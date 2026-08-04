@@ -136,7 +136,7 @@ Stein-based discharge is provided by the companion `CLTDischarge.lean` and
 `CLTDischargeMain.lean` layers. -/
 theorem directEffect_clt (Exp : ℕ → LHExperiment) (t : ℝ)
     (stud : ∀ n, (StratAssign (Exp n).ι × ∀ i, Fin ((Exp n).gsize i) → Bool) → ℝ)
-    (hstud : ∀ n sw,
+    (_hstud : ∀ n sw,
       stud n sw = ((Exp n).estD sw - (Exp n).DEbar) / Real.sqrt ((Exp n).directVar))
     (cond : ∀ n, StratAssign (Exp n).ι →
       FiniteDesign (∀ i, Fin ((Exp n).gsize i) → Bool))

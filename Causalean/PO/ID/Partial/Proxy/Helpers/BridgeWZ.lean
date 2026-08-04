@@ -143,25 +143,18 @@ lemma condIntYofA_eq_hq_armSwap_twoProxy
               * HA.likelihoodRatio_swapA a ω ∂μ) := by
     -- Apply L2 with arms (a, ¬a). Needs a ≠ ¬a (true since Bool).
     have h_swap := Causalean.setIntegral_eq_setIntegral_mul_of_likelihoodRatio_swap
-      (m := S.σ_UX) (mΩ := P.measΩ) S.σ_UX_le S.measurable_A a (!a)
+      (m := S.σ_UX) (mΩ := P.measΩ) S.σ_UX_le s s'
+      hs_meas hs'_meas
       (L := HA.likelihoodRatio_swapA a)
       (f := μ[S.YofA a | S.σ_UX])
-      hL_m hCondYa_meas
+      (hCondYa_meas.aestronglyMeasurable.mul hL_m.aestronglyMeasurable)
+      hCondYa_meas.aestronglyMeasurable
       MeasureTheory.integrable_condExp.integrableOn hYaLInt.integrableOn
       (by
         -- Spec form: μ[1_{A=a}|σ_UX] · L =ᵐ μ[1_{A=¬a}|σ_UX].
         have := HA.likelihoodRatio_swapA_spec a
-        -- Goal is the same — `!a = ¬a` and `(¬ ·) = (· ≠ a)` for Bool.
-        have hset_eq : ({ω' : P.Ω | S.A ω' = !a} : Set P.Ω)
-            = {ω' | S.A ω' ≠ a} := by
-          ext ω; cases a <;> cases hA : S.A ω <;> simp [hA]
-        rw [hset_eq]
-        exact this)
+        simpa only [hs_def, hs'_def] using this)
     -- h_swap : ∫_{A=¬a} f = ∫_{A=a} f * L.
-    -- Show s' = {ω | S.A ω = !a}.
-    have hs'_eq : s' = {ω | S.A ω = !a} := by
-      ext ω; cases a <;> cases hA : S.A ω <;> simp [s', hA]
-    rw [hs'_eq]
     exact h_swap
   -- ============================================================
   -- (b) On restrict {A=a}: μ[Y(a)|σ_UX] =ᵐ μ[h(a,W,X)|σ_AUX].
@@ -273,7 +266,7 @@ lemma condIntYofA_eq_hq_armSwap_twoProxy
   have hWX_Z : ProbabilityTheory.CondIndepFun S.σ_AUX S.σ_AUX_le
       (fun ω => (S.W ω, S.X ω)) S.Z μ :=
     Causalean.condIndepFun_prodMk_of_measurable_left S.σ_AUX_le
-      S.measurable_W S.measurable_Z S.measurable_X hX_m_AUX HA.proxy_WZ_indep
+      S.measurable_W S.measurable_Z hX_m_AUX HA.proxy_WZ_indep
   -- Symm: Z ⟂ (W,X) | σ_AUX.
   have hZ_WX : ProbabilityTheory.CondIndepFun S.σ_AUX S.σ_AUX_le
       S.Z (fun ω => (S.W ω, S.X ω)) μ := hWX_Z.symm
@@ -283,7 +276,7 @@ lemma condIntYofA_eq_hq_armSwap_twoProxy
     have hWX_meas : Measurable (fun ω : P.Ω => (S.W ω, S.X ω)) :=
       Measurable.prodMk S.measurable_W S.measurable_X
     exact Causalean.condIndepFun_prodMk_of_measurable_left S.σ_AUX_le
-      S.measurable_Z hWX_meas S.measurable_X hX_m_AUX hZ_WX
+      S.measurable_Z hWX_meas hX_m_AUX hZ_WX
   -- Symm again: (W,X) ⟂ (Z,X) | σ_AUX.
   have hWX_ZX : ProbabilityTheory.CondIndepFun S.σ_AUX S.σ_AUX_le
       (fun ω => (S.W ω, S.X ω)) (fun ω => (S.Z ω, S.X ω)) μ := hZX_WX.symm

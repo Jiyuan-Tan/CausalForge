@@ -37,23 +37,25 @@ section CellHelpers
 
 /-! #### Indicator `MemLp 2` lemmas -/
 
+omit [Fintype 𝒢] [DecidableEq 𝒢] in
 /-- Cohort indicator `𝟙{G = g}` is in `MemLp 2 μ` (bounded + finite measure). -/
 theorem indicator_cohort_memLp
-    (μ : Measure Ω) [IsProbabilityMeasure μ]
+    (μ : Measure Ω) [IsFiniteMeasure μ]
     (G : Ω → 𝒢) (G_meas : Measurable G) (g : 𝒢) :
     MemLp (fun ω => Set.indicator {ω' | G ω' = g} (fun _ => (1 : ℝ)) ω) 2 μ := by
   exact CellBridge.indicator_cell_memLp μ G G_meas g
 
 /-- Period indicator `𝟙{T_rv = t}` is in `MemLp 2 μ`. -/
 theorem indicator_period_memLp
-    (μ : Measure Ω) [IsProbabilityMeasure μ]
+    (μ : Measure Ω) [IsFiniteMeasure μ]
     (T_rv : Ω → Fin T) (T_meas : Measurable T_rv) (t : Fin T) :
     MemLp (fun ω => Set.indicator {ω' | T_rv ω' = t} (fun _ => (1 : ℝ)) ω) 2 μ := by
   exact CellBridge.indicator_cell_memLp μ T_rv T_meas t
 
+omit [Fintype 𝒢] [DecidableEq 𝒢] in
 /-- Joint cell indicator `𝟙{G=g ∧ T_rv=t}` is in `MemLp 2 μ`. -/
 theorem indicator_panel_cell_memLp
-    (μ : Measure Ω) [IsProbabilityMeasure μ]
+    (μ : Measure Ω) [IsFiniteMeasure μ]
     (G : Ω → 𝒢) (T_rv : Ω → Fin T)
     (G_meas : Measurable G) (T_meas : Measurable T_rv) (g : 𝒢) (t : Fin T) :
     MemLp (fun ω => Set.indicator {ω' | G ω' = g ∧ T_rv ω' = t}
@@ -71,6 +73,7 @@ theorem indicator_panel_cell_memLp
 
 /-! #### Integral-of-indicator-equals-mass lemmas -/
 
+omit [Fintype 𝒢] [DecidableEq 𝒢] in
 /-- `∫ 𝟙{G = g} dμ = cohortMass μ G g`. -/
 theorem integral_cohort_indicator_one_eq_cohortMass
     (μ : Measure Ω) (G : Ω → 𝒢) (G_meas : Measurable G) (g : 𝒢) :
@@ -87,6 +90,7 @@ theorem integral_period_indicator_one_eq_periodMass
   simpa [periodMass] using
     (CellBridge.integral_cell_indicator_one_eq_cellMass μ T_rv T_meas t)
 
+omit [Fintype 𝒢] [DecidableEq 𝒢] in
 /-- `∫ 𝟙{G = g ∧ T_rv = t} dμ = cellMass μ G T_rv g t`. -/
 theorem integral_panel_cell_indicator_one_eq_cellMass
     (μ : Measure Ω) (G : Ω → 𝒢) (T_rv : Ω → Fin T)
@@ -108,31 +112,33 @@ theorem integral_panel_cell_indicator_one_eq_cellMass
 
 /-! #### div–mul–mass lemmas -/
 
+omit [Fintype 𝒢] [DecidableEq 𝒢] [MeasurableSpace 𝒢] [MeasurableSingletonClass 𝒢] in
 /-- Defining identity for `cohortBarD`: dividing by cohort mass and
 multiplying back recovers the cohort-indicator-weighted integral.
 On zero-mass cohorts both sides are zero (a.e.-vanishing indicator). -/
 theorem cohort_integral_div_mul_cohortMass
-    (μ : Measure Ω) [IsProbabilityMeasure μ]
-    (F : Ω → ℝ) (G : Ω → 𝒢) (G_meas : Measurable G) (g : 𝒢) :
+    (μ : Measure Ω) [IsFiniteMeasure μ]
+    (F : Ω → ℝ) (G : Ω → 𝒢) (g : 𝒢) :
     ((∫ ω, F ω * Set.indicator {ω' | G ω' = g} (fun _ => (1 : ℝ)) ω ∂μ)
         / cohortMass μ G g) * cohortMass μ G g =
       ∫ ω, F ω * Set.indicator {ω' | G ω' = g} (fun _ => (1 : ℝ)) ω ∂μ := by
   simpa [cohortMass] using
-    (CellBridge.cell_integral_div_mul_cellMass μ F G G_meas g)
+    (CellBridge.cell_integral_div_mul_cellMass μ F G g)
 
 /-- Period analogue. -/
 theorem period_integral_div_mul_periodMass
-    (μ : Measure Ω) [IsProbabilityMeasure μ]
-    (F : Ω → ℝ) (T_rv : Ω → Fin T) (T_meas : Measurable T_rv) (t : Fin T) :
+    (μ : Measure Ω) [IsFiniteMeasure μ]
+    (F : Ω → ℝ) (T_rv : Ω → Fin T) (t : Fin T) :
     ((∫ ω, F ω * Set.indicator {ω' | T_rv ω' = t} (fun _ => (1 : ℝ)) ω ∂μ)
         / periodMass μ T_rv t) * periodMass μ T_rv t =
       ∫ ω, F ω * Set.indicator {ω' | T_rv ω' = t} (fun _ => (1 : ℝ)) ω ∂μ := by
   simpa [periodMass] using
-    (CellBridge.cell_integral_div_mul_cellMass μ F T_rv T_meas t)
+    (CellBridge.cell_integral_div_mul_cellMass μ F T_rv t)
 
+omit [Fintype 𝒢] [DecidableEq 𝒢] in
 /-- Cell analogue (joint cohort × period cell). -/
 theorem panel_cell_integral_div_mul_cellMass
-    (μ : Measure Ω) [IsProbabilityMeasure μ]
+    (μ : Measure Ω) [IsFiniteMeasure μ]
     (F : Ω → ℝ) (G : Ω → 𝒢) (T_rv : Ω → Fin T)
     (G_meas : Measurable G) (T_meas : Measurable T_rv) (g : 𝒢) (t : Fin T) :
     ((∫ ω, F ω * Set.indicator {ω' | G ω' = g ∧ T_rv ω' = t}
@@ -150,7 +156,7 @@ theorem panel_cell_integral_div_mul_cellMass
     simpa [s, Set.inter_def] using hG.inter hT
   have hs_top : μ s ≠ ⊤ := by
     exact ne_of_lt <| lt_of_le_of_lt (measure_mono (Set.subset_univ s))
-      (by simp [IsProbabilityMeasure.measure_univ])
+      (by simp)
   by_cases hmass : cellMass μ G T_rv g t = 0
   · have hs_zero : μ s = 0 := by
       have hzero : (μ s).toReal = 0 := by simpa [cellMass, s] using hmass
@@ -177,14 +183,15 @@ theorem panel_cell_integral_div_mul_cellMass
 
 /-! #### `cohortBarD` defining identity (cleanup form) -/
 
+omit [Fintype 𝒢] [DecidableEq 𝒢] [MeasurableSpace 𝒢] [MeasurableSingletonClass 𝒢] in
 /-- `cohortBarD g · cohortMass g = ∫ D · 𝟙{G=g} dμ`. -/
 theorem cohortBarD_mul_cohortMass
-    (μ : Measure Ω) [IsProbabilityMeasure μ]
-    (D : Ω → ℝ) (G : Ω → 𝒢) (G_meas : Measurable G) (g : 𝒢) :
+    (μ : Measure Ω) [IsFiniteMeasure μ]
+    (D : Ω → ℝ) (G : Ω → 𝒢) (g : 𝒢) :
     cohortBarD μ D G g * cohortMass μ G g =
       ∫ ω, D ω * Set.indicator {ω' | G ω' = g} (fun _ => (1 : ℝ)) ω ∂μ := by
   simpa [cohortBarD] using
-    (cohort_integral_div_mul_cohortMass μ D G G_meas g)
+    (cohort_integral_div_mul_cohortMass μ D G g)
 
 /-! #### Constant-on-cell identities for `panelPropensity` and `panelMeanReg`
 
@@ -215,6 +222,7 @@ noncomputable def panelMeanRegHat
         / periodMass μ T_rv t
         - ∫ ω', Y ω' ∂μ)
 
+omit [DecidableEq 𝒢] [MeasurableSpace 𝒢] [MeasurableSingletonClass 𝒢] in
 /-- On the cell `{G = g ∧ T_rv = t}`, `panelPropensity` evaluates to
 `panelPropensityHat g t`. Pointwise (no a.e. needed) by single-cell
 membership selecting one term in each finite sum. -/
@@ -222,6 +230,7 @@ theorem panelPropensity_eq_hat_of_mem
     (μ : Measure Ω) (D : Ω → ℝ) (G : Ω → 𝒢) (T_rv : Ω → Fin T)
     {g : 𝒢} {t : Fin T} {ω : Ω} (hG : G ω = g) (hT : T_rv ω = t) :
     panelPropensity μ D G T_rv ω = panelPropensityHat μ D G T_rv g t := by
+  classical
   unfold panelPropensity panelPropensityHat
   rw [Finset.sum_eq_single g]
   · rw [Finset.sum_eq_single t]
@@ -235,12 +244,14 @@ theorem panelPropensity_eq_hat_of_mem
   · intro hg
     simp at hg
 
+omit [DecidableEq 𝒢] [MeasurableSpace 𝒢] [MeasurableSingletonClass 𝒢] in
 /-- On the cell `{G = g ∧ T_rv = t}`, `panelMeanReg` evaluates to
 `panelMeanRegHat g t`. -/
 theorem panelMeanReg_eq_hat_of_mem
     (μ : Measure Ω) (Y : Ω → ℝ) (G : Ω → 𝒢) (T_rv : Ω → Fin T)
     {g : 𝒢} {t : Fin T} {ω : Ω} (hG : G ω = g) (hT : T_rv ω = t) :
     panelMeanReg μ Y G T_rv ω = panelMeanRegHat μ Y G T_rv g t := by
+  classical
   unfold panelMeanReg panelMeanRegHat
   rw [Finset.sum_eq_single g]
   · rw [Finset.sum_eq_single t]
@@ -256,11 +267,12 @@ theorem panelMeanReg_eq_hat_of_mem
 
 /-! #### Per-axis to whole-class orthogonality -/
 
+omit [DecidableEq 𝒢] in
 /-- If a square-integrable residual `V` is orthogonal to every cohort
 indicator and to every period indicator, then it is orthogonal to every
 member of `panelClass`. -/
 theorem integral_mul_panelClass_eq_zero_of_axes
-    (μ : Measure Ω) [IsProbabilityMeasure μ]
+    (μ : Measure Ω) [IsFiniteMeasure μ]
     (V : Ω → ℝ) (G : Ω → 𝒢) (T_rv : Ω → Fin T)
     (G_meas : Measurable G) (T_meas : Measurable T_rv)
     (V_memLp : MemLp V 2 μ)
@@ -275,11 +287,13 @@ theorem integral_mul_panelClass_eq_zero_of_axes
             + (∑ t, cT t
               * Set.indicator {ω' | T_rv ω' = t} (fun _ => (1 : ℝ)) ω)) ∂μ
       = 0 := by
+  classical
   exact CellBridge.integral_mul_twoAxisIndicatorSpan_eq_zero_of_axes
     μ V G T_rv G_meas T_meas V_memLp cG cT hCohort hPeriod
 
 /-! #### Integral-as-sum-over-cells identities -/
 
+omit [DecidableEq 𝒢] in
 /-- Integrate by summing over cohort cells:
 `∫ F dμ = ∑_g ∫ F · 𝟙{G = g} dμ`. -/
 theorem integral_eq_sum_cohort
@@ -288,6 +302,7 @@ theorem integral_eq_sum_cohort
     ∫ ω, F ω ∂μ =
       ∑ g, ∫ ω, F ω
         * Set.indicator {ω' | G ω' = g} (fun _ => (1 : ℝ)) ω ∂μ := by
+  classical
   exact CellBridge.integral_eq_sum_cell μ F G G_meas F_int
 
 /-- Integrate by summing over period cells. -/
@@ -299,6 +314,7 @@ theorem integral_eq_sum_period
         * Set.indicator {ω' | T_rv ω' = t} (fun _ => (1 : ℝ)) ω ∂μ := by
   exact CellBridge.integral_eq_sum_cell μ F T_rv T_meas F_int
 
+omit [DecidableEq 𝒢] in
 /-- Integrate by summing over cohort × period cells. -/
 theorem integral_eq_sum_panel_cell
     (μ : Measure Ω) (F : Ω → ℝ) (G : Ω → 𝒢) (T_rv : Ω → Fin T)

@@ -95,8 +95,14 @@ async function main(): Promise<void> {
     ...(upstream ? { upstream } : {}),
     attestation: { by: "main" as const, note: attestationNote, at: new Date().toISOString() },
   };
-  coreNode.source = source;
+  // Phase 1 (store consolidation): the working record is the authoritative truth —
+  // write the attestation there first. The published core.json is then PATCHED in
+  // place on the one attested node, never re-rendered: a full re-render from
+  // (proto, working) would silently discard any sanctioned D0.R in-place repairs
+  // that live only in the published file (audit F5). The next solve commit's
+  // render reproduces the attestation from the working record.
   workingNode.source = { ...source };
+  coreNode.source = { ...source };
   CoreSchema.parse(core);
   await saveWorkingState(ctx, working);
   await writeJsonAtomic(cp, core);

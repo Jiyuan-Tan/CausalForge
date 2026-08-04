@@ -179,12 +179,12 @@ theorem releaseOf_error_le {d n m : ℕ} {h cstar Cstar : ℝ} {x0 : Fin d → �
   let thetaBar (a : Fin 2) := (Gbar a)⁻¹.mulVec (gbar a)
   let wn := Real.sqrt (∑ i : Fin (Nq d m), (w i) ^ 2)
   have hUmem (a : Fin 2) : U a ∈ loewnerSet (pDim d m) cstar Cstar := by
-    exact loewnerProj_mem hcstar hcC (noisyG a)
+    exact loewnerProj_mem hcC (noisyG a)
   have hGmem (a : Fin 2) : Gbar a ∈ loewnerSet (pDim d m) cstar Cstar := hloew a
   have hUdet (a : Fin 2) : IsUnit (U a).det :=
-    (Matrix.isUnit_iff_isUnit_det _).mp (loewnerSet_posDef hcstar hcC (hUmem a)).isUnit
+    (Matrix.isUnit_iff_isUnit_det _).mp (loewnerSet_posDef hcstar (hUmem a).1).isUnit
   have hGdet (a : Fin 2) : IsUnit (Gbar a).det :=
-    (Matrix.isUnit_iff_isUnit_det _).mp (loewnerSet_posDef hcstar hcC (hGmem a)).isUnit
+    (Matrix.isUnit_iff_isUnit_det _).mp (loewnerSet_posDef hcstar (hGmem a).1).isUnit
   have hmomNoise (a : Fin 2) :
       Real.sqrt (∑ k, (noisyg a k - gbar a k) ^ 2) ≤
         Real.sqrt (∑ k, (ghat a k - gbar a k) ^ 2) + wn := by
@@ -211,7 +211,7 @@ theorem releaseOf_error_le {d n m : ℕ} {h cstar Cstar : ℝ} {x0 : Fin d → �
     calc
       frobDist (Gbar a) (U a) = frobDist (U a) (Gbar a) := frobDist_comm _ _
       _ ≤ frobDist (noisyG a) (Gbar a) :=
-        loewnerProj_frobDist_le hcstar hcC (noisyG a) (Gbar a) (hGmem a)
+        loewnerProj_frobDist_le hcC (noisyG a) (Gbar a) (hGmem a)
       _ ≤ frobDist (noisyG a) (Ghat a) + frobDist (Ghat a) (Gbar a) :=
         frobDist_triangle _ _ _
       _ ≤ frobDist (Ghat a) (Gbar a) + wn := by
@@ -245,12 +245,12 @@ theorem releaseOf_error_le {d n m : ℕ} {h cstar Cstar : ℝ} {x0 : Fin d → �
       change Real.sqrt (∑ k, ((thetaHat a - thetaBar a) k) ^ 2) ≤ _
       rw [hthetaEq a]
       exact htri
-    have hfirst := loewnerSet_inv_mulVec_norm_le hcstar hcC (hUmem a)
+    have hfirst := loewnerSet_inv_mulVec_norm_le hcstar (hUmem a).1
       (noisyg a - gbar a)
-    have houter := loewnerSet_inv_mulVec_norm_le hcstar hcC (hUmem a)
+    have houter := loewnerSet_inv_mulVec_norm_le hcstar (hUmem a).1
       ((Gbar a - U a).mulVec (thetaBar a))
     have hinner := mulVec_sub_norm_le (Gbar a) (U a) (thetaBar a)
-    have hbar := loewnerSet_inv_mulVec_norm_le hcstar hcC (hGmem a) (gbar a)
+    have hbar := loewnerSet_inv_mulVec_norm_le hcstar (hGmem a).1 (gbar a)
     have hbarBg : Real.sqrt (∑ k, (thetaBar a k) ^ 2) ≤ Bg / cstar := by
       exact hbar.trans (div_le_div_of_nonneg_right (hBg a) (le_of_lt hcstar))
     have hinnerBg : Real.sqrt (∑ k, ((Gbar a - U a).mulVec (thetaBar a) k) ^ 2) ≤

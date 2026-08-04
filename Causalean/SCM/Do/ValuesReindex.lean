@@ -32,8 +32,9 @@ variable {Ω : N → Type*} [∀ n, MeasurableSpace (Ω n)]
 
 /-- **Union commutativity.**  Reindexing `valuesUnionMk a b` (a block on `A ∪ B`)
     along `A ∪ B = B ∪ A` yields `valuesUnionMk b a`, when `A` and `B` are disjoint. -/
-lemma valuesUnionMk_comm {A B : Finset (SWIGNode N)} (hAB : Disjoint A B)
-    (a : ValuesOn A (swigΩ Ω)) (b : ValuesOn B (swigΩ Ω)) :
+lemma valuesUnionMk_comm {M : Type*} [DecidableEq M] {Ω : M → Type*}
+    [∀ m, MeasurableSpace (Ω m)] {A B : Finset M} (hAB : Disjoint A B)
+    (a : ValuesOn A Ω) (b : ValuesOn B Ω) :
     valuesEquivOfEq (Finset.union_comm A B) (valuesUnionMk a b)
       = valuesUnionMk b a := by
   funext ⟨v, hv⟩
@@ -47,9 +48,9 @@ lemma valuesUnionMk_comm {A B : Finset (SWIGNode N)} (hAB : Disjoint A B)
 
 /-- **Right `∅` collapse.**  Reindexing `valuesUnionMk a e` (with `e` the trivial
     block on `∅`) along `A ∪ ∅ = A` recovers `a`. -/
-lemma valuesUnionMk_empty_right {A : Finset (SWIGNode N)}
-    (a : ValuesOn A (swigΩ Ω))
-    (e : ValuesOn (∅ : Finset (SWIGNode N)) (swigΩ Ω)) :
+lemma valuesUnionMk_empty_right {M : Type*} [DecidableEq M] {Ω : M → Type*}
+    [∀ m, MeasurableSpace (Ω m)] {A : Finset M}
+    (a : ValuesOn A Ω) (e : ValuesOn (∅ : Finset M) Ω) :
     valuesEquivOfEq (Finset.union_empty A) (valuesUnionMk a e) = a := by
   funext ⟨v, hv⟩
   simp only [valuesEquivOfEq, MeasurableEquiv.coe_mk, Equiv.coe_fn_mk,
@@ -58,25 +59,26 @@ lemma valuesUnionMk_empty_right {A : Finset (SWIGNode N)}
 /-- A value block is `HEq` to its reindexing along a `Finset` equality.  The
     bridge that lets the equiv-mediated `Eq` laws above discharge legacy `HEq`
     goals in one line. -/
-lemma valuesEquivOfEq_heq {I J : Finset (SWIGNode N)} (h : I = J)
-    (x : ValuesOn I (swigΩ Ω)) :
+lemma valuesEquivOfEq_heq {M : Type*} {Ω : M → Type*} [∀ m, MeasurableSpace (Ω m)]
+    {I J : Finset M} (h : I = J) (x : ValuesOn I Ω) :
     HEq (valuesEquivOfEq h x) x := by
   subst h
   exact heq_of_eq rfl
 
 /-- **Union commutativity, `HEq` form.**  Supersedes the ad-hoc per-proof `HEq`
     construction: a one-line corollary of `valuesUnionMk_comm`. -/
-lemma valuesUnionMk_comm_heq {A B : Finset (SWIGNode N)} (hAB : Disjoint A B)
-    (a : ValuesOn A (swigΩ Ω)) (b : ValuesOn B (swigΩ Ω)) :
+lemma valuesUnionMk_comm_heq {M : Type*} [DecidableEq M] {Ω : M → Type*}
+    [∀ m, MeasurableSpace (Ω m)] {A B : Finset M} (hAB : Disjoint A B)
+    (a : ValuesOn A Ω) (b : ValuesOn B Ω) :
     HEq (valuesUnionMk a b) (valuesUnionMk b a) := by
   rw [← valuesUnionMk_comm hAB a b]
   exact (valuesEquivOfEq_heq _ _).symm
 
 /-- **Right `∅` collapse, `HEq` form.**  `valuesUnionMk a e` (trivial `∅` block)
     is `HEq` to `a`; a one-line corollary of `valuesUnionMk_empty_right`. -/
-lemma valuesUnionMk_empty_right_heq {A : Finset (SWIGNode N)}
-    (a : ValuesOn A (swigΩ Ω))
-    (e : ValuesOn (∅ : Finset (SWIGNode N)) (swigΩ Ω)) :
+lemma valuesUnionMk_empty_right_heq {M : Type*} [DecidableEq M] {Ω : M → Type*}
+    [∀ m, MeasurableSpace (Ω m)] {A : Finset M}
+    (a : ValuesOn A Ω) (e : ValuesOn (∅ : Finset M) Ω) :
     HEq (valuesUnionMk a e) a := by
   have h : valuesEquivOfEq (Finset.union_empty A) (valuesUnionMk a e) = a :=
     valuesUnionMk_empty_right a e
@@ -92,11 +94,11 @@ lemma valuesUnionMk_empty_right_heq {A : Finset (SWIGNode N)}
     `heq_of_eq` boilerplate that every `ValuesOn` reindexing step (e.g. splicing/dropping
     a coordinate block when a conditioning set grows in a fixing sequence) would otherwise
     spell out by hand. -/
-lemma valuesOn_heq_of_coord {I J : Finset (SWIGNode N)} (hIJ : I = J)
-    (f : ValuesOn I (swigΩ Ω)) (g : ValuesOn J (swigΩ Ω))
-    (h : ∀ (v : SWIGNode N) (hI : v ∈ I) (hJ : v ∈ J), f ⟨v, hI⟩ = g ⟨v, hJ⟩) :
+lemma valuesOn_heq_of_coord {M : Type*} {Ω : M → Type*} [∀ m, MeasurableSpace (Ω m)]
+    {I J : Finset M} (hIJ : I = J) (f : ValuesOn I Ω) (g : ValuesOn J Ω)
+    (h : ∀ (v : M) (hI : v ∈ I) (hJ : v ∈ J), f ⟨v, hI⟩ = g ⟨v, hJ⟩) :
     HEq f g := by
-  apply Function.hfunext (congrArg (fun S : Finset (SWIGNode N) => {i // i ∈ S}) hIJ)
+  apply Function.hfunext (congrArg (fun S : Finset M => {i // i ∈ S}) hIJ)
   rintro ⟨v, hvI⟩ ⟨v', hvJ⟩ hidx
   have hv_eq : v = v' := (Subtype.heq_iff_coe_eq (by intro x; rw [hIJ])).mp hidx
   subst hv_eq

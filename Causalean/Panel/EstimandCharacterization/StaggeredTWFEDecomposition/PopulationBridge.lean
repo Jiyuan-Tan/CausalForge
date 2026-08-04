@@ -103,7 +103,7 @@ theorem bridge_Dtilde_sq_eq_VD
         refine Finset.sum_congr rfl (fun g _ => ?_)
         refine Finset.sum_congr rfl (fun t _ => ?_)
         simpa [wD, residWitnessD_panel, mul_assoc] using
-          denom_per_cell_panel μ D G T_rv G_meas T_meas hD_cell g t
+          denom_per_cell_panel μ D G T_rv G_meas T_meas g t (hD_cell g t)
   calc
     ∫ ω, (residWitnessD_panel μ D G T_rv G_meas T_meas D_meas D_binary
               B_balanced).Vtilde ω
@@ -248,7 +248,7 @@ theorem bridge_finite_residualized_eq_twfe
         refine Finset.sum_congr rfl (fun g _ => ?_)
         refine Finset.sum_congr rfl (fun t _ => ?_)
         simpa [wD, residWitnessD_panel, mul_assoc] using
-          denom_per_cell_panel μ D G T_rv G_meas T_meas hD_cell g t
+          denom_per_cell_panel μ D G T_rv G_meas T_meas g t (hD_cell g t)
   have hNum_sum :
       ∫ ω, wD.Vtilde ω * Y ω ∂μ =
         ∑ g, ∑ t, cellMass μ G T_rv g t
@@ -269,7 +269,7 @@ theorem bridge_finite_residualized_eq_twfe
         refine Finset.sum_congr rfl (fun g _ => ?_)
         refine Finset.sum_congr rfl (fun t _ => ?_)
         simpa [wD, residWitnessD_panel, mul_assoc] using
-          num_per_cell_panel μ D Y G T_rv G_meas T_meas hD_cell g t
+          num_per_cell_panel μ D Y G T_rv G_meas T_meas g t (hD_cell g t)
   calc
     residualizedCoefficient μ (panelClass μ G T_rv G_meas T_meas)
         (residWitnessY_panel μ Y G T_rv G_meas T_meas Y_memLp B_balanced)

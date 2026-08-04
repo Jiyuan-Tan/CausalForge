@@ -262,7 +262,9 @@ theorem vec_twfe_twm_equivalence (P : VectorTWFEProblem Unit Time K)
     intro k h hh
     have hadd : IsUnitTimeAdditive h :=
       vector_mundlak_nuisance_unit_time P.X Zvar Mvar hh
-    have hortho := ddot_orthogonal_unit_time P.panel (fun i t => P.X i t k) h hadd
+    have hortho := ddot_orthogonal_unit_time
+      (lt_of_lt_of_le (by decide) P.panel.unit_card_ge_two)
+      (lt_of_lt_of_le (by decide) P.panel.time_card_ge_two) (fun i t => P.X i t k) h hadd
     simpa [inner, ddotVec] using hortho
   have hYproj_orth : ∀ k,
       (∑ i, ∑ t, ddotVec P.X i t k * (P.Y i t - ddot P.Y i t)) = 0 := by
@@ -271,7 +273,9 @@ theorem vec_twfe_twm_equivalence (P : VectorTWFEProblem Unit Time K)
       rw [show (fun i t => P.Y i t - ddot P.Y i t) = unitTimeProjection P.Y from
           funext fun i => funext fun t => sub_ddot_eq_unitTimeProjection P.Y i t]
       exact unitTimeProjection_additive P.Y
-    have hortho := ddot_orthogonal_unit_time P.panel (fun i t => P.X i t k)
+    have hortho := ddot_orthogonal_unit_time
+      (lt_of_lt_of_le (by decide) P.panel.unit_card_ge_two)
+      (lt_of_lt_of_le (by decide) P.panel.time_card_ge_two) (fun i t => P.X i t k)
       (fun i t => P.Y i t - ddot P.Y i t) hadd
     simpa [inner, ddotVec] using hortho
   -- apply the matrix FWL handoff

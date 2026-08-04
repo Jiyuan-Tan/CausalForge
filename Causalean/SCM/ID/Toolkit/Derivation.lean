@@ -169,11 +169,10 @@ theorem backdoor_rule2_ae
       = M.obsCondKernel Y (X.image SWIGNode.random ∪ Z) hY hXrZ
           (s0, valuesUnionMk p.1 p.2) :=
   SCM.obsCondKernel_fixSet_eq_ae_witness M X hObs hFix Y Z hY hZ hXr hXrZ
-    hDisj_YXr hDisj_XrZ
     (backdoorCriterion_dSep_fixSet M X hObs hFix Y Z hY hXr h_bd)
     (backdoorCriterion_W_nonDesc M X hObs hFix Y Z h_bd)
     (backdoorCriterion_W_nonDescM1 M X hObs hFix Y Z h_bd)
-    s0 hOverlap hPositivity_ae
+    s0 hPositivity_ae
 
 end SCM
 

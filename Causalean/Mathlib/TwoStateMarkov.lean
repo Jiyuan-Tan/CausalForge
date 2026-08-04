@@ -11,11 +11,11 @@ This file studies the two-state Markov chain on `Fin 2` with transition rows
 * `transitionMatrix a b` — the 2×2 row-stochastic matrix above.
 * `stationaryProjection a b` — the rank-one projector whose rows both equal
   the stationary distribution `(b/(a+b), a/(a+b))`.
-* `transitionMatrix_pow_eq_spectral` — spectral decomposition
-  `M^k = Π + (1 - a - b)^k • (1 - Π)` on the open transition square.
+* `transitionMatrix_pow_eq_spectral` — field-valued spectral decomposition
+  `M^k = Π + (1 - a - b)^k • (1 - Π)` when `a + b ≠ 0`.
 * `one_minus_a_b_abs_lt_one` — pointwise spectral gap on `(0,1)²`.
 * `one_minus_a_b_uniform_gap_on_compact` — uniform spectral gap on compact
-  subsets of the open square (via `IsCompact.exists_isMaxOn`).
+  subsets of the strip `0 < a + b < 2` (via `IsCompact.exists_isMaxOn`).
 * `transitionMatrix_pow_tendsto_stationary_uniform` - entrywise geometric
   convergence `M^k → Π`, uniform on compact subsets of the open square.
 
@@ -44,7 +44,8 @@ namespace Mathlib
 namespace TwoStateMarkov
 
 /-- Transition matrix with rows `(1 - a, a)` and `(b, 1 - b)`. -/
-noncomputable def transitionMatrix (a b : ℝ) : Matrix (Fin 2) (Fin 2) ℝ :=
+noncomputable def transitionMatrix {K : Type*} [Field K]
+    (a b : K) : Matrix (Fin 2) (Fin 2) K :=
   fun i j =>
     if i = (0 : Fin 2) then
       if j = (0 : Fin 2) then 1 - a else a
@@ -52,24 +53,21 @@ noncomputable def transitionMatrix (a b : ℝ) : Matrix (Fin 2) (Fin 2) ℝ :=
       if j = (0 : Fin 2) then b else 1 - b
 
 /-- Stationary projection with both rows equal to `(b/(a+b), a/(a+b))`. -/
-noncomputable def stationaryProjection (a b : ℝ) : Matrix (Fin 2) (Fin 2) ℝ :=
+noncomputable def stationaryProjection {K : Type*} [Field K]
+    (a b : K) : Matrix (Fin 2) (Fin 2) K :=
   fun _ j => if j = (0 : Fin 2) then b / (a + b) else a / (a + b)
 
 /-- Spectral decomposition of the two-state transition matrix:
-`M(a,b)^k = Π(a,b) + (1 - a - b)^k • (1 - Π(a,b))`. -/
+`M(a,b)^k = Π(a,b) + (1 - a - b)^k • (1 - Π(a,b))` whenever `a + b ≠ 0`. -/
 theorem transitionMatrix_pow_eq_spectral
-    (a b : ℝ) (ha_pos : 0 < a) (ha_lt_one : a < 1)
-    (hb_pos : 0 < b) (hb_lt_one : b < 1) :
+    {K : Type*} [Field K] (a b : K) (hs : a + b ≠ 0) :
     ∀ k : ℕ,
       (transitionMatrix a b) ^ k =
         stationaryProjection a b +
           ((1 - a - b) ^ k) • (1 - stationaryProjection a b) := by
-  have _ : a < 1 := ha_lt_one
-  have _ : b < 1 := hb_lt_one
   let P := stationaryProjection a b
-  let Q : Matrix (Fin 2) (Fin 2) ℝ := 1 - P
+  let Q : Matrix (Fin 2) (Fin 2) K := 1 - P
   let lam := 1 - a - b
-  have hs : a + b ≠ 0 := by positivity
   have hM : transitionMatrix a b = P + lam • Q := by
     ext i j
     fin_cases i <;> fin_cases j <;>
@@ -117,11 +115,12 @@ theorem transitionMatrix_pow_eq_spectral
               pow_succ] <;>
             field_simp [hs] <;> ring
 
-/-- Pointwise spectral gap on the open square: `|1 - a - b| < 1` whenever
-`(a,b) ∈ (0,1)²`. -/
+/-- Pointwise spectral gap: `|1 - a - b| < 1` when `a + b` lies strictly
+between zero and two. -/
 theorem one_minus_a_b_abs_lt_one
-    {a b : ℝ} (ha_pos : 0 < a) (hb_pos : 0 < b)
-    (ha_lt_one : a < 1) (hb_lt_one : b < 1) :
+    {K : Type*} [CommRing K] [LinearOrder K] [IsStrictOrderedRing K]
+    {a b : K} (hs_pos : 0 < a + b)
+    (hs_lt_two : a + b < 2) :
     |1 - a - b| < 1 := by
   by_cases hle : a + b ≤ 1
   · rw [abs_of_nonneg (by linarith)]
@@ -130,13 +129,13 @@ theorem one_minus_a_b_abs_lt_one
     rw [abs_of_neg (by linarith)]
     linarith
 
-/-- Uniform spectral gap on compact subsets of the open square: the continuous
-function `(a,b) ↦ |1 - a - b|` attains its supremum on a compact `K ⊆ (0,1)²`
+/-- Uniform spectral gap on compact subsets of the open strip: the continuous
+function `(a,b) ↦ |1 - a - b|` attains its supremum when `0 < a + b < 2`
 at some point of `K`, and that supremum is strictly less than `1` by the
 pointwise bound. -/
 theorem one_minus_a_b_uniform_gap_on_compact
     (K : Set (ℝ × ℝ)) (hK_compact : IsCompact K)
-    (hK_open : K ⊆ {p : ℝ × ℝ | 0 < p.1 ∧ p.1 < 1 ∧ 0 < p.2 ∧ p.2 < 1}) :
+    (hK_open : K ⊆ {p : ℝ × ℝ | 0 < p.1 + p.2 ∧ p.1 + p.2 < 2}) :
     ∃ ρ : ℝ, ρ < 1 ∧ ∀ p ∈ K, |1 - p.1 - p.2| ≤ ρ := by
   by_cases hne : K.Nonempty
   · let f : ℝ × ℝ → ℝ := fun p => |1 - p.1 - p.2|
@@ -147,7 +146,7 @@ theorem one_minus_a_b_uniform_gap_on_compact
     have hopen := hK_open hpstar
     have hmax_lt : f pstar < 1 := by
       dsimp [f]
-      exact one_minus_a_b_abs_lt_one hopen.1 hopen.2.2.1 hopen.2.1 hopen.2.2.2
+      exact one_minus_a_b_abs_lt_one hopen.1 hopen.2
     refine ⟨(f pstar + 1) / 2, ?_, ?_⟩
     · linarith
     · intro p hp
@@ -173,7 +172,9 @@ theorem transitionMatrix_pow_tendsto_stationary_uniform
   classical
   by_cases hne : K.Nonempty
   · obtain ⟨ρ, hρ_lt, hρ_bound⟩ :=
-      one_minus_a_b_uniform_gap_on_compact K hK_compact hK_open
+      one_minus_a_b_uniform_gap_on_compact K hK_compact (fun p hp => by
+        have hopen := hK_open hp
+        exact ⟨by linarith [hopen.1, hopen.2.2.1], by linarith [hopen.2.1, hopen.2.2.2]⟩)
     rcases hne with ⟨p0, hp0⟩
     have hρ_nonneg : 0 ≤ ρ :=
       (abs_nonneg (1 - p0.1 - p0.2)).trans (hρ_bound p0 hp0)
@@ -212,7 +213,7 @@ theorem transitionMatrix_pow_tendsto_stationary_uniform
         ((transitionMatrix p.1 p.2) ^ k - stationaryProjection p.1 p.2) i j =
           (1 - p.1 - p.2) ^ k * (1 - stationaryProjection p.1 p.2) i j := by
       have hspec :=
-        transitionMatrix_pow_eq_spectral p.1 p.2 ha_pos hopen.2.1 hb_pos hopen.2.2.2 k
+        transitionMatrix_pow_eq_spectral p.1 p.2 hs k
       calc
         ((transitionMatrix p.1 p.2) ^ k - stationaryProjection p.1 p.2) i j
             =

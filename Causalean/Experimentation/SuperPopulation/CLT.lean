@@ -49,6 +49,6 @@ theorem networkSum_clt
     Tendsto (fun n => ((μ n).map (depSum (F n).X)).real (Set.Iic s)) atTop
       (𝓝 ((gaussianReal 0 1).real (Set.Iic s))) :=
   stein_cdf_clt_of_depGraph μ (fun n => (F n).X) (fun n => (F n).toDepGraph)
-    (fun n i => (F n).meas i) m hdeg B hB hbound hB0 hNB3 hmean hvar s
+    m hdeg B hB hbound hB0 hNB3 hmean hvar s
 
 end Causalean.Experimentation.SuperPopulation

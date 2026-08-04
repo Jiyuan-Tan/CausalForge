@@ -36,7 +36,7 @@ variance-estimator-consistency bound under Conditions 1/3/4.  Note that under Co
 -/
 
 
-open scoped BigOperators Topology Classical
+open scoped BigOperators Topology
 open Filter
 
 namespace Causalean

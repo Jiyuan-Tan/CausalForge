@@ -116,7 +116,7 @@ lemma propScore_pos [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
   | true => filter_upwards [hA.overlap] with ω hω; exact hω.1
   | false =>
     have hindD : ∀ e : Bool, Integrable (S.dVar.indicator e) P.μ :=
-      fun e => S.dVar.integrable_indicator e
+      fun e => S.dVar.integrable_indicator e (measurableSet_singleton e)
     have hsum_pt : (fun ω => S.dVar.indicator true ω + S.dVar.indicator false ω)
         = (fun _ : P.Ω => (1:ℝ)) := by
       funext ω; exact S.dVar.indicator_add_indicator_not ω
@@ -149,7 +149,8 @@ lemma integral_mul_indicator_eq_integral_mul_propScore
   have key : (fun ω => S.xVar.condExpGiven (fun ω => h ω * S.dVar.indicator d ω) P.μ ω)
       =ᵐ[P.μ] (fun ω => h ω * S.propScore d ω) :=
     S.xVar.condExpGiven_mul_of_stronglyMeasurable_left (f := h)
-      (g := S.dVar.indicator d) hsm' hh_ind_int (S.dVar.integrable_indicator d)
+      (g := S.dVar.indicator d) hsm' hh_ind_int
+        (S.dVar.integrable_indicator d (measurableSet_singleton d))
   -- `∫ h·1_{D=d} = ∫ μ[h·1_{D=d}|σX]` then rewrite by `key`.
   have hint : ∫ ω, h ω * S.dVar.indicator d ω ∂P.μ
       = ∫ ω, S.xVar.condExpGiven (fun ω => h ω * S.dVar.indicator d ω) P.μ ω ∂P.μ := by
@@ -173,7 +174,7 @@ lemma ipwDensity_integrable [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
     (hA : S.DistributionalAssumptions) (d : Bool) :
     Integrable (S.ipwDensity d) P.μ := by
   have hmeas : Measurable (S.ipwDensity d) :=
-    (S.dVar.measurable_indicator d).div
+    (S.dVar.measurable_indicator d (measurableSet_singleton d)).div
       ((S.stronglyMeasurable_propScore d).mono S.sigmaX_le).measurable
   have he_sm : StronglyMeasurable[S.sigmaX] (S.propScore d) :=
     S.stronglyMeasurable_propScore d
@@ -190,7 +191,7 @@ lemma ipwDensity_integrable [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
   have hf_meas : ∀ n, Measurable (f n) := by
     intro n
     rw [hf]
-    exact (S.dVar.measurable_indicator d).mul
+    exact (S.dVar.measurable_indicator d (measurableSet_singleton d)).mul
       (measurable_const.min (measurable_const.div he_meas))
   -- each `f n` is bounded by `n` a.e., hence integrable.
   have hf_int : ∀ n, Integrable (f n) P.μ := by
@@ -305,7 +306,8 @@ lemma integral_comp_YofD_eq [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
   -- Measurability of the composites and the indicator / propensity score.
   have hgY_meas : Measurable (fun ω => g (S.factualY ω)) := hg.comp S.measurable_factualY
   have hgYd_meas : Measurable (fun ω => g (S.YofD d ω)) := hg.comp (S.measurable_YofD d)
-  have hind_meas : Measurable (S.dVar.indicator d) := S.dVar.measurable_indicator d
+  have hind_meas : Measurable (S.dVar.indicator d) :=
+    S.dVar.measurable_indicator d (measurableSet_singleton d)
   have he_sm : StronglyMeasurable[S.sigmaX] (S.propScore d) := S.stronglyMeasurable_propScore d
   have he_pos : ∀ᵐ ω ∂P.μ, 0 < S.propScore d ω := S.propScore_pos hA d
   have hipw_meas : Measurable (S.ipwDensity d) :=
@@ -376,7 +378,7 @@ lemma integral_comp_YofD_eq [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
   have hstar0 := condExp_mul_of_condIndep (μ := P.μ) (m := S.sigmaX) S.sigmaX_le
     (f := S.factualD) (g := S.YofD d) S.measurable_factualD (S.measurable_YofD d) hCI
     (u := u) (v := g) hu_meas hg
-    (by rw [hu_eq]; exact S.dVar.integrable_indicator d) hgYd_int
+    (by rw [hu_eq]; exact S.dVar.integrable_indicator d (measurableSet_singleton d)) hgYd_int
     (by
       have e1 : (fun ω => u (S.factualD ω) * g (S.YofD d ω))
           = (fun ω => S.dVar.indicator d ω * g (S.YofD d ω)) := by

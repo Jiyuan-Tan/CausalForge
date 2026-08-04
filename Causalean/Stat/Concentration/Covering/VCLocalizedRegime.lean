@@ -1,4 +1,5 @@
 import Causalean.Stat.Concentration.Covering.VCCovering
+import Causalean.Stat.Concentration.Covering.HausslerPacking
 import Causalean.Stat.Concentration.Covering.DudleyEntropy
 import Causalean.Stat.Concentration.UniformDeviation.CriticalRadius
 import Causalean.Stat.Concentration.Rademacher.Symmetrization
@@ -60,7 +61,9 @@ structure LocalizedVCDudleyHypotheses
     TotallyBounded
       (Set.univ : Set (EmpiricalFunctionSpace (starHullZeroOut F norm r) S))
 
-private lemma abs_starHullZeroOut_le_of_bound
+/-- If every function in a class is pointwise bounded in absolute value by a common
+constant, then every zeroed localized star-hull function has the same bound at every point. -/
+lemma abs_starHullZeroOut_le_of_bound
     {F : ι → 𝒳 → ℝ} {norm : (𝒳 → ℝ) → ℝ} {B r : ℝ}
     (hbound : ∀ i x, |F i x| ≤ B) (p : starHullParam ι) (x : 𝒳) :
     |starHullZeroOut F norm r p x| ≤ B := by
@@ -78,7 +81,9 @@ private lemma abs_starHullZeroOut_le_of_bound
   · have hB : 0 ≤ B := (abs_nonneg (F i x)).trans (hbound i x)
     simpa [starHullZeroOut, hactive] using hB
 
-private lemma empiricalNorm_le_of_forall_abs_le
+/-- A function whose absolute value is bounded at every point of a finite
+sample has empirical root-mean-square norm no larger than that bound. -/
+lemma empiricalNorm_le_of_forall_abs_le
     {n : ℕ} (S : Fin n → 𝒳) {f : 𝒳 → ℝ} {η : ℝ} (hη : 0 ≤ η)
     (hf : ∀ j : Fin n, |f (S j)| ≤ η) :
     empiricalNorm S f ≤ η := by
@@ -111,7 +116,9 @@ private lemma empiricalNorm_le_of_forall_abs_le
       _ ≤ Real.sqrt (η ^ 2) := Real.sqrt_le_sqrt harg
       _ = η := by rw [Real.sqrt_sq_eq_abs, abs_of_nonneg hη]
 
-private lemma empiricalFunctionSpace_dist_le_of_forall_abs_sub_le
+/-- If two functions differ by at most a nonnegative amount at every observation
+in a finite sample, then their empirical distance is at most that amount. -/
+lemma empiricalFunctionSpace_dist_le_of_forall_abs_sub_le
     {G : starHullParam ι → 𝒳 → ℝ} {n : ℕ} {S : Fin n → 𝒳}
     (q q' : EmpiricalFunctionSpace G S) {η : ℝ} (hη : 0 ≤ η)
     (hcoord : ∀ j : Fin n, |G q.index (S j) - G q'.index (S j)| ≤ η) :
@@ -123,14 +130,15 @@ private lemma empiricalFunctionSpace_dist_le_of_forall_abs_sub_le
       simpa [Pi.sub_apply] using hcoord j)
   simpa [instDistEmpiricalFunctionSpace, empiricalDist] using hnorm
 
-private lemma starHullZeroOut_totallyBounded_of_bounded_vc
+/-- A uniformly bounded function class has a totally bounded empirical image on
+every finite sample after taking its zeroed star hull. -/
+lemma starHullZeroOut_totallyBounded_of_bounded
     {F : ι → 𝒳 → ℝ} {norm : (𝒳 → ℝ) → ℝ} {B : ℝ}
     (hbound : ∀ i x, |F i x| ≤ B)
-    {n : ℕ} (S : Fin n → 𝒳) {r : ℝ} (hr : 0 < r) :
+    {n : ℕ} (S : Fin n → 𝒳) {r : ℝ} :
     TotallyBounded
       (Set.univ : Set (EmpiricalFunctionSpace (starHullZeroOut F norm r) S)) := by
   classical
-  have _hr_nonneg : 0 ≤ r := le_of_lt hr
   let sampleVector :
       EmpiricalFunctionSpace (starHullZeroOut F norm r) S → Fin n → ℝ :=
     fun q j => starHullZeroOut F norm r q.index (S j)
@@ -225,8 +233,8 @@ theorem localizedVCDudleyHypotheses_of_empiricalRadius
       ∀ p : starHullParam ι, empiricalNorm S (starHullZeroOut F norm r p) ≤ r) :
     LocalizedVCDudleyHypotheses F norm where
   empirical_radius := empirical_radius
-  totallyBounded := fun {_} S {_} hr =>
-    starHullZeroOut_totallyBounded_of_bounded_vc hbound S hr
+  totallyBounded := fun {_} S {_} _ =>
+    starHullZeroOut_totallyBounded_of_bounded hbound S
 
 /-- The finite-VC localized slope is the sample-size dependent coefficient in
 the linear localized Rademacher envelope.
@@ -379,30 +387,10 @@ def BinaryTraceEntropyControl (π : ι → 𝒳 → Bool) (d : ℕ) : Prop :=
   (∀ (m : ℕ) (S : Fin m → 𝒳), (growthFamily π S).card ≤ (m + 1) ^ d)
 
 omit [Nonempty ι] [Countable ι] in
-private lemma sum_choose_le_succ_pow (n d : ℕ) :
-    (∑ k ∈ Finset.Iic d, n.choose k) ≤ (n + 1) ^ d := by
-  calc
-    (∑ k ∈ Finset.Iic d, n.choose k) ≤ ∑ k ∈ Finset.Iic d, n ^ k := by
-      refine Finset.sum_le_sum ?_
-      intro k _hk
-      exact Nat.choose_le_pow n k
-    _ ≤ ∑ k ∈ Finset.Iic d, d.choose k * n ^ k := by
-      refine Finset.sum_le_sum ?_
-      intro k hk
-      have hk' : k ≤ d := by simpa using hk
-      have hchoose_pos : 1 ≤ d.choose k :=
-        Nat.succ_le_of_lt (Nat.choose_pos hk')
-      simpa [one_mul] using Nat.mul_le_mul_right (n ^ k) hchoose_pos
-    _ = (n + 1) ^ d := by
-      rw [add_pow]
-      simp only [one_pow, mul_one, Nat.cast_id]
-      simp only [Nat.mul_comm]
-      congr 1
-      ext k
-      simp
-
-omit [Nonempty ι] [Countable ι] in
-private lemma growthFamily_card_le_succ_pow_of_trace
+/-- A Boolean class whose trace family has bounded VC dimension, or a direct
+trace-size bound, realizes no more patterns on a finite sample than a
+polynomial of degree d in one plus the sample size. -/
+lemma growthFamily_card_le_succ_pow_of_trace
     (π : ι → 𝒳 → Bool) (d n : ℕ)
     (Htrace : BinaryTraceEntropyControl π d) (S : Fin n → 𝒳) :
     (growthFamily π S).card ≤ (n + 1) ^ d := by
@@ -413,7 +401,11 @@ private lemma growthFamily_card_le_succ_pow_of_trace
   · exact hcard n S
 
 omit [Nonempty ι] [Countable ι] in
-private lemma log_two_growth_card_le
+/-- When a Boolean growth family on a sample has positive cardinality and at most the
+degree-`d` polynomial number of patterns in one plus the sample size, twice the logarithm
+of twice its cardinality is no greater than twice that degree times the logarithm of one
+plus the sample size, plus two. -/
+lemma log_two_growth_card_le
     (π : ι → 𝒳 → Bool) (d n : ℕ) (S : Fin n → 𝒳)
     (hcard_pos : 0 < (growthFamily π S).card)
     (hcard : (growthFamily π S).card ≤ (n + 1) ^ d) :
@@ -444,7 +436,7 @@ private lemma log_two_growth_card_le
 by a Massart logarithmic factor times a common radius. -/
 lemma empiricalRademacher_withAbs_finiteClass_le
     {ι' Z : Type*} {m : ℕ} (hm : 0 < m) (H : ι' → Z → ℝ) (S' : Fin m → Z)
-    (f : Finset ι') (hf : f.Nonempty) (ρ : ℝ) (_hρ : 0 ≤ ρ)
+    (f : Finset ι') (hf : f.Nonempty) (ρ : ℝ)
     (hradius : ∀ i ∈ f,
       Real.sqrt (∑ k : Fin m, ((m : ℝ)⁻¹ * |H i (S' k)|) ^ 2) ≤ ρ) :
     empiricalRademacherComplexity m (F_on H f) S'
@@ -548,8 +540,7 @@ lemma empiricalRademacher_withAbs_finiteClass_le
             ((m : ℝ)⁻¹ * |Hd j (S' i)|) ^ 2)) *
         Real.sqrt (2 * Real.log fd.card) := by
     rw [empiricalRademacherComplexity_without_abs_eq_empiricalRademacherComplexity_pmf_without_abs]
-    exact massart_lemma_pmf (F := Hd) (S := S') fd hfd_nonempty hm
-      ((m : ℝ) * ρ) hpointwise hfd_nonempty
+    exact massart_lemma_pmf (F := Hd) (S := S') fd hfd_nonempty
   have hsup :
       (Finset.sup' fd hfd_nonempty fun j =>
           Real.sqrt (∑ i : Fin m,
@@ -578,38 +569,45 @@ lemma empiricalRademacher_withAbs_finiteClass_le
     _ = ρ * Real.sqrt (2 * Real.log (2 * (f.card : ℝ))) := by
         rw [hcard]
 
-private lemma empiricalRademacherComplexity_F_on_univ_eq
-    {ι' Z : Type*} [Fintype ι'] [Nonempty ι']
+/-- Restricting a finite function family to its full index set leaves its
+empirical Rademacher complexity unchanged. -/
+lemma empiricalRademacherComplexity_F_on_univ_eq
+    {ι' Z : Type*} [Fintype ι']
     {m : ℕ} (H : ι' → Z → ℝ) (S' : Fin m → Z) :
     empiricalRademacherComplexity m (F_on H (Finset.univ : Finset ι')) S'
       = empiricalRademacherComplexity m H S' := by
   classical
-  unfold empiricalRademacherComplexity
-  apply congrArg
-  refine Finset.sum_congr rfl ?_
-  intro σ _
-  haveI : Nonempty {j // j ∈ (Finset.univ : Finset ι')} := by
-    rcases (inferInstance : Nonempty ι') with ⟨i⟩
-    exact ⟨⟨i, by simp⟩⟩
-  apply le_antisymm
-  · refine ciSup_le ?_
-    intro i
-    exact le_ciSup
-      (Finite.bddAbove_range fun j : ι' =>
-        |(m : ℝ)⁻¹ * ∑ k : Fin m, (σ k : ℝ) * H j (S' k)|)
-      i.1
-  · refine ciSup_le ?_
-    intro i
-    have hidx : i ∈ (Finset.univ : Finset ι') := by simp
-    exact le_ciSup
-      (Finite.bddAbove_range fun j : {j // j ∈ (Finset.univ : Finset ι')} =>
-        |(m : ℝ)⁻¹ * ∑ k : Fin m, (σ k : ℝ) * F_on H (Finset.univ : Finset ι') j (S' k)|)
-      ⟨i, hidx⟩
+  cases isEmpty_or_nonempty ι' with
+  | inl _ => simp [empiricalRademacherComplexity]
+  | inr _ =>
+    unfold empiricalRademacherComplexity
+    apply congrArg
+    refine Finset.sum_congr rfl ?_
+    intro σ _
+    haveI : Nonempty {j // j ∈ (Finset.univ : Finset ι')} := by
+      rcases (inferInstance : Nonempty ι') with ⟨i⟩
+      exact ⟨⟨i, by simp⟩⟩
+    apply le_antisymm
+    · refine ciSup_le ?_
+      intro i
+      exact le_ciSup
+        (Finite.bddAbove_range fun j : ι' =>
+          |(m : ℝ)⁻¹ * ∑ k : Fin m, (σ k : ℝ) * H j (S' k)|)
+        i.1
+    · refine ciSup_le ?_
+      intro i
+      have hidx : i ∈ (Finset.univ : Finset ι') := by simp
+      exact le_ciSup
+        (Finite.bddAbove_range fun j : {j // j ∈ (Finset.univ : Finset ι')} =>
+          |(m : ℝ)⁻¹ * ∑ k : Fin m, (σ k : ℝ) * F_on H (Finset.univ : Finset ι') j (S' k)|)
+        ⟨i, hidx⟩
 
-private lemma empiricalNorm_const_mul
-    {𝒳 : Type*} {n : ℕ} (S : Fin n → 𝒳) (c : ℝ) (hc : 0 ≤ c)
+/-- Scaling a function by a constant scales its empirical root-mean-square
+norm by the absolute value of that constant. -/
+lemma empiricalNorm_const_mul
+    {𝒳 : Type*} {n : ℕ} (S : Fin n → 𝒳) (c : ℝ)
     (f : 𝒳 → ℝ) :
-    empiricalNorm S (fun x => c * f x) = c * empiricalNorm S f := by
+    empiricalNorm S (fun x => c * f x) = |c| * empiricalNorm S f := by
   classical
   unfold empiricalNorm
   have hsum :
@@ -618,7 +616,7 @@ private lemma empiricalNorm_const_mul
     rw [Finset.mul_sum]
     refine Finset.sum_congr rfl ?_
     intro i _
-    ring
+    ring_nf
   have hnonneg :
       0 ≤ (1 / (n : ℝ)) * ∑ i : Fin n, (f (S i)) ^ 2 := by
     exact mul_nonneg (by positivity) (Finset.sum_nonneg fun i _ => sq_nonneg _)
@@ -630,35 +628,8 @@ private lemma empiricalNorm_const_mul
     _ = Real.sqrt (c ^ 2) *
           Real.sqrt ((1 / (n : ℝ)) * ∑ i : Fin n, (f (S i)) ^ 2) := by
           rw [Real.sqrt_mul (sq_nonneg c)]
-    _ = c * Real.sqrt ((1 / (n : ℝ)) * ∑ i : Fin n, (f (S i)) ^ 2) := by
-          rw [Real.sqrt_sq_eq_abs, abs_of_nonneg hc]
-
-private lemma ciSup_mul_const_of_le_one {A : Type*} [Nonempty A]
-    (c : A → ℝ) (b : ℝ) (hc_le : ∀ a, c a ≤ 1) (hb : 0 ≤ b) :
-    (⨆ a : A, c a * b) = (⨆ a : A, c a) * b := by
-  classical
-  have hc_bdd : BddAbove (Set.range c) := by
-    refine ⟨1, ?_⟩
-    rintro _ ⟨a, rfl⟩
-    exact hc_le a
-  have hcb_bdd : BddAbove (Set.range fun a : A => c a * b) := by
-    refine ⟨b, ?_⟩
-    rintro _ ⟨a, rfl⟩
-    calc
-      c a * b ≤ 1 * b := mul_le_mul_of_nonneg_right (hc_le a) hb
-      _ = b := one_mul b
-  apply le_antisymm
-  · refine ciSup_le ?_
-    intro a
-    exact mul_le_mul_of_nonneg_right (le_ciSup hc_bdd a) hb
-  · by_cases hb0 : b = 0
-    · simp [hb0]
-    · have hbpos : 0 < b := lt_of_le_of_ne hb (Ne.symm hb0)
-      have hsup_le : (⨆ a : A, c a) ≤ (⨆ a : A, c a * b) / b := by
-        refine ciSup_le ?_
-        intro a
-        exact (le_div_iff₀ hbpos).mpr (le_ciSup hcb_bdd a)
-      exact (le_div_iff₀ hbpos).mp hsup_le
+    _ = |c| * Real.sqrt ((1 / (n : ℝ)) * ∑ i : Fin n, (f (S i)) ^ 2) := by
+          rw [Real.sqrt_sq_eq_abs]
 
 /-- A representative classifier index is chosen for each realized Boolean
 growth-family pattern. -/
@@ -692,7 +663,9 @@ noncomputable def starHullPatternClass
   fun A x => starHullPatternCoeff F norm π S r A *
     F (growthFamilyRep π S A) x
 
-private lemma starHullZeroOutScaleCoeff_nonneg
+/-- The largest active scalar in a zeroed star hull is nonnegative because
+the zero scalar is always available. -/
+lemma starHullZeroOutScaleCoeff_nonneg
     {ι 𝒳 : Type*} (F : ι → 𝒳 → ℝ) (norm : (𝒳 → ℝ) → ℝ)
     (r : ℝ) (i : ι) :
     0 ≤ starHullZeroOutScaleCoeff F norm r i := by
@@ -730,7 +703,9 @@ private lemma activeCoeff_le_starHullZeroOutScaleCoeff
   rw [starHullZeroOutScaleCoeff]
   exact le_ciSup hc_bdd a
 
-private lemma starHullPatternCoeff_nonneg
+/-- The coefficient assigned to any observed Boolean pattern by the localized
+star-hull pattern class is nonnegative. -/
+lemma starHullPatternCoeff_nonneg
     {ι 𝒳 : Type*} {n : ℕ} (F : ι → 𝒳 → ℝ) (norm : (𝒳 → ℝ) → ℝ)
     (π : ι → 𝒳 → Bool) (S : Fin n → 𝒳) (r : ℝ)
     (A : {A // A ∈ growthFamily π S}) :
@@ -768,7 +743,9 @@ private lemma starHullZeroOutScaleCoeff_le_patternCoeff
   rw [starHullPatternCoeff]
   exact le_ciSup hcoeff_le ⟨i, hiA⟩
 
-private lemma sample_eq_growthFamilyRep_of_pattern
+/-- When a function class factorizes samplewise through Boolean labels, any function
+with a given observed Boolean pattern agrees on the sample with that pattern's chosen representative. -/
+lemma sample_eq_growthFamilyRep_of_pattern
     {ι 𝒳 : Type*} {n : ℕ} {F : ι → 𝒳 → ℝ}
     {π : ι → 𝒳 → Bool} {S : Fin n → 𝒳} {φ : Fin n → Bool → ℝ}
     (hfactorS : ∀ i j, F i (S j) = φ j (π i (S j)))
@@ -782,7 +759,10 @@ private lemma sample_eq_growthFamilyRep_of_pattern
     hiA, ← growthFamilyRep_spec π S A,
     restrictionPattern_mem_iff (p := π (growthFamilyRep π S A)) (S := S) (j := k)]
 
-private lemma starHullZeroOut_empirical_rademacher_le_patternClass
+/-- If function values on every finite sample depend only on Boolean labels, then the
+empirical Rademacher complexity of the zeroed localized star hull is no greater than
+that of its finite sample-pattern class. -/
+lemma starHullZeroOut_empirical_rademacher_le_patternClass
     {ι 𝒳 : Type*} [Nonempty ι] {n : ℕ}
     (F : ι → 𝒳 → ℝ) (norm : (𝒳 → ℝ) → ℝ)
     (π : ι → 𝒳 → Bool)
@@ -904,7 +884,10 @@ private lemma starHullZeroOut_empirical_rademacher_le_patternClass
               starHullPatternClass F norm π S r A (S k)|)
           A
 
-private lemma sqrt_sum_inv_abs_sq_eq_empiricalNorm_div_sqrt
+/-- For a positive sample size, the square root of the sum of squared
+sample-normalized absolute function values equals the empirical norm divided by
+the square root of the sample size. -/
+lemma sqrt_sum_inv_abs_sq_eq_empiricalNorm_div_sqrt
     {𝒳 : Type*} {n : ℕ} (hn : 0 < n) (S : Fin n → 𝒳) (g : 𝒳 → ℝ) :
     Real.sqrt (∑ k : Fin n, ((n : ℝ)⁻¹ * |g (S k)|) ^ 2)
       = empiricalNorm S g / Real.sqrt (n : ℝ) := by
@@ -939,7 +922,9 @@ private lemma sqrt_sum_inv_abs_sq_eq_empiricalNorm_div_sqrt
           unfold empiricalNorm
           ring
 
-private lemma starHullZeroOutScaleCoeff_mul_empiricalNorm_le
+/-- Under the localized VC hypotheses, a function's localized scale coefficient
+times its empirical norm over the sample is at most the localization radius. -/
+lemma starHullZeroOutScaleCoeff_mul_empiricalNorm_le
     {ι 𝒳 : Type*} {n : ℕ}
     (F : ι → 𝒳 → ℝ) (norm : (𝒳 → ℝ) → ℝ)
     (Hloc : LocalizedVCDudleyHypotheses F norm)
@@ -959,12 +944,6 @@ private lemma starHullZeroOutScaleCoeff_mul_empiricalNorm_le
       (fun a : Set.Icc (0 : ℝ) 1 =>
         if norm (starHullEval F (a, i)) ≤ r then (a : ℝ) else 0)
       (empiricalNorm S (F i))
-      (by
-        intro a
-        dsimp
-        split_ifs
-        · exact a.property.2
-        · norm_num)
       hnorm_nonneg]
     rfl
   rw [← hmul]
@@ -982,7 +961,8 @@ private lemma starHullZeroOutScaleCoeff_mul_empiricalNorm_le
               funext x
               simp [starHullZeroOut, hactive, starHullEval]
         _ = (a : ℝ) * empiricalNorm S (F i) :=
-              empiricalNorm_const_mul S (a : ℝ) a.property.1 (F i)
+              by simpa [abs_of_nonneg a.property.1] using
+                empiricalNorm_const_mul S (a : ℝ) (F i)
     simpa [hactive, heq] using hnorm
   · calc
       (if norm (starHullEval F (a, i)) ≤ r then (a : ℝ) else 0) *
@@ -1021,7 +1001,6 @@ private lemma starHullPatternCoeff_mul_empiricalNorm_rep_le
       (fun i : {i : ι // restrictionPattern (π i) S = A.1} =>
         starHullZeroOutScaleCoeff F norm r i.1)
       (empiricalNorm S (F (growthFamilyRep π S A)))
-      (fun i => starHullZeroOutScaleCoeff_le_one F norm r i.1)
       hnorm_nonneg]
   rw [← hmul]
   refine ciSup_le ?_
@@ -1056,17 +1035,20 @@ private lemma starHullPatternClass_radius_le
         =
       starHullPatternCoeff F norm π S r A *
         empiricalNorm S (F (growthFamilyRep π S A)) := by
-    exact empiricalNorm_const_mul S
-      (starHullPatternCoeff F norm π S r A)
-      (starHullPatternCoeff_nonneg F norm π S r A)
-      (F (growthFamilyRep π S A))
+    simpa [abs_of_nonneg (starHullPatternCoeff_nonneg F norm π S r A)] using
+      empiricalNorm_const_mul S
+        (starHullPatternCoeff F norm π S r A)
+        (F (growthFamilyRep π S A))
   rw [hnorm]
   exact div_le_div_of_nonneg_right
     (starHullPatternCoeff_mul_empiricalNorm_rep_le F norm π hfactor Hloc S hr A)
     (Real.sqrt_nonneg _)
 
 omit [Nonempty ι] [Countable ι] in
-private lemma starHullZeroOut_empirical_rademacher_le_growthFamily
+/-- The empirical Rademacher complexity of a zero-augmented localized star hull
+is bounded by its radius times a logarithmic factor determined by the number of
+distinct Boolean patterns in the sample. -/
+lemma starHullZeroOut_empirical_rademacher_le_growthFamily
     [Nonempty ι]
     (F : ι → 𝒳 → ℝ) (norm : (𝒳 → ℝ) → ℝ)
     (π : ι → 𝒳 → Bool)
@@ -1094,8 +1076,6 @@ private lemma starHullZeroOut_empirical_rademacher_le_growthFamily
         ≤ empiricalRademacherComplexity n W S := by
     simpa [W] using
       starHullZeroOut_empirical_rademacher_le_patternClass F norm π hfactor S r
-  have hρ_nonneg : 0 ≤ r / Real.sqrt (n : ℝ) :=
-    div_nonneg hr (Real.sqrt_nonneg _)
   have hfinite_on :
       empiricalRademacherComplexity n
           (F_on W (Finset.univ : Finset {A // A ∈ growthFamily π S})) S
@@ -1107,7 +1087,7 @@ private lemma starHullZeroOut_empirical_rademacher_le_growthFamily
     refine empiricalRademacher_withAbs_finiteClass_le
       (ι' := {A // A ∈ growthFamily π S}) (Z := 𝒳)
       hn W S (Finset.univ : Finset {A // A ∈ growthFamily π S})
-      ?_ (r / Real.sqrt (n : ℝ)) hρ_nonneg ?_
+      ?_ (r / Real.sqrt (n : ℝ)) ?_
     · simpa using
         (Finset.univ_nonempty :
           (Finset.univ : Finset {A // A ∈ growthFamily π S}).Nonempty)
@@ -1295,36 +1275,6 @@ lemma absolute_dudley_vc_starHullZeroOut_linear_residual_shared
             ring
 
 omit [Nonempty ι] [Countable ι] in
-/-- VC-dimension specialization of the shared absolute-form Dudley bridge. -/
-lemma absolute_dudley_vc_starHullZeroOut_linear_residual
-    (F : ι → 𝒳 → ℝ) (norm : (𝒳 → ℝ) → ℝ)
-    (K : ℝ) (d n : ℕ) (hK : (1 : ℝ) ≤ K)
-    (Hvc : BinaryFactoredVCClass F d)
-    (Hloc : LocalizedVCDudleyHypotheses F norm) :
-    ∀ (S : Fin n → 𝒳) (r : ℝ), 0 ≤ r →
-      empiricalRademacherComplexity n (starHullZeroOut F norm r) S
-        ≤ vcLocalizedPsi K d n r :=
-  absolute_dudley_vc_starHullZeroOut_linear_residual_shared
-    F norm Hvc.π Hvc.factor K d n hK (Or.inl Hvc.vcDim_le) Hloc
-
-omit [Nonempty ι] [Countable ι] in
-/-- Cardinality-bound specialization of the shared absolute-form Dudley bridge. -/
-lemma absolute_dudley_vc_starHullZeroOut_linear_residual_of_card
-    (F : ι → 𝒳 → ℝ) (norm : (𝒳 → ℝ) → ℝ)
-    (π : ι → 𝒳 → Bool)
-    (hfactor : ∀ {m : ℕ} (S : Fin m → 𝒳), ∃ φ : Fin m → Bool → ℝ,
-      ∀ i j, F i (S j) = φ j (π i (S j)))
-    (K : ℝ) (dPi n : ℕ) (hK : (1 : ℝ) ≤ K)
-    (hcard : ∀ (m : ℕ) (S : Fin m → 𝒳),
-      (growthFamily π S).card ≤ (m + 1) ^ dPi)
-    (Hloc : LocalizedVCDudleyHypotheses F norm) :
-    ∀ (S : Fin n → 𝒳) (r : ℝ), 0 ≤ r →
-      empiricalRademacherComplexity n (starHullZeroOut F norm r) S
-        ≤ vcLocalizedPsi K dPi n r :=
-  absolute_dudley_vc_starHullZeroOut_linear_residual_shared
-    F norm π hfactor K dPi n hK (Or.inr hcard) Hloc
-
-omit [Nonempty ι] [Countable ι] in
 /-- The generic finite-VC/Dudley sample-path bridge for the localized
 star-hull class.
 
@@ -1338,7 +1288,8 @@ lemma vc_starHullZeroOut_empirical_rademacher_le_linear
     ∀ (S : Fin n → 𝒳) (r : ℝ), 0 ≤ r →
       empiricalRademacherComplexity n (starHullZeroOut F norm r) S
         ≤ vcLocalizedPsi K d n r :=
-  absolute_dudley_vc_starHullZeroOut_linear_residual F norm K d n hK Hvc Hloc
+  absolute_dudley_vc_starHullZeroOut_linear_residual_shared
+    F norm Hvc.π Hvc.factor K d n hK (Or.inl Hvc.vcDim_le) Hloc
 
 omit [Nonempty ι] [Countable ι] in
 /-- Cardinality-bound sample-path bridge for the localized star-hull class.
@@ -1356,8 +1307,8 @@ lemma vc_starHullZeroOut_empirical_rademacher_le_linear_of_card
     ∀ (S : Fin n → 𝒳) (r : ℝ), 0 ≤ r →
       empiricalRademacherComplexity n (starHullZeroOut F norm r) S
         ≤ vcLocalizedPsi K dPi n r :=
-  absolute_dudley_vc_starHullZeroOut_linear_residual_of_card
-    F norm π hfactor K dPi n hK hcard Hloc
+  absolute_dudley_vc_starHullZeroOut_linear_residual_shared
+    F norm π hfactor K dPi n hK (Or.inr hcard) Hloc
 
 omit [Nonempty ι] [Countable ι] in
 /-- The generic finite-VC/Dudley population bridge for the localized star-hull

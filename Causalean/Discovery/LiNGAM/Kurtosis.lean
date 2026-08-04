@@ -506,7 +506,8 @@ theorem cross_fourth_cumulant_eq_sum {n : ℕ} {e : Ω → Fin n → ℝ} (a b :
           (∑ i, a i ^ 2 * m i) * (∑ k, b k ^ 2 * m k)
             - ∑ j, a j ^ 2 * b j ^ 2 * m j ^ 2 := by
         simp_rw [ite_and]
-        simp [pow_two]
+        simp only [ne_eq, ite_not, Finset.sum_ite_irrel, Finset.sum_ite_eq, Finset.mem_univ,
+          ↓reduceIte, Finset.sum_const_zero]
         rw [hoffdiag]
         rw [Finset.sum_mul_sum]
         congr 1

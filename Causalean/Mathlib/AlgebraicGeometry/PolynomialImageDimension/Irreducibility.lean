@@ -132,7 +132,7 @@ theorem irreducible_zeroLocus_of_prime {ι : Type*} [Finite ι]
   infer_instance
 
 /-- Strict inclusion of affine-closed sets strictly reverses their vanishing ideals. -/
-lemma vanishingIdeal_strict_anti {ι : Type*} [Finite ι]
+lemma vanishingIdeal_strict_anti {ι : Type*}
     {A B : Set (ι → ℂ)} (hA : affineZariskiClosure A = A)
     (hB : affineZariskiClosure B = B) (hAB : A ⊂ B) :
     MvPolynomial.vanishingIdeal ℂ B < MvPolynomial.vanishingIdeal ℂ A := by

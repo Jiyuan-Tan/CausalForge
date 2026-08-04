@@ -59,27 +59,26 @@ lemma abs_E_le {X : Ω → ℝ} {M : ℝ} (h : ∀ z, |X z| ≤ M) : |D.E X| ≤
       rw [D.E_sub]; simp [D.E_const]
     rw [heq] at hpos; linarith
 
-/-- The design covariance of two random variables each bounded by `M` in absolute
-value pointwise is bounded by `2·M²` in absolute value. -/
-lemma abs_Cov_le_two_sq {X Y : Ω → ℝ} {M : ℝ} (hM : 0 ≤ M)
-    (hX : ∀ z, |X z| ≤ M) (hY : ∀ z, |Y z| ≤ M) : |D.Cov X Y| ≤ 2 * M ^ 2 := by
+/-- The design covariance of random variables bounded by `MX` and `MY` in absolute
+value pointwise is bounded by `2·MX·MY` in absolute value. -/
+lemma abs_Cov_le_two_sq {X Y : Ω → ℝ} {MX MY : ℝ} (hMX : 0 ≤ MX)
+    (hX : ∀ z, |X z| ≤ MX) (hY : ∀ z, |Y z| ≤ MY) :
+    |D.Cov X Y| ≤ 2 * MX * MY := by
   rw [D.Cov_eq]
-  have hExy : |D.E (fun z => X z * Y z)| ≤ M ^ 2 := by
-    apply D.abs_E_le (X := fun z => X z * Y z) (M := M ^ 2)
+  have hExy : |D.E (fun z => X z * Y z)| ≤ MX * MY := by
+    apply D.abs_E_le (X := fun z => X z * Y z) (M := MX * MY)
     intro z
     rw [abs_mul]
-    have hmul := mul_le_mul (hX z) (hY z) (abs_nonneg _) hM
-    rw [sq]
-    exact hmul
-  have hEX : |D.E X| ≤ M := D.abs_E_le hX
-  have hEY : |D.E Y| ≤ M := D.abs_E_le hY
-  have hprod : |D.E X * D.E Y| ≤ M ^ 2 := by
-    rw [abs_mul, sq]
-    exact mul_le_mul hEX hEY (abs_nonneg _) hM
+    exact mul_le_mul (hX z) (hY z) (abs_nonneg _) hMX
+  have hEX : |D.E X| ≤ MX := D.abs_E_le hX
+  have hEY : |D.E Y| ≤ MY := D.abs_E_le hY
+  have hprod : |D.E X * D.E Y| ≤ MX * MY := by
+    rw [abs_mul]
+    exact mul_le_mul hEX hEY (abs_nonneg _) hMX
   calc |D.E (fun z => X z * Y z) - D.E X * D.E Y|
       ≤ |D.E (fun z => X z * Y z)| + |D.E X * D.E Y| := abs_sub _ _
-    _ ≤ M ^ 2 + M ^ 2 := by linarith
-    _ = 2 * M ^ 2 := by ring
+    _ ≤ MX * MY + MX * MY := by linarith
+    _ = 2 * MX * MY := by ring
 
 /-- The covariance of the identically-zero random variable with anything is zero. -/
 lemma Cov_zero_left (Y : Ω → ℝ) : D.Cov (fun _ => 0) Y = 0 := by
@@ -102,9 +101,9 @@ are uncorrelated whenever no edge connects them.  Formally, `Var[∑_{i,j} b i j
 8·M²·m³·N` where `N` is the number of units.  This is the design-based analogue of the
 local-dependence variance bound that underlies central-limit theorems for
 network/interference experiments. -/
-theorem var_edge_sum_le {ι : Type*} [Fintype ι] [DecidableEq ι]
-    (b : ι → ι → Ω → ℝ) {M : ℝ} (hM : 0 ≤ M) (hbound : ∀ i j z, |b i j z| ≤ M)
-    (G : ι → ι → Prop) [DecidableRel G] (hsymm : ∀ i j, G i j → G j i)
+theorem var_edge_sum_le {ι : Type*} [Fintype ι]
+    (b : ι → ι → Ω → ℝ) (G : ι → ι → Prop) [DecidableRel G] {M : ℝ} (hM : 0 ≤ M)
+    (hbound : ∀ i j, G i j → ∀ z, |b i j z| ≤ M) (hsymm : ∀ i j, G i j → G j i)
     {m : ℕ} (hdeg : ∀ i, (Finset.univ.filter (fun j => G i j)).card ≤ m)
     (hvanish : ∀ i j, ¬ G i j → b i j = fun _ => 0)
     (hcov0 : ∀ i j k l, ¬ (G i k ∨ G i l ∨ G j k ∨ G j l) → D.Cov (b i j) (b k l) = 0) :
@@ -187,7 +186,9 @@ theorem var_edge_sum_le {ι : Type*} [Fintype ι] [DecidableEq ι]
             · have : χ (G j l) = 1 := by simp [hχdef, h]
               linarith
           have hcov : D.Cov (b i j) (b k l) ≤ 2 * M ^ 2 :=
-            (le_abs_self _).trans (D.abs_Cov_le_two_sq hM (hbound i j) (hbound k l))
+            (le_abs_self _).trans (by
+              simpa [sq, mul_assoc] using
+                D.abs_Cov_le_two_sq hM (hbound i j hij) (hbound k l hkl))
           have h2M2 : 0 ≤ 2 * M ^ 2 := by positivity
           calc D.Cov (b i j) (b k l) ≤ 2 * M ^ 2 := hcov
             _ = (2 * M ^ 2) * 1 := by ring

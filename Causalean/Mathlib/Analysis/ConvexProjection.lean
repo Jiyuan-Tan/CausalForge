@@ -38,7 +38,9 @@ noncomputable def convexProj (K : Set E) (hne : K.Nonempty) (hc : IsClosed K)
     (hconv : Convex ℝ K) : E → E := fun x =>
   Classical.choose (exists_norm_eq_iInf_of_complete_convex hne hc.isComplete hconv x)
 
-private lemma convexProj_spec (K : Set E) (hne : K.Nonempty) (hc : IsClosed K)
+/-- A point's metric projection onto a nonempty closed convex set belongs to that set and attains
+the smallest possible distance from the point among all points in the set. -/
+lemma convexProj_spec (K : Set E) (hne : K.Nonempty) (hc : IsClosed K)
     (hconv : Convex ℝ K) (x : E) :
     convexProj K hne hc hconv x ∈ K ∧
       ‖x - convexProj K hne hc hconv x‖ = ⨅ y : K, ‖x - y‖ :=
@@ -141,7 +143,9 @@ noncomputable def mtx (p : ℕ) :
   (LinearEquiv.curry ℝ ℝ (Fin p) (Fin p)).symm.trans
     (EuclideanSpace.equiv (Fin p × Fin p) ℝ).symm.toLinearEquiv
 
-private noncomputable def mtxHomeo (p : ℕ) :
+/-- Finite square real matrices of dimension p are homeomorphic to Euclidean vectors indexed by
+    their row and column coordinates. -/
+noncomputable def mtxHomeo (p : ℕ) :
     Matrix (Fin p) (Fin p) ℝ ≃ₜ EuclideanSpace ℝ (Fin p × Fin p) :=
   Homeomorph.piCurry.symm.trans (EuclideanSpace.equiv (Fin p × Fin p) ℝ).symm.toHomeomorph
 
@@ -202,17 +206,20 @@ theorem loewnerSet_convex (p : ℕ) (c C : ℝ) : Convex ℝ (loewnerSet p c C) 
     rw [show b = 1 - a by linarith]
     ring
 
-private theorem isClosed_posSemidef (p : ℕ) :
-    IsClosed {A : Matrix (Fin p) (Fin p) ℝ | A.PosSemidef} := by
-  rw [show {A : Matrix (Fin p) (Fin p) ℝ | A.PosSemidef} =
+/-- Real positive-semidefinite matrices indexed by any finite set form a closed set in the
+coordinatewise topology. -/
+theorem isClosed_posSemidef {ι : Type*} [Finite ι] :
+    IsClosed {A : Matrix ι ι ℝ | A.PosSemidef} := by
+  classical
+  letI := Fintype.ofFinite ι
+  rw [show {A : Matrix ι ι ℝ | A.PosSemidef} =
       {A | A.IsHermitian} ∩ {A | ∀ x, 0 ≤ dotProduct x (A.mulVec x)} by
     ext A; simp [Matrix.posSemidef_iff_dotProduct_mulVec]]
   apply IsClosed.inter
-  · rw [show {A : Matrix (Fin p) (Fin p) ℝ | A.IsHermitian} =
+  · rw [show {A : Matrix ι ι ℝ | A.IsHermitian} =
         ⋂ i, ⋂ j, {A | A i j = A j i} by
       ext A
-      simp only [Matrix.IsHermitian, Matrix.IsSelfAdjoint, Matrix.conjTranspose_apply,
-        star_trivial, Set.mem_iInter, Set.mem_setOf_eq]
+      simp only [Matrix.IsHermitian, Set.mem_iInter, Set.mem_setOf_eq]
       constructor
       · intro h i j
         exact congr_fun (congr_fun h i) j |>.symm
@@ -221,7 +228,7 @@ private theorem isClosed_posSemidef (p : ℕ) :
         exact (h i j).symm]
     exact isClosed_iInter fun i => isClosed_iInter fun j =>
       isClosed_eq (continuous_id.matrix_elem i j) (continuous_id.matrix_elem j i)
-  · rw [show {A : Matrix (Fin p) (Fin p) ℝ | ∀ x, 0 ≤ dotProduct x (A.mulVec x)} =
+  · rw [show {A : Matrix ι ι ℝ | ∀ x, 0 ≤ dotProduct x (A.mulVec x)} =
         ⋂ x, {A | 0 ≤ dotProduct x (A.mulVec x)} by ext A; simp]
     exact isClosed_iInter fun x => isClosed_Ici.preimage
       (continuous_const.dotProduct (continuous_id.matrix_mulVec continuous_const))
@@ -229,16 +236,16 @@ private theorem isClosed_posSemidef (p : ℕ) :
 /-- Every Loewner interval of finite real matrices is closed in the coordinatewise product
 topology. -/
 theorem loewnerSet_isClosed (p : ℕ) (c C : ℝ) : IsClosed (loewnerSet p c C) := by
-  exact (isClosed_posSemidef p).preimage (by fun_prop) |>.inter
-    ((isClosed_posSemidef p).preimage (by fun_prop))
+  exact (isClosed_posSemidef (ι := Fin p)).preimage (by fun_prop) |>.inter
+    ((isClosed_posSemidef (ι := Fin p)).preimage (by fun_prop))
 
 /-- Every matrix in a Loewner interval with a strictly positive lower endpoint is positive
 definite. -/
-theorem loewnerSet_posDef (hc : 0 < c) (hcC : c ≤ C) {G : Matrix (Fin p) (Fin p) ℝ}
-    (hG : G ∈ loewnerSet p c C) : G.PosDef := by
+theorem loewnerSet_posDef (hc : 0 < c) {G : Matrix (Fin p) (Fin p) ℝ}
+    (hG : (G - c • (1 : Matrix (Fin p) (Fin p) ℝ)).PosSemidef) : G.PosDef := by
   have hbase : (c • (1 : Matrix (Fin p) (Fin p) ℝ)).PosDef :=
     Matrix.PosDef.one.smul (α := ℝ) hc
-  convert hbase.add_posSemidef hG.1 using 1 <;> ext i j <;> simp [loewnerSet]
+  convert hbase.add_posSemidef hG using 1; ext i j; simp
 
 private theorem mtx_image_isClosed (p : ℕ) (c C : ℝ) :
     IsClosed (mtx p '' loewnerSet p c C) := by
@@ -262,7 +269,7 @@ noncomputable def loewnerProj (p : ℕ) (c C : ℝ) :
 
 /-- When its endpoints are ordered, Loewner projection sends every finite real matrix into the
 corresponding Loewner interval. -/
-theorem loewnerProj_mem (hc : 0 < c) (hcC : c ≤ C) (G : Matrix (Fin p) (Fin p) ℝ) :
+theorem loewnerProj_mem (hcC : c ≤ C) (G : Matrix (Fin p) (Fin p) ℝ) :
     loewnerProj p c C G ∈ loewnerSet p c C := by
   rw [loewnerProj, dif_pos hcC, loewnerProjAux]
   have hm := convexProj_mem (mtx p '' loewnerSet p c C)
@@ -274,7 +281,7 @@ theorem loewnerProj_mem (hc : 0 < c) (hcC : c ≤ C) (G : Matrix (Fin p) (Fin p)
 
 /-- With ordered endpoints, Loewner projection cannot increase Frobenius distance from any matrix
 already in the corresponding interval. -/
-theorem loewnerProj_frobDist_le (hc : 0 < c) (hcC : c ≤ C)
+theorem loewnerProj_frobDist_le (hcC : c ≤ C)
     (G S : Matrix (Fin p) (Fin p) ℝ) (hS : S ∈ loewnerSet p c C) :
     frobDist (loewnerProj p c C G) S ≤ frobDist G S := by
   rw [frobDist_eq_norm, frobDist_eq_norm, loewnerProj, dif_pos hcC, loewnerProjAux]
@@ -324,11 +331,12 @@ theorem mulVec_sub_norm_le (A B : Matrix (Fin p) (Fin p) ℝ) (v : Fin p → ℝ
 
 /-- The inverse of a matrix in a Loewner interval with a positive lower endpoint expands Euclidean
 norm by at most the reciprocal of that endpoint. -/
-theorem loewnerSet_inv_mulVec_norm_le (hc : 0 < c) (hcC : c ≤ C)
-    {G : Matrix (Fin p) (Fin p) ℝ} (hG : G ∈ loewnerSet p c C) (v : Fin p → ℝ) :
+theorem loewnerSet_inv_mulVec_norm_le (hc : 0 < c)
+    {G : Matrix (Fin p) (Fin p) ℝ}
+    (hG : (G - c • (1 : Matrix (Fin p) (Fin p) ℝ)).PosSemidef) (v : Fin p → ℝ) :
     Real.sqrt (∑ k, (G⁻¹.mulVec v k) ^ 2) ≤ Real.sqrt (∑ k, (v k) ^ 2) / c := by
   let z := G⁻¹.mulVec v
-  have hpd := loewnerSet_posDef hc hcC hG
+  have hpd := loewnerSet_posDef hc hG
   have hu : IsUnit G := hpd.isUnit
   have hudet : IsUnit G.det := (Matrix.isUnit_iff_isUnit_det G).mp hu
   have hGz : G.mulVec z = v := by
@@ -336,7 +344,7 @@ theorem loewnerSet_inv_mulVec_norm_le (hc : 0 < c) (hcC : c ≤ C)
     calc
       _ = (G * G⁻¹).mulVec v := Matrix.mulVec_mulVec v G G⁻¹
       _ = v := by rw [Matrix.mul_nonsing_inv G hudet, Matrix.one_mulVec]
-  have hquad := hG.1.dotProduct_mulVec_nonneg z
+  have hquad := hG.dotProduct_mulVec_nonneg z
   have hlower : c * ∑ k, (z k) ^ 2 ≤ ∑ k, z k * v k := by
     rw [Matrix.sub_mulVec, hGz] at hquad
     have hq : (∑ k, z k * (c * z k)) ≤ ∑ k, z k * v k := by
@@ -387,7 +395,7 @@ instance matrixBorelSpace (p : ℕ) :
 
 /-- Every matrix already in a nonempty Loewner interval is unchanged by metric projection onto that
 interval. -/
-theorem loewnerProj_eq_self {p : ℕ} {c C : ℝ} (hc : 0 < c) (hcC : c ≤ C)
+theorem loewnerProj_eq_self {p : ℕ} {c C : ℝ} (hcC : c ≤ C)
     (G : Matrix (Fin p) (Fin p) ℝ) (hG : G ∈ loewnerSet p c C) :
     loewnerProj p c C G = G := by
   rw [loewnerProj, dif_pos hcC, loewnerProjAux]

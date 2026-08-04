@@ -220,7 +220,9 @@ private lemma regression_response_ae_bounded {d : ℕ} (Q : CateLaw d)
     have hp : Measurable (fun y : ℝ => (x, y)) := measurable_const.prodMk measurable_id
     rw [Measure.map_apply hp hs]
     change (twoPointMean 1 (b x)) {y | y ∉ Set.Icc (-1 : ℝ) 1} = 0
-    exact twoPointMean_bad_support_zero (by norm_num)
+    exact twoPointMean_bad_support_zero
+      (ENNReal.ofReal ((1 + b x / 1) / 2))
+      (ENNReal.ofReal ((1 - b x / 1) / 2)) (by norm_num)
 
 private lemma regression_setIntegral_eq {d : ℕ} (Q : CateLaw d)
     {b : (Fin d → ℝ) → ℝ} [IsProbabilityMeasure Q.PX]
@@ -398,7 +400,7 @@ lemma cateWitnessLaw_dataMeasure_mixture {d : ℕ} (Q : CateLaw d) (e0 : ℝ)
       (measurable_cateWitnessOutcomeKernel hbmeas).comp
         (measurable_const.prodMk measurable_id)
     rw [Measure.bind_apply hS hk.aemeasurable]
-    unfold cateWitnessTreatmentMeasure
+    unfold cateWitnessTreatmentMeasure Causalean.Mathlib.Probability.bernoulliBool
     rw [lintegral_add_measure, lintegral_smul_measure, lintegral_smul_measure]
     simp
   simp_rw [hinner]

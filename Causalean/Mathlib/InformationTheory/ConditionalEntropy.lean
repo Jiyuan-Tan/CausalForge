@@ -54,11 +54,13 @@ defined via the chain rule `H(X ∣ Y) = H(X,Y) − H(Y)`, i.e.
 noncomputable def condEntropy (p : α × β → ℝ) : ℝ :=
   entropy p - entropy (yMarginal p)
 
+omit [DecidableEq α] in
 /-- Error probability of a deterministic decoder `decode : β → α` under the joint mass
 function `p`: the total mass on cells where the decoder is wrong,
 `∑_{x ≠ decode y} p (x, y)`. Encoded with an `if` so the correct cells contribute `0`. -/
-noncomputable def errorProb (p : α × β → ℝ) (decode : β → α) : ℝ :=
-  ∑ xy : α × β, (if xy.1 = decode xy.2 then 0 else p xy)
+noncomputable def errorProb (p : α × β → ℝ) (decode : β → α) : ℝ := by
+  classical
+  exact ∑ xy : α × β, (if xy.1 = decode xy.2 then 0 else p xy)
 
 omit [Fintype β] [DecidableEq α] in
 /-- The `β`-marginal is the finite sum of joint masses over the `α`
@@ -104,17 +106,18 @@ lemma negMulLog_add_mul_log_le {x g : ℝ} (hx : 0 ≤ x) (hg : 0 ≤ g)
         field_simp [hxpos.ne']
 
 /-- **Gibbs / cross-entropy inequality.** For a probability mass function `p` on a finite
-type `γ` and a sub-probability vector `g` (`0 ≤ g`, `∑ g ≤ 1`) that dominates the support
-of `p` (`p i ≠ 0 → 0 < g i`), the Shannon entropy is bounded by the cross-entropy:
+type `γ` and a nonnegative reference mass function `g` whose total mass is at most that of
+`p` (`∑ g ≤ ∑ p`) and that dominates the support of `p` (`p i ≠ 0 → 0 < g i`), the Shannon
+entropy is bounded by the cross-entropy:
 `entropy p ≤ −∑ i, p i * Real.log (g i)`.
 
 This is the elementary Gibbs argument: sum `negMulLog_add_mul_log_le` over `γ`. The right
-telescopes to `∑ g − ∑ p ≤ 1 − 1 = 0`, leaving `entropy p + ∑ p log g ≤ 0`. It generalises
+telescopes to `∑ g − ∑ p ≤ 0`, leaving `entropy p + ∑ p log g ≤ 0`. It generalises
 the entropy core's `entropy_le_log_card` (case `g ≡ (card γ)⁻¹`) and is the only
 information-theoretic inequality Fano's proof needs. -/
 theorem entropy_le_crossEntropy {γ : Type*} [Fintype γ] {p g : γ → ℝ}
-    (hp0 : ∀ i, 0 ≤ p i) (hpsum : ∑ i, p i = 1)
-    (hg0 : ∀ i, 0 ≤ g i) (hgsum : ∑ i, g i ≤ 1)
+    (hp0 : ∀ i, 0 ≤ p i)
+    (hg0 : ∀ i, 0 ≤ g i) (hgsum : ∑ i, g i ≤ ∑ i, p i)
     (hac : ∀ i, p i ≠ 0 → 0 < g i) :
     entropy p ≤ - ∑ i, p i * Real.log (g i) := by
   have hterm :
@@ -135,7 +138,7 @@ theorem entropy_le_crossEntropy {γ : Type*} [Fintype γ] {p g : γ → ℝ}
       (∑ i, (g i - p i)) = (∑ i, g i) - ∑ i, p i := by
         rw [Finset.sum_sub_distrib]
       _ ≤ 0 := by
-        linarith
+        exact sub_nonpos.mpr hgsum
   have : entropy p + ∑ i, p i * Real.log (g i) ≤ 0 := by
     linarith
   linarith

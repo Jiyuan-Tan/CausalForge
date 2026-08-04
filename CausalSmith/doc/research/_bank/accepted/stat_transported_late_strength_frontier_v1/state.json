@@ -1,0 +1,488 @@
+{
+  "stage_completed": "5",
+  "lean_subdir": "CausalSmith/Stat/STAT_TransportedLateStrengthFrontier_Research",
+  "qid": "stat_transported_late_strength_frontier",
+  "specialization": "v1",
+  "pending_sorries": [],
+  "design_decisions": {},
+  "added_assumptions": [
+    {
+      "label": "carrier-hosts-admissible-geometry",
+      "statement": "(hGeometry : ∃ g : Geometry 𝒳, AdmissibleGeometry g k epsilon) — on thm:oracle-score-inversion-attainment only",
+      "source": "Encoding necessity. The .tex fixes ONE common measurable covariate space (𝒳,𝒜) and states V*(t0) over it; Lean must quantify over an arbitrary 𝒳, which admits 𝒳 = Empty, where no class member exists, the supremum over an empty index set is 0, and the paper's strictly positive lower bound would be FALSE rather than merely weak. This binder says only that the carrier is rich enough to host one of the source's own admissible geometries; it does not restrict the model class. Inhabitation of the model slice is then PROVED from def:least-favorable-witness (fixedGeometrySlice_eventually_inhabited), never assumed.",
+      "classification": "regularity-bookkeeping"
+    },
+    {
+      "label": "carrier-hosts-growing-cells",
+      "statement": "(hCarrier : ∀ n, ∃ cell : Fin (k n) ↪ 𝒳, ∀ i, MeasurableSet {cell i}) — on thm:oracle-converse, thm:finite-cell-unknown-weight-attainment, thm:regular-cell-unknown-weight-attainment and the three inhabitation lemmas in Helpers/Witness.lean. SUPERSEDES the earlier weaker form (∀ n, Nonempty (Fin (k n) ↪ 𝒳)), which made those lemmas FALSE.",
+      "source": "Encoding necessity forced by the source's own text, corrected after a codex counterexample. ass:finite-cell-source and def:regular-finite-cell-class literally say 𝒳 = {1,…,k_n}, which no fixed type satisfies at every index once k_n → ∞; the sanctioned re-rendering moves the finite support from the carrier TYPE onto the MEASURE (Basic.lean:374/486). The first attempt required only an injection Fin (k n) ↪ 𝒳, which constrains cardinality but NOT the σ-algebra: on a trivial σ-algebra the only measurable superset of a singleton is univ, so Mathlib's outer-measure convention gives μ{x} = 1 for every probability measure, contradicting (sourceXLaw P n {cell i}).toReal = (k n)⁻¹ once hkInf forces k n > 1. Requiring the injected cells to be MEASURABLE atoms is exactly the content of the source's discrete cell space, is a condition on the carrier alone, and is deliberately weaker than [MeasurableSingletonClass 𝒳], which would also constrain the carrier for the global-class half of thm:oracle-converse and narrow the V* claim. Inhabitation is still PROVED from def:least-favorable-witness, never assumed.",
+      "classification": "regularity-bookkeeping"
+    }
+  ],
+  "cited_checks": [],
+  "cited_review_receipts": [],
+  "delivery_review_receipts": [],
+  "loop": "research",
+  "auto_mode": true,
+  "next_action": "pending_checkpoint",
+  "lineage": null,
+  "from_question_oq_id": null,
+  "method_id": null,
+  "closed_oq": null,
+  "gaps": {
+    "gaps_path": "/<repo-root>/CausalSmith/doc/research/active/stat_transported_late_strength_frontier/discovery/gaps.json",
+    "n_open_problems": 7,
+    "status": "completed"
+  },
+  "flags": {
+    "rewound_from_stage0": null,
+    "rewound_from_stage4d": null,
+    "local_fix_from_4d": false,
+    "missing_architecture": false,
+    "scaffold_redirect": null,
+    "scaffold_redirect_count": 0,
+    "proof_loop_counters": {
+      "iters": 1,
+      "scaffold_rounds": 1,
+      "stale": 0,
+      "tag_reroutes": 0,
+      "node_strikes": {},
+      "review_error_strikes": {},
+      "last_build_error_sig": ""
+    },
+    "d0_loop_counters": {
+      "solve_rounds": 8,
+      "revise_rounds": 3,
+      "consistency_heals": 0
+    },
+    "proof_review_escalation_pending": null,
+    "f3_filler_directive": null,
+    "f2_scaffold_directive": "HYPOTHESIS STRUCTURE AND CLASS INHABITATION (persistent; applies to every pass).\n\n1. Never emit `hyps: []` for a statement whose core `depends_on` contains assumption nodes.\n   Every assumption dependency must stay visible in the plan node's `hyps` — listed directly,\n   or as a member of a bundled class that is itself in `hyps`.\n\n2. Never replace an assumption atom with a hand-rolled copy of its content. Inlining the\n   scalar/limit conditions that live inside a class field as separate free-standing binders\n   decouples the theorem from the model class the source defines, and is rejected.\n\n3. For a worst-case / minimax statement whose conclusion already quantifies over the model\n   class internally (through the honesty, risk, or value definitions it mentions), do NOT bind\n   a single class member as a hypothesis — that conditionalizes the claim. Bind each required\n   assumption atom instead as a membership-implication schema,\n   `(h : forall n P, <class-or-slice> P ... n -> <Atom> P ... n)`, which is derivable from the\n   class definition and therefore adds no strength.\n\n4. Standing parameter-domain conditions the source states globally (parameter ranges, sampling\n   ratio positivity, rate conditions) are ADDITIONAL binders alongside the atoms in (3).\n\n5. `hyps` must always be a SUBSET of that same statement's core `depends_on`. Never introduce a\n   hypothesis id that is not already a declared dependency of the statement.\n\n6. Rules (1)-(4) select the SHAPE of a binder; they never change WHICH ids appear in `hyps`.\n   When a dependency is a CLASS, keep the class id in `hyps` — do not expand it into member\n   atoms. When the dependencies name atoms directly, list exactly those atoms.\n\n7. NEVER encode a growing per-index finite support by constraining the fixed ambient carrier\n   type. Requiring `Fin (k n) = 𝒳` (an Equiv) at every index forces that cardinality constant,\n   so once the source says it grows the class is EVENTUALLY EMPTY: statements over it go\n   vacuous and any lower bound on its value collapses to 0 and becomes FALSE under Lean's\n   empty iSup/iInf conventions. Encode the support on the MEASURE instead: at index n require\n   an INJECTION from the index set into the carrier whose image carries the full source mass,\n   with the per-atom masses the source prescribes. Points outside the image are null, so this\n   is a faithful re-rendering of the same model and leaves the class inhabited at every index.\n\n8. A vacuity originating in a SHARED definition cannot be repaired statement-by-statement. Fix\n   the definition and every definition/statement inheriting the constraint in ONE pass.\n\n9. CLASS INHABITATION IS TO BE PROVED, NOT ASSUMED. Where a lower bound would be false because\n   the class could be empty, do NOT add a nonemptiness or realizability hypothesis — the source\n   already CONSTRUCTS an explicit member family (its least-favorable witness, defined over an\n   arbitrary admissible geometry). Discharge inhabitation as a LEMMA from that construction, in\n   the helper module that owns the witness, and have the statements use that lemma. Choose the\n   carrier so the witness is realizable at every index (a countably infinite carrier), rather\n   than weakening any statement. Assuming what the source derives is laundering and is rejected.\n\n10. CORRECTION to rule 9, which was previously mis-stated and caused a narrowing: do NOT choose\n    or specialize the ambient carrier. The carrier stays an arbitrary fixed measurable space,\n    `{𝒳 : Type*} [MeasurableSpace 𝒳]`, in EVERY statement. Never instantiate it at a concrete\n    type (`ℕ`, `Fin _`, …) anywhere in a theorem binder, a class argument, or a named-argument\n    override such as `(𝒳 := ℕ)`. Specializing the carrier narrows the source's claim and is\n    rejected as drift, even when it is done only to make a class inhabited.\n\n11. The correct way to keep a class-value lower bound true without narrowing the carrier is to\n    require, as an explicit hypothesis, only that the source's own geometry class is inhabited on\n    that arbitrary carrier — i.e. that there EXISTS an admissible geometry. From such a geometry,\n    inhabitation of the model slice is then PROVED via the source's least-favorable witness\n    construction (rule 9), never assumed. Keep that existence hypothesis minimal: it is a\n    condition on the carrier being rich enough, not a restriction on the model class.\n\n12. Rule 2 still binds: the standing rate/limit conditions must NOT reappear as free-standing\n    hand-rolled binders duplicating class-field content when the corresponding assumption atoms\n    are already bound as membership-implication schemas under rule 3.\n\n13. The rule-11 carrier-richness condition is a FREE BINDER, never a `hyps` entry. `hyps`\n    accepts only assumption, class, or gate ids; a `def` id such as\n    `def:admissible-geometry-class` is refused by the structural gate (\"defs are used, not\n    assumed\"). Bind the condition in Lean exactly like the other standing domain conditions\n    (`hc`, `hepsilon`, `hkPos`, `hkRoot`), and leave the statement's `hyps` untouched.\n\n14. SIZE the richness condition to the class the statement's value actually ranges over.\n    `(hGeometry : ∃ g : Geometry 𝒳, AdmissibleGeometry g k epsilon)` is enough ONLY for a\n    value over the global class or a fixed-geometry slice. It does NOT inhabit the\n    finite-cell or regular-cell classes: admissibility constrains only the measures and the\n    weight/propensity bounds and is satisfiable on a ONE-POINT carrier, while those classes\n    additionally demand an injection `Fin (k n) ↪ 𝒳` whose image carries full source mass.\n    For a value over `FiniteCellClass` / `RegularFiniteCellClass` use\n    `(hCarrier : ∀ n, Nonempty (Fin (k n) ↪ 𝒳))`, which also yields an admissible geometry\n    (uniform source law on the injected image, `w = 1`, `e = 1/2`) and so subsumes the\n    `hGeometry` form. Both are conditions on the CARRIER only; neither restricts the model\n    class, and neither may be replaced or supplemented by assuming the class nonempty, a\n    witness law existing, or the value positive — inhabitation is still PROVED from the\n    source's least-favorable witness construction (rule 9).\n\n15. SCOPE for the carrier fix (rule 8 applied concretely, in ONE pass): the remaining `ℕ`\n    pinning is structural and lives in shared code, so patching theorem signatures alone\n    will not hold. `Frontier.lean`'s `FiniteCellInput`, `RegularCellInput` and\n    `FiniteCellOracleProcedure` hardcode the carrier, which forces every finite-cell\n    coverage/expected-length functional, every finite-cell honesty predicate, every\n    finite-cell risk, and `finiteCellOracleValue`; `Helpers/Witness.lean`'s three\n    inhabitation lemmas (`finiteCellClass_inhabited`, `transportedIVClass_inhabited`,\n    `regularFiniteCellClass_inhabited`) state their conclusions at `TransportedArray ℕ` and\n    are where the pinning originates. Generalize those first, then the theorem sites\n    (`T_OracleConverse`, `T_FiniteCellUnknownWeightAttainment`,\n    `T_RegularCellUnknownWeightAttainment`), and delete the now-dead `abbrev CellCarrier`\n    in `Basic.lean`. `Basic.lean`'s class definitions are already carrier-agnostic (the\n    `∃ cell : Fin (k n) ↪ 𝒳` re-render) and must not be changed back.\n\n16. CORRECTION to rule 14. `∀ n, Nonempty (Fin (k n) ↪ 𝒳)` is NOT sufficient and makes the\n    cell-class inhabitation lemmas FALSE: it constrains the carrier's cardinality but not its\n    σ-algebra. On a carrier with the trivial σ-algebra the only measurable superset of a\n    singleton is `univ`, so Mathlib's outer-measure convention forces `μ {x} = 1` for every\n    probability measure, contradicting `FiniteCellSource`'s `(sourceXLaw P n {cell i}).toReal\n    = (k n)⁻¹` as soon as `hkInf` pushes `k n` above 1. The cells must be MEASURABLE atoms.\n    Use\n      `(hCarrier : ∀ n, ∃ cell : Fin (k n) ↪ 𝒳, ∀ i, MeasurableSet {cell i})`\n    on every statement whose value ranges over `FiniteCellClass` / `RegularFiniteCellClass`\n    and on the inhabitation lemmas in `Helpers/Witness.lean`. This remains a condition on the\n    CARRIER only — it says 𝒳 hosts k_n measurable atoms at each index, which is exactly the\n    content of the source's own `𝒳 = {1,…,k_n}` discrete cell space — and it does NOT restrict\n    the model class. Prefer it to `[MeasurableSingletonClass 𝒳]`, which would additionally\n    constrain the carrier for the GLOBAL-class half of `thm:oracle-converse` and so narrow the\n    `V*` claim. Rules 9 and 11 still bind: inhabitation is PROVED from this, never assumed.\n\n17. Restrict a procedure-identity clause to the experiment the source quantifies over. When the\n    source defines an estimator \"on `𝒩_n`\" with objects indexed by the finite cell labels, do\n    NOT state `∀ n x, C.set n x = …` over all ambient samples, and do not make a structure's\n    `measurableGraph` a global obligation over an arbitrary carrier. State the identity per\n    class member, almost everywhere under that member's sampling law, and scope the\n    measurability obligation to the realized cell structure. Never repair such an\n    over-quantification by adding a carrier typeclass (`MeasurableSingletonClass`, `Countable`,\n    standard-Borel): that narrows the theorem to buy satisfiability, when the fault is the\n    quantifier.\n\n18. A lemma quantifying over a PARAMETERIZED FAMILY must carry the admissibility/regularity\n    hypothesis that makes the family inhabited. In Lean an `⨅`/`⨆` over an EMPTY subtype\n    evaluates to `0` in `ℝ`, so a slice-honesty or slice-value statement over an arbitrary\n    `Geometry` is FALSE at a degenerate member (e.g. the zero measure, for which the slice is\n    empty since class membership forces a probability measure, making `1 - alpha ≤ 0` fail).\n    Whenever a statement mentions a geometry, a model slice, or any index set that a class\n    membership condition can empty, bind the source's own admissibility predicate\n    (`AdmissibleGeometry g k epsilon`) plus whatever standing rate/domain conditions the\n    corresponding inhabitation lemma consumes. This is rules 9/11/14/16 applied to helper\n    lemmas rather than to headline statements: the source says \"for any ADMISSIBLE\n    deterministic geometry\", and dropping admissibility is drift, not generality.\n\n19. THE MEASURABLE-ATOM CONDITION BELONGS INSIDE THE CLASS DEFINITION, NOT ONLY ON THE\n    STATEMENT BINDER. This is a CORRECTION to how rule 16 was applied. Rule 16 got the\n    content right — the source's discrete cell space means the cells are MEASURABLE atoms —\n    but it placed that condition only on the theorem-level carrier binder `hCarrier`. The\n    class definitions kept an UNCONSTRAINED existential witness\n      `∃ cell : Fin (k n) ↪ 𝒳, sourceXLaw P n (Set.range cell) = 1 ∧ <mass bounds>`\n    and the class witness need not be `hCarrier`'s embedding. On a carrier whose σ-algebra\n    does not separate the class witness's points, Mathlib's outer-measure convention makes\n    `(sourceXLaw P n {cell i}).toReal` the mass of the smallest measurable SUPERSET, so the\n    per-cell mass bounds can hold while `sourceCellMass` bears no relation to the actual law:\n    a four-point carrier with atoms `{0},{1},{2,3}`, both laws concentrated on `{2,3}`, and the\n    class witness `(2,3)` satisfies `RegularFiniteCellClass` with `k=2, c₋=1, c₊=2`, yet gives\n    `Σ_x p_x²/q_x = 2` while the true Kish dispersion is `1`. Every downstream cell identity\n    (`κ_n = Σ_x p_x²/q_x`, the multinomial second moment, the collision calculation) is then\n    FALSE over the formal class, and the two cell theorems are unprovable as stated.\n    THEREFORE: `FiniteCellSource` and `RegularFiniteCellClass` must each require\n    `(∀ i, MeasurableSet {cell i})` of their OWN `∃ cell` witness. This is not a restriction of\n    the model class relative to the source — `ass:finite-cell-source` and\n    `def:regular-finite-cell-class` literally say `𝒳 = {1,…,k_n}`, a discrete space in which\n    every singleton is measurable — it merely deletes Lean artifacts the source never had. It\n    is the completion of the rule-7/rule-16 re-rendering, not a new assumption, and it moves\n    BOTH paper claims toward the source rather than away: the class shrinks, so the risk\n    SUPREMUM (upper-bound half) stops over-claiming, and the honest-procedure INFIMUM\n    (lower-bound half) stops under-claiming.\n    GENERAL RULE BEHIND IT: when a class definition existentially quantifies a finite structure\n    and then constrains it through measure values, the structure's own measurability must be\n    part of that existential. A regularity condition supplied only as a free binder constrains\n    the CARRIER, never the class witness, and the two are not the same object. The standing\n    `hCarrier` binder still belongs on the statements: it is what makes the class INHABITED,\n    and inhabitation is still PROVED from the source's own construction, never assumed."
+  },
+  "proposed_from": {
+    "topic": "effective identification strength and the matched minimax confidence-set-length frontier for the transported complier average causal effect: in the two-sample generalizability-with-noncompliance model of Chen-Huang arXiv:2506.00149 (n study draws of (X,Z,D,Y) with Y in [0,1], D and Z binary, propensity in [eps,1-eps], exclusion, monotonicity, cross-population conditional exchangeability, plus N target-population covariate draws, N/n -> c), with estimand theta_T = E_T[Delta_Y(X)]/E_T[Delta_D(X)] whose parameter space Theta = [-1,1] is FORCED compact by bounded Y and binary D, fix an envelope k_n -> infinity with k_n = o(n^(1/2)) and define the class by E_S[w]=1, w <= 2k_n a.s. and kappa_n = E_S[w^2] <= k_n, the Kish effective sample size n_eff = n/kappa_n, and the effective identification strength t_n = n_eff * mu_n^2 = n mu_n^2/kappa_n where mu_n = E_T[Delta_D(X)] is the transported first stage and both mu_n -> 0 and kappa_n -> infinity are permitted at arbitrary joint rates; calling a procedure SEQUENCE honest when liminf_n inf_P P(theta_T in C_n) >= 1-alpha and setting R(C,t_0) = limsup_n sup over {t_n >= t_0} of E_P[lambda(C_n)] and V*(t_0) = inf over honest (w,e)-oracle sequences of R(C,t_0), prove (K1) the converse V*(t_0) >= c min(1,t_0^(-1/2)) against oracles told w and e but NOT Delta_D or Delta_Y, with c depending only on alpha and the class constants and not on how t_0 splits into a first-stage/dispersion pair, hence a threshold t_c(alpha) below which every honest procedure is uninformative, and (K2) matched attainment by a single honest sequence from grid inversion over Theta of level-alpha tests of the transported moment restriction, achieving R(C,t_0) <= C min(1,t_0^(-1/2)) simultaneously for all t_0 - so the joint weak-first-stage and weak-overlap difficulty depends on (n,mu_n,kappa_n) ONLY through t = n mu_n^2/kappa_n and generalization-weight dispersion costs exactly a Kish sample-size deflation and no more - and (K3) that the same order is attained WITHOUT knowing the transport weight on the finite-cell sub-class N_n (X in a known {1,...,k_n}, P_S the known uniform law, e a known constant, only the cell vector P_T unknown, Delta_D and Delta_Y unrestricted), where K1 already holds; the test statistic and its calibration, all constants including c, C and t_c(alpha), the studentization, the bounded/unbounded/disconnected shape taxonomy, and every extension of K3 beyond N_n are explicitly DELEGATED and not pre-committed; well-posedness rests on Theta = [-1,1] being forced rather than chosen, which is exactly the infinite-diameter hypothesis the Dufour 1997 / Gleser-Hwang 1987 / Bertanha-Moreira impossibility requires and which fails here, and the literature contains no finite minimax length rate under weak identification at all; distinct from Aronow-Chang-Lopatto Biometrika 2026 (finite-population LATE, no reweighting), from Ma arXiv:2302.09756 and Smucler et al arXiv:2506.10449 (single-population weak-IV-robust LATE with ML nuisances, no covariate shift, no length theorem), and from Ren arXiv:2512.23854 (within-population MTE extrapolation on a strong-overlap space); witness: X uniform on {1,...,k_n} under P_S, P_T mass 1-eps_n on cell k_n, e = 1/2, complier probability 1/2 off the last cell and eps_n on it, no defiers, compliers with (Y(1),Y(0)) = (1,0), giving E_S[w] = 1 exactly, kappa_n <= k_n, study first stage -> 1/2 but mu_n of order (3/2)eps_n -> 0, and t_n of order (9/4) n eps_n^2/k_n tunable to any t_0; consumers are the anchor's own deep-canvassing application, Rudolph and van der Laan JRSS-B 2017 transporting the Moving to Opportunity complier effect, and Ross et al Epidemiology 2026",
+    "novelty_target": "field",
+    "pivot_budget_used": 0,
+    "final_verdict": "ACCEPT",
+    "proposal_path": "/<repo-root>/CausalSmith/doc/research/active/stat_transported_late_strength_frontier/discovery/proto_core.json",
+    "novelty_justification": "The closest published results divide the problem rather than subsume it. ChenHuang2025 identifies and regularly estimates the exact transported ratio, Ma2023 and SmuclerLanniMasip2025 establish weak-IV-robust inversion without covariate shift, Mikusheva2010 studies expected length only in an invariant linear experiment, and ArmstrongKolesar2021 handles deteriorating overlap for a regular ATE. No listed paper supplies a same-class compact transported-CACE oracle length converse, nor an oracle-versus-learned-weight comparison on a growing finite-cell class. The sharp theorem-level delta is that, subject to the envelope, \\(t_n=n\\mu_n^2/\\kappa_n\\) lower-bounds honest precision independently of how it splits into first-stage strength and dispersion. The matching all-regime inversion is explicitly posed as an open question and can fail only through an admissible fixed-\\(t_n\\) geometry with a different minimax order.",
+    "chosen_qid": "stat_transported_late_strength_frontier",
+    "chosen_specialization": "v1",
+    "cluster": "stat",
+    "seed_list": [
+      "A compact transported-CACE confidence-set frontier may be governed by \\(n\\mu_n^2/\\mathbb E_S[w^2]\\), rather than by weak compliance and covariate shift separately.",
+      "Learning the target cell distribution may or may not preserve the oracle effective-strength frontier for a compact transported CACE.",
+      "The nuisance-learning remainder for transported score inversion may have a necessary-and-sufficient boundary in first-stage strength, weight dispersion, and target-sample size.",
+      "Two transport designs with the same Kish effective sample size may have different weak-ratio minimax length because their higher weight moments generate distinct local experiments.",
+      "Bounded effective strength may require a Poisson or finite-profile calibration rather than a Gaussian transported-score inversion.",
+      "Compact transported score sets may have a finite, computable topology that differs from the six unbounded single-population shapes.",
+      "A bounded adherence-shift sensitivity model may admit a critical violation size at which the transported-CACE sign ceases to be identified.",
+      "Conditional randomization symmetry may yield finite-sample transported score inversion when study assignment is known and target covariates are externally sampled."
+    ],
+    "current_angle_index": 0,
+    "current_version": 3,
+    "current_mode": "revise",
+    "last_draft_handoff": "{\"status\":\"completed\",\"message\":\"Revised core written with corrected symbol ordering, full-data causal target, calibrated witness, and expanded comparator audit.\",\"artifacts\":[\"/<repo-root>/CausalSmith/doc/research/active/stat_transported_late_strength_frontier/discovery/proto_core.json\"],\"literature_checklist\":[{\"author\":\"Chen and Huang\",\"year\":2025,\"venue\":\"arXiv preprint\",\"bibkey\":\"ChenHuang2025\",\"one_line\":\"Defines and regularly estimates transported CACE as a target-weighted Wald ratio.\",\"relevant_to\":\"prop:compact-causal-range\"},{\"author\":\"Choi, Gu, and Shen\",\"year\":2018,\"venue\":\"Journal of Applied Econometrics\",\"bibkey\":\"ChoiGuShen2018\",\"one_line\":\"Extends weak-IV-robust tests and confidence sets to a linear two-sample IV model.\",\"relevant_to\":\"oeq:oracle-attainment\"},{\"author\":\"Choi and Shen\",\"year\":2019,\"venue\":\"The Stata Journal\",\"bibkey\":\"ChoiShen2019\",\"one_line\":\"Documents weaktsiv implementations of two-sample weak-instrument-robust confidence sets under homogeneous and heterogeneous sample moments.\",\"relevant_to\":\"oeq:oracle-attainment\"},{\"author\":\"Mikusheva\",\"year\":2010,\"venue\":\"Journal of Econometrics\",\"bibkey\":\"Mikusheva2010\",\"one_line\":\"Studies expected arc length of weak-IV confidence sets in an invariant linear experiment.\",\"relevant_to\":\"thm:oracle-converse\"},{\"author\":\"Smucler, Lanni, and Masip\",\"year\":2025,\"venue\":\"arXiv preprint\",\"bibkey\":\"SmuclerLanniMasip2025\",\"one_line\":\"Provides weak-IV-uniform score inversion and set geometry for one-population LATE.\",\"relevant_to\":\"oeq:oracle-attainment\"},{\"author\":\"Rudolph and van der Laan\",\"year\":2017,\"venue\":\"JRSS-B\",\"bibkey\":\"RudolphVanderLaan2017\",\"one_line\":\"Provides efficient transport inference for encouragement designs under regular conditions.\",\"relevant_to\":\"oeq:unknown-weight-attainment\"},{\"author\":\"Armstrong and Kolesar\",\"year\":2021,\"venue\":\"Econometrica\",\"bibkey\":\"ArmstrongKolesar2021\",\"one_line\":\"Provides an honest-overlap minimax template for regular ATE inference.\",\"relevant_to\":\"thm:oracle-converse\"}],\"cluster\":\"stat\"}",
+    "last_draft_status": "completed",
+    "exhausted_angles": [],
+    "last_reviewer_verdict": "{\"verdict\":\"ACCEPT\",\"proposal_path_read\":\"/<repo-root>/CausalSmith/doc/research/active/stat_transported_late_strength_frontier/discovery/proto_core.json\",\"novelty_summary\":{\"repo_axis_verdict\":\"clear\",\"published_axis_verdict\":\"clear\",\"papers_verified\":10,\"papers_flagged_mischaracterized\":0},\"structure_check\":{\"all_13_sections_present\":true,\"introduction_has_four_paragraphs_in_order\":true,\"results_at_a_glance_one_entry_per_s8_result_with_gap_consumer\":true,\"related_work_min_three_cites_with_commentary\":true,\"at_most_four_solve_targets\":true,\"sanity_check_has_concrete_reduction\":true,\"iteration_trail_present\":true,\"bibliography_matches_body_citations\":true},\"per_theorem_calls\":[{\"label\":\"Proposition 1 (compact causal range)\",\"repo_prior_art\":{\"verdict\":\"new\",\"cite\":\"stat_pn_weak_event_honest_inference — a distinct PN/PS weak-event confidence problem.\"},\"published_prior_art\":{\"verdict\":\"incremental\",\"cite\":\"ChenHuang2025, Theorem 3.1, gives transported T-CACE Wald identification; the forced [-1,1] range is a bounded-outcome specialization.\"},\"overall_verdict\":\"incremental\"},{\"label\":\"Theorem 1 (oracle converse)\",\"repo_prior_art\":{\"verdict\":\"new\",\"cite\":\"No catalogue entry gives a transported-IV density-ratio/Kish-strength honest confidence-length frontier.\"},\"published_prior_art\":{\"verdict\":\"new\",\"cite\":\"Mikusheva2010 is invariant linear-IV arc-length analysis; ArmstrongKolesar2021 is regular unconfounded ATE inference. Neither supplies the transported-CACE lower frontier indexed by n mu_n^2/kappa_n.\"},\"overall_verdict\":\"new\"},{\"label\":\"Open-ended Question 1 (oracle attainment)\",\"repo_prior_art\":{\"verdict\":\"new\",\"cite\":\"No in-catalogue proposal combines covariate-only-target CACE transport, all-strength score inversion, and expected-length control.\"},\"published_prior_art\":{\"verdict\":\"new\",\"cite\":\"SmuclerLanniMasip2025 and Ma2023 are one-population weak-LATE inversion results; ChoiGuShen2018 and ChoiShen2019 are linear two-sample IV. None treats weighted transported CACE or its stated minimax class.\"},\"overall_verdict\":\"new\"},{\"label\":\"Open-ended Question 2 (unknown-weight finite-cell attainment)\",\"repo_prior_art\":{\"verdict\":\"new\",\"cite\":\"No in-catalogue learned target-density-ratio weak-ratio finite-cell frontier.\"},\"published_prior_art\":{\"verdict\":\"new\",\"cite\":\"RudolphVanderLaan2017 and ZengKennedyBodnarNaimi2024 give regular transport inference, while ChoiShen2019 lacks target-density-ratio learning; none gives this growing-cell weak-ratio question.\"},\"overall_verdict\":\"new\"},{\"label\":\"Proposition 2 (no-shift reduction)\",\"repo_prior_art\":{\"verdict\":\"new\",\"cite\":\"none.\"},\"published_prior_art\":{\"verdict\":\"incremental\",\"cite\":\"The kappa_n=1 and t_n=n mu_n^2 specialization is the expected no-shift weak-IV reduction.\"},\"overall_verdict\":\"incremental\"}],\"structure_flags\":[],\"novelty_flags\":[],\"soundness_flags\":[],\"accepted_scope_caveats\":[],\"source_verification_receipts\":[{\"bibkey\":\"ChenHuang2025\",\"source_url\":\"https://arxiv.org/html/2506.00149v2\",\"version\":\"arXiv:2506.00149v2, 6 June 2026\",\"locator\":\"Section 2, lines 110–143; Section 3, Assumptions 3–4 and Theorem 3.1, lines 149–190\",\"verified_claim\":\"The paper observes only pre-treatment covariates in the target population, states target-population IV assumptions and first-stage exchangeability, identifies T-CACE by a target-weighted Wald ratio, and develops regular weighted estimators.\",\"supports_flag_codes\":[]},{\"bibkey\":\"RudolphVanderLaan2017\",\"source_url\":\"https://pmc.ncbi.nlm.nih.gov/articles/PMC5784860/\",\"version\":\"JRSS-B 79(5) (2017), open-access article\",\"locator\":\"Section 2, Notation and Structural Causal Model\",\"verified_claim\":\"The observed vector is O=(S,W,A,Z,S×Y): target-site assignment and receipt are observed while outcome is missing; the paper develops TMLEs for transported ITT, complier ATE, and exposure effects.\",\"supports_flag_codes\":[]},{\"bibkey\":\"ChoiGuShen2018\",\"source_url\":\"https://onlinelibrary.wiley.com/doi/10.1002/jae.2580\",\"version\":\"Journal of Applied Econometrics 33 (2018), pp. 109–125\",\"locator\":\"Publisher abstract/Summary\",\"verified_claim\":\"The paper extends weak-instrument-robust inference to two-sample IV regression and relaxes homoskedasticity and equal-moment restrictions across samples.\",\"supports_flag_codes\":[]},{\"bibkey\":\"ChoiShen2019\",\"source_url\":\"https://journals.sagepub.com/doi/pdf/10.1177/1536867X19874235\",\"version\":\"The Stata Journal 19(3) (2019), pp. 581–597\",\"locator\":\"pp. 582–585, Sections 2–3\",\"verified_claim\":\"The paper is a weaktsiv implementation companion for two-sample linear IV; both samples contain instrument/covariate measurements, the second supplies the endogenous regressor, and AR/K/CLR confidence sets are inverted under weak-IV asymptotics.\",\"supports_flag_codes\":[]},{\"bibkey\":\"Mikusheva2010\",\"source_url\":\"https://www.sciencedirect.com/science/article/pii/S0304407609003029\",\"version\":\"Journal of Econometrics 157(2) (2010), pp. 236–247\",\"locator\":\"Journal abstract\",\"verified_claim\":\"The paper constructs weak-IV robust linear-IV confidence sets and establishes near-shortest expected arc length only among similar symmetric invariant sets in a circular model.\",\"supports_flag_codes\":[]},{\"bibkey\":\"SmuclerLanniMasip2025\",\"source_url\":\"https://arxiv.org/html/2506.10449v1\",\"version\":\"arXiv:2506.10449v1, 12 June 2025\",\"locator\":\"Abstract and Section 1\",\"verified_claim\":\"The paper studies one-population nonparametric score-test inversion for LATE, uniform validity with arbitrarily weak instruments, and confidence-set geometry including infinite diameter.\",\"supports_flag_codes\":[]},{\"bibkey\":\"Ma2023\",\"source_url\":\"https://arxiv.org/html/2302.09756v5\",\"version\":\"arXiv:2302.09756v5, 10 November 2025\",\"locator\":\"Abstract and Section 1\",\"verified_claim\":\"The paper proposes an orthogonalized Anderson–Rubin inversion procedure for high-dimensional one-population LATE with uniformly valid size irrespective of identification strength.\",\"supports_flag_codes\":[]},{\"bibkey\":\"ArmstrongKolesar2021\",\"source_url\":\"https://ideas.repec.org/a/wly/emetrp/v89y2021i3p1141-1177.html\",\"version\":\"Econometrica 89(3) (2021), pp. 1141–1177\",\"locator\":\"Journal abstract\",\"verified_claim\":\"The paper treats finite-sample optimal ATE estimation and confidence intervals under unconfoundedness plus smoothness or shape restrictions, including limited overlap; it is not a weak-IV ratio result.\",\"supports_flag_codes\":[]},{\"bibkey\":\"ZengKennedyBodnarNaimi2024\",\"source_url\":\"https://arxiv.org/abs/2302.00092\",\"version\":\"arXiv:2302.00092v3\",\"locator\":\"Abstract\",\"verified_claim\":\"The paper studies regular doubly robust generalization and transportation of target ATEs, with convergence rates, limiting distributions, efficiency, and minimax results.\",\"supports_flag_codes\":[]},{\"bibkey\":\"Dufour1997\",\"source_url\":\"https://jeanmariedufour.github.io/Dufour_1994_ImpossibilityTheorems_W.pdf\",\"version\":\"Author manuscript corresponding to Econometrica 65(6) (1997), pp. 1365–1388; journal full text inaccessible\",\"locator\":\"Abstract\",\"verified_claim\":\"The source establishes unbounded-confidence-set impossibility for unbounded locally almost unidentified parameters and discusses related bounded-range cases; the proposal appropriately does not claim that Dufour settles its compact minimax frontier.\",\"supports_flag_codes\":[]}],\"publishability_tier\":\"field\",\"strengthening_paths\":[{\"suggestion\":\"State a concrete studentized transported-score statistic, nuisance-rate regime, and uniform calibration route for the oracle question, so its eventual upper bound can directly pair with the lower frontier.\",\"effort\":\"high\"},{\"suggestion\":\"Add an explicit eventual-n calculation for the finite-cell witness: existence of the calibrated a_n root, admissibility of delta_n, target-CACE separation, and nondegeneracy of both outcome laws.\",\"effort\":\"medium\"},{\"suggestion\":\"Anchor the theorem comparison to Chen and Huang Theorem 3.1, Mikusheva’s invariant arc-length result, and Choi–Shen’s two-sample model pages in the statement-level gaps.\",\"effort\":\"low\"}],\"recommended_next_step\":\"Advance the field-tier transported-CACE minimax-frontier proposal to Stage 0; retain the two attainment questions as explicit solve targets.\"}",
+    "iterations": [
+      {
+        "angle": 0,
+        "version": 1,
+        "mode": "cold-start",
+        "verdict": "REVISE",
+        "tier": "field",
+        "clean_substance": false
+      },
+      {
+        "angle": 0,
+        "version": 2,
+        "mode": "revise",
+        "verdict": "REVISE",
+        "tier": "field",
+        "clean_substance": false
+      },
+      {
+        "angle": 0,
+        "version": 3,
+        "mode": "revise",
+        "verdict": "ACCEPT",
+        "tier": "field",
+        "clean_substance": true
+      }
+    ],
+    "archived_proposals": [],
+    "seed_details": [
+      {
+        "one_line": "A compact transported-CACE confidence-set frontier may be governed by \\(n\\mu_n^2/\\mathbb E_S[w^2]\\), rather than by weak compliance and covariate shift separately.",
+        "anchor_paper": {
+          "author": "Chen and Huang",
+          "year": 2025,
+          "venue": "arXiv preprint",
+          "bibkey": "ChenHuang2025",
+          "claim": "They identify and regularly estimate the target CACE as a transported Wald ratio.",
+          "location": "Introduction and Section 4; arXiv:2506.00149v2.",
+          "verbatim_quote": "n/a"
+        },
+        "anti_pattern_check": "M11(a)+M7 is appropriate because the target is point identified and the focal object is a uniform honest-length rate, not an estimator relabelling.",
+        "referee_objection": "Immediate from a weighted central limit theorem because \\(\\kappa_n\\) is already the variance inflation.",
+        "rebuttal": "A central limit theorem neither gives a same-class minimax converse nor controls test-inversion length at bounded strength.",
+        "strict_delta": "n/a",
+        "routine_collapse_check": "n/a",
+        "motif": "M11+M7",
+        "target_tier": "field",
+        "adversarial_referee": [
+          {
+            "shape": "sufficiency-trap",
+            "instance": "The envelope may assume the desired Kish reduction.",
+            "rebuttal_or_downgrade": "The envelope controls maximum weights, while sufficiency of the second moment is the theorem-level question."
+          },
+          {
+            "shape": "witness-degenerate",
+            "instance": "One finite-cell law cannot establish a minimax rate.",
+            "rebuttal_or_downgrade": "The witness only seeds a least-favorable subexperiment; the statement is uniform over the full class."
+          },
+          {
+            "shape": "comparator-mischar",
+            "instance": "Mikusheva already studies expected length.",
+            "rebuttal_or_downgrade": "Her result is invariant linear-IV arc length, not a nonparametric two-sample transported-CACE minimax rate."
+          }
+        ],
+        "scores": {
+          "importance": 5,
+          "novelty": 5,
+          "feasibility": 4,
+          "sharpness": 5,
+          "contribution": 5,
+          "leverage": 5,
+          "total": 29
+        }
+      },
+      {
+        "one_line": "Learning the target cell distribution may or may not preserve the oracle effective-strength frontier for a compact transported CACE.",
+        "anchor_paper": {
+          "author": "Rudolph and van der Laan",
+          "year": 2017,
+          "venue": "JRSS-B",
+          "bibkey": "RudolphVanderLaan2017",
+          "claim": "They develop transported encouragement-design inference with estimated nuisances under regular positivity.",
+          "location": "Abstract and efficient-influence-function construction.",
+          "verbatim_quote": "n/a"
+        },
+        "anti_pattern_check": "M11(a) is appropriate because the question is a feasible-versus-oracle rate comparison on a stated growing class.",
+        "referee_objection": "This is routine multinomial plug-in estimation.",
+        "rebuttal": "The multinomial error enters a weak ratio jointly with increasing cell dimension; oracle equivalence is not implied by consistency.",
+        "strict_delta": "n/a",
+        "routine_collapse_check": "n/a",
+        "motif": "M11",
+        "target_tier": "field",
+        "adversarial_referee": [
+          {
+            "shape": "joint-family-unnamed",
+            "instance": "The target sample may create an unmodeled \\(N_n\\) regime.",
+            "rebuttal_or_downgrade": "The finite-cell question keeps \\(N_n/n\\to c\\) fixed and asks precisely whether another regime remains."
+          },
+          {
+            "shape": "witness-degenerate",
+            "instance": "Known-uniform source cells are too special.",
+            "rebuttal_or_downgrade": "The class is deliberately a first nontrivial feasibility benchmark, not a general nonparametric claim."
+          },
+          {
+            "shape": "anchor-drift",
+            "instance": "The anchor targets regular efficiency only.",
+            "rebuttal_or_downgrade": "It is used as the applied transport anchor; the precise novelty is stated relative to weak-ratio inference."
+          }
+        ],
+        "scores": {
+          "importance": 5,
+          "novelty": 4,
+          "feasibility": 4,
+          "sharpness": 4,
+          "contribution": 4,
+          "leverage": 5,
+          "total": 26
+        }
+      },
+      {
+        "one_line": "The nuisance-learning remainder for transported score inversion may have a necessary-and-sufficient boundary in first-stage strength, weight dispersion, and target-sample size.",
+        "anchor_paper": {
+          "author": "Ma",
+          "year": 2023,
+          "venue": "arXiv preprint",
+          "bibkey": "Ma2023",
+          "claim": "He constructs uniformly sized orthogonal test inversion for a high-dimensional single-population LATE.",
+          "location": "Introduction and orthogonal-score theorem.",
+          "verbatim_quote": "n/a"
+        },
+        "anti_pattern_check": "M11(c)+M8 is appropriate because the candidate object is a uniform limit law with a learned two-sample nuisance, not a generic DML application.",
+        "referee_objection": "It is a routine product-rate condition after inserting weights.",
+        "rebuttal": "Necessity, rather than a sufficient product rate, requires a separate lower experiment over nuisance classes.",
+        "strict_delta": "n/a",
+        "routine_collapse_check": "n/a",
+        "motif": "M11+M8",
+        "target_tier": "field",
+        "adversarial_referee": [
+          {
+            "shape": "sufficiency-trap",
+            "instance": "A convenient rate condition could define the answer.",
+            "rebuttal_or_downgrade": "A credible version requires a converse outside the sufficient region."
+          },
+          {
+            "shape": "joint-family-unnamed",
+            "instance": "Smoothness classes are unspecified.",
+            "rebuttal_or_downgrade": "Lands for the present run; the candidate is not retained."
+          },
+          {
+            "shape": "motif-mismatch",
+            "instance": "The kernel might be an empirical-process technicality.",
+            "rebuttal_or_downgrade": "Lands absent a sharp boundary and a consumer beyond feasibility."
+          }
+        ],
+        "scores": {
+          "importance": 5,
+          "novelty": 4,
+          "feasibility": 2,
+          "sharpness": 3,
+          "contribution": 4,
+          "leverage": 4,
+          "total": 22
+        }
+      },
+      {
+        "one_line": "Two transport designs with the same Kish effective sample size may have different weak-ratio minimax length because their higher weight moments generate distinct local experiments.",
+        "anchor_paper": {
+          "author": "Polo and Vicente",
+          "year": 2023,
+          "venue": "Neural Computing and Applications",
+          "bibkey": "PoloVicente2023",
+          "claim": "They describe the formal status of effective sample size under covariate shift as unresolved.",
+          "location": "Introduction and effective-sample-size discussion.",
+          "verbatim_quote": "n/a"
+        },
+        "anti_pattern_check": "M2 is appropriate because it asks whether two laws sharing a named index are information equivalent or diverge at a derived geometry frontier.",
+        "referee_objection": "A Lindeberg condition already makes second moments sufficient.",
+        "rebuttal": "The permitted envelope and nonlinear inversion still require an equivalence proof; failure would produce a genuine counter-frontier.",
+        "strict_delta": "n/a",
+        "routine_collapse_check": "n/a",
+        "motif": "M2",
+        "target_tier": "field",
+        "adversarial_referee": [
+          {
+            "shape": "iff-direction",
+            "instance": "A refutation at one law would not show a frontier.",
+            "rebuttal_or_downgrade": "A retained version needs two generic subfamilies at fixed \\(t_n\\), not one counterexample."
+          },
+          {
+            "shape": "witness-degenerate",
+            "instance": "Sparse-cell examples may be pathological.",
+            "rebuttal_or_downgrade": "The envelope and finite-cell classes provide a nondegenerate design family."
+          },
+          {
+            "shape": "anchor-drift",
+            "instance": "Prediction ESS is not causal-ratio ESS.",
+            "rebuttal_or_downgrade": "This is exactly why the proposal would need a causal information calculation."
+          }
+        ],
+        "scores": {
+          "importance": 5,
+          "novelty": 5,
+          "feasibility": 2,
+          "sharpness": 5,
+          "contribution": 5,
+          "leverage": 5,
+          "total": 27
+        }
+      },
+      {
+        "one_line": "Bounded effective strength may require a Poisson or finite-profile calibration rather than a Gaussian transported-score inversion.",
+        "anchor_paper": {
+          "author": "Bai and Lam",
+          "year": 2023,
+          "venue": "arXiv preprint",
+          "bibkey": "BaiLam2023",
+          "claim": "They analyze uncertainty quantification in rare-event regimes where Gaussian approximations can fail.",
+          "location": "Introduction and rare-event limit experiment.",
+          "verbatim_quote": "n/a"
+        },
+        "anti_pattern_check": "M11(c) is appropriate because the focal object is a non-Gaussian transition limit and its calibration.",
+        "referee_objection": "Bounded outcomes and \\(k_n=o(n^{1/2})\\) already imply a Gaussian CLT.",
+        "rebuttal": "The source weighted average may be Gaussian while ratio inversion at bounded strength remains non-Gaussian.",
+        "strict_delta": "n/a",
+        "routine_collapse_check": "n/a",
+        "motif": "M11",
+        "target_tier": "subfield",
+        "adversarial_referee": [
+          {
+            "shape": "motif-mismatch",
+            "instance": "This duplicates weak-IV local asymptotics.",
+            "rebuttal_or_downgrade": "It needs a specifically transport-compatible finite experiment; otherwise it is dropped."
+          },
+          {
+            "shape": "joint-family-unnamed",
+            "instance": "The finite profile is not specified.",
+            "rebuttal_or_downgrade": "Lands for this cold start; not retained."
+          },
+          {
+            "shape": "anchor-drift",
+            "instance": "The anchor is not a transported causal paper.",
+            "rebuttal_or_downgrade": "It is method inspiration only, not the main anchor."
+          }
+        ],
+        "scores": {
+          "importance": 3,
+          "novelty": 3,
+          "feasibility": 2,
+          "sharpness": 3,
+          "contribution": 3,
+          "leverage": 3,
+          "total": 17
+        }
+      },
+      {
+        "one_line": "Compact transported score sets may have a finite, computable topology that differs from the six unbounded single-population shapes.",
+        "anchor_paper": {
+          "author": "Smucler, Lanni, and Masip",
+          "year": 2025,
+          "venue": "arXiv preprint",
+          "bibkey": "SmuclerLanniMasip2025",
+          "claim": "They enumerate score-set shapes for a single-population unbounded LATE parameter.",
+          "location": "Introduction and Proposition 1.",
+          "verbatim_quote": "n/a"
+        },
+        "anti_pattern_check": "The topology question is a valid geometry problem but has no M11 efficiency or limit-law focal object.",
+        "referee_objection": "Intersect their quadratic inequality with \\([-1,1]\\) and the result is immediate.",
+        "rebuttal": "Candidate-dependent two-sample variance could change the acceptance inequality, but a grid inversion would be a weak contribution.",
+        "strict_delta": "n/a",
+        "routine_collapse_check": "n/a",
+        "motif": "none",
+        "target_tier": "subfield",
+        "adversarial_referee": [
+          {
+            "shape": "floor-violation",
+            "instance": "A taxonomy without a rate is modest.",
+            "rebuttal_or_downgrade": "Lands; not retained."
+          },
+          {
+            "shape": "motif-mismatch",
+            "instance": "M17 symmetry is absent.",
+            "rebuttal_or_downgrade": "Lands; this is not a symmetry-inversion kernel."
+          },
+          {
+            "shape": "comparator-mischar",
+            "instance": "The six forms already cover compact intersection.",
+            "rebuttal_or_downgrade": "Requires verification but does not support the main proposal."
+          }
+        ],
+        "scores": {
+          "importance": 2,
+          "novelty": 2,
+          "feasibility": 4,
+          "sharpness": 3,
+          "contribution": 2,
+          "leverage": 2,
+          "total": 15
+        }
+      },
+      {
+        "one_line": "A bounded adherence-shift sensitivity model may admit a critical violation size at which the transported-CACE sign ceases to be identified.",
+        "anchor_paper": {
+          "author": "Ross et al.",
+          "year": 2026,
+          "venue": "Epidemiology",
+          "bibkey": "RossDiazPittsStuartRudolph2026",
+          "claim": "They study sensitivity to target adherence differences.",
+          "location": "Sensitivity-analysis formulation.",
+          "verbatim_quote": "n/a"
+        },
+        "anti_pattern_check": "M3+M8 is appropriate because a critical sensitivity scalar, not a generic bound, is the focal object.",
+        "referee_objection": "This changes the point-identified target into a different partial-identification project.",
+        "rebuttal": "Correct; it is a credible adjacent seed but outside the locked statistical-frontier cluster.",
+        "strict_delta": "n/a",
+        "routine_collapse_check": "n/a",
+        "motif": "M3+M8",
+        "target_tier": "field",
+        "adversarial_referee": [
+          {
+            "shape": "motif-mismatch",
+            "instance": "The current topic locks point identification.",
+            "rebuttal_or_downgrade": "Lands; drop for this angle."
+          },
+          {
+            "shape": "sufficiency-trap",
+            "instance": "A sensitivity radius can be arbitrary.",
+            "rebuttal_or_downgrade": "A retained version must derive a critical radius from a stated adherence class."
+          },
+          {
+            "shape": "anchor-drift",
+            "instance": "The anchor does not study weak-length rates.",
+            "rebuttal_or_downgrade": "That is the intended but presently too broad combination."
+          }
+        ],
+        "scores": {
+          "importance": 4,
+          "novelty": 4,
+          "feasibility": 3,
+          "sharpness": 4,
+          "contribution": 4,
+          "leverage": 4,
+          "total": 23
+        }
+      },
+      {
+        "one_line": "Conditional randomization symmetry may yield finite-sample transported score inversion when study assignment is known and target covariates are externally sampled.",
+        "anchor_paper": {
+          "author": "Aronow, Chang, and Lopatto",
+          "year": 2026,
+          "venue": "Biometrika",
+          "bibkey": "AronowChangLopatto2026",
+          "claim": "They give randomization-based Anderson--Rubin sets for finite-population LATE without transport weighting.",
+          "location": "Abstract and randomization-inference theorem.",
+          "verbatim_quote": "n/a"
+        },
+        "anti_pattern_check": "M17 is explicitly generated as required, but its exact symmetry is broken by the superpopulation target reweighting.",
+        "referee_objection": "A target-density ratio destroys the finite-population permutation distribution.",
+        "rebuttal": "The objection lands unless a conditional target-covariate augmentation restores exactness.",
+        "strict_delta": "n/a",
+        "routine_collapse_check": "n/a",
+        "motif": "M17",
+        "target_tier": "subfield",
+        "adversarial_referee": [
+          {
+            "shape": "motif-mismatch",
+            "instance": "The target sampling is not a known randomization orbit.",
+            "rebuttal_or_downgrade": "Lands; not retained."
+          },
+          {
+            "shape": "anchor-drift",
+            "instance": "The anchor has fixed outcomes and no transport.",
+            "rebuttal_or_downgrade": "It is a method comparator, not a kernel anchor."
+          },
+          {
+            "shape": "floor-violation",
+            "instance": "Approximate permutation validity is weaker than the minimax frontier.",
+            "rebuttal_or_downgrade": "Lands; not retained."
+          }
+        ],
+        "scores": {
+          "importance": 3,
+          "novelty": 3,
+          "feasibility": 1,
+          "sharpness": 2,
+          "contribution": 2,
+          "leverage": 2,
+          "total": 13
+        }
+      }
+    ],
+    "literature_map": "Chen and Huang (2025) identify the transported CACE as a target-weighted Wald ratio and derive regular weighted and multiply robust asymptotics.\nRudolph and van der Laan (2017) provide efficient-influence-function and TMLE transport inference for encouragement designs under regular positivity.\nMa (2023) provides high-dimensional orthogonal Anderson--Rubin inversion uniformly over weak first stages, but only in one population.\nSmucler, Lanni, and Masip (2025) show uniform score-set validity, weak-ratio nonnormality, and unbounded set geometry for a single-population LATE.\nMikusheva (2010) studies weak-IV expected arc length after compact intersection in a linear invariant experiment, not a nonparametric transported ratio.\nDufour (1997) and Gleser--Hwang impossibilities rely on unbounded near-unidentified parameters, whereas the bounded-outcome CACE has range \\([-1,1]\\).\nArmstrong and Kolesar (2021) give honest overlap-sensitive ATE inference and a lower-bound template, but no weak denominator.\nZeng et al. (2024) study regular transported functional efficiency and minimax theory, not a weak ratio.\nPolo and Vicente (2023) leave the formal role of effective sample size under covariate shift unresolved, supplying the ESS motivation but not a causal information theorem.\nThe closest unresolved comparison is therefore joint: regular transport theory omits weak identification, weak-IV inversion omits covariate shift, and overlap minimax theory omits causal ratios.\nThe retained candidates are the oracle ESS-length frontier, its finite-cell unknown-weight feasibility test, and a possible refutation that higher weight geometry matters at fixed ESS.\nThe rate frontier is selected because it subsumes the applied decision problem and admits a least-favorable finite-cell subexperiment plus a concrete score-inversion handle.",
+    "accepted_scope_caveats": []
+  },
+  "banked": true,
+  "banked_tier": "accepted",
+  "banked_on": "2026-08-02",
+  "banked_reason": "F5 clean: dual F4 reviewers matched all seven headline results; full Lean verification and axiom audits passed.",
+  "banked_reusable": "unknown",
+  "banked_proposal_promise_gap": null,
+  "banked_novelty_tier": "field"
+}

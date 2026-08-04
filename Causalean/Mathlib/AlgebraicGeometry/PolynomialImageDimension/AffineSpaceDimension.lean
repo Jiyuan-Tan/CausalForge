@@ -21,19 +21,24 @@ open Order
 
 noncomputable section
 
-private def primeOfIrreducible {ι : Type*} [Finite ι]
+/-- An irreducible affine closed subset of finite-dimensional complex affine space determines
+the point of the polynomial ring's prime spectrum given by its vanishing ideal. -/
+def primeOfIrreducible {ι : Type*} [Finite ι]
     (Z : Set (ι → ℂ)) (hZ : IsIrreducibleAffineClosed Z) :
     PrimeSpectrum (MvPolynomial ι ℂ) :=
   ⟨MvPolynomial.vanishingIdeal ℂ Z,
     (irreducibleAffineClosed_iff_isPrime hZ.1 hZ.2.1).mp hZ⟩
 
-private lemma primeOfIrreducible_lt {ι : Type*} [Finite ι]
+/-- For two irreducible affine closed subsets of finite-dimensional complex affine space,
+strict inclusion reverses the strict order of their corresponding vanishing-ideal prime points. -/
+lemma primeOfIrreducible_lt {ι : Type*} [Finite ι]
     {A B : Set (ι → ℂ)} (hA : IsIrreducibleAffineClosed A)
     (hB : IsIrreducibleAffineClosed B) (hAB : A ⊂ B) :
     primeOfIrreducible B hB < primeOfIrreducible A hA := by
   exact vanishingIdeal_strict_anti hA.1 hB.1 hAB
 
-private lemma polynomialRing_dimension (d : ℕ) :
+/-- The Krull dimension of the ring of complex polynomials in d variables is d. -/
+lemma polynomialRing_dimension (d : ℕ) :
     ringKrullDim (MvPolynomial (Fin d) ℂ) = d := by
   rw [MvPolynomial.ringKrullDim_of_isNoetherianRing]
   simp

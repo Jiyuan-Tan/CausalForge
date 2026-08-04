@@ -83,7 +83,7 @@ private lemma witness_abs_integral_le_ball_mass {d : ℕ} (P : CateLaw d)
   have hball : MeasurableSet (supBall x0 h) := by
     rw [show supBall x0 h = ⋂ i : Fin d, {x | |x i - x0 i| ≤ h} by
       ext x
-      simp [supBall]]
+      simp [supBall, Causalean.Stat.Nonparametric.supBall]]
     apply MeasurableSet.iInter
     intro i
     exact measurableSet_le

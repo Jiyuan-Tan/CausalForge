@@ -78,6 +78,11 @@ export function resolveResumeVersion(args: {
 /** Names in `dir` matching `pattern`. A MISSING directory yields nothing; any other
  *  failure throws, so a reset cannot report success having listed nothing. Separated from
  *  deletion so callers can resolve every listing BEFORE destroying anything. */
+/** List entries matching `pattern`. A MISSING directory is legitimate — there is
+ *  nothing there. Any other failure is not: swallowing it into an empty listing
+ *  meant a reset deleted nothing and still reported success, leaving stale
+ *  artifacts behind a "fresh" reset. (One implementation; `removeMatching` was a
+ *  copy of this body with the delete inlined — merged 2026-07-31.) */
 async function listMatching(dir: string, pattern: RegExp): Promise<string[]> {
   const entries = await readdir(dir).catch((err: NodeJS.ErrnoException) => {
     if (err?.code === "ENOENT") return [] as string[];
@@ -90,17 +95,8 @@ async function listMatching(dir: string, pattern: RegExp): Promise<string[]> {
 }
 
 async function removeMatching(dir: string, pattern: RegExp): Promise<void> {
-  // A MISSING directory is legitimate — there is nothing to remove. Any other failure
-  // (permissions, I/O) is not: swallowing it into an empty listing meant the reset deleted
-  // nothing and still reported success, leaving stale artifacts behind a "fresh" reset.
-  const entries = await readdir(dir).catch((err: NodeJS.ErrnoException) => {
-    if (err?.code === "ENOENT") return [] as string[];
-    throw new Error(
-      `reset: cannot list ${dir} to clear stale artifacts (${err?.code ?? "unknown"}: ${err?.message ?? err}). ` +
-        `Refusing to report a fresh reset that removed nothing.`,
-    );
-  });
-  await Promise.all(entries.filter((name) => pattern.test(name)).map((name) => rm(path.join(dir, name), { force: true })));
+  const names = await listMatching(dir, pattern);
+  await Promise.all(names.map((name) => rm(path.join(dir, name), { force: true })));
 }
 
 async function removeAngleReviewRows(reviewsJsonl: string, angle: number): Promise<void> {
@@ -206,11 +202,12 @@ export async function resetProposalCursor(
   pf.final_verdict = freshAngle ? "pending" : null;
   // The parked cursor carries the DEAD angle's producer verdict: last_draft_status
   // "needs-pivot" makes stageNeg0_5 treat the angle as dead, and a stale
-  // last_draft_handoff makes the loop review that dead draft instead of re-driving
+  // a stale draft version makes the loop review that dead draft instead of re-driving
   // the producer. Reset both so the revise loop re-drives the producer against the
   // restored core (stageNeg0_5.ts §"Resume-aware producer-first guard").
   pf.last_draft_status = "completed";
-  pf.last_draft_handoff = undefined;
+  pf.last_draft_version = undefined;
+  delete pf.last_draft_handoff;
 
   if (freshAngle) {
     // Return to the durable D-1.1 boundary. `state.gaps` and gaps.json are
@@ -252,11 +249,21 @@ export async function resetProposalCursor(
     // and pointing at files that no longer exist. Teaching `removeMatching` to fail loudly
     // (rather than silently listing nothing) made that window reachable, so resolve every
     // listing first and only then delete.
-    const angleArchives = new RegExp(`^(?:proposal|proto_core)_angle${angle}_(?:rejected|archive)`);
+    // `(?:^|_)` admits the legacy `<qid>_<spec>_` prefix (audit A5); the tail
+    // is END-ANCHORED to dot-suffixes only (`.tex`, `.json`, parked `.prevN`) —
+    // an unanchored tail classified ordinary files with an embedded match
+    // (e.g. `notes_proposal_angle0_archive_plan.md`) as archives and DELETED
+    // them (audit C1). This regex feeds a destructive sweep; keep it exact.
+    const angleArchives = new RegExp(
+      `(?:^|_)(?:proposal|proto_core)_angle${angle}_(?:rejected|archive)(?:\\.[A-Za-z0-9]+)*$`,
+    );
     const angleReviews = new RegExp(`^angle${angle}_v\\d+\\.json$`);
     const reviewsDir = path.join(runDir, "reviews");
-    const [archiveNames, reviewNames] = await Promise.all([
+    // Pre-2026 flat layouts parked prefixed archives in the RUN directory, not
+    // discovery/ (audit B4) — sweep both so a "fresh" angle is actually fresh.
+    const [archiveNames, flatArchiveNames, reviewNames] = await Promise.all([
       listMatching(discoveryDir, angleArchives),
+      listMatching(runDir, angleArchives),
       listMatching(reviewsDir, angleReviews),
     ]);
     await Promise.all([
@@ -264,6 +271,7 @@ export async function resetProposalCursor(
       rm(path.join(discoveryDir, "proposal_output_template.json"), { force: true }),
       rm(path.join(discoveryDir, "dneg1_escalation_log.jsonl"), { force: true }),
       ...archiveNames.map((n) => rm(path.join(discoveryDir, n), { force: true })),
+      ...flatArchiveNames.map((n) => rm(path.join(runDir, n), { force: true })),
       ...reviewNames.map((n) => rm(path.join(reviewsDir, n), { force: true })),
       removeAngleReviewRows(path.join(reviewsDir, "reviews.jsonl"), angle),
     ]);
@@ -275,38 +283,25 @@ export async function resetProposalCursor(
   let restored: string | null = null;
   let restoredProtoCore: string | null = null;
   if (!freshAngle && (options.restoreArchived ?? true)) {
-    const proposalTex = proposalTexPath(repoRoot, qid, specialization);
-    const dir = path.dirname(proposalTex);
-    const archive = path.join(dir, `proposal_angle${angle}_rejected.tex`);
-    if (await fileExists(archive)) {
-      // Restore CONSUMES the archive (see the paired proto_core restore below, which
-      // now does the same). Consuming is the intended semantics — the restored content
-      // is live in proposal.tex, so there is nothing left to restore — but it is only
-      // SAFE if both artifacts behave identically. Previously the .tex was renamed
-      // while proto_core.json was copied, so a second invocation restored the core
-      // again over a .tex it could no longer restore: a run-1 .tex beside a run-2 core.
-      await rename(archive, proposalTex);
-      restored = proposalTex;
-      pf.proposal_path = proposalTex;
-      // Compare by basename: the recorded path may differ from the reconstructed one
-      // by separator or normalization, and exact string equality then leaks a stale
-      // entry that later looks like a live archive.
-      pf.archived_proposals = (pf.archived_proposals ?? []).filter(
-        (p) => path.basename(p) !== path.basename(archive),
-      );
-    }
-    // Single-artifact mode (stage -1.2): the load-bearing substance lives in
-    // proto_core.json, not the .tex skeleton. Restore the angle's archived core
-    // over whatever dead needs-pivot record the pivot left behind.
+    const dir = path.dirname(proposalTexPath(repoRoot, qid, specialization));
+    // Single-artifact regime: the proto core IS the proposal. Restore the
+    // angle's archived core over whatever dead needs-pivot record the pivot
+    // left behind, CONSUMING the archive — the restored content is live, so
+    // there is nothing left to restore. (The paired legacy `proposal.tex`
+    // restore leg was removed in the 2026-07-31 dead-code sweep: no code has
+    // written content into a .tex since the single-artifact rollout, and the
+    // asymmetric two-artifact restore was itself an incident class — a run-1
+    // .tex silently paired with a run-2 core.)
     const protoCore = path.join(dir, "proto_core.json");
     const protoArchive = path.join(dir, `proto_core_angle${angle}_rejected.json`);
     if (await fileExists(protoArchive)) {
-      // CONSUME, matching the .tex restore above. This was a copy, which made the two
-      // restores asymmetric: on a second invocation the .tex reported "(no archive)"
-      // and stayed as-is while the core was restored again from its surviving archive,
-      // silently pairing a run-1 proposal with a run-2 core.
       await rename(protoArchive, protoCore);
       restoredProtoCore = protoCore;
+      restored = protoCore;
+      pf.proposal_path = protoCore;
+      // Compare by basename: the recorded path may differ from the reconstructed
+      // one by separator or normalization, and exact string equality then leaks
+      // a stale entry that later looks like a live archive.
       pf.archived_proposals = (pf.archived_proposals ?? []).filter(
         (p) => path.basename(p) !== path.basename(protoArchive),
       );

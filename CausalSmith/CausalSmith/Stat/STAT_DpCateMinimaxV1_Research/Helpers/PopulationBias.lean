@@ -101,7 +101,7 @@ private lemma abs_feature_le {d p : ℕ} {h Kmax : ℝ} {x0 : Fin d → ℝ}
       _ = h ^ (-(d : ℝ)) * Kmax := by ring
   · have hex : ∃ j, 1 < |uCoord h x0 x j| := by
       have : ∃ j, h < |x j - x0 j| := by
-        simpa [supBall, not_forall, not_le] using hx
+        simpa [supBall, Causalean.Stat.Nonparametric.supBall, not_forall, not_le] using hx
       obtain ⟨j, hj⟩ := this
       refine ⟨j, ?_⟩
       rw [uCoord, abs_div, abs_of_pos hh]
@@ -130,25 +130,13 @@ private lemma abs_gram_feature_le {d p : ℕ} {h Kmax : ℝ} {x0 : Fin d → ℝ
       _ = h ^ (-(d : ℝ)) * Kmax := by ring
   · have hex : ∃ j, 1 < |uCoord h x0 x j| := by
       have : ∃ j, h < |x j - x0 j| := by
-        simpa [supBall, not_forall, not_le] using hx
+        simpa [supBall, Causalean.Stat.Nonparametric.supBall, not_forall, not_le] using hx
       obtain ⟨j, hj⟩ := this
       refine ⟨j, ?_⟩
       rw [uCoord, abs_div, abs_of_pos hh]
       exact (lt_div_iff₀ hh).2 (by simpa using hj)
     rw [hKsupp _ hex, mul_zero, zero_mul, zero_mul, abs_zero]
     exact mul_nonneg (Real.rpow_nonneg hh.le _) ((hK0 0).trans (hKmax 0))
-
-private lemma measurableSet_supBall_bias {d : ℕ} (x0 : Fin d → ℝ) (h : ℝ) :
-    MeasurableSet (supBall x0 h) := by
-  rw [show supBall x0 h = ⋂ i : Fin d, {x | |x i - x0 i| ≤ h} by
-    ext x
-    simp [supBall]]
-  apply MeasurableSet.iInter
-  intro i
-  change MeasurableSet ((fun x : Fin d → ℝ ↦ |x i - x0 i|) ⁻¹' Set.Iic h)
-  apply measurableSet_Iic.preimage
-  simpa only [Real.norm_eq_abs] using
-    (((measurable_pi_apply i).sub measurable_const).norm)
 
 private lemma armProb_aemeasurable {d : ℕ} {P : CateLaw d} {alpha L : ℝ}
     (hiid : IidSampling P) (hpi : PiHolder P alpha L) (a : Fin 2) :
@@ -322,7 +310,7 @@ theorem popGram_inv_popMom_bias {d p : ℕ}
     · have hz : feat k x = 0 := by
         have hex : ∃ j, 1 < |uCoord h x0 x j| := by
           have : ∃ j, h < |x j - x0 j| := by
-            simpa [supBall, not_forall, not_le] using hx
+            simpa [supBall, Causalean.Stat.Nonparametric.supBall, not_forall, not_le] using hx
           obtain ⟨j, hj⟩ := this
           refine ⟨j, ?_⟩
           rw [uCoord, abs_div, abs_of_pos hh]
@@ -373,7 +361,7 @@ theorem popGram_inv_popMom_bias {d p : ℕ}
     rw [← integral_sub hmuInt hgramInt]
     have hqint := hmuInt.sub hgramInt
     have hS : MeasurableSet {O : CateObs d | O.X ∈ supBall x0 h} :=
-      (measurableSet_supBall_bias x0 h).preimage measurable_CateObs_X
+      (Causalean.Stat.Nonparametric.measurableSet_supBall x0 h).preimage measurable_CateObs_X
     calc
       |∫ O, armProb P a O.X * armMu P a O.X * feat k O.X -
           armProb P a O.X * feat k O.X * poly O.X ∂P.dataMeasure|
@@ -404,7 +392,7 @@ theorem popGram_inv_popMom_bias {d p : ℕ}
             show feat k O.X = 0 by
               have hex : ∃ j, 1 < |uCoord h x0 O.X j| := by
                 have : ∃ j, h < |O.X j - x0 j| := by
-                  simpa [supBall, not_forall, not_le] using hO
+                  simpa [supBall, Causalean.Stat.Nonparametric.supBall, not_forall, not_le] using hO
                 obtain ⟨j, hj⟩ := this
                 refine ⟨j, ?_⟩
                 rw [uCoord, abs_div, abs_of_pos hh]
@@ -415,7 +403,7 @@ theorem popGram_inv_popMom_bias {d p : ℕ}
         rw [integral_indicator hS]
         simp only [integral_const, Measure.real, smul_eq_mul]
         rw [Measure.map_apply measurable_CateObs_X
-          (measurableSet_supBall_bias x0 h), Measure.restrict_apply_univ]
+          (Causalean.Stat.Nonparametric.measurableSet_supBall x0 h), Measure.restrict_apply_univ]
         rw [show {O : CateObs d | O.X ∈ supBall x0 h} =
           (fun O ↦ O.X) ⁻¹' supBall x0 h by rfl]
         ring
@@ -459,7 +447,7 @@ theorem popGram_inv_popMom_bias {d p : ℕ}
         Real.sqrt_le_sqrt hrsum
       _ = Real.sqrt (p : ℝ) * B := by
         rw [Real.sqrt_mul (Nat.cast_nonneg p), Real.sqrt_sq_eq_abs, abs_of_nonneg hB0]
-  have hpd : G.PosDef := loewnerSet_posDef hcstar hcC hloew
+  have hpd : G.PosDef := loewnerSet_posDef hcstar hloew.1
   have hdet : IsUnit G.det := (Matrix.isUnit_iff_isUnit_det G).mp hpd.isUnit
   have hinvtheta : G⁻¹.mulVec (G.mulVec theta) = theta := by
     calc
@@ -474,7 +462,7 @@ theorem popGram_inv_popMom_bias {d p : ℕ}
     exact congrFun (Matrix.mulVec_sub G⁻¹ m (G.mulVec theta)) k |>.symm
   have hzinv : Real.sqrt (∑ k, (G⁻¹.mulVec r k) ^ 2) ≤
       Real.sqrt (∑ k, (r k) ^ 2) / cstar :=
-    loewnerSet_inv_mulVec_norm_le hcstar hcC hloew r
+    loewnerSet_inv_mulVec_norm_le hcstar hloew.1 r
   have hznorm : Real.sqrt (∑ k, (G⁻¹.mulVec m k - theta k) ^ 2) ≤
       Real.sqrt (p : ℝ) * B / cstar := by
     simp_rw [congrFun hz]

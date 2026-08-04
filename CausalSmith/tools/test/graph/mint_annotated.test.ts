@@ -5,6 +5,7 @@ import path from "node:path";
 import { createEmptyGraph } from "../../src/graph/store.js";
 import { addNode } from "../../src/graph/mutate.js";
 import { mintAnnotatedNodes } from "../../src/graph/hidden.js";
+import { statementHash } from "../../src/graph/hash.js";
 
 let dir: string;
 beforeEach(async () => { dir = await mkdtemp(path.join(tmpdir(), "mint-")); });
@@ -39,6 +40,11 @@ describe("mintAnnotatedNodes", () => {
     expect(lemma!.provenance).toBe("agent-introduced");
     expect(lemma!.nl.frozen).toBe(false); // never relabelled from-note
     expect(lemma!.lean.decl_name).toBe("smoothedInverseWeightLaw_klDiv_le");
+    expect(lemma!.proof.state).toBe("complete");
+    expect(lemma!.review).toEqual({
+      status: "unreviewed",
+      passed_hash: statementHash("private lemma smoothedInverseWeightLaw_klDiv_le : True"),
+    });
     expect(def!.kind).toBe("definition");
     expect(def!.provenance).toBe("agent-introduced");
   });

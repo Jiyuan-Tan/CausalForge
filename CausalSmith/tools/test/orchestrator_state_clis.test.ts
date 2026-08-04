@@ -7,12 +7,17 @@ import { fileURLToPath } from "node:url";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createInitialState, loadState, saveState } from "../src/state.js";
 import {
+  appendEscalationLog,
   escalationLogPath,
   loadWorkingState,
   readEscalationLog,
   saveWorkingState,
 } from "../src/discovery/stages/d0_working.js";
 import type { PipelineContext } from "../src/types.js";
+import { protoCoreJsonPath } from "../src/discovery/stages/neg1_2_author.js";
+import { makeRequiredCoreEditMandate } from "../src/discovery/solve/mandates.js";
+import { withRunHeartbeat } from "../src/shared/run_heartbeat.js";
+import { statementRevision } from "../src/discovery/core/revision.js";
 
 const exec = promisify(execFile);
 const __TOOLS_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -86,6 +91,16 @@ describe("add_assumption.ts", () => {
 });
 
 describe("d0_directive.ts", () => {
+  it("refuses before appending when the qid pipeline lock is held", async () => {
+    const ctx: PipelineContext = { repoRoot, qid: QID, specialization: SPEC, dryRun: false, resume: true };
+    await withRunHeartbeat(repoRoot, QID, SPEC, async () => {
+      await expect(run("d0_directive.ts", [
+        "--directive", "must not race an active pipeline",
+      ])).rejects.toThrow();
+    });
+    expect(await readEscalationLog(ctx)).toEqual([]);
+  });
+
   it("appends a standalone directive to the D0 escalation log (no hand-append)", async () => {
     const ctx: PipelineContext = { repoRoot, qid: QID, specialization: SPEC, dryRun: false, resume: true };
     await mkdir(path.dirname(escalationLogPath(ctx)), { recursive: true });
@@ -96,6 +111,206 @@ describe("d0_directive.ts", () => {
     expect(entries).toHaveLength(1);
     expect(entries[0].changed).toEqual([]);
     expect(entries[0].directive).toMatch(/Nadaraya-Watson/);
+  });
+
+  it("persists schema-validated exact core edits and makes them structured-change requirements", async () => {
+    const ctx: PipelineContext = { repoRoot, qid: QID, specialization: SPEC, dryRun: false, resume: true };
+    await mkdir(path.dirname(escalationLogPath(ctx)), { recursive: true });
+    const protoPath = protoCoreJsonPath(ctx);
+    await mkdir(path.dirname(protoPath), { recursive: true });
+    const proto = JSON.parse(
+      await readFile(path.resolve(__TOOLS_ROOT, "test/fixtures/stat_ate_overlap_decay_proto_core.json"), "utf8"),
+    );
+    proto.assumptions[0].condition = String.raw`\(Y=A Y^1+(1-A)Y^0\)`;
+    await writeFile(protoPath, JSON.stringify(proto), "utf8");
+    const state = await loadState(repoRoot, QID, SPEC);
+    state.proposed_from = {
+      topic: "test",
+      novelty_target: "field",
+      pivot_budget_used: 0,
+      final_verdict: "ACCEPT",
+      proposal_path: protoPath,
+      novelty_justification: "test fixture",
+      chosen_qid: QID,
+      chosen_specialization: SPEC,
+      current_angle_index: 0,
+      current_version: 1,
+    };
+    await saveState(repoRoot, QID, SPEC, state);
+
+    await run("d0_directive.ts", [
+      "--directive", "carry the independently adjudicated deletion into the next atomic bundle",
+      "--require-core-edit", JSON.stringify({
+        kind: "assumption-replace",
+        id: "ass:consistency",
+        proposed: {
+          ...proto.assumptions[0],
+          condition: String.raw`\(Y=A Y^1+(1-A)Y^0\ \text{a.s.}\)`,
+        },
+        reason: "reviewer confirmed the exact serialization repair",
+        direction: "correct",
+      }),
+    ]);
+
+    const entry = (await readEscalationLog(ctx))[0];
+    expect(entry.require_core_changes).toBe(true);
+    expect(entry.required_core_edits).toBeUndefined();
+    expect(entry.required_core_edit_mandates).toEqual([expect.objectContaining({
+      mandate_id: expect.stringMatching(/^d0m:[a-f0-9]{64}$/),
+      hash_version: 3,
+      sealed: expect.any(String),
+      edit: expect.objectContaining({ kind: "assumption-replace", id: "ass:consistency" }),
+    })]);
+  });
+
+  it("rejects malformed exact core edits before writing the directive journal", async () => {
+    const ctx: PipelineContext = { repoRoot, qid: QID, specialization: SPEC, dryRun: false, resume: true };
+    await mkdir(path.dirname(escalationLogPath(ctx)), { recursive: true });
+    await expect(run("d0_directive.ts", [
+      "--directive", "bad edit",
+      "--require-core-edit", JSON.stringify({ kind: "statement-delete", id: "not-an-id" }),
+    ])).rejects.toThrow();
+    expect(await readEscalationLog(ctx)).toHaveLength(0);
+  });
+
+  it("refuses an exact core edit without a versioned accepted proposal basis", async () => {
+    const ctx: PipelineContext = { repoRoot, qid: QID, specialization: SPEC, dryRun: false, resume: true };
+    const protoPath = protoCoreJsonPath(ctx);
+    await mkdir(path.dirname(protoPath), { recursive: true });
+    await writeFile(
+      protoPath,
+      await readFile(path.resolve(__TOOLS_ROOT, "test/fixtures/stat_ate_overlap_decay_proto_core.json"), "utf8"),
+    );
+    await expect(run("d0_directive.ts", [
+      "--directive", "delete obsolete route",
+      "--require-core-edit", JSON.stringify({
+        kind: "statement-delete",
+        id: "lem:obsolete-route",
+        reason: "obsolete",
+        direction: "delete-obsolete",
+      }),
+    ])).rejects.toThrow();
+    expect(await readEscalationLog(ctx)).toHaveLength(0);
+  });
+
+  it("refuses an exact core edit when the working cursor belongs to another proposal revision", async () => {
+    const ctx: PipelineContext = { repoRoot, qid: QID, specialization: SPEC, dryRun: false, resume: true };
+    const protoPath = protoCoreJsonPath(ctx);
+    await mkdir(path.dirname(protoPath), { recursive: true });
+    await writeFile(
+      protoPath,
+      await readFile(path.resolve(__TOOLS_ROOT, "test/fixtures/stat_ate_overlap_decay_proto_core.json"), "utf8"),
+    );
+    const state = await loadState(repoRoot, QID, SPEC);
+    state.proposed_from = {
+      topic: "test", novelty_target: "field", pivot_budget_used: 0, final_verdict: "ACCEPT",
+      proposal_path: protoPath, novelty_justification: "fixture", chosen_qid: QID,
+      chosen_specialization: SPEC, current_angle_index: 0, current_version: 2,
+    };
+    await saveState(repoRoot, QID, SPEC, state);
+    await saveWorkingState(ctx, {
+      round: 1, proposal_revision: "angle:0/version:1", solved: {},
+      proposals: { statements: [], definitions: [], assumptions: [], coreEdits: [], proofs: [] },
+    });
+    await expect(run("d0_directive.ts", [
+      "--directive", "delete stale target",
+      "--require-core-edit", JSON.stringify({
+        kind: "statement-delete", id: "thm:oracle-rate",
+        reason: "obsolete", direction: "delete-obsolete",
+      }),
+    ])).rejects.toThrow();
+    expect(await readEscalationLog(ctx)).toHaveLength(0);
+  });
+});
+
+describe("d0_cancel_mandate.ts", () => {
+  it("persists one content-addressed, provenance-only cancellation for an outstanding mandate", async () => {
+    const ctx: PipelineContext = { repoRoot, qid: QID, specialization: SPEC, dryRun: false, resume: true };
+    const protoPath = protoCoreJsonPath(ctx);
+    await mkdir(path.dirname(protoPath), { recursive: true });
+    const proto = JSON.parse(
+      await readFile(path.resolve(__TOOLS_ROOT, "test/fixtures/stat_ate_overlap_decay_proto_core.json"), "utf8"),
+    );
+    await writeFile(protoPath, JSON.stringify(proto), "utf8");
+    const state = await loadState(repoRoot, QID, SPEC);
+    state.proposed_from = {
+      topic: "test", novelty_target: "field", pivot_budget_used: 0, final_verdict: "ACCEPT",
+      proposal_path: protoPath, novelty_justification: "fixture", chosen_qid: QID,
+      chosen_specialization: SPEC, current_angle_index: 0, current_version: 1,
+    };
+    await saveState(repoRoot, QID, SPEC, state);
+    const mandate = makeRequiredCoreEditMandate({
+      core: proto, working: null,
+      edit: {
+        kind: "statement-delete", id: proto.statements[0].id,
+        reason: "initial adjudication", direction: "delete-obsolete",
+      },
+      proposalRevision: "angle:0/version:1",
+    });
+    await saveWorkingState(ctx, {
+      round: 4, proposal_revision: "angle:0/version:1", escalation_entries_consumed: 0, solved: {},
+      required_core_edit_mandates: [mandate],
+    });
+
+    await run("d0_cancel_mandate.ts", [
+      "--mandate-id", mandate.mandate_id,
+      "--reason", "mandatory reviewer rejected the stale metadata snapshot",
+    ]);
+
+    const entry = (await readEscalationLog(ctx))[0];
+    expect(entry.provenance_only).toBe(true);
+    expect(entry.cancelled_core_edit_mandates).toEqual([expect.objectContaining({
+      cancellation_id: expect.stringMatching(/^d0c:[a-f0-9]{64}$/),
+      mandate_id: mandate.mandate_id,
+      reason: "mandatory reviewer rejected the stale metadata snapshot",
+    })]);
+  });
+
+  it("can retire one rejected mandate while the pending set contains conflicts", async () => {
+    const ctx: PipelineContext = { repoRoot, qid: QID, specialization: SPEC, dryRun: false, resume: true };
+    const protoPath = protoCoreJsonPath(ctx);
+    await mkdir(path.dirname(protoPath), { recursive: true });
+    const proto = JSON.parse(
+      await readFile(path.resolve(__TOOLS_ROOT, "test/fixtures/stat_ate_overlap_decay_proto_core.json"), "utf8"),
+    );
+    await writeFile(protoPath, JSON.stringify(proto), "utf8");
+    const state = await loadState(repoRoot, QID, SPEC);
+    state.proposed_from = {
+      topic: "test", novelty_target: "field", pivot_budget_used: 0, final_verdict: "ACCEPT",
+      proposal_path: protoPath, novelty_justification: "fixture", chosen_qid: QID,
+      chosen_specialization: SPEC, current_angle_index: 0, current_version: 1,
+    };
+    await saveState(repoRoot, QID, SPEC, state);
+    const first = makeRequiredCoreEditMandate({
+      core: proto, working: null,
+      edit: {
+        kind: "statement-delete", id: proto.statements[0].id,
+        reason: "first adjudication", direction: "delete-obsolete",
+      },
+      proposalRevision: "angle:0/version:1",
+    });
+    const conflicting = makeRequiredCoreEditMandate({
+      core: proto, working: null,
+      edit: {
+        kind: "statement-delete", id: proto.statements[0].id,
+        reason: "superseding adjudication", direction: "delete-obsolete",
+      },
+      proposalRevision: "angle:0/version:1",
+    });
+    await saveWorkingState(ctx, {
+      round: 4, proposal_revision: "angle:0/version:1", escalation_entries_consumed: 0, solved: {},
+      required_core_edit_mandates: [first, conflicting],
+    });
+
+    await run("d0_cancel_mandate.ts", [
+      "--mandate-id", first.mandate_id,
+      "--reason", "mandatory reviewer superseded this exact operation",
+    ]);
+
+    const entry = (await readEscalationLog(ctx))[0];
+    expect(entry.cancelled_core_edit_mandates).toEqual([expect.objectContaining({
+      mandate_id: first.mandate_id,
+    })]);
   });
 });
 
@@ -145,7 +360,15 @@ describe("D0 opaque serialized fields", () => {
     });
     await saveWorkingState(ctx, {
       round: 2,
-      solved: {},
+      // The write boundary now enforces that a resolution's theorem is held by
+      // the store (Phase 1 single-store invariant), so the fixture carries it.
+      solved: {
+        "thm:x": {
+          proof_tex: "P",
+          snapshot: { stmt: "S", depends_on: [], defs: {}, assumptions: {} },
+          node: { id: "thm:x", kind: "theorem", statement: "S", depends_on: [], status: "proved" } as never,
+        },
+      },
       resolved_oeqs: { "oeq:x": { theorem_id: "thm:x", source_fingerprint: fingerprint } },
       proposals: { statements: [], definitions: [], assumptions: [], coreEdits: [], proofs: [] },
     });
@@ -232,5 +455,134 @@ describe("d0_apply_change.ts", () => {
     await expect(access(path.join(dir, "proposed_statement_changes.json"))).resolves.toBeUndefined();
     expect((await loadState(repoRoot, QID, SPEC)).stage_completed).toBe(before.stage_completed);
     expect(await readEscalationLog(ctx)).toHaveLength(0);
+  });
+});
+
+describe("d0_rebuild_review_packet.ts", () => {
+  it("repins whitespace-equivalent proposal guards to durable bytes", async () => {
+    const ctx: PipelineContext = { repoRoot, qid: QID, specialization: SPEC, dryRun: false, resume: true };
+    const dir = path.join(repoRoot, "doc", "research", "active", QID, "discovery");
+    await mkdir(dir, { recursive: true });
+    const protoSrc = path.resolve(__TOOLS_ROOT, "test", "fixtures", "stat_ate_overlap_decay_proto_core.json");
+    const proto = JSON.parse(await readFile(protoSrc, "utf8"));
+    const target = proto.statements[0];
+    target.statement = "Claim introduction.\n\\[\n x = 1.\n\\]\nConclusion.";
+    const proposed = `${target.statement} Narrowed.`;
+    const proof = "Proof of the proposed totalized claim.";
+    await writeFile(path.join(dir, "proto_core.json"), JSON.stringify(proto), "utf8");
+    await writeFile(path.join(dir, "core.json"), JSON.stringify(proto), "utf8");
+    await saveWorkingState(ctx, {
+      round: 2, solved: {},
+      proposals: {
+        statements: [{
+          id: target.id,
+          current: "Claim introduction. \\[ x = 1. \\] Conclusion.",
+          proposed,
+          reason: "totalize the claim", direction: "narrow",
+        }],
+        definitions: [], assumptions: [], coreEdits: [],
+        proofs: [{ id: target.id, proof_tex: proof, argues_proposed: true }],
+      },
+    });
+
+    const rebuiltRun = await run("d0_rebuild_review_packet.ts", []);
+
+    const rebuilt = await loadWorkingState(ctx);
+    expect(rebuilt?.proposals?.statements).toContainEqual(
+      expect.objectContaining({ id: target.id, current: target.statement, proposed }),
+    );
+    expect(rebuilt?.proposals?.proofs).toContainEqual(
+      expect.objectContaining({ id: target.id, proof_tex: proof, argues_proposed: true }),
+    );
+    const report = JSON.parse(rebuiltRun.stdout);
+    const packet = JSON.parse(await readFile(report.packet, "utf8"));
+    expect(packet.proposed_statement_changes).toContainEqual(
+      expect.objectContaining({ id: target.id, current: target.statement, proposed }),
+    );
+    expect(packet.provisional_proofs).toContainEqual(
+      expect.objectContaining({ id: target.id, proof_tex: proof, argues_proposed: true }),
+    );
+  });
+
+  it("never validates an old published-core revision then repins to newer durable bytes", async () => {
+    const ctx: PipelineContext = { repoRoot, qid: QID, specialization: SPEC, dryRun: false, resume: true };
+    const dir = path.join(repoRoot, "doc", "research", "active", QID, "discovery");
+    await mkdir(dir, { recursive: true });
+    const protoSrc = path.resolve(__TOOLS_ROOT, "test", "fixtures", "stat_ate_overlap_decay_proto_core.json");
+    const proto = JSON.parse(await readFile(protoSrc, "utf8"));
+    const target = proto.statements[0];
+    const oldStatement = target.statement;
+    const staleRevision = statementRevision(target);
+    target.statement = `${oldStatement} New durable qualification.`;
+    await writeFile(path.join(dir, "proto_core.json"), JSON.stringify(proto), "utf8");
+    const stalePublished = structuredClone(proto);
+    stalePublished.statements[0].statement = oldStatement;
+    await writeFile(path.join(dir, "core.json"), JSON.stringify(stalePublished), "utf8");
+    await saveWorkingState(ctx, {
+      round: 2, solved: {},
+      proposals: {
+        statements: [{
+          id: target.id,
+          current: oldStatement,
+          based_on_revision: staleRevision,
+          proposed: `${oldStatement} Narrowed.`,
+          reason: "authored against the old published view", direction: "narrow",
+        }],
+        definitions: [], assumptions: [], coreEdits: [], proofs: [],
+      },
+    });
+
+    // The old revision must never authorize a repin onto the newer durable
+    // bytes — but one defective guard is a per-change defect: the rebuild
+    // succeeds, warns, and leaves the guard untouched for apply's exact-guard
+    // skip instead of blocking the whole mechanical recovery lane.
+    const rebuilt = await run("d0_rebuild_review_packet.ts", []);
+    expect(rebuilt.stderr).toMatch(/matches no current view/);
+    expect(JSON.parse(rebuilt.stdout).normalized_current_echo_ids).toEqual([]);
+    const unchanged = await loadWorkingState(ctx);
+    expect((unchanged?.proposals?.statements[0] as { current?: string } | undefined)?.current)
+      .toBe(oldStatement);
+  });
+
+  it("durably recovers an unconsumed mandate and quarantines its same-target proof", async () => {
+    const ctx: PipelineContext = { repoRoot, qid: QID, specialization: SPEC, dryRun: false, resume: true };
+    const dir = path.join(repoRoot, "doc", "research", "active", QID, "discovery");
+    await mkdir(dir, { recursive: true });
+    const protoSrc = path.resolve(__TOOLS_ROOT, "test", "fixtures", "stat_ate_overlap_decay_proto_core.json");
+    const proto = JSON.parse(await readFile(protoSrc, "utf8"));
+    await writeFile(path.join(dir, "proto_core.json"), JSON.stringify(proto), "utf8");
+    const target = proto.statements[0];
+    const state = await loadState(repoRoot, QID, SPEC);
+    state.proposed_from = {
+      topic: "test", novelty_target: "field", pivot_budget_used: 0, final_verdict: "ACCEPT",
+      proposal_path: path.join(dir, "proto_core.json"), novelty_justification: "fixture",
+      chosen_qid: QID, chosen_specialization: SPEC, current_angle_index: 0, current_version: 1,
+    };
+    await saveState(repoRoot, QID, SPEC, state);
+    const edit = {
+      kind: "statement-delete" as const, id: target.id,
+      reason: "independently adjudicated obsolete claim", direction: "delete-obsolete" as const,
+    };
+    const mandate = makeRequiredCoreEditMandate({
+      core: proto, working: null, edit, proposalRevision: "angle:0/version:1",
+    });
+    await saveWorkingState(ctx, {
+      round: 2, escalation_entries_consumed: 0, proposal_revision: "angle:0/version:1", solved: {},
+      proposals: {
+        statements: [], definitions: [], assumptions: [], coreEdits: [],
+        proofs: [{ id: target.id, proof_tex: "Adversarial proof of the obsolete claim." }],
+      },
+    });
+    await appendEscalationLog(ctx, {
+      round: 2, changed: [], directive: "delete the obsolete claim", require_core_changes: true,
+      required_core_edit_mandates: [mandate],
+    });
+
+    await run("d0_rebuild_review_packet.ts", []);
+
+    const rebuilt = await loadWorkingState(ctx);
+    expect(rebuilt?.required_core_edit_mandates).toEqual([expect.objectContaining({ mandate_id: mandate.mandate_id })]);
+    expect(rebuilt?.proposals?.coreEdits).toEqual([expect.objectContaining({ kind: "statement-delete", id: target.id })]);
+    expect(rebuilt?.proposals?.proofs).not.toContainEqual(expect.objectContaining({ id: target.id }));
   });
 });

@@ -20,7 +20,7 @@ the dependency-graph Stein CLT developed elsewhere in the library.
 -/
 
 
-open scoped BigOperators Topology Classical
+open scoped BigOperators Topology
 open Filter MeasureTheory
 
 namespace Causalean

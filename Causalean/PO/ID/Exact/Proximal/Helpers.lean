@@ -145,7 +145,7 @@ lemma condExp_h_drop_Z' {h_fun : Bool × γ_W × γ_X → ℝ}
   -- Lift to (W, X) ⟂ Z | σ_AUX.
   have hWX_Z : CondIndepFun S.σ_AUX S.σ_AUX_le (fun ω => (S.W ω, S.X ω)) S.Z μ :=
     Causalean.condIndepFun_prodMk_of_measurable_left S.σ_AUX_le S.measurable_W S.measurable_Z
-      S.measurable_X hX_m hWZ_AUX'
+      hX_m hWZ_AUX'
   let h_comb : γ_W × γ_X → ℝ := fun p => h_fun (a, p.1, p.2)
   have h_comb_meas : Measurable h_comb := by
     have : Measurable (fun p : γ_W × γ_X => (a, p.1, p.2)) := by fun_prop
@@ -192,7 +192,7 @@ lemma condExp_h_drop_A' {h_fun : Bool × γ_W × γ_X → ℝ}
   -- Lift to (W, X) ⟂ A | σ_UX.
   have hWX_A : CondIndepFun S.σ_UX S.σ_UX_le (fun ω => (S.W ω, S.X ω)) S.A μ :=
     Causalean.condIndepFun_prodMk_of_measurable_left S.σ_UX_le S.measurable_W S.measurable_A
-      S.measurable_X hX_m proxy_WA
+      hX_m proxy_WA
   let h_comb : γ_W × γ_X → ℝ := fun p => h_fun (a, p.1, p.2)
   have h_comb_meas : Measurable h_comb := by
     have : Measurable (fun p : γ_W × γ_X => (a, p.1, p.2)) := by fun_prop

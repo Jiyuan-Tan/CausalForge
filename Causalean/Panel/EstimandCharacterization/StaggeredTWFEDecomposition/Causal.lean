@@ -152,13 +152,13 @@ structure CausalAssumptions (P : CohortPanel 𝒢 T) (Y0 Y1 : 𝒢 → Fin T →
   /-- Pairwise untreated parallel trends for early-vs-late before late (EL). -/
   parallelTrends_EL :
     ∀ e ℓ, P.A e < P.A ℓ → AdoptionDate.isFin (P.A ℓ) →
-      Ybar0 Y0 e (S1_EL P e ℓ) - Ybar0 Y0 e (S0_EL P e ℓ)
-        = Ybar0 Y0 ℓ (S1_EL P e ℓ) - Ybar0 Y0 ℓ (S0_EL P e ℓ)
+      Ybar0 Y0 e (S1_EL P e ℓ) - Ybar0 Y0 e (S0_EL P e)
+        = Ybar0 Y0 ℓ (S1_EL P e ℓ) - Ybar0 Y0 ℓ (S0_EL P e)
   /-- Pairwise untreated parallel trends for late-vs-early after early (LE). -/
   parallelTrends_LE :
     ∀ e ℓ, P.A e < P.A ℓ → AdoptionDate.isFin (P.A ℓ) →
-      Ybar0 Y0 e (S1_LE P e ℓ) - Ybar0 Y0 e (S0_LE P e ℓ)
-        = Ybar0 Y0 ℓ (S1_LE P e ℓ) - Ybar0 Y0 ℓ (S0_LE P e ℓ)
+      Ybar0 Y0 e (S1_LE P ℓ) - Ybar0 Y0 e (S0_LE P e ℓ)
+        = Ybar0 Y0 ℓ (S1_LE P ℓ) - Ybar0 Y0 ℓ (S0_LE P e ℓ)
 
 namespace CausalAssumptions
 
@@ -177,10 +177,12 @@ theorem AdoptionDate.lt_of_isInf {a : WithTop (Fin T)} {t : Fin T}
   rw [h]
   exact (WithTop.coe_lt_top _ : (t : WithTop (Fin T)) < ⊤)
 
+omit [DecidableEq 𝒢] in
 /-- On the untreated window `S0_TN P g = {t : t < A_g}`, the factual `Ybar`
 of cohort `g` equals the never-treated `Ybar0`: by `consistencyUntreated`
 on each cell. -/
-theorem Ybar_eq_Ybar0_on_S0_TN (hA : CausalAssumptions P Y0 Y1) (g : 𝒢) :
+theorem Ybar_eq_Ybar0_on_S0_TN
+    (hConsistency : ∀ g t, AdoptionDate.lt (P.A g) t → P.Y g t = Y0 g t) (g : 𝒢) :
     Ybar P g (S0_TN P g) = Ybar0 Y0 g (S0_TN P g) := by
   classical
   unfold Ybar Ybar0
@@ -189,24 +191,28 @@ theorem Ybar_eq_Ybar0_on_S0_TN (hA : CausalAssumptions P Y0 Y1) (g : 𝒢) :
   intro t ht
   have htlt : AdoptionDate.lt (P.A g) t := by
     simpa [S0_TN, Finset.mem_filter] using ht
-  exact hA.consistencyUntreated g t htlt
+  exact hConsistency g t htlt
 
-/-- On the never-treated cohort `u` (i.e. `A_u = ∞`), every period is
-untreated, so on any window `S` the factual `Ybar` equals the
-never-treated `Ybar0`. -/
-theorem Ybar_eq_Ybar0_of_inf (hA : CausalAssumptions P Y0 Y1)
-    {u : 𝒢} (hu : AdoptionDate.isInf (P.A u)) (S : Finset (Fin T)) :
+omit [DecidableEq 𝒢] in
+/-- On any window `S` where every period is untreated for cohort `u`, the
+factual `Ybar` equals the never-treated `Ybar0`. -/
+theorem Ybar_eq_Ybar0_of_inf
+    (hConsistency : ∀ g t, AdoptionDate.lt (P.A g) t → P.Y g t = Y0 g t)
+    {u : 𝒢} (S : Finset (Fin T))
+    (hS : ∀ t ∈ S, AdoptionDate.lt (P.A u) t) :
     Ybar P u S = Ybar0 Y0 u S := by
   classical
   unfold Ybar Ybar0
   congr 1
   refine Finset.sum_congr rfl ?_
-  intro t _
-  exact hA.consistencyUntreated u t (AdoptionDate.lt_of_isInf hu)
+  intro t ht
+  exact hConsistency u t (hS t ht)
 
+omit [DecidableEq 𝒢] in
 /-- On a window where every cell is treated for cohort `g`, the factual
 `Ybar` decomposes as the never-treated mean plus the window ATT. -/
-theorem Ybar_eq_Ybar0_add_ATT_of_treated (hA : CausalAssumptions P Y0 Y1)
+theorem Ybar_eq_Ybar0_add_ATT_of_treated
+    (hConsistency : ∀ g t, AdoptionDate.le (P.A g) t → P.Y g t = Y1 g t)
     (g : 𝒢) (S : Finset (Fin T))
     (hS : ∀ t ∈ S, AdoptionDate.le (P.A g) t) :
     Ybar P g S = Ybar0 Y0 g S + ATT_window Y0 Y1 g S := by
@@ -218,7 +224,7 @@ theorem Ybar_eq_Ybar0_add_ATT_of_treated (hA : CausalAssumptions P Y0 Y1)
     ∑ t ∈ S, P.Y g t = ∑ t ∈ S, Y1 g t := by
       refine Finset.sum_congr rfl ?_
       intro t ht
-      exact hA.consistencyTreated g t (hS t ht)
+      exact hConsistency g t (hS t ht)
     _ = ∑ t ∈ S, (Y0 g t + (Y1 g t - Y0 g t)) := by
       refine Finset.sum_congr rfl ?_
       intro t _
@@ -226,10 +232,12 @@ theorem Ybar_eq_Ybar0_add_ATT_of_treated (hA : CausalAssumptions P Y0 Y1)
     _ = ∑ t ∈ S, Y0 g t + ∑ t ∈ S, (Y1 g t - Y0 g t) := by
       exact Finset.sum_add_distrib
 
-/-- On the early-cohort untreated window `S0_EL P e ℓ = {t : t < A_e}`, the
+omit [DecidableEq 𝒢] in
+/-- On the early-cohort untreated window `S0_EL P e = {t : t < A_e}`, the
 factual `Ybar` of cohort `e` equals the never-treated `Ybar0`. -/
-theorem Ybar_eq_Ybar0_on_S0_EL (hA : CausalAssumptions P Y0 Y1) (e ℓ : 𝒢) :
-    Ybar P e (S0_EL P e ℓ) = Ybar0 Y0 e (S0_EL P e ℓ) := by
+theorem Ybar_eq_Ybar0_on_S0_EL
+    (hConsistency : ∀ g t, AdoptionDate.lt (P.A g) t → P.Y g t = Y0 g t) (e : 𝒢) :
+    Ybar P e (S0_EL P e) = Ybar0 Y0 e (S0_EL P e) := by
   classical
   unfold Ybar Ybar0
   congr 1
@@ -237,11 +245,13 @@ theorem Ybar_eq_Ybar0_on_S0_EL (hA : CausalAssumptions P Y0 Y1) (e ℓ : 𝒢) :
   intro t ht
   have htlt : AdoptionDate.lt (P.A e) t := by
     simpa [S0_EL, Finset.mem_filter] using ht
-  exact hA.consistencyUntreated e t htlt
+  exact hConsistency e t htlt
 
+omit [DecidableEq 𝒢] in
 /-- The late-cohort factual `Ybar` on `S1_EL P e ℓ = {A_e ≤ t < A_ℓ}` equals
 the never-treated `Ybar0`: each cell satisfies `t < A_ℓ`. -/
-theorem Ybar_eq_Ybar0_late_on_S1_EL (hA : CausalAssumptions P Y0 Y1) (e ℓ : 𝒢) :
+theorem Ybar_eq_Ybar0_late_on_S1_EL
+    (hConsistency : ∀ g t, AdoptionDate.lt (P.A g) t → P.Y g t = Y0 g t) (e ℓ : 𝒢) :
     Ybar P ℓ (S1_EL P e ℓ) = Ybar0 Y0 ℓ (S1_EL P e ℓ) := by
   classical
   unfold Ybar Ybar0
@@ -250,13 +260,15 @@ theorem Ybar_eq_Ybar0_late_on_S1_EL (hA : CausalAssumptions P Y0 Y1) (e ℓ : �
   intro t ht
   have htmem : AdoptionDate.le (P.A e) t ∧ AdoptionDate.lt (P.A ℓ) t := by
     simpa [S1_EL, Finset.mem_filter] using ht
-  exact hA.consistencyUntreated ℓ t htmem.2
+  exact hConsistency ℓ t htmem.2
 
-/-- The late-cohort factual `Ybar` on `S0_EL P e ℓ = {t : t < A_e}` equals
+omit [DecidableEq 𝒢] in
+/-- The late-cohort factual `Ybar` on `S0_EL P e = {t : t < A_e}` equals
 the never-treated `Ybar0` when `A_e < A_ℓ`. -/
-theorem Ybar_eq_Ybar0_late_on_S0_EL (hA : CausalAssumptions P Y0 Y1)
+theorem Ybar_eq_Ybar0_late_on_S0_EL
+    (hConsistency : ∀ g t, AdoptionDate.lt (P.A g) t → P.Y g t = Y0 g t)
     (e ℓ : 𝒢) (h_lt : P.A e < P.A ℓ) :
-    Ybar P ℓ (S0_EL P e ℓ) = Ybar0 Y0 ℓ (S0_EL P e ℓ) := by
+    Ybar P ℓ (S0_EL P e) = Ybar0 Y0 ℓ (S0_EL P e) := by
   classical
   unfold Ybar Ybar0
   congr 1
@@ -264,12 +276,14 @@ theorem Ybar_eq_Ybar0_late_on_S0_EL (hA : CausalAssumptions P Y0 Y1)
   intro t ht
   have htlt : (t : WithTop (Fin T)) < P.A e := by
     simpa [S0_EL, Finset.mem_filter, AdoptionDate.lt] using ht
-  exact hA.consistencyUntreated ℓ t (by
+  exact hConsistency ℓ t (by
     simpa [AdoptionDate.lt] using lt_trans htlt h_lt)
 
+omit [DecidableEq 𝒢] in
 /-- The late-cohort factual `Ybar` on `S0_LE P e ℓ = {A_e ≤ t < A_ℓ}` equals
 the never-treated `Ybar0`. -/
-theorem Ybar_eq_Ybar0_late_on_S0_LE (hA : CausalAssumptions P Y0 Y1) (e ℓ : 𝒢) :
+theorem Ybar_eq_Ybar0_late_on_S0_LE
+    (hConsistency : ∀ g t, AdoptionDate.lt (P.A g) t → P.Y g t = Y0 g t) (e ℓ : 𝒢) :
     Ybar P ℓ (S0_LE P e ℓ) = Ybar0 Y0 ℓ (S0_LE P e ℓ) := by
   classical
   unfold Ybar Ybar0
@@ -277,11 +291,12 @@ theorem Ybar_eq_Ybar0_late_on_S0_LE (hA : CausalAssumptions P Y0 Y1) (e ℓ : �
   refine Finset.sum_congr rfl ?_
   intro t ht
   have htmem : AdoptionDate.le (P.A e) t ∧ AdoptionDate.lt (P.A ℓ) t := by
-    simpa [S0_LE, Finset.mem_filter] using ht
-  exact hA.consistencyUntreated ℓ t htmem.2
+    simpa [S0_LE, S1_EL, Finset.mem_filter] using ht
+  exact hConsistency ℓ t htmem.2
 
 end CausalAssumptions
 
+omit [DecidableEq 𝒢] in
 /-- **Layer C corollary 1 — TN identifies ATT.** Under
 `CausalAssumptions P Y0 Y1`, for every admissible treated-versus-never pair
 `(g, u)` with `A_g < ∞` and `A_u = ∞`,
@@ -307,17 +322,20 @@ theorem Δ_TN_eq_ATT (P : CohortPanel 𝒢 T) (Y0 Y1 : 𝒢 → Fin T → ℝ)
   have h_treated :
       Ybar P g (S1_TN P g) =
         Ybar0 Y0 g (S1_TN P g) + ATT_window Y0 Y1 g (S1_TN P g) := by
-    exact hA.Ybar_eq_Ybar0_add_ATT_of_treated g (S1_TN P g) (by
+    exact CausalAssumptions.Ybar_eq_Ybar0_add_ATT_of_treated hA.consistencyTreated g (S1_TN P g) (by
       intro t ht
       simpa [S1_TN, Finset.mem_filter] using ht)
-  have h_g0 := hA.Ybar_eq_Ybar0_on_S0_TN g
-  have h_u1 := hA.Ybar_eq_Ybar0_of_inf h_u_inf (S1_TN P g)
-  have h_u0 := hA.Ybar_eq_Ybar0_of_inf h_u_inf (S0_TN P g)
+  have h_g0 := CausalAssumptions.Ybar_eq_Ybar0_on_S0_TN hA.consistencyUntreated g
+  have h_u1 := CausalAssumptions.Ybar_eq_Ybar0_of_inf hA.consistencyUntreated
+    (S1_TN P g) (fun _ _ => CausalAssumptions.AdoptionDate.lt_of_isInf h_u_inf)
+  have h_u0 := CausalAssumptions.Ybar_eq_Ybar0_of_inf hA.consistencyUntreated
+    (S0_TN P g) (fun _ _ => CausalAssumptions.AdoptionDate.lt_of_isInf h_u_inf)
   have hPT := hA.parallelTrends_TN g u h_g_fin h_u_inf
   unfold Δ_TN
   rw [h_treated, h_g0, h_u1, h_u0]
   linarith
 
+omit [DecidableEq 𝒢] in
 /-- **Layer C corollary 2 — EL identifies the early cohort's ATT.** Under
 `CausalAssumptions P Y0 Y1`, for every admissible early-versus-late pair
 `(e, ℓ)` with `A_e < A_ℓ < ∞`,
@@ -341,34 +359,36 @@ theorem Δ_EL_eq_ATT (P : CohortPanel 𝒢 T) (Y0 Y1 : 𝒢 → Fin T → ℝ)
   have h_e1 :
       Ybar P e (S1_EL P e ℓ) =
         Ybar0 Y0 e (S1_EL P e ℓ) + ATT_window Y0 Y1 e (S1_EL P e ℓ) := by
-    exact hA.Ybar_eq_Ybar0_add_ATT_of_treated e (S1_EL P e ℓ) (by
+    exact CausalAssumptions.Ybar_eq_Ybar0_add_ATT_of_treated hA.consistencyTreated e
+      (S1_EL P e ℓ) (by
       intro t ht
       have htmem :
           AdoptionDate.le (P.A e) t ∧ AdoptionDate.lt (P.A ℓ) t := by
         simpa [S1_EL, Finset.mem_filter] using ht
       exact htmem.1)
-  have h_e0 := hA.Ybar_eq_Ybar0_on_S0_EL e ℓ
-  have h_l1 := hA.Ybar_eq_Ybar0_late_on_S1_EL e ℓ
-  have h_l0 := hA.Ybar_eq_Ybar0_late_on_S0_EL e ℓ h_lt
+  have h_e0 := CausalAssumptions.Ybar_eq_Ybar0_on_S0_EL hA.consistencyUntreated e
+  have h_l1 := CausalAssumptions.Ybar_eq_Ybar0_late_on_S1_EL hA.consistencyUntreated e ℓ
+  have h_l0 := CausalAssumptions.Ybar_eq_Ybar0_late_on_S0_EL hA.consistencyUntreated e ℓ h_lt
   have hPT := hA.parallelTrends_EL e ℓ h_lt h_ℓ_fin
   unfold Δ_EL
   rw [h_e1, h_e0, h_l1, h_l0]
   linarith
 
+omit [DecidableEq 𝒢] in
 /-- **Layer C corollary 3 — LE has a bad-comparison term.** Under
 `CausalAssumptions P Y0 Y1`, for every admissible late-versus-early pair
 `(e, ℓ)` with `A_e < A_ℓ < ∞`,
 
     Δ_LE P e ℓ
-      = ATT_window Y0 Y1 ℓ (S1_LE P e ℓ)
-        − (ATT_window Y0 Y1 e (S1_LE P e ℓ)
+      = ATT_window Y0 Y1 ℓ (S1_LE P ℓ)
+        − (ATT_window Y0 Y1 e (S1_LE P ℓ)
             − ATT_window Y0 Y1 e (S0_LE P e ℓ)).
 
 Proof outline:
 1. The late cohort `ℓ` is untreated on `S0_LE P e ℓ = {A_e ≤ t < A_ℓ}` so
    `Ybar P ℓ (S0_LE P e ℓ) = Ybar0 Y0 ℓ …`.
-2. On `S1_LE P e ℓ = {A_ℓ ≤ t}`, `ℓ` is treated, so consistency gives
-   `Ybar P ℓ (S1_LE P e ℓ) = Ybar0 Y0 ℓ … + ATT_window Y0 Y1 ℓ …`.
+2. On `S1_LE P ℓ = {A_ℓ ≤ t}`, `ℓ` is treated, so consistency gives
+   `Ybar P ℓ (S1_LE P ℓ) = Ybar0 Y0 ℓ … + ATT_window Y0 Y1 ℓ …`.
 3. Cohort `e` is treated on both `S0_LE` and `S1_LE` (since `A_e < A_ℓ`
    means `A_e ≤ t` whenever `t ∈ S0_LE` or `t ∈ S1_LE`); decompose
    `Ybar P e S = Ybar0 Y0 e S + ATT_window Y0 Y1 e S` for each window.
@@ -379,30 +399,31 @@ theorem Δ_LE_eq_bad_comparison (P : CohortPanel 𝒢 T) (Y0 Y1 : 𝒢 → Fin T
     (hA : CausalAssumptions P Y0 Y1) (e ℓ : 𝒢)
     (h_lt : P.A e < P.A ℓ) (h_ℓ_fin : AdoptionDate.isFin (P.A ℓ)) :
     Δ_LE P e ℓ
-      = ATT_window Y0 Y1 ℓ (S1_LE P e ℓ)
-        - (ATT_window Y0 Y1 e (S1_LE P e ℓ)
+      = ATT_window Y0 Y1 ℓ (S1_LE P ℓ)
+        - (ATT_window Y0 Y1 e (S1_LE P ℓ)
             - ATT_window Y0 Y1 e (S0_LE P e ℓ)) := by
   classical
   have h_l1 :
-      Ybar P ℓ (S1_LE P e ℓ) =
-        Ybar0 Y0 ℓ (S1_LE P e ℓ) + ATT_window Y0 Y1 ℓ (S1_LE P e ℓ) := by
-    exact hA.Ybar_eq_Ybar0_add_ATT_of_treated ℓ (S1_LE P e ℓ) (by
+      Ybar P ℓ (S1_LE P ℓ) =
+        Ybar0 Y0 ℓ (S1_LE P ℓ) + ATT_window Y0 Y1 ℓ (S1_LE P ℓ) := by
+    exact CausalAssumptions.Ybar_eq_Ybar0_add_ATT_of_treated hA.consistencyTreated ℓ (S1_LE P ℓ) (by
       intro t ht
       simpa [S1_LE, Finset.mem_filter] using ht)
-  have h_l0 := hA.Ybar_eq_Ybar0_late_on_S0_LE e ℓ
+  have h_l0 := CausalAssumptions.Ybar_eq_Ybar0_late_on_S0_LE hA.consistencyUntreated e ℓ
   have h_e0 :
       Ybar P e (S0_LE P e ℓ) =
         Ybar0 Y0 e (S0_LE P e ℓ) + ATT_window Y0 Y1 e (S0_LE P e ℓ) := by
-    exact hA.Ybar_eq_Ybar0_add_ATT_of_treated e (S0_LE P e ℓ) (by
+    exact CausalAssumptions.Ybar_eq_Ybar0_add_ATT_of_treated hA.consistencyTreated e
+      (S0_LE P e ℓ) (by
       intro t ht
       have htmem :
           AdoptionDate.le (P.A e) t ∧ AdoptionDate.lt (P.A ℓ) t := by
-        simpa [S0_LE, Finset.mem_filter] using ht
+        simpa [S0_LE, S1_EL, Finset.mem_filter] using ht
       exact htmem.1)
   have h_e1 :
-      Ybar P e (S1_LE P e ℓ) =
-        Ybar0 Y0 e (S1_LE P e ℓ) + ATT_window Y0 Y1 e (S1_LE P e ℓ) := by
-    exact hA.Ybar_eq_Ybar0_add_ATT_of_treated e (S1_LE P e ℓ) (by
+      Ybar P e (S1_LE P ℓ) =
+        Ybar0 Y0 e (S1_LE P ℓ) + ATT_window Y0 Y1 e (S1_LE P ℓ) := by
+    exact CausalAssumptions.Ybar_eq_Ybar0_add_ATT_of_treated hA.consistencyTreated e (S1_LE P ℓ) (by
       intro t ht
       have hle : AdoptionDate.le (P.A ℓ) t := by
         simpa [S1_LE, Finset.mem_filter] using ht

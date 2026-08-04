@@ -157,6 +157,7 @@ lemma norm_eucl_le_sum_abs (v : Fin k → ℝ) : ‖eucl v‖ ≤ ∑ j, |v j| :
     exact hle
   exact le_of_pow_le_pow_left₀ (by norm_num) hnonneg hsq
 
+omit [IsProbabilityMeasure μ] in
 /-- The zero sequence is `o_p(1)`. -/
 lemma isLittleOp_zero_one' :
     IsLittleOp (fun _ (_ : Ω) => (0 : ℝ)) (fun _ => (1 : ℝ)) μ := by
@@ -171,6 +172,7 @@ lemma isLittleOp_zero_one' :
         = (fun _ : ℕ => μ {ω : Ω | ε * (1 : ℝ) < |(0 : ℝ)|}) from rfl, heq]
   exact tendsto_const_nhds
 
+omit [IsProbabilityMeasure μ] in
 /-- A finite sum of `o_p(1)` sequences is `o_p(1)`. -/
 lemma isLittleOp_finset_sum_one {ι : Type*} (s : Finset ι) (g : ι → ℕ → Ω → ℝ)
     (h : ∀ i ∈ s, IsLittleOp (g i) (fun _ => (1 : ℝ)) μ) :
@@ -184,6 +186,7 @@ lemma isLittleOp_finset_sum_one {ι : Type*} (s : Finset ι) (g : ι → ℕ →
       have hadd := IsLittleOp.add_one ha hs
       simpa [Finset.sum_insert has] using hadd
 
+omit [IsProbabilityMeasure μ] in
 /-- Domination: if `|Xn| ≤ C·|Yn|` with `Yn` `o_p(1)` and `C > 0`, then `Xn` is
 `o_p(1)`. -/
 lemma isLittleOp_of_abs_le_const_mul_one {X Y : ℕ → Ω → ℝ} {C : ℝ}
@@ -192,6 +195,7 @@ lemma isLittleOp_of_abs_le_const_mul_one {X Y : ℕ → Ω → ℝ} {C : ℝ}
     IsLittleOp X (fun _ => (1 : ℝ)) μ :=
   IsLittleOp.of_abs_le_const_mul_one hC hY hbound
 
+omit [IsProbabilityMeasure μ] in
 /-- The absolute value of an `o_p(1)` sequence is `o_p(1)` (the threshold events
 coincide). -/
 lemma isLittleOp_abs {R : ℕ → Ω → ℝ} (hR : IsLittleOp R (fun _ => (1 : ℝ)) μ) :
@@ -312,38 +316,13 @@ theorem IIDSample.sampleQuantileVec_tendsto_normal (S : IIDSample Ω ℝ μ P)
         = Complex.exp (-(((∫ z, (⟪t, quantileIFVec τ q f z⟫) ^ 2 ∂P : ℝ)) : ℂ) / 2))
     (hθn_meas : ∀ n, AEMeasurable
       (IsAsymLinearVec.rescaledEstimator (S.sampleQuantileVec τ) (eucl q)
-        (fun m => Finset.range m) n) μ)
-    (hSum_meas : ∀ n, AEMeasurable
-      (IsAsymLinearVec.normalizedSum S (quantileIFVec τ q f) (fun m => Finset.range m) n) μ) :
+        (fun m => Finset.range m) n) μ) :
     Tendsto (β := ProbabilityMeasure (EuclideanSpace ℝ (Fin k)))
       (fun n => ⟨μ.map (IsAsymLinearVec.rescaledEstimator (S.sampleQuantileVec τ)
                   (eucl q) (fun m => Finset.range m) n),
                   Measure.isProbabilityMeasure_map (hθn_meas n)⟩)
       atTop (𝓝 ⟨Q, ‹IsProbabilityMeasure Q›⟩) := by
-  refine (S.sampleQuantileVec_isAsymLinearVec hreg).tendsto_normal_vec_clt
-    (measurable_quantileIFVec τ q f) ?_ Q hQ hθn_meas hSum_meas
-  -- `Integrable (quantileIFVec τ q f) P`: bounded by a constant on a probability measure.
-  refine (integrable_const (Real.sqrt (∑ j, ((|τ j| + 1) / |f j|) ^ 2))).mono'
-    (measurable_quantileIFVec τ q f).aestronglyMeasurable ?_
-  filter_upwards with z
-  -- Each coordinate is bounded by `(|τ j| + 1) / |f j|`.
-  have hcoord : ∀ j, |quantileIF (τ j) (q j) (f j) z| ≤ (|τ j| + 1) / |f j| := by
-    intro j
-    have hc0 : 0 ≤ cdfStat (q j) z := cdfStat_nonneg (q j) z
-    have hc1 : cdfStat (q j) z ≤ 1 := cdfStat_le_one (q j) z
-    have hnum : |τ j - cdfStat (q j) z| ≤ |τ j| + 1 := by
-      rw [abs_le]
-      exact ⟨by have := neg_abs_le (τ j); linarith, by have := le_abs_self (τ j); linarith⟩
-    unfold quantileIF
-    rw [abs_div, div_eq_mul_inv, div_eq_mul_inv]
-    exact mul_le_mul_of_nonneg_right hnum (inv_nonneg.mpr (abs_nonneg _))
-  rw [show ‖quantileIFVec τ q f z‖ = ‖eucl (fun j => quantileIF (τ j) (q j) (f j) z)‖ from rfl,
-    eucl, EuclideanSpace.norm_eq]
-  apply Real.sqrt_le_sqrt
-  apply Finset.sum_le_sum
-  intro j _
-  simp only [EuclideanSpace.equiv]
-  rw [Real.norm_eq_abs]
-  exact pow_le_pow_left₀ (abs_nonneg _) (hcoord j) 2
+  exact (S.sampleQuantileVec_isAsymLinearVec hreg).tendsto_normal_vec_clt
+    (measurable_quantileIFVec τ q f) Q hQ hθn_meas
 
 end Causalean.Stat

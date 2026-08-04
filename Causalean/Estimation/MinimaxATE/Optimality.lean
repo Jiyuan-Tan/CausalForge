@@ -104,6 +104,7 @@ theorem aipw_nMiss_le {m : C → ℝ} {g : Bool → C → ℝ} (hv : ValidDGP m 
         rw [ENNReal.toReal_ofReal (by positivity)]
     _ ≤ V / (s - b) ^ 2 := by gcongr
 
+omit [MeasurableSpace C] [MeasurableSingletonClass C] in
 /-- **In-class bias bound.**  For any DGP in the structure-agnostic class around `(mhat, ghat)`,
 the plug-in bias of the fixed-center AIPW estimator is `≤ ε⁻¹·2·√εg·√εm` (`ε` = center overlap). -/
 theorem aipw_inclass_bias_bound {mhat : C → ℝ} {ghat : Bool → C → ℝ} {εg εm : ℝ}

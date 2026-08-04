@@ -139,7 +139,7 @@ lemma indicator_weighted_delta_mu0_integrable
   have hW0_meas : Measurable W0 := by
     dsimp [W0, I0]
     exact ((S.toPODTRSystem.dVar ⟨0, by decide⟩).measurable_indicator
-      (S.dbar ⟨0, by decide⟩)).mul
+      (S.dbar ⟨0, by decide⟩) (MeasurableSet.singleton _)).mul
       (measurable_const.div
         (η.e₀_meas.comp (S.toPODTRSystem.measurable_factualS ⟨0, by decide⟩)))
   have hW0_bound : ∀ᵐ ω ∂P.μ, ‖W0 ω‖ ≤ ε⁻¹ := by
@@ -211,7 +211,7 @@ lemma indicator_weighted_delta_mu1_stage0_integrable
   have hW0_meas : Measurable W0 := by
     dsimp [W0, I0]
     exact ((S.toPODTRSystem.dVar ⟨0, by decide⟩).measurable_indicator
-      (S.dbar ⟨0, by decide⟩)).mul
+      (S.dbar ⟨0, by decide⟩) (MeasurableSet.singleton _)).mul
       (measurable_const.div
         (η.e₀_meas.comp (S.toPODTRSystem.measurable_factualS ⟨0, by decide⟩)))
   have hW0_bound : ∀ᵐ ω ∂P.μ, ‖W0 ω‖ ≤ ε⁻¹ := by
@@ -294,9 +294,9 @@ lemma indicator_weighted_delta_mu1_stage1_integrable
   have hW1_meas : Measurable W1 := by
     dsimp [W1, I0, I1, H1]
     exact (((S.toPODTRSystem.dVar ⟨0, by decide⟩).measurable_indicator
-      (S.dbar ⟨0, by decide⟩)).mul
+      (S.dbar ⟨0, by decide⟩) (MeasurableSet.singleton _)).mul
       ((S.toPODTRSystem.dVar ⟨1, by decide⟩).measurable_indicator
-        (S.dbar ⟨1, by decide⟩))).mul
+        (S.dbar ⟨1, by decide⟩) (MeasurableSet.singleton _))).mul
       (measurable_const.div
         ((η.e₀_meas.comp (S.toPODTRSystem.measurable_factualS ⟨0, by decide⟩)).mul
           (η.e₁_meas.comp hH1_meas)))

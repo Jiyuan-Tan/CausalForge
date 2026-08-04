@@ -376,13 +376,14 @@ private lemma integrable_phi_eta_dir_deriv_factualZ
   have hYind_int : ∀ d : Bool,
       Integrable (fun ω => Y ω * S.toPOBackdoorSystem.dVar.indicator d ω) P.μ :=
     fun d => S.toPOBackdoorSystem.dVar.integrable_mul_indicator d
-      hA.integrable_factualY S.toPOBackdoorSystem.measurable_factualY
+      (measurableSet_singleton d)
+      hA.integrable_factualY
   have hμind_int : ∀ d : Bool,
       Integrable (fun ω => S.μ_val d (X ω) *
         S.toPOBackdoorSystem.dVar.indicator d ω) P.μ := by
     intro d
-    exact S.toPOBackdoorSystem.dVar.integrable_mul_indicator d (hμ_val_int d)
-      ((S.μ_meas d).comp S.toPOBackdoorSystem.measurable_factualX)
+    exact S.toPOBackdoorSystem.dVar.integrable_mul_indicator d
+      (measurableSet_singleton d) (hμ_val_int d)
   have hresμ_int : ∀ d : Bool,
       Integrable (fun ω => S.toPOBackdoorSystem.dVar.indicator d ω *
         (Y ω - S.μ_val d (X ω))) P.μ := by
@@ -440,7 +441,8 @@ private lemma integrable_phi_eta_dir_deriv_factualZ
     have hL1 : MemLp T3 1 P.μ := by
       have hmul := MemLp.mul' (p := 1) (q := ⊤) (r := 1)
         hgMT_top (memLp_one_iff_integrable.2
-          (S.toPOBackdoorSystem.dVar.integrable_indicator true))
+          (S.toPOBackdoorSystem.dVar.integrable_indicator true
+            (MeasurableSet.singleton true)))
       exact hmul.ae_eq (Filter.Eventually.of_forall (fun ω => by
         simp [T3, X, indT]
         ring))
@@ -449,7 +451,8 @@ private lemma integrable_phi_eta_dir_deriv_factualZ
     have hL1 : MemLp T5 1 P.μ := by
       have hmul := MemLp.mul' (p := 1) (q := ⊤) (r := 1)
         hgMF_top (memLp_one_iff_integrable.2
-          (S.toPOBackdoorSystem.dVar.integrable_indicator false))
+          (S.toPOBackdoorSystem.dVar.integrable_indicator false
+            (MeasurableSet.singleton false)))
       exact hmul.ae_eq (Filter.Eventually.of_forall (fun ω => by
         simp [T5, X, indF]
         ring))

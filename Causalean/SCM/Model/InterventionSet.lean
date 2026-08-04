@@ -80,14 +80,14 @@ lemma fixSet_fixed_subset (M : Causalean.SCM N Ω) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ M.observed)
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ M.fixed) :
     M.fixed ⊆ (M.fixSet X hObs hFix).fixed :=
-  fixMono_fixed_subset M X hObs hFix
+  fixMono_fixed_subset M.toSWIGGraph X hObs hFix
 
 /-- `X.image SWIGNode.fixed ⊆ (M.fixSet X _ _).fixed`. -/
 lemma fixSet_image_fixed_subset (M : Causalean.SCM N Ω) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ M.observed)
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ M.fixed) :
     X.image SWIGNode.fixed ⊆ (M.fixSet X hObs hFix).fixed :=
-  fixMono_image_fixed_subset M X hObs hFix
+  fixMono_image_fixed_subset M.toSWIGGraph X hObs hFix
 
 /-- Every `SWIGNode.fixed D` with `D ∈ X` is in the fixed set of `fixSet X`. -/
 lemma fixed_mem_fixSet (M : Causalean.SCM N Ω) (X : Finset N)
@@ -116,6 +116,26 @@ lemma fixSet_parents_eq_of_no_fixed_parent
     (M.fixSet X hObs hFix).dag.parents v = M.dag.parents v :=
   fixMono_parents_eq_of_no_fixed_parent M X hObs hFix hNoFP
 
+end SCM
+
+namespace SWIGGraph
+
+/-- Splitting no variables leaves every parent set unchanged. -/
+lemma splitMono_empty_parents
+    (G : SWIGGraph N)
+    (v : SWIGNode N) :
+    (G.splitMono ∅
+      (fun _ hD => absurd hD (Finset.notMem_empty _))
+      (fun _ hD => absurd hD (Finset.notMem_empty _))).dag.parents v = G.dag.parents v :=
+  splitMono_parents_eq_of_no_fixed_parent G ∅
+    (fun _ hD => absurd hD (Finset.notMem_empty _))
+    (fun _ hD => absurd hD (Finset.notMem_empty _)) v
+    (fun _ hD => absurd hD (Finset.notMem_empty _))
+
+end SWIGGraph
+
+namespace SCM
+
 -- ============================================================
 -- § 2b. `fixSet_empty` — intervening on the empty set is equivalent to M
 -- ============================================================
@@ -128,28 +148,27 @@ lemma fixSet_parents_eq_of_no_fixed_parent
     single-intervention bridges. -/
 lemma fixSet_empty_parents
     (M : Causalean.SCM N Ω)
-    (hObs : ∀ D ∈ (∅ : Finset N), SWIGNode.random D ∈ M.observed)
-    (hFix : ∀ D ∈ (∅ : Finset N), SWIGNode.fixed D ∉ M.fixed)
     (v : SWIGNode N) :
-    (M.fixSet ∅ hObs hFix).dag.parents v = M.dag.parents v :=
-  fixSet_parents_eq_of_no_fixed_parent M ∅ hObs hFix
-    (fun _ hD => absurd hD (Finset.notMem_empty _))
+    (M.fixSet ∅
+      (fun _ hD => absurd hD (Finset.notMem_empty _))
+      (fun _ hD => absurd hD (Finset.notMem_empty _))).dag.parents v = M.dag.parents v :=
+  SWIGGraph.splitMono_empty_parents M.toSWIGGraph v
 
 /-- **Edges of `fixSet ∅` coincide with the base.** -/
 lemma fixSet_empty_edge
-    (M : Causalean.SCM N Ω)
-    (hObs : ∀ D ∈ (∅ : Finset N), SWIGNode.random D ∈ M.observed)
-    (hFix : ∀ D ∈ (∅ : Finset N), SWIGNode.fixed D ∉ M.fixed)
+    (G : SWIGGraph N)
     (u v : SWIGNode N) :
-    (M.fixSet ∅ hObs hFix).dag.edge u v ↔ M.dag.edge u v := by
-  -- `fixSet ∅ .dag.edge = splitMonoEdgeRel M.dag.edge ∅`, which at `X = ∅`
-  -- reduces to `M.dag.edge` by simp.
+    (G.splitMono ∅
+      (fun _ hD => absurd hD (Finset.notMem_empty _))
+      (fun _ hD => absurd hD (Finset.notMem_empty _))).dag.edge u v ↔ G.dag.edge u v := by
+  -- `splitMono ∅ .dag.edge = splitMonoEdgeRel G.dag.edge ∅`, which reduces to
+  -- `G.dag.edge` by simp.
   cases u with
   | random u =>
-    simp [SCM.fixSet, SCM.fixMono, SWIGGraph.splitMono, SWIGGraph.splitMonoDAG,
+    simp [SWIGGraph.splitMono, SWIGGraph.splitMonoDAG,
           SWIGGraph.splitMonoEdgeRel]
   | fixed d =>
-    simp [SCM.fixSet, SCM.fixMono, SWIGGraph.splitMono, SWIGGraph.splitMonoDAG,
+    simp [SWIGGraph.splitMono, SWIGGraph.splitMonoDAG,
           SWIGGraph.splitMonoEdgeRel]
 
 /-- **`fixSet ∅` is structurally equivalent to `M`.**
@@ -165,19 +184,25 @@ lemma fixSet_empty_edge
     becomes `2·orig + 1`).  The equivalence relation ignores topoOrder,
     which is the right invariant for d-separation and kernel semantics. -/
 theorem fixSet_empty_equiv
-    (M : Causalean.SCM N Ω)
-    (hObs : ∀ D ∈ (∅ : Finset N), SWIGNode.random D ∈ M.observed)
-    (hFix : ∀ D ∈ (∅ : Finset N), SWIGNode.fixed D ∉ M.fixed) :
-    SCM.Equiv (M.fixSet ∅ hObs hFix) M := by
+    (M : Causalean.SCM N Ω) :
+    SCM.Equiv (M.fixSet ∅
+      (fun _ hD => absurd hD (Finset.notMem_empty _))
+      (fun _ hD => absurd hD (Finset.notMem_empty _))) M := by
+  let hObs : ∀ D ∈ (∅ : Finset N), SWIGNode.random D ∈ M.observed :=
+    fun _ hD => absurd hD (Finset.notMem_empty _)
+  let hFix : ∀ D ∈ (∅ : Finset N), SWIGNode.fixed D ∉ M.fixed :=
+    fun _ hD => absurd hD (Finset.notMem_empty _)
   -- (1) Graph-level equivalence (reused for the parent-set transport below).
   have hGraph : SWIGGraph.Equivalent
-      (M.fixSet ∅ hObs hFix).toSWIGGraph M.toSWIGGraph := by
+      (M.fixSet ∅
+        (fun _ hD => absurd hD (Finset.notMem_empty _))
+        (fun _ hD => absurd hD (Finset.notMem_empty _))).toSWIGGraph M.toSWIGGraph := by
     refine ⟨?_, ?_, rfl, rfl⟩
-    · exact fixSet_empty_edge M hObs hFix
+    · simpa [SCM.fixSet, SCM.fixMono] using fixSet_empty_edge M.toSWIGGraph
     · simp
   refine ⟨hGraph, ?_, ?_, ?_⟩
   · -- (2) Edge-type agreement: the `∃ D ∈ ∅, u = .fixed D` guard is vacuous.
-    intro u v _ _
+    intro u v _
     change (if h : ∃ D ∈ (∅ : Finset N), u = SWIGNode.fixed D then
             M.edgeTypes.edgeType (SWIGNode.random (Classical.choose h)) v
           else M.edgeTypes.edgeType u v)
@@ -195,12 +220,12 @@ theorem fixSet_empty_equiv
     have hv_eq : v = _ := eq_of_heq hv
     subst hv_eq
     refine Function.hfunext ?_ ?_
-    · rw [hGraph.parents_eq v.val]
+    · rw [SWIGGraph.Equivalent.parents_eq hGraph.1 v.val]
     · rintro ξ₁ ξ₂ hξ
       apply heq_of_eq
       have hP : (M.fixSet ∅ hObs hFix).toSWIGGraph.dag.parents v.val
               = M.toSWIGGraph.dag.parents v.val :=
-        hGraph.parents_eq v.val
+        SWIGGraph.Equivalent.parents_eq hGraph.1 v.val
       -- Pointwise equality of ξ₁ and ξ₂ at matching coordinates, obtained by
       -- reverting both and rewriting `hP` so they end up with the same type.
       have hξ_apply : ∀ (x : SWIGNode N)
@@ -247,11 +272,28 @@ theorem fixSet_empty_equiv
 theorem fixSet_equiv_congr
     {M₁ M₂ : Causalean.SCM N Ω} (h : SCM.Equiv M₁ M₂) (X : Finset N)
     (hObs₁ : ∀ D ∈ X, SWIGNode.random D ∈ M₁.observed)
-    (hFix₁ : ∀ D ∈ X, SWIGNode.fixed D ∉ M₁.fixed)
-    (hObs₂ : ∀ D ∈ X, SWIGNode.random D ∈ M₂.observed)
-    (hFix₂ : ∀ D ∈ X, SWIGNode.fixed D ∉ M₂.fixed) :
+    (hFix₁ : ∀ D ∈ X, SWIGNode.fixed D ∉ M₁.fixed) :
+    let hObs₂ : ∀ D ∈ X, SWIGNode.random D ∈ M₂.observed := by
+      intro D hD
+      rw [← h.1.2.2.1]
+      exact hObs₁ D hD
+    let hFix₂ : ∀ D ∈ X, SWIGNode.fixed D ∉ M₂.fixed := by
+      intro D hD hDfix
+      apply hFix₁ D hD
+      rw [h.1.2.1]
+      exact hDfix
     SCM.Equiv (M₁.fixSet X hObs₁ hFix₁) (M₂.fixSet X hObs₂ hFix₂) := by
   obtain ⟨hGraph, hEdgeType, hSF, hLat⟩ := h
+  have hObs₂ : ∀ D ∈ X, SWIGNode.random D ∈ M₂.observed := by
+    intro D hD
+    rw [← hGraph.2.2.1]
+    exact hObs₁ D hD
+  have hFix₂ : ∀ D ∈ X, SWIGNode.fixed D ∉ M₂.fixed := by
+    intro D hD hDfix
+    apply hFix₁ D hD
+    rw [hGraph.2.1]
+    exact hDfix
+  change SCM.Equiv (M₁.fixSet X hObs₁ hFix₁) (M₂.fixSet X hObs₂ hFix₂)
   -- (1) Graph-level equivalence via `splitMono_congr`.
   have hGraph' : SWIGGraph.Equivalent
       (M₁.fixSet X hObs₁ hFix₁).toSWIGGraph
@@ -260,7 +302,7 @@ theorem fixSet_equiv_congr
   refine ⟨hGraph', ?_, ?_, ?_⟩
   · -- (2) Edge-type agreement.
     -- The `edgeType` of `fixSet` uses a `dite` on `∃ D ∈ X, u = .fixed D`.
-    intro u v hu hv
+    intro u v hu
     -- Both sides expand to the same dite structure; split on the guard.
     change (if hh : ∃ D ∈ X, u = SWIGNode.fixed D then
               M₁.edgeTypes.edgeType (SWIGNode.random (Classical.choose hh)) v
@@ -281,44 +323,21 @@ theorem fixSet_equiv_congr
                    SWIGGraph.splitMonoDAG, SWIGGraph.splitMonoEdgeRel,
                    if_pos hD.1] at hu
         exact hu
-      have hu₂ : M₂.dag.edge (SWIGNode.random (Classical.choose hh)) v := by
-        have huEq : u = SWIGNode.fixed (Classical.choose hh) := hD.2
-        rw [huEq] at hv
-        simp only [SCM.fixSet, SCM.fixMono, SWIGGraph.splitMono,
-                   SWIGGraph.splitMonoDAG, SWIGGraph.splitMonoEdgeRel,
-                   if_pos hD.1] at hv
-        exact hv
-      exact hEdgeType _ _ hu₁ hu₂
+      exact hEdgeType _ _ hu₁
     · -- else branch: direct M.dag.edge u v.
       have hu₁ : M₁.dag.edge u v := by
         simp only [SCM.fixSet, SCM.fixMono, SWIGGraph.splitMono,
                    SWIGGraph.splitMonoDAG, SWIGGraph.splitMonoEdgeRel] at hu
         cases u with
         | random r =>
-          simp only [SWIGGraph.splitMonoEdgeRel] at hu
           by_cases hr : r ∈ X
           · simp [hr] at hu
           · simpa [hr] using hu
         | fixed d =>
-          simp only [SWIGGraph.splitMonoEdgeRel] at hu
           by_cases hd : d ∈ X
           · exfalso; apply hh; exact ⟨d, hd, rfl⟩
           · simpa [hd] using hu
-      have hu₂ : M₂.dag.edge u v := by
-        simp only [SCM.fixSet, SCM.fixMono, SWIGGraph.splitMono,
-                   SWIGGraph.splitMonoDAG, SWIGGraph.splitMonoEdgeRel] at hv
-        cases u with
-        | random r =>
-          simp only [SWIGGraph.splitMonoEdgeRel] at hv
-          by_cases hr : r ∈ X
-          · simp [hr] at hv
-          · simpa [hr] using hv
-        | fixed d =>
-          simp only [SWIGGraph.splitMonoEdgeRel] at hv
-          by_cases hd : d ∈ X
-          · exfalso; apply hh; exact ⟨d, hd, rfl⟩
-          · simpa [hd] using hv
-      exact hEdgeType _ _ hu₁ hu₂
+      exact hEdgeType _ _ hu₁
   · -- (3) HEq structFun.
     -- Both `(M_i.fixSet X).structFun v' ξ` unfold to
     --   `M_i.structFun ⟨v'.val, _⟩ (fixMonoParentMap M_i.toSWIGGraph X _ _ v'.val ξ)`.
@@ -334,7 +353,7 @@ theorem fixSet_equiv_congr
     -- Observed sets equal, so split parent sets are equal.
     have hPar : (M₁.fixSet X hObs₁ hFix₁).dag.parents v₁.val =
                 (M₂.fixSet X hObs₂ hFix₂).dag.parents v₂.val := by
-      rw [hv_eq]; exact hGraph'.parents_eq v₂.val
+      rw [hv_eq]; exact SWIGGraph.Equivalent.parents_eq hGraph'.1 v₂.val
     refine Function.hfunext ?_ ?_
     · rw [hPar]
     · rintro ξ₁ ξ₂ hξ
@@ -345,11 +364,11 @@ theorem fixSet_equiv_congr
       have hv_obs₂' : v₂.val ∈ M₂.observed := v₂.property
       -- Parent sets.
       have hPar₀ : M₁.dag.parents v₁.val = M₂.dag.parents v₂.val := by
-        rw [hGraph.parents_eq v₁.val, hv_eq]
+        rw [SWIGGraph.Equivalent.parents_eq hGraph.1 v₁.val, hv_eq]
       -- Split parent set equality (via hGraph' and hv_eq).
       have hSplitPar : (M₁.fixSet X hObs₁ hFix₁).dag.parents v₁.val =
                        (M₂.fixSet X hObs₂ hFix₂).dag.parents v₂.val := by
-        rw [hGraph'.parents_eq v₁.val, hv_eq]
+        rw [SWIGGraph.Equivalent.parents_eq hGraph'.1 v₁.val, hv_eq]
       -- hξ_apply: pointwise equality from hξ : ξ₁ ≍ ξ₂ over propEq domain types.
       -- Use dcongr_heq since ξ₁, ξ₂ are dependent pi types.
       have hξ_apply : ∀ (x : SWIGNode N)
@@ -379,7 +398,7 @@ theorem fixSet_equiv_congr
         · intro t₁ t₂ ht
           have hval : t₁.val = t₂.val :=
             (Subtype.heq_iff_coe_eq (by intro x; rw [hObsEq])).mp ht
-          rw [hval, hGraph.parents_eq t₂.val]
+          rw [hval, SWIGGraph.Equivalent.parents_eq hGraph.1 t₂.val]
         · intro _ _; exact hSF
       -- Step 2: HEq of the fixMonoParentMap outputs.
       -- Subtype domain equality for fixMonoParentMap.
@@ -401,8 +420,10 @@ theorem fixSet_equiv_congr
           · rw [fixMonoParentMap_apply_random M₁.toSWIGGraph X hObs₁ hFix₁ v₁.val u hu ξ₁ w₁prop,
                 fixMonoParentMap_apply_random M₂.toSWIGGraph X hObs₂ hFix₂ v₂.val u hu ξ₂ w₂prop]
             exact hξ_apply (SWIGNode.fixed u) _ _
-          · rw [fixMonoParentMap_apply_random_notMem M₁.toSWIGGraph X hObs₁ hFix₁ v₁.val ξ₁ u hu w₁prop,
-                fixMonoParentMap_apply_random_notMem M₂.toSWIGGraph X hObs₂ hFix₂ v₂.val ξ₂ u hu w₂prop]
+          · rw [fixMonoParentMap_apply_random_notMem M₁.toSWIGGraph X hObs₁ hFix₁
+                v₁.val ξ₁ u hu w₁prop,
+                fixMonoParentMap_apply_random_notMem M₂.toSWIGGraph X hObs₂ hFix₂
+                v₂.val ξ₂ u hu w₂prop]
             exact hξ_apply (SWIGNode.random u) _ _
         | fixed d =>
           rw [fixMonoParentMap_apply_fixed M₁.toSWIGGraph X hObs₁ hFix₁ v₁.val ξ₁ d w₁prop,
@@ -421,7 +442,9 @@ theorem fixSet_equiv_congr
     -- `hLat : HEq M₁.latentDist M₂.latentDist`.
     exact hLat
 
-private lemma fixSet_edgeType_random_eq
+/-- After intervening on a set of variables, the label of every edge leaving a
+    random-coordinate node is unchanged from the original causal model. -/
+lemma fixSet_edgeType_random_eq
     (M : Causalean.SCM N Ω) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ M.observed)
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ M.fixed)
@@ -436,7 +459,9 @@ private lemma fixSet_edgeType_random_eq
   rintro ⟨D, _hD, hEq⟩
   cases hEq
 
-private lemma fixSet_edgeType_fixed_mem_eq
+/-- For a variable included in the intervention set, the edge label from its
+    fixed-coordinate node equals the original label from its random-coordinate node. -/
+lemma fixSet_edgeType_fixed_mem_eq
     (M : Causalean.SCM N Ω) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ M.observed)
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ M.fixed)
@@ -453,7 +478,9 @@ private lemma fixSet_edgeType_fixed_mem_eq
     exact (SWIGNode.fixed.inj (Classical.choose_spec hmem).2).symm
   rw [hchoose]
 
-private lemma fixSet_edgeType_fixed_notMem_eq
+/-- For a variable outside the intervention set, the edge label from its
+    fixed-coordinate node is unchanged by the intervention. -/
+lemma fixSet_edgeType_fixed_notMem_eq
     (M : Causalean.SCM N Ω) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ M.observed)
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ M.fixed)
@@ -472,7 +499,7 @@ private lemma fixSet_edgeType_fixed_notMem_eq
 
     Intervening on `X` and then on a fresh singleton `{y}` is structurally
     equivalent to the one-shot intervention on `insert y X`. -/
-theorem swigInterventionSet_insert_equiv
+private theorem swigInterventionSet_insert_equiv_aux
     (M : Causalean.SCM N Ω) (X : Finset N) (y : N)
     (hyX : y ∉ X)
     (hX_obs : ∀ D ∈ X, SWIGNode.random D ∈ M.observed)
@@ -520,7 +547,7 @@ theorem swigInterventionSet_insert_equiv
         Finset.image_insert, Finset.mem_union, Finset.mem_image,
         Finset.mem_singleton, Finset.mem_insert]
   refine ⟨hGraph, ?_, ?_, ?_⟩
-  · intro u v _ _
+  · intro u v _
     cases u with
     | random u =>
       rw [fixSet_edgeType_random_eq (M.fixSet X hX_obs hX_fixed) ({y} : Finset N)
@@ -558,12 +585,12 @@ theorem swigInterventionSet_insert_equiv
     have hv_eq : v = _ := eq_of_heq hv
     subst hv_eq
     refine Function.hfunext ?_ ?_
-    · rw [hGraph.parents_eq v.val]
+    · rw [SWIGGraph.Equivalent.parents_eq hGraph.1 v.val]
     · rintro ξ₁ ξ₂ hξ
       apply heq_of_eq
       have hP : Mxy.toSWIGGraph.dag.parents v.val =
           MyX.toSWIGGraph.dag.parents v.val :=
-        hGraph.parents_eq v.val
+        SWIGGraph.Equivalent.parents_eq hGraph.1 v.val
       have hξ_apply : ∀ (x : SWIGNode N)
           (h₁ : x ∈ Mxy.toSWIGGraph.dag.parents v.val)
           (h₂ : x ∈ MyX.toSWIGGraph.dag.parents v.val),
@@ -575,8 +602,7 @@ theorem swigInterventionSet_insert_equiv
         subst hξ_eq
         rfl
       have h_obs_M : v.val ∈ M.observed := by
-        have hv' : v.val ∈ Mxy.observed := v.property
-        simpa [Mxy, SCM.fixSet, SCM.fixMono, SWIGGraph.splitMono] using hv'
+        simp [SCM.fixSet, SCM.fixMono, SWIGGraph.splitMono]
       have h_y_obs' : ∀ D ∈ ({y} : Finset N),
           SWIGNode.random D ∈ (M.toSWIGGraph.splitMono X hX_obs hX_fixed).observed := by
         intro D hD
@@ -644,6 +670,46 @@ theorem swigInterventionSet_insert_equiv
               hInsert_obs hInsert_fixed v.val ξ₂ d hw]
         exact hξ_apply (SWIGNode.fixed d) _ _
   · rfl
+
+/-- **Insert form of monolithic intervention composition.**
+
+    Intervening on `X` and then on a fresh singleton `{y}` is structurally
+    equivalent to the one-shot intervention on `insert y X`. -/
+theorem swigInterventionSet_insert_equiv
+    (M : Causalean.SCM N Ω) (X : Finset N) (y : N)
+    (hyX : y ∉ X)
+    (hInsert_obs : ∀ D ∈ insert y X, SWIGNode.random D ∈ M.observed)
+    (hInsert_fixed : ∀ D ∈ insert y X, SWIGNode.fixed D ∉ M.fixed) :
+    let hX_obs : ∀ D ∈ X, SWIGNode.random D ∈ M.observed := by
+      intro D hD
+      exact hInsert_obs D (Finset.mem_insert_of_mem hD)
+    let hX_fixed : ∀ D ∈ X, SWIGNode.fixed D ∉ M.fixed := by
+      intro D hD
+      exact hInsert_fixed D (Finset.mem_insert_of_mem hD)
+    let hy_obs : ∀ D ∈ ({y} : Finset N),
+        SWIGNode.random D ∈ (M.fixSet X hX_obs hX_fixed).observed := by
+      intro D hD
+      have hDy : D = y := Finset.mem_singleton.mp hD
+      subst D
+      simpa only [fixSet_observed] using hInsert_obs y (Finset.mem_insert_self y X)
+    let hy_fixed : ∀ D ∈ ({y} : Finset N),
+        SWIGNode.fixed D ∉ (M.fixSet X hX_obs hX_fixed).fixed := by
+      intro D hD hDfixed
+      have hDy : D = y := Finset.mem_singleton.mp hD
+      subst D
+      rw [fixSet_fixed] at hDfixed
+      rcases Finset.mem_union.mp hDfixed with hyfixed | hyimage
+      · exact hInsert_fixed y (Finset.mem_insert_self y X) hyfixed
+      · rcases Finset.mem_image.mp hyimage with ⟨z, hz, hzy⟩
+        exact hyX ((SWIGNode.fixed.inj hzy).symm ▸ hz)
+    SCM.Equiv
+      ((M.fixSet X hX_obs hX_fixed).fixSet ({y} : Finset N) hy_obs hy_fixed)
+      (M.fixSet (insert y X) hInsert_obs hInsert_fixed) := by
+  dsimp
+  apply swigInterventionSet_insert_equiv_aux M X y hyX
+    (fun D hD => hInsert_obs D (Finset.mem_insert_of_mem hD))
+    (fun D hD => hInsert_fixed D (Finset.mem_insert_of_mem hD))
+    (hInsert_obs := hInsert_obs) (hInsert_fixed := hInsert_fixed)
 
 -- ============================================================
 -- § 3. `fixSetProj` — projection onto original fixed coordinates

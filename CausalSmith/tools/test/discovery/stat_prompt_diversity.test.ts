@@ -28,7 +28,6 @@ describe("Stat proposal diversity guidance", () => {
   it("uses a frontier-neutral review flag in every live review surface", async () => {
     const reviewSurfaces = await Promise.all([
       read("../../src/discovery/prompts/_shared/stage_flagship_rubric.txt"),
-      read("../../src/discovery/prompts/D-0.5/stage_neg1_review.txt"),
       read("../../src/discovery/prompts/D-0.5/stage_neg1_review_core.txt"),
       read("../../src/templates/stage_neg1_review_output_template.json"),
     ]);

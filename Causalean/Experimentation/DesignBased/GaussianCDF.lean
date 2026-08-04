@@ -41,7 +41,7 @@ noncomputable def stdNormalCdf (t : ℝ) : ℝ :=
   (ProbabilityTheory.gaussianReal 0 1).real (Set.Iic t)
 
 /-- The design-based `.real (Iic)` presentation agrees with the canonical `stdNormalCDF`. -/
-lemma stdNormalCdf_eq (t : ℝ) : stdNormalCdf t = Causalean.Mathlib.stdNormalCDF t := by
+@[simp] lemma stdNormalCdf_eq (t : ℝ) : stdNormalCdf t = Causalean.Mathlib.stdNormalCDF t := by
   rw [Causalean.Mathlib.stdNormalCDF_def]; exact (ProbabilityTheory.cdf_eq_real _ t).symm
 
 /-- The standard-normal cumulative probability is nonnegative. -/

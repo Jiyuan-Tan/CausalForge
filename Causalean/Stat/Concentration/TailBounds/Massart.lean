@@ -21,7 +21,7 @@ namespace Causalean.Stat.Concentration
 
 universe v u
 open scoped BigOperators
-open Classical MeasureTheory ProbabilityTheory Real
+open MeasureTheory ProbabilityTheory Real
 
 variable {Z : Type v}
 variable {m : ℕ} {ι : Type u}
@@ -75,6 +75,7 @@ lemma measure_eq :
   (signVecPMF m).toMeasure ≍
     Measure.pi
       fun (_ : Fin m) ↦ (PMF.uniformOfFintype ({-1, 1} : Finset ℤ)).toMeasure := by
+  classical
   rw [measurablespace_eq]
   refine (Equiv.cast_eq_iff_heq ?_).mp ?_
   · rfl
@@ -157,12 +158,11 @@ end MassartNotation
 /-- The aggregate Rademacher variable is exactly the sum of its coordinate
 increments. -/
 lemma MassartNotation.xy_identity
-    (f : Finset ι)
-    : ∀ j ∈ f,
+    : ∀ j,
         (MassartNotation.X (F:=F) (S:=S) (m:=m) (ι:=ι) j
           = ∑ i : Fin m,
               MassartNotation.Y (F:=F) (S:=S) (m:=m) (ι:=ι) i j) := by
-  intro j hj
+  intro j
   -- Now show function equality pointwise in `σ`.
   funext σ
   -- Expand definitions; the RHS reduces to the sum over `Finset.univ` via `sum_image`.
@@ -199,15 +199,14 @@ theorem massart_lemma_pmf.sign_mean_zero {Z : Type v} {m : ℕ}
 /-- Massart's finite-class lemma bounds the empirical Rademacher complexity of a
 finite class by its sample coordinate radii and a logarithmic class-size factor. -/
 lemma massart_lemma_pmf
-    (f : Finset ι) (hs : f.Nonempty) (m_pos : 0 < m)
-    (C : ℝ) (hC : ∀ i ∈ f, ∀ j, |F i (S j)| ≤ C)
-    (hsR : f.Nonempty) :
-    empiricalRademacherComplexity_pmf_without_abs m (F_on (ι:=ι) (Z:=Z) F f) S
+    (f : Finset ι) (hs : f.Nonempty)
+    : empiricalRademacherComplexity_pmf_without_abs m (F_on (ι:=ι) (Z:=Z) F f) S
       ≤ (Finset.sup' f hs fun j => Real.sqrt (∑ i : Fin m,
             ((m : ℝ)⁻¹ * |F j (S i)|) ^ 2)) * Real.sqrt (2 * Real.log f.card) := by
+    classical
     have hbridge :
         empiricalRademacherComplexity_pmf_without_abs m (F_on (ι:=ι) (Z:=Z) F f) S
-          = ∫ σ, Finset.sup' f hsR
+          = ∫ σ, Finset.sup' f hs
                 (fun j =>
                   MassartNotation.X (F:=F) (S:=S) (m:=m) (ι:=ι) j σ)
                 ∂(signVecPMF m).toMeasure := by
@@ -244,48 +243,13 @@ lemma massart_lemma_pmf
         · simp only [Int.reduceNeg, Finset.sup'_le_iff]
           intro b bf
           apply le_ciSup_of_le
-          rw [bddAbove_def]
-          · simp only [Int.reduceNeg, Set.mem_range, Subtype.exists, exists_prop,
-              forall_exists_index, and_imp, forall_apply_eq_imp_iff₂]
-            use C
-            intro a af
-            calc
-            _ ≤ ∑ x, |(↑m)⁻¹ * ↑↑(σ x) * F a (S x)| := by
-              apply Finset.sum_le_sum
-              intro i hi
-              exact le_abs_self ((↑m)⁻¹ * ↑↑(σ i) * F a (S i))
-            _ = ∑ x, (↑m)⁻¹ * |↑↑(σ x) * F a (S x)| := by
-              apply congrArg
-              ext x
-              rw [mul_assoc]
-              rw [abs_mul]
-              simp
-            _ = ∑ x, (↑m)⁻¹ * |F a (S x)| := by
-              apply congrArg
-              ext x
-              apply congrArg
-              rw [abs_mul]
-              rw [abs_sigma]
-              simp
-            _ = (↑m)⁻¹ * ∑ x, |F a (S x)| := by
-              exact Eq.symm (Finset.mul_sum Finset.univ (fun i ↦ |F a (S i)|) (↑m)⁻¹)
-            _ ≤ (↑m)⁻¹ * ∑ x : Fin m, C := by
-              refine (mul_le_mul_iff_of_pos_left ?_).mpr ?_
-              simp [m_pos]
-              apply Finset.sum_le_sum
-              intro i hi
-              apply hC
-              exact af
-            _ ≤ (↑m)⁻¹ * (m * C) := by
-              simp
-            _ = _ := by field_simp
-          apply Finset.sum_le_sum
-          intro i hi
-          set j' : { j // j ∈ f } := ⟨b, bf⟩
-          -- ↑j' is definally b
-          have : (↑m : ℝ)⁻¹ * ↑↑(σ i) * F b (S i)
-              = (↑m : ℝ)⁻¹ * ↑↑(σ i) * F (j' : ι) (S i) := by simp [j']
-          exact le_of_eq this
+          · exact Finite.bddAbove_range _
+          · refine Finset.sum_le_sum (fun i _ => ?_)
+            set j' : { j // j ∈ f } := ⟨b, bf⟩
+            -- ↑j' is definally b
+            have : (↑m : ℝ)⁻¹ * ↑↑(σ i) * F b (S i)
+                = (↑m : ℝ)⁻¹ * ↑↑(σ i) * F (j' : ι) (S i) := by simp [j']
+            exact le_of_eq this
     rw [hbridge]
     dsimp [MassartNotation.X, MassartNotation.Y]
     refine ProbabilityTheory.maximal_inequality_supR
@@ -293,7 +257,7 @@ lemma massart_lemma_pmf
       (n := f.card)
       (s := (Finset.univ : Finset (Fin m)))
       (s' := f)
-      hsR
+      hs
       rfl
       (X := MassartNotation.X (F:=F) (S:=S) (m:=m) (ι:=ι))
       (Y := MassartNotation.Y (F:=F) (S:=S) (m:=m) (ι:=ι))
@@ -349,8 +313,7 @@ lemma massart_lemma_pmf
         · exact measure_eq
         · exact PMF.toMeasure.isProbabilityMeasure (PMF.uniformOfFintype { x // x ∈ {-1, 1} })
       exact signs_coord_indep
-    · intro a af
-      apply MassartNotation.xy_identity
-      exact af
+    · intro a _
+      exact MassartNotation.xy_identity (F:=F) (S:=S) a
 
 end Causalean.Stat.Concentration

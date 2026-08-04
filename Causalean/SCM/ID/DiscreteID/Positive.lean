@@ -72,15 +72,17 @@ theorem PositiveMass.map_of_surjective
 
 /-- Positive point mass is preserved by coordinate projection. -/
 theorem PositiveMass.map_valuesProjection
-    {M : Type*} [DecidableEq M] [Fintype M]
+    {M : Type*}
     {I J : Finset M} {Ω' : M → Type*}
     [∀ m, MeasurableSpace (Ω' m)] [∀ m, Nonempty (Ω' m)]
-    [∀ m, MeasurableSingletonClass (Ω' m)]
+    [MeasurableSingletonClass (ValuesOn J Ω')]
     {μ : MeasureTheory.Measure (ValuesOn I Ω')}
     (hμ : PositiveMass μ) (hJI : J ⊆ I) :
     PositiveMass (μ.map (valuesProjection (Ω := Ω') hJI)) :=
-  PositiveMass.map_of_surjective (measurable_valuesProjection hJI) hμ
-    (valuesProjection_surjective hJI)
+  by
+    classical
+    exact PositiveMass.map_of_surjective (measurable_valuesProjection hJI) hμ
+      (valuesProjection_surjective hJI)
 
 /-- Positive point mass can be pulled back across an injective measurable map
 when the pushed-forward measure is positive at every image value. -/

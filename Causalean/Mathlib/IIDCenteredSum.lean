@@ -62,22 +62,22 @@ namespace Causalean.Mathlib
 
 open MeasureTheory ProbabilityTheory Filter Topology
 
-/-- Pull the `1 / √|s|` normalization out of a nonnegative `lintegral` bound.
+/-- A finite sum whose squared integral is at most its number of terms times a
+nonnegative benchmark remains bounded by that benchmark after division by the
+square root of the number of terms.
 
 This is the deterministic algebraic part of
-`iid_centered_sum_sq_lintegral_le`: if the unscaled centered sum has second
-moment bounded by `|s|` times a nonnegative benchmark, then the normalized sum
-is bounded by that benchmark. -/
-private lemma lintegral_ofReal_inv_sqrt_smul_sum_sq_le
+`iid_centered_sum_sq_lintegral_le`. -/
+lemma lintegral_ofReal_inv_sqrt_smul_sum_sq_le
     {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω}
     {ι : Type*} (s : Finset ι) (hs_pos : 0 < s.card)
-    (Y : ι → Ω → ℝ) (B : Ω → ℝ)
+    (Y : ι → Ω → ℝ) (B : Ω → ENNReal)
     (h_sum :
       ∫⁻ ω, ENNReal.ofReal ((∑ i ∈ s, Y i ω) ^ 2) ∂μ ≤
-        (s.card : ENNReal) * ∫⁻ ω, ENNReal.ofReal (B ω) ∂μ) :
+        (s.card : ENNReal) * ∫⁻ ω, B ω ∂μ) :
     ∫⁻ ω, ENNReal.ofReal
         (((Real.sqrt (s.card : ℝ))⁻¹ * ∑ i ∈ s, Y i ω) ^ 2) ∂μ
-      ≤ ∫⁻ ω, ENNReal.ofReal (B ω) ∂μ := by
+      ≤ ∫⁻ ω, B ω ∂μ := by
   let nE : ENNReal := s.card
   have hnE_ne_zero : nE ≠ 0 := by
     simp [nE, Nat.ne_of_gt hs_pos]
@@ -115,19 +115,21 @@ private lemma lintegral_ofReal_inv_sqrt_smul_sum_sq_le
     _ = nE⁻¹ * ∫⁻ ω, ENNReal.ofReal ((∑ i ∈ s, Y i ω) ^ 2) ∂μ := by
       rw [lintegral_const_mul' _ _ hnE_inv_ne_top]
     _ ≤ nE⁻¹ * (nE *
-          ∫⁻ ω, ENNReal.ofReal (B ω) ∂μ) := by
+          ∫⁻ ω, B ω ∂μ) := by
       exact mul_le_mul_right (by simpa [nE] using h_sum) nE⁻¹
-    _ = ∫⁻ ω, ENNReal.ofReal (B ω) ∂μ := by
+    _ = ∫⁻ ω, B ω ∂μ := by
       rw [← mul_assoc, ENNReal.inv_mul_cancel hnE_ne_zero hnE_ne_top, one_mul]
 
-/-- For an `L²` real function, the square of its `eLpNorm` is the integral of
-the square, in `ENNReal.ofReal` form. -/
-private lemma eLpNorm_two_sq_toReal_eq_integral_sq
+/-- The square of a square-integrable variable's L2 norm equals the integral
+of its squared norm, for any measure.
+
+The equality is stated in the extended nonnegative-real form used by
+nonnegative integration. -/
+lemma eLpNorm_two_sq_toReal_eq_integral_sq
     {X : Type*} [MeasurableSpace X] {P : Measure X}
-    [IsProbabilityMeasure P]
-    {f : X → ℝ} (hf : MemLp f 2 P) :
+    {E : Type*} [NormedAddCommGroup E] {f : X → E} (hf : MemLp f 2 P) :
     ENNReal.ofReal ((eLpNorm f 2 P).toReal ^ 2) =
-      ENNReal.ofReal (∫ x, (f ^ 2) x ∂P) := by
+      ENNReal.ofReal (∫ x, ‖f x‖ ^ 2 ∂P) := by
   have h_eLp := hf.eLpNorm_eq_integral_rpow_norm
     (by norm_num : (2 : ENNReal) ≠ 0)
     (by norm_num : (2 : ENNReal) ≠ ⊤)
@@ -137,26 +139,23 @@ private lemma eLpNorm_two_sq_toReal_eq_integral_sq
     exact Real.rpow_nonneg (integral_nonneg fun x => by positivity) _
   rw [ENNReal.toReal_ofReal hroot_nonneg]
   have hsq : ((∫ a, ‖f a‖ ^ (2 : ℝ) ∂P) ^ (2 : ℝ)⁻¹) ^ 2 =
-      ∫ x, f x ^ 2 ∂P := by
-    have hint_eq : (∫ a, ‖f a‖ ^ (2 : ℝ) ∂P) = ∫ x, f x ^ 2 ∂P := by
-      congr with x
-      norm_num [sq_abs]
-    rw [hint_eq]
-    rw [show ((∫ x, f x ^ 2 ∂P) ^ (2 : ℝ)⁻¹) ^ 2 =
-        ((∫ x, f x ^ 2 ∂P) ^ (1 / 2 : ℝ)) ^ 2 by norm_num]
-    rw [show ((∫ x, f x ^ 2 ∂P) ^ (1 / 2 : ℝ)) ^ 2 =
-        ((∫ x, f x ^ 2 ∂P) ^ (1 / 2 : ℝ)) ^ (2 : ℝ) by
+      ∫ x, ‖f x‖ ^ 2 ∂P := by
+    rw [show ((∫ x, ‖f x‖ ^ (2 : ℝ) ∂P) ^ (2 : ℝ)⁻¹) ^ 2 =
+        ((∫ x, ‖f x‖ ^ (2 : ℝ) ∂P) ^ (1 / 2 : ℝ)) ^ 2 by norm_num]
+    rw [show ((∫ x, ‖f x‖ ^ (2 : ℝ) ∂P) ^ (1 / 2 : ℝ)) ^ 2 =
+        ((∫ x, ‖f x‖ ^ (2 : ℝ) ∂P) ^ (1 / 2 : ℝ)) ^ (2 : ℝ) by
       norm_num [Real.rpow_two]]
     rw [← Real.rpow_mul]
     · norm_num
-      exact Real.rpow_one (∫ x, f x ^ 2 ∂P)
-    · exact integral_nonneg fun x => sq_nonneg _
+      exact Real.rpow_one (∫ x, ‖f x‖ ^ 2 ∂P)
+    · exact integral_nonneg fun x => Real.rpow_nonneg (norm_nonneg _) _
   rw [hsq]
-  simp [Pi.pow_apply]
 
-/-- The centered second moment of an `L²` real function is bounded by its
-uncentered `L²` norm.  This is the diagonal term used below. -/
-private lemma centered_sq_lintegral_le_eLpNorm_two_sq
+/-- Centering a square-integrable real variable cannot increase its second
+moment beyond its uncentered L2 energy under a probability distribution.
+
+This is the usual variance bound in nonnegative-integral form. -/
+lemma centered_sq_lintegral_le_eLpNorm_two_sq
     {X : Type*} [MeasurableSpace X] {P : Measure X}
     [IsProbabilityMeasure P]
     {f : X → ℝ} (hf : MemLp f 2 P) :
@@ -172,98 +171,100 @@ private lemma centered_sq_lintegral_le_eLpNorm_two_sq
   have hvar_eq : ∫ x, (f x - ∫ y, f y ∂P) ^ 2 ∂P = variance f P := by
     rw [(variance_eq_integral hf.aemeasurable).symm]
   rw [hvar_eq]
-  have hvar_le : variance f P ≤ ∫ x, (f ^ 2) x ∂P :=
-    variance_le_expectation_sq hf.aestronglyMeasurable
+  have hvar_le : variance f P ≤ ∫ x, ‖f x‖ ^ 2 ∂P := by
+    simpa [Real.norm_eq_abs, sq_abs] using
+      variance_le_expectation_sq hf.aestronglyMeasurable
   rw [eLpNorm_two_sq_toReal_eq_integral_sq hf]
   exact ENNReal.ofReal_le_ofReal hvar_le
 
-/-- Product-measure version of the centered finite-sum estimate for a fixed
-integrand.  This is where finite-product independence kills cross terms, via
-Mathlib's `variance_sum_pi`. -/
-private lemma pi_centered_sum_sq_lintegral_le
-    {X : Type*} [MeasurableSpace X] {P : Measure X}
-    [IsProbabilityMeasure P]
-    {ι : Type*} (s : Finset ι)
-    {f : X → ℝ} (hf : MemLp f 2 P) :
-    ∫⁻ v : ((i : s) → X), ENNReal.ofReal
-        ((∑ i : s, (f (v i) - ∫ x, f x ∂P)) ^ 2)
-        ∂Measure.pi (fun _ : s => P)
-      ≤ (s.card : ENNReal) * ENNReal.ofReal ((eLpNorm f 2 P).toReal ^ 2) := by
+/-- Finitely many independent coordinates, each with its own square-integrable
+real-valued law, have a centered sum whose second moment is bounded by the sum
+of their individual squared L² norms. -/
+lemma pi_centered_sum_sq_lintegral_le
+    {ι : Type*} [Fintype ι] {X : ι → Type*} [∀ i, MeasurableSpace (X i)]
+    {P : ∀ i, Measure (X i)} [∀ i, IsProbabilityMeasure (P i)]
+    {f : ∀ i, X i → ℝ} (hf : ∀ i, MemLp (f i) 2 (P i)) :
+    ∫⁻ v : ∀ i, X i, ENNReal.ofReal
+        ((∑ i, (f i (v i) - ∫ x, f i x ∂P i)) ^ 2)
+        ∂Measure.pi P
+      ≤ ∑ i, ENNReal.ofReal ((eLpNorm (f i) 2 (P i)).toReal ^ 2) := by
   classical
-  let ν : Measure ((i : s) → X) := Measure.pi (fun _ : s => P)
-  let c : ℝ := ∫ x, f x ∂P
-  let Y : s → ((i : s) → X) → ℝ := fun i v => f (v i) - c
-  have hcenterP : MemLp (fun x => f x - c) 2 P := by
-    simpa [c, sub_eq_add_neg] using hf.sub (memLp_const (∫ x, f x ∂P))
-  have hYmem : ∀ i : s, MemLp (Y i) 2 ν := by
+  let ν : Measure (∀ i, X i) := Measure.pi P
+  let c : ∀ i, ℝ := fun i => ∫ x, f i x ∂P i
+  let Y : ∀ i, (∀ i, X i) → ℝ := fun i v => f i (v i) - c i
+  have hcenterP : ∀ i, MemLp (fun x => f i x - c i) 2 (P i) := by
     intro i
-    have hcomp := hcenterP.comp_measurePreserving
-      (measurePreserving_eval (fun _ : s => P) i)
+    simpa [c, sub_eq_add_neg] using (hf i).sub (memLp_const (∫ x, f i x ∂P i))
+  have hYmem : ∀ i, MemLp (Y i) 2 ν := by
+    intro i
+    have hcomp := (hcenterP i).comp_measurePreserving (measurePreserving_eval P i)
     simpa [Y, c, Function.comp_def, ν] using hcomp
-  have hsum_mem : MemLp (fun v => ∑ i : s, Y i v) 2 ν := by
+  have hsum_mem : MemLp (fun v => ∑ i, Y i v) 2 ν := by
     simpa using (memLp_finset_sum Finset.univ (fun i _ => hYmem i))
-  have hsum_int : Integrable (fun v => (∑ i : s, Y i v) ^ 2) ν :=
+  have hsum_int : Integrable (fun v => (∑ i, Y i v) ^ 2) ν :=
     hsum_mem.integrable_sq
-  have hsum_nn : 0 ≤ᵐ[ν] fun v => (∑ i : s, Y i v) ^ 2 :=
+  have hsum_nn : 0 ≤ᵐ[ν] fun v => (∑ i, Y i v) ^ 2 :=
     Filter.Eventually.of_forall fun v => sq_nonneg _
   rw [← MeasureTheory.ofReal_integral_eq_lintegral_ofReal hsum_int hsum_nn]
-  have hYint_zero : ∀ i : s, ∫ v, Y i v ∂ν = 0 := by
+  have hYint_zero : ∀ i, ∫ v, Y i v ∂ν = 0 := by
     intro i
-    have hmp := measurePreserving_eval (fun _ : s => P) i
-    have hcenter_map : AEStronglyMeasurable (fun x => f x - c)
+    have hmp := measurePreserving_eval P i
+    have hcenter_map : AEStronglyMeasurable (fun x => f i x - c i)
         (Measure.map (Function.eval i) ν) := by
       rw [hmp.map_eq]
-      exact hcenterP.aestronglyMeasurable
+      exact (hcenterP i).aestronglyMeasurable
     have hmap0 := integral_map hmp.aemeasurable hcenter_map
     rw [hmp.map_eq] at hmap0
-    have hmap : ∫ x, f x - c ∂P = ∫ v, f (v i) - c ∂ν := hmap0
-    have hcenter_int_zero : ∫ x, f x - c ∂P = 0 := by
-      have hf_int : Integrable f P :=
-        hf.integrable (by norm_num : (1 : ENNReal) ≤ 2)
-      rw [integral_sub hf_int (integrable_const c)]
+    have hmap : ∫ x, f i x - c i ∂P i = ∫ v, f i (v i) - c i ∂ν := hmap0
+    have hcenter_int_zero : ∫ x, f i x - c i ∂P i = 0 := by
+      have hf_int : Integrable (f i) (P i) :=
+        (hf i).integrable (by norm_num : (1 : ENNReal) ≤ 2)
+      rw [integral_sub hf_int (integrable_const (c i))]
       simp [c]
     simpa [Y, c, ν] using hmap ▸ hcenter_int_zero
-  have hsum_int_zero : ∫ v, (∑ i : s, Y i v) ∂ν = 0 := by
+  have hsum_int_zero : ∫ v, (∑ i, Y i v) ∂ν = 0 := by
     rw [integral_finset_sum Finset.univ]
     · simp [hYint_zero]
     · intro i _hi
       exact (hYmem i).integrable (by norm_num : (1 : ENNReal) ≤ 2)
   have hvar_eq_int :
-      variance (fun v => ∑ i : s, Y i v) ν =
-        ∫ v, (∑ i : s, Y i v) ^ 2 ∂ν := by
+      variance (fun v => ∑ i, Y i v) ν =
+        ∫ v, (∑ i, Y i v) ^ 2 ∂ν := by
     rw [variance_of_integral_eq_zero hsum_mem.aemeasurable hsum_int_zero]
   have hvar_sum :
-      variance (fun v => ∑ i : s, Y i v) ν =
-        ∑ i : s, variance (fun x => f x - c) P := by
-    rw [show (fun v => ∑ i : s, Y i v) = (∑ i : s, Y i) by
+      variance (fun v => ∑ i, Y i v) ν =
+        ∑ i, variance (fun x => f i x - c i) (P i) := by
+    rw [show (fun v => ∑ i, Y i v) = (∑ i, Y i) by
       funext v
       simp]
     have h := variance_sum_pi
-      (μ := fun _ : s => P) (X := fun _ : s => fun x => f x - c)
-      (fun _ => hcenterP)
+      (μ := P) (X := fun i x => f i x - c i) hcenterP
     simpa [Y, ν] using h
   rw [← hvar_eq_int, hvar_sum]
   calc
-    ENNReal.ofReal (∑ i : s, variance (fun x => f x - c) P)
-        ≤ ENNReal.ofReal (∑ i : s, ∫ x, (f ^ 2) x ∂P) := by
+    ENNReal.ofReal (∑ i, variance (fun x => f i x - c i) (P i))
+        ≤ ENNReal.ofReal (∑ i, ∫ x, ‖f i x‖ ^ 2 ∂P i) := by
           exact ENNReal.ofReal_le_ofReal (Finset.sum_le_sum fun _i _hi => by
-            rw [variance_sub_const hf.aestronglyMeasurable c]
-            exact variance_le_expectation_sq hf.aestronglyMeasurable)
-    _ = (s.card : ENNReal) * ENNReal.ofReal (∫ x, (f ^ 2) x ∂P) := by
-          rw [Finset.sum_const, nsmul_eq_mul]
-          norm_num
-    _ = (s.card : ENNReal) *
-          ENNReal.ofReal ((eLpNorm f 2 P).toReal ^ 2) := by
-          rw [eLpNorm_two_sq_toReal_eq_integral_sq hf]
+            rw [variance_sub_const (hf _).aestronglyMeasurable (c _)]
+            simpa [Real.norm_eq_abs, sq_abs] using
+              variance_le_expectation_sq (hf _).aestronglyMeasurable)
+    _ = ∑ i, ENNReal.ofReal (∫ x, ‖f i x‖ ^ 2 ∂P i) := by
+          rw [ENNReal.ofReal_sum_of_nonneg]
+          intro i _
+          exact integral_nonneg fun x => sq_nonneg _
+    _ = ∑ i, ENNReal.ofReal ((eLpNorm (f i) 2 (P i)).toReal ^ 2) := by
+          apply Finset.sum_congr rfl
+          intro i _
+          rw [eLpNorm_two_sq_toReal_eq_integral_sq (hf i)]
 
 /-- Convert independence of a sub-σ-algebra and a random element into the
 product law of the joined map, with the first marginal trimmed to the
 sub-σ-algebra. -/
 lemma indep_trim_prod_map_eq
     {Ω β : Type*} [mΩ : MeasurableSpace Ω] [mβ : MeasurableSpace β]
-    {μ : Measure Ω} [IsProbabilityMeasure μ]
+    {μ : Measure Ω} [IsFiniteMeasure μ]
     (m_A : MeasurableSpace Ω) (hm_A_le : m_A ≤ mΩ)
-    {Z : Ω → β} (hZ : @Measurable Ω β mΩ mβ Z)
+    {Z : Ω → β} (hZ : @AEMeasurable Ω β mβ mΩ Z μ)
     (hInd : @Indep Ω m_A (MeasurableSpace.comap Z mβ) mΩ μ) :
     @Measure.map Ω (Ω × β) mΩ (@Prod.instMeasurableSpace Ω β m_A mβ)
       (fun ω => (ω, Z ω)) μ =
@@ -278,21 +279,22 @@ lemma indep_trim_prod_map_eq
     rw [Measure.map_apply (measurable_id'' hm_A_le) ht]
     exact (trim_measurableSet_eq hm_A_le ht).symm
   have hprod := (indepFun_iff_map_prod_eq_prod_map_map
-    ((measurable_id'' hm_A_le).aemeasurable) hZ.aemeasurable).mp hIF
+    ((measurable_id'' hm_A_le).aemeasurable) hZ).mp hIF
   simpa [hid_map, Function.comp_def] using hprod
 
-/-- Fubini/product-space form of the unscaled conditional second-moment
-estimate.
+/-- When a finite family jointly has the product law of a base population
+measure and independent identically distributed draws, the integrated squared
+centered sum is bounded by the number of draws times the integrated squared L² norm.
 
 The joined-law hypothesis is the output of `indep_trim_prod_map_eq` plus the
 i.i.d. product law.  What remains is the finite-product variance calculation:
 integrate first over the product coordinates, use `variance_sum_pi` to kill
 cross terms, and apply `centered_sq_lintegral_le_eLpNorm_two_sq` to each
 diagonal term. -/
-private lemma iid_centered_sum_sq_lintegral_unscaled_le_of_joined_law
+lemma iid_centered_sum_sq_lintegral_unscaled_le_of_joined_law
     {Ω X : Type*} [mΩ : MeasurableSpace Ω] [mX : MeasurableSpace X]
     {μ : Measure Ω} {P : Measure X}
-    [IsProbabilityMeasure μ] [IsProbabilityMeasure P]
+    [IsFiniteMeasure μ] [IsProbabilityMeasure P]
     {ι : Type*} (s : Finset ι)
     (W : ι → Ω → X)
     (hW_meas : ∀ i ∈ s, Measurable (W i))
@@ -350,7 +352,7 @@ private lemma iid_centered_sum_sq_lintegral_unscaled_le_of_joined_law
     have hnorm : @Measurable Ω ℝ m_A inferInstance
         (fun ω => (eLpNorm (g ω) 2 P).toReal) :=
       measurable_eLpNorm_two_toReal_of_uncurry (Ω := Ω) (P := P)
-        (g := g) hg_uncurry_meas
+        (g := g) (by norm_num) (by norm_num) hg_uncurry_meas
     exact ENNReal.measurable_ofReal.comp (hnorm.pow_const 2)
   have hleft_eq : ∫⁻ ω, ENNReal.ofReal
         ((∑ i ∈ s, (g ω (W i ω) - ∫ x, g ω x ∂P)) ^ 2) ∂μ =
@@ -386,7 +388,8 @@ private lemma iid_centered_sum_sq_lintegral_unscaled_le_of_joined_law
   have hinner_le : ∀ ω, ∫⁻ v, F (ω, v) ∂νX ≤ (s.card : ENNReal) * B ω := by
     intro ω
     simpa [F, B, νX] using
-      pi_centered_sum_sq_lintegral_le (s := s) (f := g ω) (hg_memLp ω)
+      (pi_centered_sum_sq_lintegral_le (ι := s) (X := fun _ : s => X)
+        (P := fun _ : s => P) (f := fun _ : s => g ω) (fun _ => hg_memLp ω))
   calc
     ∫⁻ ω, ENNReal.ofReal
         ((∑ i ∈ s, (g ω (W i ω) - ∫ x, g ω x ∂P)) ^ 2) ∂μ
@@ -403,16 +406,17 @@ private lemma iid_centered_sum_sq_lintegral_unscaled_le_of_joined_law
           ∫⁻ ω, ENNReal.ofReal ((eLpNorm (g ω) 2 P).toReal ^ 2) ∂μ := by
       rw [lintegral_trim hm_A_le hB_meas]
 
-/-- Unscaled conditional second-moment estimate for a centered i.i.d. sum.
+/-- A finite conditionally independent identically distributed family has
+integrated squared centered sum bounded by its size times the integrated squared L² norm.
 
 This is the remaining probability-theoretic core: expand the square, push the
 diagonal and off-diagonal terms through the conditional product law generated
 by `hW_indep_A` and `hW_iid_pi`, kill the cross terms by centering, and bound
 the diagonal variance by the L² norm. -/
-private lemma iid_centered_sum_sq_lintegral_unscaled_le
+lemma iid_centered_sum_sq_lintegral_unscaled_le
     {Ω X : Type*} [mΩ : MeasurableSpace Ω] [mX : MeasurableSpace X]
     {μ : Measure Ω} {P : Measure X}
-    [IsProbabilityMeasure μ] [IsProbabilityMeasure P]
+    [IsFiniteMeasure μ] [IsProbabilityMeasure P]
     {ι : Type*} (s : Finset ι)
     (W : ι → Ω → X)
     (hW_meas : ∀ i ∈ s, Measurable (W i))
@@ -454,7 +458,7 @@ private lemma iid_centered_sum_sq_lintegral_unscaled_le
             (fun ω (i : s) => W i.val ω) μ) :=
       indep_trim_prod_map_eq
         (Ω := Ω) (β := ((i : s) → X)) (mΩ := mΩ) (μ := μ)
-        m_A hm_A_le hZ_meas hW_indep_A
+        m_A hm_A_le hZ_meas.aemeasurable hW_indep_A
     simpa [hW_iid_pi] using hW_join_raw
   exact iid_centered_sum_sq_lintegral_unscaled_le_of_joined_law
     (Ω := Ω) (X := X) (mΩ := mΩ) (mX := mX) (μ := μ) (P := P)
@@ -509,7 +513,7 @@ Dividing by `|s|` (the `(1/√|s|)²` prefactor) gives the claim. -/
 theorem iid_centered_sum_sq_lintegral_le
     {Ω X : Type*} [mΩ : MeasurableSpace Ω] [mX : MeasurableSpace X]
     {μ : Measure Ω} {P : Measure X}
-    [IsProbabilityMeasure μ] [IsProbabilityMeasure P]
+    [IsFiniteMeasure μ] [IsProbabilityMeasure P]
     {ι : Type*} (s : Finset ι) (hs_pos : 0 < s.card)
     (W : ι → Ω → X)
     (hW_meas : ∀ i ∈ s, Measurable (W i))
@@ -532,12 +536,12 @@ theorem iid_centered_sum_sq_lintegral_le
       ≤ ∫⁻ ω, ENNReal.ofReal ((eLpNorm (g ω) 2 P).toReal ^ 2) ∂μ := by
   let Y : ι → Ω → ℝ :=
     fun i ω => g ω (W i ω) - ∫ x, g ω x ∂P
-  let B : Ω → ℝ :=
-    fun ω => (eLpNorm (g ω) 2 P).toReal ^ 2
+  let B : Ω → ENNReal :=
+    fun ω => ENNReal.ofReal ((eLpNorm (g ω) 2 P).toReal ^ 2)
   change
     ∫⁻ ω, ENNReal.ofReal
         (((Real.sqrt (s.card : ℝ))⁻¹ * ∑ i ∈ s, Y i ω) ^ 2) ∂μ
-      ≤ ∫⁻ ω, ENNReal.ofReal (B ω) ∂μ
+      ≤ ∫⁻ ω, B ω ∂μ
   exact @lintegral_ofReal_inv_sqrt_smul_sum_sq_le Ω mΩ μ ι
     s hs_pos Y B
     (by

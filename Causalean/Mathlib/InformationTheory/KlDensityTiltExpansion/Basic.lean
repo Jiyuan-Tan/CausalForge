@@ -3,7 +3,8 @@ Copyright (c) 2026 Jiyuan Tan. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jiyuan Tan
 -/
-import Mathlib
+import Mathlib.Analysis.InnerProductSpace.Basic
+import Mathlib.MeasureTheory.Integral.Bochner.Basic
 
 /-!
 # The linear density tilt and its probability-measure property
@@ -20,8 +21,8 @@ the second-order Kullback–Leibler expansion in `KLExpansion.lean`:
 * `tiltMeasure_absolutelyContinuous` — the tilt is absolutely continuous wrt `μ`;
 * `tiltDensity_nonneg` — for `|h| · C ≤ 1` the density `1 + h · s` is `≥ 0`
   everywhere (bounded score `|s| ≤ C`);
-* `integrable_of_bounded` — a bounded measurable score is `μ`-integrable
-  (finite measure);
+* `MeasureTheory.Integrable.of_bound` supplies the bounded-score integrability
+  fact used below;
 * `integral_tiltDensity` — the density integrates to `1` (mean-zero score);
 * `isProbabilityMeasure_tiltMeasure` — hence for small `|h|` the tilt is a
   probability measure.
@@ -50,6 +51,7 @@ lemma tiltMeasure_absolutelyContinuous (μ : Measure Z) (s : Z → ℝ) (h : ℝ
     tiltMeasure μ s h ≪ μ :=
   withDensity_absolutelyContinuous _ _
 
+omit [MeasurableSpace Z] in
 /-- For a bounded score `|s y| ≤ C` and tilt strength with `|h| · C ≤ 1`, the tilt
 density `1 + h · s y` is nonnegative: `|h · s y| ≤ |h| · C ≤ 1`.
 
@@ -69,27 +71,15 @@ lemma tiltDensity_nonneg {s : Z → ℝ} {C h : ℝ} (hsC : ∀ y, |s y| ≤ C)
     linarith
   linarith
 
-/-- A bounded measurable function is integrable with respect to a finite measure:
-`|s| ≤ C` is dominated by the integrable constant `C`.
-
-Proof sketch: `Integrable.of_bound`/`memℒp` route — `s` is a.e.-strongly-measurable
-and `‖s‖ ≤ C` a.e. with `C` integrable on the finite measure `μ`. -/
-lemma integrable_of_bounded {μ : Measure Z} [IsFiniteMeasure μ] {s : Z → ℝ} {C : ℝ}
-    (hs_meas : Measurable s) (hsC : ∀ y, |s y| ≤ C) : Integrable s μ := by
-  exact Integrable.of_bound hs_meas.aestronglyMeasurable C
-    (Filter.Eventually.of_forall fun y => by
-      simpa [Real.norm_eq_abs] using hsC y)
-
 /-- The tilt density integrates to `1`: `∫ (1 + h · s) dμ = 1 + h · ∫ s = 1` for a
 probability measure `μ` and a mean-zero score `s`.
 
 Proof sketch: split `∫ (1 + h · s) = ∫ 1 + h · ∫ s` via `integral_add`
-(`s` integrable by `integrable_of_bounded`), then `∫ 1 = 1` (probability measure)
+(`s` integrable by hypothesis), then `∫ 1 = 1` (probability measure)
 and `∫ s = 0`. -/
-lemma integral_tiltDensity {μ : Measure Z} [IsProbabilityMeasure μ] {s : Z → ℝ} {C h : ℝ}
-    (hs_meas : Measurable s) (hsC : ∀ y, |s y| ≤ C) (hs_mean : ∫ y, s y ∂μ = 0) :
+lemma integral_tiltDensity {μ : Measure Z} [IsProbabilityMeasure μ] {s : Z → ℝ} {h : ℝ}
+    (hs_int : Integrable s μ) (hs_mean : ∫ y, s y ∂μ = 0) :
     ∫ y, (1 + h * s y) ∂μ = 1 := by
-  have hs_int : Integrable s μ := integrable_of_bounded hs_meas hsC
   calc
     ∫ y, (1 + h * s y) ∂μ
         = ∫ y, (1 : ℝ) + h * s y ∂μ := rfl
@@ -114,7 +104,8 @@ lemma isProbabilityMeasure_tiltMeasure {μ : Measure Z} [IsProbabilityMeasure μ
     IsProbabilityMeasure (tiltMeasure μ s h) := by
   constructor
   have h_int : Integrable (fun y => (1 : ℝ) + h * s y) μ :=
-    (integrable_const 1).add ((integrable_of_bounded hs_meas hsC).const_mul h)
+    (integrable_const 1).add
+      ((Integrable.of_bound hs_meas.aestronglyMeasurable C (.of_forall hsC)).const_mul h)
   have h_nonneg : 0 ≤ᵐ[μ] fun y => (1 : ℝ) + h * s y :=
     Filter.Eventually.of_forall fun y => tiltDensity_nonneg hsC hh y
   have hmass :
@@ -122,7 +113,9 @@ lemma isProbabilityMeasure_tiltMeasure {μ : Measure Z} [IsProbabilityMeasure μ
         = ENNReal.ofReal (∫ y, (1 + h * s y) ∂μ) := by
     rw [withDensity_apply _ MeasurableSet.univ, Measure.restrict_univ,
       ← ofReal_integral_eq_lintegral_ofReal h_int h_nonneg]
-  rw [tiltMeasure, hmass, integral_tiltDensity hs_meas hsC hs_mean]
+  rw [tiltMeasure, hmass,
+    integral_tiltDensity
+      (Integrable.of_bound hs_meas.aestronglyMeasurable C (.of_forall hsC)) hs_mean]
   norm_num
 
 end Causalean.Mathlib.InformationTheory.KlDensityTiltExpansion

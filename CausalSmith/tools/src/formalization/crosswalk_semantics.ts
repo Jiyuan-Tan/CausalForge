@@ -214,6 +214,15 @@ export async function discoverRealizedSymbols(leanDir: string): Promise<string[]
  * matching: it only erases TeX spelling differences such as
  * `E_{\mathcal P_N}` versus `E_Pcal_N`.
  */
+/** ONE greek-letter command list for both comparison keys. The two keys used to
+ * carry different partial lists (one had `\delta`/`\omega`, the other
+ * `\alpha`/`\epsilon`/…), so whether a symbol's TeX and ASCII spellings matched
+ * depended on WHICH letter it used — `\sigma` (in neither list) could never
+ * bind its `@realizes sigma^2` tag and escalated as a tagging gap. Case stays
+ * significant (`\Sigma` → `Sigma` ≠ `sigma`). */
+const GREEK_COMMAND_RE =
+  /\\(?:alpha|beta|gamma|delta|epsilon|varepsilon|zeta|eta|theta|vartheta|iota|kappa|lambda|mu|nu|xi|omicron|pi|varpi|rho|varrho|sigma|varsigma|tau|upsilon|phi|varphi|chi|psi|omega|Gamma|Delta|Theta|Lambda|Xi|Pi|Sigma|Upsilon|Phi|Psi|Omega)(?![A-Za-z])/g;
+
 export function realizedNotationKey(raw: string): string {
   return raw
     .trim()
@@ -222,9 +231,13 @@ export function realizedNotationKey(raw: string): string {
     .replace(/\\mathcal\s*(?:\{([A-Za-z])\}|([A-Za-z]))/g, (_, braced, bare) => `${braced ?? bare}cal`)
     .replace(/\\mathscr\s*(?:\{([A-Za-z])\}|([A-Za-z]))/g, (_, braced, bare) => `${braced ?? bare}scr`)
     .replace(/\\mathfrak\s*(?:\{([A-Za-z])\}|([A-Za-z]))/g, (_, braced, bare) => `${braced ?? bare}frak`)
-    .replace(/\\(?:delta|omega|rho|theta|pi|gamma|mu|tau|beta|Omega|Phi)\b/g, (m) => m.slice(1))
+    .replace(GREEK_COMMAND_RE, (m) => m.slice(1))
     .replace(/_\{([^{}]*)\}/g, "_$1")
+    // Erase `^` in BOTH spellings: the braced rule dropped it while the bare
+    // spelling kept it, so `\pi^{1}` and `\pi^1` produced DIFFERENT keys and
+    // the same symbol was reported as unrealized depending on bracing.
     .replace(/\^\{([^{}]*)\}/g, "$1")
+    .replace(/\^/g, "")
     .replace(/[{}\\]/g, "")
     .replace(/[\s,;:'`]/g, "")
     .toLowerCase();
@@ -238,7 +251,7 @@ export function canonicalSymbolTagKey(raw: string): string {
     .replace(/^\$([\s\S]*)\$$/, "$1")
     .replace(/^\\\(([\s\S]*)\\\)$/, "$1")
     .replace(/\\(mathcal|mathsf|mathrm|mathbf|mathbb)\s*\{([^{}]+)\}/g, "\\$1 $2")
-    .replace(/\\(epsilon|pi|mu|tau|rho|theta|gamma|beta|alpha|lambda|phi|psi|Omega|Phi)(?![A-Za-z])/g, "$1")
+    .replace(GREEK_COMMAND_RE, (m) => m.slice(1))
     .replace(/\s+/g, " ")
     .trim();
 }

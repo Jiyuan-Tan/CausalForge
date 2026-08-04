@@ -197,6 +197,7 @@ lemma rescaledEmpiricalCDF_eq_normalizedSum (S : IIDSample Ω ℝ μ P) (y : ℝ
 
 variable [IsProbabilityMeasure μ] [IsProbabilityMeasure P]
 
+omit [IsProbabilityMeasure μ] in
 /-- **Asymptotic linearity of the empirical cdf.**  At a fixed point `y`, the
 empirical cdf `F̂ₙ(y)` is asymptotically linear at `F(y)` with influence
 function `cdfIF P y`; the remainder vanishes identically. -/
@@ -216,29 +217,25 @@ lemma empiricalCDF_isAsymLinear (S : IIDSample Ω ℝ μ P) (y : ℝ) :
 
 /-- **Empirical-cdf CLT.**  `√n (F̂ₙ(y) − F(y)) ⇒ N(0, F(y)(1 − F(y)))`.
 
-The measurability obligations on the rescaled estimator and the normalized
-sum are imposed at the call site (matching `IsAsymLinear.tendsto_normal`). -/
+The measurability obligation on the rescaled estimator is imposed at the call
+site (matching `IsAsymLinear.tendsto_normal`). -/
 theorem empiricalCDF_tendsto_normal (S : IIDSample Ω ℝ μ P) (y : ℝ)
     (hθn_meas : ∀ n : ℕ, AEMeasurable
       (IsAsymLinear.rescaledEstimator (S.empiricalCDF y) (cdf P y)
-        (fun m => Finset.range m) n) μ)
-    (hSum_meas : ∀ n : ℕ, AEMeasurable
-      (IsAsymLinear.normalizedSum S (cdfIF P y) (fun m => Finset.range m) n) μ) :
+        (fun m => Finset.range m) n) μ) :
     Tendsto_dist
       (IsAsymLinear.rescaledEstimator (S.empiricalCDF y) (cdf P y) (fun m => Finset.range m))
       (gaussianMeasure 0 (cdf P y * (1 - cdf P y)))
       μ
       hθn_meas := by
-  have h := (empiricalCDF_isAsymLinear S y).tendsto_normal (measurable_cdfIF y) hθn_meas hSum_meas
+  have h := (empiricalCDF_isAsymLinear S y).tendsto_normal (measurable_cdfIF y) hθn_meas
   rwa [cdfIF_variance] at h
 
+omit [IsProbabilityMeasure μ] in
 /-- **Empirical-cdf consistency** (WLLN): `F̂ₙ(y) →ₚ F(y)`. -/
 theorem empiricalCDF_tendsto_inProb (S : IIDSample Ω ℝ μ P) (y : ℝ) :
     Tendsto_inProb (S.empiricalCDF y) (fun _ => cdf P y) μ := by
-  have hint : Integrable (fun ω => cdfStat y (S.Z 0 ω)) μ := by
-    have : Integrable (cdfStat y) (μ.map (S.Z 0)) := by rw [S.law]; exact integrable_cdfStat y
-    exact this.comp_measurable (S.meas 0)
-  have h := S.sampleMean_tendsto_inProb (measurable_cdfStat y) hint
+  have h := S.sampleMean_tendsto_inProb (measurable_cdfStat y) (integrable_cdfStat y)
   rw [integral_cdfStat] at h
   exact h
 

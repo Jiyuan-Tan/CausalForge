@@ -6,7 +6,7 @@ Authors: Jiyuan Tan
 # Finite-partition integral algebra
 
 Causal-agnostic measure-theory utilities for decomposing an integral over the
-*fibers* of a finite-valued measurable map `H : Ω → ι` (a finite partition of the sample
+*fibers* of a finite-valued map `H : Ω → ι` (a finite partition of the sample
 space). They live in `Causalean/Mathlib/MeasureTheory/` so any layer (estimation, panel
 cell algebra, partial-ID) can use them without pulling in the statistics or
 potential-outcome layers.
@@ -21,9 +21,9 @@ pull-out** that the eventCondExp file does not provide:
 * `integral_cellConst_mul` : `∫ c(H ω)·f ω = ∑ h, c h · ∫_{H⁻¹{h}} f`.
 * `integral_cellConst` : `∫ c(H ω) = ∑ h, c h · μ(H⁻¹{h})` (finite measure).
 
-The index type carries `[Fintype ι] [MeasurableSpace ι]
-[MeasurableSingletonClass ι]`, so the fibers `H⁻¹{h}` are measurable, pairwise
-disjoint, and cover `univ`.  No measurability of `c : ι → ℝ` is required: on
+The index type carries `[Fintype ι]`; supplied measurable-fiber assumptions ensure that the
+fibers `H⁻¹{h}` are measurable, pairwise disjoint, and cover `univ`.  No measurability of
+`c : ι → ℝ` is required: on
 each fiber `c ∘ H` is the *constant* `c h`, pulled out per cell.
 -/
 
@@ -32,7 +32,7 @@ import Mathlib.MeasureTheory.Integral.Bochner.Set
 /-!
 # Finite-partition integral algebra
 
-This file decomposes integrals over the fibres of a finite-valued measurable map and
+This file decomposes integrals over the fibres of a finite-valued map with measurable fibres and
 proves that cell-constant weights can be pulled out fibre by fibre. The public lemmas
 are `integral_eq_sum_setIntegral_fiber`, `integral_cellConst_mul`, and
 `integral_cellConst`, which turn a finite partition of a sample space into finite sums
@@ -77,15 +77,16 @@ private theorem iUnion_fiber {ι : Type*} (H : Ω → ι) : (⋃ h, H ⁻¹' {h}
 /-! ## Integral decomposition over fibers -/
 
 /-- **Fiber decomposition.**  For an integrable `f` and a finite-valued
-measurable map `H`, the integral of `f` splits as the sum of its set-integrals
+map `H` with measurable fibres, the integral of `f` splits as the sum of its set-integrals
 over the fibers `H⁻¹{h}`. -/
 theorem integral_eq_sum_setIntegral_fiber {ι : Type*} [Fintype ι]
-    [MeasurableSpace ι] [MeasurableSingletonClass ι]
-    {H : Ω → ι} (hH : Measurable H) {f : Ω → ℝ} (hf : Integrable f μ) :
+    {H : Ω → ι} (hfiber : ∀ h, MeasurableSet (H ⁻¹' {h}))
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    {f : Ω → E} (hf : Integrable f μ) :
     ∫ ω, f ω ∂μ = ∑ h : ι, ∫ ω in H ⁻¹' {h}, f ω ∂μ := by
   have hsplit :
       ∫ ω in ⋃ h, H ⁻¹' {h}, f ω ∂μ = ∑ h : ι, ∫ ω in H ⁻¹' {h}, f ω ∂μ :=
-    MeasureTheory.integral_iUnion_fintype (measurableSet_fiber hH)
+    MeasureTheory.integral_iUnion_fintype hfiber
       (pairwise_disjoint_fiber H) (fun _ => hf.integrableOn)
   calc
     ∫ ω, f ω ∂μ = ∫ ω in (Set.univ : Set Ω), f ω ∂μ := by rw [setIntegral_univ]
@@ -100,45 +101,45 @@ on each fiber `c (H ω)` is the constant `c h`.
 This is the workhorse for panel cell-by-cell regression algebra and for
 estimands written as cell-weighted averages. -/
 theorem integral_cellConst_mul {ι : Type*} [Fintype ι]
-    [MeasurableSpace ι] [MeasurableSingletonClass ι]
-    {H : Ω → ι} (hH : Measurable H) (c : ι → ℝ)
-    {f : Ω → ℝ} (hf : Integrable f μ) :
-    ∫ ω, c (H ω) * f ω ∂μ = ∑ h : ι, c h * ∫ ω in H ⁻¹' {h}, f ω ∂μ := by
+    {H : Ω → ι} (hfiber : ∀ h, MeasurableSet (H ⁻¹' {h})) (c : ι → ℝ)
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    {f : Ω → E} (hf : Integrable f μ) :
+    ∫ ω, c (H ω) • f ω ∂μ = ∑ h : ι, c h • ∫ ω in H ⁻¹' {h}, f ω ∂μ := by
   -- On each fiber the integrand equals the constant-multiple `c h • f`.
-  have hgint : ∀ h : ι, IntegrableOn (fun ω => c (H ω) * f ω) (H ⁻¹' {h}) μ := by
+  have hgint : ∀ h : ι, IntegrableOn (fun ω => c (H ω) • f ω) (H ⁻¹' {h}) μ := by
     intro h
-    refine ((hf.const_mul (c h)).integrableOn).congr_fun ?_ (measurableSet_fiber hH h)
+    refine ((hf.smul (c h)).integrableOn).congr_fun ?_ (hfiber h)
     intro ω hω
     simp only [Set.mem_preimage, Set.mem_singleton_iff] at hω
     simp [hω]
   have hsplit :
-      ∫ ω in ⋃ h, H ⁻¹' {h}, c (H ω) * f ω ∂μ
-        = ∑ h : ι, ∫ ω in H ⁻¹' {h}, c (H ω) * f ω ∂μ :=
-    MeasureTheory.integral_iUnion_fintype (measurableSet_fiber hH)
+      ∫ ω in ⋃ h, H ⁻¹' {h}, c (H ω) • f ω ∂μ
+        = ∑ h : ι, ∫ ω in H ⁻¹' {h}, c (H ω) • f ω ∂μ :=
+    MeasureTheory.integral_iUnion_fintype hfiber
       (pairwise_disjoint_fiber H) hgint
   calc
-    ∫ ω, c (H ω) * f ω ∂μ
-        = ∫ ω in (Set.univ : Set Ω), c (H ω) * f ω ∂μ := by rw [setIntegral_univ]
-    _ = ∫ ω in ⋃ h, H ⁻¹' {h}, c (H ω) * f ω ∂μ := by rw [iUnion_fiber]
-    _ = ∑ h : ι, ∫ ω in H ⁻¹' {h}, c (H ω) * f ω ∂μ := hsplit
-    _ = ∑ h : ι, c h * ∫ ω in H ⁻¹' {h}, f ω ∂μ := by
+    ∫ ω, c (H ω) • f ω ∂μ
+        = ∫ ω in (Set.univ : Set Ω), c (H ω) • f ω ∂μ := by rw [setIntegral_univ]
+    _ = ∫ ω in ⋃ h, H ⁻¹' {h}, c (H ω) • f ω ∂μ := by rw [iUnion_fiber]
+    _ = ∑ h : ι, ∫ ω in H ⁻¹' {h}, c (H ω) • f ω ∂μ := hsplit
+    _ = ∑ h : ι, c h • ∫ ω in H ⁻¹' {h}, f ω ∂μ := by
         refine Finset.sum_congr rfl fun h _ => ?_
         have hcell :
-            ∫ ω in H ⁻¹' {h}, c (H ω) * f ω ∂μ = ∫ ω in H ⁻¹' {h}, c h * f ω ∂μ := by
-          refine setIntegral_congr_fun (measurableSet_fiber hH h) ?_
+            ∫ ω in H ⁻¹' {h}, c (H ω) • f ω ∂μ = ∫ ω in H ⁻¹' {h}, c h • f ω ∂μ := by
+          refine setIntegral_congr_fun (hfiber h) ?_
           intro ω hω
           simp only [Set.mem_preimage, Set.mem_singleton_iff] at hω
           simp [hω]
-        rw [hcell, integral_const_mul]
+        rw [hcell, integral_smul]
 
 /-- **Cell-weight aggregation.**  For a finite measure, the integral of a
 cell-constant function `c (H ω)` is the cell-weighted sum `∑ h, c h · μ(H⁻¹{h})`.
 Special case of `integral_cellConst_mul` with `f ≡ 1`. -/
 theorem integral_cellConst {ι : Type*} [Fintype ι]
-    [MeasurableSpace ι] [MeasurableSingletonClass ι] [IsFiniteMeasure μ]
-    {H : Ω → ι} (hH : Measurable H) (c : ι → ℝ) :
+    [IsFiniteMeasure μ] {H : Ω → ι}
+    (hfiber : ∀ h, MeasurableSet (H ⁻¹' {h})) (c : ι → ℝ) :
     ∫ ω, c (H ω) ∂μ = ∑ h : ι, c h * (μ (H ⁻¹' {h})).toReal := by
-  have h := integral_cellConst_mul hH c
+  have h := integral_cellConst_mul hfiber c
     (f := fun _ => (1 : ℝ)) (hf := (integrable_const (1 : ℝ) : Integrable (fun _ : Ω => (1 : ℝ)) μ))
   simpa [mul_one, setIntegral_const, smul_eq_mul] using h
 

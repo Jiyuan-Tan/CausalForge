@@ -30,11 +30,13 @@ variable {d : ℕ}
 
 /-- An upper-triangular matrix in the sense `j < i → U i j = 0`, i.e. all entries strictly below
 the diagonal vanish. -/
-def IsUpperTri (U : Matrix (Fin d) (Fin d) ℝ) : Prop := ∀ i j, j < i → U i j = 0
+def IsUpperTri {ι K : Type*} [LT ι] [Zero K] (U : Matrix ι ι K) : Prop :=
+  ∀ i j, j < i → U i j = 0
 
 /-- The entrywise upper-triangular predicate is exactly Mathlib's block-triangular predicate
 for the identity order. -/
-theorem isUpperTri_iff_blockTriangular {U : Matrix (Fin d) (Fin d) ℝ} :
+theorem isUpperTri_iff_blockTriangular {ι K : Type*} [LT ι] [Zero K]
+    {U : Matrix ι ι K} :
     IsUpperTri U ↔ U.BlockTriangular id := by
   rfl
 
@@ -148,7 +150,8 @@ section Uniqueness
 
 /-- An orthogonal (`Wᵀ * W = 1`) upper-triangular matrix with strictly positive diagonal is the
 identity matrix. -/
-theorem orthogonal_upperTri_pos_diag_eq_one {W : Matrix (Fin d) (Fin d) ℝ}
+theorem orthogonal_upperTri_pos_diag_eq_one {ι K : Type*} [Fintype ι] [LinearOrder ι]
+    [Field K] [LinearOrder K] [IsStrictOrderedRing K] {W : Matrix ι ι K}
     (hortho : Wᵀ * W = 1) (hupp : ∀ i j, j < i → W i j = 0) (hpos : ∀ i, 0 < W i i) :
     W = 1 := by
   classical
@@ -190,17 +193,18 @@ theorem orthogonal_upperTri_pos_diag_eq_one {W : Matrix (Fin d) (Fin d) ℝ}
     · -- `j < i`: upper-triangularity kills it
       rw [hupp i j h, Matrix.one_apply_ne (Ne.symm (by simpa using h.ne))]
 
-/-- Two upper-triangular positive-diagonal Cholesky factors of the same real positive-definite
-matrix are equal. -/
-theorem cholesky_unique {M U V : Matrix (Fin d) (Fin d) ℝ}
+/-- Two upper-triangular positive-diagonal factors with the same Gram matrix over an ordered
+field are equal. -/
+theorem cholesky_unique {ι K : Type*} [Fintype ι] [LinearOrder ι]
+    [Field K] [LinearOrder K] [IsStrictOrderedRing K] {U V : Matrix ι ι K}
     (hUu : ∀ i j, j < i → U i j = 0) (hUp : ∀ i, 0 < U i i)
     (hVu : ∀ i j, j < i → V i j = 0) (hVp : ∀ i, 0 < V i i)
-    (hU : M = U.transpose * U) (hV : M = V.transpose * V) : U = V := by
+    (hGram : U.transpose * U = V.transpose * V) : U = V := by
   classical
   have hUu' : U.BlockTriangular id := hUu
   have hVu' : V.BlockTriangular id := hVu
   -- `U` is invertible (positive diagonal ⟹ positive determinant).
-  have hUdet : (0 : ℝ) < U.det := by
+  have hUdet : (0 : K) < U.det := by
     rw [Matrix.det_of_upperTriangular hUu']; exact Finset.prod_pos (fun i _ => hUp i)
   haveI : Invertible U := U.invertibleOfIsUnitDet (isUnit_iff_ne_zero.mpr hUdet.ne')
   -- `U⁻¹` is upper-triangular with reciprocal diagonal entries.
@@ -217,7 +221,7 @@ theorem cholesky_unique {M U V : Matrix (Fin d) (Fin d) ℝ}
       · rw [hUu k i hk, mul_zero]
     · intro h; exact absurd (Finset.mem_univ i) h
   -- The transition matrix `W = V * U⁻¹`.
-  set W : Matrix (Fin d) (Fin d) ℝ := V * U⁻¹ with hW
+  set W : Matrix ι ι K := V * U⁻¹ with hW
   -- `W` is upper-triangular.
   have hWupp : ∀ i j, j < i → W i j = 0 := hVu'.mul hUinvU
   -- `W` has strictly positive diagonal.
@@ -235,7 +239,7 @@ theorem cholesky_unique {M U V : Matrix (Fin d) (Fin d) ℝ}
     rw [hWdiag i]
     exact mul_pos (hVp i) (inv_pos.mpr (hUp i))
   -- `W` is orthogonal: `Wᵀ * W = 1`.
-  have hMUV : Uᵀ * U = Vᵀ * V := hU ▸ hV
+  have hMUV : Uᵀ * U = Vᵀ * V := hGram
   have hWortho : Wᵀ * W = 1 := by
     rw [hW, Matrix.transpose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc Vᵀ V, ← hMUV,
       Matrix.mul_assoc Uᵀ, Matrix.mul_inv_of_invertible, Matrix.mul_one,

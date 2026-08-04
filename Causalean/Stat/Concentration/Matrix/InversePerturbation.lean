@@ -46,17 +46,18 @@ attribute [local instance] Matrix.linftyOpNormedAddCommGroup Matrix.linftyOpNorm
 
 variable {p : ℕ}
 
-/-- Completeness of the matrix ring under the `ℓ∞`-operator norm (it shares the product
-uniformity, so it inherits completeness from the coordinatewise reshaping `Fin (p+1) → Fin (p+1)
-→ ℝ`). Needed to invoke the Neumann/geometric-series unit API. -/
-theorem completeSpace_matrix_linftyOp :
-    CompleteSpace (Matrix (Fin (p + 1)) (Fin (p + 1)) ℝ) :=
-  inferInstanceAs (CompleteSpace (Fin (p + 1) → Fin (p + 1) → ℝ))
+/-- Completeness of finite matrices under the `ℓ∞`-operator norm follows from the coordinatewise
+function-space uniformity. Needed to invoke the Neumann/geometric-series unit API. -/
+theorem completeSpace_matrix_linftyOp {α β R : Type*}
+    [Fintype α] [Fintype β] [NormedAddCommGroup R] [CompleteSpace R] :
+    CompleteSpace (Matrix α β R) :=
+  inferInstanceAs (CompleteSpace (α → β → R))
 
-/-- Each absolute entry is dominated by the `ℓ∞`-operator (max-row-sum) norm. -/
-theorem linftyOp_abs_entry_le (A : Matrix (Fin (p + 1)) (Fin (p + 1)) ℝ) (i j : Fin (p + 1)) :
-    |A i j| ≤ ‖A‖ := by
-  rw [← Real.norm_eq_abs, Matrix.linfty_opNorm_def]
+/-- Each coefficient norm is dominated by the `ℓ∞`-operator (max-row-sum) norm. -/
+theorem linftyOp_abs_entry_le {α β R : Type*}
+    [Fintype α] [Fintype β] [NormedAddCommGroup R]
+    (A : Matrix α β R) (i : α) (j : β) : ‖A i j‖ ≤ ‖A‖ := by
+  rw [Matrix.linfty_opNorm_def]
   have hrow : ‖A i j‖₊ ≤ ∑ k, ‖A i k‖₊ :=
     Finset.single_le_sum (s := Finset.univ) (f := fun k => ‖A i k‖₊)
       (fun _ _ => zero_le _) (Finset.mem_univ j)
@@ -66,50 +67,55 @@ theorem linftyOp_abs_entry_le (A : Matrix (Fin (p + 1)) (Fin (p + 1)) ℝ) (i j 
       (Finset.mem_univ i)
   exact_mod_cast le_trans hrow hsup
 
-/-- A row-sum upper bound for the `ℓ∞`-operator norm: if every row's absolute sum is `≤ c`,
-then `‖A‖ ≤ c`. -/
-theorem linftyOp_norm_le_of_rowsum {A : Matrix (Fin (p + 1)) (Fin (p + 1)) ℝ} {c : ℝ}
-    (hc : 0 ≤ c) (h : ∀ i, (∑ j, |A i j|) ≤ c) : ‖A‖ ≤ c := by
+/-- A row-sum upper bound for the `ℓ∞`-operator norm: if every row's coefficient-norm sum is
+`≤ c`, then `‖A‖ ≤ c`. -/
+theorem linftyOp_norm_le_of_rowsum {α β R : Type*}
+    [Fintype α] [Fintype β] [NormedAddCommGroup R]
+    {A : Matrix α β R} {c : ℝ}
+    (hc : 0 ≤ c) (h : ∀ i, (∑ j, ‖A i j‖) ≤ c) : ‖A‖ ≤ c := by
   rw [Matrix.linfty_opNorm_def]
   have hsup : Finset.univ.sup (fun i => ∑ j, ‖A i j‖₊) ≤ c.toNNReal := by
     refine Finset.sup_le ?_
     intro i _
     exact NNReal.coe_le_coe.mp (by
       rw [NNReal.coe_sum, Real.coe_toNNReal c hc]
-      simpa [Real.norm_eq_abs] using h i)
+      simpa using h i)
   calc
     ↑(Finset.univ.sup fun i => ∑ j, ‖A i j‖₊) ≤ (c.toNNReal : ℝ) :=
       NNReal.coe_le_coe.mpr hsup
     _ = c := Real.coe_toNNReal c hc
 
-/-- The `ℓ∞`-operator norm of an entrywise-`η`-bounded matrix is `≤ (p+1)·η`. -/
-theorem linftyOp_norm_le_of_entry {A : Matrix (Fin (p + 1)) (Fin (p + 1)) ℝ} {η : ℝ}
-    (hη : 0 ≤ η) (h : ∀ i j, |A i j| ≤ η) : ‖A‖ ≤ (p + 1 : ℕ) * η := by
-  apply linftyOp_norm_le_of_rowsum (by positivity)
+/-- The `ℓ∞`-operator norm of an entrywise-`η`-bounded rectangular matrix is at most its
+number of columns times `η`. -/
+theorem linftyOp_norm_le_of_entry {q : ℕ}
+    {A : Matrix (Fin (p + 1)) (Fin (q + 1)) ℝ} {η : ℝ}
+    (h : ∀ i j, |A i j| ≤ η) : ‖A‖ ≤ (q + 1 : ℕ) * η := by
+  have hη : 0 ≤ η := le_trans (abs_nonneg (A 0 0)) (h 0 0)
+  apply linftyOp_norm_le_of_rowsum (mul_nonneg (by positivity) hη)
   intro i
   calc
-    ∑ j, |A i j| ≤ ∑ _j : Fin (p + 1), η :=
+    ∑ j, |A i j| ≤ ∑ _j : Fin (q + 1), η :=
       Finset.sum_le_sum (fun j _ => h i j)
-    _ = (p + 1 : ℕ) * η := by
+    _ = (q + 1 : ℕ) * η := by
       simp [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
 
-/-- **Entrywise perturbation of the `(0,0)` inverse entry.** Let `S` be an invertible
+/-- **Entrywise perturbation of an inverse entry.** Let `S` be an invertible
 `(p+1)×(p+1)` real matrix whose inverse has rows with absolute sums bounded by `c`, and let `M`
 be a matrix all of whose entries are within `η` of `S` (`|Mⱼₖ − Sⱼₖ| ≤ η`). If
-`c·(p+1)·η ≤ 1/2`, then `M` is invertible and the `(0,0)` entries of the inverses satisfy
+`c·(p+1)·η ≤ 1/2`, then `M` is invertible and every selected pair of inverse entries satisfies
 
-`|(M⁻¹)₀₀ − (S⁻¹)₀₀| ≤ 2 c² (p+1) η`.
+`|(M⁻¹)ᵢⱼ − (S⁻¹)ᵢⱼ| ≤ 2 c² (p+1) η`.
 
 This is the deterministic transport step turning an entrywise design concentration bound into a
 bound on the leverage quantity `(M⁻¹)₀₀`; combined with the population positive-definiteness it
 discharges both invertibility and the `O(1/(Nh))` leverage rate on the good event. -/
-theorem designInv00_perturb (S M : Matrix (Fin (p + 1)) (Fin (p + 1)) ℝ)
-    (hS : IsUnit S.det) {η c : ℝ} (hc : 0 ≤ c) (hη : 0 ≤ η)
+theorem designInv_perturb (S M : Matrix (Fin (p + 1)) (Fin (p + 1)) ℝ)
+    (hS : IsUnit S.det) {η c : ℝ}
     (hSrow : ∀ i, (∑ j, |S⁻¹ i j|) ≤ c)
     (hclose : ∀ j k, |M j k - S j k| ≤ η)
-    (hsmall : c * ((p + 1 : ℕ) * η) ≤ 1 / 2) :
+    (hsmall : c * ((p + 1 : ℕ) * η) ≤ 1 / 2) {i j : Fin (p + 1)} :
     IsUnit M.det ∧
-      |M⁻¹ 0 0 - S⁻¹ 0 0| ≤ 2 * c ^ 2 * ((p + 1 : ℕ) * η) := by
+      |M⁻¹ i j - S⁻¹ i j| ≤ 2 * c ^ 2 * ((p + 1 : ℕ) * η) := by
   haveI : CompleteSpace (Matrix (Fin (p + 1)) (Fin (p + 1)) ℝ) :=
     completeSpace_matrix_linftyOp
   let R := Matrix (Fin (p + 1)) (Fin (p + 1)) ℝ
@@ -120,13 +126,16 @@ theorem designInv00_perturb (S M : Matrix (Fin (p + 1)) (Fin (p + 1)) ℝ)
     exact hSu.unit_spec
   have hinv : (↑Su⁻¹ : R) = S⁻¹ := by
     rw [Matrix.coe_units_inv, hval]
+  have hc : 0 ≤ c := le_trans (Finset.sum_nonneg fun _ _ => abs_nonneg _) (hSrow 0)
   have hSinv_norm : ‖(↑Su⁻¹ : R)‖ ≤ c := by
     rw [hinv]
     exact linftyOp_norm_le_of_rowsum hc hSrow
   have hMS_norm : ‖M - S‖ ≤ (p + 1 : ℕ) * η :=
-    linftyOp_norm_le_of_entry hη (by
+    linftyOp_norm_le_of_entry (by
       intro i j
       simpa [Matrix.sub_apply] using hclose i j)
+  have hη : 0 ≤ η := le_trans (abs_nonneg (M 0 0 - S 0 0)) (hclose 0 0)
+  have hdimη : 0 ≤ (p + 1 : ℕ) * η := mul_nonneg (by positivity) hη
   set u : R := (↑Su⁻¹ : R) * (S - M) with hu_def
   have hu_le : ‖u‖ ≤ c * ((p + 1 : ℕ) * η) := by
     calc
@@ -134,7 +143,8 @@ theorem designInv00_perturb (S M : Matrix (Fin (p + 1)) (Fin (p + 1)) ℝ)
       _ ≤ ‖(↑Su⁻¹ : R)‖ * ‖S - M‖ := norm_mul_le _ _
       _ = ‖(↑Su⁻¹ : R)‖ * ‖M - S‖ := by rw [norm_sub_rev S M]
       _ ≤ c * ((p + 1 : ℕ) * η) := by
-        gcongr
+        simpa [mul_comm] using
+          mul_le_mul hMS_norm hSinv_norm (norm_nonneg _) hdimη
   have huhalf : ‖u‖ ≤ 1 / 2 := le_trans hu_le hsmall
   have hu1 : ‖u‖ < 1 := by
     have hunonneg : 0 ≤ ‖u‖ := norm_nonneg u
@@ -211,12 +221,22 @@ theorem designInv00_perturb (S M : Matrix (Fin (p + 1)) (Fin (p + 1)) ℝ)
       _ = 2 * c ^ 2 * ((p + 1 : ℕ) * η) := by ring
   refine ⟨hMdet, ?_⟩
   calc
-    |M⁻¹ 0 0 - S⁻¹ 0 0|
-        = |(((↑Munit⁻¹ : R) - ↑Su⁻¹) 0 0)| := by
+    |M⁻¹ i j - S⁻¹ i j|
+        = |(((↑Munit⁻¹ : R) - ↑Su⁻¹) i j)| := by
             rw [← hMinv_eq, ← hinv, Matrix.sub_apply]
     _ ≤ ‖(↑Munit⁻¹ : R) - ↑Su⁻¹‖ :=
-        linftyOp_abs_entry_le ((↑Munit⁻¹ : R) - ↑Su⁻¹) 0 0
+        linftyOp_abs_entry_le ((↑Munit⁻¹ : R) - ↑Su⁻¹) i j
     _ ≤ 2 * c ^ 2 * ((p + 1 : ℕ) * η) := hdiff_norm
+
+/-- The `(0,0)` specialization of the entrywise inverse perturbation bound. -/
+theorem designInv00_perturb (S M : Matrix (Fin (p + 1)) (Fin (p + 1)) ℝ)
+    (hS : IsUnit S.det) {η c : ℝ}
+    (hSrow : ∀ i, (∑ j, |S⁻¹ i j|) ≤ c)
+    (hclose : ∀ j k, |M j k - S j k| ≤ η)
+    (hsmall : c * ((p + 1 : ℕ) * η) ≤ 1 / 2) :
+    IsUnit M.det ∧
+      |M⁻¹ 0 0 - S⁻¹ 0 0| ≤ 2 * c ^ 2 * ((p + 1 : ℕ) * η) :=
+  designInv_perturb S M hS hSrow hclose hsmall
 
 end LinftyOp
 

@@ -159,10 +159,10 @@ noncomputable def empiricalVarianceSlack (a b : ℝ) (n : ℕ) (δ : ℝ) : ℝ 
   (max |a| |b|) ^ 2 * Real.sqrt (Real.log (4 / δ) / (2 * n))
     + 2 * (max |a| |b|) * (b - a) * Real.sqrt (Real.log (4 / δ) / (2 * n))
 
-/-- The half-width Hoeffding deviation at level `δ/2` for an `[a,b]`-range
-statistic is `(b − a) · √(log(4/δ)/(2n))`; we record the identity
-`hoeffdingCIHalfWidth a b n (δ/2) = (b−a) · d`. -/
-private lemma hoeffdingCIHalfWidth_half (a b : ℝ) (n : ℕ) {δ : ℝ} (_hδ0 : 0 < δ) :
+/-- Halving the confidence level in a Hoeffding half-width replaces its
+logarithmic factor with `log(4/δ)`, so the resulting half-width can be used in
+split-confidence and union-bound calculations. -/
+lemma hoeffdingCIHalfWidth_half (a b : ℝ) (n : ℕ) {δ : ℝ} :
     hoeffdingCIHalfWidth a b n (δ / 2)
       = (b - a) * Real.sqrt (Real.log (4 / δ) / (2 * n)) := by
   rw [hoeffdingCIHalfWidth]
@@ -247,12 +247,12 @@ theorem empirical_variance_concentration (S : IIDSample Ω X μ P) {f : X → �
   -- Event B: deviation of `f` (range `[a,b]`) at level δ/2
   have hmissB : μ.real {ω | (b - a) * d ≤ |S.sampleMean f n ω - m|} ≤ δ / 2 := by
     have := hoeffding_ci_miss S hf hab hbound n hn hδ20 hδ21
-    rwa [hoeffdingCIHalfWidth_half a b n hδ0, ← hddef, ← hmdef] at this
+    rwa [hoeffdingCIHalfWidth_half a b n, ← hddef, ← hmdef] at this
   -- Event A: deviation of `g = f²` (range `[0,M²]`) at level δ/2
   have hmissA : μ.real {ω | M ^ 2 * d ≤
       |S.sampleMean (fun x => (f x) ^ 2) n ω - μ₂|} ≤ δ / 2 := by
     have := hoeffding_ci_miss S hg (show (0:ℝ) < M ^ 2 from hMsq) hg_bound n hn hδ20 hδ21
-    rwa [hoeffdingCIHalfWidth_half 0 (M ^ 2) n hδ0, sub_zero, ← hddef, ← hμ₂def] at this
+    rwa [hoeffdingCIHalfWidth_half 0 (M ^ 2) n, sub_zero, ← hddef, ← hμ₂def] at this
   -- a.e. each `f (Zᵢ)` is `≤ M` in absolute value, hence so is the sample mean.
   have hMnR : (0 : ℝ) < n := by exact_mod_cast hn
   have haeXbar : ∀ᵐ ω ∂μ, |S.sampleMean f n ω| ≤ M := by
@@ -360,15 +360,12 @@ noncomputable def empiricalBernsteinCIHalfWidth (S : IIDSample Ω X μ P) (f : X
   fun ω => bernsteinCIHalfWidth c
     (Real.sqrt (S.sampleVariance f n ω + empiricalVarianceSlack a b n δ)) n δ
 
-/-- `bernsteinCIHalfWidth c · n δ` is monotone in the standard-deviation argument
-`σ` (for `0 ≤ log(2/δ)`), since both summands are nonnegative-coefficient affine
-in `σ` and `√(·)·`. -/
-private lemma bernsteinCIHalfWidth_mono_sigma {c : ℝ} {n : ℕ}
-    {δ : ℝ} (hδ0 : 0 < δ) (hδ1 : δ ≤ 1) {σ σ' : ℝ} (hσσ' : σ ≤ σ') :
+/-- The Bernstein confidence-interval half-width does not decrease when its
+standard-deviation input is increased, so an upper variance bound gives a conservative interval. -/
+lemma bernsteinCIHalfWidth_mono_sigma {c : ℝ} {n : ℕ} {δ σ σ' : ℝ}
+    (hσσ' : σ ≤ σ') :
     bernsteinCIHalfWidth c σ n δ ≤ bernsteinCIHalfWidth c σ' n δ := by
   unfold bernsteinCIHalfWidth
-  have hL : 0 ≤ Real.log (2 / δ) := by
-    apply Real.log_nonneg; rw [le_div_iff₀ hδ0]; linarith
   gcongr
 
 /-- **Data-driven (empirical) Bernstein confidence interval, miss-probability
@@ -440,7 +437,7 @@ theorem empirical_bernstein_ci_miss (S : IIDSample Ω X μ P) {f : X → ℝ}
       have hσle : σ ≤ Real.sqrt (S.sampleVariance f n ω + τ) := by
         rw [hσdef]
         exact Real.sqrt_le_sqrt hgood
-      have hmono := bernsteinCIHalfWidth_mono_sigma (c := c) (n := n) hδ0 hδ1 hσle
+      have hmono := bernsteinCIHalfWidth_mono_sigma (c := c) (n := n) (δ := δ) hσle
       exact le_trans hmono hω
     · -- bad variance event
       right

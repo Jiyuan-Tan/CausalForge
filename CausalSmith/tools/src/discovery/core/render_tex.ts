@@ -49,9 +49,43 @@ function escapeBreakableFormalText(value: string): string {
  * semantic LaTeX; the renderer only repairs two recurrent serialization hazards:
  * literal `\\n` separators emitted by JSON workers and raw sub/superscript marks
  * in text mode. `_` and `^` are BOTH math-mode-only characters, so they are
- * escaped together — escaping one but not the other still aborts the compile
- * ("Missing $ inserted") on the first `x^{...}` a producer leaves undelimited.
+ * escaped together — escaping one but not the other still leaves invalid TeX
+ * on the first `x^{...}` a producer leaves undelimited.
  * Inside $...$, \\(...\\), or \\[...\\] both remain live sub/superscripts. */
+/** Environments whose body is math mode. Top-level display environments
+ * (equation/align/…) are legal outside `\[…\]`; SUBSIDIARY_MATH_ENVS require an
+ * enclosing math context and get one added when a formal field arrives
+ * undelimited. */
+const TOP_LEVEL_MATH_ENVS = new Set([
+  "equation",
+  "align",
+  "alignat",
+  "flalign",
+  "gather",
+  "multline",
+  "eqnarray",
+  "math",
+  "displaymath",
+]);
+const SUBSIDIARY_MATH_ENVS = new Set([
+  "aligned",
+  "alignedat",
+  "gathered",
+  "split",
+  "cases",
+  "dcases",
+  "array",
+  "matrix",
+  "pmatrix",
+  "bmatrix",
+  "Bmatrix",
+  "vmatrix",
+  "Vmatrix",
+  "smallmatrix",
+  "subarray",
+]);
+const MATH_ENVS = new Set([...TOP_LEVEL_MATH_ENVS, ...SUBSIDIARY_MATH_ENVS]);
+
 function normalizeAuthoredLatex(value: string): string {
   // `\\texttt` returns to text rules even when nested inside `\\(...\\)`.
   // Raw underscores in flat code identifiers therefore still abort TeX; make
@@ -61,63 +95,60 @@ function normalizeAuthoredLatex(value: string): string {
     (_whole, body: string) => `\\texttt{${body.replace(/(?<!\\)_/g, "\\_")}}`,
   );
   let out = "";
-  let math = false;
+  let delimMath = false; // \( \[ $ $$ state
+  let envDepth = 0; // \begin{align}… nesting — a math ENVIRONMENT is math mode too
   for (let i = 0; i < text.length; i++) {
+    // An escaped-backslash pair is a row separator / literal backslash — copy it
+    // atomically so `\\[1ex]` is never misread as a display opener and `\\(`
+    // (row break before a parenthesized expression) never toggles math.
+    if (text[i] === "\\" && text[i + 1] === "\\") {
+      out += "\\\\";
+      i += 1;
+      continue;
+    }
+    // Math environments: without this, everything inside a standalone
+    // `\begin{align*}`…`\end{align*}` was scanned in TEXT mode and every `_`/`^`
+    // escaped — silently corrupting the mathematics (renders a
+    // literal underscore instead of a subscript).
+    const envM = /^\\(begin|end)\{([A-Za-z]+)\*?\}/.exec(text.slice(i, i + 40));
+    if (envM && MATH_ENVS.has(envM[2])) {
+      envDepth = Math.max(0, envDepth + (envM[1] === "begin" ? 1 : -1));
+      out += envM[0];
+      i += envM[0].length - 1;
+      continue;
+    }
     const pair = text.slice(i, i + 2);
     if (pair === "\\(" || pair === "\\[") {
-      math = true;
+      delimMath = true;
       out += pair;
       i += 1;
       continue;
     }
     if (pair === "\\)" || pair === "\\]") {
-      math = false;
+      delimMath = false;
       out += pair;
       i += 1;
       continue;
     }
     if (text[i] === "$" && (i === 0 || text[i - 1] !== "\\")) {
-      math = !math;
-      out += text[i];
+      // `$$…$$` is ONE display toggle, not two inline toggles (which would net
+      // to text mode inside the display and escape its every `_`/`^`).
+      if (text[i + 1] === "$") {
+        out += "$$";
+        i += 1;
+      } else {
+        out += "$";
+      }
+      delimMath = !delimMath;
       continue;
     }
+    const math = delimMath || envDepth > 0;
     if ((text[i] === "_" || text[i] === "^") && !math && (i === 0 || text[i - 1] !== "\\")) {
       out += text[i] === "_" ? "\\_" : "\\textasciicircum{}";
       continue;
     }
     out += text[i];
   }
-  return fitLongAuthoredMath(repairTaggedAlignedDisplays(out));
-}
-
-/** `aligned` is a subsidiary math environment, so amsmath rejects a `\tag`
- * placed inside it even when the author wrapped it in `\[...\]`. Preserve the
- * authored label while moving it to the owning `equation` environment. */
-function repairTaggedAlignedDisplays(value: string): string {
-  return value.replace(
-    /\\\[\s*\\begin\{aligned\}((?:(?!\\end\{aligned\})[\s\S])*?)\\tag\{([^{}]+)\}([\s\S]*?)\\end\{aligned\}\s*\\\]/g,
-    (_whole, before: string, tag: string, after: string) =>
-      `\\begin{equation}\n\\begin{aligned}${before}${after}\\end{aligned}\n\\tag{${tag}}\n\\end{equation}`,
-  );
-}
-
-/** TeX will not line-break an oversized display, and long inline formulas can
- * become indivisible boxes. Move only genuinely long inline formulas onto their
- * own fitted line and scale only genuinely long untagged displays. The content
- * remains authored LaTeX; this changes layout, not notation or semantics. */
-function fitLongAuthoredMath(value: string): string {
-  const fit = (body: string): string =>
-    `\\makebox[\\linewidth][c]{\\resizebox{0.98\\linewidth}{!}{\\(\\displaystyle ${body.trim()}\\)}}`;
-  let out = value.replace(/\\\[([\s\S]*?)\\\]/g, (whole, body: string) => {
-    const compact = body.replace(/\s+/g, " ").trim();
-    if (compact.length < 110 || /\\tag\b/.test(body)) return whole;
-    return `\\[\n${fit(body)}\n\\]`;
-  });
-  out = out.replace(/\\\(([^\n]*?)\\\)/g, (whole, body: string) => {
-    const compact = body.replace(/\s+/g, " ").trim();
-    if (compact.length < 100) return whole;
-    return `\\par\\noindent ${fit(body)}\\par\\noindent`;
-  });
   return out;
 }
 
@@ -128,8 +159,24 @@ function fitLongAuthoredMath(value: string): string {
 function renderFormalField(value: string): string {
   const serializationRepaired = repairSerializedLatex(value);
   const normalized = normalizeAuthoredLatex(serializationRepaired);
-  const explicitlyAuthored = /(?:\\\(|\\\[|\\begin\{(?:equation|align|gather|multline|math|displaymath)\*?\}|(?<!\\)\$)/.test(normalized);
-  return explicitlyAuthored ? normalized : `\\texttt{${escapeBreakableFormalText(serializationRepaired)}}`;
+  const topLevelEnvRe = new RegExp(`\\\\begin\\{(?:${[...TOP_LEVEL_MATH_ENVS].join("|")})\\*?\\}`);
+  const explicitlyAuthored = /\\\(|\\\[|(?<!\\)\$/.test(normalized) || topLevelEnvRe.test(normalized);
+  if (explicitlyAuthored) return normalized;
+  // A SUBSIDIARY math environment (`aligned`, `cases`, …) arriving with no outer
+  // delimiter is unambiguously authored LaTeX that merely forgot its enclosing
+  // display — emitting it verbatim is invalid TeX, and escaping it as legacy
+  // DSL shows the reader raw source. Supplying `\[…\]` is a mechanical validity
+  // repair, not a semantic rewrite.
+  const subsidiaryEnvRe = new RegExp(`\\\\begin\\{(?:${[...SUBSIDIARY_MATH_ENVS].join("|")})\\*?\\}`);
+  if (subsidiaryEnvRe.test(serializationRepaired)) {
+    return normalizeAuthoredLatex(`\\[\n${serializationRepaired}\n\\]`);
+  }
+  // Undelimited text with no subsidiary math environment stays on the faithful
+  // escaped-monospace path — even when it carries `\`-commands. That is the
+  // documented 2026-07-16 renderer decision (render legacy/undelimited formal
+  // text faithfully, never guess a semantic rewrite); the producers own the
+  // "explicitly delimited LaTeX" contract.
+  return `\\texttt{${escapeBreakableFormalText(serializationRepaired)}}`;
 }
 
 /** Bibliography citations are authored prose with occasional LaTeX such as
@@ -238,7 +285,10 @@ function renderStatement(s: CoreStatement): string {
   if (s.proof_tex && s.proof_tex.trim()) {
     const proof = normalizeAuthoredLatex(s.proof_tex.trim());
     const shouldWrapProof = s.status === "proved";
-    const renderedProof = !shouldWrapProof || /\\begin\{proof\}/.test(proof)
+    // Anchor the already-wrapped test to the START: a long proof may open with
+    // prose and contain a NESTED `\begin{proof}[Proof of Claim 1]` — detecting
+    // that anywhere left the outer body unwrapped, running on as section text.
+    const renderedProof = !shouldWrapProof || /^\s*\\begin\{proof\}/.test(proof)
       ? proof
       : `\\begin{proof}\n${proof}\n\\end{proof}`;
     // why: plain proof_tex after theorem text needs a LaTeX proof environment.

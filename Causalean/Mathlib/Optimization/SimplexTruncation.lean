@@ -33,9 +33,9 @@ globally minimizes `wsObj` over `Δ_M`, the constrained problem over `K_d` split
 if `t_rel ∈ K_d` it is already optimal there; otherwise (`t_rel` infeasible) the
 face selector `truncSegPoint M d sStar` is feasible and optimal over `K_d`. This is the
 κ-agnostic core shared by the `κ > 0` and `κ = 0` branches of the headline lemma. -/
-lemma trunc_from_minimizer (M d : ℝ) (hd0 : 0 ≤ d) (hdM : d ≤ M)
+lemma trunc_from_minimizer (M d : ℝ) (hdM : d ≤ M)
     (α β : Fin 3 → ℝ) (kappa : ℝ)
-    (hβ : ∀ i, 0 < β i) (hβy : β 1 = 1) (hβz : β 2 = 1) (hk : 0 ≤ kappa)
+    (hβ0 : 0 ≤ β 0) (hβy : β 1 = 1) (hβz : β 2 = 1) (hk : 0 ≤ kappa)
     (t_rel : Fin 3 → ℝ) (hrel : InSimplex M t_rel)
     (hmin : ∀ s, InSimplex M s → wsObj α β kappa t_rel ≤ wsObj α β kappa s) :
     (InTruncSimplex M d t_rel →
@@ -46,13 +46,20 @@ lemma trunc_from_minimizer (M d : ℝ) (hd0 : 0 ≤ d) (hdM : d ≤ M)
         ∀ s : Fin 3 → ℝ, InTruncSimplex M d s →
           wsObj α β kappa (truncSegPoint M d (truncSelector M d α β kappa))
             ≤ wsObj α β kappa s) := by
-  have hβnn : ∀ i, 0 ≤ β i := fun i => (hβ i).le
+  have hβnn : ∀ i, 0 ≤ β i := by
+    intro i
+    fin_cases i
+    · exact hβ0
+    · change 0 ≤ β 1
+      linarith [hβy]
+    · change 0 ≤ β 2
+      linarith [hβz]
   refine ⟨fun _ s hs => hmin s hs.1, ?_⟩
   intro hinf'
   have hinf : t_rel 1 + t_rel 2 < d := not_le.mp hinf'
   have hdpos : 0 < d := by
     have h1 := hrel.1 1; have h2 := hrel.1 2; linarith
-  obtain ⟨hs0, hsd⟩ := truncSelector_mem M d α β kappa hdpos (hβ 0).le hk
+  obtain ⟨hs0, hsd⟩ := truncSelector_mem M d α β kappa hdpos hβ0 hk
   set sStar := truncSelector M d α β kappa with hsStar
   have e0 : truncSegPoint M d sStar 0 = M - d := by simp [truncSegPoint]
   have e1 : truncSegPoint M d sStar 1 = sStar := by simp [truncSegPoint]
@@ -72,10 +79,10 @@ lemma trunc_from_minimizer (M d : ℝ) (hd0 : 0 ≤ d) (hdM : d ≤ M)
   refine ⟨hfeas, ?_⟩
   intro s hs
   obtain ⟨σ, hσ0, hσd, hred⟩ :=
-    truncSeg_reduction M d kappa α β hd0 hdM hβnn hk t_rel hrel hmin hinf s hs
+    truncSeg_reduction M d kappa α β hβnn hk t_rel hrel hmin hinf s hs
   calc wsObj α β kappa (truncSegPoint M d sStar)
       ≤ wsObj α β kappa (truncSegPoint M d σ) :=
-        truncSeg_selector_le M d α β kappa hdpos (hβ 0).le hβy hβz hk σ hσ0 hσd
+        truncSeg_selector_le M d α β kappa hdpos hβ0 hβy hβz hk σ hσ0 hσd
     _ ≤ wsObj α β kappa s := hred
 
 -- @node: lem:weighted-simplex-truncation
@@ -96,7 +103,7 @@ optimum is `truncSegPoint M d sStar` with the `κ = 0` endpoint rule `sStar = 0`
 This encodes the displayed boundary-segment value/selector formula for both
 `κ > 0` and the `κ = 0` truncation case. -/
 lemma weighted_simplex_truncation (M d : ℝ) (hM : 0 < M)
-    (hd0 : 0 ≤ d) (hdM : d ≤ M)
+    (hdM : d ≤ M)
     (α β : Fin 3 → ℝ) (kappa : ℝ)
     (hβ : ∀ i, 0 < β i)
     (hβy : β 1 = 1) (hβz : β 2 = 1) (hk : 0 ≤ kappa) :
@@ -124,13 +131,13 @@ lemma weighted_simplex_truncation (M d : ℝ) (hM : 0 < M)
     intro hkpos S lam hadm
     obtain ⟨hsimp, hmin⟩ :=
       activeSetPoint_isMinimizer M hM α β kappa hβ hkpos S lam hadm
-    exact trunc_from_minimizer M d hd0 hdM α β kappa hβ hβy hβz hk _ hsimp hmin
+    exact trunc_from_minimizer M d hdM α β kappa (hβ 0).le hβy hβz hk _ hsimp hmin
   · -- κ = 0
     intro hk0 t_rel hface
     subst hk0
     have hsimp : InSimplex M t_rel := hface.1
     have hmin : ∀ s, InSimplex M s → wsObj α β 0 t_rel ≤ wsObj α β 0 s :=
-      exposedMinFace_isMinimizer M hM α β t_rel hface
-    exact trunc_from_minimizer M d hd0 hdM α β 0 hβ hβy hβz le_rfl _ hsimp hmin
+      exposedMinFace_isMinimizer M α β t_rel hface
+    exact trunc_from_minimizer M d hdM α β 0 (hβ 0).le hβy hβz le_rfl _ hsimp hmin
 
 end Causalean.Mathlib.Optimization

@@ -110,7 +110,6 @@ theorem sparse_plugin_guarantee
     simp [B, l1Norm, Finset.sum_nonneg]
   have hL_nonneg : 0 ≤ L := by
     simp [L, l1Full, Finset.sum_nonneg]
-
   have hM_le : M ≤ lambda / 2 := by
     linarith [h_lambda_lb]
   have hHolder_M : |G| ≤ M * L := by
@@ -137,7 +136,6 @@ theorem sparse_plugin_guarantee
     exact le_trans hHolder_M (mul_le_mul_of_nonneg_right hM_le hL_nonneg)
   have hnegG_le : -G ≤ (lambda / 2) * L := by
     exact le_trans (neg_le_abs G) hHolder
-
   have hemp_le_D : empRiskFn θhat - empRiskFn θ₀ ≤ lambda * D := by
     have hopt := h_pluginERM.minimiser θ₀
     dsimp [D]
@@ -145,7 +143,6 @@ theorem sparse_plugin_guarantee
   have hsub_le_emp : G ≤ empRiskFn θhat - empRiskFn θ₀ := by
     simpa [G, δ, ν, h_FOC_pop] using (h_subgrad θhat)
   have hG_le_lambdaD : G ≤ lambda * D := le_trans hsub_le_emp hemp_le_D
-
   have htheta0_full : l1Full θ₀ = l1Norm θ₀ S₀ := by
     rw [l1Full_eq θ₀ S₀]
     have hzero : l1Norm θ₀ ((Finset.univ : Finset (Fin p)) \ S₀) = 0 := by
@@ -183,7 +180,6 @@ theorem sparse_plugin_guarantee
     rw [show l1Norm θhat ((Finset.univ : Finset (Fin p)) \ S₀) = B by
       simpa [C] using hcomp_hat]
     linarith
-
   have hG_le_AB : G ≤ lambda * (A - B) := by
     exact le_trans hG_le_lambdaD (mul_le_mul_of_nonneg_left hD_le hlambda_nonneg)
   have hcone_alg : B ≤ 3 * A := by
@@ -193,7 +189,6 @@ theorem sparse_plugin_guarantee
     nlinarith [h_lambda_pos]
   have hcone : ν ∈ RestrictedCone S₀ := by
     simpa [ν, A, B, C, RestrictedCone] using hcone_alg
-
   have hRSC_le :
       (σn / 2) * ‖ν‖ ^ 2 ≤
         empRiskFn θhat - empRiskFn θ₀ - G := by

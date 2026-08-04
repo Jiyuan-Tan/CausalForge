@@ -84,12 +84,14 @@ def isAncestrallyClosedSCM (M : Causalean.SCM N Ω) (R : Finset (SWIGNode N)) : 
 -- § 2. Induced sub-SCM
 -- ============================================================
 
-/-- Under ancestral closure, every parent (in `M`) of a node `v` in the induced
-    observed set survives into the induced DAG: the induced parent set equals
-    the original one.  This is the formal content of the footnote on
+/-- An ancestrally closed retained observed set keeps every parent needed to
+    evaluate each retained observed node, so its induced graph has exactly the
+    same parent set at those nodes.
+
+    This is the formal content of the footnote on
     `def:scm-induced-sub` in Basic Concepts.tex line 309 — inheriting `structFun`
     unchanged is well-defined *because* `R` is ancestrally closed. -/
-private lemma induce_parents_eq_of_ancClosed (M : Causalean.SCM N Ω)
+lemma induce_parents_eq_of_ancClosed (M : Causalean.SCM N Ω)
     (R : Finset (SWIGNode N)) (hR : M.isAncestrallyClosedSCM R)
     {v : SWIGNode N} (hv : v ∈ (M.toSWIGGraph.induce R).observed) :
     (M.toSWIGGraph.induce R).dag.parents v = M.dag.parents v := by
@@ -187,6 +189,7 @@ lemma induce_unobserved_subset (M : Causalean.SCM N Ω) (R : Finset (SWIGNode N)
   intro u hu
   simpa [SCM.induce, SWIGGraph.induce] using (Finset.mem_filter.mp hu).1
 
+omit [DecidableEq N] in
 /-- Product measures marginalize under coordinate restriction.
 
     If `J ⊆ I`, pushing the finite product measure on assignments over `I`
@@ -283,7 +286,11 @@ lemma induce_latentProduct_eq_map (M : Causalean.SCM N Ω) (R : Finset (SWIGNode
     * The observed-parent recursive call closes by IH at the induced observedIndex. -/
 lemma induce_evalMap_compat (M : Causalean.SCM N Ω) (R : Finset (SWIGNode N))
     (hR : M.isAncestrallyClosedSCM R) (sTilde : FixedValues M) (ℓ : LatentValues M) :
-    ∀ {v : SWIGNode N} (hvI : v ∈ (M.induce R hR).randomVars) (hvM : v ∈ M.randomVars),
+    ∀ {v : SWIGNode N} (hvI : v ∈ (M.induce R hR).randomVars),
+      let hvM : v ∈ M.randomVars := by
+        rcases Finset.mem_union.mp hvI with hvIObs | hvIUo
+        · exact Finset.mem_union_left _ (Finset.inter_subset_right hvIObs)
+        · exact Finset.mem_union_right _ (induce_unobserved_subset M R hR hvIUo)
       (M.induce R hR).evalMap
           (valuesProjection (Finset.filter_subset _ _) sTilde)
           (valuesProjection (induce_unobserved_subset M R hR) ℓ) ⟨v, hvI⟩
@@ -298,7 +305,7 @@ lemma induce_evalMap_compat (M : Causalean.SCM N Ω) (R : Finset (SWIGNode N))
           ⟨v, Finset.mem_union_left _ hvI⟩
         = M.evalMap sTilde ℓ
           ⟨v, Finset.mem_union_left _ (Finset.inter_subset_right hvI)⟩ by
-    intro v hvI hvM
+    intro v hvI
     -- Dispatch: `v` is either observed or unobserved in the induced SCM.
     rcases Finset.mem_union.mp hvI with hvIObs | hvIUo
     · -- Observed case: apply the strong-recursion helper.
@@ -309,7 +316,9 @@ lemma induce_evalMap_compat (M : Causalean.SCM N Ω) (R : Finset (SWIGNode N))
       have hvMUo : v ∈ M.unobserved := induce_unobserved_subset M R hR hvIUo
       rw [SCM.evalMap_unobserved (M.induce R hR) _
           (valuesProjection (induce_unobserved_subset M R hR) ℓ) ⟨v, hvI⟩ hvIUo]
-      rw [SCM.evalMap_unobserved M sTilde ℓ ⟨v, hvM⟩ hvMUo]
+      dsimp
+      rw [SCM.evalMap_unobserved M sTilde ℓ
+          ⟨v, Finset.mem_union_right _ hvMUo⟩ hvMUo]
       rfl
   -- Strong recursion on `n = (M.induce R hR).observedIndex ⟨v, hvI⟩`.
   intro n
@@ -520,7 +529,6 @@ theorem induce_marginal_compat
   --     = M.evalMap sTilde ℓ ⟨v.val, mem_union_left _ (inter_subset_right v.property)⟩
   exact induce_evalMap_compat M R hR sTilde ℓ
     (Finset.mem_union_left _ v.property)
-    (Finset.mem_union_left _ (Finset.inter_subset_right v.property))
 
 end SCM
 

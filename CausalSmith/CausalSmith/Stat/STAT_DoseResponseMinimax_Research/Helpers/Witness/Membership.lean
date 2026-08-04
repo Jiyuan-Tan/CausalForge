@@ -15,7 +15,6 @@ import CausalSmith.Stat.STAT_DoseResponseMinimax_Research.Helpers.Witness.Regres
 import CausalSmith.Stat.STAT_DoseResponseMinimax_Research.Helpers.Witness.PiCond
 import CausalSmith.Stat.STAT_DoseResponseMinimax_Research.Helpers.Witness.Theta
 import CausalSmith.Stat.STAT_DoseResponseMinimax_Research.Helpers.Witness.HolderAux
-import Mathlib.Probability.HasLawExists
 
 namespace CausalSmith.Stat.DoseResponseMinimax
 
@@ -24,21 +23,14 @@ open scoped ENNReal
 
 variable {d : ℕ}
 
-/-- Generic existence of an i.i.d. sample with a prescribed probability law, via the
-Mathlib infinite-product construction `ProbabilityTheory.exists_iid`. Discharges the
-i.i.d.-sampling existential of `IidSampling`. -/
+/-- Generic existence of an i.i.d. sample with a prescribed probability law. Discharges the
+i.i.d.-sampling existential of `IidSampling`; this is exactly
+`Causalean.Stat.HasIIDSample`, which every probability measure satisfies. -/
 lemma iidSample_nonempty {X : Type} [MeasurableSpace X] (P : Measure X)
     [IsProbabilityMeasure P] :
     ∃ (Ω : Type) (mΩ : MeasurableSpace Ω) (μ : @Measure Ω mΩ),
-      Nonempty (@Causalean.Stat.IIDSample Ω X mΩ _ μ P) := by
-  obtain ⟨Ω, mΩ, μ, Z, hmeas, hlaw, hindep, hprob⟩ :=
-    ProbabilityTheory.exists_iid ℕ P
-  refine ⟨Ω, mΩ, μ, ⟨{ Z := Z, meas := hmeas, indep := hindep, identDist := ?_, law := ?_ }⟩⟩
-  · intro i
-    exact { aemeasurable_fst := (hlaw 0).aemeasurable
-            aemeasurable_snd := (hlaw i).aemeasurable
-            map_eq := (hlaw 0).map_eq.trans (hlaw i).map_eq.symm }
-  · exact (hlaw 0).map_eq
+      Nonempty (@Causalean.Stat.IIDSample Ω X mΩ _ μ P) :=
+  Causalean.Stat.hasIIDSample_of_isProbabilityMeasure P
 
 /-- The genuine witness's data law puts the covariate `X` in the cube `[0,1]^d` a.s. -/
 lemma doseDataMeasure_ae_X_mem_cube {p0 : (Fin d → ℝ) → ℝ} {q0 : ℝ → ℝ}

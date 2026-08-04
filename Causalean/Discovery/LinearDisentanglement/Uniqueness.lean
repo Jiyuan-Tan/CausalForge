@@ -912,12 +912,9 @@ entry of `central_rank2_eq` (`hB0σtri`). -/
 private theorem monomial_relations_from_orthogonal_core (S S' : Solution d p K)
     (hNondeg : ∀ k, S.Theta k ≠ S.Theta0)
     (hΘ0 : S.Theta0 = S'.Theta0) (hΘ : ∀ k, S.Theta k = S'.Theta k)
-    {M : Matrix (Fin d) (Fin d) ℝ} (hMunit : IsUnit M) (hM : S'.H = M * S.H)
+    {M : Matrix (Fin d) (Fin d) ℝ} (hM : S'.H = M * S.H)
     (kof : Fin d → Fin K) (hkof : ∀ n, S.target (kof n) = n)
     (σ : Equiv.Perm (Fin d)) (hσtarget : ∀ n, S'.target (kof n) = σ n)
-    (hdiag :
-      M.transpose * Matrix.diagonal (fun m => (S'.lam (kof (σ.symm m))) ^ 2) * M
-        = Matrix.diagonal (fun n => (S.lam (kof n)) ^ 2))
     (hO :
       (Matrix.diagonal (fun m => Real.sqrt ((S'.lam (kof (σ.symm m))) ^ 2)) * M
           * Matrix.diagonal (fun n => (Real.sqrt ((S.lam (kof n)) ^ 2))⁻¹)).transpose
@@ -1337,7 +1334,7 @@ private theorem monomial_relations (S S' : Solution d p K)
     (hcov : Function.Bijective S.target) (hcov' : Function.Bijective S'.target)
     (hNondeg : ∀ k, S.Theta k ≠ S.Theta0)
     (hΘ0 : S.Theta0 = S'.Theta0) (hΘ : ∀ k, S.Theta k = S'.Theta k)
-    {M : Matrix (Fin d) (Fin d) ℝ} (hMunit : IsUnit M) (hM : S'.H = M * S.H) :
+    {M : Matrix (Fin d) (Fin d) ℝ} (hM : S'.H = M * S.H) :
     ∃ (σ : Equiv.Perm (Fin d)) (μ ν : Fin d → ℝ),
       (∀ i, μ i ≠ 0) ∧ (∀ i, ν i = 1 ∨ ν i = -1) ∧
       M = Matrix.diagonal μ * permMat σ ∧
@@ -1379,14 +1376,14 @@ private theorem monomial_relations (S S' : Solution d p K)
         * (Matrix.diagonal (fun m => Real.sqrt ((S'.lam (kof (σ.symm m))) ^ 2)) * M
           * Matrix.diagonal (fun n => (Real.sqrt ((S.lam (kof n)) ^ 2))⁻¹)) = 1 :=
     orthogonal_of_diag_conj hd hd' hdiag
-  exact monomial_relations_from_orthogonal_core S S' hNondeg hΘ0 hΘ hMunit hM
-    kof hkof σ hσtarget hdiag hO
+  exact monomial_relations_from_orthogonal_core S S' hNondeg hΘ0 hΘ hM
+    kof hkof σ hσtarget hO
 
 private theorem orthogonal_collapse (S S' : Solution d p K)
     (hcov : Function.Bijective S.target) (hcov' : Function.Bijective S'.target)
     (hNondeg : ∀ k, S.Theta k ≠ S.Theta0)
     (hΘ0 : S.Theta0 = S'.Theta0) (hΘ : ∀ k, S.Theta k = S'.Theta k)
-    {M : Matrix (Fin d) (Fin d) ℝ} (hMunit : IsUnit M) (hM : S'.H = M * S.H) :
+    {M : Matrix (Fin d) (Fin d) ℝ} (hM : S'.H = M * S.H) :
     ∃ (σ : Equiv.Perm (Fin d)) (μ ν : Fin d → ℝ), S.InSG σ ∧
       (∀ i, μ i ≠ 0) ∧ (∀ i, ν i = 1 ∨ ν i = -1) ∧
       M = Matrix.diagonal μ * permMat σ ∧
@@ -1394,7 +1391,7 @@ private theorem orthogonal_collapse (S S' : Solution d p K)
       (∀ k, S'.Bint k * M = Matrix.diagonal ν * permMat σ * S.Bint k) := by
   -- Get the monomial collapse and per-context relations (the isolated residual core).
   obtain ⟨σ, μ, ν, hμ, hν, hMeq, hB0rel, hBintrel⟩ :=
-    monomial_relations S S' hcov hcov' hNondeg hΘ0 hΘ hMunit hM
+    monomial_relations S S' hcov hcov' hNondeg hΘ0 hΘ hM
   refine ⟨σ, μ, ν, ?_, hμ, hν, hMeq, hB0rel, hBintrel⟩
   -- **(S4) Derive `InSG σ`** from the signed `B'₀ M` relation and monomial form.
   -- Signed conjugation read-off: row signs and nonzero column scalings do not affect support.
@@ -1452,7 +1449,7 @@ theorem exists_orderPerm (S S' : Solution d p K)
     (hcov : Function.Bijective S.target) (hcov' : Function.Bijective S'.target)
     (hNondeg : ∀ k, S.Theta k ≠ S.Theta0)
     (hΘ0 : S.Theta0 = S'.Theta0) (hΘ : ∀ k, S.Theta k = S'.Theta k)
-    {M : Matrix (Fin d) (Fin d) ℝ} (hMunit : IsUnit M) (hM : S'.H = M * S.H) :
+    {M : Matrix (Fin d) (Fin d) ℝ} (hM : S'.H = M * S.H) :
     ∃ (σ : Equiv.Perm (Fin d)) (μ ν : Fin d → ℝ), S.InSG σ ∧
       (∀ i, μ i ≠ 0) ∧ (∀ i, ν i = 1 ∨ ν i = -1) ∧
       M = Matrix.diagonal μ * permMat σ ∧
@@ -1460,7 +1457,7 @@ theorem exists_orderPerm (S S' : Solution d p K)
       (∀ k, S'.Bint k * M = Matrix.diagonal ν * permMat σ * S.Bint k) ∧
       (∀ k, S'.target k = σ (S.target k)) := by
   obtain ⟨σ, μ, ν, hσ, hμ, hν, hMeq, hB0rel, hBintrel⟩ :=
-    orthogonal_collapse S S' hcov hcov' hNondeg hΘ0 hΘ hMunit hM
+    orthogonal_collapse S S' hcov hcov' hNondeg hΘ0 hΘ hM
   exact ⟨σ, μ, ν, hσ, hμ, hν, hMeq, hB0rel, hBintrel,
     fun k => target_readoff S S' k (hNondeg k) hν (hBintrel k) hB0rel⟩
 
@@ -1492,10 +1489,10 @@ theorem disentanglement_uniqueness (S S' : Solution d p K)
         Matrix.diagonal ν * permMat σ * S.Bint k) ∧
       (∀ k, S'.target k = σ (S.target k)) := by
   -- (L1) recover the invertible change-of-basis `M` with `H' = M H`.
-  obtain ⟨M, hMunit, hM⟩ := exists_change_of_basis S S' hΘ0
+  obtain ⟨M, _, hM⟩ := exists_change_of_basis S S' hΘ0
   -- (L4) the orthogonal-correctness collapse (the isolated hard core).
   obtain ⟨σ, μ, ν, hσ, hμ, hν, hMeq, hB0rel, hBintrel, htarget⟩ :=
-    exists_orderPerm S S' hcov hcov' hNondeg hΘ0 hΘ hMunit hM
+    exists_orderPerm S S' hcov hcov' hNondeg hΘ0 hΘ hM
   refine ⟨σ, μ, ν, hσ, hμ, hν, ?_, ?_, ?_, htarget⟩
   · -- `H' = diagonal μ permMat σ H`.
     rw [hM, hMeq]

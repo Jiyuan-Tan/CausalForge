@@ -80,7 +80,7 @@ lemma finitePoissonObjective_expCell_argmax_snd_hasDerivAt
           (A.toContinuousLinearMap.comp (ContinuousLinearMap.snd ℝ ℝ E))).hasFDerivAt
             (x := (x₀, theta₀))).exp
       convert (hleft.sub hright).const_mul (q j * A (b k) j) using 1 <;>
-        ext z <;> simp <;> ring
+        ext z <;> simp
     · have hleft : HasFDerivAt (fun _p : ℝ × E ↦ m i)
           (0 : (ℝ × E) →L[ℝ] ℝ) (x₀, theta₀) :=
         hasFDerivAt_const (x := (x₀, theta₀)) (c := m i)
@@ -89,7 +89,7 @@ lemma finitePoissonObjective_expCell_argmax_snd_hasDerivAt
           (A.toContinuousLinearMap.comp (ContinuousLinearMap.snd ℝ ℝ E))).hasFDerivAt
             (x := (x₀, theta₀))).exp
       convert (hleft.sub hright).const_mul (q i * A (b k) i) using 1 <;>
-        ext z <;> simp [hij] <;> ring
+        ext z <;> simp [hij]
   let L : E →L[ℝ] (Basis.ofVectorSpaceIndex ℝ E → ℝ) :=
     D.comp (ContinuousLinearMap.inr ℝ ℝ E)
   have hL_inj : Function.Injective L := by
@@ -122,7 +122,7 @@ lemma finitePoissonObjective_expCell_argmax_snd_hasDerivAt
         rw [← Finset.sum_neg_distrib]
         apply Finset.sum_congr rfl
         intro i hi
-        by_cases hij : i = j <;> simp [hij] <;> ring
+        by_cases hij : i = j <;> simp [hij]
       dsimp [G]
       have hk'' := neg_eq_zero.mp hk'
       convert hk'' using 1
@@ -202,7 +202,7 @@ lemma finitePoissonObjective_expCell_argmax_snd_hasDerivAt
     change S (x, himp.implicitFunction x) = 0
     simpa only [hS0] using hx
   have hselected_phi :
-      (λ x ↦ maximizerOrZero (finitePoissonObjective q (expCellUpdatedMean m j B x) A))
+      (fun x ↦ maximizerOrZero (finitePoissonObjective q (expCellUpdatedMean m j B x) A))
         =ᶠ[nhds x₀] phi := by
     filter_upwards [hphi_score] with x hx
     let Gx : E →ₗ[ℝ] ℝ :=
@@ -296,7 +296,7 @@ lemma finitePoissonObjective_expCell_argmax_snd_hasDerivAt
   have hphi_snd : HasDerivAt (fun x ↦ (phi x).2) v.2 x₀ := by
     have hsnd :=
       (ContinuousLinearMap.snd ℝ U ℝ).hasFDerivAt.comp x₀ hphidiff.hasFDerivAt
-    convert hsnd.hasDerivAt using 1 <;> simp [v]
+    convert hsnd.hasDerivAt using 1
   rw [← hvbeta]
   apply hphi_snd.congr_of_eventuallyEq
   exact hselected_phi.fun_comp (fun z : E ↦ z.2)

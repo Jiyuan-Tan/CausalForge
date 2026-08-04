@@ -46,7 +46,8 @@ theorem ica_genPerm_relation {n : ℕ} {A A' : Matrix (Fin n) (Fin n) ℝ}
     dsimp [W]
     rw [Matrix.det_mul]
     exact IsUnit.mul (Matrix.isUnit_nonsing_inv_det A' hA'u) hAu
-  obtain ⟨τ, d, _hd, hWform⟩ := genPerm_of_invertible_of_colSupport hWu hcol
+  obtain ⟨τ, d, _hd, hWform⟩ :=
+    genPerm_of_det_ne_zero_of_colSupport hWu.ne_zero hcol
   refine ⟨τ, d, ?_⟩
   intro i j
   have hAinv : A'⁻¹ = W * A⁻¹ := by

@@ -224,15 +224,6 @@ private lemma bounded_sub {f g : 𝒳 → ℝ}
       · exact le_trans (hMf x) (le_max_left Mf 0)
       · exact le_trans (hMg x) (le_max_left Mg 0)
 
-lemma integrable_of_measurable_bounded {α : Type*} [MeasurableSpace α]
-    {μ : Measure α} [IsFiniteMeasure μ] {f : α → ℝ}
-    (hfmeas : Measurable f) (hfbdd : ∃ M : ℝ, ∀ x, |f x| ≤ M) :
-    Integrable f μ := by
-  rcases hfbdd with ⟨M, hM⟩
-  refine MeasureTheory.Integrable.of_bound hfmeas.aestronglyMeasurable (max M 0) ?_
-  exact Filter.Eventually.of_forall (fun x => by
-    simpa [Real.norm_eq_abs] using le_trans (hM x) (le_max_left M 0))
-
 private lemma integrable_covariate_test (P : ObservedLaw 𝒳)
     (hwf : WellFormedLaw P) {ψ : 𝒳 → ℝ}
     (hψmeas : Measurable ψ) (hψbdd : ∃ M : ℝ, ∀ x, |ψ x| ≤ M) :

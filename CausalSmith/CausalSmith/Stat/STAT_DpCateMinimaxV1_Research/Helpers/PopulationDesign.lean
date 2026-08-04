@@ -427,7 +427,8 @@ theorem design_mass_le {d : ℕ} (P : CateLaw d) (f0 f1 r0 : ℝ) (x0 : Fin d �
   have _hiid : IidSampling P := hiid
   have hball : supBall x0 h = Metric.closedBall x0 h := by
     ext x
-    simp only [supBall, Set.mem_setOf_eq, Metric.mem_closedBall]
+    simp only [supBall, Causalean.Stat.Nonparametric.supBall, Set.mem_setOf_eq,
+      Metric.mem_closedBall]
     rw [dist_pi_le_iff hh.le]
     simp only [Real.dist_eq]
   have hS : MeasurableSet (supBall x0 h) := hball ▸ Metric.isClosed_closedBall.measurableSet

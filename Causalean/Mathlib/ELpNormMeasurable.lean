@@ -3,15 +3,17 @@ Copyright (c) 2026 Jiyuan Tan. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jiyuan Tan
 
-# Measurability of the L²-norm functional `ω ↦ ‖g ω‖_{L²(P)}`
+# Measurability of parametric Lp-norm functionals
 
-For a parameter-dependent function `g : Ω → X → ℝ`, the map
-`ω ↦ (eLpNorm (g ω) 2 P).toReal` is measurable provided `g` is jointly
+For a parameter-dependent function `g : Ω → X → E` valued in a Borel normed
+additive group, the map
+`ω ↦ (eLpNorm (g ω) p P).toReal` is measurable at every finite nonzero exponent
+`p`, provided `g` is jointly
 measurable in `(ω, x)`.
 
 This file provides two flavours, both consequences of Tonelli for the
-parametric integral `ω ↦ ∫⁻ x, ‖g ω x‖₊^2 ∂P` followed by the post-processing
-`(·)^(1/2)` and `.toReal`:
+parametric integral `ω ↦ ∫⁻ x, ‖g ω x‖₊^p.toReal ∂P` followed by the post-processing
+`(·)^(1/p.toReal)` and `.toReal`:
 
 * `measurable_eLpNorm_two_toReal_of_uncurry`  — top-σ-algebra version: from
   joint measurability of `Function.uncurry g`.
@@ -30,7 +32,7 @@ import Mathlib.MeasureTheory.Integral.Prod
 /-! # Measurability of Parametric L2 Norms
 
 This file proves that the parameter map sending a jointly measurable integrand to
-its $L^2$ norm under a fixed measure is measurable. It supplies a causal-agnostic
+its finite nonzero Lp norm under a fixed measure is measurable. It supplies a causal-agnostic
 Tonelli-based measurability tool for empirical-process and sample-splitting
 arguments.
 
@@ -45,54 +47,83 @@ open MeasureTheory ENNReal
 
 variable {Ω X : Type*} [MeasurableSpace X]
 
-/-- **L²-norm measurable from joint measurability (top σ-algebra).**
+/-- **Lp-norm measurable from joint measurability (top σ-algebra).**
 If `(ω, x) ↦ g ω x` is jointly measurable on `Ω × X` and `P` is `SFinite`,
-then `ω ↦ (eLpNorm (g ω) 2 P).toReal` is measurable.
+then its finite nonzero Lp norm is measurable as a function of `ω`.
 
-**Proof sketch.** `(eLpNorm (g ω) 2 P).toReal =
-  ((∫⁻ x, ‖g ω x‖₊^2 ∂P)^(1/2 : ℝ)).toReal`.  Use:
-* `Measurable.lintegral_prod_right` (Tonelli) on `(ω, x) ↦ ‖g ω x‖₊^2` —
-  joint measurable from `hg` via `Measurable.pow_const`/`enorm`/`sq`.
-* `Measurable.pow_const` (or `Measurable.rpow_const`) for the `(1/2)` power.
+**Proof sketch.** `(eLpNorm (g ω) p P).toReal =
+  ((∫⁻ x, ‖g ω x‖₊^p.toReal ∂P)^(1/p.toReal)).toReal`.  Use:
+* `Measurable.lintegral_prod_right` (Tonelli) on `(ω, x) ↦ ‖g ω x‖₊^p.toReal` —
+  joint measurable from `hg` via `Measurable.pow_const` and `enorm`.
+* `Measurable.pow_const` for the `(1/p.toReal)` power.
 * `ENNReal.measurable_toReal` for the final `.toReal`. -/
 lemma measurable_eLpNorm_two_toReal_of_uncurry
     [MeasurableSpace Ω] {P : Measure X} [SFinite P]
-    {g : Ω → X → ℝ}
+    {E : Type*} [MeasurableSpace E] [TopologicalSpace E] [ContinuousENorm E]
+    [OpensMeasurableSpace E]
+    {g : Ω → X → E} {p : ℝ≥0∞} (hp_zero : p ≠ 0) (hp_top : p ≠ ⊤)
     (hg : Measurable (Function.uncurry g)) :
-    Measurable (fun ω => (eLpNorm (g ω) 2 P).toReal) := by
+    Measurable (fun ω => (eLpNorm (g ω) p P).toReal) := by
   have h_int :
-      Measurable (fun ω => ∫⁻ x, ‖g ω x‖ₑ ^ ((2 : ENNReal).toReal) ∂P) := by
-    exact Measurable.lintegral_prod_right' ((hg.enorm).pow_const ((2 : ENNReal).toReal))
-  have h_norm : Measurable (fun ω => eLpNorm (g ω) 2 P) := by
+      Measurable (fun ω => ∫⁻ x, ‖g ω x‖ₑ ^ p.toReal ∂P) := by
+    exact Measurable.lintegral_prod_right' ((hg.enorm).pow_const p.toReal)
+  have h_norm : Measurable (fun ω => eLpNorm (g ω) p P) := by
     simpa [MeasureTheory.eLpNorm_eq_lintegral_rpow_enorm_toReal
-        (by norm_num : (2 : ENNReal) ≠ 0) (by norm_num : (2 : ENNReal) ≠ ⊤)] using
-      (h_int.pow_const (1 / (2 : ENNReal).toReal))
+        hp_zero hp_top] using
+      (h_int.pow_const (1 / p.toReal))
   exact ENNReal.measurable_toReal.comp h_norm
 
-/-- **L²-norm measurable wrt a sub-σ-algebra.**
+/-- Alias for `measurable_eLpNorm_two_toReal_of_uncurry` whose name reflects
+that the exponent may be any finite nonzero value. -/
+lemma measurable_eLpNorm_toReal_of_uncurry
+    [MeasurableSpace Ω] {P : Measure X} [SFinite P]
+    {E : Type*} [MeasurableSpace E] [TopologicalSpace E] [ContinuousENorm E]
+    [OpensMeasurableSpace E]
+    {g : Ω → X → E} {p : ℝ≥0∞} (hp_zero : p ≠ 0) (hp_top : p ≠ ⊤)
+    (hg : Measurable (Function.uncurry g)) :
+    Measurable (fun ω => (eLpNorm (g ω) p P).toReal) :=
+  measurable_eLpNorm_two_toReal_of_uncurry hp_zero hp_top hg
+
+/-- **Lp-norm measurable wrt a sub-σ-algebra.**
 If `(ω, x) ↦ g ω x` is jointly measurable wrt
-`mΩ × MeasurableSpace X`, then `ω ↦ (eLpNorm (g ω) 2 P).toReal` is
-`mΩ`-measurable.
+`mΩ × MeasurableSpace X`, then its finite nonzero Lp norm is `mΩ`-measurable.
 
 **Proof sketch.** Apply `Measurable.lintegral_prod_right'` at the
-sub-σ-algebra product level to `‖g ω x‖₊^2`, then post-process by
-`(·)^(1/2)` and `.toReal`. -/
+sub-σ-algebra product level to `‖g ω x‖₊^p.toReal`, then post-process by
+`(·)^(1/p.toReal)` and `.toReal`. -/
 lemma measurable_eLpNorm_two_toReal_of_uncurry_of_factor
     {mΩ : MeasurableSpace Ω}
     {P : Measure X} [SFinite P]
-    {g : Ω → X → ℝ}
+    {E : Type*} [MeasurableSpace E] [TopologicalSpace E] [ContinuousENorm E]
+    [OpensMeasurableSpace E]
+    {g : Ω → X → E} {p : ℝ≥0∞} (hp_zero : p ≠ 0) (hp_top : p ≠ ⊤)
     (hg_uncurry :
-      @Measurable (Ω × X) ℝ
+      @Measurable (Ω × X) E
         (@Prod.instMeasurableSpace Ω X mΩ inferInstance) inferInstance
         (Function.uncurry g)) :
-    Measurable[mΩ] (fun ω => (eLpNorm (g ω) 2 P).toReal) := by
+    Measurable[mΩ] (fun ω => (eLpNorm (g ω) p P).toReal) := by
   have h_int :
-      Measurable[mΩ] (fun ω => ∫⁻ x, ‖g ω x‖ₑ ^ ((2 : ENNReal).toReal) ∂P) := by
-    exact Measurable.lintegral_prod_right' ((hg_uncurry.enorm).pow_const ((2 : ENNReal).toReal))
-  have h_norm : Measurable[mΩ] (fun ω => eLpNorm (g ω) 2 P) := by
+      Measurable[mΩ] (fun ω => ∫⁻ x, ‖g ω x‖ₑ ^ p.toReal ∂P) := by
+    exact Measurable.lintegral_prod_right' ((hg_uncurry.enorm).pow_const p.toReal)
+  have h_norm : Measurable[mΩ] (fun ω => eLpNorm (g ω) p P) := by
     simpa [MeasureTheory.eLpNorm_eq_lintegral_rpow_enorm_toReal
-        (by norm_num : (2 : ENNReal) ≠ 0) (by norm_num : (2 : ENNReal) ≠ ⊤)] using
-      (h_int.pow_const (1 / (2 : ENNReal).toReal))
+        hp_zero hp_top] using
+      (h_int.pow_const (1 / p.toReal))
   exact ENNReal.measurable_toReal.comp h_norm
+
+/-- Alias for `measurable_eLpNorm_two_toReal_of_uncurry_of_factor` whose name
+reflects that the exponent may be any finite nonzero value. -/
+lemma measurable_eLpNorm_toReal_of_uncurry_of_factor
+    {mΩ : MeasurableSpace Ω}
+    {P : Measure X} [SFinite P]
+    {E : Type*} [MeasurableSpace E] [TopologicalSpace E] [ContinuousENorm E]
+    [OpensMeasurableSpace E]
+    {g : Ω → X → E} {p : ℝ≥0∞} (hp_zero : p ≠ 0) (hp_top : p ≠ ⊤)
+    (hg_uncurry :
+      @Measurable (Ω × X) E
+        (@Prod.instMeasurableSpace Ω X mΩ inferInstance) inferInstance
+        (Function.uncurry g)) :
+    Measurable[mΩ] (fun ω => (eLpNorm (g ω) p P).toReal) :=
+  measurable_eLpNorm_two_toReal_of_uncurry_of_factor hp_zero hp_top hg_uncurry
 
 end Causalean.Mathlib

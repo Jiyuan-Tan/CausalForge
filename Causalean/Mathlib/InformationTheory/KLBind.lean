@@ -48,18 +48,18 @@ variable {α β γ : Type*} [MeasurableSpace α] [MeasurableSpace β] [Measurabl
 
 /-- Radon--Nikodym derivative of a shared-base composition product.
 
-If all fibres of `κ` are absolutely continuous with respect to the
+If almost all `μ`-fibres of `κ` are absolutely continuous with respect to the
 corresponding fibres of `η`, then the RN derivative of `μ ⊗ₘ κ` with respect to
 `μ ⊗ₘ η` is the fibre RN derivative. -/
 lemma rnDeriv_compProd_right_of_forall_ac
     [MeasurableSpace.CountableOrCountablyGenerated α β]
     [IsFiniteMeasure μ] [IsFiniteKernel κ] [IsFiniteKernel η]
-    (hκη : ∀ a, κ a ≪ η a) :
+    (hκη : ∀ᵐ a ∂μ, κ a ≪ η a) :
     (μ ⊗ₘ κ).rnDeriv (μ ⊗ₘ η) =ᵐ[μ ⊗ₘ η]
       fun p : α × β => Kernel.rnDeriv κ η p.1 p.2 := by
   have hκ_eq : κ =ᵐ[μ] Kernel.withDensity η (Kernel.rnDeriv κ η) := by
-    filter_upwards [] with a
-    exact (Kernel.withDensity_rnDeriv_eq (κ := κ) (η := η) (a := a) (hκη a)).symm
+    filter_upwards [hκη] with a ha
+    exact (Kernel.withDensity_rnDeriv_eq (κ := κ) (η := η) (a := a) ha).symm
   have hcomp :
       μ ⊗ₘ κ = (μ ⊗ₘ η).withDensity
         (fun p : α × β => Kernel.rnDeriv κ η p.1 p.2) := by
@@ -80,7 +80,7 @@ lemma rnDeriv_compProd_right_of_forall_ac
   filter_upwards [Measure.rnDeriv_self (μ ⊗ₘ η)] with p hp
   rw [hp, mul_one]
 
-/-- KL chain rule for a shared-base composition product, under pointwise fibre
+/-- KL chain rule for a shared-base composition product, under base-almost-everywhere fibre
 absolute continuity.
 
 This is the exact identity form used by bind-chain arguments whose output still
@@ -88,12 +88,12 @@ remembers the base coordinate. -/
 lemma klDiv_compProd_right_of_forall_ac
     [MeasurableSpace.CountableOrCountablyGenerated α β]
     [IsFiniteMeasure μ] [IsFiniteKernel κ] [IsFiniteKernel η]
-    (hκη : ∀ a, κ a ≪ η a) :
+    (hκη : ∀ᵐ a ∂μ, κ a ≪ η a) :
     _root_.InformationTheory.klDiv (μ ⊗ₘ κ) (μ ⊗ₘ η)
       = ∫⁻ a, _root_.InformationTheory.klDiv (κ a) (η a) ∂μ := by
   classical
   have hcomp_ac : μ ⊗ₘ κ ≪ μ ⊗ₘ η :=
-    Measure.AbsolutelyContinuous.compProd_right (Filter.Eventually.of_forall hκη)
+    Measure.AbsolutelyContinuous.compProd_right hκη
   rw [_root_.InformationTheory.klDiv_eq_lintegral_klFun, if_pos hcomp_ac]
   trans ∫⁻ p : α × β,
       ENNReal.ofReal
@@ -105,8 +105,8 @@ lemma klDiv_compProd_right_of_forall_ac
     rw [hp]
   · rw [Measure.lintegral_compProd]
     · refine lintegral_congr_ae ?_
-      filter_upwards [] with a
-      rw [_root_.InformationTheory.klDiv_eq_lintegral_klFun, if_pos (hκη a)]
+      filter_upwards [hκη] with a ha
+      rw [_root_.InformationTheory.klDiv_eq_lintegral_klFun, if_pos ha]
       refine lintegral_congr_ae ?_
       filter_upwards [Kernel.rnDeriv_eq_rnDeriv_measure (κ := κ) (η := η) (a := a)]
         with b hb
@@ -116,8 +116,7 @@ lemma klDiv_compProd_right_of_forall_ac
 /-- KL is invariant under a measurable embedding. -/
 lemma klDiv_map_measurableEmbedding
     {f : α → γ} (hf : MeasurableEmbedding f)
-    [IsFiniteMeasure μ] [IsFiniteMeasure (μ.map f)]
-    {ν : Measure α} [IsFiniteMeasure ν] [IsFiniteMeasure (ν.map f)] :
+    [IsFiniteMeasure μ] {ν : Measure α} [IsFiniteMeasure ν] :
     _root_.InformationTheory.klDiv (μ.map f) (ν.map f)
       = _root_.InformationTheory.klDiv μ ν := by
   classical
@@ -145,7 +144,9 @@ lemma klDiv_map_measurableEmbedding
         exact hμ_image)
     rw [_root_.InformationTheory.klDiv_of_not_ac hmap_not_ac]
 
-private lemma measurableEmbedding_base_recording
+/-- If a measurable map has a measurable graph, pairing each observation with its map value
+produces a measurable embedding into the corresponding product space. -/
+lemma measurableEmbedding_base_recording
     {B Ω : Type*} [MeasurableSpace B] [MeasurableSpace Ω]
     (proj : Ω → B) (hproj : Measurable proj)
     (hgraph : MeasurableSet {p : B × Ω | p.1 = proj p.2}) :
@@ -163,11 +164,14 @@ private lemma measurableEmbedding_base_recording
   exact MeasurableEmbedding.of_measurable_inverse hg (by simpa [hRange] using hgraph)
     measurable_snd (by intro ω; rfl)
 
-private lemma map_bind_eq_compProd_of_base_recording
+/-- If a kernel is supported almost everywhere on outputs that record their base
+coordinate, then mapping its bound measure to the recorded base-output pair gives the
+corresponding composition-product measure. -/
+lemma map_bind_eq_compProd_of_base_recording
     {B Ω : Type*} [MeasurableSpace B] [MeasurableSpace Ω]
     (m : Measure B) [SFinite m] (κ : Kernel B Ω) [IsSFiniteKernel κ]
     (proj : Ω → B) (hproj : Measurable proj)
-    (hκ_fib : ∀ b, (κ b) {ω | proj ω = b}ᶜ = 0) :
+    (hκ_fib : ∀ᵐ b ∂m, (κ b) {ω | proj ω = b}ᶜ = 0) :
     (m.bind κ).map (fun ω : Ω => (proj ω, ω)) = m ⊗ₘ κ := by
   let g : Ω → B × Ω := fun ω => (proj ω, ω)
   have hg : Measurable g := hproj.prod measurable_id
@@ -176,8 +180,8 @@ private lemma map_bind_eq_compProd_of_base_recording
       simpa [g] using Measure.map_comp (μ := m) (κ := κ) (f := g) hg
     _ = m.bind (Kernel.id ×ₖ κ) := by
       refine Measure.bind_congr_right ?_
-      filter_upwards [] with b
-      have hsupp : {ω : Ω | proj ω = b} ∈ ae (κ b) := mem_ae_iff.mpr (hκ_fib b)
+      filter_upwards [hκ_fib] with b hκ_fib
+      have hsupp : {ω : Ω | proj ω = b} ∈ ae (κ b) := mem_ae_iff.mpr hκ_fib
       have h_ae : g =ᵐ[κ b] Prod.mk b := by
         filter_upwards [hsupp] with ω hω
         exact Prod.ext hω rfl
@@ -195,12 +199,12 @@ lemma klDiv_bind_eq_of_base_recording
     {B Ω : Type*} [MeasurableSpace B] [MeasurableSpace Ω]
     [MeasurableSpace.CountableOrCountablyGenerated B Ω]
     (m : Measure B) [IsFiniteMeasure m]
-    (κ η : Kernel B Ω) [IsMarkovKernel κ] [IsMarkovKernel η]
+    (κ η : Kernel B Ω) [IsFiniteKernel κ] [IsFiniteKernel η]
     (proj : Ω → B) (hproj : Measurable proj)
     (hgraph : MeasurableSet {p : B × Ω | p.1 = proj p.2})
-    (hκ_fib : ∀ b, (κ b) {ω | proj ω = b}ᶜ = 0)
-    (hη_fib : ∀ b, (η b) {ω | proj ω = b}ᶜ = 0)
-    (hκη : ∀ b, κ b ≪ η b) :
+    (hκ_fib : ∀ᵐ b ∂m, (κ b) {ω | proj ω = b}ᶜ = 0)
+    (hη_fib : ∀ᵐ b ∂m, (η b) {ω | proj ω = b}ᶜ = 0)
+    (hκη : ∀ᵐ b ∂m, κ b ≪ η b) :
     _root_.InformationTheory.klDiv (m.bind κ) (m.bind η)
       = ∫⁻ b, _root_.InformationTheory.klDiv (κ b) (η b) ∂m := by
   let g : Ω → B × Ω := fun ω => (proj ω, ω)

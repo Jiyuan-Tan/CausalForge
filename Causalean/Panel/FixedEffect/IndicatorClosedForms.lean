@@ -84,18 +84,24 @@ private lemma sum_indicator_mem_real {α : Type*} [Fintype α] [DecidableEq α]
         (f := fun _ : α => (1 : ℝ)))]
   simp
 
-private lemma sum_centered_indicator_mem_real {α : Type*}
-    [Fintype α] [DecidableEq α] [Nonempty α] (S : Finset α) :
+/-- Centering the indicator of a finite subset by its uniform average makes
+its sum across the index set equal to zero. -/
+lemma sum_centered_indicator_mem_real {α : Type*}
+    [Fintype α] [DecidableEq α] (S : Finset α) :
     (∑ x : α,
       ((if x ∈ S then (1 : ℝ) else 0) - (S.card : ℝ) / (Fintype.card α : ℝ))) =
         0 := by
-  rw [Finset.sum_sub_distrib, sum_indicator_mem_real]
-  rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
-  have hcard : (Fintype.card α : ℝ) ≠ 0 := by
-    have : 0 < Fintype.card α := Fintype.card_pos
-    exact_mod_cast this.ne'
-  field_simp [hcard]
-  ring
+  rcases isEmpty_or_nonempty α with hα | hα
+  · letI := hα
+    simp
+  · letI := hα
+    rw [Finset.sum_sub_distrib, sum_indicator_mem_real]
+    rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
+    have hcard : (Fintype.card α : ℝ) ≠ 0 := by
+      have : 0 < Fintype.card α := Fintype.card_pos
+      exact_mod_cast this.ne'
+    field_simp [hcard]
+    ring
 
 private lemma sum_centered_eq_indicator_real {α : Type*}
     [Fintype α] [DecidableEq α] [Nonempty α] (a₀ : α) :
@@ -123,7 +129,7 @@ downstream residual arguments that need the same row/column reduction. -/
 when it is orthogonal to every unit indicator and every period indicator. This
 reduces `H_twfe` residual proofs to row and column normal equations. -/
 lemma H_twfe_orthogonal_iff (c : Cells I T) (g : V I T) :
-    (∀ h ∈ c.H_twfe, c.ip g h = 0) ↔
+    (∀ h ∈ Cells.H_twfe, c.ip g h = 0) ↔
       ((∀ i₀ : I,
           c.ip g (fun r => if r.1 = i₀ then (1 : ℝ) else 0) = 0) ∧
        (∀ t₀ : T,
@@ -251,10 +257,10 @@ lemma H_twfe_orthogonal_iff (c : Cells I T) (g : V I T) :
 
 /-- The TWFE residual of a constant array vanishes on every observed cell. -/
 theorem tildeX_const (c : Cells I T) (k : ℝ) (r : I × T) (hr : r ∈ c.observed) :
-    c.tildeX c.H_twfe (fun _ : I × T => k) r = 0 := by
+    c.tildeX Cells.H_twfe (fun _ : I × T => k) r = 0 := by
   -- PROOF: constants belong to `H_twfe` (`const_mem_H_twfe`), so by
   -- `residualize_self_of_mem` the residual vanishes on observed cells.
-  exact c.residualize_self_of_mem c.H_twfe (c.const_mem_H_twfe k) r hr
+  exact c.residualize_self_of_mem Cells.H_twfe (Cells.const_mem_H_twfe k) r hr
 
 /-! ### Unit-only and period-only indicators are absorbed by `H_twfe` -/
 
@@ -263,9 +269,9 @@ theorem tildeX_const (c : Cells I T) (k : ℝ) (r : I × T) (hr : r ∈ c.observ
 observed cell.  Independent of the weights. -/
 theorem tildeX_unit_indicator (c : Cells I T) (i₀ : I)
     (r : I × T) (hr : r ∈ c.observed) :
-    c.tildeX c.H_twfe
+    c.tildeX Cells.H_twfe
         (fun s : I × T => if s.1 = i₀ then (1 : ℝ) else 0) r = 0 := by
-  apply c.residualize_self_of_mem c.H_twfe ?_ r hr
+  apply c.residualize_self_of_mem Cells.H_twfe ?_ r hr
   exact ⟨fun i => (if i = i₀ then 1 else 0 : ℝ), fun _ => 0,
     by intro p; simp⟩
 
@@ -274,9 +280,9 @@ theorem tildeX_unit_indicator (c : Cells I T) (i₀ : I)
 observed cell.  Independent of the weights. -/
 theorem tildeX_period_indicator (c : Cells I T) (t₀ : T)
     (r : I × T) (hr : r ∈ c.observed) :
-    c.tildeX c.H_twfe
+    c.tildeX Cells.H_twfe
         (fun s : I × T => if s.2 = t₀ then (1 : ℝ) else 0) r = 0 := by
-  apply c.residualize_self_of_mem c.H_twfe ?_ r hr
+  apply c.residualize_self_of_mem Cells.H_twfe ?_ r hr
   exact ⟨fun _ => 0, fun t => (if t = t₀ then 1 else 0 : ℝ),
     by intro p; simp⟩
 
@@ -379,9 +385,9 @@ private lemma balanced_centered_product_orth_period (S_I : Finset I) (S_T : Fins
 /-- Product indicator under balanced weights: the residual factorizes into a
 product of centered indicators. -/
 theorem tildeX_product_indicator_balanced (S_I : Finset I) (S_T : Finset T)
-    (r : I × T) (hr : r ∈ (balanced (I := I) (T := T)).observed) :
+    (r : I × T) :
     (balanced (I := I) (T := T)).tildeX
-        ((balanced (I := I) (T := T)).H_twfe)
+        Cells.H_twfe
         (fun s : I × T =>
           (if s.1 ∈ S_I then (1 : ℝ) else 0) *
             (if s.2 ∈ S_T then (1 : ℝ) else 0)) r =
@@ -400,7 +406,7 @@ theorem tildeX_product_indicator_balanced (S_I : Finset I) (S_T : Finset T)
       ((if s.2 ∈ S_T then (1 : ℝ) else 0) -
         (S_T.card : ℝ) / (Fintype.card T : ℝ))
   let G : V I T := X - Y
-  have hG_mem : G ∈ c.H_twfe := by
+  have hG_mem : G ∈ Cells.H_twfe := by
     refine ⟨fun i =>
         ((S_T.card : ℝ) / (Fintype.card T : ℝ)) *
           (if i ∈ S_I then (1 : ℝ) else 0),
@@ -415,7 +421,7 @@ theorem tildeX_product_indicator_balanced (S_I : Finset I) (S_T : Finset T)
   have hXsubG : X - G = Y := by
     ext s
     simp [G]
-  have horth : ∀ h ∈ c.H_twfe, c.ip (X - G) h = 0 := by
+  have horth : ∀ h ∈ Cells.H_twfe, c.ip (X - G) h = 0 := by
     rw [H_twfe_orthogonal_iff]
     constructor
     · intro i₀
@@ -424,10 +430,10 @@ theorem tildeX_product_indicator_balanced (S_I : Finset I) (S_T : Finset T)
     · intro t₀
       rw [hXsubG]
       simpa [c, Y] using balanced_centered_product_orth_period (S_I := S_I) (S_T := S_T) t₀
-  have hproj : c.proj c.H_twfe X r = G r :=
-    c.proj_apply_eq_of_mem_orthogonal c.H_twfe X hG_mem horth r hr
+  have hproj : c.proj Cells.H_twfe X r = G r :=
+    c.proj_apply_eq_of_mem_orthogonal Cells.H_twfe X hG_mem horth r (by simp [c])
   calc
-    c.tildeX c.H_twfe X r = (X - c.proj c.H_twfe X) r := by simp [Cells.tildeX_eq]
+    c.tildeX Cells.H_twfe X r = (X - c.proj Cells.H_twfe X) r := by simp [Cells.tildeX_eq]
     _ = Y r := by
       rw [Pi.sub_apply, hproj]
       exact congrFun hXsubG r
@@ -491,26 +497,28 @@ variable {C S : ℕ}
 variable [Nonempty (Fin C)] [Nonempty (Fin S)]
 variable (law : CohortLaw C) (hpi : ∀ g : Fin C, 0 < (law.pi g : ℝ))
 
-private lemma cohort_sum_pi_centered_eq_zero (law : CohortLaw C) (g₀ : Fin C) :
-    (∑ g : Fin C,
-      (law.pi g : ℝ) * ((if g = g₀ then (1 : ℝ) else 0) - (law.pi g₀ : ℝ))) =
+/-- A singleton indicator centered by the selected category's weight has a
+zero weighted average whenever the weights across categories sum to one. -/
+lemma cohort_sum_pi_centered_eq_zero {α : Type*} [Fintype α] [DecidableEq α]
+    (w : α → ℝ) (hw : ∑ g, w g = 1) (g₀ : α) :
+    (∑ g : α,
+      w g * ((if g = g₀ then (1 : ℝ) else 0) - w g₀)) =
         0 := by
-  rw [show (∑ g : Fin C,
-      (law.pi g : ℝ) * ((if g = g₀ then (1 : ℝ) else 0) - (law.pi g₀ : ℝ))) =
-      (∑ g : Fin C, (law.pi g : ℝ) * (if g = g₀ then (1 : ℝ) else 0)) -
-        ∑ g : Fin C, (law.pi g : ℝ) * (law.pi g₀ : ℝ) by
+  rw [show (∑ g : α,
+      w g * ((if g = g₀ then (1 : ℝ) else 0) - w g₀)) =
+      (∑ g : α, w g * (if g = g₀ then (1 : ℝ) else 0)) -
+        ∑ g : α, w g * w g₀ by
     rw [← Finset.sum_sub_distrib]
     refine Finset.sum_congr rfl ?_
     intro g hg
     ring]
-  rw [show (∑ x : Fin C, (law.pi x : ℝ) * if x = g₀ then 1 else 0) =
-      (law.pi g₀ : ℝ) by
+  rw [show (∑ x : α, w x * if x = g₀ then 1 else 0) = w g₀ by
     simpa [mul_comm] using
-      (Fintype.sum_ite_eq (i := g₀) (f := fun g : Fin C => (law.pi g : ℝ))).symm]
-  rw [show (∑ g : Fin C, (law.pi g : ℝ) * (law.pi g₀ : ℝ)) =
-      (∑ g : Fin C, (law.pi g : ℝ)) * (law.pi g₀ : ℝ) by
+      (Fintype.sum_ite_eq (i := g₀) (f := fun g : α => w g)).symm]
+  rw [show (∑ g : α, w g * w g₀) =
+      (∑ g : α, w g) * w g₀ by
     rw [Finset.sum_mul]]
-  rw [law.sumOne]
+  rw [hw]
   ring
 
 private lemma cohort_cell_centered_orth_unit (law : CohortLaw C)
@@ -597,15 +605,15 @@ private lemma cohort_cell_centered_orth_period (law : CohortLaw C)
     refine Finset.sum_congr rfl ?_
     intro x hx
     ring]
-  rw [cohort_sum_pi_centered_eq_zero (law := law) (g₀ := g₀), mul_zero]
+  rw [cohort_sum_pi_centered_eq_zero (fun g => (law.pi g : ℝ)) law.sumOne g₀, mul_zero]
 
 /-- Cell indicator under cohort-period weights: the residual factorizes
 into the product of centered cohort and period indicators (with cross terms
 following the gauge fix `∑_t β(t) = π(g₀)`). -/
 theorem tildeX_cell_indicator_cohortPeriod (g₀ : Fin C) (t₀ : Fin S)
-    (r : Fin C × Fin S) (hr : r ∈ (cohortPeriodCells law hpi).observed) :
+    (r : Fin C × Fin S) :
     (cohortPeriodCells law hpi).tildeX
-        ((cohortPeriodCells law hpi).H_twfe)
+        Cells.H_twfe
         (fun s : Fin C × Fin S =>
           if s.1 = g₀ ∧ s.2 = t₀ then (1 : ℝ) else 0) r =
       (if r.1 = g₀ then (1 : ℝ) else 0) *
@@ -623,7 +631,7 @@ theorem tildeX_cell_indicator_cohortPeriod (g₀ : Fin C) (t₀ : Fin S)
       ((if s.2 = t₀ then (1 : ℝ) else 0) -
         1 / (Fintype.card (Fin S) : ℝ))
   let G : V (Fin C) (Fin S) := X - Y
-  have hG_mem : G ∈ c.H_twfe := by
+  have hG_mem : G ∈ Cells.H_twfe := by
     refine ⟨fun g => (1 / (Fintype.card (Fin S) : ℝ)) *
         (if g = g₀ then (1 : ℝ) else 0),
       fun t => (law.pi g₀ : ℝ) * (if t = t₀ then (1 : ℝ) else 0) -
@@ -634,7 +642,7 @@ theorem tildeX_cell_indicator_cohortPeriod (g₀ : Fin C) (t₀ : Fin S)
   have hXsubG : X - G = Y := by
     ext s
     simp [G]
-  have horth : ∀ h ∈ c.H_twfe, c.ip (X - G) h = 0 := by
+  have horth : ∀ h ∈ Cells.H_twfe, c.ip (X - G) h = 0 := by
     rw [H_twfe_orthogonal_iff]
     constructor
     · intro g₁
@@ -647,10 +655,11 @@ theorem tildeX_cell_indicator_cohortPeriod (g₀ : Fin C) (t₀ : Fin S)
       simpa [c, Y] using
         cohort_cell_centered_orth_period (law := law) (hpi := hpi) (g₀ := g₀)
           (t₀ := t₀) (t₁ := t₁)
-  have hproj : c.proj c.H_twfe X r = G r :=
-    c.proj_apply_eq_of_mem_orthogonal c.H_twfe X hG_mem horth r hr
+  have hproj : c.proj Cells.H_twfe X r = G r :=
+    c.proj_apply_eq_of_mem_orthogonal Cells.H_twfe X hG_mem horth r
+      (by simp [c, cohortPeriodCells])
   calc
-    c.tildeX c.H_twfe X r = (X - c.proj c.H_twfe X) r := by simp [Cells.tildeX_eq]
+    c.tildeX Cells.H_twfe X r = (X - c.proj Cells.H_twfe X) r := by simp [Cells.tildeX_eq]
     _ = Y r := by
       rw [Pi.sub_apply, hproj]
       exact congrFun hXsubG r
@@ -665,7 +674,10 @@ theorem tildeX_cell_indicator_cohortPeriod (g₀ : Fin C) (t₀ : Fin S)
 
 /-! ### Staggered indicators: diagonal and triangular -/
 
-private lemma cohortPeriod_ip_unit_eq (law : CohortLaw C)
+/-- In a cohort-by-period panel with cohort-period weights, the weighted inner
+product of any outcome array with a cohort's unit indicator equals that cohort's
+weighted sum of outcomes across periods. -/
+lemma cohortPeriod_ip_unit_eq (law : CohortLaw C)
     (hpi : ∀ g : Fin C, 0 < (law.pi g : ℝ))
     (Y : V (Fin C) (Fin S)) (g₁ : Fin C) :
     (cohortPeriodCells law hpi).ip Y
@@ -684,7 +696,10 @@ private lemma cohortPeriod_ip_unit_eq (law : CohortLaw C)
         ∑ t : Fin S, (law.pi x : ℝ) / (Fintype.card (Fin S) : ℝ) * Y (x, t))).symm]
   rw [Finset.mul_sum]
 
-private lemma cohortPeriod_ip_period_eq (law : CohortLaw C)
+/-- In a cohort-by-period panel with cohort-period weights, the weighted inner
+product of any outcome array with a period indicator equals the cohort-weighted
+sum of outcomes in that period. -/
+lemma cohortPeriod_ip_period_eq (law : CohortLaw C)
     (hpi : ∀ g : Fin C, 0 < (law.pi g : ℝ))
     (Y : V (Fin C) (Fin S)) (t₁ : Fin S) :
     (cohortPeriodCells law hpi).ip Y
@@ -1063,9 +1078,9 @@ with conditional means `E[R | g] = (1/S) · ind(g.val < S)`,
 `E[R | t] = ind(t.val < C) · π(t.val)`, and grand mean
 `E[R] = (1/S) · ∑_{g : g.val < S} π(g)`. -/
 theorem tildeX_diagonal_indicator_cohortPeriod
-    (r : Fin C × Fin S) (hr : r ∈ (cohortPeriodCells law hpi).observed) :
+    (r : Fin C × Fin S) :
     (cohortPeriodCells law hpi).tildeX
-        ((cohortPeriodCells law hpi).H_twfe)
+        Cells.H_twfe
         (fun s : Fin C × Fin S => if s.1.val = s.2.val then (1 : ℝ) else 0) r =
       (if r.1.val = r.2.val then (1 : ℝ) else 0)
         - (if r.1.val < S then 1 / (Fintype.card (Fin S) : ℝ) else 0)
@@ -1077,7 +1092,7 @@ theorem tildeX_diagonal_indicator_cohortPeriod
   let X : V (Fin C) (Fin S) := diagX
   let Y : V (Fin C) (Fin S) := diagY law
   let G : V (Fin C) (Fin S) := X - Y
-  have hG_mem : G ∈ c.H_twfe := by
+  have hG_mem : G ∈ Cells.H_twfe := by
     refine ⟨fun g => diagRowMean (S := S) g - diagGrandMean (S := S) law,
       fun t => diagPeriodMean law t, ?_⟩
     intro p
@@ -1086,7 +1101,7 @@ theorem tildeX_diagonal_indicator_cohortPeriod
   have hXsubG : X - G = Y := by
     ext s
     simp [G]
-  have horth : ∀ h ∈ c.H_twfe, c.ip (X - G) h = 0 := by
+  have horth : ∀ h ∈ Cells.H_twfe, c.ip (X - G) h = 0 := by
     rw [H_twfe_orthogonal_iff]
     constructor
     · intro g₁
@@ -1095,10 +1110,11 @@ theorem tildeX_diagonal_indicator_cohortPeriod
     · intro t₁
       rw [hXsubG]
       exact diagonal_centered_orth_period (S := S) (law := law) (hpi := hpi) (t₁ := t₁)
-  have hproj : c.proj c.H_twfe X r = G r :=
-    c.proj_apply_eq_of_mem_orthogonal c.H_twfe X hG_mem horth r hr
+  have hproj : c.proj Cells.H_twfe X r = G r :=
+    c.proj_apply_eq_of_mem_orthogonal Cells.H_twfe X hG_mem horth r
+      (by simp [c, cohortPeriodCells])
   calc
-    c.tildeX c.H_twfe X r = (X - c.proj c.H_twfe X) r := by
+    c.tildeX Cells.H_twfe X r = (X - c.proj Cells.H_twfe X) r := by
       simp [Cells.tildeX_eq]
     _ = Y r := by
       rw [Pi.sub_apply, hproj]
@@ -1120,9 +1136,9 @@ with conditional means `E[J | g] = (1/S) · ∑_t ind(g.val < t.val)`,
 `E[J | t] = ∑_{g'} π(g') ind(g'.val < t.val)`, and grand mean
 `E[J] = (1/S) · ∑_{g, t} π(g) · ind(g.val < t.val)`. -/
 theorem tildeX_triangular_indicator_cohortPeriod
-    (r : Fin C × Fin S) (hr : r ∈ (cohortPeriodCells law hpi).observed) :
+    (r : Fin C × Fin S) :
     (cohortPeriodCells law hpi).tildeX
-        ((cohortPeriodCells law hpi).H_twfe)
+        Cells.H_twfe
         (fun s : Fin C × Fin S => if s.1.val < s.2.val then (1 : ℝ) else 0) r =
       (if r.1.val < r.2.val then (1 : ℝ) else 0)
         - (∑ s : Fin S, (if r.1.val < s.val then (1 : ℝ) else 0)) /
@@ -1137,7 +1153,7 @@ theorem tildeX_triangular_indicator_cohortPeriod
   let X : V (Fin C) (Fin S) := triX
   let Y : V (Fin C) (Fin S) := triY law
   let G : V (Fin C) (Fin S) := X - Y
-  have hG_mem : G ∈ c.H_twfe := by
+  have hG_mem : G ∈ Cells.H_twfe := by
     refine ⟨fun g => triRowMean (S := S) g - triGrandMean (S := S) law,
       fun t => triPeriodMean law t, ?_⟩
     intro p
@@ -1146,7 +1162,7 @@ theorem tildeX_triangular_indicator_cohortPeriod
   have hXsubG : X - G = Y := by
     ext s
     simp [G]
-  have horth : ∀ h ∈ c.H_twfe, c.ip (X - G) h = 0 := by
+  have horth : ∀ h ∈ Cells.H_twfe, c.ip (X - G) h = 0 := by
     rw [H_twfe_orthogonal_iff]
     constructor
     · intro g₁
@@ -1155,10 +1171,11 @@ theorem tildeX_triangular_indicator_cohortPeriod
     · intro t₁
       rw [hXsubG]
       exact tri_centered_orth_period (S := S) (law := law) (hpi := hpi) (t₁ := t₁)
-  have hproj : c.proj c.H_twfe X r = G r :=
-    c.proj_apply_eq_of_mem_orthogonal c.H_twfe X hG_mem horth r hr
+  have hproj : c.proj Cells.H_twfe X r = G r :=
+    c.proj_apply_eq_of_mem_orthogonal Cells.H_twfe X hG_mem horth r
+      (by simp [c, cohortPeriodCells])
   calc
-    c.tildeX c.H_twfe X r = (X - c.proj c.H_twfe X) r := by
+    c.tildeX Cells.H_twfe X r = (X - c.proj Cells.H_twfe X) r := by
       simp [Cells.tildeX_eq]
     _ = Y r := by
       rw [Pi.sub_apply, hproj]

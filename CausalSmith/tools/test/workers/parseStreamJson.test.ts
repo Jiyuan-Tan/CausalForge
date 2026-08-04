@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseStreamJson } from "../../src/workers/claude.js";
+import { extractResolvedModel, parseStreamJson } from "../../src/workers/claude.js";
 
 describe("parseStreamJson", () => {
   it("collects assistant text blocks", () => {
@@ -76,5 +76,32 @@ describe("parseStreamJson", () => {
       message: { content: [{ type: "tool_use", name: "StructuredOutput", input: null }] },
     });
     expect(parseStreamJson(line)).toBe("");
+  });
+});
+
+describe("extractResolvedModel", () => {
+  it("prefers the assistant message's served model id over the init event's", () => {
+    const lines = [
+      JSON.stringify({ type: "system", subtype: "init", model: "claude-opus-4-8" }),
+      JSON.stringify({
+        type: "assistant",
+        message: { model: "claude-opus-4-8-20260115", content: [{ type: "text", text: "hi" }] },
+      }),
+    ].join("\n");
+    expect(extractResolvedModel(lines)).toBe("claude-opus-4-8-20260115");
+  });
+
+  it("falls back to the init event when no assistant turn carries a model", () => {
+    const lines = [
+      "non-json banner",
+      JSON.stringify({ type: "system", subtype: "init", model: "claude-opus-4-8" }),
+      JSON.stringify({ type: "result", result: "done" }),
+    ].join("\n");
+    expect(extractResolvedModel(lines)).toBe("claude-opus-4-8");
+  });
+
+  it("returns null when the stream carries no model id", () => {
+    expect(extractResolvedModel("")).toBeNull();
+    expect(extractResolvedModel(JSON.stringify({ type: "result", result: "x" }))).toBeNull();
   });
 });

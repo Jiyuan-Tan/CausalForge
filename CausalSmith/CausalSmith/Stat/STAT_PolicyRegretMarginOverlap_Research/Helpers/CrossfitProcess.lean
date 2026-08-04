@@ -5,6 +5,7 @@ Authors: Jiyuan Tan
 -/
 
 import Mathlib.MeasureTheory.Constructions.BorelSpace.Order
+import Causalean.Stat.Sample.PiTransport
 import CausalSmith.Stat.STAT_PolicyRegretMarginOverlap_Research.Basic
 
 /-! Provides centered empirical-process and cross-fit process helpers. -/
@@ -87,21 +88,14 @@ def foldProjection {n K : ℕ} (assign : Fin n → Fin K) (k : Fin K)
     (sample : Fin n → Observation 𝒳) : foldIndex assign k → Observation 𝒳 :=
   fun i => sample i.1
 
+/-- Restricting an i.i.d. product sample to one cross-fitting fold is measure preserving onto
+the product law over that fold. Delegates to `Causalean.Stat.measurePreserving_pi_restrict`. -/
 lemma measurePreserving_foldProjection {n K : ℕ} (P : ObservedLaw 𝒳)
     (assign : Fin n → Fin K) (k : Fin K) [IsProbabilityMeasure P.dataMeasure] :
     MeasurePreserving (foldProjection (𝒳 := 𝒳) assign k)
       (Measure.pi (fun _ : Fin n => P.dataMeasure))
-      (Measure.pi (fun _ : foldIndex assign k => P.dataMeasure)) := by
-  classical
-  let p : Fin n → Prop := fun i => assign i = k
-  let hsplit := MeasureTheory.measurePreserving_piEquivPiSubtypeProd
-    (μ := fun _ : Fin n => P.dataMeasure) (p := p)
-  let hfst : MeasurePreserving Prod.fst
-      ((Measure.pi (fun _ : Subtype p => P.dataMeasure)).prod
-        (Measure.pi (fun _ : Subtype (fun i => ¬ p i) => P.dataMeasure)))
-      (Measure.pi (fun _ : Subtype p => P.dataMeasure)) := by
-    exact measurePreserving_fst
-  simpa [foldProjection, p, MeasurableEquiv.piEquivPiSubtypeProd] using hfst.comp hsplit
+      (Measure.pi (fun _ : foldIndex assign k => P.dataMeasure)) :=
+  Causalean.Stat.measurePreserving_pi_restrict P.dataMeasure (fun i => assign i = k)
 
 private lemma measurable_sSup_of_countable_skeleton {n : ℕ}
     (policySet Pi0 : Set (Policy 𝒳))
@@ -418,30 +412,16 @@ lemma integral_foldLocalizedSup_eq_expected {n K : ℕ} (P : ObservedLaw 𝒳)
       =
     expectedLocalizedSup (m := Fintype.card (foldIndex assign k)) P (g k) policySet r := by
   classical
-  let F : (foldIndex assign k → Observation 𝒳) → ℝ :=
-    fun sample => foldLocalizedSubSup P g assign policySet r k sample
-  have hproj := measurePreserving_foldProjection P assign k
-  have hmap : Measure.map (foldProjection (𝒳 := 𝒳) assign k)
-      (Measure.pi (fun _ : Fin n => P.dataMeasure))
-      = Measure.pi (fun _ : foldIndex assign k => P.dataMeasure) := hproj.map_eq
-  have hsm : AEStronglyMeasurable F
-      (Measure.map (foldProjection (𝒳 := 𝒳) assign k)
-        (Measure.pi (fun _ : Fin n => P.dataMeasure))) := by
-    rw [hmap]
-    exact hInt_sub.aestronglyMeasurable
   calc
     ∫ sample : Fin n → Observation 𝒳,
         foldLocalizedSup P g assign policySet r k sample
         ∂(Measure.pi (fun _ : Fin n => P.dataMeasure))
         =
-      ∫ sample : Fin n → Observation 𝒳,
-        F (foldProjection (𝒳 := 𝒳) assign k sample)
-        ∂(Measure.pi (fun _ : Fin n => P.dataMeasure)) := by
-          rfl
-    _ = ∫ sample : foldIndex assign k → Observation 𝒳, F sample
-        ∂(Measure.pi (fun _ : foldIndex assign k => P.dataMeasure)) := by
-          rw [← hmap]
-          exact (integral_map hproj.aemeasurable hsm).symm
+      ∫ sample : foldIndex assign k → Observation 𝒳,
+        foldLocalizedSubSup P g assign policySet r k sample
+        ∂(Measure.pi (fun _ : foldIndex assign k => P.dataMeasure)) :=
+          Causalean.Stat.integral_comp_pi_restrict P.dataMeasure (fun i => assign i = k)
+            (fun z => foldLocalizedSubSup P g assign policySet r k z)
     _ = expectedLocalizedSup (m := Fintype.card (foldIndex assign k)) P (g k) policySet r :=
           integral_foldLocalizedSubSup_eq_expected P g assign policySet r k hm
 
@@ -464,30 +444,16 @@ lemma integral_foldOffsetSup_eq_expected {n K : ℕ} (P : ObservedLaw 𝒳)
         ∂(Measure.pi
           (fun _ : Fin (Fintype.card (foldIndex assign k)) => P.dataMeasure)) := by
   classical
-  let F : (foldIndex assign k → Observation 𝒳) → ℝ :=
-    fun sample => foldOffsetSubSup P g assign policySet k sample
-  have hproj := measurePreserving_foldProjection P assign k
-  have hmap : Measure.map (foldProjection (𝒳 := 𝒳) assign k)
-      (Measure.pi (fun _ : Fin n => P.dataMeasure))
-      = Measure.pi (fun _ : foldIndex assign k => P.dataMeasure) := hproj.map_eq
-  have hsm : AEStronglyMeasurable F
-      (Measure.map (foldProjection (𝒳 := 𝒳) assign k)
-        (Measure.pi (fun _ : Fin n => P.dataMeasure))) := by
-    rw [hmap]
-    exact hInt_sub.aestronglyMeasurable
   calc
     ∫ sample : Fin n → Observation 𝒳,
         foldOffsetSup P g assign policySet k sample
         ∂(Measure.pi (fun _ : Fin n => P.dataMeasure))
         =
-      ∫ sample : Fin n → Observation 𝒳,
-        F (foldProjection (𝒳 := 𝒳) assign k sample)
-        ∂(Measure.pi (fun _ : Fin n => P.dataMeasure)) := by
-          rfl
-    _ = ∫ sample : foldIndex assign k → Observation 𝒳, F sample
-        ∂(Measure.pi (fun _ : foldIndex assign k => P.dataMeasure)) := by
-          rw [← hmap]
-          exact (integral_map hproj.aemeasurable hsm).symm
+      ∫ sample : foldIndex assign k → Observation 𝒳,
+        foldOffsetSubSup P g assign policySet k sample
+        ∂(Measure.pi (fun _ : foldIndex assign k => P.dataMeasure)) :=
+          Causalean.Stat.integral_comp_pi_restrict P.dataMeasure (fun i => assign i = k)
+            (fun z => foldOffsetSubSup P g assign policySet k z)
     _ =
       ∫ sample,
         sSup ((fun π => max 0

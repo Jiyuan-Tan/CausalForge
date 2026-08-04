@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { restoreFrozenEnvsAfterRevision, stageP5HolisticRevision } from "../src/presentation/stages/p5_holistic_revision.js";
@@ -58,7 +58,6 @@ describe("P5 holistic manuscript reviser", () => {
       runClaude: async () => "",
       runCodex: async (args) => {
         call = args;
-        await writeFile(join(outDir, "front_matter.tex"), "Econometric reframing.\n");
         await writeFile(join(outDir, "paper.tex"), "Econometric reframing.\n");
         return { stdout: "Reframed the verified contribution.", stderr: "" };
       },
@@ -99,6 +98,86 @@ describe("P5 holistic manuscript reviser", () => {
     const receipt = await readFile(join(outDir, "p5_revision_pass_1.md"), "utf8");
     expect(receipt).toContain("mode: reframe");
     expect(receipt).toContain("Reframed the verified contribution.");
+    await expect(readFile(join(outDir, "front_matter.tex"), "utf8")).resolves.toBe("Old abstract.\n");
+  });
+
+  it("invalidates only purely derived P4 artifacts after a source-changing revision", async () => {
+    const outDir = await mkdtemp(join(tmpdir(), "p5-holistic-freshness-"));
+    dirs.push(outDir);
+    await mkdir(join(outDir, "sections"));
+    await mkdir(join(outDir, "proofs"));
+    for (const [name, body] of [
+      ["outline.md", "# Title\n"], ["front_matter.tex", "Abstract.\n"],
+      ["appendix_proofs.tex", ""], ["references.bib", ""], ["paper.tex", "Old paper.\n"],
+      ["verification_contract.json", "{}\n"], ["formal_layer.json", "{}\n"],
+      ["paper.pdf", "stale pdf"], ["paper_body.html", "stale web body"],
+      ["lean_snippets.json", "{}"], ["presentation_crosswalk.json", "{}"],
+      ["paper_library_index.json", "{\"decl\":\"stable\"}"], ["formal_layer_web.json", "{}"],
+      ["assumption_table.md", "stale table"],
+      ["meta.json", "{\"tldr\":\"sticky\",\"score\":8,\"score_rationale\":\"verified\"}"],
+    ]) await writeFile(join(outDir, name), body);
+    const deps: PaperDeps = {
+      runClaude: async () => "",
+      runCodex: async () => {
+        await writeFile(join(outDir, "paper.tex"), "Revised source.\n");
+        return { stdout: "changed", stderr: "" };
+      },
+      dryRun: false,
+    };
+    const review: PriorReview = {
+      recommendation: "minor_revision",
+      findings: [{ severity: "minor", section: "intro", issue: "unclear", fix: "rewrite", kind: "prose", remedy: "rewrite", finding_id: "unclear-intro" }],
+    };
+    const result = await stageP5HolisticRevision({
+      ctx: { repoRoot: outDir, qid: "q", spec: "v1", deps, outDir },
+      state: freshPaperState("q", "v1"), bank: {} as StageIO["bank"], outDir,
+    }, review, review.findings);
+
+    expect(result.changed).toBe(true);
+    await expect(readFile(join(outDir, "paper.tex"), "utf8")).resolves.toBe("Revised source.\n");
+    for (const name of ["paper.pdf", "paper_body.html", "lean_snippets.json", "presentation_crosswalk.json", "formal_layer_web.json", "assumption_table.md"]) {
+      await expect(stat(join(outDir, name))).rejects.toMatchObject({ code: "ENOENT" });
+    }
+    await expect(readFile(join(outDir, "paper_library_index.json"), "utf8")).resolves.toBe("{\"decl\":\"stable\"}");
+    await expect(readFile(join(outDir, "meta.json"), "utf8")).resolves.toBe("{\"tldr\":\"sticky\",\"score\":8,\"score_rationale\":\"verified\"}");
+  });
+
+  it("leaves P4 artifacts intact when the P5 pass leaves editable sources unchanged", async () => {
+    const outDir = await mkdtemp(join(tmpdir(), "p5-holistic-unchanged-"));
+    dirs.push(outDir);
+    await mkdir(join(outDir, "sections"));
+    await mkdir(join(outDir, "proofs"));
+    for (const [name, body] of [
+      ["outline.md", "# Title\n"], ["front_matter.tex", "Abstract.\n"],
+      ["appendix_proofs.tex", ""], ["references.bib", ""], ["paper.tex", "Paper.\n"],
+      ["verification_contract.json", "{}\n"], ["formal_layer.json", "{}\n"],
+      ["paper.pdf", "current pdf"], ["paper_body.html", "current web body"],
+      ["lean_snippets.json", "{\"snippets\":[]}"], ["presentation_crosswalk.json", "{\"crosswalk\":[]}"],
+      ["paper_library_index.json", "{\"decl\":\"current\"}"], ["formal_layer_web.json", "{}"],
+      ["assumption_table.md", "current table"], ["meta.json", "{\"tldr\":\"current\"}"],
+    ]) await writeFile(join(outDir, name), body);
+    const deps: PaperDeps = {
+      runClaude: async () => "",
+      runCodex: async () => ({ stdout: "no source changes", stderr: "" }),
+      dryRun: false,
+    };
+    const review: PriorReview = {
+      recommendation: "minor_revision",
+      findings: [{ severity: "minor", section: "intro", issue: "unclear", fix: "rewrite", kind: "prose", remedy: "rewrite", finding_id: "unclear-intro" }],
+    };
+
+    const result = await stageP5HolisticRevision({
+      ctx: { repoRoot: outDir, qid: "q", spec: "v1", deps, outDir },
+      state: freshPaperState("q", "v1"), bank: {} as StageIO["bank"], outDir,
+    }, review, review.findings);
+
+    expect(result.changed).toBe(false);
+    for (const [name, body] of [
+      ["paper.pdf", "current pdf"], ["paper_body.html", "current web body"],
+      ["lean_snippets.json", "{\"snippets\":[]}"], ["presentation_crosswalk.json", "{\"crosswalk\":[]}"],
+      ["paper_library_index.json", "{\"decl\":\"current\"}"], ["formal_layer_web.json", "{}"],
+      ["assumption_table.md", "current table"], ["meta.json", "{\"tldr\":\"current\"}"],
+    ]) await expect(readFile(join(outDir, name), "utf8")).resolves.toBe(body);
   });
 
   it("fails closed if the reviser touches a protected formal artifact", async () => {
@@ -136,5 +215,39 @@ describe("P5 holistic manuscript reviser", () => {
       bank: {} as StageIO["bank"],
       outDir,
     }, review, review.findings)).rejects.toThrow(/protected formal/i);
+  });
+
+  it("fails closed if the reviser edits a cached section instead of paper.tex", async () => {
+    const outDir = await mkdtemp(join(tmpdir(), "p5-holistic-cache-"));
+    dirs.push(outDir);
+    await mkdir(join(outDir, "sections"));
+    await mkdir(join(outDir, "proofs"));
+    for (const [name, body] of [
+      ["outline.md", "# Title\n"],
+      ["front_matter.tex", "Abstract.\n"],
+      ["appendix_proofs.tex", ""],
+      ["references.bib", ""],
+      ["paper.tex", "Paper.\n"],
+      ["verification_contract.json", "{}\n"],
+      ["formal_layer.json", "{}\n"],
+      ["related_work_brief.md", ""],
+    ]) await writeFile(join(outDir, name), body);
+    await writeFile(join(outDir, "sections", "01_body.tex"), "Body.\n");
+    const deps: PaperDeps = {
+      runClaude: async () => "",
+      runCodex: async () => {
+        await writeFile(join(outDir, "sections", "01_body.tex"), "Stale split source.\n");
+        return { stdout: "changed cache", stderr: "" };
+      },
+      dryRun: false,
+    };
+    const review: PriorReview = {
+      recommendation: "minor_revision",
+      findings: [{ severity: "minor", section: "body", issue: "unclear", fix: "rewrite", kind: "prose", remedy: "rewrite", finding_id: "unclear-body" }],
+    };
+    await expect(stageP5HolisticRevision({
+      ctx: { repoRoot: outDir, qid: "q", spec: "v1", deps, outDir },
+      state: freshPaperState("q", "v1"), bank: {} as StageIO["bank"], outDir,
+    }, review, review.findings)).rejects.toThrow(/protected formal or P2 cache artifact/i);
   });
 });

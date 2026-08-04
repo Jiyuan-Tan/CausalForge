@@ -1,0 +1,688 @@
+{
+ "qid": "exp_snipe_degree_frontier",
+ "specialization": "v1",
+ "cluster": "experimentation",
+ "namespace": "CausalSmith.Experimentation.SnipeDegreeFrontier",
+ "target_dir": "CausalSmith/Experimentation/EXP_SnipeDegreeFrontier_Research",
+ "env": [
+  {
+   "id": "S1",
+   "world": "finite-population design-based randomization world: a finite unit type `V` with a known directed interference graph (self-loops allowed) and the unit-level product Bernoulli assignment law on `Ω = V → Bool`, carried by `FiniteDesign` with the finite-sum `E`/`Var`/`Cov` algebra.",
+   "binds_symbols": [
+    "n",
+    "V_n",
+    "G_n",
+    "i",
+    "j",
+    "l",
+    "N_i",
+    "d",
+    "p",
+    "Z",
+    "P_Z",
+    "z",
+    "S",
+    "T",
+    "\\mathbb E_Z"
+   ],
+   "binds_sampling_model": true,
+   "disposition": "reuse",
+   "reuse": "Causalean.Experimentation.DesignBased.bernoulliDesign",
+   "modules": [
+    "Causalean.Experimentation.DesignBased.DesignCore",
+    "Causalean.Experimentation.DesignBased.Designs.Bernoulli",
+    "Causalean.Experimentation.DesignBased.ProductVariance",
+    "Causalean.Experimentation.DesignBased.ProductBlock"
+   ],
+   "notes": "This is the single highest-leverage reuse decision: the paper's only randomness is the unit-level product Bernoulli assignment, which is exactly `bernoulliDesign p hp0 hp1 : FiniteDesign (V → Bool)` (constant `p i = p`). Cross-coordinate independence — the engine of every orthogonality, block-independence and variance computation in the paper — is then STRUCTURAL (`prodDesign`), not an assumption: `FiniteDesign.E_prod_apply`, `E_prod_apply₂`, `Cov_prod_apply_of_ne`, `Var_prod_apply`, `Var_prod_linear_comb` (ProductVariance) and the block generalizations `E_prod_block_mul`, `Cov_prod_disjoint_zero` (ProductBlock) give the disjoint-block factorization the complete-directed-block arguments need. `\\mathbb E_Z` is `FiniteDesign.E` of this design; `P_Z` is the design itself. The graph is a plain `V → V → Prop` with `DecidablePred`, neighborhoods `N i : Finset V`; Causalean's `DAG` is NOT usable (self-loops are required and counted in both degrees), recorded as bypass-justified.",
+   "bypass_justified": "Causalean.Graph.DAG surveyed and rejected: `DAG.irrefl` forbids self-loops, but this paper REQUIRES self-loops and counts them in both degrees (ass:bounded-degree). A bare decidable edge relation on a `Fintype` is used instead."
+  },
+  {
+   "id": "S2",
+   "world": "fixed-potential-outcome (noiseless) low-order polynomial interference world: a coefficient schedule `c : (i : V) → Finset V → ℝ` supported on subsets of `N i` of size ≤ β, the induced potential outcome `Y i z = ∑_{S ⊆ N i} c i S ∏_{j ∈ S} z j`, the observed outcome `Y i Z`, the finite-population TTE contrast, and the two model classes (ℓ¹ coefficient-mass and uniformly bounded-outcome).",
+   "binds_symbols": [
+    "\\beta",
+    "\\bar\\beta_d",
+    "r",
+    "c_{i,S}",
+    "c",
+    "B",
+    "Y_i(z)",
+    "Y_i^{\\mathrm{obs}}",
+    "\\tau_n",
+    "\\Delta_r(p)",
+    "k_\\star",
+    "\\mathcal G_{n,d}",
+    "\\mathcal C_{n,d,\\beta}(B)",
+    "\\mathcal M_{n,d,\\beta}(B)",
+    "\\mathcal C_{n,d,\\beta}^{\\infty}(B)",
+    "\\mathcal M_{n,d,\\beta}^{\\infty}(B)"
+   ],
+   "binds_sampling_model": false,
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Causalean.Experimentation.DesignBased.PotentialOutcome"
+   ],
+   "notes": "Search trace: read `../doc/API.md` §18 `Experimentation/` (grepped '^## ' index, then the DesignBased/ExposureMappingInterference/TwoStageInterference/UnknownInterference tables in full); scanned `Causalean/Experimentation/DesignBased/{PotentialOutcome,Exposure,Estimators,HT/*}.lean` for 'potential outcome', 'exposure mapping', 'polynomial interference', 'low order', 'coefficient schedule'; scanned `Causalean/Experimentation/UnknownInterference/Basic.lean` for the whole-assignment PO type. Result: not found — Causalean's design-based PO layers are exposure-mapping-valued (`ProperlySpecified : ∀ i z, yr i z = y i (expo i z)`, `Yobs y f θ i z = y i (expo i z)`, an ABSTRACT finite exposure `θ`) or fully unstructured (`UnknownInterference.y i z`); neither carries the RAW-MONOMIAL POLYNOMIAL structure `Y i z = ∑_{S ⊆ N i} c i S ∏_{j∈S} z j` that every result here is about (the coefficient schedule `c` IS the model parameter, the interaction order β is the model complexity, and the ℓ¹ coefficient-mass envelope is a class restriction on `c`). Bypass-justified: the exposure layer is at the wrong abstraction (it hides the coefficients we must vary). The bridge fact that this PO factors through `z` restricted to `N i` is recorded and proved locally (one lemma), so `DesignBased.PotentialOutcome.ProperlySpecified` remains available as an instance if a later artifact wants it."
+  },
+  {
+   "id": "S3",
+   "world": "design-based decision-theoretic world: GRAPH-AWARE estimators measurable in the full observed data `(G, Z, (Y_i^obs))`, their design mean squared error at a fixed model, the worst case over a model class, and the minimax (inf over estimators) risk.",
+   "binds_symbols": [
+    "g_{i,\\beta,p}",
+    "\\widehat\\tau_n^{\\mathrm{SNIPE}}",
+    "\\widehat\\tau_n^{\\mathrm{up}}",
+    "\\widehat\\tau_n",
+    "\\widehat\\tau_{n,\\infty}^{\\mathrm{up}}",
+    "R_n^\\star(d,\\beta,p,B)",
+    "R_{n,\\ell_1}^{\\star}(d,\\beta,p,B)",
+    "R_{n,\\infty}^{\\star}(d,\\beta,p,B)",
+    "A_i",
+    "c_{\\beta,p}",
+    "C_{\\beta,p}"
+   ],
+   "binds_sampling_model": false,
+   "disposition": "reuse",
+   "reuse": "Causalean.Experimentation.DesignBased.FiniteDesign.mse",
+   "modules": [
+    "Causalean.Experimentation.DesignBased.Risk"
+   ],
+   "notes": "REVISED (round 2, FLAG-world-arity): an estimator is GRAPH-AWARE — `Estimator V := (V → V → Bool) → (V → Bool) → (V → ℝ) → ℝ` (known graph, assignment, observed outcome vector), matching the core's `\\widehat\\tau_n` symbol (`refs: [G_n, Z, Y_i^{obs}]`) and def:minimax-risk's 'measurable in `(G_n, Z, {Y_i^obs})`'. The graph is NOT fixed inside the risk functional: `riskAt` COMPOSES the single global estimator with the model's own graph, `riskAt p M est = (bernoulliDesign …).mse (fun z => est (edgeFn M) z (obsOutcome M z)) (tte M)`, where `edgeFn M := fun j i => decide (M.edge j i)` uses the class structure's existing `decEdge` field. The inf–sup is therefore the core's: ONE estimator faces every `(G_n, c)` in the class, and `snipeEstimator β p : Estimator V` (which reads its neighborhoods off its graph argument) is one admissible global competitor, so the middle term of thm:bounded-outcome-degree-frontier is literally `worstRisk … (snipeClipped B β p)`. The per-model risk is exactly `D.mse est μ = D.E (fun z => (est z - μ)^2)` with `D = bernoulliDesign`, `μ = τ_n`; `mse_eq_var_add_bias_sq`, `mse_eq_var_of_unbiased`, `var_le_mse`, `Unbiased` are all reused verbatim (the unclipped-SNIPE branch is `mse = Var` after unbiasedness; the clipping branch uses `mse_nonneg` + a pointwise projection bound). Measurability is vacuous on the finite assignment space and is imposed only on the outcome argument, and only in the converse. `worstRisk`/`minimaxRisk` are `sSup`/`sInf` over the model class / estimator class (build-inline, see def:minimax-risk). Surveyed and bypass-justified: `Causalean.Experimentation.DesignBased.worstRisk` / `IsMinimaxOn` (Optimality/Minimax.lean) minimize over DESIGNS at a fixed estimator, not over ESTIMATORS at a fixed design — the wrong quantifier order for this paper; `ProbabilityTheory.minimaxRisk` (Mathlib Decision/Risk) is kernel/loss-shaped over a general `Kernel`-valued experiment and would force a measure-theoretic re-encoding of the finite design."
+  },
+  {
+   "id": "S4",
+   "world": "least-favourable block world: complete directed `d`-blocks with loops, the block Bernoulli score/energy/representer, the continuous cosine-squared block baseline prior, the compressed sufficient-statistic laws on `({0,1}^V) × ℝ^m` (counting ⊗ Lebesgue) used for the Le Cam calculation, and their pushforwards to the full prior-predictive laws on `({0,1}^V) × ℝ^n`.",
+   "binds_symbols": [
+    "m",
+    "q",
+    "\\rho",
+    "b",
+    "V_b",
+    "G_{n,d}^{\\mathrm{blk}}",
+    "g_d",
+    "A_d",
+    "h_d",
+    "h_{d,T}",
+    "H_{\\beta,p}",
+    "s",
+    "f_s",
+    "U_b",
+    "\\sigma",
+    "\\delta",
+    "\\Pi_\\sigma",
+    "P_\\sigma"
+   ],
+   "binds_sampling_model": false,
+   "disposition": "reuse",
+   "reuse": "Causalean.Stat.tvDist",
+   "modules": [
+    "Causalean.Stat.Minimax.TotalVariation",
+    "Causalean.Stat.Minimax.LeCam",
+    "Causalean.Stat.Minimax.MinimaxRisk",
+    "Causalean.Stat.Minimax.Scheffe"
+   ],
+   "notes": "REVISED (round 3, FLAG-finite-mixture) on top of round 2 (FLAG-reuse-precondition). GENERIC Le Cam reuse is RETAINED and unchanged: `Causalean.Stat.tvDist`, `one_sub_tvDist_le_test`, `one_sub_tvDist_le_error_sum`, `real_two_point_lower_bound`, `two_point_lower_bound_of_tvDist_le` (TotalVariation.lean / LeCam.lean / MinimaxRisk.lean) — none of these has an absolute-continuity premise, and none of them requires a finite hypothesis index. DROPPED in round 3: `Causalean.Stat.mixtureReal_le` (Minimax/Mixture.lean), which the round-2 plan cited for the PRIOR REALIZABILITY step. Verified against the source (`Grep 'mixtureReal' ../Causalean/Stat/Minimax/` → `Mixture.lean:53 theorem mixtureReal_le (w : ι → ℝ≥0∞) (hw : ∑ i, w i = 1) …` with `[Fintype ι]`): it is a `.real`-MASS domination bound for a FINITE `Fintype`-indexed convex combination of measures, whereas the baseline prior here is the CONTINUOUS product `⊗_{b ≤ m} f_s(u)du` over `U : Fin m → ℝ` (a compactly supported cosine-squared density, not a finite weight vector), and the quantity to be dominated is an integrated RISK, not a set mass. It cannot discharge the realizability step and the whole `Causalean.Stat.Minimax.Mixture` module is therefore removed from this S-block's modules. REPLACEMENT (local, `small`, built in `Helpers/LeastFavourable.lean` — see def:block-family for the same text): (R0) `prior_integrated_risk_le_worstRisk` — for an admissible estimator `est` (the `AdmissibleEstimator` predicate of def:minimax-risk already carries `BddAbove {riskAt p M est | M}` and outcome-measurability), `∫ riskAt p (blockSchedule σ U) est ∂(blockBaselinePrior s m) ≤ worstRisk p est`. Proof is the ordinary continuous-prior `∫ ≤ sup`: the admissibility lemma of def:block-family puts `blockSchedule σ U` in `ModelClass V d β B` for EVERY `U` in the support, so `riskAt p (blockSchedule σ U) est ≤ worstRisk p est` pointwise by the reused API lemma `le_worstRisk`; then `MeasureTheory.integral_mono_ae` against the constant plus `integral_const` and `IsProbabilityMeasure` (`∫ f_s = 1` is the closed-form `intervalIntegral` computation already needed for (C2), lifted to the product prior by `MeasureTheory.Measure.pi` + `MeasureTheory.isProbabilityMeasure_pi`). Integrability is NOT assumed away: `0 ≤ riskAt ≤ worstRisk` (from `mse_nonneg` and `le_worstRisk`) gives a two-sided bound, and measurability in `U` holds because `riskAt` is a FINITE sum over the finite assignment space of terms polynomial in `U` composed with the outcome-measurable `est`, so `Integrable` follows from `Measure.integrable_of_bounded`-style reasoning on a probability measure. Search trace for a reusable form: `lean_local_search 'mixtureReal_le'` → EMPTY in the index; `lean_local_search 'bayesRisk'` → only `ProbabilityTheory.bayesRisk*` (Mathlib Decision/Risk), which is `Kernel`-shaped over an abstract experiment and would force a measure-theoretic re-encoding of the finite design (same rejection as in def:minimax-risk); `Grep 'integral_mono|Bayes' ../Causalean/Stat/Minimax/` → no integrated-risk-vs-worst-case-risk lemma. Not found ⇒ local, build-inline (three lines of Mathlib `integral_mono_ae`). DROPPED in round 2, and why: the round-1 plan routed the converse through `Causalean.Stat.sq_bhattacharyya_le_two_mul_integral_min` + `Causalean.Stat.integral_min_le_one_sub_tvDist` (BretagnolleHuber.lean), but BOTH are stated for `P₊ ≪ P₋` (they are RN-derivative statements, `∫ √(dP₊/dP₋) dP₋`). The two prior-predictive laws here are mixtures of COMPACTLY SUPPORTED translated cosine-square densities whose supports are non-nested, so `P₊ ≪ P₋` FAILS and those lemmas are unusable; `Pinsker.lean` / `ChiSquared.lean` are excluded for the same reason (KL and χ² are infinite here), as the core's `technical_internal_limitation` records. REPLACEMENT (built locally in `Helpers/HellingerAffinity.lean`, all statements phrased against a COMMON DOMINATING measure `λ = count(V → Bool) ⊗ volume^m`, never against a mutual RN derivative): (C0) `tvDist_le_sqrt_two_mul_one_sub_affinity` — for `P = λ.withDensity f`, `Q = λ.withDensity g` with `f, g ≥ 0` integrable densities of total mass one, `tvDist P Q ≤ √(2·(1 − ∫ √(f·g) ∂λ))`. Proof, both halves elementary and premise-free: `|P.real A − Q.real A| = |∫_A (f − g) ∂λ| ≤ ½∫|f − g| ∂λ` by REUSING `Causalean.Stat.abs_setIntegral_le_half_integral_abs_of_integral_eq_zero` (Scheffe.lean — verified generic: it takes only `Integrable f ν` and `∫ f = 0`, NO `≪`), pushed through `MeasureTheory.withDensity_apply` and `sSup` to bound `tvDist`; then the Cauchy–Schwarz factorization `∫|f−g| = ∫|√f−√g|·(√f+√g) ≤ √(∫(√f−√g)²)·√(∫(√f+√g)²) ≤ 2√(∫(√f−√g)²)` with `∫(√f−√g)² = 2(1 − ∫√(fg))`. This is exactly the paper's own step (`‖P₊−P₋‖_TV ≤ H`, 'Cauchy–Schwarz applied to the densities'), so no fidelity is lost: `H² ≤ 1/4 ⇒ tvDist ≤ 1/2`. (C1) affinity TENSORIZATION for the explicit product density: `∫ √(∏_b f_b · ∏_b g_b) ∂(λ₀ ⊗ volume^m) = ∏_b ∫ √(f_b g_b)`, by `Real.sqrt_mul` on the pointwise product followed by Fubini on `MeasureTheory.Measure.pi` (`integral_finset_prod`-style), with the shared DISCRETE assignment coordinate handled by summing over `z` first (blocks are conditionally independent given `Z`, and the law of `Z` is itself a product over blocks); combined with `1 − ∏ a_b ≤ ∑ (1 − a_b)` for `a_b ∈ [0,1]`. (C2) unchanged: the cosine-squared translation affinity bound `1 − ∫ √(f_s(u−a) f_s(u−b)) du ≤ C(a−b)²/s²`, a closed-form `intervalIntegral` computation (product-to-sum on `cos·cos` over the overlap). NOTE the direction of travel: nothing is now needed ABOUT a Hellinger distance object — only the affinity number `∫√(fg)`, so no general Hellinger theory is built and no `≪` ever appears."
+  },
+  {
+   "id": "S5",
+   "world": "block-local Riesz world: the polynomial subspace `P_d ⊆ L²(P_Z)` spanned by raw monomials of degree ≤ β̄_d on one `d`-block, the all-one-versus-all-zero contrast functional `L_d`, and the fixed-complete-block sequence `(n_t, d_t, G_t)` carrying the block-local linear design-unbiased estimator class.",
+   "binds_symbols": [
+    "\\mathcal P_d",
+    "L_d",
+    "h",
+    "f",
+    "\\mathsf{PerturbProg}_{d,\\beta,p}",
+    "\\mathsf{WeightProg}_{d,\\beta,p}",
+    "w",
+    "n_t",
+    "V_{n_t}",
+    "d_t",
+    "G_t",
+    "N_i^{G_t}",
+    "b(i)",
+    "Z_{b(i)}",
+    "w_{i,t}",
+    "\\widehat\\tau_{w,t}",
+    "\\mathcal E_t^{\\mathrm{loc,lin}}",
+    "\\mathcal M_t(G_t)",
+    "R_t^{\\mathrm{loc,lin}}"
+   ],
+   "binds_sampling_model": false,
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Causalean.Experimentation.DesignBased.DesignCore",
+    "Causalean.Experimentation.DesignBased.ProductVariance"
+   ],
+   "notes": "Search trace: `lean_local_search` for 'Riesz', 'representer', 'L2Space', 'inner product design', 'polynomial space'; read `../doc/API.md` §18 (DesignBased substrate tables) and §10g `Mathlib/SemiInnerProjection.lean`, §10f `Mathlib/FWL.lean`. Result: not found for a design-based `L²(P_Z)` inner-product layer. Bypass-justified and DELIBERATE: `L²(P_Z)` here is the FINITE-dimensional space of functions `(V_b → Bool) → ℝ` with the design inner product `⟪f,g⟫ = D.E (f·g)`, so the whole Riesz story is `Finset` algebra over `FiniteDesign.E`/`Cov` (no Mathlib `L2Space`, no `MeasureTheory` needed); `P_d` is a `Submodule ℝ ((V_b → Bool) → ℝ)` spanned by raw monomials, and orthogonal decomposition `w = g_d + u`, `u ⊥ P_d`, is finite-dimensional projection. The programs `PerturbProg`/`WeightProg` are `sInf` over the feasible sets, with their minimizers identified in lem:block-energy-representer. The only genuinely non-elementary piece is the non-necessity witness, which needs `dim P_{d_t} = ∑_{r ≤ β} C(d_t,r) < 2^{d_t}` for large `d_t` — the centered-monomial family is orthogonal (hence independent) under the product Bernoulli design, so this is a `Finset.card` computation plus `Module.finrank` of the full function space; `Mathlib.LinearAlgebra.Dimension` + `Submodule.exists_mem_ne_zero_of_finrank_lt` style reasoning covers it."
+  }
+ ],
+ "nodes": {
+  "ass:bernoulli-design": {
+   "lean_kind": "assumption",
+   "lean_name": "IsProductBernoulli",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Causalean.Experimentation.DesignBased.Designs.Bernoulli"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "assumption_kind": "modeling",
+   "target_file": "Basic.lean",
+   "statement_sketch": "`IsProductBernoulli (D : FiniteDesign (V → Bool)) (p : ℝ) : Prop := ∃ (hp0 : ∀ _ : V, (0:ℝ) ≤ p) (hp1 : ∀ _ : V, p ≤ 1), D = bernoulliDesign (fun _ => p) hp0 hp1`, together with `0 < p < 1`.",
+   "notes": "Modeling assumption on the design (the paper's known unit-level randomization); kept as a threaded Prop hypothesis, never discharged. Search trace: `lean_local_search 'bernoulliDesign'` → `Causalean.Experimentation.DesignBased.bernoulliDesign` + `bernoulliDesign_E_treatInd` / `_Var_treatInd` / `_E_treatInd_pair` / `_Cov_treatInd` (Designs/Bernoulli.lean, read in full). The CONSTRUCTION is reused verbatim; only the Prop 'the design at hand IS that construction with common p' is local (Causalean has no such predicate — grepped 'IsBernoulli', 'BernoulliDesign' → not found). Consumers get mutual independence and `Pr(Z_j = 1) = p` from the reused lemmas, so this assumption is a one-line identification, not an axiom about moments."
+  },
+  "ass:bounded-degree": {
+   "lean_kind": "assumption",
+   "lean_name": "BoundedDegree",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [],
+   "defer_tier": false,
+   "gate": false,
+   "assumption_kind": "modeling",
+   "target_file": "Basic.lean",
+   "statement_sketch": "`BoundedDegree (G : V → V → Prop) (d : ℕ) : Prop := (∀ i, (nbhd G i).card ≤ d) ∧ (∀ j, (outNbhd G j).card ≤ d)` where `nbhd G i = {j | G j i}` and `outNbhd G j = {i | j ∈ nbhd G i}`; self-loops allowed and counted in both.",
+   "notes": "Modeling assumption on the known interference graph. Search trace: `Glob ../Causalean/**` + read `../doc/API.md` §1 `Graph/DAG.lean` and §18; searched 'degree', 'maxDegree', 'BoundedDegree', 'gdep', 'InterfDep', 'degDep'. Nearest analogues found and rejected: `Causalean.DAG` (irreflexive by construction — `DAG.irrefl` forbids the self-loops this paper requires and counts), `Experimentation.UnknownInterference.InterfDep`/`degDep` (an undirected pairwise DEPENDENCE indicator on the interference graph, not the directed in/out degree pair), `ExposureMappingInterference.gdep` (same). The DIRECTED in-degree/out-degree split is load-bearing here: lem:overlap-count charges out-degree exactly once, which is the whole tightening over the anchor. Not found ⇒ local."
+  },
+  "ass:low-order": {
+   "lean_kind": "assumption",
+   "lean_name": "LowOrder",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [],
+   "defer_tier": false,
+   "gate": false,
+   "assumption_kind": "modeling",
+   "target_file": "Basic.lean",
+   "statement_sketch": "`LowOrder (c : V → Finset V → ℝ) (β : ℕ) : Prop := ∀ i S, β < S.card → c i S = 0`.",
+   "notes": "Modeling assumption restricting the outcome model (bounded polynomial interaction order). Search trace: `lean_local_search 'lowOrder'`, 'interactionOrder', 'polynomial interference', 'degree bound outcome'; read `../doc/API.md` §18 in full. Result: not found — Causalean has no low-order polynomial outcome model (its interference layers are exposure-mapping or unrestricted). Shared atom: it is a member of def:coefficient-class, def:bounded-outcome-coefficient-class and def:local-linear-class, and is ALSO listed inline by thm:bounded-outcome-degree-frontier; it remains ONE `def : Prop`."
+  },
+  "ass:bounded-coefficient-mass": {
+   "lean_kind": "assumption",
+   "lean_name": "BoundedCoeffMass",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [],
+   "defer_tier": false,
+   "gate": false,
+   "assumption_kind": "modeling",
+   "target_file": "Basic.lean",
+   "statement_sketch": "`BoundedCoeffMass (G : V → V → Prop) (c : V → Finset V → ℝ) (B : ℝ) : Prop := ∀ i, ∑ S ∈ (nbhd G i).powerset, |c i S| ≤ B`.",
+   "notes": "Modeling assumption (the anchor's `Y_max` ℓ¹ normalization). Search trace: `lean_local_search 'boundedOutcome'`, 'Ymax', 'coefficientMass', 'l1 ball', 'ell1'; read `../doc/API.md` §18 and §13sa (MinimaxATE `ValidDGP`, `InClass`) — the MinimaxATE class bounds an L²(P_X) distance to a nuisance estimate, a different object. Not found ⇒ local. Shared atom (member of def:coefficient-class and def:local-linear-class, also inline in thm:bounded-outcome-degree-frontier); ONE `def : Prop`."
+  },
+  "def:exposed-order": {
+   "lean_kind": "def",
+   "lean_name": "kStar",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Basic.lean",
+   "companions": [
+    "effBeta",
+    "bernoulliContrast"
+   ],
+   "statement_sketch": "`bernoulliContrast p r = (1-p)^r - (-p)^r` (`Δ_r(p)`); `effBeta β d = min β d`; `kStar d β p = ` the largest `r ∈ Finset.Icc 1 (effBeta β d)` with `bernoulliContrast p r ≠ 0`, as a `Finset.max'` over a set nonempty because `Δ_1(p) = 1`; `kStar 0 β p = 0`.",
+   "notes": "Search trace: `lean_local_search 'contrast'`, 'Delta_r', 'exposedOrder', 'bernoulliContrast' → not found (Causalean's `htEffect`/`CE_direct` contrasts are estimator-level, not Bernoulli-moment coefficients). Pure arithmetic construction; `Finset.max'` with the `Δ_1(p) = 1` nonemptiness witness keeps `kStar` computable and total, avoiding a junk-value branch."
+  },
+  "def:zero-degree-conventions": {
+   "lean_kind": "def",
+   "lean_name": "ZeroDegreeConventions",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/BlockScore.lean",
+   "statement_sketch": "`ZeroDegreeConventions : Prop := effBeta β 0 = 0 ∧ kStar 0 β p = 0 ∧ blockScore 0 = 0 ∧ blockEnergy 0 = 0 ∧ blockRepresenter 0 = 0` — a named `def : Prop` recording the degree-zero boundary values, proved by `Finset.sum_empty`/`Finset.Icc_self`-style `decide`/`simp` in the accompanying lemma `zeroDegreeConventions_holds`.",
+   "notes": "SYNC-BACK F2: moved from `Basic.lean` to `Helpers/BlockScore.lean` because the proposition definitionally mentions `blockScore`, `blockEnergy`, `blockRepresenter`, and `blockRawCoef`; keeping it in Basic would create an import cycle. Search trace: none needed for reuse (this is a naming convention specific to this paper), but recorded: `lean_local_search 'convention'` → not found. In Lean these are DEFINITIONAL rather than stipulated — `∑ r ∈ Finset.Icc 1 0, … = 0` by `Finset.Icc_eq_empty` + `Finset.sum_empty`, the empty product is `1`, and `Fin 0 → Bool` has a unique element. The node is nonetheless materialized as one named `Prop` (core node kind = definition/construction ⇒ `def`) plus a proof lemma, so that the `d = 0` boundary branch of thm:bounded-outcome-degree-frontier can cite it by name. `h_0 := 0` is an empty-object convention only and is NEVER unfolded as `g_0/A_0` (division by zero is avoided by branching on `1 ≤ d` before ever forming `h_d`)."
+  },
+  "def:graph-class": {
+   "lean_kind": "structure",
+   "lean_name": "GraphClass",
+   "members": [
+    "ass:bounded-degree"
+   ],
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Basic.lean",
+   "statement_sketch": "`structure GraphClass (V) (d : ℕ) where edge : V → V → Prop; decEdge : DecidableRel edge; degree_le : BoundedDegree edge d` — one field per member atom.",
+   "notes": "Search trace: as for ass:bounded-degree (`Causalean.DAG` rejected — self-loops required here). Membership in the class is exactly the bounded-degree atom, so the structure has one Prop field typed by that atom's `def`."
+  },
+  "def:coefficient-class": {
+   "lean_kind": "structure",
+   "lean_name": "CoeffClass",
+   "members": [
+    "ass:low-order",
+    "ass:bounded-coefficient-mass"
+   ],
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Basic.lean",
+   "statement_sketch": "`structure CoeffClass (G) (β : ℕ) (B : ℝ) where coef : V → Finset V → ℝ; supported : ∀ i S, ¬ S ⊆ nbhd G i → coef i S = 0; low_order : LowOrder coef β; mass_le : BoundedCoeffMass G coef B`.",
+   "notes": "Two Prop fields, one per member atom (plus the purely structural neighborhood-support field, which is part of the ambient schedule TYPE `\\mathbb R^{{(i,S) : S ⊆ N_i}}` in the core's symbol table, not an atomized assumption). Search trace: see ass:low-order / ass:bounded-coefficient-mass — no Causalean coefficient-class analogue."
+  },
+  "def:model-class": {
+   "lean_kind": "structure",
+   "lean_name": "ModelClass",
+   "members": [
+    "ass:bounded-degree",
+    "ass:low-order",
+    "ass:bounded-coefficient-mass"
+   ],
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Basic.lean",
+   "statement_sketch": "`structure ModelClass (V) (d β : ℕ) (B : ℝ) where edge : V → V → Prop; decEdge : DecidableRel edge; coef : V → Finset V → ℝ; supported : ∀ i S, ¬ S ⊆ nbhd edge i → coef i S = 0; degree_le : BoundedDegree edge d; low_order : LowOrder coef β; mass_le : BoundedCoeffMass edge coef B` — the carrier data `(G_n, c)` plus ONE Prop field per member atom, each typed by that atom's `def : Prop`.",
+   "notes": "The sup in the minimax risk ranges over terms of this structure; it is the `Y_max`-normalized ℓ¹ model class. Its `members` are exactly the core's `by_member_properties = [ass:bounded-degree, ass:low-order, ass:bounded-coefficient-mass]` — the FLATTENED atom list, one structure field per member atom (`degree_le`, `low_order`, `mass_le`), which is the normative mapping (a member must be an assumption atom, never a component class). Semantically this is still exactly `G_n ∈ 𝒢_{n,d} ∧ c ∈ 𝒞_{n,d,β}(B)`, and the component classes of def:graph-class / def:coefficient-class remain reusable building blocks: F2 should emit the two round-trip abbreviations `ModelClass.ofComponents (g : GraphClass V d) (c : CoeffClass g.edge β B) : ModelClass V d β B` and the projections `M.toGraphClass`, `M.toCoeffClass`, so any construction phrased over the components (notably def:block-family's `blockGraph`/`blockSchedule`) transports to this structure in one step and consumers never pattern-match twice. The neighborhood-support field `supported` is structural (part of the schedule TYPE `\\mathbb R^{{(i,S) : S ⊆ N_i}}` in the core's symbol table), not an atomized assumption, so it is an inline carrier field and not a member."
+  },
+  "def:snipe-score": {
+   "lean_kind": "def",
+   "lean_name": "snipeScore",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Estimator.lean",
+   "statement_sketch": "`snipeScore (G : V → V → Bool) β p i z = ∑ r ∈ Finset.Icc 1 (effBeta β d), (bernoulliContrast p r / (p*(1-p))^r) * ∑ S ∈ (nbhdB G i).powerset.filter (·.card = r), ∏ j ∈ S, ((if z j then (1:ℝ) else 0) - p)` — the graph is the Bool-valued relation the estimator RECEIVES (see def:minimax-risk), and `nbhdB G i = univ.filter (fun j => G j i)`, related to the class structures' `nbhd M.edge i` by the bridge lemma `nbhdB (edgeFn M) i = nbhd M.edge i`.",
+   "notes": "REVISED (round 2, FLAG-world-arity): the score now reads its neighborhoods off the graph ARGUMENT rather than off an ambient fixed graph, so `snipeEstimator` is a legal global `Estimator V`. Search trace: `lean_local_search 'snipe'`, 'score', 'representer', 'weight'; read `../doc/API.md` §18 (HT/Estimators/Exposure tables). Result: not found — Causalean's design-based estimators are Horvitz–Thompson (`htTotal`/`htMean`/`htEffect`, inverse-propensity weights on exposure indicators) and Hájek; SNIPE's centered-monomial polynomial score is a different weight family. Bypass-justified vs `DesignBased/HT/Estimator.lean`: SNIPE is not an IPW estimator (its weights are signed and can exceed 1/π), so the HT unbiasedness lemma `E_htTotal` does not apply; unbiasedness here comes from the block representer identity instead."
+  },
+  "def:snipe-estimator": {
+   "lean_kind": "def",
+   "lean_name": "snipeEstimatorBundle",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Causalean.Experimentation.DesignBased.DesignCore"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Estimator.lean",
+   "companions": [
+    "snipeEstimator",
+    "snipeClipped"
+   ],
+   "statement_sketch": "`snipeEstimator β p : Estimator V := fun G z y => (n:ℝ)⁻¹ * ∑ i, y i * snipeScore G β p i z` — a function of the KNOWN GRAPH, the assignment and the OBSERVED outcome vector, in the exact argument order of the `Estimator V` abbreviation, so it is one admissible global competitor in the inf of def:minimax-risk; `snipeClipped B β p : Estimator V := fun G z y => max (-B) (min B (snipeEstimator β p G z y))`.",
+   "notes": "REVISED (round 2, FLAG-world-arity): the estimator is now graph-aware (previously the graph was a fixed ambient parameter, which is not one global competitor). The composition with a model's own graph is `snipeEstimator β p (edgeFn M) z (obsOutcome M z)`, which `riskAt` performs; the neighborhood bridge `nbhdB (edgeFn M) i = nbhd M.edge i` (def:snipe-score) turns every score computation back into the class-structure form in one rewrite, so no downstream variance or unbiasedness lemma changes shape. Search trace: `lean_local_search 'clip'`, 'projIcc', 'proj_Icc' → Mathlib `Set.projIcc` exists but is `Icc`-subtype-valued; the plain `max (-B) (min B x)` form is used so the projection lemma `|max (-B) (min B x) - t| ≤ |x - t|` for `t ∈ [-B,B]` is a two-line `rcases`/`linarith`. One core node → one primary `def` plus the clipped companion in the same block, matching the core construction which introduces both."
+  },
+  "def:minimax-risk": {
+   "lean_kind": "def",
+   "lean_name": "minimaxRisk",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Causalean.Experimentation.DesignBased.Risk"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Estimator.lean",
+   "companions": [
+    "Estimator",
+    "edgeFn",
+    "riskAt",
+    "worstRisk",
+    "AdmissibleEstimator"
+   ],
+   "statement_sketch": "GRAPH-AWARE (revised round 2): `Estimator V := (V → V → Bool) → (V → Bool) → (V → ℝ) → ℝ` — the estimator takes the KNOWN graph, the assignment, and the observed outcome vector, exactly the core's `\\widehat\\tau_n` measurable in `(G_n, Z, {Y_i^{obs}})`. `edgeFn (M : ModelClass V d β B) : V → V → Bool := fun j i => decide (M.edge j i)` (available from the structure's `decEdge` field). `riskAt p M est = (bernoulliDesign …).mse (fun z => est (edgeFn M) z (obsOutcome M z)) (tte M)` (REUSING `FiniteDesign.mse`), i.e. the risk COMPOSES the single global estimator with the model's OWN graph rather than fixing a graph inside the estimator; `worstRisk … est = sSup {riskAt p M est | M : ModelClass …}`; `minimaxRisk … = sInf {worstRisk … est | est : Estimator V, Measurable-in-outcomes and BddAbove {riskAt p M est | M}}`. The bounded-range condition explicitly removes unbounded-risk competitors from the real-valued `sSup`; this is the paper's ordinary extended supremum represented in ℝ without the conditionally-complete junk value.",
+   "notes": "REVISED (round 2, FLAG-world-arity): the round-1 arity `Estimator V := (V → Bool) → (V → ℝ) → ℝ` was graph-blind, which fixed `G` inside `riskAt` and silently changed the inf–sup problem (a different estimator per graph) and made `snipeEstimator G` not a single admissible global competitor. The graph argument is now part of the estimator's input, so the inf ranges over ONE rule facing every `(G_n, c)` in the sup — the core's problem — and `snipeEstimator β p`, `snipeClipped B β p`, `snipeClippedBdd B β p` are each ONE `Estimator V`, making `minimaxRisk ≤ worstRisk … (snipeClipped B β p)` a direct `sInf` bound (`minimaxRisk_le`) instead of a per-graph argument. The graph is passed as a Bool-valued relation `V → V → Bool` (not `V → V → Prop`) so it is a first-class datum with no `DecidableRel` instance argument to carry through the inf; F2 emits `nbhdB (G : V → V → Bool) i := univ.filter (fun j => G j i)` together with the bridge `nbhdB (edgeFn M) i = nbhd M.edge i` (a `Finset.filter_congr` on `decide_eq_true_iff`), so every neighborhood lemma proved for `nbhd` transports in one rewrite and the class structures keep their existing `edge`/`decEdge` fields UNCHANGED. Two consequences recorded for F2: (i) the upper-bound branches of thm:bounded-outcome-degree-frontier / thm:degree-frontier are `worstRisk … (snipeClipped …)` with the same estimator term on both classes; (ii) in the converse, both prior mixtures are supported on schedules carrying the SAME graph `blockGraph n d`, so the estimator's graph argument is a CONSTANT across the two hypotheses and the Le Cam two-point reduction applies to `fun z y => est (blockGraph n d) z y` verbatim. Search trace: `lean_local_search 'minimax'` → `Causalean.Experimentation.DesignBased.{worstRisk, IsMinimaxOn, bestRisk, regret}` (Optimality/Minimax.lean, READ IN FULL), `ProbabilityTheory.minimaxRisk` (Mathlib Decision/Risk/Defs.lean), `Causalean.Estimation.MinimaxATE.minimaxMiss`, `CausalSmith.Stat.DoseResponseMinimax.minimaxRisk_two_point_lower`. Result: no exact fit. `DesignBased.worstRisk`/`IsMinimaxOn` optimize over DESIGNS (`R : Y → FiniteDesign Ω → ℝ`, `sup'` over a Finset of states) — wrong quantifier: this paper fixes the design and infimizes over ESTIMATORS over an INFINITE (continuum) model class, so `Finset.sup'` cannot be used. `ProbabilityTheory.minimaxRisk` is `Kernel`-shaped. ANALOGOUS MODULE for F3 to adapt: `Causalean/Estimation/MinimaxATE/Model.lean` (`minimaxMiss := ⨆ p : InClassDGP …, nMiss …` with `bddAbove_nMiss_range` + `nMiss_le_minimaxMiss`) — the same sSup-over-a-subtype packaging, with boundedness there coming from `≤ 1`; here `bddAbove` for the sup comes from the clipped-estimator branch (risk ≤ 16B²) and only the ATTAINED estimator's sup needs it, while `sInf` needs `BddBelow` (risk ≥ 0, `mse_nonneg`) and nonemptiness. F2 should emit `le_worstRisk`, `worstRisk_le_of_forall`, `minimaxRisk_le`, `le_minimaxRisk_of_forall` as the four API lemmas so the theorems never unfold `sSup`/`sInf`."
+  },
+  "def:block-score-energy": {
+   "lean_kind": "def",
+   "lean_name": "blockScoreEnergyBundle",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/BlockScore.lean",
+   "companions": [
+    "blockScore",
+    "blockEnergy",
+    "blockRepresenter",
+    "blockRawCoef"
+   ],
+   "statement_sketch": "on `Fin d → Bool`: `blockScore β p d z = ∑ r ∈ Icc 1 (effBeta β d), (Δ_r p / (p(1-p))^r) * ∑ S ∈ univ.powerset.filter (·.card = r), ∏ j ∈ S, (ind (z j) - p)`; `blockEnergy β p d = ∑ r ∈ Icc 1 (effBeta β d), (d.choose r) * (Δ_r p)^2 / (p(1-p))^r`; `blockRepresenter … = blockScore … / blockEnergy …` (guarded by `1 ≤ d`); `blockRawCoef … T` the raw-monomial coefficients of `h_d`.",
+   "notes": "Search trace: `lean_local_search 'blockScore'`, 'energy', 'Fourier', 'Walsh', 'monomial expansion' → not found in Causalean (the closest, `DesignBased/EdgeVarianceBound.lean`'s `var_edge_sum_le`, is a degree-counting variance bound, not a Fourier basis). Bernoulli-Fourier orthogonality of the centered monomials `∏_{j∈S}(z_j − p)` is the shared engine of both this node and def:snipe-score; it is factored into the supporting helper `Helpers/BernoulliFourier.lean` (`E[X_S X_T] = 1{S=T} v^{|S|}`, `E[X_S Z_T] = 1{S⊆T} v^{|S|} p^{|T|-|S|}`), proved from `FiniteDesign.E_prod_block_mul` / `E_prod_apply₂` (ProductBlock/ProductVariance) — reused, not rebuilt."
+  },
+  "def:block-family": {
+   "lean_kind": "def",
+   "lean_name": "blockFamilyBundle",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/LeastFavourable.lean",
+   "companions": [
+    "blockCount",
+    "activeCount",
+    "activeShare",
+    "blockGraph",
+    "cosSqDensity",
+    "representerMassSup",
+    "tiltAmplitude",
+    "blockSchedule",
+    "blockSchedulePrior",
+    "blockPriorLaw",
+    "priorPredictiveLaw"
+   ],
+   "statement_sketch": "`blockFamilyBundle` mechanically exposes the linked tuple `(blockCount n d, activeCount n d, activeShare n d, blockGraph n d, blockSchedulePrior n d β B p σ)`. Here `blockCount n d = n / d`, `activeCount = blockCount * d`, `activeShare = (activeCount : ℝ)/n`; `blockGraph n d` is the complete directed block graph with loops and isolated remainder; `cosSqDensity s u = s⁻¹ * Real.cos (π*u/(2*s))^2 * indicator |u| ≤ s`; `tiltAmplitude = B * min (2*H)⁻¹ (4*π)⁻¹ * min 1 (√(A_d/m))`; `blockSchedule σ (U : Fin m → ℝ)` has `c i T = U (blk i) * 1{T = ∅} + σ * δ * blockRawCoef T`; `blockSchedulePrior` is the pushforward prior on these schedules; `blockPriorLaw σ` is the compressed sufficient-statistic law with density `p_Z(z) * ∏_b cosSqDensity s (y b - σ*δ*h_d (z restricted to block b))` w.r.t. `count ⊗ volume^m`; and `priorPredictiveLaw σ : Measure ((Fin n → Bool) × (Fin n → ℝ))` is the pushforward of `blockPriorLaw σ` under the map that repeats each active block outcome across its units and assigns outcome zero to inactive units.",
+   "notes": "Search trace: `lean_local_search 'prior'`, 'leastFavourable', 'fuzzy', 'cos', 'cosSq', 'bump' → nothing matching a continuous least-favourable BASELINE prior; `Estimation/MinimaxATE/Reduction/Bump.lean` (`l2sq_bump`, Rademacher ±δ bump) is the analogous module — same two-mixture ±σ tilt pattern, but with FINITE hypotheses and a χ² certificate, so only the packaging pattern transfers. REVISED (round 3, FLAG-finite-mixture): `Causalean.Stat.mixture`/`mixtureReal_le` (Minimax/Mixture.lean) is NO LONGER claimed as a reuse for the realizability step, and `Causalean.Stat.Minimax.Mixture` is removed from this node's modules. Verified against the source (`Grep 'mixtureReal' ../Causalean/Stat/Minimax/` → `Mixture.lean:53 theorem mixtureReal_le (w : ι → ℝ≥0∞) (hw : ∑ i, w i = 1) …`, `[Fintype ι]`): it bounds the `.real` MASS of a FINITE `Fintype`-indexed convex combination of measures, whereas the baseline prior here is the CONTINUOUS product `⊗_{b ≤ m} f_s(u)du` over `U : Fin m → ℝ` and the quantity to dominate is an integrated RISK. The realizability step is therefore a LOCAL lemma, planned in full rather than adapted: (R0) `prior_integrated_risk_le_worstRisk` in this same file — `∫ riskAt p (blockSchedule σ U) est ∂(blockBaselinePrior s m) ≤ worstRisk p est` for every admissible `est`. Its ingredients are all already planned here: the admissibility lemma of this node puts `blockSchedule σ U ∈ ModelClass V d β B` for EVERY `U` in the support (`|U_b| + δ∑_T|h_{d,T}| ≤ B/2 + κBH ≤ B`), so `riskAt p (blockSchedule σ U) est ≤ worstRisk p est` pointwise by the reused `le_worstRisk` API lemma of def:minimax-risk; then `MeasureTheory.integral_mono_ae` + `integral_const` + `IsProbabilityMeasure` on the prior finish it. F2 must emit the prior as a genuine probability measure — `blockBaselinePrior s m : Measure (Fin m → ℝ) := Measure.pi (fun _ => volume.withDensity (fun u => ENNReal.ofReal (cosSqDensity s u)))` with `∫ cosSqDensity s = 1` (the same closed-form `intervalIntegral` computation (C2) needs) and `IsProbabilityMeasure` derived through `MeasureTheory.isProbabilityMeasure_pi` — since (R0)'s `integral_const` step and the Fubini step (R1) below both consume it. (R1), the companion identity that makes (R0) bite: `E_{P_σ}[(est − σθ)²] = ∫ riskAt p (blockSchedule σ U) est ∂(blockBaselinePrior s m)`, i.e. the prior-predictive expectation equals the prior-integrated design risk, by Fubini on the explicit `count ⊗ volume^m` density (the same `Measure.prod`/`Measure.pi` idiom as (C1) in S4 — the finite assignment sum comes out first, then the `U`-integral). Together (R1)+(R0) are exactly the paper's sentence 'each prior is supported on deterministic schedules in the smaller model class, so its integrated risk cannot exceed the corresponding worst-case risk', with no finite-mixture machinery anywhere. Observed data reduction (IMPORTANT and recorded for F2): under this family the observed outcomes are constant within each active block and zero off it, so the sufficient observed statistic is `(Z, (Y_b)_{b ≤ m}) ∈ (V → Bool) × ℝ^m`; the law is written directly on that product with an explicit density, which keeps the whole converse inside `Measure.prod`/`Measure.pi` + `withDensity` and avoids any conditional-kernel machinery. REVISED (round 2): that explicit density presentation is now LOAD-BEARING, not merely convenient — both `blockPriorLaw (+1)` and `blockPriorLaw (-1)` are `λ.withDensity`-of a common dominating `λ = count(V → Bool) ⊗ volume^m`, which is the hypothesis shape of the local affinity-to-TV lemma (C0) in S4; the two laws are NOT mutually absolutely continuous (the cosine-square baselines are compactly supported and the two tilts translate them apart), so F2/F3 must never phrase this step through a mutual RN derivative `dP₊/dP₋`. F2 should therefore emit `blockPriorDensity σ : (V → Bool) × (Fin m → ℝ) → ℝ` as a standalone nonneg. measurable function together with `blockPriorLaw σ = λ.withDensity (fun x => ENNReal.ofReal (blockPriorDensity σ x))` and `∫ blockPriorDensity σ ∂λ = 1`, so (C0) applies verbatim. REVISED (round 2, FLAG-world-arity): both mixtures use the SAME graph `blockGraph n d`, so under the graph-aware `Estimator V` the converse fixes `est (edgeFn (blockGraph n d))` once and the two-point reduction sees an ordinary data-only estimator — the graph argument carries no information distinguishing the hypotheses."
+  },
+  "def:perturbation-program": {
+   "lean_kind": "def",
+   "lean_name": "perturbProg",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/BlockScore.lean",
+   "companions": [
+    "polySpace",
+    "contrastFunctional"
+   ],
+   "statement_sketch": "`polySpace β p d : Submodule ℝ ((Fin d → Bool) → ℝ)` = span of raw monomials `Z_S`, `|S| ≤ effBeta β d`; `contrastFunctional f = f 1 - f 0`; `perturbProg β p d = sInf {D.E (fun z => h z ^ 2) | h ∈ polySpace, contrastFunctional h = 1}`.",
+   "notes": "Search trace: `lean_local_search 'Riesz'`, 'minNorm', 'representer', 'projection' → `Causalean/Mathlib/SemiInnerProjection.lean` (semidefinite finite-dim projections) and §10f `FWL.lean` are the analogous modules for the orthogonal-decomposition step, but both are stated for a Mathlib inner-product space, whereas here the inner product is `FiniteDesign.E (f*g)` on a finite function space. Bypass-justified: keeping the design bilinear form avoids an `InnerProductSpace` instance on `(Fin d → Bool) → ℝ` and lets the whole argument run on `E`/`Cov` lemmas already proved (`Var_linear_comb`, `Cov_linear_comb`). Uniqueness of the minimizer comes from the Cauchy–Schwarz equality case, done by hand (`sub_eq_zero` on `‖h − A⁻¹g‖² = 0` via `E_nonneg` + positivity of the design)."
+  },
+  "def:weight-program": {
+   "lean_kind": "def",
+   "lean_name": "weightProg",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/BlockScore.lean",
+   "statement_sketch": "`weightProg β p d = sInf {D.E (fun z => w z ^ 2) | w : (Fin d → Bool) → ℝ, D.E w = 0 ∧ ∀ S ≠ ∅, S.card ≤ effBeta β d → D.E (fun z => w z * ∏ j ∈ S, ind (z j)) = 1}`.",
+   "notes": "Same trace and same bypass justification as def:perturbation-program (they are the two sides of one Riesz duality and live in the same file). The feasible set is nonempty (`g_d` is feasible) and the objective is bounded below by 0, so the `sInf` is well-behaved; `weightProg = A_d` with unique minimizer `g_d` is proved in lem:block-energy-representer."
+  },
+  "def:local-linear-class": {
+   "lean_kind": "structure",
+   "lean_name": "LocLinSchedClass",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Causalean.Experimentation.DesignBased.ProductVariance",
+    "Causalean.Experimentation.DesignBased.ProductBlock"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/LocalLinearClass.lean",
+   "companions": [],
+   "statement_sketch": "`structure LocLinSchedClass (G_t : V → V → Prop) [DecidableRel G_t] (β B) (d_t) where coef : V → Finset V → ℝ; supported : ∀ i S, ¬ S ⊆ nbhd G_t i → coef i S = 0; low_order : LowOrder coef (effBeta β d_t); mass_le : BoundedCoeffMass G_t coef B` — exactly `\\mathcal M_t(G_t)`, the admissible coefficient schedules on the FIXED block graph, with ONE Prop field per member atom (low-order at the EFFECTIVE order `β̄_{d_t}`, and the ℓ¹ mass bound) plus the structural `supported` carrier field. This node is the SCHEDULE class ONLY: the estimator class `\\mathcal E_t^{loc,lin}` and the restricted risk `R_t^{loc,lin}` are the SEPARATE core nodes def:local-linear-estimator-class and def:local-linear-risk, each with its own canonical declaration in this same file.",
+   "notes": "REVISED (round 5, FLAG-node-collapse): this node previously carried `locLinEstimator`, `locLinMinimaxRisk`, `localLinearClassBundle` and `blockExtremal` as companions, i.e. it absorbed the core's OTHER two block-local nodes into one entry — which left def:local-linear-estimator-class and def:local-linear-risk UNMAPPED (a P1 one-to-one violation) and mechanically anchored a three-part construction to a single structure. The node is now narrowed to `\\mathcal M_t(G_t)` alone; `LocLinWeights`/`locLinEstimator` move to def:local-linear-estimator-class and `locLinRiskAt`/`locLinWorstRisk`/`locLinMinimaxRisk`/`blockExtremal` to def:local-linear-risk. The bundling companion `localLinearClassBundle` is DROPPED outright rather than relocated: with the three constructions now carrying their own canonical `-- @node:` tags there is nothing left for it to link, and a tuple-of-components def would only re-create the collapse. `members` is unchanged and still exactly the core's `by_member_properties`. Search trace: `lean_local_search 'unbiasedClass'`, 'linear estimator class', 'design unbiased' → `Causalean.Experimentation.DesignBased.FiniteDesign.Unbiased` (Risk.lean) is reused for the per-unit moment restrictions' packaging, but no CLASS of block-measurable unbiased weights exists; not found ⇒ local. Round-2 note (scope of FLAG-world-arity), retained and now inherited by both new sibling nodes: this construction is DELIBERATELY not restated over the graph-aware `Estimator V` of def:minimax-risk. The core fixes the graph `G_t` here and explicitly does not vary it in the supremum ('the graph is fixed and is not varied in this supremum'), and the competitor set is the restricted block-local WEIGHT family `w_{i,t}`, not all measurable rules; making it graph-aware would misstate the core.",
+   "members": [
+    "ass:low-order",
+    "ass:bounded-coefficient-mass"
+   ]
+  },
+  "def:local-linear-estimator-class": {
+   "lean_kind": "def",
+   "lean_name": "locLinEstimatorClass",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Causalean.Experimentation.DesignBased.DesignCore",
+    "Causalean.Experimentation.DesignBased.Risk",
+    "Causalean.Experimentation.DesignBased.ProductBlock"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/LocalLinearClass.lean",
+   "companions": [
+    "LocLinWeights",
+    "blockIndex",
+    "blockRestrict",
+    "locLinEstimator"
+   ],
+   "statement_sketch": "The core's `\\mathcal E_t^{loc,lin}` as its OWN construction. `blockIndex G_t i` is `b(i)` (the block containing `i` in the fixed block graph) and `blockRestrict b z` is `Z_{b(i)}` (the assignment restricted to that block), so block-measurability of `w_{i,t}` is TYPE-LEVEL rather than a side condition: `structure LocLinWeights (G_t) (β B) (d_t) where w : V → ((Fin d_t → Bool) → ℝ); centered : ∀ i, D.E (w i) = 0; moment_one : ∀ i, ∀ S ⊆ nbhd G_t i, S ≠ ∅ → S.card ≤ effBeta β d_t → D.E (fun z => w i z * ∏ j ∈ S, ind (z j)) = 1` (with `D = bernoulliDesign` on one block). `locLinEstimator … (W : LocLinWeights …) : (V → Bool) → (V → ℝ) → ℝ := fun z y => (n_t : ℝ)⁻¹ * ∑ i, W.w i (blockRestrict (blockIndex G_t i) z) * y i` is `\\widehat\\tau_{w,t}` as a DATA rule (applied to the observed outcomes `y i = Y_i(Z)`, matching the core's `w_{i,t}(Z_{b(i)})Y_i(Z)`), with NO graph argument since `G_t` is fixed by the core here. The node itself is the CLASS: `locLinEstimatorClass … : Set ((V → Bool) → (V → ℝ) → ℝ) := Set.range (locLinEstimator …)` — the set of block-local linear design-unbiased estimators the core's `\\mathcal E_t^{loc,lin}` names, which is what def:local-linear-risk infimizes over.",
+   "notes": "NEW in round 5 (FLAG-node-collapse): the core carries this as a construction node in its own right (`construction` present, no `by_member_properties` and no `inputs`), so it maps to ONE `def` with its own canonical `-- @node:` tag — previously it was an untagged companion of def:local-linear-class, which is what left the core node unmapped. Placed in `Helpers/LocalLinearClass.lean` alongside its schedule class and risk (the three are one self-contained topic and the file stays well under the size target). Search trace (re-run for this node specifically, not inherited): `lean_local_search 'Unbiased'`, 'unbiasedClass', 'estimatorClass', 'linear estimator class', 'restricted class', 'block measurable weight'; read `../doc/API.md` §18 DesignBased tables. Result: `Causalean.Experimentation.DesignBased.FiniteDesign.Unbiased` (Risk.lean) exists and IS reused to phrase the per-unit centering/moment restrictions, but no class of block-measurable design-unbiased weight collections exists ⇒ define-local, build-inline. Reuse at the design-algebra level only (`FiniteDesign.E`, `E_prod_block_mul`, `Cov_prod_disjoint_zero` for the block-independence the risk formula needs). Round-2 FLAG-world-arity exemption inherited from def:local-linear-class: this estimator family is weight-indexed and graph-FIXED, deliberately NOT the graph-aware `Estimator V` of def:minimax-risk.",
+   "used_by_note": "Consumed by def:local-linear-risk (the inf ranges over this class) and by thm:sharp-local-linear-constant-and-representers (which characterizes which sequences in this class are asymptotically minimax). It is a CONSTRUCTION, so it is USED, never assumed — it must not appear in any statement's `hyps`."
+  },
+  "def:local-linear-risk": {
+   "lean_kind": "def",
+   "lean_name": "locLinMinimaxRisk",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Causalean.Experimentation.DesignBased.Risk",
+    "Causalean.Experimentation.DesignBased.ProductVariance",
+    "Causalean.Experimentation.DesignBased.ProductBlock"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/LocalLinearClass.lean",
+   "companions": [
+    "locLinRiskAt",
+    "locLinWorstRisk",
+    "blockExtremal"
+   ],
+   "statement_sketch": "`locLinRiskAt p (c : LocLinSchedClass …) (W : LocLinWeights …) = (bernoulliDesign …).mse (fun z => locLinEstimator … W z (obsOutcome G_t c.coef z)) (tte G_t c.coef)` — REUSING `FiniteDesign.mse`; `locLinWorstRisk p W = sSup {locLinRiskAt p c W | c : LocLinSchedClass …}`; `locLinMinimaxRisk … = sInf {locLinWorstRisk p W | W : LocLinWeights …}` is `R_t^{loc,lin}`. The graph `G_t` is a fixed PARAMETER of all three, never varied in the supremum, exactly as the core's construction stipulates. Companion `blockExtremal b W = Ψ_{b,t}(W)` is a `Finset.sup'` over the finite set of sign/subset product points `(ε_i, S_i)_{i ∈ V_b}`; the exact identity `locLinWorstRisk p W = (B²/n_t²)·∑_b blockExtremal b W` and the floor `blockExtremal b W ≥ d_t²·A_{d_t}` are PROVED in thm:sharp-local-linear-constant-and-representers, not asserted here.",
+   "notes": "NEW in round 5 (FLAG-node-collapse): a core construction node in its own right (`construction` present, no `by_member_properties`, no `inputs`), previously absorbed as the companion `locLinMinimaxRisk` of def:local-linear-class and therefore unmapped. One `def` with its own canonical tag, in the same file as the schedule and estimator classes it is built from. `blockExtremal` is placed here rather than on the estimator class because Ψ_{b,t} is the per-block WORST-CASE value — it is the object the risk formula is stated in, and it is finite (`Finset.sup'` over sign vectors × subsets), so no compactness or attainment argument is needed. Search trace (re-run for this node): `lean_local_search 'minimax'`, 'worstRisk', 'restrictedRisk', 'IsMinimaxOn', 'bestRisk' → `Causalean.Experimentation.DesignBased.{worstRisk, IsMinimaxOn, bestRisk, regret}` (Optimality/Minimax.lean) minimize over DESIGNS at a fixed estimator via `Finset.sup'` over a finite state set — wrong quantifier order AND wrong finiteness (the schedule class here is a continuum), so not reusable; `ProbabilityTheory.minimaxRisk` (Mathlib Decision/Risk) is `Kernel`-shaped. Not found ⇒ define-local, build-inline. `FiniteDesign.mse` IS reused verbatim for the per-schedule risk, as in def:minimax-risk. Well-definedness of the two extrema: the `sSup` is over a nonempty set bounded above (each block error is bounded by `dB√A` via the per-unit triangle bound, giving `locLinWorstRisk ≤ B²A_{d_t}·(1 + √(U/(n_tA)))²`-type control, and in particular `BddAbove` at every `W`), and the `sInf` is over a nonempty set bounded below by 0 (`mse_nonneg`); F2 should emit `le_locLinWorstRisk`, `locLinWorstRisk_le_of_forall`, `locLinMinimaxRisk_le`, `le_locLinMinimaxRisk_of_forall` as the four API lemmas so thm:sharp-local-linear never unfolds `sSup`/`sInf`. Round-2 FLAG-world-arity exemption inherited: weight-indexed and graph-fixed by construction.",
+   "used_by_note": "Consumed by thm:sharp-local-linear-constant-and-representers (which computes it exactly as `B²A_{d_t}/m_t`). A CONSTRUCTION — used, never assumed; it must not appear in any statement's `hyps`."
+  },
+  "def:bounded-outcome-coefficient-class": {
+   "lean_kind": "structure",
+   "lean_name": "BddOutcomeCoeffClass",
+   "members": [
+    "ass:low-order"
+   ],
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Basic.lean",
+   "statement_sketch": "`structure BddOutcomeCoeffClass (G) (β : ℕ) (B : ℝ) where coef : V → Finset V → ℝ; supported : ∀ i S, ¬ S ⊆ nbhd G i → coef i S = 0; low_order : LowOrder coef β; outcome_bound : ∀ i z, |potentialOutcome G coef i z| ≤ B`.",
+   "notes": "`members` lists exactly the core's `by_member_properties` (`ass:low-order`). The uniform outcome bound `sup_z |Y_i(z)| ≤ B` is an ADDITIONAL inline field: the core states it inside the construction and does NOT atomize it as an `ass:` node (there is no such assumption id), so it cannot be listed as a member; it is materialized as a field named `outcome_bound` and F2 must not invent an assumption node for it. Search trace: 'boundedOutcome', 'Ymax', 'sup norm outcome' → not found (see ass:bounded-coefficient-mass)."
+  },
+  "def:bounded-outcome-model-class": {
+   "lean_kind": "structure",
+   "lean_name": "BddOutcomeModelClass",
+   "members": [
+    "ass:bounded-degree",
+    "ass:low-order"
+   ],
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Basic.lean",
+   "statement_sketch": "`structure BddOutcomeModelClass (V) (d β : ℕ) (B : ℝ) where edge : V → V → Prop; decEdge : DecidableRel edge; coef : V → Finset V → ℝ; supported : ∀ i S, ¬ S ⊆ nbhd edge i → coef i S = 0; degree_le : BoundedDegree edge d; low_order : LowOrder coef β; outcome_bound : ∀ i z, |potentialOutcome edge coef i z| ≤ B` — the carrier data plus ONE Prop field per member atom (`degree_le`, `low_order`), with `outcome_bound` as an inline non-member field.",
+   "notes": "The strictly larger of the two model classes. Its `members` are exactly the core's `by_member_properties = [ass:bounded-degree, ass:low-order]` — the FLATTENED atom list, one structure field per member atom (a member must be an assumption atom, never a component class). Semantically this is still `G_n ∈ 𝒢_{n,d} ∧ c ∈ 𝒞^∞_{n,d,β}(B)`, and the component classes def:graph-class / def:bounded-outcome-coefficient-class stay reusable: F2 emits `BddOutcomeModelClass.ofComponents` plus the projections `M.toGraphClass`, `M.toBddOutcomeCoeffClass`, mirroring def:model-class. The uniform outcome bound `sup_z |Y_i(z)| ≤ B` is NOT a member: the core states it inside def:bounded-outcome-coefficient-class's construction and does NOT atomize it as an `ass:` node, so it is materialized as the inline `outcome_bound` field here and in `BddOutcomeCoeffClass`; F2 must not invent an assumption node for it. The coercion `ModelClass → BddOutcomeModelClass` (identity on the carrier data and on `degree_le`/`low_order`; `outcome_bound` derived from `|Y_i(z)| ≤ ∑_S |c_{i,S}| ≤ B`, i.e. from `mass_le`) and the strictness witness (single self-loop, `Y_1(z) = B(2z_1 − 1)`, mass `3B > B`) are lemmas proved in T_bounded_outcome_frontier.lean; with the flat presentation the coercion is a single `⟨…⟩` anonymous-constructor term, field for field."
+  },
+  "def:two-class-minimax-risks": {
+   "lean_kind": "def",
+   "lean_name": "twoClassMinimaxRisks",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Estimator.lean",
+   "companions": [
+    "minimaxRiskL1",
+    "minimaxRiskBddOutcome"
+   ],
+   "statement_sketch": "`minimaxRiskL1 … := minimaxRisk …` (a definitional abbreviation, so `R_{n,ℓ¹}^⋆ = R_n^⋆` is `rfl`); `minimaxRiskBddOutcome … = sInf {sSup {riskAtBdd p M est | M : BddOutcomeModelClass …} | est : Estimator V}` — the same inf-sup over the SAME graph-aware `Estimator V` type, with the sup taken over the larger class and `riskAtBdd p M est = (bernoulliDesign …).mse (fun z => est (edgeFn M) z (obsOutcome M z)) (tte M)` composing the estimator with that model's graph.",
+   "notes": "REVISED (round 2, FLAG-world-arity, inherited from def:minimax-risk): both risks now infimize over the SAME graph-aware `Estimator V := (V → V → Bool) → (V → Bool) → (V → ℝ) → ℝ`, and both `riskAt`/`riskAtBdd` compose the estimator with the model's own graph via `edgeFn`. This is what makes the class-inclusion monotonicity `R_{n,ℓ¹}^⋆ ≤ R_{n,∞}^⋆` legitimate: the two infima are over the same estimator set, so only the sup's index set moves. Construction with `inputs = [def:minimax-risk, def:bounded-outcome-model-class]`, so it is a `def` built from those two, sharing the `Estimator`/`edgeFn`/`riskAt` layer with def:minimax-risk (only the class the sup ranges over changes). F2 should factor `worstRisk` over a general model predicate — most cleanly over a `toBddOutcomeModelClass`-style common carrier exposing `edge`, `decEdge`, `coef` — so the two risks are one definition at two instantiations and the monotonicity is a one-line `sInf`/`sSup` monotonicity from the class inclusion."
+  },
+  "def:bounded-outcome-clipped-snipe": {
+   "lean_kind": "def",
+   "lean_name": "snipeClippedBdd",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Estimator.lean",
+   "statement_sketch": "`snipeClippedBdd B β p : Estimator V := fun G z y => max (-(2*B)) (min (2*B) (snipeEstimator β p G z y))` — projection of SNIPE onto `[-2B, 2B]`, itself one graph-aware `Estimator V`.",
+   "notes": "REVISED (round 2, FLAG-world-arity, inherited from def:snipe-estimator): clipping is applied pointwise to the graph-aware estimator, so `snipeClippedBdd B β p` is a single global competitor and the bounded-outcome upper branch is `worstRiskBdd … (snipeClippedBdd B β p)`. Construction with `inputs = [def:snipe-estimator]`; identical shape to `snipeClipped` at radius `2B` (the bounded-outcome class only gives `|τ_n| ≤ 2B`). F2 should define one `clipTo (r : ℝ) (x : ℝ)` helper with the single projection lemma `t ∈ [-r,r] → |clipTo r x − t| ≤ |x − t|`, and instantiate it at `B` and `2B`."
+  },
+  "lem:block-energy-representer": {
+   "lean_kind": "lemma",
+   "lean_name": "blockEnergy_representer",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Causalean.Experimentation.DesignBased.DesignCore",
+    "Causalean.Experimentation.DesignBased.ProductVariance",
+    "Causalean.Experimentation.DesignBased.ProductBlock",
+    "Causalean.Experimentation.DesignBased.Designs.Bernoulli"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/BlockRepresenter.lean",
+   "hyps": [
+    "ass:bernoulli-design"
+   ],
+   "notes": "Build-inline (the paper's own core lemma; a bundle of six conclusions that F2 should emit as SEPARATE named lemmas sharing one section: (i) `E[g_d f] = L_d f` for `f ∈ P_d` (the representer identity — proved from the two Bernoulli-Fourier moment identities in `Helpers/BernoulliFourier.lean` plus the binomial-theorem telescoping `∑_r C(t,r)Δ_r p^{t−r} = 1`), (ii) `E[g_d²] = A_d` (orthogonality), (iii) the two unique-minimizer statements for `perturbProg`/`weightProg` (Cauchy–Schwarz equality case / orthogonal decomposition `w = g_d + u`), (iv) `h_d(1) − h_d(0) = 1` and `E[h_d²] = A_d⁻¹`, (v) `A_d ≍_{β,p} C(d,k⋆)` (binomial monotonicity through order β for `d ≥ 2β` plus a finite-`d` constant absorption — the only ASYMPTOTIC-CONSTANT statement here; F2 should state it with EXPLICIT constants `c_1(β,p)·C(d,k⋆) ≤ A_d ≤ c_2(β,p)·C(d,k⋆)` rather than an `≍` notation), (vi) `H_{β,p} = sup_{d≥1} ∑_T |h_{d,T}| < ∞` (stated as an explicit finite bound `∑_T |h_{d,T}| ≤ Hbound β p` uniform in `d`, since a `sSup` over `d` would need a separate boundedness proof and only the uniform bound is consumed). Search trace: `lean_local_search 'representer'`, 'Riesz representation', 'minimum norm unbiased', 'Fourier expansion Bernoulli' + `../doc/API.md` §18 and §12 (Stat) — not found; Causalean has no Bernoulli-Fourier layer. Reuse is at the level of the design algebra (`E_prod_block_mul`, `E_prod_apply₂`, `Var_linear_comb`, `Cov_linear_comb`) and Mathlib's `Finset.sum_pow_mul_eq_max_pow`/`add_pow` for the binomial telescoping."
+  },
+  "lem:overlap-count": {
+   "lean_kind": "lemma",
+   "lean_name": "overlap_count_le",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/OverlapCount.lean",
+   "hyps": [
+    "ass:bounded-degree"
+   ],
+   "notes": "Build-inline, `small` (a pure `Finset` double-count). Search trace: `lean_local_search 'Finset.sum_card'`, 'double count', 'card_filter', 'sum_comm', 'overlap' + `lean_loogle '∑ _, (Finset.card _).choose _'`; also read `Causalean/Experimentation/DesignBased/EdgeVarianceBound.lean` (the `var_edge_sum_le` quadruple-sum degree count — the ANALOGOUS MODULE: same 'charge each edge once through a bounded degree' pattern, but it counts EDGES of an undirected dependency graph with a `8M²m³N` bound, not `r`-subsets of in-neighborhoods against out-degree, so the statement does not transfer; F3 should read it for the counting idiom). The proof is `Finset.sum_comm` on the pair set `{(l,S) | S ⊆ N_i ∩ N_l, |S| = r}` (Mathlib `Finset.sum_sigma'` / `Finset.card_eq_sum_ones`), then `#{l | S ⊆ N_l} ≤ #{l | j_S ∈ N_l} ≤ d` from the OUT-degree half of BoundedDegree, then `Finset.card_powersetCard`. The `d = 0` case is `Finset.sum_empty`. This single-out-degree charge is the load-bearing tightening over the anchor's bound, so it gets its own file and its own name."
+  },
+  "thm:bounded-outcome-degree-frontier": {
+   "lean_kind": "theorem",
+   "lean_name": "bounded_outcome_degree_frontier",
+   "local_id": "thm:bounded-outcome-degree-frontier",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Causalean.Experimentation.DesignBased.Risk",
+    "Causalean.Experimentation.DesignBased.ProductBlock",
+    "Causalean.Experimentation.DesignBased.ProductVariance",
+    "Causalean.Stat.Minimax.TotalVariation",
+    "Causalean.Stat.Minimax.LeCam",
+    "Causalean.Stat.Minimax.MinimaxRisk",
+    "Causalean.Stat.Minimax.Scheffe"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "T_bounded_outcome_frontier.lean",
+   "hyps": [
+    "ass:bernoulli-design",
+    "ass:bounded-degree",
+    "ass:low-order",
+    "ass:bounded-coefficient-mass"
+   ],
+   "hyps_note": "All four assumption dependencies are listed so that P4's coverage check is unambiguous, but only `ass:bernoulli-design` is a FREE hypothesis of the Lean theorem. The other three are ambient inside the sup: they are FIELDS of the `ModelClass` / `BddOutcomeModelClass` structures the supremum ranges over — `M.degree_le : BoundedDegree M.edge d` (`ass:bounded-degree`), `M.low_order` (`ass:low-order`) and `M.mass_le` (`ass:bounded-coefficient-mass`) on `ModelClass`, and `M.degree_le` + `M.low_order` on `BddOutcomeModelClass` (whose third field `outcome_bound` is an inline non-member). F2 must thread them through those direct field projections and must NOT also add them as free binders.",
+   "statement_sketch": "In the complete-block divisibility clause, in addition to the two global `worstRisk` equalities, state the coefficient-mass and bounded-outcome fixed-graph equalities `worstRiskFixedGraph … (blockGraph n d) … = B^2 A_d / m` and `worstRiskBddFixedGraph … (blockGraph n d) … = B^2 A_d / m`, mechanically attributing attainment to the disjoint complete-block graph.",
+   "notes": "REVISED (round 2). TWO changes, both inherited: (α) FLAG-world-arity — the middle and upper terms are now stated against the graph-aware `Estimator V` of def:minimax-risk: the bounded-outcome branch is `minimaxRiskBddOutcome … ≤ worstRiskBdd … (snipeClippedBdd B β p) ≤ C_{β,p}·B²·min{1, dA_d/n}` and the ℓ¹ branch is `worstRisk … (snipeClipped B β p) ≤ …`, each with ONE global estimator term rather than a per-graph estimator, so `minimaxRisk_le` discharges the inf step directly; inside each `worstRisk` bound, `nbhdB (edgeFn M) i = nbhd M.edge i` (def:snipe-score) rewrites the score back into class-structure form before any variance computation, so branches (A) and (B) below are unchanged in substance. In the converse, both hypotheses carry the same `blockGraph n d`, so the estimator's graph slot is a constant (see def:block-family). (β) FLAG-reuse-precondition — branch (C) below is re-planned off the RN-derivative Bretagnolle–Huber route (unusable: it needs `P₊ ≪ P₋`, which the non-nested compactly supported cosine-square translates violate) and onto a locally proved common-dominating-density affinity-to-TV inequality; see the rewritten (C). The headline is crux content — built, never assumed. F2 should split the proof across the target file plus three supporting helper files, all planned here: (A) `Helpers/SnipeVariance.lean` — SNIPE design-unbiasedness (from the representer identity of lem:block-energy-representer applied in dimension `|N_i|`), `E[g_{i,β,p}²] = A_i ≤ A_d` (binomial monotonicity in `q_i ≤ d`), the Bernoulli-Fourier expansion of the centered summands, and the variance bound `Var(∑ W_i) ≤ n d B² A_d` assembled from lem:overlap-count's single out-degree charge plus Cauchy–Schwarz — this branch is where BOTH upper bounds and the exact complete-block worst-case value `B²A_d/m` (via `Var_prod_linear_comb` on independent block scores) come from; (B) `Helpers/LeastFavourable.lean` — def:block-family, admissibility of the block schedules in the SMALLER class (`|U_b| + δ∑_T|h_{d,T}| ≤ B/2 + κBH ≤ B`, order `≤ k⋆ ≤ β`, block graph in `G_{n,d}`), the TTE separation `τ_n = σρδ`, and `1/2 ≤ ρ ≤ 1`; (C) `Helpers/HellingerAffinity.lean` — the converse's divergence engine, RE-PLANNED in round 2. What was wrong: the round-1 plan reused `Causalean.Stat.sq_bhattacharyya_le_two_mul_integral_min` + `Causalean.Stat.integral_min_le_one_sub_tvDist` (Minimax/BretagnolleHuber.lean), but both are RN-derivative statements premised on `P₊ ≪ P₋`, and the two prior-predictive laws here are mixtures of compactly supported translated cosine-square densities with NON-NESTED supports, so that premise fails and the lemmas are inapplicable (χ² and KL fail for the same reason, as the core's `technical_internal_limitation` records). What replaces it, with GENERIC Le Cam reuse retained (`Causalean.Stat.tvDist`, `one_sub_tvDist_le_test`, `one_sub_tvDist_le_error_sum`, `real_two_point_lower_bound`, `two_point_lower_bound_of_tvDist_le` — none has an absolute-continuity premise; `mixtureReal_le` is NO LONGER in this list, see the round-3 note below): (C0) a LOCAL common-dominating-density affinity-to-TV inequality, `tvDist_le_sqrt_two_mul_one_sub_affinity`: for `P = λ.withDensity f`, `Q = λ.withDensity g` with `f, g ≥ 0` integrable and of total mass one w.r.t. a COMMON `λ` (here `count(V → Bool) ⊗ volume^m`, the explicit dominating measure def:block-family already writes the laws against), `tvDist P Q ≤ √(2·(1 − ∫ √(f·g) ∂λ))`. Its two steps are premise-free: first `|P.real A − Q.real A| = |∫_A (f − g) ∂λ| ≤ ½∫|f − g| ∂λ` by REUSING `Causalean.Stat.abs_setIntegral_le_half_integral_abs_of_integral_eq_zero` (Minimax/Scheffe.lean — verified generic: hypotheses are only `Integrable f ν` and `∫ f = 0`, no `≪` anywhere, and it is proved by the `∫_A f = −∫_{Aᶜ} f` split), transported through `MeasureTheory.withDensity_apply` / `setIntegral` and then through the `sSup` in `tvDist`; second the Cauchy–Schwarz factorization `∫|f−g| = ∫|√f−√g|(√f+√g) ≤ √(∫(√f−√g)²)·√(∫(√f+√g)²) ≤ 2√(∫(√f−√g)²)` with `∫(√f−√g)² = 2(1 − ∫√(fg))`. This is the paper's own written step ('Cauchy–Schwarz applied to the densities gives ‖P₊−P₋‖_TV ≤ H'), so `H² ≤ 1/4 ⇒ tvDist ≤ 1/2` exactly as the proof_tex has it, and NO general Hellinger-distance object is ever constructed — only the affinity NUMBER `∫√(fg)` (search trace for the object itself, retained from round 1: `lean_local_search 'hellinger'`, 'hellingerDiv', 'Hellinger' over `/<repo-root>` → EMPTY; `Grep 'Hellinger'` over the repo → only prose in this artifact's own discovery logs and one docstring). (C1) affinity TENSORIZATION over the `m` independent blocks, now stated for the EXPLICIT product density rather than for a product RN derivative: `∫ √((∏_b f_b)·(∏_b g_b)) ∂λ = ∏_b ∫ √(f_b g_b)` by `Real.sqrt_mul`/`Finset.prod_mul_distrib` pointwise plus Fubini on `MeasureTheory.Measure.pi` (`integral_finset_prod`-style), with the shared DISCRETE assignment coordinate handled by summing over `z` first (blocks are conditionally independent given `Z`, and the law of `Z` is itself a product over blocks); then `1 − ∏ a_b ≤ ∑ (1 − a_b)` for `a_b ∈ [0,1]` gives the `m`-fold bound `1 − affinity ≤ 4π²mδ²/(2B²A_d)` matching the proof_tex's `H² ≤ 4π²mδ²/(B²A_d)`. The analogous module for the Fubini idiom remains `Causalean.Stat.rnDeriv_prod_eq` + `chiSqDiv_prod` (Minimax/ChiSquared.lean) — SAME product-then-Fubini shape, `√(ab) = √a√b` in place of the square — but only as a PATTERN to adapt; its RN-derivative statement is not instantiated here. (C2) unchanged: the cosine-squared translation affinity bound `1 − ∫√(f_s(u−a)f_s(u−b))du ≤ C(a−b)²/s²` — an explicit `intervalIntegral` computation (product-to-sum on `cos·cos` over the overlap `[-s+max a b, s+min a b]`, giving the closed form `(1 − |t|/(2s))cos(πt/(2s)) + π⁻¹ sin(π|t|/(2s))`), with the `|t| ≥ 2s` branch trivial since the affinity is then 0 and `Ct²/s² ≥ 4C ≥ 1`. This is exactly the paper's Hellinger step (`‖ψ_s'‖₂² = π²/(4s²)`) delivered as a closed form instead of a weak-derivative/Minkowski argument — the DELIBERATE substitution that keeps it elementary and avoids needing a Sobolev translation lemma Mathlib does not have. The Le Cam assembly then reuses `Causalean.Stat.real_two_point_lower_bound` / `two_point_lower_bound_of_tvDist_le` for the miss-probability form, followed by a one-line Markov step `θ²·P(|est − θ| ≥ θ) ≤ E[(est − θ)²]` to convert to MSE (the analogous module is `Causalean.Estimation.MinimaxATE.nMiss_sq_le_nMSE`, same `mul_meas_ge_le_integral_of_nonneg` proof, to be re-derived here for the finite-design `E`). (D) REALIZABILITY, RE-PLANNED IN ROUND 3 (FLAG-finite-mixture). The step 'each prior is supported on deterministic schedules in the smaller model class, so its integrated risk cannot exceed the corresponding worst-case risk' — which converts the two-point bound on the prior-predictive laws into a bound on `worstRisk`/`minimaxRisk` — was planned in round 2 against `Causalean.Stat.mixtureReal_le`. That reuse is WITHDRAWN: verified against the source (`Grep 'mixtureReal' ../Causalean/Stat/Minimax/` → `Mixture.lean:53 theorem mixtureReal_le (w : ι → ℝ≥0∞) (hw : ∑ i, w i = 1) …` with `[Fintype ι]`), it bounds the `.real` MASS of a FINITE `Fintype`-indexed convex combination of measures, while the baseline prior here is the CONTINUOUS product `⊗_{b ≤ m} f_s(u)du` over `U : Fin m → ℝ` and the object to dominate is an integrated RISK — it cannot discharge this step, and `Causalean.Stat.Minimax.Mixture` is accordingly absent from this node's modules. It is replaced by two LOCAL `small` lemmas in `Helpers/LeastFavourable.lean`, both fully specified in def:block-family and neither needing new theory: (R1) the Fubini identity `E_{P_σ}[(est − σθ)²] = ∫ riskAt p (blockSchedule σ U) est ∂(blockBaselinePrior s m)` on the explicit `count ⊗ volume^m` density (same idiom as (C1) — finite assignment sum out first, then the `U`-integral); and (R0) the continuous-prior `∫ ≤ sup` bound `∫ riskAt p (blockSchedule σ U) est ∂(blockBaselinePrior s m) ≤ worstRisk p est`, from pointwise admissibility of `blockSchedule σ U` (branch (B)) plus the reused `le_worstRisk` API lemma, closed by `MeasureTheory.integral_mono_ae` + `integral_const` + `IsProbabilityMeasure` on the prior, with integrability supplied by the two-sided bound `0 ≤ riskAt ≤ worstRisk` (`mse_nonneg` / `le_worstRisk`) and by measurability in `U` (a finite sum over the finite assignment space of terms polynomial in `U` composed with the outcome-measurable `est`). The `BddAbove`/measurability side conditions this uses are exactly those already in `AdmissibleEstimator` (def:minimax-risk), so no hypothesis is added to the theorem: `hyps` is UNCHANGED. Constants: F2 must state `c_{β,p}`, `C_{β,p}` as EXPLICIT closed forms (the proof gives `c = κ²/16` with `κ = min((2H)⁻¹,(4π)⁻¹)`, and `C = 16`), never as an existentially-quantified `≍`."
+  },
+  "thm:degree-frontier": {
+   "lean_kind": "theorem",
+   "lean_name": "degree_frontier",
+   "local_id": "thm:degree-frontier",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "T_degree_frontier.lean",
+   "hyps": [],
+   "notes": "Build-inline, `small`: a pure specialization of thm:bounded-outcome-degree-frontier to the ℓ¹ coefficient-mass class, rewriting `A_d ≍ C(d,k⋆)` (part (v) of lem:block-energy-representer, reached through the stronger theorem's own restatement) and `R_{n,ℓ¹}^⋆ = R_n^⋆` (definitional, `rfl`, by def:two-class-minimax-risks). No assumption dependencies in the core (`depends_on` is `[def:two-class-minimax-risks, thm:bounded-outcome-degree-frontier]`), hence `hyps = []`: everything modeling enters through the risk definitions and the stronger theorem. F2 should ALSO emit the non-saturated-regime corollary (unclipped SNIPE attains the rate when `dC(d,k⋆)/n ≲ 1`) in this file, since the core's statement asserts it. REVISED (round 2, FLAG-world-arity, inherited): the statement's middle term is `worstRisk … (snipeClipped B β p)` and the corollary's is `worstRisk … (snipeEstimator β p)` — in both cases ONE graph-aware `Estimator V` (def:minimax-risk / def:snipe-estimator) placed inside the same `sSup` over `(G_n, c)`, not a graph-indexed family; the specialization is otherwise unchanged."
+  },
+  "thm:fair-coin-energy-frontier": {
+   "lean_kind": "theorem",
+   "lean_name": "fair_coin_energy_frontier",
+   "local_id": "thm:fair-coin-energy-frontier",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "T_fair_coin_frontier.lean",
+   "hyps": [],
+   "notes": "Build-inline, `small`: at `p = 1/2`, `Δ_r(1/2) = 2^{-r}(1 − (−1)^r)`, so `Δ_r(1/2)²/(p(1−p))^r = 4` for odd `r` and `0` for even `r` (a `Nat.even_or_odd` case split plus `ring`); hence `A_d = 4∑_{r odd ≤ min β d} C(d,r)`, `k⋆` = largest odd `r ≤ min β d`, and `β = 1 ⇒ A_d = 4d`. The frontier and exact complete-block value are then substitutions into thm:bounded-outcome-degree-frontier (whose risks and estimator terms are now graph-aware per def:minimax-risk; this node only substitutes constants and so needs no change beyond citing the revised statements). `hyps = []` because the core's `depends_on` for this node carries no assumption (the design enters through the risk definitions bound by S1/S3). Search trace: `lean_local_search 'odd binomial sum'`, `lean_loogle '∑ r ∈ Finset.filter Odd _, Nat.choose _ _'` → nothing needed beyond `Nat.Odd`/`Finset.filter` algebra; no reuse candidate."
+  },
+  "thm:sharp-local-linear-constant-and-representers": {
+   "lean_kind": "theorem",
+   "lean_name": "sharp_local_linear_constant_and_representers",
+   "local_id": "thm:sharp-local-linear-constant-and-representers",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Causalean.Experimentation.DesignBased.ProductVariance",
+    "Causalean.Experimentation.DesignBased.ProductBlock",
+    "Causalean.Experimentation.DesignBased.DesignCore"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "T_sharp_local_linear.lean",
+   "hyps": [
+    "ass:bernoulli-design",
+    "def:local-linear-class"
+   ],
+   "notes": "REVISED (round 5, FLAG-node-collapse — hyps UNCHANGED, dependency closure only). Its `depends_on` now names the three separate block-local nodes def:local-linear-class (the schedule class `\\mathcal M_t(G_t)`), def:local-linear-estimator-class (`\\mathcal E_t^{loc,lin}`) and def:local-linear-risk (`R_t^{loc,lin}`) where the plan previously saw one collapsed node. `hyps` is DELIBERATELY not extended: only an assumption or a CLASS may be a hypothesis, and the two new nodes are constructions — they are USED (the theorem computes `locLinMinimaxRisk` and quantifies over `locLinEstimatorClass`), never assumed. So `hyps = [ass:bernoulli-design, def:local-linear-class]` still satisfies P4 (⊆ depends_on, and the single assumption dependency `ass:bernoulli-design` is covered directly). What changes for F2 is only the NAMES it cites: `R_t^{loc,lin}` is `locLinMinimaxRisk`, the competitor set is `locLinEstimatorClass`, the per-block extremal is the `blockExtremal` companion of def:local-linear-risk, and `Ψ_{b,t}`'s exact formula/floor are proved HERE (those nodes only define it). Build-inline crux (the paper's own resolved structural question). `hyps ⊆ depends_on` ✓: `ass:bernoulli-design` is a free hypothesis (block independence is the engine of the whole proof, via `Var_prod_linear_comb` / `Cov_prod_disjoint_zero`), and `def:local-linear-class` is the bundled schedule class the sup ranges over. F2 should emit five named results in this file: (1) the exact finite constant `R_t^{loc,lin} = B²A_{d_t}/m_t` (attainment with `w_i = g_d` via the per-unit triangle bound `‖g f_i − L_d f_i‖₂ ≤ B√A`, converse via the constant schedule `f_i ≡ B` and the orthogonal decomposition `w_i = g + u_i`); (2) the exact per-block extremal formula `sup_c mse = (B²/n²)∑_b Ψ_{b,t}(w)` — the ℓ¹-ball extreme-point step, done as `Finset.sup'` over the finite sign/subset product points plus a `Jensen`/`inner_le_nnorm`-style convexity bound (Mathlib `inner_le_weight_mul_Lp_of_norm_le` is NOT needed; the clean route is `Finset.inner_mul_le_norm_mul_norm`-free: expand `‖E_b(c,w)‖₂²` as a quadratic form and use that a convex function on a product of ℓ¹-balls attains its max at a product of extreme points, `Finset.sup'` over `(Fin d → Bool) × (subsets)`); (3) `Ψ_{b,t}(w) ≥ d²A_d`; (4) the iff-characterization of asymptotic minimaxity (an algebraic rearrangement of (1)+(2)+(3) into `ratio = 1 + normalized excess`, then `Filter.Tendsto` transfer); (5) the sufficiency of the normalized L² condition and the distance-exactly-two NON-necessity witness. Item (5) is the only piece needing linear algebra beyond design algebra: it requires a nonzero `v ∈ P_{d_t}^⊥`, which exists because `dim P_{d_t} = ∑_{r ≤ β} C(d_t,r) < 2^{d_t} = dim ((Fin d_t → Bool) → ℝ)` for large `d_t` — the centered monomials `X_S` are pairwise orthogonal under the product Bernoulli design (Helpers/BernoulliFourier.lean), hence linearly independent, giving the dimension count without a basis-construction argument; then `Submodule.exists_mem_ne_zero_of_finrank_lt`-style extraction. Search trace: `lean_local_search 'finrank_lt'`, 'orthogonal complement nonzero', 'Submodule.exists_mem'; `lean_loogle 'Module.finrank _ _ < Module.finrank _ _ → _'`; also surveyed `Causalean/Mathlib/SemiInnerProjection.lean` and `Causalean/Estimation/GaussMarkov/` (the finite BLUE layer — the ANALOGOUS MODULE: same 'unbiased class = base + orthogonal-complement perturbation, variance adds' pattern, proved for finite Gauss–Markov least squares; abstraction gap: it is stated for a linear model with a design matrix and a Euclidean inner product, whereas here the inner product is `FiniteDesign.E` and the constraint set is the moment restrictions, so only the decomposition IDIOM transfers, not the statement)."
+  }
+ },
+ "decisions": [
+  {
+   "id": "F1-D1",
+   "decision": "The paper brief carries no `state.theorems` manifest, so the paper-scoped preamble is inert; `theorem_local_id`s are set to the core statement node ids (the only stable identifiers available) rather than invented `t1`/`t2` labels."
+  },
+  {
+   "id": "F1-D2",
+   "decision": "REVISED (round 2, FLAG-reuse-precondition). The converse is still planned WITHOUT building a general Hellinger-divergence theory, but the affinity→TV step no longer goes through the Bretagnolle–Huber layer: `sq_bhattacharyya_le_two_mul_integral_min` and `integral_min_le_one_sub_tvDist` are RN-derivative statements premised on `P₊ ≪ P₋`, and the two prior-predictive laws are mixtures of compactly supported translated cosine-square densities with non-nested supports, so that premise FAILS (as it does for KL/χ²). Instead, generic `tvDist`/Le Cam reuse is retained (`tvDist`, `one_sub_tvDist_le_test`, `one_sub_tvDist_le_error_sum`, `real_two_point_lower_bound`, `two_point_lower_bound_of_tvDist_le` — none premised on absolute continuity; `mixtureReal_le` was also listed here in round 2 and is REMOVED by F1-D10), and the bridge is proved LOCALLY for the explicit counting⊗Lebesgue densities: `tvDist P Q ≤ √(2(1 − ∫√(fg)dλ))` for `P = λ.withDensity f`, `Q = λ.withDensity g`, via the generic `Causalean.Stat.abs_setIntegral_le_half_integral_abs_of_integral_eq_zero` (Scheffe.lean) plus the paper's own Cauchy–Schwarz factorization of `∫|f−g|`; the affinity is then tensorized across blocks by Fubini on the explicit product density. Nothing is stated against a mutual RN derivative anywhere in the converse."
+  },
+  {
+   "id": "F1-D3",
+   "decision": "The least-favourable law is written directly on the SUFFICIENT observed statistic `(Z, (Y_b)_{b ≤ m}) ∈ (V → Bool) × ℝ^m` with an explicit density w.r.t. counting ⊗ Lebesgue (legitimate because under the block family the observed outcomes are constant within each active block and zero off it). This avoids conditional kernels and keeps the converse in `Measure.prod`/`withDensity`."
+  },
+  {
+   "id": "F1-D4",
+   "decision": "All `≍_{β,p}` / `≲_{β,p}` comparisons are to be stated with EXPLICIT constants in Lean (`c = κ²/16` with `κ = min((2H_{β,p})⁻¹,(4π)⁻¹)`, `C = 16`, and explicit two-sided binomial-comparison constants for `A_d ≍ C(d,k⋆)`), never as existential asymptotic notation, so the theorems remain finite-`n` statements as the core states them."
+  },
+  {
+   "id": "F1-D6",
+   "decision": "REVISE round 4 (supersedes the round-3 nested presentation, which failed the deterministic gate with four P2 violations): the two product model classes (`def:model-class`, `def:bounded-outcome-model-class`) list FLATTENED ASSUMPTION-ATOM members — `[ass:bounded-degree, ass:low-order, ass:bounded-coefficient-mass]` and `[ass:bounded-degree, ass:low-order]` — exactly as the core's `by_member_properties` records them, with one structure field per member atom. A `members` entry must be an assumption atom; a component definition id (`def:graph-class`, `def:coefficient-class`, `def:bounded-outcome-coefficient-class`) is never a member, even when the class is mathematically the product of those components. Reusability of the component classes is preserved WITHOUT re-nesting, via the `ofComponents` builders and `toGraphClass` / `toCoeffClass` / `toBddOutcomeCoeffClass` projections planned on both nodes, so def:block-family's component-phrased `blockGraph`/`blockSchedule` sketch needs no change. No hypothesis is added or dropped: P4 coverage of thm:bounded-outcome-degree-frontier is unchanged, and its `hyps_note` now threads the three ambient atoms through direct field projections (`M.degree_le`, `M.low_order`, `M.mass_le`) instead of nested ones."
+  },
+  {
+   "id": "F1-D7",
+   "decision": "REVISE round 2 (FLAG-world-arity): the estimator type is GRAPH-AWARE, `Estimator V := (V → V → Bool) → (V → Bool) → (V → ℝ) → ℝ`, matching the core's `\\widehat\\tau_n` (measurable in `(G_n, Z, {Y_i^{obs}})`), and `riskAt`/`riskAtBdd` COMPOSE the estimator with each model's own graph (`edgeFn M := fun j i => decide (M.edge j i)`, from the class structures' existing `decEdge` field) before applying the reused `FiniteDesign.mse`. The round-1 arity fixed `G` inside the risk functional, which changed the inf–sup problem (an estimator per graph) and left `snipeEstimator G` outside the competitor set. The class structures are UNCHANGED (they keep `edge : V → V → Prop` + `decEdge`); the only new plumbing is `nbhdB (G : V → V → Bool) i := univ.filter (fun j => G j i)` with the one-rewrite bridge `nbhdB (edgeFn M) i = nbhd M.edge i`, so every downstream neighborhood/variance lemma keeps its shape. Consequences: `snipeEstimator β p`, `snipeClipped B β p`, `snipeClippedBdd B β p` are each ONE global competitor, both minimax risks infimize over the SAME estimator set (so class-inclusion monotonicity `R_{n,ℓ¹}^⋆ ≤ R_{n,∞}^⋆` moves only the sup's index set), and the converse is unaffected because both prior mixtures carry the same `blockGraph n d`. def:local-linear-class is deliberately EXEMPT: the core fixes `G_t` there and competes only over block-local weights."
+  },
+  {
+   "id": "F1-D9",
+   "decision": "REVISE round 5 (FLAG-node-collapse, the escalated `def:local-linear-class` per-node strike): the core's block-local construction is THREE nodes — `def:local-linear-class` (`\\mathcal M_t(G_t)`), `def:local-linear-estimator-class` (`\\mathcal E_t^{loc,lin}`) and `def:local-linear-risk` (`R_t^{loc,lin}`) — and the plan now maps each to its own Lean declaration with its own canonical tag, restoring the one-to-one node↔declaration correspondence (P1). Previously all three were anchored to the single `LocLinSchedClass` structure with the other two demoted to untagged companions, which both left two core nodes unmapped and mechanically mis-anchored a three-part construction; the `localLinearClassBundle` tuple that had linked them is DROPPED rather than relocated, since a bundle over three now-tagged declarations would only re-create the collapse. Kind assignment follows the core's own shape: `def:local-linear-class` carries `by_member_properties` ⇒ `structure` (members unchanged: `[ass:low-order, ass:bounded-coefficient-mass]`); the other two carry a bare `construction` with no `by_member_properties` and no `inputs` ⇒ `def`. All three stay in `Helpers/LocalLinearClass.lean` (one self-contained topic, comfortably inside the size target) and all three keep the round-2 FLAG-world-arity EXEMPTION: the core fixes `G_t` and competes only over block-local weights, so none of them is restated over the graph-aware `Estimator V` of def:minimax-risk. No hypothesis moves: `thm:sharp-local-linear-constant-and-representers` keeps `hyps = [ass:bernoulli-design, def:local-linear-class]`, because a construction is USED and never assumed — only the names it cites change. Nothing outside this three-node cluster and its one consumer is touched."
+  },
+  {
+   "id": "F1-D10",
+   "decision": "REVISE round 3 (FLAG-finite-mixture): `Causalean.Stat.mixtureReal_le` is DROPPED as the reuse for the converse's PRIOR REALIZABILITY step, and `Causalean.Stat.Minimax.Mixture` is removed from the modules of S4 and def:block-family. Source check: `Mixture.lean:53 theorem mixtureReal_le (w : ι → ℝ≥0∞) (hw : ∑ i, w i = 1) …` is stated for a FINITE `Fintype`-indexed convex combination of measures and bounds a `.real` set MASS; the baseline prior in def:block-family is the CONTINUOUS product of compactly supported cosine-squared densities over `U : Fin m → ℝ`, and the quantity to be dominated is an integrated RISK, so the lemma does not apply. The step is instead planned as two local `small` lemmas in `Helpers/LeastFavourable.lean`: (R1) `E_{P_σ}[(est − σθ)²] = ∫ riskAt p (blockSchedule σ U) est ∂(blockBaselinePrior s m)` by Fubini on the explicit `count ⊗ volume^m` density, and (R0) the continuous-prior `∫ ≤ sup` bound `∫ riskAt p (blockSchedule σ U) est ∂(blockBaselinePrior s m) ≤ worstRisk p est`, proved from pointwise class-membership of `blockSchedule σ U` plus the reused `le_worstRisk`, closed by `integral_mono_ae` + `integral_const` + `IsProbabilityMeasure` (the prior is built as `Measure.pi` of `volume.withDensity (cosSqDensity s)`, whose total mass one is the closed-form `intervalIntegral` computation already required by (C2)). Integrability is discharged, not assumed: `0 ≤ riskAt ≤ worstRisk` plus measurability in `U`, both available from the `AdmissibleEstimator` side conditions already in def:minimax-risk. Nothing else moves: the generic `tvDist` / Le Cam reuse (`one_sub_tvDist_le_test`, `one_sub_tvDist_le_error_sum`, `real_two_point_lower_bound`, `two_point_lower_bound_of_tvDist_le`) and the round-2 affinity route (F1-D2) are unaffected, no node's disposition or `defer_tier` changes, and no statement's `hyps` changes — the affected closure is exactly S4, def:block-family and its one consumer thm:bounded-outcome-degree-frontier."
+  },
+  {
+   "id": "F1-D5",
+   "decision": "REVISED scaffold redirect: `H_{β,p}` is the exact `representerMassSup β p := sSup (Set.range (fun d : {d // 1 ≤ d} => representerMass β p d))`, and `tiltAmplitude` uses that exact supremum. The block-family node is anchored by `blockFamilyBundle`, which mechanically exposes `blockCount`, `activeCount`, `activeShare`, `blockGraph`, and `blockSchedulePrior`; the compressed sufficient-statistic `blockPriorLaw` and its full observed-data pushforward `priorPredictiveLaw` remain companions."
+  },
+  {
+   "id": "F1-D8",
+   "decision": "REVISED scaffold redirect: multi-object construction nodes use explicit primary bundle anchors (`snipeEstimatorBundle`, `blockScoreEnergyBundle`, `blockFamilyBundle`, and `twoClassMinimaxRisks`) while retaining computational components as companions. The class node `def:local-linear-class` remains canonically tagged on the `LocLinSchedClass` structure with members exactly equal to its `by_member_properties`; SUPERSEDED IN ROUND 5 (see F1-D9), its linked estimator family and risk are NO LONGER exposed by a `localLinearClassBundle` companion but are the separately tagged nodes def:local-linear-estimator-class and def:local-linear-risk. Real-valued minimax risks exclude estimators whose modelwise risk ranges are not `BddAbove`, preventing `Real.sSup` from assigning the conditionally-complete junk value to an unbounded risk set."
+  }
+ ]
+}

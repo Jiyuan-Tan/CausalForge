@@ -308,8 +308,22 @@ function parseFrontmatter(md: string): Record<string, unknown> | null {
   let i = 0;
   const parseScalar = (raw: string): string => {
     const t = raw.trim();
-    if (t.startsWith("\"") || t.startsWith("'")) {
-      try { return JSON.parse(t.replace(/^'(.*)'$/, "\"$1\"")); } catch { return t.replace(/^["']|["']$/g, ""); }
+    // YAML single quotes have NO backslash escapes — never JSON.parse them: a
+    // hand-filled `'Rate \frac{1}{n}'` would decode `\f` to a form feed.
+    if (t.startsWith("'")) return t.replace(/^'([\s\S]*)'$/, "$1").replace(/''/g, "'");
+    if (t.startsWith("\"")) {
+      try {
+        const decoded = JSON.parse(t) as string;
+        // Reject a decode that minted control characters: these frontmatter
+        // scalars are hand-filled at banking time, and a TeX command whose
+        // prefix is a JSON escape (`\frac`→FF+"rac", `\nu`→LF+"u", `\beta`→
+        // BS+"eta") "successfully" parses to corrupted text that is then
+        // injected into the proposer prompt as trusted verbatim content.
+        if (typeof decoded === "string" && !/[\u0000-\u001f]/.test(decoded)) return decoded;
+      } catch {
+        /* fall through to the quote-strip */
+      }
+      return t.replace(/^["']|["']$/g, "");
     }
     return t;
   };

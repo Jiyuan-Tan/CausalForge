@@ -68,7 +68,11 @@ def edge : BoolChainNode → BoolChainNode → Prop
 
 instance edgeDecidable : DecidableRel edge := by
   intro a b
-  cases a <;> cases b <;> simp [edge] <;> infer_instance
+  cases a <;> cases b
+  · exact isFalse (fun h => h)
+  · exact isTrue trivial
+  · exact isFalse (fun h => h)
+  · exact isFalse (fun h => h)
 
 /-- The topological order places the parent before the child. -/
 def topo : BoolChainNode → ℕ
@@ -102,7 +106,7 @@ def boolChainSWIG : SWIGGraph BoolChainNode where
   fixed_is_fixed := by intro s hs; simp at hs
   observed_is_random := by
     intro v hv
-    simp at hv
+    simp only [Finset.mem_insert, Finset.mem_singleton] at hv
     rcases hv with rfl | rfl <;> exact ⟨_, rfl⟩
   unobserved_is_random := by intro u hu; simp at hu
   obs_unobs_disjoint := by

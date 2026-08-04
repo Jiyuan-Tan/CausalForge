@@ -48,12 +48,30 @@
 /** Node-kind prefixes that can appear in a core id. Keep in sync with `core/schema.ts`. */
 export const NODE_KINDS = ["ass", "def", "lem", "thm", "prop", "oeq", "conj"] as const;
 
-const PATTERN = String.raw`\b(?:${NODE_KINDS.join("|")}):[a-z0-9-]+`;
+// NOTE ON THE LaTeX HYPHEN ESCAPE: the solver writes ids inside math mode, where a
+// bare `-` sets as a minus sign, so it escapes them — `def:beta\text{-}free`. Against
+// a slug grammar of `[a-z0-9-]+` the match STOPS at the backslash and yields the
+// truncated `def:beta`, which resolves against nothing. That is not a cosmetic misread:
+// `findDanglingCitations` halts/auto-heals on an unresolvable ref, so a run reported 24
+// dangling citations (`def:holder-class` → `def:holder`, `thm:oracle-high-s` →
+// `thm:oracle`), invalidated 15 nodes and paid a full re-solve for prose that was
+// correct. Accept the escape as a slug character and normalize it back to `-`, so both
+// semantics below see the id the author actually wrote.
+const HYPHEN_ESCAPE = String.raw`\\(?:text|mbox)\{-\}|\{-\}`;
+const SLUG = String.raw`(?:[a-z0-9-]|${HYPHEN_ESCAPE})+`;
+
+const PATTERN = String.raw`\b(?:${NODE_KINDS.join("|")}):${SLUG}`;
 
 /** A `<paper>/<node-id>` reference to a result in ANOTHER CausalSmith paper. The
  *  paper segment matches the qid grammar (`[a-z0-9_]+`, underscores allowed — qids
  *  use them where node ids do not), and may be LaTeX-escaped as `\_` in prose. */
-const QUALIFIED_PATTERN = String.raw`(?:[a-z0-9]|\\?_)+/(?:${NODE_KINDS.join("|")}):[a-z0-9-]+`;
+const QUALIFIED_PATTERN = String.raw`(?:[a-z0-9]|\\?_)+/(?:${NODE_KINDS.join("|")}):${SLUG}`;
+
+/** Undo the LaTeX hyphen escapes accepted by `SLUG`, so an extracted ref compares
+ *  equal to the plain-`-` id grammar of `core/schema.ts`. */
+function normalizeRef(raw: string): string {
+  return raw.replace(new RegExp(HYPHEN_ESCAPE, "gi"), "-").toLowerCase();
+}
 
 /** A FRESH matcher for `<paper>/<node-id>` cross-paper references. */
 export function qualifiedRefRegex(): RegExp {
@@ -115,10 +133,26 @@ export function nodeRefRegex(): RegExp {
 /** Every core-node reference in `text`, lowercased and de-duplicated, in first-seen
  *  order. Lowercasing matches the id convention enforced by `core/schema.ts`. */
 export function extractNodeRefs(text: string): string[] {
+  // A LaTeX en-dash range between two ids (`thm:lower--thm:upper`, the standard
+  // typesetting of "Theorems 1–2") would otherwise be swallowed as the single
+  // unresolvable slug `thm:lower--thm` AND lose the second reference outright —
+  // for the pruning consumers that is a live-node deletion. Sever the `--` when
+  // a new id begins directly after it (same-length padding keeps offsets stable).
+  const severed = text.replace(
+    new RegExp(String.raw`--(?=(?:${NODE_KINDS.join("|")}):)`, "gi"),
+    "  ",
+  );
   const seen = new Set<string>();
   const out: string[] = [];
-  for (const m of text.matchAll(nodeRefRegex())) {
-    const ref = m[0].toLowerCase();
+  for (const m of severed.matchAll(nodeRefRegex())) {
+    // No pipeline id ends in `-` (`healStatementId` strips them for statements,
+    // and slugs are semantic words everywhere), so a trailing hyphen is
+    // punctuation the slug absorbed (`… thm:main-,` or the escaped
+    // `lem:a-\text{and}…`) — trim it rather than fail to resolve. KNOWN
+    // TRADE-OFF: an `ass:`/`def:` id that literally ends in `-` is schema-legal
+    // and would stop resolving here; if a producer ever emits one, forbid it at
+    // creation (mirror healStatementId) rather than un-trimming this.
+    const ref = normalizeRef(m[0]).replace(/-+$/, "");
     if (!seen.has(ref)) {
       seen.add(ref);
       out.push(ref);

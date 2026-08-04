@@ -20,7 +20,9 @@ import {
 } from "../pipeline_support.js";
 import { createRetrieval } from "./reuse_retrieval.js";
 import { coreJsonPath } from "../discovery/stages/d0_core.js";
-import { CoreSchema } from "../discovery/core/schema.js";
+import { formalizationKind } from "../paths.js";
+import { readFormalizationCoreContext } from "./core_context.js";
+import { readTypedCore } from "../discovery/core/core_io.js";
 import { runPlanGate, type PlanGateViolation } from "./plan/plan_gate.js";
 import { PlanSchema } from "./plan/schema.js";
 import { PROOF_SCAFFOLD_MAX, STAGE2_REDIRECT_MAX } from "./loop_limits.js";
@@ -411,6 +413,14 @@ export async function runStage2(args: {
           "",
         ].join("\n")
       : "";
+  const scaffoldCorePath = coreJsonPath(args.ctx);
+  // Legacy study-pipeline scaffolds can predate typed discovery cores. Preserve
+  // that supported empty-context path; modern research runs validate/project.
+  const scaffoldCoreContext = existsSync(scaffoldCorePath)
+    ? await readFormalizationCoreContext(scaffoldCorePath, "F2 scaffold")
+    : formalizationKind(args.ctx.qid) === "study"
+      ? ""
+      : await readFormalizationCoreContext(scaffoldCorePath, "F2 scaffold");
   const prompt = [
     persistentDirectiveBlock,
     undeliveredBlock,
@@ -433,7 +443,7 @@ export async function runStage2(args: {
     // node statements/conditions the plan maps.
     `Formalization plan (plan.json — the contract you implement; for every DELIVERED node, tag EXACTLY ONE canonical primary declaration with "-- @node: <id>"; leave companion/auxiliary declarations untagged; an UNDELIVERED node emits no declaration and no tag; tag the S-block with "-- @env: <id>"). Additionally, for the SETUP/ENVIRONMENT symbols: tag EVERY Lean location that helps realize a core symbol's space with "@realizes <core-symbol-name>(<short clause hint>)" — using the EXACT core symbol name (e.g. mu_0, tau_P, e_P, pi, Pi; case-sensitive, NOT the Lean field name mu0/contrast). Put the tag at the most SPECIFIC location: for a structure FIELD, an INLINE trailing comment on that field line (e.g. 'propensity : 𝒳 → ℝ -- @realizes e_P(carrier 𝒳→ℝ; range via WellFormedLaw)'), NOT lumped on the structure docstring; for a MULTI-clause predicate (a Prop def of the form A and B and …), an INLINE comment on the SPECIFIC conjunct line that pins each symbol (e.g. in WellFormedLaw, the 'contrast x = mu1 x - mu0 x' conjunct line gets '-- @realizes tau_P(contrast = mu1 - mu0)' and the 'propensity x ∈ Icc 0 1' conjunct line gets '-- @realizes e_P(propensity ∈ Icc 0 1)'); a SINGLE-clause predicate may use its docstring (e.g. Positivity gets '@realizes e_P(a.s. 0<e<1)'). A symbol's space is normally carried by the CONJUNCTION of its carrier-type field PLUS the predicate(s) that pin its range, so the SAME symbol gets tagged on several locations (the field line AND each constraining predicate); the reviewer grades that whole cluster together. Tag EVERY core symbol in the JSON — not only setup-world ones — so the symbol→Lean crosswalk is COMPLETE: a primitive on its carrier field + constraining predicate; a quantity the paper DEFINES by a formula on the \`def\` that computes it; a symbol introduced only inside a theorem statement (e.g. an existential multiplier) on the clause that pins its range. Never tag a decl that merely USES a symbol without introducing it:\n${planText}`,
     "",
-    `Typed core JSON (ground truth for each node's statement / condition):\n${await readIfExists(coreJsonPath(args.ctx))}`,
+    `Typed core JSON (structural ground truth for each node's statement / condition; proof/publication prose omitted):\n${scaffoldCoreContext}`,
     "",
     "Return JSON. If blocked-missing-architecture, include missing_items exactly.",
   ].join("\n");
@@ -689,7 +699,7 @@ export async function runStage2(args: {
         );
       }
       if (gateInputsPresent) {
-        const core = CoreSchema.parse(JSON.parse(await readFile(corePath, "utf8")));
+        const core = await readTypedCore(corePath);
         const planObj = parseJsonWithEscapeRepair(await readFile(paths.plan, "utf8"));
         const leanTags = await parseLeanNodeTags(paths.leanDir);
         const leanDeclNames = new Set((await parseLeanDecls(paths.leanDir, { includeLemmas: true })).map((decl) => decl.name));

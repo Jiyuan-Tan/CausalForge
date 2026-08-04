@@ -22,29 +22,14 @@ path starting at the corresponding random node in the base graph. The auxiliary
 
 namespace Causalean
 
-namespace DAG
-
-variable {V : Type*} [DecidableEq V] [Fintype V] (G : DAG V)
-
-/-- A vertex with no incoming edges has no proper ancestors. -/
-lemma not_isAncestor_of_root' {r : V}
-    (hr : ∀ u, ¬ G.edge u r) (u : V) : ¬ G.isAncestor u r := by
-  intro h
-  cases h with
-  | edge he => exact hr _ he
-  | trans _ he => exact hr _ he
-
-end DAG
-
 variable {N : Type*} [DecidableEq N] [Fintype N]
 variable {Ω : N → Type*} [∀ n, MeasurableSpace (Ω n)]
 
 namespace SCM
 
-/-- Helper: edges in `(M.fixSet X).dag` reduce to `splitMonoEdgeRel` of the
-    base DAG.  Used to destructure an intervention-graph edge into its
-    base-graph source. -/
-private lemma fixSet_edge_iff
+/-- An edge in a causal model after intervention is exactly the corresponding
+    edge produced by splitting the intervened variables in the original graph. -/
+lemma fixSet_edge_iff
     (M : Causalean.SCM N Ω) (X : Finset N)
     (hX_obs : ∀ D ∈ X, SWIGNode.random D ∈ M.observed)
     (hX_fixed : ∀ D ∈ X, SWIGNode.fixed D ∉ M.fixed)

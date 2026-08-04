@@ -62,7 +62,6 @@ theorem obsKernel_inter_singleton_Zrand_eq
     (hZ_fixed : ∀ D ∈ Z, SWIGNode.fixed D ∉ M'.fixed)
     (W : Finset (SWIGNode N))
     (hZrW : Z.image SWIGNode.random ∪ W ⊆ M'.observed)
-    (hDisj_ZrW : Disjoint (Z.image SWIGNode.random) W)
     [MeasurableSingletonClass
       (ValuesOn (Z.image SWIGNode.random ∪ W) (swigΩ Ω))]
     (s' : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues)
@@ -242,7 +241,7 @@ theorem obsKernel_inter_singleton_Zrand_eq
               ⟨SWIGNode.random D, hD_in⟩
             = s' ⟨SWIGNode.fixed D,
                 SCM.fixed_mem_fixSet M1 Z hZ_obs hZ_fixed hD⟩
-        rw [valuesUnionMk_apply_left _ _ _
+        rw [valuesUnionMk_apply_left _ _
               (Finset.mem_image.mpr ⟨D, hD, rfl⟩)]
         rfl
       exact hcoord.trans hc_at
@@ -292,7 +291,7 @@ theorem obsKernel_inter_singleton_Zrand_eq
               ⟨SWIGNode.random D, hD_in⟩
             = s' ⟨SWIGNode.fixed D,
                 SCM.fixed_mem_fixSet M1 Z hZ_obs hZ_fixed hD⟩
-        rw [valuesUnionMk_apply_left _ _ _
+        rw [valuesUnionMk_apply_left _ _
               (Finset.mem_image.mpr ⟨D, hD, rfl⟩)]
         rfl
       exact hcoord.trans hc_at
@@ -408,7 +407,7 @@ theorem obsKernel_inter_Wset_Zrand_levelset_eq
       by_cases hvZ : v ∈ Z.image SWIGNode.random
       · have h_eq : (fun ζ : ValuesOn (Z.image SWIGNode.random) (swigΩ Ω) =>
             valuesUnionMk ζ w₀ ⟨v, hv⟩) = (fun ζ => ζ ⟨v, hvZ⟩) :=
-          funext fun _ => valuesUnionMk_apply_left _ _ hv hvZ
+          funext fun _ => valuesUnionMk_apply_left _ _ hvZ
         rw [h_eq]
         exact measurable_pi_apply _
       · have hvW : v ∈ W := (Finset.mem_union.mp hv).resolve_left hvZ
@@ -427,8 +426,8 @@ theorem obsKernel_inter_Wset_Zrand_levelset_eq
       have hv_union : v ∈ Z.image SWIGNode.random ∪ W :=
         Finset.subset_union_left hv
       have h_coord := congrFun h ⟨v, hv_union⟩
-      rw [valuesUnionMk_apply_left _ _ hv_union hv,
-          valuesUnionMk_apply_left _ _ hv_union hv] at h_coord
+      rw [valuesUnionMk_apply_left _ _ hv,
+          valuesUnionMk_apply_left _ _ hv] at h_coord
       exact h_coord
     rw [h_pre]
     exact hmeas (measurableSet_singleton _)
@@ -463,14 +462,14 @@ theorem obsKernel_inter_Wset_Zrand_levelset_eq
               by_cases hvA : v ∈ Z.image SWIGNode.random
               · exfalso
                 exact Finset.disjoint_left.mp hDisj_ZrW hvA hv
-              · rw [valuesUnionMk_apply_right _ _ _ hvA hv]
+              · rw [valuesUnionMk_apply_right _ _ _ hvA]
             rw [this]
             exact hwA
           · simp only [Set.mem_preimage, Set.mem_singleton_iff]
             show valuesProjection (Finset.subset_union_left) (F w) = ζ_s
             funext ⟨v, hv⟩
             simp only [valuesProjection, F, fillZrW]
-            rw [valuesUnionMk_apply_left _ _ _ hv]
+            rw [valuesUnionMk_apply_left _ _ hv]
         · rintro ⟨hW_mem, hZr_mem⟩
           simp only [Set.mem_preimage] at hW_mem
           simp only [Set.mem_preimage, Set.mem_singleton_iff] at hZr_mem
@@ -478,16 +477,16 @@ theorem obsKernel_inter_Wset_Zrand_levelset_eq
           funext ⟨v, hv⟩
           simp only [F, fillZrW]
           rcases Finset.mem_union.mp hv with hZrV | hWV
-          · rw [valuesUnionMk_apply_left _ _ _ hZrV]
+          · rw [valuesUnionMk_apply_left _ _ hZrV]
             have := congrFun hZr_mem ⟨v, hZrV⟩
             simp only [valuesProjection] at this
             exact this.symm
           · by_cases hZrV' : v ∈ Z.image SWIGNode.random
-            · rw [valuesUnionMk_apply_left _ _ _ hZrV']
+            · rw [valuesUnionMk_apply_left _ _ hZrV']
               have := congrFun hZr_mem ⟨v, hZrV'⟩
               simp only [valuesProjection] at this
               exact this.symm
-            · rw [valuesUnionMk_apply_right _ _ _ hZrV' hWV]
+            · rw [valuesUnionMk_apply_right _ _ _ hZrV']
               simp only [valuesProjection]
       rw [hImg, Set.preimage_inter]
       refine (hπ ((measurable_valuesProjection _) hA)).inter ?_
@@ -602,7 +601,7 @@ theorem obsKernel_inter_Wset_Zrand_levelset_eq
               ⟨SWIGNode.random D, hD_in⟩
             = s' ⟨SWIGNode.fixed D,
                 SCM.fixed_mem_fixSet M1 Z hZ_obs hZ_fixed hD⟩
-        rw [valuesUnionMk_apply_left _ _ hD_in
+        rw [valuesUnionMk_apply_left _ _
               (Finset.mem_image.mpr ⟨D, hD, rfl⟩)]
         rfl
       exact hcoord.symm.trans hc_at
@@ -653,7 +652,7 @@ theorem obsKernel_inter_Wset_Zrand_levelset_eq
               ⟨SWIGNode.random D, hD_in⟩
             = s' ⟨SWIGNode.fixed D,
                 SCM.fixed_mem_fixSet M1 Z hZ_obs hZ_fixed hD⟩
-        rw [valuesUnionMk_apply_left _ _ hD_in
+        rw [valuesUnionMk_apply_left _ _
               (Finset.mem_image.mpr ⟨D, hD, rfl⟩)]
         rfl
       exact hcoord.symm.trans hc_at
@@ -703,7 +702,6 @@ theorem obsKernel_disintegrate_rect
     (hY : Y ⊆ M.observed) (hCC : CC ⊆ M.observed)
     [StandardBorelSpace (ValuesOn Y (swigΩ Ω))]
     [Nonempty (ValuesOn Y (swigΩ Ω))]
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.obsKernel s)]
     [MeasurableSpace.CountableOrCountablyGenerated
       M.FixedValues (ValuesOn CC (swigΩ Ω))]
     (s : M.FixedValues)

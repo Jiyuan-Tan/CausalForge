@@ -22,7 +22,7 @@ The main API includes:
 * `measure_eq_of_singletonMass_eq` and `valuesOn_measure_eq_of_singletonMass_eq`,
   which reduce equality of finite/countable measures to equality of all singleton
   masses.
-* `singletonMass_map_eq_sum_fiber`, `singletonMass_bind_eq_sum`, and the
+* `singletonMass_map_eq_sum_fiber`, `singletonMass_comp_eq_sum`, and the
   point-mass specializations for constant or degenerate mixtures.
 * `conditionalMass_mul_denominator`, the algebraic cancellation lemma that
   recovers the joint point mass from a conditional-mass ratio once the actual
@@ -202,16 +202,6 @@ theorem singletonMass_comp_eq_sum
   rw [MeasureTheory.lintegral_fintype]
   simp [singletonMass, mul_comm]
 
-/-- Alias for `singletonMass_comp_eq_sum` using the more descriptive "bind"
-terminology common for measure mixtures. -/
-theorem singletonMass_bind_eq_sum
-    {α β : Type*} [MeasurableSpace α] [MeasurableSpace β]
-    [Fintype α] [MeasurableSingletonClass α] [MeasurableSingletonClass β]
-    (μ : MeasureTheory.Measure α) (κ : ProbabilityTheory.Kernel α β) (y : β) :
-    singletonMass (κ ∘ₘ μ) y =
-      ∑ x : α, singletonMass μ x * singletonMass (κ x) y :=
-  singletonMass_comp_eq_sum μ κ y
-
 /-- A finite kernel mixture has the common singleton mass of its slices when
 the finite singleton masses of the mixing measure sum to one. -/
 theorem singletonMass_comp_eq_of_const
@@ -257,9 +247,10 @@ theorem singletonMass_comp_eq_of_pointMass
 /-- Coordinate restriction is surjective when every omitted coordinate has at
 least one default value. -/
 theorem valuesProjection_surjective
-    {M : Type*} [DecidableEq M] [Fintype M]
+    {M : Type*}
     {I J : Finset M} {Ω' : M → Type*}
-    [∀ m, MeasurableSpace (Ω' m)] [∀ m, Nonempty (Ω' m)]
+    [∀ m, MeasurableSpace (Ω' m)]
+    [∀ m : {m // m ∈ I}, Nonempty (Ω' m.val)]
     (hJI : J ⊆ I) :
     Function.Surjective (valuesProjection (Ω := Ω') hJI) := by
   classical
@@ -274,7 +265,7 @@ theorem valuesProjection_surjective
 
 /-- Finite coordinate-product measures are determined by their point masses. -/
 theorem valuesOn_measure_eq_of_singletonMass_eq
-    {M : Type*} [DecidableEq M] [Fintype M]
+    {M : Type*}
     {Ω' : M → Type*} [∀ m, MeasurableSpace (Ω' m)] [∀ m, Countable (Ω' m)]
     (I : Finset M)
     {μ ν : MeasureTheory.Measure (ValuesOn I Ω')}

@@ -83,7 +83,7 @@ theorem deltaMethod_scalar
     simpa [Sn, Zn] using
       Tendsto_dist.const_mul_tendsto_gaussian
         (a := fun _ : ℕ => g') (a₀ := g') (v := σsq)
-        hSn_meas hZn_meas (by simpa [Sn] using _hCLT) tendsto_const_nhds
+        hSn_meas (by simpa [Sn] using _hCLT) tendsto_const_nhds
   have hInvSqrt : Tendsto (fun n : ℕ => (Real.sqrt (n : ℝ))⁻¹) atTop (𝓝 0) := by
     have hsqrt_atTop : Tendsto (fun n : ℕ => Real.sqrt (n : ℝ)) atTop atTop := by
       exact Real.tendsto_sqrt_atTop.comp tendsto_natCast_atTop_atTop
@@ -253,6 +253,10 @@ variable {E F : Type*}
   [NormedAddCommGroup F] [NormedSpace ℝ F] [FiniteDimensional ℝ F]
     [MeasurableSpace F] [BorelSpace F]
 
+section
+
+omit [FiniteDimensional ℝ E] [FiniteDimensional ℝ F]
+
 /-- **Multivariate delta method.**  If the rescaled deviation
 `√n • (T_n − t₀)` converges in distribution to a probability measure `Q`
 on `E`, and `g : E → F` is Fréchet-differentiable at `t₀` with derivative
@@ -315,7 +319,7 @@ theorem deltaMethod
     simpa using
       Tendsto_dist_vec.map_continuous
         (Q := Q.toMeasure) (g := fun x : E => ‖x‖)
-        continuous_norm hSn_meas hNormSn_meas hSnDist
+        continuous_norm hSn_meas hSnDist
   have hNormDist :
       Tendsto_dist (fun n ω => ‖Sn n ω‖)
         (Q.toMeasure.map (fun x : E => ‖x‖)) μ hNormSn_meas := by
@@ -494,10 +498,12 @@ theorem deltaMethod
     simpa [Zn] using
       Tendsto_dist_vec.map_continuous
         (Q := Q.toMeasure) (g := fun x : E => Dg x)
-        Dg.continuous hSn_meas hZn_meas hSnDist
+        Dg.continuous hSn_meas hSnDist
   change Tendsto_dist_vec Yn (Q.toMeasure.map Dg) μ hYn_meas
   exact Tendsto_dist_vec.add_isLittleOp_one
     (Q := Q.toMeasure.map Dg) (Xn := Zn) (Yn := Yn)
     hZn_meas hYn_meas hZdist hRn
+
+end
 
 end Causalean.Stat

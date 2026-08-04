@@ -12,13 +12,22 @@
 // The obj_id used here is the node's `obj_id` alias, so a note block correlates with
 // the graph node that carries the same alias (causalsmith keys both by obj_id).
 import type { FormalizationGraph, GraphNode } from "./types.js";
+import { maskNonBoundaryPeriods, truncateTexSafe } from "../shared/tex_text.js";
 
-/** A short title from the node's NL statement (first clause, truncated). */
+/** A short title from the node's NL statement (first clause, truncated).
+ * TeX-aware: the clause boundary ignores `.;:` inside math (`\{x : x>0\}`) and
+ * abbreviation/decimal periods, and the hard truncation backs off rather than
+ * cutting inside `$…$`/`\(...\)` — this title is compiled as the env's
+ * `[title]`, where an unbalanced delimiter aborts pdflatex. */
 function shortTitle(n: GraphNode): string {
   const s = (n.nl?.statement ?? "").replace(/\s+/g, " ").trim();
   if (!s) return n.obj_id ?? n.id;
-  const firstClause = s.split(/[.;:]\s/)[0];
-  return firstClause.length > 60 ? firstClause.slice(0, 57).trimEnd() + "…" : firstClause;
+  const boundaryScan = maskNonBoundaryPeriods(s)
+    .replace(/(?<!\\)\$[^$\n]*\$/g, (m) => "\u0002".repeat(m.length))
+    .replace(/\\\([\s\S]*?\\\)/g, (m) => "\u0002".repeat(m.length));
+  const stop = boundaryScan.search(/[.;:]\s/);
+  const firstClause = stop < 0 ? s : s.slice(0, stop);
+  return firstClause.length > 60 ? truncateTexSafe(firstClause, 57).trimEnd() + "…" : firstClause;
 }
 
 function renderNode(n: GraphNode): string {

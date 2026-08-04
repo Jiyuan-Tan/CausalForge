@@ -19,10 +19,13 @@ import type { Stage0_5CoreResult } from "./d0_5_core.js";
 import {
   runGeneralReview,
   buildGeneralTierVerdict,
+  decideTriageKill,
+  formatTriageTier,
   tierRank,
   TARGET_FLOOR_LABEL,
+  type GeneralReviewResult,
 } from "./d0_5_general.js";
-import { runStage0RCore } from "./d0_r_core.js";
+import { proposalFindingRoute, runStage0RCore } from "./d0_r_core.js";
 import { coreJsonPath } from "./d0_core.js";
 import { protoCoreJsonPath } from "./neg1_2_author.js";
 import { resolveInDir } from "../../paths.js";
@@ -41,10 +44,13 @@ import {
   findDanglingCitations,
   appendEscalationLog,
   readEscalationLog,
+  WORKING_STORE_FORMAT,
   type WorkingState,
 } from "./d0_working.js";
 import { type Core, CoreSchema } from "../core/schema.js";
+import { assembleCore } from "../core/assemble.js";
 import { readTypedCore } from "../core/core_io.js";
+import { maskNonBoundaryPeriods } from "../../shared/tex_text.js";
 import {
   loadSemanticManifest,
   validateCoreManifest,
@@ -171,21 +177,47 @@ export const D0_SOLVE_CAP = (() => {
  *  premise ("Suppose/Assume … such that / with …", or a new leading Assume/Suppose clause)
  *  that the prior statement did not have. Conservative — false positives route to review. */
 export function isAssumeTheCruxNarrowing(c: RawChange): boolean {
+  // Every `[^.]*` below runs on PERIOD-MASKED text: an abbreviation or decimal
+  // ("… are i.i.d. across …", "\(\alpha \le 0.05\)") otherwise ends the clause
+  // scan mid-premise — truncating `addedPremise` inside a TeX group, blinding
+  // the crux-word test, and making the i.i.d. whitelist entry unreachable.
+  const mask = (s: string | undefined) => maskNonBoundaryPeriods(s ?? "");
   const prem = /\b(suppose|assume)\b[^.]*\b(such that|with|so that)\b/i;
   const leadingPrem = /^\s*(suppose|assume)\b[^.]*\./i;
-  const leadingClause = (s: string | undefined) => s?.match(/^\s*(?:suppose|assume)\b[^.]*\./i)?.[0] ?? "";
+  const leadingClause = (s: string | undefined) => mask(s).match(/^\s*(?:suppose|assume)\b[^.]*\./i)?.[0] ?? "";
   const addedPremise = leadingClause(c.proposed).trim();
-  const currentText = c.current ?? "";
+  const currentText = mask(c.current);
   const cruxProofObject = /\b(chi[-\s]?square|χ²|least[-\s]?favo[u]?rable|separation|le\s*cam|fano|two[-\s]?point|packing|testing|witness|construction|family)\b/i;
-  const regimeWhitelist = /^\s*(suppose|assume)\b[^.]*\b(regime|setting|case|class|model|iid|i\.i\.d\.|independent|compact|finite|measurable|overlap|positivity|regularity|smooth|margin|sparsity|sub-?gaussian|well-specified|realizable|bounded|support|moment|integrable|dominated|tail|continuous|differentiable)\b[^.]*\./i;
-  const hadPremise = c.current !== undefined && prem.test(c.current);
-  const hasPremise = prem.test(c.proposed);
-  const hadLeadingPremise = c.current !== undefined && leadingPrem.test(c.current);
-  const hasLeadingPremise = leadingPrem.test(c.proposed);
+  // `i[.․]i[.․]d[.․]?` — the masked spelling of `i.i.d.` (mask sentinel ․) must
+  // stay whitelisted alongside the plain `iid`.
+  const REGIME_WORDS =
+    /\b(regime|setting|case|class|model|iid|i[.․]i[.․]d[.․]?|independent|compact|finite|measurable|overlap|positivity|regularity|smooth|margin|sparsity|sub-?gaussian|well-specified|realizable|bounded|support|moment|integrable|dominated|tail|continuous|differentiable)\b/i;
+  const regimeWhitelist = new RegExp(String.raw`^\s*(suppose|assume)\b[^.]*${REGIME_WORDS.source}[^.]*\.`, "i");
+  const hadPremise = c.current !== undefined && prem.test(mask(c.current));
+  const hasPremise = prem.test(mask(c.proposed));
+  const hadLeadingPremise = c.current !== undefined && leadingPrem.test(mask(c.current));
+  const hasLeadingPremise = leadingPrem.test(mask(c.proposed));
   const addedCruxPremise = addedPremise.length > 0 && !currentText.includes(addedPremise) && cruxProofObject.test(addedPremise);
   if (addedCruxPremise) return true; // why: generic words like bounded/family cannot whitelist proof-object premises that buy the crux.
   // AUDIT-B: whitelist only obvious regime restrictions; uncertain leading assumptions gate for review.
-  return (hasPremise && !hadPremise) || (hasLeadingPremise && !hadLeadingPremise && !regimeWhitelist.test(c.proposed));
+  // The whitelist is consulted on BOTH branches for the mid-text case: masking
+  // widened `prem`'s reach across decimals/abbreviations (its purpose), which
+  // otherwise flipped previously whitelisted regime narrowings ("overlap at
+  // level 0.05 with margin …") into gated findings via the un-whitelisted
+  // `hasPremise` branch. Suppression is deliberately narrow — EVERY
+  // suppose/assume clause must read as a pure regime restriction, and a crux
+  // word ANYWHERE in a clause vetoes it ("least-favorable family with bounded
+  // variance" is a crux premise even though "bounded" is a regime word; a crux
+  // in a SECOND premise must not hide behind a regime-only first one). False
+  // positives route to review; false negatives launder the crux.
+  const premiseClauses = [...mask(c.proposed).matchAll(/\b(?:suppose|assume)\b[^.]*/gi)].map((m) => m[0]);
+  const allPremisesPureRegime =
+    premiseClauses.length > 0 &&
+    premiseClauses.every((clause) => REGIME_WORDS.test(clause) && !cruxProofObject.test(clause));
+  return (
+    (hasPremise && !hadPremise && !allPremisesPureRegime) ||
+    (hasLeadingPremise && !hadLeadingPremise && !regimeWhitelist.test(mask(c.proposed)))
+  );
 }
 
 /** The DUAL of assume-the-crux: a narrowing that DROPS the node's load-bearing RESULT
@@ -196,12 +228,20 @@ export function isAssumeTheCruxNarrowing(c: RawChange): boolean {
  *  Detects a load-bearing construct present in `current` but absent in `proposed`. */
 export function isResultClassDegradation(c: RawChange): boolean {
   if (c.current === undefined) return false;
-  // load-bearing result constructs (minimax risk bound, equivalence, iff)
+  // load-bearing result constructs (minimax risk bound, equivalence, iff).
+  // `[\s\S]` (not `.`): these assertions are routinely typeset across lines in
+  // an `aligned` block, and a `.`-based scan missed every multi-line instance.
+  // `\ge`/`\geq` are the TeX spellings of the lower-bound comparator — the
+  // ASCII `>=` never occurs in real TeX, which made that construct a dead guard.
   const constructs: RegExp[] = [
-    /inf[_{\s].*sup[_{\s].*\bE_?P?\b/i, // inf_hat sup_P E|...|  (a minimax-risk assertion)
-    />=\s*c[_0-9]*\s*R_?n?\^?\*/i, //  >= c R_n^*  (a lower-bound on the rate)
-    /\bequivalent\b.*\bR_?n?\^?\*/i, // "equivalent ... to R_n^*"
-    /\bif and only if\b|\biff\b/i,
+    /inf[_{\s][\s\S]*sup[_{\s][\s\S]*\bE_?P?\b/i, // inf_hat sup_P E|...|  (a minimax-risk assertion)
+    /(?:>=|\\geq?\b)\s*c[_0-9]*\s*R_?n?\^?\*/i, //  >= c R_n^*  (a lower-bound on the rate)
+    /\bequivalent\b[\s\S]*\bR_?n?\^?\*/i, // "equivalent ... to R_n^*"
+    // ONE alternation for every equivalence spelling: with `\iff` matched only
+    // via the English-word branch (backslash is a \b boundary), a pure notation
+    // swap `\iff` → `\Leftrightarrow` read as "construct dropped" and falsely
+    // gated a meaning-preserving rewrite.
+    /\bif and only if\b|(?<!\\)\biff\b|\\iff\b|\\Longleftrightarrow\b|\\Leftrightarrow\b|\\equiv\b/i,
   ];
   for (const re of constructs) {
     if (re.test(c.current) && !re.test(c.proposed)) return true;
@@ -255,34 +295,66 @@ async function renderAndComplete(args: { ctx: PipelineContext; state: StateJson;
   // reachable from any non-lemma claim — an abandoned proof route's helper lemmas would
   // otherwise leak into the rendered paper. Done BEFORE render so the .tex is clean.
   let pruneNote = "";
-  // The core and the working state are read FAIL-LOUD, outside the best-effort
-  // prune below. They were previously read inside it, with `coreForGate` assigned
-  // as the try's last statement — so a failure reading a DIFFERENT file
-  // (proto_core.json, the try's first statement) left `coreForGate` null and
-  // silently skipped the cite-without-emit consistency gate entirely. That gate
-  // exists precisely to avoid an expensive D0.5 repair round; disabling it on an
-  // unrelated read error is the opposite of best-effort.
-  const coreForGate: Core = await readTypedCore(args.corePath);
+  // The working state is read FAIL-LOUD, outside the best-effort prune below.
+  // The gate core is DERIVED from (proto, working) through the pure render
+  // (Phase 1) — the same function that produced the committed core.json — so the
+  // gate checks the store truth, not a disk read-back. Only when the proto is
+  // unreadable or there is no cursor does it fall back to the published file.
   const workingForGate: WorkingState | null = await loadWorkingState(args.ctx);
+  let protoForPrune: Core | null = null;
   try {
-    const proto = await readTypedCore(protoCoreJsonPath(args.ctx));
-    const core = coreForGate;
+    protoForPrune = await readTypedCore(protoCoreJsonPath(args.ctx));
+  } catch (err) {
+    console.warn(`[D0] proto unreadable; orphan prune skipped, gate falls back to published core: ${err instanceof Error ? err.message : String(err)}`);
+  }
+  let coreForGate: Core =
+    protoForPrune !== null && workingForGate !== null
+      ? CoreSchema.parse(assembleCore(protoForPrune, workingForGate))
+      : await readTypedCore(args.corePath);
+  const mandateJournal = await readEscalationLog(args.ctx);
+  const pendingMandates = mandateJournal
+    .slice(Math.min(workingForGate?.escalation_entries_consumed ?? 0, mandateJournal.length))
+    .flatMap((entry) => entry.required_core_edit_mandates ?? []);
+  if ((workingForGate?.required_core_edit_mandates?.length ?? 0) > 0 || pendingMandates.length > 0) {
+    return {
+      stage: "0",
+      status: "checkpoint",
+      advance: false,
+      message:
+        "D0 cannot render or advance while independently adjudicated required core-edit mandates remain. " +
+        "Regenerate and apply the complete exact bundle first.",
+    };
+  }
+  try {
+    const proto = protoForPrune;
     const working = workingForGate;
-    if (working) {
-      const { pruned, protoOrphans } = pruneOrphanLemmas(core, working, proto);
+    if (proto && working) {
+      const { pruned, protoOrphans } = pruneOrphanLemmas(coreForGate, working, proto);
       if (pruned.length > 0) {
-        await writeFile(args.corePath, JSON.stringify(core, null, 2), "utf8");
+        // Publication state is data (Phase 1): a pruned PROTO-resident lemma
+        // stays in the frozen proto until the orchestrator edits it out, so the
+        // durable prune record is what keeps every later render from
+        // resurrecting it. Agent lemmas are pruned by deleting their records.
+        if (protoOrphans.length > 0) {
+          working.pruned_proto_orphans = [
+            ...new Set([...(working.pruned_proto_orphans ?? []), ...protoOrphans]),
+          ];
+        }
+        coreForGate = CoreSchema.parse(assembleCore(proto, working));
+        working.store_format = WORKING_STORE_FORMAT;
+        await writeFile(args.corePath, JSON.stringify(coreForGate, null, 2), "utf8");
         await saveWorkingState(args.ctx, working);
         pruneNote =
           `\nPruned ${pruned.length} orphan lemma(s) no longer reachable from any result: ${pruned.join(", ")}.` +
           (protoOrphans.length > 0
-            ? ` Of these, ${protoOrphans.join(", ")} also live in the frozen proto — remove them from the proto to keep a re-solve from re-assembling them.`
+            ? ` Of these, ${protoOrphans.join(", ")} also live in the frozen proto (recorded in the working ` +
+              `state's pruned_proto_orphans so no render resurrects them; remove them from the proto to retire the record).`
             : "");
       }
     }
   } catch (err) {
-    // Genuinely best-effort now: this catch covers ONLY the proto read and the
-    // orphan prune. The gate below runs regardless, on an already-parsed core.
+    // Genuinely best-effort: this catch covers ONLY the orphan prune. The gate
+    // below runs regardless, on an already-parsed core.
     console.warn(`[D0] orphan-lemma prune skipped: ${err instanceof Error ? err.message : String(err)}`);
   }
 
@@ -308,7 +380,17 @@ async function renderAndComplete(args: { ctx: PipelineContext; state: StateJson;
       // and `NaN < 1` is false — silently skipping the heal and going straight to the halt.
       const heals = d0Counters(args.state).consistency_heals;
       if (workingForGate && heals < 1) {
-        for (const id of citers) delete workingForGate.solved[id];
+        // Invalidate the citing nodes by marking their records PARTIAL, not by
+        // deleting them (audit F2). Deleting an OEQ answer's record leaves its
+        // `resolved_oeqs` entry dangling — exactly the unrepairable state
+        // `saveWorkingState` refuses — and deleting an agent node's record erased
+        // its statement definition outright. Partial keeps the catalog and the
+        // resolution while forcing a re-derivation under the SAME id (the
+        // anti-churn rule that keeps an answered question answered).
+        for (const id of citers) {
+          const rec = workingForGate.solved[id];
+          if (rec !== undefined) rec.partial = true;
+        }
         await saveWorkingState(args.ctx, workingForGate);
         await appendEscalationLog(args.ctx, {
           round: 0,
@@ -431,6 +513,21 @@ export async function runStage0Typed(args: {
     if (auto.size !== 0 || gated.length === 0) {
       throw new Error("D0 proposed-change classifier invariant failed: every proposal must be gated");
     }
+    // A round that surfaced adjudicable proposals is PROGRESS, not a stuck solver, so it
+    // must not consume the circuit breaker's budget. That breaker exists to stop a
+    // RE-ROLL — blindly re-dispatching a non-deterministic solver at an unchanged root —
+    // but gating a proposal hands control to the orchestrator, which adjudicates and
+    // applies it, and the root therefore changes before the next dispatch. Charging both
+    // outcomes alike mislabelled this run 20-to-1: 20 adjudication halts against a single
+    // genuinely incomplete round, and a well-behaved run that correctly gated every change
+    // tripped a breaker meant for a solver making no progress.
+    //
+    // Roll back only on this path. The increment is deliberately persisted BEFORE dispatch
+    // so that a round dying in a merge-gate throw still costs budget (otherwise a repeated
+    // mechanical abort re-dispatches forever), and an incomplete round below still costs
+    // budget too — both protections are untouched.
+    args.state.flags.d0_loop_counters = { ...d0Counters(args.state), solve_rounds: round };
+    await saveState(args.ctx.repoRoot, args.ctx.qid, args.ctx.specialization, args.state);
     return {
       ...solved,
       message:
@@ -470,7 +567,7 @@ export async function runStage0_5Typed(args: {
   deps: StageDeps;
 }): Promise<StageResult> {
   // D0.R edits are provisional until a subsequent core panel passes. Snapshot every
-  // artifact and in-memory state field D0.R may mutate so a non-converging/failing
+  // durable and in-memory state field D0.R may mutate so a non-converging/failing
   // review cannot contaminate the authoritative D0 package or a same-revision resume.
   const corePath = coreJsonPath(args.ctx);
   const texPath = artifactPaths(args.ctx, args.state).tex;
@@ -491,7 +588,6 @@ export async function runStage0_5Typed(args: {
   }
   const transaction = {
     core: await readFile(corePath, "utf8"),
-    tex: existsSync(texPath) ? await readFile(texPath, "utf8") : null,
     pending: existsSync(pendingPath) ? await readFile(pendingPath, "utf8") : null,
     designDecisions: structuredClone(args.state.design_decisions),
     addedAssumptions: structuredClone(args.state.added_assumptions),
@@ -506,8 +602,6 @@ export async function runStage0_5Typed(args: {
   const rollbackUnvettedD0R = async (): Promise<void> => {
     if (!d0rTouched || d0_5Passed) return;
     await writeFile(corePath, transaction.core, "utf8");
-    if (transaction.tex === null) await rm(texPath, { force: true });
-    else await writeFile(texPath, transaction.tex, "utf8");
     if (transaction.pending === null) await rm(pendingPath, { force: true });
     else await writeFile(pendingPath, transaction.pending, "utf8");
     args.state.design_decisions = transaction.designDecisions;
@@ -517,10 +611,78 @@ export async function runStage0_5Typed(args: {
   try {
   let prevKeys = new Set<string>();
   let lastReview: Stage0_5CoreResult | null = null;
+  const target = args.ctx.noveltyTarget ?? "field";
+  const floor = TARGET_FLOOR_LABEL[target];
+  // The triage tier read (see below). Survives past its own round so that a LATER
+  // non-pass exit — cap exhaustion, a round-3 backstop — still reports it, labelled as
+  // the first-round read it is.
+  let triage: GeneralReviewResult | null = null;
+  const triageNote = (): string => (triage ? formatTriageTier(triage, target) : "");
   const reviseStart = d0Counters(args.state).revise_rounds;
-  for (let round = reviseStart; round < D0_REVISE_CAP; round++) {
-    args.state.flags.d0_loop_counters = { ...d0Counters(args.state), revise_rounds: round + 1 };
-    const review = await runStage0_5Core(args);
+  // Three D0.R EDITS require up to four panel reads: the initial read plus one
+  // verification read after each edit.  The old `< D0_REVISE_CAP` bound made the
+  // third edit at round 2 and then exited without ever reviewing it; `finally`
+  // correctly rolled that unvetted edit back, turning a successful final repair
+  // into a cap checkpoint.  Permit one verification-only round at the bound, but
+  // never dispatch D0.R from that round, so the edit budget remains exactly three.
+  for (let round = reviseStart; round <= D0_REVISE_CAP; round++) {
+    // D0.5.G TRIAGE — dispatched CONCURRENTLY with the core panel on the first round of
+    // each D0.5 invocation, instead of strictly after a panel pass.
+    //
+    // What it buys: every non-pass exit below routes back to a D0 re-solve while carrying
+    // no tier, so the pipeline repeatedly paid for re-derivations of notes the cold referee
+    // would have killed on sight. One concurrent read supplies that signal to all of them,
+    // and licenses the early kill further down.
+    //
+    // What it COSTS — a real net spend, not a free win. When the panel passes on this same
+    // round the verdict is reused below (same core, no write in between, same prompt), so
+    // that path is unchanged and merely stops waiting for the referee serially. Every OTHER
+    // path of an invocation that reaches here — fail, both backstops, D0.R escalation, cap
+    // exhaustion, citation halt, and revise-then-pass (which re-reads authoritatively on the
+    // later round) — pays one extra call of the run's priciest model
+    // (MODEL_PLAN.stage0_5_general is codexKernel/high vs the panel's mechanicalTier).
+    //
+    // In aggregate that is roughly an EIGHTFOLD increase in cold-referee calls, not a
+    // rounding error: measured over the 47 pipeline.jsonl histories under doc/research as of
+    // 2026-07-31, 206 D0.5 halts previously bought ~24 referee calls (only the 16 PASS + 8
+    // below-floor halts reached the pass branch); one call per invocation makes it ~206. The
+    // tier signal on every non-pass exit, and the early kill, are bought at that price.
+    //
+    // Why the FIRST round of each invocation, not round 0 of the run: `revise_rounds` is
+    // persisted, so after a non-pass halt the operator injects a D0 directive and re-runs,
+    // and D0.5 re-enters with reviseStart > 0. Keying on round 0 would give the tier only to
+    // the very first invocation and starve exactly the re-solve cycle this signal exists to
+    // inform — the cycle where a fresh D0 derivation is most likely to have moved the tier.
+    //
+    // Why not EVERY round: D0.R repairs the proofs this referee grades, so its tier can move
+    // across rounds — a stale verdict is not a safe stand-in for the authoritative call
+    // (hence `roundTriage` below) — but re-dispatching each round would multiply the cost
+    // above for a kernel that a directed in-place repair rarely changes.
+    const wantTriage = round === reviseStart;
+    const [coreSettled, genSettled] = await Promise.allSettled([
+      runStage0_5Core(args),
+      wantTriage
+        ? runGeneralReview({ ctx: args.ctx, state: args.state, deps: args.deps, attempt: round + 1 })
+        : Promise.resolve(null),
+    ]);
+    if (wantTriage) {
+      // A cold-referee failure is ADVISORY here and must not fail the stage on a round
+      // the panel may yet pass: the pass branch below re-runs it authoritatively, where a
+      // throw is the correct (and unchanged) behaviour.
+      if (genSettled.status === "fulfilled") triage = genSettled.value;
+      else {
+        const reason = genSettled.reason instanceof Error ? genSettled.reason.message : String(genSettled.reason);
+        console.warn(`[causalsmith] D0.5.G triage referee failed (advisory, continuing): ${reason}`);
+      }
+    }
+    // Settle both before rethrowing, so a panel throw cannot orphan a running codex
+    // referee. The cost is that a fast panel precondition throw (missing core, bad node id)
+    // now waits out the referee — acceptable, since that run is already failing.
+    if (coreSettled.status === "rejected") throw coreSettled.reason;
+    const review = coreSettled.value;
+    // This round's read only — `null` on every later round, so a stale verdict can never
+    // stand in for the authoritative call.
+    const roundTriage = genSettled.status === "fulfilled" ? genSettled.value : null;
     lastReview = review;
     const citationCheckpoint = citationVerificationCheckpoint(review);
     if (citationCheckpoint) {
@@ -546,7 +708,7 @@ export async function runStage0_5Typed(args: {
         targetIds: [],
         provenanceOnly: true,
       });
-      return citationCheckpoint;
+      return { ...citationCheckpoint, message: citationCheckpoint.message + triageNote() };
     }
     if (review.overall === "pass") {
       // D0.5.G — cold tier referee. The core panel checked math soundness node by
@@ -554,20 +716,23 @@ export async function runStage0_5Typed(args: {
       // and at the target level?". It is TOLD the novelty floor and assesses the tier
       // of the PROVED content, then gates the pass on it. Recorded on every run so the
       // tier is greppable history (the gap the core panel's concise verdict left).
-      const target = args.ctx.noveltyTarget ?? "field";
-      const floor = TARGET_FLOOR_LABEL[target];
-      const gen = await runGeneralReview({
-        ctx: args.ctx,
-        state: args.state,
-        deps: args.deps,
-        attempt: round + 1,
-      });
+      //
+      // Reuse this round's TRIAGE read when there is one: it was dispatched against the
+      // same core this panel just passed, with no write in between, from the same prompt —
+      // so it is the authoritative verdict, already paid for. Any other round (or a failed
+      // triage dispatch) runs the referee here, exactly as before.
+      const gen =
+        roundTriage ??
+        (await runGeneralReview({
+          ctx: args.ctx,
+          state: args.state,
+          deps: args.deps,
+          attempt: round + 1,
+        }));
       const meetsFloor = tierRank(gen.tier) >= tierRank(floor);
       if (meetsFloor) {
-        // D0.R writes only core.json + a deterministic TeX preview. Before its
-        // provisional transaction commits, rebuild the verified publication
-        // bundle so a passing D0.5 cannot advance with PDF/log files from the
-        // pre-revision core. runStage0Render publishes nothing on compile failure.
+        // D0.R edits core.json only. Publish the revised source preview once,
+        // after the complete D0.5 panel and tier gate have accepted the edit.
         if (d0rTouched) await runStage0Render({ ctx: args.ctx, state: args.state });
         // D0.R is transactional across the ENTIRE D0.5 gate. Core-panel approval
         // alone is insufficient: a below-floor cold review leaves the run at D0,
@@ -642,6 +807,10 @@ export async function runStage0_5Typed(args: {
       };
     }
     if (review.overall === "fail") {
+      // A math `fail` keeps precedence over the triage tier: it halts here regardless, so
+      // nothing is saved by pre-empting it, and a load-bearing defect is the more
+      // actionable report. The tier rides along instead — this is a re-solve directive,
+      // and the operator should not commit to one without knowing the note's ceiling.
       await injectD0ReviewDirective({
         ctx: args.ctx,
         reason: "The D0.5 whole-paper/core panel found a load-bearing defect that requires D0 re-derivation.",
@@ -655,7 +824,35 @@ export async function runStage0_5Typed(args: {
         message:
           `Stage 0.5 (typed) FAIL on round ${round} — the math note has a defect the directed ` +
           `revise cannot fix in place. Findings: ${summarize(review.verdicts)}.` +
-          ` Provide guidance via the D0 directive (a new direction / a paper to adapt / a reframing) and re-run, or rewind D0/D-1.2.`,
+          ` Provide guidance via the D0 directive (a new direction / a paper to adapt / a reframing) and re-run, or rewind D0/D-1.2.` +
+          triageNote(),
+      };
+    }
+    // Proposal-taxonomy findings compare against state/proto surfaces outside
+    // D0.R's core.json capability. Route them after pass/fail precedence but
+    // before convergence, triage, cap, or edit charging.
+    const proposalRoute = proposalFindingRoute(review);
+    if (proposalRoute) {
+      await injectD0ReviewDirective({
+        ctx: args.ctx,
+        reason:
+          `D0.5 proposal/statement finding is outside D0.R scope: ${proposalRoute.labels.join(", ")}. ` +
+          proposalRoute.action,
+        payload: { stage: "D0.5", overall: review.overall, verdicts: review.verdicts },
+        targetIds: [],
+        // A topic/redraft/tier choice must not pre-commit a pending D0 re-solve.
+        // Preserve the paid verdict, then let the orchestrator inject an actionable
+        // directive only after it adjudicates the category-specific action.
+        provenanceOnly: true,
+      });
+      return {
+        stage: "0.5",
+        status: "checkpoint",
+        advance: false,
+        message:
+          `Stage 0.5 (typed) finding outside D0.R core-edit scope — ${proposalRoute.labels.join(", ")}. ` +
+          `${proposalRoute.action}; no D0.R edit was dispatched or charged.` +
+          triageNote(),
       };
     }
     // Loop-level non-convergence escalation (robust early-escalation): if a finding
@@ -664,7 +861,13 @@ export async function runStage0_5Typed(args: {
     // (D0.R self-escalation via `revised.escalate` only fires when D0.R itself reports
     // "failed"; this catches the case where D0.R keeps producing edits that don't land.)
     const curKeys = findingKeys(review.verdicts);
-    const convergence = decideReviseConvergence(round > 0 ? prevKeys : null, curKeys);
+    // `prevKeys` is per-INVOCATION state, initialized empty above, so "is there a previous
+    // round to compare against?" is `round > reviseStart`, not `round > 0`. On a resume
+    // (reviseStart >= 1) the old test passed the still-empty set as a real previous round,
+    // and `curKeys.size >= 0` is vacuously true — so the very first round of every resumed
+    // invocation fell straight through to the no-net-progress backstop and halted with
+    // "D0.R round N made no net progress (0 → N findings)" before D0.R had run even once.
+    const convergence = decideReviseConvergence(round > reviseStart ? prevKeys : null, curKeys);
     {
       if (convergence.kind === "persistent-findings") {
         const persistent = convergence.persistent;
@@ -682,7 +885,8 @@ export async function runStage0_5Typed(args: {
             `Stage 0.5 (typed) non-converging — finding(s) survived a D0.R edit and are still flagged on ` +
             `round ${round}: ${persistent.slice(0, 8).join(", ")}. The directed revise cannot resolve these ` +
             `in place (likely a genuine open gap needing a new idea). Open findings: ${summarize(review.verdicts)}.` +
-            ` Provide guidance via the D0 directive (a new direction / a paper to adapt / a reframing) and re-run, or rewind D0/D-1.2.`,
+            ` Provide guidance via the D0 directive (a new direction / a paper to adapt / a reframing) and re-run, or rewind D0/D-1.2.` +
+            triageNote(),
         };
       }
       // No-net-progress backstop — see decideReviseConvergence.
@@ -702,12 +906,92 @@ export async function runStage0_5Typed(args: {
             `(${prevKeys.size} → ${curKeys.size} findings; different findings each round = whack-a-mole, ` +
             `typically a class of fixes that needs proto/def changes or new math beyond an in-place core edit). ` +
             `Open findings: ${summarize(review.verdicts)}.` +
-            ` Provide guidance via the D0 directive (a new direction / a paper to adapt / a reframing) and re-run, or rewind D0/D-1.2.`,
+            ` Provide guidance via the D0 directive (a new direction / a paper to adapt / a reframing) and re-run, or rewind D0/D-1.2.` +
+            triageNote(),
         };
       }
     }
+    // D0.5.G TRIAGE KILL — the only authority a triage read has to end the run, and it
+    // fires only on `below floor AND no bounded fix` (see decideTriageKill). Reached only
+    // on a `revise`: `pass` and `fail` return above, so this cannot pre-empt either. What
+    // it stops is the remaining revise budget plus the D0 re-solve that would follow it,
+    // on a note whose kernel the referee says cannot reach the bar.
+    if (roundTriage && decideTriageKill(roundTriage, target)) {
+      // The verdict this writes to reviews.jsonl is `reject`/`novelty`, and the bank
+      // decision tree reads a novelty reject as "still mathematically sound → bank
+      // downgraded". That does NOT hold here: the panel returned `revise` and its findings
+      // are unrepaired, so soundness is simply unknown. Say so in the critique the
+      // orchestrator reads, or a defective note gets banked as merely under-novel. It goes on
+      // BOTH `verbatim_critique` and `halt_reason`: they are separate fields of the same
+      // serialized verdict, so caveating only one leaves the other reading clean.
+      const verdict = buildGeneralTierVerdict(roundTriage, target, false);
+      const caveat =
+        `\n\nHALTED AT TRIAGE: the math panel returned \`revise\` and its findings were never repaired, ` +
+        `so this note is NOT established as mathematically sound — do not bank it as downgraded on this ` +
+        `verdict alone. Open findings: ${summarize(review.verdicts)}`;
+      // `halt_reason` is written by buildGeneralTierVerdict through a cast and is not on the
+      // declared union, so reach both fields through one view of the freshly-built local.
+      const text = verdict as { verbatim_critique?: string; halt_reason?: string };
+      text.verbatim_critique = `${text.verbatim_critique ?? ""}${caveat}`;
+      text.halt_reason = `${text.halt_reason ?? ""}${caveat}`;
+      // Drop the routing field for the same reason. `tier_genuinely_below` is what
+      // bank_entry's `reusableFromGap` maps to `not_reusable` ("not worth retrying with a
+      // stronger solver") when the operator gives no explicit --reusable. That is far too
+      // strong a conclusion to draw from a mid-repair advisory read — the exact under-tiering
+      // this referee is documented to do. Absent, the mapping falls back to `unknown`, which
+      // leaves the call with the operator.
+      delete (verdict as { proposal_promise_gap?: string }).proposal_promise_gap;
+      await appendReview(args.ctx, "stage_0.5.G", round + 1, verdict).catch(() => {});
+      await injectD0ReviewDirective({
+        ctx: args.ctx,
+        reason:
+          "D0.5.G triage placed the paper below the novelty floor with NO bounded fix in scope, before the " +
+          "directed-revise loop spent its budget. Recorded for provenance alongside the still-open panel " +
+          "findings; do not re-solve on this entry alone.",
+        payload: {
+          stage: "D0.5.G.triage",
+          target,
+          floor,
+          general_review: roundTriage,
+          overall: review.overall,
+          verdicts: review.verdicts,
+        },
+        // Non-salvageable carries no targets by nature; without this the next resume would
+        // force-open the whole paper.
+        targetIds: [],
+        provenanceOnly: true,
+      });
+      return {
+        stage: "0.5",
+        status: "checkpoint",
+        advance: false,
+        // The referee's critique goes BEHIND the marker (via triageNote), not inline: the
+        // playbook classifies on the text before it, and free-text prose containing
+        // "non-converging" or "< floor" would otherwise pick the branch.
+        message:
+          `Stage 0.5 (typed) BELOW NOVELTY FLOOR (triage, round ${round}) — D0.5.G tier=${roundTriage.tier} ` +
+          `< floor=${floor} (target=${target}) and NOT salvageable in scope, so the directed-revise loop was ` +
+          `stopped before spending its budget on a note that cannot clear the bar.\n` +
+          `Panel findings left unrepaired (the tier, not these, is the reason for the halt): ${summarize(review.verdicts)}.\n` +
+          `Not salvageable within scope — bank downgraded, or re-anchor the proposal (rewind D-1.2).` +
+          triageNote(),
+      };
+    }
     prevKeys = curKeys;
-    // revise → directed D0.R edit (edits core in place + re-renders), then re-review.
+    // The last allowed D0.R edit has now received its verification panel.  If it
+    // still did not pass, fall through to the bounded cap checkpoint below; do
+    // not silently grant a fourth repair.
+    if (round === D0_REVISE_CAP) break;
+    // revise → directed D0.R core-only edit, then re-review. Rendering waits
+    // until the complete D0.5 gate accepts the provisional transaction.
+    // Persist budget use only when an edit is actually dispatched. Panel reads that
+    // pass, fail, hit citation access, or halt below-floor do not consume D0.R edits.
+    // Arm the counter before dispatch so a worker crash cannot grant a free reroll.
+    args.state.flags.d0_loop_counters = {
+      ...d0Counters(args.state),
+      revise_rounds: round + 1,
+    };
+    await saveState(args.ctx.repoRoot, args.ctx.qid, args.ctx.specialization, args.state);
     d0rTouched = true;
     const revised = await runStage0RCore({ ctx: args.ctx, state: args.state, deps: args.deps, review });
     // D0.R early-escalation: if the directed edit reports the findings are NOT fixable
@@ -727,7 +1011,8 @@ export async function runStage0_5Typed(args: {
         message:
           `Stage 0.5 (typed) D0.R escalated on round ${round} (before cap) — the directed revise cannot fix ` +
           `the findings in place: ${revised.escalate.reason}\nOpen findings: ${summarize(review.verdicts)}.` +
-          ` Provide guidance via the D0 directive (a new direction / a paper to adapt / a reframing) and re-run, or rewind D0/D-1.2.`,
+          ` Provide guidance via the D0 directive (a new direction / a paper to adapt / a reframing) and re-run, or rewind D0/D-1.2.` +
+          triageNote(),
       };
     }
   }
@@ -744,7 +1029,9 @@ export async function runStage0_5Typed(args: {
     stage: "0.5",
     status: "checkpoint",
     advance: false,
-    message: `Stage 0.5 (typed) revise cap exhausted (${D0_REVISE_CAP} rounds, CARRIED across resumes) without PASS — likely a genuine open gap. Provide guidance via the D0 directive (a new direction / a paper to adapt / a reframing) and re-run, or rewind D0/D-1.2.`,
+    message:
+      `Stage 0.5 (typed) revise cap exhausted (${D0_REVISE_CAP} rounds, CARRIED across resumes) without PASS — likely a genuine open gap. Provide guidance via the D0 directive (a new direction / a paper to adapt / a reframing) and re-run, or rewind D0/D-1.2.` +
+      triageNote(),
   };
   } finally {
     await rollbackUnvettedD0R();
@@ -817,11 +1104,16 @@ export function partitionReviewTargets(
  *  PERSISTING finding on the same key across a re-word that changes only spacing
  *  or punctuation. */
 function noteGlobalDiscriminator(oneLine: string | undefined): string {
+  // Case is KEPT: lowercasing before the strip collapsed every case-paired TeX
+  // symbol (`\Sigma` vs `\sigma`, `\Pi` vs `\pi`) — two DIFFERENT defects then
+  // shared a key across rounds and the run halted as "non-converging" while
+  // D0.R was in fact fixing one defect per round.
   return (oneLine ?? "")
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/[^A-Za-z0-9\s]/g, "")
     .replace(/\s+/g, " ")
     .trim()
+    // Sentence-initial capitalization is a re-word, not a distinction.
+    .replace(/^[A-Z]/, (c) => c.toLowerCase())
     .slice(0, 80);
 }
 

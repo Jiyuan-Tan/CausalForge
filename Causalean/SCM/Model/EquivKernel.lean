@@ -37,9 +37,11 @@ open scoped MeasureTheory ProbabilityTheory
 -- § 8. Cross-SCM evalMap agreement under `SCM.Equiv`
 -- ============================================================
 
-/-- Helper: equality of `structFun` applications across `SCM.Equiv`-related
-    SCMs, given pointwise agreement of the parent tuples through the
-    parent-set equality.
+/-- Equivalent structural graphs with matching structural functions produce the
+    same output at an observed node whenever corresponding parent values agree.
+
+    Helper: equality of `structFun` applications across equivalent SCMs, given
+    pointwise agreement of the parent tuples through the parent-set equality.
 
     Proof sketch: lift the target to `HEq` via `eq_of_heq`, then build the HEq
     of the applied forms using `dcongr_heq` (for dependent application) +
@@ -48,7 +50,7 @@ open scoped MeasureTheory ProbabilityTheory
     `Function.hfunext` using `Equivalent.parents_eq` for the subtype-domain
     equality, and subtype HEq comparisons reduce to `.val` equality via
     `Subtype.heq_iff_coe_eq`. -/
-private theorem structFun_apply_eq_of_equiv
+theorem structFun_apply_eq_of_equiv
     {M₁ M₂ : Causalean.SCM N Ω}
     (hGraph : SWIGGraph.Equivalent M₁.toSWIGGraph M₂.toSWIGGraph)
     (hSF : HEq M₁.structFun M₂.structFun)
@@ -61,7 +63,8 @@ private theorem structFun_apply_eq_of_equiv
           ξ₁ ⟨p, hp₁⟩ = ξ₂ ⟨p, hp₂⟩) :
     M₁.structFun ⟨v, hv_obs₁⟩ ξ₁ = M₂.structFun ⟨v, hv_obs₂⟩ ξ₂ := by
   have hObsEq : M₁.observed = M₂.observed := hGraph.2.2.1
-  have pEq : M₁.dag.parents v = M₂.dag.parents v := hGraph.parents_eq v
+  have pEq : M₁.dag.parents v = M₂.dag.parents v :=
+    SWIGGraph.Equivalent.parents_eq hGraph.1 v
   -- Target: both sides live in `swigΩ Ω v`.  Lift to HEq, then back to Eq.
   apply eq_of_heq
   -- Step 1: HEq of the `structFun` applications at `⟨v, ·⟩`.
@@ -84,7 +87,7 @@ private theorem structFun_apply_eq_of_equiv
       -- Output β is `((w : ...parents t.val) → ...) → swigΩ Ω t.val`, depends on t.val.
       rw [hval]
       -- Remaining type difference is in parents via `M₁.dag.parents` vs `M₂.dag.parents`.
-      rw [hGraph.parents_eq t₂.val]
+      rw [SWIGGraph.Equivalent.parents_eq hGraph.1 t₂.val]
     · intro _ _; exact hSF
   -- Step 2: HEq of the parent tuples.
   have hξHeq : HEq ξ₁ ξ₂ := by
@@ -118,7 +121,9 @@ private theorem structFun_apply_eq_of_equiv
     both sides via `evalMap_observed_unfold` to a `structFun ∘ parents-dispatch`
     form and then using `Equivalent.parents_eq` + `HEq structFun` + IH to close. -/
 theorem evalMap_eq_of_equiv
-    {M₁ M₂ : Causalean.SCM N Ω} (h : SCM.Equiv M₁ M₂)
+    {M₁ M₂ : Causalean.SCM N Ω}
+    (hGraph : SWIGGraph.Equivalent M₁.toSWIGGraph M₂.toSWIGGraph)
+    (hSF : HEq M₁.structFun M₂.structFun)
     (s₁ : FixedValues M₁) (ℓ₁ : LatentValues M₁)
     (s₂ : FixedValues M₂) (ℓ₂ : LatentValues M₂)
     (hs : ∀ {d : SWIGNode N} (hd₁ : d ∈ M₁.fixed) (hd₂ : d ∈ M₂.fixed),
@@ -128,7 +133,6 @@ theorem evalMap_eq_of_equiv
     {w : SWIGNode N} (hw₁ : w ∈ M₁.randomVars) (hw₂ : w ∈ M₂.randomVars) :
     M₁.evalMap s₁ ℓ₁ ⟨w, hw₁⟩ = M₂.evalMap s₂ ℓ₂ ⟨w, hw₂⟩ := by
   classical
-  rcases h with ⟨hGraph, _hET, hSF, _hLD⟩
   -- Case on `w ∈ M₁.observed` vs `w ∈ M₁.unobserved`.
   by_cases hw_obs₁ : w ∈ M₁.observed
   · -- Observed branch: strong induction on M₁-topological-index of `w`.
@@ -210,7 +214,9 @@ theorem evalMap_eq_of_equiv
     `HEq` on the (now same-typed) `latentDist` families to `Eq`, substitute,
     and close by `rfl`. -/
 theorem Equiv.heq_latentProduct
-    {M₁ M₂ : Causalean.SCM N Ω} (h : SCM.Equiv M₁ M₂) :
+    {M₁ M₂ : Causalean.SCM N Ω}
+    (hUnobs : M₁.unobserved = M₂.unobserved)
+    (hLD : HEq M₁.latentDist M₂.latentDist) :
     HEq M₁.latentProduct M₂.latentProduct := by
   obtain ⟨⟨dag₁, fixed₁, observed₁, unobserved₁,
            fio₁, oi₁, od₁, oou₁, foi₁, fou₁, aic₁, dc₁⟩,
@@ -218,11 +224,10 @@ theorem Equiv.heq_latentProduct
   obtain ⟨⟨dag₂, fixed₂, observed₂, unobserved₂,
            fio₂, oi₂, od₂, oou₂, foi₂, fou₂, aic₂, dc₂⟩,
          eT₂, iota₂, sf₂, mf₂, lD₂, pL₂⟩ := M₂
-  obtain ⟨_hEdge, _hFix, _hObs, hUnobs⟩ := h.1
   subst hUnobs
   -- After subst, lD₁, lD₂ : (u : {u // u ∈ unobserved₁}) → Measure (swigΩ Ω u.val)
   -- have the same type.
-  have hLD_eq : lD₁ = lD₂ := eq_of_heq h.2.2.2
+  have hLD_eq : lD₁ = lD₂ := eq_of_heq hLD
   subst hLD_eq
   -- Both sides are `Measure.pi (fun u => lD₁ u)`, the `pL₁`/`pL₂` measurability
   -- witnesses are `Subsingleton`.
@@ -237,21 +242,26 @@ theorem Equiv.heq_latentProduct
     kernel types match defeq, apply `Kernel.ext`, rewrite via
     `jointKernel_apply_eq`, and close pointwise with `evalMap_eq_of_equiv`. -/
 theorem Equiv.heq_jointKernel
-    {M₁ M₂ : Causalean.SCM N Ω} (h : SCM.Equiv M₁ M₂) :
+    {M₁ M₂ : Causalean.SCM N Ω}
+    (hGraph : SWIGGraph.Equivalent M₁.toSWIGGraph M₂.toSWIGGraph)
+    (hSF : HEq M₁.structFun M₂.structFun)
+    (hLD : HEq M₁.latentDist M₂.latentDist) :
     HEq M₁.jointKernel M₂.jointKernel := by
   -- Extract the latent-product HEq first, while `h` still has its
   -- original (non-destructured) type.  Chaining into `eq_of_heq` later
   -- would force the two `latentProduct` types to unify, prematurely
   -- identifying the M₁, M₂ metas of `heq_latentProduct`.
-  have h_lp : HEq M₁.latentProduct M₂.latentProduct := h.heq_latentProduct
+  have h_lp : HEq M₁.latentProduct M₂.latentProduct :=
+    Equiv.heq_latentProduct hGraph.2.2.2 hLD
+  have h_evalMap_eq := evalMap_eq_of_equiv hGraph hSF
   obtain ⟨⟨dag₁, fixed₁, observed₁, unobserved₁,
            fio₁, oi₁, od₁, oou₁, foi₁, fou₁, aic₁, dc₁⟩,
          eT₁, iota₁, sf₁, mf₁, lD₁, pL₁⟩ := M₁
   obtain ⟨⟨dag₂, fixed₂, observed₂, unobserved₂,
            fio₂, oi₂, od₂, oou₂, foi₂, fou₂, aic₂, dc₂⟩,
          eT₂, iota₂, sf₂, mf₂, lD₂, pL₂⟩ := M₂
-  rcases h.1 with ⟨_hEdge, rfl, rfl, rfl⟩
-  have hLD_eq : lD₁ = lD₂ := eq_of_heq h.2.2.2
+  rcases hGraph with ⟨_hEdge, rfl, rfl, rfl⟩
+  have hLD_eq : lD₁ = lD₂ := eq_of_heq hLD
   subst hLD_eq
   -- After subst: FixedValues, RandomValues, latentProduct all have matching types.
   apply heq_of_eq
@@ -271,7 +281,8 @@ theorem Equiv.heq_jointKernel
   congr 1
   apply funext
   rintro ⟨w, hw⟩
-  exact evalMap_eq_of_equiv h s ℓ s ℓ (fun _ _ => rfl) (fun _ _ => rfl) hw hw
+  exact h_evalMap_eq s ℓ s ℓ
+    (fun _ _ => rfl) (fun _ _ => rfl) hw hw
 
 /-- **HEq transport for `obsKernel`.**
 
@@ -280,17 +291,21 @@ theorem Equiv.heq_jointKernel
     coordinate-restriction function after the `observed`/`unobserved`
     Finsets are identified under `SWIGGraph.Equivalent`). -/
 theorem Equiv.heq_obsKernel
-    {M₁ M₂ : Causalean.SCM N Ω} (h : SCM.Equiv M₁ M₂) :
+    {M₁ M₂ : Causalean.SCM N Ω}
+    (hGraph : SWIGGraph.Equivalent M₁.toSWIGGraph M₂.toSWIGGraph)
+    (hSF : HEq M₁.structFun M₂.structFun)
+    (hLD : HEq M₁.latentDist M₂.latentDist) :
     HEq M₁.obsKernel M₂.obsKernel := by
-  have h_jk : HEq M₁.jointKernel M₂.jointKernel := h.heq_jointKernel
+  have h_jk : HEq M₁.jointKernel M₂.jointKernel :=
+    Equiv.heq_jointKernel hGraph hSF hLD
   obtain ⟨⟨dag₁, fixed₁, observed₁, unobserved₁,
            fio₁, oi₁, od₁, oou₁, foi₁, fou₁, aic₁, dc₁⟩,
          eT₁, iota₁, sf₁, mf₁, lD₁, pL₁⟩ := M₁
   obtain ⟨⟨dag₂, fixed₂, observed₂, unobserved₂,
            fio₂, oi₂, od₂, oou₂, foi₂, fou₂, aic₂, dc₂⟩,
          eT₂, iota₂, sf₂, mf₂, lD₂, pL₂⟩ := M₂
-  rcases h.1 with ⟨_hEdge, rfl, rfl, rfl⟩
-  have hLD_eq : lD₁ = lD₂ := eq_of_heq h.2.2.2
+  rcases hGraph with ⟨_hEdge, rfl, rfl, rfl⟩
+  have hLD_eq : lD₁ = lD₂ := eq_of_heq hLD
   subst hLD_eq
   apply heq_of_eq
   have hjk := eq_of_heq h_jk
@@ -310,30 +325,32 @@ theorem Equiv.heq_obsKernel
     shared SWIG indices, then rewrite the underlying `obsCondPairKernel`
     through `heq_obsKernel`.  The local `IsFiniteKernel` proofs inside
     `obsCondKernel` are proposition-valued and hence proof-irrelevant. -/
-theorem Equiv.heq_obsCondKernel
-    {M₁ M₂ : Causalean.SCM N Ω} (h : SCM.Equiv M₁ M₂)
+private theorem heq_obsCondKernel_aux
+    {M₁ M₂ : Causalean.SCM N Ω}
+    (hGraph : SWIGGraph.Equivalent M₁.toSWIGGraph M₂.toSWIGGraph)
+    (hSF : HEq M₁.structFun M₂.structFun)
+    (hLD : HEq M₁.latentDist M₂.latentDist)
     (Y CC : Finset (SWIGNode N))
     (hY₁ : Y ⊆ M₁.observed) (hY₂ : Y ⊆ M₂.observed)
     (hCC₁ : CC ⊆ M₁.observed) (hCC₂ : CC ⊆ M₂.observed)
     [StandardBorelSpace (ValuesOn Y (swigΩ Ω))]
     [Nonempty (ValuesOn Y (swigΩ Ω))]
-    [∀ s : M₁.FixedValues, MeasureTheory.IsFiniteMeasure (M₁.obsKernel s)]
-    [∀ s : M₂.FixedValues, MeasureTheory.IsFiniteMeasure (M₂.obsKernel s)]
     [MeasurableSpace.CountableOrCountablyGenerated
       (FixedValues M₁) (ValuesOn CC (swigΩ Ω))]
     [MeasurableSpace.CountableOrCountablyGenerated
       (FixedValues M₂) (ValuesOn CC (swigΩ Ω))] :
     HEq (M₁.obsCondKernel Y CC hY₁ hCC₁) (M₂.obsCondKernel Y CC hY₂ hCC₂) := by
   -- Extract obsKernel HEq while `h` still has its original type.
-  have h_ok : HEq M₁.obsKernel M₂.obsKernel := h.heq_obsKernel
+  have h_ok : HEq M₁.obsKernel M₂.obsKernel :=
+    Equiv.heq_obsKernel hGraph hSF hLD
   obtain ⟨⟨dag₁, fixed₁, observed₁, unobserved₁,
            fio₁, oi₁, od₁, oou₁, foi₁, fou₁, aic₁, dc₁⟩,
          eT₁, iota₁, sf₁, mf₁, lD₁, pL₁⟩ := M₁
   obtain ⟨⟨dag₂, fixed₂, observed₂, unobserved₂,
            fio₂, oi₂, od₂, oou₂, foi₂, fou₂, aic₂, dc₂⟩,
          eT₂, iota₂, sf₂, mf₂, lD₂, pL₂⟩ := M₂
-  rcases h.1 with ⟨_hEdge, rfl, rfl, rfl⟩
-  have hLD_eq : lD₁ = lD₂ := eq_of_heq h.2.2.2
+  rcases hGraph with ⟨_hEdge, rfl, rfl, rfl⟩
+  have hLD_eq : lD₁ = lD₂ := eq_of_heq hLD
   subst hLD_eq
   -- After substs, types on both sides match; `obsKernel`s are propositionally equal.
   have h_ok_eq : _ = _ := eq_of_heq h_ok
@@ -344,6 +361,36 @@ theorem Equiv.heq_obsCondKernel
   congr 1
   unfold SCM.obsCondPairKernel
   rw [h_ok_eq]
+
+/-- **HEq transport for `obsCondKernel`.**
+
+    Under structural equivalence, a conditional observational kernel built from
+    observed target and conditioning coordinates is the same for either model. -/
+theorem Equiv.heq_obsCondKernel
+    {M₁ M₂ : Causalean.SCM N Ω}
+    (hGraph : SWIGGraph.Equivalent M₁.toSWIGGraph M₂.toSWIGGraph)
+    (hSF : HEq M₁.structFun M₂.structFun)
+    (hLD : HEq M₁.latentDist M₂.latentDist)
+    (Y CC : Finset (SWIGNode N))
+    (hY₁ : Y ⊆ M₁.observed)
+    (hCC₁ : CC ⊆ M₁.observed)
+    [StandardBorelSpace (ValuesOn Y (swigΩ Ω))]
+    [Nonempty (ValuesOn Y (swigΩ Ω))]
+    [MeasurableSpace.CountableOrCountablyGenerated
+      (FixedValues M₁) (ValuesOn CC (swigΩ Ω))]
+    [MeasurableSpace.CountableOrCountablyGenerated
+      (FixedValues M₂) (ValuesOn CC (swigΩ Ω))] :
+    let hY₂ : Y ⊆ M₂.observed := by
+      intro v hv
+      rw [← hGraph.2.2.1]
+      exact hY₁ hv
+    let hCC₂ : CC ⊆ M₂.observed := by
+      intro v hv
+      rw [← hGraph.2.2.1]
+      exact hCC₁ hv
+    HEq (M₁.obsCondKernel Y CC hY₁ hCC₁) (M₂.obsCondKernel Y CC hY₂ hCC₂) := by
+  dsimp
+  apply heq_obsCondKernel_aux hGraph hSF hLD Y CC hY₁
 
 end SCM
 

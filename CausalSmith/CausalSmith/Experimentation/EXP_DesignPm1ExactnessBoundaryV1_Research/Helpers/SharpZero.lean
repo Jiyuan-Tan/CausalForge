@@ -97,7 +97,8 @@ lemma sharp_kappa_zero_reduced_min_iff (m : ℕ) (a b r kappa x y z : ℝ)
           0 s (ne_of_gt hq)
       simpa [hleft, hright] using hle
     have hface : t ∈ exposedMinFace (2 * (m : ℝ)) alpha :=
-      (kappa_zero_face (2 * (m : ℝ)) hM alpha beta t).1 ⟨htS, hwsMin⟩
+      (kappa_zero_face (2 * (m : ℝ)) alpha t).1
+        ⟨htS, by simpa [wsObj] using hwsMin⟩
     rcases hface with ⟨_htS, hsupport⟩
     refine ⟨?_, ?_, ?_⟩
     · intro hx
@@ -132,11 +133,12 @@ lemma sharp_kappa_zero_reduced_min_iff (m : ℕ) (a b r kappa x y z : ℝ)
       · exact (hyMin (by simpa [t] using hti)).2
       · exact (hzMin (by simpa [t] using hti)).1
       · exact (hzMin (by simpa [t] using hti)).2
-    have hwsMin := (kappa_zero_face (2 * (m : ℝ)) hM alpha beta t).2 hface
+    have hwsMin := (kappa_zero_face (2 * (m : ℝ)) alpha t).2 hface
     intro x' y' z' hT'
     let s : Fin 3 → ℝ := ![qParam m * x', y', z']
     have hsS : InSimplex (2 * (m : ℝ)) s := reducedTriangle_to_simplex m x' y' z' hq0 hT'
-    have hle := hwsMin.2 s hsS
+    have hle : wsObj alpha beta 0 t ≤ wsObj alpha beta 0 s := by
+      simpa [wsObj] using hwsMin.2 s hsS
     have hleft :
         wsObj alpha beta 0 t =
           reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) 0 x y z := by

@@ -117,31 +117,37 @@ theorem htVarEst_add_sub_eq_edgeSum (D : FiniteDesign Ω) (y : ι → Δ → ℝ
   simp only [Finset.sum_add_distrib, Finset.sum_sub_distrib, ← Finset.mul_sum]
   ring
 
+omit [Fintype Ω] [Fintype ι] [DecidableEq ι] in
 /-- `0 ≤ expoInd f θ i d z ≤ 1`: the exposure indicator is a 0/1 quantity. -/
 private lemma abs_expoInd_le_one (f : Ω → Θ → Δ) (θ : ι → Θ) (i : ι) (d : Δ) (z : Ω) :
     |expoInd f θ i d z| ≤ 1 :=
   abs_le.mpr ⟨le_trans (by norm_num) (FiniteDesign.ind_nonneg _ z), FiniteDesign.ind_le_one _ z⟩
 
+omit [Fintype Ω] [Fintype ι] [DecidableEq ι] in
 /-- The exposure indicator is idempotent: `(1ᵢ(d))² = 1ᵢ(d)`. -/
 private lemma expoInd_sq (f : Ω → Θ → Δ) (θ : ι → Θ) (i : ι) (d : Δ) (z : Ω) :
     (expoInd f θ i d z) ^ 2 = expoInd f θ i d z :=
   congrFun (FiniteDesign.ind_sq (fun z => expo f θ i z = d)) z
 
+omit [Fintype ι] [DecidableEq ι] in
 /-- The propensity `prop` lies in `[0,1]`: it is a probability. -/
 private lemma prop_mem_unit (D : FiniteDesign Ω) (f : Ω → Θ → Δ) (θ : ι → Θ) (i : ι) (d : Δ) :
     0 ≤ prop D f θ i d ∧ prop D f θ i d ≤ 1 :=
   ⟨D.Pr_nonneg _, D.Pr_le_one _⟩
 
+omit [Fintype ι] [DecidableEq ι] in
 /-- `propPairSame` is nonnegative (expectation of a product of two indicators). -/
 private lemma propPairSame_nonneg (D : FiniteDesign Ω) (f : Ω → Θ → Δ) (θ : ι → Θ) (i j : ι)
     (d : Δ) : 0 ≤ propPairSame D f θ i j d :=
   D.E_nonneg (fun z => mul_nonneg (FiniteDesign.ind_nonneg _ z) (FiniteDesign.ind_nonneg _ z))
 
+omit [Fintype ι] [DecidableEq ι] in
 /-- `propPairCross` is nonnegative (expectation of a product of two indicators). -/
 private lemma propPairCross_nonneg (D : FiniteDesign Ω) (f : Ω → Θ → Δ) (θ : ι → Θ) (i j : ι)
     (d d' : Δ) : 0 ≤ propPairCross D f θ i j d d' :=
   D.E_nonneg (fun z => mul_nonneg (FiniteDesign.ind_nonneg _ z) (FiniteDesign.ind_nonneg _ z))
 
+omit [Fintype ι] [DecidableEq ι] in
 /-- **Inverse-propensity-weighted summand bound.** The weighted observed outcome
 `1ₐ(d)·(Yₐ/πₐ)` is bounded by `c₁·c₂` whenever outcomes are bounded by `c₁` and the inverse
 propensity by `c₂`. -/
@@ -183,6 +189,7 @@ private lemma abs_centered_coeff_le {P πi πj c₃ : ℝ} (hP : 0 ≤ P) (hPinv
         _ = c₃ := one_mul c₃
     rw [abs_le]; constructor <;> linarith
 
+omit [Fintype ι] [DecidableEq ι] in
 /-- **Diagonal-variance summand bound.** `|diagVar d a z| ≤ c₁²·c₂²`. -/
 private lemma abs_diagVar_le (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : Ω → Θ → Δ) (θ : ι → Θ)
     (d : Δ) (a : ι) (z : Ω) {c₁ c₂ : ℝ} (hy : ∀ i d, |y i d| ≤ c₁)
@@ -204,6 +211,7 @@ private lemma abs_diagVar_le (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : 
         mul_le_mul hcoeff hAsq (sq_nonneg _) (by norm_num)
     _ = c₁ ^ 2 * c₂ ^ 2 := by ring
 
+omit [Fintype ι] [DecidableEq ι] in
 /-- **Young-correction summand bound.** `|diagCov dk dl a z| ≤ 2·c₁²·c₂`. -/
 private lemma abs_diagCov_le (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : Ω → Θ → Δ) (θ : ι → Θ)
     (dk dl : Δ) (a : ι) (z : Ω) {c₁ c₂ : ℝ} (hy : ∀ i d, |y i d| ≤ c₁)
@@ -239,6 +247,7 @@ private lemma abs_diagCov_le (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : 
     _ ≤ c₁ ^ 2 * c₂ + c₁ ^ 2 * c₂ := add_le_add (hterm dk hπk hπinvk) (hterm dl hπl hπinvl)
     _ = 2 * c₁ ^ 2 * c₂ := by ring
 
+omit [Fintype ι] [DecidableEq ι] in
 /-- **Off-diagonal variance summand bound.** `|offVar d i j z| ≤ (1+c₃)·c₁²·c₂²`. -/
 private lemma abs_offVar_le (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : Ω → Θ → Δ) (θ : ι → Θ)
     (d : Δ) (i j : ι) (z : Ω) {c₁ c₂ c₃ : ℝ} (hc₃ : 0 ≤ c₃) (hy : ∀ i d, |y i d| ≤ c₁)
@@ -264,6 +273,7 @@ private lemma abs_offVar_le (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : �
           (mul_nonneg hc₁c₂ hc₁c₂)
     _ = (1 + c₃) * c₁ ^ 2 * c₂ ^ 2 := by ring
 
+omit [Fintype ι] [DecidableEq ι] in
 /-- **Off-diagonal covariance summand bound.** `|offCov dk dl i j z| ≤ (1+c₃)·c₁²·c₂²`. -/
 private lemma abs_offCov_le (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : Ω → Θ → Δ) (θ : ι → Θ)
     (dk dl : Δ) (i j : ι) (z : Ω) {c₁ c₂ c₃ : ℝ} (hc₃ : 0 ≤ c₃) (hy : ∀ i d, |y i d| ≤ c₁)
@@ -290,10 +300,11 @@ private lemma abs_offCov_le (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : �
           (mul_nonneg hc₁c₂ hc₁c₂)
     _ = (1 + c₃) * c₁ ^ 2 * c₂ ^ 2 := by ring
 
+omit [Fintype ι] in
 /-- **Boundedness of the edge-function** (Conditions 1 + 1'): `|vb i j z| ≤ vbBound c₁ c₂ c₃`. -/
 theorem abs_vb_le (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : Ω → Θ → Δ) (θ : ι → Θ)
-    (dk dl : Δ) (hne : dk ≠ dl)
-    {c₁ c₂ c₃ : ℝ} (hc₁ : 0 ≤ c₁) (hc₂ : 0 ≤ c₂) (hc₃ : 0 ≤ c₃)
+    (dk dl : Δ) (_hne : dk ≠ dl)
+    {c₁ c₂ c₃ : ℝ} (_hc₁ : 0 ≤ c₁) (hc₂ : 0 ≤ c₂) (hc₃ : 0 ≤ c₃)
     (hy : ∀ i d, |y i d| ≤ c₁)
     (hπk : ∀ i, 0 < prop D f θ i dk) (hπl : ∀ i, 0 < prop D f θ i dl)
     (hπinvk : ∀ i, 1 / prop D f θ i dk ≤ c₂) (hπinvl : ∀ i, 1 / prop D f θ i dl ≤ c₂)
@@ -359,6 +370,7 @@ theorem abs_vb_le (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : Ω → Θ �
       mul_nonneg (mul_nonneg (sq_nonneg c₁) hc₂) hc₃,
       mul_nonneg (mul_nonneg (sq_nonneg c₁) (sq_nonneg c₂)) (by linarith : (0:ℝ) ≤ 1 + c₃)]
 
+omit [Fintype ι] in
 /-- **Off-edge vanishing.** If the same-exposure and cross-exposure pair propensities factor as
 products for an off-diagonal pair `i ≠ j`, then the centered-cross factors vanish and
 `vb i j = 0`; Condition 3 supplies these factorization hypotheses for non-adjacent pairs. -/
@@ -403,8 +415,8 @@ theorem var_htEdgeStat_le (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : Ω 
     unfold vbBound
     exact mul_nonneg (mul_nonneg (mul_nonneg (by norm_num) (by linarith)) (sq_nonneg c₁))
       (add_nonneg (sq_nonneg c₂) hc₂)
-  refine D.var_edge_sum_le (vb D y f θ dk dl) hMnn ?_ G hsymm hdeg ?_ hcov0
-  · exact fun i j z => abs_vb_le D y f θ dk dl hne hc₁ hc₂ hc₃ hy hπk hπl hπinvk hπinvl
+  refine D.var_edge_sum_le (vb D y f θ dk dl) G hMnn ?_ hsymm hdeg ?_ hcov0
+  · exact fun i j _ z => abs_vb_le D y f θ dk dl hne hc₁ hc₂ hc₃ hy hπk hπl hπinvk hπinvl
       hjk hjl hjc i j z
   · intro i j hGij
     rcases eq_or_ne i j with rfl | hij

@@ -45,8 +45,9 @@ For `m ≤ m' ≤ m0`, an `m'`-measurable set `s`, and integrable `f`,
 regression on the finer σ-algebra; masking and projecting to the coarser `m`
 commute with passing to it. -/
 theorem condExp_setIndicator_condExp_of_le
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]
     (hm : m ≤ m') (hm' : m' ≤ m0) [SigmaFinite (μ.trim hm')]
-    {s : Set Ω} (hs : MeasurableSet[m'] s) {f : Ω → ℝ} (hf : Integrable f μ) :
+    {s : Set Ω} (hs : MeasurableSet[m'] s) {f : Ω → E} (hf : Integrable f μ) :
     (μ[s.indicator f | m]) =ᵐ[μ] (μ[s.indicator (μ[f | m']) | m]) := by
   exact (MeasureTheory.condExp_condExp_of_le (μ := μ) (f := s.indicator f) hm hm').symm.trans
     (MeasureTheory.condExp_congr_ae (m := m) (μ := μ)

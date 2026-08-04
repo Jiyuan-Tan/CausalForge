@@ -1,5 +1,6 @@
 import { lintAnchors, lintDefinitionOrder, lintNegativeContributionFraming, lintReferences, parseAnchoredEnvs, repairObjRefs, type LintProblem } from "./tex_anchors.js";
 import { citedKeys, type BibEntry } from "./citations.js";
+import { maskNonBoundaryPeriods, stripTexComments } from "../shared/tex_text.js";
 import {
   normalizeRawModelJson,
   repairLatexStringsDeep,
@@ -69,15 +70,25 @@ export interface HardGateInput {
   bibEntries: BibEntry[];
 }
 
-/** Sentences of the paper that carry \cite commands, with their keys. */
+/** Sentences of the paper that carry \cite commands, with their keys.
+ * Boundaries are computed on a period-masked copy so `see, e.g. \citet{Foo}` /
+ * `cf. \citet{Bar}` are not split right before the citation — that handed the
+ * auditor a bare `\citep{…}` fragment with the supported claim cut off. */
 export function citingSentences(tex: string): { sentence: string; keys: string[] }[] {
-  const stripped = tex
-    .replace(/(?<!\\)%.*$/gm, "")
+  const stripped = stripTexComments(tex)
     // structural commands glue unrelated text into one "sentence"
     .replace(/\\(?:section|subsection|paragraph|label)\*?\{[^}]*\}/g, "\n")
     .replace(/\\(?:begin|end)\{[^}]*\}/g, "\n");
+  const masked = maskNonBoundaryPeriods(stripped); // 1:1 char replacement — offsets align
+  const sentences: string[] = [];
+  let start = 0;
+  for (const m of masked.matchAll(/(?<=[.!?])\s+(?=[A-Z\\])/g)) {
+    sentences.push(stripped.slice(start, m.index));
+    start = m.index! + m[0].length;
+  }
+  sentences.push(stripped.slice(start));
   const out: { sentence: string; keys: string[] }[] = [];
-  for (const sentence of stripped.split(/(?<=[.!?])\s+(?=[A-Z\\])/)) {
+  for (const sentence of sentences) {
     if (!/\\cite/.test(sentence)) continue;
     const keys = [...citedKeys(sentence)];
     if (keys.length > 0) out.push({ sentence: sentence.trim(), keys });

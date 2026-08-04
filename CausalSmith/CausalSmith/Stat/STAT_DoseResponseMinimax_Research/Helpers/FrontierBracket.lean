@@ -8,8 +8,7 @@ Authors: Jiyuan Tan
 Stage-2 scaffold. The certified frontier-bracket assembly
 `lem:certified-beta-frontier-bracket`: the all-β lower floor
 (`thm:sharp-pointwise-lower-bound`) together with the regime-by-regime `ρ_n`
-algebra. Packages NO same-class upper theorem. Feeds the `oeq` Prop. Every proof
-body is `sorry`.
+algebra. Packages NO same-class upper theorem. Feeds the `oeq` Prop.
 -/
 
 import CausalSmith.Stat.STAT_DoseResponseMinimax_Research.T_SharpPointwiseLowerBound

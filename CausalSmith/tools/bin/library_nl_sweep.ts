@@ -3,6 +3,7 @@ import { MODELS } from "../src/models.js";
 import { resolve, join } from "node:path";
 import { execSync } from "node:child_process";
 import { loadLibrary, isTier1, declArea, type LibDecl } from "../src/library/schema.js";
+import { runCodex } from "../src/shared/codex.js";
 
 /**
  * NL docstring sweep: dispatch codex (batched per source file, ≤ FILES_PER_CALL files
@@ -97,11 +98,17 @@ for (let i = 0; i < files.length; i += FILES_PER_CALL) {
   console.log(
     `codex batch ${i / FILES_PER_CALL + 1}/${Math.ceil(files.length / FILES_PER_CALL)}: ${batch.join(", ")}`,
   );
-  execSync(
-    `codex exec --full-auto -C ${root} --skip-git-repo-check -c windows.sandbox=unelevated ` +
-      `-c model=${MODELS.codexKernel} -c model_reasoning_effort=medium`,
-    { input: prompt, stdio: ["pipe", "inherit", "inherit"], timeout: 2400_000 },
-  );
+  const out = await runCodex({
+    prompt,
+    cwd: root,
+    model: MODELS.codexKernel,
+    reasoningEffort: "medium",
+    leanLsp: false,
+    webSearch: false,
+    inactivityTimeoutMs: 40 * 60 * 1000,
+  });
+  if (out.stdout.trim()) console.log(out.stdout.trim());
+  if (out.stderr.trim()) console.error(out.stderr.trim());
   if (!noVerify) {
     const modules = [...new Set(batch.map((f) => f.replace(/\//g, ".").replace(/\.lean$/, "")))];
     console.log(`verifying: lake build ${modules.join(" ")}`);

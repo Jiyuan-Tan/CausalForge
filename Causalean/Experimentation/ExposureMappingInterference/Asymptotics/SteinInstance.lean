@@ -180,12 +180,11 @@ The assumptions provide bounded summands with a vanishing bound, dependency neig
 nonzero variance, positive propensities, and the two Stein negligibility limits. -/
 theorem localDependenceCLT_of_stein (Exp : ℕ → Experiment) (dk dl : ∀ n, (Exp n).Δ)
     (N : ∀ n, (Exp n).ι → Finset ((Exp n).ι))
-    (hself : ∀ n i, i ∈ N n i)
     (hVar : ∀ n, 0 < (Exp n).D.Var
       (htEffect (Exp n).D (Exp n).y (Exp n).f (Exp n).θ (dk n) (dl n)))
     (hposk : ∀ n i, prop (Exp n).D (Exp n).f (Exp n).θ i (dk n) ≠ 0)
     (hposl : ∀ n i, prop (Exp n).D (Exp n).f (Exp n).θ i (dl n) ≠ 0)
-    (B : ℕ → ℝ) (hB : ∀ n, 0 ≤ B n) (hB0 : Tendsto B atTop (𝓝 0))
+    (B : ℕ → ℝ) (hB : ∀ n, 0 ≤ B n)
     (hbound : ∀ n i z, |(Exp n).effSummand (dk n) (dl n) i z| ≤ B n)
     (hindep : ∀ n i, IndepFun
       ((Exp n).effSummand (dk n) (dl n) i)
@@ -233,7 +232,7 @@ theorem localDependenceCLT_of_stein (Exp : ℕ → Experiment) (dk dl : ∀ n, (
     rfl
   -- Assemble the abstract Stein CLT, evaluated at each threshold.
   refine ⟨fun t => ?_⟩
-  have hclt := SteinMethod.stein_cdf_clt μ X N hmeas B hB hbound hmean hself hindep hvar
+  have hclt := SteinMethod.stein_cdf_clt μ X N hmeas B hB hbound hmean hindep hvar
     herr1' herr2' t
   -- Rewrite the limit point: `Φ(t) = (gaussianReal 0 1).real (Iic t)` by definition.
   rw [show stdNormalCdf t = (gaussianReal 0 1).real (Set.Iic t) from rfl]
@@ -256,12 +255,11 @@ This composes the discharged local-dependence central limit theorem with the exi
 theorem, so no separate central-limit premise remains. -/
 theorem wald_coverage_of_stein (Exp : ℕ → Experiment) (dk dl : ∀ n, (Exp n).Δ)
     (N : ∀ n, (Exp n).ι → Finset ((Exp n).ι))
-    (hself : ∀ n i, i ∈ N n i)
     (hVar : ∀ n, 0 < (Exp n).D.Var
       (htEffect (Exp n).D (Exp n).y (Exp n).f (Exp n).θ (dk n) (dl n)))
     (hposk : ∀ n i, prop (Exp n).D (Exp n).f (Exp n).θ i (dk n) ≠ 0)
     (hposl : ∀ n i, prop (Exp n).D (Exp n).f (Exp n).θ i (dl n) ≠ 0)
-    (B : ℕ → ℝ) (hB : ∀ n, 0 ≤ B n) (hB0 : Tendsto B atTop (𝓝 0))
+    (B : ℕ → ℝ) (hB : ∀ n, 0 ≤ B n)
     (hbound : ∀ n i z, |(Exp n).effSummand (dk n) (dl n) i z| ≤ B n)
     (hindep : ∀ n i, IndepFun
       ((Exp n).effSummand (dk n) (dl n) i)
@@ -282,7 +280,7 @@ theorem wald_coverage_of_stein (Exp : ℕ → Experiment) (dk dl : ∀ n, (Exp n
               (htEffect (Exp n).D (Exp n).y (Exp n).f (Exp n).θ (dk n) (dl n)))))
       Filter.atTop :=
   wald_coverage Exp dk dl
-    (localDependenceCLT_of_stein Exp dk dl N hself hVar hposk hposl B hB hB0 hbound hindep
+    (localDependenceCLT_of_stein Exp dk dl N hVar hposk hposl B hB hbound hindep
       herr1 herr2)
     hVar zq hzq0 hzq
 
@@ -325,7 +323,7 @@ theorem localDependenceCLT_of_conditions (Exp : ℕ → Experiment) (dk dl : ∀
       Experiment.E_studentizedEffect_sq _ _ _ (hVar n) (hposk n) (hposl n)]
   -- Assemble the dependency-graph Stein CLT (negligibility derived internally), at each threshold.
   refine ⟨fun t => ?_⟩
-  have hclt := SteinMethod.stein_cdf_clt_of_depGraph μ X Dg hmeas m hdeg B hB hbound hB0 hNB3
+  have hclt := SteinMethod.stein_cdf_clt_of_depGraph μ X Dg m hdeg B hB hbound hB0 hNB3
     hmean hvar t
   -- Rewrite the limit point: `Φ(t) = (gaussianReal 0 1).real (Iic t)` by definition.
   rw [show stdNormalCdf t = (gaussianReal 0 1).real (Set.Iic t) from rfl]

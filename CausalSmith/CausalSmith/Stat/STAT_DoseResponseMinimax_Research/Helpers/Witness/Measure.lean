@@ -102,7 +102,7 @@ lemma doseDataMeasure_map_X {d : ℕ}
     (m := mX) (κ₁ := fun _x : Fin d → ℝ => mA)
     (κ₂ := fun x a => twoPointMean B (mu a x))
     (g := fun x a y => DoseObs.mk y a x) (π := fun O : DoseObs d => O.X)
-    hκ1 hp1 hκ2 hp2 hg hmap hker measurable_doseObs_X (by intro x a y; rfl)
+    hp1 hp2 hg hmap hker measurable_doseObs_X (by intro x a y; rfl)
   simpa [doseDataMeasure, mX, mA, mu] using h
 
 -- @node: dose-witness-px-density

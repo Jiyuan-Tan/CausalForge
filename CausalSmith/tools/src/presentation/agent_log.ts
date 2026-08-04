@@ -52,9 +52,18 @@ export function withAgentLogging(deps: PaperDeps, logPath: string): PaperDeps {
     ...deps,
     runClaude: async (args) => {
       const t0 = Date.now();
+      // Pin the concrete model id in the log when the --model value is an alias.
+      let resolvedModel: string | undefined;
+      const forwarded = {
+        ...args,
+        onResolvedModel: (m: string) => {
+          resolvedModel = m;
+          args.onResolvedModel?.(m);
+        },
+      };
       try {
-        const out = await deps.runClaude(args);
-        await logAgentCall(logPath, "claude", args.prompt, args.model, "-", Date.now() - t0, out);
+        const out = await deps.runClaude(forwarded);
+        await logAgentCall(logPath, "claude", args.prompt, resolvedModel ?? args.model, "-", Date.now() - t0, out);
         return out;
       } catch (err) {
         const partial = (err as { stdout?: string })?.stdout ?? "";
@@ -62,7 +71,7 @@ export function withAgentLogging(deps: PaperDeps, logPath: string): PaperDeps {
           logPath,
           "claude",
           args.prompt,
-          args.model,
+          resolvedModel ?? args.model,
           "-",
           Date.now() - t0,
           `[CALL THREW: ${err instanceof Error ? err.message : String(err)}]\n${partial}`,

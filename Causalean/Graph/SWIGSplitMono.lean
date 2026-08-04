@@ -97,13 +97,17 @@ instance splitMonoEdgeRel_decidable (dagEdge : SWIGNode N → SWIGNode N → Pro
   | random u =>
     simp only [splitMonoEdgeRel]
     by_cases h : u ∈ X
-    · simp [h]; exact instDecidableFalse
-    · simp [h]; infer_instance
+    · rw [if_pos h]
+      exact instDecidableFalse
+    · rw [if_neg h]
+      infer_instance
   | fixed d =>
     simp only [splitMonoEdgeRel]
     by_cases h : d ∈ X
-    · simp [h]; infer_instance
-    · simp [h]; infer_instance
+    · rw [if_pos h]
+      infer_instance
+    · rw [if_neg h]
+      infer_instance
 
 -- ============================================================
 -- Monolithic split topological order
@@ -128,10 +132,8 @@ noncomputable def splitMonoTopo (G : SWIGGraph N) (X : Finset N) : SWIGNode N �
 
 /-- The monolithically-split DAG: the DAG on `SWIGNode N` obtained by
     rerouting all `.random D → w` edges (for `D ∈ X`) to `.fixed D → w`
-    in a single pass.  Requires each `.fixed D` (D ∈ X) to be a root
-    (isolated) in the original `G.dag`. -/
-def splitMonoDAG (G : SWIGGraph N) (X : Finset N)
-    (_hIso : ∀ D ∈ X, G.dag.parents (SWIGNode.fixed D) = ∅) :
+    in a single pass. -/
+def splitMonoDAG (G : SWIGGraph N) (X : Finset N) :
     DAG (SWIGNode N) where
   edge := splitMonoEdgeRel G.dag.edge X
   decEdge := splitMonoEdgeRel_decidable G.dag.edge X
@@ -148,7 +150,8 @@ def splitMonoDAG (G : SWIGGraph N) (X : Finset N)
         -- edges into .fixed d (by fixed_are_roots / fixed_outside_fixed_isolated).
         cases v with
         | random v =>
-          simp [splitMonoTopo]; omega
+          exact Nat.add_lt_add_right
+            ((Nat.mul_lt_mul_left (by omega : 0 < 2)).mpr hltOld) 1
         | fixed d =>
           -- edge .random u → .fixed d in G.dag: impossible since
           -- .fixed d has no parents in G.dag (root/isolated)
@@ -158,11 +161,11 @@ def splitMonoDAG (G : SWIGGraph N) (X : Finset N)
               G.fixed_are_roots _ hd_in_fix
             have : SWIGNode.random u ∈ G.dag.parents (SWIGNode.fixed d) :=
               G.dag.mem_parents.mpr hOld
-            simpa [hroot] using this
+            simp [hroot] at this
           · have hiso := G.fixed_outside_fixed_isolated d hd_in_fix
             have : SWIGNode.random u ∈ G.dag.parents (SWIGNode.fixed d) :=
               G.dag.mem_parents.mpr hOld
-            simpa [hiso.1] using this
+            simp [hiso.1] at this
     | fixed d =>
       simp only [splitMonoEdgeRel] at h
       by_cases hd : d ∈ X
@@ -170,7 +173,8 @@ def splitMonoDAG (G : SWIGGraph N) (X : Finset N)
         have hltOld := G.dag.topoOrder_lt _ _ hOld
         cases v with
         | random v =>
-          simp [splitMonoTopo, hd]; omega
+          simp only [splitMonoTopo, if_pos hd]
+          exact Nat.lt_succ_of_le (Nat.mul_le_mul_left 2 (Nat.le_of_lt hltOld))
         | fixed d' =>
           exfalso
           by_cases hd'_in_fix : SWIGNode.fixed d' ∈ G.fixed
@@ -178,16 +182,18 @@ def splitMonoDAG (G : SWIGGraph N) (X : Finset N)
               G.fixed_are_roots _ hd'_in_fix
             have : SWIGNode.random d ∈ G.dag.parents (SWIGNode.fixed d') :=
               G.dag.mem_parents.mpr hOld
-            simpa [hroot] using this
+            simp [hroot] at this
           · have hiso := G.fixed_outside_fixed_isolated d' hd'_in_fix
             have : SWIGNode.random d ∈ G.dag.parents (SWIGNode.fixed d') :=
               G.dag.mem_parents.mpr hOld
-            simpa [hiso.1] using this
+            simp [hiso.1] at this
       · have hOld : G.dag.edge (SWIGNode.fixed d) v := by simpa [hd] using h
         have hltOld := G.dag.topoOrder_lt _ _ hOld
         cases v with
         | random v =>
-          simp [splitMonoTopo, hd]; omega
+          simp only [splitMonoTopo, if_neg hd]
+          exact Nat.add_lt_add_right
+            ((Nat.mul_lt_mul_left (by omega : 0 < 2)).mpr hltOld) 1
         | fixed d' =>
           exfalso
           by_cases hd'_in_fix : SWIGNode.fixed d' ∈ G.fixed
@@ -195,11 +201,11 @@ def splitMonoDAG (G : SWIGGraph N) (X : Finset N)
               G.fixed_are_roots _ hd'_in_fix
             have : SWIGNode.fixed d ∈ G.dag.parents (SWIGNode.fixed d') :=
               G.dag.mem_parents.mpr hOld
-            simpa [hroot] using this
+            simp [hroot] at this
           · have hiso := G.fixed_outside_fixed_isolated d' hd'_in_fix
             have : SWIGNode.fixed d ∈ G.dag.parents (SWIGNode.fixed d') :=
               G.dag.mem_parents.mpr hOld
-            simpa [hiso.1] using this)
+            simp [hiso.1] at this)
 
 -- ============================================================
 -- The monolithic multi-target split operation
@@ -219,8 +225,7 @@ def splitMono (G : SWIGGraph N) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ G.observed)
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ G.fixed) :
     SWIGGraph N where
-  dag := G.splitMonoDAG X (fun D hD =>
-    (G.fixed_outside_fixed_isolated D (hFix D hD)).1)
+  dag := G.splitMonoDAG X
   fixed := G.fixed ∪ X.image SWIGNode.fixed
   observed := G.observed
   unobserved := G.unobserved
@@ -236,6 +241,7 @@ def splitMono (G : SWIGGraph N) (X : Finset N)
   dag_edges_classified := by
     intro u v huv
     -- huv : splitMonoEdgeRel G.dag.edge X u v
+    change splitMonoEdgeRel G.dag.edge X u v at huv
     have hsplit : splitMonoEdgeRel G.dag.edge X u v := huv
     cases u with
     | random a =>
@@ -307,18 +313,17 @@ def splitMono (G : SWIGGraph N) (X : Finset N)
       rcases Finset.mem_union.mp hs with hs_old | hs_new
       · have hroot : G.dag.parents s = ∅ := G.fixed_are_roots s hs_old
         have : x ∈ G.dag.parents s := G.dag.mem_parents.mpr hxE
-        simpa [hroot] using this
+        simp [hroot] at this
       · rcases Finset.mem_image.mp hs_new with ⟨D, hD, rfl⟩
         have hroot : G.dag.parents (SWIGNode.fixed D) = ∅ :=
           (G.fixed_outside_fixed_isolated D (hFix D hD)).1
         have : x ∈ G.dag.parents (SWIGNode.fixed D) := G.dag.mem_parents.mpr hxE
-        simpa [hroot] using this
+        simp [hroot] at this
     ext x
     constructor
     · intro hxPar
-      have hxEdge : splitMonoEdgeRel G.dag.edge X x s :=
-        (G.splitMonoDAG X (fun D hD =>
-          (G.fixed_outside_fixed_isolated D (hFix D hD)).1)).mem_parents.mp hxPar
+      have hxEdge := (G.splitMonoDAG X).mem_parents.mp hxPar
+      change splitMonoEdgeRel G.dag.edge X x s at hxEdge
       exfalso
       cases x with
       | random u =>
@@ -336,15 +341,15 @@ def splitMono (G : SWIGGraph N) (X : Finset N)
             simpa [splitMonoEdgeRel, hd] using hxEdge
           exact hNoG _ this
     · intro hxPar
-      simpa using hxPar
+      simp at hxPar
   unobs_are_roots := by
     intro u hu
     have hrootOld : G.dag.parents u = ∅ := G.unobs_are_roots u hu
     ext x
     constructor
     · intro hxPar
-      have hxEdge : splitMonoEdgeRel G.dag.edge X x u :=
-        (G.splitMonoDAG X _).mem_parents.mp hxPar
+      have hxEdge := (G.splitMonoDAG X).mem_parents.mp hxPar
+      change splitMonoEdgeRel G.dag.edge X x u at hxEdge
       exfalso
       cases x with
       | random n =>
@@ -353,19 +358,19 @@ def splitMono (G : SWIGGraph N) (X : Finset N)
         · have : G.dag.edge (SWIGNode.random n) u := by
             simpa [splitMonoEdgeRel, hn] using hxEdge
           have : SWIGNode.random n ∈ G.dag.parents u := G.dag.mem_parents.mpr this
-          simpa [hrootOld] using this
+          simp [hrootOld] at this
       | fixed d =>
         by_cases hd : d ∈ X
         · have : G.dag.edge (SWIGNode.random d) u := by
             simpa [splitMonoEdgeRel, hd] using hxEdge
           have : SWIGNode.random d ∈ G.dag.parents u := G.dag.mem_parents.mpr this
-          simpa [hrootOld] using this
+          simp [hrootOld] at this
         · have : G.dag.edge (SWIGNode.fixed d) u := by
             simpa [splitMonoEdgeRel, hd] using hxEdge
           have : SWIGNode.fixed d ∈ G.dag.parents u := G.dag.mem_parents.mpr this
-          simpa [hrootOld] using this
+          simp [hrootOld] at this
     · intro hxPar
-      simpa using hxPar
+      simp at hxPar
   fixed_outside_fixed_isolated := by
     intro n hn
     -- hn : .fixed n ∉ G.fixed ∪ X.image .fixed, so .fixed n ∉ G.fixed AND n ∉ X
@@ -381,8 +386,8 @@ def splitMono (G : SWIGGraph N) (X : Finset N)
       ext x
       constructor
       · intro hxPar
-        have hxEdge : splitMonoEdgeRel G.dag.edge X x (SWIGNode.fixed n) :=
-          (G.splitMonoDAG X _).mem_parents.mp hxPar
+        have hxEdge := (G.splitMonoDAG X).mem_parents.mp hxPar
+        change splitMonoEdgeRel G.dag.edge X x (SWIGNode.fixed n) at hxEdge
         exfalso
         cases x with
         | random u =>
@@ -392,37 +397,37 @@ def splitMono (G : SWIGGraph N) (X : Finset N)
               simpa [splitMonoEdgeRel, hu] using hxEdge
             have : SWIGNode.random u ∈ G.dag.parents (SWIGNode.fixed n) :=
               G.dag.mem_parents.mpr this
-            simpa [hIsoOld.1] using this
+            simp [hIsoOld.1] at this
         | fixed d =>
           by_cases hd : d ∈ X
           · have : G.dag.edge (SWIGNode.random d) (SWIGNode.fixed n) := by
               simpa [splitMonoEdgeRel, hd] using hxEdge
             have : SWIGNode.random d ∈ G.dag.parents (SWIGNode.fixed n) :=
               G.dag.mem_parents.mpr this
-            simpa [hIsoOld.1] using this
+            simp [hIsoOld.1] at this
           · have : G.dag.edge (SWIGNode.fixed d) (SWIGNode.fixed n) := by
               simpa [splitMonoEdgeRel, hd] using hxEdge
             have : SWIGNode.fixed d ∈ G.dag.parents (SWIGNode.fixed n) :=
               G.dag.mem_parents.mpr this
-            simpa [hIsoOld.1] using this
+            simp [hIsoOld.1] at this
       · intro hxPar
-        simpa using hxPar
+        simp at hxPar
     · -- children ∅
       ext x
       constructor
       · intro hxCh
-        have hxEdge : splitMonoEdgeRel G.dag.edge X (SWIGNode.fixed n) x :=
-          (G.splitMonoDAG X _).mem_children.mp hxCh
+        have hxEdge := (G.splitMonoDAG X).mem_children.mp hxCh
+        change splitMonoEdgeRel G.dag.edge X (SWIGNode.fixed n) x at hxEdge
         have : G.dag.edge (SWIGNode.fixed n) x := by
           simpa [splitMonoEdgeRel, hn_notX] using hxEdge
         have : x ∈ G.dag.children (SWIGNode.fixed n) := G.dag.mem_children.mpr this
-        simpa [hIsoOld.2] using this
+        simp [hIsoOld.2] at this
       · intro hxCh
-        simpa using hxCh
+        simp at hxCh
   all_children_in_observed := by
     intro u hu w hw
-    have hwEdge : splitMonoEdgeRel G.dag.edge X u w :=
-      (G.splitMonoDAG X _).mem_children.mp hw
+    have hwEdge := (G.splitMonoDAG X).mem_children.mp hw
+    change splitMonoEdgeRel G.dag.edge X u w at hwEdge
     -- In every branch the new edge reduces to a G-edge whose target `w` is in observed.
     cases u with
     | random a =>
@@ -511,8 +516,10 @@ theorem splitMono_parents_char (G : SWIGGraph N) (X : Finset N)
   intro x
   -- Bridge to edge relation.
   have hiff : x ∈ (G.splitMono X hObs hFix).dag.parents v ↔
-      splitMonoEdgeRel G.dag.edge X x v :=
-    (G.splitMono X hObs hFix).dag.mem_parents
+      splitMonoEdgeRel G.dag.edge X x v := by
+    change x ∈ (G.splitMonoDAG X).parents v ↔ splitMonoEdgeRel G.dag.edge X x v
+    rw [DAG.mem_parents]
+    rfl
   rw [hiff]
   cases x with
   | random u =>
@@ -548,7 +555,7 @@ theorem splitMono_parents_char (G : SWIGGraph N) (X : Finset N)
           have hiso := (G.fixed_outside_fixed_isolated d hfix_notin).2
           have hch : v ∈ G.dag.children (SWIGNode.fixed d) :=
             G.dag.mem_children.mpr (G.dag.mem_parents.mp hPar)
-          simpa [hiso] using hch
+          simp [hiso] at hch
         · have : d = D := SWIGNode.fixed.inj hEq
           subst this
           rw [if_pos hd]; exact G.dag.mem_parents.mp hRD
@@ -617,13 +624,15 @@ theorem Equivalent.splitMono_congr
     intro u v
     cases u with
     | random u =>
-      simp only [splitMono, splitMonoDAG, splitMonoEdgeRel]
+      change (if u ∈ X then False else G₁.dag.edge (.random u) v) ↔
+        (if u ∈ X then False else G₂.dag.edge (.random u) v)
       by_cases hu : u ∈ X
       · simp [hu]
       · simp [hu]
         exact hEdge _ _
     | fixed d =>
-      simp only [splitMono, splitMonoDAG, splitMonoEdgeRel]
+      change (if d ∈ X then G₁.dag.edge (.random d) v else G₁.dag.edge (.fixed d) v) ↔
+        (if d ∈ X then G₂.dag.edge (.random d) v else G₂.dag.edge (.fixed d) v)
       by_cases hd : d ∈ X
       · simp [hd]
         exact hEdge _ _

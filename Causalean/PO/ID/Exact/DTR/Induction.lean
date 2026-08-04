@@ -89,7 +89,7 @@ theorem cdtr_base [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
     S.indD_integrable dbar m
   have hindLast_int :
       Integrable ((S.dVar kLast).indicator (dbar kLast)) P.μ :=
-    (S.dVar kLast).integrable_indicator (dbar kLast)
+    (S.dVar kLast).integrable_indicator (dbar kLast) (measurableSet_singleton _)
   have hYindD_int : Integrable
       (fun ω => S.factualY ω * S.indD dbar n ω) P.μ := by
     refine hA.integrable_factualY.mono
@@ -104,8 +104,8 @@ theorem cdtr_base [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
   have hYof_indLast_int :
       Integrable (fun ω => S.Y_of dbar ω * (S.dVar kLast).indicator (dbar kLast) ω)
         P.μ := by
-    exact (S.dVar kLast).integrable_mul_indicator
-      (dbar kLast) hYof_int (S.measurable_Y_of dbar)
+    exact (S.dVar kLast).integrable_mul_indicator (dbar kLast)
+      (measurableSet_singleton _) hYof_int
   -- (a) Consistency: factualY · indD n =ᵐ Y_of · indD n.
   have hConsistency :
       (fun ω => S.factualY ω * S.indD dbar n ω) =
@@ -174,8 +174,8 @@ theorem cdtr_base [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
       have h_indD_Y_int :
           Integrable (fun ω => S.indD dbar m ω * S.Y_of dbar ω) P.μ :=
         S.indD_mul_Y_integrable dbar m hYof_int
-      have hmul := (S.dVar kLast).integrable_mul_indicator (dbar kLast) h_indD_Y_int
-        ((S.measurable_indD dbar m).mul (S.measurable_Y_of dbar))
+      have hmul := (S.dVar kLast).integrable_mul_indicator (dbar kLast)
+        (measurableSet_singleton _) h_indD_Y_int
       exact hmul.congr (Filter.Eventually.of_forall (fun ω => by ring))
     have hpull :=
       (S.historyBundle m hm_lt).condExpGiven_mul_of_stronglyMeasurable_left
@@ -233,7 +233,7 @@ theorem cdtr_base [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
       funext ω; rw [congr_fun hu_eq ω]
     rw [hEq]
     refine hYof_int.mono
-      (((S.dVar kLast).measurable_indicator (dbar kLast)).mul
+      (((S.dVar kLast).measurable_indicator (dbar kLast) (measurableSet_singleton _)).mul
         (S.measurable_Y_of dbar)).aestronglyMeasurable ?_
     refine Filter.Eventually.of_forall (fun ω => ?_)
     rcases (S.dVar kLast).indicator_eq_one_or_zero (dbar kLast) ω with h | h <;>
@@ -434,13 +434,13 @@ theorem cdtr_step [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
   -- Integrability prerequisites.
   have hYof_int : Integrable (S.Y_of dbar) P.μ := hA.integrable_Y dbar
   have hindk_int : Integrable ind_k P.μ :=
-    (S.dVar kFin).integrable_indicator (dbar kFin)
+    (S.dVar kFin).integrable_indicator (dbar kFin) (measurableSet_singleton _)
   have hindDk1_int : Integrable (S.indD dbar (k+1)) P.μ := S.indD_integrable dbar (k+1)
   have hYof_indk_int :
       Integrable (fun ω => S.Y_of dbar ω * ind_k ω) P.μ := by
     dsimp [ind_k]
-    exact (S.dVar kFin).integrable_mul_indicator
-      (dbar kFin) hYof_int (S.measurable_Y_of dbar)
+    exact (S.dVar kFin).integrable_mul_indicator (dbar kFin)
+      (measurableSet_singleton _) hYof_int
   have hindk_Yof_int :
       Integrable (fun ω => ind_k ω * S.Y_of dbar ω) P.μ :=
     hYof_indk_int.congr (Filter.Eventually.of_forall (fun ω => by ring))
@@ -528,8 +528,7 @@ theorem cdtr_step [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
         (S.historyBundle (k+1) hk1).condExpGiven (S.Y_of dbar) P.μ ω) P.μ := by
     dsimp [ind_k]
     have hmul := (S.dVar kFin).integrable_mul_indicator (dbar kFin)
-      hCondExpY_k1_int
-      ((S.historyBundle (k+1) hk1).stronglyMeasurable_condExpGiven _).measurable
+      (measurableSet_singleton _) hCondExpY_k1_int
     exact hmul.congr (Filter.Eventually.of_forall (fun ω => by ring))
   have hindDk_indk_CE_int :
       Integrable (S.indD dbar k * fun ω => ind_k ω *
@@ -684,8 +683,8 @@ theorem cdtr_step [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
   have hinnerReg_indk_int :
       Integrable (fun ω => S.innerReg dbar j ω * ind_k ω) P.μ := by
     dsimp [ind_k]
-    exact (S.dVar kFin).integrable_mul_indicator
-      (dbar kFin) hIH_int (S.measurable_innerReg dbar j)
+    exact (S.dVar kFin).integrable_mul_indicator (dbar kFin)
+      (measurableSet_singleton _) hIH_int
   -- Pull indD k IN: μ[indD k · (innerReg j · ind_k) | σ_k] =ᵐ indD k · μ[innerReg j · ind_k | σ_k].
   have hindDk_inner_int :
       Integrable (S.indD dbar k * fun ω => S.innerReg dbar j ω * ind_k ω) P.μ := by

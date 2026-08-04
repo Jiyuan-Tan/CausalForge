@@ -100,11 +100,9 @@ private noncomputable def peelMeasure (G : DAG V) (X Y Zr Zf : Finset V) : ℕ �
 -- § 2′. Topological-maximum selection in an ancestral set
 -- ============================================================
 
-/-- A topologically-maximal element of an ancestral set `ancestralSet Q` lies in
-    the seed set `Q` itself: every element of an ancestral set is either in `Q`
-    or a strict ancestor of some element of `Q`, and a strict ancestor has a
-    strictly smaller topological order, so it cannot be the maximum. -/
-private theorem topoMax_mem_seed {Q : Finset V} {n : V}
+/-- A vertex with maximal topological order in the ancestral closure of a seed set
+    must itself belong to that seed set. -/
+theorem topoMax_mem_seed {Q : Finset V} {n : V}
     (hn : n ∈ G.ancestralSet Q)
     (hmax : ∀ m ∈ G.ancestralSet Q, G.topoOrder m ≤ G.topoOrder n) :
     n ∈ Q := by
@@ -121,9 +119,9 @@ private theorem topoMax_mem_seed {Q : Finset V} {n : V}
     have h2 : G.topoOrder n < G.topoOrder w := G.isAncestor_topoOrder_lt haw
     omega
 
-/-- The ancestral set absorbs subsets of itself: if `Q' ⊆ ancestralSet Q` then
-    `ancestralSet Q' ⊆ ancestralSet Q`. (Ancestral-set idempotence, one direction.) -/
-private theorem ancestralSet_subset_of_subset_ancestralSet {Q Q' : Finset V}
+/-- The ancestral closure of a subset of an ancestral closure remains inside the
+original ancestral closure. -/
+theorem ancestralSet_subset_of_subset_ancestralSet {Q Q' : Finset V}
     (h : Q' ⊆ G.ancestralSet Q) : G.ancestralSet Q' ⊆ G.ancestralSet Q := by
   intro u hu
   simp only [ancestralSet, Finset.mem_union, ancestorsSet, Finset.mem_filter,
@@ -255,12 +253,15 @@ private theorem dSep_parents_of_maximal_source {n : V} {Y D A0 : Finset V}
     simpa using hlast
   exact (Finset.disjoint_left.mp hdSep.2.2.2 hyReach') hyY
 
-/-- **Re-inserting a non-blocking node keeps a path active.** If `p` is active
+/-- Adding a conditioning vertex preserves activity when that vertex appears internally
+only as a collider.
+
+    If `p` is active
     given `D` and `n` never sits as a *non-collider* on `p`, then `p` stays active
     given `insert n D`: adding `n` to the conditioning set can only widen collider
     activation (the ancestral set grows) and the only non-collider it could block
     is `n` itself, which is excluded by hypothesis. -/
-private theorem isActivePath_insert_cond {D : Finset V} {p : List V} {n : V}
+theorem isActivePath_insert_cond {D : Finset V} {p : List V} {n : V}
     (hact : G.IsActivePath D p)
     (hno : ∀ (i : ℕ) (hi : i + 2 < p.length),
       p.get ⟨i + 1, by omega⟩ = n →
@@ -395,7 +396,7 @@ private theorem lift_crosscond_to_insert {S W : Finset V} {p : List V} {n : V}
     active path whose nodes all lie in an ancestral set with topological maximum
     `n`, if the path ends at `n` then its last edge points into `n`: a child of `n`
     on the path would be a strict descendant, hence a strictly larger node. -/
-private theorem last_edge_into_max
+theorem last_edge_into_max
     {D bigQ : Finset V} {p : List V} {n : V}
     (hp_len : p.length ≥ 2) (hact : G.IsActivePath D p) (hlast : p.getLast? = some n)
     (hpAnc : ∀ v ∈ p, v ∈ G.ancestralSet bigQ)
@@ -421,12 +422,9 @@ private theorem last_edge_into_max
     have h2 := G.isAncestor_topoOrder_lt (isAncestor.edge hout)
     omega
 
-/-- **Concatenating two active paths at a collider.** If `pa` is active given `Z`
-    ending at `n`, `pb` is active given `Z` starting at `n`, the last edge of `pa`
-    and the first edge of `pb` both point *into* `n` (so `n` becomes a collider at
-    the seam), and `n ∈ Z`, then the glued path `pa ++ pb.tail` is an active path
-    given `Z` from the head of `pa` to the last of `pb`. -/
-private theorem activePath_join_at_collider
+/-- Two active paths that meet at a conditioned collider can be joined into an
+    active path when both incident edges point into the joining vertex. -/
+theorem activePath_join_at_collider
     {Z : Finset V} {n x y : V} {pa pb : List V}
     (hpa_len : pa.length ≥ 2) (hpa_head : pa.head? = some x)
     (hpa_last : pa.getLast? = some n) (hpa_act : G.IsActivePath Z pa)
@@ -803,42 +801,9 @@ theorem chain_join_active
                 Fin.ext (show (i-R+1)+2 = (i+2)-R+1 by omega)] at hpbcoll
           exact hpbcoll
 
-/-- A forward-directed path whose *interior* vertices avoid `Z` is active given `Z`.
-    Endpoints may lie in `Z` (they are never collider/non-collider middles). -/
-theorem isActivePath_of_directed_interior
-    {Z : Finset V} {p : List V}
-    (hdir : ∀ (i : ℕ) (hi : i + 1 < p.length),
-        G.edge (p.get ⟨i, by omega⟩) (p.get ⟨i + 1, hi⟩))
-    (hZ : ∀ (i : ℕ) (hi : i + 2 < p.length), p.get ⟨i + 1, by omega⟩ ∉ Z) :
-    G.IsActivePath Z p := by
-  refine ⟨fun i hi => ?_, fun i hi => ?_⟩
-  · exact Or.inl (hdir i hi)
-  · simp only
-    have hmr : G.edge (p.get ⟨i + 1, by omega⟩) (p.get ⟨i + 2, hi⟩) :=
-      hdir (i + 1) hi
-    have hrm_false : ¬ G.edge (p.get ⟨i + 2, hi⟩) (p.get ⟨i + 1, by omega⟩) :=
-      G.asymm hmr
-    have hnotcoll : ¬ G.IsCollider (p.get ⟨i, by omega⟩)
-                      (p.get ⟨i + 1, by omega⟩) (p.get ⟨i + 2, hi⟩) := by
-      intro ⟨_, h2⟩; exact hrm_false h2
-    rw [if_neg hnotcoll]
-    exact hZ i hi
-
-/-- An ancestor `u` of `v` with `u ∉ ancestralSet Z` gives an active path from
-    `u` to `v` given `Z`. (Local copy of the file-private
-    `exists_activePath_of_ancestor_avoiding` in `Ancestral.lean`.) -/
-private theorem exists_activePath_of_ancestor_avoiding
-    {Z : Finset V} {u v : V} (huv : G.isAncestor u v)
-    (huZ : u ∉ G.ancestralSet Z) :
-    ∃ (p : List V), p.length ≥ 2 ∧ p.head? = some u ∧ p.getLast? = some v ∧
-      G.IsActivePath Z p := by
-  obtain ⟨p, hlen, hhead, hlast, hedge, hZavoid⟩ :=
-    G.exists_directedPath_avoiding huv huZ
-  exact ⟨p, hlen, hhead, hlast, G.isActivePath_of_directed hedge hZavoid⟩
-
-/-- On a forward-directed path ending at `w`, the node at index `j` is `w` or a
-    strict ancestor of `w`. (Downward walk along the directed edges.) -/
-private theorem node_isAncestor_last_of_directed {q : List V} {w : V}
+/-- Every vertex on a forward directed path is either the path's endpoint or a
+    strict ancestor of that endpoint. -/
+theorem node_isAncestor_last_of_directed {q : List V} {w : V}
     (hlen : q.length ≥ 2) (hlast : q.getLast? = some w)
     (hedge : ∀ (i : ℕ) (hi : i + 1 < q.length),
       G.edge (q.get ⟨i, by omega⟩) (q.get ⟨i + 1, hi⟩))
@@ -905,10 +870,10 @@ private theorem descent_active_insert {S : Finset V} {c w n : V}
       rw [List.get_eq_getElem, List.getElem_zero]; exact this
     rw [hq0] at he0
     exact he0
-  exact ⟨q, hlen, hhead, hlast, G.isActivePath_of_directed_interior hedge hins, hfirst⟩
+  exact ⟨q, hlen, hhead, hlast, G.isActivePath_of_directed hedge hins, hfirst⟩
 
-/-- A prefix of an active path is active. -/
-private theorem isActivePath_take {Z : Finset V} {p : List V} {k : ℕ}
+/-- Every prefix of an active path is active. -/
+theorem isActivePath_take {Z : Finset V} {p : List V} {k : ℕ}
     (hact : G.IsActivePath Z p) : G.IsActivePath Z (p.take k) := by
   obtain ⟨hadj, hcoll⟩ := hact
   have hle : (p.take k).length ≤ p.length := by
@@ -1301,10 +1266,9 @@ private theorem dSep_erase_maximal_fixed_root {X Y Zr Zf : Finset V} {n : V}
   exact (Finset.disjoint_left.mp hdSep.2.2.2 this) hyY
 
 omit [Fintype V] in
-/-- Set-bookkeeping for the branch termination: reinserting the peeled node `n`
-    recovers the original query seed. Proved as a standalone lemma so it elaborates
-    outside the heavy well-founded-recursion context. -/
-private theorem branch_seed_eq {a b Zr c : Finset V} {n : V} (hn : n ∈ Zr) :
+/-- If a finite set contains a node, removing and then reinserting that node while taking unions
+recovers the same union as using the original set. -/
+theorem branch_seed_eq {a b Zr c : Finset V} {n : V} (hn : n ∈ Zr) :
     a ∪ {n} ∪ (Zr.erase n ∪ b) ∪ c = a ∪ b ∪ Zr ∪ c := by
   ext x; simp only [Finset.mem_union, Finset.mem_singleton, Finset.mem_erase]
   constructor
@@ -1342,13 +1306,15 @@ private theorem branch_seed_eq {a b Zr c : Finset V} {n : V} (hn : n ∈ Zr) :
     topologically-maximal relevant node; this is the constructive form of the
     classical local-to-global Markov theorem. -/
 theorem orderedLocalSG_of_dSep_with_fixed
-    (R F X Y Zr Zf : Finset V)
-    (hFixedRoots : ∀ f ∈ F, G.parents f = ∅)
-    (hFR : Disjoint F R)
-    (hX : X ⊆ R) (hY : Y ⊆ R) (hZr : Zr ⊆ R) (hZf : Zf ⊆ F)
-    (hXY : Disjoint X Y) (hXZ : Disjoint X Zr) (hYZ : Disjoint Y Zr)
+    (R X Y Zr Zf : Finset V)
+    (hFixedRoots : ∀ f ∈ Zf, G.parents f = ∅)
+    (hFR : Disjoint Zf R)
+    (hX : X ⊆ R) (hY : Y ⊆ R) (hZr : Zr ⊆ R)
     (hdSep : G.dSep X Y (Zr ∪ Zf)) :
     G.OrderedLocalSG R X Y Zr := by
+  have hXY : Disjoint X Y := hdSep.1
+  have hXZ : Disjoint X Zr := hdSep.2.1.mono_right Finset.subset_union_left
+  have hYZ : Disjoint Y Zr := hdSep.2.2.1.mono_right Finset.subset_union_left
   -- Trivial base case: an empty source set.
   rcases Finset.eq_empty_or_nonempty X with hXe | hXne
   · subst hXe; exact OrderedLocalSG.nil Y Zr hY hZr
@@ -1361,7 +1327,7 @@ theorem orderedLocalSG_of_dSep_with_fixed
   obtain ⟨n, hnAnc, hmax⟩ := Finset.exists_max_image (G.ancestralSet Q) G.topoOrder hQne
   have hnQ : n ∈ Q := G.topoMax_mem_seed hnAnc hmax
   -- Membership facts used across the cases.
-  have hnR_of_mem : ∀ {S : Finset V}, S ⊆ R → n ∈ S → n ∉ F := by
+  have hnR_of_mem : ∀ {S : Finset V}, S ⊆ R → n ∈ S → n ∉ Zf := by
     intro S hSR hnS hnF
     exact (Finset.disjoint_left.mp hFR hnF) (hSR hnS)
   -- Reusable inclusions for the termination (card-drop) arguments.
@@ -1387,7 +1353,7 @@ theorem orderedLocalSG_of_dSep_with_fixed
     set C : Finset V := Zr ∪ X' with hC_def
     set A0 : Finset V := A \ C with hA0_def
     have hnX' : n ∉ X' := Finset.notMem_erase n X
-    have hnZf : n ∉ Zf := fun h => (hnR_of_mem hX hnX) (hZf h)
+    have hnZf : n ∉ Zf := fun h => (hnR_of_mem hX hnX) h
     have hXins : X = insert n X' := (Finset.insert_erase hnX).symm
     have hX'R : X' ⊆ R := (Finset.erase_subset _ _).trans hX
     have hX'X : X' ⊆ X := Finset.erase_subset _ _
@@ -1404,8 +1370,8 @@ theorem orderedLocalSG_of_dSep_with_fixed
       omega
     -- ihX': drop `n` from the source.
     have ihX' : G.OrderedLocalSG R X' Y Zr :=
-      orderedLocalSG_of_dSep_with_fixed R F X' Y Zr Zf hFixedRoots hFR hX'R hY hZr hZf
-        (hXY.mono_left hX'X) (hXZ.mono_left hX'X) hYZ (G.dSep_subset_left hX'X hdSep)
+      orderedLocalSG_of_dSep_with_fixed R X' Y Zr Zf hFixedRoots hFR hX'R hY hZr
+        (G.dSep_subset_left hX'X hdSep)
     -- `dSep {n} Y (C ∪ Zf)`.
     have hCZf_eq : C ∪ Zf = (Zr ∪ Zf) ∪ X' := by
       rw [hC_def]; ext x; simp only [Finset.mem_union]; tauto
@@ -1428,18 +1394,13 @@ theorem orderedLocalSG_of_dSep_with_fixed
       rw [Finset.mem_union] at haCZf
       rcases haCZf with haC | haZf
       · exact (Finset.mem_sdiff.mp ha).2 haC
-      · exact (Finset.disjoint_left.mp hFR (hZf haZf)) (hA0R ha)
+      · exact (Finset.disjoint_left.mp hFR haZf) (hA0R ha)
     have hdSepA0 : G.dSep A0 Y (C ∪ Zf) :=
       G.dSep_parents_of_maximal_source hdSepN hA0_par hA0_D
     -- ihA0.
-    have hA0Y : Disjoint A0 Y := (hAY.mono_left Finset.sdiff_subset)
-    have hA0C : Disjoint A0 C := Finset.sdiff_disjoint
-    have hYC : Disjoint Y C := by
-      rw [hC_def, Finset.disjoint_union_right]
-      exact ⟨hYZ, hXY.symm.mono_right hX'X⟩
     have ihA0 : G.OrderedLocalSG R A0 Y C :=
-      orderedLocalSG_of_dSep_with_fixed R F A0 Y C Zf hFixedRoots hFR hA0R hY hCR hZf
-        hA0Y hA0C hYC hdSepA0
+      orderedLocalSG_of_dSep_with_fixed R A0 Y C Zf hFixedRoots hFR hA0R hY hCR
+        hdSepA0
     -- Basis at `n` with block `P = Y ∪ C ∪ A`.
     have hPR : Y ∪ C ∪ A ⊆ R := Finset.union_subset (Finset.union_subset hY hCR) hAR
     -- `Y ∪ C ⊆ Q` (used to inherit `¬ isAncestor n ·` from topo-maximality).
@@ -1510,7 +1471,7 @@ theorem orderedLocalSG_of_dSep_with_fixed
     set C : Finset V := Zr ∪ Y' with hC_def
     set A0 : Finset V := A \ C with hA0_def
     have hnY' : n ∉ Y' := Finset.notMem_erase n Y
-    have hnZf : n ∉ Zf := fun h => (hnR_of_mem hY hnY) (hZf h)
+    have hnZf : n ∉ Zf := fun h => (hnR_of_mem hY hnY) h
     have hYins : Y = insert n Y' := (Finset.insert_erase hnY).symm
     have hY'R : Y' ⊆ R := (Finset.erase_subset _ _).trans hY
     have hY'Y : Y' ⊆ Y := Finset.erase_subset _ _
@@ -1525,8 +1486,8 @@ theorem orderedLocalSG_of_dSep_with_fixed
       have h2 : G.topoOrder n < G.topoOrder w := G.isAncestor_topoOrder_lt hanc
       omega
     have ihY' : G.OrderedLocalSG R Y' X Zr :=
-      orderedLocalSG_of_dSep_with_fixed R F Y' X Zr Zf hFixedRoots hFR hY'R hX hZr hZf
-        (hXY.symm.mono_left hY'Y) (hYZ.mono_left hY'Y) hXZ (G.dSep_subset_left hY'Y hdSepYX)
+      orderedLocalSG_of_dSep_with_fixed R Y' X Zr Zf hFixedRoots hFR hY'R hX hZr
+        (G.dSep_subset_left hY'Y hdSepYX)
     have hCZf_eq : C ∪ Zf = (Zr ∪ Zf) ∪ Y' := by
       rw [hC_def]; ext x; simp only [Finset.mem_union]; tauto
     have hdSepN : G.dSep {n} X (C ∪ Zf) := by
@@ -1546,17 +1507,12 @@ theorem orderedLocalSG_of_dSep_with_fixed
       rw [Finset.mem_union] at haCZf
       rcases haCZf with haC | haZf
       · exact (Finset.mem_sdiff.mp ha).2 haC
-      · exact (Finset.disjoint_left.mp hFR (hZf haZf)) (hA0R ha)
+      · exact (Finset.disjoint_left.mp hFR haZf) (hA0R ha)
     have hdSepA0 : G.dSep A0 X (C ∪ Zf) :=
       G.dSep_parents_of_maximal_source hdSepN hA0_par hA0_D
-    have hA0X : Disjoint A0 X := (hAX.mono_left Finset.sdiff_subset)
-    have hA0C : Disjoint A0 C := Finset.sdiff_disjoint
-    have hXC : Disjoint X C := by
-      rw [hC_def, Finset.disjoint_union_right]
-      exact ⟨hXZ, hXY.mono_right hY'Y⟩
     have ihA0 : G.OrderedLocalSG R A0 X C :=
-      orderedLocalSG_of_dSep_with_fixed R F A0 X C Zf hFixedRoots hFR hA0R hX hCR hZf
-        hA0X hA0C hXC hdSepA0
+      orderedLocalSG_of_dSep_with_fixed R A0 X C Zf hFixedRoots hFR hA0R hX hCR
+        hdSepA0
     have hPR : X ∪ C ∪ A ⊆ R := Finset.union_subset (Finset.union_subset hX hCR) hAR
     have hXC_subQ : X ∪ C ⊆ Q := by
       rw [hQ_def, hC_def]
@@ -1617,34 +1573,26 @@ theorem orderedLocalSG_of_dSep_with_fixed
     have hZ'R : Z' ⊆ R := (Finset.erase_subset _ _).trans hZr
     have hnX : n ∉ X := fun h => (Finset.disjoint_left.mp hXZ h) hnZr
     have hnY : n ∉ Y := fun h => (Finset.disjoint_left.mp hYZ h) hnZr
-    have hnZf : n ∉ Zf := fun h => (hnR_of_mem hZr hnZr) (hZf h)
+    have hnZf : n ∉ Zf := fun h => (hnR_of_mem hZr hnZr) h
     have hmax' : ∀ m ∈ G.ancestralSet (X ∪ Y ∪ Zr ∪ Zf),
         G.topoOrder m ≤ G.topoOrder n := by rw [← hQ_def]; exact hmax
     -- IH1: drop `n` from the random condition.
     have hdSep1 : G.dSep X Y (Z' ∪ Zf) :=
       G.dSep_erase_maximal_random_condition hnZr hmax' hdSep
     have ih1 : G.OrderedLocalSG R X Y Z' :=
-      orderedLocalSG_of_dSep_with_fixed R F X Y Z' Zf hFixedRoots hFR hX hY hZ'R hZf
-        hXY (hXZ.mono_right (Finset.erase_subset _ _)) (hYZ.mono_right (Finset.erase_subset _ _))
+      orderedLocalSG_of_dSep_with_fixed R X Y Z' Zf hFixedRoots hFR hX hY hZ'R
         hdSep1
     -- Branch lemma: separate `n` from one side.
     have hmaxBr : ∀ m ∈ G.ancestralSet (X ∪ Y ∪ insert n Z' ∪ Zf),
         G.topoOrder m ≤ G.topoOrder n := by rw [← hZrins, ← hQ_def]; exact hmax
     have hdSepBr : G.dSep X Y (insert n Z' ∪ Zf) := by rw [← hZrins]; exact hdSep
-    -- Disjointness shared by both recursive branch calls.
-    have hXZ' : Disjoint X Z' := hXZ.mono_right (Finset.erase_subset _ _)
-    have hYZ' : Disjoint Y Z' := hYZ.mono_right (Finset.erase_subset _ _)
     -- Rewrite the goal's `Zr` as `Z' ∪ {n}`.
     rw [hZrins, Finset.insert_eq, Finset.union_comm {n} Z']
     rcases G.dSep_maximal_condition_branch hnZ' hnZf hmaxBr hdSepBr with hLeft | hRight
     · -- Left branch: `dSep X {n} ((Z'∪Y)∪Zf)`.
       have hP1 : G.OrderedLocalSG R X {n} (Z' ∪ Y) :=
-        orderedLocalSG_of_dSep_with_fixed R F X {n} (Z' ∪ Y) Zf hFixedRoots hFR hX
-          (Finset.singleton_subset_iff.mpr (hZr hnZr)) (Finset.union_subset hZ'R hY) hZf
-          (Finset.disjoint_singleton_right.mpr hnX)
-          (by rw [Finset.disjoint_union_right]; exact ⟨hXZ', hXY⟩)
-          (Finset.disjoint_singleton_left.mpr (by
-            rw [Finset.mem_union]; rintro (h | h); exacts [hnZ' h, hnY h]))
+        orderedLocalSG_of_dSep_with_fixed R X {n} (Z' ∪ Y) Zf hFixedRoots hFR hX
+          (Finset.singleton_subset_iff.mpr (hZr hnZr)) (Finset.union_subset hZ'R hY)
           (by rw [show (Z' ∪ Y) ∪ Zf = (Z' ∪ Y) ∪ Zf from rfl]; exact hLeft)
       -- contraction(X; Ỹ={n}, W̃=Y, Z̃=Z') with ih1, then weak union.
       have hc : G.OrderedLocalSG R X ({n} ∪ Y) Z' := OrderedLocalSG.contract hP1 ih1
@@ -1652,26 +1600,22 @@ theorem orderedLocalSG_of_dSep_with_fixed
       exact OrderedLocalSG.weakUnion hc
     · -- Right branch: `dSep Y {n} ((Z'∪X)∪Zf)`.
       have hP1 : G.OrderedLocalSG R Y {n} (Z' ∪ X) :=
-        orderedLocalSG_of_dSep_with_fixed R F Y {n} (Z' ∪ X) Zf hFixedRoots hFR hY
-          (Finset.singleton_subset_iff.mpr (hZr hnZr)) (Finset.union_subset hZ'R hX) hZf
-          (Finset.disjoint_singleton_right.mpr hnY)
-          (by rw [Finset.disjoint_union_right]; exact ⟨hYZ', hXY.symm⟩)
-          (Finset.disjoint_singleton_left.mpr (by
-            rw [Finset.mem_union]; rintro (h | h); exacts [hnZ' h, hnX h]))
+        orderedLocalSG_of_dSep_with_fixed R Y {n} (Z' ∪ X) Zf hFixedRoots hFR hY
+          (Finset.singleton_subset_iff.mpr (hZr hnZr)) (Finset.union_subset hZ'R hX)
           hRight
       have hc : G.OrderedLocalSG R Y ({n} ∪ X) Z' := OrderedLocalSG.contract hP1 ih1.symm
       rw [Finset.union_comm {n} X] at hc
       exact (OrderedLocalSG.weakUnion hc).symm
   · -- ===== Case n ∈ Zf =====
-    have hnF : n ∈ F := hZf hnZf
-    have hRoot : G.parents n = ∅ := hFixedRoots n hnF
+    have hRoot : G.parents n = ∅ := hFixedRoots n hnZf
     have hmax' : ∀ m ∈ G.ancestralSet (X ∪ Y ∪ Zr ∪ Zf),
         G.topoOrder m ≤ G.topoOrder n := by rw [← hQ_def]; exact hmax
     have hdSep' : G.dSep X Y (Zr ∪ Zf.erase n) :=
       G.dSep_erase_maximal_fixed_root hnZf hRoot hmax' hdSep
-    exact orderedLocalSG_of_dSep_with_fixed R F X Y Zr (Zf.erase n)
-      hFixedRoots hFR hX hY hZr ((Finset.erase_subset _ _).trans hZf)
-      hXY hXZ hYZ hdSep'
+    exact orderedLocalSG_of_dSep_with_fixed R X Y Zr (Zf.erase n)
+      (fun f hf => hFixedRoots f ((Finset.erase_subset _ _) hf))
+      (hFR.mono_left (Finset.erase_subset _ _)) hX hY hZr
+      hdSep'
   termination_by peelMeasure G X Y Zr Zf
   decreasing_by
     -- Six calls drop `card (ancestralSet ·)` (first lex component); the two branch
@@ -1736,9 +1680,9 @@ theorem orderedLocalSG_of_dSep_with_fixed
           ((Finset.erase_subset _ _).trans hZfQ)
       · simp only [Finset.mem_union, not_or]
         refine ⟨⟨⟨?_, ?_⟩, ?_⟩, Finset.notMem_erase n Zf⟩
-        · exact fun h => (hnR_of_mem hX h) (hZf hnZf)
-        · exact fun h => (hnR_of_mem hY h) (hZf hnZf)
-        · exact fun h => (hnR_of_mem hZr h) (hZf hnZf)
+        · exact fun h => (hnR_of_mem hX h) hnZf
+        · exact fun h => (hnR_of_mem hY h) hnZf
+        · exact fun h => (hnR_of_mem hZr h) hnZf
 
 /-- **Extending an active path by a directed arm at a non-collider seam.**
 
@@ -1759,7 +1703,7 @@ theorem bbReachable_extend_directed_arm
     (hq_int : ∀ (i : ℕ) (hi : i + 2 < q.length), q.get ⟨i + 1, by omega⟩ ∉ Z)
     (hcZ : c ∉ Z) :
     b ∈ G.bbReachableVertices Z ({a} : Finset V) := by
-  have hq_act : G.IsActivePath Z q := G.isActivePath_of_directed_interior hq_edge hq_int
+  have hq_act : G.IsActivePath Z q := G.isActivePath_of_directed hq_edge hq_int
   have hqne : q ≠ [] := by intro h; rw [h] at hq_len; simp at hq_len
   -- First edge of `q` points out of `c`.
   have hq_head_eq : q.get ⟨0, by omega⟩ = c := by

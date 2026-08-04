@@ -37,7 +37,10 @@ open Finset
 
 variable {𝒢 : Type*} [Fintype 𝒢] [DecidableEq 𝒢] {T : ℕ}
 
-private lemma weighted_center_cov_uncentered_right {ι : Type*} [Fintype ι]
+/-- For a finite collection with weights summing to one, the weighted sum of deviations of one
+quantity from its weighted mean times another quantity equals one half of the weighted sum of
+pairwise differences in the two quantities. -/
+lemma weighted_center_cov_uncentered_right {ι : Type*} [Fintype ι]
     (p x y : ι → ℝ) (hp : ∑ i, p i = 1) :
     ∑ i, p i * (x i - ∑ j, p j * x j) * y i =
       (1 / 2) * ∑ i, ∑ j, p i * p j * (x i - x j) * (y i - y j) := by
@@ -79,19 +82,27 @@ private lemma weighted_center_cov_uncentered_right {ι : Type*} [Fintype ι]
     _ = ∑ i, p i * (x i - mx) * (y i - my) := hcenter
     _ = ∑ i, p i * (x i - ∑ j, p j * x j) * (y i - ∑ j, p j * y j) := by rfl
     _ = (1 / 2) * ∑ i, ∑ j, p i * p j * (x i - x j) * (y i - y j) :=
-      Causalean.Panel.Weighted.NormalizedWeights.weighted_center_cov p x y hp
+      Causalean.Panel.Weighted.NormalizedWeights.weighted_center_cov p x y hp (by norm_num)
 
-private lemma sum_weight_over_T_commute
+omit [DecidableEq 𝒢] in
+/-- In a finite cohort panel, a cohort-weighted sum over cohorts and periods with equal period
+weight equals the average over periods of the corresponding cohort-weighted sums. -/
+lemma sum_weight_over_T_commute
     (P : CohortPanel 𝒢 T) (f : 𝒢 → Fin T → ℝ) :
     (∑ g, ∑ t, (P.p g / (T : ℝ)) * f g t) =
       (T : ℝ)⁻¹ * ∑ t, ∑ g, P.p g * f g t := by
+  classical
   rw [Finset.sum_comm]
   simp [div_eq_mul_inv, Finset.mul_sum, mul_left_comm, mul_comm]
 
-private lemma pairwise_sum_normalize
+omit [DecidableEq 𝒢] in
+/-- In a finite cohort panel, averaging half the ordered-pair weighted total at each period equals
+the ordered-pair weighted total of the time sums with the same normalization. -/
+lemma pairwise_sum_normalize
     (P : CohortPanel 𝒢 T) (f : 𝒢 → 𝒢 → Fin T → ℝ) :
     (T : ℝ)⁻¹ * ∑ t, ((1 / 2) * ∑ g, ∑ u, P.p g * P.p u * f g u t) =
       ∑ g, ∑ u, (P.p g * P.p u / (2 * (T : ℝ))) * ∑ t, f g u t := by
+  classical
   calc
     (T : ℝ)⁻¹ * ∑ t, ((1 / 2) * ∑ g, ∑ u, P.p g * P.p u * f g u t)
         = (T : ℝ)⁻¹ * ∑ t, ∑ g, ∑ u, (1 / 2) * (P.p g * P.p u * f g u t) := by
@@ -126,32 +137,43 @@ noncomputable def numPairContribution (P : CohortPanel 𝒢 T) (g u : 𝒢) : �
   (P.p g * P.p u / (2 * (T : ℝ))) *
     ∑ t, (centeredD P g t - centeredD P u t) * (P.Y g t - P.Y u t)
 
-private lemma D_eq_zero_of_isInf (P : CohortPanel 𝒢 T) {u : 𝒢}
+omit [DecidableEq 𝒢] in
+/-- In a cohort panel, a cohort that is never treated has a zero treatment indicator in every
+period. -/
+lemma D_eq_zero_of_isInf (P : CohortPanel 𝒢 T) {u : 𝒢}
     (hu : AdoptionDate.isInf (P.A u)) (t : Fin T) :
     D P u t = 0 := by
+  classical
   unfold D
   rw [show P.A u = ⊤ from hu]
   simp [AdoptionDate.le]
 
+omit [DecidableEq 𝒢] in
 private lemma barD_eq_zero_of_isInf (P : CohortPanel 𝒢 T) {u : 𝒢}
     (hu : AdoptionDate.isInf (P.A u)) :
     barD P u = 0 := by
   unfold barD
   simp [D_eq_zero_of_isInf P hu]
 
-private lemma D_sq_eq_D (P : CohortPanel 𝒢 T) (g : 𝒢) (t : Fin T) :
+omit [DecidableEq 𝒢] in
+/-- In a cohort panel, the binary treatment indicator for any cohort and time period equals its
+own square. -/
+lemma D_sq_eq_D (P : CohortPanel 𝒢 T) (g : 𝒢) (t : Fin T) :
     D P g t ^ 2 = D P g t := by
   unfold D
   by_cases h : AdoptionDate.le (P.A g) t <;> simp [h]
 
-private lemma binary_time_variance (P : CohortPanel 𝒢 T)
+omit [DecidableEq 𝒢] in
+/-- For a binary quantity observed over the panel's time periods, its average
+    squared deviation from its time mean equals that mean times one minus that mean. -/
+lemma binary_time_variance (hT_pos : 0 < T)
     (x : Fin T → ℝ) (hx : ∀ t, x t ^ 2 = x t) :
     (T : ℝ)⁻¹ * ∑ t, (x t - ((T : ℝ)⁻¹ * ∑ t, x t)) ^ 2 =
       ((T : ℝ)⁻¹ * ∑ t, x t) * (1 - ((T : ℝ)⁻¹ * ∑ t, x t)) := by
   classical
   let m : ℝ := (T : ℝ)⁻¹ * ∑ t, x t
   have hTne : (T : ℝ) ≠ 0 := by
-    exact_mod_cast (ne_of_gt P.T_pos)
+    exact_mod_cast (ne_of_gt hT_pos)
   have hsum_sq : ∑ t, x t ^ 2 = ∑ t, x t := by
     exact Finset.sum_congr rfl (by intro t _ht; exact hx t)
   have hsum_expand :
@@ -178,9 +200,13 @@ private lemma binary_time_variance (P : CohortPanel 𝒢 T)
       field_simp [hTne]
       ring
 
+omit [DecidableEq 𝒢] in
 set_option linter.flexible false in
-private lemma binary_time_cov_filter_mean
-    (P : CohortPanel 𝒢 T) (p : Fin T → Prop) [DecidablePred p] (z : Fin T → ℝ)
+/-- For an indicator of a nonempty set of periods, the time-average product of
+    its centered value and another quantity equals its variance times the difference
+    between the selected-period and unselected-period averages of that quantity. -/
+lemma binary_time_cov_filter_mean
+    (hT_pos : 0 < T) (p : Fin T → Prop) [DecidablePred p] (z : Fin T → ℝ)
     (hcard1 : ((Finset.univ.filter p).card : ℝ) ≠ 0) :
     (T : ℝ)⁻¹ * ∑ t, ((if p t then (1 : ℝ) else 0) -
         ((T : ℝ)⁻¹ * ∑ t, (if p t then (1 : ℝ) else 0))) * z t =
@@ -192,7 +218,7 @@ private lemma binary_time_cov_filter_mean
               (∑ t ∈ (Finset.univ.filter (fun t => ¬ p t)), z t)) := by
   classical
   have hTne : (T : ℝ) ≠ 0 := by
-    exact_mod_cast (ne_of_gt P.T_pos)
+    exact_mod_cast (ne_of_gt hT_pos)
   let A : ℝ := ((Finset.univ.filter p).card : ℝ)
   let B : ℝ := ((Finset.univ.filter (fun t => ¬ p t)).card : ℝ)
   let Z1 : ℝ := ∑ t ∈ (Finset.univ.filter p), z t
@@ -279,6 +305,7 @@ private lemma binary_time_cov_filter_mean
               (∑ t ∈ (Finset.univ.filter (fun t => ¬ p t)), z t)) := by
       rw [hmain, hsum_if]
 
+omit [DecidableEq 𝒢] in
 open Classical in
 private lemma TN_treated_window_card_ne_zero
     (P : CohortPanel 𝒢 T) {g : 𝒢} (hg : AdoptionDate.isFin (P.A g)) :
@@ -380,7 +407,7 @@ lemma VD_eq_pairwise_centeredD (P : CohortPanel 𝒢 T) :
       refine Finset.sum_congr rfl ?_
       intro t _ht
       exact Causalean.Panel.Weighted.NormalizedWeights.weighted_center_var (fun g => P.p g)
-        (fun g => centeredD P g t) P.p_sum_one
+        (fun g => centeredD P g t) P.p_sum_one (by norm_num)
     _ = ∑ g, ∑ u, vdPairContribution P g u := by
       unfold vdPairContribution
       exact pairwise_sum_normalize P
@@ -516,10 +543,9 @@ time variance of the centered treated-vs-never gap as the Bernoulli variance of
 the finite cohort's treatment path. -/
 private lemma TN_time_variance_eq_gap
     (P : CohortPanel 𝒢 T) {g u : 𝒢}
-    (hg : AdoptionDate.isFin (P.A g)) (hu : AdoptionDate.isInf (P.A u)) :
+    (hu : AdoptionDate.isInf (P.A u)) :
     (T : ℝ)⁻¹ * ∑ t, (centeredD P g t - centeredD P u t)^2 =
       q P g u * (1 - q P g u) := by
-  have : AdoptionDate.isFin (P.A g) := hg
   calc
     (T : ℝ)⁻¹ * ∑ t, (centeredD P g t - centeredD P u t)^2 =
         (T : ℝ)⁻¹ * ∑ t, (D P g t - barD P g)^2 := by
@@ -528,7 +554,7 @@ private lemma TN_time_variance_eq_gap
       intro t _ht
       rw [TN_centeredD_gap_eq P hu t]
     _ = barD P g * (1 - barD P g) := by
-      simpa [barD] using binary_time_variance P (fun t => D P g t) (D_sq_eq_D P g)
+      simpa [barD] using binary_time_variance P.T_pos (fun t => D P g t) (D_sq_eq_D P g)
     _ = q P g u * (1 - q P g u) := by
       rw [q, barD_eq_zero_of_isInf P hu]
       ring
@@ -538,7 +564,7 @@ private lemma TN_time_variance_eq_gap
 `q P e ℓ * (1 - q P e ℓ)`. -/
 private lemma TT_time_variance_eq_gap
     (P : CohortPanel 𝒢 T) {e ℓ : 𝒢}
-    (hord : P.A e < P.A ℓ) (_hℓ : AdoptionDate.isFin (P.A ℓ)) :
+    (hord : P.A e < P.A ℓ) :
     (T : ℝ)⁻¹ * ∑ t, (centeredD P e t - centeredD P ℓ t)^2 =
       q P e ℓ * (1 - q P e ℓ) := by
   let x : Fin T → ℝ := fun t => D P e t - D P ℓ t
@@ -566,9 +592,11 @@ private lemma TT_time_variance_eq_gap
       unfold q
       ring
     _ = q P e ℓ * (1 - q P e ℓ) := by
-      rw [binary_time_variance P x hx, hmean]
+      rw [binary_time_variance P.T_pos x hx, hmean]
 
-private lemma disjoint_union_mean_eq_card_weighted_mean {α : Type*} [DecidableEq α]
+/-- When two finite sets are disjoint and the second is nonempty, the mean of a quantity over
+their union is the cardinality-weighted combination of its means over the two sets. -/
+lemma disjoint_union_mean_eq_card_weighted_mean {α : Type*} [DecidableEq α]
     (A B : Finset α) (z : α → ℝ) (hdisj : Disjoint A B)
     (hB : ((B.card : ℝ) ≠ 0)) :
     (((A ∪ B).card : ℝ)⁻¹ * ∑ t ∈ A ∪ B, z t) =
@@ -625,7 +653,7 @@ private lemma TT_middle_filter_eq_S1_EL
         (fun t => AdoptionDate.le (P.A e) t ∧ AdoptionDate.lt (P.A ℓ) t) =
       S1_EL P e ℓ := by
   ext t
-  simp [S1_EL]
+  rfl
 
 open Classical in
 private lemma TT_middle_filter_eq_S0_LE
@@ -634,7 +662,7 @@ private lemma TT_middle_filter_eq_S0_LE
         (fun t => AdoptionDate.le (P.A e) t ∧ AdoptionDate.lt (P.A ℓ) t) =
       S0_LE P e ℓ := by
   ext t
-  simp [S0_LE]
+  simp [S0_LE, S1_EL]
 
 set_option linter.flexible false in
 open Classical in
@@ -642,7 +670,7 @@ private lemma TT_middle_complement_eq_pre_union_post
     (P : CohortPanel 𝒢 T) (e ℓ : 𝒢) :
     Finset.univ.filter
         (fun t => ¬ (AdoptionDate.le (P.A e) t ∧ AdoptionDate.lt (P.A ℓ) t)) =
-      S0_EL P e ℓ ∪ S1_LE P e ℓ := by
+      S0_EL P e ∪ S1_LE P ℓ := by
   ext t
   simp [S0_EL, S1_LE, AdoptionDate.le, AdoptionDate.lt]
   constructor
@@ -659,7 +687,7 @@ private lemma TT_middle_complement_eq_pre_union_post
 set_option linter.flexible false in
 private lemma TT_disjoint_pre_mid
     (P : CohortPanel 𝒢 T) {e ℓ : 𝒢} :
-    Disjoint (S0_EL P e ℓ) (S1_EL P e ℓ) := by
+    Disjoint (S0_EL P e) (S1_EL P e ℓ) := by
   rw [Finset.disjoint_left]
   intro t ht0 ht1
   simp [S0_EL, S1_EL, AdoptionDate.le, AdoptionDate.lt] at ht0 ht1
@@ -668,7 +696,7 @@ private lemma TT_disjoint_pre_mid
 set_option linter.flexible false in
 private lemma TT_disjoint_mid_post
     (P : CohortPanel 𝒢 T) {e ℓ : 𝒢} :
-    Disjoint (S1_EL P e ℓ) (S1_LE P e ℓ) := by
+    Disjoint (S1_EL P e ℓ) (S1_LE P ℓ) := by
   rw [Finset.disjoint_left]
   intro t htm htp
   simp [S1_EL, S1_LE, AdoptionDate.le, AdoptionDate.lt] at htm htp
@@ -677,15 +705,15 @@ private lemma TT_disjoint_mid_post
 set_option linter.flexible false in
 private lemma TT_disjoint_pre_post
     (P : CohortPanel 𝒢 T) {e ℓ : 𝒢} (hord : P.A e < P.A ℓ) :
-    Disjoint (S0_EL P e ℓ) (S1_LE P e ℓ) := by
+    Disjoint (S0_EL P e) (S1_LE P ℓ) := by
   rw [Finset.disjoint_left]
   intro t ht0 ht1
   simp [S0_EL, S1_LE, AdoptionDate.le, AdoptionDate.lt] at ht0 ht1
   exact not_lt_of_ge ht1 (lt_trans ht0 hord)
 
 private lemma TT_pre_mid_post_union
-    (P : CohortPanel 𝒢 T) {e ℓ : 𝒢} (_hord : P.A e < P.A ℓ) :
-    S0_EL P e ℓ ∪ S1_EL P e ℓ ∪ S1_LE P e ℓ =
+    (P : CohortPanel 𝒢 T) {e ℓ : 𝒢} :
+    S0_EL P e ∪ S1_EL P e ℓ ∪ S1_LE P ℓ =
       (Finset.univ : Finset (Fin T)) := by
   ext t
   simp [S0_EL, S1_EL, S1_LE, AdoptionDate.le, AdoptionDate.lt]
@@ -700,14 +728,14 @@ private lemma TT_pre_mid_post_union
 open Classical in
 private lemma TT_post_window_card_ne_zero
     (P : CohortPanel 𝒢 T) {e ℓ : 𝒢} (hℓ : AdoptionDate.isFin (P.A ℓ)) :
-    (((S1_LE P e ℓ).card : ℝ) ≠ 0) := by
+    (((S1_LE P ℓ).card : ℝ) ≠ 0) := by
   cases hA : P.A ℓ with
   | top =>
       exact False.elim (hℓ hA)
   | coe a =>
-      have hmem : a ∈ S1_LE P e ℓ := by
+      have hmem : a ∈ S1_LE P ℓ := by
         simp [S1_LE, AdoptionDate.le, hA]
-      have hpos : 0 < (S1_LE P e ℓ).card :=
+      have hpos : 0 < (S1_LE P ℓ).card :=
         Finset.card_pos.mpr ⟨a, hmem⟩
       exact_mod_cast (ne_of_gt hpos)
 
@@ -716,12 +744,12 @@ private lemma TT_mu_eq_pre_complement_share
     (P : CohortPanel 𝒢 T) {e ℓ : 𝒢}
     (hord : P.A e < P.A ℓ) (hℓ : AdoptionDate.isFin (P.A ℓ)) :
     mu P e ℓ =
-      ((S0_EL P e ℓ).card : ℝ) /
-        (((S0_EL P e ℓ ∪ S1_LE P e ℓ).card : ℝ)) := by
+      ((S0_EL P e).card : ℝ) /
+        (((S0_EL P e ∪ S1_LE P ℓ).card : ℝ)) := by
   classical
-  let A := S0_EL P e ℓ
+  let A := S0_EL P e
   let M := S1_EL P e ℓ
-  let B := S1_LE P e ℓ
+  let B := S1_LE P ℓ
   have hpre_mid : Disjoint A M := by
     simpa [A, M] using TT_disjoint_pre_mid P (e := e) (ℓ := ℓ)
   have hmid_post : Disjoint M B := by
@@ -729,7 +757,7 @@ private lemma TT_mu_eq_pre_complement_share
   have hpre_post : Disjoint A B := by
     simpa [A, B] using TT_disjoint_pre_post P hord
   have huniv : A ∪ M ∪ B = (Finset.univ : Finset (Fin T)) := by
-    simpa [A, M, B] using TT_pre_mid_post_union P hord
+    simpa [A, M, B] using TT_pre_mid_post_union P
   have hAM_B : Disjoint (A ∪ M) B := by
     rw [Finset.disjoint_left]
     intro t ht hb
@@ -805,7 +833,7 @@ private lemma TN_time_cov_eq_lambda_delta_core
   classical
   let p : Fin T → Prop := fun t => AdoptionDate.le (P.A g) t
   let z : Fin T → ℝ := fun t => P.Y g t - P.Y u t
-  have hcov := binary_time_cov_filter_mean P p z
+  have hcov := binary_time_cov_filter_mean P.T_pos p z
     (by simpa [p] using TN_treated_window_card_ne_zero P hg)
   have hbar :
       ((T : ℝ)⁻¹ * ∑ t, (if p t then (1 : ℝ) else 0)) = barD P g := by
@@ -854,7 +882,7 @@ private lemma TT_time_cov_eq_lambda_delta_core
   let p : Fin T → Prop := fun t =>
     AdoptionDate.le (P.A e) t ∧ AdoptionDate.lt (P.A ℓ) t
   let z : Fin T → ℝ := fun t => P.Y e t - P.Y ℓ t
-  have hcov := binary_time_cov_filter_mean P p z
+  have hcov := binary_time_cov_filter_mean P.T_pos p z
     (by simpa [p] using TT_middle_window_card_ne_zero P hord hℓ)
   have hq :
       ((T : ℝ)⁻¹ * ∑ t, (if p t then (1 : ℝ) else 0)) = q P e ℓ := by
@@ -885,10 +913,10 @@ private lemma TT_time_cov_eq_lambda_delta_core
     have hmid0 : Finset.univ.filter p = S0_LE P e ℓ := by
       simpa [p] using TT_middle_filter_eq_S0_LE P e ℓ
     have hcomp :
-        Finset.univ.filter (fun t => ¬ p t) = S0_EL P e ℓ ∪ S1_LE P e ℓ := by
+        Finset.univ.filter (fun t => ¬ p t) = S0_EL P e ∪ S1_LE P ℓ := by
       simpa [p] using TT_middle_complement_eq_pre_union_post P e ℓ
     have hcomp_mean :=
-      disjoint_union_mean_eq_card_weighted_mean (S0_EL P e ℓ) (S1_LE P e ℓ) z
+      disjoint_union_mean_eq_card_weighted_mean (S0_EL P e) (S1_LE P ℓ) z
         (TT_disjoint_pre_post P hord) (TT_post_window_card_ne_zero P (e := e) hℓ)
     have hmu := TT_mu_eq_pre_complement_share P hord hℓ
     rw [hmid1, hcomp, hcomp_mean, hmu]
@@ -923,13 +951,13 @@ private lemma TT_time_cov_eq_lambda_delta_core
 contributions gives the treated-vs-never raw denominator factor. -/
 lemma TN_pair_vd_contribution_eq_gap
     (P : CohortPanel 𝒢 T) {g u : 𝒢}
-    (hg : AdoptionDate.isFin (P.A g)) (hu : AdoptionDate.isInf (P.A u)) :
+    (hu : AdoptionDate.isInf (P.A u)) :
     vdPairContribution P g u + vdPairContribution P u g =
       P.p g * P.p u * q P g u * (1 - q P g u) := by
   rw [vdPairContribution_add_swap]
   have hTne : (T : ℝ) ≠ 0 := by
     exact_mod_cast (ne_of_gt P.T_pos)
-  have hvar := TN_time_variance_eq_gap P hg hu
+  have hvar := TN_time_variance_eq_gap P (g := g) hu
   calc
     (P.p g * P.p u / (T : ℝ)) *
         ∑ t, (centeredD P g t - centeredD P u t)^2 =
@@ -944,13 +972,13 @@ lemma TN_pair_vd_contribution_eq_gap
 pairwise-variance contributions gives the timing-pair raw denominator factor. -/
 lemma TT_pair_vd_contribution_eq_gap
     (P : CohortPanel 𝒢 T) {e ℓ : 𝒢}
-    (hord : P.A e < P.A ℓ) (hℓ : AdoptionDate.isFin (P.A ℓ)) :
+    (hord : P.A e < P.A ℓ) :
     vdPairContribution P e ℓ + vdPairContribution P ℓ e =
       P.p e * P.p ℓ * q P e ℓ * (1 - q P e ℓ) := by
   rw [vdPairContribution_add_swap]
   have hTne : (T : ℝ) ≠ 0 := by
     exact_mod_cast (ne_of_gt P.T_pos)
-  have hvar := TT_time_variance_eq_gap P hord hℓ
+  have hvar := TT_time_variance_eq_gap P hord
   calc
     (P.p e * P.p ℓ / (T : ℝ)) *
         ∑ t, (centeredD P e t - centeredD P ℓ t)^2 =

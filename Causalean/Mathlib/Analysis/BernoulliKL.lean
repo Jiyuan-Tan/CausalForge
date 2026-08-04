@@ -33,7 +33,9 @@ namespace Causalean.Mathlib.Analysis
 
 open Set
 
-private lemma hasDerivAt_bernEntropy (x : ℝ) (hx0 : x ≠ 0) (hx1 : 1 - x ≠ 0) :
+/-- Away from zero and one, the negative Bernoulli entropy has derivative equal to the log odds
+of its argument. -/
+lemma hasDerivAt_bernEntropy (x : ℝ) (hx0 : x ≠ 0) (hx1 : 1 - x ≠ 0) :
     HasDerivAt (fun t : ℝ => t * Real.log t + (1 - t) * Real.log (1 - t))
       (Real.log x - Real.log (1 - x)) x := by
   have h1 : HasDerivAt (fun t : ℝ => t * Real.log t) (Real.log x + 1) x :=
@@ -53,7 +55,9 @@ private lemma hasDerivAt_bernEntropy (x : ℝ) (hx0 : x ≠ 0) (hx1 : 1 - x ≠ 
   convert h1.add h2 using 1
   ring
 
-private noncomputable def bernD (t : ℝ) : ℝ :=
+/-- The negative Bernoulli entropy at a probability is the sum of that probability times its
+logarithm and its complementary probability times the logarithm of the complement. -/
+noncomputable def bernD (t : ℝ) : ℝ :=
   t * Real.log t + (1 - t) * Real.log (1 - t)
 
 private noncomputable def bernH (q : ℝ) (t : ℝ) : ℝ :=
@@ -158,7 +162,9 @@ private lemma bernH_nonneg_of_mem_quarter_band {p q : ℝ}
       rw [bernH_self] at hnum_nonneg
       linarith
 
-private lemma bernoulliKL_eq_bregman {p q : ℝ}
+/-- Bernoulli Kullback–Leibler divergence equals the Bregman remainder of the negative entropy
+function at the second probability. -/
+lemma bernoulliKL_eq_bregman {p q : ℝ}
     (hp0 : p ≠ 0) (hp1 : 1 - p ≠ 0) (hq0 : q ≠ 0) (hq1 : 1 - q ≠ 0) :
     p * Real.log (p / q) + (1 - p) * Real.log ((1 - p) / (1 - q)) =
       bernD p - bernD q - (Real.log q - Real.log (1 - q)) * (p - q) := by

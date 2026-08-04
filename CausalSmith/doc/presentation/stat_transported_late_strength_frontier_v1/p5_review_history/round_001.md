@@ -1,0 +1,27 @@
+# Referee review
+
+**Recommendation:** minor_revision
+**Overall score:** 8/10 — The verified formal layer supports a clear and publishable minimax contribution, with only presentation and scope-calibration issues remaining.
+
+The paper characterizes honest expected-length frontiers for transported complier-effect ratios under weak transported first stages and covariate reweighting, with oracle and finite-cell feasible constructions attaining the same order. The contribution is technically meaningful for weak-IV robust causal transport inference, and the prose generally tracks the verified statements. The remaining issues concern clarity of normalization, presentation of assumptions, and how much intuition is given for the finite-cell restrictions and practical scope.
+
+## Strengths
+- Clear positive contribution: the paper identifies the effective-strength scalar n mu_n^2/kappa_n and proves matching lower and upper expected-length orders.
+- The verified statements support the main claims in the abstract, introduction, oracle frontier section, and finite-cell section.
+- The paper distinguishes conditional outcome-contrast transport from integrated receipt-contrast transport, which is important for claim fidelity.
+- The oracle-to-feasible progression is logically coherent and the compact causal range resolves the usual unbounded-ratio expected-length pathology.
+
+## Findings
+- **[minor·prose] Oracle Frontier and Score Inversion** — The definition of the score-inversion set writes the radius as "L_\alpha\{\frac1n\sum_{i=1}^n\frac{w(X_i)^2}{n}\}^{1/2}" before later explaining that it equals "L_\alpha\sqrt{\widehat\kappa_n/n}". Although algebraically aligned with the verified theorem, the first display is easy to misread as an unintended double normalization.
+  - *Fix:* Rewrite the definition display directly as "L_\alpha\sqrt{\widehat\kappa_n/n}" after defining "\widehat\kappa_n=n^{-1}\sum_i w(X_i)^2", matching the theorem statement.
+- **[minor·prose] Setup, Transport, and Honest Risk** — The assumption section defines a large model class through many conditions, but the reader receives only brief motivation for why the receipt transport restriction is target-average while the outcome transport restriction is conditional. This is central to the estimand and easy to miss.
+  - *Fix:* Add a short paragraph after the two transport assumptions explaining the asymmetry: conditional reduced-form outcome transport plus target-average first-stage transport is the exact structure used to identify the transported Wald numerator and denominator for the target complier contrast.
+- **[minor·prose] Fixed Geometry and Feasible Cell Weight Learning** — The finite-cell procedures are presented as constructive attainability results, but the practical interpretation of the growth gate "k_n=o(n^{1/2})" and the role of the target-sample collision statistic are underexplained. The theorem is formally clear, but the paper gives little intuition for when the feasible rule should be viewed as approximating the oracle frontier.
+  - *Fix:* Add two or three sentences before or after the finite-cell theorem explaining that the cell-growth condition keeps target-weight estimation and within-cell source contrast estimation within the same variance order as the oracle score, and that the collision statistic estimates the relevant second-moment scale rather than the weights themselves.
+- **[nit·prose] global** — Some formal object titles use title case while surrounding prose uses sentence-style technical names, for example "Compact Causal Range" and "Oracle Frontier Converse". This does not affect correctness, but it makes the paper read partly like a verification artifact rather than a journal article.
+  - *Fix:* Use sentence-style theorem titles consistently, e.g. "Compact causal range" and "Oracle frontier converse", unless the journal style requires title case.
+
+## Questions for authors
+- Can the introduction give one concrete empirical design class, such as transported encouragement designs with noncompliance, to help readers see where target-average receipt transport is substantively plausible?
+- Do the authors intend the finite-cell results mainly as constructive minimax attainability results, or also as recommended empirical procedures? The discussion should state that intended role affirmatively.
+

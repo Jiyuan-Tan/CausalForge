@@ -55,7 +55,7 @@ when the moving upper threshold tends to `−∞`, as happens when `bₙ → ∞
 * `farEnd_vanishes_of_tendsto_atBot` — discharges the far-endpoint hypothesis: if
   `Sᵤ ⇒ N(0,1)` and the threshold `−(c + bₙ) → −∞` (i.e. `bₙ → ∞`, the `Δ > 0`
   regime), then `P(Sᵤ,ₙ < −(c + bₙ)) → 0`.  This is where positivity of the width
-  enters, via the Gaussian tail bound `gaussian_tail_small`.
+  enters, via the Gaussian tail bound `finite_measure_halfline_tails_small`.
 
 For this endpoint orientation, the two-sided-vs-one-sided gain is made precise:
 the limiting lower bound is `Φ(c)` for a *one-sided* `c`, not `Φ(c) − Φ(−c)`.
@@ -108,7 +108,7 @@ If the normalized upper-endpoint statistic `Sᵤ ⇒ N(0,1)` and the (signed)
 threshold drifts to `−∞`, then the probability that `Sᵤ,ₙ` falls below it tends to
 `0`.  Concretely `tₙ = −(c + bₙ)` with `bₙ → ∞` (the positive-width regime);
 the proof bounds the moving tail by a fixed Gaussian tail `N(0,1)((-∞,-R])` made
-arbitrarily small via `gaussian_tail_small`, then transported by portmanteau. -/
+arbitrarily small via `finite_measure_halfline_tails_small`, then transported by portmanteau. -/
 theorem farEnd_vanishes_of_tendsto_atBot
     {Su : ℕ → Ω → ℝ} (hSu : ∀ n, Measurable (Su n))
     (hSud : Tendsto_dist Su (gaussianMeasure 0 1) μ (fun n => (hSu n).aemeasurable))
@@ -117,7 +117,7 @@ theorem farEnd_vanishes_of_tendsto_atBot
   rw [Metric.tendsto_atTop]
   intro ε hε
   -- A fixed Gaussian lower tail below level `ε/2`.
-  obtain ⟨R, hRpos, hRiic, _⟩ := gaussian_tail_small (v := 1) (ε := ε / 2) (by linarith)
+  obtain ⟨R, hRpos, hRiic, _⟩ := gaussian_tail_small_gaussian (v := 1) (ε := ε / 2) (by linarith)
   -- Portmanteau at the fixed continuity point `-R`: `P(Su,ₙ ≤ -R) → N(0,1)((-∞,-R])`.
   have hport : Tendsto (fun n => ((μ.map (Su n)) (Set.Iic (-R))).toReal) atTop
       (𝓝 ((gaussianMeasure 0 1) (Set.Iic (-R))).toReal) :=

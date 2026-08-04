@@ -590,7 +590,7 @@ private lemma doseWitness_kl_ne_top_of_half {p0 : (Fin d → ℝ) → ℝ} {q0 :
 /-- The two single-observation witness laws are mutually absolutely continuous and have
 integrable log-likelihood ratio (each fibre channel has positive mass on both atoms
 `{B,−B}`, so the rn-derivative is bounded). These are the hypotheses of
-`productKL_tensorization_iid`. -/
+`productKL_tensorization`. -/
 lemma doseWitness_single_ac_and_int {p0 : (Fin d → ℝ) → ℝ} {q0 : ℝ → ℝ}
     {B alpha lambda t0 h : ℝ}
     (hB : 0 < B)
@@ -684,8 +684,8 @@ lemma doseWitness_kl_nfold_le {p0 : (Fin d → ℝ) → ℝ} {q0 : ℝ → ℝ}
         (Measure.pi fun _ : Fin n => μ)
         (Measure.pi fun _ : Fin n => ν)).toReal
         ≤ (n : ℝ) * (InformationTheory.klDiv μ ν).toReal :=
-    (Causalean.Mathlib.InformationTheory.productKL_tensorization_iid
-      n μ ν hac hac' hint).apply
+    (Causalean.Mathlib.InformationTheory.productKL_tensorization
+      n μ ν hac hint).apply
   have hsingle :
       InformationTheory.klDiv μ ν ≤ ENNReal.ofReal C := by
     dsimp [μ, ν, C]

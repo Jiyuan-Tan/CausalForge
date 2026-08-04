@@ -37,6 +37,33 @@ describe("state schema", () => {
     expect(await readFile(file, "utf8")).toContain('"stage_completed": "-1.2"');
   });
 
+  it("migrates a legacy serialized draft handoff to the compact version marker", async () => {
+    const repoRoot = await mkdtemp(path.join(os.tmpdir(), "causalsmith-draft-marker-"));
+    const qid = "panel_minimal_basis";
+    const spec = "p1_bernoulli";
+    const state = createInitialState(qid);
+    state.proposed_from = {
+      topic: "test",
+      novelty_target: "field",
+      pivot_budget_used: 0,
+      final_verdict: "pending",
+      proposal_path: "proto_core.json",
+      novelty_justification: "test",
+      chosen_qid: qid,
+      chosen_specialization: spec,
+      current_version: 4,
+      last_draft_status: "completed",
+      last_draft_handoff: '{"status":"completed","large":"payload"}',
+    };
+    const file = statePath(repoRoot, qid, spec);
+    await mkdir(path.dirname(file), { recursive: true });
+    await writeFile(file, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+
+    const loaded = await loadState(repoRoot, qid, spec);
+    expect(loaded.proposed_from?.last_draft_version).toBe(4);
+    expect(loaded.proposed_from?.last_draft_handoff).toBeUndefined();
+  });
+
   it("converts qid to canonical CamelCase Lean subdir with mode suffix", () => {
     // Research-mode qids carry a `_Research` suffix.
     expect(qidToCamel("panel_spectral_threshold")).toBe("PANEL_SpectralThreshold_Research");

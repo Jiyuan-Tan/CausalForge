@@ -313,7 +313,7 @@ theorem commonAxisFiniteHeightOneCertificates_of_exact_forward_dimensions
         (forwardCumulantImageVariety_isIrreducible m (2 * m + 2))
   apply commonAxisFiniteHeightOneCertificates_of_forward_no_intermediate m hm
   exact no_intermediate_of_exact_affine_dimensions hX
-    (Set.ssubset_iff_subset_ne.mpr ⟨hCXle, hCXne⟩) hdims.1 hdims.2
+    hdims.1 hdims.2
 
 /-- Once the explicit principal minimal-prime certificates are supplied, the
 frozen custom codimension-one claims follow exactly. -/

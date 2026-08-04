@@ -6,6 +6,9 @@ Authors: Jiyuan Tan
 import Causalean.Mathlib.Analysis.BernsteinSzegoTrig.Basic
 import Causalean.Mathlib.Analysis.BernsteinSzegoTrig.TrigPoly
 import Causalean.Mathlib.Analysis.BernsteinSzegoTrig.Interp
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Basic
+import Mathlib.Algebra.Polynomial.CancelLeads
+import Mathlib.Topology.Algebra.Polynomial
 
 /-!
 # The sharp Bernstein / Szegő differential inequality
@@ -179,7 +182,7 @@ theorem cosComp_isTrigPolyLE (R : Polynomial ℝ) (β : ℕ) (hβ : R.natDegree 
         ring
 
 /-- The Szegő interpolant is continuous as a function of its argument. -/
-private theorem szegoInterp_continuous (β : ℕ) (Q₀ Q₁ t₀ : ℝ) :
+theorem szegoInterp_continuous (β : ℕ) (Q₀ Q₁ t₀ : ℝ) :
     Continuous (szegoInterp β Q₀ Q₁ t₀) := by
   unfold szegoInterp
   fun_prop

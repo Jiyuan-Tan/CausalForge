@@ -156,7 +156,7 @@ def ObsStepFiberRN
 /-- `Measure.pi` reindexes along `valuesEquivOfEq`, with **no** probability-measure
 hypothesis (the index equality reduces the equiv to the identity).  This is the
 σ-finite-friendly companion of `measurePreserving_valuesEquivOfEq`. -/
-lemma map_pi_valuesEquivOfEq {M' : Type*} [DecidableEq M'] [Fintype M']
+lemma map_pi_valuesEquivOfEq {M' : Type*} [DecidableEq M']
     {I J : Finset M'} {Ω' : M' → Type*} [∀ n, MeasurableSpace (Ω' n)]
     (h : I = J) (μ : (i : {i // i ∈ I}) → MeasureTheory.Measure (Ω' i.val)) :
     (MeasureTheory.Measure.pi μ).map (valuesEquivOfEq (Ω := Ω') h)
@@ -170,14 +170,14 @@ lemma map_pi_valuesEquivOfEq {M' : Type*} [DecidableEq M'] [Fintype M']
 /-- The scalar reference on one node maps to the singleton product reference. -/
 lemma singletonValues_map_ref_eq_jointRef
     (ref : ReferenceMeasures Ω) (v : SWIGNode N) :
-    (ref.μ v).map (singletonValues (Ω := Ω) (v := v))
+    (ref.μ v).map (singletonValues (α := swigΩ Ω) (v := v))
       = jointRef ref ({v} : Finset (SWIGNode N)) := by
   classical
   rw [jointRef]
   let e := MeasurableEquiv.piUnique
     (fun i : {i // i ∈ ({v} : Finset (SWIGNode N))} => swigΩ Ω i.val)
   have hfun :
-      (singletonValues (Ω := Ω) (v := v))
+      (singletonValues (α := swigΩ Ω) (v := v))
         = (fun x : swigΩ Ω v => (e.symm) (by simpa using x)) := by
     funext x
     ext i
@@ -186,7 +186,7 @@ lemma singletonValues_map_ref_eq_jointRef
     subst w
     rfl
   calc
-    MeasureTheory.Measure.map (singletonValues (Ω := Ω) (v := v)) (ref.μ v)
+    MeasureTheory.Measure.map (singletonValues (α := swigΩ Ω) (v := v)) (ref.μ v)
         = MeasureTheory.Measure.map
             (fun x : swigΩ Ω v => (e.symm) (by simpa using x)) (ref.μ v) := by
           rw [hfun]
@@ -204,10 +204,12 @@ This is the final `Measure.pi` reindexing along
 lemma jointRef_prefix_card_map
     (M : Causalean.SCM N Ω) (ref : ReferenceMeasures Ω) :
     (jointRef ref (M.prefixNodes M.observed.card)).map
-        (valuesEquivOfEq (Ω := swigΩ Ω) M.prefixNodes_card)
+        (valuesEquivOfEq (Ω := swigΩ Ω)
+          (M.prefixNodes_card M.observed.card (le_refl _)))
       = jointRef ref M.observed := by
   rw [jointRef, jointRef,
-    map_pi_valuesEquivOfEq M.prefixNodes_card (fun i => ref.μ i.val)]
+    map_pi_valuesEquivOfEq (M.prefixNodes_card M.observed.card (le_refl _))
+      (fun i => ref.μ i.val)]
 
 /-- The successor prefix extension carries the product of the old-prefix reference
 and the next-node reference to the successor-prefix reference. -/
@@ -224,14 +226,15 @@ lemma jointRef_extendObsPrefix
   let hDisj : Disjoint A B := by
     simpa [A, B, v] using M.prefixNodes_disjoint_singleton_next hk
   have hsing :
-      (ref.μ v).map (singletonValues (Ω := Ω) (v := v)) = jointRef ref B := by
+      (ref.μ v).map (singletonValues (α := swigΩ Ω) (v := v)) = jointRef ref B := by
     simpa [B] using singletonValues_map_ref_eq_jointRef (Ω := Ω) ref v
   have hprod :
       ((jointRef ref A).prod (ref.μ v)).map
-          (Prod.map id (singletonValues (Ω := Ω) (v := v)))
+          (Prod.map id (singletonValues (α := swigΩ Ω) (v := v)))
         = (jointRef ref A).prod (jointRef ref B) := by
     rw [← MeasureTheory.Measure.map_prod_map
-      (jointRef ref A) (ref.μ v) measurable_id (measurable_singletonValues (Ω := Ω))]
+      (jointRef ref A) (ref.μ v) measurable_id
+        (measurable_singletonValues (α := swigΩ Ω))]
     simp [hsing]
   have hunion :
       ((jointRef ref A).prod (jointRef ref B)).map
@@ -246,16 +249,16 @@ lemma jointRef_extendObsPrefix
     (((jointRef ref A).prod (ref.μ v)).map
       ((valuesEquivOfEq (Ω := swigΩ Ω) (M.prefixNodes_succ hk).symm) ∘
         (fun p : ValuesOn A (swigΩ Ω) × swigΩ Ω v =>
-          valuesUnionMk p.1 (singletonValues (Ω := Ω) (v := v) p.2))))
+          valuesUnionMk p.1 (singletonValues (α := swigΩ Ω) (v := v) p.2))))
       = jointRef ref (M.prefixNodes (k + 1))
   rw [← MeasureTheory.Measure.map_map]
   · have hinner :
         (fun p : ValuesOn A (swigΩ Ω) × swigΩ Ω v =>
-          valuesUnionMk p.1 (singletonValues (Ω := Ω) (v := v) p.2))
+          valuesUnionMk p.1 (singletonValues (α := swigΩ Ω) (v := v) p.2))
           =
         ((fun q : ValuesOn A (swigΩ Ω) × ValuesOn B (swigΩ Ω) =>
             valuesUnionMk q.1 q.2) ∘
-          (Prod.map id (singletonValues (Ω := Ω) (v := v)))) := by
+          (Prod.map id (singletonValues (α := swigΩ Ω) (v := v)))) := by
       rfl
     rw [hinner]
     rw [← MeasureTheory.Measure.map_map]
@@ -268,10 +271,10 @@ lemma jointRef_extendObsPrefix
       rw [jointRef, map_pi_valuesEquivOfEq]
       rfl
     · exact measurable_valuesUnionMk (Ω := swigΩ Ω)
-    · exact measurable_id.prodMap (measurable_singletonValues (Ω := Ω))
+    · exact measurable_id.prodMap (measurable_singletonValues (α := swigΩ Ω))
   · exact (valuesEquivOfEq (Ω := swigΩ Ω) (M.prefixNodes_succ hk).symm).measurable
   · exact (measurable_valuesUnionMk (Ω := swigΩ Ω)).comp
-      (measurable_id.prodMap (measurable_singletonValues (Ω := Ω)))
+      (measurable_id.prodMap (measurable_singletonValues (α := swigΩ Ω)))
 
 /-- The `i`-th one-step density factor read from a `k`-prefix assignment. -/
 noncomputable def prefixStepDensityInPrefix
@@ -362,7 +365,8 @@ lemma prefixDensityProduct_card_eq_qFactorDensityProduct
     (y : ValuesOn (M.prefixNodes M.observed.card) (swigΩ Ω)) :
     M.prefixDensityProduct ref s M.observed.card y =
       M.qFactorDensityProduct ref s
-        ((valuesEquivOfEq (Ω := swigΩ Ω) M.prefixNodes_card) y) := by
+        ((valuesEquivOfEq (Ω := swigΩ Ω)
+          (M.prefixNodes_card M.observed.card (le_refl _))) y) := by
   rw [prefixDensityProduct_eq_range_product M ref s M.observed.card (le_refl _) y]
   rw [Finset.prod_range]
   simp only [qFactorDensityProduct, obsStepCondDensity, prefixStepDensityInPrefix,
@@ -371,7 +375,8 @@ lemma prefixDensityProduct_card_eq_qFactorDensityProduct
   intro i _hi
   have hproj :
       valuesProjection (M.prefixNodes_subset_observed i.val)
-          (valuesProjection (le_of_eq M.prefixNodes_card.symm) y)
+          (valuesProjection
+            (le_of_eq (M.prefixNodes_card M.observed.card (le_refl _)).symm) y)
         =
       valuesProjection (M.prefixNodes_mono (Nat.le_of_lt i.isLt)) y := by
     funext a
@@ -624,24 +629,24 @@ lemma obsChainKernel_rnDeriv_eq_prefixDensityProduct
         dsimp [νk, refnode, node, ext]
         exact (jointRef_extendObsPrefix M ref hkc).symm
       have hsingle_emb : MeasurableEmbedding
-          (singletonValues (Ω := Ω) (v := node)) := by
-        refine ⟨?_, measurable_singletonValues (Ω := Ω), ?_⟩
+          (singletonValues (α := swigΩ Ω) (v := node)) := by
+        refine ⟨?_, measurable_singletonValues (α := swigΩ Ω), ?_⟩
         · intro x y hxy
-          have := congrArg (singletonValue (Ω := Ω) (v := node)) hxy
+          have := congrArg (singletonValue (α := swigΩ Ω) (v := node)) hxy
           simpa using this
         · intro A hA
           have hpre :
-              singletonValues (Ω := Ω) (v := node) '' A
-                = (singletonValue (Ω := Ω) (v := node)) ⁻¹' A := by
+              singletonValues (α := swigΩ Ω) (v := node) '' A
+                = (singletonValue (α := swigΩ Ω) (v := node)) ⁻¹' A := by
             ext x
             constructor
             · rintro ⟨a, ha, rfl⟩
               simpa using ha
             · intro hx
-              refine ⟨singletonValue (Ω := Ω) (v := node) x, hx, ?_⟩
-              exact singletonValues_singletonValue (Ω := Ω) x
+              refine ⟨singletonValue (α := swigΩ Ω) (v := node) x, hx, ?_⟩
+              exact singletonValues_singletonValue (α := swigΩ Ω) x
           rw [hpre]
-          exact hA.preimage (measurable_singletonValue (Ω := Ω))
+          exact hA.preimage (measurable_singletonValue (α := swigΩ Ω))
       have hext_emb : MeasurableEmbedding ext := by
         dsimp [ext, node]
         unfold extendObsPrefix
@@ -653,7 +658,7 @@ lemma obsChainKernel_rnDeriv_eq_prefixDensityProduct
               ValuesOn ({(M.observedAt ⟨k, hkc⟩).val} : Finset (SWIGNode N)) (swigΩ Ω) =>
               valuesUnionMk q.1 q.2) ∘
             Prod.map id
-              (singletonValues (Ω := Ω) (v := (M.observedAt ⟨k, hkc⟩).val)))
+              (singletonValues (α := swigΩ Ω) (v := (M.observedAt ⟨k, hkc⟩).val)))
         refine ((valuesUnionEquiv (Ω := Ω)
           (M.prefixNodes_disjoint_singleton_next hkc)).symm.measurableEmbedding).comp ?_
         exact MeasurableEmbedding.id.prodMap hsingle_emb
@@ -694,7 +699,7 @@ lemma obsChainKernel_rnDeriv_eq_prefixDensityProduct
             exact Finset.mem_union_right _ (Finset.mem_singleton_self _)⟩ = p.2 := by
         have hnext :=
           congrArg
-            (fun q => singletonValue (Ω := Ω)
+            (fun q => singletonValue (α := swigΩ Ω)
               (v := (M.observedAt ⟨k, hkc⟩).val) q.2) hpair
         simpa using hnext
       rw [prefixDensityProduct]
@@ -707,7 +712,8 @@ lemma qFactorProduct_rnDeriv_eq_obsChainKernel_card_pullback_of_jointRef
     (M : Causalean.SCM N Ω) (ref : ReferenceMeasures Ω) (s : M.FixedValues)
     (href :
       (jointRef ref (M.prefixNodes M.observed.card)).map
-          (valuesEquivOfEq (Ω := swigΩ Ω) M.prefixNodes_card)
+          (valuesEquivOfEq (Ω := swigΩ Ω)
+            (M.prefixNodes_card M.observed.card (le_refl _)))
         = jointRef ref M.observed)
     [∀ s' : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.obsKernel s')]
     [∀ (k : ℕ) (hk : k < M.observed.card),
@@ -724,9 +730,11 @@ lemma qFactorProduct_rnDeriv_eq_obsChainKernel_card_pullback_of_jointRef
         fun x =>
           ((M.obsChainKernel M.observed.card (le_refl _) s).rnDeriv
             (jointRef ref (M.prefixNodes M.observed.card)))
-            ((valuesEquivOfEq (Ω := swigΩ Ω) M.prefixNodes_card).symm x) := by
+            ((valuesEquivOfEq (Ω := swigΩ Ω)
+              (M.prefixNodes_card M.observed.card (le_refl _))).symm x) := by
   classical
-  set e := valuesEquivOfEq (Ω := swigΩ Ω) M.prefixNodes_card with he
+  set e := valuesEquivOfEq (Ω := swigΩ Ω)
+    (M.prefixNodes_card M.observed.card (le_refl _)) with he
   have hf : MeasurableEmbedding
       (e : ValuesOn (M.prefixNodes M.observed.card) (swigΩ Ω) →
         ValuesOn M.observed (swigΩ Ω)) := e.measurableEmbedding
@@ -759,7 +767,8 @@ lemma qFactorProduct_rnDeriv_eq_obsChainKernel_card_pullback
         fun x =>
           ((M.obsChainKernel M.observed.card (le_refl _) s).rnDeriv
             (jointRef ref (M.prefixNodes M.observed.card)))
-            ((valuesEquivOfEq (Ω := swigΩ Ω) M.prefixNodes_card).symm x) := by
+            ((valuesEquivOfEq (Ω := swigΩ Ω)
+              (M.prefixNodes_card M.observed.card (le_refl _))).symm x) := by
   exact
     qFactorProduct_rnDeriv_eq_obsChainKernel_card_pullback_of_jointRef
       M ref s (jointRef_prefix_card_map M ref)
@@ -790,7 +799,8 @@ lemma obsChainKernel_card_rnDeriv_eq_qFactorDensityProduct_prefix_induction
       =ᵐ[jointRef ref (M.prefixNodes M.observed.card)]
         fun y =>
           M.qFactorDensityProduct ref s
-            ((valuesEquivOfEq (Ω := swigΩ Ω) M.prefixNodes_card) y) := by
+            ((valuesEquivOfEq (Ω := swigΩ Ω)
+              (M.prefixNodes_card M.observed.card (le_refl _))) y) := by
   exact
     (obsChainKernel_rnDeriv_eq_prefixDensityProduct M ref hdom s hstep
       M.observed.card (le_refl _)).trans
@@ -821,7 +831,8 @@ lemma obsChainKernel_card_rnDeriv_eq_qFactorDensityProduct_prefix
       =ᵐ[jointRef ref (M.prefixNodes M.observed.card)]
         fun y =>
           M.qFactorDensityProduct ref s
-            ((valuesEquivOfEq (Ω := swigΩ Ω) M.prefixNodes_card) y) := by
+            ((valuesEquivOfEq (Ω := swigΩ Ω)
+              (M.prefixNodes_card M.observed.card (le_refl _))) y) := by
   exact obsChainKernel_card_rnDeriv_eq_qFactorDensityProduct_prefix_induction
     M ref hdom s hstep
 
@@ -831,7 +842,8 @@ lemma obsChainKernel_card_rnDeriv_pullback_eq_qFactorDensityProduct_of_prefix
     (M : Causalean.SCM N Ω) (ref : ReferenceMeasures Ω) (s : M.FixedValues)
     (href :
       (jointRef ref (M.prefixNodes M.observed.card)).map
-          (valuesEquivOfEq (Ω := swigΩ Ω) M.prefixNodes_card)
+          (valuesEquivOfEq (Ω := swigΩ Ω)
+            (M.prefixNodes_card M.observed.card (le_refl _)))
         = jointRef ref M.observed)
     [∀ s' : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.obsKernel s')]
     [∀ (k : ℕ) (hk : k < M.observed.card),
@@ -849,15 +861,18 @@ lemma obsChainKernel_card_rnDeriv_pullback_eq_qFactorDensityProduct_of_prefix
         =ᵐ[jointRef ref (M.prefixNodes M.observed.card)]
           fun y =>
             M.qFactorDensityProduct ref s
-              ((valuesEquivOfEq (Ω := swigΩ Ω) M.prefixNodes_card) y)) :
+              ((valuesEquivOfEq (Ω := swigΩ Ω)
+                (M.prefixNodes_card M.observed.card (le_refl _))) y)) :
     (fun x =>
       ((M.obsChainKernel M.observed.card (le_refl _) s).rnDeriv
         (jointRef ref (M.prefixNodes M.observed.card)))
-        ((valuesEquivOfEq (Ω := swigΩ Ω) M.prefixNodes_card).symm x))
+        ((valuesEquivOfEq (Ω := swigΩ Ω)
+          (M.prefixNodes_card M.observed.card (le_refl _))).symm x))
       =ᵐ[jointRef ref M.observed]
         M.qFactorDensityProduct ref s := by
   classical
-  set e := valuesEquivOfEq (Ω := swigΩ Ω) M.prefixNodes_card with he
+  set e := valuesEquivOfEq (Ω := swigΩ Ω)
+    (M.prefixNodes_card M.observed.card (le_refl _)) with he
   have hf : MeasurableEmbedding
       (e : ValuesOn (M.prefixNodes M.observed.card) (swigΩ Ω) →
         ValuesOn M.observed (swigΩ Ω)) := e.measurableEmbedding
@@ -883,7 +898,8 @@ lemma obsChainKernel_card_rnDeriv_pullback_eq_qFactorDensityProduct
     (fun x =>
       ((M.obsChainKernel M.observed.card (le_refl _) s).rnDeriv
         (jointRef ref (M.prefixNodes M.observed.card)))
-        ((valuesEquivOfEq (Ω := swigΩ Ω) M.prefixNodes_card).symm x))
+        ((valuesEquivOfEq (Ω := swigΩ Ω)
+          (M.prefixNodes_card M.observed.card (le_refl _))).symm x))
       =ᵐ[jointRef ref M.observed]
         M.qFactorDensityProduct ref s := by
   exact

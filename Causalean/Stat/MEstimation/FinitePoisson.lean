@@ -93,10 +93,11 @@ lemma finitePoissonObjective_continuous {E I : Type*} [NormedAddCommGroup E] [No
 give existence and uniqueness of the Poisson pseudo-true parameter. -/
 lemma finitePoissonObjective_exists_unique_max {E I : Type*}
     [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
-    [Fintype I] [DecidableEq I] [Nonempty I]
+    [Fintype I] [Nonempty I]
     (q m : I → ℝ) (A : E →ₗ[ℝ] (I → ℝ))
     (hq : ∀ i, 0 < q i) (hm : ∀ i, 0 < m i) (hA : Function.Injective A) :
     ∃! x : E, ∀ y, finitePoissonObjective q m A y ≤ finitePoissonObjective q m A x := by
+  classical
   let B : E →ₗ[ℝ] (I → ℝ) :=
     { toFun := fun x i => q i * min (m i) 1 * A x i
       map_add' := by
@@ -173,7 +174,7 @@ lemma finitePoissonObjective_exists_unique_max {E I : Type*}
   letI : ProperSpace E := FiniteDimensional.proper_real E
   obtain ⟨xstar, hxball, hxmax⟩ :=
     (ProperSpace.isCompact_closedBall (0 : E) R).exists_isMaxOn
-      ⟨0, by simpa [ball, Metric.mem_closedBall, hR0]⟩
+      ⟨0, by simp [Metric.mem_closedBall, hR0]⟩
       (finitePoissonObjective_continuous q m A).continuousOn
   have hxglobal : ∀ y, finitePoissonObjective q m A y ≤
       finitePoissonObjective q m A xstar := by

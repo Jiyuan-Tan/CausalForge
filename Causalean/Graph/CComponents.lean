@@ -59,19 +59,19 @@ namespace SWIGGraph
 
 variable (G : SWIGGraph N)
 
-/-- Two observed variables are **directly confounded** if they share an unobserved parent.
+/-- Two distinct variables are **directly confounded** if they share an unobserved parent.
 
     Two observed variables are directly confounded when some latent root has
-    directed edges into both of them. Fixed intervention nodes play no role in
-    this relation. -/
+    directed edges into both of them; the graph invariant makes those endpoints
+    observed automatically. Fixed intervention nodes play no role in this relation. -/
 def directlyConfounded (v₁ v₂ : SWIGNode N) : Prop :=
-  v₁ ∈ G.observed ∧ v₂ ∈ G.observed ∧ v₁ ≠ v₂ ∧
+  v₁ ≠ v₂ ∧
   ∃ u ∈ G.unobserved, G.dag.edge u v₁ ∧ G.dag.edge u v₂
 
 /-- Direct confounding can be decided by finite search for a shared unobserved parent. -/
 instance decDirectlyConfounded (v₁ v₂ : SWIGNode N) :
     Decidable (G.directlyConfounded v₁ v₂) :=
-  inferInstanceAs (Decidable (_ ∧ _ ∧ _ ∧ ∃ _, _))
+  inferInstanceAs (Decidable (_ ∧ ∃ _, _))
 
 /-- The bidirected neighbors of an observed variable `v`: all observed variables that are
     directly confounded with `v`. -/
@@ -137,8 +137,8 @@ def cComponentSet : Finset (Finset (SWIGNode N)) :=
     observed-ness conditions are symmetric in the two arguments). -/
 theorem directlyConfounded_symm {v₁ v₂ : SWIGNode N}
     (h : G.directlyConfounded v₁ v₂) : G.directlyConfounded v₂ v₁ := by
-  obtain ⟨h1, h2, hne, u, hu, e1, e2⟩ := h
-  exact ⟨h2, h1, hne.symm, u, hu, e2, e1⟩
+  obtain ⟨hne, u, hu, e1, e2⟩ := h
+  exact ⟨hne.symm, u, hu, e2, e1⟩
 
 /-- Both endpoints of a bidirected-reachability derivation are observed
     (left endpoint). -/
@@ -154,7 +154,11 @@ theorem bidirectedReachable_observed_right {u v : SWIGNode N}
     (h : G.bidirectedReachable u v) : v ∈ G.observed := by
   induction h with
   | refl hv => exact hv
-  | step _ hconf _ => exact hconf.2.1
+  | step _ hconf _ =>
+    obtain ⟨_, u, hu, _, huw⟩ := hconf
+    exact G.all_children_in_observed u
+      (Finset.mem_union_left _ (Finset.mem_union_left _ hu))
+      (G.dag.mem_children.mpr huw)
 
 /-- Prepend a directly-confounded step at the head of a reachability chain:
     if `u` and `v` are directly confounded and `v` reaches `w`, then `u`
@@ -164,7 +168,13 @@ theorem bidirectedReachable_head {u v w : SWIGNode N}
     G.bidirectedReachable u w := by
   induction hvw with
   | refl hv =>
-    exact bidirectedReachable.step (bidirectedReachable.refl huv.1) huv
+    obtain ⟨hne, x, hx, hux, hxv⟩ := huv
+    have huObs : u ∈ G.observed :=
+      G.all_children_in_observed x
+        (Finset.mem_union_left _ (Finset.mem_union_left _ hx))
+        (G.dag.mem_children.mpr hux)
+    exact bidirectedReachable.step (bidirectedReachable.refl huObs)
+      ⟨hne, x, hx, hux, hxv⟩
   | step _ hconf ih =>
     exact bidirectedReachable.step ih hconf
 
@@ -275,9 +285,8 @@ theorem bidirectedBFS_go_reachable {start : SWIGNode N} :
         · exact hnew y hy
       · exact hnew
 
-/-- **Closure at saturation.** Under the BFS invariant — the frontier is the
-    newly-added layer (`frontier ⊆ visited`), the visited set is observed, and
-    every *already-expanded* visited node (one outside the frontier) has all its
+/-- **Closure at saturation.** Under the BFS invariants — the visited set is
+    observed, and every *already-expanded* visited node (one outside the frontier) has all its
     directly-confounded neighbors in `visited` — and given enough remaining fuel
     (`card observed - card visited ≤ fuel`), the result of `go` is closed under
     the directly-confounded relation: every neighbor of a node in the result is
@@ -289,7 +298,6 @@ theorem bidirectedBFS_go_reachable {start : SWIGNode N} :
     set is confounding-closed. -/
 theorem bidirectedBFS_go_closed :
     ∀ (fuel : ℕ) (frontier visited : Finset (SWIGNode N)),
-      frontier ⊆ visited →
       visited ⊆ G.observed →
       (∀ a ∈ visited, a ∉ frontier → ∀ b, G.directlyConfounded a b → b ∈ visited) →
       (G.observed.card - visited.card ≤ fuel) →
@@ -298,7 +306,7 @@ theorem bidirectedBFS_go_closed :
   intro fuel
   induction fuel with
   | zero =>
-    intro frontier visited hfv hvo hexp hbudget a ha b hab
+    intro frontier visited hvo hexp hbudget a ha b hab
     rw [bidirectedBFS.go] at ha ⊢
     -- fuel = 0: budget forces visited to already cover observed, so frontier
     -- nodes' neighbors are visited too.
@@ -307,11 +315,15 @@ theorem bidirectedBFS_go_closed :
       Finset.eq_of_subset_of_card_le hvo hcard
     by_cases haf : a ∈ frontier
     · -- a ∈ frontier ⊆ visited = observed; b ∈ observed ⊆ visited.
-      have hbo : b ∈ G.observed := hab.2.1
+      obtain ⟨_, u, hu, _, hub⟩ := hab
+      have hbo : b ∈ G.observed :=
+        G.all_children_in_observed u
+          (Finset.mem_union_left _ (Finset.mem_union_left _ hu))
+          (G.dag.mem_children.mpr hub)
       rwa [hveq]
     · exact hexp a ha haf b hab
   | succ n ih =>
-    intro frontier visited hfv hvo hexp hbudget a ha b hab
+    intro frontier visited hvo hexp hbudget a ha b hab
     rw [bidirectedBFS.go] at ha ⊢
     set newNeighbors := frontier.biUnion (G.bidirectedNeighbors) \ visited with hnn
     by_cases h : newNeighbors = ∅
@@ -322,7 +334,12 @@ theorem bidirectedBFS_go_closed :
         -- b must already be in visited.
         have hbn : b ∈ G.bidirectedNeighbors a := by
           rw [bidirectedNeighbors, Finset.mem_filter]
-          exact ⟨hab.2.1, hab⟩
+          obtain ⟨hne, u, hu, hua, hub⟩ := hab
+          have hbo : b ∈ G.observed :=
+            G.all_children_in_observed u
+              (Finset.mem_union_left _ (Finset.mem_union_left _ hu))
+              (G.dag.mem_children.mpr hub)
+          exact ⟨hbo, ⟨hne, u, hu, hua, hub⟩⟩
         have hbU : b ∈ frontier.biUnion (G.bidirectedNeighbors) :=
           Finset.mem_biUnion.mpr ⟨a, haf, hbn⟩
         by_contra hbv
@@ -354,7 +371,12 @@ theorem bidirectedBFS_go_closed :
           -- c ∈ newNeighbors.
           have hcn : c ∈ G.bidirectedNeighbors x := by
             rw [bidirectedNeighbors, Finset.mem_filter]
-            exact ⟨hxc.2.1, hxc⟩
+            obtain ⟨hne, u, hu, hux, huc⟩ := hxc
+            have hco : c ∈ G.observed :=
+              G.all_children_in_observed u
+                (Finset.mem_union_left _ (Finset.mem_union_left _ hu))
+                (G.dag.mem_children.mpr huc)
+            exact ⟨hco, ⟨hne, u, hu, hux, huc⟩⟩
           have hcU : c ∈ frontier.biUnion (G.bidirectedNeighbors) :=
             Finset.mem_biUnion.mpr ⟨x, hxf, hcn⟩
           by_cases hcv : c ∈ visited
@@ -371,7 +393,7 @@ theorem bidirectedBFS_go_closed :
         Finset.card_pos.mpr (Finset.nonempty_of_ne_empty h)
       have hbudget' : G.observed.card - (visited ∪ newNeighbors).card ≤ n := by
         rw [hcardU]; omega
-      exact ih newNeighbors (visited ∪ newNeighbors) hfv' hvo' hexp' hbudget' a ha b hab
+      exact ih newNeighbors (visited ∪ newNeighbors) hvo' hexp' hbudget' a ha b hab
 
 /-- **BFS computes bidirected reachability.** A node `w` is in the BFS from an
     observed `start` iff it is bidirected-reachable from `start`.
@@ -402,7 +424,7 @@ theorem mem_bidirectedBFS_iff_reachable {start w : SWIGNode N}
     simp only [hstart, if_true]
     -- The initial state satisfies the closure invariant with sufficient fuel.
     have hclosed := G.bidirectedBFS_go_closed (Fintype.card (SWIGNode N))
-      {start} {start} (Finset.Subset.refl _) (by simpa using hstart)
+      {start} {start} (by simpa using hstart)
       (by intro a ha haf; exact absurd ha haf)
       (by
         have h1 : G.observed.card ≤ Fintype.card (SWIGNode N) :=
@@ -505,34 +527,39 @@ theorem not_directlyConfounded_of_mem_cComponentSet_of_not_mem
     bidirectedReachable.step hsv hconf
   exact hwNotC ((G.mem_cComponentOf_iff_reachable hsObs).mpr hsw)
 
-/-- No latent root can be a shared parent of a c-component node and an observed
-node outside that c-component.
+/-- No latent root can be a shared parent of a c-component node and a node
+outside that c-component.
 
 This is the concrete shared-parent form of
 `not_directlyConfounded_of_mem_cComponentSet_of_not_mem`. -/
 theorem no_shared_unobserved_parent_of_mem_cComponentSet_of_not_mem
     {C : Finset (SWIGNode N)} (hC : C ∈ G.cComponentSet)
-    {v w u : SWIGNode N} (hvC : v ∈ C) (hwObs : w ∈ G.observed)
-    (hwNotC : w ∉ C) (hu : u ∈ G.unobserved)
+    {v w u : SWIGNode N} (hvC : v ∈ C) (hwNotC : w ∉ C) (hu : u ∈ G.unobserved)
     (huv : G.dag.edge u v) (huw : G.dag.edge u w) : False := by
-  have hvObs : v ∈ G.observed := G.cComponentSet_subset_observed C hC hvC
   have hvw : v ≠ w := by
     intro h
     exact hwNotC (h ▸ hvC)
   exact (G.not_directlyConfounded_of_mem_cComponentSet_of_not_mem
       hC hvC hwNotC)
-    ⟨hvObs, hwObs, hvw, u, hu, huv, huw⟩
+    ⟨hvw, u, hu, huv, huw⟩
 
 /-- If a latent node has edges into two observed nodes retained by an induced
 graph, those observed nodes seed the same induced c-component. -/
 theorem induce_cComponentOf_eq_of_shared_unobserved_parent
     (R : Finset (SWIGNode N)) {u v w : SWIGNode N}
     (hu : u ∈ G.unobserved)
-    (hvR : v ∈ R) (hvObs : v ∈ G.observed)
-    (hwR : w ∈ R) (hwObs : w ∈ G.observed)
+    (hvR : v ∈ R) (hwR : w ∈ R)
     (huv : G.dag.edge u v) (huw : G.dag.edge u w) :
     (G.induce R).cComponentOf v = (G.induce R).cComponentOf w := by
   classical
+  have hvObs : v ∈ G.observed :=
+    G.all_children_in_observed u
+      (Finset.mem_union_left _ (Finset.mem_union_left _ hu))
+      (G.dag.mem_children.mpr huv)
+  have hwObs : w ∈ G.observed :=
+    G.all_children_in_observed u
+      (Finset.mem_union_left _ (Finset.mem_union_left _ hu))
+      (G.dag.mem_children.mpr huw)
   by_cases hvw : v = w
   · subst hvw
     rfl
@@ -552,7 +579,7 @@ theorem induce_cComponentOf_eq_of_shared_unobserved_parent
     rw [SWIGGraph.inducedDag_edge_iff]
     exact ⟨huw, Finset.mem_union_right _ huInd, by simp [hwR, hwObs]⟩
   have hconf : (G.induce R).directlyConfounded v w :=
-    ⟨hvInd, hwInd, hvw, u, huInd, huvInd, huwInd⟩
+    ⟨hvw, u, huInd, huvInd, huwInd⟩
   exact (G.induce R).cComponentOf_eq_of_reachable
     (SWIGGraph.bidirectedReachable.step
       (SWIGGraph.bidirectedReachable.refl hvInd) hconf)

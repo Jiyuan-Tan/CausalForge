@@ -93,11 +93,11 @@ lemma measurable_factualY : Measurable S.factualY := S.yVar.measurable_factual
 
 /-- Each instrument stratum event is measurable. -/
 lemma measurableSet_zEvent (z : α) : MeasurableSet (S.zEvent z) :=
-  S.zVar.measurableSet_event _
+  S.zVar.measurableSet_event _ (measurableSet_singleton _)
 
 /-- Each treatment arm event is measurable. -/
 lemma measurableSet_dEvent (d : Bool) : MeasurableSet (S.dEvent d) :=
-  S.dVar.measurableSet_event _
+  S.dVar.measurableSet_event _ (measurableSet_singleton _)
 
 /-! ### Target parameter, support, and bound functionals -/
 

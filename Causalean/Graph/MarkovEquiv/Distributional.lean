@@ -41,16 +41,14 @@ variable {N : Type uN} [DecidableEq N] [Fintype N]
 variable {Ω : N → Type uΩ} [∀ n, MeasurableSpace (Ω n)]
 
 /-- A measure `μ` on the random values of `M` is a **global I-map** of a DAG `G` (on the
-same node set) when every d-separation in `G` is a conditional independence under `μ`:
-for pairwise-disjoint `X, Y, Z`, if `G` d-separates `X` and `Y` given `Z` then `X ⟂ Y | Z`
-under `μ`. -/
+same node set) when every d-separation in `G` is a conditional independence under `μ`.
+The required pairwise disjointness is already part of d-separation. -/
 def IsGlobalIMap (G : DAG (SWIGNode N)) (M : Causalean.SCM N Ω)
     [StandardBorelSpace M.RandomValues]
     (μ : MeasureTheory.Measure M.RandomValues) [MeasureTheory.IsFiniteMeasure μ] : Prop :=
   ∀ (X Y Z : Finset (SWIGNode N)) (hX : X ⊆ M.randomVars) (hY : Y ⊆ M.randomVars)
     (hZ : Z ⊆ M.randomVars),
-    Disjoint X Y → Disjoint X Z → Disjoint Y Z → G.dSep X Y Z →
-    FullCondIndep M X Y Z hX hY hZ μ
+    G.dSep X Y Z → FullCondIndep M X Y Z hX hY hZ μ
 
 /-- A measure `μ` is **faithful** to a DAG `G` when every conditional independence of `μ`
 reflects a genuine d-separation of `G` (the converse of being an I-map): for
@@ -83,8 +81,8 @@ theorem isGlobalIMap_dag_self (M : Causalean.SCM N Ω)
     [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.jointKernel s)]
     (s : M.FixedValues) :
     IsGlobalIMap M.dag M (M.jointKernel s) := by
-  intro X Y Z hX hY hZ hXY hXZ hYZ hdsep
-  exact full_globalMarkov M X Y Z hX hY hZ hXY hXZ hYZ hdsep s
+  intro X Y Z hX hY hZ hdsep
+  exact full_globalMarkov M X Y Z hX hY hZ hdsep s
 
 /-- **Easy half.** Graph-level Markov equivalence implies distributional Markov equivalence:
 when two DAGs declare the same d-separations they are I-maps of the same distributions. -/
@@ -92,10 +90,10 @@ theorem distMarkovEquiv_of_markovEquiv {G₁ G₂ : DAG (SWIGNode N)}
     (h : MarkovEquiv G₁ G₂) : DistMarkovEquiv Ω G₁ G₂ := by
   intro M _ μ _
   constructor
-  · intro himap X Y Z hX hY hZ hXY hXZ hYZ hdsep
-    exact himap X Y Z hX hY hZ hXY hXZ hYZ ((h X Y Z hXY hXZ hYZ).mpr hdsep)
-  · intro himap X Y Z hX hY hZ hXY hXZ hYZ hdsep
-    exact himap X Y Z hX hY hZ hXY hXZ hYZ ((h X Y Z hXY hXZ hYZ).mp hdsep)
+  · intro himap X Y Z hX hY hZ hdsep
+    exact himap X Y Z hX hY hZ ((h X Y Z).mpr hdsep)
+  · intro himap X Y Z hX hY hZ hdsep
+    exact himap X Y Z hX hY hZ ((h X Y Z).mp hdsep)
 
 end SCM
 

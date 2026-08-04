@@ -46,7 +46,7 @@ theorem localEmpProcessModulus_of_localized
     {ψ : ℕ → ℝ → ℝ} {b : ℝ}
     (hreg : LocalizedRademacherRegime S S_iid split g idx norm ψ b)
     (hpop_center : ∀ θ ∈ S.Θ_set, |S.L θ g - S.L S.θ₀ g| ≤ b)
-    {δ : ℝ} (hδ : 0 < δ) (hδ' : δ ≤ 1) :
+    {δ : ℝ} (_hδ : 0 < δ) (_hδ' : δ ≤ 1) :
     LocalEmpProcessModulus S S_iid split
       (fun _n => Real.sqrt (2 * b)) δ g
 ```
@@ -272,7 +272,7 @@ theorem localEmpProcessModulus_of_localized_bounded
     {ψ : ℕ → ℝ → ℝ} {b : ℝ}
     (hreg : LocalizedRademacherRegime S S_iid split g idx norm ψ b)
     (hpop_center : ∀ θ ∈ S.Θ_set, |S.L θ g - S.L S.θ₀ g| ≤ b)
-    {δ : ℝ} (hδ : 0 < δ) (hδ' : δ ≤ 1) :
+    {δ : ℝ} (_hδ : 0 < δ) (_hδ' : δ ≤ 1) :
     LocalEmpProcessModulus S S_iid split
       (fun _n => Real.sqrt (2 * b)) δ g := by
   intro n
@@ -491,7 +491,7 @@ theorem localEmpProcessModulus_of_localized_sharp
         (fun (θ : S.Θ_set) (z : Z) => S.ℓ z θ.val g - S.ℓ z S.θ₀ g)
         norm P_Z (id : Z → Z) m (ψ m))
     -- BddAbove hypothesis needed by the bridge lemma inside `localized_uniform_deviation`.
-    (hrad_bdd : ∀ m r, ∀ S_fin : Fin m → Z, ∀ σ : Signs m,
+    (_hrad_bdd : ∀ m r, ∀ S_fin : Fin m → Z, ∀ σ : Signs m,
       BddAbove (Set.range fun p : starHullParam S.Θ_set =>
         |(m : ℝ)⁻¹ * ∑ k : Fin m, (σ k : ℝ) *
           starHullZeroOut
@@ -623,7 +623,7 @@ theorem localEmpProcessModulus_of_localized_sharp
         measurable_id hF_meas_full Rloc hδ hδ' m
         (by simpa [m] using hm_pos_nat) (r := Rmax) (by simpa [Rloc] using hRmax_lb m)
         (by simpa [Rloc] using hcrit_pos m) (by simpa [Rloc] using hcrit_fp m)
-        (by simpa [F] using hrad_bdd m Rmax)
+        (by simpa [F] using _hrad_bdd m Rmax)
         (by simpa [F, Function.comp_def] using hrad_int m Rmax)
     have hnonempty_modulus :
         ∃ E : Set Ω, MeasurableSet E ∧ μ E ≥ 1 - ENNReal.ofReal δ ∧
@@ -690,7 +690,7 @@ theorem localEmpProcessModulus_of_localized_sharp
               hr_lb
               (by simpa [Rloc, δn] using hcrit_pos m)
               (by simpa [Rloc, δn] using hcrit_fp m)
-              (by simpa [F] using hrad_bdd m (δn * (2 : ℝ) ^ (k : ℕ)))
+              (by simpa [F] using _hrad_bdd m (δn * (2 : ℝ) ^ (k : ℕ)))
               (by simpa [F, Function.comp_def] using
                 hrad_int m (δn * (2 : ℝ) ^ (k : ℕ))) with
             ⟨E_k, hE_k_meas, hE_k_prob, hE_k_bound⟩
@@ -1287,8 +1287,8 @@ theorem localEmpProcessModulus_of_localized_sharp_ae
     intro m r S_fin σ
     exact starHullZeroOut_bddAbove_of_bound
       (fun (θ : Sc.Θ_set) (z : Z) => Sc.ℓ z θ.val g - Sc.ℓ z Sc.θ₀ g)
-      norm hb
-      (fun θ z => hSc_bound z θ.val θ.property) m r S_fin σ
+      norm hb m r S_fin
+      (fun θ k => hSc_bound (S_fin k) θ.val θ.property) σ
   have hSc_rad_int : ∀ m r,
       Integrable
         (fun ω : Fin m → Z =>
@@ -1327,7 +1327,7 @@ theorem localEmpProcessModulus_of_localized_sharp_ae
     (hℓ_meas := hSc_ℓ_meas) (hℓ_int := hSc_ℓ_int)
     (hF_diam := hSc_diam) (hRmax_lb := hRmax_lb)
     (hcrit_pos := hcrit_pos) (hcrit_fp := hcrit_fp)
-    (hψ_ub := hSc_ψ_ub) (hrad_bdd := hSc_rad_bdd)
+    (hψ_ub := hSc_ψ_ub) hSc_rad_bdd
     (hrad_int := hSc_rad_int)
     (hδ := hδ) (hδ' := hδ') (hδ_dom := hδ_dom)
   intro n

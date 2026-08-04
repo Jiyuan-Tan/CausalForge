@@ -163,7 +163,9 @@ noncomputable def pinnedExtend
         else
           Classical.arbitrary _
 
-private lemma splitMono_edge_from_unobserved_iff
+/-- Under a valid monolithic intervention split, a directed edge from an unobserved node exists
+    exactly when that edge existed in the original graph. -/
+lemma splitMono_edge_from_unobserved_iff
     (G : SWIGGraph N) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ G.observed)
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ G.fixed)
@@ -176,7 +178,9 @@ private lemma splitMono_edge_from_unobserved_iff
   simp [SWIGGraph.splitMono, SWIGGraph.splitMonoDAG,
     SWIGGraph.splitMonoEdgeRel, hdX]
 
-private lemma splitMono_directlyConfounded_iff
+/-- Under a valid monolithic intervention split, two nodes are directly confounded exactly when
+    they were directly confounded in the original graph. -/
+lemma splitMono_directlyConfounded_iff
     (G : SWIGGraph N) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ G.observed)
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ G.fixed)
@@ -184,16 +188,18 @@ private lemma splitMono_directlyConfounded_iff
     (G.splitMono X hObs hFix).directlyConfounded v₁ v₂ ↔
       G.directlyConfounded v₁ v₂ := by
   constructor
-  · rintro ⟨hv₁, hv₂, hne, u, hu, hu₁, hu₂⟩
-    exact ⟨hv₁, hv₂, hne, u, hu,
+  · rintro ⟨hne, u, hu, hu₁, hu₂⟩
+    exact ⟨hne, u, hu,
       (splitMono_edge_from_unobserved_iff G X hObs hFix hu).mp hu₁,
       (splitMono_edge_from_unobserved_iff G X hObs hFix hu).mp hu₂⟩
-  · rintro ⟨hv₁, hv₂, hne, u, hu, hu₁, hu₂⟩
-    exact ⟨hv₁, hv₂, hne, u, hu,
+  · rintro ⟨hne, u, hu, hu₁, hu₂⟩
+    exact ⟨hne, u, hu,
       (splitMono_edge_from_unobserved_iff G X hObs hFix hu).mpr hu₁,
       (splitMono_edge_from_unobserved_iff G X hObs hFix hu).mpr hu₂⟩
 
-private lemma splitMono_bidirectedReachable_iff
+/-- A valid monolithic intervention split leaves bidirected reachability between any two
+SWIG nodes unchanged. -/
+lemma splitMono_bidirectedReachable_iff
     (G : SWIGGraph N) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ G.observed)
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ G.fixed)
@@ -214,7 +220,9 @@ private lemma splitMono_bidirectedReachable_iff
         exact SWIGGraph.bidirectedReachable.step ih
           ((splitMono_directlyConfounded_iff G X hObs hFix _ _).mpr hconf)
 
-private lemma splitMono_cComponentOf_eq
+/-- Under a valid monolithic intervention split, the bidirected component containing any
+SWIG node is the same as it was before intervention. -/
+lemma splitMono_cComponentOf_eq
     (G : SWIGGraph N) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ G.observed)
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ G.fixed)
@@ -232,7 +240,9 @@ private lemma splitMono_cComponentOf_eq
         ((G.mem_cComponentOf_iff_reachable hv).mp hw)
   · simp [SWIGGraph.cComponentOf, SWIGGraph.bidirectedBFS, hv]
 
-private lemma splitMono_cComponentSet_eq
+/-- Splitting a graph under a valid monolithic intervention leaves its partition into bidirected
+connected components unchanged. -/
+lemma splitMono_cComponentSet_eq
     (G : SWIGGraph N) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ G.observed)
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ G.fixed) :
@@ -240,19 +250,9 @@ private lemma splitMono_cComponentSet_eq
   ext C
   simp [SWIGGraph.cComponentSet, splitMono_cComponentOf_eq G X hObs hFix]
 
-private lemma DAG.mem_ancestralSet_of_edge_to_mem
-    {V : Type*} [DecidableEq V] [Fintype V] (G : DAG V)
-    {u v : V} {S : Finset V} (huv : G.edge u v)
-    (hv : v ∈ G.ancestralSet S) :
-    u ∈ G.ancestralSet S := by
-  rcases Finset.mem_union.mp hv with hvS | hvA
-  · exact G.mem_ancestralSet_of_isAncestor hvS (DAG.isAncestor.edge huv)
-  · apply Finset.mem_union_right
-    simp only [DAG.ancestorsSet, Finset.mem_filter, Finset.mem_univ, true_and] at hvA ⊢
-    obtain ⟨w, hwS, hvw⟩ := hvA
-    exact ⟨w, hwS, G.isAncestor_trans (DAG.isAncestor.edge huv) hvw⟩
-
-private lemma splitMono_no_edge_from_intervened_random
+/-- Under a valid monolithic intervention split, the random copy of an intervened variable has no
+    outgoing directed edge. -/
+lemma splitMono_no_edge_from_intervened_random
     (G : SWIGGraph N) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ G.observed)
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ G.fixed)
@@ -261,7 +261,9 @@ private lemma splitMono_no_edge_from_intervened_random
   simp [SWIGGraph.splitMono, SWIGGraph.splitMonoDAG,
     SWIGGraph.splitMonoEdgeRel, hd]
 
-private lemma splitMono_not_isAncestor_from_intervened_random
+/-- After a valid monolithic intervention split, the random copy of an intervened variable
+is not an ancestor of any node. -/
+lemma splitMono_not_isAncestor_from_intervened_random
     (G : SWIGGraph N) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ G.observed)
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ G.fixed)
@@ -272,7 +274,9 @@ private lemma splitMono_not_isAncestor_from_intervened_random
   | edge he => exact splitMono_no_edge_from_intervened_random G X hObs hFix hd _ he
   | trans _ _ ih => exact ih
 
-private lemma random_intervened_mem_fixAncestralSet_iff_mem_Y_aux
+/-- For an intervened variable, its random copy is a post-intervention ancestor
+of the query exactly when it is explicitly queried. -/
+lemma random_intervened_mem_fixAncestralSet_iff_mem_Y
     (M : Causalean.SCM N Ω) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ M.observed)
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ M.fixed)
@@ -321,7 +325,7 @@ lemma pinnedExtend_projection_eq
         have hAnc : SWIGNode.random d ∈ fixAncestralSet M X hObs hFix Y :=
           (Finset.mem_inter.mp hvD).1
         have hYd : SWIGNode.random d ∈ Y :=
-          (random_intervened_mem_fixAncestralSet_iff_mem_Y_aux
+          (random_intervened_mem_fixAncestralSet_iff_mem_Y
             M X hObs hFix Y hd).mp hAnc
         exact hYX d hd hYd
       simp [valuesProjection, pinnedExtend, hnotX, hvD]
@@ -385,17 +389,6 @@ lemma fixObservedAncestralSet_obsParent_closed
     exact DAG.mem_ancestralSet_of_edge_to_mem
       (M.fixSet X hObs hFix).toSWIGGraph.dag hEdge hvAnc
   exact Finset.mem_inter.mpr ⟨hwAnc, hw⟩
-
-/-- For an intervened variable, its random copy is a post-intervention ancestor
-of the query exactly when it is explicitly queried. -/
-lemma random_intervened_mem_fixAncestralSet_iff_mem_Y
-    (M : Causalean.SCM N Ω) (X : Finset N)
-    (hObs : ∀ D ∈ X, SWIGNode.random D ∈ M.observed)
-    (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ M.fixed)
-    (Y : Finset (SWIGNode N)) {d : N} (hd : d ∈ X) :
-    SWIGNode.random d ∈ fixAncestralSet M X hObs hFix Y ↔
-      SWIGNode.random d ∈ Y := by
-  exact random_intervened_mem_fixAncestralSet_iff_mem_Y_aux M X hObs hFix Y hd
 
 /-- The **post-intervention marginal on the observed ancestors of the query**: the
 do-observational law pushed forward to the observed part of `Ystar = An_{G_X}(Y)`.

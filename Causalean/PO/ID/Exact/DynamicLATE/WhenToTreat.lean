@@ -60,7 +60,7 @@ private lemma treatmentRegime_assign_D1 (S : PODynLATESystem P γ₀ γ₁)
     (hv : S.D1 ∈ (S.treatmentRegime d).target) :
     (S.treatmentRegime d).assign S.D1 hv = S.hD1bool.symm (d 0) := by
   change Regime.listLookup _ _ _ = _
-  exact Regime.listLookup_cons_self _
+  exact Regime.listLookup_cons_self
 
 omit [MeasurableSingletonClass γ₀] [MeasurableSingletonClass γ₁]
   [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ] in
@@ -74,8 +74,8 @@ private lemma treatmentRegime_assign_D2 (S : PODynLATESystem P γ₀ γ₁)
   have hv' : S.D2 ∈ ([⟨S.D2, S.hD2bool.symm (d 1)⟩] :
       List ((v : P.V) × P.X v)).map Sigma.fst := by
     simp
-  rw [Regime.listLookup_cons_of_ne S.D1_ne_D2.symm _ hv']
-  exact Regime.listLookup_cons_self _
+  rw [Regime.listLookup_cons_of_ne S.D1_ne_D2.symm hv']
+  exact Regime.listLookup_cons_self
 
 /-- On the event `{D(z) = d}`, the encouragement-regime outcome `Y(D(z))`
 agrees pointwise with the treatment-regime outcome `Y(d)`.

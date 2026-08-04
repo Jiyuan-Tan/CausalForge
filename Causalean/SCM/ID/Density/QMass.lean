@@ -76,7 +76,7 @@ private def singletonValuePt
 @[simp] private lemma overrideOn_singleton_self
     {M : Causalean.SCM N Ω} {v : SWIGNode N} (hv : v ∈ M.observed)
     (x : ValuesOn M.observed (swigΩ Ω)) (ω : swigΩ Ω v) :
-    overrideOn (Finset.singleton_subset_iff.mpr hv) x (singletonValuePt v ω)
+    overrideOn x (singletonValuePt v ω)
       ⟨v, hv⟩ = ω := by
   simp
 
@@ -84,7 +84,7 @@ private def singletonValuePt
     {M : Causalean.SCM N Ω} {v w : SWIGNode N}
     (hv : v ∈ M.observed) (hw : w ∈ M.observed) (hvw : w ≠ v)
     (x : ValuesOn M.observed (swigΩ Ω)) (ω : swigΩ Ω v) :
-    overrideOn (Finset.singleton_subset_iff.mpr hv) x (singletonValuePt v ω)
+    overrideOn x (singletonValuePt v ω)
       ⟨w, hw⟩ = x ⟨w, hw⟩ := by
   simp [hvw]
 
@@ -116,34 +116,33 @@ private lemma overrideOn_union_singletonValuePt
     (hU : U ⊆ I) (hvI : v ∈ I)
     (x : ValuesOn I (swigΩ Ω)) (y : ValuesOn U (swigΩ Ω))
     (ω : swigΩ Ω v) :
-    overrideOn hUnion x (valuesUnionMk (singletonValuePt v ω) y) =
-      overrideOn (Finset.singleton_subset_iff.mpr hvI)
-        (overrideOn hU x y) (singletonValuePt v ω) := by
+    overrideOn x (valuesUnionMk (singletonValuePt v ω) y) =
+      overrideOn (overrideOn x y) (singletonValuePt v ω) := by
   classical
   funext i
   by_cases hiv : i.val = v
   · have hiSing : i.val ∈ ({v} : Finset (SWIGNode N)) := by simp [hiv]
     have hiUnion : i.val ∈ ({v} : Finset (SWIGNode N)) ∪ U :=
       Finset.mem_union_left U hiSing
-    rw [overrideOn_mem _ _ _ i hiUnion]
-    rw [valuesUnionMk_apply_left _ _ hiUnion hiSing]
-    rw [overrideOn_mem _ _ _ i hiSing]
+    rw [overrideOn_mem _ _ i hiUnion]
+    rw [valuesUnionMk_apply_left _ _ hiSing]
+    rw [overrideOn_mem _ _ i hiSing]
   · have hiNotSing : i.val ∉ ({v} : Finset (SWIGNode N)) := by simpa using hiv
     by_cases hiU : i.val ∈ U
     · have hiUnion : i.val ∈ ({v} : Finset (SWIGNode N)) ∪ U :=
         Finset.mem_union_right _ hiU
-      rw [overrideOn_mem _ _ _ i hiUnion]
-      rw [valuesUnionMk_apply_right _ _ hiUnion hiNotSing hiU]
-      rw [overrideOn_notMem _ _ _ i hiNotSing]
-      rw [overrideOn_mem hU x y i hiU]
+      rw [overrideOn_mem _ _ i hiUnion]
+      rw [valuesUnionMk_apply_right _ _ hiUnion hiNotSing]
+      rw [overrideOn_notMem _ _ i hiNotSing]
+      rw [overrideOn_mem x y i hiU]
     · have hiUnionNot : i.val ∉ ({v} : Finset (SWIGNode N)) ∪ U := by
         intro hmem
         rcases Finset.mem_union.mp hmem with hs | hUmem
         · exact hiNotSing hs
         · exact hiU hUmem
-      rw [overrideOn_notMem _ _ _ i hiUnionNot]
-      rw [overrideOn_notMem _ _ _ i hiNotSing]
-      rw [overrideOn_notMem hU x y i hiU]
+      rw [overrideOn_notMem _ _ i hiUnionNot]
+      rw [overrideOn_notMem _ _ i hiNotSing]
+      rw [overrideOn_notMem x y i hiU]
 
 private lemma marginalizeOn_congr_finset
     [∀ n, Fintype (Ω n)]
@@ -151,7 +150,7 @@ private lemma marginalizeOn_congr_finset
     (hAB : A = B) (hA : A ⊆ M.observed) (hB : B ⊆ M.observed)
     (q : ValuesOn M.observed (swigΩ Ω) → ENNReal)
     (x : ValuesOn M.observed (swigΩ Ω)) :
-    M.marginalizeOn A hA q x = M.marginalizeOn B hB q x := by
+    marginalizeOn M.observed A hA q x = marginalizeOn M.observed B hB q x := by
   classical
   subst B
   unfold marginalizeOn
@@ -159,12 +158,14 @@ private lemma marginalizeOn_congr_finset
   intro y _hy
   congr
 
-private lemma marginalizeOn_empty
+/-- Marginalizing a mass function over an empty set of observed coordinates leaves its value at
+every observed assignment unchanged. -/
+lemma marginalizeOn_empty
     [∀ n, Fintype (Ω n)]
     (M : Causalean.SCM N Ω)
     (q : ValuesOn M.observed (swigΩ Ω) → ENNReal)
     (x : ValuesOn M.observed (swigΩ Ω)) :
-    M.marginalizeOn ∅ (by simp) q x = q x := by
+    marginalizeOn M.observed ∅ (by simp) q x = q x := by
   classical
   unfold marginalizeOn
   let y0 : ValuesOn (∅ : Finset (SWIGNode N)) (swigΩ Ω) :=
@@ -185,13 +186,10 @@ private lemma marginalizeOn_insert
     (hU : U ⊆ M.observed)
     (q : ValuesOn M.observed (swigΩ Ω) → ENNReal)
     (x : ValuesOn M.observed (swigΩ Ω)) :
-    M.marginalizeOn (insert v U) hins q x =
-      M.marginalizeOn U hU
+    marginalizeOn M.observed (insert v U) hins q x =
+      marginalizeOn M.observed U hU
         (fun x' => ∑ ω : swigΩ Ω v,
-          q (overrideOn
-            (Finset.singleton_subset_iff.mpr
-              (hins (Finset.mem_insert_self v U)))
-            x' (singletonValuePt v ω))) x := by
+          q (overrideOn x' (singletonValuePt v ω))) x := by
   classical
   have hvObs : v ∈ M.observed := hins (Finset.mem_insert_self v U)
   have hInsert : insert v U = ({v} : Finset (SWIGNode N)) ∪ U := by
@@ -209,48 +207,46 @@ private lemma marginalizeOn_insert
   unfold marginalizeOn
   calc
     (∑ y : ValuesOn (insert v U) (swigΩ Ω),
-        q (overrideOn hins x y))
+        q (overrideOn x y))
         = ∑ y : ValuesOn (({v} : Finset (SWIGNode N)) ∪ U) (swigΩ Ω),
-            q (overrideOn hUnion x y) := by
+            q (overrideOn x y) := by
           refine Fintype.sum_equiv
             (valuesEquivOfEq (Ω := swigΩ Ω) hInsert).toEquiv _ _ ?_
           intro y
           congr
     _ = ∑ p : ValuesOn ({v} : Finset (SWIGNode N)) (swigΩ Ω) ×
               ValuesOn U (swigΩ Ω),
-            q (overrideOn hUnion x ((valuesUnionEquiv (Ω := Ω) hDisj).symm p)) := by
+            q (overrideOn x ((valuesUnionEquiv (Ω := Ω) hDisj).symm p)) := by
           refine Fintype.sum_equiv (valuesUnionEquiv (Ω := Ω) hDisj).toEquiv _ _ ?_
           intro y
           congr
           exact ((valuesUnionEquiv (Ω := Ω) hDisj).left_inv y).symm
     _ = ∑ p : ValuesOn ({v} : Finset (SWIGNode N)) (swigΩ Ω) ×
               ValuesOn U (swigΩ Ω),
-            q (overrideOn hUnion x (valuesUnionMk p.1 p.2)) := by
+            q (overrideOn x (valuesUnionMk p.1 p.2)) := by
           rfl
     _ = ∑ yv : ValuesOn ({v} : Finset (SWIGNode N)) (swigΩ Ω),
           ∑ yU : ValuesOn U (swigΩ Ω),
-            q (overrideOn hUnion x (valuesUnionMk yv yU)) := by
+            q (overrideOn x (valuesUnionMk yv yU)) := by
           rw [Fintype.sum_prod_type]
     _ = ∑ yU : ValuesOn U (swigΩ Ω),
           ∑ yv : ValuesOn ({v} : Finset (SWIGNode N)) (swigΩ Ω),
-            q (overrideOn hUnion x (valuesUnionMk yv yU)) := by
+            q (overrideOn x (valuesUnionMk yv yU)) := by
           simpa using (Finset.sum_comm
             (s := (Finset.univ :
               Finset (ValuesOn ({v} : Finset (SWIGNode N)) (swigΩ Ω))))
             (t := (Finset.univ : Finset (ValuesOn U (swigΩ Ω))))
-            (f := fun yv yU => q (overrideOn hUnion x (valuesUnionMk yv yU))))
+            (f := fun yv yU => q (overrideOn x (valuesUnionMk yv yU))))
     _ = ∑ yU : ValuesOn U (swigΩ Ω),
           ∑ ω : swigΩ Ω v,
-            q (overrideOn (Finset.singleton_subset_iff.mpr hvObs)
-              (overrideOn hU x yU) (singletonValuePt v ω)) := by
+            q (overrideOn (overrideOn x yU) (singletonValuePt v ω)) := by
           refine Finset.sum_congr rfl ?_
           intro yU _hyU
           refine (Fintype.sum_equiv (singletonValuePtEquiv (Ω := Ω) v)
             (fun ω : swigΩ Ω v =>
-              q (overrideOn (Finset.singleton_subset_iff.mpr hvObs)
-                (overrideOn hU x yU) (singletonValuePt v ω)))
+              q (overrideOn (overrideOn x yU) (singletonValuePt v ω)))
             (fun yv : ValuesOn ({v} : Finset (SWIGNode N)) (swigΩ Ω) =>
-              q (overrideOn hUnion x (valuesUnionMk yv yU))) ?_).symm
+              q (overrideOn x (valuesUnionMk yv yU))) ?_).symm
           intro ω
           exact (congrArg q
             (overrideOn_union_singletonValuePt hUnion hU hvObs x yU ω)).symm
@@ -263,16 +259,14 @@ private lemma localConsistent_override_singleton_of_ne
     (x : ValuesOn M.observed (swigΩ Ω)) (ω : swigΩ Ω v)
     (ℓ : M.LatentValues) :
     M.localConsistent s
-        (overrideOn (Finset.singleton_subset_iff.mpr (hT hvT)) x
-          (singletonValuePt v ω))
+        (overrideOn x (singletonValuePt v ω))
         w (hT hwT) ℓ ↔
       M.localConsistent s x w (hT hwT) ℓ := by
   classical
   rw [localConsistent_iff_structFun_dispatch,
     localConsistent_iff_structFun_dispatch]
   have htarget :
-      overrideOn (Finset.singleton_subset_iff.mpr (hT hvT)) x
-          (singletonValuePt v ω) ⟨w, hT hwT⟩ =
+      overrideOn x (singletonValuePt v ω) ⟨w, hT hwT⟩ =
         x ⟨w, hT hwT⟩ := by
     exact overrideOn_singleton_ne (hT hvT) (hT hwT) hwv x ω
   have hparents :
@@ -289,8 +283,7 @@ private lemma localConsistent_override_singleton_of_ne
                 · exact hob
               · exact absurd h2 huo
             (show swigΩ Ω p.val from
-              overrideOn (Finset.singleton_subset_iff.mpr (hT hvT)) x
-                (singletonValuePt v ω) ⟨p.val, hobs⟩))
+              overrideOn x (singletonValuePt v ω) ⟨p.val, hobs⟩))
         =
       (fun p : {p // p ∈ M.dag.parents w} =>
           if huo : p.val ∈ M.unobserved then ℓ ⟨p.val, huo⟩
@@ -342,16 +335,14 @@ private lemma localConsistent_override_singleton_self_iff
     (x : ValuesOn M.observed (swigΩ Ω)) (ω : swigΩ Ω v)
     (ℓ : M.LatentValues) :
     M.localConsistent s
-        (overrideOn (Finset.singleton_subset_iff.mpr (hT hvT)) x
-          (singletonValuePt v ω))
+        (overrideOn x (singletonValuePt v ω))
         v (hT hvT) ℓ ↔
       localStructValue M s x v (hT hvT) ℓ = ω := by
   classical
   rw [localConsistent_iff_structFun_dispatch]
   unfold localStructValue
   have htarget :
-      overrideOn (Finset.singleton_subset_iff.mpr (hT hvT)) x
-          (singletonValuePt v ω) ⟨v, hT hvT⟩ = ω := by
+      overrideOn x (singletonValuePt v ω) ⟨v, hT hvT⟩ = ω := by
     exact overrideOn_singleton_self (hT hvT) x ω
   have hparents :
       (fun p : {p // p ∈ M.dag.parents v} =>
@@ -367,8 +358,7 @@ private lemma localConsistent_override_singleton_self_iff
                 · exact hob
               · exact absurd h2 huo
             (show swigΩ Ω p.val from
-              overrideOn (Finset.singleton_subset_iff.mpr (hT hvT)) x
-                (singletonValuePt v ω) ⟨p.val, hobs⟩))
+              overrideOn x (singletonValuePt v ω) ⟨p.val, hobs⟩))
         =
       (fun p : {p // p ∈ M.dag.parents v} =>
           if huo : p.val ∈ M.unobserved then ℓ ⟨p.val, huo⟩
@@ -403,8 +393,7 @@ private lemma qLocalEvent_override_singleton_eq_inter
     (x : ValuesOn M.observed (swigΩ Ω)) (ω : swigΩ Ω v) :
     {ℓ : M.LatentValues | ∀ w (hw : w ∈ T),
       M.localConsistent s
-        (overrideOn (Finset.singleton_subset_iff.mpr (hT hvT)) x
-          (singletonValuePt v ω))
+        (overrideOn x (singletonValuePt v ω))
         w (hT hw) ℓ} =
       {ℓ : M.LatentValues | ∀ w (hw : w ∈ T.erase v),
         M.localConsistent s x w (hT (Finset.mem_of_mem_erase hw)) ℓ} ∩
@@ -440,8 +429,7 @@ lemma qLocalMass_sum_point_eliminate
     (x : ValuesOn M.observed (swigΩ Ω)) :
     (∑ ω : swigΩ Ω v,
       M.qLocalMass s T hT
-        (overrideOn (Finset.singleton_subset_iff.mpr (hT hvT)) x
-          (singletonValuePt v ω))) =
+        (overrideOn x (singletonValuePt v ω))) =
       M.qLocalMass s (T.erase v)
         (fun _ hv => hT (Finset.mem_of_mem_erase hv)) x := by
   classical
@@ -454,8 +442,7 @@ lemma qLocalMass_sum_point_eliminate
       ∀ ω : swigΩ Ω v,
         {ℓ : M.LatentValues | ∀ w (hw : w ∈ T),
           M.localConsistent s
-            (overrideOn (Finset.singleton_subset_iff.mpr (hT hvT)) x
-              (singletonValuePt v ω))
+            (overrideOn x (singletonValuePt v ω))
             w (hT hw) ℓ} = Erest ∩ Fset ω := by
     intro ω
     simpa [Erest, Fset] using
@@ -482,8 +469,7 @@ lemma qLocalMass_sum_point_eliminate
     (∑ ω : swigΩ Ω v,
         M.latentProduct {ℓ : M.LatentValues | ∀ w (hw : w ∈ T),
           M.localConsistent s
-            (overrideOn (Finset.singleton_subset_iff.mpr (hT hvT)) x
-              (singletonValuePt v ω))
+            (overrideOn x (singletonValuePt v ω))
             w (hT hw) ℓ})
         =
       ∑ ω : swigΩ Ω v, M.latentProduct (Erest ∩ Fset ω) := by
@@ -535,7 +521,7 @@ lemma qLocalMass_marginalize_ancestralClosed
     (T W : Finset (SWIGNode N)) (hT : T ⊆ M.observed) (hWT : W ⊆ T)
     (hclosed : ∀ v ∈ T, ∀ w ∈ W, M.dag.edge v w → v ∈ W)
     (x : ValuesOn M.observed (swigΩ Ω)) :
-    M.marginalizeOn (T \ W)
+    marginalizeOn M.observed (T \ W)
         (fun _ hv => hT ((Finset.mem_sdiff.mp hv).1))
         (M.qLocalMass s T hT) x =
       M.qLocalMass s W (fun _ hv => hT (hWT hv)) x := by
@@ -545,7 +531,7 @@ lemma qLocalMass_marginalize_ancestralClosed
       (∀ v ∈ T, ∀ w ∈ W, M.dag.edge v w → v ∈ W) →
       ∀ x : ValuesOn M.observed (swigΩ Ω),
       (T \ W).card = n →
-        M.marginalizeOn (T \ W)
+        marginalizeOn M.observed (T \ W)
             (fun _ hv => hT ((Finset.mem_sdiff.mp hv).1))
             (M.qLocalMass s T hT) x =
           M.qLocalMass s W (fun _ hv => hT (hWT hv)) x
@@ -590,10 +576,7 @@ lemma qLocalMass_marginalize_ancestralClosed
             (fun x' : ValuesOn M.observed (swigΩ Ω) =>
               ∑ ω : swigΩ Ω v,
                 M.qLocalMass s T hT
-                  (overrideOn
-                    (Finset.singleton_subset_iff.mpr
-                      (hInsobs (Finset.mem_insert_self v U)))
-                    x' (singletonValuePt v ω))) =
+                  (overrideOn x' (singletonValuePt v ω))) =
             (fun x' : ValuesOn M.observed (swigΩ Ω) =>
               M.qLocalMass s (T.erase v) hTerase x') := by
           funext x'
@@ -617,30 +600,27 @@ lemma qLocalMass_marginalize_ancestralClosed
           intro a ha w hw haw
           exact hclosed a (Finset.mem_of_mem_erase ha) w hw haw
         calc
-          M.marginalizeOn (T \ W)
+          marginalizeOn M.observed (T \ W)
               (fun _ hv => hT ((Finset.mem_sdiff.mp hv).1))
               (M.qLocalMass s T hT) x
               =
-            M.marginalizeOn (insert v U) hInsobs (M.qLocalMass s T hT) x := by
+            marginalizeOn M.observed (insert v U) hInsobs (M.qLocalMass s T hT) x := by
               exact marginalizeOn_congr_finset M hS_eq
                 (fun _ hv => hT ((Finset.mem_sdiff.mp hv).1))
                 hInsobs (M.qLocalMass s T hT) x
           _ =
-            M.marginalizeOn U hUobs
+            marginalizeOn M.observed U hUobs
               (fun x' => ∑ ω : swigΩ Ω v,
                 M.qLocalMass s T hT
-                  (overrideOn
-                    (Finset.singleton_subset_iff.mpr
-                      (hInsobs (Finset.mem_insert_self v U)))
-                    x' (singletonValuePt v ω))) x := by
+                  (overrideOn x' (singletonValuePt v ω))) x := by
               exact marginalizeOn_insert M hvNotU hInsobs hUobs
                 (M.qLocalMass s T hT) x
           _ =
-            M.marginalizeOn U hUobs
+            marginalizeOn M.observed U hUobs
               (M.qLocalMass s (T.erase v) hTerase) x := by
               rw [hfun]
           _ =
-            M.marginalizeOn ((T.erase v) \ W)
+            marginalizeOn M.observed ((T.erase v) \ W)
               (fun _ hv => hTerase ((Finset.mem_sdiff.mp hv).1))
               (M.qLocalMass s (T.erase v) hTerase) x := by
               exact marginalizeOn_congr_finset M hEraseSdiff.symm
@@ -653,7 +633,9 @@ lemma qLocalMass_marginalize_ancestralClosed
               simpa [hTerase] using hIH
   exact hP (T \ W).card T hT hWT hclosed x rfl
 
-private lemma latentProduct_singleton_eq_prod
+/-- The latent-product mass of a singleton latent assignment equals the product
+of the singleton masses assigned by the latent distributions at every unobserved node. -/
+lemma latentProduct_singleton_eq_prod
     [∀ n, Fintype (Ω n)] [∀ n, MeasurableSingletonClass (Ω n)]
     (M : Causalean.SCM N Ω) (ℓ₀ : M.LatentValues) :
     M.latentProduct ({ℓ₀} : Set M.LatentValues) =
@@ -673,22 +655,9 @@ private lemma latentProduct_singleton_eq_prod
     simp [Set.mem_pi, funext_iff]
   rw [hsingleton, MeasureTheory.Measure.pi_pi]
 
-private lemma cComponentOf_eq_of_mem_cComponentSet
-    (M : Causalean.SCM N Ω) {C : Finset (SWIGNode N)}
-    (hC : C ∈ M.toSWIGGraph.cComponentSet) {v : SWIGNode N} (hvC : v ∈ C) :
-    M.toSWIGGraph.cComponentOf v = C := by
-  classical
-  have hvObs : v ∈ M.observed :=
-    M.toSWIGGraph.cComponentSet_subset_observed C hC hvC
-  have hCv : M.toSWIGGraph.cComponentOf v ∈ M.toSWIGGraph.cComponentSet := by
-    rw [SWIGGraph.cComponentSet, Finset.mem_image]
-    exact ⟨v, hvObs, rfl⟩
-  by_contra hne
-  exact Finset.disjoint_left.mp
-    (M.toSWIGGraph.cComponentSet_pairwise_disjoint hCv hC hne)
-    (M.toSWIGGraph.mem_cComponentOf_self hvObs) hvC
-
-private lemma measurableSet_comap_piFinset_of_depends
+/-- A set of finite product outcomes whose membership depends only on a specified
+    finite set of coordinates is measurable with respect to the σ-algebra on those coordinates. -/
+lemma measurableSet_comap_piFinset_of_depends
     {ι : Type*} [Fintype ι]
     {α : ι → Type*} [∀ i, MeasurableSpace (α i)]
     [∀ i, Fintype (α i)] [∀ i, MeasurableSingletonClass (α i)]
@@ -804,7 +773,7 @@ private lemma localConsistent_event_measurable_comap_latentBlockIndex
   · intro hℓ v hv
     have hvC : v ∈ C := Finset.mem_of_mem_inter_left hv
     have hcomp : M.toSWIGGraph.cComponentOf v = C :=
-      cComponentOf_eq_of_mem_cComponentSet M hC hvC
+      M.toSWIGGraph.cComponentOf_eq_of_mem_cComponentSet hC hvC
     exact (M.localConsistent_depends_only_on_block s x v
       (hP.1 (Finset.mem_of_mem_inter_right hv)) ℓ ℓ' (by
         intro u hu
@@ -818,7 +787,7 @@ private lemma localConsistent_event_measurable_comap_latentBlockIndex
   · intro hℓ' v hv
     have hvC : v ∈ C := Finset.mem_of_mem_inter_left hv
     have hcomp : M.toSWIGGraph.cComponentOf v = C :=
-      cComponentOf_eq_of_mem_cComponentSet M hC hvC
+      M.toSWIGGraph.cComponentOf_eq_of_mem_cComponentSet hC hvC
     exact (M.localConsistent_depends_only_on_block s x v
       (hP.1 (Finset.mem_of_mem_inter_right hv)) ℓ' ℓ (by
         intro u hu
@@ -860,7 +829,7 @@ private lemma localConsistent_biInter_event_measurable_comap_latentBlockIndex
     intro hCS v hv
     have hvC : v ∈ C := Finset.mem_of_mem_inter_left hv
     have hcomp : M.toSWIGGraph.cComponentOf v = C :=
-      cComponentOf_eq_of_mem_cComponentSet M (hS hCS) hvC
+      M.toSWIGGraph.cComponentOf_eq_of_mem_cComponentSet (hS hCS) hvC
     exact (M.localConsistent_depends_only_on_block s x v
       (hP.1 (Finset.mem_of_mem_inter_right hv)) ℓ ℓ' (by
         intro u hu
@@ -886,7 +855,7 @@ private lemma localConsistent_biInter_event_measurable_comap_latentBlockIndex
     intro hCS v hv
     have hvC : v ∈ C := Finset.mem_of_mem_inter_left hv
     have hcomp : M.toSWIGGraph.cComponentOf v = C :=
-      cComponentOf_eq_of_mem_cComponentSet M (hS hCS) hvC
+      M.toSWIGGraph.cComponentOf_eq_of_mem_cComponentSet (hS hCS) hvC
     exact (M.localConsistent_depends_only_on_block s x v
       (hP.1 (Finset.mem_of_mem_inter_right hv)) ℓ' ℓ (by
         intro u hu
@@ -903,7 +872,9 @@ private lemma localConsistent_biInter_event_measurable_comap_latentBlockIndex
         have hcoord := hagree ⟨u, (Finset.mem_filter.mp huC).1⟩ hmem
         simpa using hcoord.symm)).mp (hℓ'C hCS v hv)
 
-private lemma localConsistent_depends_only_on_latentBlock_of_mem
+/-- Local consistency at an observed node in a node set is unchanged when two latent assignments
+agree on every unobserved parent of a node in that set. -/
+lemma localConsistent_depends_only_on_latentBlock_of_mem
     (M : Causalean.SCM N Ω) (s : M.FixedValues)
     (x : ValuesOn M.observed (swigΩ Ω)) {U : Finset (SWIGNode N)}
     {v : SWIGNode N} (hvU : v ∈ U) (hv : v ∈ M.observed)
@@ -937,8 +908,8 @@ private lemma localConsistent_depends_only_on_latentBlock_of_mem
         exact ⟨huo, ⟨v, hvU, hedge_v⟩⟩
       exact hℓ w.val huBlock
     · by_cases hfix : w.val ∈ M.fixed
-      · rw [parentMap_fixed M s ℓ j.isLt _ w huo hfix,
-            parentMap_fixed M s ℓ' j.isLt _ w huo hfix]
+      · rw [parentMap_fixed M s ℓ j.isLt _ w hfix,
+            parentMap_fixed M s ℓ' j.isLt _ w hfix]
       · have hedge : M.dag.edge w.val (M.observedAt j).val :=
           M.dag.mem_parents.mp w.property
         have hobs : w.val ∈ M.observed := by
@@ -947,8 +918,8 @@ private lemma localConsistent_depends_only_on_latentBlock_of_mem
             · exact absurd hfx hfix
             · exact hob
           · exact absurd h2 huo
-        rw [parentMap_observed M s ℓ j.isLt _ w huo hfix hobs,
-            parentMap_observed M s ℓ' j.isLt _ w huo hfix hobs]
+        rw [parentMap_observed M s ℓ j.isLt _ w hobs,
+            parentMap_observed M s ℓ' j.isLt _ w hobs]
   subst j
   change
     ((M.observedAt_observedIndex ⟨v, hv⟩) ▸
@@ -1070,7 +1041,9 @@ private lemma localConsistent_biInter_event_measurable_comap_latentBlockIndex_of
         have hcoord := hagree ⟨u, (Finset.mem_filter.mp hu).1⟩ hmem
         simpa using hcoord.symm)).mp hlocal
 
-private lemma localConsistent_event_eq_component_biInter
+/-- For an observed-parent-closed node set, local consistency at all of its nodes is equivalent to
+local consistency within each of its confounded components. -/
+lemma localConsistent_event_eq_component_biInter
     (M : Causalean.SCM N Ω) (s : M.FixedValues)
     (P : Finset (SWIGNode N)) (hP : M.ObsParentClosed P)
     (x : ValuesOn M.observed (swigΩ Ω)) :
@@ -1101,7 +1074,9 @@ private lemma localConsistent_event_eq_component_biInter
     exact hℓC hC v
       (Finset.mem_inter.mpr ⟨hvC, hvP⟩)
 
-private lemma localConsistent_event_eq_family_biInter
+/-- For a finite family of observed node sets, local consistency over their union is equivalent to
+local consistency over every member of the family. -/
+lemma localConsistent_event_eq_family_biInter
     (M : Causalean.SCM N Ω) (s : M.FixedValues)
     (𝒞 : Finset (Finset (SWIGNode N)))
     (h𝒞obs : ∀ U ∈ 𝒞, U ⊆ M.observed)
@@ -1242,8 +1217,6 @@ lemma qLocalMass_prod_of_latentBlock_disjoint
     (hblock :
       (↑𝒞 : Set (Finset (SWIGNode N))).Pairwise
         (fun U U' => Disjoint (M.latentBlock U) (M.latentBlock U')))
-    (_hnode : (↑𝒞 : Set (Finset (SWIGNode N))).Pairwise
-        (fun U U' => Disjoint U U'))
     (x : ValuesOn M.observed (swigΩ Ω)) :
     M.qLocalMass s (𝒞.sup id)
         (fun v hv => by
@@ -1372,8 +1345,6 @@ lemma qLocalMass_prod_inter_of_latentBlock_disjoint
     (hblock :
       (↑𝒞 : Set (Finset (SWIGNode N))).Pairwise
         (fun U U' => Disjoint (M.latentBlock U) (M.latentBlock U')))
-    (_hnode : (↑𝒞 : Set (Finset (SWIGNode N))).Pairwise
-        (fun U U' => Disjoint U U'))
     (x : ValuesOn M.observed (swigΩ Ω)) :
     M.qLocalMass s P hPobs x =
       ∏ U ∈ 𝒞,

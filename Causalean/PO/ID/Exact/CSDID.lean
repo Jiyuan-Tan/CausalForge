@@ -90,7 +90,7 @@ lemma measurable_factualY (s : Fin S.T) : Measurable (S.factualY s) :=
 /-- Each period-specific treatment event is measurable. -/
 lemma measurableSet_dEvent (s : Fin S.T) (b : Bool) :
     MeasurableSet (S.dEvent s b) :=
-  (S.dVar s).measurableSet_event _
+  (S.dVar s).measurableSet_event _ (measurableSet_singleton _)
 
 /-! ### Treatment-path regimes `regOf g` and `regNT`
 
@@ -453,7 +453,7 @@ theorem att_csdid (hA : S.Assumptions) (g t : Fin S.T)
           - eventCondExp P.μ (S.cohortEvent g hg)
               (fun ω => S.YofNT t ω - S.YofNT (S.predFin g hg) ω) := by
     unfold ATT
-    rw [eventCondExp_congr_ae P.μ (S.cohortEvent g hg) hAE]
+    rw [eventCondExp_congr_ae P.μ (S.cohortEvent g hg) (ae_restrict_of_ae hAE)]
     exact eventCondExp_sub P.μ (S.cohortEvent g hg)
       ((hA.intYofCohort g t).sub (hA.intYofCohort g (S.predFin g hg))).integrableOn
       ((hA.intYofNT t).sub (hA.intYofNT (S.predFin g hg))).integrableOn

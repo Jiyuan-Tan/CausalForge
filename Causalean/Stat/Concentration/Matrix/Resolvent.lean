@@ -24,9 +24,9 @@ namespace Causalean.Stat.Concentration
 
 open scoped BigOperators
 
-/-- **Resolvent inequality.** For units `a, b` of a normed ring,
+/-- **Resolvent inequality.** For units `a, b` of a seminormed ring,
 `‖a⁻¹ − b⁻¹‖ ≤ ‖a⁻¹‖ · ‖b⁻¹‖ · ‖a − b‖`. -/
-theorem norm_unitInv_sub_unitInv_le {R : Type*} [NormedRing R] (a b : Rˣ) :
+theorem norm_unitInv_sub_unitInv_le {R : Type*} [SeminormedRing R] (a b : Rˣ) :
     ‖(↑a⁻¹ : R) - ↑b⁻¹‖ ≤ ‖(↑a⁻¹ : R)‖ * ‖(↑b⁻¹ : R)‖ * ‖(↑a : R) - ↑b‖ := by
   have hid : (↑a⁻¹ : R) - ↑b⁻¹ = ↑a⁻¹ * (↑b - ↑a) * ↑b⁻¹ := by
     have h1 : (↑a⁻¹ : R) * ↑a = 1 := by exact_mod_cast a.inv_mul

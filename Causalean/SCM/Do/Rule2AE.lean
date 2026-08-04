@@ -54,8 +54,6 @@ theorem condDistrib_fixSet_cross_SCM_bridge
     (hW : W ⊆ M'.observed)
     (hZr : Z.image SWIGNode.random ⊆ M'.observed)
     (hZrW : Z.image SWIGNode.random ∪ W ⊆ M'.observed)
-    (hDisj_YZr : Disjoint Y (Z.image SWIGNode.random))
-    (hDisj_ZrW : Disjoint (Z.image SWIGNode.random) W)
     (hdSep : (M'.fixSet Z hZ_obs hZ_fixed).dag.dSep
       Y (Z.image SWIGNode.random)
       (W ∪ (M'.fixSet Z hZ_obs hZ_fixed).fixed))
@@ -63,26 +61,7 @@ theorem condDistrib_fixSet_cross_SCM_bridge
       ¬ (M'.fixSet Z hZ_obs hZ_fixed).dag.isAncestor (SWIGNode.fixed z) v)
     (hWNonDescM1 : ∀ D ∈ Z, ∀ w ∈ W,
       ¬ M'.dag.isAncestor (SWIGNode.random D) w)
-    [StandardBorelSpace M'.RandomValues]
     [∀ n, StandardBorelSpace (swigΩ Ω n)] [∀ n, Nonempty (swigΩ Ω n)]
-    [StandardBorelSpace (M'.fixSet Z hZ_obs hZ_fixed).RandomValues]
-    [StandardBorelSpace (M'.fixSet Z hZ_obs hZ_fixed).ObservedValues]
-    [StandardBorelSpace (ValuesOn Y (swigΩ Ω))]
-    [Nonempty (ValuesOn Y (swigΩ Ω))]
-    [StandardBorelSpace
-      (ValuesOn (M'.cutsetLatent Y (Z.image SWIGNode.random ∪ W)) (swigΩ Ω))]
-    [Nonempty
-      (ValuesOn (M'.cutsetLatent Y (Z.image SWIGNode.random ∪ W)) (swigΩ Ω))]
-    [StandardBorelSpace (ValuesOn (Z.image SWIGNode.random) (swigΩ Ω))]
-    [Nonempty (ValuesOn (Z.image SWIGNode.random) (swigΩ Ω))]
-    [∀ s : M'.FixedValues, MeasureTheory.IsFiniteMeasure (M'.jointKernel s)]
-    [∀ s : M'.FixedValues, MeasureTheory.IsFiniteMeasure (M'.obsKernel s)]
-    [∀ s : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues,
-      MeasureTheory.IsFiniteMeasure
-        ((M'.fixSet Z hZ_obs hZ_fixed).jointKernel s)]
-    [∀ s : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues,
-      MeasureTheory.IsFiniteMeasure
-        ((M'.fixSet Z hZ_obs hZ_fixed).obsKernel s)]
     [MeasurableSpace.CountableOrCountablyGenerated
       M'.FixedValues (ValuesOn (Z.image SWIGNode.random ∪ W) (swigΩ Ω))]
     [MeasurableSpace.CountableOrCountablyGenerated
@@ -93,8 +72,6 @@ theorem condDistrib_fixSet_cross_SCM_bridge
     [MeasurableSingletonClass
       (ValuesOn (Z.image SWIGNode.random ∪ W) (swigΩ Ω))]
     (s0 : M'.FixedValues)
-    (hOverlap : ∀ s : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues,
-      Causalean.SCM.ID.Rule2JointOverlap M' Z hZ_obs hZ_fixed W hZrW s)
     (hPositivity_ae :
       (((M'.obsKernel s0).map (valuesProjection hZr) ⊗ₘ
           ProbabilityTheory.Kernel.const _
@@ -113,6 +90,9 @@ theorem condDistrib_fixSet_cross_SCM_bridge
             (valuesProjection hY) (valuesProjection hZrW) (M'.obsKernel s0)
             (valuesUnionMk p.1 p.2) := by
   classical
+  have hDisj_YZr : Disjoint Y (Z.image SWIGNode.random) := hdSep.1
+  have hDisj_ZrW : Disjoint (Z.image SWIGNode.random) W :=
+    Disjoint.mono_right Finset.subset_union_left hdSep.2.2.1
   -- The product measure `λ = νZ ⊗ₘ const μW` and the fill map `G = valuesUnionMk`.
   set νZ := (M'.obsKernel s0).map (valuesProjection hZr) with hνZ
   set μW := (M'.obsKernel s0).map (valuesProjection hW) with hμW
@@ -170,8 +150,6 @@ theorem obsCondKernel_fixSet_eq_ae_witness
     (hW : W ⊆ M'.observed)
     (hZr : Z.image SWIGNode.random ⊆ M'.observed)
     (hZrW : Z.image SWIGNode.random ∪ W ⊆ M'.observed)
-    (hDisj_YZr : Disjoint Y (Z.image SWIGNode.random))
-    (hDisj_ZrW : Disjoint (Z.image SWIGNode.random) W)
     (hdSep : (M'.fixSet Z hZ_obs hZ_fixed).dag.dSep
       Y (Z.image SWIGNode.random)
       (W ∪ (M'.fixSet Z hZ_obs hZ_fixed).fixed))
@@ -179,26 +157,7 @@ theorem obsCondKernel_fixSet_eq_ae_witness
       ¬ (M'.fixSet Z hZ_obs hZ_fixed).dag.isAncestor (SWIGNode.fixed z) v)
     (hWNonDescM1 : ∀ D ∈ Z, ∀ w ∈ W,
       ¬ M'.dag.isAncestor (SWIGNode.random D) w)
-    [StandardBorelSpace M'.RandomValues]
     [∀ n, StandardBorelSpace (swigΩ Ω n)] [∀ n, Nonempty (swigΩ Ω n)]
-    [StandardBorelSpace (M'.fixSet Z hZ_obs hZ_fixed).RandomValues]
-    [StandardBorelSpace (M'.fixSet Z hZ_obs hZ_fixed).ObservedValues]
-    [StandardBorelSpace (ValuesOn Y (swigΩ Ω))]
-    [Nonempty (ValuesOn Y (swigΩ Ω))]
-    [StandardBorelSpace
-      (ValuesOn (M'.cutsetLatent Y (Z.image SWIGNode.random ∪ W)) (swigΩ Ω))]
-    [Nonempty
-      (ValuesOn (M'.cutsetLatent Y (Z.image SWIGNode.random ∪ W)) (swigΩ Ω))]
-    [StandardBorelSpace (ValuesOn (Z.image SWIGNode.random) (swigΩ Ω))]
-    [Nonempty (ValuesOn (Z.image SWIGNode.random) (swigΩ Ω))]
-    [∀ s : M'.FixedValues, MeasureTheory.IsFiniteMeasure (M'.jointKernel s)]
-    [∀ s : M'.FixedValues, MeasureTheory.IsFiniteMeasure (M'.obsKernel s)]
-    [∀ s : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues,
-      MeasureTheory.IsFiniteMeasure
-        ((M'.fixSet Z hZ_obs hZ_fixed).jointKernel s)]
-    [∀ s : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues,
-      MeasureTheory.IsFiniteMeasure
-        ((M'.fixSet Z hZ_obs hZ_fixed).obsKernel s)]
     [MeasurableSpace.CountableOrCountablyGenerated
       M'.FixedValues (ValuesOn (Z.image SWIGNode.random ∪ W) (swigΩ Ω))]
     [MeasurableSpace.CountableOrCountablyGenerated
@@ -209,8 +168,6 @@ theorem obsCondKernel_fixSet_eq_ae_witness
     [MeasurableSingletonClass
       (ValuesOn (Z.image SWIGNode.random ∪ W) (swigΩ Ω))]
     (s0 : M'.FixedValues)
-    (hOverlap : ∀ s : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues,
-      Causalean.SCM.ID.Rule2JointOverlap M' Z hZ_obs hZ_fixed W hZrW s)
     (hPositivity_ae :
       (((M'.obsKernel s0).map (valuesProjection hZr) ⊗ₘ
           ProbabilityTheory.Kernel.const _
@@ -227,6 +184,9 @@ theorem obsCondKernel_fixSet_eq_ae_witness
           (M'.fixSetExtend Z hZ_obs hZ_fixed s0 p.1, p.2)
         = M'.obsCondKernel Y (Z.image SWIGNode.random ∪ W) hY hZrW
             (s0, valuesUnionMk p.1 p.2) := by
+  have hDisj_YZr : Disjoint Y (Z.image SWIGNode.random) := hdSep.1
+  have hDisj_ZrW : Disjoint (Z.image SWIGNode.random) W :=
+    Disjoint.mono_right Finset.subset_union_left hdSep.2.2.1
   -- Abbreviations matching the statement.
   set M2 := M'.fixSet Z hZ_obs hZ_fixed with hM2
   set sT := fun t => M'.fixSetExtend Z hZ_obs hZ_fixed s0 t with hsT
@@ -259,7 +219,7 @@ theorem obsCondKernel_fixSet_eq_ae_witness
     MeasureTheory.ae_of_ae_map hG_meas.aemeasurable h_obs_ae_mapG
   -- The isolated hard bridge: do-side `obsCondKernel` = obs-side `condDistrib`, joint-a.e.
   have h_bridge := condDistrib_fixSet_cross_SCM_bridge M' Z hZ_obs hZ_fixed Y W hY hW hZr hZrW
-    hDisj_YZr hDisj_ZrW hdSep hWNonDesc hWNonDescM1 s0 hOverlap hPositivity_ae
+    hdSep hWNonDesc hWNonDescM1 s0 hPositivity_ae
   -- Assemble: do-side =[bridge] obs `condDistrib` =[obs, reversed] M1.obsCondKernel.
   filter_upwards [h_obs_prod, h_bridge] with p hobs hbr
   rw [hbr, ← hobs]

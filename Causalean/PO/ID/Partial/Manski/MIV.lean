@@ -202,7 +202,7 @@ private lemma measure_mul_eventCondExp_of_factualZ_const
     (P.μ (S.zEvent z)).toReal
       * eventCondExp P.μ (S.zEvent z) (fun ω => g (S.factualZ ω))
       = (P.μ (S.zEvent z)).toReal * g z := by
-  rw [mul_comm, eventCondExp_mul_measure_toReal]
+  rw [mul_comm, eventCondExp_mul_measure_toReal P.μ (S.zEvent z) (measure_ne_top _ _)]
   have hset : ∫ ω in S.zEvent z, g (S.factualZ ω) ∂P.μ
             = ∫ _ω in S.zEvent z, g z ∂P.μ := by
     refine MeasureTheory.setIntegral_congr_fun (S.measurableSet_zEvent z) ?_

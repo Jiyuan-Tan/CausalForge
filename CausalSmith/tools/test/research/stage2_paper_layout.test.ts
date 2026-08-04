@@ -172,6 +172,15 @@ afterEach(async () => {
 });
 
 describe("Stage 2 paper-scoped scaffold", () => {
+  it("fails closed when a modern research run is missing its typed core", async () => {
+    const ctx = { ...makeCtx(repoRoot), qid: "pid_missing_core_test" };
+    await expect(runStage2({
+      ctx,
+      state: makeState([]),
+      deps: makeDeps(path.join(repoRoot, "unused-lean"), []),
+    })).rejects.toThrow(/required typed core is unreadable/);
+  });
+
   it("discovers node and environment tags recursively in nested helper modules", async () => {
     const leanDir = path.join(repoRoot, "CausalSmith", "PartialID", "Manski1990Test");
     const nested = path.join(leanDir, "Helpers", "Nested.lean");

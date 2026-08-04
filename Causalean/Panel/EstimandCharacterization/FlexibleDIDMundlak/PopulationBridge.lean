@@ -75,7 +75,7 @@ theorem imputationTheta_eq_eventCondExp
     imputationTheta P S g t = eventCondExp μ cohortEvent Δ := by
   unfold imputationTheta
   rw [eventCondExp_eq_sum_condProb_mul_eventCondExp μ cohortEvent covarCell hG hC
-    hdisj hcov Δ hΔ]
+    hdisj hcov (fun c => measure_ne_top μ (cohortEvent ∩ covarCell c)) Δ hΔ]
   refine Finset.sum_congr rfl (fun c _ => ?_)
   rw [hweight c, hcell c]
 
@@ -152,7 +152,10 @@ theorem m0_eq_eventCondExp_untreated
     (cellEvent : Cohort → Time → Covar → Set Ω) (Y0pop : Ω → ℝ)
     (hY0 : P.Y0Mean g t c = eventCondExp μ (cellEvent g t c) Y0pop) :
     S.m0 g t c = eventCondExp μ (cellEvent g t c) Y0pop := by
-  rw [S.untreatedFit hNA hCPT hut c, hNA hut c, hY0]
+  have hfit := SaturatedUntreatedRegression.untreatedFit
+    S.toUntreatedFitWitness hNA hCPT hut c
+  rw [show S.m0 g t c = P.YgMean g t c by
+    simpa [SaturatedUntreatedRegression.toUntreatedFitWitness] using hfit, hNA hut c, hY0]
 
 end FlexibleDIDMundlak
 end Panel.EstimandCharacterization

@@ -216,11 +216,13 @@ theorem forwardBandCoordinateSubalgebra_trdeg_le_generatorCard
       (Subalgebra.algebra (polynomialCoordinateSubalgebra
         (forwardBandCoordinatePolynomial m (2 * m + 2) (by omega)))) ≤
       Fintype.card (ForwardImageGenerator m) := by
-  exact coordinateSubalgebra_trdeg_le_of_polynomial_factorization
-    (forwardBandCoordinatePolynomial m (2 * m + 2) (by omega))
-    (forwardImageGeneratorPolynomial m hm)
-    (forwardImageFactorPolynomial m hm)
-    (forwardBandCoordinatePolynomial_factorization m hm)
+  simpa only [Nat.card_eq_fintype_card] using
+    (coordinateSubalgebra_trdeg_le_of_polynomial_factorization
+      (τ := ForwardImageGenerator m)
+      (forwardBandCoordinatePolynomial m (2 * m + 2) (by omega))
+      (forwardImageGeneratorPolynomial m hm)
+      (forwardImageFactorPolynomial m hm)
+      (forwardBandCoordinatePolynomial_factorization m hm))
 
 private def fixedAxisForwardGenerator (m : ℕ) (hm : 1 ≤ m) :
     ForwardImageGenerator m :=
@@ -428,11 +430,14 @@ theorem forwardCommonAxisCoordinateSubalgebra_trdeg_le_expected
       (Subalgebra.algebra (polynomialCoordinateSubalgebra
         (forwardCommonAxisCoordinatePolynomial m (2 * m + 2) hm (by omega)))) ≤
       Fintype.card (CommonAxisImageGenerator m hm) :=
-    coordinateSubalgebra_trdeg_le_of_polynomial_factorization
-      (forwardCommonAxisCoordinatePolynomial m (2 * m + 2) hm (by omega))
-      (commonAxisGeneratorPolynomial m hm)
-      (commonAxisImageFactorPolynomial m hm)
-      (forwardCommonAxisCoordinatePolynomial_factorization m hm)
+    by
+      simpa only [Nat.card_eq_fintype_card] using
+        (coordinateSubalgebra_trdeg_le_of_polynomial_factorization
+          (τ := CommonAxisImageGenerator m hm)
+          (forwardCommonAxisCoordinatePolynomial m (2 * m + 2) hm (by omega))
+          (commonAxisGeneratorPolynomial m hm)
+          (commonAxisImageFactorPolynomial m hm)
+          (forwardCommonAxisCoordinatePolynomial_factorization m hm))
   have heq : (Fintype.card (CommonAxisImageGenerator m hm) : Cardinal) =
       (commonAxisExpectedDimension m : Cardinal) := by
     exact_mod_cast card_commonAxisImageGenerator m hm

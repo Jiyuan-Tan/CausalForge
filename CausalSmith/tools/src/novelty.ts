@@ -32,7 +32,7 @@ export const REVIEWER_TIER_RANK: Record<string, number> = {
   field: 2,
   subfield: 1,
   incremental: 0,
-  // D-0.5 reviewer-prompt vocabulary: stage_neg1_review.txt's tier enum is
+  // D-0.5 reviewer-prompt vocabulary: stage_neg1_review_core.txt's tier enum is
   // flagship|field|letter|not-publishable. Without these aliases both ranked
   // -1, which silently disabled the tier-saturation auto-promote and
   // force-killed clean letter-tier angles at the subfield floor.

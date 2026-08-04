@@ -127,7 +127,7 @@ theorem Tendsto_dist.div_tendsto_inProb_gaussian
     have h :=
       Tendsto_dist.const_mul_tendsto_gaussian
         (Xn := Xn) (a := fun _ : ℕ => 1 / σ₀) (a₀ := 1 / σ₀)
-        (v := σ₀ ^ 2) hXn hscaled_meas hX tendsto_const_nhds
+        (v := σ₀ ^ 2) hXn hX tendsto_const_nhds
     have hvar : ((σ₀ ^ 2)⁻¹ * σ₀ ^ 2) = 1 := by
       have hσsq_ne : σ₀ ^ 2 ≠ 0 := pow_ne_zero 2 hσ₀_ne
       field_simp [hσsq_ne]

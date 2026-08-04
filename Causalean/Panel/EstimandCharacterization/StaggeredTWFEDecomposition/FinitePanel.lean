@@ -69,7 +69,7 @@ Carries cohort population shares `p`, adoption dates `A : 𝒢 → WithTop (Fin 
 (with `⊤` encoding the never-treated case `A_g = ∞`), and cohort-period
 factual outcome means `Y`. Side conditions: shares are positive, sum to one,
 and the period count is positive. -/
-structure CohortPanel (𝒢 : Type*) (T : ℕ) [Fintype 𝒢] [DecidableEq 𝒢] where
+structure CohortPanel (𝒢 : Type*) (T : ℕ) [Fintype 𝒢] where
   /-- Cohort population share `p_g`. -/
   p : 𝒢 → ℝ
   /-- Adoption date `A_g ∈ 𝒯 ∪ {∞}`, encoded with `⊤ = ∞`. -/
@@ -124,11 +124,13 @@ noncomputable def cohortWeights (P : CohortPanel 𝒢 T) :
     WeightedTwoWayPanel.UnitWeights 𝒢 :=
   ⟨P.p, P.p_pos, P.p_sum_one⟩
 
+omit [DecidableEq 𝒢] in
 /-- Goodman-Bacon's cohort treatment share is the shared unit mean. -/
 theorem barD_eq_unitMean (P : CohortPanel 𝒢 T) (g : 𝒢) :
     barD P g = WeightedTwoWayPanel.unitMean (D P) g := by
   simp [barD, WeightedTwoWayPanel.unitMean]
 
+omit [DecidableEq 𝒢] in
 /-- Goodman-Bacon's overall treatment share is the shared weighted grand mean. -/
 theorem pCohort_eq_grandMean (P : CohortPanel 𝒢 T) :
     pCohort P = WeightedTwoWayPanel.grandMean (cohortWeights P) (D P) := by
@@ -139,6 +141,7 @@ theorem pCohort_eq_grandMean (P : CohortPanel 𝒢 T) :
 noncomputable def Dtilde (P : CohortPanel 𝒢 T) (g : 𝒢) (t : Fin T) : ℝ :=
   WeightedTwoWayPanel.ddot (cohortWeights P) (D P) g t
 
+omit [DecidableEq 𝒢] in
 /-- Compatibility with the original Goodman-Bacon closed form for residualized
 treatment. -/
 theorem Dtilde_eq (P : CohortPanel 𝒢 T) (g : 𝒢) (t : Fin T) :
@@ -178,10 +181,8 @@ noncomputable def S1_TN (P : CohortPanel 𝒢 T) (g : 𝒢) : Finset (Fin T) :=
   Finset.univ.filter (fun t => AdoptionDate.le (P.A g) t)
 
 open Classical in
-/-- Early-vs-late untreated window `\mathcal{T}_{e\ell}^0 = {t : t < A_e}`.
-The late-cohort argument `_ℓ` is unused but preserved for symmetry with
-`S1_EL`. -/
-noncomputable def S0_EL (P : CohortPanel 𝒢 T) (e _ℓ : 𝒢) : Finset (Fin T) :=
+/-- Early-vs-late untreated window `\mathcal{T}_{e\ell}^0 = {t : t < A_e}`. -/
+noncomputable def S0_EL (P : CohortPanel 𝒢 T) (e : 𝒢) : Finset (Fin T) :=
   Finset.univ.filter (fun t => AdoptionDate.lt (P.A e) t)
 
 open Classical in
@@ -192,13 +193,11 @@ noncomputable def S1_EL (P : CohortPanel 𝒢 T) (e ℓ : 𝒢) : Finset (Fin T)
 open Classical in
 /-- Late-vs-early early-treated window `\mathcal{T}_{\ell e}^0 = {t : A_e ≤ t < A_ℓ}`. -/
 noncomputable def S0_LE (P : CohortPanel 𝒢 T) (e ℓ : 𝒢) : Finset (Fin T) :=
-  Finset.univ.filter (fun t => AdoptionDate.le (P.A e) t ∧ AdoptionDate.lt (P.A ℓ) t)
+  S1_EL P e ℓ
 
 open Classical in
-/-- Late-vs-early both-treated window `\mathcal{T}_{\ell e}^1 = {t : A_ℓ ≤ t}`.
-The early-cohort argument `_e` is unused but preserved for symmetry with
-`S0_LE`. -/
-noncomputable def S1_LE (P : CohortPanel 𝒢 T) (_e ℓ : 𝒢) : Finset (Fin T) :=
+/-- Late-vs-early both-treated window `\mathcal{T}_{\ell e}^1 = {t : A_ℓ ≤ t}`. -/
+noncomputable def S1_LE (P : CohortPanel 𝒢 T) (ℓ : 𝒢) : Finset (Fin T) :=
   Finset.univ.filter (fun t => AdoptionDate.le (P.A ℓ) t)
 
 /-! ### 2x2 comparison contrasts -/
@@ -210,13 +209,13 @@ noncomputable def Δ_TN (P : CohortPanel 𝒢 T) (g u : 𝒢) : ℝ :=
 
 /-- Early-vs-late before late 2x2 DID contrast `Δ^EL_{e,ℓ}`. -/
 noncomputable def Δ_EL (P : CohortPanel 𝒢 T) (e ℓ : 𝒢) : ℝ :=
-  (Ybar P e (S1_EL P e ℓ) - Ybar P e (S0_EL P e ℓ))
-    - (Ybar P ℓ (S1_EL P e ℓ) - Ybar P ℓ (S0_EL P e ℓ))
+  (Ybar P e (S1_EL P e ℓ) - Ybar P e (S0_EL P e))
+    - (Ybar P ℓ (S1_EL P e ℓ) - Ybar P ℓ (S0_EL P e))
 
 /-- Late-vs-early after early 2x2 DID contrast `Δ^LE_{ℓ,e}`. -/
 noncomputable def Δ_LE (P : CohortPanel 𝒢 T) (e ℓ : 𝒢) : ℝ :=
-  (Ybar P ℓ (S1_LE P e ℓ) - Ybar P ℓ (S0_LE P e ℓ))
-    - (Ybar P e (S1_LE P e ℓ) - Ybar P e (S0_LE P e ℓ))
+  (Ybar P ℓ (S1_LE P ℓ) - Ybar P ℓ (S0_LE P e ℓ))
+    - (Ybar P e (S1_LE P ℓ) - Ybar P e (S0_LE P e ℓ))
 
 /-! ### Raw and normalized weights -/
 

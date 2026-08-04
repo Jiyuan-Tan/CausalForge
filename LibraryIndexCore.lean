@@ -84,12 +84,18 @@ def isLibDecl (pfx : Name) (env : Environment) (n : Name) : Bool :=
   | some m => isLibModule pfx m
   | none => false
 
-def shouldSkipDecl (env : Environment) (n : Name) : Bool :=
+def shouldSkipDeclOther (env : Environment) (n : Name) : Bool :=
   isAuxiliary n ||
   env.isConstructor n ||
   env.isProjectionFn n ||
   -- compiler-generated companions namespaced under a constructor (e.g. `BBDir.fromChild.elim`)
   env.isConstructor n.getPrefix
+
+def shouldSkipDecl (env : Environment) (n : Name) : Bool :=
+  shouldSkipDeclOther env n ||
+  -- `@[congr]` synthesizes `<decl>.congr_simp` theorem constants.  They have
+  -- no authored declaration range or source; the declaration they support is indexed.
+  declarationLeaf n == "congr_simp"
 
 def uniqueSortedStrings (xs : Array String) : Array String :=
   xs.foldl
@@ -187,34 +193,14 @@ abbrev FileCache := IO.Ref (NameMap (Array String))
 
 def sourceSliceCap : Nat := 150
 
-/-- When Lean does not persist a declaration docstring (notably for a named
-`local instance`), recover an immediately preceding `/-- ... -/` block from
-the source so the published index retains its natural-language explanation. -/
-partial def precedingDocStart? (lines : Array String) (lo : Nat) : Option Nat :=
-  let rec seekOpen (i fuel : Nat) : Option Nat :=
-    if i == 0 || fuel == 0 then none
-    else
-      let j := i - 1
-      if (lines[j]!.trimAscii.toString).startsWith "/--" then some j
-      else seekOpen j (fuel - 1)
-  -- Declaration ranges omit doc-comments and may retain an old source offset
-  -- after a comment-only edit; the nearest doc block within this short preamble
-  -- window is therefore the declaration's own documentation.
-  seekOpen lo 16
+/-- Verbatim source slice of a declaration, from its declaration range.
 
-def leadingDocString? (source : String) : Option String :=
-  match source.splitOn "/--" with
-  | _ :: rest =>
-      match rest.head?.bind (fun after => (after.splitOn "-/").head?) with
-      | some doc =>
-          let doc := doc.trimAscii.toString
-          if doc.isEmpty then none else some doc
-      | none => none
-  | [] => none
-
-/-- Verbatim source slice of a declaration, from its declaration range; leading
-doc-comment lines are kept (the site strips them for display). Truncated at
-`sourceSliceCap` lines. -/
+Lean's declaration range starts at the declaration keyword when the declaration
+is undocumented, and at the attached doc-comment when it is documented.
+Deliberately do not scan backwards for a documentation block here: an undocumented
+declaration following a documented neighbour would otherwise inherit that
+neighbour's source and docstring.  Docstrings come independently from the
+elaborated environment in `entryFor?`. -/
 def sourceFor (cache : FileCache) (modName : Name) (srcRoot file : String) (n : Name) :
     CoreM (Option String) := do
   let some ranges ← findDeclarationRanges? n | return none
@@ -229,22 +215,7 @@ def sourceFor (cache : FileCache) (modName : Name) (srcRoot file : String) (n : 
       pure ls
   if lines.isEmpty then return none
   let declLo := ranges.range.pos.line - 1      -- 1-indexed → 0-indexed
-  let sourceDeclLo? := lines.findIdx? fun line =>
-    let line := line.trimAscii.toString
-    (line.startsWith "local " || line.startsWith "private ") && line.contains (declarationLeaf n)
-  -- An attached doc-comment is part of Lean's declaration range, so in the
-  -- usual case `declLo` already points at the opening `/--`.  Searching
-  -- backwards unconditionally would then steal the preceding declaration's
-  -- docstring whenever the two declarations are close together.
-  let rangeStartsWithDoc :=
-    (lines[declLo]?.map (fun line =>
-      (line.trimAscii.toString).startsWith "/--")).getD false
-  let docLo? :=
-    if rangeStartsWithDoc then some declLo
-    else
-      precedingDocStart? lines declLo <|>
-        sourceDeclLo?.bind (precedingDocStart? lines)
-  let lo := docLo?.getD declLo
+  let lo := declLo
   let hi := min ranges.range.endPos.line lines.size
   if lo ≥ hi then return none
   let slice := (Array.range (hi - lo)).map (fun i => lines[lo + i]!)
@@ -252,6 +223,13 @@ def sourceFor (cache : FileCache) (modName : Name) (srcRoot file : String) (n : 
       (slice.take sourceSliceCap).push "  -- … truncated; follow the source link for the rest …"
     else slice
   return some ("\n".intercalate slice.toList)
+
+/-- `add_decl_doc` installs its command range on an otherwise rangeless declaration.
+Such a range documents a generated constant; it is not an authored declaration. -/
+def isAddedDocRangeSource (source : String) : Bool :=
+  match source.splitOn "\n" |>.reverse |>.find? (fun line => line.trimAscii.toString != "") with
+  | some line => line.trimAscii.toString.startsWith "add_decl_doc "
+  | none => false
 
 partial def axiomStringsFor (pfx : Name)
     (cache : IO.Ref (NameMap (Array String))) (seen : NameMap Unit) (n : Name) :
@@ -285,10 +263,22 @@ def entryFor? (pfx : Name) (srcRoot : String)
     (ci : ConstantInfo) : CoreM (Option DeclEntry) := do
   let env ← getEnv
   let n := ci.name
-  if !isLibDecl pfx env n || shouldSkipDecl env n then
+  if !isLibDecl pfx env n || shouldSkipDeclOther env n then
+    return none
+  let isCongrSimp := declarationLeaf n == "congr_simp"
+  if isCongrSimp && (← findDeclarationRanges? n).isNone then
     return none
   let some moduleName := moduleNameOf? env n
     | return none
+  let congrSource ← if isCongrSimp then
+      sourceFor fileCache moduleName srcRoot (moduleToFile moduleName) n
+    else
+      pure none
+  if let some source := congrSource then
+    -- A later `add_decl_doc` can attach its own command range to a generated
+    -- companion.  Do not mistake that documentation range for authorship.
+    if isAddedDocRangeSource source then
+      return none
   let some kind ← kindOf env n ci
     | return none
   -- A def nested under another def/instance is a compiler- or where-generated
@@ -329,11 +319,11 @@ def entryFor? (pfx : Name) (srcRoot : String)
   let file := moduleToFile moduleName
   -- Theorems carry their source too: the proof renders behind an expandable
   -- "Proof" link on the site (statement stays the primary view).
-  let source ← sourceFor fileCache moduleName srcRoot file n
-  -- Prefer an authored source doc block when present: Lean can retain an empty
-  -- environment doc entry for named local instances, which must not mask the
-  -- source fallback used by the public index.
-  let doc := (source.bind leadingDocString?).orElse fun _ => envDoc
+  let source ← if isCongrSimp then
+      pure congrSource
+    else
+      sourceFor fileCache moduleName srcRoot file n
+  let doc := envDoc
   return some {
     name := n.toString
     kind := kind

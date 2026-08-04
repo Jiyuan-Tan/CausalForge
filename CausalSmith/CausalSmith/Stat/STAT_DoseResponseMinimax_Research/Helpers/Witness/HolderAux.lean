@@ -30,10 +30,10 @@ lemma center_mem_doseWindow {t0 eps0 : ℝ} (heps : 0 ≤ eps0) :
 
 /-- The unit covariate cube is compact in every finite dimension. -/
 lemma isCompact_cube (d : ℕ) : IsCompact (cube d) := by
-  have hEq : cube d = Set.Icc (fun _ : Fin d => (0 : ℝ)) (fun _ => (1 : ℝ)) := by
-    ext x
-    exact ⟨fun hx => ⟨fun i => (hx i).1, fun i => (hx i).2⟩, fun hx i => ⟨hx.1 i, hx.2 i⟩⟩
-  rw [hEq]; exact isCompact_Icc
+  have hEq : cube d = Set.univ.pi (fun _ : Fin d => Set.Icc (0 : ℝ) 1) := by
+    ext x; simp [cube, Pi.le_def, forall_and]
+  rw [hEq]
+  exact Causalean.Stat.Nonparametric.isCompact_cube (ι := Fin d) 0 1
 
 /-- The unit covariate cube has finite Lebesgue volume in every finite dimension. -/
 lemma volume_cube_lt_top (d : ℕ) : volume (cube d) < ∞ :=

@@ -22,8 +22,9 @@ import Causalean.Experimentation.DesignBased.WaldCoverage
 `dependency_wald_coverage` chains the design-based dependency CLT (`dependency_studentized_cdf`)
 into the conservative Wald-coverage transfer (`conservative_wald_liminf_of_studentized_cdf`).  Given
 unit
-contributions `X n` whose standardized sum `depSum(X n)` equals the scaled centered estimator
-`√(m n)·(est n − θ n)`, and a deterministic conservative variance `vhat n ≥ v n`, the Wald interval
+contributions `X n` whose standardized sum `depSum(X n)` eventually equals the scaled centered
+estimator `√(m n)·(est n − θ n)`, and a deterministic variance `vhat n` that eventually dominates
+`v n`, the Wald interval
 `|θ n − est n| ≤ z·√(vhat n / m n)` has liminf coverage at least `1 − α`.
 -/
 
@@ -40,8 +41,9 @@ finite designs `D n` with an estimator `est n` of a target `θ n`.  Suppose the 
 scaled estimator `√(m n)·(est n − θ n)` is the sum `depSum(X n)` of unit contributions `X n i` that
 are uniformly bounded, have design mean `0`, and depend only across a graph of degree at most
 `Dmax`, with standardizing variance `v n = E[depSum(X n)²]` bounded below by `c` times the number of
-units, and the number of units diverging.  Then, for a deterministic conservative variance
-`vhat n ≥ v n`, the two-sided Wald interval `|θ n − est n| ≤ z·√(vhat n / m n)` (with `z` the upper
+units, and the number of units diverging.  If the decomposition and a deterministic conservative
+variance `vhat n ≥ v n` both hold eventually, then the two-sided Wald interval
+`|θ n − est n| ≤ z·√(vhat n / m n)` (with `z` the upper
 `1 − α/2` normal quantile) has asymptotic (liminf) coverage at least `1 − α`.
 
 This is the complete design-based inference pipeline: it obtains the studentized CLT from the
@@ -52,7 +54,7 @@ theorem dependency_wald_coverage
     {Ω : ℕ → Type*} [∀ n, Fintype (Ω n)] [∀ n, MeasurableSpace (Ω n)]
     [∀ n, MeasurableSingletonClass (Ω n)]
     (D : ∀ n, FiniteDesign (Ω n))
-    {ι : ℕ → Type*} [∀ n, Fintype (ι n)] [∀ n, DecidableEq (ι n)]
+    {ι : ℕ → Type*} [∀ n, Fintype (ι n)]
     (X : ∀ n, ι n → Ω n → ℝ) (Dep : ∀ n, DepGraph (X n) (D n).toMeasure)
     (Dmax : ℕ) (hdeg : ∀ n i, ((Dep n).nbhd i).card ≤ Dmax)
     (M : ℝ) (hM : 0 ≤ M) (hbound : ∀ n i ω, |X n i ω| ≤ M)
@@ -62,23 +64,30 @@ theorem dependency_wald_coverage
     (hvc : ∀ᶠ n in atTop, c * (Fintype.card (ι n) : ℝ) ≤ v n)
     (hcard : Tendsto (fun n => Fintype.card (ι n)) atTop atTop)
     (est : ∀ n, Ω n → ℝ) (θ m : ℕ → ℝ)
-    (hlink : ∀ n ω, depSum (X n) ω = Real.sqrt (m n) * (est n ω - θ n))
-    (hmpos : ∀ᶠ n in atTop, 0 < m n) (hvarpos : ∀ᶠ n in atTop, 0 < v n)
-    (vhat : ℕ → ℝ) (hvar_le : ∀ n, v n ≤ vhat n)
+    (hlink : ∀ᶠ n in atTop, ∀ ω, depSum (X n) ω = Real.sqrt (m n) * (est n ω - θ n))
+    (hmpos : ∀ᶠ n in atTop, 0 < m n)
+    (vhat : ℕ → ℝ) (hvar_le : ∀ᶠ n in atTop, v n ≤ vhat n)
     (α z : ℝ) (hz0 : 0 ≤ z) (hz : stdNormalCdf z = 1 - α / 2) :
     1 - α ≤ liminf (fun n =>
         (D n).Pr (fun ω => |θ n - est n ω| ≤ z * Real.sqrt (vhat n / m n))) atTop := by
+  classical
   have hclt : ∀ s : ℝ, Tendsto (fun n =>
       (D n).Pr (fun ω =>
         Real.sqrt (m n) * (est n ω - θ n) / Real.sqrt (v n) ≤ s))
       atTop (𝓝 (stdNormalCdf s)) := by
     intro s
     have h := dependency_studentized_cdf D X Dep Dmax hdeg M hM hbound hmean v hv c hc hvc hcard s
-    refine Tendsto.congr (fun n => ?_) h
+    refine h.congr' ?_
+    filter_upwards [hlink] with n hlinkn
     refine (D n).Pr_congr _ _ (fun ω => ?_)
-    rw [hlink n ω]
-  exact conservative_wald_liminf_of_studentized_cdf D est θ v vhat m hmpos hvarpos hvar_le hclt
-    α z hz0 hz
+    rw [hlinkn ω]
+  have hvarpos : ∀ᶠ n in atTop, 0 < v n := by
+    filter_upwards [hvc, (tendsto_atTop.1 hcard 1)] with n hvn hcardn
+    have hcardpos : 0 < (Fintype.card (ι n) : ℝ) := by
+      exact_mod_cast (show 0 < Fintype.card (ι n) from by omega)
+    exact lt_of_lt_of_le (mul_pos hc hcardpos) hvn
+  exact conservative_wald_liminf_of_studentized_cdf D est θ v vhat m hmpos hvarpos hvar_le α z
+    (hclt z) (hclt (-z)) hz0 hz
 
 end DesignBased
 end Experimentation

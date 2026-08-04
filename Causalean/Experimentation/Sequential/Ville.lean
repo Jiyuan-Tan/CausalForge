@@ -51,17 +51,17 @@ def IsTestSupermartingale (M : ℕ → Ω → ℝ) (ℱ : Filtration ℕ m0) (μ
 /-- **Finite-horizon supermartingale maximal inequality.** For a nonnegative supermartingale `M` and
 level `λ > 0`, the probability that `M` reaches `λ` by time `n` is at most `E[M₀] / λ`.
 
-This is the supermartingale analogue of `MeasureTheory.maximal_ineq` (which is stated for nonnegative
+This is the supermartingale analogue of `MeasureTheory.maximal_ineq` (for nonnegative
 submartingales); it is proved by optional stopping of the supermartingale at the hitting time of
 `[λ,∞)`. -/
 theorem supermartingale_maximal_ineq [IsFiniteMeasure μ] {M : ℕ → Ω → ℝ}
     (hM : Supermartingale M ℱ μ) (hnonneg : ∀ n, 0 ≤ M n) {lam : ℝ} (hlam : 0 < lam) (n : ℕ) :
-    μ {ω | lam ≤ (Finset.range (n + 1)).sup' Finset.nonempty_range_succ (fun k => M k ω)}
+    μ {ω | lam ≤ (Finset.range (n + 1)).sup' Finset.nonempty_range_add_one (fun k => M k ω)}
       ≤ ENNReal.ofReal (μ[M 0] / lam) := by
   classical
   let τ : Ω → ℕ∞ := fun ω => (hittingBtwn M {y : ℝ | lam ≤ y} (0 : ℕ) n ω : ℕ)
   let A : Set Ω :=
-    {ω | lam ≤ (Finset.range (n + 1)).sup' Finset.nonempty_range_succ (fun k => M k ω)}
+    {ω | lam ≤ (Finset.range (n + 1)).sup' Finset.nonempty_range_add_one (fun k => M k ω)}
   have hAmeas : MeasurableSet A := by
     exact measurableSet_le measurable_const
       (Finset.measurable_range_sup'' fun k _ => (hM.1.stronglyMeasurable (i := k)).measurable)
@@ -132,7 +132,7 @@ theorem ville_inequality [IsFiniteMeasure μ] {M : ℕ → Ω → ℝ}
   -- The "ever reaches lam" event is the increasing union of the finite-horizon events; apply the
   -- finite-horizon maximal inequality termwise.
   set A : ℕ → Set Ω :=
-    fun N => {ω | lam ≤ (Finset.range (N + 1)).sup' Finset.nonempty_range_succ (fun k => M k ω)}
+    fun N => {ω | lam ≤ (Finset.range (N + 1)).sup' Finset.nonempty_range_add_one (fun k => M k ω)}
     with hA
   have hUnion : {ω | ∃ n, lam ≤ M n ω} = ⋃ N, A N := by
     ext ω
@@ -141,14 +141,14 @@ theorem ville_inequality [IsFiniteMeasure μ] {M : ℕ → Ω → ℝ}
     · rintro ⟨n, hn⟩
       exact ⟨n, Finset.le_sup'_of_le (f := fun k => M k ω) (Finset.self_mem_range_succ n) hn⟩
     · rintro ⟨N, hN⟩
-      obtain ⟨k, _, hk⟩ := Finset.exists_mem_eq_sup' Finset.nonempty_range_succ (fun k => M k ω)
+      obtain ⟨k, _, hk⟩ := Finset.exists_mem_eq_sup' Finset.nonempty_range_add_one (fun k => M k ω)
       exact ⟨k, hN.trans hk.le⟩
   have hmono : Monotone A := by
     intro a b hab ω hω
     simp only [hA, Set.mem_setOf_eq] at hω ⊢
     have hsub : Finset.range (a + 1) ⊆ Finset.range (b + 1) :=
       Finset.range_mono (Nat.succ_le_succ hab)
-    exact le_trans hω (Finset.sup'_mono (fun k => M k ω) hsub Finset.nonempty_range_succ)
+    exact le_trans hω (Finset.sup'_mono (fun k => M k ω) hsub Finset.nonempty_range_add_one)
   rw [hUnion, hmono.measure_iUnion]
   exact iSup_le (fun N => supermartingale_maximal_ineq hM hnonneg hlam N)
 

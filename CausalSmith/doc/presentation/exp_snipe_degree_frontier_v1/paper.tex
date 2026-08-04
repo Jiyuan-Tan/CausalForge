@@ -1,0 +1,1722 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1.1in]{geometry}
+
+\usepackage{amssymb,mathtools,natbib}
+
+\input{paper_macros.tex}
+
+\title{Minimax Mean Squared Error for Low-Order Network Interference under Bernoulli Assignment}
+
+\author{CausalSmith\thanks{Formal verification details are summarized in the verification appendix.}}
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This paper studies design-based estimation of the finite-population all-treated-versus-all-control effect under known bounded-degree interference and low-order polynomial potential-outcome schedules. Under common-probability Bernoulli assignment, coefficient mass bounded by \(B\), graph in- and out-degree bounded by \(d\), and fixed interaction order \(\beta\), the minimax mean squared error is characterized up to constants depending only on \((\beta,p)\):
+\[
+B^2\min\!\left\{1,\frac{d\binom{d}{k_\star(d,\beta,p)}}{n}\right\}.
+\]
+Here \(k_\star(d,\beta,p)\) is the maximum \(r\in\{1,\ldots,\min\{\beta,d\}\}\) whose Bernoulli all-treated-versus-all-control contrast is nonzero when this set is nonempty, with \(k_\star=0\) under the degree-zero convention. For each fixed \((\beta,p)\), the implied constants are uniform in \(n\), \(d\), and \(B\). The upper bound is achieved by the clipped SNIPE estimator, and the lower bound is obtained from complete-block least-favourable priors built from the block representer. The same block energy \(A_d\) governs a uniformly bounded-outcome model class, yielding the equivalent frontier \(B^2\min\{1,dA_d/n\}\). On complete-block graph sequences, the local linear benchmark has exact finite-sample value \(B^2A_d/m\), and asymptotic optimality is characterized by a blockwise quadratic excess criterion. For fair-coin assignment, only odd interaction orders contribute to \(A_d\); for first-order interactions \((\beta=1)\), the frontier becomes \(B^2\min\{1,d^2/n\}\).
+\end{abstract}
+
+\section{Introduction}
+
+Network experiments routinely target contrasts between global treatment policies while observing outcomes under randomized assignments that expose only a small portion of the potential-outcome schedule. When one unit's outcome may depend on nearby units' assignments, the variance of a graph-aware estimator is shaped both by the size of each exposure neighborhood and by the number of other outcomes that share the same treatment coordinates. This paper gives a finite-population, design-based minimax calculation for that tradeoff under known bounded-degree interference and low-order polynomial response schedules.
+
+The estimand is the average all-treated-versus-all-control contrast. The population, graph, and potential outcomes are fixed, and randomness comes from independent Bernoulli assignment with common treatment probability \(p\in(0,1)\). Each unit's outcome is a polynomial in the assignments in its graph neighborhood, with interaction order bounded by a fixed \(\beta\) and coefficient mass bounded by \(B\). The graph has maximum in-degree and out-degree at most \(d\), with self-loops counted. This is the coefficient-mass model class in \cref{obj:def:model-class}, and risk is the design mean squared error in \cref{obj:def:minimax-risk}.
+
+The main result, \cref{obj:thm:degree-frontier}, establishes the minimax frontier
+\[
+R_n^\star(d,\beta,p,B)
+\asymp_{\beta,p}
+B^2\min\!\left\{1,\frac{d\binom{d}{k_\star(d,\beta,p)}}{n}\right\}.
+\]
+The index \(k_\star(d,\beta,p)\), defined in \cref{obj:def:exposed-order}, is the maximum \(r\in\{1,\ldots,\min\{\beta,d\}\}\) whose Bernoulli all-treated-versus-all-control contrast is nonzero when this set is nonempty, with \(k_\star=0\) under the degree-zero convention. Thus the rate separates three components: the sample-size factor \(1/n\), the graph-overlap factor \(d\), and the number of exposed interaction subsets inside a degree-\(d\) neighborhood. The clipped SNIPE estimator in \cref{obj:def:snipe-estimator} attains the upper bound, while the unprojected SNIPE estimator has worst-case mean squared error bounded by the corresponding untruncated variance scale.
+
+The proof identifies two finite-design objects behind the rate. The first is the complete-block score energy \(A_d\) introduced in \cref{obj:def:block-score-energy}. \Cref{obj:lem:block-energy-representer} proves that, for complete-block product Bernoulli designs on \(\{0,1\}^d\) and the low-order polynomial space \(\mathcal P_d\), the block score represents the all-treated-versus-all-control contrast, \(A_d\) is the minimum energy of an unbiased local weight, and \(A_d^{-1}\) is the minimum energy of a normalized local perturbation. The second is the overlap count in \cref{obj:thm:degree-frontier}, which shows that each \(r\)-way treatment subset in one neighborhood can be reused by at most \(d\) outcome scores. Together these facts convert local Bernoulli information into the global variance scale \(dA_d/n\), and \cref{obj:lem:block-energy-representer} relates \(A_d\) to \(\binom{d}{k_\star(d,\beta,p)}\).
+
+The lower bound uses complete directed blocks as least-favourable carriers. Within each block, the perturbation is aligned with the normalized Riesz representer \(h_d\), and random baseline coefficients are drawn from a smooth compactly supported density. The two signed priors shift the target by \(\rho\delta\) and \(-\rho\delta\), while their squared Hellinger distance is controlled by \(m\delta^2/(B^2A_d)\). This construction yields the lower frontier at the same scale as the SNIPE upper bound.
+
+The complete-block calculation also gives an exact benchmark for local linear estimators. In \cref{obj:thm:sharp-local-linear-constant-and-representers}, for a fixed complete-block graph sequence with block size \(d_t\), \(m_t=n_t/d_t\) blocks, and the moment restrictions in \cref{obj:def:local-linear-estimator-class}, the local linear minimax risk is
+\[
+R_t^{\mathrm{loc,lin}}=\frac{B^2A_{d_t}}{m_t}.
+\]
+The theorem gives a finite-sample blockwise quadratic criterion \(\Psi_{b,t}\), proves that its excess over \(d_t^2A_{d_t}\) exactly characterizes asymptotic attainment of the benchmark, and shows that risk-optimal local linear weights can remain separated from the canonical complete-block SNIPE score in normalized \(L^2\) distance when \(d_t\to\infty\).
+
+The coefficient-mass model has a bounded-outcome analogue in \cref{obj:def:bounded-outcome-model-class}. For this class, \cref{obj:thm:bounded-outcome-degree-frontier} characterizes the minimax order through the same energy scale:
+\[
+R_{n,\infty}^{\star}(d,\beta,p,B)
+\asymp_{\beta,p}
+B^2\min\!\left\{1,\frac{dA_d}{n}\right\}.
+\]
+The projected estimator is clipped to the natural total-effect range \([-2B,2B]\), and the unprojected SNIPE estimator remains unbiased with worst-case mean squared error at most \(B^2dA_d/n\). On complete blocks with \(d\mid n\), canonical SNIPE has exact worst-case risk \(B^2A_d/m\) for both the coefficient-mass and bounded-outcome classes.
+
+The fair-coin specialization in \cref{obj:thm:fair-coin-energy-frontier} makes the exposure calculation explicit. At \(p=1/2\), even-order Bernoulli contrasts cancel and odd orders determine the energy:
+\[
+A_d=4\sum_{\substack{1\le r\le \bar\beta_d\\ r\text{ odd}}}\binom{d}{r}.
+\]
+For first-order interactions \((\beta=1)\), \(A_d=4d\), so the minimax frontier is of order \(B^2\min\{1,d^2/n\}\). This case gives a transparent calibration of the quadratic degree cost induced by first-order interference under fair Bernoulli assignment.
+
+The results build on the design-based potential-outcomes tradition for randomized experiments \citep{Rubin1978,HorvitzThompson1952,ImbensRubin2015} and on interference frameworks based on exposure mappings, local dependence, and network randomization \citep{Sobel2006,HudgensHalloran2008,Aronow2017,Ugander2013,Eckles2017,Leung2022,Savje2021,Hu2022,Gao2025}. The closest antecedent is the SNIPE analysis for low-order neighborhood interference in \citet{CortezRodriguezEichhornYu2023}, which supplies the known-graph Bernoulli estimator and its overlap-aware design variance calculation. The present paper characterizes the matched minimax mean-squared-error frontier in that setting, with explicit degree dependence \(dA_d/n\asymp_{\beta,p}d\binom{d}{k_\star}/n\). Its lower bound is generated by a complete-block least-favourable family aligned with the Riesz representer, and its extensions give the bounded-outcome frontier and the exact complete-block local linear benchmark. The calculation also supplies a unit-randomized reference point for recent work on low-order, clustered, and covariate-adjusted interference estimators \citep{HarshawSavjeWang2025,EichhornKhanUganderYu2026,WangLi2026}. A Lean 4 development accompanies the paper; the verification appendix states the precise formal scope.
+
+
+\section{Setup and Assumptions}
+
+We work in a finite-population design-based setting. The population is the finite unit set \leanref{sym:V_n}{\ensuremath{V_n}} with size \leanref{sym:n}{\ensuremath{n}}; indices such as \leanref{sym:i}{\ensuremath{i}} and \leanref{sym:j}{\ensuremath{j}} refer to units in \(V_n\). A known directed graph \leanref{sym:G_n}{\ensuremath{G_n}} records interference, with \leanref{sym:N_i}{\ensuremath{N_i}} denoting the assignment coordinates that can enter unit \(i\)'s potential outcome. For an assignment vector \leanref{sym:z}{\ensuremath{z}}, the potential outcome schedule is \leanref{sym:Y_i(z)}{\ensuremath{Y_i(z)}}, and the realized assignment is \leanref{sym:Z}{\ensuremath{Z}}. The observed outcome is \leanref{sym:Y_i^{\mathrm{obs}}}{\ensuremath{Y_i^{\mathrm{obs}}}} \(=Y_i(Z)\). The estimand is the average all-treated-versus-all-control contrast \leanref{sym:\tau_n}{\ensuremath{\tau_n}}. This \leanref{S-1}{finite-population design-based randomization world} and the accompanying \leanref{S-2}{fixed-potential-outcome polynomial interference world} provide the objects used in all risk statements below.
+
+The assignment mechanism is the independent Bernoulli design. We write \leanref{sym:p}{\ensuremath{p}} for the common treatment probability, \leanref{sym:P_Z}{\ensuremath{P_Z}} for the product assignment law, and \leanref{sym:\mathbb E_Z}{\ensuremath{\mathbb E_Z}} for expectation under that law.
+
+The notation is grouped by role in the results.
+\begin{center}
+\small
+\begin{tabular}{p{0.37\linewidth}p{0.25\linewidth}p{0.28\linewidth}}
+\hline
+Object group & Role & First main use \\
+\hline
+\((V_n,G_n,N_i,Z,Y_i^{\mathrm{obs}},\tau_n)\), \(c\), \((d,\beta,B,p)\)
+& finite-population decision problem
+& \cref{obj:thm:degree-frontier} \\
+\(g_{i,\beta,p}\), \(\widehat\tau_n^{\mathrm{SNIPE}}\), \(\widehat\tau_n^{\mathrm{up}}\), \(R_n^\star\)
+& score, estimator, and coefficient-class risk
+& \cref{obj:thm:degree-frontier} \\
+\(g_d\), \(A_d\), \(h_d\), \(L^2(P_Z)\), \(\mathcal P_d\), \(L_d\)
+& complete-block Riesz quantities
+& \cref{obj:thm:degree-frontier,obj:thm:sharp-local-linear-constant-and-representers} \\
+\(V_b\), \(U_b\), \(\delta\), \(\rho\), \(\Pi_+\), \(\Pi_-\)
+& least-favourable block construction
+& \cref{obj:thm:degree-frontier} \\
+\(G_t\), \(n_t\), \(d_t\), \(m_t\), \(b(i)\), \(w_{i,t}\), \(\mathcal E_t^{\mathrm{loc,lin}}\), \(\Psi_{b,t}\)
+& complete-block local linear benchmark
+& \cref{obj:thm:sharp-local-linear-constant-and-representers} \\
+\(\mathcal M_{n,d,\beta}^{\infty}(B)\), \(R_{n,\infty}^{\star}\), \(\widehat\tau_{n,\infty}^{\mathrm{up}}\)
+& uniformly bounded-outcome comparison
+& \cref{obj:thm:bounded-outcome-degree-frontier} \\
+\hline
+\end{tabular}
+\end{center}
+The setup first introduces the design, graph, model class, estimator, and risk. The block programs, least-favourable laws, local-linear sequence, and bounded-outcome envelope then appear at the points where the main theorems use them.
+
+\begin{assumptionv}{ass:bernoulli-design}[Bernoulli assignment]
+The assignment law \(P_Z\) is the common-probability product Bernoulli design with \(p\in(0,1)\). Equivalently, the assignments \(\{Z_j:j\in V_n\}\) are mutually independent and
+\[
+\Pr(Z_j=1)=p
+\]
+for every \(j\in V_n\).
+\end{assumptionv}
+
+\Cref{obj:ass:bernoulli-design} is the standard unit-level Bernoulli randomization condition used in design-based analyses of SNIPE-type estimators \citep{CortezRodriguezEichhornYu2023}. Its independence and common-probability clauses make the finite-design moments of centered assignment monomials explicit.
+
+Interference is local in the known graph. The parameter \leanref{sym:d}{\ensuremath{d}} bounds both the number of assignment coordinates entering each unit's outcome and the number of outcomes affected by each assignment coordinate, with self-loops counted in both directions.
+
+\begin{assumptionv}{ass:bounded-degree}[Bounded interference degree]
+Self-loops are allowed and count in both degrees. The interference neighborhoods satisfy
+\[
+\max_{i\in V_n}|N_i|\le d
+\qquad\text{and}\qquad
+\max_{j\in V_n}\bigl|\{i\in V_n:j\in N_i\}\bigr|\le d .
+\]
+\end{assumptionv}
+
+\Cref{obj:ass:bounded-degree} is the standard bounded in- and out-degree neighborhood interference condition with self-loops \citep{CortezRodriguezEichhornYu2023}. The first bound limits the dimension of each unit's exposure polynomial, while the second controls how many summands in an estimator can share a treatment coordinate.
+
+Potential outcomes are represented by raw assignment monomials on the relevant neighborhood. The coefficient schedule is \leanref{sym:c}{\ensuremath{c}}, with \leanref{sym:c_{i,S}}{\ensuremath{c_{i,S}}} denoting the coefficient on a finite subset \leanref{sym:S}{\ensuremath{S}} of assignment coordinates. The interaction order \leanref{sym:\beta}{\ensuremath{\beta}} fixes the maximum monomial degree used by the model.
+
+\begin{assumptionv}{ass:low-order}[Low-order interactions]
+For every \(i\in V_n\) and every finite subset \(S\subseteq V_n\),
+\[
+c_{i,S}=0
+\]
+whenever \(|S|>\beta\).
+\end{assumptionv}
+
+\Cref{obj:ass:low-order} is the standard bounded polynomial interaction order condition \citep{CortezRodriguezEichhornYu2023}. It turns the neighborhood outcome schedule into a low-order polynomial and separates the role of graph degree from the role of interaction order.
+
+The coefficient envelope \leanref{sym:B}{\ensuremath{B}} normalizes the size of each unit's outcome polynomial.
+
+\begin{assumptionv}{ass:bounded-coefficient-mass}[Bounded coefficient mass]
+For every \(i\in V_n\),
+\[
+\sum_{S\subseteq N_i}|c_{i,S}|\le B .
+\]
+\end{assumptionv}
+
+\Cref{obj:ass:bounded-coefficient-mass} is the standard SNIPE \(Y_{\max}\) coefficient-mass normalization \citep{CortezRodriguezEichhornYu2023}. It supplies a uniform scale for the total-effect target and for the design mean squared error comparisons.
+
+The exposed interaction order records how much of the polynomial class can be seen within a degree-\(d\) neighborhood. The Bernoulli contrast coefficient is \leanref{sym:\Delta_r(p)}{\ensuremath{\Delta_r(p)}}, with \leanref{sym:r}{\ensuremath{r}} indexing interaction order; it is the order-\(r\) all-treated-versus-all-control contrast of a centered assignment monomial,
+\[
+\Delta_r(p):=(1-p)^r-(-p)^r .
+\]
+Whether \(\Delta_r(p)\) vanishes decides which interaction orders the design can expose, and hence the value of \(k_\star\) below.
+
+\begin{definitionv}{def:exposed-order}[Exposed order \(\bar\beta_d\) and \(k_\star(d,\beta,p)\)]
+For every \(d\ge0\), set
+\[
+\bar\beta_d:=\min\{\beta,d\}.
+\]
+In particular, \(\bar\beta_0=0\).
+
+If \(\bar\beta_d\ge1\), define
+\[
+k_\star(d,\beta,p)
+:=
+\max\bigl\{r\in\{1,\ldots,\bar\beta_d\}:\Delta_r(p)\ne0\bigr\}.
+\]
+Since \(\Delta_1(p)=1\), the index set contains \(r=1\), so this maximum is well defined.
+
+If \(\bar\beta_d=0\), equivalently \(d=0\) or \(\beta=0\), set
+\[
+k_\star(d,\beta,p):=0
+\]
+as a totality convention rather than as an attained interaction order. Thus the maximum case applies exactly when \(d\ge1\) and \(\beta\ge1\). Throughout the subsequent results, \(\beta\ge1\) is fixed.
+\end{definitionv}
+
+The quantities \leanref{sym:\bar\beta_d}{\ensuremath{\bar\beta_d}} and \leanref{sym:k_\star}{\ensuremath{k_\star(d,\beta,p)}} determine which centered monomial contrasts carry identifying content under the Bernoulli design.
+
+\begin{definitionv}{def:zero-degree-conventions}[Zero-degree conventions \(\binom00\), \(g_0\), \(A_0\), and \(h_0\)]
+For every \(\beta\in\mathbb N\) and \(p\in\mathbb R\), the degree-zero conventions are
+\[
+\bar\beta_0:=\min\{\beta,0\}=0,
+\qquad
+k_\star(0,\beta,p):=0,
+\qquad
+g_0:=0,
+\qquad
+A_0:=0.
+\]
+The normalized representer is guarded at degree zero by setting
+\[
+h_0:=0,
+\qquad
+h_{0,T}:=0
+\]
+for every block-coordinate subset \(T\) of the zero-coordinate block, with \(h_0\) imposed as an empty-object convention rather than as the quotient \(g_0/A_0\).
+\end{definitionv}
+
+These conventions allow the formulas for scores, energies, and representers to remain total across degree values, while the main results use the positive-degree regime stated in their conditions.
+
+We next collect the graph and coefficient classes. The graph carrier is \leanref{sym:\mathcal G_{n,d}}{\ensuremath{\mathcal G_{n,d}}}, the coefficient carrier is \leanref{sym:\mathcal C_{n,d,\beta}(B)}{\ensuremath{\mathcal C_{n,d,\beta}(B)}}, and their product model class is \leanref{sym:\mathcal M_{n,d,\beta}(B)}{\ensuremath{\mathcal M_{n,d,\beta}(B)}}.
+
+\begin{definitionv}{def:graph-class}[Graph class $\mathcal G_{n,d}$]
+The graph class with degree bound \(d\) is
+\[
+\mathcal G_{n,d}
+:=
+\{G_n\subseteq V_n\times V_n:\ G_n \text{ satisfies } \cref{obj:ass:bounded-degree}\}.
+\]
+\end{definitionv}
+
+\begin{definitionv}{def:coefficient-class}[Coefficient class $\mathcal C_{n,d,\beta}(B)$]
+The coefficient class with interaction order \(\beta\) and mass radius \(B\) is
+\[
+\mathcal C_{n,d,\beta}(B)
+:=
+\left\{c=(c_{i,S})_{i\in V_n,\,S\subseteq V_n}:
+ c_{i,S}=0 \text{ whenever } S\not\subseteq N_i,
+\ c \text{ satisfies } \cref{obj:ass:low-order,obj:ass:bounded-coefficient-mass}\right\}.
+\]
+\end{definitionv}
+
+\begin{definitionv}{def:model-class}[Model class $\mathcal M_{n,d,\beta}(B)$]
+Under \cref{obj:ass:bounded-degree,obj:ass:low-order,obj:ass:bounded-coefficient-mass}, with coefficient schedules supported on the in-neighborhoods in the sense that \(c_{i,S}=0\) whenever \(S\not\subseteq N_i\), the model class is
+\[
+\mathcal M_{n,d,\beta}(B)
+:=
+\{(G_n,c):\ G_n\in\mathcal G_{n,d},\ c\in\mathcal C_{n,d,\beta}(B)\}.
+\]
+\end{definitionv}
+
+Together, \cref{obj:def:graph-class,obj:def:coefficient-class,obj:def:model-class} specify the coefficient-mass model over which the first minimax risk is evaluated.
+
+The estimator uses centered Bernoulli contrast scores. For unit \(i\), the score \leanref{sym:g_{i,\beta,p}}{\ensuremath{g_{i,\beta,p}}} weights observed outcomes by all centered neighborhood monomials up to the exposed order.
+
+\begin{definitionv}{def:snipe-score}[SNIPE score \(g_{i,\beta,p}\)]
+For unit \(i\), the SNIPE score is
+\[
+g_{i,\beta,p}(z)
+:=
+\sum_{r=1}^{\bar\beta_d}
+\frac{\Delta_r(p)}{[p(1-p)]^r}
+\sum_{\substack{S\subseteq N_i\\ |S|=r}}
+\prod_{j\in S}(z_j-p).
+\]
+\end{definitionv}
+
+The unprojected estimator \leanref{sym:\widehat\tau_n^{\mathrm{SNIPE}}}{\ensuremath{\widehat\tau_n^{\mathrm{SNIPE}}}} averages observed outcomes weighted by these scores, and the projected estimator \leanref{sym:\widehat\tau_n^{\mathrm{up}}}{\ensuremath{\widehat\tau_n^{\mathrm{up}}}} clips that average to \([-B,B]\) for the coefficient-mass risk comparison.
+
+\begin{definitionv}{def:snipe-estimator}[SNIPE estimator \(\widehat\tau_n^{\mathrm{SNIPE}}\)]
+The unprojected SNIPE estimator is
+\[
+\widehat\tau_n^{\mathrm{SNIPE}}
+:=
+\frac{1}{n}\sum_{i\in V_n}Y_i^{\mathrm{obs}}g_{i,\beta,p}(Z).
+\]
+Its projected version is
+\[
+\widehat\tau_n^{\mathrm{up}}
+:=
+\Pi_{[-B,B]}\bigl(\widehat\tau_n^{\mathrm{SNIPE}}\bigr),
+\]
+where \(\Pi_{[-B,B]}\) denotes Euclidean projection onto \([-B,B]\).
+\end{definitionv}
+
+The decision problem is graph-aware and design-based: estimators may use the graph, the assignment, and the observed outcomes, while risk averages only over the random assignment. The generic estimator is \leanref{sym:\widehat\tau_n}{\ensuremath{\widehat\tau_n}}, and the resulting coefficient-class minimax risk is \leanref{sym:R_n^\star(d,\beta,p,B)}{\ensuremath{R_n^\star(d,\beta,p,B)}}. This is the \leanref{S-3}{design-based decision-theoretic world} used by the main theorem.
+
+\begin{definitionv}{def:minimax-risk}[Minimax risk \(R_n^\star(d,\beta,p,B)\)]
+The minimax design mean squared error over \(\mathcal M_{n,d,\beta}(B)\) is
+\[
+R_n^\star(d,\beta,p,B)
+:=
+\inf_{\widehat\tau_n}
+\sup_{(G_n,c)\in\mathcal M_{n,d,\beta}(B)}
+\mathbb E_Z\!\left[
+\bigl(\widehat\tau_n-\tau_n\bigr)^2
+\right],
+\]
+where the infimum ranges over estimators \(\widehat\tau_n\) measurable with respect to \((G_n,Z,\{Y_i^{\mathrm{obs}}:i\in V_n\})\).
+\end{definitionv}
+
+The lower-bound construction and the local linear benchmark both reduce to complete blocks. For one \(d\)-block, the block score \leanref{sym:g_d}{\ensuremath{g_d}}, energy \leanref{sym:A_d}{\ensuremath{A_d}}, normalized representer \leanref{sym:h_d}{\ensuremath{h_d}}, block-coordinate subset \leanref{sym:T}{\ensuremath{T}}, and raw coefficient \leanref{sym:h_{d,T}}{\ensuremath{h_{d,T}}} are as follows.
+
+\begin{definitionv}{def:block-score-energy}[Complete-block score and energy \(g_d,A_d,h_d\)]
+For \(d\ge 1\) and a Bernoulli assignment vector \(z=(z_1,\ldots,z_d)\), define
+\[
+g_d(z):=\sum_{r=1}^{\bar\beta_d}\frac{\Delta_r(p)}{[p(1-p)]^r}\sum_{\substack{S\subseteq\{1,\ldots,d\}\\ |S|=r}}\prod_{j\in S}(z_j-p).
+\]
+The corresponding energy is
+\[
+A_d:=\sum_{r=1}^{\bar\beta_d}\binom{d}{r}\frac{\Delta_r(p)^2}{[p(1-p)]^r}.
+\]
+The normalized block representer is
+\[
+h_d:=\frac{g_d}{A_d}.
+\]
+Its raw-monomial expansion is
+\[
+h_d(z)=\sum_{T\subseteq\{1,\ldots,d\}}h_{d,T}\prod_{j\in T}z_j.
+\]
+\end{definitionv}
+
+The least-favourable family places complete directed blocks inside the population. Its notation includes the number of blocks \leanref{sym:m}{\ensuremath{m}}, active units \leanref{sym:q}{\ensuremath{q}}, active fraction \leanref{sym:\rho}{\ensuremath{\rho}}, active block \leanref{sym:V_b}{\ensuremath{V_b}}, block index \leanref{sym:b}{\ensuremath{b}}, baseline halfwidth \leanref{sym:s}{\ensuremath{s}}, density \leanref{sym:f_s}{\ensuremath{f_s}}, block baseline \leanref{sym:U_b}{\ensuremath{U_b}}, representer mass bound \leanref{sym:H_{\beta,p}}{\ensuremath{H_{\beta,p}}}, perturbation amplitude \leanref{sym:\delta}{\ensuremath{\delta}}, sign \leanref{sym:\sigma}{\ensuremath{\sigma}}, and prior \leanref{sym:\Pi_\sigma}{\ensuremath{\Pi_\sigma}}. This is the \leanref{S-4}{least-favourable block world} used to calibrate the minimax lower bound.
+
+\begin{definitionv}{def:block-family}[Least-favourable block family \(\Pi_\sigma\)]
+For \(B>0\) and \(1\le d\le n\), set
+\[
+m:=\lfloor n/d\rfloor,\qquad q:=md,\qquad \rho:=q/n.
+\]
+Partition \(q\) units into \(m\) blocks \(V_b\) of size \(d\). Each block contains every within-block directed arrow, including loops, and the remaining \(n-q\) units are isolated.
+
+Set
+\[
+s:=B/2,\qquad f_s(u):=s^{-1}\cos^2\!\left(\frac{\pi u}{2s}\right)\mathbf 1\{|u|\le s\}.
+\]
+Let \(U_1,\ldots,U_m\) be independent draws from density \(f_s\). Define
+\[
+H_{\beta,p}:=\sup_{d\ge1}\sum_T |h_{d,T}|
+\]
+and choose
+\[
+\delta:=B\min\{(2H_{\beta,p})^{-1},(4\pi)^{-1}\}\min\{1,\sqrt{A_d/m}\}.
+\]
+Under \(\Pi_\sigma\), each active unit \(i\in V_b\) has coefficients
+\[
+c_{i,T}:=U_b\mathbf1\{T=\varnothing\}+\sigma\delta h_{d,T},\qquad |T|\le k_\star.
+\]
+All remaining coefficients, including coefficients of inactive units, are zero. The variables \(U_b\) randomize fixed potential-outcome schedules as prior draws over schedules.
+\end{definitionv}
+
+The two signed versions of the construction also induce prior-predictive laws. The negative law is named separately because the affinity comparison in the lower-bound argument uses the pair symmetrically.
+
+\begin{definitionv}{synth_4}[Negative least-favourable prior-predictive law $\Pi_-$]
+We write $\Pi_-$ for the prior-predictive law induced by the least-favourable block construction with sign $\sigma=-1$: draw $Z\sim\prod_{j\in V_n}\mathrm{Bernoulli}(p)$ and independent $U_1,\ldots,U_m$ with density $f_s$, set the active coefficients in block $V_b$ to $c_{i,T}=U_b\mathbf1\{T=\varnothing\}-\delta h_{d,T}$ for $|T|\le k_\star$ and all remaining coefficients to zero, and take the induced joint law of $(Z,\{Y_i^{\mathrm{obs}}:i\in V_n\})$.
+\end{definitionv}
+
+\begin{definitionv}{synth_3}[Positive score-aligned block prior $\Pi_+$]
+In the complete-block construction with \(B>0\) and \(1\le d\le n\), we write \(\Pi_+(n,d,\beta,B,p)\) for the probability law on fixed coefficient schedules induced by independent draws \(U_b\sim f_s\) under which each active unit \(i\in V_b\) has \(c_{i,T}=U_b\mathbf 1\{T=\varnothing\}+\delta h_{d,T}\) for \(|T|\le k_\star(d,\beta,p)\), and every other coefficient, including each coefficient of an inactive unit, equals \(0\).
+\end{definitionv}
+
+For the complete-block Riesz calculations, the finite design space and the polynomial contrast space are useful in their own right. We use the \leanref{S-5}{block-local Riesz world}: the block polynomial subspace \leanref{sym:\mathcal P_d}{\ensuremath{\mathcal P_d}}, candidate polynomial \leanref{sym:f}{\ensuremath{f}}, candidate perturbation \leanref{sym:h}{\ensuremath{h}}, all-one-versus-all-zero contrast functional \leanref{sym:L_d}{\ensuremath{L_d}}, candidate block-local weight \leanref{sym:w}{\ensuremath{w}}, and the associated minimum-energy programs. The contrast functional evaluates a block polynomial at the all-treated and all-control assignments,
+\[
+L_d(f):=f(\mathbf 1_d)-f(\mathbf 0_d),
+\]
+so the normalization \(L_d(h)=1\) below fixes the scale at which a perturbation moves the target. Writing \(A_i\) for the local SNIPE energy of unit \(i\), the same construction applied to that unit's own neighborhood gives
+\[
+A_i:=\sum_{r=1}^{\min\{\beta,|N_i|\}}\binom{|N_i|}{r}\frac{\Delta_r(p)^2}{[p(1-p)]^r},
+\]
+which reduces to the complete-block energy \(A_d\) when \(|N_i|=d\).
+
+\begin{definitionv}{synth_2}[Design $L^2(P_Z)$ space]
+We write $L^2(P_Z)$ for the real vector space of functions $w:\{0,1\}^{\{1,\ldots,d\}}\to\mathbb R$ with finite design second moment $\mathbb E_Z[w(Z)^2]<\infty$ under the product Bernoulli assignment law $P_Z$ with success probability $p$.
+\end{definitionv}
+
+\begin{definitionv}{synth_1}[Block polynomial space \(\mathcal P_d\)]
+For \(d\ge1\), \(\mathcal P_d\) is the linear subspace of \(L^2(P_Z)\) spanned by the raw monomials \(z\mapsto\prod_{j\in S} z_j\) with \(S\subseteq\{1,\ldots,d\}\) and \(|S|\le\bar\beta_d\).
+\end{definitionv}
+
+\begin{definitionv}{def:perturbation-program}[Perturbation program \(\mathsf{PerturbProg}_{d,\beta,p}\)]
+For \(d\ge1\), define
+\[
+\mathsf{PerturbProg}_{d,\beta,p}:=\min_{h\in\mathcal P_d}\mathbb E_Z[h(Z)^2]
+\]
+subject to
+\[
+L_d(h)=1.
+\]
+\end{definitionv}
+
+\begin{definitionv}{def:weight-program}[Weight program \(\mathsf{WeightProg}_{d,\beta,p}\)]
+For \(d\ge1\), define
+\[
+\mathsf{WeightProg}_{d,\beta,p}:=\min_{w\in L^2(P_Z)}\mathbb E_Z[w(Z)^2]
+\]
+subject to
+\[
+\mathbb E_Z[w(Z)]=0
+\]
+and, for every nonempty \(S\subseteq\{1,\ldots,d\}\) with \(|S|\le\bar\beta_d\),
+\[
+\mathbb E_Z\!\left[w(Z)\prod_{j\in S}Z_j\right]=1.
+\]
+\end{definitionv}
+
+The perturbation program \leanref{sym:\mathsf{PerturbProg}_{d,\beta,p}}{\ensuremath{\mathsf{PerturbProg}_{d,\beta,p}}} and the weight program \leanref{sym:\mathsf{WeightProg}_{d,\beta,p}}{\ensuremath{\mathsf{WeightProg}_{d,\beta,p}}} express the same complete-block information through dual normalizations: one fixes the all-one-versus-all-zero contrast and minimizes polynomial energy, while the other fixes unbiased raw-monomial moments and minimizes weight energy.
+
+The fixed-graph local linear benchmark specializes the population sequence to complete blocks. Let \leanref{sym:G_t}{\ensuremath{G_t}} be the fixed complete-block graph at index \(t\), with carrier \leanref{sym:V_{n_t}}{\ensuremath{V_{n_t}}}, size \leanref{sym:n_t}{\ensuremath{n_t}}, block size \leanref{sym:d_t}{\ensuremath{d_t}}, and neighborhoods \leanref{sym:N_i^{G_t}}{\ensuremath{N_i^{G_t}}}. The local coefficient class is \leanref{sym:\mathcal M_t(G_t)}{\ensuremath{\mathcal M_t(G_t)}}.
+
+\begin{definitionv}{def:local-linear-class}[Fixed-graph class \(\mathcal M_t(G_t)\)]
+Under \cref{obj:ass:low-order,obj:ass:bounded-coefficient-mass}, on the fixed graph \(G_t\), define \(\mathcal M_t(G_t)\) as the set of coefficient schedules \(c\) satisfying
+\[
+c_{i,S}=0
+\]
+whenever \(S\subseteq N_i^{G_t}\) and \(|S|\le\bar\beta_{d_t}\) fail to hold, and satisfying, for every \(i\in V_{n_t}\),
+\[
+\sum_{S\subseteq N_i^{G_t}}|c_{i,S}|\le B.
+\]
+\end{definitionv}
+
+A local linear estimator uses a block-local assignment weight \leanref{sym:w_{i,t}}{\ensuremath{w_{i,t}}}. If \leanref{sym:b(i)}{\ensuremath{b(i)}} denotes the block containing unit \(i\), then \leanref{sym:Z_{b(i)}}{\ensuremath{Z_{b(i)}}} is the assignment vector in that block, \leanref{sym:\widehat\tau_{w,t}}{\ensuremath{\widehat\tau_{w,t}}} is the resulting estimator, and \leanref{sym:\mathcal E_t^{\mathrm{loc,lin}}}{\ensuremath{\mathcal E_t^{\mathrm{loc,lin}}}} is the moment-restricted class.
+
+\begin{definitionv}{def:local-linear-estimator-class}[Local linear estimators \(\mathcal E_t^{\mathrm{loc,lin}}\)]
+Define \(\mathcal E_t^{\mathrm{loc,lin}}\) as the set of estimators
+\[
+\widehat\tau_{w,t}:=n_t^{-1}\sum_{i\in V_{n_t}}w_{i,t}(Z_{b(i)})Y_i(Z)
+\]
+such that \(w_{i,t}\in L^2(P_Z)\) is measurable with respect to \(Z_{b(i)}\),
+\[
+\mathbb E_Z[w_{i,t}]=0,
+\]
+and, for every nonempty \(S\subseteq N_i^{G_t}\) with \(|S|\le\bar\beta_{d_t}\),
+\[
+\mathbb E_Z\!\left[w_{i,t}\prod_{j\in S}Z_j\right]=1.
+\]
+\end{definitionv}
+
+The fixed-graph local linear risk \leanref{sym:R_t^{\mathrm{loc,lin}}}{\ensuremath{R_t^{\mathrm{loc,lin}}}} evaluates these estimators over the corresponding coefficient schedules.
+
+\begin{definitionv}{def:local-linear-risk}[Local linear risk \(R_t^{\mathrm{loc,lin}}\)]
+For a fixed complete-block graph \(G_t\), define
+\[
+R_t^{\mathrm{loc,lin}}
+:=
+\inf_{\widehat\tau_{w,t}\in\mathcal E_t^{\mathrm{loc,lin}}}
+\sup_{c\in\mathcal M_t(G_t)}
+\mathbb E_Z\!\left[
+\left(\widehat\tau_{w,t}-\tau_{n_t}\right)^2
+\right].
+\]
+The supremum ranges over coefficient schedules on the fixed graph \(G_t\).
+\end{definitionv}
+
+Finally, we introduce the uniformly bounded-outcome class. Its schedule carrier is \leanref{sym:\mathcal C_{n,d,\beta}^{\infty}(B)}{\ensuremath{\mathcal C_{n,d,\beta}^{\infty}(B)}}, and its model class is \leanref{sym:\mathcal M_{n,d,\beta}^{\infty}(B)}{\ensuremath{\mathcal M_{n,d,\beta}^{\infty}(B)}}.
+
+\begin{definitionv}{def:bounded-outcome-coefficient-class}[Bounded-outcome coefficient class \(\mathcal C_{n,d,\beta}^{\infty}(B)\)]
+Under \cref{obj:ass:low-order}, define
+\[
+\mathcal C_{n,d,\beta}^{\infty}(B)
+:=
+\left\{
+c:
+c_{i,S}=0\ \text{whenever } S\not\subseteq N_i,
+\quad
+c_{i,S}=0\ \text{whenever } |S|>\beta,
+\quad
+\sup_{z\in\{0,1\}^{V_n}} |Y_i(z)|\le B
+\ \text{for every } i\in V_n
+\right\}.
+\]
+\end{definitionv}
+
+\begin{definitionv}{def:bounded-outcome-model-class}[Bounded-outcome model class \(\mathcal M_{n,d,\beta}^{\infty}(B)\)]
+Under \cref{obj:ass:bounded-degree,obj:ass:low-order}, define
+\[
+\mathcal M_{n,d,\beta}^{\infty}(B)
+:=
+\left\{
+(G_n,c):
+G_n\in\mathcal G_{n,d},
+\quad
+c\in\mathcal C_{n,d,\beta}^{\infty}(B)
+\right\}.
+\]
+\end{definitionv}
+
+The notation for the two minimax risks distinguishes the coefficient-mass class from the uniformly bounded-outcome class. We write \leanref{sym:R_{n,\ell_1}^{\star}(d,\beta,p,B)}{\ensuremath{R_{n,\ell_1}^{\star}(d,\beta,p,B)}} for the coefficient-mass risk and \leanref{sym:R_{n,\infty}^{\star}(d,\beta,p,B)}{\ensuremath{R_{n,\infty}^{\star}(d,\beta,p,B)}} for the bounded-outcome risk.
+
+\begin{definitionv}{def:two-class-minimax-risks}[Two minimax risks \(R_{n,\ell_1}^{\star}\) and \(R_{n,\infty}^{\star}\)]
+For \(0\le p\le 1\), define
+\[
+R_{n,\ell_1}^{\star}(d,\beta,p,B)
+:=
+R_n^\star(d,\beta,p,B)
+\]
+and
+\[
+R_{n,\infty}^{\star}(d,\beta,p,B)
+:=
+\inf_{\widehat\tau_n}
+\sup_{(G_n,c)\in\mathcal M_{n,d,\beta}^{\infty}(B)}
+\mathbb E_Z\!\left[
+\left(\widehat\tau_n-\tau_n\right)^2
+\right].
+\]
+The infimum ranges over graph-aware estimators \(\widehat\tau_n\) of \(G_n\), \(Z\), and \(\{Y_i^{\mathrm{obs}}:i\in V_n\}\) that, for each fixed \(G_n\) and \(Z\), are measurable as functions of the observed-outcome vector and whose modelwise bounded-outcome risk range
+\[
+\left\{
+\mathbb E_Z\!\left[
+\left(\widehat\tau_n-\tau_n\right)^2
+\right]
+:
+(G_n,c)\in\mathcal M_{n,d,\beta}^{\infty}(B)
+\right\}
+\]
+is bounded above.
+\end{definitionv}
+
+For the bounded-outcome comparison, the SNIPE estimator is projected to the natural range of the total-effect contrast. The clipped version is \leanref{sym:\widehat\tau_{n,\infty}^{\mathrm{up}}}{\ensuremath{\widehat\tau_{n,\infty}^{\mathrm{up}}}}.
+
+\begin{definitionv}{def:bounded-outcome-clipped-snipe}[Bounded-outcome clipped SNIPE \(\widehat\tau_{n,\infty}^{\mathrm{up}}\)]
+Define
+\[
+\widehat\tau_{n,\infty}^{\mathrm{up}}
+:=
+\Pi_{[-2B,2B]}\!\left(\widehat\tau_n^{\mathrm{SNIPE}}\right),
+\]
+where \(\Pi_{[-2B,2B]}\) denotes Euclidean projection onto \([-2B,2B]\).
+\end{definitionv}
+
+Two prior laws are compared through the squared Hellinger distance, used throughout in its unhalved form: for laws \(P\) and \(Q\) with densities \(f\) and \(g\) with respect to a common dominating measure \(\lambda\),
+\[
+H^2(P,Q):=\int\left(\sqrt{f}-\sqrt{g}\right)^2\mathrm{d}\lambda .
+\]
+Every constant reported for a least-favourable pair below refers to this normalization; the halved convention would rescale those constants by a factor of two.
+
+The definitions above fix the design, model classes, estimators, block programs, and risk criteria used in the results that follow.
+
+
+
+
+
+\section{Main Results}
+
+The definitions in \cref{obj:def:model-class,obj:def:snipe-estimator,obj:def:minimax-risk} lead to a design-based risk comparison in which the graph is known, treatment is assigned independently, and performance is evaluated uniformly over the coefficient-mass class. The first result characterizes the degree dependence of that comparison. Its rate is governed by the exposed Bernoulli contrast order \(k_\star(d,\beta,p)\), equivalently by the leading nonzero centered monomial order exposed by the assignment design when a positive-order exposed contrast is present and by the degree-zero convention otherwise. The projected SNIPE estimator from \cref{obj:def:snipe-estimator} attains the same order as the lower bound, while the unprojected estimator has the corresponding nontruncated variance bound.
+
+\begin{theoremv}{thm:degree-frontier}[Degree Frontier Bounds]
+Fix \(\beta\ge 1\) and \(p\in(0,1)\). Under the notation in \cref{obj:def:exposed-order,obj:def:minimax-risk,obj:def:model-class}, there exist constants \(c_{\beta,p}\) and \(C_{\beta,p}\) such that \(0<c_{\beta,p}\le C_{\beta,p}\) and, for every \(n,d\in\mathbb N\) and \(B\in\mathbb R\) with \(n\ge 1\), \(d\le n\), and \(B\ge 0\), the following statements hold:
+\begin{itemize}
+\item \textbf{(Minimax frontier.)}
+\[
+c_{\beta,p} B^2
+\min\!\left\{1,\frac{d\binom{d}{k_\star(d,\beta,p)}}{n}\right\}
+\le
+R_n^\star(d,\beta,p,B).
+\]
+Moreover,
+\[
+R_n^\star(d,\beta,p,B)
+\le
+\sup_{(G,c)\in\mathcal M_{n,d,\beta}(B)}
+\mathbb E\!\left[
+  \bigl(\widehat\tau_n^{\mathrm{up}}-\tau_n\bigr)^2
+\right]
+\le
+C_{\beta,p} B^2
+\min\!\left\{1,\frac{d\binom{d}{k_\star(d,\beta,p)}}{n}\right\}.
+\]
+The unprojected SNIPE estimator also satisfies
+\[
+\sup_{(G,c)\in\mathcal M_{n,d,\beta}(B)}
+\mathbb E\!\left[
+  \bigl(\widehat\tau_n^{\mathrm{SNIPE}}-\tau_n\bigr)^2
+\right]
+\le
+C_{\beta,p} B^2
+\frac{d\binom{d}{k_\star(d,\beta,p)}}{n}.
+\]
+
+\item \textbf{(Score energy.)}
+For every \((G,c)\in\mathcal M_{n,d,\beta}(B)\) and every unit \(i\in V_n\),
+\[
+A_i
+\le
+A_d.
+\]
+
+\item \textbf{(Overlap counts.)}
+For every \((G,c)\in\mathcal M_{n,d,\beta}(B)\), every unit \(i\in V_n\), and every integer \(r\ge 1\),
+\[
+\sum_{\ell\in V_n}\binom{|N_i\cap N_\ell|}{r}
+=
+\sum_{\substack{S\subseteq N_i\\ |S|=r}}
+\#\{\ell\in V_n:S\subseteq N_\ell\}
+\le
+d\binom{|N_i|}{r}
+\le
+d\binom{d}{r}.
+\]
+
+\item \textbf{(Block construction.)}
+If \(B>0\) and \(d\ge 1\), let \(m=\lfloor n/d\rfloor\), let \(\rho\) be the active population fraction, and let \(\delta\) be the least-favourable perturbation amplitude. For every block-coefficient vector \(U=(U_1,\ldots,U_m)\) satisfying \(|U_b|\le B/2\) for all \(b\), there exist two models \(M_+\) and \(M_-\) in \(\mathcal M_{n,d,\beta}(B)\), both supported on the complete \(d\)-block graph, whose coefficient schedules are the corresponding \(+1\) and \(-1\) block schedules, and whose total treatment effects satisfy
+\[
+\tau_n(M_+)=\rho\delta,
+\qquad
+\tau_n(M_-)=-\rho\delta.
+\]
+The associated block prior densities satisfy
+\[
+H^2(\Pi_+,\Pi_-)
+\le
+\frac{4\pi^2 m\delta^2}{B^2 A_d}.
+\]
+In addition,
+\[
+\frac12\le \rho\le 1,
+\qquad
+\frac{A_d}{m}=\frac{dA_d/n}{\rho}.
+\]
+\end{itemize}
+\end{theoremv}
+
+\Cref{obj:thm:degree-frontier} identifies the relevant effective dimension as a degree-weighted count of exposed interactions. The upper bound combines unbiasedness of the SNIPE score with the overlap count in the theorem, so the risk grows with the number of units whose scores can share treatment coordinates. The lower bound is calibrated on complete blocks: the perturbation is aligned with the normalized block representer of \cref{obj:def:block-score-energy}, and the Hellinger bound makes the target separation comparable to the same block energy. Thus the minimax comparison measures the exact price of estimating the total treatment effect under known bounded-degree interference and low-order polynomial response schedules.
+
+The next result isolates what local linear estimators can achieve on a fixed complete-block sequence. This benchmark is useful because complete blocks are the least-favourable carriers used above and because local linear estimators are a natural graph-local analogue of inverse-probability weighted estimators in randomized experiments. The characterization is exact at each \(t\), and the asymptotic statements distinguish attainment of the optimal block risk from closeness to the canonical SNIPE score itself.
+
+\begin{theoremv}{thm:sharp-local-linear-constant-and-representers}[Sharp Local Linear Representers]
+Fix \(\beta\in\mathbb N\), \(p\in(0,1)\), and \(B>0\), with \(\beta\ge 1\).  Suppose that:
+\begin{itemize}
+\item \textbf{(Block sizes.)} For each \(t\), \(n_t\) and \(d_t\) are positive integers and \(d_t\mid n_t\).  Write \(m_t:=n_t/d_t\).
+\item \textbf{(Block graph.)} For each \(t\), \(G_t\) is the directed complete-block graph on \(V_{n_t}\): units are partitioned into \(m_t\) active blocks \(V_b\) of size \(d_t\), each block contains all directed edges including self-loops, and there are no edges between distinct blocks.
+\item \textbf{(Assignment law.)} For each \(t\), the finite design \(D_t\) satisfies \cref{obj:ass:bernoulli-design} with common treatment probability \(p\).
+\end{itemize}
+Then, for every \(t\),
+\[
+R_t^{\mathrm{loc,lin}}
+=
+\frac{B^2 A_{d_t}}{m_t}
+=
+\frac{B^2 d_t A_{d_t}}{n_t}.
+\]
+For every \(t\) and every \(w\in\mathcal E_t^{\mathrm{loc,lin}}\),
+\[
+\sup_{c\in\mathcal M_t(G_t)}
+\mathbb E_Z\!\left[(\widehat\tau_{w,t}-\tau_{n_t})^2\right]
+=
+\frac{B^2}{n_t^2}
+\sum_{b=1}^{m_t}\Psi_{b,t}(w),
+\]
+where, with \(Z_S:=\prod_{j\in S}Z_j\),
+\[
+\Psi_{b,t}(w)
+:=
+\max_{\substack{(\varepsilon_i,S_i)_{i\in V_b}\\
+\varepsilon_i\in\{-1,1\},\ S_i\subseteq V_b,\ |S_i|\le \bar\beta_{d_t}}}
+\mathbb E_Z\!\left[
+\left(
+\sum_{i\in V_b}
+\varepsilon_i
+\left\{
+w_{i,t}(Z_b)Z_{S_i}
+-
+\mathbf 1(S_i\ne\varnothing)
+\right\}
+\right)^2
+\right].
+\]
+Moreover, for every \(t\), every \(w\in\mathcal E_t^{\mathrm{loc,lin}}\), and every block \(V_b\),
+\[
+d_t^2 A_{d_t}\le \Psi_{b,t}(w).
+\]
+For every sequence \(w_t\in\mathcal E_t^{\mathrm{loc,lin}}\),
+\[
+\frac{
+\sup_{c\in\mathcal M_t(G_t)}
+\mathbb E_Z[(\widehat\tau_{w_t,t}-\tau_{n_t})^2]
+}{
+B^2 A_{d_t}/m_t
+}
+\longrightarrow 1
+\]
+if and only if
+\[
+\frac{1}{m_t d_t^2 A_{d_t}}
+\sum_{b=1}^{m_t}
+\left\{\Psi_{b,t}(w_t)-d_t^2A_{d_t}\right\}
+\longrightarrow 0.
+\]
+For every sequence \(w_t\in\mathcal E_t^{\mathrm{loc,lin}}\), the condition
+\[
+\frac{1}{n_t A_{d_t}}
+\sum_{i\in V_{n_t}}
+\mathbb E_Z\!\left[
+\left\{
+w_{i,t}(Z_{b(i)})-g_{d_t}(Z_{b(i)})
+\right\}^2
+\right]
+\longrightarrow 0
+\]
+implies
+\[
+\frac{
+\sup_{c\in\mathcal M_t(G_t)}
+\mathbb E_Z[(\widehat\tau_{w_t,t}-\tau_{n_t})^2]
+}{
+B^2 A_{d_t}/m_t
+}
+\longrightarrow 1.
+\]
+If \(d_t\to\infty\), then there exists a sequence \(w_t\in\mathcal E_t^{\mathrm{loc,lin}}\) such that
+\[
+\frac{
+\sup_{c\in\mathcal M_t(G_t)}
+\mathbb E_Z[(\widehat\tau_{w_t,t}-\tau_{n_t})^2]
+}{
+B^2 A_{d_t}/m_t
+}
+\longrightarrow 1,
+\]
+and, for all sufficiently large \(t\),
+\[
+\frac{1}{n_t A_{d_t}}
+\sum_{i\in V_{n_t}}
+\mathbb E_Z\!\left[
+\left\{
+w_{i,t}(Z_{b(i)})-g_{d_t}(Z_{b(i)})
+\right\}^2
+\right]
+=2.
+\]
+For every sufficiently large \(t\), the same sequence also satisfies, for every bijection \(\pi:V_{n_t}\to V_{n_t}\) that preserves block membership,
+\[
+\frac{1}{n_t A_{d_t}}
+\sum_{i\in V_{n_t}}
+\mathbb E_Z\!\left[
+\left\{
+w_{i,t}(Z_{\pi(b(i))})-g_{d_t}(Z_{\pi(b(i))})
+\right\}^2
+\right]
+=2.
+\]
+\end{theoremv}
+
+\Cref{obj:thm:sharp-local-linear-constant-and-representers} gives the exact complete-block constant \(B^2A_{d_t}/m_t\). The block criterion \leanref{sym:\Psi_{b,t}}{\ensuremath{\Psi_{b,t}}} is the finite-dimensional worst-case quadratic form induced by the moment restrictions in \cref{obj:def:local-linear-estimator-class}; averaging its excess over \(d_t^2A_{d_t}\) is necessary and sufficient for asymptotic minimaxity within the local linear class. The final clauses show that score closeness is a sufficient route to the benchmark, while the benchmark also admits asymptotically optimal local linear weights whose normalized distance from the canonical complete-block score is fixed at two along growing block sizes. The result therefore separates the risk-optimality property from uniqueness of the SNIPE representer as a weight function.
+
+The coefficient-mass condition in \cref{obj:def:model-class} has a direct bounded-outcome counterpart in \cref{obj:def:bounded-outcome-model-class}. The next theorem compares the two decision problems and shows that the same complete-block energy controls the minimax order under the uniformly bounded-outcome envelope. This formulation aligns the SNIPE variance calculation with the design-based bounded-outcome risk scale used in network-experiment analyses such as \citet{CortezRodriguezEichhornYu2023} and related low-order interference work \citep{HarshawSavjeWang2025,WangLi2026}.
+
+\begin{theoremv}{thm:bounded-outcome-degree-frontier}[Bounded-Outcome Degree Frontier]
+Fix an interaction order \(\beta\ge 1\) and a treatment probability \(p\in(0,1)\). There exist real constants \(c_{\beta,p}\) and \(C_{\beta,p}\) with
+\[
+0<c_{\beta,p}\le C_{\beta,p}
+\]
+such that, for every \(n\ge 1\), every design \(D\) satisfying \cref{obj:ass:bernoulli-design} with common treatment probability \(p\), every integer \(d\le n\), and every \(B\ge 0\), the following statements hold.
+
+\begin{itemize}
+\item \textbf{(Model comparison.)} The coefficient-mass class \(\mathcal M_{n,d,\beta}(B)\) of \cref{obj:def:model-class} is contained, carrier by carrier, in the uniformly bounded-outcome class \(\mathcal M_{n,d,\beta}^{\infty}(B)\) of \cref{obj:def:bounded-outcome-model-class}. If \(B>0\) and \(d\ge 1\), this containment is strict.
+
+\item \textbf{(Frontier bounds.)} With \(A_d\) denoting the complete-block score energy,
+\[
+c_{\beta,p} B^2 \min\!\left\{1,\frac{dA_d}{n}\right\}
+\le
+R_{n,\ell_1}^{\star}(d,\beta,p,B),
+\]
+\[
+R_{n,\ell_1}^{\star}(d,\beta,p,B)
+=
+R_n^{\star}(d,\beta,p,B),
+\]
+\[
+R_{n,\ell_1}^{\star}(d,\beta,p,B)
+\le
+R_{n,\infty}^{\star}(d,\beta,p,B),
+\]
+and
+\[
+R_{n,\infty}^{\star}(d,\beta,p,B)
+\le
+\sup_{\mathcal M_{n,d,\beta}^{\infty}(B)}
+\mathbb E_Z\!\left[
+\bigl(\widehat\tau_{n,\infty}^{\mathrm{up}}-\tau_n\bigr)^2
+\right]
+\le
+C_{\beta,p} B^2 \min\!\left\{1,\frac{dA_d}{n}\right\}.
+\]
+The coefficient-class clipped SNIPE estimator satisfies
+\[
+\sup_{\mathcal M_{n,d,\beta}(B)}
+\mathbb E_Z\!\left[
+\bigl(\widehat\tau_n^{\mathrm{up}}-\tau_n\bigr)^2
+\right]
+\le
+C_{\beta,p} B^2 \min\!\left\{1,\frac{dA_d}{n}\right\}.
+\]
+
+\item \textbf{(Unclipped SNIPE.)} On both \(\mathcal M_{n,d,\beta}(B)\) and \(\mathcal M_{n,d,\beta}^{\infty}(B)\), the SNIPE estimator \(\widehat\tau_n^{\mathrm{SNIPE}}\) is unbiased under \(D\), and its worst-case mean squared error is at most
+\[
+B^2\frac{dA_d}{n}.
+\]
+
+\item \textbf{(Local energy and binomial scale.)} For every unit \(i\), the local SNIPE energy on either model class is bounded by \(A_d\). Moreover, with \(k_\star=k_\star(d,\beta,p)\) as in \cref{obj:def:exposed-order},
+\[
+c_{\beta,p}\,d\binom{d}{k_\star}
+\le
+dA_d
+\le
+C_{\beta,p}\,d\binom{d}{k_\star}.
+\]
+
+\item \textbf{(Exact block risk.)} If \(d\ge 1\) and \(d\mid n\), let \(m=n/d\) and let the graph be the disjoint union of \(m\) complete directed \(d\)-blocks, including loops. Then canonical SNIPE has exact worst-case risk
+\[
+\frac{B^2A_d}{m}
+\]
+on the fixed block graph for both model classes and globally over both model classes. Equivalently,
+\[
+\frac{B^2A_d}{m}
+=
+B^2\frac{dA_d}{n}.
+\]
+
+\item \textbf{(Least-favourable block family.)} If \(B>0\) and \(d\ge 1\), set \(m=\lfloor n/d\rfloor\), \(\rho=md/n\), and let \(\delta\) be the perturbation amplitude. For every vector \(U=(U_1,\ldots,U_m)\) with \(|U_b|\le B/2\) for all \(b\), both signed block schedules belong to \(\mathcal M_{n,d,\beta}(B)\) on the complete-block graph, and their targets are
+\[
+\rho\delta
+\qquad\text{and}\qquad
+-\rho\delta .
+\]
+The squared Hellinger distance between the two corresponding block priors is bounded by
+\[
+\frac{4\pi^2 m\delta^2}{B^2A_d},
+\]
+and
+\[
+\frac12\le \rho\le 1,
+\qquad
+\frac{A_d}{m}
+=
+\frac{dA_d/n}{\rho}.
+\]
+\end{itemize}
+\end{theoremv}
+
+\Cref{obj:thm:bounded-outcome-degree-frontier} expresses the bounded-outcome comparison through the energy \(A_d\), and \cref{obj:thm:degree-frontier} then converts that energy to the binomial scale indexed by \(k_\star(d,\beta,p)\). The bounded-outcome lower frontier is inherited from the coefficient-mass lower frontier because the coefficient-mass class is contained carrier by carrier in the bounded-outcome class, giving \(R_{n,\ell_1}^{\star}\le R_{n,\infty}^{\star}\). The strict containment statement records how the two envelopes relate on the same graph carriers. The clipped estimator \(\widehat\tau_{n,\infty}^{\mathrm{up}}\) attains the bounded-outcome rate after projection to the natural total-effect range, while the unprojected estimator remains unbiased and has worst-case mean squared error \(B^2dA_d/n\). On complete blocks with \(d\mid n\), the theorem also gives the exact canonical SNIPE risk \(B^2A_d/m\), matching the local linear value in \cref{obj:thm:sharp-local-linear-constant-and-representers}.
+
+The final result specializes the energy calculation to fair-coin assignment. When \(p=1/2\), even-order Bernoulli contrasts vanish and odd orders determine the complete-block score energy. For first-order interactions \((\beta=1)\), this gives the transparent rate \(B^2\min\{1,d^2/n\}\), a useful benchmark for comparing low-order network interference estimators with the overlap-aware constructions in \citet{CortezRodriguezEichhornYu2023} and subsequent degree-sensitive analyses \citep{HarshawSavjeWang2025,EichhornKhanUganderYu2026,WangLi2026}.
+
+\begin{theoremv}{thm:fair-coin-energy-frontier}[Fair-Coin Energy Frontier]
+Let \(p=1/2\). The following statements hold.
+\begin{itemize}
+\item \textbf{(Fair-coin contrasts and exposed order.)} For every \(n,d,\beta\in\mathbb N\) and \(B\in\mathbb R\) such that \(n\ge 1\), \(1\le d\le n\), \(\beta\ge 1\), and \(B\ge 0\), the contrast coefficients and energy in \cref{obj:def:exposed-order} satisfy, for every \(r\ge 1\),
+\[
+\Delta_r(1/2)=
+\begin{cases}
+2^{1-r}, & r \text{ odd},\\
+0, & r \text{ even},
+\end{cases}
+\]
+and
+\[
+A_d
+=
+4\sum_{\substack{1\le r\le \bar\beta_d\\ r\text{ odd}}}
+\binom{d}{r}.
+\]
+Moreover, \(k_\star(d,\beta,1/2)\) is the largest odd integer no greater than \(\bar\beta_d\), with value \(0\) when no such odd integer exists.
+
+\item \textbf{(Degree-one minimax frontier.)} There exist constants \(c_{\mathrm{lower}},c_{\mathrm{upper}}\in\mathbb R\) with
+\[
+0<c_{\mathrm{lower}}\le c_{\mathrm{upper}}
+\]
+such that, for every \(n,d\in\mathbb N\) and \(B\in\mathbb R\) satisfying \(n\ge 1\), \(1\le d\le n\), and \(B\ge 0\), the degree-one energy is
+\[
+A_d=4d,
+\]
+and the minimax risks in \cref{obj:def:minimax-risk} obey
+\[
+c_{\mathrm{lower}}B^2\min\!\left\{1,\frac{d^2}{n}\right\}
+\le
+R_n^\star(d,1,1/2,B)
+=
+R_{n,\ell_1}^\star(d,1,1/2,B)
+\le
+R_{n,\infty}^\star(d,1,1/2,B)
+\le
+c_{\mathrm{upper}}B^2\min\!\left\{1,\frac{d^2}{n}\right\}.
+\]
+If \(d\mid n\), the unprojected SNIPE estimator satisfies the exact worst-case identities
+\[
+\sup_{\mathcal M_{n,d,1}(B)}
+\mathbb E\!\left[\bigl(\widehat\tau_n^{\mathrm{SNIPE}}-\tau_n\bigr)^2\right]
+=
+\frac{4B^2d^2}{n}
+\]
+and
+\[
+\sup_{\mathcal M_{n,d,1}^{\infty}(B)}
+\mathbb E\!\left[\bigl(\widehat\tau_n^{\mathrm{SNIPE}}-\tau_n\bigr)^2\right]
+=
+\frac{4B^2d^2}{n}.
+\]
+\end{itemize}
+\end{theoremv}
+
+\Cref{obj:thm:fair-coin-energy-frontier} makes the role of parity explicit. At \(p=1/2\), the exposed order is the largest odd interaction order up to \(\bar\beta_d\), and the block energy is four times the corresponding sum of odd binomial coefficients. In the first-order interaction case \((\beta=1)\), \(A_d=4d\), so the degree factor in \cref{obj:thm:bounded-outcome-degree-frontier} becomes \(dA_d=4d^2\). The resulting minimax rate \(B^2\min\{1,d^2/n\}\) shows how first-order interference converts the graph degree into a quadratic design cost under fair-coin Bernoulli assignment.
+
+
+
+
+
+\section{Discussion and Extensions}
+
+The results above identify the design-based cost of total-effect estimation through a small set of finite-population quantities. The common feature in \cref{obj:thm:degree-frontier,obj:thm:bounded-outcome-degree-frontier,obj:thm:fair-coin-energy-frontier} is the product of an overlap factor and a block energy. Under the bounded-degree condition, each treatment coordinate can enter at most \(d\) unit-level scores, and the overlap count in \cref{obj:thm:degree-frontier} turns this graph fact into the variance scale \(dA_d/n\). The energy \(A_d\) then records how much Bernoulli design information is required to recover the all-treated-versus-all-control contrast from low-order centered monomials.
+
+This interpretation connects the rate to the exposure and overlap structure emphasized in network-experiment analyses \citep{Leung2022,Savje2021,Hu2022,Gao2025}. In the present model, the known graph fixes the neighborhoods and the low-order polynomial restriction fixes which assignment interactions are relevant. The exposed order \(k_\star(d,\beta,p)\) summarizes the maximum positive contrast order visible under Bernoulli assignment when such an order exists, with \(k_\star=0\) under the degree-zero convention, and \cref{obj:thm:degree-frontier} converts that order into the binomial scale \(d\binom{d}{k_\star(d,\beta,p)}/n\). For fixed \(\beta\) and \(p\), the rate therefore separates the sample-size contribution \(1/n\), the graph-overlap contribution \(d\), and the interaction-order contribution through the number of exposed subsets inside a degree-\(d\) neighborhood.
+
+The closest estimator-level antecedent, \citet{CortezRodriguezEichhornYu2023}, develops SNIPE for low-order neighborhood interference under known-graph Bernoulli assignment and analyzes the resulting design variance through exposure overlap. The minimax frontier here turns that variance scale into a matched decision-theoretic characterization: the complete-block lower bound, the clipped SNIPE upper bound, and the binomial degree formula \(dA_d/n\asymp_{\beta,p}d\binom{d}{k_\star}/n\) all use the same block energy. The bounded-outcome result and the local-linear complete-block theorem provide the corresponding bounded-envelope and graph-local benchmarks.
+
+The complete-block benchmark clarifies why the same quantity appears in both upper and lower bounds. In the least-favourable construction of \cref{obj:thm:degree-frontier}, complete directed blocks align all within-block neighborhoods, so the block representer in \cref{obj:def:block-score-energy} generates the hardest local contrast at energy \(A_d\). On this graph, \cref{obj:thm:sharp-local-linear-constant-and-representers} gives the exact local linear value \(B^2A_{d_t}/m_t\), equivalently \(B^2d_tA_{d_t}/n_t\). The global SNIPE upper bound attains the same order on arbitrary graphs because the score uses the same blockwise Riesz structure locally, while the bounded out-degree condition controls how often those local scores can share assignment coordinates.
+
+The local linear characterization also separates risk optimality from a unique choice of weights. The canonical complete-block score is sufficient for attaining the benchmark, and \cref{obj:thm:sharp-local-linear-constant-and-representers} gives the exact blockwise quadratic criterion whose average excess characterizes asymptotic minimaxity inside the local linear class. Thus the complete-block calculation is more than a lower-bound device: it identifies the precise variance target that any asymptotically optimal local linear rule must match, while allowing multiple weight sequences to attain that target. This perspective complements recent work on low-order and degree-sensitive interference estimators \citep{WangLi2026,EichhornKhanUganderYu2026}.
+
+The bounded-outcome extension in \cref{obj:thm:bounded-outcome-degree-frontier} shows that the same degree dependence is calibrated by \(A_d\) under a uniform potential-outcome envelope. The projection interval changes from the coefficient-mass scale to the natural total-effect range, but the unprojected SNIPE variance remains governed by \(B^2dA_d/n\), and clipping converts that variance calculation into the bounded risk comparison. The fair-coin specialization in \cref{obj:thm:fair-coin-energy-frontier} makes this calibration explicit: for \(p=1/2\), odd interaction orders determine \(A_d\), and first-order interference yields the rate \(B^2\min\{1,d^2/n\}\).
+
+\paragraph{Limitations and future work.}
+The analysis is developed for known bounded-degree interference graphs, independent Bernoulli assignment with common treatment probability, and noiseless finite-population potential outcomes represented by low-order polynomial schedules. Natural extensions include alternative randomization schemes, covariate adjustment, graph uncertainty, clustered assignment, and sampling or outcome noise. These directions would connect the minimax calculation here with broader design and exposure-mapping frameworks for network experiments \citep{Leung2022,Savje2021,Hu2022,Gao2025}.
+
+
+
+
+
+\appendix
+
+\section*{Appendices}
+
+\section{Proofs and Auxiliary Lemmas}
+
+This appendix collects the auxiliary finite-design facts that support the main risk comparisons. The first statement is the complete-block Riesz calculation used in the least-favourable construction and in the local linear benchmark. The second statement is the graph-counting identity that converts bounded in- and out-degree into the overlap scale appearing in \cref{obj:thm:degree-frontier,obj:thm:bounded-outcome-degree-frontier}. Together, these two ingredients isolate the two sources of the rate: block energy under Bernoulli assignment and neighborhood overlap in the graph.
+
+\begin{lemmav}{lem:block-energy-representer}[Block Energy Representer]
+Fix an integer \(\beta\ge 1\) and \(p\in(0,1)\). With \(k_\star(d,\beta,p)\) as in \cref{obj:def:exposed-order}, there exist constants \(c_1,c_2,H\in\mathbb R\), depending on \((\beta,p)\), such that \(0<c_1\le c_2\) and \(0<H\), and the following statements hold for every integer \(d\ge 1\):
+\begin{itemize}
+\item \textbf{(Energy scale.)}
+\[
+c_1\binom{d}{k_\star(d,\beta,p)}
+\le
+A_d
+\le
+c_2\binom{d}{k_\star(d,\beta,p)} .
+\]
+\item \textbf{(Representer identities.)}
+For every finite design \(D\) on \(\{0,1\}^d\) satisfying the common-\(p\) product Bernoulli assignment condition in \cref{obj:ass:bernoulli-design}, and every \(f\in\mathcal P_d\),
+\[
+\mathbb E_D[g_d(Z)f(Z)] = L_d(f).
+\]
+For the same \(D\),
+\[
+L_d(h_d)=1,
+\qquad
+\mathbb E_D[h_d(Z)^2]=A_d^{-1}.
+\]
+\item \textbf{(Perturbation program.)}
+For every finite design \(D\) on \(\{0,1\}^d\) satisfying the common-\(p\) product Bernoulli assignment condition in \cref{obj:ass:bernoulli-design}, the representer \(h_d\) is feasible for the perturbation program in \cref{obj:def:perturbation-program}. For every feasible perturbation \(h\),
+\[
+A_d^{-1}\le \mathbb E_D[h(Z)^2],
+\]
+with equality if and only if \(h=h_d\).
+\item \textbf{(Weight program.)}
+For every finite design \(D\) on \(\{0,1\}^d\) satisfying the common-\(p\) product Bernoulli assignment condition in \cref{obj:ass:bernoulli-design}, and every weight \(w\) feasible for the weight program in \cref{obj:def:weight-program} under \(D\),
+\[
+A_d\le \mathbb E_D[w(Z)^2],
+\]
+with equality if and only if \(w=g_d\).
+\item \textbf{(Program values.)}
+For every pair of witnesses \(0\le p\) and \(p\le 1\),
+\[
+\mathsf{PerturbProg}_{d,\beta,p}=A_d^{-1},
+\qquad
+\mathsf{WeightProg}_{d,\beta,p}=A_d.
+\]
+\item \textbf{(Coefficient envelope.)}
+\[
+\sum_{T\subseteq\{1,\ldots,d\}} |h_{d,T}| \le H .
+\]
+\end{itemize}
+\end{lemmav}
+
+\begin{proof}[Proof of \cref{obj:lem:block-energy-representer}]
+Fix \(\beta\ge1\) and \(p\in(0,1)\).  For \(1\le r\le\beta\), write
+\[
+e_r(p):=\frac{\Delta_r(p)^2}{[p(1-p)]^r},
+\qquad
+m_r(p):=\frac{|\Delta_r(p)|}{[p(1-p)]^r}(1+p)^r .
+\]
+Let \(c_1\) be the minimum of \(e_r(p)\) over the exposed orders \(1\le r\le\beta\) with \(\Delta_r(p)\ne0\), let \(c_2:=2^\beta\sum_{r=1}^{\beta}e_r(p)\), and let
+\[
+H:=c_1+\frac{2^\beta\sum_{r=1}^{\beta}m_r(p)}{c_1}.
+\]
+Since \(\Delta_1(p)=1\) and \(p(1-p)>0\), this exposed set contains \(1\), and hence \(c_1>0\).  Applying the uniform comparison at \(d=1\), together with
+\(\binom{1}{k_\star(1,\beta,p)}>0\), gives \(c_1\le c_2\).  The displayed formula for \(H\) is \(c_1\) plus a nonnegative term, so \(H>0\). % lean: blockLowerConst_spec, blockEnergy_uniform_compare, kStar_mem_exposedOrder, rawMassCoeff
+
+Now fix \(d\ge1\).  The energy comparison is obtained by taking \(k=k_\star(d,\beta,p)\): the lower bound isolates the \(k\)-term in \(A_d\), while the upper bound writes \(A_d\) as the finite sum over \(1\le r\le\bar\beta_d\) and uses the fixed-order domination
+\[
+\binom{d}{r}\le 2^\beta\binom{d}{k}
+\]
+for every exposed \(r\le k\), with zero contrast terms contributing zero. % lean: blockEnergy_uniform_compare, eligibleOrder_le_kStar, choose_le_pow_mul_choose
+
+Let \(D\) be any common-\(p\) product Bernoulli design on \(\{0,1\}^d\).  The score \(g_d\) pairs to one with every eligible nonconstant raw monomial and has mean zero on the constant monomial; by linearity over the raw-monomial span \(\mathcal P_d\), for every \(f\in\mathcal P_d\),
+\[
+\mathbb E_D[g_d(Z)f(Z)]=L_d(f).
+\]
+% lean: blockScore_raw_moment, blockScore_mean_zero, blockScore_represents
+The same identities give \(L_d(g_d)=A_d\) and \(\mathbb E_D[g_d(Z)^2]=A_d\), and the positivity of \(A_d\) follows from the \(r=1\) summand.  Since \(h_d=g_d/A_d\), this yields
+\[
+L_d(h_d)=1,
+\qquad
+\mathbb E_D[h_d(Z)^2]=A_d^{-1}.
+\]
+% lean: blockScore_contrast, blockScore_sq_expectation, blockEnergy_pos, blockRepresenter_contrast_energy
+
+The centered-monomial expansion of \(g_d\) in the raw basis places \(g_d\), and therefore \(h_d\), in \(\mathcal P_d\); together with \(L_d(h_d)=1\), this proves feasibility for the perturbation program. % lean: centeredMonomial_raw_expansion, blockScore_mem_polySpace, blockRepresenter_perturbFeasible
+If \(h\in\mathcal P_d\) is feasible, then \(\mathbb E_D[g_d(Z)h(Z)]=L_d(h)=1\) and \(\mathbb E_D[g_d(Z)^2]=A_d\).  Expanding the nonnegative square gives
+\[
+\mathbb E_D\!\left[(A_dh(Z)-g_d(Z))^2\right]
+=
+A_d^2\mathbb E_D[h(Z)^2]-A_d,
+\]
+so \(A_d^{-1}\le \mathbb E_D[h(Z)^2]\).  Equality forces the displayed square to have expectation zero; the strict product Bernoulli law has positive mass on every assignment, so \(A_dh=g_d\) pointwise, equivalently \(h=h_d\).  The converse equality follows from the preceding identity for \(h_d\). % lean: perturbFeasible_energy_unique, blockDesign_sq_eq_zero_iff
+
+For the weight program, feasibility extends from the raw constraints to all of \(\mathcal P_d\), and \(g_d\in\mathcal P_d\).  Hence every feasible \(w\) satisfies \(\mathbb E_D[w(Z)g_d(Z)]=L_d(g_d)=A_d\), while \(\mathbb E_D[g_d(Z)^2]=A_d\).  Expanding
+\[
+\mathbb E_D\!\left[(w(Z)-g_d(Z))^2\right]
+=
+\mathbb E_D[w(Z)^2]-A_d
+\]
+gives \(A_d\le\mathbb E_D[w(Z)^2]\), with equality exactly when \(w=g_d\) by the same positive-mass argument. % lean: weightFeasibleAt_represents, blockScore_mem_polySpace, weightFeasibleAt_energy_unique, blockDesign_sq_eq_zero_iff
+
+The canonical feasible perturbation \(h_d\) and canonical feasible weight \(g_d\) give the matching attainable values in the two finite-dimensional programs, and the two optimality inequalities just proved give the reverse inequalities for every admissible pair of endpoint witnesses \(0\le p\) and \(p\le1\).  Thus
+\[
+\mathsf{PerturbProg}_{d,\beta,p}=A_d^{-1},
+\qquad
+\mathsf{WeightProg}_{d,\beta,p}=A_d .
+\]
+% lean: blockPrograms_exact
+
+Finally, expand each centered product in \(g_d\) into raw monomials and apply the triangle inequality.  This bounds the raw coefficient mass of \(h_d\) by
+\[
+A_d^{-1}\sum_{r=1}^{\bar\beta_d}\binom{d}{r}m_r(p).
+\]
+The same fixed-order binomial comparison and the lower energy bound \(c_1\binom{d}{k_\star(d,\beta,p)}\le A_d\) reduce this quantity to at most \(H\). % lean: blockRawCoef_mass_estimate, blockRawCoef_mass_uniform
+\end{proof}
+
+\Cref{obj:lem:block-energy-representer} supplies the finite-dimensional normalization used throughout the block arguments. The identity \(\mathbb E_D[g_d(Z)f(Z)]=L_d(f)\) states that the complete-block score represents the all-one-versus-all-zero contrast on the low-order polynomial space from \cref{obj:synth_1}. The perturbation and weight programs in \cref{obj:def:perturbation-program,obj:def:weight-program} are therefore dual descriptions of the same Bernoulli information: the normalized perturbation has energy \(A_d^{-1}\), while the unbiased block weight has energy \(A_d\). The coefficient envelope gives a uniform way to embed the score-aligned perturbation inside the coefficient-mass model class in \cref{obj:def:block-family}. These calculations are the block analogue of inverse-probability and Horvitz--Thompson moment identities for randomized experiments \citep{HorvitzThompson1952,Aronow2017}.
+
+The next lemma records the overlap count used to pass from block-local variance identities to arbitrary bounded-degree graphs. It is purely combinatorial: a shared \(r\)-tuple of treatment coordinates contributes to the covariance of two unit-level scores only when that tuple lies in both neighborhoods, and the out-degree bound controls how often each tuple can be reused.
+
+\begin{lemmav}{lem:overlap-count}[Overlap Count Bound]
+Let \(G\) be a graph on \(V_n\). Suppose that
+\begin{itemize}
+\item \textbf{(Bounded degree.)} \(G\) satisfies \cref{obj:ass:bounded-degree} with degree bound \(d\).
+\item \textbf{(Order.)} \(r\in\mathbb N\) satisfies \(1\le r\).
+\item \textbf{(Unit.)} \(i\in V_n\).
+\end{itemize}
+Then
+\[
+\sum_{l\in V_n}\binom{|N_i\cap N_l|}{r}
+=
+\sum_{\substack{S\subseteq N_i\\ |S|=r}}
+\#\{l\in V_n:S\subseteq N_l\}
+\le
+d\binom{|N_i|}{r}
+\le
+d\binom{d}{r}.
+\]
+\end{lemmav}
+
+\begin{proof}[Proof of \cref{obj:lem:overlap-count}]
+Let
+\[
+\mathcal F:=\{S\subseteq N_i: |S|=r\}.
+\]
+For each \(l\in V_n\), the binomial coefficient \(\binom{|N_i\cap N_l|}{r}\) counts the \(r\)-subsets of \(N_i\cap N_l\), equivalently
+\[
+\binom{|N_i\cap N_l|}{r}
+=
+\sum_{S\in\mathcal F}\mathbf 1\{S\subseteq N_l\}.
+\]
+% lean: hchoose, Finset.card_powersetCard
+Summing over \(l\) and commuting the two finite sums gives
+\[
+\sum_{l\in V_n}\binom{|N_i\cap N_l|}{r}
+=
+\sum_{S\in\mathcal F}\#\{l\in V_n:S\subseteq N_l\}.
+\]
+% lean: Finset.sum_comm, containingNeighborhoods
+
+Fix \(S\in\mathcal F\).  Since \(|S|=r\) and \(1\le r\), choose \(j\in S\).  Whenever \(S\subseteq N_l\), this \(j\) belongs to \(N_l\), so the set of \(l\)'s with \(S\subseteq N_l\) is contained in the out-neighborhood of \(j\).  The out-degree part of \cref{obj:ass:bounded-degree} therefore gives
+\[
+\#\{l\in V_n:S\subseteq N_l\}\le d .
+\]
+% lean: hcontain
+Summing this bound over \(S\in\mathcal F\) and using \(|\mathcal F|=\binom{|N_i|}{r}\) yields
+\[
+\sum_{S\in\mathcal F}\#\{l\in V_n:S\subseteq N_l\}
+\le
+d\binom{|N_i|}{r}.
+\]
+% lean: hcardF, Finset.sum_le_sum
+Finally, the in-degree part of \cref{obj:ass:bounded-degree} gives \(|N_i|\le d\), and monotonicity of binomial coefficients in the upper argument gives
+\[
+d\binom{|N_i|}{r}\le d\binom{d}{r}.
+\]
+% lean: Nat.choose_le_choose, Nat.mul_le_mul_left
+Combining the displayed identities and inequalities proves the claim. % lean: overlap_count_le
+\end{proof}
+
+\Cref{obj:lem:overlap-count} is the graph-theoretic step behind the SNIPE upper bound. After expanding products of centered Bernoulli monomials, only common neighborhood coordinates contribute nonzero covariance terms under \cref{obj:ass:bernoulli-design}. The equality rewrites the sum by first choosing the shared subset and then counting affected units; the final inequalities use the two degree bounds in \cref{obj:ass:bounded-degree}. This converts local score energy into the global variance scale \(dA_d/n\), matching the overlap-aware variance calculations used in network-interference estimators \citep{CortezRodriguezEichhornYu2023,HarshawSavjeWang2025}.
+
+The proof of \cref{obj:thm:degree-frontier} combines the two auxiliary lemmas. For the upper bound, the SNIPE score is unbiased for each low-order unit contrast by the same centered-monomial orthogonality encoded in \cref{obj:lem:block-energy-representer}; the covariance expansion is then summed with \cref{obj:lem:overlap-count}. Projection to \([-B,B]\) preserves the target scale of \cref{obj:def:minimax-risk} and turns the unprojected variance bound into the truncated risk comparison. For the lower bound, the complete-block family in \cref{obj:def:block-family} uses \(h_d\) as the score-aligned perturbation, so the two signed priors separate the target by \(\rho\delta\) while their affinity is controlled by the energy \(A_d^{-1}\).
+
+The proof of \cref{obj:thm:sharp-local-linear-constant-and-representers} evaluates the same block program inside the restricted local linear class. The moment equations defining \cref{obj:def:local-linear-estimator-class} reduce each block to the weight program in \cref{obj:def:weight-program}, and \cref{obj:lem:block-energy-representer} gives the minimum second moment \(A_{d_t}\). The quadratic criterion \(\Psi_{b,t}\) then records the exact blockwise worst-case contribution of admissible weights, yielding the finite-sample value and the asymptotic characterization stated in \cref{obj:thm:sharp-local-linear-constant-and-representers}.
+
+For the bounded-outcome comparison in \cref{obj:thm:bounded-outcome-degree-frontier}, the coefficient-mass class embeds carrier by carrier into the uniformly bounded-outcome class, so the lower bound from \cref{obj:thm:degree-frontier} transfers through the risk ordering in \cref{obj:def:two-class-minimax-risks}. The upper bound uses the same unbiased SNIPE variance calculation, with projection to \([-2B,2B]\) as defined in \cref{obj:def:bounded-outcome-clipped-snipe}. On complete blocks, \cref{obj:lem:block-energy-representer} gives the exact canonical variance \(B^2A_d/m\), aligning the global bounded-outcome comparison with the local linear benchmark.
+
+Finally, \cref{obj:thm:fair-coin-energy-frontier} follows by evaluating the Bernoulli contrast coefficients at \(p=1/2\). Even-order contrasts cancel, odd-order contrasts remain, and the energy formula in \cref{obj:def:block-score-energy} reduces to the stated odd-binomial sum. In the first-order interaction case \((\beta=1)\), this gives \(A_d=4d\), so the general degree-dependent comparison in \cref{obj:thm:bounded-outcome-degree-frontier} specializes to the rate \(B^2\min\{1,d^2/n\}\).
+
+
+
+
+
+\section{Verification Note}
+
+This appendix records the formal verification scope for the mathematical claims stated in the paper. The theorem statements and their proofs are machine-checked in Lean 4 for the finite Bernoulli design algebra underlying \cref{obj:ass:bernoulli-design}, the polynomial-interference constructions in \cref{obj:ass:low-order,obj:def:model-class}, the SNIPE unbiasedness and variance calculations associated with \cref{obj:def:snipe-score,obj:def:snipe-estimator}, and the minimax-risk definitions in \cref{obj:def:minimax-risk,obj:def:two-class-minimax-risks}. The same checked development covers the least-favourable complete-block family in \cref{obj:def:block-family}, the continuous-prior integrated-risk step, the affinity-based total-variation bound used for the block lower bound, and the block Riesz programs in \cref{obj:def:perturbation-program,obj:def:weight-program}.
+
+The verification also covers the formal statements of \cref{obj:thm:degree-frontier,obj:thm:sharp-local-linear-constant-and-representers,obj:thm:bounded-outcome-degree-frontier,obj:thm:fair-coin-energy-frontier} and the auxiliary statements collected in the proof appendix. The bibliographic inputs and econometric interpretation are supplied by the cited randomized-experiment, potential-outcomes, design-based, SNIPE, and low-order interference literatures \citep{HorvitzThompson1952,Rubin1978,ImbensRubin2015,Aronow2017,CortezRodriguezEichhornYu2023,HarshawSavjeWang2025}.
+
+
+
+
+
+\section{Proofs of the main results}\label{sec:deferred-proofs}
+
+\begin{proof}[Proof of \cref{obj:thm:sharp-local-linear-constant-and-representers}]
+\begin{enumerate}
+\item Fix \(t\) and write \(n=n_t\), \(d=d_t\), and \(m=m_t\).  On the complete-block graph, every active block is a full neighborhood of size \(d\), and \(n=md\).  The canonical block-local weights
+\[
+w^0_{i,t}(Z)=g_d(Z_{b(i)})
+\]
+belong to \(\mathcal E_t^{\mathrm{loc,lin}}\).  The block program identities in \cref{obj:lem:block-energy-representer}, applied block by block, give value \(A_d\) per unit score and therefore \(d^2A_d\) per block in the block-extremal criterion.  Thus every admissible local-linear rule has worst-case risk at least
+\[
+\frac{B^2}{n^2}\sum_{b=1}^{m}d^2A_d
+ = \frac{B^2A_d}{m},
+\]
+while the canonical rule attains this value.  Since \(n=md\),
+\[
+\frac{B^2A_d}{m}=\frac{B^2dA_d}{n}.
+\]
+This proves the finite minimax identity. % lean: locLinMinimaxRisk_exact
+
+\item For a fixed \(w\in\mathcal E_t^{\mathrm{loc,lin}}\), the squared error decomposes across complete blocks.  Maximizing the coefficient signs and low-order monomials independently on each block gives
+\[
+\sup_{c\in\mathcal M_t(G_t)}
+\mathbb E_Z[(\widehat\tau_{w,t}-\tau_{n_t})^2]
+=
+\frac{B^2}{n_t^2}\sum_{b=1}^{m_t}\Psi_{b,t}(w),
+\]
+where the finite maximum in \(\Psi_{b,t}\) is the same block-extreme functional after translating the sign coding to \(\varepsilon_i\in\{-1,1\}\) and writing block monomials as \(Z_{S_i}\). % lean: locLinWorstRisk_exact_blockExtremal
+
+\item The per-block lower bound follows from the all-empty monomial candidate and the block score identity.  Let \(g\) be the common complete-block score on \(V_b\).  For every \(i\in V_b\), blockwise unbiasedness gives
+\[
+\mathbb E_Z[w_{i,t}(Z_b)g(Z_b)]=A_{d_t},
+\qquad
+\mathbb E_Z[g(Z_b)^2]=A_{d_t}.
+\]
+Hence
+\[
+0\le
+\mathbb E_Z\!\left[
+\left\{\sum_{i\in V_b}w_{i,t}(Z_b)-d_t g(Z_b)\right\}^2
+\right]
+=
+\mathbb E_Z\!\left[
+\left\{\sum_{i\in V_b}w_{i,t}(Z_b)\right\}^2
+\right]
+-d_t^2A_{d_t}.
+\]
+The all-empty choice in \(\Psi_{b,t}\) contains the first expectation on the right, so
+\[
+d_t^2A_{d_t}\le \Psi_{b,t}(w).
+\]
+% lean: completeBlock_blockExtremal_lower
+
+\item Define
+\[
+Y_t:=
+\frac{1}{m_t d_t^2 A_{d_t}}
+\sum_{b=1}^{m_t}\{\Psi_{b,t}(w_t)-d_t^2A_{d_t}\}.
+\]
+The preceding finite identity gives, for every \(t\),
+\[
+\frac{
+\sup_{c\in\mathcal M_t(G_t)}
+\mathbb E_Z[(\widehat\tau_{w_t,t}-\tau_{n_t})^2]
+}{
+B^2A_{d_t}/m_t
+}
+=1+Y_t.
+\]
+Therefore convergence of the risk ratio to \(1\) is equivalent to convergence of \(Y_t\) to \(0\), by subtracting and adding the constant sequence \(1\). % lean: riskRatio_tendsto_iff_normalizedBlockExcess
+
+\item Let
+\[
+X_t:=
+\frac{1}{n_tA_{d_t}}
+\sum_{i\in V_{n_t}}
+\mathbb E_Z\!\left[
+\{w_{i,t}(Z_{b(i)})-g_{d_t}(Z_{b(i)})\}^2
+\right].
+\]
+The block-excess sum is nonnegative by the lower bound above.  The blockwise distance inequality gives
+\[
+Y_t\le 2\sqrt{X_t}+X_t,
+\]
+after using \(n_t=m_td_t\) and simplifying
+\[
+\frac{
+2\sqrt{d_t^2A_{d_t}}\sqrt{m_t}\sqrt{d_tE_t}
++d_tE_t
+}{
+m_td_t^2A_{d_t}
+}
+=
+2\sqrt{\frac{E_t}{n_tA_{d_t}}}
++\frac{E_t}{n_tA_{d_t}}.
+\]
+Thus \(X_t\to0\) implies \(Y_t\to0\) by squeezing, and the identity in the previous step gives the asserted convergence of the risk ratio. % lean: normalizedWeightDistance_tendsto_implies_riskRatio
+
+\item Assume \(d_t\to\infty\).  For all sufficiently large \(t\), \(\beta<d_t\).  Define \(w_t\) by adding to the canonical weights a centered full-block perturbation on one distinguished unit in each block:
+\[
+w_{i,t}(Z)
+=
+g_{d_t}(Z_{b(i)})
++
+\mathbf 1\{i=i_b^\star\}
+\left\{
+\frac{2d_tA_{d_t}}{(p(1-p))^{d_t}}
+\right\}^{1/2}
+\prod_{j\in V_{b(i)}}(Z_j-p).
+\]
+The full-block centered monomial has order \(d_t\), so it is orthogonal under \cref{obj:ass:bernoulli-design} to every monomial of order at most \(\beta\); consequently these weights remain in \(\mathcal E_t^{\mathrm{loc,lin}}\).  The exact identity above gives the lower bound \(1\) for the risk ratio.  The witness block bound gives, eventually,
+\[
+\Psi_{b,t}(w_t)
+\le
+d_t^2A_{d_t}
++2\sqrt{d_t^2A_{d_t}}\sqrt{2d_tA_{d_t}}
++2d_tA_{d_t},
+\]
+and therefore
+\[
+\frac{
+\sup_{c\in\mathcal M_t(G_t)}
+\mathbb E_Z[(\widehat\tau_{w_t,t}-\tau_{n_t})^2]
+}{
+B^2A_{d_t}/m_t
+}
+\le
+1+2\sqrt{\frac{2}{d_t}}+\frac{2}{d_t}.
+\]
+Since \(d_t\to\infty\), squeezing proves the displayed risk-ratio convergence for this sequence. % lean: orthogonalWitness_riskRatio_tendsto_one
+
+\item For the same sufficiently large \(t\), the perturbation has squared energy \(2d_tA_{d_t}\) on the distinguished unit of each block and zero perturbation energy on the other units.  Hence
+\[
+\sum_{i\in V_{n_t}}
+\mathbb E_Z\!\left[
+\{w_{i,t}(Z_{b(i)})-g_{d_t}(Z_{b(i)})\}^2
+\right]
+=
+m_t(2d_tA_{d_t}),
+\]
+and division by \(n_tA_{d_t}=m_td_tA_{d_t}\) gives the value \(2\).  If \(\pi\) preserves block membership, the complete-block score is invariant under the induced within-block relabeling, and the full-block centered perturbation has the same squared energy after the relabeling.  The same calculation gives the relabeled normalized distance \(2\). % lean: orthogonalWitness_normalized_relabel_distance_eq_two
+\end{enumerate}
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:thm:fair-coin-energy-frontier}]
+\begin{enumerate}
+\item Fix admissible \(n,d,\beta,B\).  For every \(r\ge 1\),
+\[
+\Delta_r(1/2)
+=
+(1/2)^r-(-1/2)^r
+=
+2^{-r}\{1-(-1)^r\}.
+\]
+Thus \(\Delta_r(1/2)=2^{1-r}\) when \(r\) is odd, and \(\Delta_r(1/2)=0\) when \(r\) is even. % lean: fairCoinContrast
+
+\item Expanding \(A_d\) from \cref{obj:def:block-score-energy} at \(p=1/2\) gives
+\[
+A_d
+=
+\sum_{r=1}^{\bar\beta_d}
+\binom{d}{r}
+\frac{\Delta_r(1/2)^2}{((1/2)(1-1/2))^r}.
+\]
+The preceding calculation makes the even terms vanish.  For odd \(r\),
+\[
+\frac{\Delta_r(1/2)^2}{((1/2)(1-1/2))^r}
+=
+\frac{(2^{1-r})^2}{(1/4)^r}
+=
+4.
+\]
+Therefore
+\[
+A_d
+=
+4\sum_{\substack{1\le r\le \bar\beta_d\\ r\text{ odd}}}
+\binom{d}{r}.
+\] % lean: fairCoinEnergy
+The exposed set in \cref{obj:def:exposed-order} is exactly the set of odd integers in \(\{1,\ldots,\bar\beta_d\}\).  Hence \(k_\star(d,\beta,1/2)\) is its maximum, with the stated zero value when the set is empty. % lean: fairCoinKStar
+
+\item Apply \cref{obj:thm:bounded-outcome-degree-frontier} with \(\beta=1\) and \(p=1/2\).  It supplies constants \(a,C\) with \(0<a\le C\).  Set
+\[
+c_{\mathrm{lower}}:=a,
+\qquad
+c_{\mathrm{upper}}:=4C .
+\]
+Since \(C>0\), these constants satisfy \(0<c_{\mathrm{lower}}\le c_{\mathrm{upper}}\).  For fixed admissible \(n,d,B\), use the common fair Bernoulli product design on \(V_n\), which satisfies \cref{obj:ass:bernoulli-design}. % lean: bounded_outcome_degree_frontier
+
+\item The first-order interaction energy follows from the fair-coin energy identity.  Since \(d\ge1\), \(\bar\beta_d=\min\{1,d\}=1\), and the odd orders in \(\{1\}\) consist only of \(1\).  Hence
+\[
+A_d
+=
+4\binom d1
+=
+4d.
+\]
+Put \(x=d^2/n\).  Then \(x\ge0\), and
+\[
+\frac{dA_d}{n}
+=
+\frac{d(4d)}{n}
+=
+4x.
+\]
+Moreover \(\min\{1,x\}\le \min\{1,4x\}\). % lean: henergy, henergyArg, hminLower
+
+\item The lower bound from \cref{obj:thm:bounded-outcome-degree-frontier} gives
+\[
+aB^2\min\!\left\{1,\frac{dA_d}{n}\right\}
+\le
+R_{n,\ell_1}^{\star}(d,1,1/2,B),
+\]
+and the same result identifies
+\[
+R_{n,\ell_1}^{\star}(d,1,1/2,B)
+=
+R_n^\star(d,1,1/2,B).
+\]
+Using \(\min\{1,x\}\le\min\{1,4x\}\) and \(dA_d/n=4x\) yields
+\[
+c_{\mathrm{lower}}B^2\min\!\left\{1,\frac{d^2}{n}\right\}
+\le
+R_n^\star(d,1,1/2,B).
+\] % lean: hminLower, henergyArg, hlower, hriskEq, hlower'
+The class comparison in \cref{obj:thm:bounded-outcome-degree-frontier} supplies
+\[
+R_{n,\ell_1}^{\star}(d,1,1/2,B)
+\le
+R_{n,\infty}^{\star}(d,1,1/2,B).
+\] % lean: hclassMono
+For the upper bound, the same result bounds the bounded-outcome minimax risk by the clipped bounded-outcome SNIPE worst risk and then by
+\[
+CB^2\min\!\left\{1,\frac{dA_d}{n}\right\}
+=
+CB^2\min\{1,4x\}.
+\]
+If \(x\le1\), then either \(4x\le1\), in which case \(\min\{1,4x\}=4x\), or \(4x>1\), in which case \(\min\{1,4x\}=1\le4x\).  If \(x>1\), then \(\min\{1,4x\}\le1\le4\min\{1,x\}\).  Thus
+\[
+\min\{1,4x\}\le4\min\{1,x\},
+\]
+and consequently
+\[
+R_{n,\infty}^{\star}(d,1,1/2,B)
+\le
+c_{\mathrm{upper}}B^2\min\!\left\{1,\frac{d^2}{n}\right\}.
+\] % lean: hbddToWorst, hworstUpper, henergyArg, hupper'
+Combining the displayed identities and inequalities gives the full minimax chain.
+
+\item Finally assume \(d\mid n\).  The exact complete-block identities from \cref{obj:thm:bounded-outcome-degree-frontier} give, for the unprojected SNIPE estimator,
+\[
+\sup_{\mathcal M_{n,d,1}(B)}
+\mathbb E\!\left[\bigl(\widehat\tau_n^{\mathrm{SNIPE}}-\tau_n\bigr)^2\right]
+=
+\frac{B^2A_d}{n/d}
+=
+\frac{B^2dA_d}{n},
+\]
+and the same identity over \(\mathcal M_{n,d,1}^{\infty}(B)\).  Substituting \(A_d=4d\) gives both asserted values,
+\[
+\frac{B^2dA_d}{n}
+=
+\frac{4B^2d^2}{n}.
+\]
+% lean: fair_coin_energy_frontier
+\end{enumerate}
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:thm:degree-frontier}]
+\begin{enumerate}
+\item Apply \cref{obj:thm:bounded-outcome-degree-frontier} with the fixed \(\beta\) and \(p\).  It gives constants \(a,b\) with \(0<a\le b\) and, for every admissible \(n,d,B\), the block-energy lower bound, the projected-SNIPE upper bound, the unprojected-SNIPE upper bound, the local-energy comparison, the exposed-order comparison
+\[
+a\,d\binom{d}{k_\star(d,\beta,p)}
+\le dA_d
+\le b\,d\binom{d}{k_\star(d,\beta,p)},
+\]
+and the block-mixture conclusions.  Set
+\[
+c_{\beta,p}:=\min\{1,a^2\},
+\qquad
+C_{\beta,p}:=\max\{1,b^2\}.
+\]
+Then \(0<c_{\beta,p}\le C_{\beta,p}\). % lean: degree_frontier
+
+\item Fix \(n,d\in\mathbb N\) and \(B\in\mathbb R\) with \(n\ge1\), \(d\le n\), and \(B\ge0\), and write
+\[
+x:=\frac{d\binom{d}{k_\star(d,\beta,p)}}{n},
+\qquad
+y:=\frac{dA_d}{n}.
+\]
+The common-\(p\) product Bernoulli design satisfies \cref{obj:ass:bernoulli-design}.  Since \(n\ge1\), the exposed-order comparison from the preceding item gives
+\[
+a x\le y\le b x,
+\]
+and hence
+\[
+\min\{1,ax\}\le \min\{1,y\}\le \min\{1,bx\}.
+\]
+Also \(\min\{1,a^2\}\le a\): if \(a\le1\), then \(\min\{1,a^2\}\le a^2\le a\), while if \(a>1\), then \(\min\{1,a^2\}\le1\le a\).  Splitting on \(x\le1\) and \(ax\le1\), and using this comparison in the saturated branches, gives
+\[
+\min\{1,a^2\}\min\{1,x\}
+\le
+a\min\{1,ax\}.
+\]
+Similarly \(b\le\max\{1,b^2\}\): if \(b\le1\), then \(b\le1\le\max\{1,b^2\}\), while if \(b>1\), then \(b\le b^2\le\max\{1,b^2\}\).  Splitting on \(x\le1\) and \(bx\le1\) gives
+\[
+b\min\{1,bx\}
+\le
+\max\{1,b^2\}\min\{1,x\}.
+\]
+In the branch \(x>1\) and \(bx\le1\), the needed bound is obtained by first deriving \(b<1\): otherwise \(b\ge1\) would imply \(x\le bx\), contradicting \(x>1\) and \(bx\le1\). % lean: degree_frontier
+
+\item The lower bound follows by chaining the previous inequalities with the block-energy lower bound supplied by \cref{obj:thm:bounded-outcome-degree-frontier} and the identification of the coefficient-mass minimax risk in \cref{obj:def:minimax-risk}:
+\[
+\begin{aligned}
+c_{\beta,p}B^2\min\{1,x\}
+&=B^2\min\{1,a^2\}\min\{1,x\} \\
+&\le B^2a\min\{1,ax\} \\
+&\le B^2a\min\{1,y\} \\
+&\le R_n^\star(d,\beta,p,B).
+\end{aligned}
+\] % lean: degree_frontier
+
+\item The projected-SNIPE upper bound at the block-energy scale from \cref{obj:thm:bounded-outcome-degree-frontier}, together with the upper rescaling above, gives
+\[
+\begin{aligned}
+\sup_{(G,c)\in\mathcal M_{n,d,\beta}(B)}
+\mathbb E\!\left[
+  \bigl(\widehat\tau_n^{\mathrm{up}}-\tau_n\bigr)^2
+\right]
+&\le bB^2\min\{1,y\} \\
+&\le bB^2\min\{1,bx\} \\
+&\le C_{\beta,p}B^2\min\{1,x\}.
+\end{aligned}
+\] % lean: degree_frontier
+
+\item The estimator \(\widehat\tau_n^{\mathrm{up}}\) is an admissible competitor for the minimax problem.  The finite-population estimator is measurable, and \cref{obj:ass:bounded-coefficient-mass} gives, for every model in \(\mathcal M_{n,d,\beta}(B)\),
+\[
+|Y_i(z)|\le
+\sum_{S\subseteq N_i}|c_{i,S}|\le B.
+\]
+Therefore
+\[
+|\tau_n|
+\le
+\frac1n\sum_{i\in V_n}\bigl(|Y_i(\mathbf 1)|+|Y_i(\mathbf 0)|\bigr)
+\le 2B.
+\]
+The projection defining \(\widehat\tau_n^{\mathrm{up}}\) places the estimator in \([-B,B]\), so its pointwise squared loss is bounded by \(9B^2\), and hence its risk is uniformly bounded over the class.  Since \(n\ge1\), the empty graph with the zero coefficient schedule supplies a member of \(\mathcal M_{n,d,\beta}(B)\).  The definition of \(R_n^\star(d,\beta,p,B)\) as the infimum over admissible estimators gives
+\[
+R_n^\star(d,\beta,p,B)
+\le
+\sup_{(G,c)\in\mathcal M_{n,d,\beta}(B)}
+\mathbb E\!\left[
+  \bigl(\widehat\tau_n^{\mathrm{up}}-\tau_n\bigr)^2
+\right].
+\] % lean: snipeClipped_admissible, minimaxRisk_le_worstRisk_of_admissible
+
+\item The unprojected SNIPE bound is obtained from the block-energy bound in \cref{obj:thm:bounded-outcome-degree-frontier}:
+\[
+\begin{aligned}
+\sup_{(G,c)\in\mathcal M_{n,d,\beta}(B)}
+\mathbb E\!\left[
+  \bigl(\widehat\tau_n^{\mathrm{SNIPE}}-\tau_n\bigr)^2
+\right]
+&\le B^2\,\frac{dA_d}{n} \\
+&\le B^2\,b\,x \\
+&\le C_{\beta,p}B^2\,x.
+\end{aligned}
+\] % lean: degree_frontier
+
+\item The score-energy assertion is exactly the local-energy comparison supplied by \cref{obj:thm:bounded-outcome-degree-frontier}: for every \((G,c)\in\mathcal M_{n,d,\beta}(B)\) and every \(i\in V_n\),
+\[
+A_i\le A_d.
+\] % lean: degree_frontier
+
+\item For every \((G,c)\in\mathcal M_{n,d,\beta}(B)\), every \(i\in V_n\), and every order \(r\) with \(1\le r\), the overlap-count assertion is \cref{obj:lem:overlap-count} applied to the graph \(G\), the degree bound \(d\), the order \(r\), and the unit \(i\):
+\[
+\sum_{\ell\in V_n}\binom{|N_i\cap N_\ell|}{r}
+=
+\sum_{\substack{S\subseteq N_i\\ |S|=r}}
+\#\{\ell\in V_n:S\subseteq N_\ell\}
+\le
+d\binom{|N_i|}{r}
+\le
+d\binom{d}{r}.
+\] % lean: overlap_count_le
+
+\item Assume \(B>0\) and \(d\ge1\).  The block-mixture component of \cref{obj:thm:bounded-outcome-degree-frontier}, with \(m=\lfloor n/d\rfloor\), \(\rho\) the active population fraction, and \(\delta\) the least-favourable perturbation amplitude, gives the two complete-block models \(M_+\) and \(M_-\) for every \(U=(U_1,\ldots,U_m)\) with \(|U_b|\le B/2\).  Their graph is the complete-block graph, their coefficient schedules are the corresponding \(+1\) and \(-1\) block schedules, and
+\[
+\tau_n(M_+)=\rho\delta,
+\qquad
+\tau_n(M_-)=-\rho\delta.
+\]
+The same component gives
+\[
+H^2(\Pi_+,\Pi_-)
+\le
+\frac{4\pi^2m\delta^2}{B^2A_d},
+\qquad
+\frac12\le\rho\le1,
+\qquad
+\frac{A_d}{m}=\frac{dA_d/n}{\rho}.
+\]
+This proves the block-construction assertion and completes the proof. % lean: degree_frontier
+\end{enumerate}
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:thm:bounded-outcome-degree-frontier}]
+\begin{enumerate}
+\item By \cref{obj:lem:block-energy-representer}, choose constants
+\(c_1,c_2,H\) depending only on \((\beta,p)\), with
+\(0<c_1\le c_2\), and with
+\[
+c_1\binom{d}{k_\star(d,\beta,p)}
+\le A_d
+\le
+c_2\binom{d}{k_\star(d,\beta,p)}
+\qquad(d\ge 1).
+\]
+Let \(H_{\beta,p}\) denote the corresponding uniform raw-representer mass
+supremum and set
+\[
+\kappa
+=
+\min\!\left\{(2H_{\beta,p})^{-1},(4\pi)^{-1}\right\},
+\qquad
+c_{\beta,p}
+=
+\min\!\left\{c_1,\frac{\kappa^2}{16}\right\},
+\qquad
+C_{\beta,p}
+=
+\max\{16,c_2\}.
+\]
+The representer-mass positivity and \(\pi>0\) give \(\kappa>0\), hence
+\(c_{\beta,p}>0\), and
+\[
+c_{\beta,p}\le c_1\le c_2\le C_{\beta,p}.
+\]
+% lean: blockEnergy_representer
+
+\item Fix \(n,D,d,B\) satisfying the hypotheses. The degree-index condition gives
+\(d\le n\). The coefficient-mass envelope bounds every potential outcome by
+\(B\) on the same carrier, so
+\(\mathcal M_{n,d,\beta}(B)\subseteq
+\mathcal M_{n,d,\beta}^{\infty}(B)\) carrier by carrier. If \(B>0\) and
+\(d\ge 1\), the one-loop schedule with coefficients \(B\) and \(-2B\) has
+uniformly bounded outcomes and coefficient mass \(3B>B\), giving strict
+containment. The equality
+\(R_{n,\ell_1}^{\star}(d,\beta,p,B)=R_n^{\star}(d,\beta,p,B)\) is the
+definition of the coefficient-class minimax risk used here, and the carrier
+inclusion gives
+\[
+R_{n,\ell_1}^{\star}(d,\beta,p,B)
+\le R_{n,\infty}^{\star}(d,\beta,p,B).
+\]
+% lean: modelClassIncluded_of_coeffMass
+
+\item The scaled block-prior lower bound gives
+\[
+c_{\beta,p}B^2\min\!\left\{1,\frac{dA_d}{n}\right\}
+\le
+R_{n,\ell_1}^{\star}(d,\beta,p,B).
+\]
+For \(d\ge1\) and \(B>0\), this is obtained with
+\(m=\lfloor n/d\rfloor\), \(\rho=md/n\),
+\(t=\min\{1,\sqrt{A_d/m}\}\), and
+\(\delta=B\kappa t\). The choice
+\(\kappa\le(4\pi)^{-1}\) makes the squared Hellinger distance of the two block
+priors at most \(1/4\). Le Cam's block-prior lower bound then gives
+\((\rho\delta)^2/4\), and the identities
+\[
+\frac{dA_d}{n}=\rho\frac{A_d}{m},
+\qquad
+\frac12\le\rho\le1,
+\qquad
+t^2=\min\!\left\{1,\frac{A_d}{m}\right\}
+\]
+convert this to the displayed frontier lower bound. For \(B=0\), and also for
+\(d=0\), the left side is \(0\), and the minimax risk is nonnegative.
+% lean: minimaxRisk_scaled_block_lower
+
+\item The unclipped SNIPE variance calculation, with the local dependence
+aggregation controlled by \cref{obj:lem:overlap-count}, yields on both model
+classes
+\[
+\sup \mathbb E_Z\!\left[
+(\widehat\tau_n^{\mathrm{SNIPE}}-\tau_n)^2
+\right]
+\le
+B^2\frac{dA_d}{n}.
+\]
+For each model in the coefficient-mass class, and for each model in the
+uniformly bounded-outcome class, the product Bernoulli design assumption
+identifies \(D\) with the common-\(p\) Bernoulli law, and the SNIPE moment
+identity gives unbiasedness for \(\tau_n\).
+% lean: worstRisk_snipe_le
+
+\item Projection to \([-B,B]\) on the coefficient-mass class and to
+\([-2B,2B]\) on the uniformly bounded-outcome class can only improve the
+modelwise squared error relative to the corresponding target envelopes, while
+the trivial saturated bounds are \(4B^2\) and \(16B^2\). Combining these with
+the unclipped risk bounds gives
+\[
+\sup_{\mathcal M_{n,d,\beta}(B)}
+\mathbb E_Z\!\left[
+(\widehat\tau_n^{\mathrm{up}}-\tau_n)^2
+\right]
+\le
+4B^2\min\!\left\{1,\frac{dA_d}{n}\right\},
+\]
+and
+\[
+\sup_{\mathcal M_{n,d,\beta}^{\infty}(B)}
+\mathbb E_Z\!\left[
+(\widehat\tau_{n,\infty}^{\mathrm{up}}-\tau_n)^2
+\right]
+\le
+16B^2\min\!\left\{1,\frac{dA_d}{n}\right\}.
+\]
+Since \(4\le16\le C_{\beta,p}\), the coefficient-class clipped bound and the
+bounded-outcome clipped bound have the theorem's constant \(C_{\beta,p}\). The
+minimax risk over the bounded-outcome class is bounded above by the risk of the
+bounded-outcome clipped SNIPE estimator, giving the displayed minimax upper
+chain.
+% lean: worstRiskBdd_clipped_le_min
+
+\item For every unit \(i\), the exact local score energy is bounded by the
+complete-block energy:
+\[
+A_i\le A_d.
+\]
+The same estimate applies on both model classes because it depends only on the
+degree bound of the carrier graph. Multiplying the energy scale from
+\cref{obj:lem:block-energy-representer} by \(d\) and using
+\(c_{\beta,p}\le c_1\) and \(c_2\le C_{\beta,p}\) gives, for \(d\ge1\),
+\[
+c_{\beta,p}d\binom{d}{k_\star(d,\beta,p)}
+\le dA_d
+\le
+C_{\beta,p}d\binom{d}{k_\star(d,\beta,p)}.
+\]
+For \(d=0\), both sides reduce by the zero-degree convention.
+% lean: localEnergy_le_blockEnergy
+
+\item Assume \(d\ge1\) and \(d\mid n\), and put \(m=n/d\). On the complete
+directed \(d\)-block graph with loops, first consider \(B>0\). The canonical
+local-linear weights agree with the SNIPE score on each block. The block
+extremal criterion equals \(d^2A_d\) on every block, so summing over \(m\)
+blocks and normalizing yields
+\[
+\frac{B^2A_d}{m}.
+\]
+The fixed-graph coefficient-class risk equals this value. The global
+coefficient-class risk is bracketed between that fixed-graph risk and the
+unclipped SNIPE upper bound at the same value; the fixed-graph
+bounded-outcome risk and the global bounded-outcome risk are obtained by the
+same comparison, using the carrier-preserving inclusion of the coefficient
+class in the bounded-outcome class. If \(B=0\), the target
+\(B^2A_d/m\) is zero; the zero schedule gives a nonnegative risk in the
+fixed-graph coefficient class, and the SNIPE upper bounds and fixed-to-global
+comparisons force the fixed-graph and global risks in both model classes to be
+zero. Thus, for all \(B\ge0\), the fixed-graph coefficient-class risk, the
+fixed-graph bounded-outcome risk, and the corresponding global worst risks all
+equal \(B^2A_d/m\). Since \(n=md\),
+\[
+\frac{B^2A_d}{m}=B^2\frac{dA_d}{n}.
+\]
+% lean: completeBlock_all_risks_exact
+
+\item Finally suppose \(B>0\) and \(d\ge1\), set
+\(m=\lfloor n/d\rfloor\), \(\rho=md/n\), and let
+\(\delta\) be the perturbation amplitude. For every
+\(U=(U_1,\ldots,U_m)\) with \(|U_b|\le B/2\), the two signed block schedules
+are members of \(\mathcal M_{n,d,\beta}(B)\) on the complete-block graph. Their
+targets are
+\[
+\rho\delta
+\qquad\text{and}\qquad
+-\rho\delta .
+\]
+The block-prior Hellinger calculation gives
+\[
+H^2(\Pi_{+},\Pi_{-})
+\le
+\frac{4\pi^2m\delta^2}{B^2A_d}.
+\]
+The active-share arithmetic gives
+\[
+\frac12\le\rho\le1,
+\qquad
+\frac{A_d}{m}
+=
+\frac{dA_d/n}{\rho}.
+\]
+These are exactly the least-favourable family conclusions.
+% lean: blockScheduleModel
+\end{enumerate}
+\end{proof}
+
+\bibliographystyle{plainnat}
+
+\bibliography{references}
+
+\end{document}

@@ -67,7 +67,8 @@ namespace SCM
 
 open scoped MeasureTheory ProbabilityTheory
 
-/-- The joint kernel maps each fixed-value assignment to the law of the model evaluation under the latent product distribution.
+/-- The joint kernel maps each fixed-value assignment to the law of the model
+evaluation under the latent product distribution.
 
     The joint kernel `jointKernel M : Kernel (FixedValues M) (RandomValues M)`.
 
@@ -97,7 +98,8 @@ theorem measurable_randomToObserved (M : Causalean.SCM N Ω) :
   exact measurable_pi_apply
     (a := (⟨v.val, Finset.mem_union_left _ v.property⟩ : {i // i ∈ M.randomVars}))
 
-/-- At each fixed assignment, the joint kernel is the pushforward of the latent product through the evaluation map.
+/-- At each fixed assignment, the joint kernel is the pushforward of the latent
+product through the evaluation map.
 
     Pointwise form of the joint kernel: at each fixed assignment `s`, the joint kernel
     is the pushforward of `M.latentProduct` along `fun ℓ => M.evalMap s ℓ`.
@@ -117,7 +119,8 @@ lemma jointKernel_apply_eq (M : Causalean.SCM N Ω) (s : FixedValues M) :
       ProbabilityTheory.Kernel.compProd_apply (measurable_snd hA),
       ProbabilityTheory.Kernel.const_apply,
       MeasureTheory.Measure.map_apply hf hA]
-  -- LHS: ∫⁻ ℓ, (deterministic (uncurry evalMap)) (s, ℓ) (Prod.mk ℓ ⁻¹' (Prod.snd ⁻¹' A)) ∂latentProduct
+  -- LHS: ∫⁻ ℓ, (deterministic (uncurry evalMap)) (s, ℓ)
+  --   (Prod.mk ℓ ⁻¹' (Prod.snd ⁻¹' A)) ∂latentProduct
   -- RHS: latentProduct ((fun ℓ => evalMap s ℓ) ⁻¹' A)
   simp only [ProbabilityTheory.Kernel.deterministic_apply, Function.uncurry_apply_pair]
   -- Simplify the preimage `Prod.mk ℓ ⁻¹' (Prod.snd ⁻¹' A) = A` (rfl on Set membership).
@@ -136,7 +139,8 @@ lemma jointKernel_apply_eq (M : Causalean.SCM N Ω) (s : FixedValues M) :
     rfl
   · exact MeasureTheory.lintegral_indicator_one (hf hA)
 
-/-- The observational kernel maps each fixed-value assignment to the induced law of the observed nodes.
+/-- The observational kernel maps each fixed-value assignment to the induced law
+of the observed nodes.
 
     The observational kernel `obsKernel M : Kernel (FixedValues M) (ObservedValues M)`.
 
@@ -158,12 +162,19 @@ instance instIsMarkovKernelObsKernel (M : Causalean.SCM N Ω) :
   unfold obsKernel
   exact ProbabilityTheory.Kernel.IsMarkovKernel.map _ M.measurable_randomToObserved
 
+/-- Every slice of a Markov kernel has total mass one. -/
+theorem kernel_apply_univ {α β : Type*} [MeasurableSpace α] [MeasurableSpace β]
+    (κ : ProbabilityTheory.Kernel α β) [ProbabilityTheory.IsMarkovKernel κ] (a : α) :
+    κ a Set.univ = 1 :=
+  MeasureTheory.measure_univ
+
 /-- Each observational-kernel slice has total mass one. -/
 theorem obsKernel_apply_univ (M : Causalean.SCM N Ω) (s : FixedValues M) :
-    M.obsKernel s Set.univ = 1 := by
-  exact MeasureTheory.measure_univ
+    M.obsKernel s Set.univ = 1 :=
+  kernel_apply_univ M.obsKernel s
 
-/-- The observational kernel can be written as one pushforward that evaluates the model and then projects to observed coordinates.
+/-- The observational kernel can be written as one pushforward that evaluates
+the model and then projects to observed coordinates.
 
     **Pushforward and projection commute.**  The observational kernel can be obtained
     either in two steps (first push the latent product along `evalMap`, then project
@@ -184,7 +195,8 @@ theorem jointKernel_map_commute (M : Causalean.SCM N Ω) :
 -- § `obsCondKernel` — jointly measurable conditional kernel
 -- ============================================================
 
-/-- The conditional-pair kernel pushes the observational law to conditioning coordinates paired with target coordinates. -/
+/-- The conditional-pair kernel pushes the observational law to conditioning
+coordinates paired with target coordinates. -/
 noncomputable def obsCondPairKernel
     (M : Causalean.SCM N Ω) (Y CC : Finset (SWIGNode N))
     (hY : Y ⊆ M.observed) (hCC : CC ⊆ M.observed) :
@@ -193,7 +205,8 @@ noncomputable def obsCondPairKernel
   (M.obsKernel).map (fun ω =>
     (valuesProjection hCC ω, valuesProjection hY ω))
 
-/-- The observational conditional kernel is a jointly measurable conditional law of target coordinates given conditioning coordinates.
+/-- The observational conditional kernel is a jointly measurable conditional law
+of target coordinates given conditioning coordinates.
 
     Jointly measurable conditional law of the `Y`-coordinates given the
     `CC`-coordinates under `M.obsKernel`. -/
@@ -202,7 +215,6 @@ noncomputable def obsCondKernel
     (hY : Y ⊆ M.observed) (hCC : CC ⊆ M.observed)
     [StandardBorelSpace (ValuesOn Y (swigΩ Ω))]
     [Nonempty (ValuesOn Y (swigΩ Ω))]
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.obsKernel s)]
     [MeasurableSpace.CountableOrCountablyGenerated
       (FixedValues M) (ValuesOn CC (swigΩ Ω))] :
     ProbabilityTheory.Kernel
@@ -218,7 +230,8 @@ noncomputable def obsCondKernel
     infer_instance
   (M.obsCondPairKernel Y CC hY hCC).condKernel
 
-/-- The observational conditional kernel agrees almost everywhere with the measure-level conditional distribution.
+/-- The observational conditional kernel agrees almost everywhere with the
+measure-level conditional distribution.
 
     **Bridge: `obsCondKernel` agrees with `condDistrib` a.e.**
 
@@ -233,7 +246,6 @@ theorem obsCondKernel_ae_eq_condDistrib
     (hY : Y ⊆ M.observed) (hCC : CC ⊆ M.observed)
     [StandardBorelSpace (ValuesOn Y (swigΩ Ω))]
     [Nonempty (ValuesOn Y (swigΩ Ω))]
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.obsKernel s)]
     [MeasurableSpace.CountableOrCountablyGenerated
       (FixedValues M) (ValuesOn CC (swigΩ Ω))]
     (s : M.FixedValues) :

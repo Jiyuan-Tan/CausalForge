@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import { maskNonBoundaryPeriods } from "../shared/tex_text.js";
 import { parseNoteBlocks } from "../presentation/note_parser.js";
 import { createEmptyGraph } from "./store.js";
 import { addEdge, addNode } from "./mutate.js";
@@ -59,10 +60,19 @@ function dependencyText(body: string): string {
   if (lb) parts.push(lb[1]);
   const hyp = body.match(/\*Hyp:\*([\s\S]*?)(?:\*Concl|$)/i);
   if (hyp) parts.push(hyp[1]);
-  // Capture up to the first period so the dep LIST is read but trailing prose on
-  // the same line (e.g. "… P-7. (the domain T-2 quantifies over)") is not.
-  for (const m of body.matchAll(/Depends on[:.]?\s*([^.\n]*)/gi)) parts.push(m[1]);
-  return parts.join("\n");
+  // Capture up to the first SENTENCE period so the dep LIST is read but trailing
+  // prose on the same line (e.g. "… P-7. (the domain T-2 quantifies over)") is
+  // not. Non-boundary periods are masked first so "Prop. 2" or a decimal inside
+  // the list does not truncate it.
+  for (const m of maskNonBoundaryPeriods(body).matchAll(/Depends on[:.]?\s*([^.\n]*)/gi)) parts.push(m[1]);
+  // Blank out math spans: `for all $k \le T-1$` inside a hypothesis field is
+  // arithmetic, not a dependency declaration — matching the `T-1` inside it
+  // minted a spurious proof-uses edge to a real node.
+  return parts
+    .join("\n")
+    .replace(/(?<!\\)\$[^$\n]*\$/g, " ")
+    .replace(/\\\(([\s\S]*?)\\\)/g, " ")
+    .replace(/\\\[([\s\S]*?)\\\]/g, " ");
 }
 
 /** A representative NL statement for a block. */

@@ -16,6 +16,7 @@ import { buildSymbolClusters, parseLeanDecls } from "./crosswalk.js";
 import { resolveCitedTarget, type CitedMatchTarget } from "./citation_fetch.js";
 import { PlanSchema, type Citation, type Plan } from "./plan/schema.js";
 import { CoreSchema } from "../discovery/core/schema.js";
+import { readTypedCore } from "../discovery/core/core_io.js";
 import { citedEvidenceHash, deliveryEvidenceHash } from "./delivery_audit.js";
 import { planPath, promptPath } from "../paths.js";
 import type { CitedReviewReceipt, DeliveryReviewReceipt } from "../types.js";
@@ -24,6 +25,7 @@ import type { CodexRunInput } from "../shared/codex.js";
 import type { ClaudeRunInput } from "../workers/claude.js";
 import { dispatchAgent, dispatchClaudeAgent } from "../framework/agent_dispatch.js";
 import { parseJsonWithEscapeRepair } from "../shared/codex_json.js";
+import { truncateTexSafe } from "../shared/tex_text.js";
 import {
   gradeReviewerOutput,
   mapLimit,
@@ -43,6 +45,20 @@ import {
  *  whole batch and trusting its internal attention split (which satisfices and skims). 6 keeps the
  *  process/file-handle count well under the cluster caps even when convergence doubles the per-unit calls. */
 const REVIEW_CONCURRENCY = 6;
+
+/** Fence a fetched-TeX excerpt for a prompt. `~~~~~` fences instead of triple
+ * backticks (fetched papers legitimately contain ``` in listings/verbatim,
+ * which would end a backtick fence mid-paper and spill the rest outside the
+ * quoted region), the cut avoids stopping inside a math span, and an EXPLICIT
+ * truncation marker tells the reviewer the source continues — an unmarked cut
+ * reads as "the statement is not in the paper". */
+function fencedExcerpt(text: string, max: number): string {
+  const cut = truncateTexSafe(text, max);
+  const marker = cut.length < text.length
+    ? `\n[…TRUNCATED — ${text.length - cut.length} more chars of source not shown. Absence beyond this point is NOT evidence.]`
+    : "";
+  return "~~~~~\n" + cut + marker + "\n~~~~~";
+}
 
 /**
  * The unified faithfulness gate over the dirty frontier. Reviews frozen-theorem statement drift + new assumptions in any frozen theorem's
@@ -107,7 +123,7 @@ export async function runReviewer(args: {
   let typedCore: ReturnType<typeof CoreSchema.parse> | null = null;
   if (args.corePath) {
     try {
-      typedCore = CoreSchema.parse(JSON.parse(await readFile(args.corePath, "utf8")));
+      typedCore = await readTypedCore(args.corePath);
     } catch (err) {
       return failReview(
         "missing-review-evidence",
@@ -319,7 +335,18 @@ export async function runReviewer(args: {
       let lean = "(no Lean anchor — judge against the NL + sources)";
       const graphNode = args.graph.nodes.find((node) => nodeIdToObjId(node.id) === r.obj_id);
       const externalReuse = graphNode?.provenance === "library";
-      if (!r.lean && !externalReuse) {
+      // An assumption node states a HYPOTHESIS CLAUSE (`1 ≤ β`, `p ∈ (0,1)`), which is
+      // threaded as a binder on the lemmas that need it and therefore never owns a
+      // declaration of its own. Demanding a Lean anchor for it is unsatisfiable, and
+      // because this check fails closed BEFORE any model call, it dead-ends F4 on a
+      // fully proved tree — no re-scaffold or re-review can clear it. Exempt it from the
+      // ANCHOR requirement exactly as `provenance === "library"` is exempted; the node is
+      // still reviewed, against its NL + sources (`lean` already carries that instruction),
+      // and this is NOT an escape hatch for an unproved obligation: whether an assumption is
+      // legitimately a note hypothesis or an illegitimate ADDED assumption is decided by the
+      // assumption-review / `added_assumptions` machinery, which this check never performed.
+      const hypothesisClause = (graphNode?.kind ?? r.kind) === "assumption";
+      if (!r.lean && !externalReuse && !hypothesisClause) {
         evidenceFailure ??= `${r.obj_id}: local delivered target has no Lean anchor`;
       }
       if (r.lean?.decl) {
@@ -400,8 +427,8 @@ export async function runReviewer(args: {
                 // Give a larger window and an HONEST fallback: statement-not-in-excerpt must grade
                 // unverifiable, never a guessed verified/mismatch against unrelated text.
                 ? `(EXCERPT of the fetched paper's TeX SOURCE — theorem numbers are usually auto-generated, so "${cited.citation.locator}" may not appear literally; locate the statement of record by its content. If it is NOT present in this excerpt, emit check_status "cited-source-unverifiable" — do NOT infer a verdict from surrounding text.)\n` +
-                  "```\n" + cited.target.text.slice(0, 12000) + "\n```"
-                : "```\n" + cited.target.text.slice(0, 4000) + "\n```",
+                  fencedExcerpt(cited.target.text, 12000)
+                : fencedExcerpt(cited.target.text, 4000),
             `SELF-CONTAINEDNESS: the def must ENCODE every distinguishing hypothesis the cited statement relies on — in particular any regularity/model class that separates it from this paper's own class — as a defined predicate or explicit binder, NOT as a free abstract variable nor an undefined class named only in prose/the docstring. A cited claim about "the risk over class X" whose X is not a defined object is not self-contained.`,
             `Emit ONE substrate_gates entry: { name:"${r.lean?.decl ?? r.obj_id}", gate_class:"cited", source:{cite_id:"${cited.citation.id}", locator:"${cited.citation.locator}"}, check_status }. check_status = "${okStatus}" if the def faithfully AND self-containedly encodes the statement; "cited-mismatch" if the quantifiers/constants/direction differ or it is vacuous; "cited-underspecified" if a distinguishing hypothesis/class is named but not encoded (a free variable or undefined class). Both cited-mismatch and cited-underspecified BLOCK banking.`,
           ].join("\n")
@@ -572,7 +599,7 @@ export async function runReviewer(args: {
   if (deliveryTargets.length > 0) {
     try {
       if (!args.corePath) throw new Error("typed core path is missing");
-      const core = CoreSchema.parse(JSON.parse(await readFile(args.corePath, "utf8")));
+      const core = await readTypedCore(args.corePath);
       const plan = PlanSchema.parse(parseJsonWithEscapeRepair(await readFile(planPath(args.ctx.repoRoot, args.ctx.qid, args.ctx.specialization), "utf8")));
       for (const id of deliveryTargets) {
         deliveryHashByObjId.set(nodeIdToObjId(id), deliveryEvidenceHash(core, plan, args.graph, id));
@@ -637,9 +664,14 @@ export async function runReviewer(args: {
     // present hypothesis missing, flagged a faithful `0<c→P` antecedent as vacuous), churning futile F2
     // scaffold reroutes. The 5.5 kernel tier is the reliable reviewer for this faithfulness grading.
     // texPath/leanDir are optional on args; drop unset ones rather than logging "undefined".
+    // Log ONLY what prompt construction actually consumes. `texPath` was listed here while being
+    // explicitly unused (see the AUDIT-FORM note on the field), so `pipeline.jsonl` advertised the
+    // `.tex` as an F4 input. That mislabel cost a real debugging cycle: a stale `writeup.tex` was
+    // diagnosed as the cause of a repeated F4 finding and re-rendered, when the actual stale copy
+    // was the graph node's `nl.statement`. A dispatch label is evidence about what a model SAW —
+    // it must name the real inputs or it is worse than no label at all.
     const dispatchSources: string[] = [
       promptFile,
-      ...(args.texPath ? [args.texPath] : []),
       args.corePath ?? "(no core)",
       ...(args.leanDir ? [args.leanDir] : []),
     ];

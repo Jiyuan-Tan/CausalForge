@@ -5,6 +5,7 @@ import { addAssumption, markUnreviewed } from "../graph/mutate.js";
 import { nodeIdToObjId, objIdToNodeId } from "../graph/from_note.js";
 import { isUndeliveredNode, type AssumptionClass, type FormalizationGraph } from "../graph/types.js";
 import type { CodexRunInput } from "../shared/codex.js";
+import { parseJsonWithEscapeRepair } from "../shared/codex_json.js";
 import { promptPath } from "../paths.js";
 import { dispatchAgent } from "../framework/agent_dispatch.js";
 
@@ -93,7 +94,11 @@ function parseFillerOutput(stdout: string): FillerOutput {
   candidates.sort((a, b) => b.length - a.length);
   for (const cand of candidates) {
     try {
-      const o = JSON.parse(cand) as Record<string, unknown>;
+      // Escape-repair parse, NOT bare JSON.parse: a filler note carrying LaTeX
+      // (`\(`, `\mathcal`) is invalid JSON, and discarding the reply lost its
+      // disclosed `added_assumptions` — including substrate-gate disclosures —
+      // while the Lean edits stayed on disk.
+      const o = parseJsonWithEscapeRepair(cand) as Record<string, unknown>;
       if (!o || typeof o !== "object" || Array.isArray(o)) continue;
       // why: copied examples/prose objects are unsafe unless they have the filler result shape.
       if (!("added_assumptions" in o) && !("escalate" in o) && !("summary" in o)) continue;

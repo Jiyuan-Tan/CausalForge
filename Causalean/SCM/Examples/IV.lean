@@ -44,7 +44,8 @@ namespace Causalean.SCM.Examples.IV
 -- Vertex type
 -- ============================================================
 
-/-- The instrumental-variable example has instrument, treatment, outcome, and unobserved-confounder vertices. -/
+/-- The instrumental-variable example has instrument, treatment, outcome, and
+unobserved-confounder vertices. -/
 inductive IVNode
   | Z  -- instrument (binary)
   | D  -- treatment (binary)
@@ -84,7 +85,8 @@ instance : Fintype IVNode where
 -- Edge relation
 -- ============================================================
 
-/-- The instrumental-variable graph has instrument-to-treatment, treatment-to-outcome, and latent-confounder-to-treatment/outcome edges. -/
+/-- The instrumental-variable graph has instrument-to-treatment, treatment-to-outcome, and
+latent-confounder-to-treatment/outcome edges. -/
 def ivEdge : IVNode → IVNode → Prop
   | Z, D => True
   | D, Y => True
@@ -92,22 +94,27 @@ def ivEdge : IVNode → IVNode → Prop
   | U, Y => True
   | _, _ => False
 
-/-- Whether a proposed instrumental-variable edge is present is decidable by case analysis on the endpoints. -/
+/-- A proposed instrumental-variable edge is decidable by case analysis on its
+endpoints. -/
 instance : DecidableRel ivEdge := by
-  intro a b; cases a <;> cases b <;> simp [ivEdge] <;> infer_instance
+  intro a b
+  cases a <;> cases b <;>
+    first | exact isTrue trivial | exact isFalse (by simp only [ivEdge]; exact fun h => h)
 
 -- ============================================================
 -- Topological order
 -- ============================================================
 
-/-- The instrumental-variable graph orders the unobserved confounder and instrument before treatment and outcome. -/
+/-- The instrumental-variable graph orders the unobserved confounder and
+instrument before treatment and outcome. -/
 def ivTopo : IVNode → ℕ
   | U => 0
   | Z => 1
   | D => 2
   | Y => 3
 
-/-- Every edge in the instrumental-variable graph points from an earlier to a later node in the chosen topological order. -/
+/-- Every instrumental-variable edge points from an earlier to a later node in
+the chosen topological order. -/
 theorem ivTopo_lt : ∀ u v, ivEdge u v → ivTopo u < ivTopo v := by
   intro u v h; cases u <;> cases v <;> simp_all [ivEdge, ivTopo]
 
@@ -232,16 +239,22 @@ def ivSWIGGraph : SWIGGraph IVNode where
   unobserved := {SWIGNode.random U}
   fixed_is_fixed := by intro s hs; simp at hs
   observed_is_random := by
-    intro v hv; simp at hv
+    intro v hv
+    simp only [Finset.mem_insert, Finset.mem_singleton] at hv
     rcases hv with rfl | rfl | rfl <;> exact ⟨_, rfl⟩
   unobserved_is_random := by
-    intro u hu; simp at hu; subst hu; exact ⟨U, rfl⟩
+    intro u hu
+    simp only [Finset.mem_singleton] at hu
+    subst u
+    exact ⟨U, rfl⟩
   obs_unobs_disjoint := by native_decide
   dag_edges_classified := by native_decide
   fixed_image_in_observed := by intro s hs; simp at hs
   fixed_are_roots := by intro s hs; simp at hs
   unobs_are_roots := by
-    intro u hu; simp at hu; subst hu
+    intro u hu
+    simp only [Finset.mem_singleton] at hu
+    subst u
     simpa [initialSWIG] using
       (swig_random_root_of_root ivDAG ∅ U (by native_decide : ivDAG.parents U = ∅))
   fixed_outside_fixed_isolated := by

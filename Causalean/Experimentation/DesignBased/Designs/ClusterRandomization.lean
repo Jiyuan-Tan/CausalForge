@@ -30,7 +30,7 @@ namespace Causalean
 namespace Experimentation
 namespace DesignBased
 
-variable {U C : Type*} [Fintype U] [DecidableEq U] [Fintype C] [DecidableEq C]
+variable {U C : Type*} [Fintype C] [DecidableEq C]
 
 /-- The **cluster-randomization design**: each cluster `c` is independently assigned treatment with
 probability `p c` (a Bernoulli design over the cluster labels). A unit is treated iff its cluster
@@ -49,7 +49,8 @@ lemma clusterDesign_E_unitTreatInd (p : C → ℝ) (hp0 : ∀ c, 0 ≤ p c) (hp1
     (clus : U → C) (i : U) :
     (clusterDesign p hp0 hp1).E (unitTreatInd clus i) = p (clus i) := by
   simp only [clusterDesign]
-  exact bernoulliDesign_E_treatInd p hp0 hp1 (clus i)
+  simpa [unitTreatInd, treatInd] using
+    (bernoulliDesign_E_treatInd p hp0 hp1 (clus i) (fun b => if b then (1 : ℝ) else 0))
 
 /-- **Same-cluster joint treatment.** Two units in the same cluster are jointly treated with their
 shared cluster's probability — their treatments coincide. -/
@@ -58,10 +59,13 @@ lemma clusterDesign_E_unitTreatInd_pair_same (p : C → ℝ) (hp0 : ∀ c, 0 ≤
     (clusterDesign p hp0 hp1).E (fun z => unitTreatInd clus i z * unitTreatInd clus j z)
       = p (clus i) := by
   simp only [clusterDesign, unitTreatInd]
-  rw [← bernoulliDesign_E_treatInd p hp0 hp1 (clus i)]
-  exact (bernoulliDesign p hp0 hp1).E_congr (fun z => by
-    rw [← h]
-    by_cases hz : z (clus i) <;> simp [treatInd, hz])
+  rw [← h]
+  rw [show (fun z => treatInd (clus i) z * treatInd (clus i) z) =
+      (fun z => treatInd (clus i) z) by
+    funext z
+    by_cases hz : z (clus i) <;> simp [treatInd, hz]]
+  simpa [treatInd] using
+    (bernoulliDesign_E_treatInd p hp0 hp1 (clus i) (fun b => if b then (1 : ℝ) else 0))
 
 /-- **Different-cluster joint treatment.** Two units in distinct clusters are jointly treated with
 the product of their cluster rates — distinct clusters are randomized independently. -/

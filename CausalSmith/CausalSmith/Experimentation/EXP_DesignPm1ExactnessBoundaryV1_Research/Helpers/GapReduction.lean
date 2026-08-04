@@ -316,7 +316,7 @@ lemma exists_relaxed_reduced_minimizer (m : ℕ) (a b r kappa : ℝ)
           · simpa [hik] using hkmin j
           · simp [hik] at hi
       exact ⟨t_rel, hface.1,
-        exposedMinFace_isMinimizer (2 * (m : ℝ)) hM alpha beta t_rel hface⟩
+        exposedMinFace_isMinimizer (2 * (m : ℝ)) alpha beta t_rel hface⟩
   rcases hSimplexMin with ⟨t_rel, hrelS, hrelMin⟩
   let X_rel : ℝ × ℝ × ℝ := (t_rel 0 / qParam m, t_rel 1, t_rel 2)
   refine ⟨X_rel, by simpa [X_rel] using simplex_to_reducedTriangle m t_rel hq hrelS, ?_⟩
@@ -418,8 +418,8 @@ lemma exists_implementable_reduced_minimizer (m : ℕ) (a b r kappa : ℝ)
         kappa s (ne_of_gt hq)
     simpa [hleft, hright] using hle
   obtain ⟨htruncFeasOfFeas, htruncOfInfeas⟩ :=
-    trunc_from_minimizer (2 * (m : ℝ)) (parityThreshold m) hd0 hdM
-      alpha beta kappa hbetaPos hbetaY hbetaZ hk t_rel hrelS hrelWsMin
+    trunc_from_minimizer (2 * (m : ℝ)) (parityThreshold m) hdM
+      alpha beta kappa (hbetaPos 0).le hbetaY hbetaZ hk t_rel hrelS hrelWsMin
   by_cases hfeas : parityThreshold m ≤ t_rel 1 + t_rel 2
   · let X_impl : ℝ × ℝ × ℝ := (t_rel 0 / qParam m, t_rel 1, t_rel 2)
     have htruncMin := htruncFeasOfFeas ⟨hrelS, hfeas⟩
@@ -671,7 +671,7 @@ lemma pos_gap_kappa_zero_exposed_face (m : ℕ) (a b r : ℝ)
           0 s (ne_of_gt hq)
       simpa [hleft, hright] using hle
     have hface : t ∈ exposedMinFace (2 * (m : ℝ)) alpha :=
-      (kappa_zero_face (2 * (m : ℝ)) hM alpha beta t).1 ⟨htS, hwsMin⟩
+      (kappa_zero_face (2 * (m : ℝ)) alpha t).1 ⟨htS, by simpa [wsObj] using hwsMin⟩
     exact (hDisjoint t (by simpa [alpha] using hface)) (by simpa [t] using hpar)
   have hne : implementabilityGap m a b r 0 ≠ 0 := by
     intro hgap

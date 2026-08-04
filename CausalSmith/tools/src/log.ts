@@ -24,6 +24,9 @@ export type ReviewLogEntry =
       classification?: string;
       report_summary?: string;
       review?: ReviewResult;
+      /** D-1 proposal angle (stage_neg1 rows). Structured so `--fresh-angle`
+       *  row removal never has to parse it back out of `report_summary` prose. */
+      angle?: number;
     }
   | {
       timestamp: string;

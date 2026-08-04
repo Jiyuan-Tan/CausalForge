@@ -57,6 +57,7 @@ theorem integral_atomicLaw {n : ℕ} {x : Fin n → ℝ} {p : Fin n → ℝ}
     apply Finset.sum_congr rfl
     intro i hi
     rw [atomicWeight_apply hx]
+    simp [smul_eq_mul]
   · intro t ht
     obtain ⟨i, hi, rfl⟩ := Finset.mem_image.mp ht
     rw [atomicWeight_apply hx]
@@ -99,7 +100,7 @@ theorem memLp_id_atomicLaw {n : ℕ} {x : Fin n → ℝ} {p : Fin n → ℝ}
   apply memLp_of_bounded
   · rw [ae_iff]
     change atomicLaw n x p (Set.Icc (-C) C)ᶜ = 0
-    apply Causalean.Mathlib.MeasureTheory.discreteMeasure_apply_compl_Icc
+    apply Causalean.Mathlib.MeasureTheory.discreteMeasure_apply_compl_of_subset
     intro t ht
     obtain ⟨i, hi, rfl⟩ := Finset.mem_image.mp ht
     have hxi : |x i| ≤ C := by

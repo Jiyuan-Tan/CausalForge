@@ -14,10 +14,39 @@
 //     — and TERMINAL results are the systematic victims, having no inbound edge to
 //     trigger the self-containment repair.
 //
-// So: snapshots are computed HERE, against `proto`, and nowhere else.
+// So: snapshots are computed HERE, against `proto`, and nowhere else — over the
+// WIRED closure: the member's authored `depends_on` plus every LOCAL node id
+// its claim/proof text cites (qualified cross-paper mentions excluded —
+// `extractCitationRefs`). The refresh
+// loops that used to re-sync snapshots from the mutated workspace core after
+// dependency auto-wiring are gone; the wiring is applied AT THE WRITE, from the
+// same text the render's canonical wiring pass reads, so the two can never
+// disagree. (The record node's published edge set gets the cycle-guarded wiring
+// at render; the snapshot closure deliberately skips the cycle guard — an extra
+// closure edge only ever WIDENS invalidation, which is the safe direction.)
 
 import type { Core, CoreStatement } from "./core/schema.js";
+import { extractCitationRefs } from "./core/node_ids.js";
 import { snapshotMember, type SolvedMember, type WorkingState } from "./stages/d0_working.js";
+
+/** The member with its claim/proof-cited node ids unioned into `depends_on` —
+ *  the closure `snapshotMember` walks, matching what dependency auto-wiring
+ *  publishes. */
+export function withWiredDeps(member: CoreStatement, proofTex: string): CoreStatement {
+  const deps = new Set(member.depends_on ?? []);
+  // CITATION refs only: a qualified `other_paper/lem:foo` is a mention of
+  // another paper, never a local dependency — including its bare suffix
+  // poisoned the closure with an id that exists nowhere and read the record
+  // permanently stale (audit R2BB2).
+  for (const ref of extractCitationRefs(`${member.statement ?? ""}\n${proofTex}`)) {
+    if (ref !== member.id) deps.add(ref);
+  }
+  // SORTED: the snapshot's `depends_on` is provenance (validity walks the
+  // defs/assumptions maps), and a canonical order makes writer and checker
+  // byte-agree regardless of which surface (merge record, apply compose,
+  // render-wired statement) supplied the base dep list.
+  return { ...member, depends_on: [...deps].sort() };
+}
 
 /** One proof record to write. `snapshotOf` and `node` are separate on purpose — see below. */
 export interface ProofRecordSpec {
@@ -44,9 +73,21 @@ export interface ProofRecordSpec {
   partial?: boolean;
 }
 
-/** Record a proof, computing its snapshot against the frozen `proto`. */
+/** The canonical snapshot computation: against the frozen `proto`, over the
+ *  wired closure. ONE function shared by the writer (`recordProof`) and the
+ *  `snapshot-basis` invariant checker, so they can never disagree about what a
+ *  correct basis looks like. */
+export function wiredSnapshot(proto: Core, member: CoreStatement, proofTex: string) {
+  return snapshotMember(proto, withWiredDeps(member, proofTex));
+}
+
+/** Record a proof, computing its snapshot against the frozen `proto` over the
+ *  wired closure (authored deps + claim/proof-cited ids). */
 export function recordProof(working: WorkingState, proto: Core, spec: ProofRecordSpec): void {
-  const common = { proof_tex: spec.proofTex, snapshot: snapshotMember(proto, spec.snapshotOf) };
+  const common = {
+    proof_tex: spec.proofTex,
+    snapshot: wiredSnapshot(proto, spec.snapshotOf, spec.proofTex),
+  };
   const partial = spec.partial ? { partial: true as const } : {};
   // Built as one of the two arms rather than assigned field-by-field: `SolvedMember` is
   // a union discriminated on `node`, so an agent-authored record must carry its
@@ -57,36 +98,8 @@ export function recordProof(working: WorkingState, proto: Core, spec: ProofRecor
       : { ...common, ...partial };
 }
 
-/**
- * Re-snapshot every recorded proof against the CURRENT statement text in `core`.
- *
- * Run after any pass that rewrites statements in place — dependency auto-wiring, OEQ
- * id remapping, prose application. Without it a record keeps the snapshot it was
- * written with, and the next round reads the rewrite as a content change and re-opens
- * a finished proof.
- *
- * `skipPartial` leaves open obligations alone: a partial record's snapshot describes
- * what the agent was asked to extend, and refreshing it would quietly retarget the
- * obligation. Returns the ids whose snapshot actually moved, for logging.
- */
-export function refreshSnapshots(
-  working: WorkingState,
-  proto: Core,
-  core: Core,
-  opts: { skipPartial?: boolean } = {},
-): string[] {
-  const byId = new Map(core.statements.map((s) => [s.id, s] as const));
-  const moved: string[] = [];
-  for (const [id, rec] of Object.entries(working.solved)) {
-    if (opts.skipPartial && rec.partial) continue;
-    const stmt = byId.get(id);
-    if (!stmt) continue;
-    const next = snapshotMember(proto, stmt);
-    if (JSON.stringify(rec.snapshot) !== JSON.stringify(next)) moved.push(id);
-    rec.snapshot = next;
-    // The record's own copy of the node must track the rewrite too, or the durable
-    // agent-node catalog drifts from what the core actually says.
-    if (rec.node) rec.node = stmt;
-  }
-  return moved;
-}
+// (Batch B: `refreshSnapshots` is gone. Snapshots are computed once, at the
+// write, over the wired closure — there is no workspace core to re-sync from.
+// The one remaining post-write snapshot mutation is the OEQ id remap in the
+// merge, which rewrites `rec.snapshot.depends_on` in place: an id rename, not
+// a basis retarget.)

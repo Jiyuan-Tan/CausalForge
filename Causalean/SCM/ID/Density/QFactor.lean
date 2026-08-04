@@ -127,7 +127,6 @@ It is the graph-to-measure interface needed for Tian's Lemma 1 and deliberately
 does not mention an induced structural causal model. -/
 def KernelGlobalMarkovOn
     (H : SWIGGraph N) (D : Finset (SWIGNode N))
-    (_hD : H.observed = D)
     (μ : MeasureTheory.Measure (ValuesOn D (swigΩ Ω)))
     [StandardBorelSpace (ValuesOn D (swigΩ Ω))]
     [MeasureTheory.IsFiniteMeasure μ] : Prop :=
@@ -377,14 +376,9 @@ private lemma fixSet_fixed_random_edgeless_qfactor
       using hEdge
   simp [SWIGGraph.splitMonoEdgeRel, hnX] at hEdgeRel
 
-private lemma qLocalMass_ne_top_qfactor
-    (M : Causalean.SCM N Ω) (s : M.FixedValues)
-    (T : Finset (SWIGNode N)) (hT : T ⊆ M.observed)
-    (x : ValuesOn M.observed (swigΩ Ω)) :
-    M.qLocalMass s T hT x ≠ ∞ := by
-  exact ne_of_lt (MeasureTheory.measure_lt_top M.latentProduct _)
-
-private lemma prefixIn_parent_closed_induce_observed
+/-- In an induced set of observed variables, every topological prefix contains all parents
+within that set of each variable it contains. -/
+lemma prefixIn_parent_closed_induce_observed
     (M : Causalean.SCM N Ω) (A : Finset (SWIGNode N)) (hA : A ⊆ M.observed)
     (k : ℕ) :
     ∀ v ∈ A, ∀ w ∈ (M.toSWIGGraph.induce A).prefixIn A k,
@@ -450,15 +444,10 @@ private lemma qLocalMass_prefixIn_eq_prod_induce_components
         (fun U U' => Disjoint (M.latentBlock U) (M.latentBlock U')) := by
     intro U hU V hV hne
     exact latentBlock_pairwise_disjoint_induce_components M A hU hV hne
-  have hnode :
-      (↑H.cComponentSet : Set (Finset (SWIGNode N))).Pairwise
-        (fun U U' => Disjoint U U') := by
-    intro U hU V hV hne
-    exact H.cComponentSet_pairwise_disjoint hU hV hne
   have hfac :=
     M.qLocalMass_prod_inter_of_latentBlock_disjoint s
       (H.prefixIn A k) (fun _ hv => hA (H.prefixIn_subset A k hv))
-      H.cComponentSet h𝒞obs hcover hblock hnode x
+      H.cComponentSet h𝒞obs hcover hblock x
   calc
     M.qLocalMass s (H.prefixIn A k)
         (fun _ hv => hA (H.prefixIn_subset A k hv)) x =
@@ -476,94 +465,6 @@ private lemma qLocalMass_prefixIn_eq_prod_induce_components
           refine Finset.prod_congr rfl ?_
           intro C hC
           simp [hC]
-
-private lemma ENNReal.div_mul_common_qfactor
-    {a b r : ENNReal} (hr0 : r ≠ 0) (hrtop : r ≠ ∞) :
-    (a * r) / (b * r) = a / b := by
-  rw [ENNReal.div_eq_inv_mul, ENNReal.div_eq_inv_mul]
-  rw [ENNReal.mul_inv]
-  · rw [show b⁻¹ * r⁻¹ * (a * r) = (r⁻¹ * r) * (b⁻¹ * a) by ac_rfl]
-    rw [ENNReal.inv_mul_cancel hr0 hrtop]
-    simp [mul_comm]
-  · exact Or.inr hrtop
-  · exact Or.inr hr0
-
-private lemma Finset.prod_ne_top_of_ne_top_qfactor {ι : Type*}
-    (s : Finset ι) (f : ι → ENNReal) (hf : ∀ i ∈ s, f i ≠ ∞) :
-    (∏ i ∈ s, f i) ≠ ∞ := by
-  classical
-  induction s using Finset.induction_on with
-  | empty => simp
-  | insert a s ha ih =>
-      rw [Finset.prod_insert ha]
-      exact ENNReal.mul_ne_top (hf a (Finset.mem_insert_self a s))
-        (ih (by intro i hi; exact hf i (Finset.mem_insert_of_mem hi)))
-
-private lemma ENNReal.prod_div_prod_qfactor {ι : Type*}
-    (t : Finset ι) (f g : ι → ENNReal)
-    (hg0 : ∀ i ∈ t, g i ≠ 0) (hgtop : ∀ i ∈ t, g i ≠ ∞) :
-    (∏ i ∈ t, f i / g i) = (∏ i ∈ t, f i) / (∏ i ∈ t, g i) := by
-  classical
-  induction t using Finset.induction_on with
-  | empty => simp
-  | insert a t ha ih =>
-      have ih' :
-          (∏ i ∈ t, f i / g i) = (∏ i ∈ t, f i) / (∏ i ∈ t, g i) :=
-        ih (by intro i hi; exact hg0 i (Finset.mem_insert_of_mem hi))
-          (by intro i hi; exact hgtop i (Finset.mem_insert_of_mem hi))
-      have hprod0 : (∏ i ∈ t, g i) ≠ 0 := by
-        exact Finset.prod_ne_zero_iff.mpr (by
-          intro i hi
-          exact hg0 i (Finset.mem_insert_of_mem hi))
-      have hprodtop : (∏ i ∈ t, g i) ≠ ∞ := by
-        exact Finset.prod_ne_top_of_ne_top_qfactor _ g (by
-          intro i hi
-          exact hgtop i (Finset.mem_insert_of_mem hi))
-      rw [Finset.prod_insert ha, Finset.prod_insert ha, Finset.prod_insert ha, ih']
-      rw [div_eq_mul_inv, div_eq_mul_inv, div_eq_mul_inv]
-      rw [ENNReal.mul_inv]
-      · ac_rfl
-      · exact Or.inr hprodtop
-      · exact Or.inr hprod0
-
-private lemma ENNReal.prod_div_prod₂_qfactor {ι : Type*}
-    (t : Finset ι) (f g h : ι → ENNReal)
-    (hh0 : ∀ i ∈ t, h i ≠ 0) (hhtop : ∀ i ∈ t, h i ≠ ∞) :
-    (∏ i ∈ t, (f i / g i) / h i) =
-      (∏ i ∈ t, f i / g i) / (∏ i ∈ t, h i) := by
-  exact ENNReal.prod_div_prod_qfactor t (fun i => f i / g i) h hh0 hhtop
-
-private lemma mechCFactor_eq_qLocalMass_div_jointRef_qfactor
-    [∀ n, Fintype (Ω n)] [∀ n, MeasurableSingletonClass (Ω n)]
-    (M : Causalean.SCM N Ω) (ref : ReferenceMeasures Ω) (s : M.FixedValues)
-    (S : Finset (SWIGNode N)) (hS : S ⊆ M.observed)
-    (href : Causalean.SCM.ReferenceFaithful ref)
-    (hfe : ∀ n : N, SWIGNode.fixed n ∈ M.fixed →
-      ∀ v : SWIGNode N, ¬ M.dag.edge (SWIGNode.random n) v)
-    (x : ValuesOn M.observed (swigΩ Ω)) :
-    M.mechCFactor ref S hS s x =
-      M.qLocalMass s S hS x /
-        jointRef ref S ({valuesProjection hS x} :
-          Set (ValuesOn S (swigΩ Ω))) := by
-  have hnum :
-      QmechMeasure M S hS (M.mechDoValues S s x) {valuesProjection hS x}
-        = M.qLocalMass s S hS x :=
-    QmechMeasure_singleton_eq_qLocalMass M S hS hfe s x
-  have hden0 :
-      jointRef ref S ({valuesProjection hS x} :
-        Set (ValuesOn S (swigΩ Ω))) ≠ 0 :=
-    jointRef_singleton_ne_zero ref href S (valuesProjection hS x)
-  have hdenTop :
-      jointRef ref S ({valuesProjection hS x} :
-        Set (ValuesOn S (swigΩ Ω))) ≠ ∞ := by
-    exact ne_of_lt (MeasureTheory.measure_lt_top (jointRef ref S)
-      ({valuesProjection hS x} : Set (ValuesOn S (swigΩ Ω))))
-  unfold mechCFactor
-  rw [rnDeriv_singleton_eq_div _ _
-      (absolutelyContinuous_jointRef_of_faithful ref href S
-        (QmechMeasure M S hS (M.mechDoValues S s x)))
-      (valuesProjection hS x) hden0 hdenTop]
-  rw [hnum]
 
 private lemma cComponent_inter_prefixIn_succ_eq_of_ne
     (M : Causalean.SCM N Ω) (H : SWIGGraph N) (D : Finset (SWIGNode N))
@@ -649,7 +550,7 @@ lemma prefixIn_qProduct_ratio_eq_component_ratio_of_family
     (s : M.FixedValues)
     (𝒞 : Finset (Finset (SWIGNode N))) (S : Finset (SWIGNode N))
     (hS𝒞 : S ∈ 𝒞)
-    (hdisj : (↑𝒞 : Set (Finset (SWIGNode N))).Pairwise (fun U U' => Disjoint U U'))
+    (hdisj : ∀ C ∈ 𝒞, C ≠ S → Disjoint C S)
     (i : Fin D.card) (hDobs : D ⊆ M.observed)
     (hiS : (H.nodesAt D i).val ∈ S)
     (hpos : DiscreteID.PositiveMass (M.obsKernel s))
@@ -688,7 +589,7 @@ lemma prefixIn_qProduct_ratio_eq_component_ratio_of_family
       intro h
       exact (Finset.mem_sdiff.mp hC).2 (by simp [h])
     simp [f₁, f₀,
-      family_inter_prefixIn_succ_eq_of_ne H D hiS (hdisj hC𝒞 hS𝒞 hCne)]
+      family_inter_prefixIn_succ_eq_of_ne H D hiS (hdisj C hC𝒞 hCne)]
   have hsplit₁ : (∏ C ∈ 𝒞, f₁ C) =
       f₁ S * ∏ C ∈ 𝒞 \ {S}, f₁ C := by
     exact Finset.prod_eq_mul_prod_diff_singleton S f₁
@@ -704,14 +605,14 @@ lemma prefixIn_qProduct_ratio_eq_component_ratio_of_family
         (fun _ hv => hDobs (H.prefixIn_subset D i.val
           (Finset.mem_of_mem_inter_right hv))) x)
   have hrtop : (∏ C ∈ 𝒞 \ {S}, f₀ C) ≠ ∞ := by
-    exact Finset.prod_ne_top_of_ne_top_qfactor _ f₀ (by
+    exact Finset.prod_ne_top_of_ne_top _ f₀ (by
       intro C _hC
-      exact qLocalMass_ne_top_qfactor M s (C ∩ H.prefixIn D i.val)
+      exact qLocalMass_ne_top M s (C ∩ H.prefixIn D i.val)
         (fun _ hv => hDobs (H.prefixIn_subset D i.val
           (Finset.mem_of_mem_inter_right hv))) x)
   change (∏ C ∈ 𝒞, f₁ C) / (∏ C ∈ 𝒞, f₀ C) = f₁ S / f₀ S
   rw [hsplit₁, hsplit₀, hrest]
-  exact ENNReal.div_mul_common_qfactor hr0 hrtop
+  exact ENNReal.div_mul_common hr0 hrtop
 
 private lemma prefixIn_qProduct_ratio_eq_component_ratio_of_ne_zero
     [∀ n, Fintype (Ω n)] [∀ n, MeasurableSingletonClass (Ω n)]
@@ -770,15 +671,15 @@ private lemma prefixIn_qProduct_ratio_eq_component_ratio_of_ne_zero
     exact Finset.prod_eq_mul_prod_diff_singleton S f₀
       (by intro h; exact False.elim (h hScomp))
   have hrtop : (∏ C ∈ M.toSWIGGraph.cComponentSet \ {S}, f₀ C) ≠ ∞ := by
-    exact Finset.prod_ne_top_of_ne_top_qfactor _ f₀ (by
+    exact Finset.prod_ne_top_of_ne_top _ f₀ (by
       intro C _hC
-      exact qLocalMass_ne_top_qfactor M s (C ∩ H.prefixIn D i.val)
+      exact qLocalMass_ne_top M s (C ∩ H.prefixIn D i.val)
         (fun _ hv => hDobs (H.prefixIn_subset D i.val
           (Finset.mem_of_mem_inter_right hv))) x)
   change (∏ C ∈ M.toSWIGGraph.cComponentSet, f₁ C) /
       (∏ C ∈ M.toSWIGGraph.cComponentSet, f₀ C) = f₁ S / f₀ S
   rw [hsplit₁, hsplit₀, hrest]
-  exact ENNReal.div_mul_common_qfactor hrest0 hrtop
+  exact ENNReal.div_mul_common hrest0 hrtop
 
 /-- Nonzero-denominator variant of
 `prefixIn_qProduct_ratio_eq_component_ratio_of_family`. -/
@@ -788,7 +689,7 @@ lemma prefixIn_qProduct_ratio_eq_component_ratio_of_family_of_ne_zero
     (s : M.FixedValues)
     (𝒞 : Finset (Finset (SWIGNode N))) (S : Finset (SWIGNode N))
     (hS𝒞 : S ∈ 𝒞)
-    (hdisj : (↑𝒞 : Set (Finset (SWIGNode N))).Pairwise (fun U U' => Disjoint U U'))
+    (hdisj : ∀ C ∈ 𝒞, C ≠ S → Disjoint C S)
     (i : Fin D.card) (hDobs : D ⊆ M.observed)
     (hiS : (H.nodesAt D i).val ∈ S)
     (x : ValuesOn M.observed (swigΩ Ω))
@@ -831,7 +732,7 @@ lemma prefixIn_qProduct_ratio_eq_component_ratio_of_family_of_ne_zero
       intro h
       exact (Finset.mem_sdiff.mp hC).2 (by simp [h])
     simp [f₁, f₀,
-      family_inter_prefixIn_succ_eq_of_ne H D hiS (hdisj hC𝒞 hS𝒞 hCne)]
+      family_inter_prefixIn_succ_eq_of_ne H D hiS (hdisj C hC𝒞 hCne)]
   have hsplit₁ : (∏ C ∈ 𝒞, f₁ C) =
       f₁ S * ∏ C ∈ 𝒞 \ {S}, f₁ C := by
     exact Finset.prod_eq_mul_prod_diff_singleton S f₁
@@ -841,14 +742,14 @@ lemma prefixIn_qProduct_ratio_eq_component_ratio_of_family_of_ne_zero
     exact Finset.prod_eq_mul_prod_diff_singleton S f₀
       (by intro h; exact False.elim (h hS𝒞))
   have hrtop : (∏ C ∈ 𝒞 \ {S}, f₀ C) ≠ ∞ := by
-    exact Finset.prod_ne_top_of_ne_top_qfactor _ f₀ (by
+    exact Finset.prod_ne_top_of_ne_top _ f₀ (by
       intro C _hC
-      exact qLocalMass_ne_top_qfactor M s (C ∩ H.prefixIn D i.val)
+      exact qLocalMass_ne_top M s (C ∩ H.prefixIn D i.val)
         (fun _ hv => hDobs (H.prefixIn_subset D i.val
           (Finset.mem_of_mem_inter_right hv))) x)
   change (∏ C ∈ 𝒞, f₁ C) / (∏ C ∈ 𝒞, f₀ C) = f₁ S / f₀ S
   rw [hsplit₁, hsplit₀, hrest]
-  exact ENNReal.div_mul_common_qfactor hrest0 hrtop
+  exact ENNReal.div_mul_common hrest0 hrtop
 
 private lemma component_qLocalMass_ratio_product_prefixIn
     [∀ n, Fintype (Ω n)] [∀ n, MeasurableSingletonClass (Ω n)]
@@ -895,7 +796,7 @@ private lemma component_qLocalMass_ratio_product_prefixIn
     exact M.qLocalMass_pos_of_positiveObs s hpos (S ∩ H.prefixIn D k) (hPrefObs k) x
   have hfin : ∀ k ≤ D.card, a k ≠ ∞ := by
     intro k hk
-    exact qLocalMass_ne_top_qfactor M s (S ∩ H.prefixIn D k) (hPrefObs k) x
+    exact qLocalMass_ne_top M s (S ∩ H.prefixIn D k) (hPrefObs k) x
   have hconst : ∀ k < D.card, k ∉ T → a (k + 1) = a k := by
     intro k hk hnot
     have hnode_not :
@@ -988,7 +889,7 @@ private lemma component_qLocalMass_ratio_product_prefixIn_of_ne_zero
     exact hne k hk
   have hfin : ∀ k ≤ D.card, a k ≠ ∞ := by
     intro k hk
-    exact qLocalMass_ne_top_qfactor M s (S ∩ H.prefixIn D k) (hPrefObs k) x
+    exact qLocalMass_ne_top M s (S ∩ H.prefixIn D k) (hPrefObs k) x
   have hconst : ∀ k < D.card, k ∉ T → a (k + 1) = a k := by
     intro k hk hnot
     have hnode_not :
@@ -1043,7 +944,7 @@ lemma extractDistrict_qLocalMass
     (hC' : C' ∈ (M.toSWIGGraph.induce A).cComponentSet)
     (hpos : DiscreteID.PositiveMass (M.obsKernel s))
     (x : ValuesOn M.observed (swigΩ Ω)) :
-    M.extractDistrict (M.toSWIGGraph.induce A) A C' hA
+    extractDistrict M.observed (M.toSWIGGraph.induce A) A C' hA
         (M.qLocalMass s A hA) x =
       M.qLocalMass s C'
         (fun _ hv =>
@@ -1069,7 +970,7 @@ lemma extractDistrict_qLocalMass
     intro U hU V hV hne
     exact H.cComponentSet_pairwise_disjoint hU hV hne
   have hmarg : ∀ k,
-      M.marginalizeOn (A \ H.prefixIn A k)
+      marginalizeOn M.observed (A \ H.prefixIn A k)
           (fun _ hv => hA ((Finset.mem_sdiff.mp hv).1))
           (M.qLocalMass s A hA) x =
         M.qLocalMass s (H.prefixIn A k)
@@ -1092,10 +993,10 @@ lemma extractDistrict_qLocalMass
   calc
     (∏ i ∈ Finset.univ.filter
         (fun i : Fin A.card => (H.nodesAt A i).val ∈ C'),
-      M.marginalizeOn (A \ H.prefixIn A (i.val + 1))
+      marginalizeOn M.observed (A \ H.prefixIn A (i.val + 1))
           (fun _ hv => hA ((Finset.mem_sdiff.mp hv).1))
           (M.qLocalMass s A hA) x /
-        M.marginalizeOn (A \ H.prefixIn A i.val)
+        marginalizeOn M.observed (A \ H.prefixIn A i.val)
           (fun _ hv => hA ((Finset.mem_sdiff.mp hv).1))
           (M.qLocalMass s A hA) x)
         =
@@ -1125,7 +1026,8 @@ lemma extractDistrict_qLocalMass
           intro i hi
           have hiC : (H.nodesAt A i).val ∈ C' := (Finset.mem_filter.mp hi).2
           exact prefixIn_qProduct_ratio_eq_component_ratio_of_family
-            M H A s H.cComponentSet C' hC' hdisj i hA hiC hpos x
+            M H A s H.cComponentSet C' hC'
+              (fun C hC hne => hdisj hC hC' hne) i hA hiC hpos x
     _ =
       M.qLocalMass s C' hCobs x := by
           simpa using
@@ -1151,7 +1053,9 @@ theorem CFactorReachableRec.target_subset
   | base _ hCT _ => exact hCT
   | step _ hCT _ _ _ => exact hCT
 
-private lemma qLocalMass_obsProof_irrel
+/-- The local q-mass of an observed variable set does not depend on which proof
+establishes that the set is observed. -/
+lemma qLocalMass_obsProof_irrel
     (M : Causalean.SCM N Ω) (s : M.FixedValues)
     (T : Finset (SWIGNode N)) (hT hT' : T ⊆ M.observed)
     (x : ValuesOn M.observed (swigΩ Ω)) :
@@ -1168,7 +1072,7 @@ theorem identifyMassRec_qLocalMass
     (T C : Finset (SWIGNode N)) (hT : T ⊆ M.observed)
     (hReach : CFactorReachableRec M.toSWIGGraph T C)
     (x : ValuesOn M.observed (swigΩ Ω)) :
-    M.identifyMassRec M.toSWIGGraph T C hT (M.qLocalMass s T hT) x =
+    identifyMassRec M.observed M.toSWIGGraph T C hT (M.qLocalMass s T hT) x =
       M.qLocalMass s C (fun _ hv => hT (hReach.target_subset hv)) x := by
   classical
   induction hReach generalizing x with
@@ -1211,7 +1115,7 @@ theorem identifyMassRec_qLocalMass
           simp [SWIGGraph.induce, hchooseA, hchooseObs]
         exact Finset.mem_image.mpr ⟨hne.choose, hchooseInd, rfl⟩
       have hmarg :
-          M.marginalizeOn (T₀ \ A)
+          marginalizeOn M.observed (T₀ \ A)
               (fun _ hv => hT ((Finset.mem_sdiff.mp hv).1))
               (M.qLocalMass s T₀ hT) =
             M.qLocalMass s A hA := by
@@ -1224,12 +1128,12 @@ theorem identifyMassRec_qLocalMass
         exact M.qLocalMass_marginalize_ancestralClosed s T₀ A hT
           (inducedAncestral_subset_left M.toSWIGGraph T₀ C₀) hclosedA y
       have hextract :
-          M.extractDistrict (M.toSWIGGraph.induce A) A C₁ hA
+          extractDistrict M.observed (M.toSWIGGraph.induce A) A C₁ hA
               (M.qLocalMass s A hA) =
             M.qLocalMass s C₁ hC₁obs := by
         funext y
         calc
-          M.extractDistrict (M.toSWIGGraph.induce A) A C₁ hA
+          extractDistrict M.observed (M.toSWIGGraph.induce A) A C₁ hA
               (M.qLocalMass s A hA) y
               = M.qLocalMass s C₁
                   (fun _ hv =>
@@ -1246,14 +1150,14 @@ theorem identifyMassRec_qLocalMass
       rw [SCM.identifyMassRec_step M M.toSWIGGraph T₀ C₀ hT
         (M.qLocalMass s T₀ hT) hnotC hnotT]
       change
-        M.identifyMassRec M.toSWIGGraph C₁ C₀ hC₁obs
-          (M.extractDistrict (M.toSWIGGraph.induce A) A C₁ hA
-            (M.marginalizeOn (T₀ \ A)
+        identifyMassRec M.observed M.toSWIGGraph C₁ C₀ hC₁obs
+          (extractDistrict M.observed (M.toSWIGGraph.induce A) A C₁ hA
+            (marginalizeOn M.observed (T₀ \ A)
               (fun _ hv => hT ((Finset.mem_sdiff.mp hv).1))
               (M.qLocalMass s T₀ hT))) x = _
       rw [hmarg, hextract]
       calc
-        M.identifyMassRec M.toSWIGGraph C₁ C₀ hC₁obs
+        identifyMassRec M.observed M.toSWIGGraph C₁ C₀ hC₁obs
             (M.qLocalMass s C₁ hC₁obs) x
             = M.qLocalMass s C₀
                 (fun _ hv => hC₁obs (hrec.target_subset hv)) x := by
@@ -1263,7 +1167,9 @@ theorem identifyMassRec_qLocalMass
                 hT ((CFactorReachableRec.step hne hCT hnotC hnotT hrec).target_subset hv)) x := by
               exact qLocalMass_obsProof_irrel M s C₀ _ _ x
 
-private lemma component_ref_atom_product_eq_jointRef_prefixIn
+/-- For a subset of an ordered finite graph set, the product of coordinate reference-measure
+masses at selected values equals the reference measure's mass at their joint singleton outcome. -/
+lemma component_ref_atom_product_eq_jointRef_prefixIn
     [∀ n, MeasurableSingletonClass (Ω n)]
     (H : SWIGGraph N) (D : Finset (SWIGNode N)) (ref : ReferenceMeasures Ω)
     (S : Finset (SWIGNode N)) (hSD : S ⊆ D)
@@ -1315,7 +1221,9 @@ private lemma component_ref_atom_product_eq_jointRef_prefixIn
   rw [jointRef_singleton_eq_prod]
   exact hprod
 
-private lemma prefix_pair_singleton_mass_eq_succ_prefix_mass
+/-- The mass of a realized prefix together with its next coordinate equals the mass of the
+same realization of the successor prefix under any measure on the ordered graph values. -/
+lemma prefix_pair_singleton_mass_eq_succ_prefix_mass
     [∀ n, MeasurableSingletonClass (Ω n)]
     (H : SWIGGraph N) (D : Finset (SWIGNode N))
     (μ : MeasureTheory.Measure (ValuesOn D (swigΩ Ω)))
@@ -1413,7 +1321,10 @@ private lemma prefix_pair_singleton_mass_eq_succ_prefix_mass
       (MeasurableSet.singleton _),
     hsets]
 
-private lemma tianPrefixStepDensity_eq_prefix_mass_ratio
+/-- When the preceding prefix has nonzero singleton mass, the one-step Tian density is
+the ratio of the successive prefix singleton masses, divided by the singleton reference mass
+of the added variable. -/
+lemma tianPrefixStepDensity_eq_prefix_mass_ratio
     [∀ n, Fintype (Ω n)]
     [∀ n, MeasurableSingletonClass (Ω n)]
     (H : SWIGGraph N) (D : Finset (SWIGNode N))
@@ -1508,11 +1419,13 @@ private lemma doModel_mechCFactor_eq_qLocalMass_div_jointRef
       (M.fixSet X hObs hFix).qLocalMass sDo S hSobs x /
         jointRef ref S ({valuesProjection hSobs x} :
           Set (ValuesOn S (swigΩ Ω))) := by
-  exact mechCFactor_eq_qLocalMass_div_jointRef_qfactor
+  exact mechCFactor_eq_qLocalMass_div_jointRef
     (M.fixSet X hObs hFix) ref sDo S hSobs href
     (fixSet_fixed_random_edgeless_qfactor M X hObs hFix hStd) x
 
-private lemma valuesProjection_extend_eq_of_subset
+/-- If an extension preserves all values on a larger observed set, then restricting the
+extension to any subset gives the same values as restricting the original assignment directly. -/
+lemma valuesProjection_extend_eq_of_subset
     (M : Causalean.SCM N Ω)
     {D S : Finset (SWIGNode N)}
     (hDobs : D ⊆ M.observed) (hSD : S ⊆ D) (hSobs : S ⊆ M.observed)
@@ -1573,7 +1486,7 @@ private lemma doObsKernelAncestralMarginal_map_prefix_eq_doObsKernel_map_prefix
   have hcomp :
       valuesProjection (Ω := swigΩ Ω) hPobs =
         valuesProjection hPD ∘ valuesProjection hDobs :=
-    valuesProjection_comp (Ω' := swigΩ Ω) hPD hDobs hPobs
+    valuesProjection_comp (Ω' := swigΩ Ω) hPD hDobs
   unfold doObsKernelAncestralMarginal
   rw [ProbabilityTheory.Kernel.map_apply _ (measurable_valuesProjection hDobs)]
   rw [MeasureTheory.Measure.map_map (measurable_valuesProjection hPD)
@@ -1719,14 +1632,9 @@ private lemma doObsKernelAncestralMarginal_prefix_singleton_eq_prod_H_qLocalMass
         (fun U U' => Disjoint (MX.latentBlock U) (MX.latentBlock U')) := by
     intro U hU V hV hne
     exact latentBlock_pairwise_disjoint_induce_components MX A hU hV hne
-  have hnode :
-      (↑H.cComponentSet : Set (Finset (SWIGNode N))).Pairwise
-        (fun U U' => Disjoint U U') := by
-    intro U hU V hV hne
-    exact H.cComponentSet_pairwise_disjoint hU hV hne
   have hfac :=
     MX.qLocalMass_prod_inter_of_latentBlock_disjoint sDo
-      P hPobsMX H.cComponentSet h𝒞obs hcover hblock hnode (extend xD)
+      P hPobsMX H.cComponentSet h𝒞obs hcover hblock (extend xD)
   have hq :
       ((MX.obsKernel sDo).map (valuesProjection hPobsMX))
         ({valuesProjection hPobsMX (extend xD)} : Set (ValuesOn P (swigΩ Ω))) =
@@ -2008,7 +1916,7 @@ theorem tianDistrictDensity_eq_mechCFactor_doModel
             · intro i hi
               simpa [idxS, qratio, den] using hstep i (by simpa [idxS] using hi)
       _ = (∏ i ∈ idxS, qratio i) / (∏ i ∈ idxS, den i) := by
-            exact ENNReal.prod_div_prod_qfactor idxS qratio den hden0 hdentop
+            exact ENNReal.prod_div_prod idxS qratio den hden0 hdentop
       _ = MX.qLocalMass sDo S hSobsMX (extend xD) /
           jointRef ref S ({valuesProjection hSD xD} :
             Set (ValuesOn S (swigΩ Ω))) := by
@@ -2197,7 +2105,9 @@ theorem tianDistrictDensity_eq_qLocalMass_div_jointRef_district
         exact hfactor_ne0 i.val C (Finset.mem_sdiff.mp hC).1)
     have hcancel :=
       prefixIn_qProduct_ratio_eq_component_ratio_of_family_of_ne_zero
-        MX H D sDo H.cComponentSet S hScomp hdisj i hDobs hiS (extend xD) hrest0
+        MX H D sDo H.cComponentSet S hScomp
+          (fun C hC hne => hdisj hC hScomp hne)
+          i hDobs hiS (extend xD) hrest0
     calc
       tianPrefixStepDensity H D μ ref i xD
           =
@@ -2288,7 +2198,7 @@ theorem tianDistrictDensity_eq_qLocalMass_div_jointRef_district
             · intro i hi
               simpa [idxS, qratio, den] using hstep i (by simpa [idxS] using hi)
       _ = (∏ i ∈ idxS, qratio i) / (∏ i ∈ idxS, den i) := by
-            exact ENNReal.prod_div_prod_qfactor idxS qratio den hden0 hdentop
+            exact ENNReal.prod_div_prod idxS qratio den hden0 hdentop
       _ = MX.qLocalMass sDo S hSobsMX (extend xD) /
           jointRef ref S ({valuesProjection hSD xD} :
             Set (ValuesOn S (swigΩ Ω))) := by

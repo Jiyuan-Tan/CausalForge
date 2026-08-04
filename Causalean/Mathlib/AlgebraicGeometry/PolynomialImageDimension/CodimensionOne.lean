@@ -42,14 +42,16 @@ def HasAffineCodimensionIn {ι : Type*} (d : ℕ)
       StrictMono chain ∧ (∀ i, IsIrreducibleAffineClosed (chain i)) ∧
       chain 0 = C ∧ chain (Fin.last (d + 1)) = X
 
-private lemma map_quotient_strictMono {R : Type*} [CommRing R]
-    (I A B : Ideal R) (hIA : I ≤ A) (hIB : I ≤ B) (hAB : A < B) :
+/-- If one ideal is strictly contained in another and both contain a third ideal, their images in
+the quotient by that third ideal remain strictly ordered. -/
+lemma map_quotient_strictMono {R : Type*} [CommRing R]
+    (I A B : Ideal R) (hIA : I ≤ A) (hAB : A < B) :
     A.map (Ideal.Quotient.mk I) < B.map (Ideal.Quotient.mk I) := by
   refine lt_of_le_of_ne (Ideal.map_mono hAB.le) ?_
   intro heq
   apply hAB.ne
   have hc := congrArg (Ideal.comap (Ideal.Quotient.mk I)) heq
-  simpa [Ideal.comap_map_mk hIA, Ideal.comap_map_mk hIB] using hc
+  simpa [Ideal.comap_map_mk hIA, Ideal.comap_map_mk (hIA.trans hAB.le)] using hc
 
 /-- A prime affine subvariety whose prime ideal is minimal over one additional
 equation in the coordinate ring of `X` admits no intermediate irreducible
@@ -90,9 +92,9 @@ theorem no_three_chain_of_minimalPrime_span
     (irreducibleAffineClosed_iff_isPrime hC.1 hC.2.1).mp hC
   let q := Ideal.Quotient.mk I
   have hmapKJ : K.map q < J.map q :=
-    map_quotient_strictMono I K J hIK.le (hIK.le.trans hKJ.le) hKJ
+    map_quotient_strictMono I K J hIK.le hKJ
   have hmapIK : I.map q < K.map q :=
-    map_quotient_strictMono I I K le_rfl hIK.le hIK
+    map_quotient_strictMono I I K le_rfl hIK
   haveI hmapKprime : (K.map q).IsPrime :=
     Ideal.isPrime_map_quotientMk_of_isPrime hIK.le
   haveI hmapJprime : (J.map q).IsPrime :=
@@ -109,7 +111,7 @@ theorem no_three_chain_of_minimalPrime_span
     simpa [Ideal.height_bot] using hstrict
   have hheightK_zero : (K.map q).height = 0 :=
     ENat.lt_one_iff_eq_zero.mp hheightK_lt
-  simpa [hheightK_zero] using hheightK_pos
+  simp [hheightK_zero] at hheightK_pos
 
 private def affineTwoSetChain {ι : Type*}
     (C X : Set (ι → ℂ)) : Fin 2 → Set (ι → ℂ)
@@ -144,7 +146,7 @@ private lemma affineAppendTwo_strictMono {ι : Type*} {d : ℕ}
     have hi1 : i.succ.val < d + 1 := by simp; omega
     simp only [affineAppendTwo, dif_pos hic, dif_pos hi1]
     apply hchain
-    simp [Fin.ext_iff]
+    simp
   · have hcases : i.val = d ∨ i.val = d + 1 := by omega
     rcases hcases with hid | hid
     · have hi0 : i.val < d + 1 := by omega
@@ -169,7 +171,6 @@ closed set.  The proof appends `Y` and `X` to a maximal-length chain inside
 theorem no_intermediate_of_exact_affine_dimensions
     {ι : Type*} {d : ℕ} {C X : Set (ι → ℂ)}
     (hX : IsIrreducibleAffineClosed X)
-    (hCX : C ⊂ X)
     (hCdim : HasAffineZariskiDimension d C)
     (hXdim : HasAffineZariskiDimension (d + 1) X) :
     ¬ ∃ Y, IsIrreducibleAffineClosed Y ∧ C ⊂ Y ∧ Y ⊂ X := by
@@ -186,10 +187,11 @@ theorem no_intermediate_of_exact_affine_dimensions
       · simpa [affineAppendTwo, hi, hy] using hX
   · intro i
     by_cases hi : i.val < d + 1
-    · simpa [affineAppendTwo, hi] using (hsub ⟨i.val, hi⟩).trans hCX.le
+    · simpa [affineAppendTwo, hi] using (hsub ⟨i.val, hi⟩).trans (hCY.le.trans hYX.le)
     · by_cases hy : i.val = d + 1
-      · simpa [affineAppendTwo, hi, hy] using hYX.le
-      · simpa [affineAppendTwo, hi, hy] using (Set.Subset.rfl : X ⊆ X)
+      · simpa [affineAppendTwo, hy] using hYX.le
+      · have hi' : ¬ i.val ≤ d := by omega
+        simp [affineAppendTwo, hi', hy]
 
 /-- An irreducible closed subset with no irreducible closed set strictly
 between it and an ambient irreducible variety is a component of every proper
@@ -296,7 +298,11 @@ theorem hasAffineCodimensionIn_one_of_minimalPrime_span
       apply Set.Subset.antisymm hZX
       simpa [heq] using hD.2.1
     exact ⟨affineTwoSetChain D X, affineTwoSetChain_strictMono hDX,
-      (by intro i; fin_cases i; exact hD.1; exact hX), rfl, rfl⟩
+      (by
+        intro i
+        fin_cases i
+        · exact hD.1
+        · exact hX), rfl, rfl⟩
   · refine ⟨C, hC, ?_⟩
     exact no_three_chain_of_minimalPrime_span hC.1 hX P hmin
 

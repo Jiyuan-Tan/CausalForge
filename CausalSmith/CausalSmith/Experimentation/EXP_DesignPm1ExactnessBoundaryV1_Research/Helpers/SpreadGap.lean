@@ -217,8 +217,8 @@ lemma spread_certificate_relaxed_minimizer_and_gap (m : ℕ) (a b r kappa : ℝ)
     simp [trel]
     linarith [hOutside]
   obtain ⟨htruncFeas, htruncMin⟩ :=
-    (trunc_from_minimizer (2 * (m : ℝ)) (parityThreshold m) hd0 hdM
-      alpha beta kappa hbetaPos hbetaY hbetaZ hk trel htrelS hws_min).2 htrelInfeas
+    (trunc_from_minimizer (2 * (m : ℝ)) (parityThreshold m) hdM
+      alpha beta kappa (hbetaPos 0).le hbetaY hbetaZ hk trel htrelS hws_min).2 htrelInfeas
   let Ximpl : ℝ × ℝ × ℝ :=
     (truncSegPoint (2 * (m : ℝ)) (parityThreshold m)
       (truncSelector (2 * (m : ℝ)) (parityThreshold m) alpha beta kappa) 0 / qParam m,

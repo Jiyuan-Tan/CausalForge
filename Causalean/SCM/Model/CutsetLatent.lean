@@ -210,7 +210,11 @@ theorem cutsetLatent_subset (M : Causalean.SCM N Ω)
 -- § 2. Structural cutset factorization for `evalMap_overrideC`
 -- ============================================================
 
-/-- **Cutset agreement at the topological-index level.**
+/-- If two latent assignments agree at every unobserved node that is a target or reaches a target
+along a directed path whose interior avoids the override block, their recursive override
+evaluations agree at every observed node that is a target or reaches one along such a path.
+
+    **Cutset agreement at the topological-index level.**
 
     Two latent assignments `ℓ₁`, `ℓ₂` that agree on every latent node reaching a
     target set `T` along a `C`-avoiding directed path produce the same override
@@ -223,7 +227,7 @@ theorem cutsetLatent_subset (M : Causalean.SCM N Ω)
     structural function to parent values; each latent parent is in the cutset by
     extending the avoiding path through the non-`C` current node, and each
     observed non-`C` parent recurses with the avoiding witness extended. -/
-private lemma evalObservedAuxOverride_agree_cutset (M : Causalean.SCM N Ω)
+lemma evalObservedAuxOverride_agree_cutset (M : Causalean.SCM N Ω)
     (T : Finset (SWIGNode N))
     {C : Finset (SWIGNode N)} (hC : C ⊆ M.observed)
     (s : FixedValues M)
@@ -262,8 +266,8 @@ private lemma evalObservedAuxOverride_agree_cutset (M : Causalean.SCM N Ω)
             parentMapOverride_unobserved M hC s c ℓ₂ hn _ w huo]
         exact hAgree w.val huo hReachW
       · by_cases hfix : w.val ∈ M.fixed
-        · rw [parentMapOverride_fixed M hC s c ℓ₁ hn _ w huo hfix,
-              parentMapOverride_fixed M hC s c ℓ₂ hn _ w huo hfix]
+        · rw [parentMapOverride_fixed M hC s c ℓ₁ hn _ w hfix,
+              parentMapOverride_fixed M hC s c ℓ₂ hn _ w hfix]
         · have hobs : w.val ∈ M.observed := by
             rcases Finset.mem_union.mp
                 (M.dag_edges_classified _ _ hedge).1 with h1' | h2'
@@ -272,10 +276,10 @@ private lemma evalObservedAuxOverride_agree_cutset (M : Causalean.SCM N Ω)
               · exact hob
             · exact absurd h2' huo
           by_cases hcW : w.val ∈ C
-          · rw [parentMapOverride_C M hC s c ℓ₁ hn _ w huo hfix hcW,
-                parentMapOverride_C M hC s c ℓ₂ hn _ w huo hfix hcW]
-          · rw [parentMapOverride_observed M hC s c ℓ₁ hn _ w huo hfix hobs hcW,
-                parentMapOverride_observed M hC s c ℓ₂ hn _ w huo hfix hobs hcW]
+          · rw [parentMapOverride_C M hC s c ℓ₁ hn _ w hcW,
+                parentMapOverride_C M hC s c ℓ₂ hn _ w hcW]
+          · rw [parentMapOverride_observed M hC s c ℓ₁ hn _ w hobs hcW,
+                parentMapOverride_observed M hC s c ℓ₂ hn _ w hobs hcW]
             have hj : (M.observedIndex ⟨w.val, hobs⟩).val < n :=
               M.observed_parent_index_lt hn hedge hobs
             congr 1
@@ -339,7 +343,6 @@ theorem evalMap_overrideC_agree_cutset (M : Causalean.SCM N Ω)
     the cutset `cutsetLatent Y C` (together with the fixed and override inputs,
     held fixed here). -/
 theorem exists_evalMap_overrideC_factors_cutset (M : Causalean.SCM N Ω)
-    [∀ n, Nonempty (Ω n)]
     {Y C : Finset (SWIGNode N)}
     (hY : Y ⊆ M.observed) (hC : C ⊆ M.observed)
     (s : FixedValues M) (c : ValuesOn C (swigΩ Ω)) :
@@ -349,10 +352,11 @@ theorem exists_evalMap_overrideC_factors_cutset (M : Causalean.SCM N Ω)
         M.evalMap_overrideC hY hC s c ℓ =
           h (valuesProjection (M.cutsetLatent_subset Y C) ℓ) := by
   classical
-  have hNEΩ : ∀ w : SWIGNode N, Nonempty (swigΩ Ω w) := by
-    intro w; cases w <;> exact inferInstance
   -- Extend a cutset projection to a full latent vector (default off the cutset).
-  let ℓ₀ : LatentValues M := fun u => (hNEΩ u.val).some
+  let ℓ₀ : LatentValues M := fun u => by
+    letI : MeasureTheory.IsProbabilityMeasure (M.latentDist u) :=
+      M.isProbability_latent u
+    exact MeasureTheory.nonempty_of_isProbabilityMeasure (M.latentDist u) |>.some
   let extend : ValuesOn (M.cutsetLatent Y C) (swigΩ Ω) → LatentValues M :=
     fun cwProj u =>
       if h : u.val ∈ M.cutsetLatent Y C then cwProj ⟨u.val, h⟩ else ℓ₀ u

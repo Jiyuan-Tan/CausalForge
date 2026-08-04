@@ -137,7 +137,7 @@ holds pointwise: when `norm (...) ≤ r₁` the two are equal; otherwise the
     expression. A pointwise bound `|f i x| ≤ |g i x|` is not sufficient, because
     sign cancellation in the inner sum can reverse the comparison. -/
 lemma empiricalRademacherComplexity_mono_of_inner
-    {ι' : Type*} [Nonempty ι'] {n : ℕ}
+    {ι' : Type*} {n : ℕ}
     (f g : ι' → 𝒳 → ℝ) (S : Fin n → 𝒳)
     (hbdd_g : ∀ σ : Signs n,
       BddAbove (Set.range fun i =>
@@ -234,7 +234,7 @@ lemma abs_starHullZeroOut_le_starHullEval
     larger empirical Rademacher process), which is the
     `hint` hypothesis. -/
 lemma localRademacherComplexity_mono_r
-    [Nonempty ι] (F : ι → 𝒳 → ℝ) (norm : (𝒳 → ℝ) → ℝ)
+    (F : ι → 𝒳 → ℝ) (norm : (𝒳 → ℝ) → ℝ)
     (μ : Measure Ω) (X : Ω → 𝒳) (n : ℕ) {r₁ r₂ : ℝ} (h : r₁ ≤ r₂)
     (hbdd : ∀ S : Fin n → 𝒳, ∀ σ : Signs n,
       BddAbove (Set.range fun p : starHullParam ι =>
@@ -317,7 +317,6 @@ theorem localRademacher_le_critical_radius
     over `p : starHullParam ι`, giving a matching Rademacher inequality
     after taking expectations. -/
 lemma rademacherComplexity_zeroOut_le_starHullZeroOut
-    [Nonempty ι]
     (F : ι → 𝒳 → ℝ) (norm : (𝒳 → ℝ) → ℝ)
     (μ : Measure Ω) (X : Ω → 𝒳)
     (n : ℕ) {r : ℝ}

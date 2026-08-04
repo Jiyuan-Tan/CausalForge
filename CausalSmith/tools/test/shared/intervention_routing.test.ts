@@ -49,7 +49,7 @@ function makeProposedFrom(overrides: Partial<ProposedFrom> = {}): ProposedFrom {
     current_version: 0,
     current_mode: "cold-start",
     last_reviewer_verdict: "reject",
-    last_draft_handoff: "handoff",
+    last_draft_version: 0,
     last_draft_status: "completed",
     exhausted_angles: [],
     ...overrides,
@@ -182,7 +182,7 @@ describe("applyInterventionRoute", () => {
         current_angle_index: 0,
         current_version: 2,
         current_mode: "revise",
-        last_draft_handoff: "old handoff",
+        last_draft_version: 2,
         last_draft_status: "completed",
         exhausted_angles: [],
       }),
@@ -200,7 +200,7 @@ describe("applyInterventionRoute", () => {
     expect(state.proposed_from?.current_mode).toBe("pivot");
     expect(state.proposed_from?.exhausted_angles).toEqual([0]);
     expect(state.proposed_from?.last_reviewer_verdict).toBe("");
-    expect(state.proposed_from?.last_draft_handoff).toBeUndefined();
+    expect(state.proposed_from?.last_draft_version).toBeUndefined();
     expect(state.proposed_from?.last_draft_status).toBeUndefined();
     expect(state.flags.rewound_from_stage0_5_pivot).toBe("pivot requested");
     expect(state.pending_sorries).toEqual([]);
@@ -237,7 +237,7 @@ describe("applyInterventionRoute", () => {
         current_angle_index: 0,
         current_version: 0,
         current_mode: "cold-start",
-        last_draft_handoff: "old handoff",
+        last_draft_version: 0,
         last_draft_status: "completed",
       }),
     });
@@ -261,7 +261,7 @@ describe("applyInterventionRoute", () => {
     expect(state.flags.rewound_from_stage0).toBe("add latent assumption");
     expect(state.flags.theorem_splits).toBe(2);
     expect(state.proposed_from?.current_mode).toBe("revise");
-    expect(state.proposed_from?.last_draft_handoff).toBeUndefined();
+    expect(state.proposed_from?.last_draft_version).toBeUndefined();
     expect(state.proposed_from?.last_draft_status).toBeUndefined();
     expect(state.added_assumptions).toEqual([
       {

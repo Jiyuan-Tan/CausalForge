@@ -66,10 +66,18 @@ function decodeLooseJsonString(s: string): string {
       continue;
     }
     const next = s[++i];
+    // This decoder runs on the RAW-LaTeX fallback path (the strict JSON parse
+    // already failed), so JSON escape semantics must NOT be applied blindly:
+    // `\n`/`\t`/`\b`/`\f`/`\r` followed by a letter are TeX commands (`\nabla`,
+    // `\to`, `\beta`, `\frac`, `\rho`) and decoding them injected control
+    // characters into the frozen statement layer. Decode the whitespace escapes
+    // only when NOT followed by a letter; keep everything letter-led verbatim.
     const standard: Record<string, string> = {
       "\\": "\\", '"': '"', "/": "/", n: "\n", r: "\r", t: "\t", b: "\b", f: "\f",
     };
-    if (next in standard) out += standard[next];
+    const letterFollows = /^[A-Za-z]/.test(s.slice(i + 1, i + 2));
+    if (next === "\\" || next === '"' || next === "/") out += standard[next];
+    else if ("nrtbf".includes(next) && !letterFollows) out += standard[next];
     else if (next === "u" && /^[0-9a-fA-F]{4}$/.test(s.slice(i + 1, i + 5))) {
       out += String.fromCharCode(Number.parseInt(s.slice(i + 1, i + 5), 16));
       i += 4;

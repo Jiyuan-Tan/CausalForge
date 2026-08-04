@@ -214,6 +214,6 @@ lemma bernoulli_E_ctrl_mul_ctrl (p : I → ℝ) (hp0 : ∀ k, 0 ≤ p k)
 
 /-- A one-unit Bernoulli assignment distribution is unchanged when its treatment probability and
 the corresponding conditions that it lies between zero and one are replaced by equal ones. -/
-add_decl_doc Causalean.Experimentation.UnknownInterference.coinDesign.congr_simp
+add_decl_doc Causalean.Experimentation.DesignBased.coinDesign.congr_simp
 
 end CausalSmith.Experimentation.BipartiteMinimaxDesign

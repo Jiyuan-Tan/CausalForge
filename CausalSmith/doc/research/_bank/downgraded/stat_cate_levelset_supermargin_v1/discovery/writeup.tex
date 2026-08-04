@@ -1,0 +1,1175 @@
+\documentclass{article}
+\usepackage[margin=0.8in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{mathrsfs,bm,bbm}
+\usepackage{graphicx,booktabs,array,multirow,tabularx,longtable}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{algorithm,algpseudocode}
+\usepackage{subcaption,tikz}
+\usepackage{siunitx,cancel,accents}
+\usepackage{microtype}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{cleveref}
+\setlength{\emergencystretch}{2em}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{openendedquestion}{Open-ended Question}
+\newtheorem{conjecture}{Conjecture}
+\newcommand{\coreref}[1]{\ref{#1}}
+
+\begin{document}
+
+\sloppy
+
+\section*{stat\_\allowbreak{}cate\_\allowbreak{}levelset\_\allowbreak{}supermargin}
+
+\noindent\textit{Specialization:} v1\par
+
+\paragraph{TL;DR.} For the fixed calibrated constants, the nonempty super-margin frontier is exactly \(\{(1,\gamma):\gamma>d\}\), and an explicit transverse law proves nonemptiness with an interior threshold crossing. The minimax risk is exactly of order \((r_n^*)^2\) when \(\beta\ge\gamma\). For \(\beta<\gamma\), the full two-branch match remains open: the published low-smoothness fuzzy experiment uses covariate-density holes and therefore does not belong to the calibrated class, whose density is uniform on the entire cube.
+
+\section{Project justification}
+
+\paragraph{Gap.} Bonvini--Kennedy--Keele give the conditional upper order \((r_n^*)^{1+\xi}\), while their lower theorem excludes \(\xi\gamma>d\). Kennedy--Balakrishnan--Robins--Wasserman obtain the low-smoothness CATE scale by a fuzzy construction whose covariate density omits bump-transition regions. That construction cannot be inserted into the present calibrated class because calibration forces a positive uniform density on every such region.
+
+\paragraph{Niche.} The note isolates a calibration-specific, nonempty transverse super-margin class with an exact two-sided margin and weighted level-set loss. It separates the part of the statistical problem settled by a direct graph Assouad construction from the unresolved known-uniform-design nuisance-sensitive converse.
+
+\paragraph{Fill.} The proved contribution is the exact calibrated feasibility frontier, an explicit causal witness with interior crossing, well-posed weighted risk, and an honest minimax bracket that matches \((r_n^*)^2\) for \(\beta\ge\gamma\). The residual result is sharpened to a concrete obstruction: the standard fuzzy lower experiment loses mixture matching once uniform mass is restored on smooth transition regions.
+
+\section{Related work}
+
+Bonvini--Kennedy--Keele \cite{BonviniKennedyKeele2023MinimaxSubgroup} define the weighted CATE level-set loss and prove a conditional upper bound of order \((r_n^*)^{1+\xi}\), but their minimax lower theorem assumes \(\xi\gamma\le d\). Kennedy--Balakrishnan--Robins--Wasserman \cite{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE} derive the two-branch pointwise CATE scale using localized fuzzy hypotheses. Their low-smoothness construction deliberately supports the covariate law on flat bump tops so that the averaged one-observation densities coincide; restoring full uniform support creates a first-order unmatched-mixture term and recovers only the oracle converse scale. Audibert--Tsybakov \cite{AudibertTsybakov2007FastPlugin} supplies the adjacent Hölder-margin crossing obstruction, while Rigollet--Vert \cite{RigolletVert2009DensityLevelSets} is a noncausal level-set analogue rather than a solution to this uniform-design causal converse.
+
+\section{Setup}
+
+Target (estimand / structural parameter): \(G_P=\{x\in\mathcal X:\tau_P(x)>\theta\}\).
+Primary functional / estimator / diagnostic: \(\mathcal F(\kappa)=\{(1,\gamma):\gamma>d\}\). For every fixed calibrated \(\kappa\), every \(\gamma>d\), and all sufficiently large \(n\), \leavevmode\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle c_{\mathrm{lb}}n^{-2\gamma/(2\gamma+d)}\le\mathfrak R_n(1,\gamma;\kappa)\le C_{\mathrm{ub}}n^{-2\min\{\beta,\gamma\}/\{2\min\{\beta,\gamma\}+d\}}\)}}\par\noindent. This equals \((r_n^*)^2\) in order when \(\beta\ge\gamma\); the exact rate for \(\beta<\gamma\) remains open..
+\begin{itemize}
+  \item \texttt{n} --- \texttt{integer}; \texttt{\textbackslash{}\allowbreak{}mathbb N}; \texttt{asymptotic index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{sample size}
+  \item \texttt{d} --- \texttt{integer}; \texttt{\textbackslash{}\allowbreak{}mathbb N}; \texttt{dimension}
+  \par\smallskip\noindent\emph{Definition.} \texttt{covariate dimension}
+  \item \texttt{c} --- \texttt{scalar}; \texttt{(0,\allowbreak{}1/\allowbreak{}4)}; \texttt{calibration constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{calibration slope}
+  \item \texttt{\textbackslash{}\allowbreak{}mathcal X} --- \texttt{set}; \texttt{\textbackslash{}\allowbreak{}mathbb R\textasciicircum{}d}; \texttt{support}
+  \par\smallskip\noindent\emph{Definition.} \texttt{fixed covariate support}
+  \item \texttt{M\_\allowbreak{}Y} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{model constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{outcome envelope}
+  \item \texttt{\textbackslash{}\allowbreak{}theta} --- \texttt{scalar}; \texttt{\textbackslash{}\allowbreak{}mathbb R}; \texttt{decision threshold}
+  \par\smallskip\noindent\emph{Definition.} \texttt{fixed CATE threshold}
+  \item \texttt{\textbackslash{}\allowbreak{}eta} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{localization constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{threshold-\allowbreak{}band width}
+  \item \texttt{t\_\allowbreak{}0} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{margin constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{margin range endpoint}
+  \item \texttt{c\_\allowbreak{}f} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{model constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{density lower constant}
+  \item \texttt{C\_\allowbreak{}f} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{model constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{density upper constant}
+  \item \texttt{c\_\allowbreak{}\textbackslash{}\allowbreak{}pi} --- \texttt{scalar}; \texttt{(0,\allowbreak{}1/\allowbreak{}2)}; \texttt{model constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{overlap constant}
+  \item \texttt{c\_\allowbreak{}m} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{model constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{margin lower constant}
+  \item \texttt{C\_\allowbreak{}m} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{model constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{margin upper constant}
+  \item \texttt{L\_\allowbreak{}\textbackslash{}\allowbreak{}pi} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{model constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{propensity Hölder radius}
+  \item \texttt{L\_\allowbreak{}0} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{model constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{control-\allowbreak{}regression Hölder radius}
+  \item \texttt{L\_\allowbreak{}\textbackslash{}\allowbreak{}tau} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{model constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{CATE Hölder radius}
+  \item \texttt{\textbackslash{}\allowbreak{}alpha} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{smoothness index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{propensity Hölder order}
+  \item \texttt{\textbackslash{}\allowbreak{}beta} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{smoothness index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{control-\allowbreak{}regression Hölder order}
+  \item \texttt{\textbackslash{}\allowbreak{}gamma} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{smoothness index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{near-\allowbreak{}band CATE Hölder order}
+  \item \texttt{\textbackslash{}\allowbreak{}gamma'} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{smoothness index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{off-\allowbreak{}band CATE Hölder order}
+  \item \texttt{\textbackslash{}\allowbreak{}xi} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{margin index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{tight-\allowbreak{}margin exponent}
+  \item \texttt{\textbackslash{}\allowbreak{}kappa} --- \texttt{parameter vector}; \texttt{2\textasciicircum{}\{\textbackslash{}\allowbreak{}mathbb R\textasciicircum{}d\}\allowbreak{}\textbackslash{}\allowbreak{}times(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)\textbackslash{}\allowbreak{}times\textbackslash{}\allowbreak{}mathbb R\textbackslash{}\allowbreak{}times(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)\textasciicircum{}2\textbackslash{}\allowbreak{}times(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)\textasciicircum{}2\textbackslash{}\allowbreak{}times(0,\allowbreak{}1/\allowbreak{}2)\textbackslash{}\allowbreak{}times(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)\textasciicircum{}5\textbackslash{}\allowbreak{}times(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)\textasciicircum{}2\textbackslash{}\allowbreak{}times(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{model index}
+  \par\smallskip\noindent\emph{Definition.} \(\kappa=(\mathcal X,M_Y,\theta,\eta,t_0,c_f,C_f,c_\pi,c_m,C_m,L_\pi,L_0,L_\tau,\alpha,\beta,\gamma')\)
+  \item \texttt{\textbackslash{}\allowbreak{}bar s} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{rate index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{average nuisance smoothness}
+  \item \texttt{\textbackslash{}\allowbreak{}rho} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{function-\allowbreak{}class index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{generic Hölder order}
+  \item \texttt{L} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{function-\allowbreak{}class index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{generic Hölder radius}
+  \item \texttt{U} --- \texttt{set}; \texttt{2\textasciicircum{}\{\textbackslash{}\allowbreak{}mathbb R\textasciicircum{}d\}\allowbreak{}}; \texttt{function-\allowbreak{}class index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{generic Hölder domain}
+  \item \texttt{\textbackslash{}\allowbreak{}mathsf H\_\allowbreak{}\textbackslash{}\allowbreak{}rho(L;\allowbreak{}U)} --- \texttt{function class}; \texttt{\textbackslash{}\allowbreak{}\{g:\allowbreak{}U\textbackslash{}\allowbreak{}to\textbackslash{}\allowbreak{}mathbb R\textbackslash{}\allowbreak{}\}\allowbreak{}}; \texttt{smoothness class}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Taylor-\allowbreak{}remainder Hölder ball}
+  \item \texttt{x} --- \texttt{deterministic point}; \texttt{\textbackslash{}\allowbreak{}mathcal X}; \texttt{formula index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{evaluation point}
+  \item \texttt{u} --- \texttt{deterministic point}; \texttt{\textbackslash{}\allowbreak{}mathcal X}; \texttt{formula index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{local-\allowbreak{}window point}
+  \item \texttt{j} --- \texttt{integer}; \texttt{\textbackslash{}\allowbreak{}\{1,\allowbreak{}\textbackslash{}\allowbreak{}ldots,\allowbreak{}d\textbackslash{}\allowbreak{}\}\allowbreak{}}; \texttt{formula index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{coordinate index}
+  \item \texttt{a} --- \texttt{integer}; \texttt{\textbackslash{}\allowbreak{}\{0,\allowbreak{}1\textbackslash{}\allowbreak{}\}\allowbreak{}}; \texttt{formula index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{treatment-\allowbreak{}arm index}
+  \item \texttt{t} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{formula index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{margin argument}
+  \item \texttt{q} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{approximation index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{approximation smoothness order}
+  \item \texttt{g} --- \texttt{function}; \texttt{\textbackslash{}\allowbreak{}mathcal X\textbackslash{}\allowbreak{}to\textbackslash{}\allowbreak{}mathbb R}; \texttt{approximation argument}
+  \par\smallskip\noindent\emph{Definition.} \texttt{generic target function}
+  \item \texttt{v} --- \texttt{vector}; \texttt{\textbackslash{}\allowbreak{}bigcup\_\allowbreak{}\{r\textbackslash{}\allowbreak{}in\textbackslash{}\allowbreak{}mathbb N\}\allowbreak{}\textbackslash{}\allowbreak{}mathbb R\textasciicircum{}r}; \texttt{approximation coefficient}
+  \par\smallskip\noindent\emph{Definition.} \texttt{generic sieve coefficient}
+  \item \texttt{X} --- \texttt{random vector}; \texttt{\textbackslash{}\allowbreak{}mathcal X}; \texttt{effect modifiers}
+  \par\smallskip\noindent\emph{Definition.} \texttt{covariates}
+  \item \texttt{A} --- \texttt{random variable}; \texttt{\textbackslash{}\allowbreak{}\{0,\allowbreak{}1\textbackslash{}\allowbreak{}\}\allowbreak{}}; \texttt{treatment}
+  \par\smallskip\noindent\emph{Definition.} \texttt{treatment}
+  \item \texttt{Y} --- \texttt{random variable}; \texttt{[-\allowbreak{}M\_\allowbreak{}Y,\allowbreak{}M\_\allowbreak{}Y]}; \texttt{outcome}
+  \par\smallskip\noindent\emph{Definition.} \texttt{observed outcome}
+  \item \texttt{Y\textasciicircum{}a} --- \texttt{random variable}; \texttt{[-\allowbreak{}M\_\allowbreak{}Y,\allowbreak{}M\_\allowbreak{}Y]}; \texttt{potential outcome}
+  \par\smallskip\noindent\emph{Definition.} potential outcome under arm \(a\)
+  \item \texttt{U\_\allowbreak{}A} --- \texttt{random variable}; \texttt{[0,\allowbreak{}1]}; \texttt{witness input}
+  \par\smallskip\noindent\emph{Definition.} \texttt{treatment uniform variate}
+  \item \texttt{U\_\allowbreak{}0} --- \texttt{random variable}; \texttt{[0,\allowbreak{}1]}; \texttt{witness input}
+  \par\smallskip\noindent\emph{Definition.} \texttt{control uniform variate}
+  \item \texttt{U\_\allowbreak{}1} --- \texttt{random variable}; \texttt{[0,\allowbreak{}1]}; \texttt{witness input}
+  \par\smallskip\noindent\emph{Definition.} \texttt{treated uniform variate}
+  \item \texttt{Z\_\allowbreak{}i} --- \texttt{random vector}; \texttt{\textbackslash{}\allowbreak{}mathcal X\textbackslash{}\allowbreak{}times\textbackslash{}\allowbreak{}\{0,\allowbreak{}1\textbackslash{}\allowbreak{}\}\allowbreak{}\textbackslash{}\allowbreak{}times[-\allowbreak{}M\_\allowbreak{}Y,\allowbreak{}M\_\allowbreak{}Y]}; \texttt{sample element}
+  \par\smallskip\noindent\emph{Definition.} the \(i\)-th observed triple
+  \item \texttt{X\_\allowbreak{}i} --- \texttt{random vector}; \texttt{\textbackslash{}\allowbreak{}mathcal X}; \texttt{sample component}
+  \par\smallskip\noindent\emph{Definition.} covariate component of \(Z_i\)
+  \item \texttt{P} --- \texttt{probability law}; \texttt{\textbackslash{}\allowbreak{}mathcal P(\textbackslash{}\allowbreak{}mathcal X\textbackslash{}\allowbreak{}times\textbackslash{}\allowbreak{}\{0,\allowbreak{}1\textbackslash{}\allowbreak{}\}\allowbreak{}\textbackslash{}\allowbreak{}times[-\allowbreak{}M\_\allowbreak{}Y,\allowbreak{}M\_\allowbreak{}Y])}; \texttt{statistical law}
+  \par\smallskip\noindent\emph{Definition.} \texttt{observed-\allowbreak{}data law}
+  \item \texttt{P\_\allowbreak{}X} --- \texttt{probability law}; \texttt{\textbackslash{}\allowbreak{}mathcal P(\textbackslash{}\allowbreak{}mathcal X)}; \texttt{covariate law}
+  \par\smallskip\noindent\emph{Definition.} \texttt{covariate marginal}
+  \item \texttt{f\_\allowbreak{}P} --- \texttt{function}; \texttt{\textbackslash{}\allowbreak{}mathcal X\textbackslash{}\allowbreak{}to\textbackslash{}\allowbreak{}mathbb R\_\allowbreak{}+\allowbreak{}}; \texttt{covariate density}
+  \par\smallskip\noindent\emph{Definition.} Lebesgue density of \(P_X\)
+  \item \texttt{F\_\allowbreak{}0} --- \texttt{function}; \texttt{\textbackslash{}\allowbreak{}mathcal X\textbackslash{}\allowbreak{}to\textbackslash{}\allowbreak{}mathbb R\_\allowbreak{}+\allowbreak{}}; \texttt{estimator density input}
+  \par\smallskip\noindent\emph{Definition.} \texttt{known uniform density}
+  \item \texttt{\textbackslash{}\allowbreak{}pi} --- \texttt{function}; \texttt{\textbackslash{}\allowbreak{}mathcal X\textbackslash{}\allowbreak{}to[0,\allowbreak{}1]}; \texttt{treatment mechanism}
+  \par\smallskip\noindent\emph{Definition.} \texttt{propensity score}
+  \item \texttt{\textbackslash{}\allowbreak{}mu\_\allowbreak{}0} --- \texttt{function}; \texttt{\textbackslash{}\allowbreak{}mathcal X\textbackslash{}\allowbreak{}to\textbackslash{}\allowbreak{}mathbb R}; \texttt{nuisance regression}
+  \par\smallskip\noindent\emph{Definition.} \texttt{control outcome regression}
+  \item \texttt{\textbackslash{}\allowbreak{}mu\_\allowbreak{}1} --- \texttt{function}; \texttt{\textbackslash{}\allowbreak{}mathcal X\textbackslash{}\allowbreak{}to\textbackslash{}\allowbreak{}mathbb R}; \texttt{outcome regression}
+  \par\smallskip\noindent\emph{Definition.} \texttt{treated outcome regression}
+  \item \texttt{\textbackslash{}\allowbreak{}tau\_\allowbreak{}P} --- \texttt{function}; \texttt{\textbackslash{}\allowbreak{}mathcal X\textbackslash{}\allowbreak{}to\textbackslash{}\allowbreak{}mathbb R}; \texttt{identified CATE}
+  \par\smallskip\noindent\emph{Definition.} \texttt{designated continuous CATE version}
+  \item \texttt{\textbackslash{}\allowbreak{}mathcal D\_\allowbreak{}P(\textbackslash{}\allowbreak{}eta)} --- \texttt{set}; \texttt{2\textasciicircum{}\{\textbackslash{}\allowbreak{}mathcal X\}\allowbreak{}}; \texttt{local region}
+  \par\smallskip\noindent\emph{Definition.} \texttt{near-\allowbreak{}threshold band}
+  \item \texttt{G\_\allowbreak{}P} --- \texttt{set}; \texttt{2\textasciicircum{}\{\textbackslash{}\allowbreak{}mathcal X\}\allowbreak{}}; \texttt{causal target}
+  \par\smallskip\noindent\emph{Definition.} \texttt{CATE upper-\allowbreak{}level set}
+  \item \texttt{H} --- \texttt{set}; \texttt{2\textasciicircum{}\{\textbackslash{}\allowbreak{}mathcal X\}\allowbreak{}}; \texttt{loss argument}
+  \par\smallskip\noindent\emph{Definition.} \texttt{generic measurable set}
+  \item \texttt{d\_\allowbreak{}H} --- \texttt{loss function}; \texttt{2\textasciicircum{}\{\textbackslash{}\allowbreak{}mathcal X\}\allowbreak{}\textbackslash{}\allowbreak{}times2\textasciicircum{}\{\textbackslash{}\allowbreak{}mathcal X\}\allowbreak{}\textbackslash{}\allowbreak{}times\textbackslash{}\allowbreak{}mathcal P\textbackslash{}\allowbreak{}to\textbackslash{}\allowbreak{}mathbb R\_\allowbreak{}+\allowbreak{}}; \texttt{risk loss}
+  \par\smallskip\noindent\emph{Definition.} \texttt{weighted symmetric-\allowbreak{}difference loss}
+  \item \texttt{\textbackslash{}\allowbreak{}widehat G\_\allowbreak{}n} --- \texttt{statistic}; \texttt{2\textasciicircum{}\{\textbackslash{}\allowbreak{}mathcal X\}\allowbreak{}}; \texttt{decision estimator}
+  \par\smallskip\noindent\emph{Definition.} \texttt{measurable set estimator}
+  \item \texttt{r\_\allowbreak{}n\textasciicircum{}*} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{benchmark rate}
+  \par\smallskip\noindent\emph{Definition.} \texttt{two-\allowbreak{}branch CATE scale}
+  \item \texttt{r\_\allowbreak{}n} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{tuning sequence}
+  \par\smallskip\noindent\emph{Definition.} \texttt{tuning-\allowbreak{}rate alias}
+  \item \texttt{\textbackslash{}\allowbreak{}mathcal M(\textbackslash{}\allowbreak{}xi,\allowbreak{}\textbackslash{}\allowbreak{}gamma;\allowbreak{}\textbackslash{}\allowbreak{}kappa)} --- \texttt{class of laws}; \texttt{\textbackslash{}\allowbreak{}mathcal P(\textbackslash{}\allowbreak{}mathcal X\textbackslash{}\allowbreak{}times\textbackslash{}\allowbreak{}\{0,\allowbreak{}1\textbackslash{}\allowbreak{}\}\allowbreak{}\textbackslash{}\allowbreak{}times[-\allowbreak{}M\_\allowbreak{}Y,\allowbreak{}M\_\allowbreak{}Y])}; \texttt{minimax class}
+  \par\smallskip\noindent\emph{Definition.} \texttt{smooth CATE law class}
+  \item \texttt{\textbackslash{}\allowbreak{}mathcal M\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{tr\}\allowbreak{}\}\allowbreak{}(\textbackslash{}\allowbreak{}gamma;\allowbreak{}\textbackslash{}\allowbreak{}kappa)} --- \texttt{class of laws}; \texttt{\textbackslash{}\allowbreak{}mathcal P(\textbackslash{}\allowbreak{}mathcal X\textbackslash{}\allowbreak{}times\textbackslash{}\allowbreak{}\{0,\allowbreak{}1\textbackslash{}\allowbreak{}\}\allowbreak{}\textbackslash{}\allowbreak{}times[-\allowbreak{}M\_\allowbreak{}Y,\allowbreak{}M\_\allowbreak{}Y])}; \texttt{headline model}
+  \par\smallskip\noindent\emph{Definition.} \texttt{calibrated transverse class}
+  \item \texttt{\textbackslash{}\allowbreak{}mathfrak R\_\allowbreak{}n(\textbackslash{}\allowbreak{}xi,\allowbreak{}\textbackslash{}\allowbreak{}gamma;\allowbreak{}\textbackslash{}\allowbreak{}kappa)} --- \texttt{scalar}; \texttt{\textbackslash{}\allowbreak{}mathbb R\_\allowbreak{}+\allowbreak{}}; \texttt{minimax criterion}
+  \par\smallskip\noindent\emph{Definition.} \texttt{minimax weighted set risk}
+  \item \texttt{\textbackslash{}\allowbreak{}mathcal F(\textbackslash{}\allowbreak{}kappa)} --- \texttt{set}; \texttt{2\textasciicircum{}\{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)\textasciicircum{}2\}\allowbreak{}}; \texttt{open-\allowbreak{}problem target}
+  \par\smallskip\noindent\emph{Definition.} \texttt{feasible super-\allowbreak{}margin frontier}
+  \item \texttt{P\textasciicircum{}\{\textbackslash{}\allowbreak{}mathrm\{tr\}\allowbreak{}\}\allowbreak{}} --- \texttt{augmented probability law}; \texttt{\textbackslash{}\allowbreak{}mathcal P(\textbackslash{}\allowbreak{}mathcal X\textbackslash{}\allowbreak{}times[0,\allowbreak{}1]\textasciicircum{}3\textbackslash{}\allowbreak{}times\textbackslash{}\allowbreak{}\{0,\allowbreak{}1\textbackslash{}\allowbreak{}\}\allowbreak{}\textasciicircum{}4)}; \texttt{explicit witness}
+  \par\smallskip\noindent\emph{Definition.} \texttt{calibrated transverse causal witness}
+  \item \texttt{p\_\allowbreak{}a} --- \texttt{function}; \texttt{\textbackslash{}\allowbreak{}mathcal X\textbackslash{}\allowbreak{}to[0,\allowbreak{}1]}; \texttt{witness conditional mean}
+  \par\smallskip\noindent\emph{Definition.} \texttt{witness arm-\allowbreak{}specific Bernoulli probability}
+  \item \texttt{h} --- \texttt{scalar}; \texttt{(0,\allowbreak{}1]}; \texttt{estimator tuning index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{local bandwidth}
+  \item \texttt{L\_\allowbreak{}j} --- \texttt{scalar}; \texttt{[-\allowbreak{}1,\allowbreak{}1]}; \texttt{window geometry}
+  \par\smallskip\noindent\emph{Definition.} \texttt{left endpoint of coordinate window}
+  \item \texttt{R\_\allowbreak{}j} --- \texttt{scalar}; \texttt{[-\allowbreak{}1,\allowbreak{}1]}; \texttt{window geometry}
+  \par\smallskip\noindent\emph{Definition.} \texttt{right endpoint of coordinate window}
+  \item \texttt{\textbackslash{}\allowbreak{}ell\_\allowbreak{}j} --- \texttt{scalar}; \texttt{(0,\allowbreak{}2]}; \texttt{window geometry}
+  \par\smallskip\noindent\emph{Definition.} \texttt{coordinate-\allowbreak{}window length}
+  \item \texttt{W\_\allowbreak{}\{x,\allowbreak{}h\}\allowbreak{}} --- \texttt{set}; \texttt{2\textasciicircum{}\{\textbackslash{}\allowbreak{}mathcal X\}\allowbreak{}}; \texttt{local neighborhood}
+  \par\smallskip\noindent\emph{Definition.} \texttt{truncated cube window}
+  \item \texttt{V\_\allowbreak{}\{x,\allowbreak{}h\}\allowbreak{}} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{kernel normalization}
+  \par\smallskip\noindent\emph{Definition.} \texttt{window volume}
+  \item \texttt{T\_\allowbreak{}\{x,\allowbreak{}h\}\allowbreak{}} --- \texttt{map}; \texttt{\textbackslash{}\allowbreak{}mathcal X\textbackslash{}\allowbreak{}to[0,\allowbreak{}1]\textasciicircum{}d}; \texttt{boundary transformation}
+  \par\smallskip\noindent\emph{Definition.} \texttt{window rescaling map}
+  \item \texttt{K\_\allowbreak{}\{x,\allowbreak{}h\}\allowbreak{}} --- \texttt{function}; \texttt{\textbackslash{}\allowbreak{}mathcal X\textbackslash{}\allowbreak{}to\textbackslash{}\allowbreak{}mathbb R\_\allowbreak{}+\allowbreak{}}; \texttt{local weight}
+  \par\smallskip\noindent\emph{Definition.} \texttt{normalized cube kernel}
+  \item \texttt{p} --- \texttt{integer}; \texttt{\textbackslash{}\allowbreak{}mathbb N}; \texttt{estimator tuning index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{local polynomial order}
+  \item \texttt{J\_\allowbreak{}p} --- \texttt{integer}; \texttt{\textbackslash{}\allowbreak{}mathbb N}; \texttt{local basis dimension}
+  \par\smallskip\noindent\emph{Definition.} \texttt{number of total-\allowbreak{}degree polynomial terms}
+  \item \texttt{\textbackslash{}\allowbreak{}rho\_\allowbreak{}p} --- \texttt{vector-\allowbreak{}valued function}; \texttt{[0,\allowbreak{}1]\textasciicircum{}d\textbackslash{}\allowbreak{}to\textbackslash{}\allowbreak{}mathbb R\textasciicircum{}\{J\_\allowbreak{}p\}\allowbreak{}}; \texttt{local polynomial basis}
+  \par\smallskip\noindent\emph{Definition.} \texttt{shifted-\allowbreak{}Legendre total-\allowbreak{}degree basis}
+  \item \texttt{r\_\allowbreak{}\{x,\allowbreak{}h,\allowbreak{}p\}\allowbreak{}} --- \texttt{vector-\allowbreak{}valued function}; \texttt{\textbackslash{}\allowbreak{}mathcal X\textbackslash{}\allowbreak{}to\textbackslash{}\allowbreak{}mathbb R\textasciicircum{}\{J\_\allowbreak{}p\}\allowbreak{}}; \texttt{local polynomial basis}
+  \par\smallskip\noindent\emph{Definition.} \texttt{rescaled local polynomial basis}
+  \item \texttt{r\_\allowbreak{}x} --- \texttt{vector}; \texttt{\textbackslash{}\allowbreak{}mathbb R\textasciicircum{}\{J\_\allowbreak{}p\}\allowbreak{}}; \texttt{evaluation vector}
+  \par\smallskip\noindent\emph{Definition.} local basis evaluated at \(x\)
+  \item \texttt{r\_\allowbreak{}B} --- \texttt{integer}; \texttt{\textbackslash{}\allowbreak{}mathbb N}; \texttt{sieve order}
+  \par\smallskip\noindent\emph{Definition.} \texttt{B-\allowbreak{}spline order}
+  \item \texttt{m} --- \texttt{integer}; \texttt{\textbackslash{}\allowbreak{}mathbb N}; \texttt{sieve tuning index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{tensor-\allowbreak{}grid resolution}
+  \item \texttt{k} --- \texttt{integer}; \texttt{\textbackslash{}\allowbreak{}mathbb N}; \texttt{sieve tuning index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{sieve dimension}
+  \item \texttt{B\_\allowbreak{}k} --- \texttt{vector-\allowbreak{}valued function}; \texttt{[0,\allowbreak{}1]\textasciicircum{}d\textbackslash{}\allowbreak{}to\textbackslash{}\allowbreak{}mathbb R\textasciicircum{}k}; \texttt{sieve basis}
+  \par\smallskip\noindent\emph{Definition.} \texttt{orthonormal tensor-\allowbreak{}product B-\allowbreak{}spline basis}
+  \item \texttt{b\_\allowbreak{}\{x,\allowbreak{}h,\allowbreak{}k\}\allowbreak{}} --- \texttt{vector-\allowbreak{}valued function}; \texttt{\textbackslash{}\allowbreak{}mathcal X\textbackslash{}\allowbreak{}to\textbackslash{}\allowbreak{}mathbb R\textasciicircum{}k}; \texttt{higher-\allowbreak{}order basis}
+  \par\smallskip\noindent\emph{Definition.} \texttt{localized normalized spline basis}
+  \item \texttt{Q\_\allowbreak{}\{x,\allowbreak{}h\}\allowbreak{}} --- \texttt{matrix}; \texttt{\textbackslash{}\allowbreak{}mathbb R\textasciicircum{}\{J\_\allowbreak{}p\textbackslash{}\allowbreak{}times J\_\allowbreak{}p\}\allowbreak{}}; \texttt{local design matrix}
+  \par\smallskip\noindent\emph{Definition.} \texttt{population local Gram matrix}
+  \item \texttt{\textbackslash{}\allowbreak{}Omega\_\allowbreak{}\{x,\allowbreak{}h,\allowbreak{}k\}\allowbreak{}} --- \texttt{matrix}; \texttt{\textbackslash{}\allowbreak{}mathbb R\textasciicircum{}\{k\textbackslash{}\allowbreak{}times k\}\allowbreak{}}; \texttt{higher-\allowbreak{}order design matrix}
+  \par\smallskip\noindent\emph{Definition.} \texttt{population localized spline Gram matrix}
+  \item \texttt{K\_\allowbreak{}0} --- \texttt{integer}; \texttt{\textbackslash{}\allowbreak{}\{2,\allowbreak{}3,\allowbreak{}\textbackslash{}\allowbreak{}ldots\textbackslash{}\allowbreak{}\}\allowbreak{}}; \texttt{cross-\allowbreak{}fitting index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{number of cross-\allowbreak{}fitting folds}
+  \item \texttt{\textbackslash{}\allowbreak{}ell} --- \texttt{integer}; \texttt{\textbackslash{}\allowbreak{}\{1,\allowbreak{}\textbackslash{}\allowbreak{}ldots,\allowbreak{}K\_\allowbreak{}0\textbackslash{}\allowbreak{}\}\allowbreak{}}; \texttt{cross-\allowbreak{}fitting index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{fold index}
+  \item \texttt{\textbackslash{}\allowbreak{}mathcal I\_\allowbreak{}\textbackslash{}\allowbreak{}ell} --- \texttt{set}; \texttt{2\textasciicircum{}\{\textbackslash{}\allowbreak{}\{1,\allowbreak{}\textbackslash{}\allowbreak{}ldots,\allowbreak{}n\textbackslash{}\allowbreak{}\}\allowbreak{}\}\allowbreak{}}; \texttt{cross-\allowbreak{}fitting partition}
+  \par\smallskip\noindent\emph{Definition.} \texttt{evaluation-\allowbreak{}fold index set}
+  \item \texttt{\textbackslash{}\allowbreak{}widehat\textbackslash{}\allowbreak{}pi\textasciicircum{}\{(-\allowbreak{}\textbackslash{}\allowbreak{}ell)\}\allowbreak{}} --- \texttt{function}; \texttt{\textbackslash{}\allowbreak{}mathcal X\textbackslash{}\allowbreak{}to[0,\allowbreak{}1]}; \texttt{nuisance estimate}
+  \par\smallskip\noindent\emph{Definition.} \texttt{training-\allowbreak{}fold propensity estimate}
+  \item \texttt{\textbackslash{}\allowbreak{}widehat\textbackslash{}\allowbreak{}mu\_\allowbreak{}0\textasciicircum{}\{(-\allowbreak{}\textbackslash{}\allowbreak{}ell)\}\allowbreak{}} --- \texttt{function}; \texttt{\textbackslash{}\allowbreak{}mathcal X\textbackslash{}\allowbreak{}to\textbackslash{}\allowbreak{}mathbb R}; \texttt{nuisance estimate}
+  \par\smallskip\noindent\emph{Definition.} \texttt{training-\allowbreak{}fold control-\allowbreak{}regression estimate}
+  \item \texttt{\textbackslash{}\allowbreak{}widetilde\textbackslash{}\allowbreak{}Omega\textasciicircum{}\{(-\allowbreak{}\textbackslash{}\allowbreak{}ell)\}\allowbreak{}\_\allowbreak{}\{x,\allowbreak{}h,\allowbreak{}k\}\allowbreak{}} --- \texttt{matrix}; \texttt{\textbackslash{}\allowbreak{}mathbb R\textasciicircum{}\{k\textbackslash{}\allowbreak{}times k\}\allowbreak{}}; \texttt{matrix estimate}
+  \par\smallskip\noindent\emph{Definition.} \texttt{raw training spline Gram matrix}
+  \item \texttt{\textbackslash{}\allowbreak{}widehat\textbackslash{}\allowbreak{}Omega\textasciicircum{}\{(-\allowbreak{}\textbackslash{}\allowbreak{}ell)\}\allowbreak{}\_\allowbreak{}\{x,\allowbreak{}h,\allowbreak{}k\}\allowbreak{}} --- \texttt{matrix}; \texttt{\textbackslash{}\allowbreak{}mathbb R\textasciicircum{}\{k\textbackslash{}\allowbreak{}times k\}\allowbreak{}}; \texttt{matrix estimate}
+  \par\smallskip\noindent\emph{Definition.} \texttt{spectrally stabilized spline Gram matrix}
+  \item \texttt{q\_\allowbreak{}-\allowbreak{}} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{matrix constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{local spectral lower threshold}
+  \item \texttt{q\_\allowbreak{}+\allowbreak{}} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{matrix constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{local spectral upper threshold}
+  \item \texttt{\textbackslash{}\allowbreak{}mathcal Z} --- \texttt{set}; \texttt{\textbackslash{}\allowbreak{}mathcal X\textbackslash{}\allowbreak{}times\textbackslash{}\allowbreak{}\{0,\allowbreak{}1\textbackslash{}\allowbreak{}\}\allowbreak{}\textbackslash{}\allowbreak{}times[-\allowbreak{}M\_\allowbreak{}Y,\allowbreak{}M\_\allowbreak{}Y]}; \texttt{operator domain}
+  \par\smallskip\noindent\emph{Definition.} \texttt{observed-\allowbreak{}data sample space}
+  \item \texttt{q\_\allowbreak{}1} --- \texttt{matrix-\allowbreak{}valued function}; \texttt{\textbackslash{}\allowbreak{}mathcal Z\textbackslash{}\allowbreak{}to\textbackslash{}\allowbreak{}mathbb R\textasciicircum{}\{J\_\allowbreak{}p\textbackslash{}\allowbreak{}times J\_\allowbreak{}p\}\allowbreak{}}; \texttt{estimating score}
+  \par\smallskip\noindent\emph{Definition.} \texttt{first-\allowbreak{}order local Gram score}
+  \item \texttt{q\_\allowbreak{}2} --- \texttt{matrix-\allowbreak{}valued kernel}; \texttt{\textbackslash{}\allowbreak{}mathcal Z\textasciicircum{}2\textbackslash{}\allowbreak{}to\textbackslash{}\allowbreak{}mathbb R\textasciicircum{}\{J\_\allowbreak{}p\textbackslash{}\allowbreak{}times J\_\allowbreak{}p\}\allowbreak{}}; \texttt{estimating kernel}
+  \par\smallskip\noindent\emph{Definition.} \texttt{second-\allowbreak{}order local Gram score}
+  \item \texttt{s\_\allowbreak{}1} --- \texttt{vector-\allowbreak{}valued function}; \texttt{\textbackslash{}\allowbreak{}mathcal Z\textbackslash{}\allowbreak{}to\textbackslash{}\allowbreak{}mathbb R\textasciicircum{}\{J\_\allowbreak{}p\}\allowbreak{}}; \texttt{estimating score}
+  \par\smallskip\noindent\emph{Definition.} \texttt{first-\allowbreak{}order local response score}
+  \item \texttt{s\_\allowbreak{}2} --- \texttt{vector-\allowbreak{}valued kernel}; \texttt{\textbackslash{}\allowbreak{}mathcal Z\textasciicircum{}2\textbackslash{}\allowbreak{}to\textbackslash{}\allowbreak{}mathbb R\textasciicircum{}\{J\_\allowbreak{}p\}\allowbreak{}}; \texttt{estimating kernel}
+  \par\smallskip\noindent\emph{Definition.} \texttt{second-\allowbreak{}order local response score}
+  \item \texttt{P\_\allowbreak{}\textbackslash{}\allowbreak{}ell} --- \texttt{empirical operator}; \texttt{\textbackslash{}\allowbreak{}\{f:\allowbreak{}\textbackslash{}\allowbreak{}mathcal Z\textbackslash{}\allowbreak{}to\textbackslash{}\allowbreak{}mathbb R\textbackslash{}\allowbreak{}\}\allowbreak{}\textbackslash{}\allowbreak{}to\textbackslash{}\allowbreak{}mathbb R}; \texttt{empirical operator}
+  \par\smallskip\noindent\emph{Definition.} \texttt{evaluation-\allowbreak{}fold empirical average}
+  \item \texttt{U\_\allowbreak{}\textbackslash{}\allowbreak{}ell} --- \texttt{U-\allowbreak{}statistic operator}; \texttt{\textbackslash{}\allowbreak{}\{f:\allowbreak{}\textbackslash{}\allowbreak{}mathcal Z\textasciicircum{}2\textbackslash{}\allowbreak{}to\textbackslash{}\allowbreak{}mathbb R\textbackslash{}\allowbreak{}\}\allowbreak{}\textbackslash{}\allowbreak{}to\textbackslash{}\allowbreak{}mathbb R}; \texttt{empirical operator}
+  \par\smallskip\noindent\emph{Definition.} \texttt{ordered evaluation-\allowbreak{}fold second-\allowbreak{}order average}
+  \item \texttt{\textbackslash{}\allowbreak{}widetilde Q\textasciicircum{}\{(\textbackslash{}\allowbreak{}ell)\}\allowbreak{}\_\allowbreak{}\{x,\allowbreak{}h\}\allowbreak{}} --- \texttt{matrix}; \texttt{\textbackslash{}\allowbreak{}mathbb R\textasciicircum{}\{J\_\allowbreak{}p\textbackslash{}\allowbreak{}times J\_\allowbreak{}p\}\allowbreak{}}; \texttt{matrix estimate}
+  \par\smallskip\noindent\emph{Definition.} \texttt{raw local Gram estimate}
+  \item \texttt{\textbackslash{}\allowbreak{}widetilde R\textasciicircum{}\{(\textbackslash{}\allowbreak{}ell)\}\allowbreak{}\_\allowbreak{}\{x,\allowbreak{}h\}\allowbreak{}} --- \texttt{vector}; \texttt{\textbackslash{}\allowbreak{}mathbb R\textasciicircum{}\{J\_\allowbreak{}p\}\allowbreak{}}; \texttt{response estimate}
+  \par\smallskip\noindent\emph{Definition.} \texttt{raw local response estimate}
+  \item \texttt{\textbackslash{}\allowbreak{}widehat Q\textasciicircum{}\{(\textbackslash{}\allowbreak{}ell)\}\allowbreak{}\_\allowbreak{}\{x,\allowbreak{}h\}\allowbreak{}} --- \texttt{matrix}; \texttt{\textbackslash{}\allowbreak{}mathbb R\textasciicircum{}\{J\_\allowbreak{}p\textbackslash{}\allowbreak{}times J\_\allowbreak{}p\}\allowbreak{}}; \texttt{matrix estimate}
+  \par\smallskip\noindent\emph{Definition.} \texttt{spectrally stabilized local Gram estimate}
+  \item \texttt{\textbackslash{}\allowbreak{}widehat\textbackslash{}\allowbreak{}tau\_\allowbreak{}n} --- \texttt{statistic}; \texttt{\textbackslash{}\allowbreak{}\{g:\allowbreak{}\textbackslash{}\allowbreak{}mathcal X\textbackslash{}\allowbreak{}to\textbackslash{}\allowbreak{}mathbb R\textbackslash{}\allowbreak{}\}\allowbreak{}}; \texttt{CATE estimate}
+  \par\smallskip\noindent\emph{Definition.} \texttt{cross-\allowbreak{}fitted higher-\allowbreak{}order local-\allowbreak{}polynomial R-\allowbreak{}learner}
+  \item \texttt{\textbackslash{}\allowbreak{}widehat G\_\allowbreak{}n\textasciicircum{}\{\textbackslash{}\allowbreak{}mathrm\{LP\}\allowbreak{}\}\allowbreak{}} --- \texttt{statistic}; \texttt{2\textasciicircum{}\{\textbackslash{}\allowbreak{}mathcal X\}\allowbreak{}}; \texttt{achieving estimator}
+  \par\smallskip\noindent\emph{Definition.} \texttt{thresholded boundary-\allowbreak{}adapted R-\allowbreak{}learner set estimator}
+  \item \texttt{T} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{tuning index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{low-\allowbreak{}smoothness tuning exponent}
+  \item \texttt{h\_\allowbreak{}n} --- \texttt{scalar}; \texttt{(0,\allowbreak{}1]}; \texttt{tuning sequence}
+  \par\smallskip\noindent\emph{Definition.} \texttt{chosen local bandwidth}
+  \item \texttt{C\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{tun\}\allowbreak{}\}\allowbreak{}} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{tuning constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{fixed lower tuning constant}
+  \item \texttt{m\_\allowbreak{}n} --- \texttt{integer}; \texttt{\textbackslash{}\allowbreak{}mathbb N}; \texttt{tuning sequence}
+  \par\smallskip\noindent\emph{Definition.} \texttt{chosen tensor-\allowbreak{}grid resolution}
+  \item \texttt{k\_\allowbreak{}n} --- \texttt{integer}; \texttt{\textbackslash{}\allowbreak{}mathbb N}; \texttt{tuning sequence}
+  \par\smallskip\noindent\emph{Definition.} chosen sieve dimension \(m_n^d\)
+  \item \texttt{c\_\allowbreak{}1} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{theorem constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{lower comparison constant}
+  \item \texttt{C\_\allowbreak{}1} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{theorem constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{upper comparison constant}
+  \item \texttt{C\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{app\}\allowbreak{}\}\allowbreak{}} --- \texttt{scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{approximation constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{uniform approximation constant}
+\end{itemize}
+
+\section{Assumptions}
+
+\begin{assumption}[ass:iid-sampling]\label{ass:iid-sampling}
+\(Z_1,\ldots,Z_n\stackrel{\mathrm{iid}}{\sim}P\).
+\par\smallskip\noindent\emph{Standard} (independent and identically distributed sampling, \cite{BonviniKennedyKeele2023MinimaxSubgroup}).
+\end{assumption}
+
+\begin{assumption}[ass:consistency]\label{ass:consistency}
+\(Y=Y^A\).
+\par\smallskip\noindent\emph{Standard} (consistency, \cite{BonviniKennedyKeele2023MinimaxSubgroup}).
+\end{assumption}
+
+\begin{assumption}[ass:conditional-exchangeability]\label{ass:conditional-exchangeability}
+\((Y^0,Y^1)\perp A\mid X\).
+\par\smallskip\noindent\emph{Standard} (conditional exchangeability, \cite{BonviniKennedyKeele2023MinimaxSubgroup}).
+\end{assumption}
+
+\begin{assumption}[ass:strict-overlap]\label{ass:strict-overlap}
+\(c_\pi\le\pi(x)\le1-c_\pi\ \text{for }x\in\mathcal X\).
+\par\smallskip\noindent\emph{Standard} (strict overlap, \cite{BonviniKennedyKeele2023MinimaxSubgroup}).
+\end{assumption}
+
+\begin{assumption}[ass:bounded-density]\label{ass:bounded-density}
+\leavevmode\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle P_X(\mathcal X)=1\ \text{and}\ c_f\le f_P(x)\le C_f\ \text{for Lebesgue-almost every }x\in\mathcal X.\)}}\par\noindent
+\par\smallskip\noindent\emph{Standard} (two-sided bounded Lebesgue density on a fixed support, \cite{BonviniKennedyKeele2023MinimaxSubgroup}).
+\end{assumption}
+
+\begin{assumption}[ass:continuous-cate-version]\label{ass:continuous-cate-version}
+\(\tau_P\in C(\mathcal X)\).
+\par\smallskip\noindent\emph{Novel.} Continuous conditional-mean versions are natural on compact covariate supports; the calibrated witness has a linear CATE version.
+\end{assumption}
+
+\begin{assumption}[ass:near-band-holder]\label{ass:near-band-holder}
+\(\tau_P\in\mathsf H_\gamma(L_\tau;\mathcal D_P(\eta))\).
+\par\smallskip\noindent\emph{Standard} (local Hölder smoothness, \cite{BonviniKennedyKeele2023MinimaxSubgroup}).
+\end{assumption}
+
+\begin{assumption}[ass:off-band-holder]\label{ass:off-band-holder}
+\(\tau_P\in\mathsf H_{\gamma'}(L_\tau;\mathcal X\setminus\mathcal D_P(\eta))\).
+\par\smallskip\noindent\emph{Standard} (off-band Hölder smoothness, \cite{BonviniKennedyKeele2023MinimaxSubgroup}).
+\end{assumption}
+
+\begin{assumption}[ass:propensity-holder]\label{ass:propensity-holder}
+\(\pi\in\mathsf H_\alpha(L_\pi;\mathcal X)\).
+\par\smallskip\noindent\emph{Standard} (Hölder propensity model, \cite{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE}).
+\end{assumption}
+
+\begin{assumption}[ass:control-holder]\label{ass:control-holder}
+\(\mu_0\in\mathsf H_\beta(L_0;\mathcal X)\).
+\par\smallskip\noindent\emph{Standard} (Hölder outcome-regression model, \cite{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE}).
+\end{assumption}
+
+\begin{assumption}[ass:lower-margin]\label{ass:lower-margin}
+\(c_m t^\xi\le P_X\{0<|\tau_P(X)-\theta|\le t\}\ \text{for }0<t\le t_0.\)
+\par\smallskip\noindent\emph{Novel.} A two-sided lower margin mass records a nondegenerate boundary; in the calibrated transverse model the exponent is one.
+\end{assumption}
+
+\begin{assumption}[ass:upper-margin]\label{ass:upper-margin}
+\(P_X\{0<|\tau_P(X)-\theta|\le t\}\le C_m t^\xi\ \text{for }0<t\le t_0.\)
+\par\smallskip\noindent\emph{Standard} (Tsybakov upper-margin condition, \cite{AudibertTsybakov2007FastPlugin}).
+\end{assumption}
+
+\begin{assumption}[ass:interior-crossing]\label{ass:interior-crossing}
+\(\exists x^-,x^+\in\operatorname{int}(\mathcal X):\tau_P(x^-)<\theta<\tau_P(x^+)\).
+\par\smallskip\noindent\emph{Standard} (interior threshold crossing, \cite{AudibertTsybakov2007FastPlugin}).
+\end{assumption}
+
+\section{Definitions}
+
+\begin{definition}[def:holder-ball]\label{def:holder-ball}
+\par\smallskip\noindent\emph{Defined object.} \texttt{\textbackslash{}\allowbreak{}mathsf H\_\allowbreak{}\textbackslash{}\allowbreak{}rho(L;\allowbreak{}U)}
+\par\smallskip\noindent\emph{Construction.} \(\mathsf H_\rho(L;U)=\{g:U\to\mathbb R:\|g\|_{\mathsf H^\rho(U)}\le L\}\).
+\end{definition}
+
+\begin{definition}[def:calibration]\label{def:calibration}
+\par\smallskip\noindent\emph{Defined object.} \texttt{calibrated parameter value}
+\par\smallskip\noindent\emph{Construction.} \leavevmode\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathcal X=[-1,1]^d,\ M_Y=1,\ \theta=0,\ \eta=t_0=c,\ c_f=C_f=2^{-d},\ c_\pi=1/4,\ c_m=C_m=c^{-1},\ L_\pi=L_0=L_\tau=1\)}}\par\noindent.
+\end{definition}
+
+\begin{definition}[def:average-smoothness]\label{def:average-smoothness}
+\par\smallskip\noindent\emph{Defined object.} \texttt{average nuisance smoothness}
+\par\smallskip\noindent\emph{Construction.} \(\bar s=(\alpha+\beta)/2\).
+\end{definition}
+
+\begin{definition}[def:cate]\label{def:cate}
+\par\smallskip\noindent\emph{Defined object.} \texttt{designated CATE version}
+\par\smallskip\noindent\emph{Construction.} \(\tau_P(x)=\mu_1(x)-\mu_0(x)\) for \(P_X\)-almost every \(x\in\mathcal X\), with \(\tau_P\) the continuous representative.
+\end{definition}
+
+\begin{definition}[def:band]\label{def:band}
+\par\smallskip\noindent\emph{Defined object.} \texttt{near-\allowbreak{}threshold band}
+\par\smallskip\noindent\emph{Construction.} \(\mathcal D_P(\eta)=\{x\in\mathcal X:|\tau_P(x)-\theta|\le\eta\}\).
+\end{definition}
+
+\begin{definition}[def:upper-set]\label{def:upper-set}
+\par\smallskip\noindent\emph{Defined object.} \texttt{CATE upper-\allowbreak{}level set}
+\par\smallskip\noindent\emph{Construction.} \(G_P=\{x\in\mathcal X:\tau_P(x)>\theta\}\).
+\end{definition}
+
+\begin{definition}[def:weighted-loss]\label{def:weighted-loss}
+\par\smallskip\noindent\emph{Defined object.} \texttt{weighted symmetric-\allowbreak{}difference loss}
+\par\smallskip\noindent\emph{Construction.} \(d_H(H,G_P;P)=\int_{H\triangle G_P}|\tau_P(x)-\theta|f_P(x)\,dx\).
+\end{definition}
+
+\begin{definition}[def:rate]\label{def:rate}
+\par\smallskip\noindent\emph{Defined object.} \texttt{two-\allowbreak{}branch CATE scale}
+\par\smallskip\noindent\emph{Construction.} \(r_n^*=n^{-\gamma/(2\gamma+d)}\) if \(\bar s\ge d/[4\{1+d/(2\gamma)\}]\), and \(r_n^*=n^{-1/[1+d/(4\bar s)+d/(2\gamma)]}\) otherwise.
+\end{definition}
+
+\begin{definition}[def:smooth-model]\label{def:smooth-model}
+\par\smallskip\noindent\emph{Defined object.} \texttt{\textbackslash{}\allowbreak{}mathcal M(\textbackslash{}\allowbreak{}xi,\allowbreak{}\textbackslash{}\allowbreak{}gamma;\allowbreak{}\textbackslash{}\allowbreak{}kappa)}
+\par\smallskip\noindent\emph{Construction.} \leavevmode\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathcal M(\xi,\gamma;\kappa)=\{P\in\mathcal P(\mathcal X\times\{0,1\}\times[-M_Y,M_Y]):P\text{ satisfies }\mathrm{ass:strict-overlap},\mathrm{ass:bounded-density},\mathrm{ass:continuous-cate-version},\mathrm{ass:near-band-holder},\mathrm{ass:off-band-holder},\mathrm{ass:propensity-holder},\mathrm{ass:control-holder},\mathrm{ass:lower-margin},\mathrm{ass:upper-margin},\mathrm{ass:interior-crossing}\}\)}}\par\noindent.
+\par\smallskip\noindent\emph{Member properties.} \texttt{ass:\allowbreak{}strict-\allowbreak{}overlap}; \texttt{ass:\allowbreak{}bounded-\allowbreak{}density}; \texttt{ass:\allowbreak{}continuous-\allowbreak{}cate-\allowbreak{}version}; \texttt{ass:\allowbreak{}near-\allowbreak{}band-\allowbreak{}holder}; \texttt{ass:\allowbreak{}off-\allowbreak{}band-\allowbreak{}holder}; \texttt{ass:\allowbreak{}propensity-\allowbreak{}holder}; \texttt{ass:\allowbreak{}control-\allowbreak{}holder}; \texttt{ass:\allowbreak{}lower-\allowbreak{}margin}; \texttt{ass:\allowbreak{}upper-\allowbreak{}margin}; \texttt{ass:\allowbreak{}interior-\allowbreak{}crossing}.
+\end{definition}
+
+\begin{definition}[def:transverse-model]\label{def:transverse-model}
+\par\smallskip\noindent\emph{Defined object.} \texttt{\textbackslash{}\allowbreak{}mathcal M\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{tr\}\allowbreak{}\}\allowbreak{}(\textbackslash{}\allowbreak{}gamma;\allowbreak{}\textbackslash{}\allowbreak{}kappa)}
+\par\smallskip\noindent\emph{Construction.} \(\mathcal M_{\mathrm{tr}}(\gamma;\kappa)=\mathcal M(1,\gamma;\kappa)\) for \(\gamma\in(d,\infty)\).
+\par\smallskip\noindent\emph{Member properties.} \texttt{ass:\allowbreak{}strict-\allowbreak{}overlap}; \texttt{ass:\allowbreak{}bounded-\allowbreak{}density}; \texttt{ass:\allowbreak{}continuous-\allowbreak{}cate-\allowbreak{}version}; \texttt{ass:\allowbreak{}near-\allowbreak{}band-\allowbreak{}holder}; \texttt{ass:\allowbreak{}off-\allowbreak{}band-\allowbreak{}holder}; \texttt{ass:\allowbreak{}propensity-\allowbreak{}holder}; \texttt{ass:\allowbreak{}control-\allowbreak{}holder}; \texttt{ass:\allowbreak{}lower-\allowbreak{}margin}; \texttt{ass:\allowbreak{}upper-\allowbreak{}margin}; \texttt{ass:\allowbreak{}interior-\allowbreak{}crossing}.
+\end{definition}
+
+\begin{definition}[def:minimax-risk]\label{def:minimax-risk}
+\par\smallskip\noindent\emph{Defined object.} \texttt{\textbackslash{}\allowbreak{}mathfrak R\_\allowbreak{}n(\textbackslash{}\allowbreak{}xi,\allowbreak{}\textbackslash{}\allowbreak{}gamma;\allowbreak{}\textbackslash{}\allowbreak{}kappa)}
+\par\smallskip\noindent\emph{Construction.} \leavevmode\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathfrak R_n(\xi,\gamma;\kappa)=\inf_{\widehat G_n}\sup_{P\in\mathcal M(\xi,\gamma;\kappa)}\mathbb E_P[d_H(\widehat G_n,G_P;P)]\)}}\par\noindent.
+\end{definition}
+
+\begin{definition}[def:feasible-frontier]\label{def:feasible-frontier}
+\par\smallskip\noindent\emph{Defined object.} \texttt{\textbackslash{}\allowbreak{}mathcal F(\textbackslash{}\allowbreak{}kappa)}
+\par\smallskip\noindent\emph{Construction.} \leavevmode\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathcal F(\kappa)=\{(\xi,\gamma)\in(0,\infty)^2:\xi\gamma>d,\ \mathcal M(\xi,\gamma;\kappa)\ne\varnothing\}\)}}\par\noindent.
+\end{definition}
+
+\begin{definition}[def:transverse-witness]\label{def:transverse-witness}
+\par\smallskip\noindent\emph{Defined object.} \(P^{\mathrm{tr}}\)
+\par\smallskip\noindent\emph{Construction.} Given \(X=x\), draw \(U_A,U_0,U_1\) independently as \(\operatorname{Unif}(0,1)\), independently of \(X\), and set \(A=\mathbf 1\{U_A\le1/2\}\), \(Y^0=\mathbf 1\{U_0\le1/2\}\), \(Y^1=\mathbf 1\{U_1\le1/2+cx_1\}\), and \(Y=Y^A\), with \(X\sim\operatorname{Unif}([-1,1]^d)\). Equivalently, \(P(A=a,Y^0=y_0,Y^1=y_1\mid X=x)=\tfrac12\prod_{b=0}^1p_b(x)^{y_b}\{1-p_b(x)\}^{1-y_b}\), where \(p_0(x)=1/2\) and \(p_1(x)=1/2+cx_1\).
+\end{definition}
+
+\begin{definition}[def:window-basis]\label{def:window-basis}
+\par\smallskip\noindent\emph{Defined object.} \texttt{boundary-\allowbreak{}adapted local basis}
+\par\smallskip\noindent\emph{Construction.} \leavevmode\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle L_j=\max\{-1,x_j-h/2\},\ R_j=\min\{1,x_j+h/2\},\ \ell_j=R_j-L_j,\ W_{x,h}=\prod_{j=1}^d[L_j,R_j],\ V_{x,h}=\prod_{j=1}^d\ell_j,\ T_{x,h}(u)_j=(u_j-L_j)/\ell_j,\ K_{x,h}(u)=V_{x,h}^{-1}\mathbf 1\{u\in W_{x,h}\}\)}}\par\noindent. Also \(J_p=\binom{d+p}{p}\), \(r_{x,h,p}(u)=\rho_p(T_{x,h}(u))\), and \(r_x=r_{x,h,p}(x)\), where \(\rho_p\) is the shifted-Legendre total-degree basis orthonormal on \([0,1]^d\).
+\end{definition}
+
+\begin{definition}[def:spline-basis]\label{def:spline-basis}
+\par\smallskip\noindent\emph{Defined object.} \texttt{localized tensor B-\allowbreak{}spline basis}
+\par\smallskip\noindent\emph{Construction.} Choose \(r_B\ge\lceil\max\{\alpha,\beta,\gamma,\gamma'\}\rceil+1\), let \(k=m^d\), let \(B_k\) be an \(L_2([0,1]^d)\)-orthonormalized tensor-product B-spline basis of order \(r_B\), and set \(b_{x,h,k}(u)=V_{x,h}^{-1/2}B_k(T_{x,h}(u))\mathbf 1\{u\in W_{x,h}\}\).
+\end{definition}
+
+\begin{definition}[def:local-matrices]\label{def:local-matrices}
+\par\smallskip\noindent\emph{Defined object.} \texttt{population local matrices}
+\par\smallskip\noindent\emph{Construction.} \(Q_{x,h}=\mathbb E[K_{x,h}(X)r_{x,h,p}(X)r_{x,h,p}(X)^\top\pi(X)\{1-\pi(X)\}]\) and \(\Omega_{x,h,k}=\mathbb E[b_{x,h,k}(X)b_{x,h,k}(X)^\top]\).
+\end{definition}
+
+\begin{definition}[def:boundary-adapted-estimator]\label{def:boundary-adapted-estimator}
+\par\smallskip\noindent\emph{Defined object.} \texttt{\textbackslash{}\allowbreak{}widehat G\_\allowbreak{}n\textasciicircum{}\{\textbackslash{}\allowbreak{}mathrm\{LP\}\allowbreak{}\}\allowbreak{}}
+\par\smallskip\noindent\emph{Construction.} Use the known density input \(F_0(x)=2^{-d}\), set \(p=\lceil\gamma\rceil-1\), \(q_-=2^{-d-1}c_\pi(1-c_\pi)\), and \(q_+=2^{-d-1}\), and partition \(\{1,\ldots,n\}\) into fixed balanced folds \(\mathcal I_1,\ldots,\mathcal I_{K_0}\). On every training complement set \(\widehat\pi^{(-\ell)}(x)=1/2\), \(\widehat\mu_0^{(-\ell)}(x)=0\), and \(\widehat\Omega^{(-\ell)}_{x,h,k}=2^{-d}I_k\). Let \(P_\ell f=|\mathcal I_\ell|^{-1}\sum_{i\in\mathcal I_\ell}f(Z_i)\) and \(U_\ell f=|\mathcal I_\ell|^{-1}(|\mathcal I_\ell|-1)^{-1}\sum_{i\ne j\in\mathcal I_\ell}f(Z_i,Z_j)\). Define \(q_1(Z)=K_{x,h}(X)r_{x,h,p}(X)r_{x,h,p}(X)^\top A[A-\widehat\pi^{(-\ell)}(X)]\), \leavevmode\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle q_2(Z_1,Z_2)=-V_{x,h}K_{x,h}(X_1)K_{x,h}(X_2)r_{x,h,p}(X_1)r_{x,h,p}(X_1)^\top[A_1-\widehat\pi^{(-\ell)}(X_1)]b_{x,h,k}(X_1)^\top[\widehat\Omega^{(-\ell)}_{x,h,k}]^{-1}b_{x,h,k}(X_2)A_2\)}}\par\noindent, \(s_1(Z)=K_{x,h}(X)r_{x,h,p}(X)[Y-\widehat\mu_0^{(-\ell)}(X)][A-\widehat\pi^{(-\ell)}(X)]\), and \leavevmode\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle s_2(Z_1,Z_2)=-V_{x,h}K_{x,h}(X_1)K_{x,h}(X_2)r_{x,h,p}(X_1)[A_1-\widehat\pi^{(-\ell)}(X_1)]b_{x,h,k}(X_1)^\top[\widehat\Omega^{(-\ell)}_{x,h,k}]^{-1}b_{x,h,k}(X_2)[Y_2-\widehat\mu_0^{(-\ell)}(X_2)]\)}}\par\noindent. Set \(\widetilde Q^{(\ell)}_{x,h}=P_\ell q_1+U_\ell q_2\), \(\widetilde R^{(\ell)}_{x,h}=P_\ell s_1+U_\ell s_2\), and \leavevmode\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \widehat Q^{(\ell)}_{x,h}=T_{[q_-,q_+]}\{(\widetilde Q^{(\ell)}_{x,h}+\widetilde Q^{(\ell)\top}_{x,h})/2\}\)}}\par\noindent. For symmetric \(M=V\operatorname{diag}(\lambda_j)V^\top\), let \(T_{[a,b]}(M)=V\operatorname{diag}(\min\{b,\max\{a,\lambda_j\}\})V^\top\). Finally set \leavevmode\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \widehat\tau_n(x)=K_0^{-1}\sum_{\ell=1}^{K_0}\operatorname{clip}_{[-2M_Y,2M_Y]}\{r_x^\top[\widehat Q^{(\ell)}_{x,h}]^{-1}\widetilde R^{(\ell)}_{x,h}\}\)}}\par\noindent and \(\widehat G_n^{\mathrm{LP}}=\{x\in\mathcal X:\widehat\tau_n(x)>\theta\}\). A nonfinite raw matrix or a fold of size smaller than two returns \(\theta\) on that fold.
+\par\smallskip\noindent\emph{Inputs.} \texttt{Z\_\allowbreak{}i}; \texttt{\textbackslash{}\allowbreak{}kappa}.
+\end{definition}
+
+\begin{definition}[def:tuning]\label{def:tuning}
+\par\smallskip\noindent\emph{Defined object.} \texttt{two-\allowbreak{}branch tuning}
+\par\smallskip\noindent\emph{Construction.} Let \(\bar s=(\alpha+\beta)/2\), \(T=1+d/(4\bar s)+d/(2\gamma)\), and \(r_n=r_n^*\). In the high-smoothness branch set \(h_n=n^{-1/(2\gamma+d)}\), \(m_n=\lceil C_{\mathrm{tun}}^{1/d}(nh_n^d)^{1/d}\rceil\), and \(k_n=m_n^d\). In the low-smoothness branch set \(h_n=n^{-1/(\gamma T)}\), \(m_n=\lceil C_{\mathrm{tun}}^{1/d}h_n(r_n^*)^{-1/(2\bar s)}\rceil\), and \(k_n=m_n^d\).
+\end{definition}
+
+\section{Main results}
+
+\begin{theorem}[thm:identified-version]\label{thm:identified-version}
+Under \(\mathrm{ass:consistency}\), \(\mathrm{ass:conditional-exchangeability}\), \(\mathrm{ass:strict-overlap}\), and \(\mathrm{ass:continuous-cate-version}\), \(\tau_P(X)=\mathbb E[Y^1-Y^0\mid X]\) almost surely. The continuous representative is unique on \(\operatorname{supp}(P_X)\); hence \(G_P\) is an observed-law functional modulo \(P_X\)-null sets, and \(d_H(H,G_P;P)\) is invariant to \(P_X\)-null changes of either set.
+\end{theorem}
+\begin{proof}
+\textbf{Identification.} Fix \(a\in\{0,1\}\). Boundedness of \(Y^a\) guarantees integrability. By \(\mathrm{ass:conditional-exchangeability}\),
+\[
+ \mathbb E_P[Y^a\mid X,A=a]=\mathbb E_P[Y^a\mid X]
+\]
+where the left-hand conditional mean is defined. By \(\mathrm{ass:strict-overlap}\), \(P(A=a\mid X)\ge c_\pi>0\) almost surely, so the arm-specific conditional mean is determined for \(P_X\)-almost every covariate value. On \(\{A=a\}\), \(\mathrm{ass:consistency}\) gives \(Y=Y^a\). Therefore
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mu_a(X)
+ =\mathbb E_P[Y\mid X,A=a]
+ =\mathbb E_P[Y^a\mid X,A=a]
+ =\mathbb E_P[Y^a\mid X]
+ \qquad P\text{-almost surely}.\)}}
+\]
+Subtracting the identities for \(a=0\) and \(a=1\), and then applying \(\mathrm{def:cate}\), yields
+\[
+ \tau_P(X)
+ =\mu_1(X)-\mu_0(X)
+ =\mathbb E_P[Y^1-Y^0\mid X]
+ \qquad P\text{-almost surely}.
+\]
+
+\textbf{Uniqueness on the support.} Let \(g_1,g_2\in C(\mathcal X)\) represent the same \(P_X\)-almost-sure equivalence class. Suppose that \(g_1(x_0)\ne g_2(x_0)\) at some \(x_0\in\operatorname{supp}(P_X)\). Continuity gives an \(\varepsilon>0\) and a relatively open neighborhood \(O\) of \(x_0\) in \(\mathcal X\) such that
+\[
+ |g_1(x)-g_2(x)|>\varepsilon
+ \qquad\text{for every }x\in O.
+\]
+The definition of support gives \(P_X(O)>0\), contradicting \(g_1=g_2\) \(P_X\)-almost surely. Hence \(g_1=g_2\) on \(\operatorname{supp}(P_X)\). By \(\mathrm{ass:continuous-cate-version}\), this applies to the designated continuous representative \(\tau_P\).
+
+The observed law determines each \(\mu_a\) as an arm-specific conditional mean on the set where that arm has positive conditional probability. Strict overlap makes this set have full \(P_X\)-measure for both arms. Thus the observed law determines \(\tau_P\) \(P_X\)-almost surely, and the preceding uniqueness argument determines its continuous representative on \(\operatorname{supp}(P_X)\). By \(\mathrm{def:upper-set}\), any two versions of \(G_P\) obtained from observationally equivalent representatives can therefore differ only on a \(P_X\)-null set.
+
+\textbf{Null-set invariance of the loss.} Because \(f_P\) is the Lebesgue density of \(P_X\), \(\mathrm{def:weighted-loss}\) can be written as
+\[
+ d_H(H,G_P;P)
+ =\int_{\mathcal X}\mathbf 1_{H\triangle G_P}(x)
+       |\tau_P(x)-\theta|\,dP_X(x).
+\]
+Let \(H'\) and \(G'_P\) satisfy \(P_X(H'\triangle H)=0\) and \(P_X(G'_P\triangle G_P)=0\). The elementary set inclusion
+\[
+ (H'\triangle G'_P)\triangle(H\triangle G_P)
+ \subseteq (H'\triangle H)\cup(G'_P\triangle G_P)
+\]
+shows that the two indicator functions in the corresponding loss integrals agree \(P_X\)-almost surely. Their nonnegative integrals are consequently equal. This proves invariance to \(P_X\)-null changes of either set. No numerical upper or lower bound on \(f_P\) is used.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This theorem separates the causal CATE target from its observed-law conditional-mean representation. \textit{Gap.} Identification is needed before the level set and weighted loss can be treated as observed-law objects. \textit{Consumer.} It supports the causal interpretation of every surviving feasibility and risk statement.
+
+\begin{theorem}[thm:calibrated-witness]\label{thm:calibrated-witness}
+Under \(\mathrm{def:calibration}\), the observed marginal induced by \(P^{\mathrm{tr}}\) belongs to \(\mathcal M_{\mathrm{tr}}(\gamma;\kappa)\) for every \(\gamma>d\) and \(\gamma'>0\). It satisfies \((Y^0,Y^1)\perp A\mid X\), \(Y=Y^A\), \(\pi=1/2\), \(\mu_0=1/2\), \(\mu_1(x)=1/2+cx_1\), \(\tau_{P^{\mathrm{tr}}}(x)=cx_1\), and \(P_X\{0<|\tau_{P^{\mathrm{tr}}}(X)-\theta|\le t\}=t/c\) for \(0<t\le c\).
+\end{theorem}
+\begin{proof}
+By \(\mathrm{def:transverse-witness}\), conditional on \(X=x\), the treatment variable \(A\) is a function of \(U_A\), whereas \((Y^0,Y^1)\) is a function of \((U_0,U_1)\). The three uniforms are conditionally independent, so
+\[
+(Y^0,Y^1)\perp A\mid X.
+\]
+The same definition sets \(Y=Y^A\). Since \(A=\mathbf 1\{U_A\le 1/2\}\),
+\[
+\pi(x)=P(A=1\mid X=x)=\frac12.
+\]
+Conditional exchangeability and consistency, or directly the independent-uniform construction, give
+\[
+\mu_0(x)=\mathbb E[Y\mid A=0,X=x]=\frac12,
+\qquad
+\mu_1(x)=\mathbb E[Y\mid A=1,X=x]=\frac12+cx_1.
+\]
+Consequently, \(\mathrm{def:cate}\) gives the continuous representative
+\[
+\tau_{P^{\mathrm{tr}}}(x)=\mu_1(x)-\mu_0(x)=cx_1.
+\]
+Because \(0<c<1/4\) and \(x_1\in[-1,1]\), all Bernoulli probabilities in the construction belong to \([1/4,3/4]\), and \(Y\in[0,1]\subseteq[-M_Y,M_Y]\) under \(M_Y=1\). The propensity \(1/2\) satisfies strict overlap with \(c_\pi=1/4\). The uniform distribution on \([-1,1]^d\) has density \(2^{-d}=c_f=C_f\).
+
+The functions \(\pi\) and \(\mu_0\) are constant, while \(\tau_{P^{\mathrm{tr}}}(x)=cx_1\) is affine. In the Taylor-remainder norm of \(\mathrm{def:holder-ball}\), the relevant norms are at most one: the only nonzero derivative of the affine term has magnitude \(c<1/4\), and every higher-order Taylor remainder is zero. Furthermore,
+\[
+|\tau_{P^{\mathrm{tr}}}(x)-\theta|=|cx_1|\le c=\eta,
+\]
+so \(\mathcal D_{P^{\mathrm{tr}}}(\eta)=\mathcal X\). Thus the near-band Hölder condition holds for every \(\gamma>d\), and the off-band Hölder condition is vacuous for every \(\gamma'>0\).
+
+For \(0<t\le c\), uniformity of \(X_1\) and \(\theta=0\) yield
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \begin{aligned}
+P_X\{0<|\tau_{P^{\mathrm{tr}}}(X)-\theta|\le t\}
+&=P\{0<|cX_1|\le t\}\\
+&=P\{0<|X_1|\le t/c\}
+=\frac{t}{c}.
+\end{aligned}\)}}
+\]
+Since \(c_m=C_m=c^{-1}\), this identity is exactly the lower and upper margin condition with \(\xi=1\) for \(0<t\le t_0=c\). Finally, the interior points
+\[
+x^-=(-1/2,0,\ldots,0),
+\qquad
+x^+=(1/2,0,\ldots,0)
+\]
+have CATE values \(-c/2<0=\theta<c/2\). Hence the interior-crossing condition holds. We have verified every member property in \(\mathrm{def:smooth-model}\), so the observed marginal induced by \(P^{\mathrm{tr}}\) belongs to
+\[
+\mathcal M(1,\gamma;\kappa)=\mathcal M_{\mathrm{tr}}(\gamma;\kappa)
+\]
+for every \(\gamma>d\) and every \(\gamma'>0\), and all the asserted identities have already been established.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The explicit transverse law proves nonemptiness and an interior threshold crossing for every feasible calibrated smoothness index. \textit{Gap.} A feasibility characterization requires an actual member law, not only a compatibility obstruction. \textit{Consumer.} It supplies the reverse inclusion in the calibrated frontier theorem and the nonemptiness part of risk well-posedness.
+
+\begin{lemma}[lem:uniform-design]\label{lem:uniform-design}
+For every \(P\in\mathcal M_{\mathrm{tr}}(\gamma;\kappa)\) under \(\mathrm{def:calibration}\), \(f_P=F_0=2^{-d}\) Lebesgue-almost everywhere on \(\mathcal X\); its zero extension vanishes off \(\mathcal X\). Thus the density-ratio error is zero and the density-ratio supremum is one.
+\end{lemma}
+\begin{proof}
+Fix \(P\in\mathcal M_{\mathrm{tr}}(\gamma;\kappa)\). Under \(\mathrm{def:calibration}\), the support is \(\mathcal X=[-1,1]^d\) and the two density constants satisfy \(c_f=C_f=2^{-d}\). Assumption \(\mathrm{ass:bounded-density}\) therefore gives
+\[
+2^{-d}\le f_P(x)\le 2^{-d}
+\]
+for Lebesgue-almost every \(x\in\mathcal X\), whence \(f_P(x)=2^{-d}\) almost everywhere on \(\mathcal X\). By its declared meaning, \(F_0\) is the uniform density on \(\mathcal X\); since the cube has volume \(2^d\), normalization gives \(F_0(x)=2^{-d}\). Thus \(f_P=F_0\) almost everywhere. By definition, the zero extension of a density supported on \(\mathcal X\) vanishes on \(\mathbb R^d\setminus\mathcal X\). Consequently \(f_P/F_0=1\) almost everywhere on \(\mathcal X\): any density-ratio error relative to \(F_0\) is zero and the essential supremum of the ratio is one.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} Calibration and the two-sided density equality force the covariate density to equal the known uniform reference. \textit{Gap.} The displayed statistic uses a known density input whose relation to member laws must be explicit. \textit{Consumer.} It supports the deterministic Gram and score-envelope calculations without implying a risk rate.
+
+\begin{openendedquestion}[oeq:nontransverse-frontier]\label{oeq:nontransverse-frontier}
+For fixed calibrated \(\kappa\) and \(\gamma>d\), does \(\mathfrak R_n(1,\gamma;\kappa)\asymp(r_n^*)^2\) hold in either or both branches of \(r_n^*\)?
+\end{openendedquestion}
+For every fixed calibrated \(\kappa\), every \(\gamma>d\), and all sufficiently large \(n\),
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle c n^{-2\gamma/(2\gamma+d)}
+\le \mathfrak R_n(1,\gamma;\kappa)
+\le C n^{-2\min\{\beta,\gamma\}/\{2\min\{\beta,\gamma\}+d\}}.\)}}
+\]
+If \(\beta\ge\gamma\), then \(\bar s=(\alpha+\beta)/2\ge\gamma/2>d/[4\{1+d/(2\gamma)\}]\), so the high-smoothness branch applies and \((r_n^*)^2=n^{-2\gamma/(2\gamma+d)}\). Hence
+\[
+\mathfrak R_n(1,\gamma;\kappa)\asymp(r_n^*)^2
+\]
+in that subregime. When \(\beta<\gamma\), the displayed two-sided bracket is the strongest conclusion established by the frozen proof spine.
+\par\smallskip\noindent \textit{Justification.} This question now isolates the known-uniform-design minimax problem left after the matched \(\beta\ge\gamma\) subregime. \textit{Gap.} For \(\beta<\gamma\), the direct bracket does not match, and the standard low-smoothness fuzzy construction violates the calibrated full-support density. \textit{Consumer.} A future solution must neutralize the transition-region likelihood under uniform design or prove a different sharp rate for the calibrated class.
+
+\begin{lemma}[lem:exact-margin-graph-packing]\label{lem:exact-margin-graph-packing}
+Under \(\mathrm{def:calibration}\), for every \(\gamma>d\) and every sufficiently small \(h>0\), put \(\delta=h^\gamma\). There are an integer \(M\ge c_0h^{-(d-1)}\), with \(M=1\) when \(d=1\), and functions \(\tau_\omega\in\mathsf H_\gamma(1;\mathcal X)\), indexed by \(\omega\in\{0,1\}^M\), such that: each \(\tau_\omega\) crosses zero in the interior; under the uniform law on \(\mathcal X\),
+\[
+ P_X\{0<|\tau_\omega(X)|\le t\}=t/c\qquad(0<t\le c);
+\]
+and, if \(\omega^{(j)}\) differs from \(\omega\) only in coordinate \(j\), then the corresponding upper sets have a local weighted separation \(s_j\ge c_1\delta^2h^{d-1}\) in the sense that, for every measurable \(H\), the sum of the two losses restricted to the \(j\)-th patch is at least \(s_j\). Moreover, adjacent CATEs differ by at most \(C\delta\) on a set of Lebesgue measure at most \(Ch^d\).
+\end{lemma}
+\begin{proof}
+Put \(D=d-1\) and write \(x=(x_1,z)\), where \(z\in[-1,1]^D\); when \(d=1\), all notation involving \(z\) is omitted. Choose a nonincreasing function \(\chi\in C^\infty([0,\infty);[0,1])\) such that \(\chi=1\) on \([0,1/4]\) and \(\chi=0\) on \([3/4,\infty)\), and put \(\psi=-2\chi\chi'\ge0\). If \(D\ge1\), choose \(\phi\in C_c^\infty((-1/2,1/2)^D;[0,1])\) equal to one on \([-1/4,1/4]^D\). For every sufficiently small \(h\), one can pack pairwise disjoint cubes \(z_j+h(-1/2,1/2)^D\) in \((-1,1)^D\), \(1\le j\le M\), with \(M\ge c_0h^{-D}\). Fix a sufficiently small constant \(a>0\), independent of \(h\) and \(\omega\), and define
+\[
+ b_\omega(z)=a\delta\sum_{j=1}^M(2\omega_j-1)\phi\!\left(\frac{z-z_j}{h}\right)^2,
+ \qquad \delta=h^\gamma.
+\]
+For \(d=1\), take \(M=1\) and \(b_\omega=a\delta(2\omega_1-1)\). Disjointness of the bump supports gives, for every multi-index \(q\),
+\[
+ \|D^q b_\omega\|_\infty\le C_q a h^{\gamma-|q|}.
+\]
+In particular, because \(\gamma>d\ge1\),
+\[
+ \frac{\|b_\omega\|_\infty}{h}\le Ca h^{\gamma-1}\longrightarrow0.
+\]
+This limit is the scale separation needed both for the change-of-variables construction and for the linear formulas used below.
+
+Set \(q_h(w)=\chi(|w|/h)^2\). This is smooth at zero because it is constant near zero. For fixed \(z\), define
+\[
+ \Phi_\omega(w,z)=w+b_\omega(z)q_h(w),\qquad -1\le w\le1.
+\]
+For \(w>0\) and \(w<0\), respectively,
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \partial_w\Phi_\omega(w,z)
+ =1-\frac{b_\omega(z)}h\psi(w/h),
+ \qquad
+ \partial_w\Phi_\omega(w,z)
+ =1+\frac{b_\omega(z)}h\psi((-w)/h).\)}}
+\]
+Thus, after decreasing the upper bound on \(h\), \(\partial_w\Phi_\omega\ge1/2\) uniformly. Moreover, \(\Phi_\omega(-1,z)=-1\) and \(\Phi_\omega(1,z)=1\). Hence \(w\mapsto\Phi_\omega(w,z)\) is a smooth increasing bijection of \([-1,1]\). Let \(w_\omega(x_1,z)\) be its inverse and define
+\[
+ \tau_\omega(x_1,z)=c\,w_\omega(x_1,z).
+\]
+The implicit-function theorem and the uniform lower bound on \(\partial_w\Phi_\omega\) show that this is a smooth function on the cube. Its zero set is the graph \(x_1=b_\omega(z)\), and therefore
+\[
+ \{\tau_\omega>0\}=\{(x_1,z):x_1>b_\omega(z)\}.
+\]
+Because \(q_h(w)=0\) for \(|w|\ge3h/4\), one has \(\tau_\omega(x)=cx_1\) away from an \(O(h)\)-neighborhood of that graph. In particular, for small \(h\), the two interior points \((1/2,0)\) and \((-1/2,0)\) have strictly positive and strictly negative values, respectively.
+
+We next verify the exact margin identity. For \(0\le v\le1\), the two points having \(|w_\omega|=v\) are
+\[
+ x_+(v,z)=v+b_\omega(z)\chi(v/h)^2,
+ \qquad
+ x_-(v,z)=-v+b_\omega(z)\chi(v/h)^2.
+\]
+Their derivatives are
+\[
+ \partial_vx_+=1-\frac{b_\omega(z)}h\psi(v/h),
+ \qquad
+ \partial_vx_-=-1-\frac{b_\omega(z)}h\psi(v/h).
+\]
+Conditional on \(z\), the calibrated uniform distribution gives density \(1/2\) to \(X_1\). Therefore the conditional density of \(V=|w_\omega(X_1,z)|\) is
+\[
+ f_{V\mid z}(v)=\frac12\bigl(\partial_vx_+(v,z)+|\partial_vx_-(v,z)|\bigr)=1,
+ \qquad 0<v<1.
+\]
+Since \(|\tau_\omega(X)|=cV\), integration over \(z\) yields
+\[
+ P_X\{0<|\tau_\omega(X)|\le t\}=\frac tc,
+ \qquad 0<t\le c.
+\]
+
+It remains to check the claimed Hölder radius, including noninteger \(\gamma\). Write \(R_\omega=\tau_\omega-cx_1\). Repeated implicit differentiation of
+\[
+ x_1=w_\omega+b_\omega(z)q_h(w_\omega)
+\]
+uses only the bounds \(\partial_w\Phi_\omega\ge1/2\), \(\|D^qb_\omega\|_\infty\le C_qah^{\gamma-|q|}\), and \(\|q_h^{(r)}\|_\infty\le C_rh^{-r}\). Induction on total derivative order consequently gives
+\[
+ \|D^mR_\omega\|_\infty\le C_m a h^{\gamma-m}
+ \quad\text{for every integer }0\le m\le\lceil\gamma\rceil.
+\]
+For completeness, the induction step follows by differentiating the implicit equation once more: the unique highest-order derivative of \(w_\omega\) is multiplied by \(\partial_w\Phi_\omega\), while every remaining product has total scale \(a h^{\gamma-m}\); division by \(\partial_w\Phi_\omega\ge1/2\) preserves that order.
+
+If \(\gamma\) is an integer, the bound with \(m=\gamma\) and Taylor's integral remainder give a degree-\(\gamma-1\) remainder bounded by \(Ca\|x-y\|^\gamma\). If \(\gamma\) is not an integer, write \(r=\lfloor\gamma\rfloor\) and \(\nu=\gamma-r\in(0,1)\). When \(\|x-y\|\le h\), the mean-value theorem and the \((r+1)\)-st derivative bound give
+\[
+ \|D^rR_\omega(x)-D^rR_\omega(y)\|
+ \le Ca h^{\nu-1}\|x-y\|
+ \le Ca\|x-y\|^\nu.
+\]
+When \(\|x-y\|>h\), the \(r\)-th derivative bound instead gives
+\[
+ \|D^rR_\omega(x)-D^rR_\omega(y)\|
+ \le 2Ca h^\nu
+ \le2Ca\|x-y\|^\nu.
+\]
+This two-scale argument supplies the required order-\(\gamma\) Taylor remainder uniformly across bump boundaries. Under the Taylor-remainder norm in \(\mathrm{def:holder-ball}\), the linear map \(x\mapsto cx_1\) has norm at most \(2c<1/2\). Taking \(a\) small enough, depending only on the fixed constants and \(\gamma,d\), makes the uniform contribution of \(R_\omega\) smaller than the remaining radius. Hence \(\tau_\omega\in\mathsf H_\gamma(1;\mathcal X)\) for every \(\omega\).
+
+Now fix an edge \((\omega,\omega^{(j)})\). On the core cube \(z_j+h[-1/4,1/4]^D\), the two boundary graphs are \(b^+(z)=a\delta\) and \(b^-(z)=-a\delta\), up to relabeling. Since \(\delta/h=h^{\gamma-1}\to0\), for all \(-a\delta\le x_1\le a\delta\) the inverse points satisfy \(|w|\le2a\delta<h/4\), where \(q_h=1\). Thus on this core strip
+\[
+ \tau_+(x)=c(x_1-a\delta),
+ \qquad
+ \tau_-(x)=c(x_1+a\delta).
+\]
+At every point between the two graphs, an arbitrary measurable set \(H\) disagrees with at least one of the two upper sets. If the point belongs to \(H\), its contribution to the loss for the upper graph is \(c(a\delta-x_1)\); if it does not belong to \(H\), its contribution to the loss for the lower graph is \(c(x_1+a\delta)\). Using the calibrated density \(2^{-d}\), the sum of the two losses restricted to this patch is at least
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle 2^{-d}c\int_{z_j+h[-1/4,1/4]^D}
+ \int_{-a\delta}^{a\delta}
+ \min\{x_1+a\delta,a\delta-x_1\}\,dx_1\,dz
+ =c_1\delta^2h^D,\)}}
+\]
+where \(c_1=2^{-d}ca^2 2^{-D}>0\); for \(D=0\), the tangential factor is one. This is the asserted lower bound \(c_1\delta^2h^{d-1}\).
+
+Finally, adjacent boundary functions differ only on one tangential cube of volume \(O(h^{d-1})\). If \(b\) and \(b'\) are the adjacent graphs, monotonicity of \(\Phi_b\) and \(\partial_w\Phi_b\ge1/2\) imply, at every common \((x_1,z)\),
+\[
+ |w_b(x_1,z)-w_{b'}(x_1,z)|\le2|b(z)-b'(z)|\le C\delta.
+\]
+The inverses, and hence the CATEs, coincide unless \(z\) lies in that tangential cube and \(|x_1|\le Ch\), because \(q_h=0\) outside the normal transition strip and \(\|b\|_\infty=o(h)\). Thus adjacent CATEs differ by at most \(C\delta\) on a set of Lebesgue measure at most \(Ch^{d-1}h=Ch^d\). All constants are independent of \(h\), \(M\), and \(\omega\), completing the proof.
+\end{proof}
+
+\begin{lemma}[lem:calibrated-margin-compatibility]\label{lem:calibrated-margin-compatibility}
+Under \(\mathrm{def:calibration}\), if \(P\in\mathcal M(\xi,\gamma;\kappa)\) and \(\xi\gamma>d\), then \(\xi=1\) and \(\gamma>d\).
+\end{lemma}
+\begin{proof}
+Let \(P\in\mathcal M(\xi,\gamma;\kappa)\) and suppose \(\xi\gamma>d\). Membership in \(\mathrm{def:smooth-model}\), together with \(c_m=C_m=c^{-1}\) and \(t_0=c\) from \(\mathrm{def:calibration}\), makes the lower and upper margin bounds coincide:
+\[
+P_X\{0<|\tau_P(X)-\theta|\le t\}=c^{-1}t^\xi,
+\qquad 0<t\le c.
+\tag{1}
+\]
+At \(t=c\), the left-hand side is at most one. Hence \(c^{\xi-1}\le1\). Since \(0<c<1\), this implies
+\[
+\xi\ge1.
+\tag{2}
+\]
+
+We next obtain the reverse restriction from the interior crossing. Put \(q=\min\{\gamma,1\}\). Let \(x^-\) and \(x^+\) be the interior points in \(\mathrm{ass:interior-crossing}\). The cube \(\mathcal X=[-1,1]^d\) is convex, and its interior contains the compact segment joining these two points. By continuity of \(\tau_P\), a sufficiently thin solid cylinder around a slightly shortened version of this segment can be parameterized as
+\[
+\mathcal C=\{z+se:z\in B,\ 0\le s\le \ell_0\}\subset\operatorname{int}(\mathcal X),
+\]
+where \(e\) is a unit vector, \(B\) is a \((d-1)\)-dimensional cross-section of positive measure, and there is \(\varepsilon>0\) such that, uniformly in \(z\in B\),
+\[
+\tau_P(z)-\theta\le-\varepsilon,
+\qquad
+\tau_P(z+\ell_0e)-\theta\ge\varepsilon.
+\tag{3}
+\]
+For \(d=1\), the cross-section consists of one point and its transverse measure is interpreted as one.
+
+The zero set of \(\tau_P-\theta\) is compact. Since \(\eta=c>0\), continuity supplies a fixed neighborhood of that zero set contained in \(\mathcal D_P(\eta)\). On this neighborhood, \(\mathrm{ass:near-band-holder}\) implies
+\[
+|\tau_P(x)-\tau_P(y)|\le L_*\|x-y\|^q
+\tag{4}
+\]
+whenever the segment joining \(x\) and \(y\) remains in the neighborhood, for a finite constant \(L_*\). Indeed, when \(\gamma\le1\), (4) is the defining Hölder bound; when \(\gamma>1\), the first derivatives are bounded by the Hölder norm and (4) follows with \(q=1\) from the mean-value theorem.
+
+For each \(z\in B\), let
+\[
+s_z=\inf\{s\in[0,\ell_0]:\tau_P(z+se)-\theta=0\}.
+\]
+Equation (3) and continuity show that \(s_z\) exists and that \(\tau_P(z+se)-\theta<0\) for \(0\le s<s_z\). Uniform continuity on the compact cylinder, together with the uniform endpoint separation in (3), gives constants \(r_0>0\) and \(t_1>0\), independent of \(z\), such that the interval \([s_z-r_0,s_z]\) lies in the cylinder and in the neighborhood where (4) applies, and \((t/L_*)^{1/q}\le r_0\) for \(0<t\le t_1\). Therefore, for every such \(t\),
+\[
+s_z-(t/L_*)^{1/q}\le s<s_z
+\quad\Longrightarrow\quad
+0<|\tau_P(z+se)-\theta|\le t.
+\]
+Fubini's theorem and the calibrated lower density bound \(f_P\ge2^{-d}\) now give a constant \(C_*>0\) such that
+\[
+P_X\{0<|\tau_P(X)-\theta|\le t\}
+\ge C_*t^{1/q},
+\qquad 0<t\le t_1.
+\tag{5}
+\]
+Combining (1) and (5) and letting \(t\downarrow0\) yields
+\[
+\xi\le\frac1q=\frac1{\min\{\gamma,1\}}.
+\tag{6}
+\]
+If \(\gamma\le1\), then (6) gives \(\xi\gamma\le1\le d\), contradicting \(\xi\gamma>d\). Thus \(\gamma>1\), so (6) becomes \(\xi\le1\). Together with (2), this proves \(\xi=1\). The assumed super-margin inequality then reduces to \(\gamma>d\), as required.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} Positive density, an interior crossing, local Hölder regularity, and the exact two-sided margin determine the only feasible calibrated exponent. \textit{Gap.} Nominal parameter labels need not correspond to nonempty law classes. \textit{Consumer.} It gives the forward inclusion in the exact calibrated frontier characterization.
+
+\begin{theorem}[thm:calibrated-risk-well-posedness]\label{thm:calibrated-risk-well-posedness}
+For every fixed calibrated \(\kappa\), every \(\gamma>d\), and every \(n\), the class \(\mathcal M_{\mathrm{tr}}(\gamma;\kappa)\) is nonempty and
+\[
+0\le\mathfrak R_n(1,\gamma;\kappa)\le2.
+\]
+The upper inequality is witnessed by the constant empty-set estimator.
+\end{theorem}
+\begin{proof}
+Fix \(\gamma>d\) and \(n\in\mathbb N\). By \(\mathrm{thm:calibrated-witness}\), \(\mathcal M_{\mathrm{tr}}(\gamma;\kappa)\) is nonempty. By \(\mathrm{def:transverse-model}\), it equals \(\mathcal M(1,\gamma;\kappa)\), so the supremum in \(\mathrm{def:minimax-risk}\) is over a nonempty class. Since the integrand in \(\mathrm{def:weighted-loss}\) is nonnegative, every risk is nonnegative and hence
+\[
+\mathfrak R_n(1,\gamma;\kappa)\ge0.
+\]
+For the upper bound, take the deterministic, sample-independent measurable estimator \(\widehat G_n=\varnothing\). Under calibration, \(M_Y=1\) and \(\theta=0\). Since \(Y\in[-1,1]\), each conditional mean \(\mu_a(X)\) belongs to \([-1,1]\) almost surely. Therefore \(\mathrm{def:cate}\) gives \(|\tau_P(X)|\le2\) almost surely for every \(P\in\mathcal M_{\mathrm{tr}}(\gamma;\kappa)\). Consequently,
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \begin{aligned}
+d_H(\varnothing,G_P;P)
+&=\int_{G_P}|\tau_P(x)-\theta|f_P(x)\,dx\\
+&\le2\int_{\mathcal X}f_P(x)\,dx
+=2.
+\end{aligned}\)}}
+\]
+The estimator is deterministic, so taking its expectation does not change this bound. Taking the supremum over \(P\in\mathcal M_{\mathrm{tr}}(\gamma;\kappa)\) and then using this estimator as a candidate in the infimum of \(\mathrm{def:minimax-risk}\) yields
+\[
+\mathfrak R_n(1,\gamma;\kappa)\le2.
+\]
+Both inequalities hold for every \(n\), completing the proof.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The explicit transverse witness proves nonemptiness, and the constant empty-set estimator proves finite minimax risk for every sample size. \textit{Gap.} The bound \(0\le\mathfrak R_n(1,\gamma;\kappa)\le2\) alone does not imply consistency. \textit{Consumer.} The rate results operate on a nonempty class with a finite decision problem.
+
+\begin{lemma}[lem:calibrated-direct-assouad-lower]\label{lem:calibrated-direct-assouad-lower}
+For every fixed calibrated \(\kappa\), every \(\gamma>d\), and all sufficiently large \(n\),
+\[
+ \mathfrak R_n(1,\gamma;\kappa)
+ \ge c n^{-2\gamma/(2\gamma+d)}
+\]
+for a constant \(c>0\) independent of \(n\).
+\end{lemma}
+\begin{proof}
+Fix the calibrated \(\kappa\) and \(\gamma>d\). For a bandwidth \(h>0\) to be selected below, put \(\delta=h^\gamma\) and take the family \(\{\tau_\omega:\omega\in\{0,1\}^M\}\) supplied by \(\mathrm{lem:exact-margin-graph-packing}\). For each \(\omega\), define an observed-data law \(P_\omega\) as follows. Let \(X\) be uniform on \([-1,1]^d\), let \(A\mid X\sim\operatorname{Bernoulli}(1/2)\), and, conditionally on \((X=x,A=a)\), let \(Y\in\{-1,1\}\) satisfy
+\[
+P_\omega(Y=1\mid X=x,A=0)=\frac12,
+\qquad
+P_\omega(Y=1\mid X=x,A=1)=\frac{1+\tau_\omega(x)}2.
+\]
+The exact margin identity at \(t=c\) gives
+\[
+P_X\{0<|\tau_\omega(X)|\le c\}=1.
+\]
+Since \(\tau_\omega\) is continuous and the uniform density is strictly positive on every relatively open subset of the cube, this implies \(|\tau_\omega(x)|\le c<1/4\) for every \(x\). Hence the displayed Bernoulli probabilities are valid and bounded away from zero and one.
+
+We verify membership rather than building it into the construction. Under \(P_\omega\),
+\[
+\pi(x)=\frac12,\qquad \mu_0(x)=0,\qquad
+\mu_1(x)=\tau_\omega(x),\qquad
+\tau_{P_\omega}(x)=\tau_\omega(x).
+\]
+Thus strict overlap, the calibrated uniform density, the propensity Hölder condition, and the control-regression Hölder condition all hold. The preceding range bound gives \(\mathcal D_{P_\omega}(c)=\mathcal X\), so the global membership \(\tau_\omega\in\mathsf H_\gamma(1;\mathcal X)\) from the packing lemma verifies the near-band condition, while the off-band condition is vacuous on the empty complement. The exact identity
+\[
+P_X\{0<|\tau_\omega(X)|\le t\}=t/c,
+\qquad 0<t\le c,
+\]
+verifies both calibrated margin inequalities, and the packing lemma supplies the interior crossing. Outcomes lie in \([-1,1]\), and the designated CATE is continuous. Therefore
+\[
+P_\omega\in\mathcal M_{\mathrm{tr}}(\gamma;\kappa)
+\qquad\text{for every }\omega.
+\]
+
+We next control adjacent testing affinity. If \(\omega^{(j)}\) differs from \(\omega\) only in coordinate \(j\), the packing lemma gives
+\[
+|\tau_\omega(x)-\tau_{\omega^{(j)}}(x)|\le C\delta
+\]
+on a set of Lebesgue measure at most \(Ch^d\), and the two functions agree elsewhere. Let
+\[
+\rho(P,Q)=\int\sqrt{dP\,dQ}
+\]
+denote Hellinger affinity. For probabilities \(p,q\in[3/8,5/8]\),
+\[
+(\sqrt p-\sqrt q)^2\le\frac{(p-q)^2}{\min\{p,q\}}\le C(p-q)^2,
+\]
+and the same inequality applies to \(1-p\) and \(1-q\). Conditioning on \((X,A)\), noting that only the treated outcome law differs, and integrating over the uniform design therefore yield
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle 1-\rho(P_\omega,P_{\omega^{(j)}})
+\le C\int_{\mathcal X}
+\{\tau_\omega(x)-\tau_{\omega^{(j)}}(x)\}^2\,dx
+\le C\delta^2h^d.\)}}
+\]
+For the independent sample laws, affinity tensorizes:
+\[
+\rho(P_\omega^{\otimes n},P_{\omega^{(j)}}^{\otimes n})
+=\rho(P_\omega,P_{\omega^{(j)}})^n,
+\]
+so \(1-\rho(P_\omega^{\otimes n},P_{\omega^{(j)}}^{\otimes n})\le Cn\delta^2h^d\). The elementary Cauchy--Schwarz calculation
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \begin{aligned}
+\|P-Q\|_{\mathrm{TV}}
+&=\frac12\int|\sqrt{dP}-\sqrt{dQ}|(\sqrt{dP}+\sqrt{dQ})\\
+&\le\sqrt{2\{1-\rho(P,Q)\}}
+\end{aligned}\)}}
+\]
+then gives
+\[
+\|P_\omega^{\otimes n}-P_{\omega^{(j)}}^{\otimes n}\|_{\mathrm{TV}}
+\le C\sqrt{n\delta^2h^d}.
+\]
+Choose
+\[
+h=a_0n^{-1/(2\gamma+d)},
+\]
+where the fixed \(a_0>0\) is small enough that the last upper bound is at most \(1/2\). For all sufficiently large \(n\), this \(h\) is also within the range of the packing lemma. Thus every adjacent pair has testing affinity
+\[
+1-\|P_\omega^{\otimes n}-P_{\omega^{(j)}}^{\otimes n}\|_{\mathrm{TV}}
+\ge\frac12.
+\]
+
+It remains to convert testing difficulty into the weighted set loss. Let \(L_{\omega j}(H)\) be the part of \(d_H(H,G_{P_\omega};P_\omega)\) on the \(j\)-th disjoint packing patch. The packing lemma states that for every measurable \(H\),
+\[
+L_{\omega j}(H)+L_{\omega^{(j)}j}(H)
+\ge s_j,
+\qquad s_j\ge c_1\delta^2h^{d-1}.
+\]
+For any set estimator \(\widehat G_n\), integration with respect to the common part of two adjacent sample laws gives
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathbb E_{P_\omega^{\otimes n}}L_{\omega j}(\widehat G_n)
++\mathbb E_{P_{\omega^{(j)}}^{\otimes n}}L_{\omega^{(j)}j}(\widehat G_n)
+\ge s_j\{1-\|P_\omega^{\otimes n}-P_{\omega^{(j)}}^{\otimes n}\|_{\mathrm{TV}}\}
+\ge\frac{s_j}{2}.\)}}
+\]
+Indeed, on a dominating measure with densities \(p,q\), the integral over \(\min\{p,q\}\) is at least \(s_j\int\min\{p,q\}=s_j(1-\|P-Q\|_{\mathrm{TV}})\).
+
+Average the risk uniformly over \(\omega\), sum over the disjoint patches, and pair the vertices along each coordinate. Each unordered edge is counted twice in the uniform vertex sum, so
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \begin{aligned}
+\sup_{P\in\mathcal M_{\mathrm{tr}}(\gamma;\kappa)}
+\mathbb E_P[d_H(\widehat G_n,G_P;P)]
+&\ge2^{-M}\sum_\omega\sum_{j=1}^M
+\mathbb E_{P_\omega^{\otimes n}}L_{\omega j}(\widehat G_n)\\
+&\ge cM\delta^2h^{d-1}.
+\end{aligned}\)}}
+\]
+For \(d\ge2\), the packing lemma gives \(M\ge c_0h^{-(d-1)}\); for \(d=1\), it gives \(M=1\), and the same conclusion holds with \(h^{d-1}=1\). Hence every measurable estimator satisfies
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \sup_{P\in\mathcal M_{\mathrm{tr}}(\gamma;\kappa)}
+\mathbb E_P[d_H(\widehat G_n,G_P;P)]
+\ge c\delta^2=ch^{2\gamma}
+=cn^{-2\gamma/(2\gamma+d)}.\)}}
+\]
+Taking the infimum over estimators and using \(\mathcal M_{\mathrm{tr}}(\gamma;\kappa)=\mathcal M(1,\gamma;\kappa)\) proves the asserted minimax lower bound.
+\end{proof}
+
+\begin{lemma}[lem:calibrated-direct-regression-upper]\label{lem:calibrated-direct-regression-upper}
+For every fixed calibrated \(\kappa\), every \(\gamma>d\), and all sufficiently large \(n\), there is one explicit armwise local-polynomial set estimator, independent of the unknown member law, for which
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \sup_{P\in\mathcal M_{\mathrm{tr}}(\gamma;\kappa)}
+ \mathbb E_P\!\left[d_H(\widehat G_n,G_P;P)\right]
+ \le C n^{-2\min\{\beta,\gamma\}/\{2\min\{\beta,\gamma\}+d\}}.\)}}
+\]
+Consequently,
+\[
+ \mathfrak R_n(1,\gamma;\kappa)
+ \le C n^{-2\min\{\beta,\gamma\}/\{2\min\{\beta,\gamma\}+d\}}.
+\]
+\end{lemma}
+\begin{proof}
+Fix the calibrated \(\kappa\), let \(P\in\mathcal M_{\mathrm{tr}}(\gamma;\kappa)\), and put
+\[
+s=\min\{\beta,\gamma\}.
+\]
+We first show that the local CATE restriction is global in the calibrated class. At \(t=c\), \(\mathrm{ass:lower-margin}\) and \(c_m=c^{-1}\) give
+\[
+1\le P_X\{0<|\tau_P(X)|\le c\}\le1.
+\]
+Consequently \(0<|\tau_P(X)|\le c\) almost surely. Since \(\tau_P\) is continuous, \(f_P=2^{-d}\) almost everywhere by \(\mathrm{lem:uniform-design}\), and every nonempty relatively open subset of the cube has positive Lebesgue measure, it follows that \(|\tau_P(x)|\le c\) for every \(x\in\mathcal X\). Hence \(\mathcal D_P(c)=\mathcal X\), and \(\mathrm{ass:near-band-holder}\) yields \(\tau_P\in\mathsf H_\gamma(1;\mathcal X)\). Together with \(\mu_0\in\mathsf H_\beta(1;\mathcal X)\) and \(\mu_1=\mu_0+\tau_P\) almost everywhere, the standard representative of each arm regression belongs to \(\mathsf H_s(C_H;\mathcal X)\), where \(C_H\) depends only on the fixed class parameters. This last assertion follows directly from the Taylor-remainder definition: a function of higher Hölder order on the fixed cube satisfies the lower-order remainder bound after enlarging the radius by a constant depending only on the two orders and the cube diameter, and Hölder balls are closed under addition.
+
+We now give one estimator, common to every member law. Set
+\[
+h=n^{-1/(2s+d)},\qquad p_s=\lceil s\rceil-1,
+\]
+and use the window, kernel, and shifted-Legendre basis from \(\mathrm{def:window-basis}\) with order \(p_s\). Write \(r_{x,h}(u)=r_{x,h,p_s}(u)\) and \(r_x=r_{x,h,p_s}(x)\). For \(a\in\{0,1\}\), define
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \begin{aligned}
+\widetilde Q_a(x)&=\frac1n\sum_{i=1}^n K_{x,h}(X_i)r_{x,h}(X_i)r_{x,h}(X_i)^\top\mathbf 1\{A_i=a\},\\
+\widetilde R_a(x)&=\frac1n\sum_{i=1}^n K_{x,h}(X_i)r_{x,h}(X_i)\mathbf 1\{A_i=a\}Y_i.
+\end{aligned}\)}}
+\]
+Let \(\lambda=2^{-d-1}c_\pi\) and \(\Lambda=2^{1-d}\). For a symmetric matrix \(M=V\operatorname{diag}(\lambda_j)V^\top\), define \(T_{[\lambda,\Lambda]}(M)=V\operatorname{diag}(\min\{\Lambda,\max\{\lambda,\lambda_j\}\})V^\top\). Set
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \widehat Q_a(x)=T_{[\lambda,\Lambda]}\{\widetilde Q_a(x)\},
+\qquad
+\widehat\mu_a(x)=\operatorname{clip}_{[-1,1]}
+\{r_x^\top\widehat Q_a(x)^{-1}\widetilde R_a(x)\}.\)}}
+\]
+Finally, put
+\[
+\widehat\tau(x)=\widehat\mu_1(x)-\widehat\mu_0(x),
+\qquad
+\widehat G_n=\{x\in\mathcal X:\widehat\tau(x)>0\}.
+\]
+All operations are Borel measurable, and the construction uses only the sample and the fixed class parameters, not the unknown member law.
+
+We establish a uniform pointwise exponential bound. Let
+\[
+\zeta_a(u)=P(A=a\mid X=u),
+\]
+so strict overlap gives \(c_\pi\le\zeta_a(u)\le1-c_\pi\). Define the population quantities
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle Q_a(x)=\mathbb E_P[K_{x,h}(X)r_{x,h}(X)r_{x,h}(X)^\top\mathbf 1\{A=a\}],
+\quad
+R_a(x)=\mathbb E_P[K_{x,h}(X)r_{x,h}(X)\mathbf 1\{A=a\}Y].\)}}
+\]
+By the uniform density, the change of variables \(z=T_{x,h}(u)\), and orthonormality of the finite basis,
+\[
+2^{-d}c_\pi I\preceq Q_a(x)\preceq2^{-d}(1-c_\pi)I.
+\]
+Thus the spectrum of \(Q_a(x)\) lies strictly inside \([\lambda,\Lambda]\), uniformly in \(P\), \(x\), and \(h\).
+
+Let \(q_{a,x}\) be the degree-\(p_s\) Taylor polynomial of \(\mu_a\) at \(x\), expressed in the basis as \(q_{a,x}(u)=v_{a,x}^\top r_{x,h}(u)\). The Taylor-remainder condition and the diameter of \(W_{x,h}\) give
+\[
+\sup_{u\in W_{x,h}}|\mu_a(u)-q_{a,x}(u)|\le C h^s.
+\]
+Since \(R_a(x)=\mathbb E[K_{x,h}(X)r_{x,h}(X)\zeta_a(X)\mu_a(X)]\), the identity defining \(Q_a\) yields
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \begin{aligned}
+&\left|r_x^\top Q_a(x)^{-1}R_a(x)-\mu_a(x)\right|\\
+&\quad\le |q_{a,x}(x)-\mu_a(x)|
++\left|r_x^\top Q_a(x)^{-1}
+\mathbb E[K_{x,h}(X)r_{x,h}(X)\zeta_a(X)
+\{\mu_a(X)-q_{a,x}(X)\}]\right|\\
+&\quad\le C h^s.
+\end{aligned}\)}}
+\]
+Here all basis norms and inverse norms are bounded by constants because \(p_s\) and \(d\) are fixed.
+
+For completeness, we derive the stochastic bound used next. Each centered entry of \(\widetilde Q_a(x)-Q_a(x)\) and \(\widetilde R_a(x)-R_a(x)\) is an average of independent variables bounded in absolute value by \(C h^{-d}\), with second moment at most \(C h^{-d}\). The bounds follow from \(V_{x,h}\ge2^{-d}h^d\), boundedness of the fixed-degree basis, and \(|Y|\le1\). For any centered summand \(W\) satisfying these two bounds, expansion of its exponential and the inequality \(m!\ge2\,3^{m-2}\) for \(m\ge2\) give, whenever \(|\lambda|Ch^{-d}<3\),
+\[
+\mathbb E e^{\lambda W}
+\le\exp\!\left\{
+\frac{C\lambda^2h^{-d}}{2(1-|\lambda|Ch^{-d}/3)}
+\right\}.
+\]
+Exponential Markov applied to the independent sum and optimization in \(\lambda\), followed by a union bound over the fixed number of vector and matrix entries, therefore gives
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle P\!\left(
+\|\widetilde Q_a(x)-Q_a(x)\|_F
++\|\widetilde R_a(x)-R_a(x)\|_2>t
+\right)
+\le C_1\exp\{-C_2nh^d\min(t^2,t)\}.\)}}
+\]
+The constants are uniform over \(P\), \(x\), and \(a\).
+
+Because \(Q_a(x)\) has spectrum in the clipping interval, orthogonal diagonalization and scalar projection onto \([\lambda,\Lambda]\) give
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \|\widehat Q_a(x)-Q_a(x)\|_F
+\le\|\widetilde Q_a(x)-Q_a(x)\|_F,
+\qquad
+\|\widehat Q_a(x)^{-1}\|_{\mathrm{op}}\le\lambda^{-1}.\)}}
+\]
+The resolvent identity, the deterministic boundedness of \(R_a(x)\), and clipping of the scalar output, which cannot increase its distance from \(\mu_a(x)\in[-1,1]\), now imply constants \(B_0,B_1,B_2>0\) such that
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \sup_{P\in\mathcal M_{\mathrm{tr}}(\gamma;\kappa)}
+\sup_{x\in\mathcal X}
+P\{ |\widehat\tau(x)-\tau_P(x)|>B_0h^s+t\}
+\le B_1\exp\{-B_2nh^d\min(t^2,t)\}.\)}}
+\]
+Since \(|\tau_P(x)|\le c<1/4\), only bounded \(t\) is needed below, and the quadratic part of this exponent applies.
+
+Put \(r=h^s=n^{-s/(2s+d)}\); then \(nh^dr^2=1\). Let \(\Delta(x)=|\tau_P(x)|\). A thresholding error at \(x\) implies \(\Delta(x)\le|\widehat\tau(x)-\tau_P(x)|\). Fubini's theorem therefore gives
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathbb E_P[d_H(\widehat G_n,G_P;P)]
+\le\int_{\mathcal X}\Delta(x)
+P\{|\widehat\tau(x)-\tau_P(x)|\ge\Delta(x)\}\,dP_X(x).\)}}
+\]
+Set \(u_0=2B_0r\) and \(u_j=2^ju_0\). For all sufficiently large \(n\), \(u_0<c\). The calibrated upper-margin bound extends to every \(t>0\): it is assumed for \(t\le c\), while for \(t>c\) it follows from \(P_X\{0<\Delta(X)\le t\}\le1\le t/c=C_mt\). Thus the part with \(0<\Delta\le u_0\) is at most
+\[
+u_0P_X\{0<\Delta(X)\le u_0\}\le C_m u_0^2\le Cr^2.
+\]
+On the shell \(u_j<\Delta\le2u_j\), the pointwise tail bound and \(\Delta-B_0r\ge\Delta/2\) give a contribution at most
+\[
+2u_j\,P_X\{0<\Delta(X)\le2u_j\}
+B_1\exp\{-B_2' u_j^2/r^2\}
+\le C u_j^2e^{-c_0 4^j}.
+\]
+Summing the shells, including only those intersecting \(\{\Delta\le c\}\), yields
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \sup_{P\in\mathcal M_{\mathrm{tr}}(\gamma;\kappa)}
+\mathbb E_P[d_H(\widehat G_n,G_P;P)]
+\le Cr^2\sum_{j\ge0}4^je^{-c_0 4^j}+Cr^2
+\le Cn^{-2s/(2s+d)}.\)}}
+\]
+Since \(s=\min\{\beta,\gamma\}\), this is the first displayed rate. Finally \(\mathcal M_{\mathrm{tr}}(\gamma;\kappa)=\mathcal M(1,\gamma;\kappa)\) by \(\mathrm{def:transverse-model}\), and the minimax infimum in \(\mathrm{def:minimax-risk}\) is no larger than the risk of this single measurable estimator. This proves the consequence for \(\mathfrak R_n(1,\gamma;\kappa)\).
+\end{proof}
+
+\begin{lemma}[lem:bkk-level-set-upper-cited]\label{lem:bkk-level-set-upper-cited}
+For the higher-order local-polynomial R-learner under the smoothness model, margin condition, and matrix, density-ratio, approximation, boundedness, and sample-splitting conditions stated in Bonvini--Kennedy--Keele, the thresholded estimator satisfies \(\mathbb E[d_H(\widehat G_n,G_P;P)]\le C(r_n^*)^{1+\xi}\), with the two branches in \(\mathrm{def:rate}\) and without a condition \(\xi\gamma\le d\).
+\end{lemma}
+\par\smallskip\noindent \textit{Justification.} This cited result accurately records the published conditional upper theorem. \textit{Gap.} Its hypotheses are not certified here for the exact displayed estimator. \textit{Consumer.} It remains a standalone background comparator and is not used by any surviving rate claim.
+
+\begin{theorem}[thm:calibrated-frontier-feasibility]\label{thm:calibrated-frontier-feasibility}
+For fixed calibrated \(\kappa\), \(\mathcal F(\kappa)=\{(1,\gamma):\gamma>d\}\). Hence every \((\xi,\gamma)\in\mathcal F(\kappa)\) satisfies \(\xi=1\), \(\gamma>d\), and \(\mathcal M(\xi,\gamma;\kappa)=\mathcal M_{\mathrm{tr}}(\gamma;\kappa)\).
+\end{theorem}
+\begin{proof}
+Fix the calibrated value of \(\kappa\). We prove the two set inclusions. First let \((\xi,\gamma)\in\mathcal F(\kappa)\). By the definition of the feasible frontier,
+\[
+\xi\gamma>d
+\qquad\text{and}\qquad
+\mathcal M(\xi,\gamma;\kappa)\ne\varnothing.
+\]
+Choose \(P\in\mathcal M(\xi,\gamma;\kappa)\). The calibrated margin-compatibility lemma applies to this member and yields
+\[
+\xi=1
+\qquad\text{and}\qquad
+\gamma>d.
+\]
+Consequently,
+\[
+\mathcal F(\kappa)\subseteq\{(1,\gamma):\gamma>d\}.
+\tag{1}
+\]
+Conversely, fix \(\gamma>d\). By the calibrated-witness theorem, the observed marginal induced by \(P^{\mathrm{tr}}\) belongs to \(\mathcal M_{\mathrm{tr}}(\gamma;\kappa)\). By the definition of the transverse model,
+\[
+\mathcal M_{\mathrm{tr}}(\gamma;\kappa)=\mathcal M(1,\gamma;\kappa).
+\]
+It follows that \(\mathcal M(1,\gamma;\kappa)\ne\varnothing\). Since also \(1\cdot\gamma>d\), the definition of \(\mathcal F(\kappa)\) gives \((1,\gamma)\in\mathcal F(\kappa)\). Thus
+\[
+\{(1,\gamma):\gamma>d\}\subseteq\mathcal F(\kappa).
+\tag{2}
+\]
+Combining \((1)\) and \((2)\) proves
+\[
+\mathcal F(\kappa)=\{(1,\gamma):\gamma>d\}.
+\]
+Finally, if \((\xi,\gamma)\in\mathcal F(\kappa)\), the equality just proved gives \(\xi=1\) and \(\gamma>d\). Substitution into the definition of the transverse model then gives
+\[
+\mathcal M(\xi,\gamma;\kappa)
+=\mathcal M(1,\gamma;\kappa)
+=\mathcal M_{\mathrm{tr}}(\gamma;\kappa),
+\]
+which proves the remaining assertion.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This theorem determines the nonempty super-margin parameter frontier before any minimax rate is discussed. \textit{Gap.} It is a feasibility theorem and makes no statistical rate claim. \textit{Consumer.} All calibrated super-margin risk statements may restrict without loss to \(\xi=1\) and \(\gamma>d\).
+
+\begin{proposition}[prop:calibrated-direct-rate-bracket]\label{prop:calibrated-direct-rate-bracket}
+For every fixed calibrated \(\kappa\), every \(\gamma>d\), and all sufficiently large \(n\), there are constants \(0<c\le C<\infty\), independent of \(n\), such that
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle c n^{-2\gamma/(2\gamma+d)}
+ \le \mathfrak R_n(1,\gamma;\kappa)
+ \le C n^{-2\min\{\beta,\gamma\}/\{2\min\{\beta,\gamma\}+d\}}.\)}}
+\]
+If \(\beta\ge\gamma\), the two endpoints coincide, the high-smoothness branch of \(r_n^*\) applies, and
+\[
+ \mathfrak R_n(1,\gamma;\kappa)\asymp(r_n^*)^2.
+\]
+\end{proposition}
+\begin{proof}
+Fix a calibrated \(\kappa\) and \(\gamma>d\). By \(\mathrm{lem:calibrated-direct-assouad-lower}\), there are constants \(c_{\mathrm{lb}}>0\) and \(N_{\mathrm{lb}}<\infty\), independent of \(n\), such that
+\[
+\mathfrak R_n(1,\gamma;\kappa)\ge c_{\mathrm{lb}}n^{-2\gamma/(2\gamma+d)}
+\]
+for every \(n\ge N_{\mathrm{lb}}\). By \(\mathrm{lem:calibrated-direct-regression-upper}\), there are constants \(C_{\mathrm{ub}}<\infty\) and \(N_{\mathrm{ub}}<\infty\), also independent of \(n\), such that
+\[
+\mathfrak R_n(1,\gamma;\kappa)
+\le C_{\mathrm{ub}}n^{-2\min\{\beta,\gamma\}/\{2\min\{\beta,\gamma\}+d\}}
+\]
+for every \(n\ge N_{\mathrm{ub}}\). Set
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle N_0=\max\{N_{\mathrm{lb}},N_{\mathrm{ub}}\},\qquad
+c=c_{\mathrm{lb}},\qquad
+C=\max\{c_{\mathrm{lb}},C_{\mathrm{ub}}\}.\)}}
+\]
+Then \(0<c\le C<\infty\), and both preceding inequalities hold simultaneously for every \(n\ge N_0\). This proves the displayed two-sided bracket.
+
+Suppose now that \(\beta\ge\gamma\). Then \(\min\{\beta,\gamma\}=\gamma\), so the lower and upper exponents in the bracket both equal \(2\gamma/(2\gamma+d)\). By \(\mathrm{def:average-smoothness}\),
+\[
+\bar s=\frac{\alpha+\beta}{2}\ge\frac{\beta}{2}\ge\frac{\gamma}{2}.
+\]
+Since \(\gamma>d\),
+\[
+\frac{d}{4\{1+d/(2\gamma)\}}
+<\frac d4
+<\frac\gamma2
+\le\bar s.
+\]
+Consequently the high-smoothness branch in \(\mathrm{def:rate}\) applies, and
+\[
+r_n^*=n^{-\gamma/(2\gamma+d)}.
+\]
+Substitution into the two-sided bracket gives
+\[
+c(r_n^*)^2
+\le\mathfrak R_n(1,\gamma;\kappa)
+\le C(r_n^*)^2
+\]
+for every \(n\ge N_0\). The constants are positive, finite, and independent of \(n\); hence \(\mathfrak R_n(1,\gamma;\kappa)\asymp(r_n^*)^2\), as claimed.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The proposition combines the explicit direct-regression achievability result with the exact-margin Assouad converse. \textit{Gap.} Its exponents coincide when \(\beta\ge\gamma\) and can differ when \(\beta<\gamma\). \textit{Consumer.} The residual OEQ and open-obligation record use this proposition to separate the matched subregime from the unresolved \(\beta<\gamma\) bracket.
+
+\section{Interpretation}
+
+The equality \(\mathcal F(\kappa)=\{(1,\gamma):\gamma>d\}\) is induced by the fixed calibration \(c_m=C_m=c^{-1}\), together with interior crossing and Hölder regularity. It should not be read as a universal margin-smoothness frontier. Within this calibrated slice, transverse graph perturbations preserve the exact margin and yield the oracle Assouad lower rate; nuisance-sensitive indistinguishability under known uniform design is the unresolved step.
+
+\section*{Technical internal limitation (diagnostic only)}
+
+For \(\beta<\gamma\), no proved construction in the frozen core yields a lower bound of order \((r_n^*)^2\). In the low branch, the natural fuzzy family has transition-region divergence of order \(n h^d\delta^2\), which diverges at \(\delta=r_n^*\). The current direct upper bound is also slower than the benchmark when \(\beta<\gamma\). Therefore neither a two-branch match nor sharpness of the remaining bracket is claimed.
+
+\section{Honest scope}
+
+All feasibility statements are confined to the fixed calibrated cube. The exact minimax conclusion is confined to \(\beta\ge\gamma\), where the direct lower and upper exponents coincide and the high-smoothness branch applies. For \(\beta<\gamma\), the note reports the proved bracket and the precise uniform-density obstruction; it does not claim that the Bonvini--Kennedy--Keele upper transfer is rate-sharp or that the Kennedy--Balakrishnan--Robins--Wasserman lower construction belongs to this law class.
+
+\begin{thebibliography}{99}
+
+  \bibitem{BonviniKennedyKeele2023MinimaxSubgroup} Matteo Bonvini, Edward H. Kennedy, and Luke J. Keele (2023), \emph{Minimax optimal subgroup identification}, arXiv:2306.17464.
+
+  \bibitem{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE} Edward H. Kennedy, Sivaraman Balakrishnan, James M. Robins, and Larry Wasserman (2024), \emph{Minimax rates for heterogeneous causal effect estimation}, Annals of Statistics 52, 793--818.
+
+  \bibitem{AudibertTsybakov2007FastPlugin} Jean-Yves Audibert and Alexandre B. Tsybakov (2007), \emph{Fast learning rates for plug-in classifiers}, Annals of Statistics 35, 608--633.
+
+  \bibitem{RigolletVert2009DensityLevelSets} Philippe Rigollet and Regis Vert (2009), \emph{Optimal rates for plug-in estimators of density level sets}, Bernoulli 15, 1154--1178.
+
+  \bibitem{Kennedy2023OptimalDRCATE} Edward H. Kennedy (2023), \emph{Towards optimal doubly robust estimation of heterogeneous causal effects}, Electronic Journal of Statistics 17, 3008--3049.
+
+  \bibitem{ReeveCanningsSamworth2023OptimalSubgroup} Henry W. J. Reeve, Timothy I. Cannings, and Richard J. Samworth (2023), \emph{Optimal subgroup selection}, Annals of Statistics 51, 2342--2365.
+
+\end{thebibliography}
+
+\end{document}

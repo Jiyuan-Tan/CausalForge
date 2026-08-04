@@ -60,7 +60,7 @@ lemma propScore_false_ae (S : BackdoorEstimationSystem P γ)
         (fun ω => 1 - S.toPOBackdoorSystem.propScore true ω) := by
   have hindD_integrable :
       ∀ e : Bool, Integrable (S.toPOBackdoorSystem.dVar.indicator e) P.μ :=
-    fun e => S.toPOBackdoorSystem.dVar.integrable_indicator e
+    fun e => S.toPOBackdoorSystem.dVar.integrable_indicator e (MeasurableSet.singleton e)
   have hsum_ptwise :
       (fun ω => S.toPOBackdoorSystem.dVar.indicator true ω +
         S.toPOBackdoorSystem.dVar.indicator false ω)
@@ -146,8 +146,8 @@ lemma weighted_residual_integral_zero
   have hYind_int : Integrable
       (fun ω => S.toPOBackdoorSystem.factualY ω *
         S.toPOBackdoorSystem.dVar.indicator d ω) P.μ :=
-    S.toPOBackdoorSystem.dVar.integrable_mul_indicator d hA.integrable_factualY
-      S.toPOBackdoorSystem.measurable_factualY
+    S.toPOBackdoorSystem.dVar.integrable_mul_indicator d (measurableSet_singleton d)
+      hA.integrable_factualY
   have hμx_int :
       Integrable (fun ω => S.μ_val d (S.toPOBackdoorSystem.factualX ω)) P.μ := by
     have hcate_int : Integrable (S.toPOBackdoorSystem.CATE d) P.μ := by
@@ -160,7 +160,7 @@ lemma weighted_residual_integral_zero
   have hμind_int : Integrable
       (fun ω => S.μ_val d (S.toPOBackdoorSystem.factualX ω) *
         S.toPOBackdoorSystem.dVar.indicator d ω) P.μ :=
-    S.toPOBackdoorSystem.dVar.integrable_mul_indicator d hμx_int hμx_meas
+    S.toPOBackdoorSystem.dVar.integrable_mul_indicator d (measurableSet_singleton d) hμx_int
   have hresid_int : Integrable
       (fun ω => S.toPOBackdoorSystem.dVar.indicator d ω *
         (S.toPOBackdoorSystem.factualY ω -
@@ -240,7 +240,7 @@ lemma indicator_to_propScore_integral
     exact (hf_meas.comp
       (comap_measurable S.toPOBackdoorSystem.factualX)).stronglyMeasurable
   have hind_int : Integrable (S.toPOBackdoorSystem.dVar.indicator d) P.μ :=
-    S.toPOBackdoorSystem.dVar.integrable_indicator d
+    S.toPOBackdoorSystem.dVar.integrable_indicator d (MeasurableSet.singleton d)
   have hCE_pull :=
     MeasureTheory.condExp_mul_of_stronglyMeasurable_left
       (μ := P.μ) (m := S.toPOBackdoorSystem.sigmaX) hf_sm hf_ind_int hind_int

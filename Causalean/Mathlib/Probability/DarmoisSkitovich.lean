@@ -143,14 +143,15 @@ lemma charFun_eventually_ne_zero (μ : Measure ℝ) [IsProbabilityMeasure μ] :
   exact (continuous_charFun (μ := μ)).continuousAt.eventually_ne
     (by simp : charFun μ 0 ≠ 0)
 
+omit [IsProbabilityMeasure P] in
 /-- `charFun` of a pushforward with a finite second moment is `C²`.  This is a
 specialisation of `contDiff_charFun` (the characteristic function is `Cⁿ` whenever
 the `n`-th moment is finite), transferring `MemLp Z 2 P` to `MemLp id 2 (P.map Z)`
 along the pushforward map. -/
-lemma charFun_contDiff_two {Z : Ω → ℝ} (mZ : Measurable Z) (hZ : MemLp Z 2 P) :
+lemma charFun_contDiff_two {Z : Ω → ℝ} [IsFiniteMeasure P] (hZ : MemLp Z 2 P) :
     ContDiff ℝ 2 (charFun (P.map Z)) := by
   refine contDiff_charFun (μ := P.map Z) ?_
-  exact (memLp_map_measure_iff aestronglyMeasurable_id mZ.aemeasurable).2
+  exact (memLp_map_measure_iff aestronglyMeasurable_id hZ.aestronglyMeasurable.aemeasurable).2
     (by simpa [Function.comp_def] using hZ)
 
 /-- **Pure analytic core: the Bernstein functional equation forces a Gaussian form.**
@@ -513,9 +514,9 @@ lemma bernstein_charFun_gaussian_nhds_zero
   haveI : IsProbabilityMeasure μX := Measure.isProbabilityMeasure_map mX.aemeasurable
   haveI : IsProbabilityMeasure μY := Measure.isProbabilityMeasure_map mY.aemeasurable
   have hf : ContDiff ℝ 2 f := by
-    simpa [f, μX] using charFun_contDiff_two (P := P) (Z := X) mX hX2
+    simpa [f, μX] using charFun_contDiff_two (P := P) (Z := X) hX2
   have hg : ContDiff ℝ 2 g := by
-    simpa [g, μY] using charFun_contDiff_two (P := P) (Z := Y) mY hY2
+    simpa [g, μY] using charFun_contDiff_two (P := P) (Z := Y) hY2
   have hf0 : f 0 = 1 := by simp [f]
   have hg0 : g 0 = 1 := by simp [g]
   have hfe : ∀ u v : ℝ, f (u + v) * g (u - v) = f u * g u * (f v * g (-v)) := by
@@ -561,8 +562,8 @@ lemma bernstein_charFun_gaussian_nhds_zero
         HasDerivAt.ofReal_comp (hasDerivAt_id t)
       have hp : HasDerivAt (fun t : ℝ => a * (t : ℂ) + b * (t : ℂ) ^ 2 / 2)
           (a + b * (t : ℂ)) t := by
-        convert ((hcoe.const_mul a).add (((hcoe.pow 2).const_mul b).div_const 2)) using 1 <;> ring
-      convert hp.cexp.deriv using 1 <;> ring
+        convert ((hcoe.const_mul a).add (((hcoe.pow 2).const_mul b).div_const 2)) using 1 ; ring
+      convert hp.cexp.deriv using 1 ; ring
     rw [hderivModel]
     have hcoe0 : HasDerivAt (fun y : ℝ => (y : ℂ)) 1 0 :=
       HasDerivAt.ofReal_comp (hasDerivAt_id 0)
@@ -570,10 +571,10 @@ lemma bernstein_charFun_gaussian_nhds_zero
       convert ((hcoe0.const_mul a).add (((hcoe0.pow 2).const_mul b).div_const 2)) using 1
       norm_num
     have hlin0 : HasDerivAt (fun t : ℝ => a + b * (t : ℂ)) b 0 := by
-      convert (hcoe0.const_mul b).const_add a using 1 <;> ring
+      convert (hcoe0.const_mul b).const_add a using 1 ; ring
     have hexp0 : HasDerivAt (fun t : ℝ => Complex.exp (a * t + b * t ^ 2 / 2)) a 0 := by
-      convert hp0.cexp using 1 <;> simp <;> ring
-    convert (hlin0.mul hexp0).deriv using 1 <;> simp <;> ring
+      convert hp0.cexp using 1 ; simp
+    convert (hlin0.mul hexp0).deriv using 1 ; simp ; ring
   have hmodelSecondX : iteratedDeriv 2 f 0 = c + (deriv f 0) ^ 2 := by
     calc
       iteratedDeriv 2 f 0
@@ -606,16 +607,14 @@ lemma bernstein_charFun_gaussian_nhds_zero
     intro t ht
     change f t = Complex.exp ((mf : ℂ) * t * Complex.I - (σ2 : ℂ) * t ^ 2 / 2)
     rw [ht]
-    congr 1
     rw [hderivX, hc]
-    ring
+    ring_nf
   · refine hYee.mono ?_
     intro t ht
     change g t = Complex.exp ((mg : ℂ) * t * Complex.I - (σ2 : ℂ) * t ^ 2 / 2)
     rw [ht]
-    congr 1
     rw [hderivY, hc]
-    ring
+    ring_nf
 
 /-- **Bernstein's theorem (finite-variance Darmois–Skitovich, two variables).**
 If `X` and `Y` are independent real random variables with finite second moments,

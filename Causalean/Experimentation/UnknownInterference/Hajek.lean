@@ -40,7 +40,7 @@ their mean and variance controls under Bernoulli assignment, and combines them w
 finite-design Slutsky tools to prove consistency for the Sävje-Aronow-Hudgens EATE estimand.
 -/
 
-open scoped BigOperators Topology Classical
+open scoped BigOperators Topology
 open Finset Filter
 
 namespace Causalean
@@ -177,7 +177,7 @@ private lemma E_htTreatSummand (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : �
   letI : MeasurableSingletonClass Bool := ⟨fun _ => trivial⟩
   set D := bernoulliDesign p hp0 hp1 with hD
   set hT : (U → Bool) → ℝ := fun z => y i (Function.update z i true) with hhT
-  show D.E (htTreatSummand p y i) = D.E hT
+  change D.E (htTreatSummand p y i) = D.E hT
   have hpt : ∀ z, htTreatSummand p y i z
       = (1 / p i) * ((if z i then (1 : ℝ) else 0) * hT z) := by
     intro z
@@ -224,7 +224,7 @@ private lemma E_htCtrlSummand (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : �
   letI : MeasurableSingletonClass Bool := ⟨fun _ => trivial⟩
   set D := bernoulliDesign p hp0 hp1 with hD
   set hC : (U → Bool) → ℝ := fun z => y i (Function.update z i false) with hhC
-  show D.E (htCtrlSummand p y i) = D.E hC
+  change D.E (htCtrlSummand p y i) = D.E hC
   have hpt : ∀ z, htCtrlSummand p y i z
       = (1 / (1 - p i)) * ((if z i then (0 : ℝ) else 1) * hC z) := by
     intro z
@@ -267,6 +267,7 @@ private lemma E_htCtrlSummand (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : �
 private theorem htTreatSummand_depends_on_interferers (p : U → ℝ) (y : U → (U → Bool) → ℝ) (i : U)
     (z z' : U → Bool) (h : ∀ ℓ ∈ interferers y i, z ℓ = z' ℓ) :
     htTreatSummand p y i z = htTreatSummand p y i z' := by
+  classical
   have hmem : ∀ ℓ : U, Interferes y ℓ i → ℓ ∈ interferers y i := by
     intro ℓ hℓ; exact Finset.mem_filter.mpr ⟨Finset.mem_univ ℓ, hℓ⟩
   have hzi : z i = z' i := h i (hmem i (Or.inl rfl))
@@ -279,6 +280,7 @@ private theorem htTreatSummand_depends_on_interferers (p : U → ℝ) (y : U →
 private theorem htCtrlSummand_depends_on_interferers (p : U → ℝ) (y : U → (U → Bool) → ℝ) (i : U)
     (z z' : U → Bool) (h : ∀ ℓ ∈ interferers y i, z ℓ = z' ℓ) :
     htCtrlSummand p y i z = htCtrlSummand p y i z' := by
+  classical
   have hmem : ∀ ℓ : U, Interferes y ℓ i → ℓ ∈ interferers y i := by
     intro ℓ hℓ; exact Finset.mem_filter.mpr ⟨Finset.mem_univ ℓ, hℓ⟩
   have hzi : z i = z' i := h i (hmem i (Or.inl rfl))
@@ -315,7 +317,7 @@ private theorem cov_htCtrlSummand_zero (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) 
 /-- Per-summand variance bound for the treated summand: `Var(Zᵢ Yᵢ/pᵢ) ≤ k⁴`. -/
 private theorem var_htTreatSummand_le (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, p i ≤ 1)
     (y : U → (U → Bool) → ℝ) (k : ℝ) (hk : 1 ≤ k)
-    (hplo : ∀ i, k⁻¹ ≤ p i) (hphi : ∀ i, p i ≤ 1 - k⁻¹)
+    (hplo : ∀ i, k⁻¹ ≤ p i)
     (hmom : ∀ i, (bernoulliDesign p hp0 hp1).E (fun z => (y i z) ^ 2) ≤ k ^ 2) (i : U) :
     (bernoulliDesign p hp0 hp1).Var (htTreatSummand p y i) ≤ k ^ 4 := by
   set D := bernoulliDesign p hp0 hp1 with hD
@@ -356,7 +358,7 @@ private theorem var_htTreatSummand_le (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (
 /-- Per-summand variance bound for the control summand: `Var((1−Zᵢ) Yᵢ/(1−pᵢ)) ≤ k⁴`. -/
 private theorem var_htCtrlSummand_le (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, p i ≤ 1)
     (y : U → (U → Bool) → ℝ) (k : ℝ) (hk : 1 ≤ k)
-    (hplo : ∀ i, k⁻¹ ≤ p i) (hphi : ∀ i, p i ≤ 1 - k⁻¹)
+    (hphi : ∀ i, p i ≤ 1 - k⁻¹)
     (hmom : ∀ i, (bernoulliDesign p hp0 hp1).E (fun z => (y i z) ^ 2) ≤ k ^ 2) (i : U) :
     (bernoulliDesign p hp0 hp1).Var (htCtrlSummand p y i) ≤ k ^ 4 := by
   set D := bernoulliDesign p hp0 hp1 with hD
@@ -398,9 +400,10 @@ private theorem var_htCtrlSummand_le (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (h
 argument as the HT estimator). -/
 theorem var_AhatTreat_le (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, p i ≤ 1)
     (y : U → (U → Bool) → ℝ) (k : ℝ) (hk : 1 ≤ k) (hcard : 1 ≤ Fintype.card U)
-    (hplo : ∀ i, k⁻¹ ≤ p i) (hphi : ∀ i, p i ≤ 1 - k⁻¹)
+    (hplo : ∀ i, k⁻¹ ≤ p i)
     (hmom : ∀ i, (bernoulliDesign p hp0 hp1).E (fun z => (y i z) ^ 2) ≤ k ^ 2) :
     (bernoulliDesign p hp0 hp1).Var (AhatTreat p y) ≤ k ^ 4 * dbar y / (Fintype.card U : ℝ) := by
+  classical
   set D := bernoulliDesign p hp0 hp1 with hD
   set n : ℝ := (Fintype.card U : ℝ) with hn
   have hn0 : (0 : ℝ) < n := by rw [hn]; exact_mod_cast lt_of_lt_of_le zero_lt_one hcard
@@ -413,9 +416,9 @@ theorem var_AhatTreat_le (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, 
         Var_nonneg D _
       rw [D.Var_sub] at hVsub
       have hVi : D.Var (htTreatSummand p y i) ≤ k ^ 4 :=
-        var_htTreatSummand_le p hp0 hp1 y k hk hplo hphi hmom i
+        var_htTreatSummand_le p hp0 hp1 y k hk hplo hmom i
       have hVj : D.Var (htTreatSummand p y j) ≤ k ^ 4 :=
-        var_htTreatSummand_le p hp0 hp1 y k hk hplo hphi hmom j
+        var_htTreatSummand_le p hp0 hp1 y k hk hplo hmom j
       linarith
     · rw [if_neg hdep]
       exact le_of_eq (cov_htTreatSummand_zero p hp0 hp1 y hdep)
@@ -425,7 +428,8 @@ theorem var_AhatTreat_le (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, 
     exact Finset.sum_congr rfl (fun i _ => (one_mul _).symm)
   have hVarEst : D.Var (AhatTreat p y)
       = (n⁻¹) ^ 2 * ∑ i : U, ∑ j : U, D.Cov (htTreatSummand p y i) (htTreatSummand p y j) := by
-    rw [hEstEq, D.Var_const_mul, D.Var_linear_comb Finset.univ (fun _ => (1:ℝ)) (htTreatSummand p y)]
+    rw [hEstEq, D.Var_const_mul,
+      D.Var_linear_comb Finset.univ (fun _ => (1 : ℝ)) (htTreatSummand p y)]
     congr 1
     refine Finset.sum_congr rfl (fun i _ => Finset.sum_congr rfl (fun j _ => ?_))
     rw [one_mul, one_mul]
@@ -449,9 +453,10 @@ theorem var_AhatTreat_le (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, 
 /-- Variance bound for the control numerator average: `Var(Â₀) ≤ k⁴·d̄/n`. -/
 theorem var_AhatCtrl_le (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, p i ≤ 1)
     (y : U → (U → Bool) → ℝ) (k : ℝ) (hk : 1 ≤ k) (hcard : 1 ≤ Fintype.card U)
-    (hplo : ∀ i, k⁻¹ ≤ p i) (hphi : ∀ i, p i ≤ 1 - k⁻¹)
+    (hphi : ∀ i, p i ≤ 1 - k⁻¹)
     (hmom : ∀ i, (bernoulliDesign p hp0 hp1).E (fun z => (y i z) ^ 2) ≤ k ^ 2) :
     (bernoulliDesign p hp0 hp1).Var (AhatCtrl p y) ≤ k ^ 4 * dbar y / (Fintype.card U : ℝ) := by
+  classical
   set D := bernoulliDesign p hp0 hp1 with hD
   set n : ℝ := (Fintype.card U : ℝ) with hn
   have hn0 : (0 : ℝ) < n := by rw [hn]; exact_mod_cast lt_of_lt_of_le zero_lt_one hcard
@@ -464,9 +469,9 @@ theorem var_AhatCtrl_le (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, p
         Var_nonneg D _
       rw [D.Var_sub] at hVsub
       have hVi : D.Var (htCtrlSummand p y i) ≤ k ^ 4 :=
-        var_htCtrlSummand_le p hp0 hp1 y k hk hplo hphi hmom i
+        var_htCtrlSummand_le p hp0 hp1 y k hk hphi hmom i
       have hVj : D.Var (htCtrlSummand p y j) ≤ k ^ 4 :=
-        var_htCtrlSummand_le p hp0 hp1 y k hk hplo hphi hmom j
+        var_htCtrlSummand_le p hp0 hp1 y k hk hphi hmom j
       linarith
     · rw [if_neg hdep]
       exact le_of_eq (cov_htCtrlSummand_zero p hp0 hp1 y hdep)
@@ -594,7 +599,7 @@ theorem var_BhatCtrl_le (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, p
 /-- The treated numerator mean is the average treated potential outcome, uniformly bounded by `k`
 via the potential-outcome moment bound (Assumption C). -/
 theorem abs_E_AhatTreat_le (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, p i ≤ 1)
-    (hp0' : ∀ i, p i ≠ 0) (hp1' : ∀ i, (1 : ℝ) - p i ≠ 0)
+    (hp0' : ∀ i, p i ≠ 0)
     (y : U → (U → Bool) → ℝ) (k : ℝ) (hk : 1 ≤ k) (hcard : 1 ≤ Fintype.card U)
     (hpo : ∀ i, (bernoulliDesign p hp0 hp1).E (fun z => |y i (Function.update z i true)|) ≤ k) :
     |(bernoulliDesign p hp0 hp1).E (AhatTreat p y)| ≤ k := by
@@ -627,7 +632,7 @@ theorem abs_E_AhatTreat_le (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i
 /-- The control numerator mean is the average control potential outcome, uniformly bounded
 by `k`. -/
 theorem abs_E_AhatCtrl_le (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, p i ≤ 1)
-    (hp0' : ∀ i, p i ≠ 0) (hp1' : ∀ i, (1 : ℝ) - p i ≠ 0)
+    (hp1' : ∀ i, (1 : ℝ) - p i ≠ 0)
     (y : U → (U → Bool) → ℝ) (k : ℝ) (hk : 1 ≤ k) (hcard : 1 ≤ Fintype.card U)
     (hpo : ∀ i, (bernoulliDesign p hp0 hp1).E (fun z => |y i (Function.update z i false)|) ≤ k) :
     |(bernoulliDesign p hp0 hp1).E (AhatCtrl p y)| ≤ k := by
@@ -679,6 +684,7 @@ theorem E_AhatTreat_sub_E_AhatCtrl (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1
 always hold (witness `ℓ = i`), so `dbarCount y ≥ n`, hence `dbar y = dbarCount/n ≥ 1`. -/
 private lemma one_le_dbar (y : U → (U → Bool) → ℝ) (hcard : 1 ≤ Fintype.card U) :
     (1 : ℝ) ≤ dbar y := by
+  classical
   have hn0 : (0 : ℝ) < (Fintype.card U : ℝ) := by exact_mod_cast lt_of_lt_of_le zero_lt_one hcard
   have hdiag : ∀ i : U, InterfDep y i i := fun i => ⟨i, Or.inl rfl, Or.inl rfl⟩
   have hcount : (Fintype.card U : ℝ) ≤ dbarCount y := by
@@ -721,12 +727,12 @@ theorem hajek_consistent_eate (Exp : ℕ → SAHExperiment) (M : ℝ)
     refine squeeze_zero (fun m => Var_nonneg (D m) _) (fun m => ?_) hrate
     rw [hDm m]
     exact var_AhatTreat_le (Exp m).p (Exp m).hp0 (Exp m).hp1 (Exp m).y (Exp m).k (Exp m).hk
-      (Exp m).hcard (Exp m).hplo (Exp m).hphi (Exp m).hmom
+      (Exp m).hcard (Exp m).hplo (Exp m).hmom
   have hvarA0 : Tendsto (fun m => (D m).Var (AhatCtrl (Exp m).p (Exp m).y)) atTop (𝓝 0) := by
     refine squeeze_zero (fun m => Var_nonneg (D m) _) (fun m => ?_) hrate
     rw [hDm m]
     exact var_AhatCtrl_le (Exp m).p (Exp m).hp0 (Exp m).hp1 (Exp m).y (Exp m).k (Exp m).hk
-      (Exp m).hcard (Exp m).hplo (Exp m).hphi (Exp m).hmom
+      (Exp m).hcard (Exp m).hphi (Exp m).hmom
   -- The `k²/n ≤ k⁴·d̄/n` squeeze for the weight variances.
   have hweightle : ∀ m, (Exp m).k ^ 2 / (Fintype.card (Exp m).U : ℝ)
       ≤ (Exp m).k ^ 4 * dbar (Exp m).y / (Fintype.card (Exp m).U : ℝ) := by
@@ -777,15 +783,15 @@ theorem hajek_consistent_eate (Exp : ℕ → SAHExperiment) (M : ℝ)
     change |(D m).E (AhatTreat (Exp m).p (Exp m).y)| ≤ (Exp m).k
     rw [hDm m]
     exact abs_E_AhatTreat_le (Exp m).p (Exp m).hp0 (Exp m).hp1 (Exp m).p_ne_zero
-      (Exp m).one_sub_p_ne_zero (Exp m).y (Exp m).k (Exp m).hk (Exp m).hcard
+      (Exp m).y (Exp m).k (Exp m).hk (Exp m).hcard
       (by intro i; have := hpo1 m i; unfold SAHExperiment.D at this; exact this)
   have hbound0 : ∀ m, |ybar0 m| ≤ M := by
     intro m
     refine le_trans ?_ (hM m)
     change |(D m).E (AhatCtrl (Exp m).p (Exp m).y)| ≤ (Exp m).k
     rw [hDm m]
-    exact abs_E_AhatCtrl_le (Exp m).p (Exp m).hp0 (Exp m).hp1 (Exp m).p_ne_zero
-      (Exp m).one_sub_p_ne_zero (Exp m).y (Exp m).k (Exp m).hk (Exp m).hcard
+    exact abs_E_AhatCtrl_le (Exp m).p (Exp m).hp0 (Exp m).hp1 (Exp m).one_sub_p_ne_zero
+      (Exp m).y (Exp m).k (Exp m).hk (Exp m).hcard
       (by intro i; have := hpo0 m i; unfold SAHExperiment.D at this; exact this)
   have hR1 : FiniteDesign.TendstoInProb D
       (fun m z => AhatTreat (Exp m).p (Exp m).y z / BhatTreat (Exp m).p z) ybar1 :=

@@ -55,12 +55,14 @@ noncomputable def projKernel (c : X → Fin J → ℝ) (M : Matrix (Fin J) (Fin 
     X → X → ℝ :=
   fun x y => ∑ k, ∑ l, c x k * M k l * c y l
 
+omit [IsProbabilityMeasure P] in
 /-- The Gram matrix is symmetric. -/
 theorem gram_symm (c : X → Fin J → ℝ) : (gram c P)ᵀ = gram c P := by
   funext k l
   simp only [Matrix.transpose_apply, gram, Matrix.of_apply]
   simp_rw [mul_comm]
 
+omit [IsProbabilityMeasure P] in
 /-- **One-sided degeneracy of the projected kernel.** If the basis coordinates are
 centered (`∫ c_l dP = 0` for every `l`), then `∫ g(x, ·) dP = 0` for every `x`.
 This records the zero-integral field only; measurability, symmetry, and

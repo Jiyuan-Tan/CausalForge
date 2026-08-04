@@ -105,9 +105,15 @@ async function readParent(
     else if (qid.startsWith("panel_")) cluster = "panel";
   }
 
-  // Current bank entries preserve the live run directory verbatim. Keep the
-  // pre-2026 flattened names as fallbacks so upgrades work across both layouts.
+  // Current bank entries preserve the live run directory verbatim. The
+  // authoritative proposal is the typed proto core (single-artifact regime);
+  // the `proposal.tex` names are read-compat for pre-rollout entries, whose
+  // .tex was the proposal (audit A2 — without the proto-core candidate, a
+  // new-format parent handed the upgrade proposer an EMPTY parent-proposal
+  // block and deprived it of the kernel it must improve).
   const proposal_tex = await readFirstTrimmed([
+    path.join(dir, "discovery", "proto_core.json"),
+    path.join(dir, "proto_core.json"),
     path.join(dir, "discovery", "proposal.tex"),
     path.join(dir, "proposal.tex"),
     path.join(dir, `${entryName}_proposal.tex`),
@@ -226,9 +232,16 @@ async function dirExists(p: string): Promise<boolean> {
 async function readTrimmed(p: string): Promise<string> {
   try {
     const raw = await readFile(p, "utf8");
-    return raw.length <= MAX_TEX_BYTES
-      ? raw
-      : raw.slice(0, MAX_TEX_BYTES) + "\n\n% [truncated by upgrade.loadParentEntry]\n";
+    if (raw.length <= MAX_TEX_BYTES) return raw;
+    // A JSON artifact (the typed proto core) must NEVER be prefix-truncated —
+    // the slice lands mid-key and hands the proposer malformed JSON with the
+    // load-bearing tail (statements, honest_scope) gone (audit B1). Inline it
+    // whole up to a sanity bound (largest real core is ~104 KB; a >1 MiB file
+    // is pathological, and skipping the candidate — falling through to the
+    // legacy names or an empty block — beats both malformed JSON and an
+    // unbounded prompt, audit C2).
+    if (p.endsWith(".json")) return raw.length <= 1_048_576 ? raw : "";
+    return raw.slice(0, MAX_TEX_BYTES) + "\n\n% [truncated by upgrade.loadParentEntry]\n";
   } catch {
     return "";
   }

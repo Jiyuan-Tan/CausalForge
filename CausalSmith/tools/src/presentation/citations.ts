@@ -26,7 +26,11 @@ export interface ExternalRecord {
  * and all unrelated fields are preserved. Title-query records are intentionally ineligible. */
 export function canonicalizeBibEntry(bib: string, key: string, rec: ExternalRecord): string | null {
   if (!rec.authoritative) return null;
-  const startRe = new RegExp(`@([A-Za-z]+)\\s*\\{\\s*${key.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}\\s*,`, "i");
+  // NB the escaper class: `[.*+?^${}()|[\]\\]` — the earlier spelling closed the
+  // class one char early, so NO special char was escaped unless followed by `]`,
+  // and a bib key containing `.`/`+` built a wrong regex that silently no-oped
+  // the canonicalization.
+  const startRe = new RegExp(`@([A-Za-z]+)\\s*\\{\\s*${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*,`, "i");
   const match = startRe.exec(bib);
   if (!match) return null;
   const start = match.index;
@@ -53,9 +57,13 @@ export function canonicalizeBibEntry(bib: string, key: string, rec: ExternalReco
       // BibTeX after normalization.
       .replace(/&amp;/gi, "&")
       .replace(/(?<!\\)&/g, "\\&");
+    // Function replacements ONLY: `safe` is external registry text and titles
+    // like "Sharp $1$-Wasserstein bounds" contain `$1`/`$&`, which a STRING
+    // replacement expands as capture references — silently corrupting the
+    // written references.bib.
     const fieldRe = new RegExp(`(\\b${field}\\s*=\\s*)(?:\\{(?:[^{}]|\\{[^{}]*\\})*\\}|\"[^\"]*\"|[^,}]+)`, "i");
-    if (fieldRe.test(block)) block = block.replace(fieldRe, `$1{${safe}}`);
-    else block = block.replace(/}\s*$/, `,\n  ${field} = {${safe}}\n}`);
+    if (fieldRe.test(block)) block = block.replace(fieldRe, (_m, lead: string) => `${lead}{${safe}}`);
+    else block = block.replace(/}\s*$/, () => `,\n  ${field} = {${safe}}\n}`);
   }
   return bib.slice(0, start) + block + bib.slice(end);
 }
@@ -189,7 +197,10 @@ function scanBibFields(body: string): Array<[string, string]> {
 
 export function citedKeys(tex: string): Set<string> {
   const keys = new Set<string>();
-  const re = /\\cite[tp]?\*?(?:\[[^\]]*\])*\{([^}]+)\}/g;
+  // `[A-Za-z]*` covers the whole natbib family (`\citealp`, `\citeauthor`,
+  // `\citeyearpar`, `\Citet`, …): a key cited only through a variant this regex
+  // missed skipped external verification entirely while still compiling.
+  const re = /\\[Cc]ite[A-Za-z]*\*?(?:\[[^\]]*\])*\{([^}]+)\}/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(tex))) for (const k of m[1].split(",")) keys.add(k.trim());
   return keys;

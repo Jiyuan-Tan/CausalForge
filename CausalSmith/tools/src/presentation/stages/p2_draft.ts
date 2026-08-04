@@ -1,5 +1,6 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
+import { extractBalancedEnv } from "../../shared/tex_text.js";
 import type { StageIO } from "../pipeline.js";
 import { PRESENTATION_PROSE_POLICY_VERSION, presentationPrompt } from "../prompt_io.js";
 import { parseOutline, unwrapArtifact, type Outline } from "../stage_util.js";
@@ -24,10 +25,12 @@ import {
 } from "../revision_brief.js";
 import { symbolProseTargets, normalizeSymbolLeanrefs, promoteSymbolLeanrefs, repairSymbolLeanrefTargets } from "../emit.js";
 import { writeJsonAtomic } from "../json_io.js";
+import { recordP2Assembly } from "../assembly_freshness.js";
 import { runProofAudit } from "../audit.js";
 import { extractFullDeclSource } from "../lean_extract.js";
 import { discoverRealizedSymbols, buildSymbolClusters } from "../../formalization/crosswalk.js";
 import type { FormalizationGraph } from "../graph_view.js";
+import { parseBib } from "../citations.js";
 
 /** Content key for a P2 section cache entry: changes iff a drafting input changes — the section's
  *  objs list (membership AND order), brief, allowed cites, the frozen env bodies it places, or its
@@ -37,6 +40,30 @@ export function sectionCacheKey(
   name: string, objs: string[], brief: string, allowedKeys: string, envBodies: string[], revBrief: string,
 ): string {
   return hashEnvBody([name, objs.join(","), brief, allowedKeys, ...envBodies, revBrief].join("§"));
+}
+
+/** The front-matter author must receive at least one verified citation key. */
+export function frontMatterBibKeys(bibText: string): string {
+  const keys = parseBib(bibText).map((entry) => entry.key);
+  if (keys.length === 0) {
+    throw new Error("P2 front-matter draft requires a non-empty, parseable references.bib citation pool");
+  }
+  return keys.join(", ");
+}
+
+/** Content key for the front-matter draft, including every model prompt input. */
+export function frontMatterCacheKey(
+  modelCacheKey: string, body: string, frontBrief: string, brief: string, allowedBibKeys: string,
+): string {
+  return hashEnvBody([modelCacheKey, body, frontBrief, brief, allowedBibKeys].join("§"));
+}
+
+/** Cache format used before the citation-pool prompt input was added. Keep this
+ * only to migrate reviewed front matter rather than replacing it wholesale. */
+export function legacyFrontMatterCacheKey(
+  modelCacheKey: string, body: string, frontBrief: string, brief: string,
+): string {
+  return hashEnvBody([modelCacheKey, body, frontBrief, brief].join("§"));
 }
 
 /** Keep only notation rows whose control sequences/identifiers occur in this artifact.
@@ -249,7 +276,11 @@ export async function stageP2(io: StageIO): Promise<void> {
   // skip any key already present (a re-run, or a paper key reused by reconciliation).
   if (bibInjections.size > 0) {
     const current = await readFile(bibPath, "utf8").catch(() => "");
-    const fresh = [...bibInjections].filter(([k]) => !new RegExp(`@\\w+\\s*\\{\\s*${k}\\b`).test(current)).map(([, e]) => e);
+    // Escape the key: a `.`/`+` in a bib key would otherwise widen the match and
+    // read an absent entry as "already present", leaving a dangling \citep.
+    const fresh = [...bibInjections]
+      .filter(([k]) => !new RegExp(`@\\w+\\s*\\{\\s*${k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\w-])`).test(current))
+      .map(([, e]) => e);
     if (fresh.length > 0) {
       await writeFile(
         bibPath,
@@ -258,6 +289,13 @@ export async function stageP2(io: StageIO): Promise<void> {
       );
     }
   }
+
+  // Read after the provenance injection above: the front-matter author receives the complete
+  // paper-wide verified bibliography pool, while section authors receive strict per-section subsets.
+  const frontMatterBib = await readFile(bibPath, "utf8").catch(() => {
+    throw new Error("P2 front-matter draft requires a readable references.bib citation pool");
+  });
+  const allowedFrontMatterBibKeys = frontMatterBibKeys(frontMatterBib);
 
   // Lean-faithful appendix proofs, one per theorem env. Cached per theorem in
   // proofs/<obj_id>.tex (codex renders are the most expensive P2 calls);
@@ -319,7 +357,10 @@ export async function stageP2(io: StageIO): Promise<void> {
     if (/^\s*UNCLEAR:/m.test(stdout)) {
       throw new Error(`P2 proof rendering for ${e.obj_id} reported UNCLEAR — see codex output`);
     }
-    const proof = normalizeCrefs(stdout.match(/\\begin\{proof\}[\s\S]*?\\end\{proof\}/)?.[0] ?? "");
+    // Depth-aware: a lazy match ended at the FIRST `\end{proof}`, truncating any
+    // proof that nests `\begin{proof}[Proof of Claim 1]` and leaving an
+    // unbalanced `\end{proof}` for P4 after the audit already blessed the text.
+    const proof = normalizeCrefs(extractBalancedEnv(stdout, "proof") ?? "");
     if (!proof) throw new Error(`P2: no proof block in codex output for ${e.obj_id}`);
     await writeFile(proofPath, proof + "\n", "utf8");
     proofCacheKeys[e.obj_id] = proofKey;
@@ -413,8 +454,13 @@ export async function stageP2(io: StageIO): Promise<void> {
   // Front matter is a summary of the finished body — content-key it on the body + its revision brief
   // so a re-drafted/restructured body (or a referee front-matter finding) regenerates the abstract/intro.
   const frontBrief = frontMatterRevisionBrief(priorReview);
-  const frontKey = hashEnvBody([modelCacheKey, body, frontBrief, brief].join("§")); // why: front-matter prompt includes related_work_brief and output depends on the authoring model.
-  let front = cacheKeys["_front"] === frontKey ? await readFile(join(io.outDir, "front_matter.tex"), "utf8").catch(() => null) : null;
+  const frontKey = frontMatterCacheKey(modelCacheKey, body, frontBrief, brief, allowedFrontMatterBibKeys); // why: front-matter prompt includes the completed body, related-work brief, allowed bibliography keys, revision brief, and authoring model.
+  const legacyFrontKey = legacyFrontMatterCacheKey(modelCacheKey, body, frontBrief, brief);
+  // Existing bundles store the four-input key. Accept it once, then write the
+  // current key below, so adding citation-pool awareness never discards P3's
+  // reviewed front matter on the next P2 run.
+  const frontCacheHit = cacheKeys["_front"] === frontKey || cacheKeys["_front"] === legacyFrontKey;
+  let front = frontCacheHit ? await readFile(join(io.outDir, "front_matter.tex"), "utf8").catch(() => null) : null;
   if (front !== null && lintNegativeContributionFraming(front).length > 0) front = null;
   if (front === null) {
     // Intro + abstract: medium effort (summarization of the already-drafted body).
@@ -424,6 +470,7 @@ export async function stageP2(io: StageIO): Promise<void> {
           prompt: await presentationPrompt("p2_intro_abstract", {
             full_body_tex: body,
             related_work_brief: brief,
+            allowed_bib_keys: allowedFrontMatterBibKeys,
             revision_brief: frontBrief,
           }),
           cwd: io.ctx.repoRoot,
@@ -485,6 +532,7 @@ export async function stageP2(io: StageIO): Promise<void> {
     );
   }
   await writeFile(join(io.outDir, "paper.tex"), paperSafe + "\n", "utf8");
+  await recordP2Assembly(io.outDir);
 }
 
 const LEMMA_BATCH = 5;
@@ -501,7 +549,7 @@ export function parseLemmaProofBatch(stdout: string, expected: string[]): Map<st
   for (let i = 0; i < marks.length; i++) {
     const chunk = stdout.slice(marks[i].end, i + 1 < marks.length ? marks[i + 1].start : undefined);
     const block =
-      chunk.match(/\\begin\{proof\}[\s\S]*?\\end\{proof\}/)?.[0] ??
+      extractBalancedEnv(chunk, "proof") ??
       (/^\s*UNCLEAR:/m.test(chunk) ? chunk.match(/^\s*UNCLEAR:.*$/m)![0].trim() : null);
     if (block) out.set(marks[i].id, block);
   }

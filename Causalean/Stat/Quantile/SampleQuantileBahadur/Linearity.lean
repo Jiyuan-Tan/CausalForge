@@ -37,6 +37,7 @@ variable [IsProbabilityMeasure μ] [IsProbabilityMeasure P]
 
 /-! ## Inversion and Taylor expansion -/
 
+omit [IsProbabilityMeasure μ] in
 /-- **Sum of in-probability limits.**  If `Xn →ₚ 0` and `Yn →ₚ 0`
 then `Xn + Yn →ₚ 0`.  Union bound: `{ε ≤ |Xn+Yn|} ⊆ {ε/2 ≤ |Xn|} ∪ {ε/2 ≤ |Yn|}`. -/
 lemma Tendsto_inProb.add_zero_zero {Xn Yn : ℕ → Ω → ℝ}
@@ -64,6 +65,7 @@ lemma Tendsto_inProb.add_zero_zero {Xn Yn : ℕ → Ω → ℝ}
       _ = ε := by ring
   exact absurd hω (not_le.mpr this)
 
+omit [IsProbabilityMeasure μ] in
 /-- **Little-o in probability implies convergence in probability.**
 An `IsLittleOp _ 1` sequence converges to
 `0` in probability.  Both unwind to the same `μ{· < |·|} → 0` statement up to a
@@ -82,6 +84,7 @@ lemma Tendsto_inProb.of_isLittleOp_one {Xn : ℕ → Ω → ℝ}
   simp only [Set.mem_setOf_eq, sub_zero, Real.norm_eq_abs] at hω ⊢
   linarith
 
+omit [IsProbabilityMeasure P] in
 /-- **The sample-quantile atom term vanishes.**
 `√n (F̂ₙ(q̂ₙ) − τ) →ₚ 0`.  The switching
 atom bound `|F̂ₙ(q̂ₙ) − τ| ≤ 1/n` (a.e.) gives `|√n(F̂ₙ(q̂ₙ) − τ)| ≤ 1/√n → 0`,
@@ -315,6 +318,7 @@ lemma IIDSample.sampleQuantile_inversion (S : IIDSample Ω ℝ μ P)
 
 /-! ## Normalized-sum identity -/
 
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- The normalized influence-function sum equals `−Gₙ(q₀)/f₀`:
 
     (1/√n) Σ ψ_τ(Zᵢ)  =  −Gₙ(q₀) / f₀. -/
@@ -337,6 +341,7 @@ lemma IIDSample.normalizedSum_quantileIF_eq (S : IIDSample Ω ℝ μ P)
 
 /-! ## Derived asymptotic linearity -/
 
+omit [IsProbabilityMeasure μ] in
 /-- Scalar multiple preserves in-probability convergence to `0`. -/
 lemma Tendsto_inProb.const_mul_zero {Xn : ℕ → Ω → ℝ} (c : ℝ)
     (h : Tendsto_inProb Xn (fun _ => 0) μ) :

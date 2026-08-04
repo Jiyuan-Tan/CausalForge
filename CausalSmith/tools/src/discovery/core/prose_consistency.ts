@@ -13,6 +13,7 @@
 import type { Core } from "./schema.js";
 import { coreNodeIds } from "./schema.js";
 import { extractCitationRefs } from "./node_ids.js";
+import { maskNonBoundaryPeriods } from "../../shared/tex_text.js";
 
 export interface ProseWarning {
   code: "PROSE-DANGLING-REF" | "PROSE-OPEN-OVERCLAIM";
@@ -54,7 +55,19 @@ const ESTABLISH =
 // A negation / open-acknowledgement anywhere in the clause suppresses the flag (the
 // prose is honestly saying the target is NOT established).
 const NEGATION =
-  /\b(?:not|cannot|can't|never|no\b|without|fails?\s+to|leaves?\b|leave\b|remains?\s+open|open\s+question|conjectur\w*|do(?:es)?\s+not|is\s+not)\b/i;
+  /\b(?:not|cannot|can't|never|no\b|neither|nor|without|fails?\s+to|leaves?\b|leave\b|remains?\s+open|open\s+question|conjectur\w*|do(?:es)?\s+not|is\s+not)\b/i;
+
+/** Whole-word matcher for a harvested term. Guards each side only where the term's own
+ *  edge is alphanumeric, so a term carrying punctuation still matches. */
+function wholeWordRe(term: string): RegExp {
+  const esc = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  // `\\` in the left class: a term must not match the tail of a TeX command
+  // (`overline` inside `\overline{m}_h`) — the same guard
+  // `preflight.mentionsSymbol` already carries.
+  const left = /^[A-Za-z0-9]/.test(term) ? "(?<![A-Za-z0-9\\\\])" : "";
+  const right = /[A-Za-z0-9]$/.test(term) ? "(?![A-Za-z0-9])" : "";
+  return new RegExp(`${left}${esc}${right}`, "i");
+}
 
 const STOPWORDS = new Set([
   "the", "and", "for", "with", "that", "this", "which", "under", "over", "from",
@@ -63,13 +76,28 @@ const STOPWORDS = new Set([
   "result", "results", "bound", "bounds", "rate", "rates", "class", "problem",
 ]);
 
-/** Distinctive lowercased words (letters only, length ≥ 6, non-stopword) of a text. */
+/** Distinctive lowercased words (letters only, length ≥ 6, non-stopword) of a text.
+ * TeX command names are stripped first — `\overline`/`\subseteq`/`\liminf` are
+ * notation, not distinctive prose terms, and harvesting them made the overclaim
+ * signal fire on any prose that typesets the same notation. */
 function distinctiveTerms(text: string): Set<string> {
   const out = new Set<string>();
-  for (const w of text.toLowerCase().match(/[a-z]{6,}/g) ?? []) {
+  // Environment NAMES go first (whole `\begin{aligned}` token — else the
+  // command strip leaves the bare word "aligned" behind), then commands.
+  const stripped = text.replace(/\\(?:begin|end)\s*\{[A-Za-z*]+\}/g, " ").replace(/\\[A-Za-z]+/g, " ");
+  for (const w of stripped.toLowerCase().match(/[a-z]{6,}/g) ?? []) {
     if (!STOPWORDS.has(w)) out.add(w);
   }
   return out;
+}
+
+/** Sentence split for advisory prose checks. Periods that provably do not end a
+ * sentence (decimals, `i.i.d.`-style abbreviations) are masked first, and `;` is
+ * NOT a boundary: it is routine inside math (`K(u; h)`, `p(y \mid x; \theta)`),
+ * and splitting there separated a negation from its establishment verb, turning
+ * honest "not known whether …" prose into an overclaim flag. */
+function splitProseSentences(text: string): string[] {
+  return maskNonBoundaryPeriods(text).split(/(?<=[.!?])\s+/);
 }
 
 function isOpen(s: Core["statements"][number]): boolean {
@@ -93,7 +121,7 @@ function isOpen(s: Core["statements"][number]): boolean {
  * emptying the term set and silencing the signal entirely.
  */
 function openTargetText(statement: string): string {
-  const sentences = statement.split(/(?<=[.;!?])\s+/);
+  const sentences = splitProseSentences(statement);
   const kept = sentences.filter((s) => /\?/.test(s) || !ESTABLISH.test(s) || NEGATION.test(s));
   // All sentences recite settled material ⇒ no narrowing to do; fall back to the whole
   // statement rather than silently dropping the node from the check.
@@ -154,11 +182,17 @@ export function checkProseConsistency(core: Core): ProseWarning[] {
     }
     // Signal B — establishment claim on an open-only target.
     if (openOnlyTerms.size > 0) {
-      for (const sentence of text.split(/(?<=[.;!?])\s+/)) {
+      for (const sentence of splitProseSentences(text)) {
         if (!ESTABLISH.test(sentence) || NEGATION.test(sentence)) continue;
         const lower = sentence.toLowerCase();
         for (const [term, owner] of openOnlyTerms) {
-          if (lower.includes(term)) {
+          // Match the term as a WHOLE WORD. A bare `includes` fires on any substring, so
+          // the term `either` (harvested from an OEQ's "in either residual region") matched
+          // inside `n-either`, flagging the honestly-negative sentence "Their result
+          // therefore NEITHER proves nor rules out …" as an overclaim — the exact inverse
+          // of what this signal is for. Same defect class as the G5 construction-name match
+          // fixed 2026-07-29; short harvested terms make it near-certain, not incidental.
+          if (wholeWordRe(term).test(lower)) {
             // CIRCULAR MATCH. `ESTABLISH` contains status verbs (`settl\w*`,
             // `characteriz\w*`, …) and `distinctiveTerms` accepts any non-stopword word,
             // so one token can supply BOTH halves of the test. A well-scoped open node

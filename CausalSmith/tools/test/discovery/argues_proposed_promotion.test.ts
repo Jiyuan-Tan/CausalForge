@@ -209,6 +209,62 @@ describe("argues_proposed paired-proof promotion", () => {
     } finally { await h.dispose(); }
   }, 30000);
 
+  it("promotes a consumer after its later same-bundle helper reaches proved", async () => {
+    const helper = {
+      id: "lem:helper", kind: "lemma", statement: "helper, old", depends_on: ["ass:overlap"],
+      status: "proved", proof_tex: "old helper proof",
+    };
+    const consumer = {
+      ...STMT,
+      statement: "main, old",
+      depends_on: ["lem:helper"],
+      status: "proved",
+      proof_tex: "old main proof",
+    };
+    const h = await createDStageHarness({
+      qid: "stat_promote", specialization: "v1", proto: { ...PROTO, statements: [consumer, helper] },
+    });
+    try {
+      const proto = await h.readProto();
+      await saveWorkingState(h.ctx(), {
+        round: 1,
+        solved: {
+          "thm:main": {
+            proof_tex: "new main proof using lem:helper",
+            snapshot: snapshotMember(proto, proto.statements[0]),
+            partial: true,
+          },
+          "lem:helper": {
+            proof_tex: "new helper proof",
+            snapshot: snapshotMember(proto, proto.statements[1]),
+            partial: true,
+          },
+        },
+        resolved_oeqs: {},
+        proposals: {
+          // Consumer deliberately precedes helper: a single proposal-order pass leaves
+          // the consumer partial even though the accepted bundle discharges its basis.
+          statements: [
+            { id: "thm:main", current: "main, old", proposed: "main, new", reason: "tighten", direction: "correct" },
+            { id: "lem:helper", current: "helper, old", proposed: "helper, new", reason: "tighten", direction: "correct" },
+          ],
+          definitions: [], assumptions: [], coreEdits: [],
+          proofs: [
+            { id: "thm:main", proof_tex: "new main proof using lem:helper", argues_proposed: true },
+            { id: "lem:helper", proof_tex: "new helper proof", argues_proposed: true },
+          ],
+        },
+      } as never);
+
+      await applyProposedChanges({ ctx: h.ctx() });
+
+      const after = await h.readProto();
+      expect(after.statements.find((s) => s.id === "lem:helper")?.status).toBe("proved");
+      expect(after.statements.find((s) => s.id === "thm:main")?.status).toBe("proved");
+      expect((await readRec(h))?.partial).toBeUndefined();
+    } finally { await h.dispose(); }
+  }, 30000);
+
   it("does NOT promote an undeclared paired proof (conservative default)", async () => {
     const h = await createDStageHarness({ qid: "stat_promote", specialization: "v1", proto: PROTO });
     try {

@@ -47,7 +47,7 @@ as lemmas:
   corollary of the CLT.
 * `cdf_increment_sqrt_tendsto` (imported from `.Oscillation`) — the Taylor limit
   `√n (F(q₀+M/√n) − F(q₀)) → f₀·M` from `HasDerivAt F f₀ q₀`.
-* `gaussian_tail_small` — for a nondegenerate variance the symmetric Gaussian
+* `finite_measure_halfline_tails_small` — for a nondegenerate variance the symmetric Gaussian
   half-line tails can be made `< ε`. -/
 
 omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
@@ -73,17 +73,12 @@ lemma IIDSample.empProcess_q0_tendsto_normal (S : IIDSample Ω ℝ μ P)
         (fun m => Finset.range m)) = fun n ω => S.empProcess n ω q₀ := by
     funext n ω
     simp only [IsAsymLinear.rescaledEstimator, IIDSample.empProcess, Finset.card_range]
-  -- Measurability obligations for the underlying CLT.
+  -- Measurability obligation for the underlying CLT.
   have hθn_meas : ∀ n : ℕ, AEMeasurable
       (IsAsymLinear.rescaledEstimator (S.empiricalCDF q₀) (cdf P q₀)
         (fun m => Finset.range m) n) μ := by
     intro n; rw [hθeq]; exact (S.measurable_empProcess n q₀).aemeasurable
-  have hSum_meas : ∀ n : ℕ, AEMeasurable
-      (IsAsymLinear.normalizedSum S (cdfIF P q₀) (fun m => Finset.range m) n) μ := by
-    intro n
-    refine (Measurable.const_mul ?_ _).aemeasurable
-    exact Finset.measurable_sum _ fun i _ => (measurable_cdfIF q₀).comp (S.meas i)
-  have h := empiricalCDF_tendsto_normal S q₀ hθn_meas hSum_meas
+  have h := empiricalCDF_tendsto_normal S q₀ hθn_meas
   -- Rewrite the *goal's* variance `τ → cdf P q₀` (the goal's `hmeas` does not
   -- mention `cdf`, so this is motive-safe), matching `h`'s limit measure.
   rw [← hreg.cdf_eq]
@@ -127,7 +122,7 @@ theorem Tendsto_dist.limsup_measure_closed_le
   rw [Measure.map_apply_of_aemeasurable (hXn n) hF.measurableSet]
   exact le_refl _
 
--- `gaussian_tail_small` (Gaussian half-line tail control) lives in
+-- `finite_measure_halfline_tails_small` (Gaussian half-line tail control) lives in
 -- `Causalean/Stat/CLT/GaussianTail.lean`, imported above.
 
 /-- **Root-`n` consistency of the sample quantile.**
@@ -144,7 +139,8 @@ lemma IIDSample.sampleQuantile_rate (S : IIDSample Ω ℝ μ P)
   have hf0 : 0 < f₀ := hreg.density_pos
   intro ε hε
   -- Choose the Gaussian half-line cutoff `R` at level `ε/2` (both tails).
-  obtain ⟨R, hRpos, hRiic, hRici⟩ := gaussian_tail_small (v := σ2) (ε := ε / 2) (by linarith)
+  obtain ⟨R, hRpos, hRiic, hRici⟩ :=
+    gaussian_tail_small_gaussian (v := σ2) (ε := ε / 2) (by linarith)
   -- The window constant `M := 4R/f₀`, so that `f₀·M/4 = R`.
   refine ⟨4 * R / f₀, ?_⟩
   set M : ℝ := 4 * R / f₀ with hM

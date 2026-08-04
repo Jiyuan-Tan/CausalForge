@@ -154,7 +154,7 @@ private lemma dgp_factualX_eq_latentUn :
   change (XEquiv m g)
       ((dgpSCM m g).evalMap (dgpFixed m g) ℓ
         ⟨SWIGNode.random WNode.Xc, by
-          simp [SCM.randomVars, dgpSCM, wSWIGGraph]⟩) =
+          simp [SCM.randomVars, SWIGGraph.randomVars, dgpSCM, wSWIGGraph]⟩) =
     ℓ (iUn (C := C) m g)
   rw [SCM.evalMap_observed_unfold (dgpSCM m g) (dgpFixed m g) ℓ
     ⟨SWIGNode.random WNode.Xc, by simp [dgpSCM, wSWIGGraph]⟩]
@@ -163,14 +163,14 @@ private lemma dgp_factualX_eq_latentUn :
 
 private noncomputable def dgpXSingletonEquiv :
     C ≃ᵐ ValuesOn ({SWIGNode.random WNode.Xc} : Finset (SWIGNode WNode)) (swigΩ (WΩ C)) where
-  toFun := SCM.singletonValues (Ω := WΩ C) (v := SWIGNode.random WNode.Xc)
-  invFun := SCM.singletonValue (Ω := WΩ C) (v := SWIGNode.random WNode.Xc)
+  toFun := SCM.singletonValues (α := swigΩ (WΩ C)) (v := SWIGNode.random WNode.Xc)
+  invFun := SCM.singletonValue (α := swigΩ (WΩ C)) (v := SWIGNode.random WNode.Xc)
   left_inv := fun x =>
-    SCM.singletonValue_singletonValues (Ω := WΩ C) (v := SWIGNode.random WNode.Xc) x
+    SCM.singletonValue_singletonValues (α := swigΩ (WΩ C)) (v := SWIGNode.random WNode.Xc) x
   right_inv := fun x =>
-    SCM.singletonValues_singletonValue (Ω := WΩ C) (v := SWIGNode.random WNode.Xc) x
-  measurable_toFun := SCM.measurable_singletonValues (Ω := WΩ C)
-  measurable_invFun := SCM.measurable_singletonValue (Ω := WΩ C)
+    SCM.singletonValues_singletonValue (α := swigΩ (WΩ C)) (v := SWIGNode.random WNode.Xc) x
+  measurable_toFun := SCM.measurable_singletonValues (α := swigΩ (WΩ C))
+  measurable_invFun := SCM.measurable_singletonValue (α := swigΩ (WΩ C))
 
 private lemma dgp_factualD_eq_treatFun :
     (dgpBackdoor m g).factualD =
@@ -185,14 +185,14 @@ private lemma dgp_factualD_eq_treatFun :
   change (AEquiv m g)
       ((dgpSCM m g).evalMap (dgpFixed m g) ℓ
         ⟨SWIGNode.random WNode.A, by
-          simp [SCM.randomVars, dgpSCM, wSWIGGraph]⟩) =
+          simp [SCM.randomVars, SWIGGraph.randomVars, dgpSCM, wSWIGGraph]⟩) =
     treatFun (m (ℓ (iUn (C := C) m g))) (ℓ (iEa (C := C) m g))
   rw [SCM.evalMap_observed_unfold (dgpSCM m g) (dgpFixed m g) ℓ
     ⟨SWIGNode.random WNode.A, by simp [dgpSCM, wSWIGGraph]⟩]
   change treatFun
       (m ((dgpSCM m g).evalMap (dgpFixed m g) ℓ
         ⟨SWIGNode.random WNode.Xc, by
-          simp [SCM.randomVars, dgpSCM, wSWIGGraph]⟩))
+          simp [SCM.randomVars, SWIGGraph.randomVars, dgpSCM, wSWIGGraph]⟩))
       (ℓ (iEa (C := C) m g)) =
     treatFun (m (ℓ (iUn (C := C) m g))) (ℓ (iEa (C := C) m g))
   rw [SCM.evalMap_observed_unfold (dgpSCM m g) (dgpFixed m g) ℓ
@@ -219,7 +219,7 @@ private lemma dgp_factualY_eq_outFun :
   change (YEquiv m g)
       ((dgpSCM m g).evalMap (dgpFixed m g) ℓ
         ⟨SWIGNode.random WNode.Y, by
-          simp [SCM.randomVars, dgpSCM, wSWIGGraph]⟩) =
+          simp [SCM.randomVars, SWIGGraph.randomVars, dgpSCM, wSWIGGraph]⟩) =
     outFun (C := C) g
       (treatFun (m (ℓ (iUn (C := C) m g))) (ℓ (iEa (C := C) m g)))
       (ℓ (iUn (C := C) m g))
@@ -229,10 +229,10 @@ private lemma dgp_factualY_eq_outFun :
   change outFun (C := C) g
       ((dgpSCM m g).evalMap (dgpFixed m g) ℓ
         ⟨SWIGNode.random WNode.A, by
-          simp [SCM.randomVars, dgpSCM, wSWIGGraph]⟩)
+          simp [SCM.randomVars, SWIGGraph.randomVars, dgpSCM, wSWIGGraph]⟩)
       ((dgpSCM m g).evalMap (dgpFixed m g) ℓ
         ⟨SWIGNode.random WNode.Xc, by
-          simp [SCM.randomVars, dgpSCM, wSWIGGraph]⟩)
+          simp [SCM.randomVars, SWIGGraph.randomVars, dgpSCM, wSWIGGraph]⟩)
       (ℓ (iEy (C := C) m g)) =
     outFun (C := C) g
       (treatFun (m (ℓ (iUn (C := C) m g))) (ℓ (iEa (C := C) m g)))
@@ -241,14 +241,14 @@ private lemma dgp_factualY_eq_outFun :
   have hAeval :
       (dgpSCM m g).evalMap (dgpFixed m g) ℓ
           ⟨SWIGNode.random WNode.A, by
-            simp [SCM.randomVars, dgpSCM, wSWIGGraph]⟩ =
+            simp [SCM.randomVars, SWIGGraph.randomVars, dgpSCM, wSWIGGraph]⟩ =
         treatFun (m (ℓ (iUn (C := C) m g))) (ℓ (iEa (C := C) m g)) := by
     rw [SCM.evalMap_observed_unfold (dgpSCM m g) (dgpFixed m g) ℓ
       ⟨SWIGNode.random WNode.A, by simp [dgpSCM, wSWIGGraph]⟩]
     change treatFun
         (m ((dgpSCM m g).evalMap (dgpFixed m g) ℓ
           ⟨SWIGNode.random WNode.Xc, by
-            simp [SCM.randomVars, dgpSCM, wSWIGGraph]⟩))
+            simp [SCM.randomVars, SWIGGraph.randomVars, dgpSCM, wSWIGGraph]⟩))
         (ℓ (iEa (C := C) m g)) =
       treatFun (m (ℓ (iUn (C := C) m g))) (ℓ (iEa (C := C) m g))
     rw [SCM.evalMap_observed_unfold (dgpSCM m g) (dgpFixed m g) ℓ
@@ -258,7 +258,7 @@ private lemma dgp_factualY_eq_outFun :
   have hXeval :
       (dgpSCM m g).evalMap (dgpFixed m g) ℓ
           ⟨SWIGNode.random WNode.Xc, by
-            simp [SCM.randomVars, dgpSCM, wSWIGGraph]⟩ =
+            simp [SCM.randomVars, SWIGGraph.randomVars, dgpSCM, wSWIGGraph]⟩ =
         ℓ (iUn (C := C) m g) := by
     rw [SCM.evalMap_observed_unfold (dgpSCM m g) (dgpFixed m g) ℓ
       ⟨SWIGNode.random WNode.Xc, by simp [dgpSCM, wSWIGGraph]⟩]
@@ -279,7 +279,7 @@ private lemma dgp_YofD_eq_outFun (d : Bool) :
   change (YEquiv m g)
       (M'.evalMap (combinedFixed (dgpSCM m g) (dgpFixed m g) r) ℓ
         ⟨SWIGNode.random WNode.Y, by
-          simp [M', SCM.randomVars, dgpSCM, wSWIGGraph]⟩) =
+          simp [M', SCM.randomVars, SWIGGraph.randomVars, dgpSCM, wSWIGGraph]⟩) =
     outFun (C := C) g d (ℓ (iUn (C := C) m g)) (ℓ (iEy (C := C) m g))
   let ξ : ∀ w : {w // w ∈ M'.dag.parents (SWIGNode.random WNode.Y)}, swigΩ (WΩ C) w.val :=
     fun w =>
@@ -512,6 +512,10 @@ private lemma dgp_indep_ea_un :
       (⟨iUn (C := C) m g, by simp⟩ :
         {u // u ∈ ({iUn (C := C) m g} :
           Finset {u // u ∈ (dgpSCM m g).unobserved})}))
+  have h_fintype : Fintype.ofFinite {u // u ∈ (dgpSCM m g).unobserved} =
+      Finset.Subtype.fintype (dgpSCM m g).unobserved :=
+    Subsingleton.elim _ _
+  rw [h_fintype] at hcomp
   simpa using hcomp
 
 private lemma dgp_integral_ea_threshold (x : C) (ht : m x ∈ Set.Icc (0 : ℝ) 1) :
@@ -786,6 +790,10 @@ private lemma dgp_indep_ey_dx :
         measurableSet_le hEa ((measurable_of_finite m).comp hUn)
     exact htreat.prodMk hUn
   have hcomp := hbase.comp (measurable_pi_apply pEy) hright
+  have h_fintype : Fintype.ofFinite {u // u ∈ (dgpSCM m g).unobserved} =
+      Finset.Subtype.fintype (dgpSCM m g).unobserved :=
+    Subsingleton.elim _ _
+  rw [h_fintype] at hcomp
   simpa [S, T, pEy, pUn, pEa, right] using hcomp
 
 private lemma dgp_integral_ey_threshold (d : Bool) (x : C)
@@ -1117,14 +1125,15 @@ theorem dgp_unconfoundedness :
     · intro v hv
       simp [X] at hv
       subst v
-      simp [SCM.randomVars, dgpSCM, wSWIGGraph]
+      simp [SCM.randomVars, SWIGGraph.randomVars, dgpSCM, wSWIGGraph]
     · intro v hv
       simp [Y] at hv
-      rcases hv with rfl | rfl <;> simp [SCM.randomVars, dgpSCM, wSWIGGraph]
+      rcases hv with rfl | rfl <;>
+        simp [SCM.randomVars, SWIGGraph.randomVars, dgpSCM, wSWIGGraph]
     · intro v hv
       simp [Z] at hv
       subst v
-      simp [SCM.randomVars, dgpSCM, wSWIGGraph]
+      simp [SCM.randomVars, SWIGGraph.randomVars, dgpSCM, wSWIGGraph]
     · native_decide
     · native_decide
     · native_decide
@@ -1162,13 +1171,15 @@ theorem dgp_unconfoundedness :
     · funext ℓ
       change (dgpBackdoor m g).factualD ℓ =
         (dgpSCM m g).evalMap (dgpFixed m g) ℓ
-          ⟨SWIGNode.random WNode.A, by simp [SCM.randomVars, dgpSCM, wSWIGGraph]⟩
+          ⟨SWIGNode.random WNode.A, by
+            simp [SCM.randomVars, SWIGGraph.randomVars, dgpSCM, wSWIGGraph]⟩
       rw [dgp_factualD_eq_treatFun (m := m) (g := g)]
       symm
       rw [SCM.evalMap_observed_unfold (dgpSCM m g) (dgpFixed m g) ℓ
         ⟨SWIGNode.random WNode.A, by simp [dgpSCM, wSWIGGraph]⟩]
       change treatFun (m ((dgpSCM m g).evalMap (dgpFixed m g) ℓ
-          ⟨SWIGNode.random WNode.Xc, by simp [SCM.randomVars, dgpSCM, wSWIGGraph]⟩))
+          ⟨SWIGNode.random WNode.Xc, by
+            simp [SCM.randomVars, SWIGGraph.randomVars, dgpSCM, wSWIGGraph]⟩))
           (ℓ (iEa (C := C) m g)) =
         treatFun (m (ℓ (iUn (C := C) m g))) (ℓ (iEa (C := C) m g))
       rw [SCM.evalMap_observed_unfold (dgpSCM m g) (dgpFixed m g) ℓ
@@ -1182,17 +1193,21 @@ theorem dgp_unconfoundedness :
       · change (dgpBackdoor m g).YofD true ℓ =
           outFun (C := C) g true
             ((dgpSCM m g).evalMap (dgpFixed m g) ℓ
-              ⟨SWIGNode.random WNode.Un, by simp [SCM.randomVars, dgpSCM, wSWIGGraph]⟩)
+              ⟨SWIGNode.random WNode.Un, by
+                simp [SCM.randomVars, SWIGGraph.randomVars, dgpSCM, wSWIGGraph]⟩)
             ((dgpSCM m g).evalMap (dgpFixed m g) ℓ
-              ⟨SWIGNode.random WNode.Ey, by simp [SCM.randomVars, dgpSCM, wSWIGGraph]⟩)
+              ⟨SWIGNode.random WNode.Ey, by
+                simp [SCM.randomVars, SWIGGraph.randomVars, dgpSCM, wSWIGGraph]⟩)
         rw [dgp_YofD_eq_outFun (m := m) (g := g) true]
         rfl
       · change (dgpBackdoor m g).YofD false ℓ =
           outFun (C := C) g false
             ((dgpSCM m g).evalMap (dgpFixed m g) ℓ
-              ⟨SWIGNode.random WNode.Un, by simp [SCM.randomVars, dgpSCM, wSWIGGraph]⟩)
+              ⟨SWIGNode.random WNode.Un, by
+                simp [SCM.randomVars, SWIGGraph.randomVars, dgpSCM, wSWIGGraph]⟩)
             ((dgpSCM m g).evalMap (dgpFixed m g) ℓ
-              ⟨SWIGNode.random WNode.Ey, by simp [SCM.randomVars, dgpSCM, wSWIGGraph]⟩)
+              ⟨SWIGNode.random WNode.Ey, by
+                simp [SCM.randomVars, SWIGGraph.randomVars, dgpSCM, wSWIGGraph]⟩)
         rw [dgp_YofD_eq_outFun (m := m) (g := g) false]
         rfl
     · funext ℓ z
@@ -1201,17 +1216,19 @@ theorem dgp_unconfoundedness :
       subst v
       change (dgpBackdoor m g).factualX ℓ =
         (dgpSCM m g).evalMap (dgpFixed m g) ℓ
-          ⟨SWIGNode.random WNode.Xc, by simp [SCM.randomVars, dgpSCM, wSWIGGraph]⟩
+          ⟨SWIGNode.random WNode.Xc, by
+            simp [SCM.randomVars, SWIGGraph.randomVars, dgpSCM, wSWIGGraph]⟩
       rw [dgp_factualX_eq_latentUn (m := m) (g := g)]
       change ℓ (iUn (C := C) m g) =
         (dgpSCM m g).evalMap (dgpFixed m g) ℓ
-          ⟨SWIGNode.random WNode.Xc, by simp [SCM.randomVars, dgpSCM, wSWIGGraph]⟩
+          ⟨SWIGNode.random WNode.Xc, by
+            simp [SCM.randomVars, SWIGGraph.randomVars, dgpSCM, wSWIGGraph]⟩
       rw [SCM.evalMap_observed_unfold (dgpSCM m g) (dgpFixed m g) ℓ
         ⟨SWIGNode.random WNode.Xc, by simp [dgpSCM, wSWIGGraph]⟩]
       unfold dgpSCM parentVal iUn
       rfl
   have hc_eq : c.value =
-      SCM.singletonValues (Ω := WΩ C) (v := SWIGNode.random WNode.Xc) ∘
+      SCM.singletonValues (α := swigΩ (WΩ C)) (v := SWIGNode.random WNode.Xc) ∘
         (RegimedVar.ofFactual (dgpBackdoor m g).xVar).value := by
     funext ℓ z
     rcases z with ⟨v, hv⟩
@@ -1228,27 +1245,27 @@ theorem dgp_unconfoundedness :
           inferInstance
           (RegimedVar.ofFactual (dgpBackdoor m g).xVar).value :=
       comap_measurable _
-    exact ((SCM.measurable_singletonValues (Ω := WΩ C)
+    exact ((SCM.measurable_singletonValues (α := swigΩ (WΩ C))
       (v := SWIGNode.random WNode.Xc)).comp hx_meas).comap_le
   · have hsingleton_meas :
         @Measurable (dgpPO m g).Ω
           (ValuesOn ({SWIGNode.random WNode.Xc} : Finset (SWIGNode WNode)) (swigΩ (WΩ C)))
           (MeasurableSpace.comap
-            (SCM.singletonValues (Ω := WΩ C) (v := SWIGNode.random WNode.Xc) ∘
+            (SCM.singletonValues (α := swigΩ (WΩ C)) (v := SWIGNode.random WNode.Xc) ∘
               (RegimedVar.ofFactual (dgpBackdoor m g).xVar).value) inferInstance)
           inferInstance
-          (SCM.singletonValues (Ω := WΩ C) (v := SWIGNode.random WNode.Xc) ∘
+          (SCM.singletonValues (α := swigΩ (WΩ C)) (v := SWIGNode.random WNode.Xc) ∘
             (RegimedVar.ofFactual (dgpBackdoor m g).xVar).value) :=
       comap_measurable _
     have hx_meas :
         @Measurable (dgpPO m g).Ω C
           (MeasurableSpace.comap
-            (SCM.singletonValues (Ω := WΩ C) (v := SWIGNode.random WNode.Xc) ∘
+            (SCM.singletonValues (α := swigΩ (WΩ C)) (v := SWIGNode.random WNode.Xc) ∘
               (RegimedVar.ofFactual (dgpBackdoor m g).xVar).value) inferInstance)
           inferInstance
           (RegimedVar.ofFactual (dgpBackdoor m g).xVar).value := by
       simpa [Function.comp_assoc] using
-        ((SCM.measurable_singletonValue (Ω := WΩ C)
+        ((SCM.measurable_singletonValue (α := swigΩ (WΩ C))
           (v := SWIGNode.random WNode.Xc)).comp hsingleton_meas)
     exact hx_meas.comap_le
 
@@ -1338,7 +1355,7 @@ theorem dgp_adjustedCE_eq_g (hv : ValidDGP m g) (hso : ∀ x, m x ∈ Set.Ioo (0
       change MeasurableSet[MeasurableSpace.comap S.factualDX inferInstance]
         (S.factualD ⁻¹' {d})
       exact ⟨Prod.fst ⁻¹' {d}, measurableSet_singleton d |>.preimage measurable_fst, rfl⟩
-    have hs : MeasurableSet s := S.dVar.measurableSet_event d
+    have hs : MeasurableSet s := S.dVar.measurableSet_event d (measurableSet_singleton d)
     have hmul_indicator :
         (fun ω => S.factualY ω * S.dVar.indicator d ω) = s.indicator S.factualY := by
       funext ω
@@ -1378,7 +1395,7 @@ theorem dgp_adjustedCE_eq_g (hv : ValidDGP m g) (hso : ∀ x, m x ∈ Set.Ioo (0
           (MeasureTheory.condExp_congr_ae (m := S.sigmaX) (μ := (dgpPO m g).μ)
             houtcome_target))
     have hind_int : Integrable (S.dVar.indicator d) (dgpPO m g).μ :=
-      S.dVar.integrable_indicator d
+      S.dVar.integrable_indicator d (measurableSet_singleton d)
     have htarget_mul_indicator :
         target * S.dVar.indicator d = s.indicator target := by
       funext ω
@@ -1474,7 +1491,7 @@ theorem dgp_P_X_eq_covLaw :
     change (XEquiv m g)
         ((dgpSCM m g).evalMap (dgpFixed m g) ℓ
           ⟨SWIGNode.random WNode.Xc, by
-            simp [SCM.randomVars, dgpSCM, wSWIGGraph]⟩) = ℓ iUn
+            simp [SCM.randomVars, SWIGGraph.randomVars, dgpSCM, wSWIGGraph]⟩) = ℓ iUn
     rw [SCM.evalMap_observed_unfold (dgpSCM m g) (dgpFixed m g) ℓ
       ⟨SWIGNode.random WNode.Xc, by simp [dgpSCM, wSWIGGraph]⟩]
     unfold XEquiv dgpSCM parentVal

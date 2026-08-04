@@ -185,7 +185,9 @@ theorem twfe_twm_residual_common (P : ScalarTWFEProblem Unit Time)
         exact sub_ddot_eq_unitTimeProjection P.X i t]
     exact unitTimeProjection_additive P.X
   · intro h hh
-    exact ddot_orthogonal_unit_time P.panel P.X h
+    exact ddot_orthogonal_unit_time
+      (lt_of_lt_of_le (by decide) P.panel.unit_card_ge_two)
+      (lt_of_lt_of_le (by decide) P.panel.time_card_ge_two) P.X h
       (mundlak_nuisance_unit_time P.X Zvar Mvar hh)
 
 /-- Wooldridge finite-panel scalar TWFE--two-way Mundlak equivalence. The
@@ -211,7 +213,9 @@ theorem twfe_twm_equivalence (P : ScalarTWFEProblem Unit Time)
     exact unitTimeProjection_additive P.Y
   have hYorth :
       ∑ i, ∑ t, ddot P.X i t * (P.Y i t - ddot P.Y i t) = 0 := by
-    simpa [inner] using ddot_orthogonal_unit_time P.panel P.X
+    simpa [inner] using ddot_orthogonal_unit_time
+      (lt_of_lt_of_le (by decide) P.panel.unit_card_ge_two)
+      (lt_of_lt_of_le (by decide) P.panel.time_card_ge_two) P.X
       (fun i t => P.Y i t - ddot P.Y i t) hYadd
   have hfw := finite_residualized_coefficient_eq_of_normalEqs
     (fun h : Unit → Time → ℝ => IsTwoWayMundlakNuisance P.X Zvar Mvar h)
@@ -233,9 +237,7 @@ theorem twfe_twm_equivalence (P : ScalarTWFEProblem Unit Time)
     (by simpa [inner] using hYorth)
     (by simpa [inner, pow_two] using P.ddotX_ss_pos)
     (by simpa [inner] using fit.normal_X)
-    (by
-      intro h hh
-      simpa [inner] using fit.normal_H h hh)
+    (by simpa [inner] using fit.normal_H hres hres_mem)
   simpa [ScalarTWFEProblem.betaTWFE, ScalarTWFEProblem.twfeNumerator,
     ScalarTWFEProblem.twfeDenominator, finiteResidualizedCoefficient, inner,
     pow_two]

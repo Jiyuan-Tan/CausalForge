@@ -3,6 +3,7 @@ import Causalean.Stat.Minimax.MinimaxRisk
 import Causalean.Stat.Minimax.Pinsker
 import Causalean.Stat.Minimax.TotalVariation
 import Causalean.Estimation.MinimaxATE.ConstCenterHalf.Parametric
+import Causalean.Mathlib.Probability.IidMeanVariance
 import CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.LowerBound
 import Mathlib.Probability.Moments.Variance
 import Mathlib.Probability.ProbabilityMassFunction.Integrals
@@ -192,12 +193,8 @@ lemma centeredEstimator_mean {n d : ℕ} (P : DiscreteLaw d) (hn : 0 < n) :
       ∫ z, centeredUnitScore z ∂obsLaw P := by
   rw [show productLaw P n = Measure.pi (fun _ : Fin n => obsLaw P) by rfl]
   simp_rw [centeredEstimator_eq_scoreMean]
-  rw [integral_const_mul, integral_finset_sum]
-  · simp_rw [integral_comp_eval (μ := fun _ : Fin n => obsLaw P)
-        (Measurable.aestronglyMeasurable (measurable_of_finite _))]
-    simp [Finset.sum_const, hn.ne']
-  · intro i hi
-    exact MemLp.of_discrete.integrable one_le_two
+  exact Causalean.Mathlib.Probability.iid_average_integral (obsLaw P) n hn
+    centeredUnitScore (MemLp.of_discrete.integrable (by norm_num))
 
 -- @node: centeredUnitScore_variance_le_one
 /-- Establishes the stated upper bound for centered Unit Score variance le one. -/
@@ -217,33 +214,14 @@ lemma centeredEstimator_variance_le {n d : ℕ} (P : DiscreteLaw d) (hn : 0 < n)
     variance (fun sample => centeredEstimator sample) (productLaw P n) ≤ 1 / (n : ℝ) := by
   rw [show productLaw P n = Measure.pi (fun _ : Fin n => obsLaw P) by rfl]
   simp_rw [centeredEstimator_eq_scoreMean]
-  rw [variance_const_mul]
-  have hvarsum :
-      variance (fun sample : Fin n → Obs d => ∑ i, centeredUnitScore (sample i))
-          (Measure.pi (fun _ : Fin n => obsLaw P)) =
-        ∑ _i : Fin n, variance (fun z => centeredUnitScore z) (obsLaw P) := by
-    calc
-      _ = variance (∑ i : Fin n, fun sample => centeredUnitScore (sample i))
-          (Measure.pi (fun _ : Fin n => obsLaw P)) := by
-            congr 2
-            funext sample
-            simp
-      _ = _ := variance_sum_pi (ι := Fin n) (Ω := fun _ => Obs d)
-        (μ := fun _ => obsLaw P) (fun _ =>
-          (MemLp.of_discrete : MemLp centeredUnitScore 2 (obsLaw P)))
-  rw [hvarsum]
-  have hsum : (∑ _i : Fin n, variance (fun z => centeredUnitScore z) (obsLaw P)) ≤
-      (n : ℝ) := by
-    calc
-      _ ≤ ∑ _i : Fin n, (1 : ℝ) := Finset.sum_le_sum (fun _ _ =>
-        centeredUnitScore_variance_le_one P)
-      _ = n := by simp
-  have hnreal : (0 : ℝ) < n := by exact_mod_cast hn
+  rw [Causalean.Mathlib.Probability.iid_average_variance (obsLaw P) n hn
+    centeredUnitScore MemLp.of_discrete]
   calc
-    (n : ℝ)⁻¹ ^ 2 *
-        (∑ _i : Fin n, variance (fun z => centeredUnitScore z) (obsLaw P)) ≤
-        (n : ℝ)⁻¹ ^ 2 * n := mul_le_mul_of_nonneg_left hsum (sq_nonneg _)
-    _ = 1 / (n : ℝ) := by field_simp
+    (n : ℝ)⁻¹ * variance centeredUnitScore (obsLaw P)
+        ≤ (n : ℝ)⁻¹ * 1 :=
+          mul_le_mul_of_nonneg_left (centeredUnitScore_variance_le_one P)
+            (by positivity)
+    _ = 1 / (n : ℝ) := by rw [mul_one, one_div]
 
 -- @node: mse_eq_variance_add_sq_bias
 /-- Establishes the stated equality relating mse eq variance add sq bias. -/

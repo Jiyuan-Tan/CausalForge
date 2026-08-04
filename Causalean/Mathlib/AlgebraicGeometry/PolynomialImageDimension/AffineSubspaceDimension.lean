@@ -20,9 +20,10 @@ namespace Causalean.Mathlib.AlgebraicGeometry.PolynomialImageDimension
 noncomputable section
 
 /-- A linear map from a finite-coordinate source is polynomial. -/
-lemma linearMap_isPolynomial {ι κ : Type*} [Fintype ι]
+lemma linearMap_isPolynomial {ι κ : Type*} [Finite ι]
     (F : (ι → ℂ) →ₗ[ℂ] (κ → ℂ)) : IsPolynomialMap F := by
   classical
+  letI := Fintype.ofFinite ι
   intro k
   let P : MvPolynomial ι ℂ := ∑ i,
     MvPolynomial.C (F (Pi.single i 1) k) * MvPolynomial.X i
@@ -45,7 +46,7 @@ lemma linearMap_isPolynomial {ι κ : Type*} [Fintype ι]
   simpa [P, mul_comm] using hFx.symm
 
 /-- An affine-linear map from a finite-coordinate source is polynomial. -/
-lemma affineLinearMap_isPolynomial {ι κ : Type*} [Fintype ι]
+lemma affineLinearMap_isPolynomial {ι κ : Type*} [Finite ι]
     (F : (ι → ℂ) →ₗ[ℂ] (κ → ℂ)) (c : κ → ℂ) :
     IsPolynomialMap (fun x => c + F x) := by
   obtain hF := linearMap_isPolynomial F
@@ -57,10 +58,11 @@ lemma affineLinearMap_isPolynomial {ι κ : Type*} [Fintype ι]
 
 /-- An affine translate of a `d`-dimensional linear subspace has exact
 irreducible-chain dimension `d`. -/
-theorem affineSubspace_hasAffineZariskiDimension {κ : Type*} [Fintype κ]
+theorem affineSubspace_hasAffineZariskiDimension {κ : Type*} [Finite κ]
     (V : Submodule ℂ (κ → ℂ)) (x₀ : κ → ℂ) (d : ℕ)
     (hdim : Module.finrank ℂ V = d) :
     HasAffineZariskiDimension d {x | x - x₀ ∈ V} := by
+  letI := Fintype.ofFinite κ
   let b := Module.finBasisOfFinrankEq ℂ V hdim
   let E : (Fin d → ℂ) ≃ₗ[ℂ] V := b.equivFun.symm
   let inclusion : V →ₗ[ℂ] (κ → ℂ) := V.subtype

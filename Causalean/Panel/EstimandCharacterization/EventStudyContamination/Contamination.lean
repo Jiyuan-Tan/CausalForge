@@ -36,13 +36,14 @@ variable {T : ℕ} {P : EventStudySystem T} {D : P.ConventionalDesign}
 projection input, the conventional event-study coefficient is the
 contamination-weighted sum of cohort-relative-time CATTs. -/
 theorem contamination_representation_of_cellGrid
-    (hCausal : P.EventStudyCausalRestrictions)
+    (hConsistency : P.Consistency) (hMeanParallelUntreated : P.MeanParallelUntreated)
     (hSupport : P.ConventionalFiniteSupport D)
     (hCell : P.CellGridResidualization D) :
     D.mu =
       ∑ ge ∈ P.admissibleCells D.eventSupport,
         P.omega D ge.1 ge.2 * P.CATT ge.1 ge.2 :=
-  P.contamination_representation D hCausal (cellGrid_provides_residualization hCell)
+  P.contamination_representation D hConsistency hMeanParallelUntreated
+    (cellGrid_provides_residualization hCell.hCellMassPos hCell.hCellNonempty hCell.hRdotResidual).hResidualization
     hCell.hDenomPos (cellGrid_mu_eq_conventionalMuRatio hCell) hSupport
 
 /-- **Contamination split (genuine).** Displayed-event-time component plus
@@ -57,7 +58,8 @@ theorem contamination_representation_split_of_cellGrid
       (∑ ge ∈ (P.admissibleCells D.eventSupport).filter
           (fun ge => ge.2 ≠ D.displayedEvent),
         P.omega D ge.1 ge.2 * P.CATT ge.1 ge.2) :=
-  P.contamination_representation_split D hCausal (cellGrid_provides_residualization hCell)
+  P.contamination_representation_split D hCausal.hConsistency hCausal.hMeanParallelUntreated
+    (cellGrid_provides_residualization hCell.hCellMassPos hCell.hCellNonempty hCell.hRdotResidual)
     hCell.hDenomPos (cellGrid_mu_eq_conventionalMuRatio hCell) hSupport
 
 /-- **Apparent pretrends (genuine).** For a displayed lead, the coefficient is a
@@ -65,13 +67,13 @@ weighted sum of post-treatment CATTs, from the cell-grid projection input. -/
 theorem apparent_pretrends_from_post_treatment_of_cellGrid
     (hCausal : P.EventStudyCausalRestrictions)
     (hSupport : P.ConventionalFiniteSupport D)
-    (hCell : P.CellGridResidualization D)
-    (hLead : D.displayedEvent < 0) :
+    (hCell : P.CellGridResidualization D) :
     D.mu =
       ∑ ge ∈ (P.admissibleCells D.eventSupport).filter (fun ge => 0 ≤ ge.2),
         P.omega D ge.1 ge.2 * P.CATT ge.1 ge.2 :=
-  P.apparent_pretrends_from_post_treatment D hCausal (cellGrid_provides_residualization hCell)
-    hCell.hDenomPos (cellGrid_mu_eq_conventionalMuRatio hCell) hSupport hLead
+  P.apparent_pretrends_from_post_treatment D hCausal
+    (cellGrid_provides_residualization hCell.hCellMassPos hCell.hCellNonempty hCell.hRdotResidual).hResidualization
+    hCell.hDenomPos (cellGrid_mu_eq_conventionalMuRatio hCell) hSupport
 
 end EventStudySystem
 

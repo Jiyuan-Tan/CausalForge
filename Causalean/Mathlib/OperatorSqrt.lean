@@ -112,6 +112,7 @@ noncomputable def posSqrtCLM : E →L[ℝ] E := hT.posSqrt.toContinuousLinearMap
 
 /-- The continuous-linear-map packaging of the positive square root has the same pointwise
 action as the linear-map square root. -/
+@[simp]
 theorem posSqrtCLM_apply (x : E) : hT.posSqrtCLM x = hT.posSqrt x := rfl
 
 /-- The continuous square root is self-adjoint. -/

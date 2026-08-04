@@ -253,8 +253,8 @@ lemma condIntYofA_eq_h_arm (HA : POProximalSystem.WBasedAssumptions S μ) (a : B
     have hg_m : Measurable[S.σ_UX] (μ[fun ω => HA.h (a, S.W ω, S.X ω) | S.σ_UX]) :=
       MeasureTheory.stronglyMeasurable_condExp.measurable
     exact Causalean.ae_eq_of_ae_eq_restrict_arm (mΩ := P.measΩ)
-      S.σ_UX S.σ_UX_le a
-      hf_m hg_m hCE_UX_eq_on_arm (HA.overlap_strong a)
+      S.σ_UX S.σ_UX_le
+      (measurableSet_eq_fun hf_m hg_m) hCE_UX_eq_on_arm (HA.overlap_strong a)
   -- (B) integrated form.
   have hStepB : (∫ ω in s', (μ[S.YofA a | S.σ_UX]) ω ∂μ)
       = (∫ ω in s', (μ[fun ω => HA.h (a, S.W ω, S.X ω) | S.σ_UX]) ω ∂μ) :=

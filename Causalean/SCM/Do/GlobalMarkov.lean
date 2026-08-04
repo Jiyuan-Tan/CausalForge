@@ -35,7 +35,9 @@ universe uN uΩ
 variable {N : Type uN} [DecidableEq N] [Fintype N]
 variable {Ω : N → Type uΩ} [∀ n, MeasurableSpace (Ω n)]
 
-private noncomputable def latentAncestorsOfSet (M : Causalean.SCM N Ω)
+/-- The latent ancestors of a node set are the unobserved nodes that either belong to the set or
+are ancestors of one of its nodes. -/
+noncomputable def latentAncestorsOfSet (M : Causalean.SCM N Ω)
     (T : Finset (SWIGNode N)) : Finset (SWIGNode N) :=
   letI : DecidablePred
       (fun u : SWIGNode N => ∃ v ∈ T, u = v ∨ M.dag.isAncestor u v) :=
@@ -75,16 +77,15 @@ private lemma not_isAncestor_of_fixed_target (M : Causalean.SCM N Ω)
   cases hAnc with
   | edge hEdge =>
       have hPar : u ∈ M.dag.parents d := M.dag.mem_parents.mpr hEdge
-      simpa [M.fixed_are_roots d hd] using hPar
+      simp [M.fixed_are_roots d hd] at hPar
   | trans _ hEdge =>
       have hPar : _ ∈ M.dag.parents d := M.dag.mem_parents.mpr hEdge
-      simpa [M.fixed_are_roots d hd] using hPar
+      simp [M.fixed_are_roots d hd] at hPar
 
 private theorem latentAncestorsOfSet_inter_subset_of_dSep_with_fixed
     (M : Causalean.SCM N Ω)
     (a : SWIGNode N) (Y W_rand W_fix : Finset (SWIGNode N))
     (hW_fix : W_fix ⊆ M.fixed)
-    (hDisj_aY : Disjoint ({a} : Finset (SWIGNode N)) Y)
     (hdSep : M.dag.dSep {a} Y (W_rand ∪ W_fix)) :
     M.latentAncestorsOfSet ({a} : Finset (SWIGNode N)) ∩ M.latentAncestorsOfSet Y ⊆
       M.latentAncestorsOfSet W_rand := by
@@ -102,7 +103,7 @@ private theorem latentAncestorsOfSet_inter_subset_of_dSep_with_fixed
     · exact DAG.mem_ancestralSet_of_isAncestor M.dag hvY hAnc
   have huAncZW :
       u ∈ M.dag.ancestralSet (W_rand ∪ W_fix) := by
-    exact DAG.ancestralSet_inter_subset_ancestralSet_of_dSep M.dag hdSep hDisj_aY
+    exact DAG.ancestralSet_inter_subset_ancestralSet_of_dSep M.dag hdSep.1 hdSep.2.2.2
       (Finset.mem_inter.mpr ⟨huAncA, huAncY⟩)
   simp only [DAG.ancestralSet, Finset.mem_union, DAG.ancestorsSet,
     Finset.mem_filter, Finset.mem_univ, true_and] at huAncZW
@@ -150,7 +151,8 @@ private theorem evalMap_valuesProjection_factors_through_latentAncestorsOfSet
   -- `w ∈ T` is observed or unobserved.
   have obsOrUnobs : ∀ {w : SWIGNode N}, w ∈ T → w ∈ M.observed ∨ w ∈ M.unobserved := by
     intro w hw
-    exact Finset.mem_union.mp (by simpa [SCM.randomVars] using hT hw)
+    exact Finset.mem_union.mp
+      (by simpa only [SCM.randomVars, SWIGGraph.randomVars] using hT hw)
   -- Build `g` coordinatewise.
   refine ⟨fun latentProj w =>
       if hobs : w.val ∈ M.observed then
@@ -237,7 +239,7 @@ private theorem evalMap_valuesProjection_factors_through_latentAncestorsOfSet
 private theorem evalMap_valuesProjection_factors_through_latent_base_and_residual
     (M : Causalean.SCM N Ω) [∀ n, Nonempty (Ω n)] (s : M.FixedValues)
     (T W_rand : Finset (SWIGNode N))
-    (hT : T ⊆ M.randomVars) (hW_rand : W_rand ⊆ M.randomVars) :
+    (hT : T ⊆ M.randomVars) :
     ∃ g : ValuesOn (M.latentAncestorsOfSet W_rand) (swigΩ Ω) →
           ValuesOn (M.latentResidualOfSet T W_rand) (swigΩ Ω) →
           ValuesOn T (swigΩ Ω),
@@ -346,17 +348,28 @@ theorem indepFun_valuesProjection_latentProduct
     rw [hA'def, Finset.mem_subtype] at hiA
     rw [hB'def, Finset.mem_subtype] at hiB
     exact (Finset.disjoint_left.mp hAB hiA) hiB
-  have hbase :
+  letI f_unobs : Fintype {i // i ∈ M.unobserved} := Fintype.ofFinite _
+  have hbase_pi :
       ProbabilityTheory.IndepFun
         (finsetCoordProj (Ω := fun i : {i // i ∈ M.unobserved} => swigΩ Ω i.val) A')
         (finsetCoordProj (Ω := fun i : {i // i ∈ M.unobserved} => swigΩ Ω i.val) B')
         (MeasureTheory.Measure.pi (fun u => M.latentDist u)) :=
     indepFun_pi_of_disjoint (fun u => M.latentDist u) hA'B'
+  have h_fintype : f_unobs = Finset.Subtype.fintype M.unobserved :=
+    Subsingleton.elim _ _
+  have hbase :
+      ProbabilityTheory.IndepFun
+        (finsetCoordProj (Ω := fun i : {i // i ∈ M.unobserved} => swigΩ Ω i.val) A')
+        (finsetCoordProj (Ω := fun i : {i // i ∈ M.unobserved} => swigΩ Ω i.val) B')
+        M.latentProduct := by
+    rw [h_fintype] at hbase_pi
+    simpa only [Causalean.SCM.latentProduct] using hbase_pi
   exact hbase.comp (reindexSubtypeProj (Ω' := swigΩ Ω) A hA).measurable
     (reindexSubtypeProj (Ω' := swigΩ Ω) B hB).measurable
 
-/-- Shared-base conditional independence under the latent product measure
-    `M.latentProduct`.
+/-- Under an SCM's latent product measure, two outcomes that depend on a shared
+latent block and otherwise on disjoint latent blocks are conditionally
+independent after conditioning on any measurable summary of the shared block.
 
     Once both sides of `evalMap s` are factored through a common latent block `U`
     and disjoint residual blocks `Rx`, `Ry`, conditioning on any measurable summary
@@ -374,7 +387,7 @@ theorem indepFun_valuesProjection_latentProduct
     Proof sketch: reduce to `condIndepFun_pi_of_inter_subset` via the product-space
     σ-algebra factorization
     `ValuesOn (U ∪ Rx ∪ Ry) Ω ≅ ValuesOn U Ω × ValuesOn Rx Ω × ValuesOn Ry Ω`. -/
-private theorem condIndepFun_of_shared_base_valuesProjection_pi
+theorem condIndepFun_of_shared_base_valuesProjection_pi
     (M : Causalean.SCM N Ω)
     {U Rx Ry : Finset (SWIGNode N)}
     [StandardBorelSpace M.LatentValues]
@@ -444,11 +457,10 @@ private theorem condIndepFun_of_shared_base_valuesProjection_pi
   -- Step D: re-attach the `σ(b)`-measurable base coordinate to both sides.
   have hD1 : ProbabilityTheory.CondIndepFun (MeasurableSpace.comap b inferInstance) hle
       (fun ω => (pRx ω, b ω)) pRy M.latentProduct :=
-    condIndepFun_prodMk_of_measurable_left hle hpRx_meas hpRy_meas hb_meas hb_𝒢 hStepC
+    condIndepFun_prodMk_of_measurable_left hle hpRx_meas hpRy_meas hb_𝒢 hStepC
   have hD2 : ProbabilityTheory.CondIndepFun (MeasurableSpace.comap b inferInstance) hle
       (fun ω => (pRy ω, b ω)) (fun ω => (pRx ω, b ω)) M.latentProduct :=
-    condIndepFun_prodMk_of_measurable_left hle hpRy_meas (hpRx_meas.prod hb_meas) hb_meas
-      hb_𝒢 hD1.symm
+    condIndepFun_prodMk_of_measurable_left hle hpRy_meas (hpRx_meas.prod hb_meas) hb_𝒢 hD1.symm
   -- Apply the two outer measurable maps `leftMap`, `rightMap` (after swapping the
   -- coordinate pair to `(b, residual)` order).
   exact hD2.symm.comp
@@ -461,16 +473,10 @@ private theorem condIndepFun_of_shared_base_valuesProjection_pi
 -- § 1. Singleton-source auxiliary
 -- ============================================================
 
-/-- Ordered-local Markov: each random node is conditionally independent of its
-    strictly-earlier non-parents given its parents (intersected with randomVars),
-    under jointKernel.
-
-    Concretely, for a set `P` of non-descendants of `v` that contains `v`'s random
-    parents, the node `v` is conditionally independent of `P` minus its parents,
-    given its random parents. This is the local Markov property repackaged into
-    the "ordered" form (right set carved out of an arbitrary predecessor block `P`)
-    that the Verma–Pearl induction consumes. -/
-private theorem fullCondIndep_ordered_local
+/-- For a random node, any set of random non-descendants that contains its random parents is
+    conditionally independent of the remaining nodes in that set given those parents, under the
+    model's joint kernel. -/
+theorem fullCondIndep_ordered_local
     (M : Causalean.SCM N Ω) [StandardBorelSpace M.RandomValues]
     [StandardBorelSpace M.LatentValues]
     [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.jointKernel s)]
@@ -486,7 +492,7 @@ private theorem fullCondIndep_ordered_local
     (P : Finset (SWIGNode N))
     (hP : P ⊆ M.randomVars)
     (hP_nonDesc : P ⊆ M.dag.nonDescendants v)
-    (hpa_sub : (M.dag.parents v ∩ M.randomVars) ⊆ P) :
+    (_hpa_sub : (M.dag.parents v ∩ M.randomVars) ⊆ P) :
     FullCondIndep M {v} (P \ (M.dag.parents v ∩ M.randomVars))
       (M.dag.parents v ∩ M.randomVars)
       (Finset.singleton_subset_iff.mpr hv)
@@ -525,7 +531,11 @@ private theorem fullCondIndep_ordered_local
     -- Align the conditioning set `∅` with `parents v ∩ randomVars` (both `∅`).
     exact fullCondIndep_congr_right M hpa_inter_empty.symm hLM'
 
-/-- **Interpretation of an ordered-local derivation as full conditional
+/-- A conditional-independence conclusion derived from the graph's ordered local
+    Markov statements and semi-graphoid rules also holds in the structural causal
+    model's full joint distribution.
+
+    **Interpretation of an ordered-local derivation as full conditional
     independence.** Any purely-graphical `OrderedLocalSG` derivation of "`X` ⊥ `Y`
     given `Z`" (over the random set `M.randomVars`) holds as a `FullCondIndep` under
     the joint kernel.
@@ -535,10 +545,9 @@ private theorem fullCondIndep_ordered_local
     `fullCondIndep_const_left`, and the four semi-graphoid constructors map to the
     matching `fullCondIndep_*` axioms. Subset-to-`randomVars` side-conditions are
     recovered from the derivation via `OrderedLocalSG.subset_random`. -/
-private theorem fullCondIndep_of_orderedLocalSG
+theorem fullCondIndep_of_orderedLocalSG
     (M : Causalean.SCM N Ω) [StandardBorelSpace M.RandomValues]
     [StandardBorelSpace M.LatentValues]
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.jointKernel s)]
     [∀ (v : SWIGNode N),
       StandardBorelSpace (ValuesOn ({v} : Finset (SWIGNode N)) (swigΩ Ω))]
     [∀ (v : SWIGNode N),
@@ -562,19 +571,19 @@ private theorem fullCondIndep_of_orderedLocalSG
   | decomp h' ih =>
       intro hX hY hZ
       obtain ⟨hX0, hYW0, hZ0⟩ := h'.subset_random
-      exact fullCondIndep_decomposition M hX0 hYW0 hY hZ (ih hX0 hYW0 hZ0)
+      exact fullCondIndep_decomposition M hX0 hYW0 hZ (ih hX0 hYW0 hZ0)
   | weakUnion h' ih =>
       intro hX hY hZ
       obtain ⟨hX0, hYW0, hZ0⟩ := h'.subset_random
-      exact fullCondIndep_weak_union M hX0 hYW0 hY hZ0 hZ (ih hX0 hYW0 hZ0)
+      exact fullCondIndep_weak_union M hX0 hYW0 hZ (ih hX0 hYW0 hZ0)
   | contract h1 h2 ih1 ih2 =>
       intro hX hY hZ
       obtain ⟨hX1, hY1, hZW1⟩ := h1.subset_random
       obtain ⟨_, hW2, hZ2⟩ := h2.subset_random
-      exact fullCondIndep_contraction M hX1 hY1 hW2 hZ2 hY hZW1
+      exact fullCondIndep_contraction M hX1 hY1 hW2 hZ2
         (ih1 hX1 hY1 hZW1) (ih2 hX1 hW2 hZ2)
 
-/-- **Singleton-source d-sep with fixed-node conditioning shadow ⟹ full CI.**
+/- **Singleton-source d-sep with fixed-node conditioning shadow ⟹ full CI.**
 
     For any single observed-or-latent node `a`, any `Y, W_rand ⊆ M.randomVars`,
     and any `W_fix ⊆ M.fixed`, d-separation `dSep {a} Y (W_rand ∪ W_fix)` in the
@@ -591,20 +600,20 @@ private theorem fullCondIndep_of_orderedLocalSG
       `W_rand`;
     * invoke `DAG.orderedLocalSG_of_dSep_with_fixed` and interpret the resulting
       ordered-local derivation as `FullCondIndep` via
-      `fullCondIndep_of_orderedLocalSG`.
+      `fullCondIndep_of_orderedLocalSG`. -/
 
-    Used in `full_globalMarkov_with_fixed` step (ii). -/
-private theorem fullCondIndep_singleton_of_dSep_with_fixed
+/-- D-separation of one random node from a target set implies conditional
+    independence after conditioning on the random nodes, even when the graph's
+    conditioning set also contains fixed intervention nodes.  The fixed nodes
+    affect the graphical separation but do not appear among the random values
+    being conditioned on. -/
+theorem fullCondIndep_singleton_of_dSep_with_fixed
     (M : Causalean.SCM N Ω) [StandardBorelSpace M.RandomValues]
     [∀ n, StandardBorelSpace (swigΩ Ω n)] [∀ n, Nonempty (swigΩ Ω n)]
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.jointKernel s)]
     (a : SWIGNode N) (Y W_rand W_fix : Finset (SWIGNode N))
     (ha : a ∈ M.randomVars)
     (hY : Y ⊆ M.randomVars) (hW_rand : W_rand ⊆ M.randomVars)
     (hW_fix : W_fix ⊆ M.fixed)
-    (hDisj_aY : Disjoint ({a} : Finset (SWIGNode N)) Y)
-    (hDisj_aW : Disjoint ({a} : Finset (SWIGNode N)) W_rand)
-    (hDisj_YW : Disjoint Y W_rand)
     (hdSep : M.dag.dSep {a} Y (W_rand ∪ W_fix))
     (s : M.FixedValues) :
     FullCondIndep M {a} Y W_rand
@@ -617,9 +626,10 @@ private theorem fullCondIndep_singleton_of_dSep_with_fixed
     · obtain ⟨m, hm⟩ := M.observed_is_random _ h; exact absurd hm (by simp)
     · obtain ⟨m, hm⟩ := M.unobserved_is_random _ h; exact absurd hm (by simp)
   have hDeriv : M.dag.OrderedLocalSG M.randomVars {a} Y W_rand :=
-    M.dag.orderedLocalSG_of_dSep_with_fixed M.randomVars M.fixed {a} Y W_rand W_fix
-      M.fixed_are_roots hFR (Finset.singleton_subset_iff.mpr ha) hY hW_rand hW_fix
-      hDisj_aY hDisj_aW hDisj_YW hdSep
+    M.dag.orderedLocalSG_of_dSep_with_fixed M.randomVars {a} Y W_rand W_fix
+      (fun f hf => M.fixed_are_roots f (hW_fix hf)) (hFR.mono_left hW_fix)
+      (Finset.singleton_subset_iff.mpr ha) hY hW_rand
+      hdSep
   exact fullCondIndep_of_orderedLocalSG M s hDeriv
     (Finset.singleton_subset_iff.mpr ha) hY hW_rand
 
@@ -657,20 +667,22 @@ private theorem fullCondIndep_singleton_of_dSep_with_fixed
 theorem full_globalMarkov_with_fixed (M : Causalean.SCM N Ω)
     [StandardBorelSpace M.RandomValues]
     [∀ n, StandardBorelSpace (swigΩ Ω n)] [∀ n, Nonempty (swigΩ Ω n)]
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.jointKernel s)]
     (X Y Z_rand Z_fix : Finset (SWIGNode N))
     (hX : X ⊆ M.randomVars) (hY : Y ⊆ M.randomVars)
     (hZ_rand : Z_rand ⊆ M.randomVars) (hZ_fix : Z_fix ⊆ M.fixed)
-    (hDisj_XY : Disjoint X Y)
-    (hDisj_XZ : Disjoint X Z_rand) (hDisj_YZ : Disjoint Y Z_rand)
     (hdSep : M.dag.dSep X Y (Z_rand ∪ Z_fix))
     (s : M.FixedValues) :
     FullCondIndep M X Y Z_rand hX hY hZ_rand (M.jointKernel s) := by
   -- Strong induction on `X` (subset well-founded) with topologically-last selection.
-  revert hX hDisj_XY hDisj_XZ hdSep
+  revert hX hdSep
   induction X using Finset.strongInductionOn with
   | _ X ih =>
-    intro hX hDisj_XY hDisj_XZ hdSep
+    intro hX hdSep
+    have hDisj_XY : Disjoint X Y := hdSep.1
+    have hDisj_XZ : Disjoint X Z_rand :=
+      Disjoint.mono_right Finset.subset_union_left hdSep.2.1
+    have hDisj_YZ : Disjoint Y Z_rand :=
+      Disjoint.mono_right Finset.subset_union_left hdSep.2.2.1
     by_cases hempty : X = ∅
     · -- Base X = ∅: ∅-projection is constant, so CondIndepFun is trivial.
       subst hempty
@@ -706,7 +718,7 @@ theorem full_globalMarkov_with_fixed (M : Causalean.SCM N Ω)
       have hDisj_A'Y : Disjoint A' Y := Disjoint.mono_left hA'_sub hDisj_XY
       have hDisj_A'Z : Disjoint A' Z_rand := Disjoint.mono_left hA'_sub hDisj_XZ
       have h_A'_ci : FullCondIndep M A' Y Z_rand hA' hY hZ_rand (M.jointKernel s) :=
-        ih A' hA'_ssub hA' hDisj_A'Y hDisj_A'Z h_A'_dsep
+        ih A' hA'_ssub hA' h_A'_dsep
       -- Step (ii): dSep_source_to_cond → dSep {a} Y ((Z_rand ∪ A') ∪ Z_fix).
       have h_aA'_eq : ({a} ∪ A' : Finset (SWIGNode N)) = X := by
         rw [Finset.singleton_union]; exact hXeq
@@ -716,33 +728,19 @@ theorem full_globalMarkov_with_fixed (M : Causalean.SCM N Ω)
         · rw [h_aA'_eq]; exact hdSep
       have h_a_dsep : M.dag.dSep {a} Y ((Z_rand ∪ A') ∪ Z_fix) := by
         simpa [Finset.union_assoc, Finset.union_left_comm, Finset.union_comm] using h_a_dsep'
-      have hDisj_aY : Disjoint ({a} : Finset (SWIGNode N)) Y := by
-        rw [Finset.disjoint_singleton_left]
-        exact fun haY => (Finset.disjoint_left.mp hDisj_XY) ha_mem haY
-      have hDisj_aW : Disjoint ({a} : Finset (SWIGNode N)) (Z_rand ∪ A') := by
-        rw [Finset.disjoint_union_right]
-        refine ⟨?_, ?_⟩
-        · rw [Finset.disjoint_singleton_left]
-          exact fun h => (Finset.disjoint_left.mp hDisj_XZ ha_mem) h
-        · rw [Finset.disjoint_singleton_left]; exact Finset.notMem_erase a X
-      have hDisj_YW : Disjoint Y (Z_rand ∪ A') := by
-        rw [Finset.disjoint_union_right]
-        exact ⟨hDisj_YZ, hDisj_XY.symm.mono_right hA'_sub⟩
       -- Derive `{a} ⊥ Y | (Z_rand ∪ A')` from the singleton-source d-sep auxiliary.
       have h_a_ci : FullCondIndep M {a} Y (Z_rand ∪ A')
           (Finset.singleton_subset_iff.mpr ha_rv) hY
           (Finset.union_subset hZ_rand hA') (M.jointKernel s) :=
         fullCondIndep_singleton_of_dSep_with_fixed M a Y (Z_rand ∪ A') Z_fix
-          ha_rv hY (Finset.union_subset hZ_rand hA') hZ_fix hDisj_aY hDisj_aW hDisj_YW
-          h_a_dsep s
+          ha_rv hY (Finset.union_subset hZ_rand hA') hZ_fix h_a_dsep s
       -- Step (iii): contraction + symmetry.
       have h_Y_A' := h_A'_ci.symm
       have h_Y_a := h_a_ci.symm
       have h_aA'_rv : ({a} ∪ A') ⊆ M.randomVars :=
         Finset.union_subset (Finset.singleton_subset_iff.mpr ha_rv) hA'
       have h_combined := fullCondIndep_contraction M hY
-        (Finset.singleton_subset_iff.mpr ha_rv) hA' hZ_rand h_aA'_rv
-        (Finset.union_subset hZ_rand hA') h_Y_a h_Y_A'
+        (Finset.singleton_subset_iff.mpr ha_rv) hA' hZ_rand h_Y_a h_Y_A'
       -- h_combined : Y ⊥ ({a} ∪ A') | Z_rand. Symmetrize and transport `{a} ∪ A' = X`.
       exact fullCondIndep_congr_left M h_aA'_eq h_combined.symm
 
@@ -751,17 +749,14 @@ theorem full_globalMarkov_with_fixed (M : Causalean.SCM N Ω)
 theorem full_globalMarkov (M : Causalean.SCM N Ω)
     [StandardBorelSpace M.RandomValues]
     [∀ n, StandardBorelSpace (swigΩ Ω n)] [∀ n, Nonempty (swigΩ Ω n)]
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.jointKernel s)]
     (X Y Z : Finset (SWIGNode N))
     (hX : X ⊆ M.randomVars) (hY : Y ⊆ M.randomVars) (hZ : Z ⊆ M.randomVars)
-    (hDisj_XY : Disjoint X Y)
-    (hDisj_XZ : Disjoint X Z) (hDisj_YZ : Disjoint Y Z)
     (hdSep : M.dag.dSep X Y Z)
     (s : M.FixedValues) :
     FullCondIndep M X Y Z hX hY hZ (M.jointKernel s) := by
   simpa using
-    (full_globalMarkov_with_fixed M X Y Z ∅ hX hY hZ (Finset.empty_subset _) hDisj_XY
-      hDisj_XZ hDisj_YZ (by simpa using hdSep) s)
+    (full_globalMarkov_with_fixed M X Y Z ∅ hX hY hZ (Finset.empty_subset _)
+      (by simpa using hdSep) s)
 
 end SCM
 

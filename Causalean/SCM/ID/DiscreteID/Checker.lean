@@ -62,7 +62,9 @@ theorem containingCComponent_eq_of_mem_of_subset
     G.cComponentOf_eq_of_mem_cComponentSet hmem hchoose
   simpa [containingCComponent, hne] using hcomponent
 
-private theorem cComponentSet_nonempty
+/-- Every c-component in a graph's c-component set contains at least one
+node. -/
+theorem cComponentSet_nonempty
     (G : SWIGGraph N) {C : Finset (SWIGNode N)}
     (hmem : C ∈ G.cComponentSet) : C.Nonempty := by
   classical

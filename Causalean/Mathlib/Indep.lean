@@ -72,27 +72,29 @@ open MeasureTheory ProbabilityTheory
     `Measure.pi` of a family of probability measures.  This is the binary
     aggregation of `iIndepFun_pi` via `iIndepFun.indepFun_finset`. -/
 theorem indepFun_pi_of_disjoint
-    {ι : Type*} [Fintype ι]
+    {ι : Type*} [Finite ι]
     {Ω : ι → Type*} [∀ i, MeasurableSpace (Ω i)]
     (μ : (i : ι) → Measure (Ω i)) [∀ i, IsProbabilityMeasure (μ i)]
     {S T : Finset ι} (hST : Disjoint S T) :
+    letI : Fintype ι := Fintype.ofFinite ι
     IndepFun (fun (x : ∀ i, Ω i) (i : {i // i ∈ S}) => x i.val)
              (fun (x : ∀ i, Ω i) (i : {i // i ∈ T}) => x i.val)
              (Measure.pi μ) := by
+  letI : Fintype ι := Fintype.ofFinite ι
   have hiindep : iIndepFun (fun (i : ι) (ω : ∀ j, Ω j) => ω i) (Measure.pi μ) :=
     iIndepFun_pi (X := fun _ (ω : Ω _) => ω) (fun _ => aemeasurable_id)
   exact hiindep.indepFun_finset S T hST (fun i => measurable_pi_apply i)
 
 /-- Tuple projection to a finite coordinate block of a dependent product. -/
 def finsetCoordProj
-    {ι : Type*} [DecidableEq ι] [Fintype ι]
+    {ι : Type*}
     {Ω : ι → Type*} (S : Finset ι) :
     (∀ i, Ω i) → ((i : {i // i ∈ S}) → Ω i.val) :=
   fun x i => x i.val
 
 /-- `finsetCoordProj` is measurable. -/
 theorem measurable_finsetCoordProj
-    {ι : Type*} [DecidableEq ι] [Fintype ι]
+    {ι : Type*}
     {Ω : ι → Type*} [∀ i, MeasurableSpace (Ω i)] (S : Finset ι) :
     Measurable (finsetCoordProj (Ω := Ω) S) := by
   refine measurable_pi_lambda _ ?_
@@ -102,7 +104,7 @@ theorem measurable_finsetCoordProj
 /-- Reassemble coordinates on `S` from coordinates on `U` and on the residual
     block `S \ U`. -/
 def finsetCoordProjFromCondResidual
-    {ι : Type*} [DecidableEq ι] [Fintype ι]
+    {ι : Type*} [DecidableEq ι]
     {Ω : ι → Type*} (S U : Finset ι) :
     (((i : {i // i ∈ U}) → Ω i.val) ×
       ((i : {i // i ∈ S \ U}) → Ω i.val)) →
@@ -115,7 +117,7 @@ def finsetCoordProjFromCondResidual
 
 /-- The residual reassembly map is measurable. -/
 theorem measurable_finsetCoordProjFromCondResidual
-    {ι : Type*} [DecidableEq ι] [Fintype ι]
+    {ι : Type*} [DecidableEq ι]
     {Ω : ι → Type*} [∀ i, MeasurableSpace (Ω i)] (S U : Finset ι) :
     Measurable (finsetCoordProjFromCondResidual (Ω := Ω) S U) := by
   refine measurable_pi_lambda _ ?_
@@ -129,7 +131,7 @@ theorem measurable_finsetCoordProjFromCondResidual
 
 /-- Reassembling `π_U` with the residual projection `π_{S \ U}` gives `π_S`. -/
 theorem finsetCoordProjFromCondResidual_comp
-    {ι : Type*} [DecidableEq ι] [Fintype ι]
+    {ι : Type*} [DecidableEq ι]
     {Ω : ι → Type*} (S U : Finset ι) :
     finsetCoordProjFromCondResidual (Ω := Ω) S U ∘
       (fun x => (finsetCoordProj (Ω := Ω) U x, finsetCoordProj (Ω := Ω) (S \ U) x))
@@ -140,7 +142,7 @@ theorem finsetCoordProjFromCondResidual_comp
 
 /-- Extract two sub-blocks from the tuple on their union. -/
 def finsetCoordProjPairFromUnion
-    {ι : Type*} [DecidableEq ι] [Fintype ι]
+    {ι : Type*} [DecidableEq ι]
     {Ω : ι → Type*} (A B : Finset ι) :
     (((i : {i // i ∈ A ∪ B}) → Ω i.val) →
       ((i : {i // i ∈ A}) → Ω i.val) × ((i : {i // i ∈ B}) → Ω i.val)) :=
@@ -150,7 +152,7 @@ def finsetCoordProjPairFromUnion
 
 /-- The union sub-block extraction map is measurable. -/
 theorem measurable_finsetCoordProjPairFromUnion
-    {ι : Type*} [DecidableEq ι] [Fintype ι]
+    {ι : Type*} [DecidableEq ι]
     {Ω : ι → Type*} [∀ i, MeasurableSpace (Ω i)] (A B : Finset ι) :
     Measurable (finsetCoordProjPairFromUnion (Ω := Ω) A B) := by
   refine (measurable_pi_lambda _ ?_).prod (measurable_pi_lambda _ ?_)
@@ -166,7 +168,7 @@ theorem measurable_finsetCoordProjPairFromUnion
 /-- Projecting to `A ∪ B` and then extracting the two sub-blocks gives the
     pair of direct projections to `A` and `B`. -/
 theorem finsetCoordProjPairFromUnion_comp
-    {ι : Type*} [DecidableEq ι] [Fintype ι]
+    {ι : Type*} [DecidableEq ι]
     {Ω : ι → Type*} (A B : Finset ι) :
     finsetCoordProjPairFromUnion (Ω := Ω) A B ∘
       finsetCoordProj (Ω := Ω) (A ∪ B)
@@ -214,11 +216,12 @@ theorem condIndepFun_bot_of_indepFun
     residual coordinate block `S0` is conditionally independent of `T0` when
     both residual blocks are disjoint from `U` and from each other. -/
 theorem condIndepFun_pi_cond_residual_of_disjoint
-    {ι : Type*} [DecidableEq ι] [Fintype ι]
+    {ι : Type*} [Finite ι]
     {Ω : ι → Type*} [∀ i, MeasurableSpace (Ω i)] [∀ i, StandardBorelSpace (Ω i)]
     (μ : (i : ι) → Measure (Ω i)) [∀ i, IsProbabilityMeasure (μ i)]
     {S0 T0 U : Finset ι} (hS0T0 : Disjoint S0 T0)
     (hS0U : Disjoint S0 U) :
+    letI : Fintype ι := Fintype.ofFinite ι
     CondIndepFun
       (MeasurableSpace.comap (finsetCoordProj (Ω := Ω) U) inferInstance)
       (Measurable.comap_le (measurable_finsetCoordProj (Ω := Ω) U))
@@ -226,6 +229,7 @@ theorem condIndepFun_pi_cond_residual_of_disjoint
       (fun x => (finsetCoordProj (Ω := Ω) U x, finsetCoordProj (Ω := Ω) T0 x))
       (Measure.pi μ) := by
   classical
+  letI : Fintype ι := Fintype.ofFinite ι
   have hS0T0U : Disjoint S0 (T0 ∪ U) := by
     rw [Finset.disjoint_left]
     intro i hiS0 hiT0U
@@ -294,7 +298,6 @@ theorem condIndepFun_pi_cond_residual_of_disjoint
       (Measurable.comap_le (measurable_finsetCoordProj (Ω := Ω) U))
       (measurable_finsetCoordProj (Ω := Ω) S0)
       (measurable_finsetCoordProj (Ω := Ω) T0)
-      (measurable_finsetCoordProj (Ω := Ω) U)
       (comap_measurable (finsetCoordProj (Ω := Ω) U))
       hbase
   have hright :
@@ -314,7 +317,6 @@ theorem condIndepFun_pi_cond_residual_of_disjoint
       (measurable_finsetCoordProj (Ω := Ω) T0)
       ((measurable_finsetCoordProj (Ω := Ω) S0).prod
         (measurable_finsetCoordProj (Ω := Ω) U))
-      (measurable_finsetCoordProj (Ω := Ω) U)
       (comap_measurable (finsetCoordProj (Ω := Ω) U))
       hleft.symm
   have hswapS :
@@ -340,10 +342,11 @@ theorem condIndepFun_pi_cond_residual_of_disjoint
     The proof reduces to `condIndepFun_pi_cond_residual_of_disjoint`, the
     focused finite-product disintegration fact isolated just above. -/
 theorem condIndepFun_pi_of_inter_subset
-    {ι : Type*} [DecidableEq ι] [Fintype ι]
+    {ι : Type*} [DecidableEq ι] [Finite ι]
     {Ω : ι → Type*} [∀ i, MeasurableSpace (Ω i)] [∀ i, StandardBorelSpace (Ω i)]
     (μ : (i : ι) → Measure (Ω i)) [∀ i, IsProbabilityMeasure (μ i)]
     {S T U : Finset ι} (hSTU : S ∩ T ⊆ U) :
+    letI : Fintype ι := Fintype.ofFinite ι
     CondIndepFun
       (MeasurableSpace.comap (finsetCoordProj (Ω := Ω) U) inferInstance)
       (Measurable.comap_le (measurable_finsetCoordProj (Ω := Ω) U))
@@ -351,6 +354,7 @@ theorem condIndepFun_pi_of_inter_subset
       (finsetCoordProj (Ω := Ω) T)
       (Measure.pi μ) := by
   classical
+  letI : Fintype ι := Fintype.ofFinite ι
   let S0 : Finset ι := S \ U
   let T0 : Finset ι := T \ U
   have hS0T0 : Disjoint S0 T0 := by

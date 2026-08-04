@@ -92,13 +92,17 @@ noncomputable def inner (V W : Unit → Time → ℝ) : ℝ :=
   ∑ i, ∑ t, V i t * W i t
 
 omit [Fintype Time] in
-private theorem timeMean_eq_weighted (hU : 0 < Fintype.card Unit)
+/-- In a finite balanced panel with uniformly weighted units, the usual time
+mean in any period equals the time mean computed under the uniform unit weights. -/
+theorem timeMean_eq_weighted (hU : 0 < Fintype.card Unit)
     (V : Unit → Time → ℝ) (t : Time) :
     timeMean V t = WeightedTwoWayPanel.timeMean (uniformWeights hU) V t := by
   unfold timeMean WeightedTwoWayPanel.timeMean uniformWeights
   rw [← Finset.mul_sum]
 
-private theorem grandMean_eq_weighted (hU : 0 < Fintype.card Unit)
+/-- In a finite balanced panel with uniform unit weights, the usual grand mean
+equals the grand mean computed under those weights. -/
+theorem grandMean_eq_weighted (hU : 0 < Fintype.card Unit)
     (V : Unit → Time → ℝ) :
     grandMean V = WeightedTwoWayPanel.grandMean (uniformWeights hU) V := by
   unfold grandMean WeightedTwoWayPanel.grandMean uniformWeights
@@ -120,14 +124,18 @@ private theorem grandMean_eq_weighted (hU : 0 < Fintype.card Unit)
 
 /-- Uniform double-demeaning is weighted double-demeaning with uniform unit
 weights. -/
-theorem ddot_eq_weighted (hU : 0 < Fintype.card Unit)
+theorem ddot_eq_weighted
     (V : Unit → Time → ℝ) (i : Unit) (t : Time) :
-    ddot V i t = WeightedTwoWayPanel.ddot (uniformWeights hU) V i t := by
+    ddot V i t = WeightedTwoWayPanel.ddot
+      (uniformWeights (Fintype.card_pos_iff.mpr ⟨i⟩)) V i t := by
+  have hU : 0 < Fintype.card Unit := Fintype.card_pos_iff.mpr ⟨i⟩
   unfold ddot WeightedTwoWayPanel.ddot
   rw [timeMean_eq_weighted hU V t, grandMean_eq_weighted hU V]
   rfl
 
-private theorem sum_eq_card_mul_uniform_weighted (hU : 0 < Fintype.card Unit)
+/-- In a finite balanced panel, the unweighted sum across all unit-period cells
+equals the number of units times the corresponding sum under uniform unit weights. -/
+theorem sum_eq_card_mul_uniform_weighted (hU : 0 < Fintype.card Unit)
     (F : Unit → Time → ℝ) :
     ∑ i, ∑ t, F i t =
       (Fintype.card Unit : ℝ) *
@@ -176,7 +184,8 @@ noncomputable def finiteResidualizedCoefficient
 /-- Finite scalar Frisch-Waugh-Lovell handoff.
 
 If a proposed coefficient `β` and nuisance term `Hβ` satisfy the finite normal
-equations against the raw regressor `D` and a nuisance class `H`, while
+equation against the raw regressor `D` and the equation for the nuisance
+component `Dproj`, while
 `Dtilde` is the residualized regressor orthogonal to `H`, then `β` equals the
 finite residualized ratio. The outcome residual only needs the explicit bridge
 `inner Dtilde Yproj = 0`; this covers the common TWFE case where `Yproj` is
@@ -193,11 +202,11 @@ theorem finite_residualized_coefficient_eq_of_normalEqs
     (hDtilde_pos : 0 < inner Dtilde Dtilde)
     (h_normal_D :
       inner D (fun i t => Y i t - D i t * β - Hβ i t) = 0)
-    (h_normal_H : ∀ h : Unit → Time → ℝ, H h →
-      inner h (fun i t => Y i t - D i t * β - Hβ i t) = 0) :
+    (h_normal_Dproj :
+      inner Dproj (fun i t => Y i t - D i t * β - Hβ i t) = 0) :
     β = finiteResidualizedCoefficient Dtilde Ytilde := by
   let e : Unit → Time → ℝ := fun i t => Y i t - D i t * β - Hβ i t
-  have hDproj_e : inner Dproj e = 0 := h_normal_H Dproj hDproj_mem
+  have hDproj_e : inner Dproj e = 0 := h_normal_Dproj
   have hD_split : inner D e = inner Dproj e + inner Dtilde e := by
     unfold inner
     dsimp [e]
@@ -296,18 +305,15 @@ theorem sub_ddot_eq_unitTimeProjection (V : Unit → Time → ℝ) (i : Unit) (t
   ring
 
 /-- Double-demeaned arrays are orthogonal to arbitrary unit-only functions. -/
-theorem ddot_orthogonal_unit (P : BalancedPanel Unit Time)
+theorem ddot_orthogonal_unit (hU : 0 < Fintype.card Unit)
+    (hT : 0 < Fintype.card Time)
     (V : Unit → Time → ℝ) (a : Unit → ℝ) :
     ∑ i, ∑ t, ddot V i t * a i = 0 := by
   classical
-  have hU : 0 < Fintype.card Unit :=
-    lt_of_lt_of_le (by decide : 0 < 2) P.unit_card_ge_two
-  have hT : (0 : ℝ) < Fintype.card Time := by
-    exact_mod_cast (lt_of_lt_of_le (by decide : 0 < 2) P.time_card_ge_two)
   let w := uniformWeights (Unit := Unit) hU
   have hweighted :
       ∑ i, ∑ t, w.p i * (WeightedTwoWayPanel.ddot w V i t * a i) = 0 :=
-    WeightedTwoWayPanel.ddot_orthogonal_unit w hT V a
+    WeightedTwoWayPanel.ddot_orthogonal_unit w V a
   calc
     ∑ i, ∑ t, ddot V i t * a i =
         (Fintype.card Unit : ℝ) * ∑ i, ∑ t, w.p i * (ddot V i t * a i) := by
@@ -322,17 +328,15 @@ theorem ddot_orthogonal_unit (P : BalancedPanel Unit Time)
       intro i _hi
       apply Finset.sum_congr rfl
       intro t _ht
-      rw [ddot_eq_weighted hU V i t]
+      rw [ddot_eq_weighted V i t]
     _ = 0 := by
       rw [hweighted, mul_zero]
 
 /-- Double-demeaned arrays are orthogonal to arbitrary time-only functions. -/
-theorem ddot_orthogonal_time (P : BalancedPanel Unit Time)
+theorem ddot_orthogonal_time (hU : 0 < Fintype.card Unit)
     (V : Unit → Time → ℝ) (b : Time → ℝ) :
     ∑ i, ∑ t, ddot V i t * b t = 0 := by
   classical
-  have hU : 0 < Fintype.card Unit :=
-    lt_of_lt_of_le (by decide : 0 < 2) P.unit_card_ge_two
   let w := uniformWeights (Unit := Unit) hU
   have hweighted :
       ∑ i, ∑ t, w.p i * (WeightedTwoWayPanel.ddot w V i t * b t) = 0 :=
@@ -351,20 +355,17 @@ theorem ddot_orthogonal_time (P : BalancedPanel Unit Time)
       intro i _hi
       apply Finset.sum_congr rfl
       intro t _ht
-      rw [ddot_eq_weighted hU V i t]
+      rw [ddot_eq_weighted V i t]
     _ = 0 := by
       rw [hweighted, mul_zero]
 
 /-- Double-demeaned arrays are orthogonal to every unit/time additive
 nuisance function. -/
-theorem ddot_orthogonal_unit_time (P : BalancedPanel Unit Time)
+theorem ddot_orthogonal_unit_time (hU : 0 < Fintype.card Unit)
+    (hT : 0 < Fintype.card Time)
     (V h : Unit → Time → ℝ) (hh : IsUnitTimeAdditive h) :
     inner (ddot V) h = 0 := by
   classical
-  have hU : 0 < Fintype.card Unit :=
-    lt_of_lt_of_le (by decide : 0 < 2) P.unit_card_ge_two
-  have hT : (0 : ℝ) < Fintype.card Time := by
-    exact_mod_cast (lt_of_lt_of_le (by decide : 0 < 2) P.time_card_ge_two)
   let w := uniformWeights (Unit := Unit) hU
   calc
     inner (ddot V) h =
@@ -378,9 +379,9 @@ theorem ddot_orthogonal_unit_time (P : BalancedPanel Unit Time)
       apply congrArg
         (fun F => (Fintype.card Unit : ℝ) * WeightedTwoWayPanel.inner w F h)
       funext i t
-      rw [ddot_eq_weighted hU V i t]
+      rw [ddot_eq_weighted V i t]
     _ = 0 := by
-      rw [WeightedTwoWayPanel.ddot_orthogonal_unit_time w hT V h hh, mul_zero]
+      rw [WeightedTwoWayPanel.ddot_orthogonal_unit_time w V h hh, mul_zero]
 
 end UniformTwoWayPanel
 end Panel

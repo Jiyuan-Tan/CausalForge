@@ -35,12 +35,10 @@ import {
   promptPath,
   citedDependenciesPath,
   PAPER_TMP_DIR,
-  proposalOutputJsonPath,
   proposalReviewOutputJsonPath,
   proposalTexPath,
   sorriesPath,
   substrateDebtPath,
-  templatePath,
   texPath,
 } from "./paths.js";
 import type { PipelineContext, Stage, StateJson } from "./types.js";
@@ -183,17 +181,24 @@ export function defaultDeps(ctx: PipelineContext, currentStage?: Stage, state?: 
     },
     runClaude: async (input) => {
       const t0 = Date.now();
+      // `input.model` may be an alias ("opus"); log the id it resolved to so the
+      // run record pins the concrete model (see ClaudeRunInput.onResolvedModel).
+      let resolvedModel: string | undefined;
       try {
         const out = await runClaude({
           ...input,
           prompt: input.prompt + scratchInstruction,
           cwd: usePaperTmpAsCwd ? paperTmp! : input.cwd,
+          onResolvedModel: (m) => {
+            resolvedModel = m;
+            input.onResolvedModel?.(m);
+          },
         });
-        await logAgentCall(ctx, stageId, "claude", input.prompt, input.model, "-", Date.now() - t0, out);
+        await logAgentCall(ctx, stageId, "claude", input.prompt, resolvedModel ?? input.model, "-", Date.now() - t0, out);
         return out;
       } catch (err) {
         const partial = (err as { stdout?: string })?.stdout ?? "";
-        await logAgentCall(ctx, stageId, "claude", input.prompt, input.model, "-", Date.now() - t0, `[CALL THREW: ${err instanceof Error ? err.message : String(err)}]\n${partial}`);
+        await logAgentCall(ctx, stageId, "claude", input.prompt, resolvedModel ?? input.model, "-", Date.now() - t0, `[CALL THREW: ${err instanceof Error ? err.message : String(err)}]\n${partial}`);
         throw err;
       }
     },
@@ -217,28 +222,6 @@ export function resolveCodexWorkingDirectory(args: {
 
 export async function readPrompt(ctx: PipelineContext, name: string): Promise<string> {
   return readFile(promptPath(ctx.repoRoot, name), "utf8");
-}
-
-function escapeLatexUnderscores(value: string): string {
-  return value.replace(/_/g, "\\_");
-}
-
-export async function ensureSkeleton(args: {
-  ctx: PipelineContext;
-  templateName: string;
-  target: string;
-}): Promise<{ created: boolean; templateFile: string }> {
-  const templateFile = templatePath(args.ctx.repoRoot, args.templateName);
-  if (existsSync(args.target)) return { created: false, templateFile };
-  const raw = await readFile(templateFile, "utf8");
-  const rendered = raw
-    .split("__QID__")
-    .join(escapeLatexUnderscores(args.ctx.qid))
-    .split("__SPECIALIZATION__")
-    .join(escapeLatexUnderscores(args.ctx.specialization));
-  await mkdir(path.dirname(args.target), { recursive: true });
-  await writeFile(args.target, rendered, "utf8");
-  return { created: true, templateFile };
 }
 
 export async function readIfExists(file: string): Promise<string> {
@@ -276,16 +259,10 @@ export async function cleanupRenderedTemplate(targetPath: string): Promise<void>
   }
 }
 
-// Stage 0 skeleton section headers (mirrors templates/stage0_skeleton.tex).
 export function artifactPaths(ctx: PipelineContext, state: StateJson) {
   return {
     tex: texPath(ctx.repoRoot, ctx.qid, ctx.specialization),
     proposalTex: proposalTexPath(ctx.repoRoot, ctx.qid, ctx.specialization),
-    proposalOutputJson: proposalOutputJsonPath(
-      ctx.repoRoot,
-      ctx.qid,
-      ctx.specialization,
-    ),
     proposalReviewOutputJson: proposalReviewOutputJsonPath(
       ctx.repoRoot,
       ctx.qid,

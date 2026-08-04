@@ -293,24 +293,29 @@ lemma Pr_split (B A : Ω → Prop) [DecidablePred A] [DecidablePred B] :
 /-- The **pushforward** design `f_* D` of `D` along `f : Ω → Ω'`: the law of the transformed
 assignment `f z` when `z` is drawn from `D`.  Its weight on `y` is the total design weight of the
 fiber `f⁻¹{y}`. -/
-noncomputable def map {Ω' : Type*} [Fintype Ω'] [DecidableEq Ω'] (f : Ω → Ω') :
-    FiniteDesign Ω' where
-  p := fun y => ∑ z, if f z = y then D.p z else 0
-  p_nonneg := fun y => Finset.sum_nonneg fun z _ => by
-    by_cases h : f z = y <;> simp [h, D.p_nonneg z]
-  p_sum := by
-    rw [Finset.sum_comm]
-    simp only [Finset.sum_ite_eq, Finset.mem_univ, if_true]
-    exact D.p_sum
+noncomputable def map {Ω' : Type*} [Fintype Ω'] (f : Ω → Ω') :
+    FiniteDesign Ω' := by
+  classical
+  exact {
+    p := fun y => ∑ z, if f z = y then D.p z else 0
+    p_nonneg := fun y => Finset.sum_nonneg fun z _ => by
+      by_cases h : f z = y <;> simp [h, D.p_nonneg z]
+    p_sum := by
+      rw [Finset.sum_comm]
+      simp only [Finset.sum_ite_eq, Finset.mem_univ, if_true]
+      exact D.p_sum }
 
 /-- The pushforward weight of `y` is the fiber sum `∑_{z} 1[f z = y] · D.p z`. -/
-@[simp] lemma map_p {Ω' : Type*} [Fintype Ω'] [DecidableEq Ω'] (f : Ω → Ω') (y : Ω') :
-    (D.map f).p y = ∑ z, if f z = y then D.p z else 0 := rfl
+@[simp] lemma map_p {Ω' : Type*} [Fintype Ω'] (f : Ω → Ω') (y : Ω') :
+    (D.map f).p y = ∑ z, @ite ℝ (f z = y) (Classical.propDecidable _) (D.p z) 0 := by
+  classical
+  rfl
 
 /-- **Transfer of expectation across a pushforward.**  The expectation of `g` under the
 pushforward `f_* D` equals the expectation of the composite `g ∘ f` under `D`. -/
-lemma E_map {Ω' : Type*} [Fintype Ω'] [DecidableEq Ω'] (f : Ω → Ω') (g : Ω' → ℝ) :
+lemma E_map {Ω' : Type*} [Fintype Ω'] (f : Ω → Ω') (g : Ω' → ℝ) :
     (D.map f).E g = D.E (fun z => g (f z)) := by
+  classical
   unfold E map
   simp only [Finset.sum_mul]
   rw [Finset.sum_comm]
@@ -322,9 +327,10 @@ lemma E_map {Ω' : Type*} [Fintype Ω'] [DecidableEq Ω'] (f : Ω → Ω') (g : 
 
 /-- **Transfer of probability across a pushforward.**  The probability of an event `A` under the
 pushforward `f_* D` equals the probability of its preimage under `D`. -/
-lemma Pr_map {Ω' : Type*} [Fintype Ω'] [DecidableEq Ω'] (f : Ω → Ω')
+lemma Pr_map {Ω' : Type*} [Fintype Ω'] (f : Ω → Ω')
     (A : Ω' → Prop) [DecidablePred A] :
     (D.map f).Pr A = D.Pr (fun z => A (f z)) := by
+  classical
   unfold Pr; rw [E_map]; rfl
 
 end FiniteDesign

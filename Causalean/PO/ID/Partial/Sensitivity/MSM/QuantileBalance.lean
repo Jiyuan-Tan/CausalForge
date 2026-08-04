@@ -110,7 +110,7 @@ theorem cutoff_optimal (Λ : ℝ) (hΛ : 1 ≤ Λ)
     rw [hMax, hMin, and_comm]
   have hAm : Measurable A := by
     rw [hA_def]
-    exact S.dVar.measurable_indicator true
+    exact S.dVar.measurable_indicator true (MeasurableSet.singleton true)
   have hYm : Measurable Y := by
     rw [hY_def]
     exact S.measurable_factualY

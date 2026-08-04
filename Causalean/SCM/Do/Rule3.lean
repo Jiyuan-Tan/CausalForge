@@ -69,22 +69,17 @@ theorem fixSet_latentProduct_compat
         (fun u => M2.latentDist u)).map_eq]
   congr 1
 
-/-- **Helper — `hNoDesc` implies no `SWIGNode.fixed z` is a parent of `v`.**
-
-    A parent is in particular an ancestor (via `isAncestor.edge`), so the
-    non-ancestor hypothesis `hNoDesc` lifts to a non-parent hypothesis. -/
-private lemma hNoDesc_implies_no_fixed_parent
+/-- If none of the fixed intervention nodes is an ancestor of a node, none is
+a parent of that node. -/
+lemma hNoDesc_implies_no_fixed_parent
     {M2 : Causalean.SCM N Ω} {Z : Finset N} {v : SWIGNode N}
     (hNoDesc : ∀ z ∈ Z, ¬ M2.dag.isAncestor (SWIGNode.fixed z) v) :
     ∀ z ∈ Z, SWIGNode.fixed z ∉ M2.dag.parents v := fun z hz hP =>
   hNoDesc z hz (DAG.isAncestor.edge (M2.dag.mem_parents.mp hP))
 
-/-- **Helper — descend `hNoDesc` through a parent edge.**
-
-    If `w ∈ parents v` and no `.fixed z` is an ancestor of `v`, then no
-    `.fixed z` is an ancestor of `w` either (else `isAncestor.trans` would
-    chain through the `w → v` edge to contradict `hNoDesc`). -/
-private lemma hNoDesc_descend_to_parent
+/-- If none of the fixed intervention nodes is an ancestor of a node, then
+none is an ancestor of any parent of that node. -/
+lemma hNoDesc_descend_to_parent
     {M2 : Causalean.SCM N Ω} {Z : Finset N} {v w : SWIGNode N}
     (hwP : w ∈ M2.dag.parents v)
     (hNoDesc : ∀ z ∈ Z, ¬ M2.dag.isAncestor (SWIGNode.fixed z) v) :
@@ -92,6 +87,7 @@ private lemma hNoDesc_descend_to_parent
   hNoDesc z hz (DAG.isAncestor.trans hanc (M2.dag.mem_parents.mp hwP))
 
 set_option maxHeartbeats 800000 in
+-- This recursive `evalMap` compatibility proof needs a larger heartbeat budget.
 /-- **Cross-SCM `evalMap` bridge for Rule 3.**
 
     At an observed node `v` whose `SWIGNode.fixed z` ancestors (`z ∈ Z`) are
@@ -315,7 +311,7 @@ theorem fixSet_evalMap_nonAnc_compat
           have := M'.fixed_outside_fixed_isolated d hfix_M1
           have hCh : v ∈ M'.dag.children (SWIGNode.fixed d) :=
             M'.dag.mem_children.mpr (M'.dag.mem_parents.mp hwVal_M1)
-          simpa [this.2] using hCh
+          simp [this.2] at hCh
         · have hfix_M2 : (SWIGNode.fixed d : SWIGNode N) ∉ M2.fixed := by
             intro h
             rcases Finset.mem_union.mp (show _ ∈ M'.fixed ∪ Z.image SWIGNode.fixed from h)

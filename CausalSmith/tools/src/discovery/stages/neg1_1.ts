@@ -9,7 +9,7 @@ import type { PipelineContext, StageResult, StateJson } from "../../types.js";
 import { artifactPaths, readPrompt, type StageDeps } from "../../pipeline_support.js";
 import { dispatchAgent, parseAgentJson } from "../../framework/agent_dispatch.js";
 import { normalizeRawModelJson } from "../core/latex_serialization.js";
-import { stores } from "../framework/stores.js";
+import { gapsJsonPath } from "../../paths.js";
 
 /** Pure verdict over the scout's parsed stdout JSON.
  *
@@ -100,7 +100,7 @@ export async function runStageNeg1_1(args: {
   // ---- assembleContext ------------------------------------------------------
   const paths = artifactPaths(args.ctx, args.state);
   await mkdir(paths.formalizationDir, { recursive: true });
-  const gapsPath = stores.gaps.path(args.ctx);
+  const gapsPath = gapsJsonPath(args.ctx.repoRoot, args.ctx.qid, args.ctx.specialization);
 
   const litReviewPrompt = await readPrompt(args.ctx, "stage_neg1_1_lit_review.txt");
   const upgradeBlock = args.ctx.upgradeFrom

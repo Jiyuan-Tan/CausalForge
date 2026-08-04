@@ -133,6 +133,7 @@ open MeasureTheory
 variable {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
   {μ : Measure Ω} {P : Measure X} [IsProbabilityMeasure μ] [IsProbabilityMeasure P]
 
+omit [MeasurableSpace Ω] in
 /-- **Coverage event identity (Beresteanu–Molinari coverage corollary).**  Fix the
 population identified interval `E[Y] = [μL, μU]`, the sample-mean interval
 `Ȳₙ(ω) = [yl(ω), yu(ω)]`, sample size `n ≥ 1`, and critical value `ĉ ≥ 0`.  With the
@@ -191,10 +192,11 @@ variable {ψ : X → EuclideanSpace ℝ (Fin 2)} (hψ : Measurable ψ)
 instance : IsProbabilityMeasure ((gaussianLimit hψ hvar).map dirStat) :=
   Measure.isProbabilityMeasure_map measurable_dirStat.aemeasurable
 
+omit [IsProbabilityMeasure P] in
 /-- **Directed continuous-mapping CLT.**  `dirStat` of the vector normalised sum
 converges in distribution to `(gaussianLimit ψ).map dirStat`. -/
 theorem normalizedSum_dirStat_clt (S : IIDSample Ω X μ P)
-    (hψ_int : Integrable ψ P) (hmean : ∫ x, ψ x ∂P = 0)
+    (hmean : ∫ x, ψ x ∂P = 0)
     (hSum_meas : ∀ n, AEMeasurable
       (IsAsymLinearVec.normalizedSum S ψ (fun m => Finset.range m) n) μ) :
     Tendsto_dist_vec
@@ -202,11 +204,11 @@ theorem normalizedSum_dirStat_clt (S : IIDSample Ω X μ P)
       ((gaussianLimit hψ hvar).map dirStat) μ
       (fun n => measurable_dirStat.comp_aemeasurable (hSum_meas n)) :=
   Tendsto_dist_vec.map_continuous continuous_dirStat hSum_meas
-    (fun n => measurable_dirStat.comp_aemeasurable (hSum_meas n))
-    (S.clt_normalizedSum_vec hψ hvar hψ_int hmean hSum_meas)
+    (S.clt_normalizedSum_vec hψ hvar hmean)
 
 end DirectedCLT
 
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- Both coordinates of the vector normalised sum of `intervalIFVec` are
 `√n · (sample mean − population mean)`. -/
 private lemma nsCoord (S : IIDSample Ω X μ P) (yL yU : X → ℝ) (n : ℕ) (ω : Ω) :
@@ -238,6 +240,7 @@ private lemma nsCoord (S : IIDSample Ω X μ P) (yL yU : X → ℝ) (n : ℕ) (�
       sqrt_inv_centered]
     simp only [sampleMean]
 
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- **Directed Hausdorff bridge.**  `dirStat` of the centered endpoint normalised
 sum equals `√n · dᴴ(E[Y], Ȳₙ)`. -/
 theorem dirStat_normalizedSum_eq (S : IIDSample Ω X μ P) (yL yU : X → ℝ)
@@ -259,6 +262,7 @@ theorem dirStat_normalizedSum_eq (S : IIDSample Ω X μ P) (yL yU : X → ℝ)
 
 /-! ## Asymptotic coverage of the directed confidence region (Beresteanu–Molinari Prop 2.7) -/
 
+omit [IsProbabilityMeasure P] in
 /-- **Asymptotic coverage of the directed confidence region.**  With population
 identified interval `E[Y] = [E y_L, E y_U]`, sample-mean interval `Ȳₙ`, and the BM
 bandwidth `c/√n`, the coverage probability of the *whole* identified set converges
@@ -278,7 +282,6 @@ theorem directedRegion_coverage (S : IIDSample Ω X μ P) (yL yU : X → ℝ)
     (hLU : ∀ z, yL z ≤ yU z) (hLint : Integrable yL P) (hUint : Integrable yU P)
     (hψ : Measurable (intervalIFVec yL yU P))
     (hvar : Integrable (fun x => ‖intervalIFVec yL yU P x‖ ^ 2) P)
-    (hψ_int : Integrable (intervalIFVec yL yU P) P)
     (hmean : ∫ x, intervalIFVec yL yU P x ∂P = 0)
     (hSum_meas : ∀ n, AEMeasurable
       (IsAsymLinearVec.normalizedSum S (intervalIFVec yL yU P) (fun m => Finset.range m) n) μ)
@@ -287,7 +290,7 @@ theorem directedRegion_coverage (S : IIDSample Ω X μ P) (yL yU : X → ℝ)
     Tendsto (fun n => μ {ω | Set.Icc (∫ x, yL x ∂P) (∫ x, yU x ∂P)
         ⊆ dilate (Set.Icc (sampleMean S yL n ω) (sampleMean S yU n ω)) (c / Real.sqrt n)})
       atTop (𝓝 (((gaussianLimit hψ hvar).map dirStat) (Set.Iic c))) := by
-  have hclt := normalizedSum_dirStat_clt hψ hvar S hψ_int hmean hSum_meas
+  have hclt := normalizedSum_dirStat_clt hψ hvar S hmean hSum_meas
   unfold Tendsto_dist_vec at hclt
   have hport := MeasureTheory.ProbabilityMeasure.tendsto_measure_of_null_frontier_of_tendsto'
     hclt (E := Set.Iic c) (by rw [frontier_Iic]; exact hfront)

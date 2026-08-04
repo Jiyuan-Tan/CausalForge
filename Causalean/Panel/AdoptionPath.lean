@@ -12,6 +12,7 @@ represents the never-treated path.
 import Mathlib.Data.Fin.Basic
 import Mathlib.Data.Real.Basic
 import Mathlib.Order.WithBot
+import Causalean.Panel.EstimandCharacterization.StaggeredTWFEDecomposition.Causal
 
 /-! # Adoption Path Helpers
 
@@ -28,6 +29,8 @@ same raw infinite-date encoding for proof stability. -/
 namespace Causalean
 namespace Panel
 namespace AdoptionPath
+
+open Causalean.Panel.EstimandCharacterization.StaggeredTWFEDecomposition.CausalAssumptions
 
 /-- A finite adoption path, embedded in `WithTop (Fin T)`. -/
 def finite {T : ℕ} (g : Fin T) : WithTop (Fin T) :=
@@ -105,33 +108,13 @@ later than the finite period. -/
 
 /-- If `t < A`, then adoption has not occurred by `t`. -/
 theorem not_le_of_lt {T : ℕ} {a : WithTop (Fin T)} {t : Fin T}
-    (hlt : lt a t) : ¬ le a t := by
-  intro hle
-  unfold lt at hlt
-  unfold le at hle
-  rw [WithTop.lt_def] at hlt
-  rw [WithTop.le_def] at hle
-  rcases hle with htop | hle
-  · exact WithTop.coe_ne_top htop
-  rcases hlt with hlt_top | hlt_fin
-  · rcases hlt_top with ⟨_, ha_top⟩
-    rcases hle with ⟨c, _d, _hcd, ha, _ht⟩
-    exact WithTop.top_ne_coe (ha_top.symm.trans ha)
-  · rcases hlt_fin with ⟨c, d, hcd, ht_c, ha_d⟩
-    rcases hle with ⟨c', d', hc'd', ha_c', ht_d'⟩
-    have hd_eq : d = c' := WithTop.coe_injective (ha_d.symm.trans ha_c')
-    have hc_eq : c = d' := WithTop.coe_injective (ht_c.symm.trans ht_d')
-    subst d
-    subst d'
-    have hlt_nat : c.val < c'.val := (Fin.val_fin_lt).2 hcd
-    have hle_nat : c'.val ≤ c.val := (Fin.val_fin_le).2 hc'd'
-    omega
+    (hlt : lt a t) : ¬ le a t :=
+  AdoptionDate.not_le_of_lt hlt
 
 /-- Never-treated paths are untreated in every finite period. -/
 theorem lt_of_isInfinite {T : ℕ} {a : WithTop (Fin T)} {t : Fin T}
-    (ha : isInfinite a) : lt a t := by
-  subst a
-  exact (WithTop.coe_lt_top _ : (t : WithTop (Fin T)) < ⊤)
+    (ha : isInfinite a) : lt a t :=
+  AdoptionDate.lt_of_isInf ha
 
 end AdoptionPath
 end Panel

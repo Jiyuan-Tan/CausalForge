@@ -88,7 +88,7 @@ private lemma eventCondExp_YofD_eq_factualY_on_dEvent
     eventCondExp P.μ (S.dEvent d) (S.YofD d)
       = eventCondExp P.μ (S.dEvent d) S.factualY :=
   POVar.eventCondExp_cfUnder_eq_factual_on_event hA.consistency
-    S.yVar S.dVar d (Ne.symm S.hDY) P.μ
+    S.yVar S.dVar d (S.measurableSet_dEvent d) (Ne.symm S.hDY) P.μ
 
 /-! ### Core pointwise a.s. inequalities -/
 
@@ -159,8 +159,8 @@ theorem mtr_E_Y1_le_upper (hA : S.BaseAssumptions) :
   -- Decompose: E[Y(1)] = p·E[Y(1)|D=1] + (1-p)·E[Y(1)|D=0].
   have hdecomp := S.integral_eq_sum_eventCondExp_dEvent (S.YofD true) hA.integrable_Y1
   -- Rewrite both summands as set integrals.
-  have h1 := eventCondExp_mul_measure_toReal P.μ (S.dEvent true) (S.YofD true)
-  have h0 := eventCondExp_mul_measure_toReal P.μ (S.dEvent false) (S.YofD true)
+  have h1 := eventCondExp_mul_measure_toReal P.μ (S.dEvent true) (measure_ne_top _ _) (S.YofD true)
+  have h0 := eventCondExp_mul_measure_toReal P.μ (S.dEvent false) (measure_ne_top _ _) (S.YofD true)
   rw [h1, h0] at hdecomp
   -- First set integral: use consistency to swap Y(1) ↔ Y on {D=1}.
   have hset_true : ∫ ω in S.dEvent true, S.YofD true ω ∂P.μ
@@ -174,7 +174,7 @@ theorem mtr_E_Y1_le_upper (hA : S.BaseAssumptions) :
   have hfirst : ∫ ω in S.dEvent true, S.YofD true ω ∂P.μ
               = (P.μ (S.dEvent true)).toReal
                   * eventCondExp P.μ (S.dEvent true) S.factualY := by
-    rw [hset_true, ← eventCondExp_mul_measure_toReal P.μ (S.dEvent true) S.factualY, mul_comm]
+    rw [hset_true, ← eventCondExp_mul_measure_toReal P.μ (S.dEvent true) (measure_ne_top _ _) S.factualY, mul_comm]
   -- Bound the second summand: ∫_{D=0} Y(1) ≤ hi · (μ(D=0)).toReal.
   have hbd_ae : S.YofD true ≤ᵐ[P.μ] (fun _ => hA.hi) :=
     hA.bounded_one.mono (fun _ h => h.2)
@@ -204,8 +204,8 @@ theorem mtr_lower_le_E_Y0 (hA : S.BaseAssumptions) :
     ≤ ∫ ω, S.YofD false ω ∂P.μ := by
   -- Decompose: E[Y(0)] = p·E[Y(0)|D=1] + (1-p)·E[Y(0)|D=0].
   have hdecomp := S.integral_eq_sum_eventCondExp_dEvent (S.YofD false) hA.integrable_Y0
-  have h1 := eventCondExp_mul_measure_toReal P.μ (S.dEvent true) (S.YofD false)
-  have h0 := eventCondExp_mul_measure_toReal P.μ (S.dEvent false) (S.YofD false)
+  have h1 := eventCondExp_mul_measure_toReal P.μ (S.dEvent true) (measure_ne_top _ _) (S.YofD false)
+  have h0 := eventCondExp_mul_measure_toReal P.μ (S.dEvent false) (measure_ne_top _ _) (S.YofD false)
   rw [h1, h0] at hdecomp
   -- On {D = 0}: consistency gives ∫_{D=0} Y(0) = ∫_{D=0} Y.
   have hset_false : ∫ ω in S.dEvent false, S.YofD false ω ∂P.μ
@@ -218,7 +218,7 @@ theorem mtr_lower_le_E_Y0 (hA : S.BaseAssumptions) :
   have hsecond : ∫ ω in S.dEvent false, S.YofD false ω ∂P.μ
                = (P.μ (S.dEvent false)).toReal
                    * eventCondExp P.μ (S.dEvent false) S.factualY := by
-    rw [hset_false, ← eventCondExp_mul_measure_toReal P.μ (S.dEvent false) S.factualY, mul_comm]
+    rw [hset_false, ← eventCondExp_mul_measure_toReal P.μ (S.dEvent false) (measure_ne_top _ _) S.factualY, mul_comm]
   -- Bound the first summand below: lo · (μ(D=1)).toReal ≤ ∫_{D=1} Y(0).
   have hbd_ae : (fun _ : P.Ω => hA.lo) ≤ᵐ[P.μ] S.YofD false :=
     hA.bounded_zero.mono (fun _ h => h.1)

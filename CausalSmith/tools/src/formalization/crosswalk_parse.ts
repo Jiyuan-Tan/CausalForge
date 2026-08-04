@@ -50,7 +50,9 @@ export async function parseMdBlocks(mdPath: string): Promise<MdBlock[]> {
     const isThm = cur.objId.startsWith("T-");
     const isLem = cur.objId.startsWith("L-");
     const isProp = /\bproposition\b/i.test(title);
-    const isAssumption = /\(P-form of\s+A\d|\bassumption\b/i.test(title);
+    // `(?<![\\{])` — a `\` or `{` boundary let the word fire inside TeX
+    // (`\begin{assumption}` in a title reclassified a definition block).
+    const isAssumption = /\(P-form of\s+A\d|(?<![\\{])\bassumption\b/i.test(title);
     const kind: CrosswalkEntry["kind"] = isThm
       ? "theorem"
       : isLem
@@ -129,6 +131,18 @@ export function classifyComment(source: string): boolean[] {
  *  - `def`/`abbrev`/`structure`: a `P-<n>` token in the comment above only;
  *    T- and L- tokens are IGNORED (a definition is never a theorem/lemma).
  */
+/** Blank out math spans in a docstring before scanning for `T-n`/`L-n`/`P-n`
+ * tokens: `\(t \le T-1\)` (horizon minus one) and `the \(L-2\) norm` are
+ * everyday mathematics, and matching inside them let a helper lemma hijack a
+ * crosswalk row or seed a spurious reachability root. */
+function objIdScanText(commentAbove: string): string {
+  return commentAbove
+    .replace(/\\\([\s\S]*?\\\)/g, " ")
+    .replace(/\\\[[\s\S]*?\\\]/g, " ")
+    .replace(/(?<![\\$])\$[^$\n]*\$/g, " ")
+    .replace(/`[^`\n]*`/g, " ");
+}
+
 export function deriveObjId(declKind: string, name: string, commentAbove: string): string | null {
   // Archived / deprecated SHADOW decls (kept in-tree for provenance after a
   // theorem is superseded — convention `<name>_deterministic_shadow` /
@@ -158,12 +172,12 @@ export function deriveObjId(declKind: string, name: string, commentAbove: string
   if (declKind === "theorem") {
     const tm = name.match(/^t(\d+)_/i);
     if (tm) return `T-${tm[1]}`;
-    return commentAbove.match(/\bT-\d+\b/)?.[0] ?? null;
+    return objIdScanText(commentAbove).match(/\bT-\d+\b/)?.[0] ?? null;
   }
   if (declKind === "lemma") {
     const lm = name.match(/^l(\d+)/i);
     if (lm) return `L-${lm[1]}`;
-    return commentAbove.match(/\bL-\d+[a-z]?\b/)?.[0] ?? null;
+    return objIdScanText(commentAbove).match(/\bL-\d+[a-z]?\b/)?.[0] ?? null;
   }
   // Assumption bundle (`structure a3Bundle …`) → A-3; setup (`def s1Setup …`) → S-1.
   // Name-prefix only (`^a\d` / `^s\d`), so `aipwScore` / `score` do NOT match.
@@ -171,7 +185,7 @@ export function deriveObjId(declKind: string, name: string, commentAbove: string
   if (am) return `A-${am[1]}`;
   const sm = name.match(/^s(\d+)/i);
   if (sm) return `S-${sm[1]}`;
-  return commentAbove.match(/\bP-\d+[a-z]?\b/)?.[0] ?? null;
+  return objIdScanText(commentAbove).match(/\bP-\d+[a-z]?\b/)?.[0] ?? null;
 }
 
 /**

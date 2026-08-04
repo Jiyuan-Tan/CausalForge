@@ -111,12 +111,11 @@ theorem sub_ddot_eq_unitTimeProjection (w : UnitWeights Unit) (V : Unit → Time
 arbitrary unit-only functions: `∑_i ∑_t p_i · ddot V_{it} · a_i = 0`.
 Per-unit the period sum of `ddot` vanishes (uniform time mean cancels), so the
 `p_i a_i` factor drops out. -/
-theorem ddot_orthogonal_unit (w : UnitWeights Unit)
-    (hT : (0 : ℝ) < Fintype.card Time)
+private theorem ddot_orthogonal_unit_of_card_ne_zero (w : UnitWeights Unit)
+    (hT_ne : (Fintype.card Time : ℝ) ≠ 0)
     (V : Unit → Time → ℝ) (a : Unit → ℝ) :
     ∑ i, ∑ t, w.p i * (ddot w V i t * a i) = 0 := by
   classical
-  have hT_ne : (Fintype.card Time : ℝ) ≠ 0 := ne_of_gt hT
   have h_unitMean_count : ∀ i,
       (Fintype.card Time : ℝ) * unitMean V i = ∑ t, V i t := by
     intro i
@@ -172,6 +171,20 @@ theorem ddot_orthogonal_unit (w : UnitWeights Unit)
       simp [hrow]
 
 /-- Double-demeaned arrays are orthogonal (in the `p`-weighted inner product) to
+arbitrary unit-only functions. -/
+theorem ddot_orthogonal_unit (w : UnitWeights Unit)
+    (V : Unit → Time → ℝ) (a : Unit → ℝ) :
+    ∑ i, ∑ t, w.p i * (ddot w V i t * a i) = 0 := by
+  classical
+  cases isEmpty_or_nonempty Time with
+  | inl h =>
+      letI : IsEmpty Time := h
+      simp
+  | inr h =>
+      letI : Nonempty Time := h
+      exact ddot_orthogonal_unit_of_card_ne_zero w (by positivity) V a
+
+/-- Double-demeaned arrays are orthogonal (in the `p`-weighted inner product) to
 arbitrary time-only functions: `∑_i ∑_t p_i · ddot V_{it} · b_t = 0`.
 Per-period the `p`-weighted unit sum of `ddot` vanishes (`∑ p = 1` cancels the
 time mean against the grand mean). -/
@@ -217,7 +230,6 @@ theorem ddot_orthogonal_time (w : UnitWeights Unit)
 /-- Double-demeaned arrays are orthogonal to every unit/time additive nuisance
 function in the `p`-weighted inner product. -/
 theorem ddot_orthogonal_unit_time (w : UnitWeights Unit)
-    (hT : (0 : ℝ) < Fintype.card Time)
     (V h : Unit → Time → ℝ) (hh : IsUnitTimeAdditive h) :
     inner w (ddot w V) h = 0 := by
   rcases hh with ⟨a, b, hh⟩
@@ -230,7 +242,7 @@ theorem ddot_orthogonal_unit_time (w : UnitWeights Unit)
           (∑ i, ∑ t, w.p i * (ddot w V i t * b t)) := by
           simp [mul_add, Finset.sum_add_distrib]
     _ = 0 := by
-          rw [ddot_orthogonal_unit w hT V a, ddot_orthogonal_time w V b, zero_add]
+          rw [ddot_orthogonal_unit w V a, ddot_orthogonal_time w V b, zero_add]
 
 /-! ### Bridge to the generic `WeightedSupport` FWL tower
 
@@ -355,7 +367,7 @@ theorem ddot_eq_residualize (w : UnitWeights Unit) (V : Unit → Time → ℝ)
     have hadd : IsUnitTimeAdditive (fun i t => h (i, t)) :=
       (mem_twoAxisAdditiveSpan_iff).mp (hH ▸ hh)
     have hkey : inner w (ddot w V) (fun i t => h (i, t)) = 0 :=
-      ddot_orthogonal_unit_time w hT V (fun i t => h (i, t)) hadd
+    ddot_orthogonal_unit_time w V (fun i t => h (i, t)) hadd
     have hbridge :
         inner w (ddot w V) (fun i t => h (i, t))
           = (Fintype.card Time : ℝ)

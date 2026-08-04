@@ -54,7 +54,7 @@ theorem dependency_studentized_cdf
     {Ω : ℕ → Type*} [∀ n, Fintype (Ω n)] [∀ n, MeasurableSpace (Ω n)]
     [∀ n, MeasurableSingletonClass (Ω n)]
     (D : ∀ n, FiniteDesign (Ω n))
-    {ι : ℕ → Type*} [∀ n, Fintype (ι n)] [∀ n, DecidableEq (ι n)]
+    {ι : ℕ → Type*} [∀ n, Fintype (ι n)]
     (X : ∀ n, ι n → Ω n → ℝ) (Dep : ∀ n, DepGraph (X n) (D n).toMeasure)
     (Dmax : ℕ) (hdeg : ∀ n i, ((Dep n).nbhd i).card ≤ Dmax)
     (M : ℝ) (hM : 0 ≤ M) (hbound : ∀ n i ω, |X n i ω| ≤ M)

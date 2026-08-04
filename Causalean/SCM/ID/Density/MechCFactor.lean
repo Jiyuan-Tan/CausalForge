@@ -295,7 +295,9 @@ end SCM
 
 namespace SCM.ID
 
-private lemma prefixNodes_obsParentClosed
+/-- The first k observed nodes in a structural causal model's topological order form a set closed
+under observed parents. -/
+lemma prefixNodes_obsParentClosed
     (M : Causalean.SCM N Ω) (k : ℕ) :
     M.ObsParentClosed (M.prefixNodes k) := by
   classical
@@ -345,14 +347,17 @@ private lemma obsKernel_prefix_singleton_eq_prod_qLocalMass
     (M.obsKernel_marginal_singleton_eq_prod_qLocalMass s
       (M.prefixNodes k) (prefixNodes_obsParentClosed M k) x)
 
-private lemma qLocalMass_ne_top
+/-- Every local q-mass associated with fixed values, an observed node set, and
+an observed assignment is finite. -/
+lemma qLocalMass_ne_top
     (M : Causalean.SCM N Ω) (s : M.FixedValues)
     (T : Finset (SWIGNode N)) (hT : T ⊆ M.observed)
     (x : ValuesOn M.observed (swigΩ Ω)) :
     M.qLocalMass s T hT x ≠ ∞ := by
   exact ne_of_lt (MeasureTheory.measure_lt_top M.latentProduct _)
 
-private lemma ENNReal.div_mul_common
+/-- Cancelling a common nonzero finite factor preserves a quotient of extended nonnegative reals. -/
+lemma ENNReal.div_mul_common
     {a b r : ENNReal} (hr0 : r ≠ 0) (hrtop : r ≠ ∞) :
     (a * r) / (b * r) = a / b := by
   rw [ENNReal.div_eq_inv_mul, ENNReal.div_eq_inv_mul]
@@ -363,7 +368,8 @@ private lemma ENNReal.div_mul_common
   · exact Or.inr hrtop
   · exact Or.inr hr0
 
-private lemma Finset.prod_ne_top_of_ne_top {ι : Type*} [DecidableEq ι]
+/-- A finite product of finite extended nonnegative reals is finite. -/
+lemma Finset.prod_ne_top_of_ne_top {ι : Type*} [DecidableEq ι]
     (s : Finset ι) (f : ι → ENNReal) (hf : ∀ i ∈ s, f i ≠ ∞) :
     (∏ i ∈ s, f i) ≠ ∞ := by
   classical
@@ -532,9 +538,9 @@ private lemma obsStepCondKernel_singleton_eq_obsCondKernel_singleton
           x} :
           Set (ValuesOn ({(M.observedAt i).val} : Finset (SWIGNode N)) (swigΩ Ω))) := by
   unfold obsStepCondKernel
-  rw [ProbabilityTheory.Kernel.map_apply _ (measurable_singletonValue (Ω := Ω))]
+  rw [ProbabilityTheory.Kernel.map_apply _ (measurable_singletonValue (α := swigΩ Ω))]
   rw [MeasureTheory.Measure.map_apply
-    (measurable_singletonValue (Ω := Ω)) (MeasurableSet.singleton _)]
+    (measurable_singletonValue (α := swigΩ Ω)) (MeasurableSet.singleton _)]
   congr 1
   ext y
   constructor
@@ -588,14 +594,9 @@ private lemma obsStepCondKernel_singleton_eq_prefix_ratio
       exact M.qLocalMass_pos_of_positiveObs s hpos (C ∩ M.prefixNodes i.val)
         (fun _ hv =>
           M.prefixNodes_subset_observed i.val (Finset.mem_of_mem_inter_right hv)) x)
-  have hctop : ((M.obsKernel s).map (valuesProjection hCC))
-        ({valuesProjection hCC x} :
-          Set (ValuesOn (M.prefixNodes i.val) (swigΩ Ω))) ≠ ∞ := by
-    exact ne_of_lt
-      (MeasureTheory.measure_lt_top ((M.obsKernel s).map (valuesProjection hCC)) _)
   rw [obsCondKernel_singleton_mass_of_ne_zero M
     ({(M.observedAt i).val} : Finset (SWIGNode N)) (M.prefixNodes i.val)
-    hY hCC s (valuesProjection hCC x) (valuesProjection hY x) hc0 hctop]
+    hY hCC s (valuesProjection hCC x) (valuesProjection hY x) hc0]
   congr 1
   let e : ValuesOn (M.prefixNodes (i.val + 1)) (swigΩ Ω) ≃ᵐ
       ValuesOn (M.prefixNodes i.val) (swigΩ Ω) ×
@@ -670,7 +671,8 @@ private lemma obsStepCondDensity_eq_component_ratio_div_ref
   rw [obsKernel_prefix_singleton_eq_prod_qLocalMass]
   rw [prefix_qProduct_ratio_eq_component_ratio M s S hScomp i hiS hpos x]
 
-private lemma ENNReal.prod_div_prod {ι : Type*} [DecidableEq ι]
+/-- A finite product of quotients is the quotient of the finite products when denominators are nonzero and finite. -/
+lemma ENNReal.prod_div_prod {ι : Type*} [DecidableEq ι]
     (t : Finset ι) (f g : ι → ENNReal)
     (hg0 : ∀ i ∈ t, g i ≠ 0) (hgtop : ∀ i ∈ t, g i ≠ ∞) :
     (∏ i ∈ t, f i / g i) = (∏ i ∈ t, f i) / (∏ i ∈ t, g i) := by
@@ -823,7 +825,7 @@ private lemma component_qLocalMass_ratio_product
       ∏ k ∈ T, a (k + 1) / a k = a M.observed.card / a 0 :=
     prod_filter_div_telescope a M.observed.card T hTsubset hne hfin hconst
   have htop : S ∩ M.prefixNodes M.observed.card = S := by
-    rw [M.prefixNodes_card]
+    rw [M.prefixNodes_card M.observed.card (le_refl _)]
     exact Finset.inter_eq_left.mpr hS
   have hzero : S ∩ M.prefixNodes 0 = ∅ := by
     rw [M.prefixNodes_zero, Finset.inter_empty]
@@ -850,7 +852,9 @@ private lemma component_qLocalMass_ratio_product
     _ = M.qLocalMass s S hS x := by
           simp
 
-private lemma component_ref_atom_product_eq_jointRef
+/-- Multiplying the singleton reference masses for all observed variables in one c-component
+equals the singleton mass of their joint reference measure. -/
+lemma component_ref_atom_product_eq_jointRef
     [∀ n, MeasurableSingletonClass (Ω n)]
     (M : Causalean.SCM N Ω) (ref : ReferenceMeasures Ω)
     (S : Finset (SWIGNode N)) (hS : S ⊆ M.observed)

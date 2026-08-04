@@ -93,7 +93,7 @@ private lemma condIntYq_factor_arm
   have hZX_Y : ProbabilityTheory.CondIndepFun S.σ_AUX S.σ_AUX_le
       (fun ω => (S.Z ω, S.X ω)) S.Y μ :=
     Causalean.condIndepFun_prodMk_of_measurable_left S.σ_AUX_le
-      S.measurable_Z S.measurable_Y S.measurable_X hX_m_AUX hZ_Y
+      S.measurable_Z S.measurable_Y hX_m_AUX hZ_Y
   -- Apply condExp_mul_of_condIndep with f = (Z, X), g = Y,
   -- u (z, x) = q (z, a, x), v = id.
   set u : γ_Z × γ_X → ℝ := fun p => HA.q (p.1, a, p.2) with hu_def
@@ -308,7 +308,11 @@ lemma condIntYofA_le_envelope_arm
     -- Apply L2.
     have hL2 :=
       Causalean.setIntegral_eq_setIntegral_mul_of_likelihoodRatio_swap
-        S.σ_UX_le S.measurable_A a (!a) hL_m hf_m hfInt.integrableOn hfLInt.integrableOn
+        S.σ_UX_le {ω | S.A ω = a} {ω | S.A ω = !a}
+        (S.measurable_A (measurableSet_singleton a))
+        (S.measurable_A (measurableSet_singleton (!a)))
+        (hf_m.aestronglyMeasurable.mul hL_m.aestronglyMeasurable)
+        hf_m.aestronglyMeasurable hfInt.integrableOn hfLInt.integrableOn
         (by
           -- Need hSpec's RHS to use (!a) instead of (≠ a). They're equal as sets.
           have h_ind_eq :
@@ -446,7 +450,11 @@ lemma condIntYofA_le_envelope_arm
       · intro h; cases ha : S.A ω <;> cases a <;> simp_all
     have hL2 :=
       Causalean.setIntegral_eq_setIntegral_mul_of_likelihoodRatio_swap
-        S.σ_UX_le S.measurable_A a (!a) hL_m hUmeas_UX hUInt.integrableOn hU_int_L.integrableOn
+        S.σ_UX_le {ω | S.A ω = a} {ω | S.A ω = !a}
+        (S.measurable_A (measurableSet_singleton a))
+        (S.measurable_A (measurableSet_singleton (!a)))
+        (hUmeas_UX.aestronglyMeasurable.mul hL_m.aestronglyMeasurable)
+        hUmeas_UX.aestronglyMeasurable hUInt.integrableOn hU_int_L.integrableOn
         (by
           have h_ind_eq :
               (Set.indicator ({ω' | S.A ω' = !a}) (fun _ => (1:ℝ)))
@@ -549,7 +557,11 @@ lemma envelope_le_condIntYofA_arm
       · intro h; cases ha : S.A ω <;> cases a <;> simp_all
     have hL2 :=
       Causalean.setIntegral_eq_setIntegral_mul_of_likelihoodRatio_swap
-        S.σ_UX_le S.measurable_A a (!a) hL_m hf_m hfInt.integrableOn hfLInt.integrableOn
+        S.σ_UX_le {ω | S.A ω = a} {ω | S.A ω = !a}
+        (S.measurable_A (measurableSet_singleton a))
+        (S.measurable_A (measurableSet_singleton (!a)))
+        (hf_m.aestronglyMeasurable.mul hL_m.aestronglyMeasurable)
+        hf_m.aestronglyMeasurable hfInt.integrableOn hfLInt.integrableOn
         (by
           have h_ind_eq :
               (Set.indicator ({ω' | S.A ω' = !a}) (fun _ => (1:ℝ)))
@@ -648,7 +660,11 @@ lemma envelope_le_condIntYofA_arm
       · intro h; cases ha : S.A ω <;> cases a <;> simp_all
     have hL2 :=
       Causalean.setIntegral_eq_setIntegral_mul_of_likelihoodRatio_swap
-        S.σ_UX_le S.measurable_A a (!a) hL_m hLmeas_UX hLInt.integrableOn hL_int_L.integrableOn
+        S.σ_UX_le {ω | S.A ω = a} {ω | S.A ω = !a}
+        (S.measurable_A (measurableSet_singleton a))
+        (S.measurable_A (measurableSet_singleton (!a)))
+        (hLmeas_UX.aestronglyMeasurable.mul hL_m.aestronglyMeasurable)
+        hLmeas_UX.aestronglyMeasurable hLInt.integrableOn hL_int_L.integrableOn
         (by
           have h_ind_eq :
               (Set.indicator ({ω' | S.A ω' = !a}) (fun _ => (1:ℝ)))

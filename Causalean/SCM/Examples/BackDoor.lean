@@ -355,8 +355,7 @@ example : Causalean.SCM.ID.idSucceeds ({bdD} : Finset BDNode)
 -- Z d-seps Y from D in the lower-bar graph (= bdSWIG.splitMono {bdD}).
 -- We use the underlying computable DAG `splitMonoDAG` directly (since `splitMono`
 -- is noncomputable due to its SWIGGraph fields, but the DAG is fully computable).
-example : (bdSWIG.splitMonoDAG {bdD}
-    (by intro D hD; simp at hD; subst hD; native_decide)).dSep
+example : (bdSWIG.splitMonoDAG {bdD}).dSep
     {SWIGNode.random bdY} {SWIGNode.random bdD} {SWIGNode.random bdZ} := by native_decide
 
 -- Condition (i): Z contains no descendant of D
@@ -408,7 +407,7 @@ example :
     -- decided natively (inlined to keep the goal free of free variables
     -- that would trip up `native_decide`).
     exact (by native_decide :
-      (bdSWIG.splitMonoDAG {bdD} (by native_decide)).dSep
+      (bdSWIG.splitMonoDAG {bdD}).dSep
         {SWIGNode.random bdY} (Finset.image SWIGNode.random {bdD})
         ({SWIGNode.random bdZ} ∪ Finset.image SWIGNode.fixed {bdD}))
 

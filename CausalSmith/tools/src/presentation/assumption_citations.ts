@@ -13,6 +13,8 @@
 // fallback only ever ADDS the correct reference, it never mis-cites.
 import type { FormalizationGraph, GraphNode } from "../graph/types.js";
 import { isCitedNode } from "./graph_view.js";
+import { parseBib } from "./citations.js";
+import { MASKED_PERIOD, maskNonBoundaryPeriods } from "../shared/tex_text.js";
 
 export interface BibEntry {
   key: string;
@@ -23,17 +25,17 @@ export interface BibEntry {
 /** Parse `references.bib` into {key, author, year} records (one per `@type{...}` entry).
  *  Tolerant field scan — enough to match author surname + year, not a full BibTeX parse. */
 export function indexBib(bibText: string): BibEntry[] {
-  const out: BibEntry[] = [];
-  // Split on each entry header `@type{key,`; keep the body up to the next `@` or EOF.
-  const re = /@\w+\s*\{\s*([^,\s]+)\s*,([\s\S]*?)(?=@\w+\s*\{|$)/g;
-  for (let m = re.exec(bibText); m; m = re.exec(bibText)) {
-    const key = m[1];
-    const body = m[2];
-    const author = body.match(/author\s*=\s*[{"]([\s\S]*?)[}"]\s*,?/i)?.[1]?.replace(/\s+/g, " ").trim() ?? "";
-    const year = body.match(/year\s*=\s*[{"]?\s*((?:19|20)\d{2})/i)?.[1] ?? null;
-    out.push({ key, author, year });
-  }
-  return out;
+  // Route through citations.ts's depth-counting scanner. The old lazy field
+  // regex stopped at the FIRST `}` inside a value, so nested capitalization
+  // protection (`author = {Van der Vaart, {A. W.} and …}`) truncated the author
+  // list, `reconcileCite`'s surname match then failed, and a DUPLICATE entry
+  // was injected for a paper already in the pool. Its entry splitter also broke
+  // on an `@` inside a field value.
+  return parseBib(bibText).map((e) => ({
+    key: e.key,
+    author: (e.fields.author ?? "").replace(/\s+/g, " ").trim(),
+    year: e.fields.year?.match(/((?:19|20)\d{2})/)?.[1] ?? null,
+  }));
 }
 
 /** First-author surname from a free-text citation ("Tsybakov, A. B. (2004)…" → "Tsybakov";
@@ -51,11 +53,18 @@ export function citationYear(citation: string): string | null {
  *  free-text citations (journal names with `&`, identifiers with `_`) that natbib
  *  passes straight to TeX. Backslash first, then the single-char specials. */
 export function escapeBibText(s: string): string {
+  // Braces are escaped too: an unbalanced `{` in free-text citation prose would
+  // otherwise break the injected entry's grouping (and the whole bib scan).
+  // Backslashes go through a placeholder so the braces that our OWN replacement
+  // commands introduce stay live.
   return s
-    .replace(/\\/g, "\\textbackslash{}")
+    .replace(/\\/g, "\u0000")
     .replace(/([&%#_$])/g, "\\$1")
+    .replace(/\{/g, "\\{")
+    .replace(/\}/g, "\\}")
     .replace(/~/g, "\\textasciitilde{}")
-    .replace(/\^/g, "\\textasciicircum{}");
+    .replace(/\^/g, "\\textasciicircum{}")
+    .replace(/\u0000/g, "\\textbackslash{}");
 }
 
 /** Build a minimal natbib-citable BibTeX entry from a free-text citation, under `key`.
@@ -63,8 +72,12 @@ export function escapeBibText(s: string): string {
 export function injectionEntry(key: string, citation: string): string {
   const surname = firstAuthorSurname(citation) ?? key;
   const year = citationYear(citation) ?? "";
-  // title ≈ the clause after the "(year)." up to the next period.
-  const title = citation.match(/\((?:19|20)\d{2}[a-z]?\)\.?\s*([^.]+)\./)?.[1]?.trim();
+  // title ≈ the clause after the "(year)." up to the next SENTENCE period —
+  // masked first so "et al." / decimals inside the title do not truncate it.
+  const title = maskNonBoundaryPeriods(citation)
+    .match(/\((?:19|20)\d{2}[a-z]?\)\.?\s*([^.]+)\./)?.[1]
+    ?.replaceAll(MASKED_PERIOD, ".")
+    .trim();
   const fields = [
     `  author = {${escapeBibText(surname)}}`,
     year ? `  year = {${year}}` : null,

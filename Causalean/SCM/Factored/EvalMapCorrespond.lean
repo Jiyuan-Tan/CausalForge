@@ -137,10 +137,11 @@ theorem measurable_partialEvalMap (M : Causalean.SCM N Ω) :
 -- § 3b. Helper: `compProd` with a deterministic second kernel
 -- ============================================================
 
-/-- Pointwise evaluation of `κ ⊗ₖ Kernel.deterministic f hf` at `a`:
-    it is the pushforward of `κ a` along `b ↦ (b, f (a, b))`.  Factored out of
-    the induction step in `jointKernelPrefix_apply_eq` below. -/
-private lemma compProd_deterministic_apply
+/-- Composing a kernel with a deterministic second kernel gives the distribution
+    obtained by drawing from the first kernel and appending the deterministic
+    output to that draw.  This map-valued identity is useful when constructing
+    factored kernels recursively. -/
+lemma compProd_deterministic_apply
     {α β γ : Type*} [MeasurableSpace α] [MeasurableSpace β] [MeasurableSpace γ]
     (κ : ProbabilityTheory.Kernel α β) [ProbabilityTheory.IsSFiniteKernel κ]
     {f : α × β → γ} (hf : Measurable f) (a : α) :
@@ -167,9 +168,9 @@ private lemma compProd_deterministic_apply
 -- § 3c. Unfolding helpers for `observedPrefixValue` and `partialEvalMap`
 -- ============================================================
 
-/-- Reading the last slot of a length-`(k+1)` observed prefix built by pairing
-    returns the freshly-appended value `y`. -/
-private lemma observedPrefixValue_succ_last
+/-- Appending an observed coordinate to a prefix makes the final coordinate of
+    the expanded prefix equal to the appended value. -/
+lemma observedPrefixValue_succ_last
     (M : Causalean.SCM N Ω) {k : ℕ} (hn : k + 1 ≤ M.observed.card)
     (ξ : M.ObservedPrefixValues k (Nat.le_of_succ_le hn))
     (y : swigΩ Ω (M.observedAt ⟨k, hn⟩).val) :
@@ -177,9 +178,9 @@ private lemma observedPrefixValue_succ_last
         (Fin.last k) = y := by
   simp [observedPrefixValue, Fin.lastCases_last]
 
-/-- Reading a non-last slot `j.castSucc` of a length-`(k+1)` prefix recurses to
-    reading slot `j` of the length-`k` prefix. -/
-private lemma observedPrefixValue_succ_castSucc
+/-- Appending an observed coordinate to a prefix leaves every earlier coordinate
+    of the prefix unchanged. -/
+lemma observedPrefixValue_succ_castSucc
     (M : Causalean.SCM N Ω) {k : ℕ} (hn : k + 1 ≤ M.observed.card)
     (ξ : M.ObservedPrefixValues k (Nat.le_of_succ_le hn))
     (y : swigΩ Ω (M.observedAt ⟨k, hn⟩).val) (j : Fin k) :
@@ -188,9 +189,9 @@ private lemma observedPrefixValue_succ_castSucc
       M.observedPrefixValue (Nat.le_of_succ_le hn) ξ j := by
   simp [observedPrefixValue, Fin.lastCases_castSucc]
 
-/-- The `.1` component of `(partialEvalMap (k+1) hn s ℓ).2` is the earlier
-    observed prefix `(partialEvalMap k _ s ℓ).2`. -/
-private lemma partialEvalMap_succ_snd_fst
+/-- Extending a deterministic evaluation prefix by one observed variable leaves
+    the previously computed observed prefix unchanged. -/
+lemma partialEvalMap_succ_snd_fst
     (M : Causalean.SCM N Ω) (s : FixedValues M) (ℓ : LatentValues M)
     {k : ℕ} (hn : k + 1 ≤ M.observed.card) :
     ((M.partialEvalMap (k + 1) hn s ℓ).2 :
@@ -198,9 +199,9 @@ private lemma partialEvalMap_succ_snd_fst
       (M.partialEvalMap k (Nat.le_of_succ_le hn) s ℓ).2 := by
   rfl
 
-/-- The `.2` component of `(partialEvalMap (k+1) hn s ℓ).2` is the freshly-produced
-    `stepFun` value. -/
-private lemma partialEvalMap_succ_snd_snd
+/-- Extending a deterministic evaluation prefix appends the value determined for
+    the newly added observed variable. -/
+lemma partialEvalMap_succ_snd_snd
     (M : Causalean.SCM N Ω) (s : FixedValues M) (ℓ : LatentValues M)
     {k : ℕ} (hn : k + 1 ≤ M.observed.card) :
     ((M.partialEvalMap (k + 1) hn s ℓ).2 :
@@ -255,12 +256,12 @@ theorem partialEvalMap_observedPrefixValue (M : Causalean.SCM N Ω)
         · -- Fixed parent branch.
           simp only [dif_pos hfix]
           have huo : w.val ∉ M.unobserved := fun hu => hfix_disj_unobs _ hu hfix
-          exact (parentMap_fixed M s ℓ _ _ w huo hfix).symm
+          exact (parentMap_fixed M s ℓ _ _ w hfix).symm
         · simp only [dif_neg hfix]
           by_cases hobs : w.val ∈ M.observed
           · -- Observed parent branch: use IH on smaller prefix index.
             simp only [dif_pos hobs]
-            have huo : w.val ∉ M.unobserved := M.not_unobs_of_obs hobs
+            have huo : w.val ∉ M.unobserved := not_unobs_of_obs M.toSWIGGraph hobs
             -- IH at (k, iobs) where iobs points to the parent's observed index.
             have hedge : M.dag.edge w.val (M.observedAt ⟨k, hn⟩).val :=
               M.dag.mem_parents.mp w.property
@@ -272,15 +273,13 @@ theorem partialEvalMap_observedPrefixValue (M : Causalean.SCM N Ω)
             -- Rewrite `observedPrefixValue` via IH, so both sides become
             -- `castEq ▸ evalObservedAux s ℓ idx _` for the same equality.
             rw [ih]
-            refine Eq.trans ?_ (parentMap_observed M s ℓ _ _ w huo hfix hobs).symm
-            -- Collapse the `cast` on LHS and the `▸` on RHS: both transport
-            -- along the same `(observedAt (observedIndex w)).val = w.val`.
-            -- Proof-irrelevance kills the bound proofs, then `cast_heq`/`eqRec_heq`
-            -- close via HEq.
-            apply eq_of_heq
-            refine (cast_heq _ _).trans ?_
-            symm
-            exact eqRec_heq _ _
+            refine Eq.trans ?_ (parentMap_observed M s ℓ _ _ w hobs).symm
+            -- Both sides transport the evaluator result along the same node
+            -- equality.
+            have hNode : (M.observedAt (M.observedIndex ⟨w.val, hobs⟩)).val =
+                w.val :=
+              M.observedAt_observedIndex ⟨w.val, hobs⟩
+            simp [eqRec_eq_cast]
           · -- Unobserved parent branch.
             have hunobs : w.val ∈ M.unobserved := by
               have hedge : M.dag.edge w.val (M.observedAt ⟨k, hn⟩).val :=

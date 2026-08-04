@@ -40,7 +40,7 @@ Used inside the bridge proof to identify the FWL denominator with the
 saturated-overlap denominator. -/
 theorem denom_per_cell {Ω 𝒢 : Type*} [MeasurableSpace Ω] [Fintype 𝒢]
     [DecidableEq 𝒢] [MeasurableSpace 𝒢] [MeasurableSingletonClass 𝒢]
-    (μ : Measure Ω) [IsProbabilityMeasure μ]
+    (μ : Measure Ω) [IsFiniteMeasure μ]
     (D : Ω → ℝ) (G : Ω → 𝒢)
     (G_meas : Measurable G) (D_meas : Measurable D)
     (D_binary : ∀ᵐ ω ∂μ, D ω = 0 ∨ D ω = 1) (g : 𝒢) :
@@ -100,7 +100,7 @@ theorem denom_per_cell {Ω 𝒢 : Type*} [MeasurableSpace Ω] [Fintype 𝒢]
           simp [A, M, hIint]
     have hshare : p * M = A := by
       simpa [p, M, A, I, s, cellShare, cellMass] using
-        (CellBridge.cellMean_mul_cellMass μ D G G_meas g)
+        (CellBridge.cellMean_mul_cellMass μ D G g)
     change ∫ ω, (D ω - propensity μ D G ω)
         * (D ω - propensity μ D G ω) * I ω ∂μ = M * (p * (1 - p))
     rw [hmain]
@@ -222,7 +222,7 @@ theorem num_per_cell {Ω 𝒢 : Type*} [MeasurableSpace Ω] [Fintype 𝒢]
     calc
       τ * M = ∫ ω, (Y1 ω - Y0 ω) * I ω ∂μ := by
         simpa [τ, M, I, s, cellTau, cellMass] using
-          (CellBridge.cellMean_mul_cellMass μ (fun ω => Y1 ω - Y0 ω) G G_meas g)
+          (CellBridge.cellMean_mul_cellMass μ (fun ω => Y1 ω - Y0 ω) G g)
       _ = B1 - B0 := hdiff
   change ∫ ω, (D ω - propensity μ D G ω) * Y ω * I ω ∂μ =
     M * (p * (1 - p)) * τ

@@ -338,4 +338,28 @@ describe("Stage 1 paper-scoped NL formalization", () => {
     expect(await readFile(existingGraph, "utf8")).toBe('{"preserve":"reviewed graph"}\n');
     expect(await readFile(existingNote, "utf8")).toBe("preserve reviewed note\n");
   });
+
+  it("rebuilds full reuse context when history exists but the prior plan is missing", async () => {
+    const ctx = makeCtx(repoRoot);
+    const state = makeState();
+    let prompt = "";
+    await writeFile(
+      pipelineLogPath(repoRoot, ctx.qid, ctx.specialization),
+      JSON.stringify({ stage: "3", status: "completed" }) + "\n",
+    );
+    const deps: StageDeps = {
+      runClaude: async (opts: unknown) => {
+        prompt = (opts as { prompt: string }).prompt;
+        return JSON.stringify({ status: "completed", artifacts: [] });
+      },
+      runCodex: async () => { throw new Error("runCodex should not be called by Stage 1"); },
+      lean: undefined as never,
+    };
+
+    await runStage1({ ctx, state, deps });
+
+    expect(prompt).not.toContain("=== REVISE REUSE SCOPE ===");
+    expect(prompt).not.toContain("Keep every settled reuse/define-local decision in the existing plan");
+    expect(prompt).toContain("Write the formalization plan JSON");
+  });
 });

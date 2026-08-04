@@ -18,7 +18,7 @@ import { runReviewBoundary } from "../shared/intervention_routing.js";
 import { runStage1 } from "./stage1.js";
 import { propagateTheoremReview } from "./theorem_review.js";
 import { coreJsonPath } from "../discovery/stages/d0_core.js";
-import { CoreSchema } from "../discovery/core/schema.js";
+import { parseTypedCore } from "../discovery/core/core_io.js";
 import { runPlanGate } from "../formalization/plan/plan_gate.js";
 import { createRetrieval } from "../formalization/reuse_retrieval.js";
 import { parseJsonWithEscapeRepair } from "../shared/codex_json.js";
@@ -38,7 +38,7 @@ export async function planGatePrelint(
   const coreText = await readRequired(corePath, "F1.5 plan gate");
   let core;
   try {
-    core = CoreSchema.parse(JSON.parse(coreText));
+    core = parseTypedCore(coreText, `F1.5 plan gate: core.json at ${corePath}`);
   } catch (err) {
     throw new Error(
       `F1.5 plan gate: core.json at ${corePath} failed to parse/validate: ${err instanceof Error ? err.message : String(err)} (legacy pre-typed-core run? re-run discovery (D0) to regenerate core.json)`,

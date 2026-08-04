@@ -18,6 +18,41 @@ export interface GateGraphRefresh {
   hashes: Record<string, string>;
   coverage: ValidationResult | null;
   error?: string;
+  /** Inert invented `@node:` tags stripped by the self-heal below. Non-empty means the
+   *  scaffolder emitted a tag naming no real node; surfaced so the heal is never silent. */
+  strippedTags?: { id: string; file: string }[];
+}
+
+/**
+ * Remove `-- @node: <id>` comment lines for the given ids from every `.lean` file under
+ * `leanDir`. Comment-only, so it cannot change what any declaration means. Used to clear
+ * inert invented tags that would otherwise dead-lock every future graph refresh.
+ */
+async function stripNodeTags(leanDir: string, ids: string[]): Promise<{ id: string; file: string }[]> {
+  const { readdir, readFile, writeFile } = await import("node:fs/promises");
+  const path = await import("node:path");
+  const wanted = new Set(ids);
+  const removed: { id: string; file: string }[] = [];
+  const walk = async (dir: string): Promise<string[]> => {
+    const out: string[] = [];
+    for (const e of await readdir(dir, { withFileTypes: true })) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) out.push(...(await walk(p)));
+      else if (e.name.endsWith(".lean")) out.push(p);
+    }
+    return out;
+  };
+  for (const file of await walk(leanDir)) {
+    const src = await readFile(file, "utf8");
+    const kept = src.split("\n").filter((line) => {
+      const m = /^\s*--\s*@node:\s*(\S+)\s*$/.exec(line);
+      if (!m || !wanted.has(m[1])) return true;
+      removed.push({ id: m[1], file: path.relative(leanDir, file) });
+      return false;
+    });
+    if (kept.length !== src.split("\n").length) await writeFile(file, kept.join("\n"), "utf8");
+  }
+  return removed;
 }
 
 /** Map a reviewer crosswalk verdict onto the node review vocabulary. `unmatched`
@@ -77,6 +112,7 @@ export async function refreshGraphForGate(a: {
   mdPath?: string;
 }): Promise<GateGraphRefresh> {
   try {
+    let strippedTags: { id: string; file: string }[] = [];
     const p = graphPath(a.formalizationDir, a.qid, a.spec);
     let g: FormalizationGraph | null = existsSync(p)
       ? await loadGraph(p)
@@ -89,11 +125,32 @@ export async function refreshGraphForGate(a: {
     // them below. Duplicate @node tags, by contrast, survive minting and are caught by the
     // post-mint `ext.unlinked` check (extractFromLean early-returns duplicates as unlinked).
     const ext0 = await extractFromLean(g, a.leanDir);
+    // Ids the graph already knew BEFORE minting. An unlinked tag naming one of these is a
+    // REAL ambiguity (two decls claiming one node, or a mis-anchor) and stays fatal below.
+    const preMintIds = new Set(g.nodes.map((n) => n.id));
     g = await mintHiddenDefNodes(ext0.graph, a.leanDir);
     // Register agent-introduced `@node:`-tagged helper lemmas the filler added, then
     // re-extract so the freshly-minted nodes get linked (decl_name/file) and hashed.
     g = await mintAnnotatedNodes(g, a.leanDir);
-    const ext = await extractFromLean(g, a.leanDir);
+    let ext = await extractFromLean(g, a.leanDir);
+    // SELF-HEAL (bounded, once): a scaffolder that invents a tag value and repeats it on
+    // several helper lemmas creates a tag naming no real node. `mintAnnotatedNodes` mints it
+    // against the FIRST decl and skips the rest, so extraction then reports a duplicate on
+    // every subsequent refresh — permanently. Because the patch pass dies here BEFORE the
+    // reviewer's redirect is applied, the reviewer re-flags the same targets next round and the
+    // loop burns its whole scaffold budget without ever converging: a cosmetic defect turned
+    // into a hard deadlock. Such a tag is INERT — it names no plan node, so it cannot mis-anchor
+    // one or make coverage depend on source order (the hazard the duplicate check exists for).
+    // Strip those comment lines, drop the phantom node minted from them, and re-extract once.
+    // Tags naming a pre-existing node are untouched and still fail closed.
+    if (ext.unlinked.length > 0 && ext.unlinked.every((u) => !preMintIds.has(u.id))) {
+      const inertIds = [...new Set(ext.unlinked.map((u) => u.id))];
+      strippedTags = await stripNodeTags(a.leanDir, inertIds);
+      if (strippedTags.length > 0) {
+        g = { ...g, nodes: g.nodes.filter((n) => !(inertIds.includes(n.id) && !preMintIds.has(n.id))) };
+        ext = await extractFromLean(g, a.leanDir);
+      }
+    }
     if (ext.unlinked.length > 0) {
       // why: post-mint duplicate/unmatched @node tags must not persist a stale or partially linked graph.
       throw new Error(`graph refresh found unlinked Lean @node annotations: ${ext.unlinked.map((u) => `${u.id}->${u.decl_name}@${u.file}`).join(", ")}`);
@@ -106,6 +163,7 @@ export async function refreshGraphForGate(a: {
       dirty: dirtyFrontier(g, ext.hashes),
       hashes: ext.hashes,
       coverage: validate(g),
+      ...(strippedTags.length ? { strippedTags } : {}),
     };
   } catch (err) {
     return {

@@ -51,7 +51,7 @@ function isTar(b: Uint8Array): boolean {
 /** Minimal ustar reader: concatenate the contents of every `.tex` member. */
 function texFromTar(buf: Uint8Array): string {
   const dec = new TextDecoder("utf-8", { fatal: false });
-  let out = "";
+  const files: Array<{ name: string; text: string }> = [];
   let off = 0;
   while (off + 512 <= buf.length) {
     const header = buf.subarray(off, off + 512);
@@ -61,11 +61,39 @@ function texFromTar(buf: Uint8Array): string {
     const sizeOctal = dec.decode(header.subarray(124, 136)).replace(/\0.*$/, "").trim();
     const size = parseInt(sizeOctal, 8) || 0;
     const dataStart = off + 512;
-    if (name.endsWith(".tex")) out += `${dec.decode(buf.subarray(dataStart, dataStart + size))}\n`;
+    if (name.endsWith(".tex")) {
+      files.push({ name, text: dec.decode(buf.subarray(dataStart, dataStart + size)) });
+    }
     // Advance past data, rounded up to the next 512-byte boundary.
     off = dataStart + Math.ceil(size / 512) * 512;
   }
-  return out;
+  // ORDER MATTERS, because the consumer TRUNCATES. A multi-file arXiv bundle is emitted in
+  // tar order, which is arbitrary (often alphabetical), and the D0.5 referee is shown only
+  // the leading slice of this string. Concatenating blindly therefore handed the referee a
+  // symbol-macro fragment (`amssym.tex`) while the cited theorem sat megabytes further in
+  // `paper/section3_theory.tex`, and the referee — correctly — reported it could not verify
+  // a citation that was in fact accurate. A citation silently "unverifiable" for a packaging
+  // reason is worse than a loud failure: the honest next move looks like editing our account
+  // of a source we cannot read, which is how a citation gets laundered.
+  //
+  // So lead with the document root, then the files carrying sectioning/theorem content, and
+  // put pure macro/style fragments last. Nothing is dropped — a bundle whose theorem lives
+  // in an \input-ed file is still present — but the truncation window now opens on real text.
+  const isRoot = (f: { text: string }) => /\\documentclass|\\begin\{document\}/.test(f.text);
+  // Include the near-universal `\newtheorem` ABBREVIATIONS (`thm`, `lem`, `prop`,
+  // `cor`, `defn`, `assump`, `claim`, `rem`, `conj`): a sections/ file written
+  // with `\begin{thm}` and no `\section` ranked as a macro fragment, sorted
+  // last, and fell outside the referee's truncation window — grading an
+  // accurate citation "unverifiable" for a packaging reason.
+  const hasContent = (f: { text: string }) =>
+    /\\(section|subsection|chapter)\b|\\begin\{(theorem|thms?|lemma|lem|proposition|prop|corollary|cor|definition|defn?|assumption|assump?|claim|remark|rem|conjecture|conj)\*?\}/i
+      .test(f.text);
+  const rank = (f: { text: string }): number => (isRoot(f) ? 0 : hasContent(f) ? 1 : 2);
+  return files
+    .map((f, i) => ({ f, i }))
+    .sort((a, b) => rank(a.f) - rank(b.f) || a.i - b.i)
+    .map(({ f }) => `${f.text}\n`)
+    .join("");
 }
 
 /** Decode an arXiv e-print payload (gzip of either a tar or a single .tex) to tex. */

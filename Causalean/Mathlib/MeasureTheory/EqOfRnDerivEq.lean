@@ -32,11 +32,10 @@ Stated for application by unification (`exact`/`apply`) instead of rewriting, so
 the reference `ρ` is inferred from the supplied absolute-continuity proofs and the
 two measures need not be syntactically aligned with any rewrite pattern. -/
 theorem eq_of_rnDeriv_eq {μ ν ρ : Measure α} [SigmaFinite ρ]
-    (hμfin : IsFiniteMeasure μ) (hνfin : IsFiniteMeasure ν)
     (hμ : μ ≪ ρ) (hν : ν ≪ ρ)
     (h : μ.rnDeriv ρ =ᵐ[ρ] ν.rnDeriv ρ) : μ = ν := by
-  haveI := hμfin
-  haveI := hνfin
+  letI : SFinite μ := sFinite_of_absolutelyContinuous hμ
+  letI : SFinite ν := sFinite_of_absolutelyContinuous hν
   rw [← Measure.withDensity_rnDeriv_eq μ ρ hμ, ← Measure.withDensity_rnDeriv_eq ν ρ hν]
   exact MeasureTheory.withDensity_congr_ae h
 

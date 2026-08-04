@@ -11,6 +11,7 @@ import path from "node:path";
 import { appendPipelineLog } from "../log.js";
 import { reviewsDir } from "../paths.js";
 import { loadState, saveState } from "../state.js";
+import { firstFreeName } from "../shared/fs_aside.js";
 
 export interface InvalidateProposalReviewResult {
   angle: number;
@@ -21,15 +22,7 @@ export interface InvalidateProposalReviewResult {
 
 const fileExists = (file: string): Promise<boolean> => access(file).then(() => true, () => false);
 
-async function firstFreeArchive(file: string): Promise<string> {
-  const base = `${file}.invalidated`;
-  if (!(await fileExists(base))) return base;
-  for (let n = 1; n < 1000; n++) {
-    const candidate = `${base}.${n}`;
-    if (!(await fileExists(candidate))) return candidate;
-  }
-  throw new Error(`invalidate-proposal-review: no free archive name beside ${file}`);
-}
+const firstFreeArchive = (file: string): Promise<string> => firstFreeName(`${file}.invalidated`);
 
 export async function invalidateCurrentProposalReview(
   repoRoot: string,
@@ -55,7 +48,10 @@ export async function invalidateCurrentProposalReview(
         `cursor angle ${pf.current_angle_index ?? 0} v${pf.current_version ?? 0}`,
     );
   }
-  if (pf.last_draft_status !== "completed" || !pf.last_draft_handoff) {
+  if (
+    pf.last_draft_status !== "completed" ||
+    pf.last_draft_version !== (pf.current_version ?? 0)
+  ) {
     throw new Error(
       "invalidate-proposal-review refuses to reopen without a completed producer handoff; " +
         "this helper may re-run only the reviewer, never the author",
@@ -93,8 +89,8 @@ export async function invalidateCurrentProposalReview(
   pf.final_verdict = "pending";
   pf.last_reviewer_verdict = "";
   pf.accepted_scope_caveats = undefined;
-  // Preserve current_mode, current_version, last_draft_status, and
-  // last_draft_handoff: D-0.5 will review this exact authored artifact again.
+  // Preserve current_mode/current_version, status, and freshness marker:
+  // D-0.5 will review this exact authored artifact again.
 
   try {
     await saveState(repoRoot, qid, specialization, state);

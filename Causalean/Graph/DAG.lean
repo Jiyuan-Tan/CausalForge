@@ -194,8 +194,9 @@ private theorem iterate_ancStep_sound {v : V} {S : Finset V}
 private theorem subset_ancStep (S : Finset V) : S ⊆ G.ancStep S := by
   intro x hx; rw [ancStep, Finset.mem_union]; exact Or.inl hx
 
-/-- Each set is contained in any number of `ancStep` iterations of it. -/
-private theorem subset_iterate_ancStep (S : Finset V) (k : ℕ) :
+/-- Any finite set of graph nodes remains contained after applying the graph's ancestor-step
+operation any number of times. -/
+theorem subset_iterate_ancStep (S : Finset V) (k : ℕ) :
     S ⊆ (G.ancStep)^[k] S := by
   induction k with
   | zero => simp
@@ -210,12 +211,13 @@ private theorem iterate_of_fixpoint {T : Finset V} (h : G.ancStep T = T) (j : �
   | zero => rfl
   | succ j ih => rw [Function.iterate_succ_apply', ih, h]
 
-/-- If each of `k` consecutive `ancStep` iterations strictly grows the cardinality,
-then the cardinality has grown by at least `k`. -/
-private theorem le_card_iterate (S₀ : Finset V) (k : ℕ)
+omit G [DecidableEq V] [Fintype V] in
+/-- If each of a specified number of successive applications of a function on finite
+    sets strictly increases cardinality, the final set has grown by at least that number. -/
+theorem le_card_iterate (f : Finset V → Finset V) (S₀ : Finset V) (k : ℕ)
     (hstrict : ∀ j, j < k →
-      ((G.ancStep)^[j] S₀).card < ((G.ancStep)^[j + 1] S₀).card) :
-    ((G.ancStep)^[0] S₀).card + k ≤ ((G.ancStep)^[k] S₀).card := by
+      (f^[j] S₀).card < (f^[j + 1] S₀).card) :
+    (f^[0] S₀).card + k ≤ (f^[k] S₀).card := by
   induction k with
   | zero => simp
   | succ k ih =>
@@ -242,7 +244,7 @@ private theorem ancStep_ancClosure (v : V) :
       exact Finset.card_lt_card (Finset.ssubset_iff_subset_ne.mpr ⟨hsub, hne⟩)
     have hge : ((G.ancStep)^[0] (G.parents v)).card + (Fintype.card V + 1)
         ≤ ((G.ancStep)^[Fintype.card V + 1] (G.parents v)).card :=
-      G.le_card_iterate (G.parents v) (Fintype.card V + 1) hstrict
+      le_card_iterate G.ancStep (G.parents v) (Fintype.card V + 1) hstrict
     have hle : ((G.ancStep)^[Fintype.card V + 1] (G.parents v)).card ≤ Fintype.card V :=
       Finset.card_le_univ _
     simp only [Function.iterate_zero, id_eq] at hge
@@ -259,8 +261,8 @@ private theorem ancStep_ancClosure (v : V) :
   unfold ancClosure
   rw [hSN]; exact hfixk
 
-/-- The backward-reachability closure is closed under taking parents. -/
-private theorem ancClosure_closed (v : V) {x : V} (hx : x ∈ G.ancClosure v) :
+/-- Every parent of a vertex in its computed ancestor set also belongs to that ancestor set. -/
+theorem ancClosure_closed (v : V) {x : V} (hx : x ∈ G.ancClosure v) :
     G.parents x ⊆ G.ancClosure v := by
   intro p hp
   have hbu : p ∈ (G.ancClosure v).biUnion G.parents := Finset.mem_biUnion.mpr ⟨x, hx, hp⟩
@@ -268,9 +270,9 @@ private theorem ancClosure_closed (v : V) {x : V} (hx : x ∈ G.ancClosure v) :
     rw [ancStep, Finset.mem_union]; exact Or.inr hbu
   rwa [G.ancStep_ancClosure v] at hstep
 
-/-- If `T` is closed under taking parents and `w ∈ T`, then every ancestor of `w`
-lies in `T`. -/
-private theorem isAncestor_mem_of_closed {T : Finset V}
+/-- A finite set that contains every parent of each of its vertices contains every ancestor of
+each vertex it contains. -/
+theorem isAncestor_mem_of_closed {T : Finset V}
     (hT : ∀ x ∈ T, G.parents x ⊆ T) {u w : V} (h : G.isAncestor u w) :
     w ∈ T → u ∈ T := by
   induction h with
@@ -444,7 +446,9 @@ def roots : Finset V :=
 -- Acyclicity from an explicit topological numbering
 -- ============================================================
 
-/-- **Acyclicity from a topological numbering.** If a function `τ : V → ℕ`
+omit [DecidableEq V] [Fintype V] in
+/-- **Acyclicity from a topological ranking.** If a function `τ : V → W` into
+a set equipped with a transitive, irreflexive ranking relation `r`
 strictly increases along every edge (`hτ`), then the edge relation has no directed
 cycle: a cycle `v ⇝ v` would force the strictly increasing `τ` to satisfy
 `τ v < τ v`. This is the standard way to discharge the `acyclic` field when
@@ -455,15 +459,27 @@ The numbering appears only inside this (proof-level) lemma, so a `DAG` whose
 `acyclic` field is `DAG.acyclic_of_topoOrder hτ` stays computable even when the
 witnessing `τ` is `noncomputable` — the witness certifies acyclicity but is erased,
 and the resulting DAG's own `topoOrder` is the canonical derived rank, not `τ`. -/
-theorem acyclic_of_topoOrder {e : V → V → Prop} {τ : V → ℕ}
-    (hτ : ∀ u v, e u v → τ u < τ v) : ∀ v, ¬ Relation.TransGen e v v := by
-  have key : ∀ {a b : V}, Relation.TransGen e a b → τ a < τ b := by
+theorem acyclic_of_topoOrder {W : Type*} {r : W → W → Prop} [IsTrans W r] [Std.Irrefl r]
+    {e : V → V → Prop} {τ : V → W}
+    (hτ : ∀ u v, e u v → r (τ u) (τ v)) : ∀ v, ¬ Relation.TransGen e v v := by
+  have key : ∀ {a b : V}, Relation.TransGen e a b → r (τ a) (τ b) := by
     intro a b h
     induction h with
     | single hab => exact hτ _ _ hab
-    | tail _ hbc ih => exact lt_trans ih (hτ _ _ hbc)
+    | tail _ hbc ih => exact IsTrans.trans _ _ _ ih (hτ _ _ hbc)
   intro v hv
-  exact absurd (key hv) (lt_irrefl _)
+  exact absurd (key hv) (Std.Irrefl.irrefl _)
+
+/-- Every vertex reached by a nonempty directed path has an incoming edge, namely the
+final edge of that path. -/
+theorem isAncestor_has_parent (G : DAG V) {u v : V}
+    (h : G.isAncestor u v) : G.parents v ≠ ∅ := by
+  intro hempty
+  have hmem : ∀ w, w ∉ G.parents v :=
+    fun w => (Finset.eq_empty_iff_forall_notMem.mp hempty) w
+  induction h with
+  | edge he => exact hmem u (G.mem_parents.mpr he)
+  | trans _ he _ => exact hmem _ (G.mem_parents.mpr he)
 
 end DAG
 

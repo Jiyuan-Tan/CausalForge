@@ -43,7 +43,7 @@ function state(): StateJson {
       current_version: 6,
       current_mode: "revise",
       last_draft_status: "completed",
-      last_draft_handoff: JSON.stringify({ status: "completed" }),
+      last_draft_version: 6,
       last_reviewer_verdict: "invalid review",
       iterations: [
         { angle: 0, version: 5, mode: "revise", verdict: "REVISE" },
@@ -85,20 +85,16 @@ describe("invalidateCurrentProposalReview", () => {
     expect(saved.proposed_from!.angle_checkpoint).toBeUndefined();
     expect(saved.proposed_from!.last_reviewer_verdict).toBe("");
     expect(saved.proposed_from!.current_version).toBe(6);
-    expect(saved.proposed_from!.last_draft_handoff).toContain("completed");
+    expect(saved.proposed_from!.last_draft_version).toBe(6);
   });
 });
 
 describe("applyProposalSourceCorrection", () => {
-  it("changes only literature-facing core and handoff fields without bumping the version", async () => {
+  it("changes only literature-facing core fields without bumping the draft version", async () => {
     root = await mkdtemp(path.join(os.tmpdir(), "correct-neg1-source-"));
     const qid = "pid_test";
     const spec = "v1";
     const s = state();
-    s.proposed_from!.last_draft_handoff = JSON.stringify({
-      status: "completed",
-      literature_checklist: [{ one_line: "Section 4, Lemma 4 and Theorem 4." }],
-    });
     await saveState(root, qid, spec, s);
 
     const core = JSON.parse(await readFile(
@@ -125,7 +121,7 @@ describe("applyProposalSourceCorrection", () => {
       "Lemma 4 and Theorem 4",
       "Lemma 1 and Theorem 1",
     );
-    expect(result).toMatchObject({ coreReplacements: 2, handoffReplacements: 1 });
+    expect(result).toMatchObject({ coreReplacements: 2 });
     const corrected = JSON.parse(await readFile(corePath, "utf8")) as Record<string, unknown>;
     expect(corrected.related_work).toContain("Lemma 1 and Theorem 1");
     expect(corrected.comparator_promise_table).toEqual([expect.objectContaining({
@@ -133,6 +129,6 @@ describe("applyProposalSourceCorrection", () => {
     })]);
     const saved = await loadState(root, qid, spec);
     expect(saved.proposed_from!.current_version).toBe(6);
-    expect(saved.proposed_from!.last_draft_handoff).toContain("Lemma 1 and Theorem 1");
+    expect(saved.proposed_from!.last_draft_version).toBe(6);
   });
 });

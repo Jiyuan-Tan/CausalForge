@@ -438,13 +438,13 @@ def forwardTopRow (m : ℕ) (a : Fin (m + 1) ⊕ Fin (m + 1)) :
     RetainedCumCoord (2 * m + 2) :=
   ⟨(⟨2 * m + 2, by omega⟩,
       ⟨doubledExponent a, by
-        have h := doubledExponent_lt (n := m + 1) (by omega) a
+        have h := doubledExponent_lt (n := m + 1) a
         omega⟩),
     by
       change 2 ≤ 2 * m + 2
       omega, by
       change doubledExponent a ≤ 2 * m + 2
-      have := doubledExponent_lt (n := m + 1) (by omega) a
+      have := doubledExponent_lt (n := m + 1) a
       omega⟩
 
 /-- Value columns are top-order weights; derivative columns are the finite
@@ -652,7 +652,7 @@ theorem canonicalForwardTopAugmentedJacobianAtWitness_eq (m : ℕ) :
           (Fin.last (m + 1))).2 ^ doubledExponent a = 0
     rw [forwardJacobianWitness_loading_last]
     simp [show 2 * m + 2 - doubledExponent a ≠ 0 by
-      have := doubledExponent_lt (n := m + 1) (by omega) a
+      have := doubledExponent_lt (n := m + 1) a
       omega]
   · rfl
   · obtain rfl : u = () := Subsingleton.elim _ _

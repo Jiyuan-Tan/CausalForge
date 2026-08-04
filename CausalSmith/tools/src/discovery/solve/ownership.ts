@@ -130,6 +130,8 @@ function isCatalogCoreEdit(edit: RawCoreEdit): boolean {
   return edit.kind === "assumption-replace" || edit.kind === "assumption-delete" ||
     edit.kind === "definition-add" || edit.kind === "definition-replace" || edit.kind === "definition-delete" ||
     edit.kind === "bibliography-replace" ||
+    edit.kind === "target-estimand-replace" ||
+    edit.kind === "estimand-functional-replace" ||
     edit.kind === "comparator-promise-table-replace" ||
     edit.kind === "symbol-add" || edit.kind === "symbol-replace" || edit.kind === "symbol-delete" ||
     edit.kind === "rebuild-reverse-dependencies";
@@ -145,13 +147,17 @@ export function projectOutputsToWriteCapabilities(args: {
   semanticTargetOwners: ReadonlyMap<string, string>;
   directiveOwnerLabel: string | null;
   requiredCoreTargets: ReadonlySet<string>;
+  existingStatementIds?: ReadonlySet<string>;
 }): { outputs: SolveUnitOutput[]; quarantined: QuarantinedCapabilityEmission[] } {
   const required = (target: string): boolean => args.requiredCoreTargets.has(target);
   const proofCap = (id: string): EmissionCapability => ({
     category: "proof", target: id, semanticIds: [id], singleton: required(id),
   });
   const resolutionCap = (sourceId: string, theoremId: string): EmissionCapability => ({
-    category: "oeq-resolution", target: sourceId, semanticIds: [sourceId, theoremId], singleton: true,
+    // The source OEQ owns the resolution transaction. The answer theorem may be
+    // a sibling target (or an already-carried agent node), so including it here
+    // would manufacture an ambiguity between two legitimate semantic owners.
+    category: "oeq-resolution", target: sourceId, semanticIds: [sourceId], singleton: true,
   });
   const addedNodeCap = (statement: CoreStatement): EmissionCapability => ({
     category: statement.status === "cited" ? "cited-added-node" : "added-node",
@@ -177,14 +183,59 @@ export function projectOutputsToWriteCapabilities(args: {
       singleton: isCatalogCoreEdit(edit) || required(target),
     };
   };
-  const obligationCap = (id: string): EmissionCapability => ({
-    category: "open-obligation", target: id, semanticIds: [id], singleton: false,
-  });
   const proseCap = (): EmissionCapability => ({
     category: "prose-updates", target: "prose:paper-wide", semanticIds: [], singleton: true,
   });
 
   const authorizedEmissions = new Set<string>();
+  const effectiveSemanticOwners = new Map(args.semanticTargetOwners);
+  for (const unit of args.dispatch) {
+    for (const target of unit.targets) {
+      if (!effectiveSemanticOwners.has(target.id)) effectiveSemanticOwners.set(target.id, unit.label);
+    }
+  }
+  const newStatementEmitters = new Map<string, Set<string>>();
+  const noteNewStatementEmitter = (id: string, unit: string): void => {
+    const emitters = newStatementEmitters.get(id) ?? new Set<string>();
+    emitters.add(unit);
+    newStatementEmitters.set(id, emitters);
+  };
+  for (let i = 0; i < args.outputs.length; i += 1) {
+    for (const statement of args.outputs[i].added_lemmas) {
+      noteNewStatementEmitter(statement.id, args.dispatch[i].label);
+    }
+    for (const resolution of args.outputs[i].resolved_oeqs) {
+      noteNewStatementEmitter(resolution.theorem.id, args.dispatch[i].label);
+    }
+  }
+  for (const [id, emitters] of newStatementEmitters) {
+    if (emitters.size === 1 && !args.existingStatementIds?.has(id)) {
+      effectiveSemanticOwners.set(id, [...emitters][0]);
+    }
+  }
+  // A cleanup proposal emitted alongside an OEQ resolution belongs to the same
+  // source-owned transaction. The answer theorem can already exist as a stale
+  // projection (and therefore have a different semantic owner), but its paired
+  // statement overlay must not be quarantined from the resolution that carries it.
+  const resolutionStatementOwners = new Map<string, string>();
+  for (let i = 0; i < args.outputs.length; i += 1) {
+    for (const resolution of args.outputs[i].resolved_oeqs) {
+      resolutionStatementOwners.set(resolution.theorem.id, args.dispatch[i].label);
+    }
+  }
+  const localTargetOwner = (id: string): string | undefined =>
+    effectiveSemanticOwners.get(id) ??
+    args.dispatch.find((unit) => unit.targets.some((target) => target.id === id))?.label;
+  const obligationOwners = (id: string): string[] =>
+    [...new Set([
+      localTargetOwner(id),
+      // A coordinator may attest an exact directed residual because it owns the
+      // round-wide transaction, but that authority does not extend to unrelated
+      // nodes merely because the round happens to have a directive.
+      required(id) ? args.directiveOwnerLabel ?? undefined : undefined,
+    ].filter((owner): owner is string => owner !== undefined))].sort();
+  const obligationAllowed = (unit: string, id: string): boolean =>
+    obligationOwners(id).includes(unit);
   const capabilitiesFor = (output: SolveUnitOutput): EmissionCapability[] => [
     ...output.proofs.map((proof) => proofCap(proof.id)),
     ...output.resolved_oeqs.map((replacement) => resolutionCap(replacement.source_id, replacement.theorem.id)),
@@ -200,10 +251,15 @@ export function projectOutputsToWriteCapabilities(args: {
     for (const capability of capabilitiesFor(args.outputs[i])) {
       const owner = capabilityOwner({
         capability,
-        semanticTargetOwners: args.semanticTargetOwners,
+        semanticTargetOwners: effectiveSemanticOwners,
         directiveOwnerLabel: args.directiveOwnerLabel,
       });
       if (owner === unit.label) authorizedEmissions.add(capability.target);
+    }
+    for (const obligation of args.outputs[i].open_obligations) {
+      if (obligationAllowed(unit.label, obligation.node_id)) {
+        authorizedEmissions.add(obligation.node_id);
+      }
     }
   }
 
@@ -213,11 +269,26 @@ export function projectOutputsToWriteCapabilities(args: {
     const allowed = (capability: EmissionCapability): boolean => {
       const owner = capabilityOwner({
         capability,
-        semanticTargetOwners: args.semanticTargetOwners,
+        semanticTargetOwners: effectiveSemanticOwners,
         directiveOwnerLabel: args.directiveOwnerLabel,
       });
-      if (owner === null || owner === unit.label) return true;
-      quarantined.push({ unit: unit.label, owner, category: capability.category, target: capability.target });
+      if (owner === unit.label) return true;
+      // An ownerless added node is genuinely new and belongs to its emitter. A
+      // standalone proof is different: if its id was not dispatched and is not an
+      // exact directed target, accepting it would let any unit overwrite unrelated
+      // carried mathematics.
+      if (owner === null &&
+          capability.category !== "proof" &&
+          !(
+            (capability.category === "added-node" || capability.category === "cited-added-node") &&
+            args.existingStatementIds?.has(capability.target)
+          )) return true;
+      quarantined.push({
+        unit: unit.label,
+        owner: owner ?? "(no dispatched semantic owner)",
+        category: capability.category,
+        target: capability.target,
+      });
       return false;
     };
     return {
@@ -230,7 +301,7 @@ export function projectOutputsToWriteCapabilities(args: {
         allowed(addedNodeCap(statement))
       ),
       proposed_statement_changes: output.proposed_statement_changes.filter((change) =>
-        allowed(statementChangeCap(change.id))
+        allowed(statementChangeCap(change.id)) || resolutionStatementOwners.get(change.id) === unit.label
       ),
       proposed_definition_changes: output.proposed_definition_changes.filter((change) =>
         allowed(definitionChangeCap(change.id))
@@ -241,9 +312,16 @@ export function projectOutputsToWriteCapabilities(args: {
       proposed_core_edits: output.proposed_core_edits.filter((edit) =>
         allowed(coreEditCap(edit))
       ),
-      open_obligations: output.open_obligations.filter((obligation) =>
-        allowed(obligationCap(obligation.node_id))
-      ),
+      open_obligations: output.open_obligations.filter((obligation) => {
+        if (obligationAllowed(unit.label, obligation.node_id)) return true;
+        quarantined.push({
+          unit: unit.label,
+          owner: obligationOwners(obligation.node_id).join(" or ") || "(no eligible owner)",
+          category: "open-obligation",
+          target: obligation.node_id,
+        });
+        return false;
+      }),
       prose_updates: output.prose_updates && allowed(proseCap()) ? output.prose_updates : undefined,
     };
   });
@@ -374,6 +452,9 @@ export function collectConflictingSolveEmissions(
     for (const edit of output.proposed_core_edits) {
       record("core-edit", coreEditTarget(edit), unit, coreEditConflictPayload(edit));
     }
+    for (const obligation of output.open_obligations) {
+      record("open-obligation", obligation.node_id, unit, obligation);
+    }
   }
   return [...conflicted.values()];
 }
@@ -400,6 +481,7 @@ export function dropConflictingSolveEmissions(
     proposed_definition_changes: output.proposed_definition_changes.filter((c) => keep("definition-change", c.id)),
     proposed_assumptions: output.proposed_assumptions.filter((a) => keep("assumption", a.id)),
     proposed_core_edits: output.proposed_core_edits.filter((e) => keep("core-edit", coreEditTarget(e))),
+    open_obligations: output.open_obligations.filter((o) => keep("open-obligation", o.node_id)),
   }));
 }
 

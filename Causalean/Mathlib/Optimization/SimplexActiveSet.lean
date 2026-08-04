@@ -53,9 +53,10 @@ lemma weighted_simplex_active_set (M : ℝ) (hM : 0 < M)
   · -- κ > 0: unique admissible pair, active-set point is the strict minimizer, value M·λ.
     obtain ⟨S, lam, hadm⟩ := exists_admissible α β kappa hβ hk
     refine ⟨(S, lam), ⟨hadm,
-      activeSetPoint_mem M α β kappa S lam hM hβ hadm,
+      activeSetPoint_mem M α β S lam hM.le (fun i _ => hβ i) hadm.1 hadm.2.2.1,
       activeSetPoint_strict_min M α β kappa S lam hM hβ hk hadm,
-      activeSetPoint_value M α β kappa S lam hM hβ hk hadm⟩, ?_⟩
+      activeSetPoint_value M α β kappa S lam hM.le (fun i _ => hβ i) hk
+        hadm.1 hadm.2.2.1 hadm.2.1⟩, ?_⟩
     rintro ⟨S', lam'⟩ ⟨hadm', hmem', hmin', hval'⟩
     -- The two active-set points coincide (each is the strict minimizer of the SOCP).
     set t := activeSetPoint M α β S lam with ht
@@ -66,25 +67,31 @@ lemma weighted_simplex_active_set (M : ℝ) (hM : 0 < M)
     have htt' : t = t' := by
       by_contra hne
       have h1 : wsObj α β kappa t < wsObj α β kappa t' :=
-        hmin t' (activeSetPoint_mem M α β kappa S' lam' hM hβ hadm') (fun h => hne h.symm)
+        hmin t' (activeSetPoint_mem M α β S' lam' hM.le (fun i _ => hβ i)
+          hadm'.1 hadm'.2.2.1) (fun h => hne h.symm)
       have h2 : wsObj α β kappa t' < wsObj α β kappa t :=
-        hmin' t (activeSetPoint_mem M α β kappa S lam hM hβ hadm) (fun h => hne h)
+        hmin' t (activeSetPoint_mem M α β S lam hM.le (fun i _ => hβ i)
+          hadm.1 hadm.2.2.1) (fun h => hne h)
       exact lt_irrefl _ (h1.trans h2)
     -- Supports agree: `i ∈ S ↔ 0 < tᵢ = t'ᵢ ↔ i ∈ S'`.
     have hSS' : S = S' := by
       ext i
-      rw [← activeSetPoint_pos_iff M α β kappa S lam hM hβ hadm i,
-          ← activeSetPoint_pos_iff M α β kappa S' lam' hM hβ hadm' i, ← ht, ← ht', htt']
+      rw [← activeSetPoint_pos_iff M α β S lam hM (fun i _ => hβ i)
+            hadm.1 hadm.2.2.1 i,
+          ← activeSetPoint_pos_iff M α β S' lam' hM (fun i _ => hβ i)
+            hadm'.1 hadm'.2.2.1 i, ← ht, ← ht', htt']
     -- Multipliers agree via the value formula `M·λ = wsObj t = wsObj t' = M·λ'`.
     have hlam : lam = lam' := by
       have hv : M * lam = M * lam' := by
-        rw [← activeSetPoint_value M α β kappa S lam hM hβ hk hadm, ← ht, htt', ht',
-            activeSetPoint_value M α β kappa S' lam' hM hβ hk hadm']
+        rw [← activeSetPoint_value M α β kappa S lam hM.le (fun i _ => hβ i) hk
+              hadm.1 hadm.2.2.1 hadm.2.1, ← ht, htt', ht',
+            activeSetPoint_value M α β kappa S' lam' hM.le (fun i _ => hβ i) hk
+              hadm'.1 hadm'.2.2.1 hadm'.2.1]
       exact mul_left_cancel₀ (ne_of_gt hM) hv
     exact Prod.ext hSS'.symm hlam.symm
   · -- κ = 0: minimizer set is the exposed α-minimizing face.
     subst hk
     intro t
-    exact kappa_zero_face M hM α β t
+    simpa [wsObj] using kappa_zero_face M α t
 
 end Causalean.Mathlib.Optimization

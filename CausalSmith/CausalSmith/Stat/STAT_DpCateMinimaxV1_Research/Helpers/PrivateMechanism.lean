@@ -679,11 +679,11 @@ theorem mechOf_isArmwise {d n : ℕ} (beta r0 epsN h cstar Cstar : ℝ)
     exact empQuery_sensitivity m h x0 hn hh s s' hadj
   · exact measurable_loewnerProj (pDim d m) cstar Cstar
   · intro G
-    simpa [loewnerSet] using loewnerProj_mem hcstar hcC G
+    simpa [loewnerSet] using loewnerProj_mem hcC G
   · intro G hGlower hGupper
-    exact loewnerProj_eq_self hcstar hcC G ⟨hGlower, hGupper⟩
+    exact loewnerProj_eq_self hcC G ⟨hGlower, hGupper⟩
   · intro G S hSlower hSupper
-    exact loewnerProj_frobDist_le hcstar hcC G S ⟨hSlower, hSupper⟩
+    exact loewnerProj_frobDist_le hcC G S ⟨hSlower, hSupper⟩
   · constructor
     · intro s w
       rfl

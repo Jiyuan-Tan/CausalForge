@@ -7,8 +7,7 @@ Authors: Jiyuan Tan
 
 Stage-2 scaffold. The certified regime theorem `thm:sharp-minimax-smooth-covariate`
 (`s ≥ d/4`): the certified lower floor lands on the same exponent as the published
-benchmark `ρ_n`, with NO matching same-class upper claim. Every proof body is
-`sorry`.
+benchmark `ρ_n`, with NO matching same-class upper claim.
 -/
 
 import CausalSmith.Stat.STAT_DoseResponseMinimax_Research.T_SharpPointwiseLowerBound

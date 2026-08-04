@@ -64,7 +64,6 @@ export async function runStage0Solve(args: {
   // content; otherwise open-gap / incomplete-round / clean discharge.
   const commitRound = makeCommitRound({
     ctx, sctx,
-    protoChangedByProse: mr.protoChangedByProse,
     withheldProofBytes: mr.withheldProofBytes,
   });
   const checkpoint = await surfaceProposalCheckpoint({ ctx, sctx, mr, commitRound });

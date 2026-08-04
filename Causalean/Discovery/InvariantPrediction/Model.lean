@@ -88,13 +88,15 @@ structure EnvFamily (N : Type*) [DecidableEq N] [Fintype N]
       (valuesProjection (Ω := swigΩ Ω)
         (show (M i).dag.parents (SWIGNode.random Y) ∩ (M i).unobserved ⊆ (M i).randomVars from
           (Finset.inter_subset_right).trans
-            (by show (M i).unobserved ⊆ (M i).observed ∪ (M i).unobserved
-                exact Finset.subset_union_right)))
+            (by
+              change (M i).unobserved ⊆ (M i).observed ∪ (M i).unobserved
+              exact Finset.subset_union_right)))
       (valuesProjection (Ω := swigΩ Ω)
         (show (M i).dag.parents (SWIGNode.random Y) ∩ (M i).observed ⊆ (M i).randomVars from
           (Finset.inter_subset_right).trans
-            (by show (M i).observed ⊆ (M i).observed ∪ (M i).unobserved
-                exact Finset.subset_union_left)))
+            (by
+              change (M i).observed ⊆ (M i).observed ∪ (M i).unobserved
+              exact Finset.subset_union_left)))
       ((M i).jointKernel (s i))
 
 namespace EnvFamily

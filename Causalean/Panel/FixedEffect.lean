@@ -21,7 +21,7 @@ This mirrors Definition 2.2 of
 
 ## Main definitions
 
-* `Cells.H_twfe c : Submodule ℝ ((I × T) → ℝ)` — the two-way fixed-effect
+* `Cells.H_twfe : Submodule ℝ ((I × T) → ℝ)` — the two-way fixed-effect
   subspace, defined as `Causalean.Panel.Weighted.twoAxisAdditiveSpan I T`.
 
 ## Main lemmas
@@ -47,7 +47,6 @@ namespace Panel
 namespace Cells
 
 variable {I T : Type*}
-variable [Fintype I] [Fintype T] [DecidableEq I] [DecidableEq T]
 
 /-- The two-way fixed-effect subspace.
 
@@ -55,22 +54,24 @@ variable [Fintype I] [Fintype T] [DecidableEq I] [DecidableEq T]
 `h (i, t) = a i + b t` for all `(i, t)`.
 
 Definitionally equal to `Causalean.Panel.Weighted.twoAxisAdditiveSpan I T`. -/
-def H_twfe (_c : Cells I T) : Submodule ℝ (V I T) :=
+def H_twfe : Submodule ℝ (V I T) :=
   Causalean.Panel.Weighted.twoAxisAdditiveSpan I T
 
 /-- `H_twfe` unfolds to the generic two-axis additive span. -/
-lemma H_twfe_eq (c : Cells I T) :
-    c.H_twfe = Causalean.Panel.Weighted.twoAxisAdditiveSpan I T := rfl
+lemma H_twfe_eq :
+    H_twfe = Causalean.Panel.Weighted.twoAxisAdditiveSpan I T := rfl
 
 /-- Constants belong to `H_twfe`: delegates to `AdditiveSpan.const_mem`. -/
-lemma const_mem_H_twfe (c : Cells I T) (c₀ : ℝ) :
-    (fun _ : I × T => c₀) ∈ c.H_twfe :=
+lemma const_mem_H_twfe (c₀ : ℝ) :
+    (fun _ : I × T => c₀) ∈ H_twfe :=
   Causalean.Panel.Weighted.AdditiveSpan.const_mem (Prod.fst : I × T → I) Prod.snd c₀
+
+variable [Finite I] [Finite T] [DecidableEq I] [DecidableEq T]
 
 /-- `H_twfe` is finite-dimensional: inherits from
 `AdditiveSpan.finiteDimensional`. -/
-instance H_twfe_finiteDimensional (c : Cells I T) :
-    Module.Finite ℝ (c.H_twfe) :=
+instance H_twfe_finiteDimensional :
+    Module.Finite ℝ (H_twfe (I := I) (T := T)) :=
   Causalean.Panel.Weighted.AdditiveSpan.finiteDimensional
 
 end Cells

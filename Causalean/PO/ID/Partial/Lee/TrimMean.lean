@@ -105,7 +105,7 @@ lemma Mw_alwaysSelectedTrimWeight_eq_condExp_Y1_AS
     unfold POVar.indicator selEvent
     rw [MeasureTheory.setIntegral_indicator
       (show MeasurableSet (S.selVar.event true) from
-        S.selVar.measurableSet_event true)]
+        S.selVar.measurableSet_event true (measurableSet_singleton _))]
     simp
     rfl
   have hAfalse_ne : (P.μ (S.aEvent false)).toReal ≠ 0 := by
@@ -133,7 +133,7 @@ lemma Mw_alwaysSelectedTrimWeight_eq_condExp_Y1_AS
       unfold POVar.indicator selEvent
       rw [MeasureTheory.setIntegral_indicator
         (show MeasurableSet (S.selVar.event true) from
-          S.selVar.measurableSet_event true)]
+          S.selVar.measurableSet_event true (measurableSet_singleton _))]
       simp
       rfl
     have hsplit := S.selectedTreated_measure_split hA

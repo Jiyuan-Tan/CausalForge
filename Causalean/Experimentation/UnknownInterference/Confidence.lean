@@ -49,7 +49,7 @@ bound, and `eate_ci_kbound` instantiates it with the finite-sample variance boun
 `k^4 * dbar / n`.
 -/
 
-open scoped BigOperators Classical
+open scoped BigOperators
 open Finset
 
 namespace Causalean
@@ -66,6 +66,7 @@ equals the paper's `n⁻²[∑ᵢ ZᵢYᵢ²/pᵢ² + ∑ᵢ(1−Zᵢ)Yᵢ²/(1�
 noncomputable def VhatBer (p : U → ℝ) (y : U → (U → Bool) → ℝ) (z : U → Bool) : ℝ :=
   (∑ i, (htSummand p y i z) ^ 2) / (Fintype.card U : ℝ) ^ 2
 
+open Classical in
 /-- The interference **degree** of unit `i`: the number of units interference-dependent with `i`
 (`d̄ᵢ = ∑ⱼ 1[InterfDep i j]`). -/
 noncomputable def degDep (y : U → (U → Bool) → ℝ) (i : U) : ℝ :=
@@ -150,6 +151,7 @@ theorem var_htEst_le_inflated (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : �
     (y : U → (U → Bool) → ℝ) (D : ℝ) (hD : ∀ i, degDep y i ≤ D) :
     (bernoulliDesign p hp0 hp1).Var (htEst p y)
       ≤ (1 + D) * (bernoulliDesign p hp0 hp1).E (VhatBer p y) := by
+  classical
   set Des := bernoulliDesign p hp0 hp1 with hDes
   set n : ℝ := (Fintype.card U : ℝ) with hn
   -- Abbreviation for `E[ĤTᵢ²]`, and its key facts.
@@ -302,6 +304,7 @@ theorem chebyshev_ci_eate (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i,
 /-- `d̄ ≥ 1`: the diagonal pairs `InterfDep i i` (each holds) already contribute `n`. -/
 private lemma one_le_dbar (y : U → (U → Bool) → ℝ) (hcard : 1 ≤ Fintype.card U) :
     1 ≤ dbar y := by
+  classical
   have hn0 : (0 : ℝ) < (Fintype.card U : ℝ) := by
     exact_mod_cast lt_of_lt_of_le zero_lt_one hcard
   -- dbarCount ≥ n: each diagonal term is 1, and the inner sum dominates the diagonal term.
@@ -335,6 +338,7 @@ theorem eate_ci_kbound (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, p 
     1 - α ≤ (bernoulliDesign p hp0 hp1).Pr
       (fun z => |htEst p y z - EATE (bernoulliDesign p hp0 hp1) y|
         ≤ Real.sqrt (k ^ 4 * dbar y / ((Fintype.card U : ℝ) * α))) := by
+  classical
   set V : ℝ := k ^ 4 * dbar y / (Fintype.card U : ℝ) with hVdef
   have hn0 : (0 : ℝ) < (Fintype.card U : ℝ) := by
     exact_mod_cast lt_of_lt_of_le zero_lt_one hcard

@@ -144,8 +144,8 @@ private lemma cond_exp_residual_at_h
   have hYind_int : Integrable
       (fun ω => S.toPOBackdoorSystem.factualY ω *
         S.toPOBackdoorSystem.dVar.indicator d ω) P.μ :=
-    S.toPOBackdoorSystem.dVar.integrable_mul_indicator d hA.integrable_factualY
-      S.toPOBackdoorSystem.measurable_factualY
+    S.toPOBackdoorSystem.dVar.integrable_mul_indicator d (MeasurableSet.singleton d)
+      hA.integrable_factualY
   have hres_eq :
       (fun ω => S.toPOBackdoorSystem.dVar.indicator d ω *
           (S.toPOBackdoorSystem.factualY ω -
@@ -191,7 +191,7 @@ private lemma cond_exp_residual_at_h
     exact (hh_meas.comp
       (comap_measurable S.toPOBackdoorSystem.factualX)).stronglyMeasurable
   have hind_int : Integrable (S.toPOBackdoorSystem.dVar.indicator d) P.μ :=
-    S.toPOBackdoorSystem.dVar.integrable_indicator d
+    S.toPOBackdoorSystem.dVar.integrable_indicator d (MeasurableSet.singleton d)
   have hhce :
       P.μ[fun ω => h (S.toPOBackdoorSystem.factualX ω) *
           S.toPOBackdoorSystem.dVar.indicator d ω |
@@ -394,20 +394,20 @@ theorem phi_eta_minus_phi₀_cond_exp
         simpa [one_div, Real.norm_eq_abs, abs_of_pos hpos] using hle)
   have hYind_int : ∀ d : Bool,
       Integrable (fun ω => Y ω * S.toPOBackdoorSystem.dVar.indicator d ω) P.μ :=
-    fun d => S.toPOBackdoorSystem.dVar.integrable_mul_indicator d
-      hA.integrable_factualY S.toPOBackdoorSystem.measurable_factualY
+    fun d => S.toPOBackdoorSystem.dVar.integrable_mul_indicator d (MeasurableSet.singleton d)
+      hA.integrable_factualY
   have hημind_int : ∀ d : Bool,
       Integrable (fun ω => η.μ_fn d (X ω) *
         S.toPOBackdoorSystem.dVar.indicator d ω) P.μ := by
     intro d
-    exact S.toPOBackdoorSystem.dVar.integrable_mul_indicator d (h_μ_η_int d)
-      ((η.μ_meas d).comp S.toPOBackdoorSystem.measurable_factualX)
+    exact S.toPOBackdoorSystem.dVar.integrable_mul_indicator d (MeasurableSet.singleton d)
+      (h_μ_η_int d)
   have hμind_int : ∀ d : Bool,
       Integrable (fun ω => S.μ_val d (X ω) *
         S.toPOBackdoorSystem.dVar.indicator d ω) P.μ := by
     intro d
-    exact S.toPOBackdoorSystem.dVar.integrable_mul_indicator d (hμ_val_int d)
-      ((S.μ_meas d).comp S.toPOBackdoorSystem.measurable_factualX)
+    exact S.toPOBackdoorSystem.dVar.integrable_mul_indicator d (MeasurableSet.singleton d)
+      (hμ_val_int d)
   have hresη_int : ∀ d : Bool,
       Integrable (fun ω => S.toPOBackdoorSystem.dVar.indicator d ω *
         (Y ω - η.μ_fn d (X ω))) P.μ := by
@@ -924,14 +924,14 @@ theorem cond_exp_phi_eta_dir_deriv_at_truth_zero
         simpa [one_div, Real.norm_eq_abs, abs_of_pos hpos] using hle)
   have hYind_int : ∀ d : Bool,
       Integrable (fun ω => Y ω * S.toPOBackdoorSystem.dVar.indicator d ω) P.μ :=
-    fun d => S.toPOBackdoorSystem.dVar.integrable_mul_indicator d
-      hA.integrable_factualY S.toPOBackdoorSystem.measurable_factualY
+    fun d => S.toPOBackdoorSystem.dVar.integrable_mul_indicator d (MeasurableSet.singleton d)
+      hA.integrable_factualY
   have hμind_int : ∀ d : Bool,
       Integrable (fun ω => S.μ_val d (X ω) *
         S.toPOBackdoorSystem.dVar.indicator d ω) P.μ := by
     intro d
-    exact S.toPOBackdoorSystem.dVar.integrable_mul_indicator d (hμ_val_int d)
-      ((S.μ_meas d).comp S.toPOBackdoorSystem.measurable_factualX)
+    exact S.toPOBackdoorSystem.dVar.integrable_mul_indicator d (MeasurableSet.singleton d)
+      (hμ_val_int d)
   have hresμ_int : ∀ d : Bool,
       Integrable (fun ω => S.toPOBackdoorSystem.dVar.indicator d ω *
         (Y ω - S.μ_val d (X ω))) P.μ := by
@@ -989,7 +989,7 @@ theorem cond_exp_phi_eta_dir_deriv_at_truth_zero
     have hL1 : MemLp T3 1 P.μ := by
       have hmul := MemLp.mul' (p := 1) (q := ⊤) (r := 1)
         hgMT_top (memLp_one_iff_integrable.2
-          (S.toPOBackdoorSystem.dVar.integrable_indicator true))
+          (S.toPOBackdoorSystem.dVar.integrable_indicator true (MeasurableSet.singleton true)))
       exact hmul.ae_eq (Filter.Eventually.of_forall (fun ω => by
         simp [T3, X, indT]
         ring))
@@ -998,7 +998,7 @@ theorem cond_exp_phi_eta_dir_deriv_at_truth_zero
     have hL1 : MemLp T5 1 P.μ := by
       have hmul := MemLp.mul' (p := 1) (q := ⊤) (r := 1)
         hgMF_top (memLp_one_iff_integrable.2
-          (S.toPOBackdoorSystem.dVar.integrable_indicator false))
+          (S.toPOBackdoorSystem.dVar.integrable_indicator false (MeasurableSet.singleton false)))
       exact hmul.ae_eq (Filter.Eventually.of_forall (fun ω => by
         simp [T5, X, indF]
         ring))
@@ -1047,7 +1047,7 @@ theorem cond_exp_phi_eta_dir_deriv_at_truth_zero
         (comap_measurable S.toPOBackdoorSystem.factualX)).stronglyMeasurable
     have hpull := MeasureTheory.condExp_mul_of_stronglyMeasurable_left
       (μ := P.μ) (m := S.toPOBackdoorSystem.sigmaX) hg_sm hprod_int
-      (S.toPOBackdoorSystem.dVar.integrable_indicator d)
+      (S.toPOBackdoorSystem.dVar.integrable_indicator d (MeasurableSet.singleton d))
     simpa [POBackdoorSystem.propScore] using hpull
   have hT2_ce : P.μ[T2 | S.toPOBackdoorSystem.sigmaX]
       =ᵐ[P.μ] (fun _ => (0 : ℝ)) := by

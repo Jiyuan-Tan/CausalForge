@@ -1354,4 +1354,19 @@ lemma overlap_envelope (α γ h β : ℝ)
       rw [hpow β']
       exact halg β'
 
+/-! ## Shared integrability utility
+
+A measurable, uniformly bounded real function is integrable against any finite measure.
+This is the single copy used by the whole run (previously duplicated in `Helpers/ClipBias`
+and `T_minimax_lower`); it is a candidate for promotion to Causalean. -/
+
+lemma integrable_of_measurable_bounded {α : Type*} [MeasurableSpace α]
+    {μ : Measure α} [IsFiniteMeasure μ] {f : α → ℝ}
+    (hfmeas : Measurable f) (hfbdd : ∃ M : ℝ, ∀ x, |f x| ≤ M) :
+    Integrable f μ := by
+  rcases hfbdd with ⟨M, hM⟩
+  refine MeasureTheory.Integrable.of_bound hfmeas.aestronglyMeasurable (max M 0) ?_
+  exact Filter.Eventually.of_forall (fun x => by
+    simpa [Real.norm_eq_abs] using le_trans (hM x) (le_max_left M 0))
+
 end CausalSmith.Stat.PolicyRegretMarginOverlap

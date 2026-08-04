@@ -34,7 +34,7 @@ only on the treatments of the units that interfere with it — the bridge that t
 disjoint-block independence lemma then turns into a vanishing covariance.
 -/
 
-open scoped BigOperators Classical
+open scoped BigOperators
 open Finset
 
 namespace Causalean
@@ -58,6 +58,7 @@ interferes with both — i.e. they may be affected by a common treatment. The pa
 def InterfDep (y : U → (U → Bool) → ℝ) (i j : U) : Prop :=
   ∃ ℓ : U, Interferes y ℓ i ∧ Interferes y ℓ j
 
+open Classical in
 /-- The (unnormalized) count `∑ᵢ ∑ⱼ 1[InterfDep i j]` of interference-dependent ordered pairs. -/
 noncomputable def dbarCount (y : U → (U → Bool) → ℝ) : ℝ :=
   ∑ i : U, ∑ j : U, if InterfDep y i j then (1 : ℝ) else 0
@@ -103,6 +104,10 @@ noncomputable def htEst (p : U → ℝ) (y : U → (U → Bool) → ℝ) (z : U 
 
 /-! ### Outcome depends only on interferers -/
 
+section
+
+omit [Fintype U]
+
 /-- Flipping the treatment of a unit `ℓ` that does **not** interfere with `i` (and `ℓ ≠ i`) never
 changes `i`'s outcome: the negation of `Interferes` unfolds to this pointwise invariance. -/
 lemma y_update_eq_of_not_interferes {y : U → (U → Bool) → ℝ} {ℓ i : U}
@@ -110,6 +115,14 @@ lemma y_update_eq_of_not_interferes {y : U → (U → Bool) → ℝ} {ℓ i : U}
     y i z = y i (Function.update z ℓ (! z ℓ)) := by
   by_contra hne
   exact h (Or.inr ⟨z, hne⟩)
+
+end
+
+section
+
+omit [Fintype U]
+
+variable [Finite U]
 
 /-- **A unit's outcome depends only on the units that interfere with it.** If two assignments `z`
 and `z'` agree on every unit that interferes with `i`, then `y i z = y i z'`.  This is the bridge
@@ -119,6 +132,8 @@ disjoint coordinate blocks. -/
 theorem y_eq_of_agree_on_interferers (y : U → (U → Bool) → ℝ) (i : U) (z z' : U → Bool)
     (h : ∀ ℓ : U, Interferes y ℓ i → z ℓ = z' ℓ) :
     y i z = y i z' := by
+  classical
+  letI := Fintype.ofFinite U
   -- Auxiliary: changing `z` to `z'` over a finset `S` of differing, non-interfering coordinates.
   -- We induct on the finset of coordinates where `z` and `z'` differ; `z` is generalized so the
   -- induction hypothesis applies to the updated assignment `w`.
@@ -179,6 +194,8 @@ theorem y_eq_of_agree_on_interferers (y : U → (U → Bool) → ℝ) (i : U) (z
       exact hnint ℓ (Finset.mem_insert_of_mem hℓS) hℓ
     rw [step1]
     exact ih w hsub' hnint'
+
+end
 
 end UnknownInterference
 end Experimentation

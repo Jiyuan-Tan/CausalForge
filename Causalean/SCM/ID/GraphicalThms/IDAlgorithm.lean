@@ -47,10 +47,12 @@ set_option linter.unusedFintypeInType false
 
 Both fixed-node sets are empty, so each fixed-value product is a one-point space. -/
 theorem standardFixedValues_heq (M₁ M₂ : Causalean.SCM N Ω)
-    (hsg : M₁.toSWIGGraph = M₂.toSWIGGraph)
-    (h₁ : M₁.isStandard) (h₂ : M₂.isStandard) :
-    HEq (standardFixedValues M₁ h₁) (standardFixedValues M₂ h₂) := by
-  have hf : M₁.fixed = M₂.fixed := congrArg SWIGGraph.fixed hsg
+    (hf : M₁.fixed = M₂.fixed) (h₁ : M₁.isStandard) :
+    HEq (standardFixedValues M₁ h₁)
+      (standardFixedValues M₂ (by
+        change M₂.fixed = ∅
+        rw [← hf]
+        exact h₁)) := by
   have h₁' : M₁.fixed = (∅ : Finset (SWIGNode N)) := h₁
   haveI hempty : IsEmpty {v // v ∈ M₁.fixed} :=
     ⟨fun i => absurd (h₁' ▸ i.property) (Finset.notMem_empty i.val)⟩
@@ -74,7 +76,7 @@ theorem doObsKernelYMarginal_eq_ancestralMarginal_map
   rw [← ProbabilityTheory.Kernel.map_comp_right _ (measurable_valuesProjection _)
       (measurable_valuesProjection _),
     valuesProjection_comp (subset_fixObservedAncestralSet M X hObs hFix Y hY)
-      Finset.inter_subset_right ((SCM.fixSet_observed M X hObs hFix).symm ▸ hY)]
+      Finset.inter_subset_right]
 
 /-- If two models with the same SWIG graph have equal observed-ancestral do-law marginals, then their outcome marginals agree.
 
@@ -129,7 +131,7 @@ every product singleton.  A `jointRef`-null set is therefore empty, so every
 measure on the observed-ancestral product space is absolutely continuous with
 respect to `jointRef`. -/
 theorem doObsKernelAncestralMarginal_dominated
-    [∀ n, Fintype (Ω n)] [∀ n, MeasurableSingletonClass (Ω n)]
+    [∀ n, MeasurableSingletonClass (Ω n)]
     (M : Causalean.SCM N Ω) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ M.observed)
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ M.fixed)
@@ -183,13 +185,15 @@ theorem doObsKernelAncestralMarginal_heq_of_obsDensity_heq
     (_hsg₁ : M₁.toSWIGGraph = G) (_hsg₂ : M₂.toSWIGGraph = G)
     (_hdom₁ : DominatedObs M₁ ref) (_hdom₂ : DominatedObs M₂ ref)
     (hpos₁ : DiscreteID.DiscretePositive M₁) (hpos₂ : DiscreteID.DiscretePositive M₂)
-    (hYX : ∀ D ∈ X, SWIGNode.random D ∉ Y)
     (_hden : HEq (M₁.obsDensity ref) (M₂.obsDensity ref))
     (hvalid₁ : interventionalQueryValid X Y M₁)
     (hvalid₂ : interventionalQueryValid X Y M₂) :
     HEq (doObsKernelAncestralMarginal M₁ X hvalid₁.1 hvalid₁.2.1 Y)
         (doObsKernelAncestralMarginal M₂ X hvalid₂.1 hvalid₂.2.1 Y) := by
   classical
+  have hYX : ∀ D ∈ X, SWIGNode.random D ∉ Y := by
+    rcases _hID with ⟨_, hIDrest⟩
+    exact hIDrest.2.1
   have hobs : HEq M₁.obsKernel M₂.obsKernel :=
     obsKernel_heq_of_obsDensity_heq M₁ M₂ ref (_hsg₁.trans _hsg₂.symm)
       _hdom₁ _hdom₂ _hden
@@ -244,7 +248,7 @@ theorem doObsKernelAncestralMarginal_heq_of_obsDensity_heq
   -- to show the two Radon–Nikodym derivatives agree a.e.  Applying the lemma as a
   -- term (not by `rw`) lets unification absorb the definitional `D₁ = D₂` gap that
   -- previously made the rewrite route brittle.
-  refine MeasureTheory.Measure.eq_of_rnDeriv_eq (hfin1 s) (hfin2 s)
+  refine MeasureTheory.Measure.eq_of_rnDeriv_eq
     (doObsKernelAncestralMarginal_dominated _ X hvalid₁.1 hvalid₁.2.1 Y ref href s)
     (doObsKernelAncestralMarginal_dominated _ X hvalid₂.1 hvalid₂.2.1 Y ref href s) ?_
   -- Remaining density (rnDeriv) transport.  By the Tian wrapper each side's density
@@ -441,7 +445,6 @@ theorem doObsKernelYMarginal_heq_of_obsDensity_heq
     (_hsg₁ : M₁.toSWIGGraph = G) (_hsg₂ : M₂.toSWIGGraph = G)
     (_hdom₁ : DominatedObs M₁ ref) (_hdom₂ : DominatedObs M₂ ref)
     (hpos₁ : DiscreteID.DiscretePositive M₁) (hpos₂ : DiscreteID.DiscretePositive M₂)
-    (hYX : ∀ D ∈ X, SWIGNode.random D ∉ Y)
     (_hden : HEq (M₁.obsDensity ref) (M₂.obsDensity ref))
     (hvalid₁ : interventionalQueryValid X Y M₁)
     (hvalid₂ : interventionalQueryValid X Y M₂) :
@@ -453,7 +456,7 @@ theorem doObsKernelYMarginal_heq_of_obsDensity_heq
   exact doObsKernelYMarginal_heq_of_ancestralMarginal_heq X Y M₁ M₂ hsg
     hvalid₁.1 hvalid₁.2.1 hvalid₂.1 hvalid₂.2.1 hvalid₁.2.2.1 hvalid₂.2.2.1
     (doObsKernelAncestralMarginal_heq_of_obsDensity_heq X Y G ref href _hID M₁ M₂
-      _hsg₁ _hsg₂ _hdom₁ _hdom₂ hpos₁ hpos₂ hYX _hden hvalid₁ hvalid₂)
+      _hsg₁ _hsg₂ _hdom₁ _hdom₂ hpos₁ hpos₂ _hden hvalid₁ hvalid₂)
 
 /-- Two dominated models with the same SWIG graph and observational law have the same
 post-intervention outcome marginal under a successful ID certificate.
@@ -471,7 +474,6 @@ theorem doObsKernelYMarginal_heq_of_obsKernel_heq
     (hsg₁ : M₁.toSWIGGraph = G) (hsg₂ : M₂.toSWIGGraph = G)
     (hdom₁ : DominatedObs M₁ ref) (hdom₂ : DominatedObs M₂ ref)
     (hpos₁ : DiscreteID.DiscretePositive M₁) (hpos₂ : DiscreteID.DiscretePositive M₂)
-    (hYX : ∀ D ∈ X, SWIGNode.random D ∉ Y)
     (hobs : HEq M₁.obsKernel M₂.obsKernel)
     (hvalid₁ : interventionalQueryValid X Y M₁)
     (hvalid₂ : interventionalQueryValid X Y M₂) :
@@ -481,7 +483,7 @@ theorem doObsKernelYMarginal_heq_of_obsKernel_heq
   -- density: equal `obsKernel` gives equal `obsDensity` (`obsDensity_heq_of_obsKernel_heq`),
   -- and the g-formula core consumes that density.
   doObsKernelYMarginal_heq_of_obsDensity_heq X Y G ref href hID M₁ M₂ hsg₁ hsg₂ hdom₁ hdom₂
-    hpos₁ hpos₂ hYX
+    hpos₁ hpos₂
     (obsDensity_heq_of_obsKernel_heq M₁ M₂ ref (hsg₁.trans hsg₂.symm) hobs)
     hvalid₁ hvalid₂
 
@@ -501,7 +503,7 @@ equal `obsDensity`, hence equal do-query density, hence equal `doKernelY`.
 
 The finite-state and positivity hypotheses supply the atom-level density and
 ratio identities used by the finite density route.  The separate
-`interventionalQueryValid_iff_of_obsKernel_heq` lemma handles branch alignment. -/
+`interventionalQueryValid_iff_of_toSWIGGraph_eq` lemma handles branch alignment. -/
 theorem doKernelY_eq_cfactor_decomposition
     [∀ n, StandardBorelSpace (Ω n)] [∀ n, Nonempty (Ω n)]
     [∀ n, Fintype (Ω n)] [∀ n, MeasurableSingletonClass (Ω n)]
@@ -513,7 +515,6 @@ theorem doKernelY_eq_cfactor_decomposition
     (_hsg₁ : M₁.toSWIGGraph = G) (_hsg₂ : M₂.toSWIGGraph = G)
     (_hdom₁ : DominatedObs M₁ ref) (_hdom₂ : DominatedObs M₂ ref)
     (hpos₁ : DiscreteID.DiscretePositive M₁) (hpos₂ : DiscreteID.DiscretePositive M₂)
-    (hYX : ∀ D ∈ X, SWIGNode.random D ∉ Y)
     (_hobs : HEq M₁.obsKernel M₂.obsKernel)
     (hvalid₁ : interventionalQueryValid X Y M₁)
     (hvalid₂ : interventionalQueryValid X Y M₂) :
@@ -526,9 +527,9 @@ theorem doKernelY_eq_cfactor_decomposition
   exact doKernelY_eq_of_doObsKernel_heq X Y M₁ M₂ hsg
     hvalid₁.1 hvalid₁.2.1 hvalid₂.1 hvalid₂.2.1 hvalid₁.2.2.1 hvalid₂.2.2.1
     (standardFixedValues M₁ hvalid₁.2.2.2) (standardFixedValues M₂ hvalid₂.2.2.2)
-    (standardFixedValues_heq M₁ M₂ hsg hvalid₁.2.2.2 hvalid₂.2.2.2)
+    (standardFixedValues_heq M₁ M₂ (congrArg SWIGGraph.fixed hsg) hvalid₁.2.2.2)
     (doObsKernelYMarginal_heq_of_obsKernel_heq X Y G ref href _hID M₁ M₂ _hsg₁ _hsg₂
-      _hdom₁ _hdom₂ hpos₁ hpos₂ hYX _hobs hvalid₁ hvalid₂)
+      _hdom₁ _hdom₂ hpos₁ hpos₂ _hobs hvalid₁ hvalid₂)
 
 /-- A successful structural ID certificate makes the interventional outcome
 kernel identifiable from the observational law within the dominated positive
@@ -538,7 +539,7 @@ Dominance and discrete positivity are carried as the structural assumption `As`
 of `IdentifiableUnder`; domination makes the density-assisted Tian assembly
 available, while positivity supplies the nonzero point masses needed by the
 ratio identities.  Proof: branch alignment
-(`interventionalQueryValid_iff_of_obsKernel_heq`) reduces to the valid branch,
+(`interventionalQueryValid_iff_of_toSWIGGraph_eq`) reduces to the valid branch,
 where `doKernelY_eq_cfactor_decomposition` performs the density-level c-factor
 decomposition; the invalid branch returns the fixed fallback kernel for both.
 
@@ -561,14 +562,14 @@ theorem id_sound [∀ n, StandardBorelSpace (Ω n)] [∀ n, Nonempty (Ω n)]
     exact hIDrest.2.1
   have hvalid_iff :
       interventionalQueryValid X Y M₁ ↔ interventionalQueryValid X Y M₂ :=
-    interventionalQueryValid_iff_of_obsKernel_heq
-      (Ω := Ω) X Y G M₁ M₂ hsg₁ hsg₂ hobs
+    interventionalQueryValid_iff_of_toSWIGGraph_eq
+      (Ω := Ω) X Y M₁ M₂ (hsg₁.trans hsg₂.symm)
   by_cases hvalid₁ : interventionalQueryValid X Y M₁
   · have hvalid₂ : interventionalQueryValid X Y M₂ := hvalid_iff.mp hvalid₁
     rw [interventionalQuery_eq_doKernelY_of_valid (Ω := Ω) X Y M₁ hvalid₁,
       interventionalQuery_eq_doKernelY_of_valid (Ω := Ω) X Y M₂ hvalid₂]
     exact doKernelY_eq_cfactor_decomposition
-      (Ω := Ω) X Y G ref href hID M₁ M₂ hsg₁ hsg₂ hM₁.1 hM₂.1 hM₁.2 hM₂.2 hYX
+      (Ω := Ω) X Y G ref href hID M₁ M₂ hsg₁ hsg₂ hM₁.1 hM₂.1 hM₁.2 hM₂.2
       hobs hvalid₁ hvalid₂
   · have hvalid₂ : ¬ interventionalQueryValid X Y M₂ := by
       intro h

@@ -145,7 +145,7 @@ theorem margin_erm_surrogate_excess_rate {d n : ℕ} {Ω : Type*} [MeasurableSpa
           (fun k => ⟨featM (S k), hmem (S k)⟩) (fun w => w)
         simpa [Function.comp_def, mul_assoc] using h
       have hcontr := empiricalRademacherComplexity_contraction_abs_of_bddAbove
-        (ι := KWeight d W) (fun s => φ s - φ 0) (L := L) hL hφtilde p
+        (ι := KWeight d W) (fun s => φ s - φ 0) (L := L) hφtilde p
         (M := Yb * Xb * W) hYbXbW hpbound n S
       have hfeq : empiricalRademacherComplexity n f S
           = empiricalRademacherComplexity n

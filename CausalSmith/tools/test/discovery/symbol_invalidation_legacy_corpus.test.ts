@@ -1,22 +1,26 @@
-// Legacy-core soundness of SCOPED symbol invalidation, checked against every real run.
+// Legacy-node soundness of SCOPED symbol invalidation, checked against every real run.
 //
 // Scoping symbol invalidation by a node's declared `free_symbols` is only safe if a
 // node that never declared the field is read as "may use ANY symbol". That is a claim
-// about REAL artifacts, not about a fixture: zero of the 1077 statements and zero of the
-// 1269 definitions in the 112 real cores under doc/research/{active,_bank} carry
-// `free_symbols`, so if the field defaulted to `[]` on parse — or if the scope treated
-// absence as emptiness — every one of those runs would carry every proof through a
-// symbol re-definition and publish proofs of materially different claims as current.
+// about REAL artifacts, not about a fixture: the corpus now mixes newer declarations
+// with legacy nodes that predate the field. If absence defaulted to `[]` on parse — or
+// if the scope treated absence as emptiness — those legacy proofs could be carried
+// through a symbol re-definition and published against materially different claims.
 //
 // This test replays that exact scenario on the real (proto_core.json, d0_working.json)
 // pairs: stamp the cursor with the basis of its own proto, perturb ONE real symbol's
-// `space`, and require every previously-carried proof to reopen.
+// `space`, and require every previously-carried proof with an undeclared scope to reopen.
 
 import { describe, it, expect } from "vitest";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { computeValidNodes, symbolBasis, type WorkingState } from "../../src/discovery/stages/d0_working.js";
+import {
+  computeValidNodes,
+  declaredSymbolScope,
+  symbolBasis,
+  type WorkingState,
+} from "../../src/discovery/stages/d0_working.js";
 import { CoreSchema, DefinitionSchema, StatementSchema, type Core } from "../../src/discovery/core/schema.js";
 import { normalizeRawModelJson } from "../../src/discovery/core/latex_serialization.js";
 
@@ -116,7 +120,7 @@ describe("free_symbols must survive parsing as ABSENT, not as empty", () => {
   });
 });
 
-describe("scoped symbol invalidation stays sound on every real legacy run", () => {
+describe("scoped symbol invalidation stays sound across the mixed real-run corpus", () => {
   const runs = realRuns();
 
   it("finds a non-trivial corpus (walker-rot canary)", () => {
@@ -125,19 +129,20 @@ describe("scoped symbol invalidation stays sound on every real legacy run", () =
     expect(runs.length).toBeGreaterThanOrEqual(20);
   });
 
-  it("no real statement or definition declares free_symbols — the case the fail-safe exists for", () => {
+  it("contains both legacy and declared nodes (corpus-path canary)", () => {
     const declaring: string[] = [];
+    const legacy: string[] = [];
     for (const { label, proto } of runs) {
-      for (const s of proto.statements) if (s.free_symbols !== undefined) declaring.push(`${label}/${s.id}`);
-      for (const d of proto.definitions ?? []) if (d.free_symbols !== undefined) declaring.push(`${label}/${d.id}`);
+      for (const node of [...proto.statements, ...(proto.definitions ?? [])]) {
+        (node.free_symbols === undefined ? legacy : declaring).push(`${label}/${node.id}`);
+      }
     }
-    // If this ever fails, the corpus has moved on and the assertions below stop testing
-    // the legacy path — they would be testing the scoped path instead.
-    expect(declaring).toEqual([]);
+    expect(legacy.length).toBeGreaterThan(0);
+    expect(declaring.length).toBeGreaterThan(0);
   });
 
-  it("a semantic symbol change reopens EVERY carried proof in every run", () => {
-    const carriedTotal: number[] = [];
+  it("a semantic symbol change reopens every carried proof with an undeclared scope", () => {
+    let legacyCarriedTotal = 0;
     const leaks: string[] = [];
     for (const { label, proto, cursor } of runs) {
       // The cursors predate `symbol_basis`; stamp the run's own proto as the basis these
@@ -145,15 +150,21 @@ describe("scoped symbol invalidation stays sound on every real legacy run", () =
       const prev = { ...cursor, symbol_basis: symbolBasis(proto) } as WorkingState;
       const before = computeValidNodes(prev, proto);
       if (before.size === 0) continue; // nothing carried — no reuse decision to make
-      carriedTotal.push(before.size);
       const moved = JSON.parse(JSON.stringify(proto)) as Core;
       moved.symbols[0] = { ...moved.symbols[0], space: `${moved.symbols[0].space ?? ""} [narrowed]` };
       const after = computeValidNodes(prev, moved);
-      if (after.size > 0) leaks.push(`${label}: ${after.size}/${before.size} proofs carried through a symbol change`);
+      for (const member of proto.statements) {
+        if (!before.has(member.id)) continue;
+        const record = prev.solved[member.id];
+        if (!record || declaredSymbolScope(proto, member, record.snapshot) !== null) continue;
+        legacyCarriedTotal += 1;
+        if (after.has(member.id)) leaks.push(`${label}/${member.id}`);
+      }
     }
     expect(leaks).toEqual([]);
-    // Canary: if the corpus stopped carrying proofs the assertion above is vacuous.
-    expect(carriedTotal.reduce((a, b) => a + b, 0)).toBeGreaterThan(100);
+    // Canary: if migration eventually removes the legacy path, replace this corpus test
+    // with a fixed compatibility fixture instead of letting the assertion go vacuous.
+    expect(legacyCarriedTotal).toBeGreaterThan(0);
   });
 
   it("carries those same proofs when the symbol table is untouched (no mass re-derivation)", () => {

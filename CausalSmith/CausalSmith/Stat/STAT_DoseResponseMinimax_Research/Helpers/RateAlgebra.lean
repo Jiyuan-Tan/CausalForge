@@ -7,7 +7,7 @@ Authors: Jiyuan Tan
 
 Stage-2 scaffold. The pure real-power identities collapsing the published
 benchmark `ρ_n` in the smooth-covariate (`s ≥ d/4`) and deficient (`0 < s < d/4`)
-regimes. Every proof body is `sorry`.
+regimes.
 -/
 
 import CausalSmith.Stat.STAT_DoseResponseMinimax_Research.Basic

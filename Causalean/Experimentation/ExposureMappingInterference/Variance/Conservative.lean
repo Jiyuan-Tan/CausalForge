@@ -127,10 +127,10 @@ theorem E_htVarEst (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : Ω → Θ 
       · -- force both outcomes via expoInd₂_mul_Yobs and its symmetric use
         have h1 : expoInd f θ i d z * expoInd f θ j d z * Yobs y f θ i z
             = expoInd f θ i d z * expoInd f θ j d z * y i d :=
-          expoInd₂_mul_Yobs y f θ i j d d z
+          expoInd₂_mul_Yobs y f θ i d (expoInd f θ j d) z
         have h2 : expoInd f θ j d z * expoInd f θ i d z * Yobs y f θ j z
             = expoInd f θ j d z * expoInd f θ i d z * y j d :=
-          expoInd₂_mul_Yobs y f θ j i d d z
+          expoInd₂_mul_Yobs y f θ j d (expoInd f θ i d) z
         calc expoInd f θ i d z * expoInd f θ j d z * Yobs y f θ i z * Yobs y f θ j z
             = (expoInd f θ i d z * expoInd f θ j d z * Yobs y f θ i z) * Yobs y f θ j z := by ring
           _ = (expoInd f θ i d z * expoInd f θ j d z * y i d) * Yobs y f θ j z := by rw [h1]
@@ -186,10 +186,10 @@ theorem E_htCovEst_le (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : Ω → 
         · rw [D.E_const_mul]; rfl
         · have h1 : expoInd f θ i dk z * expoInd f θ j dl z * Yobs y f θ i z
               = expoInd f θ i dk z * expoInd f θ j dl z * y i dk :=
-            expoInd₂_mul_Yobs y f θ i j dk dl z
+            expoInd₂_mul_Yobs y f θ i dk (expoInd f θ j dl) z
           have h2 : expoInd f θ j dl z * expoInd f θ i dk z * Yobs y f θ j z
               = expoInd f θ j dl z * expoInd f θ i dk z * y j dl :=
-            expoInd₂_mul_Yobs y f θ j i dl dk z
+            expoInd₂_mul_Yobs y f θ j dl (expoInd f θ i dk) z
           calc expoInd f θ i dk z * expoInd f θ j dl z * Yobs y f θ i z * Yobs y f θ j z
               = (expoInd f θ i dk z * expoInd f θ j dl z * Yobs y f θ i z) * Yobs y f θ j z := by
                   ring
@@ -340,10 +340,10 @@ theorem E_htVarEst_eq_addBias (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f :
       · rw [D.E_const_mul]; rfl
       · have h1 : expoInd f θ i d z * expoInd f θ j d z * Yobs y f θ i z
             = expoInd f θ i d z * expoInd f θ j d z * y i d :=
-          expoInd₂_mul_Yobs y f θ i j d d z
+          expoInd₂_mul_Yobs y f θ i d (expoInd f θ j d) z
         have h2 : expoInd f θ j d z * expoInd f θ i d z * Yobs y f θ j z
             = expoInd f θ j d z * expoInd f θ i d z * y j d :=
-          expoInd₂_mul_Yobs y f θ j i d d z
+          expoInd₂_mul_Yobs y f θ j d (expoInd f θ i d) z
         calc expoInd f θ i d z * expoInd f θ j d z * Yobs y f θ i z * Yobs y f θ j z
             = (expoInd f θ i d z * expoInd f θ j d z * Yobs y f θ i z) * Yobs y f θ j z := by ring
           _ = (expoInd f θ i d z * expoInd f θ j d z * y i d) * Yobs y f θ j z := by rw [h1]
@@ -481,10 +481,10 @@ theorem E_htCovEst_eq_of_noEffect (D : FiniteDesign Ω) (y : ι → Δ → ℝ) 
         · rw [D.E_const_mul]; rfl
         · have h1 : expoInd f θ i dk z * expoInd f θ j dl z * Yobs y f θ i z
               = expoInd f θ i dk z * expoInd f θ j dl z * y i dk :=
-            expoInd₂_mul_Yobs y f θ i j dk dl z
+            expoInd₂_mul_Yobs y f θ i dk (expoInd f θ j dl) z
           have h2 : expoInd f θ j dl z * expoInd f θ i dk z * Yobs y f θ j z
               = expoInd f θ j dl z * expoInd f θ i dk z * y j dl :=
-            expoInd₂_mul_Yobs y f θ j i dl dk z
+            expoInd₂_mul_Yobs y f θ j dl (expoInd f θ i dk) z
           calc expoInd f θ i dk z * expoInd f θ j dl z * Yobs y f θ i z * Yobs y f θ j z
               = (expoInd f θ i dk z * expoInd f θ j dl z * Yobs y f θ i z) * Yobs y f θ j z := by
                   ring
@@ -595,10 +595,10 @@ theorem E_htCovEstA_le (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : Ω →
         · rw [D.E_const_mul]; rfl
         · have h1 : expoInd f θ i dk z * expoInd f θ j dl z * Yobs y f θ i z
               = expoInd f θ i dk z * expoInd f θ j dl z * y i dk :=
-            expoInd₂_mul_Yobs y f θ i j dk dl z
+            expoInd₂_mul_Yobs y f θ i dk (expoInd f θ j dl) z
           have h2 : expoInd f θ j dl z * expoInd f θ i dk z * Yobs y f θ j z
               = expoInd f θ j dl z * expoInd f θ i dk z * y j dl :=
-            expoInd₂_mul_Yobs y f θ j i dl dk z
+            expoInd₂_mul_Yobs y f θ j dl (expoInd f θ i dk) z
           calc expoInd f θ i dk z * expoInd f θ j dl z * Yobs y f θ i z * Yobs y f θ j z
               = (expoInd f θ i dk z * expoInd f θ j dl z * Yobs y f θ i z) * Yobs y f θ j z := by
                   ring

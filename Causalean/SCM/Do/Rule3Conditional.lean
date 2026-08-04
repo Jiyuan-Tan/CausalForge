@@ -120,20 +120,18 @@ theorem obsKernel_map_prodWY_eq
     funext ω
     apply Prod.ext
     · simpa [pairU, Function.comp_apply] using
-        congrFun (valuesProjection_comp (Ω' := swigΩ Ω) hW_U hU_do
-          ((fixSet_observed M' Z hZ_obs hZ_fixed).symm ▸ hW)).symm ω
+        congrFun (valuesProjection_comp (Ω' := swigΩ Ω) hW_U hU_do).symm ω
     · simpa [pairU, Function.comp_apply] using
-        congrFun (valuesProjection_comp (Ω' := swigΩ Ω) hY_U hU_do
-          ((fixSet_observed M' Z hZ_obs hZ_fixed).symm ▸ hY)).symm ω
+        congrFun (valuesProjection_comp (Ω' := swigΩ Ω) hY_U hU_do).symm ω
   have hPair_base_comp :
       pairU ∘ valuesProjection hU =
         (fun ω : M'.ObservedValues => (valuesProjection hW ω, valuesProjection hY ω)) := by
     funext ω
     apply Prod.ext
     · simpa [pairU, Function.comp_apply] using
-        congrFun (valuesProjection_comp (Ω' := swigΩ Ω) hW_U hU hW).symm ω
+        congrFun (valuesProjection_comp (Ω' := swigΩ Ω) hW_U hU).symm ω
     · simpa [pairU, Function.comp_apply] using
-        congrFun (valuesProjection_comp (Ω' := swigΩ Ω) hY_U hU hY).symm ω
+        congrFun (valuesProjection_comp (Ω' := swigΩ Ω) hY_U hU).symm ω
   have hR3 :
       (M2.obsKernel s').map (valuesProjection hU_do) =
         (M'.obsKernel (M'.fixSetProj Z hZ_obs hZ_fixed s')).map
@@ -162,10 +160,9 @@ theorem obsKernel_map_W_eq
     (M' : Causalean.SCM N Ω) (Z : Finset N)
     (hZ_obs : ∀ D ∈ Z, SWIGNode.random D ∈ M'.observed)
     (hZ_fixed : ∀ D ∈ Z, SWIGNode.fixed D ∉ M'.fixed)
-    (Y W : Finset (SWIGNode N))
-    (_hY : Y ⊆ M'.observed)
+    (W : Finset (SWIGNode N))
     (hW : W ⊆ M'.observed)
-    (hNoDesc : ∀ v ∈ Y ∪ W, ∀ d ∈ Z,
+    (hNoDesc : ∀ v ∈ W, ∀ d ∈ Z,
       ¬ (M'.fixSet Z hZ_obs hZ_fixed).dag.isAncestor (SWIGNode.fixed d) v)
     (s' : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues) :
     ((M'.fixSet Z hZ_obs hZ_fixed).obsKernel s').map
@@ -174,7 +171,7 @@ theorem obsKernel_map_W_eq
     (M'.obsKernel (M'.fixSetProj Z hZ_obs hZ_fixed s')).map
         (valuesProjection hW) :=
   condDistrib_intervention_ancestral_eq M' Z hZ_obs hZ_fixed W hW
-    (fun z hz v hv => hNoDesc v (Finset.mem_union_right _ hv) z hz) s'
+    (fun z hz v hv => hNoDesc v hv z hz) s'
 
 -- ============================================================
 -- § 2. Conditional Rule 3
@@ -200,9 +197,6 @@ theorem do_rule3_conditional_condDistrib
     (hW : W ⊆ M'.observed)
     [StandardBorelSpace (ValuesOn Y (swigΩ Ω))]
     [Nonempty (ValuesOn Y (swigΩ Ω))]
-    [∀ s : M'.FixedValues, MeasureTheory.IsFiniteMeasure (M'.obsKernel s)]
-    [∀ s : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues,
-      MeasureTheory.IsFiniteMeasure ((M'.fixSet Z hZ_obs hZ_fixed).obsKernel s)]
     (hNoDesc : ∀ v ∈ Y ∪ W, ∀ d ∈ Z,
       ¬ (M'.fixSet Z hZ_obs hZ_fixed).dag.isAncestor (SWIGNode.fixed d) v)
     (s' : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues) :
@@ -239,9 +233,6 @@ theorem do_rule3_conditional
     (hW : W ⊆ M'.observed)
     [StandardBorelSpace (ValuesOn Y (swigΩ Ω))]
     [Nonempty (ValuesOn Y (swigΩ Ω))]
-    [∀ s : M'.FixedValues, MeasureTheory.IsFiniteMeasure (M'.obsKernel s)]
-    [∀ s : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues,
-      MeasureTheory.IsFiniteMeasure ((M'.fixSet Z hZ_obs hZ_fixed).obsKernel s)]
     [MeasurableSpace.CountableOrCountablyGenerated
       M'.FixedValues (ValuesOn W (swigΩ Ω))]
     [MeasurableSpace.CountableOrCountablyGenerated
@@ -265,7 +256,8 @@ theorem do_rule3_conditional
     ((fixSet_observed M' Z hZ_obs hZ_fixed).symm ▸ hW) s'
   have h2 := M'.obsCondKernel_ae_eq_condDistrib Y W hY hW
     (M'.fixSetProj Z hZ_obs hZ_fixed s')
-  have hbase := obsKernel_map_W_eq M' Z hZ_obs hZ_fixed Y W hY hW hNoDesc s'
+  have hbase := obsKernel_map_W_eq M' Z hZ_obs hZ_fixed W hW
+    (fun v hv d hd => hNoDesc v (Finset.mem_union_right _ hv) d hd) s'
   have hcd := do_rule3_conditional_condDistrib M' Z hZ_obs hZ_fixed Y W hY hW hNoDesc s'
   rw [hbase] at h1
   rw [hcd] at h1

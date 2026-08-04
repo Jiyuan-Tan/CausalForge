@@ -29,8 +29,8 @@ open scoped MeasureTheory
 
 /-- A value assignment over a finite node set gives one value in the appropriate space for each
 node in the set. -/
-abbrev ValuesOn {M : Type*} [DecidableEq M] [Fintype M]
-    (I : Finset M) (Ω : M → Type*) [∀ n, MeasurableSpace (Ω n)] :=
+abbrev ValuesOn {M : Type*}
+    (I : Finset M) (Ω : M → Type*) :=
   ∀ i : {i // i ∈ I}, Ω i.val
 
 /-- A value assignment can be restricted from a larger finite node set to a smaller one.
@@ -38,7 +38,7 @@ abbrev ValuesOn {M : Type*} [DecidableEq M] [Fintype M]
     This coincides definitionally with Mathlib's `Finset.restrict₂`; we keep the explicit
     lambda body because a large number of downstream proofs `simp [valuesProjection]` and rely
     on it unfolding to `fun ξ j => ξ ⟨j.val, hJI j.property⟩`. -/
-def valuesProjection {M : Type*} [DecidableEq M] [Fintype M]
+def valuesProjection {M : Type*}
     {I J : Finset M} {Ω : M → Type*} [∀ n, MeasurableSpace (Ω n)]
     (hJI : J ⊆ I) : ValuesOn I Ω → ValuesOn J Ω :=
   fun ξ j => ξ ⟨j.val, hJI j.property⟩
@@ -47,7 +47,7 @@ def valuesProjection {M : Type*} [DecidableEq M] [Fintype M]
 
     Coordinate restriction `valuesProjection hJI` is measurable; since it coincides with
     `Finset.restrict₂ hJI`, measurability is exactly `Finset.measurable_restrict₂`. -/
-theorem measurable_valuesProjection {M : Type*} [DecidableEq M] [Fintype M]
+theorem measurable_valuesProjection {M : Type*}
     {I J : Finset M} {Ω' : M → Type*} [∀ n, MeasurableSpace (Ω' n)]
     (hJI : J ⊆ I) : Measurable (valuesProjection (Ω := Ω') hJI) :=
   Finset.measurable_restrict₂ hJI
@@ -57,7 +57,7 @@ sigma-algebra.
 
     The comap of `valuesProjection` gives a sub-σ-algebra of the ambient
     measurable space on `ValuesOn I Ω`. -/
-theorem comap_valuesProjection_le {M : Type*} [DecidableEq M] [Fintype M]
+theorem comap_valuesProjection_le {M : Type*}
     {I W : Finset M} {Ω' : M → Type*} [∀ n, MeasurableSpace (Ω' n)]
     (hW : W ⊆ I) :
     MeasurableSpace.comap (valuesProjection (Ω := Ω') hW) inferInstance ≤
@@ -70,7 +70,7 @@ equivalent.
     `ValuesOn I Ω` and `ValuesOn J Ω` are canonically measurably-equivalent when the
     index `Finset`s agree propositionally.  Packages the `valuesProjection`
     inverse pair so call sites avoid ad-hoc `▸`/`HEq` on the `Subtype` index. -/
-noncomputable def valuesEquivOfEq {M : Type*} [DecidableEq M] [Fintype M]
+noncomputable def valuesEquivOfEq {M : Type*}
     {I J : Finset M} {Ω : M → Type*} [∀ n, MeasurableSpace (Ω n)]
     (h : I = J) : ValuesOn I Ω ≃ᵐ ValuesOn J Ω where
   toFun := valuesProjection (le_of_eq h.symm)
@@ -85,11 +85,10 @@ noncomputable def valuesEquivOfEq {M : Type*} [DecidableEq M] [Fintype M]
     `Measure.pi` transports along `valuesEquivOfEq`: the equiv is measure-preserving
     between the two `Measure.pi`'s whose per-coordinate measures agree through the
     subtype transport of the index equality. -/
-lemma measurePreserving_valuesEquivOfEq {M : Type*} [DecidableEq M] [Fintype M]
+lemma measurePreserving_valuesEquivOfEq {M : Type*}
     {I J : Finset M} {Ω : M → Type*} [∀ n, MeasurableSpace (Ω n)]
     (h : I = J)
-    (μ : (i : {i // i ∈ I}) → MeasureTheory.Measure (Ω i.val))
-    [∀ i, MeasureTheory.IsProbabilityMeasure (μ i)] :
+    (μ : (i : {i // i ∈ I}) → MeasureTheory.Measure (Ω i.val)) :
     MeasureTheory.MeasurePreserving (valuesEquivOfEq (Ω := Ω) h)
       (MeasureTheory.Measure.pi μ)
       (MeasureTheory.Measure.pi
@@ -108,37 +107,36 @@ lemma measurePreserving_valuesEquivOfEq {M : Type*} [DecidableEq M] [Fintype M]
 
 The first assignment takes priority on overlapping coordinates; the second
 assignment is used on the remaining coordinates. -/
-noncomputable def valuesUnionMk {M : Type*} [DecidableEq M] [Fintype M]
+noncomputable def valuesUnionMk {M : Type*} [DecidableEq M]
     {Ω : M → Type*} [∀ n, MeasurableSpace (Ω n)] {A B : Finset M}
     (a : ValuesOn A Ω) (b : ValuesOn B Ω) :
     ValuesOn (A ∪ B) Ω := fun ⟨v, hv⟩ =>
   if hA : v ∈ A then a ⟨v, hA⟩
   else b ⟨v, (Finset.mem_union.mp hv).resolve_left hA⟩
 
-/-- Projecting the union assignment to a coordinate from the first input returns the first input's value. -/
-@[simp] lemma valuesUnionMk_apply_left {M : Type*} [DecidableEq M] [Fintype M]
+/-- Projecting a union assignment to a coordinate from the first input returns that value. -/
+@[simp] lemma valuesUnionMk_apply_left {M : Type*} [DecidableEq M]
     {Ω : M → Type*} [∀ n, MeasurableSpace (Ω n)] {A B : Finset M}
     (a : ValuesOn A Ω) (b : ValuesOn B Ω)
-    {v : M} (hv : v ∈ A ∪ B) (hA : v ∈ A) :
-    valuesUnionMk a b ⟨v, hv⟩ = a ⟨v, hA⟩ := by
+    {v : M} (hA : v ∈ A) :
+    valuesUnionMk a b ⟨v, Finset.mem_union_left B hA⟩ = a ⟨v, hA⟩ := by
   unfold valuesUnionMk
   exact dif_pos hA
 
-/-- Projecting the union assignment to a coordinate outside the first input returns the second input's value. -/
-@[simp] lemma valuesUnionMk_apply_right {M : Type*} [DecidableEq M] [Fintype M]
+/-- Projecting a union assignment outside the first input returns the second input's value. -/
+@[simp] lemma valuesUnionMk_apply_right {M : Type*} [DecidableEq M]
     {Ω : M → Type*} [∀ n, MeasurableSpace (Ω n)] {A B : Finset M}
     (a : ValuesOn A Ω) (b : ValuesOn B Ω)
-    {v : M} (hv : v ∈ A ∪ B) (hA : v ∉ A)
-    (hB : v ∈ B := (Finset.mem_union.mp hv).resolve_left hA) :
-    valuesUnionMk a b ⟨v, hv⟩ = b ⟨v, hB⟩ := by
+    {v : M} (hv : v ∈ A ∪ B) (hA : v ∉ A) :
+    valuesUnionMk a b ⟨v, hv⟩ = b ⟨v, (Finset.mem_union.mp hv).resolve_left hA⟩ := by
   unfold valuesUnionMk
   exact dif_neg hA
 
-/-- Combining assignments is measurable in the second assignment when the first assignment is held fixed.
+/-- Combining assignments is measurable in the second assignment with the first held fixed.
 
 At every output coordinate the value is either constant or a coordinate
 projection of the second assignment. -/
-lemma measurable_valuesUnionMk_right {M : Type*} [DecidableEq M] [Fintype M]
+lemma measurable_valuesUnionMk_right {M : Type*} [DecidableEq M]
     {Ω : M → Type*} [∀ n, MeasurableSpace (Ω n)] {A B : Finset M}
     (a : ValuesOn A Ω) :
     Measurable (fun b : ValuesOn B Ω => valuesUnionMk a b) := by
@@ -148,7 +146,7 @@ lemma measurable_valuesUnionMk_right {M : Type*} [DecidableEq M] [Fintype M]
   · have h_eq :
         (fun b : ValuesOn B Ω => valuesUnionMk a b ⟨v, hv⟩)
           = (fun _ => a ⟨v, hA⟩) :=
-      funext fun _ => valuesUnionMk_apply_left a _ hv hA
+      funext fun _ => valuesUnionMk_apply_left a _ hA
     rw [h_eq]
     exact measurable_const
   · have hB : v ∈ B := (Finset.mem_union.mp hv).resolve_left hA
@@ -160,7 +158,7 @@ lemma measurable_valuesUnionMk_right {M : Type*} [DecidableEq M] [Fintype M]
     exact measurable_pi_apply _
 
 /-- Combining assignments is jointly measurable in both input assignments. -/
-lemma measurable_valuesUnionMk {M : Type*} [DecidableEq M] [Fintype M]
+lemma measurable_valuesUnionMk {M : Type*} [DecidableEq M]
     {Ω : M → Type*} [∀ n, MeasurableSpace (Ω n)] {A B : Finset M} :
     Measurable
       (fun p : ValuesOn A Ω × ValuesOn B Ω =>
@@ -173,7 +171,7 @@ lemma measurable_valuesUnionMk {M : Type*} [DecidableEq M] [Fintype M]
             valuesUnionMk p.1 p.2 ⟨v, hv⟩)
           = (fun p => p.1 ⟨v, hA⟩) := by
       funext p
-      exact valuesUnionMk_apply_left _ _ hv hA
+      exact valuesUnionMk_apply_left _ _ hA
     rw [h_eq]
     exact (measurable_pi_apply _).comp measurable_fst
   · have hB : v ∈ B := (Finset.mem_union.mp hv).resolve_left hA

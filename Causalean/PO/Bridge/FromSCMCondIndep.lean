@@ -128,7 +128,7 @@ theorem ofSCM_condIndepCF_of_dSep
     simpa [E, Function.uncurry] using
       hmeas.comp (Measurable.prodMk measurable_const measurable_id)
   have hFull : SCM.FullCondIndep M X Y Z hX hY hZ (M.jointKernel s) :=
-    SCM.full_globalMarkov M X Y Z hX hY hZ hDisj_XY hDisj_XZ hDisj_YZ hdSep s
+    SCM.full_globalMarkov M X Y Z hX hY hZ hdSep s
   have hJointEq : M.jointKernel s = M.latentProduct.map E := by
     simpa [E] using SCM.jointKernel_apply_eq M s
   haveI : IsFiniteMeasure (M.latentProduct.map E) := hJointEq ▸

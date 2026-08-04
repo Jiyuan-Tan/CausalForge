@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jiyuan Tan
 -/
 import Causalean.Mathlib.Analysis.FiniteDimL1LinfDuality.HahnBanachSetup
+import Mathlib.Analysis.Convex.Cone.Extension
 
 /-!
 # Finite-dimensional ℓ¹/ℓ∞ duality from moment-system feasibility

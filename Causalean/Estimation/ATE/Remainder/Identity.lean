@@ -247,12 +247,12 @@ lemma aipw_remainder_identity
   have hwT_Linf : MemLp wT ⊤ P.μ := by
     refine MemLp.of_bound ?_ ε⁻¹ hwT_bound
     apply Measurable.aestronglyMeasurable
-    exact S.toPOBackdoorSystem.dVar.measurable_indicator true |>.div
+    exact S.toPOBackdoorSystem.dVar.measurable_indicator true (MeasurableSet.singleton true) |>.div
       (η.e_meas.comp S.toPOBackdoorSystem.measurable_factualX)
   have hwF_Linf : MemLp wF ⊤ P.μ := by
     refine MemLp.of_bound ?_ ε⁻¹ hwF_bound
     apply Measurable.aestronglyMeasurable
-    exact S.toPOBackdoorSystem.dVar.measurable_indicator false |>.div
+    exact S.toPOBackdoorSystem.dVar.measurable_indicator false (MeasurableSet.singleton false) |>.div
       (measurable_const.sub (η.e_meas.comp S.toPOBackdoorSystem.measurable_factualX))
   have hrT_int : Integrable rT P.μ := by
     have hL2 : MemLp rT 2 P.μ := by

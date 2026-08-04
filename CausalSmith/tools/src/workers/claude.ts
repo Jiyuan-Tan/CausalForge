@@ -25,6 +25,14 @@ export interface ClaudeRunInput {
   systemPromptFile?: string;
   inactivityTimeoutMs?: number;
   /**
+   * Called with the RESOLVED model id (e.g. "claude-opus-4-8-20260115") parsed
+   * from the CLI's stream-json events. The `--model` value may be an alias
+   * ("opus"), which is useless for reproducibility records; this surfaces what
+   * the alias actually resolved to at run time so the dispatch boundary can log
+   * it (pipeline.jsonl). Not called when the stream carries no model id.
+   */
+  onResolvedModel?: (modelId: string) => void;
+  /**
    * Configure the `lean-lsp` MCP server for this claude call. DEFAULT-ON (user
    * policy 2026-06-04): every claude call gets the lean-lsp server + the
    * `mcp__lean-lsp__*` read/query tools merged into its allow-list, unless it
@@ -232,6 +240,13 @@ export async function runClaude(input: ClaudeRunInput): Promise<string> {
     "--disable-slash-commands",
     "--tools",
     allowedTools.join(","),
+    // `--tools` only advertises tools; it does not grant permission to invoke
+    // them.  Headless (`-p`) workers cannot answer permission prompts, so grant
+    // exactly the same narrow allow-list explicitly.  This keeps Bash/Edit out
+    // of read-only reviewers while making their declared Read/Grep/Glob and
+    // lean-lsp queries usable.
+    "--allowedTools",
+    allowedTools.join(","),
     "--append-system-prompt",
     buildClaudePreamble(allowedTools),
   ];
@@ -285,6 +300,10 @@ export async function runClaude(input: ClaudeRunInput): Promise<string> {
       result.stderr,
     );
   }
+  if (input.onResolvedModel) {
+    const resolved = extractResolvedModel(result.stdout);
+    if (resolved) input.onResolvedModel(resolved);
+  }
   const parsed = parseStreamJson(result.stdout);
   // Stash diagnostics on the function so callers can inspect after the fact
   // when the parsed text is unexpectedly empty (Bug B follow-up — see
@@ -300,6 +319,38 @@ export async function runClaude(input: ClaudeRunInput): Promise<string> {
 let lastDiagnostic: ClaudeRunDiagnostic | null = null;
 export function getLastClaudeDiagnostic(): ClaudeRunDiagnostic | null {
   return lastDiagnostic;
+}
+
+/**
+ * Pull the resolved model id out of the CLI's stream-json stdout. An assistant
+ * event's `message.model` is the id the API actually served (preferred); the
+ * init system event's `model` is the fallback for streams with no assistant
+ * turn. Returns null when neither appears (e.g. a mocked or crashed stream).
+ */
+export function extractResolvedModel(stdout: string | undefined | null): string | null {
+  if (typeof stdout !== "string" || stdout.length === 0) return null;
+  let initModel: string | null = null;
+  for (const line of stdout.split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    try {
+      const parsed = JSON.parse(line) as Record<string, unknown>;
+      if (parsed.type === "assistant" && typeof parsed.message === "object" && parsed.message !== null) {
+        const model = (parsed.message as { model?: unknown }).model;
+        if (typeof model === "string" && model.length > 0) return model;
+      }
+      if (
+        parsed.type === "system" &&
+        parsed.subtype === "init" &&
+        typeof parsed.model === "string" &&
+        parsed.model.length > 0
+      ) {
+        initModel ??= parsed.model;
+      }
+    } catch {
+      // non-JSON banner lines carry no model id
+    }
+  }
+  return initModel;
 }
 
 export function parseStreamJson(stdout: string | undefined | null): string {

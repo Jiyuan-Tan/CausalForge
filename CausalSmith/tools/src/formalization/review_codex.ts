@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import { MODEL_PLAN } from "../constants.js";
 import { type ReviewResult } from "../judgment.js";
 import { coreJsonPath } from "../discovery/stages/d0_core.js";
+import { readFormalizationCoreContext } from "./core_context.js";
 import type { PipelineContext, StateJson } from "../types.js";
 import {
   artifactPaths,
@@ -35,7 +36,7 @@ export async function reviewWithCodex(
   // when present.
   const contextBlock =
     stageLabel === "1.5"
-      ? `Formalization plan (plan.json — the subject of review):\n${await readRequired(paths.plan, "F1.5 review")}\n\nTyped core JSON (the structural ground truth):\n${await readRequired(coreJsonPath(args.ctx), "F1.5 review")}\n`
+      ? `Formalization plan (plan.json — the subject of review):\n${await readRequired(paths.plan, "F1.5 review")}\n\nTyped core JSON (structural ground truth; proof/publication prose omitted):\n${await readFormalizationCoreContext(coreJsonPath(args.ctx), "F1.5 review")}\n`
       : existsSync(paths.md)
         ? `Markdown:\n${await readIfExists(paths.md)}\n`
         : "";

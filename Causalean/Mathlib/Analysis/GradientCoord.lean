@@ -27,9 +27,9 @@ namespace Causalean.Mathlib
 Euclidean space that is differentiable at `x`, the `a`-th coordinate of its gradient at `x` equals
 the derivative at `0` of the one-variable restriction `t ↦ f(x + t · eₐ)` along the `a`-th standard
 basis direction. -/
-lemma gradient_coord_eq_deriv {n : ℕ}
-    (f : EuclideanSpace ℝ (Fin n) → ℝ)
-    (x : EuclideanSpace ℝ (Fin n)) (a : Fin n)
+lemma gradient_coord_eq_deriv {ι : Type*} [Fintype ι] [DecidableEq ι]
+    (f : EuclideanSpace ℝ ι → ℝ)
+    (x : EuclideanSpace ℝ ι) (a : ι)
     (hf : DifferentiableAt ℝ f x) :
     (gradient f x) a =
       deriv (fun t : ℝ => f (x + t • EuclideanSpace.single a (1 : ℝ))) 0 := by

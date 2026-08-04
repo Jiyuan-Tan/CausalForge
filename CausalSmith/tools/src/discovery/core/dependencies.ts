@@ -95,9 +95,19 @@ export function wireStatementProofDependencies(core: Core): void {
  * declare membership structurally; constructed definitions may also cite an
  * assumption id literally in their formula (for example a target-law premise).
  * Both are direct definition consumers, alongside statement depends_on edges. */
-export function rebuildAssumptionUsedBy(core: Core): void {
+export function rebuildAssumptionUsedBy(core: Core, carriedStatements: readonly CoreStatement[] = []): void {
   const directUsers = new Map(core.assumptions.map((a) => [a.id, new Set<string>()] as const));
-  for (const statement of core.statements) {
+  const frozenStatementIds = new Set(core.statements.map((statement) => statement.id));
+  // Agent-added proved nodes live only in the incremental working cursor until the
+  // final core is assembled.  Rebuilding from the frozen proto alone silently drops
+  // their reverse edges after an unrelated statement deletion.  A frozen statement
+  // remains authoritative for a same-id carried snapshot, which may be stale after a
+  // claim edit and must not contribute old dependencies.
+  const statements = [
+    ...core.statements,
+    ...carriedStatements.filter((statement) => !frozenStatementIds.has(statement.id)),
+  ];
+  for (const statement of statements) {
     for (const dependency of statement.depends_on ?? []) directUsers.get(dependency)?.add(statement.id);
   }
   for (const definition of core.definitions) {

@@ -1,184 +1,48 @@
-// Cross-store coherence — every check that a D-stage round's stores agree,
-// in one module with TIERED verdicts:
+// Round invariants — every check that a committed D-stage round left a sound
+// state, in one module. All WARN-tier: detect-and-warn by policy; the danger
+// they guard against is SILENCE, not survivable damage, and aborting a paid
+// round over a repairable inconsistency is the worse trade.
 //
-//   HARD  — `reconcileProofStores` (repairs the recoverable direction; THROWS on
-//           the one unrepairable state) and the proposal-closure invariant
-//           (`checkProposalClosure`): a violation means an atomic apply or the
-//           next round would silently destroy real work.
-//   WARN  — the round invariants (`checkRoundInvariants`): detect-and-warn by
-//           policy; the danger they guard against is SILENCE, not survivable
-//           damage, and aborting a paid round over a repairable inconsistency
-//           is the worse trade.
+// Consolidated 2026-07-20 (T4 of the framework-rewrite mechanical phase);
+// REDUCED 2026-07-31 (Phase 1 of the store-consolidation migration): the
+// published core.json became a pure render of (proto_core.json,
+// d0_working.json) — `assembleCore` — so the cross-store contradiction checks
+// this module used to carry became unrepresentable and were DELETED, each
+// replaced by a construction-level test (test/discovery/assemble.test.ts):
 //
-// Consolidated 2026-07-20 (T4 of the framework-rewrite mechanical phase) from
-// `core/closure.ts`, `core/round_invariants.ts` and
-// `stages/d0_working.ts::reconcileProofStores`, each moved verbatim — the
-// original per-check header commentary is kept inline below.
+//   `reconcileProofStores` (hard)  — repaired proved-in-core-but-not-in-cursor;
+//                                    a rendered proof now only ever comes FROM
+//                                    the cursor. Its throw case (a resolution
+//                                    naming a theorem no store holds) moved to
+//                                    `saveWorkingState` → `normalizeWorkingState`.
+//   proposal closure (hard)        — ids(core) ⊆ ids(proto) ∪ ids(working) holds
+//                                    by construction of the render.
+//   `store-incoherent` (warn)      — both directions unrepresentable: a settled
+//                                    core node exists only via its record, and a
+//                                    recorded (unshelved) agent node always renders.
+//   `proved-not-partial` (warn)    — published status is DERIVED from the record;
+//                                    a partial record renders `to-prove`, never
+//                                    `proved`.
+//   `oeq-source-retired` (warn)    — the render filters answered sources.
+//   `oeq-source-record-retired`    — auto-resolved at the single write boundary
+//     (warn)                         (`normalizeWorkingState` retires the record).
+//
+// What remains guards the MATHEMATICS and the cross-round history, which no
+// store layout can make unrepresentable.
 
-// ---------------------------------------------------------------------------
-// HARD TIER 1/2 — proposal closure (formerly core/closure.ts)
-//
-// D0 keeps the same mathematics in several stores: the live `core.json`, the
-// frozen `proto_core.json` that an atomic apply rebases onto, and the round's
-// proposal payload (the `proposals` carrier in `d0_working.json`; the per-kind
-// `proposed_*.json` mirror files are retired).
-// `d0_apply_change` composes proto + proposals; it CANNOT see `core.json`.
-//
-// So the apply is sound only if
-//
-//     ids(core) ⊆ ids(proto) ∪ ids(proposals)
-//
-// When that fails, a node the solver genuinely emitted — with a complete proof —
-// is invisible to the apply, and the resulting base carries a dangling
-// dependency. On the 2026-07-18 run this happened three times to
-// `lem:integrated-arm-path-differentiation`, and each time it was caught only by
-// a `gpt-5.6-sol` adjudication AFTER a 20-60 minute solve round. This check is
-// that same verdict as a set difference: no tokens, before dispatch.
-//
-// The reverse direction (proto nodes absent from core) is reported but not
-// fatal: it is usually a deliberate removal, and nothing had ever surfaced it.
-import { snapshotMember, type WorkingState } from "../stages/d0_working.js";
+import { type WorkingState } from "../stages/d0_working.js";
+import { wiredSnapshot } from "../working_writer.js";
 import type { Core } from "./schema.js";
-
-/** The structural slice of a core this check needs. Deliberately loose so it can
- *  run against a partially-parsed store — a closure violation must still be
- *  reportable when the full `CoreSchema` parse is what is failing. */
-export interface ClosureCoreView {
-  statements?: Array<{ id?: string }>;
-  assumptions?: Array<{ id?: string }>;
-  definitions?: Array<{ id?: string }>;
-}
-
-export interface ClosureReport {
-  ok: boolean;
-  /** In `core` but in neither `proto` nor any proposal — the apply would drop these. */
-  uncarried: string[];
-  /** In `proto` but not in `core` — drift in the other direction; advisory. */
-  protoOnly: string[];
-}
-
-export function nodeIds(view: ClosureCoreView | null | undefined): string[] {
-  if (!view) return [];
-  const out: string[] = [];
-  for (const group of [view.statements, view.assumptions, view.definitions]) {
-    for (const node of group ?? []) {
-      if (typeof node?.id === "string" && node.id.length > 0) out.push(node.id);
-    }
-  }
-  return out;
-}
-
-export function checkProposalClosure(args: {
-  core: ClosureCoreView;
-  proto: ClosureCoreView;
-  /** Every id the proposal payload would carry into the atomic base. */
-  proposalIds: Set<string>;
-}): ClosureReport {
-  const coreIds = nodeIds(args.core);
-  const protoIds = new Set(nodeIds(args.proto));
-  const uncarried = [...new Set(coreIds)]
-    .filter((id) => !protoIds.has(id) && !args.proposalIds.has(id))
-    .sort();
-  const coreIdSet = new Set(coreIds);
-  const protoOnly = [...protoIds].filter((id) => !coreIdSet.has(id)).sort();
-  return { ok: uncarried.length === 0, uncarried, protoOnly };
-}
-
-/** Human-readable escalation body for a closure violation. Names the exact ids and
- *  the exact repair, so the orchestrator never has to re-derive it from a REJECT. */
-export function formatClosureViolation(report: ClosureReport): string {
-  const lines = [
-    `D0 proposal closure violated: ${report.uncarried.length} node(s) exist in core.json but are carried ` +
-      `by neither proto_core.json nor any proposal file, so an atomic apply would silently drop them ` +
-      `and leave a dangling dependency.`,
-    `UNCARRIED: ${report.uncarried.join(", ")}`,
-    `REPAIR: emit a structured core edit (and, where the node is proved, its proof in the round's ` +
-      `proposal payload — the \`proposals.proofs\` carrier in d0_working.json) for each id above, in the ` +
-      `SAME bundle as any change that depends on it.`,
-  ];
-  if (report.protoOnly.length > 0) {
-    lines.push(`ADVISORY — in proto but absent from core (verify the removal was intended): ${report.protoOnly.join(", ")}`);
-  }
-  return lines.join("\n");
-}
-
-// ---------------------------------------------------------------------------
-// HARD TIER 2/2 — proof-store reconciliation (formerly stages/d0_working.ts)
-
-/** Reconcile the two stores that redundantly record the same proofs: the assembled
- *  `core` (derived merge, what renders) and `working.solved` (what the NEXT round
- *  carries). Several carry branches in Stage 0-SOLVE write only one of them, and the
- *  asymmetry is silently fatal: every carry branch reads `prev.solved`, so a node
- *  present in the core with a proof but absent from `solved` renders this round and
- *  then disappears. TERMINAL results are the systematic victims — having no inbound
- *  edge, they never trigger the referenced-but-not-re-emitted repair.
- *
- *  Repairs the recoverable direction (core node is the authoritative proof) and
- *  returns the recovered ids for the caller to report. Mutates `working.solved`.
- *  Throws when a `resolved_oeqs` entry names a theorem present in NEITHER store:
- *  that state claims an open question is answered by a result that does not exist,
- *  and nothing in the core can reconstruct it. */
-export function reconcileProofStores(core: Core, proto: Core, working: WorkingState): string[] {
-  const recovered: string[] = [];
-  for (const s of core.statements) {
-    if (!s.proof_tex || working.solved[s.id]) continue;
-    const { proof_tex, ...bare } = s;
-    // Snapshot against `proto`, not `core` — `computeValidNodes` compares stored
-    // snapshots to `snapshotMember(proto, …)`, so a core-derived snapshot would
-    // read as permanently stale and re-open a finished proof every round.
-    working.solved[s.id] = { node: bare, proof_tex, snapshot: snapshotMember(proto, bare) };
-    recovered.push(s.id);
-  }
-  const dangling = Object.entries(working.resolved_oeqs ?? {})
-    .map(([sourceId, r]) => [sourceId, typeof r === "string" ? r : r.theorem_id] as const)
-    .filter(([, theoremId]) => !working.solved[theoremId]);
-  if (dangling.length > 0) {
-    throw new Error(
-      `Stage 0-SOLVE resolved-OEQ points at an absent theorem: ` +
-        `${dangling.map(([s, t]) => `${s}->${t}`).join(", ")}. ` +
-        "The run would claim an open question is answered by a result present in no store; " +
-        "refusing to persist an incoherent state.",
-    );
-  }
-  return recovered;
-}
-
-// ---------------------------------------------------------------------------
-// WARN TIER — round invariants (formerly core/round_invariants.ts)
-//
-// What a D-stage round must never leave behind.
-//
-// Each check below corresponds to a fault that ACTUALLY OCCURRED on 2026-07-19. None was
-// caught by the ~1600 unit tests, because none is a property of a single function: they
-// live where two code paths meet — two writers of one store, two builders of one payload,
-// two guards that each work alone. Such a fault is visible only in the state a ROUND
-// leaves behind, and several need more than one round to appear.
-//
-// This module DETECTS; it does not decide what to do. The D0 solve commit warns on every
-// violation at commit time, so each real run checks itself, and the test suite asserts
-// the same function so a scenario and a live run cannot disagree about what "broken"
-// means. Detection is O(nodes) over a graph of tens of nodes — free at round scale.
-//
-// POLICY: warn, do not throw. Today's lesson was that the danger is SILENCE, not
-// survivable damage; aborting an expensive round over a repairable inconsistency trades
-// one failure mode for a worse one. The single exception is `reconcileProofStores`
-// above, which throws when a resolution names a theorem present in no store — that
-// state cannot be repaired and must not be persisted.
 
 export interface RoundViolation {
   /** Stable, greppable identifier for the invariant that failed. */
   code:
-    | "store-incoherent"
     | "dangling-resolution"
     | "oeq-answer-churn"
     | "snapshot-basis"
     | "hollow-proof"
     | "silent-node-loss"
-    | "dependency-cycle"
-    // Cross-store contradictions added after the 2026-07 rewind audit (warn-tier).
-    | "oeq-source-retired"
-    | "oeq-source-record-retired"
-    | "proved-not-partial";
+    | "dependency-cycle";
   /** One line explaining what this means and why it matters. */
   detail: string;
   /** The offending node ids (or `source->answer` pairs), for a receipts-bearing log line. */
@@ -197,46 +61,6 @@ export interface RoundInvariantInput {
 
 const resolutionTargetId = (r: unknown): string =>
   typeof r === "string" ? r : (r as { theorem_id: string }).theorem_id;
-
-/** The two stores must agree in BOTH directions.
- *
- *  This checked only core -> working. The reverse is equally possible and was invisible:
- *  on 2026-07-19 two agent-authored lemmas sat in the working cursor carrying full proofs
- *  while absent from the assembled core, and this invariant — whose whole job is store
- *  divergence — stayed silent. An agent-authored node is defined NOWHERE ELSE, so its
- *  absence from core means the definition exists only in a store nothing renders from. */
-function checkStoreCoherence({ proto, core, after }: RoundInvariantInput): RoundViolation | null {
-  const coreIds = new Set(core.statements.map((s) => s.id));
-  // SETTLED, not just proved-with-text. Requiring a non-empty proof_tex silently exempted
-  // `cited` nodes — whose justification IS the citation, so they legitimately carry no
-  // proof — and a cited leaf present in core but absent from the cursor renders once and
-  // then vanishes, exactly like the proved case this was written for.
-  //
-  // ...but only for nodes that can actually be LOST. A frozen proto member is recreated
-  // from proto_core.json on every assembly, so its absence from the cursor is not a
-  // vanishing node. Including cited without that carve-out reported every frozen cited
-  // leaf on a first round -- an over-broad rule of exactly the kind this sweep keeps
-  // producing.
-  const protoIds = new Set(proto.statements.map((s: { id: string }) => s.id));
-  const settled = (s: { status?: string; proof_tex?: string }): boolean =>
-    s.status === "cited" || (s.proof_tex ?? "").length > 0;
-  const missingWorking = core.statements
-    .filter((s) => settled(s) && !after.solved[s.id] && !protoIds.has(s.id))
-    .map((s) => `core-only:${s.id}`);
-  const missingCore = Object.entries(after.solved)
-    .filter(([id, rec]) => rec.node !== undefined && !coreIds.has(id))
-    .map(([id]) => `working-only:${id}`);
-  const ids = [...missingWorking, ...missingCore];
-  return ids.length === 0 ? null : {
-    code: "store-incoherent",
-    detail:
-      "core.json and the working cursor disagree. `core-only` = a proved core node with no " +
-      "working record: every carry branch reads prev.solved, so it renders this round and is " +
-      "deleted the next. `working-only` = an agent-authored node carried in the cursor but " +
-      "absent from core: it is defined nowhere else, so it renders nowhere and may be pruned",
-    ids,
-  };
-}
 
 /** Every resolution names a theorem that exists somewhere. */
 function checkDanglingResolution({ core, after }: RoundInvariantInput): RoundViolation | null {
@@ -283,7 +107,10 @@ function checkSnapshotBasis({ proto, core, after }: RoundInvariantInput): RoundV
     // can itself have drifted — checking the derived artifact instead of the source.
     const stmt = rec.node ?? byId.get(id);
     if (!stmt) continue;
-    if (JSON.stringify(rec.snapshot) !== JSON.stringify(snapshotMember(proto, stmt))) ids.push(id);
+    // Compare against the CANONICAL basis computation (the wired closure the
+    // writer uses) — recomputing with the bare closure here would flag every
+    // correctly-written record whose proof cites an undeclared def/ass.
+    if (JSON.stringify(rec.snapshot) !== JSON.stringify(wiredSnapshot(proto, stmt, rec.proof_tex ?? ""))) ids.push(id);
   }
   return ids.length === 0 ? null : {
     code: "snapshot-basis",
@@ -350,103 +177,13 @@ function checkDependencyCycle({ core }: RoundInvariantInput): RoundViolation | n
   };
 }
 
-// ---------------------------------------------------------------------------
-// Cross-store contradictions added after the 2026-07 cross-stage rewind audit.
-// All WARN-tier (registered in CHECKS below): the danger is silence, and a false
-// positive at the commit boundary must never abort a paid round. Each was
-// validated against every real (core.json, d0_working.json) pair under
-// doc/research/{active,_bank} before landing: zero hits on healthy states, one
-// GENUINE historical hit (`proved-not-partial` on the banked
-// exp_saturation_skew_threshold_v1 run — see that check).
-//
-// Deliberately NOT added, after the same audit killed them:
-//  - a before/after snapshot-basis-monotone check: carry is BY REFERENCE
-//    (`context.ts` does `next.solved[id] = rec` with `rec = prev.solved[id]`), and
-//    `refreshSnapshots` mutates `rec.snapshot` on that shared object, so any
-//    in-memory before/after comparison sees one object against itself — dead code.
-//    `checkSnapshotBasis` above remains tautological w.r.t. basis SHRINKAGE for the
-//    same structural reason (it compares against `snapshotMember`, the function
-//    that produced the shrunken value); detecting that fault class needs a
-//    deep-copied carry, a broader change than a warn check can justify.
-//  - an "OEQ answer must be settled" check: a resolved OEQ whose answer's basis
-//    moved is DELIBERATELY re-inserted as `to-prove` under the same id (see the
-//    stale-recovery comment in `solve/context.ts`) — the check fires on a state
-//    the codebase produces on purpose.
-//  - a core-vs-cursor proof-bytes-agree check: `repairCoreLatexSerialization`
-//    (merge) legitimately rewrites core proof_tex while the cursor keeps raw
-//    solver bytes, so byte divergence is not evidence of a different argument.
-// ---------------------------------------------------------------------------
-
-/** An ANSWERED question must not still be published as a live core node. Assembly
- *  filters the source out and merge removes a freshly resolved (or temporarily
- *  force-restored) source before commit, so at the commit boundary a live `oeq:`
- *  source that `resolved_oeqs` says is answered means the two stores contradict —
- *  and the discharge gate exempts `oeq:` ids, so the contradiction would pass as a
- *  clean discharge. Keyed on the resolution map (id-based), not on `kind`, so a
- *  mis-kinded node on an answered source id cannot slip past. */
-function checkOeqSourceRetired({ core, after }: RoundInvariantInput): RoundViolation | null {
-  const answered = new Set(Object.keys(after.resolved_oeqs ?? {}));
-  if (answered.size === 0) return null;
-  const ids = core.statements.filter((s) => answered.has(s.id)).map((s) => s.id);
-  return ids.length === 0 ? null : {
-    code: "oeq-source-retired",
-    detail:
-      "an answered open question is still a live node in the assembled core; the core and the " +
-      "working cursor contradict each other, and the discharge gate exempts `oeq:` ids so this " +
-      "would pass as a clean discharge",
-    ids,
-  };
-}
-
-/** The answered source's working RECORD must be retired too (merge deletes
- *  `next.solved[sourceId]` when a resolution lands; the answer lives under the
- *  theorem id). A surviving source record is an orphan `planCarry` classifies
- *  `dropped` — and it can be re-injected as a stale solve target. */
-function checkOeqSourceRecordRetired({ after }: RoundInvariantInput): RoundViolation | null {
-  const ids = Object.keys(after.resolved_oeqs ?? {}).filter((src) => after.solved[src] !== undefined);
-  return ids.length === 0 ? null : {
-    code: "oeq-source-record-retired",
-    detail:
-      "an answered open question still has a working record under its source id; the answer " +
-      "lives under the theorem id, so this record is an orphan that can resurface as a stale target",
-    ids,
-  };
-}
-
-/** The two stores must agree on whether a node is FINISHED. A core node published
- *  `status:"proved"` whose cursor record is `partial:true` is invisible to the
- *  discharge gate (which counts only `to-prove`) while the cursor says the proof is
- *  an open obligation — so the round can discharge "cleanly" without ever
- *  re-deriving it, and the contradiction ships. Observed for real: the banked
- *  exp_saturation_skew_threshold_v1 run ended with `oeq:full-branch-optimizer-map`
- *  proved in core.json over DIFFERENT bytes than its partial cursor record.
- *  Restricted to `proved` — `cited`-with-partial is the deliberate
- *  awaiting-revalidation state (see the frozen-member carry in `solve/context.ts`). */
-function checkProvedNotPartial({ core, after }: RoundInvariantInput): RoundViolation | null {
-  const ids = core.statements
-    .filter((s) => s.status === "proved" && after.solved[s.id]?.partial === true)
-    .map((s) => s.id);
-  return ids.length === 0 ? null : {
-    code: "proved-not-partial",
-    detail:
-      "node(s) published `proved` in the core while the working cursor marks them partial " +
-      "(open obligation); the discharge gate cannot see them, so the round can complete " +
-      "without re-deriving them and the contradiction ships",
-    ids,
-  };
-}
-
 const CHECKS = [
-  checkStoreCoherence,
   checkDanglingResolution,
   checkOeqAnswerChurn,
   checkSnapshotBasis,
   checkHollowProofs,
   checkSilentNodeLoss,
   checkDependencyCycle,
-  checkOeqSourceRetired,
-  checkOeqSourceRecordRetired,
-  checkProvedNotPartial,
 ] as const;
 
 /** Run every round-level invariant. Empty result means the round left a coherent state. */

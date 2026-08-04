@@ -81,6 +81,7 @@ def gPert (g₀ g₁ δ : ℝ) : Bool → C → ℝ := fun d _ => if d then g₁
 
 variable {m₀ g₀ g₁ δ : ℝ}
 
+omit [Fintype C] [Nonempty C] [MeasurableSpace C] [MeasurableSingletonClass C] in
 /-- Validity of the null DGP. -/
 theorem validDGP_null (hm0 : 0 < m₀) (hm1 : m₀ < 1) (hg0 : 0 < g₀) (hg0' : g₀ < 1)
     (hg1 : 0 < g₁) (hg1' : g₁ < 1) :
@@ -88,6 +89,7 @@ theorem validDGP_null (hm0 : 0 < m₀) (hm1 : m₀ < 1) (hg0 : 0 < g₀) (hg0' :
   m_mem _ := ⟨hm0.le, hm1.le⟩
   g_mem d _ := by cases d <;> simp [gNull] <;> constructor <;> linarith
 
+omit [Fintype C] [Nonempty C] [MeasurableSpace C] [MeasurableSingletonClass C] in
 /-- Validity of the perturbed DGP (using `0 ≤ δ` and `g₁ + δ ≤ 1`). -/
 theorem validDGP_pert (hm0 : 0 < m₀) (hm1 : m₀ < 1) (hg0 : 0 < g₀) (hg0' : g₀ < 1)
     (hg1 : 0 < g₁) (hδ : 0 ≤ δ) (hδU : g₁ + δ ≤ 1) :
@@ -95,6 +97,7 @@ theorem validDGP_pert (hm0 : 0 < m₀) (hm1 : m₀ < 1) (hg0 : 0 < g₀) (hg0' :
   m_mem _ := ⟨hm0.le, hm1.le⟩
   g_mem d _ := by cases d <;> simp [gPert] <;> constructor <;> linarith
 
+omit [MeasurableSpace C] [MeasurableSingletonClass C] in
 /-- The ATE of the null DGP is `g₁ − g₀`. -/
 theorem ate_gNull : ate (C := C) (gNull g₀ g₁) = g₁ - g₀ := by
   have hC : (Fintype.card C : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr Fintype.card_ne_zero
@@ -102,6 +105,7 @@ theorem ate_gNull : ate (C := C) (gNull g₀ g₁) = g₁ - g₀ := by
   rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
   field_simp
 
+omit [MeasurableSpace C] [MeasurableSingletonClass C] in
 /-- The ATE of the perturbed DGP is `(g₁ + δ) − g₀`. -/
 theorem ate_gPert : ate (C := C) (gPert g₀ g₁ δ) = (g₁ + δ) - g₀ := by
   have hC : (Fintype.card C : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr Fintype.card_ne_zero
@@ -109,6 +113,7 @@ theorem ate_gPert : ate (C := C) (gPert g₀ g₁ δ) = (g₁ + δ) - g₀ := by
   rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
   field_simp
 
+omit [MeasurableSpace C] [MeasurableSingletonClass C] in
 /-- The squared `L²` distance between the perturbed and null treated arms is `δ²`;
 control arms agree.  Hence each arm's error from `gNull` is `≤ εg` once `δ² ≤ εg`. -/
 theorem l2sq_gPert_gNull (d : Bool) :
@@ -122,6 +127,7 @@ theorem l2sq_gPert_gNull (d : Bool) :
       nsmul_eq_mul]
     field_simp
 
+omit [Nonempty C] [MeasurableSpace C] [MeasurableSingletonClass C] in
 /-- The null DGP lies in the class around `(mC, gNull)` (zero nuisance error). -/
 theorem inClass_null {εg εm : ℝ} (hv : ValidDGP (C := C) (mC m₀) (gNull g₀ g₁))
     (hεg : 0 ≤ εg) (hεm : 0 ≤ εm) :
@@ -130,6 +136,7 @@ theorem inClass_null {εg εm : ℝ} (hv : ValidDGP (C := C) (mC m₀) (gNull g�
   err_g d := by rw [l2sq_self]; exact hεg
   err_m := by rw [l2sq_self]; exact hεm
 
+omit [MeasurableSpace C] [MeasurableSingletonClass C] in
 /-- The perturbed DGP lies in the class around `(mC, gNull)` when `δ² ≤ εg`. -/
 theorem inClass_pert {εg εm : ℝ} (hv : ValidDGP (C := C) (mC m₀) (gPert g₀ g₁ δ))
     (hbudget : δ ^ 2 ≤ εg) (hεm : 0 ≤ εm) :

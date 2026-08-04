@@ -26,13 +26,12 @@ describe("comparator source-status policy", () => {
   });
 
   it("applies the same distinction during proposal drafting and review", async () => {
-    const [legacyReview, coreReview, drafter] = await Promise.all([
-      prompt("D-0.5/stage_neg1_review.txt"),
+    const [coreReview, drafter] = await Promise.all([
       prompt("D-0.5/stage_neg1_review_core.txt"),
       prompt("D-1/stage_neg1_2_proto_core.txt"),
     ]);
 
-    for (const text of [legacyReview, coreReview]) {
+    for (const text of [coreReview]) {
       expect(text).toContain("unpublished non-archival WIP");
       expect(text).toContain("article or preprint");
       expect(text).toContain("source verification");

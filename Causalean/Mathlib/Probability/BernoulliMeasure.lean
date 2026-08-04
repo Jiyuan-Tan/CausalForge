@@ -9,11 +9,12 @@ import Mathlib.InformationTheory.KullbackLeibler.Basic
 import Mathlib.MeasureTheory.Integral.Bochner.Basic
 
 /-!
-# Real-valued Bernoulli measures
+# Bernoulli measures
 
 This file defines the Bernoulli law on the real line, supported on `0` and
 `1`, and proves its basic probability, support, integral, absolute-continuity,
-and KL-divergence facts.
+and KL-divergence facts. It also provides the corresponding Bool-valued law and
+its measurability, probability, integral, bind, and map formulas.
 -/
 
 namespace Causalean.Mathlib.Probability
@@ -93,18 +94,10 @@ lemma bernoulliLaw_ae_zero_or_one {p : ℝ} :
   rw [Measure.add_apply, Measure.smul_apply, Measure.smul_apply]
   simp
 
-/-- Alias for the binary-support fact: a draw from the real-valued Bernoulli
-law is almost surely either `0` or `1`. -/
-lemma bernoulliLaw_ae_binary {p : ℝ} :
-    ∀ᵐ y ∂bernoulliLaw p, y = 0 ∨ y = 1 := by
-  exact bernoulliLaw_ae_zero_or_one
-
-/-- Bernoulli laws with parameters in the central quarter band are mutually
-absolutely continuous in the direction needed for likelihood-ratio and KL
-computations. -/
-lemma bernoulliLaw_ac_of_mem_quarter_band {p q : ℝ}
-    (_hp_lo : (1 : ℝ) / 4 ≤ p) (_hp_hi : p ≤ 3 / 4)
-    (hq_lo : (1 : ℝ) / 4 ≤ q) (hq_hi : q ≤ 3 / 4) :
+/-- A Bernoulli law is absolutely continuous with respect to any Bernoulli law
+whose success probability is strictly between zero and one. -/
+lemma bernoulliLaw_ac_of_reference_interior {p q : ℝ}
+    (hq0 : 0 < q) (hq1 : q < 1) :
     bernoulliLaw p ≪ bernoulliLaw q := by
   have hq_ne0 : ENNReal.ofReal q ≠ 0 := by
     intro h
@@ -128,11 +121,9 @@ lemma bernoulliLaw_ac_of_mem_quarter_band {p q : ℝ}
       simp [h1, h0, h1q_ne0] at hzero
     · simp [h1, h0]
 
-/-- The log-likelihood ratio between two central-quarter Bernoulli laws is
-integrable under the first Bernoulli law. -/
-lemma bernoulliLaw_llr_integrable_of_mem_quarter_band {p q : ℝ}
-    (_hp_lo : (1 : ℝ) / 4 ≤ p) (_hp_hi : p ≤ 3 / 4)
-    (_hq_lo : (1 : ℝ) / 4 ≤ q) (_hq_hi : q ≤ 3 / 4) :
+/-- The log-likelihood ratio between any two real-parameter Bernoulli laws is
+integrable under the first law. -/
+lemma bernoulliLaw_llr_integrable {p q : ℝ} :
     Integrable (llr (bernoulliLaw p) (bernoulliLaw q)) (bernoulliLaw p) := by
   unfold bernoulliLaw
   rw [integrable_add_measure]
@@ -150,16 +141,16 @@ lemma bernoulliLaw_llr_integrable_of_mem_quarter_band {p q : ℝ}
           + ENNReal.ofReal (1 - p) • Measure.dirac (0 : ℝ)) (bernoulliLaw q))
         (a := (0 : ℝ)) (by simp [enorm])) (by simp)
 
-/-- For two Bernoulli laws with success probabilities strictly between zero
-and one, their KL divergence is the usual two-point Bernoulli expression:
-success contribution plus failure contribution. -/
-lemma bernoulliLaw_klDiv_toReal {p q : ℝ} (hp0 : 0 < p) (hp1 : p < 1)
+/-- For Bernoulli laws whose first success probability lies in the unit interval
+and whose reference probability is strictly between zero and one, their KL divergence
+is the usual two-point Bernoulli expression: success contribution plus failure contribution. -/
+lemma bernoulliLaw_klDiv_toReal {p q : ℝ} (hp0 : 0 ≤ p) (hp1 : p ≤ 1)
     (hq0 : 0 < q) (hq1 : q < 1) :
     (InformationTheory.klDiv (bernoulliLaw p) (bernoulliLaw q)).toReal
       = p * Real.log (p / q) + (1 - p) * Real.log ((1 - p) / (1 - q)) := by
   classical
   haveI hp_prob : IsProbabilityMeasure (bernoulliLaw p) :=
-    bernoulliLaw_isProbabilityMeasure hp0.le hp1.le
+    bernoulliLaw_isProbabilityMeasure hp0 hp1
   haveI hq_prob : IsProbabilityMeasure (bernoulliLaw q) :=
     bernoulliLaw_isProbabilityMeasure hq0.le hq1.le
   let g : ℝ → ENNReal :=
@@ -211,9 +202,9 @@ lemma bernoulliLaw_klDiv_toReal {p q : ℝ} (hp0 : 0 < p) (hp1 : p < 1)
       rw [hx]
   rw [bernoulliLaw_integral hq0.le hq1.le]
   dsimp [g]
-  have hpq_nonneg : 0 ≤ p / q := div_nonneg hp0.le hq0.le
+  have hpq_nonneg : 0 ≤ p / q := div_nonneg hp0 hq0.le
   have hcp_nonneg : 0 ≤ (1 - p) / (1 - q) :=
-    div_nonneg (sub_nonneg.mpr hp1.le) (sub_nonneg.mpr hq1.le)
+    div_nonneg (sub_nonneg.mpr hp1) (sub_nonneg.mpr hq1.le)
   simp only [↓reduceIte, zero_ne_one]
   rw [ENNReal.toReal_ofReal hpq_nonneg, ENNReal.toReal_ofReal hcp_nonneg]
   have hqne : q ≠ 0 := hq0.ne'
@@ -243,26 +234,97 @@ lemma bernoulliLaw_klDiv_le_four_sq_sub {p q : ℝ}
   have hq0 : 0 < q := by linarith
   have hq1 : q < 1 := by linarith
   have hac : bernoulliLaw p ≪ bernoulliLaw q :=
-    bernoulliLaw_ac_of_mem_quarter_band hp_lo hp_hi hq_lo hq_hi
+    bernoulliLaw_ac_of_reference_interior hq0 hq1
   have hint : Integrable (llr (bernoulliLaw p) (bernoulliLaw q)) (bernoulliLaw p) :=
-    bernoulliLaw_llr_integrable_of_mem_quarter_band hp_lo hp_hi hq_lo hq_hi
+    bernoulliLaw_llr_integrable
   have hfinite :
       InformationTheory.klDiv (bernoulliLaw p) (bernoulliLaw q) ≠ ⊤ :=
     InformationTheory.klDiv_ne_top hac hint
   rw [← ENNReal.ofReal_toReal hfinite]
   exact ENNReal.ofReal_le_ofReal <| by
-    rw [bernoulliLaw_klDiv_toReal hp0 hp1 hq0 hq1]
+    rw [bernoulliLaw_klDiv_toReal hp0.le hp1.le hq0 hq1]
     exact Causalean.Mathlib.Analysis.bernoulli_kl_le_four_sq_sub_of_mem_quarter_band
       hp_lo hp_hi hq_lo hq_hi
 
 /-- `ℝ≥0∞`/`lintegral` analogue of `bernoulliLaw_integral`: a Bernoulli law
 integrates an `ℝ≥0∞`-valued function as the two-point weighted sum. -/
-lemma bernoulliLaw_lintegral_ofReal {p : ℝ} (_hp0 : 0 ≤ p) (_hp1 : p ≤ 1)
-    (f : ℝ → ENNReal) :
+lemma bernoulliLaw_lintegral_ofReal {p : ℝ} (f : ℝ → ENNReal) :
     ∫⁻ y, f y ∂(bernoulliLaw p)
       = ENNReal.ofReal p * f 1 + ENNReal.ofReal (1 - p) * f 0 := by
   unfold bernoulliLaw
   rw [lintegral_add_measure]
   · simp [lintegral_smul_measure, mul_comm]
+
+/-- The Boolean Bernoulli distribution assigns success probability to truth and failure
+probability to falsehood. It is the same two-point law as the existing real-valued Bernoulli
+distribution on zero and one, but its Boolean values make it usable as a Markov kernel into
+a Boolean coordinate of a potential-outcome tuple.
+
+This is the Bool-valued sibling of `bernoulliLaw`. -/
+noncomputable def bernoulliBool (p : ℝ) : Measure Bool :=
+  ENNReal.ofReal p • Measure.dirac true +
+    ENNReal.ofReal (1 - p) • Measure.dirac false
+
+/-- The Bool-valued Bernoulli distribution varies measurably with its success probability,
+so a measurable probability parameter can be used to construct a measurable kernel. -/
+lemma measurable_bernoulliBool : Measurable bernoulliBool := by
+  unfold bernoulliBool
+  fun_prop
+
+/-- A Bool-valued Bernoulli distribution is a probability distribution whenever its
+success probability lies between zero and one. -/
+lemma bernoulliBool_isProbabilityMeasure {p : ℝ}
+    (hp0 : 0 ≤ p) (hp1 : p ≤ 1) :
+    IsProbabilityMeasure (bernoulliBool p) := by
+  rw [isProbabilityMeasure_iff]
+  unfold bernoulliBool
+  rw [Measure.add_apply, Measure.smul_apply, Measure.smul_apply]
+  simp only [Measure.dirac_apply, Set.indicator_of_mem, Set.mem_univ,
+    Pi.one_apply, smul_eq_mul, mul_one]
+  rw [← ENNReal.ofReal_add hp0 (sub_nonneg.mpr hp1)]
+  convert ENNReal.ofReal_one using 2
+  all_goals ring
+
+/-- The expectation of a real-valued function of a Bool-valued Bernoulli draw is its value
+at success times the success probability plus its value at failure times the failure
+probability. -/
+lemma bernoulliBool_integral {p : ℝ} (hp0 : 0 ≤ p) (hp1 : p ≤ 1)
+    (f : Bool → ℝ) :
+    ∫ z, f z ∂bernoulliBool p =
+      p * f true + (1 - p) * f false := by
+  unfold bernoulliBool
+  rw [integral_add_measure]
+  · rw [integral_smul_measure, integral_smul_measure]
+    simp [hp0, sub_nonneg.mpr hp1, smul_eq_mul]
+  · exact Integrable.smul_measure (μ := Measure.dirac true)
+      (c := ENNReal.ofReal p)
+      (integrable_dirac (f := f) (a := true) (by simp [enorm])) (by simp)
+  · exact Integrable.smul_measure (μ := Measure.dirac false)
+      (c := ENNReal.ofReal (1 - p))
+      (integrable_dirac (f := f) (a := false) (by simp [enorm])) (by simp)
+
+/-- Drawing a Bool-valued Bernoulli variable and then selecting a distribution according to
+its value produces the corresponding success-probability mixture of the two distributions. -/
+lemma bernoulliBool_bind {β : Type*} [MeasurableSpace β] (p : ℝ)
+    (K : Bool → Measure β) :
+    (bernoulliBool p).bind K =
+      ENNReal.ofReal p • K true + ENNReal.ofReal (1 - p) • K false := by
+  ext A hA
+  rw [Measure.bind_apply hA (measurable_of_finite _).aemeasurable]
+  unfold bernoulliBool
+  rw [lintegral_add_measure, lintegral_smul_measure, lintegral_smul_measure]
+  simp [Measure.add_apply, Measure.smul_apply, smul_eq_mul]
+
+/-- Transforming a Bool-valued Bernoulli draw produces a two-point distribution concentrated
+on the transformed success and failure values with their original probabilities. -/
+lemma bernoulliBool_map {β : Type*} [MeasurableSpace β] (p : ℝ)
+    (f : Bool → β) :
+    (bernoulliBool p).map f =
+      ENNReal.ofReal p • Measure.dirac (f true) +
+        ENNReal.ofReal (1 - p) • Measure.dirac (f false) := by
+  have hf : Measurable f := measurable_of_finite f
+  unfold bernoulliBool
+  rw [Measure.map_add _ _ hf, Measure.map_smul, Measure.map_smul]
+  rw [Measure.map_dirac' hf, Measure.map_dirac' hf]
 
 end Causalean.Mathlib.Probability

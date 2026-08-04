@@ -105,7 +105,7 @@ Immediate from the change-of-variables formula for pushforward measures applied
 to `f p = p.1 * p.2` and `g u = (quantile μ u, quantile ν u)`. -/
 theorem product_expectation_comonotoneCoupling (μ ν : Measure ℝ)
     [IsProbabilityMeasure μ] [IsProbabilityMeasure ν]
-    (hμ : MemLp (fun x : ℝ => x) 2 μ) (hν : MemLp (fun y : ℝ => y) 2 ν) :
+    (_hμ : MemLp (fun x : ℝ => x) 2 μ) (_hν : MemLp (fun y : ℝ => y) 2 ν) :
     (∫ p, p.1 * p.2 ∂(comonotoneCoupling μ ν))
       = ∫ u in Ioo (0 : ℝ) 1, quantile μ u * quantile ν u := by
   unfold comonotoneCoupling

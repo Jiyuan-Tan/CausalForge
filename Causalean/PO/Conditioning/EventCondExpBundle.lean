@@ -80,14 +80,14 @@ expectation factorises as
 
 Used by dynamic-regime bridge arguments that condition on a history bundle. -/
 theorem condExpGiven_mul_of_consistency_CondIndepCFBundle
-    [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
-    {α : Type*} [MeasurableSpace α] [MeasurableSingletonClass α]
+    [StandardBorelSpace P.Ω]
+    {α : Type*} [MeasurableSpace α]
     {a : POVar P α}
     (hCI : P.CondIndepCFBundle (RegimedVar.ofFactual a) B C P.μ)
-    {factualF : P.Ω → ℝ} (hF_meas : Measurable factualF)
+    {factualF : P.Ω → ℝ}
     {h : (∀ i, B.type i) → ℝ} (hh_meas : Measurable h)
     (hh_int : Integrable (fun ω => h (B.jointValue ω)) P.μ)
-    {x : α}
+    {x : α} (hx : MeasurableSet ({x} : Set α))
     (hF_eq : (fun ω => factualF ω * a.indicator x ω) =ᵐ[P.μ]
               fun ω => h (B.jointValue ω) * a.indicator x ω) :
     C.condExpGiven (fun ω => factualF ω * a.indicator x ω) P.μ
@@ -95,10 +95,8 @@ theorem condExpGiven_mul_of_consistency_CondIndepCFBundle
       fun ω => C.condExpGiven (fun ω' => h (B.jointValue ω')) P.μ ω
         * C.condExpGiven (a.indicator x) P.μ ω := by
   let u : α → ℝ := ({x} : Set α).indicator (fun _ => (1 : ℝ))
-  have _ : Measurable (fun ω => factualF ω * a.indicator x ω) :=
-    hF_meas.mul (a.measurable_indicator x)
   have hu_meas : Measurable u :=
-    measurable_const.indicator (MeasurableSet.singleton x)
+    measurable_const.indicator hx
   have hu_eq : (fun ω => u (a.factual ω)) = a.indicator x := by
     funext ω
     unfold POVar.indicator
@@ -119,7 +117,7 @@ theorem condExpGiven_mul_of_consistency_CondIndepCFBundle
       rw [congr_fun hu_eq ω]
     rw [hEq]
     refine hh_int.mono
-      ((a.measurable_indicator x).mul
+      ((a.measurable_indicator x hx).mul
         (hh_meas.comp B.measurable_jointValue)).aestronglyMeasurable ?_
     refine Filter.Eventually.of_forall (fun ω => ?_)
     rcases a.indicator_eq_one_or_zero x ω with hω | hω <;> simp [hω]
@@ -133,7 +131,9 @@ theorem condExpGiven_mul_of_consistency_CondIndepCFBundle
         (f := a.factual) (g := B.jointValue)
         a.measurable_factual B.measurable_jointValue hCI.toCondIndepFun
         (u := u) (v := h) hu_meas hh_meas
-        (by rw [hu_eq]; exact a.integrable_indicator x) hh_int huv_int
+        (by
+          rw [hu_eq]
+          exact a.integrable_indicator x hx) hh_int huv_int
   have hfact' :
       C.condExpGiven (fun ω => h (B.jointValue ω) * a.indicator x ω) P.μ
         =ᵐ[P.μ]
@@ -157,14 +157,14 @@ hypotheses plus an a.s.-positive denominator, the conditional ratio
 `condExpRatio (factualF · 1_{a=x}) (1_{a=x})` collapses to the conditional
 mean of `h ∘ B.jointValue`. -/
 theorem condExpRatio_of_consistency_CondIndepCFBundle
-    [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
-    {α : Type*} [MeasurableSpace α] [MeasurableSingletonClass α]
+    [StandardBorelSpace P.Ω]
+    {α : Type*} [MeasurableSpace α]
     {a : POVar P α}
     (hCI : P.CondIndepCFBundle (RegimedVar.ofFactual a) B C P.μ)
-    {factualF : P.Ω → ℝ} (hF_meas : Measurable factualF)
+    {factualF : P.Ω → ℝ}
     {h : (∀ i, B.type i) → ℝ} (hh_meas : Measurable h)
     (hh_int : Integrable (fun ω => h (B.jointValue ω)) P.μ)
-    {x : α}
+    {x : α} (hx : MeasurableSet ({x} : Set α))
     (hF_eq : (fun ω => factualF ω * a.indicator x ω) =ᵐ[P.μ]
               fun ω => h (B.jointValue ω) * a.indicator x ω)
     (hOver : ∀ᵐ ω ∂P.μ, C.condExpGiven (a.indicator x) P.μ ω ≠ 0) :
@@ -173,7 +173,7 @@ theorem condExpRatio_of_consistency_CondIndepCFBundle
       C.condExpGiven (fun ω' => h (B.jointValue ω')) P.μ := by
   refine C.condExpRatio_eq_of_mul ?_ hOver
   filter_upwards [condExpGiven_mul_of_consistency_CondIndepCFBundle B C
-    hCI hF_meas hh_meas hh_int hF_eq] with ω hω
+    hCI hh_meas hh_int hx hF_eq] with ω hω
   simpa [Pi.mul_apply, mul_comm] using hω
 
 end POCFBundle

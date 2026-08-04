@@ -207,9 +207,6 @@ lemma obsCondKernel_cross_eq_ae_of_discrete
     (Y W : Finset (SWIGNode N))
     (hY : Y ⊆ M'.observed) (hW : W ⊆ M'.observed)
     (hZrW : Z.image SWIGNode.random ∪ W ⊆ M'.observed)
-    (hDisj_ZrW : Disjoint (Z.image SWIGNode.random) W)
-    (hDisj_YZr : Disjoint Y (Z.image SWIGNode.random))
-    (hDisj_YW : Disjoint Y W)
     [∀ n, StandardBorelSpace (swigΩ Ω n)] [∀ n, Nonempty (swigΩ Ω n)]
     (hdSep : (M'.fixSet Z hZ_obs hZ_fixed).dag.dSep
               Y (Z.image SWIGNode.random)
@@ -236,10 +233,7 @@ lemma obsCondKernel_cross_eq_ae_of_discrete
       (M'.fixSet Z hZ_obs hZ_fixed).FixedValues (ValuesOn W (swigΩ Ω))]
     [MeasurableSingletonClass
       (ValuesOn (Z.image SWIGNode.random ∪ W) (swigΩ Ω))]
-    [∀ _z : {z // z ∈ Z}, Countable (swigΩ Ω (SWIGNode.random _z.val))]
     (s : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues)
-    (hOverlap : Causalean.SCM.ID.Rule2JointOverlap
-                  M' Z hZ_obs hZ_fixed W hZrW s)
     (hPositivity :
       ((M'.obsKernel (M'.fixSetProj Z hZ_obs hZ_fixed s)).map
           (valuesProjection (Ω := swigΩ Ω) hW))
@@ -262,6 +256,8 @@ lemma obsCondKernel_cross_eq_ae_of_discrete
   let M2 := M'.fixSet Z hZ_obs hZ_fixed
   let sM1 : M'.FixedValues := M'.fixSetProj Z hZ_obs hZ_fixed s
   let F := M'.fillZrW Z hZ_obs hZ_fixed W s
+  have hDisj_ZrW : Disjoint (Z.image SWIGNode.random) W :=
+    Disjoint.mono_right Finset.subset_union_left hdSep.2.2.1
   have hY_M2 : Y ⊆ M2.observed :=
     (fixSet_observed M' Z hZ_obs hZ_fixed).symm ▸ hY
   have hW_M2 : W ⊆ M2.observed :=
@@ -290,7 +286,7 @@ lemma obsCondKernel_cross_eq_ae_of_discrete
   -- (2) D-sep collapse: ν_C-a.e. c, M2.obsCondKernel(C)(s, c) B
   --                = M2.obsCondKernel(W)(s, π_W^C c) B.
   have h_L1 := obsCondKernel_dSep_collapse_ae M' Z hZ_obs hZ_fixed Y W
-    hY hW hZrW hDisj_YZr hDisj_ZrW hDisj_YW hdSep s hB
+    hY hW hdSep s hB
   -- (3) Pullback equality: μ_C.comap F = ν_C.comap F.
   have hPartA : μ_C.comap F = ν_C.comap F :=
     mu_C_comap_F_eq_nu_C_comap_F M' Z hZ_obs hZ_fixed W hZrW hDisj_ZrW s
@@ -340,7 +336,7 @@ lemma obsCondKernel_cross_eq_ae_of_discrete
     have hvNotZr : v ∉ Z.image SWIGNode.random := fun hvZr =>
       Finset.disjoint_left.mp hDisj_ZrW hvZr hvW
     simp only [valuesProjection, F, fillZrW]
-    rw [valuesUnionMk_apply_right _ _ hv_in hvNotZr hvW]
+    rw [valuesUnionMk_apply_right _ _ hv_in hvNotZr]
   -- (7) Simplify h_L1_pulled using h_proj_F.
   have h_L1_simpl :
       ∀ᵐ w ∂(ν_C.comap F),

@@ -252,7 +252,7 @@ theorem cb_backdoor_criterion :
     -- `{random X}` in the splitMono graph.  Discharged via `splitMonoDAG`
     -- (computable) + `native_decide`, mirroring `SCM/Examples/BackDoor.lean`.
     exact (by native_decide :
-      (cbSWIGGraph.splitMonoDAG ({Xidx} : Finset CBNode) (by native_decide)).dSep
+      (cbSWIGGraph.splitMonoDAG ({Xidx} : Finset CBNode)).dSep
         {SWIGNode.random Yidx}
         (Finset.image SWIGNode.random ({Xidx} : Finset CBNode))
         ({SWIGNode.random Zidx} ∪ Finset.image SWIGNode.fixed ({Xidx} : Finset CBNode)))

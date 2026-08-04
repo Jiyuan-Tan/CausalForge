@@ -162,16 +162,15 @@ theorem aipw_mean_zero_ATT
     have hYind_int : Integrable
         (fun ω => S.toPOBackdoorSystem.dVar.indicator true ω *
           S.toPOBackdoorSystem.factualY ω) P.μ := by
-      have h := S.toPOBackdoorSystem.dVar.integrable_mul_indicator true hY_int
-        S.toPOBackdoorSystem.measurable_factualY
+      have h := S.toPOBackdoorSystem.dVar.integrable_mul_indicator true
+        (measurableSet_singleton true) hY_int
       exact h.congr (Filter.Eventually.of_forall (fun ω => by ring))
     have hAdjind_int : Integrable
           (fun ω => S.toPOBackdoorSystem.dVar.indicator true ω *
             S.toPOBackdoorSystem.adjustedCE false ω) P.μ := by
       have h :=
         S.toPOBackdoorSystem.dVar.integrable_mul_indicator true
-          (integrable_adjustedCE S hA)
-          (measurable_adjustedCE S false)
+          (measurableSet_singleton true) (integrable_adjustedCE S hA)
       exact h.congr (Filter.Eventually.of_forall (fun ω => by ring))
     have hsub := hYind_int.sub hAdjind_int
     refine hsub.congr ?_

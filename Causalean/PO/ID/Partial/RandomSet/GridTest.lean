@@ -105,7 +105,8 @@ variable (S : IIDSample Ω X μ P) (F : X → Set V) (EF : Set V) (p : Fin k →
     (IsAsymLinearVec.normalizedSum S (supportProcess F EF p)
       (fun m => Finset.range m) n) μ)
 
-include hint hmean in
+omit hint [IsProbabilityMeasure P] in
+include hmean in
 /-- The normalized finite-grid support-process statistic converges to the grid
 supremum of its Gaussian limit.
 
@@ -118,9 +119,10 @@ theorem gridTestStat_clt :
     Tendsto_dist_vec (gridTestStat S F EF p)
       ((gaussianLimit hψ hvar).map maxAbsK) μ
       (fun n => measurable_maxAbsK.comp_aemeasurable (hSum_meas n)) :=
-  setValued_supportProcess_clt S F EF p hψ hvar hint hmean hSum_meas
+  setValued_supportProcess_clt S F EF p hψ hvar hmean hSum_meas
 
-include hint hmean hSum_meas in
+omit [IsProbabilityMeasure P] in
+include hmean hSum_meas in
 /-- The tail probability of the normalized finite-grid support-process statistic
 converges to the corresponding Gaussian-limit tail.
 
@@ -139,7 +141,7 @@ theorem gridTest_asymptotic_level {c : ℝ}
     (hfront : ((gaussianLimit hψ hvar).map maxAbsK) {c} = 0) :
     Tendsto (fun n => μ (gridTestReject S F EF p n c)) atTop
       (𝓝 (((gaussianLimit hψ hvar).map maxAbsK) (Set.Ioi c))) := by
-  have hclt := gridTestStat_clt S F EF p hψ hvar hint hmean hSum_meas
+  have hclt := gridTestStat_clt S F EF p hψ hvar hmean hSum_meas
   unfold Tendsto_dist_vec at hclt
   have hport := MeasureTheory.ProbabilityMeasure.tendsto_measure_of_null_frontier_of_tendsto'
     hclt (E := Set.Ioi c) (by rw [frontier_Ioi]; exact hfront)

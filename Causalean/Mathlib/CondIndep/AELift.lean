@@ -42,7 +42,7 @@ open scoped MeasureTheory ProbabilityTheory
 `s`-indicators. -/
 lemma indicator_aeEq_of_aeEq_restrict
     {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : MeasureTheory.Measure Ω}
-    {s : Set Ω} (hs : MeasurableSet s) {f g : Ω → ℝ}
+    {s : Set Ω} (hs : MeasurableSet s) {β : Type*} [Zero β] {f g : Ω → β}
     (h : f =ᵐ[μ.restrict s] g) :
     s.indicator f =ᵐ[μ] s.indicator g := by
   have h_on : ∀ᵐ ω ∂(μ.restrict s), s.indicator f ω = s.indicator g ω := by
@@ -58,7 +58,7 @@ lemma indicator_aeEq_of_aeEq_restrict
 `s`-indicators. -/
 lemma aeEq_restrict_of_indicator_aeEq
     {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : MeasureTheory.Measure Ω}
-    {s : Set Ω} (hs : MeasurableSet s) {f g : Ω → ℝ}
+    {s : Set Ω} (hs : MeasurableSet s) {β : Type*} [Zero β] {f g : Ω → β}
     (h : s.indicator f =ᵐ[μ] s.indicator g) :
     f =ᵐ[μ.restrict s] g := by
   rw [Filter.EventuallyEq, ae_restrict_iff' hs]
@@ -72,18 +72,19 @@ indicator, so does its conditional expectation. -/
 lemma condExp_indicator_aeEq_zero
     {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : MeasureTheory.Measure Ω}
     {m : MeasurableSpace Ω} {s : Set Ω} (hs : MeasurableSet[m] s)
-    {f : Ω → ℝ} (hf : MeasureTheory.Integrable f μ)
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]
+    {f : Ω → E} (hf : MeasureTheory.Integrable f μ)
     (h : s.indicator f =ᵐ[μ] 0) :
     s.indicator (μ[f | m]) =ᵐ[μ] 0 := by
   have hCE_ind := MeasureTheory.condExp_indicator (m := m) hf hs
   have hLHS_zero : μ[s.indicator f | m] =ᵐ[μ] 0 := by
     refine (MeasureTheory.condExp_congr_ae (m := m) h).trans ?_
-    rw [MeasureTheory.condExp_zero (m := m) (μ := μ) (E := ℝ)]
+    rw [MeasureTheory.condExp_zero (m := m) (μ := μ) (E := E)]
   exact hCE_ind.symm.trans hLHS_zero
 
 /-- **Single-arm a.e.-equality lift for σ-measurable functions.**
 
-If `f, g : Ω → ℝ` are both `m`-measurable and agree `μ.restrict {A=a}`-a.e., they
+If `f, g : Ω → β` are both `m`-measurable and agree `μ.restrict {A=a}`-a.e., they
 agree `μ`-a.e. globally, PROVIDED the conditional probability `P(A=a | m)` is
 positive a.e. (`h_overlap`).
 
@@ -101,22 +102,20 @@ Mathlib-contribution candidate. Used in `Proxy/Helpers/BridgeW.lean` and
 theorem ae_eq_of_ae_eq_restrict_arm
     {Ω : Type*} {mΩ : MeasurableSpace Ω}
     (m : MeasurableSpace Ω) (hm : m ≤ mΩ)
-    {μ : @MeasureTheory.Measure Ω mΩ} [@MeasureTheory.IsFiniteMeasure Ω mΩ μ]
-    {α : Type*} [MeasurableSpace α] [MeasurableSingletonClass α]
-    {A : Ω → α} (a : α)
-    {f g : Ω → ℝ}
-    (_hfm : Measurable[m] f) (_hgm : Measurable[m] g)
-    (_h : f =ᵐ[μ.restrict {ω | A ω = a}] g)
+    {μ : @MeasureTheory.Measure Ω mΩ}
+    {E : Set Ω}
+    {β : Type*} {f g : Ω → β}
+    (h_eq_meas : MeasurableSet[m] {ω | f ω = g ω})
+    (_h : f =ᵐ[μ.restrict E] g)
     (_h_overlap : ∀ s : Set Ω, MeasurableSet[m] s →
-        μ (s ∩ {ω | A ω = a}) = 0 → μ s = 0) :
+        μ (s ∩ E) = 0 → μ s = 0) :
     f =ᵐ[μ] g := by
   let s : Set Ω := {ω | f ω ≠ g ω}
   have hs : MeasurableSet[m] s := by
-    have heq : MeasurableSet[m] {ω | f ω = g ω} := measurableSet_eq_fun _hfm _hgm
-    simpa [s, Set.compl_setOf] using heq.compl
+    simpa [s, Set.compl_setOf] using h_eq_meas.compl
   have hs_ambient : @MeasurableSet Ω mΩ s := hm _ hs
-  have hs_arm_zero : μ (s ∩ {ω | A ω = a}) = 0 := by
-    have hbad : (μ.restrict {ω | A ω = a}) s = 0 := by
+  have hs_arm_zero : μ (s ∩ E) = 0 := by
+    have hbad : (μ.restrict E) s = 0 := by
       exact MeasureTheory.ae_iff.mp _h
     rwa [MeasureTheory.Measure.restrict_apply hs_ambient] at hbad
   have hs_zero : μ s = 0 := _h_overlap s hs hs_arm_zero
@@ -138,11 +137,11 @@ theorem ae_le_YofA_of_ae_le_Y
     [@StandardBorelSpace Ω mΩ]
     {μ : @MeasureTheory.Measure Ω mΩ} [@MeasureTheory.IsFiniteMeasure Ω mΩ μ]
     {σ_UX : MeasurableSpace Ω} (_hσUX : σ_UX ≤ mΩ)
-    {A : Ω → Bool} {Y Ya : Ω → ℝ}
-    (_hA : @Measurable Ω Bool mΩ _ A)
-    (_hY : @Measurable Ω ℝ mΩ _ Y)
+    {α : Type*} [MeasurableSpace α] [MeasurableSingletonClass α]
+    {A : Ω → α} {Y Ya : Ω → ℝ}
+    (_hA : @Measurable Ω α mΩ _ A)
     (_hYa : @Measurable Ω ℝ mΩ _ Ya)
-    (a : Bool)
+    (a : α)
     (_latent_exch : ProbabilityTheory.CondIndepFun σ_UX _hσUX Ya A μ)
     (_consistency : Y =ᵐ[μ.restrict {ω | A ω = a}] Ya)
     (_h_overlap : ∀ s : Set Ω, MeasurableSet[σ_UX] s →
@@ -171,7 +170,7 @@ theorem ae_le_YofA_of_ae_le_Y
         fun ω => (μ⟦B | σ_UX⟧) ω * (μ⟦E | σ_UX⟧) ω := by
     have hraw :=
       (ProbabilityTheory.condIndepFun_iff_condExp_inter_preimage_eq_mul _hYa _hA).mp
-        _latent_exch (Set.Ioi M) ({a} : Set Bool) measurableSet_Ioi
+        _latent_exch (Set.Ioi M) ({a} : Set α) measurableSet_Ioi
         (measurableSet_singleton a)
     simpa [B, E] using hraw
   have hBE_indicator_zero :
@@ -187,7 +186,7 @@ theorem ae_le_YofA_of_ae_le_Y
   have hE_pos : ∀ᵐ ω ∂μ, 0 < (μ⟦E | σ_UX⟧) ω := by
     simpa [E] using
       (ae_pos_condExp_indicator_of_le (mΩ := mΩ) (μ := μ)
-        (m₁ := σ_UX) (m₂ := σ_UX) _hσUX _hσUX le_rfl _hA a _h_overlap)
+        (m₁ := σ_UX) _hσUX hE _h_overlap)
   have hCE_B_zero : μ⟦B | σ_UX⟧ =ᵐ[μ] 0 := by
     have hprod_zero :
         (fun ω => (μ⟦B | σ_UX⟧) ω * (μ⟦E | σ_UX⟧) ω) =ᵐ[μ] 0 :=
@@ -222,11 +221,11 @@ theorem ae_le_YofA_of_ae_le_Y_below
     [@StandardBorelSpace Ω mΩ]
     {μ : @MeasureTheory.Measure Ω mΩ} [@MeasureTheory.IsFiniteMeasure Ω mΩ μ]
     {σ_UX : MeasurableSpace Ω} (_hσUX : σ_UX ≤ mΩ)
-    {A : Ω → Bool} {Y Ya : Ω → ℝ}
-    (_hA : @Measurable Ω Bool mΩ _ A)
-    (_hY : @Measurable Ω ℝ mΩ _ Y)
+    {α : Type*} [MeasurableSpace α] [MeasurableSingletonClass α]
+    {A : Ω → α} {Y Ya : Ω → ℝ}
+    (_hA : @Measurable Ω α mΩ _ A)
     (_hYa : @Measurable Ω ℝ mΩ _ Ya)
-    (a : Bool)
+    (a : α)
     (_latent_exch : ProbabilityTheory.CondIndepFun σ_UX _hσUX Ya A μ)
     (_consistency : Y =ᵐ[μ.restrict {ω | A ω = a}] Ya)
     (_h_overlap : ∀ s : Set Ω, MeasurableSet[σ_UX] s →
@@ -236,7 +235,7 @@ theorem ae_le_YofA_of_ae_le_Y_below
   have hneg : ∀ᵐ ω ∂μ, -Ya ω ≤ -M :=
     ae_le_YofA_of_ae_le_Y (mΩ := mΩ) (μ := μ) (σ_UX := σ_UX) _hσUX
       (A := A) (Y := fun ω => -Y ω) (Ya := fun ω => -Ya ω)
-      _hA _hY.neg _hYa.neg a
+      _hA _hYa.neg a
       _latent_exch.neg_left
       (_consistency.mono fun ω hω => by simp [hω])
       _h_overlap

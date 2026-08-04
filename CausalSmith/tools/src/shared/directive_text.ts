@@ -1,5 +1,5 @@
 // Directive-capture sanitizer, shared by every orchestrator directive CLI
-// (`bin/{d0,dneg1,f2,f3}_directive.ts`, `bin/d0r_directed_solve.ts`).
+// (`bin/{d0,dneg1,f2,f3}_directive.ts`).
 //
 // WHY THIS EXISTS. A directive is normally captured from a consult agent's output
 // and piped into a directive CLI. When that capture is built wrong — the classic

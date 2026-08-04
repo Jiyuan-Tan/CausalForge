@@ -102,4 +102,16 @@ describe("fixOverEscapedTex", () => {
     // the guard fires (has \\( ), but \\<space> is left alone (only \\<non-space-non-digit> collapses)
     expect(fixOverEscapedTex("\\\\(a\\\\) \\\\ \nb")).toBe("\\(a\\) \\\\ \nb");
   });
+  it("leaves a table row break directly before inline math alone (no doubled CLOSER)", () => {
+    // 2026-08-01 TeX audit: `a \\\(x\)` is a row separator followed by a real
+    // `\(` — a single-token `\\(` trigger collapsed EVERY `\\` in the body,
+    // destroying row separators document-wide. The repair now requires a
+    // doubled OPEN *and* CLOSE pair as evidence.
+    const tabular = "\\begin{tabular}{ll} a \\\\\\(x\\) & b \\\\ c \\end{tabular}";
+    expect(fixOverEscapedTex(tabular)).toBe(tabular);
+  });
+  it("does not read \\\\[1em] vertical spacing as a doubled display opener", () => {
+    const body = "row one \\\\[1em] row two \\\\] tail";
+    expect(fixOverEscapedTex(body)).toBe(body);
+  });
 });

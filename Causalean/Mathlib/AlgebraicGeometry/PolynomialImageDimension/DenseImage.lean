@@ -45,7 +45,7 @@ lemma affineZariskiClosure_polynomial_image_of_dense
 /-- The closure of a polynomial image of a nonempty dense subset of finite
 complex affine space is irreducible. -/
 theorem irreducible_affineClosure_polynomial_image_of_dense
-    {ι κ : Type*} [Finite ι] [Finite κ]
+    {ι κ : Type*} [Finite ι]
     {f : (ι → ℂ) → (κ → ℂ)} (hf : IsPolynomialMap f)
     {A : Set (ι → ℂ)} (hA : affineZariskiClosure A = Set.univ)
     (hne : A.Nonempty) :
@@ -109,7 +109,7 @@ theorem irreducible_affineClosure_polynomial_image_of_dense
 /-- The closure of the full range of a polynomial map between finite complex
 affine spaces is irreducible. -/
 theorem polynomialImageClosure_isIrreducible
-    {ι κ : Type*} [Finite ι] [Finite κ]
+    {ι κ : Type*} [Finite ι]
     {f : (ι → ℂ) → (κ → ℂ)} (hf : IsPolynomialMap f) :
     IsIrreducibleAffineClosed (affineZariskiClosure (Set.range f)) := by
   have hdense : affineZariskiClosure (Set.univ : Set (ι → ℂ)) = Set.univ :=

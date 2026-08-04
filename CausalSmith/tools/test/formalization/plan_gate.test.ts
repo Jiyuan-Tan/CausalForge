@@ -2,6 +2,10 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { runPlanGate, type PlanGateViolation } from "../../src/formalization/plan/plan_gate.js";
 import type { Core } from "../../src/discovery/core/schema.js";
+import { addNode, markPassed, setLean, setProof } from "../../src/graph/mutate.js";
+import { createEmptyGraph } from "../../src/graph/store.js";
+import { statementHash } from "../../src/graph/hash.js";
+import type { ExtractedDecl } from "../../src/graph/extractor.js";
 
 // A small, schema-valid core exercising every node kind: a standalone atom, two
 // shared member atoms, a class, a construction, and a theorem.
@@ -155,6 +159,110 @@ describe("F1 plan gate — P5/P6/P7/P8 optional + derived", () => {
     const plan = makePlan();
     const leanTags = { nodes: new Set(Object.keys(plan.nodes)), envs: new Set(["S1"]) };
     expect(runPlanGate(plan, makeCore(), { leanTags }).ok).toBe(true);
+  });
+  it("exempts only an exact, completed pre-F2 helper receipt", () => {
+    const plan = makePlan();
+    const statement = "lemma helper : True";
+    let graph = createEmptyGraph("panel_demo", "v1");
+    graph = addNode(graph, {
+      id: "helper",
+      kind: "lemma",
+      provenance: "agent-introduced",
+      nl_statement: "helper",
+      tex_anchor: "",
+    });
+    graph = setLean(graph, "helper", "Demo.helper", "Helpers.lean");
+    graph = setProof(graph, "helper", "complete", 0);
+    graph = markPassed(graph, "helper", statementHash(statement));
+    const annotatedDecls: ExtractedDecl[] = [{
+      nodeId: "helper",
+      declKind: "lemma",
+      declName: "Demo.helper",
+      namespace: "Demo",
+      file: "Helpers.lean",
+      statement,
+      hasSorry: false,
+    }];
+    const leanTags = {
+      nodes: new Set([...Object.keys(plan.nodes), "helper"]),
+      envs: new Set(["S1"]),
+    };
+    expect(runPlanGate(plan, makeCore(), {
+      leanTags,
+      preF2Graph: graph,
+      annotatedDecls,
+    }).violations).toEqual([]);
+  });
+  it.each([
+    ["missing receipt hash", (graph: ReturnType<typeof createEmptyGraph>) => {
+      graph.nodes[0].review.passed_hash = null;
+    }],
+    ["stale statement hash", (_graph: ReturnType<typeof createEmptyGraph>, decls: ExtractedDecl[]) => {
+      decls[0].statement = "lemma helper : False";
+    }],
+    ["rebound declaration", (_graph: ReturnType<typeof createEmptyGraph>, decls: ExtractedDecl[]) => {
+      decls[0].declName = "Other.helper";
+    }],
+    ["incomplete proof", (graph: ReturnType<typeof createEmptyGraph>) => {
+      graph.nodes[0].proof.state = "sorry";
+    }],
+    ["drift verdict", (graph: ReturnType<typeof createEmptyGraph>) => {
+      graph.nodes[0].review.status = "drift";
+    }],
+  ])("refuses a plan-less helper with %s", (_label, mutate) => {
+    const plan = makePlan();
+    const statement = "lemma helper : True";
+    let graph = createEmptyGraph("panel_demo", "v1");
+    graph = addNode(graph, {
+      id: "helper",
+      kind: "lemma",
+      provenance: "agent-introduced",
+      nl_statement: "helper",
+      tex_anchor: "",
+    });
+    graph = setLean(graph, "helper", "Demo.helper", "Helpers.lean");
+    graph = setProof(graph, "helper", "complete", 0);
+    graph = markPassed(graph, "helper", statementHash(statement));
+    const annotatedDecls: ExtractedDecl[] = [{
+      nodeId: "helper",
+      declKind: "lemma",
+      declName: "Demo.helper",
+      namespace: "Demo",
+      file: "Helpers.lean",
+      statement,
+      hasSorry: false,
+    }];
+    mutate(graph, annotatedDecls);
+    const leanTags = {
+      nodes: new Set([...Object.keys(plan.nodes), "helper"]),
+      envs: new Set(["S1"]),
+    };
+    expect(runPlanGate(plan, makeCore(), {
+      leanTags,
+      preF2Graph: graph,
+      annotatedDecls,
+    }).violations).toContainEqual(expect.objectContaining({ code: "P7", where: "helper" }));
+  });
+  it("refuses a helper minted after the pre-F2 snapshot", () => {
+    const plan = makePlan();
+    const leanTags = {
+      nodes: new Set([...Object.keys(plan.nodes), "new_helper"]),
+      envs: new Set(["S1"]),
+    };
+    const annotatedDecls: ExtractedDecl[] = [{
+      nodeId: "new_helper",
+      declKind: "lemma",
+      declName: "Demo.new_helper",
+      namespace: "Demo",
+      file: "Helpers.lean",
+      statement: "lemma new_helper : True",
+      hasSorry: false,
+    }];
+    expect(runPlanGate(plan, makeCore(), {
+      leanTags,
+      preF2Graph: createEmptyGraph("panel_demo", "v1"),
+      annotatedDecls,
+    }).violations).toContainEqual(expect.objectContaining({ code: "P7", where: "new_helper" }));
   });
   it("flags stored feasibility disagreeing with the derived value (P8)", () => {
     const plan = makePlan();

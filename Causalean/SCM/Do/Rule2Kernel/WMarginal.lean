@@ -83,13 +83,13 @@ lemma fillZrW_image_eq
         by_cases hvA : v ∈ Z.image SWIGNode.random
         · exfalso
           exact Finset.disjoint_left.mp hDisj_ZrW hvA hv
-        · rw [valuesUnionMk_apply_right _ _ _ hvA hv]
+        · rw [valuesUnionMk_apply_right _ _ _ hvA]
       rw [this]
       exact hwA
     · simp only [Set.mem_preimage, Set.mem_singleton_iff]
       funext ⟨v, hv⟩
       simp only [valuesProjection, fillZrW]
-      rw [valuesUnionMk_apply_left _ _ _ hv]
+      rw [valuesUnionMk_apply_left _ _ hv]
   · rintro ⟨hW_mem, hZr_mem⟩
     simp only [Set.mem_preimage] at hW_mem
     simp only [Set.mem_preimage, Set.mem_singleton_iff] at hZr_mem
@@ -97,16 +97,16 @@ lemma fillZrW_image_eq
     funext ⟨v, hv⟩
     simp only [fillZrW]
     rcases Finset.mem_union.mp hv with hZrV | hWV
-    · rw [valuesUnionMk_apply_left _ _ _ hZrV]
+    · rw [valuesUnionMk_apply_left _ _ hZrV]
       have := congrFun hZr_mem ⟨v, hZrV⟩
       simp only [valuesProjection] at this
       exact this.symm
     · by_cases hZrV' : v ∈ Z.image SWIGNode.random
-      · rw [valuesUnionMk_apply_left _ _ _ hZrV']
+      · rw [valuesUnionMk_apply_left _ _ hZrV']
         have := congrFun hZr_mem ⟨v, hZrV'⟩
         simp only [valuesProjection] at this
         exact this.symm
-      · rw [valuesUnionMk_apply_right _ _ _ hZrV' hWV]
+      · rw [valuesUnionMk_apply_right _ _ _ hZrV']
         simp only [valuesProjection]
 
 /-- `fillZrW Z _ _ W s'` is injective when `Z.image .random` and `W` are
@@ -128,8 +128,8 @@ lemma fillZrW_injective
     Finset.disjoint_left.mp hDisj_ZrW hvZr hv
   have hcoord := congrFun h ⟨v, h_in⟩
   simp only [fillZrW] at hcoord
-  rw [valuesUnionMk_apply_right _ _ h_in hvNotZr hv,
-      valuesUnionMk_apply_right _ _ h_in hvNotZr hv] at hcoord
+  rw [valuesUnionMk_apply_right _ _ h_in hvNotZr,
+      valuesUnionMk_apply_right _ _ h_in hvNotZr] at hcoord
   exact hcoord
 
 /-- A measurable `W`-event has a measurable image under `fillZrW`.
@@ -166,7 +166,7 @@ lemma measurableSet_fillZrW_image
         by_cases hvZ : v ∈ Z.image SWIGNode.random
         · have h_eq : (fun ζ : ValuesOn (Z.image SWIGNode.random) (swigΩ Ω) =>
               valuesUnionMk ζ w₀ ⟨v, hv⟩) = (fun ζ => ζ ⟨v, hvZ⟩) :=
-            funext fun _ => valuesUnionMk_apply_left _ _ hv hvZ
+            funext fun _ => valuesUnionMk_apply_left _ _ hvZ
           rw [h_eq]
           exact measurable_pi_apply _
         · have hvW : v ∈ W := (Finset.mem_union.mp hv).resolve_left hvZ
@@ -187,8 +187,8 @@ lemma measurableSet_fillZrW_image
         have hv_union : v ∈ Z.image SWIGNode.random ∪ W :=
           Finset.subset_union_left hv
         have h_coord := congrFun h ⟨v, hv_union⟩
-        rw [valuesUnionMk_apply_left _ _ hv_union hv,
-            valuesUnionMk_apply_left _ _ hv_union hv] at h_coord
+        rw [valuesUnionMk_apply_left _ _ hv,
+            valuesUnionMk_apply_left _ _ hv] at h_coord
         exact h_coord
       rw [h_pre]
       exact hmeas (measurableSet_singleton _)
@@ -241,7 +241,7 @@ lemma obsKernel_fixSet_W_marginal_pushforward_eq
     (M' : Causalean.SCM N Ω) (Z : Finset N)
     (hZ_obs : ∀ D ∈ Z, SWIGNode.random D ∈ M'.observed)
     (hZ_fixed : ∀ D ∈ Z, SWIGNode.fixed D ∉ M'.fixed)
-    (W : Finset (SWIGNode N)) (hW : W ⊆ M'.observed)
+    (W : Finset (SWIGNode N))
     (hZrW : Z.image SWIGNode.random ∪ W ⊆ M'.observed)
     (hDisj_ZrW : Disjoint (Z.image SWIGNode.random) W)
     [MeasurableSingletonClass
@@ -255,7 +255,10 @@ lemma obsKernel_fixSet_W_marginal_pushforward_eq
     {A : Set (ValuesOn W (swigΩ Ω))} (hA : MeasurableSet A) :
     ((MeasureTheory.Measure.map
         (valuesProjection
-          ((fixSet_observed M' Z hZ_obs hZ_fixed).symm ▸ hW))
+          ((fixSet_observed M' Z hZ_obs hZ_fixed).symm ▸
+            (by
+              intro v hv
+              exact hZrW (Finset.mem_union_right _ hv))))
         ((M'.fixSet Z hZ_obs hZ_fixed).obsKernel s'))) A
       = ((MeasureTheory.Measure.map
           (valuesProjection hZrW)
@@ -263,6 +266,9 @@ lemma obsKernel_fixSet_W_marginal_pushforward_eq
             (M'.fixSetProj Z hZ_obs hZ_fixed s'))))
           ((M'.fillZrW Z hZ_obs hZ_fixed W s') '' A) := by
   classical
+  have hW : W ⊆ M'.observed := by
+    intro v hv
+    exact hZrW (Finset.mem_union_right _ hv)
   -- Abbreviations.
   let M2 := M'.fixSet Z hZ_obs hZ_fixed
   let sM1 : M'.FixedValues := M'.fixSetProj Z hZ_obs hZ_fixed s'
@@ -335,19 +341,19 @@ lemma obsKernel_fixSet_W_marginal_pushforward_eq
     funext ⟨v, hv⟩
     simp only [F, fillZrW]
     rcases Finset.mem_union.mp hv with hZrV | hWV
-    · rw [valuesUnionMk_apply_left _ _ _ hZrV]
+    · rw [valuesUnionMk_apply_left _ _ hZrV]
       obtain ⟨D, hDZ, hDeq⟩ := Finset.mem_image.mp hZrV
       cases hDeq
       simp only [zFixedAsRandom, valuesProjection]
       -- Goal: s' ⟨.fixed D, _⟩ = ω ⟨.random D, _⟩  (from valuesUnionMk_apply_left)
       exact (hω D hDZ).symm
     · by_cases hZrV' : v ∈ Z.image SWIGNode.random
-      · rw [valuesUnionMk_apply_left _ _ _ hZrV']
+      · rw [valuesUnionMk_apply_left _ _ hZrV']
         obtain ⟨D, hDZ, hDeq⟩ := Finset.mem_image.mp hZrV'
         cases hDeq
         simp only [zFixedAsRandom, valuesProjection]
         exact (hω D hDZ).symm
-      · rw [valuesUnionMk_apply_right _ _ _ hZrV' hWV]
+      · rw [valuesUnionMk_apply_right _ _ _ hZrV']
         simp only [valuesProjection]
   · intro hMem
     -- π_C ω = F w₀ for some w₀ ∈ A.  Show π_W ω ∈ A.
@@ -363,7 +369,7 @@ lemma obsKernel_fixSet_W_marginal_pushforward_eq
       Finset.disjoint_left.mp hDisj_ZrW hvZr hvW
     have hcoord := congrFun hF_eq ⟨v, hv_in⟩
     simp only [valuesProjection, F, fillZrW] at hcoord ⊢
-    rw [valuesUnionMk_apply_right _ _ hv_in hvNotZr hvW] at hcoord
+    rw [valuesUnionMk_apply_right _ _ hv_in hvNotZr] at hcoord
     exact hcoord.symm
 
 /-- Cross-SCM rectangle bridge for the W-marginal.
@@ -422,22 +428,13 @@ theorem obsKernel_fixSet_W_rect_integral_eq
     (hY : Y ⊆ M'.observed) (hW : W ⊆ M'.observed)
     (hZrW : Z.image SWIGNode.random ∪ W ⊆ M'.observed)
     (hDisj_ZrW : Disjoint (Z.image SWIGNode.random) W)
-    (hdSep : (M'.fixSet Z hZ_obs hZ_fixed).dag.dSep
-              Y (Z.image SWIGNode.random)
-              (W ∪ (M'.fixSet Z hZ_obs hZ_fixed).fixed))
     [StandardBorelSpace (ValuesOn Y (swigΩ Ω))]
     [Nonempty (ValuesOn Y (swigΩ Ω))]
-    [∀ s : M'.FixedValues, MeasureTheory.IsFiniteMeasure (M'.obsKernel s)]
-    [∀ s : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues,
-      MeasureTheory.IsFiniteMeasure
-        ((M'.fixSet Z hZ_obs hZ_fixed).obsKernel s)]
     [MeasurableSpace.CountableOrCountablyGenerated
       M'.FixedValues (ValuesOn (Z.image SWIGNode.random ∪ W) (swigΩ Ω))]
     [MeasurableSingletonClass
       (ValuesOn (Z.image SWIGNode.random ∪ W) (swigΩ Ω))]
     (s : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues)
-    (hOverlap : Causalean.SCM.ID.Rule2JointOverlap
-                  M' Z hZ_obs hZ_fixed W hZrW s)
     (hPinned : ∀ᵐ ω ∂((M'.fixSet Z hZ_obs hZ_fixed).obsKernel s),
       ∀ D (hD : D ∈ Z),
         ω ⟨SWIGNode.random D, hZ_obs D hD⟩
@@ -524,7 +521,7 @@ theorem obsKernel_fixSet_W_rect_integral_eq
       ν_W S = μ_C (F '' S) := by
     intro S hS
     simp only [hν_W_def, hμ_C_def]
-    exact obsKernel_fixSet_W_marginal_pushforward_eq M' Z hZ_obs hZ_fixed W hW
+    exact obsKernel_fixSet_W_marginal_pushforward_eq M' Z hZ_obs hZ_fixed W
       hZrW hDisj_ZrW s hPinned hS
   -- ν_W = μ_C.comap F as measures on `ValuesOn W`.
   have hcomap_eq : ν_W = μ_C.comap F := by
@@ -644,7 +641,7 @@ theorem obsKernel_fixSet_W_rect_integral_eq
         Finset.disjoint_left.mp hDisj_ZrW hvZr hvW
       have hcoord := congrFun hF_eq ⟨v, hv_in⟩
       simp only [valuesProjection, F, fillZrW] at hcoord ⊢
-      rw [valuesUnionMk_apply_right _ _ hv_in hvNotZr hvW] at hcoord
+      rw [valuesUnionMk_apply_right _ _ hv_in hvNotZr] at hcoord
       exact hcoord.symm
     · rintro ⟨hπWmem, hπYmem⟩
       refine ⟨?_, hπYmem⟩
@@ -654,18 +651,18 @@ theorem obsKernel_fixSet_W_rect_integral_eq
       funext ⟨v, hv⟩
       simp only [F, fillZrW]
       rcases Finset.mem_union.mp hv with hZrV | hWV
-      · rw [valuesUnionMk_apply_left _ _ _ hZrV]
+      · rw [valuesUnionMk_apply_left _ _ hZrV]
         obtain ⟨D, hDZ, hDeq⟩ := Finset.mem_image.mp hZrV
         cases hDeq
         simp only [zFixedAsRandom, valuesProjection]
         exact (hω D hDZ).symm
       · by_cases hZrV' : v ∈ Z.image SWIGNode.random
-        · rw [valuesUnionMk_apply_left _ _ _ hZrV']
+        · rw [valuesUnionMk_apply_left _ _ hZrV']
           obtain ⟨D, hDZ, hDeq⟩ := Finset.mem_image.mp hZrV'
           cases hDeq
           simp only [zFixedAsRandom, valuesProjection]
           exact (hω D hDZ).symm
-        · rw [valuesUnionMk_apply_right _ _ _ hZrV' hWV]
+        · rw [valuesUnionMk_apply_right _ _ _ hZrV']
           simp only [valuesProjection]
   -- ----------------------------------------------------------------
   -- Assemble the chain.

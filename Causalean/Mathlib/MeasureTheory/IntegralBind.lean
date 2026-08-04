@@ -67,11 +67,10 @@ supplying the bridge needed to expand a nested bind-then-map Bochner integral. -
 theorem integral_bind_map {α β γ E : Type*} [MeasurableSpace α] [MeasurableSpace β]
     [MeasurableSpace γ] [NormedAddCommGroup E] [NormedSpace ℝ E]
     {m : Measure α} {κ : α → Measure β} {g : α → β → γ} {f : γ → E}
-    (hκ : Measurable κ) (hg : ∀ a, Measurable (g a))
+    (hg : ∀ a, Measurable (g a))
     (hgm : Measurable (fun a => (κ a).map (g a)))
     (hf : Integrable f (m.bind (fun a => (κ a).map (g a)))) :
     ∫ z, f z ∂m.bind (fun a => (κ a).map (g a)) = ∫ a, ∫ x, f (g a x) ∂κ a ∂m := by
-  have _ : Measurable κ := hκ
   let K : Kernel α γ := ⟨fun a => (κ a).map (g a), hgm⟩
   have hcomp : (K ∘ₘ m) = m.bind fun a => (κ a).map (g a) := by
     rw [Measure.comp_eq_comp_const_apply]
@@ -108,18 +107,12 @@ theorem integral_bind_bind_map {α β γ δ E : Type*}
     [MeasurableSpace δ] [NormedAddCommGroup E] [NormedSpace ℝ E]
     {m : Measure α} {κ₁ : α → Measure β} {κ₂ : α → β → Measure γ}
     {g : α → β → γ → δ} {f : δ → E}
-    (_hκ₁ : Measurable κ₁)
-    (hκ₂ : Measurable fun p : α × β => κ₂ p.1 p.2)
     (hg : ∀ a b, Measurable (g a b))
     (hmap : ∀ a, Measurable fun b => (κ₂ a b).map (g a b))
     (hker : Measurable fun a => (κ₁ a).bind fun b => (κ₂ a b).map (g a b))
-    (hf : Integrable f (m.bind fun a => (κ₁ a).bind fun b => (κ₂ a b).map (g a b)))
-    (hf₂ : ∀ᵐ a ∂m, Integrable (fun b => ∫ c, f (g a b c) ∂(κ₂ a b)) (κ₁ a))
-    (hf' : Integrable (fun a => ∫ b, ∫ c, f (g a b c) ∂(κ₂ a b) ∂(κ₁ a)) m) :
+    (hf : Integrable f (m.bind fun a => (κ₁ a).bind fun b => (κ₂ a b).map (g a b))) :
     ∫ z, f z ∂(m.bind fun a => (κ₁ a).bind fun b => (κ₂ a b).map (g a b))
       = ∫ a, ∫ b, ∫ c, f (g a b c) ∂(κ₂ a b) ∂(κ₁ a) ∂m := by
-  classical
-  have _ : Integrable (fun a => ∫ b, ∫ c, f (g a b c) ∂(κ₂ a b) ∂(κ₁ a)) m := hf'
   let K : Kernel α δ := ⟨fun a => (κ₁ a).bind fun b => (κ₂ a b).map (g a b), hker⟩
   have hcomp : (K ∘ₘ m) = m.bind fun a => (κ₁ a).bind fun b => (κ₂ a b).map (g a b) := by
     rw [Measure.comp_eq_comp_const_apply]; rfl
@@ -132,8 +125,8 @@ theorem integral_bind_bind_map {α β γ δ E : Type*}
   have hcollapse :
       (fun a => ∫ z, f z ∂((κ₁ a).bind fun b => (κ₂ a b).map (g a b)))
         =ᶠ[ae m] (fun a => ∫ b, ∫ c, f (g a b c) ∂(κ₂ a b) ∂(κ₁ a)) := by
-    filter_upwards [hfiber_int_ae, hf₂] with a hfa hf₂a
-    exact integral_bind_map (hκ₂.comp measurable_prodMk_left) (hg a) (hmap a) hfa
+    filter_upwards [hfiber_int_ae] with a hfa
+    exact integral_bind_map (hg a) (hmap a) hfa
   rw [integral_bind hker hf]
   exact integral_congr_ae hcollapse
 
@@ -151,10 +144,8 @@ theorem integral_bind_of_ae_eq_const {α β E : Type*} [MeasurableSpace α]
     {m : Measure α} {κ : α → Measure β} {f : β → E} {f' : α → E}
     (hκ : Measurable κ) (hp : ∀ a, IsProbabilityMeasure (κ a))
     (hconst : ∀ a, ∀ᵐ y ∂κ a, f y = f' a)
-    (hf : Integrable f (m.bind κ))
-    (hf' : Integrable f' m) :
+    (hf : Integrable f (m.bind κ)) :
     ∫ y, f y ∂m.bind κ = ∫ a, f' a ∂m := by
-  have _ : Integrable f' m := hf'
   rw [integral_bind hκ hf]
   by_cases hE : CompleteSpace E
   · have hfiber : (fun a => ∫ y, f y ∂κ a) =ᶠ[ae m] (fun a => f' a) := by
@@ -184,8 +175,7 @@ theorem map_bind_bind_map_proj {α β γ δ : Type*}
     [MeasurableSpace δ]
     {m : Measure α} {κ₁ : α → Measure β} {κ₂ : α → β → Measure γ}
     {g : α → β → γ → δ} {π : δ → α}
-    (_hκ₁ : Measurable κ₁) (hp₁ : ∀ a, IsProbabilityMeasure (κ₁ a))
-    (_hκ₂ : Measurable fun p : α × β => κ₂ p.1 p.2)
+    (hp₁ : ∀ a, IsProbabilityMeasure (κ₁ a))
     (hp₂ : ∀ a b, IsProbabilityMeasure (κ₂ a b))
     (hg : ∀ a b, Measurable (g a b))
     (hmap : ∀ a, Measurable fun b => (κ₂ a b).map (g a b))
@@ -226,8 +216,7 @@ theorem integral_bind_bind_map_proj {α β γ δ E : Type*}
     [MeasurableSpace δ] [NormedAddCommGroup E] [NormedSpace ℝ E]
     {m : Measure α} {κ₁ : α → Measure β} {κ₂ : α → β → Measure γ}
     {g : α → β → γ → δ} {π : δ → α} {f : α → E}
-    (hκ₁ : Measurable κ₁) (hp₁ : ∀ a, IsProbabilityMeasure (κ₁ a))
-    (hκ₂ : Measurable fun p : α × β => κ₂ p.1 p.2)
+    (hp₁ : ∀ a, IsProbabilityMeasure (κ₁ a))
     (hp₂ : ∀ a b, IsProbabilityMeasure (κ₂ a b))
     (hg : ∀ a b, Measurable (g a b))
     (hmap : ∀ a, Measurable fun b => (κ₂ a b).map (g a b))
@@ -237,7 +226,7 @@ theorem integral_bind_bind_map_proj {α β γ δ E : Type*}
     ∫ z, f (π z) ∂(m.bind fun a => (κ₁ a).bind fun b => (κ₂ a b).map (g a b))
       = ∫ a, f a ∂m := by
   have hmeq := map_bind_bind_map_proj (m := m)
-    hκ₁ hp₁ hκ₂ hp₂ hg hmap hker hπ hπg
+    hp₁ hp₂ hg hmap hker hπ hπg
   conv_rhs => rw [← hmeq]
   exact (integral_map hπ.aemeasurable (hmeq.symm ▸ hf'.aestronglyMeasurable)).symm
 

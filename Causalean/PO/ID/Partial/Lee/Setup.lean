@@ -129,11 +129,11 @@ lemma measurable_factualY : Measurable S.factualY := S.yVar.measurable_factual
 
 /-- Each factual treatment arm event is measurable. -/
 lemma measurableSet_aEvent (a : Bool) : MeasurableSet (S.aEvent a) :=
-  S.aVar.measurableSet_event _
+  S.aVar.measurableSet_event _ (measurableSet_singleton _)
 
 /-- Each factual selection event is measurable. -/
 lemma measurableSet_selEvent (s : Bool) : MeasurableSet (S.selEvent s) :=
-  S.selVar.measurableSet_event _
+  S.selVar.measurableSet_event _ (measurableSet_singleton _)
 
 /-- The selected-treated observed cell is measurable. -/
 lemma measurableSet_selectedTreated : MeasurableSet S.selectedTreated :=

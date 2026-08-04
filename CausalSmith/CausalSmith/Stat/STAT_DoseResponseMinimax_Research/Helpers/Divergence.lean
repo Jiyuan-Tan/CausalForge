@@ -46,7 +46,14 @@ lemma bernoulli_mean_channel_kl_source (B u v : ℝ) (hB : 0 < B)
     (hu : |u| ≤ B / 2) (hv : |v| ≤ B / 2) :
     InformationTheory.klDiv (twoPointMean B u) (twoPointMean B v)
       ≤ ENNReal.ofReal (2 * (u - v) ^ 2 / B ^ 2) := by
-  exact bernoulli_mean_channel_kl B u v hB hu hv
+  calc
+    InformationTheory.klDiv (twoPointMean B u) (twoPointMean B v)
+        ≤ ENNReal.ofReal ((u - v) ^ 2 / B ^ 2) :=
+      bernoulli_mean_channel_kl B u v hB hu hv
+    _ ≤ ENNReal.ofReal (2 * (u - v) ^ 2 / B ^ 2) := by
+      apply ENNReal.ofReal_le_ofReal
+      rw [mul_div_assoc]
+      nlinarith [div_nonneg (sq_nonneg (u - v)) (sq_nonneg B)]
 
 -- @node: lem:le-cam-two-point-mse-source
 /-- Le Cam's two-point reduction: a finite KL budget gives a positive,

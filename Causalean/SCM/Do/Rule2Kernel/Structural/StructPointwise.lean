@@ -101,23 +101,9 @@ lemma fixSet_random_not_isAncestor (M : Causalean.SCM N Ω) (Z : Finset N)
 -- § 2. Override-agreement helper (mirror of `evalObservedAux_agree_anc`)
 -- ============================================================
 
-/-- **Override-version of `evalObservedAux_agree_anc`.**
-
-    Given two override sets `C₁`, `C₂ ⊆ M.observed` and values `c₁`, `c₂`
-    on each, together with a target set `T ⊆ M.observed`, if for every
-    node `x` that is `=` or `M.dag.isAncestor` of some `t ∈ T`:
-    * `x ∈ C₁ ↔ x ∈ C₂` (the two override sets agree on the relevant slice);
-    * and whenever both hold, `c₁ ⟨x,_⟩ = c₂ ⟨x,_⟩`;
-
-    then `evalObservedAuxOverride` at `(C₁, c₁)` and `(C₂, c₂)` produce
-    the same value at every topological index whose observed node is in
-    `T` or an ancestor of `T`.
-
-    Proof by strong recursion mirroring `evalObservedAux_agree_anc`:
-    at each step, classify the node-itself C-membership and each parent's
-    role identically on both sides; the IH ancestor-witness extends through
-    parents using `isAncestor.edge`/`isAncestor.trans`. -/
-private lemma evalObservedAuxOverride_agree_anc (M : Causalean.SCM N Ω)
+/-- If two overrides use the same values on every observed ancestor of a target
+    set, their recursive structural evaluations agree at every such ancestor and target. -/
+lemma evalObservedAuxOverride_agree_anc (M : Causalean.SCM N Ω)
     (T : Finset (SWIGNode N))
     {C₁ C₂ : Finset (SWIGNode N)}
     (hC₁ : C₁ ⊆ M.observed) (hC₂ : C₂ ⊆ M.observed)
@@ -166,8 +152,8 @@ private lemma evalObservedAuxOverride_agree_anc (M : Causalean.SCM N Ω)
       · rw [parentMapOverride_unobserved M hC₁ s c₁ ℓ hn _ w huo,
             parentMapOverride_unobserved M hC₂ s c₂ ℓ hn _ w huo]
       · by_cases hfix : w.val ∈ M.fixed
-        · rw [parentMapOverride_fixed M hC₁ s c₁ ℓ hn _ w huo hfix,
-              parentMapOverride_fixed M hC₂ s c₂ ℓ hn _ w huo hfix]
+        · rw [parentMapOverride_fixed M hC₁ s c₁ ℓ hn _ w hfix,
+              parentMapOverride_fixed M hC₂ s c₂ ℓ hn _ w hfix]
         · -- Observed (non-fixed, non-latent) parent: either in C or recurse.
           have hobs : w.val ∈ M.observed := by
             rcases Finset.mem_union.mp
@@ -178,12 +164,12 @@ private lemma evalObservedAuxOverride_agree_anc (M : Causalean.SCM N Ω)
             · exact absurd h2' huo
           by_cases hcW1 : w.val ∈ C₁
           · have hcW2 : w.val ∈ C₂ := hWAgree.1.mp hcW1
-            rw [parentMapOverride_C M hC₁ s c₁ ℓ hn _ w huo hfix hcW1,
-                parentMapOverride_C M hC₂ s c₂ ℓ hn _ w huo hfix hcW2]
+            rw [parentMapOverride_C M hC₁ s c₁ ℓ hn _ w hcW1,
+                parentMapOverride_C M hC₂ s c₂ ℓ hn _ w hcW2]
             exact hWAgree.2 hcW1 hcW2
           · have hcW2 : w.val ∉ C₂ := fun h => hcW1 (hWAgree.1.mpr h)
-            rw [parentMapOverride_observed M hC₁ s c₁ ℓ hn _ w huo hfix hobs hcW1,
-                parentMapOverride_observed M hC₂ s c₂ ℓ hn _ w huo hfix hobs hcW2]
+            rw [parentMapOverride_observed M hC₁ s c₁ ℓ hn _ w hobs hcW1,
+                parentMapOverride_observed M hC₂ s c₂ ℓ hn _ w hobs hcW2]
             -- Recursion at w's smaller topological index.
             have hj : (M.observedIndex ⟨w.val, hobs⟩).val < n :=
               M.observed_parent_index_lt hn hedge hobs
@@ -198,11 +184,10 @@ private lemma evalObservedAuxOverride_agree_anc (M : Causalean.SCM N Ω)
             rw [h_at]
             exact hwt
 
-/-- **Override-agreement for `evalMap_overrideC` on a target set `Y`.**
-
-    Same hypothesis as `evalObservedAuxOverride_agree_anc`, but stated as
-    function equality on `Y`. -/
-private lemma evalMap_overrideC_agree_anc (M : Causalean.SCM N Ω)
+/-- Two assignments that override observed variables give the same evaluated
+values at every target variable when they agree on which relevant ancestors are
+overridden and on the values assigned there. -/
+lemma evalMap_overrideC_agree_anc (M : Causalean.SCM N Ω)
     {Y C₁ C₂ : Finset (SWIGNode N)}
     (hY : Y ⊆ M.observed) (hC₁ : C₁ ⊆ M.observed) (hC₂ : C₂ ⊆ M.observed)
     (s : FixedValues M) (ℓ : LatentValues M)
@@ -240,7 +225,6 @@ theorem evalMap_overrideC_dropZr_on_fillZrW
     (hZ_fixed : ∀ D ∈ Z, SWIGNode.fixed D ∉ M'.fixed)
     (Y W : Finset (SWIGNode N))
     (hY_M2 : Y ⊆ (M'.fixSet Z hZ_obs hZ_fixed).observed)
-    (hW_M2 : W ⊆ (M'.fixSet Z hZ_obs hZ_fixed).observed)
     (hZrW : Z.image SWIGNode.random ∪ W ⊆
               (M'.fixSet Z hZ_obs hZ_fixed).observed)
     (hDisj_YZr : Disjoint Y (Z.image SWIGNode.random))
@@ -249,7 +233,10 @@ theorem evalMap_overrideC_dropZr_on_fillZrW
     (w : ValuesOn W (swigΩ Ω)) :
     (M'.fixSet Z hZ_obs hZ_fixed).evalMap_overrideC hY_M2 hZrW s
         (M'.fillZrW Z hZ_obs hZ_fixed W s w) ℓ
-      = (M'.fixSet Z hZ_obs hZ_fixed).evalMap_overrideC hY_M2 hW_M2 s w ℓ := by
+      = (M'.fixSet Z hZ_obs hZ_fixed).evalMap_overrideC hY_M2
+          (Finset.subset_union_right.trans hZrW) s w ℓ := by
+  let hW_M2 : W ⊆ (M'.fixSet Z hZ_obs hZ_fixed).observed :=
+    Finset.subset_union_right.trans hZrW
   classical
   let M2 := M'.fixSet Z hZ_obs hZ_fixed
   -- Apply the override-agreement helper with C₁ := Zr ∪ W, C₂ := W.
@@ -288,7 +275,7 @@ theorem evalMap_overrideC_dropZr_on_fillZrW
     -- h₁ : x ∈ Zr ∪ W, h₂ : x ∈ W.
     show M'.fillZrW Z hZ_obs hZ_fixed W s w ⟨x, h₁⟩ = w ⟨x, h₂⟩
     unfold fillZrW
-    rw [valuesUnionMk_apply_right _ _ h₁ hxNotZr h₂]
+    rw [valuesUnionMk_apply_right _ _ h₁ hxNotZr]
 
 -- ============================================================
 -- § 4. Filled-assignment helper for the cross-model bridge
@@ -313,8 +300,7 @@ lemma fillZrW_random_eq_fixed
       s ⟨SWIGNode.fixed D,
           SCM.fixed_mem_fixSet M' Z hZ_obs hZ_fixed hD⟩ := by
   unfold fillZrW
-  rw [valuesUnionMk_apply_left _ _ hRD
-        (Finset.mem_image.mpr ⟨D, hD, rfl⟩)]
+  rw [valuesUnionMk_apply_left _ _ (Finset.mem_image.mpr ⟨D, hD, rfl⟩)]
   rfl
 
 /- The cross-model companion theorem is in `StructCrossSCM.lean`. -/

@@ -94,17 +94,16 @@ against a linear nuisance class `H`, `E[D̃²] > 0`, and `(β, H_β)` with
 
 then `β = E[D̃ · Ỹ] / E[D̃²] = residualizedCoefficient μ H wY wD`.
 
-Side hypotheses ensure the appearing integrals are well-defined: `Y` and `D`
-are square-integrable (so their witnesses' decompositions integrate against
-L² nuisance terms via Cauchy-Schwarz). -/
+The residual from the normal equations is square-integrable, so its products
+with the L² witness decompositions are integrable by Cauchy-Schwarz. -/
 theorem residualizedCoefficient_eq_of_normalEqs {Ω : Type*} [MeasurableSpace Ω]
     (μ : Measure Ω) (H : LinearL2Class μ)
     {Y D : Ω → ℝ}
-    (Y_memLp : MemLp Y 2 μ) (D_memLp : MemLp D 2 μ)
     (wY : ResidualizationWitness μ H Y)
     (wD : ResidualizationWitness μ H D)
     (hDtilde_pos : 0 < ∫ ω, wD.Vtilde ω * wD.Vtilde ω ∂μ)
     (β : ℝ) (Hβ : Ω → ℝ) (Hβ_mem : H.mem Hβ)
+    (e_mem : MemLp (fun ω => Y ω - β * D ω - Hβ ω) 2 μ)
     (h_normal_D : ∫ ω, (Y ω - β * D ω - Hβ ω) * D ω ∂μ = 0)
     (h_normal_H : ∀ ⦃h : Ω → ℝ⦄, H.mem h →
       ∫ ω, (Y ω - β * D ω - Hβ ω) * h ω ∂μ = 0) :
@@ -120,9 +119,7 @@ theorem residualizedCoefficient_eq_of_normalEqs {Ω : Type*} [MeasurableSpace Ω
     have h_inner : H.mem (fun ω ↦ wY.VH ω + (-β) * wD.VH ω) := H.add_mem wY.VH_mem h_beta
     exact H.add_mem h_neg_Hβ h_inner
   have h_orth : ∫ ω, wD.Vtilde ω * h_star ω ∂μ = 0 := wD.orthogonal h_star_mem
-  have e_mem : MemLp e 2 μ := by
-    dsimp [e]
-    exact (Y_memLp.sub (MemLp.const_mul D_memLp β)).sub Hβ_mem'
+  have e_mem' : MemLp e 2 μ := by simpa [e] using e_mem
   have hD_decomp_int : ∫ ω, e ω * D ω ∂μ = ∫ ω, e ω * (wD.VH ω + wD.Vtilde ω) ∂μ := by
     refine integral_congr_ae ?_
     filter_upwards [wD.decomp] with ω hD
@@ -143,9 +140,9 @@ theorem residualizedCoefficient_eq_of_normalEqs {Ω : Type*} [MeasurableSpace Ω
       (∫ ω, e ω * wD.VH ω ∂μ) + ∫ ω, e ω * wD.Vtilde ω ∂μ =
           ∫ ω, e ω * wD.VH ω + e ω * wD.Vtilde ω ∂μ := by
             have hVH_int : Integrable (fun ω => e ω * wD.VH ω) μ :=
-              e_mem.integrable_mul (H.memLp wD.VH_mem)
+              e_mem'.integrable_mul (H.memLp wD.VH_mem)
             have hVt_int : Integrable (fun ω => e ω * wD.Vtilde ω) μ :=
-              e_mem.integrable_mul wD.Vtilde_memLp
+              e_mem'.integrable_mul wD.Vtilde_memLp
             exact (integral_add hVH_int hVt_int).symm
       _ = ∫ ω, e ω * (wD.VH ω + wD.Vtilde ω) ∂μ :=
             (integral_congr_ae h_mul_split).symm

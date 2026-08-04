@@ -98,14 +98,14 @@ theorem bridge_finite_residualized_eq_overlap
           (Y_memLp_of_consistency μ B_meas_D B_binary B_Y0_L2 B_Y1_L2 B_consis))
         (residWitnessD μ D G B_meas_G B_meas_D B_binary)
       = FinitePartition.overlapWeightedATE
-          (partitionOf μ D Y0 Y1 G B_meas_G B_meas_D B_binary B_overlap) := by
+          (partitionOf μ D Y0 Y1 G B_meas_G B_binary B_overlap) := by
   -- Bring derived Y_memLp into scope by name for readability.
   have Y_memLp : MemLp Y 2 μ :=
     Y_memLp_of_consistency μ B_meas_D B_binary B_Y0_L2 B_Y1_L2 B_consis
   let H := saturatedClass μ G B_meas_G
   let wY := residWitnessY μ Y G B_meas_G Y_memLp
   let wD := residWitnessD μ D G B_meas_G B_meas_D B_binary
-  let P := partitionOf μ D Y0 Y1 G B_meas_G B_meas_D B_binary B_overlap
+  let P := partitionOf μ D Y0 Y1 G B_meas_G B_binary B_overlap
   have hMeanReg_mem : H.mem (meanReg μ Y G) :=
     meanReg_mem_saturatedClass μ Y G B_meas_G
   have hNum_tilde :
@@ -201,7 +201,7 @@ theorem bridge_finite_residualized_eq_overlap
           * (cellShare μ D G g * (1 - cellShare μ D G g))) := by
       rw [hNum_sum, hDen_sum]
     _ = FinitePartition.overlapWeightedATE
-          (partitionOf μ D Y0 Y1 G B_meas_G B_meas_D B_binary B_overlap) := by
+          (partitionOf μ D Y0 Y1 G B_meas_G B_binary B_overlap) := by
       rw [hP]
 
 end Causalean.Panel.EstimandCharacterization.OLSWeightDecomposition

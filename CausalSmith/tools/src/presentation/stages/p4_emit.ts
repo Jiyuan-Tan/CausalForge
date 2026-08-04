@@ -1,5 +1,5 @@
-import { readFile, writeFile, mkdir, readdir } from "node:fs/promises";
-import { join } from "node:path";
+import { readFile, writeFile, mkdir, readdir, rename, rm } from "node:fs/promises";
+import { basename, join } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { StageIO } from "../pipeline.js";
@@ -17,9 +17,84 @@ import { extractLeanrefIds } from "../tex2html.js";
 import { paperReferenceLabels, resolveObjCrefsPlain, tex2html } from "../tex2html.js";
 import { PresentationCrosswalk, LeanSnippets, FormalLayer, PaperMeta } from "../types.js";
 import { MODELS } from "../../models.js";
+import { assertP2AssemblyFresh, recordP2Assembly } from "../assembly_freshness.js";
 
 const execFileP = promisify(execFile);
 const COMPILE_ATTEMPTS = 3;
+
+type IndexedDecl = {
+  name?: unknown;
+  source?: unknown;
+  doc?: unknown;
+  module?: unknown;
+  file?: unknown;
+  statement?: unknown;
+  kind?: unknown;
+  line?: unknown;
+};
+
+type PaperLibraryIndex = {
+  modules?: Record<string, unknown>;
+  entries?: IndexedDecl[];
+};
+
+const INDEXED_FIELDS = ["source", "doc", "module", "file", "statement", "kind", "line"] as const;
+
+function parsePaperLibraryIndex(raw: string, path: string): PaperLibraryIndex {
+  const index = JSON.parse(raw) as PaperLibraryIndex;
+  if (!Array.isArray(index.entries)) throw new Error(`P4: ${path} has no entries array`);
+  return index;
+}
+
+async function readPaperLibraryIndex(path: string): Promise<PaperLibraryIndex | null> {
+  try {
+    return parsePaperLibraryIndex(await readFile(path, "utf8"), path);
+  } catch (err: unknown) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw err;
+  }
+}
+
+function hasSourceLocation(entry: IndexedDecl): entry is IndexedDecl & { name: string; source: string; line: number } {
+  return typeof entry.name === "string" && typeof entry.source === "string" && entry.source.length > 0 &&
+    typeof entry.line === "number" && entry.line > 0;
+}
+
+/** Reject a candidate cache that would silently erase an existing published declaration or field.
+`congr_simp`-style synthetic constants have no authored source/range and are intentionally excluded
+from this comparison: the extractor omits them rather than publishing an unusable drawer entry. */
+function validatePaperIndexReplacement(
+  previous: PaperLibraryIndex | null,
+  next: PaperLibraryIndex,
+  moduleTargets: string[],
+): void {
+  const nextEntries = next.entries!;
+  if (moduleTargets.length > 0 && nextEntries.length === 0)
+    throw new Error("P4: paper_index emitted an empty index for non-empty module targets");
+  if (!previous) return;
+  const byName = new Map(nextEntries.flatMap((entry) =>
+    typeof entry.name === "string" ? [[entry.name, entry] as const] : [],
+  ));
+  const lost = previous.entries!.filter(hasSourceLocation).flatMap((entry) =>
+    byName.has(entry.name) ? [] : [entry.name],
+  );
+  if (lost.length > 0)
+    throw new Error(`P4: paper_index would drop ${lost.length} published declaration(s): ${lost.slice(0, 12).join(", ")}`);
+  const nulled: string[] = [];
+  for (const oldEntry of previous.entries!.filter(hasSourceLocation)) {
+    const current = byName.get(oldEntry.name);
+    if (!current) continue;
+    for (const field of INDEXED_FIELDS) {
+      const before = oldEntry[field];
+      const after = current[field];
+      if (before !== null && before !== undefined && (after === null || after === undefined))
+        nulled.push(`${oldEntry.name}.${field}`);
+      if (field === "line" && before !== 0 && after === 0) nulled.push(`${oldEntry.name}.line`);
+    }
+  }
+  if (nulled.length > 0)
+    throw new Error(`P4: paper_index would null ${nulled.length} published field(s): ${nulled.slice(0, 12).join(", ")}`);
+}
 
 /** Only Lean-backed blocks have a Lean equivalence claim to audit. Presentation-
  * synthesized definitions are frozen and linted, but intentionally have no Lean
@@ -76,6 +151,7 @@ export async function stageP4(io: StageIO): Promise<void> {
   }
   const paperPath = join(io.outDir, "paper.tex");
   let paperTex = await readFile(paperPath, "utf8");
+  await assertP2AssemblyFresh(io.outDir);
   // Formal layer (source of truth); the freeze lives in each block's body_hash (no frozen_hashes.json).
   const formalLayer = FormalLayerSource.parse(
     JSON.parse(await readFile(join(io.outDir, "formal_layer.json"), "utf8")),
@@ -244,55 +320,78 @@ export async function stageP4(io: StageIO): Promise<void> {
 
   // paper-module index: full decl-level view of the run's Lean code for the
   // site's Formalization tab (same extractor core as the Causalean /library
-  // explorer). Tolerant: lake may be contended by concurrent runs — the bundle
-  // is valid without it and the step is rerunnable.
+  // explorer). It is a required published artifact: a transient Lake failure
+  // must stop P4 rather than leave a stale or blank Formalization tab behind.
   const indexPath = join(io.outDir, "paper_library_index.json");
   // leanSubdir is the module path below the package lib root
   // ("CausalSmith/Stat/X_Research" → module CausalSmith.Stat.X_Research)
   const modPrefix = io.bank.leanSubdir.replace(/\//g, ".");
+  const priorIndex = await readPaperLibraryIndex(indexPath);
   // paper_index reads OLEANS, so the paper's modules must be built first or it
-  // silently emits an empty index (→ blank Formalization page). Build exactly
-  // the crosswalk's Lean modules (file path → module name) before emitting.
+  // silently emits an empty index (→ blank Formalization page). Preserve all
+  // prior indexed modules as well as crosswalk modules: a useful run helper
+  // need not be imported by any crosswalk declaration, while importing every
+  // sibling source file changes Lean's source-module ownership.
   const modTargets = [
     ...new Set(
-      io.bank.crosswalk
-        .filter((e) => e.lean)
-        .map((e) => `${modPrefix}.${e.lean!.file.replace(/\.lean$/, "").replace(/\//g, ".")}`),
+      [
+        ...io.bank.crosswalk
+          .filter((e) => e.lean)
+          .map((e) => `${modPrefix}.${e.lean!.file.replace(/\.lean$/, "").replace(/\//g, ".")}`),
+        ...Object.keys(priorIndex?.modules ?? {}).filter((moduleName) =>
+          moduleName === modPrefix || moduleName.startsWith(`${modPrefix}.`),
+        ),
+        ...(priorIndex?.entries ?? []).flatMap((entry) =>
+          typeof entry.module === "string" &&
+          (entry.module === modPrefix || entry.module.startsWith(`${modPrefix}.`))
+            ? [entry.module]
+            : [],
+        ),
+      ],
     ),
-  ];
-  const emitIndex = () =>
-    execFileP(
-      "lake",
+  ].sort();
+  const emitIndex = async (previous: PaperLibraryIndex | null): Promise<PaperLibraryIndex> => {
+    const candidatePath = `${indexPath}.next-${process.pid}`;
+    try {
+      await execFileP(
+        "lake",
       // repoRoot IS the CausalSmith package root (findRepoRoot anchors on its
       // lakefile), so it is both the lake dir and the src root.
-      ["-d", io.ctx.repoRoot, "exe", "paper_index", "--",
-        "--prefix", modPrefix,
-        "--src-root", io.ctx.repoRoot,
-        // import the paper's own modules directly — the index must not depend on
-        // the paper being wired into the CausalSmith root (orphan → 0 decls).
-        ...(modTargets.length > 0 ? ["--modules", modTargets.join(",")] : []),
-        "--out", indexPath],
-      { cwd: io.ctx.repoRoot, maxBuffer: 16 * 1024 * 1024, timeout: 1800_000 },
-    );
-  try {
-    if (modTargets.length > 0) {
-      await execFileP("lake", ["-d", io.ctx.repoRoot, "build", ...modTargets], {
-        cwd: io.ctx.repoRoot,
-        maxBuffer: 16 * 1024 * 1024,
-        timeout: 1800_000,
-      });
+        ["-d", io.ctx.repoRoot, "exe", "paper_index", "--",
+          "--prefix", modPrefix,
+          "--src-root", io.ctx.repoRoot,
+          // Import the paper modules directly so indexing does not depend on a
+          // run being wired into the CausalSmith root import graph.
+          "--modules", modTargets.join(","),
+          "--out", candidatePath],
+        { cwd: io.ctx.repoRoot, maxBuffer: 16 * 1024 * 1024, timeout: 1800_000 },
+      );
+      const candidate = await readPaperLibraryIndex(candidatePath);
+      if (!candidate) throw new Error("P4: paper_index produced no output");
+      validatePaperIndexReplacement(previous, candidate, modTargets);
+      await rename(candidatePath, indexPath);
+      return candidate;
+    } catch (err) {
+      await rm(candidatePath, { force: true });
+      throw err;
     }
-    await emitIndex();
-  } catch (e: unknown) {
-    const msg = (e as Error).message?.slice(0, 300) ?? String(e);
-    io.state.notes.push(`P4: paper_library_index emit failed (rerunnable): ${msg}`);
-  }
+  };
+  if (modTargets.length === 0)
+    throw new Error("P4: no paper modules available for paper_library_index emission");
+  await execFileP("lake", ["-d", io.ctx.repoRoot, "build", ...modTargets], {
+    cwd: io.ctx.repoRoot,
+    maxBuffer: 16 * 1024 * 1024,
+    timeout: 1800_000,
+  });
+  const firstEmittedIndex = await emitIndex(priorIndex);
 
   // NL docstring coverage: the site renders each decl's docstring as its
   // natural-language statement, so an undocumented decl in the paper's modules
   // ships as "no translation yet". One batched codex pass documents the gaps
   // (docstring insertions only), the build re-validates, and the index is
-  // re-emitted. Tolerant like the index step; failed edits are restored.
+  // re-emitted. Failed docstring edits are restored, but a failed re-emit is
+  // fatal so an older index cannot be accepted for the changed Lean sources.
+  let docstringsUpdated = false;
   try {
     const idx = JSON.parse(await readFile(indexPath, "utf8")) as {
       entries: { name: string; file: string; line: number; kind: string; doc: string | null }[];
@@ -336,12 +435,15 @@ export async function stageP4(io: StageIO): Promise<void> {
         }
         throw buildErr;
       }
-      await emitIndex();
-      io.state.notes.push(`P4: documented ${undoc.length} undocumented decls; index re-emitted`);
+      docstringsUpdated = true;
     }
   } catch (e: unknown) {
     const msg = (e as Error).message?.slice(0, 300) ?? String(e);
     io.state.notes.push(`P4: docstring-coverage pass failed (rerunnable): ${msg}`);
+  }
+  if (docstringsUpdated) {
+    await emitIndex(firstEmittedIndex);
+    io.state.notes.push("P4: docstring coverage updated; paper_library_index re-emitted");
   }
 
   // Join off the JSON source of truth (explicit obj_id = node id, loaded above), not a re-parse of
@@ -520,6 +622,14 @@ export async function stageP4(io: StageIO): Promise<void> {
     JSON.stringify(LeanSnippets.parse(bundle.snippets), null, 2) + "\n",
     "utf8",
   );
+  // The extractor itself can exit successfully with structurally valid but
+  // wrong JSON. Run the independent snapshot + HEAD regression lint only after
+  // all three cache inputs exist, and make a failure visible to the pipeline.
+  await execFileP(
+    "npx",
+    ["tsx", "bin/check_paper_indexes.ts", "--strict", "--vs", "HEAD", "--bundle", basename(io.outDir)],
+    { cwd: join(io.ctx.repoRoot, "tools"), maxBuffer: 16 * 1024 * 1024 },
+  );
   // Web-only "Formal layer" panel: deterministic, complete list of every from-note object
   // (NL + Lean + verified status) straight from the graph — the backstop for inline \leanref.
   // IMPORTANT: this EMITTED shape is `{commit, groups}` (FormalLayer), which is DIFFERENT from the
@@ -650,6 +760,9 @@ export async function stageP4(io: StageIO): Promise<void> {
     score_rationale: scoreRationale,
   });
   await writeFile(join(io.outDir, "meta.json"), JSON.stringify(meta, null, 2) + "\n", "utf8");
+  // A successful compiler-repair pass may have applied the same mechanical fix
+  // to paper.tex and its authored cache. Preserve that synchronized baseline.
+  await recordP2Assembly(io.outDir);
 }
 
 /** Authored/cache TeX inputs that P2 uses to assemble paper.tex. Repairs must land here as

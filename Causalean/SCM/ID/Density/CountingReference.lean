@@ -24,18 +24,19 @@ variable {N : Type*} [DecidableEq N] [Fintype N]
 variable {Ω : N → Type*} [∀ n, MeasurableSpace (Ω n)]
 
 /-- The counting reference family: each SWIG-node coordinate carries the counting
-measure.  On finite value spaces this is a finite, hence σ-finite, measure. -/
+measure.  On countable value spaces this is a σ-finite measure. -/
 noncomputable def countingRef
-    [∀ n, Fintype (Ω n)] [∀ n, MeasurableSingletonClass (Ω n)] :
+    [∀ sn, Countable (swigΩ Ω sn)] [∀ n, MeasurableSingletonClass (Ω n)] :
     ReferenceMeasures Ω where
   μ := fun _ => MeasureTheory.Measure.count
   sigmaFinite := fun _ => by
     infer_instance
 
+omit [DecidableEq N] [Fintype N] in
 /-- The counting reference family is faithful: every singleton coordinate value
 has counting mass one, in particular nonzero. -/
 lemma referenceFaithful_countingRef
-    [∀ n, Fintype (Ω n)] [∀ n, MeasurableSingletonClass (Ω n)] :
+    [∀ sn, Countable (swigΩ Ω sn)] [∀ n, MeasurableSingletonClass (Ω n)] :
     ReferenceFaithful (countingRef (Ω := Ω)) := by
   intro v x
   unfold countingRef
@@ -44,10 +45,10 @@ lemma referenceFaithful_countingRef
 
 /-- Every structural causal model is dominated by the counting reference family:
 each observational law is absolutely continuous with respect to the counting
-product, because a faithful reference dominates every measure on a finite
-product.  Note this holds for *all* `M`, with no positivity or graph hypothesis. -/
+product, because a faithful reference dominates every measure on a countable
+coordinate product.  Note this holds for *all* `M`, with no positivity or graph hypothesis. -/
 lemma dominatedObs_countingRef
-    [∀ n, Fintype (Ω n)] [∀ n, MeasurableSingletonClass (Ω n)]
+    [∀ sn, Countable (swigΩ Ω sn)] [∀ n, MeasurableSingletonClass (Ω n)]
     (M : Causalean.SCM N Ω) :
     DominatedObs M (countingRef (Ω := Ω)) := by
   intro s

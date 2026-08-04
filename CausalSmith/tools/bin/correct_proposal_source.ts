@@ -29,8 +29,8 @@ async function main(): Promise<void> {
     to,
   );
   console.error(
-    `[proposal-source-correction] ${qid}/${specialization}: ${result.coreReplacements} core + ` +
-      `${result.handoffReplacements} handoff replacement(s); core=${result.corePath}`,
+    `[proposal-source-correction] ${qid}/${specialization}: ${result.coreReplacements} core ` +
+      `replacement(s); core=${result.corePath}`,
   );
 }
 

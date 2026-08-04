@@ -137,7 +137,7 @@ private lemma eval_encouragement_eq_eval_encZ2_on_z1Event
   have hReg_eq : S.encouragementRegime z = r₁.sqcup r₂ hr_disj := by
     refine Regime.ext ?_ ?_
     · -- targets equal as Finsets.
-      simp [encouragementRegime, Regime.ofList, r₁, r₂, encZ2Regime, Regime.single,
+      simp [encouragementRegime, Regime.ofList_target, r₁, r₂, encZ2Regime, Regime.single,
         Finset.union_comm]
     · -- pointwise assignments equal.
       intro w h₁ h₂
@@ -146,7 +146,7 @@ private lemma eval_encouragement_eq_eval_encZ2_on_z1Event
       have hw_mem : w = S.Z1 ∨ w = S.Z2 := by
         have hw : w ∈ ({S.Z1, S.Z2} : Finset P.V) := by
           have : w ∈ (S.encouragementRegime z).target := h₁
-          simpa [encouragementRegime, Regime.ofList] using this
+          simpa [encouragementRegime, Regime.ofList_target] using this
         rcases Finset.mem_insert.mp hw with hw | hw
         · exact Or.inl hw
         · exact Or.inr (Finset.mem_singleton.mp hw)
@@ -157,7 +157,7 @@ private lemma eval_encouragement_eq_eval_encZ2_on_z1Event
           simp [r₁, encZ2Regime, Regime.single, S.Z1_ne_Z2]
         have hZ1_in_r2 : S.Z1 ∈ r₂.target := by
           simp [r₂, Regime.single]
-        rw [Regime.sqcup_assign_neg r₁ r₂ hr_disj S.Z1 h₂ hZ1_not_in_r1 hZ1_in_r2]
+        rw [Regime.sqcup_assign_neg r₁ r₂ hr_disj S.Z1 hZ1_not_in_r1 hZ1_in_r2]
         -- LHS: encouragementRegime.assign S.Z1 _ = listLookup [⟨Z1,..⟩,⟨Z2,..⟩] S.Z1 _.
         change Regime.listLookup _ S.Z1 _ = _
         rw [Regime.listLookup_cons_self]
@@ -166,14 +166,14 @@ private lemma eval_encouragement_eq_eval_encZ2_on_z1Event
       · -- w = S.Z2: encouragementRegime assigns hZ2bool.symm (z 1); sqcup assigns via r₁.
         have hZ2_in_r1 : S.Z2 ∈ r₁.target := by
           simp [r₁, encZ2Regime, Regime.single]
-        rw [Regime.sqcup_assign_pos r₁ r₂ hr_disj S.Z2 h₂ hZ2_in_r1]
+        rw [Regime.sqcup_assign_pos r₁ r₂ hr_disj S.Z2 hZ2_in_r1]
         -- LHS: listLookup [⟨Z1,..⟩,⟨Z2,..⟩] S.Z2 _.
         change Regime.listLookup _ S.Z2 _ = _
         have hne : S.Z2 ≠ S.Z1 := S.Z1_ne_Z2.symm
         have hmem_rest : S.Z2 ∈
             ([⟨S.Z2, S.hZ2bool.symm (z 1)⟩] :
               List ((v : P.V) × P.X v)).map Sigma.fst := by simp
-        rw [Regime.listLookup_cons_of_ne hne _ hmem_rest, Regime.listLookup_cons_self]
+        rw [Regime.listLookup_cons_of_ne hne hmem_rest, Regime.listLookup_cons_self]
         -- RHS: r₁.assign S.Z2 _ = hZ2bool.symm (z 1).
         simp [r₁, encZ2Regime, Regime.single]
   rw [hReg_eq, hev_sqcup_eq_r1]

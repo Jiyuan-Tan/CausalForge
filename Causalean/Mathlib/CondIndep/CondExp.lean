@@ -180,7 +180,10 @@ private theorem setIntegral_condExp_indep_indicator_one
           rw [Set.inter_comm]
     _ = ∫ x in A ∩ F, S.indicator (fun _ : Ω => (1 : ℝ)) x ∂μ := rfl
 
-private theorem setIntegral_condExp_indep_indicator
+/-- Under conditional independence of two variables given a σ-algebra, integrating the conditional
+expectation of a constant times an event indicator over the intersection of a conditioning event
+and an event determined by one variable equals integrating that indicator directly. -/
+theorem setIntegral_condExp_indep_indicator
     {Ω α β : Type*}
     {m mΩ : MeasurableSpace Ω} (hm : m ≤ mΩ)
     [MeasurableSpace α] [MeasurableSpace β]
@@ -320,7 +323,7 @@ theorem condExp_sup_comap_eq_of_condIndep_comap
     (hCI : ProbabilityTheory.CondIndepFun m hm g f μ)
     {Y : Ω → ℝ}
     (hY_meas :
-      @MeasureTheory.StronglyMeasurable Ω ℝ _ (MeasurableSpace.comap g inferInstance) Y)
+      @Measurable Ω ℝ (MeasurableSpace.comap g inferInstance) _ Y)
     (hY_int : MeasureTheory.Integrable Y μ) :
     μ[Y | m ⊔ MeasurableSpace.comap f inferInstance] =ᵐ[μ] μ[Y | m] := by
   let mf : MeasurableSpace Ω := MeasurableSpace.comap f inferInstance
@@ -390,7 +393,8 @@ theorem condExp_sup_comap_eq_of_condIndep_comap
         (T_m.continuous.comp continuous_subtype_val)
     exact MeasureTheory.Lp.induction_stronglyMeasurable hmg (by norm_num)
       (fun u : Ω →₁[μ] ℝ => T_M u = T_m u) hP_ind hP_add hP_closed
-      (hY_int.toL1 Y) (hY_meas.aestronglyMeasurable.congr hY_int.coeFn_toL1.symm)
+      (hY_int.toL1 Y) (hY_meas.stronglyMeasurable.aestronglyMeasurable.congr
+        hY_int.coeFn_toL1.symm)
   have hM := MeasureTheory.condExp_ae_eq_condExpL1CLM hmM hY_int
   have hm' := MeasureTheory.condExp_ae_eq_condExpL1CLM hm hY_int
   have hL1_ae :
@@ -425,9 +429,8 @@ theorem condExp_sup_comap_eq_of_condIndep
       @Measurable Ω β (MeasurableSpace.comap g inferInstance) _ g := by
     exact Measurable.of_comap_le le_rfl
   have hY_meas :
-      @MeasureTheory.StronglyMeasurable Ω ℝ _
-        (MeasurableSpace.comap g inferInstance) (fun ω => h (g ω)) := by
-    exact (hh.comp hg_comap).stronglyMeasurable
+      @Measurable Ω ℝ (MeasurableSpace.comap g inferInstance) _ (fun ω => h (g ω)) := by
+    exact hh.comp hg_comap
   exact condExp_sup_comap_eq_of_condIndep_comap hm hf hg hCI hY_meas hhg
 
 /-- **Conditional-independence factorization of a product's conditional
@@ -668,8 +671,7 @@ theorem condIndepFun_prodMk_of_measurable_left
     [StandardBorelSpace Ω]
     {μ : MeasureTheory.Measure Ω} [MeasureTheory.IsFiniteMeasure μ]
     {W : Ω → α} {X : Ω → β} {Z : Ω → γ}
-    (_hW : Measurable W) (_hZ : Measurable Z) (_hX : Measurable X)
-    (_hX_m : Measurable[m] X)
+    (_hW : Measurable W) (_hZ : Measurable Z) (_hX_m : Measurable[m] X)
     (_hCI : ProbabilityTheory.CondIndepFun m hm W Z μ) :
     ProbabilityTheory.CondIndepFun m hm (fun ω => (W ω, X ω)) Z μ := by
   let pair : Ω → α × β := fun ω => (W ω, X ω)
@@ -680,7 +682,7 @@ theorem condIndepFun_prodMk_of_measurable_left
     {q | ∃ s : Set α, MeasurableSet s ∧
       ∃ u : Set β, MeasurableSet u ∧ pair ⁻¹' (s ×ˢ u) = q}
   let pZ : Set (Set Ω) := {q | ∃ r : Set γ, r ∈ zsets ∧ Z ⁻¹' r = q}
-  have hpair_meas : Measurable pair := _hW.prod _hX
+  have hpair_meas : Measurable pair := _hW.prod (_hX_m.mono hm le_rfl)
   have hpPair_pi : IsPiSystem pPair := by
     simpa [pPair] using (isPiSystem_prod (α := α) (β := β)).comap pair
   have hpZ_pi : IsPiSystem pZ := by

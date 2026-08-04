@@ -96,7 +96,7 @@ def ObsIntegrable : Prop := ∀ j, Integrable (fun ω => F.obs.X ω j) F.obs.P
 parents, `S(E) ⊆ PA(Y)`.  The null `H_{0,PA(Y)}` is correct with the causal
 coefficient `γ* = β₀,·` and residual `ε₁`, so `PA(Y) ∈ invariantSets` and hence
 is one of the intersected sets. -/
-theorem icp_sound_linearGaussian (hInt : F.ObsIntegrable) :
+theorem icp_sound_linearGaussian (_hInt : F.ObsIntegrable) :
     F.identifiedSet ⊆ F.paY := by
   -- It suffices that `PA(Y)` itself satisfies the invariance null, since the
   -- identified set is contained in every invariant set.

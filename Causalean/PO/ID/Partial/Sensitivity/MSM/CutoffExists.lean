@@ -103,7 +103,7 @@ theorem condExp_treat_wMin_eq (Λ : ℝ)
     exact (measurable_const.add
       ((measurable_const.sub hprop_meas).div (measurable_const.mul hprop_meas))).stronglyMeasurable
   have hind_int : Integrable (S.dVar.indicator true) P.μ :=
-    S.dVar.integrable_indicator true
+    S.dVar.integrable_indicator true (measurableSet_singleton true)
   have hcomm :
       (fun ω => S.dVar.indicator true ω * S.wMin Λ ω)
         = (fun ω => S.wMin Λ ω * S.dVar.indicator true ω) := by
@@ -134,7 +134,7 @@ theorem condExp_treat_wMax_eq (Λ : ℝ)
     exact (measurable_const.add
       ((measurable_const.mul (measurable_const.sub hprop_meas)).div hprop_meas)).stronglyMeasurable
   have hind_int : Integrable (S.dVar.indicator true) P.μ :=
-    S.dVar.integrable_indicator true
+    S.dVar.integrable_indicator true (measurableSet_singleton true)
   have hcomm :
       (fun ω => S.dVar.indicator true ω * S.wMax Λ ω)
         = (fun ω => S.wMax Λ ω * S.dVar.indicator true ω) := by

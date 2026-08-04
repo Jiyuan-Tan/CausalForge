@@ -78,7 +78,7 @@ Vector analogue of `Causalean.Stat.Tendsto_dist.add_isLittleOp_one` (file
 and by `IsAsymLinearVec.tendsto_normal_vec`. -/
 theorem Tendsto_dist_vec.add_isLittleOp_one
     {Ω E : Type*} [MeasurableSpace Ω] {μ : Measure Ω} [IsProbabilityMeasure μ]
-    [NormedAddCommGroup E] [MeasurableSpace E] [BorelSpace E]
+    [NormedAddCommGroup E] [MeasurableSpace E] [OpensMeasurableSpace E]
     {Xn Yn : ℕ → Ω → E} {Q : Measure E} [IsProbabilityMeasure Q]
     (hXn : ∀ n, AEMeasurable (Xn n) μ)
     (hYn : ∀ n, AEMeasurable (Yn n) μ)
@@ -240,10 +240,19 @@ theorem Tendsto_dist_vec.map_continuous
     {Xn : ℕ → Ω → E} {Q : Measure E} [IsProbabilityMeasure Q]
     {g : E → F} (hg : Continuous g)
     (hXn : ∀ n, AEMeasurable (Xn n) μ)
-    (hgXn : ∀ n, AEMeasurable (fun ω => g (Xn n ω)) μ)
-    [IsProbabilityMeasure (Q.map g)]
     (hX : Tendsto_dist_vec Xn Q μ hXn) :
-    Tendsto_dist_vec (fun n ω => g (Xn n ω)) (Q.map g) μ hgXn := by
+    Tendsto (β := ProbabilityMeasure F)
+      (fun n =>
+        ⟨μ.map (fun ω => g (Xn n ω)),
+          Measure.isProbabilityMeasure_map
+            (hg.measurable.aemeasurable.comp_aemeasurable (hXn n))⟩)
+      atTop
+      (𝓝 ⟨Q.map g, Measure.isProbabilityMeasure_map hg.measurable.aemeasurable⟩) := by
+  have hgXn : ∀ n, AEMeasurable (fun ω => g (Xn n ω)) μ := fun n =>
+    hg.measurable.aemeasurable.comp_aemeasurable (hXn n)
+  letI : IsProbabilityMeasure (Q.map g) :=
+    Measure.isProbabilityMeasure_map hg.measurable.aemeasurable
+  change Tendsto_dist_vec (fun n ω => g (Xn n ω)) (Q.map g) μ hgXn
   unfold Tendsto_dist_vec at hX ⊢
   have hpm := MeasureTheory.ProbabilityMeasure.tendsto_map_of_tendsto_of_continuous
     (fun n => ⟨μ.map (Xn n), Measure.isProbabilityMeasure_map (hXn n)⟩)

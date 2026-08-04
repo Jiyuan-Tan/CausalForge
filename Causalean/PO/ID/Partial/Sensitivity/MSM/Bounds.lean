@@ -147,7 +147,7 @@ theorem msmUpper_eq (Λ : ℝ) (hΛ : 1 ≤ Λ)
   set Y : P.Ω → ℝ := S.factualY with hY_def
   set e : P.Ω → ℝ := S.propScore true with he_def
   -- Measurability.
-  have hAm : Measurable A := S.dVar.measurable_indicator true
+  have hAm : Measurable A := S.dVar.measurable_indicator true (measurableSet_singleton true)
   have hYm : Measurable Y := S.measurable_factualY
   have hem : Measurable e := by
     rw [he_def]; unfold POBackdoorSystem.propScore
@@ -309,7 +309,7 @@ theorem msmLower_eq (Λ : ℝ) (hΛ : 1 ≤ Λ)
   set A : P.Ω → ℝ := S.dVar.indicator true with hA_def
   set Y : P.Ω → ℝ := S.factualY with hY_def
   set e : P.Ω → ℝ := S.propScore true with he_def
-  have hAm : Measurable A := S.dVar.measurable_indicator true
+  have hAm : Measurable A := S.dVar.measurable_indicator true (measurableSet_singleton true)
   have hYm : Measurable Y := S.measurable_factualY
   have hem : Measurable e := by
     rw [he_def]; unfold POBackdoorSystem.propScore

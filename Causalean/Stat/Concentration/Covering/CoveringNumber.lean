@@ -53,7 +53,7 @@ theorem coveringNumber_eq {X : Type*} [PseudoMetricSpace X] {A : Set X}
   dif_pos hε
 
 /-- Covering numbers weakly decrease as the positive covering radius grows. -/
-theorem converingNumber_antitone {X : Type*} [PseudoMetricSpace X] {A : Set X}
+theorem coveringNumber_antitone {X : Type*} [PseudoMetricSpace X] {A : Set X}
     (ha : TotallyBounded A) :
     AntitoneOn (coveringNumber ha) (Set.Ioi 0) := by
   intro ε₁ hε₁ ε₂ hε₂ hε₁ε₂
@@ -79,11 +79,11 @@ theorem coveringNumber_nonzero {X : Type*} [PseudoMetricSpace X] {A : Set X}
 
 /-- The covering-number function of the radius is almost-everywhere measurable
 on the real line. -/
-theorem converingNumber_aemeasurable {X : Type*} [PseudoMetricSpace X] {A : Set X}
-    (ha : TotallyBounded A) :
-    AEMeasurable (coveringNumber ha) MeasureTheory.volume := by
-  have h₀ : AEMeasurable (coveringNumber ha) (MeasureTheory.volume.restrict (Set.Ioi 0)) :=
-    aemeasurable_restrict_of_antitoneOn measurableSet_Ioi (converingNumber_antitone ha)
+theorem coveringNumber_aemeasurable {X : Type*} [PseudoMetricSpace X] {A : Set X}
+    (ha : TotallyBounded A) (μ : MeasureTheory.Measure ℝ) :
+    AEMeasurable (coveringNumber ha) μ := by
+  have h₀ : AEMeasurable (coveringNumber ha) (μ.restrict (Set.Ioi 0)) :=
+    aemeasurable_restrict_of_antitoneOn measurableSet_Ioi (coveringNumber_antitone ha)
   convert (aemeasurable_indicator_iff measurableSet_Ioi).mpr h₀
   ext ε
   if h : ε ∈ Set.Ioi 0 then

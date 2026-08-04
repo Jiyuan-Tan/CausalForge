@@ -175,10 +175,10 @@ lemma integrable_factualY_of_consistency
     Integrable S.factualY P.μ := by
   have hY1_ind :
       Integrable (fun ω => S.YofD true ω * S.dVar.indicator true ω) P.μ :=
-    S.dVar.integrable_mul_indicator true hY1 (S.measurable_YofD true)
+    S.dVar.integrable_mul_indicator true (measurableSet_singleton true) hY1
   have hY0_ind :
       Integrable (fun ω => S.YofD false ω * S.dVar.indicator false ω) P.μ :=
-    S.dVar.integrable_mul_indicator false hY0 (S.measurable_YofD false)
+    S.dVar.integrable_mul_indicator false (measurableSet_singleton false) hY0
   have hsum_int :
       Integrable
         (fun ω => S.YofD true ω * S.dVar.indicator true ω
@@ -227,7 +227,7 @@ lemma propScore_ne_of_overlap [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
   cases d
   · -- false: propScore false = 1 - propScore true, and propScore true < 1.
     have hindD_integrable : ∀ e : Bool, Integrable (S.dVar.indicator e) P.μ :=
-      fun e => S.dVar.integrable_indicator e
+      fun e => S.dVar.integrable_indicator e (measurableSet_singleton e)
     have hsum_ptwise :
         (fun ω => S.dVar.indicator true ω + S.dVar.indicator false ω)
           = (fun _ : P.Ω => (1 : ℝ)) := by
@@ -295,18 +295,18 @@ theorem cate_backdoor_of_propScore_ne [StandardBorelSpace P.Ω] [IsFiniteMeasure
   · -- (hprod): μ[Y·1_{D=d}|σX] =ᵐ μ[1_{D=d}|σX] · CATE d.
     -- Integrability prerequisites.
     have hindD_integrable : Integrable (S.dVar.indicator d) P.μ :=
-      S.dVar.integrable_indicator d
+      S.dVar.integrable_indicator d (measurableSet_singleton d)
     have hYofD_integrable : Integrable (S.YofD d) P.μ := by
       cases d
       · exact hY0
       · exact hY1
     have hYofD_bdd_integrable_aux :
         Integrable (fun ω => S.YofD d ω * S.dVar.indicator d ω) P.μ := by
-      exact S.dVar.integrable_mul_indicator d hYofD_integrable (S.measurable_YofD d)
+      exact S.dVar.integrable_mul_indicator d (measurableSet_singleton d) hYofD_integrable
     have hYtimesInd_integrable :
         Integrable (fun ω => S.factualY ω * S.dVar.indicator d ω) P.μ := by
-      exact S.dVar.integrable_mul_indicator d
-        (S.integrable_factualY_of_consistency hcons hY1 hY0) S.measurable_factualY
+      exact S.dVar.integrable_mul_indicator d (measurableSet_singleton d)
+        (S.integrable_factualY_of_consistency hcons hY1 hY0)
     -- Step 1: μ[Y·1_{D=d}|σX] =ᵐ μ[Y(d)·1_{D=d}|σX].
     have hstep1 :
         S.xVar.condExpGiven (fun ω => S.factualY ω * S.dVar.indicator d ω) P.μ
@@ -568,7 +568,8 @@ theorem regression_adjustment [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
         change MeasurableSet[MeasurableSpace.comap S.factualDX inferInstance]
           (S.factualD ⁻¹' {d})
         exact ⟨Prod.fst ⁻¹' {d}, measurableSet_singleton d |>.preimage measurable_fst, rfl⟩
-      have hs : MeasurableSet s := S.dVar.measurableSet_event d
+      have hs : MeasurableSet s :=
+        S.dVar.measurableSet_event d (measurableSet_singleton d)
       have hmul_indicator :
           (fun ω => S.factualY ω * S.dVar.indicator d ω) = s.indicator S.factualY := by
         funext ω
@@ -611,7 +612,7 @@ theorem regression_adjustment [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
             (MeasureTheory.condExp_congr_ae (m := S.sigmaX) (μ := P.μ)
               (Filter.EventuallyEq.of_eq houtcome_target)))
       have hind_int : Integrable (S.dVar.indicator d) P.μ :=
-        S.dVar.integrable_indicator d
+        S.dVar.integrable_indicator d (measurableSet_singleton d)
       have htarget_mul_indicator :
           target * S.dVar.indicator d = s.indicator target := by
         funext ω

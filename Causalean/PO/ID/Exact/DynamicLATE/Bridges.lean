@@ -141,8 +141,8 @@ theorem innerCondY_mul_z1_indicator (As : S.Assumptions) (z : Fin 2 → Bool) :
     have h := POCFBundle.condExpRatio_of_consistency_CondIndepCFBundle
       (B := S.cfBundle2 (z 1)) (C := S.historyBundle2)
       (a := S.z2Var) (x := z 1)
-      (As.ignorability2 (z 1)) S.measurable_factualY
-      hψ_meas hψ_int hF_eq hover
+      (As.ignorability2 (z 1)) hψ_meas hψ_int
+        (measurableSet_singleton (z 1)) hF_eq hover
     rw [hψ_eq] at h
     exact h
   let q : P.Ω → ℝ := S.z1Var.indicator (z 0)
@@ -162,19 +162,18 @@ theorem innerCondY_mul_z1_indicator (As : S.Assumptions) (z : Fin 2 → Bool) :
     · ext ω
       rfl
   have hz2_int : Integrable (S.z2Var.indicator (z 1)) P.μ :=
-    S.z2Var.integrable_indicator (z 1)
+    S.z2Var.integrable_indicator (z 1) (measurableSet_singleton (z 1))
   have hY_z2_int :
       Integrable (fun ω => S.factualY ω * S.z2Var.indicator (z 1) ω) P.μ :=
-    S.z2Var.integrable_mul_indicator (z 1) As.integrable_factualY S.measurable_factualY
+    S.z2Var.integrable_mul_indicator (z 1) (measurableSet_singleton (z 1))
+      As.integrable_factualY
   have hq_z2_int : Integrable (q * S.z2Var.indicator (z 1)) P.μ := by
-    have h := S.z1Var.integrable_mul_indicator (z 0) hz2_int
-      (S.z2Var.measurable_indicator (z 1))
+    have h := S.z1Var.integrable_mul_indicator (z 0) (measurableSet_singleton (z 0)) hz2_int
     exact h.congr (Filter.Eventually.of_forall (fun ω => by dsimp [q]; ring))
   have hq_Y_z2_int :
       Integrable
         (q * fun ω => S.factualY ω * S.z2Var.indicator (z 1) ω) P.μ := by
-    have h := S.z1Var.integrable_mul_indicator (z 0) hY_z2_int
-      (S.measurable_factualY.mul (S.z2Var.measurable_indicator (z 1)))
+    have h := S.z1Var.integrable_mul_indicator (z 0) (measurableSet_singleton (z 0)) hY_z2_int
     exact h.congr (Filter.Eventually.of_forall (fun ω => by dsimp [q]; ring))
   have hNumPull :
       S.historyBundle2.condExpGiven
@@ -289,8 +288,8 @@ theorem innerCondD_mul_z1_indicator (As : S.Assumptions) (z d : Fin 2 → Bool) 
     have h := POCFBundle.condExpRatio_of_consistency_CondIndepCFBundle
       (B := S.cfBundle2 (z 1)) (C := S.historyBundle2)
       (a := S.z2Var) (x := z 1)
-      (As.ignorability2 (z 1)) (S.d2Var.measurable_indicator (d 1))
-      hψ_meas hψ_int hF_eq hover
+      (As.ignorability2 (z 1)) hψ_meas hψ_int
+        (measurableSet_singleton (z 1)) hF_eq hover
     rw [hψ_eq] at h
     exact h
   have hz1_sm : StronglyMeasurable[S.historyBundle2.sigma] (S.z1Var.indicator (z 0)) := by
@@ -326,46 +325,39 @@ theorem innerCondD_mul_z1_indicator (As : S.Assumptions) (z d : Fin 2 → Bool) 
     dsimp [q]
     exact hz1_sm.mul hd1_sm
   have hz2_int : Integrable (S.z2Var.indicator (z 1)) P.μ :=
-    S.z2Var.integrable_indicator (z 1)
+    S.z2Var.integrable_indicator (z 1) (measurableSet_singleton (z 1))
   have hd2z2_int :
       Integrable (fun ω => S.d2Var.indicator (d 1) ω *
         S.z2Var.indicator (z 1) ω) P.μ :=
     by
-      have h := S.d2Var.integrable_mul_indicator (d 1) hz2_int
-        (S.z2Var.measurable_indicator (z 1))
+      have h := S.d2Var.integrable_mul_indicator (d 1) (measurableSet_singleton (d 1)) hz2_int
       exact h.congr (Filter.Eventually.of_forall
         (fun ω => by simp [mul_comm]))
   have hd1_z2_int :
       Integrable (S.d1Var.indicator (d 0) * S.z2Var.indicator (z 1)) P.μ :=
     by
-      have h := S.d1Var.integrable_mul_indicator (d 0) hz2_int
-        (S.z2Var.measurable_indicator (z 1))
+      have h := S.d1Var.integrable_mul_indicator (d 0) (measurableSet_singleton (d 0)) hz2_int
       exact h.congr (Filter.Eventually.of_forall
         (fun ω => by simp [mul_comm]))
   have hz1_z2_int : Integrable (S.z1Var.indicator (z 0) * S.z2Var.indicator (z 1)) P.μ := by
-    have h := S.z1Var.integrable_mul_indicator (z 0) hz2_int
-      (S.z2Var.measurable_indicator (z 1))
+    have h := S.z1Var.integrable_mul_indicator (z 0) (measurableSet_singleton (z 0)) hz2_int
     exact h.congr (Filter.Eventually.of_forall
       (fun ω => by simp [mul_comm]))
   have hq_z2_int : Integrable (q * S.z2Var.indicator (z 1)) P.μ := by
-    have h := S.z1Var.integrable_mul_indicator (z 0) hd1_z2_int
-      ((S.d1Var.measurable_indicator (d 0)).mul (S.z2Var.measurable_indicator (z 1)))
+    have h := S.z1Var.integrable_mul_indicator (z 0) (measurableSet_singleton (z 0)) hd1_z2_int
     exact h.congr (Filter.Eventually.of_forall (fun ω => by dsimp [q]; ring))
   have hd1_d2z2_int :
       Integrable
         (S.d1Var.indicator (d 0) *
           fun ω => S.d2Var.indicator (d 1) ω * S.z2Var.indicator (z 1) ω) P.μ :=
     by
-      have h := S.d1Var.integrable_mul_indicator (d 0) hd2z2_int
-        ((S.d2Var.measurable_indicator (d 1)).mul (S.z2Var.measurable_indicator (z 1)))
+      have h := S.d1Var.integrable_mul_indicator (d 0) (measurableSet_singleton (d 0)) hd2z2_int
       exact h.congr (Filter.Eventually.of_forall
         (fun ω => by simp [mul_comm]))
   have hq_d2z2_int :
       Integrable
         (q * fun ω => S.d2Var.indicator (d 1) ω * S.z2Var.indicator (z 1) ω) P.μ := by
-    have h := S.z1Var.integrable_mul_indicator (z 0) hd1_d2z2_int
-      ((S.d1Var.measurable_indicator (d 0)).mul
-        ((S.d2Var.measurable_indicator (d 1)).mul (S.z2Var.measurable_indicator (z 1))))
+    have h := S.z1Var.integrable_mul_indicator (z 0) (measurableSet_singleton (z 0)) hd1_d2z2_int
     exact h.congr (Filter.Eventually.of_forall (fun ω => by dsimp [q]; ring))
   have hNumPull :
       S.historyBundle2.condExpGiven
@@ -437,7 +429,7 @@ theorem cOutcome_bridge (As : S.Assumptions) (z d : Fin 2 → Bool)
   have hStage1 := POCFBundle.condExpGiven_mul_of_consistency_CondIndepCFBundle
     (B := S.cfBundle1 z) (C := S.historyBundle1)
     (a := S.z1Var) (x := z 0)
-    (As.ignorability1 z) (S.measurable_YofDofZ z) hψ_meas hψ_int hF_eq
+    (As.ignorability1 z) hψ_meas hψ_int (measurableSet_singleton (z 0)) hF_eq
   rw [hψ_eq] at hStage1
   have hσ12 : S.historyBundle1.sigma ≤ S.historyBundle2.sigma := by
     have hn2 : S.historyBundle2.n = 4 := rfl
@@ -477,8 +469,7 @@ theorem cOutcome_bridge (As : S.Assumptions) (z d : Fin 2 → Bool)
     · ext ω
       rfl
   have hz1_YofZ2_int : Integrable (S.z1Var.indicator (z 0) * S.YofZ2 (z 1)) P.μ := by
-    have h := S.z1Var.integrable_mul_indicator (z 0) hYofZ2_int
-      (S.measurable_YofZ2 (z 1))
+    have h := S.z1Var.integrable_mul_indicator (z 0) (measurableSet_singleton (z 0)) hYofZ2_int
     exact h.congr (Filter.Eventually.of_forall
       (fun ω => by simp [mul_comm]))
   have hRevPull :
@@ -587,7 +578,7 @@ theorem cCompliance_bridge (As : S.Assumptions) (z d : Fin 2 → Bool)
   have hStage1 := POCFBundle.condExpGiven_mul_of_consistency_CondIndepCFBundle
     (B := S.cfBundle1 z) (C := S.historyBundle1)
     (a := S.z1Var) (x := z 0)
-    (As.ignorability1 z) htarget_meas hψ_meas hψ_int hF_eq
+    (As.ignorability1 z) hψ_meas hψ_int (measurableSet_singleton (z 0)) hF_eq
   rw [hψ_eq] at hStage1
   have hσ12 : S.historyBundle1.sigma ≤ S.historyBundle2.sigma := by
     have hn2 : S.historyBundle2.n = 4 := rfl
@@ -654,13 +645,12 @@ theorem cCompliance_bridge (As : S.Assumptions) (z d : Fin 2 → Bool)
   have hd1_d2cf_int :
       Integrable
         (S.d1Var.indicator (d 0) * S.d2ofZ2EqIndicator (z 1) (d 1)) P.μ := by
-    have h := S.d1Var.integrable_mul_indicator (d 0) hd2cf_int hd2cf_meas
+    have h := S.d1Var.integrable_mul_indicator (d 0) (measurableSet_singleton (d 0)) hd2cf_int
     exact h.congr (Filter.Eventually.of_forall
       (fun ω => by simp [mul_comm]))
   have hq_d2cf_int :
       Integrable (q * S.d2ofZ2EqIndicator (z 1) (d 1)) P.μ := by
-    have h := S.z1Var.integrable_mul_indicator (z 0) hd1_d2cf_int
-      ((S.d1Var.measurable_indicator (d 0)).mul hd2cf_meas)
+    have h := S.z1Var.integrable_mul_indicator (z 0) (measurableSet_singleton (z 0)) hd1_d2cf_int
     exact h.congr (Filter.Eventually.of_forall
       (fun ω => by dsimp [q]; ring))
   have hRevPull :

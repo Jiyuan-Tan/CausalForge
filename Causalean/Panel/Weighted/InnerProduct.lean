@@ -146,32 +146,32 @@ lemma ip_self_eq_zero_iff (c : WeightedSupport R) (A : R → ℝ) :
 
 /-! ### Matrix-valued vector inner product
 
-Vector arrays are modeled as `K`-tuples of scalar arrays:
-`A : Fin K → (R → ℝ)`.  The matrix-valued inner product is the entrywise
+Vector arrays are modeled as `J`-indexed families of scalar arrays:
+`A : J → (R → ℝ)`.  The matrix-valued inner product is the entrywise
 scalar inner product. -/
 
-variable {K : ℕ}
+variable {J : Type*}
 
 /-- The matrix-valued inner product takes the scalar weighted inner product
 between each pair of columns. -/
-def ipMat (c : WeightedSupport R) (A B : Fin K → R → ℝ) :
-    Matrix (Fin K) (Fin K) ℝ :=
+def ipMat (c : WeightedSupport R) (A B : J → R → ℝ) :
+    Matrix J J ℝ :=
   fun j k => c.ip (A j) (B k)
 
 /-- Each entry of the matrix-valued inner product is the scalar weighted inner
 product of the corresponding two columns. -/
-@[simp] lemma ipMat_apply (c : WeightedSupport R) (A B : Fin K → R → ℝ)
-    (j k : Fin K) :
+@[simp] lemma ipMat_apply (c : WeightedSupport R) (A B : J → R → ℝ)
+    (j k : J) :
     c.ipMat A B j k = c.ip (A j) (B k) := rfl
 
 /-- The transpose of `⟨A, B⟩_ω` is `⟨B, A⟩_ω`. -/
-lemma ipMat_transpose (c : WeightedSupport R) (A B : Fin K → R → ℝ) :
+lemma ipMat_transpose (c : WeightedSupport R) (A B : J → R → ℝ) :
     (c.ipMat A B).transpose = c.ipMat B A := by
   ext j k
   rw [Matrix.transpose_apply, ipMat_apply, ipMat_apply, ip_symm]
 
 /-- Additivity in the left tuple argument (entrywise). -/
-lemma ipMat_add_left (c : WeightedSupport R) (A A' B : Fin K → R → ℝ) :
+lemma ipMat_add_left (c : WeightedSupport R) (A A' B : J → R → ℝ) :
     c.ipMat (A + A') B = c.ipMat A B + c.ipMat A' B := by
   ext j k
   change c.ip ((A + A') j) (B k) = c.ipMat A B j k + c.ipMat A' B j k
@@ -179,7 +179,7 @@ lemma ipMat_add_left (c : WeightedSupport R) (A A' B : Fin K → R → ℝ) :
   simp [ipMat_apply]
 
 /-- Additivity in the right tuple argument (entrywise). -/
-lemma ipMat_add_right (c : WeightedSupport R) (A B B' : Fin K → R → ℝ) :
+lemma ipMat_add_right (c : WeightedSupport R) (A B B' : J → R → ℝ) :
     c.ipMat A (B + B') = c.ipMat A B + c.ipMat A B' := by
   ext j k
   change c.ip (A j) ((B + B') k) = c.ipMat A B j k + c.ipMat A B' j k
@@ -187,7 +187,7 @@ lemma ipMat_add_right (c : WeightedSupport R) (A B B' : Fin K → R → ℝ) :
   simp [ipMat_apply]
 
 /-- Scalar homogeneity in the left tuple argument (entrywise). -/
-lemma ipMat_smul_left (c : WeightedSupport R) (s : ℝ) (A B : Fin K → R → ℝ) :
+lemma ipMat_smul_left (c : WeightedSupport R) (s : ℝ) (A B : J → R → ℝ) :
     c.ipMat (s • A) B = s • c.ipMat A B := by
   ext j k
   change c.ip ((s • A) j) (B k) = s • (c.ipMat A B) j k
@@ -195,7 +195,7 @@ lemma ipMat_smul_left (c : WeightedSupport R) (s : ℝ) (A B : Fin K → R → �
   simp [ipMat_apply, smul_eq_mul]
 
 /-- Scalar homogeneity in the right tuple argument (entrywise). -/
-lemma ipMat_smul_right (c : WeightedSupport R) (s : ℝ) (A B : Fin K → R → ℝ) :
+lemma ipMat_smul_right (c : WeightedSupport R) (s : ℝ) (A B : J → R → ℝ) :
     c.ipMat A (s • B) = s • c.ipMat A B := by
   ext j k
   change c.ip (A j) ((s • B) k) = s • (c.ipMat A B) j k

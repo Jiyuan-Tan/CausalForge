@@ -14,6 +14,10 @@
 //                      null ⇒ use the run's repoRoot (the lake project that
 //                      transitively sees Causalean).
 //   mcpTimeoutMs     — MCP_TIMEOUT for the (slow-cold-starting) lean-lsp server.
+//   codexSandbox     — local-tool sandbox for Codex workers. Keep the portable
+//                      default `workspace-write`; set `danger-full-access` only
+//                      when the machine is already externally confined and its
+//                      Linux bubblewrap/user namespaces are unavailable.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -24,6 +28,7 @@ export interface LocalConfig {
   leanLspMcpBinary: string;
   leanProjectPath?: string;
   mcpTimeoutMs: number;
+  codexSandbox: "workspace-write" | "danger-full-access";
 }
 
 const CONFIG_DIR = path.resolve(
@@ -42,6 +47,14 @@ function parsePositiveIntegerConfig(name: string, value: unknown): number {
     throw new Error(`Invalid ${name}: ${String(value)} (expected a positive integer milliseconds value)`);
   }
   return n;
+}
+
+function parseCodexSandbox(value: unknown): LocalConfig["codexSandbox"] {
+  const mode = String(value).trim();
+  if (mode === "workspace-write" || mode === "danger-full-access") return mode;
+  throw new Error(
+    `Invalid codexSandbox: ${mode} (expected workspace-write or danger-full-access)`,
+  );
 }
 
 export function localConfig(): LocalConfig {
@@ -80,6 +93,9 @@ export function localConfig(): LocalConfig {
     mcpTimeoutMs: parsePositiveIntegerConfig(
       "MCP_TIMEOUT",
       process.env.MCP_TIMEOUT ?? file.mcpTimeoutMs ?? 600000,
+    ),
+    codexSandbox: parseCodexSandbox(
+      process.env.CAUSALSMITH_CODEX_SANDBOX ?? file.codexSandbox ?? "workspace-write",
     ),
   };
   return cached;

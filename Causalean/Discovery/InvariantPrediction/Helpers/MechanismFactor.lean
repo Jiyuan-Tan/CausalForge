@@ -157,9 +157,9 @@ theorem measurable_mechanismFunCf (F : EnvFamily N Ω ι) (i₀ i : ι)
   apply ((F.M i).structFun_measurable ⟨F.yNode, F.hYobs i⟩).comp
   exact measurable_pi_lambda _ (fun d => by
       by_cases hlat : d.val ∈ (F.M i).unobserved
-      · simp only [mechanismFunCf, dif_pos hlat]
+      · simp only [dif_pos hlat]
         exact (measurable_pi_apply _).comp measurable_snd
-      · simp only [mechanismFunCf, dif_neg hlat]
+      · simp only [dif_neg hlat]
         by_cases hfix : d.val ∈ (F.M i).fixed
         · simp only [dif_pos hfix]
           exact measurable_const
@@ -177,9 +177,9 @@ theorem measurable_mechanismFun (F : EnvFamily N Ω ι) (i₀ i : ι) :
   apply ((F.M i).structFun_measurable ⟨F.yNode, F.hYobs i⟩).comp
   exact measurable_pi_lambda _ (fun d => by
       by_cases hlat : d.val ∈ (F.M i).unobserved
-      · simp only [mechanismFun, dif_pos hlat]
+      · simp only [dif_pos hlat]
         exact (measurable_pi_apply _).comp measurable_snd
-      · simp only [mechanismFun, dif_neg hlat]
+      · simp only [dif_neg hlat]
         by_cases hfix : d.val ∈ (F.M i).fixed
         · simp only [dif_pos hfix]
           exact measurable_const
@@ -202,13 +202,13 @@ theorem target_projection_evalMap_eq_mechanismFun
           (show F.paObs i₀ ⊆ (F.M i).randomVars from by
             rw [F.paObs_eq i₀ i]
             exact (Finset.inter_subset_right).trans (by
-              show (F.M i).observed ⊆ (F.M i).observed ∪ (F.M i).unobserved
+              change (F.M i).observed ⊆ (F.M i).observed ∪ (F.M i).unobserved
               exact Finset.subset_union_left))
           ((F.M i).evalMap (F.s i) ℓ),
          valuesProjection
           (show F.paLat i ⊆ (F.M i).randomVars from by
             exact (Finset.inter_subset_right).trans (by
-              show (F.M i).unobserved ⊆ (F.M i).observed ∪ (F.M i).unobserved
+              change (F.M i).unobserved ⊆ (F.M i).observed ∪ (F.M i).unobserved
               exact Finset.subset_union_right))
           ((F.M i).evalMap (F.s i) ℓ)) := by
   funext w
@@ -271,7 +271,7 @@ theorem map_heq_transport {α₁ α₂ δ : Type u}
 
 /-- `ValuesOn` measurable spaces transport heterogeneously across equality of
 the finite index sets. -/
-theorem valuesOn_measurableSpace_heq {M : Type*} [DecidableEq M] [Fintype M]
+theorem valuesOn_measurableSpace_heq {M : Type*} [Fintype M]
     {Ω' : M → Type*} [∀ n, MeasurableSpace (Ω' n)]
     {I J : Finset M} (h : I = J) :
     HEq (inferInstance : MeasurableSpace (ValuesOn I Ω'))
@@ -421,11 +421,11 @@ theorem condDistrib_target_eq_mechanismKernel
       let hPrv : F.paObs i₀ ⊆ (F.M i).randomVars := by
         rw [F.paObs_eq i₀ i]
         exact (Finset.inter_subset_right).trans (by
-          show (F.M i).observed ⊆ (F.M i).observed ∪ (F.M i).unobserved
+          change (F.M i).observed ⊆ (F.M i).observed ∪ (F.M i).unobserved
           exact Finset.subset_union_left)
       let hLrv : F.paLat i ⊆ (F.M i).randomVars := by
         exact (Finset.inter_subset_right).trans (by
-          show (F.M i).unobserved ⊆ (F.M i).observed ∪ (F.M i).unobserved
+          change (F.M i).unobserved ⊆ (F.M i).observed ∪ (F.M i).unobserved
           exact Finset.subset_union_right)
       exact
         (fun c => condDistrib (valuesProjection hYrv) (valuesProjection hPrv)
@@ -448,7 +448,7 @@ theorem condDistrib_target_eq_mechanismKernel
   have hPrv : F.paObs i₀ ⊆ (F.M i).randomVars := by
     rw [F.paObs_eq i₀ i]
     exact (Finset.inter_subset_right).trans (by
-      show (F.M i).observed ⊆ (F.M i).observed ∪ (F.M i).unobserved
+      change (F.M i).observed ⊆ (F.M i).observed ∪ (F.M i).unobserved
       exact Finset.subset_union_left)
   have hLrv : F.paLat i ⊆ (F.M i).randomVars := by
     exact (Finset.inter_subset_right).trans (by

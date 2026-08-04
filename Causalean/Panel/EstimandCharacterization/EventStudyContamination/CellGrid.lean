@@ -147,15 +147,15 @@ lemma cellAverage_mem_cellNuisance (P : EventStudySystem T) (D : P.ConventionalD
 on a nonempty cell `(g, e')`, is the cell-level indicator `1{e' = e}`. -/
 lemma cellAverage_eventIndicator (P : EventStudySystem T) {e : ℤ} {g : Fin T} {e' : ℤ}
     (hne : (P.targetPeriods g e').Nonempty) :
-    P.cellAverage (fun g t => P.eventIndicator e (P.relTime g t)) g e'
-      = P.eventIndicator e e' := by
+    P.cellAverage (fun g t => eventIndicator e (P.relTime g t)) g e'
+      = eventIndicator e e' := by
   classical
   have hcard : ((P.targetPeriods g e').card : ℝ) ≠ 0 := by
     have : 0 < (P.targetPeriods g e').card := Finset.card_pos.mpr hne
     exact_mod_cast this.ne'
   unfold EventStudySystem.cellAverage
   have hconst : ∀ t ∈ P.targetPeriods g e',
-      P.eventIndicator e (P.relTime g t) = P.eventIndicator e e' := by
+      eventIndicator e (P.relTime g t) = eventIndicator e e' := by
     intro t ht
     have hrel : P.relTime g t = e' := by simpa [EventStudySystem.targetPeriods] using ht
     rw [hrel]
@@ -166,9 +166,9 @@ lemma cellAverage_eventIndicator (P : EventStudySystem T) {e : ℤ} {g : Fin T} 
 subspace (it is the cell average of the corresponding event-study nuisance). -/
 lemma eventIndicator_mem_cellNuisance (P : EventStudySystem T) (D : P.ConventionalDesign)
     {e : ℤ} (he_inc : e ∈ D.includedEvents) (he_ne : e ≠ D.displayedEvent) :
-    (fun cell : P.CellIndex D => P.eventIndicator e cell.val.2) ∈ P.cellNuisance D := by
+    (fun cell : P.CellIndex D => eventIndicator e cell.val.2) ∈ P.cellNuisance D := by
   classical
-  have hN : P.IsEventStudyNuisance D (fun g t => P.eventIndicator e (P.relTime g t)) := by
+  have hN : P.IsEventStudyNuisance D (fun g t => eventIndicator e (P.relTime g t)) := by
     refine ⟨fun _ _ => 0, ⟨fun _ => 0, fun _ => 0, fun g t => by simp⟩,
       fun k => if k = e then 1 else 0, ?_⟩
     intro g _ t
@@ -180,9 +180,9 @@ lemma eventIndicator_mem_cellNuisance (P : EventStudySystem T) (D : P.Convention
       exact absurd (Finset.mem_filter.mpr ⟨he_inc, he_ne⟩) hnot
   have heq :
       (fun cell : P.CellIndex D =>
-          P.cellAverage (fun g t => P.eventIndicator e (P.relTime g t))
+          P.cellAverage (fun g t => eventIndicator e (P.relTime g t))
             cell.val.1 cell.val.2)
-        = fun cell : P.CellIndex D => P.eventIndicator e cell.val.2 := by
+        = fun cell : P.CellIndex D => eventIndicator e cell.val.2 := by
     funext cell
     have hmem : cell.val ∈ (P.cohorts.product D.eventSupport).filter
         (fun ge => P.AdmissibleCell ge.1 ge.2) := cell.property
@@ -197,7 +197,7 @@ observed at relative time `e'`. Pure finite algebra; no residualization needed.
 This is the engine behind `hDisplayedExpansion` and `hOtherIncludedOrthogonal`. -/
 lemma sum_admissible_mul_eventIndicator (P : EventStudySystem T) (D : P.ConventionalDesign)
     (e' : ℤ) (f : Fin T → ℤ → ℝ) :
-    ∑ ge ∈ P.admissibleCells D.eventSupport, f ge.1 ge.2 * P.eventIndicator e' ge.2
+    ∑ ge ∈ P.admissibleCells D.eventSupport, f ge.1 ge.2 * eventIndicator e' ge.2
       = ∑ g ∈ P.cohortsAtEvent D.eventSupport e', f g e' := by
   classical
   have hfilter :
@@ -220,7 +220,7 @@ lemma sum_admissible_mul_eventIndicator (P : EventStudySystem T) (D : P.Conventi
       exact ⟨⟨⟨hg, by simpa [heq] using hSupport⟩, by simpa [heq] using hAdm⟩,
         heq.symm⟩
   calc
-    ∑ ge ∈ P.admissibleCells D.eventSupport, f ge.1 ge.2 * P.eventIndicator e' ge.2
+    ∑ ge ∈ P.admissibleCells D.eventSupport, f ge.1 ge.2 * eventIndicator e' ge.2
         = ∑ ge ∈ P.admissibleCells D.eventSupport,
             if ge.2 = e' then f ge.1 e' else 0 := by
           refine Finset.sum_congr rfl (fun ge _ => ?_)
@@ -241,7 +241,7 @@ lemma sum_admissible_mul_eventIndicator (P : EventStudySystem T) (D : P.Conventi
 function. -/
 noncomputable def cellRegressor (P : EventStudySystem T) (D : P.ConventionalDesign) :
     P.CellIndex D → ℝ :=
-  fun cell => P.eventIndicator D.displayedEvent cell.val.2
+  fun cell => eventIndicator D.displayedEvent cell.val.2
 
 /-- Cell-grid outcome: the observed cell mean as a cell function. -/
 noncomputable def cellOutcome (P : EventStudySystem T) (D : P.ConventionalDesign) :
@@ -284,9 +284,9 @@ structure CellGridResidualization (P : EventStudySystem T)
 
 variable {P : EventStudySystem T} {D : P.ConventionalDesign}
 
-/-- The residualized regressor on the cell grid equals `D.Rdot` (as a cell
-function). -/
-private lemma tildeX_eq_Rdot (h : P.CellGridResidualization D) :
+/-- Under cell-grid residualization, the residualized displayed-event regressor equals the
+design residual at every admissible cohort--relative-time cell. -/
+lemma tildeX_eq_Rdot (h : P.CellGridResidualization D) :
     (P.cellSupport D h.hCellMassPos h.hCellNonempty).tildeX (P.cellNuisance D)
         (P.cellRegressor D)
       = fun cell => D.Rdot cell.val.1 cell.val.2 := by
@@ -321,7 +321,7 @@ theorem cellGrid_mu_eq_conventionalMuRatio (h : P.CellGridResidualization D) :
     rw [← (P.cellSupport D h.hCellMassPos h.hCellNonempty).ip_tildeX_self
         (P.cellNuisance D) (P.cellRegressor D), hRdot]
     exact P.ip_cellSupport D h.hCellMassPos h.hCellNonempty
-      (fun ge => D.Rdot ge.1 ge.2) (fun ge => P.eventIndicator D.displayedEvent ge.2)
+      (fun ge => D.Rdot ge.1 ge.2) (fun ge => eventIndicator D.displayedEvent ge.2)
   have hpos_ip :
       0 < (P.cellSupport D h.hCellMassPos h.hCellNonempty).ip
         ((P.cellSupport D h.hCellMassPos h.hCellNonempty).tildeX (P.cellNuisance D)
@@ -332,35 +332,46 @@ theorem cellGrid_mu_eq_conventionalMuRatio (h : P.CellGridResidualization D) :
   obtain ⟨α, hα_mem, hNR, hNH⟩ := h.hMuNormalEqs
   have hmu := (P.cellSupport D h.hCellMassPos h.hCellNonempty).scalar_fwl_of_normalEqs
     (P.cellNuisance D) (P.cellRegressor D) (P.cellOutcome D) D.mu α
-    hα_mem hpos_ip hNR hNH
+    hα_mem hpos_ip.ne' hNR hNH
   rw [hmu, hnum, hden, EventStudySystem.conventionalMuRatio]
   have hDen : P.residualDenom D ≠ 0 := h.hDenomPos.ne'
   field_simp
 
 /-- The three finite-cell orthogonality conditions are derived from the genuine
 weighted projection, not assumed. -/
-theorem cellGrid_provides_residualization (h : P.CellGridResidualization D) :
+theorem cellGrid_provides_residualization
+    (hCellMassPos : ∀ ge ∈ P.admissibleCells D.eventSupport,
+      0 < P.cellMassAtEvent ge.1 ge.2)
+    (hCellNonempty : (P.admissibleCells D.eventSupport).Nonempty)
+    (hRdotResidual : ∀ cell : P.CellIndex D,
+      D.Rdot cell.val.1 cell.val.2
+        = (P.cellSupport D hCellMassPos hCellNonempty).tildeX (P.cellNuisance D)
+            (P.cellRegressor D) cell) :
     P.ConventionalResidualization D := by
   classical
   have hZpos : 0 < P.cellTotalMass D :=
-    Finset.sum_pos (fun ge hge => h.hCellMassPos ge hge) h.hCellNonempty
+    Finset.sum_pos (fun ge hge => hCellMassPos ge hge) hCellNonempty
   have hZ : P.cellTotalMass D ≠ 0 := hZpos.ne'
-  have hRdot := tildeX_eq_Rdot h
+  have hRdot :
+      (P.cellSupport D hCellMassPos hCellNonempty).tildeX (P.cellNuisance D)
+          (P.cellRegressor D) = fun cell => D.Rdot cell.val.1 cell.val.2 := by
+    funext cell
+    exact (hRdotResidual cell).symm
   refine ⟨?_, ?_, ?_⟩
   · -- hResidualization
     intro hCell hN
     have hmem := P.cellAverage_mem_cellNuisance D hN
-    have hortho := (P.cellSupport D h.hCellMassPos h.hCellNonempty).residualize_in_orthogonal
+    have hortho := (P.cellSupport D hCellMassPos hCellNonempty).residualize_in_orthogonal
       (P.cellNuisance D) (P.cellRegressor D) hmem
     rw [hRdot] at hortho
     have hip :
-        (P.cellSupport D h.hCellMassPos h.hCellNonempty).ip
+        (P.cellSupport D hCellMassPos hCellNonempty).ip
             (fun cell => D.Rdot cell.val.1 cell.val.2)
             (fun cell => P.cellAverage hCell cell.val.1 cell.val.2)
           = (∑ ge ∈ P.admissibleCells D.eventSupport,
               P.cellMassAtEvent ge.1 ge.2 * D.Rdot ge.1 ge.2
                 * P.cellAverage hCell ge.1 ge.2) / P.cellTotalMass D :=
-      P.ip_cellSupport D h.hCellMassPos h.hCellNonempty
+      P.ip_cellSupport D hCellMassPos hCellNonempty
         (fun ge => D.Rdot ge.1 ge.2) (fun ge => P.cellAverage hCell ge.1 ge.2)
     rw [hip] at hortho
     exact (div_eq_zero_iff.mp hortho).resolve_right hZ
@@ -370,22 +381,22 @@ theorem cellGrid_provides_residualization (h : P.CellGridResidualization D) :
   · -- hOtherIncludedOrthogonal
     intro e he_inc he_ne
     have hmem := P.eventIndicator_mem_cellNuisance D he_inc he_ne
-    have hortho := (P.cellSupport D h.hCellMassPos h.hCellNonempty).residualize_in_orthogonal
+    have hortho := (P.cellSupport D hCellMassPos hCellNonempty).residualize_in_orthogonal
       (P.cellNuisance D) (P.cellRegressor D) hmem
     rw [hRdot] at hortho
     have hip :
-        (P.cellSupport D h.hCellMassPos h.hCellNonempty).ip
+        (P.cellSupport D hCellMassPos hCellNonempty).ip
             (fun cell => D.Rdot cell.val.1 cell.val.2)
-            (fun cell => P.eventIndicator e cell.val.2)
+            (fun cell => eventIndicator e cell.val.2)
           = (∑ ge ∈ P.admissibleCells D.eventSupport,
               P.cellMassAtEvent ge.1 ge.2 * D.Rdot ge.1 ge.2
-                * P.eventIndicator e ge.2) / P.cellTotalMass D :=
-      P.ip_cellSupport D h.hCellMassPos h.hCellNonempty
-        (fun ge => D.Rdot ge.1 ge.2) (fun ge => P.eventIndicator e ge.2)
+                * eventIndicator e ge.2) / P.cellTotalMass D :=
+      P.ip_cellSupport D hCellMassPos hCellNonempty
+        (fun ge => D.Rdot ge.1 ge.2) (fun ge => eventIndicator e ge.2)
     rw [hip] at hortho
     have hsum0 :
         ∑ ge ∈ P.admissibleCells D.eventSupport,
-          P.cellMassAtEvent ge.1 ge.2 * D.Rdot ge.1 ge.2 * P.eventIndicator e ge.2 = 0 :=
+          P.cellMassAtEvent ge.1 ge.2 * D.Rdot ge.1 ge.2 * eventIndicator e ge.2 = 0 :=
       (div_eq_zero_iff.mp hortho).resolve_right hZ
     rw [← P.sum_admissible_mul_eventIndicator D e
       (fun g e0 => P.cellMassAtEvent g e0 * D.Rdot g e0)]

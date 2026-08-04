@@ -94,13 +94,6 @@ noncomputable def empiricalPMet (S : Fin n → 𝒳) :
         _ = √(∑ i, ‖yS i - zS i‖ ^ 2) := EuclideanSpace.norm_eq (yS - zS)
         _ = √(∑ i, (yS i - zS i) ^ 2) := by simp
 
-/-- The empirical distance between two functions is their empirical norm
-difference. -/
-@[simp]
-lemma empiricalDist_app (S : Fin n → 𝒳) (f g : 𝒳 → ℝ) :
-    empiricalDist S f g = empiricalNorm S (f - g) :=
-  rfl
-
 /-- The empirical distance is symmetric. -/
 @[simp] lemma empiricalDist_comm (S : Fin n → 𝒳) (f g : 𝒳 → ℝ) :
     empiricalDist S f g = empiricalDist S g f := by

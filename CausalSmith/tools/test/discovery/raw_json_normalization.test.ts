@@ -43,6 +43,32 @@ describe("normalizeRawModelJson (pre-parse raw-byte repair)", () => {
     });
   });
 
+  it("restores under-escaped amssymb negated relations (\\nRightarrow family)", () => {
+    const raw = String.raw`{"s":"A \nRightarrow B and x \nVdash y and \notag"}`;
+    expect(parseNormalized(raw)).toEqual({
+      s: String.raw`A \nRightarrow B and x \nVdash y and \notag`,
+    });
+  });
+
+  it("post-parse repair never converts a correctly-authored negated arrow into a newline", () => {
+    // 2026-08-01 TeX audit: `\n` + uppercase was blanket-converted to a line
+    // break, silently corrupting `A \nRightarrow B` ("does not imply") that
+    // arrived CORRECTLY escaped.
+    expect(repairSerializedLatex(String.raw`A \nRightarrow B`)).toBe(String.raw`A \nRightarrow B`);
+    expect(repairSerializedLatex(String.raw`x \nLeftrightarrow y`)).toBe(String.raw`x \nLeftrightarrow y`);
+    // …while a genuine serialized newline before an uppercase word still repairs.
+    expect(repairSerializedLatex("First.\\nThen more.")).toBe("First.\nThen more.");
+  });
+
+  it("keeps the line break before an aligned row that starts with the variable e", () => {
+    // `e &= mc` opening an alignment row is the VARIABLE e — rewriting its
+    // preceding newline into `\ne` destroyed the row separator and injected ≠.
+    const proof = "\\begin{aligned}\ne &= mc \\\\\nf &= g\n\\end{aligned}";
+    expect(repairSerializedLatex(proof)).toBe(proof);
+    // …while a genuinely decoded `\ne` (newline + `e` + delimiter) still restores.
+    expect(repairSerializedLatex("a \ne b")).toBe(String.raw`a \ne b`);
+  });
+
   it("rescues invalid JSON escapes (\\alpha, \\geq, \\{, \\[) instead of throwing", () => {
     const raw = String.raw`{"s":"\alpha \geq 0, \{x\}, \[y\]"}`;
     expect(() => JSON.parse(raw)).toThrow();

@@ -124,7 +124,6 @@ theorem condIndepFun_of_map
 theorem full_local_markov (M : Causalean.SCM N Ω)
     [StandardBorelSpace M.RandomValues]
     [StandardBorelSpace M.LatentValues]
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.jointKernel s)]
     (v : SWIGNode N) (hv : v ∈ M.observed)
     [StandardBorelSpace (ValuesOn ({v} : Finset (SWIGNode N)) (swigΩ Ω))]
     [Nonempty (ValuesOn ({v} : Finset (SWIGNode N)) (swigΩ Ω))]
@@ -279,7 +278,6 @@ theorem full_local_markov (M : Causalean.SCM N Ω)
 theorem full_local_markov_latent (M : Causalean.SCM N Ω)
     [StandardBorelSpace M.RandomValues]
     [StandardBorelSpace M.LatentValues]
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.jointKernel s)]
     (a : SWIGNode N) (ha : a ∈ M.unobserved)
     [StandardBorelSpace (ValuesOn ({a} : Finset (SWIGNode N)) (swigΩ Ω))]
     [Nonempty (ValuesOn ({a} : Finset (SWIGNode N)) (swigΩ Ω))]
@@ -394,13 +392,23 @@ theorem full_local_markov_latent (M : Causalean.SCM N Ω)
   -- latent index sets.
   haveI : ∀ i, MeasureTheory.IsProbabilityMeasure (M.latentDist i) :=
     M.isProbability_latent
+  letI f_unobs : Fintype {i // i ∈ M.unobserved} := Fintype.ofFinite _
+  have h_base_pi :
+      ProbabilityTheory.IndepFun
+        (fun (ℓ : M.LatentValues) (i : {i // i ∈ S_idx}) => ℓ i.val)
+        (fun (ℓ : M.LatentValues) (i : {i // i ∈ T_idx}) => ℓ i.val)
+        (MeasureTheory.Measure.pi M.latentDist) :=
+    indepFun_pi_of_disjoint M.latentDist h_disj
+  have h_fintype : f_unobs =
+      Finset.Subtype.fintype M.unobserved :=
+    Subsingleton.elim _ _
   have h_base :
       ProbabilityTheory.IndepFun
         (fun (ℓ : M.LatentValues) (i : {i // i ∈ S_idx}) => ℓ i.val)
         (fun (ℓ : M.LatentValues) (i : {i // i ∈ T_idx}) => ℓ i.val)
         M.latentProduct := by
-    change ProbabilityTheory.IndepFun _ _ (MeasureTheory.Measure.pi M.latentDist)
-    exact indepFun_pi_of_disjoint M.latentDist h_disj
+    rw [h_fintype] at h_base_pi
+    simpa only [latentProduct] using h_base_pi
   -- Step J: post-compose via `IndepFun.comp` with `wrap_a`, `g_T`.
   rw [h_LHS, h_RHS]
   exact h_base.comp hwrap_meas hg_T_meas

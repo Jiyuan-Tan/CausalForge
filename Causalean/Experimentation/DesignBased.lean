@@ -16,6 +16,7 @@ import Causalean.Experimentation.DesignBased.WaldCoverage
 import Causalean.Experimentation.DesignBased.EdgeVarianceBound
 import Causalean.Experimentation.DesignBased.GaussianCDF
 import Causalean.Experimentation.DesignBased.FiniteDesignMeasure
+import Causalean.Experimentation.DesignBased.LocalDependenceVariance
 import Causalean.Experimentation.DesignBased.MeasureBridge
 import Causalean.Experimentation.DesignBased.Concentration
 import Causalean.Experimentation.DesignBased.DependencyCLT

@@ -29,7 +29,7 @@ variable {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω}
 theorem rpow_quarter_le_one (n : ℕ) : (n : ℝ) ^ (-(1 / 4 : ℝ)) ≤ 1 := by
   rcases Nat.eq_zero_or_pos n with hn | hn
   · subst hn
-    simp [Real.rpow_def_of_pos]
+    simp
   · have h1 : (1 : ℝ) ≤ (n : ℝ) := by exact_mod_cast hn
     exact Real.rpow_le_one_of_one_le_of_nonpos h1 (by norm_num)
 

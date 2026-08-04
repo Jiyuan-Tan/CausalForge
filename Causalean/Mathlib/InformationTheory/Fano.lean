@@ -56,7 +56,7 @@ noncomputable def fanoRef (p : α × β → ℝ) (decode : β → α) (xy : α �
 
 /-- The Fano reference distribution is nonnegative. -/
 lemma fanoRef_nonneg {p : α × β → ℝ} (hp0 : ∀ xy, 0 ≤ p xy)
-    (hsum : ∑ xy : α × β, p xy = 1) (hcard : 2 ≤ Fintype.card α) (decode : β → α)
+    (hsum : ∑ xy : α × β, p xy = 1) (decode : β → α)
     (xy : α × β) : 0 ≤ fanoRef p decode xy := by
   rw [fanoRef_def]
   refine mul_nonneg (yMarginal_nonneg hp0 xy.2) ?_
@@ -64,17 +64,16 @@ lemma fanoRef_nonneg {p : α × β → ℝ} (hp0 : ∀ xy, 0 ≤ p xy)
   · exact sub_nonneg.mpr (errorProb_le_one hp0 hsum decode)
   · exact div_nonneg (errorProb_nonneg hp0 decode) (by
       have hMge1 : (1 : ℝ) ≤ (Fintype.card α : ℝ) := by
-        exact_mod_cast (le_trans (by norm_num : 1 ≤ 2) hcard)
+        exact_mod_cast Fintype.card_pos_iff.mpr ⟨xy.1⟩
       linarith)
 
 /-- The Fano reference distribution is a probability mass function: `∑ xy, fanoRef = 1`.
 On each column the inner weights sum to `(1 − Pe) + (card α − 1) · Pe/(card α − 1) = 1`,
 so the total is `∑ y, yMarginal p y = 1`. -/
-lemma fanoRef_sum_eq_one {p : α × β → ℝ} (hp0 : ∀ xy, 0 ≤ p xy)
+lemma fanoRef_sum_eq_one {p : α × β → ℝ}
     (hsum : ∑ xy : α × β, p xy = 1) (hcard : 2 ≤ Fintype.card α) (decode : β → α) :
     ∑ xy : α × β, fanoRef p decode xy = 1 := by
   classical
-  have _ := hp0
   let Pe : ℝ := errorProb p decode
   let M : ℝ := Fintype.card α
   have hMne : M - 1 ≠ 0 := by
@@ -296,9 +295,9 @@ theorem fano_inequality {p : α × β → ℝ} (hp0 : ∀ xy, 0 ≤ p xy)
     condEntropy p ≤ Real.binEntropy (errorProb p decode)
       + errorProb p decode * Real.log ((Fintype.card α : ℝ) - 1) := by
   have hcross :=
-    entropy_le_crossEntropy (p := p) (g := fanoRef p decode) hp0 hsum
-      (fun xy => fanoRef_nonneg hp0 hsum hcard decode xy)
-      (le_of_eq (fanoRef_sum_eq_one hp0 hsum hcard decode))
+    entropy_le_crossEntropy (p := p) (g := fanoRef p decode) hp0
+      (fun xy => fanoRef_nonneg hp0 hsum decode xy)
+      (by rw [fanoRef_sum_eq_one hsum hcard decode, hsum])
       (fun xy h => fanoRef_ac hp0 hsum hcard decode xy h)
   rw [neg_crossEntropy_fanoRef hp0 hsum hcard decode] at hcross
   rw [condEntropy_def]

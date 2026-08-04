@@ -5,6 +5,7 @@ Authors: Jiyuan Tan
 -/
 
 import Causalean.Experimentation.DesignBased.Designs.Bernoulli
+import Causalean.Experimentation.DesignBased.Designs.BernoulliMoments
 import Causalean.Experimentation.DesignBased.Designs.CompleteRandomization
 import Causalean.Experimentation.DesignBased.Designs.Stratified
 import Causalean.Experimentation.DesignBased.Designs.ClusterRandomization

@@ -35,6 +35,9 @@ turns such a kernel into a completely degenerate `Fin 2` kernel, while
 quantity.  The public theorems `integral_offDiag_sum_sq`,
 `integral_rescaled_sq`, `memLp_rescaled`, and `integral_rescaled_eq_zero`
 provide the exact order-2 second-moment, `L²`, and mean-zero facts.
+
+The module also gives a nonasymptotic variance bound for a bounded
+off-diagonal kernel average without any degeneracy assumption.
 -/
 
 namespace Causalean.Stat
@@ -44,7 +47,9 @@ open MeasureTheory ProbabilityTheory Filter Topology
 variable {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
   {μ : Measure Ω} {P : Measure X}
 
-private theorem injectiveTupleCount_two_eq_offDiag_card (n : ℕ) :
+/-- The number of ordered injective pairs from a sample of size `n` equals the number of
+off-diagonal ordered pairs drawn from that sample. -/
+theorem injectiveTupleCount_two_eq_offDiag_card (n : ℕ) :
     injectiveTupleCount 2 n = ((Finset.range n).offDiag.card : ℝ) := by
   have hdesc : ((n.descFactorial 2 : ℕ) : ℝ) = (n : ℝ) * ((n : ℝ) - 1) := by
     by_cases hn0 : n = 0
@@ -63,7 +68,9 @@ private theorem injectiveTupleCount_two_eq_offDiag_card (n : ℕ) :
       ring
   rw [injectiveTupleCount_eq_descFactorial, hdesc, hoff]
 
-private theorem injectiveTupleCount_two_eq_mul_sub_one {n : ℕ} (hn : 2 ≤ n) :
+/-- For a sample of size at least two, the number of ordered injective pairs is the sample size
+times one less than the sample size. -/
+theorem injectiveTupleCount_two_eq_mul_sub_one {n : ℕ} (hn : 2 ≤ n) :
     injectiveTupleCount 2 n = (n : ℝ) * ((n : ℝ) - 1) := by
   rw [injectiveTupleCount_eq_descFactorial]
   have hle1 : 1 ≤ n := by omega
@@ -101,8 +108,9 @@ namespace DegenKernel
 
 variable [IsProbabilityMeasure P] {g : X → X → ℝ}
 
-/-- `g` is L¹ on the product law (probability space, from L²). -/
-theorem integrable (hg : DegenKernel P g) :
+omit [IsProbabilityMeasure P] in
+/-- `g` is L¹ on a finite product measure, from L². -/
+theorem integrable [IsFiniteMeasure P] (hg : DegenKernel P g) :
     Integrable (fun p : X × X => g p.1 p.2) (P.prod P) :=
   ((memLp_two_iff_integrable_sq hg.meas.aestronglyMeasurable).mpr hg.sq).integrable
     (by norm_num)
@@ -112,12 +120,13 @@ omit [IsProbabilityMeasure P] in
 theorem deg' (hg : DegenKernel P g) (y : X) : ∫ x, g x y ∂P = 0 := by
   simp_rw [hg.symm _ y]; exact hg.deg y
 
+omit [IsProbabilityMeasure P] in
 /-- **Bridge to the order-`m` theory (`m = 2`).**  A degenerate order-2 kernel `g`
 gives a completely-degenerate order-`2` kernel `pairKernel g` (`z ↦ g (z 0) (z 1)`):
 symmetry of `pairKernel g` under `Equiv.Perm (Fin 2)` is `hg.symm`; the
 single-coordinate integrals are `hg.deg` / `hg.deg'`; square-integrability
 transports across the `Fin 2 → X` ≃ `X × X` product-law equivalence. -/
-theorem toOrderDegenKernel (hg : DegenKernel P g) :
+theorem toOrderDegenKernel [SigmaFinite P] (hg : DegenKernel P g) :
     OrderDegenKernel P (pairKernel g) := by
   refine
     { meas := ?_
@@ -195,11 +204,11 @@ variable [IsProbabilityMeasure μ] [IsProbabilityMeasure P]
 noncomputable def zeta (P : Measure X) (g : X → X → ℝ) : ℝ :=
   ∫ p, (g p.1 p.2) ^ 2 ∂(P.prod P)
 
-omit [IsProbabilityMeasure μ] in
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- The order-2 second moment `ζ` equals the order-`m` second moment `ζ_m` of the
 paired kernel: `∬ g² dP dP = ∫ (pairKernel g)² dP²`.  A change of variables along
 the `Fin 2 → X` ≃ `X × X` measure equivalence. -/
-theorem zeta_eq_zetaOrder : zeta P g = zetaOrder P (pairKernel g) := by
+theorem zeta_eq_zetaOrder [SigmaFinite P] : zeta P g = zetaOrder P (pairKernel g) := by
   let e := MeasurableEquiv.piFinTwo (fun _ : Fin 2 => X)
   have hmp : MeasurePreserving e
       (Measure.pi fun _ : Fin 2 => P) (P.prod P) := by
@@ -216,6 +225,7 @@ omit [IsProbabilityMeasure P] in
 theorem zeta_nonneg : 0 ≤ zeta P g :=
   integral_nonneg (fun _ => sq_nonneg _)
 
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- **Second moment of the off-diagonal sum.**
 `E[(Σ_{p ∈ offDiag} g(Z_{p.1},Z_{p.2}))²] = 2 · |offDiag| · ζ`.  The `m = 2` case of
 `integral_injectiveTuples_sum_sq_degen`, using
@@ -224,6 +234,10 @@ theorem zeta_nonneg : 0 ≤ zeta P g :=
 theorem integral_offDiag_sum_sq (hg : DegenKernel P g) (n : ℕ) :
     ∫ ω, (∑ p ∈ (Finset.range n).offDiag, g (S.Z p.1 ω) (S.Z p.2 ω)) ^ 2 ∂μ
       = 2 * ((Finset.range n).offDiag.card : ℝ) * zeta P g := by
+  letI : IsProbabilityMeasure μ := S.indep.isProbabilityMeasure
+  letI : IsProbabilityMeasure P := by
+    rw [← S.law]
+    exact Measure.isProbabilityMeasure_map (S.meas 0).aemeasurable
   have hpoint :
       (fun ω =>
           (∑ p ∈ (Finset.range n).offDiag, g (S.Z p.1 ω) (S.Z p.2 ω)) ^ 2)
@@ -237,6 +251,7 @@ theorem integral_offDiag_sum_sq (hg : DegenKernel P g) (n : ℕ) :
     ← zeta_eq_zetaOrder, injectiveTupleCount_two_eq_offDiag_card n]
   norm_num
 
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- **L² bound on the rescaled degenerate U-statistic.** For `n ≥ 2`,
 `E[(√n · Gₙ)²] = 2ζ / (n−1)`.  The `m = 2` case of
 `integral_rescaled_order_sq_degen` (`n · 2! · ζ / n^{(2)} = 2ζ/(n−1)`), via
@@ -244,20 +259,34 @@ theorem integral_offDiag_sum_sq (hg : DegenKernel P g) (n : ℕ) :
 theorem integral_rescaled_sq (hg : DegenKernel P g) {n : ℕ} (hn : 2 ≤ n) :
     ∫ ω, (Real.sqrt (n : ℝ) * uStatistic S g n ω) ^ 2 ∂μ
       = 2 * zeta P g / ((n : ℝ) - 1) := by
+  letI : IsProbabilityMeasure μ := S.indep.isProbabilityMeasure
+  letI : IsProbabilityMeasure P := by
+    rw [← S.law]
+    exact Measure.isProbabilityMeasure_map (S.meas 0).aemeasurable
   have h := S.integral_rescaled_order_sq_degen hg.toOrderDegenKernel hn
   rw [uStatisticOrder_two_eq_uStatistic S g n, ← zeta_eq_zetaOrder] at h
   rw [h]
   exact rescaled_order_two_arith hn (zeta P g)
 
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- The rescaled degenerate U-statistic is in `L²`. -/
 theorem memLp_rescaled (hg : DegenKernel P g) (n : ℕ) :
     MemLp (fun ω => Real.sqrt (n : ℝ) * uStatistic S g n ω) 2 μ := by
+  letI : IsProbabilityMeasure μ := S.indep.isProbabilityMeasure
+  letI : IsProbabilityMeasure P := by
+    rw [← S.law]
+    exact Measure.isProbabilityMeasure_map (S.meas 0).aemeasurable
   simpa [uStatisticOrder_two_eq_uStatistic S g n] using
-    S.memLp_rescaled_order hg.toOrderDegenKernel n
+    S.memLp_rescaled_order hg.toOrderDegenKernel.meas hg.toOrderDegenKernel.sq n
 
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- The rescaled degenerate U-statistic has mean zero. -/
 theorem integral_rescaled_eq_zero (hg : DegenKernel P g) (n : ℕ) :
     ∫ ω, Real.sqrt (n : ℝ) * uStatistic S g n ω ∂μ = 0 := by
+  letI : IsProbabilityMeasure μ := S.indep.isProbabilityMeasure
+  letI : IsProbabilityMeasure P := by
+    rw [← S.law]
+    exact Measure.isProbabilityMeasure_map (S.meas 0).aemeasurable
   by_cases hn : 2 ≤ n
   · have h := S.integral_rescaled_uStatisticOrder_eq_zero_of_degenKernel
       hg.toOrderDegenKernel hn
@@ -268,5 +297,242 @@ theorem integral_rescaled_eq_zero (hg : DegenKernel P g) (n : ℕ) :
     · simp [uStatistic]
 
 end IIDSample
+
+set_option maxHeartbeats 800000 in
+-- Expanding variance into all covariance pairs and counting overlaps needs a larger budget.
+/-- A bounded kernel's off-diagonal average over an independent sample
+has variance at most thirty-two times the squared kernel bound divided by the sample size.
+
+Unlike the exact `DegenKernel` second-moment results above, this bound requires no
+degeneracy assumption and therefore complements rather than competes with them. -/
+lemma variance_offDiag_kernel_le
+    {X : Type*} [MeasurableSpace X] (μ : Measure X)
+    [IsProbabilityMeasure μ] (N : ℕ)
+    (kernel : X → X → ℝ) (hkernel : Measurable (Function.uncurry kernel))
+    (M : ℝ) (hbound : ∀ x y, |kernel x y| ≤ M) :
+    variance
+        (fun target : Fin N → X =>
+          ((N : ℝ) * (N - 1 : ℕ))⁻¹ *
+            ∑ i, ∑ j, if i ≠ j then kernel (target i) (target j) else 0)
+        (Measure.pi (fun _ : Fin N => μ)) ≤
+      32 * M ^ 2 / (N : ℝ) := by
+  classical
+  have hM : 0 ≤ M := by
+    let x : X := (nonempty_of_isProbabilityMeasure μ).some
+    exact (abs_nonneg (kernel x x)).trans (hbound x x)
+  rcases Nat.lt_or_ge N 2 with hNsmall | hNtwo
+  · have hcases : N = 0 ∨ N = 1 := by omega
+    rcases hcases with rfl | rfl
+    · simp [show (fun _ : (Fin 0 → X) => (0 : ℝ)) = 0 by rfl, variance_zero]
+    · simp [show (fun _ : (Fin 1 → X) => (0 : ℝ)) = 0 by rfl, variance_zero,
+        sq_nonneg M]
+  let μN := Measure.pi (fun _ : Fin N => μ)
+  let b : Fin N → Fin N → (Fin N → X) → ℝ := fun i j target =>
+    if i ≠ j then kernel (target i) (target j) else 0
+  have hbmeas (i j : Fin N) : Measurable (b i j) := by
+    dsimp only [b]
+    split_ifs
+    · have hp : Measurable (fun target : Fin N → X =>
+          (target i, target j)) :=
+        (measurable_pi_apply i).prodMk (measurable_pi_apply j)
+      exact (show Measurable (fun target : Fin N → X =>
+        Function.uncurry kernel (target i, target j)) from hkernel.comp hp)
+    · exact measurable_const
+  have hbbound (i j : Fin N) (target : Fin N → X) :
+      |b i j target| ≤ M := by
+    dsimp only [b]
+    split_ifs
+    · exact hbound _ _
+    · simpa using hM
+  have hbmem (i j : Fin N) : MemLp (b i j) 2 μN :=
+    MemLp.of_bound (hbmeas i j).aestronglyMeasurable M
+      (Filter.Eventually.of_forall fun target => by
+        simpa [Real.norm_eq_abs] using hbbound i j target)
+  have habsCov (i j k l : Fin N) :
+      |cov[b i j, b k l; μN]| ≤ 2 * M ^ 2 := by
+    rw [covariance_eq_sub (hbmem i j) (hbmem k l)]
+    have hEX : |∫ target, b i j target ∂μN| ≤ M := by
+      simpa [Real.norm_eq_abs] using
+        (norm_integral_le_of_norm_le_const
+          (μ := μN) (f := b i j) (C := M)
+          (Filter.Eventually.of_forall fun target => by
+            simpa [Real.norm_eq_abs] using hbbound i j target))
+    have hEY : |∫ target, b k l target ∂μN| ≤ M := by
+      simpa [Real.norm_eq_abs] using
+        (norm_integral_le_of_norm_le_const
+          (μ := μN) (f := b k l) (C := M)
+          (Filter.Eventually.of_forall fun target => by
+            simpa [Real.norm_eq_abs] using hbbound k l target))
+    have hprod : |(∫ target, b i j target ∂μN) *
+        (∫ target, b k l target ∂μN)| ≤ M ^ 2 := by
+      rw [abs_mul, sq]
+      exact mul_le_mul hEX hEY (abs_nonneg _) hM
+    have hEXY : |∫ target, b i j target * b k l target ∂μN| ≤ M ^ 2 := by
+      simpa [Real.norm_eq_abs] using
+        (norm_integral_le_of_norm_le_const
+          (μ := μN) (f := fun target => b i j target * b k l target)
+          (C := M ^ 2) (Filter.Eventually.of_forall fun target => by
+            rw [Real.norm_eq_abs, abs_mul]
+            calc
+              |b i j target| * |b k l target| ≤ M * M :=
+                mul_le_mul (hbbound i j target)
+                  (hbbound k l target) (abs_nonneg _) hM
+              _ = M ^ 2 := by ring
+            ))
+    calc
+      |(∫ target, b i j target * b k l target ∂μN) -
+          (∫ target, b i j target ∂μN) *
+            ∫ target, b k l target ∂μN| ≤
+          |∫ target, b i j target * b k l target ∂μN| +
+            |(∫ target, b i j target ∂μN) *
+              ∫ target, b k l target ∂μN| := abs_sub _ _
+      _ ≤ M ^ 2 + M ^ 2 := add_le_add hEXY hprod
+      _ = 2 * M ^ 2 := by ring
+  have hcoordIndep :
+      iIndepFun (fun i : Fin N => fun target : Fin N → X => target i) μN :=
+    iIndepFun_pi (fun _ => Measurable.aemeasurable measurable_id)
+  have hcov0 (i j k l : Fin N)
+      (hik : i ≠ k) (hil : i ≠ l) (hjk : j ≠ k) (hjl : j ≠ l) :
+      cov[b i j, b k l; μN] = 0 := by
+    by_cases hij : i = j
+    · subst j
+      simp [b, covariance]
+    by_cases hkl : k = l
+    · subst l
+      simp [b, covariance]
+    have hpairs :=
+      hcoordIndep.indepFun_prodMk_prodMk
+        (fun r => measurable_pi_apply r) i j k l hik hil hjk hjl
+    have hindep : b i j ⟂ᵢ[μN] b k l := by
+      have hc := hpairs.comp hkernel hkernel
+      simpa only [Function.comp_apply, b, if_pos hij, if_pos hkl] using hc
+    exact hindep.covariance_eq_zero (hbmem i j) (hbmem k l)
+  let χ : Prop → ℝ := fun p => if p then 1 else 0
+  let bracket : Fin N → Fin N → Fin N → Fin N → ℝ := fun i j k l =>
+    χ (i = k) + χ (i = l) + χ (j = k) + χ (j = l)
+  have hbracket_nonneg (i j k l : Fin N) :
+      0 ≤ bracket i j k l := by
+    dsimp only [bracket, χ]
+    positivity
+  have hterm (i j k l : Fin N) :
+      cov[b i j, b k l; μN] ≤
+        (2 * M ^ 2) * bracket i j k l := by
+    by_cases hij : i = j
+    · subst j
+      have hz : b i i = fun _ => 0 := by
+        funext target
+        simp [b]
+      rw [hz]
+      simp only [covariance_const_left, ge_iff_le]
+      exact mul_nonneg (by positivity) (hbracket_nonneg i i k l)
+    by_cases hkl : k = l
+    · subst l
+      have hz : b k k = fun _ => 0 := by
+        funext target
+        simp [b]
+      rw [hz]
+      simp only [covariance_const_right, ge_iff_le]
+      exact mul_nonneg (by positivity) (hbracket_nonneg i j k k)
+    by_cases hconn : i = k ∨ i = l ∨ j = k ∨ j = l
+    · have hone : 1 ≤ bracket i j k l := by
+        rcases hconn with h | h | h | h
+        · subst k
+          dsimp only [bracket, χ]
+          split_ifs <;> simp_all
+        · subst l
+          dsimp only [bracket, χ]
+          split_ifs <;> simp_all
+        · subst k
+          dsimp only [bracket, χ]
+          split_ifs <;> simp_all
+        · subst l
+          dsimp only [bracket, χ]
+          split_ifs <;> simp_all
+      calc
+        cov[b i j, b k l; μN] ≤ |cov[b i j, b k l; μN]| :=
+          le_abs_self _
+        _ ≤ 2 * M ^ 2 := habsCov i j k l
+        _ = (2 * M ^ 2) * 1 := by ring
+        _ ≤ (2 * M ^ 2) * bracket i j k l := by
+          gcongr
+    · push_neg at hconn
+      rw [hcov0 i j k l hconn.1 hconn.2.1 hconn.2.2.1 hconn.2.2.2]
+      exact mul_nonneg (by positivity) (hbracket_nonneg i j k l)
+  have hvarsum :
+      variance (fun target : Fin N → X => ∑ i, ∑ j, b i j target) μN ≤
+        8 * M ^ 2 * (N : ℝ) ^ 3 := by
+    have hexpand :
+        variance (fun target : Fin N → X => ∑ i, ∑ j, b i j target) μN =
+          ∑ i, ∑ j, ∑ k, ∑ l, cov[b i j, b k l; μN] := by
+      have h :=
+        variance_fun_sum
+          (μ := μN) (X := fun p : Fin N × Fin N => b p.1 p.2)
+          (fun p => hbmem p.1 p.2)
+      simpa only [Fintype.sum_prod_type] using h
+    rw [hexpand]
+    calc
+      (∑ i, ∑ j, ∑ k, ∑ l, cov[b i j, b k l; μN]) ≤
+          ∑ i, ∑ j, ∑ k, ∑ l,
+            (2 * M ^ 2) * bracket i j k l := by
+        apply Finset.sum_le_sum
+        intro i hi
+        apply Finset.sum_le_sum
+        intro j hj
+        apply Finset.sum_le_sum
+        intro k hk
+        apply Finset.sum_le_sum
+        intro l hl
+        exact hterm i j k l
+      _ = (2 * M ^ 2) *
+          (∑ i, ∑ j, ∑ k, ∑ l, bracket i j k l) := by
+        simp_rw [Finset.mul_sum]
+      _ = (2 * M ^ 2) * (4 * (N : ℝ) ^ 3) := by
+        congr 1
+        have hchi (i : Fin N) : ∑ k : Fin N, χ (i = k) = 1 := by
+          rw [Finset.sum_eq_single i]
+          · simp [χ]
+          · intro k hk hki
+            simp [χ, hki.symm]
+          · simp
+        have hchi' (k : Fin N) : ∑ i : Fin N, χ (i = k) = 1 := by
+          rw [Finset.sum_eq_single k]
+          · simp [χ]
+          · intro i hi hik
+            simp [χ, hik]
+          · simp
+        have hdouble :
+            (∑ i : Fin N, ∑ k : Fin N, χ (i = k)) = (N : ℝ) := by
+          calc
+            _ = ∑ _i : Fin N, (1 : ℝ) := by
+              apply Finset.sum_congr rfl
+              intro i hi
+              exact hchi i
+            _ = (N : ℝ) := by simp
+        dsimp only [bracket]
+        simp_rw [Finset.sum_add_distrib]
+        simp only [hchi, Finset.sum_const, Finset.card_univ,
+          nsmul_eq_mul, Fintype.card_fin]
+        simp_rw [← Finset.mul_sum]
+        rw [hdouble]
+        ring
+      _ = 8 * M ^ 2 * (N : ℝ) ^ 3 := by ring
+  have hNreal : 0 < (N : ℝ) := by positivity
+  have hNm1real : 0 < ((N - 1 : ℕ) : ℝ) := by
+    exact_mod_cast Nat.sub_pos_of_lt hNtwo
+  rw [variance_const_mul]
+  change
+    (((N : ℝ) * (N - 1 : ℕ))⁻¹) ^ 2 *
+        variance (fun target : Fin N → X => ∑ i, ∑ j, b i j target) μN ≤
+      32 * M ^ 2 / (N : ℝ)
+  calc
+    _ ≤ (((N : ℝ) * (N - 1 : ℕ))⁻¹) ^ 2 *
+        (8 * M ^ 2 * (N : ℝ) ^ 3) := by gcongr
+    _ ≤ 32 * M ^ 2 / (N : ℝ) := by
+      have hNm1 : (N : ℝ) ≤ 2 * ((N - 1 : ℕ) : ℝ) := by
+        exact_mod_cast (show N ≤ 2 * (N - 1) by omega)
+      have hsquare : (N : ℝ) ^ 2 ≤ 4 * ((N - 1 : ℕ) : ℝ) ^ 2 := by
+        nlinarith
+      field_simp [hNreal.ne', hNm1real.ne']
+      nlinarith [sq_nonneg M]
 
 end Causalean.Stat

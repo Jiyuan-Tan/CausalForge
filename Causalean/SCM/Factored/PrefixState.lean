@@ -25,14 +25,6 @@ variable {Ω : N → Type uΩ} [∀ n, MeasurableSpace (Ω n)]
 
 open scoped MeasureTheory ProbabilityTheory
 
-omit [DecidableEq N] [Fintype N] in
-/-- `cast` along `congrArg (swigΩ Ω) h` is measurable: changing a node index by
-    an equality preserves the underlying σ-algebra. -/
-theorem measurable_cast_swigΩ {a b : SWIGNode N} (hab : a = b) :
-    Measurable (cast (congrArg (swigΩ Ω) hab) : swigΩ Ω a → swigΩ Ω b) := by
-  subst hab
-  exact measurable_id
-
 -- ============================================================
 -- § 1. Observed prefix values
 -- ============================================================

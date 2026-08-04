@@ -11,10 +11,10 @@ import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import type { PipelineContext, StateJson } from "../../types.js";
 import { clusterFor, loadDiscoveryClusterSetupBlock } from "../cluster_setup.js";
+import { recordProof } from "../working_writer.js";
 import { coreJsonPath } from "../stages/d0_core.js";
 import { protoCoreJsonPath } from "../stages/neg1_2_author.js";
 import { CoreSchema, StatementSchema, type Core, type CoreStatement } from "../core/schema.js";
-import { recordProof } from "../working_writer.js";
 import { planCarry } from "../carry_plan.js";
 import { solvedStatus } from "../core/status.js";
 import {
@@ -27,10 +27,14 @@ import {
   changedSymbolNames,
   symbolBasis,
 } from "../stages/d0_working.js";
-import type { RawCoreEdit } from "../stages/d0_apply.js";
+import { coreEditTarget, recoverPendingApply, type RawCoreEdit } from "../stages/d0_apply.js";
 import { loadSemanticManifest, validateCoreManifest, type SemanticManifest } from "../semantic_manifest.js";
 import { emptyProposals, readRoundProposals } from "./proposals.js";
 import { readTypedCore } from "../core/core_io.js";
+import {
+  resolveRequiredCoreEditMandates,
+  type RequiredCoreEditMandate,
+} from "./mandates.js";
 
 /** Mathematical identity of an OEQ resolution source. Motivation prose is deliberately
  * absent: changing a gap/consumer note cannot make a theorem stop answering the same
@@ -89,14 +93,18 @@ const invalidatedCatalogNode = (s: CoreStatement): CoreStatement =>
   s.source !== undefined
     ? { ...s, status: "cited", proof_tex: undefined }
     : { ...s, status: "to-prove", proof_tex: undefined, source: undefined };
-export const openSolveTarget = (s: CoreStatement): CoreStatement => ({
-  ...s,
-  status: "to-prove",
-  proof_tex: undefined,
-  // `source` is legal iff status=cited. The source remains durable on the
-  // partial catalog node above and the solver must re-emit it to discharge.
-  source: undefined,
-});
+export const openSolveTarget = (s: CoreStatement): CoreStatement =>
+  s.status === "cited" || s.source !== undefined
+    ? {
+        ...s,
+        // A reopened citation is not a theorem for the worker to prove. Its
+        // complete citation object is the revalidation receipt, so preserve the
+        // canonical source in the target packet and require a byte-faithful
+        // `added_lemmas` re-emission at merge.
+        status: "cited",
+        proof_tex: undefined,
+      }
+    : { ...s, status: "to-prove", proof_tex: undefined, source: undefined };
 
 /** Everything the later solve steps (dispatch/merge/gates/commit) read or mutate.
  *  `core`, `proto` and `next` are shared mutable state threaded through the round. */
@@ -118,6 +126,8 @@ export interface SolveRoundContext {
   hasPendingDirective: boolean;
   requiresCoreChanges: boolean;
   requiredCoreTargets: Set<string>;
+  requiredCoreEdits: RawCoreEdit[];
+  requiredCoreEditMandates: RequiredCoreEditMandate[];
   escContext: string;
 }
 
@@ -126,6 +136,10 @@ export async function assembleSolveContext(args: {
   state: StateJson;
 }): Promise<SolveRoundContext> {
   const { ctx, state } = args;
+  // A durable apply intent outranks every later solve cursor. Finish it before
+  // reading proto/working state so an ordinary resume cannot commit newer state
+  // that a later apply invocation would overwrite with the transaction post-image.
+  await recoverPendingApply(ctx);
   const protoPath = protoCoreJsonPath(ctx);
   if (!existsSync(protoPath)) {
     throw new Error(`Stage 0-SOLVE requires the frozen proposal core at ${protoPath} (run D-1.2 first)`);
@@ -201,14 +215,56 @@ export async function assembleSolveContext(args: {
   // whose only purpose is to preserve a paid verdict would set `hasPendingDirective`
   // with no targets, and the branch below would force EVERY statement open — a
   // whole-paper re-derivation triggered by an act of bookkeeping.
-  const hasPendingDirective = pendingEscalations.some(
+  const hasPendingDirectiveText = pendingEscalations.some(
     (entry) =>
       entry.provenance_only !== true &&
       typeof entry.directive === "string" &&
       entry.directive.trim().length > 0,
   );
-  const requiresCoreChanges = pendingEscalations.some((entry) => entry.require_core_changes === true);
-  const requiredCoreTargets = new Set(pendingEscalations.flatMap((entry) => entry.required_core_targets ?? []));
+  // Resolve the bare structured-change guard in journal order. A later, explicit
+  // prose-only correction may retire an accidentally over-broad guard without
+  // rewriting the append-only journal. Exact edit mandates remain independently
+  // content-addressed and must use their dedicated cancellation path.
+  let requiresCoreChanges = false;
+  for (const entry of pendingEscalations) {
+    if (entry.require_core_changes === true) requiresCoreChanges = true;
+    if (entry.cancel_require_core_changes === true) requiresCoreChanges = false;
+  }
+  const pendingMandates = pendingEscalations.flatMap((entry) => entry.required_core_edit_mandates ?? []);
+  const pendingCancellations = pendingEscalations.flatMap((entry) => entry.cancelled_core_edit_mandates ?? []);
+  const legacyRawMandates = escalationLog.flatMap((entry) => entry.required_core_edits ?? []);
+  if (legacyRawMandates.length > 0) {
+    throw new Error(
+      "D0 found legacy required_core_edits with no recorded revision/snapshot basis; refusing to rebase " +
+      "an old decision onto the live proto. Re-adjudicate it with d0_directive --require-core-edit.",
+    );
+  }
+  const mandateCandidates: RequiredCoreEditMandate[] = [];
+  // Do not let a D-1.2 revision reset erase a mandate before its basis check can
+  // reject it. A revision change requires explicit re-adjudication.
+  for (const mandate of [...(loadedPrev?.required_core_edit_mandates ?? []), ...pendingMandates]) {
+    if (!mandateCandidates.some((existing) => existing.mandate_id === mandate.mandate_id)) mandateCandidates.push(mandate);
+  }
+  const requiredCoreEditMandates = resolveRequiredCoreEditMandates({
+    mandates: mandateCandidates,
+    cancellations: pendingCancellations,
+    core: proto,
+    working: loadedPrev,
+    proposalRevision: currentProposalRevision,
+  });
+  const requiredCoreEdits = requiredCoreEditMandates.map((mandate) => mandate.edit);
+  const requiredCoreTargets = new Set<string>();
+  for (const entry of pendingEscalations) {
+    for (const target of entry.required_core_targets ?? []) requiredCoreTargets.add(target);
+    for (const target of entry.cancelled_core_targets ?? []) requiredCoreTargets.delete(target);
+  }
+  for (const target of requiredCoreEdits.map(coreEditTarget)) requiredCoreTargets.add(target);
+  // Exact targets and content-addressed edit mandates ARE directed work even when
+  // an apply receipt carries no prose directive. Merge has always enforced these
+  // obligations; dispatch must use the same predicate or it can send an ordinary
+  // dependency component that was never told which exact node it owes.
+  const hasPendingDirective =
+    hasPendingDirectiveText || requiredCoreTargets.size > 0 || requiredCoreEditMandates.length > 0;
   const escContext = formatEscalationContext(pendingEscalations);
   const round = (loadedPrev?.round ?? 0) + 1;
   // (The historical `proposed_proofs.json` mirror and its round-lifecycle
@@ -232,7 +288,40 @@ export async function assembleSolveContext(args: {
     // rebuilt state always carries an explicit (empty) payload. A round that surfaces
     // proposals overwrites this below.
     proposals: emptyProposals() as unknown as WorkingState["proposals"],
+    required_core_edit_mandates: requiredCoreEditMandates,
+    // Durable render state carried across rounds (Phase 1). Both die with `prev`
+    // on a D-1.2 revision change: the new proto carries its own prose, and a
+    // pruned-orphan record for the old proto is meaningless against the new one.
+    ...(prev?.prose_overlay !== undefined ? { prose_overlay: prev.prose_overlay } : {}),
+    ...(prev?.pruned_proto_orphans !== undefined
+      ? {
+          // Housekeeping: an entry is retired when its id left the proto (the
+          // orchestrator applied the edit), when a later round re-proved the node
+          // (revival — audit F3; a subsequent invalidation must re-OPEN it, not
+          // re-hide it), or when an exact-target directive names it this round.
+          pruned_proto_orphans: prev.pruned_proto_orphans.filter((id) =>
+            proto.statements.some((s) => s.id === id) &&
+            !(prev.solved[id] !== undefined && prev.solved[id].partial !== true) &&
+            !requiredCoreTargets.has(id),
+          ),
+        }
+      : {}),
   };
+
+  // Pruned proto orphans leave the ROUND WORKSPACE too (audit R2F3): the clone
+  // above re-included them from the proto, so without this filter an unrelated
+  // round would re-dispatch a pruned lemma as an ordinary open member, record a
+  // fresh proof, and thereby "revive" it although nothing asked for it. An
+  // exact-target directive naming the orphan bypasses the filter (and the carry
+  // housekeeping above already retired its entry for this round).
+  {
+    const stillPruned = new Set(
+      (next.pruned_proto_orphans ?? []).filter((id) => !requiredCoreTargets.has(id)),
+    );
+    if (stillPruned.size > 0) {
+      core.statements = core.statements.filter((s) => !stillPruned.has(s.id));
+    }
+  }
 
   // A resolved OEQ has a two-part durable representation: its answer theorem is
   // an agent-added node in `solved`, while its original question remains in the
@@ -445,20 +534,31 @@ export async function assembleSolveContext(args: {
     }
   }
   const staleTargetIds = new Set<string>();
+  const frozenDependencyIds = new Set(proto.statements.flatMap((statement) => statement.depends_on ?? []));
   const addStaleClosure = (id: string): void => {
     if (staleTargetIds.has(id)) return;
     const rec = staleAgentById.get(id);
     if (!rec?.node) return;
     staleTargetIds.add(id);
-    for (const dependency of rec.node.depends_on ?? []) addStaleClosure(dependency);
+    // The snapshot is the durable edge set the accepted proof actually used.
+    // Include it while rebuilding the stale closure: a later re-emission can
+    // accidentally omit a dependency from the catalog node, and following only
+    // that lossy node silently shelves the still-load-bearing helper. Re-deriving
+    // an extra historical dependency is conservative; losing one is unsound.
+    for (const dependency of new Set([
+      ...(rec.node.depends_on ?? []),
+      ...(rec.snapshot?.depends_on ?? []),
+    ])) addStaleClosure(dependency);
   };
   for (const [id, rec] of staleAgentById) {
-    // Ordinary helper lemmas are pulled in through an invalid result root, but an
-    // explicitly required stale lemma is itself the directed repair root. Without
-    // this exception a partial agent-authored cited lemma disappears from the solve
-    // frontier: it is absent from proto, present in working (so prior-core recovery
-    // declines it), yet never dispatched and therefore can never be revalidated.
-    if (rec.node?.kind !== "lemma" || requiredCoreTargets.has(id)) addStaleClosure(id);
+    // Ordinary helper lemmas are pulled in through an invalid result root. A lemma
+    // consumed directly by a frozen statement is also a live repair root: the frozen
+    // consumer is handled by the proto frontier rather than staleAgentById, so without
+    // this edge the helper remains working-only and can never be revalidated. Explicit
+    // required targets remain roots as before.
+    if (rec.node?.kind !== "lemma" || requiredCoreTargets.has(id) || frozenDependencyIds.has(id)) {
+      addStaleClosure(id);
+    }
   }
   const staleAgentTargets: CoreStatement[] = [];
   for (const id of staleTargetIds) {
@@ -467,47 +567,83 @@ export async function assembleSolveContext(args: {
     if (!core.statements.some((statement) => statement.id === id)) core.statements.push(target);
     staleAgentTargets.push(target);
   }
+  // Publication state is DATA (Phase 1): a stale agent record that was NOT
+  // re-opened as a target this round is carried as shelved debt — `assembleCore`
+  // must not publish it. Re-opened targets clear the flag. (The old design left
+  // this distinction implicit in which nodes the context had pushed into the
+  // in-memory core, which no render could reconstruct from the stores.)
+  for (const id of staleAgentById.keys()) {
+    const rec = next.solved[id];
+    if (rec?.node === undefined) continue;
+    if (staleTargetIds.has(id)) delete rec.shelved;
+    else rec.shelved = true;
+  }
 
-  // A proposed-change checkpoint can leave an agent-added result in the last
-  // schema-valid assembled core as `to-prove` while (correctly) omitting it from
-  // `working.solved`: there is no completed proof to carry. Because such a result
-  // never lived in the frozen proto, the next directed round would otherwise forget
-  // the node entirely and make an exact `required_core_targets` directive impossible
-  // to satisfy. Recover only explicitly required targets, only within the same
-  // proposal revision, and only from the current validated core. This is deliberately
-  // narrower than treating core.json as a second proto: ordinary stale/orphan nodes
-  // must not be resurrected, especially across a D-1.2 source rewind.
+  // Required-target recovery, LEGACY CURSORS ONLY (Phase 1 + audit F4). A
+  // post-migration proposal checkpoint records every checkpoint-withheld agent
+  // node into the working state as a partial (see `surfaceProposalCheckpoint`),
+  // so for `store_format ≥ 2` cursors the read-core-as-truth path is gone — the
+  // cursor IS the durable catalog. A PRE-migration cursor, however, can still
+  // hold exactly the old shape: an agent-authored `to-prove` node that lives
+  // only in the last published core.json. Read-compat is forever (the mandate
+  // doctrine), so the narrow recovery stays for those cursors alone.
   if (
-    requiredCoreTargets.size > 0 &&
+    (prev?.store_format ?? 0) < 2 &&
     prev !== null &&
     !proposalRevisionChanged &&
     existsSync(corePath)
   ) {
-    const missingRequiredTargets = [...requiredCoreTargets].filter((id) =>
+    // Every agent-authored node the legacy published core holds that is catalogued
+    // NOWHERE else. Under the old code these lived only in core.json (a proposal
+    // checkpoint left them there with no completed proof to carry); post-migration
+    // code records them at checkpoint time, so this is the one-time ADOPTION of
+    // the legacy shape into the cursor. Adopting ONLY the currently-required
+    // targets would strand the rest: this round's commit stamps store_format 2 and
+    // renders core.json from the cursor, so an un-adopted node vanishes and a
+    // LATER directive for it finds a format-2 cursor with no legacy path left
+    // (audit R2F1).
+    const missingLegacyIds = (id: string): boolean =>
       !sourceById.has(id) &&
       prev.solved[id] === undefined &&
-      !core.statements.some((statement) => statement.id === id),
-    );
-    // Read the prior published core only when a required agent-authored target is
-    // genuinely absent from both the proto and working cursor. A killed D0 round
-    // can leave an intermediate, intentionally undischarged core on disk; eagerly
-    // schema-parsing it here blocks the working cursor from completing recovery.
-    const priorCore = missingRequiredTargets.length > 0
-      ? await readTypedCore(corePath)
-      : null;
-    for (const id of missingRequiredTargets) {
-      const priorNode = priorCore!.statements.find((statement) => statement.id === id);
-      if (!priorNode) continue; // a genuinely new required node must still be emitted as an addition.
-      const target = openSolveTarget(priorNode);
-      core.statements.push(target);
-      staleAgentTargets.push(target);
-      recordProof(next, proto, {
-        id,
-        snapshotOf: priorNode,
-        proofTex: priorNode.proof_tex ?? "",
-        node: target,
-        partial: true,
-      });
+      !core.statements.some((statement) => statement.id === id);
+    // A killed D0 round can leave an intermediate, intentionally undischarged core
+    // on disk; parse it best-effort (adoption is legacy compat — a required target
+    // that stays unresolved still surfaces loudly through the merge guard).
+    let priorCore: Core | null = null;
+    try {
+      priorCore = await readTypedCore(corePath);
+    } catch {
+      priorCore = null;
+    }
+    for (const priorNode of priorCore?.statements ?? []) {
+      if (!missingLegacyIds(priorNode.id)) continue;
+      if (requiredCoreTargets.has(priorNode.id)) {
+        // The directive's target: re-open it as a dispatchable node, exactly the
+        // old recovery behaviour.
+        const target = openSolveTarget(priorNode);
+        core.statements.push(target);
+        staleAgentTargets.push(target);
+        recordProof(next, proto, {
+          id: priorNode.id,
+          snapshotOf: priorNode,
+          proofTex: priorNode.proof_tex ?? "",
+          node: target,
+          partial: true,
+        });
+      } else {
+        // Not targeted this round: adopt into the durable catalog as SHELVED debt
+        // — not published, not dispatched, but recoverable by a later exact-target
+        // directive (the stale-agent path clears `shelved` when it re-opens).
+        recordProof(next, proto, {
+          id: priorNode.id,
+          snapshotOf: priorNode,
+          proofTex: priorNode.proof_tex ?? "",
+          node: priorNode,
+          partial: true,
+        });
+        const adopted = next.solved[priorNode.id];
+        if (adopted?.node !== undefined) adopted.shelved = true;
+      }
     }
   }
 
@@ -529,6 +665,8 @@ export async function assembleSolveContext(args: {
     hasPendingDirective,
     requiresCoreChanges,
     requiredCoreTargets,
+    requiredCoreEdits,
+    requiredCoreEditMandates,
     escContext,
   };
 }

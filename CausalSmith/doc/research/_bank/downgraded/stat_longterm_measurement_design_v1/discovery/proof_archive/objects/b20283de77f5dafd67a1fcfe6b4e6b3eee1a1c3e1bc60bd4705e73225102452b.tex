@@ -1,0 +1,163 @@
+Fix \(P\) as in the theorem.  We first prove a deterministic-design-and-allocation expansion, then transfer it through the independent pilot.
+
+\emph{Interior counts.}
+For every \(d\in\mathcal D\), positive costs and Assumption~\(\mathrm{ass{:}nondegenerate\text{-}components}\) imply \(0<\alpha_d^*(P)<1\).  Since \(\mathcal D\) is finite, there is \(a_0\in(0,1/2)\) such that
+\[
+ 2a_0\le\alpha_d^*(P)\le1-2a_0
+ \qquad(d\in\mathcal D).                                    \tag{1}
+\]
+Theorem~\(\mathrm{thm{:}pilot\text{-}oracle\text{-}regret}\) gives
+\[
+ \max_{d\in\mathcal D}
+ |\widehat\alpha_{d,m}-\alpha_d^*(P)|=o_P(1).                 \tag{2}
+\]
+Consequently, with probability tending to one, \(\widehat\alpha_m\in[a_0,1-a_0]\) and both purchased source counts are bounded below by a positive multiple of \(B\).  Assumption~\(\mathrm{ass{:}source\text{-}arm\text{-}positivity}\), the conditional i.i.d. sampling premise, Chebyshev's inequality, and a finite union bound over the two arms and the fixed number of balanced folds imply
+\[
+ P(\mathsf D_B)\longrightarrow1.                              \tag{3}
+\]
+
+\emph{Deterministic-path linearization.}
+Take any deterministic path \((d_B,\alpha_B)\) such that \(d_B\in\mathcal D\) and \(|\alpha_B-\alpha_{d_B}^*(P)|\to0\).  Let \(e_B,o_B\) be its floor counts.  Equations (1) and the finiteness of the cost catalogue imply
+\[
+ e_B\asymp B,\qquad o_B\asymp B.                             \tag{4}
+\]
+Write \(h=h_{d_B}\), \(q=q_{d_B}\),
+\[
+ \Delta h_\ell=\widehat h_{d_B,B}^{(-\ell)}-h,
+ \qquad
+ \Delta q_\ell=\widehat q_{d_B,B}^{(-\ell)}-q.
+\]
+
+We repeatedly use the following elementary arm-ratio expansion.  If \(W_1,\ldots,W_N\) are i.i.d., \(p_a=P(A=a)>0\), \(N_a=\sum_i\mathbf1\{A_i=a\}\), and \(f\in L_2\), then
+\[
+ \frac1{N_a}\sum_{i=1}^N\mathbf1\{A_i=a\}f(W_i)
+ -E\{f(W)\mid A=a\}
+ =\frac1N\sum_{i=1}^N\frac{\mathbf1\{A_i=a\}}{p_a}
+ \bigl[f(W_i)-E\{f(W)\mid A=a\}\bigr]
+ +o_P(N^{-1/2}).                                               \tag{5}
+\]
+Indeed, the centered numerator divided by \(N\) is \(O_P(N^{-1/2})\), while \(Np_a/N_a-1=O_P(N^{-1/2})\); their product is \(O_P(N^{-1})\).  Conditional on the training observations, the same calculation and conditional Chebyshev inequality show that a fold-external random function with \(L_2\)-norm \(o_P(1)\) contributes \(o_P(N^{-1/2})\).  Balanced-fold averaging changes the observational weights only by \(O(B^{-2})\) per observation and therefore by \(o_P(B^{-1/2})\) in total.
+
+When a random nuisance perturbation has a nonzero arm mean, the empirical denominator must also be controlled.  Before multiplication by \(\sqrt N\), replacing \(\widehat p_a^{-1}\) by \(p_a^{-1}\) changes its population contribution by at most
+\[
+ C|\widehat p_a-p_a|\,|P\{\mathbf1(A=a)g_N\}|
+ \le C|\widehat p_a-p_a|\,\|g_N\|_2
+ =O_P(N^{-1/2}\|g_N\|_2).                                   \tag{6}
+\]
+For \(g_N=\Delta h_\ell\), this is \(o_P(B^{-1/2})\) by the maintained strong outcome-bridge condition.  For \(g_N=q\Delta h_\ell\) and \(g_N=\Delta q_\ell\Delta h_\ell\), the same conclusion follows from Assumption~\(\mathrm{ass{:}postselection\text{-}multiplier\text{-}condition}\).  The remaining term \(\Delta q_\ell(Y-h)\) has zero arm mean by the outcome-bridge equation, so only its centered product remains.
+
+The outcome-bridge moment equation and the selection-bridge change-of-measure identity imply, for every square-integrable early-argument function \(u\) and late-argument function \(f\),
+\[
+ E_O\{u(S_{2d_B},S_{1d_B},a,X)(Y-h)\mid A=a\}=0,              \tag{7}
+\]
+\[
+ E_E\{f(S_{3d_B},S_{2d_B},a,X)\mid A=a\}
+ =E_O\{qf(S_{3d_B},S_{2d_B},a,X)\mid A=a\}.                 \tag{8}
+\]
+Thus, conditional on the training observations, the nuisance drift in one arm is exactly
+\[
+\begin{aligned}
+ &E_E(\Delta h_\ell\mid A=a)
+ +E_O\{(q+\Delta q_\ell)(Y-h-\Delta h_\ell)\mid A=a\}\\
+ &\hspace{35mm}=-E_O(\Delta q_\ell\Delta h_\ell\mid A=a).   \tag{9}
+\end{aligned}
+\]
+The two terms linear in \(\Delta h_\ell\) cancel by (8), and the residual terms linear in \(q\) or \(\Delta q_\ell\) vanish by (7).
+
+Source-arm positivity and iterated expectation through \(T_{d_B}\), or through its adjoint, give
+\[
+\begin{aligned}
+ |E_O(\Delta q_\ell\Delta h_\ell\mid A=a)|
+ &\le C\|\Delta q_\ell\|_{2,O,q,d_B}
+       \|T_{d_B}\Delta h_\ell\|_{2,O,q,d_B},\\
+ |E_O(\Delta q_\ell\Delta h_\ell\mid A=a)|
+ &\le C\|T_{d_B}^{\star}\Delta q_\ell\|_{2,O,h,d_B}
+       \|\Delta h_\ell\|_{2,O,h,d_B}.                       \tag{10}
+\end{aligned}
+\]
+By (4), the source masses in \(P_{B,d_B,\alpha_B}^{\circ}\) stay bounded away from zero, so its \(L_2\)-norm is uniformly equivalent to the two source-conditional norms.  The four maintained weak and strong rates and Assumption~\(\mathrm{ass{:}uniform\text{-}bridge\text{-}product\text{-}rate}\) make (9) \(o_P(B^{-1/2})\), uniformly over the fixed folds and arms.
+
+The centered experimental nuisance perturbation is \(\Delta h_\ell\); its conditional empirical fluctuation is \(o_P(B^{-1/2})\) by the strong-rate condition and conditional Chebyshev inequality.  The centered observational perturbation is
+\[
+ \Delta q_\ell(Y-h)-q\Delta h_\ell-Delta q_\ell\Delta h_\ell. \tag{11}
+\]
+The multiplier condition makes its \(L_2(P_{B,d_B,\alpha_B}^{\circ})\)-norm \(o_P(1)\), and hence its foldwise centered empirical contribution is \(o_P(B^{-1/2})\).  The prescribed training scheme supplies conditional independence: the experimental evaluation uses outcome bridges trained on observational observations, while each observational evaluation fold is excluded from both fits.
+
+Applying (5)--(11), and then contrasting the two arms, yields the deterministic-path expansion
+\[
+ \widehat\tau_B(d_B,\alpha_B)-\theta_{d_B}(P)
+ =\frac1{e_B}\sum_{i\in E_B}\phi_{E,d_B,i}
+ +\frac1{o_B}\sum_{i\in O_B}\phi_{O,d_B,i}
+ +o_P(B^{-1/2}).                                               \tag{12}
+\]
+This expansion is centered at the observed bridge contrast and uses no common-identification restriction.
+
+The two leading sums in (12) are independent and centered, with variances \(V_{E,d_B}/e_B\) and \(V_{O,d_B}/o_B\).  To verify the central limit theorem when \(d_B\) varies, take any subsequence and then a further subsequence on which \(d_B\) is constant, which is possible because \(\mathcal D\) is finite.  The ordinary i.i.d. central limit theorem applies on that further subsequence under the finite second moments in Assumption~\(\mathrm{ass{:}nondegenerate\text{-}components}\).  Since every subsequence has a further subsequence with the same standard-normal limit,
+\[
+ \frac{\sqrt B}{s_{0,B}(d_B,\alpha_B)}
+ \left\{
+ \frac1{e_B}\sum_{i\in E_B}\phi_{E,d_B,i}
+ +\frac1{o_B}\sum_{i\in O_B}\phi_{O,d_B,i}
+ \right\}
+ \rightsquigarrow\mathcal N(0,1),                             \tag{13}
+\]
+where
+\[
+ s_{0,B}^2(d_B,\alpha_B)
+ =B\left\{\frac{V_{E,d_B}}{e_B}+\frac{V_{O,d_B}}{o_B}\right\}.
+\]
+Nondegeneracy and (4) keep this variance bounded above and away from zero.  Equations (12)--(13) prove the deterministic-path studentized limit.
+
+\emph{Transfer through pilot selection.}
+By (2), there exists a deterministic \(t_B\downarrow0\) such that
+\[
+ P\{|\widehat\alpha_m-\alpha_{\widehat d_m}^*(P)|>t_B\}
+ \longrightarrow0.                                           \tag{14}
+\]
+The deterministic-path conclusions above are uniform over
+\[
+ \{(d,\alpha):d\in\mathcal D,
+ |\alpha-\alpha_d^*(P)|\le t_B\}.                             \tag{15}
+\]
+Otherwise, for infinitely many \(B\), one could select a deterministic violating pair from (15), contradicting the conclusion already proved along every deterministic path.  Independence of the pilot and main study permits conditioning on \((\widehat d_m,\widehat\alpha_m)\).  Equations (12)--(15) therefore imply
+\[
+ \frac{\sqrt B\{\widehat\tau_B(\widehat d_m,\widehat\alpha_m)
+ -\theta_{\widehat d_m}(P)\}}{s_{0,B}}
+ \rightsquigarrow\mathcal N(0,1).                             \tag{16}
+\]
+
+Theorem~\(\mathrm{thm{:}pilot\text{-}oracle\text{-}regret}\), together with Lemma~\(\mathrm{lem{:}second\text{-}order\text{-}allocation\text{-}loss}\), gives
+\[
+ s_{0,B}^2-\mathcal V_{\widehat d_m}^*(P)=o_P(1).              \tag{17}
+\]
+On \(\mathsf D_B\), direct subtraction yields
+\[
+\begin{aligned}
+ |\widehat s_B^2-s_{0,B}^2|
+ \le{}&\frac{B}{N_{E,B}}
+ |\widetilde V_{E,\widehat d_m,B}-V_{E,\widehat d_m}|\\
+ &+\frac{B}{N_{O,B}}
+ |\widetilde V_{O,\widehat d_m,B}-V_{O,\widehat d_m}|.
+                                                                    \tag{18}
+\end{aligned}
+\]
+The coefficients are \(O_P(1)\) by (1)--(2).  Assumptions~\(\mathrm{ass{:}main\text{-}gradient\text{-}variance\text{-}rate}\) and \(\mathrm{ass{:}main\text{-}variance\text{-}rate\text{-}vanishes}\) make the right-hand side \(o_P(1)\).  Combining (3), (17), and (18) proves
+\[
+ \widehat s_B^2-\mathcal V_{\widehat d_m}^*(P)=o_P(1).        \tag{19}
+\]
+Because \(\min_d\mathcal V_d^*(P)>0\), equations (3), (17), and (19) also give
+\[
+ P(\mathsf G_{\mathrm{tot}})\longrightarrow1,
+ \qquad \widehat s_B/s_{0,B}\longrightarrow_P1.              \tag{20}
+\]
+Slutsky's theorem applied to (16) and (20) proves
+\[
+ \mathsf T_B\rightsquigarrow\mathcal N(0,1),                 \tag{21}
+\]
+including the total zero extension off \(\mathsf G_{\mathrm{tot}}\).
+
+On \(\mathsf G_{\mathrm{tot}}\), the event \(\theta_{\widehat d_m}(P)\in I_B\) is exactly \(|\mathsf T_B|\le z_{1-\eta/2}\).  Its complement has vanishing probability by (20), and the standard normal distribution is continuous at both critical values.  Equation (21) therefore yields
+\[
+ P\{\theta_{\widehat d_m}(P)\in I_B\}\longrightarrow1-\eta.
+\]
+This proves every assertion under the explicitly listed maintained sufficient conditions.

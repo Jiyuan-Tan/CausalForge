@@ -65,6 +65,7 @@ def StratifiedInterference (Y : ∀ i, Fin (n i) → WAssign n i → ℝ) : Prop
   ∀ i (j : Fin (n i)) (w w' : WAssign n i),
     stratExpo i j w = stratExpo i j w' → Y i j w = Y i j w'
 
+omit [Fintype ι] [DecidableEq ι] in
 /-- Restatement of stratified interference in terms of the two raw summaries: equal own
 treatment and equal count of treated others force equal outcomes. -/
 lemma StratifiedInterference.elim {Y : ∀ i, Fin (n i) → WAssign n i → ℝ}
@@ -73,12 +74,14 @@ lemma StratifiedInterference.elim {Y : ∀ i, Fin (n i) → WAssign n i → ℝ}
     Y i j w = Y i j w' :=
   h i j w w' (by rw [stratExpo, stratExpo, hown, hcount])
 
+omit [Fintype ι] [DecidableEq ι] in
 /-- The exposure summary of unit `(i,j)` is always realized — namely by `w` itself; so every
 stratified exposure value reachable from some assignment has a witnessing assignment. -/
 lemma stratExpo_exists (i : ι) (j : Fin (n i)) (w : WAssign n i) :
     ∃ w', stratExpo i j w' = stratExpo i j w :=
   ⟨w, rfl⟩
 
+omit [Fintype ι] [DecidableEq ι] in
 /-- **Factorization through the exposure.**  Under stratified interference there is a family
 `g i j : Bool × ℕ → ℝ` of exposure-indexed potential outcomes such that every outcome factors
 as `Y i j w = g i j (stratExpo i j w)`.  This realizes the Aronow–Samii "properly specified

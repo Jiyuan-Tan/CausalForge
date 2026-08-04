@@ -208,7 +208,7 @@ lemma stageOneReg_indD_eq (S : DTREstimationSystem P δ γ)
   have hYI_int : Integrable (fun ω => T.factualY ω * I1 ω) P.μ := by
     simpa [T, I1, kLast] using
       (T.dVar kLast).integrable_mul_indicator (S.dbar kLast)
-        hA.integrable_factualY T.measurable_factualY
+        (measurableSet_singleton (S.dbar kLast)) hA.integrable_factualY
   have hYindD2_int :
       Integrable (fun ω => T.factualY ω * T.indD S.dbar 2 ω) P.μ := by
     refine hA.integrable_factualY.mono

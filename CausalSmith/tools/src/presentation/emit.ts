@@ -408,7 +408,14 @@ function isMergedArm(name: string, withGenerics: SymbolCluster[]): boolean {
  * correctly-escaped body (the common case), so it is safe to wrap every refiner output.
  */
 export function fixOverEscapedTex(s: string): string {
-  if (!/\\\\[()]/.test(s)) return s; // no doubled inline-math delimiter → not over-escaped
+  // A PAIR of doubled delimiters is required, not a lone token: `\\(` alone
+  // legitimately occurs in valid LaTeX — a table/array row break directly
+  // before inline math (`a \\\(x\)`) — and the old single-token trigger then
+  // collapsed EVERY `\\` in the body, destroying row separators document-wide.
+  // (Unlike `repairSerializedLatex`, canonical single backslashes do NOT veto:
+  // refiners partially over-escape, doubling delimiters but not every command.)
+  const pairedDoubledDelims = (/\\\\\(/.test(s) && /\\\\\)/.test(s)) || (/\\\\\[(?![0-9])/.test(s) && /\\\\\]/.test(s));
+  if (!pairedDoubledDelims) return s;
   return s.replace(/\\\\(?=[^\s\d])/g, "\\");
 }
 
@@ -461,8 +468,11 @@ export function normalizeSymbolLeanrefs(tex: string): string {
     const id = idGroup.content;
     const disp = dispGroup.content.trim();
     // Strip any existing math wrapper down to the bare math, then \ensuremath-wrap it.
+    // `[^$]` in the dollar branch: the greedy `[\s\S]+` matched ACROSS two
+    // spans (`$a$ + $b$` → inner `a$ + $b`), and \ensuremath-wrapping that
+    // re-created the "Missing $ inserted" failure this function prevents.
     const m =
-      disp.match(/^\\ensuremath\{([\s\S]*)\}$/) ?? disp.match(/^\$([\s\S]+)\$$/) ?? disp.match(/^\\\(([\s\S]*?)\\\)$/);
+      disp.match(/^\\ensuremath\{([\s\S]*)\}$/) ?? disp.match(/^\$([^$]+)\$$/) ?? disp.match(/^\\\(([\s\S]*?)\\\)$/);
     const math = m ? m[1] : disp;
     out += `\\leanref{${id}}{\\ensuremath{${math}}}`;
     i = dispGroup.end;
@@ -882,10 +892,36 @@ export function assumptionTable(
       // `\ref{obj:def:…}` (e.g. `p∈S_{k,q}`, `P∈\mathcal P_\beta`) rather than a
       // bare `ass:` ref, carry no `ass:`-token the scan above can find — yet these
       // ARE the theorem's load-bearing hypotheses. Extract each labelled item.
-      for (const m of t.body.matchAll(
-        /\\item\s+\\textbf\{\(([^)]+?)\.?\)\}\s*([\s\S]*?)(?=\\item|\\end\{itemize\}|$)/g,
-      )) {
-        hyps.push({ label: m[1].trim(), text: m[2].replace(/\s+/g, " ").trim() });
+      // Balanced-brace label read: `([^)]+?)` could not read a label containing
+      // its own parens (`(P \in \mathcal{P}(\beta))`) and the whole hypothesis
+      // row silently vanished — tripping the totality gate downstream.
+      for (const m of t.body.matchAll(/\\item\s+\\textbf(?=\{)/g)) {
+        const group = readBalancedBraceGroup(t.body, m.index! + m[0].length);
+        if (!group || !group.content.startsWith("(")) continue; // only `(Name.)`-labelled items
+        // Match the label's own parens by DEPTH (a label may contain parens:
+        // `(P \in \mathcal{P}(\beta))`), then strip a trailing period whether it
+        // sits inside (`(Name.)`) or outside (`(Name).`) the closing paren.
+        let depth = 0;
+        let close = -1;
+        for (let i = 0; i < group.content.length; i++) {
+          const ch = group.content[i];
+          if (ch === "\\") {
+            i += 1;
+            continue;
+          }
+          if (ch === "(") depth += 1;
+          else if (ch === ")" && --depth === 0) {
+            close = i;
+            break;
+          }
+        }
+        if (close < 0) continue;
+        const label = group.content.slice(1, close).replace(/\.$/, "").trim();
+        if (!label) continue;
+        const tail = t.body.slice(group.end);
+        const stop = tail.search(/\\item\s|\\end\{itemize\}/);
+        const text = (stop < 0 ? tail : tail.slice(0, stop)).replace(/\s+/g, " ").trim();
+        hyps.push({ label, text });
       }
     }
     // every H-binder in the Lean statement must appear in the note's hypothesis list.

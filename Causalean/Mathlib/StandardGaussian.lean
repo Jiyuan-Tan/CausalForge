@@ -56,8 +56,9 @@ variable (E : Type*) [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 private noncomputable def onb : OrthonormalBasis (Fin (Module.finrank ℝ E)) ℝ E :=
   stdOrthonormalBasis ℝ E
 
-/-- The base product measure on `Fin n → ℝ`: `n` independent standard real Gaussians. -/
-private noncomputable def piGaussian :
+/-- The product measure of independent standard normal laws, with one real-valued coordinate
+for each dimension of a finite-dimensional real inner-product space. -/
+noncomputable def piGaussian :
     Measure (Fin (Module.finrank ℝ E) → ℝ) :=
   Measure.pi (fun _ : Fin (Module.finrank ℝ E) => gaussianReal 0 1)
 
@@ -131,10 +132,10 @@ instance isGaussian_stdGaussian : IsGaussian (stdGaussian E) := by
   unfold stdGaussian
   exact isGaussian_map_equiv _
 
-/-- Pushing the mean through a continuous linear equivalence. -/
-private lemma integral_id_map_equiv {F G : Type*}
+/-- Transporting a measure through a continuous linear equivalence transports its vector integral
+through the same equivalence. -/
+lemma integral_id_map_equiv {F G : Type*}
     [NormedAddCommGroup F] [NormedSpace ℝ F] [MeasurableSpace F] [BorelSpace F]
-    [SecondCountableTopology F]
     [NormedAddCommGroup G] [NormedSpace ℝ G] [MeasurableSpace G] [BorelSpace G]
     [SecondCountableTopology G]
     {μ : Measure F} (L : F ≃L[ℝ] G) :

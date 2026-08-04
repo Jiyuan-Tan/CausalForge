@@ -23,7 +23,7 @@ then strict full-rank Poisson geometry makes the selected scalar coefficient
 have exactly the sign of the remaining scalar score. -/
 lemma finitePoissonObjective_snd_sign_of_nuisance_score
     {U I : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U]
-    [FiniteDimensional ℝ U] [Fintype I] [DecidableEq I] [Nonempty I]
+    [FiniteDimensional ℝ U] [Fintype I] [Nonempty I]
     (q m : I → ℝ) (A : (U × ℝ) →ₗ[ℝ] (I → ℝ)) (u₀ : U)
     (hq : ∀ i, 0 < q i) (hm : ∀ i, 0 < m i)
     (hA : Function.Injective A)
@@ -36,6 +36,7 @@ lemma finitePoissonObjective_snd_sign_of_nuisance_score
     (beta < 0 ↔ scalarScore < 0) ∧
     (beta = 0 ↔ scalarScore = 0) ∧
     (0 < beta ↔ 0 < scalarScore) := by
+  classical
   dsimp only
   let xstar : U × ℝ := maximizerOrZero (finitePoissonObjective q m A)
   let xzero : U × ℝ := (u₀, 0)
@@ -185,9 +186,9 @@ lemma finitePoissonObjective_snd_sign_of_nuisance_score
       have hb : xstar.2 ≠ 0 := fun hb => hs.ne (hzero.mp hb)
       have hv : v ≠ 0 := by
         intro hv
-        have := congrArg Prod.snd hv
-        simp [v, xzero] at this
-        exact hb this
+        have hsnd : xstar.2 = 0 := by
+          simpa [v, xzero] using congrArg Prod.snd hv
+        exact hb hsnd
       have hp := hstrict hv
       nlinarith
   have hpos : 0 < xstar.2 ↔ 0 < scalarScore := by
@@ -204,9 +205,9 @@ lemma finitePoissonObjective_snd_sign_of_nuisance_score
       have hb : xstar.2 ≠ 0 := fun hb => hs.ne' (hzero.mp hb)
       have hv : v ≠ 0 := by
         intro hv
-        have := congrArg Prod.snd hv
-        simp [v, xzero] at this
-        exact hb this
+        have hsnd : xstar.2 = 0 := by
+          simpa [v, xzero] using congrArg Prod.snd hv
+        exact hb hsnd
       have hp := hstrict hv
       nlinarith
   simpa [xstar, xzero, scalarScore] using And.intro hneg (And.intro hzero hpos)

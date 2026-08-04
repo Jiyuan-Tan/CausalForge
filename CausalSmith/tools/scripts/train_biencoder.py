@@ -138,6 +138,8 @@ def main():
     ap.add_argument("--batch", type=int, default=16)
     ap.add_argument("--seq", type=int, default=256)
     ap.add_argument("--hard-negs", type=int, default=0)
+    ap.add_argument("--grad-checkpoint", action="store_true",
+                    help="trade compute for activation memory — lets the recipe's batch size fit a 12GB GPU")
     args = ap.parse_args()
 
     ents = json.load(open(INDEX))["entries"]
@@ -155,6 +157,10 @@ def main():
     print(f"training on {len(examples)} examples ({args.epochs} epoch(s), batch {args.batch}, "
           f"seq {args.seq}, hard_negs {args.hard_negs})", file=sys.stderr)
     loader = DataLoader(examples, shuffle=True, batch_size=args.batch)
+    if args.grad_checkpoint:
+        # Recompute activations in the backward pass instead of storing them: the recipe's
+        # batch (16 x [query, positive, N hard negs]) otherwise OOMs a 12GB card at bge-large.
+        base[0].auto_model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
     loss = losses.MultipleNegativesRankingLoss(base)
     warmup = int(len(loader) * args.epochs * 0.1)
     base.fit(train_objectives=[(loader, loss)], epochs=args.epochs, warmup_steps=warmup,

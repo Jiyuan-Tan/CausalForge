@@ -119,7 +119,8 @@ theorem candMean0_completeProp0_eq_Y0mean
   have hg_smeas : StronglyMeasurable[S.sigmaXY0] g := by
     have he_meas : Measurable[S.sigmaXY0] e := he_smeas.measurable
     exact (hY0_meas.div he_meas).stronglyMeasurable
-  have hf_int : Integrable f P.μ := S.dVar.integrable_indicator false
+  have hf_int : Integrable f P.μ :=
+    S.dVar.integrable_indicator false (MeasurableSet.singleton false)
   have hgf_int : Integrable (fun ω => g ω * f ω) P.μ := by
     refine hcand_int.congr (Filter.Eventually.of_forall ?_)
     intro ω

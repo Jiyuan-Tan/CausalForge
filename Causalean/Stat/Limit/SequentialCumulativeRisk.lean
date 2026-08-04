@@ -401,7 +401,7 @@ van Trees inequality itself (`lem:bayes-cramer-rao-predictable`) and the
 Neyman-gap identity (`lem:neyman-gap-identity`) enter only through the assumed
 hypotheses `hrec`, `hconv`, `hsup`. -/
 theorem sequential_cumulative_risk_regret
-    (S J d L Iq : ℝ) (hS : 0 < S) (hJ : 0 < J) (hd : d ≠ 0)
+    (S J d L Iq : ℝ) (hJ : 0 < J) (hd : d ≠ 0)
     (hL : 0 ≤ L) (hIq : 0 ≤ Iq)
     (b B RB Rsup : ℕ → ℝ) (hB : ∀ n, B n = ∑ t ∈ Finset.Icc 1 n, b t)
     (hrec : ∀ t : ℕ, 1 ≤ t →

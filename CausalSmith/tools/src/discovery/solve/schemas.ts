@@ -21,6 +21,8 @@ import type { RawCoreEdit } from "../stages/d0_apply.js";
 export interface ProposedStatementChange {
   id: string;
   current: string;
+  /** Revision stamp of the displayed statement view. Optional for legacy output. */
+  based_on_revision?: string;
   proposed: string;
   reason: string;
   /** "narrow" = the claim is genuinely too strong (allowed, for review);
@@ -36,6 +38,8 @@ export interface ProposedStatementChange {
 export interface ProposedDefinitionChange {
   id: string;
   current: string;
+  /** Revision stamp of the displayed constructed-definition view. */
+  based_on_revision?: string;
   proposed: string;
   reason: string;
   /** "correct" = the construction formula was wrong (too small / mis-specified) and
@@ -120,6 +124,7 @@ export type ProseUpdates = z.infer<typeof ProseUpdatesSchema>;
 const ProposedStatementChangeSchema = z.object({
   id: z.string(),
   current: z.string(),
+  based_on_revision: z.string().regex(/^rev:[a-f0-9]{64}$/).optional(),
   proposed: z.string(),
   reason: z.string(),
   direction: z.string(),
@@ -128,13 +133,14 @@ const ProposedStatementChangeSchema = z.object({
 const ProposedDefinitionChangeSchema = z.object({
   id: z.string(),
   current: z.string(),
+  based_on_revision: z.string().regex(/^rev:[a-f0-9]{64}$/).optional(),
   proposed: z.string(),
   reason: z.string(),
   direction: z.string(),
 });
 
 const ProposedAssumptionSchema = z.object({
-  id: z.string(),
+  id: z.string().regex(/^ass:[a-z0-9-]+$/),
   condition: z.string(),
   reason: z.string(),
   standard_or_novel: z.string(),
@@ -175,7 +181,7 @@ const StatementReplacementSchema = z
     };
   });
 
-const ProposedCoreEditSchema = z.discriminatedUnion("kind", [
+export const ProposedCoreEditSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("assumption-replace"), id: z.string().regex(/^ass:[a-z0-9-]+$/),
     proposed: AssumptionSchema, reason: z.string(), direction: z.literal("correct"),
@@ -187,6 +193,12 @@ const ProposedCoreEditSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("statement-replace"), id: z.string().regex(/^(?:thm|lem|prop|conj|oeq):[a-z0-9-]+$/),
     proposed: StatementReplacementSchema, reason: z.string(), direction: z.literal("correct"),
+    /** Phase 2 (reference-by-revision-hash): the `revision` stamp of the node
+     *  view this edit was authored against, as shown in the dispatch context /
+     *  review packet. When present, the apply matches it against the revisions
+     *  of its legal views instead of running the byte-echo view-selection; an
+     *  unknown hash skips fail-safe. Absent on old artifacts → echo fallback. */
+    based_on_revision: z.string().regex(/^rev:[a-f0-9]{64}$/).optional(),
   }),
   z.object({
     kind: z.literal("statement-delete"), id: z.string().regex(/^(?:thm|lem|prop|conj|oeq):[a-z0-9-]+$/),
@@ -207,6 +219,42 @@ const ProposedCoreEditSchema = z.discriminatedUnion("kind", [
   }),
   z.object({
     kind: z.literal("bibliography-replace"), key: z.string(), proposed: BibEntrySchema,
+    reason: z.string(), direction: z.literal("correct"),
+  }),
+  // The ONLY channel that can edit `target_estimand`. It exists because a referee can
+  // legitimately object to the estimand line itself — typically an unqualified causal
+  // equality ("θ_P(t₀) = ∫μ_P(t₀,x)p_X(x)dx = E[Y(t₀)]") that in truth holds only under
+  // the run's identification proposition. With no channel, such a finding is unfixable:
+  // the repair stage cannot touch the field, so the run can neither pass review nor
+  // address what review objected to, and every in-core workaround (relocating the causal
+  // claim into class membership) is laundering, because E[Y(t₀)] then stops being a
+  // functional of the observed law.
+  //
+  // `current` is a MANDATORY byte-for-byte echo of the estimand being replaced. This is
+  // what keeps the field's anti-drift guarantee: the estimand is the anchor of what the
+  // run committed to deliver, so an edit must prove it saw the text it is overwriting and
+  // can never be applied blind to a core the author never read. Qualifying the causal
+  // equality is a correction; quietly swapping the deliverable is not, and the echo plus
+  // the logged `from`/`to` diff is what lets review tell them apart.
+  z.object({
+    kind: z.literal("target-estimand-replace"),
+    id: z.literal("metadata:target-estimand"),
+    current: z.string(),
+    proposed: z.string(),
+    reason: z.string(), direction: z.literal("correct"),
+  }),
+  // Same contract for the §7 identifying/minimax functional. These two fields fail
+  // together: a repair that removes a parameter from the law class leaves the headline
+  // functional still advertising it, which is the SAME unfaithfulness the referee
+  // objected to, merely relocated one line over. `current` echoes byte-for-byte, with
+  // `""` echoing an absent field. With this, every top-level Core field is writable
+  // through exactly one reviewed channel — formal fields here, framing prose through
+  // `prose_updates` — and none is frozen with no way to correct it.
+  z.object({
+    kind: z.literal("estimand-functional-replace"),
+    id: z.literal("metadata:estimand-functional"),
+    current: z.string(),
+    proposed: z.string(),
     reason: z.string(), direction: z.literal("correct"),
   }),
   z.object({
@@ -235,10 +283,11 @@ const ProposedCoreEditSchema = z.discriminatedUnion("kind", [
 
 const OpenObligationSchema = z.object({
   node_id: z.string(),
-  what_is_open: z.string(),
-  obstruction: z.string(),
-  attempted: z.string(),
-  partial_result: z.string().optional(),
+  what_is_open: z.string().trim().min(1),
+  obstruction: z.string().trim().min(1),
+  attempted: z.string().trim().min(1),
+  // Empty is the prompt's canonical "no partial result reached" value.
+  partial_result: z.string().trim().optional(),
 });
 
 /** STRICT on purpose. Every array below is `.default([])`, so on a non-strict object a
@@ -250,7 +299,13 @@ const OpenObligationSchema = z.object({
  *  already fails closed on. The prompt specifies these keys exactly, so an unknown
  *  top-level key IS the bug, never a harmless extra. */
 export const SolveUnitOutputSchema = z.strictObject({
-  proofs: z.array(z.object({ id: z.string(), proof_tex: z.string(), argues_proposed: z.boolean().optional() })).default([]),
+  proofs: z.array(z.object({
+    id: z.string(),
+    proof_tex: z.string().refine((proof) => proof.trim().length > 0, {
+      message: "proof_tex must contain a substantive proof",
+    }),
+    argues_proposed: z.boolean().optional(),
+  })).default([]),
   resolved_oeqs: z.array(z.object({
     source_id: z.string().regex(/^oeq:[a-z0-9-]+$/),
     theorem: StatementSchema.refine(

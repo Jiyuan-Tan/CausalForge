@@ -35,8 +35,9 @@ section Helpers
 
 variable {ι : Type u} {𝒳 : Type v}
 
-/-- The critical radius of a positive linear envelope is exactly its slope. -/
-private lemma criticalRadius_linear_eq {C : ℝ} (hC : 0 < C) :
+/-- The critical radius of a positive-slope linear envelope equals its slope,
+giving the exact fixed-point scale for a localized empirical-process bound. -/
+lemma criticalRadius_linear_eq {C : ℝ} (hC : 0 < C) :
     criticalRadius (fun r : ℝ => C * r) = C := by
   apply le_antisymm
   · exact criticalRadius_linear_le hC
@@ -48,9 +49,9 @@ private lemma criticalRadius_linear_eq {C : ℝ} (hC : 0 < C) :
         simpa [pow_two] using hδ
       nlinarith [hδ', hδ_pos]
 
-/-- The finite-VC linear envelope attains the fixed-point inequality at its
-critical radius. -/
-private lemma vcLocalizedPsi_criticalRadius_fp {K : ℝ} {d n : ℕ}
+/-- For the finite-VC localized envelope, its value at the critical radius is
+no larger than the square of that radius. -/
+lemma vcLocalizedPsi_criticalRadius_fp {K : ℝ} {d n : ℕ}
     (hK : 0 ≤ K) (hn : 0 < n) :
     vcLocalizedPsi K d n (criticalRadius (vcLocalizedPsi K d n))
       ≤ (criticalRadius (vcLocalizedPsi K d n)) ^ 2 := by
@@ -63,78 +64,9 @@ private lemma vcLocalizedPsi_criticalRadius_fp {K : ℝ} {d n : ℕ}
   unfold vcLocalizedPsi ρ
   rw [pow_two]
 
-/-- Star-hull zero-out terms inherit the uniform envelope bound. -/
-private lemma abs_starHullZeroOut_le_bound
-    (F : ι → 𝒳 → ℝ) (norm : (𝒳 → ℝ) → ℝ) {b r : ℝ}
-    (hb : 0 ≤ b) (hbound : ∀ i x, |F i x| ≤ b)
-    (p : starHullParam ι) (x : 𝒳) :
-    |starHullZeroOut F norm r p x| ≤ b := by
-  unfold starHullZeroOut
-  by_cases hp : norm (starHullEval F p) ≤ r
-  · have hα_nonneg : 0 ≤ p.1.val := p.1.property.1
-    have hα_le_one : p.1.val ≤ 1 := p.1.property.2
-    have hα_abs_le : |p.1.val| ≤ 1 := by
-      rw [abs_of_nonneg hα_nonneg]
-      exact hα_le_one
-    calc
-      |starHullZeroOut F norm r p x| = |starHullEval F p x| := by
-        simp [starHullZeroOut, hp]
-      _ = |p.1.val| * |F p.2 x| := by
-        simp [starHullEval, abs_mul]
-      _ ≤ 1 * b := mul_le_mul hα_abs_le (hbound p.2 x) (abs_nonneg _) (by norm_num)
-      _ = b := one_mul b
-  · simpa [hp] using hb
-
-/-- The sharp-deviation bridge only needs a finite upper bound on each
-sample/sign supremum.  In the identity-sample setup, the class envelope gives
-`b` as an explicit upper bound. -/
-private lemma starHullZeroOut_rademacher_bddAbove_of_bound
-    {n : ℕ} (hn : 0 < n)
-    (F : ι → 𝒳 → ℝ) (norm : (𝒳 → ℝ) → ℝ) {b r : ℝ}
-    (hb : 0 ≤ b) (hbound : ∀ i x, |F i x| ≤ b) :
-    ∀ S : Fin n → 𝒳, ∀ σ : Signs n,
-      BddAbove (Set.range fun p : starHullParam ι =>
-        |(n : ℝ)⁻¹ * ∑ k : Fin n, (σ k : ℝ) *
-          starHullZeroOut F norm r p (S k)|) := by
-  intro S σ
-  rw [bddAbove_def]
-  refine ⟨b, ?_⟩
-  intro y hy
-  rcases hy with ⟨p, rfl⟩
-  have hn_pos : 0 < (n : ℝ) := Nat.cast_pos.mpr hn
-  have hsum_abs :
-      |∑ k : Fin n, (σ k : ℝ) * starHullZeroOut F norm r p (S k)|
-        ≤ ∑ _k : Fin n, b := by
-    calc
-      |∑ k : Fin n, (σ k : ℝ) * starHullZeroOut F norm r p (S k)|
-          ≤ ∑ k : Fin n,
-              |(σ k : ℝ) * starHullZeroOut F norm r p (S k)| :=
-            Finset.abs_sum_le_sum_abs _ _
-      _ ≤ ∑ _k : Fin n, b := by
-        refine Finset.sum_le_sum ?_
-        intro k _
-        calc
-          |(σ k : ℝ) * starHullZeroOut F norm r p (S k)|
-              = |starHullZeroOut F norm r p (S k)| := by
-                simp [abs_mul, Signs.apply_abs']
-          _ ≤ b := abs_starHullZeroOut_le_bound F norm hb hbound p (S k)
-  have hscaled :
-      (n : ℝ)⁻¹ *
-          |∑ k : Fin n, (σ k : ℝ) * starHullZeroOut F norm r p (S k)|
-        ≤ (n : ℝ)⁻¹ * ∑ _k : Fin n, b :=
-    mul_le_mul_of_nonneg_left hsum_abs (inv_nonneg.mpr (le_of_lt hn_pos))
-  have hcard : (n : ℝ)⁻¹ * ∑ _k : Fin n, b = b := by
-    simp [Finset.sum_const, hn_pos.ne']
-  calc
-    |(n : ℝ)⁻¹ * ∑ k : Fin n, (σ k : ℝ) *
-        starHullZeroOut F norm r p (S k)|
-        = (n : ℝ)⁻¹ *
-          |∑ k : Fin n, (σ k : ℝ) * starHullZeroOut F norm r p (S k)| := by
-            rw [abs_mul, abs_of_nonneg (inv_nonneg.mpr (le_of_lt hn_pos))]
-    _ ≤ (n : ℝ)⁻¹ * ∑ _k : Fin n, b := hscaled
-    _ = b := hcard
-
-private lemma ciSup_prod_eq_of_bddAbove {A B : Type*} [Nonempty A] [Nonempty B]
+/-- The bounded supremum of a real-valued quantity indexed by two choices is
+unchanged when the two choices are optimized one after the other. -/
+lemma ciSup_prod_eq_of_bddAbove {A B : Type*} [Nonempty A] [Nonempty B]
     (f : A → B → ℝ)
     (hb : BddAbove (Set.range fun p : A × B => f p.1 p.2)) :
     (⨆ p : A × B, f p.1 p.2) = ⨆ b : B, ⨆ a : A, f a b := by
@@ -187,18 +119,18 @@ private lemma ciSup_mul_const_of_Icc {A : Type*} [Nonempty A]
         exact (le_div_iff₀ hbpos).mpr (le_ciSup hcb_bdd a)
       exact (le_div_iff₀ hbpos).mp hsup_le
 
-/-- Residual measurability bridge for the empirical Rademacher process of the
-finite-VC localized star hull.
+/-- Measurability bridge for the empirical Rademacher process of the finite-VC
+localized star hull.
 
   The scale parameter in `starHullParam ι = Set.Icc 0 1 × ι` is uncountable.
   For measurability we first take its deterministic supremum, producing one
   constant coefficient for each countable `i : ι`, and then use the standard
   countable `Measurable.iSup` bridge. -/
-  lemma vc_starHullZeroOut_empirical_rademacher_aemeasurable_residual
+  lemma vc_starHullZeroOut_empirical_rademacher_aemeasurable
       [MeasurableSpace 𝒳] [Nonempty ι] [Countable ι]
       (F : ι → 𝒳 → ℝ) (norm : (𝒳 → ℝ) → ℝ)
       (hF_meas : ∀ i, Measurable (F i))
-      (μ : Measure 𝒳) [IsProbabilityMeasure μ]
+      (μ : Measure 𝒳)
       (b r : ℝ) (hb : 0 ≤ b) (hbound : ∀ i x, |F i x| ≤ b)
       (n : ℕ) (hn : 0 < n) :
         AEMeasurable
@@ -226,8 +158,8 @@ finite-VC localized star hull.
             |(n : ℝ)⁻¹ * ∑ k : Fin n, (σ k : ℝ) *
               starHullZeroOut F norm r p ((id ∘ ω) k)|) := by
         simpa using
-          starHullZeroOut_rademacher_bddAbove_of_bound
-            (n := n) hn F norm hb hbound (id ∘ ω) σ
+          starHullZeroOut_bddAbove_of_bound F norm hb n r (id ∘ ω)
+            (fun i k => hbound i _) σ
       calc
         (⨆ p : starHullParam ι,
             |(n : ℝ)⁻¹ * ∑ k : Fin n, (σ k : ℝ) *
@@ -258,23 +190,6 @@ finite-VC localized star hull.
     intro k _
     apply measurable_const.mul
     exact (hF_meas i).comp (measurable_pi_apply k)
-
-/-- Measurability wrapper for the localized star-hull empirical Rademacher
-complexity. This packages the residual measurability lemma under the standard
-finite-class assumptions used by the VC localized-deviation theorem. -/
-  lemma vc_starHullZeroOut_empirical_rademacher_aemeasurable
-      [MeasurableSpace 𝒳] [Nonempty ι] [Countable ι]
-      (F : ι → 𝒳 → ℝ) (norm : (𝒳 → ℝ) → ℝ)
-      (hF_meas : ∀ i, Measurable (F i))
-      (μ : Measure 𝒳) [IsProbabilityMeasure μ]
-      (b r : ℝ) (hb : 0 ≤ b) (hbound : ∀ i x, |F i x| ≤ b)
-      (n : ℕ) (hn : 0 < n) :
-        AEMeasurable
-          (fun ω : Fin n → 𝒳 =>
-            empiricalRademacherComplexity n (starHullZeroOut F norm r) (id ∘ ω))
-          (Measure.pi (fun _ => μ)) :=
-    vc_starHullZeroOut_empirical_rademacher_aemeasurable_residual
-      F norm hF_meas μ b r hb hbound n hn
 
 /-- Integrability of the finite-VC localized star-hull empirical Rademacher
 process follows from the deterministic linear envelope once the residual
@@ -448,7 +363,8 @@ theorem vc_localized_deviation_event
           |(n : ℝ)⁻¹ * ∑ k : Fin n, (σ k : ℝ) *
             starHullZeroOut F norm r p (S k)|) := by
     intro r _hr
-    exact starHullZeroOut_rademacher_bddAbove_of_bound hn F norm hb hbound
+    exact fun S σ => starHullZeroOut_bddAbove_of_bound F norm hb n r S
+      (fun i k => hbound i _) σ
   have hrad_int : ∀ r : ℝ, ρ ≤ r →
       Integrable
         (fun ω : Fin n → 𝒳 =>
@@ -460,8 +376,7 @@ theorem vc_localized_deviation_event
   rcases localized_uniform_deviation_sharp
       F norm μ id measurable_id hF_meas R hδ hδ' n hn
       (ρ := ρ) (Rmax := b)
-      hcrit_le_ρ hρ_pos (by simpa [ρ] using hρ_le_b)
-      hcrit_pos hcrit_fp hrad_bdd hrad_int
+      hcrit_le_ρ hρ_pos hcrit_pos hcrit_fp hrad_bdd hrad_int
       (by simpa [R, ρ] using hδ_dom) with
     ⟨E, hE_meas, hE_prob, hE_bound⟩
   refine ⟨E, hE_meas, hE_prob, ?_⟩
@@ -528,7 +443,8 @@ theorem vc_localized_deviation_event_of_card
           |(n : ℝ)⁻¹ * ∑ k : Fin n, (σ k : ℝ) *
             starHullZeroOut F norm r p (S k)|) := by
     intro r _hr
-    exact starHullZeroOut_rademacher_bddAbove_of_bound hn F norm hb hbound
+    exact fun S σ => starHullZeroOut_bddAbove_of_bound F norm hb n r S
+      (fun i k => hbound i _) σ
   have hrad_int : ∀ r : ℝ, ρ ≤ r →
       Integrable
         (fun ω : Fin n → 𝒳 =>
@@ -540,8 +456,7 @@ theorem vc_localized_deviation_event_of_card
   rcases localized_uniform_deviation_sharp
       F norm μ id measurable_id hF_meas R hδ hδ' n hn
       (ρ := ρ) (Rmax := b)
-      hcrit_le_ρ hρ_pos (by simpa [ρ] using hρ_le_b)
-      hcrit_pos hcrit_fp hrad_bdd hrad_int
+      hcrit_le_ρ hρ_pos hcrit_pos hcrit_fp hrad_bdd hrad_int
       (by simpa [R, ρ] using hδ_dom) with
     ⟨E, hE_meas, hE_prob, hE_bound⟩
   refine ⟨E, hE_meas, hE_prob, ?_⟩

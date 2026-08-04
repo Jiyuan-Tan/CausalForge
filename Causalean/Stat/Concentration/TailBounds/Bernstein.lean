@@ -133,7 +133,7 @@ lemma bounded_mgf_le_exp_sq [IsProbabilityMeasure μ] {c σ : ℝ} (hc : 0 ≤ c
 `(2σ², c)`.  The MGF branch is `bounded_mgf_le_exp_sq` (note `2σ² · t²/2 = σ²t²`),
 valid on `c|t| < 1`. -/
 lemma bounded_hasSubexponentialMGF [IsProbabilityMeasure μ] {c σ : ℝ}
-    (hc : 0 ≤ c) (hσ : 0 ≤ σ) (hmeas : AEMeasurable X μ) (hmean : μ[X] = 0)
+    (hc : 0 ≤ c) (hmeas : AEMeasurable X μ) (hmean : μ[X] = 0)
     (hbound : ∀ᵐ ω ∂μ, |X ω| ≤ c) (hvar : μ[fun ω => X ω ^ 2] ≤ σ ^ 2) :
     HasSubexponentialMGF X ⟨2 * σ ^ 2, by positivity⟩ ⟨c, hc⟩ μ := by
   refine ⟨fun t ht => ?_, fun t ht => ?_⟩
@@ -156,7 +156,7 @@ statistic.  If `f` has population mean `m = E[f]`, satisfies `|f − m| ≤ c`
 `P`-a.e., and has variance `∫ (f − m)² ≤ σ²`, then for `ε ≥ 0`,
 `P(X̄ₙ − m ≥ ε) ≤ exp(−n ε² / (2 (2σ² + c ε)))`. -/
 theorem bernstein_ge (S : IIDSample Ω X' μ P) {f : X' → ℝ} (hf : Measurable f)
-    (hfint : Integrable f P) {c σ : ℝ} (hc : 0 ≤ c) (hσ : 0 ≤ σ)
+    (hfint : Integrable f P) {c σ : ℝ} (hc : 0 ≤ c)
     (hbound : ∀ᵐ x ∂P, |f x - ∫ y, f y ∂P| ≤ c)
     (hvar : ∫ x, (f x - ∫ y, f y ∂P) ^ 2 ∂P ≤ σ ^ 2)
     (n : ℕ) (hn : 0 < n) {ε : ℝ} (hε : 0 ≤ ε) :
@@ -173,9 +173,10 @@ theorem bernstein_ge (S : IIDSample Ω X' μ P) {f : X' → ℝ} (hf : Measurabl
   have hYsubexp : ∀ i, HasSubexponentialMGF (fun ω => g (S.Z i ω))
       ⟨2 * σ ^ 2, by positivity⟩ ⟨c, hc⟩ μ := by
     intro i
-    refine bounded_hasSubexponentialMGF hc hσ (hg_meas.comp (S.meas i)).aemeasurable ?_ ?_ ?_
+    refine bounded_hasSubexponentialMGF hc (hg_meas.comp (S.meas i)).aemeasurable ?_ ?_ ?_
     · -- mean zero
-      have heq : (∫ ω, g (S.Z i ω) ∂μ) = ∫ x, g x ∂P := S.integral_comp_eq hg_meas i
+      have heq : (∫ ω, g (S.Z i ω) ∂μ) = ∫ x, g x ∂P :=
+        S.integral_comp_eq hg_meas.aemeasurable i
       have hz : (∫ x, g x ∂P) = 0 := by
         rw [hg, integral_sub hfint (integrable_const m), integral_const]
         simp only [probReal_univ, one_smul, hm, sub_self]
@@ -187,7 +188,7 @@ theorem bernstein_ge (S : IIDSample Ω X' μ P) {f : X' → ℝ} (hf : Measurabl
         (measurableSet_le hg_meas.abs measurable_const)).mp hb2
     · -- variance
       have hsq : (μ[fun ω => g (S.Z i ω) ^ 2]) = ∫ x, g x ^ 2 ∂P :=
-        S.integral_comp_eq (hg_meas.pow_const 2) i
+        S.integral_comp_eq (hg_meas.pow_const 2).aemeasurable i
       rw [hsq, hg]
       exact hvar
   -- the centered family is independent
@@ -215,7 +216,7 @@ theorem bernstein_ge (S : IIDSample Ω X' μ P) {f : X' → ℝ} (hf : Measurabl
 /-- **Two-sided Bernstein inequality** for the sample mean of a bounded
 statistic: `P(|X̄ₙ − m| ≥ ε) ≤ 2 exp(−n ε² / (2 (2σ² + c ε)))`. -/
 theorem bernstein_abs_ge (S : IIDSample Ω X' μ P) {f : X' → ℝ} (hf : Measurable f)
-    (hfint : Integrable f P) {c σ : ℝ} (hc : 0 ≤ c) (hσ : 0 ≤ σ)
+    (hfint : Integrable f P) {c σ : ℝ} (hc : 0 ≤ c)
     (hbound : ∀ᵐ x ∂P, |f x - ∫ y, f y ∂P| ≤ c)
     (hvar : ∫ x, (f x - ∫ y, f y ∂P) ^ 2 ∂P ≤ σ ^ 2)
     (n : ℕ) (hn : 0 < n) {ε : ℝ} (hε : 0 ≤ ε) :
@@ -223,7 +224,7 @@ theorem bernstein_abs_ge (S : IIDSample Ω X' μ P) {f : X' → ℝ} (hf : Measu
       ≤ 2 * Real.exp (-n * ε ^ 2 / (2 * (2 * σ ^ 2 + c * ε))) := by
   haveI : IsProbabilityMeasure μ := S.indep.isProbabilityMeasure
   set m : ℝ := ∫ x, f x ∂P with hm
-  have hup := bernstein_ge S hf hfint hc hσ hbound hvar n hn hε
+  have hup := bernstein_ge S hf hfint hc hbound hvar n hn hε
   -- lower tail via negation: apply the one-sided bound to `-f`
   have hbound' : ∀ᵐ x ∂P, |(-f x) - ∫ y, -f y ∂P| ≤ c := by
     rw [integral_neg, ← hm]
@@ -234,12 +235,13 @@ theorem bernstein_abs_ge (S : IIDSample Ω X' μ P) {f : X' → ℝ} (hf : Measu
     rw [integral_neg, ← hm]
     simp only [show ∀ x, (-f x - -m) ^ 2 = (f x - m) ^ 2 from fun x => by ring]
     exact hvar
-  have hlow := bernstein_ge S (f := fun x => -f x) hf.neg hfint.neg hc hσ hbound' hvar' n hn hε
+  have hlow := bernstein_ge S (f := fun x => -f x) hf.neg hfint.neg hc hbound' hvar' n hn hε
   have hint_neg : (∫ x, (fun x => -f x) x ∂P) = -m := by simp [hm, integral_neg]
   have hmean_neg : ∀ ω, S.sampleMean (fun x => -f x) n ω = -S.sampleMean f n ω := by
     intro ω; simp [IIDSample.sampleMean, Finset.sum_neg_distrib, mul_neg]
   rw [hint_neg] at hlow
   simp only [hmean_neg, sub_neg_eq_add] at hlow
-  exact measureReal_abs_dev_le_two_sided (S.sampleMean f n) m _ ε hup hlow
+  simpa [two_mul] using
+    (measureReal_abs_dev_le_two_sided (S.sampleMean f n) m _ _ ε hup hlow)
 
 end Causalean.Stat.Concentration

@@ -1,10 +1,18 @@
 import { resolve } from "node:path";
 import { readFileSync } from "node:fs";
-import { createRetrieval, type Query } from "../src/formalization/reuse_retrieval.js";
+import { createRetrieval, applyRerank, type Query } from "../src/formalization/reuse_retrieval.js";
 import { reuseCandidateBlock } from "../src/formalization/reuse_render.js";
 import { loadSemanticTier, embedQueries } from "../src/formalization/semantic_tier.js";
 import { poolModules } from "../src/formalization/module_tier.js";
+import { rerankBatch, rerankerAvailable, loadRerankerMeta } from "../src/formalization/reranker_tier.js";
 import type { ClusterKey } from "../src/constants.js";
+
+/** Scope banner: the single most costly misreading of this tool's output is "no hit ⇒ the fact
+ *  does not exist" — the index covers Causalean ONLY, so that inference is invalid for anything
+ *  Mathlib might provide. Printed on every run (decl and module modes). */
+const SCOPE_LINE =
+  "scope: Causalean only — Mathlib is NOT indexed; a miss here is NOT evidence a fact is missing. " +
+  "Check Mathlib (lean_leansearch / lean_loogle) before concluding absence or building anew.";
 
 /**
  * Interactive CLI for the Causalean reuse/lemma search engine (reuse_retrieval.ts).
@@ -19,6 +27,9 @@ import type { ClusterKey } from "../src/constants.js";
  * Flags: --cluster <panel|exactid|partialid|stat>  --k <N>  --root <causaleanRoot>
  *   --scope decl|module|file : decl-level lemma search (default) vs per-file orientation
  *     (ranks over module `/-! -/` docstrings; returns module path · decl count · overview)
+ *   --semantic : blend the embedding tier into concept mode (needs fresh embeddings)
+ *   --fusion rrf|weighted : lexical+semantic fusion method (default rrf; weighted = magnitude-aware A/B)
+ *   --rerank : cross-encoder rerank of the fused pool (concept mode; needs the reranker model)
  */
 
 const argv = process.argv.slice(2);
@@ -38,6 +49,17 @@ const boolFlag = (name: string): boolean => {
   return true;
 };
 const useSemantic = boolFlag("--semantic");
+const useRerank = boolFlag("--rerank");
+
+// --fusion rrf|weighted : how the lexical + semantic ranked lists combine (default rrf, the
+// production fusion). "weighted" is the magnitude-aware min-max blend (blendWeighted) — exposed
+// for A/B; it only takes effect when the semantic tier is active.
+const fusionArg = flag("--fusion");
+if (fusionArg !== undefined && fusionArg !== "rrf" && fusionArg !== "weighted") {
+  console.error(`--fusion must be rrf|weighted (got "${fusionArg}").`);
+  process.exit(1);
+}
+const fusion = fusionArg as "rrf" | "weighted" | undefined;
 
 const root = resolve(flag("--root") ?? resolve(import.meta.dirname, "..", "..", ".."));
 const kRaw = flag("--k");
@@ -101,13 +123,13 @@ if (scopeArg === "module" || scopeArg === "file") {
     declCount[e.module] = (declCount[e.module] ?? 0) + 1;
   }
   // Fused decl search (semantic auto-on when fresh), then pool the results to modules.
-  let semanticOpt: { tier: ReturnType<typeof loadSemanticTier> & object; queryVec: Float32Array } | undefined;
+  let semanticOpt: { tier: ReturnType<typeof loadSemanticTier> & object; queryVec: Float32Array; fusion?: "rrf" | "weighted" } | undefined;
   let semanticOn = false;
   const tier = loadSemanticTier(root, (n) => r.get(n)?.file);
   if (tier) {
     try {
       const [vec] = embedQueries([positional], root);
-      semanticOpt = { tier, queryVec: vec };
+      semanticOpt = { tier, queryVec: vec, fusion };
       semanticOn = true;
     } catch (e) {
       console.error(`module: query embedding failed (${(e as Error).message}); pooling lexical scores.`);
@@ -122,6 +144,7 @@ if (scopeArg === "module" || scopeArg === "file") {
     `index @ ${idx.commit.slice(0, 7)} · ${Object.keys(idx.modules).length} modules · mode=${scopeArg}` +
       `${cluster ? ` · cluster=${cluster}` : ""}${semanticOn ? " · +semantic" : ""} · top-3 pooled · showing ${mods.length}/${k}`,
   );
+  console.log(SCOPE_LINE);
   for (const m of mods) {
     const overview = String(idx.modules[m.module] ?? "").split(/\n\s*\n/)[0].replace(/^#+\s*/, "").replace(/\s+/g, " ").trim();
     console.log(`\n  [${m.score.toFixed(3)}] ${m.module}   (${m.memberCount} matched · ${declCount[m.module] ?? "?"} decls)`);
@@ -149,11 +172,11 @@ if (typePattern !== undefined) q = { mode: "typePattern", pattern: typePattern }
 else if (goal !== undefined) q = { mode: "goal", goalType: goal };
 else if (positional) q = { mode: "concept", title: positional };
 else {
-  console.error('usage: causalean_search [<concept words> | --type "<pat>" | --goal "<type>" | --block <f1.md> | --scope module "<words>"] [--cluster X] [--k N] [--semantic]');
+  console.error('usage: causalean_search [<concept words> | --type "<pat>" | --goal "<type>" | --block <f1.md> | --scope module "<words>"] [--cluster X] [--k N] [--semantic] [--fusion rrf|weighted] [--rerank]');
   process.exit(1);
 }
 
-let semanticOpt: { tier: ReturnType<typeof loadSemanticTier> & object; queryVec: Float32Array } | undefined;
+let semanticOpt: { tier: ReturnType<typeof loadSemanticTier> & object; queryVec: Float32Array; fusion?: "rrf" | "weighted" } | undefined;
 let semanticOn = false;
 if (q.mode === "goal") {
   const tier = loadSemanticTier(root, (n) => r.get(n)?.file);
@@ -168,9 +191,11 @@ if (q.mode === "goal") {
       console.error(`--goal: query embedding failed (${(e as Error).message}); using symbol-overlap only.`);
     }
   }
-} else if (useSemantic) {
+} else if (useSemantic || useRerank) {
+  // --rerank reorders the FUSED pool, so it wants the semantic tier active too (mirrors the
+  // eval harness's reranked arm); degrade gracefully when embeddings are unavailable.
   if (q.mode !== "concept") {
-    console.error("--semantic applies to concept mode only; ignoring for --type.");
+    console.error("--semantic/--rerank apply to concept mode only; ignoring for --type.");
   } else {
     const tier = loadSemanticTier(root, (n) => r.get(n)?.file);
     if (!tier) {
@@ -178,7 +203,7 @@ if (q.mode === "goal") {
     } else {
       try {
         const [vec] = embedQueries([positional], root);
-        semanticOpt = { tier, queryVec: vec };
+        semanticOpt = { tier, queryVec: vec, fusion };
         semanticOn = true;
       } catch (e) {
         console.error(`--semantic: query embedding failed (${(e as Error).message}); using lexical only.`);
@@ -186,12 +211,39 @@ if (q.mode === "goal") {
     }
   }
 }
+if (fusion && !semanticOn && q.mode === "concept") {
+  console.error("--fusion only takes effect with the semantic tier active (pass --semantic / fix embeddings); ignoring.");
+}
 
-const hits = r.search(q, { cluster, topK: k, semantic: semanticOpt });
+// --rerank (concept mode): rerank the fused top-`pool` with the cross-encoder (same path as the
+// eval harness's reranked arm), then display the top-k. Any unavailability degrades to fused order.
+let rerankOn = false;
+let pool = k;
+if (useRerank && q.mode === "concept") {
+  if (!rerankerAvailable(root)) {
+    console.error("--rerank: reranker model/meta unavailable (see doc/retrieval_reranker.meta.json); using fused order.");
+  } else {
+    rerankOn = true;
+    pool = Math.max(k, loadRerankerMeta(root)?.pool ?? 50);
+  }
+}
+
+let hits = r.search(q, { cluster, topK: rerankOn ? pool : k, semantic: semanticOpt });
+if (rerankOn && hits.length > 0 && q.mode === "concept") {
+  const scores = rerankBatch([{ query: positional, names: hits.map((h) => h.name) }]);
+  if (scores) hits = applyRerank(hits, scores[0], hits.length, k);
+  else {
+    console.error("--rerank: rerank call failed; using fused order.");
+    hits = hits.slice(0, k);
+  }
+} else {
+  hits = hits.slice(0, k);
+}
 console.log(
   `index @ ${r.library.commit.slice(0, 7)} · ${r.library.entries.length} decls · mode=${q.mode}` +
-    `${cluster ? ` · cluster=${cluster}` : ""}${semanticOn ? " · +semantic" : ""} · showing ${hits.length}/${k}`,
+    `${cluster ? ` · cluster=${cluster}` : ""}${semanticOn ? ` · +semantic(${fusion ?? "rrf"})` : ""}${rerankOn ? " · +rerank" : ""} · showing ${hits.length}/${k}`,
 );
+console.log(SCOPE_LINE);
 for (const h of hits) {
   console.log(`\n  [${Number.isInteger(h.score) ? h.score : h.score.toFixed(3)}] ${h.name}   (${h.matchedVia})`);
   console.log(`      ${h.statement.replace(/\s+/g, " ").slice(0, 140)}`);

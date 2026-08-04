@@ -135,10 +135,10 @@ def mEvent (m : β) : Set P.Ω := S.mVar.event m
 
 /-- The factual treatment event for a treatment arm is measurable. -/
 lemma measurableSet_aEvent (a : Bool) : MeasurableSet (S.aEvent a) :=
-  S.aVar.measurableSet_event _
+  S.aVar.measurableSet_event _ (measurableSet_singleton _)
 /-- The factual mediator event for a mediator value is measurable. -/
 lemma measurableSet_mEvent (m : β) : MeasurableSet (S.mEvent m) :=
-  S.mVar.measurableSet_event _
+  S.mVar.measurableSet_event _ (measurableSet_singleton _)
 
 /-! ### Counterfactual bundle (for the `M(a) ⊥ A` assumption)
 
@@ -281,10 +281,9 @@ lemma integrable_factualY_of_consistency_integrable_YofAM
     intro a m
     have hA_int :
         Integrable (fun ω => S.YofAM a m ω * S.aVar.indicator a ω) P.μ :=
-      S.aVar.integrable_mul_indicator a (hY a m) (S.measurable_YofAM a m)
+      S.aVar.integrable_mul_indicator a (measurableSet_singleton a) (hY a m)
     simpa [cell, mul_assoc] using
-      S.mVar.integrable_mul_indicator m hA_int
-        ((S.measurable_YofAM a m).mul (S.aVar.measurable_indicator a))
+      S.mVar.integrable_mul_indicator m (measurableSet_singleton m) hA_int
   have hsum_int :
       Integrable (fun ω => ∑ a : Bool, ∑ m : β, cell a m ω) P.μ := by
     have hsum_beta : ∀ a, Integrable (fun ω => ∑ m : β, cell a m ω) P.μ := by
@@ -646,8 +645,9 @@ theorem EofY_eq_frontdoorTerm (hA : S.Assumptions) (a : Bool) :
           = (P.μ ((S.MofA a) ⁻¹' {m})).toReal
               * ∫ ω, id (S.YofAM true m ω) ∂P.μ :=
       (hA.indep_Y_M a m).integral_restrict_preimage_eq_mul
-        (S.measurable_MofA a) (S.measurable_YofAM true m)
-        (measurableSet_singleton m) measurable_id
+        (S.measurable_MofA a).aemeasurable (S.measurable_YofAM true m).aemeasurable
+        (measurableSet_singleton m) ((S.measurable_MofA a) (measurableSet_singleton m))
+        measurable_id.aestronglyMeasurable
     simpa [mSet, id] using hdrop
   -- ───────────────────────────────────────────────────────────────────────────
   -- Main chain: combine (i) partition, (B,C) drop + marginal, (D) inner.

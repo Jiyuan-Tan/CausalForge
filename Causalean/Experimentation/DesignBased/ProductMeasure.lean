@@ -108,17 +108,19 @@ theorem indepFun_prodDesign_blocks (D : ∀ i, FiniteDesign (α i)) {A B : Finse
   (iIndepFun_prodDesign_eval D).indepFun_finset A B hAB
     (fun i => measurable_pi_apply i)
 
-/-- **Functions of disjoint coordinate blocks are independent.**  Composing
-`indepFun_prodDesign_blocks` with a measurable family `g i : α i → ℝ`: the tuple
-`(g k (w k))_{k ∈ A}` is independent of `(g k (w k))_{k ∈ B}` whenever `A` and `B` are disjoint,
-under the product-design measure. -/
+/-- **Functions of disjoint coordinate blocks are independent.**  Applying separate measurable
+function families to the coordinates in two disjoint blocks preserves their independence, even
+when the two blocks have different coordinatewise output spaces. -/
 theorem indepFun_prodDesign_apply_blocks (D : ∀ i, FiniteDesign (α i))
-    {g : ∀ i, α i → ℝ} (hg : ∀ i, Measurable (g i)) {A B : Finset ι} (hAB : Disjoint A B) :
+    {β γ : ι → Type*} [∀ i, MeasurableSpace (β i)] [∀ i, MeasurableSpace (γ i)]
+    {g : ∀ i, α i → β i} {h : ∀ i, α i → γ i}
+    (hg : ∀ i, Measurable (g i)) (hh : ∀ i, Measurable (h i))
+    {A B : Finset ι} (hAB : Disjoint A B) :
     IndepFun (fun (w : ∀ k, α k) (k : A) => g k (w k))
-      (fun w (k : B) => g k (w k)) (prodDesign D).toMeasure :=
+      (fun w (k : B) => h k (w k)) (prodDesign D).toMeasure :=
   (indepFun_prodDesign_blocks D hAB).comp
     (φ := fun (v : ∀ k : A, α k) (k : A) => g k (v k))
-    (ψ := fun (v : ∀ k : B, α k) (k : B) => g k (v k))
+    (ψ := fun (v : ∀ k : B, α k) (k : B) => h k (v k))
     (by fun_prop) (by fun_prop)
 
 /-- **General functions of disjoint coordinate blocks are independent.**  The strict generalization

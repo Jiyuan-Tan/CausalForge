@@ -10,7 +10,6 @@
 import { describe, expect, it } from "vitest";
 import { SolveUnitOutputSchema, partitionProofsByTarget } from "../../src/discovery/stages/d0_solve.js";
 import { findingKeys, partitionReviewTargets } from "../../src/discovery/stages/d0.js";
-import { checkProposalClosure, formatClosureViolation } from "../../src/discovery/core/coherence.js";
 import { checkSymbolDeclarations } from "../../src/discovery/core/preflight.js";
 import { combineVerdicts } from "../../src/discovery/core/review.js";
 import { extractJsonObject } from "../../src/judgment.js";
@@ -120,51 +119,8 @@ describe("findingKeys keeps distinct note-global findings distinct", () => {
   });
 });
 
-describe("cross-store proposal closure", () => {
-  const core = {
-    statements: [{ id: "thm:main", depends_on: ["lem:helper"] }, { id: "lem:helper" }],
-    assumptions: [],
-    definitions: [],
-  };
-
-  it("flags a core node that the atomic base lacks and no proposal carries", () => {
-    // This is the round 30-33 failure verbatim: lem:integrated-arm-path-
-    // differentiation lived in core.json with a complete proof, was absent from
-    // proto_core.json, and no proposal carried it — so `d0_apply_change --all`
-    // would have produced a dangling dependency. It was caught only by
-    // gpt-5.6-sol adjudication, three times, at maximum model cost.
-    const res = checkProposalClosure({
-      core,
-      proto: { statements: [{ id: "thm:main" }], assumptions: [], definitions: [] },
-      proposalIds: new Set<string>(),
-    });
-    expect(res.ok).toBe(false);
-    expect(res.uncarried).toEqual(["lem:helper"]);
-  });
-
-  it("passes when a proposal carries the node", () => {
-    const res = checkProposalClosure({
-      core,
-      proto: { statements: [{ id: "thm:main" }], assumptions: [], definitions: [] },
-      proposalIds: new Set(["lem:helper"]),
-    });
-    expect(res.ok).toBe(true);
-    expect(res.uncarried).toEqual([]);
-  });
-
-  it("reports proto nodes absent from core (drift in the other direction)", () => {
-    const res = checkProposalClosure({
-      core,
-      proto: {
-        statements: [{ id: "thm:main" }, { id: "lem:helper" }],
-        assumptions: [{ id: "ass:stale" }],
-        definitions: [],
-      },
-      proposalIds: new Set<string>(),
-    });
-    expect(res.protoOnly).toEqual(["ass:stale"]);
-  });
-});
+// (Retired, Phase 1: proposal-closure tests — the closure holds by construction
+// of assembleCore; see test/discovery/assemble.test.ts.)
 
 describe("D0.5 sees this round's proofs, not the stale carried text", () => {
   const core = {
@@ -241,13 +197,15 @@ describe("deterministic structural contracts replace model-discovered rules", ()
     expect(v[0].detail).not.toContain("lambda");
   });
 
-  it("treats delimited and bare symbol declarations as the same symbol", () => {
-    expect(
-      checkSymbolDeclarations({
-        symbols: [{ name: "t_\\pi" }],
-        assumptions: [{ id: "ass:a", free_symbols: ["\\(t_\\pi\\)"] }],
-      }),
-    ).toEqual([]);
+  it("flags a delimiter-style declaration mismatch before the round is paid for", () => {
+    // 2026-08-01 TeX audit: the post-solve G1 gate matches free_symbols EXACTLY
+    // against symbols[].name, so normalizing here let this mismatch through
+    // preflight and fail only AFTER a full solve round. It must flag now.
+    const v = checkSymbolDeclarations({
+      symbols: [{ name: "t_\\pi" }],
+      assumptions: [{ id: "ass:a", free_symbols: ["\\(t_\\pi\\)"] }],
+    });
+    expect(v.map((x) => x.check)).toEqual(["symbol-declaration-style"]);
   });
 
   const replacementOutput = (proof: unknown = undefined) => ({
@@ -397,19 +355,6 @@ describe("deterministic structural contracts replace model-discovered rules", ()
   });
 });
 
-describe("closure violation message names the ids and the repair", () => {
-  it("states the uncarried ids and does not read as a maths verdict", () => {
-    const msg = formatClosureViolation({ ok: false, uncarried: ["lem:helper"], protoOnly: [] });
-    expect(msg).toContain("lem:helper");
-    expect(msg).toContain("closure violated");
-    expect(msg).toMatch(/REPAIR:/);
-    // The repair must point at the LIVE carrier (d0_working.json:proposals), never
-    // at the retired per-kind mirror files — following the old text told the
-    // operator to write a file whose reader now fails loud.
-    expect(msg).not.toContain("proposed_proofs.json");
-    expect(msg).toContain("d0_working.json");
-  });
-});
 
 describe("an empty referee panel is not a pass", () => {
   it("throws rather than resolving no verdicts to pass", () => {

@@ -142,15 +142,15 @@ lemma measurable_factualY : Measurable S.factualY := S.yVar.measurable_factual
 
 /-- The factual instrument event is measurable. -/
 lemma measurableSet_zEvent (z : Bool) : MeasurableSet (S.zEvent z) :=
-  S.zVar.measurableSet_event _
+  S.zVar.measurableSet_event _ (measurableSet_singleton _)
 
 /-- The factual treatment event is measurable. -/
 lemma measurableSet_dEvent (d : Bool) : MeasurableSet (S.dEvent d) :=
-  S.dVar.measurableSet_event _
+  S.dVar.measurableSet_event _ (measurableSet_singleton _)
 
 /-- The factual outcome event is measurable. -/
 lemma measurableSet_yEvent (y : Bool) : MeasurableSet (S.yEvent y) :=
-  S.yVar.measurableSet_event _
+  S.yVar.measurableSet_event _ (measurableSet_singleton _)
 
 /-- The Boolean-to-real embedding is measurable. -/
 lemma measurable_boolToReal : Measurable (boolToReal) := by

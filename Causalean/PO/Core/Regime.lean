@@ -22,16 +22,15 @@ causal model. -/
 namespace Causalean
 namespace PO
 
-variable {V : Type*} [DecidableEq V] [Fintype V]
-variable {X : V → Type*} [∀ v, MeasurableSpace (X v)]
+variable {V : Type*} [DecidableEq V]
+variable {X : V → Type*}
 
 /-- An intervention regime specifies a finite set of targeted variables and an
 assigned value in the corresponding value space for each targeted variable.
 
 Implementation note: this is the code object `Regime`, corresponding to
 `r = (target, assign)` in def:po-system. -/
-structure Regime (V : Type*) [DecidableEq V] [Fintype V]
-    (X : V → Type*) [∀ v, MeasurableSpace (X v)] where
+structure Regime (V : Type*) [DecidableEq V] (X : V → Type*) where
   target : Finset V
   assign : ∀ v : V, v ∈ target → X v
 
@@ -50,13 +49,9 @@ def empty : Regime V X where
 variable in common. -/
 def Disjoint (r₁ r₂ : Regime V X) : Prop := _root_.Disjoint r₁.target r₂.target
 
-/-- The disjoint union of two compatible intervention regimes targets the union
-of their target sets and uses the assignment from the unique component regime
-that targets each variable.
-
-Implementation note: this is the disjoint union `r₁ ⊔ r₂` from
-def:po-consistency and def:po-from-scm. -/
-noncomputable def sqcup (r₁ r₂ : Regime V X) (_h : r₁.Disjoint r₂) :
+/-- The left-biased union of two regimes targets their union and uses the first regime's
+assignment wherever both regimes target the same variable. -/
+noncomputable def leftBiasedUnion (r₁ r₂ : Regime V X) :
     Regime V X where
   target := r₁.target ∪ r₂.target
   assign := fun v hv =>
@@ -65,6 +60,16 @@ noncomputable def sqcup (r₁ r₂ : Regime V X) (_h : r₁.Disjoint r₂) :
       rcases Finset.mem_union.mp hv with h₁ | h₂
       · exact (h1 h₁).elim
       · exact h₂)
+
+/-- The disjoint union of two compatible intervention regimes targets the union
+of their target sets and uses the assignment from the unique component regime
+that targets each variable.
+
+Implementation note: this is the disjoint union `r₁ ⊔ r₂` from
+def:po-consistency and def:po-from-scm. -/
+noncomputable def sqcup (r₁ r₂ : Regime V X) (_h : r₁.Disjoint r₂) :
+    Regime V X :=
+  leftBiasedUnion r₁ r₂
 
 /-- The empty intervention regime has no target variables. -/
 @[simp] lemma empty_target : (empty : Regime V X).target = ∅ := rfl
@@ -83,16 +88,17 @@ lemma empty_disjoint_left (r : Regime V X) : r.Disjoint (empty : Regime V X) := 
 
 /-- `sqcup` agrees with `r₁` whenever `v ∈ r₁.target`. -/
 lemma sqcup_assign_pos (r₁ r₂ : Regime V X) (h : r₁.Disjoint r₂)
-    (v : V) (hv : v ∈ (r₁.sqcup r₂ h).target) (h1 : v ∈ r₁.target) :
-    (r₁.sqcup r₂ h).assign v hv = r₁.assign v h1 := by
-  simp [Regime.sqcup, h1]
+    (v : V) (h1 : v ∈ r₁.target) :
+    (r₁.sqcup r₂ h).assign v (by simp [Regime.sqcup, Regime.leftBiasedUnion, h1]) =
+      r₁.assign v h1 := by
+  simp [Regime.sqcup, Regime.leftBiasedUnion, h1]
 
 /-- `sqcup` agrees with `r₂` whenever `v ∉ r₁.target` (and hence `v ∈ r₂.target`). -/
 lemma sqcup_assign_neg (r₁ r₂ : Regime V X) (h : r₁.Disjoint r₂)
-    (v : V) (hv : v ∈ (r₁.sqcup r₂ h).target)
-    (h1 : v ∉ r₁.target) (h2 : v ∈ r₂.target) :
-    (r₁.sqcup r₂ h).assign v hv = r₂.assign v h2 := by
-  simp [Regime.sqcup, h1]
+    (v : V) (h1 : v ∉ r₁.target) (h2 : v ∈ r₂.target) :
+    (r₁.sqcup r₂ h).assign v (by simp [Regime.sqcup, Regime.leftBiasedUnion, h2]) =
+      r₂.assign v h2 := by
+  simp [Regime.sqcup, Regime.leftBiasedUnion, h1]
 
 /-- Extensionality for `Regime`: equal targets and pointwise-equal assignments. -/
 theorem ext {r₁ r₂ : Regime V X}
@@ -157,13 +163,19 @@ def listLookup : (l : List ((v : V) × X v)) → (v : V) →
           · exact (h hv).elim
           · exact hv)
 
+/-- A list of variable-value assignments determines a regime by using the first listed
+assignment for each targeted variable. -/
+def ofListLeftBiased (l : List ((v : V) × X v)) :
+    Regime V X where
+  target := (l.map Sigma.fst).toFinset
+  assign := fun v hv => listLookup l v (List.mem_toFinset.mp hv)
+
 /-- A duplicate-free list of variable-value assignments determines the
 intervention regime that targets exactly the listed variables and assigns each
 target its listed value. -/
 def ofList (l : List ((v : V) × X v)) (_h : (l.map Sigma.fst).Nodup) :
-    Regime V X where
-  target := (l.map Sigma.fst).toFinset
-  assign := fun v hv => listLookup l v (List.mem_toFinset.mp hv)
+    Regime V X :=
+  ofListLeftBiased l
 
 /-- The target of a regime built from a duplicate-free list is the finite set
 of listed variables. -/
@@ -172,8 +184,8 @@ of listed variables. -/
     (ofList l h).target = (l.map Sigma.fst).toFinset := rfl
 
 /-- Building a regime from the empty list gives the empty intervention regime. -/
-@[simp] theorem ofList_nil (h : ([] : List ((v : V) × X v)).map Sigma.fst |>.Nodup) :
-    (ofList [] h : Regime V X) = empty := by
+@[simp] theorem ofList_nil :
+    (ofList [] (by simp) : Regime V X) = empty := by
   congr 1
 
 /-- The target of a regime built from a nonempty list inserts the head variable
@@ -183,24 +195,20 @@ into the target from the tail. -/
     (h : ((⟨v, x⟩ :: rest : List ((v : V) × X v)).map Sigma.fst).Nodup) :
     (ofList (⟨v, x⟩ :: rest) h).target =
       insert v (rest.map Sigma.fst).toFinset := by
-  simp [ofList]
+  simp [ofList, ofListLeftBiased]
 
-omit [Fintype V] [(v : V) → MeasurableSpace (X v)] in
 /-- Looking up the head variable of a dependent assignment list returns the head value. -/
 theorem listLookup_cons_self {v : V} {x : X v}
-    {rest : List ((v : V) × X v)}
-    (hv : v ∈ ((⟨v, x⟩ :: rest : List ((v : V) × X v)).map Sigma.fst)) :
-    listLookup (⟨v, x⟩ :: rest) v hv = x := by
+    {rest : List ((v : V) × X v)} :
+    listLookup (⟨v, x⟩ :: rest) v (by simp) = x := by
   simp [listLookup]
 
-omit [Fintype V] [(v : V) → MeasurableSpace (X v)] in
 /-- Looking up a different variable skips the head of a dependent assignment
 list and continues in the tail. -/
 theorem listLookup_cons_of_ne {v w : V} {x : X w}
     {rest : List ((v : V) × X v)} (hvw : v ≠ w)
-    (hv : v ∈ ((⟨w, x⟩ :: rest : List ((v : V) × X v)).map Sigma.fst))
     (hv' : v ∈ rest.map Sigma.fst) :
-    listLookup (⟨w, x⟩ :: rest) v hv = listLookup rest v hv' := by
+    listLookup (⟨w, x⟩ :: rest) v (by simp [hv']) = listLookup rest v hv' := by
   simp [listLookup, hvw]
 
 end Regime

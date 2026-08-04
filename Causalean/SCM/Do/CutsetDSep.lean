@@ -85,7 +85,7 @@ theorem cutsetLatent_dSep_of_dSep (M : Causalean.SCM N Ω)
           rw [hroot] at hpar
           exact absurd hpar (Finset.notMem_empty _)
       have hq_act : M.dag.IsActivePath (W ∪ F) q :=
-        M.dag.isActivePath_of_directed_interior hq_edge hq_intWF
+        M.dag.isActivePath_of_directed hq_edge hq_intWF
       have hyReachZr : y ∈ M.dag.bbReachableVertices (W ∪ F) Zr := by
         rw [M.dag.bbReachableVertices_iff_activePath]
         exact ⟨c, hcZr, q, hq_len, hq_act, hq_head, hq_last⟩
@@ -96,7 +96,7 @@ theorem cutsetLatent_dSep_of_dSep (M : Causalean.SCM N Ω)
     intro c hcCut hcWF
     have hc_lat : c ∈ M.unobserved := (M.mem_cutsetLatent.mp hcCut).1
     rcases Finset.mem_union.mp hcWF with hcW | hcF
-    · exact M.not_obs_of_unobs hc_lat (hW hcW)
+    · exact not_obs_of_unobs M.toSWIGGraph hc_lat (hW hcW)
     · obtain ⟨m, hm⟩ := M.fixed_is_fixed c (hF hcF)
       obtain ⟨k, hk⟩ := M.unobserved_is_random c hc_lat
       rw [hm] at hk
@@ -114,7 +114,7 @@ theorem cutsetLatent_dSep_of_dSep (M : Causalean.SCM N Ω)
     have hc_notWF : c ∉ W ∪ F := by
       intro hcWF
       rcases Finset.mem_union.mp hcWF with hcW | hcF
-      · exact M.not_obs_of_unobs hc_lat (hW hcW)
+      · exact not_obs_of_unobs M.toSWIGGraph hc_lat (hW hcW)
       · -- `c ∈ F ⊆ fixed` is `.fixed`-form, but `c ∈ unobserved` is `.random`-form.
         obtain ⟨m, hm⟩ := M.fixed_is_fixed c (hF hcF)
         obtain ⟨k, hk⟩ := M.unobserved_is_random c hc_lat
@@ -162,24 +162,9 @@ variable (M : Causalean.SCM N Ω) (Z : Finset N)
   (hZ_obs : ∀ D ∈ Z, SWIGNode.random D ∈ M.observed)
   (hZ_fixed : ∀ D ∈ Z, SWIGNode.fixed D ∉ M.fixed)
 
-/-- In `M.fixSet Z _ _`, the node `.random D` (`D ∈ Z`) has no outgoing edges.
-    (Local re-derivation, avoiding the heavy kernel imports.) -/
-private lemma fixSetRandomNoChildren {D : N} (hD : D ∈ Z) (v : SWIGNode N) :
-    ¬ (M.fixSet Z hZ_obs hZ_fixed).dag.edge (SWIGNode.random D) v := by
-  intro hEdge
-  have h_eqrel :
-      (M.fixSet Z hZ_obs hZ_fixed).dag.edge (SWIGNode.random D) v ↔
-        SWIGGraph.splitMonoEdgeRel M.toSWIGGraph.dag.edge Z (SWIGNode.random D) v := by
-    simp only [SCM.fixSet, SCM.fixMono, SWIGGraph.splitMono, SWIGGraph.splitMonoDAG]
-  rw [h_eqrel] at hEdge
-  simp only [SWIGGraph.splitMonoEdgeRel, if_pos hD] at hEdge
-
-/-- **Edge survival into `fixSet Z`.**  Any base-graph edge `u → v` whose source `u`
-    is not a treatment node `.random D` (`D ∈ Z`) survives in `M.fixSet Z _ _`.
-    The only edges deleted by `fixSet Z` are the out-edges of the `.random D`
-    nodes (`D ∈ Z`); the `.fixed D` (`D ∈ Z`) nodes are isolated roots in `M`, so
-    they contribute no base edges. -/
-private lemma edge_fixSet_of_edge {u v : SWIGNode N}
+/-- A directed edge in the original graph remains an edge after fixing treatments when its
+source is not the random copy of any treatment being fixed. -/
+lemma edge_fixSet_of_edge {u v : SWIGNode N}
     (he : M.dag.edge u v) (hu : ∀ D ∈ Z, u ≠ SWIGNode.random D) :
     (M.fixSet Z hZ_obs hZ_fixed).dag.edge u v := by
   have h_eqrel :
@@ -202,10 +187,9 @@ private lemma edge_fixSet_of_edge {u v : SWIGNode N}
       exact absurd hch (Finset.notMem_empty _)
     · simpa only [SWIGGraph.splitMonoEdgeRel, if_neg h] using he
 
-/-- **Reverse edge transport.**  Any edge `u → v` of `M.fixSet Z _ _` is either a
-    base-graph edge `u → v`, or `u = .fixed D` (`D ∈ Z`) with base edge
-    `.random D → v` (the redirected out-edge). -/
-private lemma edge_of_edge_fixSet {u v : SWIGNode N}
+/-- Every directed edge after fixing treatments is either an original edge or the redirected
+outgoing edge from the fixed copy of a treatment being fixed. -/
+lemma edge_of_edge_fixSet {u v : SWIGNode N}
     (he : (M.fixSet Z hZ_obs hZ_fixed).dag.edge u v) :
     M.dag.edge u v ∨
       (∃ D ∈ Z, u = SWIGNode.fixed D ∧ M.dag.edge (SWIGNode.random D) v) := by
@@ -224,12 +208,11 @@ private lemma edge_of_edge_fixSet {u v : SWIGNode N}
     · exact Or.inr ⟨d, h, rfl, by simpa only [SWIGGraph.splitMonoEdgeRel, if_pos h] using he⟩
     · exact Or.inl (by simpa only [SWIGGraph.splitMonoEdgeRel, if_neg h] using he)
 
-/-- **Ancestry survival into `fixSet Z`, under a no-treatment hypothesis.**
-    A base-graph directed path `u ⤳ v` whose edge sources are all non-treatment
-    (`hNoT`: every `s` that is `u` or a proper ancestor of `v` reachable from `u`,
-    and itself an ancestor of `v`, is not `.random D` for `D ∈ Z`) is a directed
-    path in `M.fixSet Z _ _` as well: `u` is an ancestor of `v` in the split graph. -/
-private lemma isAncestor_fixSet_of_isAncestor {u v : SWIGNode N}
+/-- A directed ancestry path in a causal graph remains after intervening on a
+set when every possible edge source along that path is not a random copy of an
+intervened variable. Thus the original ancestor remains an ancestor in the
+intervened graph. -/
+lemma isAncestor_fixSet_of_isAncestor {u v : SWIGNode N}
     (hanc : M.dag.isAncestor u v)
     (hNoT : ∀ s, (s = u ∨ M.dag.isAncestor u s) → M.dag.isAncestor s v →
       ∀ D ∈ Z, s ≠ SWIGNode.random D) :
@@ -250,10 +233,9 @@ private lemma isAncestor_fixSet_of_isAncestor {u v : SWIGNode N}
     intro s hs hsw
     exact hNoT s hs (DAG.isAncestor.trans hsw he)
 
-/-- **A treatment node is never a proper ancestor of a conditioning node**, given
-    backdoor criterion (i) `hWNonDescM1` and that the fixed block `M.fixed` consists
-    of roots.  Here `C = W ∪ M.fixed`. -/
-private lemma treatment_not_isAncestor_cond
+/-- Under the backdoor non-descendancy condition, a treatment node cannot be a
+    proper ancestor of any node in the observed-or-fixed conditioning block. -/
+lemma treatment_not_isAncestor_cond
     (W : Finset (SWIGNode N))
     (hWNonDescM1 : ∀ D ∈ Z, ∀ w ∈ W, ¬ M.dag.isAncestor (SWIGNode.random D) w)
     {D : N} (hD : D ∈ Z) {c : SWIGNode N} (hc : c ∈ W ∪ M.fixed)
@@ -271,13 +253,10 @@ private lemma treatment_not_isAncestor_cond
     rw [M.fixed_are_roots c hcF] at hpmem
     exact absurd hpmem (Finset.notMem_empty _)
 
-/-- **Collider-activeness transports into `fixSet Z`.**
-
-    If `m` is in the Bayes-Ball ancestral set of `C = W ∪ M.fixed` in the base
-    graph (the activation witness for a collider), then `m` is in the ancestral
-    set of `C ∪ Z.image .fixed` in `M.fixSet Z _ _`.  Uses backdoor criterion (i):
-    no treatment node is a proper ancestor of any `w ∈ W`. -/
-private lemma bbZAncestors_fixSet_transport
+/-- A node in the Bayes-ball ancestor set of a target set and the model's fixed nodes remains in
+    the corresponding ancestor set after intervention, once the fixed treatment copies are added
+    to the target set, provided no treatment's random copy is an ancestor of a target node. -/
+lemma bbZAncestors_fixSet_transport
     (W : Finset (SWIGNode N))
     (hWNonDescM1 : ∀ D ∈ Z, ∀ w ∈ W, ¬ M.dag.isAncestor (SWIGNode.random D) w)
     {m : SWIGNode N}
@@ -296,9 +275,9 @@ private lemma bbZAncestors_fixSet_transport
     subst hsEq
     exact treatment_not_isAncestor_cond M Z W hWNonDescM1 hD hcC' hsc
 
-/-- A path node `v` carrying any base-graph incident edge cannot be a treatment
-    `.fixed D` (`D ∈ Z`): such nodes are isolated in `M`. -/
-private lemma not_fixedTreatment_of_uadj
+/-- A node incident to a directed edge in the base graph cannot be the fixed copy of a treatment
+    variable that is newly fixed by the intervention. -/
+lemma not_fixedTreatment_of_uadj
     (hZ_fixed : ∀ D ∈ Z, SWIGNode.fixed D ∉ M.fixed) {a v : SWIGNode N}
     (h : M.dag.UAdj a v) {D : N} (hD : D ∈ Z) : v ≠ SWIGNode.fixed D := by
   intro hveq
@@ -312,15 +291,9 @@ private lemma not_fixedTreatment_of_uadj
     have hmem : a ∈ M.dag.children (SWIGNode.fixed D) := M.dag.mem_children.mpr hva
     rw [hiso.2] at hmem; exact absurd hmem (Finset.notMem_empty _)
 
-/-- **Active-path transport into `fixSet Z`.**
-
-    An `M`-active path `P` given `C = W ∪ M.fixed` whose every step's underlying
-    base edge has a non-treatment source (`hInEdge`) is active in `M.fixSet Z _ _`
-    given `C ∪ Z.image .fixed`.  The collider activations transport by
-    `bbZAncestors_fixSet_transport` (using backdoor criterion (i)); the
-    non-collider conditions transport because path nodes are never the treatment
-    roots `.fixed D` adjoined to the conditioning set. -/
-private lemma path_fixSet_active
+/-- An active path in the original structural causal model remains active after
+    fixing the treatment set, when each of its directed edges has a non-treatment source. -/
+lemma path_fixSet_active
     (W : Finset (SWIGNode N))
     (hWNonDescM1 : ∀ D ∈ Z, ∀ w ∈ W, ¬ M.dag.isAncestor (SWIGNode.random D) w)
     {P : List (SWIGNode N)}
@@ -378,16 +351,14 @@ private lemma path_fixSet_active
     · obtain ⟨D, hD, hDeq⟩ := Finset.mem_image.mp hm2
       exact not_fixedTreatment_of_uadj M Z hZ_fixed (hadj i (by omega)) hD (hm ▸ hDeq.symm)
 
-/-- **No forward run from a non-ancestor source.**
+end CrossModel
+end SCM
 
-    Pure-graph helper.  Let `prev :: m :: rest` be an active path given `C`, with a
-    forward edge `prev → m` entering the run, and assume `s` is an ancestor of `prev`
-    (or `s = prev`).  If the run's last node is a root (no incoming edge) and `s` is
-    never a proper ancestor of any node of `bbZAncestors C` (`hTreat`), then we reach a
-    contradiction: the forward chain out of `s` must either hit the root (impossible —
-    roots have no incoming edge) or open a collider apex `m'` with `s ⤳ m' ∈
-    bbZAncestors C` (contradicting `hTreat`). -/
-private lemma activePath_forwardRun_absurd {V : Type*} [DecidableEq V] [Fintype V]
+/-- An active path that starts with an arrow flowing away from an ancestor cannot
+    end at a root when that ancestor has no directed route to any activated
+    conditioning ancestor.  The result rules out a forward run that must either
+    enter a root or create an activated collider. -/
+lemma DAG.activePath_forwardRun_absurd {V : Type*} [DecidableEq V] [Fintype V]
     (G : DAG V) {C : Finset V} {s : V}
     (hTreat : ∀ k, k ∈ G.bbZAncestors C → ¬ G.isAncestor s k) :
     ∀ (prev m : V) (rest : List V),
@@ -435,8 +406,9 @@ private lemma activePath_forwardRun_absurd {V : Type*} [DecidableEq V] [Fintype 
       -- `htri : m ∈ bbZAncestors C`; but `s ⤳ m`.
       exact hTreat m htri hsm
 
-/-- A suffix `p.drop j` of an active path is active. -/
-private lemma isActivePath_drop {V : Type*} [DecidableEq V] [Fintype V]
+/-- Removing any initial segment of an active graph path leaves a path that is
+    still active under the same conditioning set. -/
+lemma DAG.isActivePath_drop {V : Type*} [DecidableEq V] [Fintype V]
     (G : DAG V) {C : Finset V} {p : List V} (j : ℕ)
     (hact : G.IsActivePath C p) : G.IsActivePath C (p.drop j) := by
   obtain ⟨hadj, hcoll⟩ := hact
@@ -463,9 +435,17 @@ private lemma isActivePath_drop {V : Type*} [DecidableEq V] [Fintype V]
   /- (`convert … using 2` aligns the `Fin` index arithmetic `j + (i+k)` with
       `(j+i)+k`.) -/
 
-/-- Index translation for the join `pa ++ q.tail` (with `q.head = pa.getLast`).
-    Left part reads from `pa`; right part reads from `q` shifted by one. -/
-private lemma get_appendTail {V : Type*} (pa q : List V)
+namespace SCM
+
+section CrossModel
+
+variable (M : Causalean.SCM N Ω) (Z : Finset N)
+  (hZ_obs : ∀ D ∈ Z, SWIGNode.random D ∈ M.observed)
+  (hZ_fixed : ∀ D ∈ Z, SWIGNode.fixed D ∉ M.fixed)
+
+/-- Appending the tail of one nonempty list to another nonempty list preserves the
+    first list's entries and then reads the remaining entries from the second list with a one-place shift. -/
+lemma get_appendTail {V : Type*} (pa q : List V)
     (_hpa : pa ≠ []) (hq : q ≠ []) :
     (pa ++ q.tail).length = pa.length + q.length - 1 ∧
     (∀ (j : ℕ) (hj : j < pa.length),
@@ -554,14 +534,14 @@ private lemma exists_inEdge_activePath_to_Y
   have hc_notC : c ∉ C := by
     rw [hC]; intro hcC
     rcases Finset.mem_union.mp hcC with hcW | hcF
-    · exact M.not_obs_of_unobs hc_lat (hW hcW)
+    · exact not_obs_of_unobs M.toSWIGGraph hc_lat (hW hcW)
     · obtain ⟨m, hm⟩ := M.fixed_is_fixed c hcF
       obtain ⟨k, hk⟩ := M.unobserved_is_random c hc_lat
       rw [hm] at hk; cases hk
   have hc_notZr : c ∉ Zr := by
     rw [hZr]; intro hcZr
     obtain ⟨D, hDZ, hDeq⟩ := Finset.mem_image.mp hcZr
-    exact M.not_obs_of_unobs hc_lat (hDeq ▸ hZ_obs D hDZ)
+    exact not_obs_of_unobs M.toSWIGGraph hc_lat (hDeq ▸ hZ_obs D hDZ)
   -- (3) Select a MINIMAL-length active `Zr ⤳ c` path given `C`.
   have hExists : ∃ n, ∃ p : List (SWIGNode N), p.length = n ∧ p.length ≥ 2 ∧
       M.dag.IsActivePath C p ∧ (∃ zr ∈ Zr, p.head? = some zr) ∧ p.getLast? = some c := by
@@ -575,7 +555,7 @@ private lemma exists_inEdge_activePath_to_Y
   have hZrOnly0 : ∀ (j : ℕ) (hj : j < pa.length), 1 ≤ j → pa.get ⟨j, hj⟩ ∉ Zr := by
     intro j hj hj1 hjZr
     -- `pa.drop j` is a shorter active `Zr ⤳ c` path.
-    have hdrop_act : M.dag.IsActivePath C (pa.drop j) := isActivePath_drop M.dag j hpa_act
+    have hdrop_act : M.dag.IsActivePath C (pa.drop j) := DAG.isActivePath_drop M.dag j hpa_act
     have hdrop_len : (pa.drop j).length = pa.length - j := List.length_drop ..
     have hdrop_ge2 : (pa.drop j).length ≥ 2 := by
       rw [hdrop_len]
@@ -624,7 +604,7 @@ private lemma exists_inEdge_activePath_to_Y
       have hgl := List.getLast?_eq_some_getLast hne
       rw [hpa_last] at hgl
       exact Option.some_inj.mp hgl.symm
-    refine activePath_forwardRun_absurd M.dag (hTreatAll hD) a b rest hpa_act
+    refine M.dag.activePath_forwardRun_absurd (hTreatAll hD) a b rest hpa_act
       hab (Or.inl heq.symm) ?_
     rw [hpa_last']; exact hc_root
   -- In-edge property for `pa` (the whole path), via minimality + the root run.
@@ -676,7 +656,7 @@ private lemma exists_inEdge_activePath_to_Y
       exact hq_int i hi (Finset.mem_union_left _ hmem)
     -- `q` is active given `C`.
     have hq_act : M.dag.IsActivePath C q :=
-      M.dag.isActivePath_of_directed_interior hq_edge hq_intC
+      M.dag.isActivePath_of_directed hq_edge hq_intC
     -- The join point: first edge of `q` points out of `c`.
     have hqne : q ≠ [] := by intro h; rw [h] at hq_len; simp at hq_len
     have hq_head_eq : q.get ⟨0, by omega⟩ = c := by
@@ -823,7 +803,7 @@ theorem cutsetLatent_dSep_of_fixSet_dSep
     have hzrObs : zr ∈ M.observed := by
       rw [← hzrEq]
       exact hZ_obs D hD
-    exact M.not_obs_of_unobs ((M.mem_cutsetLatent.mp hzrCut).1) hzrObs
+    exact not_obs_of_unobs M.toSWIGGraph ((M.mem_cutsetLatent.mp hzrCut).1) hzrObs
   · refine Disjoint.mono_right ?_ hdSep2.2.2.1
     intro v hv
     rcases Finset.mem_union.mp hv with hvW | hvM
@@ -835,7 +815,7 @@ theorem cutsetLatent_dSep_of_fixSet_dSep
     intro c hcCut hcWF
     have hc_lat : c ∈ M.unobserved := (M.mem_cutsetLatent.mp hcCut).1
     rcases Finset.mem_union.mp hcWF with hcW | hcF
-    · exact M.not_obs_of_unobs hc_lat (hW hcW)
+    · exact not_obs_of_unobs M.toSWIGGraph hc_lat (hW hcW)
     · obtain ⟨m, hm⟩ := M.fixed_is_fixed c hcF
       obtain ⟨k, hk⟩ := M.unobserved_is_random c hc_lat
       rw [hm] at hk

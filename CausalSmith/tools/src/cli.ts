@@ -4,7 +4,7 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createRequire } from "node:module";
-import { runPipeline } from "./pipeline.js";
+import { runPipeline, type RunPipelineOptions } from "./pipeline.js";
 import { CAP_GATE_FLAGS } from "./cap_gates.js";
 import { applyWorkerEnv, leanProjectPathFor } from "./local_config.js";
 import {
@@ -148,6 +148,22 @@ function toInternalStopAfter(id: StageHaltId): (typeof STAGE_ORDER)[number] {
     );
   }
   return internal;
+}
+
+/** Pipeline options for a tier-downgrade resume. Intentionally omits
+ * `startStage`: ordinary resume routing must first consume any pending D0
+ * directive, while a clean state completed at D0 naturally advances to D0.5. */
+export function downgradeResumeOptions(args: {
+  auto: boolean;
+  stopAfter?: StageHaltId;
+}): RunPipelineOptions {
+  return {
+    stopAfterStage: args.stopAfter
+      ? toInternalStopAfter(args.stopAfter)
+      : args.auto
+        ? undefined
+        : toInternalStopAfter("D0.5"),
+  };
 }
 
 function splitParentToken(token: string): { parent_qid: string; parent_spec: string } {
@@ -699,7 +715,11 @@ async function runDowngradeTier(repoRoot: string, parsed: CliArgs): Promise<void
     );
   }
 
-  // Read the achieved tier from the last D0.5 general review (evidence the note meets the new floor).
+  // Read the achieved tier from the last D0.5 general review (evidence the note meets the
+  // new floor). Since D0.5.G also runs as a first-round TRIAGE read, this tier may have been
+  // taken on a draft whose panel findings were still open — a pre-check, not a proof of
+  // achievement. It stays sound as a guard because lowering the floor re-runs D0.5, which
+  // re-grades authoritatively against the new floor before anything advances.
   const reviewsDir = resolveInDir(formalizationDir(repoRoot, parsed.qid), "reviews", [
     `${parsed.qid}_${spec}_reviews`,
   ]);
@@ -753,14 +773,12 @@ async function runDowngradeTier(repoRoot: string, parsed: CliArgs): Promise<void
     `downgrade-tier: ${parsed.qid}/${spec} novelty floor ${currentFloor} -> ${target} (achieved ${achievedTier}). Re-passing D0.5…`,
   );
 
-  // 3. Re-run D0.5 at the new floor. Pass noveltyTarget so ctx wins over state; start at D0.5.
+  // 3. Resume normally at the new floor. Do not force a D0.5 start: a D0.5 halt may
+  //    have appended a D0 escalation which the ordinary resume preflight must consume
+  //    first. Hard-coding D0.5 bypassed that routing and made the safety guard reject
+  //    an otherwise lawful downgrade recovery.
   //    Honor --auto (continue into F); without it (or with an explicit --stop-after) halt at go/no-go.
-  const startStage = toInternalStopAfter("D0.5");
-  const stopAfterStage = parsed.stopAfter
-    ? toInternalStopAfter(parsed.stopAfter)
-    : parsed.auto
-      ? undefined
-      : toInternalStopAfter("D0.5");
+  const resumeOptions = downgradeResumeOptions(parsed);
   const finalState = await runPipeline(
     {
       repoRoot,
@@ -772,7 +790,7 @@ async function runDowngradeTier(repoRoot: string, parsed: CliArgs): Promise<void
       noveltyTarget: target,
     },
     undefined,
-    { startStage, stopAfterStage },
+    resumeOptions,
   );
   console.log(
     `downgrade-tier: ${parsed.qid}/${spec} finished at stage ${formatStageLabel(finalState.stage_completed)}.`,

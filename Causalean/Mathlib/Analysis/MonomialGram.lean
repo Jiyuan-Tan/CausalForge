@@ -20,13 +20,13 @@ namespace Causalean.Mathlib.Analysis
 
 /-- The closed sup-norm ball contains the vectors whose every coordinate lies within the stated
 radius of the corresponding coordinate of the center. -/
-def supBall {d : ℕ} (x0 : Fin d → ℝ) (r : ℝ) : Set (Fin d → ℝ) :=
+def supBall {ι : Type*} (x0 : ι → ℝ) (r : ℝ) : Set (ι → ℝ) :=
   {x | ∀ i, |x i - x0 i| ≤ r}
 
 /-- A multivariate monomial multiplies the coordinates of a vector after raising each coordinate
 to its assigned nonnegative integer exponent. -/
-def monomial {d : ℕ} (e : Fin d → ℕ) (u : Fin d → ℝ) : ℝ :=
-  ∏ j : Fin d, (u j) ^ (e j)
+def monomial {ι : Type*} [Fintype ι] (e : ι → ℕ) (u : ι → ℝ) : ℝ :=
+  ∏ j, (u j) ^ (e j)
 
 /-- The monomial Gram matrix records the integrals of every pairwise product of a finite family of
 multivariate monomials over a centered closed cube. -/
@@ -48,12 +48,14 @@ private lemma isCompact_cube (d : ℕ) (r : ℝ) : IsCompact (cube d r) := by
   rw [cube_eq_pi_Icc]
   exact isCompact_univ_pi fun _ => isCompact_Icc
 
-private lemma continuous_monomial {d : ℕ} (e : Fin d → ℕ) :
+/-- A multivariate real monomial varies continuously with its coordinate vector. -/
+lemma continuous_monomial {ι : Type*} [Fintype ι] (e : ι → ℕ) :
     Continuous (monomial e) := by
   unfold monomial
   exact continuous_finset_prod _ fun j _ => (continuous_apply j).pow (e j)
 
-private lemma continuous_monomialCombination {d p : ℕ}
+/-- A finite linear combination of multivariate real monomials is continuous. -/
+lemma continuous_monomialCombination {d p : ℕ}
     (expo : Fin p → (Fin d → ℕ)) (z : Fin p → ℝ) :
     Continuous (fun u => ∑ k, z k * monomial (expo k) u) := by
   exact continuous_finset_sum _ fun k _ =>
@@ -110,27 +112,21 @@ private lemma monomial_coefficients_eq_zero_of_vanishes_on_openCube {d p : ℕ}
   simpa [monomialPolynomial, MvPolynomial.coeff_C_mul, MvPolynomial.coeff_monomial,
     hfs.eq_iff, hexpo.eq_iff] using hcoeff
 
-/-- A linear combination of distinct multivariate monomials that vanishes throughout a cube with
-positive radius must have every coefficient equal to zero. -/
+/-- A linear combination of distinct multivariate monomials that vanishes throughout the interior
+of a cube with positive radius must have every coefficient equal to zero. -/
 theorem monomial_linearIndependent_on_cube {d p : ℕ} {expo : Fin p → (Fin d → ℕ)} {r : ℝ}
     (hr : 0 < r) (hexpo : Function.Injective expo) (z : Fin p → ℝ)
-    (hz : ∀ u, (∀ j, |u j| ≤ r) → (∑ k, z k * monomial (expo k) u) = 0) :
+    (hz : ∀ u, (∀ j, u j ∈ Set.Ioo (-r) r) → (∑ k, z k * monomial (expo k) u) = 0) :
     z = 0 := by
-  apply monomial_coefficients_eq_zero_of_vanishes_on_openCube hr hexpo z
-  intro u hu
-  apply hz u
-  intro j
-  rw [abs_le]
-  exact ⟨(hu j).1.le, (hu j).2.le⟩
+  exact monomial_coefficients_eq_zero_of_vanishes_on_openCube hr hexpo z hz
 
 /-- Evaluating the monomial Gram quadratic form at a coefficient vector equals integrating the
 square of the corresponding monomial combination over the cube. -/
 theorem monomialGram_quadForm {d p : ℕ} (expo : Fin p → (Fin d → ℕ)) {r : ℝ}
-    (hr : 0 < r) (z : Fin p → ℝ) :
+    (z : Fin p → ℝ) :
     ∑ k, ∑ l, z k * monomialGram expo r k l * z l =
       ∫ u in {u : Fin d → ℝ | ∀ j, |u j| ≤ r},
         (∑ k, z k * monomial (expo k) u) ^ 2 := by
-  have _hr := hr
   change (∑ k, ∑ l, z k * (∫ u in cube d r,
       monomial (expo k) u * monomial (expo l) u) * z l) = _
   have hkl (k l : Fin p) : IntegrableOn
@@ -174,13 +170,13 @@ theorem monomialGram_isHermitian {d p : ℕ} (expo : Fin p → (Fin d → ℕ)) 
 
 /-- Every coefficient vector gives a nonnegative quadratic form under the monomial Gram matrix. -/
 theorem monomialGram_posSemidef {d p : ℕ} (expo : Fin p → (Fin d → ℕ)) {r : ℝ}
-    (hr : 0 < r) : (monomialGram expo r).PosSemidef := by
+    : (monomialGram expo r).PosSemidef := by
   apply Matrix.PosSemidef.of_dotProduct_mulVec_nonneg (monomialGram_isHermitian expo r)
   intro z
   rw [show star z = z by ext k; simp]
   simp only [dotProduct, Matrix.mulVec, Finset.mul_sum]
   simp_rw [← mul_assoc]
-  rw [monomialGram_quadForm expo hr z]
+  rw [monomialGram_quadForm expo z]
   exact MeasureTheory.integral_nonneg_of_ae
     (Filter.Eventually.of_forall fun _ => sq_nonneg _)
 
@@ -194,7 +190,7 @@ theorem monomialGram_posDef {d p : ℕ} (expo : Fin p → (Fin d → ℕ)) {r : 
   rw [show star z = z by ext k; simp]
   simp only [dotProduct, Matrix.mulVec, Finset.mul_sum]
   simp_rw [← mul_assoc]
-  rw [monomialGram_quadForm expo hr z]
+  rw [monomialGram_quadForm expo z]
   let f : (Fin d → ℝ) → ℝ := fun u => ∑ k, z k * monomial (expo k) u
   have hfcont : Continuous f := continuous_monomialCombination expo z
   have hfint : IntegrableOn (fun u => (f u) ^ 2) (cube d r) :=
@@ -227,7 +223,8 @@ theorem monomialGram_posDef {d p : ℕ} (expo : Fin p → (Fin d → ℕ)) {r : 
   intro u hu
   exact hpoint (fun j _ => hu j)
 
-private lemma sum_sq_pos {p : ℕ} (z : Fin p → ℝ) (hz : z ≠ 0) :
+/-- The sum of squared coordinates of a nonzero finite real-valued vector is strictly positive. -/
+lemma sum_sq_pos {ι : Type*} [Fintype ι] (z : ι → ℝ) (hz : z ≠ 0) :
     0 < ∑ k, (z k) ^ 2 := by
   have hnonneg : 0 ≤ ∑ k, (z k) ^ 2 := Finset.sum_nonneg fun _ _ => sq_nonneg _
   refine lt_of_le_of_ne hnonneg ?_

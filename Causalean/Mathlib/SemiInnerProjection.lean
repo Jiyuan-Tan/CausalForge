@@ -18,15 +18,16 @@ Candidate for upstreaming to Mathlib.
 import Mathlib.LinearAlgebra.FiniteDimensional.Basic
 import Mathlib.LinearAlgebra.BilinearForm.Basic
 import Mathlib.LinearAlgebra.SesquilinearForm.Basic
+import Mathlib.LinearAlgebra.Basis.VectorSpace
 import Mathlib.LinearAlgebra.Dual.Lemmas
 import Mathlib.Algebra.Module.Projective
 import Mathlib.Data.Real.Basic
 
 /-! # Semidefinite Normal-Equation Maps
 
-This file proves `exists_orthogonalProjection_of_posSemidef`: every subspace of
-a finite-dimensional real vector space admits a linear map into that subspace
-whose residual is orthogonal, with respect to a symmetric positive-semidefinite
+This file proves `exists_orthogonalProjection_of_posSemidef`: every finite-dimensional
+subspace of a vector space over a linearly ordered field admits a linear map into that
+subspace whose residual is orthogonal, with respect to a symmetric positive-semidefinite
 bilinear form, to every vector in the subspace. The result supplies the
 linear-algebra substrate for weighted normal-equation arguments where the inner
 product may be degenerate. -/
@@ -35,25 +36,26 @@ namespace Causalean.Mathlib
 
 open LinearMap
 
-variable {V : Type*} [AddCommGroup V] [Module ℝ V] [FiniteDimensional ℝ V]
+variable {K V : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
+  [AddCommGroup V] [Module K V]
 
-/-- In a finite-dimensional real vector space with a symmetric
-positive-semidefinite bilinear form, every linear subspace admits a linear map
-into the subspace whose residual is orthogonal to all vectors in the subspace.
+/-- In a vector space over a linearly ordered field with a symmetric positive-semidefinite
+bilinear form, every finite-dimensional linear subspace admits a linear map into the
+subspace whose residual is orthogonal to all vectors in the subspace.
 
 The proof views `B` as a map from `H` to `H`'s dual, shows the functional
 `h ↦ B X h` lies in its range by annihilating the kernel, chooses a linear right
 inverse on that range, and composes with the subtype map of `H`. -/
 lemma exists_orthogonalProjection_of_posSemidef
-    (B : LinearMap.BilinForm ℝ V)
+    (B : LinearMap.BilinForm K V)
     (hsymm : ∀ x y, B x y = B y x)
     (hpos : ∀ x, 0 ≤ B x x)
-    (H : Submodule ℝ V) :
-    ∃ P : V →ₗ[ℝ] V,
+    (H : Submodule K V) [FiniteDimensional K H] :
+    ∃ P : V →ₗ[K] V,
       (∀ X, P X ∈ H) ∧ (∀ X, ∀ h ∈ H, B (X - P X) h = 0) := by
   classical
-  let A : H →ₗ[ℝ] Module.Dual ℝ H :=
-    LinearMap.mk₂ ℝ (fun x y : H => B x.1 y.1)
+  let A : H →ₗ[K] Module.Dual K H :=
+    LinearMap.mk₂ K (fun x y : H => B x.1 y.1)
       (by
         intro x y z
         simp)
@@ -66,8 +68,8 @@ lemma exists_orthogonalProjection_of_posSemidef
       (by
         intro a x z
         simp)
-  let L : V →ₗ[ℝ] Module.Dual ℝ H :=
-    LinearMap.mk₂ ℝ (fun (x : V) (y : H) => B x y.1)
+  let L : V →ₗ[K] Module.Dual K H :=
+    LinearMap.mk₂ K (fun (x : V) (y : H) => B x y.1)
       (by
         intro x y z
         simp)
@@ -92,23 +94,25 @@ lemma exists_orthogonalProjection_of_posSemidef
       have hxself : B x.1 x.1 = 0 := by
         have hAx : A x = 0 := by
           simpa [LinearMap.mem_ker] using hx
-        have := congrArg (fun f : Module.Dual ℝ H => f x) hAx
+        have := congrArg (fun f : Module.Dual K H => f x) hAx
         simpa [A] using this
       have hxker : x.1 ∈ LinearMap.ker B := by
         exact (B.apply_apply_same_eq_zero_iff hpos hBsymm).mp hxself
       have hxX : B x.1 X = 0 := by
         have hBx : B x.1 = 0 := by
           simpa [LinearMap.mem_ker] using hxker
-        have := congrArg (fun f : Module.Dual ℝ V => f X) hBx
+        have := congrArg (fun f : Module.Dual K V => f X) hBx
         simpa using this
       simpa [L, hsymm X x.1] using hxX
     rwa [LinearMap.dualAnnihilator_ker_eq_range_flip, hAflip] at hL_ann
-  let Lrange : V →ₗ[ℝ] LinearMap.range A :=
+  let Lrange : V →ₗ[K] LinearMap.range A :=
     L.codRestrict (LinearMap.range A) hL_mem_range
+  letI : Module.Free K (LinearMap.range A) :=
+    Module.Free.of_divisionRing K (LinearMap.range A)
   obtain ⟨S, hS⟩ :=
     A.rangeRestrict.exists_rightInverse_of_surjective
       (LinearMap.range_rangeRestrict A)
-  let PH : V →ₗ[ℝ] H := S.comp Lrange
+  let PH : V →ₗ[K] H := S.comp Lrange
   refine ⟨H.subtype.comp PH, ?_, ?_⟩
   · intro X
     exact (PH X).2
@@ -116,12 +120,12 @@ lemma exists_orthogonalProjection_of_posSemidef
     let hh : H := ⟨h, hH⟩
     have hEq : A (PH X) hh = L X hh := by
       have hRangeEq : A.rangeRestrict (S (Lrange X)) = Lrange X := by
-        exact congrArg (fun f : LinearMap.range A →ₗ[ℝ] LinearMap.range A =>
+        exact congrArg (fun f : LinearMap.range A →ₗ[K] LinearMap.range A =>
           f (Lrange X)) hS
-      have hValEq : (A.rangeRestrict (S (Lrange X)) : Module.Dual ℝ H) =
-          (Lrange X : Module.Dual ℝ H) :=
-        congrArg (fun y : LinearMap.range A => (y : Module.Dual ℝ H)) hRangeEq
-      exact congrArg (fun f : Module.Dual ℝ H => f hh) hValEq
+      have hValEq : (A.rangeRestrict (S (Lrange X)) : Module.Dual K H) =
+          (Lrange X : Module.Dual K H) :=
+        congrArg (fun y : LinearMap.range A => (y : Module.Dual K H)) hRangeEq
+      exact congrArg (fun f : Module.Dual K H => f hh) hValEq
     have hB_eq : B (PH X).1 h = B X h := by
       simpa [A, L, PH, hh] using hEq
     simp [hB_eq]

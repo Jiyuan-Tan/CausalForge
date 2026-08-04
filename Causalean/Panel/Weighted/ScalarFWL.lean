@@ -74,7 +74,7 @@ residualized regressor `X̃ = c.tildeX H X` has positive weighted energy, then
 theorem scalar_fwl_of_normalEqs (c : WeightedSupport R)
     (H : Submodule ℝ (R → ℝ)) (X Y : R → ℝ) (β : ℝ) (α : R → ℝ)
     (hα : α ∈ H)
-    (hpos : 0 < c.ip (c.tildeX H X) (c.tildeX H X))
+    (hden : c.ip (c.tildeX H X) (c.tildeX H X) ≠ 0)
     (h_normal_X : c.ip (Y - β • X - α) X = 0)
     (h_normal_H : ∀ h ∈ H, c.ip (Y - β • X - α) h = 0) :
     β = c.ip (c.tildeX H X) Y / c.ip (c.tildeX H X) (c.tildeX H X) := by
@@ -112,7 +112,7 @@ theorem scalar_fwl_of_normalEqs (c : WeightedSupport R)
     rw [hneg_smul, hneg_α, hα_zero, hXt_X]; ring
   -- Combine: 0 = ⟨Xt, Y⟩ − β⟨Xt, Xt⟩.
   rw [hexpand] at hXt_R₀
-  have hne : c.ip Xt Xt ≠ 0 := hpos.ne'
+  have hne : c.ip Xt Xt ≠ 0 := by simpa [hXt] using hden
   field_simp at hXt_R₀ ⊢
   linarith [hXt_R₀]
 

@@ -69,7 +69,7 @@ CausalSmith/
 | Lean 4 | as pinned in `lean-toolchain` | Build CausalSmith + Causalean |
 | Lake | bundled with Lean | Build orchestration |
 | Node.js | `20.20.2` (via nvm) | TypeScript pipeline runtime — the default shell is often older and silently fails |
-| Codex CLI | latest | Subagent dispatch for D-1 / D0 / F2 / F3 / F4 / F5 |
+| Codex CLI | latest | Pipeline worker/reviewer dispatch for D-1 / D0 / F2 / F3 / F4 / F5 |
 
 ```bash
 source ~/.nvm/nvm.sh && nvm use 20.20.2
@@ -102,8 +102,9 @@ Machine-specific paths live in **one** place: `tools/config/local.json` (gitigno
 | `leanLspMcpBinary` | `CAUSALSMITH_LEAN_LSP_MCP` | The `lean-lsp-mcp` server binary (PATH name or absolute). |
 | `leanProjectPath` | `CAUSALSMITH_LEAN_PROJECT_PATH` | Optional override for lean-lsp `--lean-project-path`; `null` ⇒ the run's repoRoot (the lake project that transitively sees Causalean). |
 | `mcpTimeoutMs` | `MCP_TIMEOUT` | Per-call timeout for the slow-cold-starting lean-lsp server (default 120000). |
+| `codexSandbox` | `CAUSALSMITH_CODEX_SANDBOX` | Codex local-tool sandbox. Default `workspace-write`. `danger-full-access` is a persistent machine-local grant of unrestricted filesystem/network tools to every CausalSmith Codex worker; use it only when that is explicitly intended or an outer environment supplies confinement. |
 
-**lean-lsp MCP wiring.** Both worker backends can query Lean live, but MCP must be configured explicitly (it is NOT auto-enabled): the `claude` worker gets a generated `--mcp-config` (F1 feasibility gate, F2 scaffold verify); the `codex` worker gets inline `-c mcp_servers.lean-lsp.*` flags when a stage passes `leanLsp: true` (F3 proof-fill). On the codex side, the network-off sandbox blocks the *search* tools (`lean_leansearch`/`lean_loogle`/`lean_leanfinder`) but the local tools (`lean_diagnostic_messages`/`lean_goal`/`lean_multi_attempt`/`lean_local_search`) work.
+**lean-lsp MCP wiring.** Both worker backends can query Lean live, but MCP must be configured explicitly (it is NOT auto-enabled): the `claude` worker gets a generated `--mcp-config` (F1 feasibility gate, F2 scaffold verify); the `codex` worker gets inline `-c mcp_servers.lean-lsp.*` flags when a stage passes `leanLsp: true` (F3 proof-fill). In the default network-off `workspace-write` mode, the *search* tools (`lean_leansearch`/`lean_loogle`/`lean_leanfinder`) are blocked but the local tools (`lean_diagnostic_messages`/`lean_goal`/`lean_multi_attempt`/`lean_local_search`) work.
 
 ## Running the `causalsmith research` pipeline
 

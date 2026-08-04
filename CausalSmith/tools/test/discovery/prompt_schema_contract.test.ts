@@ -17,6 +17,10 @@ const PROMPT_URL = new URL(
   "../../src/discovery/prompts/D-1/stage_neg1_2_proto_core.txt",
   import.meta.url,
 );
+const D0_SOLVE_PROMPT_URL = new URL(
+  "../../src/discovery/prompts/D0/stage0_solve.txt",
+  import.meta.url,
+);
 
 /** Top-level fields the prompt mandates: the leading run of backticked
  * identifiers in each `- \`field\`` bullet (nested row-field mentions later in
@@ -74,5 +78,16 @@ describe("D-1 proto-core prompt ↔ CoreSchema persistence contract", () => {
     const handoffKeys = new Set<string>(CORE_HANDOFF_KEYS);
     const stale = [...EXPECTED_DROPS].filter((f) => schemaKeys.has(f) || handoffKeys.has(f));
     expect(stale).toEqual([]);
+  });
+});
+
+describe("D0 solve carried-node prompt contract", () => {
+  it("consistently permits citation without re-emission for established nodes", async () => {
+    const prompt = await readFile(D0_SOLVE_PROMPT_URL, "utf8");
+    expect(prompt).toContain("Cite ALREADY-ESTABLISHED nodes for reuse and do NOT re-emit them");
+    expect(prompt).toContain("a frozen/ALREADY-ESTABLISHED node");
+    expect(prompt).not.toContain(
+      "a helper that is not an emitted `added_lemmas` node or a frozen node THIS round DOES NOT EXIST",
+    );
   });
 });

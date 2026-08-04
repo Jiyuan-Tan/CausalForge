@@ -30,7 +30,9 @@ private lemma weightedVec_norm (β t : Fin 3 → ℝ) (hβ : ∀ i, 0 ≤ β i) 
   nlinarith [Real.sq_sqrt (hβ 0), Real.sq_sqrt (hβ 1), Real.sq_sqrt (hβ 2),
     sq_abs (t 0), sq_abs (t 1), sq_abs (t 2)]
 
-private lemma weighted_sqrt_segment_le (β : Fin 3 → ℝ) (hβ : ∀ i, 0 ≤ β i)
+/-- The weighted Euclidean root-mean-square of a convex combination is no larger than
+the same convex combination of the two weighted root-mean-squares. -/
+lemma weighted_sqrt_segment_le (β : Fin 3 → ℝ) (hβ : ∀ i, 0 ≤ β i)
     (u v : Fin 3 → ℝ) (θ : ℝ) (hθ0 : 0 ≤ θ) (hθ1 : θ ≤ 1) :
     Real.sqrt (∑ i, β i * ((1 - θ) * u i + θ * v i) ^ 2)
       ≤ (1 - θ) * Real.sqrt (∑ i, β i * u i ^ 2) +
@@ -54,7 +56,9 @@ private lemma weighted_sqrt_segment_le (β : Fin 3 → ℝ) (hβ : ∀ i, 0 ≤ 
         rw [norm_smul, norm_smul, weightedVec_norm β u hβ, weightedVec_norm β v hβ]
         simp [Real.norm_eq_abs, abs_of_nonneg hθc, abs_of_nonneg hθ0]
 
-private lemma eq_truncSegPoint_of_simplex_face (M d : ℝ) (x : Fin 3 → ℝ)
+/-- A three-coordinate vector with total mass M whose last two coordinates sum to d is the
+corresponding point on the truncation segment, indexed by its second coordinate. -/
+lemma eq_truncSegPoint_of_simplex_face (M d : ℝ) (x : Fin 3 → ℝ)
     (hx : InSimplex M x) (hxd : x 1 + x 2 = d) :
     x = truncSegPoint M d (x 1) := by
   funext i
@@ -108,7 +112,7 @@ is dominated by some face point `truncSegPoint M d σ` with `σ ∈ [0,d]`:
 at a point whose objective is `≤ wsObj t` by convexity, since `wsObj t_rel ≤
 wsObj t`.) -/
 lemma truncSeg_reduction (M d kappa : ℝ) (α β : Fin 3 → ℝ)
-    (hd0 : 0 ≤ d) (hdM : d ≤ M) (hβ : ∀ i, 0 ≤ β i) (hk : 0 ≤ kappa)
+    (hβ : ∀ i, 0 ≤ β i) (hk : 0 ≤ kappa)
     (t_rel : Fin 3 → ℝ) (hrel : InSimplex M t_rel)
     (hmin : ∀ s, InSimplex M s → wsObj α β kappa t_rel ≤ wsObj α β kappa s)
     (hinf : t_rel 1 + t_rel 2 < d)
@@ -118,7 +122,6 @@ lemma truncSeg_reduction (M d kappa : ℝ) (α β : Fin 3 → ℝ)
   set S : ℝ := t 1 + t 2
   set P : ℝ := t_rel 1 + t_rel 2
   have hS_ge : d ≤ S := by
-    have _ : 0 ≤ M := by linarith [hd0, hdM]
     simpa [S] using ht.2
   have hP_lt_d : P < d := by simpa [P] using hinf
   rcases eq_or_lt_of_le hS_ge with hS_eq | hd_lt_S

@@ -8,42 +8,15 @@ namespace CausalSmith.Stat.DpCateMinimax
 open MeasureTheory ProbabilityTheory
 open scoped ENNReal
 
-lemma measurableSet_supBall {d : ℕ} (x0 : Fin d → ℝ) (h : ℝ) :
-    MeasurableSet (supBall x0 h) := by
-  rw [show supBall x0 h = Set.Icc (fun i => x0 i - h) (fun i => x0 i + h) by
-    ext x
-    simp only [supBall, Set.mem_setOf_eq, Set.mem_Icc, Pi.le_def]
-    constructor
-    · intro hx
-      constructor <;> intro i
-      · linarith [(abs_le.mp (hx i)).1]
-      · linarith [(abs_le.mp (hx i)).2]
-    · rintro ⟨hxlo, hxhi⟩ i
-      exact abs_le.mpr ⟨by linarith [hxlo i], by linarith [hxhi i]⟩]
-  exact measurableSet_Icc
-
-lemma volume_supBall {d : ℕ} (x0 : Fin d → ℝ) {h : ℝ} (hh : 0 ≤ h) :
-    volume (supBall x0 h) = ENNReal.ofReal (2 * h) ^ d := by
-  rw [show supBall x0 h = Set.Icc (fun i => x0 i - h) (fun i => x0 i + h) by
-    ext x
-    simp only [supBall, Set.mem_setOf_eq, Set.mem_Icc, Pi.le_def]
-    constructor
-    · intro hx
-      exact ⟨fun i => by linarith [(abs_le.mp (hx i)).1],
-        fun i => by linarith [(abs_le.mp (hx i)).2]⟩
-    · rintro ⟨hxlo, hxhi⟩ i
-      exact abs_le.mpr ⟨by linarith [hxlo i], by linarith [hxhi i]⟩,
-    Real.volume_Icc_pi]
-  simp_rw [show ∀ i : Fin d, x0 i + h - (x0 i - h) = 2 * h by
-    intro i; ring]
-  simp [Finset.prod_const]
+-- `measurableSet_supBall` / `volume_supBall` now live in Causalean
+-- (`Causalean.Stat.Nonparametric`); call sites use them directly.
 
 lemma localDensity_PX_supBall_le {d : ℕ} (Q : CateLaw d) (f0 f1 r0 h : ℝ)
     (x0 : Fin d → ℝ) (hQ : LocalDensity Q f0 f1 r0 x0)
     (hQdens : PxIsXDensity Q) (hQmarg : PXIsXMarginal Q)
     (hf1 : 0 ≤ f1) (hh : 0 ≤ h) (hhr : h ≤ r0) :
     Q.PX (supBall x0 h) ≤ ENNReal.ofReal f1 * ENNReal.ofReal (2 * h) ^ d := by
-  rw [hQmarg, hQdens, withDensity_apply _ (measurableSet_supBall x0 h)]
+  rw [hQmarg, hQdens, withDensity_apply _ (Causalean.Stat.Nonparametric.measurableSet_supBall x0 h)]
   calc
     ∫⁻ x in supBall x0 h, ENNReal.ofReal (Q.px x) ∂volume.restrict (cube d)
         ≤ ∫⁻ _x in supBall x0 h, ENNReal.ofReal f1 ∂volume.restrict (cube d) := by
@@ -58,7 +31,7 @@ lemma localDensity_PX_supBall_le {d : ℕ} (Q : CateLaw d) (f0 f1 r0 h : ℝ)
       rw [setLIntegral_const]
       gcongr
       exact Measure.restrict_le_self
-    _ = _ := by rw [volume_supBall x0 hh]
+    _ = _ := by rw [Causalean.Stat.Nonparametric.volume_supBall x0 h]
 
 lemma localized_bump_kl_single_le {d : ℕ}
     (Q : CateLaw d) (e0 f0 f1 r0 gamma cB h : ℝ) (x0 : Fin d → ℝ)
@@ -150,11 +123,12 @@ lemma localized_bump_kl_single_le {d : ℕ}
           lintegral_mono hpoint
         _ = ENNReal.ofReal C *
             ((volume.restrict (cube d)).withDensity fun x => ENNReal.ofReal (Q.px x)) S := by
-          rw [lintegral_indicator (measurableSet_supBall x0 h), lintegral_const]
+          rw [lintegral_indicator
+              (Causalean.Stat.Nonparametric.measurableSet_supBall x0 h), lintegral_const]
           rw [Measure.restrict_apply MeasurableSet.univ, Set.univ_inter]
         _ ≤ ENNReal.ofReal C * (ENNReal.ofReal f1 * volume S) := by
           gcongr
-          rw [withDensity_apply _ (measurableSet_supBall x0 h)]
+          rw [withDensity_apply _ (Causalean.Stat.Nonparametric.measurableSet_supBall x0 h)]
           calc
             ∫⁻ x in S, ENNReal.ofReal (Q.px x) ∂volume.restrict (cube d)
                 ≤ ∫⁻ _x in S, ENNReal.ofReal f1 ∂volume.restrict (cube d) := by
@@ -173,7 +147,7 @@ lemma localized_bump_kl_single_le {d : ℕ}
               gcongr
               exact Measure.restrict_le_self
         _ = ENNReal.ofReal (C * f1) * ENNReal.ofReal (2 * h) ^ d := by
-          rw [volume_supBall x0 hh.le, ENNReal.ofReal_mul hC]
+          rw [Causalean.Stat.Nonparametric.volume_supBall x0 h, ENNReal.ofReal_mul hC]
           ring
         _ = _ := by simp [C]
 

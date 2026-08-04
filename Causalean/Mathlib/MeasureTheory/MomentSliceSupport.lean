@@ -52,7 +52,8 @@ noncomputable section
 
 /-- The discrete probability-measure builder: `∑_{x ∈ T} w x · δ_x`, the weighted sum of
 Dirac masses at the points of `T`. -/
-noncomputable def discreteMeasure (T : Finset ℝ) (w : ℝ → ℝ) : Measure ℝ :=
+noncomputable def discreteMeasure {α : Type*} [MeasurableSpace α]
+    (T : Finset α) (w : α → ℝ) : Measure α :=
   ∑ x ∈ T, ENNReal.ofReal (w x) • Measure.dirac x
 
 /-- The moment slice: probability measures supported on `[a,b]` with mean `0` and second
@@ -96,21 +97,23 @@ theorem exists_moment_perturbation {T : Finset ℝ} (hT : 3 < T.card) :
 
 /-! ### Measure-level computations -/
 
-/-- A discrete measure whose atoms all lie in `[a,b]` gives zero mass to the
-complement of `[a,b]`. -/
-theorem discreteMeasure_apply_compl_Icc {T : Finset ℝ} {w : ℝ → ℝ} {a b : ℝ}
-    (hTab : ∀ x ∈ T, x ∈ Set.Icc a b) :
-    discreteMeasure T w (Set.Icc a b)ᶜ = 0 := by
+/-- A discrete measure whose atoms all lie in a set gives zero mass to that set's
+complement. -/
+theorem discreteMeasure_apply_compl_of_subset {α : Type*} [MeasurableSpace α]
+    [MeasurableSingletonClass α] {T : Finset α} {w : α → ℝ} {K : Set α}
+    (hTK : ∀ x ∈ T, x ∈ K) :
+    discreteMeasure T w Kᶜ = 0 := by
   rw [discreteMeasure, Measure.finset_sum_apply]
   apply Finset.sum_eq_zero
   intro x hx
   rw [Measure.smul_apply, Measure.dirac_apply, smul_eq_mul]
-  have : x ∉ (Set.Icc a b)ᶜ := by simp [hTab x hx]
+  have : x ∉ Kᶜ := by simp [hTK x hx]
   simp [this]
 
 /-- A finite discrete measure is a probability measure when all atom weights
 are nonnegative and their sum is one. -/
-theorem isProbabilityMeasure_discreteMeasure {T : Finset ℝ} {w : ℝ → ℝ}
+theorem isProbabilityMeasure_discreteMeasure {α : Type*} [MeasurableSpace α]
+    {T : Finset α} {w : α → ℝ}
     (hw : ∀ x ∈ T, 0 ≤ w x) (hsum : ∑ x ∈ T, w x = 1) :
     IsProbabilityMeasure (discreteMeasure T w) := by
   constructor
@@ -120,21 +123,26 @@ theorem isProbabilityMeasure_discreteMeasure {T : Finset ℝ} {w : ℝ → ℝ}
   rw [Finset.sum_congr rfl this, ← ENNReal.ofReal_sum_of_nonneg hw, hsum, ENNReal.ofReal_one]
 
 /-- Integral against a discrete measure is the weighted sum of the integrand over the atoms.
-Every real-valued `f` is integrable here since the measure has finite support. -/
-theorem integral_discreteMeasure {T : Finset ℝ} {w : ℝ → ℝ} (hw : ∀ x ∈ T, 0 ≤ w x)
-    (f : ℝ → ℝ) :
-    ∫ x, f x ∂(discreteMeasure T w) = ∑ x ∈ T, w x * f x := by
+Every function into a real normed vector space is integrable because the measure
+has finite support. -/
+theorem integral_discreteMeasure {α E : Type*} [MeasurableSpace α] [MeasurableSingletonClass α]
+    [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]
+    {T : Finset α} {w : α → ℝ} (hw : ∀ x ∈ T, 0 ≤ w x)
+    (f : α → E) :
+    ∫ x, f x ∂(discreteMeasure T w) = ∑ x ∈ T, w x • f x := by
   rw [discreteMeasure, integral_finset_sum_measure]
   · apply Finset.sum_congr rfl
     intro x hx
-    rw [integral_smul_measure, integral_dirac, ENNReal.toReal_ofReal (hw x hx), smul_eq_mul]
+    rw [integral_smul_measure, integral_dirac, ENNReal.toReal_ofReal (hw x hx)]
   · intro x hx
     exact (integrable_dirac enorm_lt_top).smul_measure (by simp)
 
 /-- The mass assigned by a finite discrete measure to an atom in its support is
 the corresponding atom weight, coerced to `ℝ≥0∞`. -/
-theorem discreteMeasure_singleton {T : Finset ℝ} {w : ℝ → ℝ} {x₀ : ℝ} (hx₀ : x₀ ∈ T) :
+theorem discreteMeasure_singleton {α : Type*} [MeasurableSpace α] [MeasurableSingletonClass α]
+    {T : Finset α} {w : α → ℝ} {x₀ : α} (hx₀ : x₀ ∈ T) :
     discreteMeasure T w {x₀} = ENNReal.ofReal (w x₀) := by
+  classical
   rw [discreteMeasure, Measure.finset_sum_apply]
   have : ∀ x ∈ T, (ENNReal.ofReal (w x) • Measure.dirac x) {x₀}
       = if x = x₀ then ENNReal.ofReal (w x) else 0 := by
@@ -146,7 +154,8 @@ theorem discreteMeasure_singleton {T : Finset ℝ} {w : ℝ → ℝ} {x₀ : ℝ
 
 /-- A discrete measure whose atom weights are the pointwise average of two nonnegative
 weightings is the midpoint of the two corresponding discrete measures. -/
-theorem discreteMeasure_midpoint {T : Finset ℝ} {w wp wm : ℝ → ℝ}
+theorem discreteMeasure_midpoint {α : Type*} [MeasurableSpace α]
+    {T : Finset α} {w wp wm : α → ℝ}
     (hp : ∀ x ∈ T, 0 ≤ wp x) (hm : ∀ x ∈ T, 0 ≤ wm x)
     (hmid : ∀ x ∈ T, w x = (1 / 2) * wp x + (1 / 2) * wm x) :
     discreteMeasure T w
@@ -178,9 +187,11 @@ theorem card_le_three_of_isExtremePoint {a b s : ℝ} {T : Finset ℝ} {w : ℝ 
   have hwnn : ∀ x ∈ T, 0 ≤ w x := fun x hx => (hpos x hx).le
   obtain ⟨hμprob, _, hμmean, hμ2⟩ := hext.1
   have hmean : ∑ x ∈ T, w x * x = 0 := by
-    rw [← integral_discreteMeasure hwnn (fun x => x)]; exact hμmean
+    simpa only [smul_eq_mul] using
+      (integral_discreteMeasure hwnn (fun x => x)).symm.trans hμmean
   have hsec : ∑ x ∈ T, w x * x ^ 2 = s := by
-    rw [← integral_discreteMeasure hwnn (fun x => x ^ 2)]; exact hμ2
+    simpa only [smul_eq_mul] using
+      (integral_discreteMeasure hwnn (fun x => x ^ 2)).symm.trans hμ2
   have huniv : (discreteMeasure T w) Set.univ = ENNReal.ofReal (∑ x ∈ T, w x) := by
     rw [discreteMeasure, Measure.finset_sum_apply, ENNReal.ofReal_sum_of_nonneg hwnn]
     apply Finset.sum_congr rfl; intro x hx; rw [Measure.smul_apply, smul_eq_mul]; simp
@@ -228,13 +239,15 @@ theorem card_le_three_of_isExtremePoint {a b s : ℝ} {T : Finset ℝ} {w : ℝ 
     rw [show (∑ x ∈ T, ε * δ x * x ^ 2) = ε * ∑ x ∈ T, δ x * x ^ 2 by rw [Finset.mul_sum]; ring_nf,
       hδ2, mul_zero, sub_zero]
   have hmemp : discreteMeasure T wp ∈ MomentSlice a b s :=
-    ⟨isProbabilityMeasure_discreteMeasure hwpnn hsump, discreteMeasure_apply_compl_Icc hTab,
-      by rw [integral_discreteMeasure hwpnn (fun x => x)]; exact hmeanp,
-      by rw [integral_discreteMeasure hwpnn (fun x => x ^ 2)]; exact hsecp⟩
+    ⟨isProbabilityMeasure_discreteMeasure hwpnn hsump,
+      discreteMeasure_apply_compl_of_subset (K := Set.Icc a b) hTab,
+      by rw [integral_discreteMeasure hwpnn (fun x => x)]; simpa only [smul_eq_mul] using hmeanp,
+      by rw [integral_discreteMeasure hwpnn (fun x => x ^ 2)]; simpa only [smul_eq_mul] using hsecp⟩
   have hmemm : discreteMeasure T wm ∈ MomentSlice a b s :=
-    ⟨isProbabilityMeasure_discreteMeasure hwmnn hsumm, discreteMeasure_apply_compl_Icc hTab,
-      by rw [integral_discreteMeasure hwmnn (fun x => x)]; exact hmeanm,
-      by rw [integral_discreteMeasure hwmnn (fun x => x ^ 2)]; exact hsecm⟩
+    ⟨isProbabilityMeasure_discreteMeasure hwmnn hsumm,
+      discreteMeasure_apply_compl_of_subset (K := Set.Icc a b) hTab,
+      by rw [integral_discreteMeasure hwmnn (fun x => x)]; simpa only [smul_eq_mul] using hmeanm,
+      by rw [integral_discreteMeasure hwmnn (fun x => x ^ 2)]; simpa only [smul_eq_mul] using hsecm⟩
   have hmid : ∀ x ∈ T, w x = (1 / 2) * wp x + (1 / 2) * wm x := by
     intro x hx; simp only [hwp, hwm]; ring
   have hmideq := discreteMeasure_midpoint hwpnn hwmnn hmid

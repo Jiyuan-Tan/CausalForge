@@ -298,7 +298,6 @@ export const stateSchema = z
         })
         .optional(),
       stage0_too_many_conjectures: z.string().optional(),
-      stage0_stitch_invariant_violated: z.string().optional(),
     }).passthrough(),
     proposed_from: z
       .object({
@@ -347,6 +346,9 @@ export const stateSchema = z
             next_angle: z.number().int().nonnegative().optional(),
           })
           .optional(),
+        last_draft_version: z.number().int().nonnegative().optional(),
+        // Legacy input only; loadState converts this payload to the compact
+        // version marker and removes it before returning runtime state.
         last_draft_handoff: z.string().optional(),
         last_draft_status: z
           .enum(["completed", "needs-pivot", "invalid-draft", "env-failure"])
@@ -441,6 +443,20 @@ export async function loadState(
 ): Promise<StateJson> {
   const file = statePath(repoRoot, qid, specialization);
   const parsed = stateSchema.parse(JSON.parse(await readFile(file, "utf8")));
+  const proposal = parsed.proposed_from;
+  if (proposal) {
+    // One-time in-memory migration from the retired serialized handoff payload.
+    // Its content was never consumed; nonempty meant only "the current draft is
+    // fresh". Preserve exactly that bit as the authored version number.
+    if (
+      proposal.last_draft_version === undefined &&
+      typeof proposal.last_draft_handoff === "string" &&
+      proposal.last_draft_handoff.length > 0
+    ) {
+      proposal.last_draft_version = proposal.current_version ?? 0;
+    }
+    delete proposal.last_draft_handoff;
+  }
   assertLeanSubdirInvariant(qid, parsed);
   return parsed;
 }

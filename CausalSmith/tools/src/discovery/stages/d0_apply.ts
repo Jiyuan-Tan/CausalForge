@@ -8,10 +8,12 @@
 // this module just executes an already-decided set of changes.
 import { existsSync } from "node:fs";
 import { readFile, writeFile, rm, readdir, rename } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { artifactPath, statePath } from "../../paths.js";
 import { loadState, saveState } from "../../state.js";
 import type { PipelineContext } from "../../types.js";
+import { assertMandateBasis, coreEditOperationKey, resolveRequiredCoreEditMandates } from "../solve/mandates.js";
 import { protoCoreJsonPath } from "./neg1_2_author.js";
 import { coreJsonPath } from "./d0_core.js";
 import {
@@ -19,6 +21,8 @@ import {
   appendEscalationLog,
   loadWorkingState,
   memberValid,
+  proposalRevision,
+  readEscalationLog,
   saveWorkingState,
   snapshotMember,
   type EscalationLogEntry,
@@ -34,16 +38,31 @@ import {
   type ComparatorPromise,
 } from "../core/schema.js";
 import { archiveProofs, proofBytesInRoundFile, type ProofToArchive } from "../proof_archive.js";
+import { statementRevision } from "../core/revision.js";
+import { wiredSnapshot } from "../working_writer.js";
+import { companionPathFor } from "../solve/tex_companion.js";
 import { proofContentClosureIntersects, rebuildAssumptionUsedBy } from "../core/dependencies.js";
 import { normalizeSymbol } from "../core/preflight.js";
 import {
   assertNoDecodedControlChars,
+  assertSealableLatexPayload,
   normalizeRawModelJson,
   repairCoreLatexSerialization,
+  repairLatexStringsDeep,
 } from "../core/latex_serialization.js";
+import { writeJsonAtomic } from "../../shared/json_atomic.js";
 import { extractNodeRefs } from "../core/node_ids.js";
+import { truncateTexSafe } from "../../shared/tex_text.js";
 import { findAuthoredNodeReferences, type AuthoredNodeReference } from "../core/text_references.js";
 import { topologicallyOrderSymbols } from "../core/symbol_order.js";
+import { topologicallyOrderDefinitions } from "../core/definition_order.js";
+import { readTypedCore } from "../core/core_io.js";
+
+/** Statements added during D0 are durable in the working cursor but absent from the
+ * frozen proto.  Reverse-dependency repair must see them as direct consumers. */
+function carriedStatements(working: WorkingState | null): CoreStatement[] {
+  return Object.values(working?.solved ?? {}).flatMap((record) => record.node ? [record.node] : []);
+}
 
 export interface RawChange {
   id: string;
@@ -80,12 +99,18 @@ export type RawCoreEdit =
       proposed: Omit<CoreStatement, "proof_tex"> & { partial_result?: string };
       reason?: string;
       direction: "correct";
+      /** Phase 2: revision stamp of the view this edit was authored against
+       *  (see core/revision.ts). Optional — absent on old artifacts, which use
+       *  the byte-echo fallback. */
+      based_on_revision?: string;
     }
   | { kind: "statement-delete"; id: string; replacement_id?: string; reason?: string; direction: "delete-obsolete" }
   | { kind: "definition-add"; id: string; proposed: CoreDefinition; reason?: string; direction: "correct" }
   | { kind: "definition-replace"; id: string; proposed: CoreDefinition; reason?: string; direction: "correct" }
   | { kind: "definition-delete"; id: string; reason?: string; direction: "delete-obsolete" }
   | { kind: "bibliography-replace"; key: string; proposed: { key: string; citation?: string }; reason?: string; direction: "correct" }
+  | { kind: "target-estimand-replace"; id: "metadata:target-estimand"; current: string; proposed: string; reason?: string; direction: "correct" }
+  | { kind: "estimand-functional-replace"; id: "metadata:estimand-functional"; current: string; proposed: string; reason?: string; direction: "correct" }
   | { kind: "comparator-promise-table-replace"; id: "metadata:comparator-promise-table"; proposed: ComparatorPromise[]; reason?: string; direction: "correct" }
   | { kind: "symbol-add"; name: string; proposed: CoreSymbol; reason?: string; direction: "correct" }
   | { kind: "symbol-replace"; name: string; proposed: CoreSymbol; reason?: string; direction: "correct" }
@@ -170,6 +195,41 @@ export function declarationNarrowed(
   return prior.free_symbols.some((name) => !after.has(normalizeSymbol(name)));
 }
 
+/** Phase 2 (reference-by-revision-hash): when the edit carries
+ *  `based_on_revision`, match it against the revisions of the LEGAL VIEWS of the
+ *  target node — one comparison replaces the entire echo view-selection
+ *  (`describeEchoMismatch` / `describePairedClaimEchoMismatch` remain as the
+ *  fallback for edits without the field). Views are supplied by the caller; the
+ *  open-target form (`openSolveTarget`) of each is added here, since a dispatch
+ *  target is stamped in that form. A `kind` echo is still enforced against the
+ *  matched view: the compose spreads `proposed`, so a wrong kind would land.
+ *  Unknown hash → mismatch string with the hash (the caller skips fail-safe). */
+export function describeRevisionMismatch(
+  basedOnRevision: string,
+  proposed: { id: string; kind?: string },
+  views: Array<{ id: string; kind?: string; statement?: string; status?: string; source?: unknown; depends_on?: string[] }>,
+  editId: string,
+): string | null {
+  if (proposed.id !== editId) return `payload id '${proposed.id}' does not match the edit target '${editId}'`;
+  // Inline open-target form (same rule as solve/context.ts `openSolveTarget`,
+  // which cannot be imported here without a module cycle): status re-opened,
+  // `source` dropped — the shape a dispatch target is stamped in.
+  const candidates = views.flatMap((view) => [
+    view,
+    { ...view, status: "to-prove", source: undefined },
+  ]);
+  const matched = candidates.find((view) => statementRevision(view) === basedOnRevision);
+  if (matched === undefined) {
+    return `based_on_revision ${basedOnRevision} matches no current view of ${editId} — ` +
+      "the node changed since this edit was authored (stale edit; re-author against the current packet)";
+  }
+  if (proposed.kind !== matched.kind) {
+    return `kind must echo the node's current value '${matched.kind}', got '${proposed.kind}' ` +
+      "(this channel is dependency/metadata-only)";
+  }
+  return null;
+}
+
 export function describeEchoMismatch(
   proposed: { id: string; kind?: string; statement?: string; status?: string },
   current: { id: string; kind?: string; statement?: string; status?: string },
@@ -190,6 +250,29 @@ export function describeEchoMismatch(
   return null;
 }
 
+/** Validate the structural half of a selected same-id claim+metadata composition.
+ * The claim channel owns the resulting statement/status. A solver may serialize
+ * the structural half against either the immutable pre-bundle node or the already
+ * assembled proposed-claim node, but it may not mix fields from those two views. */
+function describePairedClaimEchoMismatch(
+  proposed: { id: string; kind?: string; statement?: string; status?: string },
+  before: { id: string; kind?: string; statement?: string; status?: string },
+  after: { id: string; kind?: string; statement?: string; status?: string },
+  editId: string,
+): string | null {
+  if (proposed.id !== editId) return `payload id '${proposed.id}' does not match the edit target '${editId}'`;
+  if (proposed.kind !== before.kind || proposed.kind !== after.kind) {
+    return `kind must echo the node's current value '${before.kind}', got '${proposed.kind}' ` +
+      "(this channel is dependency/metadata-only)";
+  }
+  const echoesBefore = proposed.statement === before.statement && proposed.status === before.status;
+  const echoesAfter = proposed.statement === after.statement && proposed.status === after.status;
+  if (!echoesBefore && !echoesAfter) {
+    return "statement/status must together echo either the pre-bundle node or the selected paired claim";
+  }
+  return null;
+}
+
 const CORE_EDIT_KINDS = [
   "assumption-replace",
   "assumption-delete",
@@ -199,6 +282,8 @@ const CORE_EDIT_KINDS = [
   "definition-replace",
   "definition-delete",
   "bibliography-replace",
+  "target-estimand-replace",
+  "estimand-functional-replace",
   "comparator-promise-table-replace",
   "symbol-add",
   "symbol-replace",
@@ -310,8 +395,19 @@ export function parseAssumptionTag(
 ): { standard: { name: string; cite: string } } | { novel: { flag: true; justification: string } } {
   const text = (s ?? "").trim();
   if (/^standard/i.test(text)) {
-    const key = bibKeys.find((k) => text.includes(k));
-    if (key) return { standard: { name: text.replace(/^standard:?\s*/i, "").slice(0, 80) || "standard condition", cite: key } };
+    // Boundary-anchored key match: a bare substring test let a short bibkey
+    // (`Lee`, `Chen`) match inside an unrelated word or TeX and mis-attribute
+    // the citation.
+    const key = bibKeys.find((k) =>
+      new RegExp(`(?<![A-Za-z0-9])${k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![A-Za-z0-9])`).test(text),
+    );
+    if (key) {
+      // PERSISTED field: a hard 80-char cut could land inside `\(...\)` and
+      // seal an unbalanced math delimiter into `standard.name`, failing the
+      // render/seal gates downstream. Back off to a math-safe cut.
+      const name = truncateTexSafe(text.replace(/^standard:?\s*/i, ""), 80);
+      return { standard: { name: name || "standard condition", cite: key } };
+    }
   }
   return { novel: { flag: true, justification: text || "solver-proposed (pending approval)" } };
 }
@@ -371,13 +467,105 @@ export async function clearRoundOutputs(ctx: PipelineContext): Promise<void> {
       // are not swept; and payloads that DID land in hot state are filtered out — the
       // archive records only bytes actually leaving hot state.
       if (/(^|_)solve_.*\.json$/.test(f) || /proposed_proofs\.json$/.test(f)) {
-        const bytes = proofBytesInRoundFile(f, await readFile(path.join(dir, f), "utf8"))
+        // Phase 3: a solve unit's proof bytes may live in its TeX companion
+        // (under discovery/solve_tex/).
+        const companionFile = companionPathFor(path.join(dir, f));
+        const companionText = existsSync(companionFile) ? await readFile(companionFile, "utf8") : undefined;
+        const bytes = proofBytesInRoundFile(f, await readFile(path.join(dir, f), "utf8"), "round-cleared", companionText)
           .filter((p) => !hot.get(p.nodeId)?.has(p.proofTex));
         if (bytes.length > 0) await archiveProofs(dir, bytes);
+        await rm(companionFile, { force: true });
       }
       await rm(path.join(dir, f), { force: true });
     }
   }
+}
+
+interface D0ApplyTransaction {
+  version: 1;
+  transaction_id: string;
+  proto_before: string;
+  proto_after: string;
+  working_after: WorkingState | null;
+  escalation_entry: EscalationLogEntry;
+}
+
+function applyTransactionPath(ctx: PipelineContext): string {
+  return path.join(path.dirname(coreJsonPath(ctx)), "d0_apply_transaction.json");
+}
+
+async function writeTextAtomic(file: string, contents: string): Promise<void> {
+  const temp = `${file}.tmp-${process.pid}-${Date.now()}`;
+  try {
+    await writeFile(temp, contents, "utf8");
+    await rename(temp, file);
+  } finally {
+    await rm(temp, { force: true });
+  }
+}
+
+/** Validation prefix of `recoverPendingApply`, exported so the replay harness grades a
+ * pending transaction by EXACTLY the standard recovery applies — one validator, no
+ * drift. Throws on the first violation. The live proto is read LAZILY (only after the
+ * transaction's own shape and post-image are validated) to preserve recovery's error
+ * precedence: a corrupt transaction reports corruption even when the proto is also
+ * missing or unreadable. */
+export async function validatePendingApplyTransaction(
+  raw: unknown,
+  readLiveProto: () => Promise<string>,
+  txPath: string,
+): Promise<{ tx: D0ApplyTransaction; liveProto: string }> {
+  const tx = raw as D0ApplyTransaction;
+  if (
+    tx.version !== 1 || typeof tx.transaction_id !== "string" ||
+    typeof tx.proto_before !== "string" || typeof tx.proto_after !== "string" ||
+    tx.escalation_entry?.transaction_id !== tx.transaction_id
+  ) throw new Error(`D0 apply transaction is corrupt at ${txPath}`);
+  CoreSchema.parse(JSON.parse(tx.proto_after));
+  const liveProto = await readLiveProto();
+  if (liveProto !== tx.proto_before && liveProto !== tx.proto_after) {
+    throw new Error(
+      `D0 apply transaction ${tx.transaction_id} cannot replay: proto changed outside the transaction`,
+    );
+  }
+  return { tx, liveProto };
+}
+
+/** Finish an interrupted multi-file apply before reading any live basis. The
+ * transaction contains both post-images and an idempotent journal key, so a crash
+ * after either store write is replayable instead of becoming a stale half-apply. */
+export async function recoverPendingApply(ctx: PipelineContext): Promise<EscalationLogEntry["changed"] | null> {
+  const txPath = applyTransactionPath(ctx);
+  if (!existsSync(txPath)) return null;
+  // protoPath is resolved lazily, inside the callback, so the legacy-name probe runs
+  // only after the transaction's shape and post-image validate — HEAD's exact timing.
+  let protoPath = "";
+  const { tx, liveProto } = await validatePendingApplyTransaction(
+    JSON.parse(await readFile(txPath, "utf8")),
+    () => {
+      protoPath = protoCoreJsonPath(ctx);
+      return readFile(protoPath, "utf8");
+    },
+    txPath,
+  );
+
+  const sp = statePath(ctx.repoRoot, ctx.qid, ctx.specialization ?? "v1");
+  if (existsSync(sp)) {
+    const state = await loadState(ctx.repoRoot, ctx.qid, ctx.specialization ?? "v1");
+    if (state.stage_completed !== "-0.5") {
+      state.stage_completed = "-0.5";
+      await saveState(ctx.repoRoot, ctx.qid, ctx.specialization ?? "v1", state);
+    }
+  }
+  if (liveProto !== tx.proto_after) await writeTextAtomic(protoPath, tx.proto_after);
+  const journal = await readEscalationLog(ctx);
+  if (!journal.some((entry) => entry.transaction_id === tx.transaction_id)) {
+    await appendEscalationLog(ctx, tx.escalation_entry);
+  }
+  if (tx.working_after) await saveWorkingState(ctx, tx.working_after);
+  await clearRoundOutputs(ctx);
+  await rm(txPath, { force: true });
+  return tx.escalation_entry.changed;
 }
 
 /** Consume a fully adjudicated, fully rejected proposal bundle without touching the
@@ -393,6 +581,27 @@ export async function discardAllProposedChanges(args: {
   if (!note.trim()) throw new Error("discard-all requires a nonempty adjudication note");
   const working = await loadWorkingState(ctx);
   if (!working) throw new Error("discard-all requires a durable D0 working cursor");
+  const journal = await readEscalationLog(ctx);
+  const pendingMandates = journal
+    .slice(Math.min(working.escalation_entries_consumed ?? 0, journal.length))
+    .flatMap((entry) => entry.required_core_edit_mandates ?? []);
+  const pendingCancellations = journal
+    .slice(Math.min(working.escalation_entries_consumed ?? 0, journal.length))
+    .flatMap((entry) => entry.cancelled_core_edit_mandates ?? []);
+  const proto = await readTypedCore(protoCoreJsonPath(ctx));
+  const liveMandates = resolveRequiredCoreEditMandates({
+    mandates: [...(working.required_core_edit_mandates ?? []), ...pendingMandates],
+    cancellations: pendingCancellations,
+    core: proto,
+    working,
+    proposalRevision: working.proposal_revision,
+  });
+  if (liveMandates.length > 0) {
+    throw new Error(
+      "discard-all refuses a bundle containing independently adjudicated required core edits; " +
+      "apply the complete mandated bundle or record an explicit cancellation directive",
+    );
+  }
   const proposals = await readProposedChanges(ctx);
   const count = proposals.statements.length + proposals.definitions.length +
     proposals.assumptions.length + proposals.coreEdits.length;
@@ -435,6 +644,14 @@ export async function applyProposedChanges(args: {
   checkOnly?: boolean;
 }): Promise<EscalationLogEntry["changed"]> {
   const { ctx, ids = null, note, directive, checkOnly = false } = args;
+  if (checkOnly && existsSync(applyTransactionPath(ctx))) {
+    throw new Error(
+      "D0 apply preview found an interrupted apply transaction; recover it with the apply CLI first, " +
+      "then preview the committed state",
+    );
+  }
+  const recovered = await recoverPendingApply(ctx);
+  if (recovered !== null) return recovered;
   const sel = toSelector(ids);
   const protoPath = protoCoreJsonPath(ctx);
   const protoBytesAtRead = await readFile(protoPath, "utf8");
@@ -466,7 +683,99 @@ export async function applyProposedChanges(args: {
   const statements = dedupe(proposals.statements);
   const definitions = dedupe(proposals.definitions);
   const assumptions = dedupe(proposals.assumptions);
-  const coreEdits = dedupe(proposals.coreEdits);
+  // Apply statement rewrites before statement deletions, and statement deletions before
+  // definition cleanup. Live supersession bundles are emitted with mandates first, but
+  // A→B cannot be validated/applied until B's reviewed dependency/claim cleanup has
+  // landed; likewise carried obstruction lemmas must be deleted before their definitions.
+  const editPriority = (edit: RawCoreEdit): number =>
+    edit.kind === "statement-replace" ? 0 :
+    edit.kind === "statement-delete" ? 1 :
+    edit.kind === "definition-delete" ? 3 : 2;
+  const coreEdits = dedupe(proposals.coreEdits)
+    .map((edit, index) => ({ edit, index }))
+    .sort((a, b) => editPriority(a.edit) - editPriority(b.edit) || a.index - b.index)
+    .map(({ edit }) => edit);
+  const journal = await readEscalationLog(ctx);
+  const pendingMandates = journal
+    .slice(Math.min(working?.escalation_entries_consumed ?? 0, journal.length))
+    .flatMap((entry) => entry.required_core_edit_mandates ?? []);
+  const pendingCancellations = journal
+    .slice(Math.min(working?.escalation_entries_consumed ?? 0, journal.length))
+    .flatMap((entry) => entry.cancelled_core_edit_mandates ?? []);
+  const mandateCandidates = [...(working?.required_core_edit_mandates ?? []), ...pendingMandates];
+  const liveStateFile = statePath(ctx.repoRoot, ctx.qid, ctx.specialization ?? "v1");
+  const liveProposalRevision = mandateCandidates.length > 0 && existsSync(liveStateFile)
+    ? proposalRevision(await loadState(ctx.repoRoot, ctx.qid, ctx.specialization ?? "v1"))
+    : working?.proposal_revision;
+  const mandates = resolveRequiredCoreEditMandates({
+    mandates: mandateCandidates,
+    cancellations: pendingCancellations,
+    core: proto,
+    working,
+    proposalRevision: liveProposalRevision,
+  });
+  for (const mandate of mandates) {
+    assertMandateBasis({
+      mandate,
+      core: proto,
+      working,
+      proposalRevision: liveProposalRevision,
+    });
+    // Compare under the SAME LaTeX repair on both sides. `coreEdits` come from
+    // `working.proposals` (repaired on every load), while `mandate.edit` is in
+    // the opaque set and keeps its sealed bytes — so a payload on which
+    // `repairSerializedLatex` is not a no-op diverged BY REPAIR alone, and the
+    // byte-compare then threw on every apply ("regenerate the packet"
+    // deterministically reproduces it: a run deadlock, not a lost edit).
+    const repairedMandateEdit = structuredClone(mandate.edit) as Record<string, unknown>;
+    repairLatexStringsDeep(repairedMandateEdit);
+    const match = coreEdits.find((edit) => JSON.stringify(edit) === JSON.stringify(repairedMandateEdit));
+    if (!match) {
+      throw new Error(
+        `D0 apply lost or altered exact required core-edit mandate ${mandate.mandate_id}; regenerate the packet`,
+      );
+    }
+    if (sel && !sel.matchesCoreEdit(match)) {
+      throw new Error(
+        `D0 apply selection omits required core-edit mandate ${mandate.mandate_id}; mandated edits apply atomically`,
+      );
+    }
+  }
+  // A replacement endpoint is part of the mandate's frozen semantic snapshot. A
+  // statement-replace may be necessary in the same reviewed bundle to remove A from
+  // B's dependencies before A→B; permit only that stable structural cleanup.
+  for (const mandate of mandates) {
+    if (mandate.edit.kind !== "statement-delete" || mandate.edit.replacement_id === undefined) continue;
+    const replacementId = mandate.edit.replacement_id;
+    const sourceId = mandate.edit.id;
+    const selectedClaimMutation = statements.some((change) =>
+      change.id === replacementId && (!sel || sel.matchesStatement(change.id)));
+    const selectedEndpointEdits = coreEdits.filter((edit) =>
+      coreEditTarget(edit) === replacementId && (!sel || sel.matchesCoreEdit(edit)));
+    const endpointCleanups = selectedEndpointEdits.filter(
+      (edit): edit is Extract<RawCoreEdit, { kind: "statement-replace" }> =>
+        edit.kind === "statement-replace");
+    const cleanupDeps = endpointCleanups[0]?.proposed.depends_on;
+    const endpointCurrentlyDependsOnSource =
+      stmtById.get(replacementId)?.depends_on.includes(sourceId) === true ||
+      working?.solved[replacementId]?.node?.depends_on.includes(sourceId) === true;
+    const cleanupIsStable = cleanupDeps !== undefined &&
+      !cleanupDeps.includes(sourceId) &&
+      !cleanupDeps.includes(replacementId);
+    if (
+      selectedEndpointEdits.some((edit) => edit.kind !== "statement-replace") ||
+      endpointCleanups.length > 1 ||
+      (endpointCleanups.length === 1 && !cleanupIsStable) ||
+      (selectedClaimMutation && endpointCleanups.length !== 1) ||
+      (endpointCurrentlyDependsOnSource && !cleanupIsStable)
+    ) {
+      throw new Error(
+        `D0 required delete ${sourceId}->${replacementId} requires one stable surviving replacement endpoint: ` +
+        `no deletion, and any reviewed claim rewrite or dependency on ${sourceId} must be paired with one ` +
+        `selected statement-replace removing both ${sourceId} and self-dependency ${replacementId}`,
+      );
+    }
+  }
   // A `statement-replace` changes dependencies/metadata but — by its statement/status
   // echo requirement — never the claim text. When the SAME round also emits a proof for that
   // node, the solver wrote that proof against exactly this rewiring, in one unit, in one
@@ -616,6 +925,81 @@ export async function applyProposedChanges(args: {
           `Resolve to one proposal per id before applying. Nothing was mutated.`,
       );
     }
+  }
+  // Validate only newly selected/model-authored publishable fields. Running the
+  // strict TeX gate over the whole proto is not backward-compatible with legacy
+  // formal DSL (for example `E_n\{a,b}`), while scanning raw working state also
+  // misreads non-TeX fingerprints. New solve output is checked at ingest, but a
+  // legacy/recovered proposal can predate that boundary, so apply repeats the
+  // gate over exactly the bytes this transaction may introduce or promote.
+  const selectedStatements = statements.filter((change) => !sel || sel.matchesStatement(change.id));
+  const selectedDefinitions = definitions.filter((change) => !sel || sel.matchesDefinition(change.id));
+  const selectedAssumptions = assumptions.filter((change) => !sel || sel.matchesAssumption(change.id));
+  const selectedCoreEdits = coreEdits.filter((edit) => !sel || sel.matchesCoreEdit(edit));
+  const selectedProofIds = new Set<string>([
+    ...selectedStatements.map((change) => change.id),
+    ...selectedCoreEdits
+      .filter((edit) => edit.kind === "statement-replace")
+      .map((edit) => edit.id),
+  ]);
+  const coreEditPublishablePayload = (edit: RawCoreEdit): unknown => {
+    switch (edit.kind) {
+      case "assumption-replace":
+      case "definition-add":
+      case "definition-replace":
+      case "bibliography-replace":
+      case "symbol-add":
+      case "symbol-replace":
+        return edit.proposed;
+      case "statement-replace": {
+        // `statement` is an echo of durable old content, not a byte introduced
+        // by this metadata/dependency channel. Validate only the authored delta.
+        const { id: _id, kind: _kind, statement: _statement, status: _status, ...metadata } = edit.proposed;
+        return metadata;
+      }
+      case "target-estimand-replace":
+      case "estimand-functional-replace":
+      case "comparator-promise-table-replace":
+        return edit.proposed;
+      default:
+        return undefined;
+    }
+  };
+  // Validate each selected change INDIVIDUALLY so one malformed field names its
+  // own change instead of aborting the transaction with an opaque array index.
+  // Apply stays atomic: any offense still refuses the whole transaction, but the
+  // error enumerates exactly which change ids to exclude on re-selection, so the
+  // other accepted changes apply without a solver round or manual byte hunting.
+  const sealOffenders: string[] = [];
+  const checkSealable = (kind: string, id: string, payload: unknown): void => {
+    try {
+      assertSealableLatexPayload(payload, `${kind} ${id}`);
+    } catch (err) {
+      sealOffenders.push(`${kind} ${id}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  };
+  for (const change of selectedStatements) checkSealable("statement-change", change.id, change.proposed);
+  for (const change of selectedDefinitions) checkSealable("definition-change", change.id, change.proposed);
+  for (const change of selectedAssumptions) {
+    checkSealable("assumption", change.id, {
+      condition: change.condition,
+      ...(change.free_symbols === undefined ? {} : { free_symbols: change.free_symbols }),
+      ...parseAssumptionTag(change.standard_or_novel, bibKeys),
+    });
+  }
+  for (const edit of selectedCoreEdits) {
+    const payload = coreEditPublishablePayload(edit);
+    if (payload !== undefined) checkSealable(`core-edit ${edit.kind}`, coreEditTarget(edit), payload);
+  }
+  for (const proof of (proposals.proofs ?? []).filter((p) => selectedProofIds.has(p.id))) {
+    checkSealable("promotable-proof", proof.id, proof.proof_tex);
+  }
+  if (sealOffenders.length > 0) {
+    throw new Error(
+      `Refusing D0 apply: ${sealOffenders.length} selected change(s) carry unsealable TeX in ` +
+        `${protoPath}. Re-select without these ids (repair them via the mechanical rebuild lane); ` +
+        `nothing was mutated.\n${sealOffenders.join("\n")}`,
+    );
   }
   const originalStatements = new Map(proto.statements.map((s) => [s.id, structuredClone(s)] as const));
   const originalCarriedStatements = new Map(
@@ -775,7 +1159,7 @@ export async function applyProposedChanges(args: {
         // the byte-faithful revalidation receipt lands.
         working.solved[c.id] = {
           proof_tex: "",
-          snapshot: snapshotMember(proto, { ...s, statement: priorFrozenStatement }),
+          snapshot: wiredSnapshot(proto, { ...s, statement: priorFrozenStatement }, ""),
           partial: true,
         };
         workingChanged = true;
@@ -882,7 +1266,7 @@ export async function applyProposedChanges(args: {
       }
       proto.assumptions = proto.assumptions.filter((a) => a.id !== edit.id);
       assIds.delete(edit.id);
-      rebuildAssumptionUsedBy(proto);
+      rebuildAssumptionUsedBy(proto, carriedStatements(working));
       changed.push({
         id: edit.id,
         kind: "assumption",
@@ -901,7 +1285,20 @@ export async function applyProposedChanges(args: {
           skipped.push({ id: edit.id, kind: "statement-replace", why: "no carried node for this id in the working cursor" });
           continue;
         }
-        const mismatch = describeEchoMismatch(edit.proposed, originalNode, edit.id);
+        // Phase 2: a revision-bearing edit pins its view by hash — the legal
+        // views here are the pre-bundle original and (when the same bundle also
+        // rewrote the claim) the selected paired-claim node. Edits without the
+        // field keep the byte-echo fallback unchanged.
+        const mismatch = edit.based_on_revision !== undefined
+          ? describeRevisionMismatch(
+              edit.based_on_revision,
+              edit.proposed,
+              claimChangedIds.has(edit.id) ? [originalNode, carriedNode] : [originalNode],
+              edit.id,
+            )
+          : claimChangedIds.has(edit.id)
+            ? describePairedClaimEchoMismatch(edit.proposed, originalNode, carriedNode, edit.id)
+            : describeEchoMismatch(edit.proposed, originalNode, edit.id);
         if (mismatch) {
           skipped.push({ id: edit.id, kind: "statement-replace", why: mismatch });
           continue;
@@ -933,7 +1330,7 @@ export async function applyProposedChanges(args: {
           // it; three independent auditors caught that in the same pass.
           carried.node = composed;
           carried.proof_tex = composed.proof_tex ?? "";
-          carried.snapshot = snapshotMember(proto, composed);
+          carried.snapshot = wiredSnapshot(proto, composed, composed.proof_tex ?? "");
           delete carried.partial;
         } else if (
           pairedCarried !== undefined &&
@@ -946,7 +1343,7 @@ export async function applyProposedChanges(args: {
           const proved = { ...composed, status: "proved" as const, proof_tex: pairedCarried };
           carried.node = proved;
           carried.proof_tex = pairedCarried;
-          carried.snapshot = snapshotMember(proto, proved);
+          carried.snapshot = wiredSnapshot(proto, proved, pairedCarried);
           delete carried.partial;
         } else if (
           // A metadata-only replacement does not owe a re-proof when the theorem's
@@ -964,7 +1361,7 @@ export async function applyProposedChanges(args: {
           dependencyClosureValid(composed)
         ) {
           carried.node = { ...composed, proof_tex: carried.proof_tex };
-          carried.snapshot = snapshotMember(proto, composed);
+          carried.snapshot = wiredSnapshot(proto, composed, carried.proof_tex ?? "");
           delete carried.partial;
         } else {
           // Reopening a CITED node must drop `source` too: the schema ties
@@ -974,7 +1371,7 @@ export async function applyProposedChanges(args: {
           // preserved the OLD-basis snapshot with the retained bytes; re-snapshotting
           // here against the new claim would erase what the bytes argued and mute the
           // previous-statement dispatch warning.
-          if (!claimChangedIds.has(edit.id)) carried.snapshot = snapshotMember(proto, carried.node);
+          if (!claimChangedIds.has(edit.id)) carried.snapshot = wiredSnapshot(proto, carried.node, carried.proof_tex ?? "");
           carried.partial = true;
         }
         workingChanged = true;
@@ -998,7 +1395,33 @@ export async function applyProposedChanges(args: {
       const currentEchoView = hasSettledOverlay
         ? { ...original, status: "proved" as const, proof_tex: protoRecBefore.proof_tex }
         : original;
-      const protoMismatch = describeEchoMismatch(edit.proposed, currentEchoView, edit.id);
+      // The pre-bundle view the solver actually saw is the ASSEMBLED one — with
+      // any settled working overlay applied — for the paired branch too.
+      // Phase 2: a revision-bearing edit pins the view by hash instead; legal
+      // views are the assembled pre-bundle view, the bare frozen original, and
+      // (paired branch) the post-claim node.
+      const protoMismatch = edit.based_on_revision !== undefined
+        ? describeRevisionMismatch(
+            edit.based_on_revision,
+            edit.proposed,
+            // The settled-overlay variant is included UNCONDITIONALLY (audit
+            // R2P23F1): a same-bundle claim change already marked the working
+            // record partial by the time this loop runs, so `hasSettledOverlay`
+            // can no longer see the settled view the solver was shown. Proof
+            // bytes are not hashed, so the variant is just the status flip —
+            // and a solver can only possess rev(proved) if the display DID
+            // show the node settled.
+            [
+              currentEchoView,
+              original,
+              { ...original, status: "proved" as const },
+              ...(claimChangedIds.has(edit.id) ? [prior] : []),
+            ],
+            edit.id,
+          )
+        : claimChangedIds.has(edit.id)
+          ? describePairedClaimEchoMismatch(edit.proposed, currentEchoView, prior, edit.id)
+          : describeEchoMismatch(edit.proposed, currentEchoView, edit.id);
       if (protoMismatch) {
         skipped.push({ id: edit.id, kind: "statement-replace", why: protoMismatch });
         continue;
@@ -1010,6 +1433,10 @@ export async function applyProposedChanges(args: {
         status: prior.status,
         proof_tex: prior.proof_tex,
       };
+      const proposedDependencies = new Set(composed.depends_on);
+      const structuralBasisNarrowed =
+        original.depends_on.some((dependency) => !proposedDependencies.has(dependency)) ||
+        declarationNarrowed(original, composed);
       const depSet = (deps: string[]): string => [...new Set(deps)].sort().join("\u0000");
       if (
         prior.kind === "openendedquestion" &&
@@ -1036,10 +1463,15 @@ export async function applyProposedChanges(args: {
         });
       } else if (pairedProto !== undefined && protoRec && dependencyClosureValid(composed)) {
         protoRec.proof_tex = pairedProto;
-        protoRec.snapshot = snapshotMember(proto, composed);
+        protoRec.snapshot = wiredSnapshot(proto, composed, pairedProto);
         delete protoRec.partial;
         workingChanged = true;
-      } else if (protoRec && hasSettledOverlay && dependencyClosureValid(composed)) {
+      } else if (
+        protoRec &&
+        hasSettledOverlay &&
+        !structuralBasisNarrowed &&
+        dependencyClosureValid(composed)
+      ) {
         // This is metadata repair, not new proof content. Dependency growth only
         // declares additional settled support; it does not alter the statement or any
         // definition/assumption content the existing proof was checked against. The
@@ -1055,7 +1487,7 @@ export async function applyProposedChanges(args: {
         // silently narrows the proof's staleness basis. A later correction to the dropped
         // definition would then leave `memberValid` true and carry a proof of the OLD
         // object forward as a proof of the new one. Re-snapshot only on growth.
-        const repaired = snapshotMember(proto, composed);
+        const repaired = wiredSnapshot(proto, composed, protoRec.proof_tex ?? "");
         const retainsAll = (prior: Record<string, string>, updated: Record<string, string>): boolean =>
           Object.keys(prior).every((key) => updated[key] !== undefined);
         const priorSnapshot = protoRec.snapshot;
@@ -1074,7 +1506,24 @@ export async function applyProposedChanges(args: {
               "re-snapshotting the un-re-derived proof would drop it from the staleness basis — " +
               "the node keeps its original snapshot and re-derives if that content changes",
           });
+          protoRec.partial = true;
+          workingChanged = true;
         }
+      } else if (structuralBasisNarrowed && working) {
+        // A declaration/dependency shrink narrows the future staleness basis. It is
+        // never metadata-only: preserve the old snapshot and make the settlement
+        // explicitly partial until the node is re-derived/revalidated.
+        if (protoRec) {
+          protoRec.partial = true;
+        } else {
+          working.solved[edit.id] = {
+            proof_tex: original.proof_tex ?? "",
+            snapshot: wiredSnapshot(proto, original, original.proof_tex ?? ""),
+            partial: true,
+          };
+        }
+        if (composed.status === "cited") reopenedCitedIds.push(edit.id);
+        workingChanged = true;
       }
     } else if (edit.kind === "statement-delete") {
       const priorFrozen = proto.statements.find((s) => s.id === edit.id);
@@ -1148,7 +1597,7 @@ export async function applyProposedChanges(args: {
         }
         workingChanged = true;
       }
-      rebuildAssumptionUsedBy(proto);
+      rebuildAssumptionUsedBy(proto, carriedStatements(working));
       changed.push({
         id: edit.id,
         kind: "statement",
@@ -1234,7 +1683,12 @@ export async function applyProposedChanges(args: {
       }
       proto.definitions = proto.definitions.filter((d) => d.id !== edit.id);
       for (const s of proto.statements) s.depends_on = s.depends_on.filter((d) => d !== edit.id);
+      for (const rec of Object.values(working?.solved ?? {})) {
+        if (rec.node) rec.node.depends_on = rec.node.depends_on.filter((d) => d !== edit.id);
+      }
       for (const symbol of proto.symbols) if (symbol.ref === edit.id) delete symbol.ref;
+      rebuildAssumptionUsedBy(proto, carriedStatements(working));
+      if (working) workingChanged = true;
       changed.push({ id: edit.id, kind: "definition", from: JSON.stringify(prior), to: "<deleted>", reason: edit.reason ?? "" });
     } else if (edit.kind === "bibliography-replace") {
       const i = proto.bibliography.findIndex((b) => b.key === edit.key);
@@ -1252,6 +1706,25 @@ export async function applyProposedChanges(args: {
         changed.push({ id: target, kind: "bibliography", from: JSON.stringify(proto.bibliography[i]), to: JSON.stringify(edit.proposed), reason: edit.reason ?? "" });
         proto.bibliography[i] = edit.proposed;
       }
+    } else if (edit.kind === "target-estimand-replace") {
+      // Refuse a blind overwrite: `current` must echo the estimand byte-for-byte. The
+      // estimand is the anchor of what the run committed to deliver, so an edit that did
+      // not see the text it replaces cannot be told apart from silent drift.
+      if (edit.current !== proto.target_estimand) {
+        skipped.push({ id: target, kind: "target-estimand-replace", why: `\`current\` does not echo the core's target_estimand byte-for-byte — re-read it and re-emit` });
+        continue;
+      }
+      changed.push({ id: target, kind: "metadata", from: proto.target_estimand, to: edit.proposed, reason: edit.reason ?? "" });
+      proto.target_estimand = edit.proposed;
+    } else if (edit.kind === "estimand-functional-replace") {
+      // Same echo contract; `""` echoes an absent field.
+      const currentFunctional = proto.estimand_functional ?? "";
+      if (edit.current !== currentFunctional) {
+        skipped.push({ id: target, kind: "estimand-functional-replace", why: `\`current\` does not echo the core's estimand_functional byte-for-byte (use "" if the field is absent) — re-read it and re-emit` });
+        continue;
+      }
+      changed.push({ id: target, kind: "metadata", from: currentFunctional, to: edit.proposed, reason: edit.reason ?? "" });
+      proto.estimand_functional = edit.proposed;
     } else if (edit.kind === "comparator-promise-table-replace") {
       changed.push({
         id: edit.id,
@@ -1296,7 +1769,7 @@ export async function applyProposedChanges(args: {
       proto.symbols = proto.symbols.filter((s) => s.name !== edit.name);
       changed.push({ id: target, kind: "symbol", from: JSON.stringify(prior), to: "<deleted>", reason: edit.reason ?? "" });
     } else {
-      rebuildAssumptionUsedBy(proto);
+      rebuildAssumptionUsedBy(proto, carriedStatements(working));
       changed.push({ id: edit.id, kind: "metadata", from: "stale reverse dependencies", to: "rebuilt direct used_by inverse", reason: edit.reason ?? "" });
     }
   }
@@ -1359,31 +1832,57 @@ export async function applyProposedChanges(args: {
       assumptions.some((a) => unappliedIds.has(a.id)) ||
       coreEdits.some((e) => GLOBAL_EDIT_KINDS.has(e.kind) && unappliedIds.has(coreEditTarget(e)));
     const carriedNodes = Object.values(working.solved).flatMap((r) => (r.node ? [r.node] : []));
-    for (const id of hasUnappliedGlobalInvalidator ? [] : claimChangedIds) {
-      const paired = pairedProofById.get(id);
-      if (!paired?.arguesProposed) continue;
-      const frozen = proto.statements.find((s) => s.id === id);
-      const rec = working.solved[id];
-      const node = frozen ?? rec?.node;
-      if (!node || node.status !== "to-prove") continue;
-      if (proofContentClosureIntersects({
-        core: proto, node, proofText: paired.proofTex, changedIds: unappliedIds, extraStatements: carriedNodes,
-      })) continue;
-      if (!dependencyClosureValid(node)) continue;
-      node.status = "proved";
-      node.proof_tex = paired.proofTex;
-      const snapshot = snapshotMember(proto, node);
-      if (rec) {
-        if (rec.node) rec.node = node;
-        rec.proof_tex = paired.proofTex;
-        rec.snapshot = snapshot;
-        delete rec.partial;
-      } else {
-        working.solved[id] = { proof_tex: paired.proofTex, snapshot };
+    // Promotion is a monotone dependency problem, not a proposal-order problem. A
+    // consumer can precede a same-bundle helper in `claimChangedIds`; revisit deferred
+    // consumers after each successful helper promotion until the closure stabilizes.
+    const pendingPromotionIds = new Set(hasUnappliedGlobalInvalidator ? [] : claimChangedIds);
+    let promotedThisPass = true;
+    while (promotedThisPass && pendingPromotionIds.size > 0) {
+      promotedThisPass = false;
+      for (const id of [...pendingPromotionIds]) {
+        const paired = pairedProofById.get(id);
+        if (!paired?.arguesProposed) {
+          pendingPromotionIds.delete(id);
+          continue;
+        }
+        const frozen = proto.statements.find((s) => s.id === id);
+        const rec = working.solved[id];
+        const node = frozen ?? rec?.node;
+        if (!node || node.status !== "to-prove") {
+          pendingPromotionIds.delete(id);
+          continue;
+        }
+        if (proofContentClosureIntersects({
+          core: proto, node, proofText: paired.proofTex, changedIds: unappliedIds, extraStatements: carriedNodes,
+        })) {
+          pendingPromotionIds.delete(id);
+          continue;
+        }
+        if (!dependencyClosureValid(node)) continue;
+        node.status = "proved";
+        node.proof_tex = paired.proofTex;
+        const snapshot = wiredSnapshot(proto, node, paired.proofTex);
+        if (rec) {
+          if (rec.node) rec.node = node;
+          rec.proof_tex = paired.proofTex;
+          rec.snapshot = snapshot;
+          delete rec.partial;
+        } else {
+          working.solved[id] = { proof_tex: paired.proofTex, snapshot };
+        }
+        pendingPromotionIds.delete(id);
+        promotedThisPass = true;
+        workingChanged = true;
       }
-      workingChanged = true;
     }
   }
+
+  // Reverse dependency lists are a derived view of the final accepted graph, not
+  // authored content. Normalize once after every selected edit/proof promotion so
+  // statement rewires and deletions cannot require a separate model proposal and
+  // adjudication round. This happens on the in-memory transaction image before any
+  // artifact is published.
+  rebuildAssumptionUsedBy(proto, carriedStatements(working));
 
   // Persist the same narrow JSON/LaTeX repairs used by assembled cores. This is
   // especially important for legacy proto strings containing a decoded control
@@ -1394,6 +1893,10 @@ export async function applyProposedChanges(args: {
   // after an older shorthand that references it. Canonicalize the declared-symbol DAG
   // after every accepted bundle; this changes only array order, never payload bytes.
   proto.symbols = topologicallyOrderSymbols(proto.symbols);
+  // Definition-add also appends, so a new prerequisite can otherwise land after
+  // an older constructed definition that names it. Preserve every payload byte
+  // and canonicalize only the accepted definition DAG order.
+  proto.definitions = topologicallyOrderDefinitions(proto.definitions);
   // Fail loudly before persisting: a control character still present after both
   // repair layers means an escaping corruption neither could safely resolve.
   assertNoDecodedControlChars(proto, `proto core after apply (${protoPath})`);
@@ -1451,50 +1954,9 @@ export async function applyProposedChanges(args: {
     );
   }
 
-  const sp = statePath(ctx.repoRoot, ctx.qid, ctx.specialization ?? "v1");
-  if (existsSync(sp)) {
-    const state = await loadState(ctx.repoRoot, ctx.qid, ctx.specialization ?? "v1");
-    if (state.stage_completed !== "-0.5") {
-      state.stage_completed = "-0.5";
-      await saveState(ctx.repoRoot, ctx.qid, ctx.specialization ?? "v1", state);
-    }
-  }
-  // COMMIT ORDER. The durable agent-node cursor is persisted BEFORE the frozen proto.
-  // That order is deliberate: if the process stops between the two atomic renames the old
-  // proto remains authoritative and the next solve re-derives validity, whereas the
-  // reverse order could delete a proto node while a carried copy survives to resurrect it.
-  //
-  // Honest limit: "the old proto remains authoritative" holds only for FROZEN nodes. A
-  // CARRIED (agent-authored) node's sole durable catalog IS this working save, so a stop
-  // in the window commits its adjudicated edits (including a paired-proof promotion)
-  // before the journal entry lands. The unconsumed bundle survives, but a mechanical
-  // re-apply does NOT replay it: the carried node now reads the NEW text, so the stale-
-  // `current` guard skips the proposal and the count guard refuses the partial apply.
-  // Recovery is operator-level — the applied edit is visibly in the cursor; deselect it
-  // (or drop the bundle) and re-record the journal entry. What a crash here loses is
-  // the journal record, never the decision. Pre-existing exposure (the cited-shortcut
-  // and statement-replace pairing branches settle carried nodes in this same window).
-  //
-  // The hole was never the order. The SAME working save also consumed
-  // `working.proposals`, so a stop in that window left the adjudicated bundle consumed
-  // and the proto un-updated — the accepted decision lost, with nothing to replay.
-  // The proposals are therefore consumed only AFTER the proto lands.
-  if (workingChanged && working) await saveWorkingState(ctx, working);
-
-  const protoTemp = `${protoPath}.tmp-${process.pid}-${Date.now()}`;
-  try {
-    await writeFile(protoTemp, JSON.stringify(proto, null, 2), "utf8");
-    await rename(protoTemp, protoPath);
-  } finally {
-    await rm(protoTemp, { force: true });
-  }
-  // The adjudicated payload must not outlive its round: `clearRoundOutputs` deletes the
-  // derived per-kind files, so the authoritative copy goes with them — but only now that
-  // the proto has durably received the changes.
-  // Journal the accepted decision BEFORE consuming the bundle: a stop between these two
-  // would otherwise leave the proto changed, the proposals gone, and no record of the
-  // rationale or directive the next solve reads.
-  await appendEscalationLog(ctx, {
+  const transactionId = `d0apply:${randomUUID()}`;
+  const escalationEntry: EscalationLogEntry = {
+    transaction_id: transactionId,
     round: working?.round ?? 0,
     changed,
     note,
@@ -1505,25 +1967,23 @@ export async function applyProposedChanges(args: {
     // referee escalation names them in its own entry; a solver-proposed narrowing has
     // no such entry, so the apply journal must require them itself.
     ...(reopenedCitedIds.length > 0 ? { required_core_targets: [...new Set(reopenedCitedIds)] } : {}),
-  });
-  // The adjudicated payload must not outlive its round: `clearRoundOutputs` deletes the
-  // derived per-kind files, so the authoritative copy goes with them — but only now that
-  // the proto has durably received the changes.
-  // CONSUMED MARKER, not a deletion. `readRoundProposals` treats an ABSENT
-  // `working.proposals` as "this run predates the fold" and falls back to the per-kind
-  // mirrors — it cannot tell a legacy run from a modern one caught mid-crash. Deleting the
-  // field and then clearing the mirrors left a window where the canonical copy was gone
-  // and the mirrors were not, so the already-applied bundle became authoritative again.
-  //
-  // Clearing the mirrors first is no better: a stop before the delete leaves the canonical
-  // bundle present and consumed, and the next round re-reads it.
-  //
-  // Writing EMPTY channels is safe in both windows. An empty object is still "present", so
-  // the fallback stays suppressed, and it reads as consumed rather than as legacy.
-  if (working?.proposals !== undefined) {
+  };
+  if (working) {
     working.proposals = emptyProposals() as unknown as typeof working.proposals;
-    await saveWorkingState(ctx, working);
+    working.required_core_edit_mandates = [];
   }
-  await clearRoundOutputs(ctx);
-  return changed;
+  // One durable intent precedes every store mutation. Recovery accepts only the exact
+  // before/after proto bytes and journals by transaction_id, making each replay step
+  // idempotent across crashes between proto, journal, and working-cursor writes.
+  await writeJsonAtomic(applyTransactionPath(ctx), {
+    version: 1,
+    transaction_id: transactionId,
+    proto_before: protoBytesAtRead,
+    proto_after: JSON.stringify(proto, null, 2),
+    working_after: working,
+    escalation_entry: escalationEntry,
+  } satisfies D0ApplyTransaction);
+  const committed = await recoverPendingApply(ctx);
+  if (committed === null) throw new Error("D0 apply transaction disappeared before commit");
+  return committed;
 }

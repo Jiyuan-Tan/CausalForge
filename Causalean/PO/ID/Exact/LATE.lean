@@ -124,7 +124,7 @@ lemma measurableSet_complierEvent : MeasurableSet S.complierEvent :=
 
 /-- The factual instrument event is measurable. -/
 lemma measurableSet_zEvent (z : Bool) : MeasurableSet (S.zEvent z) :=
-  S.zVar.measurableSet_event _
+  S.zVar.measurableSet_event _ (measurableSet_singleton _)
 
 /-- `Y` composed with `D(z)`: `1_{D(z)=1} Y(1) + 1_{D(z)=0} Y(0)`. -/
 noncomputable def YofDofZ (z : Bool) : P.Ω → ℝ :=
@@ -248,7 +248,10 @@ theorem first_stage_identity (hA : S.Assumptions)
         eventCondExp P.μ (S.zVar.event z) (fun ω => ((S.factualD ω).toNat : ℝ)) := rfl
     rw [hbridge,
       POSystem.eventCondExp_of_consistency_IndepCF hA.instrumentIndep
-        (a := S.zVar) hh_meas h_cons (hμne_zero z hZ) (hμne_top z)]
+        (a := S.zVar) hh_meas
+        (measurableSet_singleton z)
+        (ae_restrict_of_forall_mem (S.measurableSet_zEvent z) h_cons)
+        (hμne_zero z hZ) (hμne_top z)]
     refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
     intro ω
     change ((cond z ((S.cfBundle.jointValue ω (0 : Fin 4)) : Bool)
@@ -359,7 +362,10 @@ theorem reduced_form_identity (hA : S.Assumptions)
         eventCondExp P.μ (S.zVar.event z) S.factualY := rfl
     rw [hbridge,
       POSystem.eventCondExp_of_consistency_IndepCF hA.instrumentIndep
-        (a := S.zVar) hh_meas h_cons (hμne_zero z hZ) (hμne_top z)]
+        (a := S.zVar) hh_meas
+        (measurableSet_singleton z)
+        (ae_restrict_of_forall_mem (S.measurableSet_zEvent z) h_cons)
+        (hμne_zero z hZ) (hμne_top z)]
     refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
     intro ω
     change (if ((cond z ((S.cfBundle.jointValue ω (0 : Fin 4)) : Bool)

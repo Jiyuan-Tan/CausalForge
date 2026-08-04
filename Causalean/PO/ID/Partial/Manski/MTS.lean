@@ -127,14 +127,14 @@ lemma eventCondExp_YofD_eq_factualY (hA : S.BaseAssumptions) (d : Bool) :
     eventCondExp P.μ (S.dEvent d) (S.YofD d)
       = eventCondExp P.μ (S.dEvent d) S.factualY :=
   POVar.eventCondExp_cfUnder_eq_factual_on_event hA.consistency
-    S.yVar S.dVar d (Ne.symm S.hDY) P.μ
+    S.yVar S.dVar d (S.measurableSet_dEvent d) (Ne.symm S.hDY) P.μ
 
 /-- `(μ A).toReal * eventCondExp μ A (fun _ => c) = (μ A).toReal * c`.
 Follows from `eventCondExp_mul_measure_toReal` with the constant integrand. -/
 lemma measure_mul_eventCondExp_const (A : Set P.Ω) (c : ℝ) :
     (P.μ A).toReal * eventCondExp P.μ A (fun _ : P.Ω => c)
       = (P.μ A).toReal * c := by
-  rw [mul_comm, eventCondExp_mul_measure_toReal]
+  rw [mul_comm, eventCondExp_mul_measure_toReal P.μ A (measure_ne_top _ _)]
   rw [MeasureTheory.setIntegral_const, smul_eq_mul,
     MeasureTheory.measureReal_def, mul_comm]
 
@@ -164,7 +164,7 @@ theorem mts_lower_le_E_Y1 (hA : S.BaseAssumptions) (_hMTS : S.MTS) :
   have hlo_cond :
       eventCondExp P.μ (S.dEvent false) (fun _ => hA.lo)
         ≤ eventCondExp P.μ (S.dEvent false) (S.YofD true) := by
-    exact eventCondExp_mono_ae P.μ hint_const hint_Y1 hlo_ae
+    exact eventCondExp_mono_ae P.μ hint_const hint_Y1 (ae_restrict_of_ae hlo_ae)
   -- `eventCondExp μ A (fun _ => c) = c` when `μ A ≠ 0`; else both sides are
   -- `0`.  In either case the inequality `c ≤ eventCondExp μ A f` together
   -- with `(μ A).toReal * c ≤ (μ A).toReal * eventCondExp μ A f` follows by
@@ -283,7 +283,7 @@ theorem mts_E_Y0_le_upper (hA : S.BaseAssumptions) (_hMTS : S.MTS) :
   have hhi_cond :
       eventCondExp P.μ (S.dEvent true) (S.YofD false)
         ≤ eventCondExp P.μ (S.dEvent true) (fun _ => hA.hi) :=
-    eventCondExp_mono_ae P.μ hint_Y0 hint_const hhi_ae
+    eventCondExp_mono_ae P.μ hint_Y0 hint_const (ae_restrict_of_ae hhi_ae)
   have heq_const :
       p * eventCondExp P.μ (S.dEvent true) (fun _ : P.Ω => hA.hi)
       = p * hA.hi :=

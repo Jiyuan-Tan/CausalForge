@@ -126,18 +126,28 @@ moment of the transform. This is the single contact point through which the
 upstream CLT enters the estimation theory. -/
 theorem IIDSample.clt_normalized_sum
     {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
-    {μ : Measure Ω} {P : Measure X} [IsProbabilityMeasure μ]
+    {μ : Measure Ω} {P : Measure X}
     (S : IIDSample Ω X μ P) {ψ : X → ℝ}
     (hψ_meas : Measurable ψ)
     (hψ_mean : ∫ x, ψ x ∂P = 0)
-    (hψ_sq_int : Integrable (fun x => (ψ x) ^ 2) P)
-    (hSum_meas : ∀ n, AEMeasurable
-      (IsAsymLinear.normalizedSum S ψ (fun m => Finset.range m) n) μ) :
-    Tendsto_dist
+    (hψ_sq_int : Integrable (fun x => (ψ x) ^ 2) P) :
+    @Tendsto_dist Ω _
       (IsAsymLinear.normalizedSum S ψ (fun m => Finset.range m))
-      (gaussianMeasure 0 (∫ x, (ψ x) ^ 2 ∂P))
-      μ
-      hSum_meas := by
+      (gaussianMeasure 0 (∫ x, (ψ x) ^ 2 ∂P)) μ
+      S.indep.isProbabilityMeasure
+      (instIsProbabilityMeasureGaussianMeasure 0 (∫ x, (ψ x) ^ 2 ∂P))
+      (by
+        intro n
+        unfold IsAsymLinear.normalizedSum
+        exact ((Finset.measurable_sum _
+          (fun i _ => hψ_meas.comp (S.meas i))).const_mul _).aemeasurable) := by
+  haveI : IsProbabilityMeasure μ := S.indep.isProbabilityMeasure
+  have hSum_meas : ∀ n, AEMeasurable
+      (IsAsymLinear.normalizedSum S ψ (fun m => Finset.range m) n) μ := by
+    intro n
+    unfold IsAsymLinear.normalizedSum
+    exact ((Finset.measurable_sum _
+      (fun i _ => hψ_meas.comp (S.meas i))).const_mul _).aemeasurable
   let σ2 : ℝ := ∫ x, (ψ x) ^ 2 ∂P
   have hσ2_nonneg : 0 ≤ σ2 := by
     dsimp [σ2]
@@ -427,17 +437,19 @@ theorem Tendsto_dist.const_mul_tendsto_gaussian
     {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω} [IsProbabilityMeasure μ]
     {Xn : ℕ → Ω → ℝ} {a : ℕ → ℝ} {a₀ v : ℝ}
     (hXn : ∀ n, AEMeasurable (Xn n) μ)
-    (hScaled : ∀ n, AEMeasurable (fun ω => a n * Xn n ω) μ)
     (hX : Tendsto_dist Xn (gaussianMeasure 0 v) μ hXn)
     (ha : Tendsto a atTop (𝓝 a₀)) :
     Tendsto_dist (fun n ω => a n * Xn n ω)
-      (gaussianMeasure 0 (a₀ ^ 2 * v)) μ hScaled := by
-  haveI : IsProbabilityMeasure ((gaussianMeasure 0 v).map (fun x : ℝ => a₀ * x)) :=
-    Measure.isProbabilityMeasure_map (measurable_const.mul measurable_id).aemeasurable
+      (gaussianMeasure 0 (a₀ ^ 2 * v)) μ
+      (fun n => (measurable_const.mul measurable_id).aemeasurable.comp_aemeasurable (hXn n)) := by
+  have hScaled : ∀ n, AEMeasurable (fun ω => a n * Xn n ω) μ := fun n =>
+    (measurable_const.mul measurable_id).aemeasurable.comp_aemeasurable (hXn n)
+  letI : IsProbabilityMeasure ((gaussianMeasure 0 v).map (fun x : ℝ => a₀ * x)) :=
+    Measure.isProbabilityMeasure_map (by fun_prop)
   have hscaled_dist :
       Tendsto_dist (fun n ω => a n * Xn n ω)
         ((gaussianMeasure 0 v).map (fun x : ℝ => a₀ * x)) μ hScaled :=
-    Tendsto_dist.const_mul_tendsto hXn hScaled hX ha
+    Tendsto_dist.const_mul_tendsto hXn hX ha
   have hmap :
       (gaussianMeasure 0 v).map (fun x : ℝ => a₀ * x)
         = gaussianMeasure 0 (a₀ ^ 2 * v) := by
@@ -451,28 +463,34 @@ The headline statement.  Combines `IIDSample.clt_normalized_sum` (the CLT
 contact point) with `Tendsto_dist.add_isLittleOp_one` (Slutsky). -/
 
 variable {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
-  {μ : Measure Ω} {P : Measure X} [IsProbabilityMeasure μ]
+  {μ : Measure Ω} {P : Measure X}
   {θn : ℕ → Ω → ℝ} {θ₀ : ℝ} {ψ : X → ℝ} {S : IIDSample Ω X μ P}
 
 /-- Asymptotic linearity implies `√n (θn − θ₀) ⇒ N(0, ∫ ψ² dP)`.
 
 The Gaussian target is `gaussianMeasure 0 σ²` where `σ² = ∫ ψ² dP`.  The
-measurability hypothesis on the rescaled estimator and the partial sum is
-imposed at the call site (proof obligations the caller carries). -/
+measurability hypothesis on the rescaled estimator is imposed at the call
+site; measurability of the partial sum follows from that of `ψ` and the sample
+coordinates. -/
 theorem IsAsymLinear.tendsto_normal
     (h : IsAsymLinear θn θ₀ ψ S (fun m => Finset.range m))
     (hψ_meas : Measurable ψ)
     (hθn_meas : ∀ n : ℕ, AEMeasurable
-      (IsAsymLinear.rescaledEstimator θn θ₀ (fun m => Finset.range m) n) μ)
-    (hSum_meas : ∀ n : ℕ, AEMeasurable
-      (IsAsymLinear.normalizedSum S ψ (fun m => Finset.range m) n) μ) :
-    Tendsto_dist
+      (IsAsymLinear.rescaledEstimator θn θ₀ (fun m => Finset.range m) n) μ) :
+    @Tendsto_dist Ω _
       (IsAsymLinear.rescaledEstimator θn θ₀ (fun m => Finset.range m))
-      (gaussianMeasure 0 (∫ x, (ψ x) ^ 2 ∂P))
-      μ
-      hθn_meas := by
+      (gaussianMeasure 0 (∫ x, (ψ x) ^ 2 ∂P)) μ
+      S.indep.isProbabilityMeasure
+      (instIsProbabilityMeasureGaussianMeasure 0 (∫ x, (ψ x) ^ 2 ∂P)) hθn_meas := by
+  haveI : IsProbabilityMeasure μ := S.indep.isProbabilityMeasure
+  have hSum_meas : ∀ n : ℕ, AEMeasurable
+      (IsAsymLinear.normalizedSum S ψ (fun m => Finset.range m) n) μ := by
+    intro n
+    unfold IsAsymLinear.normalizedSum
+    exact ((Finset.measurable_sum _
+      (fun i _ => hψ_meas.comp (S.meas i))).const_mul _).aemeasurable
   have hCLT :=
-    IIDSample.clt_normalized_sum S hψ_meas h.mean_zero h.finite_var hSum_meas
+    IIDSample.clt_normalized_sum S hψ_meas h.mean_zero h.finite_var
   refine Tendsto_dist.add_isLittleOp_one hSum_meas hθn_meas hCLT ?_
   -- `IsAsymLinear.remainder` uses `(I n).card` with `I = Finset.range`, which
   -- equals `n`; the resulting `IsLittleOp` matches the Slutsky absorption form.

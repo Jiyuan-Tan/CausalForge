@@ -5,10 +5,10 @@ Authors: Jiyuan Tan
 
 # Gaussian half-line tail control
 
-A single generic fact about the centered Gaussian law: each one-sided half-line
-tail of `N(0, v)` can be made smaller than any `ε > 0` by pushing the cutoff out.
-Both half-line families `(-∞, -n]` and `[n, ∞)` shrink to `∅`, so continuity from
-above of the (finite) measure sends their mass to `0`.
+A generic fact about probability laws on the real line: each one-sided half-line
+tail can be made smaller than any `ε > 0` by pushing the cutoff out. Both half-line
+families `(-∞, -n]` and `[n, ∞)` shrink to `∅`, so continuity from above of the
+(finite) measure sends their mass to `0`.
 
 Factored out of the sample-quantile rate proof (where it discharges the L4 tail
 ingredient) so it can be reused by the Imbens–Manski coverage argument in
@@ -25,25 +25,24 @@ can be made arbitrarily small by choosing a sufficiently large cutoff. The resul
 is a reusable tightness ingredient for quantile and partial-identification
 asymptotic arguments.
 
-The exported lemma `gaussian_tail_small` applies to the project's
-`gaussianMeasure 0 v`, including the clipped degenerate case for nonpositive
-variance parameters, and returns one positive cutoff controlling both the lower
-and upper half-line tails. -/
+The exported lemma `finite_measure_halfline_tails_small` applies to every finite measure on
+the real line. Its Gaussian corollary `gaussian_tail_small_gaussian` applies to
+the project's `gaussianMeasure m v`, including the clipped degenerate case for
+nonpositive variance parameters. Both return one positive cutoff controlling the
+lower and upper half-line tails. -/
 
 namespace Causalean.Stat
 
 open MeasureTheory ProbabilityTheory Filter Topology
 
-/-- **Gaussian-measure half-line tail control.**  For the project's
-`gaussianMeasure`, both symmetric half-line tails can be made smaller than any
-positive tolerance by taking the cutoff large. This includes the clipped
-degenerate case produced by nonpositive variance parameters. -/
-lemma gaussian_tail_small {v ε : ℝ} (hε : 0 < ε) :
+/-- **Finite-measure half-line tail control.** Both symmetric half-line
+tails of any finite measure on the real line can be made smaller
+than any positive tolerance by taking the cutoff large. -/
+lemma finite_measure_halfline_tails_small (Q : Measure ℝ) [IsFiniteMeasure Q]
+    {ε : ℝ} (hε : 0 < ε) :
     ∃ R : ℝ, 0 < R ∧
-      gaussianMeasure 0 v (Set.Iic (-R)) ≤ ENNReal.ofReal ε ∧
-      gaussianMeasure 0 v (Set.Ici R) ≤ ENNReal.ofReal ε := by
-  set Q : Measure ℝ := gaussianMeasure 0 v with hQ
-  haveI : IsProbabilityMeasure Q := by rw [hQ]; infer_instance
+      Q (Set.Iic (-R)) ≤ ENNReal.ofReal ε ∧
+      Q (Set.Ici R) ≤ ENNReal.ofReal ε := by
   -- Both one-sided tails over the integer cutoffs shrink to `∅`, so their
   -- measure tends to `0`; pick a cutoff `> 0` below level `ε`.
   have htail : ∀ (s : ℕ → Set ℝ), Antitone s → (⋂ n, s n) = ∅ →
@@ -90,5 +89,22 @@ lemma gaussian_tail_small {v ε : ℝ} (hε : 0 < ε) :
     apply Set.Ici_subset_Ici.mpr
     have h2 : (N₂ : ℝ) ≤ (max N₁ N₂ : ℝ) := by exact_mod_cast le_max_right N₁ N₂
     linarith
+
+/-- Compatibility alias for probability-measure half-line tail control. -/
+@[deprecated finite_measure_halfline_tails_small (since := "2026-08-04")]
+lemma gaussian_tail_small (Q : Measure ℝ) [IsProbabilityMeasure Q] {ε : ℝ} (hε : 0 < ε) :
+    ∃ R : ℝ, 0 < R ∧
+      Q (Set.Iic (-R)) ≤ ENNReal.ofReal ε ∧
+      Q (Set.Ici R) ≤ ENNReal.ofReal ε :=
+  finite_measure_halfline_tails_small Q hε
+
+/-- Both symmetric half-line tails of a Gaussian distribution can be
+made smaller than any positive tolerance by choosing a sufficiently large
+positive cutoff. -/
+lemma gaussian_tail_small_gaussian {m v ε : ℝ} (hε : 0 < ε) :
+    ∃ R : ℝ, 0 < R ∧
+      gaussianMeasure m v (Set.Iic (-R)) ≤ ENNReal.ofReal ε ∧
+      gaussianMeasure m v (Set.Ici R) ≤ ENNReal.ofReal ε :=
+  finite_measure_halfline_tails_small (gaussianMeasure m v) hε
 
 end Causalean.Stat

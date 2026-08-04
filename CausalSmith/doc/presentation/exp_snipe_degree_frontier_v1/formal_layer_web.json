@@ -1,0 +1,1958 @@
+{
+  "commit": "755195f4d6a4007dc1e66d0258d81da99758d4e6",
+  "groups": [
+    {
+      "kind": "setup",
+      "items": [
+        {
+          "obj_id": "S1",
+          "kind": "setup",
+          "label": "Setup S-1",
+          "nl": "finite-population design-based randomization world: a finite unit type `V` with a known directed interference graph (self-loops allowed) and the unit-level product Bernoulli assignment law on `Ω = V → Bool`, carried by `FiniteDesign` with the finite-sum `E`/`Var`/`Cov` algebra. — This is the single highest-leverage reuse decision: the paper's only randomness is the unit-level product Bernoulli assignment, which is exactly `bernoulliDesign p hp0 hp1 : FiniteDesign (V → Bool)` (constant `p i = p`). Cross-coordinate independence — the engine of every orthogonality, block-independence and variance computation in the paper — is then STRUCTURAL (`prodDesign`), not an assumption: `FiniteDesign.E_prod_apply`, `E_prod_apply₂`, `Cov_prod_apply_of_ne`, `Var_prod_apply`, `Var_prod_linear_comb` (ProductVariance) and the block generalizations `E_prod_block_mul`, `Cov_prod_disjoint_zero` (ProductBlock) give the disjoint-block factorization the complete-directed-block arguments need. `\\mathbb E_Z` is `FiniteDesign.E` of this design; `P_Z` is the design itself. The graph is a plain `V → V → Prop` with `DecidablePred`, neighborhoods `N i : Finset V`; Causalean's `DAG` is NOT usable (self-loops are required and counted in both degrees), recorded as bypass-justified.",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "S2",
+          "kind": "setup",
+          "label": "Setup S-2",
+          "nl": "fixed-potential-outcome (noiseless) low-order polynomial interference world: a coefficient schedule `c : (i : V) → Finset V → ℝ` supported on subsets of `N i` of size ≤ β, the induced potential outcome `Y i z = ∑_{S ⊆ N i} c i S ∏_{j ∈ S} z j`, the observed outcome `Y i Z`, the finite-population TTE contrast, and the two model classes (ℓ¹ coefficient-mass and uniformly bounded-outcome). — Search trace: read `../doc/API.md` §18 `Experimentation/` (grepped '^## ' index, then the DesignBased/ExposureMappingInterference/TwoStageInterference/UnknownInterference tables in full); scanned `Causalean/Experimentation/DesignBased/{PotentialOutcome,Exposure,Estimators,HT/*}.lean` for 'potential outcome', 'exposure mapping', 'polynomial interference', 'low order', 'coefficient schedule'; scanned `Causalean/Experimentation/UnknownInterference/Basic.lean` for the whole-assignment PO type. Result: not found — Causalean's design-based PO layers are exposure-mapping-valued (`ProperlySpecified : ∀ i z, yr i z = y i (expo i z)`, `Yobs y f θ i z = y i (expo i z)`, an ABSTRACT finite exposure `θ`) or fully unstructured (`UnknownInterference.y i z`); neither carries the RAW-MONOMIAL POLYNOMIAL structure `Y i z = ∑_{S ⊆ N i} c i S ∏_{j∈S} z j` that every result here is about (the coefficient schedule `c` IS the model parameter, the interaction order β is the model complexity, and the ℓ¹ coefficient-mass envelope is a class restriction on `c`). Bypass-justified: the exposure layer is at the wrong abstraction (it hides the coefficients we must vary). The bridge fact that this PO factors through `z` restricted to `N i` is recorded and proved locally (one lemma), so `DesignBased.PotentialOutcome.ProperlySpecified` remains available as an instance if a later artifact wants it.",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "S3",
+          "kind": "setup",
+          "label": "Setup S-3",
+          "nl": "design-based decision-theoretic world: GRAPH-AWARE estimators measurable in the full observed data `(G, Z, (Y_i^obs))`, their design mean squared error at a fixed model, the worst case over a model class, and the minimax (inf over estimators) risk. — REVISED (round 2, FLAG-world-arity): an estimator is GRAPH-AWARE — `Estimator V := (V → V → Bool) → (V → Bool) → (V → ℝ) → ℝ` (known graph, assignment, observed outcome vector), matching the core's `\\widehat\\tau_n` symbol (`refs: [G_n, Z, Y_i^{obs}]`) and def:minimax-risk's 'measurable in `(G_n, Z, {Y_i^obs})`'. The graph is NOT fixed inside the risk functional: `riskAt` COMPOSES the single global estimator with the model's own graph, `riskAt p M est = (bernoulliDesign …).mse (fun z => est (edgeFn M) z (obsOutcome M z)) (tte M)`, where `edgeFn M := fun j i => decide (M.edge j i)` uses the class structure's existing `decEdge` field. The inf–sup is therefore the core's: ONE estimator faces every `(G_n, c)` in the class, and `snipeEstimator β p : Estimator V` (which reads its neighborhoods off its graph argument) is one admissible global competitor, so the middle term of thm:bounded-outcome-degree-frontier is literally `worstRisk … (snipeClipped B β p)`. The per-model risk is exactly `D.mse est μ = D.E (fun z => (est z - μ)^2)` with `D = bernoulliDesign`, `μ = τ_n`; `mse_eq_var_add_bias_sq`, `mse_eq_var_of_unbiased`, `var_le_mse`, `Unbiased` are all reused verbatim (the unclipped-SNIPE branch is `mse = Var` after unbiasedness; the clipping branch uses `mse_nonneg` + a pointwise projection bound). Measurability is vacuous on the finite assignment space and is imposed only on the outcome argument, and only in the converse. `worstRisk`/`minimaxRisk` are `sSup`/`sInf` over the model class / estimator class (build-inline, see def:minimax-risk). Surveyed and bypass-justified: `Causalean.Experimentation.DesignBased.worstRisk` / `IsMinimaxOn` (Optimality/Minimax.lean) minimize over DESIGNS at a fixed estimator, not over ESTIMATORS at a fixed design — the wrong quantifier order for this paper; `ProbabilityTheory.minimaxRisk` (Mathlib Decision/Risk) is kernel/loss-shaped over a general `Kernel`-valued experiment and would force a measure-theoretic re-encoding of the finite design.",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "S4",
+          "kind": "setup",
+          "label": "Setup S-4",
+          "nl": "least-favourable block world: complete directed `d`-blocks with loops, the block Bernoulli score/energy/representer, the continuous cosine-squared block baseline prior, and the two prior-predictive laws on `({0,1}^V) × ℝ^m` (counting ⊗ Lebesgue) used for the Le Cam converse. — REVISED (round 3, FLAG-finite-mixture) on top of round 2 (FLAG-reuse-precondition). GENERIC Le Cam reuse is RETAINED and unchanged: `Causalean.Stat.tvDist`, `one_sub_tvDist_le_test`, `one_sub_tvDist_le_error_sum`, `real_two_point_lower_bound`, `two_point_lower_bound_of_tvDist_le` (TotalVariation.lean / LeCam.lean / MinimaxRisk.lean) — none of these has an absolute-continuity premise, and none of them requires a finite hypothesis index. DROPPED in round 3: `Causalean.Stat.mixtureReal_le` (Minimax/Mixture.lean), which the round-2 plan cited for the PRIOR REALIZABILITY step. Verified against the source (`Grep 'mixtureReal' ../Causalean/Stat/Minimax/` → `Mixture.lean:53 theorem mixtureReal_le (w : ι → ℝ≥0∞) (hw : ∑ i, w i = 1) …` with `[Fintype ι]`): it is a `.real`-MASS domination bound for a FINITE `Fintype`-indexed convex combination of measures, whereas the baseline prior here is the CONTINUOUS product `⊗_{b ≤ m} f_s(u)du` over `U : Fin m → ℝ` (a compactly supported cosine-squared density, not a finite weight vector), and the quantity to be dominated is an integrated RISK, not a set mass. It cannot discharge the realizability step and the whole `Causalean.Stat.Minimax.Mixture` module is therefore removed from this S-block's modules. REPLACEMENT (local, `small`, built in `Helpers/LeastFavourable.lean` — see def:block-family for the same text): (R0) `prior_integrated_risk_le_worstRisk` — for an admissible estimator `est` (the `AdmissibleEstimator` predicate of def:minimax-risk already carries `BddAbove {riskAt p M est | M}` and outcome-measurability), `∫ riskAt p (blockSchedule σ U) est ∂(blockBaselinePrior s m) ≤ worstRisk p est`. Proof is the ordinary continuous-prior `∫ ≤ sup`: the admissibility lemma of def:block-family puts `blockSchedule σ U` in `ModelClass V d β B` for EVERY `U` in the support, so `riskAt p (blockSchedule σ U) est ≤ worstRisk p est` pointwise by the reused API lemma `le_worstRisk`; then `MeasureTheory.integral_mono_ae` against the constant plus `integral_const` and `IsProbabilityMeasure` (`∫ f_s = 1` is the closed-form `intervalIntegral` computation already needed for (C2), lifted to the product prior by `MeasureTheory.Measure.pi` + `MeasureTheory.isProbabilityMeasure_pi`). Integrability is NOT assumed away: `0 ≤ riskAt ≤ worstRisk` (from `mse_nonneg` and `le_worstRisk`) gives a two-sided bound, and measurability in `U` holds because `riskAt` is a FINITE sum over the finite assignment space of terms polynomial in `U` composed with the outcome-measurable `est`, so `Integrable` follows from `Measure.integrable_of_bounded`-style reasoning on a probability measure. Search trace for a reusable form: `lean_local_search 'mixtureReal_le'` → EMPTY in the index; `lean_local_search 'bayesRisk'` → only `ProbabilityTheory.bayesRisk*` (Mathlib Decision/Risk), which is `Kernel`-shaped over an abstract experiment and would force a measure-theoretic re-encoding of the finite design (same rejection as in def:minimax-risk); `Grep 'integral_mono|Bayes' ../Causalean/Stat/Minimax/` → no integrated-risk-vs-worst-case-risk lemma. Not found ⇒ local, build-inline (three lines of Mathlib `integral_mono_ae`). DROPPED in round 2, and why: the round-1 plan routed the converse through `Causalean.Stat.sq_bhattacharyya_le_two_mul_integral_min` + `Causalean.Stat.integral_min_le_one_sub_tvDist` (BretagnolleHuber.lean), but BOTH are stated for `P₊ ≪ P₋` (they are RN-derivative statements, `∫ √(dP₊/dP₋) dP₋`). The two prior-predictive laws here are mixtures of COMPACTLY SUPPORTED translated cosine-square densities whose supports are non-nested, so `P₊ ≪ P₋` FAILS and those lemmas are unusable; `Pinsker.lean` / `ChiSquared.lean` are excluded for the same reason (KL and χ² are infinite here), as the core's `technical_internal_limitation` records. REPLACEMENT (built locally in `Helpers/HellingerAffinity.lean`, all statements phrased against a COMMON DOMINATING measure `λ = count(V → Bool) ⊗ volume^m`, never against a mutual RN derivative): (C0) `tvDist_le_sqrt_two_mul_one_sub_affinity` — for `P = λ.withDensity f`, `Q = λ.withDensity g` with `f, g ≥ 0` integrable densities of total mass one, `tvDist P Q ≤ √(2·(1 − ∫ √(f·g) ∂λ))`. Proof, both halves elementary and premise-free: `|P.real A − Q.real A| = |∫_A (f − g) ∂λ| ≤ ½∫|f − g| ∂λ` by REUSING `Causalean.Stat.abs_setIntegral_le_half_integral_abs_of_integral_eq_zero` (Scheffe.lean — verified generic: it takes only `Integrable f ν` and `∫ f = 0`, NO `≪`), pushed through `MeasureTheory.withDensity_apply` and `sSup` to bound `tvDist`; then the Cauchy–Schwarz factorization `∫|f−g| = ∫|√f−√g|·(√f+√g) ≤ √(∫(√f−√g)²)·√(∫(√f+√g)²) ≤ 2√(∫(√f−√g)²)` with `∫(√f−√g)² = 2(1 − ∫√(fg))`. This is exactly the paper's own step (`‖P₊−P₋‖_TV ≤ H`, 'Cauchy–Schwarz applied to the densities'), so no fidelity is lost: `H² ≤ 1/4 ⇒ tvDist ≤ 1/2`. (C1) affinity TENSORIZATION for the explicit product density: `∫ √(∏_b f_b · ∏_b g_b) ∂(λ₀ ⊗ volume^m) = ∏_b ∫ √(f_b g_b)`, by `Real.sqrt_mul` on the pointwise product followed by Fubini on `MeasureTheory.Measure.pi` (`integral_finset_prod`-style), with the shared DISCRETE assignment coordinate handled by summing over `z` first (blocks are conditionally independent given `Z`, and the law of `Z` is itself a product over blocks); combined with `1 − ∏ a_b ≤ ∑ (1 − a_b)` for `a_b ∈ [0,1]`. (C2) unchanged: the cosine-squared translation affinity bound `1 − ∫ √(f_s(u−a) f_s(u−b)) du ≤ C(a−b)²/s²`, a closed-form `intervalIntegral` computation (product-to-sum on `cos·cos` over the overlap). NOTE the direction of travel: nothing is now needed ABOUT a Hellinger distance object — only the affinity number `∫√(fg)`, so no general Hellinger theory is built and no `≪` ever appears.",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "S5",
+          "kind": "setup",
+          "label": "Setup S-5",
+          "nl": "block-local Riesz world: the polynomial subspace `P_d ⊆ L²(P_Z)` spanned by raw monomials of degree ≤ β̄_d on one `d`-block, the all-one-versus-all-zero contrast functional `L_d`, and the fixed-complete-block sequence `(n_t, d_t, G_t)` carrying the block-local linear design-unbiased estimator class. — Search trace: `lean_local_search` for 'Riesz', 'representer', 'L2Space', 'inner product design', 'polynomial space'; read `../doc/API.md` §18 (DesignBased substrate tables) and §10g `Mathlib/SemiInnerProjection.lean`, §10f `Mathlib/FWL.lean`. Result: not found for a design-based `L²(P_Z)` inner-product layer. Bypass-justified and DELIBERATE: `L²(P_Z)` here is the FINITE-dimensional space of functions `(V_b → Bool) → ℝ` with the design inner product `⟪f,g⟫ = D.E (f·g)`, so the whole Riesz story is `Finset` algebra over `FiniteDesign.E`/`Cov` (no Mathlib `L2Space`, no `MeasureTheory` needed); `P_d` is a `Submodule ℝ ((V_b → Bool) → ℝ)` spanned by raw monomials, and orthogonal decomposition `w = g_d + u`, `u ⊥ P_d`, is finite-dimensional projection. The programs `PerturbProg`/`WeightProg` are `sInf` over the feasible sets, with their minimizers identified in lem:block-energy-representer. The only genuinely non-elementary piece is the non-necessity witness, which needs `dim P_{d_t} = ∑_{r ≤ β} C(d_t,r) < 2^{d_t}` for large `d_t` — the centered-monomial family is orthogonal (hence independent) under the product Bernoulli design, so this is a `Finset.card` computation plus `Module.finrank` of the full function space; `Mathlib.LinearAlgebra.Dimension` + `Submodule.exists_mem_ne_zero_of_finrank_lt` style reasoning covers it.",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        }
+      ]
+    },
+    {
+      "kind": "definition",
+      "items": [
+        {
+          "obj_id": "def:exposed-order",
+          "kind": "definition",
+          "label": "Definition P-1",
+          "nl": "Set \\(\\bar\\beta_d:=\\min\\{\\beta,d\\}\\) for every \\(d\\ge0\\); in particular \\(\\bar\\beta_0=0\\). If \\(\\bar\\beta_d\\ge1\\), set \\(k_\\star(d,\\beta,p):=\\max\\{r\\in\\{1,\\ldots,\\bar\\beta_d\\}:\\Delta_r(p)\\ne0\\}\\); since \\(\\Delta_1(p)=1\\), this index set contains \\(r=1\\), so its maximum is well defined. When \\(\\bar\\beta_d=0\\), equivalently \\(d=0\\) or \\(\\beta=0\\), set \\(k_\\star(d,\\beta,p):=0\\) as a totality convention only, never as an attained interaction order. Thus the maximum case applies exactly when both \\(d\\ge1\\) and \\(\\beta\\ge1\\); every statement below fixes \\(\\beta\\ge1\\).",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.kStar",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:zero-degree-conventions",
+          "kind": "definition",
+          "label": "Definition P-2",
+          "nl": "Set \\(\\binom{0}{0}:=1\\), \\(g_0:=0\\), and \\(A_0:=0\\). Interpret sums over nonempty subsets of \\(\\{1,\\ldots,0\\}\\) as zero; its assignment space has one empty vector and the empty product equals one. Set \\(h_0:=0\\) only as an empty-object convention, and never interpret it as \\(g_0/A_0\\).",
+          "lean": {
+            "file": "Helpers/BlockScore.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.ZeroDegreeConventions",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:graph-class",
+          "kind": "definition",
+          "label": "Definition P-3",
+          "nl": "\\(\\mathcal G_{n,d}:=\\{G_n\\in2^{V_n\\times V_n}:G_n\\text{ satisfies }\\mathrm{ass:bounded-degree}\\}\\).",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.GraphClass",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:coefficient-class",
+          "kind": "definition",
+          "label": "Definition P-4",
+          "nl": "\\(\\mathcal C_{n,d,\\beta}(B):=\\{c:c\\text{ satisfies }\\mathrm{ass:low-order}\\text{ and }\\mathrm{ass:bounded-coefficient-mass}\\}\\).",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.CoeffClass",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:model-class",
+          "kind": "definition",
+          "label": "Definition P-5",
+          "nl": "\\(\\mathcal M_{n,d,\\beta}(B):=\\{(G_n,c):G_n\\in\\mathcal G_{n,d},\\ c\\in\\mathcal C_{n,d,\\beta}(B)\\}\\), where \\(\\mathcal G_{n,d}\\) and \\(\\mathcal C_{n,d,\\beta}(B)\\) are the classes in \\({\\rm def:graph-class}\\) and \\({\\rm def:coefficient-class}\\), respectively.",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.ModelClass",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:snipe-score",
+          "kind": "definition",
+          "label": "Definition P-6",
+          "nl": "\\(g_{i,\\beta,p}(z):=\\sum_{r=1}^{\\bar\\beta_d}\\frac{\\Delta_r(p)}{[p(1-p)]^r}\\sum_{\\substack{S\\subseteq N_i\\\\|S|=r}}\\prod_{j\\in S}(z_j-p)\\).",
+          "lean": {
+            "file": "Estimator.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.snipeScore",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:snipe-estimator",
+          "kind": "definition",
+          "label": "Definition P-7",
+          "nl": "\\(\\widehat\\tau_n^{\\mathrm{SNIPE}}:=n^{-1}\\sum_{i\\in V_n}Y_i^{\\mathrm{obs}}g_{i,\\beta,p}(Z)\\) and \\(\\widehat\\tau_n^{\\mathrm{up}}:=\\Pi_{[-B,B]}(\\widehat\\tau_n^{\\mathrm{SNIPE}})\\), where \\(\\Pi_{[-B,B]}\\) is Euclidean projection.",
+          "lean": {
+            "file": "Estimator.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.snipeEstimatorBundle",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:minimax-risk",
+          "kind": "definition",
+          "label": "Definition P-8",
+          "nl": "\\(R_n^\\star(d,\\beta,p,B):=\\inf_{\\widehat\\tau_n}\\sup_{(G_n,c)\\in\\mathcal M_{n,d,\\beta}(B)}\\mathbb E_Z[(\\widehat\\tau_n-\\tau_n)^2]\\), where \\(\\widehat\\tau_n\\) is measurable in \\((G_n,Z,\\{Y_i^{\\mathrm{obs}}:i\\in V_n\\})\\).",
+          "lean": {
+            "file": "Estimator.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.minimaxRisk",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:block-score-energy",
+          "kind": "definition",
+          "label": "Definition P-9",
+          "nl": "For \\(d\\ge1\\) and a \\(d\\)-coordinate Bernoulli vector, set \\(g_d(z):=\\sum_{r=1}^{\\bar\\beta_d}\\frac{\\Delta_r(p)}{[p(1-p)]^r}\\sum_{\\substack{S\\subseteq\\{1,\\ldots,d\\}\\\\|S|=r}}\\prod_{j\\in S}(z_j-p)\\), \\(A_d:=\\sum_{r=1}^{\\bar\\beta_d}\\binom{d}{r}\\Delta_r(p)^2/[p(1-p)]^r\\), and \\(h_d:=g_d/A_d=\\sum_{T\\subseteq\\{1,\\ldots,d\\}}h_{d,T}\\prod_{j\\in T}z_j\\), the last equality being the raw-monomial expansion.",
+          "lean": {
+            "file": "Helpers/BlockScore.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.blockScoreEnergyBundle",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:block-family",
+          "kind": "definition",
+          "label": "Definition P-10",
+          "nl": "For \\(B>0\\) and \\(1\\le d\\le n\\), set \\(m:=\\lfloor n/d\\rfloor\\), \\(q:=md\\), and \\(\\rho:=q/n\\). Partition \\(q\\) units into \\(m\\) blocks \\(V_b\\) of size \\(d\\); include every within-block directed arrow, including loops, and leave the remaining \\(n-q\\) units isolated. Set \\(s:=B/2\\), \\(f_s(u):=s^{-1}\\cos^2(\\pi u/(2s))\\mathbf1\\{|u|\\le s\\}\\), and draw \\(U_1,\\ldots,U_m\\) independently from \\(f_s\\). Let \\(H_{\\beta,p}:=\\sup_{d\\ge1}\\sum_T|h_{d,T}|\\) and choose \\(\\delta:=B\\min\\{(2H_{\\beta,p})^{-1},(4\\pi)^{-1}\\}\\min\\{1,\\sqrt{A_d/m}\\}\\). Under \\(\\Pi_\\sigma\\), active \\(i\\in V_b\\) has \\(c_{i,T}:=U_b\\mathbf1\\{T=\\varnothing\\}+\\sigma\\delta h_{d,T}\\) for \\(|T|\\le k_\\star\\), and all other coefficients, including those of inactive units, are zero. The \\(U_b\\) randomize fixed potential-outcome schedules only; they are not observation noise.",
+          "lean": {
+            "file": "Helpers/LeastFavourable.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.blockFamilyBundle",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:perturbation-program",
+          "kind": "definition",
+          "label": "Definition P-11",
+          "nl": "For \\(d\\ge1\\), \\(\\mathsf{PerturbProg}_{d,\\beta,p}:=\\min_{h\\in\\mathcal P_d}\\mathbb E_Z[h(Z)^2]\\) subject to \\(L_d(h)=1\\).",
+          "lean": {
+            "file": "Helpers/BlockScore.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.perturbProg",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:weight-program",
+          "kind": "definition",
+          "label": "Definition P-12",
+          "nl": "For \\(d\\ge1\\), \\(\\mathsf{WeightProg}_{d,\\beta,p}:=\\min_{w\\in L^2(P_Z)}\\mathbb E_Z[w(Z)^2]\\) subject to \\(\\mathbb E_Z[w(Z)]=0\\) and \\(\\mathbb E_Z[w(Z)\\prod_{j\\in S}Z_j]=1\\) for every nonempty \\(S\\subseteq\\{1,\\ldots,d\\}\\) with \\(|S|\\le\\bar\\beta_d\\).",
+          "lean": {
+            "file": "Helpers/BlockScore.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.weightProg",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:local-linear-class",
+          "kind": "definition",
+          "label": "Definition P-13",
+          "nl": "On the fixed graph \\(G_t\\), set \\(\\mathcal M_t(G_t):=\\{c:c_{i,S}=0\\text{ unless }S\\subseteq N_i^{G_t}\\text{ and }|S|\\le\\bar\\beta_{d_t},\\ \\sum_{S\\subseteq N_i^{G_t}}|c_{i,S}|\\le B\\text{ for every }i\\in V_{n_t}\\}\\).",
+          "lean": {
+            "file": "Helpers/LocalLinearClass.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.LocLinSchedClass",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:local-linear-estimator-class",
+          "kind": "definition",
+          "label": "Definition P-14",
+          "nl": "Set \\(\\mathcal E_t^{\\mathrm{loc,lin}}:=\\{\\widehat\\tau_{w,t}=n_t^{-1}\\sum_{i\\in V_{n_t}}w_{i,t}(Z_{b(i)})Y_i(Z):w_{i,t}\\in L^2(P_Z)\\text{ is measurable with respect to }Z_{b(i)},\\ \\mathbb E_Z[w_{i,t}]=0,\\text{ and }\\mathbb E_Z[w_{i,t}\\prod_{j\\in S}Z_j]=1\\text{ for every nonempty }S\\subseteq N_i^{G_t}\\text{ with }|S|\\le\\bar\\beta_{d_t}\\}\\).",
+          "lean": {
+            "file": "Helpers/LocalLinearClass.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.locLinEstimatorClass",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:local-linear-risk",
+          "kind": "definition",
+          "label": "Definition P-15",
+          "nl": "Define \\(R_t^{\\mathrm{loc,lin}}:=\\inf_{\\widehat\\tau_{w,t}\\in\\mathcal E_t^{\\mathrm{loc,lin}}}\\sup_{c\\in\\mathcal M_t(G_t)}\\mathbb E_Z[(\\widehat\\tau_{w,t}-\\tau_{n_t})^2]\\); the graph is fixed and is not varied in this supremum.",
+          "lean": {
+            "file": "Helpers/LocalLinearClass.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.locLinMinimaxRisk",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:bounded-outcome-coefficient-class",
+          "kind": "definition",
+          "label": "Definition P-16",
+          "nl": "\\(\\mathcal C_{n,d,\\beta}^{\\infty}(B):=\\{c:c_{i,S}=0\\text{ whenever }|S|>\\beta,\\ \\sup_{z\\in\\{0,1\\}^{V_n}}|Y_i(z)|\\le B\\text{ for every }i\\in V_n\\}\\).",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.BddOutcomeCoeffClass",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:bounded-outcome-model-class",
+          "kind": "definition",
+          "label": "Definition P-17",
+          "nl": "\\(\\mathcal M_{n,d,\\beta}^{\\infty}(B):=\\{(G_n,c):G_n\\in\\mathcal G_{n,d},\\ c\\in\\mathcal C_{n,d,\\beta}^{\\infty}(B)\\}\\), where the two component classes are those in \\({\\rm def:graph-class}\\) and \\({\\rm def:bounded-outcome-coefficient-class}\\).",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.BddOutcomeModelClass",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:two-class-minimax-risks",
+          "kind": "definition",
+          "label": "Definition P-18",
+          "nl": "\\(R_{n,\\ell_1}^{\\star}(d,\\beta,p,B):=R_n^\\star(d,\\beta,p,B)\\) and \\(R_{n,\\infty}^{\\star}(d,\\beta,p,B):=\\inf_{\\widehat\\tau_n}\\sup_{(G_n,c)\\in\\mathcal M_{n,d,\\beta}^{\\infty}(B)}\\mathbb E_Z[(\\widehat\\tau_n-\\tau_n)^2]\\), where \\(\\widehat\\tau_n\\) is measurable in \\((G_n,Z,\\{Y_i^{\\mathrm{obs}}:i\\in V_n\\})\\).",
+          "lean": {
+            "file": "Estimator.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.twoClassMinimaxRisks",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:bounded-outcome-clipped-snipe",
+          "kind": "definition",
+          "label": "Definition P-19",
+          "nl": "\\(\\widehat\\tau_{n,\\infty}^{\\mathrm{up}}:=\\Pi_{[-2B,2B]}(\\widehat\\tau_n^{\\mathrm{SNIPE}})\\), where \\(\\Pi_{[-2B,2B]}\\) is Euclidean projection.",
+          "lean": {
+            "file": "Estimator.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.snipeClippedBdd",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        }
+      ]
+    },
+    {
+      "kind": "assumption",
+      "items": [
+        {
+          "obj_id": "ass:bernoulli-design",
+          "kind": "assumption",
+          "label": "Assumption A-1",
+          "nl": "\\(Z_j\\) are mutually independent and \\(\\Pr(Z_j=1)=p\\) for every \\(j\\in V_n\\).",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.IsProductBernoulli",
+            "decl_kind": "structure",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "ass:bounded-degree",
+          "kind": "assumption",
+          "label": "Assumption A-2",
+          "nl": "Self-loops are allowed and count in both degrees, with \\(\\max_{i\\in V_n}|N_i|\\le d\\) and \\(\\max_{j\\in V_n}|\\{i\\in V_n:j\\in N_i\\}|\\le d\\).",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.BoundedDegree",
+            "decl_kind": "structure",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "ass:low-order",
+          "kind": "assumption",
+          "label": "Assumption A-3",
+          "nl": "\\(c_{i,S}=0\\) whenever \\(|S|>\\beta\\).",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.LowOrder",
+            "decl_kind": "structure",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "ass:bounded-coefficient-mass",
+          "kind": "assumption",
+          "label": "Assumption A-4",
+          "nl": "\\(\\sum_{S\\subseteq N_i}|c_{i,S}|\\le B\\) for every \\(i\\in V_n\\).",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.BoundedCoeffMass",
+            "decl_kind": "structure",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        }
+      ]
+    },
+    {
+      "kind": "lemma",
+      "items": [
+        {
+          "obj_id": "lem:block-energy-representer",
+          "kind": "lemma",
+          "label": "Lemma L-1",
+          "nl": "For fixed \\(\\beta\\ge1\\), \\(p\\in(0,1)\\), and \\(d\\ge1\\), \\(A_d\\asymp_{\\beta,p}\\binom{d}{k_\\star}\\), \\(\\mathbb E_Z[g_d(Z)f(Z)]=L_d(f)\\) for every \\(f\\in\\mathcal P_d\\), \\(h_d(\\mathbf1_d)-h_d(\\mathbf0_d)=1\\), and \\(\\mathbb E_Z[h_d(Z)^2]=A_d^{-1}\\). The unique minimizers of \\({\\rm def:perturbation-program}\\) and \\({\\rm def:weight-program}\\) are respectively \\(h_d=g_d/A_d\\), with value \\(A_d^{-1}\\), and \\(w=g_d\\), with value \\(A_d\\). Moreover \\(H_{\\beta,p}=\\sup_{d\\ge1}\\sum_T|h_{d,T}|<\\infty\\).",
+          "lean": {
+            "file": "Helpers/BlockRepresenter.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.blockEnergy_representer",
+            "decl_kind": "lemma",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "lem:overlap-count",
+          "kind": "lemma",
+          "label": "Lemma L-2",
+          "nl": "For every \\(r\\ge1\\), including \\(d=0\\), and every \\(i\\in V_n\\), \\[\\sum_{l\\in V_n}\\binom{|N_i\\cap N_l|}{r}=\\sum_{\\substack{S\\subseteq N_i\\\\|S|=r}}\\#\\{l\\in V_n:S\\subseteq N_l\\}\\le d\\binom{|N_i|}{r}\\le d\\binom{d}{r}.\\]",
+          "lean": {
+            "file": "Helpers/OverlapCount.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.overlap_count_le",
+            "decl_kind": "lemma",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        }
+      ]
+    },
+    {
+      "kind": "theorem",
+      "items": [
+        {
+          "obj_id": "thm:degree-frontier",
+          "kind": "theorem",
+          "label": "Theorem T-1",
+          "nl": "Fix \\(\\beta\\ge1\\), \\(p\\in(0,1)\\), \\(B\\ge0\\), integers \\(n\\ge1\\), and \\(0\\le d\\le n\\). There are \\(0<c_{\\beta,p}\\le C_{\\beta,p}<\\infty\\) such that \\[c_{\\beta,p}B^2\\min\\!\\left\\{1,\\frac{d\\binom{d}{k_\\star}}{n}\\right\\}\\le R_n^\\star(d,\\beta,p,B)\\le\\sup_{(G_n,c)\\in\\mathcal M_{n,d,\\beta}(B)}\\mathbb E_Z[(\\widehat\\tau_n^{\\mathrm{up}}-\\tau_n)^2]\\le C_{\\beta,p}B^2\\min\\!\\left\\{1,\\frac{d\\binom{d}{k_\\star}}{n}\\right\\}.\\] In the nonsaturated regime \\(d\\binom{d}{k_\\star}/n\\lesssim_{\\beta,p}1\\), unclipped SNIPE attains the same rate. The upper bound uses \\(A_i=\\sum_{r=1}^{\\min\\{\\beta,|N_i|\\}}\\binom{|N_i|}{r}\\Delta_r(p)^2/[p(1-p)]^r\\le A_d\\) and the single-out-degree overlap count. For \\(B>0\\) and \\(d\\ge1\\), the block mixtures have TTE separation \\(2\\rho\\delta\\) and squared Hellinger distance at most \\(4\\pi^2m\\delta^2/(B^2A_d)\\); since \\(1/2\\le\\rho\\le1\\) and \\(A_d/m=(dA_d/n)/\\rho\\), this yields the stated lower branch without a divisibility condition.",
+          "lean": {
+            "file": "T_degree_frontier.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.degree_frontier",
+            "decl_kind": "theorem",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "thm:sharp-local-linear-constant-and-representers",
+          "kind": "theorem",
+          "label": "Theorem T-2",
+          "nl": "Fix \\(\\beta\\ge1\\), \\(p\\in(0,1)\\), and \\(B>0\\). For every index \\(t\\), let \\(n_t\\) and \\(d_t\\) be positive integers such that \\(d_t\\mid n_t\\), write \\(m_t:=n_t/d_t\\), and let \\(G_t\\) be the fixed directed graph that is the disjoint union of \\(m_t\\) complete directed blocks \\(V_b\\) of size \\(d_t\\), including all self-loops. Then, for every \\(t\\),\n\\[\nR_t^{\\mathrm{loc,lin}}=\\frac{B^2A_{d_t}}{m_t}=\\frac{B^2d_tA_{d_t}}{n_t}.\n\\]\nIn particular, \\(R_t^{\\mathrm{loc,lin}}/(B^2d_tA_{d_t}/n_t)=1\\) for every \\(t\\). More precisely, put \\(Z_S:=\\prod_{j\\in S}Z_j\\) and \\(Z_b:=(Z_j)_{j\\in V_b}\\), and for every block \\(V_b\\) define\n\\[\n\\Psi_{b,t}(w):=\\max_{\\substack{(\\varepsilon_i,S_i)_{i\\in V_b}\\\\\\varepsilon_i\\in\\{-1,1\\},\\ S_i\\subseteq V_b,\\ |S_i|\\le\\bar\\beta_{d_t}}}\n\\mathbb E_Z\\!\\left[\\left(\\sum_{i\\in V_b}\\varepsilon_i\\{w_{i,t}(Z_b)Z_{S_i}-\\mathbf1(S_i\\ne\\varnothing)\\}\\right)^2\\right].\n\\]\nThen, for every \\(t\\),\n\\[\n\\sup_{c\\in\\mathcal M_t(G_t)}\\mathbb E_Z[(\\widehat\\tau_{w,t}-\\tau_{n_t})^2]\n=\\frac{B^2}{n_t^2}\\sum_{b=1}^{m_t}\\Psi_{b,t}(w),\n\\qquad\n\\Psi_{b,t}(w)\\ge d_t^2A_{d_t}.\n\\]\nA sequence in \\(\\mathcal E_t^{\\mathrm{loc,lin}}\\) is asymptotically minimax if and only if\n\\[\n\\frac{1}{m_td_t^2A_{d_t}}\\sum_{b=1}^{m_t}\\{\\Psi_{b,t}(w)-d_t^2A_{d_t}\\}\\longrightarrow0.\n\\]\nThe condition\n\\[\n\\frac{1}{n_tA_{d_t}}\\sum_{i\\in V_{n_t}}\\mathbb E_Z[(w_{i,t}(Z_{b(i)})-g_{d_t}(Z_{b(i)}))^2]\\longrightarrow0\n\\]\nis sufficient for asymptotic minimaxity. Suppose in addition that \\(d_t\\to\\infty\\). This sufficient condition is not necessary, even up to relabeling coordinates within blocks. There are asymptotically minimax weights for which the last display equals \\(2\\) for every sufficiently large \\(t\\).",
+          "lean": {
+            "file": "T_sharp_local_linear.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.sharp_local_linear_constant_and_representers",
+            "decl_kind": "theorem",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "thm:bounded-outcome-degree-frontier",
+          "kind": "theorem",
+          "label": "Theorem T-3",
+          "nl": "Fix \\(\\beta\\ge1\\), \\(p\\in(0,1)\\), \\(B\\ge0\\), integers \\(n\\ge1\\), and \\(0\\le d\\le n\\). The coefficient-mass model is contained in the uniformly bounded-outcome model, and the inclusion is strict whenever \\(B>0\\) and \\(d\\ge1\\). There are \\(0<c_{\\beta,p}\\le C_{\\beta,p}<\\infty\\) such that\n\\[\nc_{\\beta,p}B^2\\min\\!\\left\\{1,\\frac{dA_d}{n}\\right\\}\n\\le R_{n,\\ell_1}^\\star(d,\\beta,p,B)=R_n^\\star(d,\\beta,p,B)\n\\le R_{n,\\infty}^\\star(d,\\beta,p,B)\n\\le \\sup_{(G_n,c)\\in\\mathcal M_{n,d,\\beta}^{\\infty}(B)}\n\\mathbb E_Z[(\\widehat\\tau_{n,\\infty}^{\\mathrm{up}}-\\tau_n)^2]\n\\le C_{\\beta,p}B^2\\min\\!\\left\\{1,\\frac{dA_d}{n}\\right\\}.\n\\]\nMoreover,\n\\[\n\\sup_{(G_n,c)\\in\\mathcal M_{n,d,\\beta}(B)}\n\\mathbb E_Z[(\\widehat\\tau_n^{\\mathrm{up}}-\\tau_n)^2]\n\\le C_{\\beta,p}B^2\\min\\!\\left\\{1,\\frac{dA_d}{n}\\right\\},\n\\]\nand on either model class unclipped SNIPE is design-unbiased and has worst-case mean squared error at most \\(B^2dA_d/n\\). For every \\(0\\le d\\le n\\), \\(dA_d\\asymp_{\\beta,p}d\\binom d{k_\\star}\\), so both minimax risks are also \\(\\asymp_{\\beta,p}B^2\\min\\{1,d\\binom d{k_\\star}/n\\}\\), and unclipped SNIPE attains the nonsaturated branch. If \\(1\\le d\\le n\\) and \\(d\\mid n\\), put \\(m=n/d\\) and take the disjoint union of \\(m\\) complete directed \\(d\\)-blocks, including loops. Then canonical unclipped SNIPE has the exact global worst-case risk on both classes,\n\\[\n\\sup_{(G_n,c)\\in\\mathcal M_{n,d,\\beta}(B)}\\mathbb E_Z[(\\widehat\\tau_n^{\\mathrm{SNIPE}}-\\tau_n)^2]\n=\\sup_{(G_n,c)\\in\\mathcal M_{n,d,\\beta}^{\\infty}(B)}\\mathbb E_Z[(\\widehat\\tau_n^{\\mathrm{SNIPE}}-\\tau_n)^2]\n=\\frac{B^2A_d}{m}=\\frac{B^2dA_d}{n},\n\\]\nso the constant one in the global unclipped variance bound is sharp. The upper-bound calculation uses\n\\[\nA_i=\\sum_{r=1}^{\\min\\{\\beta,|N_i|\\}}\\binom{|N_i|}{r}\\frac{\\Delta_r(p)^2}{[p(1-p)]^r}\\le A_d\n\\]\nand charges out-degree only once. For \\(B>0\\) and \\(d\\ge1\\), the block mixtures in \\({\\rm def:block-family}\\) lie in the smaller class, have TTE separation \\(2\\rho\\delta\\), and have squared Hellinger distance at most \\(4\\pi^2m\\delta^2/(B^2A_d)\\); furthermore \\(1/2\\le\\rho\\le1\\) and \\(A_d/m=(dA_d/n)/\\rho\\).",
+          "lean": {
+            "file": "T_bounded_outcome_frontier.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.bounded_outcome_degree_frontier",
+            "decl_kind": "theorem",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "thm:fair-coin-energy-frontier",
+          "kind": "theorem",
+          "label": "Theorem T-4",
+          "nl": "Fix \\(n\\ge1\\), \\(1\\le d\\le n\\), \\(\\beta\\ge1\\), \\(B\\ge0\\), and \\(p=1/2\\). Then\n\\[\n\\Delta_r(1/2)=\\begin{cases}2^{1-r},&r\\text{ odd},\\\\0,&r\\text{ even},\\end{cases}\n\\qquad\nA_d=4\\sum_{\\substack{1\\le r\\le\\min\\{\\beta,d\\}\\\\r\\text{ odd}}}\\binom dr.\n\\]\nConsequently \\(k_\\star\\) is the largest odd integer no greater than \\(\\min\\{\\beta,d\\}\\). For \\(\\beta=1\\), \\(A_d=4d\\) and\n\\[\nR_n^\\star(d,1,1/2,B)=R_{n,\\ell_1}^\\star(d,1,1/2,B)\n\\asymp R_{n,\\infty}^\\star(d,1,1/2,B)\n\\asymp B^2\\min\\!\\left\\{1,\\frac{d^2}{n}\\right\\}.\n\\]\nIf additionally \\(d\\mid n\\), canonical unclipped SNIPE has exact worst-case mean squared error \\(4B^2d^2/n\\) on both model classes.",
+          "lean": {
+            "file": "T_fair_coin_frontier.lean",
+            "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.fair_coin_energy_frontier",
+            "decl_kind": "theorem",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        }
+      ]
+    },
+    {
+      "kind": "auxiliary",
+      "items": [
+        {
+          "obj_id": "aux_activeShare",
+          "kind": "definition",
+          "label": "Definition activeShare",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_bernoulliContrast",
+          "kind": "definition",
+          "label": "Definition bernoulliContrast",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_blockCount",
+          "kind": "definition",
+          "label": "Definition blockCount",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_blockDominatingMeasure",
+          "kind": "definition",
+          "label": "Definition blockDominatingMeasure",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_blockEnergy",
+          "kind": "definition",
+          "label": "Definition blockEnergy",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_blockExtremal",
+          "kind": "definition",
+          "label": "Definition blockExtremal",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_blockGraph",
+          "kind": "definition",
+          "label": "Definition blockGraph",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_blockPriorDensity",
+          "kind": "definition",
+          "label": "Definition blockPriorDensity",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_blockSchedule",
+          "kind": "definition",
+          "label": "Definition blockSchedule",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_blockUnits",
+          "kind": "definition",
+          "label": "Definition blockUnits",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_edgeFn",
+          "kind": "definition",
+          "label": "Definition edgeFn",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_edgeFnBdd",
+          "kind": "definition",
+          "label": "Definition edgeFnBdd",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_effBeta",
+          "kind": "definition",
+          "label": "Definition effBeta",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_Hbound",
+          "kind": "definition",
+          "label": "Definition Hbound",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_hellingerSqDensity",
+          "kind": "definition",
+          "label": "Definition hellingerSqDensity",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_largestOddLE",
+          "kind": "definition",
+          "label": "Definition largestOddLE",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_localEnergy",
+          "kind": "definition",
+          "label": "Definition localEnergy",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_locLinMinimaxRisk",
+          "kind": "definition",
+          "label": "Definition locLinMinimaxRisk",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_locLinRiskRatio",
+          "kind": "definition",
+          "label": "Definition locLinRiskRatio",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_LocLinWeights",
+          "kind": "definition",
+          "label": "Definition LocLinWeights",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_locLinWorstRisk",
+          "kind": "definition",
+          "label": "Definition locLinWorstRisk",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_minimaxRiskL1",
+          "kind": "definition",
+          "label": "Definition minimaxRiskL1",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_ModelClassIncluded",
+          "kind": "definition",
+          "label": "Definition ModelClassIncluded",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_ModelClassStrict",
+          "kind": "definition",
+          "label": "Definition ModelClassStrict",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_normalizedBlockExcess",
+          "kind": "definition",
+          "label": "Definition normalizedBlockExcess",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_normalizedWeightDistance",
+          "kind": "definition",
+          "label": "Definition normalizedWeightDistance",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_normalizedWeightDistanceRelabeled",
+          "kind": "definition",
+          "label": "Definition normalizedWeightDistanceRelabeled",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_obsOutcome",
+          "kind": "definition",
+          "label": "Definition obsOutcome",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_OutcomeMeasurable",
+          "kind": "definition",
+          "label": "Definition OutcomeMeasurable",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_snipeClipped",
+          "kind": "definition",
+          "label": "Definition snipeClipped",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_tiltAmplitude",
+          "kind": "definition",
+          "label": "Definition tiltAmplitude",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_tte",
+          "kind": "definition",
+          "label": "Definition tte",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_worstRisk",
+          "kind": "definition",
+          "label": "Definition worstRisk",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_worstRiskBdd",
+          "kind": "definition",
+          "label": "Definition worstRiskBdd",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_worstRiskBddFixedGraph",
+          "kind": "definition",
+          "label": "Definition worstRiskBddFixedGraph",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_worstRiskFixedGraph",
+          "kind": "definition",
+          "label": "Definition worstRiskFixedGraph",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_AdmissibleEstimator",
+          "kind": "definition",
+          "label": "Definition AdmissibleEstimator",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_AdmissibleEstimatorBdd",
+          "kind": "definition",
+          "label": "Definition AdmissibleEstimatorBdd",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_containingNeighborhoods",
+          "kind": "definition",
+          "label": "Definition containingNeighborhoods",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_DegreeIndex",
+          "kind": "definition",
+          "label": "Definition DegreeIndex",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_minimaxRiskBddOutcome",
+          "kind": "definition",
+          "label": "Definition minimaxRiskBddOutcome",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_nbhd",
+          "kind": "definition",
+          "label": "Definition nbhd",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_snipeEstimator",
+          "kind": "definition",
+          "label": "Definition snipeEstimator",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "fairCoinContrast",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.fairCoinContrast",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "fairCoinEnergy",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.fairCoinEnergy",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "fairCoinKStar",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.fairCoinKStar",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "E_coordinate_prod",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.E_coordinate_prod",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "one_sub_prod_le_sum",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.one_sub_prod_le_sum",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "potentialOutcome_abs_le_of_mem_modelClass",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.potentialOutcome_abs_le_of_mem_modelClass",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "tte_abs_le_two_mul_of_mem_modelClass",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.tte_abs_le_two_mul_of_mem_modelClass",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "snipeClipped_admissible",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.snipeClipped_admissible",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "minimaxRisk_le_worstRisk_of_admissible",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.minimaxRisk_le_worstRisk_of_admissible",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "blockScore_contrast",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.blockScore_contrast",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "blockEnergy_pos",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.blockEnergy_pos",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "localEnergy_le_blockEnergy",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.localEnergy_le_blockEnergy",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "blockContrast_binomial",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.blockContrast_binomial",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "blockScore_raw_moment",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.blockScore_raw_moment",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "blockScore_mean_zero",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.blockScore_mean_zero",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "centeredMonomial_raw_expansion",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.centeredMonomial_raw_expansion",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sum_powerset_subset_exchange",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.sum_powerset_subset_exchange",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "nbhdB_edgeFn_eq_nbhd",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.nbhdB_edgeFn_eq_nbhd",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "nbhdB_edgeFnBdd_eq_nbhd",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.nbhdB_edgeFnBdd_eq_nbhd",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "E_global_coordinate_prod",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.E_global_coordinate_prod",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "snipeScore_raw_moment",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.snipeScore_raw_moment",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "snipeScore_mean_zero",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.snipeScore_mean_zero",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "snipeScore_potentialOutcome_moment",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.snipeScore_potentialOutcome_moment",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "blockScore_weightFeasibleAt",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.blockScore_weightFeasibleAt",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "weightProg_le_blockEnergy",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.weightProg_le_blockEnergy",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "kStar_mem_exposedOrder",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.kStar_mem_exposedOrder",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "blockEnergy_topExposed_le",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.blockEnergy_topExposed_le",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "blockDesign_sq_eq_zero_iff",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.blockDesign_sq_eq_zero_iff",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "blockScore_mem_polySpace",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.blockScore_mem_polySpace",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "weightFeasibleAt_represents",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.weightFeasibleAt_represents",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "perturbFeasible_energy_unique",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.perturbFeasible_energy_unique",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "weightFeasibleAt_energy_unique",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.weightFeasibleAt_energy_unique",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "blockPrograms_exact",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.blockPrograms_exact",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "choose_le_pow_mul_choose",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.choose_le_pow_mul_choose",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "eligibleOrder_le_kStar",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.eligibleOrder_le_kStar",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "blockLowerConst_spec",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.blockLowerConst_spec",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "blockEnergy_uniform_compare",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.blockEnergy_uniform_compare",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "blockRawCoef_mass_estimate",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.blockRawCoef_mass_estimate",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "blockRawCoef_mass_uniform",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.blockRawCoef_mass_uniform",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "modelClassIncluded_of_coeffMass",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Experimentation.SnipeDegreeFrontier.modelClassIncluded_of_coeffMass",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        }
+      ]
+    },
+    {
+      "kind": "symbol",
+      "items": [
+        {
+          "obj_id": "sym:V_n",
+          "kind": "symbol",
+          "label": "V_n",
+          "nl": "realized by variable@27",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:n",
+          "kind": "symbol",
+          "label": "n",
+          "nl": "realized by variable@27",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:i",
+          "kind": "symbol",
+          "label": "i",
+          "nl": "realized by variable@27",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:j",
+          "kind": "symbol",
+          "label": "j",
+          "nl": "realized by variable@27",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:l",
+          "kind": "symbol",
+          "label": "l",
+          "nl": "realized by variable@27",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:G_n",
+          "kind": "symbol",
+          "label": "G_n",
+          "nl": "realized by nbhd, GraphClass",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:N_i",
+          "kind": "symbol",
+          "label": "N_i",
+          "nl": "realized by nbhd",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\Delta_r(p)",
+          "kind": "symbol",
+          "label": "\\Delta_r(p)",
+          "nl": "realized by bernoulliContrast",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\beta",
+          "kind": "symbol",
+          "label": "\\beta",
+          "nl": "realized by effBeta",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\bar\\beta_d",
+          "kind": "symbol",
+          "label": "\\bar\\beta_d",
+          "nl": "realized by effBeta",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:d",
+          "kind": "symbol",
+          "label": "d",
+          "nl": "realized by DegreeIndex",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:r",
+          "kind": "symbol",
+          "label": "r",
+          "nl": "realized by OrderIndex",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:S",
+          "kind": "symbol",
+          "label": "S",
+          "nl": "realized by NeighborhoodSubset",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:k_\\star",
+          "kind": "symbol",
+          "label": "k_\\star",
+          "nl": "realized by kStar",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:p",
+          "kind": "symbol",
+          "label": "p",
+          "nl": "realized by IsProductBernoulli",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:P_Z",
+          "kind": "symbol",
+          "label": "P_Z",
+          "nl": "realized by IsProductBernoulli",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\mathbb E_Z",
+          "kind": "symbol",
+          "label": "\\mathbb E_Z",
+          "nl": "realized by IsProductBernoulli",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:c",
+          "kind": "symbol",
+          "label": "c",
+          "nl": "realized by LowOrder",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:c_{i,S}",
+          "kind": "symbol",
+          "label": "c_{i,S}",
+          "nl": "realized by LowOrder",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:B",
+          "kind": "symbol",
+          "label": "B",
+          "nl": "realized by BoundedCoeffMass",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:z",
+          "kind": "symbol",
+          "label": "z",
+          "nl": "realized by potentialOutcome",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:Y_i(z)",
+          "kind": "symbol",
+          "label": "Y_i(z)",
+          "nl": "realized by potentialOutcome",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:Z",
+          "kind": "symbol",
+          "label": "Z",
+          "nl": "realized by obsOutcome",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:Y_i^{\\mathrm{obs}}",
+          "kind": "symbol",
+          "label": "Y_i^{\\mathrm{obs}}",
+          "nl": "realized by obsOutcome",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\tau_n",
+          "kind": "symbol",
+          "label": "\\tau_n",
+          "nl": "realized by tte",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\mathcal G_{n,d}",
+          "kind": "symbol",
+          "label": "\\mathcal G_{n,d}",
+          "nl": "realized by GraphClass",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\mathcal C_{n,d,\\beta}(B)",
+          "kind": "symbol",
+          "label": "\\mathcal C_{n,d,\\beta}(B)",
+          "nl": "realized by CoeffClass",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\mathcal M_{n,d,\\beta}(B)",
+          "kind": "symbol",
+          "label": "\\mathcal M_{n,d,\\beta}(B)",
+          "nl": "realized by ModelClass",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\mathcal C_{n,d,\\beta}^{\\infty}(B)",
+          "kind": "symbol",
+          "label": "\\mathcal C_{n,d,\\beta}^{\\infty}(B)",
+          "nl": "realized by BddOutcomeCoeffClass",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\mathcal M_{n,d,\\beta}^{\\infty}(B)",
+          "kind": "symbol",
+          "label": "\\mathcal M_{n,d,\\beta}^{\\infty}(B)",
+          "nl": "realized by BddOutcomeModelClass",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\widehat\\tau_n",
+          "kind": "symbol",
+          "label": "\\widehat\\tau_n",
+          "nl": "realized by Estimator",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:g_{i,\\beta,p}",
+          "kind": "symbol",
+          "label": "g_{i,\\beta,p}",
+          "nl": "realized by snipeScore",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\widehat\\tau_n^{\\mathrm{SNIPE}}",
+          "kind": "symbol",
+          "label": "\\widehat\\tau_n^{\\mathrm{SNIPE}}",
+          "nl": "realized by snipeEstimator",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\widehat\\tau_n^{\\mathrm{up}}",
+          "kind": "symbol",
+          "label": "\\widehat\\tau_n^{\\mathrm{up}}",
+          "nl": "realized by snipeClipped",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:R_n^\\star(d,\\beta,p,B)",
+          "kind": "symbol",
+          "label": "R_n^\\star(d,\\beta,p,B)",
+          "nl": "realized by minimaxRisk",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:R_{n,\\ell_1}^{\\star}(d,\\beta,p,B)",
+          "kind": "symbol",
+          "label": "R_{n,\\ell_1}^{\\star}(d,\\beta,p,B)",
+          "nl": "realized by minimaxRiskL1",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:R_{n,\\infty}^{\\star}(d,\\beta,p,B)",
+          "kind": "symbol",
+          "label": "R_{n,\\infty}^{\\star}(d,\\beta,p,B)",
+          "nl": "realized by minimaxRiskBddOutcome",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\widehat\\tau_{n,\\infty}^{\\mathrm{up}}",
+          "kind": "symbol",
+          "label": "\\widehat\\tau_{n,\\infty}^{\\mathrm{up}}",
+          "nl": "realized by snipeClippedBdd",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:H_{\\beta,p}",
+          "kind": "symbol",
+          "label": "H_{\\beta,p}",
+          "nl": "realized by blockEnergy_representer, representerMassSup",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:c_{\\beta,p}",
+          "kind": "symbol",
+          "label": "c_{\\beta,p}",
+          "nl": "realized by blockEnergy_representer, bounded_outcome_degree_frontier",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:C_{\\beta,p}",
+          "kind": "symbol",
+          "label": "C_{\\beta,p}",
+          "nl": "realized by blockEnergy_representer, bounded_outcome_degree_frontier",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:g_d",
+          "kind": "symbol",
+          "label": "g_d",
+          "nl": "realized by blockScore",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:A_d",
+          "kind": "symbol",
+          "label": "A_d",
+          "nl": "realized by blockEnergy",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:h_d",
+          "kind": "symbol",
+          "label": "h_d",
+          "nl": "realized by blockRepresenter",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:T",
+          "kind": "symbol",
+          "label": "T",
+          "nl": "realized by blockRawCoef",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:h_{d,T}",
+          "kind": "symbol",
+          "label": "h_{d,T}",
+          "nl": "realized by blockRawCoef",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\mathcal P_d",
+          "kind": "symbol",
+          "label": "\\mathcal P_d",
+          "nl": "realized by polySpace",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:f",
+          "kind": "symbol",
+          "label": "f",
+          "nl": "realized by polySpace",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:h",
+          "kind": "symbol",
+          "label": "h",
+          "nl": "realized by polySpace",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:L_d",
+          "kind": "symbol",
+          "label": "L_d",
+          "nl": "realized by contrastFunctional",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\mathsf{PerturbProg}_{d,\\beta,p}",
+          "kind": "symbol",
+          "label": "\\mathsf{PerturbProg}_{d,\\beta,p}",
+          "nl": "realized by perturbProg",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:w",
+          "kind": "symbol",
+          "label": "w",
+          "nl": "realized by WeightFeasible",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\mathsf{WeightProg}_{d,\\beta,p}",
+          "kind": "symbol",
+          "label": "\\mathsf{WeightProg}_{d,\\beta,p}",
+          "nl": "realized by weightProg",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:s",
+          "kind": "symbol",
+          "label": "s",
+          "nl": "realized by baselineProductDensity, cosSqDensity, blockPriorDensity",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:f_s",
+          "kind": "symbol",
+          "label": "f_s",
+          "nl": "realized by baselineProductDensity, cosSqDensity",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:m",
+          "kind": "symbol",
+          "label": "m",
+          "nl": "realized by blockCount",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:q",
+          "kind": "symbol",
+          "label": "q",
+          "nl": "realized by activeCount",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\rho",
+          "kind": "symbol",
+          "label": "\\rho",
+          "nl": "realized by activeShare",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:G_{n,d}^{\\mathrm{blk}}",
+          "kind": "symbol",
+          "label": "G_{n,d}^{\\mathrm{blk}}",
+          "nl": "realized by blockGraph",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:V_b",
+          "kind": "symbol",
+          "label": "V_b",
+          "nl": "realized by blockGraph",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:b",
+          "kind": "symbol",
+          "label": "b",
+          "nl": "realized by blockGraph",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:U_b",
+          "kind": "symbol",
+          "label": "U_b",
+          "nl": "realized by baselineAt",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\delta",
+          "kind": "symbol",
+          "label": "\\delta",
+          "nl": "realized by tiltAmplitude",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\sigma",
+          "kind": "symbol",
+          "label": "\\sigma",
+          "nl": "realized by blockSchedule",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\Pi_\\sigma",
+          "kind": "symbol",
+          "label": "\\Pi_\\sigma",
+          "nl": "realized by blockSchedulePrior",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:P_\\sigma",
+          "kind": "symbol",
+          "label": "P_\\sigma",
+          "nl": "realized by priorPredictiveLaw",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\mathcal M_t(G_t)",
+          "kind": "symbol",
+          "label": "\\mathcal M_t(G_t)",
+          "nl": "realized by LocLinSchedClass",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:G_t",
+          "kind": "symbol",
+          "label": "G_t",
+          "nl": "realized by LocLinSchedClass",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:N_i^{G_t}",
+          "kind": "symbol",
+          "label": "N_i^{G_t}",
+          "nl": "realized by LocLinSchedClass",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:n_t",
+          "kind": "symbol",
+          "label": "n_t",
+          "nl": "realized by LocLinSchedClass",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:V_{n_t}",
+          "kind": "symbol",
+          "label": "V_{n_t}",
+          "nl": "realized by LocLinSchedClass",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:d_t",
+          "kind": "symbol",
+          "label": "d_t",
+          "nl": "realized by LocLinSchedClass",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:w_{i,t}",
+          "kind": "symbol",
+          "label": "w_{i,t}",
+          "nl": "realized by LocLinWeights",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:b(i)",
+          "kind": "symbol",
+          "label": "b(i)",
+          "nl": "realized by LocLinWeights",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:Z_{b(i)}",
+          "kind": "symbol",
+          "label": "Z_{b(i)}",
+          "nl": "realized by LocLinWeights",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\widehat\\tau_{w,t}",
+          "kind": "symbol",
+          "label": "\\widehat\\tau_{w,t}",
+          "nl": "realized by locLinEstimator",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\mathcal E_t^{\\mathrm{loc,lin}}",
+          "kind": "symbol",
+          "label": "\\mathcal E_t^{\\mathrm{loc,lin}}",
+          "nl": "realized by locLinEstimatorClass",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:R_t^{\\mathrm{loc,lin}}",
+          "kind": "symbol",
+          "label": "R_t^{\\mathrm{loc,lin}}",
+          "nl": "realized by locLinMinimaxRisk",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:A_i",
+          "kind": "symbol",
+          "label": "A_i",
+          "nl": "realized by localEnergy",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\Psi_{b,t}",
+          "kind": "symbol",
+          "label": "\\Psi_{b,t}",
+          "nl": "realized by sharp_local_linear_constant_and_representers",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        }
+      ]
+    }
+  ]
+}

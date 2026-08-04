@@ -25,7 +25,7 @@ variance bound; no central limit theorem is needed.
 -/
 
 
-open scoped BigOperators Topology Classical
+open scoped BigOperators Topology
 open Finset Filter
 
 namespace Causalean

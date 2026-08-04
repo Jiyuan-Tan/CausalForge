@@ -15,7 +15,7 @@ import { buildCompleteCrosswalk, buildCompleteCrosswalkFromGraph, parseLeanDecls
 import { graphPath, loadGraph } from "../graph/store.js";
 import { existsSync } from "node:fs";
 import { bankSoundnessIssues } from "./bank_soundness.js";
-import { CoreSchema } from "../discovery/core/schema.js";
+import { readTypedCore } from "../discovery/core/core_io.js";
 import { coreJsonPath } from "../discovery/stages/d0_core.js";
 import { PlanSchema } from "./plan/schema.js";
 import { auditCitedReview, auditDelivery } from "./delivery_audit.js";
@@ -114,7 +114,7 @@ export async function runStage5(args: {
   {
     const paths = artifactPaths(args.ctx, args.state);
     try {
-      const core = CoreSchema.parse(JSON.parse(await readFile(coreJsonPath(args.ctx), "utf8")));
+      const core = await readTypedCore(coreJsonPath(args.ctx));
       const plan = PlanSchema.parse(parseJsonWithEscapeRepair(await readFile(paths.plan, "utf8")));
       const gp = graphPath(paths.formalizationDir, args.ctx.qid, args.ctx.specialization);
       const graph = await loadGraph(gp);

@@ -66,7 +66,7 @@ lemma finitePoissonObjective_tendstoUniformlyOn {E I : Type*}
 eventual sequence of global maximizers in one common compact ball. -/
 lemma finitePoissonObjective_eventually_common_compact {E I : Type*}
     [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
-    [Fintype I] [DecidableEq I]
+    [Fintype I]
     (qN mN : ℕ → I → ℝ) (q m : I → ℝ)
     (A : E →ₗ[ℝ] (I → ℝ)) (argmax : ℕ → E)
     (hqpos : ∀ i, 0 < q i) (hmpos : ∀ i, 0 < m i)
@@ -195,7 +195,7 @@ lemma finitePoissonObjective_eventually_common_compact {E I : Type*}
 their finitely many positive weights and means. -/
 lemma finitePoissonObjective_argmax_tendsto {E I : Type*}
     [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
-    [SecondCountableTopology E] [Fintype I] [DecidableEq I]
+    [SecondCountableTopology E] [Fintype I]
     (qN mN : ℕ → I → ℝ) (q m : I → ℝ)
     (A : E →ₗ[ℝ] (I → ℝ)) (argmax : ℕ → E) (limitArgmax : E)
     (hqpos : ∀ i, 0 < q i) (hmpos : ∀ i, 0 < m i)
@@ -231,7 +231,7 @@ lemma finitePoissonObjective_argmax_tendsto {E I : Type*}
 full-rank finite Poisson objective varies continuously with all cell means. -/
 lemma finitePoissonObjective_argmax_continuousAt_mean
     {E I : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
-    [FiniteDimensional ℝ E] [Fintype I] [DecidableEq I] [Nonempty I]
+    [FiniteDimensional ℝ E] [Fintype I] [Nonempty I]
     (q : I → ℝ) (A : E →ₗ[ℝ] (I → ℝ)) (m₀ : I → ℝ)
     (hq : ∀ i, 0 < q i) (hm₀ : ∀ i, 0 < m₀ i)
     (hA : Function.Injective A) :
@@ -239,6 +239,7 @@ lemma finitePoissonObjective_argmax_continuousAt_mean
       (fun m : I → ℝ =>
         maximizerOrZero (finitePoissonObjective q m A))
       m₀ := by
+  classical
   rw [ContinuousAt, Filter.tendsto_iff_seq_tendsto]
   intro mN hmN
   have hm : ∀ i, Filter.Tendsto (fun N => mN N i) Filter.atTop (nhds (m₀ i)) :=

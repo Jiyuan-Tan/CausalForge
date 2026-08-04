@@ -34,9 +34,10 @@ theorem IndepFun.integral_restrict_preimage_eq_mul
     {Ω α β : Type*} [MeasurableSpace Ω] [MeasurableSpace α] [MeasurableSpace β]
     {μ : Measure Ω}
     {f : Ω → α} {g : Ω → β} (hfg : IndepFun f g μ)
-    (hf : Measurable f) (hg : Measurable g)
+    (hf_ae : AEMeasurable f μ) (hg : AEMeasurable g μ)
     {E : Set α} (hE : MeasurableSet E)
-    {h : β → ℝ} (hh_meas : Measurable h) :
+    (hpre : MeasurableSet (f ⁻¹' E))
+    {h : β → ℝ} (hh : AEStronglyMeasurable h (μ.map g)) :
     ∫ ω in f ⁻¹' E, h (g ω) ∂μ
       = (μ (f ⁻¹' E)).toReal * ∫ ω, h (g ω) ∂μ := by
   classical
@@ -56,7 +57,7 @@ theorem IndepFun.integral_restrict_preimage_eq_mul
   -- Rewrite `∫ in f ⁻¹' E, ...` as `∫ φ(f) * h(g) dμ`.
   have heq_int : ∫ ω in f ⁻¹' E, h (g ω) ∂μ
       = ∫ ω, φ (f ω) * h (g ω) ∂μ := by
-    rw [← MeasureTheory.integral_indicator (hf hE)]
+    rw [← MeasureTheory.integral_indicator hpre]
     refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
     intro ω
     by_cases hω : ω ∈ f ⁻¹' E
@@ -65,19 +66,17 @@ theorem IndepFun.integral_restrict_preimage_eq_mul
     · have hfE : f ω ∉ E := hω
       simp [hφ_def, hfE]
   -- Apply independence to factor the product integral.
-  have hfAE : AEMeasurable f μ := hf.aemeasurable
-  have hgAE : AEMeasurable g μ := hg.aemeasurable
+  have hfAE : AEMeasurable f μ := hf_ae
+  have hgAE : AEMeasurable g μ := hg
   have hφAEStr : MeasureTheory.AEStronglyMeasurable φ (μ.map f) :=
     hφ_meas.aestronglyMeasurable
-  have hhAEStr : MeasureTheory.AEStronglyMeasurable h (μ.map g) :=
-    hh_meas.aestronglyMeasurable
   have hmul : ∫ ω, φ (f ω) * h (g ω) ∂μ
       = (∫ ω, φ (f ω) ∂μ) * ∫ ω, h (g ω) ∂μ :=
-    hfg.integral_fun_comp_mul_comp hfAE hgAE hφAEStr hhAEStr
+    hfg.integral_fun_comp_mul_comp hfAE hgAE hφAEStr hh
   -- `∫ φ(f) dμ = μ(f ⁻¹' E).toReal`.
   have hφint : ∫ ω, φ (f ω) ∂μ = (μ (f ⁻¹' E)).toReal := by
     rw [MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall hφ_indicator)]
-    rw [MeasureTheory.integral_indicator_const (1 : ℝ) (hf hE)]
+    rw [MeasureTheory.integral_indicator_const (1 : ℝ) hpre]
     simp [MeasureTheory.measureReal_def]
   rw [heq_int, hmul, hφint]
 

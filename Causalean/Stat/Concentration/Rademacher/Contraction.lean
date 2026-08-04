@@ -55,8 +55,8 @@ namespace Concentration
 
 /-- A real-valued function `φ` is "Lipschitz at 0" with constant `L` if
     `φ 0 = 0` and `|φ x - φ y| ≤ L |x - y|` for all `x, y`. The "at 0"
-    pin-down is what the contraction principle requires; without
-    `φ 0 = 0` the bound carries an extra constant term. -/
+    pin-down is used by the absolute-value contraction theorem; the signed
+    theorem needs only the global Lipschitz inequality. -/
 def LipschitzAt0 (φ : ℝ → ℝ) (L : ℝ) : Prop :=
   φ 0 = 0 ∧ ∀ x y, |φ x - φ y| ≤ L * |x - y|
 
@@ -100,16 +100,22 @@ private noncomputable def flipSignEquiv (n : ℕ) (k : Fin n) : Signs n ≃ Sign
   left_inv := flipSign_involutive n k
   right_inv := flipSign_involutive n k
 
-private lemma finite_iSup_eq_value {α : Type*} [Nonempty α] [Fintype α]
+/-- A real-valued function on a nonempty finite population attains a largest value, and its
+supremum is that value. -/
+lemma finite_iSup_eq_value {α : Type*} [Nonempty α] [Finite α]
     (f : α → ℝ) : ∃ a : α, (⨆ x, f x) = f a ∧ ∀ x, f x ≤ f a := by
   classical
   rcases Finite.exists_max f with ⟨a, ha⟩
   refine ⟨a, ?_, ha⟩
   exact le_antisymm (ciSup_le ha) (le_ciSup (Finite.bddAbove_range f) a)
 
-private lemma sup_pair_lipschitz_scaled
-    {ι : Type*} [Nonempty ι] [Fintype ι]
-    (φ : ℝ → ℝ) {L c : ℝ} (_hL : 0 ≤ L) (hc : 0 ≤ c) (hφ : LipschitzAt0 φ L)
+/-- For a finite nonempty collection, the sum of the largest values obtained by adding and
+subtracting a nonnegative multiple of a transformation with a given Lipschitz constant is no
+greater than the corresponding sum using that linear bound. -/
+lemma sup_pair_lipschitz_scaled
+    {ι : Type*} [Nonempty ι] [Finite ι]
+    (φ : ℝ → ℝ) {L c : ℝ} (hc : 0 ≤ c)
+    (hφ : ∀ x y, |φ x - φ y| ≤ L * |x - y|)
     (a : ι → ℝ) (b : ι → ℝ) :
     (⨆ i, a i + c * φ (b i)) + (⨆ i, a i - c * φ (b i))
       ≤ (⨆ i, a i + c * (L * b i)) + (⨆ i, a i - c * (L * b i)) := by
@@ -120,7 +126,7 @@ private lemma sup_pair_lipschitz_scaled
     ⟨i₂, hi₂eq, _hi₂max⟩
   rw [hi₁eq, hi₂eq]
   have hdiff : φ (b i₁) - φ (b i₂) ≤ L * |b i₁ - b i₂| := by
-    exact (le_abs_self _).trans (hφ.2 (b i₁) (b i₂))
+    exact (le_abs_self _).trans (hφ (b i₁) (b i₂))
   have hcdiff : c * (φ (b i₁) - φ (b i₂)) ≤ c * (L * |b i₁ - b i₂|) := by
     exact mul_le_mul_of_nonneg_left hdiff hc
   by_cases hcase : b i₂ ≤ b i₁
@@ -297,8 +303,9 @@ private lemma signAtom_coe_real_eq_neg_one_or_one (s : SignAtom) :
     norm_num
 
 private lemma hybrid_pair_le
-    [Nonempty ι] [Fintype ι]
-    (φ : ℝ → ℝ) {L : ℝ} (hL : 0 ≤ L) (hφ : LipschitzAt0 φ L)
+    [Nonempty ι] [Finite ι]
+    (φ : ℝ → ℝ) {L : ℝ}
+    (hφ : ∀ x y, |φ x - φ y| ≤ L * |x - y|)
     (F : ι → 𝒳 → ℝ) {n : ℕ} (S : Fin n → 𝒳)
     {m : ℕ} (hm : m < n) (σ : Signs n) :
     (⨆ i, hybridInner φ L F n S m σ i)
@@ -340,10 +347,10 @@ private lemma hybrid_pair_le
     dsimp [a, b, c, k]
     rw [hybridInner_flip_succ_eq_base_sub_linear φ L F hm S σ i]
   rcases signAtom_coe_real_eq_neg_one_or_one (σ k) with hσ | hσ
-  · have hpair := sup_pair_lipschitz_scaled φ hL hc hφ a b
+  · have hpair := sup_pair_lipschitz_scaled φ hc hφ a b
     rw [hφ₁, hφ₂, hlin₁, hlin₂]
     simpa [hσ, sub_eq_add_neg, add_comm, add_left_comm, add_assoc] using hpair
-  · have hpair := sup_pair_lipschitz_scaled φ hL hc hφ a b
+  · have hpair := sup_pair_lipschitz_scaled φ hc hφ a b
     rw [hφ₁, hφ₂, hlin₁, hlin₂]
     simpa [hσ, sub_eq_add_neg, add_comm, add_left_comm, add_assoc] using hpair
 
@@ -352,8 +359,9 @@ private lemma sum_flipSign (n : ℕ) (k : Fin n) (A : Signs n → ℝ) :
   simpa using (flipSignEquiv n k).sum_comp A
 
 private lemma hybridAverage_mono_step
-    [Nonempty ι] [Fintype ι]
-    (φ : ℝ → ℝ) {L : ℝ} (hL : 0 ≤ L) (hφ : LipschitzAt0 φ L)
+    [Nonempty ι] [Finite ι]
+    (φ : ℝ → ℝ) {L : ℝ} (hL : 0 ≤ L)
+    (hφ : ∀ x y, |φ x - φ y| ≤ L * |x - y|)
     (F : ι → 𝒳 → ℝ) {n : ℕ} (S : Fin n → 𝒳)
     {m : ℕ} (hm : m < n) :
     hybridAverage φ L F n S m ≤ hybridAverage φ L F n S (m + 1) := by
@@ -369,7 +377,7 @@ private lemma hybridAverage_mono_step
     refine Finset.sum_le_sum ?_
     intro σ _
     dsimp [A, B, k]
-    exact hybrid_pair_le φ hL hφ F S hm σ
+    exact hybrid_pair_le φ hφ F S hm σ
   have hA :
       ∑ σ : Signs n, (A σ + A (flipSign n k σ))
         = 2 * ∑ σ : Signs n, A σ := by
@@ -411,8 +419,9 @@ private lemma hybridAverage_full_eq_linear
   simp
 
 private lemma hybridAverage_zero_le_full
-    [Nonempty ι] [Fintype ι]
-    (φ : ℝ → ℝ) {L : ℝ} (hL : 0 ≤ L) (hφ : LipschitzAt0 φ L)
+    [Nonempty ι] [Finite ι]
+    (φ : ℝ → ℝ) {L : ℝ} (hL : 0 ≤ L)
+    (hφ : ∀ x y, |φ x - φ y| ≤ L * |x - y|)
     (F : ι → 𝒳 → ℝ) (n : ℕ) (S : Fin n → 𝒳) :
     hybridAverage φ L F n S 0 ≤ hybridAverage φ L F n S n := by
   classical
@@ -428,8 +437,9 @@ private lemma hybridAverage_zero_le_full
         exact le_trans (ih hm_le) (hybridAverage_mono_step φ hL hφ F S hm_lt)
   simpa [H] using hchain n le_rfl
 
-private theorem empiricalRademacherComplexity_without_abs_smul_class_core
-    [Nonempty ι] [Fintype ι]
+/-- Without-abs analogue of `empiricalRademacherComplexity_smul_class`:
+    the signed scaling carries `c`, not `|c|`. -/
+theorem empiricalRademacherComplexity_without_abs_smul_class
     (F : ι → 𝒳 → ℝ) (c : ℝ) (hc : 0 ≤ c) (n : ℕ) (S : Fin n → 𝒳) :
     empiricalRademacherComplexity_without_abs n (fun i x => c * F i x) S
       = c * empiricalRademacherComplexity_without_abs n F S := by
@@ -472,8 +482,9 @@ private theorem empiricalRademacherComplexity_without_abs_smul_class_core
   ring
 
 private theorem rademacher_contraction_core
-    [Nonempty ι] [Fintype ι]
-    (φ : ℝ → ℝ) {L : ℝ} (hL : 0 ≤ L) (hφ : LipschitzAt0 φ L)
+    [Nonempty ι] [Finite ι]
+    (φ : ℝ → ℝ) {L : ℝ} (hL : 0 ≤ L)
+    (hφ : ∀ x y, |φ x - φ y| ≤ L * |x - y|)
     (F : ι → 𝒳 → ℝ) (n : ℕ) (S : Fin n → 𝒳) :
     empiricalRademacherComplexity_without_abs n
         (fun i x => φ (F i x)) S
@@ -487,60 +498,43 @@ private theorem rademacher_contraction_core
     _ = empiricalRademacherComplexity_without_abs n (fun i x => L * F i x) S := by
           rw [hybridAverage_full_eq_linear]
     _ = L * empiricalRademacherComplexity_without_abs n F S :=
-          empiricalRademacherComplexity_without_abs_smul_class_core F L hL n S
-
-/-- Wrapper exposing the signed contraction bound at a chosen coordinate.
-
-    The coordinate argument is not used in this packaged statement; the actual
-    one-coordinate comparison in the proof is carried by `hybrid_pair_le` and
-    `hybridAverage_mono_step`. -/
-private lemma rademacher_swap_step
-    [Nonempty ι] [Fintype ι]
-    (φ : ℝ → ℝ) {L : ℝ} (hL : 0 ≤ L) (hφ : LipschitzAt0 φ L)
-    (F : ι → 𝒳 → ℝ) (n : ℕ) (S : Fin n → 𝒳) (_k : Fin n) :
-    empiricalRademacherComplexity_without_abs n
-        (fun i x => φ (F i x)) S
-      ≤ L * empiricalRademacherComplexity_without_abs n F S := by
-  exact rademacher_contraction_core φ hL hφ F n S
-
-/-- **Telescoping over coordinates**. Iterating `rademacher_swap_step`
-    over all `k : Fin n` gives the headline contraction bound. -/
-private lemma rademacher_telescope
-    [Nonempty ι] [Fintype ι]
-    (φ : ℝ → ℝ) {L : ℝ} (hL : 0 ≤ L) (hφ : LipschitzAt0 φ L)
-    (F : ι → 𝒳 → ℝ) (n : ℕ) (S : Fin n → 𝒳) :
-    empiricalRademacherComplexity_without_abs n
-        (fun i x => φ (F i x)) S
-      ≤ L * empiricalRademacherComplexity_without_abs n F S := by
-  exact rademacher_contraction_core φ hL hφ F n S
+          empiricalRademacherComplexity_without_abs_smul_class F L hL n S
 
 /-- **Ledoux–Talagrand contraction principle (signed form).**
-    For any `L`-Lipschitz `φ : ℝ → ℝ` with `φ 0 = 0`,
+    For any `L`-Lipschitz `φ : ℝ → ℝ` and nonnegative `L`,
     `R̂_n(φ ∘ F) ≤ L · R̂_n(F)`. -/
 theorem rademacher_contraction
-    [Nonempty ι] [Fintype ι]
-    (φ : ℝ → ℝ) {L : ℝ} (hL : 0 ≤ L) (hφ : LipschitzAt0 φ L)
+    [Nonempty ι] [Finite ι]
+    (φ : ℝ → ℝ) {L : ℝ} (hL : 0 ≤ L)
+    (hLip : ∀ x y, |φ x - φ y| ≤ L * |x - y|)
     (F : ι → 𝒳 → ℝ) (n : ℕ) (S : Fin n → 𝒳) :
     empiricalRademacherComplexity_without_abs n
         (fun i x => φ (F i x)) S
       ≤ L * empiricalRademacherComplexity_without_abs n F S := by
-  exact rademacher_contraction_core φ hL hφ F n S
+  classical
+  letI := Fintype.ofFinite ι
+  exact rademacher_contraction_core φ hL hLip F n S
 
 private def withZero (F : ι → 𝒳 → ℝ) : Option ι → 𝒳 → ℝ
   | none, _ => 0
   | some i, x => F i x
 
-private lemma lipschitzAt0_neg (φ : ℝ → ℝ) {L : ℝ} (hφ : LipschitzAt0 φ L) :
+/-- Negating a function that fixes zero preserves the same Lipschitz
+constant. -/
+lemma lipschitzAt0_neg (φ : ℝ → ℝ) {L : ℝ} (hφ : LipschitzAt0 φ L) :
     LipschitzAt0 (fun x => -φ x) L := by
   refine ⟨by simp [hφ.1], ?_⟩
   intro x y
   rw [show -φ x - -φ y = -(φ x - φ y) from by ring, abs_neg]
   exact hφ.2 x y
 
-private lemma iSup_abs_le_iSup_add_iSup_neg_of_exists_zero
-    {α : Type*} [Fintype α] (x : α → ℝ) (h0 : ∃ a : α, x a = 0) :
+/-- If a finite collection of real numbers includes zero, its largest absolute value is at most
+the sum of its largest value and the largest value after negation. -/
+lemma iSup_abs_le_iSup_add_iSup_neg_of_exists_zero
+    {α : Type*} [Finite α] (x : α → ℝ) (h0 : ∃ a : α, x a = 0) :
     (⨆ a, |x a|) ≤ (⨆ a, x a) + (⨆ a, -x a) := by
   classical
+  letI := Fintype.ofFinite α
   rcases h0 with ⟨a0, ha0⟩
   letI : Nonempty α := ⟨a0⟩
   have hsup_nonneg : 0 ≤ ⨆ a, x a := by
@@ -560,11 +554,12 @@ private lemma iSup_abs_le_iSup_add_iSup_neg_of_exists_zero
     linarith
 
 private lemma empirical_abs_withZero_eq
-    [Nonempty ι] [Fintype ι]
+    [Nonempty ι] [Finite ι]
     (F : ι → 𝒳 → ℝ) (n : ℕ) (S : Fin n → 𝒳) :
     empiricalRademacherComplexity n (withZero F) S
       = empiricalRademacherComplexity n F S := by
   classical
+  letI := Fintype.ofFinite ι
   unfold empiricalRademacherComplexity
   congr 1
   refine Finset.sum_congr rfl ?_
@@ -592,11 +587,12 @@ private lemma empirical_abs_withZero_eq
         |(n : ℝ)⁻¹ * ∑ k : Fin n, (σ k : ℝ) * withZero F o (S k)|)) (some i)
 
 private lemma empirical_without_abs_withZero_le_abs
-    [Nonempty ι] [Fintype ι]
+    [Nonempty ι] [Finite ι]
     (F : ι → 𝒳 → ℝ) (n : ℕ) (S : Fin n → 𝒳) :
     empiricalRademacherComplexity_without_abs n (withZero F) S
       ≤ empiricalRademacherComplexity n F S := by
   classical
+  letI := Fintype.ofFinite ι
   unfold empiricalRademacherComplexity_without_abs empiricalRademacherComplexity
   refine mul_le_mul_of_nonneg_left ?_ (by positivity)
   refine Finset.sum_le_sum ?_
@@ -618,14 +614,18 @@ private lemma empirical_without_abs_withZero_le_abs
         (le_ciSup (Finite.bddAbove_range
           (fun i : ι => |(n : ℝ)⁻¹ * ∑ k : Fin n, (σ k : ℝ) * F i (S k)|)) i)
 
-private lemma empirical_abs_withZero_le_no_abs_plus_neg
-    [Fintype ι]
+/-- If a function class contains the zero function, its empirical Rademacher complexity with
+absolute values is bounded by the sum of the corresponding unsigned complexities for the class
+and its negation. -/
+lemma empirical_abs_withZero_le_no_abs_plus_neg
+    [Finite ι]
     (F : Option ι → 𝒳 → ℝ) (hzero : ∀ x, F none x = 0)
     (n : ℕ) (S : Fin n → 𝒳) :
     empiricalRademacherComplexity n F S
       ≤ empiricalRademacherComplexity_without_abs n F S
           + empiricalRademacherComplexity_without_abs n (fun i x => -F i x) S := by
   classical
+  letI := Fintype.ofFinite ι
   unfold empiricalRademacherComplexity empiricalRademacherComplexity_without_abs
   rw [← mul_add]
   refine mul_le_mul_of_nonneg_left ?_ (by positivity)
@@ -665,13 +665,18 @@ private lemma empirical_abs_withZero_le_no_abs_plus_neg
     the empirical Rademacher complexity satisfies the `2L` bound; the proof
     reduces to `rademacher_contraction` applied to `φ` and `-φ`. -/
 theorem rademacher_contraction_abs
-    [Nonempty ι] [Fintype ι]
-    (φ : ℝ → ℝ) {L : ℝ} (hL : 0 ≤ L) (hφ : LipschitzAt0 φ L)
+    [Nonempty ι] [Finite ι]
+    (φ : ℝ → ℝ) {L : ℝ} (hφ : LipschitzAt0 φ L)
     (F : ι → 𝒳 → ℝ) (n : ℕ) (S : Fin n → 𝒳) :
     empiricalRademacherComplexity n
         (fun i x => φ (F i x)) S
       ≤ 2 * L * empiricalRademacherComplexity n F S := by
   classical
+  letI := Fintype.ofFinite ι
+  have hL : 0 ≤ L := by
+    have h := hφ.2 0 1
+    norm_num [hφ.1] at h
+    exact (abs_nonneg _).trans h
   let F0 : Option ι → 𝒳 → ℝ := withZero F
   let G0 : Option ι → 𝒳 → ℝ := fun i x => φ (F0 i x)
   have hG0_zero : ∀ x, G0 none x = 0 := by
@@ -692,12 +697,12 @@ theorem rademacher_contraction_abs
   have h_contraction_pos :
       empiricalRademacherComplexity_without_abs n G0 S
         ≤ L * empiricalRademacherComplexity_without_abs n F0 S := by
-    simpa [G0] using rademacher_contraction_core φ hL hφ F0 n S
+    simpa [G0] using rademacher_contraction_core φ hL hφ.2 F0 n S
   have h_contraction_neg :
       empiricalRademacherComplexity_without_abs n (fun i x => -G0 i x) S
         ≤ L * empiricalRademacherComplexity_without_abs n F0 S := by
     simpa [G0] using
-      rademacher_contraction_core (fun x => -φ x) hL (lipschitzAt0_neg φ hφ) F0 n S
+      rademacher_contraction_core (fun x => -φ x) hL (lipschitzAt0_neg φ hφ).2 F0 n S
   have hF0_le :
       empiricalRademacherComplexity_without_abs n F0 S
         ≤ empiricalRademacherComplexity n F S := by
@@ -722,7 +727,6 @@ theorem rademacher_contraction_abs
     each element of a function class by `c` scales the absolute-value empirical
     Rademacher complexity by `|c|`. -/
 theorem empiricalRademacherComplexity_smul_class
-    [Nonempty ι] [Fintype ι]
     (F : ι → 𝒳 → ℝ) (c : ℝ) (n : ℕ) (S : Fin n → 𝒳) :
     empiricalRademacherComplexity n (fun i x => c * F i x) S
       = |c| * empiricalRademacherComplexity n F S := by
@@ -769,55 +773,9 @@ theorem empiricalRademacherComplexity_smul_class
   rw [hsum]
   ring
 
-/-- Without-abs analogue of `empiricalRademacherComplexity_smul_class`:
-    the signed scaling carries `c`, not `|c|`. -/
-theorem empiricalRademacherComplexity_without_abs_smul_class
-    [Nonempty ι] [Fintype ι]
-    (F : ι → 𝒳 → ℝ) (c : ℝ) (hc : 0 ≤ c) (n : ℕ) (S : Fin n → 𝒳) :
-    empiricalRademacherComplexity_without_abs n (fun i x => c * F i x) S
-      = c * empiricalRademacherComplexity_without_abs n F S := by
-  unfold empiricalRademacherComplexity_without_abs
-  have hsum :
-      (∑ σ : Signs n,
-          ⨆ i,
-            (n : ℝ)⁻¹ * ∑ k : Fin n, (σ k : ℝ) * (c * F i (S k)))
-        =
-      c * ∑ σ : Signs n,
-          ⨆ i,
-            (n : ℝ)⁻¹ * ∑ k : Fin n, (σ k : ℝ) * F i (S k) := by
-    rw [Finset.mul_sum]
-    refine Finset.sum_congr rfl fun σ _ => ?_
-    calc
-      (⨆ i,
-          (n : ℝ)⁻¹ * ∑ k : Fin n, (σ k : ℝ) * (c * F i (S k)))
-          =
-        ⨆ i,
-          c * ((n : ℝ)⁻¹ * ∑ k : Fin n, (σ k : ℝ) * F i (S k)) := by
-          refine iSup_congr fun i => ?_
-          calc
-            (n : ℝ)⁻¹ * ∑ k : Fin n, (σ k : ℝ) * (c * F i (S k))
-                =
-              (n : ℝ)⁻¹ * (c * ∑ k : Fin n, (σ k : ℝ) * F i (S k)) := by
-                congr 1
-                rw [Finset.mul_sum]
-                refine Finset.sum_congr rfl fun k _ => by ring
-            _ =
-              c * ((n : ℝ)⁻¹ * ∑ k : Fin n, (σ k : ℝ) * F i (S k)) := by
-                ring
-      _ =
-        c * ⨆ i,
-          (n : ℝ)⁻¹ * ∑ k : Fin n, (σ k : ℝ) * F i (S k) := by
-          exact
-            (Real.mul_iSup_of_nonneg hc
-              (fun i =>
-                (n : ℝ)⁻¹ * ∑ k : Fin n, (σ k : ℝ) * F i (S k))).symm
-  rw [hsum]
-  ring
-
-/-- The per-sign supremand of the empirical Rademacher complexity is bounded above by any
-uniform bound `M` on the class. Supplies the `BddAbove` witnesses needed to manipulate the
-`⨆` over an infinite index. -/
-private lemma absInner_le_of_bound
+/-- A signed empirical average of a uniformly bounded function has absolute
+value no larger than the same uniform bound. -/
+lemma absInner_le_of_bound
     (H : ι → 𝒳 → ℝ) {M : ℝ} (hM0 : 0 ≤ M) (hH : ∀ i x, |H i x| ≤ M)
     (n : ℕ) (S : Fin n → 𝒳) (σ : Signs n) (i : ι) :
     |(n : ℝ)⁻¹ * ∑ k : Fin n, (σ k : ℝ) * H i (S k)| ≤ M := by
@@ -839,7 +797,9 @@ private lemma absInner_le_of_bound
             rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
             field_simp
 
-private lemma absInner_bddAbove
+/-- Signed empirical averages of a uniformly bounded function class are bounded above by the
+common absolute bound. -/
+lemma absInner_bddAbove
     (H : ι → 𝒳 → ℝ) {M : ℝ} (hM0 : 0 ≤ M) (hH : ∀ i x, |H i x| ≤ M)
     (n : ℕ) (S : Fin n → 𝒳) (σ : Signs n) :
     BddAbove (Set.range
@@ -884,12 +844,16 @@ finitely many sign vectors, an `ε`-approximate maximizer; their finite collecti
 finite subindex on which the Fintype contraction applies. -/
 theorem empiricalRademacherComplexity_contraction_abs_of_bddAbove
     [Nonempty ι]
-    (φ : ℝ → ℝ) {L : ℝ} (hL : 0 ≤ L) (hφ : LipschitzAt0 φ L)
+    (φ : ℝ → ℝ) {L : ℝ} (hφ : LipschitzAt0 φ L)
     (F : ι → 𝒳 → ℝ) {M : ℝ} (hM0 : 0 ≤ M) (hM : ∀ i x, |F i x| ≤ M)
     (n : ℕ) (S : Fin n → 𝒳) :
     empiricalRademacherComplexity n (fun i x => φ (F i x)) S
       ≤ 2 * L * empiricalRademacherComplexity n F S := by
   classical
+  have hL : 0 ≤ L := by
+    have h := hφ.2 0 1
+    norm_num [hφ.1] at h
+    exact (abs_nonneg _).trans h
   haveI hSigns : Nonempty (Signs n) := ⟨fun _ => ⟨1, by decide⟩⟩
   -- uniform bound for the composed class `φ ∘ F`
   have hLM0 : 0 ≤ L * M := mul_nonneg hL hM0
@@ -914,7 +878,7 @@ theorem empiricalRademacherComplexity_contraction_abs_of_bddAbove
     ⟨⟨iσ (Classical.arbitrary (Signs n)),
       Finset.mem_image.mpr ⟨_, Finset.mem_univ _, rfl⟩⟩⟩
   -- Fintype contraction on the subindex `↥T`
-  have hcontr := rademacher_contraction_abs (ι := {x // x ∈ T}) φ hL hφ
+  have hcontr := rademacher_contraction_abs (ι := {x // x ∈ T}) φ hφ
     (fun j => F j.val) n S
   -- (b) restricting the index only lowers the (with-abs) complexity
   have hb : empiricalRademacherComplexity n (fun j : {x // x ∈ T} => F j.val) S

@@ -67,8 +67,9 @@ noncomputable def populationGram (φ : FeatureMap γ K) (P : Measure (γ × ℝ)
     Matrix K K ℝ :=
   Matrix.of fun k l => ∫ z, φ.φ z.1 k * φ.φ z.1 l ∂P
 
+omit [DecidableEq K] in
 /-- The population feature Gram is positive semidefinite whenever the feature
-coordinates are measurable and the fourth moment of the feature norm is finite. -/
+ coordinates are measurable and the fourth moment of the feature norm is finite. -/
 theorem populationGram_posSemidef (φ : FeatureMap γ K) (P : Measure (γ × ℝ))
     [IsFiniteMeasure P]
     (hφ : ∀ k, Measurable (fun x => φ.φ x k))
@@ -173,6 +174,7 @@ theorem populationGram_posSemidef (φ : FeatureMap γ K) (P : Measure (γ × ℝ
     rw [hquad]
     exact integral_nonneg fun z => sq_nonneg _
 
+omit [MeasurableSpace Ω] [MeasurableSpace γ] [DecidableEq K] in
 /-- The empirical Gram is positive semidefinite (average of rank-one `φφᵀ`). -/
 theorem empiricalGram_posSemidef (φ : FeatureMap γ K) (Z : ℕ → Ω → γ × ℝ)
     (n : ℕ) (ω : Ω) : (empiricalGram φ Z n ω).PosSemidef := by
@@ -188,6 +190,7 @@ theorem empiricalGram_posSemidef (φ : FeatureMap γ K) (Z : ℕ → Ω → γ �
         (Matrix.vecMulVec (φ.φ (Z i ω).1) (star (φ.φ (Z i ω).1))).PosSemidef)
   · exact inv_nonneg.mpr (Nat.cast_nonneg n)
 
+omit [MeasurableSpace Ω] [MeasurableSpace γ] in
 /-- The ridge coefficient error factors through the regularized empirical Gram
 inverse and the centered empirical score
 `Ŝₙ − λ β⋆ = (Ĉₙ − Ĝₙ β⋆) − λ β⋆`. -/
@@ -217,8 +220,9 @@ theorem sampleRidgeCoef_sub_eq (φ : FeatureMap γ K) (Z : ℕ → Ω → γ × 
     _ = G⁻¹ *ᵥ
           (empiricalCross φ Z n ω - empiricalGram φ Z n ω *ᵥ βstar - lam • βstar) := by
           rw [← hG_mul]
-          abel
+          abel_nf
 
+omit [DecidableEq K] in
 /-- The centered empirical score mean
 `Ŝₙ − λβ⋆ = (Ĉₙ − Ĝₙβ⋆) − λβ⋆ = n⁻¹ Σ (φᵢ(yᵢ−⟨β⋆,φᵢ⟩) − λβ⋆)`
 is `O_p(n^{-1/2})`.  The population normal equations make the summands centered. -/
@@ -459,18 +463,8 @@ theorem sampleRidgeCoef_isBigOp (φ : FeatureMap γ K) (P : Measure (γ × ℝ))
       Tendsto_inProb (fun n ω => empiricalGram φ S.Z n ω i j)
         (fun _ => populationGram φ P i j) μ := by
     intro i j
-    have hcomp_int :
-        Integrable (fun ω => φ.φ (S.Z 0 ω).1 i * φ.φ (S.Z 0 ω).1 j) μ := by
-      let g : γ × ℝ → ℝ := fun z => φ.φ z.1 i * φ.φ z.1 j
-      have hg_meas : Measurable g := (hφ_prod i).mul (hφ_prod j)
-      have hmap : Integrable g (μ.map (S.Z 0)) := by
-        rw [S.law]
-        exact hprod_int i j
-      simpa [g] using
-        (MeasureTheory.integrable_map_measure hg_meas.aestronglyMeasurable
-          (S.meas 0).aemeasurable).1 hmap
     have hmean := S.sampleMean_tendsto_inProb
-      ((hφ_prod i).mul (hφ_prod j)) hcomp_int
+      ((hφ_prod i).mul (hφ_prod j)) (hprod_int i j)
     have hfun :
         (fun n ω => empiricalGram φ S.Z n ω i j) =
           S.sampleMean (fun z : γ × ℝ => φ.φ z.1 i * φ.φ z.1 j) := by
@@ -559,6 +553,7 @@ theorem sampleRidgeCoef_isBigOp (φ : FeatureMap γ K) (P : Measure (γ × ℝ))
   exact Finset.single_le_sum (f := fun j => |v j|)
     (fun j _ => abs_nonneg _) (Finset.mem_univ k)
 
+omit [DecidableEq K] in
 /-- A finite linear combination of features has finite L² norm under the
 covariate marginal whenever the feature vector has a finite fourth moment under
 the joint law. -/
@@ -610,6 +605,7 @@ lemma linear_predictor_sub_memLp_of_l4 (φ : FeatureMap γ K) (P : Measure (γ �
   rw [memLp_map_measure_iff hF_meas.aestronglyMeasurable measurable_fst.aemeasurable]
   simpa [Function.comp_def, hmap] using hlin_mem
 
+omit [DecidableEq K] in
 /-- **Deterministic predictor Lipschitz bound.** The prediction L²(P_X) error is
 bounded by a finite constant times the coefficient error:
 `‖∑ₖ δₖ φ·ₖ‖_{L²} ≤ C ‖δ‖`. -/

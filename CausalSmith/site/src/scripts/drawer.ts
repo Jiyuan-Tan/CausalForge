@@ -41,7 +41,10 @@ interface Snippet {
 }
 interface PaperData {
   github: string | null;
+  /** Commit the bundle was audited at — provenance, shown as the pinned-commit label. */
   commit: string;
+  /** Ref source links resolve against (see `sourceRef` in lib/config). */
+  ref: string;
   leanSubdir: string;
   entries: Entry[];
   snippets: Record<string, Snippet>;
@@ -225,7 +228,7 @@ export function initDrawer(): void {
       });
     } else if (e.lean && snip) {
       const ghLink = data.github
-        ? `<a href="https://github.com/${data.github}/blob/${data.commit}/${data.leanSubdir}/${e.lean.file}#L${e.lean.line}" target="_blank" rel="noopener">full file ↗ GitHub @ ${data.commit.slice(0, 7)}</a>`
+        ? `<a href="https://github.com/${data.github}/blob/${data.ref}/${data.leanSubdir}/${e.lean.file}#L${e.lean.line}" target="_blank" rel="noopener">full file ↗ GitHub @ ${data.ref.slice(0, 7)}</a>`
         : `pinned commit ${data.commit.slice(0, 7)}`;
       subEl.innerHTML = `↔ <span class="ident">${esc(e.lean.decl)}</span> · ${esc(e.lean.file)}:${e.lean.line}`;
       const badge = snip.sorry_free

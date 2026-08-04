@@ -210,13 +210,13 @@ theorem evalMap_overrideC_fixSet_compat_on_fillZrW
     (W : Finset (SWIGNode N))
     (hZrW_M2 : Z.image SWIGNode.random ∪ W ⊆
                 (M'.fixSet Z hZ_obs hZ_fixed).observed)
-    (hZrW_M1 : Z.image SWIGNode.random ∪ W ⊆ M'.observed)
     (s : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues)
     (w : ValuesOn W (swigΩ Ω))
     (ℓ : (M'.fixSet Z hZ_obs hZ_fixed).LatentValues)
     {v : SWIGNode N}
     (hv : v ∈ (M'.fixSet Z hZ_obs hZ_fixed).observed) :
-    M'.evalMap_overrideC (Finset.Subset.refl _) hZrW_M1
+    M'.evalMap_overrideC (Finset.Subset.refl _)
+        ((fixSet_observed M' Z hZ_obs hZ_fixed) ▸ hZrW_M2)
         (M'.fixSetProj Z hZ_obs hZ_fixed s)
         (M'.fillZrW Z hZ_obs hZ_fixed W s w)
         (valuesProjection
@@ -230,6 +230,8 @@ theorem evalMap_overrideC_fixSet_compat_on_fillZrW
   let M1 := M'
   let M2 := M1.fixSet Z hZ_obs hZ_fixed
   have h_obs_eq : M2.observed = M1.observed := rfl
+  let hZrW_M1 : Z.image SWIGNode.random ∪ W ⊆ M'.observed :=
+    (fixSet_observed M' Z hZ_obs hZ_fixed) ▸ hZrW_M2
   have h_unobs : M2.unobserved = M1.unobserved := rfl
   let s_M1 : M1.FixedValues := M1.fixSetProj Z hZ_obs hZ_fixed s
   let ℓ_M1 : M1.LatentValues := valuesProjection (le_of_eq h_unobs.symm) ℓ

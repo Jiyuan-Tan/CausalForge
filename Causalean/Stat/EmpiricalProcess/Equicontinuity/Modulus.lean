@@ -90,6 +90,7 @@ def AsymptoticEquicont (ψ : E → X → E) (θ₀ : E) (P : Measure X)
           ε < ‖S.empProcVec (fun z => ψ θ z - ψ θ₀ z) n ω‖}
         ≤ ENNReal.ofReal η
 
+omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
 /-- **Empirical process at the estimator vanishes.**
 
 If the score family is asymptotically equicontinuous (`AsymptoticEquicont`) and
@@ -145,6 +146,7 @@ theorem empProcVec_atEstimator_tendsto_zero
   refine le_trans (measure_mono hsub) (le_trans (measure_union_le _ _) ?_)
   exact le_trans (add_le_add hCons_n hAEC_n) hsum_le
 
+omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
 /-- **Reduction: `StochEquicontAt` from class-level equicontinuity + consistency.**
 
 The `Z`-estimator / GMM CLTs (`zEstimator_clt`, `gmm_asymptotically_linear`)

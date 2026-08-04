@@ -126,6 +126,7 @@ noncomputable def asympVar : E →L[ℝ] E :=
 /-- The **efficient asymptotic variance** `(GᵀCov⁻¹G)⁻¹`. -/
 noncomputable def effVar : E →L[ℝ] E := prob.effInv
 
+omit [BorelSpace F] in
 /-- The covariance operator is positive — it is a second moment. -/
 theorem cov_isPositive : prob.Cov.IsPositive := by
   refine ⟨fun t s => ?_, fun t => ?_⟩
@@ -141,6 +142,7 @@ theorem cov_isPositive : prob.Cov.IsPositive := by
     rw [hre, prob.hCov t t]
     exact integral_nonneg fun x => mul_self_nonneg _
 
+omit [BorelSpace F] in
 /-- **GMM optimal-weighting theorem (Hansen 1982), statistical form.** The
 sandwich asymptotic variance dominates the efficient variance `(GᵀCov⁻¹G)⁻¹` in
 the Löwner order: `asympVar − effVar` is a positive operator. -/

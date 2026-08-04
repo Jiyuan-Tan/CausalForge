@@ -24,7 +24,7 @@ boundedness, overlap, dependency-graph, and variance-growth conditions.
 -/
 
 
-open scoped BigOperators Topology Classical
+open scoped BigOperators Topology
 open Filter
 
 namespace Causalean
@@ -108,12 +108,6 @@ theorem var_NsqVhat_tendsto_zero_of_conditions
     (hjk : ∀ n i j, 1 / propPairSame (Exp n).D (Exp n).f (Exp n).θ i j (dk n) ≤ c₃)
     (hjl : ∀ n i j, 1 / propPairSame (Exp n).D (Exp n).f (Exp n).θ i j (dl n) ≤ c₃)
     (hjc : ∀ n i j, 1 / propPairCross (Exp n).D (Exp n).f (Exp n).θ i j (dk n) (dl n) ≤ c₃)
-    (hjointk : ∀ n i j, i ≠ j →
-      0 < propPairSame (Exp n).D (Exp n).f (Exp n).θ i j (dk n))
-    (hjointl : ∀ n i j, i ≠ j →
-      0 < propPairSame (Exp n).D (Exp n).f (Exp n).θ i j (dl n))
-    (hjointc : ∀ n i j, i ≠ j →
-      0 < propPairCross (Exp n).D (Exp n).f (Exp n).θ i j (dk n) (dl n))
     (G : ∀ n, (Exp n).ι → (Exp n).ι → Prop) (decG : ∀ n, DecidableRel (G n))
     (hrefl : ∀ n i, G n i i) (hsymm : ∀ n i j, G n i j → G n j i)
     {m : ℕ} (hdeg : ∀ n i, (Finset.univ.filter (fun j => G n i j)).card ≤ m)
@@ -223,7 +217,7 @@ theorem wald_coverage_feasible_of_conditions
         exact (inv_le_comm₀ hc₂pos (hπl n i)).mpr hπinv)
       hN hVar cVar hcVar hCond4
   have hVN := var_NsqVhat_tendsto_zero_of_conditions Exp dk dl hne hc₁ hc₂ hc₃ hy hπk hπl
-    hπinvk hπinvl hjk hjl hjc hjointk hjointl hjointc G decG hrefl hsymm hdeg hGindep hcov0 hN
+    hπinvk hπinvl hjk hjl hjc G decG hrefl hsymm hdeg hGindep hcov0 hN
   have hrel := relVar_of_NsqVar_tendsto Exp dk dl hcVar hCond4 hVN
   exact wald_coverage_feasible_of_relVar Exp dk dl hclt hne
     (fun n i => (hπk n i).ne') (fun n i => (hπl n i).ne')

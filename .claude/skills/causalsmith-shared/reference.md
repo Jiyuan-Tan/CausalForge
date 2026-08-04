@@ -110,6 +110,10 @@ Run this cleanup ONLY during an intervention or after ALL F3 jobs finish (never 
 
 ## Watching a live run — watcher recipes (principle: SKILL § "The loop", step 1)
 
+**All Codex orchestrators must skip the remainder of this watcher-recipe subsection. D/F leaseholders follow
+their phase fixed-window contract; direct Codex main ownership follows the main skill's same 30-minute / 120-second
+contract. The legacy recipes below apply only to non-Codex runtimes.**
+
 **The current resume-lease holder arms the watcher** — and because main GRANTS the lease to the D/F sub in
 the SAME turn as the launch / cross-boundary resume, that sub is the watcher-armer for the WHOLE of its
 phase, **including the cold-start→first-halt window** (main does not watch it). The sub resumes its own
@@ -122,17 +126,18 @@ launch/resume so a *meaningful pipeline event* wakes you instantly (the `run_in_
 notification only fires on process EXIT — no signal during a long F3/F4/F5, and even the exit signal can
 LAG under codex contention with a concurrent run, so the watcher is your PRIMARY event signal):
 
-**⚠ NESTED-SUBAGENT CAVEAT (a dispatched D/F/topics sub — NOT top-level main).** A sub that starts a `run_in_background` task and then ENDS ITS TURN is NOT re-woken: the completion notification misroutes to the PARENT (main), stalling the sub idle (observed live 2026-07-10). A sub must STAY IN ITS TURN and self-drive with FOREGROUND, BLOCKING calls — launch the long node process so it OUTLIVES both harness time-caps, then FOREGROUND-poll-watch it (`pgrep` + `wc -l` on `pipeline.jsonl` / `reviews/reviews.jsonl`), re-issuing the poll if it hits the time-cap — never yield-and-wait-for-the-notification. **⚠ The node `--resume` must be launched DETACHED via `setsid`, NOT a plain `run_in_background` and NOT foreground:** a foreground `--resume` dies at the ~10-min Bash cap, and a plain `run_in_background` node process is KILLED by the harness at a **~60-minute cap** (observed live 2026-07-10 — long F2.5/F3 fills died at exactly 60 min, twice). Detached survives both (verified 63 min past the cap): `setsid bash -c 'source ~/.nvm/nvm.sh && nvm use 20.20.2 && npx --prefix tools tsx tools/bin/causalsmith.ts research --resume --from-stage <stage> --auto <qid> <spec> > <logfile> 2>&1' < /dev/null & disown`. **NEVER pipe the node command through `| grep …`** — the pipeline's exit code becomes grep's (1 on no-match), masking a real success as a failure and risking a SIGPIPE kill; redirect to `<logfile>` and inspect it. State ratchets forward across stages, so on ANY death (either cap, or cluster contention) just re-resume detached from the current stage. Dispatch any codex consult FOREGROUND for the same reason. (Top-level MAIN is exempt — it receives its own background-task notifications; the two recipes below are for main or an in-turn watcher. A sub must NOT arm a background `Monitor`/`until`-loop and then stop.)
+**⚠ NESTED-SUBAGENT CAVEAT (a dispatched D/F/topics sub — NOT top-level main).** A sub that starts a `run_in_background` task and then ENDS ITS TURN is NOT re-woken: the completion notification misroutes to the PARENT (main), stalling the sub idle (observed live 2026-07-10). A sub must STAY IN ITS TURN and self-drive with FOREGROUND, BLOCKING calls — launch the long node process so it OUTLIVES both harness time-caps, then FOREGROUND-poll-watch it (`pgrep` + `wc -l` on `pipeline.jsonl` / `reviews/reviews.jsonl`), re-issuing the poll if it hits the time-cap — never yield-and-wait-for-the-notification. **⚠ The node `--resume` must be launched DETACHED via `setsid`, NOT a plain `run_in_background` and NOT foreground:** a foreground `--resume` dies at the ~10-min Bash cap, and a plain `run_in_background` node process is KILLED by the harness at a **~60-minute cap** (observed live 2026-07-10 — long F2.5/F3 fills died at exactly 60 min, twice). Detached survives both (verified 63 min past the cap): `setsid bash -c 'source ~/.nvm/nvm.sh && nvm use 20.20.2 && npx --prefix tools tsx tools/bin/causalsmith.ts research --resume --from-stage <stage> --auto <qid> <spec> > <logfile> 2>&1' < /dev/null & disown`. **NEVER pipe the node command through `| grep …`** — the pipeline's exit code becomes grep's (1 on no-match), masking a real success as a failure and risking a SIGPIPE kill; redirect to `<logfile>` and inspect it. State ratchets forward across stages, so on ANY death (either cap, or cluster contention) just re-resume detached from the current stage. Dispatch any **shell-based** Codex consult FOREGROUND for the same reason; native Codex subagents use the managed wait/message API. (Top-level MAIN is exempt — it receives its own background-task notifications; the two recipes below are for main or an in-turn watcher. A sub must NOT arm a background `Monitor`/`until`-loop and then stop.)
 
 **Host-specific architectural rule.** Under Claude, ONLY MAIN dispatches Claude subagents: completion
 does not route back to a nested Claude orchestrator, so a sub drives detached OS processes and returns
 `{escalation:"dispatch-request", spec:…}` when it genuinely needs a Claude worker. Under Codex, the
 managed collaboration API is different: a Codex main or Codex sub-orchestrator may `spawn_agent` a
-bounded Codex child and drive it with `wait_agent`/messages when model and reasoning effort are
-unspecified. The current managed API does not expose per-child selection, so use `codex exec` whenever
-the task or skill specifies a model or effort. Assign disjoint edit scopes whichever route is selected,
-and respect the managed concurrency limit. A detached OS process is still the route for the long
-TypeScript pipeline node itself, which is not a Codex worker. Under Claude, a sub dispatches codex DETACHED via `setsid`, redirects
+bounded Codex child and drive it with `wait_agent`/messages. Use native dispatch for orchestrator
+children: D math-facing orchestration uses `high`, routine orchestration `medium`. Set model/effort
+explicitly. The TypeScript pipeline's own worker/reviewer/
+consult processes still use its configured `codex exec` adapter. Assign disjoint edit scopes whichever route is selected, and respect
+the managed concurrency limit. A detached OS process is still the route for the long TypeScript pipeline
+node itself, which is not a Codex worker. Under Claude, a sub dispatches codex DETACHED via `setsid`, redirects
 to a logfile, and foreground-polls all node/build processes together; it must never
 `run_in_background`+end-turn.
 

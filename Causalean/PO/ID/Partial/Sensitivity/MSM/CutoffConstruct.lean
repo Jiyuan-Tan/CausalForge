@@ -141,7 +141,7 @@ private lemma integrable_propScore_mul_treatedCondCDF (t : ℝ) :
 
 private lemma integrable_treated_indicator_mul_treatedCondCDF (t : ℝ) :
     Integrable (fun ω => S.dVar.indicator true ω * S.treatedCondCDF ω t) P.μ := by
-  exact (S.dVar.integrable_indicator true).mul_bdd
+  exact (S.dVar.integrable_indicator true (MeasurableSet.singleton true)).mul_bdd
     ((S.measurable_treatedCondCDF_const_ambient t).aestronglyMeasurable)
     (S.eventually_norm_treatedCondCDF_le_one t)
 
@@ -164,7 +164,7 @@ private lemma setIntegral_propScore_mul_treatedCondCDF_eq_le (t : ℝ)
       (m := S.sigmaX) (μ := P.μ)
       (S.stronglyMeasurable_treatedCondCDF_const t)
       (S.integrable_treated_indicator_mul_treatedCondCDF t)
-      (S.dVar.integrable_indicator true)
+      (S.dVar.integrable_indicator true (MeasurableSet.singleton true))
     exact h.trans (Filter.EventuallyEq.of_eq (by funext ω; rfl))
   have hleft_to_ZF :
       ∫ ω in S.factualX ⁻¹' B, S.propScore true ω * S.treatedCondCDF ω t ∂P.μ =
@@ -325,7 +325,8 @@ theorem treatedSurv_const_eq (t : ℝ) :
     (f := S.dVar.indicator true)
     (g := fun ω => S.dVar.indicator true ω *
       (if S.factualY ω ≤ t then (1 : ℝ) else 0))
-    (S.dVar.integrable_indicator true) (S.integrable_treated_le_indicator t)
+    (S.dVar.integrable_indicator true (MeasurableSet.singleton true))
+      (S.integrable_treated_le_indicator t)
   have hle_bridge := S.treatedLe_const_eq t
   filter_upwards [hsub, hle_bridge] with ω hsubω hleω
   change P.μ[S.dVar.indicator true - (fun ω => S.dVar.indicator true ω *
@@ -504,7 +505,7 @@ private lemma integrable_propScore_mul_treatedCondCDF_variable (c : P.Ω → ℝ
 private lemma integrable_treated_indicator_mul_treatedCondCDF_variable (c : P.Ω → ℝ)
     (hc : Measurable[S.sigmaX] c) :
     Integrable (fun ω => S.dVar.indicator true ω * S.treatedCondCDF ω (c ω)) P.μ := by
-  exact (S.dVar.integrable_indicator true).mul_bdd
+  exact (S.dVar.integrable_indicator true (MeasurableSet.singleton true)).mul_bdd
     ((S.measurable_treatedCondCDF_variable_ambient c hc).aestronglyMeasurable)
     (S.eventually_norm_treatedCondCDF_variable_le_one c)
 
@@ -538,7 +539,7 @@ private lemma setIntegral_propScore_mul_treatedCondCDF_eq_le_variable (c : P.Ω 
       (S.stronglyMeasurable_treatedCondCDF_variable (fun ω => q (S.factualX ω)) hcq)
       (S.integrable_treated_indicator_mul_treatedCondCDF_variable
         (fun ω => q (S.factualX ω)) hcq)
-      (S.dVar.integrable_indicator true)
+      (S.dVar.integrable_indicator true (MeasurableSet.singleton true))
     exact h.trans (Filter.EventuallyEq.of_eq (by funext ω; rfl))
   have hleft_to_ZF :
       ∫ ω in S.factualX ⁻¹' B, S.propScore true ω *
@@ -710,7 +711,8 @@ theorem treatedSurv_eq (c : P.Ω → ℝ) (hc : Measurable[S.sigmaX] c) :
     (f := S.dVar.indicator true)
     (g := fun ω => S.dVar.indicator true ω *
       (if S.factualY ω ≤ c ω then (1 : ℝ) else 0))
-    (S.dVar.integrable_indicator true) (S.integrable_treated_le_indicator_variable c hc)
+    (S.dVar.integrable_indicator true (MeasurableSet.singleton true))
+      (S.integrable_treated_le_indicator_variable c hc)
   have hle_bridge := S.treatedLe_eq c hc
   filter_upwards [hsub, hle_bridge] with ω hsubω hleω
   change P.μ[S.dVar.indicator true - (fun ω => S.dVar.indicator true ω *
@@ -785,7 +787,7 @@ theorem exists_calibrating_cutoff (Λ : ℝ) (hΛ : 1 < Λ)
     infer_instance
   obtain ⟨hq_meas, hq_attain⟩ :=
     Causalean.Mathlib.measurable_condQuantile_and_attains
-      S.treatedXYLaw τ hτ_meas hτ0 hτ1 hatomless
+      S.treatedXYLaw τ hτ_meas hτ0 hτ1 (fun a => (hatomless a).continuousAt)
   let c : P.Ω → ℝ := fun ω =>
     Causalean.Mathlib.condQuantile S.treatedXYLaw τ (S.factualX ω)
   have hc_meas : Measurable[S.sigmaX] c := by

@@ -54,13 +54,16 @@ theorem not_dSeparable_of_uAdj {a b : V} (h : G.UAdj a b) (Z : Finset V) :
   simp only [DAG.dSep] at hsep
   exact (Finset.disjoint_left.mp hsep.2.2.2 hb) (Finset.mem_singleton_self b)
 
-/-- **Helper for the skeleton read-off.** If `x` is topologically *before* `y` and the two
+/-- If one endpoint precedes a nonadjacent later endpoint topologically, conditioning on
+the later endpoint's parents d-separates the pair.
+
+If `x` is topologically *before* `y` and the two
 are non-adjacent, then conditioning on the parents of `y` d-separates `x` from `y`. Every
 active path from `x` to `y` ends with an edge incident to `y`; that edge cannot point *into*
 `y` (the second-to-last vertex would then be a conditioned non-collider) nor *out of* `y` (the
 second-to-last vertex would be a topological descendant of `y`, contradicting that all path
 nodes are ancestors of `{x} ∪ {y} ∪ parents y`, all of which are `≤ y` in topological order). -/
-private theorem dSep_parents_of_topoOrder_lt {x y : V}
+theorem dSep_parents_of_topoOrder_lt {x y : V}
     (hlt : G.topoOrder x < G.topoOrder y) (hxy : ¬ G.UAdj x y) :
     G.dSep {x} {y} (G.parents y) := by
   have hne : x ≠ y := by
@@ -183,12 +186,15 @@ theorem adjacent_iff_not_dSeparable {a b : V} (hne : a ≠ b) :
     by_contra hadj
     exact h (G.dSeparable_of_not_uAdj hne hadj)
 
-/-- **Helper for the collider read-off (non-collider case).** On an unshielded triple `x — b
+/-- On an unshielded two-edge triple, a non-collider middle vertex points into the
+topologically later endpoint.
+
+On an unshielded triple `x — b
 — y` whose ends satisfy `topoOrder x ≤ topoOrder y`, if `b` is *not* a collider then `b` is
 a parent of the topologically-later end `y`. Indeed the non-collider has an outgoing edge `b
 → x` or `b → y`; in the former case `b` precedes `x` hence `y`, so the adjacency `b — y`
 cannot point into `b` (that would make `b` later than `y`), forcing `b → y`. -/
-private theorem edge_to_later_of_nonCollider {x y b : V}
+theorem edge_to_later_of_nonCollider {x y b : V}
     (hxy_le : G.topoOrder x ≤ G.topoOrder y)
     (hxb : G.UAdj x b) (hyb : G.UAdj y b) (hnc : ¬ G.IsCollider x b y) :
     G.edge b y := by
@@ -331,9 +337,7 @@ theorem sameSkeleton_of_markovEquiv {G₁ G₂ : DAG V} (h : MarkovEquiv G₁ G�
     intro Ga Gb hab a b hne hna hUAdj
     obtain ⟨Z, haZ, hbZ, hsep⟩ := Ga.dSeparable_disjoint_of_not_uAdj hne hna
     exact Gb.not_dSeparable_of_uAdj hUAdj Z
-      ((hab {a} {b} Z (Finset.disjoint_singleton.mpr hne)
-        (Finset.disjoint_singleton_left.mpr haZ)
-        (Finset.disjoint_singleton_left.mpr hbZ)).mp hsep)
+      ((hab {a} {b} Z).mp hsep)
   intro a b
   by_cases hne : a = b
   · subst hne; exact iff_of_false (G₁.not_uAdj_self a) (G₂.not_uAdj_self a)
@@ -364,10 +368,7 @@ theorem sameImmoralities_of_markovEquiv {G₁ G₂ : DAG V} (h : MarkovEquiv G�
           refine imp_congr_right (fun _ => ?_)
           refine imp_congr_right (fun haZ => ?_)
           refine imp_congr_right (fun hcZ => ?_)
-          exact not_congr (h {a} {c} Z
-            (Finset.disjoint_singleton.mpr hne)
-            (Finset.disjoint_singleton_left.mpr haZ)
-            (Finset.disjoint_singleton_left.mpr hcZ))
+          exact not_congr (h {a} {c} Z)
         · -- c, b non-adjacent in both: both sides false (needs `edge c b`, hence `UAdj c b`)
           have hcb₂ : ¬ G₂.UAdj c b := fun h' => hcb ((hskel c b).mpr h')
           exact iff_of_false (fun him => hcb (Or.inl him.2.1))

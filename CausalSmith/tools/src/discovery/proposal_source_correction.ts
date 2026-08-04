@@ -14,10 +14,10 @@ import { CoreSchema } from "./core/schema.js";
 import { runProposalGate } from "./core/proposal_gate.js";
 import { protoCoreJsonPath } from "./stages/neg1_2_author.js";
 import { parseRepairedModelJson } from "./core/core_io.js";
+import { firstFreeName } from "../shared/fs_aside.js";
 
 export interface ProposalSourceCorrectionResult {
   coreReplacements: number;
-  handoffReplacements: number;
   corePath: string;
 }
 
@@ -82,7 +82,12 @@ export async function applyProposalSourceCorrection(
   const parkedOrReviewerOnlyReopened =
     pf?.angle_checkpoint !== undefined ||
     (pf?.final_verdict === "pending" && !currentReviewStillActive);
-  if (!pf || !parkedOrReviewerOnlyReopened || pf.last_draft_status !== "completed" || !pf.last_draft_handoff) {
+  if (
+    !pf ||
+    !parkedOrReviewerOnlyReopened ||
+    pf.last_draft_status !== "completed" ||
+    pf.last_draft_version !== (pf.current_version ?? 0)
+  ) {
     throw new Error(
       "proposal-source-correction requires a completed proposal either parked at D-0.5 or reopened by reviewer invalidation",
     );
@@ -99,17 +104,13 @@ export async function applyProposalSourceCorrection(
     resume: true,
   });
   const originalCoreRaw = await readFile(corePath, "utf8");
-  // Three-layer defense: the core and handoff are model-authored TeX carriers;
-  // the corrected artifacts persisted below then also leave in canonical form.
+  // Three-layer defense: the core is a model-authored TeX carrier; the
+  // corrected artifact persisted below then also leaves in canonical form.
+  // ONLY the core is edited: draft freshness remains the compact version marker;
+  // reviewer context is the raw proto core itself.
   const core = parseRepairedModelJson(originalCoreRaw, corePath) as Record<string, unknown>;
   const coreReplacements = correctLiteratureFields(core, from, to);
-
-  const handoff = parseRepairedModelJson(
-    pf.last_draft_handoff,
-    "proposal-source-correction: last_draft_handoff",
-  ) as Record<string, unknown>;
-  const handoffReplacements = correctLiteratureFields(handoff, from, to);
-  if (coreReplacements + handoffReplacements === 0) {
+  if (coreReplacements === 0) {
     throw new Error(`proposal-source-correction found no exact occurrence of ${JSON.stringify(from)}; nothing changed`);
   }
 
@@ -126,7 +127,6 @@ export async function applyProposalSourceCorrection(
     );
   }
   const correctedCoreRaw = `${JSON.stringify(core, null, 2)}\n`;
-  pf.last_draft_handoff = JSON.stringify(handoff);
 
   await writeFile(corePath, correctedCoreRaw, "utf8");
   try {
@@ -144,10 +144,10 @@ export async function applyProposalSourceCorrection(
       message:
         `Administrative literature-only correction at angle ${pf.current_angle_index ?? 0} ` +
         `v${pf.current_version ?? 0}: ${JSON.stringify(from)} -> ${JSON.stringify(to)}; ` +
-        `${coreReplacements} core and ${handoffReplacements} handoff replacement(s).`,
+        `${coreReplacements} core replacement(s).`,
     },
   );
-  return { coreReplacements, handoffReplacements, corePath };
+  return { coreReplacements, corePath };
 }
 
 /** Recover the exact latest proto core inlined into a D-0.5 reviewer transcript.
@@ -192,15 +192,7 @@ export async function recoverProposalCoreFromLatestReviewPrompt(
   if (!gate.ok) throw new Error("review transcript core fails the proposal gate; refusing recovery");
 
   const corePath = protoCoreJsonPath({ repoRoot, qid, specialization, dryRun: false, resume: true });
-  let backupPath = `${corePath}.pre-recovery`;
-  for (let n = 1; ; n++) {
-    try {
-      await stat(backupPath);
-      backupPath = `${corePath}.pre-recovery.${n}`;
-    } catch {
-      break;
-    }
-  }
+  const backupPath = await firstFreeName(`${corePath}.pre-recovery`);
   await rename(corePath, backupPath);
   try {
     await writeFile(corePath, `${latest.coreText}\n`, "utf8");

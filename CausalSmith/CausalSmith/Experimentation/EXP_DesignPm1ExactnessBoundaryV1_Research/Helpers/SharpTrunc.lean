@@ -95,8 +95,8 @@ lemma sharp_truncation_value_of_no_reduced_argmin_in_slice (m : ℕ) (a b r kapp
     exact hNoMeet ⟨X_rel.1, X_rel.2.1, X_rel.2.2, hRelMin.1, hRelMin.2,
       by simpa [t_rel] using hfeas⟩
   obtain ⟨htruncFeas, htruncMin⟩ :=
-    (trunc_from_minimizer (2 * (m : ℝ)) (parityThreshold m) hd0 hdM
-      alpha beta kappa hbetaPos hbetaY hbetaZ hk t_rel hrelS hrelWsMin).2 hrelInfeas
+    (trunc_from_minimizer (2 * (m : ℝ)) (parityThreshold m) hdM
+      alpha beta kappa (hbetaPos 0).le hbetaY hbetaZ hk t_rel hrelS hrelWsMin).2 hrelInfeas
   let t_impl : Fin 3 → ℝ :=
     truncSegPoint (2 * (m : ℝ)) (parityThreshold m)
       (truncSelector (2 * (m : ℝ)) (parityThreshold m) alpha beta kappa)

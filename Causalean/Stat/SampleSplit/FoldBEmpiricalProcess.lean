@@ -89,6 +89,7 @@ OneShot-specific public lemmas at the end of this file are thin wrappers
 around these abstract versions, and the analogous KFold corollaries follow
 without any additional analytic content. -/
 
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- The fold-A σ-algebra is contained in the ambient σ-algebra on `Ω`,
 because each `S.Z i` is measurable (so the fold-A coordinate map is
 measurable, and `comap` of a measurable map is `≤` the source σ-algebra). -/
@@ -101,6 +102,7 @@ private lemma foldA_sigma_le
   rcases hs with ⟨t, ht, rfl⟩
   exact (measurable_pi_iff.mpr fun i : split.foldA n => S.meas i) ht
 
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- The training-fold σ-algebra of a K-fold split (the comap σ-algebra of
 the training-fold coordinate map) is contained in the ambient σ-algebra. -/
 private lemma trainComplement_sigma_le
@@ -302,6 +304,7 @@ Bridge `OneShotSplit.folds_indep` / `KFoldSplit.folds_indep` and
 `IIDSample.indep` to the abstract `h_indep` / `h_iid` parameters of the
 abstract layer. -/
 
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- OneShot independence specialisation: `IndepFun = Indep ∘ comap ∘ comap`. -/
 private lemma oneShot_indep
     {S : IIDSample Ω X μ P} (split : OneShotSplit S) (n : ℕ) :
@@ -312,6 +315,7 @@ private lemma oneShot_indep
         (fun ω (i : split.foldB n) => S.Z i ω) inferInstance) μ :=
   split.folds_indep n
 
+omit [IsProbabilityMeasure P] in
 /-- OneShot evaluation-fold i.i.d. product law. **Public** because the
 orthogonal-learning modulus chain consumes it as the joint-law bridge between fold B and
 `Measure.pi` (see `Estimation/OrthogonalLearning/LocalEmpProcess/Rademacher.lean`). -/
@@ -330,6 +334,7 @@ lemma oneShot_iid
         congr with i
         rw [← (S.identDist i).map_eq, S.law]
 
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- KFold independence specialisation. -/
 private lemma kFold_indep
     {S : IIDSample Ω X μ P} {K : ℕ} (split : KFoldSplit S K)
@@ -344,6 +349,7 @@ private lemma kFold_indep
   have hIF := (split.folds_indep n k).symm
   exact hIF
 
+omit [IsProbabilityMeasure P] in
 /-- KFold evaluation-fold i.i.d. product law. -/
 private lemma kFold_iid
     (S : IIDSample Ω X μ P) {K : ℕ} (split : KFoldSplit S K)
@@ -363,6 +369,7 @@ private lemma kFold_iid
 
 /-! ## Abstract bias term: `√|eval n| · ∫ f(n, ω, ·) dP` is `o_p(1)` -/
 
+omit [IsProbabilityMeasure μ] in
 /-- **Abstract: bias term is `o_p(1)` under fixed-ratio split.**
 
 Same proof as the OneShot version, but parameterised by an arbitrary
@@ -503,7 +510,7 @@ private lemma evalSum_isLittleOp_one
     have hnorm :
         Measurable (fun p : Ω × X => (eLpNorm (f n p.1) 2 P).toReal) :=
       (Causalean.Mathlib.measurable_eLpNorm_two_toReal_of_uncurry
-          (P := P) (hf_meas n)).comp measurable_fst
+          (P := P) (by norm_num) (by norm_num) (hf_meas n)).comp measurable_fst
     simpa using Measurable.ite (measurableSet_le hnorm measurable_const)
       (hf_meas n) measurable_const
   have hftil_uncurry_train : ∀ n,
@@ -515,7 +522,7 @@ private lemma evalSum_isLittleOp_one
         Measurable[(m_train n).prod (inferInstance : MeasurableSpace X)]
           (fun p : Ω × X => (eLpNorm (f n p.1) 2 P).toReal) := by
       exact (Causalean.Mathlib.measurable_eLpNorm_two_toReal_of_uncurry_of_factor
-        (P := P) (hf_uncurry_train n)).comp measurable_fst
+        (P := P) (by norm_num) (by norm_num) (hf_uncurry_train n)).comp measurable_fst
     simpa using Measurable.ite (measurableSet_le hnorm measurable_const)
       (hf_uncurry_train n) measurable_const
   have hftil_memLp : ∀ n ω, MemLp (ftil n ω) 2 P := by
@@ -585,7 +592,7 @@ private lemma evalSum_isLittleOp_one
       have hnorm_meas :
           Measurable (fun ω => (eLpNorm (ftil n ω) 2 P).toReal) :=
         Causalean.Mathlib.measurable_eLpNorm_two_toReal_of_uncurry
-          (P := P) (hftil_meas n)
+          (P := P) (by norm_num) (by norm_num) (hftil_meas n)
       exact hnorm_meas.pow_const 2
     · intro n ω
       exact sq_nonneg _
@@ -688,6 +695,7 @@ Direct corollary of the constant-case Cauchy–Schwarz
 `‖f‖_2 = o_p(n^{-1/2})`, and the bounded deterministic factor
 `√(|B(n)|/n) → √c`. -/
 
+omit [IsProbabilityMeasure μ] in
 /-- **Bias term is `o_p(1)` under fixed-ratio split.**
 
 Given `|B(n)|/n → c` for `0 < c` and `‖f n ω‖_{L²(P)} = o_p(n^{-1/2})`, the
@@ -749,6 +757,7 @@ theorem KFoldSplit.fold_centered_sum_isLittleOp_one
     (split.grow k)
     f hf_meas hf_uncurry_train hf_memLp hf_rate
 
+omit [IsProbabilityMeasure μ] in
 /-- **Per-fold bias term is `o_p(1)` under a nonempty K-fold split.** -/
 theorem KFoldSplit.sqrtFold_integral_isLittleOp_one
     (S : IIDSample Ω X μ P) {K : ℕ} (split : KFoldSplit S K) (k : Fin K)

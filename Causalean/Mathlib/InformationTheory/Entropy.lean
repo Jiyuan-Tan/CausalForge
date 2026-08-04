@@ -60,52 +60,56 @@ lemma entropy_nonneg {p : α → ℝ} (h0 : ∀ i, 0 ≤ p i) (h1 : ∀ i, p i �
   intro i _
   exact Real.negMulLog_nonneg (h0 i) (h1 i)
 
-/-- Per-coordinate Gibbs lever. For a single coordinate of a pmf on an alphabet of
-cardinality `n`, the entropy summand minus `p i · log n` is bounded by `1/n - p i`:
-`Real.negMulLog (p i) - p i * Real.log n ≤ (n : ℝ)⁻¹ - p i`.
+/-- Per-coordinate Gibbs lever. At any positive real scale `c`, the entropy summand
+minus `x · log c` is bounded by `1/c - x`:
+`Real.negMulLog x - x * Real.log c ≤ c⁻¹ - x`.
 
-On the support (`p i > 0`) this is `p i · log (1 / (n · p i)) ≤ p i · (1/(n p i) - 1)`
-via `Real.log_le_sub_one_of_pos`; off the support (`p i = 0`) both `negMulLog` and the
-product vanish and the bound is `0 ≤ (n : ℝ)⁻¹`. Summing this over `α` yields the
-maximum-entropy bound. -/
-lemma negMulLog_sub_mul_log_le {n : ℕ} (hn : 0 < n) {x : ℝ} (hx : 0 ≤ x) :
-    Real.negMulLog x - x * Real.log n ≤ (n : ℝ)⁻¹ - x := by
+For `x > 0`, this is `x · log (1 / (c · x)) ≤ x · (1/(c x) - 1)` via
+`Real.log_le_sub_one_of_pos`; at `x = 0`, the bound follows from `c > 0`. -/
+lemma negMulLog_sub_mul_log_le {c : ℝ} (hc : 0 < c) {x : ℝ} (hx : 0 ≤ x) :
+    Real.negMulLog x - x * Real.log c ≤ c⁻¹ - x := by
   rcases eq_or_lt_of_le hx with rfl | hxpos
-  · simp [Real.negMulLog]
-  · have hnR : (0 : ℝ) < n := by exact_mod_cast hn
+  · simpa [Real.negMulLog] using le_of_lt hc
+  · have hcR : (0 : ℝ) < c := hc
     have hlog := Real.log_le_sub_one_of_pos
-      (show (0 : ℝ) < ((n : ℝ) * x)⁻¹ by positivity)
-    have hlogeq : Real.log (((n : ℝ) * x)⁻¹) = -(Real.log (n : ℝ) + Real.log x) := by
+      (show (0 : ℝ) < (c * x)⁻¹ by positivity)
+    have hlogeq : Real.log ((c * x)⁻¹) = -(Real.log c + Real.log x) := by
       rw [Real.log_inv]
-      rw [Real.log_mul hnR.ne' hxpos.ne']
-    have hid : Real.negMulLog x - x * Real.log n =
-        x * Real.log (((n : ℝ) * x)⁻¹) := by
+      rw [Real.log_mul hcR.ne' hxpos.ne']
+    have hid : Real.negMulLog x - x * Real.log c =
+        x * Real.log ((c * x)⁻¹) := by
       rw [Real.negMulLog_def]
       rw [hlogeq]
       ring
     have hmul := mul_le_mul_of_nonneg_left hlog (le_of_lt hxpos)
     calc
-      Real.negMulLog x - x * Real.log n = x * Real.log (((n : ℝ) * x)⁻¹) := hid
-      _ ≤ x * (((n : ℝ) * x)⁻¹ - 1) := hmul
-      _ = (n : ℝ)⁻¹ - x := by
-        field_simp [hnR.ne', hxpos.ne']
+      Real.negMulLog x - x * Real.log c = x * Real.log ((c * x)⁻¹) := hid
+      _ ≤ x * ((c * x)⁻¹ - 1) := hmul
+      _ = c⁻¹ - x := by
+        field_simp [hcR.ne', hxpos.ne']
 
-/-- **Maximum-entropy (Gibbs) bound.** For a probability mass function `p` on a nonempty
-finite alphabet `α` with `n = Fintype.card α`, the Shannon entropy is at most `log n`:
+/-- **Maximum-entropy (Gibbs) bound.** For a probability mass function `p` on a finite
+alphabet `α` with `n = Fintype.card α`, the Shannon entropy is at most `log n`:
 `entropy p ≤ Real.log (Fintype.card α)`.
 
 This is Cover & Thomas Thm 2.6.4 (`H(p) ≤ log |𝒳|`). The proof is the elementary Gibbs
 argument: sum the per-coordinate bound `negMulLog_sub_mul_log_le` over `α`. The right
 side telescopes to `n · (1/n) - 1 = 0` (using `∑ p i = 1`), and the left side is
-`entropy p - log n`, giving `entropy p - log n ≤ 0`. -/
-theorem entropy_le_log_card [Nonempty α] {p : α → ℝ} (h0 : ∀ i, 0 ≤ p i)
+`entropy p - log n`, giving `entropy p - log n ≤ 0`. Normalization itself rules out an
+empty alphabet. -/
+theorem entropy_le_log_card {p : α → ℝ} (h0 : ∀ i, 0 ≤ p i)
     (hsum : ∑ i, p i = 1) : entropy p ≤ Real.log (Fintype.card α) := by
+  letI : Nonempty α := by
+    by_contra h
+    letI : IsEmpty α := not_nonempty_iff.mp h
+    simp at hsum
   let n := Fintype.card α
   have hn : 0 < n := Fintype.card_pos
   have hterm :
       (∑ i, (Real.negMulLog (p i) - p i * Real.log (n : ℝ))) ≤
         ∑ i, ((n : ℝ)⁻¹ - p i) := by
-    exact Finset.sum_le_sum (fun i _ => negMulLog_sub_mul_log_le hn (h0 i))
+    exact Finset.sum_le_sum
+      (fun i _ => negMulLog_sub_mul_log_le (by exact_mod_cast hn) (h0 i))
   have hleft :
       (∑ i, (Real.negMulLog (p i) - p i * Real.log (n : ℝ))) =
         entropy p - Real.log (n : ℝ) := by

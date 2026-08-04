@@ -61,9 +61,6 @@ theorem uStatisticOrder_clt (S : IIDSample Ω X μ P)
     (hneg : OrderDegenerateNegligible S h)
     (hθn_meas : ∀ n : ℕ, AEMeasurable
       (IsAsymLinear.rescaledEstimator (uStatisticOrder S h) (uMeanOrder h P)
-        (fun r => Finset.range r) n) μ)
-    (hSum_meas : ∀ n : ℕ, AEMeasurable
-      (IsAsymLinear.normalizedSum S (uInfluenceOrder h P)
         (fun r => Finset.range r) n) μ) :
     Tendsto_dist
       (IsAsymLinear.rescaledEstimator (uStatisticOrder S h) (uMeanOrder h P)
@@ -74,7 +71,7 @@ theorem uStatisticOrder_clt (S : IIDSample Ω X μ P)
   have hAL : IsAsymLinear (uStatisticOrder S h) (uMeanOrder h P)
       (uInfluenceOrder h P) S (fun r => Finset.range r) :=
     uStatisticOrder_isAsymLinear S h hψ_mean hψ_sq hneg
-  exact hAL.tendsto_normal hψ_meas hθn_meas hSum_meas
+  exact hAL.tendsto_normal hψ_meas hθn_meas
 
 /-- **Fixed-order U-statistic CLT (end-to-end).**  For an order-`m` kernel `h`
 whose residual is regular (measurable, square-integrable, with the slice/Fubini
@@ -86,7 +83,7 @@ negligibility hypothesis is required from the caller — the order-`m` analogue 
 `uStatistic_clt_of_symmetric`. -/
 theorem uStatisticOrder_clt_of_regular
     {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
-    {μ : Measure Ω} {P : Measure X} [IsProbabilityMeasure μ] [IsProbabilityMeasure P]
+    {μ : Measure Ω} {P : Measure X} [IsProbabilityMeasure μ]
     (S : IIDSample Ω X μ P) {m : ℕ} [NeZero m] (h : (Fin m → X) → ℝ)
     (hmeas : Measurable (uDegenOrder h P))
     (hL2 : Integrable (fun z => (uDegenOrder h P z) ^ 2)
@@ -107,9 +104,6 @@ theorem uStatisticOrder_clt_of_regular
     (hψ_sq : Integrable (fun x => (uInfluenceOrder h P x) ^ 2) P)
     (hθn_meas : ∀ n : ℕ, AEMeasurable
       (IsAsymLinear.rescaledEstimator (uStatisticOrder S h) (uMeanOrder h P)
-        (fun r => Finset.range r) n) μ)
-    (hSum_meas : ∀ n : ℕ, AEMeasurable
-      (IsAsymLinear.normalizedSum S (uInfluenceOrder h P)
         (fun r => Finset.range r) n) μ) :
     Tendsto_dist
       (IsAsymLinear.rescaledEstimator (uStatisticOrder S h) (uMeanOrder h P)
@@ -117,8 +111,11 @@ theorem uStatisticOrder_clt_of_regular
       (gaussianMeasure 0 (∫ x, (uInfluenceOrder h P x) ^ 2 ∂P))
       μ
       hθn_meas := by
+  letI : IsProbabilityMeasure P := by
+    rw [← S.law]
+    exact Measure.isProbabilityMeasure_map (S.meas 0).aemeasurable
   have hneg : OrderDegenerateNegligible S h :=
     orderDegenerateNegligible_of_residual S h hmeas hL2 hslice_int hmean hrow
-  exact uStatisticOrder_clt S h hψ_meas hψ_mean hψ_sq hneg hθn_meas hSum_meas
+  exact uStatisticOrder_clt S h hψ_meas hψ_mean hψ_sq hneg hθn_meas
 
 end Causalean.Stat

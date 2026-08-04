@@ -112,7 +112,7 @@ theorem condExp_control_wMin0_eq (Λ : ℝ)
     exact (measurable_const.add
       ((measurable_const.sub hprop_meas).div (measurable_const.mul hprop_meas))).stronglyMeasurable
   have hind_int : Integrable (S.dVar.indicator false) P.μ :=
-    S.dVar.integrable_indicator false
+    S.dVar.integrable_indicator false (measurableSet_singleton false)
   have hcomm :
       (fun ω => S.dVar.indicator false ω * S.wMin0 Λ ω)
         = (fun ω => S.wMin0 Λ ω * S.dVar.indicator false ω) := by
@@ -144,7 +144,7 @@ theorem condExp_control_wMax0_eq (Λ : ℝ)
     exact (measurable_const.add
       ((measurable_const.mul (measurable_const.sub hprop_meas)).div hprop_meas)).stronglyMeasurable
   have hind_int : Integrable (S.dVar.indicator false) P.μ :=
-    S.dVar.integrable_indicator false
+    S.dVar.integrable_indicator false (measurableSet_singleton false)
   have hcomm :
       (fun ω => S.dVar.indicator false ω * S.wMax0 Λ ω)
         = (fun ω => S.wMax0 Λ ω * S.dVar.indicator false ω) := by
@@ -192,7 +192,7 @@ theorem control_calibValue_eq (Λ : ℝ) (c : P.Ω → ℝ) (_hc_meas : Measurab
     (hwMax_smeas.measurable.sub hwMin_smeas.measurable).stronglyMeasurable
   have hA_int : Integrable A P.μ := by
     rw [hA_def]
-    exact S.dVar.integrable_indicator false
+    exact S.dVar.integrable_indicator false (measurableSet_singleton false)
   have hI_int : Integrable (fun ω => A ω * I ω) P.μ := by
     rw [hA_def, hI_def]
     exact hint1

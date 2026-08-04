@@ -33,9 +33,9 @@ import Mathlib.MeasureTheory.Function.SpecialFunctions.Inner
 
 /-! # Second-Moment Operator
 
-This file constructs the finite-dimensional second-moment operator associated with a
-vector-valued influence function. The operator supplies the covariance object whose
-positive square root is used in vector central limit theorems.
+This file constructs the second-moment operator associated with a vector-valued
+influence function. The operator supplies the covariance object whose positive square
+root is used in vector central limit theorems.
 
 The helper theorem `integrable_inner_smul` proves integrability of the operator
 integrand. The main API is `secondMomentLM`, the bilinear-form identity
@@ -49,8 +49,9 @@ open scoped RealInnerProductSpace
 namespace Causalean.Stat
 
 variable {X E : Type*} [MeasurableSpace X] {P : Measure X}
-  [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
-  [MeasurableSpace E] [BorelSpace E] {ψ : X → E}
+  [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+  [MeasurableSpace E] [OpensMeasurableSpace E] [SecondCountableTopology E] [MeasurableSMul₂ ℝ E]
+  {ψ : X → E}
 
 /-- The integrand `x ↦ ⟪t, ψ x⟫ • ψ x` is integrable when `‖ψ‖²` is, by the
 Cauchy–Schwarz bound `‖⟪t,ψ⟫ • ψ‖ ≤ ‖t‖ ‖ψ‖²`. -/
@@ -78,6 +79,8 @@ noncomputable def secondMomentLM : E →ₗ[ℝ] E where
     simp only [RingHom.id_apply, ← integral_smul]
     refine integral_congr_ae (ae_of_all _ fun x => ?_)
     simp only [inner_smul_left, conj_trivial, mul_smul]
+
+variable [CompleteSpace E]
 
 /-- Quadratic-form identity: `⟪Σ t, s⟫ = ∫ ⟪t, ψ⟫ ⟪s, ψ⟫ ∂P`. -/
 theorem secondMomentLM_inner (t s : E) :

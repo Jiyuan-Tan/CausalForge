@@ -46,6 +46,16 @@ variable {α : ι → Type*} [∀ i, Fintype (α i)]
 
 namespace FiniteDesign
 
+omit [Fintype ι] [DecidableEq ι] in
+/-- Every coordinate type carrying a finite design is nonempty. -/
+theorem nonempty_of_design (D : ∀ i, FiniteDesign (α i)) : ∀ i, Nonempty (α i) := by
+  intro i
+  by_contra h
+  rw [not_nonempty_iff] at h
+  have := (D i).p_sum
+  rw [Finset.univ_eq_empty, Finset.sum_empty] at this
+  exact one_ne_zero this.symm
+
 /-- **Disjoint-block factorization of expectation.** If `f` depends only on the coordinates in the
 block `A` (it is invariant under changes to coordinates outside `A`) and `g` depends only on the
 coordinates outside `A`, then under the product design their product's expectation factors:
@@ -59,14 +69,7 @@ theorem E_prod_block_mul (D : ∀ i, FiniteDesign (α i)) (A : Finset ι)
   classical
   letI : (i : ι) → MeasurableSpace (α i) := fun _ => ⊤
   haveI : (i : ι) → MeasurableSingletonClass (α i) := fun _ => inferInstance
-  -- Each coordinate type is nonempty: its design probabilities sum to `1 ≠ 0`.
-  have hne : ∀ i, Nonempty (α i) := by
-    intro i
-    by_contra h
-    rw [not_nonempty_iff] at h
-    have := (D i).p_sum
-    rw [Finset.univ_eq_empty, Finset.sum_empty] at this
-    exact one_ne_zero this.symm
+  have hne := nonempty_of_design D
   -- A global reference point used to fill in the coordinates we drop.
   let x₀ : ∀ i, α i := fun i => (hne i).some
   -- Factor `f` through the `A`-block restriction and `g` through the `Aᶜ`-block restriction.

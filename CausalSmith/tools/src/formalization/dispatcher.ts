@@ -283,9 +283,15 @@ async function runProofReviewLoopStage(args: {
     // Phase-A re-scaffold seam: drive F2 in revise-mode via a scaffold_redirect directive (it
     // patches the named decls in place, preserving proofs via carry-over and self-clears the flag).
     scaffold: async ({ redirect, targets }) => {
+      // NOT JSON.stringify: symbol obj_ids legitimately contain TeX
+      // (`sym:\(\mathcal H\)`), and JSON doubling their backslashes made the
+      // scaffolder grep for `\\(\\mathcal H\\)` — matching nothing in the Lean
+      // tree, so the cluster was never found and the reroute burned its cap.
       args.state.flags.scaffold_redirect = [
         redirect,
-        targets.length ? `Declarations to edit (JSON obj_id array): ${JSON.stringify(targets)}` : "",
+        targets.length
+          ? `Declarations to edit (one obj_id per line, verbatim):\n${targets.map((t) => `- ${t}`).join("\n")}`
+          : "",
       ].filter(Boolean).join("\n\n");
       const result = await runStage2({ ctx: args.ctx, state: args.state, deps: args.deps });
       if (result.status !== "completed") {

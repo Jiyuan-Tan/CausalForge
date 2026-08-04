@@ -3,8 +3,6 @@
 
 import type { PipelineContext, Stage, StageResult, StateJson } from "../types.js";
 import { type StageDeps } from "../pipeline_support.js";
-// Side-effect: gate registry population must not depend on a transitive import.
-import "./framework/gate_registrations.js";
 import { runStageNeg1_1 } from "./stages/neg1_1.js";
 import { runStageNeg1_2 } from "./stages/neg1_2.js";
 import { runStageNeg0_5 } from "./stages/neg0_5.js";

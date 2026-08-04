@@ -277,14 +277,12 @@ theorem contamination_representation_population (E : EventStudyPopulation T)
     (D : (E.toSystem).ConventionalDesign)
     (hPar : (E.toSystem).MeanParallelUntreated)
     (hSupport : (E.toSystem).ConventionalFiniteSupport D)
-    (hIntegrable : E.OutcomesIntegrable)
     (hCell : (E.toSystem).CellGridResidualization D) :
     D.mu =
       ∑ ge ∈ (E.toSystem).admissibleCells D.eventSupport,
         (E.toSystem).omega D ge.1 ge.2 * (E.toSystem).CATT ge.1 ge.2 := by
-  have _ := hIntegrable
   exact (E.toSystem).contamination_representation_of_cellGrid
-    (E.toSystem_causalRestrictions hPar) hSupport hCell
+    E.toSystem_consistency hPar hSupport hCell
 
 /-- **Population interaction-weighted characterization (headline).** For a
 population event-study system, the interaction-weighted estimand `nuIW` is a
@@ -297,12 +295,10 @@ that each `CATT g ℓ` is a genuine expected treatment-effect contrast (see
 `toSystem_CATT_eq_meanDiff`). -/
 theorem IW_convex_characterization_population (E : EventStudyPopulation T)
     (I : (E.toSystem).IWDesign)
-    (hEventTime_nonneg : 0 ≤ I.eventTime)
     (hIWParallelTrends : (E.toSystem).IWComparisonParallelTrends I)
     (hSupport : (E.toSystem).IWSupport I)
     (hRhoNonneg : ∀ g ∈ I.cohortsIW, 0 ≤ I.rho g)
     (hRhoSumOne : ∑ g ∈ I.cohortsIW, I.rho g = 1)
-    (hIntegrable : E.OutcomesIntegrable)
     {lo hi : ℝ}
     (hLo : ∀ g ∈ I.cohortsIW, lo ≤ (E.toSystem).CATT g I.eventTime)
     (hHi : ∀ g ∈ I.cohortsIW, (E.toSystem).CATT g I.eventTime ≤ hi) :
@@ -310,11 +306,9 @@ theorem IW_convex_characterization_population (E : EventStudyPopulation T)
       (E.toSystem).nuIW I =
         ∑ g ∈ I.cohortsIW, I.rho g * (E.toSystem).CATT g I.eventTime ∧
       lo ≤ (E.toSystem).nuIW I ∧ (E.toSystem).nuIW I ≤ hi := by
-  have _ := hIntegrable
   exact (E.toSystem).IW_convex_characterization I
-    hEventTime_nonneg
     E.toSystem_consistency E.toSystem_noAnticipation E.toSystem_pathConsistency
-    hIWParallelTrends hSupport hRhoNonneg hRhoSumOne hLo hHi
+    hIWParallelTrends.hComparisonParallelTrends hSupport hRhoNonneg hRhoSumOne hLo hHi
 
 end EventStudyPopulation
 

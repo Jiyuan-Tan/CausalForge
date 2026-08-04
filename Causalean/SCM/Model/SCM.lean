@@ -84,6 +84,14 @@ structure SCM (N : Type*) [DecidableEq N] [Fintype N]
   isProbability_latent :
     ∀ u : {u // u ∈ unobserved}, MeasureTheory.IsProbabilityMeasure (latentDist u)
 
+namespace SWIGGraph
+
+/-- The random variables of a SWIG graph are its observed and latent nodes. -/
+def randomVars (G : SWIGGraph N) : Finset (SWIGNode N) :=
+  G.observed ∪ G.unobserved
+
+end SWIGGraph
+
 namespace SCM
 
 universe uN uΩ
@@ -114,35 +122,35 @@ abbrev LatentValues (M : Causalean.SCM N Ω) :=
 abbrev UnobservedValues (M : Causalean.SCM N Ω) := LatentValues M
 
 /-- A standard structural causal model has no fixed intervention variables. -/
-def isStandard (M : Causalean.SCM N Ω) : Prop := M.fixed = ∅
+def isStandard (M : Causalean.SCM N Ω) : Prop := M.toSWIGGraph.isStandard
 
 /-- The random variables of a structural causal model are its observed and latent nodes. -/
 def randomVars (M : Causalean.SCM N Ω) : Finset (SWIGNode N) :=
-  M.observed ∪ M.unobserved
+  M.toSWIGGraph.randomVars
 
 /-- Random values assign values to every observed or latent node in a structural causal model. -/
 abbrev RandomValues (M : Causalean.SCM N Ω) :=
   ValuesOn M.randomVars (swigΩ Ω)
 
 /-- An observed node cannot also be an unobserved node. -/
-theorem not_unobs_of_obs (M : Causalean.SCM N Ω) {n : SWIGNode N} (h : n ∈ M.observed) :
-    n ∉ M.unobserved :=
-  Finset.disjoint_left.mp M.obs_unobs_disjoint h
+theorem not_unobs_of_obs (G : SWIGGraph N) {n : SWIGNode N} (h : n ∈ G.observed) :
+    n ∉ G.unobserved :=
+  Finset.disjoint_left.mp G.obs_unobs_disjoint h
 
 /-- An unobserved node cannot also be an observed node. -/
-theorem not_obs_of_unobs (M : Causalean.SCM N Ω) {n : SWIGNode N} (h : n ∈ M.unobserved) :
-    n ∉ M.observed :=
-  Finset.disjoint_right.mp M.obs_unobs_disjoint h
+theorem not_obs_of_unobs (G : SWIGGraph N) {n : SWIGNode N} (h : n ∈ G.unobserved) :
+    n ∉ G.observed :=
+  Finset.disjoint_right.mp G.obs_unobs_disjoint h
 
 /-- An observed node cannot also be a fixed node.
 
     A node in `observed` is not in `fixed`: `observed` elements are of the form
     `.random _` while `fixed` elements are of the form `.fixed _`. -/
-theorem not_fixed_of_obs (M : Causalean.SCM N Ω) {n : SWIGNode N} (h : n ∈ M.observed) :
-    n ∉ M.fixed := by
+theorem not_fixed_of_obs (G : SWIGGraph N) {n : SWIGNode N} (h : n ∈ G.observed) :
+    n ∉ G.fixed := by
   intro hfix
-  obtain ⟨m, hm⟩ := M.fixed_is_fixed n hfix
-  obtain ⟨k, hk⟩ := M.observed_is_random n h
+  obtain ⟨m, hm⟩ := G.fixed_is_fixed n hfix
+  obtain ⟨k, hk⟩ := G.observed_is_random n h
   rw [hm] at hk
   cases hk
 
@@ -195,6 +203,7 @@ noncomputable def observedIndex (M : Causalean.SCM N Ω) (v : {v // v ∈ M.obse
   exact (M.observed.orderIsoOfFin rfl).symm v
 
 /-- Looking up an observed node by its canonical index recovers the same node. -/
+@[simp]
 theorem observedAt_observedIndex (M : Causalean.SCM N Ω) (v : {v // v ∈ M.observed}) :
     (M.observedAt (M.observedIndex v)).val = v.val := by
   classical
@@ -205,6 +214,7 @@ theorem observedAt_observedIndex (M : Causalean.SCM N Ω) (v : {v // v ∈ M.obs
 
     Round-trip the other way: looking up the index of the node at position `k`
     recovers `k`. -/
+@[simp]
 theorem observedIndex_observedAt (M : Causalean.SCM N Ω) (k : Fin M.observed.card) :
     M.observedIndex (M.observedAt k) = k := by
   classical
@@ -244,7 +254,7 @@ structural functions, and latent laws agree.
     (`structFun_measurable`, `isProbability_latent`) are ignored. -/
 def Equiv (M₁ M₂ : Causalean.SCM N Ω) : Prop :=
   Causalean.SWIGGraph.Equivalent M₁.toSWIGGraph M₂.toSWIGGraph ∧
-  (∀ u v, M₁.dag.edge u v → M₂.dag.edge u v →
+  (∀ u v, M₁.dag.edge u v →
     M₁.edgeTypes.edgeType u v = M₂.edgeTypes.edgeType u v) ∧
   HEq M₁.structFun M₂.structFun ∧
   HEq M₁.latentDist M₂.latentDist
@@ -253,7 +263,7 @@ def Equiv (M₁ M₂ : Causalean.SCM N Ω) : Prop :=
 lemma Equiv.refl (M : Causalean.SCM N Ω) : Equiv M M := by
   refine And.intro (Causalean.SWIGGraph.Equivalent.refl _) ?_
   refine And.intro ?_ ?_
-  · intro u v _ _
+  · intro u v _
     rfl
   · exact And.intro HEq.rfl HEq.rfl
 
@@ -263,8 +273,8 @@ lemma Equiv.symm {M₁ M₂ : Causalean.SCM N Ω} (h : Equiv M₁ M₂) :
   rcases h with ⟨hG, hE, hF, hL⟩
   refine And.intro hG.symm ?_
   refine And.intro ?_ ?_
-  · intro u v hu hv
-    exact (hE u v ((hG.1 u v).2 hu) ((hG.1 u v).1 hv)).symm
+  · intro u v hu
+    exact (hE u v ((hG.1 u v).2 hu)).symm
   · exact And.intro hF.symm hL.symm
 
 /-- Structural equivalence is transitive. -/
@@ -274,9 +284,9 @@ lemma Equiv.trans {M₁ M₂ M₃ : Causalean.SCM N Ω}
   rcases h₂ with ⟨hG₂, hE₂, hF₂, hL₂⟩
   refine And.intro (Causalean.SWIGGraph.Equivalent.trans hG₁ hG₂) ?_
   refine And.intro ?_ ?_
-  · intro u v hu hv
+  · intro u v hu
     have hM₂_edge : M₂.dag.edge u v := (hG₁.1 u v).1 hu
-    exact (hE₁ u v hu hM₂_edge).trans (hE₂ u v hM₂_edge hv)
+    exact (hE₁ u v hu).trans (hE₂ u v hM₂_edge)
   · exact And.intro (hF₁.trans hF₂) (hL₁.trans hL₂)
 
 /-- Structural causal models form a setoid under structural equivalence. -/

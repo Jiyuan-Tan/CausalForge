@@ -65,7 +65,9 @@ function escapeRegExp(s: string): string {
 }
 
 function cell(s: string | undefined): string {
-  return (s ?? "—").replace(/\|/g, "\\|").replace(/\n/g, " ").trim() || "—";
+  // Escape only UNESCAPED pipes: a TeX norm `\|x\|` in a description would
+  // otherwise become `\\|x\\|` — a row break plus a table-splitting pipe.
+  return (s ?? "—").replace(/(?<!\\)\|/g, "\\|").replace(/\n/g, " ").trim() || "—";
 }
 
 /**

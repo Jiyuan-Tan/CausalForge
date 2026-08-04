@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseArgsForTest } from "../src/cli.js";
+import { downgradeResumeOptions, parseArgsForTest } from "../src/cli.js";
 import { normalizeNoveltyTarget, NOVELTY_TARGETS } from "../src/novelty.js";
 
 describe("normalizeNoveltyTarget", () => {
@@ -76,5 +76,16 @@ describe("cli --downgrade-tier parsing", () => {
     expect(() =>
       parseArgsForTest(["--downgrade-tier", "subfield", "stat_x_v1", "v1", "extra"]),
     ).toThrow();
+  });
+});
+
+describe("downgrade-tier resume routing", () => {
+  it("uses ordinary resume routing instead of forcing D0.5", () => {
+    expect(downgradeResumeOptions({ auto: true, stopAfter: "D0.5" })).toEqual({
+      stopAfterStage: "0.5",
+    });
+    expect(downgradeResumeOptions({ auto: true })).toEqual({ stopAfterStage: undefined });
+    expect(downgradeResumeOptions({ auto: false })).toEqual({ stopAfterStage: "0.5" });
+    expect(downgradeResumeOptions({ auto: true, stopAfter: "D0.5" })).not.toHaveProperty("startStage");
   });
 });

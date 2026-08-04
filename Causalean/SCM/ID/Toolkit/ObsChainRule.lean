@@ -54,8 +54,9 @@ open scoped MeasureTheory ProbabilityTheory
 theorem obsKernel_map_eq_obsCondKernel_comp
     (M : Causalean.SCM N Ω) (Y CC : Finset (SWIGNode N))
     (hY : Y ⊆ M.observed) (hCC : CC ⊆ M.observed)
-    [∀ n, StandardBorelSpace (swigΩ Ω n)] [∀ n, Nonempty (swigΩ Ω n)]
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.obsKernel s)]
+    [StandardBorelSpace (ValuesOn Y (swigΩ Ω))]
+    [Nonempty (ValuesOn Y (swigΩ Ω))]
+    [MeasurableSpace.CountableOrCountablyGenerated (M.FixedValues) (ValuesOn CC (swigΩ Ω))]
     (s : M.FixedValues) :
     (M.obsKernel s).map (valuesProjection hY)
       = (M.obsCondKernel Y CC hY hCC).sectR s
@@ -154,7 +155,8 @@ lemma obsKernel_empty_projection_eq_dirac
     verbatim to any stacked-intervention model `M.fixSet …`. -/
 lemma obsCondKernel_empty_eq_marginal
     (M : Causalean.SCM N Ω) (Y : Finset (SWIGNode N)) (hY : Y ⊆ M.observed)
-    [∀ n, StandardBorelSpace (swigΩ Ω n)] [∀ n, Nonempty (swigΩ Ω n)]
+    [StandardBorelSpace (ValuesOn Y (swigΩ Ω))]
+    [Nonempty (ValuesOn Y (swigΩ Ω))]
     (s : M.FixedValues) (c : ValuesOn (∅ : Finset (SWIGNode N)) (swigΩ Ω)) :
     M.obsCondKernel Y (∅ : Finset (SWIGNode N)) hY (Finset.empty_subset M.observed)
         (s, c)

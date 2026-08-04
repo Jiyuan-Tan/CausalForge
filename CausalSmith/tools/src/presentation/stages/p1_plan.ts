@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import type { StageIO } from "../pipeline.js";
 import { PRESENTATION_PROSE_POLICY_VERSION, presentationPrompt } from "../prompt_io.js";
@@ -43,6 +43,79 @@ const OPEN_DIRECTION_RE = /\b(?:open (?:question|problem|direction)|unresolved (
 const ASSERTED_RESULT_RE = /\b(?:(?:we|this (?:paper|work)|our (?:paper|work|result|analysis))\s+(?:prove|proves|establish|establishes|show|shows|derive|derives|demonstrate|demonstrates)|(?:theorem|corollary|proposition|our result)\b[^.!?]{0,100}\b(?:prove|proves|establish|establishes|show|shows|imply|implies)|it follows that|we conclude that|is established here|has been proved)\b/i;
 const ASSERTIVE_REVERSAL_RE = /\b(?:nevertheless|in fact|indeed|therefore|thus|hence)\b/i;
 const LEGALISTIC_UNDELIVERED_RE = /^\s*this work does not (?:establish|prove|deliver)/i;
+const P1_SYNTH_RESUME_VERSION = "notation-definition-order-v7";
+
+/** The stamped successful layer is newer evidence than a rejected receipt that a prior failed
+ * attempt may have left behind. Keep the marker in the TeX view rather than extending the
+ * formal-layer JSON schema: the view already round-trips through parseAnchoredEnvs and preserves
+ * synthetic ids and titles. */
+export function p1SynthResumeMarker(model?: string): string {
+  return `% causalsmith-p1-synth model=${model ?? "?"} version=${P1_SYNTH_RESUME_VERSION}`;
+}
+
+export type SynthRecoverySource = "formal_layer.tex" | "formal_layer_rejected.tex";
+
+export function selectSynthRecoveryLayer(
+  formalLayerTex: string,
+  rejectedLayerTex: string,
+  marker: string,
+): { source: SynthRecoverySource; tex: string } | null {
+  // Prefer the successful artifact. This ordering also makes the write-then-delete cleanup below
+  // crash-safe: if both files exist after an interruption, the stale rejection cannot win.
+  if (formalLayerTex.startsWith(marker)) return { source: "formal_layer.tex", tex: formalLayerTex };
+  if (rejectedLayerTex.startsWith(marker)) return { source: "formal_layer_rejected.tex", tex: rejectedLayerTex };
+  return null;
+}
+
+/** Apply the same conservative replay rules to either a rejected receipt or a stamped successful
+ * formal layer. Lean realization status is deliberately evaluated now, not trusted from the
+ * earlier run, because it can change between stage re-runs. */
+export function recoverSynthesizedDefinitions(
+  layer: string,
+  options: {
+    isLeanRealizedNotation: (notation: string | undefined) => boolean;
+    titleById: Map<string, string>;
+    graphDefinitionNotation: readonly string[];
+    normalizeBody: (body: string) => string;
+    note: (message: string) => void;
+  },
+): { envs: P1Env[]; synthCount: number } {
+  let synthCount = 0;
+  const envs: P1Env[] = [];
+  const recoveredFamilies = new Set<string>();
+  const candidates = parseAnchoredEnvs(layer)
+    .filter((x) => /^synth_\d+$/.test(x.obj_id))
+    .sort((a, b) => Number(a.obj_id.slice("synth_".length)) - Number(b.obj_id.slice("synth_".length)));
+  for (const e of candidates) {
+    const n = Number(e.obj_id.slice("synth_".length));
+    if (Number.isFinite(n)) synthCount = Math.max(synthCount, n);
+    // A title is the durable declaration of which notation a synthetic block owns. Titleless
+    // output cannot be safely deduplicated or placed; let the live reviewer request it again.
+    if (!e.title) {
+      options.note(`P1: discarded titleless recovered notation definition ${e.obj_id}`);
+      continue;
+    }
+    const mathFragments = [...e.title.matchAll(/\$([^$]+)\$|\\\((.*?)\\\)|\\\[([\s\S]*?)\\\]/g)]
+      .map((m) => m[1] ?? m[2] ?? m[3]).filter((x): x is string => !!x);
+    if (mathFragments.length === 0) {
+      options.note(`P1: discarded recovered notation definition ${e.obj_id} with no parseable notation in its title`);
+      continue;
+    }
+    const hasLeanHome = mathFragments.some((fragment) => options.isLeanRealizedNotation(fragment));
+    const familyPeer = [...recoveredFamilies, ...options.titleById.values()]
+      .some((title) => sameEstimatorNotationFamily(title, e.title!)) ||
+      options.graphDefinitionNotation.some((text) => sameEstimatorNotationFamily(text, e.title!));
+    if (hasLeanHome || familyPeer) {
+      options.note(`P1: discarded duplicate recovered notation definition ${e.obj_id}`);
+      continue;
+    }
+    recoveredFamilies.add(e.title);
+    options.titleById.set(e.obj_id, e.title);
+    const body = options.normalizeBody(e.body.trim());
+    envs.push({ id: e.obj_id, env: "definitionv", statement: body, body, refSet: [] });
+  }
+  return { envs, synthCount };
+}
 
 /** A model-written remark is acceptable only when it clearly frames the claim as an open
  * direction and does not turn around and assert it as a theorem/result. */
@@ -337,10 +410,18 @@ export async function stageP1(io: StageIO): Promise<void> {
   // Titles are carried in a side-map (the render emits them; the loop tracks only
   // bodies). A titled definition env lets notation resolution match a class.
   const titleById = new Map<string, string>();
+  // Split on UNESCAPED pipes (`\|` is a TeX norm inside a math cell, and
+  // doubles as markdown's escaped pipe) and keep POSITIONAL columns —
+  // `.filter(Boolean)` shifted every column when a cell was empty. Both row
+  // formats the corpus actually contains are accepted: `| a | b | … |` (edge
+  // pipes) and the prompt-specified pipe-less `a | b | …` — requiring a
+  // leading pipe silently parsed ZERO rows from 4 of 9 real papers.
   const notationSymbols = notation.split("\n").flatMap((line) => {
-    const cells = line.split("|").map((x) => x.trim()).filter(Boolean);
-    if (cells.length < 4) return [];
-    const symbol = cells[1].replace(/^\$|\$$/g, "").replace(/^\\\(|\\\)$/g, "").trim();
+    const parts = line.split(/(?<!\\)\|/).map((x) => x.trim());
+    if (parts.length > 1 && parts[0] === "") parts.shift();
+    if (parts.length > 1 && parts[parts.length - 1] === "") parts.pop();
+    if (parts.length < 4) return [];
+    const symbol = parts[1].replace(/^\$|\$$/g, "").replace(/^\\\(|\\\)$/g, "").trim();
     return symbol && !/^[A-Za-z]$/.test(symbol) ? [symbol] : [];
   });
   /** Stable topological order induced by notation definitions. This lets a synthetic definition
@@ -437,9 +518,12 @@ export async function stageP1(io: StageIO): Promise<void> {
   // comma-free cohort-time convention for synthetic setup definitions only.
   const normalizeSynthNotation = (body: string): string =>
     body
-      // Raw LaTeX such as `\\to` is a valid JSON `\\t` escape followed by
-      // `o`; JSON.parse then produces a literal tab and invalid TeX.
-      .replace(/\t(?=[A-Za-z])/g, "\\\\t")
+      // Raw LaTeX such as `\to` is a valid JSON `\t` escape followed by `o`;
+      // JSON.parse then produces a literal tab and invalid TeX. Restore ONE
+      // backslash: in a JS replacement string a backslash is not special, so
+      // the earlier `"\\\\t"` inserted the two chars `\\` — a TeX row break —
+      // and froze `x \\to y` into formal_layer.json.
+      .replace(/\t(?=[A-Za-z])/g, "\\t")
       .replace(/D_\{G_i,\s*t\}/g, "D_{G_i t}");
   const recoveredSynthBodies = new Map<string, string>();
 
@@ -735,53 +819,32 @@ export async function stageP1(io: StageIO): Promise<void> {
     );
   };
 
-  const synthResumeMarker = `% causalsmith-p1-synth model=${deps.codexModel ?? "?"} version=notation-definition-order-v7`;
+  const synthResumeMarker = p1SynthResumeMarker(deps.codexModel);
   let synthCount = 0;
   const recoveredSynth: P1Env[] = [];
   const graphDefinitionNotation = nodes
     .filter((n) => n.kind === "setup" || n.kind === "definition" || n.kind === "assumption")
     .map((n) => `${n.nl.frozen_title ?? ""} ${n.nl.statement}`);
   // A capped semantic loop can spend many model calls building valid setup definitions before
-  // discovering one deeper missing symbol. Persisted rejected output is therefore a resumable
-  // receipt, not disposable scratch. Reuse only an explicitly model/version-stamped layer so a
-  // model switch or prompt migration cannot silently carry old authored prose forward.
+  // discovering one deeper missing symbol. Both a rejected receipt and a converged formal layer
+  // are resumable, but only when explicitly model/version-stamped so a model switch or prompt
+  // migration cannot silently carry old authored prose forward.
   const rejectedPath = join(io.outDir, "formal_layer_rejected.tex");
+  const formalLayerPath = join(io.outDir, "formal_layer.tex");
+  const formalLayerTex = await readFile(formalLayerPath, "utf8").catch(() => "");
   const rejected = await readFile(rejectedPath, "utf8").catch(() => "");
-  if (rejected.startsWith(synthResumeMarker)) {
-    const recoveredCandidates = parseAnchoredEnvs(rejected)
-      .filter((x) => /^synth_\d+$/.test(x.obj_id))
-      .sort((a, b) => Number(a.obj_id.slice("synth_".length)) - Number(b.obj_id.slice("synth_".length)));
-    const recoveredFamilies = new Set<string>();
-    for (const e of recoveredCandidates) {
-      const n = Number(e.obj_id.slice("synth_".length));
-      if (Number.isFinite(n)) synthCount = Math.max(synthCount, n);
-      // A title is the durable declaration of which notation a synthetic block
-      // owns. Titleless rejected output cannot be safely deduplicated or placed;
-      // let the live reviewer request it again instead of replaying ambiguity.
-      if (!e.title) {
-        io.state.notes.push(`P1: discarded titleless recovered notation definition ${e.obj_id}`);
-        continue;
-      }
-      const mathFragments = [...e.title.matchAll(/\$([^$]+)\$|\\\((.*?)\\\)|\\\[([\s\S]*?)\\\]/g)]
-        .map((m) => m[1] ?? m[2] ?? m[3]).filter((x): x is string => !!x);
-      if (mathFragments.length === 0) {
-        io.state.notes.push(`P1: discarded recovered notation definition ${e.obj_id} with no parseable notation in its title`);
-        continue;
-      }
-      const hasLeanHome = mathFragments.some((fragment) => isLeanRealizedNotation(fragment));
-      const familyPeer = [...recoveredFamilies, ...titleById.values()]
-        .some((title) => sameEstimatorNotationFamily(title, e.title!)) ||
-        graphDefinitionNotation.some((text) => sameEstimatorNotationFamily(text, e.title!));
-      if (hasLeanHome || familyPeer) {
-        io.state.notes.push(`P1: discarded duplicate recovered notation definition ${e.obj_id}`);
-        continue;
-      }
-      recoveredFamilies.add(e.title);
-      titleById.set(e.obj_id, e.title);
-      const body = normalizeSynthNotation(e.body.trim());
-      recoveredSynth.push({ id: e.obj_id, env: "definitionv", statement: body, body, refSet: [] });
-      recoveredSynthBodies.set(e.obj_id, body);
-    }
+  const resumeLayer = selectSynthRecoveryLayer(formalLayerTex, rejected, synthResumeMarker);
+  if (resumeLayer) {
+    const recovered = recoverSynthesizedDefinitions(resumeLayer.tex, {
+      isLeanRealizedNotation,
+      titleById,
+      graphDefinitionNotation,
+      normalizeBody: normalizeSynthNotation,
+      note: (message) => io.state.notes.push(message),
+    });
+    synthCount = recovered.synthCount;
+    recoveredSynth.push(...recovered.envs);
+    for (const e of recovered.envs) recoveredSynthBodies.set(e.id, e.body);
     if (recoveredSynth.length > 0) log(`resume: recovered ${recoveredSynth.length} model-matched synthesized definition(s)`);
   }
   const synthesize: P1LoopHooks["synthesize"] = async (symbols) => {
@@ -811,7 +874,14 @@ export async function stageP1(io: StageIO): Promise<void> {
           leanLsp: true,
         });
         const p = parseJsonLoose(res.stdout) as { title?: string; body?: string } | null;
-        if (!p?.body || /\\(begin|end|label)\b/.test(p.body)) continue;
+        // Reject labels and STRUCTURAL environments, but keep subsidiary math
+        // environments: `cases`/`aligned`/matrices are the natural body of a
+        // piecewise class definition, and a blanket `\begin` ban silently
+        // discarded the synthesis every round until the loop cap was hit.
+        const structuralEnv = [...(p?.body ?? "").matchAll(/\\(?:begin|end)\{([A-Za-z]+)\*?\}/g)].some(
+          (m) => !/^(?:cases|dcases|aligned|alignedat|gathered|split|array|[pbBvV]?matrix|smallmatrix)$/.test(m[1]),
+        );
+        if (!p?.body || structuralEnv || /\\label\b/.test(p.body)) continue;
         const id = `synth_${++synthCount}`;
         if (p.title) titleById.set(id, p.title);
         const body = normalizeSynthNotation(p.body.trim());
@@ -839,7 +909,7 @@ export async function stageP1(io: StageIO): Promise<void> {
   }))];
   const onRound: P1LoopHooks["onRound"] = async ({ phase, iter, envs, findings }) => {
     // Always persist the latest layer so a slow/timed-out run leaves the render on disk.
-    await writeFile(join(io.outDir, "formal_layer.tex"), assemble(envs) + "\n", "utf8");
+    await writeFile(formalLayerPath, assemble(envs) + "\n", "utf8");
     if (phase === "render0") log(`render0: persisted ${envs.length}-env layer to formal_layer.tex`);
     else {
       const blocking = (findings ?? []).filter((f) => f.gate !== "xref-missing" && !(f.gate === "notation-undefined" && f.fixLocus == null));
@@ -906,12 +976,14 @@ export async function stageP1(io: StageIO): Promise<void> {
     JSON.stringify(FormalLayerSource.parse({ commit: null, blocks }), null, 2) + "\n",
     "utf8",
   );
+  // Put the successful receipt first so recovery can distinguish this final layer from an
+  // in-progress onRound render. If a stale rejected receipt remains after an interruption, the
+  // startup selection above deliberately prefers this newer successful layer.
   await writeFile(
-    join(io.outDir, "formal_layer.tex"),
-    "% DERIVED from formal_layer.json — read-only, do not edit.\n" + blocksToTex(blocks) + "\n",
+    formalLayerPath,
+    synthResumeMarker + "\n% DERIVED from formal_layer.json — read-only, do not edit.\n" + blocksToTex(blocks) + "\n",
     "utf8",
   );
-
   // ── STATEMENT EQUIVALENCE AUDIT (co-located with statement production). Each frozen env body is
   // reconciled against its Lean declaration the moment it is rendered; drift is refined toward Lean
   // and the validated body is persisted onto the graph (nl.frozen_body) so a re-run stays tight. A
@@ -919,6 +991,14 @@ export async function stageP1(io: StageIO): Promise<void> {
   // the outline checkpoint already verified against Lean, so P2/P3 confirm rather than reconstruct.
   log("statement audit: reconciling frozen envs against Lean…");
   const eqProblems = await runStatementAudit(io);
+  // The audit may tighten a body and re-derive formal_layer.tex from JSON. Reapply the receipt
+  // marker after that write so the final audited artifact—not a pre-audit intermediate—is what a
+  // later P1 re-run can safely recover from.
+  const auditedLayerTex = await readFile(formalLayerPath, "utf8");
+  const unstampedAuditedLayer = auditedLayerTex.startsWith(synthResumeMarker + "\n")
+    ? auditedLayerTex.slice(synthResumeMarker.length + 1)
+    : auditedLayerTex;
+  await writeFile(formalLayerPath, synthResumeMarker + "\n" + unstampedAuditedLayer, "utf8");
   if (eqProblems.length > 0) {
     io.state.hard_gate_failures = eqProblems;
     throw new Error(
@@ -942,4 +1022,9 @@ export async function stageP1(io: StageIO): Promise<void> {
     JSON.stringify({ ok: result.ok, iterations: result.iterations, advisories: result.advisories }, null, 2) + "\n",
     "utf8",
   );
+  // The stamped successful layer is now the recovery source. Removing an old failure receipt
+  // prevents it from being mistaken for the current run by tools or readers outside this stage.
+  await unlink(rejectedPath).catch((e: NodeJS.ErrnoException) => {
+    if (e.code !== "ENOENT") throw e;
+  });
 }

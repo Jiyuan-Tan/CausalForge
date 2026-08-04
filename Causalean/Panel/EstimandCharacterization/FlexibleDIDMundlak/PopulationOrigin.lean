@@ -75,8 +75,8 @@ As in `DCDHPanel.ofPopulation`, the cell-weight data (`cohortShare`,
 `covarWeight`) and their side conditions (`cohortShare_pos_on_treated`,
 `covarWeight_nonneg`, `covarWeight_sum_one`) are supplied as witnesses — the
 weight construction is separate from the population cell-mean definitions. -/
-noncomputable def StaggeredATTCells.ofPopulation
-    {Ω : Type*} [MeasurableSpace Ω] (μ : Measure Ω) [IsProbabilityMeasure μ]
+noncomputable def StaggeredATTCells.ofMeasure
+    {Ω : Type*} [MeasurableSpace Ω] (μ : Measure Ω)
     (cellEvent : Cohort → Time → Covar → Set Ω)
     (Y0pop Ygpop Yobspop : Ω → ℝ)
     (treatedCell untreatedCell : Cohort → Time → Prop)
@@ -115,6 +115,31 @@ noncomputable def StaggeredATTCells.ofPopulation
     have _ := hY0_int g t c
     have _ := hYobs_int g t c
     eventCondExp_congr_on μ (hmeas g t c) (hcons_ut hut c)
+
+/-- Probability-measure specialization of `StaggeredATTCells.ofMeasure`. -/
+noncomputable def StaggeredATTCells.ofPopulation
+    {Ω : Type*} [MeasurableSpace Ω] (μ : Measure Ω) [IsProbabilityMeasure μ]
+    (cellEvent : Cohort → Time → Covar → Set Ω)
+    (Y0pop Ygpop Yobspop : Ω → ℝ)
+    (treatedCell untreatedCell : Cohort → Time → Prop)
+    (cohortShare : Cohort → ℝ) (covarWeight : Cohort → Covar → ℝ)
+    (hmeas : ∀ g t c, MeasurableSet (cellEvent g t c))
+    (hcell_pos : ∀ g t c, 0 < (μ (cellEvent g t c)).toReal)
+    (hY0_int : ∀ g t c, IntegrableOn Y0pop (cellEvent g t c) μ)
+    (hYg_int : ∀ g t c, IntegrableOn Ygpop (cellEvent g t c) μ)
+    (hYobs_int : ∀ g t c, IntegrableOn Yobspop (cellEvent g t c) μ)
+    (cohortShare_pos_on_treated :
+      ∀ ⦃g : Cohort⦄ ⦃t : Time⦄, treatedCell g t → 0 < cohortShare g)
+    (covarWeight_nonneg : ∀ g c, 0 ≤ covarWeight g c)
+    (covarWeight_sum_one : ∀ g, ∑ c, covarWeight g c = 1)
+    (hcons_tr : ∀ ⦃g : Cohort⦄ ⦃t : Time⦄, treatedCell g t →
+        ∀ c, ∀ ω ∈ cellEvent g t c, Yobspop ω = Ygpop ω)
+    (hcons_ut : ∀ ⦃g : Cohort⦄ ⦃t : Time⦄, untreatedCell g t →
+        ∀ c, ∀ ω ∈ cellEvent g t c, Yobspop ω = Y0pop ω) :
+    StaggeredATTCells Cohort Time Covar :=
+  StaggeredATTCells.ofMeasure μ cellEvent Y0pop Ygpop Yobspop treatedCell untreatedCell
+    cohortShare covarWeight hmeas hcell_pos hY0_int hYg_int hYobs_int
+    cohortShare_pos_on_treated covarWeight_nonneg covarWeight_sum_one hcons_tr hcons_ut
 
 /-- On a treated cell in a population-built system, the fitted untreated mean
 equals the population conditional mean of the untreated potential outcome.

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { recordProof, refreshSnapshots } from "../../src/discovery/working_writer.js";
+import { recordProof } from "../../src/discovery/working_writer.js";
 import { computeValidNodes } from "../../src/discovery/stages/d0_working.js";
 import type { WorkingState } from "../../src/discovery/stages/d0_working.js";
 import type { Core, CoreStatement } from "../../src/discovery/core/schema.js";
@@ -83,53 +83,45 @@ describe("recordProof", () => {
   });
 });
 
-describe("refreshSnapshots", () => {
-  it("re-snapshots after a statement rewrite and reports what moved", () => {
-    const before = stmt({ statement: "OLD" });
-    const proto = makeCore([before]);
+describe("recordProof wired-closure snapshots (Batch B — refreshSnapshots is retired)", () => {
+  it("includes defs/assumptions the PROOF TEXT cites in the snapshot closure", () => {
+    // The old flow wired the workspace core, then re-synced snapshots from it.
+    // Now the wire happens at the write: a def cited only in the proof body is
+    // part of the validity basis, so editing it re-opens the node.
+    const node = stmt({ depends_on: [] });
+    const proto = makeCore([node], [], [{ id: "def:d", name: "D", construction: "X = 1" }]);
     const w = emptyWorking();
-    recordProof(w, proto, { id: "lem:a", snapshotOf: before, proofTex: "P", node: before });
+    recordProof(w, proto, { id: "lem:a", snapshotOf: node, proofTex: "By def:d, done.", node });
 
-    const after = stmt({ statement: "NEW" });
-    const moved = refreshSnapshots(w, makeCore([after]), makeCore([after]));
-
-    expect(moved).toEqual(["lem:a"]);
-    expect(w.solved["lem:a"].snapshot.stmt).toBe("NEW");
-    expect(w.solved["lem:a"].node?.statement).toBe("NEW");
+    expect(w.solved["lem:a"].snapshot.defs).toEqual({ "def:d": "X = 1" });
+    expect(w.solved["lem:a"].snapshot.depends_on).toContain("def:d");
+    // ...and the record reads STALE once that def's construction moves.
+    const edited = makeCore([node], [], [{ id: "def:d", name: "D", construction: "X = 2" }]);
+    expect(computeValidNodes(w, edited).has("lem:a")).toBe(false);
+    expect(computeValidNodes(w, proto).has("lem:a")).toBe(true);
   });
 
-  it("reports nothing when no snapshot actually changed", () => {
+  it("a prose-cited helper's statement change invalidates the citing record (audit BB1)", () => {
+    // Pre-Batch-B this propagation flowed through the refresh-synced wired node;
+    // now the snapshot's cited closure feeds computeValidNodes directly.
+    const helper = stmt({ id: "lem:b", statement: "HELPER-V1" });
+    const main = stmt({ id: "thm:a", kind: "theorem", depends_on: [] });
+    const proto = makeCore([main, helper]);
+    const w = emptyWorking();
+    recordProof(w, proto, { id: "lem:b", snapshotOf: helper, proofTex: "P", node: helper });
+    recordProof(w, proto, { id: "thm:a", snapshotOf: main, proofTex: "By lem:b, done.", node: main });
+    expect(computeValidNodes(w, proto).has("thm:a")).toBe(true);
+    const edited = makeCore([main, { ...helper, statement: "HELPER-V2" } as CoreStatement]);
+    expect(computeValidNodes(w, edited).has("lem:b")).toBe(false);
+    expect(computeValidNodes(w, edited).has("thm:a")).toBe(false); // propagated
+  });
+
+  it("never adds a self-reference to the closure", () => {
     const node = stmt();
     const proto = makeCore([node]);
     const w = emptyWorking();
-    recordProof(w, proto, { id: "lem:a", snapshotOf: node, proofTex: "P", node });
-
-    expect(refreshSnapshots(w, proto, proto)).toEqual([]);
-  });
-
-  it("leaves open obligations alone under skipPartial", () => {
-    // A partial's snapshot describes what the agent was asked to extend; refreshing it
-    // would quietly retarget the obligation.
-    const before = stmt({ statement: "OLD" });
-    const proto = makeCore([before]);
-    const w = emptyWorking();
-    recordProof(w, proto, { id: "lem:a", snapshotOf: before, proofTex: "partial", node: before, partial: true });
-
-    const after = makeCore([stmt({ statement: "NEW" })]);
-    expect(refreshSnapshots(w, after, after, { skipPartial: true })).toEqual([]);
-    expect(w.solved["lem:a"].snapshot.stmt).toBe("OLD");
-
-    expect(refreshSnapshots(w, after, after)).toEqual(["lem:a"]);
-    expect(w.solved["lem:a"].snapshot.stmt).toBe("NEW");
-  });
-
-  it("ignores records whose id is absent from the core", () => {
-    const node = stmt();
-    const w = emptyWorking();
-    recordProof(w, makeCore([node]), { id: "lem:a", snapshotOf: node, proofTex: "P", node });
-
-    expect(refreshSnapshots(w, makeCore([]), makeCore([]))).toEqual([]);
-    expect(w.solved["lem:a"].proof_tex).toBe("P");
+    recordProof(w, proto, { id: "lem:a", snapshotOf: node, proofTex: "Recall lem:a itself.", node });
+    expect(w.solved["lem:a"].snapshot.depends_on).not.toContain("lem:a");
   });
 
   it("does not invent a node key for a record that had none", () => {
@@ -137,8 +129,6 @@ describe("refreshSnapshots", () => {
     const proto = makeCore([node]);
     const w = emptyWorking();
     recordProof(w, proto, { id: "lem:a", snapshotOf: node, proofTex: "P" });
-
-    refreshSnapshots(w, proto, proto);
     expect("node" in w.solved["lem:a"]).toBe(false);
   });
 });

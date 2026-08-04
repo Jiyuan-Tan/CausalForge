@@ -5,8 +5,8 @@ Authors: Jiyuan Tan
 
 # Integrability lemmas via conditional expectation of indicators
 
-* `ae_pos_condExp_indicator_of_le` — σ-projection of indicator-conditional positivity:
-  if `μ⟦𝟙_{A=a}|m₂⟧ > 0` a.e. and `m₁ ≤ m₂`, then `μ⟦𝟙_{A=a}|m₁⟧ > 0` a.e.
+* `ae_pos_condExp_indicator_of_le` — indicator-conditional positivity from overlap on the
+  conditioning σ-algebra.
 * `integrableOn_of_condExp_indicator_mul` — integrability on `B` of an `m`-measurable
   nonneg `g` whose product with `μ⟦𝟙_B|m⟧` equals `μ⟦𝟙_C|m⟧`.
 
@@ -23,8 +23,8 @@ conditional-expectation identities for indicators into positivity and integrabil
 conclusions. The results support proxy and partial-identification arguments that
 reason through sub-σ-algebras.
 
-The theorem `ae_pos_condExp_indicator_of_le` projects strict overlap from a
-larger σ-algebra to a smaller one. The theorem
+The theorem `ae_pos_condExp_indicator_of_le` derives strict conditional positivity
+from overlap on the conditioning σ-algebra. The theorem
 `integrableOn_of_condExp_indicator_mul` turns an `m`-measurable nonnegative
 function satisfying an indicator conditional-expectation product identity into
 an integrable-on-stratum conclusion. -/
@@ -35,50 +35,41 @@ open scoped MeasureTheory ProbabilityTheory
 
 /-- **σ-projection of indicator-conditional positivity.**
 
-If the indicator-conditional `μ⟦𝟙_{A=a} | m₂⟧` is strictly positive μ-a.e. on
+If the indicator-conditional `μ⟦𝟙_E | m₂⟧` is strictly positive μ-a.e. on
 some larger σ-algebra `m₂`, then the same holds when conditioning on a
 sub-σ-algebra `m₁ ≤ m₂`. Concretely: from
 `∀ᵐ ω ∂μ, μ⟦𝟙_{A=a} | m₂⟧ ω > 0` infer `∀ᵐ ω ∂μ, μ⟦𝟙_{A=a} | m₁⟧ ω > 0`.
 
 Standard measure-theoretic argument:
-- Let `S = {ω | μ⟦𝟙_{A=a}|m₁⟧ ω = 0}` (m₁-measurable).
-- `∫_S 𝟙_{A=a} dμ = ∫_S μ⟦𝟙_{A=a}|m₁⟧ dμ = 0` by `setIntegral_condExp` and
+- Let `S = {ω | μ⟦𝟙_E|m₁⟧ ω = 0}` (m₁-measurable).
+- `∫_S 𝟙_E dμ = ∫_S μ⟦𝟙_E|m₁⟧ dμ = 0` by `setIntegral_condExp` and
   the integrand vanishing on S.
-- Hence `μ(S ∩ {A=a}) = 0`.
-- The "overlap_strong" hypothesis on m₂ (encoded here via the `m₂`-positivity
-  of the indicator condExp, since m₁ ≤ m₂ via `MeasurableSet[m₁] ≤
-  MeasurableSet[m₂]`) implies `μ(S) = 0`.
+- Hence `μ(S ∩ E) = 0`.
+- The overlap hypothesis on `m₁` implies `μ(S) = 0`.
 
 Mathlib-contribution candidate. Used in `Proxy/Helpers/CondExpQ.lean` for the
 σ_X-projection of `likelihoodRatio_swapA_spec`. -/
 theorem ae_pos_condExp_indicator_of_le
     {Ω : Type*} {mΩ : MeasurableSpace Ω}
     {μ : @MeasureTheory.Measure Ω mΩ} [@MeasureTheory.IsFiniteMeasure Ω mΩ μ]
-    {m₁ m₂ : MeasurableSpace Ω} (_h₁ : m₁ ≤ mΩ) (_h₂ : m₂ ≤ mΩ) (_h₁₂ : m₁ ≤ m₂)
-    {α : Type*} [MeasurableSpace α] [MeasurableSingletonClass α]
-    {A : Ω → α} (_hA : @Measurable Ω α mΩ _ A) (a : α)
-    (_h_overlap : ∀ s : Set Ω, MeasurableSet[m₂] s →
-        μ (s ∩ {ω | A ω = a}) = 0 → μ s = 0) :
+    {m₁ : MeasurableSpace Ω} (_h₁ : m₁ ≤ mΩ)
+    {E : Set Ω} (hE : @MeasurableSet Ω mΩ E)
+    (_h_overlap : ∀ s : Set Ω, MeasurableSet[m₁] s →
+        μ (s ∩ E) = 0 → μ s = 0) :
     ∀ᵐ ω ∂μ,
-      0 < (μ[Set.indicator {ω' | A ω' = a} (fun _ => (1:ℝ)) | m₁]) ω := by
-  let E : Set Ω := {ω | A ω = a}
+      0 < (μ[Set.indicator E (fun _ => (1:ℝ)) | m₁]) ω := by
   let f : Ω → ℝ := Set.indicator E (fun _ => (1 : ℝ))
   let p : Ω → ℝ := μ[f | m₁]
   let S : Set Ω := {ω | p ω = 0}
   haveI : MeasureTheory.IsFiniteMeasure (μ.trim _h₁) :=
     MeasureTheory.isFiniteMeasure_trim _h₁
-  have hE : @MeasurableSet Ω mΩ E := by
-    dsimp [E]
-    exact _hA (measurableSet_singleton a)
   have hf_int : MeasureTheory.Integrable f μ := by
     dsimp [f]
     exact (MeasureTheory.integrable_const (μ := μ) (1 : ℝ)).indicator hE
   have hp_nonneg : 0 ≤ᵐ[μ] p := by
-    dsimp [p, f, E]
-    exact MeasureTheory.condExp_nonneg (Filter.Eventually.of_forall fun ω => by
-      by_cases h : A ω = a
-      · simp [Set.indicator_of_mem, h]
-      · simp [Set.indicator_of_notMem, h])
+    dsimp [p, f]
+    exact MeasureTheory.condExp_nonneg (Filter.Eventually.of_forall fun ω =>
+      Set.indicator_nonneg (fun _ _ => zero_le_one) _)
   have hp_sm : StronglyMeasurable[m₁] p := by
     dsimp [p, f]
     exact MeasureTheory.stronglyMeasurable_condExp
@@ -86,7 +77,6 @@ theorem ae_pos_condExp_indicator_of_le
     dsimp [S]
     exact hp_sm.measurable (measurableSet_singleton (0 : ℝ))
   have hS_mΩ : @MeasurableSet Ω mΩ S := _h₁ S hS_m1
-  have hS_m2 : MeasurableSet[m₂] S := _h₁₂ S hS_m1
   have hset : ∫ ω in S, p ω ∂μ = ∫ ω in S, f ω ∂μ := by
     dsimp [p]
     exact MeasureTheory.setIntegral_condExp _h₁ hf_int hS_m1
@@ -106,7 +96,7 @@ theorem ae_pos_condExp_indicator_of_le
     rw [← hf_set_real]
     exact hf_set_zero
   have hS_zero : μ S = 0 := by
-    exact _h_overlap S hS_m2 (by simpa [E] using hSE_zero)
+    exact _h_overlap S hS_m1 hSE_zero
   have hS_ae : ∀ᵐ ω ∂μ, ω ∉ S := by
     rw [MeasureTheory.ae_iff]
     simpa using hS_zero

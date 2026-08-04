@@ -2,19 +2,27 @@ import { describe, it, expect } from "vitest";
 import {
   structuralGate,
   proposalGate,
-  closureGate,
   symbolPreflightGate,
+  symbolDriftGate,
   roundInvariantsGate,
   proseConsistencyGate,
 } from "../../../src/discovery/framework/gate_registrations.js";
-import { allGates } from "../../../src/discovery/framework/gates.js";
 
 describe("gate registrations", () => {
-  it("registry lists every registered gate with non-empty evidence", () => {
-    const ids = allGates().map((g) => g.id);
+  it("every exported gate has a stable id and non-empty evidence", () => {
+    const gates = [
+      structuralGate,
+      proposalGate,
+      symbolPreflightGate,
+      symbolDriftGate,
+      roundInvariantsGate,
+      proseConsistencyGate,
+    ];
+    const ids = gates.map((g) => g.id);
     expect(ids).toContain("structural-gate");
     expect(ids).toContain("proposal-gate");
-    for (const g of allGates()) expect(g.evidence.trim().length).toBeGreaterThan(0);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const g of gates) expect(g.evidence.trim().length).toBeGreaterThan(0);
   });
 
   it("structural-gate fires on a schema-invalid core (firing fixture)", () => {
@@ -29,16 +37,8 @@ describe("gate registrations", () => {
     expect(violations[0].gateId).toBe("proposal-gate");
   });
 
-  it("proposal-closure fires on an uncarried core id (firing fixture)", () => {
-    const node = (id: string) => ({ id });
-    const violations = closureGate.check({
-      core: { statements: [node("thm:orphan")], definitions: [], assumptions: [] },
-      proto: { statements: [], definitions: [], assumptions: [] },
-      proposalIds: new Set<string>(),
-    });
-    expect(violations.length).toBeGreaterThan(0);
-    expect(violations[0].ids).toContain("thm:orphan");
-  });
+  // (Retired, Phase 1: the proposal-closure gate — closure holds by construction
+  // of assembleCore; see test/discovery/assemble.test.ts.)
 
   it("symbol-preflight fires on an undeclared free symbol (firing fixture)", () => {
     const violations = symbolPreflightGate.check({

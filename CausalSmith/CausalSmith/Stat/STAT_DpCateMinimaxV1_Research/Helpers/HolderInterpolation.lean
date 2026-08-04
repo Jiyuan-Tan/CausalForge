@@ -130,7 +130,7 @@ theorem holder_point_l1_interpolation_holds {d : ℕ}
     intro P Q _ _
     have hball : supBall x0 (rStar r0 x0) = Set.univ := by
       ext x
-      simp [supBall]
+      simp [supBall, Causalean.Stat.Nonparametric.supBall]
     rw [hball, setIntegral_univ, integral_unique]
     rw [Measure.volume_pi_eq_dirac (default : Fin 0 → ℝ)]
     simp [Real.rpow_one, Subsingleton.elim x0 default]

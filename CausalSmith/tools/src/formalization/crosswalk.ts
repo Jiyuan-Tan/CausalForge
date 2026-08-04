@@ -461,11 +461,15 @@ export function renderCrosswalkMd(entries: CrosswalkEntry[]): string {
     "| obj_id | kind | Lean (file:decl) | .tex anchor | verdict | note |",
     "|---|---|---|---|---|---|",
   ];
+  // Escape UNESCAPED pipes in EVERY interpolated cell (not just note): the tex
+  // anchor is TeX prose, and an `E[Y|X]` or `\{x : |x| \le 1\}` in it added
+  // columns and corrupted the banked table row.
+  const mdCell = (s: string) => s.replace(/(?<!\\)\|/g, "\\|");
   for (const e of entries) {
     const lean = e.lean ? `${e.lean.file}:${e.lean.decl} (L${e.lean.line})` : "(none)";
     const tex = e.tex.label || e.tex.line_range || "(none)";
     lines.push(
-      `| ${e.obj_id} | ${e.kind} | \`${lean}\` | ${tex} | ${e.verdict} | ${(e.note ?? "").replace(/\|/g, "\\|")} |`,
+      `| ${mdCell(e.obj_id)} | ${e.kind} | \`${mdCell(lean)}\` | ${mdCell(tex)} | ${e.verdict} | ${mdCell(e.note ?? "")} |`,
     );
   }
   // Per-definition clause breakdowns (only where the reviewer supplied them).

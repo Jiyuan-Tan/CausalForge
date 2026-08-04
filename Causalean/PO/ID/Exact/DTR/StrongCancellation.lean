@@ -115,13 +115,13 @@ theorem cdtr_strong [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
     have hYof_int : Integrable (S.Y_of dbar) P.μ := hA.integrable_Y dbar
     have hindLast_int :
         Integrable ((S.dVar kLast).indicator (dbar kLast)) P.μ :=
-      (S.dVar kLast).integrable_indicator (dbar kLast)
+      (S.dVar kLast).integrable_indicator (dbar kLast) (measurableSet_singleton _)
     have hindD_n_int : Integrable (S.indD dbar n) P.μ := S.indD_integrable dbar n
     have hYindLast_int :
         Integrable (fun ω => S.factualY ω *
           (S.dVar kLast).indicator (dbar kLast) ω) P.μ := by
-      exact (S.dVar kLast).integrable_mul_indicator
-        (dbar kLast) hA.integrable_factualY S.measurable_factualY
+      exact (S.dVar kLast).integrable_mul_indicator (dbar kLast)
+        (measurableSet_singleton _) hA.integrable_factualY
     have hindD_m_sm :
         StronglyMeasurable[(S.historyBundle m hm_lt).sigma] (S.indD dbar m) :=
       S.stronglyMeasurable_indD_sigma_history m hm_lt dbar m (le_refl m)
@@ -355,8 +355,8 @@ theorem cdtr_strong [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
     have hinnerReg_indk_int :
         Integrable (fun ω => S.innerReg dbar j ω * ind_k ω) P.μ := by
       dsimp [ind_k]
-      exact (S.dVar kFin).integrable_mul_indicator
-        (dbar kFin) ihInt (S.measurable_innerReg dbar j)
+      exact (S.dVar kFin).integrable_mul_indicator (dbar kFin)
+        (measurableSet_singleton _) ihInt
     have hCE_int_k1 :
         Integrable
           ((S.historyBundle (k+1) hk1).condExpGiven (S.Y_of dbar) P.μ) P.μ :=
@@ -366,8 +366,7 @@ theorem cdtr_strong [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
           (S.historyBundle (k+1) hk1).condExpGiven (S.Y_of dbar) P.μ ω) P.μ := by
       dsimp [ind_k]
       have hmul := (S.dVar kFin).integrable_mul_indicator (dbar kFin)
-        hCE_int_k1
-        ((S.historyBundle (k+1) hk1).stronglyMeasurable_condExpGiven _).measurable
+        (measurableSet_singleton _) hCE_int_k1
       exact hmul.congr (Filter.Eventually.of_forall (fun ω => by ring))
     -- innerReg j · ind_k =ᵐ indD k · (ind_k · μ[Y|σ_{k+1}]).
     have hAEinnerReg_indk :

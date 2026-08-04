@@ -4,7 +4,8 @@
 // subset at D-1). A whole class of discovery-layer defects never reaches an LLM
 // reviewer. Checks G1–G7; returns every violation with its gate code + location.
 import { CoreSchema, type Core } from "./schema.js";
-import { nodeRefRegex } from "./node_ids.js";
+import { extractNodeRefs } from "./node_ids.js";
+import { hasPlausibleSentenceEnd, maskNonBoundaryPeriods } from "../../shared/tex_text.js";
 
 export interface GateViolation {
   code: "schema" | "G1" | "G2" | "G3" | "G4" | "G5" | "G6" | "G7";
@@ -58,6 +59,30 @@ function escapeRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/** Match a construction name as a standalone token, not as a substring. A bare
+ *  `new RegExp(escapeRe(name))` lets a short name (`g`, `T`, `mu`) fire inside
+ *  ordinary English words ("desi*g*nated", "satisfyin*g*"), which reads as a
+ *  witness reference that is not there. The guard is applied per side and only
+ *  where the name's own edge character is alphanumeric, so names that already
+ *  begin or end in punctuation (`\hat{g}`) keep matching after a letter.
+ *
+ *  `_` is deliberately NOT a boundary character here. This text is LaTeX, where
+ *  `_` is the subscript delimiter rather than part of a name: with `_` in the
+ *  class, construction `Omega` stops matching `\Omega_n` and `g` stops matching
+ *  `g_n` — both GENUINE witness carves. G5 is a soundness firewall, so a false
+ *  negative is the costly direction; excluding `_` still blocks the English-word
+ *  case this guard exists for. */
+function constructionNameRe(name: string): RegExp {
+  // `(?<!\\[,;:!]\s?)` — a TeX spacing command directly before a single letter
+  // is the differential idiom (`\,d\mu`, `\; d x`): that `d` is the measure
+  // differential, never a witness reference. Scoped to the spacing commands so
+  // a genuine reference after `\colon`/`\{` etc. still matches (G5 is a
+  // soundness firewall; false negatives are the costly direction).
+  const left = /^[A-Za-z0-9]/.test(name) ? "(?<![A-Za-z0-9])(?<!\\\\[,;:!]\\s?)" : "";
+  const right = /[A-Za-z0-9]$/.test(name) ? "(?![A-Za-z0-9])" : "";
+  return new RegExp(`${left}${escapeRe(name)}${right}`);
+}
+
 /** Mechanical dead-assumption prune (D-stage). An assumption referenced by NO
  *  statement — directly in a `depends_on`, transitively through the statement
  *  dependency chain, or as a class `by_member_properties` member — is an isolated,
@@ -82,7 +107,13 @@ export function pruneDeadAssumptions(coreInput: unknown): { core: Core; pruned: 
   // under it, leaving the class defined by a property that no longer exists. Surfaced
   // 2026-07-20 while testing a gate check for exactly that dangling reference.
   const stack: string[] = [...core.statements.map((s) => s.id), ...core.definitions.map((d) => d.id)];
-  const REF_RE = nodeRefRegex(); // shared definition — see core/node_ids.ts
+  // Go through `extractNodeRefs`, NOT a raw `nodeRefRegex()` matchAll: the extractor is
+  // what normalizes a LaTeX-escaped hyphen (`lem:beta\text{-}free`) back to the plain-`-`
+  // id grammar. Lowercasing the raw match instead yields the truncated `lem:beta`, so the
+  // real node's last inbound prose edge disappears and THIS FUNCTION DELETES IT — while
+  // `findDanglingCitations`, which does use the extractor, resolves the same reference
+  // happily. That disagreement is exactly the failure mode core/node_ids.ts exists to
+  // prevent; keep every reachability consumer on the one extractor.
   while (stack.length) {
     const id = stack.pop()!;
     if (alive.has(id)) continue;
@@ -97,7 +128,7 @@ export function pruneDeadAssumptions(coreInput: unknown): { core: Core; pruned: 
     const def = defById.get(id);
     if (def) {
       for (const r of def.inputs ?? []) stack.push(r);
-      for (const m of `${def.construction ?? ""}`.matchAll(REF_RE)) stack.push(m[0].toLowerCase());
+      for (const r of extractNodeRefs(`${def.construction ?? ""}`)) stack.push(r);
     }
     // Also keep alive anything the node CITES in its proof/statement prose: the solver's
     // `depends_on` is not always complete vs. its `Ass:`/`Lem:` prose, so an assumption used
@@ -106,7 +137,7 @@ export function pruneDeadAssumptions(coreInput: unknown): { core: Core; pruned: 
     // stage0_working.pruneOrphanLemmas; a truly-unused assumption (cited nowhere) is still pruned.
     if (s) {
       const prose = `${s.proof_tex ?? ""} ${s.statement ?? ""}`;
-      for (const m of prose.matchAll(REF_RE)) stack.push(m[0].toLowerCase());
+      for (const r of extractNodeRefs(prose)) stack.push(r);
     }
   }
   const pruned: string[] = [];
@@ -204,7 +235,24 @@ export function runStructuralGate(coreInput: unknown, opts: GateOptions = {}): G
         });
       }
     }
-    const clauses = a.condition.split(/\.\s+(?=[A-Z(\\])/).filter((x) => x.trim().length > 0);
+    // Preserve the pre-existing sentence heuristic, but make it TeX-aware:
+    // (1) mask periods that provably do not end a sentence (decimals `0.5`,
+    //     abbreviations `i.i.d.` / `w.r.t.` / `Thm.`) — without this, the split
+    //     fires on `i.i.d. \(N(0,\sigma^2)\)` and the terminal-closer guard
+    //     below disables itself on any decimal constant;
+    // (2) protect a period whose entire remaining suffix is only closing TeX
+    //     math delimiters (terminal `.\n\\]` is not a second sentence) — UNLESS
+    //     an earlier plausible sentence end exists, in which case the terminal
+    //     period is a real boundary after a lowercase-led second sentence.
+    const masked = maskNonBoundaryPeriods(a.condition);
+    const terminalCloserPeriod = /\.(?=\s*(?:\\(?:\]|\)|end\{[^{}]+\})\s*)+$)/.exec(masked);
+    const earlierPlausibleEnd = terminalCloserPeriod
+      ? hasPlausibleSentenceEnd(masked.slice(0, terminalCloserPeriod.index))
+      : false;
+    const sentenceScan = terminalCloserPeriod && !earlierPlausibleEnd
+      ? `${masked.slice(0, terminalCloserPeriod.index)}∯${masked.slice(terminalCloserPeriod.index + 1)}`
+      : masked;
+    const clauses = sentenceScan.split(/\.\s+(?=[A-Z(\\$])/).filter((x) => x.trim().length > 0);
     if (clauses.length > 1) {
       violations.push({
         code: "G2",
@@ -218,7 +266,17 @@ export function runStructuralGate(coreInput: unknown, opts: GateOptions = {}): G
   // construction is always a statement, never an assumption.
   for (const a of core.assumptions) {
     for (const cn of classNames) {
-      const re = new RegExp(`(∈|\\\\in|belongs to|lies in)\\s*\\$?${escapeRe(cn)}`, "i");
+      // `\\in(?![A-Za-z])` — without the boundary, `\in` matches the prefix of
+      // `\int`/`\inf`/`\infty` and a short class name then falsely matches the
+      // command's tail (`\int T` fired G3 for class `T`). The optional wrapper
+      // lets the plain-named class `C` still be caught when written
+      // `\\in \\mathcal{C}` — the idiomatic spelling — but is restricted to the
+      // CLASS fonts: accepting any command let `x \\in \\mathbb{R}^d` (ambient
+      // reals, ubiquitous) fire for a class named `R`.
+      const re = new RegExp(
+        `(∈|\\\\in(?![A-Za-z])|belongs to|lies in)\\s*\\$?\\s*(?:\\\\(?:mathcal|mathscr|mathfrak)\\s*\\{\\s*)?${escapeRe(cn)}`,
+        "i",
+      );
       if (re.test(a.condition)) {
         violations.push({
           code: "G3",
@@ -337,7 +395,7 @@ export function runStructuralGate(coreInput: unknown, opts: GateOptions = {}): G
     ];
     for (const [site, text] of witnessSites) {
       for (const cn of constructionNames) {
-        if (new RegExp(escapeRe(cn)).test(text)) {
+        if (constructionNameRe(cn).test(text)) {
           violations.push({
             code: "G5",
             where: d.id,

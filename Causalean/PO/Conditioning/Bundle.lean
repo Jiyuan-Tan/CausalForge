@@ -121,10 +121,18 @@ indicator `1_s` factors out of the bundle conditional expectation. -/
 lemma condExpGiven_indicator_mul
     {s : Set P.Ω} {g : P.Ω → ℝ} {μ : Measure P.Ω}
     (hs : MeasurableSet[B.sigma] s)
-    (hsg : Integrable (s.indicator (fun _ => (1 : ℝ)) * g) μ) (hg : Integrable g μ) :
+    (hg : Integrable g μ) :
     B.condExpGiven (s.indicator (fun _ => (1 : ℝ)) * g) μ
-      =ᵐ[μ] s.indicator (fun _ => (1 : ℝ)) * B.condExpGiven g μ :=
-  B.condExpGiven_mul_of_stronglyMeasurable_left
+      =ᵐ[μ] s.indicator (fun _ => (1 : ℝ)) * B.condExpGiven g μ := by
+  have hsg : Integrable (s.indicator (fun _ => (1 : ℝ)) * g) μ := by
+    have hs_meas : AEStronglyMeasurable (s.indicator (fun _ => (1 : ℝ))) μ :=
+      StronglyMeasurable.aestronglyMeasurable
+        (((stronglyMeasurable_const (b := (1 : ℝ))).indicator hs).mono B.sigma_le)
+    refine hg.mono
+      (hs_meas.mul hg.aestronglyMeasurable) ?_
+    refine Filter.Eventually.of_forall (fun ω => ?_)
+    by_cases hω : ω ∈ s <;> simp [Set.indicator, hω]
+  exact B.condExpGiven_mul_of_stronglyMeasurable_left
     ((stronglyMeasurable_const (b := (1 : ℝ))).indicator hs) hsg hg
 
 /-- a.e. congruence for `condExpGiven`: if `f =ᵐ g`, then their bundle

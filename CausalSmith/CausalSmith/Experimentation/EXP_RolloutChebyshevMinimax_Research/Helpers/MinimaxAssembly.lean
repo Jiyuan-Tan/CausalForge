@@ -144,7 +144,9 @@ lemma chebyshev_amplification_lower (qmax clower : ℝ) (hclower_pos : 0 < clowe
     dsimp [dualSet]
     simpa [_root_.Causalean.Mathlib.Analysis.FiniteDimL1LinfDuality.dualValSet] using
       (_root_.Causalean.Mathlib.Analysis.FiniteDimL1LinfDuality.dualValSet_bddAbove
-        (p := p) (β := beta) hp.2.2.1.injective hkβ)
+        (p := p) (β := beta)
+        (_root_.Causalean.Mathlib.Analysis.FiniteDimL1LinfDuality.primalNormSet_nonempty
+          hp.2.2.1.injective hkβ))
   have hrdeg : r.natDegree ≤ beta := by
     simpa [r] using chebyshev_affine_natDegree_le beta q
   have hrbound : ∀ j, |r.eval (p j)| ≤ 1 := by

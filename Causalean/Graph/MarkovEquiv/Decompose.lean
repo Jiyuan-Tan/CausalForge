@@ -41,11 +41,17 @@ theorem SameImmoralities.trans {G₁ G₂ G₃ : DAG V} (h₁ : SameImmoralities
 Markov equivalent (d-separation depends only on the edge relation). -/
 theorem markovEquiv_of_same_edge {G₁ G₂ : DAG V}
     (he : ∀ u w, G₁.edge u w ↔ G₂.edge u w) : MarkovEquiv G₁ G₂ := by
-  intro X Y Z hXY hXZ hYZ
-  have h := DAG.hasActivePath_edge_congr he X Y Z
-  rw [← DAG.not_dSep_iff_hasActivePath G₁ X Y Z hXY hXZ hYZ,
-    ← DAG.not_dSep_iff_hasActivePath G₂ X Y Z hXY hXZ hYZ] at h
-  exact not_iff_not.mp h
+  intro X Y Z
+  by_cases hXY : Disjoint X Y
+  · by_cases hXZ : Disjoint X Z
+    · by_cases hYZ : Disjoint Y Z
+      · have h := DAG.hasActivePath_edge_congr he X Y Z
+        rw [← DAG.not_dSep_iff_hasActivePath G₁ X Y Z hXY hXZ hYZ,
+          ← DAG.not_dSep_iff_hasActivePath G₂ X Y Z hXY hXZ hYZ] at h
+        exact not_iff_not.mp h
+      · exact iff_of_false (fun h => hYZ h.2.2.1) (fun h => hYZ h.2.2.1)
+    · exact iff_of_false (fun h => hXZ h.2.1) (fun h => hXZ h.2.1)
+  · exact iff_of_false (fun h => hXY h.1) (fun h => hXY h.1)
 
 /-- The directed edges of `G₁` that are absent from `G₂`. -/
 def edgeDiff (G₁ G₂ : DAG V) : Finset (V × V) :=
@@ -54,8 +60,9 @@ def edgeDiff (G₁ G₂ : DAG V) : Finset (V × V) :=
 /-- Number of directed edges of `G₁` absent from `G₂`. -/
 def edgeDiffCount (G₁ G₂ : DAG V) : ℕ := (edgeDiff G₁ G₂).card
 
-/-- With a shared skeleton, an empty edge-difference forces equal edge relations. -/
-theorem same_edge_of_edgeDiff_empty {G₁ G₂ : DAG V} (hskel : SameSkeleton G₁ G₂)
+/-- With a one-way skeleton inclusion, an empty edge-difference forces equal edge relations. -/
+theorem same_edge_of_edgeDiff_empty {G₁ G₂ : DAG V}
+    (hskel : ∀ u w, G₂.UAdj u w → G₁.UAdj u w)
     (h : edgeDiff G₁ G₂ = ∅) : ∀ u w, G₁.edge u w ↔ G₂.edge u w := by
   have hsub : ∀ u w, G₁.edge u w → G₂.edge u w := by
     intro u w he
@@ -65,7 +72,7 @@ theorem same_edge_of_edgeDiff_empty {G₁ G₂ : DAG V} (hskel : SameSkeleton G�
     rw [h] at hmem; simp at hmem
   intro u w
   refine ⟨hsub u w, fun he2 => ?_⟩
-  rcases (hskel u w).mpr (Or.inl he2) with h1 | h1
+  rcases hskel u w (Or.inl he2) with h1 | h1
   · exact h1
   · exact absurd (hsub w u h1) (G₂.asymm he2)
 
@@ -199,7 +206,8 @@ private theorem markovEquiv_covered_aux (G₂ : DAG V) :
   | _ n ih =>
     intro G₁ hskel himm hn
     rcases Finset.eq_empty_or_nonempty (edgeDiff G₁ G₂) with hempty | ⟨p, hp⟩
-    · exact markovEquiv_of_same_edge (same_edge_of_edgeDiff_empty hskel hempty)
+    · exact markovEquiv_of_same_edge
+        (same_edge_of_edgeDiff_empty (fun u w h => (hskel u w).mpr h) hempty)
     · obtain ⟨ha0b0, hnotG2⟩ := (Finset.mem_filter.mp hp).2
       have hUadj2 : G₂.UAdj p.1 p.2 := (hskel p.1 p.2).mp (Or.inl ha0b0)
       have hb0a0 : G₂.edge p.2 p.1 := hUadj2.resolve_left hnotG2
@@ -217,7 +225,7 @@ private theorem markovEquiv_covered_aux (G₂ : DAG V) :
 /-- **Verma–Pearl hard direction (covered-edge route).** DAGs with the same skeleton and the
 same immoralities are Markov equivalent — proven via AMP Lemma 3.2 (covered-edge reversals),
 independent of the moralization/ancestral kernel. -/
-theorem markovEquiv_of_sameSkeleton_sameImmoralities_covered {G₁ G₂ : DAG V}
+theorem markovEquiv_of_sameSkeleton_sameImmoralities {G₁ G₂ : DAG V}
     (hskel : SameSkeleton G₁ G₂) (himm : SameImmoralities G₁ G₂) : MarkovEquiv G₁ G₂ :=
   markovEquiv_covered_aux G₂ (edgeDiffCount G₁ G₂) G₁ hskel himm rfl
 

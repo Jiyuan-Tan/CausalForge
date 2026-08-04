@@ -166,6 +166,7 @@ structure QuantileRegularity (S : IIDSample Ω ℝ μ P) (qn : ℕ → Ω → �
 
 variable [IsProbabilityMeasure μ] [IsProbabilityMeasure P]
 
+omit [IsProbabilityMeasure μ] in
 /-- A `QuantileRegularity` bundle is an `IsAsymLinear` witness for `q̂ₙ` at `q₀`
 with influence function `ψ_τ`. -/
 lemma QuantileRegularity.isAsymLinear {S : IIDSample Ω ℝ μ P} {qn : ℕ → Ω → ℝ}
@@ -184,14 +185,14 @@ theorem QuantileRegularity.tendsto_normal {S : IIDSample Ω ℝ μ P} {qn : ℕ 
     {τ q₀ f₀ : ℝ} (h : QuantileRegularity S qn τ q₀ f₀)
     (hθn_meas : ∀ n : ℕ, AEMeasurable
       (IsAsymLinear.rescaledEstimator qn q₀ (fun m => Finset.range m) n) μ)
-    (hSum_meas : ∀ n : ℕ, AEMeasurable
+    (_hSum_meas : ∀ n : ℕ, AEMeasurable
       (IsAsymLinear.normalizedSum S (quantileIF τ q₀ f₀) (fun m => Finset.range m) n) μ) :
     Tendsto_dist
       (IsAsymLinear.rescaledEstimator qn q₀ (fun m => Finset.range m))
       (gaussianMeasure 0 (τ * (1 - τ) / f₀ ^ 2))
       μ
       hθn_meas := by
-  have hAL := h.isAsymLinear.tendsto_normal (measurable_quantileIF τ q₀ f₀) hθn_meas hSum_meas
+  have hAL := h.isAsymLinear.tendsto_normal (measurable_quantileIF τ q₀ f₀) hθn_meas
   rwa [quantileIF_variance h.cdf_eq] at hAL
 
 end Causalean.Stat

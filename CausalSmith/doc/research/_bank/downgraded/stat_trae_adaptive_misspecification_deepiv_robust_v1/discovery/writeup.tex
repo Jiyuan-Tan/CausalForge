@@ -1,0 +1,979 @@
+\documentclass{article}
+\usepackage[margin=0.8in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{mathrsfs,bm,bbm}
+\usepackage{graphicx,booktabs,array,multirow,tabularx,longtable}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{algorithm,algpseudocode}
+\usepackage{subcaption,tikz}
+\usepackage{siunitx,cancel,accents}
+\usepackage{microtype}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{cleveref}
+\setlength{\emergencystretch}{2em}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{openendedquestion}{Open-ended Question}
+\newtheorem{conjecture}{Conjecture}
+\newcommand{\coreref}[1]{\ref{#1}}
+
+\begin{document}
+
+\sloppy
+
+\section*{stat\_\allowbreak{}trae\_\allowbreak{}adaptive\_\allowbreak{}misspecification}
+
+\noindent\textit{Specialization:} common\_\allowbreak{}audit\_\allowbreak{}trae\_\allowbreak{}misspecification\_\allowbreak{}v1\par
+
+\paragraph{TL;DR.} For the note-defined hybrid that combines candidate-specific adversarial training with a shared absolute-convex holdout audit, the paper proves the computable training-coverage distance identity, an exact nonzero collapsed-path failure frontier \((0,B^2]\) with attained endpoint \(B^2\), and failure of every signed or affine combination of an entirely collapsed trained path. Separately, it proves the deterministic envelope \(\|\widehat h-h^\dagger\|_{L_2(P_X)}^2\le4B^2\) with supremum-sharp coefficient \(4\). These are architecture-level diagnostics for the note-defined hybrid. Tan--Syrgkanis discrepancy-selected TRAE and Li--Lan--Syrgkanis--Wang--Uehara Regularized DeepIV are positive neighboring comparators, not workflows refuted by the theorem.
+
+\section{Project justification}
+
+\paragraph{Gap.} Tan and Syrgkanis prove positive discrepancy-selected TRAE rates under the assumptions of their Proposition 3.12, including critic-closeness or witness-coverage structure. Li, Lan, Syrgkanis, Wang, and Uehara use a different positive workflow in Section 8 and Algorithm 2: held-out Best-ERM or Convex-ERM compares candidates through a shared explicit learned-operator loss. Neither result studies the note-defined hybrid in which each candidate is trained against its own adversarial critic body and a common absolute-convex audit later selects only among the already-trained path. The paper therefore does not claim that either published workflow fails.
+
+\paragraph{Niche.} The note isolates a property of its own path-restricted hybrid: validation-time visibility of a residual direction is distinct from training-time coverage of that direction. The evaluable diagnostic is \(\varepsilon_{\mathrm{tr},k}\), the worst distance from target-sieve residual differences to the compact bounded ideal training critic body \(\mathcal F_k^{\mathrm{tr}}\).
+
+\paragraph{Fill.} The mathematical contribution is the training-coverage distance identity; a genuine two-atom exact-image witness with zero target, audit, and image defects; the exact attainable collapsed-path error frontier \((0,B^2]\); exhaustive failure of all random, data-dependent, or oracle-dependent signed and affine combinations of that collapsed path; and, independently, the supremum-sharp deterministic clipping constant \(4B^2\). The result diagnoses the note-defined hybrid only. A negative theorem about an accurately named published workflow would require a materially different construction and proof.
+
+\section{Related work}
+
+Tan and Syrgkanis provide a positive neighboring result: their Theorem 3.13, under the assumptions of Proposition 3.12, gives discrepancy-selected TRAE squared strong error \(O(\delta_n^{2\min\{\beta,1\}/(1+\min\{\beta,1\})})\) and squared weak error \(O(\delta_n^2)\), with strong-rate saturation for \(\beta>1\) \cite{TanSyrgkanis2026Adaptive}. This comparator is unmatched here and is only an informed-by benchmark because its witness-coverage regime is not the note-defined hybrid. Li, Lan, Syrgkanis, Wang, and Uehara provide another distinct positive neighbor: Section 8 and Algorithm 2 use held-out Best-ERM or Convex-ERM with a shared explicit learned-operator loss \cite{LiLanSyrgkanisWangUehara2024RegularizedDeepIV}. That comparator is likewise unmatched and informed-by, not a negative target. Ai and Chen motivate minimum-norm pseudo-true centering under misspecified conditional moments \cite{AiChen2007MisspecifiedConditionalMoments}. The comparison is
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \begin{array}{lllll}
+\text{workflow} & \text{training object} & \text{selection object} & \text{published status} & \text{relation here}\\
+\text{discrepancy-selected TRAE} & \text{covered witness class} & \text{discrepancy principle} & \text{positive rate} & \text{unmatched/informed by}\\
+\text{Regularized DeepIV} & \text{shared learned operator} & \text{Best-ERM or Convex-ERM} & \text{positive bound} & \text{unmatched/informed by}\\
+\text{note-defined common-audit hybrid} & \text{candidate adversarial critics} & \text{shared absolute-convex audit} & \text{not a published target} & \text{exact }(0,B^2]\text{ frontier}
+\end{array}\)}}
+\]
+No comparator promise treats a published method as matched or refuted. Obtaining a negative result for an accurately named published workflow would require a materially different theorem.
+
+\section{Setup}
+
+Target (estimand / structural parameter): \(h_0\).
+Primary functional / estimator / diagnostic: \(\|\widehat h-h^\dagger\|_{L_2(P_X)}^2\).
+\begin{itemize}
+  \item \texttt{n} --- \texttt{integer}; \(n\ge 3\); \texttt{index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Total sample size.}
+  \item \texttt{W\_\allowbreak{}i} --- \texttt{random vector}; \(\mathcal W\); \texttt{data}
+  \par\smallskip\noindent\emph{Definition.} Observation \(W_i=(Y_i,X_i,Z_i)\).
+  \item \texttt{P} --- \texttt{probability law}; \(\mathcal P(\mathcal W)\); \texttt{sampling law}
+  \par\smallskip\noindent\emph{Definition.} Law of \(W=(Y,X,Z)\).
+  \item \texttt{Y} --- \texttt{random variable}; \(\mathbb R\); \texttt{outcome}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Outcome.}
+  \item \texttt{X} --- \texttt{random vector}; \(\mathcal X\); \texttt{regressor}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Endogenous regressor.}
+  \item \texttt{Z} --- \texttt{random vector}; \(\mathcal Z\); \texttt{instrument}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Instrument.}
+  \item \texttt{P\_\allowbreak{}X} --- \texttt{marginal law}; \(\mathcal P(\mathcal X)\); \texttt{marginal}
+  \par\smallskip\noindent\emph{Definition.} The marginal law of \(X\).
+  \item \texttt{P\_\allowbreak{}Z} --- \texttt{marginal law}; \(\mathcal P(\mathcal Z)\); \texttt{marginal}
+  \par\smallskip\noindent\emph{Definition.} The marginal law of \(Z\).
+  \item \texttt{L\_\allowbreak{}X} --- \texttt{Hilbert space}; \(L_2(P_X)\); \texttt{primal space}
+  \par\smallskip\noindent\emph{Definition.} Square-integrable functions of \(X\).
+  \item \texttt{L\_\allowbreak{}Z} --- \texttt{Hilbert space}; \(L_2(P_Z)\); \texttt{residual space}
+  \par\smallskip\noindent\emph{Definition.} Square-integrable functions of \(Z\).
+  \item \texttt{T} --- \texttt{linear operator}; \(T:L_X\to L_Z\); \texttt{conditional-\allowbreak{}expectation operator}
+  \par\smallskip\noindent\emph{Definition.} \((Th)(z)=E_P[h(X)\mid Z=z]\).
+  \item \texttt{T\textasciicircum{}*} --- \texttt{adjoint operator}; \(T^*:L_Z\to L_X\); \texttt{source operator}
+  \par\smallskip\noindent\emph{Definition.} Hilbert-space adjoint of \(T\).
+  \item \texttt{r} --- \texttt{function}; \(L_Z\); \texttt{reduced form}
+  \par\smallskip\noindent\emph{Definition.} \(r(z)=E_P[Y\mid Z=z]\).
+  \item \texttt{h\_\allowbreak{}0} --- \texttt{function}; \(L_X\); \texttt{causal response}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Structural response under the valid NPIV calibration.}
+  \item \texttt{h\textasciicircum{}\textbackslash{}\allowbreak{}dagger} --- \texttt{function}; \(L_X\); \texttt{pseudo-\allowbreak{}true target}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Minimum-\allowbreak{}norm population least-\allowbreak{}squares inverse target.}
+  \item \texttt{q\_\allowbreak{}h} --- \texttt{function}; \(L_Z\); \texttt{conditional-\allowbreak{}moment residual}
+  \par\smallskip\noindent\emph{Definition.} \(q_h=r-Th\).
+  \item \texttt{\textbackslash{}\allowbreak{}beta} --- \texttt{scalar}; \((0,2]\); \texttt{regularity index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Source-\allowbreak{}smoothness index.}
+  \item \texttt{\textbackslash{}\allowbreak{}bar\textbackslash{}\allowbreak{}beta} --- \texttt{scalar}; \((0,1]\); \texttt{Tikhonov saturation index}
+  \par\smallskip\noindent\emph{Definition.} \(\bar\beta=\min\{\beta,1\}\).
+  \item \texttt{w} --- \texttt{function}; \(L_X\); \texttt{source representer}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Source representer.}
+  \item \texttt{B} --- \texttt{positive scalar}; \texttt{constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Uniform envelope and coefficient radius.}
+  \item \texttt{C} --- \texttt{positive scalar}; \texttt{constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Universal finite inequality constant.}
+  \item \texttt{\textbackslash{}\allowbreak{}mathcal K} --- \texttt{finite set}; \texttt{model collection}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Candidate-\allowbreak{}model indices.}
+  \item \texttt{k} --- \texttt{index}; \(\mathcal K\); \texttt{index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Candidate-\allowbreak{}model index.}
+  \item \texttt{k\_\allowbreak{}0} --- \texttt{index}; \(\mathcal K\); \texttt{benchmark index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Zero-\allowbreak{}defect benchmark index.}
+  \item \texttt{K} --- \texttt{integer}; \texttt{model count}
+  \par\smallskip\noindent\emph{Definition.} \(K=|\mathcal K|\).
+  \item \texttt{d\_\allowbreak{}\{H,\allowbreak{}k\}\allowbreak{}} --- \texttt{integer}; \texttt{sieve dimension}
+  \par\smallskip\noindent\emph{Definition.} Dimension of candidate \(k\)'s target sieve.
+  \item \texttt{\textbackslash{}\allowbreak{}phi\_\allowbreak{}\{kj\}\allowbreak{}} --- \texttt{function}; \(L_X\); \texttt{target basis}
+  \par\smallskip\noindent\emph{Definition.} The \(j\)-th target basis function for candidate \(k\).
+  \item \texttt{J\_\allowbreak{}k} --- \texttt{index set}; \(\{1,\ldots,d_{H,k}\}\); \texttt{critic-\allowbreak{}coordinate set}
+  \par\smallskip\noindent\emph{Definition.} Image coordinates admitted to candidate \(k\)'s training critic.
+  \item \texttt{\textbackslash{}\allowbreak{}mathcal H\_\allowbreak{}k} --- \texttt{function class}; \(L_X\); \texttt{target class}
+  \par\smallskip\noindent\emph{Definition.} Bounded target sieve for candidate \(k\).
+  \item \texttt{g\_\allowbreak{}\{kj\}\allowbreak{}} --- \texttt{function}; \(L_Z\); \texttt{ideal conditional image}
+  \par\smallskip\noindent\emph{Definition.} \(g_{kj}=T\phi_{kj}\).
+  \item \texttt{\textbackslash{}\allowbreak{}widehat g\_\allowbreak{}\{kj\}\allowbreak{}} --- \texttt{function}; \(L_Z\); \texttt{learned conditional image}
+  \par\smallskip\noindent\emph{Definition.} Critic-split estimate of \(g_{kj}\).
+  \item \texttt{\textbackslash{}\allowbreak{}alpha\_\allowbreak{}\{k,\allowbreak{}n\}\allowbreak{}} --- \texttt{nonnegative scalar}; \texttt{operator-\allowbreak{}learning error}
+  \par\smallskip\noindent\emph{Definition.} Maximum learned-image error for candidate \(k\).
+  \item \texttt{a\_\allowbreak{}\{k,\allowbreak{}n\}\allowbreak{}} --- \texttt{nonnegative scalar}; \texttt{nuisance rate}
+  \par\smallskip\noindent\emph{Definition.} Deterministic image-estimation radius for candidate \(k\).
+  \item \texttt{\textbackslash{}\allowbreak{}widehat\{\textbackslash{}\allowbreak{}mathcal F\}\allowbreak{}\_\allowbreak{}k} --- \texttt{function class}; \(L_Z\); \texttt{training critic}
+  \par\smallskip\noindent\emph{Definition.} Bounded span of selected learned images used for training candidate \(k\).
+  \item \texttt{\textbackslash{}\allowbreak{}mathcal A\_\allowbreak{}0} --- \texttt{function class}; \(L_Z\); \texttt{audit augmentation}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Fixed bounded audit dictionary.}
+  \item \texttt{\textbackslash{}\allowbreak{}mathcal F\textasciicircum{}\{\textbackslash{}\allowbreak{}mathrm A\}\allowbreak{}} --- \texttt{function class}; \(L_Z\); \texttt{population audit}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Common ideal audit class.}
+  \item \texttt{\textbackslash{}\allowbreak{}widehat\{\textbackslash{}\allowbreak{}mathcal F\}\allowbreak{}\textasciicircum{}\{\textbackslash{}\allowbreak{}mathrm A\}\allowbreak{}} --- \texttt{function class}; \(L_Z\); \texttt{validation audit}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Common learned audit class used on validation data.}
+  \item \texttt{d\_\allowbreak{}A} --- \texttt{integer}; \texttt{audit dimension}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Dimension of the linear span of the common audit sieve.}
+  \item \texttt{G\_\allowbreak{}k} --- \texttt{linear subspace}; \(L_Z\); \texttt{ideal image space}
+  \par\smallskip\noindent\emph{Definition.} \(G_k=\operatorname{span}\{g_{kj}:1\le j\le d_{H,k}\}\).
+  \item \texttt{\textbackslash{}\allowbreak{}Pi\_\allowbreak{}\{G\_\allowbreak{}k\}\allowbreak{}} --- \texttt{orthogonal projection}; \(L_Z\to G_k\); \texttt{projection map}
+  \par\smallskip\noindent\emph{Definition.} The \(L_2(P_Z)\) orthogonal projection onto \(G_k\).
+  \item \texttt{D\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathcal F\textasciicircum{}\{\textbackslash{}\allowbreak{}mathrm A\}\allowbreak{}\}\allowbreak{}} --- \texttt{functional}; \(L_Z\to\mathbb R_+\); \texttt{audit loss}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Population quadratic dual loss induced by the common audit class.}
+  \item \texttt{\textbackslash{}\allowbreak{}varepsilon\_\allowbreak{}\{H,\allowbreak{}k\}\allowbreak{}} --- \texttt{nonnegative scalar}; \texttt{target approximation}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Target-\allowbreak{}sieve approximation error.}
+  \item \texttt{\textbackslash{}\allowbreak{}varepsilon\_\allowbreak{}\{A,\allowbreak{}k\}\allowbreak{}} --- \texttt{nonnegative scalar}; \texttt{audit approximation}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Residual-\allowbreak{}coordinate defect left by the common ideal audit class.}
+  \item \texttt{I\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{cr\}\allowbreak{}\}\allowbreak{}} --- \texttt{index set}; \(\{1,\ldots,n\}\); \texttt{sample split}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Critic-\allowbreak{}construction indices.}
+  \item \texttt{I\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{tr\}\allowbreak{}\}\allowbreak{}} --- \texttt{index set}; \(\{1,\ldots,n\}\); \texttt{sample split}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Training indices.}
+  \item \texttt{I\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{va\}\allowbreak{}\}\allowbreak{}} --- \texttt{index set}; \(\{1,\ldots,n\}\); \texttt{sample split}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Validation indices.}
+  \item \texttt{n\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{cr\}\allowbreak{}\}\allowbreak{}} --- \texttt{integer}; \texttt{split size}
+  \par\smallskip\noindent\emph{Definition.} \(n_{\mathrm{cr}}=|I_{\mathrm{cr}}|\).
+  \item \texttt{n\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{tr\}\allowbreak{}\}\allowbreak{}} --- \texttt{integer}; \texttt{split size}
+  \par\smallskip\noindent\emph{Definition.} \(n_{\mathrm{tr}}=|I_{\mathrm{tr}}|\).
+  \item \texttt{n\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{va\}\allowbreak{}\}\allowbreak{}} --- \texttt{integer}; \texttt{split size}
+  \par\smallskip\noindent\emph{Definition.} \(n_{\mathrm{va}}=|I_{\mathrm{va}}|\).
+  \item \texttt{P\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{tr\}\allowbreak{}\}\allowbreak{}} --- \texttt{empirical measure}; \texttt{empirical law}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Training empirical measure.}
+  \item \texttt{P\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{va\}\allowbreak{}\}\allowbreak{}} --- \texttt{empirical measure}; \texttt{empirical law}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Validation empirical measure.}
+  \item \texttt{\textbackslash{}\allowbreak{}eta} --- \texttt{scalar}; \((0,1)\); \texttt{confidence index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Failure-\allowbreak{}probability index.}
+  \item \texttt{J\_\allowbreak{}n} --- \texttt{integer}; \texttt{grid index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Technical truncation index of the regularization grid.}
+  \item \texttt{\textbackslash{}\allowbreak{}Lambda\_\allowbreak{}n} --- \texttt{finite set}; \((0,1]\); \texttt{tuning grid}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Geometric Tikhonov grid.}
+  \item \texttt{\textbackslash{}\allowbreak{}lambda} --- \texttt{scalar}; \(\Lambda_n\); \texttt{tuning parameter}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Tikhonov level.}
+  \item \texttt{\textbackslash{}\allowbreak{}delta\_\allowbreak{}\{k,\allowbreak{}n\}\allowbreak{}\textasciicircum{}2} --- \texttt{nonnegative scalar}; \texttt{stochastic scale}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Finite-\allowbreak{}sieve simultaneous training complexity scale.}
+  \item \texttt{s\_\allowbreak{}\{k,\allowbreak{}n\}\allowbreak{}} --- \texttt{nonnegative scalar}; \texttt{oracle scale}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Training,\allowbreak{} audit,\allowbreak{} and learned-\allowbreak{}image oracle scale.}
+  \item \texttt{A\_\allowbreak{}\{k,\allowbreak{}\textbackslash{}\allowbreak{}lambda,\allowbreak{}\textbackslash{}\allowbreak{}ell\}\allowbreak{}} --- \texttt{scalar}; \texttt{training criterion}
+  \par\smallskip\noindent\emph{Definition.} Training TRAE objective at enumerated target candidate \(\ell\).
+  \item \texttt{h\_\allowbreak{}\{k\textbackslash{}\allowbreak{}ell\}\allowbreak{}} --- \texttt{function}; \(\mathcal H_k\); \texttt{measurable path}
+  \par\smallskip\noindent\emph{Definition.} The \(\ell\)-th element of a fixed countable dense target enumeration.
+  \item \texttt{\textbackslash{}\allowbreak{}widehat h\_\allowbreak{}\{k,\allowbreak{}\textbackslash{}\allowbreak{}lambda\}\allowbreak{}} --- \texttt{function}; \(\mathcal H_k\); \texttt{candidate estimator}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Least-\allowbreak{}index approximate minimizer of the training TRAE objective.}
+  \item \texttt{\textbackslash{}\allowbreak{}widehat V\_\allowbreak{}\{k,\allowbreak{}\textbackslash{}\allowbreak{}lambda\}\allowbreak{}} --- \texttt{scalar}; \texttt{validation statistic}
+  \par\smallskip\noindent\emph{Definition.} Common-audit validation score for candidate \(k,\lambda\).
+  \item \texttt{\textbackslash{}\allowbreak{}operatorname\{pen\}\allowbreak{}\_\allowbreak{}n} --- \texttt{nonnegative scalar}; \texttt{selection penalty}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Common observable validation penalty.}
+  \item \texttt{\textbackslash{}\allowbreak{}mathcal M\_\allowbreak{}n} --- \texttt{model class}; \texttt{proposal class}
+  \par\smallskip\noindent\emph{Definition.} Common-audit TRAE configurations at sample size \(n\).
+  \item \texttt{\textbackslash{}\allowbreak{}widehat k} --- \texttt{index}; \(\mathcal K\); \texttt{selected model}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Selected candidate index.}
+  \item \texttt{\textbackslash{}\allowbreak{}widehat\textbackslash{}\allowbreak{}lambda} --- \texttt{scalar}; \(\Lambda_n\); \texttt{selected tuning}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Selected regularization level.}
+  \item \texttt{\textbackslash{}\allowbreak{}widehat h} --- \texttt{function}; \(L_X\); \texttt{adaptive estimator}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Selected common-\allowbreak{}audit TRAE estimate.}
+  \item \texttt{U} --- \texttt{random variable}; \(\{-1,1\}\); \texttt{diagnostic coordinate}
+  \par\smallskip\noindent\emph{Definition.} \texttt{First Rademacher coordinate.}
+  \item \texttt{V} --- \texttt{random variable}; \(\{-1,1\}\); \texttt{diagnostic coordinate}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Second Rademacher coordinate.}
+  \item \texttt{\textbackslash{}\allowbreak{}xi} --- \texttt{random variable}; \(\{-1,1\}\); \texttt{diagnostic noise}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Independent mean-\allowbreak{}zero outcome noise.}
+  \item \texttt{a\_\allowbreak{}0} --- \texttt{scalar}; \([-1/4,1/4]\); \texttt{diagnostic coefficient}
+  \par\smallskip\noindent\emph{Definition.} \texttt{First structural coefficient.}
+  \item \texttt{b\_\allowbreak{}0} --- \texttt{scalar}; \([-1/4,1/4]\setminus\{0\}\); \texttt{diagnostic coefficient}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Second structural coefficient.}
+  \item \texttt{\textbackslash{}\allowbreak{}mathcal F\_\allowbreak{}k\textasciicircum{}\{\textbackslash{}\allowbreak{}mathrm\{tr\}\allowbreak{}\}\allowbreak{}} --- \texttt{compact convex function body}; \(L_Z\); \texttt{training-\allowbreak{}coverage body}
+  \par\smallskip\noindent\emph{Definition.} The bounded \(\ell_1\)-coefficient body generated by candidate \(k\)'s ideal training images.
+  \item \texttt{\textbackslash{}\allowbreak{}varepsilon\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{tr\}\allowbreak{},\allowbreak{}k\}\allowbreak{}} --- \texttt{nonnegative scalar}; \texttt{training-\allowbreak{}coverage distance}
+  \par\smallskip\noindent\emph{Definition.} Worst \(L_2(P_Z)\) distance of a target-sieve residual difference from candidate \(k\)'s compact ideal training critic body.
+  \item \texttt{\textbackslash{}\allowbreak{}gamma} --- \texttt{scalar}; \((0,1]\); \texttt{diagnostic magnitude}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Fraction of the source-\allowbreak{}radius squared realized as collapsed-\allowbreak{}path error in the constant two-\allowbreak{}atom diagnostic.}
+\end{itemize}
+
+\section{Assumptions}
+
+\begin{assumption}[ass:iid]\label{ass:iid}
+\(W_1,\ldots,W_n\stackrel{\mathrm{iid}}{\sim}P\).
+\par\smallskip\noindent\emph{Standard} (independent and identically distributed sampling, \cite{TanSyrgkanis2026Adaptive}).
+\end{assumption}
+
+\begin{assumption}[ass:three-way-split]\label{ass:three-way-split}
+\(I_{\mathrm{cr}},I_{\mathrm{tr}},I_{\mathrm{va}}\) are a deterministic partition of \(\{1,\ldots,n\}\) with positive cardinalities.
+\par\smallskip\noindent\emph{Standard} (three-way sample splitting, \cite{LiLanSyrgkanisWangUehara2024RegularizedDeepIV}).
+\end{assumption}
+
+\begin{assumption}[ass:bounded-outcome]\label{ass:bounded-outcome}
+\(|Y|\le B\) almost surely.
+\par\smallskip\noindent\emph{Standard} (bounded-outcome envelope, \cite{DikkalaLewisMackeySyrgkanis2020Minimax}).
+\end{assumption}
+
+\begin{assumption}[ass:bounded-bases]\label{ass:bounded-bases}
+\(\max_{k\in\mathcal K,1\le j\le d_{H,k}}\|\phi_{kj}\|_{L_\infty(P_X)}\le1\).
+\par\smallskip\noindent\emph{Standard} (bounded finite sieve basis, \cite{LiLanSyrgkanisWangUehara2024RegularizedDeepIV}).
+\end{assumption}
+
+\begin{assumption}[ass:finite-candidates]\label{ass:finite-candidates}
+\(1\le K<\infty\).
+\par\smallskip\noindent\emph{Novel.} A finite predeclared list of target and critic architectures is realistic in a model-selection problem. It makes the simultaneous multiplicity penalty explicit without encoding a target rate.
+\end{assumption}
+
+\begin{assumption}[ass:finite-audit]\label{ass:finite-audit}
+\(d_A<\infty\).
+\par\smallskip\noindent\emph{Novel.} A finite common audit sieve is implementable and permits a transparent validation concentration term. It does not impose a rate on the conditional-moment law.
+\end{assumption}
+
+\begin{assumption}[ass:target-origin]\label{ass:target-origin}
+\(0\in\mathcal H_k\) for every \(k\in\mathcal K\).
+\par\smallskip\noindent\emph{Standard} (origin-containing regularization sieve, \cite{BennettKallusMaoNeweySyrgkanisUehara2023SourceConditionDR}).
+\end{assumption}
+
+\begin{assumption}[ass:target-compact-convex]\label{ass:target-compact-convex}
+\(\mathcal H_k\) is a compact convex subset of \(\operatorname{span}\{\phi_{kj}:1\le j\le d_{H,k}\}\) for every \(k\in\mathcal K\).
+\par\smallskip\noindent\emph{Standard} (compact convex linear sieve, \cite{LiLanSyrgkanisWangUehara2024RegularizedDeepIV}).
+\end{assumption}
+
+\begin{assumption}[ass:target-coefficient-radius]\label{ass:target-coefficient-radius}
+For every \(h=\sum_{j=1}^{d_{H,k}}\theta_j\phi_{kj}\in\mathcal H_k\), \(\|\theta\|_1\le B\).
+\par\smallskip\noindent\emph{Standard} (bounded coefficient sieve, \cite{LiLanSyrgkanisWangUehara2024RegularizedDeepIV}).
+\end{assumption}
+
+\begin{assumption}[ass:image-estimability]\label{ass:image-estimability}
+For every \(k\in\mathcal K\) and \(1\le j\le d_{H,k}\), \(g_{kj}\) is \(L_2(P_Z)\)-estimable from \(I_{\mathrm{cr}}\) at deterministic radius \(a_{k,n}\).
+\par\smallskip\noindent\emph{Standard} (nonparametric regression estimability, \cite{LiLanSyrgkanisWangUehara2024RegularizedDeepIV}).
+\end{assumption}
+
+\begin{assumption}[ass:source-representation]\label{ass:source-representation}
+\(h^\dagger=(T^*T)^{\beta/2}w\).
+\par\smallskip\noindent\emph{Standard} (Tikhonov source representation, \cite{TanSyrgkanis2026Adaptive}).
+\end{assumption}
+
+\begin{assumption}[ass:source-radius]\label{ass:source-radius}
+\(\|w\|_{L_2(P_X)}\le B\).
+\par\smallskip\noindent\emph{Standard} (bounded source ball, \cite{TanSyrgkanis2026Adaptive}).
+\end{assumption}
+
+\begin{assumption}[ass:pseudotrue-attainment]\label{ass:pseudotrue-attainment}
+\(\operatorname*{arg\,min}_{h\in L_X}\|Th-r\|_{L_2(P_Z)}\ne\varnothing\).
+\par\smallskip\noindent\emph{Standard} (attained least-squares inverse projection, \cite{AiChen2007MisspecifiedConditionalMoments}).
+\end{assumption}
+
+\begin{assumption}[ass:dense-enumeration]\label{ass:dense-enumeration}
+For every \(k\in\mathcal K\), \(\{h_{k\ell}:\ell\ge1\}\subset\mathcal H_k\) is a fixed countable \(L_2(P_X)\)-dense subset containing \(0\).
+\par\smallskip\noindent\emph{Novel.} Rational coefficient vectors give such an enumeration for every finite bounded sieve, including the two-coordinate diagnostic. It fixes a measurable optimization path without making an estimator property a model-membership condition.
+\end{assumption}
+
+\begin{assumption}[ass:grid-coverage]\label{ass:grid-coverage}
+\(2^{-J_n}\le\tfrac12 s_{k,n}^{1/(1+\bar\beta)}\) whenever \(0<s_{k,n}\le1\), for every \(k\in\mathcal K\).
+\par\smallskip\noindent\emph{Novel.} This proposal-specific finite-grid condition merely reaches the displayed continuous oracle scale. For \(J_n=\lceil\log_2 n\rceil\), it follows if \(s_{k,n}\ge 2^{-(1+\bar\beta)}n^{-(1+\bar\beta)}\) for every candidate.
+\end{assumption}
+
+\begin{assumption}[ass:iv-validity]\label{ass:iv-validity}
+\(E_P[Y-h_0(X)\mid Z]=0\) almost surely.
+\par\smallskip\noindent\emph{Standard} (valid NPIV conditional moment, \cite{BennettKallusMaoNeweySyrgkanisUehara2023MinimaxIV}).
+\end{assumption}
+
+\begin{assumption}[ass:completeness]\label{ass:completeness}
+\(Th=0\) implies \(h=0\) for every \(h\in L_X\).
+\par\smallskip\noindent\emph{Standard} (NPIV completeness or injectivity, \cite{BennettKallusMaoNeweySyrgkanisUehara2023MinimaxIV}).
+\end{assumption}
+
+\section{Definitions}
+
+\begin{definition}[def:configuration-class]\label{def:configuration-class}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Common-\allowbreak{}audit TRAE configuration class}
+\par\smallskip\noindent\emph{Construction.} \(\mathcal M_n\) is the class of complete common-audit TRAE configurations \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle (P,I_{\mathrm{cr}},I_{\mathrm{tr}},I_{\mathrm{va}},\mathcal A_0,(\phi_{kj},J_k,\mathcal H_k,(h_{k\ell})_{\ell\ge1},\widehat g_{kj})_{k\in\mathcal K,1\le j\le d_{H,k}})\)}}\par\noindent satisfying \(\texttt{ass:iid}\), \(\texttt{ass:three-way-split}\), \(\texttt{ass:bounded-outcome}\), \(\texttt{ass:bounded-bases}\), \(\texttt{ass:finite-candidates}\), \(\texttt{ass:finite-audit}\), \(\texttt{ass:target-origin}\), \(\texttt{ass:target-compact-convex}\), \(\texttt{ass:target-coefficient-radius}\), \(\texttt{ass:image-estimability}\), \(\texttt{ass:pseudotrue-attainment}\), and \(\texttt{ass:dense-enumeration}\). The source conditions are theorem-side regularity conditions, not membership conditions, and no training-coverage, inverse-stability, or oracle-rate property is built into \(\mathcal M_n\).
+\par\smallskip\noindent\emph{Member properties.} \texttt{ass:\allowbreak{}iid}; \texttt{ass:\allowbreak{}three-\allowbreak{}way-\allowbreak{}split}; \texttt{ass:\allowbreak{}bounded-\allowbreak{}outcome}; \texttt{ass:\allowbreak{}bounded-\allowbreak{}bases}; \texttt{ass:\allowbreak{}finite-\allowbreak{}candidates}; \texttt{ass:\allowbreak{}finite-\allowbreak{}audit}; \texttt{ass:\allowbreak{}target-\allowbreak{}origin}; \texttt{ass:\allowbreak{}target-\allowbreak{}compact-\allowbreak{}convex}; \texttt{ass:\allowbreak{}target-\allowbreak{}coefficient-\allowbreak{}radius}; \texttt{ass:\allowbreak{}image-\allowbreak{}estimability}; \texttt{ass:\allowbreak{}pseudotrue-\allowbreak{}attainment}; \texttt{ass:\allowbreak{}dense-\allowbreak{}enumeration}.
+\end{definition}
+
+\begin{definition}[def:split-measures]\label{def:split-measures}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Training and validation empirical measures}
+\par\smallskip\noindent\emph{Construction.} \(P_{\mathrm{tr}}=n_{\mathrm{tr}}^{-1}\sum_{i\in I_{\mathrm{tr}}}\delta_{W_i}\) and \(P_{\mathrm{va}}=n_{\mathrm{va}}^{-1}\sum_{i\in I_{\mathrm{va}}}\delta_{W_i}\).
+\par\smallskip\noindent\emph{Inputs.} \texttt{n\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{tr\}\allowbreak{}\}\allowbreak{}}; \texttt{n\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{va\}\allowbreak{}\}\allowbreak{}}; \texttt{I\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{tr\}\allowbreak{}\}\allowbreak{}}; \texttt{I\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{va\}\allowbreak{}\}\allowbreak{}}; \texttt{W\_\allowbreak{}i}.
+\end{definition}
+
+\begin{definition}[def:pseudotrue-target]\label{def:pseudotrue-target}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Minimum-\allowbreak{}norm pseudo-\allowbreak{}true target}
+\par\smallskip\noindent\emph{Construction.} \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle h^\dagger=\operatorname*{arg\,min}_{h\in\operatorname*{arg\,min}_{u\in L_X}\|Tu-r\|_{L_2(P_Z)}}\|h\|_{L_2(P_X)}\)}}\par\noindent.
+\par\smallskip\noindent\emph{Inputs.} \texttt{T}; \texttt{r}; \texttt{L\_\allowbreak{}X}; \texttt{P\_\allowbreak{}X}; \texttt{P\_\allowbreak{}Z}.
+\end{definition}
+
+\begin{definition}[def:learned-images]\label{def:learned-images}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Finite learned-\allowbreak{}image critic construction}
+\par\smallskip\noindent\emph{Construction.} For each \(k\in\mathcal K\) and \(1\le j\le d_{H,k}\), fit \(\widehat g_{kj}\) using only \(I_{\mathrm{cr}}\), set \(\alpha_{k,n}=\max_{1\le j\le d_{H,k}}\|\widehat g_{kj}-g_{kj}\|_{L_2(P_Z)}\), and set \(\widehat{\mathcal F}_k=\{\sum_{j\in J_k}u_j\widehat g_{kj}:\sum_{j\in J_k}|u_j|\le B\}\).
+\par\smallskip\noindent\emph{Inputs.} \texttt{I\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{cr\}\allowbreak{}\}\allowbreak{}}; \texttt{g\_\allowbreak{}\{kj\}\allowbreak{}}; \texttt{\textbackslash{}\allowbreak{}widehat g\_\allowbreak{}\{kj\}\allowbreak{}}; \texttt{J\_\allowbreak{}k}; \texttt{d\_\allowbreak{}\{H,\allowbreak{}k\}\allowbreak{}}; \texttt{B}; \texttt{P\_\allowbreak{}Z}.
+\end{definition}
+
+\begin{definition}[def:common-audit]\label{def:common-audit}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Common ideal and learned audit classes}
+\par\smallskip\noindent\emph{Construction.} \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathcal F^{\mathrm A}=\operatorname{absconv}(\mathcal A_0\cup\bigcup_{k\in\mathcal K}\{\sum_{j\in J_k}u_jg_{kj}:\sum_{j\in J_k}|u_j|\le B\})\)}}\par\noindent, \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \widehat{\mathcal F}^{\mathrm A}=\operatorname{absconv}(\mathcal A_0\cup\bigcup_{k\in\mathcal K}\widehat{\mathcal F}_k)\)}}\par\noindent, \(D_{\mathcal F^{\mathrm A}}(v)=\sup_{f\in\mathcal F^{\mathrm A}}\{2E_P[v(Z)f(Z)]-E_P[f(Z)^2]\}\), \(\varepsilon_{H,k}=\inf_{h\in\mathcal H_k}\|h-h^\dagger\|_{L_2(P_X)}\), and \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \varepsilon_{A,k}^2=\sup_{h\in\mathcal H_k}\{\|q_h-q_{h^\dagger}\|_{L_2(P_Z)}^2-D_{\mathcal F^{\mathrm A}}(q_h-q_{h^\dagger})\}_+\)}}\par\noindent.
+\par\smallskip\noindent\emph{Inputs.} \texttt{\textbackslash{}\allowbreak{}mathcal A\_\allowbreak{}0}; \texttt{g\_\allowbreak{}\{kj\}\allowbreak{}}; \texttt{J\_\allowbreak{}k}; \texttt{\textbackslash{}\allowbreak{}widehat\{\textbackslash{}\allowbreak{}mathcal F\}\allowbreak{}\_\allowbreak{}k}; \texttt{B}; \texttt{P}; \texttt{q\_\allowbreak{}h}; \texttt{\textbackslash{}\allowbreak{}mathcal H\_\allowbreak{}k}; \texttt{h\textasciicircum{}\textbackslash{}\allowbreak{}dagger}; \texttt{P\_\allowbreak{}X}; \texttt{P\_\allowbreak{}Z}.
+\end{definition}
+
+\begin{definition}[def:grid-and-scale]\label{def:grid-and-scale}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Finite-\allowbreak{}sieve simultaneous grid and scale}
+\par\smallskip\noindent\emph{Construction.} \(J_n=\lceil\log_2 n\rceil\), \(\Lambda_n=\{2^{-j}:j=0,\ldots,J_n\}\), \(\delta_{k,n}^2=C B^2[d_{H,k}+d_A+\log(4K|\Lambda_n|/\eta)]/n_{\mathrm{tr}}\), and \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle s_{k,n}=\delta_{k,n}^2+\varepsilon_{H,k}^2+\varepsilon_{A,k}^2+B^2\alpha_{k,n}^2+B^2\sqrt{\log(4K|\Lambda_n|/\eta)/n_{\mathrm{va}}}\)}}\par\noindent.
+\par\smallskip\noindent\emph{Inputs.} \texttt{n}; \texttt{B}; \texttt{d\_\allowbreak{}\{H,\allowbreak{}k\}\allowbreak{}}; \texttt{d\_\allowbreak{}A}; \texttt{K}; \texttt{\textbackslash{}\allowbreak{}Lambda\_\allowbreak{}n}; \texttt{\textbackslash{}\allowbreak{}eta}; \texttt{n\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{tr\}\allowbreak{}\}\allowbreak{}}; \texttt{\textbackslash{}\allowbreak{}varepsilon\_\allowbreak{}\{H,\allowbreak{}k\}\allowbreak{}}; \texttt{\textbackslash{}\allowbreak{}varepsilon\_\allowbreak{}\{A,\allowbreak{}k\}\allowbreak{}}; \texttt{\textbackslash{}\allowbreak{}alpha\_\allowbreak{}\{k,\allowbreak{}n\}\allowbreak{}}; \texttt{n\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{va\}\allowbreak{}\}\allowbreak{}}.
+\end{definition}
+
+\begin{definition}[def:common-audit-selector]\label{def:common-audit-selector}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Measurable common-\allowbreak{}audit TRAE selector and trained path}
+\par\smallskip\noindent\emph{Construction.} For \(k\in\mathcal K\), \(\lambda\in\Lambda_n\), and \(\ell\ge1\), let \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle A_{k,\lambda,\ell}=\sup_{f\in\widehat{\mathcal F}_k}\{2P_{\mathrm{tr}}[(Y-h_{k\ell}(X))f(Z)]-P_{\mathrm{tr}}[f(Z)^2]\}+\lambda P_{\mathrm{tr}}[h_{k\ell}(X)^2]\)}}\par\noindent. Let \(\widehat h_{k,\lambda}\) be the least-index \(h_{k\ell}\) whose score is within \(n^{-1}\) of \(\inf_{m\ge1}A_{k,\lambda,m}\), with index one as a deterministic fallback. Set \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \widehat V_{k,\lambda}=\sup_{f\in\widehat{\mathcal F}^{\mathrm A}}\{2P_{\mathrm{va}}[(Y-\widehat h_{k,\lambda}(X))f(Z)]-P_{\mathrm{va}}[f(Z)^2]\}\)}}\par\noindent, \(\operatorname{pen}_n=8B^2\sqrt{\log(4K|\Lambda_n|/\eta)/n_{\mathrm{va}}}\), and let \((\widehat k,\widehat\lambda)\) be the lexicographically least minimizer of \(\widehat V_{k,\lambda}+\operatorname{pen}_n\); finally set \(\widehat h=\widehat h_{\widehat k,\widehat\lambda}\). The selection stage is restricted to the finite trained path \(\{\widehat h_{k,\lambda}:k\in\mathcal K,\lambda\in\Lambda_n\}\). A path-restricted selector means any measurable map valued in that set, and a convex path aggregation means any convex combination of its elements; neither operation retrains a candidate.
+\par\smallskip\noindent\emph{Inputs.} \texttt{P\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{tr\}\allowbreak{}\}\allowbreak{}}; \texttt{P\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{va\}\allowbreak{}\}\allowbreak{}}; \texttt{\textbackslash{}\allowbreak{}widehat\{\textbackslash{}\allowbreak{}mathcal F\}\allowbreak{}\_\allowbreak{}k}; \texttt{\textbackslash{}\allowbreak{}widehat\{\textbackslash{}\allowbreak{}mathcal F\}\allowbreak{}\textasciicircum{}\{\textbackslash{}\allowbreak{}mathrm A\}\allowbreak{}}; \texttt{h\_\allowbreak{}\{k\textbackslash{}\allowbreak{}ell\}\allowbreak{}}; \texttt{n}; \texttt{\textbackslash{}\allowbreak{}lambda}; \texttt{\textbackslash{}\allowbreak{}Lambda\_\allowbreak{}n}; \texttt{B}; \texttt{K}; \texttt{\textbackslash{}\allowbreak{}eta}.
+\end{definition}
+
+\begin{definition}[def:two-coordinate-configuration]\label{def:two-coordinate-configuration}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Two-\allowbreak{}coordinate common-\allowbreak{}audit configuration}
+\par\smallskip\noindent\emph{Construction.} Let \(U,V,\xi\) be mutually independent Rademacher variables, set \(X=Z=(U,V)\), \(h_0=w=a_0U+b_0V\), \(Y=a_0U+b_0V+\xi\), \(\mathcal K=\{1,2\}\), \(B=2\), and \(\mathcal H_1=\mathcal H_2=\{aU+bV:|a|+|b|\le2\}\). Use the common target basis \(\phi_{k1}=U,\phi_{k2}=V\), its rational-coefficient dense enumeration, \(J_1=\{1,2\}\), \(J_2=\{1\}\), \(\widehat{\mathcal F}_1=\{s\widehat g_{11}+t\widehat g_{12}:|s|+|t|\le2\}\), and \(\widehat{\mathcal F}_2=\{s\widehat g_{21}:|s|\le2\}\). Take \(\mathcal A_0=\{0\}\) and form \(\widehat{\mathcal F}^{\mathrm A}\) as in \(\texttt{def:common-audit}\).
+\par\smallskip\noindent\emph{Inputs.} \texttt{U}; \texttt{V}; \texttt{\textbackslash{}\allowbreak{}xi}; \texttt{a\_\allowbreak{}0}; \texttt{b\_\allowbreak{}0}; \texttt{\textbackslash{}\allowbreak{}mathcal K}; \texttt{B}; \texttt{\textbackslash{}\allowbreak{}mathcal H\_\allowbreak{}k}; \texttt{\textbackslash{}\allowbreak{}phi\_\allowbreak{}\{kj\}\allowbreak{}}; \texttt{J\_\allowbreak{}k}; \texttt{\textbackslash{}\allowbreak{}widehat g\_\allowbreak{}\{kj\}\allowbreak{}}; \texttt{\textbackslash{}\allowbreak{}widehat\{\textbackslash{}\allowbreak{}mathcal F\}\allowbreak{}\_\allowbreak{}k}; \texttt{\textbackslash{}\allowbreak{}mathcal A\_\allowbreak{}0}; \texttt{\textbackslash{}\allowbreak{}widehat\{\textbackslash{}\allowbreak{}mathcal F\}\allowbreak{}\textasciicircum{}\{\textbackslash{}\allowbreak{}mathrm A\}\allowbreak{}}.
+\end{definition}
+
+\begin{definition}[def:training-coverage-defect]\label{def:training-coverage-defect}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Population training-\allowbreak{}coverage distance}
+\par\smallskip\noindent\emph{Construction.} For every \(k\in\mathcal K\), define the bounded training critic body
+\[
+ \mathcal F_k^{\mathrm{tr}}
+ =\left\{\sum_{j\in J_k}u_jg_{kj}:\sum_{j\in J_k}|u_j|\le B\right\}
+\]
+and
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \varepsilon_{\mathrm{tr},k}^2
+ =\sup_{h\in\mathcal H_k}
+ \left\{
+ \|q_h-q_{h^\dagger}\|_{L_2(P_Z)}^2
+ -\sup_{f\in\mathcal F_k^{\mathrm{tr}}}
+ \left(2E_P[(q_h-q_{h^\dagger})(Z)f(Z)]-E_P[f(Z)^2]\right)
+ \right\}.\)}}
+\]
+Equivalently, as proved in \(\texttt{lem:training-coverage-distance-identity}\),
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \varepsilon_{\mathrm{tr},k}^2
+ =\sup_{h\in\mathcal H_k}
+ \operatorname{dist}_{L_2(P_Z)}^2
+ \bigl(q_h-q_{h^\dagger},\mathcal F_k^{\mathrm{tr}}\bigr).\)}}
+\]
+The inner dual problem is a finite-dimensional concave quadratic optimization over an \(\ell_1\)-ball, and the outer problem is over the compact coefficient set defining \(\mathcal H_k\). The relevant geometry is the compact bounded critic body itself, not merely its linear span.
+\par\smallskip\noindent\emph{Inputs.} \texttt{k}; \texttt{\textbackslash{}\allowbreak{}mathcal K}; \texttt{g\_\allowbreak{}\{kj\}\allowbreak{}}; \texttt{J\_\allowbreak{}k}; \texttt{B}; \texttt{q\_\allowbreak{}h}; \texttt{h\textasciicircum{}\textbackslash{}\allowbreak{}dagger}; \texttt{\textbackslash{}\allowbreak{}mathcal H\_\allowbreak{}k}; \texttt{P}; \texttt{P\_\allowbreak{}Z}.
+\end{definition}
+
+\begin{definition}[def:two-atom-constant-configuration]\label{def:two-atom-constant-configuration}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Constant-\allowbreak{}target two-\allowbreak{}atom common-\allowbreak{}audit configuration}
+\par\smallskip\noindent\emph{Construction.} Fix \(B>0\), \(\gamma\in(0,1]\), and put \(a=B\sqrt{\gamma}\). Let \(X=Z\in\{-1,1\}\) with \(P(X=Z=1)=p\in(0,1)\), let \(Y=a\) almost surely, and write \(\mathbf 1\) for the constant-one function. Set \(h_0=w=a\mathbf 1\), \(\mathcal K=\{1,2\}\), \(d_{H,1}=d_{H,2}=1\), \(\phi_{11}=\phi_{21}=\mathbf 1\), \(\mathcal H_1=\{0\}\), and \(\mathcal H_2=\{c\mathbf 1:0\le c\le a\}\). Take \(J_1=\{1\}\), \(J_2=\varnothing\), set \(\widehat g_{11}=\widehat g_{21}=\mathbf 1\) and \(a_{1,n}=a_{2,n}=0\), enumerate \(\mathcal H_1\) by zero and enumerate a countable dense subset of \(\mathcal H_2\) with \(h_{21}=0\), and set \(\mathcal A_0=\{0\}\). Form the learned training critics and common audit by \(\texttt{def:learned-images}\) and \(\texttt{def:common-audit}\). Along \(n=3m\), use any deterministic balanced three-way partition and set \(\eta=1/4\).
+\par\smallskip\noindent\emph{Inputs.} \texttt{B}; \texttt{\textbackslash{}\allowbreak{}gamma}; \texttt{X}; \texttt{Z}; \texttt{Y}; \texttt{h\_\allowbreak{}0}; \texttt{w}; \texttt{\textbackslash{}\allowbreak{}mathcal K}; \texttt{d\_\allowbreak{}\{H,\allowbreak{}k\}\allowbreak{}}; \texttt{\textbackslash{}\allowbreak{}phi\_\allowbreak{}\{kj\}\allowbreak{}}; \texttt{\textbackslash{}\allowbreak{}mathcal H\_\allowbreak{}k}; \texttt{J\_\allowbreak{}k}; \texttt{\textbackslash{}\allowbreak{}widehat g\_\allowbreak{}\{kj\}\allowbreak{}}; \texttt{a\_\allowbreak{}\{k,\allowbreak{}n\}\allowbreak{}}; \texttt{h\_\allowbreak{}\{k\textbackslash{}\allowbreak{}ell\}\allowbreak{}}; \texttt{\textbackslash{}\allowbreak{}mathcal A\_\allowbreak{}0}; \texttt{n}; \texttt{I\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{cr\}\allowbreak{}\}\allowbreak{}}; \texttt{I\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{tr\}\allowbreak{}\}\allowbreak{}}; \texttt{I\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{va\}\allowbreak{}\}\allowbreak{}}; \texttt{\textbackslash{}\allowbreak{}eta}.
+\end{definition}
+
+\section{Main results}
+
+\begin{lemma}[lem:operator-contraction]\label{lem:operator-contraction}
+For \(h,h'\in L_X\), \(\|T(h-h')\|_{L_2(P_Z)}\le\|h-h'\|_{L_2(P_X)}\).
+\end{lemma}
+\begin{proof}
+Put \(v=h-h'\). By the definition of \(T\), \((Tv)(Z)=E_P[v(X)\mid Z]\). Conditional Jensen's inequality gives
+\[
+ |E_P[v(X)\mid Z]|^2\le E_P[|v(X)|^2\mid Z]
+\]
+almost surely. Taking expectations and using the tower property yields
+\[
+ \|T(h-h')\|_{L_2(P_Z)}^2
+ =E_P\!\left[|E_P[v(X)\mid Z]|^2\right]
+ \le E_P[|v(X)|^2]
+ =\|h-h'\|_{L_2(P_X)}^2.
+\]
+Both sides are nonnegative, so taking square roots proves the claim. The sampling condition \(\texttt{ass:iid}\) fixes the common population law \(P\) and hence the same conditional-expectation operator for every observation.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} Conditional expectation is the basic stability inequality needed to separate target approximation from inverse amplification. \textit{Gap.} It is a standard Jensen reduction, not a claimed advance over prior work. \textit{Consumer.} It converts a target-sieve approximation into a weak-residual approximation in the oracle analysis.
+
+\begin{proposition}[prop:zero-defect-reduction]\label{prop:zero-defect-reduction}
+For any candidate \(k_0\), if \(0<s_{k_0,n}\le1\) and \(\texttt{ass:grid-coverage}\) holds, then the deterministic grid functional satisfies
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \inf_{\lambda\in\Lambda_n}
+ \left\{\lambda^{\bar\beta}+\frac{s_{k_0,n}}{\lambda}\right\}
+ \le3s_{k_0,n}^{\bar\beta/(1+\bar\beta)}.\)}}
+\]
+This algebraic optimization does not imply a rate for \(\widehat h\) under \(\mathcal M_n\): \(\texttt{thm:common-audit-oracle-impossibility}\) gives zero-defect configurations for which the displayed functional converges to zero while \(\|\widehat h-h^\dagger\|_{L_2(P_X)}^2=1/32\) almost surely. Independently, that theorem gives the deterministic clipping bound \(\|\widehat h-h^\dagger\|_{L_2(P_X)}^2\le4B^2\). The grid exponent equals \(\beta/(1+\beta)\) for \(\beta\le1\) and saturates at \(1/2\) for \(\beta>1\).
+\end{proposition}
+\begin{proof}
+Put \(a=\bar\beta\in(0,1]\), \(s=s_{k_0,n}\), and \(t=s^{1/(1+a)}\). Since \(0<s\le1\), one has \(0<t\le1\). By \(\texttt{ass:grid-coverage}\),
+\[
+ 2^{-J_n}\le \frac{t}{2}.
+\]
+Because \(\Lambda_n=\{2^{-j}:0\le j\le J_n\}\), there is a grid point \(\lambda_t\in\Lambda_n\) such that
+\[
+ \frac{t}{2}<\lambda_t\le t.
+\]
+Indeed, choose the largest dyadic grid point not exceeding \(t\). The lower endpoint of the grid is at most \(t/2\), and adjacent grid points differ by a factor of two. Therefore
+\[
+ \lambda_t^a+\frac{s}{\lambda_t}
+ \le t^a+\frac{2s}{t}
+ =s^{a/(1+a)}+2s^{a/(1+a)}
+ =3s^{a/(1+a)}.
+\]
+Taking the infimum over \(\lambda\in\Lambda_n\) proves
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \inf_{\lambda\in\Lambda_n}
+ \left\{\lambda^{\bar\beta}+\frac{s_{k_0,n}}{\lambda}\right\}
+ \le3s_{k_0,n}^{\bar\beta/(1+\bar\beta)}.\)}}
+\]
+
+This numerical inequality is not an estimator guarantee. Apply \(\texttt{thm:common-audit-oracle-impossibility}\) with \(B=2\), \(\gamma=1/128\), and \(\eta=1/4\). Then \(\gamma B^2=1/32\), candidate \(2\) satisfies
+\[
+ \varepsilon_{H,2}=\varepsilon_{A,2}=\alpha_{2,n}=0,
+\]
+the optimized grid functional converges to zero, and the selected estimator satisfies
+\[
+ \|\widehat h-h^\dagger\|_{L_2(P_X)}^2=\frac{1}{32}
+\]
+for every sample. The same theorem gives the logically separate deterministic clipping bound
+\[
+ \|\widehat h-h^\dagger\|_{L_2(P_X)}^2\le4B^2.
+\]
+Finally, if \(0<\beta\le1\), then \(a=\beta\) and \(a/(1+a)=\beta/(1+\beta)\). If \(1<\beta\le2\), then \(a=1\) and \(a/(1+a)=1/2\). This proves the asserted saturation statement.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This proposition isolates the deterministic optimization supplied by the finite dyadic Tikhonov grid. For every candidate \(k_0\) satisfying \(0<s_{k_0,n}\le1\) and \(\texttt{ass:grid-coverage}\), the grid contains a level within a factor of two of the continuous bias--variance balance, which yields the stated factor-three bound. \textit{Gap.} The calculation controls only the displayed grid functional and does not by itself control \(\|\widehat h-h^\dagger\|_{L_2(P_X)}^2\). Zero benchmark defects are not premises of this proposition; they enter only in the later collapsed-path witness showing that the grid functional can vanish while the estimator's strong error remains positive. \textit{Consumer.} Use this proposition only to simplify the deterministic oracle expression and read off its saturation exponent. Any estimator-level conclusion additionally needs training-critic coverage or another argument linking the trained path to the pseudo-true target.
+
+\begin{proposition}[prop:causal-calibration]\label{prop:causal-calibration}
+Under \(\texttt{ass:iv-validity}\) and \(\texttt{ass:completeness}\), \(r=Th_0\) and \(h^\dagger=h_0\). Without those conditions, \(h^\dagger\) in \(\texttt{def:pseudotrue-target}\) is only a minimum-norm pseudo-true sensitivity target and is not automatically causal.
+\end{proposition}
+\begin{proof}
+By \(\texttt{ass:iv-validity}\),
+\[
+E_P[Y-h_0(X)\mid Z]=0
+\quad\text{almost surely}.
+\]
+Linearity of conditional expectation and the definitions of \(r\) and \(T\) therefore give
+\[
+r=E_P[Y\mid Z]=E_P[h_0(X)\mid Z]=Th_0
+\quad\text{in }L_2(P_Z).
+\]
+Let
+\[
+\mathcal S=\operatorname*{arg\,min}_{u\in L_X}\|Tu-r\|_{L_2(P_Z)}.
+\]
+Since \(Th_0=r\), the minimum defining \(\mathcal S\) equals zero, and hence
+\[
+\mathcal S=\{u\in L_X:Tu=r\}.
+\]
+For every \(u\in\mathcal S\), linearity of \(T\) yields
+\[
+T(u-h_0)=Tu-Th_0=r-r=0.
+\]
+By \(\texttt{ass:completeness}\), \(u-h_0=0\) in \(L_2(P_X)\). Thus \(\mathcal S=\{h_0\}\), and the minimum-norm selection in \(\texttt{def:pseudotrue-target}\) satisfies
+\[
+h^\dagger
+=\operatorname*{arg\,min}_{h\in\mathcal S}\|h\|_{L_2(P_X)}
+=h_0.
+\]
+
+Neither calibration condition can be dropped while retaining the causal conclusion. First, omit validity. Let \(X=Z\) be Rademacher, let \(Y=X\), and declare \(h_0=0\). Then \(T\) is the identity operator on \(L_2(P_X)\), so completeness holds, whereas \(r(Z)=Z\). Consequently the unique least-squares inverse is \(h^\dagger(X)=X\ne h_0(X)\).
+
+Second, omit completeness. Let \(X\) be Rademacher, let \(Z\) be constant, set \(Y=X\), and set \(h_0(X)=X\). Validity holds identically because \(Y-h_0(X)=0\). Here
+\[
+(Th)(Z)=E_P[h(X)]
+\quad\text{and}\quad
+r(Z)=E_P[Y]=0,
+\]
+so the least-squares solution set is
+\[
+\mathcal S=\{h\in L_2(P_X):E_P[h(X)]=0\}.
+\]
+Its unique minimum-norm element is the zero function. Therefore \(h^\dagger=0\ne h_0\). These witnesses show that without the stated calibration conditions the functional in \(\texttt{def:pseudotrue-target}\) remains a minimum-norm pseudo-true inverse target and is not automatically the causal structural response.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This proposition keeps the statistical inverse target distinct from the causal structural response. \textit{Gap.} Misspecified conditional moments identify a pseudo-true projection, not automatically \(h_0\). \textit{Consumer.} It tells applied users when the clipping and impossibility statements concern a causal response and when they concern only sensitivity to the observed conditional moment.
+
+\begin{proposition}[prop:two-coordinate-common-audit]\label{prop:two-coordinate-common-audit}
+In \(\texttt{def:two-coordinate-configuration}\), \(T=I\), \(w=h_0=a_0U+b_0V\), and \(\alpha_{1,n}=\alpha_{2,n}=0\) when the learned images equal their ideal images. Under that ideal-image equality, candidate \(2\)'s critic is orthogonal to the \(V\) coordinate, and the population counterpart of its unpenalized training dual loss at the blind fit \(a_0U\) is exactly zero: \[\sup_{f\in\widehat{\mathcal F}_2}\left\{2E_P[(Y-a_0U)f(Z)]-E_P[f(Z)^2]\right\}=0.\] Nevertheless, \(V\in\widehat{\mathcal F}^{\mathrm A}\) through candidate \(1\), and the common validation score at the blind fit has population counterpart satisfying \[\sup_{f\in\widehat{\mathcal F}^{\mathrm A}}\left\{2E_P[(Y-a_0U)f(Z)]-E_P[f(Z)^2]\right\}\ge b_0^2.\]
+\end{proposition}
+\begin{proof}
+Because \(X=Z=(U,V)\), every \(h\in L_X\) is measurable with respect to \(Z\), after the canonical identification of \(L_2(P_X)\) with \(L_2(P_Z)\). Therefore
+\[
+ (Th)(Z)=E_P[h(X)\mid Z]=h(U,V)
+\]
+almost surely, and hence \(T=I\). The construction directly sets
+\[
+ w=h_0=a_0U+b_0V.
+\]
+In particular, the ideal images of the common basis functions are
+\[
+ g_{k1}=T\phi_{k1}=U,
+ \qquad
+ g_{k2}=T\phi_{k2}=V,
+ \qquad k\in\{1,2\}.
+\]
+If every learned image equals its ideal image, then the definition of the learned-image error gives
+\[
+ \alpha_{k,n}
+ =\max_{1\le j\le 2}\|\widehat g_{kj}-g_{kj}\|_{L_2(P_Z)}
+ =0,
+ \qquad k\in\{1,2\}.
+\]
+
+For candidate \(2\), the declared coordinate set is \(J_2=\{1\}\), so ideal-image equality reduces its learned critic body to
+\[
+ \widehat{\mathcal F}_2=\{sU:|s|\le2\}.
+\]
+For every \(f=sU\) in this body, mutual independence and the mean-zero Rademacher laws imply
+\[
+ E_P[Vf(Z)]=sE_P[VU]=0
+\]
+and
+\[
+ E_P[(Y-a_0U)f(Z)]
+ =E_P[(b_0V+\xi)sU]
+ =b_0sE_P[VU]+sE_P[\xi U]
+ =0.
+\]
+Moreover, \(E_P[f(Z)^2]=s^2E_P[U^2]=s^2\). Consequently,
+\[
+ \sup_{f\in\widehat{\mathcal F}_2}
+ \left\{2E_P[(Y-a_0U)f(Z)]-E_P[f(Z)^2]\right\}
+ =\sup_{|s|\le2}(-s^2)
+ =0,
+\]
+where the maximum is attained at \(s=0\). This also proves that every element of candidate \(2\)'s critic body is orthogonal to the \(V\) coordinate.
+
+For candidate \(1\), ideal-image equality gives
+\[
+ \widehat{\mathcal F}_1
+ =\{sU+tV:|s|+|t|\le2\}.
+\]
+Taking \((s,t)=(0,1)\) shows that \(V\in\widehat{\mathcal F}_1\), and hence \(V\in\widehat{\mathcal F}^{\mathrm A}\) by the definition of the common absolute-convex audit. Since \(|b_0|\le1/4<2\), the function \(f_0=b_0V\) also belongs to \(\widehat{\mathcal F}_1\subseteq\widehat{\mathcal F}^{\mathrm A}\). Independence of \(\xi\) and \(V\), together with their zero means, yields
+\[
+ E_P[(Y-a_0U)f_0(Z)]
+ =E_P[(b_0V+\xi)b_0V]
+ =b_0^2
+\]
+and \(E_P[f_0(Z)^2]=b_0^2\). Evaluating the common-audit objective at this feasible witness therefore gives
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \sup_{f\in\widehat{\mathcal F}^{\mathrm A}}
+ \left\{2E_P[(Y-a_0U)f(Z)]-E_P[f(Z)^2]\right\}
+ \ge 2b_0^2-b_0^2
+ =b_0^2.\)}}
+\]
+This proves every assertion.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The bounded diagnostic shows at population level that the common audit assigns positive loss to a residual coordinate omitted by a candidate's own critic. \textit{Gap.} Detection by validation alone does not establish that any trained candidate path fits the detected coordinate. \textit{Consumer.} Together with the impossibility theorem, it separates the audit's diagnostic role from the training path's constructive role.
+
+\begin{lemma}[lem:positive-contraction-fractional-power]\label{lem:positive-contraction-fractional-power}
+Let \(A\) be a bounded positive self-adjoint operator on a Hilbert space with \(\|A\|_{\mathrm{op}}\le1\). For every \(a\in(0,1]\) and every vector \(v\), the continuous-functional-calculus power satisfies \(\|A^a v\|\le\|v\|\).
+\end{lemma}
+
+\begin{lemma}[lem:training-coverage-distance-identity]\label{lem:training-coverage-distance-identity}
+For every \(k\in\mathcal K\) and \(h\in\mathcal H_k\), let \(v_h=q_h-q_{h^\dagger}\). Then
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \|v_h\|_{L_2(P_Z)}^2-\sup_{f\in\mathcal F_k^{\mathrm{tr}}}
+ \left\{2E_P[v_h(Z)f(Z)]-E_P[f(Z)^2]\right\}
+ =\operatorname{dist}_{L_2(P_Z)}^2
+ \bigl(v_h,\mathcal F_k^{\mathrm{tr}}\bigr).\)}}
+\]
+Consequently,
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \varepsilon_{\mathrm{tr},k}^2
+ =\sup_{h\in\mathcal H_k}
+ \operatorname{dist}_{L_2(P_Z)}^2
+ \bigl(q_h-q_{h^\dagger},\mathcal F_k^{\mathrm{tr}}\bigr).\)}}
+\]
+The declared \(\mathcal F_k^{\mathrm{tr}}\) is a compact, hence closed, bounded critic body, and therefore \(\varepsilon_{\mathrm{tr},k}=0\) if and only if \(q_h-q_{h^\dagger}\in\mathcal F_k^{\mathrm{tr}}\) for every \(h\in\mathcal H_k\). For a nonclosed critic set the corresponding conclusion is membership in its closure; membership merely in the linear span of the declared bounded body is not sufficient.
+\end{lemma}
+\begin{proof}
+Fix \(k\) and \(h\), and abbreviate \(v=v_h\) and \(\mathcal F=\mathcal F_k^{\mathrm{tr}}\). For every \(f\in L_2(P_Z)\), completing the Hilbert-space square gives
+\[
+ 2E_P[v(Z)f(Z)]-E_P[f(Z)^2]
+ =2\langle v,f\rangle-\|f\|^2
+ =\|v\|^2-\|v-f\|^2.
+\]
+Taking the supremum over \(f\in\mathcal F\) and subtracting from \(\|v\|^2\) yields
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \|v\|^2-\sup_{f\in\mathcal F}\{2\langle v,f\rangle-\|f\|^2\}
+ =\inf_{f\in\mathcal F}\|v-f\|^2
+ =\operatorname{dist}^2(v,\mathcal F).\)}}
+\]
+Taking the supremum over \(h\in\mathcal H_k\) proves the displayed identity for \(\varepsilon_{\mathrm{tr},k}^2\).
+
+For the zero characterization, define
+\[
+ \mathbb B_{1,k}=\left\{u\in\mathbb R^{|J_k|}:\sum_{j\in J_k}|u_j|\le B\right\}.
+\]
+This coefficient body is compact. The linear map
+\[
+ u\longmapsto\sum_{j\in J_k}u_jg_{kj}
+\]
+is continuous from the finite-dimensional coefficient space into \(L_2(P_Z)\). Its image \(\mathcal F_k^{\mathrm{tr}}\) is therefore compact and hence closed. Since every squared distance is nonnegative,
+\[
+ \sup_{h\in\mathcal H_k}\operatorname{dist}^2(v_h,\mathcal F_k^{\mathrm{tr}})=0
+\]
+holds if and only if each distance is zero. Closedness gives
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \operatorname{dist}(v_h,\mathcal F_k^{\mathrm{tr}})=0
+ \quad\Longleftrightarrow\quad
+ v_h\in\mathcal F_k^{\mathrm{tr}}.\)}}
+\]
+Moreover, \(h\mapsto v_h=T(h^\dagger-h)\) is continuous by \(\texttt{lem:operator-contraction}\), and distance to a nonempty set is one-Lipschitz. Thus compactness of \(\mathcal H_k\) also makes the outer supremum a maximum. For a nonclosed set \(\mathcal C\), the corresponding elementary equivalence is only \(\operatorname{dist}(v,\mathcal C)=0\) if and only if \(v\in\overline{\mathcal C}\). Finally, \(\mathcal F_k^{\mathrm{tr}}\) is a bounded coefficient body rather than a linear space, so membership in \(\operatorname{span}(\mathcal F_k^{\mathrm{tr}})\) alone does not imply zero distance.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} Completing the square makes the obstruction an explicit and evaluable distance to the compact bounded critic body. \textit{Gap.} Linear-span coverage is insufficient because the training adversary is coefficient-bounded. \textit{Consumer.} The identity supplies the exact diagnostic used by the witness and prevents stale positive-part or generic-span interpretations.
+
+\begin{proposition}[prop:universal-clipping-constant-sharp]\label{prop:universal-clipping-constant-sharp}
+Under \(\mathcal M_n\), \(\texttt{ass:source-representation}\), and \(\texttt{ass:source-radius}\), every realization of the common-audit selector satisfies
+\[
+ \|\widehat h-h^\dagger\|_{L_2(P_X)}^2\le4B^2.
+\]
+The coefficient \(4\) is supremum-sharp: for every \(c<4\) and every positive training size, there is a genuine two-point-support configuration in the same class and an event of positive sampling probability on which \(\|\widehat h-h^\dagger\|_{L_2(P_X)}^2>cB^2\).
+\end{proposition}
+\begin{proof}
+If the selector chooses candidate \(k\), then \(\widehat h\in\mathcal H_k\). Write \(\widehat h=\sum_j\widehat\theta_j\phi_{kj}\). The basis and coefficient bounds give
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \|\widehat h\|_{L_2(P_X)}
+ \le\|\widehat h\|_{L_\infty(P_X)}
+ \le\sum_j|\widehat\theta_j|\,\|\phi_{kj}\|_{L_\infty(P_X)}
+ \le B.\)}}
+\]
+By \(\texttt{lem:operator-contraction}\), \(\|T\|_{\mathrm{op}}\le1\), so the positive self-adjoint operator \(A=T^*T\) satisfies \(\|A\|_{\mathrm{op}}\le1\). Since \(\beta/2\in(0,1]\), \(\texttt{lem:positive-contraction-fractional-power}\), \(\texttt{ass:source-representation}\), and \(\texttt{ass:source-radius}\) yield
+\[
+ \|h^\dagger\|_{L_2(P_X)}
+ =\|A^{\beta/2}w\|_{L_2(P_X)}
+ \le\|w\|_{L_2(P_X)}
+ \le B.
+\]
+The triangle inequality now gives
+\[
+ \|\widehat h-h^\dagger\|_{L_2(P_X)}^2
+ \le(\|\widehat h\|_{L_2(P_X)}+\|h^\dagger\|_{L_2(P_X)})^2
+ \le4B^2.
+\]
+
+For sharpness, fix \(c<4\), choose \(\gamma\in(0,1)\) with \(4\gamma>c\), and let \(e_j(x)=\mathbf 1\{x=j\}\) under
+\[
+ P(X=Z=2)=\gamma,
+ \qquad
+ P(X=Z=1)=1-\gamma,
+ \qquad
+ Y=B e_2(X).
+\]
+Then \(T=I\), \(h^\dagger=B e_2\), and the source conditions hold with \(w=h^\dagger\). Use one candidate with basis \((e_1,e_2)\), target class
+\[
+ \mathcal H_1=\{a e_2:-B\le a\le B\},
+\]
+blind critic coordinate \(J_1=\{1\}\), exact learned images, and \(\mathcal A_0=\{0\}\). Choose a countable dense enumeration whose first element is \(-B e_2\) and which also contains zero. The two-point law, balanced or otherwise deterministic positive splits, bounded bases, compact convex target class, coefficient radius, exact image learner, attained inverse, and fixed dense enumeration satisfy every condition defining \(\mathcal M_n\).
+
+Let \(E\) be the event that no training observation has \(X=2\). Independence and the assumed positive training size give
+\[
+ P(E)=(1-\gamma)^{n_{\mathrm{tr}}}>0.
+\]
+For \(h=a e_2\) and every blind critic \(f=u e_1\), the moment product is identically zero. On \(E\), the empirical regularizer also vanishes because \(P_{\mathrm{tr}}e_2=0\). Hence
+\[
+ A_{1,\lambda,\ell}=0
+\]
+for every enumerated target and every \(\lambda\in\Lambda_n\). The least-index rule selects \(-B e_2\) for every tuning value. Since there is only one candidate and all tuning paths coincide on \(E\), validation also returns \(\widehat h=-B e_2\). Therefore, on \(E\),
+\[
+ \|\widehat h-h^\dagger\|_{L_2(P_X)}^2
+ =\|-2B e_2\|_{L_2(P_X)}^2
+ =4\gamma B^2
+ >cB^2.
+\]
+Thus no coefficient smaller than four is a universal deterministic bound. As \(\gamma\uparrow1\), the ratio approaches four, while for every \(\gamma<1\) the missed-support event has strictly positive probability. This proves supremum-sharpness.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This proposition records the sole unconditional strong-error guarantee and proves that its numerical coefficient cannot be improved over the frozen class. \textit{Gap.} The source and coefficient radii give only two radius-\(B\) objects without an alignment restriction. \textit{Consumer.} It prevents the negative theorem from being mistaken for absence of every finite guarantee.
+
+\begin{lemma}[lem:parameterized-blind-path-witness]\label{lem:parameterized-blind-path-witness}
+Fix \(B>0\), \(\gamma\in(0,1]\), \(\beta\in(0,2]\), and \(\eta=1/4\). Along \(n=3m\) with balanced deterministic splits, there exists a sequence in \(\mathcal M_n\), supported on exactly two atoms of positive probability and having exact learned images, with a candidate \(k_0=2\) such that
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \varepsilon_{H,2}=\varepsilon_{A,2}=\alpha_{2,n}=0,
+ \qquad
+ \widehat h_{k,\lambda}=0
+ \quad\text{for every }k\in\{1,2\},\ \lambda\in\Lambda_n,\)}}
+\]
+for every sample, whereas
+\[
+ \|\widehat h-h^\dagger\|_{L_2(P_X)}^2
+ =\varepsilon_{\mathrm{tr},2}^2
+ =\gamma B^2
+\]
+almost surely. For every fixed finite value of \(C\) in \(\texttt{def:grid-and-scale}\),
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \inf_{k\in\mathcal K,\lambda\in\Lambda_n}
+ \left\{\lambda^{\bar\beta}+\frac{s_{k,n}}{\lambda}\right\}
+ \longrightarrow0.\)}}
+\]
+The endpoint \(\gamma=1\) is attained without degenerating the two-atom support. Moreover, among configurations satisfying \(\texttt{ass:source-representation}\) and \(\texttt{ass:source-radius}\) whose entire trained path is zero, \(B^2\) is the largest possible squared strong error.
+\end{lemma}
+\begin{proof}
+Fix \(B>0\), \(\gamma\in(0,1]\), \(\beta\in(0,2]\), and \(\eta=1/4\), and put \(a=B\sqrt{\gamma}\). Let \(S\) be Rademacher, and define
+\[
+ X=Z=S,\qquad Y=a\quad\text{almost surely}.
+\]
+Thus \(W=(Y,X,Z)\) has exactly the two atoms \((a,-1,-1)\) and \((a,1,1)\), each of probability \(1/2\). Since \(a\le B\), the bounded-outcome condition holds, including when \(\gamma=1\).
+
+Because \(X=Z\), conditional expectation is the identity from \(L_2(P_X)\) to \(L_2(P_Z)\). Hence
+\[
+ T=I,\qquad r=a\mathbf 1,\qquad h^\dagger=a\mathbf 1,
+\]
+where \(\mathbf 1\) is the constant-one function. Indeed, \(Th=r\) has the unique solution \(h=a\mathbf 1\), so this solution is also the minimum-norm target in \(\texttt{def:pseudotrue-target}\). Set \(w=a\mathbf 1\). Then
+\[
+ (T^*T)^{\beta/2}w=w=h^\dagger,
+ \qquad
+ \|w\|_{L_2(P_X)}=a=B\sqrt{\gamma}\le B.
+\]
+Thus \(\texttt{ass:source-representation}\) and \(\texttt{ass:source-radius}\) hold, with equality in the radius bound at \(\gamma=1\).
+
+For every \(n=3m\), use deterministic splits of size \(m\), and take
+\[
+ \mathcal K=\{1,2\},\quad d_{H,1}=d_{H,2}=1,\quad
+ \phi_{11}=\phi_{21}=\mathbf 1,
+\]
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathcal H_1=\{0\},\qquad
+ \mathcal H_2=\{c\mathbf 1:0\le c\le a\},
+ \qquad J_1=\{1\},\quad J_2=\varnothing,
+ \qquad \mathcal A_0=\{0\}.\)}}
+\]
+Enumerate \(\mathcal H_1\) by zero. Enumerate \(\mathcal H_2\) by putting zero first and then listing \(a q\mathbf 1\) for \(q\in\mathbb Q\cap[0,1]\). Since \(g_{11}=g_{21}=\mathbf 1\), use the deterministic exact learners
+\[
+ \widehat g_{11}=g_{11}=\mathbf 1,
+ \qquad
+ \widehat g_{21}=g_{21}=\mathbf 1,
+ \qquad
+ a_{1,n}=a_{2,n}=0.
+\]
+
+We verify that these objects form a member of \(\mathcal M_n\). Draw the observations independently from the displayed law and use the deterministic balanced partition above. The basis functions have supremum norm one. Both target sets are compact, convex, contain zero, and lie in their declared one-dimensional spans; every coefficient has absolute value at most \(a\le B\). The candidate set is finite, and the common audit has one-dimensional linear span. The exact constant-image learners satisfy image estimability at radius zero. The population least-squares target is attained, and the declared enumerations are countable, dense, and contain zero. Hence every member condition in \(\texttt{def:configuration-class}\) is satisfied. In particular,
+\[
+ \alpha_{1,n}=\alpha_{2,n}=0.
+\]
+
+Candidate \(2\) contains \(h^\dagger\), so \(\varepsilon_{H,2}=0\). For \(h=c\mathbf 1\in\mathcal H_2\),
+\[
+ q_h-q_{h^\dagger}=(a-c)\mathbf 1.
+\]
+Candidate \(1\)'s ideal critic body contains every \(u\mathbf 1\) with \(|u|\le B\). Since \(0\le a-c\le a\le B\), the common ideal audit class contains \((a-c)\mathbf 1\). The square-completion identity
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle 2\langle v,f\rangle_{L_2(P_Z)}-\|f\|_{L_2(P_Z)}^2
+ =\|v\|_{L_2(P_Z)}^2-\|v-f\|_{L_2(P_Z)}^2
+ \le \|v\|_{L_2(P_Z)}^2\)}}
+\]
+therefore attains equality at \(v=f=(a-c)\mathbf 1\). Consequently,
+\[
+ D_{\mathcal F^{\mathrm A}}(q_h-q_{h^\dagger})
+ =\|q_h-q_{h^\dagger}\|_{L_2(P_Z)}^2
+\]
+for every \(h\in\mathcal H_2\), and hence \(\varepsilon_{A,2}=0\).
+
+We next evaluate every trained candidate. Since \(J_2=\varnothing\), \(\widehat{\mathcal F}_2=\{0\}\). For \(h=c\mathbf 1\in\mathcal H_2\), the training criterion in \(\texttt{def:common-audit-selector}\) is exactly
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \sup_{f\in\{0\}}
+ \left\{2P_{\mathrm{tr}}[(Y-h(X))f(Z)]-P_{\mathrm{tr}}[f(Z)^2]\right\}
+ +\lambda P_{\mathrm{tr}}[h(X)^2]
+ =\lambda c^2.\)}}
+\]
+Its infimum is zero and is attained by the first enumerated element. Thus the least-index approximate-minimizer rule gives
+\[
+ \widehat h_{2,\lambda}=0
+ \quad\text{for every }\lambda\in\Lambda_n
+\]
+for every sample. Candidate \(1\)'s target class is the singleton \(\{0\}\), so also \(\widehat h_{1,\lambda}=0\) for every \(\lambda\). Validation can select only a zero function, whence
+\[
+ \widehat h=0,
+ \qquad
+ \|\widehat h-h^\dagger\|_{L_2(P_X)}^2
+ =\|a\mathbf 1\|_{L_2(P_X)}^2
+ =a^2
+ =\gamma B^2
+\]
+samplewise.
+
+For candidate \(2\), the empty coordinate set also implies \(\mathcal F_2^{\mathrm{tr}}=\{0\}\). By \(\texttt{lem:training-coverage-distance-identity}\),
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \begin{aligned}
+ \varepsilon_{\mathrm{tr},2}^2
+ &=\sup_{0\le c\le a}
+ \operatorname{dist}_{L_2(P_Z)}^2\bigl((a-c)\mathbf 1,\{0\}\bigr)\\
+ &=\sup_{0\le c\le a}(a-c)^2
+ =a^2
+ =\gamma B^2.
+ \end{aligned}\)}}
+\]
+
+It remains to evaluate the oracle functional. Here \(K=2\), \(d_{H,2}=1\), \(d_A=1\), and \(n_{\mathrm{tr}}=n_{\mathrm{va}}=m=n/3\). Write
+\[
+ L_n=\log\!\left(\frac{4K|\Lambda_n|}{\eta}\right).
+\]
+Because \(|\Lambda_n|=1+\lceil\log_2 n\rceil\), one has \(L_n=O(\log\log n)\). All target-approximation, audit-defect, and learned-image terms for candidate \(2\) vanish, so for each fixed finite \(C\),
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle s_{2,n}
+ =CB^2\frac{2+L_n}{m}
+ +B^2\sqrt{\frac{L_n}{m}}
+ =O_{B,C}\!\left(\frac{\log\log n}{n}
+ +\sqrt{\frac{\log\log n}{n}}\right).\)}}
+\]
+Let \(j_n=\lfloor(\log_2 n)/4\rfloor\) and \(\lambda_n=2^{-j_n}\). For all sufficiently large \(n\), \(j_n\le J_n\), so \(\lambda_n\in\Lambda_n\), and
+\[
+ n^{-1/4}\le\lambda_n\le2n^{-1/4}.
+\]
+Since \(\bar\beta>0\),
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \lambda_n^{\bar\beta}\longrightarrow0,
+ \qquad
+ \frac{s_{2,n}}{\lambda_n}
+ =O_{B,C}\!\left(n^{-3/4}\log\log n
+ +n^{-1/4}\sqrt{\log\log n}\right)
+ \longrightarrow0.\)}}
+\]
+Therefore
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \inf_{k\in\mathcal K,\lambda\in\Lambda_n}
+ \left\{\lambda^{\bar\beta}+\frac{s_{k,n}}{\lambda}\right\}
+ \le
+ \lambda_n^{\bar\beta}+\frac{s_{2,n}}{\lambda_n}
+ \longrightarrow0.\)}}
+\]
+
+At \(\gamma=1\), the same law still has two distinct atoms of probabilities \(1/2\) and \(1/2\); only the constant outcome and target reach the envelope \(B\). Thus the error \(B^2\) is attained without support degeneration.
+
+Finally, consider any configuration satisfying the two source conditions whose entire trained path is zero. By \(\texttt{lem:operator-contraction}\), \(\|T\|_{\mathrm{op}}\le1\). Hence \(A=T^*T\) is positive and self-adjoint with \(\|A\|_{\mathrm{op}}\le1\). Since \(\beta/2\in(0,1]\), \(\texttt{lem:positive-contraction-fractional-power}\) and the source conditions imply
+\[
+ \|h^\dagger\|_{L_2(P_X)}
+ =\|A^{\beta/2}w\|_{L_2(P_X)}
+ \le\|w\|_{L_2(P_X)}
+ \le B.
+\]
+A collapsed-zero path therefore has squared strong error at most \(B^2\), and the construction with \(\gamma=1\) attains this bound. This proves maximality.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The witness realizes every error in \((0,B^2]\), including the endpoint, while all defects in the proposed oracle scale vanish. \textit{Gap.} A fixed interior counterexample would not establish the exact maximal collapsed-zero-path frontier. \textit{Consumer.} It drives the impossibility theorem and the path-restricted selection and aggregation result.
+
+\begin{proposition}[prop:path-restricted-selection-frontier]\label{prop:path-restricted-selection-frontier}
+In the configurations of \(\texttt{lem:parameterized-blind-path-witness}\), every measurable path-restricted selector, even one allowed oracle knowledge of \(P\), equals zero. Every random, data-dependent, or oracle-dependent signed linear or affine combination of the already-trained elements \(\{\widehat h_{k,\lambda}:k\in\mathcal K,\lambda\in\Lambda_n\}\) also equals zero. All such procedures therefore have squared strong error \(\gamma B^2\). As \(\gamma\) ranges over \((0,1]\), their nonzero errors fill \((0,B^2]\), including exact attainment of \(B^2\) on genuine two-atom support; this endpoint is maximal for a collapsed-zero path under the source conditions. The claim concerns only combinations of already-trained path elements and does not cover refitting or construction of a new coordinate.
+\end{proposition}
+\begin{proof}
+By \(\texttt{lem:parameterized-blind-path-witness}\), sample by sample,
+\[
+ \widehat h_{k,\lambda}=0
+ \quad\text{for every }(k,\lambda)\in\mathcal K\times\Lambda_n.
+\]
+Thus the set of already-trained path elements is the singleton \(\{0\}\). Every measurable map valued in this set equals zero, regardless of whether its index depends on the sample, the population law \(P\), auxiliary randomness, or all three.
+
+More generally, let \(\omega_{k,\lambda}\) be arbitrary finite real-valued coefficients, possibly random, data-dependent, or oracle-dependent. Pointwise,
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \sum_{k\in\mathcal K,\lambda\in\Lambda_n}
+ \omega_{k,\lambda}\widehat h_{k,\lambda}
+ =\sum_{k,\lambda}\omega_{k,\lambda}0
+ =0.\)}}
+\]
+This proves the assertion for every signed linear combination. It also proves it for every affine combination, since imposing \(\sum_{k,\lambda}\omega_{k,\lambda}=1\) does not alter the displayed identity.
+
+The witness then gives
+\[
+ \|0-h^\dagger\|_{L_2(P_X)}^2=\gamma B^2.
+\]
+For any \(\rho\in(0,B^2]\), choosing \(\gamma=\rho/B^2\in(0,1]\) produces squared strong error exactly \(\rho\). The two support atoms retain probabilities \(1/2\) and \(1/2\), including at \(\rho=B^2\). The maximality conclusion of \(\texttt{lem:parameterized-blind-path-witness}\) shows that the source conditions force \(\|h^\dagger\|_{L_2(P_X)}^2\le B^2\), so no collapsed-zero path can have larger squared strong error. Every operation considered above combines only already-trained zero path elements; none refits a candidate or introduces a function outside the path.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The corollary shows that the obstruction is not an artifact of the lexicographic holdout rule once the trained path has collapsed. \textit{Gap.} Changing selection weights cannot recover a coordinate absent from every path element. \textit{Consumer.} It precisely identifies the selection-only scope while leaving retraining and richer aggregation outside the claim.
+
+\begin{theorem}[thm:common-audit-oracle-impossibility]\label{thm:common-audit-oracle-impossibility}
+The proposed common-audit oracle inequality is false uniformly over \(\mathcal M_n\), even with exact learned images and zero target, audit, and image defects for the benchmark candidate. More precisely, fix \(B>0\), \(\gamma\in(0,1]\), \(\beta\in(0,2]\), and \(\eta=1/4\). Along \(n=3m\) there are genuine two-atom configurations in \(\mathcal M_n\) for which
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \varepsilon_{H,2}=\varepsilon_{A,2}=\alpha_{2,n}=0,
+ \qquad
+ \widehat h_{k,\lambda}=0
+ \quad\text{for every }(k,\lambda)\in\mathcal K\times\Lambda_n,\)}}
+\]
+while
+\[
+ \|\widehat h-h^\dagger\|_{L_2(P_X)}^2
+ =\varepsilon_{\mathrm{tr},2}^2
+ =\gamma B^2
+\]
+for every sample and
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \inf_{k\in\mathcal K,\lambda\in\Lambda_n}
+ \left\{\lambda^{\bar\beta}+\frac{s_{k,n}}{\lambda}\right\}
+ \longrightarrow0.\)}}
+\]
+Consequently, for every fixed finite value of \(C\), the proposed high-probability inequality fails with probability one for all sufficiently large \(n\). Every random, data-dependent, or oracle-dependent signed linear or affine combination of the already-trained path elements also equals zero. The nonzero collapsed-path failure frontier is exactly \((0,B^2]\), with \(B^2\) attained at \(\gamma=1\) on genuine two-atom support; it is maximal because the source conditions imply \(\|h^\dagger\|_{L_2(P_X)}\le B\). Independently of this impossibility, every realization satisfies \(\|\widehat h-h^\dagger\|_{L_2(P_X)}^2\le4B^2\), and the coefficient \(4\) is supremum-sharp over \(\mathcal M_n\).
+\end{theorem}
+\begin{proof}
+Fix \(B>0\), \(\gamma\in(0,1]\), \(\beta\in(0,2]\), and \(\eta=1/4\). Apply \(\texttt{lem:parameterized-blind-path-witness}\) to the constant two-atom configuration in \(\texttt{def:two-atom-constant-configuration}\). That lemma verifies membership in \(\mathcal M_n\), exact learned images, the three zero defects for candidate \(2\), collapse of every trained path element to zero, and the identities
+\[
+ \|\widehat h-h^\dagger\|_{L_2(P_X)}^2
+ =\varepsilon_{\mathrm{tr},2}^2
+ =\gamma B^2.
+\]
+It also gives
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle R_n:=\inf_{k\in\mathcal K,\lambda\in\Lambda_n}
+ \left\{\lambda^{\bar\beta}+\frac{s_{k,n}}{\lambda}\right\}
+ \longrightarrow0\)}}
+\]
+for every fixed finite numerical choice of the constant in \(\texttt{def:grid-and-scale}\). Since \(\gamma B^2>0\), for every fixed finite multiplier \(C\) there is \(n_0\) such that \(CR_n<\gamma B^2\) whenever \(n\ge n_0\). On every sample from such a configuration,
+\[
+ \min\{4B^2,CR_n\}<\gamma B^2
+ =\|\widehat h-h^\dagger\|_{L_2(P_X)}^2.
+\]
+Thus the proposed inequality fails on the whole sample space, not merely on an event of probability exceeding \(\eta\).
+
+By \(\texttt{prop:path-restricted-selection-frontier}\), every random, data-dependent, or oracle-dependent signed linear or affine combination of the already-trained path is also the zero function. Hence its squared error is \(\gamma B^2\). Varying \(\gamma\) over \((0,1]\) produces every value in \((0,B^2]\), and \(\gamma=1\) attains \(B^2\) on the declared two-atom law.
+
+It remains to verify maximality of this collapsed-zero frontier. By \(\texttt{lem:operator-contraction}\), \(\|T\|_{\mathrm{op}}\le1\), so \(A=T^*T\) is positive self-adjoint and satisfies \(\|A\|_{\mathrm{op}}\le1\). Because \(\beta/2\in(0,1]\), \(\texttt{lem:positive-contraction-fractional-power}\), \(\texttt{ass:source-representation}\), and \(\texttt{ass:source-radius}\) yield
+\[
+ \|h^\dagger\|_{L_2(P_X)}
+ =\|A^{\beta/2}w\|_{L_2(P_X)}
+ \le\|w\|_{L_2(P_X)}
+ \le B.
+\]
+Any collapsed-zero path therefore has squared strong error \(\|h^\dagger\|_{L_2(P_X)}^2\le B^2\), proving endpoint maximality.
+
+Finally, \(\texttt{prop:universal-clipping-constant-sharp}\) gives \(\|\widehat h-h^\dagger\|_{L_2(P_X)}^2\le4B^2\) for every realization in the full class and proves that no smaller uniform coefficient replaces \(4\). This clipping fact is logically separate from the failed oracle rate. Every step concerns only the note-defined selector and trained path in \(\texttt{def:common-audit-selector}\); no step asserts that a published TRAE or Regularized DeepIV workflow instantiates that hybrid architecture.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This theorem is an architecture-level diagnostic for the note-defined hybrid that trains each candidate with its own adversarial critic and then selects only among the resulting finite path using a common audit. The explicit two-atom construction proves that a training critic can omit a target direction even when the common audit detects that direction and the benchmark's target, audit, and learned-image defects all vanish. \textit{Gap.} The theorem does not refute the published discrepancy-selected TRAE workflow of Tan and Syrgkanis or the published Regularized DeepIV workflow of Li et al. Their estimators, objectives, and assumptions are not the note-defined candidate-specific-training plus common-audit selector. In particular, Tan and Syrgkanis's Theorem 3.13, under the assumptions of their Proposition 3.12, remains the published TRAE saturation comparator. \textit{Consumer.} Use the theorem to rule out uniform oracle inequalities for this exact path-restricted hybrid unless the training stage gains a condition that controls the training-coverage defect or is allowed to refit with the audit coordinates. Do not export the counterexample as a negative claim about published TRAE or Regularized DeepIV procedures.
+
+\begin{lemma}[lem:tan-syrgkanis-trae-saturation]\label{lem:tan-syrgkanis-trae-saturation}
+Tan and Syrgkanis, Theorem 3.13, state under the assumptions of their Proposition 3.12 that discrepancy-selected TRAE has squared strong error \(O(\delta_n^{2\min\{\beta,1\}/(1+\min\{\beta,1\})})\) and squared weak error \(O(\delta_n^2)\); in particular, the strong-rate exponent saturates when \(\beta>1\).
+\end{lemma}
+
+\section{Interpretation}
+
+The training-coverage identity says exactly what the note-defined hybrid can miss: membership in the linear span of available images is insufficient when a candidate trains against a bounded critic body. In the endpoint witness, the common audit contains the omitted constant residual and therefore can detect it, but both trained candidates are already zero. Selection, randomization, and even oracle-dependent signed or affine reweighting cannot create a function outside that collapsed path. The error equals \(\varepsilon_{\mathrm{tr},2}^2=\gamma B^2\), reaches \(B^2\) at \(\gamma=1\), and cannot exceed that endpoint for a collapsed-zero path under the source-radius condition. This mechanism is a diagnostic for the note-defined hybrid, not an interpretation of the algorithms in either cited positive comparator.
+
+\section*{Technical internal limitation (diagnostic only)}
+
+The negative theorem is architecture-specific. It covers the finite trained path generated by the note's candidate-specific adversarial critics and subsequently scored by its common audit, including every signed or affine combination of those already-trained elements. It does not cover refitting after validation, adding an audit-detected coordinate to training, imposing quantitative control of \(\varepsilon_{\mathrm{tr},k}\), Tan--Syrgkanis discrepancy-selected TRAE under its witness-coverage premises, or Li et al.'s shared explicit learned-operator Best-ERM and Convex-ERM workflow. The \(4B^2\) result is a sharp deterministic envelope rather than a convergence rate. A negative result about a named published workflow requires a different theorem whose estimator and assumptions reproduce that workflow accurately.
+
+\section{Honest scope}
+
+The formal theorem concerns only the common-audit selector defined in this note over finite bounded sieves, three deterministic sample splits, bounded outcomes and bases, and the stated Tikhonov source ball. Its two-atom witness grants exact learned images and zero declared benchmark defects, proves the exact \((0,B^2]\) collapsed-path frontier, and leaves retraining and richer critic construction outside scope. Tan--Syrgkanis and Li et al. are unmatched positive neighboring comparators and are not refuted. The statistical loss is centered at the minimum-norm pseudo-true response \(h^\dagger\); it concerns the causal response \(h_0\) only under the separate IV-validity and completeness assumptions.
+
+\begin{thebibliography}{99}
+
+  \bibitem{TanSyrgkanis2026Adaptive} J. Tan and V. Syrgkanis (2026). Adaptive estimation and inference in conditional moment models via the discrepancy principle. arXiv:2603.01337, Theorem 3.13 and Remark 3.8.
+
+  \bibitem{LiLanSyrgkanisWangUehara2024RegularizedDeepIV} Z. Li, H. Lan, V. Syrgkanis, M. Wang, and M. Uehara (2024). Regularized DeepIV with model selection. arXiv:2403.04236, Theorem 12 and Section 8.
+
+  \bibitem{DikkalaLewisMackeySyrgkanis2020Minimax} N. Dikkala, G. Lewis, L. Mackey, and V. Syrgkanis (2020). Minimax estimation of conditional moment models. NeurIPS 33, 12248--12262.
+
+  \bibitem{BennettKallusMaoNeweySyrgkanisUehara2023MinimaxIV} A. Bennett, N. Kallus, X. Mao, W. Newey, V. Syrgkanis, and M. Uehara (2023). Minimax IV estimation with general function approximation. COLT 2023, arXiv:2302.05404.
+
+  \bibitem{BennettKallusMaoNeweySyrgkanisUehara2023SourceConditionDR} A. Bennett, N. Kallus, X. Mao, W. Newey, V. Syrgkanis, and M. Uehara (2023). Source condition double robust inference on functionals of inverse problems. arXiv:2307.13793.
+
+  \bibitem{AiChen2007MisspecifiedConditionalMoments} C. Ai and X. Chen (2007). Estimation of possibly misspecified semiparametric conditional moment restriction models with different conditioning variables. Journal of Econometrics 141, 5--43.
+
+  \bibitem{VanDerVaartWellner1996} A. van der Vaart and J. Wellner (1996). Weak Convergence and Empirical Processes. Springer.
+
+  \bibitem{Conway1990FunctionalAnalysis} J. B. Conway (1990). A Course in Functional Analysis, second edition. Graduate Texts in Mathematics 96, Springer. Normal Operators on Hilbert Space, pp. 255--302. doi:10.1007/978-1-4757-4383-8.
+
+\end{thebibliography}
+
+\end{document}

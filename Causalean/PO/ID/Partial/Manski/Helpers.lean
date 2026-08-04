@@ -48,17 +48,17 @@ variable {P : POSystem} {α : Type*}
 /-- `factualY · indicator d` is integrable. -/
 lemma factualY_mul_indD_integrable (hA : S.BaseAssumptions) (d : Bool) :
     Integrable (fun ω => S.factualY ω * S.dVar.indicator d ω) P.μ := by
-  exact S.dVar.integrable_mul_indicator d hA.integrable_factualY S.measurable_factualY
+  exact S.dVar.integrable_mul_indicator d (measurableSet_singleton d) hA.integrable_factualY
 
 /-- `YofD d · indicator d` is integrable. -/
 lemma YofD_mul_indD_integrable (hA : S.BaseAssumptions) (d : Bool) :
     Integrable (fun ω => S.YofD d ω * S.dVar.indicator d ω) P.μ := by
-  exact S.dVar.integrable_mul_indicator d (hA.integrable_YofD d) (S.measurable_YofD d)
+  exact S.dVar.integrable_mul_indicator d (measurableSet_singleton d) (hA.integrable_YofD d)
 
 /-- Constant times `indicator d` is integrable. -/
 lemma const_mul_indD_integrable [IsFiniteMeasure P.μ] (c : ℝ) (d : Bool) :
     Integrable (fun ω => c * S.dVar.indicator d ω) P.μ :=
-  (S.dVar.integrable_indicator d).const_mul c
+  (S.dVar.integrable_indicator d (measurableSet_singleton d)).const_mul c
 
 /-! ### Pointwise a.e. bounds -/
 
@@ -146,7 +146,7 @@ theorem boundArm_lo_le_cond_YofD [IsFiniteMeasure P.μ]
                      + hA.lo * S.dVar.indicator (!d) ω)
         ≤ eventCondExp P.μ (S.zEvent z) (S.YofD d) := by
     refine eventCondExp_mono_ae P.μ hint_sum hint_Yd ?_
-    simpa using hbound_ae
+    simpa using (ae_restrict_of_ae hbound_ae)
   calc
     S.boundArm d hA.lo z
         = eventCondExp P.μ (S.zEvent z)
@@ -186,7 +186,7 @@ theorem cond_YofD_le_boundArm_hi [IsFiniteMeasure P.μ]
             (fun ω => S.YofD d ω * S.dVar.indicator d ω
                        + hA.hi * S.dVar.indicator (!d) ω) := by
     refine eventCondExp_mono_ae P.μ hint_Yd hint_sum ?_
-    simpa using hbound_ae
+    simpa using (ae_restrict_of_ae hbound_ae)
   calc
     eventCondExp P.μ (S.zEvent z) (S.YofD d)
         ≤ eventCondExp P.μ (S.zEvent z)

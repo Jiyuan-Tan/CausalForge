@@ -199,9 +199,7 @@ theorem obsCondKernel_singleton_mass_of_ne_zero
     (s : M.FixedValues) (c : ValuesOn CC (swigΩ Ω))
     (y : ValuesOn Y (swigΩ Ω))
     (hc0 : ((M.obsKernel s).map (valuesProjection hCC))
-        ({c} : Set (ValuesOn CC (swigΩ Ω))) ≠ 0)
-    (hctop : ((M.obsKernel s).map (valuesProjection hCC))
-        ({c} : Set (ValuesOn CC (swigΩ Ω))) ≠ ∞) :
+        ({c} : Set (ValuesOn CC (swigΩ Ω))) ≠ 0) :
     M.obsCondKernel Y CC hY hCC (s, c)
         ({y} : Set (ValuesOn Y (swigΩ Ω))) =
       ((M.obsKernel s).map
@@ -233,6 +231,11 @@ theorem obsCondKernel_singleton_mass_of_ne_zero
       hcomp
   rw [compProd_singleton_mass] at hmass
   rw [hpair] at hmass
+  haveI : IsFiniteMeasure ((M.obsKernel s).map (valuesProjection hCC)) :=
+    (M.obsKernel s).isFiniteMeasure_map _
+  have hctop : ((M.obsKernel s).map (valuesProjection hCC))
+      ({c} : Set (ValuesOn CC (swigΩ Ω))) ≠ ∞ :=
+    measure_ne_top _ _
   rw [ENNReal.eq_div_iff hc0 hctop]
   simpa [Kernel.sectR] using hmass.symm
 

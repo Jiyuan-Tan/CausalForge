@@ -18,7 +18,7 @@ import Mathlib.Analysis.Complex.Basic
 # Stacked Vandermonde systems
 
 This file gives a constructive injectivity certificate for a stacked family of
-weighted Vandermonde evaluation maps at distinct complex nodes.
+weighted Vandermonde evaluation maps at distinct nodes in a commutative domain.
 -/
 
 namespace Causalean.Mathlib.LinearAlgebra
@@ -27,25 +27,25 @@ open scoped BigOperators
 
 noncomputable section
 
-/-- The coefficient vector of `(X₀ + z X₁)^k`, after dividing its `r`-th
-coefficient by the nonzero binomial coefficient `\binom{k}{r}`.  Thus this is
-the standard affine-chart model of a degree-`k` binary form. -/
-def affineBinaryPower (z : ℂ) (k : ℕ) : Fin (k + 1) → ℂ :=
+/-- The affine power vector whose `r`-th entry is `z^r`. Over a field, this is
+the coefficient vector of `(X₀ + z X₁)^k` after normalization by the corresponding
+nonzero binomial coefficient. -/
+def affineBinaryPower {K : Type*} [Monoid K] (z : K) (k : ℕ) : Fin (k + 1) → K :=
   fun r => z ^ (r : ℕ)
 
-/-- The coefficient-vector version of the stacked contraction map.  In the
-affine chart `ℓ j = X₀ + slopes j X₁`, its `k`-th component is exactly the
-coefficient vector of `∑ j, weights j k * e j • (ℓ j)^k`, up to invertible
+/-- The coefficient-vector version of the stacked contraction map. Over a
+field in the affine chart `ℓ j = X₀ + slopes j X₁`, its `k`-th component agrees
+with the coefficient vector of `∑ j, weights j k * e j • (ℓ j)^k` up to invertible
 binomial diagonal rescaling. -/
-def stackedContraction (N : ℕ) (slopes : Fin (N + 1) → ℂ)
-    (weights : Fin (N + 1) → Fin N → ℂ) (e : Fin (N + 1) → ℂ) :
-    (k : Fin N) → Fin (k.1 + 1) → ℂ :=
+def stackedContraction {K : Type*} [Semiring K] (N : ℕ) (slopes : Fin (N + 1) → K)
+    (weights : Fin (N + 1) → Fin N → K) (e : Fin (N + 1) → K) :
+    (k : Fin N) → Fin (k.1 + 1) → K :=
   fun k r => ∑ j, weights j k * e j * affineBinaryPower (slopes j) k.1 r
 
 /-- The two-block specialization from the block-Vandermonde argument:
 `J₀ = {0}` and `J_{N-1} = {1, …, N}`. -/
-def blockVandermondeWitnessWeights (N : ℕ) (hN : 2 ≤ N) :
-    Fin (N + 1) → Fin N → ℂ :=
+def blockVandermondeWitnessWeights {K : Type*} [Zero K] [One K] (N : ℕ) (hN : 1 ≤ N) :
+    Fin (N + 1) → Fin N → K :=
   let zeroBlock : Fin N := ⟨0, by omega⟩
   let topBlock : Fin N := ⟨N - 1, Nat.sub_lt (by omega) (by omega)⟩
   fun j k =>
@@ -53,13 +53,13 @@ def blockVandermondeWitnessWeights (N : ℕ) (hN : 2 ≤ N) :
       if k = zeroBlock then 1 else 0
     else if k = topBlock then 1 else 0
 
-/-- At least three distinct complex nodes admit weights for which the stacked
+/-- At least three distinct domain-valued nodes admit weights for which the stacked
 contraction is injective. The first block detects coordinate `0`, while the
 last block is a square Vandermonde system on coordinates `1,…,N`. -/
-theorem stacked_contraction_injective_of_generic_weights
-  {N : ℕ} (hN : 2 ≤ N) (slopes : Fin (N + 1) → ℂ)
+theorem stacked_contraction_injective_of_generic_weights {K : Type*} [CommRing K] [IsDomain K]
+  {N : ℕ} (hN : 2 ≤ N) (slopes : Fin (N + 1) → K)
     (hslopes : Function.Injective slopes) :
-    ∃ weights : Fin (N + 1) → Fin N → ℂ,
+    ∃ weights : Fin (N + 1) → Fin N → K,
       Function.Injective (stackedContraction N slopes weights) := by
   let zeroBlock : Fin N := ⟨0, by omega⟩
   let topBlock : Fin N := ⟨N - 1, Nat.sub_lt (by omega) (by omega)⟩
@@ -68,7 +68,7 @@ theorem stacked_contraction_injective_of_generic_weights
     have : N - 1 = 0 := Fin.ext_iff.mp h
     omega
   have hzero_ne_top : (0 : ℕ) ≠ N - 1 := by omega
-  refine ⟨blockVandermondeWitnessWeights N hN, ?_⟩
+  refine ⟨blockVandermondeWitnessWeights N (by omega), ?_⟩
   intro e e' he
   have hzero : e 0 = e' 0 := by
     have h := congrFun (congrFun he zeroBlock) (0 : Fin 1)

@@ -54,7 +54,7 @@ Then the standardized network sum converges in distribution to the standard norm
 Obtained as a corollary of `networkSum_clt` applied to the standardized field
 `centeredNormalizedField`. -/
 theorem networkMean_clt
-    {V : ℕ → Type*} [∀ n, Fintype (V n)] [∀ n, DecidableEq (V n)]
+    {V : ℕ → Type*} [∀ n, Fintype (V n)]
     {Ω : ℕ → Type*} [∀ n, MeasurableSpace (Ω n)] (μ : ∀ n, Measure (Ω n))
     [∀ n, IsProbabilityMeasure (μ n)]
     (Y : ∀ n, V n → Ω n → ℝ)

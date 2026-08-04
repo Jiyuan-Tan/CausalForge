@@ -139,6 +139,7 @@ private lemma linear_predictor_sub_memLp (φ : FeatureMap γ K) (P : Measure (γ
   rw [memLp_map_measure_iff hmeas.aestronglyMeasurable measurable_fst.aemeasurable]
   simpa [Function.comp_def] using hcomp
 
+omit [MeasurableSpace Ω] [MeasurableSpace γ] [DecidableEq K] in
 /-- **Strong-convexity basic inequality (deterministic).** If `β̂` solves the empirical
 penalized FOC `∇ₙ(β̂) = 0` and `λ > 0`, the coefficient error is controlled by the
 empirical gradient at the target: `2λ‖β̂ − β⋆‖ ≤ ∑ₖ |∇ₙ(β⋆)ₖ|`. -/
@@ -301,6 +302,7 @@ theorem regLogistic_basic_inequality (φ : FeatureMap γ K) (Z : ℕ → Ω → 
           field_simp [hnorm_pos.ne']
     simpa [δ] using hfinal
 
+omit [DecidableEq K] in
 /-- Each coordinate of the empirical penalized gradient at the population target
 is `O_p(n^{-1/2})`; the population score equations make the i.i.d. summands
 centered. -/
@@ -364,6 +366,7 @@ theorem regLogisticGrad_coord_isBigOp (φ : FeatureMap γ K) (P : Measure (γ ×
   rw [hcoord]
   exact hk2
 
+omit [DecidableEq K] in
 /-- The regularized-logistic coefficient error is `O_p(n^{-1/2})`: the
 strong-convexity basic inequality converts the centered-gradient bound into a
 coefficient-error bound. -/
@@ -418,6 +421,7 @@ theorem regLogisticCoef_isBigOp (φ : FeatureMap γ K) (P : Measure (γ × ℝ))
     _ = (1 / (2 * lam)) * ∑ k, |regLogisticGrad φ S.Z lam n ω βstar k| := by
           ring
 
+omit [DecidableEq K] in
 /-- **Regularized-logistic root-n estimation rate.** Under the penalized population FOC,
 `λ > 0`, the L⁴ feature moment, and a square-integrable score, the fitted logistic
 probability `σ(⟨β̂ₙ, φ⟩)` attains the root-n L²-rate toward the population target

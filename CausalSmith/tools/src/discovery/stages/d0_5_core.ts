@@ -10,12 +10,12 @@ import { existsSync } from "node:fs";
 import { mkdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { MODEL_PLAN } from "../../constants.js";
+import { truncateTexSafe } from "../../shared/tex_text.js";
 import { runReferee } from "../framework/referee.js";
 import { reviewsDir } from "../../paths.js";
-import { baseBrief, readPrompt, type StageDeps } from "../../pipeline_support.js";
+import { discoveryBrief, readPrompt, type StageDeps } from "../../pipeline_support.js";
 import type { PipelineContext, StateJson } from "../../types.js";
 import { coreJsonPath } from "./d0_core.js";
-import { TARGET_FLOOR_LABEL } from "./d0_5_general.js";
 import { type Core } from "../core/schema.js";
 import { loadPaperView, logPaperView } from "../core/paper_view.js";
 import {
@@ -35,9 +35,10 @@ import {
 // The core panel is the NODE-ADDRESSABLE math/decision review (concise
 // {referee,verdict,findings} via stage0_5_core_adapter.txt). The holistic
 // "general" judgment — proved-vs-claimed + the publishability TIER — is a
-// SEPARATE cold referee (stage0_5_general.ts::runGeneralReview, run after this
-// panel passes in runStage0_5Typed), so it is intentionally NOT a panel role:
-// that avoids reusing the cold-referee prompt here and then stripping its tier.
+// SEPARATE cold referee (stage0_5_general.ts::runGeneralReview, dispatched
+// alongside this panel on round 0 and again on the round it passes — see
+// runStage0_5Typed), so it is intentionally NOT a panel role: that avoids
+// reusing the cold-referee prompt here and then stripping its tier.
 const REFEREES: { role: "math" | "general" | "decision"; prompt: string }[] = [
   { role: "math", prompt: "stage0_5_math_review.txt" },
   { role: "decision", prompt: "stage0_5_review.txt" },
@@ -50,6 +51,45 @@ function reviewVerdictPath(ctx: PipelineContext, role: string): string {
   // resolution is needed (the dir is mkdir'd by the caller before writing).
   const fileRole = role === "decision" ? "rubric" : role;
   return path.join(reviewsDir(ctx.repoRoot, ctx.qid, ctx.specialization), `review_${fileRole}.json`);
+}
+
+/** Remove tier instructions owned by the separate cold referee. Preserve the
+ * proposal-promise-gap taxonomy: downstream banking consumes that diagnosis. */
+export function compactD05DecisionPrompt(prompt: string): string {
+  return prompt
+    .replace(
+      /^You are D0\.5\.2[^\n]*\n/,
+      "You are D0.5.2 of CausalSmith: an adversarial journal-style referee for the typed CORE. Review node-by-node; you own NOVELTY/positioning and deliverable/usability. Structure is owned by the structural gate, correctness by the math referee, and tier by the separate cold referee. Report only; do not edit files.\n",
+    )
+    .replace(
+      /- `revise`:.*\n/,
+      "- `revise`: the note has a real theorem-level contribution but has fixable novelty, positioning, exposition, deliverable, example, or assumption gaps.\n",
+    )
+    .replace(
+      /- `fail`:.*\n/,
+      "- `fail`: novelty/positioning or the promised deliverable has a severe, non-fixable failure (for example a tautological/non-novel claim or anchor-cluster drift). Proof correctness belongs to the math referee.\n",
+    )
+    .replace(/\n=== TIER-AWARENESS REASONING \(NO OUTPUT FIELD\) ===[\s\S]*?(?=\n=== OUTPUT ===)/, "\n");
+}
+
+/** Retarget the shared core adapter to the decision referee without carrying
+ * the math referee's reproduce-proof or tier instructions back in later. */
+export function compactD05DecisionAdapter(adapter: string): string {
+  const marker = "=== VERDICT OUTPUT ===";
+  const start = adapter.indexOf(marker);
+  if (start < 0) throw new Error("D0.5 decision adapter is missing VERDICT OUTPUT marker");
+  const outputContract = adapter.slice(start).replace(
+    /Use `revise` for fixable defects[\s\S]*?standard\.\n/,
+    "Use `revise` for fixable novelty, positioning, or deliverable defects; `fail` only when that owned claim/deliverable is non-viable; `pass` when your owned dimensions pass.\n",
+  );
+  return [
+    "=== D0.5 DECISION CORE ADAPTER — node-addressable novelty/deliverable review ===",
+    "Review the exact typed core and route every finding to a real core node id.",
+    "Do not reproduce proofs or assess tier: the parallel math and cold referees own those dimensions.",
+    "Emit cited_checks:[]; source matching belongs exclusively to the math referee.",
+    "",
+    outputContract,
+  ].join("\n");
 }
 
 interface D0CitedTarget {
@@ -111,7 +151,12 @@ function citedReviewBlock(role: "math" | "general" | "decision", cited: D0CitedT
       `Source: ${c.citationLabel} @ ${c.source.locator}`,
       c.target.mode === "unverifiable"
         ? `SOURCE UNAVAILABLE: ${c.target.detail}. You MUST emit cited-source-unverifiable; do not verify from memory.`
-        : `SOURCE OF RECORD (${c.target.mode}, ${c.target.detail}):\n${c.target.text.slice(0, 6000)}`,
+        : ((cut: string) =>
+            `SOURCE OF RECORD (${c.target.mode}, ${c.target.detail}):\n${cut}${
+              cut.length < c.target.text.length
+                ? `\n[…TRUNCATED — ${c.target.text.length - cut.length} more chars of source not shown. If the cited hypotheses are not visible above, emit cited-source-unverifiable rather than cited-mismatch.]`
+                : ""
+            }`)(truncateTexSafe(c.target.text, 6000)),
     ]),
   ].join("\n");
 }
@@ -121,9 +166,12 @@ async function reviewWithReferee(args: {
   state: StateJson;
   deps: StageDeps;
   core: Core;
-  paperTex: string;
   citedTargets: D0CitedTarget[];
   referee: { role: "math" | "general" | "decision"; prompt: string };
+  /** Set on the one bounded per-referee retry after a verdict-contract
+   * violation; appended to the prompt so the referee fixes only the contract
+   * defect instead of the whole panel being re-paid. */
+  mechanicalNote?: string;
 }): Promise<ReviewVerdict> {
   const { ctx, referee } = args;
   const outPath = reviewVerdictPath(ctx, referee.role);
@@ -131,33 +179,22 @@ async function reviewWithReferee(args: {
   // why: referee verdict paths are stable, so remove stale files before this round writes.
   await rm(outPath, { force: true });
 
-  // The decision referee owns the novelty/positioning + tier-aware judgment, so it
-  // must KNOW the run's novelty target (and the floor tier it must clear) to calibrate its
-  // pass/revise/fail — flag below-floor as a novelty `revise`. (The math referee
-  // judges correctness only and ignores tiering, so it is not told the floor; the
-  // authoritative tier call is the separate cold referee in runStage0_5Typed.)
-  const target = ctx.noveltyTarget ?? "field";
-  const noveltyLine =
-    referee.role === "decision"
-      ? `novelty_target: ${target}  (floor tier this note must clear: ${TARGET_FLOOR_LABEL[target]}). Flag a note below this floor as a novelty \`revise\`/\`fail\`; tiering otherwise informs your verdict text.`
-      : "";
-
+  const rawRefereePrompt = await readPrompt(ctx, referee.prompt);
+  const rawAdapter = await readPrompt(ctx, "stage0_5_core_adapter.txt");
   const prompt = [
-    await readPrompt(ctx, referee.prompt),
+    referee.role === "decision" ? compactD05DecisionPrompt(rawRefereePrompt) : rawRefereePrompt,
     "",
-    await readPrompt(ctx, "stage0_5_core_adapter.txt"),
+    referee.role === "decision" ? compactD05DecisionAdapter(rawAdapter) : rawAdapter,
     "",
-    baseBrief(ctx, args.state),
-    ...(noveltyLine ? ["", noveltyLine] : []),
+    discoveryBrief(ctx, args.state),
     "",
     citedReviewBlock(referee.role, args.citedTargets),
     "",
-    "=== FULL CURRENT PAPER UNDER REVIEW ===",
-    "This TeX is rendered in memory from the exact typed core below for this referee call; it cannot be a stale disk render.",
-    args.paperTex,
-    "",
     "=== CORE UNDER REVIEW ===",
     JSON.stringify(args.core, null, 2),
+    ...(args.mechanicalNote === undefined
+      ? []
+      : ["", "=== MECHANICAL RETRY — CONTRACT VIOLATION IN YOUR PREVIOUS VERDICT ===", args.mechanicalNote]),
     "",
     `VERDICT_OUTPUT_PATH: ${outPath}`,
     'Return only JSON on stdout: {"status":"completed","message":"...","artifacts":["<verdict.json>"]}.',
@@ -171,7 +208,7 @@ async function reviewWithReferee(args: {
     stage: "0.5",
     label: `D0.5 panel referee ${referee.role}`,
     prompt,
-    promptSources: [`referee:${referee.role}`, "core+paper (inline)"],
+    promptSources: [`referee:${referee.role}`, "core (inline)"],
     model: MODEL_PLAN.mechanicalTier.model,
     reasoningEffort: MODEL_PLAN.mechanicalTier.effort,
     inactivityTimeoutMs: 25 * 60 * 1000,
@@ -224,8 +261,40 @@ export async function runStage0_5Core(args: {
   const view = await loadPaperView(args.ctx, { corePath });
   logPaperView(view, "D0.5");
   const core = view.core;
-  const paperTex = view.tex;
   const citedTargets = await resolveD0CitedTargets(core, args.citedResolver ?? resolveCitedTarget);
+
+  // Verdict-contract checks are per-referee mechanical output rules (real node
+  // ids in findings; the cited_checks table shape and ownership). One referee's
+  // violation gets one bounded retry of THAT referee with the exact violation,
+  // instead of discarding all three paid panel reads.
+  const refereeContractViolation = (verdict: ReviewVerdict): string | null => {
+    const bad = unresolvedFindingNodes(core, [verdict]);
+    if (bad.length > 0) {
+      return `findings cite nonexistent core node(s): ${[...new Set(bad)].join(", ")}`;
+    }
+    if (verdict.referee !== "math") {
+      return verdict.cited_checks.length > 0 ? "only the math referee may emit cited_checks" : null;
+    }
+    const expected = new Map(citedTargets.map((c) => [c.nodeId, c] as const));
+    const seen = new Set<string>();
+    for (const check of verdict.cited_checks) {
+      const target = expected.get(check.node_id);
+      if (!target) return `cited check names non-cited node ${check.node_id}`;
+      if (seen.has(check.node_id)) return `duplicate cited check for ${check.node_id}`;
+      seen.add(check.node_id);
+      const allowed = target.target.mode === "fetched"
+        ? new Set(["cited-verified", "cited-mismatch", "cited-underspecified", "cited-source-unverifiable"])
+        : target.target.mode === "attested"
+          ? new Set(["cited-verified-attested", "cited-mismatch", "cited-underspecified", "cited-source-unverifiable"])
+          : new Set(["cited-source-unverifiable"]);
+      if (!allowed.has(check.check_status)) {
+        return `cited check ${check.node_id}=${check.check_status} is invalid for resolver mode ${target.target.mode}`;
+      }
+    }
+    const missing = [...expected.keys()].filter((id) => !seen.has(id));
+    if (missing.length > 0) return `omitted cited check(s): ${missing.join(", ")}`;
+    return null;
+  };
 
   const verdicts = await Promise.all(
     REFEREES.map((referee) =>
@@ -234,47 +303,34 @@ export async function runStage0_5Core(args: {
         state: args.state,
         deps: args.deps,
         core,
-        paperTex,
         citedTargets,
         referee,
       }),
     ),
   );
-
-  const bad = unresolvedFindingNodes(core, verdicts);
-  if (bad.length > 0) {
-    throw new Error(
-      `Stage 0.5 referee cited nonexistent core node(s): ${[...new Set(bad)].join(", ")}`,
-    );
+  for (const [i, referee] of REFEREES.entries()) {
+    const violation = refereeContractViolation(verdicts[i]);
+    if (violation === null) continue;
+    console.warn(`[D0.5] referee ${referee.role} violated the verdict contract (${violation}); retrying this referee once`);
+    verdicts[i] = await reviewWithReferee({
+      ctx: args.ctx,
+      state: args.state,
+      deps: args.deps,
+      core,
+      citedTargets,
+      referee,
+      mechanicalNote:
+        `Your previous verdict violated the mechanical output contract: ${violation}. ` +
+        "Re-emit a complete corrected verdict fixing ONLY the contract defect (exact core node ids; " +
+        "the required cited_checks rows for your role). Do not weaken, drop, or invent findings.",
+    });
+    const second = refereeContractViolation(verdicts[i]);
+    if (second !== null) {
+      throw new Error(`Stage 0.5 referee ${referee.role} violated the verdict contract after a mechanical retry: ${second}`);
+    }
   }
 
   const math = verdicts.find((v) => v.referee === "math")!;
-  const nonMathRows = verdicts.filter((v) => v.referee !== "math").flatMap((v) => v.cited_checks);
-  if (nonMathRows.length > 0) {
-    throw new Error("Stage 0.5: only the math referee may emit cited_checks");
-  }
-  const expected = new Map(citedTargets.map((c) => [c.nodeId, c] as const));
-  const seen = new Set<string>();
-  for (const check of math.cited_checks) {
-    const target = expected.get(check.node_id);
-    if (!target) throw new Error(`Stage 0.5 math referee emitted cited check for non-cited node ${check.node_id}`);
-    if (seen.has(check.node_id)) throw new Error(`Stage 0.5 math referee emitted duplicate cited check for ${check.node_id}`);
-    seen.add(check.node_id);
-    const allowed = target.target.mode === "fetched"
-      ? new Set(["cited-verified", "cited-mismatch", "cited-underspecified", "cited-source-unverifiable"])
-      : target.target.mode === "attested"
-        ? new Set(["cited-verified-attested", "cited-mismatch", "cited-underspecified", "cited-source-unverifiable"])
-        : new Set(["cited-source-unverifiable"]);
-    if (!allowed.has(check.check_status)) {
-      throw new Error(
-        `Stage 0.5 cited check ${check.node_id}=${check.check_status} is invalid for resolver mode ${target.target.mode}`,
-      );
-    }
-  }
-  const missing = [...expected.keys()].filter((id) => !seen.has(id));
-  if (missing.length > 0) {
-    throw new Error(`Stage 0.5 math referee omitted cited check(s): ${missing.join(", ")}`);
-  }
   const citedBad = math.cited_checks.filter(
     (c) => c.check_status === "cited-mismatch" || c.check_status === "cited-underspecified",
   );

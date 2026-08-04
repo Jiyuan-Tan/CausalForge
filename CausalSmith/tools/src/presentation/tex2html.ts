@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { extractBalancedEnv } from "../shared/tex_text.js";
 import { parseAnchoredEnvs } from "./tex_anchors.js";
 import { paperLabels } from "./emit.js";
 import { citedKeys, type BibEntry } from "./citations.js";
@@ -200,18 +201,31 @@ export async function tex2html(
           `<div class="formal-block kind-${kind}" id="obj-${esc(objId)}"${drawerAttrs}>${head}${h}${drawerEnabled ? `<span class="lean-hint">⊢ Lean</span>` : ""}</div>`,
       );
     });
-  // proofs
-  tex = tex.replace(/\\begin\{proof\}(?:\[([^\]]*)\])?([\s\S]*?)\\end\{proof\}/g, (_, title: string | undefined, inner: string) =>
-    stash(inner, (h) => `<div class="proof"><span class="env-label">${esc(title ?? "Proof")}.</span>${h}<span class="qed">∎</span></div>`),
-  );
+  // proofs. Depth-aware (a lazy regex truncated proofs nesting
+  // `\begin{proof}[Proof of Claim 1]`), and the optional title is read with
+  // bracket depth (`[^\]]*` stopped at the inner `]` of a title like
+  // `[Proof of the bound for $x\in[0,1]$]`, leaking a stray `$]`).
+  for (;;) {
+    const block = extractBalancedEnv(tex, "proof");
+    if (block === null) break;
+    const at = tex.indexOf(block);
+    const bodyRaw = block.slice("\\begin{proof}".length, block.length - "\\end{proof}".length);
+    const ws = bodyRaw.length - bodyRaw.trimStart().length;
+    const { title, end } = readOptionalFormalTitle(bodyRaw, ws);
+    const inner = bodyRaw.slice(end);
+    const replacement = stash(inner, (h) => `<div class="proof"><span class="env-label">${esc(title ?? "Proof")}.</span>${h}<span class="qed">∎</span></div>`);
+    tex = tex.slice(0, at) + replacement + tex.slice(at + block.length);
+  }
 
   let html = await pandoc(tex);
   for (const p of placeholders) {
     const rendered = await p.html();
     html = html.replace(new RegExp(`<p>\\s*${p.token}\\s*</p>`), () => rendered);
   }
-  for (const r of refTokens) html = html.replaceAll(r.token, r.html);
-  for (const r of lr.tokens) html = html.replaceAll(r.token, r.html);
+  // Function replacements: token HTML embeds TeX-derived display text, and a
+  // residual `$&`/`$'` in a STRING replacement is expanded as a capture ref.
+  for (const r of refTokens) html = html.replaceAll(r.token, () => r.html);
+  for (const r of lr.tokens) html = html.replaceAll(r.token, () => r.html);
   html += references(bib.filter((e) => cited.has(e.key))); // why: P4 verifies cited keys only, so uncited stale entries must not publish.
   return html;
 }
@@ -405,24 +419,32 @@ function stripSymbolLeanrefs(s: string): string {
       continue;
     }
     const disp = dispGroup.content;
+    // `[^$]` in the dollar branch: greedy `[\s\S]+` spanned two math spans.
     const m =
-      disp.match(/^\\ensuremath\{([\s\S]*)\}$/) ?? disp.match(/^\$([\s\S]+)\$$/) ?? disp.match(/^\\\(([\s\S]*?)\\\)$/);
+      disp.match(/^\\ensuremath\{([\s\S]*)\}$/) ?? disp.match(/^\$([^$]+)\$$/) ?? disp.match(/^\\\(([\s\S]*?)\\\)$/);
     out += m ? m[1] : disp;
     i = dispGroup.end;
   }
   return out;
 }
 
-/** Unwrap symbol `\leanref`s nested inside a `\(…\)`/`\[…\]` math display (web-only — see tex2html). */
+/** Unwrap symbol `\leanref`s nested inside a `\(…\)`/`\[…\]` math display (web-only — see tex2html).
+ * `(?<!\\)` on the display opener: `\\[1.1em]` is a row break with vertical
+ * spacing, not a display opener — without the guard the "display" ran to the
+ * next real `\]`, stripping links from prose and skipping the genuine display
+ * (same guard as tex_anchors' display scan). */
 function unwrapNestedSymbolLeanrefs(tex: string): string {
   return tex
-    .replace(/\\\(([\s\S]*?)\\\)/g, (_, inner: string) => `\\(${stripSymbolLeanrefs(inner)}\\)`)
-    .replace(/\\\[([\s\S]*?)\\\]/g, (_, inner: string) => `\\[${stripSymbolLeanrefs(inner)}\\]`);
+    .replace(/(?<!\\)\\\(([\s\S]*?)(?<!\\)\\\)/g, (_, inner: string) => `\\(${stripSymbolLeanrefs(inner)}\\)`)
+    .replace(/(?<!\\)\\\[([\s\S]*?)(?<!\\)\\\]/g, (_, inner: string) => `\\[${stripSymbolLeanrefs(inner)}\\]`);
 }
 
 function pandoc(tex: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    const child = spawn("pandoc", ["--from", "latex", "--to", "html", "--mathjax"], {
+    // --wrap=none: pandoc's default 72-column output wrapping inserts newlines
+    // mid-phrase ("Robins\net al."), breaking downstream substring anchors over
+    // the emitted HTML and making output depend on prose length.
+    const child = spawn("pandoc", ["--from", "latex", "--to", "html", "--mathjax", "--wrap=none"], {
       stdio: ["pipe", "pipe", "pipe"],
     });
     let out = "";
@@ -468,8 +490,10 @@ function renderCites(tex: string, bib: BibEntry[]): string {
     const etal = (e.fields.author ?? "").includes(" and ") ? " et al." : "";
     return { fam: fam + etal, year: e.fields.year ?? "" };
   };
+  // `\citealt`/`\Citet` render textual like `\citet`; `\citealp` parenthetical
+  // like `\citep` — a variant neither regex matched used to reach the page raw.
   return tex
-    .replace(/\\citet\*?(?:\[[^\]]*\])*\{([^}]+)\}/g, (_, keys: string) =>
+    .replace(/\\[Cc]ite(?:t|alt)\*?(?:\[[^\]]*\])*\{([^}]+)\}/g, (_, keys: string) =>
       keys
         .split(",")
         .map((k) => {
@@ -478,7 +502,7 @@ function renderCites(tex: string, bib: BibEntry[]): string {
         })
         .join("; "),
     )
-    .replace(/\\citep\*?(?:\[[^\]]*\])*\{([^}]+)\}/g, (_, keys: string) => {
+    .replace(/\\[Cc]ite(?:p|alp)?\*?(?:\[[^\]]*\])*\{([^}]+)\}/g, (_, keys: string) => {
       const inner = keys
         .split(",")
         .map((k) => {

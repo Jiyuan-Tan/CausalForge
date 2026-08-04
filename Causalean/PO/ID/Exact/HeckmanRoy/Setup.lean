@@ -146,7 +146,7 @@ lemma measurable_factualU : Measurable S.factualU := S.uVar.measurable_factual
 
 /-- The factual instrument event is measurable. -/
 lemma measurableSet_zEvent (z : α) : MeasurableSet (S.zEvent z) :=
-  S.zVar.measurableSet_event _
+  S.zVar.measurableSet_event _ (measurableSet_singleton _)
 
 /-- The latent interval complier event is measurable. -/
 lemma measurableSet_intervalComplierEvent (z₀ z₁ : α) :

@@ -7,8 +7,8 @@ Authors: Jiyuan Tan
 
 This file promotes the randomization design from a fixed object to a *parameter* that the
 experimenter chooses.  A **design family** is a set of candidate designs on a common
-assignment space; a **risk** `R` assigns each design a real number (its mean squared error
-for a chosen estimator and target — see `mseRisk` — or any other criterion).  One design
+assignment space; a **risk** `R` assigns each design an ordered value (such as its mean squared
+error for a chosen estimator and target — see `mseRisk` — or any other criterion). One design
 **dominates** another when it carries no larger risk, and a design is **optimal** in a
 family when it dominates every member.  The main result is that over a nonempty *finite*
 family an optimal design exists.  Keeping the optimality layer generic in `R` isolates the
@@ -20,8 +20,8 @@ import Causalean.Experimentation.DesignBased.Risk
 /-!
 # Design-family optimality criteria
 
-This file treats a randomization design as the object being chosen from a finite family under a
-real-valued risk criterion.
+This file treats a randomization design as the object being chosen from a finite family under an
+ordered risk criterion.
 
 The declarations `DesignFamily`, `Dominates`, and `IsOptimalOn` formalize candidate sets,
 weak domination, and least-risk designs. The theorem `exists_isOptimalOn` shows that every
@@ -44,30 +44,34 @@ abbrev DesignFamily (Ω : Type*) [Fintype Ω] : Type _ := Set (FiniteDesign Ω)
 
 /-- `D₁` weakly **dominates** `D₂` under the risk criterion `R` when it carries no larger
 risk: `R D₁ ≤ R D₂`. -/
-def Dominates (R : FiniteDesign Ω → ℝ) (D₁ D₂ : FiniteDesign Ω) : Prop := R D₁ ≤ R D₂
+def Dominates {α : Type*} [Preorder α] (R : FiniteDesign Ω → α) (D₁ D₂ : FiniteDesign Ω) : Prop :=
+  R D₁ ≤ R D₂
 
 /-- Domination is reflexive: every design dominates itself. -/
-lemma Dominates.refl (R : FiniteDesign Ω → ℝ) (D : FiniteDesign Ω) : Dominates R D D :=
+lemma Dominates.refl {α : Type*} [Preorder α] (R : FiniteDesign Ω → α) (D : FiniteDesign Ω) :
+    Dominates R D D :=
   le_refl _
 
 /-- Domination is transitive. -/
-lemma Dominates.trans {R : FiniteDesign Ω → ℝ} {D₁ D₂ D₃ : FiniteDesign Ω}
+lemma Dominates.trans {α : Type*} [Preorder α] {R : FiniteDesign Ω → α} {D₁ D₂ D₃ : FiniteDesign Ω}
     (h₁ : Dominates R D₁ D₂) (h₂ : Dominates R D₂ D₃) : Dominates R D₁ D₃ :=
   le_trans h₁ h₂
 
 /-- A design `D₀` is **optimal** in the family `𝒟` under risk `R` when it belongs to `𝒟`
 and carries the least risk among all members. -/
-def IsOptimalOn (𝒟 : DesignFamily Ω) (R : FiniteDesign Ω → ℝ) (D₀ : FiniteDesign Ω) : Prop :=
+def IsOptimalOn {α : Type*} [Preorder α] (𝒟 : DesignFamily Ω) (R : FiniteDesign Ω → α)
+    (D₀ : FiniteDesign Ω) : Prop :=
   D₀ ∈ 𝒟 ∧ ∀ D ∈ 𝒟, R D₀ ≤ R D
 
 /-- An optimal design dominates every member of its family. -/
-lemma IsOptimalOn.dominates {𝒟 : DesignFamily Ω} {R : FiniteDesign Ω → ℝ} {D₀ : FiniteDesign Ω}
+lemma IsOptimalOn.dominates {α : Type*} [Preorder α] {𝒟 : DesignFamily Ω}
+    {R : FiniteDesign Ω → α} {D₀ : FiniteDesign Ω}
     (h : IsOptimalOn 𝒟 R D₀) {D : FiniteDesign Ω} (hD : D ∈ 𝒟) : Dominates R D₀ D :=
   h.2 D hD
 
 /-- **Existence of an optimal design.** Over a nonempty finite design family, some design
 minimizes the risk. -/
-theorem exists_isOptimalOn (𝒟 : DesignFamily Ω) (R : FiniteDesign Ω → ℝ)
+theorem exists_isOptimalOn {α : Type*} [LinearOrder α] (𝒟 : DesignFamily Ω) (R : FiniteDesign Ω → α)
     (hfin : 𝒟.Finite) (hne : 𝒟.Nonempty) : ∃ D₀, IsOptimalOn 𝒟 R D₀ := by
   let s := hfin.toFinset
   have hs : s.Nonempty := by

@@ -125,45 +125,6 @@ variable [∀ n, StandardBorelSpace (swigΩ Ω n)] [∀ n, Nonempty (swigΩ Ω n
 
 open scoped MeasureTheory ProbabilityTheory
 
-private lemma disjoint_base_of_disjoint_random_image
-    {X W : Finset N}
-    (hDisj : Disjoint (W.image SWIGNode.random) (X.image SWIGNode.random)) :
-    Disjoint W X := by
-  rw [Finset.disjoint_left] at hDisj ⊢
-  intro d hdW hdX
-  exact hDisj (Finset.mem_image.mpr ⟨d, hdW, rfl⟩)
-    (Finset.mem_image.mpr ⟨d, hdX, rfl⟩)
-
-private lemma fixSet_fixed_not_mem_of_disjoint
-    (M : Causalean.SCM N Ω) (X W : Finset N)
-    (hW_obs : ∀ D ∈ W, SWIGNode.random D ∈ M.observed)
-    (hW_fixed : ∀ D ∈ W, SWIGNode.fixed D ∉ M.fixed)
-    (hX_fixed : ∀ D ∈ X, SWIGNode.fixed D ∉ M.fixed)
-    (hDisj : Disjoint W X) :
-    ∀ D ∈ X, SWIGNode.fixed D ∉ (M.fixSet W hW_obs hW_fixed).fixed := by
-  intro D hD hmem
-  rw [SCM.fixSet_fixed] at hmem
-  rcases Finset.mem_union.mp hmem with hM | hWF
-  · exact hX_fixed D hD hM
-  · rcases Finset.mem_image.mp hWF with ⟨D0, hD0W, hEq⟩
-    cases hEq
-    exact (Finset.disjoint_left.mp hDisj) hD0W hD
-
-private lemma fixSet_fixed_not_mem
-    (M : Causalean.SCM N Ω) (X W : Finset N)
-    (hX_obs : ∀ D ∈ X, SWIGNode.random D ∈ M.observed)
-    (hX_fixed : ∀ D ∈ X, SWIGNode.fixed D ∉ M.fixed)
-    (hW_fixed : ∀ D ∈ W, SWIGNode.fixed D ∉ M.fixed)
-    (hDisj : Disjoint X W) :
-    ∀ D ∈ W, SWIGNode.fixed D ∉ (M.fixSet X hX_obs hX_fixed).fixed := by
-  intro D hD hmem
-  rw [SCM.fixSet_fixed] at hmem
-  rcases Finset.mem_union.mp hmem with hM | hXF
-  · exact hW_fixed D hD hM
-  · rcases Finset.mem_image.mp hXF with ⟨D0, hD0X, hEq⟩
-    cases hEq
-    exact (Finset.disjoint_left.mp hDisj) hD0X hD
-
 -- ============================================================
 -- § 1. The frontdoor-adjustment kernel in the treatment value
 -- ============================================================
@@ -219,7 +180,7 @@ private theorem frontdoor_legA_mediator
       Causalean.SCM.ID.Rule2JointOverlap M X hObs hFix
         (∅ : Finset (SWIGNode N)) (by simpa using hXr) s)
     (hPositivityA : M.BackdoorPositivityAE X (∅ : Finset (SWIGNode N))
-        (Finset.empty_subset M.observed) hXr (by simpa using hXr) s0) :
+        (Finset.empty_subset M.observed) (by simpa using hXr) s0) :
     (M.treatmentMarginal X hXr s0) ⊗ₘ
         (M.doKernelY X hObs hFix (Wbase.image SWIGNode.random) hWr s0)
       =
@@ -228,7 +189,7 @@ private theorem frontdoor_legA_mediator
           (∅ : Finset (SWIGNode N)) hWr (Finset.empty_subset M.observed) s0) := by
   exact M.backdoor_completeness_ae_compProd X hObs hFix
     (Wbase.image SWIGNode.random) (∅ : Finset (SWIGNode N))
-    hWr (Finset.empty_subset M.observed) hXr (by simpa using hXr) _hFD.2.1
+    hWr (Finset.empty_subset M.observed) _hFD.2.1
     hDisj_WrXr (Finset.disjoint_empty_right _) s0 hOverlapA hPositivityA
 
 /-- **Frontdoor Leg B (outcome).**
@@ -256,21 +217,19 @@ private theorem frontdoor_legB_outcome
       Causalean.SCM.ID.Rule2JointOverlap M Wbase hWobs hWfix
         (X.image SWIGNode.random) (Finset.union_subset hWr hXr) s)
     (hPositivityB : M.BackdoorPositivityAE Wbase (X.image SWIGNode.random)
-        hXr hWr (Finset.union_subset hWr hXr) s0) :
+        hXr (Finset.union_subset hWr hXr) s0) :
     (M.treatmentMarginal Wbase hWr s0) ⊗ₘ (M.doKernelY Wbase hWobs hWfix Y hY s0)
       =
     (M.treatmentMarginal Wbase hWr s0) ⊗ₘ
         (M.adjustmentKernelY Wbase hWobs hWfix Y (X.image SWIGNode.random)
           hY hXr s0) := by
   exact M.backdoor_completeness_ae_compProd Wbase hWobs hWfix Y (X.image SWIGNode.random)
-    hY hXr hWr (Finset.union_subset hWr hXr) _hFD.2.2.1 hDisj_YWr hDisj_WrXr
+    hY hXr _hFD.2.2.1 hDisj_YWr hDisj_WrXr
     s0 hOverlapB hPositivityB
 
-/-- **Intervention-order swap for the `Y`-marginal.**  Two structurally
-    equivalent gSCMs with `HEq`-corresponding base slices have the same
-    observational `Y`-marginal.  Used to commute the two do-intervention orders
-    `(do X)(do W)` and `(do W)(do X)` in the FD1 derivation. -/
-private lemma obsKernel_map_proj_eq_of_equiv
+/-- Structurally equivalent structural causal models assign the same observational marginal law
+to a shared set of observed variables when their fixed-variable assignments correspond. -/
+lemma obsKernel_map_proj_eq_of_equiv
     {M₁ M₂ : Causalean.SCM N Ω} (h : SCM.Equiv M₁ M₂)
     (Y : Finset (SWIGNode N))
     (hY₁ : Y ⊆ M₁.observed) (hY₂ : Y ⊆ M₂.observed)
@@ -278,7 +237,8 @@ private lemma obsKernel_map_proj_eq_of_equiv
     (M₁.obsKernel s₁).map (valuesProjection hY₁)
       = (M₂.obsKernel s₂).map (valuesProjection hY₂) := by
   -- Extract the `obsKernel` HEq while `h` still has its `Equiv` type.
-  have hok0 : HEq M₁.obsKernel M₂.obsKernel := SCM.Equiv.heq_obsKernel h
+  have hok0 : HEq M₁.obsKernel M₂.obsKernel :=
+    SCM.Equiv.heq_obsKernel h.1 h.2.2.1 h.2.2.2
   obtain ⟨⟨dag₁, fixed₁, observed₁, unobserved₁,
            fio₁, oi₁, od₁, oou₁, foi₁, fou₁, aic₁, dc₁⟩,
          eT₁, iota₁, sf₁, mf₁, lD₁, pL₁⟩ := M₁
@@ -316,7 +276,9 @@ private lemma valuesUnionMk_union_comm_heq
   -- Now a one-line corollary of the `ValuesReindex` algebra layer.
   valuesUnionMk_comm_heq hDisj a b
 
-private lemma adjustmentKernelY_empty_eq
+/-- With an empty adjustment set, the outcome adjustment kernel equals the observed conditional
+kernel of the outcome variables given the treated variables at the same fixed values. -/
+lemma adjustmentKernelY_empty_eq
     (M : Causalean.SCM N Ω) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ M.observed)
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ M.fixed)
@@ -415,7 +377,7 @@ private lemma adjustmentKernelY_empty_eq
     hWr (Finset.union_subset hXr (Finset.empty_subset M.observed)) hXr
   exact valuesOn_heq_of_coord (Finset.union_empty _) _ _
     (fun v hvU hvX => valuesUnionMk_apply_left t
-      (default : ValuesOn (∅ : Finset (SWIGNode N)) (swigΩ Ω)) hvU hvX)
+      (default : ValuesOn (∅ : Finset (SWIGNode N)) (swigΩ Ω)) hvX)
 
 private lemma frontdoor_doubledo_dropX_marginal
     (M : Causalean.SCM N Ω) (X : Finset N)
@@ -470,10 +432,10 @@ private lemma frontdoor_doubledo_dropX_marginal
     · exact hWfix D hD
     · exact hFix D hD
   have e1 : SCM.Equiv M₁ (M.fixSet (X ∪ Wbase) hU1o hU1f) := by
-    exact SCM.ID.intervention_target_simp M X Wbase ∅ hObs hFix hWobsX hWfixX
+    exact SCM.ID.intervention_target_simp M X Wbase hObs hFix hWobsX hWfixX
       hU1o hU1f hDisjBaseXW
   have e2 : SCM.Equiv M₂ (M.fixSet (Wbase ∪ X) hU2o hU2f) := by
-    exact SCM.ID.intervention_target_simp M Wbase X ∅ hWobs hWfix hXobsW hXfixW
+    exact SCM.ID.intervention_target_simp M Wbase X hWobs hWfix hXobsW hXfixW
       hU2o hU2f hDisjBaseXW.symm
   have eb : SCM.Equiv
       (M.fixSet (X ∪ Wbase) hU1o hU1f) (M.fixSet (Wbase ∪ X) hU2o hU2f) := by
@@ -563,7 +525,6 @@ private theorem frontdoor_fd1_interception_compProd
     (hY : Y ⊆ M.observed)
     (hWr : Wbase.image SWIGNode.random ⊆ M.observed)
     (hXr : X.image SWIGNode.random ⊆ M.observed)
-    (hXrW : X.image SWIGNode.random ∪ Wbase.image SWIGNode.random ⊆ M.observed)
     (_hFD : M.toSWIGGraph.frontdoorCriterion X hObs hFix Wbase hWobs hWfix Y)
     (hDisj_YWr : Disjoint Y (Wbase.image SWIGNode.random))
     (hDisj_WrXr : Disjoint (Wbase.image SWIGNode.random) (X.image SWIGNode.random))
@@ -572,20 +533,20 @@ private theorem frontdoor_fd1_interception_compProd
       Causalean.SCM.ID.Rule2JointOverlap M X hObs hFix
         (∅ : Finset (SWIGNode N)) (by simpa using hXr) s)
     (hPositivityA : M.BackdoorPositivityAE X (∅ : Finset (SWIGNode N))
-        (Finset.empty_subset M.observed) hXr (by simpa using hXr) s0)
+        (Finset.empty_subset M.observed) (by simpa using hXr) s0)
     (hOverlapB : ∀ s : (M.fixSet Wbase hWobs hWfix).FixedValues,
       Causalean.SCM.ID.Rule2JointOverlap M Wbase hWobs hWfix
         (X.image SWIGNode.random) (Finset.union_subset hWr hXr) s)
     (hPositivityB : M.BackdoorPositivityAE Wbase (X.image SWIGNode.random)
-        hXr hWr (Finset.union_subset hWr hXr) s0)
+        hXr (Finset.union_subset hWr hXr) s0)
     (hOverlapFD1 : ∀ s : ((M.fixSet X hObs hFix).fixSet Wbase
         (by intro D hD; simpa [SCM.fixSet_observed] using hWobs D hD)
-        (fixSet_fixed_not_mem M X Wbase hObs hFix hWfix
-          ((disjoint_base_of_disjoint_random_image hDisj_WrXr).symm))).FixedValues,
+        (Causalean.SCM.fixSet_fixed_not_mem_of_disjoint M Wbase X hObs hFix hWfix
+          ((disjoint_base_of_disjoint_random_image X Wbase hDisj_WrXr).symm))).FixedValues,
       Causalean.SCM.ID.Rule2JointOverlap (M.fixSet X hObs hFix) Wbase
         (by intro D hD; simpa [SCM.fixSet_observed] using hWobs D hD)
-        (fixSet_fixed_not_mem M X Wbase hObs hFix hWfix
-          ((disjoint_base_of_disjoint_random_image hDisj_WrXr).symm))
+        (Causalean.SCM.fixSet_fixed_not_mem_of_disjoint M Wbase X hObs hFix hWfix
+          ((disjoint_base_of_disjoint_random_image X Wbase hDisj_WrXr).symm))
         (∅ : Finset (SWIGNode N))
         (by
           simpa [Finset.union_empty, SCM.fixSet_observed] using hWr)
@@ -605,6 +566,8 @@ private theorem frontdoor_fd1_interception_compProd
     (M.treatmentMarginal X hXr s0) ⊗ₘ (M.doKernelY X hObs hFix Y hY s0)
       = (M.treatmentMarginal X hXr s0) ⊗ₘ
           (M.frontdoorKernelY X hObs hFix Y (Wbase.image SWIGNode.random) hY hWr s0) := by
+  have hXrW : X.image SWIGNode.random ∪ Wbase.image SWIGNode.random ⊆ M.observed :=
+    Finset.union_subset hXr hWr
   have hLegA := frontdoor_legA_mediator M X hObs hFix Wbase hWobs hWfix Y hWr hXr
     _hFD hDisj_WrXr s0 hOverlapA hPositivityA
   have hLegB := frontdoor_legB_outcome M X hObs hFix Wbase hWobs hWfix Y hY hWr hXr
@@ -649,9 +612,9 @@ private theorem frontdoor_fd1_interception_compProd
     intro D hD
     simpa [SCM.fixSet_observed] using hWobs D hD
   have hDisjBaseXW : Disjoint X Wbase :=
-    (disjoint_base_of_disjoint_random_image hDisj_WrXr).symm
+    (disjoint_base_of_disjoint_random_image X Wbase hDisj_WrXr).symm
   have hWfixX : ∀ D ∈ Wbase, SWIGNode.fixed D ∉ (M.fixSet X hObs hFix).fixed :=
-    fixSet_fixed_not_mem M X Wbase hObs hFix hWfix hDisjBaseXW
+    Causalean.SCM.fixSet_fixed_not_mem_of_disjoint M Wbase X hObs hFix hWfix hDisjBaseXW
   have hWrX : Wbase.image SWIGNode.random ⊆ (M.fixSet X hObs hFix).observed := by
     simpa [SCM.fixSet_observed] using hWr
   have hWrEmptyX :
@@ -682,14 +645,11 @@ private theorem frontdoor_fd1_interception_compProd
             (M.fixSetExtend X hObs hFix s0 t, valuesUnionMk p.1 p.2) := by
     exact SCM.do_rule2_kernel (M.fixSet X hObs hFix) Wbase hWobsX hWfixX
       Y (∅ : Finset (SWIGNode N)) hYpost (Finset.empty_subset _)
-      hWrX hWrEmptyX hDisj_YWr (Finset.disjoint_empty_right _)
+      hWrX hWrEmptyX
       (by simpa [hWobsX, hWfixX] using hG1)
       (by intro z hz v hv; simpa using hv)
       (by intro z hz v hv; simpa using hv)
       (M.fixSetExtend X hObs hFix s0 t)
-      (by
-        intro s
-        simpa [hWobsX, hWfixX, hWrEmptyX] using hOverlapFD1 s)
       (by
         simpa [hWrX, hWrEmptyX] using
           hPositivityFD1 (M.fixSetExtend X hObs hFix s0 t))
@@ -888,7 +848,8 @@ private theorem frontdoor_fd1_interception_compProd
         simpa [SCM.fixSet_observed] using hObs D hD
       have hXfixW : ∀ D ∈ X, SWIGNode.fixed D ∉
           (M.fixSet Wbase hWobs hWfix).fixed :=
-        fixSet_fixed_not_mem M Wbase X hWobs hWfix hFix hDisjBaseXW.symm
+        Causalean.SCM.fixSet_fixed_not_mem_of_disjoint M X Wbase hWobs hWfix hFix
+          hDisjBaseXW.symm
       have hG2' : ∀ d ∈ X, ∀ v ∈ Y,
           ¬ ((M.fixSet Wbase hWobs hWfix).fixSet X hXobsW hXfixW).dag.isAncestor
             (SWIGNode.fixed d) v := by
@@ -935,7 +896,7 @@ private theorem frontdoor_fd1_interception_compProd
             (by simp) hYpost hWrX hWrEmptyX
           exact valuesOn_heq_of_coord (by simp) _ _
             (fun v hvW hvU => (valuesUnionMk_apply_left z
-              (default : ValuesOn (∅ : Finset (SWIGNode N)) (swigΩ Ω)) hvU hvW).symm)
+              (default : ValuesOn (∅ : Finset (SWIGNode N)) (swigΩ Ω)) hvW).symm)
         _ =
           (((M.fixSet X hObs hFix).fixSet Wbase hWobsX hWfixX).obsCondKernel Y
             (∅ : Finset (SWIGNode N))
@@ -1142,7 +1103,6 @@ theorem frontdoor_completeness_ae_compProd
     (hY : Y ⊆ M.observed)
     (hWr : Wbase.image SWIGNode.random ⊆ M.observed)
     (hXr : X.image SWIGNode.random ⊆ M.observed)
-    (hXrW : X.image SWIGNode.random ∪ Wbase.image SWIGNode.random ⊆ M.observed)
     (_hFD : M.toSWIGGraph.frontdoorCriterion X hObs hFix Wbase hWobs hWfix Y)
     (hDisj_YWr : Disjoint Y (Wbase.image SWIGNode.random))
     (hDisj_WrXr : Disjoint (Wbase.image SWIGNode.random) (X.image SWIGNode.random))
@@ -1151,20 +1111,20 @@ theorem frontdoor_completeness_ae_compProd
       Causalean.SCM.ID.Rule2JointOverlap M X hObs hFix
         (∅ : Finset (SWIGNode N)) (by simpa using hXr) s)
     (hPositivityA : M.BackdoorPositivityAE X (∅ : Finset (SWIGNode N))
-        (Finset.empty_subset M.observed) hXr (by simpa using hXr) s0)
+        (Finset.empty_subset M.observed) (by simpa using hXr) s0)
     (hOverlapB : ∀ s : (M.fixSet Wbase hWobs hWfix).FixedValues,
       Causalean.SCM.ID.Rule2JointOverlap M Wbase hWobs hWfix
         (X.image SWIGNode.random) (Finset.union_subset hWr hXr) s)
     (hPositivityB : M.BackdoorPositivityAE Wbase (X.image SWIGNode.random)
-        hXr hWr (Finset.union_subset hWr hXr) s0)
+        hXr (Finset.union_subset hWr hXr) s0)
     (hOverlapFD1 : ∀ s : ((M.fixSet X hObs hFix).fixSet Wbase
         (by intro D hD; simpa [SCM.fixSet_observed] using hWobs D hD)
-        (fixSet_fixed_not_mem M X Wbase hObs hFix hWfix
-          ((disjoint_base_of_disjoint_random_image hDisj_WrXr).symm))).FixedValues,
+        (Causalean.SCM.fixSet_fixed_not_mem_of_disjoint M Wbase X hObs hFix hWfix
+          ((disjoint_base_of_disjoint_random_image X Wbase hDisj_WrXr).symm))).FixedValues,
       Causalean.SCM.ID.Rule2JointOverlap (M.fixSet X hObs hFix) Wbase
         (by intro D hD; simpa [SCM.fixSet_observed] using hWobs D hD)
-        (fixSet_fixed_not_mem M X Wbase hObs hFix hWfix
-          ((disjoint_base_of_disjoint_random_image hDisj_WrXr).symm))
+        (Causalean.SCM.fixSet_fixed_not_mem_of_disjoint M Wbase X hObs hFix hWfix
+          ((disjoint_base_of_disjoint_random_image X Wbase hDisj_WrXr).symm))
         (∅ : Finset (SWIGNode N))
         (by
           simpa [Finset.union_empty, SCM.fixSet_observed] using hWr)
@@ -1184,7 +1144,7 @@ theorem frontdoor_completeness_ae_compProd
       = (M.treatmentMarginal X hXr s0) ⊗ₘ
           (M.frontdoorKernelY X hObs hFix Y (Wbase.image SWIGNode.random) hY hWr s0) := by
   exact frontdoor_fd1_interception_compProd M X hObs hFix Wbase hWobs hWfix Y hY hWr hXr
-    hXrW _hFD hDisj_YWr hDisj_WrXr s0 hOverlapA hPositivityA hOverlapB hPositivityB
+    _hFD hDisj_YWr hDisj_WrXr s0 hOverlapA hPositivityA hOverlapB hPositivityB
     hOverlapFD1 hPositivityFD1
 
 /-- **Frontdoor identification, a.e. in the treatment value.**
@@ -1212,20 +1172,20 @@ theorem frontdoor_identifiable_ae
       Causalean.SCM.ID.Rule2JointOverlap M X hObs hFix
         (∅ : Finset (SWIGNode N)) (by simpa using hXr) s)
     (hPositivityA : M.BackdoorPositivityAE X (∅ : Finset (SWIGNode N))
-        (Finset.empty_subset M.observed) hXr (by simpa using hXr) s0)
+        (Finset.empty_subset M.observed) (by simpa using hXr) s0)
     (hOverlapB : ∀ s : (M.fixSet Wbase hWobs hWfix).FixedValues,
       Causalean.SCM.ID.Rule2JointOverlap M Wbase hWobs hWfix
         (X.image SWIGNode.random) (Finset.union_subset hWr hXr) s)
     (hPositivityB : M.BackdoorPositivityAE Wbase (X.image SWIGNode.random)
-        hXr hWr (Finset.union_subset hWr hXr) s0)
+        hXr (Finset.union_subset hWr hXr) s0)
     (hOverlapFD1 : ∀ s : ((M.fixSet X hObs hFix).fixSet Wbase
         (by intro D hD; simpa [SCM.fixSet_observed] using hWobs D hD)
-        (fixSet_fixed_not_mem M X Wbase hObs hFix hWfix
-          ((disjoint_base_of_disjoint_random_image hDisj_WrXr).symm))).FixedValues,
+        (Causalean.SCM.fixSet_fixed_not_mem_of_disjoint M Wbase X hObs hFix hWfix
+          ((disjoint_base_of_disjoint_random_image X Wbase hDisj_WrXr).symm))).FixedValues,
       Causalean.SCM.ID.Rule2JointOverlap (M.fixSet X hObs hFix) Wbase
         (by intro D hD; simpa [SCM.fixSet_observed] using hWobs D hD)
-        (fixSet_fixed_not_mem M X Wbase hObs hFix hWfix
-          ((disjoint_base_of_disjoint_random_image hDisj_WrXr).symm))
+        (Causalean.SCM.fixSet_fixed_not_mem_of_disjoint M Wbase X hObs hFix hWfix
+          ((disjoint_base_of_disjoint_random_image X Wbase hDisj_WrXr).symm))
         (∅ : Finset (SWIGNode N))
         (by
           simpa [Finset.union_empty, SCM.fixSet_observed] using hWr)
@@ -1251,7 +1211,7 @@ theorem frontdoor_identifiable_ae
     exact (M.obsKernel s0).isFiniteMeasure_map _
   exact ProbabilityTheory.Kernel.ae_eq_of_compProd_eq
     (M.frontdoor_completeness_ae_compProd X hObs hFix Wbase hWobs hWfix Y hY hWr hXr
-      hXrW _hFD hDisj_YWr hDisj_WrXr s0 hOverlapA hPositivityA hOverlapB hPositivityB
+      _hFD hDisj_YWr hDisj_WrXr s0 hOverlapA hPositivityA hOverlapB hPositivityB
       hOverlapFD1 hPositivityFD1)
 
 end SCM

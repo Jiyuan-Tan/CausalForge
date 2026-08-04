@@ -6,10 +6,6 @@ Authors: Jiyuan Tan
 import Causalean.Mathlib.Probability.SteinMethod.DepGraphCLT
 import Mathlib.Analysis.SpecialFunctions.Sqrt
 
--- The per-stage `DecidableEq (ι n)` is used in the proof terms (via `depGraph_div_const`) but not
--- in the statement types; the `DepGraph` structure carries its own decidability field.
-set_option linter.unusedDecidableInType false
-
 /-!
 # Standardized bounded-degree dependency-graph CLT
 
@@ -33,34 +29,37 @@ namespace SteinMethod
 /-- Dividing every summand in a dependency graph by the same deterministic constant preserves the
 graph and transfers the independence field by measurable post-composition. -/
 noncomputable def depGraph_div_const
-    {Ω ι : Type*} [MeasurableSpace Ω] [Fintype ι] [DecidableEq ι]
+    {Ω ι : Type*} [MeasurableSpace Ω] [Fintype ι]
     {μ : Measure Ω} {X : ι → Ω → ℝ} (D : DepGraph X μ) (s : ℝ) :
-    DepGraph (fun i ω => X i ω / s) μ where
-  G := D.G
-  decG := D.decG
-  refl := D.refl
-  symm := D.symm
-  meas i := (D.meas i).div_const s
-  indep A B hAB := by
-    have h := D.indep A B hAB
-    let φ : (A → ℝ) → (A → ℝ) := fun v k => v k / s
-    let ψ : (B → ℝ) → (B → ℝ) := fun v k => v k / s
-    have hφ : Measurable φ := by
-      exact measurable_pi_lambda φ fun k => by
-        have hk : Measurable (fun v : A → ℝ => v k) := measurable_pi_apply k
-        simpa [φ] using hk.div_const s
-    have hψ : Measurable ψ := by
-      exact measurable_pi_lambda ψ fun k => by
-        have hk : Measurable (fun v : B → ℝ => v k) := measurable_pi_apply k
-        simpa [ψ] using hk.div_const s
-    simpa only [φ, ψ, Function.comp] using h.comp hφ hψ
+    DepGraph (fun i ω => X i ω / s) μ := by
+  classical
+  refine {
+    G := D.G
+    decG := D.decG
+    refl := D.refl
+    symm := D.symm
+    meas := fun i => (D.meas i).div_const s
+    indep := ?_ }
+  intro A B hAB
+  have h := D.indep A B hAB
+  let φ : (A → ℝ) → (A → ℝ) := fun v k => v k / s
+  let ψ : (B → ℝ) → (B → ℝ) := fun v k => v k / s
+  have hφ : Measurable φ := by
+    exact measurable_pi_lambda φ fun k => by
+      have hk : Measurable (fun v : A → ℝ => v k) := measurable_pi_apply k
+      simpa [φ] using hk.div_const s
+  have hψ : Measurable ψ := by
+    exact measurable_pi_lambda ψ fun k => by
+      have hk : Measurable (fun v : B → ℝ => v k) := measurable_pi_apply k
+      simpa [ψ] using hk.div_const s
+  simpa only [φ, ψ, Function.comp] using h.comp hφ hψ
 
 /-- Dependency-graph CLT wrapper when the linear variance floor holds at every index.
 The public theorem below removes this all-index convenience by shifting to a tail. -/
 theorem bounded_degree_dependency_clt_of_variance_floor_all
     {Ω : ℕ → Type*} [∀ n, MeasurableSpace (Ω n)] (μ : ∀ n, Measure (Ω n))
     [∀ n, IsProbabilityMeasure (μ n)]
-    {ι : ℕ → Type*} [∀ n, Fintype (ι n)] [∀ n, DecidableEq (ι n)]
+    {ι : ℕ → Type*} [∀ n, Fintype (ι n)]
     (X : ∀ n, ι n → Ω n → ℝ) (Dep : ∀ n, DepGraph (X n) (μ n))
     (Dmax : ℕ) (hdeg : ∀ n i, ((Dep n).nbhd i).card ≤ Dmax)
     (M : ℝ) (hM : 0 ≤ M) (hbound : ∀ n i ω, |X n i ω| ≤ M)
@@ -166,7 +165,7 @@ theorem bounded_degree_dependency_clt_of_variance_floor_all
     have hlim : Tendsto (fun n => K ^ 3 / Real.sqrt (cardR n)) atTop (𝓝 0) :=
       hsqrtcard.const_div_atTop (K ^ 3)
     simpa [cardR, hNB3eq] using hlim
-  have hclt := stein_cdf_clt_of_depGraph μ Xs Ds hmeas Dmax hdeg' B hB_nonneg hbound'
+  have hclt := stein_cdf_clt_of_depGraph μ Xs Ds Dmax hdeg' B hB_nonneg hbound'
     hB0 hNB3 hmean' hvar' s
   exact hclt.congr (fun n => by rw [hdep n])
 
@@ -179,7 +178,7 @@ drives the Stein bound. -/
 theorem bounded_degree_dependency_clt
     {Ω : ℕ → Type*} [∀ n, MeasurableSpace (Ω n)] (μ : ∀ n, Measure (Ω n))
     [∀ n, IsProbabilityMeasure (μ n)]
-    {ι : ℕ → Type*} [∀ n, Fintype (ι n)] [∀ n, DecidableEq (ι n)]
+    {ι : ℕ → Type*} [∀ n, Fintype (ι n)]
     (X : ∀ n, ι n → Ω n → ℝ) (Dep : ∀ n, DepGraph (X n) (μ n))
     (Dmax : ℕ) (hdeg : ∀ n i, ((Dep n).nbhd i).card ≤ Dmax)
     (M : ℝ) (hM : 0 ≤ M) (hbound : ∀ n i ω, |X n i ω| ≤ M)
@@ -226,7 +225,7 @@ affects the limiting CDF, so the uniform summand bound need only hold after a fi
 theorem bounded_degree_dependency_clt_eventually_bounded
     {Ω : ℕ → Type*} [∀ n, MeasurableSpace (Ω n)] (μ : ∀ n, Measure (Ω n))
     [∀ n, IsProbabilityMeasure (μ n)]
-    {ι : ℕ → Type*} [∀ n, Fintype (ι n)] [∀ n, DecidableEq (ι n)]
+    {ι : ℕ → Type*} [∀ n, Fintype (ι n)]
     (X : ∀ n, ι n → Ω n → ℝ) (Dep : ∀ n, DepGraph (X n) (μ n))
     (Dmax : ℕ) (hdeg : ∀ n i, ((Dep n).nbhd i).card ≤ Dmax)
     (M : ℝ) (hM : 0 ≤ M) (hbound : ∀ᶠ n in atTop, ∀ i ω, |X n i ω| ≤ M)

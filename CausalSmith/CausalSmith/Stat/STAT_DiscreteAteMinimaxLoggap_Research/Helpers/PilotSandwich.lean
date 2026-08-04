@@ -90,7 +90,7 @@ lemma pilotCategory_upper_tail {n d : ℕ} (P : DiscreteLaw d) (k : Fin d)
   apply Causalean.Stat.Concentration.bernoulliCount_upper_tail
     (Causalean.Stat.iidSample_infinitePi (obsLaw P))
     (measurable_of_finite _) (fun z ↦ ?_)
-    (categoryIndicator_mean P k) hmean_lt
+    (categoryIndicator_mean P k).le hmean_lt
   by_cases hz : z.1 = k <;> simp [categoryIndicator, hz]
 
 -- @node: pilotCategory_lower_tail
@@ -118,7 +118,7 @@ lemma pilotCategory_lower_tail {n d : ℕ} (P : DiscreteLaw d) (k : Fin d)
   apply Causalean.Stat.Concentration.bernoulliCount_lower_tail
     (Causalean.Stat.iidSample_infinitePi (obsLaw P))
     (measurable_of_finite _) (fun z ↦ ?_)
-    (cellMass_mem_unitInterval P k).1 (categoryIndicator_mean P k) hmean_gt
+    (categoryIndicator_mean P k) hmean_gt
   by_cases hz : z.1 = k <;> simp [categoryIndicator, hz]
 
 /-- Defines pilot Heavy At, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/

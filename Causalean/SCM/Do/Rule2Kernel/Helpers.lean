@@ -63,6 +63,7 @@ noncomputable def zFixedAsRandom {Z : Finset N}
 -- `Causalean/Mathlib/MeasureTheory/FinsetValues.lean` (namespace `Causalean`,
 -- over an arbitrary finite index) and are used here at `M := SWIGNode N`.
 
+omit [Fintype N] in
 /-- Reading intervention values as observed random-variable values is a measurable operation.
 
 At every output coordinate the map is just a coordinate projection of the input
@@ -110,22 +111,22 @@ noncomputable def valuesUnionEquiv {A B : Finset (SWIGNode N)}
   left_inv ξ := by
     funext ⟨v, hv⟩
     by_cases hA : v ∈ A
-    · simp [valuesUnionMk_apply_left _ _ hv hA, valuesProjection]
+    · simp [valuesProjection, valuesUnionMk_apply_left _ _ hA]
     · have hB : v ∈ B := (Finset.mem_union.mp hv).resolve_left hA
-      simp [valuesUnionMk_apply_right _ _ hv hA hB, valuesProjection]
+      simp [valuesUnionMk_apply_right _ _ hv hA, valuesProjection]
   right_inv := by
     rintro ⟨a, b⟩
     ext
     · rename_i i
       obtain ⟨v, hvA⟩ := i
       have hv : v ∈ A ∪ B := Finset.subset_union_left hvA
-      simp [valuesProjection, valuesUnionMk_apply_left _ _ hv hvA]
+      simp [valuesProjection, valuesUnionMk_apply_left _ _ hvA]
     · rename_i i
       obtain ⟨v, hvB⟩ := i
       have hv : v ∈ A ∪ B := Finset.subset_union_right hvB
       have hA : v ∉ A := fun hA' =>
         (Finset.disjoint_left.mp hDisj hA') hvB
-      simp [valuesProjection, valuesUnionMk_apply_right _ _ hv hA hvB]
+      simp [valuesProjection, valuesUnionMk_apply_right _ _ hv hA]
   measurable_toFun :=
     (measurable_valuesProjection _).prodMk (measurable_valuesProjection _)
   measurable_invFun := by
@@ -138,7 +139,7 @@ noncomputable def valuesUnionEquiv {A B : Finset (SWIGNode N)}
           (fun p : ValuesOn A (swigΩ Ω) × ValuesOn B (swigΩ Ω) =>
               valuesUnionMk p.1 p.2 ⟨v, hv⟩)
             = (fun p => p.1 ⟨v, hA⟩) :=
-        funext fun _ => valuesUnionMk_apply_left _ _ hv hA
+        funext fun _ => valuesUnionMk_apply_left _ _ hA
       rw [h_eq]
       exact (measurable_pi_apply _).comp measurable_fst
     · have hB : v ∈ B := (Finset.mem_union.mp hv).resolve_left hA
@@ -163,7 +164,8 @@ theorem measurable_fillZrW (M' : Causalean.SCM N Ω) (Z : Finset N)
   unfold fillZrW
   exact measurable_valuesUnionMk_right _
 
-/-- The Rule 2 filler is jointly measurable in the post-intervention fixed slice and the free conditioning coordinates.
+/-- The Rule 2 filler is jointly measurable in the post-intervention fixed slice
+and the free conditioning coordinates.
 
 This is the local bridge used to pull the observational conditional kernel back
 along the map that pairs the base fixed slice with the filled conditioning value. -/
@@ -188,7 +190,8 @@ theorem measurable_fillZrW_prod (M' : Causalean.SCM N Ω) (Z : Finset N)
   exact measurable_zFixedAsRandom.comp
     ((measurable_valuesProjection _).comp measurable_fst)
 
-/-- This map reads observed treatment values as values for the corresponding intervention coordinates.
+/-- This map reads observed treatment values as values for the corresponding
+intervention coordinates.
 
 It is the mirror image of the map from fixed intervention values to random
 observed values. -/
@@ -203,6 +206,7 @@ noncomputable def xRandomAsFixed {X : Finset N}
   | SWIGNode.random _, hv => by
       exfalso; rcases Finset.mem_image.mp hv with ⟨_, _, heq⟩; cases heq
 
+omit [Fintype N] in
 /-- Reading observed treatment values as intervention-coordinate values is measurable. -/
 lemma measurable_xRandomAsFixed {X : Finset N} :
     Measurable (xRandomAsFixed (Ω := Ω) (X := X)) := by

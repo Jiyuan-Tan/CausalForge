@@ -102,7 +102,7 @@ lemma propensity_score_residual_integral_zero
       (comap_measurable S.toPOBackdoorSystem.factualX)).stronglyMeasurable
   -- Integrability of the residual `a − e(X)`.
   have hind_int : Integrable (S.toPOBackdoorSystem.dVar.indicator true) P.μ :=
-    S.toPOBackdoorSystem.dVar.integrable_indicator true
+    S.toPOBackdoorSystem.dVar.integrable_indicator true (MeasurableSet.singleton true)
   have he_int : Integrable
       (fun ω => S.e_val (S.toPOBackdoorSystem.factualX ω)) P.μ := by
     -- `e_val(X)` is bounded (it equals `propScore true` a.e., which is in [0,1]),

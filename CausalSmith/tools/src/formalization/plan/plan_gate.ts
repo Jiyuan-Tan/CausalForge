@@ -9,6 +9,9 @@
 import type { Core } from "../../discovery/core/schema.js";
 import { coreNodeIds } from "../../discovery/core/schema.js";
 import { buildDagFromCore } from "../../discovery/core/dag.js";
+import type { ExtractedDecl } from "../../graph/extractor.js";
+import { statementHash } from "../../graph/hash.js";
+import type { FormalizationGraph } from "../../graph/types.js";
 import { PlanSchema, deriveFeasibility, type Plan } from "./schema.js";
 
 export type PlanGateCode =
@@ -45,6 +48,12 @@ export interface PlanGateOptions {
   /** All emitted Lean declaration names. Catches stale untagged declarations for an
    * undelivered plan node, which tag-only P7 cannot see. */
   leanDeclNames?: Set<string>;
+  /** Formalization graph captured before F2. Enables the narrow P7 exemption for
+   * already-reviewed agent-introduced helpers that intentionally have no plan node. */
+  preF2Graph?: FormalizationGraph;
+  /** Declarations extracted from the emitted Lean. Required with `preF2Graph` to
+   * verify that an exempt helper still matches its reviewed receipt exactly. */
+  annotatedDecls?: ExtractedDecl[];
 }
 
 const MODULE_RE = /^[A-Z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)*$/;
@@ -181,8 +190,38 @@ export function runPlanGate(planInput: unknown, core: Core, opts: PlanGateOption
   // P7: orphan Lean — emitted tags correspond exactly to plan keys (F2 only).
   if (opts.leanTags) {
     const envIds = new Set(plan.env.map((e) => e.id));
+    const preF2Nodes = new Map(opts.preF2Graph?.nodes.map((node) => [node.id, node]) ?? []);
+    const extractedByNode = new Map<string, ExtractedDecl[]>();
+    for (const decl of opts.annotatedDecls ?? []) {
+      const decls = extractedByNode.get(decl.nodeId) ?? [];
+      decls.push(decl);
+      extractedByNode.set(decl.nodeId, decls);
+    }
+    const hasExactPreF2HelperReceipt = (id: string): boolean => {
+      const node = preF2Nodes.get(id);
+      const decls = extractedByNode.get(id) ?? [];
+      if (
+        node?.kind !== "lemma" ||
+        node.provenance !== "agent-introduced" ||
+        node.proof.state !== "complete" ||
+        node.proof.sorry_count !== 0 ||
+        node.review.status === "unreviewed" ||
+        node.review.status === "drift" ||
+        node.review.passed_hash === null ||
+        node.lean.decl_name === null ||
+        node.lean.file === null ||
+        decls.length !== 1
+      ) return false;
+      const decl = decls[0];
+      return !decl.hasSorry &&
+        decl.declName === node.lean.decl_name &&
+        decl.file === node.lean.file &&
+        statementHash(decl.statement) === node.review.passed_hash;
+    };
     for (const t of opts.leanTags.nodes) {
-      if (!planNodeKeys.has(t)) violations.push({ code: "P7", where: t, message: `emitted Lean tags '@node ${t}' but no plan entry` });
+      if (!planNodeKeys.has(t) && !hasExactPreF2HelperReceipt(t)) {
+        violations.push({ code: "P7", where: t, message: `emitted Lean tags '@node ${t}' but no plan entry or exact completed pre-F2 helper receipt` });
+      }
     }
     for (const id of planNodeKeys) {
       const undelivered = plan.nodes[id]?.delivery_status === "undelivered";

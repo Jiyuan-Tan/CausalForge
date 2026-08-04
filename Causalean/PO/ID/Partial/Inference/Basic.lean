@@ -121,6 +121,7 @@ theorem randomCoversIcc_compl_subset {lo hi : Ω → ℝ} {L U wL wU : ℝ} :
   · right
     exact hU
 
+omit [MeasurableSpace Ω] in
 /-- A lower endpoint overshoot after widening implies the corresponding
 two-sided absolute-deviation miss. -/
 theorem lowerOvershoot_subset_absMiss {lo : Ω → ℝ} {L wL : ℝ} :
@@ -130,6 +131,7 @@ theorem lowerOvershoot_subset_absMiss {lo : Ω → ℝ} {L wL : ℝ} :
   have : wL < lo ω - L := by linarith
   exact (le_of_lt this).trans (le_abs_self _)
 
+omit [MeasurableSpace Ω] in
 /-- An upper endpoint undershoot after widening implies the corresponding
 two-sided absolute-deviation miss. -/
 theorem upperUndershoot_subset_absMiss {hi : Ω → ℝ} {U wU : ℝ} :

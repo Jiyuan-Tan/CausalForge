@@ -64,22 +64,11 @@ namespace IIDSample
 variable [IsProbabilityMeasure μ] [IsProbabilityMeasure P]
   {m : ℕ} [NeZero m] {g : (Fin m → X) → ℝ} (S : IIDSample Ω X μ P)
 
-omit [IsProbabilityMeasure P] in
-private theorem orderFirstTerm_diag (hg : OrderFirstDegenKernel P g)
-    {n : ℕ} {t : Fin m → Fin n} (ht : Function.Injective t) :
-    ∫ ω, (g (fun j => S.Z (t j : ℕ) ω)) ^ 2 ∂μ = zetaOrder P g := by
-  rw [zetaOrder]
-  rw [← S.map_tuple_eq ht]
-  rw [integral_map
-    (measurable_pi_lambda _ (fun j : Fin m => S.meas (t j : ℕ))).aemeasurable
-    (hg.meas.pow_const 2).aestronglyMeasurable]
-
-/-- **Disjoint case.**  If the two tuples' images are disjoint, the blocks are
-independent, so the cross expectation factors as `E[g(Z_t)]·E[g(Z_q)] = 0·0`.
-Use `iIndepFun.indepFun_finset` (disjoint index Finsets) + `.comp` +
-`IndepFun.integral_fun_mul_eq_mul_integral`; each factor's mean is
-`uMeanOrder g P = hg.integral_eq_zero` (via `S.integral_orderKernelTerm_eq`). -/
-private theorem crossterm_zero_of_disjoint (hg : OrderFirstDegenKernel P g)
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
+/-- For a first-order-degenerate kernel, the expected product of terms evaluated
+    on two injective sample-index tuples with disjoint index sets is zero. -/
+theorem crossterm_zero_of_disjoint [IsFiniteMeasure P]
+    (hg : OrderFirstDegenKernel P g)
     {n : ℕ} {t q : Fin m → Fin n}
     (ht : Function.Injective t) (hq : Function.Injective q)
     (hdisj : Disjoint (Finset.univ.image t) (Finset.univ.image q)) :
@@ -121,13 +110,11 @@ private theorem crossterm_zero_of_disjoint (hg : OrderFirstDegenKernel P g)
   change ∫ ω, (φ ∘ Xt) ω * (ψ ∘ Xq) ω ∂μ = 0
   rw [hfactor, hmean_t, hmean_q, zero_mul]
 
-/-- **One-shared case.**  If the two tuples' images meet in a single index `a`,
-integrate out the `m − 1` coordinates of the first tuple other than the slot
-carrying `a`; that inner integral is the first Hoeffding projection
-`hg.firstDeg (t⁻¹ a) x_a = 0`.  Map to the product law over the `2m − 1` distinct
-indices (`map_fintype_tuple_eq`) and Fubini-split, mirroring `Variance.lean`'s
-`term_shared` / `map_triple_eq'`. -/
-private theorem crossterm_zero_of_shared_one (hg : OrderFirstDegenKernel P g)
+omit [IsProbabilityMeasure P] in
+/-- For a first-order-degenerate kernel, the expected product of terms evaluated
+    on two injective sample-index tuples sharing exactly one index is zero. -/
+theorem crossterm_zero_of_shared_one [IsFiniteMeasure P]
+    (hg : OrderFirstDegenKernel P g)
     {n : ℕ} {t q : Fin m → Fin n}
     (ht : Function.Injective t) (hq : Function.Injective q)
     {a : Fin n} (hshare : Finset.univ.image t ∩ Finset.univ.image q = {a}) :
@@ -230,7 +217,7 @@ private theorem crossterm_zero_of_shared_one (hg : OrderFirstDegenKernel P g)
     intro ω
     rfl
   have hcomp_int : Integrable (fun ω => F (XA ω, Xq ω)) μ := by
-    have horig := S.integrable_sqKernelTerm_mul hg.meas hg.sq ht hq
+    have horig := S.integrable_orderTerm_mul hg.meas hg.sq ht hq
     refine horig.congr ?_
     filter_upwards with ω
     simp [F, ht_rewrite ω, hq_rewrite ω]
@@ -270,9 +257,10 @@ private theorem crossterm_zero_of_shared_one (hg : OrderFirstDegenKernel P g)
             exact hinner xq]
           simp
 
+omit [IsProbabilityMeasure P] in
 /-- Cross-term vanishing, assembled from the disjoint (`card = 0`) and one-shared
 (`card = 1`) cases. -/
-private theorem crossterm_eq_zero_of_shared_le_one_product_disintegration
+private theorem crossterm_eq_zero_of_shared_le_one_product_disintegration [IsFiniteMeasure P]
     (hg : OrderFirstDegenKernel P g)
     {n : ℕ} {t q : Fin m → Fin n}
     (ht : Function.Injective t) (hq : Function.Injective q)
@@ -286,30 +274,37 @@ private theorem crossterm_eq_zero_of_shared_le_one_product_disintegration
   · obtain ⟨a, ha⟩ := Finset.card_eq_one.mp h1
     exact S.crossterm_zero_of_shared_one hg ht hq ha
 
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- **Cross-term vanishing.**  If two ordered injective `m`-tuples share at most
 one sample index, the expected product of the corresponding kernel terms is zero.
 Zero shared indices ⇒ independence + mean zero; one shared index ⇒ condition on
 it and use first-order degeneracy of each factor. -/
-theorem crossterm_eq_zero_of_shared_le_one (hg : OrderFirstDegenKernel P g)
+theorem crossterm_eq_zero_of_shared_le_one
+    (hg : OrderFirstDegenKernel P g)
     {n : ℕ} {t q : Fin m → Fin n}
     (ht : Function.Injective t) (hq : Function.Injective q)
     (hshare : (Finset.univ.image t ∩ Finset.univ.image q).card ≤ 1) :
     ∫ ω, g (fun j => S.Z (t j : ℕ) ω) * g (fun j => S.Z (q j : ℕ) ω) ∂μ = 0 := by
+  letI : IsProbabilityMeasure μ := S.indep.isProbabilityMeasure
+  letI : IsProbabilityMeasure P := by
+    rw [← S.law]
+    exact Measure.isProbabilityMeasure_map (S.meas 0).aemeasurable
   exact S.crossterm_eq_zero_of_shared_le_one_product_disintegration hg ht hq hshare
 
-omit [IsProbabilityMeasure P] in
-/-- **Per-term Cauchy–Schwarz bound.**  Each cross expectation is bounded by
-`ζ_m = zetaOrder P g`, since both factors are `L²` with second moment
-`orderFirstTerm_diag = zetaOrder P g`. -/
-private theorem crossterm_abs_le_zeta (hg : OrderFirstDegenKernel P g)
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] [NeZero m] in
+/-- The absolute expected product of two kernel evaluations on distinct sample
+tuples is no larger than the kernel's second moment under the product distribution. -/
+theorem crossterm_abs_le_zeta (hmeas : Measurable g)
+    (hsq : Integrable (fun z => (g z) ^ 2) (Measure.pi fun _ : Fin m => P))
     {n : ℕ} {t q : Fin m → Fin n}
     (ht : Function.Injective t) (hq : Function.Injective q) :
     |∫ ω, g (fun j => S.Z (t j : ℕ) ω) * g (fun j => S.Z (q j : ℕ) ω) ∂μ|
       ≤ zetaOrder P g := by
+  letI : IsProbabilityMeasure μ := S.indep.isProbabilityMeasure
   let ft : Ω → ℝ := fun ω => g (fun j => S.Z (t j : ℕ) ω)
   let fq : Ω → ℝ := fun ω => g (fun j => S.Z (q j : ℕ) ω)
-  have hft0 : MemLp ft 2 μ := S.memLp_sqKernelTerm hg.meas hg.sq ht
-  have hfq0 : MemLp fq 2 μ := S.memLp_sqKernelTerm hg.meas hg.sq hq
+  have hft0 : MemLp ft 2 μ := S.memLp_orderTerm hmeas hsq ht
+  have hfq0 : MemLp fq 2 μ := S.memLp_orderTerm hmeas hsq hq
   have hft : MemLp ft (ENNReal.ofReal (2 : ℝ)) μ := by simpa using hft0
   have hfq : MemLp fq (ENNReal.ofReal (2 : ℝ)) μ := by simpa using hfq0
   have hcs := MeasureTheory.integral_mul_norm_le_Lp_mul_Lq
@@ -323,9 +318,9 @@ private theorem crossterm_abs_le_zeta (hg : OrderFirstDegenKernel P g)
       _ = ∫ ω, ‖ft ω‖ * ‖fq ω‖ ∂μ := by
         simp [Real.norm_eq_abs, abs_mul]
   have ht2 : ∫ ω, ‖ft ω‖ ^ (2 : ℝ) ∂μ = zetaOrder P g := by
-    simpa [ft, sq_abs] using S.orderFirstTerm_diag hg ht
+    simpa [ft, sq_abs] using S.orderTerm_diag hmeas ht
   have hq2 : ∫ ω, ‖fq ω‖ ^ (2 : ℝ) ∂μ = zetaOrder P g := by
-    simpa [fq, sq_abs] using S.orderFirstTerm_diag hg hq
+    simpa [fq, sq_abs] using S.orderTerm_diag hmeas hq
   have hznonneg : 0 ≤ zetaOrder P g := zetaOrder_nonneg
   rw [ht2, hq2] at hcs
   have hroot :
@@ -385,13 +380,15 @@ private theorem shareCountEncoding_card_le (m n : ℕ) :
     Fintype.card_pi, Finset.prod_const, ge_iff_le]
   exact le_of_eq (by ring)
 
-omit [NeZero m] in
-private theorem sharedPositions_card_eq {n : ℕ} {t q : Fin m → Fin n}
+/-- For an injective tuple map, the number of positions whose values occur in a
+second tuple equals the number of values shared by the two tuple images. -/
+theorem sharedPositions_card_eq {α β : Type*} [Fintype α] [DecidableEq β]
+    {t q : α → β}
     (hq : Function.Injective q) :
-    (Finset.univ.filter (fun j : Fin m => q j ∈ Finset.univ.image t)).card =
+    (Finset.univ.filter (fun j : α => q j ∈ Finset.univ.image t)).card =
       (Finset.univ.image t ∩ Finset.univ.image q).card := by
   have himage :
-      (Finset.univ.filter (fun j : Fin m => q j ∈ Finset.univ.image t)).image q =
+    (Finset.univ.filter (fun j : α => q j ∈ Finset.univ.image t)).image q =
         Finset.univ.image t ∩ Finset.univ.image q := by
     ext a
     constructor
@@ -406,19 +403,21 @@ private theorem sharedPositions_card_eq {n : ℕ} {t q : Fin m → Fin n}
       exact Finset.mem_image.mpr ⟨j, by simpa using hat, rfl⟩
   rw [← himage]
   exact (Finset.card_image_of_injOn
-    (s := Finset.univ.filter (fun j : Fin m => q j ∈ Finset.univ.image t))
+    (s := Finset.univ.filter (fun j : α => q j ∈ Finset.univ.image t))
     (f := q) (fun a _ b _ h => hq h)).symm
 
-/-- **Count of surviving tuple pairs.**  The ordered injective tuple pairs sharing
-`≥ 2` indices number `≤ (m choose 2)·m²·n^{2m-2}` — choose `t` (`≤ nᵐ`), the two
-shared slots of `q` (`≤ m.choose 2`), their values from `image t` (`≤ m²`), and
-the free remaining `m-2` slots (`≤ n^{m-2}`).  Prove by an injection of the pair
-set into an explicit product `Finset`. -/
-private theorem card_share_ge_two_le {n : ℕ} :
+omit [NeZero m] in
+/-- The number of ordered pairs of injective tuples of length m drawn from n
+observations that share at least two sample indices is bounded by a polynomial
+in n determined by the tuple length. -/
+theorem card_share_ge_two_le {n : ℕ} :
     ((injectiveTuples m n ×ˢ injectiveTuples m n).filter
         (fun tq => 2 ≤ (Finset.univ.image tq.1 ∩ Finset.univ.image tq.2).card)).card
       ≤ m.choose 2 * m ^ 2 * n ^ (2 * m - 2) := by
   classical
+  by_cases hmzero : m = 0
+  · subst m
+    simp [injectiveTuples]
   let share : Finset ((Fin m → Fin n) × (Fin m → Fin n)) :=
     (injectiveTuples m n ×ˢ injectiveTuples m n).filter
       (fun tq => 2 ≤ (Finset.univ.image tq.1 ∩ Finset.univ.image tq.2).card)
@@ -435,7 +434,7 @@ private theorem card_share_ge_two_le {n : ℕ} :
     have hspcard : 2 ≤ sp.card := by
       have hshare : 2 ≤ (Finset.univ.image t ∩ Finset.univ.image q).card :=
         (Finset.mem_filter.mp hmem).2
-      rwa [sharedPositions_card_eq (m := m) (t := t) (q := q) hq]
+      rwa [sharedPositions_card_eq (t := t) (q := q) hq]
     let s : Finset (Fin m) :=
       Classical.choose (Finset.powersetCard_nonempty.mpr hspcard)
     have hs_sp : s ∈ sp.powersetCard 2 :=
@@ -465,7 +464,7 @@ private theorem card_share_ge_two_le {n : ℕ} :
                   (Finset.mem_filter.mp (Finset.mem_product.mp hpair).2).2
                 have hshare : 2 ≤ (Finset.univ.image d.1.1 ∩ Finset.univ.image d.1.2).card :=
                   (Finset.mem_filter.mp hmem).2
-                rwa [sharedPositions_card_eq (m := m) (t := d.1.1) (q := d.1.2) hq]))
+                rwa [sharedPositions_card_eq (t := d.1.1) (q := d.1.2) hq]))
             |> Finset.mem_powersetCard.mp).1 hj)).2))).2
     · rfl
   have hinj : Function.Injective encode := by
@@ -484,7 +483,7 @@ private theorem card_share_ge_two_le {n : ℕ} :
       share.card by rfl, hcardD]
   exact le_trans (Fintype.card_le_of_injective encode hinj)
     (le_trans (shareCountEncoding_card_le m n) (by
-      have hmpos : 0 < m := Nat.pos_of_ne_zero (NeZero.ne m)
+      have hmpos : 0 < m := Nat.pos_of_ne_zero hmzero
       by_cases h2 : 2 ≤ m
       · have hexp : m + (m - 2) = 2 * m - 2 := by omega
         calc
@@ -496,12 +495,14 @@ private theorem card_share_ge_two_le {n : ℕ} :
         subst m
         simp))
 
-/-- **Falling-factorial lower bound.**  For `n ≥ m`,
-`n^m / m^m ≤ n.descFactorial m` (each of the `m` factors `n - i ≥ n - (m-1)`, and
-`∏ (1 - i/n)` is minimized at `n = m`). -/
-private theorem descFactorial_ge {n : ℕ} (hmn : m ≤ n) :
+/-- When the sample size is at least the order, its falling factorial is at least
+the sample-size power divided by the order power. -/
+theorem descFactorial_ge {m n : ℕ} (hmn : m ≤ n) :
     (n : ℝ) ^ m / (m : ℝ) ^ m ≤ (n.descFactorial m : ℝ) := by
-  have hmposNat : 0 < m := Nat.pos_of_ne_zero (NeZero.ne m)
+  by_cases hmzero : m = 0
+  · subst m
+    simp
+  have hmposNat : 0 < m := Nat.pos_of_ne_zero hmzero
   have hmpos : 0 < (m : ℝ) := by exact_mod_cast hmposNat
   rw [Nat.descFactorial_eq_prod_range]
   norm_num [Nat.cast_prod]
@@ -523,12 +524,17 @@ private theorem descFactorial_ge {n : ℕ} (hmn : m ≤ n) :
     (fun _i _hi => div_nonneg (Nat.cast_nonneg _) (le_of_lt hmpos)) hfactor
   simpa [Finset.prod_const, div_pow] using hprod
 
-private theorem integral_injectiveTuples_sum_sq_le_shared_count
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
+/-- For a first-order-degenerate kernel, the second moment of the unnormalised
+sum over ordered injective sample tuples is bounded by the number of tuple pairs
+sharing at least two observations times the kernel's second moment. -/
+theorem integral_injectiveTuples_sum_sq_le_shared_count [IsFiniteMeasure P]
     (hg : OrderFirstDegenKernel P g) {n : ℕ} :
     ∫ ω, (∑ t ∈ injectiveTuples m n, g (fun j => S.Z (t j : ℕ) ω)) ^ 2 ∂μ
       ≤ (((injectiveTuples m n ×ˢ injectiveTuples m n).filter
           (fun tq => 2 ≤ (Finset.univ.image tq.1 ∩ Finset.univ.image tq.2).card)).card : ℝ)
         * zetaOrder P g := by
+  letI : IsProbabilityMeasure μ := S.indep.isProbabilityMeasure
   classical
   let T : Finset (Fin m → Fin n) := injectiveTuples m n
   let SHARE : Finset ((Fin m → Fin n) × (Fin m → Fin n)) :=
@@ -554,7 +560,7 @@ private theorem integral_injectiveTuples_sum_sq_le_shared_count
   rw [integral_finset_sum _ (fun t ht => by
     apply integrable_finset_sum
     intro q hq
-    exact S.integrable_sqKernelTerm_mul hg.meas hg.sq
+    exact S.integrable_orderTerm_mul hg.meas hg.sq
       (hinj_of_mem_T t ht) (hinj_of_mem_T q hq))]
   have hpush : ∀ t ∈ T,
       ∫ ω, ∑ q ∈ T,
@@ -563,7 +569,7 @@ private theorem integral_injectiveTuples_sum_sq_le_shared_count
           g (fun j => S.Z (t j : ℕ) ω) * g (fun j => S.Z (q j : ℕ) ω) ∂μ := by
     intro t ht
     exact integral_finset_sum _ (fun q hq =>
-      S.integrable_sqKernelTerm_mul hg.meas hg.sq
+      S.integrable_orderTerm_mul hg.meas hg.sq
         (hinj_of_mem_T t ht) (hinj_of_mem_T q hq))
   rw [Finset.sum_congr rfl hpush]
   rw [show (∑ t ∈ T, ∑ q ∈ T, ∫ ω,
@@ -588,11 +594,13 @@ private theorem integral_injectiveTuples_sum_sq_le_shared_count
     have ht : Function.Injective x.1 := hinj_of_mem_T x.1 (Finset.mem_product.mp hxT).1
     have hq : Function.Injective x.2 := hinj_of_mem_T x.2 (Finset.mem_product.mp hxT).2
     exact le_trans (le_abs_self (F x)) (by
-      simpa [F] using S.crossterm_abs_le_zeta hg ht hq)
+      simpa [F] using S.crossterm_abs_le_zeta hg.meas hg.sq ht hq)
   have hsum := Finset.sum_le_card_nsmul SHARE F (zetaOrder P g) hterm_le
   simpa [SHARE, T, nsmul_eq_mul] using hsum
 
-private theorem rescaled_order_normalization_le {n : ℕ} (hmn : m ≤ n) {ζ : ℝ}
+/-- For a nonnegative second-moment bound and a sample size at least the kernel
+    order, the falling-factorial normalization term is bounded by a constant divided by the sample size. -/
+theorem rescaled_order_normalization_le {n : ℕ} (hmn : m ≤ n) {ζ : ℝ}
     (hζ : 0 ≤ ζ) :
     (n : ℝ) * (injectiveTupleCount m n)⁻¹ ^ 2 *
         ((m.choose 2 : ℝ) * (m : ℝ) ^ 2 * (n : ℝ) ^ (2 * m - 2) * ζ)
@@ -654,7 +662,8 @@ private theorem rescaled_order_normalization_le {n : ℕ} (hmn : m ≤ n) {ζ : 
           rw [hpow_n_rhs]
           ring
 
-private theorem integral_rescaled_order_sq_le_counting_normalization
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
+private theorem integral_rescaled_order_sq_le_counting_normalization [IsFiniteMeasure P]
     (hg : OrderFirstDegenKernel P g) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ {n : ℕ}, m ≤ n →
       ∫ ω, (Real.sqrt (n : ℝ) * uStatisticOrder S g n ω) ^ 2 ∂μ ≤ C / (n : ℝ) := by
@@ -729,6 +738,7 @@ private theorem integral_rescaled_order_sq_le_counting_normalization
             simpa [C, mul_assoc] using
               rescaled_order_normalization_le (m := m) (n := n) hmn hzeta
 
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- **`L²` bound on the rescaled higher-order remainder.**  For a first-order
 degenerate order-`m` kernel there is a constant `C` (depending only on `m` and
 `ζ_m = E[g²]`) with `E[(√n · Uₙ)²] ≤ C / n` for all `n ≥ m`.  This is the
@@ -738,6 +748,10 @@ keystone estimate; it packages cross-term vanishing, the Cauchy–Schwarz bound
 theorem integral_rescaled_order_sq_le (hg : OrderFirstDegenKernel P g) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ {n : ℕ}, m ≤ n →
       ∫ ω, (Real.sqrt (n : ℝ) * uStatisticOrder S g n ω) ^ 2 ∂μ ≤ C / (n : ℝ) := by
+  letI : IsProbabilityMeasure μ := S.indep.isProbabilityMeasure
+  letI : IsProbabilityMeasure P := by
+    rw [← S.law]
+    exact Measure.isProbabilityMeasure_map (S.meas 0).aemeasurable
   exact S.integral_rescaled_order_sq_le_counting_normalization hg
 
 end IIDSample

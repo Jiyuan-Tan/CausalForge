@@ -68,7 +68,11 @@ theorem E_htTreatedTotal (p y1 : C → ℝ) (hp0 : ∀ c, 0 ≤ p c) (hp1 : ∀ 
       funext (fun z => Finset.sum_congr rfl (fun c _ => by ring))]
   rw [FiniteDesign.E_sum]
   refine Finset.sum_congr rfl (fun c _ => ?_)
-  rw [FiniteDesign.E_const_mul _ (y1 c / p c) (treatInd c), bernoulliDesign_E_treatInd]
+  rw [FiniteDesign.E_const_mul _ (y1 c / p c) (treatInd c)]
+  have hE : (bernoulliDesign p hp0 hp1).E (treatInd c) = p c := by
+    simpa [treatInd] using
+      (bernoulliDesign_E_treatInd p hp0 hp1 c (fun b => if b then (1 : ℝ) else 0))
+  rw [hE]
   exact div_mul_cancel₀ (y1 c) (hppos c).ne'
 
 /-- The HT control total is unbiased for the control-arm population total `∑ y0 c`: each cluster
@@ -80,7 +84,11 @@ theorem E_htControlTotal (p y0 : C → ℝ) (hp0 : ∀ c, 0 ≤ p c) (hp1 : ∀ 
     intro c
     rw [show (fun z => (1 : ℝ) - treatInd c z)
           = (fun z => (fun _ => (1 : ℝ)) z - treatInd c z) from rfl,
-      FiniteDesign.E_sub, FiniteDesign.E_const, bernoulliDesign_E_treatInd]
+      FiniteDesign.E_sub, FiniteDesign.E_const]
+    have hE : (bernoulliDesign p hp0 hp1).E (treatInd c) = p c := by
+      simpa [treatInd] using
+        (bernoulliDesign_E_treatInd p hp0 hp1 c (fun b => if b then (1 : ℝ) else 0))
+    rw [hE]
   change (bernoulliDesign p hp0 hp1).E
       (fun z => ∑ c, (1 - treatInd c z) / (1 - p c) * y0 c)
     = ∑ c, y0 c

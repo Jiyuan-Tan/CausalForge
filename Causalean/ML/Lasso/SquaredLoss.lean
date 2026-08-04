@@ -186,7 +186,7 @@ theorem lasso_erm_squaredLoss_excess_rate {d n : ℕ} (hd : 0 < d) (hn : 0 < n)
         rw [hφdef, abs_of_nonneg (clampedSq_nonneg _ _)]
         exact clampedSq_le_sq hXinfW _
       have hcontr := empiricalRademacherComplexity_contraction_abs_of_bddAbove
-        (ι := ι) φ (L := 2 * (Xinf * W)) (by positivity)
+        (ι := ι) φ (L := 2 * (Xinf * W))
         (by rw [hφdef]; exact lipschitzAt0_clampedSq hXinfW) p
         (M := Xinf * W) hXinfW hpbound n S
       have hquad : empiricalRademacherComplexity n

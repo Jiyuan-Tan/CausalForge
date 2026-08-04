@@ -138,6 +138,25 @@ instance instMeasurableSpaceSwigΩ {N : Type*} (Ω : N → Type*)
   | .random _ => inferInstance
   | .fixed _ => inferInstance
 
+namespace SCM
+
+/-- Transporting a value along an equality of indices is measurable. -/
+theorem measurable_cast_family {I : Type*} {X : I → Type*}
+    [∀ i, MeasurableSpace (X i)] {a b : I} (hab : a = b) :
+    Measurable (cast (congrArg X hab) : X a → X b) := by
+  subst hab
+  exact measurable_id
+
+/-- A measurable function remains measurable after transporting its codomain index. -/
+theorem measurable_family_cast {I γ : Type*} {X : I → Type*}
+    [∀ i, MeasurableSpace (X i)] [MeasurableSpace γ]
+    {v w : I} (h : v = w) {f : γ → X v} (hf : Measurable f) :
+    Measurable (fun x => (h ▸ f x : X w)) := by
+  subst h
+  exact hf
+
+end SCM
+
 /-- The shared SWIG value-space family inherits standard Borel spaces from the base variables. -/
 instance instStandardBorelSpaceSwigΩ {N : Type*} (Ω : N → Type*)
     [∀ n, MeasurableSpace (Ω n)] [∀ n, StandardBorelSpace (Ω n)] :
@@ -261,10 +280,10 @@ theorem swig_fixed_are_roots (G : DAG N) (targets : Finset N) (n : N) :
   intro x _
   cases x <;> simp [swigEdge]
 
-/-- In the SWIG, random nodes of intervention targets have the same incoming edges
-    as in the original DAG (mapped to random versions). Specifically, the parents
-    of random D in the SWIG are exactly the random versions of D's parents in G. -/
-theorem swig_target_parents (G : DAG N) (targets : Finset N) (d : N) (_hd : d ∈ targets) :
+/-- In the SWIG, every random node has the same incoming edges as in the original
+    DAG, with each parent represented by its random or fixed version according to
+    whether that parent is an intervention target. -/
+theorem swig_target_parents (G : DAG N) (targets : Finset N) (d : N) :
     ∀ x : SWIGNode N, x ∈ (swigDAG G targets).parents (.random d) ↔
       ∃ p, G.edge p d ∧ x = .random p ∧ p ∉ targets ∨
            G.edge p d ∧ x = .fixed p ∧ p ∈ targets := by
@@ -473,11 +492,11 @@ def Equivalent (G H : SWIGGraph N) : Prop :=
     Consequence of `Equivalent`'s edge-iff clause and the fact that
     `DAG.parents` is `Finset.univ.filter (edge · v)`. -/
 theorem Equivalent.parents_eq {G H : SWIGGraph N}
-    (h : G.Equivalent H) (v : SWIGNode N) :
+    (hEdge : ∀ u v, G.dag.edge u v ↔ H.dag.edge u v) (v : SWIGNode N) :
     G.dag.parents v = H.dag.parents v := by
   ext u
   rw [G.dag.mem_parents, H.dag.mem_parents]
-  exact h.1 u v
+  exact hEdge u v
 
 /-- If `u` is a parent of `v` in `G`, then `u` is classified
     (fixed, observed, or unobserved). -/

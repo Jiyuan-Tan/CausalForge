@@ -16,9 +16,11 @@ import {
   readRoundProposals,
   emptyProposals,
   hasProposals,
+  pinWhitespaceEquivalentCurrent,
   proposalIds,
 } from "../../src/discovery/solve/proposals.js";
 import { artifactPath } from "../../src/paths.js";
+import { definitionRevision, statementRevision } from "../../src/discovery/core/revision.js";
 
 // Local mirror of the RETIRED per-kind filenames (production no longer exports
 // them; these tests exercise the leftover-file detection).
@@ -96,6 +98,97 @@ describe("readRoundProposals", () => {
     const ctx = await ctxIn();
     await writeFile(legacyProposalPath(ctx, "coreEdits"), "{ not json", "utf8");
     await expect(readRoundProposals(ctx, working())).rejects.toThrow(/migrate_dstage_stores/);
+  });
+});
+
+describe("pinWhitespaceEquivalentCurrent", () => {
+  it("repins only whitespace-equivalent guards to authoritative durable bytes", () => {
+    const durable = "Claim introduction.\n\\[\n x = 1.\n\\]\nConclusion.";
+    const compressed = "Claim introduction. \\[ x = 1. \\] Conclusion.";
+    expect(pinWhitespaceEquivalentCurrent({ id: "thm:a", current: compressed }, durable)).toEqual({
+      id: "thm:a", current: durable,
+    });
+
+    const stale = { id: "thm:a", current: "A substantively older claim." };
+    const warnings: string[] = [];
+    expect(pinWhitespaceEquivalentCurrent(stale, durable, [], (m) => warnings.push(m))).toBe(stale);
+    expect(warnings).toEqual([expect.stringMatching(/left unpinned/)]);
+    expect(pinWhitespaceEquivalentCurrent(
+      { id: "def:d", current: "U   =\n a", proposed: "U = a + b" },
+      "U = a",
+    )).toEqual({ id: "def:d", current: "U = a", proposed: "U = a + b" });
+  });
+
+  it("repins a non-whitespace serialization mismatch only from a matching revision", () => {
+    const durable = 'The H"older condition holds.';
+    const revision = statementRevision({
+      id: "thm:a", kind: "theorem", statement: durable, status: "to-prove",
+    });
+    expect(pinWhitespaceEquivalentCurrent(
+      { id: "thm:a", current: String.raw`The H\"older condition holds.`, based_on_revision: revision },
+      durable,
+      [revision],
+    )).toEqual({ id: "thm:a", current: durable, based_on_revision: revision });
+    // An unknown revision hash is a single-change defect: the guard stays
+    // untouched (apply's exact guard skips it) instead of aborting the round.
+    const garbled = { id: "thm:a", current: durable, based_on_revision: `rev:${"0".repeat(64)}` };
+    const staleRevisionWarnings: string[] = [];
+    expect(pinWhitespaceEquivalentCurrent(garbled, durable, [revision], (m) => staleRevisionWarnings.push(m)))
+      .toBe(garbled);
+    expect(staleRevisionWarnings).toEqual([expect.stringMatching(/matches no current view/)]);
+    // A valid revision proves the displayed view, so a substantively drifted
+    // echo is repinned — but the tripwire stays visible.
+    const echoWarnings: string[] = [];
+    expect(pinWhitespaceEquivalentCurrent(
+      { id: "thm:a", current: "A completely misread claim.", based_on_revision: revision },
+      durable,
+      [revision],
+      (m) => echoWarnings.push(m),
+    )).toEqual({ id: "thm:a", current: durable, based_on_revision: revision });
+    expect(echoWarnings).toEqual([expect.stringMatching(/differs beyond whitespace/)]);
+
+    const definition = { id: "def:d", construction: "U = a", name: "D" } as const;
+    const defRevision = definitionRevision(definition);
+    expect(pinWhitespaceEquivalentCurrent(
+      { id: "def:d", current: "U=a", based_on_revision: defRevision },
+      definition.construction,
+      [defRevision],
+    ).current).toBe("U = a");
+  });
+
+  it("leaves paragraph-boundary changes unpinned for apply-time refusal", () => {
+    const stale = { id: "thm:a", current: "First paragraph. Second paragraph." };
+    const warnings: string[] = [];
+    expect(pinWhitespaceEquivalentCurrent(stale, "First paragraph.\n\nSecond paragraph.", [], (m) => warnings.push(m)))
+      .toBe(stale);
+    expect(warnings).toEqual([expect.stringMatching(/left unpinned/)]);
+  });
+
+  it("never normalizes when TeX makes whitespace semantic", () => {
+    const expectUnpinned = <T extends { current?: string }>(change: T, durable: string): void => {
+      const warnings: string[] = [];
+      expect(pinWhitespaceEquivalentCurrent(change, durable, [], (m) => warnings.push(m))).toBe(change);
+      expect(warnings).toEqual([expect.stringMatching(/left unpinned/)]);
+    };
+    expectUnpinned({ id: "thm:comment", current: "Claim% old" }, "Claim%\nold");
+    expectUnpinned({ id: "thm:verb", current: String.raw`Use \verb|a  b|.` }, String.raw`Use \verb|a b|.`);
+    expectUnpinned(
+      { id: "thm:env", current: "\\begin{verbatim}\na  b\n\\end{verbatim}" },
+      "\\begin{verbatim}\na b\n\\end{verbatim}",
+    );
+    for (const [id, current, durable] of [
+      ["begin-space", "\\begin {verbatim}\na  b\n\\end {verbatim}", "\\begin {verbatim}\na b\n\\end {verbatim}"],
+      ["verbatim-out", "\\begin{VerbatimOut}{x}\na  b\n\\end{VerbatimOut}", "\\begin{VerbatimOut}{x}\na b\n\\end{VerbatimOut}"],
+      ["lstinline", String.raw`Use \lstinline|a  b|.`, String.raw`Use \lstinline|a b|.`],
+      ["mintinline", String.raw`Use \mintinline{text}|a  b|.`, String.raw`Use \mintinline{text}|a b|.`],
+      ["obeyspaces", "\\obeyspaces a  b", "\\obeyspaces a b"],
+      ["obeylines", "\\obeylines a\n b", "\\obeylines a b"],
+    ] as const) {
+      expectUnpinned({ id: `thm:${id}`, current }, durable);
+    }
+
+    const exactComment = { id: "thm:exact", current: "Claim%\nold" };
+    expect(pinWhitespaceEquivalentCurrent(exactComment, exactComment.current)).toBe(exactComment);
   });
 });
 

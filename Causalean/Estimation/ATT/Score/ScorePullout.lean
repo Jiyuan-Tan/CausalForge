@@ -64,7 +64,7 @@ lemma propScore_false_ae (S : TreatedEstimationSystem P γ)
         (fun ω => 1 - S.toPOBackdoorSystem.propScore true ω) := by
   have hindD_integrable :
       ∀ e : Bool, Integrable (S.toPOBackdoorSystem.dVar.indicator e) P.μ :=
-    fun e => S.toPOBackdoorSystem.dVar.integrable_indicator e
+    fun e => S.toPOBackdoorSystem.dVar.integrable_indicator e (measurableSet_singleton e)
   have hsum_ptwise :
       (fun ω => S.toPOBackdoorSystem.dVar.indicator true ω +
         S.toPOBackdoorSystem.dVar.indicator false ω)
@@ -147,8 +147,8 @@ lemma residual_false_condExp_zero (S : TreatedEstimationSystem P γ)
   have hYind_int : Integrable
       (fun ω => S.toPOBackdoorSystem.factualY ω *
         S.toPOBackdoorSystem.dVar.indicator false ω) P.μ :=
-    S.toPOBackdoorSystem.dVar.integrable_mul_indicator false hY_int
-      S.toPOBackdoorSystem.measurable_factualY
+    S.toPOBackdoorSystem.dVar.integrable_mul_indicator false
+      (measurableSet_singleton false) hY_int
   have hμ₀x_int :
       Integrable (fun ω => S.μ₀_val (S.toPOBackdoorSystem.factualX ω)) P.μ := by
     have hcate_int : Integrable (S.toPOBackdoorSystem.CATE false) P.μ := by
@@ -161,7 +161,8 @@ lemma residual_false_condExp_zero (S : TreatedEstimationSystem P γ)
   have hμ₀ind_int : Integrable
       (fun ω => S.μ₀_val (S.toPOBackdoorSystem.factualX ω) *
         S.toPOBackdoorSystem.dVar.indicator false ω) P.μ :=
-    S.toPOBackdoorSystem.dVar.integrable_mul_indicator false hμ₀x_int hμ₀x_meas
+    S.toPOBackdoorSystem.dVar.integrable_mul_indicator false
+      (measurableSet_singleton false) hμ₀x_int
   have hres_eq :
       (fun ω => S.toPOBackdoorSystem.dVar.indicator false ω *
           (S.toPOBackdoorSystem.factualY ω -
@@ -205,7 +206,7 @@ lemma residual_false_condExp_zero (S : TreatedEstimationSystem P γ)
     exact (S.μ₀_meas.comp
       (comap_measurable S.toPOBackdoorSystem.factualX)).stronglyMeasurable
   have hind_int : Integrable (S.toPOBackdoorSystem.dVar.indicator false) P.μ :=
-    S.toPOBackdoorSystem.dVar.integrable_indicator false
+    S.toPOBackdoorSystem.dVar.integrable_indicator false (measurableSet_singleton false)
   have hμce :
       P.μ[fun ω => S.μ₀_val (S.toPOBackdoorSystem.factualX ω) *
           S.toPOBackdoorSystem.dVar.indicator false ω |
@@ -258,8 +259,8 @@ lemma weighted_residual_false_integral_zero
   have hYind_int : Integrable
       (fun ω => S.toPOBackdoorSystem.factualY ω *
         S.toPOBackdoorSystem.dVar.indicator false ω) P.μ :=
-    S.toPOBackdoorSystem.dVar.integrable_mul_indicator false hY_int
-      S.toPOBackdoorSystem.measurable_factualY
+    S.toPOBackdoorSystem.dVar.integrable_mul_indicator false
+      (measurableSet_singleton false) hY_int
   have hμ₀x_int :
       Integrable (fun ω => S.μ₀_val (S.toPOBackdoorSystem.factualX ω)) P.μ := by
     have hcate_int : Integrable (S.toPOBackdoorSystem.CATE false) P.μ := by
@@ -272,7 +273,8 @@ lemma weighted_residual_false_integral_zero
   have hμ₀ind_int : Integrable
       (fun ω => S.μ₀_val (S.toPOBackdoorSystem.factualX ω) *
         S.toPOBackdoorSystem.dVar.indicator false ω) P.μ :=
-    S.toPOBackdoorSystem.dVar.integrable_mul_indicator false hμ₀x_int hμ₀x_meas
+    S.toPOBackdoorSystem.dVar.integrable_mul_indicator false
+      (measurableSet_singleton false) hμ₀x_int
   have hresid_int : Integrable
       (fun ω => S.toPOBackdoorSystem.dVar.indicator false ω *
         (S.toPOBackdoorSystem.factualY ω -
@@ -355,7 +357,7 @@ lemma indicator_to_propScore_integral
     exact (hf_meas.comp
       (comap_measurable S.toPOBackdoorSystem.factualX)).stronglyMeasurable
   have hind_int : Integrable (S.toPOBackdoorSystem.dVar.indicator d) P.μ :=
-    S.toPOBackdoorSystem.dVar.integrable_indicator d
+    S.toPOBackdoorSystem.dVar.integrable_indicator d (measurableSet_singleton d)
   have hCE_pull :=
     MeasureTheory.condExp_mul_of_stronglyMeasurable_left
       (μ := P.μ) (m := S.toPOBackdoorSystem.sigmaX) hf_sm hf_ind_int hind_int

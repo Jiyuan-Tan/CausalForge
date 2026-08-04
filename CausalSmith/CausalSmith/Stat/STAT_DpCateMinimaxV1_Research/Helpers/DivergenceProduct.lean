@@ -29,8 +29,8 @@ lemma cateWitness_tv_product_le {d n : ℕ} (Q : CateLaw d) (e0 K : ℝ)
     cateWitnessLaw_isProbabilityMeasure Q e0 0 measurable_const (by simp) he0 he1
   obtain ⟨hac, hac', hint⟩ :=
     cateWitness_single_ac_and_int Q e0 b hbmeas hb he0 he1
-  have ht := Causalean.Mathlib.InformationTheory.productKL_tensorization_iid
-    n μ ν hac hac' hint
+  have ht := Causalean.Mathlib.InformationTheory.productKL_tensorization
+    n μ ν hac hint
   have hsingle : (InformationTheory.klDiv μ ν).toReal ≤ K := by
     have := ENNReal.toReal_mono ENNReal.ofReal_ne_top hkl
     simpa [μ, ν, ENNReal.toReal_ofReal hK] using this

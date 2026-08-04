@@ -102,7 +102,8 @@ private lemma integrable_treatedY_of_wMax_envelope (Λ : ℝ) (hΛ : 1 < Λ)
       div_nonneg (mul_nonneg (le_of_lt hΛpos) (le_of_lt hnum)) (le_of_lt hω.1)
     linarith
   refine Integrable.mono' henv
-    ((S.dVar.measurable_indicator true).mul S.measurable_factualY).aestronglyMeasurable ?_
+    ((S.dVar.measurable_indicator true (MeasurableSet.singleton true)).mul
+      S.measurable_factualY).aestronglyMeasurable ?_
   filter_upwards [hwMax_ge_one] with ω hw
   rw [Real.norm_eq_abs, abs_mul]
   have hAabs : |S.dVar.indicator true ω| = S.dVar.indicator true ω :=
@@ -143,7 +144,8 @@ private lemma integrable_treatedY_trunc_of_wMax_envelope (Λ : ℝ) (hΛ : 1 < �
     Measurable.ite (measurableSet_lt (hc.mono S.sigmaX_le le_rfl) S.measurable_factualY)
       measurable_const measurable_const
   refine Integrable.mono' henv
-    (((S.dVar.measurable_indicator true).mul S.measurable_factualY).mul hImeas).aestronglyMeasurable ?_
+    (((S.dVar.measurable_indicator true (MeasurableSet.singleton true)).mul
+      S.measurable_factualY).mul hImeas).aestronglyMeasurable ?_
   filter_upwards [hwMax_ge_one] with ω hw
   rw [Real.norm_eq_abs, abs_mul, abs_mul]
   have hAabs : |S.dVar.indicator true ω| = S.dVar.indicator true ω :=

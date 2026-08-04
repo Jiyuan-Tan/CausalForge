@@ -85,7 +85,7 @@ open Finset
 components.
 
 Compatibility alias for the shared additive-span predicate. -/
-abbrev IsGTFE {G T : Type*} [Fintype G] [Fintype T] (h : G → T → ℝ) : Prop :=
+abbrev IsGTFE {G T : Type*} (h : G → T → ℝ) : Prop :=
   Causalean.Panel.Weighted.IsUnitTimeAdditive h
 
 /-- Finite DCDH group-time panel with a residualized-treatment witness. -/
@@ -144,27 +144,49 @@ def zeroUntreatedResidualContrast (P : DCDHPanel G T) : Prop :=
 
 /-- Orthogonality of the residualized treatment against `D - Dtilde` gives
 the DCDH denominator identity. -/
-theorem inner_Dtilde_D_eq_SD (P : DCDHPanel G T) :
-  ∑ g, ∑ t, P.pi g t * P.Dtilde g t * P.D g t = P.SD := by
-  have horth : ∑ g, ∑ t, P.pi g t * P.Dtilde g t *
-      (P.D g t - P.Dtilde g t) = 0 :=
-    P.Dtilde_orthogonal (fun g t => P.D g t - P.Dtilde g t)
-      P.D_minus_resid_mem
+theorem inner_Dtilde_D_eq_SD_core
+    (pi D Dtilde : G → T → ℝ)
+    (hmem : IsGTFE (fun g t => D g t - Dtilde g t))
+    (horth : ∀ h : G → T → ℝ, IsGTFE h →
+      ∑ g, ∑ t, pi g t * Dtilde g t * h g t = 0) :
+    ∑ g, ∑ t, pi g t * Dtilde g t * D g t =
+      ∑ g, ∑ t, pi g t * (Dtilde g t)^2 := by
+  have horth' : ∑ g, ∑ t, pi g t * Dtilde g t *
+      (D g t - Dtilde g t) = 0 :=
+    horth (fun g t => D g t - Dtilde g t) hmem
   have hdiff :
-      (∑ g, ∑ t, P.pi g t * P.Dtilde g t * P.D g t) -
-        (∑ g, ∑ t, P.pi g t * (P.Dtilde g t)^2) = 0 := by
-    rw [← horth]
+      (∑ g, ∑ t, pi g t * Dtilde g t * D g t) -
+        (∑ g, ∑ t, pi g t * (Dtilde g t)^2) = 0 := by
+    rw [← horth']
     simp_rw [mul_sub, Finset.sum_sub_distrib, pow_two]
     ring_nf
-  rw [SD]
   exact sub_eq_zero.mp hdiff
+
+/-- Orthogonality of the residualized treatment against `D - Dtilde` gives
+the DCDH denominator identity. -/
+theorem inner_Dtilde_D_eq_SD (P : DCDHPanel G T) :
+  ∑ g, ∑ t, P.pi g t * P.Dtilde g t * P.D g t = P.SD := by
+  simpa [SD] using inner_Dtilde_D_eq_SD_core P.pi P.D P.Dtilde
+    P.D_minus_resid_mem P.Dtilde_orthogonal
+
+/-- A weighted residual is orthogonal to every additive array, so its contrast
+with an additive untreated-outcome array vanishes. -/
+theorem weighted_residual_contrast_eq_zero_of_isGTFE
+    (pi Dtilde Y0 : G → T → ℝ)
+    (horth : ∀ h : G → T → ℝ, IsGTFE h →
+      ∑ g, ∑ t, pi g t * Dtilde g t * h g t = 0)
+    (hY0 : IsGTFE Y0) :
+    ∑ g, ∑ t, pi g t * Dtilde g t * Y0 g t = 0 :=
+  horth Y0 hY0
 
 /-- Group-plus-period untreated means imply the zero untreated residual
 contrast. -/
 theorem zeroUntreatedResidualContrast_of_Y0_mem_gtfe
   (P : DCDHPanel G T) (hY0 : IsGTFE P.Y0) :
   P.zeroUntreatedResidualContrast := by
-  simpa [zeroUntreatedResidualContrast] using P.Dtilde_orthogonal P.Y0 hY0
+  simpa [zeroUntreatedResidualContrast] using
+    weighted_residual_contrast_eq_zero_of_isGTFE P.pi P.Dtilde P.Y0
+      P.Dtilde_orthogonal hY0
 
 /-- DCDH finite TWFE decomposition into untreated bias and the all-cell
 `D`-weighted treatment-effect component. -/
@@ -237,22 +259,43 @@ theorem treated_omega_sum_eq_one (P : DCDHPanel G T) :
       rw [hnum]
       exact div_self (ne_of_gt P.SD_pos)
 
+/-- Dividing a positive cell mass times a residual by a positive normalizer
+preserves whether the residual is negative. -/
+theorem normalized_weight_neg_iff_residual_neg
+    {pi Dtilde SD : ℝ} (hpi : 0 < pi) (hSD : 0 < SD) :
+    pi * Dtilde / SD < 0 ↔ Dtilde < 0 := by
+  constructor
+  · intro h
+    have hnum : pi * Dtilde < 0 :=
+      ((div_neg_iff.mp h).resolve_left
+        (fun hpos => not_lt_of_gt hSD hpos.2)).1
+    nlinarith [hpi]
+  · intro h
+    exact div_neg_of_neg_of_pos (mul_neg_of_pos_of_neg hpi h) hSD
+
 /-- The sign of the normalized DCDH weight is the sign of the residualized
 treatment. The lemma is named for its treated-cell use in the DCDH weight
 interpretation, but the equivalence only needs `π_gt > 0` and `S_D > 0`. -/
 theorem treated_omega_neg_iff_Dtilde_neg
   (P : DCDHPanel G T) {g : G} {t : T} :
   P.omega g t < 0 ↔ P.Dtilde g t < 0 := by
-  unfold omega
+  simpa [omega] using normalized_weight_neg_iff_residual_neg
+    (P.pi_pos g t) P.SD_pos
+
+/-- Dividing a positive cell mass times a residual by a positive normalizer
+preserves whether the residual is positive. -/
+theorem normalized_weight_pos_iff_residual_pos
+    {pi Dtilde SD : ℝ} (hpi : 0 < pi) (hSD : 0 < SD) :
+    0 < pi * Dtilde / SD ↔ 0 < Dtilde := by
+  rw [div_pos_iff_of_pos_right hSD]
   constructor
   · intro h
-    have hnum : P.pi g t * P.Dtilde g t < 0 :=
-      ((div_neg_iff.mp h).resolve_left
-        (fun hpos => not_lt_of_gt P.SD_pos hpos.2)).1
-    nlinarith [P.pi_pos g t]
+    rcases lt_trichotomy Dtilde 0 with h' | h' | h'
+    · exact absurd (mul_neg_of_pos_of_neg hpi h') (not_lt.mpr (le_of_lt h))
+    · simp [h'] at h
+    · exact h'
   · intro h
-    exact div_neg_of_neg_of_pos (mul_neg_of_pos_of_neg (P.pi_pos g t) h)
-      P.SD_pos
+    exact mul_pos hpi h
 
 /-- Positive-weight direction of the sign characterization: ω_gt > 0 iff
 D̃_gt > 0.  Together with `treated_omega_neg_iff_Dtilde_neg` and
@@ -261,18 +304,25 @@ sign(ω_gt) = sign(D̃_gt) (.tex Theorem 2 / .md prop:po-estimand-dcdh-weights-s
 theorem treated_omega_pos_iff_Dtilde_pos
   (P : DCDHPanel G T) {g : G} {t : T} :
   0 < P.omega g t ↔ 0 < P.Dtilde g t := by
-  unfold omega SD
-  -- 0 < (pi * Dtilde) / SD ↔ 0 < pi * Dtilde  (since SD > 0)
-  rw [div_pos_iff_of_pos_right P.SD_pos]
+  simpa [omega] using normalized_weight_pos_iff_residual_pos
+    (P.pi_pos g t) P.SD_pos
+
+/-- A positive cell mass and positive normalizer make the normalized weight
+zero exactly when its residual is zero. -/
+theorem normalized_weight_zero_iff_residual_zero
+    {pi Dtilde SD : ℝ} (hpi : 0 < pi) (hSD : 0 < SD) :
+    pi * Dtilde / SD = 0 ↔ Dtilde = 0 := by
+  rw [div_eq_zero_iff]
   constructor
   · intro h
-    have hpi := P.pi_pos g t
-    rcases lt_trichotomy (P.Dtilde g t) 0 with h' | h' | h'
-    · exact absurd (mul_neg_of_pos_of_neg hpi h') (not_lt.mpr (le_of_lt h))
-    · simp [h'] at h
-    · exact h'
+    rcases h with hnum | hSD0
+    · rcases mul_eq_zero.mp hnum with hpi0 | hDt
+      · exact absurd hpi0 (ne_of_gt hpi)
+      · exact hDt
+    · exact absurd hSD0 (ne_of_gt hSD)
   · intro h
-    exact mul_pos (P.pi_pos g t) h
+    left
+    rw [h, mul_zero]
 
 /-- Zero-weight direction of the sign characterization: ω_gt = 0 iff D̃_gt = 0.
 Together with the pos/neg sibling lemmas, this completes sign(ω_gt) = sign(D̃_gt)
@@ -280,18 +330,8 @@ for all three cases. -/
 theorem treated_omega_zero_iff_Dtilde_zero
   (P : DCDHPanel G T) {g : G} {t : T} :
   P.omega g t = 0 ↔ P.Dtilde g t = 0 := by
-  unfold omega
-  rw [div_eq_zero_iff]
-  constructor
-  · intro h
-    rcases h with hnum | hSD
-    · rcases mul_eq_zero.mp hnum with hpi | hDt
-      · exact absurd hpi (ne_of_gt (P.pi_pos g t))
-      · exact hDt
-    · exact absurd hSD (ne_of_gt P.SD_pos)
-  · intro h
-    left
-    rw [h, mul_zero]
+  simpa [omega] using normalized_weight_zero_iff_residual_zero
+    (P.pi_pos g t) P.SD_pos
 
 end DCDHPanel
 
@@ -319,11 +359,9 @@ negative component, some strictly positive effects have a negative weighted
 sum. -/
 theorem exists_positive_effects_negative_weighted_sum_of_negative_component
   {ι : Type*} [Fintype ι] (w : ι → ℝ)
-  (h_sum : ∑ i, w i = 1)
   (h_neg_component : ∑ i ∈ (Finset.univ.filter fun i => w i < 0), w i < 0) :
   ∃ tau : ι → ℝ, (∀ i, 0 < tau i) ∧ ∑ i, w i * tau i < 0 := by
   classical
-  have _ : ∑ i, w i = 1 := h_sum
   let N : Finset ι := Finset.univ.filter fun i => w i < 0
   let B : ℝ := ∑ i ∈ (Finset.univ.filter fun i => ¬ w i < 0), w i
   have hAneg : (∑ i ∈ N, w i) < 0 := by
@@ -434,7 +472,7 @@ theorem exists_panel_with_positive_treated_effects_twfe_negative_of_negative_com
     exact h_neg_component
   obtain ⟨tau, htau_pos, hweighted_neg⟩ :=
     exists_positive_effects_negative_weighted_sum_of_negative_component
-      w hsum_w hneg_w
+      w hneg_w
   let P' : DCDHPanel G T :=
     { pi := P.pi
       D := P.D

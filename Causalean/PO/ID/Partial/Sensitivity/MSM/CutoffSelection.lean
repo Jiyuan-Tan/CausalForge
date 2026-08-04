@@ -89,7 +89,7 @@ theorem cutoff_calibValue_eq (Λ : ℝ) (c : P.Ω → ℝ) (_hc_meas : Measurabl
     (hwMax_smeas.measurable.sub hwMin_smeas.measurable).stronglyMeasurable
   have hA_int : Integrable A P.μ := by
     rw [hA_def]
-    exact S.dVar.integrable_indicator true
+    exact S.dVar.integrable_indicator true (measurableSet_singleton true)
   have hI_int : Integrable (fun ω => A ω * I ω) P.μ := by
     rw [hA_def, hI_def]
     exact hint1

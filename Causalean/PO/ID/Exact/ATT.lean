@@ -100,7 +100,7 @@ structure ATTAssumptions (S : POBackdoorSystem P γ)
 private lemma propScore_false_ae [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ] :
     S.propScore false =ᵐ[P.μ] (fun ω => 1 - S.propScore true ω) := by
   have hindD_integrable : ∀ e : Bool, Integrable (S.dVar.indicator e) P.μ :=
-    fun e => S.dVar.integrable_indicator e
+    fun e => S.dVar.integrable_indicator e (measurableSet_singleton e)
   have hsum_ptwise :
       (fun ω => S.dVar.indicator true ω + S.dVar.indicator false ω)
         = (fun _ : P.Ω => (1 : ℝ)) := by
@@ -172,19 +172,20 @@ private lemma att_numerator_arm [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
     ∫ ω, S.dVar.indicator true ω * S.YofD d ω ∂P.μ
       = ∫ ω, S.dVar.indicator true ω * S.adjustedCE d ω ∂P.μ := by
   have hindT_integrable : Integrable (S.dVar.indicator true) P.μ :=
-    S.dVar.integrable_indicator true
+    S.dVar.integrable_indicator true (measurableSet_singleton true)
   have hYofD_integrable : Integrable (S.YofD d) P.μ := by
     cases d
     · exact hA.integrable_Y0
     · exact hA.integrable_Y1
   have hAY_int : Integrable (fun ω => S.dVar.indicator true ω * S.YofD d ω) P.μ := by
-    have h := S.dVar.integrable_mul_indicator true hYofD_integrable (S.measurable_YofD d)
+    have h := S.dVar.integrable_mul_indicator true (measurableSet_singleton true)
+      hYofD_integrable
     exact h.congr (Filter.Eventually.of_forall (fun ω => by ring))
   have hAdj_int : Integrable (S.adjustedCE d) P.μ := hAdjCE_int
   have hAdj_meas : Measurable (S.adjustedCE d) :=
     S.measurable_adjustedCE d
   have hAdjA_int : Integrable (fun ω => S.adjustedCE d ω * S.dVar.indicator true ω) P.μ :=
-    S.dVar.integrable_mul_indicator true hAdj_int hAdj_meas
+    S.dVar.integrable_mul_indicator true (measurableSet_singleton true) hAdj_int
   have hAAdj_int : Integrable (fun ω => S.dVar.indicator true ω * S.adjustedCE d ω) P.μ :=
     hAdjA_int.congr (Filter.Eventually.of_forall (fun ω => by ring))
   let u : Bool → ℝ := ({true} : Set Bool).indicator (fun _ => (1 : ℝ))
@@ -287,16 +288,15 @@ private lemma condExp_indicator_residual_adjusted_zero
       =ᵐ[P.μ] (fun _ => (0 : ℝ)) := by
   have hYind_int : Integrable
       (fun ω => S.factualY ω * S.dVar.indicator d ω) P.μ :=
-    S.dVar.integrable_mul_indicator d
+    S.dVar.integrable_mul_indicator d (measurableSet_singleton d)
       (S.integrable_factualY_of_consistency
         hA.consistency hA.integrable_Y1 hA.integrable_Y0)
-      S.measurable_factualY
   have hAdj_int : Integrable (S.adjustedCE d) P.μ := hAdjCE_int
   have hAdj_meas : Measurable (S.adjustedCE d) :=
     S.measurable_adjustedCE d
   have hAdjind_int : Integrable
       (fun ω => S.adjustedCE d ω * S.dVar.indicator d ω) P.μ :=
-    S.dVar.integrable_mul_indicator d hAdj_int hAdj_meas
+    S.dVar.integrable_mul_indicator d (measurableSet_singleton d) hAdj_int
   have hres_eq :
       (fun ω => S.dVar.indicator d ω * (S.factualY ω - S.adjustedCE d ω))
         = (fun ω => S.factualY ω * S.dVar.indicator d ω
@@ -321,7 +321,7 @@ private lemma condExp_indicator_residual_adjusted_zero
       P.μ[fun ω => S.adjustedCE d ω * S.dVar.indicator d ω | S.sigmaX]
         =ᵐ[P.μ] S.adjustedCE d * S.propScore d := by
     have hind_int : Integrable (S.dVar.indicator d) P.μ :=
-      S.dVar.integrable_indicator d
+      S.dVar.integrable_indicator d (measurableSet_singleton d)
     have h :=
       S.xVar.condExpGiven_mul_of_stronglyMeasurable_left
         (S.stronglyMeasurable_adjustedCE_comap d) hAdjind_int hind_int
@@ -344,14 +344,13 @@ private lemma weighted_false_residual_integral_zero
         (S.dVar.indicator false ω * (S.factualY ω - S.adjustedCE false ω)) ∂P.μ = 0 := by
   have hYind_int : Integrable
       (fun ω => S.factualY ω * S.dVar.indicator false ω) P.μ :=
-    S.dVar.integrable_mul_indicator false
+    S.dVar.integrable_mul_indicator false (measurableSet_singleton false)
       (S.integrable_factualY_of_consistency
         hA.consistency hA.integrable_Y1 hA.integrable_Y0)
-      S.measurable_factualY
   have hAdjind_int : Integrable
       (fun ω => S.adjustedCE false ω * S.dVar.indicator false ω) P.μ :=
-    S.dVar.integrable_mul_indicator false (S.integrable_adjustedCE_control hA)
-      (S.measurable_adjustedCE false)
+    S.dVar.integrable_mul_indicator false (measurableSet_singleton false)
+      (S.integrable_adjustedCE_control hA)
   have hresid_int : Integrable
       (fun ω => S.dVar.indicator false ω *
         (S.factualY ω - S.adjustedCE false ω)) P.μ := by
@@ -413,20 +412,21 @@ theorem ATT_eq_adjustedATT [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
   have hfalse := S.att_numerator_arm hA false
     (S.cate_backdoor_control hA) (S.integrable_adjustedCE_control hA)
   have hY1 : Integrable (fun ω => S.dVar.indicator true ω * S.YofD true ω) P.μ := by
-    have h := S.dVar.integrable_mul_indicator true hA.integrable_Y1 (S.measurable_YofD true)
+    have h := S.dVar.integrable_mul_indicator true (measurableSet_singleton true)
+      hA.integrable_Y1
     exact h.congr (Filter.Eventually.of_forall (fun ω => by ring))
   have hY0 : Integrable (fun ω => S.dVar.indicator true ω * S.YofD false ω) P.μ := by
-    have h := S.dVar.integrable_mul_indicator true hA.integrable_Y0 (S.measurable_YofD false)
+    have h := S.dVar.integrable_mul_indicator true (measurableSet_singleton true)
+      hA.integrable_Y0
     exact h.congr (Filter.Eventually.of_forall (fun ω => by ring))
   have hAfact : Integrable (fun ω => S.dVar.indicator true ω * S.factualY ω) P.μ := by
-    have h := S.dVar.integrable_mul_indicator true
+    have h := S.dVar.integrable_mul_indicator true (measurableSet_singleton true)
       (S.integrable_factualY_of_consistency
         hA.consistency hA.integrable_Y1 hA.integrable_Y0)
-      S.measurable_factualY
     exact h.congr (Filter.Eventually.of_forall (fun ω => by ring))
   have hAdj0 : Integrable (fun ω => S.dVar.indicator true ω * S.adjustedCE false ω) P.μ := by
-    have h := S.dVar.integrable_mul_indicator true (S.integrable_adjustedCE_control hA)
-      (S.measurable_adjustedCE false)
+    have h := S.dVar.integrable_mul_indicator true (measurableSet_singleton true)
+      (S.integrable_adjustedCE_control hA)
     exact h.congr (Filter.Eventually.of_forall (fun ω => by ring))
   -- On the treated set, consistency gives `A · Y = A · Y(1)`.
   have hcons :
@@ -547,17 +547,15 @@ theorem adjustedATT_eq_aipwForm [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
       Integrable (fun ω => S.dVar.indicator true ω *
         (S.factualY ω - S.adjustedCE false ω)) P.μ := by
     have hYind_int : Integrable (fun ω => S.dVar.indicator true ω * S.factualY ω) P.μ := by
-      have h := S.dVar.integrable_mul_indicator true
+      have h := S.dVar.integrable_mul_indicator true (measurableSet_singleton true)
         (S.integrable_factualY_of_consistency
           hA.consistency hA.integrable_Y1 hA.integrable_Y0)
-        S.measurable_factualY
       exact h.congr (Filter.Eventually.of_forall (fun ω => by ring))
     have hAdjind_int : Integrable
         (fun ω => S.dVar.indicator true ω * S.adjustedCE false ω) P.μ := by
       have h :=
-        S.dVar.integrable_mul_indicator true
+        S.dVar.integrable_mul_indicator true (measurableSet_singleton true)
           (S.integrable_adjustedCE_control hA)
-          (S.measurable_adjustedCE false)
       exact h.congr (Filter.Eventually.of_forall (fun ω => by ring))
     exact (hYind_int.sub hAdjind_int).congr
       (Filter.Eventually.of_forall (fun ω => by

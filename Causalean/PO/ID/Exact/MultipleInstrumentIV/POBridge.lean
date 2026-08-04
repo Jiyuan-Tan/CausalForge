@@ -169,7 +169,7 @@ lemma measurableSet_gEvent (g : ResponseType K) : MeasurableSet (S.gEvent g) :=
 
 /-- Each instrument support cell is measurable. -/
 lemma measurableSet_zEvent (k : Fin K) : MeasurableSet (S.zEvent k) :=
-  S.zVar.measurableSet_event k
+  S.zVar.measurableSet_event k (measurableSet_singleton k)
 
 /-- The outcome under the treatment induced by an instrument support point is measurable. -/
 lemma measurable_YofDofZ (k : Fin K) : Measurable (S.YofDofZ k) := by
@@ -246,7 +246,10 @@ theorem treatmentDrop [IsFiniteMeasure P.μ] (hA : S.Assumptions) (k : Fin K)
   change eventCondExp P.μ (S.zVar.event k) (fun ω => boolToReal (S.factualD ω))
       = ∫ ω, boolToReal (S.DofZ k ω) ∂P.μ
   rw [POSystem.eventCondExp_of_consistency_IndepCF (hA.instrumentIndep k)
-    (a := S.zVar) hh_meas hF_eq hZk (measure_ne_top _ _)]
+    (a := S.zVar) hh_meas
+    (measurableSet_singleton k)
+    (ae_restrict_of_forall_mem (μ := P.μ) (S.measurableSet_zEvent k) hF_eq)
+    hZk (measure_ne_top _ _)]
   refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
   intro ω
   dsimp [h_proj]
@@ -298,7 +301,10 @@ theorem outcomeDrop [IsFiniteMeasure P.μ] (hA : S.Assumptions) (k : Fin K)
     cases S.DofZ k ω <;> simp
   change eventCondExp P.μ (S.zVar.event k) S.factualY = ∫ ω, S.YofDofZ k ω ∂P.μ
   rw [POSystem.eventCondExp_of_consistency_IndepCF (hA.instrumentIndep k)
-    (a := S.zVar) hh_meas hF_eq hZk (measure_ne_top _ _)]
+    (a := S.zVar) hh_meas
+    (measurableSet_singleton k)
+    (ae_restrict_of_forall_mem (μ := P.μ) (S.measurableSet_zEvent k) hF_eq)
+    hZk (measure_ne_top _ _)]
   refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
   intro ω
   dsimp [h_proj, getD, getY1, getY0]
@@ -482,7 +488,7 @@ theorem treatment_cell_eq [IsFiniteMeasure P.μ] (hK : 0 < K) (hA : S.Assumption
           eventCondExp P.μ (S.gEvent g) (fun ω => boolToReal (S.DofZ q ω)) * S.mass g := by
         ring
       _ = ∫ ω in S.gEvent g, boolToReal (S.DofZ q ω) ∂P.μ := by
-        rw [mass, eventCondExp_mul_measure_toReal]
+        rw [mass, eventCondExp_mul_measure_toReal _ _ (measure_ne_top _ _)]
       _ = ∫ ω in S.gEvent g, boolToReal (g q) ∂P.μ := by
         refine MeasureTheory.setIntegral_congr_fun (S.measurableSet_gEvent g) ?_
         intro ω hω

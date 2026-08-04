@@ -41,6 +41,7 @@ open DesignBased
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 variable {n : ι → ℕ}
 
+omit [Fintype ι] [DecidableEq ι] in
 /-- **Within-group unbiasedness.** Conditional on group `i` being assigned strategy `ρ`, the
 empirical mean among `z`-treated units is unbiased for the group average potential outcome
 `ȳ_i(z;ρ)`.  Uses the design's constant `z`-treatment propensity `m / nᵢ`. -/
@@ -63,6 +64,7 @@ theorem E_groupEst (ρ : ∀ i, FiniteDesign (WAssign n i))
   rw [hLHS, Finset.sum_congr rfl (fun j _ => key j), ← Finset.mul_sum]
   field_simp
 
+omit [Fintype ι] [DecidableEq ι] in
 /-- The summand of the population estimator equals the stage-1 indicator times the within-group
 estimator, packaging it for the `E_compound_factor` stage-2 collapse. -/
 private lemma popEst_summand (Y : ∀ i, Fin (n i) → WAssign n i → ℝ)
@@ -116,6 +118,7 @@ theorem E_popEst (D₁ : FiniteDesign (StratAssign ι))
     rw [div_div, mul_comm (Fintype.card ι : ℝ) C, ← div_div, div_self hC]
   rw [hEsum, ← Finset.sum_mul, mul_div_assoc, hcN, mul_one_div]
 
+omit [DecidableEq ι] in
 /-- **Mixed-orientation decomposition identity.** With direct effect measured as treatment minus
 control under ψ, and indirect/total effects measured from φ-control to ψ, the total contrast equals
 the indirect contrast minus the direct contrast. -/

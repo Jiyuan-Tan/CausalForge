@@ -659,7 +659,8 @@ lemma bochner_discharge {K : ℕ}
         (fun k => hgTmeas k π (hvc.1 π (hPi0sub hπ)))
     · intro sample
       refine sSup_image_eq_of_dense_tendsto _ policySet Pi0 hPi0sub
-        (bddAbove_image_of_bound policySet _ (4 * B + 1) hoffbound sample) ?_
+        (bddAbove_image_of_bound policySet _ (4 * B + 1)
+          (fun sample π hπ => (le_abs_self _).trans (hoffbound sample π hπ)) sample) ?_
       intro π hπ
       rcases hPi0dense π hπ with ⟨seq, hseq, hseqconv⟩
       refine ⟨seq, hseq, ?_⟩
@@ -683,7 +684,8 @@ lemma bochner_discharge {K : ℕ}
         (fun k' => hgTmeas k' π (hvc.1 π (hPi0sub hπ)))
     · intro sample
       refine sSup_image_eq_of_dense_tendsto _ policySet Pi0 hPi0sub
-        (bddAbove_image_of_bound policySet _ (4 * B + 1) (hfoldoffbound k) sample) ?_
+        (bddAbove_image_of_bound policySet _ (4 * B + 1)
+          (fun sample π hπ => (le_abs_self _).trans (hfoldoffbound k sample π hπ)) sample) ?_
       intro π hπ
       rcases hPi0dense π hπ with ⟨seq, hseq, hseqconv⟩
       refine ⟨seq, hseq, ?_⟩

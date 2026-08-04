@@ -21,6 +21,7 @@ import type { PipelineContext, StateJson } from "../../types.js";
 import { CoreSchema } from "../core/schema.js";
 import {
   assertNoDecodedControlChars,
+  containsLikelyDecodedTexNewlines,
   normalizeRawModelJson,
   repairCoreLatexSerialization,
 } from "../core/latex_serialization.js";
@@ -61,6 +62,66 @@ export const CORE_HANDOFF_KEYS = [
   "cluster",
   "novelty_justification",
   "literature_checklist",
+] as const;
+
+/** Upgrade-mode receipt fields the UM8 directive mandates in the author's
+ * STDOUT JSON (not the core file). The persisted core is the single source the
+ * -0.5 reviewer reads, so these are folded into it at
+ * the persist boundary — otherwise upgrade runs would review without their
+ * declared axis/delta. Fixed allowlist for the same injection/bloat reason as
+ * CORE_HANDOFF_KEYS. */
+export const UPGRADE_RECEIPT_KEYS = [
+  "upgrade_mode",
+  "parent_qid",
+  "parent_spec",
+  "upgrade_axis",
+  "delta_summary",
+  "reused_bibkeys",
+  "new_bibkeys",
+] as const;
+
+/** The checklist's one canonical key plus the spellings the producer model
+ * empirically drifts to. ONE logical field: the persist fold normalizes any
+ * spelling to `literature_checklist` and never persists an alias — otherwise a
+ * fresh checklist emitted under a drift spelling loses to a stale canonical
+ * copy carried in the core (audit R3C3). */
+const CHECKLIST_SPELLINGS = [
+  "literature_checklist",
+  "named_literature_checklist",
+  "literature_check_list",
+] as const;
+
+/** The stdout fields the -0.5 reviewer CONSUMES from the persisted core, which the head prompts
+ * mandate (or tolerate as empirical key drift) on the FINAL STDOUT LINE rather
+ * than in the core file: the checklist (+ drift spellings), the novelty
+ * justification, the UM8 upgrade receipt, and the author's one-line `message`.
+ * Folded into the persisted core at the persist boundary so a
+ * contract-compliant stdout-only emission still reaches the reviewer through
+ * the single artifact (audit C1: losing a stdout-only checklist made every
+ * revise round fire N-thin-survey).
+ *
+ * Fold semantics, each boundary pinned by a test:
+ *  - STDOUT WINS on conflict. The current call's stdout is always fresh,
+ *    while the core copy can be OUR OWN prior fold carried back through the
+ *    revise input block (audit R2C1: raw-core precedence persisted iteration
+ *    1's checklist over iteration 2's updated one).
+ *  - RAW-CORE FALLBACK when stdout omits the key. CoreSchema strips these
+ *    keys from the typed core, so without an explicit fallback a revise whose
+ *    stdout forgets the UM8 receipt silently drops `upgrade_mode` and D-0.5
+ *    skips the parent-aware directive (audit R3C2).
+ *  - The checklist is normalized across CHECKLIST_SPELLINGS to the canonical
+ *    key; aliases are never persisted (audit R3C3).
+ *  - The list must stay DISJOINT from CoreSchema-declared keys. Folding a
+ *    schema-declared key (e.g. `cluster`, an enum) would let a malformed
+ *    stdout value invalidate an already-validated core AFTER its last
+ *    CoreSchema.parse (audit R2C2). Ideation metadata the reviewer never
+ *    renders (seeds, literature_map, cluster) is therefore NOT folded — it
+ *    reaches `proposed_from` via the in-memory handoff object instead. */
+export const STDOUT_HANDOFF_KEYS = [
+  ...UPGRADE_RECEIPT_KEYS,
+  ...CHECKLIST_SPELLINGS,
+  "novelty_justification",
+  "message",
 ] as const;
 
 /** Preserve the small stdout status receipt while sourcing proposal metadata
@@ -153,7 +214,9 @@ export async function runStageNeg1_2ProtoCore(args: {
     const prompt = lastGateFeedback
       ? `${basePrompt}\n\n── PRIOR ATTEMPT REJECTED BY THE PROPOSAL GATE ──\n` +
         `Your previous core failed these structural checks:\n${lastGateFeedback}\n` +
-        `Fix EXACTLY these and re-author the COMPLETE corrected core JSON. Atomic ` +
+        `Fix every listed structural violation and re-author the COMPLETE corrected core JSON. ` +
+        `Then re-audit the original reviewer flags and orchestrator directives: a structural-gate ` +
+        `repair does not discharge or narrow those substantive obligations. Atomic ` +
         `fields (an assumption \`condition\`, formal target/objective expressions) must ` +
         `hold ONLY formal symbolic content — move any explanatory prose into the ` +
         `designated prose/description fields.`
@@ -172,8 +235,8 @@ export async function runStageNeg1_2ProtoCore(args: {
         ...(modeBlock ? ["mode-input-block"] : []),
         ...(lastGateFeedback ? ["gate-feedback"] : []),
       ],
-      model: MODEL_PLAN.mechanicalTier.model,
-      reasoningEffort: MODEL_PLAN.mechanicalTier.effort,
+      model: MODEL_PLAN.stageNeg1_2_draft.codex.model,
+      reasoningEffort: MODEL_PLAN.stageNeg1_2_draft.codex.effort,
       inactivityTimeoutMs: 40 * 60 * 1000,
     });
     const parsedOut = parseStageOutput(out.stdout);
@@ -203,7 +266,17 @@ export async function runStageNeg1_2ProtoCore(args: {
         // best-effort by design), and every pivot then burns budget on no seeds.
         handoff = extractJsonObject(normalizeRawModelJson(out.stdout)) as Record<string, unknown>;
       } catch {
-        /* best-effort */
+        // The normalizer assumes pure JSON: odd `"` counts in surrounding
+        // narration flip its string tracker and corrupt correctly-escaped
+        // JSON. Retry on the untouched stdout before giving up — but reject a
+        // fallback showing the `\n`-family decode signature (silent TeX
+        // corruption only raw-byte normalization could have prevented).
+        try {
+          const rawHandoff = extractJsonObject(out.stdout) as Record<string, unknown>;
+          if (!containsLikelyDecodedTexNewlines(rawHandoff)) handoff = rawHandoff;
+        } catch {
+          /* best-effort */
+        }
       }
       if (existsSync(corePath)) {
         try {
@@ -284,29 +357,62 @@ export async function runStageNeg1_2ProtoCore(args: {
     for (const key of CORE_HANDOFF_KEYS) {
       if (Object.prototype.hasOwnProperty.call(rawCore, key)) persistedCore[key] = rawCore[key];
     }
-    // Emitted-vs-persisted visibility: the drop above is intentional, but it must
-    // never be SILENT — a prompt-mandated field missing from CoreSchema/allowlist
-    // otherwise vanishes here and is only discovered rounds later as a reviewer
-    // <MISSING> (the comparator_promise_table incident).
+    let stdoutHandoff: Record<string, unknown> = {};
+    try {
+      stdoutHandoff = extractJsonObject(normalizeRawModelJson(out.stdout)) as Record<string, unknown>;
+    } catch {
+      // Same normalizer caveat as the needs-pivot harvest above: retry raw,
+      // rejecting a fallback with the `\n`-family decode signature.
+      try {
+        const rawHandoff = extractJsonObject(out.stdout) as Record<string, unknown>;
+        if (!containsLikelyDecodedTexNewlines(rawHandoff)) stdoutHandoff = rawHandoff;
+      } catch {
+        /* gate already passed; harvest is best-effort */
+      }
+    }
+    // The head prompts mandate the reviewer-rendered handoff fields (checklist,
+    // novelty justification, upgrade receipt, message) on the final STDOUT
+    // line, not in the core file — fold them into the persisted core so the
+    // single artifact the -0.5 reviewer reads carries everything the drafter
+    // emitted. Stdout wins, raw core is the fallback, checklist spellings
+    // normalize to the canonical key (see STDOUT_HANDOFF_KEYS for why each).
+    const hasOwn = (obj: Record<string, unknown>, key: string): boolean =>
+      Object.prototype.hasOwnProperty.call(obj, key);
+    const checklistKeys: readonly string[] = CHECKLIST_SPELLINGS;
+    for (const key of STDOUT_HANDOFF_KEYS) {
+      if (checklistKeys.includes(key)) continue; // one logical field, handled below
+      if (hasOwn(stdoutHandoff, key)) persistedCore[key] = stdoutHandoff[key];
+      else if (!hasOwn(persistedCore, key) && hasOwn(rawCore, key)) persistedCore[key] = rawCore[key];
+    }
+    for (const key of checklistKeys) delete persistedCore[key];
+    const checklistSource = checklistKeys.some((key) => hasOwn(stdoutHandoff, key))
+      ? stdoutHandoff
+      : rawCore;
+    const checklistSpelling = checklistKeys.find((key) => hasOwn(checklistSource, key));
+    if (checklistSpelling !== undefined) {
+      persistedCore.literature_checklist = checklistSource[checklistSpelling];
+    }
+    // Emitted-vs-persisted visibility (computed AFTER the folds so a key with a
+    // persistence home is never falsely reported): the drop is intentional, but
+    // it must never be SILENT — a prompt-mandated field missing from every
+    // allowlist otherwise vanishes here and is only discovered rounds later as
+    // a reviewer <MISSING> (the comparator_promise_table incident).
     const droppedKeys = Object.keys(rawCore).filter(
-      (key) => !Object.prototype.hasOwnProperty.call(persistedCore, key),
+      (key) =>
+        !Object.prototype.hasOwnProperty.call(persistedCore, key) &&
+        // A checklist alias is not dropped — it was normalized to the
+        // canonical `literature_checklist` (or superseded by stdout's).
+        !(STDOUT_HANDOFF_KEYS as readonly string[]).includes(key),
     );
     if (droppedKeys.length > 0) {
       console.warn(
         `[D-1.2] persist boundary dropped non-schema key(s) from the authored core: ` +
           `${droppedKeys.join(", ")} — if the prompt mandates one of these, give it a home in ` +
-          `CoreSchema or CORE_HANDOFF_KEYS (contract: prompt_schema_contract.test.ts)`,
+          `CoreSchema, CORE_HANDOFF_KEYS, or STDOUT_HANDOFF_KEYS (contract: prompt_schema_contract.test.ts)`,
       );
     }
     await writeJsonAtomic(corePath, persistedCore);
     core = persistedCore;
-
-    let stdoutHandoff: Record<string, unknown> = {};
-    try {
-      stdoutHandoff = extractJsonObject(normalizeRawModelJson(out.stdout)) as Record<string, unknown>;
-    } catch {
-      /* gate already passed; harvest is best-effort */
-    }
 
     const handoff = mergeCoreHandoff(core as Record<string, unknown>, stdoutHandoff);
 

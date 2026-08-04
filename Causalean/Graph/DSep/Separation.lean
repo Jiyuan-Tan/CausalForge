@@ -212,7 +212,8 @@ theorem exists_directedPath_avoiding
         refine ⟨x, hvZ, ?_⟩
         exact G.isAncestor_trans h₁ (isAncestor.edge he')
 
-/-- **Path-level source-to-cond transfer.**
+/-- An active path under an enlarged conditioning set can be replaced by an active path
+whose source may additionally come from the newly conditioned vertices.
 
     Given an active path `p` from `x ∈ X` to `w` given `Z ∪ S`, there exists
     an active path `p'` from some `x' ∈ X ∪ S` to `w` given `Z`.
@@ -250,7 +251,7 @@ theorem exists_directedPath_avoiding
     triples at the `m*` join, and `qTail` interior), using asymmetry of `G.edge`
     for the reversed-directed portion and maximality of `j_star` on the `qTail`
     side. -/
-private theorem activePath_transfer_cond_to_source
+theorem activePath_transfer_cond_to_source
     {X Z S : Finset V} {p : List V} {x w : V}
     (hxX : x ∈ X) (hlen : p.length ≥ 2)
     (hact : G.IsActivePath (Z ∪ S) p)
@@ -648,7 +649,7 @@ private theorem activePath_transfer_cond_to_source
   · -- Case A: no S-only-activated collider, q itself is active given Z.
     push_neg at hExists
     refine ⟨x₁, q, hx₁XS, hqlen, ?_, hqhead, hqlast⟩
-    apply G.isActivePath_Z_of_no_S_only_collider hqact hqInterior
+    apply G.isActivePath_Z_of_no_S_only_collider hqact
     intro i hi hC
     exact hExists i hi hC
 
@@ -690,14 +691,18 @@ theorem dSep_source_to_cond {X Y Z S : Finset V}
         hxX hlen hact hhead hlast
     exact ⟨x', hx'XS, p', hlen', hact', hhead', hlast'⟩
 
-private theorem isAncestor_mono_edge
+/-- If every directed edge of one graph is also an edge of another graph, every
+    ancestor relation in the first graph also holds in the second graph. -/
+theorem isAncestor_mono_edge
     (G' : DAG V) (hEdge : ∀ u v : V, G'.edge u v → G.edge u v)
     {u v : V} (h : G'.isAncestor u v) : G.isAncestor u v := by
   induction h with
   | edge he => exact isAncestor.edge (hEdge _ _ he)
   | trans h₁ he ih => exact isAncestor.trans ih (hEdge _ _ he)
 
-private theorem bbZAncestors_mono_edge
+/-- Adding directed edges can only enlarge the set of vertices that are ancestors
+    of the conditioning set and can activate colliders. -/
+theorem bbZAncestors_mono_edge
     (G' : DAG V) (hEdge : ∀ u v : V, G'.edge u v → G.edge u v)
     (Z : Finset V) :
     G'.bbZAncestors Z ⊆ G.bbZAncestors Z := by
@@ -708,14 +713,18 @@ private theorem bbZAncestors_mono_edge
   · exact Or.inl hvZ
   · exact Or.inr ⟨w, hwZ, G.isAncestor_mono_edge G' hEdge hvw⟩
 
-private theorem uAdj_mono_edge
+/-- If every directed edge of one graph is also an edge of another graph, vertices
+    adjacent in the first graph are also adjacent in the second graph. -/
+theorem uAdj_mono_edge
     (G' : DAG V) (hEdge : ∀ u v : V, G'.edge u v → G.edge u v)
     {u v : V} (h : G'.UAdj u v) : G.UAdj u v := by
   rcases h with huv | hvu
   · exact Or.inl (hEdge _ _ huv)
   · exact Or.inr (hEdge _ _ hvu)
 
-private theorem isCollider_of_supergraph
+/-- If every edge of one graph is also an edge of another, a collider in the larger graph remains
+a collider in the smaller graph whenever its two adjacent pairs are present there. -/
+theorem isCollider_of_supergraph
     (G' : DAG V) (hEdge : ∀ u v : V, G'.edge u v → G.edge u v)
     {l m r : V} (hadj_lm : G'.UAdj l m) (hadj_mr : G'.UAdj m r)
     (hcoll : G.IsCollider l m r) : G'.IsCollider l m r := by
@@ -729,7 +738,9 @@ private theorem isCollider_of_supergraph
     · exact absurd (hEdge _ _ hmr') (G.asymm hrm)
     · exact hrm'
 
-private theorem isActivePath_mono_edge
+/-- An active path in a graph with fewer edges remains active when those edges
+    are restored, so path witnesses transfer across graph transformations. -/
+theorem isActivePath_mono_edge
     (G' : DAG V) (hEdge : ∀ u v : V, G'.edge u v → G.edge u v)
     {Z : Finset V} {p : List V}
     (h : G'.IsActivePath Z p) : G.IsActivePath Z p := by

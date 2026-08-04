@@ -316,19 +316,19 @@ private noncomputable abbrev P' := canonicalPOSystem S π hπ_nn hπ_sum
 private noncomputable abbrev S' := canonicalBP S π hπ_nn hπ_sum
 
 /-- The sqcup assignment formula. -/
-private lemma sqcup_assign_left {V : Type*} [DecidableEq V] [Fintype V]
+private lemma sqcup_assign_left {V : Type*} [DecidableEq V]
     {X : V → Type*} [∀ v, MeasurableSpace (X v)]
     (r₁ r₂ : Regime V X) (h : r₁.Disjoint r₂) (v : V) (hin : v ∈ r₁.target)
     (hsq : v ∈ (r₁.sqcup r₂ h).target) :
     (r₁.sqcup r₂ h).assign v hsq = r₁.assign v hin := by
-  unfold Regime.sqcup; simp [hin]
+  exact Regime.sqcup_assign_pos r₁ r₂ h v hin
 
-private lemma sqcup_assign_right {V : Type*} [DecidableEq V] [Fintype V]
+private lemma sqcup_assign_right {V : Type*} [DecidableEq V]
     {X : V → Type*} [∀ v, MeasurableSpace (X v)]
     (r₁ r₂ : Regime V X) (h : r₁.Disjoint r₂) (v : V) (hnin : v ∉ r₁.target)
     (hin : v ∈ r₂.target) (hsq : v ∈ (r₁.sqcup r₂ h).target) :
     (r₁.sqcup r₂ h).assign v hsq = r₂.assign v hin := by
-  unfold Regime.sqcup; simp [hnin]
+  exact Regime.sqcup_assign_neg r₁ r₂ h v hnin hin
 
 /-- Consistency for the canonical PO system. -/
 lemma canonical_consistency : (P' S π hπ_nn hπ_sum).Consistency := by

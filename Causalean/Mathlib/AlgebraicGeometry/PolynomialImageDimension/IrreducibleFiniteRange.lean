@@ -27,7 +27,9 @@ private def coordinateValuePolynomial {κ : Type*} (c : κ) (S : Finset ℂ) :
     MvPolynomial κ ℂ :=
   ∏ z ∈ S, (MvPolynomial.X c - MvPolynomial.C z)
 
-private lemma finiteCoordinateRange_closed {κ : Type*} (c : κ) (S : Finset ℂ) :
+/-- The set of complex coordinate vectors whose chosen coordinate belongs to a
+fixed finite set is closed in the affine Zariski topology. -/
+lemma finiteCoordinateRange_closed {κ : Type*} (c : κ) (S : Finset ℂ) :
     affineZariskiClosure {x : κ → ℂ | x c ∈ S} = {x | x c ∈ S} := by
   have heq : {x : κ → ℂ | x c ∈ S} =
       {x | MvPolynomial.eval x (coordinateValuePolynomial c S) = 0} := by

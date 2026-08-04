@@ -139,11 +139,23 @@ describe("checkSymbolDeclarations (hard) now covers statements", () => {
     expect(v[0].ids).toEqual(["thm:localized-upper"]);
   });
 
-  it("accepts a statement whose declaration resolves, including across delimiter styles", () => {
+  it("flags a delimiter-style mismatch that the post-solve G1 gate would fail", () => {
+    // Regression (2026-08-01 TeX audit): G1 matches free_symbols EXACTLY against
+    // symbols[].name — no delimiter normalization. Preflight silently accepting
+    // `\(t_\pi\)` against a declared `t_\pi` let the mismatch surface only at
+    // the post-solve gate, after the round was paid for: the precise failure
+    // this preflight exists to catch. The exact spelling still passes clean.
+    const v = checkSymbolDeclarations({
+      symbols: [{ name: "t_\\pi" }],
+      statements: [{ id: "thm:a", free_symbols: ["\\(t_\\pi\\)"] }],
+    });
+    expect(v).toHaveLength(1);
+    expect(v[0].check).toBe("symbol-declaration-style");
+    expect(v[0].detail).toContain("G1");
     expect(
       checkSymbolDeclarations({
         symbols: [{ name: "t_\\pi" }],
-        statements: [{ id: "thm:a", free_symbols: ["\\(t_\\pi\\)"] }],
+        statements: [{ id: "thm:a", free_symbols: ["t_\\pi"] }],
       }),
     ).toEqual([]);
   });

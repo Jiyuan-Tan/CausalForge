@@ -8,7 +8,7 @@
  */
 import type { PipelineContext, StateJson } from "../types.js";
 import { loadState, saveState } from "../state.js";
-import { proposalTexPath } from "../paths.js";
+import { protoCoreJsonPath } from "./stages/neg1_2_author.js";
 import { archiveProposalForPivot, NEG1_PIVOT_BUDGET } from "./stages/neg1_2.js";
 import { appendNeg1EscalationLog } from "./stageNeg1_directive.js";
 
@@ -37,7 +37,8 @@ export interface ProposalAngleActionResult {
 function resetForProducer(state: StateJson): void {
   const pf = state.proposed_from!;
   pf.last_draft_status = "completed";
-  pf.last_draft_handoff = undefined;
+  pf.last_draft_version = undefined;
+  delete pf.last_draft_handoff;
   pf.last_reviewer_verdict = "";
   pf.final_verdict = "pending";
   pf.angle_checkpoint = undefined;
@@ -104,9 +105,31 @@ export async function applyProposalAngleAction(
       resume: true,
     };
     await appendNeg1EscalationLog(ctx, {
+      // A switch directive intentionally steers the pivot it is about to
+      // create; all other actions continue to steer the current angle.
+      angle: options.action === "switch" ? checkpoint.angle + 1 : checkpoint.angle,
       version: checkpoint.version,
       directive,
       note: options.directiveNote ?? `angle-action:${options.action}`,
+    });
+  }
+
+  // Every switch gets a fixed internal boundary independent of the optional
+  // user directive/note. It delimits legacy rows and is never rendered.
+  if (options.action === "switch") {
+    const ctx: PipelineContext = {
+      repoRoot: options.repoRoot,
+      qid: options.qid,
+      specialization: options.specialization,
+      dryRun: false,
+      resume: true,
+    };
+    await appendNeg1EscalationLog(ctx, {
+      angle: checkpoint.angle + 1,
+      version: checkpoint.version,
+      directive: "",
+      note: "angle-action:switch",
+      provenance_only: true,
     });
   }
 
@@ -159,7 +182,13 @@ export async function applyProposalAngleAction(
   }
 
   const archived = await archiveProposalForPivot(
-    proposalTexPath(options.repoRoot, options.qid, options.specialization),
+    protoCoreJsonPath({
+      repoRoot: options.repoRoot,
+      qid: options.qid,
+      specialization: options.specialization,
+      dryRun: false,
+      resume: true,
+    }),
     angle,
   );
   if (archived && !(pf.archived_proposals ?? []).includes(archived)) {

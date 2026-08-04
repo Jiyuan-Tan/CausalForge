@@ -193,7 +193,18 @@ export async function runHarness(o: HarnessOpts) {
         cluster: it.cluster, topK: POOL, exclude: new Set([it.theorem]),
         semantic: tier ? { tier, queryVec: qvec(i), lexConfident: o.lexConfident, simFloor: o.simFloor, kSem: o.kSem, graphProp: o.graphProp, fusion: o.fusion, wLex: o.wLex, wDense: o.wDense } : undefined,
       }));
-    const scores = rerankBatch(pools.map((cands, i) => ({ query: items[i].text, names: cands.map((c) => c.name) })));
+    // Timeout scales with batch size: CPU reranking runs ~7 pairs/s warm (measured on the SC
+    // cluster), so a flat 300 s cap silently kills any batch beyond ~40 pools of 50. 10 s per
+    // pool + 60 s cold-start headroom keeps one warm-daemon subprocess call per arm.
+    const scores = rerankBatch(
+      pools.map((cands, i) => ({ query: items[i].text, names: cands.map((c) => c.name) })),
+      60_000 + pools.length * 10_000,
+    );
+    // A null result (model missing, python env, or the rerank subprocess TIMEOUT on large
+    // batches — CPU reranking of nQueries×pool pairs easily exceeds the cap) silently yields
+    // a "reranked" arm identical to the fused one; without this warning that reads as
+    // "reranking adds nothing", which is the wrong conclusion.
+    if (!scores) console.error(`[eval] rerankBatch failed/timed out for ${pools.length} pools — reranked arm degraded to fused order (numbers will equal the semantic arm)`);
     return items.map((it, i) => {
       const reranked = scores ? applyRerank(pools[i], scores[i], pools[i].length, o.topK) : pools[i].slice(0, o.topK);
       return {

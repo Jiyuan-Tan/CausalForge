@@ -15,6 +15,7 @@
 // Keep each entry to ~2 sentences: what to do at THIS halt, and what the next
 // phase is. Do NOT grow it into a copy of the skill — point, don't paste.
 
+import { D0_5_TRIAGE_MARKER } from "./constants.js";
 import type { Stage } from "./types.js";
 
 /**
@@ -83,10 +84,14 @@ function perStageGuidance(
       // so branch on the actual verdict in the halt message (never assert PASS
       // blindly — that canned wording once fooled the orchestrator into treating
       // a non-converging halt as a pass and resuming toward F1).
-      const m = message.toLowerCase();
+      // Classify on the VERDICT text only. The D0.5.G triage tier note appended to every
+      // non-pass halt is referee prose containing `floor=` and a free-text critique; left
+      // in, it decides the branch — a cap-exhausted halt (no pass, no floor language of its
+      // own) matches the PASS branch purely on the word `floor` from the note.
+      const m = message.split(D0_5_TRIAGE_MARKER)[0].toLowerCase();
       if (m.includes("non-converging") || m.includes("non converging")) {
         return (
-          "D0.5 NON-CONVERGING — not a pass (stage stays \"0\"; no general review). Read the findings; repair the source proto/definitions/assumptions toward truth, never by strengthening; add a D0 directive and rerun D0 → D0.5, or rewind D0/D-1.2. " +
+          "D0.5 NON-CONVERGING — not a pass (stage stays \"0\"). Read the findings; repair the source proto/definitions/assumptions toward truth, never by strengthening; add a D0 directive and rerun D0 → D0.5, or rewind D0/D-1.2. " +
           "F1 waits for a real pass."
         );
       }
@@ -101,13 +106,17 @@ function perStageGuidance(
       if (!negativePass && explicitPass && (m.includes("floor") || m.includes("go/no-go"))) {
         // why: "did not pass the floor" must not route to PASS guidance.
         return (
-          "D0.5 PASS: confirm stage_completed=\"0.5\" and reviews/review_general.json, then decide whether to enter F1–F5. " +
+          // The general referee now also runs as a concurrent TRIAGE read on non-passing
+          // rounds, so `review_general.json` EXISTING no longer implies a pass — its
+          // `meets_floor` field does. Confirming existence alone would read a below-floor
+          // triage halt as a pass.
+          "D0.5 PASS: confirm stage_completed=\"0.5\" and reviews/review_general.json with meets_floor:true, then decide whether to enter F1–F5. " +
           "On resume, F1 → F1.5 reaches consolidated CKPT 1 for depth, reuse, and statement-fidelity audit. SKILL §'F1 CKPT 1'."
         );
       }
       // Unknown D0.5 halt shape — do NOT assume pass; force a verdict-body read.
       return (
-        "D0.5 halt: read its message and stage_completed. Only stage \"0.5\" plus reviews/review_general.json is PASS; stage \"0\" means repair findings / lift tier and rerun D0.5. " +
+        "D0.5 halt: read its message and stage_completed. Only stage \"0.5\" plus reviews/review_general.json with meets_floor:true is PASS (the file alone is NOT — the tier referee also runs as a triage read on non-passing rounds); stage \"0\" means repair findings / lift tier and rerun D0.5. " +
         "Never infer PASS from the stage alone. SKILL §'Watch keys' D0.5 row."
       );
     }

@@ -10,6 +10,7 @@ import { parseBib } from "../citations.js";
 import { savePaperState } from "../state.js";
 import { writeJsonAtomic } from "../json_io.js";
 import { repairLatexStringsDeep } from "../../discovery/core/latex_serialization.js";
+import { maskNonBoundaryPeriods } from "../../shared/tex_text.js";
 import {
   runHardGates,
   gateLoop,
@@ -60,13 +61,24 @@ export function stripLatexCommentLines(tex: string): string {
   return tex.replace(/^[ \t]*%.*(?:\r?\n|$)/gm, "");
 }
 
-/** Stable prose units for differential overclaim re-review. */
+/** Stable prose units for differential overclaim re-review.
+ *
+ * Split points are computed on a PERIOD-MASKED copy (decimals and `e.g.`-style
+ * abbreviations are not boundaries — `see, e.g. \citet{Foo}` used to split) and
+ * a boundary is refused when the "next sentence" is really a closing math token
+ * (`\[ f(x) = x. \] Hence …` used to yield a bare `\]` unit). The emitted units
+ * are sliced from the ORIGINAL collapsed text, never the masked copy. */
 export function claimUnits(tex: string): string[] {
-  return tex
-    .replace(/\s+/g, " ")
-    .split(/(?<=[.!?])\s+(?=(?:\\|[A-Z]))/)
-    .map((s) => s.trim())
-    .filter((s) => /[A-Za-z]/.test(s));
+  const collapsed = tex.replace(/\s+/g, " ");
+  const masked = maskNonBoundaryPeriods(collapsed); // 1:1 char replacement — offsets align
+  const parts: string[] = [];
+  let start = 0;
+  for (const m of masked.matchAll(/(?<=[.!?])\s+(?=(?:\\(?![)\]])(?!end\b)|[A-Z]))/g)) {
+    parts.push(collapsed.slice(start, m.index));
+    start = m.index! + m[0].length;
+  }
+  parts.push(collapsed.slice(start));
+  return parts.map((s) => s.trim()).filter((s) => /[A-Za-z]/.test(s));
 }
 
 function contextualClaimUnits(tex: string): { sentence: string; context: string; ordinal: number }[] {
@@ -120,6 +132,42 @@ export function applyTargetedReplacements(tex: string, replacements: TextReplace
     out = out.slice(0, first) + after + out.slice(first + before.length);
   }
   return out;
+}
+
+/** Return the cached P2 front-matter artifact as it appears in an assembled paper. */
+export function frontMatterFromPaper(paperTex: string): string | null {
+  const abstract = /\\begin\{abstract\}[\s\S]*?\\end\{abstract\}/.exec(paperTex);
+  if (!abstract || abstract.index === undefined) return null;
+  const firstSection = /\\section\{([^}]*)\}/g;
+  firstSection.lastIndex = abstract.index + abstract[0].length;
+  const intro = firstSection.exec(paperTex);
+  // The cache is specifically the abstract plus Introduction.  Do not guess
+  // when a reviser has renamed or deleted that heading: guessing can swallow a
+  // body section and make the next P2 assembly delete the real introduction.
+  if (!intro || intro[1] !== "Introduction" || intro.index === undefined) return null;
+  const terminator = /\\section\{|\\appendix\b|\\end\{document\}/g;
+  terminator.lastIndex = intro.index + intro[0].length;
+  const end = terminator.exec(paperTex)?.index ?? paperTex.length;
+  // This one contiguous slice deliberately retains every byte between the
+  // abstract and Introduction (keywords, JEL lines, framing text, ...).
+  return paperTex.slice(abstract.index, end);
+}
+
+/** Validate and normalize the P2 cache text derived from an assembled paper. */
+export function checkedFrontMatterFromPaper(paperTex: string): string {
+  const frontMatter = frontMatterFromPaper(paperTex);
+  if (frontMatter === null) {
+    throw new Error("P3 front-matter synchronization could not locate an abstract and first section");
+  }
+  const captured = parseAnchoredEnvs(frontMatter);
+  if (captured.length > 0) {
+    throw new Error(
+      `P3 front-matter synchronization refused an extract containing anchored formal environments: ${captured.map((e) => e.obj_id).join(", ")}`,
+    );
+  }
+  // P2 separates front matter and body with two newlines. Do not retain that
+  // separator and append another one on every P2 → P3 cycle.
+  return frontMatter.trimEnd() + "\n";
 }
 
 /** Select the paragraphs most lexically related to the reported problems. */
@@ -192,6 +240,7 @@ export async function stageP3(io: StageIO): Promise<void> {
     throw new Error(message);
   };
   const paperPath = join(io.outDir, "paper.tex");
+  const frontMatterPath = join(io.outDir, "front_matter.tex");
   const reviewsPath = join(io.outDir, "reviews.jsonl");
   const formalLayer = FormalLayerSource.parse(
     JSON.parse(await readFile(join(io.outDir, "formal_layer.json"), "utf8")),
@@ -210,6 +259,20 @@ export async function stageP3(io: StageIO): Promise<void> {
   // P3 protects the complete P1 formal-layer namespace, including presentation-owned setup
   // definitions that intentionally have no bank crosswalk/Lean declaration.
   const known = new Set(frozen.keys());
+  const frontMatterOrFail = async (source: string): Promise<string> => {
+    try {
+      return checkedFrontMatterFromPaper(source);
+    } catch {
+      return failP3(
+        "P3 front-matter synchronization failed: the reviser deleted or renamed the required " +
+        "\\section{Introduction} heading; restore that heading before publishing.",
+      );
+    }
+  };
+  const syncFrontMatter = async (paperTex?: string): Promise<void> => {
+    const source = paperTex ?? await readFile(paperPath, "utf8");
+    await writeFile(frontMatterPath, await frontMatterOrFail(source), "utf8");
+  };
 
   // Definition order is structural: P3 prose revision cannot move or rewrite the P1-frozen
   // environments. Fail directly with a P1 repair instruction instead of burning revision rounds.
@@ -455,15 +518,18 @@ export async function stageP3(io: StageIO): Promise<void> {
       );
       if (!frozenTouched) {
         paperTex = refRepair.tex;
+        // Keep paper.tex and P2's cache synchronized immediately. There is no
+        // deferred text state for later gates or the rubric to disagree about.
+        const repairedFrontMatter = await frontMatterOrFail(paperTex);
         await writeFile(paperPath, paperTex, "utf8");
+        await writeFile(frontMatterPath, repairedFrontMatter, "utf8");
       }
     }
     // Proof faithfulness is audited at P2 (runProofAudit), co-located with proof production, so the P3
     // hard gates no longer re-audit proofs (proofs: []). P3's runHardGates covers anchor lint, cite
     // pool, overclaim, and citation support.
     const proofs: HardGateInput["proofs"] = [];
-    const abstract = paperTex.match(/\\begin\{abstract\}[\s\S]*?\\end\{abstract\}/)?.[0] ?? "";
-    const intro = paperTex.match(/\\section\{Introduction\}[\s\S]*?(?=\\section\{)/)?.[0] ?? "";
+    const cachedFrontMatter = frontMatterFromPaper(paperTex) ?? "";
     // Interpretive body sections carry the comparative / qualitative claims
     // (monotonicity, phase behavior, "free lunch") the overclaim gate must see —
     // the abstract/intro can be correct while a discussion aside contradicts the
@@ -479,7 +545,7 @@ export async function stageP3(io: StageIO): Promise<void> {
     // interpretive prose against the frozen claims (passed separately as
     // `frozenEnvsTex`), and a frozen env flagged inside the prose is unfixable by
     // the reviser (it would trip the frozen-layer guard and abort the round).
-    const frontMatter = stripFrozenEnvs(`${abstract}\n\n${intro}\n\n${interpretive}`);
+    const frontMatter = stripFrozenEnvs(`${cachedFrontMatter}\n\n${interpretive}`);
     const input: HardGateInput = {
       paperTex,
       notation,
@@ -526,7 +592,6 @@ export async function stageP3(io: StageIO): Promise<void> {
     const agentRevision = applyTargetedReplacements(before, proseOnlyReplacements(parsed.replacements));
     const proofRestored = restoreAuditedProofBlocks(agentRevision, beforeProofs);
     if (proofRestored === null) {
-      await writeFile(paperPath, before, "utf8");
       throw new Error(
         "P3 revision round " + round +
           " changed the proof-block count (restored); rerun the proof-audited stage before publishing",
@@ -541,23 +606,26 @@ export async function stageP3(io: StageIO): Promise<void> {
       normalizeFrozenEnvs(proofRestored, canonicalFrozen),
       formalLayer.blocks,
     );
-    await writeFile(paperPath, revised, "utf8");
     if (revised === before) {
       throw new Error(`P3 revision round ${round} made no changes to paper.tex`);
     }
     const afterProofs = proofBlocks(revised);
     if (JSON.stringify(afterProofs) !== JSON.stringify(beforeProofs)) {
-      await writeFile(paperPath, before, "utf8");
       // why: P3 revises whole paper.tex without proof audit inputs; proof edits require a P2 re-audit.
       throw new Error(`P3 revision round ${round} changed proof blocks (restored); rerun the proof-audited stage before publishing`);
     }
     const lint = [...lintAnchors(revised, known, frozen), ...lintDefinitionOrder(revised, notation)];
     if (lint.length > 0) {
-      await writeFile(paperPath, before, "utf8");
       throw new Error(
         `P3 revision round ${round} broke the frozen layer (restored): ${lint.map((p) => p.detail).join("; ")}`,
       );
     }
+    // P3 patches paper.tex, not the P2 cache. Derive the cache from that validated assembled
+    // source only after every frozen/proof guard has passed, so later regeneration never reseeds
+    // pre-review front matter and frozen environments remain untouched.
+    const revisedFrontMatter = await frontMatterOrFail(revised);
+    await writeFile(paperPath, revised, "utf8");
+    await writeFile(frontMatterPath, revisedFrontMatter, "utf8");
     p3RevisionRound = round;
     io.state.revision_round += 1;
   };
@@ -593,6 +661,9 @@ export async function stageP3(io: StageIO): Promise<void> {
         result.problems.map((p) => `[${p.gate}] ${p.detail}`).join("; "),
     );
   }
+
+  // Heal stale P2 caches even when all hard gates pass in round zero.
+  await syncFrontMatter();
 
   // soft rubric ensemble: opus ×1 + codex ×1 (user decision 2026-06-10: the
   // two opus reviews scored near-identically, so the duplicate bought nothing;

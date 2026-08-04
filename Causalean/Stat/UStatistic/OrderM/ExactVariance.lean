@@ -66,7 +66,9 @@ variable [IsProbabilityMeasure μ] [IsProbabilityMeasure P]
 
 /-! ## Cross expectations by image comparison -/
 
-private noncomputable def permOfImageEq {n : ℕ} {t q : Fin m → Fin n}
+/-- Two injective maps from a finite index set with the same image determine a permutation
+of that index set which reorders the first map into the second. -/
+noncomputable def permOfImageEq {n : ℕ} {t q : Fin m → Fin n}
     (ht : Function.Injective t) (hq : Function.Injective q)
     (himg : Finset.univ.image t = Finset.univ.image q) : Equiv.Perm (Fin m) := by
   classical
@@ -116,11 +118,12 @@ private theorem permOfImageEq_apply {n : ℕ} {t q : Fin m → Fin n}
       Finset.mem_image.mpr ⟨j, Finset.mem_univ j, rfl⟩
     simp [himg])) : ∃ i, i ∈ Finset.univ ∧ t i = q j)).2
 
-omit [IsProbabilityMeasure P] in
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] [NeZero m] in
 /-- **Equal-image cross term.**  If two ordered injective `m`-tuples have the same
 image, then `q` is a reordering of `t`, so by symmetry `g(Z_q) = g(Z_t)` and the
 cross expectation is `ζ_m = zetaOrder P g`. -/
-theorem crossterm_eq_zeta_of_image_eq (hg : OrderDegenKernel P g)
+theorem crossterm_eq_zeta_of_image_eq (hmeas : Measurable g)
+    (hsymm : ∀ σ : Equiv.Perm (Fin m), ∀ z, g (z ∘ σ) = g z)
     {n : ℕ} {t q : Fin m → Fin n}
     (ht : Function.Injective t) (hq : Function.Injective q)
     (himg : Finset.univ.image t = Finset.univ.image q) :
@@ -140,19 +143,32 @@ theorem crossterm_eq_zeta_of_image_eq (hg : OrderDegenKernel P g)
         =
       (fun ω => (g (fun j => S.Z (t j : ℕ) ω)) ^ 2) := by
     funext ω
-    rw [hq_rewrite ω, hg.symm σ]
+    rw [hq_rewrite ω, hsymm σ]
     ring
   rw [hcongr]
-  exact S.orderTerm_diag hg ht
+  rw [zetaOrder, ← S.map_tuple_eq ht]
+  rw [integral_map
+    (measurable_pi_lambda _ (fun j : Fin m => S.meas (t j : ℕ))).aemeasurable
+    (hmeas.pow_const 2).aestronglyMeasurable]
 
+omit [IsProbabilityMeasure μ] [NeZero m] in
 /-- **Distinct-image cross term.**  If two ordered injective `m`-tuples have
 different images, complete degeneracy kills the cross expectation: some index of
 `t` is absent from `q`, and integrating that coordinate out gives `0`. -/
-theorem crossterm_eq_zero_of_image_ne (hg : OrderDegenKernel P g)
+theorem crossterm_eq_zero_of_image_ne (hmeas : Measurable g)
+    (hsq : Integrable (fun z => (g z) ^ 2) (Measure.pi fun _ : Fin m => P))
+    (hdeg : ∀ (j : Fin m) (tail : ({k : Fin m // k ≠ j}) → X),
+      ∫ x, g (insertCoord j x tail) ∂P = 0)
     {n : ℕ} {t q : Fin m → Fin n}
     (ht : Function.Injective t) (hq : Function.Injective q)
     (himg : Finset.univ.image t ≠ Finset.univ.image q) :
     ∫ ω, g (fun j => S.Z (t j : ℕ) ω) * g (fun j => S.Z (q j : ℕ) ω) ∂μ = 0 := by
+  letI : IsProbabilityMeasure μ := ⟨by
+    calc
+      μ Set.univ = μ (S.Z 0 ⁻¹' Set.univ) := by simp
+      _ = (μ.map (S.Z 0)) Set.univ := (Measure.map_apply (S.meas 0) MeasurableSet.univ).symm
+      _ = P Set.univ := by rw [S.law]
+      _ = 1 := measure_univ⟩
   classical
   let A : Finset (Fin n) := Finset.univ.image t
   let B : Finset (Fin n) := Finset.univ.image q
@@ -229,7 +245,7 @@ theorem crossterm_eq_zero_of_image_ne (hg : OrderDegenKernel P g)
     have hcomp := hindBlocks.comp hEval measurable_id
     simpa [Function.comp_def] using hcomp
   have hΦ : Measurable (fun z : X × (R → X) => g (insertCoord p z.1 (tailOf z.2))) := by
-    exact hg.meas.comp (measurable_pi_lambda _ (fun j : Fin m => by
+    exact hmeas.comp (measurable_pi_lambda _ (fun j : Fin m => by
       by_cases hj : j = p
       · subst j
         simpa [insertCoord] using measurable_fst
@@ -241,7 +257,7 @@ theorem crossterm_eq_zero_of_image_ne (hg : OrderDegenKernel P g)
               have hne : t j ≠ t p := fun h => hj (ht h)
               simp [R, hmemA, hne]⟩ : R)).comp measurable_snd))
   have hΨ : Measurable Ψ := by
-    exact hg.meas.comp (measurable_pi_lambda _ (fun j : Fin m =>
+    exact hmeas.comp (measurable_pi_lambda _ (fun j : Fin m =>
       measurable_pi_apply _))
   have hFmeas : Measurable F := hΦ.mul (hΨ.comp measurable_snd)
   have ht_rewrite : ∀ ω, g (fun j => S.Z (t j : ℕ) ω)
@@ -257,7 +273,20 @@ theorem crossterm_eq_zero_of_image_ne (hg : OrderDegenKernel P g)
     intro ω
     rfl
   have hcomp_int : Integrable (fun ω => F (S.Z (t p : ℕ) ω, XR ω)) μ := by
-    have horig := S.integrable_orderTerm_mul hg ht hq
+    have hterm_mem : ∀ {r : Fin m → Fin n}, Function.Injective r →
+        MemLp (fun ω => g (fun j => S.Z (r j : ℕ) ω)) 2 μ := by
+      intro r hr
+      have hm : AEStronglyMeasurable (fun ω => g (fun j => S.Z (r j : ℕ) ω)) μ :=
+        (hmeas.comp
+          (measurable_pi_lambda _ (fun j : Fin m => S.meas (r j : ℕ)))).aestronglyMeasurable
+      apply (memLp_two_iff_integrable_sq hm).mpr
+      have hmap : Integrable (fun z => (g z) ^ 2)
+          (μ.map (fun ω : Ω => fun j : Fin m => S.Z (r j : ℕ) ω)) := by
+        rw [S.map_tuple_eq hr]
+        exact hsq
+      exact (integrable_map_measure (hmeas.pow_const 2).aestronglyMeasurable
+        (measurable_pi_lambda _ (fun j : Fin m => S.meas (r j : ℕ))).aemeasurable).mp hmap
+    have horig := (hterm_mem ht).integrable_mul (hterm_mem hq)
     refine horig.congr ?_
     filter_upwards with ω
     simp [F, ht_rewrite ω, hq_rewrite ω]
@@ -274,7 +303,7 @@ theorem crossterm_eq_zero_of_image_ne (hg : OrderDegenKernel P g)
   have hinner : ∀ xr : R → X, (∫ x : X, F (x, xr) ∂P) = 0 := by
     intro xr
     change (∫ x : X, g (insertCoord p x (tailOf xr)) * Ψ xr ∂P) = 0
-    rw [integral_mul_const, hg.deg p (tailOf xr), zero_mul]
+    rw [integral_mul_const, hdeg p (tailOf xr), zero_mul]
   calc
     ∫ ω, g (fun j => S.Z (t j : ℕ) ω) * g (fun j => S.Z (q j : ℕ) ω) ∂μ
         = ∫ ω, F (S.Z (t p : ℕ) ω, XR ω) ∂μ := by
@@ -335,11 +364,22 @@ theorem card_injectiveTuples_image_eq {n : ℕ} {t : Fin m → Fin n}
 
 /-! ## Exact second moment and variance -/
 
+omit [IsProbabilityMeasure μ] in
 /-- **Exact second moment of the injective-tuple sum.**
 `E[(Σ_{t} g(Z_t))²] = m! · n^{(m)} · ζ_m`. -/
-theorem integral_injectiveTuples_sum_sq_degen (hg : OrderDegenKernel P g) (n : ℕ) :
+theorem integral_injectiveTuples_sum_sq_degen
+    (hg : OrderDegenKernel P g) (n : ℕ) :
     ∫ ω, (∑ t ∈ injectiveTuples m n, g (fun j => S.Z (t j : ℕ) ω)) ^ 2 ∂μ
       = (m.factorial : ℝ) * injectiveTupleCount m n * zetaOrder P g := by
+  letI : IsProbabilityMeasure μ := ⟨by
+    calc
+      μ Set.univ = μ (S.Z 0 ⁻¹' Set.univ) := by simp
+      _ = (μ.map (S.Z 0)) Set.univ := (Measure.map_apply (S.meas 0) MeasurableSet.univ).symm
+      _ = P Set.univ := by rw [S.law]
+      _ = 1 := measure_univ⟩
+  letI : IsProbabilityMeasure P := by
+    rw [← S.law]
+    exact Measure.isProbabilityMeasure_map (S.meas 0).aemeasurable
   classical
   let T : Finset (Fin m → Fin n) := injectiveTuples m n
   let F : (Fin m → Fin n) → (Fin m → Fin n) → ℝ := fun t q =>
@@ -362,14 +402,16 @@ theorem integral_injectiveTuples_sum_sq_degen (hg : OrderDegenKernel P g) (n : �
   rw [integral_finset_sum _ (fun t ht => by
     apply integrable_finset_sum
     intro q hq
-    exact S.integrable_orderTerm_mul hg (hinj_of_mem_T t ht) (hinj_of_mem_T q hq))]
+    exact S.integrable_orderTerm_mul hg.meas hg.sq
+      (hinj_of_mem_T t ht) (hinj_of_mem_T q hq))]
   have hpush : ∀ t ∈ T,
       ∫ ω, ∑ q ∈ T,
         g (fun j => S.Z (t j : ℕ) ω) * g (fun j => S.Z (q j : ℕ) ω) ∂μ
         = ∑ q ∈ T, F t q := by
     intro t ht
     exact integral_finset_sum _ (fun q hq =>
-      S.integrable_orderTerm_mul hg (hinj_of_mem_T t ht) (hinj_of_mem_T q hq))
+      S.integrable_orderTerm_mul hg.meas hg.sq
+        (hinj_of_mem_T t ht) (hinj_of_mem_T q hq))
   rw [Finset.sum_congr rfl hpush]
   have hinner : ∀ t ∈ T, ∑ q ∈ T, F t q = (m.factorial : ℝ) * zetaOrder P g := by
     intro t ht
@@ -383,7 +425,7 @@ theorem integral_injectiveTuples_sum_sq_degen (hg : OrderDegenKernel P g) (n : �
       have hne : Finset.univ.image t ≠ Finset.univ.image q := by
         intro h
         exact hqnot (Finset.mem_filter.mpr ⟨hq, h.symm⟩)
-      simpa [F] using S.crossterm_eq_zero_of_image_ne hg htinj hqinj hne
+      simpa [F] using S.crossterm_eq_zero_of_image_ne hg.meas hg.sq hg.deg htinj hqinj hne
     rw [← Finset.sum_subset hsub hzero]
     have hsame : ∀ q ∈ SAME, F t q = zetaOrder P g := by
       intro q hq
@@ -392,7 +434,7 @@ theorem integral_injectiveTuples_sum_sq_degen (hg : OrderDegenKernel P g) (n : �
       have hqinj := hinj_of_mem_T q hqT
       have himg : Finset.univ.image t = Finset.univ.image q :=
         (Finset.mem_filter.mp hq).2.symm
-      simpa [F] using S.crossterm_eq_zeta_of_image_eq hg htinj hqinj himg
+      simpa [F] using S.crossterm_eq_zeta_of_image_eq hg.meas hg.symm htinj hqinj himg
     rw [Finset.sum_congr rfl hsame]
     rw [Finset.sum_const, nsmul_eq_mul]
     have htinj := hinj_of_mem_T t ht
@@ -404,12 +446,22 @@ theorem integral_injectiveTuples_sum_sq_degen (hg : OrderDegenKernel P g) (n : �
   simp only [T, injectiveTupleCount]
   ring
 
+omit [IsProbabilityMeasure μ] in
 /-- **Exact variance of the rescaled degenerate fixed-order U-statistic.**
 `E[(√n · Uₙ)²] = n · m! · ζ_m / n^{(m)}`.  For `m = 2` this is `2ζ / (n−1)`. -/
 theorem integral_rescaled_order_sq_degen (hg : OrderDegenKernel P g)
     {n : ℕ} (hmn : m ≤ n) :
     ∫ ω, (Real.sqrt (n : ℝ) * uStatisticOrder S g n ω) ^ 2 ∂μ
       = (n : ℝ) * (m.factorial : ℝ) * zetaOrder P g / injectiveTupleCount m n := by
+  letI : IsProbabilityMeasure μ := ⟨by
+    calc
+      μ Set.univ = μ (S.Z 0 ⁻¹' Set.univ) := by simp
+      _ = (μ.map (S.Z 0)) Set.univ := (Measure.map_apply (S.meas 0) MeasurableSet.univ).symm
+      _ = P Set.univ := by rw [S.law]
+      _ = 1 := measure_univ⟩
+  letI : IsProbabilityMeasure P := by
+    rw [← S.law]
+    exact Measure.isProbabilityMeasure_map (S.meas 0).aemeasurable
   classical
   let K : Ω → ℝ := fun ω => ∑ t ∈ injectiveTuples m n,
     g (fun j => S.Z (t j : ℕ) ω)

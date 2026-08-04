@@ -1,0 +1,15 @@
+/-
+# Regular-cell risk engine
+
+Leaf lemmas for the honesty and variance half of the regular finite-cell
+attainment argument.  The ambient covariate carrier remains arbitrary: every
+finite calculation is scoped to the injected support supplied by
+`RegularFiniteCellClass`.
+-/
+
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.T_CompactCausalRange
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers.RegularCellRisk_Part1
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers.RegularCellRisk_Part2
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers.RegularCellRisk_Part3
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers.RegularCellRisk_Part4
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers.RegularCellRisk_Part5

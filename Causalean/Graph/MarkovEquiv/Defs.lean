@@ -61,12 +61,10 @@ def SameImmoralities (G₁ G₂ : DAG V) : Prop :=
 /-- Two DAGs are **Markov equivalent** when they entail exactly the same d-separations:
 for every triple of vertex sets `X, Y, Z`, `X` and `Y` are d-separated by `Z` in `G₁` iff
 they are in `G₂`. Equivalently (via the global Markov property) the two graphs impose the
-same conditional-independence constraints on every distribution. The quantification ranges
-over pairwise-disjoint triples `X, Y, Z` — the standard setting for conditional
-independence — matching the global Markov property and the moralization criterion. -/
+same conditional-independence constraints on every distribution. Pairwise disjointness is
+already part of `dSep`, so it need not be repeated here. -/
 def MarkovEquiv (G₁ G₂ : DAG V) : Prop :=
-  ∀ X Y Z : Finset V, Disjoint X Y → Disjoint X Z → Disjoint Y Z →
-    (G₁.dSep X Y Z ↔ G₂.dSep X Y Z)
+  ∀ X Y Z : Finset V, G₁.dSep X Y Z ↔ G₂.dSep X Y Z
 
 /-- Whether two finite DAGs have the same skeleton is decidable. -/
 instance (G₁ G₂ : DAG V) : Decidable (SameSkeleton G₁ G₂) := by
@@ -78,15 +76,15 @@ instance (G₁ G₂ : DAG V) : Decidable (SameImmoralities G₁ G₂) := by
 
 /-- Markov equivalence is reflexive. -/
 @[refl] theorem MarkovEquiv.refl (G : DAG V) : MarkovEquiv G G :=
-  fun _ _ _ _ _ _ => Iff.rfl
+  fun _ _ _ => Iff.rfl
 
 /-- Markov equivalence is symmetric. -/
 theorem MarkovEquiv.symm {G₁ G₂ : DAG V} (h : MarkovEquiv G₁ G₂) : MarkovEquiv G₂ G₁ :=
-  fun X Y Z hXY hXZ hYZ => (h X Y Z hXY hXZ hYZ).symm
+  fun X Y Z => (h X Y Z).symm
 
 /-- Markov equivalence is transitive. -/
 theorem MarkovEquiv.trans {G₁ G₂ G₃ : DAG V}
     (h₁ : MarkovEquiv G₁ G₂) (h₂ : MarkovEquiv G₂ G₃) : MarkovEquiv G₁ G₃ :=
-  fun X Y Z hXY hXZ hYZ => (h₁ X Y Z hXY hXZ hYZ).trans (h₂ X Y Z hXY hXZ hYZ)
+  fun X Y Z => (h₁ X Y Z).trans (h₂ X Y Z)
 
 end Causalean

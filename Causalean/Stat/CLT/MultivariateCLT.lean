@@ -78,7 +78,7 @@ open MeasureTheory ProbabilityTheory Filter Topology Complex
 open scoped RealInnerProductSpace
 
 variable {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
-  {μ : Measure Ω} {P : Measure X} [IsProbabilityMeasure μ]
+  {μ : Measure Ω} {P : Measure X}
   {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
     [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
 
@@ -87,30 +87,37 @@ private noncomputable abbrev rng : ℕ → Finset ℕ := fun m => Finset.range m
 
 /-! ## Projection of the vector normalised sum -/
 
-omit [IsProbabilityMeasure μ] [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
+omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
 /-- The inner product of `t` with the vector normalised sum is the scalar
 normalised sum of the projected influence function `x ↦ ⟪t, ψ x⟫`. -/
 theorem inner_normalizedSum (S : IIDSample Ω X μ P) (ψ : X → E) (t : E)
-    (n : ℕ) (ω : Ω) :
-    ⟪t, IsAsymLinearVec.normalizedSum S ψ rng n ω⟫
-      = IsAsymLinear.normalizedSum S (fun x => ⟪t, ψ x⟫) rng n ω := by
+    (I : ℕ → Finset ℕ) (n : ℕ) (ω : Ω) :
+    ⟪t, IsAsymLinearVec.normalizedSum S ψ I n ω⟫
+      = IsAsymLinear.normalizedSum S (fun x => ⟪t, ψ x⟫) I n ω := by
   simp only [IsAsymLinearVec.normalizedSum, IsAsymLinear.normalizedSum,
     real_inner_smul_right, inner_sum]
 
 /-! ## Per-direction characteristic-function limit -/
 
-/-- **Per-direction charFun limit.**  Under integrable, mean-zero,
-square-integrable `ψ`, the characteristic function of the vector normalised
-sum, evaluated at `t`, converges to `exp(−½ ∫⟪t,ψ⟫² dP)`. -/
-theorem IIDSample.normalizedSum_vec_charFun_tendsto
-    [IsProbabilityMeasure P] (S : IIDSample Ω X μ P) {ψ : X → E}
-    (hψ_meas : Measurable ψ) (hψ_int : Integrable ψ P)
-    (hmean : ∫ x, ψ x ∂P = 0) (hvar : Integrable (fun x => ‖ψ x‖ ^ 2) P)
-    (t : E) :
+/-- **Per-direction charFun limit (general core).**  Assuming only that the
+scalar projection `⟪t,ψ⟫` in the chosen direction `t` is square-integrable
+(weaker than requiring the whole vector `ψ` to be square-integrable) and
+mean-zero, the characteristic function of the vector normalised sum, evaluated
+at `t`, converges to `exp(−½ ∫⟪t,ψ⟫² dP)`.  The full-vector convenience form is
+`normalizedSum_vec_charFun_tendsto` below. -/
+theorem IIDSample.normalizedSum_vec_charFun_tendsto_of_proj_integrable
+    (S : IIDSample Ω X μ P) {ψ : X → E}
+    (hψ_meas : Measurable ψ) (t : E)
+    (hvar_t : Integrable (fun x => (⟪t, ψ x⟫) ^ 2) P)
+    (hmean : ∫ x, ⟪t, ψ x⟫ ∂P = 0) :
     Tendsto
       (fun n => charFun (μ.map (IsAsymLinearVec.normalizedSum S ψ rng n)) t)
       atTop
       (𝓝 (Complex.exp (-(((∫ x, (⟪t, ψ x⟫) ^ 2 ∂P : ℝ)) : ℂ) / 2))) := by
+  haveI : IsProbabilityMeasure μ := S.indep.isProbabilityMeasure
+  haveI : IsProbabilityMeasure P := by
+    rw [← S.law]
+    exact Measure.isProbabilityMeasure_map (S.meas 0).aemeasurable
   -- projected influence function and its regularity
   set ψt : X → ℝ := fun x => ⟪t, ψ x⟫ with hψt_def
   have hψt_meas : Measurable ψt := by
@@ -118,19 +125,9 @@ theorem IIDSample.normalizedSum_vec_charFun_tendsto
       (innerSL ℝ t).continuous.measurable.comp hψ_meas
     simpa [innerSL_apply_apply, hψt_def] using h
   have hψt_mean : ∫ x, ψt x ∂P = 0 := by
-    have h := integral_inner (𝕜 := ℝ) hψ_int t
-    simpa [hψt_def, hmean, inner_zero_right] using h
+    simpa [hψt_def] using hmean
   have hψt_var : Integrable (fun x => (ψt x) ^ 2) P := by
-    have hbd : Integrable (fun x => ‖t‖ ^ 2 * ‖ψ x‖ ^ 2) P := hvar.const_mul _
-    refine hbd.mono' (hψt_meas.pow_const 2).aestronglyMeasurable
-      (ae_of_all _ fun x => ?_)
-    rw [Real.norm_eq_abs, abs_of_nonneg (sq_nonneg _)]
-    have hsq : (⟪t, ψ x⟫) ^ 2 ≤ (‖t‖ * ‖ψ x‖) ^ 2 := by
-      nlinarith [abs_real_inner_le_norm t (ψ x), abs_nonneg (⟪t, ψ x⟫ : ℝ),
-        sq_abs (⟪t, ψ x⟫ : ℝ), norm_nonneg t, norm_nonneg (ψ x)]
-    calc (ψt x) ^ 2 = (⟪t, ψ x⟫) ^ 2 := rfl
-      _ ≤ (‖t‖ * ‖ψ x‖) ^ 2 := hsq
-      _ = ‖t‖ ^ 2 * ‖ψ x‖ ^ 2 := by ring
+    simpa [hψt_def] using hvar_t
   -- measurability of the partial sums (mirrors `IIDSample.measurable_sampleMean`)
   have hSumScalar_meas : ∀ n,
       AEMeasurable (IsAsymLinear.normalizedSum S ψt rng n) μ := by
@@ -146,7 +143,7 @@ theorem IIDSample.normalizedSum_vec_charFun_tendsto
       (fun i _ => hψ_meas.comp (S.meas i))).const_smul _).aemeasurable
   -- scalar CLT for the projected influence function
   have h_scalar :=
-    S.clt_normalized_sum hψt_meas hψt_mean hψt_var hSumScalar_meas
+    S.clt_normalized_sum hψt_meas hψt_mean hψt_var
   unfold Tendsto_dist at h_scalar
   -- convert weak convergence to pointwise charFun convergence (Lévy, E = ℝ)
   have h_char1 :
@@ -176,7 +173,7 @@ theorem IIDSample.normalizedSum_vec_charFun_tendsto
     refine integral_congr_ae (ae_of_all _ fun ω => ?_)
     have hval : (⟪IsAsymLinearVec.normalizedSum S ψ rng n ω, t⟫ : ℝ)
         = IsAsymLinear.normalizedSum S ψt rng n ω := by
-      rw [real_inner_comm]; exact inner_normalizedSum S ψ t n ω
+      rw [real_inner_comm]; exact inner_normalizedSum S ψ t rng n ω
     simp only [hval, Complex.ofReal_one, one_mul]
   -- assemble
   have hfun :
@@ -187,6 +184,36 @@ theorem IIDSample.normalizedSum_vec_charFun_tendsto
   rw [h_gauss] at h_char1
   exact h_char1
 
+/-- **Per-direction charFun limit (full-vector form).**  Convenience wrapper of
+`normalizedSum_vec_charFun_tendsto_of_proj_integrable` for the common case where
+the whole vector `ψ` is square-integrable: the projection `⟪t,ψ⟫` is then
+square-integrable by Cauchy–Schwarz, so callers holding the standard full-vector
+`L²` condition need not re-establish the per-direction one. -/
+theorem IIDSample.normalizedSum_vec_charFun_tendsto
+    (S : IIDSample Ω X μ P) {ψ : X → E}
+    (hψ_meas : Measurable ψ)
+    (hvar : Integrable (fun x => ‖ψ x‖ ^ 2) P) (t : E)
+    (hmean : ∫ x, ⟪t, ψ x⟫ ∂P = 0) :
+    Tendsto
+      (fun n => charFun (μ.map (IsAsymLinearVec.normalizedSum S ψ rng n)) t)
+      atTop
+      (𝓝 (Complex.exp (-(((∫ x, (⟪t, ψ x⟫) ^ 2 ∂P : ℝ)) : ℂ) / 2))) := by
+  have hψt_meas : Measurable (fun x => (⟪t, ψ x⟫ : ℝ)) := by
+    have h : Measurable (fun x => (innerSL ℝ t) (ψ x)) :=
+      (innerSL ℝ t).continuous.measurable.comp hψ_meas
+    simpa [innerSL_apply_apply] using h
+  have hvar_t : Integrable (fun x => (⟪t, ψ x⟫) ^ 2) P := by
+    have hbd : Integrable (fun x => ‖t‖ ^ 2 * ‖ψ x‖ ^ 2) P := hvar.const_mul _
+    refine hbd.mono' (hψt_meas.pow_const 2).aestronglyMeasurable
+      (ae_of_all _ fun x => ?_)
+    rw [Real.norm_eq_abs, abs_of_nonneg (sq_nonneg _)]
+    have hsq : (⟪t, ψ x⟫) ^ 2 ≤ (‖t‖ * ‖ψ x‖) ^ 2 := by
+      nlinarith [abs_real_inner_le_norm t (ψ x), abs_nonneg (⟪t, ψ x⟫ : ℝ),
+        sq_abs (⟪t, ψ x⟫ : ℝ), norm_nonneg t, norm_nonneg (ψ x)]
+    calc (⟪t, ψ x⟫) ^ 2 ≤ (‖t‖ * ‖ψ x‖) ^ 2 := hsq
+      _ = ‖t‖ ^ 2 * ‖ψ x‖ ^ 2 := by ring
+  exact S.normalizedSum_vec_charFun_tendsto_of_proj_integrable hψ_meas t hvar_t hmean
+
 /-! ## Cramér–Wold wrapper -/
 
 /-- **Cramér–Wold / Lévy continuity wrapper.**  If the characteristic functions
@@ -195,7 +222,7 @@ of an `E`-valued sequence converge pointwise to those of a probability measure
 `MeasureTheory.ProbabilityMeasure.tendsto_iff_tendsto_charFun` (`Clt` package)
 for the project's `Tendsto_dist_vec` wrapper. -/
 theorem Tendsto_dist_vec.of_charFun_tendsto
-    {Xn : ℕ → Ω → E} {Q : Measure E} [IsProbabilityMeasure Q]
+    [IsProbabilityMeasure μ] {Xn : ℕ → Ω → E} {Q : Measure E} [IsProbabilityMeasure Q]
     (hXn : ∀ n, AEMeasurable (Xn n) μ)
     (hchar : ∀ t : E,
       Tendsto (fun n => charFun (μ.map (Xn n)) t) atTop (𝓝 (charFun Q t))) :
@@ -212,17 +239,37 @@ Gaussian one `charFun Q t = exp(−½ ∫⟪t,ψ⟫² dP)`, the vector normalise
 converges to `Q` in distribution.  This discharges the `_hCLT` hypothesis of
 `IsAsymLinearVec.tendsto_normal_vec` and of `deltaMethod`. -/
 theorem IIDSample.clt_normalizedSum_vec_of_charFun
-    [IsProbabilityMeasure P] (S : IIDSample Ω X μ P) {ψ : X → E}
-    (hψ_meas : Measurable ψ) (hψ_int : Integrable ψ P)
+    (S : IIDSample Ω X μ P) {ψ : X → E}
+    (hψ_meas : Measurable ψ)
     (hmean : ∫ x, ψ x ∂P = 0) (hvar : Integrable (fun x => ‖ψ x‖ ^ 2) P)
     (Q : Measure E) [IsProbabilityMeasure Q]
     (hQ : ∀ t : E, charFun Q t
-          = Complex.exp (-(((∫ x, (⟪t, ψ x⟫) ^ 2 ∂P : ℝ)) : ℂ) / 2))
-    (hSum_meas : ∀ n, AEMeasurable (IsAsymLinearVec.normalizedSum S ψ rng n) μ) :
-    Tendsto_dist_vec (IsAsymLinearVec.normalizedSum S ψ rng) Q μ hSum_meas := by
-  refine Tendsto_dist_vec.of_charFun_tendsto hSum_meas fun t => ?_
+          = Complex.exp (-(((∫ x, (⟪t, ψ x⟫) ^ 2 ∂P : ℝ)) : ℂ) / 2)) :
+    @Tendsto_dist_vec Ω E _ _ _ _ (IsAsymLinearVec.normalizedSum S ψ rng) Q μ
+      S.indep.isProbabilityMeasure ‹IsProbabilityMeasure Q›
+      (by
+        intro n
+        unfold IsAsymLinearVec.normalizedSum
+        exact ((Finset.measurable_sum _
+          (fun i _ => hψ_meas.comp (S.meas i))).const_smul _).aemeasurable) := by
+  haveI : IsProbabilityMeasure μ := S.indep.isProbabilityMeasure
+  have hSum_meas : ∀ n, AEMeasurable (IsAsymLinearVec.normalizedSum S ψ rng n) μ := by
+    intro n
+    unfold IsAsymLinearVec.normalizedSum
+    exact ((Finset.measurable_sum _
+      (fun i _ => hψ_meas.comp (S.meas i))).const_smul _).aemeasurable
+  haveI : IsProbabilityMeasure P := by
+    rw [← S.law]
+    exact Measure.isProbabilityMeasure_map (S.meas 0).aemeasurable
+  have hψ_int : Integrable ψ P :=
+    ((MeasureTheory.memLp_two_iff_integrable_sq_norm
+      hψ_meas.aestronglyMeasurable).2 hvar).integrable
+      (by norm_num)
+  refine Tendsto_dist_vec.of_charFun_tendsto (Q := Q) hSum_meas fun t => ?_
   rw [hQ t]
-  exact S.normalizedSum_vec_charFun_tendsto hψ_meas hψ_int hmean hvar t
+  apply S.normalizedSum_vec_charFun_tendsto hψ_meas hvar t
+  have h := integral_inner (𝕜 := ℝ) hψ_int t
+  simpa [hmean, inner_zero_right] using h
 
 /-! ## End-to-end vector asymptotic normality -/
 
@@ -233,21 +280,28 @@ asymptotic linearity at `θ₀` with influence function `ψ`, and a target `Q`
 whose characteristic function is the Gaussian one, the rescaled estimator
 converges in distribution to `Q`. -/
 theorem IsAsymLinearVec.tendsto_normal_vec_clt
-    [IsProbabilityMeasure P] {θn : ℕ → Ω → E} {θ₀ : E} {ψ : X → E}
+    {θn : ℕ → Ω → E} {θ₀ : E} {ψ : X → E}
     {S : IIDSample Ω X μ P}
     (h : IsAsymLinearVec θn θ₀ ψ S rng)
-    (hψ_meas : Measurable ψ) (hψ_int : Integrable ψ P)
+    (hψ_meas : Measurable ψ)
     (Q : Measure E) [IsProbabilityMeasure Q]
     (hQ : ∀ t : E, charFun Q t
           = Complex.exp (-(((∫ x, (⟪t, ψ x⟫) ^ 2 ∂P : ℝ)) : ℂ) / 2))
-    (hθn_meas : ∀ n, AEMeasurable (IsAsymLinearVec.rescaledEstimator θn θ₀ rng n) μ)
-    (hSum_meas : ∀ n, AEMeasurable (IsAsymLinearVec.normalizedSum S ψ rng n) μ) :
+    (hθn_meas : ∀ n, AEMeasurable (IsAsymLinearVec.rescaledEstimator θn θ₀ rng n) μ) :
     Tendsto (β := ProbabilityMeasure E)
       (fun n => ⟨μ.map (IsAsymLinearVec.rescaledEstimator θn θ₀ rng n),
-                  Measure.isProbabilityMeasure_map (hθn_meas n)⟩)
+                  @Measure.isProbabilityMeasure_map Ω E _ _ μ
+                    S.indep.isProbabilityMeasure _ (hθn_meas n)⟩)
       atTop (𝓝 ⟨Q, ‹IsProbabilityMeasure Q›⟩) :=
-  IsAsymLinearVec.tendsto_normal_vec ⟨Q, ‹IsProbabilityMeasure Q›⟩ h hψ_meas
-    hθn_meas hSum_meas
-    (S.clt_normalizedSum_vec_of_charFun hψ_meas hψ_int h.mean_zero h.finite_var Q hQ hSum_meas)
+  by
+    haveI : IsProbabilityMeasure μ := S.indep.isProbabilityMeasure
+    have hSum_meas : ∀ n, AEMeasurable (IsAsymLinearVec.normalizedSum S ψ rng n) μ := by
+      intro n
+      unfold IsAsymLinearVec.normalizedSum
+      exact ((Finset.measurable_sum _
+        (fun i _ => hψ_meas.comp (S.meas i))).const_smul _).aemeasurable
+    exact IsAsymLinearVec.tendsto_normal_vec ⟨Q, ‹IsProbabilityMeasure Q›⟩ h.remainder
+      hθn_meas hSum_meas
+      (S.clt_normalizedSum_vec_of_charFun hψ_meas h.mean_zero h.finite_var Q hQ)
 
 end Causalean.Stat

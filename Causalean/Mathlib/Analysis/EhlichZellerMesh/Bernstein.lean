@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jiyuan Tan
 -/
 import Causalean.Mathlib.Analysis.BernsteinSzegoTrig.Szego
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.InverseDeriv
 
 /-!
 # Bernstein / Szegő analytic core for the Ehlich–Zeller mesh inequality
@@ -146,7 +147,9 @@ theorem czTrig_szego_deriv (R : Polynomial ℝ) (β : ℕ) (hβ : R.natDegree �
       nlinarith [hsq']
     exact abs_le_of_sq_le_sq hsq_bound (by positivity)
 
-private theorem czTrig_arccos_lipschitz_regularized (R : Polynomial ℝ) (β : ℕ)
+/-- For a real polynomial of degree at most β, the arccosine of its cosine-polynomial transform
+normalized by its supremum plus a positive constant is Lipschitz on [0, π] with constant β. -/
+theorem czTrig_arccos_lipschitz_regularized (R : Polynomial ℝ) (β : ℕ)
     (hβ : R.natDegree ≤ β) {δ : ℝ} (hδ : 0 < δ) {s t : ℝ}
     (hs : s ∈ Set.Icc 0 Real.pi) (ht : t ∈ Set.Icc 0 Real.pi) :
     |Real.arccos (czTrig R t / (czSup R + δ)) -

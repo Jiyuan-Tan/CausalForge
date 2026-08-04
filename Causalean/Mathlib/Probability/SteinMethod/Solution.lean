@@ -53,8 +53,9 @@ private theorem steinIntegrand_continuous (h : ℝ → ℝ) (hh : Continuous h) 
   unfold steinIntegrand
   fun_prop
 
-/-- The Gaussian expectation of a bounded function is bounded by the same constant. -/
-private theorem abs_gExpect_le {h : ℝ → ℝ} {C : ℝ} (hb : ∀ x, |h x| ≤ C) :
+/-- The absolute value of the standard-normal expectation of a uniformly bounded function is at
+most the same bound. This is useful throughout Stein-method estimates. -/
+theorem abs_gExpect_le {h : ℝ → ℝ} {C : ℝ} (hb : ∀ x, |h x| ≤ C) :
     |gExpect h| ≤ C := by
   unfold gExpect
   calc |∫ x, h x ∂(gaussianReal 0 1)| ≤ ∫ x, |h x| ∂(gaussianReal 0 1) :=

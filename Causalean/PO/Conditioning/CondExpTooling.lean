@@ -50,11 +50,13 @@ lemma POVar.comap_factual_le (c : POVar P γ) :
 /-- Multiplying an integrable function by a `POVar` factual indicator preserves
 integrability. -/
 lemma POVar.integrable_mul_indicator
-    {α : Type*} [MeasurableSpace α] [MeasurableSingletonClass α]
-    (a : POVar P α) (x : α)
-    {f : P.Ω → ℝ} (hf : Integrable f P.μ) (hf_meas : Measurable f) :
-    Integrable (fun ω => f ω * a.indicator x ω) P.μ := by
-  refine hf.mono (hf_meas.mul (a.measurable_indicator x)).aestronglyMeasurable ?_
+    {α : Type*} [MeasurableSpace α]
+    (a : POVar P α) (x : α) (hx : MeasurableSet ({x} : Set α))
+    {f : P.Ω → ℝ} {μ : Measure P.Ω} (hf : Integrable f μ) :
+    Integrable (fun ω => f ω * a.indicator x ω) μ := by
+  refine hf.mono
+    (hf.aestronglyMeasurable.mul
+      (a.measurable_indicator x hx).aestronglyMeasurable) ?_
   refine Filter.Eventually.of_forall (fun ω => ?_)
   rcases a.indicator_eq_one_or_zero x ω with h | h <;> simp [h]
 
@@ -132,10 +134,18 @@ conditional expectation just like any other strongly measurable multiplier. -/
 lemma POVar.condExpGiven_indicator_mul
     (c : POVar P γ) {s : Set P.Ω} {g : P.Ω → ℝ} {μ : Measure P.Ω}
     (hs : MeasurableSet[MeasurableSpace.comap c.factual inferInstance] s)
-    (hsg : Integrable (s.indicator (fun _ => (1 : ℝ)) * g) μ) (hg : Integrable g μ) :
+    (hg : Integrable g μ) :
     c.condExpGiven (s.indicator (fun _ => (1 : ℝ)) * g) μ
-      =ᵐ[μ] s.indicator (fun _ => (1 : ℝ)) * c.condExpGiven g μ :=
-  c.condExpGiven_mul_of_stronglyMeasurable_left
+      =ᵐ[μ] s.indicator (fun _ => (1 : ℝ)) * c.condExpGiven g μ := by
+  have hsg : Integrable (s.indicator (fun _ => (1 : ℝ)) * g) μ := by
+    have hs_meas : AEStronglyMeasurable (s.indicator (fun _ => (1 : ℝ))) μ :=
+      StronglyMeasurable.aestronglyMeasurable
+        (((stronglyMeasurable_const (b := (1 : ℝ))).indicator hs).mono c.comap_factual_le)
+    refine hg.mono
+      (hs_meas.mul hg.aestronglyMeasurable) ?_
+    refine Filter.Eventually.of_forall (fun ω => ?_)
+    by_cases hω : ω ∈ s <;> simp [Set.indicator, hω]
+  exact c.condExpGiven_mul_of_stronglyMeasurable_left
     ((stronglyMeasurable_const (b := (1 : ℝ))).indicator hs) hsg hg
 
 /-! ### Tower property -/

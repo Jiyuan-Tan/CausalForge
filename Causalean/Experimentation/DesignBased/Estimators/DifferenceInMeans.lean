@@ -110,9 +110,11 @@ theorem E_treatedMean (n₁ : ℕ) (hn : n₁ ≤ Fintype.card U) (hn1 : 0 < n�
 
 /-- The control-arm mean is unbiased for the control population mean `(1/N) ∑ Y0`. Each unit enters
 the control arm with probability `n₀ / N`. -/
-theorem E_controlMean (n₁ : ℕ) (hn : n₁ ≤ Fintype.card U) (hn0 : n₁ < Fintype.card U)
+theorem E_controlMean (n₁ : ℕ) (hn0 : n₁ < Fintype.card U)
     (Y0 : U → ℝ) :
-    (completeRandomization n₁ hn).E (controlMean n₁ Y0) = (∑ i, Y0 i) / (Fintype.card U : ℝ) := by
+    (completeRandomization n₁ (Nat.le_of_lt hn0)).E (controlMean n₁ Y0) =
+      (∑ i, Y0 i) / (Fintype.card U : ℝ) := by
+  have hn : n₁ ≤ Fintype.card U := Nat.le_of_lt hn0
   let D := completeRandomization n₁ hn
   have hNpos : 0 < Fintype.card U := lt_of_le_of_lt (Nat.zero_le n₁) hn0
   have hNR : (Fintype.card U : ℝ) ≠ 0 := by exact_mod_cast (ne_of_gt hNpos)
@@ -176,20 +178,23 @@ theorem E_controlMean (n₁ : ℕ) (hn : n₁ ≤ Fintype.card U) (hn0 : n₁ < 
 
 /-- **Unbiasedness of difference in means.** Under complete randomization with `0 < n₁ < N`, the
 difference-in-means estimator is unbiased for the sample average treatment effect. -/
-theorem E_diffInMeans_eq_sate (n₁ : ℕ) (hn : n₁ ≤ Fintype.card U) (hn1 : 0 < n₁)
+theorem E_diffInMeans_eq_sate (n₁ : ℕ) (hn1 : 0 < n₁)
     (hn0 : n₁ < Fintype.card U) (Y1 Y0 : U → ℝ) :
-    (completeRandomization n₁ hn).E (diffInMeans n₁ Y1 Y0) = sateEstimand Y1 Y0 := by
+    (completeRandomization n₁ (Nat.le_of_lt hn0)).E (diffInMeans n₁ Y1 Y0)
+      = sateEstimand Y1 Y0 := by
+  have hn : n₁ ≤ Fintype.card U := Nat.le_of_lt hn0
   unfold diffInMeans sateEstimand
-  rw [FiniteDesign.E_sub, E_treatedMean n₁ hn hn1, E_controlMean n₁ hn hn0]
+  rw [FiniteDesign.E_sub, E_treatedMean n₁ hn hn1, E_controlMean n₁ hn0]
   rw [← sub_div]
   congr 1
   rw [← Finset.sum_sub_distrib]
 
 /-- The difference in means is unbiased for the SATE, in the `Unbiased` predicate form. -/
-theorem unbiased_diffInMeans (n₁ : ℕ) (hn : n₁ ≤ Fintype.card U) (hn1 : 0 < n₁)
+theorem unbiased_diffInMeans (n₁ : ℕ) (hn1 : 0 < n₁)
     (hn0 : n₁ < Fintype.card U) (Y1 Y0 : U → ℝ) :
-    (completeRandomization n₁ hn).Unbiased (diffInMeans n₁ Y1 Y0) (sateEstimand Y1 Y0) :=
-  E_diffInMeans_eq_sate n₁ hn hn1 hn0 Y1 Y0
+    (completeRandomization n₁ (Nat.le_of_lt hn0)).Unbiased (diffInMeans n₁ Y1 Y0)
+      (sateEstimand Y1 Y0) :=
+  E_diffInMeans_eq_sate n₁ hn1 hn0 Y1 Y0
 
 end DesignBased
 end Experimentation

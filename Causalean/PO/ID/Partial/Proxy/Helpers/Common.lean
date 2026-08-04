@@ -99,7 +99,7 @@ lemma YofA_essbound_above {a : Bool} (HC : POSystem.Consistency P)
     intro ω hω
     exact (POVar.cf_eq_factual_on_event HC S.Yvar S.Avar a hAY.symm hω).symm
   exact Causalean.ae_le_YofA_of_ae_le_Y (mΩ := P.measΩ) (σ_UX := S.σ_UX) S.σ_UX_le
-    S.measurable_A S.measurable_Y (S.measurable_YofA a) a latent_exch hYeq overlap hY
+    S.measurable_A (S.measurable_YofA a) a latent_exch hYeq overlap hY
 
 /-- `Y(a)` inherits Y's a.e. lower bound. Mirror of `YofA_essbound_above`. -/
 lemma YofA_essbound_below {a : Bool} (HC : POSystem.Consistency P)
@@ -115,7 +115,7 @@ lemma YofA_essbound_below {a : Bool} (HC : POSystem.Consistency P)
     intro ω hω
     exact (POVar.cf_eq_factual_on_event HC S.Yvar S.Avar a hAY.symm hω).symm
   exact Causalean.ae_le_YofA_of_ae_le_Y_below (mΩ := P.measΩ) (σ_UX := S.σ_UX) S.σ_UX_le
-    S.measurable_A S.measurable_Y (S.measurable_YofA a) a latent_exch hYeq overlap hY
+    S.measurable_A (S.measurable_YofA a) a latent_exch hYeq overlap hY
 
 /-! ### Observed-data collapse: replacing `h(a,W,X)` with `μ[Y | σ_AX]` on `{A=a}` -/
 

@@ -1,6 +1,8 @@
 import type { CitedReviewReceipt, CrosswalkEntry, CrosswalkVerdict, DeliveryReviewReceipt } from "../types.js";
 import type { SubstrateGate } from "../judgment.js";
 import type { FormalizationGraph } from "../graph/types.js";
+import { parseJsonWithEscapeRepair } from "../shared/codex_json.js";
+import { maskNonBoundaryPeriods } from "../shared/tex_text.js";
 
 /**
  * Normalize a reviewer-supplied object id without shredding TeX symbol ids.
@@ -156,7 +158,11 @@ export function parseJsonObject(stdout: string): ReviewerOutput {
   };
   for (const cand of candidates) {
     try {
-      const o = JSON.parse(cand);
+      // Escape-repair parse, NOT bare JSON.parse: a reviewer note containing
+      // LaTeX (`should be \(\forall n\) eventual`) is invalid JSON, and
+      // discarding the whole verdict as unparsable killed paid review rounds —
+      // the exact failure shared/codex_json.ts documents.
+      const o = parseJsonWithEscapeRepair(cand);
       // Prefer the actual verdict object; copied source/plan JSON without reviewer keys is unsafe.
       if (o && typeof o === "object" && !Array.isArray(o) && hasReviewerShape(o as Record<string, unknown>)) return o as ReviewerOutput;
     } catch { /* try the next candidate */ }
@@ -200,8 +206,14 @@ const POS_VERDICTS = ["faithful-refinement", "faithful", "regularity-bookkeeping
 const OBJ_ID_RE = /^\s*\(?\*{0,2}\s*([A-Za-z]{1,3}-?\d+[A-Za-z0-9]*)\b/;
 
 const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+// `\` is excluded from the LEFT boundary: a backslash boundary let verdict
+// tokens fire inside TeX commands (`\partial` graded a `matched` note as drift
+// — "partial" ∈ NEG). Environment NAMES (`\begin{aligned}` reading as the POS
+// token "aligned") are handled by stripping `\begin/\end{…}` in `verdictClass`
+// rather than excluding `{` here: a generic `{` exclusion also hid a REAL
+// verdict word wrapped in a TeX group (`but \emph{drifts}`), a soundness miss.
 const containsVerdictPhrase = (text: string, phrase: string): boolean =>
-  new RegExp(`(?:^|[^a-z0-9])${escapeRegExp(phrase)}(?:$|[^a-z0-9])`, "i").test(text);
+  new RegExp(`(?:^|[^a-z0-9\\\\])${escapeRegExp(phrase)}(?:$|[^a-z0-9])`, "i").test(text);
 const positiveRoot = "(?:faithful|match(?:ed)?|equivalent|exact|correct|pass|ok|align(?:ed)?|consistent|sound|accurate|preserved|concordant|valid|fine)";
 // Failure/negation cues that GOVERN a positive root. A reviewer rejects equivalence in prose far
 // more often than with a listed NEG token, and every such phrasing ("fails to match", "cannot
@@ -220,8 +232,10 @@ const GENERIC_NEGATION_RE = new RegExp(
 );
 const NEGATIVE_PREFIX_RE =
   /\b(?:mis|in|un|non)[-]?(?:align(?:ed)?|accurate|exact|correct|valid|sound|consistent|faithful|match(?:ed)?|preserved|equivalent)\b/i;
+// Left boundary excludes `\` so a TeX command in the contrast clause
+// ("matched, but note \partial is used") cannot read as a negative token.
 const CONTRAST_NEGATIVE_RE =
-  /\b(?:drift(?:s|ed|ing)?|mismatch(?:es|ed|ing)?|overclaim(?:s|ed|ing)?|weaken(?:s|ed|ing)?|conditionaliz(?:e|es|ed|ing)|partial(?:ly)?|incorrect|invalid|unsound|inconsistent|wrong)\b/i;
+  /(?<![\\A-Za-z0-9])(?:drift(?:s|ed|ing)?|mismatch(?:es|ed|ing)?|overclaim(?:s|ed|ing)?|weaken(?:s|ed|ing)?|conditionaliz(?:e|es|ed|ing)|partial(?:ly)?|incorrect|invalid|unsound|inconsistent|wrong)\b/i;
 
 /**
  * HEDGED positives — a real positive token that is QUALIFIED rather than negated, so no negation
@@ -240,11 +254,15 @@ const HEDGE_RE =
  * explanation, so `faithful; uses the derived consequence` stays a clean pass.
  */
 const leadClause = (text: string): string =>
-  text.split(/[.;]/)[0].trim().split(/\s+/).slice(0, 12).join(" ");
+  // Masked so a decimal ("faithful up to 0.5 rounding") or abbreviation does
+  // not truncate the clause before its hedge/qualifier is visible.
+  maskNonBoundaryPeriods(text).split(/[.;]/)[0].trim().split(/\s+/).slice(0, 12).join(" ");
 
 // Shared negative-first classifier: unknown/non-faithful verdict tokens must never merge to pass.
 export const verdictClass = (raw: unknown): "pass" | "fail" | "unknown" => {
-  const text = String(raw ?? "").toLowerCase();
+  // Drop environment tokens whole: the NAME inside `\begin{aligned}` is TeX
+  // structure, not a verdict word ("aligned" ∈ POS graded junk as pass).
+  const text = String(raw ?? "").replace(/\\(?:begin|end)\s*\{[A-Za-z*]+\}/g, " ").toLowerCase();
   // The verdict is the leading clause. Do not let words in its explanation (for example,
   // "faithful; uses the derived consequence") flip the result. A contrastive clause is the one
   // exception: "faithful, but drifted" must fail.
@@ -263,8 +281,12 @@ export const verdictClass = (raw: unknown): "pass" | "fail" | "unknown" => {
 
 // Setup-world symbol-space shape tests (shared by the symbol-cluster review AND the pre-review
 // "is there a symbol to check?" gate, so a settled node graph never "covers" an untagged symbol).
-const isRangeSpace = (sp: string) => /[{[(]\s*-?\s*[0-9]/.test(sp);
-const isProductSpace = (sp: string) => / x |[×⨯]/.test(sp);
+// `(?<![\^_])` — a brace opened by a sub/superscript is TeX script structure,
+// not a range: `\mathbb{R}^{2}`, `\mathcal{H}_{0}`, `W^{1,2}` all misread as
+// range spaces without it. `\times`/`\otimes` are the TeX spellings of a
+// product — the literal `×` almost never appears in authored spaces.
+const isRangeSpace = (sp: string) => /(?<![\^_])[{[(]\s*-?\s*[0-9]/.test(sp);
+const isProductSpace = (sp: string) => / x |[×⨯]|\\o?times\b/.test(sp);
 /** A core symbol is IN-SCOPE for the cluster review iff it has a range-shaped, non-product space and is
  *  not a `role:"derived"` schedule sequence — mirrors the filter in the symbol-cluster builder. */
 export const symbolInScope = (s: { name?: string; space?: string; type?: string; role?: string }): boolean => {

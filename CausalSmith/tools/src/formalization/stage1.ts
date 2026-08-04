@@ -37,7 +37,8 @@ import {
   missingArchitectureLedgerPath,
 } from "../shared/missing_architecture_ledger.js";
 import { coreJsonPath } from "../discovery/stages/d0_core.js";
-import { CoreSchema, type Core } from "../discovery/core/schema.js";
+import { type Core } from "../discovery/core/schema.js";
+import { parseTypedCore } from "../discovery/core/core_io.js";
 import { runPlanGate } from "../formalization/plan/plan_gate.js";
 import { PlanSchema, deriveFeasibility } from "../formalization/plan/schema.js";
 import { createRetrieval } from "../formalization/reuse_retrieval.js";
@@ -113,7 +114,7 @@ export async function runStage1(args: {
   const coreText = await readRequired(corePath, "F1 planning");
   let core: Core;
   try {
-    core = CoreSchema.parse(JSON.parse(coreText));
+    core = parseTypedCore(coreText, `F1 planning: core.json at ${corePath}`);
   } catch (err) {
     throw new Error(
       `F1 planning: core.json at ${corePath} failed to parse/validate: ${err instanceof Error ? err.message : String(err)} (legacy pre-typed-core run? re-run discovery (D0) to regenerate core.json)`,
@@ -162,13 +163,17 @@ export async function runStage1(args: {
   }
 
   const cluster = clusterFromLeanSubdir(args.state.lean_subdir) ?? core.cluster ?? null;
-  const reuseBlock = coreReuseCandidateBlock(args.ctx.repoRoot, core, cluster, {
-    // Semantic blend ON by default: pure-lexical ranking surfaced surface-token matches
-    // (e.g. a Le Cam TV bound for `clip-bias`) over the concept-correct PO/Estimation
-    // decls; the semantic tier re-ranks the right candidate up. Degrades to lexical-only
-    // if embeddings are missing/stale. Set RETRIEVAL_SEMANTIC_PUSH=off to force lexical.
-    semantic: process.env.RETRIEVAL_SEMANTIC_PUSH !== "off",
-  });
+  const reuseBlock = isRevise && existsSync(paths.plan)
+    ? [
+        "=== REVISE REUSE SCOPE ===",
+        "Keep every settled reuse/define-local decision in the existing plan. Re-search only reviewer-flagged nodes,",
+        "substrate-built gates, and their dependency closure; do not repeat the all-node cold-start candidate survey.",
+      ].join("\n")
+    : coreReuseCandidateBlock(args.ctx.repoRoot, core, cluster, {
+        // Semantic blend ON by default: pure-lexical ranking surfaced surface-token matches
+        // over concept-correct declarations. Degrades to lexical-only if embeddings are stale.
+        semantic: process.env.RETRIEVAL_SEMANTIC_PUSH !== "off",
+      });
 
   // SUBSTRATE-BUILT channel (build→F1): if the orchestrator built a Defer-item's
   // crux substrate since the last F1 run, it left the new decl(s) on

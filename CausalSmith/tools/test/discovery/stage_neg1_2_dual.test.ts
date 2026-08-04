@@ -6,10 +6,15 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import {
   runStageNeg1_2ProtoCore,
   protoCoreJsonPath,
+  STDOUT_HANDOFF_KEYS,
 } from "../../src/discovery/stages/neg1_2_author.js";
-import { runStageNeg1_2Dual } from "../../src/discovery/stages/neg1_2.js";
+import { CoreSchema } from "../../src/discovery/core/schema.js";
+import { modeUsesGapsContext, runStageNeg1_2Dual } from "../../src/discovery/stages/neg1_2.js";
+import { formatNeg1EscalationContext } from "../../src/discovery/stageNeg1_directive.js";
+import { MODEL_PLAN } from "../../src/constants.js";
 import { artifactPaths, type StageDeps } from "../../src/pipeline_support.js";
 import { promptPath } from "../../src/paths.js";
+import type { CodexRunInput } from "../../src/shared/codex.js";
 import type { PipelineContext, StateJson } from "../../src/types.js";
 
 const QID = "stat_ate_overlap_decay";
@@ -64,14 +69,22 @@ function makeState(): StateJson {
 }
 
 /** runCodex stub: writes `coreBody` to the core path, returns `extra` handoff keys. */
-function authorDeps(coreBody: string, extra: Record<string, unknown> = {}): StageDeps {
+function authorDeps(
+  coreBody: string | ((attempt: number) => string),
+  extra: Record<string, unknown> = {},
+  onInput?: (input: CodexRunInput) => void,
+): StageDeps {
+  let attempt = 0;
   return {
-    runCodex: async ({ prompt }: { prompt: string }) => {
+    runCodex: async (input: CodexRunInput) => {
+      attempt++;
+      onInput?.(input);
+      const { prompt } = input;
       const m = prompt.match(/proposal core JSON to this path \(create it\): (.+)/);
       if (!m) throw new Error("authorDeps: no core path in prompt");
       const target = m[1].trim();
       await mkdir(path.dirname(target), { recursive: true });
-      await writeFile(target, coreBody, "utf8");
+      await writeFile(target, typeof coreBody === "function" ? coreBody(attempt) : coreBody, "utf8");
       return {
         stdout: JSON.stringify({ status: "completed", message: "core", artifacts: [target], ...extra }),
         stderr: "",
@@ -119,6 +132,126 @@ afterAll(async () => {
 });
 
 describe("Stage -1.2 author (single artifact: formal + prose → gate → schema-validate)", () => {
+  it("dispatches the Codex proposal author with the stage-specific Sol tier", async () => {
+    const inputs: CodexRunInput[] = [];
+    await runStageNeg1_2ProtoCore({
+      ctx: makeCtx(repoRoot),
+      state: makeState(),
+      mode: "cold-start",
+      deps: authorDeps(goldenCore, {}, (input) => inputs.push(input)),
+    });
+
+    expect(inputs).toHaveLength(1);
+    expect(inputs[0].model).toBe("gpt-5.6-sol");
+    expect(inputs[0].model).toBe(MODEL_PLAN.stageNeg1_2_draft.codex.model);
+    expect(inputs[0].reasoningEffort).toBe(MODEL_PLAN.stageNeg1_2_draft.codex.effort);
+  });
+
+  it("selects the matching mode head and limits gaps to ideation modes", async () => {
+    const modes = ["cold-start", "revise", "pivot", "kernel-replace", "draft-rebuild"] as const;
+    const expectedGaps = new Set(["cold-start", "pivot"]);
+    for (const mode of modes) {
+      const prompts: string[] = [];
+      await runStageNeg1_2ProtoCore({
+        ctx: makeCtx(repoRoot),
+        state: makeState(),
+        mode,
+        deps: authorDeps(goldenCore, {}, (input) => prompts.push(input.prompt)),
+      });
+      expect(prompts[0]).toMatch(new RegExp(`^stub ${mode.replace(/-/g, "_")} head`));
+      expect(modeUsesGapsContext(mode)).toBe(expectedGaps.has(mode));
+    }
+  });
+
+  it("keeps substantive revision obligations in scope after a structural-gate retry", async () => {
+    const broken = JSON.parse(goldenCore);
+    broken.statements[0].status = "proved";
+    const prompts: string[] = [];
+    const deps = authorDeps(
+      (attempt) => attempt === 1 ? JSON.stringify(broken) : goldenCore,
+      {},
+      (input) => prompts.push(input.prompt),
+    );
+
+    await runStageNeg1_2ProtoCore({
+      ctx: makeCtx(repoRoot),
+      state: makeState(),
+      mode: "revise",
+      deps,
+    });
+
+    expect(prompts).toHaveLength(2);
+    expect(prompts[1]).toContain("does not discharge or narrow those substantive obligations");
+  });
+
+  it("injects every current-angle directive and excludes abandoned angles", () => {
+    const formatted = formatNeg1EscalationContext([
+      { angle: 0, version: 0, directive: "stale directive with reused version" },
+      { angle: 0, version: 9, directive: "old angle directive" },
+      { angle: 1, version: 0, directive: "current directive A" },
+      { angle: 1, version: 2, directive: "current directive B" },
+    ], 1);
+
+    expect(formatted).not.toContain("stale directive");
+    expect(formatted).not.toContain("old angle directive");
+    expect(formatted).toContain("current directive A");
+    expect(formatted).toContain("current directive B");
+  });
+
+  it("backfills legacy angle segments across version resets and switch rows", () => {
+    const formatted = formatNeg1EscalationContext([
+      { version: 4, directive: "legacy angle zero" },
+      { version: 0, directive: "legacy angle one root" },
+      { version: 4, directive: "legacy angle one final" },
+      { version: 0, directive: "legacy angle two root" },
+      { version: 6, directive: "legacy angle three root", note: "angle-action:switch" },
+      { version: 1, directive: "legacy angle three continuation", note: "angle-action:continue" },
+      { angle: 3, version: 5, directive: "new provenance row" },
+    ], 3);
+
+    expect(formatted).not.toContain("angle zero");
+    expect(formatted).not.toContain("angle one");
+    expect(formatted).not.toContain("angle two");
+    expect(formatted).toContain("legacy angle three root");
+    expect(formatted).toContain("legacy angle three continuation");
+    expect(formatted).toContain("new provenance row");
+  });
+
+  it("fails closed when equal-version legacy rows cannot identify a later angle", () => {
+    expect(() => formatNeg1EscalationContext([
+      { version: 0, directive: "could be angle zero" },
+      { version: 0, directive: "could be angle zero or one" },
+    ], 1)).toThrow(/cannot be safely mapped/);
+
+    expect(formatNeg1EscalationContext([
+      { version: 0, directive: "legacy angle zero" },
+      {
+        angle: 1,
+        version: 0,
+        directive: "",
+        note: "angle-action:switch",
+        provenance_only: true,
+      },
+    ], 1)).toBe("");
+
+    expect(formatNeg1EscalationContext([
+      { version: 10, directive: "legacy angle zero" },
+      {
+        angle: 1,
+        version: 10,
+        directive: "carry this repaired kernel into angle one",
+        note: "user supplied note",
+      },
+      {
+        angle: 1,
+        version: 10,
+        directive: "",
+        note: "angle-action:switch",
+        provenance_only: true,
+      },
+    ], 1)).toContain("carry this repaired kernel into angle one");
+  });
+
   it("makes standalone orchestrator directives outrank an ACCEPT with no reviewer flags", async () => {
     const prompt = await readFile(
       new URL("../../src/discovery/prompts/D-1/stage_neg1_2_proto_head_revise.txt", import.meta.url),
@@ -321,7 +454,123 @@ describe("runStageNeg1_2Dual (rollout step 5 — one author + render + harvest)"
     expect(pf.cluster).toBe("stat");
     expect(pf.seed_list).toEqual(["seedA"]);
     expect(typeof pf.novelty_justification).toBe("string");
-    expect(pf.last_draft_handoff as string).toContain("literature_checklist");
+    expect(pf.last_draft_version).toBe(1);
+    // Single-source contract: the D-0.5 drafter context reads the PERSISTED
+    // CORE, so a checklist the prompt mandates on the final stdout line (and
+    // that the authored core file therefore lacks) must be folded into the
+    // artifact — otherwise every revise round fires a spurious N-thin-survey.
+    const persisted = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8")) as Record<
+      string,
+      unknown
+    >;
+    expect(persisted.literature_checklist).toEqual([
+      { bibkey: "Tsybakov2009", relevant_to: "thm:lower" },
+    ]);
+    expect(persisted.message).toBeDefined();
+  });
+
+  it("lets the current stdout supersede a checklist carried in the core (stale-fold guard)", async () => {
+    // Revise shape of audit R2C1: the authored core carries iteration 1's
+    // checklist (our own prior fold, echoed back through the revise input
+    // block) while the CURRENT stdout carries the updated one. Stdout must
+    // win, or the reviewer re-judges the stale checklist every revise round.
+    const ctx = makeCtx(repoRoot);
+    const state = makeState();
+    const core = JSON.parse(goldenCore) as Record<string, unknown>;
+    core.literature_checklist = [{ bibkey: "StaleIteration1Key", relevant_to: "thm:pn" }];
+    const res = await runStageNeg1_2Dual({
+      ctx,
+      state,
+      deps: authorDeps(JSON.stringify(core), {
+        literature_checklist: [
+          { bibkey: "StaleIteration1Key", relevant_to: "thm:pn" },
+          { bibkey: "FreshIteration2Key", relevant_to: "thm:pn" },
+        ],
+      }),
+      mode: "cold-start",
+      nextVersion: 1,
+      angleIndex: 0,
+    });
+    expect(res.status).toBe("completed");
+    const persisted = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8")) as Record<
+      string,
+      unknown
+    >;
+    expect(persisted.literature_checklist).toEqual([
+      { bibkey: "StaleIteration1Key", relevant_to: "thm:pn" },
+      { bibkey: "FreshIteration2Key", relevant_to: "thm:pn" },
+    ]);
+  });
+
+  it("falls back to a raw-core upgrade receipt when the revise stdout forgets UM8", async () => {
+    // Audit R3C2: CoreSchema strips receipt keys from the typed core, so
+    // without an explicit raw-core fallback a revise whose stdout omits the
+    // UM8 receipt would silently drop upgrade_mode and D-0.5 would skip the
+    // parent-aware directive for the rest of the run.
+    const ctx = makeCtx(repoRoot);
+    const state = makeState();
+    const core = JSON.parse(goldenCore) as Record<string, unknown>;
+    core.upgrade_mode = true;
+    core.upgrade_axis = "estimation";
+    const res = await runStageNeg1_2Dual({
+      ctx,
+      state,
+      deps: authorDeps(JSON.stringify(core)),
+      mode: "cold-start",
+      nextVersion: 1,
+      angleIndex: 0,
+    });
+    expect(res.status).toBe("completed");
+    const persisted = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8")) as Record<
+      string,
+      unknown
+    >;
+    expect(persisted.upgrade_mode).toBe(true);
+    expect(persisted.upgrade_axis).toBe("estimation");
+  });
+
+  it("normalizes a drift-spelled stdout checklist over a stale canonical core copy", async () => {
+    // Audit R3C3: the three checklist spellings are ONE logical field. A fresh
+    // checklist under `named_literature_checklist` must supersede a stale
+    // canonical copy carried in the core, and no alias key may persist —
+    // the reviewer consumes the canonical key from the persisted core.
+    const ctx = makeCtx(repoRoot);
+    const state = makeState();
+    const core = JSON.parse(goldenCore) as Record<string, unknown>;
+    core.literature_checklist = [{ bibkey: "StaleIteration1Key", relevant_to: "thm:pn" }];
+    const res = await runStageNeg1_2Dual({
+      ctx,
+      state,
+      deps: authorDeps(JSON.stringify(core), {
+        named_literature_checklist: [{ bibkey: "FreshDriftSpelledKey", relevant_to: "thm:pn" }],
+      }),
+      mode: "cold-start",
+      nextVersion: 1,
+      angleIndex: 0,
+    });
+    expect(res.status).toBe("completed");
+    const persisted = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8")) as Record<
+      string,
+      unknown
+    >;
+    expect(persisted.literature_checklist).toEqual([
+      { bibkey: "FreshDriftSpelledKey", relevant_to: "thm:pn" },
+    ]);
+    expect(persisted.named_literature_checklist).toBeUndefined();
+    expect(persisted.literature_check_list).toBeUndefined();
+  });
+
+  it("keeps STDOUT_HANDOFF_KEYS disjoint from CoreSchema-declared keys", () => {
+    // Folding a schema-declared key (e.g. `cluster`, an enum) would let a
+    // malformed stdout value invalidate an already-validated core AFTER its
+    // last CoreSchema.parse (audit R2C2). The fold happens post-validation on
+    // purpose, so this disjointness is what keeps it safe.
+    const declared = new Set(Object.keys(CoreSchema.innerType().shape));
+    for (const key of STDOUT_HANDOFF_KEYS) {
+      expect(declared.has(key), `STDOUT_HANDOFF_KEYS contains CoreSchema-declared key "${key}"`).toBe(
+        false,
+      );
+    }
   });
 
   it("harvests ideation metadata from the core when the stdout receipt is minimal", async () => {
@@ -351,7 +600,11 @@ describe("runStageNeg1_2Dual (rollout step 5 — one author + render + harvest)"
       JSON.stringify({ anchor: "Tian and Pearl", gap: "mediator-defier frontier" }),
     );
     expect(pf.novelty_justification).toBe("core-authored novelty case");
-    expect(pf.last_draft_handoff as string).toContain("TianPearl2000");
+    expect(pf.last_draft_version).toBe(1);
+    const persisted = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8")) as Record<string, unknown>;
+    expect(persisted.literature_checklist).toEqual([
+      { bibkey: "TianPearl2000", relevant_to: "thm:pn" },
+    ]);
   });
 
   it("rehydrates missing seed state from a revised core after an interrupted run", async () => {

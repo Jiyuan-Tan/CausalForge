@@ -23,24 +23,24 @@ open scoped BigOperators
 noncomputable def kktThreshold (α β : Fin 3 → ℝ) (lam : ℝ) : ℝ :=
   ∑ i, (max (lam - α i) 0) ^ 2 / β i
 
-/-- The active-set threshold function varies continuously with the multiplier. The
-positive-weight assumption is carried here to match the surrounding simplex
-lemmas, although continuity itself only uses that the weights are fixed real
-coefficients. -/
-lemma continuous_kktThreshold (α β : Fin 3 → ℝ) (hβ : ∀ i, 0 < β i) :
+/-- The active-set threshold function varies continuously with the multiplier because
+the weights are fixed real coefficients. -/
+lemma continuous_kktThreshold (α β : Fin 3 → ℝ) :
     Continuous (kktThreshold α β) := by
-  have _hβ := hβ
   unfold kktThreshold
   continuity
 
-private lemma kktThreshold_nonneg (α β : Fin 3 → ℝ) (hβ : ∀ i, 0 < β i)
+/-- The active-set threshold is nonnegative when every coordinate has a nonnegative
+weight, because it sums squared multiplier gaps divided by those weights. -/
+lemma kktThreshold_nonneg (α β : Fin 3 → ℝ) (hβ : ∀ i, 0 ≤ β i)
     (lam : ℝ) :
     0 ≤ kktThreshold α β lam := by
   unfold kktThreshold
   exact Finset.sum_nonneg fun i _ =>
-    div_nonneg (sq_nonneg _) (le_of_lt (hβ i))
+    div_nonneg (sq_nonneg _) (hβ i)
 
-private lemma kktThreshold_eq_zero_of_le (α β : Fin 3 → ℝ) (lam : ℝ)
+/-- The active-set threshold is zero when the multiplier is no larger than every coefficient. -/
+lemma kktThreshold_eq_zero_of_le (α β : Fin 3 → ℝ) (lam : ℝ)
     (hle : ∀ i, lam ≤ α i) :
     kktThreshold α β lam = 0 := by
   unfold kktThreshold
@@ -49,7 +49,9 @@ private lemma kktThreshold_eq_zero_of_le (α β : Fin 3 → ℝ) (lam : ℝ)
   have hdiff : lam - α i ≤ 0 := by linarith [hle i]
   simp [max_eq_right hdiff]
 
-private lemma support_sum_eq_kktThreshold (α β : Fin 3 → ℝ) (lam : ℝ) :
+/-- Summing squared multiplier gaps only over coordinates whose coefficients lie below
+the multiplier gives exactly the active-set threshold. -/
+lemma support_sum_eq_kktThreshold (α β : Fin 3 → ℝ) (lam : ℝ) :
     (∑ i ∈ Finset.univ.filter (fun i : Fin 3 => α i < lam),
         (lam - α i) ^ 2 / β i) = kktThreshold α β lam := by
   classical
@@ -131,7 +133,7 @@ lemma exists_admissible (α β : Fin 3 → ℝ) (kappa : ℝ)
     · exact hhi_ge
   have hcontOn :
       ContinuousOn (kktThreshold α β) (Set.Icc lo hi) :=
-    (continuous_kktThreshold α β hβ).continuousOn
+    (continuous_kktThreshold α β).continuousOn
   obtain ⟨lam, -, hlam⟩ :=
     intermediate_value_Icc hlohi hcontOn htarget
   let S : Finset (Fin 3) := Finset.univ.filter (fun i : Fin 3 => α i < lam)

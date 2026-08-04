@@ -6,6 +6,7 @@ Authors: Jiyuan Tan
 
 import CausalSmith.Stat.STAT_DpCateMinimaxV1_Research.Basic
 import Causalean.Mathlib.Probability.SignedTwoPoint
+import Causalean.Mathlib.Probability.BernoulliMeasure
 import Causalean.Mathlib.MeasureTheory.IntegralBind
 import Mathlib.Probability.ConditionalExpectation
 import Mathlib.Probability.Independence.InfinitePi
@@ -37,10 +38,10 @@ private lemma integrable_of_measurable_ae_bounded {α : Type*} [MeasurableSpace 
   simpa [Real.norm_eq_abs] using hx.trans (le_max_left C 0)
 
 /-- The witness treatment law is a Bernoulli draw represented on booleans, later
-packed as the real treatment values zero and one. -/
-noncomputable def cateWitnessTreatmentMeasure (e0 : ℝ) : Measure Bool :=
-  ENNReal.ofReal e0 • Measure.dirac true +
-    ENNReal.ofReal (1 - e0) • Measure.dirac false
+packed as the real treatment values zero and one. Notation for the library law
+`Causalean.Mathlib.Probability.bernoulliBool`. -/
+noncomputable abbrev cateWitnessTreatmentMeasure (e0 : ℝ) : Measure Bool :=
+  bernoulliBool e0
 
 /-- The witness packing map turns an outcome, Boolean treatment, and covariate
 vector into an observed CATE triple. -/
@@ -126,7 +127,7 @@ lemma measurable_cateWitnessObservationKernel {d : ℕ} (e0 : ℝ)
     funext x
     rw [Measure.bind_apply hS (hout x).aemeasurable]]
   haveI : SFinite (cateWitnessTreatmentMeasure e0) := by
-    unfold cateWitnessTreatmentMeasure
+    unfold cateWitnessTreatmentMeasure bernoulliBool
     infer_instance
   exact Measurable.lintegral_prod_right'
     (Measure.measurable_coe hS |>.comp (measurable_cateWitnessOutcomeKernel hb))
@@ -228,7 +229,7 @@ lemma measurable_cateWitnessFullKernel {d : ℕ} (e0 : ℝ)
     funext x
     change ((cateWitnessTreatmentMeasure e0).bind (k x)) S = _
     rw [Measure.bind_apply hS (measurable_of_finite _).aemeasurable]
-    unfold cateWitnessTreatmentMeasure
+    unfold cateWitnessTreatmentMeasure bernoulliBool
     rw [lintegral_add_measure, lintegral_smul_measure, lintegral_smul_measure]
     simp
   rw [hform]
@@ -253,14 +254,8 @@ noncomputable def cateWitnessLaw {d : ℕ} (Q : CateLaw d) (e0 : ℝ)
 measure. -/
 lemma cateWitnessTreatmentMeasure_isProbabilityMeasure {e0 : ℝ}
     (he0 : 0 ≤ e0) (he1 : e0 ≤ 1) :
-    IsProbabilityMeasure (cateWitnessTreatmentMeasure e0) := by
-  rw [isProbabilityMeasure_iff]
-  unfold cateWitnessTreatmentMeasure
-  rw [Measure.add_apply, Measure.smul_apply, Measure.smul_apply]
-  simp only [Measure.dirac_apply, Set.mem_univ, Set.indicator_of_mem, Pi.one_apply,
-    smul_eq_mul, mul_one]
-  rw [← ENNReal.ofReal_add he0 (sub_nonneg.mpr he1)]
-  norm_num
+    IsProbabilityMeasure (cateWitnessTreatmentMeasure e0) :=
+  bernoulliBool_isProbabilityMeasure he0 he1
 
 /-- Under a measurable unit-bounded contrast and a probability covariate design,
 the complete witness data measure is a probability measure. -/
@@ -567,8 +562,8 @@ private lemma cateWitness_setIntegral_potential_eq {d : ℕ}
         (twoPointMean 1 (b x)).map (cateWitnessFullPack x a y0)) =
         (∫ U, K U ∂(twoPointMean 1 0).bind fun y0 =>
           (twoPointMean 1 (b x)).map (cateWitnessFullPack x a y0))
-      rw [Causalean.Mathlib.MeasureTheory.integral_bind_map measurable_const hp hm hHia]
-      rw [Causalean.Mathlib.MeasureTheory.integral_bind_map measurable_const hp hm hKia]
+      rw [Causalean.Mathlib.MeasureTheory.integral_bind_map hp hm hHia]
+      rw [Causalean.Mathlib.MeasureTheory.integral_bind_map hp hm hKia]
       by_cases hs : r (cateWitnessFullPack x a 0 0) ∈ S
       · have hmem (y0 y1 : ℝ) : r (cateWitnessFullPack x a y0 y1) ∈ S := by
           rw [hrpack]
@@ -790,7 +785,9 @@ private lemma cateWitnessLaw_ae_Y_mem {d : ℕ} (Q : CateLaw d) (e0 : ℝ)
       rw [Measure.map_apply hpack hmeas]
       change (twoPointMean 1 (if a then b x else 0))
         {y | y ∉ Set.Icc (-1 : ℝ) 1} = 0
-      exact twoPointMean_bad_support_zero (by norm_num)
+      exact twoPointMean_bad_support_zero
+        (ENNReal.ofReal ((1 + (if a then b x else 0) / 1) / 2))
+        (ENNReal.ofReal ((1 - (if a then b x else 0) / 1) / 2)) (by norm_num)
 
 private lemma cateWitnessLaw_ae_A_mem {d : ℕ} (Q : CateLaw d) (e0 : ℝ)
     {b : (Fin d → ℝ) → ℝ} [IsProbabilityMeasure Q.PX]
@@ -862,18 +859,7 @@ lemma cateWitnessLaw_iidSampling {d : ℕ} (Q : CateLaw d) (e0 : ℝ)
   refine ⟨inferInstance, ?_, ?_, hX, ?_⟩
   · simpa [P] using cateWitnessLaw_ae_Y_mem Q e0 hbmeas hb he0 he1
   · simpa [P] using cateWitnessLaw_ae_A_mem Q e0 hbmeas hb he0 he1
-  · let Ω := ℕ → CateObs d
-    let μ : Measure Ω := Measure.infinitePi fun _ : ℕ => P.dataMeasure
-    letI : IsProbabilityMeasure μ := inferInstance
-    refine ⟨Ω, inferInstance, μ, ⟨fun i ω => ω i, ?_, ?_, ?_, ?_⟩⟩
-    · intro i
-      fun_prop
-    · exact iIndepFun_infinitePi fun _ => measurable_id
-    · intro i
-      exact ⟨measurable_pi_apply 0 |>.aemeasurable,
-        measurable_pi_apply i |>.aemeasurable, by
-        rw [Measure.infinitePi_map_eval, Measure.infinitePi_map_eval]⟩
-    · exact Measure.infinitePi_map_eval _ 0
+  · exact Causalean.Stat.hasIIDSample_of_isProbabilityMeasure P.dataMeasure
 
 /-- Both independently drawn latent outcomes retain the fixed two-point support. -/
 lemma cateWitnessLaw_potentialOutcomeRange {d : ℕ} (Q : CateLaw d) (e0 : ℝ)
@@ -890,10 +876,14 @@ lemma cateWitnessLaw_potentialOutcomeRange {d : ℕ} (Q : CateLaw d) (e0 : ℝ)
     hbad.preimage measurable_CateFull_Y1
   have hzero : (twoPointMean 1 0) bad = 0 := by
     change (twoPointMean 1 0) {y | y ∉ Set.Icc (-1 : ℝ) 1} = 0
-    exact twoPointMean_bad_support_zero (by norm_num)
+    exact twoPointMean_bad_support_zero
+      (ENNReal.ofReal ((1 + 0 / 1) / 2))
+      (ENNReal.ofReal ((1 - 0 / 1) / 2)) (by norm_num)
   have hzero1 (x : Fin d → ℝ) : (twoPointMean 1 (b x)) bad = 0 := by
     change (twoPointMean 1 (b x)) {y | y ∉ Set.Icc (-1 : ℝ) 1} = 0
-    exact twoPointMean_bad_support_zero (by norm_num)
+    exact twoPointMean_bad_support_zero
+      (ENNReal.ofReal ((1 + b x / 1) / 2))
+      (ENNReal.ofReal ((1 - b x / 1) / 2)) (by norm_num)
   have hkernel0 (x : Fin d → ℝ) :
       cateWitnessFullKernel e0 b x {U : CateFull d | U.Y0 ∈ bad} = 0 := by
     change ((cateWitnessTreatmentMeasure e0).bind fun a =>
@@ -1050,8 +1040,8 @@ private lemma cateWitness_regression_setIntegral_eq {d : ℕ} (Q : CateLaw d) (e
       simpa [κ, pack] using (measurable_cateWitnessOutcomeKernel hbmeas).comp
         (measurable_const.prodMk measurable_id)
     rw [show obs x = ν.bind fun a => (κ x a).map (pack x a) by rfl]
-    rw [Causalean.Mathlib.MeasureTheory.integral_bind_map hκmeas hpackmeas hmapmeas hHi]
-    rw [Causalean.Mathlib.MeasureTheory.integral_bind_map hκmeas hpackmeas hmapmeas hKi]
+    rw [Causalean.Mathlib.MeasureTheory.integral_bind_map hpackmeas hmapmeas hHi]
+    rw [Causalean.Mathlib.MeasureTheory.integral_bind_map hpackmeas hmapmeas hKi]
     apply integral_congr_ae
     exact Filter.Eventually.of_forall fun a => by
       letI : IsProbabilityMeasure (κ x a) := hκprob x a
@@ -1171,7 +1161,7 @@ lemma cateWitnessLaw_muIsRegression {d : ℕ} (Q : CateLaw d) (e0 : ℝ)
 private lemma cateWitnessTreatmentMeasure_mean {e0 : ℝ}
     (he0 : 0 ≤ e0) (he1 : e0 ≤ 1) :
     ∫ a : Bool, (if a then (1 : ℝ) else 0) ∂cateWitnessTreatmentMeasure e0 = e0 := by
-  unfold cateWitnessTreatmentMeasure
+  unfold cateWitnessTreatmentMeasure bernoulliBool
   rw [integral_add_measure]
   · simp [he0]
   · exact Integrable.smul_measure (integrable_dirac (by simp [enorm])) (by simp)
@@ -1251,8 +1241,8 @@ private lemma cateWitness_propensity_setIntegral_eq {d : ℕ} (Q : CateLaw d) (e
       simpa [κ, pack] using (measurable_cateWitnessOutcomeKernel hbmeas).comp
         (measurable_const.prodMk measurable_id)
     rw [show obs x = ν.bind fun a => (κ x a).map (pack x a) by rfl]
-    rw [Causalean.Mathlib.MeasureTheory.integral_bind_map hκmeas hpackmeas hmapmeas hHi]
-    rw [Causalean.Mathlib.MeasureTheory.integral_bind_map hκmeas hpackmeas hmapmeas hKi]
+    rw [Causalean.Mathlib.MeasureTheory.integral_bind_map hpackmeas hmapmeas hHi]
+    rw [Causalean.Mathlib.MeasureTheory.integral_bind_map hpackmeas hmapmeas hKi]
     by_cases hx : x ∈ S
     · have hHval : (fun y => H (pack x false y)) = fun _ => e0 := by
         funext y

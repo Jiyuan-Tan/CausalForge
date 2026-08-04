@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jiyuan Tan
 -/
 import Causalean.Mathlib.Analysis.FiniteDimL1LinfDuality.WeakDuality
+import Mathlib.Algebra.Polynomial.Eval.SMul
 
 /-!
 # Setup for strong duality: the algebraic Hahn–Banach route
@@ -234,7 +235,7 @@ theorem ninf_sign (s : Fin (k + 1) → ℝ) (hs : ∀ j, |s j| = 1) : ninf s = 1
 
 /-- **Dual value is nonnegative.**  `0 ∈ dualValSet p β` (the zero polynomial)
 and the set is bounded above, so its supremum is `≥ 0`. -/
-theorem dual_nonneg (hp : Function.Injective p) (hβ : β ≤ k) :
+theorem dual_nonneg (hbounded : BddAbove (dualValSet p β)) :
     0 ≤ sSup (dualValSet p β) := by
   have h0 : 0 ∈ dualValSet p β := by
     refine ⟨(0 : Polynomial ℝ), ?_, ?_, ?_⟩
@@ -242,7 +243,7 @@ theorem dual_nonneg (hp : Function.Injective p) (hβ : β ≤ k) :
     · intro j
       simp
     · simp
-  exact le_csSup (dualValSet_bddAbove hp hβ) h0
+  exact le_csSup hbounded h0
 
 /-- **Boundedness estimate (the Hahn–Banach hypothesis).**  On the node-value
 subspace the contrast functional is dominated by `M · ‖·‖_∞`, where
@@ -269,7 +270,8 @@ theorem contrastL_le_dual_mul_ninf (hp : Function.Injective p) (hβ : β ≤ k)
       simpa [s] using hs0
     have hb : b = 0 := (Ev_injective hp hβ) (by simpa using hEvzero)
     simp only [hb, map_zero]
-    exact mul_nonneg (dual_nonneg hp hβ) (ninf_nonneg 0)
+    exact mul_nonneg (dual_nonneg (dualValSet_bddAbove (primalNormSet_nonempty hp hβ)))
+      (ninf_nonneg 0)
   · have hspos : 0 < s := by
       exact lt_of_le_of_ne (by simpa [s] using ninf_nonneg (Ev p β b)) (Ne.symm hs0)
     let r' : Polynomial ℝ := s⁻¹ • coeffPoly b
@@ -291,7 +293,7 @@ theorem contrastL_le_dual_mul_ninf (hp : Function.Injective p) (hβ : β ≤ k)
           _ = 1 := by
             exact inv_mul_cancel₀ hspos.ne'
     have hdual : |r'.eval 1 - r'.eval 0| ≤ M := by
-      exact le_csSup (dualValSet_bddAbove hp hβ) hmem
+      exact le_csSup (dualValSet_bddAbove (primalNormSet_nonempty hp hβ)) hmem
     have hscaled : r'.eval 1 - r'.eval 0 = s⁻¹ * contrastL β b := by
       calc
         r'.eval 1 - r'.eval 0 =

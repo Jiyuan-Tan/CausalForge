@@ -52,8 +52,6 @@ variable {Ω : N → Type uΩ} [∀ n, MeasurableSpace (Ω n)]
 theorem obs_condIndep_of_full (M : Causalean.SCM N Ω)
     [StandardBorelSpace M.RandomValues]
     [StandardBorelSpace M.ObservedValues]
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.jointKernel s)]
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.obsKernel s)]
     {X Y Z : Finset (SWIGNode N)}
     [StandardBorelSpace (ValuesOn X (swigΩ Ω))] [Nonempty (ValuesOn X (swigΩ Ω))]
     [StandardBorelSpace (ValuesOn Y (swigΩ Ω))] [Nonempty (ValuesOn Y (swigΩ Ω))]
@@ -104,17 +102,11 @@ theorem obs_condIndep_of_full (M : Causalean.SCM N Ω)
     independence under the full joint distribution, then projects that
     independence to the observational law with `obs_condIndep_of_full`. -/
 theorem globalMarkov (M : Causalean.SCM N Ω)
-    [StandardBorelSpace M.RandomValues]
-    [StandardBorelSpace M.ObservedValues]
     [∀ n, StandardBorelSpace (swigΩ Ω n)] [∀ n, Nonempty (swigΩ Ω n)]
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.jointKernel s)]
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.obsKernel s)]
     (X Y Z : Finset (SWIGNode N))
     [StandardBorelSpace (ValuesOn X (swigΩ Ω))] [Nonempty (ValuesOn X (swigΩ Ω))]
     [StandardBorelSpace (ValuesOn Y (swigΩ Ω))] [Nonempty (ValuesOn Y (swigΩ Ω))]
     (hX : X ⊆ M.observed) (hY : Y ⊆ M.observed) (hZ : Z ⊆ M.observed)
-    (hDisj_XY : Disjoint X Y)
-    (hDisj_XZ : Disjoint X Z) (hDisj_YZ : Disjoint Y Z)
     (hdSep : M.dag.dSep X Y Z)
     (s : M.FixedValues) :
     ObsCondIndep M X Y Z hX hY hZ (M.obsKernel s) := by
@@ -123,7 +115,6 @@ theorem globalMarkov (M : Causalean.SCM N Ω)
     (hX.trans (observed_subset_randomVars M))
     (hY.trans (observed_subset_randomVars M))
     (hZ.trans (observed_subset_randomVars M))
-    hDisj_XY hDisj_XZ hDisj_YZ
     hdSep s
   -- Stage 2: project to observational level
   exact obs_condIndep_of_full M hX hY hZ s hfull
@@ -142,26 +133,25 @@ theorem globalMarkov (M : Causalean.SCM N Ω)
     part `Z_obs` and fixed conditioning shadow `Z_fix`, then project the
     resulting full conditional independence along `randomToObserved`. -/
 theorem globalMarkov_with_fixed (M : Causalean.SCM N Ω)
-    [StandardBorelSpace M.RandomValues]
-    [StandardBorelSpace M.ObservedValues]
     [∀ n, StandardBorelSpace (swigΩ Ω n)] [∀ n, Nonempty (swigΩ Ω n)]
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.jointKernel s)]
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.obsKernel s)]
     (X Y Z_obs Z_fix : Finset (SWIGNode N))
     [StandardBorelSpace (ValuesOn X (swigΩ Ω))] [Nonempty (ValuesOn X (swigΩ Ω))]
     [StandardBorelSpace (ValuesOn Y (swigΩ Ω))] [Nonempty (ValuesOn Y (swigΩ Ω))]
     (hX : X ⊆ M.observed) (hY : Y ⊆ M.observed) (hZ_obs : Z_obs ⊆ M.observed)
     (hZ_fix : Z_fix ⊆ M.fixed)
-    (hDisj_XY : Disjoint X Y)
-    (hDisj_XZ : Disjoint X Z_obs) (hDisj_YZ : Disjoint Y Z_obs)
     (hdSep : M.dag.dSep X Y (Z_obs ∪ Z_fix))
     (s : M.FixedValues) :
     ObsCondIndep M X Y Z_obs hX hY hZ_obs (M.obsKernel s) := by
+  have hDisj_XY : Disjoint X Y := hdSep.1
+  have hDisj_XZ : Disjoint X Z_obs :=
+    Disjoint.mono_right Finset.subset_union_left hdSep.2.1
+  have hDisj_YZ : Disjoint Y Z_obs :=
+    Disjoint.mono_right Finset.subset_union_left hdSep.2.2.1
   have hfull := full_globalMarkov_with_fixed M X Y Z_obs Z_fix
     (hX.trans (observed_subset_randomVars M))
     (hY.trans (observed_subset_randomVars M))
     (hZ_obs.trans (observed_subset_randomVars M))
-    hZ_fix hDisj_XY hDisj_XZ hDisj_YZ hdSep s
+    hZ_fix hdSep s
   exact obs_condIndep_of_full M hX hY hZ_obs s hfull
 
 end SCM

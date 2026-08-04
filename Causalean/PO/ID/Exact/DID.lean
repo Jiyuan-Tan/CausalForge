@@ -94,7 +94,7 @@ lemma measurable_factualY₁ : Measurable S.factualY₁ := S.y1Var.measurable_fa
 
 /-- Each observed treatment-arm event is measurable. -/
 lemma measurableSet_dEvent (d : Bool) : MeasurableSet (S.dEvent d) :=
-  S.dVar.measurableSet_event _
+  S.dVar.measurableSet_event _ (measurableSet_singleton _)
 
 /-- The ATT is the treated-group mean difference between treated and untreated
 post-period potential outcomes. -/
@@ -174,7 +174,7 @@ theorem att_did (hA : S.Assumptions) :
           - eventCondExp P.μ (S.dEvent true)
               (fun ω => S.Y1ofD false ω - S.Y0ofD false ω) := by
     unfold ATT
-    rw [eventCondExp_congr_ae P.μ (S.dEvent true) hAE]
+    rw [eventCondExp_congr_ae P.μ (S.dEvent true) (ae_restrict_of_ae hAE)]
     -- `Y0ofD true` is integrable via a.e. equality with `Y0ofD false`.
     have hY0true_int : Integrable (S.Y0ofD true) P.μ :=
       hA.intY0ofD_false.congr (hA.noAnticipation.mono (fun _ h => h.symm))

@@ -107,12 +107,23 @@ export async function dispatchClaudeAgent(args: {
     model: args.input.model,
     message: `${args.label}: prompt ${Buffer.byteLength(args.input.prompt, "utf8")} bytes from [${args.promptSources.join(", ")}]`,
   });
-  const out = await args.deps.runClaude(args.input);
+  // The claude --model value may be an alias ("opus"); record what it resolved
+  // to so the run log pins the concrete model id (reproducibility: the paper's
+  // base-model claims must be readable off pipeline.jsonl, not inferred from
+  // config history). Callers' own onResolvedModel, if any, still runs.
+  let resolvedModel: string | undefined;
+  const out = await args.deps.runClaude({
+    ...args.input,
+    onResolvedModel: (m) => {
+      resolvedModel = m;
+      args.input.onResolvedModel?.(m);
+    },
+  });
   await appendPipelineLog(args.ctx, {
     stage: args.stage,
     status: "dispatch-complete",
     duration_ms: Date.now() - started,
-    model: args.input.model,
+    model: resolvedModel ?? args.input.model,
     message: `${args.label}: stdout ${Buffer.byteLength(out, "utf8")} bytes`,
   });
   return out;

@@ -48,7 +48,9 @@ import Mathlib.Analysis.Calculus.ContDiff.Basic
 import Mathlib.Order.ConditionallyCompleteLattice.Basic
 import Mathlib.MeasureTheory.Measure.GiryMonad
 import Causalean.Stat.Sample
+import Causalean.Stat.Sample.PiTransport
 import Causalean.Stat.Minimax.TotalVariation
+import Causalean.Stat.Nonparametric.Approximation.HolderInterpolation.Defs
 
 namespace CausalSmith.Stat.DpCateMinimax
 
@@ -156,9 +158,10 @@ lemma measurable_CateFull_toObs {d : ℕ} :
 /-- The covariate cube `[0,1]^d`. -/
 def cube (d : ℕ) : Set (Fin d → ℝ) := {x | ∀ i, x i ∈ Set.Icc (0 : ℝ) 1}
 
-/-- The sup-norm `r`-neighborhood of `x₀` inside `(Fin d → ℝ)`. -/
-def supBall {d : ℕ} (x0 : Fin d → ℝ) (r : ℝ) : Set (Fin d → ℝ) :=
-  {x | ∀ i, |x i - x0 i| ≤ r}
+/-- The sup-norm `r`-neighborhood of `x₀` inside `(Fin d → ℝ)`. Notation for the library
+neighbourhood `Causalean.Stat.Nonparametric.supBall`. -/
+abbrev supBall {d : ℕ} (x0 : Fin d → ℝ) (r : ℝ) : Set (Fin d → ℝ) :=
+  Causalean.Stat.Nonparametric.supBall x0 r
 
 /-- The half-min localization radius
 `r_* = (1/2) min{r₀, x_{0,1}, 1-x_{0,1}, …, x_{0,d}, 1-x_{0,d}}` used in the
@@ -171,17 +174,14 @@ on `S ⊆ (Fin d → ℝ)`: all iterated Fréchet derivatives up to `k = ⌈orde
 exist and are continuous on `S` (`ContDiffOn`), are bounded by `M` in operator
 norm, and the `k`-th derivative is
 `(order - k)`-Hölder with constant `M` (the standard nonparametric
-`C^{⌈order⌉-1, order-⌈order⌉+1}` ball, exponent `order - k ∈ (0,1]`). This is the
-standard `⌈s⌉-1` convention; it is NOT the `⌊order⌋` convention of
-`DoseResponseMinimax.HolderBallND`.
+`C^{⌈order⌉-1, order-⌈order⌉+1}` ball, exponent `order - k ∈ (0,1]`). Notation for the
+library ball `Causalean.Stat.Nonparametric.HolderBallStd`; the sibling
+`DoseResponseMinimax.HolderBallND` is notation for the very same ball, in the very same
+`⌈order⌉-1` convention.
 @realizes H^s([0,1]^d,L)(the standard `⌈s⌉-1`-convention multivariate Hölder ball of order `order` and radius `M` on `S ⊆ (Fin d → ℝ)`; the sets `H^α`, `H^β`, `H^γ` are its instances `PiHolder`/`MuHolder`/`TauHolder` on `cube d`) -/
-def HolderBallStd {d : ℕ} (f : (Fin d → ℝ) → ℝ) (order M : ℝ)
+abbrev HolderBallStd {d : ℕ} (f : (Fin d → ℝ) → ℝ) (order M : ℝ)
     (S : Set (Fin d → ℝ)) : Prop :=
-  ContDiffOn ℝ (⌈order⌉₊ - 1) f S ∧
-    (∀ j : ℕ, j ≤ ⌈order⌉₊ - 1 → ∀ x ∈ S, ‖iteratedFDeriv ℝ j f x‖ ≤ M) ∧
-    (∀ x ∈ S, ∀ y ∈ S,
-      ‖iteratedFDeriv ℝ (⌈order⌉₊ - 1) f x - iteratedFDeriv ℝ (⌈order⌉₊ - 1) f y‖
-        ≤ M * ‖x - y‖ ^ (order - ((⌈order⌉₊ - 1 : ℕ) : ℝ)))
+  Causalean.Stat.Nonparametric.HolderBallStd f order M S
 
 /-- Build-inline causal-law object: the LATENT joint law of `(Y(0), Y(1), A, X)`
 (the potential-outcome process, carried on the law's own probability space), the

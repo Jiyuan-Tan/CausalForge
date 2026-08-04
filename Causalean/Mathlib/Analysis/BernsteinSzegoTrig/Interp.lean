@@ -3,7 +3,10 @@ Copyright (c) 2026 Jiyuan Tan. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jiyuan Tan
 -/
-import Mathlib
+import Mathlib.Analysis.InnerProductSpace.Basic
+import Mathlib.Analysis.SpecialFunctions.Complex.Arg
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Deriv
+import Mathlib.Topology.Algebra.Module.ModuleTopology
 
 /-!
 # The Szegő comparison interpolant
@@ -78,21 +81,21 @@ theorem szegoInterp_hasDerivAt (β : ℕ) (hβ : 1 ≤ β) (Q₀ Q₁ t₀ : ℝ
     simpa [hc] using h
   simpa [szegoInterp, c] using hsum
 
-/-- The Szegő interpolant is an elementary wave of amplitude
-`A = √(Q₀² + (Q₁/β)²)`: there is a phase `φ` with
-`S(t) = A · cos(β(t − t₀) − φ)` for all `t`.
+/-- A cosine-sine wave is an elementary wave of amplitude
+`A = √(Q₀² + q²)`: for every real frequency `ω`, there is a phase `φ` with
+`Q₀ cos(ω(t − t₀)) + q sin(ω(t − t₀)) = A cos(ω(t − t₀) − φ)` for all `t`.
 
-(Write the point `(Q₀, Q₁/β)` in polar form `A·(cos φ, sin φ)` and expand
-`cos(β(t−t₀) − φ)` by the angle-subtraction formula.) -/
-theorem szegoInterp_amplitude (β : ℕ) (Q₀ Q₁ t₀ : ℝ) :
-    ∃ φ : ℝ, ∀ t, szegoInterp β Q₀ Q₁ t₀ t
-      = Real.sqrt (Q₀ ^ 2 + (Q₁ / (β : ℝ)) ^ 2)
-        * Real.cos ((β : ℝ) * (t - t₀) - φ) := by
-  let q : ℝ := Q₁ / (β : ℝ)
+(Write the point `(Q₀, q)` in polar form `A·(cos φ, sin φ)` and expand
+`cos(ω(t−t₀) − φ)` by the angle-subtraction formula.) -/
+theorem szegoInterp_amplitude_core (ω : ℝ) (Q₀ q t₀ : ℝ) :
+    ∃ φ : ℝ, ∀ t,
+      Q₀ * Real.cos (ω * (t - t₀)) + q * Real.sin (ω * (t - t₀))
+      = Real.sqrt (Q₀ ^ 2 + q ^ 2)
+        * Real.cos (ω * (t - t₀) - φ) := by
   let z : ℂ := ⟨Q₀, q⟩
   refine ⟨Complex.arg z, ?_⟩
   intro t
-  let x : ℝ := (β : ℝ) * (t - t₀)
+  let x : ℝ := ω * (t - t₀)
   have hnorm : ‖z‖ = Real.sqrt (Q₀ ^ 2 + q ^ 2) := by
     simp [z, Complex.norm_def, Complex.normSq_mk, pow_two]
   have hcos : ‖z‖ * Real.cos (Complex.arg z) = Q₀ := by
@@ -100,17 +103,26 @@ theorem szegoInterp_amplitude (β : ℕ) (Q₀ Q₁ t₀ : ℝ) :
   have hsin : ‖z‖ * Real.sin (Complex.arg z) = q := by
     simp [z]
   calc
-    szegoInterp β Q₀ Q₁ t₀ t = Q₀ * Real.cos x + q * Real.sin x := by
-      simp [szegoInterp, q, x]
+    Q₀ * Real.cos (ω * (t - t₀)) + q * Real.sin (ω * (t - t₀))
+        = Q₀ * Real.cos x + q * Real.sin x := by simp [x]
     _ = (‖z‖ * Real.cos (Complex.arg z)) * Real.cos x
         + (‖z‖ * Real.sin (Complex.arg z)) * Real.sin x := by
       rw [hcos, hsin]
     _ = ‖z‖ * Real.cos (x - Complex.arg z) := by
       rw [Real.cos_sub]
       ring
-    _ = Real.sqrt (Q₀ ^ 2 + (Q₁ / (β : ℝ)) ^ 2)
-        * Real.cos ((β : ℝ) * (t - t₀) - Complex.arg z) := by
+    _ = Real.sqrt (Q₀ ^ 2 + q ^ 2)
+        * Real.cos (ω * (t - t₀) - Complex.arg z) := by
       rw [hnorm]
+
+/-- The Szegő interpolant is an elementary wave of amplitude
+`A = √(Q₀² + (Q₁/β)²)`. -/
+theorem szegoInterp_amplitude (β : ℕ) (Q₀ Q₁ t₀ : ℝ) :
+    ∃ φ : ℝ, ∀ t, szegoInterp β Q₀ Q₁ t₀ t
+      = Real.sqrt (Q₀ ^ 2 + (Q₁ / (β : ℝ)) ^ 2)
+        * Real.cos ((β : ℝ) * (t - t₀) - φ) := by
+  simpa [szegoInterp] using
+    szegoInterp_amplitude_core (β : ℝ) Q₀ (Q₁ / (β : ℝ)) t₀
 
 /-- The Szegő interpolant is bounded in absolute value by its amplitude
 `A = √(Q₀² + (Q₁/β)²)`. -/

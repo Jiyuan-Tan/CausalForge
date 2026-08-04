@@ -309,9 +309,9 @@ lemma integrable_factualY_of_consistency_integrable_YofZ2 [IsFiniteMeasure P.μ]
     (hC : P.Consistency) (hY : ∀ z₂ : Bool, Integrable (S.YofZ2 z₂) P.μ) :
     Integrable S.factualY P.μ := by
   have htrue_int : Integrable (fun ω => S.YofZ2 true ω * S.z2Var.indicator true ω) P.μ :=
-    S.z2Var.integrable_mul_indicator true (hY true) (S.measurable_YofZ2 true)
+    S.z2Var.integrable_mul_indicator true (measurableSet_singleton _) (hY true)
   have hfalse_int : Integrable (fun ω => S.YofZ2 false ω * S.z2Var.indicator false ω) P.μ :=
-    S.z2Var.integrable_mul_indicator false (hY false) (S.measurable_YofZ2 false)
+    S.z2Var.integrable_mul_indicator false (measurableSet_singleton _) (hY false)
   have hsum_int : Integrable
       ((fun ω => S.YofZ2 true ω * S.z2Var.indicator true ω) +
         fun ω => S.YofZ2 false ω * S.z2Var.indicator false ω) P.μ :=
@@ -412,11 +412,13 @@ noncomputable def indZ (z : Fin 2 → Bool) : P.Ω → ℝ :=
 
 /-- The joint treatment indicator is measurable. -/
 lemma measurable_indD (d : Fin 2 → Bool) : Measurable (S.indD d) :=
-  (S.d1Var.measurable_indicator _).mul (S.d2Var.measurable_indicator _)
+  (S.d1Var.measurable_indicator _ (MeasurableSet.singleton _)).mul
+    (S.d2Var.measurable_indicator _ (MeasurableSet.singleton _))
 
 /-- The joint encouragement indicator is measurable. -/
 lemma measurable_indZ (z : Fin 2 → Bool) : Measurable (S.indZ z) :=
-  (S.z1Var.measurable_indicator _).mul (S.z2Var.measurable_indicator _)
+  (S.z1Var.measurable_indicator _ (MeasurableSet.singleton _)).mul
+    (S.z2Var.measurable_indicator _ (MeasurableSet.singleton _))
 
 /-! ### Observable nested-regression functionals
     (def:po-dynamic-late-observable-functionals) -/

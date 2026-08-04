@@ -117,16 +117,14 @@ lemma interventionalQuery_eq_default_of_not_valid [∀ n, Nonempty (Ω n)]
 
 /-- Two models with the same SWIG graph agree on whether the total query is
 well formed. -/
-theorem interventionalQueryValid_iff_of_obsKernel_heq [∀ n, Nonempty (Ω n)]
-    (X : Finset N) (Y : Finset (SWIGNode N)) (G : SWIGGraph N)
+theorem interventionalQueryValid_iff_of_toSWIGGraph_eq
+    (X : Finset N) (Y : Finset (SWIGNode N))
     (M₁ M₂ : Causalean.SCM N Ω)
-    (hsg₁ : M₁.toSWIGGraph = G) (hsg₂ : M₂.toSWIGGraph = G)
-    (_hobs : HEq M₁.obsKernel M₂.obsKernel) :
+    (hsg : M₁.toSWIGGraph = M₂.toSWIGGraph) :
     interventionalQueryValid X Y M₁ ↔ interventionalQueryValid X Y M₂ := by
-  have hsg : M₁.toSWIGGraph = M₂.toSWIGGraph := hsg₁.trans hsg₂.symm
   have ho : M₁.observed = M₂.observed := congrArg SWIGGraph.observed hsg
   have hf : M₁.fixed = M₂.fixed := congrArg SWIGGraph.fixed hsg
   unfold interventionalQueryValid Causalean.SCM.isStandard
-  rw [ho, hf]
+  rw [ho, hf, hsg]
 
 end Causalean.SCM.ID

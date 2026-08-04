@@ -45,17 +45,26 @@ argv, return the lease to main, and do not race.
 2. The leaseholder reads verdicts, applies levers, and repeatedly resumes its phase without a main hop.
    It returns only one `{escalation, receipts}`—`go-no-go`, terminal, `codex-blocked`,
    `rewind:fix-source`, `cap-block`/`substrate-unbuildable`, `substrate-build:study`,
-   `citation-instantiation-overflow`, `f5-clean`, `pipeline-bug`, `dispatch-request`, or
+   `citation-verification`, `citation-instantiation-overflow`, `f5-clean`, `pipeline-bug`, `dispatch-request`, or
    `request-reseed`—not routine rounds. It asks main to dispatch any Claude subagent.
 3. Main handles that escalation (§ "Handling escalations"); crossing a boundary resumes and re-dispatches
    the next sub **in the same turn**. Clear caps only with resume's `--clear-gate <flag>`, never by editing
    `state.flags`.
 4. A leaseholder that dies without returning it triggers § "Orphan recovery".
 
+**Codex main monitoring:** after granting a D/F lease, make one full 30-minute event-triggered mailbox wait.
+If an API cap returns early, continue the same deadline; do not status-poll before it. At deadline, check only
+that the leaseholder runs, then silently start another window.
+Any unrelated/non-actionable wake continues that same deadline silently, without a status check. When Codex
+main directly owns a process, use the same fixed window with exact-PID/log probes at least 120 seconds apart.
+Do not duplicate its pipeline/review-log watcher or message it routinely. Re-ground from logs only when it
+returns the lease, escalates, or dies and triggers orphan recovery.
+
 ## Dispatching sub-orchestrators
 
-- **Cold:** use Claude's Agent/Codex `spawn_agent`; on Codex use `codex exec` only when a specified model
-  or effort must be enforced. Grant and log the lease.
+- **Cold:** dispatch through the current runtime's native agent mechanism. Under Codex, use native
+  `spawn_agent`: D math-facing orchestration uses `high`, routine orchestration `medium`. Set
+  model/effort explicitly. Pipeline workers/reviewers still use their configured `codex exec` adapter.
 - **Warm:** under Codex, use `followup_task` to restart an idle/completed agent; `send_message` only amends
   a currently running turn and does not trigger a new one. Under Claude, use `SendMessage`. Warm reuse is
   only an optimization—state remains `decision_log` + `state.json`.
@@ -103,6 +112,7 @@ collapsed conjecture, the `.tex` line audited). If receipts are missing, send it
 | `request-reseed` | D/F | The leaseholder is degrading — respawn a fresh sub for the SAME phase + re-grant the lease, seeded from the log. Not a terminal. |
 | `dispatch-request` | D/F | Only main dispatches Claude subagents (shared reference § "Architectural rule"). Do so, wait, warm-send its result, and re-grant. This is rare: subs self-drive their own Codex/node processes. |
 | `codex-blocked` | D/F | Not a math finding and not validity-gated. Hard user-stop even `--auto`: quote denial, exact command, and impact; harness-level permission (accept prompt/leave auto) is required—chat permission cannot clear it. Then re-grant and re-issue the SAME command; reject any hand-proof/weakened-gate workaround. |
+| `citation-verification` | D | Obtain lawful verbatim source evidence for every returned node. From the CausalSmith root run `npx --prefix tools tsx tools/bin/d0_attest_cited_source.ts <qid> <spec> --id <id> --expect-locator <locator> --verbatim <statement> --note <provenance> (--upstream <primary-citation> [--upstream-locator <text>] [--upstream-cite <bibkey>] \| --upstream-none)`. Then re-grant D; D runs plain `--resume` so D0.5 rechecks it. Never infer or invent missing source text. |
 | `terminal:tex-claim-wrong` | D/F | **codex-validity-gate** → bank `failed`. |
 | `terminal:below-floor` | D | codex-validity-gate first. Then **surface** the fact to the user (never silently lower `--novelty`) and let them choose: bank `downgraded` (stop), or accept the achieved tier and continue to F via **`causalsmith research --downgrade-tier <achieved-tier> <qid> <spec>`** (lowers the floor, re-passes D0.5, then continues per `--auto` / halts at the go/no-go). |
 | `terminal:laundering` (claim-level) | D/F | codex-validity-gate → bank `failed`. |
@@ -111,13 +121,13 @@ collapsed conjecture, the `.tex` line audited). If receipts are missing, send it
 | `substrate-build:study` | F | Launch the `--study` side-run yourself (§ "`--study`") and relay the Causalean path back. |
 | `citation-instantiation-overflow` | F | Independently classify from contribution + downstream graph (`crux:true` is insufficient) and audit the cited boundary. Source-match a stronger paper-agnostic source interface if available; otherwise gate/attempt only a minimal uncited reusable bridge that is headline-critical (study only substantial/reusable). Secondary → stop spend and disclose UNDELIVERED. Paper-specific residual → prove, UNDELIVERED, or correct source—never gate. F4 still must run; inability to represent/review an undelivered subset is a pipeline bug. |
 | `f5-clean` | F | Verify F4 exists: a F2.5 escalation followed by stages 3/3.5/3.7/4 skipped, absent this-round `reviews.jsonl` verdict, or absent dual F4 receipts voids it. Send void claims back to resolve the root and re-enter F2.5; no sub-audit substitutes for F4. With F4: run S6 for remaining `gated` debt (auto in `--auto`), then CKPT 2 user-stop with Lean/API/assumptions/F4/tier receipts. After an `accepted` bank run F7 promotion. |
-| `reviewer-dispute` | F | Main independently reproduces; reviewer right → comply. Reviewer wrong → first-instance `pipeline-bug`: while stopped, add a concise GENERAL reviewer-prompt rule, record `PIPELINE_NOTES.md`, and re-enter F2.5/F4. Never instance-exempt a node or weaken re-review; undecidable math → user. |
+| `reviewer-dispute` | F | Main independently reproduces; reviewer right → comply. Reviewer wrong → first-instance `pipeline-bug`: while stopped, propose a concise GENERAL reviewer-prompt rule and **ask the user before editing** (§ hard stop 8), record `PIPELINE_NOTES.md`, then re-enter F2.5/F4. Never instance-exempt a node or weaken re-review; undecidable math → user. |
 | `pipeline-bug` | D/F | Fix the prompt/code while the run is stopped (§ "Pipeline-bug fixes"), then re-dispatch. |
 
 **Codex-validity-gate:** only `terminal:*`/`cap-block`, never `go-no-go`/`f5-clean`. Before banking or
 user escalation, consult `gpt-5.6-sol` **high** (`CAUSALEAN_MODEL_CODEX_CONSULT`, `-c model_reasoning_effort=high`;
-this consultation tier only — all other codex agents stay medium) with raw halt, verbatim
-receipts, and a neutral terminal-vs-fixable prompt that states the case to continue. Different resolving
+this consultation tier is high; D-stage math/review calls use high.
+Supply raw halt, verbatim receipts, and a neutral terminal-vs-fixable prompt that states the case to continue. Different resolving
 load-bearing defects mean keep going; the same recurring defect, laundering, or wrong-direction pivot may
 stop. Re-attributed recurring themes are root gaps, not noise; a lower tier is not hopelessness—converge and
 bank `downgraded`. A concrete fix becomes a dispatch/rewind (or root-earned `--clear-gate`), not a bank.
@@ -132,7 +142,7 @@ decide it yourself and `--resume`/act **without pausing to ask the user**; only 
 / offer" half is overridden — the math/proof judgment (sub + codex) is identical. Propagate
 `auto_mode=<bool>` into every dispatch template.
 
-**Hard stops even in `--auto` — ONLY these seven. Everything else you decide and drive yourself.**
+**Hard stops even in `--auto` — ONLY these eight. Everything else you decide and drive yourself.**
 1. **CKPT 2** (after S6) — bank / promote / commit ALWAYS wait. The one routine stop; report the per-gate
    and per-core outcomes there.
 2. **Kernel dead** — the math CLAIM itself is refuted / false / unprovable (codex-validity-gate confirmed).
@@ -145,6 +155,11 @@ decide it yourself and `--resume`/act **without pausing to ask the user**; only 
    continue under an explicitly lowered floor.
 7. **Unresolvable reviewer dispute** — after independent reproduction cannot decide the mathematics, the
    user must adjudicate; disagreement that is reproducibly reviewer-right/wrong follows the normal route.
+8. **Editing a STAGE PROMPT** — always ask, even when the fix looks obvious and the run is blocked on it.
+   A prompt edit is a permanent change to every future run's gate, and one written to clear a blocking
+   verdict is written by someone who wants it cleared: it can silently weaken the very check it sharpens.
+   Present the diagnosis, the exact rule text, and what the new rule would now LET THROUGH. Pipeline CODE
+   fixes are not a stop — they are behaviour-preserving repairs, not gate changes.
 
 **NOT stops — drive these yourself, even in `--auto`:**
 - **Unfaithful scaffold / wrong model encoding / statement drift while the NOTE is correct** → an ORDINARY
@@ -246,8 +261,30 @@ is the CLAUDE.md universal rule; make it your first move on every diagnosis, not
 The sub sees a recurrence (it reads the reviews); the edit is cross-run learning and needs the run
 stopped, so main applies it. Diagnose from the agent's OWN I/O: read
 `doc/research/_agent_logs/`, diff EMITTED vs PERSISTED. Classify: **code bug** (id-mapping drop,
-fail-open-to-empty-prompt) → fix the TS; **prompt problem** → edit that stage's prompt with a GENERAL
-rule, concise, not overfit. **Recurrence threshold:** 1st occurrence → record in
+fail-open-to-empty-prompt) → fix the TS yourself; **prompt problem** → a GENERAL rule, concise, not
+overfit, and **user-approved before you write it** (§ hard stop 8).
+
+Do not route accepted mathematics back through an LLM merely to repair serialization, exact-current
+canonicalization, ordering, derived metadata, or packet/carrier state. Main fixes or uses the existing
+deterministic recovery lane, then re-grants the lease. Re-dispatch D0 only when mathematical content,
+claim authorship, or reproof actually changes.
+
+**Every pipeline fix needs an INDEPENDENT adversarial audit before you trust it — the author of a fix is
+its worst auditor.** Dispatch a fresh codex (`gpt-5.6-sol`, high, read-only, JSON) on the CHANGED
+artifact asking the inverse question: *how could someone obeying this exactly still get a wrong result
+past it?* Require, per hole, the enabling clause quoted, a concrete failing scenario, and a concise
+general fix.
+
+**The audit must PASS, not merely run. A not-sound verdict BLOCKS: fix and RE-AUDIT the new version
+before resuming anything.** Running an audit and then acting on your own revision is the same
+self-certification the rule exists to prevent — the revision is untested code written by the party that
+wants to proceed. Loop until the audit returns sound, or escalate; never carry a `false` verdict forward.
+This is cheap and it has paid twice on one run: an audit of a just-"fixed" F4 returned
+`enforces_equivalence:false` with 12 critical holes (most PRE-EXISTING; two of main's own
+verdict-clearing rules had inverted the gate — a disclosure treated as a defence, "hard to fix" read as
+"not a defect"), and an audit of a P7 code fix returned `fix_is_sound:false`, catching a vacuity path
+main had explicitly and wrongly reassured the user about. Never let a fix that unblocks your own run be
+certified by you alone. **Recurrence threshold:** 1st occurrence → record in
 [`PIPELINE_NOTES.md`](../../../CausalSmith/doc/research/PIPELINE_NOTES.md); promote to a
 prompt/code rule on the 2nd instance or across two qids. Prompts are re-read per dispatch → edit only
 while stopped.
@@ -276,7 +313,7 @@ escalation) plus every terminal/rewind already committed.
 | `--downgrade-tier <tier> <qid> <spec>` | Accept an achieved lower tier on a `terminal:below-floor` run: lower the persisted novelty floor to `<tier>` and re-pass D0.5, then continue per `--auto` (into F) or halt at the go/no-go. Guarded — `<tier>` must be strictly below the current floor AND ≤ the reviewer-assessed tier; logs a `command` decision-log entry. Use after the codex-validity-gate confirms + the user opts to carry the sound sub-tier result into F rather than bank `downgraded`. |
 | `--angle-action <continue\|switch\|retry\|give-up> <qid> <spec>` | Resolve a persisted D-0.5 checkpoint. `continue` acknowledges a routine REVISE; `switch` archives the exhausted angle; `retry --extra-revisions N` persists a per-angle cap; `give-up` writes a terminal proposal block. Add `--angle-directive <text\|->` to persist the D-orchestrator repair before any next proposer starts. Non-give-up actions resume in the same CLI process. |
 
-Optional pass-through flags: `--auto` (§ "Auto mode"); `--novelty <incremental|subfield|field|flagship>` (D0.5 threshold = the floor tier, default `field`; the vocabulary IS the reviewer tier ladder — legacy `relative-to-repo`→`incremental` / `relative-to-literature`→`subfield` still accepted); `--upgrade <parent>` + `--upgrade-axis <computation|estimation|generalization|mechanism>` (requires an explicit novelty target strictly above the parent's achieved `banked_novelty_tier`); `--stop-after <stage>` (`D-1.1`,`D-1.2`,`D-0.5`,`D0`,`D0.5`,`F1`,`F1.5`,`F2`,`F2.5`,`F3`,`F3.5`,`F4`,`F5`); `--from-stage <stage>` (resume-entry override — re-run a stage instead of hand-editing `stage_completed`); `--clear-gate <flag>` (resume-only, repeatable — clears a cap-gate flag as part of the resume instead of hand-editing `state.flags`; flags: `substrate_build_required`, `scaffold_redirect_cap_hit`, `stage1_rewinds_cap_hit`, `theorem_splits_cap_hit`, `stage0_budget_exhausted`, `general_review_halt`, `stage_neg1_fallback`, **`proof_loop_cap_hit`**; clearing `scaffold_redirect_cap_hit`/`stage1_rewinds_cap_hit` also resets its paired counter. **`proof_loop_cap_hit` covers EVERY proof-review-loop iteration budget** — total iters, Phase-A scaffold-reroute rounds, per-node strikes, tag reroutes, the no-progress bound — all now PERSISTED in `state.flags.proof_loop_counters` and cumulative across resumes; clearing it resets them all. **Clearing ANY iteration cap is MAIN's authority alone** (a sub escalates `cap-block`; see that row) and is legitimate only once the ROOT cause has changed — a reset that re-runs the identical scaffold/review is a re-roll, not a retry); `--proposer <codex|claude>`; `--from-study-gaps`; `--dry-run` (state-machine mechanics only, no Codex — **NEVER use `--dry-run` to move the stage pointer on a live run: it fast-forwards `stage_completed` and corrupts the run; use `--from-stage` to re-enter a stage**). Parsing failure → stop and report; do NOT invent a qid.
+Optional pass-through flags: `--auto` (§ "Auto mode"); `--novelty <incremental|subfield|field|flagship>` (D0.5 threshold = the floor tier, default `field`; the vocabulary IS the reviewer tier ladder — legacy `relative-to-repo`→`incremental` / `relative-to-literature`→`subfield` still accepted); `--upgrade <parent>` + `--upgrade-axis <computation|estimation|generalization|mechanism>` (requires an explicit novelty target strictly above the parent's achieved `banked_novelty_tier`); `--stop-after <stage>` (`D-1.1`,`D-1.2`,`D-0.5`,`D0`,`D0.5`,`F1`,`F1.5`,`F2`,`F2.5`,`F3`,`F3.5`,`F4`,`F5`); `--from-stage <stage>` (resume-entry override — re-run a stage instead of hand-editing `stage_completed`); `--clear-gate <flag>` (resume-only, repeatable — clears a cap-gate flag as part of the resume instead of hand-editing `state.flags`; flags: `substrate_build_required`, `scaffold_redirect_cap_hit`, `stage1_rewinds_cap_hit`, `theorem_splits_cap_hit`, `stage0_budget_exhausted`, `general_review_halt`, `stage_neg1_fallback`, `d0_loop_cap_hit`, **`proof_loop_cap_hit`**; clearing `scaffold_redirect_cap_hit`/`stage1_rewinds_cap_hit` also resets its paired counter; clearing `d0_loop_cap_hit` resets `d0_loop_counters.{solve_rounds,revise_rounds,consistency_heals}`. **`proof_loop_cap_hit` covers EVERY proof-review-loop iteration budget** — total iters, Phase-A scaffold-reroute rounds, per-node strikes, tag reroutes, the no-progress bound — all now PERSISTED in `state.flags.proof_loop_counters` and cumulative across resumes; clearing it resets them all. **Clearing ANY iteration cap is MAIN's authority alone** (a sub escalates `cap-block`; see that row) and is legitimate only once the ROOT cause has changed — a reset that re-runs the identical scaffold/review is a re-roll, not a retry); `--proposer <codex|claude>`; `--from-study-gaps`; `--dry-run` (state-machine mechanics only, no Codex — **NEVER use `--dry-run` to move the stage pointer on a live run: it fast-forwards `stage_completed` and corrupts the run; use `--from-stage` to re-enter a stage**). Parsing failure → stop and report; do NOT invent a qid.
 
 ## Launch
 

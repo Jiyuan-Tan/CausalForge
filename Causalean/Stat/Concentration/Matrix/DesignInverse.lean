@@ -49,7 +49,7 @@ theorem designMatrix_inv_concentration {N p : ℕ} {Ω : Type*} [MeasurableSpace
     (hg : ∀ j k, MemLp (g j k) 2 μ)
     (S : Matrix (Fin (p + 1)) (Fin (p + 1)) ℝ)
     (hSpop : ∀ j k, S j k = N * ∫ x, g j k x ∂μ)
-    (hS : IsUnit S.det) {η c : ℝ} (hc : 0 ≤ c) (hη : 0 < η)
+    (hS : IsUnit S.det) {η c : ℝ} (hη : 0 < η)
     (hSrow : ∀ i, (∑ j, |S⁻¹ i j|) ≤ c)
     (hsmall : c * ((p + 1 : ℕ) * η) ≤ 1 / 2) :
     (Measure.pi (fun _ : Fin N => μ))
@@ -83,7 +83,7 @@ theorem designMatrix_inv_concentration {N p : ℕ} {Ω : Type*} [MeasurableSpace
       exact le_of_lt (hωDev' (j, k))
     have hgood :=
       designInv00_perturb S (Matrix.of (fun j k => ∑ i, g j k (ω i)))
-        hS hc hη.le hSrow hclose hsmall
+        hS hSrow hclose hsmall
     exact hω hgood
   refine le_trans hbad_le_dev ?_
   simpa [Dev] using iid_sum_union_bound μ

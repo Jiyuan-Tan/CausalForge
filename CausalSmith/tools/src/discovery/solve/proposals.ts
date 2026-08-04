@@ -26,6 +26,7 @@
 import { existsSync } from "node:fs";
 import { artifactPath } from "../../paths.js";
 import type { PipelineContext } from "../../types.js";
+import { normalizeTexWhitespace, stripTexComments } from "../../shared/tex_text.js";
 import type { WorkingState } from "../stages/d0_working.js";
 import type { RawChange, RawAssumption, RawCoreEdit } from "../stages/d0_apply.js";
 
@@ -55,6 +56,71 @@ export function emptyProposals(): RoundProposals {
 export function hasProposals(p: RoundProposals): boolean {
   return p.statements.length > 0 || p.definitions.length > 0 || p.assumptions.length > 0 ||
     p.coreEdits.length > 0 || p.proofs.length > 0;
+}
+
+/** True when ordinary whitespace normalization is not semantics-preserving TeX.
+ * Exact byte matches remain safe; non-exact fields containing comments or
+ * whitespace-preserving literal/code constructs must stay fail-closed. */
+function containsWhitespaceSensitiveTex(value: string): boolean {
+  if (stripTexComments(value) !== value) return true;
+  if (/\\(?:verb\*?|Verb\*?|SaveVerb|lstinline\*?|mintinline\*?|obeyspaces|obeylines)(?![A-Za-z@])/.test(value)) {
+    return true;
+  }
+  return /\\begin\s*\{(?:[^{}]*verbatim[^{}]*|lstlisting\*?|minted\*?|alltt\*?)\}/i.test(value);
+}
+
+/** Pin a proposal's stale-write guard to the authoritative durable bytes when the
+ * worker changed only insignificant whitespace, or when a valid revision stamp
+ * proves which pipeline-owned view the worker saw. `current` is not authored new
+ * mathematics; apply uses it solely to prove that the node has not moved since the
+ * proposal was generated. Paragraph boundaries remain significant through
+ * `normalizeTexWhitespace`; comments and literal/code constructs are never
+ * normalized. A guard this function cannot safely repin is left UNTOUCHED and
+ * warned about, never thrown on: apply's byte-exact guard then skips exactly that
+ * change with a recorded reason, so one defective guard field can neither abort a
+ * round's other accepted work nor block the mechanical rebuild lane. */
+export function pinWhitespaceEquivalentCurrent<T extends { current?: string; based_on_revision?: string }>(
+  change: T,
+  durableCurrent: string | undefined,
+  validRevisions: readonly string[] = [],
+  warn: (message: string) => void = (message) => console.warn(message),
+): T {
+  if (change.current === undefined) {
+    return change;
+  }
+  const label = "id" in change ? String((change as T & { id?: unknown }).id ?? "<unknown>") : "<unknown>";
+  if (change.based_on_revision !== undefined) {
+    if (!validRevisions.includes(change.based_on_revision) || durableCurrent === undefined) {
+      warn(
+        `proposal ${label}: based_on_revision ${change.based_on_revision} matches no current view; ` +
+          "left unpinned — apply's exact guard will skip this change",
+      );
+      return change;
+    }
+    if (change.current !== durableCurrent &&
+        normalizeTexWhitespace(change.current) !== normalizeTexWhitespace(durableCurrent)) {
+      // The valid revision proves the worker was shown exactly the durable view,
+      // so the repin is safe — but an echo this far off suggests the worker
+      // misread its target. Keep the tripwire visible for adjudication.
+      warn(`proposal ${label}: current echo differs beyond whitespace from its revision-pinned view; repinned to durable bytes`);
+    }
+    return change.current === durableCurrent ? change : { ...change, current: durableCurrent };
+  }
+  if (durableCurrent === undefined || change.current === durableCurrent) {
+    return change;
+  }
+  if (
+    containsWhitespaceSensitiveTex(change.current) ||
+    containsWhitespaceSensitiveTex(durableCurrent) ||
+    normalizeTexWhitespace(change.current) !== normalizeTexWhitespace(durableCurrent)
+  ) {
+    warn(
+      `proposal ${label}: current guard is not safely whitespace-equivalent to the durable bytes; ` +
+        "left unpinned — apply's exact guard will skip this change",
+    );
+    return change;
+  }
+  return { ...change, current: durableCurrent };
 }
 
 export interface PendingStatementSupersession {
@@ -127,9 +193,10 @@ export async function readRoundProposals(
   if (legacy.length > 0) {
     throw new Error(
       `D0 proposals: working state carries no proposals payload but legacy per-kind file(s) exist on disk ` +
-        `[${legacy.join(", ")}]. This run predates the store fold — run ` +
-        `\`npx tsx bin/migrate_dstage_stores.ts <qid> <spec>\` before adjudicating; reading the legacy files ` +
-        `directly is no longer supported.`,
+        `[${legacy.join(", ")}]. This run predates the 2026-07-20 store fold; no active run remains in that ` +
+        `format (verified 2026-07-31), so the one-shot migration tool was retired — restore ` +
+        `bin/migrate_dstage_stores.ts from git history (any commit before the D-stage dead-code sweep) ` +
+        `if a frozen run ever needs re-adjudication. Reading the legacy files directly is not supported.`,
     );
   }
   return emptyProposals();

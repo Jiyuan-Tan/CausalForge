@@ -1,18 +1,17 @@
 // Stage 0.R (core revise) — the in-place editor of the typed core.
 //
 // D0.R holds the core + the D0.5 findings and edits the CORE in place (directed
-// floor + holistic freedom). The .tex is NOT hand-edited: it is RE-RENDERED
-// deterministically from the revised core (same `renderCoreTex` as D0-RENDER), so
-// the prose can never drift from the core. The edit is bounded by the structural
-// gate, which must re-pass with full discharge (D0_CORE_REDESIGN.md §8/§12.7).
+// floor + holistic freedom). It edits only core.json. The source preview remains
+// the last authoritative D0 render while the edit is provisional; the caller
+// publishes a fresh preview only after the complete D0.5 gate passes. The edit
+// is bounded by the structural gate, which must re-pass with full discharge.
 // Prompt derived from stage0_directed + stage0_salvage.
 import { existsSync } from "node:fs";
-import { mkdir, readFile, writeFile, appendFile } from "node:fs/promises";
+import { readFile, writeFile, appendFile } from "node:fs/promises";
 import path from "node:path";
 import { MODEL_PLAN } from "../../constants.js";
 import {
-  artifactPaths,
-  baseBrief,
+  discoveryBrief,
   parseStageOutput,
   readPrompt,
   type StageDeps,
@@ -30,18 +29,68 @@ import {
 import { loadPaperView, logPaperView } from "../core/paper_view.js";
 import { runGates } from "../framework/gates.js";
 import { structuralGate } from "../framework/gate_registrations.js";
-import { renderCoreTex } from "../core/render_tex.js";
+import { normalizeTexWhitespace } from "../../shared/tex_text.js";
 import type { Stage0_5CoreResult } from "./d0_5_core.js";
 
 export interface Stage0RCoreResult {
   message: string;
   coreJsonPath: string;
-  texPath: string;
   /** Set when D0.R determines a finding cannot be fixed by an in-place edit (it needs
    *  real math / a re-derivation / new substrate, or would force weakening the result).
    *  The typed D0.5 loop turns this into an immediate checkpoint — escalate BEFORE the
    *  revise cap rather than thrashing or crashing. */
   escalate?: { reason: string };
+}
+
+const TOPIC_MISMATCH_CODES = [
+  "kernel-substituted",
+  "direction-only",
+  "constructive-object-missing",
+] as const;
+
+export interface ProposalFindingRoute {
+  labels: string[];
+  action: string;
+}
+
+/** Findings whose comparison surface lives in durable pipeline state, outside
+ * D0.R's core.json edit capability. Exported so the caller can route them before
+ * charging an edit round; runStage0RCore repeats the check as a direct-call guard. */
+export function proposalFindingRoute(review: Stage0_5CoreResult): ProposalFindingRoute | null {
+  const routed = review.verdicts.filter((verdict) => verdict.referee === "decision")
+    .flatMap((verdict) => verdict.findings)
+    .map((finding) => {
+      const raw = String(finding.code ?? "").toLowerCase().replaceAll("_", "-");
+      const code = raw.startsWith("novelty-") ? raw.slice("novelty-".length) : raw;
+      return { finding, code };
+    })
+    .filter(({ code }) =>
+      TOPIC_MISMATCH_CODES.some((known) => code === known) ||
+      code === "assumption-omitted" ||
+      code === "proposal-drift" ||
+      code === "tier-genuinely-below"
+    );
+  if (routed.length === 0) return null;
+
+  const actions = new Set<string>();
+  if (routed.some(({ code }) => TOPIC_MISMATCH_CODES.some((known) => code === known))) {
+    actions.add(
+      "either re-derive the promised object or audit and apply the guarded state.proposed_from.topic update",
+    );
+  }
+  if (routed.some(({ code }) => code === "assumption-omitted")) {
+    actions.add("repair the theorem statement/premise and re-derive it through the proto");
+  }
+  if (routed.some(({ code }) => code === "proposal-drift")) {
+    actions.add("rewind D-1.2 and redraft/re-anchor the proposal; a topic-only narrowing is not sufficient");
+  }
+  if (routed.some(({ code }) => code === "tier-genuinely-below")) {
+    actions.add("make the novelty-floor/downgrade decision or re-anchor; the delivered kernel already matches the proposal");
+  }
+  return {
+    labels: routed.map(({ finding }) => `${finding.code}@${finding.node_id}`),
+    action: [...actions].join("; "),
+  };
 }
 
 export async function runStage0RCore(args: {
@@ -51,7 +100,6 @@ export async function runStage0RCore(args: {
   review: Stage0_5CoreResult;
 }): Promise<Stage0RCoreResult> {
   const corePath = coreJsonPath(args.ctx);
-  const texPath = artifactPaths(args.ctx, args.state).tex;
   if (!existsSync(corePath)) throw new Error(`Stage 0.R requires a core at ${corePath}`);
 
   // Edit the SHARED paper view, not raw core.json. The findings this stage must fix
@@ -64,8 +112,6 @@ export async function runStage0RCore(args: {
   const core = view.core;
   const restoreProtectedCore = async (): Promise<void> => {
     await writeFile(corePath, JSON.stringify(core, null, 2), "utf8");
-    await mkdir(path.dirname(texPath), { recursive: true });
-    await writeFile(texPath, renderCoreTex(core), "utf8");
   };
   const preStatementText = new Map(
     core.statements
@@ -76,10 +122,31 @@ export async function runStage0RCore(args: {
     v.findings.map((f) => ({ referee: v.referee, ...f })),
   );
 
+  // Proposal-promise findings compare the delivered core with the durable topic
+  // injected by `discoveryBrief(state.proposed_from.topic)`. D0.R can edit only
+  // core.json, so a prose rewrite cannot change that comparison surface: it buys a
+  // full model call, then the same finding returns (or a whack-a-mole checkpoint
+  // rolls the provisional edit back). Route these directly to the orchestrator,
+  // which must choose between substantive re-derivation and the guarded audited
+  // topic-update command. Never silently narrow the topic merely to clear review.
+  const proposalRoute = proposalFindingRoute(args.review);
+  if (proposalRoute) {
+    const labels = proposalRoute.labels.join(", ");
+    return {
+      message: `Stage 0.R escalated proposal-promise mismatch: ${labels}`,
+      coreJsonPath: corePath,
+      escalate: {
+        reason:
+          `proposal-promise mismatch (${labels}) is outside D0.R core-edit scope because ` +
+          `the relevant proposal/statement state is durable outside core.json; ${proposalRoute.action}`,
+      },
+    };
+  }
+
   const prompt = [
     await readPrompt(args.ctx, "stage0_R_core.txt"),
     "",
-    baseBrief(args.ctx, args.state),
+    discoveryBrief(args.ctx, args.state),
     "",
     "=== CURRENT CORE (edit in place) ===",
     JSON.stringify(core, null, 2),
@@ -92,7 +159,7 @@ export async function runStage0RCore(args: {
     "HARD LIMIT — you MUST NOT change any THEOREM/PROPOSITION/LEMMA STATEMENT or its CONCLUSION: what it asserts, its target object/type, its quantifiers, or its premise-strength. A statement-level finding — ill-typed target, overclaim/positioning, a claim needing narrowing or restating — is NOT yours to fix: a core-JSON statement edit is DISCARDED when the orchestrator re-solves from the proto, so statement changes must land in the proto, which the ORCHESTRATOR owns. Escalate those (do not burn a round editing a statement in place).",
     "DIRECTION-OF-TRUTH on any def/assumption change (the laundering guard): only ALIGN (bring the class/assumption into agreement with what the proofs already use — e.g. add a law-side condition that BOTH sides' objects satisfy, so the converse and the achievability quantify over the SAME class), CORRECT a mis-specified constructed-object formula, or DISCHARGE a dischargeable premise. NEVER NARROW a class to a subclass to force a proof through, never add a hypothesis that assumes the crux or buys a rate — that is laundering and will be rejected. When you ALIGN the class by adding a condition, you MUST re-prove the converse witness / construction still lies in the changed class (update its membership lemma); if it does not, the alignment is invalid — escalate instead.",
     "ESCALATE (status:failed) for a finding whose honest fix needs GENUINELY NEW MATH / substrate the proposal cannot support, OR that requires changing a node's STATEMENT/CONCLUSION (the orchestrator owns statement changes via the proto — see the HARD LIMIT above). Both need an orchestrator rewind. Do NOT escalate — and do NOT burn a round thrashing on — a graph-dependency / wiring / redundant-assumption-declaration / faithful def-alignment fix; make it in place.",
-    'Return only JSON on stdout: EITHER {"status":"completed","message":"...","artifacts":["<core.json>"]} when you resolved EVERY finding (by a core edit and/or a faithful provisional def/assumption change), OR {"status":"failed","message":"<list each finding needing genuinely new math the proposal cannot support>"} to ESCALATE. Use "failed" only for a true new-math gap — not for a def/assumption change you can make faithfully.',
+    'Return only JSON on stdout: EITHER {"status":"completed","message":"...","artifacts":["<core.json>"]} when you resolved EVERY finding (by a core edit and/or a faithful provisional def/assumption change), OR {"status":"failed","message":"<list each finding outside in-place core-edit scope>"} to ESCALATE. Use "failed" for a true new-math/statement gap or a durable proposal-topic mismatch — not for a graph, wiring, redundant-assumption-declaration, or faithful def/assumption change you can make directly.',
   ].join("\n");
 
   const out = await dispatchAgent({
@@ -142,7 +209,6 @@ export async function runStage0RCore(args: {
     return {
       message: `Stage 0.R escalated: ${parsedOut.message ?? "(no message)"}`,
       coreJsonPath: corePath,
-      texPath,
       escalate: { reason: parsedOut.message ?? "findings not fixable by an in-place edit" },
     };
   }
@@ -172,7 +238,6 @@ export async function runStage0RCore(args: {
     return {
       message: `Stage 0.R escalated: D0.R wrote a corrupt core.json (restored the pre-edit core)`,
       coreJsonPath: corePath,
-      texPath,
       escalate: {
         reason: `D0.R edited core is corrupt or unparseable: ${err instanceof Error ? err.message : String(err)}`,
       },
@@ -203,7 +268,6 @@ export async function runStage0RCore(args: {
     return {
       message: "Stage 0.R attempted an orchestrator-maintained assumption edit",
       coreJsonPath: corePath,
-      texPath,
       escalate: {
         reason:
           `D0.R changed protected maintained assumption(s) ${[...changedMaintainedIds].join(", ")}; ` +
@@ -225,7 +289,6 @@ export async function runStage0RCore(args: {
     return {
       message: "Stage 0.R attempted unscoped assumption deletion(s)",
       coreJsonPath: corePath,
-      texPath,
       escalate: {
         reason:
           `D0.R deleted unflagged assumption(s) ${unauthorizedDeletedAssumptions.join(", ")}; ` +
@@ -235,7 +298,7 @@ export async function runStage0RCore(args: {
   }
   // why: only a real CLAIM change is illegal here; collapse whitespace so a formatting-only
   // rewrite (re-wrapping, trimmed spaces) of a legitimate D0.R repair does not spuriously escalate.
-  const normClaim = (t: string) => t.replace(/\s+/g, " ").trim();
+  const normClaim = (t: string) => normalizeTexWhitespace(t); // a \par-only edit to a protected statement must not slip the guard
   const illegalStatementEdits = edited.statements.filter((s) => {
     const before = preStatementText.get(s.id);
     return before !== undefined && normClaim(before) !== normClaim(s.statement);
@@ -246,7 +309,6 @@ export async function runStage0RCore(args: {
     return {
       message: `Stage 0.R attempted protected statement edits`,
       coreJsonPath: corePath,
-      texPath,
       escalate: { reason: `D0.R changed protected statement text for ${illegalStatementEdits.map((s) => s.id).join(", ")}` },
     };
   }
@@ -257,7 +319,6 @@ export async function runStage0RCore(args: {
     return {
       message: `Stage 0.R edit did not re-discharge the gate`,
       coreJsonPath: corePath,
-      texPath,
       escalate: { reason: `in-place edit left the core undischarged:\n${lines}` },
     };
   }
@@ -318,14 +379,8 @@ export async function runStage0RCore(args: {
     console.warn(`[D0.R] ${args.state.design_decisions["d0r_pending_approval"]}`);
   }
 
-  // Re-render the .tex deterministically from the revised core — the prose cannot
-  // drift from the core because it is generated from it.
-  await mkdir(path.dirname(texPath), { recursive: true });
-  await writeFile(texPath, renderCoreTex(edited), "utf8");
-
   return {
-    message: parsedOut.message ?? "Stage 0.R revised the core in place; .tex re-rendered",
+    message: parsedOut.message ?? "Stage 0.R revised core.json provisionally",
     coreJsonPath: corePath,
-    texPath,
   };
 }

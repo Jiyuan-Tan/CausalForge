@@ -61,7 +61,8 @@ variable {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
 namespace OneShotSplit
 
 omit [IsProbabilityMeasure μ] in
-/-- The estimation fold of a one-shot split is the interval from the split point to the sample size. -/
+/-- The estimation fold of a one-shot split is the interval from the split point
+to the sample size. -/
 lemma foldB_eq_Ico (split : OneShotSplit S) (n : ℕ) :
     split.foldB n = Finset.Ico (split.n₁ n) n := by
   ext i
@@ -78,7 +79,7 @@ end OneShotSplit
 
 namespace IIDSample
 
-/-- A normalized sum over any finite index set has the same characteristic function as a normalized initial block of the same size. -/
+/-- A normalized finite-set sum has the characteristic function of an equal-size initial block. -/
 lemma charFun_normalizedSum_finset_eq_range_card
     (S : IIDSample Ω X μ P) {ψ : X → ℝ} (hψ_meas : Measurable ψ)
     (s : Finset ℕ) (t : ℝ) :
@@ -178,7 +179,7 @@ theorem clt_normalizedFoldB
     exact (measurable_const.mul
       (Finset.measurable_sum _ (fun i _hi => hψ_meas.comp (S.meas i)))).aemeasurable
   have hFull :=
-    IIDSample.clt_normalized_sum S hψ_meas hψ_mean hψ_sq_int hFull_meas
+    IIDSample.clt_normalized_sum S hψ_meas hψ_mean hψ_sq_int
   have hcard_tendsto : Tendsto (fun n => (split.foldB n).card) atTop atTop := by
     convert split.cogrow using 1
     funext n
@@ -324,7 +325,7 @@ theorem IsAsymLinear.tendsto_normal_foldB_sqrt_n
       Tendsto_dist
         (fun n ω => a n * IsAsymLinear.rescaledEstimator θn θ₀ split.foldB n ω)
         (gaussianMeasure 0 (((Real.sqrt c)⁻¹) ^ 2 * σ2)) μ hscaled_meas :=
-    Tendsto_dist.const_mul_tendsto_gaussian hfold_meas hscaled_meas hfold hscale_tendsto
+    Tendsto_dist.const_mul_tendsto_gaussian hfold_meas hfold hscale_tendsto
   have h_eventual_eq : ∀ᶠ n in atTop,
       (fun ω => a n * IsAsymLinear.rescaledEstimator θn θ₀ split.foldB n ω)
         =ᵐ[μ] (fun ω => Real.sqrt (n : ℝ) * (θn n ω - θ₀)) := by

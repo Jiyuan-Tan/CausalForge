@@ -26,7 +26,7 @@ namespace Causalean.SCM
 open scoped MeasureTheory ProbabilityTheory
 open MeasureTheory
 
-variable {N : Type*} [DecidableEq N] [Fintype N]
+variable {N : Type*} [DecidableEq N]
 variable {Ω : N → Type*} [∀ n, MeasurableSpace (Ω n)]
 
 /-- Value assignments on finite SWIG-node sets are finite when each base node
@@ -41,44 +41,44 @@ instance instFintypeValuesOnSwigΩ [∀ n, Fintype (Ω n)]
 
 /-- Override the coordinates in `W` of an assignment on `I`, leaving the other
 coordinates unchanged. -/
-def overrideOn {I W : Finset (SWIGNode N)} (_hWI : W ⊆ I)
+def overrideOn {I W : Finset (SWIGNode N)}
     (x : ValuesOn I (swigΩ Ω)) (y : ValuesOn W (swigΩ Ω)) :
     ValuesOn I (swigΩ Ω) :=
   fun i => if h : i.val ∈ W then y ⟨i.val, h⟩ else x i
 
 /-- On overridden coordinates, `overrideOn` reads from the replacement
 assignment. -/
-@[simp] lemma overrideOn_mem {I W : Finset (SWIGNode N)} (hWI : W ⊆ I)
+@[simp] lemma overrideOn_mem {I W : Finset (SWIGNode N)}
     (x : ValuesOn I (swigΩ Ω)) (y : ValuesOn W (swigΩ Ω))
     (i : {i // i ∈ I}) (hiW : i.val ∈ W) :
-    overrideOn hWI x y i = y ⟨i.val, hiW⟩ := by
+    overrideOn x y i = y ⟨i.val, hiW⟩ := by
   simp [overrideOn, hiW]
 
 /-- Away from overridden coordinates, `overrideOn` keeps the original
 assignment. -/
-@[simp] lemma overrideOn_notMem {I W : Finset (SWIGNode N)} (hWI : W ⊆ I)
+@[simp] lemma overrideOn_notMem {I W : Finset (SWIGNode N)}
     (x : ValuesOn I (swigΩ Ω)) (y : ValuesOn W (swigΩ Ω))
     (i : {i // i ∈ I}) (hiW : i.val ∉ W) :
-    overrideOn hWI x y i = x i := by
+    overrideOn x y i = x i := by
   simp [overrideOn, hiW]
 
 /-- Re-overriding the same coordinate set keeps the last replacement
 assignment. -/
-@[simp] lemma overrideOn_overrideOn {I W : Finset (SWIGNode N)} (hWI : W ⊆ I)
+@[simp] lemma overrideOn_overrideOn {I W : Finset (SWIGNode N)}
     (x : ValuesOn I (swigΩ Ω)) (y z : ValuesOn W (swigΩ Ω)) :
-    overrideOn hWI (overrideOn hWI x y) z = overrideOn hWI x z := by
+    overrideOn (overrideOn x y) z = overrideOn x z := by
   funext i
   by_cases hiW : i.val ∈ W
-  · simp [hiW]
-  · simp [hiW]
+  · simp [overrideOn, hiW]
+  · simp [overrideOn, hiW]
 
 /-- Projecting an override back to the overridden coordinates returns the
 replacement assignment. -/
 @[simp] lemma valuesProjection_overrideOn {I W : Finset (SWIGNode N)} (hWI : W ⊆ I)
     (x : ValuesOn I (swigΩ Ω)) (y : ValuesOn W (swigΩ Ω)) :
-    valuesProjection hWI (overrideOn hWI x y) = y := by
+    valuesProjection hWI (overrideOn x y) = y := by
   funext i
-  exact overrideOn_mem hWI x y ⟨i.val, hWI i.property⟩ i.property
+  exact overrideOn_mem x y ⟨i.val, hWI i.property⟩ i.property
 
 /-- The index equivalence `{a ∈ A} ⊕ {b ∈ B} ≃ {i ∈ A ∪ B}` for disjoint `A`, `B`. -/
 def unionSumEquiv {A B : Finset (SWIGNode N)} (hDisj : Disjoint A B) :

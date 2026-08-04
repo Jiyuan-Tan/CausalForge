@@ -58,14 +58,14 @@ converts almost-everywhere convergence to convergence in probability on the
 finite probability space `μ`. -/
 theorem sampleMean_tendsto_inProb
     (S : IIDSample Ω X μ P) {g : X → ℝ}
-    [IsProbabilityMeasure P]
     (hg_meas : Measurable g)
-    (hg_int : Integrable (fun ω => g (S.Z 0 ω)) μ) :
+    (hg_int : Integrable g P) :
     Tendsto_inProb (S.sampleMean g) (fun _ => ∫ x, g x ∂P) μ := by
-  haveI : IsProbabilityMeasure μ := by
-    haveI : IsProbabilityMeasure (μ.map (S.Z 0)) := by
-      rw [S.law]; infer_instance
-    exact Measure.isProbabilityMeasure_of_map (S.Z 0)
+  haveI : IsProbabilityMeasure μ := S.indep.isProbabilityMeasure
+  have hg_int_sample : Integrable (fun ω => g (S.Z 0 ω)) μ := by
+    have hg_int_map : Integrable g (μ.map (S.Z 0)) := by
+      simpa [S.law] using hg_int
+    exact hg_int_map.comp_measurable (S.meas 0)
   -- i.i.d. family of the transformed sample points
   have hindep_iid :
       Pairwise (Function.onFun (fun x1 x2 => IndepFun x1 x2 μ)
@@ -79,7 +79,7 @@ theorem sampleMean_tendsto_inProb
     intro i
     exact ((S.identDist i).symm.comp hg_meas)
   have hslln := ProbabilityTheory.strong_law_ae_real
-    (fun i ω => g (S.Z i ω)) hg_int hindep_iid hident
+    (fun i ω => g (S.Z i ω)) hg_int_sample hindep_iid hident
   -- transfer the limiting integral through the law of `Z 0`
   have hint_eq : (∫ ω, g (S.Z 0 ω) ∂μ) = ∫ x, g x ∂P := by
     rw [← integral_map (S.meas 0).aemeasurable hg_meas.aestronglyMeasurable, S.law]
@@ -101,9 +101,9 @@ square-integrable values, the empirical second moment `S.sampleMean (ψ²) N`
 converges in probability to `∫ x, (ψ x)² ∂P`.  Direct application of the WLLN
 to `g := ψ²`. -/
 theorem sampleSecondMoment_tendsto_inProb
-    (S : IIDSample Ω X μ P) [IsProbabilityMeasure P] {ψ : X → ℝ}
+    (S : IIDSample Ω X μ P) {ψ : X → ℝ}
     (hψ_meas : Measurable ψ)
-    (hψ_sq_int : Integrable (fun ω => (ψ (S.Z 0 ω)) ^ 2) μ) :
+    (hψ_sq_int : Integrable (fun x => (ψ x) ^ 2) P) :
     Tendsto_inProb (S.sampleMean (fun x => (ψ x) ^ 2))
       (fun _ => ∫ x, (ψ x) ^ 2 ∂P) μ :=
   S.sampleMean_tendsto_inProb (hψ_meas.pow_const 2) hψ_sq_int

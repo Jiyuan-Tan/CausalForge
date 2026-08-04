@@ -364,7 +364,6 @@ theorem localized_uniform_deviation_sharp
     {ρ Rmax : ℝ}
     (hcrit_le_ρ : criticalRadius (R.ψ n) ≤ ρ)
     (hρ_pos : 0 < ρ)
-    (hRmax_lb : ρ ≤ Rmax)
     (hcrit_pos : 0 < criticalRadius (R.ψ n))
     (hcrit_fp : R.ψ n (criticalRadius (R.ψ n)) ≤ (criticalRadius (R.ψ n)) ^ 2)
     (hrad_bdd : ∀ r : ℝ, ρ ≤ r →
@@ -392,7 +391,6 @@ theorem localized_uniform_deviation_sharp
           ≤ 8 * ρ * norm (F i) + 5 * ρ ^ 2 := by
   classical
   have hρ_nonneg : 0 ≤ ρ := le_of_lt hρ_pos
-  have hRmax_nonneg : 0 ≤ Rmax := le_trans hρ_nonneg hRmax_lb
   obtain ⟨K, hK⟩ : ∃ K : ℕ, Rmax ≤ ρ * (2 : ℝ) ^ K := by
     rcases pow_unbounded_of_one_lt (Rmax / ρ) (by norm_num : (1 : ℝ) < 2) with
       ⟨K, hK⟩

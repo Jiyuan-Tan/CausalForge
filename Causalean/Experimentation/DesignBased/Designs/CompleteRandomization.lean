@@ -41,11 +41,12 @@ variable {U : Type*} [Fintype U] [DecidableEq U]
 
 /-- The number of possible treated sets in complete randomization is the binomial coefficient
 `(Fintype.card U).choose n₁`. -/
-lemma completeRandomization_card (n₁ : ℕ) :
-    Fintype.card {S : Finset U // S.card = n₁} = (Fintype.card U).choose n₁ := by
+lemma completeRandomization_card {V : Type*} [Fintype V] (n₁ : ℕ) :
+    Fintype.card {S : Finset V // S.card = n₁} = (Fintype.card V).choose n₁ := by
+  classical
   rw [Fintype.card_subtype]
   rw [← Finset.card_univ]
-  rw [← Finset.card_powersetCard n₁ (Finset.univ : Finset U)]
+  rw [← Finset.card_powersetCard n₁ (Finset.univ : Finset V)]
   congr
   ext S
   simp [Finset.mem_powersetCard]
@@ -53,41 +54,45 @@ lemma completeRandomization_card (n₁ : ℕ) :
 /-- The **complete-randomization design**: the uniform law on size-`n₁` subsets of the population,
 i.e. exactly `n₁` of the `N = card U` units are treated, with every such treated set equally likely.
 Requires `n₁ ≤ N` so that the design space is nonempty. -/
-noncomputable def completeRandomization (n₁ : ℕ) (hn : n₁ ≤ Fintype.card U) :
-    FiniteDesign {S : Finset U // S.card = n₁} where
-  p := fun _ => 1 / (Fintype.card {S : Finset U // S.card = n₁} : ℝ)
-  p_nonneg := fun _ => one_div_nonneg.mpr (Nat.cast_nonneg _)
-  p_sum := by
-    -- ∑ over the C(N,n₁) equally-likely treated sets of 1/C(N,n₁) = 1; needs C(N,n₁) > 0 (from hn).
-    rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
-    have hcard_nat : Fintype.card {S : Finset U // S.card = n₁} ≠ 0 := by
-      rw [completeRandomization_card]
-      exact Nat.choose_ne_zero hn
-    have hcard_real : (Fintype.card {S : Finset U // S.card = n₁} : ℝ) ≠ 0 := by
-      exact_mod_cast hcard_nat
-    field_simp [hcard_real]
+noncomputable def completeRandomization {V : Type*} [Fintype V] (n₁ : ℕ)
+    (hn : n₁ ≤ Fintype.card V) : FiniteDesign {S : Finset V // S.card = n₁} := by
+  classical
+  exact {
+    p := fun _ => 1 / (Fintype.card {S : Finset V // S.card = n₁} : ℝ)
+    p_nonneg := fun _ => one_div_nonneg.mpr (Nat.cast_nonneg _)
+    p_sum := by
+      -- The equally likely treated sets have total mass one; `hn` makes their count positive.
+      rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
+      have hcard_nat : Fintype.card {S : Finset V // S.card = n₁} ≠ 0 := by
+        rw [completeRandomization_card]
+        exact Nat.choose_ne_zero hn
+      have hcard_real : (Fintype.card {S : Finset V // S.card = n₁} : ℝ) ≠ 0 := by
+        exact_mod_cast hcard_nat
+      field_simp [hcard_real] }
 
-private lemma card_powersetCard_filter_mem_succ (i : U) (k : ℕ) :
-    (((Finset.univ : Finset U).powersetCard (k + 1)).filter (fun S => i ∈ S)).card =
-      ((Finset.univ.erase i).powersetCard k).card := by
+/-- Among subsets containing a specified unit and of size `k + 1`,
+there are exactly as many as there are size-`k` subsets after that unit is removed. -/
+lemma card_powersetCard_filter_mem_succ {α : Type*} [DecidableEq α] (s : Finset α) (i : α)
+    (hi : i ∈ s) (k : ℕ) :
+    ((s.powersetCard (k + 1)).filter (fun t => i ∈ t)).card =
+      ((s.erase i).powersetCard k).card := by
   have hps0 := Finset.powersetCard_succ_insert
-    (notMem_erase i (Finset.univ : Finset U)) k
-  have hps : (Finset.univ : Finset U).powersetCard (k + 1) =
-      (Finset.univ.erase i).powersetCard (k + 1) ∪
-        ((Finset.univ.erase i).powersetCard k).image (insert i) := by
+    (notMem_erase i s) k
+  have hps : s.powersetCard (k + 1) =
+      (s.erase i).powersetCard (k + 1) ∪ ((s.erase i).powersetCard k).image (insert i) := by
     simpa [Nat.succ_eq_add_one,
-      show insert i (Finset.univ.erase i) = (Finset.univ : Finset U) by simp] using hps0
+      show insert i (s.erase i) = s by exact Finset.insert_erase hi] using hps0
   rw [hps, Finset.filter_union]
   have hleft :
-      (((Finset.univ.erase i).powersetCard (k + 1)).filter (fun S => i ∈ S)) = ∅ := by
+      (((s.erase i).powersetCard (k + 1)).filter (fun S => i ∈ S)) = ∅ := by
     apply Finset.filter_false_of_mem
     intro S hSpow hi
-    exact (Finset.notMem_erase i (Finset.univ : Finset U))
+    exact (Finset.notMem_erase i s)
       ((Finset.mem_powersetCard.mp hSpow).1 hi)
   have hright :
-      ((((Finset.univ.erase i).powersetCard k).image (insert i)).filter
+      ((((s.erase i).powersetCard k).image (insert i)).filter
           (fun S => i ∈ S)) =
-        ((Finset.univ.erase i).powersetCard k).image (insert i) := by
+        ((s.erase i).powersetCard k).image (insert i) := by
     ext S
     simp only [Finset.mem_filter]
     constructor
@@ -101,13 +106,15 @@ private lemma card_powersetCard_filter_mem_succ (i : U) (k : ℕ) :
     intro A hA B hB hEq
     exact insert_erase_invOn.2.injOn (by
       intro hi
-      exact (Finset.notMem_erase i (Finset.univ : Finset U))
+      exact (Finset.notMem_erase i s)
         ((Finset.mem_powersetCard.mp hA).1 hi)) (by
       intro hi
-      exact (Finset.notMem_erase i (Finset.univ : Finset U))
+      exact (Finset.notMem_erase i s)
         ((Finset.mem_powersetCard.mp hB).1 hi)) hEq)
 
-private lemma card_design_mem_succ (i : U) (k : ℕ) :
+/-- The number of subsets of a finite population with `k + 1` units that contain one specified
+unit equals the number of ways to choose `k` units from the remaining population. -/
+lemma card_design_mem_succ (i : U) (k : ℕ) :
     Fintype.card {S : {S : Finset U // S.card = k + 1} // i ∈ S.val} =
       (Fintype.card U - 1).choose k := by
   let e : {S : {S : Finset U // S.card = k + 1} // i ∈ S.val} ≃
@@ -123,104 +130,90 @@ private lemma card_design_mem_succ (i : U) (k : ℕ) :
       (((Finset.univ : Finset U).powersetCard (k + 1)).filter (fun S => i ∈ S)) := by
     ext S
     simp [Finset.mem_powersetCard, and_comm]
-  rw [hfilter, card_powersetCard_filter_mem_succ]
+  rw [hfilter, card_powersetCard_filter_mem_succ (Finset.univ : Finset U) i (Finset.mem_univ i)]
   rw [Finset.card_powersetCard, Finset.card_erase_of_mem (Finset.mem_univ i),
     Finset.card_univ]
 
-private lemma card_powersetCard_filter_mem_pair (i j : U) (hij : i ≠ j) (k : ℕ) :
-    (((Finset.univ : Finset U).powersetCard (k + 2)).filter
-        (fun S => i ∈ S ∧ j ∈ S)).card =
-      (((Finset.univ.erase i).erase j).powersetCard k).card := by
-  let e : {S : Finset U // S ∈ ((Finset.univ : Finset U).powersetCard (k + 2)) ∧
-        i ∈ S ∧ j ∈ S} ≃
-      {T : Finset U // T.card = k ∧ T ⊆ (Finset.univ.erase i).erase j} :=
-    { toFun := fun S => by
-        refine ⟨(S.val.erase i).erase j, ?_⟩
-        rcases S.property with ⟨hSpow, hi, hj⟩
-        constructor
-        · have hcardS : S.val.card = k + 2 := (Finset.mem_powersetCard.mp hSpow).2
-          have hcard_erase_i : (S.val.erase i).card = k + 1 := by
-            rw [Finset.card_erase_of_mem hi, hcardS]
-            omega
-          have hj_erase_i : j ∈ S.val.erase i := by simp [hj, hij.symm]
-          rw [Finset.card_erase_of_mem hj_erase_i, hcard_erase_i]
-          omega
-        · intro x hx
-          simp only [Finset.mem_erase] at hx
-          rcases hx with ⟨hxj, hxi, _hxS⟩
-          simp [hxj, hxi]
-      invFun := fun T => by
-        refine ⟨insert i (insert j T.val), ?_⟩
-        rcases T.property with ⟨hTcard, hTsub⟩
-        have hiT : i ∉ T.val := by
-          intro hi
-          have := hTsub hi
+/-- Among the fixed-size subsets of a finite set that contain two distinct specified elements,
+the count equals the number of subsets of the remaining set after those two elements are removed.
+This is the finite-population counting identity behind pairwise inclusion probabilities. -/
+lemma card_powersetCard_filter_mem_pair {α : Type*} [DecidableEq α] (s : Finset α) (i j : α)
+    (hi : i ∈ s) (hj : j ∈ s) (hij : i ≠ j) (k : ℕ) :
+    ((s.powersetCard (k + 2)).filter (fun t => i ∈ t ∧ j ∈ t)).card =
+      (((s.erase i).erase j).powersetCard k).card := by
+  refine Finset.card_bij' (fun t _ => (t.erase i).erase j) (fun t _ => insert i (insert j t))
+    ?_ ?_ ?_ ?_
+  · intro t ht
+    rcases Finset.mem_filter.mp ht with ⟨htpow, hti, htj⟩
+    rw [Finset.mem_powersetCard]
+    constructor
+    · intro x hx
+      rcases Finset.mem_erase.mp hx with ⟨hxj, hx⟩
+      rcases Finset.mem_erase.mp hx with ⟨hxi, hxt⟩
+      exact Finset.mem_erase.mpr ⟨hxj, Finset.mem_erase.mpr ⟨hxi,
+        (Finset.mem_powersetCard.mp htpow).1 hxt⟩⟩
+    · have htcard : t.card = k + 2 := (Finset.mem_powersetCard.mp htpow).2
+      have hterase_i : (t.erase i).card = k + 1 := by
+        rw [Finset.card_erase_of_mem hti, htcard]
+        omega
+      have htj_erase_i : j ∈ t.erase i := by simp [htj, hij.symm]
+      rw [Finset.card_erase_of_mem htj_erase_i, hterase_i]
+      omega
+  · intro t ht
+    rcases Finset.mem_powersetCard.mp ht with ⟨htsub, htcard⟩
+    rw [Finset.mem_filter]
+    constructor
+    · rw [Finset.mem_powersetCard]
+      constructor
+      · intro x hx
+        rcases Finset.mem_insert.mp hx with rfl | hx
+        · exact hi
+        rcases Finset.mem_insert.mp hx with rfl | hx
+        · exact hj
+        exact (Finset.mem_erase.mp (Finset.mem_erase.mp (htsub hx)).2).2
+      · have hti : i ∉ t := by
+          intro hti
+          have := htsub hti
           simp at this
-        have hjT : j ∉ T.val := by
-          intro hj
-          have := hTsub hj
+        have htj : j ∉ t := by
+          intro htj
+          have := htsub htj
           simp at this
-        have hi_insert_j : i ∉ insert j T.val := by
-          simp [hiT, hij]
-        constructor
-        · rw [Finset.mem_powersetCard]
-          constructor
-          · simp
-          · rw [Finset.card_insert_of_notMem hi_insert_j,
-              Finset.card_insert_of_notMem hjT, hTcard]
-        · constructor
-          · simp
-          · simp
-      left_inv := by
-        intro S
-        ext x
-        rcases S.property with ⟨_hSpow, hi, hj⟩
-        by_cases hxi : x = i
-        · subst x
-          simp [hi]
-        · by_cases hxj : x = j
-          · subst x
-            simp [hj]
-          · simp [hxi, hxj]
-      right_inv := by
-        intro T
-        ext x
-        rcases T.property with ⟨_hTcard, hTsub⟩
-        have hiT : i ∉ T.val := by
-          intro hi
-          have := hTsub hi
-          simp at this
-        have hjT : j ∉ T.val := by
-          intro hj
-          have := hTsub hj
-          simp at this
-        by_cases hxi : x = i
-        · subst x
-          simp [hiT]
-        · by_cases hxj : x = j
-          · subst x
-            simp [hjT]
-          · simp [hxi, hxj] }
-  have hleft :
-      Fintype.card {S : Finset U // S ∈ ((Finset.univ : Finset U).powersetCard (k + 2)) ∧
-          i ∈ S ∧ j ∈ S} =
-        (((Finset.univ : Finset U).powersetCard (k + 2)).filter
-          (fun S => i ∈ S ∧ j ∈ S)).card := by
-    rw [Fintype.card_subtype]
-    congr 1
-    ext S
-    simp [Finset.mem_powersetCard]
-  have hright :
-      Fintype.card {T : Finset U // T.card = k ∧ T ⊆ (Finset.univ.erase i).erase j} =
-        (((Finset.univ.erase i).erase j).powersetCard k).card := by
-    rw [Fintype.card_subtype]
-    congr 1
-    ext T
-    simp [Finset.mem_powersetCard, and_comm]
-  rw [← hleft, ← hright]
-  exact Fintype.card_congr e
+        have hti_insert_j : i ∉ insert j t := by simp [hti, hij]
+        rw [Finset.card_insert_of_notMem hti_insert_j,
+          Finset.card_insert_of_notMem htj, htcard]
+    · simp
+  · intro t ht
+    rcases Finset.mem_filter.mp ht with ⟨_htpow, hti, htj⟩
+    ext x
+    by_cases hxi : x = i
+    · subst x
+      simp [hti]
+    · by_cases hxj : x = j
+      · subst x
+        simp [htj]
+      · simp [hxi, hxj]
+  · intro t ht
+    have hti : i ∉ t := by
+      intro hti
+      have := (Finset.mem_powersetCard.mp ht).1 hti
+      simp at this
+    have htj : j ∉ t := by
+      intro htj
+      have := (Finset.mem_powersetCard.mp ht).1 htj
+      simp at this
+    ext x
+    by_cases hxi : x = i
+    · subst x
+      simp [hti]
+    · by_cases hxj : x = j
+      · subst x
+        simp [htj]
+      · simp [hxi, hxj]
 
-private lemma card_design_mem_pair (i j : U) (hij : i ≠ j) (k : ℕ) :
+/-- The number of subsets of a finite population with `k + 2` units that contain two distinct
+specified units equals the number of ways to choose `k` units from the remaining population. -/
+lemma card_design_mem_pair (i j : U) (hij : i ≠ j) (k : ℕ) :
     Fintype.card {S : {S : Finset U // S.card = k + 2} // i ∈ S.val ∧ j ∈ S.val} =
       (Fintype.card U - 2).choose k := by
   let e : {S : {S : Finset U // S.card = k + 2} // i ∈ S.val ∧ j ∈ S.val} ≃
@@ -237,7 +230,8 @@ private lemma card_design_mem_pair (i j : U) (hij : i ≠ j) (k : ℕ) :
         (fun S => i ∈ S ∧ j ∈ S)) := by
     ext S
     simp [Finset.mem_powersetCard]
-  rw [hfilter, card_powersetCard_filter_mem_pair i j hij k]
+  rw [hfilter, card_powersetCard_filter_mem_pair (Finset.univ : Finset U) i j
+    (Finset.mem_univ i) (Finset.mem_univ j) hij k]
   rw [Finset.card_powersetCard]
   have hcard : ((Finset.univ.erase i).erase j).card = Fintype.card U - 2 := by
     rw [Finset.card_erase_of_mem
@@ -265,8 +259,8 @@ lemma completeRandomization_incl (n₁ : ℕ) (hn : n₁ ≤ Fintype.card U) (i 
               if i ∈ S.val then (1 : ℝ) else 0) =
             (Fintype.card {S : {S : Finset U // S.card = k + 1} // i ∈ S.val} : ℝ) := by
         rw [Fintype.card_subtype]
-        simpa using (Finset.sum_boole (R := ℝ)
-          (fun S : {S : Finset U // S.card = k + 1} => i ∈ S.val) Finset.univ)
+        exact Finset.sum_boole (R := ℝ)
+          (fun S : {S : Finset U // S.card = k + 1} => i ∈ S.val) Finset.univ
       rw [hsum, card_design_mem_succ]
       rw [completeRandomization_card]
       have hNpos : 0 < Fintype.card U := Fintype.card_pos_iff.mpr ⟨i⟩
@@ -325,9 +319,9 @@ lemma completeRandomization_incl_pair (n₁ : ℕ) (hn : n₁ ≤ Fintype.card U
                 (Fintype.card {S : {S : Finset U // S.card = k + 2} //
                     i ∈ S.val ∧ j ∈ S.val} : ℝ) := by
             rw [Fintype.card_subtype]
-            simpa using (Finset.sum_boole (R := ℝ)
+            exact Finset.sum_boole (R := ℝ)
               (fun S : {S : Finset U // S.card = k + 2} => i ∈ S.val ∧ j ∈ S.val)
-              Finset.univ)
+              Finset.univ
           rw [hsum, card_design_mem_pair i j h k]
           rw [completeRandomization_card]
           have hpair_sub : ({i, j} : Finset U) ⊆ (Finset.univ : Finset U) := by

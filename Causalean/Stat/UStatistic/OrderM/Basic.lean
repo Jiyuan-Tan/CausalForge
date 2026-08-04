@@ -131,7 +131,7 @@ theorem hoeffding_decomp_order {m : ℕ} [NeZero m] (h : (Fin m → X) → ℝ)
 
 /-- The coordinatewise first projection is integrable whenever the corresponding
 slice-averaged kernel is integrable. -/
-theorem uProjOrderAt_integrable [IsProbabilityMeasure P] {m : ℕ} (j : Fin m)
+theorem uProjOrderAt_integrable [IsFiniteMeasure P] {m : ℕ} (j : Fin m)
     {h : (Fin m → X) → ℝ}
     (hint : Integrable
       (fun x => ∫ tail : ({k : Fin m // k ≠ j}) → X,
@@ -161,7 +161,7 @@ theorem uProjOrderAt_integral_eq_zero [IsProbabilityMeasure P] {m : ℕ}
 
 /-- The summed first-order influence function is integrable if every
 coordinatewise first projection is integrable. -/
-theorem uInfluenceOrder_integrable [IsProbabilityMeasure P] {m : ℕ} [NeZero m]
+theorem uInfluenceOrder_integrable {m : ℕ}
     {h : (Fin m → X) → ℝ}
     (hint : ∀ j : Fin m, Integrable (uProjOrderAt j h P) P) :
     Integrable (fun x => ∑ j : Fin m, uProjOrderAt j h P x) P := by
@@ -169,8 +169,7 @@ theorem uInfluenceOrder_integrable [IsProbabilityMeasure P] {m : ℕ} [NeZero m]
 
 /-- The summed first-order influence function is centered if every
 coordinatewise first projection is centered. -/
-theorem uInfluenceOrder_integral_eq_zero [IsProbabilityMeasure P] {m : ℕ}
-    [NeZero m] {h : (Fin m → X) → ℝ}
+theorem uInfluenceOrder_integral_eq_zero {m : ℕ} {h : (Fin m → X) → ℝ}
     (hint : ∀ j : Fin m, Integrable (uProjOrderAt j h P) P)
     (hzero : ∀ j : Fin m, ∫ x, uProjOrderAt j h P x ∂P = 0) :
     ∫ x, (∑ j : Fin m, uProjOrderAt j h P x) ∂P = 0 := by
@@ -180,7 +179,8 @@ theorem uInfluenceOrder_integral_eq_zero [IsProbabilityMeasure P] {m : ℕ}
 /-- Integrating a function of one coordinate under a finite product law recovers
 the one-dimensional integral. -/
 theorem integral_pi_eval_eq [IsProbabilityMeasure P] {ι : Type*} [Fintype ι]
-    (i : ι) {f : X → ℝ} (hf : Integrable f P) :
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    (i : ι) {f : X → E} (hf : Integrable f P) :
     ∫ z : ι → X, f (z i) ∂(Measure.pi fun _ : ι => P)
       = ∫ x, f x ∂P := by
   have hmp := measurePreserving_eval (fun _ : ι => P) i

@@ -16,7 +16,7 @@ import Mathlib.Probability.Moments.Variance
 
 /-! # Cauchy–Schwarz for covariance
 
-For square-integrable statistics `X` and `Y` on a probability space, the squared covariance is at
+For square-integrable statistics `X` and `Y` under a finite measure, the squared covariance is at
 most the product of the variances (`covariance_sq_le_variance_mul`), equivalently the absolute
 covariance is at most the product of the standard deviations (`abs_covariance_le_sqrt_mul`).  This
 is the covariance form of the Cauchy–Schwarz inequality, filling a gap in Mathlib's covariance API.
@@ -28,9 +28,9 @@ namespace Causalean.Mathlib
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω}
 
-/-- **Cauchy–Schwarz for covariance (squared form).** For square-integrable statistics on a
-probability space, the squared covariance is at most the product of the two variances. -/
-theorem covariance_sq_le_variance_mul [IsProbabilityMeasure μ] {X Y : Ω → ℝ}
+/-- **Cauchy–Schwarz for covariance (squared form).** For square-integrable statistics under a
+finite measure, the squared covariance is at most the product of the two variances. -/
+theorem covariance_sq_le_variance_mul [IsFiniteMeasure μ] {X Y : Ω → ℝ}
     (hX : MemLp X 2 μ) (hY : MemLp Y 2 μ) :
     covariance X Y μ ^ 2 ≤ variance X μ * variance Y μ := by
   have hquad : ∀ t : ℝ,
@@ -66,10 +66,10 @@ theorem covariance_sq_le_variance_mul [IsProbabilityMeasure μ] {X Y : Ω → �
     rw [hvalue] at h
     linarith
 
-/-- **Cauchy–Schwarz for covariance.** For square-integrable statistics on a probability space, the
+/-- **Cauchy–Schwarz for covariance.** For square-integrable statistics under a finite measure, the
 absolute covariance is at most the product of the standard deviations,
 `|Cov(X,Y)| ≤ √(Var X) · √(Var Y)`. -/
-theorem abs_covariance_le_sqrt_mul [IsProbabilityMeasure μ] {X Y : Ω → ℝ}
+theorem abs_covariance_le_sqrt_mul [IsFiniteMeasure μ] {X Y : Ω → ℝ}
     (hX : MemLp X 2 μ) (hY : MemLp Y 2 μ) :
     |covariance X Y μ| ≤ Real.sqrt (variance X μ) * Real.sqrt (variance Y μ) := by
   have h := covariance_sq_le_variance_mul hX hY

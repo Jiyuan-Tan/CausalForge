@@ -89,7 +89,7 @@ theorem completeProp_calibrated
   have hinv_smeas : StronglyMeasurable[S.sigmaXY1] (fun ω => 1 / e ω) :=
     (measurable_const.div he_smeas.measurable).stronglyMeasurable
   -- Integrability of `A` and `(1/e)·A` (= `A/e`).
-  have hA_int : Integrable A P.μ := S.dVar.integrable_indicator true
+  have hA_int : Integrable A P.μ := S.dVar.integrable_indicator true (measurableSet_singleton true)
   have hinvA_int : Integrable (fun ω => (1 / e ω) * A ω) P.μ := by
     refine hint.congr (Filter.Eventually.of_forall ?_)
     intro ω

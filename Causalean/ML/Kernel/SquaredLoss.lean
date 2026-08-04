@@ -147,7 +147,7 @@ theorem kernel_erm_squaredLoss_excess_rate {d n : ℕ} {Ω : Type*} [MeasurableS
         rw [hφdef, abs_of_nonneg (clampedSq_nonneg _ _)]
         exact clampedSq_le_sq hXbW _
       have hcontr := empiricalRademacherComplexity_contraction_abs_of_bddAbove
-        (ι := KWeight d W) φ (L := 2 * (Xb * W)) (by positivity)
+        (ι := KWeight d W) φ (L := 2 * (Xb * W))
         (by rw [hφdef]; exact lipschitzAt0_clampedSq hXbW) p (M := Xb * W) hXbW hpbound n S
       have hquad : empiricalRademacherComplexity n
           (fun (w : KWeight d W) (a : KFeat d Xb Yb) => φ (p w a)) S

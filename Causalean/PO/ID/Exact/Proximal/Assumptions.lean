@@ -124,7 +124,8 @@ private lemma integrable_mul_indicator {α : Type*} [MeasurableSpace α]
     [MeasurableSingletonClass α] (a : POVar P α) (x : α)
     {f : P.Ω → ℝ} (hf : Integrable f μ) (hf_meas : Measurable f) :
     Integrable (fun ω => f ω * a.indicator x ω) μ := by
-  refine hf.mono (hf_meas.mul (a.measurable_indicator x)).aestronglyMeasurable ?_
+  refine hf.mono
+    (hf_meas.mul (a.measurable_indicator x (measurableSet_singleton x))).aestronglyMeasurable ?_
   refine Filter.Eventually.of_forall (fun ω => ?_)
   rcases a.indicator_eq_one_or_zero x ω with h | h <;> simp [h]
 

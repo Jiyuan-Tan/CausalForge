@@ -3,7 +3,16 @@ Copyright (c) 2026 Jiyuan Tan. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jiyuan Tan
 -/
-import Mathlib
+import Mathlib.Algebra.Lie.OfAssociative
+import Mathlib.Algebra.Polynomial.FieldDivision
+import Mathlib.Analysis.CStarAlgebra.Classes
+import Mathlib.Analysis.Calculus.Deriv.Polynomial
+import Mathlib.Analysis.InnerProductSpace.Basic
+import Mathlib.Analysis.SpecialFunctions.Complex.Log
+import Mathlib.Analysis.SpecialFunctions.ExpDeriv
+import Mathlib.Data.Real.StarOrdered
+import Mathlib.RingTheory.SimpleRing.Principal
+import Mathlib.Topology.Algebra.Module.ModuleTopology
 
 /-!
 # Real trigonometric polynomials and their zero count
@@ -203,7 +212,9 @@ private lemma trigPolyComplexPoly_natDegree_le (n : ℕ) (a b : ℕ → ℝ) :
   · exact (Polynomial.natDegree_C_mul_X_pow_le
       ((a k : ℂ) / 2 + (b k : ℂ) * Complex.I / 2) (n - k)).trans (by omega)
 
-private lemma exp_mul_I_injOn_Ico {c s t : ℝ}
+/-- On any half-open real interval spanning one full period, the complex exponential evaluated at
+an imaginary real input is injective. -/
+lemma exp_mul_I_injOn_Ico {c s t : ℝ}
     (hs : s ∈ Set.Ico c (c + 2 * Real.pi)) (ht : t ∈ Set.Ico c (c + 2 * Real.pi))
     (h : Complex.exp ((s : ℂ) * Complex.I) = Complex.exp ((t : ℂ) * Complex.I)) :
     s = t := by

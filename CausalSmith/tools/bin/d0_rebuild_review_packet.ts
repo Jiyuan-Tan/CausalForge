@@ -9,27 +9,35 @@
  *
  * Usage: npx tsx tools/bin/d0_rebuild_review_packet.ts <qid> <spec> [--solve-json <path>]
  */
-import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { artifactPath } from "../src/paths.js";
 import type { PipelineContext } from "../src/types.js";
 import { CoreSchema } from "../src/discovery/core/schema.js";
-import { coreJsonPath } from "../src/discovery/stages/d0_core.js";
 import { protoCoreJsonPath } from "../src/discovery/stages/neg1_2_author.js";
 import { writeJsonAtomic } from "../src/shared/json_atomic.js";
 import { buildReviewPacket } from "../src/discovery/review_packet.js";
-import { readRoundProposals } from "../src/discovery/solve/proposals.js";
-import { solvedStatus } from "../src/discovery/core/status.js";
+import { pinWhitespaceEquivalentCurrent, readRoundProposals } from "../src/discovery/solve/proposals.js";
+import { assembleCore } from "../src/discovery/core/assemble.js";
 import {
   proposalReviewPacketPath,
 } from "../src/discovery/discovery_paths.js";
-import { loadWorkingState, saveWorkingState } from "../src/discovery/stages/d0_working.js";
+import {
+  loadWorkingState,
+  proposalRevision,
+  readEscalationLog,
+  saveWorkingState,
+} from "../src/discovery/stages/d0_working.js";
 import { findCausalSmithRoot } from "../src/shared/repo_root.js";
 import { SolveUnitOutputSchema } from "../src/discovery/solve/schemas.js";
 import { parseRepairedModelJson } from "../src/discovery/core/core_io.js";
 import { reusableOeqAnswerMatches } from "../src/discovery/solve/merge.js";
+import { openSolveTarget } from "../src/discovery/solve/context.js";
+import { definitionRevision, statementRevision } from "../src/discovery/core/revision.js";
+import { coreEditTarget } from "../src/discovery/stages/d0_apply.js";
+import { resolveRequiredCoreEditMandates } from "../src/discovery/solve/mandates.js";
+import { loadState } from "../src/state.js";
 
 
 
@@ -46,41 +54,62 @@ async function main(): Promise<void> {
   const proto = CoreSchema.parse(JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8")));
   const working = await loadWorkingState(ctx);
   if (!working) throw new Error("Cannot rebuild a D0 review packet without d0_working.json");
-  const publishedCorePath = coreJsonPath(ctx);
-  const core = existsSync(publishedCorePath)
-    ? CoreSchema.parse(JSON.parse(await readFile(publishedCorePath, "utf8")))
-    : CoreSchema.parse((() => {
-        // A structural-gate failure can prevent core.json publication after a
-        // valid proposal apply. Reconstruct the adjudication view from the
-        // authoritative current proto plus the durable provisional proof bank;
-        // never fall back to an older rendered paper.
-        const recovered = structuredClone(proto);
-        const frozenById = new Map(recovered.statements.map((statement) => [statement.id, statement] as const));
-        for (const [id, record] of Object.entries(working.solved)) {
-          if (!record.node) continue;
-          const frozen = frozenById.get(id);
-          const proof = record.proof_tex.trim();
-          if (frozen) {
-            // A stale carried claim must not overwrite the current accepted
-            // proto. Attach its proof only when the exact claim still matches.
-            if (record.node.statement !== frozen.statement || proof.length === 0) continue;
-            frozen.proof_tex = record.proof_tex;
-            frozen.status = solvedStatus(frozen);
-            continue;
-          }
-          recovered.statements.push({
-            ...record.node,
-            proof_tex: proof.length > 0 ? record.proof_tex : record.node.proof_tex,
-            // Deliberately STRICTER than `solvedStatus`: with no recovered proof this
-            // keeps the prior status rather than publishing `proved` over nothing. A
-            // recovery tool must not manufacture a discharge it cannot substantiate.
-            status: proof.length > 0 ? solvedStatus(record.node) : record.node.status,
-          });
-        }
-        return recovered;
-      })());
+  const escalationLog = await readEscalationLog(ctx);
+  if (escalationLog.some((entry) => (entry.required_core_edits?.length ?? 0) > 0)) {
+    throw new Error(
+      "D0 recovery found legacy required_core_edits with no recorded revision/snapshot basis; " +
+      "re-adjudicate them with d0_directive --require-core-edit",
+    );
+  }
+  const consumed = Math.min(working.escalation_entries_consumed ?? 0, escalationLog.length);
+  const pendingMandates = escalationLog.slice(consumed)
+    .flatMap((entry) => entry.required_core_edit_mandates ?? []);
+  const pendingCancellations = escalationLog.slice(consumed)
+    .flatMap((entry) => entry.cancelled_core_edit_mandates ?? []);
+  const state = await loadState(ctx.repoRoot, qid, spec);
+  const mandates = resolveRequiredCoreEditMandates({
+    mandates: [...(working.required_core_edit_mandates ?? []), ...pendingMandates],
+    cancellations: pendingCancellations,
+    core: proto,
+    working,
+    proposalRevision: proposalRevision(state),
+  });
+  // Recovery becomes the durable carrier if the live solve was interrupted before
+  // commitRound copied an unconsumed journal mandate onto the working cursor.
+  working.required_core_edit_mandates = mandates;
+  // A structural-gate failure can prevent core.json publication after a valid
+  // proposal apply. Reconstruct the adjudication view through the SAME pure
+  // render the solve commit uses (Phase 1 of the store consolidation — the old
+  // hand-rolled derivation here was the seed for `assembleCore` and would only
+  // drift from it); never fall back to an older rendered paper.
+  // Recovery must validate revisions and choose replacement bytes from the
+  // same authoritative generation. A published core may lag an interrupted
+  // cursor; rebuilding it from proto+working prevents an old revision from
+  // authorizing a repin onto newer durable claim bytes.
+  const core = CoreSchema.parse(assembleCore(proto, working));
 
   const currentStatementById = new Map(core.statements.map((statement) => [statement.id, statement] as const));
+  // Match apply's authority exactly: a frozen proto node wins; only an agent-added
+  // statement absent from proto is sourced from the durable working record.  The
+  // published core is an adjudication VIEW and can lag an interrupted cursor update.
+  const durableStatementCurrentById = new Map(
+    proto.statements.map((statement) => [statement.id, statement.statement] as const),
+  );
+  for (const record of Object.values(working.solved)) {
+    if (record.node && !durableStatementCurrentById.has(record.node.id)) {
+      durableStatementCurrentById.set(record.node.id, record.node.statement);
+    }
+  }
+  const durableDefinitionCurrentById = new Map(
+    proto.definitions
+      .filter((definition) => definition.by_member_properties === undefined)
+      .map((definition) => [definition.id, definition.construction] as const),
+  );
+  const durableDefinitionById = new Map(
+    proto.definitions
+      .filter((definition) => definition.by_member_properties === undefined)
+      .map((definition) => [definition.id, definition] as const),
+  );
   // Sole carrier: the proposals payload on the working cursor (the per-kind
   // mirror files are retired 2026-07-20).
   let roundProposals = await readRoundProposals(ctx, working);
@@ -235,6 +264,36 @@ async function main(): Promise<void> {
     }
     recoveredSolveSource = absoluteSolvePath;
   }
+  const normalizedCurrentEchoIds: string[] = [];
+  const pinCurrent = <T extends { id: string; current?: string; based_on_revision?: string }>(
+    change: T,
+    durableCurrent: string | undefined,
+    validRevisions: readonly string[],
+  ): T => {
+    const pinned = pinWhitespaceEquivalentCurrent(change, durableCurrent, validRevisions);
+    if (pinned !== change) normalizedCurrentEchoIds.push(change.id);
+    return pinned;
+  };
+  roundProposals = {
+    ...roundProposals,
+    statements: roundProposals.statements.map((change) => {
+      const target = currentStatementById.get(change.id);
+      return pinCurrent(
+        change,
+        durableStatementCurrentById.get(change.id),
+        target ? [statementRevision(target), statementRevision(openSolveTarget(target))] : [],
+      );
+    }),
+    definitions: roundProposals.definitions.map((change) => {
+      const target = durableDefinitionById.get(change.id);
+      return pinCurrent(
+        change,
+        durableDefinitionCurrentById.get(change.id),
+        target ? [definitionRevision(target)] : [],
+      );
+    }),
+  };
+  const mandatedTargets = new Set(mandates.map((mandate) => coreEditTarget(mandate.edit)));
   const existingProofs = roundProposals.proofs as Array<{ id: string; proof_tex: string; argues_proposed?: boolean }>;
   const proofById = new Map<string, { proof_tex: string; argues_proposed?: boolean }>();
   const addProof = (id: string, proofTex: string, source: string, arguesProposed = false): void => {
@@ -249,6 +308,7 @@ async function main(): Promise<void> {
     });
   };
   for (const proof of existingProofs) {
+    if (mandatedTargets.has(proof.id)) continue;
     if (currentStatementById.get(proof.id)?.kind === "openendedquestion") continue;
     addProof(proof.id, proof.proof_tex, "proposal-artifact", proof.argues_proposed === true);
   }
@@ -258,6 +318,7 @@ async function main(): Promise<void> {
   const durablePartialProofIdsIncluded: string[] = [];
   const openQuestionPartialResults: Array<{ id: string; partial_result: string }> = [];
   for (const [id, record] of Object.entries(working.solved)) {
+    if (mandatedTargets.has(id)) continue;
     if (!record.partial || !currentIds.has(id) || !record.proof_tex.trim()) continue;
     if (currentStatementById.get(id)?.kind === "openendedquestion") {
       openQuestionPartialResults.push({ id, partial_result: record.proof_tex });
@@ -267,12 +328,24 @@ async function main(): Promise<void> {
     if (!proofById.has(id)) recovered.push(id);
     addProof(id, record.proof_tex, "durable-working-state");
   }
-  const provisionalProofs = [...proofById].map(([id, proof]) => ({ id, ...proof }));
+  // Defence in depth: the collection loops above already skip mandated targets, but
+  // quarantine again at the serialization boundary so a future recovery source cannot
+  // reintroduce a proof/claim mutation beside an exact mandated operation.
+  const provisionalProofs = [...proofById]
+    .filter(([id]) => !mandatedTargets.has(id))
+    .map(([id, proof]) => ({ id, ...proof }));
 
-  const proposedStatementChanges = roundProposals.statements as unknown[];
-  const proposedDefinitionChanges = roundProposals.definitions as unknown[];
-  const proposedAssumptions = roundProposals.assumptions as unknown[];
-  const proposedCoreEdits = roundProposals.coreEdits as unknown as Array<Record<string, any>>;
+  const proposedStatementChanges = roundProposals.statements
+    .filter((change) => !mandatedTargets.has(change.id)) as unknown[];
+  const proposedDefinitionChanges = roundProposals.definitions
+    .filter((change) => !mandatedTargets.has(change.id)) as unknown[];
+  const proposedAssumptions = roundProposals.assumptions
+    .filter((assumption) => !mandatedTargets.has(assumption.id)) as unknown[];
+  const proposedCoreEdits = [
+    ...mandates.map((mandate) => structuredClone(mandate.edit) as Record<string, any>),
+    ...roundProposals.coreEdits
+      .filter((edit) => !mandatedTargets.has(coreEditTarget(edit))) as unknown as Array<Record<string, any>>,
+  ];
   if (
     proposedStatementChanges.length === 0 && proposedDefinitionChanges.length === 0 &&
     proposedAssumptions.length === 0 && proposedCoreEdits.length === 0
@@ -331,15 +404,15 @@ async function main(): Promise<void> {
       proposedDefinitionChanges,
       proposedAssumptions,
       proposedCoreEdits,
+      requiredCoreEditMandates: working.required_core_edit_mandates,
       provisionalProofs,
       recovery: {
         mode: "mechanical-no-solver",
         ...(recoveredSolveSource ? { recovered_solve_source: recoveredSolveSource } : {}),
-        current_core_source: existsSync(publishedCorePath)
-          ? "published-core"
-          : "current-proto-plus-durable-provisional-proofs",
+        current_core_source: "current-proto-plus-durable-working-state",
         recovered_partial_proof_ids: recovered,
         durable_partial_proof_ids_included: durablePartialProofIdsIncluded,
+        normalized_current_echo_ids: normalizedCurrentEchoIds,
         normalized_statement_replace_proof_ids: normalizedStatementReplaceProofIds,
         proto_statement_ids: proto.statements.map((statement) => statement.id),
       },
@@ -349,6 +422,7 @@ async function main(): Promise<void> {
     packet: packetPath,
     proposals_carrier: "d0_working.json:proposals",
     recovered,
+    normalized_current_echo_ids: normalizedCurrentEchoIds,
     normalized_statement_replace_proof_ids: normalizedStatementReplaceProofIds,
   }, null, 2));
 }

@@ -96,10 +96,10 @@ lemma integrableY (hA : S.BaseAssumptions) :
     Integrable S.factualY P.μ := by
   have hY1_ind :
       Integrable (fun ω => S.YofA true ω * S.aVar.indicator true ω) P.μ :=
-    S.aVar.integrable_mul_indicator true hA.integrableY1 (S.measurable_YofA true)
+    S.aVar.integrable_mul_indicator true (measurableSet_singleton _) hA.integrableY1
   have hY0_ind :
       Integrable (fun ω => S.YofA false ω * S.aVar.indicator false ω) P.μ :=
-    S.aVar.integrable_mul_indicator false hA.integrableY0 (S.measurable_YofA false)
+    S.aVar.integrable_mul_indicator false (measurableSet_singleton _) hA.integrableY0
   refine (hY1_ind.add hY0_ind).congr ?_
   filter_upwards with ω
   have htrue := congr_fun

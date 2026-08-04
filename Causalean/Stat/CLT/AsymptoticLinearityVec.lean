@@ -52,8 +52,7 @@ open MeasureTheory ProbabilityTheory Filter Topology
 
 variable {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
   {μ : Measure Ω} {P : Measure X}
-  {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
-    [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
+  {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
 /-! ## Vector-valued asymptotic linearity -/
 
@@ -146,12 +145,12 @@ caller-supplied vector CLT contact (`_hCLT`) with vector Slutsky absorption
 (`Tendsto_dist_vec.add_isLittleOp_one`) to push the rescaled estimator's
 pushforward to the target law `Q : ProbabilityMeasure E`. -/
 
-variable [IsProbabilityMeasure μ]
+variable [MeasurableSpace E] [OpensMeasurableSpace E]
 
-/-- **Vector asymptotic normality.**  Given vector asymptotic linearity at
-`θ₀` with influence function `ψ`, and a vector CLT contact (the partial-sum
-pushforwards converge to a target law `Q : ProbabilityMeasure E`), the
-rescaled estimator converges in distribution to `Q`.
+/-- **Vector asymptotic normality.** Given a vector remainder condition and a
+vector CLT contact (the partial-sum pushforwards converge to a target law
+`Q : ProbabilityMeasure E`), the rescaled estimator converges in distribution
+to `Q`.
 
 For the canonical case `Q = N(0, ∫ ψ ψᵀ dP)` the conclusion specialises to
 the multivariate CLT. -/
@@ -159,20 +158,27 @@ theorem IsAsymLinearVec.tendsto_normal_vec
     {θn : ℕ → Ω → E} {θ₀ : E} {ψ : X → E} {S : IIDSample Ω X μ P}
     {I : ℕ → Finset ℕ}
     (Q : ProbabilityMeasure E)
-    (_h : IsAsymLinearVec θn θ₀ ψ S I)
-    (_hψ_meas : Measurable ψ)
+    (hRem : IsLittleOp
+      (fun n ω =>
+        ‖Real.sqrt ((I n).card : ℝ) • (θn n ω - θ₀)
+          - (Real.sqrt ((I n).card : ℝ))⁻¹ •
+            ∑ i ∈ I n, ψ (S.Z i ω)‖)
+      (fun _ => (1 : ℝ)) μ)
     (_hθn_meas : ∀ n : ℕ, AEMeasurable
       (IsAsymLinearVec.rescaledEstimator θn θ₀ I n) μ)
     (_hSum_meas : ∀ n : ℕ, AEMeasurable
       (IsAsymLinearVec.normalizedSum S ψ I n) μ)
     (_hCLT : Tendsto (β := ProbabilityMeasure E)
       (fun n => ⟨μ.map (IsAsymLinearVec.normalizedSum S ψ I n),
-                  Measure.isProbabilityMeasure_map (_hSum_meas n)⟩)
+                  @Measure.isProbabilityMeasure_map Ω E _ _ μ
+                    S.indep.isProbabilityMeasure _ (_hSum_meas n)⟩)
       atTop (𝓝 Q)) :
     Tendsto (β := ProbabilityMeasure E)
       (fun n => ⟨μ.map (IsAsymLinearVec.rescaledEstimator θn θ₀ I n),
-                  Measure.isProbabilityMeasure_map (_hθn_meas n)⟩)
+                  @Measure.isProbabilityMeasure_map Ω E _ _ μ
+                    S.indep.isProbabilityMeasure _ (_hθn_meas n)⟩)
       atTop (𝓝 Q) := by
+  haveI : IsProbabilityMeasure μ := S.indep.isProbabilityMeasure
   haveI : IsProbabilityMeasure (Q.toMeasure) := Q.2
   change Tendsto_dist_vec (IsAsymLinearVec.rescaledEstimator θn θ₀ I)
     Q.toMeasure μ _hθn_meas
@@ -183,7 +189,6 @@ theorem IsAsymLinearVec.tendsto_normal_vec
   · change Tendsto_dist_vec (IsAsymLinearVec.normalizedSum S ψ I)
       Q.toMeasure μ _hSum_meas
     exact _hCLT
-  · have := _h.remainder
-    simpa [IsAsymLinearVec.normalizedSum, IsAsymLinearVec.rescaledEstimator] using this
+  · simpa [IsAsymLinearVec.normalizedSum, IsAsymLinearVec.rescaledEstimator] using hRem
 
 end Causalean.Stat

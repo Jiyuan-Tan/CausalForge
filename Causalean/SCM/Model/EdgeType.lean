@@ -27,7 +27,8 @@ models and is used to track functional assumptions.
 
 namespace Causalean
 
-/-- A monotonicity kind records whether an edge is nondecreasing, nonincreasing, strictly increasing, or strictly decreasing.
+/-- A monotonicity kind records whether an edge is nondecreasing, nonincreasing, strictly
+increasing, or strictly decreasing.
 
     For every monotonicity classification and every natural-number pretty-printing
 precedence, the derived representation function returns a standard formatted
@@ -66,7 +67,8 @@ inductive EdgeType
 
 namespace EdgeType
 
-/-- The Boolean refinement check decides whether one edge-type assumption is at least as specific as another.
+/-- The Boolean refinement check decides whether one edge-type assumption is at least as specific
+as another.
 
     Nonparametric is the weakest assumption: every edge type refines it. A
     linear edge refines the linear and nonparametric classes, but it is not
@@ -130,7 +132,8 @@ def allNonparametric (G : DAG V) : EdgeTypeAssignment G where
 def incomingTypes (a : EdgeTypeAssignment G) (v : V) : Finset EdgeType :=
   (G.parents v).image (fun u => a.edgeType u v)
 
-/-- A graph is fully nonparametric under an assignment when every directed edge is labeled nonparametric. -/
+/-- A graph is fully nonparametric under an assignment when every directed edge is labeled
+nonparametric. -/
 def isFullyNonparametric (a : EdgeTypeAssignment G) : Prop :=
   ∀ u v, G.edge u v → a.edgeType u v = .nonparametric
 

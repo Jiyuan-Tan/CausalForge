@@ -36,6 +36,8 @@ import Mathlib.Analysis.Calculus.IteratedDeriv.Defs
 import Mathlib.Analysis.Calculus.ContDiff.Basic
 import Mathlib.Order.ConditionallyCompleteLattice.Basic
 import Causalean.Stat.Sample
+import Causalean.Stat.Sample.PiTransport
+import Causalean.Stat.Nonparametric.Approximation.HolderInterpolation.Defs
 
 namespace CausalSmith.Stat.DoseResponseMinimax
 
@@ -85,14 +87,11 @@ def HolderBall1D (f : ℝ → ℝ) (order M : ℝ) (S : Set ℝ) : Prop :=
 `S ⊆ (Fin d → ℝ)`: all iterated Fréchet derivatives up to the largest integer
 `k = ⌈order⌉ - 1` strictly below `order` exist continuously on `S`, are bounded
 by `M` in operator norm, and the `k`-th derivative is `(order - k)`-Hölder with
-constant `M`. -/
-def HolderBallND {d : ℕ} (f : (Fin d → ℝ) → ℝ) (order M : ℝ)
+constant `M`. Notation for the library ball
+`Causalean.Stat.Nonparametric.HolderBallStd` (same `⌈order⌉-1` convention). -/
+abbrev HolderBallND {d : ℕ} (f : (Fin d → ℝ) → ℝ) (order M : ℝ)
     (S : Set (Fin d → ℝ)) : Prop :=
-  ContDiffOn ℝ (⌈order⌉₊ - 1) f S ∧
-    (∀ j : ℕ, j ≤ ⌈order⌉₊ - 1 → ∀ x ∈ S, ‖iteratedFDeriv ℝ j f x‖ ≤ M) ∧
-    (∀ x ∈ S, ∀ y ∈ S,
-      ‖iteratedFDeriv ℝ (⌈order⌉₊ - 1) f x - iteratedFDeriv ℝ (⌈order⌉₊ - 1) f y‖
-        ≤ M * ‖x - y‖ ^ (order - ((⌈order⌉₊ - 1 : ℕ) : ℝ)))
+  Causalean.Stat.Nonparametric.HolderBallStd f order M S
 
 /-- Build-inline observed-law object: the per-draw observation law, the covariate
 marginal, the law-side nuisances `μ_P, π_P, p_{X,P}`, and the potential-outcome

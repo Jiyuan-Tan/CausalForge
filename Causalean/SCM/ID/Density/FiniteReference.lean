@@ -23,13 +23,15 @@ open scoped MeasureTheory ProbabilityTheory
 variable {N : Type*} [DecidableEq N] [Fintype N]
 variable {Ω : N → Type*} [∀ n, MeasurableSpace (Ω n)]
 
-/-- Every random or fixed SWIG-node value space is finite when every base-node value space is finite. -/
+/-- Every random or fixed SWIG-node value space is finite when every base-node
+value space is finite. -/
 instance instFintypeSwigΩ [∀ n, Fintype (Ω n)] :
     ∀ sn : SWIGNode N, Fintype (swigΩ Ω sn)
   | .random _ => inferInstance
   | .fixed _ => inferInstance
 
-/-- Every random or fixed SWIG-node value space has measurable singletons when every base-node value space has measurable singletons. -/
+/-- Every random or fixed SWIG-node value space has measurable singletons when
+every base-node value space has measurable singletons. -/
 instance instMeasurableSingletonClassSwigΩ [∀ n, MeasurableSingletonClass (Ω n)] :
     ∀ sn : SWIGNode N, MeasurableSingletonClass (swigΩ Ω sn)
   | .random _ => inferInstance
@@ -50,15 +52,17 @@ lemma isFiniteMeasure_of_finite_measurableSingleton
     (fun x _ => MeasureTheory.measure_singleton_lt_top (μ := μ) (a := x))
 
 /-- Each coordinate reference measure is finite on finite measurable-singleton node spaces. -/
-instance instIsFiniteMeasure_refMu [∀ n, Fintype (Ω n)]
+instance instIsFiniteMeasure_refMu [∀ n, Finite (Ω n)]
     [∀ n, MeasurableSingletonClass (Ω n)]
     (ref : ReferenceMeasures Ω) (v : SWIGNode N) :
     MeasureTheory.IsFiniteMeasure (ref.μ v) := by
+  haveI : Finite (swigΩ Ω v) := by
+    cases v <;> infer_instance
   haveI : MeasureTheory.SigmaFinite (ref.μ v) := ref.sigmaFinite v
   exact isFiniteMeasure_of_finite_measurableSingleton (ref.μ v)
 
 /-- The finite product reference measure is finite on finite measurable-singleton node spaces. -/
-instance instIsFiniteMeasure_jointRef [∀ n, Fintype (Ω n)]
+instance instIsFiniteMeasure_jointRef [∀ n, Finite (Ω n)]
     [∀ n, MeasurableSingletonClass (Ω n)]
     (ref : ReferenceMeasures Ω) (I : Finset (SWIGNode N)) :
     MeasureTheory.IsFiniteMeasure (jointRef ref I) := by
@@ -96,7 +100,9 @@ lemma absolutelyContinuous_of_singleton_ne_zero {α : Type*} [MeasurableSpace α
       cases hx
   simp [hs_empty]
 
-/-- A faithful reference family gives every point in a finite coordinate product nonzero joint reference mass. -/
+omit [DecidableEq N] [Fintype N] in
+/-- A faithful reference family gives every point in a finite coordinate product
+nonzero joint reference mass. -/
 lemma jointRef_singleton_ne_zero [∀ n, MeasurableSingletonClass (Ω n)]
     (ref : ReferenceMeasures Ω) (href : ReferenceFaithful ref)
     (I : Finset (SWIGNode N)) (x : ValuesOn I (swigΩ Ω)) :
@@ -108,7 +114,9 @@ lemma jointRef_singleton_ne_zero [∀ n, MeasurableSingletonClass (Ω n)]
     intro i _hi
     exact href i.val (x i))
 
-/-- Every measure on a finite coordinate product is dominated by a faithful product reference measure. -/
+omit [DecidableEq N] [Fintype N] in
+/-- Every measure on a finite coordinate product is dominated by a faithful
+product reference measure. -/
 lemma absolutelyContinuous_jointRef_of_faithful [∀ n, MeasurableSingletonClass (Ω n)]
     (ref : ReferenceMeasures Ω) (href : ReferenceFaithful ref)
     (I : Finset (SWIGNode N)) (μ : MeasureTheory.Measure (ValuesOn I (swigΩ Ω))) :
@@ -120,9 +128,9 @@ lemma absolutelyContinuous_jointRef_of_faithful [∀ n, MeasurableSingletonClass
 lemma aemeasurable_fiber_rnDeriv_of_finite
     {α β : Type*} [MeasurableSpace α] [MeasurableSpace β]
     [Finite α] [Finite β] [MeasurableSingletonClass α] [MeasurableSingletonClass β]
-    (ν : MeasureTheory.Measure α) (ρ : MeasureTheory.Measure β)
+    (μ : MeasureTheory.Measure (α × β)) (ρ : MeasureTheory.Measure β)
     (κ : ProbabilityTheory.Kernel α β) :
-    AEMeasurable (fun p : α × β => (κ p.1).rnDeriv ρ p.2) (ν.prod ρ) :=
+    AEMeasurable (fun p : α × β => (κ p.1).rnDeriv ρ p.2) μ :=
   (measurable_of_finite (fun p : α × β => (κ p.1).rnDeriv ρ p.2)).aemeasurable
 
 end Causalean.SCM

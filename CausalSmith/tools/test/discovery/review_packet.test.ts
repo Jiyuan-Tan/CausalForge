@@ -64,6 +64,7 @@ describe("buildReviewPacket", () => {
       "proposed_definition_changes",
       "proposed_assumptions",
       "proposed_core_edits",
+      "required_core_edit_mandates",
       "provisional_proofs",
     ]) {
       expect(p, `missing ${key}`).toHaveProperty(key);

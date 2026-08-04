@@ -37,7 +37,7 @@ theorem arm_disintegration_tv_lower {d : ℕ}
   let T : ℝ → CateObs d → ℝ := fun a O =>
     (if O.A = a then (1 : ℝ) else 0) * g a O.X * (O.Y - c a O.X)
   let F : CateObs d → ℝ := fun O => T 1 O + T 0 O
-  have hS : MeasurableSet S := measurableSet_supBall _ _
+  have hS : MeasurableSet S := Causalean.Stat.Nonparametric.measurableSet_supBall _ _
   have hDmeas (a : ℝ) (ha : a = 0 ∨ a = 1) : Measurable (D a) :=
     (measurable_indicator_armReg hreg P hP ha).sub
       (measurable_indicator_armReg hreg Q hQ ha)

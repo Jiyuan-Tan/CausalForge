@@ -32,7 +32,7 @@ namespace EventStudySystem
 variable {T : ℕ}
 
 /-- Included-event-time indicator on a cohort-relative-time cell. -/
-noncomputable def eventIndicator (_P : EventStudySystem T) (k e : ℤ) : ℝ :=
+noncomputable def eventIndicator (k e : ℤ) : ℝ :=
   if e = k then 1 else 0
 
 /-- Conventional event-study finite design for the coefficient on
@@ -60,7 +60,7 @@ def IsEventStudyNuisance (P : EventStudySystem T) (D : P.ConventionalDesign)
       ∀ g ∈ P.cohorts, ∀ t,
         h g t = hAdd g t +
           ∑ k ∈ D.includedEvents.filter (fun k => k ≠ D.displayedEvent),
-            gamma k * P.eventIndicator k (P.relTime g t)
+            gamma k * eventIndicator k (P.relTime g t)
 
 /-- Average of a cohort-period nuisance function over the finite periods that
 realize cell `(g,e)`. -/
@@ -88,7 +88,7 @@ structure ConventionalResidualization (P : EventStudySystem T)
   hDisplayedExpansion :
     ∑ ge ∈ P.admissibleCells D.eventSupport,
       P.cellMassAtEvent ge.1 ge.2 * D.Rdot ge.1 ge.2 *
-        P.eventIndicator D.displayedEvent ge.2 =
+        eventIndicator D.displayedEvent ge.2 =
       ∑ g ∈ P.cohortsAtEvent D.eventSupport D.displayedEvent,
         P.cellMassAtEvent g D.displayedEvent * D.Rdot g D.displayedEvent
   hOtherIncludedOrthogonal :
@@ -101,7 +101,7 @@ noncomputable def residualDenom (P : EventStudySystem T)
     (D : P.ConventionalDesign) : ℝ :=
   ∑ ge ∈ P.admissibleCells D.eventSupport,
     P.cellMassAtEvent ge.1 ge.2 * D.Rdot ge.1 ge.2 *
-      P.eventIndicator D.displayedEvent ge.2
+      eventIndicator D.displayedEvent ge.2
 
 /-- Finite residualized numerator `E[Rdot^l Y]`. -/
 noncomputable def residualNumerator (P : EventStudySystem T)
@@ -135,7 +135,12 @@ noncomputable def omega (P : EventStudySystem T) (D : P.ConventionalDesign)
 /-- Desired-event-time weights sum to one. -/
 theorem desired_event_weights_sum_one (P : EventStudySystem T)
     (D : P.ConventionalDesign)
-    (hResidualization : P.ConventionalResidualization D)
+    (hDisplayedExpansion :
+      ∑ ge ∈ P.admissibleCells D.eventSupport,
+        P.cellMassAtEvent ge.1 ge.2 * D.Rdot ge.1 ge.2 *
+          eventIndicator D.displayedEvent ge.2 =
+        ∑ g ∈ P.cohortsAtEvent D.eventSupport D.displayedEvent,
+          P.cellMassAtEvent g D.displayedEvent * D.Rdot g D.displayedEvent)
     (hDenomPos : 0 < P.residualDenom D) :
     ∑ g ∈ P.cohortsAtEvent D.eventSupport D.displayedEvent,
       P.omega D g D.displayedEvent = 1 := by
@@ -148,20 +153,18 @@ theorem desired_event_weights_sum_one (P : EventStudySystem T)
           P.residualDenom D := by
       simp [omega, Finset.sum_div]
     _ = P.residualDenom D / P.residualDenom D := by
-      rw [← hResidualization.hDisplayedExpansion]
+      rw [← hDisplayedExpansion]
       rfl
     _ = 1 := div_self hDenom_ne
 
 /-- Other included-event-time weights sum to zero. -/
 theorem other_included_event_weights_sum_zero (P : EventStudySystem T)
     (D : P.ConventionalDesign) {e : ℤ}
-    (hDisplayedIncluded : D.displayedEvent ∈ D.includedEvents)
-    (hOtherIncluded : e ∈ D.includedEvents)
-    (hOther : e ≠ D.displayedEvent)
-    (hResidualization : P.ConventionalResidualization D)
+    (hOtherZero :
+      ∑ g ∈ P.cohortsAtEvent D.eventSupport e,
+        P.cellMassAtEvent g e * D.Rdot g e = 0)
     (hDenomPos : 0 < P.residualDenom D) :
     ∑ g ∈ P.cohortsAtEvent D.eventSupport e, P.omega D g e = 0 := by
-  have _ := hDisplayedIncluded
   have _ : P.residualDenom D ≠ 0 := ne_of_gt hDenomPos
   calc
     ∑ g ∈ P.cohortsAtEvent D.eventSupport e, P.omega D g e =
@@ -169,7 +172,7 @@ theorem other_included_event_weights_sum_zero (P : EventStudySystem T)
           P.cellMassAtEvent g e * D.Rdot g e) / P.residualDenom D := by
       simp [omega, Finset.sum_div]
     _ = 0 / P.residualDenom D := by
-      rw [hResidualization.hOtherIncludedOrthogonal e hOtherIncluded hOther]
+      rw [hOtherZero]
     _ = 0 := zero_div _
 
 /-- Conventional Sun-Abraham contamination representation.
@@ -181,8 +184,13 @@ the public wrappers in `Contamination.lean` for the projection-derived entry
 points. -/
 theorem contamination_representation (P : EventStudySystem T)
     (D : P.ConventionalDesign)
-    (hCausal : P.EventStudyCausalRestrictions)
-    (hResidualization : P.ConventionalResidualization D)
+    (hConsistency : P.Consistency)
+    (hMeanParallelUntreated : P.MeanParallelUntreated)
+    (hNuisanceOrthogonal :
+      ∀ h : Fin T → Fin T → ℝ, P.IsEventStudyNuisance D h →
+        ∑ ge ∈ P.admissibleCells D.eventSupport,
+          P.cellMassAtEvent ge.1 ge.2 * D.Rdot ge.1 ge.2 *
+            P.cellAverage h ge.1 ge.2 = 0)
     (hDenomPos : 0 < P.residualDenom D)
     (hMuRatio : D.mu = P.conventionalMuRatio D)
     (hSupport : P.ConventionalFiniteSupport D) :
@@ -190,7 +198,7 @@ theorem contamination_representation (P : EventStudySystem T)
       ∑ ge ∈ P.admissibleCells D.eventSupport,
         P.omega D ge.1 ge.2 * P.CATT ge.1 ge.2 := by
   have _ : P.residualDenom D ≠ 0 := ne_of_gt hDenomPos
-  rcases hCausal.hMeanParallelUntreated with ⟨hAdd, ⟨alpha, lambda, hAdd_eq⟩, hUntreated⟩
+  rcases hMeanParallelUntreated with ⟨hAdd, ⟨alpha, lambda, hAdd_eq⟩, hUntreated⟩
   let hFE : Fin T → Fin T → ℝ := fun g t => alpha g + lambda t
   have hNuisance : P.IsEventStudyNuisance D hFE := by
     refine ⟨hFE, ⟨alpha, lambda, ?_⟩, fun _ => 0, ?_⟩
@@ -202,7 +210,7 @@ theorem contamination_representation (P : EventStudySystem T)
       ∑ ge ∈ P.admissibleCells D.eventSupport,
         P.cellMassAtEvent ge.1 ge.2 * D.Rdot ge.1 ge.2 *
           P.cellAverage hFE ge.1 ge.2 = 0 :=
-    hResidualization.hResidualization hFE hNuisance
+    hNuisanceOrthogonal hFE hNuisance
   have hObs :
       ∀ ge ∈ P.admissibleCells D.eventSupport,
         P.observedCellMean ge.1 ge.2 =
@@ -230,7 +238,7 @@ theorem contamination_representation (P : EventStudySystem T)
                 (P.treatedMean ge.1 t - P.untreatedMean ge.1 t)) := by
           apply Finset.sum_congr rfl
           intro t ht
-          rw [hCausal.hConsistency ge.1 hg t, hUntreated ge.1 hg t, hAdd_eq ge.1 t]
+          rw [hConsistency ge.1 hg t, hUntreated ge.1 hg t, hAdd_eq ge.1 t]
           ring
         _ = (∑ t ∈ P.targetPeriods ge.1 ge.2, (alpha ge.1 + lambda t)) +
             ∑ t ∈ P.targetPeriods ge.1 ge.2,
@@ -288,7 +296,8 @@ set_option linter.flexible false in
 event-time component and all other admissible event times. -/
 theorem contamination_representation_split (P : EventStudySystem T)
     (D : P.ConventionalDesign)
-    (hCausal : P.EventStudyCausalRestrictions)
+    (hConsistency : P.Consistency)
+    (hMeanParallelUntreated : P.MeanParallelUntreated)
     (hResidualization : P.ConventionalResidualization D)
     (hDenomPos : 0 < P.residualDenom D)
     (hMuRatio : D.mu = P.conventionalMuRatio D)
@@ -303,7 +312,8 @@ theorem contamination_representation_split (P : EventStudySystem T)
   have hMain :
       D.mu = ∑ ge ∈ P.admissibleCells D.eventSupport, F ge := by
     simpa [F] using
-      contamination_representation P D hCausal hResidualization hDenomPos
+      contamination_representation P D hConsistency
+        hMeanParallelUntreated hResidualization.hResidualization hDenomPos
         hMuRatio hSupport
   have hDisplayedCells :
       (P.admissibleCells D.eventSupport).filter
@@ -351,20 +361,23 @@ post-treatment effects once all negative-event-time CATTs vanish. -/
 theorem apparent_pretrends_from_post_treatment (P : EventStudySystem T)
     (D : P.ConventionalDesign)
     (hCausal : P.EventStudyCausalRestrictions)
-    (hResidualization : P.ConventionalResidualization D)
+    (hNuisanceOrthogonal :
+      ∀ h : Fin T → Fin T → ℝ, P.IsEventStudyNuisance D h →
+        ∑ ge ∈ P.admissibleCells D.eventSupport,
+          P.cellMassAtEvent ge.1 ge.2 * D.Rdot ge.1 ge.2 *
+            P.cellAverage h ge.1 ge.2 = 0)
     (hDenomPos : 0 < P.residualDenom D)
     (hMuRatio : D.mu = P.conventionalMuRatio D)
-    (hSupport : P.ConventionalFiniteSupport D)
-    (hLead : D.displayedEvent < 0) :
+    (hSupport : P.ConventionalFiniteSupport D) :
     D.mu =
       ∑ ge ∈ (P.admissibleCells D.eventSupport).filter (fun ge => 0 ≤ ge.2),
         P.omega D ge.1 ge.2 * P.CATT ge.1 ge.2 := by
-  have _ := hLead
   let F : Fin T × ℤ → ℝ := fun ge => P.omega D ge.1 ge.2 * P.CATT ge.1 ge.2
   have hMain :
       D.mu = ∑ ge ∈ P.admissibleCells D.eventSupport, F ge := by
     simpa [F] using
-      contamination_representation P D hCausal hResidualization hDenomPos
+      contamination_representation P D hCausal.hConsistency
+        hCausal.hMeanParallelUntreated hNuisanceOrthogonal hDenomPos
         hMuRatio hSupport
   have hNegZero :
       ∑ ge ∈ (P.admissibleCells D.eventSupport).filter

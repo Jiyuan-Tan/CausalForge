@@ -25,12 +25,23 @@ import path from "node:path";
 import { artifactPath } from "../../paths.js";
 import { archiveProofs, type ProofToArchive } from "../proof_archive.js";
 import type { PipelineContext } from "../../types.js";
-import { nodeRefRegex, extractCitationRefs } from "../core/node_ids.js";
+import { extractNodeRefs, extractCitationRefs } from "../core/node_ids.js";
 import { normalizeSymbol } from "../core/preflight.js";
 import type { Core, CoreStatement } from "../core/schema.js";
 import { coreNodeIds } from "../core/schema.js";
 import { writeJsonAtomic } from "../../shared/json_atomic.js";
 import { repairLatexStringsDeep } from "../core/latex_serialization.js";
+import type { ProseOverlay } from "../core/assemble.js";
+import { ProposedCoreEditSchema } from "../solve/schemas.js";
+import type { RawCoreEdit } from "./d0_apply.js";
+import {
+  assertMandateIntegrity,
+  assertMandateCancellationIntegrity,
+  RequiredCoreEditMandateCancellationSchema,
+  RequiredCoreEditMandateSchema,
+  type RequiredCoreEditMandateCancellation,
+  type RequiredCoreEditMandate,
+} from "../solve/mandates.js";
 
 /** The content a member statement was last solved against — change ⟹ invalidate. */
 export interface MemberSnapshot {
@@ -65,6 +76,9 @@ interface ProtoMemberProof {
   node?: undefined;
   owner?: undefined;
   partial?: boolean;
+  /** Never set on a frozen member: its render comes from the proto text, so there
+   *  is nothing to shelve. Typed `undefined` so a union read is legal. */
+  shelved?: undefined;
 }
 interface AgentNodeProof {
   proof_tex: string;
@@ -75,6 +89,13 @@ interface AgentNodeProof {
    *  A partial is carried forward as "extend, don't restart" context but is NOT a valid
    *  proof for reuse/discharge — the node stays open until fully proved. */
   partial?: boolean;
+  /** A partial carried as debt that is deliberately NOT part of the published paper
+   *  this round (e.g. a stale helper lemma that no live result consumes yet — the
+   *  frontier logic re-opens it only when a root pulls it back in). `assembleCore`
+   *  skips shelved records; a published partial (`shelved` absent/false) renders as
+   *  an open `to-prove` target with its best-partial bytes. Meaningful only with
+   *  `partial: true`. */
+  shelved?: boolean;
 }
 export type SolvedMember = ProtoMemberProof | AgentNodeProof;
 
@@ -145,6 +166,10 @@ export interface WorkingState {
      *  basis materializes. Kept structural here to avoid an import cycle. */
     proofs: Array<{ id: string; proof_tex: string; argues_proposed?: boolean }>;
   };
+  /** Independently adjudicated exact edits remain authoritative across any number
+   * of solve regenerations and are cleared only by a successful atomic apply or an
+   * explicit, content-addressed cancellation journal event. */
+  required_core_edit_mandates?: RequiredCoreEditMandate[];
   /**
    * Solved OEQs are not ordinary added theorems: their source `oeq:` node still
    * lives in the frozen proto used to rebuild later D0 rounds. This map makes
@@ -152,7 +177,35 @@ export interface WorkingState {
    */
   /** String values from the first implementation are recognized and safely re-solved. */
   resolved_oeqs?: Record<string, ResolvedOeq | string>;
+  /**
+   * Cumulative directive-authorized prose overlay (Phase 1 of the 2026-07-30
+   * store consolidation). `prose_updates` used to be applied to BOTH core.json
+   * and the frozen proto mid-round (`applyProseUpdates` — the only
+   * non-transactional proto writer); now the round merges them here and
+   * `assembleCore` applies the overlay at render time. Absent on pre-migration
+   * cursors (their prose is already baked into the proto by the old dual write).
+   */
+  prose_overlay?: ProseOverlay;
+  /**
+   * Proto-resident lemmas removed from the published paper by the maximality-
+   * checkpoint orphan prune. The proto still defines them (only an orchestrator
+   * proto edit deletes them there), so the pure render needs this durable filter
+   * — without it every re-assembly would resurrect the pruned node. An entry
+   * whose id later leaves the proto (the orchestrator applied the edit) is inert.
+   */
+  pruned_proto_orphans?: string[];
+  /**
+   * Store-format generation. `2` = written by post-consolidation code (core.json
+   * is a pure render of (proto, working)); absent = pre-migration writer. The
+   * replay harness keys its assemble-equivalence severity on this: divergence is
+   * report-only on legacy cursors, a hard failure on format ≥ 2 (unless a D0.R
+   * in-place edit is on record for the run).
+   */
+  store_format?: number;
 }
+
+/** The current writer's store-format generation (see `WorkingState.store_format`). */
+export const WORKING_STORE_FORMAT = 2;
 
 /** Stable identity of the D-1.2 source revision currently under D0. */
 export function proposalRevision(state: {
@@ -174,6 +227,15 @@ export function escalationLogPath(ctx: PipelineContext): string {
   ]);
 }
 
+function validateWorkingMandates(working: WorkingState): void {
+  if (working.required_core_edit_mandates === undefined) return;
+  working.required_core_edit_mandates = working.required_core_edit_mandates.map((raw) => {
+    const mandate = RequiredCoreEditMandateSchema.parse(raw);
+    assertMandateIntegrity(mandate);
+    return mandate;
+  });
+}
+
 export async function loadWorkingState(ctx: PipelineContext): Promise<WorkingState | null> {
   const p = workingPath(ctx);
   if (!existsSync(p)) return null;
@@ -181,7 +243,8 @@ export async function loadWorkingState(ctx: PipelineContext): Promise<WorkingSta
     const working = JSON.parse(await readFile(p, "utf8")) as WorkingState;
     // Repair legacy decoded control-escape corruption carried in solved
     // proof_tex/snapshots from before the escape defense.
-    repairLatexStringsDeep(working, new Set(["source_fingerprint"]));
+    repairLatexStringsDeep(working, new Set(["source_fingerprint", "required_core_edit_mandates"]));
+    validateWorkingMandates(working);
     return working;
   } catch (err) {
     throw new Error(
@@ -244,7 +307,40 @@ export function hotProofBytes(w: WorkingState | null): Map<string, Set<string>> 
   return hot;
 }
 
+/** Single-store invariants enforced at the ONE write boundary (Phase 1 of the
+ *  store consolidation — these replace the cross-store checks that policed the
+ *  same states after the fact):
+ *  - an answered OEQ's working record is retired (the answer lives under the
+ *    theorem id; a surviving source record was the `oeq-source-record-retired`
+ *    warn class — now auto-resolved at write);
+ *  - a resolution must name a theorem the store holds (was the throw inside
+ *    `reconcileProofStores`: that state claims an open question is answered by
+ *    a result present in no store, and nothing can reconstruct it). */
+export function normalizeWorkingState(w: WorkingState): void {
+  const resolutions = Object.entries(w.resolved_oeqs ?? {});
+  for (const [sourceId] of resolutions) {
+    if (w.solved[sourceId] !== undefined) delete w.solved[sourceId];
+  }
+  const dangling = resolutions
+    .map(([src, r]) => [src, typeof r === "string" ? r : r.theorem_id] as const)
+    .filter(([, theoremId]) => !w.solved[theoremId]);
+  if (dangling.length > 0) {
+    throw new Error(
+      `D0 working state resolved-OEQ points at an absent theorem: ` +
+        `${dangling.map(([s, t]) => `${s}->${t}`).join(", ")}. ` +
+        "The store would claim an open question is answered by a result it does not hold; " +
+        "refusing to persist an incoherent state.",
+    );
+  }
+}
+
 export async function saveWorkingState(ctx: PipelineContext, w: WorkingState): Promise<void> {
+  validateWorkingMandates(w);
+  // `store_format` is deliberately NOT stamped here: a quiescent CLI that
+  // mutates a legacy cursor without re-rendering core.json must not promote the
+  // run to "post-consolidation" (the replay harness keys hard-fail severity on
+  // it). The writers that render core.json through `assembleCore` stamp it.
+  normalizeWorkingState(w);
   // Archive-on-displacement at the store boundary. Diffing against the ON-DISK previous
   // cursor (not whatever object the caller mutated) is what makes this immune to
   // call-site mistakes: any path that overwrites or deletes proof bytes — statement
@@ -264,6 +360,8 @@ export async function saveWorkingState(ctx: PipelineContext, w: WorkingState): P
 
 /** One orchestrator resolution, appended when a proposed change is applied. */
 export interface EscalationLogEntry {
+  /** Idempotency key for a replayable multi-file D0 apply transaction. */
+  transaction_id?: string;
   round: number;
   changed: Array<{ id: string; kind: "definition" | "statement" | "assumption" | "bibliography" | "symbol" | "metadata"; from: string; to: string; reason: string }>;
   note?: string;
@@ -274,8 +372,26 @@ export interface EscalationLogEntry {
    * The next solve must emit at least one structured proposal instead of merely
    * rewriting proofs/prose around a stale node. */
   require_core_changes?: boolean;
+  /** Auditable retirement of a pending bare `require_core_changes` guard when review
+   * determines that the requested repair is prose-only. Exact edit mandates have
+   * their own content-addressed cancellation mechanism and are unaffected. */
+  cancel_require_core_changes?: boolean;
   /** Exact structured-proposal targets required by this directive. */
   required_core_targets?: string[];
+  /** Auditable retirement of bare required targets that later normalize to a
+   * proven no-op. Exact edit mandates remain separately content-addressed. */
+  cancelled_core_targets?: string[];
+  /** Exact, already-adjudicated structured edits that the next atomic bundle must
+   * carry. Unlike prose directives, these are typed operations: the solver may
+   * provide surrounding mathematics, but cannot silently replace a required delete
+   * with a fresh proof of the obsolete node. */
+  required_core_edits?: RawCoreEdit[];
+  /** Durable form written by the current CLI. Raw required_core_edits above is
+   * parsed only so every live or consumed legacy row can fail closed. */
+  required_core_edit_mandates?: RequiredCoreEditMandate[];
+  /** Auditable retirement of an exact mandate rejected by subsequent mandatory
+   * review. These events are journal-only and never authored by solve workers. */
+  cancelled_core_edit_mandates?: RequiredCoreEditMandateCancellation[];
   /** PROVENANCE ONLY — record this verdict/critique in the journal, but do NOT treat it as
    *  a re-solve directive.
    *
@@ -300,7 +416,20 @@ export async function readEscalationLog(ctx: PipelineContext): Promise<Escalatio
     if (l.trim().length === 0) return;
     try {
       const entry = JSON.parse(l) as EscalationLogEntry;
-      repairLatexStringsDeep(entry, new Set(["source_fingerprint", "from", "to"]));
+      repairLatexStringsDeep(entry, new Set(["source_fingerprint", "from", "to", "required_core_edit_mandates"]));
+      if (entry.required_core_edits !== undefined) {
+        entry.required_core_edits = entry.required_core_edits.map((edit) => ProposedCoreEditSchema.parse(edit));
+      }
+      if (entry.required_core_edit_mandates !== undefined) {
+        entry.required_core_edit_mandates = entry.required_core_edit_mandates.map((mandate) =>
+          RequiredCoreEditMandateSchema.parse(mandate));
+        entry.required_core_edit_mandates.forEach(assertMandateIntegrity);
+      }
+      if (entry.cancelled_core_edit_mandates !== undefined) {
+        entry.cancelled_core_edit_mandates = entry.cancelled_core_edit_mandates.map((cancellation) =>
+          RequiredCoreEditMandateCancellationSchema.parse(cancellation));
+        entry.cancelled_core_edit_mandates.forEach(assertMandateCancellationIntegrity);
+      }
       entries.push(entry);
     } catch (err) {
       // This journal carries accepted edits and directives. Skipping a torn row
@@ -452,14 +581,13 @@ export function changedSymbolNames(prev: WorkingState | null, proto: Core): Set<
  *  the scope is UNDECLARED and must be read as "may use ANY symbol".
  *
  *  THE FAIL-SAFE IS THE WHOLE POINT. `StatementSchema`/`DefinitionSchema` spell
- *  `free_symbols` `.optional()` precisely so `undefined` survives parsing: every one of
- *  the 1077 statements and 1269 definitions in the 112 real cores under
- *  doc/research/{active,_bank} predates the field, and a `.default([])` would present
- *  each of them as "declared, and uses no symbols" — scoping every symbol change to
- *  nothing and publishing proofs of materially different claims as current. `[]` is a
- *  real declaration (111 real assumptions carry it) and does scope; `undefined` never
- *  does. Any undeclared member of the closure poisons the whole scope, because a symbol
- *  can be used ONLY through a definition the statement cites.
+ *  `free_symbols` `.optional()` precisely so `undefined` survives parsing: real cores
+ *  mix newer declarations with legacy nodes that predate the field, and a `.default([])`
+ *  would present every legacy node as "declared, and uses no symbols" — scoping symbol
+ *  changes to nothing and publishing proofs of materially different claims as current.
+ *  `[]` is a real declaration and does scope; `undefined` never does. Any undeclared
+ *  member of the closure poisons the whole scope, because a symbol can be used ONLY
+ *  through a definition the statement cites.
  *
  *  The CURRENT declarations are read, not the ones stored at solve time: a declaration
  *  that grew must widen the scope immediately (a snapshot copy would keep watching the
@@ -640,7 +768,10 @@ export function computeValidNodes(prev: WorkingState | null, proto: Core): Set<s
     }
     // A statement dependency that has VANISHED from both stores leaves nothing to
     // discharge it. The propagation below only reaches deps still present in nodeById, so
-    // a deleted dependency silently left its consumer "valid".
+    // a deleted dependency silently left its consumer "valid". AUTHORED edges
+    // only: a wired (prose-cited) ref that exists nowhere is the
+    // cite-without-emit class, owned by the consistency gate — treating it as a
+    // vanished dependency would read the record permanently stale (audit R2BB2).
     const missingDep = (node.depends_on ?? []).some(
       (d) => /^(thm|lem|prop|oeq|conj):/.test(d) && !nodeById.has(d),
     );
@@ -656,13 +787,20 @@ export function computeValidNodes(prev: WorkingState | null, proto: Core): Set<s
     }
     if (!snapshotBasisValid(prev.solved[id].snapshot, proto, node)) stale.add(id);
   }
-  // Propagate along depends_on to a fixpoint.
+  // Propagate along the WIRED edge set (authored deps ∪ the snapshot's cited
+  // closure) to a fixpoint — an upstream change reaches every proof that cites
+  // the node, declared or prose-cited.
+  const propagationEdges = (id: string, node: CoreStatement): Iterable<string> =>
+    new Set([
+      ...(node.depends_on ?? []),
+      ...(prev.solved[id]?.snapshot?.depends_on ?? []),
+    ]);
   for (let changed = true; changed; ) {
     changed = false;
     for (const [id, node] of nodeById) {
       if (stale.has(id)) continue;
-      for (const dep of node.depends_on ?? []) {
-        if (nodeById.has(dep) && stale.has(dep)) {
+      for (const dep of propagationEdges(id, node)) {
+        if (dep !== id && nodeById.has(dep) && stale.has(dep)) {
           stale.add(id);
           changed = true;
           break;
@@ -721,12 +859,17 @@ export function pruneOrphanLemmas(
   // 2026-06-30, estimator-side linearization lemmas). Treating prose references as edges
   // keeps a genuinely-used lemma; an abandoned-route orphan, cited by no surviving result, is
   // still unreferenced and still pruned.
-  const REF_RE = nodeRefRegex(); // shared definition — see core/node_ids.ts
+  // Go through `extractNodeRefs`, NOT a raw `nodeRefRegex()` matchAll — it is the extractor
+  // that normalizes a LaTeX-escaped hyphen (`lem:beta\text{-}free`) back to the plain-`-` id
+  // grammar. Lowercasing the raw match yields the truncated `lem:beta`, the real lemma loses
+  // its last inbound prose edge, and THIS FUNCTION DELETES IT — while `findDanglingCitations`
+  // below, which does use the extractor, resolves the same reference. Keep every reachability
+  // consumer on the one extractor so the two can never disagree.
   const edgesOf = (s: CoreStatement | undefined): string[] => {
     if (!s) return [];
     const refs = new Set<string>(s.depends_on ?? []);
     const prose = `${s.proof_tex ?? ""} ${s.statement ?? ""}`;
-    for (const m of prose.matchAll(REF_RE)) refs.add(m[0].toLowerCase());
+    for (const r of extractNodeRefs(prose)) refs.add(r);
     return [...refs];
   };
   while (stack.length > 0) {

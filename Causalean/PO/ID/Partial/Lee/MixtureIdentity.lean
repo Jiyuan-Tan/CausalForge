@@ -124,8 +124,10 @@ lemma selectedTreated_integral_split
               ∫ ω, S.selOfATrueSet.indicator (S.YofA true) ω ∂P.μ := by
       have hraw :=
         (hA.randAssign true).integral_restrict_preimage_eq_mul
-          S.measurable_factualA hpair_meas
-          (measurableSet_singleton true) hφ_meas
+          S.measurable_factualA.aemeasurable hpair_meas.aemeasurable
+          (measurableSet_singleton true)
+          (S.measurable_factualA (measurableSet_singleton true))
+          hφ_meas.aestronglyMeasurable
       simpa [aEvent, factualA, POVar.event, hφ_indicator] using hraw
     rw [← MeasureTheory.setIntegral_indicator S.measurableSet_selOfATrueSet,
       ← MeasureTheory.integral_indicator S.measurableSet_selOfATrueSet]
@@ -300,8 +302,10 @@ lemma selectedTreated_integral_split_indicator
                   (fun ω => if S.YofA true ω = y then (1 : ℝ) else 0) ω ∂P.μ := by
       have hraw :=
         (hA.randAssign true).integral_restrict_preimage_eq_mul
-          S.measurable_factualA hpair_meas
-          (measurableSet_singleton true) hφ_meas
+          S.measurable_factualA.aemeasurable hpair_meas.aemeasurable
+          (measurableSet_singleton true)
+          (S.measurable_factualA (measurableSet_singleton true))
+          hφ_meas.aestronglyMeasurable
       simpa [aEvent, factualA, POVar.event, hφ_indicator] using hraw
     rw [← MeasureTheory.setIntegral_indicator S.measurableSet_selOfATrueSet,
       ← MeasureTheory.integral_indicator S.measurableSet_selOfATrueSet]

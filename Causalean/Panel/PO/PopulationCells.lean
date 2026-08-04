@@ -134,7 +134,7 @@ theorem mean_congr_on (P : CellPartition μ ι) {f g : Ω → ℝ} (i : ι)
 theorem mean_congr_ae (P : CellPartition μ ι) {f g : Ω → ℝ} (i : ι)
     (h : f =ᵐ[μ] g) :
     P.mean f i = P.mean g i :=
-  eventCondExp_congr_ae μ (P.cell i) h
+  eventCondExp_congr_ae μ (P.cell i) (ae_restrict_of_ae h)
 
 /-- Cell means are additive over subtraction of integrable integrands. -/
 theorem mean_sub (P : CellPartition μ ι) {f g : Ω → ℝ} (i : ι)

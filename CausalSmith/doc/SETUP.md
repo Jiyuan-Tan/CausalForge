@@ -34,6 +34,33 @@ Install pipeline JS dependencies:
 cd CausalSmith/tools && npm install
 ```
 
+### Retrieval models (semantic search) — rebuilding on a fresh machine
+
+The two fine-tuned retrieval models are **gitignored weights**, so a fresh clone or a
+migration to a new machine has to regenerate them; only their meta sidecars are committed.
+Everything is derived offline from `doc/library_index.json` (no LLM, no labels), so the
+rebuild is fully reproducible — the train/test split is a deterministic hash of module
+names, which is what keeps the reported numbers leak-free.
+
+The scripts shell out to plain `python3`, so **the interpreter that has `torch` +
+`sentence-transformers` installed must be the one on `PATH`** (a venv works; activate it, or
+prepend its `bin/`). Otherwise semantic retrieval silently degrades to lexical-only. Weights
+for the base checkpoints (`BAAI/bge-large-en-v1.5`, `BAAI/bge-reranker-base`) must be in the
+HF cache; the scripts default to `HF_HUB_OFFLINE=1`, so set it to `0` for the first download.
+Training needs one GPU:
+
+```sh
+cd CausalSmith/tools
+python3 scripts/build_finetune_data.py --out ../../doc/retrieval_finetune
+python3 scripts/train_biencoder.py --test-modules ../../doc/retrieval_finetune/test_modules.json \
+        --out ../../doc/retrieval_model_ft --epochs 3 --hard-negs 4   # add --grad-checkpoint on a ≤12GB card
+npm run embed:library && npm run lint:embeddings                       # re-embed the corpus with it
+npm run eval:retrieval -- --test-modules ../../doc/retrieval_finetune/test_modules.json --module
+```
+
+The cross-encoder reranker is optional (opt-in, not wired into the live pipeline — see the
+retrieval-v2 plan): `python3 scripts/train_reranker.py --test-modules … --out ../../doc/retrieval_reranker_ft`.
+
 ### FoML / lean-rademacher (vendored)
 
 The one non-Mathlib Lean dependency, `FoML`, is **vendored in-tree** under

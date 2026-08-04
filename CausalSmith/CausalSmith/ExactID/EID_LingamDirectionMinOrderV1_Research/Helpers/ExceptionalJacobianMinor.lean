@@ -165,7 +165,7 @@ theorem canonicalForwardFullJacobianAtWitness_eq
           Matrix.fromBlocks_apply₂₁, Pi.zero_apply]
         apply eval_forward_weight_otherOrder
         change k.val ≠ 2 * m
-        have := doubledExponent_lt (n := m + 1) (by omega) a
+        have := doubledExponent_lt (n := m + 1) a
         omega
       · simp only [canonicalForwardFullJacobianAtWitness,
           forwardFullJacobianColumn, forwardFullJacobianRow,
@@ -428,7 +428,7 @@ theorem canonicalCommonAxisFullJacobianAtWitness_eq
         apply eval_selected_commonAxis_weight_otherOrder
         · rfl
         · change k.val ≠ 2 * m
-          have h := pinnedExponent_lt (n := m + 1) (by omega) a
+          have h := pinnedExponent_lt (n := m + 1) a
           omega
       · simp only [canonicalCommonAxisFullJacobianAtWitness,
           commonAxisFullJacobianColumn, commonAxisFullJacobianRow,

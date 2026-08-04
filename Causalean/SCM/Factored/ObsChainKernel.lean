@@ -106,15 +106,16 @@ lemma observedAt_mem_prefixNodes_iff (M : Causalean.SCM N Ω)
     exact ⟨(M.observedAt i).property,
       by simpa [M.observedIndex_observedAt i] using hlt⟩
 
-/-- The full prefix is the full observed node set. -/
-lemma prefixNodes_card (M : Causalean.SCM N Ω) :
-    M.prefixNodes M.observed.card = M.observed := by
+/-- Every prefix at least as long as the observed-node list is the full observed node set. -/
+lemma prefixNodes_card (M : Causalean.SCM N Ω) (n : ℕ)
+    (hn : M.observed.card ≤ n) :
+    M.prefixNodes n = M.observed := by
   ext v
   constructor
   · exact fun hv => M.prefixNodes_subset_observed _ hv
   · intro hv
-    exact (M.mem_prefixNodes_iff M.observed.card v).mpr
-      ⟨hv, (M.observedIndex ⟨v, hv⟩).isLt⟩
+    exact (M.mem_prefixNodes_iff n v).mpr
+      ⟨hv, lt_of_lt_of_le (M.observedIndex ⟨v, hv⟩).isLt hn⟩
 
 /-- The next observed node is not in the previous prefix. -/
 lemma observedAt_not_mem_prefixNodes (M : Causalean.SCM N Ω) {n : ℕ}
@@ -199,47 +200,50 @@ lemma observedPredecessors_observedAt (M : Causalean.SCM N Ω) {n : ℕ}
 -- ============================================================
 
 /-- Read the only coordinate of a singleton `ValuesOn` tuple. -/
-noncomputable def singletonValue {v : SWIGNode N}
-    (x : ValuesOn ({v} : Finset (SWIGNode N)) (swigΩ Ω)) :
-    swigΩ Ω v :=
+noncomputable def singletonValue {ι : Type*} {α : ι → Type*}
+    {v : ι} (x : ValuesOn ({v} : Finset ι) α) :
+    α v :=
   x ⟨v, by simp⟩
 
 /-- Build a singleton `ValuesOn` tuple from a value. -/
-noncomputable def singletonValues {v : SWIGNode N} (x : swigΩ Ω v) :
-    ValuesOn ({v} : Finset (SWIGNode N)) (swigΩ Ω) :=
+noncomputable def singletonValues {ι : Type*} {α : ι → Type*}
+    {v : ι} (x : α v) :
+    ValuesOn ({v} : Finset ι) α :=
   fun ⟨w, hw⟩ => by
     have h : w = v := by simpa using hw
     exact h ▸ x
 
 /-- Reading a singleton value is measurable. -/
-lemma measurable_singletonValue {v : SWIGNode N} :
-    Measurable (singletonValue (Ω := Ω) (v := v)) := by
+lemma measurable_singletonValue {ι : Type*} {α : ι → Type*}
+    [∀ i, MeasurableSpace (α i)] {v : ι} :
+    Measurable (singletonValue (α := α) (v := v)) := by
   unfold singletonValue
   exact measurable_pi_apply (⟨v, by simp⟩ :
-    {w // w ∈ ({v} : Finset (SWIGNode N))})
+    {w // w ∈ ({v} : Finset ι)})
 
 /-- Building a singleton tuple is measurable. -/
-lemma measurable_singletonValues {v : SWIGNode N} :
-    Measurable (singletonValues (Ω := Ω) (v := v)) := by
+lemma measurable_singletonValues {ι : Type*} {α : ι → Type*}
+    [∀ i, MeasurableSpace (α i)] {v : ι} :
+    Measurable (singletonValues (α := α) (v := v)) := by
   refine measurable_pi_iff.mpr ?_
   rintro ⟨w, hw⟩
   have h : w = v := by simpa using hw
   subst w
-  change Measurable (id : swigΩ Ω v → swigΩ Ω v)
+  change Measurable (id : α v → α v)
   exact measurable_id
 
 /-- Reading the tuple built from a singleton value returns that value. -/
-@[simp] lemma singletonValue_singletonValues {v : SWIGNode N}
-    (x : swigΩ Ω v) :
-    singletonValue (Ω := Ω) (v := v)
-      (singletonValues (Ω := Ω) (v := v) x) = x := by
+@[simp] lemma singletonValue_singletonValues {ι : Type*} {α : ι → Type*}
+    {v : ι} (x : α v) :
+    singletonValue (α := α) (v := v)
+      (singletonValues (α := α) (v := v) x) = x := by
   rfl
 
 /-- Building a singleton tuple from its only coordinate returns the tuple. -/
-@[simp] lemma singletonValues_singletonValue {v : SWIGNode N}
-    (x : ValuesOn ({v} : Finset (SWIGNode N)) (swigΩ Ω)) :
-    singletonValues (Ω := Ω) (v := v)
-      (singletonValue (Ω := Ω) (v := v) x) = x := by
+@[simp] lemma singletonValues_singletonValue {ι : Type*} {α : ι → Type*}
+    {v : ι} (x : ValuesOn ({v} : Finset ι) α) :
+    singletonValues (α := α) (v := v)
+      (singletonValue (α := α) (v := v) x) = x := by
   ext ⟨w, hw⟩
   have hwv : w = v := by simpa using hw
   subst w
@@ -253,7 +257,6 @@ noncomputable def obsStepCondKernel
       (ValuesOn ({(M.observedAt ⟨n, hn⟩).val} : Finset (SWIGNode N)) (swigΩ Ω))]
     [Nonempty
       (ValuesOn ({(M.observedAt ⟨n, hn⟩).val} : Finset (SWIGNode N)) (swigΩ Ω))]
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.obsKernel s)]
     [MeasurableSpace.CountableOrCountablyGenerated
       (M.FixedValues) (ValuesOn (M.prefixNodes n) (swigΩ Ω))] :
     ProbabilityTheory.Kernel
@@ -266,7 +269,7 @@ noncomputable def obsStepCondKernel
         have hv_eq : v = (M.observedAt ⟨n, hn⟩).val := by simpa using hv
         simp [hv_eq, (M.observedAt ⟨n, hn⟩).property])
       (M.prefixNodes_subset_observed n)).map
-    (singletonValue (Ω := Ω) (v := (M.observedAt ⟨n, hn⟩).val))
+    (singletonValue (α := swigΩ Ω) (v := (M.observedAt ⟨n, hn⟩).val))
 
 /-- The one-node observational conditional kernel is Markov. -/
 instance isMarkov_obsStepCondKernel
@@ -275,7 +278,6 @@ instance isMarkov_obsStepCondKernel
       (ValuesOn ({(M.observedAt ⟨n, hn⟩).val} : Finset (SWIGNode N)) (swigΩ Ω))]
     [Nonempty
       (ValuesOn ({(M.observedAt ⟨n, hn⟩).val} : Finset (SWIGNode N)) (swigΩ Ω))]
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.obsKernel s)]
     [MeasurableSpace.CountableOrCountablyGenerated
       (M.FixedValues) (ValuesOn (M.prefixNodes n) (swigΩ Ω))] :
     ProbabilityTheory.IsMarkovKernel (M.obsStepCondKernel hn) := by
@@ -299,20 +301,7 @@ instance isMarkov_obsStepCondKernel
     infer_instance
   unfold obsStepCondKernel SCM.obsCondKernel
   exact ProbabilityTheory.Kernel.IsMarkovKernel.map _
-    (measurable_singletonValue (Ω := Ω))
-
-/-- The one-node observational conditional kernel is finite. -/
-instance isFinite_obsStepCondKernel
-    (M : Causalean.SCM N Ω) {n : ℕ} (hn : n < M.observed.card)
-    [StandardBorelSpace
-      (ValuesOn ({(M.observedAt ⟨n, hn⟩).val} : Finset (SWIGNode N)) (swigΩ Ω))]
-    [Nonempty
-      (ValuesOn ({(M.observedAt ⟨n, hn⟩).val} : Finset (SWIGNode N)) (swigΩ Ω))]
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.obsKernel s)]
-    [MeasurableSpace.CountableOrCountablyGenerated
-      (M.FixedValues) (ValuesOn (M.prefixNodes n) (swigΩ Ω))] :
-    ProbabilityTheory.IsFiniteKernel (M.obsStepCondKernel hn) := by
-  infer_instance
+    (measurable_singletonValue (α := swigΩ Ω))
 
 /-- Mapping the scalar step kernel back to the singleton tuple recovers the
 conditional kernel it was built from. -/
@@ -322,11 +311,10 @@ lemma obsStepCondKernel_map_singletonValues
       (ValuesOn ({(M.observedAt ⟨n, hn⟩).val} : Finset (SWIGNode N)) (swigΩ Ω))]
     [Nonempty
       (ValuesOn ({(M.observedAt ⟨n, hn⟩).val} : Finset (SWIGNode N)) (swigΩ Ω))]
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.obsKernel s)]
     [MeasurableSpace.CountableOrCountablyGenerated
       (M.FixedValues) (ValuesOn (M.prefixNodes n) (swigΩ Ω))] :
     (M.obsStepCondKernel hn).map
-        (singletonValues (Ω := Ω) (v := (M.observedAt ⟨n, hn⟩).val))
+        (singletonValues (α := swigΩ Ω) (v := (M.observedAt ⟨n, hn⟩).val))
       =
     M.obsCondKernel ({(M.observedAt ⟨n, hn⟩).val} : Finset (SWIGNode N))
       (M.prefixNodes n)
@@ -337,20 +325,20 @@ lemma obsStepCondKernel_map_singletonValues
       (M.prefixNodes_subset_observed n) := by
   refine ProbabilityTheory.Kernel.ext fun sc => ?_
   unfold obsStepCondKernel
-  rw [ProbabilityTheory.Kernel.map_apply _ (measurable_singletonValues (Ω := Ω))]
-  rw [ProbabilityTheory.Kernel.map_apply _ (measurable_singletonValue (Ω := Ω))]
+  rw [ProbabilityTheory.Kernel.map_apply _ (measurable_singletonValues (α := swigΩ Ω))]
+  rw [ProbabilityTheory.Kernel.map_apply _ (measurable_singletonValue (α := swigΩ Ω))]
   rw [MeasureTheory.Measure.map_map
-      (measurable_singletonValues (Ω := Ω))
-      (measurable_singletonValue (Ω := Ω))]
+      (measurable_singletonValues (α := swigΩ Ω))
+      (measurable_singletonValue (α := swigΩ Ω))]
   have hcomp :
-      (singletonValues (Ω := Ω) (v := (M.observedAt ⟨n, hn⟩).val) ∘
-        singletonValue (Ω := Ω) (v := (M.observedAt ⟨n, hn⟩).val))
+      (singletonValues (α := swigΩ Ω) (v := (M.observedAt ⟨n, hn⟩).val) ∘
+        singletonValue (α := swigΩ Ω) (v := (M.observedAt ⟨n, hn⟩).val))
         =
       (id :
         ValuesOn ({(M.observedAt ⟨n, hn⟩).val} : Finset (SWIGNode N)) (swigΩ Ω) →
           ValuesOn ({(M.observedAt ⟨n, hn⟩).val} : Finset (SWIGNode N)) (swigΩ Ω)) := by
     funext x
-    exact singletonValues_singletonValue (Ω := Ω) x
+    exact singletonValues_singletonValue (α := swigΩ Ω) x
   rw [hcomp, MeasureTheory.Measure.map_id]
 
 /-- Slice form of `obsStepCondKernel_map_singletonValues`. -/
@@ -360,12 +348,11 @@ lemma obsStepCondKernel_sectR_map_singletonValues
       (ValuesOn ({(M.observedAt ⟨n, hn⟩).val} : Finset (SWIGNode N)) (swigΩ Ω))]
     [Nonempty
       (ValuesOn ({(M.observedAt ⟨n, hn⟩).val} : Finset (SWIGNode N)) (swigΩ Ω))]
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.obsKernel s)]
     [MeasurableSpace.CountableOrCountablyGenerated
       (M.FixedValues) (ValuesOn (M.prefixNodes n) (swigΩ Ω))]
     (s : M.FixedValues) :
     ((M.obsStepCondKernel hn).sectR s).map
-        (singletonValues (Ω := Ω) (v := (M.observedAt ⟨n, hn⟩).val))
+        (singletonValues (α := swigΩ Ω) (v := (M.observedAt ⟨n, hn⟩).val))
       =
     (M.obsCondKernel ({(M.observedAt ⟨n, hn⟩).val} : Finset (SWIGNode N))
       (M.prefixNodes n)
@@ -376,12 +363,12 @@ lemma obsStepCondKernel_sectR_map_singletonValues
       (M.prefixNodes_subset_observed n)).sectR s := by
   refine ProbabilityTheory.Kernel.ext fun c => ?_
   unfold ProbabilityTheory.Kernel.sectR
-  rw [ProbabilityTheory.Kernel.map_apply _ (measurable_singletonValues (Ω := Ω))]
+  rw [ProbabilityTheory.Kernel.map_apply _ (measurable_singletonValues (α := swigΩ Ω))]
   rw [ProbabilityTheory.Kernel.comap_apply]
   rw [ProbabilityTheory.Kernel.comap_apply]
   have h := congrArg (fun k => k (s, c)) (M.obsStepCondKernel_map_singletonValues hn)
   change ((M.obsStepCondKernel hn).map
-        (singletonValues (Ω := Ω) (v := (M.observedAt ⟨n, hn⟩).val))) (s, c)
+        (singletonValues (α := swigΩ Ω) (v := (M.observedAt ⟨n, hn⟩).val))) (s, c)
       =
     M.obsCondKernel ({(M.observedAt ⟨n, hn⟩).val} : Finset (SWIGNode N))
       (M.prefixNodes n)
@@ -390,7 +377,7 @@ lemma obsStepCondKernel_sectR_map_singletonValues
         have hv_eq : v = (M.observedAt ⟨n, hn⟩).val := by simpa using hv
         simp [hv_eq, (M.observedAt ⟨n, hn⟩).property])
       (M.prefixNodes_subset_observed n) (s, c) at h
-  rw [ProbabilityTheory.Kernel.map_apply _ (measurable_singletonValues (Ω := Ω))] at h
+  rw [ProbabilityTheory.Kernel.map_apply _ (measurable_singletonValues (α := swigΩ Ω))] at h
   exact h
 
 -- ============================================================
@@ -425,7 +412,7 @@ noncomputable def extendObsPrefix (M : Causalean.SCM N Ω) {n : ℕ}
   fun p =>
     (valuesEquivOfEq (Ω := swigΩ Ω) (M.prefixNodes_succ hn).symm)
       (valuesUnionMk p.1
-        (singletonValues (Ω := Ω) (v := (M.observedAt ⟨n, hn⟩).val) p.2))
+        (singletonValues (α := swigΩ Ω) (v := (M.observedAt ⟨n, hn⟩).val) p.2))
 
 /-- Prefix extension is measurable. -/
 lemma measurable_extendObsPrefix (M : Causalean.SCM N Ω) {n : ℕ}
@@ -435,7 +422,7 @@ lemma measurable_extendObsPrefix (M : Causalean.SCM N Ω) {n : ℕ}
     exact (valuesEquivOfEq (Ω := swigΩ Ω) (M.prefixNodes_succ hn).symm).measurable.comp
       ((measurable_valuesUnionMk (Ω := swigΩ Ω)).comp
         (Measurable.prodMk measurable_fst
-          ((measurable_singletonValues (Ω := Ω)).comp measurable_snd)))
+          ((measurable_singletonValues (α := swigΩ Ω)).comp measurable_snd)))
 
 /-- Projecting the successor prefix through the union equivalence gives the
 previous-prefix block and the singleton next-node block. -/
@@ -460,6 +447,19 @@ lemma prefixSucc_projection_pair (M : Causalean.SCM N Ω) {n : ℕ}
   · rfl
   · rfl
 
+omit [Fintype N] in
+/-- Transporting a combined assignment to an equal index set and back, then splitting the
+disjoint union, recovers the original pair of assignments. -/
+lemma valuesUnionEquiv_valuesEquivOfEq_symm_valuesUnionMk
+    {A B C : Finset (SWIGNode N)} (hDisj : Disjoint A B) (hUnion : C = A ∪ B)
+    (p : ValuesOn A (swigΩ Ω) × ValuesOn B (swigΩ Ω)) :
+    valuesUnionEquiv (Ω := Ω) hDisj
+        ((valuesEquivOfEq (Ω := swigΩ Ω) hUnion)
+          ((valuesEquivOfEq (Ω := swigΩ Ω) hUnion).symm
+            (valuesUnionMk p.1 p.2))) = p := by
+  rw [(valuesEquivOfEq (Ω := swigΩ Ω) hUnion).apply_symm_apply]
+  exact (valuesUnionEquiv (Ω := Ω) hDisj).right_inv p
+
 /-- The successor-prefix extension is inverse to the union-equivalence view of
 the successor prefix. -/
 lemma valuesUnionEquiv_extendObsPrefix (M : Causalean.SCM N Ω) {n : ℕ}
@@ -471,29 +471,11 @@ lemma valuesUnionEquiv_extendObsPrefix (M : Causalean.SCM N Ω) {n : ℕ}
           (M.extendObsPrefix hn p))
       =
     (p.1,
-      singletonValues (Ω := Ω) (v := (M.observedAt ⟨n, hn⟩).val) p.2) := by
-  change valuesUnionEquiv (Ω := Ω) (M.prefixNodes_disjoint_singleton_next hn)
-      ((valuesEquivOfEq (Ω := swigΩ Ω) (M.prefixNodes_succ hn))
-        ((valuesEquivOfEq (Ω := swigΩ Ω) (M.prefixNodes_succ hn)).symm
-          (valuesUnionMk p.1 (singletonValues p.2)))) = _
-  have hcast :
-      (valuesEquivOfEq (Ω := swigΩ Ω) (M.prefixNodes_succ hn))
-        ((valuesEquivOfEq (Ω := swigΩ Ω) (M.prefixNodes_succ hn)).symm
-          (valuesUnionMk p.1 (singletonValues p.2)))
-        =
-      valuesUnionMk p.1 (singletonValues p.2) :=
-    by
-      change (valuesEquivOfEq (Ω := swigΩ Ω) (M.prefixNodes_succ hn)).toFun
-          ((valuesEquivOfEq (Ω := swigΩ Ω) (M.prefixNodes_succ hn)).invFun
-            (valuesUnionMk p.1 (singletonValues p.2)))
-        = valuesUnionMk p.1 (singletonValues p.2)
-      exact (valuesEquivOfEq (Ω := swigΩ Ω) (M.prefixNodes_succ hn)).right_inv _
-  rw [hcast]
-  change (valuesUnionEquiv (Ω := Ω) (M.prefixNodes_disjoint_singleton_next hn)).toFun
-      ((valuesUnionEquiv (Ω := Ω) (M.prefixNodes_disjoint_singleton_next hn)).invFun
-        (p.1, singletonValues p.2))
-    = (p.1, singletonValues p.2)
-  exact (valuesUnionEquiv (Ω := Ω) (M.prefixNodes_disjoint_singleton_next hn)).right_inv _
+      singletonValues (α := swigΩ Ω) (v := (M.observedAt ⟨n, hn⟩).val) p.2) := by
+  unfold extendObsPrefix
+  exact valuesUnionEquiv_valuesEquivOfEq_symm_valuesUnionMk
+    (M.prefixNodes_disjoint_singleton_next hn) (M.prefixNodes_succ hn)
+    (p.1, singletonValues p.2)
 
 /-- Slice-level disintegration for the pair kernel defining `obsCondKernel`. -/
 lemma obsCondPairKernel_apply_eq_compProd
@@ -501,7 +483,6 @@ lemma obsCondPairKernel_apply_eq_compProd
     (hY : Y ⊆ M.observed) (hCC : CC ⊆ M.observed)
     [StandardBorelSpace (ValuesOn Y (swigΩ Ω))]
     [Nonempty (ValuesOn Y (swigΩ Ω))]
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.obsKernel s)]
     [MeasurableSpace.CountableOrCountablyGenerated
       M.FixedValues (ValuesOn CC (swigΩ Ω))]
     (s : M.FixedValues) :
@@ -544,16 +525,15 @@ lemma obsCondPairKernel_apply_eq_compProd
 /-- The recursive observational chain-rule kernel through the first `n`
 observed nodes. -/
 noncomputable def obsChainKernel (M : Causalean.SCM N Ω)
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.obsKernel s)]
     [∀ (k : ℕ) (hk : k < M.observed.card),
       StandardBorelSpace
         (ValuesOn ({(M.observedAt ⟨k, hk⟩).val} : Finset (SWIGNode N)) (swigΩ Ω))]
     [∀ (k : ℕ) (hk : k < M.observed.card),
       Nonempty
         (ValuesOn ({(M.observedAt ⟨k, hk⟩).val} : Finset (SWIGNode N)) (swigΩ Ω))]
-    [∀ k : ℕ,
+    [∀ k : Fin M.observed.card,
       MeasurableSpace.CountableOrCountablyGenerated
-        (M.FixedValues) (ValuesOn (M.prefixNodes k) (swigΩ Ω))] :
+        (M.FixedValues) (ValuesOn (M.prefixNodes k.val) (swigΩ Ω))] :
     (n : ℕ) → (hn : n ≤ M.observed.card) →
       ProbabilityTheory.Kernel M.FixedValues (ValuesOn (M.prefixNodes n) (swigΩ Ω))
   | 0, _ => M.obsChainKernelZero
@@ -567,22 +547,23 @@ noncomputable def obsChainKernel (M : Causalean.SCM N Ω)
         inferInstance
       letI : MeasurableSpace.CountableOrCountablyGenerated
           (M.FixedValues) (ValuesOn (M.prefixNodes k) (swigΩ Ω)) :=
-        inferInstance
+        (inferInstance : MeasurableSpace.CountableOrCountablyGenerated
+          (M.FixedValues)
+          (ValuesOn (M.prefixNodes (⟨k, hk⟩ : Fin M.observed.card).val) (swigΩ Ω)))
       exact ((M.obsChainKernel k (Nat.le_of_succ_le hn)) ⊗ₖ
         (M.obsStepCondKernel hk)).map (M.extendObsPrefix hk)
 
 /-- The recursive observational chain kernel is Markov. -/
 instance isMarkov_obsChainKernel (M : Causalean.SCM N Ω)
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.obsKernel s)]
     [∀ (k : ℕ) (hk : k < M.observed.card),
       StandardBorelSpace
         (ValuesOn ({(M.observedAt ⟨k, hk⟩).val} : Finset (SWIGNode N)) (swigΩ Ω))]
     [∀ (k : ℕ) (hk : k < M.observed.card),
       Nonempty
         (ValuesOn ({(M.observedAt ⟨k, hk⟩).val} : Finset (SWIGNode N)) (swigΩ Ω))]
-    [∀ k : ℕ,
+    [∀ k : Fin M.observed.card,
       MeasurableSpace.CountableOrCountablyGenerated
-        (M.FixedValues) (ValuesOn (M.prefixNodes k) (swigΩ Ω))] :
+        (M.FixedValues) (ValuesOn (M.prefixNodes k.val) (swigΩ Ω))] :
     ∀ (n : ℕ) (hn : n ≤ M.observed.card),
       ProbabilityTheory.IsMarkovKernel (M.obsChainKernel n hn)
   | 0, _ => M.isMarkov_obsChainKernelZero
@@ -597,7 +578,9 @@ instance isMarkov_obsChainKernel (M : Causalean.SCM N Ω)
         inferInstance
       letI : MeasurableSpace.CountableOrCountablyGenerated
           (M.FixedValues) (ValuesOn (M.prefixNodes k) (swigΩ Ω)) :=
-        inferInstance
+        (inferInstance : MeasurableSpace.CountableOrCountablyGenerated
+          (M.FixedValues)
+          (ValuesOn (M.prefixNodes (⟨k, hk⟩ : Fin M.observed.card).val) (swigΩ Ω)))
       change ProbabilityTheory.IsMarkovKernel
         (((M.obsChainKernel k (Nat.le_of_succ_le hn)) ⊗ₖ
           (M.obsStepCondKernel hk)).map (M.extendObsPrefix hk))
@@ -608,54 +591,33 @@ instance isMarkov_obsChainKernel (M : Causalean.SCM N Ω)
 -- § 4. Full-length product and chain-rule theorem
 -- ============================================================
 
-/-- Pushforward along a measurable equivalence is injective on measures. -/
-lemma measure_eq_of_map_measurableEquiv
-    {α β : Type*} [MeasurableSpace α] [MeasurableSpace β]
-    (e : α ≃ᵐ β) {μ ν : MeasureTheory.Measure α}
-    (h : μ.map e = ν.map e) : μ = ν := by
-  calc
-    μ = (μ.map e).map e.symm := by
-      rw [MeasureTheory.Measure.map_map e.symm.measurable e.measurable]
-      have hcomp : e.symm ∘ (e : α → β) = id := by
-        funext x
-        exact e.left_inv x
-      rw [hcomp, MeasureTheory.Measure.map_id]
-    _ = (ν.map e).map e.symm := by rw [h]
-    _ = ν := by
-      rw [MeasureTheory.Measure.map_map e.symm.measurable e.measurable]
-      have hcomp : e.symm ∘ (e : α → β) = id := by
-        funext x
-        exact e.left_inv x
-      rw [hcomp, MeasureTheory.Measure.map_id]
-
 /-- The full observational chain-rule product as a kernel on observed values. -/
 noncomputable def qFactorProduct (M : Causalean.SCM N Ω)
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.obsKernel s)]
     [∀ (k : ℕ) (hk : k < M.observed.card),
       StandardBorelSpace
         (ValuesOn ({(M.observedAt ⟨k, hk⟩).val} : Finset (SWIGNode N)) (swigΩ Ω))]
     [∀ (k : ℕ) (hk : k < M.observed.card),
       Nonempty
         (ValuesOn ({(M.observedAt ⟨k, hk⟩).val} : Finset (SWIGNode N)) (swigΩ Ω))]
-    [∀ k : ℕ,
+    [∀ k : Fin M.observed.card,
       MeasurableSpace.CountableOrCountablyGenerated
-        (M.FixedValues) (ValuesOn (M.prefixNodes k) (swigΩ Ω))] :
+        (M.FixedValues) (ValuesOn (M.prefixNodes k.val) (swigΩ Ω))] :
     ProbabilityTheory.Kernel M.FixedValues M.ObservedValues :=
     (M.obsChainKernel M.observed.card (le_refl _)).map
-      (valuesEquivOfEq (Ω := swigΩ Ω) M.prefixNodes_card)
+      (valuesEquivOfEq (Ω := swigΩ Ω)
+        (M.prefixNodes_card M.observed.card (le_refl _)))
 
 /-- Prefix form of the observational chain rule. -/
 theorem obsKernel_map_prefixNodes (M : Causalean.SCM N Ω) (s : M.FixedValues)
-    [∀ s' : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.obsKernel s')]
     [∀ (k : ℕ) (hk : k < M.observed.card),
       StandardBorelSpace
         (ValuesOn ({(M.observedAt ⟨k, hk⟩).val} : Finset (SWIGNode N)) (swigΩ Ω))]
     [∀ (k : ℕ) (hk : k < M.observed.card),
       Nonempty
         (ValuesOn ({(M.observedAt ⟨k, hk⟩).val} : Finset (SWIGNode N)) (swigΩ Ω))]
-    [∀ k : ℕ,
+    [∀ k : Fin M.observed.card,
       MeasurableSpace.CountableOrCountablyGenerated
-        (M.FixedValues) (ValuesOn (M.prefixNodes k) (swigΩ Ω))] :
+        (M.FixedValues) (ValuesOn (M.prefixNodes k.val) (swigΩ Ω))] :
     ∀ (n : ℕ) (hn : n ≤ M.observed.card),
       (M.obsKernel s).map (valuesProjection (M.prefixNodes_subset_observed n))
         = M.obsChainKernel n hn s := by
@@ -702,6 +664,10 @@ theorem obsKernel_map_prefixNodes (M : Causalean.SCM N Ω) (s : M.FixedValues)
       intro hn
       classical
       have hk : n < M.observed.card := Nat.lt_of_succ_le hn
+      letI : MeasurableSpace.CountableOrCountablyGenerated
+          (M.FixedValues) (ValuesOn (M.prefixNodes n) (swigΩ Ω)) :=
+        inferInstanceAs (MeasurableSpace.CountableOrCountablyGenerated
+          (M.FixedValues) (ValuesOn (M.prefixNodes (⟨n, hk⟩ : Fin _).val) (swigΩ Ω)))
       let Y : Finset (SWIGNode N) := {(M.observedAt ⟨n, hk⟩).val}
       let hY : Y ⊆ M.observed := by
         intro v hv
@@ -712,7 +678,7 @@ theorem obsKernel_map_prefixNodes (M : Causalean.SCM N Ω) (s : M.FixedValues)
           ValuesOn (M.prefixNodes n) (swigΩ Ω) × ValuesOn Y (swigΩ Ω) :=
         (valuesEquivOfEq (Ω := swigΩ Ω) (M.prefixNodes_succ hk)).trans
           (valuesUnionEquiv (Ω := Ω) (M.prefixNodes_disjoint_singleton_next hk))
-      refine measure_eq_of_map_measurableEquiv e ?_
+      refine e.map_measurableEquiv_injective ?_
       have hIH := ih (Nat.le_of_succ_le hn)
       change MeasureTheory.Measure.map e
           (MeasureTheory.Measure.map
@@ -749,7 +715,7 @@ theorem obsKernel_map_prefixNodes (M : Causalean.SCM N Ω) (s : M.FixedValues)
           (fun p : ValuesOn (M.prefixNodes n) (swigΩ Ω) ×
               swigΩ Ω (M.observedAt ⟨n, hk⟩).val =>
             (p.1,
-              singletonValues (Ω := Ω)
+              singletonValues (α := swigΩ Ω)
                 (v := (M.observedAt ⟨n, hk⟩).val) p.2)) := by
         funext p
         exact M.valuesUnionEquiv_extendObsPrefix hk p
@@ -760,14 +726,14 @@ theorem obsKernel_map_prefixNodes (M : Causalean.SCM N Ω) (s : M.FixedValues)
         =
         MeasureTheory.Measure.map
           (Prod.map id
-            (singletonValues (Ω := Ω) (v := (M.observedAt ⟨n, hk⟩).val)))
+            (singletonValues (α := swigΩ Ω) (v := (M.observedAt ⟨n, hk⟩).val)))
           (((M.obsKernel s).map (valuesProjection hCC)) ⊗ₘ
             (M.obsStepCondKernel hk).sectR s)
       rw [← MeasureTheory.Measure.compProd_map
         (μ := (M.obsKernel s).map (valuesProjection hCC))
         (κ := (M.obsStepCondKernel hk).sectR s)
-        (f := singletonValues (Ω := Ω) (v := (M.observedAt ⟨n, hk⟩).val))
-        (measurable_singletonValues (Ω := Ω))]
+        (f := singletonValues (α := swigΩ Ω) (v := (M.observedAt ⟨n, hk⟩).val))
+        (measurable_singletonValues (α := swigΩ Ω))]
       rw [M.obsStepCondKernel_sectR_map_singletonValues hk s]
       rw [← M.obsCondPairKernel_apply_eq_compProd Y (M.prefixNodes n) hY hCC s]
       unfold obsCondPairKernel
@@ -777,27 +743,29 @@ theorem obsKernel_map_prefixNodes (M : Causalean.SCM N Ω) (s : M.FixedValues)
 /-- The observational kernel is the full chain-rule product of one-node
 conditionals along the observed topological order. -/
 theorem obsKernel_eq_qFactorProduct (M : Causalean.SCM N Ω) (s : M.FixedValues)
-    [∀ s' : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.obsKernel s')]
     [∀ (k : ℕ) (hk : k < M.observed.card),
       StandardBorelSpace
         (ValuesOn ({(M.observedAt ⟨k, hk⟩).val} : Finset (SWIGNode N)) (swigΩ Ω))]
     [∀ (k : ℕ) (hk : k < M.observed.card),
       Nonempty
         (ValuesOn ({(M.observedAt ⟨k, hk⟩).val} : Finset (SWIGNode N)) (swigΩ Ω))]
-    [∀ k : ℕ,
+    [∀ k : Fin M.observed.card,
       MeasurableSpace.CountableOrCountablyGenerated
-        (M.FixedValues) (ValuesOn (M.prefixNodes k) (swigΩ Ω))] :
+        (M.FixedValues) (ValuesOn (M.prefixNodes k.val) (swigΩ Ω))] :
     M.obsKernel s = M.qFactorProduct s := by
   unfold qFactorProduct
   rw [ProbabilityTheory.Kernel.map_apply _
-    (valuesEquivOfEq (Ω := swigΩ Ω) M.prefixNodes_card).measurable]
+    (valuesEquivOfEq (Ω := swigΩ Ω)
+      (M.prefixNodes_card M.observed.card (le_refl _))).measurable]
   have hprefix := M.obsKernel_map_prefixNodes s M.observed.card (le_refl _)
   rw [← hprefix]
   rw [MeasureTheory.Measure.map_map
-    (valuesEquivOfEq (Ω := swigΩ Ω) M.prefixNodes_card).measurable
+    (valuesEquivOfEq (Ω := swigΩ Ω)
+      (M.prefixNodes_card M.observed.card (le_refl _))).measurable
     (measurable_valuesProjection (M.prefixNodes_subset_observed M.observed.card))]
   have hcomp :
-      (valuesEquivOfEq (Ω := swigΩ Ω) M.prefixNodes_card) ∘
+      (valuesEquivOfEq (Ω := swigΩ Ω)
+        (M.prefixNodes_card M.observed.card (le_refl _))) ∘
         valuesProjection (M.prefixNodes_subset_observed M.observed.card)
         =
       (id : M.ObservedValues → M.ObservedValues) := by

@@ -118,6 +118,26 @@ describe("dispatchClaudeAgent", () => {
     expect(complete.message).toContain(`${Buffer.byteLength("ok", "utf8")} bytes`);
     expect(complete.model).toBe("opus");
   });
+
+  it("logs the resolved model id on dispatch-complete when the runner surfaces it", async () => {
+    const deps = {
+      runClaude: (async (input: { onResolvedModel?: (m: string) => void }) => {
+        input.onResolvedModel?.("claude-opus-4-8-20260115");
+        return "ok";
+      }) as never,
+    };
+    const input = { prompt: "hello", model: "opus", cwd: ctx.repoRoot } as never;
+    await dispatchClaudeAgent({ ctx, deps, stage: "1", label: "claude-resolved-t", promptSources: ["src.txt"], input });
+    const log = await readFile(pipelineLogPath(tmp, "stat_demo", "econometrics"), "utf8");
+    const lines = log
+      .trim()
+      .split("\n")
+      .map((l) => JSON.parse(l));
+    const dispatch = lines.find((l) => l.status === "dispatch" && l.message.includes("claude-resolved-t"));
+    const complete = lines.find((l) => l.status === "dispatch-complete" && l.message.includes("claude-resolved-t"));
+    expect(dispatch.model).toBe("opus");
+    expect(complete.model).toBe("claude-opus-4-8-20260115");
+  });
 });
 
 describe("parseAgentJson", () => {

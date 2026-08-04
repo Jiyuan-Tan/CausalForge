@@ -73,7 +73,10 @@ theorem card_growthFamily_le_sum_choose (𝒜 : Finset (Finset (Fin n)))
       · intro _ _ _
         exact Nat.zero_le _
 
-private lemma empirical_dist_eq_zero_of_factor_pattern
+/-- If two functions induce the same Boolean pattern at every observation in a
+finite sample, then their empirical distance is zero whenever their values
+factor through those patterns. -/
+lemma empirical_dist_eq_zero_of_factor_pattern
     {F : ι → 𝒳 → ℝ} {S : Fin n → 𝒳}
     {π : ι → 𝒳 → Bool} {φ : Fin n → Bool → ℝ}
     (hfactor : ∀ i j, F i (S j) = φ j (π i (S j)))
@@ -204,10 +207,9 @@ theorem log_coveringNumber_le_of_card_bound [Nonempty ι]
 
 /-- The Sauer-Shelah binomial sum is bounded by the usual polynomial upper
 bound in sample size and VC dimension. -/
-lemma sum_choose_le_succ_mul_pow (hd_pos : 0 < d) (hdn : d ≤ n) :
+lemma sum_choose_le_succ_mul_pow (hn_pos : 0 < n) :
     ((∑ k ∈ Finset.Iic d, n.choose k : ℕ) : ℝ) ≤
       ((d + 1 : ℕ) : ℝ) * (n : ℝ) ^ d := by
-  have hn_pos : 0 < n := lt_of_lt_of_le hd_pos hdn
   have hsum_nat : (∑ k ∈ Finset.Iic d, n.choose k) ≤ (d + 1) * n ^ d := by
     calc
       (∑ k ∈ Finset.Iic d, n.choose k) ≤ ∑ k ∈ Finset.Iic d, n ^ d := by
@@ -227,7 +229,7 @@ theorem log_coveringNumber_le [Nonempty ι]
     (hfactor : ∀ i j, F i (S j) = φ j (π i (S j)))
     (h' : TotallyBounded (Set.univ : Set (EmpiricalFunctionSpace F S)))
     {ε : ℝ} (hε : 0 < ε)
-    (hd_pos : 0 < d) (hdn : d ≤ n)
+    (hn_pos : 0 < n)
     (hvd : (growthFamily π S).vcDim ≤ d) :
     Real.log (coveringNumber h' ε) ≤
       Real.log ((d + 1 : ℕ) : ℝ) + (d : ℝ) * Real.log n := by
@@ -246,8 +248,7 @@ theorem log_coveringNumber_le [Nonempty ι]
       ((coveringNumber h' ε : ℕ) : ℝ) ≤ (s : ℝ) := by
         exact_mod_cast hcov_sum
       _ ≤ ((d + 1 : ℕ) : ℝ) * (n : ℝ) ^ d :=
-        sum_choose_le_succ_mul_pow (n := n) (d := d) hd_pos hdn
-  have hn_pos : 0 < n := lt_of_lt_of_le hd_pos hdn
+        sum_choose_le_succ_mul_pow (n := n) (d := d) hn_pos
   calc
     Real.log (coveringNumber h' ε) ≤
         Real.log (((d + 1 : ℕ) : ℝ) * (n : ℝ) ^ d) := by

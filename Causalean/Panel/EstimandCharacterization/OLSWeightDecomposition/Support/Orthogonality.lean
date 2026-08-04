@@ -28,14 +28,15 @@ section CellHelpers
 
 /-- The treatment residual is orthogonal to each saturated cell indicator. -/
 theorem residD_cell_orthogonal {Ω 𝒢 : Type*} [MeasurableSpace Ω]
-    [Fintype 𝒢] [DecidableEq 𝒢] [MeasurableSpace 𝒢]
+    [Fintype 𝒢] [MeasurableSpace 𝒢]
     [MeasurableSingletonClass 𝒢]
-    (μ : Measure Ω) [IsProbabilityMeasure μ]
+    (μ : Measure Ω) [IsFiniteMeasure μ]
     (D : Ω → ℝ) (G : Ω → 𝒢)
     (G_meas : Measurable G) (D_meas : Measurable D)
     (D_binary : ∀ᵐ ω ∂μ, D ω = 0 ∨ D ω = 1) (g : 𝒢) :
     ∫ ω, (D ω - propensity μ D G ω)
         * Set.indicator {ω' | G ω' = g} (fun _ => (1 : ℝ)) ω ∂μ = 0 := by
+  classical
   let s : Set Ω := {ω | G ω = g}
   let I : Ω → ℝ := fun ω => Set.indicator s (fun _ => (1 : ℝ)) ω
   let p : ℝ := cellShare μ D G g
@@ -78,20 +79,21 @@ theorem residD_cell_orthogonal {Ω 𝒢 : Type*} [MeasurableSpace Ω]
       _ = p * cellMass μ G g := by rw [hIint]
   have hshare : p * cellMass μ G g = ∫ ω, D ω * I ω ∂μ := by
     simpa [p, I, s, cellShare, cellMass] using
-      (CellBridge.cellMean_mul_cellMass μ D G G_meas g)
+      (CellBridge.cellMean_mul_cellMass μ D G g)
   change ∫ ω, (D ω - propensity μ D G ω) * I ω ∂μ = 0
   rw [hInt, hpInt, hshare]
   ring
 
 /-- The outcome residual is orthogonal to each cell indicator. -/
 theorem residY_cell_orthogonal {Ω 𝒢 : Type*} [MeasurableSpace Ω]
-    [Fintype 𝒢] [DecidableEq 𝒢] [MeasurableSpace 𝒢]
+    [Fintype 𝒢] [MeasurableSpace 𝒢]
     [MeasurableSingletonClass 𝒢]
-    (μ : Measure Ω) [IsProbabilityMeasure μ]
+    (μ : Measure Ω) [IsFiniteMeasure μ]
     (Y : Ω → ℝ) (G : Ω → 𝒢)
     (G_meas : Measurable G) (Y_memLp : MemLp Y 2 μ) (g : 𝒢) :
     ∫ ω, (Y ω - meanReg μ Y G ω)
         * Set.indicator {ω' | G ω' = g} (fun _ => (1 : ℝ)) ω ∂μ = 0 := by
+  classical
   let s : Set Ω := {ω | G ω = g}
   let I : Ω → ℝ := fun ω => Set.indicator s (fun _ => (1 : ℝ)) ω
   let m : ℝ := (∫ ω, Y ω * I ω ∂μ) / cellMass μ G g
@@ -126,7 +128,7 @@ theorem residY_cell_orthogonal {Ω 𝒢 : Type*} [MeasurableSpace Ω]
       _ = m * cellMass μ G g := by rw [hIint]
   have hmean : m * cellMass μ G g = ∫ ω, Y ω * I ω ∂μ := by
     simpa [m, I, s, cellMass, CellBridge.cellMean] using
-      (CellBridge.cellMean_mul_cellMass μ Y G G_meas g)
+      (CellBridge.cellMean_mul_cellMass μ Y G g)
   change ∫ ω, (Y ω - meanReg μ Y G ω) * I ω ∂μ = 0
   rw [hInt, hmInt, hmean]
   ring

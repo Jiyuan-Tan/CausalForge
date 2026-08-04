@@ -93,7 +93,7 @@ theorem measurable_orderedLatentPrefixFullToRandom (M : Causalean.SCM N Ω) :
           M.observedPrefixValue (le_refl _) p.2 (M.observedIndex ⟨n, hobs⟩) :=
       (M.measurable_observedPrefixValue (le_refl _) (M.observedIndex ⟨n, hobs⟩)).comp
         (measurable_snd : Measurable Prod.snd)
-    exact (measurable_cast_swigΩ hNode).comp hmeas
+    exact (measurable_cast_family hNode).comp hmeas
   · have hunobs : n ∈ M.unobserved := by
       rcases Finset.mem_union.mp hn with hobs' | hunobs
       · exact False.elim (hobs hobs')

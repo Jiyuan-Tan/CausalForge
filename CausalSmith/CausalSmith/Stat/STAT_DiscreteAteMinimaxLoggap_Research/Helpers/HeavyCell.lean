@@ -3,6 +3,8 @@ import CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.PilotCond
 import CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.LightCell
 import CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.HeavyCellMoments
 import CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.HybridProgram
+import Causalean.Mathlib.Probability.IidMeanVariance
+import Causalean.Stat.Sample.PiTransport
 import Mathlib.Probability.Moments.Variance
 
 namespace CausalSmith.Stat.DiscreteAteMinimaxLoggap
@@ -328,42 +330,16 @@ lemma productLaw_map_splitTuple {n d : ℕ} (P : DiscreteLaw d)
     (j : Fin 2) :
     (productLaw P n).map (fun sample => splitTuple sample j) =
       Measure.pi
-        (fun _ : {i : Fin n // i ∈ splitIndices n j} => obsLaw P) := by
-  have hindepAll : iIndepFun
-      (fun i : Fin n => fun sample : Fin n → Obs d => sample i)
-      (productLaw P n) := by
-    unfold productLaw
-    exact ProbabilityTheory.iIndepFun_pi
-      (X := fun _ => (id : Obs d → Obs d)) (fun _ => aemeasurable_id)
-  have hindep : iIndepFun
-      (fun i : {i : Fin n // i ∈ splitIndices n j} =>
-        fun sample : Fin n → Obs d => sample i.1)
-      (productLaw P n) :=
-    hindepAll.precomp Subtype.val_injective
-  have hmap := (ProbabilityTheory.iIndepFun_iff_map_fun_eq_pi_map
-    (fun i : {i : Fin n // i ∈ splitIndices n j} =>
-      (measurable_pi_apply i.1).aemeasurable)).mp hindep
-  change (productLaw P n).map
-      (fun sample (i : {i : Fin n // i ∈ splitIndices n j}) =>
-        sample i.1) = _
-  calc
-    _ = Measure.pi
-        (fun i : {i : Fin n // i ∈ splitIndices n j} =>
-          (productLaw P n).map (fun sample => sample i.1)) := hmap
-    _ = Measure.pi
-        (fun _ : {i : Fin n // i ∈ splitIndices n j} => obsLaw P) := by
-      congr with i
-      simp [productLaw, Measure.pi_map_eval]
+        (fun _ : {i : Fin n // i ∈ splitIndices n j} => obsLaw P) :=
+  Causalean.Stat.map_pi_restrict_finset (obsLaw P) (splitIndices n j)
 
 /-- Integral transport from the full sample to either deterministic split. -/
 lemma integral_comp_splitTuple {n d : ℕ} (P : DiscreteLaw d)
     (j : Fin 2) (g : ({i : Fin n // i ∈ splitIndices n j} → Obs d) → ℝ) :
     ∫ sample : Fin n → Obs d, g (splitTuple sample j) ∂productLaw P n =
       ∫ z, g z ∂Measure.pi
-        (fun _ : {i : Fin n // i ∈ splitIndices n j} => obsLaw P) := by
-  rw [← productLaw_map_splitTuple P j]
-  rw [integral_map (measurable_of_finite _).aemeasurable
-    (measurable_of_finite g).aestronglyMeasurable]
+        (fun _ : {i : Fin n // i ∈ splitIndices n j} => obsLaw P) :=
+  Causalean.Stat.integral_comp_pi_restrict_finset (obsLaw P) (splitIndices n j) g
 
 lemma sum_fixedMassScore_splitTuple {n d : ℕ} (P : DiscreteLaw d)
     (sample : Fin n → Obs d) (j : Fin 2) (H : Finset (Fin d)) (a : Fin 2) :
@@ -420,79 +396,42 @@ lemma integral_fixedEmpiricalMassArm_sub_target_sq_le {n d : ℕ}
         ∂productLaw P n ≤ 1 / (splitSize n 1 : ℝ) := by
   classical
   let J := {i : Fin n // i ∈ splitIndices n (1 : Fin 2)}
-  let m : ℝ := splitSize n 1
-  let g : Obs d → ℝ := fixedMassScore P H a
-  let S : (J → Obs d) → ℝ := fun z => ∑ i, g (z i)
-  let avg : (J → Obs d) → ℝ := fun z => S z / m
   have hmcard : Fintype.card J = splitSize n 1 := by simp [J, splitSize]
-  have hmR : 0 < m := by
-    dsimp [m]
-    exact_mod_cast hm
-  have hgmean : ∫ z, g z ∂obsLaw P = fixedTargetArm P H a := by
-    exact integral_fixedMassScore_eq P H a
-  have havgmean : ∫ z : J → Obs d, avg z
-      ∂Measure.pi (fun _ : J => obsLaw P) = fixedTargetArm P H a := by
-    unfold avg S
-    rw [integral_div]
-    simp_rw [integral_finset_sum (Finset.univ : Finset J)
-      (fun _ _ => Integrable.of_finite)]
-    have heval (i : J) :
-        ∫ z : J → Obs d, g (z i) ∂Measure.pi (fun _ : J => obsLaw P) =
-          ∫ x, g x ∂obsLaw P := by
-      exact integral_comp_eval (measurable_of_finite g).aestronglyMeasurable
-    simp_rw [heval, hgmean]
-    rw [Finset.sum_const, nsmul_eq_mul]
-    rw [show Finset.univ.card = splitSize n 1 by exact hmcard]
-    field_simp
-    dsimp [m]
-    ring
-  have hvarScore : Var[g; obsLaw P] ≤ 1 := by
-    calc
-      Var[g; obsLaw P] ≤ ((1 - 0) / 2 : ℝ) ^ 2 := by
-        apply variance_le_sq_of_bounded
-        · filter_upwards with z
-          exact fixedMassScore_mem_unitInterval P H a z
-        · exact (measurable_of_finite g).aemeasurable
-      _ ≤ 1 := by norm_num
-  have hvarS : Var[S; Measure.pi (fun _ : J => obsLaw P)] ≤ m := by
-    have hvarExact :
-        Var[S; Measure.pi (fun _ : J => obsLaw P)] =
-          ∑ i : J, Var[g; obsLaw P] := by
-      calc
-        _ = Var[(∑ i : J, fun z : J → Obs d => g (z i));
-            Measure.pi (fun _ : J => obsLaw P)] := by
-              congr 2
-              funext z
-              simp [S]
-        _ = _ := variance_sum_pi (ι := J) (Ω := fun _ => Obs d)
-          (μ := fun _ => obsLaw P) (fun _ =>
-            (MemLp.of_discrete : MemLp g 2 (obsLaw P)))
-    rw [hvarExact]
-    rw [Finset.sum_const, nsmul_eq_mul]
-    rw [show Finset.univ.card = splitSize n 1 by exact hmcard]
-    dsimp [m]
-    nlinarith [show 0 ≤ (splitSize n 1 : ℝ) by positivity]
-  have hvarAvg : Var[avg; Measure.pi (fun _ : J => obsLaw P)] ≤ 1 / m := by
-    rw [show Var[avg; Measure.pi (fun _ : J => obsLaw P)] =
-        (1 / m) ^ 2 * Var[S; Measure.pi (fun _ : J => obsLaw P)] by
-      unfold avg
-      rw [show (fun z => S z / m) = fun z => (1 / m) * S z by
-        funext z; ring]
-      exact variance_const_mul (1 / m) S _]
-    calc
-      _ ≤ (1 / m) ^ 2 * m := by gcongr
-      _ = 1 / m := by field_simp
-  rw [show (∫ sample : Fin n → Obs d,
+  haveI : Nonempty J := by
+    rw [← Fintype.card_pos_iff, hmcard]; exact hm
+  have hg01 : ∀ z, fixedMassScore P H a z ∈ Set.Icc (0 : ℝ) 1 :=
+    fixedMassScore_mem_unitInterval P H a
+  -- The estimation-fold average of the bounded score IS the empirical mass arm.
+  have hrewrite : (∫ sample : Fin n → Obs d,
         (fixedEmpiricalMassArm P sample H a - fixedTargetArm P H a) ^ 2
         ∂productLaw P n) =
-      ∫ z : J → Obs d, (avg z - fixedTargetArm P H a) ^ 2
-        ∂Measure.pi (fun _ : J => obsLaw P) by
-      simpa only [J, avg, S, g, m, fixedEmpiricalMassArm_sub_target_eq_score]
-        using integral_comp_splitTuple P 1
-          (fun z => ((∑ i, fixedMassScore P H a (z i)) /
-            splitSize n 1 - fixedTargetArm P H a) ^ 2)]
-  rw [← havgmean, ← variance_eq_integral (measurable_of_finite avg).aemeasurable]
-  exact hvarAvg
+      ∫ z : J → Obs d,
+        ((Fintype.card J : ℝ)⁻¹ * (∑ i, fixedMassScore P H a (z i))
+            - ∫ x, fixedMassScore P H a x ∂obsLaw P) ^ 2
+        ∂Measure.pi (fun _ : J => obsLaw P) := by
+    rw [← integral_comp_splitTuple P 1
+      (fun z => ((Fintype.card J : ℝ)⁻¹ * (∑ i, fixedMassScore P H a (z i))
+        - ∫ x, fixedMassScore P H a x ∂obsLaw P) ^ 2)]
+    refine integral_congr_ae (Filter.Eventually.of_forall fun sample => ?_)
+    simp only [integral_fixedMassScore_eq, hmcard]
+    rw [fixedEmpiricalMassArm_sub_target_eq_score, div_eq_inv_mul]
+  rw [hrewrite]
+  -- Second moment of a `[0,1]`-valued score is at most one.
+  have hsq : ∫ z, (fixedMassScore P H a z) ^ 2 ∂obsLaw P ≤ 1 := by
+    have hle : ∫ z, (fixedMassScore P H a z) ^ 2 ∂obsLaw P
+        ≤ ∫ _z : Obs d, (1 : ℝ) ∂obsLaw P :=
+      integral_mono Integrable.of_finite (integrable_const 1) fun z => by
+        nlinarith [(hg01 z).1, (hg01 z).2]
+    simpa using hle
+  have hscoreLp : MemLp (fixedMassScore P H a) 2 (obsLaw P) :=
+    MemLp.of_bound (measurable_of_finite _).aestronglyMeasurable 1
+      (ae_of_all _ fun z => abs_le.mpr ⟨by linarith [(hg01 z).1], (hg01 z).2⟩)
+  refine le_trans (Causalean.Mathlib.Probability.iid_mean_sq_le_fintype (ι := J)
+    (obsLaw P) (fixedMassScore P H a) hscoreLp) ?_
+  rw [hmcard]
+  have hmR : (0 : ℝ) < (splitSize n 1 : ℝ) := by exact_mod_cast hm
+  rw [div_le_div_iff_of_pos_right hmR]
+  exact hsq
 
 /-- Exact pointwise decomposition of the implemented arm ratio error about
 its empirical category-mass centering.  The first term is centered ratio

@@ -19,6 +19,7 @@ import type { CodexRunInput } from "../../shared/codex.js";
 import { dispatchAgent, parseAgentJson } from "../../framework/agent_dispatch.js";
 import {
   assertNoDecodedControlChars,
+  containsLikelyDecodedTexNewlines,
   normalizeRawModelJson,
   repairLatexStringsDeep,
 } from "../core/latex_serialization.js";
@@ -158,7 +159,19 @@ export async function runReferee(args: {
   // separate copy at the raw-byte boundary before JSON.parse.  In particular,
   // model output such as `\(d/\epsilon\)` otherwise fails on the invalid `\(`
   // escape before the post-parse LaTeX repair can run.
-  const parsed = parseAgentJson(normalizeRawModelJson(out.stdout));
+  let parsed = parseAgentJson(normalizeRawModelJson(out.stdout));
+  if (!parsed.json) {
+    // The normalizer assumes a pure JSON document: narration around the JSON
+    // with an ODD number of `"` characters flips its in-string tracker for the
+    // rest of the stream and corrupts the real (correctly escaped) JSON. Fall
+    // back to the untouched stdout before discarding a paid review round — but
+    // FAIL CLOSED if the un-normalized parse shows the `\n`-family decode
+    // signature (`\neq` → newline+"eq"): that is silent TeX corruption only the
+    // raw-byte normalizer could have prevented, and a discarded round is
+    // cheaper than a persisted corrupted verdict.
+    const fallback = parseAgentJson(out.stdout);
+    if (fallback.json && !containsLikelyDecodedTexNewlines(fallback.json)) parsed = fallback;
+  }
   if (!parsed.json) {
     return { raw: out.stdout, json: {}, verdict: null, parseError: parsed.parseError, failure: null };
   }

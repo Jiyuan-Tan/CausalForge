@@ -21,9 +21,10 @@ import { loadState, saveState } from "../../src/state.js";
 import { protoCoreJsonPath } from "../../src/discovery/stages/neg1_2_author.js";
 import type { PipelineContext, StateJson } from "../../src/types.js";
 import type { StageDeps } from "../../src/pipeline_support.js";
+import type { CodexRunInput } from "../../src/shared/codex.js";
 
 // Mock the runStageNeg1_2 producer. We capture every call but do not run
-// any real producer logic. The mock must populate last_draft_handoff and
+// any real producer logic. The mock must populate last_draft_version and
 // bump current_version so the producer-first guard does not re-fire and the
 // outer loop converges.
 const runStageNeg1_2Calls: Array<{ mode: string | undefined; version: number | undefined }> = [];
@@ -41,7 +42,7 @@ vi.mock("../../src/discovery/stages/neg1_2.js", async () => {
       });
       // Simulate what a real producer would set so the outer loop advances.
       pf.current_version = (pf.current_version ?? 0) + 1;
-      pf.last_draft_handoff = JSON.stringify({ status: "completed", mode: pf.current_mode });
+      pf.last_draft_version = pf.current_version;
       pf.last_draft_status = "completed";
       return { stage: "-1.2", status: "completed", message: "mock producer" };
     }),
@@ -118,7 +119,7 @@ function makeState(overrides: Partial<NonNullable<StateJson["proposed_from"]>> =
       exhausted_angles: [],
       iterations: [],
       archived_proposals: [],
-      last_draft_handoff: JSON.stringify({ status: "completed", mode: "cold-start" }),
+      last_draft_version: 1,
       last_draft_status: "completed",
       last_reviewer_verdict: "",
       ...overrides,
@@ -129,10 +130,14 @@ function makeState(overrides: Partial<NonNullable<StateJson["proposed_from"]>> =
 
 // Reviewer returns REJECT @ field with a kernel-level C-definitional-unfold
 // flag, then ACCEPT on any subsequent call so the loop terminates.
-function makeDeps(reviewerSequence: Array<Record<string, unknown>>): StageDeps {
+function makeDeps(
+  reviewerSequence: Array<Record<string, unknown>>,
+  onPrompt?: (prompt: string) => void,
+): StageDeps {
   let callIndex = 0;
   return {
-    runCodex: async () => {
+    runCodex: async ({ prompt }: CodexRunInput) => {
+      onPrompt?.(prompt);
       const json = reviewerSequence[Math.min(callIndex, reviewerSequence.length - 1)];
       callIndex += 1;
       return { stdout: JSON.stringify(json), stderr: "", exitCode: 0 } as never;
@@ -147,7 +152,6 @@ function makeDeps(reviewerSequence: Array<Record<string, unknown>>): StageDeps {
 async function writeFixtures(root: string, qid: string, spec: string): Promise<void> {
   // Prompts that runStageNeg0_5 reads on entry.
   for (const name of [
-    "stage_neg1_review.txt",
     "stage_neg1_review_core.txt",
     "stage_neg1_review_upgrade_directive.txt",
     "stage_flagship_rubric.txt",
@@ -168,10 +172,14 @@ async function writeFixtures(root: string, qid: string, spec: string): Promise<v
   );
   await mkdir(path.dirname(tmplPath), { recursive: true });
   await writeFile(tmplPath, "{}\n");
-  // Proposal .tex that the reviewer reads.
-  const fmlDir = path.join(root, "doc", "research", "active", qid);
-  await mkdir(fmlDir, { recursive: true });
-  await writeFile(path.join(fmlDir, `${qid}_${spec}_proposal.tex`), "stub proposal");
+  // The proto core the reviewer inlines (single-artifact regime — the legacy
+  // proposal.tex reviewer path was removed in the 2026-07-31 dead-code sweep).
+  const discoveryDir = path.join(root, "doc", "research", "active", qid, "discovery");
+  await mkdir(discoveryDir, { recursive: true });
+  await writeFile(
+    path.join(discoveryDir, "proto_core.json"),
+    JSON.stringify({ qid, specialization: spec, statements: [], assumptions: [], definitions: [], symbols: [], bibliography: [], target_estimand: "tau" }),
+  );
 }
 
 beforeEach(async () => {
@@ -254,20 +262,27 @@ describe("Stage -0.5 kernel-replace dispatcher", () => {
   it("halts after REVISE before starting the next proposer", async () => {
     const ctx = makeCtx(repoRoot);
     const state = makeState();
-    const result = await runStageNeg0_5({ ctx, state, deps: makeDeps([reviseVerdict]) });
+    const prompts: string[] = [];
+    const result = await runStageNeg0_5({
+      ctx,
+      state,
+      deps: makeDeps([reviseVerdict], (prompt) => prompts.push(prompt)),
+    });
 
     expect(result.status).toBe("checkpoint");
     expect(state.proposed_from!.angle_checkpoint).toMatchObject({
       kind: "revise", angle: 0, version: 1, verdict: "REVISE",
     });
     expect(runStageNeg1_2Calls).toEqual([]);
+    expect(prompts[0]).toContain("=== PROPOSAL CORE (the artifact under review — typed source of truth) ===");
+    expect(prompts[0]).not.toContain("=== DRAFTER HANDOFF");
   });
 
   it("persists a nested proposer result before dispatching its reviewer", async () => {
     const ctx = makeCtx(repoRoot);
     const state = makeState({
       current_mode: "revise",
-      last_draft_handoff: undefined,
+      last_draft_version: undefined,
     });
     await saveState(repoRoot, ctx.qid, ctx.specialization, state);
     const deps = makeDeps([acceptVerdict]);
@@ -277,7 +292,7 @@ describe("Stage -0.5 kernel-replace dispatcher", () => {
 
     const onDisk = await loadState(repoRoot, ctx.qid, ctx.specialization);
     expect(onDisk.proposed_from!.current_version).toBe(2);
-    expect(onDisk.proposed_from!.last_draft_handoff).toContain("completed");
+    expect(onDisk.proposed_from!.last_draft_version).toBe(2);
   });
 
   it("scenario A: REJECT + C-definitional-unfold on cold-start v1 routes to kernel-replace, NOT pivot", async () => {

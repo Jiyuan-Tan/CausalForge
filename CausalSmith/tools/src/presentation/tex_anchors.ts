@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { extractBalancedEnv, maskNonBoundaryPeriods, stripTexComments } from "../shared/tex_text.js";
 
 /**
  * Parser + linter for obj_id-anchored formal environments in paper tex.
@@ -164,9 +165,14 @@ const NEGATIVE_CONTRIBUTION_RE = [
 export function lintNegativeContributionFraming(tex: string): LintProblem[] {
   let prose = maskLimitationSections(tex);
   prose = stripAnchoredEnvBlocks(prose)
-    .replace(/\\begin\{proof\}(?:\[[^\]]*\])?[\s\S]*?\\end\{proof\}/g, " ")
-    .replace(/% CAUSALSMITH-CITED-SCOPE-BEGIN[^\n]*[\s\S]*?% CAUSALSMITH-CITED-SCOPE-END[^\n]*/g, " ")
-    .replace(/(?<!\\)%.*$/gm, " ");
+    .replace(/% CAUSALSMITH-CITED-SCOPE-BEGIN[^\n]*[\s\S]*?% CAUSALSMITH-CITED-SCOPE-END[^\n]*/g, " ");
+  // Balanced proof removal (a lazy regex left the tail of a proof containing a
+  // nested `\begin{proof}[Proof of Claim 1]` in the linted prose), then a
+  // parity-aware comment strip (`\\%` after a row break IS a comment).
+  for (let block = extractBalancedEnv(prose, "proof"); block !== null; block = extractBalancedEnv(prose, "proof")) {
+    prose = prose.replace(block, () => " ");
+  }
+  prose = stripTexComments(prose);
   const hits = new Map<number, LintProblem>();
   for (const re of NEGATIVE_CONTRIBUTION_RE) {
     re.lastIndex = 0;
@@ -207,6 +213,31 @@ export function normalizeCrefs(tex: string): string {
   );
   out = out.replace(/\\(?:auto|eq)?ref\{([^}]+)\}/g, (_whole, label: string, offset: number, source: string) =>
     `\\${atSentenceStart(source, offset) ? "Cref" : "cref"}{${label}}`);
+  return unwrapReferenceOnlyInlineMath(out);
+}
+
+/** `\\cref` expands to prose, not a mathematical atom. Keep math delimiters only
+ * when the group contains actual math; a reference list by itself is emitted as
+ * ordinary text so the HTML converter never passes it to KaTeX. Single-dollar
+ * inline math gets the same treatment as `\\(...\\)`: both are valid TeX inline
+ * delimiters and both otherwise produce the same broken web rendering. */
+function unwrapReferenceOnlyInlineMath(tex: string): string {
+  const referencesOnly = (content: string): boolean => {
+    const reference = /\\[cC]ref\{[^{}]+\}/g;
+    const separator = /^[\s,;:~()\-–—]*$/;
+    let end = 0;
+    let count = 0;
+    for (let match = reference.exec(content); match; match = reference.exec(content)) {
+      if (!separator.test(content.slice(end, match.index))) return false;
+      end = match.index + match[0].length;
+      count += 1;
+    }
+    return count > 0 && separator.test(content.slice(end));
+  };
+  const unwrap = (whole: string, content: string) => referencesOnly(content) ? content : whole;
+  let out = tex.replace(/\\\(([\s\S]*?)\\\)/g, unwrap);
+  // Do not treat escaped dollars or either half of `$$...$$` as inline delimiters.
+  out = out.replace(/(?<![\\$])\$(?!\$)([\s\S]*?)(?<![\\$])\$(?!\$)/g, unwrap);
   return out;
 }
 
@@ -275,21 +306,43 @@ export function hashEnvBody(body: string): string {
  */
 export function lintNestedMathDelimiters(tex: string): LintProblem[] {
   const problems: LintProblem[] = [];
-  // The negative lookbehind matters for cases/arrays: `\\[1.1em]` is a TeX row break with
-  // vertical spacing, and its second backslash must not be mistaken for a nested `\[` opener.
-  const displayRe = /(?<!\\)\\\[([\s\S]*?)(?<!\\)\\\]/g;
-  let match: RegExpExecArray | null;
-  while ((match = displayRe.exec(tex))) {
-    const nested = /(?<!\\)\\\(|(?<!\\)\\\[/.test(match[1]);
-    const paragraphArray = match[1].includes("\\begin{array}{p{");
-    if (nested || paragraphArray) {
-      const line = tex.slice(0, match.index).split("\n").length;
+  // Backslash-RUN parity, not a single-char lookbehind: an ODD run before the
+  // bracket is a delimiter, an even run is a row break/literal. The lookbehind
+  // version got runs ≥ 2 wrong in both directions — `\\[1.1em]` (row break with
+  // spacing) as a false opener, and `d \\\]` (row break directly before a real
+  // close) as a missed close that swallowed the following prose into a false
+  // nested-math report.
+  let openAt: number | null = null;
+  let reported = false;
+  const lineOf = (at: number) => tex.slice(0, at).split("\n").length;
+  for (const m of tex.matchAll(/(\\+)([\[\](])/g)) {
+    if (m[1].length % 2 === 0) continue;
+    const at = m.index! + m[1].length - 1;
+    const delim = m[2];
+    if (openAt == null) {
+      if (delim === "[") {
+        openAt = at;
+        reported = false;
+      }
+      continue;
+    }
+    if (delim === "]") {
+      const body = tex.slice(openAt + 2, at);
+      if (body.includes("\\begin{array}{p{")) {
+        problems.push({
+          gate: "web-incompatible-math",
+          detail: `display math beginning on line ${lineOf(openAt)} uses an array with paragraph columns; use a table/tabular environment so KaTeX does not expose raw TeX`,
+        });
+      }
+      openAt = null;
+      continue;
+    }
+    if (!reported) {
       problems.push({
-        gate: paragraphArray ? "web-incompatible-math" : "nested-math-delimiter",
-        detail: paragraphArray
-          ? `display math beginning on line ${line} uses an array with paragraph columns; use a table/tabular environment so KaTeX does not expose raw TeX`
-          : `display math beginning on line ${line} contains a nested \\(...\\) or \\[...\\] delimiter; move prose outside the display and keep only bare math inside`,
+        gate: "nested-math-delimiter",
+        detail: `display math beginning on line ${lineOf(openAt)} contains a nested \\(...\\) or \\[...\\] delimiter; move prose outside the display and keep only bare math inside`,
       });
+      reported = true;
     }
   }
   return problems;
@@ -438,7 +491,11 @@ export function lintClarity(tex: string): LintProblem[] {
     let m: RegExpExecArray | null;
     // BibTeX keys are opaque identifiers by design and often look like PascalCase Lean names
     // (`BochnakCosteRoy1998`). They are citation provenance, not displayed mathematical prose.
-    const proseBody = e.body.replace(/\\cite[A-Za-z]*\s*(?:\[[^\]]*\]\s*){0,2}\{[^}]*\}/g, "");
+    // Text-font math arguments (`\mathrm{VarPlusBias}`, `\text{…}`, `\operatorname{…}`) are
+    // DISPLAYED notation, not leaked Lean identifiers — drop their contents too.
+    const proseBody = e.body
+      .replace(/\\cite[A-Za-z]*\s*(?:\[[^\]]*\]\s*){0,2}\{[^}]*\}/g, "")
+      .replace(/\\(?:mathrm|mathsf|mathtt|text|texttt|operatorname\*?)\s*\{[^{}]*\}/g, "");
     LEAN_IDENT_RE.lastIndex = 0;
     while ((m = LEAN_IDENT_RE.exec(proseBody))) idents.add(m[0]);
     for (const id of idents) {
@@ -519,7 +576,14 @@ export function orphanParameterizedClasses(tex: string): { symbol: string; usedI
   const defined = new Set<string>();
   for (const e of envs) {
     if (e.env === "definitionv") for (const c of classSymbolsIn(e.title ?? "")) defined.add(c);
-    for (const m of e.body.matchAll(new RegExp(`(?:we say|denote|the class|let)\\b[^.]{0,50}?(${CLASS_FONT_SRC})`, "gi")))
+    // Case-insensitivity is confined to the cue words: under a `gi` flag the
+    // CLASS_FONT capture also matched lowercase (`\mathcal p`), which
+    // `classSymbolsIn` (case-sensitive) then failed to canonicalize — the class
+    // silently went unregistered and a redundant definition was synthesized.
+    // Periods are masked so `let $\mathcal H^{0.5}$` survives the `[^.]` window.
+    for (const m of maskNonBoundaryPeriods(e.body).matchAll(
+      new RegExp(`(?:[Ww]e say|[Dd]enote|[Tt]he class|[Ll]et)\\b[^.]{0,50}?(${CLASS_FONT_SRC})`, "g"),
+    ))
       for (const c of classSymbolsIn(m[1])) defined.add(c);
     for (const m of e.body.matchAll(new RegExp(`(${CLASS_FONT_SRC})[\\s^_{}A-Za-z0-9\\\\,;()|-]{0,30}?:=`, "g")))
       for (const c of classSymbolsIn(m[1])) defined.add(c);
@@ -565,7 +629,11 @@ export function notationHomes(notation: string): NotationHome[] {
   const out: NotationHome[] = [];
   for (const line of notation.split("\n")) {
     if (!/^\s*\|/.test(line)) continue;
-    const cells = line.split("|").slice(1, -1).map((x) => x.trim());
+    // Split on UNESCAPED pipes only: a math cell containing `\|` (a TeX norm,
+    // doubling as the markdown escape for a literal pipe) must not add columns —
+    // `| $\|\beta\|_1$ | … |` used to shatter into six bogus cells and the row
+    // was silently dropped from the definition-order gate.
+    const cells = line.split(/(?<!\\)\|/).slice(1, -1).map((x) => x.trim());
     if (cells.length < 4 || cells[0].toLowerCase() === "note symbol" || /^-+$/.test(cells[0])) continue;
     const home = cells[3].replace(/^`|`$/g, "").trim();
     if (!/^[A-Za-z0-9:_-]+$/.test(home) || home === "notation_gaps") continue;
@@ -578,7 +646,11 @@ export function notationHomes(notation: string): NotationHome[] {
     // and its row's "home" describes the relation, not either already-defined operand.
     if (symbol.includes("=")) {
       const lhs = symbol.split("=")[0].trim();
-      if (/[()]/.test(lhs)) continue;
+      // An `=` inside a brace/bracket group (`\mathbb{E}[Y \mid X=x]`, `\sum_{i=1}^n`)
+      // is not a scalar declaration: truncating at it produced an unmatchable
+      // garbage symbol. Skip such rows like other composite relations.
+      const balanced = (open: string, close: string) => lhs.split(open).length === lhs.split(close).length;
+      if (/[()]/.test(lhs) || !balanced("{", "}") || !balanced("[", "]")) continue;
       symbol = lhs;
     }
     // Bare ASCII parameters are too overloaded for a sound text-only home check (`d` may denote
@@ -591,14 +663,23 @@ export function notationHomes(notation: string): NotationHome[] {
 }
 
 function notationSearchText(tex: string): string {
-  return tex
-    .replace(/(?<!\\)%.*$/gm, "")
-    .replace(/\\(?:Cref|cref|ref|label|pageref)\{[^}]*\}/g, "")
-    // The first argument is metadata, not a displayed use (`sym:u_j` must not count as `u_j`).
-    .replace(/\\leanref\{[^{}]*\}/g, "")
-    .replace(/\\ensuremath\s*\{/g, "{")
-    .replace(/\\\(|\\\)|\\\[|\\\]|\$/g, "")
-    .replace(/\s+/g, "");
+  return (
+    stripTexComments(tex)
+      .replace(/\\(?:Cref|cref|ref|label|pageref)\{[^}]*\}/g, "")
+      // The first argument is metadata, not a displayed use (`sym:u_j` must not count as `u_j`).
+      .replace(/\\leanref\{[^{}]*\}/g, "")
+      .replace(/\\ensuremath\s*\{/g, "{")
+      // Unescaped math delimiters only: `\\[1em]` is a row break — stripping its
+      // `\[` left the mangled `\1em]` in the search text.
+      .replace(/(?<!\\)(?:\\[()[\]]|\$)/g, "")
+      // Canonicalize a single-char braced argument (`\mathcal{H}` ≡ `\mathcal H`)
+      // and keep a control-word/argument boundary (`\Delta t`): both collapse to
+      // the same sentinel-separated form, so the two spellings match each other
+      // and plain whitespace removal cannot glue `\Delta t` into `\Deltat`.
+      .replace(/(\\[A-Za-z]+)\s*\{([A-Za-z0-9])\}(?![A-Za-z0-9])/g, "$1\u0001$2")
+      .replace(/(\\[A-Za-z]+)\s+(?=[A-Za-z])/g, "$1\u0001")
+      .replace(/\s+/g, "")
+  );
 }
 
 export function containsNotation(tex: string, symbol: string): boolean {
@@ -913,13 +994,13 @@ export function lintAnchors(
   // (the env macros define the labels), never as a bare id the reader can't
   // resolve against the printed numbering. Frozen env bodies are exempt (they
   // may cross-reference ids and cannot be edited anyway).
-  const proseNoEnvs = stripAnchoredEnvBlocks(tex)
-    .replace(/\\(?:Cref|cref|ref|label)\{[^}]*obj:[^}]*\}/g, " ")
-    // Strip ALL LaTeX comments (inline too, not just full-line): proof steps carry
-    // inline `% lean: <decl>` provenance tags, and an aux-lemma node whose id equals
-    // its decl_name would otherwise false-positive on its own (invisible) comment tag.
-    // An escaped `\%` is a literal percent, not a comment — leave it.
-    .replace(/(?<!\\)%.*$/gm, " ");
+  // Strip ALL LaTeX comments (inline too, not just full-line): proof steps carry
+  // inline `% lean: <decl>` provenance tags, and an aux-lemma node whose id equals
+  // its decl_name would otherwise false-positive on its own (invisible) comment tag.
+  // Parity-aware: `\%` is a literal percent, `\\%` (row break, then %) is a comment.
+  const proseNoEnvs = stripTexComments(
+    stripAnchoredEnvBlocks(tex).replace(/\\(?:Cref|cref|ref|label)\{[^}]*obj:[^}]*\}/g, " "),
+  );
   for (const id of knownObjIds) {
     const idRe = new RegExp(`(?<![\\w:-])${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\w-])`);
     if (idRe.test(proseNoEnvs)) {

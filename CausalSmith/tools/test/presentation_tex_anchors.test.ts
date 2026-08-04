@@ -51,6 +51,18 @@ describe("normalizeCrefs", () => {
     expect(normalizeCrefs(legacy)).toBe(canonical);
     expect(normalizeCrefs(canonical)).toBe(canonical);
   });
+
+  it("unwraps reference-only inline math without touching math that contains a reference", () => {
+    const source = String.raw`See \(\cref{obj:ass:low-order,obj:ass:bounded-coefficient-mass}\), then \(\Cref{obj:def:exposed-order,obj:def:minimax-risk,obj:def:model-class}\). Dollar form: $\cref{obj:thm:main}$. Keep \(x + \cref{obj:def:exposed-order}\) mathematical.`;
+    const normalized = String.raw`See \cref{obj:ass:low-order,obj:ass:bounded-coefficient-mass}, then \Cref{obj:def:exposed-order,obj:def:minimax-risk,obj:def:model-class}. Dollar form: \cref{obj:thm:main}. Keep \(x + \cref{obj:def:exposed-order}\) mathematical.`;
+    expect(normalizeCrefs(source)).toBe(normalized);
+    expect(normalizeCrefs(normalized)).toBe(normalized);
+  });
+
+  it("keeps trailing mathematical separators around a reference inside inline math", () => {
+    const source = String.raw`The constraint \(\cref{obj:ass:order} \le x\) is feasible.`;
+    expect(normalizeCrefs(source)).toBe(source);
+  });
 });
 
 describe("lintNestedMathDelimiters", () => {

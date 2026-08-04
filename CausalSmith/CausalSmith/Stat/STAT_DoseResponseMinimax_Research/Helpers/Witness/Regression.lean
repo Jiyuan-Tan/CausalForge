@@ -149,7 +149,7 @@ private lemma doseDataMeasure_integral_AX {p0 : (Fin d → ℝ) → ℝ} {q0 : �
   rw [doseDataMeasure_eq_AXbind]
   change ∫ O, F O ∂mAX.bind (fun p => (κ p).map (g p)) =
     ∫ p, ∫ y, F (g p y) ∂κ p ∂mAX
-  exact Causalean.Mathlib.MeasureTheory.integral_bind_map hκ hg hgm hFbind
+  exact Causalean.Mathlib.MeasureTheory.integral_bind_map hg hgm hFbind
 
 private lemma doseRegression_setIntegral_preimage_eq
     {p0 : (Fin d → ℝ) → ℝ} {q0 : ℝ → ℝ}

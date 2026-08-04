@@ -34,6 +34,46 @@ describe("checkProseConsistency", () => {
     expect(dangling.map((x) => x.message).join(" ")).not.toContain("thm:barrier");
   });
 
+  it("resolves an id whose hyphen is LaTeX-escaped in math mode", () => {
+    // Regression (stat_doseresponse_minimax_elbow, 2026-07-29): the solver sets ids
+    // inside math mode, where a bare `-` renders as a minus, so it writes
+    // `def:beta\text{-}free`. The slug grammar stopped at the backslash and yielded the
+    // truncated `def:beta`, which resolves against nothing — one run reported 24 phantom
+    // dangling citations, invalidated 15 nodes and paid a full re-solve for correct prose.
+    const c = core({
+      statements: [stmt("thm:beta-free", "theorem", "the rate does not see β")],
+      tldr: String.raw`We establish \Cref{thm:beta\text{-}free} and settle oeq:old\text{-}frontier.`,
+    });
+    const dangling = checkProseConsistency(c).filter((x) => x.code === "PROSE-DANGLING-REF");
+    const msg = dangling.map((x) => x.message).join(" ");
+    // The message quotes the ref in backticks (`prose cites \`<ref>\``), so assert on the
+    // quoted form — a bare `not.toContain("thm:beta-free")` passes even pre-fix, when the
+    // truncated `thm:beta` is what gets reported, and tests nothing.
+    expect(msg).not.toContain("`thm:beta`");
+    expect(msg).not.toContain("`thm:beta-free`");
+    // the genuinely-missing id is still reported, un-truncated
+    expect(msg).toContain("`oeq:old-frontier`");
+  });
+
+  it("does not read an open-only term out of the middle of another word", () => {
+    // Regression (stat_doseresponse_minimax_elbow, 2026-07-29). The term `either`,
+    // harvested from an OEQ's "in either residual region", matched inside "n-either", so
+    // the honestly-negative sentence below was flagged as an OVERCLAIM — the exact inverse
+    // of this signal's purpose. Two independent faults: substring matching, and NEGATION
+    // not recognising "neither … nor".
+    const c = core({
+      statements: [
+        stmt("oeq:frontier", "openendedquestion",
+          "Does an exact exponent exist in either residual region?", "to-prove"),
+        stmt("thm:upper", "theorem", "the constructive upper bound holds on the region"),
+      ],
+      related_work: "Their result therefore neither proves nor rules out nested-class β-invariance here.",
+    });
+    const w = checkProseConsistency(c).filter((x) => x.code === "PROSE-OPEN-OVERCLAIM");
+    expect(w.map((x) => x.message).join(" ")).not.toContain("either");
+    expect(w).toHaveLength(0);
+  });
+
   it("flags prose that claims to establish an OPEN-only target term", () => {
     const c = core({
       statements: [

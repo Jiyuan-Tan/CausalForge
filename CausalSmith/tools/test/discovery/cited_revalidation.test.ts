@@ -29,6 +29,7 @@ import { appendEscalationLog, workingPath } from "../../src/discovery/stages/d0_
 import { promptPath } from "../../src/paths.js";
 import type { PipelineContext, StateJson } from "../../src/types.js";
 import type { StageDeps } from "../../src/pipeline_support.js";
+import type { CodexRunInput } from "../../src/shared/codex.js";
 
 const QID = "stat_cited_reval";
 const SPEC = "v1";
@@ -228,6 +229,43 @@ describe("reopened FROZEN cited leaf", () => {
 });
 
 describe("reopened AGENT-AUTHORED cited leaf (2026-07-22 incident, end-to-end)", () => {
+  it("dispatches a valid working-only exact target from a receipt with no prose directive", async () => {
+    const ctx = makeCtx();
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify({
+      ...PROTO,
+      statements: [{
+        id: "thm:main", kind: "theorem", statement: "tau is identified",
+        depends_on: ["ass:overlap"], status: "to-prove",
+        justification: "core ID", gap: "vs prior", consumer: "applied",
+      }],
+    }), "utf8");
+    const r1 = await runStage0Solve({ ctx, state: makeState(), deps: solveDeps([AGENT_COMPARATOR]) });
+    expect((r1 as { status?: string }).status).not.toBe("checkpoint");
+
+    // The production failure was a still-valid working-only cited node. Because it
+    // was valid, it did not enter the ordinary stale frontier; only the exact target
+    // receipt can force it open. The receipt intentionally has no redundant prose.
+    await appendEscalationLog(ctx, {
+      round: 2,
+      changed: [],
+      required_core_targets: [AGENT_COMPARATOR.id],
+    });
+    const prompts: string[] = [];
+    const deps = solveDeps([AGENT_COMPARATOR]);
+    const capture: StageDeps = {
+      ...deps,
+      runCodex: async (args: CodexRunInput) => {
+        prompts.push(args.prompt);
+        return deps.runCodex(args);
+      },
+    };
+    const r2 = await runStage0Solve({ ctx, state: makeState(), deps: capture });
+    expect((r2 as { status?: string }).status).not.toBe("checkpoint");
+    const targetPrompt = prompts.find((prompt) => prompt.includes(`"id": "${AGENT_COMPARATOR.id}"`));
+    expect(targetPrompt).toContain(`"status": "cited"`);
+    expect(targetPrompt).toContain(`"locator": "Section 4"`);
+  });
+
   it("byte-faithful re-emission clears partial and refreshes the snapshot", async () => {
     const ctx = makeCtx();
     // Agent-flavour proto: the comparator exists ONLY in the working catalog.

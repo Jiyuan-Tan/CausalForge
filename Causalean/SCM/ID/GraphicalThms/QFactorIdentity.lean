@@ -69,8 +69,8 @@ variable {Ω : N → Type*} [∀ n, MeasurableSpace (Ω n)]
 /-- The proven marginal fixing helper behind Tian's fixing lemma.
 
     For an ancestrally-closed `R ⊆ M.observed`, a c-component
-    `T ⊆ R` of the induced sub-SCM `M.induce R`, and a name set
-    `Wn` such that `Wn.image .random = R \ T`, Rule 3 and induced-SCM
+    `T ⊆ R` of the induced sub-SCM `M.induce R`, and an intervention name set
+    `Wn`, Rule 3 and induced-SCM
     marginal compatibility imply that the `T`-marginal of the
     post-intervention kernel `(M.fixSet Wn _ _).obsKernel` agrees with
     the `T`-marginal of the induced sub-SCM at the projected fixed
@@ -85,7 +85,6 @@ def QFactorMarginalFixingConclusion
     (Wn : Finset N) : Prop :=
   ∀ (hR_ac : M.isAncestrallyClosedSCM R)
     (hT_induce : T ⊆ (M.induce R hR_ac).observed)
-    (_hWn_eq : Wn.image SWIGNode.random = R \ T)
     (_hWn_obs : ∀ D ∈ Wn, SWIGNode.random D ∈ M.observed)
     (_hWn_fixed : ∀ D ∈ Wn, SWIGNode.fixed D ∉ M.fixed)
     (_hNoDesc : ∀ z ∈ Wn, ∀ v ∈ T,
@@ -119,7 +118,6 @@ def QFactorIdentityConclusion
     (Wn : Finset N) : Prop :=
   ∀ (hR_ac : M.isAncestrallyClosedSCM R)
     (hT_induce : T ⊆ (M.induce R hR_ac).observed)
-    (_hWn_eq : Wn.image SWIGNode.random = R \ T)
     (_hWn_obs : ∀ D ∈ Wn, SWIGNode.random D ∈ M.observed)
     (_hWn_fixed : ∀ D ∈ Wn, SWIGNode.fixed D ∉ M.fixed)
     (_hNoDesc : ∀ z ∈ Wn, ∀ v ∈
@@ -173,7 +171,7 @@ theorem q_factor_marginal_fixing
     (Wn : Finset N) :
     QFactorMarginalFixingConclusion M R T Wn := by
   classical
-  intro hR_ac hT_induce _hWn_eq hWn_obs hWn_fixed hNoDesc s'
+  intro hR_ac hT_induce hWn_obs hWn_fixed hNoDesc s'
   let sTilde : M.FixedValues := M.fixSetProj Wn hWn_obs hWn_fixed s'
   let MI : Causalean.SCM N Ω := M.induce R hR_ac
   have hT_base : T ⊆ M.observed := by
@@ -203,7 +201,7 @@ theorem q_factor_marginal_fixing
   rw [MeasureTheory.Measure.map_map
     (measurable_valuesProjection hT_induce)
     (measurable_valuesProjection hMI_obs_base)]
-  rw [← valuesProjection_comp hT_induce hMI_obs_base hT_base]
+  rw [← valuesProjection_comp hT_induce hMI_obs_base]
 
 /-- Equal pair laws give equal conditional-kernel slices a.e.
 
@@ -278,7 +276,7 @@ theorem obsCondKernel_slice_ae_eq_of_pairMeasure_eq
 
     For ancestrally-closed `R` and c-component `T ∈ C(G_R)`, the
     structurally-defined c-factor on `T` equals a.e. the `T | qFactorParents T`
-    conditional extracted from the intervention fixing `R \ T`.  See
+    conditional extracted from the intervention fixing `Wn`.  See
     `QFactorIdentityConclusion` for the precise hypothesis frame.
 
     Proof sketch (Tian 2002, Lemma 1):
@@ -299,7 +297,7 @@ theorem q_factor_identity
     (Wn : Finset N) :
     QFactorIdentityConclusion M R T Wn := by
   classical
-  intro hR_ac hT_induce hWn_eq hWn_obs hWn_fixed hNoDesc
+  intro hR_ac hT_induce hWn_obs hWn_fixed hNoDesc
   dsimp only
   intro _ _ _ _ _ _ s'
   -- The conditional-kernel uniqueness argument first proves the joint identity on
@@ -310,7 +308,7 @@ theorem q_factor_identity
       QFactorMarginalFixingConclusion M R T Wn :=
     q_factor_marginal_fixing M R T Wn
   have _hT_marginal :=
-    hMarginal hR_ac hT_induce hWn_eq hWn_obs hWn_fixed
+    hMarginal hR_ac hT_induce hWn_obs hWn_fixed
       (by
         intro z hz v hv
         exact hNoDesc z hz v (Finset.mem_union_left _ hv))
@@ -379,7 +377,7 @@ theorem q_factor_identity
     rw [MeasureTheory.Measure.map_map
       (measurable_valuesProjection hU_induce)
       (measurable_valuesProjection hMI_obs_base)]
-    rw [← valuesProjection_comp hU_induce hMI_obs_base hU_base]
+    rw [← valuesProjection_comp hU_induce hMI_obs_base]
   have hP_U : P ⊆ U := by
     intro v hv
     exact Finset.mem_union_right T hv
@@ -398,16 +396,16 @@ theorem q_factor_identity
           (valuesProjection hP_do ω, valuesProjection hT_do ω)) := by
     funext ω
     apply Prod.ext
-    · exact congrFun (valuesProjection_comp hP_U hU_do hP_do).symm ω
-    · exact congrFun (valuesProjection_comp hT_U hU_do hT_do).symm ω
+    · exact congrFun (valuesProjection_comp hP_U hU_do).symm ω
+    · exact congrFun (valuesProjection_comp hT_U hU_do).symm ω
   have hPair_induce_comp :
       pairU ∘ valuesProjection hU_induce =
         (fun ω : MI.ObservedValues =>
           (valuesProjection hP_induce ω, valuesProjection hT_induce ω)) := by
     funext ω
     apply Prod.ext
-    · exact congrFun (valuesProjection_comp hP_U hU_induce hP_induce).symm ω
-    · exact congrFun (valuesProjection_comp hT_U hU_induce hT_induce).symm ω
+    · exact congrFun (valuesProjection_comp hP_U hU_induce).symm ω
+    · exact congrFun (valuesProjection_comp hT_U hU_induce).symm ω
   have hPairMeasure :
       MI.obsCondPairKernel T P hT_induce hP_induce sInduce =
         Mdo.obsCondPairKernel T P hT_do hP_do s' := by
@@ -448,8 +446,7 @@ theorem q_factor_identity
     consists of observed-random non-fixed targets in `M.fixSet Dn`. -/
 def InterventionTargetSimpConclusion
     (M : Causalean.SCM N Ω)
-    (Dn Yn : Finset N)
-    (_T : Finset (SWIGNode N)) : Prop :=
+    (Dn Yn : Finset N) : Prop :=
   ∀ (hD_obs : ∀ D ∈ Dn, SWIGNode.random D ∈ M.observed)
     (hD_fixed : ∀ D ∈ Dn, SWIGNode.fixed D ∉ M.fixed)
     (hY_obs : ∀ D ∈ Yn,
@@ -469,9 +466,8 @@ def InterventionTargetSimpConclusion
     and `M.fixSet (Dn ∪ Yn)` are the same gSCM. -/
 theorem intervention_target_simp
     (M : Causalean.SCM N Ω)
-    (Dn Yn : Finset N)
-    (T : Finset (SWIGNode N)) :
-    InterventionTargetSimpConclusion M Dn Yn T := by
+    (Dn Yn : Finset N) :
+    InterventionTargetSimpConclusion M Dn Yn := by
   classical
   refine Finset.induction_on Yn ?_ ?_
   · intro hD_obs hD_fixed hY_obs hY_fixed hUnion_obs hUnion_fixed _hDY_disjoint
@@ -479,7 +475,7 @@ theorem intervention_target_simp
         SCM.Equiv
           ((M.fixSet Dn hD_obs hD_fixed).fixSet ∅ hY_obs hY_fixed)
           (M.fixSet Dn hD_obs hD_fixed) :=
-      fixSet_empty_equiv (M.fixSet Dn hD_obs hD_fixed) hY_obs hY_fixed
+      fixSet_empty_equiv (M.fixSet Dn hD_obs hD_fixed)
     have hRhs :
         SCM.Equiv
           (M.fixSet Dn hD_obs hD_fixed)
@@ -487,8 +483,6 @@ theorem intervention_target_simp
       simpa [Finset.union_empty] using
         fixSet_equiv_congr (SCM.Equiv.refl M) Dn
           hD_obs hD_fixed
-          (fun D hD => hUnion_obs D (Finset.mem_union_left _ hD))
-          (fun D hD => hUnion_fixed D (Finset.mem_union_left _ hD))
     exact SCM.Equiv.trans hEmpty hRhs
   · intro y Ys hyYs ih hD_obs hD_fixed hY_obs hY_fixed hUnion_obs hUnion_fixed
       hDY_disjoint
@@ -549,8 +543,7 @@ theorem intervention_target_simp
           (M₀.fixSet (insert y Ys) hY_obs hY_fixed)
           ((M₀.fixSet Ys hYs_obs hYs_fixed).fixSet
             ({y} : Finset N) hy_single_obs₀ hy_single_fixed₀) :=
-      (swigInterventionSet_insert_equiv M₀ Ys y hyYs hYs_obs hYs_fixed
-        hy_single_obs₀ hy_single_fixed₀ hY_obs hY_fixed).symm
+      (swigInterventionSet_insert_equiv M₀ Ys y hyYs hY_obs hY_fixed).symm
     have hy_single_obs₁ : ∀ D ∈ ({y} : Finset N),
         SWIGNode.random D ∈
           (M.fixSet (Dn ∪ Ys) hUnionYs_obs hUnionYs_fixed).observed := by
@@ -581,7 +574,7 @@ theorem intervention_target_simp
           ((M.fixSet (Dn ∪ Ys) hUnionYs_obs hUnionYs_fixed).fixSet
             ({y} : Finset N) hy_single_obs₁ hy_single_fixed₁) :=
       fixSet_equiv_congr hIH ({y} : Finset N)
-        hy_single_obs₀ hy_single_fixed₀ hy_single_obs₁ hy_single_fixed₁
+        hy_single_obs₀ hy_single_fixed₀
     have hInsertUnion_obs : ∀ D ∈ insert y (Dn ∪ Ys),
         SWIGNode.random D ∈ M.observed := by
       intro D hD
@@ -618,8 +611,6 @@ theorem intervention_target_simp
           rcases Finset.mem_union.mp hyUnion with hyD | hyY
           · exact hyDn hyD
           · exact hyYs hyY)
-        hUnionYs_obs hUnionYs_fixed
-        hy_single_obs₁ hy_single_fixed₁
         hInsertUnion_obs hInsertUnion_fixed
     have hAll := SCM.Equiv.trans hStepL (SCM.Equiv.trans hStepMid hStepR)
     simpa [M₀, Finset.insert_union, Finset.union_insert, Finset.union_assoc,
@@ -631,7 +622,7 @@ theorem intervention_target_simp
 
 /-- The conclusion of district identification: for `T ∈ C(G)`, the c-factor
     `Q[T]` of the full SCM equals a.e. the matching do-side conditional after
-    fixing `V \ T`.  Special case `R = M.observed` of
+    fixing `Wn`.  Special case `R = M.observed` of
     `QFactorIdentityConclusion`. -/
 def DistrictIdConclusion
     (M : Causalean.SCM N Ω) (T : Finset (SWIGNode N))
@@ -641,7 +632,7 @@ def DistrictIdConclusion
 /-- **Corollary (District identification).**
 
     The c-factor of every C-component `T` of the full SCM is equal a.e. to the
-    matching do-side conditional obtained by intervening on `V \ T`.
+    matching do-side conditional obtained by intervening on `Wn`.
     Specialized from `q_factor_identity` at `R := M.observed`. -/
 theorem district_id
     (M : Causalean.SCM N Ω)

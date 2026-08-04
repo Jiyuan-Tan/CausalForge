@@ -69,7 +69,7 @@ noncomputable def observedTargetMean (P : EventStudySystem T)
 /-- Observed treated-cohort baseline mean from the finite-cohort factual
 means, using relative time `-1`. -/
 noncomputable def observedBaselineMean (P : EventStudySystem T)
-    (_I : P.IWDesign) (g : Fin T) : ℝ :=
+    (g : Fin T) : ℝ :=
   ((P.baselinePeriods g).card : ℝ)⁻¹ *
     ∑ t ∈ P.baselinePeriods g, P.observedMean g t
 
@@ -90,7 +90,7 @@ noncomputable def comparisonMeanChange (P : EventStudySystem T)
 group. -/
 noncomputable def DIDContrast (P : EventStudySystem T)
     (I : P.IWDesign) (g : Fin T) : ℝ :=
-  (P.observedTargetMean I g - P.observedBaselineMean I g) -
+  (P.observedTargetMean I g - P.observedBaselineMean g) -
     P.comparisonMeanChange I g
 
 /-- Cohort-specific IW DID contrast `Delta(g,l)`. It is definitional rather
@@ -158,11 +158,30 @@ theorem IW_Delta_eq_CATT (P : EventStudySystem T) (I : P.IWDesign)
     (hConsistency : P.Consistency)
     (hNoAnticipation : P.NoAnticipation)
     (hPathConsistency : P.PathConsistency)
-    (hIWParallelTrends : P.IWComparisonParallelTrends I)
-    (hSupport : P.IWSupport I)
+    (hComparisonParallelTrends : ∀ g ∈ I.cohortsIW,
+      ((P.targetPeriods g I.eventTime).card : ℝ)⁻¹ *
+          ∑ t ∈ P.targetPeriods g I.eventTime,
+            (P.untreatedMean g t) -
+        ((P.baselinePeriods g).card : ℝ)⁻¹ *
+          ∑ t ∈ P.baselinePeriods g, (P.untreatedMean g t)
+      =
+      (P.comparisonMass I g)⁻¹ *
+        ∑ h ∈ I.comparisonGroup g,
+          P.cohortShare h *
+          (((P.targetPeriods g I.eventTime).card : ℝ)⁻¹ *
+              ∑ t ∈ P.targetPeriods g I.eventTime, P.untreatedPathMean h t -
+            ((P.baselinePeriods g).card : ℝ)⁻¹ *
+              ∑ t ∈ P.baselinePeriods g, P.untreatedPathMean h t))
+    (hCohort : ∀ g ∈ I.cohortsIW, g ∈ P.cohorts)
+    (hComparisonUntreatedBaseline :
+      ∀ g ∈ I.cohortsIW, ∀ h ∈ I.comparisonGroup g,
+        ∀ t ∈ P.baselinePeriods g, absorbingTreatment h t = 0)
+    (hComparisonUntreatedTarget :
+      ∀ g ∈ I.cohortsIW, ∀ h ∈ I.comparisonGroup g,
+        ∀ t ∈ P.targetPeriods g I.eventTime, absorbingTreatment h t = 0)
     {g : Fin T} (hg : g ∈ I.cohortsIW) :
     P.Delta I g = P.CATT g I.eventTime := by
-  have hgCohort : g ∈ P.cohorts := (hSupport.hTargetValid g hg).1
+  have hgCohort : g ∈ P.cohorts := hCohort g hg
   have hObsTarget :
       P.observedTargetMean I g =
         ((P.targetPeriods g I.eventTime).card : ℝ)⁻¹ *
@@ -176,7 +195,7 @@ theorem IW_Delta_eq_CATT (P : EventStudySystem T) (I : P.IWDesign)
       exact hConsistency g hgCohort t
     rw [hsum]
   have hObsBaseline :
-      P.observedBaselineMean I g =
+      P.observedBaselineMean g =
         ((P.baselinePeriods g).card : ℝ)⁻¹ *
           ∑ t ∈ P.baselinePeriods g, P.untreatedMean g t := by
     unfold observedBaselineMean
@@ -206,7 +225,7 @@ theorem IW_Delta_eq_CATT (P : EventStudySystem T) (I : P.IWDesign)
       apply Finset.sum_congr rfl
       intro t ht
       exact P.pathConsistency_observed_eq_untreated hPathConsistency
-        (hSupport.hComparisonUntreatedTarget g hg h hh t ht)
+        (hComparisonUntreatedTarget g hg h hh t ht)
     rw [hsum]
   have hPathBaseline : ∀ h ∈ I.comparisonGroup g,
       P.pathBaselineMean h g =
@@ -220,7 +239,7 @@ theorem IW_Delta_eq_CATT (P : EventStudySystem T) (I : P.IWDesign)
       apply Finset.sum_congr rfl
       intro t ht
       exact P.pathConsistency_observed_eq_untreated hPathConsistency
-        (hSupport.hComparisonUntreatedBaseline g hg h hh t ht)
+        (hComparisonUntreatedBaseline g hg h hh t ht)
     rw [hsum]
   have hComparison :
       P.comparisonMeanChange I g =
@@ -246,7 +265,7 @@ theorem IW_Delta_eq_CATT (P : EventStudySystem T) (I : P.IWDesign)
       intro h hh
       rw [hPathTarget h hh, hPathBaseline h hh]
     rw [hsum]
-  have hParallel := hIWParallelTrends.hComparisonParallelTrends g hg
+  have hParallel := hComparisonParallelTrends g hg
   unfold Delta DIDContrast CATT meanCellContrast
   rw [hObsTarget, hObsBaseline, hComparison, ← hParallel]
   rw [Finset.sum_sub_distrib]
@@ -267,11 +286,23 @@ the bound parametrically in `lo`/`hi` to avoid `Finset.min'`/`max'`
 nonemptiness side goals. The explicit `0 ≤ I.eventTime` hypothesis matches the
 source restriction for the interaction-weighted event-study estimand. -/
 theorem IW_convex_characterization (P : EventStudySystem T) (I : P.IWDesign)
-    (hEventTime_nonneg : 0 ≤ I.eventTime)
     (hConsistency : P.Consistency)
     (hNoAnticipation : P.NoAnticipation)
     (hPathConsistency : P.PathConsistency)
-    (hIWParallelTrends : P.IWComparisonParallelTrends I)
+    (hComparisonParallelTrends : ∀ g ∈ I.cohortsIW,
+      ((P.targetPeriods g I.eventTime).card : ℝ)⁻¹ *
+          ∑ t ∈ P.targetPeriods g I.eventTime,
+            P.untreatedMean g t -
+        ((P.baselinePeriods g).card : ℝ)⁻¹ *
+          ∑ t ∈ P.baselinePeriods g, P.untreatedMean g t
+      =
+      (P.comparisonMass I g)⁻¹ *
+        ∑ h ∈ I.comparisonGroup g,
+          P.cohortShare h *
+          (((P.targetPeriods g I.eventTime).card : ℝ)⁻¹ *
+              ∑ t ∈ P.targetPeriods g I.eventTime, P.untreatedPathMean h t -
+            ((P.baselinePeriods g).card : ℝ)⁻¹ *
+              ∑ t ∈ P.baselinePeriods g, P.untreatedPathMean h t))
     (hSupport : P.IWSupport I)
     (hRhoNonneg : ∀ g ∈ I.cohortsIW, 0 ≤ I.rho g)
     (hRhoSumOne : ∑ g ∈ I.cohortsIW, I.rho g = 1)
@@ -281,11 +312,12 @@ theorem IW_convex_characterization (P : EventStudySystem T) (I : P.IWDesign)
     (∀ g ∈ I.cohortsIW, P.Delta I g = P.CATT g I.eventTime) ∧
       P.nuIW I = ∑ g ∈ I.cohortsIW, I.rho g * P.CATT g I.eventTime ∧
       lo ≤ P.nuIW I ∧ P.nuIW I ≤ hi := by
-  have _ := hEventTime_nonneg
   have hDelta : ∀ g ∈ I.cohortsIW, P.Delta I g = P.CATT g I.eventTime := by
     intro g hg
     exact P.IW_Delta_eq_CATT I hConsistency hNoAnticipation hPathConsistency
-      hIWParallelTrends hSupport hg
+      hComparisonParallelTrends
+      (fun g hg => (hSupport.hTargetValid g hg).1)
+      hSupport.hComparisonUntreatedBaseline hSupport.hComparisonUntreatedTarget hg
   have hAgg : P.nuIW I = ∑ g ∈ I.cohortsIW, I.rho g * P.CATT g I.eventTime := by
     unfold nuIW
     apply Finset.sum_congr rfl

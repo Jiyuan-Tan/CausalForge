@@ -39,11 +39,12 @@ the corresponding product law.
 The index map `r : ι → Fin n` is assumed injective, so the coordinates
 `S.Z (r i)` are independent and each has law `P`.  This is the reusable
 transport lemma behind fixed-order U-statistic expectations and moments. -/
-theorem map_fintype_tuple_eq (S : IIDSample Ω X μ P) [IsProbabilityMeasure μ]
+theorem map_fintype_tuple_eq (S : IIDSample Ω X μ P)
     {ι : Type*} [Fintype ι] {n : ℕ} {r : ι → Fin n}
     (hr : Function.Injective r) :
     μ.map (fun ω : Ω => fun i : ι => S.Z (r i : ℕ) ω)
       = Measure.pi (fun _ : ι => P) := by
+  letI : IsProbabilityMeasure μ := S.indep.isProbabilityMeasure
   have hrNat : Function.Injective (fun i : ι => (r i : ℕ)) := by
     intro a b hab
     exact hr (Fin.ext hab)
@@ -62,7 +63,7 @@ theorem map_fintype_tuple_eq (S : IIDSample Ω X μ P) [IsProbabilityMeasure μ]
 
 This is the `Fin m` specialization of `map_fintype_tuple_eq`, used throughout
 the fixed-order U-statistic variance and negligibility proofs. -/
-theorem map_tuple_eq (S : IIDSample Ω X μ P) [IsProbabilityMeasure μ]
+theorem map_tuple_eq (S : IIDSample Ω X μ P)
     {m n : ℕ} {t : Fin m → Fin n} (ht : Function.Injective t) :
     μ.map (fun ω : Ω => fun j : Fin m => S.Z (t j : ℕ) ω)
       = Measure.pi (fun _ : Fin m => P) := by
@@ -75,9 +76,10 @@ namespace OrderDegenKernel
 variable [IsProbabilityMeasure P] {m : ℕ} [NeZero m]
   {g : (Fin m → X) → ℝ}
 
+omit [IsProbabilityMeasure P] in
 /-- A square-integrable order-`m` degenerate kernel is integrable under the
 product law. -/
-theorem integrable (hg : OrderDegenKernel P g) :
+theorem integrable [IsFiniteMeasure P] (hg : OrderDegenKernel P g) :
     Integrable g (Measure.pi fun _ : Fin m => P) :=
   ((memLp_two_iff_integrable_sq hg.meas.aestronglyMeasurable).mpr hg.sq).integrable
     (by norm_num)
@@ -185,7 +187,7 @@ variable [IsProbabilityMeasure μ] [IsProbabilityMeasure P]
 
 /-! ## Unbiasedness and product-law transport -/
 
-omit [IsProbabilityMeasure P] in
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- An order-`m` kernel term along an injective tuple is integrable whenever the
 kernel is integrable under the product law. -/
 theorem integrable_orderKernelTerm {h : (Fin m → X) → ℝ}
@@ -200,7 +202,7 @@ theorem integrable_orderKernelTerm {h : (Fin m → X) → ℝ}
   exact (integrable_map_measure hmeas.aestronglyMeasurable
     (measurable_pi_lambda _ (fun j : Fin m => S.meas (t j : ℕ))).aemeasurable).mp hmap
 
-omit [IsProbabilityMeasure P] in
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- The expectation of an injectively indexed order-`m` kernel term equals the
 kernel's product-law mean. -/
 theorem integral_orderKernelTerm_eq {h : (Fin m → X) → ℝ}
@@ -212,7 +214,7 @@ theorem integral_orderKernelTerm_eq {h : (Fin m → X) → ℝ}
     (measurable_pi_lambda _ (fun j : Fin m => S.meas (t j : ℕ))).aemeasurable
     hmeas.aestronglyMeasurable]
 
-omit [IsProbabilityMeasure P] in
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- An injectively indexed order-`m` kernel term has mean zero whenever the
 kernel has zero product-law mean. -/
 theorem integral_orderKernelTerm_eq_zero_of_uMean_zero {h : (Fin m → X) → ℝ}
@@ -221,7 +223,7 @@ theorem integral_orderKernelTerm_eq_zero_of_uMean_zero {h : (Fin m → X) → �
     ∫ ω, h (fun j => S.Z (t j : ℕ) ω) ∂μ = 0 := by
   rw [S.integral_orderKernelTerm_eq hmeas ht, ← uMeanOrder, hmean_zero]
 
-omit [IsProbabilityMeasure P] in
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- The fixed-order U-statistic is unbiased: its expectation is the product-law
 kernel mean. -/
 theorem integral_uStatisticOrder_eq_uMean {m n : ℕ} {h : (Fin m → X) → ℝ}
@@ -254,7 +256,7 @@ theorem integral_uStatisticOrder_eq_uMean {m n : ℕ} {h : (Fin m → X) → ℝ
   rw [injectiveTupleCount]
   field_simp [hcard_ne]
 
-omit [IsProbabilityMeasure P] in
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- A fixed-order U-statistic with product-law mean zero has expectation zero. -/
 theorem integral_uStatisticOrder_eq_zero_of_uMean_zero {m n : ℕ}
     {h : (Fin m → X) → ℝ}
@@ -265,7 +267,7 @@ theorem integral_uStatisticOrder_eq_zero_of_uMean_zero {m n : ℕ}
     ∫ ω, uStatisticOrder S h n ω ∂μ = 0 := by
   rw [S.integral_uStatisticOrder_eq_uMean hmeas hint hmn, hmean_zero]
 
-omit [IsProbabilityMeasure P] in
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- The rescaled fixed-order U-statistic has mean equal to the same rescaling of
 the product-law kernel mean. -/
 theorem integral_rescaled_uStatisticOrder_eq_sqrt_mul_uMean {m n : ℕ}
@@ -277,7 +279,7 @@ theorem integral_rescaled_uStatisticOrder_eq_sqrt_mul_uMean {m n : ℕ}
       Real.sqrt (n : ℝ) * uMeanOrder h P := by
   rw [integral_const_mul, S.integral_uStatisticOrder_eq_uMean hmeas hint hmn]
 
-omit [IsProbabilityMeasure P] in
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- If an order-`m` kernel has product-law mean zero, then the rescaled
 fixed-order U-statistic has mean zero. -/
 theorem integral_rescaled_uStatisticOrder_eq_zero_of_uMean_zero {m n : ℕ}
@@ -290,23 +292,28 @@ theorem integral_rescaled_uStatisticOrder_eq_zero_of_uMean_zero {m n : ℕ}
   rw [S.integral_rescaled_uStatisticOrder_eq_sqrt_mul_uMean hmeas hint hmn,
     hmean_zero, mul_zero]
 
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- A fully degenerate order-`m` kernel whose product-law mean is zero gives a
 mean-zero fixed-order U-statistic.  The product-law mean-zero assumption is kept
 explicit here rather than inferred from coordinatewise degeneracy. -/
-theorem integral_uStatisticOrder_eq_zero_of_degenKernel_uMean_zero [NeZero m]
+theorem integral_uStatisticOrder_eq_zero_of_degenKernel_uMean_zero [IsFiniteMeasure P] [NeZero m]
     (hg : OrderDegenKernel P g) (hmn : m ≤ n)
     (hmean_zero : uMeanOrder g P = 0) :
     ∫ ω, uStatisticOrder S g n ω ∂μ = 0 :=
   S.integral_uStatisticOrder_eq_zero_of_uMean_zero hg.meas hg.integrable hmn hmean_zero
 
+omit [IsProbabilityMeasure P] in
 /-- A fully degenerate order-`m` kernel gives a mean-zero fixed-order
 U-statistic in the nonempty sampling regime `m ≤ n`. -/
 theorem integral_uStatisticOrder_eq_zero_of_degenKernel [NeZero m]
     (hg : OrderDegenKernel P g) (hmn : m ≤ n) :
-    ∫ ω, uStatisticOrder S g n ω ∂μ = 0 :=
-  S.integral_uStatisticOrder_eq_zero_of_degenKernel_uMean_zero hg hmn hg.integral_eq_zero
+    ∫ ω, uStatisticOrder S g n ω ∂μ = 0 := by
+  letI : IsProbabilityMeasure P := by
+    rw [← S.law]
+    exact Measure.isProbabilityMeasure_map (S.meas 0).aemeasurable
+  exact S.integral_uStatisticOrder_eq_zero_of_degenKernel_uMean_zero hg hmn hg.integral_eq_zero
 
-omit [IsProbabilityMeasure P] in
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- An injectively indexed fully degenerate order-`m` kernel term has mean zero
 when its product-law mean is zero. -/
 theorem integral_orderTerm_eq_zero_of_degenKernel_uMean_zero [NeZero m]
@@ -315,6 +322,7 @@ theorem integral_orderTerm_eq_zero_of_degenKernel_uMean_zero [NeZero m]
     ∫ ω, g (fun j => S.Z (t j : ℕ) ω) ∂μ = 0 :=
   S.integral_orderKernelTerm_eq_zero_of_uMean_zero hg.meas ht hmean_zero
 
+omit [IsProbabilityMeasure μ] in
 /-- An injectively indexed fully degenerate order-`m` kernel term has mean
 zero. -/
 theorem integral_orderTerm_eq_zero [NeZero m]
@@ -322,23 +330,29 @@ theorem integral_orderTerm_eq_zero [NeZero m]
     ∫ ω, g (fun j => S.Z (t j : ℕ) ω) ∂μ = 0 :=
   S.integral_orderTerm_eq_zero_of_degenKernel_uMean_zero hg ht hg.integral_eq_zero
 
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- A fully degenerate order-`m` kernel whose product-law mean is zero gives a
 mean-zero rescaled fixed-order U-statistic.  This is a mean statement only; it
 does not assert the variance bound or negligibility. -/
-theorem integral_rescaled_uStatisticOrder_eq_zero_of_degenKernel_uMean_zero [NeZero m]
+theorem integral_rescaled_uStatisticOrder_eq_zero_of_degenKernel_uMean_zero [IsFiniteMeasure P]
+    [NeZero m]
     (hg : OrderDegenKernel P g) (hmn : m ≤ n)
     (hmean_zero : uMeanOrder g P = 0) :
     ∫ ω, Real.sqrt (n : ℝ) * uStatisticOrder S g n ω ∂μ = 0 :=
   S.integral_rescaled_uStatisticOrder_eq_zero_of_uMean_zero hg.meas hg.integrable
     hmn hmean_zero
 
+omit [IsProbabilityMeasure P] in
 /-- A fully degenerate order-`m` kernel gives a mean-zero rescaled fixed-order
 U-statistic in the nonempty sampling regime `m ≤ n`.  This is a mean statement
 only; it does not assert the variance bound or negligibility. -/
 theorem integral_rescaled_uStatisticOrder_eq_zero_of_degenKernel [NeZero m]
     (hg : OrderDegenKernel P g) (hmn : m ≤ n) :
-    ∫ ω, Real.sqrt (n : ℝ) * uStatisticOrder S g n ω ∂μ = 0 :=
-  S.integral_rescaled_uStatisticOrder_eq_zero_of_degenKernel_uMean_zero hg hmn
+    ∫ ω, Real.sqrt (n : ℝ) * uStatisticOrder S g n ω ∂μ = 0 := by
+  letI : IsProbabilityMeasure P := by
+    rw [← S.law]
+    exact Measure.isProbabilityMeasure_map (S.meas 0).aemeasurable
+  exact S.integral_rescaled_uStatisticOrder_eq_zero_of_degenKernel_uMean_zero hg hmn
     hg.integral_eq_zero
 
 /-- `ζ_m = E[g(Z₁,…,Z_m)^2]`, the second moment of an order-`m` kernel under the
@@ -351,87 +365,91 @@ noncomputable def zetaOrder (P : Measure X) {m : ℕ}
     (g : (Fin m → X) → ℝ) : ℝ :=
   ∫ z, (g z) ^ 2 ∂(Measure.pi fun _ : Fin m => P)
 
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- An order-`m` kernel term along an injective tuple is integrable. -/
-theorem integrable_orderTerm [NeZero m] (hg : OrderDegenKernel P g)
+theorem integrable_orderTerm (hmeas : Measurable g)
+    (hint : Integrable g (Measure.pi fun _ : Fin m => P))
     {t : Fin m → Fin n} (ht : Function.Injective t) :
-    Integrable (fun ω => g (fun j => S.Z (t j : ℕ) ω)) μ := by
-  have hmap : Integrable g
-      (μ.map (fun ω : Ω => fun j : Fin m => S.Z (t j : ℕ) ω)) := by
-    rw [S.map_tuple_eq ht]
-    exact hg.integrable
-  exact (integrable_map_measure hg.meas.aestronglyMeasurable
-    (measurable_pi_lambda _ (fun j : Fin m => S.meas (t j : ℕ))).aemeasurable).mp hmap
+    Integrable (fun ω => g (fun j => S.Z (t j : ℕ) ω)) μ :=
+  S.integrable_orderKernelTerm hmeas hint ht
 
-omit [IsProbabilityMeasure P] in
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- The square of an order-`m` kernel term along an injective tuple is
 integrable. -/
-theorem integrable_orderTerm_sq [NeZero m] (hg : OrderDegenKernel P g)
+theorem integrable_orderTerm_sq (hmeas : Measurable g)
+    (hsq : Integrable (fun z => (g z) ^ 2) (Measure.pi fun _ : Fin m => P))
     {t : Fin m → Fin n} (ht : Function.Injective t) :
     Integrable (fun ω => (g (fun j => S.Z (t j : ℕ) ω)) ^ 2) μ := by
   have hmap : Integrable (fun z => (g z) ^ 2)
       (μ.map (fun ω : Ω => fun j : Fin m => S.Z (t j : ℕ) ω)) := by
     rw [S.map_tuple_eq ht]
-    exact hg.sq
-  exact (integrable_map_measure (hg.meas.pow_const 2).aestronglyMeasurable
+    exact hsq
+  exact (integrable_map_measure (hmeas.pow_const 2).aestronglyMeasurable
     (measurable_pi_lambda _ (fun j : Fin m => S.meas (t j : ℕ))).aemeasurable).mp hmap
 
-omit [IsProbabilityMeasure P] in
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- Diagonal second moment of a single injective order-`m` kernel term. -/
-theorem orderTerm_diag [NeZero m] (hg : OrderDegenKernel P g)
+theorem orderTerm_diag (hmeas : Measurable g)
     {t : Fin m → Fin n} (ht : Function.Injective t) :
     ∫ ω, (g (fun j => S.Z (t j : ℕ) ω)) ^ 2 ∂μ = zetaOrder P g := by
   rw [zetaOrder]
   rw [← S.map_tuple_eq ht]
   rw [integral_map
     (measurable_pi_lambda _ (fun j : Fin m => S.meas (t j : ℕ))).aemeasurable
-    (hg.meas.pow_const 2).aestronglyMeasurable]
+    (hmeas.pow_const 2).aestronglyMeasurable]
 
-omit [IsProbabilityMeasure P] in
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- Each injective order-`m` kernel term is in `L²`. -/
-theorem memLp_orderTerm [NeZero m] (hg : OrderDegenKernel P g)
+theorem memLp_orderTerm (hmeas : Measurable g)
+    (hsq : Integrable (fun z => (g z) ^ 2) (Measure.pi fun _ : Fin m => P))
     {t : Fin m → Fin n} (ht : Function.Injective t) :
     MemLp (fun ω => g (fun j => S.Z (t j : ℕ) ω)) 2 μ := by
   have hm : AEStronglyMeasurable (fun ω => g (fun j => S.Z (t j : ℕ) ω)) μ :=
-    (hg.meas.comp
+    (hmeas.comp
       (measurable_pi_lambda _ (fun j : Fin m => S.meas (t j : ℕ)))).aestronglyMeasurable
-  exact (memLp_two_iff_integrable_sq hm).mpr (S.integrable_orderTerm_sq hg ht)
+  exact (memLp_two_iff_integrable_sq hm).mpr (S.integrable_orderTerm_sq hmeas hsq ht)
 
-omit [IsProbabilityMeasure P] in
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- The product of two injective order-`m` kernel terms is integrable. -/
-theorem integrable_orderTerm_mul [NeZero m] (hg : OrderDegenKernel P g)
+theorem integrable_orderTerm_mul (hmeas : Measurable g)
+    (hsq : Integrable (fun z => (g z) ^ 2) (Measure.pi fun _ : Fin m => P))
     {t q : Fin m → Fin n} (ht : Function.Injective t) (hq : Function.Injective q) :
     Integrable
       (fun ω => g (fun j => S.Z (t j : ℕ) ω) *
         g (fun j => S.Z (q j : ℕ) ω)) μ :=
-  (S.memLp_orderTerm hg ht).integrable_mul (S.memLp_orderTerm hg hq)
+  (S.memLp_orderTerm hmeas hsq ht).integrable_mul (S.memLp_orderTerm hmeas hsq hq)
 
-/-- The injective-tuple sum of an order-`m` degenerate kernel is integrable. -/
-theorem integrable_injectiveTuples_sum [NeZero m] (hg : OrderDegenKernel P g)
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
+/-- The injective-tuple sum of an order-`m` kernel is integrable. -/
+theorem integrable_injectiveTuples_sum (hmeas : Measurable g)
+    (hint : Integrable g (Measure.pi fun _ : Fin m => P))
     (n : ℕ) :
     Integrable (fun ω => ∑ t ∈ injectiveTuples m n,
       g (fun j => S.Z (t j : ℕ) ω)) μ := by
   apply integrable_finset_sum
   intro t ht
-  exact S.integrable_orderTerm hg ((Finset.mem_filter.mp ht).2)
+  exact S.integrable_orderTerm hmeas hint ((Finset.mem_filter.mp ht).2)
 
-omit [IsProbabilityMeasure P] in
-/-- The injective-tuple sum of an order-`m` degenerate kernel is in `L²`. -/
-theorem memLp_injectiveTuples_sum [NeZero m] (hg : OrderDegenKernel P g)
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
+/-- The injective-tuple sum of an order-`m` kernel is in `L²`. -/
+theorem memLp_injectiveTuples_sum (hmeas : Measurable g)
+    (hsq : Integrable (fun z => (g z) ^ 2) (Measure.pi fun _ : Fin m => P))
     (n : ℕ) :
     MemLp (fun ω => ∑ t ∈ injectiveTuples m n,
       g (fun j => S.Z (t j : ℕ) ω)) 2 μ := by
   have hsum := memLp_finset_sum (μ := μ) (p := 2) (injectiveTuples m n)
     (f := fun t ω => g (fun j => S.Z (t j : ℕ) ω))
-    (fun t ht => S.memLp_orderTerm hg ((Finset.mem_filter.mp ht).2))
+    (fun t ht => S.memLp_orderTerm hmeas hsq ((Finset.mem_filter.mp ht).2))
   simpa using hsum
 
-omit [IsProbabilityMeasure P] in
-/-- The rescaled order-`m` degenerate U-statistic is in `L²`. -/
-theorem memLp_rescaled_order [NeZero m] (hg : OrderDegenKernel P g) (n : ℕ) :
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
+/-- The rescaled order-`m` U-statistic is in `L²`. -/
+theorem memLp_rescaled_order (hmeas : Measurable g)
+    (hsq : Integrable (fun z => (g z) ^ 2) (Measure.pi fun _ : Fin m => P)) (n : ℕ) :
     MemLp (fun ω => Real.sqrt (n : ℝ) * uStatisticOrder S g n ω) 2 μ := by
   have hsum : MemLp (fun ω => ∑ t ∈ injectiveTuples m n,
       g (fun j => S.Z (t j : ℕ) ω)) 2 μ :=
-    S.memLp_injectiveTuples_sum hg n
+    S.memLp_injectiveTuples_sum hmeas hsq n
   have : (fun ω => Real.sqrt (n : ℝ) * uStatisticOrder S g n ω)
       = (fun ω => (Real.sqrt (n : ℝ) * (injectiveTupleCount m n)⁻¹)
           * ∑ t ∈ injectiveTuples m n, g (fun j => S.Z (t j : ℕ) ω)) := by

@@ -1,57 +1,53 @@
-// Cross-store coherence checks added after the 2026-07 cross-stage rewind audit.
-//
-// FIXTURES ARE DERIVED FROM PRODUCTION ARTIFACTS, not authored from belief (the previous
-// attempt's tests passed while testing nothing because their fixtures were invented):
-//  - the proved-not-partial case is the REAL terminal state of the banked run
-//    doc/research/_bank/downgraded/exp_saturation_skew_threshold_v1 — core.json publishes
-//    `oeq:full-branch-optimizer-map` as `status:"proved"` (with proof bytes) while
-//    d0_working.json carries `partial:true` over DIFFERENT bytes; the run banked with the
-//    contradiction because the discharge gate counts only `to-prove`.
-//  - the resolved-OEQ cases start from the REAL healthy resolution in
-//    doc/research/active/stat_reversekl_two_coverage (`oeq:full-feasible-frontier` →
-//    `thm:full-feasible-frontier-answer`: source absent from core.statements AND from
-//    solved) and mutate exactly the one property under test.
-// A corpus scan over all 36 real (core.json, d0_working.json) pairs under
-// doc/research/{active,_bank} showed ZERO hits for the two OEQ checks and exactly the
-// one genuine hit above for proved-not-partial.
+// The 2026-07 cross-stage rewind audit's contradiction classes, RE-POINTED at the
+// Phase-1 store consolidation (2026-07-30 migration plan): the checks that used
+// to DETECT these states after the fact are retired, because the published core
+// is now `assembleCore(proto, working)` and the states are unrepresentable or
+// auto-resolved. The fixtures stay derived from the same production artifacts
+// as the original detector tests:
+//  - proved-not-partial: the REAL terminal state of the banked run
+//    doc/research/_bank/downgraded/exp_saturation_skew_threshold_v1 — core.json
+//    published `oeq:full-branch-optimizer-map` as `proved` while d0_working.json
+//    carried `partial:true` over DIFFERENT bytes, and the run banked with the
+//    contradiction. Under the render, the record's partiality DERIVES the
+//    published status, so the contradiction cannot be written.
+//  - resolved-OEQ retirement: the REAL healthy resolution shape of
+//    doc/research/active/stat_reversekl_two_coverage
+//    (`oeq:full-feasible-frontier` → `thm:full-feasible-frontier-answer`).
 
 import { describe, it, expect } from "vitest";
-import { checkRoundInvariants } from "../../src/discovery/core/coherence.js";
+import { assembleCore } from "../../src/discovery/core/assemble.js";
+import { normalizeWorkingState } from "../../src/discovery/stages/d0_working.js";
 import type { Core } from "../../src/discovery/core/schema.js";
 import type { WorkingState } from "../../src/discovery/stages/d0_working.js";
 
-const codes = (v: ReturnType<typeof checkRoundInvariants>): string[] => v.map((x) => x.code);
-
 // ── proved-not-partial: trimmed from exp_saturation_skew_threshold_v1 ────────────────
 
-const SATURATION_NODE = {
+const SATURATION_OEQ = {
   id: "oeq:full-branch-optimizer-map",
   kind: "openendedquestion",
-  status: "proved",
+  status: "to-prove",
   statement:
     "Certified delivered content plus the remaining atlas-compression question. For every exact algebraic or symbolic parameter point theta=(pbar, V_1, V_3, V_4) ...",
   depends_on: ["thm:global-certificate"],
-  proof_tex:
-    "Proof. Fix an exact algebraic or symbolic parameter point theta=(pbar,V_1,V_3,V_4) with 0<=pbar<=1. ...",
 };
 
 const SATURATION_SIBLING = {
   id: "thm:global-certificate",
   kind: "theorem",
-  status: "proved",
+  status: "to-prove",
   statement: "The global certificate holds.",
   depends_on: [],
-  proof_tex: "Certified by the discharged DAG.",
 };
 
-function saturationCore(): Core {
+function saturationProto(): Core {
   return {
     qid: "exp_saturation_skew_threshold",
     specialization: "v1",
     cluster: "experimentation",
     symbols: [], assumptions: [], definitions: [],
-    statements: [SATURATION_SIBLING, SATURATION_NODE],
+    statements: [SATURATION_SIBLING, SATURATION_OEQ],
     bibliography: [],
+    target_estimand: "tau",
   } as unknown as Core;
 }
 
@@ -61,10 +57,11 @@ function saturationWorking(): WorkingState {
     round: 9,
     solved: {
       "thm:global-certificate": {
-        proof_tex: SATURATION_SIBLING.proof_tex,
+        proof_tex: "Certified by the discharged DAG.",
         snapshot: snap(SATURATION_SIBLING.statement),
       },
-      // The real cursor record: partial, over DIFFERENT bytes than the published core.
+      // The real cursor record: partial, over different bytes than the old
+      // published core claimed to have proved.
       "oeq:full-branch-optimizer-map": {
         proof_tex:
           "For every theta=(pbar,V_1,V_3,V_4) with 0<=pbar<=1, thm:constructive-optimal-design-algorithm returns ...",
@@ -76,34 +73,20 @@ function saturationWorking(): WorkingState {
   } as unknown as WorkingState;
 }
 
-describe("proved-not-partial", () => {
-  it("flags the real banked contradiction: core publishes `proved` over a partial cursor record", () => {
-    const core = saturationCore();
-    const after = saturationWorking();
-    const got = checkRoundInvariants({ proto: core, core, after });
-    const hit = got.find((v) => v.code === "proved-not-partial");
-    expect(hit).toBeDefined();
-    expect(hit!.ids).toEqual(["oeq:full-branch-optimizer-map"]);
+describe("proved-not-partial is unrepresentable in the render", () => {
+  it("the real banked contradiction cannot be published: partial record ⇒ open node", () => {
+    const out = assembleCore(saturationProto(), saturationWorking());
+    const node = out.statements.find((s) => s.id === "oeq:full-branch-optimizer-map")!;
+    // The old core.json said `proved`; the render derives from the record.
+    expect(node.status).toBe("to-prove");
+    // The best-partial bytes ride along as prior progress, from the CURSOR —
+    // the store the next round actually carries.
+    expect(node.proof_tex).toContain("thm:constructive-optimal-design-algorithm");
   });
 
-  it("stays silent on `cited` + partial — the deliberate awaiting-revalidation state", () => {
-    const core = saturationCore();
-    // A cited leaf awaiting revalidation is carried as partial debt ON PURPOSE
-    // (solve/context.ts frozen-member carry); it must not warn.
-    (core.statements[1] as { status: string; source?: unknown; proof_tex?: string }).status = "cited";
-    (core.statements[1] as { status: string; source?: unknown; proof_tex?: string }).proof_tex = undefined;
-    (core.statements[1] as { status: string; source?: unknown }).source = { locator: "Theorem 1" };
-    const after = saturationWorking();
-    expect(codes(checkRoundInvariants({ proto: core, core, after }))).not.toContain("proved-not-partial");
-  });
-
-  it("stays silent when the cursor agrees the node is finished", () => {
-    const core = saturationCore();
-    const after = saturationWorking();
-    const rec = after.solved["oeq:full-branch-optimizer-map"];
-    delete (rec as { partial?: boolean }).partial;
-    rec.proof_tex = SATURATION_NODE.proof_tex;
-    expect(codes(checkRoundInvariants({ proto: core, core, after }))).not.toContain("proved-not-partial");
+  it("the finished sibling still publishes `proved` from its full record", () => {
+    const out = assembleCore(saturationProto(), saturationWorking());
+    expect(out.statements.find((s) => s.id === "thm:global-certificate")!.status).toBe("proved");
   });
 });
 
@@ -121,16 +104,26 @@ const ANSWER = {
 
 const SOURCE_ID = "oeq:full-feasible-frontier";
 
-/** The healthy shape, as on disk in the live run: the answered source is absent from
- *  BOTH core.statements and solved; the answer theorem lives in both. */
-function frontierStores(): { core: Core; after: WorkingState } {
-  const core = {
+function frontierStores(): { proto: Core; after: WorkingState } {
+  const proto = {
     qid: "stat_reversekl_two_coverage",
     specialization: "linear_exact_shell",
     cluster: "stat",
     symbols: [], assumptions: [], definitions: [],
-    statements: [ANSWER],
+    // The frozen proto still holds the question — that is exactly why the old
+    // check existed: assembly had to filter it, and one path forgot.
+    statements: [
+      {
+        id: SOURCE_ID,
+        kind: "openendedquestion",
+        status: "to-prove",
+        statement:
+          "For the fixed public experiment \\(\\mathfrak E\\), characterize which pairs in the varying-design feasible region are attainable ...",
+        depends_on: [],
+      },
+    ],
     bibliography: [],
+    target_estimand: "tau",
   } as unknown as Core;
   const after = {
     round: 12,
@@ -149,46 +142,30 @@ function frontierStores(): { core: Core; after: WorkingState } {
           kind: "openendedquestion",
           statement:
             "For the fixed public experiment \\(\\mathfrak E\\), characterize which pairs in the varying-design feasible region are attainable ...",
-          depends_on: ["def:exact-shell", "thm:feasible-index-region"],
+          depends_on: [],
         }),
       },
     },
   } as unknown as WorkingState;
-  return { core, after };
+  return { proto, after };
 }
 
-describe("resolved-OEQ retirement", () => {
-  it("stays silent on the healthy on-disk shape (source retired from both stores)", () => {
-    const { core, after } = frontierStores();
-    const got = codes(checkRoundInvariants({ proto: core, core, after }));
-    expect(got).not.toContain("oeq-source-retired");
-    expect(got).not.toContain("oeq-source-record-retired");
+describe("resolved-OEQ retirement is structural in the render", () => {
+  it("an answered question can never appear as a live core node — the render filters it", () => {
+    const { proto, after } = frontierStores();
+    const out = assembleCore(proto, after);
+    expect(out.statements.some((s) => s.id === SOURCE_ID)).toBe(false);
+    expect(out.statements.some((s) => s.id === ANSWER.id)).toBe(true);
   });
 
-  it("flags an answered question still published as a live core node — regardless of its `kind`", () => {
-    const { core, after } = frontierStores();
-    // Minimal mutation: the source survives in the assembled core (a mis-kinded node on
-    // the source id would slip a kind-keyed repair; the check keys on the id).
-    core.statements.push({
-      id: SOURCE_ID,
-      kind: "theorem",
-      status: "to-prove",
-      statement: "For the fixed public experiment, characterize the attainable pairs ...",
-      depends_on: [],
-    } as unknown as Core["statements"][number]);
-    const hit = checkRoundInvariants({ proto: core, core, after }).find((v) => v.code === "oeq-source-retired");
-    expect(hit).toBeDefined();
-    expect(hit!.ids).toEqual([SOURCE_ID]);
-  });
-
-  it("flags an answered question that still has a working record under its source id", () => {
-    const { core, after } = frontierStores();
+  it("a surviving source RECORD is auto-resolved at the write boundary", () => {
+    const { after } = frontierStores();
     after.solved[SOURCE_ID] = {
       proof_tex: "stale bytes",
       snapshot: { stmt: "the question text", depends_on: [], defs: {}, assumptions: {} },
     } as unknown as WorkingState["solved"][string];
-    const hit = checkRoundInvariants({ proto: core, core, after }).find((v) => v.code === "oeq-source-record-retired");
-    expect(hit).toBeDefined();
-    expect(hit!.ids).toEqual([SOURCE_ID]);
+    normalizeWorkingState(after);
+    expect(after.solved[SOURCE_ID]).toBeUndefined();
+    expect(after.solved[ANSWER.id]).toBeDefined();
   });
 });

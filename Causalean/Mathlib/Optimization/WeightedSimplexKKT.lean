@@ -21,39 +21,41 @@ variable (M : ℝ) (α β : Fin 3 → ℝ) (kappa : ℝ) (S : Finset (Fin 3)) (l
 
 /-- The active-set denominator `D = Σ_{h∈S} (λ−αₕ)/βₕ` is strictly positive: `S` is
 nonempty and each summand is positive (`λ > αₕ` on `S`, `βₕ > 0`). -/
-lemma activeSet_denom_pos (hβ : ∀ i, 0 < β i)
-    (hadm : IsAdmissibleSupport α β kappa S lam) :
+lemma activeSet_denom_pos (hβ : ∀ i ∈ S, 0 < β i) (hS : S.Nonempty)
+    (hactive : ∀ i ∈ S, α i < lam) :
     0 < ∑ h ∈ S, (lam - α h) / β h := by
-  rcases hadm with ⟨hS, -, hactive, -⟩
   exact Finset.sum_pos
-    (fun h hh => div_pos (sub_pos.mpr (hactive h hh)) (hβ h)) hS
+    (fun h hh => div_pos (sub_pos.mpr (hactive h hh)) (hβ h hh)) hS
 
 /-- The active-set point has support exactly `S`: on `S` its coordinate is positive,
 off `S` it is `0`. -/
-lemma activeSetPoint_pos_iff (hM : 0 < M) (hβ : ∀ i, 0 < β i)
-    (hadm : IsAdmissibleSupport α β kappa S lam) (i : Fin 3) :
+lemma activeSetPoint_pos_iff (hM : 0 < M) (hβ : ∀ i ∈ S, 0 < β i)
+    (hS : S.Nonempty) (hactive : ∀ i ∈ S, α i < lam) (i : Fin 3) :
     0 < activeSetPoint M α β S lam i ↔ i ∈ S := by
   constructor
   · intro hpos
     by_contra hi
     simp [activeSetPoint, hi] at hpos
   · intro hi
-    simp [activeSetPoint, hi]
+    rw [activeSetPoint, if_pos hi]
     exact div_pos
-      (mul_pos hM (div_pos (sub_pos.mpr (hadm.2.2.1 i hi)) (hβ i)))
-      (activeSet_denom_pos α β kappa S lam hβ hadm)
+      (mul_pos hM (div_pos (sub_pos.mpr (hactive i hi)) (hβ i hi)))
+      (activeSet_denom_pos α β S lam hβ hS hactive)
 
 /-- The active-set point lies in the simplex `Δ_M`. -/
-lemma activeSetPoint_mem (hM : 0 < M) (hβ : ∀ i, 0 < β i)
-    (hadm : IsAdmissibleSupport α β kappa S lam) :
+lemma activeSetPoint_mem (hM : 0 ≤ M) (hβ : ∀ i ∈ S, 0 < β i)
+    (hS : S.Nonempty) (hactive : ∀ i ∈ S, α i < lam) :
     InSimplex M (activeSetPoint M α β S lam) := by
   constructor
   · intro i
     by_cases hi : i ∈ S
-    · exact le_of_lt ((activeSetPoint_pos_iff M α β kappa S lam hM hβ hadm i).2 hi)
+    · rw [activeSetPoint, if_pos hi]
+      exact div_nonneg
+        (mul_nonneg hM (le_of_lt (div_pos (sub_pos.mpr (hactive i hi)) (hβ i hi))))
+        (le_of_lt (activeSet_denom_pos α β S lam hβ hS hactive))
     · simp [activeSetPoint, hi]
   · let D := ∑ h ∈ S, (lam - α h) / β h
-    have hD : D ≠ 0 := ne_of_gt (activeSet_denom_pos α β kappa S lam hβ hadm)
+    have hD : D ≠ 0 := ne_of_gt (activeSet_denom_pos α β S lam hβ hS hactive)
     calc
       (∑ i, activeSetPoint M α β S lam i)
           = ∑ i ∈ S, M * ((lam - α i) / β i) / D := by
@@ -67,13 +69,13 @@ lemma activeSetPoint_mem (hM : 0 < M) (hβ : ∀ i, 0 < β i)
 
 /-- Weighted squared norm of the active-set point: `Σ βᵢ tᵢ² = (Mκ)² / D²`, using the
 admissibility identity `Σ_{i∈S}(λ−αᵢ)²/βᵢ = κ²`. -/
-lemma activeSetPoint_normSq (hβ : ∀ i, 0 < β i)
-    (hadm : IsAdmissibleSupport α β kappa S lam) :
+lemma activeSetPoint_normSq (hβ : ∀ i ∈ S, 0 < β i) (hS : S.Nonempty)
+    (hactive : ∀ i ∈ S, α i < lam)
+    (hsq : (∑ i ∈ S, (lam - α i) ^ 2 / β i) = kappa ^ 2) :
     (∑ i, β i * activeSetPoint M α β S lam i ^ 2)
       = (M * kappa) ^ 2 / (∑ h ∈ S, (lam - α h) / β h) ^ 2 := by
   let D := ∑ h ∈ S, (lam - α h) / β h
-  have hD : D ≠ 0 := ne_of_gt (activeSet_denom_pos α β kappa S lam hβ hadm)
-  have hsq : (∑ i ∈ S, (lam - α i) ^ 2 / β i) = kappa ^ 2 := hadm.2.1
+  have hD : D ≠ 0 := ne_of_gt (activeSet_denom_pos α β S lam hβ hS hactive)
   calc
     (∑ i, β i * activeSetPoint M α β S lam i ^ 2)
         = ∑ i ∈ S, β i * (M * ((lam - α i) / β i) / D) ^ 2 := by
@@ -81,7 +83,7 @@ lemma activeSetPoint_normSq (hβ : ∀ i, 0 < β i)
     _ = ∑ i ∈ S, (M ^ 2 / D ^ 2) * ((lam - α i) ^ 2 / β i) := by
           apply Finset.sum_congr rfl
           intro i hi
-          have hb : β i ≠ 0 := ne_of_gt (hβ i)
+          have hb : β i ≠ 0 := ne_of_gt (hβ i hi)
           field_simp [hb, hD]
     _ = (M ^ 2 / D ^ 2) * (∑ i ∈ S, (lam - α i) ^ 2 / β i) := by
           rw [Finset.mul_sum]
@@ -92,23 +94,23 @@ lemma activeSetPoint_normSq (hβ : ∀ i, 0 < β i)
 /-- Objective value of the active-set point is the closed form `M·λ`. Multiplying
 active stationarity `(λ−αᵢ) = κ βᵢ tᵢ / N` by `tᵢ` and summing gives
 `Σ αᵢ tᵢ + κ N = λ Σ tᵢ = M λ`. -/
-lemma activeSetPoint_value (hM : 0 < M) (hβ : ∀ i, 0 < β i) (hk : 0 < kappa)
-    (hadm : IsAdmissibleSupport α β kappa S lam) :
+lemma activeSetPoint_value (hM : 0 ≤ M) (hβ : ∀ i ∈ S, 0 < β i) (hk : 0 < kappa)
+    (hS : S.Nonempty) (hactive : ∀ i ∈ S, α i < lam)
+    (hsq : (∑ i ∈ S, (lam - α i) ^ 2 / β i) = kappa ^ 2) :
     wsObj α β kappa (activeSetPoint M α β S lam) = M * lam := by
   let D := ∑ h ∈ S, (lam - α h) / β h
-  have hDpos : 0 < D := activeSet_denom_pos α β kappa S lam hβ hadm
+  have hDpos : 0 < D := activeSet_denom_pos α β S lam hβ hS hactive
   have hD : D ≠ 0 := ne_of_gt hDpos
-  have hsq : (∑ i ∈ S, (lam - α i) ^ 2 / β i) = kappa ^ 2 := hadm.2.1
   have hnorm :
       (∑ i, β i * activeSetPoint M α β S lam i ^ 2) = (M * kappa) ^ 2 / D ^ 2 := by
-    simpa [D] using activeSetPoint_normSq M α β kappa S lam hβ hadm
+    simpa [D] using activeSetPoint_normSq M α β kappa S lam hβ hS hactive hsq
   have hsqrt :
       Real.sqrt (∑ i, β i * activeSetPoint M α β S lam i ^ 2) = M * kappa / D := by
     rw [hnorm]
     rw [div_eq_mul_inv]
     rw [show (M * kappa) ^ 2 * (D ^ 2)⁻¹ = (M * kappa / D) ^ 2 by
       field_simp [hD]]
-    exact Real.sqrt_sq (le_of_lt (div_pos (mul_pos hM hk) hDpos))
+    exact Real.sqrt_sq (div_nonneg (mul_nonneg hM (le_of_lt hk)) hDpos.le)
   have hlin :
       (∑ i, α i * activeSetPoint M α β S lam i) = M * lam - M * kappa ^ 2 / D := by
     have hcore :
@@ -119,7 +121,7 @@ lemma activeSetPoint_value (hM : 0 < M) (hβ : ∀ i, 0 < β i) (hk : 0 < kappa)
                 (lam * ((lam - α i) / β i) - (lam - α i) ^ 2 / β i) := by
               apply Finset.sum_congr rfl
               intro i hi
-              have hb : β i ≠ 0 := ne_of_gt (hβ i)
+              have hb : β i ≠ 0 := ne_of_gt (hβ i hi)
               field_simp [hb]
               ring
         _ = lam * D - kappa ^ 2 := by
@@ -167,12 +169,15 @@ lemma activeSetPoint_strict_min (hM : 0 < M) (hβ : ∀ i, 0 < β i) (hk : 0 < k
   let Ns := Real.sqrt (∑ i, β i * s i ^ 2)
   let R := ∑ i, β i * (t i * s i)
   have htmem : InSimplex M t := by
-    simpa [t] using activeSetPoint_mem M α β kappa S lam hM hβ hadm
+    simpa [t] using activeSetPoint_mem M α β S lam hM.le (fun i _ => hβ i)
+      hadm.1 hadm.2.2.1
   have ht_sum : ∑ i, t i = M := htmem.2
-  have hDpos : 0 < D := activeSet_denom_pos α β kappa S lam hβ hadm
+  have hDpos : 0 < D := activeSet_denom_pos α β S lam (fun i _ => hβ i)
+    hadm.1 hadm.2.2.1
   have hD : D ≠ 0 := ne_of_gt hDpos
   have hQnorm : Q = (M * kappa) ^ 2 / D ^ 2 := by
-    simpa [Q, t, D] using activeSetPoint_normSq M α β kappa S lam hβ hadm
+    simpa [Q, t, D] using activeSetPoint_normSq M α β kappa S lam (fun i _ => hβ i)
+      hadm.1 hadm.2.2.1 hadm.2.1
   have hQnonneg : 0 ≤ Q := by
     rw [hQnorm]
     exact div_nonneg (sq_nonneg (M * kappa)) (sq_nonneg D)
@@ -190,10 +195,10 @@ lemma activeSetPoint_strict_min (hM : 0 < M) (hβ : ∀ i, 0 < β i) (hk : 0 < k
     exact div_pos (mul_pos hM hk) hDpos
   have hcs : R < N * Ns := by
     simpa [R, N, Ns, t] using
-      weighted_cs_simplex_strict M hM β t s hβ ht_sum hs.2 (Ne.symm hne)
+      weighted_cs_simplex_strict M hM.ne' β t s hβ ht_sum hs.2 (Ne.symm hne)
   have hRdiff :
       (∑ i, β i * (t i * (s i - t i))) = R - Q := by
-    simp [R, Q]
+    dsimp [R, Q]
     rw [← Finset.sum_sub_distrib]
     apply Finset.sum_congr rfl
     intro i hi
@@ -306,7 +311,8 @@ lemma activeSetPoint_strict_min (hM : 0 < M) (hβ : ∀ i, 0 < β i) (hk : 0 < k
       linarith
     linarith
   have ht_value : wsObj α β kappa t = M * lam := by
-    simpa [t] using activeSetPoint_value M α β kappa S lam hM hβ hk hadm
+    simpa [t] using activeSetPoint_value M α β kappa S lam hM.le (fun i _ => hβ i) hk
+      hadm.1 hadm.2.2.1 hadm.2.1
   linarith
 
 end Causalean.Mathlib.Optimization

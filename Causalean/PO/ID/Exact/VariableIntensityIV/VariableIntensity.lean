@@ -127,7 +127,7 @@ lemma measurable_factualY : Measurable S.factualY := S.yVar.measurable_factual
 
 /-- The factual instrument cell is measurable. -/
 lemma measurableSet_zEvent (z : 𝒵) : MeasurableSet (S.zEvent z) :=
-  S.zVar.measurableSet_event z
+  S.zVar.measurableSet_event z (MeasurableSet.singleton z)
 
 /-! ### Counterfactual bundle for a directed contrast
 
@@ -417,7 +417,10 @@ lemma condExpDZ_left_eq_integral {z0 z1 : 𝒵}
         (fun ω => OrderedTreatment.intensityValue (S.factualD ω)) := rfl
   rw [hbridge,
     POSystem.eventCondExp_of_consistency_IndepCF hValid.hIndependence
-      (a := S.zVar) hh_meas h_cons hμne_zero hμne_top]
+      (a := S.zVar) hh_meas
+      (MeasurableSet.singleton z0)
+      (ae_restrict_of_forall_mem (S.measurableSet_zEvent z0) h_cons)
+      hμne_zero hμne_top]
   refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
   intro ω
   change OrderedTreatment.intensityValue ((S.cfContrastBundle z0 z1).jointValue ω idx0) =
@@ -457,7 +460,10 @@ lemma condExpDZ_right_eq_integral {z0 z1 : 𝒵}
         (fun ω => OrderedTreatment.intensityValue (S.factualD ω)) := rfl
   rw [hbridge,
     POSystem.eventCondExp_of_consistency_IndepCF hValid.hIndependence
-      (a := S.zVar) hh_meas h_cons hμne_zero hμne_top]
+      (a := S.zVar) hh_meas
+      (MeasurableSet.singleton z1)
+      (ae_restrict_of_forall_mem (S.measurableSet_zEvent z1) h_cons)
+      hμne_zero hμne_top]
   refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
   intro ω
   change OrderedTreatment.intensityValue
@@ -518,7 +524,10 @@ lemma condExpYZ_left_eq_integral {z0 z1 : 𝒵}
       eventCondExp P.μ (S.zVar.event z0) S.factualY := rfl
   rw [hbridge,
     POSystem.eventCondExp_of_consistency_IndepCF hValid.hIndependence
-      (a := S.zVar) hh_meas h_cons hμne_zero hμne_top]
+      (a := S.zVar) hh_meas
+      (MeasurableSet.singleton z0)
+      (ae_restrict_of_forall_mem (S.measurableSet_zEvent z0) h_cons)
+      hμne_zero hμne_top]
   refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
   intro ω
   have hJV0 : (S.cfContrastBundle z0 z1).jointValue ω idx0 = S.DofZ z0 ω := rfl
@@ -593,7 +602,10 @@ lemma condExpYZ_right_eq_integral {z0 z1 : 𝒵}
       eventCondExp P.μ (S.zVar.event z1) S.factualY := rfl
   rw [hbridge,
     POSystem.eventCondExp_of_consistency_IndepCF hValid.hIndependence
-      (a := S.zVar) hh_meas h_cons hμne_zero hμne_top]
+      (a := S.zVar) hh_meas
+      (MeasurableSet.singleton z1)
+      (ae_restrict_of_forall_mem (S.measurableSet_zEvent z1) h_cons)
+      hμne_zero hμne_top]
   refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
   intro ω
   have hJV1 : (S.cfContrastBundle z0 z1).jointValue ω idx1 = S.DofZ z1 ω := rfl
@@ -718,7 +730,7 @@ theorem indicatorWeightedACR_eq_averageCausalResponse {z0 z1 : 𝒵} :
   apply Finset.sum_congr rfl
   intro j _hj
   rw [← PO.eventCondExp_mul_measure_toReal P.μ (S.crossingEvent z0 z1 j)
-    (S.marginResponse j)]
+    (measure_ne_top _ _) (S.marginResponse j)]
   ring_nf
 
 /-- Angrist-Imbens ACR characterization: the directed Wald estimand equals the

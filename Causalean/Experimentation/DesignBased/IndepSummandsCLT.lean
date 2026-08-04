@@ -67,7 +67,7 @@ noncomputable def diagDepGraph (D : ∀ n, ∀ i, FiniteDesign (α n i)) (g : �
       intro a haA haB
       exact hAB a haA a haB rfl
     exact indepFun_prodDesign_apply_blocks (D n)
-      (fun i => Measurable.of_discrete) hdisj
+      (fun i => Measurable.of_discrete) (fun i => Measurable.of_discrete) hdisj
 
 /-- **Independent-summands CLT over product designs.** A normalized sum of independent, uniformly
 bounded (`|g n i a| ≤ B n` with `B n → 0`, `card(ιₙ)·Bₙ³ → 0`), mean-zero per-coordinate summands
@@ -125,7 +125,7 @@ theorem prodDesign_clt
   -- Apply the dependency-graph Stein CLT (degree bound `m := 1`).
   have hbound' : ∀ n i (ω : ∀ j, α n j), |X n i ω| ≤ B n :=
     fun n i ω => hbound n i (ω i)
-  have hclt := stein_cdf_clt_of_depGraph μ X Dg hmeas 1 hdeg B hB hbound' hB0 hNB3
+  have hclt := stein_cdf_clt_of_depGraph μ X Dg 1 hdeg B hB hbound' hB0 hNB3
     hmean' hvar' s
   -- Rewrite the limit point: `Φ(s) = (gaussianReal 0 1).real (Iic s)` by definition.
   rw [show stdNormalCdf s = (gaussianReal 0 1).real (Set.Iic s) from rfl]

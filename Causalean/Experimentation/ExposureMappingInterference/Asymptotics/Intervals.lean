@@ -23,7 +23,7 @@ Gaussian-CDF continuity; the paper only claims "at least", so it is not pursued 
 -/
 
 
-open scoped BigOperators Topology Classical
+open scoped BigOperators Topology
 open Filter
 
 namespace Causalean

@@ -29,13 +29,14 @@ namespace Causalean.Mathlib.LinearAlgebra
 
 open scoped Matrix BigOperators
 
-/-- An invertible square matrix with at most one non-zero entry per column is a generalized
+/-- A square matrix with nonzero determinant and at most one non-zero entry per column is a
+generalized
 permutation matrix: there are a permutation `τ` and non-zero scalings `d` with
 `W i j = if j = τ i then d i else 0`. -/
-theorem genPerm_of_invertible_of_colSupport {n : ℕ} {W : Matrix (Fin n) (Fin n) ℝ}
-    (hW : IsUnit W.det)
+theorem genPerm_of_det_ne_zero_of_colSupport {ι K : Type*} [Fintype ι] [DecidableEq ι]
+    [CommRing K] {W : Matrix ι ι K} (hW : W.det ≠ 0)
     (hcol : ∀ j i k, i ≠ k → W i j = 0 ∨ W k j = 0) :
-    ∃ (τ : Equiv.Perm (Fin n)) (d : Fin n → ℝ), (∀ i, d i ≠ 0) ∧
+    ∃ (τ : Equiv.Perm ι) (d : ι → K), (∀ i, d i ≠ 0) ∧
       ∀ i j, W i j = if j = τ i then d i else 0 := by
   classical
   have hcol_nonzero : ∀ j, ∃ i, W i j ≠ 0 := by
@@ -45,8 +46,8 @@ theorem genPerm_of_invertible_of_colSupport {n : ℕ} {W : Matrix (Fin n) (Fin n
       intro i
       by_contra hi
       exact hzero ⟨i, hi⟩
-    exact hW.ne_zero (Matrix.det_eq_zero_of_column_eq_zero j hcol_zero)
-  let ρ : Fin n → Fin n := fun j => Classical.choose (hcol_nonzero j)
+    exact hW (Matrix.det_eq_zero_of_column_eq_zero j hcol_zero)
+  let ρ : ι → ι := fun j => Classical.choose (hcol_nonzero j)
   have hρ_ne : ∀ j, W (ρ j) j ≠ 0 := by
     intro j
     exact Classical.choose_spec (hcol_nonzero j)
@@ -68,11 +69,11 @@ theorem genPerm_of_invertible_of_colSupport {n : ℕ} {W : Matrix (Fin n) (Fin n
     have hrow_zero : ∀ j, W i j = 0 := by
       intro j
       exact hρ_zero j i (fun h => hi j h.symm)
-    exact hW.ne_zero (Matrix.det_eq_zero_of_row_eq_zero i hrow_zero)
+    exact hW (Matrix.det_eq_zero_of_row_eq_zero i hrow_zero)
   have hρ_inj : Function.Injective ρ := (Finite.injective_iff_surjective).2 hρ_surj
-  let ρE : Equiv.Perm (Fin n) := Equiv.ofBijective ρ ⟨hρ_inj, hρ_surj⟩
-  let τ : Equiv.Perm (Fin n) := ρE.symm
-  let d : Fin n → ℝ := fun i => W i (τ i)
+  let ρE : Equiv.Perm ι := Equiv.ofBijective ρ ⟨hρ_inj, hρ_surj⟩
+  let τ : Equiv.Perm ι := ρE.symm
+  let d : ι → K := fun i => W i (τ i)
   refine ⟨τ, d, ?_, ?_⟩
   · intro i
     have hρτ : ρ (τ i) = i := by
@@ -124,10 +125,11 @@ is lower triangular in some causal order `σ` (`C i j = 0` when `σ i < σ j`), 
 obtained from `C` by a generalized permutation `C' i j = d i · C (τ i) j`. Then `C = C'`: the unit
 diagonal plus triangularity force the underlying permutation to be the identity and every scaling
 to be one. (Formerly `Discovery.LiNGAM.lingam_reduction`.) -/
-theorem eq_of_genPerm_triangular_unitDiag {n : ℕ} {C C' : Matrix (Fin n) (Fin n) ℝ}
+theorem eq_of_genPerm_triangular_unitDiag {n : ℕ} {K : Type*}
+    [MulZeroOneClass K] [Nontrivial K] {C C' : Matrix (Fin n) (Fin n) K}
     (hCdiag : ∀ i, C i i = 1) (hC'diag : ∀ i, C' i i = 1)
     {σ : Equiv.Perm (Fin n)} (hCtri : ∀ i j, σ i < σ j → C i j = 0)
-    {τ : Equiv.Perm (Fin n)} {d : Fin n → ℝ}
+    {τ : Equiv.Perm (Fin n)} {d : Fin n → K}
     (hW : ∀ i j, C' i j = d i * C (τ i) j) :
     C = C' := by
   have hne : ∀ i, C (τ i) i ≠ 0 := by

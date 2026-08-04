@@ -1,0 +1,28 @@
+# Referee review
+
+**Recommendation:** minor_revision
+**Overall score:** 8/10 — The verified core delivers a clear minimax frontier contribution, and the remaining issues are mainly organizational and expository rather than threats to the formal claims.
+
+The paper studies honest expected-length frontiers for transported complier-effect inference under weak first stages and transport-weight dispersion. The central contribution is a matched lower and upper order, indexed by n mu_n^2/kappa_n, together with feasible finite-cell constructions that attain the same order under stated growth and regularity conditions. The verified statements support the main claims, and the manuscript is close to publishable after targeted improvements to ordering, trust-boundary exposition, and assumption interpretation.
+
+## Strengths
+- The main estimand, risk criterion, and effective-strength scale are stated precisely and tied to verified formal objects.
+- The oracle lower and upper bounds deliver a clean and useful frontier for transported weak-ratio inference.
+- The finite-cell and regular-cell procedures make the benchmark constructive rather than purely oracle-based.
+- The prose generally respects the compact-parameter-space conditions and avoids overselling beyond the verified theorems.
+- The related-work section now gives a much clearer map between transported noncompliance, weak-IV robust inference, and transported ATE benchmarks.
+
+## Findings
+- **[minor·structure] Oracle Frontier and Score Inversion** — The theorem "Single-population frontier reduction" is still stated before the manuscript defines the fixed-geometry class, fixed-geometry slice, and fixed-geometry value it relies on. The paragraph acknowledges that the definitions appear in the next section, but readers must process math objects before their formal meaning is introduced.
+  - *Fix:* Move \cref{obj:def:admissible-geometry-class,obj:def:fixed-geometry-slice,obj:def:fixed-geometry-honesty,obj:def:fixed-geometry-value} before \cref{obj:prop:no-shift-reduction}, or move the no-shift reduction theorem into the fixed-geometry section after those definitions.
+- **[minor·prose] Setup, Transport, and Honest Risk** — The interpretation of target-average receipt transport is improved, but the empirical content remains high-stakes because the denominator is identified from an average cross-population compliance restriction rather than a conditional one. The current text gives possible sources of support but leaves the reader without a compact diagnostic for what evidence validates the integrated equality.
+  - *Fix:* Add one short paragraph after \cref{obj:ass:receipt-transport} that gives a concrete admissible design example and names the observed or external quantities that would support the target-law average equality.
+- **[minor·prose] appendix** — The verification note is broadly clear, but the appendix contains long proof narratives with inline Lean comments, which can blur the boundary between machine-checked declarations and reader-facing explanation.
+  - *Fix:* At the start of \cref{sec:deferred-proofs}, add a sentence stating that the formal theorem statements and proof obligations are the checked Lean declarations named in the comments, while the displayed proofs are expository companions aligned to those declarations.
+- **[nit·citation] Related Literature and Discussion** — The related-work comparison has become much more specific, but the sentence beginning "The closest transported-CACE comparison is \citet{ChenHuang2025}" combines estimand, design, and contribution in a dense paragraph with many neighboring papers. Readers would benefit from a more scannable comparison among the nearest papers.
+  - *Fix:* Split the dense paragraph into two shorter paragraphs or add a compact comparison sentence grouping the nearest papers by transported CACE, transported encouragement effects, weak-LATE score inversion, and two-sample linear IV.
+
+## Questions for authors
+- Can the receipt-transport condition be illustrated with one empirical setting where the target-average encouragement effect on receipt is directly supported by design or external data?
+- Would the authors prefer to introduce fixed-geometry notation earlier, or to move the no-shift theorem into the fixed-geometry section?
+

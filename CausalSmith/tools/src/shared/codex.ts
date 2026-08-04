@@ -2,7 +2,11 @@ import { open, readdir, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { spawnWithInactivityTimeout } from "../workers/spawn.js";
-import { localConfig, leanProjectPathFor } from "../local_config.js";
+import {
+  localConfig,
+  leanProjectPathFor,
+  type LocalConfig,
+} from "../local_config.js";
 import { MODELS } from "../models.js";
 
 /**
@@ -21,8 +25,8 @@ export interface CodexRunInput {
    * scratch directory. Formalization stages F2.5--F4 normally run Codex from
    * `<leanDir>/tmp` so disposable probes cannot pollute the package root; a
    * source-producing nested call (F2 redirect or F3 filler) must opt back into
-   * its explicit `cwd`, otherwise Codex's workspace-write sandbox cannot edit
-   * the production Lean tree.
+   * its explicit `cwd`, so the dispatcher and prompt agree on the production
+   * tree the worker is meant to edit.
    */
   productionWrite?: boolean;
   /**
@@ -33,7 +37,7 @@ export interface CodexRunInput {
   inactivityTimeoutMs?: number;
   startupTimeoutMs?: number;
   /**
-   * Configure the `lean-lsp` MCP server for this codex run. `--full-auto` does
+   * Configure the `lean-lsp` MCP server for this codex run. `codex exec` does
    * NOT auto-enable MCP — servers must be configured explicitly (per OpenAI
    * Codex docs), so we inject the server inline via `-c mcp_servers.lean-lsp.*`
    * rather than touching global `~/.codex/config.toml`.
@@ -74,6 +78,45 @@ export interface CodexRunInput {
    * if the extra tool surface is unwanted.
    */
   webSearch?: boolean;
+}
+
+export type CodexSandboxMode = LocalConfig["codexSandbox"];
+
+/**
+ * Decide which Codex sandbox can actually execute local tools on this host.
+ *
+ * `workspace-write` is the portable default. On Linux it requires a working
+ * user/network namespace (directly or through bubblewrap). Some managed cluster
+ * containers deny both: Codex then starts normally, but every read, shell
+ * command, and `apply_patch` fails with `bwrap: loopback: Failed RTM_NEWADDR`.
+ * Because detecting that failure does NOT prove the host is otherwise confined,
+ * this function never broadens permissions automatically.
+ *
+ * An operator who has verified an outer sandbox may explicitly opt into Codex's
+ * non-bypass `danger-full-access` mode in `tools/config/local.json` or with
+ * `CAUSALSMITH_CODEX_SANDBOX`. The environment overrides the file. Invalid
+ * values fail closed.
+ */
+export function resolveCodexSandboxMode(args: {
+  env?: NodeJS.ProcessEnv;
+  configured?: string;
+} = {}): CodexSandboxMode {
+  const env = args.env ?? process.env;
+  const configured = (env.CAUSALSMITH_CODEX_SANDBOX ?? args.configured)?.trim();
+  if (configured) {
+    if (configured === "workspace-write" || configured === "danger-full-access") {
+      return configured;
+    }
+    throw new Error(
+      `CAUSALSMITH_CODEX_SANDBOX must be workspace-write or danger-full-access; got ${configured}`,
+    );
+  }
+  return "workspace-write";
+}
+
+/** Canonical, explicitly configured mode for every real Codex dispatch. */
+export function codexSandboxMode(): CodexSandboxMode {
+  return resolveCodexSandboxMode({ configured: localConfig().codexSandbox });
 }
 
 /**
@@ -149,8 +192,12 @@ export async function runCodex(input: CodexRunInput): Promise<{ stdout: string; 
     "unset npm_config_prefix",
     "if [ -s ~/.nvm/nvm.sh ]; then . ~/.nvm/nvm.sh && nvm use 20.20.2 >/dev/null 2>&1; fi",
   ].join(" && ");
+  const sandboxMode = codexSandboxMode();
   const cmd = [
-    "codex exec --full-auto",
+    // `codex exec` is non-interactive, so approval remains `never`; this selects
+    // only the explicitly configured local-tool sandbox. Never use the blanket
+    // --dangerously-bypass-approvals-and-sandbox flag.
+    `codex exec --sandbox ${sandboxMode}`,
     `-C ${shellQuote(input.cwd)}`,
     "--skip-git-repo-check",
     // Windows: the default `elevated` sandbox setup helper fails to spawn on
@@ -159,13 +206,10 @@ export async function runCodex(input: CodexRunInput): Promise<{ stdout: string; 
     // workaround and runs commands fine; verified `SANDBOX_OK`. Key is ignored on
     // non-Windows hosts (the cluster), so it is safe to pass unconditionally.
     //
-    // NOTE: we deliberately do NOT enable `sandbox_workspace_write.network_access`.
-    // Stages that need to read a paper use codex's HOSTED `web_search` tool
-    // (search + open_page) — server-side, outside the sandbox. That tool is NOT
-    // on by default; it is enabled by the `tools.web_search` override below. So the
-    // sandbox stays network-off (no raw egress to the autonomous agent) while the
-    // hosted web search is available to stages that need it (Stage -1.1 scout,
-    // D-0.5 citation review, D0 salvage).
+    // We deliberately do NOT enable `sandbox_workspace_write.network_access`.
+    // In workspace-write mode, stages read papers through hosted `web_search`
+    // without raw sandbox egress. An explicit danger-full-access machine setting
+    // delegates both filesystem and network confinement to the outer environment.
     "-c windows.sandbox=unelevated",
     // Default fallback tier is mechanical (gpt-5.6-terra); every hard-math / kernel caller
     // passes an explicit `input.model` (codexKernel = gpt-5.5), so this default only applies

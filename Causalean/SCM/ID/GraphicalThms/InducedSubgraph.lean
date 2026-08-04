@@ -76,7 +76,7 @@ def properDescIn (R : Finset (SWIGNode N)) (v₀ : SWIGNode N) :
     Finset (SWIGNode N) :=
   (G.induce R).dag.descendants v₀
 
-/-- This set contains the selected nodes that are neither the target node nor its proper descendants in the induced subgraph.
+/-- This set contains selected nodes excluding the target and its proper descendants.
 
 It is the non-descendant conditioning set used in Tian's Lemma 1 convention. -/
 def nonDescIn (R : Finset (SWIGNode N)) (v₀ : SWIGNode N) :
@@ -94,7 +94,7 @@ lemma v₀_not_mem_nonDescIn (G : SWIGGraph N) (R : Finset (SWIGNode N))
     (v₀ : SWIGNode N) : v₀ ∉ G.nonDescIn R v₀ := by
   simp [nonDescIn]
 
-/-- Every proper descendant inside the induced subgraph lies in the selected set with the target node removed. -/
+/-- Proper descendants lie in the selected set with the target node removed. -/
 lemma properDescIn_subset_erase (G : SWIGGraph N) (R : Finset (SWIGNode N))
     (v₀ : SWIGNode N) :
     G.properDescIn R v₀ ⊆ R.erase v₀ := by
@@ -102,7 +102,7 @@ lemma properDescIn_subset_erase (G : SWIGGraph N) (R : Finset (SWIGNode N))
   simp only [properDescIn, DAG.mem_descendants] at hw
   rw [Finset.mem_erase]
   exact ⟨fun heq => DAG.isAncestor_irrefl _ v₀ (heq ▸ hw),
-         G.induce_isAncestor_mem_R R hw⟩
+         (Finset.mem_inter.mp (G.induce_isAncestor_mem_R R hw)).1⟩
 
 /-- Every induced non-descendant lies in the selected set with the target node removed. -/
 lemma nonDescIn_subset_erase (G : SWIGGraph N) (R : Finset (SWIGNode N))
@@ -126,12 +126,11 @@ lemma properDescIn_disjoint_nonDescIn (G : SWIGGraph N)
   rw [Finset.mem_sdiff] at hx'
   exact hx'.2 hx
 
-/-- Proper descendants together with non-descendants cover the selected nodes except for the target node.
+/-- Proper and non-descendants cover selected nodes except for the target.
 
 This is the coverage identity used in the graph split for Tian's Lemma 1. -/
 lemma properDescIn_union_nonDescIn_eq_erase
-    (G : SWIGGraph N) (R : Finset (SWIGNode N)) (v₀ : SWIGNode N)
-    (hv₀ : v₀ ∈ R) :
+    (G : SWIGGraph N) (R : Finset (SWIGNode N)) (v₀ : SWIGNode N) :
     G.properDescIn R v₀ ∪ G.nonDescIn R v₀ = R.erase v₀ := by
   ext x
   simp only [Finset.mem_union, Finset.mem_erase, properDescIn, nonDescIn,
@@ -141,7 +140,7 @@ lemma properDescIn_union_nonDescIn_eq_erase
     intro hx
     rcases hx with hx | ⟨⟨hne, hxR⟩, _⟩
     · exact ⟨fun heq => DAG.isAncestor_irrefl _ v₀ (heq ▸ hx),
-             G.induce_isAncestor_mem_R R hx⟩
+             (Finset.mem_inter.mp (G.induce_isAncestor_mem_R R hx)).1⟩
     · exact ⟨hne, hxR⟩
   · -- (⊇): x ∈ R.erase v₀ → in properDescIn or nonDescIn
     intro ⟨hne, hxR⟩

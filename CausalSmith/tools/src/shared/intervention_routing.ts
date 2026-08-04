@@ -264,6 +264,7 @@ export function applyInterventionRoute(state: StateJson, intervention: Intervent
     pf.current_version = 0;
     pf.current_mode = "pivot";
     pf.last_reviewer_verdict = "";
+    delete pf.last_draft_version;
     delete pf.last_draft_handoff;
     delete pf.last_draft_status;
     state.stage_completed = "-1.2";
@@ -313,7 +314,7 @@ export function applyInterventionRoute(state: StateJson, intervention: Intervent
     // stage_completed = "-1.2" so nextStage = "-0.5" (proposal re-review). Then
     // Stage -0.5's resume-aware producer-first guard fires only when the last
     // draft handoff is empty AND a prior reviewer verdict exists. We clear
-    // last_draft_handoff and pin current_mode = "revise" to guarantee that on
+    // the draft freshness marker and pin current_mode = "revise" to guarantee that on
     // resume, the producer runs once before the reviewer re-judges — that way
     // the Stage 0.5 rejection context is woven into a fresh v(N+1) draft
     // rather than the reviewer re-accepting the same already-judged .tex.
@@ -342,7 +343,8 @@ export function applyInterventionRoute(state: StateJson, intervention: Intervent
     }
     const pf = state.proposed_from;
     if (pf) {
-      pf.last_draft_handoff = undefined;
+      pf.last_draft_version = undefined;
+      delete pf.last_draft_handoff;
       pf.last_draft_status = undefined;
       pf.current_mode = "revise";
     }

@@ -54,7 +54,7 @@ lemma supBall_rStar_subset_supBall {d : ℕ} (r0 : ℝ) (x0 : Fin d → ℝ) (hr
     supBall x0 (rStar r0 x0) ⊆ supBall x0 r0 := by
   by_cases hd : d = 0
   · subst d
-    simp [supBall]
+    simp [supBall, Causalean.Stat.Nonparametric.supBall]
   haveI : Nonempty (Fin d) := Fin.pos_iff_nonempty.mp (Nat.pos_of_ne_zero hd)
   intro x hx i
   have hrs0 : 0 ≤ rStar r0 x0 := (abs_nonneg (x i - x0 i)).trans (hx i)
@@ -85,34 +85,8 @@ lemma supBall_rStar_subset_cube {d : ℕ} (r0 : ℝ) (x0 : Fin d → ℝ) (hr0 :
   constructor <;> linarith [min_le_left (x0 i) (1 - x0 i),
     min_le_right (x0 i) (1 - x0 i)]
 
-/-- Every finite-dimensional sup-norm ball is a measurable set. -/
-lemma measurableSet_supBall {d : ℕ} (x0 : Fin d → ℝ) (r : ℝ) :
-    MeasurableSet (supBall x0 r) := by
-  rw [show supBall x0 r = ⋂ i : Fin d,
-      (fun x : Fin d → ℝ => |x i - x0 i|) ⁻¹' Set.Iic r by ext x; simp [supBall]]
-  exact MeasurableSet.iInter fun i => measurableSet_Iic.preimage
-    (by simpa only [Real.norm_eq_abs] using
-      ((measurable_pi_apply i).sub measurable_const).norm)
-
-/-- Every finite-dimensional sup-norm ball is compact. -/
-lemma isCompact_supBall {d : ℕ} (x0 : Fin d → ℝ) (r : ℝ) :
-    IsCompact (supBall x0 r) := by
-  by_cases hd : d = 0
-  · subst d
-    simpa [supBall] using (isCompact_univ : IsCompact (Set.univ : Set (Fin 0 → ℝ)))
-  haveI : Nonempty (Fin d) := Fin.pos_iff_nonempty.mp (Nat.pos_of_ne_zero hd)
-  rw [show supBall x0 r = Metric.closedBall x0 r by
-    ext x
-    simp only [supBall, Set.mem_setOf_eq, Metric.mem_closedBall]
-    by_cases hr : 0 ≤ r
-    · rw [dist_pi_le_iff hr]
-      simp only [Real.dist_eq]
-    · have hempty : ¬ (∀ i, |x i - x0 i| ≤ r) := fun hall =>
-        hr ((abs_nonneg _).trans (hall (Classical.choice inferInstance)))
-      have hdist : ¬ dist x x0 ≤ r := fun hle => hr ((dist_nonneg).trans hle)
-      simp only [hempty, false_iff, Metric.mem_closedBall, hdist]
-  ]
-  exact isCompact_closedBall _ _
+-- The sup-norm ball's measurability and compactness now live in Causalean; call sites use
+-- `Causalean.Stat.Nonparametric.measurableSet_supBall` / `.isCompact_supBall` directly.
 
 /-- Each arm regression is bounded in absolute value by the Hölder radius on the cube. -/
 theorem armReg_abs_le_L {d : ℕ} {alpha beta gamma L e0 f0 f1 r0 : ℝ}
@@ -150,7 +124,7 @@ theorem measurable_indicator_armReg {d : ℕ} {alpha beta gamma L e0 f0 f1 r0 : 
     Measurable ((supBall x0 (rStar r0 x0)).indicator (armReg P a)) := by
   classical
   let S := supBall x0 (rStar r0 x0)
-  have hS : MeasurableSet S := measurableSet_supBall _ _
+  have hS : MeasurableSet S := Causalean.Stat.Nonparametric.measurableSet_supBall _ _
   have hsub : S ⊆ cube d := supBall_rStar_subset_cube r0 x0 hreg.2.2.2.2.2.2.2.1.1
     hreg.2.2.2.2.2.2.2.2
   have hc : ContinuousOn (armReg P a) S :=
@@ -226,7 +200,7 @@ theorem measurable_indicator_armPi {d : ℕ} {alpha beta gamma L e0 f0 f1 r0 : �
     Measurable ((supBall x0 (rStar r0 x0)).indicator (armPi P a)) := by
   classical
   let S := supBall x0 (rStar r0 x0)
-  have hS : MeasurableSet S := measurableSet_supBall _ _
+  have hS : MeasurableSet S := Causalean.Stat.Nonparametric.measurableSet_supBall _ _
   have hsub : S ⊆ cube d := supBall_rStar_subset_cube r0 x0
     hreg.2.2.2.2.2.2.2.1.1 hreg.2.2.2.2.2.2.2.2
   have hpi : ContinuousOn P.pi S := hP.piH.1.continuousOn.mono hsub
@@ -253,7 +227,7 @@ theorem smul_volume_restrict_le_xMarginal_restrict {d : ℕ}
       (xMarginal P).restrict (supBall x0 (rStar r0 x0)) := by
   let S := supBall x0 (rStar r0 x0)
   let ν : Measure (Fin d → ℝ) := volume.restrict S
-  have hS : MeasurableSet S := measurableSet_supBall _ _
+  have hS : MeasurableSet S := Causalean.Stat.Nonparametric.measurableSet_supBall _ _
   have hScube : S ⊆ cube d := supBall_rStar_subset_cube r0 x0
     hreg.2.2.2.2.2.2.2.1.1 hreg.2.2.2.2.2.2.2.2
   have hSball : S ⊆ supBall x0 r0 := supBall_rStar_subset_supBall r0 x0
@@ -501,7 +475,7 @@ theorem armReg_abs_le_one_ae {d : ℕ} {alpha beta gamma L e0 f0 f1 r0 : ℝ}
   letI : IsProbabilityMeasure P.dataMeasure := hIid.1
   let S := supBall x0 (rStar r0 x0)
   let N := S ∩ {x | 1 < |S.indicator (armReg P a) x|}
-  have hS : MeasurableSet S := measurableSet_supBall _ _
+  have hS : MeasurableSet S := Causalean.Stat.Nonparametric.measurableSet_supBall _ _
   have hN : MeasurableSet N := hS.inter (measurableSet_lt measurable_const
     (by simpa only [Real.norm_eq_abs] using
       (measurable_indicator_armReg hreg P hP ha).norm))

@@ -54,19 +54,16 @@ open scoped MeasureTheory ProbabilityTheory
 -- § 1. Parent classification for an observed target
 -- ============================================================
 
-/-- If `w` is a parent of the `(n+1)`-st observed node and is neither fixed nor
-    observed, then `w` must be unobserved.  Direct consequence of
-    `SWIGGraph.dag_edges_classified`. -/
-private theorem parent_unobserved_of_not_fixed_not_observed
-    (M : Causalean.SCM N Ω) {n : ℕ}
-    (hn : n + 1 ≤ M.observed.card)
-    (w : {w // w ∈ M.dag.parents (M.observedAt ⟨n, hn⟩).val})
-    (hfix : w.val ∉ M.fixed) (hobs : w.val ∉ M.observed) :
-    w.val ∈ M.unobserved := by
-  have hedge : M.dag.edge w.val (M.observedAt ⟨n, hn⟩).val :=
-    M.dag.mem_parents.mp w.property
-  have hclass : w.val ∈ M.fixed ∪ M.observed ∪ M.unobserved :=
-    (M.dag_edges_classified _ _ hedge).1
+/-- A parent that is neither fixed nor observed must be an unobserved node.
+    This lets an evaluator classify a parent's value source without depending on
+    where the target appears in an observation order. -/
+theorem parent_unobserved_of_not_fixed_not_observed
+    (G : SWIGGraph N) {u v : SWIGNode N}
+    (hedge : G.dag.edge u v)
+    (hfix : u ∉ G.fixed) (hobs : u ∉ G.observed) :
+    u ∈ G.unobserved := by
+  have hclass : u ∈ G.fixed ∪ G.observed ∪ G.unobserved :=
+    (G.dag_edges_classified _ _ hedge).1
   rcases Finset.mem_union.mp hclass with h | h
   · rcases Finset.mem_union.mp h with h | h
     · exact (hfix h).elim
@@ -108,7 +105,8 @@ noncomputable def parentValuesFromPrefix (M : Causalean.SCM N Ω) {n : ℕ}
               M.observedPrefixValue (Nat.le_of_succ_le hn) sℓξ.2.2 iobs
         · -- Unobserved parent: read from `ℓ = sℓξ.2.1`.
           have hunobs : w.val ∈ M.unobserved :=
-            parent_unobserved_of_not_fixed_not_observed (M := M) hn w hfix hobs
+            parent_unobserved_of_not_fixed_not_observed M.toSWIGGraph
+              (M.dag.mem_parents.mp w.property) hfix hobs
           exact sℓξ.2.1 ⟨w.val, hunobs⟩
 
 -- ============================================================
@@ -158,7 +156,7 @@ theorem measurable_parentValuesFromPrefix (M : Causalean.SCM N Ω) {n : ℕ}
           Measurable (fun y :
               swigΩ Ω (M.observedAt (M.observedIndex ⟨w.val, hobs⟩)).val =>
             cast hEq y) :=
-        measurable_cast_swigΩ hNode
+        measurable_cast_family hNode
       have hmeasCast :
           Measurable fun c : M.FixedValues ×
               M.OrderedLatentPrefixValues n (Nat.le_of_succ_le hn) =>
@@ -168,7 +166,8 @@ theorem measurable_parentValuesFromPrefix (M : Causalean.SCM N Ω) {n : ℕ}
       simpa [SCM.parentValuesFromPrefix, hfix, hobs, iobs] using hmeasCast
     · -- Unobserved case: projection `sℓξ ↦ sℓξ.2.1 ⟨w.val, hunobs⟩`.
       have hunobs : w.val ∈ M.unobserved :=
-        parent_unobserved_of_not_fixed_not_observed (M := M) hn w hfix hobs
+        parent_unobserved_of_not_fixed_not_observed M.toSWIGGraph
+          (M.dag.mem_parents.mp w.property) hfix hobs
       let wu : {x // x ∈ M.unobserved} := ⟨w.val, hunobs⟩
       simpa [SCM.parentValuesFromPrefix, hfix, hobs, hunobs, wu] using
         ((measurable_pi_apply (a := wu)) :

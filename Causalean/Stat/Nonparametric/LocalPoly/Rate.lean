@@ -88,14 +88,14 @@ This is the variance-rate capstone for the local-polynomial upper bound: combine
 theorem localPoly_inv00_rate {N : ℕ} {h c cInv η : ℝ}
     {S M : Matrix (Fin (p + 1)) (Fin (p + 1)) ℝ}
     (_hNh : 0 < (N : ℝ) * h)
-    (hS : IsUnit S.det) (hc : 0 ≤ c) (hη : 0 ≤ η)
+    (hS : IsUnit S.det) (_hc : 0 ≤ c) (_hη : 0 ≤ η)
     (hSrow : ∀ i, (∑ j, |S⁻¹ i j|) ≤ c)
     (hclose : ∀ j k, |M j k - S j k| ≤ η)
     (hsmall : c * ((p + 1 : ℕ) * η) ≤ 1 / 2)
     (hSinv00 : S⁻¹ 0 0 ≤ cInv / ((N : ℝ) * h))
     (hpert : 2 * c ^ 2 * ((p + 1 : ℕ) * η) ≤ cInv / ((N : ℝ) * h)) :
     IsUnit M.det ∧ M⁻¹ 0 0 ≤ 2 * (cInv / ((N : ℝ) * h)) := by
-  obtain ⟨hMdet, hΔ⟩ := designInv00_perturb S M hS hc hη hSrow hclose hsmall
+  obtain ⟨hMdet, hΔ⟩ := designInv00_perturb S M hS hSrow hclose hsmall
   refine ⟨hMdet, ?_⟩
   have hub := (abs_le.mp hΔ).2
   linarith [hub, hSinv00, hpert]
@@ -113,7 +113,8 @@ the upper-bound analysis. -/
 theorem localPoly_leverage_bound {N : ℕ} {h c cInv cTop η : ℝ}
     {S M : Matrix (Fin (p + 1)) (Fin (p + 1)) ℝ}
     (hNh : 0 < (N : ℝ) * h)
-    (hS : IsUnit S.det) (hc : 0 ≤ c) (hη : 0 ≤ η) (_hcInv : 0 ≤ cInv) (hcTop : 0 ≤ cTop)
+    (hS : IsUnit S.det) (hc : 0 ≤ c) (hη : 0 ≤ η) (_hcInv : 0 ≤ cInv)
+    (_hcTop : 0 ≤ cTop)
     (hSrow : ∀ i, (∑ j, |S⁻¹ i j|) ≤ c)
     (hclose : ∀ j k, |M j k - S j k| ≤ η)
     (hsmall : c * ((p + 1 : ℕ) * η) ≤ 1 / 2)
@@ -129,7 +130,7 @@ theorem localPoly_leverage_bound {N : ℕ} {h c cInv cTop η : ℝ}
   have hM00bd : M 0 0 ≤ (cTop + 1) * ((N : ℝ) * h) := by
     nlinarith [hS00, hcl, hηle]
   have hb0 : 0 ≤ (cTop + 1) * ((N : ℝ) * h) := by
-    nlinarith [hcTop, hNh.le]
+    nlinarith [_hcTop, hNh.le]
   have hprod : M 0 0 * M⁻¹ 0 0 ≤ 2 * cInv * (cTop + 1) := by
     have hmul := mul_le_mul hM00bd hrate hMinv00 hb0
     have hne : ((N : ℝ) * h) ≠ 0 := hNh.ne'

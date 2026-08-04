@@ -12,7 +12,7 @@ reasoning about Bayes Ball witnesses.
 
 The endpoint corollary exposed downstream is
 
-    `bbReachableVertices_inter_subset_ancestralSet :
+    `subset_ancestralSet_of_subset :
         (G.bbReachableVertices Z X) ∩ Y ⊆ G.ancestralSet (X ∪ Y ∪ Z)`
 
 It says only that a reachable target endpoint already lies in the ancestral set
@@ -23,7 +23,7 @@ because it is in `Y`. The stronger active-path witness statement is
 
 * `DAG.activePath_nodes_are_ancestors` — every node on an active `X-Y` path,
   given `Z`, lies in `ancestralSet (X ∪ Y ∪ Z)`. (Core ancestral lemma.)
-* `DAG.bbReachableVertices_inter_subset_ancestralSet` — endpoint inclusion for
+* `DAG.subset_ancestralSet_of_subset` — endpoint inclusion for
   reachable targets in finset form.
 
 ## References
@@ -111,9 +111,9 @@ lemma nonCollider_has_outgoing
   · -- edge m l: outgoing on the left.
     exact Or.inl hml
 
-/-- If an edge points into the ancestral set of `S`, then its tail is also in
-    the ancestral set of `S`. -/
-private lemma mem_ancestralSet_of_edge_to_mem
+/-- When a directed edge points to a vertex in the ancestral closure of a set,
+    its source vertex is also in that ancestral closure. -/
+lemma mem_ancestralSet_of_edge_to_mem
     {u v : V} {S : Finset V} (huv : G.edge u v)
     (hv : v ∈ G.ancestralSet S) :
     u ∈ G.ancestralSet S := by
@@ -340,24 +340,13 @@ theorem activePath_nodes_are_ancestors
 -- Endpoint corollary: BFS-reachable vertex in Y is in the ancestral set
 -- ============================================================
 
-/-- **BFS-reachable target lands in the ancestral set.**
-
-    If `v ∈ bbReachableVertices Z X` and `v ∈ Y`, then `v ∈ ancestralSet
-    (X ∪ Y ∪ Z)`. The endpoint `v` is in `Y ⊆ X ∪ Y ∪ Z ⊆ ancestralSet
-    (X ∪ Y ∪ Z)` directly — no path-walk needed.
-
-    The deeper "every internal node of the witnessing path lies in the
-    ancestral set" is captured separately by
-    `activePath_witness_subset_ancestralSet`. -/
-theorem bbReachableVertices_inter_subset_ancestralSet
-    (X Y Z : Finset V) :
-    (G.bbReachableVertices Z X) ∩ Y ⊆ G.ancestralSet (X ∪ Y ∪ Z) := by
-  intro v hv
-  rw [Finset.mem_inter] at hv
-  obtain ⟨_, hvY⟩ := hv
-  -- v ∈ Y ⊆ X ∪ Y ∪ Z ⊆ ancestralSet (X ∪ Y ∪ Z): trivial endpoint inclusion.
+/-- Every element of a subset belongs to the ancestral closure of its ambient set. -/
+theorem subset_ancestralSet_of_subset
+    {Y S : Finset V} (hYS : Y ⊆ S) :
+    Y ⊆ G.ancestralSet S := by
+  intro v hvY
   apply G.subset_ancestralSet
-  exact Finset.mem_union_left _ (Finset.mem_union_right _ hvY)
+  exact hYS hvY
 
 -- ============================================================
 -- Inner-node version: any *intermediate* node of an active X-Y path is
@@ -387,15 +376,15 @@ theorem activePath_witness_subset_ancestralSet
 -- Ancestral intersection from d-separation (graph-theoretic core)
 -- ============================================================
 
-/-- A *forward*-directed path avoiding `Z` is an active path given `Z`.
+/-- A *forward*-directed path whose interior vertices avoid `Z` is an active path given `Z`.
     "Forward-directed" means each edge points from the *earlier* index to the
     *later* index. Every interior vertex is then a non-collider (incoming +
-    outgoing), and by the avoidance hypothesis none is in `Z`. -/
+    outgoing), and by the avoidance hypothesis none is in `Z`; endpoints may lie in `Z`. -/
 theorem isActivePath_of_directed
     {Z : Finset V} {p : List V}
     (hdir : ∀ (i : ℕ) (hi : i + 1 < p.length),
         G.edge (p.get ⟨i, by omega⟩) (p.get ⟨i + 1, hi⟩))
-    (hZ : ∀ x ∈ p, x ∉ Z) :
+    (hZ : ∀ (i : ℕ) (hi : i + 2 < p.length), p.get ⟨i + 1, by omega⟩ ∉ Z) :
     G.IsActivePath Z p := by
   refine ⟨fun i hi => ?_, fun i hi => ?_⟩
   · -- Adjacency: G.edge p[i] p[i+1] gives UAdj.
@@ -410,26 +399,28 @@ theorem isActivePath_of_directed
                       (p.get ⟨i + 1, by omega⟩) (p.get ⟨i + 2, hi⟩) := by
       intro ⟨_, h2⟩; exact hrm_false h2
     rw [if_neg hnotcoll]
-    exact hZ _ (List.get_mem _ _)
+    exact hZ i hi
 
-/-- An ancestor `u` of some `v ∈ S`, with `u ∉ ancestralSet Z`, gives a
-    forward-directed *active path* from `u` to `v` given `Z`. The internal
+/-- An ancestor outside the conditioning set's ancestral closure has an active path
+to its descendant.
+
+    The internal
     nodes of the path are also ancestors of `v` (hence members of
     `ancestralSet S` for any `S ∋ v`). -/
-private theorem exists_activePath_of_ancestor_avoiding
+theorem exists_activePath_of_ancestor_avoiding
     {Z : Finset V} {u v : V} (huv : G.isAncestor u v)
     (huZ : u ∉ G.ancestralSet Z) :
     ∃ (p : List V), p.length ≥ 2 ∧ p.head? = some u ∧ p.getLast? = some v ∧
       G.IsActivePath Z p := by
   obtain ⟨p, hlen, hhead, hlast, hedge, hZavoid⟩ :=
     G.exists_directedPath_avoiding huv huZ
-  exact ⟨p, hlen, hhead, hlast, G.isActivePath_of_directed hedge hZavoid⟩
+  exact ⟨p, hlen, hhead, hlast,
+    G.isActivePath_of_directed hedge (fun i hi => hZavoid _ (List.get_mem _ _))⟩
 
-/-- **Fork-path active-ness.** If `xp` is a directed path from `u` to `x`
-    avoiding `Z` and `yp` is a directed path from `u` to `y` avoiding `Z`,
-    and `u ∉ Z`, then the path `xp.reverse ++ yp.tail` is an active path
-    from `x` to `y` given `Z` (with `u` as a fork at the seam). -/
-private theorem fork_isActivePath
+/-- Two directed paths from one unconditioned vertex can be joined through that fork.
+
+The resulting path is active between their endpoints. -/
+theorem fork_isActivePath
     {Z : Finset V} {u x y : V} {xp yp : List V}
     (hxp_len : xp.length ≥ 2) (hxp_head : xp.head? = some u)
     (hxp_last : xp.getLast? = some x)
@@ -736,19 +727,13 @@ private theorem fork_isActivePath
           apply hyp_Z
           exact List.get_mem _ _
 
-/-- **Ancestral intersection from d-separation.** If `X` and `Y` are
-    d-separated by `Z` in `G`, and `X` and `Y` are disjoint, then any common
+/-- **Ancestral intersection from reachability separation.** If `X` and `Y` are
+    disjoint and no vertex in `Y` is Bayes-Ball-reachable from `X` given `Z`, then any common
     member of the ancestral closures of `X` and `Y` lies in the ancestral
-    closure of `Z`.
-
-    The disjointness assumption rules out the degenerate case `u ∈ X ∩ Y`
-    (which would already contradict `dSep` only if BFS-reachability includes
-    sources in its target — a subtlety we sidestep). The main consumer
-    (`fullCondIndep_singleton_of_dSep`) supplies disjointness easily since the
-    source set is a singleton `{a}` disjoint from the target `Y`. -/
+    closure of `Z`. -/
 theorem ancestralSet_inter_subset_ancestralSet_of_dSep
-    {X Y Z : Finset V} (hdSep : G.dSep X Y Z)
-    (hXY : Disjoint X Y) :
+    {X Y Z : Finset V} (hXY : Disjoint X Y)
+    (hReach : Disjoint (G.bbReachableVertices Z X) Y) :
     G.ancestralSet X ∩ G.ancestralSet Y ⊆ G.ancestralSet Z := by
   intro u hu
   rw [Finset.mem_inter] at hu
@@ -777,7 +762,7 @@ theorem ancestralSet_inter_subset_ancestralSet_of_dSep
     have hyR : y ∈ G.bbReachableVertices Z X := by
       rw [G.bbReachableVertices_iff_activePath]
       exact ⟨x, hxX, p, hlen, hact, hhead, hlast⟩
-    exact (Finset.disjoint_left.mp hdSep.2.2.2) hyR hyY
+    exact (Finset.disjoint_left.mp hReach) hyR hyY
   -- Build the active path. Three cases on (huX', huY').
   rcases huX' with hxIs | ⟨x, hxX, hax⟩
   · -- u ∈ X. Use directed path u → ... → y for some y ∈ Y.
@@ -794,7 +779,7 @@ theorem ancestralSet_inter_subset_ancestralSet_of_dSep
     · -- u ∈ Y. The directed path xp (u → ... → x) is itself an active path
       -- from u to x; reverse it via the public `isActivePath_reverse`.
       have hxp_act_fwd : G.IsActivePath Z xp :=
-        G.isActivePath_of_directed hxp_edge hxp_Z
+        G.isActivePath_of_directed hxp_edge (fun i hi => hxp_Z _ (List.get_mem _ _))
       have hxp_act : G.IsActivePath Z xp.reverse := G.isActivePath_reverse hxp_act_fwd
       have hxp_rev_len : xp.reverse.length ≥ 2 := by
         rw [List.length_reverse]; exact hxp_len

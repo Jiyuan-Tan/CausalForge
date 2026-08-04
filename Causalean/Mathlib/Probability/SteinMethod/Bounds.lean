@@ -11,9 +11,9 @@ import Mathlib.Order.Filter.AtTopBot.Ring
 # Uniform bounds on the Stein solution (Chen–Goldstein–Shao)
 
 For an absolutely continuous test function `h` with bounded derivative `‖h'‖_∞ ≤ L`, the Stein
-solution `f_h` and its derivative are uniformly bounded by a multiple of `L`:
+solution `f_h` is uniformly bounded by `L` and its derivative by `2·L`:
 
-    ‖f_h‖_∞ ≤ 2·L,   ‖f_h'‖_∞ ≤ 2·L.
+    ‖f_h‖_∞ ≤ L,   ‖f_h'‖_∞ ≤ 2·L.
 
 The file proves the public bounds `steinSol_abs_le`, `steinSol_deriv_abs_le`,
 and `steinSol_deriv_lipschitz`; the last packages the second-derivative bound
@@ -122,8 +122,8 @@ private theorem neg_phi_hasDerivAt (x : ℝ) : HasDerivAt (fun y => -phi y) (x *
   convert this using 1
   ring
 
-/-- `|x| ≤ exp(x²/4)`, used to dominate `x·φ`. -/
-private theorem abs_le_exp_sq_div_four (x : ℝ) : |x| ≤ Real.exp (x ^ 2 / 4) := by
+/-- The absolute value of any real number is at most the exponential of one quarter of its square. -/
+theorem abs_le_exp_sq_div_four (x : ℝ) : |x| ≤ Real.exp (x ^ 2 / 4) := by
   have h1 : |x| ≤ 1 + x ^ 2 / 4 := by
     nlinarith [sq_nonneg (|x| / 2 - 1), sq_abs x, abs_nonneg x]
   exact h1.trans (by have := Real.add_one_le_exp (x ^ 2 / 4); linarith)
@@ -483,8 +483,9 @@ private theorem weighted_moment_cancel (w : ℝ) :
             = Real.sqrt (2 * π) * (E * phi w) := by ring
         _ = Real.sqrt (2 * π) := by rw [hEφ, mul_one]
 
-/-- The Stein solution actually satisfies the sharper bound `|steinSol h w| ≤ L`. -/
-private theorem steinSol_abs_le_one (h : ℝ → ℝ) (hh : Continuous h) {C L : ℝ}
+/-- The standard-normal Stein solution is uniformly bounded by the derivative bound of its test
+function. -/
+theorem steinSol_abs_le (h : ℝ → ℝ) {C L : ℝ}
     (hb : ∀ x, |h x| ≤ C) (hd : ∀ x, |deriv h x| ≤ L) (hdiff : Differentiable ℝ h) (w : ℝ) :
     |steinSol h w| ≤ L := by
   -- Notation for the four building blocks of the weighted identity.
@@ -501,12 +502,12 @@ private theorem steinSol_abs_le_one (h : ℝ → ℝ) (hh : Continuous h) {C L :
   have hKpos : 0 < Real.sqrt (2 * π) := Real.sqrt_pos.mpr (by positivity)
   -- Bounds on |A| and |B| coming from the Lipschitz estimates.
   have hAbound : |A| ≤ L * (w * Q + phi w) := by
-    rw [hA, hQ]; exact abs_integral_diff_phi_Iic_le hh hb hd hdiff w
+    rw [hA, hQ]; exact abs_integral_diff_phi_Iic_le hdiff.continuous hb hd hdiff w
   have hBbound : |B| ≤ L * (phi w - w * P) := by
-    rw [hB, hP]; exact abs_integral_diff_phi_Ioi_le hh hb hd hdiff w
+    rw [hB, hP]; exact abs_integral_diff_phi_Ioi_le hdiff.continuous hb hd hdiff w
   -- The weighted identity, with the cancellation pre-computed.
   have hid : Real.sqrt (2 * π) * steinSol h w = E * (P * A - Q * B) := by
-    rw [hE, hP, hQ, hA, hB]; exact steinSol_weighted_identity hh hb w
+    rw [hE, hP, hQ, hA, hB]; exact steinSol_weighted_identity hdiff.continuous hb w
   -- Bound `√(2π)·|steinSol|`.
   have hmain : Real.sqrt (2 * π) * |steinSol h w| ≤ Real.sqrt (2 * π) * L := by
     calc Real.sqrt (2 * π) * |steinSol h w|
@@ -526,13 +527,6 @@ private theorem steinSol_abs_le_one (h : ℝ → ℝ) (hh : Continuous h) {C L :
       _ = Real.sqrt (2 * π) * L := by ring
   -- Cancel the positive factor `√(2π)`.
   exact le_of_mul_le_mul_left hmain hKpos
-
-/-- **Sup bound on the Stein solution** in terms of the derivative bound of `h`. -/
-theorem steinSol_abs_le (h : ℝ → ℝ) (hh : Continuous h) {C L : ℝ} (hC : 0 ≤ C) (hL : 0 ≤ L)
-    (hb : ∀ x, |h x| ≤ C) (hd : ∀ x, |deriv h x| ≤ L) (hdiff : Differentiable ℝ h) (w : ℝ) :
-    |steinSol h w| ≤ 2 * L := by
-  have h1 := steinSol_abs_le_one h hh hb hd hdiff w
-  linarith
 
 /-! ### Lower Mills-ratio bound
 
@@ -779,7 +773,7 @@ private theorem crux_pure {e p q f k w : ℝ}
       _ ≤ k := by rw [mul_one_div, div_le_iff₀ hden]; exact (mills_arith hk43).2
 
 /-- **Sup bound on the derivative of the Stein solution** in terms of the `h`-derivative bound. -/
-theorem steinSol_deriv_abs_le (h : ℝ → ℝ) (hh : Continuous h) {C L : ℝ} (hC : 0 ≤ C) (hL : 0 ≤ L)
+theorem steinSol_deriv_abs_le (h : ℝ → ℝ) {C L : ℝ}
     (hb : ∀ x, |h x| ≤ C) (hd : ∀ x, |deriv h x| ≤ L) (hdiff : Differentiable ℝ h) (w : ℝ) :
     |deriv (steinSol h) w| ≤ 2 * L := by
   set K : ℝ := Real.sqrt (2 * π) with hKdef
@@ -812,11 +806,12 @@ theorem steinSol_deriv_abs_le (h : ℝ → ℝ) (hh : Continuous h) {C L : ℝ} 
   have hEphi : E * phi w = 1 := exp_mul_phi w
   -- Stein equation and the weighted identity give the c-free derivative identity.
   have hstein : deriv (steinSol h) w = w * steinSol h w + (h w - gExpect h) :=
-    (steinSol_hasDerivAt h hh hb w).deriv
+    (steinSol_hasDerivAt h hdiff.continuous hb w).deriv
   have hwid : K * steinSol h w = E * (P * A - Q * B) := by
-    rw [hKdef, hP, hQ, hA, hB, hE]; exact steinSol_weighted_identity hh hb w
+    rw [hKdef, hP, hQ, hA, hB, hE]
+    exact steinSol_weighted_identity hdiff.continuous hb w
   have hKD : K * (h w - gExpect h) = -(A + B) := by
-    rw [hKdef, hA, hB]; exact sqrt_mul_centered_eq hh hb w
+    rw [hKdef, hA, hB]; exact sqrt_mul_centered_eq hdiff.continuous hb w
   -- `K·deriv = w·E·(P A − Q B) − (A + B) = −E·(A·aₒ + B·aᵢ)`.
   have hKderiv : K * deriv (steinSol h) w = -(E * (A * (phi w - w * P) + B * (w * Q + phi w))) := by
     have hexpand : K * deriv (steinSol h) w = w * (K * steinSol h w) + K * (h w - gExpect h) := by
@@ -826,10 +821,10 @@ theorem steinSol_deriv_abs_le (h : ℝ → ℝ) (hh : Continuous h) {C L : ℝ} 
     linear_combination (A + B) * hEphi
   -- Bound `K·|deriv| ≤ 2·L·E·(w Q + φ w)·(φ w − w P)`.
   have hAbound : |A| ≤ L * (w * Q + phi w) := by
-    rw [hA, hQ]; exact abs_integral_diff_phi_Iic_le hh hb hd hdiff w
+    rw [hA, hQ]; exact abs_integral_diff_phi_Iic_le hdiff.continuous hb hd hdiff w
   have hBbound : |B| ≤ L * (phi w - w * P) := by
-    rw [hB, hP]; exact abs_integral_diff_phi_Ioi_le hh hb hd hdiff w
-  have hLnn : 0 ≤ L := hL
+    rw [hB, hP]; exact abs_integral_diff_phi_Ioi_le hdiff.continuous hb hd hdiff w
+  have hLnn : 0 ≤ L := le_trans (abs_nonneg (deriv h 0)) (hd 0)
   have hbound : K * |deriv (steinSol h) w| ≤ 2 * L * (E * ((w * Q + phi w) * (phi w - w * P))) := by
     calc K * |deriv (steinSol h) w|
         = |K * deriv (steinSol h) w| := by rw [abs_mul, abs_of_nonneg hKpos.le]
@@ -922,8 +917,8 @@ private theorem crux2_pure {e p q f k w a b L : ℝ}
 
 /-- **Crux of the second-derivative bound.** The combination `(1+w²)·f_h(w) + w·(h(w) − E[h(Z)])`
 — equal to `f_h''(w) − h'(w)` — is uniformly bounded by `L`. -/
-private theorem steinSol_crux_le (h : ℝ → ℝ) (hh : Continuous h) {C L : ℝ} (_hC : 0 ≤ C)
-    (_hL : 0 ≤ L) (hb : ∀ x, |h x| ≤ C) (hd : ∀ x, |deriv h x| ≤ L) (hdiff : Differentiable ℝ h)
+private theorem steinSol_crux_le (h : ℝ → ℝ) (hh : Continuous h) {C L : ℝ}
+    (hb : ∀ x, |h x| ≤ C) (hd : ∀ x, |deriv h x| ≤ L) (hdiff : Differentiable ℝ h)
     (w : ℝ) :
     |(1 + w ^ 2) * steinSol h w + w * (h w - gExpect h)| ≤ L := by
   set K : ℝ := Real.sqrt (2 * π) with hKdef
@@ -963,20 +958,21 @@ private theorem steinSol_crux_le (h : ℝ → ℝ) (hh : Continuous h) {C L : �
             (by rw [hP]; exact lower_mills w) (by rw [hQ]; exact lower_mills_left w)
   exact le_of_mul_le_mul_left hbound hKpos
 
-/-- The Stein solution `f_h` is `C¹`: `deriv (steinSol h)` is differentiable at every point, with
-`f_h''(w) = f_h(w) + w·f_h'(w) + h'(w)`. -/
-private theorem steinSol_deriv_hasDerivAt (h : ℝ → ℝ) (hh : Continuous h) {C : ℝ}
+/-- For a bounded differentiable test function, the derivative of its standard-normal Stein
+solution is differentiable at each point, with derivative equal to the solution value plus the
+point times its first derivative plus the derivative of the test function. -/
+theorem steinSol_deriv_hasDerivAt (h : ℝ → ℝ) {C : ℝ}
     (hb : ∀ x, |h x| ≤ C) (hdiff : Differentiable ℝ h) (w : ℝ) :
     HasDerivAt (deriv (steinSol h))
       (steinSol h w + (w * deriv (steinSol h) w + deriv h w)) w := by
   -- `deriv (steinSol h) = fun u => u * steinSol h u + (h u - gExpect h)` (Stein equation).
   have hderiv_eq : deriv (steinSol h) = fun u => u * steinSol h u + (h u - gExpect h) := by
-    funext u; exact (steinSol_hasDerivAt h hh hb u).deriv
+    funext u; exact (steinSol_hasDerivAt h hdiff.continuous hb u).deriv
   -- `f` is differentiable with derivative `deriv (steinSol h) w`.
   have hfderiv : deriv (steinSol h) w = w * steinSol h w + (h w - gExpect h) :=
-    (steinSol_hasDerivAt h hh hb w).deriv
+    (steinSol_hasDerivAt h hdiff.continuous hb w).deriv
   have hf : HasDerivAt (steinSol h) (deriv (steinSol h) w) w := by
-    rw [hfderiv]; exact steinSol_hasDerivAt h hh hb w
+    rw [hfderiv]; exact steinSol_hasDerivAt h hdiff.continuous hb w
   rw [hderiv_eq]
   -- Differentiate `u ↦ u·f(u) + (h u − c)`.
   have hprod : HasDerivAt (fun u => u * steinSol h u)
@@ -988,14 +984,15 @@ private theorem steinSol_deriv_hasDerivAt (h : ℝ → ℝ) (hh : Continuous h) 
   convert this using 1
   rw [hfderiv]; ring
 
-/-- **Second-derivative sup bound** `|f_h''(w)| ≤ 2L` (Chen–Goldstein–Shao Lemma 2.5). -/
-private theorem steinSol_secondDeriv_abs_le (h : ℝ → ℝ) (hh : Continuous h) {C L : ℝ} (hC : 0 ≤ C)
-    (hL : 0 ≤ L) (hb : ∀ x, |h x| ≤ C) (hd : ∀ x, |deriv h x| ≤ L) (hdiff : Differentiable ℝ h)
+/-- The absolute second derivative of the standard-normal Stein solution at each point is at most
+twice the uniform bound on the derivative of the test function. -/
+theorem steinSol_secondDeriv_abs_le (h : ℝ → ℝ) {C L : ℝ}
+    (hb : ∀ x, |h x| ≤ C) (hd : ∀ x, |deriv h x| ≤ L) (hdiff : Differentiable ℝ h)
     (w : ℝ) :
     |steinSol h w + (w * deriv (steinSol h) w + deriv h w)| ≤ 2 * L := by
   -- `f + w f' + h' = (1+w²) f + w (h − c) + h'`, using the Stein equation `f' = w f + (h − c)`.
   have hstein : deriv (steinSol h) w = w * steinSol h w + (h w - gExpect h) :=
-    (steinSol_hasDerivAt h hh hb w).deriv
+    (steinSol_hasDerivAt h hdiff.continuous hb w).deriv
   have hrewrite : steinSol h w + (w * deriv (steinSol h) w + deriv h w) =
       ((1 + w ^ 2) * steinSol h w + w * (h w - gExpect h)) + deriv h w := by
     rw [hstein]; ring
@@ -1004,25 +1001,25 @@ private theorem steinSol_secondDeriv_abs_le (h : ℝ → ℝ) (hh : Continuous h
       ≤ |(1 + w ^ 2) * steinSol h w + w * (h w - gExpect h)| + |deriv h w| := abs_add_le _ _
     _ ≤ L + L := by
         gcongr
-        · exact steinSol_crux_le h hh hC hL hb hd hdiff w
+        · exact steinSol_crux_le h hdiff.continuous hb hd hdiff w
         · exact hd w
     _ = 2 * L := by ring
 
 /-- **Lipschitz bound on the derivative of the Stein solution** (equivalent to `‖f_h''‖ ≤ 2L`;
 Chen–Goldstein–Shao Lemma 2.5). The form `f_h'` is `2L`-Lipschitz is what the second-order
 Taylor step in the local-dependence Stein bound consumes. -/
-theorem steinSol_deriv_lipschitz (h : ℝ → ℝ) (hh : Continuous h) {C L : ℝ} (hC : 0 ≤ C)
-    (hL : 0 ≤ L) (hb : ∀ x, |h x| ≤ C) (hd : ∀ x, |deriv h x| ≤ L) (hdiff : Differentiable ℝ h)
+theorem steinSol_deriv_lipschitz (h : ℝ → ℝ) {C L : ℝ}
+    (hb : ∀ x, |h x| ≤ C) (hd : ∀ x, |deriv h x| ≤ L) (hdiff : Differentiable ℝ h)
     (u v : ℝ) :
     |deriv (steinSol h) u - deriv (steinSol h) v| ≤ 2 * L * |u - v| := by
   -- Mean value inequality: `deriv (steinSol h)` is differentiable everywhere with second
   -- derivative bounded by `2L`, so it is `2L`-Lipschitz.
   have hbound := Convex.norm_image_sub_le_of_norm_deriv_le (𝕜 := ℝ)
     (f := deriv (steinSol h)) (s := Set.univ)
-    (fun z _ => (steinSol_deriv_hasDerivAt h hh hb hdiff z).differentiableAt)
+    (fun z _ => (steinSol_deriv_hasDerivAt h hb hdiff z).differentiableAt)
     (fun z _ => by
-      rw [Real.norm_eq_abs, (steinSol_deriv_hasDerivAt h hh hb hdiff z).deriv]
-      exact steinSol_secondDeriv_abs_le h hh hC hL hb hd hdiff z)
+      rw [Real.norm_eq_abs, (steinSol_deriv_hasDerivAt h hb hdiff z).deriv]
+      exact steinSol_secondDeriv_abs_le h hb hd hdiff z)
     convex_univ (Set.mem_univ v) (Set.mem_univ u)
   simpa [Real.norm_eq_abs] using hbound
 

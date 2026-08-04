@@ -142,6 +142,7 @@ import Causalean.Mathlib.AlgebraicGeometry.PolynomialImageDimension.ZariskiClosu
 import Causalean.Mathlib.Analysis.BernoulliKL
 import Causalean.Mathlib.Analysis.BernsteinSzegoTrig.Szego
 import Causalean.Mathlib.Analysis.Convex.ReciprocalProduct
+import Causalean.Mathlib.Analysis.ClipInterval
 import Causalean.Mathlib.Analysis.ConvexProjection
 import Causalean.Mathlib.Analysis.EhlichZellerMesh.Mesh
 import Causalean.Mathlib.Analysis.FiniteDimL1LinfDuality.Duality
@@ -153,6 +154,7 @@ import Causalean.Mathlib.Analysis.MonomialGram
 import Causalean.Mathlib.Analysis.RpowArith
 import Causalean.Mathlib.Analysis.SecondOrderDescent
 import Causalean.Mathlib.Analysis.SmoothReciprocal
+import Causalean.Mathlib.Analysis.WeightedCauchySchwarz
 import Causalean.Mathlib.CondDistribWitness
 import Causalean.Mathlib.CondIndep
 import Causalean.Mathlib.ConvergenceInDistribution
@@ -177,6 +179,7 @@ import Causalean.Mathlib.LinearAlgebra.MonomialMatrix
 import Causalean.Mathlib.LinearAlgebra.StackedVandermonde
 import Causalean.Mathlib.LinearAlgebra.VandermondeSynthesis
 import Causalean.Mathlib.MeasurableEmbeddingExtras
+import Causalean.Mathlib.MeasureTheory.FiniteAtomicMeasure
 import Causalean.Mathlib.MeasureTheory.FinsetValues
 import Causalean.Mathlib.MeasureTheory.IntegralBind
 import Causalean.Mathlib.MeasureTheory.MemLp
@@ -184,6 +187,7 @@ import Causalean.Mathlib.MeasureTheory.MomentSliceSupport
 import Causalean.Mathlib.MeasureTheory.PartitionIntegral
 import Causalean.Mathlib.MeasureTheory.PartitionRnDeriv
 import Causalean.Mathlib.MeasureTheory.RnDerivCompProdSigmaFinite
+import Causalean.Mathlib.MeasureTheory.SetIntegralRecovery
 import Causalean.Mathlib.MeasureTheory.SupCountableDense
 import Causalean.Mathlib.OperatorSqrt
 import Causalean.Mathlib.Optimization.KKT
@@ -201,6 +205,7 @@ import Causalean.Mathlib.Probability.SignedTwoPoint
 import Causalean.Mathlib.Probability.StdNormalCDF
 import Causalean.Mathlib.Probability.StdNormalMoments
 import Causalean.Mathlib.Probability.SteinMethod.StandardizedDepGraphCLT
+import Causalean.Mathlib.Probability.VarianceProd
 import Causalean.Mathlib.SemiInnerProjection
 import Causalean.Mathlib.StandardGaussian
 import Causalean.Mathlib.TwoStateMarkov
@@ -466,6 +471,7 @@ import Causalean.Stat.GMM.OverID
 import Causalean.Stat.GMM.Setup
 import Causalean.Stat.GMM.VarianceAlgebra
 import Causalean.Stat.Inference.ChiSquaredWald
+import Causalean.Stat.Inference.AffineInversion
 import Causalean.Stat.Inference.FunctionalDelta
 import Causalean.Stat.Inference.HadamardDeriv
 import Causalean.Stat.Inference.RatioDeltaMethod
@@ -485,9 +491,12 @@ import Causalean.Stat.Minimax.BretagnolleHuber
 import Causalean.Stat.Minimax.ChiSquared
 import Causalean.Stat.Minimax.ChiSquaredFinite
 import Causalean.Stat.Minimax.Fano
+import Causalean.Stat.Minimax.HellingerAffinity
+import Causalean.Stat.Minimax.HonestConfidenceSet
 import Causalean.Stat.Minimax.LeCam
 import Causalean.Stat.Minimax.LeCamTwoPoint
 import Causalean.Stat.Minimax.MinimaxRisk
+import Causalean.Stat.Minimax.MinimaxValue
 import Causalean.Stat.Minimax.Mixture
 import Causalean.Stat.Minimax.Pinsker
 import Causalean.Stat.Minimax.Scheffe
@@ -527,6 +536,9 @@ import Causalean.Stat.Quantile.SampleQuantileBahadur.Oscillation
 import Causalean.Stat.Quantile.SampleQuantileBahadur.Rate
 import Causalean.Stat.Quantile.SampleQuantileJoint
 import Causalean.Stat.Sample
+import Causalean.Stat.Sample.CollisionEstimator
+import Causalean.Stat.Sample.EffectiveSampleSize
+import Causalean.Stat.Sample.EmpiricalMass
 import Causalean.Stat.Sample.PiTransport
 import Causalean.Stat.SampleSplit
 import Causalean.Stat.SampleSplit.FoldBEmpiricalProcess

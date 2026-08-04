@@ -89,6 +89,7 @@ of the Gaussian limit by the continuous `maxAbs`). -/
 instance : IsProbabilityMeasure ((gaussianLimit hψ hvar).map maxAbs) :=
   Measure.isProbabilityMeasure_map measurable_maxAbs.aemeasurable
 
+omit [IsProbabilityMeasure P] in
 /-- **Abstract continuous-mapping CLT.**  `maxAbs` of the vector normalised sum
 converges in distribution to the pushforward `(gaussianLimit ψ).map maxAbs` — the
 law of `max(|z_L|, |z_U|)` for the bivariate Gaussian limit.  Immediate from the
@@ -96,7 +97,7 @@ multivariate CLT (`clt_normalizedSum_vec`) and the continuous-mapping theorem
 (`Tendsto_dist_vec.map_continuous`). -/
 theorem normalizedSum_maxAbs_clt
     (S : IIDSample Ω X μ P)
-    (hψ_int : Integrable ψ P) (hmean : ∫ x, ψ x ∂P = 0)
+    (_hψ_int : Integrable ψ P) (hmean : ∫ x, ψ x ∂P = 0)
     (hSum_meas : ∀ n, AEMeasurable
       (IsAsymLinearVec.normalizedSum S ψ (fun m => Finset.range m) n) μ) :
     Tendsto_dist_vec
@@ -104,8 +105,7 @@ theorem normalizedSum_maxAbs_clt
       ((gaussianLimit hψ hvar).map maxAbs) μ
       (fun n => measurable_maxAbs.comp_aemeasurable (hSum_meas n)) :=
   Tendsto_dist_vec.map_continuous continuous_maxAbs hSum_meas
-    (fun n => measurable_maxAbs.comp_aemeasurable (hSum_meas n))
-    (S.clt_normalizedSum_vec hψ hvar hψ_int hmean hSum_meas)
+    (S.clt_normalizedSum_vec hψ hvar hmean)
 
 end CLT
 
@@ -138,6 +138,7 @@ noncomputable def intervalIFVec (yL yU : X → ℝ) (P : Measure X) :
     X → EuclideanSpace ℝ (Fin 2) :=
   fun z => eucl₂ ![yL z - ∫ x, yL x ∂P, yU z - ∫ x, yU x ∂P]
 
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- Both coordinates of the vector normalised sum of `intervalIFVec` are
 `√n · (sample mean − population mean)`. -/
 private lemma normalizedSum_coord (S : IIDSample Ω X μ P) (yL yU : X → ℝ) (n : ℕ) (ω : Ω) :
@@ -169,6 +170,7 @@ private lemma normalizedSum_coord (S : IIDSample Ω X μ P) (yL yU : X → ℝ) 
       sqrt_inv_centered]
     simp only [sampleMean]
 
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- The sample-mean interval is well-ordered (lower ≤ upper) when `y_L ≤ y_U`. -/
 lemma sampleMean_le (S : IIDSample Ω X μ P) (yL yU : X → ℝ)
     (hLU : ∀ z, yL z ≤ yU z) (n : ℕ) (ω : Ω) :
@@ -177,6 +179,7 @@ lemma sampleMean_le (S : IIDSample Ω X μ P) (yL yU : X → ℝ)
   gcongr with i _
   exact hLU _
 
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- **The Hausdorff bridge (Beresteanu–Molinari Theorem 3.2, statistic form).**
 `maxAbs` of the centered endpoint normalised sum is exactly
 `√n · H(Ȳₙ, E[Y])`, the scaled Hausdorff distance between the sample-mean interval
@@ -201,6 +204,7 @@ theorem maxAbs_normalizedSum_eq (S : IIDSample Ω X μ P) (yL yU : X → ℝ)
 /-- Coordinate access for `eucl₂`: `(eucl₂ v) j = v j`. -/
 @[simp] lemma eucl₂_apply (v : Fin 2 → ℝ) (j : Fin 2) : (eucl₂ v) j = v j := rfl
 
+omit [IsProbabilityMeasure P] in
 /-- Pointwise squared norm of the endpoint influence function as the sum of the
 two squared centered endpoints. -/
 lemma norm_sq_intervalIFVec (yL yU : X → ℝ) (x : X) :
@@ -212,6 +216,7 @@ lemma norm_sq_intervalIFVec (yL yU : X → ℝ) (x : X) :
   rw [Real.norm_eq_abs, Real.norm_eq_abs, sq_abs, sq_abs, eucl₂_apply, eucl₂_apply]
   rw [Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_zero]
 
+omit [IsProbabilityMeasure P] in
 /-- `intervalIFVec` is measurable from measurability of the two endpoint maps. -/
 lemma measurable_intervalIFVec (yL yU : X → ℝ)
     (hLmeas : Measurable yL) (hUmeas : Measurable yU) :
@@ -289,6 +294,7 @@ lemma intervalIFVec_mean_zero (yL yU : X → ℝ)
         sub_self]
   rw [hzero, map_zero]
 
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- The vector normalised sum of `intervalIFVec` is `AEMeasurable` for each `n`,
 from measurability of the endpoints and of the sample coordinates `S.Z i`. -/
 lemma intervalIFVec_sum_aemeasurable (S : IIDSample Ω X μ P) (yL yU : X → ℝ)
@@ -302,6 +308,7 @@ lemma intervalIFVec_sum_aemeasurable (S : IIDSample Ω X μ P) (yL yU : X → �
   refine Finset.measurable_sum _ (fun i _ => ?_)
   exact (measurable_intervalIFVec yL yU hLmeas hUmeas).comp (S.meas i)
 
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- The scaled Hausdorff statistic is `AEMeasurable` for each `n`.  Equals
 `maxAbs ∘ (normalised sum)` everywhere by `maxAbs_normalizedSum_eq`. -/
 lemma intervalIFVec_hHmeas (S : IIDSample Ω X μ P) (yL yU : X → ℝ)
@@ -317,6 +324,7 @@ lemma intervalIFVec_hHmeas (S : IIDSample Ω X μ P) (yL yU : X → ℝ)
   exact Filter.Eventually.of_forall fun ω =>
     maxAbs_normalizedSum_eq S yL yU hLU hLint hUint n ω
 
+omit [IsProbabilityMeasure P] in
 /-- **Beresteanu–Molinari Theorem 3.2 (scalar interval data).**  For an i.i.d.
 sample of interval data `Yᵢ = [y_{iL}, y_{iU}]` with `y_L ≤ y_U` and the centered
 endpoint influence function satisfying the multivariate-CLT hypotheses, the scaled

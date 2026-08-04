@@ -18,7 +18,7 @@ The key measurability identity is
 `{a | condQuantile ρ τ a ≤ t} = {a | τ a ≤ condCDF ρ a t}`, using monotonicity,
 right-continuity, and the `atBot`/`atTop` limits of `condCDF`.  The theorem
 `measurable_condQuantile_and_attains` proves that `condQuantile ρ τ` is measurable and,
-when every conditional CDF is continuous, attains the requested level:
+when every conditional CDF is continuous at its selected quantile, attains the requested level:
 `condCDF ρ a (condQuantile ρ τ a) = τ a`.
 -/
 
@@ -33,12 +33,16 @@ variable {α : Type*} [MeasurableSpace α]
 noncomputable def condQuantile (ρ : Measure (α × ℝ)) (τ : α → ℝ) (a : α) : ℝ :=
   sInf {x : ℝ | τ a ≤ condCDF ρ a x}
 
-private lemma condQuantileSet_up_closed {ρ : Measure (α × ℝ)} {τ : α → ℝ} {a : α}
+/-- If a response value's conditional cumulative distribution function reaches a target level,
+    then every larger response value also reaches that level. -/
+lemma condQuantileSet_up_closed {ρ : Measure (α × ℝ)} {τ : α → ℝ} {a : α}
     {x x' : ℝ} (hx : x ∈ {y : ℝ | τ a ≤ condCDF ρ a y}) (hxx' : x ≤ x') :
     x' ∈ {y : ℝ | τ a ≤ condCDF ρ a y} :=
   le_trans hx ((condCDF ρ a).mono hxx')
 
-private lemma bddBelow_condQuantileSet {ρ : Measure (α × ℝ)} {τ : α → ℝ} {a : α}
+/-- At a strictly positive conditional-quantile level, the response values whose
+conditional cumulative distribution function reaches that level are bounded below. -/
+lemma bddBelow_condQuantileSet {ρ : Measure (α × ℝ)} {τ : α → ℝ} {a : α}
     (hτ0 : 0 < τ a) : BddBelow {x : ℝ | τ a ≤ condCDF ρ a x} := by
   obtain ⟨N, hN⟩ :=
     Filter.eventually_atBot.mp ((tendsto_condCDF_atBot ρ a).eventually_lt_const hτ0)
@@ -47,13 +51,17 @@ private lemma bddBelow_condQuantileSet {ρ : Measure (α × ℝ)} {τ : α → �
   push_neg at hlt
   exact absurd hs (not_le.mpr (hN s hlt.le))
 
-private lemma nonempty_condQuantileSet {ρ : Measure (α × ℝ)} {τ : α → ℝ} {a : α}
+/-- At a conditional-quantile level strictly below one, some response value has a
+conditional cumulative distribution function that reaches that level. -/
+lemma nonempty_condQuantileSet {ρ : Measure (α × ℝ)} {τ : α → ℝ} {a : α}
     (hτ1 : τ a < 1) : ({x : ℝ | τ a ≤ condCDF ρ a x}).Nonempty := by
   obtain ⟨N, hN⟩ :=
     Filter.eventually_atTop.mp ((tendsto_condCDF_atTop ρ a).eventually_const_lt hτ1)
   exact ⟨N, (hN N le_rfl).le⟩
 
-private lemma le_condCDF_condQuantile {ρ : Measure (α × ℝ)} {τ : α → ℝ} {a : α}
+/-- At a target level below one, the conditional generalized inverse reaches at least that
+level in the conditional cumulative distribution function. -/
+lemma le_condCDF_condQuantile {ρ : Measure (α × ℝ)} {τ : α → ℝ} {a : α}
     (hτ1 : τ a < 1) : τ a ≤ condCDF ρ a (condQuantile ρ τ a) := by
   set q := condQuantile ρ τ a with hq
   have hne : ({x : ℝ | τ a ≤ condCDF ρ a x}).Nonempty := nonempty_condQuantileSet hτ1
@@ -68,34 +76,39 @@ private lemma le_condCDF_condQuantile {ρ : Measure (α × ℝ)} {τ : α → �
     filter_upwards [self_mem_nhdsWithin] with x hx using hgt x hx
   exact ge_of_tendsto htends hev
 
-private lemma le_condCDF_of_condQuantile_le {ρ : Measure (α × ℝ)} {τ : α → ℝ}
+/-- A conditional quantile below a value makes the conditional CDF reach any level below one. -/
+lemma le_condCDF_of_condQuantile_le {ρ : Measure (α × ℝ)} {τ : α → ℝ}
     {a : α} {x : ℝ} (hτ1 : τ a < 1) (hx : condQuantile ρ τ a ≤ x) :
     τ a ≤ condCDF ρ a x :=
   le_trans (le_condCDF_condQuantile (ρ := ρ) (τ := τ) (a := a) hτ1)
     ((condCDF ρ a).mono hx)
 
-private lemma condQuantile_le_of_le_condCDF {ρ : Measure (α × ℝ)} {τ : α → ℝ}
+/-- When the conditional cumulative distribution function has reached a positive target level
+at a point, the conditional generalized inverse is no larger than that point. -/
+lemma condQuantile_le_of_le_condCDF {ρ : Measure (α × ℝ)} {τ : α → ℝ}
     {a : α} {x : ℝ} (hτ0 : 0 < τ a) (hx : τ a ≤ condCDF ρ a x) :
     condQuantile ρ τ a ≤ x :=
   csInf_le (bddBelow_condQuantileSet (ρ := ρ) (τ := τ) (a := a) hτ0) hx
 
-private lemma condQuantile_le_iff {ρ : Measure (α × ℝ)} {τ : α → ℝ} {a : α}
+/-- At an interior target level, a point is above the conditional generalized inverse exactly
+when its conditional cumulative distribution function has reached that level. -/
+lemma condQuantile_le_iff {ρ : Measure (α × ℝ)} {τ : α → ℝ} {a : α}
     {x : ℝ} (hτ0 : 0 < τ a) (hτ1 : τ a < 1) :
     condQuantile ρ τ a ≤ x ↔ τ a ≤ condCDF ρ a x :=
   ⟨le_condCDF_of_condQuantile_le (ρ := ρ) (τ := τ) (a := a) hτ1,
     condQuantile_le_of_le_condCDF (ρ := ρ) (τ := τ) (a := a) hτ0⟩
 
-/-- **Measurable conditional quantile (selection).** For a finite measure `ρ` on `α × ℝ`
-and a measurable target level `τ : α → ℝ` with `τ ∈ (0,1)`, if every conditional law
-is atomless (`condCDF ρ a` continuous), the conditional quantile `condQuantile ρ τ` is
+/-- **Measurable conditional quantile (selection).** For a measure `ρ` on `α × ℝ`
+and a measurable target level `τ : α → ℝ` with `τ ∈ (0,1)`, if every conditional CDF
+is continuous at its selected quantile, the conditional quantile `condQuantile ρ τ` is
 measurable and attains the level:
 `condCDF ρ a (condQuantile ρ τ a) = τ a` for all `a`.
 
 This is the conditional analogue of an unconditional generalized inverse, with measurability
 of the selection in the conditioning variable. -/
-theorem measurable_condQuantile_and_attains (ρ : Measure (α × ℝ)) [IsFiniteMeasure ρ]
+theorem measurable_condQuantile_and_attains (ρ : Measure (α × ℝ))
     (τ : α → ℝ) (hτ : Measurable τ) (hτ0 : ∀ a, 0 < τ a) (hτ1 : ∀ a, τ a < 1)
-    (hcont : ∀ a, Continuous (condCDF ρ a)) :
+    (hcont : ∀ a, ContinuousAt (condCDF ρ a) (condQuantile ρ τ a)) :
     Measurable (condQuantile ρ τ) ∧
       ∀ a, condCDF ρ a (condQuantile ρ τ a) = τ a := by
   constructor
@@ -113,7 +126,7 @@ theorem measurable_condQuantile_and_attains (ρ : Measure (α × ℝ)) [IsFinite
       have hlt : τ a < condCDF ρ a (condQuantile ρ τ a) := lt_of_not_ge hnot
       let q := condQuantile ρ τ a
       have hnear : ∀ᶠ y in 𝓝 q, τ a < condCDF ρ a y := by
-        simpa [q] using ((hcont a).continuousAt.tendsto.eventually_const_lt hlt)
+        simpa [q] using ((hcont a).tendsto.eventually_const_lt hlt)
       obtain ⟨ε, hεpos, hε⟩ := Metric.eventually_nhds_iff.mp hnear
       let x := q - ε / 2
       have hxlt : x < q := sub_lt_self q (half_pos hεpos)

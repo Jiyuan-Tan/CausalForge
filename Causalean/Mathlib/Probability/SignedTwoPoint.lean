@@ -22,7 +22,7 @@ This file provides:
   `twoPointMean_bad_support_zero`;
 * `klDiv_map_measurableEquiv` — KL-divergence invariance under a measurable equivalence;
 * `twoPointMean_eq_map_bernoulli` — the affine-image representation;
-* `bernoulli_mean_channel_kl` — the KL band `KL(Q_u, Q_v) ≤ 2(u − v)²/B²` for `|u|,|v| ≤ B/2`.
+* `bernoulli_mean_channel_kl` — the KL band `KL(Q_u, Q_v) ≤ (u − v)²/B²` for `|u|,|v| ≤ B/2`.
 
 It is the reusable least-favorable outcome channel for two-point / Le Cam minimax lower bounds in
 a mean-estimation setting.
@@ -48,7 +48,9 @@ a function of the target mean `u`. -/
   unfold twoPointMean
   fun_prop
 
-private lemma twoPointMean_coef_nonneg {B u : ℝ} (hB : 0 < B) (hu : |u| ≤ B) :
+/-- When the scale is positive and the target mean lies within that scale, both
+weights in the signed two-point distribution are nonnegative. -/
+lemma twoPointMean_coef_nonneg {B u : ℝ} (hB : 0 < B) (hu : |u| ≤ B) :
     0 ≤ (1 + u / B) / 2 ∧ 0 ≤ (1 - u / B) / 2 := by
   have hbounds := abs_le.mp hu
   constructor <;> field_simp [ne_of_gt hB] <;> nlinarith [hbounds.1, hbounds.2, hB]
@@ -94,14 +96,14 @@ lemma twoPointMean_mean {B u : ℝ} (hB : 0 < B) (hu : |u| ≤ B) :
   ring
 
 /-- **The channel is supported in `[−M, M]` whenever `|B| ≤ M`.**  The mass that
-`twoPointMean B u` places outside the interval `[−M, M]` is `0`. -/
-lemma twoPointMean_bad_support_zero {B M u : ℝ} (hBM : |B| ≤ M) :
-    (twoPointMean B u) {y | y ∉ Set.Icc (-M) M} = 0 := by
+any nonnegative mixture of point masses at `B` and `−B` places outside the
+interval `[−M, M]` is `0`. -/
+lemma twoPointMean_bad_support_zero {B M : ℝ} (wplus wminus : ℝ≥0∞) (hBM : |B| ≤ M) :
+    (wplus • Measure.dirac B + wminus • Measure.dirac (-B))
+      {y | y ∉ Set.Icc (-M) M} = 0 := by
   let S : Set ℝ := {y | y ∉ Set.Icc (-M) M}
   have hS : MeasurableSet S := measurableSet_Icc.compl
-  unfold twoPointMean
-  change (ENNReal.ofReal ((1 + u / B) / 2) • Measure.dirac B
-      + ENNReal.ofReal ((1 - u / B) / 2) • Measure.dirac (-B)) S = 0
+  change (wplus • Measure.dirac B + wminus • Measure.dirac (-B)) S = 0
   rw [Measure.add_apply, Measure.smul_apply, Measure.smul_apply]
   have hBmem : B ∈ Set.Icc (-M) M := by
     exact abs_le.mp hBM
@@ -146,14 +148,14 @@ lemma klDiv_map_measurableEquiv {α β : Type*} [MeasurableSpace α] [Measurable
       InformationTheory.klDiv_eq_lintegral_klFun, if_neg hmap_not, if_neg hμν]
 
 /-- **Affine-image representation.**  The `{−B, B}` mean channel is the pushforward of the `{0,1}`
-Bernoulli law `bernoulliLaw ((1 + u/B)/2)` under the affine map `x ↦ 2Bx − B` (for `B > 0`). -/
-lemma twoPointMean_eq_map_bernoulli (B u : ℝ) (hB : 0 < B) :
+Bernoulli law `bernoulliLaw ((1 + u/B)/2)` under the affine map `x ↦ 2Bx − B` (for `B ≠ 0`). -/
+lemma twoPointMean_eq_map_bernoulli (B u : ℝ) (hB : B ≠ 0) :
     twoPointMean B u =
       Measure.map
-        (affineHomeomorph (2 * B) (-B) (by nlinarith : (2 * B : ℝ) ≠ 0)).toMeasurableEquiv
+        (affineHomeomorph (2 * B) (-B) (mul_ne_zero (by norm_num) hB)).toMeasurableEquiv
         (bernoulliLaw ((1 + u / B) / 2)) := by
   let e : ℝ ≃ᵐ ℝ :=
-    (affineHomeomorph (2 * B) (-B) (by nlinarith : (2 * B : ℝ) ≠ 0)).toMeasurableEquiv
+    (affineHomeomorph (2 * B) (-B) (mul_ne_zero (by norm_num) hB)).toMeasurableEquiv
   change twoPointMean B u =
     Measure.map e (bernoulliLaw ((1 + u / B) / 2))
   rw [twoPointMean, bernoulliLaw]
@@ -167,12 +169,12 @@ lemma twoPointMean_eq_map_bernoulli (B u : ℝ) (hB : 0 < B) :
 
 /-- **KL band for the signed two-point mean channel.**  For `B > 0` and means `u, v` with
 `|u| ≤ B/2` and `|v| ≤ B/2`, the Kullback–Leibler divergence between the two channels is bounded by
-the quadratic `KL(Q_u, Q_v) ≤ 2(u − v)²/B²`.  This is the affine transport of the `{0,1}` Bernoulli
+the quadratic `KL(Q_u, Q_v) ≤ (u − v)²/B²`.  This is the affine transport of the `{0,1}` Bernoulli
 KL band onto the `{−B, B}` mean parametrization. -/
 lemma bernoulli_mean_channel_kl (B u v : ℝ) (hB : 0 < B)
     (hu : |u| ≤ B / 2) (hv : |v| ≤ B / 2) :
     InformationTheory.klDiv (twoPointMean B u) (twoPointMean B v)
-      ≤ ENNReal.ofReal (2 * (u - v) ^ 2 / B ^ 2) := by
+      ≤ ENNReal.ofReal ((u - v) ^ 2 / B ^ 2) := by
   let p : ℝ := (1 + u / B) / 2
   let q : ℝ := (1 + v / B) / 2
   have hB_ne : B ≠ 0 := ne_of_gt hB
@@ -208,7 +210,7 @@ lemma bernoulli_mean_channel_kl (B u v : ℝ) (hB : 0 < B)
     simp only [Measure.dirac_apply, Set.mem_univ, Set.indicator_of_mem, Pi.one_apply,
       smul_eq_mul, mul_one]
     exact ENNReal.add_lt_top.2 ⟨ENNReal.ofReal_lt_top, ENNReal.ofReal_lt_top⟩
-  rw [twoPointMean_eq_map_bernoulli B u hB, twoPointMean_eq_map_bernoulli B v hB,
+  rw [twoPointMean_eq_map_bernoulli B u hB.ne', twoPointMean_eq_map_bernoulli B v hB.ne',
     klDiv_map_measurableEquiv]
   have hbern :
       InformationTheory.klDiv (bernoulliLaw p) (bernoulliLaw q) ≤
@@ -223,10 +225,5 @@ lemma bernoulli_mean_channel_kl (B u v : ℝ) (hB : 0 < B)
       subst q
       field_simp [hB_ne]
       ring
-    _ ≤ ENNReal.ofReal (2 * (u - v) ^ 2 / B ^ 2) := by
-      apply ENNReal.ofReal_le_ofReal
-      have hsquare : (u - v) ^ 2 ≤ 2 * (u - v) ^ 2 := by
-        nlinarith [sq_nonneg (u - v)]
-      exact div_le_div_of_nonneg_right hsquare (sq_nonneg B)
 
 end Causalean.Mathlib.Probability

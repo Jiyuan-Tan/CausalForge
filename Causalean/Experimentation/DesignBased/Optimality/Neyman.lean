@@ -42,9 +42,9 @@ noncomputable def neymanFraction (A B : ℝ) : ℝ := Real.sqrt A / (Real.sqrt A
 the arm variances are positive. -/
 noncomputable def neymanOptimalValue (A B : ℝ) : ℝ := (Real.sqrt A + Real.sqrt B) ^ 2
 
-/-- **Neyman allocation lower bound.** For positive arm variances `A, B` and any treatment fraction
-`x ∈ (0,1)`, the two-arm variance is at least `(√A + √B)²`. -/
-theorem neyman_allocation_lower_bound {A B x : ℝ} (hA : 0 < A) (hB : 0 < B)
+/-- **Neyman allocation lower bound.** For nonnegative arm variances `A, B` and any treatment
+fraction `x ∈ (0,1)`, the two-arm variance is at least `(√A + √B)²`. -/
+theorem neyman_allocation_lower_bound {A B x : ℝ} (hA : 0 ≤ A) (hB : 0 ≤ B)
     (hx0 : 0 < x) (hx1 : x < 1) :
     neymanOptimalValue A B ≤ A / x + B / (1 - x) := by
   -- A/x + B/(1−x) − (√A+√B)² = (√(A(1−x)/x) − √(Bx/(1−x)))² ≥ 0  (the cross term √(AB) cancels x).
@@ -58,8 +58,8 @@ theorem neyman_allocation_lower_bound {A B x : ℝ} (hA : 0 < A) (hB : 0 < B)
     field_simp [hxne, h1xne]
   rw [hcommon]
   rw [le_div_iff₀ hden]
-  have hsqA : Real.sqrt A ^ 2 = A := Real.sq_sqrt (le_of_lt hA)
-  have hsqB : Real.sqrt B ^ 2 = B := Real.sq_sqrt (le_of_lt hB)
+  have hsqA : Real.sqrt A ^ 2 = A := Real.sq_sqrt hA
+  have hsqB : Real.sqrt B ^ 2 = B := Real.sq_sqrt hB
   nlinarith [sq_nonneg (Real.sqrt A - (Real.sqrt A + Real.sqrt B) * x)]
 
 /-- The Neyman fraction lies in `(0,1)`. -/
@@ -75,8 +75,13 @@ theorem neymanFraction_mem_Ioo {A B : ℝ} (hA : 0 < A) (hB : 0 < B) :
 
 /-- **Neyman allocation optimum.** At the Neyman fraction the two-arm variance equals its lower
 bound `(√A + √B)²`; hence the Neyman fraction minimizes the variance over `(0,1)`. -/
-theorem neyman_allocation_eq_at_fraction {A B : ℝ} (hA : 0 < A) (hB : 0 < B) :
+theorem neyman_allocation_eq_at_fraction {A B : ℝ} (hA : 0 ≤ A) (hB : 0 ≤ B) :
     A / neymanFraction A B + B / (1 - neymanFraction A B) = neymanOptimalValue A B := by
+  rcases eq_or_lt_of_le hA with rfl | hA
+  · simp [neymanFraction, neymanOptimalValue, Real.sq_sqrt hB]
+  rcases eq_or_lt_of_le hB with rfl | hB
+  · simp [neymanFraction, neymanOptimalValue, Real.sq_sqrt (le_of_lt hA),
+      ne_of_gt (Real.sqrt_pos.2 hA)]
   unfold neymanFraction neymanOptimalValue
   have hs : 0 < Real.sqrt A := Real.sqrt_pos.2 hA
   have ht : 0 < Real.sqrt B := Real.sqrt_pos.2 hB
@@ -95,7 +100,7 @@ theorem neyman_allocation_eq_at_fraction {A B : ℝ} (hA : 0 < A) (hB : 0 < B) :
 
 /-- The Neyman fraction is a minimizer: its two-arm variance is no larger than the variance at
 any treatment fraction in `(0,1)`. -/
-theorem neyman_allocation_isMinimizer {A B : ℝ} (hA : 0 < A) (hB : 0 < B) :
+theorem neyman_allocation_isMinimizer {A B : ℝ} (hA : 0 ≤ A) (hB : 0 ≤ B) :
     ∀ x, 0 < x → x < 1 →
       A / neymanFraction A B + B / (1 - neymanFraction A B) ≤ A / x + B / (1 - x) := by
   intro x hx0 hx1

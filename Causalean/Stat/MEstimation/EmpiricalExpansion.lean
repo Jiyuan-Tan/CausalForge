@@ -81,6 +81,7 @@ variable {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
 
 /-! ## (a) Sample mean-square score difference at a consistent estimator -/
 
+omit [FiniteDimensional ℝ E] [BorelSpace E] in
 /-- **(a) Score difference is `o_p(1)` in mean square.**
 
 If `θn → θ₀` in probability and `ψ` has the almost-everywhere integrable derivative envelope
@@ -340,6 +341,7 @@ theorem score_diff_L2_isLittleOp_sqrt
 -- `Causalean/Stat/EmpiricalProcess/Equicontinuity/StochEquicont.lean`, so the
 -- foundational equicontinuity modules need not depend on this expansion.
 
+omit [FiniteDimensional ℝ E] [BorelSpace E] in
 /-- **(b) Empirical-process score difference is `o_p(√n)`.**
 
 Under `ZEstimatorRegularity`, consistency `θn →_p θ₀`, and asymptotic
@@ -446,6 +448,7 @@ theorem empiricalScoreDiff_isLittleOp_sqrt
 
 /-! ## (c) Population Fréchet expansion -/
 
+omit [FiniteDimensional ℝ E] [BorelSpace E] in
 /-- **(c) Population Fréchet expansion of the score difference.**
 
 The population mean of the score difference admits the linearisation
@@ -485,6 +488,7 @@ theorem populationScoreDiff_eq_jacobian_plus_remainder
 
 /-! ## Headline local stochastic expansion -/
 
+omit [FiniteDimensional ℝ E] [BorelSpace E] in
 /-- **Local stochastic expansion for Z-estimators.**
 
 Combining centered empirical-process control with the population Fréchet

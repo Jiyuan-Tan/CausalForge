@@ -38,9 +38,15 @@ export async function readRepairedModelJson(filePath: string): Promise<unknown> 
   return parseRepairedModelJson(await readFile(filePath, "utf8"), filePath);
 }
 
-export async function readTypedCore(filePath: string): Promise<Core> {
-  const core = CoreSchema.parse(JSON.parse(normalizeRawModelJson(await readFile(filePath, "utf8")))) as Core;
+/** The three-layer defense over already-read core text — for callers that need
+ * their own read/error wrapping but must NOT fall back to bare `JSON.parse`. */
+export function parseTypedCore(text: string, source: string): Core {
+  const core = CoreSchema.parse(JSON.parse(normalizeRawModelJson(text))) as Core;
   repairCoreLatexSerialization(core);
-  assertNoDecodedControlChars(core, `core artifact ${filePath}`);
+  assertNoDecodedControlChars(core, source);
   return core;
+}
+
+export async function readTypedCore(filePath: string): Promise<Core> {
+  return parseTypedCore(await readFile(filePath, "utf8"), `core artifact ${filePath}`);
 }

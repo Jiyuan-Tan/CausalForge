@@ -52,13 +52,11 @@ lemma latentBlock_pairwise_disjoint
   obtain ⟨hu', w, hwC', huw⟩ := by
     simpa [latentBlock] using (Finset.mem_filter.mp huC')
   have hdisj := M.toSWIGGraph.cComponentSet_pairwise_disjoint hC hC' hne
-  have hwObs : w ∈ M.toSWIGGraph.observed :=
-    M.toSWIGGraph.cComponentSet_subset_observed C' hC' hwC'
   have hwNotC : w ∉ C := by
     intro hwC
     exact (Finset.disjoint_left.mp hdisj) hwC hwC'
   exact M.toSWIGGraph.no_shared_unobserved_parent_of_mem_cComponentSet_of_not_mem
-    hC hvC hwObs hwNotC hu huv huw
+    hC hvC hwNotC hu huv huw
 
 /-- Distinct c-components of an induced SWIG have disjoint latent-parent blocks
 in the ambient SCM. -/
@@ -81,15 +79,11 @@ lemma latentBlock_pairwise_disjoint_induce_components
     (M.toSWIGGraph.induce R).cComponentSet_subset_observed C' hC' hwC'
   have hvR : v ∈ R := by
     simpa [SWIGGraph.induce] using (Finset.mem_inter.mp hvIndObs).1
-  have hvObs : v ∈ M.toSWIGGraph.observed := by
-    simpa [SWIGGraph.induce] using (Finset.mem_inter.mp hvIndObs).2
   have hwR : w ∈ R := by
     simpa [SWIGGraph.induce] using (Finset.mem_inter.mp hwIndObs).1
-  have hwObs : w ∈ M.toSWIGGraph.observed := by
-    simpa [SWIGGraph.induce] using (Finset.mem_inter.mp hwIndObs).2
   have hsame :=
     M.toSWIGGraph.induce_cComponentOf_eq_of_shared_unobserved_parent
-      R hu hvR hvObs hwR hwObs huv huw
+      R hu hvR hwR huv huw
   have hvComp :
       (M.toSWIGGraph.induce R).cComponentOf v = C :=
     (M.toSWIGGraph.induce R).cComponentOf_eq_of_mem_cComponentSet hC hvC
@@ -161,8 +155,8 @@ lemma localConsistent_depends_only_on_block
         exact ⟨huo, ⟨v, hvComp, hedge_v⟩⟩
       exact hℓ w.val huBlock
     · by_cases hfix : w.val ∈ M.fixed
-      · rw [parentMap_fixed M s ℓ j.isLt _ w huo hfix,
-            parentMap_fixed M s ℓ' j.isLt _ w huo hfix]
+      · rw [parentMap_fixed M s ℓ j.isLt _ w hfix,
+            parentMap_fixed M s ℓ' j.isLt _ w hfix]
       · have hedge : M.dag.edge w.val (M.observedAt j).val :=
           M.dag.mem_parents.mp w.property
         have hobs : w.val ∈ M.observed := by
@@ -171,8 +165,8 @@ lemma localConsistent_depends_only_on_block
             · exact absurd hfx hfix
             · exact hob
           · exact absurd h2 huo
-        rw [parentMap_observed M s ℓ j.isLt _ w huo hfix hobs,
-            parentMap_observed M s ℓ' j.isLt _ w huo hfix hobs]
+        rw [parentMap_observed M s ℓ j.isLt _ w hobs,
+            parentMap_observed M s ℓ' j.isLt _ w hobs]
   subst j
   change
     ((M.observedAt_observedIndex ⟨v, hv⟩) ▸
@@ -188,7 +182,9 @@ lemma localConsistent_depends_only_on_block
         = x ⟨v, hv⟩)
   rw [hfun]
 
-private lemma observedAt_observedIndex_subtype (M : Causalean.SCM N Ω)
+/-- Taking an observed node to its topological index and back recovers the same
+observed-node subtype value. -/
+lemma observedAt_observedIndex_subtype (M : Causalean.SCM N Ω)
     {v : SWIGNode N} (hv : v ∈ M.observed) :
     M.observedAt (M.observedIndex ⟨v, hv⟩) = ⟨v, hv⟩ :=
   Subtype.ext (M.observedAt_observedIndex ⟨v, hv⟩)
@@ -236,7 +232,7 @@ lemma parentMap_prevFromObservedValues_eq_dispatch
   · rw [parentMap_unobserved M s ℓ j.isLt _ w huo, dif_pos huo]
   · rw [dif_neg huo]
     by_cases hfix : w.val ∈ M.fixed
-    · rw [parentMap_fixed M s ℓ j.isLt _ w huo hfix, dif_pos hfix]
+    · rw [parentMap_fixed M s ℓ j.isLt _ w hfix, dif_pos hfix]
     · rw [dif_neg hfix]
       have hedge : M.dag.edge w.val (M.observedAt j).val :=
         M.dag.mem_parents.mp w.property
@@ -246,7 +242,7 @@ lemma parentMap_prevFromObservedValues_eq_dispatch
           · exact absurd hfx hfix
           · exact hob
         · exact absurd h2 huo
-      rw [parentMap_observed M s ℓ j.isLt _ w huo hfix hobs]
+      rw [parentMap_observed M s ℓ j.isLt _ w hobs]
       exact prevFromObservedValues_apply_observed M x hobs
         (M.observed_parent_index_lt j.isLt hedge hobs)
 
@@ -414,7 +410,9 @@ lemma localConsistent_iff_structFun_dispatch
   subst hsub
   exact hiff
 
-private lemma evalMap_eq_iff_localConsistent_of_observed_parent_agree
+/-- When all observed parents agree with their assigned values, evaluation at an
+observed node equals its assignment exactly when the latent values are locally consistent. -/
+lemma evalMap_eq_iff_localConsistent_of_observed_parent_agree
     (M : Causalean.SCM N Ω) (s : M.FixedValues)
     (x : ValuesOn M.observed (swigΩ Ω)) (ℓ : M.LatentValues)
     (v : SWIGNode N) (hv : v ∈ M.observed)
@@ -470,7 +468,9 @@ private lemma evalMap_eq_iff_localConsistent_of_observed_parent_agree
         exact hprev w.val hobs hedge
   rw [hfun]
 
-private lemma evalMap_eq_x_of_observedAt_eq
+/-- If structural evaluation at an indexed observed node equals its recorded value,
+then the same equality holds after replacing that node by any equal observed node. -/
+lemma evalMap_eq_x_of_observedAt_eq
     (M : Causalean.SCM N Ω) (s : M.FixedValues)
     (x : ValuesOn M.observed (swigΩ Ω)) (ℓ : M.LatentValues)
     (j : Fin M.observed.card) {v : SWIGNode N} (hv : v ∈ M.observed)

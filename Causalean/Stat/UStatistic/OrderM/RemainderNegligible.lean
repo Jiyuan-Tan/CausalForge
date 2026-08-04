@@ -50,21 +50,29 @@ namespace IIDSample
 variable [IsProbabilityMeasure μ] [IsProbabilityMeasure P]
   {m : ℕ} [NeZero m] {g : (Fin m → X) → ℝ} (S : IIDSample Ω X μ P)
 
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- The rescaled higher-order remainder has mean zero. -/
 theorem integral_rescaled_order_eq_zero (hg : OrderFirstDegenKernel P g)
     {n : ℕ} (hmn : m ≤ n) :
-    ∫ ω, Real.sqrt (n : ℝ) * uStatisticOrder S g n ω ∂μ = 0 :=
-  S.integral_rescaled_uStatisticOrder_eq_zero_of_uMean_zero hg.meas hg.integrable hmn
+    ∫ ω, Real.sqrt (n : ℝ) * uStatisticOrder S g n ω ∂μ = 0 := by
+  letI : IsProbabilityMeasure μ := S.indep.isProbabilityMeasure
+  letI : IsProbabilityMeasure P := by
+    rw [← S.law]
+    exact Measure.isProbabilityMeasure_map (S.meas 0).aemeasurable
+  exact S.integral_rescaled_uStatisticOrder_eq_zero_of_uMean_zero hg.meas hg.integrable hmn
     hg.integral_eq_zero
 
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- **Negligibility of the higher-order remainder.**  Under first-order
 degeneracy, `√n · Uₙ → 0` in probability, i.e. it is `o_p(1)`.  Proof: `L²`
-boundedness (`memLp_rescaled_sqKernel`) with mean zero and variance `≤ C/n → 0`
+boundedness (`memLp_rescaled_order`) with mean zero and variance `≤ C/n → 0`
 (`integral_rescaled_order_sq_le`), via Chebyshev — mirror the order-2
 `degenerateNegligible_of_degenKernel`. -/
-theorem orderDegenerateNegligible_of_firstDegen (hg : OrderFirstDegenKernel P g) :
+theorem orderDegenerateNegligible_of_firstDegen [IsFiniteMeasure P]
+    (hg : OrderFirstDegenKernel P g) :
     IsLittleOp (fun n ω => Real.sqrt (n : ℝ) * uStatisticOrder S g n ω)
       (fun _ => (1 : ℝ)) μ := by
+  letI : IsProbabilityMeasure μ := S.indep.isProbabilityMeasure
   intro ε hε
   rcases S.integral_rescaled_order_sq_le hg with ⟨C, hCnn, hCbound⟩
   have hb_tendsto :
@@ -83,7 +91,7 @@ theorem orderDegenerateNegligible_of_firstDegen (hg : OrderFirstDegenKernel P g)
     filter_upwards [eventually_ge_atTop m] with n hmn
     set X : Ω → ℝ := fun ω => Real.sqrt (n : ℝ) * uStatisticOrder S g n ω with hXdef
     have hmem : MemLp X 2 μ := by
-      simpa [X, hXdef] using S.memLp_rescaled_sqKernel hg.meas hg.sq n
+      simpa [X, hXdef] using S.memLp_rescaled_order hg.meas hg.sq n
     have hmean : ∫ ω, X ω ∂μ = 0 := by
       simpa [X, hXdef] using S.integral_rescaled_order_eq_zero hg hmn
     have hvar_le : variance X μ ≤ C / (n : ℝ) := by
@@ -128,7 +136,7 @@ Proof: assemble `OrderFirstDegenKernel P (uDegenOrder h P)` — `firstDeg` is
 unfolds to negligibility of `uStatisticOrder S (uDegenOrder h P)`. -/
 theorem orderDegenerateNegligible_of_residual
     {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
-    {μ : Measure Ω} {P : Measure X} [IsProbabilityMeasure μ] [IsProbabilityMeasure P]
+    {μ : Measure Ω} {P : Measure X}
     (S : IIDSample Ω X μ P) {m : ℕ} [NeZero m] (h : (Fin m → X) → ℝ)
     (hmeas : Measurable (uDegenOrder h P))
     (hL2 : Integrable (fun z => (uDegenOrder h P z) ^ 2)
@@ -145,6 +153,10 @@ theorem orderDegenerateNegligible_of_residual
         h (insertCoord j x tail))
         (Measure.pi fun _ : {k : Fin m // k ≠ j} => P)) :
     OrderDegenerateNegligible S h := by
+  letI : IsProbabilityMeasure μ := S.indep.isProbabilityMeasure
+  letI : IsProbabilityMeasure P := by
+    rw [← S.law]
+    exact Measure.isProbabilityMeasure_map (S.meas 0).aemeasurable
   have hg : OrderFirstDegenKernel P (uDegenOrder h P) := {
     meas := hmeas
     firstDeg := fun j x => uDegenOrder_integral_tail_eq_zero hslice_int hmean hrow j x

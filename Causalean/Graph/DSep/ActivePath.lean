@@ -163,16 +163,17 @@ theorem isActivePath_reverse {Z : Finset V} {p : List V}
       simp only [this, ite_false]
       exact horig
 
-/-- A reversed directed path avoiding `Z` is an active path given `Z`.
+/-- A backward-directed path whose interior vertices avoid the conditioning set is active.
+
     "Reversed directed" means each edge points from the *later* index to the
     *earlier* index (i.e., the list enumerates the path in the direction opposite
     to the edges). Every interior vertex is then a non-collider, and by the
     avoidance hypothesis none is in `Z`. -/
-private theorem isActivePath_of_reversed_directed
+theorem isActivePath_of_reversed_directed
     {Z : Finset V} {p : List V}
     (hdir : ∀ (i : ℕ) (hi : i + 1 < p.length),
         G.edge (p.get ⟨i + 1, hi⟩) (p.get ⟨i, by omega⟩))
-    (hZ : ∀ x ∈ p, x ∉ Z) :
+    (hZ : ∀ (i : ℕ) (hi : i + 2 < p.length), p.get ⟨i + 1, by omega⟩ ∉ Z) :
     G.IsActivePath Z p := by
   refine ⟨fun i hi => ?_, fun i hi => ?_⟩
   · -- Adjacency: hdir says G.edge p[i+1] p[i], so p[i] and p[i+1] are UAdj
@@ -191,7 +192,7 @@ private theorem isActivePath_of_reversed_directed
       intro ⟨h1, _⟩; exact hlm_false h1
     rw [if_neg hnotcoll]
     -- Need p[i+1] ∉ Z, which follows from hZ
-    exact hZ _ (List.get_mem _ _)
+    exact hZ i hi
 
 -- ============================================================
 -- Active path surgery helpers
@@ -341,14 +342,12 @@ theorem take_suffix_at_last_S
     simp only [IS, Finset.mem_filter, Finset.mem_univ, true_and]
     exact ⟨hk2, hkS⟩
 
-/-- If `q` is active given `Z ∪ S`, strict-interior vertices are outside `S`,
-    and every interior collider of `q` is `Z`-activated (not merely `S`-activated),
+/-- If `q` is active given `Z ∪ S` and every interior collider of `q` is
+    `Z`-activated (not merely `S`-activated),
     then `q` is active given `Z` alone. -/
 theorem isActivePath_Z_of_no_S_only_collider
     {Z S : Finset V} {q : List V}
     (hact : G.IsActivePath (Z ∪ S) q)
-    (_hInterior : ∀ (k : ℕ) (_hk1 : 0 < k) (hk2 : k + 1 < q.length),
-        q.get ⟨k, by omega⟩ ∉ S)
     (hNoSOnly : ∀ (i : ℕ) (hi : i + 2 < q.length),
         G.IsCollider (q.get ⟨i, by omega⟩) (q.get ⟨i + 1, by omega⟩) (q.get ⟨i + 2, hi⟩) →
         q.get ⟨i + 1, by omega⟩ ∈ G.bbZAncestors Z) :
@@ -525,7 +524,9 @@ theorem isActivePath_cons_of_active_triple
           simpa [Nat.add_assoc] using hi)
         simpa [Nat.add_assoc] using h
 
-private theorem active_triple_swap_outer
+/-- The active-path condition at a three-vertex segment is unchanged when its two outer
+vertices are swapped. -/
+theorem active_triple_swap_outer
     {Z : Finset V} {u w z : V}
     (h : if G.IsCollider u w z then w ∈ G.bbZAncestors Z else w ∉ Z) :
     if G.IsCollider z w u then w ∈ G.bbZAncestors Z else w ∉ Z := by
@@ -543,7 +544,8 @@ private theorem uAdj_reverse_of_stateMatchesEdge
   · exact Or.inr h
   · exact Or.inl h
 
-private theorem isActivePath_pair
+/-- Any two adjacent vertices form an active path of length one for every conditioning set. -/
+theorem isActivePath_pair
     {Z : Finset V} {a b : V} (h : G.UAdj a b) :
     G.IsActivePath Z [a, b] := by
   refine ⟨fun i hi => ?_, fun i hi => ?_⟩
@@ -611,7 +613,8 @@ private theorem bbReachable_state_has_reverse_activePath
   have hsS := hsub hs
   simpa [S] using hsS
 
-private theorem isActivePath_cons_tail
+/-- Removing the first vertex from an active path leaves an active path. -/
+theorem isActivePath_cons_tail
     {Z : Finset V} {u w : V} {r : List V}
     (h : G.IsActivePath Z (u :: w :: r)) :
     G.IsActivePath Z (w :: r) := by

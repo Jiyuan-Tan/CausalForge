@@ -24,6 +24,9 @@ Main results:
   available.
 * `mse_integrable_of_estimator_bound` — bounded-estimator bookkeeping for squared
   losses, used before MSE lower bounds can be applied to truncated estimators.
+* `integral_le_sSup_range_of_isProbabilityMeasure` — the Bayes-risk step: the average of a
+  risk function against any prior probability measure is at most its worst-case value, so a
+  minimax lower bound follows from a lower bound on a single prior's Bayes risk.
 
 These statements remain project-agnostic: concrete causal or nonparametric lower
 bounds import this layer after constructing the two laws, the functional
@@ -121,5 +124,27 @@ lemma mse_integrable_of_estimator_bound {S : Type*} [MeasurableSpace S]
   have hsq : (T s - theta) ^ 2 ≤ (M + |theta|) ^ 2 := by
     nlinarith [hsub, abs_nonneg (T s - theta), hC, sq_abs (T s - theta)]
   simpa [Real.norm_eq_abs, abs_of_nonneg (sq_nonneg (T s - theta))] using hsq
+
+/-- **Bayes risk never exceeds worst-case risk.**  Averaging an integrable risk function over
+the parameter space against any prior *probability* distribution gives at most the supremum of
+that risk over the parameter space (assuming the risk is bounded above).  This is the step that
+lets a minimax lower bound be certified by exhibiting a single prior and bounding its average
+risk from below. -/
+lemma integral_le_sSup_range_of_isProbabilityMeasure
+    {Θ : Type*} [MeasurableSpace Θ]
+    (π : Measure Θ) [IsProbabilityMeasure π]
+    (risk : Θ → ℝ) (hrisk : Integrable risk π)
+    (hbounded : BddAbove (Set.range risk)) :
+    ∫ θ, risk θ ∂π ≤ sSup (Set.range risk) := by
+  have hpoint : ∀ θ, risk θ ≤ sSup (Set.range risk) :=
+    fun θ => le_csSup hbounded (Set.mem_range_self θ)
+  have hconst :
+      Integrable (fun _ : Θ => sSup (Set.range risk)) π :=
+    integrable_const _
+  have hmono :
+      (∫ θ, risk θ ∂π) ≤
+        ∫ _ : Θ, sSup (Set.range risk) ∂π :=
+    integral_mono hrisk hconst hpoint
+  simpa using hmono
 
 end Causalean.Stat

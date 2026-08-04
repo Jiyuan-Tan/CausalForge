@@ -3,46 +3,52 @@ Copyright (c) 2026 Jiyuan Tan. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jiyuan Tan
 -/
+import Causalean.Mathlib.Analysis.WeightedCauchySchwarz
 import Causalean.Mathlib.Optimization.SimplexActiveSetDefs
 
 /-! # Weighted Cauchy–Schwarz on the three-point simplex
 
-Cauchy–Schwarz for the weighted inner product `⟨s,t⟩_β = Σ βᵢ sᵢ tᵢ` on `Fin 3`,
+Cauchy–Schwarz for the weighted inner product `⟨s,t⟩_β = Σ βᵢ sᵢ tᵢ` on a finite index type,
 in the squared form `weighted_cs_sq` and the strict simplex-slice form
 `weighted_cs_simplex_strict`.  The strict version is used to prove uniqueness for
 the weighted-simplex SOCP: on the affine slice `Σ sᵢ = Σ tᵢ = M > 0`, distinct
 points are not positive scalar multiples of each other, so equality in
-Cauchy–Schwarz cannot occur. -/
+Cauchy–Schwarz cannot occur.
+
+The squared form is the arbitrary-finite-index
+`Causalean.Mathlib.Analysis.weighted_inner_sq_le`; only the strict version is genuinely
+three-dimensional (its proof uses the explicit Lagrange identity). -/
 
 namespace Causalean.Mathlib.Optimization
 
 open scoped BigOperators
 
-/-- **Weighted Cauchy–Schwarz (squared form).** For nonnegative weights `β`,
-`(Σ βᵢ sᵢ tᵢ)² ≤ (Σ βᵢ sᵢ²)(Σ βᵢ tᵢ²)`. Proof: expand over `Fin 3` and use the
-Lagrange identity `PQ − R² = Σ_{i<j} βᵢβⱼ (sᵢtⱼ − sⱼtᵢ)² ≥ 0`. -/
-lemma weighted_cs_sq (β s t : Fin 3 → ℝ) (hβ : ∀ i, 0 ≤ β i) :
-    (∑ i, β i * (s i * t i)) ^ 2 ≤ (∑ i, β i * s i ^ 2) * (∑ i, β i * t i ^ 2) := by
-  simp only [Fin.sum_univ_three]
-  nlinarith
-    [mul_nonneg (mul_nonneg (hβ 0) (hβ 1)) (sq_nonneg (s 0 * t 1 - s 1 * t 0)),
-      mul_nonneg (mul_nonneg (hβ 0) (hβ 2)) (sq_nonneg (s 0 * t 2 - s 2 * t 0)),
-      mul_nonneg (mul_nonneg (hβ 1) (hβ 2)) (sq_nonneg (s 1 * t 2 - s 2 * t 1))]
+/-- **Weighted Cauchy–Schwarz (squared form).** Weighting finitely many coordinates
+by nonnegative masses, the square of the weighted inner product of two vectors is at most
+the product of their weighted sums of squares.
+
+This is the general finite-index form of
+`Causalean.Mathlib.Analysis.weighted_inner_sq_le`. -/
+lemma weighted_cs_sq {ι : Type*} [Fintype ι] (β s t : ι → ℝ) (hβ : ∀ i, 0 ≤ β i) :
+    (∑ i, β i * (s i * t i)) ^ 2 ≤ (∑ i, β i * s i ^ 2) * (∑ i, β i * t i ^ 2) :=
+  by
+    simpa using Analysis.weighted_inner_sq_le (Finset.univ : Finset ι) β s t
+      (fun i _ => hβ i)
 
 /-- **Strict weighted Cauchy–Schwarz on the simplex slice.** For positive weights,
-if `s ≠ t` but `Σ sᵢ = Σ tᵢ = M > 0`, then
+if `s ≠ t` but `Σ sᵢ = Σ tᵢ = M ≠ 0`, then
 `Σ βᵢ sᵢ tᵢ < √(Σ βᵢ sᵢ²) · √(Σ βᵢ tᵢ²)`.
 
 Proof plan:
 * Let `P = Σ βᵢ sᵢ²`, `Q = Σ βᵢ tᵢ²`, `R = Σ βᵢ sᵢ tᵢ`. Since `t ≠ 0` (its coords
-  sum to `M > 0`) and `β > 0`, `Q > 0`; likewise `P > 0`, so `√P·√Q = √(P·Q) > 0`.
+  sum to a nonzero `M`) and `β > 0`, `Q > 0`; likewise `P > 0`, so `√P·√Q = √(P·Q) > 0`.
 * Show `R² < P·Q`. The Lagrange gap `P·Q − R²` equals
   `β0β1(s0t1−s1t0)² + β0β2(s0t2−s2t0)² + β1β2(s1t2−s2t1)² ≥ 0`. If it were `0` then all
   three cross terms vanish; with `t ≠ 0` this forces `s = c • t` for `c = sₖ/tₖ` at any
   `tₖ ≠ 0`, and then `M = Σ sᵢ = c Σ tᵢ = c M` gives `c = 1`, i.e. `s = t`,
   contradicting `s ≠ t`. Hence the gap is `> 0`.
 * Conclude `R ≤ √(R²) < √(P·Q) = √P·√Q` (if `R < 0` it is `< 0 < √P·√Q` directly). -/
-lemma weighted_cs_simplex_strict (M : ℝ) (hM : 0 < M) (β s t : Fin 3 → ℝ)
+lemma weighted_cs_simplex_strict (M : ℝ) (hM : M ≠ 0) (β s t : Fin 3 → ℝ)
     (hβ : ∀ i, 0 < β i) (hs : ∑ i, s i = M) (ht : ∑ i, t i = M) (hne : s ≠ t) :
     (∑ i, β i * (s i * t i)) <
       Real.sqrt (∑ i, β i * s i ^ 2) * Real.sqrt (∑ i, β i * t i ^ 2) := by
@@ -115,7 +121,7 @@ lemma weighted_cs_simplex_strict (M : ℝ) (hM : 0 < M) (β s t : Fin 3 → ℝ)
       · by_cases ht1 : t 1 = 0
         · by_cases ht2 : t 2 = 0
           · exfalso
-            nlinarith only [hM, ht3, ht0, ht1, ht2]
+            exact hM (by linarith only [ht3, ht0, ht1, ht2])
           · have hs2 : s 2 = t 2 := by
               have hscale : M * s 2 = M * t 2 := by
                 calc
@@ -123,7 +129,7 @@ lemma weighted_cs_simplex_strict (M : ℝ) (hM : 0 < M) (β s t : Fin 3 → ℝ)
                   _ = s 2 * (t 0 + t 1 + t 2) := by rw [ht3]
                   _ = (s 0 + s 1 + s 2) * t 2 := by nlinarith only [h02, h12]
                   _ = M * t 2 := by rw [hs3]
-              exact mul_left_cancel₀ (ne_of_gt hM) hscale
+              exact mul_left_cancel₀ hM hscale
             have hs0 : s 0 = t 0 := by
               have hs0_zero : s 0 = 0 := by
                 have hmul : s 0 * t 2 = 0 := by rw [h02eq, ht0, mul_zero]
@@ -143,7 +149,7 @@ lemma weighted_cs_simplex_strict (M : ℝ) (hM : 0 < M) (β s t : Fin 3 → ℝ)
                 _ = s 1 * (t 0 + t 1 + t 2) := by rw [ht3]
                 _ = (s 0 + s 1 + s 2) * t 1 := by nlinarith only [h01, h12]
                 _ = M * t 1 := by rw [hs3]
-            exact mul_left_cancel₀ (ne_of_gt hM) hscale
+            exact mul_left_cancel₀ hM hscale
           have hs0 : s 0 = t 0 := by
             have hs0_zero : s 0 = 0 := by
               have hmul : s 0 * t 1 = 0 := by rw [h01eq, ht0, mul_zero]
@@ -165,7 +171,7 @@ lemma weighted_cs_simplex_strict (M : ℝ) (hM : 0 < M) (β s t : Fin 3 → ℝ)
               _ = s 0 * (t 0 + t 1 + t 2) := by rw [ht3]
               _ = (s 0 + s 1 + s 2) * t 0 := by nlinarith only [h01, h02]
               _ = M * t 0 := by rw [hs3]
-          exact mul_left_cancel₀ (ne_of_gt hM) hscale
+          exact mul_left_cancel₀ hM hscale
         have hs1 : s 1 = t 1 := by
           have hmul : t 0 * t 1 = t 0 * s 1 := by
             calc

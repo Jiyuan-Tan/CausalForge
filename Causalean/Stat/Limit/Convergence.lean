@@ -92,12 +92,22 @@ theorem Tendsto_dist.const_mul_tendsto
     {Xn : ℕ → Ω → ℝ} {Q : Measure ℝ} [IsProbabilityMeasure Q]
     {a : ℕ → ℝ} {a₀ : ℝ}
     (hXn : ∀ n, AEMeasurable (Xn n) μ)
-    (hScaled : ∀ n, AEMeasurable (fun ω => a n * Xn n ω) μ)
-    [IsProbabilityMeasure (Q.map (fun x : ℝ => a₀ * x))]
     (hX : Tendsto_dist Xn Q μ hXn)
     (ha : Tendsto a atTop (𝓝 a₀)) :
-    Tendsto_dist (fun n ω => a n * Xn n ω)
-      (Q.map (fun x : ℝ => a₀ * x)) μ hScaled := by
+    Tendsto (β := ProbabilityMeasure ℝ)
+      (fun n =>
+        ⟨μ.map (fun ω => a n * Xn n ω),
+          Measure.isProbabilityMeasure_map
+            ((measurable_const.mul measurable_id).aemeasurable.comp_aemeasurable (hXn n))⟩)
+      atTop
+      (𝓝 ⟨Q.map (fun x : ℝ => a₀ * x),
+        Measure.isProbabilityMeasure_map (measurable_const.mul measurable_id).aemeasurable⟩) := by
+  have hScaled : ∀ n, AEMeasurable (fun ω => a n * Xn n ω) μ := fun n =>
+    (measurable_const.mul measurable_id).aemeasurable.comp_aemeasurable (hXn n)
+  letI : IsProbabilityMeasure (Q.map (fun x : ℝ => a₀ * x)) :=
+    Measure.isProbabilityMeasure_map (measurable_const.mul measurable_id).aemeasurable
+  change Tendsto_dist (fun n ω => a n * Xn n ω)
+    (Q.map (fun x : ℝ => a₀ * x)) μ hScaled
   unfold Tendsto_dist at hX ⊢
   have hpm := MeasureTheory.ProbabilityMeasure.tendsto_map_mul_of_tendsto hX ha
   refine hpm.congr' ?_
@@ -215,7 +225,7 @@ In particular, when `Xn ⇒ Q` for some probability measure `Q` and
 `a n = 1/√n`, we get `a n · Xn →_p 0`.  Used in the Δ-method linearization
 step to conclude `T_n − t₀ →_p 0` from `√n (T_n − t₀) ⇒ Q`. -/
 theorem IsBigOp.const_mul_tendsto_zero
-    {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω} [IsProbabilityMeasure μ]
+    {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω}
     {Xn : ℕ → Ω → ℝ} {a : ℕ → ℝ}
     (hX : IsBigOp Xn (fun _ => (1 : ℝ)) μ)
     (ha : Tendsto a atTop (𝓝 0)) :

@@ -42,14 +42,14 @@ variable {G T : Type*} [Fintype G] [Fintype T]
 noncomputable def uniformWeight (G T : Type*) [Fintype G] [Fintype T] : ℝ :=
   ((Fintype.card G : ℝ) * (Fintype.card T : ℝ))⁻¹
 
-/-- In a balanced panel with at least two groups and periods, the uniform
-unit-period cell weight is strictly positive. -/
-theorem uniformWeight_pos (balanced : UniformTwoWayPanel.BalancedPanel G T) :
+/-- For finite nonempty group and time types, the uniform unit-period cell weight is
+strictly positive. -/
+theorem uniformWeight_pos [Nonempty G] [Nonempty T] :
     0 < uniformWeight G T := by
   have hG : (0 : ℝ) < (Fintype.card G : ℝ) :=
-    by exact_mod_cast lt_of_lt_of_le (by decide : 0 < 2) balanced.unit_card_ge_two
+    by exact_mod_cast (Fintype.card_pos : 0 < Fintype.card G)
   have hT : (0 : ℝ) < (Fintype.card T : ℝ) :=
-    by exact_mod_cast lt_of_lt_of_le (by decide : 0 < 2) balanced.time_card_ge_two
+    by exact_mod_cast (Fintype.card_pos : 0 < Fintype.card T)
   exact inv_pos.mpr (mul_pos hG hT)
 
 /-- Builds the uniform balanced-panel DCDH structure whose residualized treatment
@@ -75,7 +75,12 @@ noncomputable def ofTwoWayPanel
   Y0 := Y0
   tau := tau
   Dtilde := ddot D
-  pi_pos := fun _ _ => uniformWeight_pos balanced
+  pi_pos := fun _ _ =>
+    @uniformWeight_pos G T _ _
+      (Fintype.card_pos_iff.mp
+        (lt_of_lt_of_le (by decide : 0 < 2) balanced.unit_card_ge_two))
+      (Fintype.card_pos_iff.mp
+        (lt_of_lt_of_le (by decide : 0 < 2) balanced.time_card_ge_two))
   pi_sum_one := by
     have hcard : ((Fintype.card G : ℝ) * (Fintype.card T : ℝ)) ≠ 0 := by
       have hG : (0 : ℝ) < (Fintype.card G : ℝ) :=
@@ -97,7 +102,9 @@ noncomputable def ofTwoWayPanel
   Dtilde_orthogonal := by
     intro h hh
     have horth : inner (ddot D) h = 0 :=
-      UniformTwoWayPanel.ddot_orthogonal_unit_time balanced D h hh
+      UniformTwoWayPanel.ddot_orthogonal_unit_time
+        (lt_of_lt_of_le (by decide) balanced.unit_card_ge_two)
+        (lt_of_lt_of_le (by decide) balanced.time_card_ge_two) D h hh
     have : ∑ g, ∑ t, uniformWeight G T * ddot D g t * h g t
         = uniformWeight G T * inner (ddot D) h := by
       unfold inner
@@ -131,7 +138,12 @@ theorem ofTwoWayPanel_betaTWFE
     (hSD : 0 < ∑ g, ∑ t, uniformWeight G T * (ddot D g t) ^ 2) :
     (ofTwoWayPanel balanced D Y Y0 tau hD_binary hconsistency hSD).betaTWFE
       = finiteResidualizedCoefficient (ddot D) Y := by
-  have hwpos : 0 < uniformWeight G T := uniformWeight_pos balanced
+  have hwpos : 0 < uniformWeight G T :=
+    @uniformWeight_pos G T _ _
+      (Fintype.card_pos_iff.mp
+        (lt_of_lt_of_le (by decide : 0 < 2) balanced.unit_card_ge_two))
+      (Fintype.card_pos_iff.mp
+        (lt_of_lt_of_le (by decide : 0 < 2) balanced.time_card_ge_two))
   set P := ofTwoWayPanel balanced D Y Y0 tau hD_binary hconsistency hSD with hP
   have hnum : (∑ g, ∑ t, P.pi g t * P.Dtilde g t * P.Y g t)
       = uniformWeight G T * inner (ddot D) Y := by

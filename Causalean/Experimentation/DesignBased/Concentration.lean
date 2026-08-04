@@ -19,9 +19,9 @@ import Causalean.Stat.Concentration.TailBounds.Bernstein
 /-! # Bernstein concentration for a bounded design statistic
 
 For a finite design `D` and a statistic `X` bounded by `c`, with design mean `0` and design
-variance at most `σ²`, `bernstein_ge` gives the one-sided tail bound
-`Pr[ε ≤ X] ≤ exp(−ε² / (2(2σ² + cε)))` and `bernstein_abs_ge` the two-sided bound
-`Pr[ε ≤ |X|] ≤ 2·exp(−ε² / (2(2σ² + cε)))`.  These are exponentially sharper than the Chebyshev
+variance at most `v`, `bernstein_ge` gives the one-sided tail bound
+`Pr[ε ≤ X] ≤ exp(−ε² / (2(2v + cε)))` and `bernstein_abs_ge` the two-sided bound
+`Pr[ε ≤ |X|] ≤ 2·exp(−ε² / (2(2v + cε)))`.  These are exponentially sharper than the Chebyshev
 bound `Var/ε²`, and are obtained from the measure-theoretic sub-exponential Chernoff bound through
 the design-to-measure bridge.
 -/
@@ -38,52 +38,57 @@ variable {Ω : Type*} [Fintype Ω] [MeasurableSpace Ω] [MeasurableSingletonClas
 variable (D : FiniteDesign Ω)
 
 /-- A bounded, mean-zero statistic on a finite design is sub-exponential under the design measure,
-with variance-proxy `2σ²` and scale `c`.  This is the finite-design instance of the Bernstein
+with variance-proxy `2v` and scale `c`.  This is the finite-design instance of the Bernstein
 sub-exponential lemma, obtained through the measure bridge. -/
-lemma hasSubexponentialMGF_of_bounded (X : Ω → ℝ) {c σ : ℝ} (hc : 0 ≤ c) (hσ : 0 ≤ σ)
-    (hmean : D.E X = 0) (hbound : ∀ z, |X z| ≤ c) (hvar : D.Var X ≤ σ ^ 2) :
-    HasSubexponentialMGF X ⟨2 * σ ^ 2, by positivity⟩ ⟨c, hc⟩ D.toMeasure := by
+lemma hasSubexponentialMGF_of_bounded (X : Ω → ℝ) {c v : ℝ} (hc : 0 ≤ c)
+    (hmean : D.E X = 0) (hbound : ∀ z, |X z| ≤ c) (hvar : D.Var X ≤ v) :
+    HasSubexponentialMGF X ⟨2 * v, by
+      exact mul_nonneg (by norm_num) (le_trans (D.E_nonneg fun _ => sq_nonneg _) hvar)⟩
+      ⟨c, hc⟩ D.toMeasure := by
   have hmean' : D.toMeasure[X] = 0 := (D.integral_toMeasure X).trans hmean
-  have hvar' : D.toMeasure[fun ω => X ω ^ 2] ≤ σ ^ 2 := by
+  have hvar' : D.toMeasure[fun ω => X ω ^ 2] ≤ v := by
     rw [D.integral_toMeasure (fun z => X z ^ 2)]
     have : D.E (fun z => X z ^ 2) = D.Var X := by rw [D.Var_eq X, hmean]; ring
     rw [this]; exact hvar
-  exact bounded_hasSubexponentialMGF hc hσ (D.aemeasurable_toMeasure X) hmean'
-    (Filter.Eventually.of_forall hbound) hvar'
+  have hv : 0 ≤ v := le_trans (D.E_nonneg fun _ => sq_nonneg _) hvar
+  simpa only [Real.sq_sqrt hv] using
+    bounded_hasSubexponentialMGF (σ := Real.sqrt v) hc (D.aemeasurable_toMeasure X) hmean'
+      (Filter.Eventually.of_forall hbound) (by simpa only [Real.sq_sqrt hv] using hvar')
 
 /-- **Bernstein tail for a bounded design statistic (one-sided).** If a statistic is bounded by `c`,
-has design mean `0`, and has design variance at most `σ²`, then it exceeds a nonnegative threshold
-`ε` with probability at most `exp(−ε² / (2(2σ² + cε)))`, far sharper than Chebyshev. -/
-theorem bernstein_ge (X : Ω → ℝ) {c σ ε : ℝ} (hc : 0 ≤ c) (hσ : 0 ≤ σ)
-    (hmean : D.E X = 0) (hbound : ∀ z, |X z| ≤ c) (hvar : D.Var X ≤ σ ^ 2) (hε : 0 ≤ ε) :
-    D.Pr (fun z => ε ≤ X z) ≤ Real.exp (-ε ^ 2 / (2 * (2 * σ ^ 2 + c * ε))) := by
-  have hsub := D.hasSubexponentialMGF_of_bounded X hc hσ hmean hbound hvar
+has design mean `0`, and has design variance at most `v`, then it exceeds a nonnegative threshold
+`ε` with probability at most `exp(−ε² / (2(2v + cε)))`, far sharper than Chebyshev. -/
+theorem bernstein_ge (X : Ω → ℝ) {c v ε : ℝ} (hc : 0 ≤ c)
+    (hmean : D.E X = 0) (hbound : ∀ z, |X z| ≤ c) (hvar : D.Var X ≤ v) (hε : 0 ≤ ε) :
+    D.Pr (fun z => ε ≤ X z) ≤ Real.exp (-ε ^ 2 / (2 * (2 * v + c * ε))) := by
+  have hsub := D.hasSubexponentialMGF_of_bounded X hc hmean hbound hvar
   have h := hsub.measure_ge_le hε
   rw [D.toMeasure_real_setOf (fun z => ε ≤ X z)] at h
   simpa only [NNReal.coe_mk] using h
 
 /-- **Bernstein tail for a bounded design statistic (two-sided).** Under the same hypotheses, the
 absolute deviation exceeds `ε` with probability at most twice the one-sided bound. -/
-theorem bernstein_abs_ge (X : Ω → ℝ) {c σ ε : ℝ} (hc : 0 ≤ c) (hσ : 0 ≤ σ)
-    (hmean : D.E X = 0) (hbound : ∀ z, |X z| ≤ c) (hvar : D.Var X ≤ σ ^ 2) (hε : 0 ≤ ε) :
-    D.Pr (fun z => ε ≤ |X z|) ≤ 2 * Real.exp (-ε ^ 2 / (2 * (2 * σ ^ 2 + c * ε))) := by
+theorem bernstein_abs_ge (X : Ω → ℝ) {c v ε : ℝ} (hc : 0 ≤ c)
+    (hmean : D.E X = 0) (hbound : ∀ z, |X z| ≤ c) (hvar : D.Var X ≤ v) (hε : 0 ≤ ε) :
+    D.Pr (fun z => ε ≤ |X z|) ≤ 2 * Real.exp (-ε ^ 2 / (2 * (2 * v + c * ε))) := by
   have hvarneg : D.Var (fun z => -X z) = D.Var X := by
     have he : (fun z => -X z) = (fun z => (-1 : ℝ) * X z) := by funext z; ring
     rw [he, D.Var_const_mul]; ring
-  have hsub := D.hasSubexponentialMGF_of_bounded X hc hσ hmean hbound hvar
-  have hpos := D.hasSubexponentialMGF_of_bounded (fun z => -X z) hc hσ
+  have hsub := D.hasSubexponentialMGF_of_bounded X hc hmean hbound hvar
+  have hpos := D.hasSubexponentialMGF_of_bounded (v := v) (fun z => -X z) hc
     (by rw [D.E_neg, hmean, neg_zero]) (fun z => by simpa [abs_neg] using hbound z)
-    (by rw [hvarneg]; exact hvar)
+    (by simpa only [hvarneg] using hvar)
   have hup : D.toMeasure.real {ω | ε ≤ X ω - 0} ≤
-      Real.exp (-ε ^ 2 / (2 * (2 * σ ^ 2 + c * ε))) := by
+      Real.exp (-ε ^ 2 / (2 * (2 * v + c * ε))) := by
     simpa only [sub_zero, NNReal.coe_mk] using hsub.measure_ge_le hε
   have hlow : D.toMeasure.real {ω | ε ≤ -X ω + 0} ≤
-      Real.exp (-ε ^ 2 / (2 * (2 * σ ^ 2 + c * ε))) := by
+      Real.exp (-ε ^ 2 / (2 * (2 * v + c * ε))) := by
     simpa only [add_zero, NNReal.coe_mk] using hpos.measure_ge_le hε
   have h := measureReal_abs_dev_le_two_sided (μ := D.toMeasure) X 0
-    (Real.exp (-ε ^ 2 / (2 * (2 * σ ^ 2 + c * ε)))) ε hup hlow
+    (Real.exp (-ε ^ 2 / (2 * (2 * v + c * ε))))
+    (Real.exp (-ε ^ 2 / (2 * (2 * v + c * ε)))) ε hup hlow
   rw [D.Pr_eq_measureReal (fun z => ε ≤ |X z|)]
-  simpa only [sub_zero] using h
+  simpa only [sub_zero, two_mul] using h
 
 end FiniteDesign
 end DesignBased

@@ -86,7 +86,7 @@ theorem uProj_integral_eq_zero [IsProbabilityMeasure P] {h : X → X → ℝ}
   simp [uMean]
 
 /-- The first projection is integrable whenever `x ↦ ∫ h(x, ·) dP` is. -/
-theorem uProj_integrable [IsProbabilityMeasure P] {h : X → X → ℝ}
+theorem uProj_integrable [IsFiniteMeasure P] {h : X → X → ℝ}
     (hint : Integrable (fun x => ∫ y, h x y ∂P) P) :
     Integrable (uProj h P) P := by
   unfold uProj

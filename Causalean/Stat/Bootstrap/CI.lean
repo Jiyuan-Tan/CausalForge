@@ -115,8 +115,6 @@ theorem bootstrap_studentized_tendsto
     (hpos : 0 < ∫ x, (ψ x) ^ 2 ∂P)
     (hθn_meas : ∀ n, AEMeasurable
       (IsAsymLinear.rescaledEstimator θn θ₀ (fun m => Finset.range m) n) μ)
-    (hSum_meas : ∀ n, AEMeasurable
-      (IsAsymLinear.normalizedSum S ψ (fun m => Finset.range m) n) μ)
     (hStud_meas : ∀ n,
       AEMeasurable (IIDSample.bootstrapStudentized θn θ₀ S ψ n) μ) :
     Tendsto_dist (IIDSample.bootstrapStudentized θn θ₀ S ψ)
@@ -129,7 +127,7 @@ theorem bootstrap_studentized_tendsto
       Tendsto_dist (IsAsymLinear.rescaledEstimator θn θ₀ (fun m => Finset.range m))
         (gaussianMeasure 0 (σ₀ ^ 2)) μ hθn_meas := by
     rw [hσ₀sq]
-    exact IsAsymLinear.tendsto_normal h hψ_meas hθn_meas hSum_meas
+    exact IsAsymLinear.tendsto_normal h hψ_meas hθn_meas
   -- bootstrap SE ⇒ σ₀ in probability
   have hSE : Tendsto_inProb (IIDSample.bootstrapSE S ψ) (fun _ => σ₀) μ :=
     IIDSample.bootstrapSE_tendsto_inProb S hψ_meas hψ_int hψ_sq_int h.mean_zero
@@ -156,8 +154,6 @@ theorem bootstrap_wald_coverage
     (hpos : 0 < ∫ x, (ψ x) ^ 2 ∂P)
     (hθn_meas : ∀ n, AEMeasurable
       (IsAsymLinear.rescaledEstimator θn θ₀ (fun m => Finset.range m) n) μ)
-    (hSum_meas : ∀ n, AEMeasurable
-      (IsAsymLinear.normalizedSum S ψ (fun m => Finset.range m) n) μ)
     (hStud_meas : ∀ n,
       AEMeasurable (IIDSample.bootstrapStudentized θn θ₀ S ψ n) μ)
     {z : ℝ} (hz : 0 < z) (coverProb : ℕ → ℝ)
@@ -168,7 +164,7 @@ theorem bootstrap_wald_coverage
     Tendsto coverProb atTop
       (𝓝 ((gaussianMeasure 0 1) (Set.Icc (-z) z)).toReal) := by
   have hStud := bootstrap_studentized_tendsto h hψ_meas hψ_int hψ_sq_int hpos
-    hθn_meas hSum_meas hStud_meas
+    hθn_meas hStud_meas
   exact Tendsto_dist.wald_coverage hStud_meas hStud hz coverProb h_bridge
 
 end Causalean.Stat

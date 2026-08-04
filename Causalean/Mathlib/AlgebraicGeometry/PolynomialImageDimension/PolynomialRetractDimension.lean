@@ -43,7 +43,9 @@ private lemma image_strictMono_global {α β ι : Type*} [Preorder ι]
     obtain ⟨y, hy, hfy⟩ := him
     exact hf hfy.symm ▸ hy
 
-private lemma image_strictMono_on {α β ι : Type*} [Preorder ι]
+/-- If a function is injective on a set containing every member of a strictly increasing chain
+    of sets, then the images of those sets form a strictly increasing chain. -/
+lemma image_strictMono_on {α β ι : Type*} [Preorder ι]
     (f : α → β) {S : Set α} (hf : Set.InjOn f S)
     {chain : ι → Set α} (hc : StrictMono chain)
     (hsub : ∀ i, chain i ⊆ S) :
@@ -71,7 +73,7 @@ private lemma image_strictMono_on {α β ι : Type*} [Preorder ι]
 
 /-- A polynomial embedding with a polynomial retraction sends irreducible
 affine-closed subsets to irreducible affine-closed images. -/
-lemma irreducible_image_polynomial_retract {ι κ : Type*} [Finite ι] [Finite κ]
+lemma irreducible_image_polynomial_retract {ι κ : Type*}
     {f : (ι → ℂ) → (κ → ℂ)} {g : (κ → ℂ) → (ι → ℂ)}
     (hf : IsPolynomialMap f) (hg : IsPolynomialMap g)
     (hleft : Function.LeftInverse g f) {A : Set (ι → ℂ)} :
@@ -111,7 +113,7 @@ lemma irreducible_image_polynomial_retract {ι κ : Type*} [Finite ι] [Finite �
 
 /-- A polynomial embedding with a polynomial retraction has an image of the
 same exact irreducible-chain dimension as its source affine space. -/
-theorem polynomialRetract_range_dimension {d : ℕ} {κ : Type*} [Finite κ]
+theorem polynomialRetract_range_dimension {d : ℕ} {κ : Type*}
     {f : (Fin d → ℂ) → (κ → ℂ)} {g : (κ → ℂ) → (Fin d → ℂ)}
     (hf : IsPolynomialMap f) (hg : IsPolynomialMap g)
     (hleft : Function.LeftInverse g f) :

@@ -1,5 +1,6 @@
 import { findHiddenStatementDefs } from "../formalization/crosswalk.js";
 import { parseAnnotatedDecls } from "./extractor.js";
+import { statementHash } from "./hash.js";
 import { addNode } from "./mutate.js";
 import type { FormalizationGraph, NodeKind } from "./types.js";
 
@@ -56,7 +57,15 @@ export async function mintAnnotatedNodes(graph: FormalizationGraph, leanDir: str
       nl_statement: `(agent-introduced ${d.declKind} ${d.declName})`,
       tex_anchor: "",
     });
-    g = { ...g, nodes: g.nodes.map((n) => (n.id === d.nodeId ? { ...n, lean: { decl_name: d.declName, file: d.file } } : n)) };
+    g = {
+      ...g,
+      nodes: g.nodes.map((n) => n.id === d.nodeId ? {
+        ...n,
+        lean: { decl_name: d.declName, file: d.file },
+        proof: { state: d.hasSorry ? "sorry" : "complete", sorry_count: d.hasSorry ? 1 : 0 },
+        review: { ...n.review, passed_hash: d.hasSorry ? null : statementHash(d.statement) },
+      } : n),
+    };
   }
   return g;
 }

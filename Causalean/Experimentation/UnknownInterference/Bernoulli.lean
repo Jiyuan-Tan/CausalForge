@@ -9,10 +9,11 @@ The Bernoulli design assigns each unit's treatment by an independent coin flip w
 probability `p i`.  It is exactly the product design `prodDesign` of the per-unit coin designs, so
 cross-unit independence — and, more importantly, independence of two units' outcomes whenever they
 are not interference dependent — is the structural disjoint-block independence of the product
-design.  This file builds the coin design, the Bernoulli design, and the marginal facts
-(`Z_i ⊥ Z_{-i}`, `E[Z_i] = p_i`) used for Horvitz–Thompson unbiasedness.
+design.  This file reuses the canonical coin design, builds the Bernoulli design, and records the
+marginal facts (`Z_i ⊥ Z_{-i}`, `E[Z_i] = p_i`) used for Horvitz–Thompson unbiasedness.
 -/
 
+import Causalean.Experimentation.DesignBased.Designs.Coin
 import Causalean.Experimentation.DesignBased.Product
 import Causalean.Experimentation.UnknownInterference.Basic
 
@@ -21,8 +22,8 @@ import Causalean.Experimentation.UnknownInterference.Basic
 Independent Bernoulli assignment supplies the product-design independence used for
 Sävje-Aronow-Hudgens unknown-interference results.
 
-This file builds the single-unit `coinDesign`, the product Bernoulli randomization design
-`bernoulliDesign`, and the one-coordinate marginal identities used throughout the
+This file reuses the canonical single-unit `coinDesign`, builds the product Bernoulli randomization
+design `bernoulliDesign`, and proves the one-coordinate marginal identities used throughout the
 Horvitz-Thompson and Hájek arguments.  `coinDesign_E` expands the two-point expectation,
 `bernoulliDesign_E_eval` reduces any function of one unit's assignment to the corresponding coin
 expectation, and `bernoulliDesign_E_treat` / `bernoulliDesign_E_ctrl` give the marginal treatment
@@ -39,21 +40,6 @@ namespace UnknownInterference
 open DesignBased
 
 variable {U : Type*} [Fintype U] [DecidableEq U]
-
-/-- The single-unit **coin design** on `Bool`: treatment (`true`) with probability `p`, control
-(`false`) with probability `1 − p`. -/
-def coinDesign (p : ℝ) (hp0 : 0 ≤ p) (hp1 : p ≤ 1) : FiniteDesign Bool where
-  p := fun b => cond b p (1 - p)
-  p_nonneg := by
-    intro b; cases b
-    · exact sub_nonneg.mpr hp1
-    · exact hp0
-  p_sum := by rw [Fintype.sum_bool]; show p + (1 - p) = 1; ring
-
-/-- The expectation of a function of a single coin: `E[g] = p·g(true) + (1−p)·g(false)`. -/
-lemma coinDesign_E (p : ℝ) (hp0 : 0 ≤ p) (hp1 : p ≤ 1) (g : Bool → ℝ) :
-    (coinDesign p hp0 hp1).E g = p * g true + (1 - p) * g false := by
-  simp only [FiniteDesign.E, coinDesign, Fintype.sum_bool, cond_true, cond_false]
 
 /-- The **Bernoulli randomization design**: each unit `i` is independently assigned treatment with
 probability `p i`.  Built as the product of the per-unit coin designs. -/

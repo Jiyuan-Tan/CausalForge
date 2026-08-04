@@ -41,13 +41,13 @@ variable {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
 /-- The first-order influence function of an ordered fixed-order kernel: the sum
 of its coordinatewise first Hoeffding projections.  For a symmetric kernel this
 is `m` times the usual first projection. -/
-noncomputable def uInfluenceOrder {m : ℕ} [NeZero m] (h : (Fin m → X) → ℝ)
+noncomputable def uInfluenceOrder {m : ℕ} (h : (Fin m → X) → ℝ)
     (P : Measure X) : X → ℝ :=
   fun x => ∑ j : Fin m, uProjOrderAt j h P x
 
 /-- If all coordinatewise first projections agree with a common projection, then
 the order-`m` influence function is `m` times that projection. -/
-theorem uInfluenceOrder_eq_card_mul_of_common_projection {m : ℕ} [NeZero m]
+theorem uInfluenceOrder_eq_card_mul_of_common_projection {m : ℕ}
     {h : (Fin m → X) → ℝ} {φ : X → ℝ}
     (hproj : ∀ j : Fin m, ∀ x, uProjOrderAt j h P x = φ x) :
     uInfluenceOrder h P = fun x => (m : ℝ) * φ x := by
@@ -108,7 +108,7 @@ theorem injectiveTupleCount_ne_zero {m n : ℕ} (hmn : m ≤ n) :
 /-- Fibres of a fixed coordinate map on ordered injective tuples have the same
 cardinality.  The bijection composes tuples with the codomain transposition
 swapping the two fibre values. -/
-theorem injectiveTuples_fiber_card_eq {m n : ℕ} [NeZero m] (j : Fin m)
+theorem injectiveTuples_fiber_card_eq {m n : ℕ} (j : Fin m)
     (y y' : Fin n) :
     ((injectiveTuples m n).filter (fun t => t j = y)).card =
       ((injectiveTuples m n).filter (fun t => t j = y')).card := by
@@ -141,12 +141,12 @@ theorem injectiveTuples_fiber_card_eq {m n : ℕ} [NeZero m] (j : Fin m)
 
 /-- For each coordinate of an ordered injective tuple, every sample index appears
 equally often. -/
-theorem sum_injectiveTuples_apply_eq_range {m n : ℕ} [NeZero m] (hmn : m ≤ n)
+theorem sum_injectiveTuples_apply_eq_range {m n : ℕ} (hmn : m ≤ n)
     (j : Fin m) (f : ℕ → ℝ) :
     ∑ t ∈ injectiveTuples m n, f (t j : ℕ)
       = (injectiveTupleCount m n / (n : ℝ)) * ∑ i ∈ Finset.range n, f i := by
   classical
-  have hmpos : 0 < m := Nat.pos_of_ne_zero (NeZero.ne m)
+  have hmpos : 0 < m := lt_of_le_of_lt (Nat.zero_le _) j.isLt
   have hnpos_nat : 0 < n := lt_of_lt_of_le hmpos hmn
   have hnne : (n : ℝ) ≠ 0 := by exact_mod_cast (Nat.ne_of_gt hnpos_nat)
   let y0 : Fin n := ⟨0, hnpos_nat⟩
@@ -245,7 +245,7 @@ theorem uStatisticOrder_sub_uMean_eq (S : IIDSample Ω X μ P)
 
 /-- The Hájek remainder in `IsAsymLinear` form is the rescaled higher-order
 residual U-statistic. -/
-theorem uStatisticOrder_remainder_eq [IsProbabilityMeasure μ]
+theorem uStatisticOrder_remainder_eq
     (S : IIDSample Ω X μ P) {m : ℕ} [NeZero m] (h : (Fin m → X) → ℝ)
     {n : ℕ} (hmn : m ≤ n) :
     (fun ω =>
@@ -274,8 +274,6 @@ theorem uStatisticOrder_remainder_eq [IsProbabilityMeasure μ]
 The central-limit contact point: negligibility of the higher-order remainder makes
 the U-statistic asymptotically linear.  The CLT itself (`uStatisticOrder_clt` and
 the end-to-end `uStatisticOrder_clt_of_regular`) is assembled in `OrderM.CLT`. -/
-
-variable [IsProbabilityMeasure μ]
 
 /-- **Fixed-order U-statistic asymptotic linearity.**  If the summed first
 projection is centered and square-integrable, and the higher-order residual is

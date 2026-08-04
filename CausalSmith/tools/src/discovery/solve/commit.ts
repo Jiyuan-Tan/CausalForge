@@ -10,24 +10,23 @@ import path from "node:path";
 import type { PipelineContext, StageResult, StateJson } from "../../types.js";
 import { writeJsonAtomic } from "../../shared/json_atomic.js";
 import { buildReviewPacket } from "../review_packet.js";
-import { formatClosureViolation } from "../core/coherence.js";
 import { formatPreflightViolations } from "../core/preflight.js";
+import { assembleCore } from "../core/assemble.js";
+import { CoreSchema, type Core } from "../core/schema.js";
 import {
   proposalReviewPacketPath,
   openObligationsPath,
 } from "../discovery_paths.js";
 import { archiveProofs, type ProofToArchive } from "../proof_archive.js";
-import { workingPath, saveWorkingState } from "../stages/d0_working.js";
+import { workingPath, saveWorkingState, normalizeWorkingState, WORKING_STORE_FORMAT } from "../stages/d0_working.js";
 import type { ProposedStatementChange } from "./schemas.js";
 import { formatSolveEmissionConflicts } from "./ownership.js";
 import type { SolveRoundContext } from "./context.js";
 import type { SolveMergeResult } from "./merge.js";
 import {
-  reconcileAndWarnRound,
-  checkpointClosure,
+  warnRoundInvariants,
   checkpointPreflight,
   checkpointSymbolDrift,
-  healMissingBibCites,
   runPostSolveGate,
 } from "./gates.js";
 
@@ -39,36 +38,48 @@ export interface Stage0SolveResult {
   proposedChanges: ProposedStatementChange[];
 }
 
+/** Render the round's publishable core from the two authoritative stores.
+ *  The cursor is normalized FIRST (audit R3F1): `saveWorkingState` applies the
+ *  same normalization at persist time, so rendering the un-normalized cursor
+ *  would publish a core that diverges from the stores the very same commit
+ *  saves. Schema-parsed so a render the downstream readers would reject fails
+ *  loud at the boundary instead of being persisted. */
+export function renderRoundCore(sctx: SolveRoundContext): Core {
+  normalizeWorkingState(sctx.next);
+  return CoreSchema.parse(assembleCore(sctx.proto, sctx.next));
+}
+
 /** Build the round's atomic commit closure over the shared round state. */
 export function makeCommitRound(args: {
   ctx: PipelineContext;
   sctx: SolveRoundContext;
-  protoChangedByProse: boolean;
   /** Proof bytes the merge refused to install anywhere in hot state. They live only in
    *  this round's raw solve files, which the next dispatch may overwrite — so the
    *  commit copies them to the cold archive first. */
   withheldProofBytes?: ProofToArchive[];
 }): () => Promise<void> {
-  const { ctx, sctx, protoChangedByProse, withheldProofBytes = [] } = args;
-  const { proto, core, protoPath, corePath, next } = sctx;
+  const { ctx, sctx, withheldProofBytes = [] } = args;
+  const { corePath, next } = sctx;
   // `d0_working.json` is the round commit record: it marks escalation rows as
   // consumed. Publish every round artifact first and rename the cursor LAST.
   // A crash before that final rename safely replays the directive; after it,
   // core/proposal artifacts are already durable.
-  // STORE-COHERENCE INVARIANT. `core.json` (the derived merge) and the working
-  // state's `solved` map record the same proofs through different code paths, and
-  // several carry branches write only one of them. A node present in the core with
-  // a proof but ABSENT from `solved` still renders this round, then silently
-  // vanishes next round: every carry branch reads `prev.solved`, so the working
-  // state — not the core — is what survives. This preferentially destroys TERMINAL
-  // results, which have no inbound edge to trigger the self-containment repair.
-  // Repair from the core node (the authoritative proof) and report receipts; a
-  // resolution pointing at a theorem in NEITHER store is unrepairable, so throw.
+  //
+  // SINGLE SOURCE OF TRUTH (Phase 1 of the store consolidation): the persisted
+  // core.json is `assembleCore(proto, next)` — a pure render of the two
+  // authoritative stores. A proof that was never recorded into the working state
+  // cannot appear in the published core (the old `reconcileProofStores` repair
+  // direction is unrepresentable), and the frozen proto is never written here
+  // (the prose overlay lives in the working state and is applied at render).
   const commitRound = async (): Promise<void> => {
-    reconcileAndWarnRound(sctx);
+    // The cursor this commit persists is what the rendered core.json derives
+    // from — stamp the post-consolidation store format (replay hard-fails
+    // assemble-equivalence only on cursors carrying it).
+    next.store_format = WORKING_STORE_FORMAT;
+    const rendered = renderRoundCore(sctx);
+    warnRoundInvariants(sctx, rendered);
     if (withheldProofBytes.length > 0) await archiveProofs(path.dirname(corePath), withheldProofBytes);
-    await writeJsonAtomic(corePath, core);
-    if (protoChangedByProse) await writeJsonAtomic(protoPath, proto);
+    await writeJsonAtomic(corePath, rendered);
     await saveWorkingState(ctx, next);
   };
   return commitRound;
@@ -118,6 +129,10 @@ export async function surfaceProposalCheckpoint(args: {
       proposedCoreEdits.length > 0 || emissionConflicts.length > 0 ||
       addedLemmaCollisions.length > 0 || oeqAnswerCollisions.length > 0 ||
       unmatchedProofIds.length > 0) {
+    // (Batch B: the checkpoint-withheld recording loop is gone — the records-only
+    // merge writes a record for EVERY install, so an agent node cannot exist
+    // outside the cursor; the render republishes it on every directed round by
+    // construction. See stage0_solve.test.ts ("records-only merge" describe).)
     // The payload's ONE carrier is `working.proposals` (set below, committed by
     // commitRound). The five per-kind mirror files are retired — every consumer
     // (apply, reviewers, packet rebuild) reads through `solve/proposals.ts`.
@@ -152,26 +167,41 @@ export async function surfaceProposalCheckpoint(args: {
           mr.openObligations.map((o) => `${o.node_id} — ${o.what_is_open}`).join("; "),
       );
     }
+    // The working carrier is the single durable proposal source. Populate it
+    // before snapshotting `durable_working_state` into the review packet; doing
+    // this afterward made every normal packet claim its own proposal arrays were
+    // absent even though the separately persisted cursor carried them.
+    next.proposals = {
+      statements: proposedChanges,
+      definitions: defChanges,
+      assumptions: proposedAssumptions,
+      coreEdits: proposedCoreEdits,
+      proofs: deferredProofs,
+    };
     // One canonical adjudication input prevents reviewers from seeing only the
     // pre-proposal paper or only a pile of deltas. It contains the complete paper
     // rendered from this round's assembled core plus every same-round proposal and
     // every proof payload that supersedes stale core proof text for review.
     const reviewPacketPath = proposalReviewPacketPath(ctx);
+    // The packet renders the SAME core the commit will publish (the pure
+    // assemble over proto + working), so adjudication and the durable artifact
+    // can never diverge.
+    const renderedForPacket = renderRoundCore(sctx);
     await writeJsonAtomic(
       reviewPacketPath,
       buildReviewPacket({
-        core,
+        core: renderedForPacket,
         working: next,
         proposedStatementChanges: proposedChanges,
         proposedDefinitionChanges: defChanges,
         proposedAssumptions,
         proposedCoreEdits,
+        requiredCoreEditMandates: next.required_core_edit_mandates,
         provisionalProofs: deferredProofs,
       }),
     );
     artifacts.push(reviewPacketPath);
-    const closure = checkpointClosure(sctx, mr);
-    const preflight = checkpointPreflight(core);
+    const preflight = checkpointPreflight(renderedForPacket);
     if (preflight.length > 0) {
       blocks.push(formatPreflightViolations(preflight));
     }
@@ -179,7 +209,7 @@ export async function surfaceProposalCheckpoint(args: {
     // under-declared `free_symbols` narrows symbol invalidation, so it must be visible,
     // but the check is a text scan that disagrees with correct cores often enough that
     // routing it into the orchestrator's decision surface would manufacture work.
-    for (const drift of checkpointSymbolDrift(core)) {
+    for (const drift of checkpointSymbolDrift(renderedForPacket)) {
       console.warn(`[D0-SOLVE] ${drift.detail}`);
     }
     // Withheld cross-unit collisions. Surfaced here rather than thrown, so the round's
@@ -210,27 +240,15 @@ export async function surfaceProposalCheckpoint(args: {
           `(canonical kept, alternative archived): ${[...new Set(mr.duplicateReproofIds)].join(", ")}`,
       );
     }
-    if (!closure.ok) {
-      blocks.push(formatClosureViolation(closure));
-    } else if (closure.protoOnly.length > 0) {
-      blocks.push(
-        `ADVISORY — ${closure.protoOnly.length} node(s) in proto_core but absent from core ` +
-          `(confirm the removal was intended): ${closure.protoOnly.join(", ")}`,
-      );
-    }
+    // (Retired here, Phase 1: the proposal-closure gate. The published core is now
+    // assembled from proto + working, so `ids(core) ⊆ ids(proto) ∪ ids(working)`
+    // holds by construction — an uncarried node is unrepresentable.)
     // AUTHORITY: the payload lives in the working state, which every consumer reads
     // through `solve/proposals.ts`. Five independent per-kind mirror files were what
     // let `d0_apply_change` approve a statement change while discarding the proof
     // written for it, and let the D0.5 reviewers see none of the payload at all;
     // they are retired (operators inspect the payload in `d0_working.json` or the
     // review packet).
-    next.proposals = {
-      statements: proposedChanges,
-      definitions: defChanges,
-      assumptions: proposedAssumptions,
-      coreEdits: proposedCoreEdits,
-      proofs: deferredProofs,
-    };
     blocks.push("canonical full-paper proposal review packet written");
     if (illegalDefTargets.length > 0) {
       blocks.push(`IGNORED ${illegalDefTargets.length} illegal class/unknown def change(s): ${illegalDefTargets.join(", ")}`);
@@ -295,8 +313,12 @@ export async function finalizeRound(args: {
   commitRound: () => Promise<void>;
 }): Promise<Stage0SolveResult | StageResult> {
   const { ctx, state, sctx, mr, dispatchCount, commitRound } = args;
-  const { core, corePath, carriedMembers, next } = sctx;
+  const { corePath, carriedMembers, next } = sctx;
   const { openObligations, unmatchedProofIds, illegalDefTargets, solved, addedLemmas } = mr;
+  // The terminal decision is taken over the RENDERED core — the artifact the
+  // commit publishes — not the in-memory workspace (Phase 1: gates check what
+  // actually persists).
+  const core = renderRoundCore(sctx);
   // OPEN GAP handling. An open obligation on an OPEN-ENDED QUESTION (`oeq:`) node is, by
   // design, a LEGITIMATE RESIDUAL — a research question the note deliberately leaves open
   // (e.g. tightness). It is recorded and surfaced to D0.5, which judges whether it is an
@@ -380,8 +402,7 @@ export async function finalizeRound(args: {
     };
   }
 
-  healMissingBibCites(core);
-
+  // (Bib heal is part of the render now — `assembleCore` stubs missing cites.)
   // Everything discharged → sanity-gate the structure, then it's a clean discharge.
   runPostSolveGate(core);
 
@@ -394,7 +415,8 @@ export async function finalizeRound(args: {
   return {
     message:
       `Stage 0-SOLVE discharged ${solved} target(s) across ${dispatchCount} dispatched unit(s) ` +
-      `(reused ${carriedMembers} carried member proof(s) + ${Object.keys(next.solved).length - solved - carriedMembers} lemma(s)), added ${addedLemmas} lemma(s)` +
+      `(reused ${carriedMembers} carried member proof(s); ${Object.keys(next.solved).length} working record(s)), ` +
+      `added ${addedLemmas} lemma(s)` +
       (illegalDefTargets.length > 0
         ? ` (ignored ${illegalDefTargets.length} illegal class/unknown def change: ${illegalDefTargets.join(", ")})`
         : "") +

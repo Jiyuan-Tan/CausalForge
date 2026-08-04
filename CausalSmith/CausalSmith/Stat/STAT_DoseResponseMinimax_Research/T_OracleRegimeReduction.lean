@@ -8,7 +8,7 @@ Authors: Jiyuan Tan
 Stage-2 scaffold. The proposition `prop:oracle-regime-reduction`: in the
 smooth-covariate regime `s ≥ d/4`, `ρ_n` collapses to the oracle exponent and the
 certified lower floor reduces to the classical interior pointwise nonparametric
-regression barrier. Every proof body is `sorry`.
+regression barrier.
 -/
 
 import CausalSmith.Stat.STAT_DoseResponseMinimax_Research.T_SharpPointwiseLowerBound

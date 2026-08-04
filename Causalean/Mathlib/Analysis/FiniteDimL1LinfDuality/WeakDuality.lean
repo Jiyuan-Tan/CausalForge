@@ -120,16 +120,16 @@ theorem dual_le_primal {s t : ℝ} (hs : s ∈ primalNormSet p β)
 
 /-- The dual set is bounded above (by any primal value; the primal set is
 nonempty for distinct nodes and `β ≤ k`). -/
-theorem dualValSet_bddAbove (hp : Function.Injective p) (hβ : β ≤ k) :
+theorem dualValSet_bddAbove (hne : (primalNormSet p β).Nonempty) :
     BddAbove (dualValSet p β) := by
-  rcases primalNormSet_nonempty hp hβ with ⟨s, hs⟩
+  rcases hne with ⟨s, hs⟩
   exact ⟨s, fun t ht => dual_le_primal hs ht⟩
 
 /-- Consequence of weak duality: `sSup (dualValSet p β) ≤ sInf (primalNormSet p β)`. -/
-theorem sSup_dual_le_sInf_primal (hp : Function.Injective p) (hβ : β ≤ k) :
+theorem sSup_dual_le_sInf_primal (hne : (primalNormSet p β).Nonempty) :
     sSup (dualValSet p β) ≤ sInf (primalNormSet p β) := by
   exact csSup_le dualValSet_nonempty fun t ht =>
-    le_csInf (primalNormSet_nonempty hp hβ) fun s hs =>
+    le_csInf hne fun s hs =>
       dual_le_primal hs ht
 
 end Causalean.Mathlib.Analysis.FiniteDimL1LinfDuality

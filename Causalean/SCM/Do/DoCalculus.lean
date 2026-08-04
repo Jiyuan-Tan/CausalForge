@@ -74,25 +74,23 @@ open scoped MeasureTheory ProbabilityTheory
     splitting the condition into the observed part `W` and the fixed
     part `M'.fixed`. -/
 theorem do_rule1 (M' : Causalean.SCM N Ω)
-    [StandardBorelSpace M'.RandomValues]
-    [StandardBorelSpace M'.ObservedValues]
     [∀ n, StandardBorelSpace (swigΩ Ω n)] [∀ n, Nonempty (swigΩ Ω n)]
-    [∀ s : M'.FixedValues, MeasureTheory.IsFiniteMeasure (M'.jointKernel s)]
-    [∀ s : M'.FixedValues, MeasureTheory.IsFiniteMeasure (M'.obsKernel s)]
     (Y Z W : Finset (SWIGNode N))
     [StandardBorelSpace (ValuesOn Y (swigΩ Ω))] [Nonempty (ValuesOn Y (swigΩ Ω))]
     [StandardBorelSpace (ValuesOn Z (swigΩ Ω))] [Nonempty (ValuesOn Z (swigΩ Ω))]
     (hY : Y ⊆ M'.observed)
     (hZ : Z ⊆ M'.observed)
     (hW : W ⊆ M'.observed)
-    (hDisj_YZ : Disjoint Y Z)
-    (hDisj_YW : Disjoint Y W)
-    (hDisj_ZW : Disjoint Z W)
     (hdSep : M'.dag.dSep Y Z (W ∪ M'.fixed))
     (s : M'.FixedValues) :
-    ObsCondIndep M' Y Z W hY hZ hW (M'.obsKernel s) :=
-  M'.globalMarkov_with_fixed Y Z W M'.fixed hY hZ hW (Finset.Subset.refl _)
-    hDisj_YZ hDisj_YW hDisj_ZW hdSep s
+    ObsCondIndep M' Y Z W hY hZ hW (M'.obsKernel s) := by
+  have hDisj_YZ : Disjoint Y Z := hdSep.1
+  have hDisj_YW : Disjoint Y W :=
+    Disjoint.mono_right Finset.subset_union_left hdSep.2.1
+  have hDisj_ZW : Disjoint Z W :=
+    Disjoint.mono_right Finset.subset_union_left hdSep.2.2.1
+  exact M'.globalMarkov_with_fixed Y Z W M'.fixed hY hZ hW (Finset.Subset.refl _)
+    hdSep s
 
 /-- **Rule 2: Action/observation exchange (single-SCM form, kernel-native).**
 
@@ -135,8 +133,6 @@ theorem do_rule2_kernel (M' : Causalean.SCM N Ω) (Z : Finset N)
     (hW : W ⊆ M'.observed)
     (hZr : Z.image SWIGNode.random ⊆ M'.observed)
     (hZrW : Z.image SWIGNode.random ∪ W ⊆ M'.observed)
-    (hDisj_YZr : Disjoint Y (Z.image SWIGNode.random))
-    (hDisj_ZrW : Disjoint (Z.image SWIGNode.random) W)
     (hdSep : (M'.fixSet Z hZ_obs hZ_fixed).dag.dSep
       Y (Z.image SWIGNode.random)
       (W ∪ (M'.fixSet Z hZ_obs hZ_fixed).fixed))
@@ -144,26 +140,7 @@ theorem do_rule2_kernel (M' : Causalean.SCM N Ω) (Z : Finset N)
       ¬ (M'.fixSet Z hZ_obs hZ_fixed).dag.isAncestor (SWIGNode.fixed z) v)
     (hWNonDescM1 : ∀ D ∈ Z, ∀ w ∈ W,
       ¬ M'.dag.isAncestor (SWIGNode.random D) w)
-    [StandardBorelSpace M'.RandomValues]
     [∀ n, StandardBorelSpace (swigΩ Ω n)] [∀ n, Nonempty (swigΩ Ω n)]
-    [StandardBorelSpace (M'.fixSet Z hZ_obs hZ_fixed).RandomValues]
-    [StandardBorelSpace (M'.fixSet Z hZ_obs hZ_fixed).ObservedValues]
-    [StandardBorelSpace (ValuesOn Y (swigΩ Ω))]
-    [Nonempty (ValuesOn Y (swigΩ Ω))]
-    [StandardBorelSpace
-      (ValuesOn (M'.cutsetLatent Y (Z.image SWIGNode.random ∪ W)) (swigΩ Ω))]
-    [Nonempty
-      (ValuesOn (M'.cutsetLatent Y (Z.image SWIGNode.random ∪ W)) (swigΩ Ω))]
-    [StandardBorelSpace (ValuesOn (Z.image SWIGNode.random) (swigΩ Ω))]
-    [Nonempty (ValuesOn (Z.image SWIGNode.random) (swigΩ Ω))]
-    [∀ s : M'.FixedValues, MeasureTheory.IsFiniteMeasure (M'.jointKernel s)]
-    [∀ s : M'.FixedValues, MeasureTheory.IsFiniteMeasure (M'.obsKernel s)]
-    [∀ s : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues,
-      MeasureTheory.IsFiniteMeasure
-        ((M'.fixSet Z hZ_obs hZ_fixed).jointKernel s)]
-    [∀ s : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues,
-      MeasureTheory.IsFiniteMeasure
-        ((M'.fixSet Z hZ_obs hZ_fixed).obsKernel s)]
     [MeasurableSpace.CountableOrCountablyGenerated
       M'.FixedValues (ValuesOn (Z.image SWIGNode.random ∪ W) (swigΩ Ω))]
     [MeasurableSpace.CountableOrCountablyGenerated
@@ -174,8 +151,6 @@ theorem do_rule2_kernel (M' : Causalean.SCM N Ω) (Z : Finset N)
     [MeasurableSingletonClass
       (ValuesOn (Z.image SWIGNode.random ∪ W) (swigΩ Ω))]
     (s0 : M'.FixedValues)
-    (hOverlap : ∀ s : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues,
-      Causalean.SCM.ID.Rule2JointOverlap M' Z hZ_obs hZ_fixed W hZrW s)
     (hPositivity_ae :
       (((M'.obsKernel s0).map (valuesProjection hZr) ⊗ₘ
           ProbabilityTheory.Kernel.const _
@@ -193,7 +168,7 @@ theorem do_rule2_kernel (M' : Causalean.SCM N Ω) (Z : Finset N)
       = M'.obsCondKernel Y (Z.image SWIGNode.random ∪ W) hY hZrW
           (s0, valuesUnionMk p.1 p.2) :=
   SCM.obsCondKernel_fixSet_eq_ae_witness M' Z hZ_obs hZ_fixed Y W hY hW hZr hZrW
-    hDisj_YZr hDisj_ZrW hdSep hWNonDesc hWNonDescM1 s0 hOverlap hPositivity_ae
+    hdSep hWNonDesc hWNonDescM1 s0 hPositivity_ae
 
 /-- Rule 3: insertion/deletion of actions in the simplified joint-marginal form.
 

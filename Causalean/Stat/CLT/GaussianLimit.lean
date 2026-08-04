@@ -52,7 +52,7 @@ open scoped RealInnerProductSpace
 namespace Causalean.Stat
 
 variable {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
-  {μ : Measure Ω} {P : Measure X} [IsProbabilityMeasure μ] [IsProbabilityMeasure P]
+  {μ : Measure Ω} {P : Measure X}
   {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
     [MeasurableSpace E] [BorelSpace E]
   {ψ : X → E} (hψ : Measurable ψ) (hvar : Integrable (fun x => ‖ψ x‖ ^ 2) P)
@@ -67,10 +67,6 @@ noncomputable def gaussianLimit : Measure E :=
 instance : IsGaussian (gaussianLimit hψ hvar) := by
   unfold gaussianLimit; infer_instance
 
-/-- The limiting Gaussian law is a probability law. -/
-instance : IsProbabilityMeasure (gaussianLimit hψ hvar) := inferInstance
-
-omit [IsProbabilityMeasure P] in
 /-- The limiting Gaussian is centered. -/
 theorem gaussianLimit_mean : ∫ x, x ∂(gaussianLimit hψ hvar) = 0 := by
   have hL : ∫ x, x ∂(gaussianLimit hψ hvar)
@@ -79,11 +75,10 @@ theorem gaussianLimit_mean : ∫ x, x ∂(gaussianLimit hψ hvar) = 0 := by
     exact ContinuousLinearMap.integral_comp_comm _ IsGaussian.integrable_id
   rw [hL, stdGaussian_mean, map_zero]
 
-omit [IsProbabilityMeasure P] in
 /-- The covariance form of the limiting Gaussian recovers the asymptotic-variance
-integral `∫⟪t,ψ⟫⟪t,ψ⟫ dP`. -/
-theorem gaussianLimit_covarianceBilin (t : E) :
-    covarianceBilin (gaussianLimit hψ hvar) t t = ∫ x, ⟪t, ψ x⟫ * ⟪t, ψ x⟫ ∂P := by
+integral `∫⟪s,ψ⟫⟪t,ψ⟫ dP`. -/
+theorem gaussianLimit_covarianceBilin (s t : E) :
+    covarianceBilin (gaussianLimit hψ hvar) s t = ∫ x, ⟪s, ψ x⟫ * ⟪t, ψ x⟫ ∂P := by
   set hpos := secondMomentLM_isPositive hψ hvar with hposdef
   -- `√Σ ∘ √Σ = Σ` at the point `t`
   have hcomp : hpos.posSqrtCLM (hpos.posSqrtCLM t) = secondMomentLM hψ hvar t := by
@@ -92,17 +87,17 @@ theorem gaussianLimit_covarianceBilin (t : E) :
         = (hpos.posSqrtCLM ∘L hpos.posSqrtCLM) t := rfl
       _ = ((secondMomentLM hψ hvar).toContinuousLinearMap) t := by rw [h]
       _ = secondMomentLM hψ hvar t := rfl
-  -- self-adjointness turns `⟪√Σ t, √Σ t⟫` into `⟪t, Σ t⟫`
-  have hsa : (⟪hpos.posSqrtCLM t, hpos.posSqrtCLM t⟫ : ℝ) = ⟪t, secondMomentLM hψ hvar t⟫ := by
-    rw [(ContinuousLinearMap.adjoint_inner_right hpos.posSqrtCLM t (hpos.posSqrtCLM t)).symm,
+  -- self-adjointness turns `⟪√Σ s, √Σ t⟫` into `⟪s, Σ t⟫`
+  have hsa : (⟪hpos.posSqrtCLM s, hpos.posSqrtCLM t⟫ : ℝ) = ⟪s, secondMomentLM hψ hvar t⟫ := by
+    rw [(ContinuousLinearMap.adjoint_inner_right hpos.posSqrtCLM s (hpos.posSqrtCLM t)).symm,
       hpos.posSqrtCLM_adjoint, hcomp]
   rw [gaussianLimit, covarianceBilin_map IsGaussian.memLp_two_id hpos.posSqrtCLM,
     hpos.posSqrtCLM_adjoint, covarianceBilin_stdGaussian, hsa,
-    show (⟪t, secondMomentLM hψ hvar t⟫ : ℝ) = ⟪secondMomentLM hψ hvar t, t⟫ from
+    show (⟪s, secondMomentLM hψ hvar t⟫ : ℝ) = ⟪secondMomentLM hψ hvar t, s⟫ from
       real_inner_comm _ _,
-    secondMomentLM_inner hψ hvar t t]
+    secondMomentLM_inner hψ hvar t s]
+  exact integral_congr_ae (ae_of_all _ fun x => mul_comm _ _)
 
-omit [IsProbabilityMeasure P] in
 /-- The characteristic function of the limiting Gaussian is exactly the abstract
 target `exp(−½ ∫⟪t,ψ⟫² dP)` of `MultivariateCLT`. -/
 theorem gaussianLimit_charFun (t : E) :
@@ -119,12 +114,21 @@ distribution to `gaussianLimit ψ`, the centered Gaussian with covariance the
 second-moment operator of `ψ`.  No abstract target or charFun hypothesis
 remains. -/
 theorem IIDSample.clt_normalizedSum_vec (S : IIDSample Ω X μ P)
-    (hψ_int : Integrable ψ P) (hmean : ∫ x, ψ x ∂P = 0)
-    (hSum_meas : ∀ n,
-      AEMeasurable (IsAsymLinearVec.normalizedSum S ψ (fun m => Finset.range m) n) μ) :
-    Tendsto_dist_vec (IsAsymLinearVec.normalizedSum S ψ (fun m => Finset.range m))
-      (gaussianLimit hψ hvar) μ hSum_meas :=
-  S.clt_normalizedSum_vec_of_charFun hψ hψ_int hmean hvar (gaussianLimit hψ hvar)
-    (gaussianLimit_charFun hψ hvar) hSum_meas
+    (hmean : ∫ x, ψ x ∂P = 0) :
+    @Tendsto_dist_vec Ω E _ _ _ _
+      (IsAsymLinearVec.normalizedSum S ψ (fun m => Finset.range m))
+      (gaussianLimit hψ hvar) μ S.indep.isProbabilityMeasure
+      (inferInstance : IsProbabilityMeasure (gaussianLimit hψ hvar))
+      (by
+        intro n
+        unfold IsAsymLinearVec.normalizedSum
+        exact ((Finset.measurable_sum _
+          (fun i _ => hψ.comp (S.meas i))).const_smul _).aemeasurable) := by
+  haveI : IsProbabilityMeasure μ := S.indep.isProbabilityMeasure
+  haveI : IsProbabilityMeasure P := by
+    rw [← S.law]
+    exact Measure.isProbabilityMeasure_map (S.meas 0).aemeasurable
+  exact S.clt_normalizedSum_vec_of_charFun hψ hmean hvar (gaussianLimit hψ hvar)
+    (gaussianLimit_charFun hψ hvar)
 
 end Causalean.Stat

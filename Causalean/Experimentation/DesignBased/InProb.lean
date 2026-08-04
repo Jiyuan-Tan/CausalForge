@@ -296,21 +296,21 @@ theorem boundedInProb_of_var_bound (D : ∀ m, FiniteDesign (Ω m)) (X : ∀ m, 
           apply mul_le_mul (by linarith) hr1 (by norm_num) (by linarith)
   linarith [hVm]
 
-/-- Scaling a probability-null sequence by a constant keeps it probability-null: if `X m → 0` in
-probability then `c · X m → 0` in probability. -/
+/-- Scaling a convergent sequence by a constant scales its probability limit: if `X m → a m` in
+probability then `c · X m → c · a m` in probability. -/
 theorem TendstoInProb.const_mul {D : ∀ m, FiniteDesign (Ω m)} {X : ∀ m, Ω m → ℝ}
-    (c : ℝ) (h : TendstoInProb D X (fun _ => 0)) :
-    TendstoInProb D (fun m z => c * X m z) (fun _ => 0) := by
+    {a : ℕ → ℝ}
+    (c : ℝ) (h : TendstoInProb D X a) :
+    TendstoInProb D (fun m z => c * X m z) (fun m => c * a m) := by
   intro ε hε
   have hc1 : 0 < |c| + 1 := by positivity
   have hεc : 0 < ε / (|c| + 1) := by positivity
-  have hsub : ∀ m, (D m).Pr (fun z => ε ≤ |c * X m z - (fun _ => (0:ℝ)) m|)
-      ≤ (D m).Pr (fun z => ε / (|c| + 1) ≤ |X m z - (fun _ => (0:ℝ)) m|) := by
+  have hsub : ∀ m, (D m).Pr (fun z => ε ≤ |c * X m z - c * a m|)
+      ≤ (D m).Pr (fun z => ε / (|c| + 1) ≤ |X m z - a m|) := by
     intro m
     apply (D m).Pr_mono
     intro z hz
-    simp only [sub_zero] at hz ⊢
-    rw [abs_mul] at hz
+    rw [← mul_sub, abs_mul] at hz
     rw [div_le_iff₀ hc1]
     nlinarith [hz, abs_nonneg (X m z), abs_nonneg c]
   refine squeeze_zero (fun m => (D m).Pr_nonneg _) hsub ?_

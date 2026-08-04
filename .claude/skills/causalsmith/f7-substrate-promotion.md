@@ -26,6 +26,12 @@ For EACH helper in the SET:
    names), generality, and file granularity (CLAUDE.md: one topic, normally ≤600 lines; split before ~900 when independent). Strip run-coupled types
    from the statement where the lemma is genuinely general; if it can't be stated without them, it wasn't
    low-coupling — stop and report (above).
+   **Mind reusability of the signature.** A run states a lemma for its one caller; the shared copy is
+   reused by many, so an over-specific signature is silently re-derived downstream. Before moving,
+   promote the WEAKEST statement the *existing* proof already supports: drop hypotheses and `[instance]`
+   arguments the proof never uses, weaken a typeclass to what it actually needs, and widen a hard-coded
+   concrete type/constant the proof treats generically. Aim for the reachable, readable form — not
+   maximal generality — and never ADD a compensating hypothesis to make it go through.
 3. **Move** statement + proof into the target module; rewire CausalSmith to re-import it (delete the local
    copy — never two definitions). **Causalean NEVER imports CausalSmith.**
 4. **Docstring-canonical** (CLAUDE.md): first paragraph = self-contained NL translation; `/-! -/` module

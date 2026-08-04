@@ -50,17 +50,19 @@ lemma hasDerivAt_line (q d : E) (t : ℝ) :
   simpa using ((hasDerivAt_id t).smul_const d).const_add q
 
 /-- **First directional derivative along a line.** -/
-lemma deriv_line {f : E → ℝ} (hf : Differentiable ℝ f) (q d : E) (t : ℝ) :
+lemma deriv_line {f : E → ℝ} (q d : E) (t : ℝ)
+    (hf : DifferentiableAt ℝ f (q + t • d)) :
     deriv (fun s : ℝ => f (q + s • d)) t = fderiv ℝ f (q + t • d) d := by
   exact
-    ((hf (q + t • d)).hasFDerivAt.comp_hasDerivAt t (hasDerivAt_line q d t)).deriv
+    (hf.hasFDerivAt.comp_hasDerivAt t (hasDerivAt_line q d t)).deriv
 
-/-- `x ↦ fderiv ℝ f x d` is `C¹` when `f` is `C²`. It is the composition of the `C¹` map
-`x ↦ fderiv ℝ f x` with the continuous linear evaluation `L ↦ L d`. -/
-lemma contDiff_one_fderiv_apply {f : E → ℝ} (hf : ContDiff ℝ 2 f) (d : E) :
-    ContDiff ℝ 1 (fun x => fderiv ℝ f x d) := by
+/-- `x ↦ fderiv ℝ f x d` is `Cⁿ` when `f` is `Cⁿ⁺¹`. It is the composition of the
+derivative map with the continuous linear evaluation `L ↦ L d`. -/
+lemma contDiff_one_fderiv_apply {n : ℕ} {f : E → ℝ}
+    (hf : ContDiff ℝ (n + 1) f) (d : E) :
+    ContDiff ℝ n (fun x => fderiv ℝ f x d) := by
   exact (ContinuousLinearMap.apply ℝ ℝ d).contDiff.comp
-    (hf.fderiv_right (m := 1) (by norm_num))
+    (hf.fderiv_right (m := n) (by rfl))
 
 /-- `x ↦ fderiv ℝ f x d` is differentiable when `f` is `C²`. -/
 lemma differentiable_fderiv_apply {f : E → ℝ} (hf : ContDiff ℝ 2 f) (d : E) :
@@ -76,9 +78,9 @@ lemma deriv_deriv_line {f : E → ℝ} (hf : ContDiff ℝ 2 f) (q d : E) (t : �
   have hstep : (deriv fun s : ℝ => f (q + s • d)) =
       fun s => fderiv ℝ f (q + s • d) d := by
     funext s
-    exact deriv_line (hf.differentiable two_ne_zero) q d s
+    exact deriv_line q d s ((hf.differentiable two_ne_zero) (q + s • d))
   rw [hstep]
-  exact deriv_line (differentiable_fderiv_apply hf d) q d t
+  exact deriv_line q d t ((differentiable_fderiv_apply hf d) (q + t • d))
 
 /-- **The curvature modulus is continuous in the base point.** Hence bounded on any compact
 set, which supplies the `BddAbove` hypothesis of `le_ciSup`. -/

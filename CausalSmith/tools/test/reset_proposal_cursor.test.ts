@@ -27,7 +27,7 @@ function run(bin: string, args: string[]): Promise<{ stdout: string; stderr: str
  * angles 1–4 (all exhausted) → final_verdict NO-PASS with the cursor parked on
  * the dead angle 4. Also archives angle 0's .tex AND (single-artifact mode) its
  * proto_core.json; the live proto_core.json holds the stale needs-pivot record,
- * and last_draft_handoff holds a stale handoff. */
+ * and last_draft_version marks a stale draft. */
 async function seedNoPass(): Promise<{
   proposalTex: string;
   archive0: string;
@@ -54,7 +54,7 @@ async function seedNoPass(): Promise<{
     current_version: 1,
     current_mode: "pivot",
     last_draft_status: "needs-pivot",
-    last_draft_handoff: '{"status":"needs-pivot","stale":true}',
+    last_draft_version: 1,
     exhausted_angles: [0, 1, 2, 3, 4],
     iterations: [
       { angle: 0, version: 1, mode: "revise", verdict: "revise", tier: "field" },
@@ -99,15 +99,16 @@ describe("reset_proposal_cursor.ts", () => {
     expect(pf.current_version).toBe(6);
   });
 
-  it("restores the archived draft for the angle back to proposal.tex and drops it from archived_proposals", async () => {
-    const { proposalTex, archive0 } = await seedNoPass();
-    expect(await exists(proposalTex)).toBe(false);
+  it("consumes the angle's proto-core archive and re-points the cursor at the restored core", async () => {
+    // Single-artifact regime: the proto core is the proposal; the legacy
+    // proposal.tex restore leg was removed in the 2026-07-31 dead-code sweep.
+    const { protoCore, protoArchive0 } = await seedNoPass();
     await run("reset_proposal_cursor.ts", ["--angle", "0"]);
-    expect(await exists(proposalTex)).toBe(true);
-    expect(await exists(archive0)).toBe(false);
-    expect(await readFile(proposalTex, "utf8")).toMatch(/angle-0 v6 converged/);
+    expect(await exists(protoCore)).toBe(true);
+    expect(await exists(protoArchive0)).toBe(false); // restore CONSUMES the archive
     const pf = (await loadState(repoRoot, QID, SPEC)).proposed_from!;
-    expect(pf.archived_proposals ?? []).not.toContain(archive0);
+    expect(pf.proposal_path).toBe(protoCore);
+    expect((pf.archived_proposals ?? []).some((p) => p.endsWith("proto_core_angle0_rejected.json"))).toBe(false);
   });
 
   it("restores the archived proto_core.json (single-artifact mode) over the stale needs-pivot record", async () => {
@@ -137,12 +138,12 @@ describe("reset_proposal_cursor.ts", () => {
     expect(pf.literature_map).toBe("known ratio exact; learned ratio corrected");
   });
 
-  it("clears the stale draft handoff and marks last_draft_status completed so the loop re-drives the producer", async () => {
+  it("clears the stale draft version and marks last_draft_status completed so the loop re-drives the producer", async () => {
     await seedNoPass();
     await run("reset_proposal_cursor.ts", ["--angle", "0"]);
     const pf = (await loadState(repoRoot, QID, SPEC)).proposed_from!;
-    // stale needs-pivot handoff must be cleared → loop re-drives the revise producer, not a dead review
-    expect(pf.last_draft_handoff ?? "").toBe("");
+    // stale marker must be cleared → loop re-drives the revise producer, not a dead review
+    expect(pf.last_draft_version).toBeUndefined();
     expect(pf.last_draft_status).toBe("completed");
   });
 

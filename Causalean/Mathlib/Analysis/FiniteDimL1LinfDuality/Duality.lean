@@ -32,7 +32,8 @@ This is the min-norm-representation `=` dual-sup identity — the ℓ¹/ℓ∞ p
 identity + triangle inequality) with strong duality (Hahn–Banach extension). -/
 theorem l1_repr_eq_sup_dual (hp : Function.Injective p) (hβ : β ≤ k) :
     sInf (primalNormSet p β) = sSup (dualValSet p β) :=
-  le_antisymm (sInf_primal_le_sSup_dual hp hβ) (sSup_dual_le_sInf_primal hp hβ)
+  le_antisymm (sInf_primal_le_sSup_dual hp hβ)
+    (sSup_dual_le_sInf_primal (primalNormSet_nonempty hp hβ))
 
 /-- **Squared form.**  The square of the min-norm-representation value equals the
 square of the dual sup.  This is the shape consumed downstream (the amplification

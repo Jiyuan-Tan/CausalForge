@@ -222,8 +222,8 @@ theorem not_dSep_iff_hasActivePath (H : DAG V) (X Y Z : Finset V)
       exact ⟨x, hxX, p, hlen, hact, by rw [hx], by rw [hv]⟩
     exact (Finset.disjoint_left.mp hsep.2.2.2 hvReach) hvY
 
-/-- Equal directed-edge relations have equal ancestor relations. -/
-private theorem isAncestor_edge_congr {G₁ G₂ : DAG V}
+/-- Graphs with the same directed edges have exactly the same ancestor relations. -/
+theorem isAncestor_edge_congr {G₁ G₂ : DAG V}
     (he : ∀ u w : V, G₁.edge u w ↔ G₂.edge u w) {u v : V} :
     G₁.isAncestor u v ↔ G₂.isAncestor u v := by
   constructor
@@ -236,8 +236,9 @@ private theorem isAncestor_edge_congr {G₁ G₂ : DAG V}
     | edge h => exact isAncestor.edge ((he _ _).mpr h)
     | trans _ h ih => exact isAncestor.trans ih ((he _ _).mpr h)
 
-/-- Equal directed-edge relations have equal Bayes-ball ancestor sets. -/
-private theorem bbZAncestors_edge_congr {G₁ G₂ : DAG V}
+/-- Graphs with the same directed edges have exactly the same sets of vertices
+    that are ancestors of the conditioning set and can activate colliders. -/
+theorem bbZAncestors_edge_congr {G₁ G₂ : DAG V}
     (he : ∀ u w : V, G₁.edge u w ↔ G₂.edge u w) (Z : Finset V) (v : V) :
     v ∈ G₁.bbZAncestors Z ↔ v ∈ G₂.bbZAncestors Z := by
   simp only [bbZAncestors, ancestralSet, ancestorsSet, Finset.mem_union,
@@ -250,22 +251,23 @@ private theorem bbZAncestors_edge_congr {G₁ G₂ : DAG V}
     · exact Or.inl hv
     · exact Or.inr ⟨w, hw, (isAncestor_edge_congr he).mpr h⟩
 
-/-- Equal directed-edge relations have equal undirected adjacencies. -/
-private theorem uAdj_edge_congr {G₁ G₂ : DAG V}
+/-- Graphs with the same directed edges have exactly the same undirected adjacencies. -/
+theorem uAdj_edge_congr {G₁ G₂ : DAG V}
     (he : ∀ u w : V, G₁.edge u w ↔ G₂.edge u w) {u v : V} :
     G₁.UAdj u v ↔ G₂.UAdj u v := by
   unfold UAdj
   exact or_congr (he u v) (he v u)
 
-/-- Equal directed-edge relations have equal collider predicates. -/
-private theorem isCollider_edge_congr {G₁ G₂ : DAG V}
+/-- Graphs with the same directed edges have exactly the same collider triples. -/
+theorem isCollider_edge_congr {G₁ G₂ : DAG V}
     (he : ∀ u w : V, G₁.edge u w ↔ G₂.edge u w) {l m r : V} :
     G₁.IsCollider l m r ↔ G₂.IsCollider l m r := by
   unfold IsCollider
   exact and_congr (he l m) (he r m)
 
-/-- Equal directed-edge relations preserve active paths, including collider activation sets. -/
-private theorem isActivePath_edge_congr {G₁ G₂ : DAG V}
+/-- Graphs with the same directed edges have exactly the same active paths for
+    every conditioning set. -/
+theorem isActivePath_edge_congr {G₁ G₂ : DAG V}
     (he : ∀ u w : V, G₁.edge u w ↔ G₂.edge u w)
     (Z : Finset V) (p : List V) :
     G₁.IsActivePath Z p ↔ G₂.IsActivePath Z p := by
@@ -372,8 +374,10 @@ theorem flipEdge_flipEdge_edge {a b : V} (hcov : G.IsCoveredEdge a b) :
       subst hub; subst hwa
       exact G.asymm hcov.1 hG
 
-/-- Last-step decomposition for strict directed ancestry. -/
-private theorem isAncestor_last {H : DAG V} {u v : V} (h : H.isAncestor u v) :
+/-- If one node is a strict ancestor of another in a directed acyclic graph,
+then it either has a direct edge to the latter or is a strict ancestor of a
+node that has a direct edge to the latter. -/
+theorem isAncestor_last {H : DAG V} {u v : V} (h : H.isAncestor u v) :
     H.edge u v ∨ ∃ w, H.isAncestor u w ∧ H.edge w v := by
   induction h with
   | edge he => exact Or.inl he
@@ -403,8 +407,9 @@ private theorem isAncestor_flip_to_b {a b v : V} (hcov : G.IsCoveredEdge a b)
     · subst hqb
       exact hvq
 
-/-- A `G`-edge either survives in the flipped graph or is exactly the deleted edge. -/
-private theorem flipEdge_edge_or_deleted {a b u w : V} (hcov : G.IsCoveredEdge a b)
+/-- Under a covered reversal of the edge from `a` to `b`, every directed edge of the original
+    graph either remains an edge or is the deleted edge from `a` to `b`. -/
+theorem flipEdge_edge_or_deleted {a b u w : V} (hcov : G.IsCoveredEdge a b)
     (he : G.edge u w) : (flipEdge hcov).edge u w ∨ (u = a ∧ w = b) := by
   by_cases hab : u = a ∧ w = b
   · exact Or.inr hab
@@ -437,8 +442,9 @@ private theorem isAncestor_flip {a b s z : V} (hcov : G.IsCoveredEdge a b)
           omega
         simpa [hdel.2] using isAncestor_flip_to_b hcov hsb ihA
 
-/-- Away from `a`, membership in the Bayes-ball ancestor set is preserved by a covered flip. -/
-private theorem bbZAncestors_flip_of_ne {a b v : V} (hcov : G.IsCoveredEdge a b)
+/-- If a vertex other than the reversed tail belongs to the Bayes-ball ancestor closure of a
+    conditioning set before a covered reversal, it belongs to that closure after the reversal. -/
+theorem bbZAncestors_flip_of_ne {a b v : V} (hcov : G.IsCoveredEdge a b)
     (Z : Finset V) (hva : v ≠ a) :
     v ∈ G.bbZAncestors Z → v ∈ (flipEdge hcov).bbZAncestors Z := by
   simp only [bbZAncestors, ancestralSet, ancestorsSet, Finset.mem_union,
@@ -517,8 +523,9 @@ private theorem flipEdge_isCollider_iff_of_ne_a {a b l m r : V}
   exact and_congr (flipEdge_edge_iff_of_ne_a hcov hla hma)
     (flipEdge_edge_iff_of_ne_a hcov hra hma)
 
-/-- If an active path avoids `a`, the same list is active after flipping `a → b`. -/
-private theorem isActivePath_flip_of_not_mem {a b : V} (hcov : G.IsCoveredEdge a b)
+/-- A path that is active relative to a conditioning set and does not contain the tail of a
+    covered reversed edge remains active relative to the same set after the reversal. -/
+theorem isActivePath_flip_of_not_mem {a b : V} (hcov : G.IsCoveredEdge a b)
     {Z : Finset V} {p : List V} (hact : G.IsActivePath Z p) (hna : a ∉ p) :
     (flipEdge hcov).IsActivePath Z p := by
   obtain ⟨hadj, htri⟩ := hact
@@ -1687,7 +1694,7 @@ covered-reversal path-surgery step, assembled from the fork-tolerant swap and th
 backtrack/drop reduction. -/
 private theorem hasActivePath_flipEdge_of_isCoveredEdge {a b : V}
     (hcov : G.IsCoveredEdge a b) (X Y Z : Finset V)
-    (hXY : Disjoint X Y) (_hXZ : Disjoint X Z) (_hYZ : Disjoint Y Z) :
+    (hXY : Disjoint X Y) :
     G.HasActivePath X Y Z → (flipEdge hcov).HasActivePath X Y Z := by
   rintro ⟨p, hlen, hact, hhead, hlast⟩
   -- disjoint `X`, `Y` force distinct endpoints
@@ -1716,22 +1723,28 @@ collider pattern, and one that does is rerouted through the shared parents of `a
 `a` and `b` reach `Z` through the same ancestors. -/
 theorem markovEquiv_flipEdge {a b : V} (hcov : G.IsCoveredEdge a b) :
     MarkovEquiv G (flipEdge hcov) := by
-  intro X Y Z hXY hXZ hYZ
-  have hAP : G.HasActivePath X Y Z ↔ (flipEdge hcov).HasActivePath X Y Z := by
-    constructor
-    · exact hasActivePath_flipEdge_of_isCoveredEdge hcov X Y Z hXY hXZ hYZ
-    · intro hp
-      have hp₂ : (flipEdge (flipEdge_isCoveredEdge_back hcov)).HasActivePath X Y Z :=
-        @hasActivePath_flipEdge_of_isCoveredEdge V _ _ (flipEdge hcov) b a
-          (flipEdge_isCoveredEdge_back hcov) X Y Z hXY hXZ hYZ hp
-      exact (hasActivePath_edge_congr (flipEdge_flipEdge_edge hcov) X Y Z).mp hp₂
-  apply not_iff_not.mp
-  calc
-    ¬ G.dSep X Y Z ↔ G.HasActivePath X Y Z :=
-      not_dSep_iff_hasActivePath G X Y Z hXY hXZ hYZ
-    _ ↔ (flipEdge hcov).HasActivePath X Y Z := hAP
-    _ ↔ ¬ (flipEdge hcov).dSep X Y Z :=
-      (not_dSep_iff_hasActivePath (flipEdge hcov) X Y Z hXY hXZ hYZ).symm
+  intro X Y Z
+  by_cases hXY : Disjoint X Y
+  · by_cases hXZ : Disjoint X Z
+    · by_cases hYZ : Disjoint Y Z
+      · have hAP : G.HasActivePath X Y Z ↔ (flipEdge hcov).HasActivePath X Y Z := by
+          constructor
+          · exact hasActivePath_flipEdge_of_isCoveredEdge hcov X Y Z hXY
+          · intro hp
+            have hp₂ : (flipEdge (flipEdge_isCoveredEdge_back hcov)).HasActivePath X Y Z :=
+              @hasActivePath_flipEdge_of_isCoveredEdge V _ _ (flipEdge hcov) b a
+                (flipEdge_isCoveredEdge_back hcov) X Y Z hXY hp
+            exact (hasActivePath_edge_congr (flipEdge_flipEdge_edge hcov) X Y Z).mp hp₂
+        apply not_iff_not.mp
+        calc
+          ¬ G.dSep X Y Z ↔ G.HasActivePath X Y Z :=
+            not_dSep_iff_hasActivePath G X Y Z hXY hXZ hYZ
+          _ ↔ (flipEdge hcov).HasActivePath X Y Z := hAP
+          _ ↔ ¬ (flipEdge hcov).dSep X Y Z :=
+            (not_dSep_iff_hasActivePath (flipEdge hcov) X Y Z hXY hXZ hYZ).symm
+      · exact iff_of_false (fun h => hYZ h.2.2.1) (fun h => hYZ h.2.2.1)
+    · exact iff_of_false (fun h => hXZ h.2.1) (fun h => hXZ h.2.1)
+  · exact iff_of_false (fun h => hXY h.1) (fun h => hXY h.1)
 
 end DAG
 

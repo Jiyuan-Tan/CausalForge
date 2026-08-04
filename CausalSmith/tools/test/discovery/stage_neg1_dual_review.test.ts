@@ -4,7 +4,6 @@ import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   buildProtoCoreReviewBlock,
-  neg1ReviewArtifactPath,
   sourceReceiptValidationError,
 } from "../../src/discovery/stages/neg0_5.js";
 import { protoCoreJsonPath } from "../../src/discovery/stages/neg1_2_author.js";
@@ -58,9 +57,11 @@ afterAll(async () => {
 });
 
 describe("buildProtoCoreReviewBlock (D-0.5 single-artifact: inline the core)", () => {
-  it("returns '' when no proto_core exists (legacy monolithic .tex path is untouched)", async () => {
+  it("fails loud when no proto_core exists — a plumbing failure, never a review verdict", async () => {
+    // (The legacy monolithic-.tex fallback was removed in the 2026-07-31
+    // dead-code sweep; it had been unreachable since the single-artifact rollout.)
     const ctx = makeCtx(repoRoot);
-    expect(await buildProtoCoreReviewBlock(ctx)).toBe("");
+    await expect(buildProtoCoreReviewBlock(ctx)).rejects.toThrow(/proto_core\.json is absent/);
   });
 
   it("inlines the proposal core once it exists (no adapter — the core rubric is self-contained)", async () => {
@@ -73,17 +74,6 @@ describe("buildProtoCoreReviewBlock (D-0.5 single-artifact: inline the core)", (
     expect(block).toContain("PROPOSAL CORE"); // the core is inlined under its header
     expect(block).toContain("ass:tail"); // a real assumption node id
     expect(block).toContain("thm:lower"); // a real statement node id
-  });
-
-  it("routes every reviewer-facing path to the core once it exists", async () => {
-    const ctx = makeCtx(repoRoot);
-    const cp = protoCoreJsonPath(ctx);
-    const legacyTex = path.join(repoRoot, "stale-proposal.tex");
-    await mkdir(path.dirname(cp), { recursive: true });
-    await writeFile(cp, goldenProto, "utf8");
-    await writeFile(legacyTex, "stale reciprocal-endpoint proposal", "utf8");
-
-    expect(neg1ReviewArtifactPath(ctx, legacyTex)).toBe(cp);
   });
 
   it("repairs an under-escaped / legacy-corrupted proto core instead of failing or inlining garbage", async () => {

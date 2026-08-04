@@ -48,6 +48,7 @@ open DesignBased
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 variable {n : ι → ℕ}
 
+omit [Fintype ι] [DecidableEq ι] in
 /-- The `pick`-parameterized summand of the population estimator: on the groups selected by the
 flag `pick`, the summand equals the stage-1 selection indicator times the within-group
 estimator, packaging it for the `E_compound_factor` stage-2 collapse. -/

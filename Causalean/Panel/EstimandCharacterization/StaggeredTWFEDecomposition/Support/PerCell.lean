@@ -44,6 +44,7 @@ noncomputable def panelDtilde
               (fun _ => (1 : ℝ)) ω ∂μ) / cellMass μ G T_rv g t)
     - panelPropensityHat μ D G T_rv g t
 
+omit [DecidableEq 𝒢] in
 /-- **Per-cell denominator identity.** On the cell `{G = g ∧ T_rv = t}`,
 `(D - panelPropensity)(ω) = panelDtilde μ D G T_rv g t`; squaring and
 integrating over the cell gives
@@ -55,18 +56,19 @@ The proof requires the cell-constancy hypothesis `hD_cell` saying that on
 `{G = g ∧ T_rv = t}`, `D` agrees a.e. with the cell mean
 `(∫ D · 𝟙{cell} dμ) / cellMass`. -/
 theorem denom_per_cell_panel
-    (μ : Measure Ω) [IsProbabilityMeasure μ]
+    (μ : Measure Ω) [IsFiniteMeasure μ]
     (D : Ω → ℝ) (G : Ω → 𝒢) (T_rv : Ω → Fin T)
     (G_meas : Measurable G) (T_meas : Measurable T_rv)
-    (hD_cell : ∀ g t, ∀ᵐ ω ∂μ.restrict {ω' | G ω' = g ∧ T_rv ω' = t},
+    (g : 𝒢) (t : Fin T)
+    (hD_cell : ∀ᵐ ω ∂μ.restrict {ω' | G ω' = g ∧ T_rv ω' = t},
       D ω = (∫ ω', D ω' * Set.indicator {ω' | G ω' = g ∧ T_rv ω' = t}
-              (fun _ => (1 : ℝ)) ω' ∂μ) / cellMass μ G T_rv g t)
-    (g : 𝒢) (t : Fin T) :
+              (fun _ => (1 : ℝ)) ω' ∂μ) / cellMass μ G T_rv g t) :
     ∫ ω, (D ω - panelPropensity μ D G T_rv ω)
             * (D ω - panelPropensity μ D G T_rv ω)
             * Set.indicator {ω' | G ω' = g ∧ T_rv ω' = t}
                 (fun _ => (1 : ℝ)) ω ∂μ
       = cellMass μ G T_rv g t * (panelDtilde μ D G T_rv g t)^2 := by
+  classical
   let s : Set Ω := {ω | G ω = g ∧ T_rv ω = t}
   let I : Ω → ℝ := fun ω => Set.indicator s (fun _ => (1 : ℝ)) ω
   let q : ℝ := panelDtilde μ D G T_rv g t
@@ -83,7 +85,7 @@ theorem denom_per_cell_panel
       (fun ω => (D ω - panelPropensity μ D G T_rv ω)
             * (D ω - panelPropensity μ D G T_rv ω) * I ω)
         =ᵐ[μ.restrict s] (fun ω => q^2 * I ω) := by
-    filter_upwards [hD_cell g t, MeasureTheory.ae_restrict_mem hs] with ω hDω hωs
+    filter_upwards [hD_cell, MeasureTheory.ae_restrict_mem hs] with ω hDω hωs
     rcases hωs with ⟨hGω, hTω⟩
     have hpω :
         panelPropensity μ D G T_rv ω = panelPropensityHat μ D G T_rv g t :=
@@ -114,6 +116,7 @@ theorem denom_per_cell_panel
       rw [integral_panel_cell_indicator_one_eq_cellMass μ G T_rv G_meas T_meas g t]
     _ = cellMass μ G T_rv g t * q^2 := by ring
 
+omit [DecidableEq 𝒢] in
 /-- **Per-cell numerator identity.** Under the same cell-constancy
 hypothesis on `D`, plus the cell-mean defining identity for `Y`,
 
@@ -122,18 +125,19 @@ hypothesis on `D`, plus the cell-mean defining identity for `Y`,
 
 This is the two-axis analogue of Sloczynski's `num_per_cell`. -/
 theorem num_per_cell_panel
-    (μ : Measure Ω) [IsProbabilityMeasure μ]
+    (μ : Measure Ω) [IsFiniteMeasure μ]
     (D Y : Ω → ℝ) (G : Ω → 𝒢) (T_rv : Ω → Fin T)
     (G_meas : Measurable G) (T_meas : Measurable T_rv)
-    (hD_cell : ∀ g t, ∀ᵐ ω ∂μ.restrict {ω' | G ω' = g ∧ T_rv ω' = t},
+    (g : 𝒢) (t : Fin T)
+    (hD_cell : ∀ᵐ ω ∂μ.restrict {ω' | G ω' = g ∧ T_rv ω' = t},
       D ω = (∫ ω', D ω' * Set.indicator {ω' | G ω' = g ∧ T_rv ω' = t}
-              (fun _ => (1 : ℝ)) ω' ∂μ) / cellMass μ G T_rv g t)
-    (g : 𝒢) (t : Fin T) :
+              (fun _ => (1 : ℝ)) ω' ∂μ) / cellMass μ G T_rv g t) :
     ∫ ω, (D ω - panelPropensity μ D G T_rv ω) * Y ω
             * Set.indicator {ω' | G ω' = g ∧ T_rv ω' = t}
                 (fun _ => (1 : ℝ)) ω ∂μ
       = cellMass μ G T_rv g t * panelDtilde μ D G T_rv g t
           * cellMean μ Y G T_rv g t := by
+  classical
   let s : Set Ω := {ω | G ω = g ∧ T_rv ω = t}
   let I : Ω → ℝ := fun ω => Set.indicator s (fun _ => (1 : ℝ)) ω
   let q : ℝ := panelDtilde μ D G T_rv g t
@@ -149,7 +153,7 @@ theorem num_per_cell_panel
   have h_on :
       (fun ω => (D ω - panelPropensity μ D G T_rv ω) * Y ω * I ω)
         =ᵐ[μ.restrict s] (fun ω => q * (Y ω * I ω)) := by
-    filter_upwards [hD_cell g t, MeasureTheory.ae_restrict_mem hs] with ω hDω hωs
+    filter_upwards [hD_cell, MeasureTheory.ae_restrict_mem hs] with ω hDω hωs
     rcases hωs with ⟨hGω, hTω⟩
     have hpω :
         panelPropensity μ D G T_rv ω = panelPropensityHat μ D G T_rv g t :=

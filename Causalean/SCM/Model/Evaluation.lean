@@ -42,7 +42,7 @@ open scoped MeasureTheory ProbabilityTheory
 -- § 1. Parent-tuple assembly (one step of the recursion)
 -- ============================================================
 
-/-- A parent-value tuple for one observed node is assembled from fixed values, latent values, and earlier observed evaluations.
+/-- A parent-value tuple is assembled from fixed, latent, and earlier observed values.
 
     Assemble the parent-value tuple for the observed node at topological index `n`,
     given a strong recursion hypothesis `prev` that supplies the value at every
@@ -99,9 +99,15 @@ lemma parentMap_fixed (M : Causalean.SCM N Ω)
     (prev : ∀ m : ℕ, m < n → ∀ hm : m < M.observed.card,
               swigΩ Ω (M.observedAt ⟨m, hm⟩).val)
     (w : {w // w ∈ M.dag.parents (M.observedAt ⟨n, hn⟩).val})
-    (huo : w.val ∉ M.unobserved) (hfix : w.val ∈ M.fixed) :
+    (hfix : w.val ∈ M.fixed) :
     parentMap M s ℓ hn prev w = s ⟨w.val, hfix⟩ := by
   unfold parentMap
+  have huo : w.val ∉ M.unobserved := by
+    intro h
+    obtain ⟨m, hm⟩ := M.unobserved_is_random _ h
+    obtain ⟨k, hk⟩ := M.fixed_is_fixed _ hfix
+    rw [hk] at hm
+    exact absurd hm (by simp)
   rw [dif_neg huo, dif_pos hfix]
 
 /-- The parent-value tuple reads an observed parent from the previously computed observed values. -/
@@ -111,7 +117,6 @@ lemma parentMap_observed (M : Causalean.SCM N Ω)
     (prev : ∀ m : ℕ, m < n → ∀ hm : m < M.observed.card,
               swigΩ Ω (M.observedAt ⟨m, hm⟩).val)
     (w : {w // w ∈ M.dag.parents (M.observedAt ⟨n, hn⟩).val})
-    (huo : w.val ∉ M.unobserved) (hfix : w.val ∉ M.fixed)
     (hobs : w.val ∈ M.observed) :
     parentMap M s ℓ hn prev w =
       (M.observedAt_observedIndex ⟨w.val, hobs⟩) ▸
@@ -120,13 +125,15 @@ lemma parentMap_observed (M : Causalean.SCM N Ω)
                 (M.dag.mem_parents.mp w.property) hobs)
              (M.observedIndex ⟨w.val, hobs⟩).isLt := by
   unfold parentMap
+  have huo : w.val ∉ M.unobserved := not_unobs_of_obs M.toSWIGGraph hobs
+  have hfix : w.val ∉ M.fixed := not_fixed_of_obs M.toSWIGGraph hobs
   rw [dif_neg huo, dif_neg hfix]
 
 -- ============================================================
 -- § 2. Strong recursion over the observed topological order
 -- ============================================================
 
-/-- The auxiliary evaluator computes each observed node by recursively applying structural functions in topological order.
+/-- The auxiliary evaluator recursively applies structural functions in topological order.
 
     Value of the observed node at topological index `n`, computed by strong recursion
     on `n` using `parentMap` at each step.
@@ -142,7 +149,7 @@ noncomputable def evalObservedAux (M : Causalean.SCM N Ω)
     (fun k ih hk =>
       M.structFun (M.observedAt ⟨k, hk⟩) (fun w => parentMap M s ℓ hk ih w))
 
-/-- The auxiliary evaluator unfolds to the structural function applied to the assembled parent tuple at that node.
+/-- The auxiliary evaluator unfolds to its structural function applied to the parent tuple.
 
     Unfold equation for `evalObservedAux`: the `n`-th observed node's value is
     `structFun` at that node applied to the parent-value tuple assembled via
@@ -160,7 +167,8 @@ lemma evalObservedAux_eq (M : Causalean.SCM N Ω)
 -- § 3. The evaluation map
 -- ============================================================
 
-/-- The evaluation map sends fixed values and a latent realization to the resulting values of all observed and latent random nodes.
+/-- The evaluation map sends fixed values and a latent realization to the
+resulting values of all observed and latent random nodes.
 
     The evaluation map `φ_M : 𝒳_S × Ω_M → ∏_{w ∈ V ∪ L} 𝒳_w`.
 
@@ -180,12 +188,15 @@ noncomputable def evalMap (M : Causalean.SCM N Ω) :
         (M.observedIndex ⟨w.val, hobs⟩).isLt
   else
     have hrand : w.val ∈ M.observed ∪ M.unobserved := by
-      simpa [SCM.randomVars] using w.property
+      have hw := w.property
+      change w.val ∈ M.observed ∪ M.unobserved at hw
+      exact hw
     have huo : w.val ∈ M.unobserved :=
       (Finset.mem_union.mp hrand).elim (fun ho => absurd ho hobs) id
     ℓ ⟨w.val, huo⟩
 
-/-- On an observed node, the evaluation map is the auxiliary topological-order evaluation transported to that node. -/
+/-- On an observed node, the evaluation map is the auxiliary topological-order
+evaluation transported to that node. -/
 lemma evalMap_observed (M : Causalean.SCM N Ω)
     (s : FixedValues M) (ℓ : LatentValues M)
     (w : {w // w ∈ M.randomVars}) (hobs : w.val ∈ M.observed) :
@@ -202,7 +213,7 @@ lemma evalMap_unobserved (M : Causalean.SCM N Ω)
     (w : {w // w ∈ M.randomVars}) (huo : w.val ∈ M.unobserved) :
     M.evalMap s ℓ w = ℓ ⟨w.val, huo⟩ := by
   unfold evalMap
-  rw [dif_neg (M.not_obs_of_unobs huo)]
+  rw [dif_neg (not_obs_of_unobs M.toSWIGGraph huo)]
 
 /-- The parent-value dispatch function for `M.structFun v`: each parent
     `w ∈ M.dag.parents v.val` is classified into (unobserved / fixed / observed) and the
@@ -246,7 +257,7 @@ private lemma evalObservedAux_eq_structFunAt
   · rw [parentMap_unobserved M s ℓ j.isLt _ w huo, dif_pos huo]
   · rw [dif_neg huo]
     by_cases hfix : w.val ∈ M.fixed
-    · rw [parentMap_fixed M s ℓ j.isLt _ w huo hfix, dif_pos hfix]
+    · rw [parentMap_fixed M s ℓ j.isLt _ w hfix, dif_pos hfix]
     · rw [dif_neg hfix]
       have hedge : M.dag.edge w.val (M.observedAt j).val :=
         M.dag.mem_parents.mp w.property
@@ -256,7 +267,7 @@ private lemma evalObservedAux_eq_structFunAt
           · exact absurd hfx hfix
           · exact hob
         · exact absurd h2 huo
-      rw [parentMap_observed M s ℓ j.isLt _ w huo hfix hobs,
+      rw [parentMap_observed M s ℓ j.isLt _ w hobs,
           evalMap_observed M s ℓ ⟨w.val, _⟩ hobs]
 
 /-- Cast-navigation helper: given Fin indices `j`, `k` with `k = j` and the derived
@@ -275,12 +286,13 @@ private lemma evalObservedAux_cast_eq_structFunAt
       = M.structFun (M.observedAt j) (parentDispatch M s ℓ (M.observedAt j)) := by
   -- `subst k` substitutes `k := j` via `hkj`, eliminating `k`.
   subst k
-  -- `hcast : (M.observedAt j).val = (M.observedAt j).val` — replace with `rfl` via proof irrelevance.
+  -- Replace the reflexive cast proof with `rfl` by proof irrelevance.
   have hrfl : hcast = rfl := Subsingleton.elim _ _
   rw [hrfl]
   exact evalObservedAux_eq_structFunAt M s ℓ j
 
-/-- At an observed node, the evaluation map unfolds to the structural function applied to fixed, latent, or recursively evaluated parent values.
+/-- At an observed node, the evaluation map unfolds to the structural function
+applied to fixed, latent, or recursively evaluated parent values.
 
     Unfold `M.evalMap` at a generic observed subtype `v` in the "recursive form": the
     value equals `M.structFun v` applied to a parent tuple where each parent is read
@@ -325,19 +337,10 @@ lemma evalMap_observed_unfold (M : Causalean.SCM N Ω) (s : FixedValues M) (ℓ 
     (M.observedIndex_observedAt j)
     (M.observedAt_observedIndex ⟨(M.observedAt j).val, (M.observedAt j).property⟩)
 
-/-- A measurable map into `swigΩ Ω v` can be transported along a SWIGNode equality
-    `v = w` to give a measurable map into `swigΩ Ω w`. Used to discharge the `▸`
-    casts on the observed branches of `parentMap` and `evalMap`. -/
-private lemma measurable_swigΩ_cast {γ : Type*} [MeasurableSpace γ]
-    {v w : SWIGNode N} (h : v = w) {f : γ → swigΩ Ω v} (hf : Measurable f) :
-    Measurable (fun x => (h ▸ f x : swigΩ Ω w)) := by
-  subst h; exact hf
-
-/-- Measurability of `evalObservedAux` at each topological index `n`, by strong
-    induction on `n`. The inductive step uses `evalObservedAux_eq` to rewrite the
-    recursion one step and then the three `parentMap` unfold lemmas to peel off the
-    parent tuple coordinate by coordinate. -/
-private lemma evalObservedAux_measurable (M : Causalean.SCM N Ω) :
+/-- At every position in a causal model's topological ordering of observed variables, the
+recursively evaluated observed value is measurable as a function of the model's fixed and latent
+inputs. -/
+lemma evalObservedAux_measurable (M : Causalean.SCM N Ω) :
     ∀ (n : ℕ) (hn : n < M.observed.card),
       Measurable (fun p : FixedValues M × LatentValues M =>
         evalObservedAux M p.1 p.2 n hn) := by
@@ -372,7 +375,7 @@ private lemma evalObservedAux_measurable (M : Causalean.SCM N Ω) :
                   (fun m _ hm_card => evalObservedAux M p.1 p.2 m hm_card) w) =
             (fun p => p.1 ⟨w.val, hfix⟩) := by
           funext p
-          exact parentMap_fixed M p.1 p.2 hn _ w huo hfix
+          exact parentMap_fixed M p.1 p.2 hn _ w hfix
         rw [hfun]
         exact (measurable_pi_apply _).comp measurable_fst
       · have hedge : M.dag.edge w.val (M.observedAt ⟨n, hn⟩).val :=
@@ -396,9 +399,9 @@ private lemma evalObservedAux_measurable (M : Causalean.SCM N Ω) :
                   (M.observedIndex ⟨w.val, hobs⟩).val
                   (M.observedIndex ⟨w.val, hobs⟩).isLt) := by
           funext p
-          exact parentMap_observed M p.1 p.2 hn _ w huo hfix hobs
+          exact parentMap_observed M p.1 p.2 hn _ w hobs
         rw [hfun]
-        exact measurable_swigΩ_cast _ (ih _ hj _)
+        exact measurable_family_cast _ (ih _ hj _)
 
 /-- The evaluation map is jointly measurable in the fixed-value assignment and latent realization.
 
@@ -423,9 +426,11 @@ theorem evalMap_measurable (M : Causalean.SCM N Ω) :
       funext p
       exact evalMap_observed M p.1 p.2 w hobs
     rw [hfun]
-    exact measurable_swigΩ_cast _ (evalObservedAux_measurable M _ _)
+    exact measurable_family_cast _ (evalObservedAux_measurable M _ _)
   · have hrand : w.val ∈ M.observed ∪ M.unobserved := by
-      simpa [SCM.randomVars] using w.property
+      have hw := w.property
+      change w.val ∈ M.observed ∪ M.unobserved at hw
+      exact hw
     have huo : w.val ∈ M.unobserved :=
       (Finset.mem_union.mp hrand).elim (fun ho => absurd ho hobs) id
     have hfun :
@@ -437,13 +442,10 @@ theorem evalMap_measurable (M : Causalean.SCM N Ω) :
     rw [hfun]
     exact (measurable_pi_apply _).comp measurable_snd
 
-/-- **Ancestor-agreement helper** for `ancestralFactorization`.
-
-    Strong recursion on the topological index `n`: the `n`-th observed-aux value is
-    invariant under swapping `(s, ℓ)` for `(s', ℓ')` as long as the two inputs agree on
-    every fixed/latent node that is either in `T` itself or a proper ancestor of some
-    `v ∈ T`, and the `n`-th observed node is itself in `T` or an ancestor of `T`. -/
-private lemma evalObservedAux_agree_anc (M : Causalean.SCM N Ω)
+/-- An observed variable has the same recursively evaluated value under two inputs when
+    those inputs agree on every fixed and latent cause that can affect the target variables.
+    This expresses the local ancestral dependence of a structural causal model. -/
+lemma evalObservedAux_agree_anc (M : Causalean.SCM N Ω)
     (T : Finset (SWIGNode N))
     {s s' : FixedValues M} {ℓ ℓ' : LatentValues M}
     (hs : ∀ (d : SWIGNode N) (hd : d ∈ M.fixed),
@@ -481,8 +483,8 @@ private lemma evalObservedAux_agree_anc (M : Causalean.SCM N Ω)
           parentMap_unobserved M s' ℓ' hn _ w huo]
       exact hℓ w.val huo hAncW
     · by_cases hfix : w.val ∈ M.fixed
-      · rw [parentMap_fixed M s ℓ hn _ w huo hfix,
-            parentMap_fixed M s' ℓ' hn _ w huo hfix]
+      · rw [parentMap_fixed M s ℓ hn _ w hfix,
+            parentMap_fixed M s' ℓ' hn _ w hfix]
         exact hs w.val hfix hAncW
       · -- `w` is observed: apply IH at its smaller topological index.
         have hobs : w.val ∈ M.observed := by
@@ -493,8 +495,8 @@ private lemma evalObservedAux_agree_anc (M : Causalean.SCM N Ω)
           · exact absurd h2 huo
         have hj : (M.observedIndex ⟨w.val, hobs⟩).val < n :=
           M.observed_parent_index_lt hn hedge hobs
-        rw [parentMap_observed M s ℓ hn _ w huo hfix hobs,
-            parentMap_observed M s' ℓ' hn _ w huo hfix hobs]
+        rw [parentMap_observed M s ℓ hn _ w hobs,
+            parentMap_observed M s' ℓ' hn _ w hobs]
         congr 1
         apply ih _ hj
         -- Re-cast the ancestor witness at `observedAt (observedIndex w) = w`.
@@ -507,7 +509,8 @@ private lemma evalObservedAux_agree_anc (M : Causalean.SCM N Ω)
         rw [h_at]
         exact hwv
 
-/-- Evaluation on a target set depends only on fixed and latent nodes that are in or ancestral to that target set.
+/-- Evaluation on a target set depends only on fixed and latent nodes that are
+in or ancestral to that target set.
 
     **Ancestral factorization** (Lemma `lem:scm-ancestral-factor`).
 
@@ -522,7 +525,7 @@ private lemma evalObservedAux_agree_anc (M : Causalean.SCM N Ω)
     of graph reachability.  It is consumed by `SCM.induce_marginal_compat` and
     the Markov/do-calculus layers. -/
 theorem ancestralFactorization (M : Causalean.SCM N Ω)
-    (T : Finset (SWIGNode N)) (hT : T ⊆ M.observed)
+    (T : Finset (SWIGNode N))
     {s s' : FixedValues M} {ℓ ℓ' : LatentValues M}
     (hs : ∀ (d : SWIGNode N) (hd : d ∈ M.fixed),
       (∃ v ∈ T, d = v ∨ M.dag.isAncestor d v) →
@@ -530,10 +533,9 @@ theorem ancestralFactorization (M : Causalean.SCM N Ω)
     (hℓ : ∀ (u : SWIGNode N) (hu : u ∈ M.unobserved),
       (∃ v ∈ T, u = v ∨ M.dag.isAncestor u v) →
       ℓ ⟨u, hu⟩ = ℓ' ⟨u, hu⟩)
-    {v : SWIGNode N} (hv : v ∈ T) :
-    M.evalMap s ℓ ⟨v, Finset.mem_union_left _ (hT hv)⟩ =
-    M.evalMap s' ℓ' ⟨v, Finset.mem_union_left _ (hT hv)⟩ := by
-  have hv_obs : v ∈ M.observed := hT hv
+    {v : SWIGNode N} (hv : v ∈ T) (hv_obs : v ∈ M.observed) :
+    M.evalMap s ℓ ⟨v, Finset.mem_union_left _ hv_obs⟩ =
+    M.evalMap s' ℓ' ⟨v, Finset.mem_union_left _ hv_obs⟩ := by
   rw [evalMap_observed M s ℓ ⟨v, Finset.mem_union_left _ hv_obs⟩ hv_obs,
       evalMap_observed M s' ℓ' ⟨v, Finset.mem_union_left _ hv_obs⟩ hv_obs]
   congr 1

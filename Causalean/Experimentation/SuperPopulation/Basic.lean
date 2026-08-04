@@ -77,9 +77,11 @@ def toDepGraph : Causalean.SteinMethod.DepGraph F.X μ where
 /-- The closed network neighborhood `N i = {j | adj i j}` of a unit. -/
 noncomputable def nbhd (i : V) : Finset V := F.toDepGraph.nbhd i
 
+omit [IsProbabilityMeasure μ] in
 /-- Membership in the neighborhood is exactly adjacency. -/
 theorem mem_nbhd_iff {i j : V} : j ∈ F.nbhd i ↔ F.adj i j := F.toDepGraph.mem_nbhd_iff
 
+omit [IsProbabilityMeasure μ] in
 /-- Each unit lies in its own neighborhood. -/
 theorem self_mem_nbhd (i : V) : i ∈ F.nbhd i := F.toDepGraph.self_mem_nbhd i
 

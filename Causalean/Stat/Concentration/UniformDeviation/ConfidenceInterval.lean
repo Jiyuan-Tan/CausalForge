@@ -37,6 +37,7 @@ condition making the tail `≤ δ`.
 -/
 
 import Causalean.Stat.Concentration.TailBounds.Bernstein
+import Causalean.Stat.Limit.WLLN
 
 /-! # Concentration confidence intervals
 
@@ -67,14 +68,16 @@ scales with `σ`, not the range `c`. -/
 noncomputable def bernsteinCIHalfWidth (c σ : ℝ) (n : ℕ) (δ : ℝ) : ℝ :=
   2 * σ * Real.sqrt (Real.log (2 / δ) / n) + 2 * c * (Real.log (2 / δ) / n)
 
-/-- `log (2/δ) ≥ 0` for `0 < δ ≤ 1` (since then `2/δ ≥ 2 ≥ 1`). -/
-private lemma log_two_div_nonneg {δ : ℝ} (hδ0 : 0 < δ) (hδ1 : δ ≤ 1) :
+/-- For a confidence level between zero and one, the logarithm of twice its inverse is
+nonnegative. -/
+lemma log_two_div_nonneg {δ : ℝ} (hδ0 : 0 < δ) (hδ1 : δ ≤ 1) :
     0 ≤ Real.log (2 / δ) := by
   apply Real.log_nonneg
   rw [le_div_iff₀ hδ0]; linarith
 
-/-- `exp (-(log (2/δ))) = δ/2` for `0 < δ`. -/
-private lemma exp_neg_log_two_div {δ : ℝ} (hδ0 : 0 < δ) :
+/-- For a positive confidence level, exponentiating the negative logarithm of twice its inverse
+returns half that confidence level. -/
+lemma exp_neg_log_two_div {δ : ℝ} (hδ0 : 0 < δ) :
     Real.exp (-(Real.log (2 / δ))) = δ / 2 := by
   rw [Real.exp_neg, Real.exp_log (by positivity)]
   field_simp
@@ -143,7 +146,7 @@ theorem bernstein_ci_miss (S : IIDSample Ω X' μ P) {f : X' → ℝ} (hf : Meas
     exact add_nonneg
       (mul_nonneg (mul_nonneg (by norm_num) hσnn) hs0)
       (mul_nonneg (mul_nonneg (by norm_num) hc) (pow_nonneg hs0 2))
-  have htail := bernstein_abs_ge S hf hfint hc hσnn hbound hvar n hn hwnn
+  have htail := bernstein_abs_ge S hf hfint hc hbound hvar n hn hwnn
   refine htail.trans ?_
   have hcw : 0 ≤ c * w := mul_nonneg hc hwnn
   have hDpos : (0 : ℝ) < 2 * (2 * σ ^ 2 + c * w) := by nlinarith [hσ2, hcw]
@@ -165,13 +168,6 @@ theorem bernstein_ci_miss (S : IIDSample Ω X' μ P) {f : X' → ℝ} (hf : Meas
     _ = 2 * (δ / 2) := by rw [exp_neg_log_two_div hδ0]
     _ = δ := by ring
 
-/-- Measurability of the sample mean `X̄ₙ = n⁻¹ ∑ᵢ f (Zᵢ)`, established inline so
-this file need not import the limit layer. -/
-private lemma measurable_sampleMean (S : IIDSample Ω X' μ P) {f : X' → ℝ}
-    (hf : Measurable f) (n : ℕ) : Measurable (S.sampleMean f n) := by
-  change Measurable (fun ω => (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, f (S.Z i ω))
-  exact (Finset.measurable_sum _ (fun i _ => hf.comp (S.meas i))).const_mul _
-
 /-- **Finite-sample Hoeffding confidence interval (coverage form).**
 The complement of `hoeffding_ci_miss`: the population mean `m = ∫ f ∂P` lies
 strictly inside the random interval `(X̄ₙ − w, X̄ₙ + w)` with probability at least
@@ -182,7 +178,7 @@ theorem hoeffding_ci_cover (S : IIDSample Ω X' μ P) {f : X' → ℝ} (hf : Mea
     1 - δ ≤
       μ.real {ω | |S.sampleMean f n ω - ∫ x, f x ∂P| < hoeffdingCIHalfWidth a b n δ} := by
   haveI : IsProbabilityMeasure μ := S.indep.isProbabilityMeasure
-  have hSM : Measurable (S.sampleMean f n) := measurable_sampleMean S hf n
+  have hSM : Measurable (S.sampleMean f n) := S.measurable_sampleMean hf n
   set m : ℝ := ∫ x, f x ∂P with hmdef
   set w : ℝ := hoeffdingCIHalfWidth a b n δ with hwdef
   have hMmeas : MeasurableSet {ω | w ≤ |S.sampleMean f n ω - m|} :=
@@ -206,7 +202,7 @@ theorem bernstein_ci_cover (S : IIDSample Ω X' μ P) {f : X' → ℝ} (hf : Mea
     1 - δ ≤
       μ.real {ω | |S.sampleMean f n ω - ∫ x, f x ∂P| < bernsteinCIHalfWidth c σ n δ} := by
   haveI : IsProbabilityMeasure μ := S.indep.isProbabilityMeasure
-  have hSM : Measurable (S.sampleMean f n) := measurable_sampleMean S hf n
+  have hSM : Measurable (S.sampleMean f n) := S.measurable_sampleMean hf n
   set m : ℝ := ∫ x, f x ∂P with hmdef
   set w : ℝ := bernsteinCIHalfWidth c σ n δ with hwdef
   have hMmeas : MeasurableSet {ω | w ≤ |S.sampleMean f n ω - m|} :=

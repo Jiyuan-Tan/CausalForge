@@ -72,19 +72,13 @@ describe("runStage0Render (D0-RENDER — deterministic core → .tex)", () => {
     const ctx = makeCtx(repoRoot);
     const res = await runStage0Render({ ctx, state: makeState() });
     expect(existsSync(res.texPath)).toBe(true);
-    expect(existsSync(res.pdfPath)).toBe(true);
-    expect(existsSync(res.logPath)).toBe(true);
     expect(res.texPath).toBe(artifactPaths(ctx, makeState()).tex);
     const tex = await readFile(res.texPath, "utf8");
     // formal nodes emitted verbatim with labels; proofs included (discharged core)
     expect(tex).toContain("\\label{thm:lower}");
     expect(tex).toContain("\\label{ass:tail}");
     expect(tex).toContain("\\begin{document}");
-    const pdf = await readFile(res.pdfPath);
-    expect(pdf.subarray(0, 5).toString("ascii")).toBe("%PDF-");
-    const log = await readFile(res.logPath, "utf8");
-    expect(log).toContain("Output written on");
-    expect(log).not.toContain("Overfull \\hbox");
+    expect(res.message).toMatch(/no compilation in D/i);
   });
 
   it("is a pure re-render — running twice yields byte-identical .tex", async () => {
@@ -104,25 +98,4 @@ describe("runStage0Render (D0-RENDER — deterministic core → .tex)", () => {
     await rm(empty, { recursive: true, force: true });
   });
 
-  it("keeps the previous verified bundle when a new TeX candidate does not compile", async () => {
-    const ctx = makeCtx(repoRoot);
-    const state = makeState();
-    const paths = artifactPaths(ctx, state);
-    const stem = path.basename(paths.tex, path.extname(paths.tex));
-    const pdfPath = path.join(path.dirname(paths.tex), `${stem}.pdf`);
-    const logPath = path.join(path.dirname(paths.tex), `${stem}.log`);
-    await writeFile(paths.tex, "verified tex sentinel", "utf8");
-    await writeFile(pdfPath, "verified pdf sentinel", "utf8");
-    await writeFile(logPath, "verified log sentinel", "utf8");
-    const broken = structuredClone(core);
-    broken.statements[0]!.proof_tex = "\\undefinedDZeroCommand";
-    await writeFile(coreJsonPath(ctx), JSON.stringify(broken), "utf8");
-
-    await expect(runStage0Render({ ctx, state })).rejects.toThrow(/pdflatex verification failed/i);
-    expect(await readFile(paths.tex, "utf8")).toBe("verified tex sentinel");
-    expect(await readFile(pdfPath, "utf8")).toBe("verified pdf sentinel");
-    expect(await readFile(logPath, "utf8")).toBe("verified log sentinel");
-
-    await writeFile(coreJsonPath(ctx), JSON.stringify(core), "utf8");
-  });
 });

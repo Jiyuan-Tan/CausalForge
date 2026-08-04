@@ -7,8 +7,7 @@ Authors: Jiyuan Tan
 
 Stage-2 scaffold. The certified regime theorem `thm:frontier-bracket-deficient`
 (`0 < s < d/4`): the all-β lower floor together with the strictly-smaller deficient
-`ρ_n` exponent; the same-class upper endpoint is NOT discharged. Every proof body
-is `sorry`.
+`ρ_n` exponent; the same-class upper endpoint is NOT discharged.
 -/
 
 import CausalSmith.Stat.STAT_DoseResponseMinimax_Research.Helpers.TwoPointConstruction

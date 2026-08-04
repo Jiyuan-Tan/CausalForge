@@ -19,6 +19,7 @@
 
 import type { Core } from "./core/schema.js";
 import { renderCoreTex } from "./core/render_tex.js";
+import { stampCoreStatements } from "./core/revision.js";
 import type { WorkingState } from "./stages/d0_working.js";
 
 /**
@@ -41,6 +42,9 @@ export interface ReviewPacketInput {
   proposedDefinitionChanges: unknown[];
   proposedAssumptions: unknown[];
   proposedCoreEdits: unknown[];
+  /** Stable adjudication provenance for orchestrator-required edits. The same ids
+   * remain visible if a solve round regenerates the proposal carrier. */
+  requiredCoreEditMandates?: WorkingState["required_core_edit_mandates"];
   provisionalProofs: unknown[];
   /** Provenance for a mechanically recovered packet; omitted on the normal path. */
   recovery?: Record<string, unknown>;
@@ -52,12 +56,18 @@ export function buildReviewPacket(input: ReviewPacketInput): Record<string, unkn
     contract: REVIEW_PACKET_CONTRACT,
     ...(input.recovery ? { recovery: input.recovery } : {}),
     full_current_paper_tex: renderCoreTex(input.core),
-    current_typed_core: input.core,
+    // Every rendered node carries its `revision` stamp (Phase 2): the exact view
+    // the adjudicator/solver sees, pinned by hash, so a later structural edit
+    // can cite it via `based_on_revision`. Applied to the packet's serialized
+    // view only — the stored core.json field shapes do not change.
+    current_typed_core: stampCoreStatements(input.core),
     durable_working_state: input.working,
     proposed_statement_changes: input.proposedStatementChanges,
     proposed_definition_changes: input.proposedDefinitionChanges,
     proposed_assumptions: input.proposedAssumptions,
     proposed_core_edits: input.proposedCoreEdits,
+    required_core_edit_mandates:
+      input.requiredCoreEditMandates ?? input.working.required_core_edit_mandates ?? [],
     provisional_proofs: input.provisionalProofs,
   };
 }

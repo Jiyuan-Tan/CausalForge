@@ -59,9 +59,9 @@ variables (on probability spaces `(Ω n, μ n)`), and for each `m` let `T m n : 
 `m`-th approximating row, all square-integrable.  Assume:
 
 * `(H1)` for every `m`, the laws `(μ n).map (T m n)` converge weakly to `G` as `n → ∞`;
-* `(H2)` for every `ε > 0` there is `M` such that for all `m ≥ M`,
-  `limsupₙ ENNReal.ofReal (∫ ω, (S n ω − T m n ω)² ∂(μ n)) ≤ ENNReal.ofReal ε`
-  (the rows approximate `S` in `L²`, uniformly in `n` in the iterated-`limsup` sense).
+* `(H2)` for every `ε > 0` there is a row `M` such that
+  `limsupₙ ENNReal.ofReal (∫ ω, (S n ω − T M n ω)² ∂(μ n)) ≤ ENNReal.ofReal ε`
+  (one row approximates `S` in `L²`, in the iterated-`limsup` sense).
 
 Then the laws `(μ n).map (S n)` converge weakly to `G` as `n → ∞`.
 
@@ -73,17 +73,20 @@ theorem tendsto_inDistribution_of_l2_approx
     (μ : (n : ℕ) → Measure (Ω n)) [∀ n, IsProbabilityMeasure (μ n)]
     (G : ProbabilityMeasure ℝ)
     (S : (n : ℕ) → Ω n → ℝ) (T : ℕ → (n : ℕ) → Ω n → ℝ)
-    (hS_meas : ∀ n, Measurable (S n)) (hT_meas : ∀ m n, Measurable (T m n))
     (hS_sq : ∀ n, MemLp (S n) 2 (μ n)) (hT_sq : ∀ m n, MemLp (T m n) 2 (μ n))
     (H1 : ∀ m, Tendsto
-      (fun n => lawPM ((μ n).map (T m n))
-        (Measure.isProbabilityMeasure_map (hT_meas m n).aemeasurable)) atTop (𝓝 G))
-    (H2 : ∀ ε : ℝ, 0 < ε → ∃ M : ℕ, ∀ m ≥ M,
-      Filter.limsup (fun n => ENNReal.ofReal (∫ ω, (S n ω - T m n ω) ^ 2 ∂(μ n))) atTop
+      (fun n =>
+        lawPM ((μ n).map (T m n))
+          (Measure.isProbabilityMeasure_map (hT_sq m n).aestronglyMeasurable.aemeasurable))
+        atTop (𝓝 G))
+    (H2 : ∀ ε : ℝ, 0 < ε → ∃ M : ℕ,
+      Filter.limsup (fun n => ENNReal.ofReal (∫ ω, (S n ω - T M n ω) ^ 2 ∂(μ n))) atTop
         ≤ ENNReal.ofReal ε) :
     Tendsto
-      (fun n => lawPM ((μ n).map (S n))
-        (Measure.isProbabilityMeasure_map (hS_meas n).aemeasurable)) atTop (𝓝 G) := by
+      (fun n =>
+        lawPM ((μ n).map (S n))
+          (Measure.isProbabilityMeasure_map (hS_sq n).aestronglyMeasurable.aemeasurable))
+        atTop (𝓝 G) := by
   refine MeasureTheory.ProbabilityMeasure.tendsto_iff_tendsto_charFun.mpr ?_
   intro t
   let c := charFun (G : Measure ℝ) t
@@ -120,7 +123,7 @@ theorem tendsto_inDistribution_of_l2_approx
   have hlim :
       Filter.limsup
           (fun n => ENNReal.ofReal (∫ ω, (S n ω - T M n ω) ^ 2 ∂(μ n))) atTop
-        ≤ ENNReal.ofReal ε := hM M le_rfl
+        ≤ ENNReal.ofReal ε := hM
   have hεlt : ENNReal.ofReal ε < ENNReal.ofReal (2 * ε) := by
     rw [ENNReal.ofReal_lt_ofReal_iff]
     · linarith
@@ -153,7 +156,10 @@ theorem tendsto_inDistribution_of_l2_approx
           = ‖charFun ((μ n).map (S n)) t - charFun ((μ n).map (T M n)) t‖ := by
             rw [dist_eq_norm]
       _ ≤ |t| * Real.sqrt (∫ ω, (S n ω - T M n ω) ^ 2 ∂(μ n)) :=
-            tendsto_charFun_sub_le_L2 (μ n) (hS_sq n) (hT_sq M n) t
+            norm_charFun_sub_le_L2 (μ n)
+              (hS_sq n).aestronglyMeasurable.aemeasurable
+              (hT_sq M n).aestronglyMeasurable.aemeasurable
+              ((hS_sq n).sub (hT_sq M n)) t
       _ ≤ |t| * Real.sqrt (2 * ε) := by
             exact mul_le_mul_of_nonneg_left hsqrt_le (abs_nonneg t)
   have hfirst : dist (charFun ((μ n).map (S n)) t) (charFun ((μ n).map (T M n)) t) < δ / 2 :=
@@ -166,27 +172,27 @@ theorem tendsto_inDistribution_of_l2_approx
 
 /-- **Converging-together corollary for the standard normal (the CLT diagonal step).**
 The specialization of `tendsto_inDistribution_of_l2_approx` to the limit law `gaussianReal 0 1`:
-if each `L²`-approximating row `T m` satisfies a standard-normal CLT `(H1)` and the rows approximate
-`S` in `L²` in the iterated-`limsup` sense `(H2)`, then the laws of `S n` converge weakly to the
-standard normal.  This is exactly the shape an m-dependent-approximation CLT consumes to pass from
+if each `L²`-approximating row `T m` satisfies a standard-normal CLT `(H1)` and, for every
+tolerance, one row approximates `S` in `L²` in the iterated-`limsup` sense `(H2)`, then the laws
+of `S n` converge weakly to the standard normal.  This is exactly the shape an
+m-dependent-approximation CLT consumes to pass from
 the per-`m` m-dependent CLT to the limit. -/
 theorem clt_of_l2_approx
     {Ω : ℕ → Type*} [∀ n, MeasurableSpace (Ω n)]
     (μ : (n : ℕ) → Measure (Ω n)) [∀ n, IsProbabilityMeasure (μ n)]
     (S : (n : ℕ) → Ω n → ℝ) (T : ℕ → (n : ℕ) → Ω n → ℝ)
-    (hS_meas : ∀ n, Measurable (S n)) (hT_meas : ∀ m n, Measurable (T m n))
     (hS_sq : ∀ n, MemLp (S n) 2 (μ n)) (hT_sq : ∀ m n, MemLp (T m n) 2 (μ n))
     (H1 : ∀ m, Tendsto
       (fun n => lawPM ((μ n).map (T m n))
-        (Measure.isProbabilityMeasure_map (hT_meas m n).aemeasurable)) atTop
+        (Measure.isProbabilityMeasure_map (hT_sq m n).aestronglyMeasurable.aemeasurable)) atTop
         (𝓝 (lawPM (gaussianReal 0 1) inferInstance)))
-    (H2 : ∀ ε : ℝ, 0 < ε → ∃ M : ℕ, ∀ m ≥ M,
-      Filter.limsup (fun n => ENNReal.ofReal (∫ ω, (S n ω - T m n ω) ^ 2 ∂(μ n))) atTop
+    (H2 : ∀ ε : ℝ, 0 < ε → ∃ M : ℕ,
+      Filter.limsup (fun n => ENNReal.ofReal (∫ ω, (S n ω - T M n ω) ^ 2 ∂(μ n))) atTop
         ≤ ENNReal.ofReal ε) :
     Tendsto
       (fun n => lawPM ((μ n).map (S n))
-        (Measure.isProbabilityMeasure_map (hS_meas n).aemeasurable)) atTop
+        (Measure.isProbabilityMeasure_map (hS_sq n).aestronglyMeasurable.aemeasurable)) atTop
       (𝓝 (lawPM (gaussianReal 0 1) inferInstance)) :=
-  tendsto_inDistribution_of_l2_approx μ _ S T hS_meas hT_meas hS_sq hT_sq H1 H2
+  tendsto_inDistribution_of_l2_approx μ _ S T hS_sq hT_sq H1 H2
 
 end Causalean.Mathlib.Probability.ConvergingTogether

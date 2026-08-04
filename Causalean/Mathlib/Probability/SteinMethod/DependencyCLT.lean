@@ -52,9 +52,9 @@ noncomputable def depSum (X : ι → Ω → ℝ) : Ω → ℝ := fun ω => ∑ i
 noncomputable def nbhdSum (X : ι → Ω → ℝ) (N : ι → Finset ι) (i : ι) : Ω → ℝ :=
   fun ω => ∑ j ∈ N i, X j ω
 
-/-- **Cauchy–Schwarz for real integrals.**  For `L²` functions `f, g`,
-`|∫ f·g| ≤ √(∫ f²)·√(∫ g²)`. -/
-private theorem abs_integral_mul_le_sqrt {μ : Measure Ω} (f g : Ω → ℝ)
+/-- For square-integrable real-valued functions, the absolute value of their product integral
+is at most the product of the square roots of their two squared integrals. -/
+theorem abs_integral_mul_le_sqrt {μ : Measure Ω} (f g : Ω → ℝ)
     (hf : MemLp f 2 μ) (hg : MemLp g 2 μ) :
     |∫ ω, f ω * g ω ∂μ| ≤ Real.sqrt (∫ ω, f ω ^ 2 ∂μ) * Real.sqrt (∫ ω, g ω ^ 2 ∂μ) := by
   have hpq : (2 : ℝ).HolderConjugate 2 := by
@@ -78,27 +78,28 @@ private theorem abs_integral_mul_le_sqrt {μ : Measure Ω} (f g : Ω → ℝ)
     _ = Real.sqrt (∫ ω, f ω ^ 2 ∂μ) * Real.sqrt (∫ ω, g ω ^ 2 ∂μ) := by
         rw [hsqrt, hsqrt]; simp_rw [hnormsq, hnormsqg]
 
-/-- The derivative of the Stein solution is continuous (it is `2L`-Lipschitz). -/
-private theorem steinSol_deriv_continuous (h : ℝ → ℝ) (hh : Continuous h) {C L : ℝ}
-    (hC : 0 ≤ C) (hL : 0 ≤ L) (hb : ∀ x, |h x| ≤ C) (hd : ∀ x, |deriv h x| ≤ L)
+/-- A continuous differentiable test function with bounded values and bounded derivative has a
+Stein solution whose derivative is continuous. -/
+theorem steinSol_deriv_continuous (h : ℝ → ℝ) (hh : Continuous h) {C L : ℝ}
+    (hL : 0 ≤ L) (hb : ∀ x, |h x| ≤ C) (hd : ∀ x, |deriv h x| ≤ L)
     (hdiff : Differentiable ℝ h) : Continuous (deriv (steinSol h)) := by
   have hlip : LipschitzWith (2 * L).toNNReal (deriv (steinSol h)) := by
     refine LipschitzWith.of_dist_le_mul (fun u v => ?_)
     rw [Real.dist_eq, Real.dist_eq, Real.coe_toNNReal _ (by positivity)]
-    exact steinSol_deriv_lipschitz h hh hC hL hb hd hdiff u v
+    exact steinSol_deriv_lipschitz h hb hd hdiff u v
   exact hlip.continuous
 
-/-- **Second-order Taylor bound for the Stein solution.**  Because `deriv (steinSol h)` is
-`2L`-Lipschitz (`steinSol_deriv_lipschitz`), the first-order remainder of `steinSol h` at the
-*right* endpoint is controlled quadratically:
-`|f(a+t) − f(a) − t·f'(a+t)| ≤ L·t²`. -/
-private theorem steinSol_taylor_right (h : ℝ → ℝ) (hh : Continuous h) {C L : ℝ}
-    (hC : 0 ≤ C) (hL : 0 ≤ L) (hb : ∀ x, |h x| ≤ C) (hd : ∀ x, |deriv h x| ≤ L)
+/-- The standard-normal Stein solution has a first-order Taylor error that grows no faster than
+the test function's derivative bound times the squared step size. -/
+theorem steinSol_taylor_right (h : ℝ → ℝ) {C L : ℝ}
+    (hb : ∀ x, |h x| ≤ C) (hd : ∀ x, |deriv h x| ≤ L)
     (hdiff : Differentiable ℝ h) (a t : ℝ) :
     |steinSol h (a + t) - steinSol h a - t * deriv (steinSol h) (a + t)| ≤ L * t ^ 2 := by
+  have hh : Continuous h := hdiff.continuous
+  have hL : 0 ≤ L := le_trans (abs_nonneg (deriv h 0)) (hd 0)
   set f := steinSol h with hf
   set f' := deriv (steinSol h) with hf'
-  have hf'cont : Continuous f' := steinSol_deriv_continuous h hh hC hL hb hd hdiff
+  have hf'cont : Continuous f' := steinSol_deriv_continuous h hh hL hb hd hdiff
   -- `s ↦ f (a + s * t)` has derivative `f' (a + s * t) * t`.
   have hg : ∀ s : ℝ, HasDerivAt (fun s => f (a + s * t)) (f' (a + s * t) * t) s := by
     intro s
@@ -134,7 +135,7 @@ private theorem steinSol_taylor_right (h : ℝ → ℝ) (hh : Continuous h) {C L
       ((continuous_const.mul (continuous_const.sub continuous_id)).intervalIntegrable 0 1)
       (fun s hs => ?_)
     have hs1 : s ≤ 1 := hs.2
-    have hlip := steinSol_deriv_lipschitz h hh hC hL hb hd hdiff (a + s * t) (a + t)
+    have hlip := steinSol_deriv_lipschitz h hb hd hdiff (a + s * t) (a + t)
     calc |f' (a + s * t) * t - t * f' (a + t)|
         = |t| * |f' (a + s * t) - f' (a + t)| := by rw [← abs_mul]; ring_nf
       _ ≤ |t| * (2 * L * |(a + s * t) - (a + t)|) := by
@@ -159,15 +160,15 @@ theorem stein_local_dependence_bound
     (hmeas : ∀ i, Measurable (X i))
     {B : ℝ} (hB : 0 ≤ B) (hbound : ∀ i ω, |X i ω| ≤ B)
     (hmean : ∀ i, ∫ ω, X i ω ∂μ = 0)
-    (hself : ∀ i, i ∈ N i)
     (hindep : ∀ i, IndepFun (X i) (fun ω => ∑ j ∈ Finset.univ \ N i, X j ω) μ)
     (hvar : ∫ ω, (depSum X ω) ^ 2 ∂μ = 1)
-    (h : ℝ → ℝ) (hh : Continuous h) {C L : ℝ} (hC : 0 ≤ C) (hL : 0 ≤ L)
+    (h : ℝ → ℝ) {C L : ℝ}
     (hb : ∀ x, |h x| ≤ C) (hd : ∀ x, |deriv h x| ≤ L) (hdiff : Differentiable ℝ h) :
     |(∫ ω, h (depSum X ω) ∂μ) - gExpect h|
       ≤ 2 * L * Real.sqrt (variance (fun ω => ∑ i, X i ω * nbhdSum X N i ω) μ)
         + L * ∑ i, ∫ ω, |X i ω| * (nbhdSum X N i ω) ^ 2 ∂μ := by
   classical
+  have hh : Continuous h := hdiff.continuous
   -- Abbreviations.
   set W : Ω → ℝ := depSum X with hW
   set T : ι → Ω → ℝ := fun i => nbhdSum X N i with hT
@@ -175,12 +176,14 @@ theorem stein_local_dependence_bound
   set f : ℝ → ℝ := steinSol h with hf
   set f' : ℝ → ℝ := deriv (steinSol h) with hf'
   set Y : Ω → ℝ := fun ω => ∑ i, X i ω * T i ω with hY
+  have hL : 0 ≤ L := le_trans (abs_nonneg (deriv h 0)) (hd 0)
   -- Continuity / measurability of the Stein solution and its derivative.
   have hfdiff : Differentiable ℝ f := fun w => (steinSol_hasDerivAt h hh hb w).differentiableAt
   have hfcont : Continuous f := hfdiff.continuous
-  have hf'cont : Continuous f' := steinSol_deriv_continuous h hh hC hL hb hd hdiff
-  have hfbd : ∀ w, |f w| ≤ 2 * L := fun w => steinSol_abs_le h hh hC hL hb hd hdiff w
-  have hf'bd : ∀ w, |f' w| ≤ 2 * L := fun w => steinSol_deriv_abs_le h hh hC hL hb hd hdiff w
+  have hf'cont : Continuous f' := steinSol_deriv_continuous h hh hL hb hd hdiff
+  have hfbd : ∀ w, |f w| ≤ 2 * L := fun w =>
+    (steinSol_abs_le h hb hd hdiff w).trans (by linarith)
+  have hf'bd : ∀ w, |f' w| ≤ 2 * L := fun w => steinSol_deriv_abs_le h hb hd hdiff w
   -- Measurability of the random variables.
   have hWmeas : Measurable W := by
     simp only [hW]; exact Finset.measurable_sum _ (fun i _ => hmeas i)
@@ -289,7 +292,7 @@ theorem stein_local_dependence_bound
   -- Taylor bound: `|R i ω| ≤ L·(Tᵢ ω)²`.
   have hRbound : ∀ i ω, |R i ω| ≤ L * (T i ω) ^ 2 := by
     intro i ω
-    have htaylor := steinSol_taylor_right h hh hC hL hb hd hdiff (S i ω) (T i ω)
+    have htaylor := steinSol_taylor_right h hb hd hdiff (S i ω) (T i ω)
     have hWeq : S i ω + T i ω = W ω := by rw [hWsplit i ω]; ring
     rw [hWeq] at htaylor
     change |T i ω * f' (W ω) - (f (W ω) - f (S i ω))| ≤ L * (T i ω) ^ 2

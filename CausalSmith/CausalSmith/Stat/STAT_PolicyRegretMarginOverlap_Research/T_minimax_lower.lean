@@ -8,7 +8,6 @@ Authors: Jiyuan Tan
 Stage-2 scaffold. The explicit two-point witness, its class membership and
 χ²/separation analysis, the in-core Le Cam testing lemma, the CRUX converse
 `thm:minimax-lower`, and the headline corollary `thm:rate-characterization`.
-Every proof body is `sorry`.
 -/
 
 import CausalSmith.Stat.STAT_PolicyRegretMarginOverlap_Research.Basic
@@ -16,6 +15,8 @@ import CausalSmith.Mathlib.InformationTheory.ProductChiSquared
 import Causalean.Mathlib.MeasureTheory.IntegralBind
 import Causalean.Mathlib.MeasureTheory.PartitionRnDeriv
 import Causalean.Stat.Minimax.ChiSquared
+import Causalean.Mathlib.Probability.BernoulliMeasure
+import Causalean.Mathlib.Probability.SignedTwoPoint
 import Mathlib.Analysis.SpecialFunctions.Pow.Asymptotics
 import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
 import Mathlib.MeasureTheory.Measure.GiryMonad
@@ -24,112 +25,65 @@ import Mathlib.MeasureTheory.Constructions.Pi
 namespace CausalSmith.Stat.PolicyRegretMarginOverlap
 
 open MeasureTheory
+open Causalean.Mathlib.Probability (twoPointMean)
 open scoped BigOperators Topology
 
 /-- `{0,1}`-supported Bernoulli observation-treatment measure on the treatment
-space `Bool` (`true ↦ 1`) with `P(A=1)=p`. -/
-noncomputable def bernoulliBool (p : ℝ) : Measure Bool :=
-  ENNReal.ofReal p • Measure.dirac true
-    + ENNReal.ofReal (1 - p) • Measure.dirac false
+space `Bool` (`true ↦ 1`) with `P(A=1)=p`.
 
-/-- `{-1,1}`-supported outcome measure with mean `m` (`P(Y=1)=(1+m)/2`). -/
-noncomputable def bernoulliPM (m : ℝ) : Measure ℝ :=
-  ENNReal.ofReal ((1 + m) / 2) • Measure.dirac (1 : ℝ)
-    + ENNReal.ofReal ((1 - m) / 2) • Measure.dirac (-1 : ℝ)
+This is `Causalean.Mathlib.Probability.bernoulliBool`; the local name is retained as a
+reducible alias. -/
+noncomputable abbrev bernoulliBool (p : ℝ) : Measure Bool :=
+  Causalean.Mathlib.Probability.bernoulliBool p
 
-@[fun_prop] lemma measurable_bernoulliBool : Measurable bernoulliBool := by
-  unfold bernoulliBool
-  fun_prop
+/-- `{-1,1}`-supported outcome measure with mean `m` (`P(Y=1)=(1+m)/2`).
 
-@[fun_prop] lemma measurable_bernoulliPM : Measurable bernoulliPM := by
-  unfold bernoulliPM
-  fun_prop
+This is the symmetric signed two-point channel of scale `1`,
+`Causalean.Mathlib.Probability.twoPointMean 1 m`. -/
+noncomputable abbrev bernoulliPM (m : ℝ) : Measure ℝ :=
+  Causalean.Mathlib.Probability.twoPointMean 1 m
+
+@[fun_prop] lemma measurable_bernoulliBool : Measurable bernoulliBool :=
+  Causalean.Mathlib.Probability.measurable_bernoulliBool
+
+@[fun_prop] lemma measurable_bernoulliPM : Measurable bernoulliPM :=
+  Causalean.Mathlib.Probability.measurable_twoPointMean 1
 
 lemma bernoulliBool_isProbabilityMeasure {p : ℝ} (hp0 : 0 ≤ p) (hp1 : p ≤ 1) :
-    IsProbabilityMeasure (bernoulliBool p) := by
-  rw [isProbabilityMeasure_iff]
-  unfold bernoulliBool
-  rw [Measure.add_apply, Measure.smul_apply, Measure.smul_apply]
-  simp only [Measure.dirac_apply, Set.indicator_of_mem, Set.mem_univ,
-    Pi.one_apply, smul_eq_mul, mul_one]
-  rw [← ENNReal.ofReal_add hp0 (sub_nonneg.mpr hp1)]
-  rw [show p + (1 - p) = (1 : ℝ) by ring]
-  simp
+    IsProbabilityMeasure (bernoulliBool p) :=
+  Causalean.Mathlib.Probability.bernoulliBool_isProbabilityMeasure hp0 hp1
 
 lemma bernoulliPM_isProbabilityMeasure {m : ℝ} (hm_lo : -1 ≤ m) (hm_hi : m ≤ 1) :
-    IsProbabilityMeasure (bernoulliPM m) := by
-  rw [isProbabilityMeasure_iff]
-  unfold bernoulliPM
-  rw [Measure.add_apply, Measure.smul_apply, Measure.smul_apply]
-  simp only [Measure.dirac_apply, Set.indicator_of_mem, Set.mem_univ,
-    Pi.one_apply, smul_eq_mul, mul_one]
-  rw [← ENNReal.ofReal_add]
-  · rw [show (1 + m) / 2 + (1 - m) / 2 = (1 : ℝ) by ring]
-    simp
-  · linarith
-  · linarith
+    IsProbabilityMeasure (bernoulliPM m) :=
+  Causalean.Mathlib.Probability.twoPointMean_isProbabilityMeasure one_pos
+    (abs_le.mpr ⟨hm_lo, hm_hi⟩)
 
 lemma bernoulliBool_integral {p : ℝ} (hp0 : 0 ≤ p) (hp1 : p ≤ 1)
     (f : Bool → ℝ) :
-    ∫ a, f a ∂bernoulliBool p = p * f true + (1 - p) * f false := by
-  unfold bernoulliBool
-  rw [integral_add_measure]
-  · rw [integral_smul_measure, integral_smul_measure]
-    simp [hp0, sub_nonneg.mpr hp1, smul_eq_mul]
-  · exact Integrable.smul_measure (μ := Measure.dirac true)
-      (c := ENNReal.ofReal p)
-      (integrable_dirac (f := f) (a := true) (by simp [enorm])) (by simp)
-  · exact Integrable.smul_measure (μ := Measure.dirac false)
-      (c := ENNReal.ofReal (1 - p))
-      (integrable_dirac (f := f) (a := false) (by simp [enorm])) (by simp)
+    ∫ a, f a ∂bernoulliBool p = p * f true + (1 - p) * f false :=
+  Causalean.Mathlib.Probability.bernoulliBool_integral hp0 hp1 f
 
 lemma bernoulliPM_integral {m : ℝ} (hm_lo : -1 ≤ m) (hm_hi : m ≤ 1)
     (f : ℝ → ℝ) :
     ∫ y, f y ∂bernoulliPM m =
       ((1 + m) / 2) * f 1 + ((1 - m) / 2) * f (-1) := by
-  unfold bernoulliPM
-  rw [integral_add_measure]
-  · rw [integral_smul_measure, integral_smul_measure]
-    simp [show 0 ≤ (1 + m) / 2 by linarith,
-      show 0 ≤ (1 - m) / 2 by linarith, smul_eq_mul]
-  · exact Integrable.smul_measure (μ := Measure.dirac (1 : ℝ))
-      (c := ENNReal.ofReal ((1 + m) / 2))
-      (integrable_dirac (f := f) (a := (1 : ℝ)) (by simp [enorm])) (by simp)
-  · exact Integrable.smul_measure (μ := Measure.dirac (-1 : ℝ))
-      (c := ENNReal.ofReal ((1 - m) / 2))
-      (integrable_dirac (f := f) (a := (-1 : ℝ)) (by simp [enorm])) (by simp)
+  simpa using Causalean.Mathlib.Probability.twoPointMean_integral one_pos
+    (abs_le.mpr ⟨hm_lo, hm_hi⟩) f
 
 lemma bernoulliPM_mean {m : ℝ} (hm_lo : -1 ≤ m) (hm_hi : m ≤ 1) :
-    ∫ y, y ∂bernoulliPM m = m := by
-  rw [bernoulliPM_integral hm_lo hm_hi]
-  ring
+    ∫ y, y ∂bernoulliPM m = m :=
+  Causalean.Mathlib.Probability.twoPointMean_mean one_pos (abs_le.mpr ⟨hm_lo, hm_hi⟩)
 
 lemma bernoulliPM_bad_support_zero (m : ℝ) :
-    (bernoulliPM m) {y | y ∉ Set.Icc (-1 : ℝ) 1} = 0 := by
-  unfold bernoulliPM
-  rw [Measure.add_apply, Measure.smul_apply, Measure.smul_apply]
-  simp
+    (bernoulliPM m) {y | y ∉ Set.Icc (-1 : ℝ) 1} = 0 :=
+  Causalean.Mathlib.Probability.twoPointMean_bad_support_zero
+    (ENNReal.ofReal ((1 + m / 1) / 2)) (ENNReal.ofReal ((1 - m / 1) / 2)) (by norm_num)
 
 lemma bernoulliBool_bind {β : Type*} [MeasurableSpace β] (p : ℝ)
     (K : Bool → Measure β) :
     (bernoulliBool p).bind K =
-      ENNReal.ofReal p • K true + ENNReal.ofReal (1 - p) • K false := by
-  ext s hs
-  have hKmeas : AEMeasurable K (bernoulliBool p) :=
-    (measurable_of_finite K).aemeasurable
-  rw [Measure.bind_apply hs hKmeas]
-  unfold bernoulliBool
-  rw [lintegral_add_measure, lintegral_smul_measure, lintegral_smul_measure]
-  simp [Measure.add_apply, Measure.smul_apply, smul_eq_mul]
-
-private lemma integrable_of_measurable_bounded {α : Type*} [MeasurableSpace α]
-    {μ : Measure α} [IsFiniteMeasure μ] {f : α → ℝ}
-    (hfmeas : Measurable f) (hfbdd : ∃ M : ℝ, ∀ x, |f x| ≤ M) :
-    Integrable f μ := by
-  rcases hfbdd with ⟨M, hM⟩
-  refine Integrable.of_bound hfmeas.aestronglyMeasurable (max M 0) ?_
-  exact Filter.Eventually.of_forall fun x => by
-    simpa [Real.norm_eq_abs] using le_trans (hM x) (le_max_left M 0)
+      ENNReal.ofReal p • K true + ENNReal.ofReal (1 - p) • K false :=
+  Causalean.Mathlib.Probability.bernoulliBool_bind p K
 
 private lemma measurable_observation_X : Measurable (fun O : Observation ℝ => O.X) := by
   have htuple : Measurable (fun O : Observation ℝ => (O.X, O.A, O.Y)) :=
@@ -203,10 +157,11 @@ lemma measurable_map_observation_bernoulliPM (a : Bool) (m : ℝ) :
         ENNReal.ofReal ((1 + m) / 2) • Measure.dirac (Observation.mk x a (1 : ℝ)) +
           ENNReal.ofReal ((1 - m) / 2) • Measure.dirac (Observation.mk x a (-1 : ℝ)) by
     funext x
-    unfold bernoulliPM
+    unfold bernoulliPM twoPointMean
     rw [Measure.map_add _ _ (measurable_observation_mk x a)]
     rw [Measure.map_smul, Measure.map_smul]
-    rw [Measure.map_dirac, Measure.map_dirac]]
+    rw [Measure.map_dirac, Measure.map_dirac]
+    norm_num]
   have hdir1 : Measurable fun x : ℝ => Measure.dirac (Observation.mk x a (1 : ℝ)) :=
     Measure.measurable_dirac.comp (measurable_observation_mk_X a 1)
   have hdirNeg : Measurable fun x : ℝ => Measure.dirac (Observation.mk x a (-1 : ℝ)) :=
@@ -893,7 +848,7 @@ lemma twoPointWitness_wellFormed (α γ u0 cB σ : ℝ) {n : ℕ}
       (κ₂ := outcome)
       (g := fun x a y => Observation.mk x a y)
       (π := fun O : Observation ℝ => O.X)
-      hκ1 hp1 hκ2 hp2 hg hmap hker measurable_observation_X
+      hp1 hp2 hg hmap hker measurable_observation_X
       (by intro x a y; rfl)
     simpa [data] using hmap_eq
   have hmu1_abs : ∀ x, |mu1 x| ≤ 1 := by
@@ -991,7 +946,7 @@ lemma twoPointWitness_wellFormed (α γ u0 cB σ : ℝ) {n : ℕ}
     have hcollapse := Causalean.Mathlib.MeasureTheory.integral_bind_bind_map
       (m := m) (κ₁ := fun x : ℝ => bernoulliBool (prop x)) (κ₂ := outcome)
       (g := fun x a y => Observation.mk x a y) (f := f)
-      hκ1 hκ2 hg hmap hker hf hf₂ hf'
+      hg hmap hker hf
     calc
       ∫ O, boolIndicator O.A * φ O.X ∂(twoPointWitness α γ u0 cB n σ).dataMeasure
           = ∫ O, f O ∂data := by
@@ -1089,7 +1044,7 @@ lemma twoPointWitness_wellFormed (α γ u0 cB σ : ℝ) {n : ℕ}
     have hcollapse := Causalean.Mathlib.MeasureTheory.integral_bind_bind_map
       (m := m) (κ₁ := fun x : ℝ => bernoulliBool (prop x)) (κ₂ := outcome)
       (g := fun x a y => Observation.mk x a y) (f := f)
-      hκ1 hκ2 hg hmap hker hf hf₂ hf'
+      hg hmap hker hf
     calc
       ∫ O, boolIndicator O.A * O.Y * φ O.X
           ∂(twoPointWitness α γ u0 cB n σ).dataMeasure
@@ -1194,7 +1149,7 @@ lemma twoPointWitness_wellFormed (α γ u0 cB σ : ℝ) {n : ℕ}
     have hcollapse := Causalean.Mathlib.MeasureTheory.integral_bind_bind_map
       (m := m) (κ₁ := fun x : ℝ => bernoulliBool (prop x)) (κ₂ := outcome)
       (g := fun x a y => Observation.mk x a y) (f := f)
-      hκ1 hκ2 hg hmap hker hf hf₂ hf'
+      hg hmap hker hf
     calc
       ∫ O, (1 - boolIndicator O.A) * O.Y * φ O.X
           ∂(twoPointWitness α γ u0 cB n σ).dataMeasure
@@ -1704,7 +1659,7 @@ lemma twoPointWitness_one_draw_chiSq_bound (α γ u0 cB : ℝ)
     repeat rw [Measure.map_apply (measurable_observation_mk x true)]
     repeat rw [Measure.map_apply (measurable_observation_mk x false)]
     · by_cases hxB : x ∈ B <;>
-        simp [prop, outcomeP, outcomeM, s0, s1, s2, hxB, bernoulliPM]
+        simp [prop, outcomeP, outcomeM, s0, s1, s2, hxB, bernoulliPM, twoPointMean]
     all_goals exact ht.inter hs0
   have hinner1P : ∀ x (t : Set (Observation ℝ)), MeasurableSet t →
       ((bernoulliBool (prop x)).bind fun a => (outcomeP x a).map (Observation.mk x a))
@@ -1718,10 +1673,10 @@ lemma twoPointWitness_one_draw_chiSq_bound (α γ u0 cB : ℝ)
     rw [Measure.map_apply (measurable_observation_mk x false)]
     · by_cases hxB : x ∈ B
       · by_cases hxt : Observation.mk x true (1 : ℝ) ∈ t
-        · simp [prop, outcomeP, s1, hxB, hxt, bernoulliPM,
+        · simp [prop, outcomeP, s1, hxB, hxt, bernoulliPM, twoPointMean,
               Pi.single_eq_of_ne (show (-1 : ℝ) ≠ 1 by norm_num)]
-        · simp [prop, outcomeP, s1, hxB, hxt, bernoulliPM]
-      · simp [prop, outcomeP, s1, hxB, bernoulliPM]
+        · simp [prop, outcomeP, s1, hxB, hxt, bernoulliPM, twoPointMean]
+      · simp [prop, outcomeP, s1, hxB, bernoulliPM, twoPointMean]
     all_goals exact ht.inter hs1
   have hinner1M : ∀ x (t : Set (Observation ℝ)), MeasurableSet t →
       ((bernoulliBool (prop x)).bind fun a => (outcomeM x a).map (Observation.mk x a))
@@ -1735,11 +1690,11 @@ lemma twoPointWitness_one_draw_chiSq_bound (α γ u0 cB : ℝ)
     rw [Measure.map_apply (measurable_observation_mk x false)]
     · by_cases hxB : x ∈ B
       · by_cases hxt : Observation.mk x true (1 : ℝ) ∈ t
-        · simp [prop, outcomeM, s1, hxB, hxt, bernoulliPM,
+        · simp [prop, outcomeM, s1, hxB, hxt, bernoulliPM, twoPointMean,
               Pi.single_eq_of_ne (show (-1 : ℝ) ≠ 1 by norm_num),
             show (1 + -h) / 2 = (1 - h) / 2 by ring]
-        · simp [prop, outcomeM, s1, hxB, hxt, bernoulliPM]
-      · simp [prop, outcomeM, s1, hxB, bernoulliPM]
+        · simp [prop, outcomeM, s1, hxB, hxt, bernoulliPM, twoPointMean]
+      · simp [prop, outcomeM, s1, hxB, bernoulliPM, twoPointMean]
     all_goals exact ht.inter hs1
   have hinner2P : ∀ x (t : Set (Observation ℝ)), MeasurableSet t →
       ((bernoulliBool (prop x)).bind fun a => (outcomeP x a).map (Observation.mk x a))
@@ -1753,10 +1708,10 @@ lemma twoPointWitness_one_draw_chiSq_bound (α γ u0 cB : ℝ)
     rw [Measure.map_apply (measurable_observation_mk x false)]
     · by_cases hxB : x ∈ B
       · by_cases hxt : Observation.mk x true (-1 : ℝ) ∈ t
-        · simp [prop, outcomeP, s2, hxB, hxt, bernoulliPM,
+        · simp [prop, outcomeP, s2, hxB, hxt, bernoulliPM, twoPointMean,
               Pi.single_eq_of_ne (show (1 : ℝ) ≠ -1 by norm_num)]
-        · simp [prop, outcomeP, s2, hxB, hxt, bernoulliPM]
-      · simp [prop, outcomeP, s2, hxB, bernoulliPM]
+        · simp [prop, outcomeP, s2, hxB, hxt, bernoulliPM, twoPointMean]
+      · simp [prop, outcomeP, s2, hxB, bernoulliPM, twoPointMean]
     all_goals exact ht.inter hs2
   have hinner2M : ∀ x (t : Set (Observation ℝ)), MeasurableSet t →
       ((bernoulliBool (prop x)).bind fun a => (outcomeM x a).map (Observation.mk x a))
@@ -1770,11 +1725,11 @@ lemma twoPointWitness_one_draw_chiSq_bound (α γ u0 cB : ℝ)
     rw [Measure.map_apply (measurable_observation_mk x false)]
     · by_cases hxB : x ∈ B
       · by_cases hxt : Observation.mk x true (-1 : ℝ) ∈ t
-        · simp [prop, outcomeM, s2, hxB, hxt, bernoulliPM,
+        · simp [prop, outcomeM, s2, hxB, hxt, bernoulliPM, twoPointMean,
               Pi.single_eq_of_ne (show (1 : ℝ) ≠ -1 by norm_num),
             show (1 + -h) / 2 = (1 - h) / 2 by ring]
-        · simp [prop, outcomeM, s2, hxB, hxt, bernoulliPM]
-      · simp [prop, outcomeM, s2, hxB, bernoulliPM]
+        · simp [prop, outcomeM, s2, hxB, hxt, bernoulliPM, twoPointMean]
+      · simp [prop, outcomeM, s2, hxB, bernoulliPM, twoPointMean]
     all_goals exact ht.inter hs2
   have hratio1 : ∀ I : ENNReal,
       ENNReal.ofReal q * ENNReal.ofReal ((1 + h) / 2) * I =
@@ -1943,31 +1898,23 @@ lemma twoPointWitness_one_draw_chiSq_bound (α γ u0 cB : ℝ)
     simpa [Pm] using hwf.1
   letI : IsProbabilityMeasure Pp := hprobPp
   letI : IsProbabilityMeasure Pm := hprobPm
-  have hc_nonneg : ∀ i : Fin 3,
-      0 ≤ (if i = 0 then (1 : ℝ)
-           else if i = 1 then (1 + h) / (1 - h)
-           else (1 - h) / (1 + h)) := by
-    have hp : 0 ≤ 1 + h := by linarith
-    have hm : 0 ≤ 1 - h := by linarith
-    intro i
-    fin_cases i <;> simp [div_nonneg, hp, hm]
   have hac : Pp ≪ Pm :=
     Causalean.Mathlib.MeasureTheory.partition_restrict_absolutelyContinuous
       Pp Pm s
-      (fun i : Fin 3 =>
-        if i = 0 then (1 : ℝ)
-        else if i = 1 then (1 + h) / (1 - h)
-        else (1 - h) / (1 + h))
-      hs hdisj hcover hc_nonneg hrestrict
+      (fun i : Fin 3 => ENNReal.ofReal
+        (if i = 0 then (1 : ℝ)
+         else if i = 1 then (1 + h) / (1 - h)
+         else (1 - h) / (1 + h)))
+      hs hdisj hcover hrestrict
   have hint :
       Integrable (fun x => ((Pp.rnDeriv Pm x).toReal - 1) ^ (2 : ℕ)) Pm :=
-    Causalean.Mathlib.MeasureTheory.partition_restrict_integrable_sq_rnDeriv
+    Causalean.Mathlib.MeasureTheory.partition_restrict_integrable_pow_rnDeriv
       Pp Pm s
-      (fun i : Fin 3 =>
-        if i = 0 then (1 : ℝ)
-        else if i = 1 then (1 + h) / (1 - h)
-        else (1 - h) / (1 + h))
-      hs hdisj hcover hc_nonneg hrestrict
+      (fun i : Fin 3 => ENNReal.ofReal
+        (if i = 0 then (1 : ℝ)
+         else if i = 1 then (1 + h) / (1 - h)
+         else (1 - h) / (1 + h))) 2
+      hs hdisj hcover hrestrict
   have hchi_partition :
       Causalean.Stat.chiSqDiv Pp Pm ≤
         8 * (cB * h ^ α) * q * h ^ (2 : ℕ) :=

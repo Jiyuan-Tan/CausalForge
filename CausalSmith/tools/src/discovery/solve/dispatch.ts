@@ -6,7 +6,7 @@
 // stage0_solve.ts in the T1 carve. Capability projection and conflict
 // resolution over the raw outputs happen in solve/merge.ts.
 import { existsSync } from "node:fs";
-import { mkdir, readFile, rm } from "node:fs/promises";
+import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { MODEL_PLAN } from "../../constants.js";
 import { artifactPath } from "../../paths.js";
@@ -16,6 +16,7 @@ import type { Core, CoreStatement } from "../core/schema.js";
 import { healStatementId } from "../core/node_ids.js";
 import {
   assertNoDecodedControlChars,
+  assertSealableLatexPayload,
   normalizeRawModelJson,
   repairLatexStringsDeep,
 } from "../core/latex_serialization.js";
@@ -30,6 +31,22 @@ import {
   selectSemanticTargetOwners,
 } from "./ownership.js";
 import { openSolveTarget, type SolveRoundContext } from "./context.js";
+import { stampRevision } from "../core/revision.js";
+import { companionPathFor, sliceTexCompanion, resolveTexRefs } from "./tex_companion.js";
+import type { RawCoreEdit } from "../stages/d0_apply.js";
+import {
+  projectFrozenCore,
+  serializeFrozenCoreSnapshot,
+} from "./context_projection.js";
+
+/** A worker's explicit "the target is not provable" refusal — a mathematical
+ * signal that must surface unchanged, never a mechanical-retry candidate. */
+class SolveUnitMathFailure extends Error {}
+
+/** The completed worker's OUTPUT failed the mechanical reader (garbled stdout
+ * receipt, missing/invalid/unsealable output file). The only retryable class:
+ * infrastructure failures (timeout, spawn) propagate unchanged. */
+class SolveUnitMechanicalReadError extends Error {}
 
 /** Per-unit output JSON path ('thm:x' → 'thm_x', 'props' → 'props'). */
 function unitOutPath(ctx: PipelineContext, label: string): string {
@@ -45,25 +62,29 @@ export function repairSolveUnitLatexSerialization(value: unknown): void {
   repairLatexStringsDeep(value);
 }
 
-/** Read-only frozen-core context block shared by every solver unit. */
-function frozenContextBlock(core: Core): string {
-  return JSON.stringify(
-    {
-      symbols: core.symbols,
-      assumptions: core.assumptions,
-      definitions: core.definitions,
-      target_estimand: core.target_estimand,
-      estimand_functional: core.estimand_functional,
-      statements: core.statements.map((s) => ({
-        id: s.id,
-        kind: s.kind,
-        statement: s.statement,
-        depends_on: s.depends_on,
-      })),
-    },
-    null,
-    2,
-  );
+async function publishFrozenCoreSnapshot(
+  ctx: PipelineContext,
+  core: Core,
+): Promise<{ path: string; bytes: string; sha256: string }> {
+  const serialized = serializeFrozenCoreSnapshot(core);
+  const dir = path.join(path.dirname(unitOutPath(ctx, "snapshot")), "solve_context");
+  const snapshotPath = path.join(dir, `core-${serialized.sha256}.json`);
+  await mkdir(dir, { recursive: true });
+  if (existsSync(snapshotPath)) {
+    const existing = await readFile(snapshotPath, "utf8");
+    if (existing !== serialized.bytes) {
+      throw new Error(`D0 frozen-core snapshot hash collision/corruption at ${snapshotPath}`);
+    }
+  } else {
+    const staged = `${snapshotPath}.tmp-${process.pid}-${Date.now()}`;
+    try {
+      await writeFile(staged, serialized.bytes, "utf8");
+      await rename(staged, snapshotPath);
+    } finally {
+      await rm(staged, { force: true });
+    }
+  }
+  return { path: snapshotPath, ...serialized };
 }
 
 /** When F3 bounced a node back to D0 with a refuting witness (`flags.redo_math_witness`), surface it
@@ -105,12 +126,22 @@ async function solveUnit(args: {
    * proof helpers. */
   directiveEmissionRole: "owner" | "local" | "none";
   requiredCoreTargets: string[];
+  requiredCoreEdits: RawCoreEdit[];
   ownedSemanticTargets: string[];
   siblingSemanticTargets: Array<{ id: string; owner: string }>;
+  /** Cross-cutting/prose owners need the complete formal view inline. Ordinary
+   * units receive a deterministic target neighborhood and inspect the immutable
+   * snapshot only when the omission manifest shows relevant extra context. */
+  fullCoreContext: boolean;
+  coreSnapshotPath: string;
+  coreSnapshotSha256: string;
 }): Promise<SolveUnitOutput> {
   const { ctx, targets, label } = args;
   const outPath = unitOutPath(ctx, label);
   await mkdir(path.dirname(outPath), { recursive: true });
+  // The companion dir (discovery/solve_tex/) must exist before the worker
+  // tries to write its raw-TeX file into it.
+  await mkdir(path.dirname(companionPathFor(outPath)), { recursive: true });
   // Output paths are stable across D0 rounds. Remove the prior invocation's
   // artifact before dispatch so a worker that reports completion but fails to
   // write cannot be credited with stale proofs/proposals from an earlier round.
@@ -118,14 +149,43 @@ async function solveUnit(args: {
   // the ONLY copy of what that dispatch paid for. Bytes that DID reach the working
   // cursor are filtered out — they are hot, not displaced, and a false archive row
   // would later suppress the record of a real displacement (dedup is (bytes, node)).
-  if (existsSync(outPath)) {
-    const hot = hotProofBytes(await loadWorkingState(ctx));
-    const stale = proofBytesInRoundFile(path.basename(outPath), await readFile(outPath, "utf8"), "stale-dispatch-cleared")
-      .filter((p) => !hot.get(p.nodeId)?.has(p.proofTex));
-    if (stale.length > 0) await archiveProofs(path.dirname(outPath), stale);
-  }
-  await rm(outPath, { force: true });
+  // The mechanical retry below runs the same sweep so attempt 1's bytes are
+  // archived (not silently overwritten) and its stale companion cannot trip
+  // attempt 2's strict unused-blocks reader check.
+  const archiveAndClearRoundFiles = async (reason: string): Promise<void> => {
+    const companionPath = companionPathFor(outPath);
+    const companionText = existsSync(companionPath) ? await readFile(companionPath, "utf8") : undefined;
+    if (existsSync(outPath)) {
+      const hot = hotProofBytes(await loadWorkingState(ctx));
+      const stale = proofBytesInRoundFile(
+        path.basename(outPath),
+        await readFile(outPath, "utf8"),
+        reason,
+        companionText,
+      ).filter((p) => !hot.get(p.nodeId)?.has(p.proofTex));
+      if (stale.length > 0) await archiveProofs(path.dirname(outPath), stale);
+    } else if (companionText !== undefined && companionText.trim().length > 0) {
+      // ORPHANED companion (audit P23F5): the worker wrote its TeX and crashed
+      // before the JSON. These bytes exist nowhere else — archive them as a
+      // blob before the sweep deletes the file.
+      await archiveProofs(path.dirname(outPath), [{
+        nodeId: `file:${path.basename(companionPath)}`,
+        proofTex: companionText,
+        reason: `${reason}-orphan`,
+      }]);
+    }
+    await rm(outPath, { force: true });
+    // A stale companion from a prior round must never resolve into this round's
+    // fresh output (Phase 3) — its bytes were archived above.
+    await rm(companionPath, { force: true });
+  };
+  await archiveAndClearRoundFiles("stale-dispatch-cleared");
 
+  const projectedCore = projectFrozenCore(
+    args.core,
+    new Set(args.targets.map((target) => target.id)),
+    args.fullCoreContext,
+  );
   const prompt = [
     await readPrompt(ctx, "stage0_common_discovery.txt"),
     "",
@@ -136,8 +196,18 @@ async function solveUnit(args: {
     discoveryBrief(ctx, args.state),
     ...(redoMathWitnessBlock(args.state) ? ["", redoMathWitnessBlock(args.state)] : []),
     "",
-    "=== FROZEN CORE (read-only context) ===",
-    frozenContextBlock(args.core),
+    args.fullCoreContext
+      ? "=== FROZEN CORE (complete formal view; read-only context) ==="
+      : "=== FROZEN CORE TARGET NEIGHBORHOOD (read-only inline context) ===",
+    JSON.stringify(projectedCore.inline, null, 2),
+    "",
+    "=== FROZEN CORE SNAPSHOT + OMISSION MANIFEST ===",
+    `CORE_SNAPSHOT_PATH: ${args.coreSnapshotPath}`,
+    `CORE_SNAPSHOT_SHA256: ${args.coreSnapshotSha256}`,
+    JSON.stringify(projectedCore.manifest, null, 2),
+    args.fullCoreContext
+      ? "The complete formal view is inline. The immutable snapshot additionally carries prose, sources, bibliography, and proof bytes; inspect it only if those fields are needed."
+      : "The inline view contains your targets, their transitive statement dependencies, and referenced catalog/symbol closure. The manifest names every omitted node with revisions and separately lists affected downstream statement ids. If an omitted id becomes relevant to a proof, consistency check, or proposed edit, inspect that id selectively in CORE_SNAPSHOT_PATH (for example with jq or rg); inspect affected downstream nodes before changing a claim or dependency they consume. Do not scan the snapshot by default and NEVER edit it.",
     ...(args.priorContext && args.priorContext.trim().length > 0 ? ["", args.priorContext] : []),
     ...(args.proseRole === "owner" ? [
       "",
@@ -179,17 +249,7 @@ async function solveUnit(args: {
       "If your proof uses a shared comparator/symbol/definition, cite or add that exact id to `depends_on` and",
       "let the canonical owner emit it. You may still emit genuinely local non-cited proof helpers and a",
       "statement change/edit for one of YOUR exact target ids. Do not duplicate the shared payload.",
-      // This block OVERRIDES the base prompt's CROSS-TARGET SHARED HELPERS rule, which
-      // told every unit to emit a shared helper "rather than assume the other target/unit
-      // proves it" and promised duplicates are deduped. Both halves misled: dedup is
-      // content-keyed, so two units wording the same lemma differently is a CONFLICT that
-      // aborts the round. Units followed the more emphatic base rule and collided —
-      // the comparator lemma, sym:\bar d and the metadata rebuild all fit this shape.
-      "THIS OVERRIDES the base prompt's instruction to emit a shared helper rather than assume another unit",
-      "proves it: for the ids above, citing is CORRECT and emitting is not. Every unit's output is merged",
-      "into one core before validation, so a citation to an id the owner emits resolves there. Emitting it",
-      "anyway is not a harmless duplicate — payloads are compared by CONTENT, and the same lemma in different",
-      "words is a CONFLICT that aborts the round and discards every unit's work.",
+      "The canonical owner's output is merged before validation, so cite its ids; do not emit competing payloads.",
       `Statement target ids semantically owned by YOUR unit: ${args.ownedSemanticTargets.join(", ") || "(none)"}.`,
       "Every proof, replacement, `proposed_statement_changes` item, or statement-target core edit for a",
       "sibling-owned id is forbidden. You may only depend on these sibling-owned ids:",
@@ -197,36 +257,101 @@ async function solveUnit(args: {
         ? args.siblingSemanticTargets.map(({ id, owner }) => `- ${id} -> semantic owner ${owner}`)
         : ["- (no sibling-owned statement targets)"]),
     ] : []),
+    ...(args.requiredCoreEdits.length > 0 ? [
+      "",
+      "=== ORCHESTRATOR-SUPPLIED EXACT CORE EDITS (already in the atomic bundle) ===",
+      JSON.stringify(args.requiredCoreEdits, null, 2),
+      "These typed operations are already supplied by the orchestrator. Do NOT re-emit them.",
+      "Do NOT prove, replace, reopen, or add a node named by a supplied statement-delete.",
+      "Solve only the surviving targets and any dependency cleanup requested by the directive.",
+    ] : []),
     "",
     `=== TARGET STATEMENT(S) TO SOLVE (unit: ${label}) ===`,
-    JSON.stringify(targets, null, 2),
+    JSON.stringify(targets.map((t) => stampRevision(t)), null, 2),
     "",
     `SOLVE_OUTPUT_PATH: ${outPath}`,
+    `SOLVE_COMPANION_PATH: ${companionPathFor(outPath)}`,
+    "=== MANDATORY MECHANICAL SELF-CHECK (same call; no mathematical rewrite) ===",
+    `Run: cd ${JSON.stringify(ctx.repoRoot)} && npx --prefix tools tsx tools/src/discovery/solve/validate_output.ts ${JSON.stringify(outPath)}`,
+    "If it fails, correct only the reported serialization/schema field and rerun it until PASS before stdout.",
     'Return only JSON on stdout: {"status":"completed","message":"...","artifacts":["<solve.json>"]}.',
   ].join("\n");
 
-  const out = await dispatchAgent({
-    ctx,
-    deps: args.deps,
-    stage: "0",
-    label: `D0-SOLVE unit ${label}`,
-    prompt,
-    promptSources: ["prompts/D0/stage0_solve.txt", `unit:${label}`],
-    model: MODEL_PLAN.stage0_solve.model,
-    reasoningEffort: MODEL_PLAN.stage0_solve.effort,
-    inactivityTimeoutMs: 30 * 60 * 1000,
-  });
-  const parsed = parseStageOutput(out.stdout);
-  if (parsed.status === "parse_failed") {
-    // AUDIT-A: fail closed on unparseable stage output; why: D0 solve must not advance on garbage.
-    throw new Error(`Stage 0-SOLVE: worker output for unit ${label} did not parse (parse_failed) - refusing to advance on unparseable output`);
-  }
-  if (parsed.status === "failed") {
-    throw new Error(
-      `Stage 0-SOLVE failed on unit ${label}: ${parsed.message ?? "(no message)"} — ` +
-        `the target is not provable from its declared dependencies; fix the core, do not launder.`,
+  const attemptUnit = async (mechanicalNote: string | null): Promise<SolveUnitOutput> => {
+    const out = await dispatchAgent({
+      ctx,
+      deps: args.deps,
+      stage: "0",
+      label: `D0-SOLVE unit ${label}${mechanicalNote === null ? "" : " (mechanical retry)"}`,
+      prompt: mechanicalNote === null
+        ? prompt
+        : [prompt, "", "=== MECHANICAL RETRY — READER ERROR FROM YOUR PREVIOUS RUN ===", mechanicalNote].join("\n"),
+      promptSources: ["prompts/D0/stage0_solve.txt", `unit:${label}`],
+      model: MODEL_PLAN.stage0_solve.model,
+      reasoningEffort: MODEL_PLAN.stage0_solve.effort,
+      inactivityTimeoutMs: 30 * 60 * 1000,
+    });
+    const parsed = parseStageOutput(out.stdout);
+    if (parsed.status === "parse_failed") {
+      // AUDIT-A: fail closed on unparseable stage output; why: D0 solve must not advance on garbage.
+      throw new SolveUnitMechanicalReadError(`Stage 0-SOLVE: worker output for unit ${label} did not parse (parse_failed) - refusing to advance on unparseable output`);
+    }
+    if (parsed.status === "failed") {
+      throw new SolveUnitMathFailure(
+        `Stage 0-SOLVE failed on unit ${label}: ${parsed.message ?? "(no message)"} — ` +
+          `the target is not provable from its declared dependencies; fix the core, do not launder.`,
+      );
+    }
+    try {
+      return await readSolveUnitOutput(outPath, label);
+    } catch (err) {
+      throw new SolveUnitMechanicalReadError(err instanceof Error ? err.message : String(err));
+    }
+  };
+  let output: SolveUnitOutput;
+  try {
+    output = await attemptUnit(null);
+  } catch (err) {
+    // Only a completed worker's unreadable OUTPUT is retried, and only once: a
+    // per-unit serialization slip must not discard every sibling unit's paid
+    // work. Mathematical refusals and infrastructure failures (timeout, spawn)
+    // propagate unchanged — a retry note claiming a "reader error" would send
+    // the fresh worker hunting a nonexistent serialization defect.
+    if (!(err instanceof SolveUnitMechanicalReadError)) throw err;
+    console.warn(`[D0-SOLVE] unit ${label} failed the mechanical output reader; retrying this unit once: ${err.message}`);
+    // Archive attempt 1's bytes and clear its files: the retry must not
+    // silently overwrite the only copy of what that dispatch paid for, and a
+    // stale companion must not trip attempt 2's strict unused-blocks check.
+    await archiveAndClearRoundFiles("mechanical-retry-cleared");
+    output = await attemptUnit(
+      "Your previous run's output failed the mechanical reader below. Fix ONLY the reported " +
+        "serialization/schema defect and rewrite SOLVE_OUTPUT_PATH (and its companion if used); do not " +
+        `re-derive or change any mathematical content.\n${err.message}`,
     );
   }
+  // Phase 3 ingest: content-address every companion block into the proof archive
+  // at the moment it enters the pipeline — the companion is a raw round file the
+  // next dispatch overwrites, so this is the earliest durable copy. (Read paths
+  // like replay never archive; only the live dispatch does.)
+  {
+    const companionPath = companionPathFor(outPath);
+    if (existsSync(companionPath)) {
+      const blocks = sliceTexCompanion(await readFile(companionPath, "utf8"), companionPath);
+      if (blocks.size > 0) {
+        await archiveProofs(
+          path.dirname(outPath),
+          [...blocks.entries()].map(([ref, tex]) => ({
+            nodeId: `companion:${ref}`,
+            proofTex: tex,
+            reason: `solve-companion/${label}`,
+          })),
+        );
+      }
+    }
+  }
+  return output;
+}
+
 /** Rewrite every statement id a solve unit emitted into the schema's lowercase-kebab
  *  grammar, in place, including the dependency edges and proof ids that reference them.
  *  Mutates `body` before validation; ids already canonical are untouched. */
@@ -306,6 +431,11 @@ function healSolveUnitIds(body: unknown): void {
   );
 }
 
+/** Production ingest for a persisted solve-unit output file: raw-byte normalization →
+ *  JSON.parse → LaTeX repair → control-char assert → id heal → strict schema. This is
+ *  the ONE reader of model-written solve JSON; the replay harness (`bin/replay_packets.ts`)
+ *  calls it over archived real artifacts so replay exercises the exact production path. */
+export async function readSolveUnitOutput(outPath: string, label: string): Promise<SolveUnitOutput> {
   if (!existsSync(outPath)) {
     throw new Error(`Stage 0-SOLVE unit ${label} completed without writing ${outPath}`);
   }
@@ -316,6 +446,31 @@ function healSolveUnitIds(body: unknown): void {
     const body = JSON.parse(normalizeRawModelJson(await readFile(outPath, "utf8")));
     repairSolveUnitLatexSerialization(body);
     assertNoDecodedControlChars(body, `Stage 0-SOLVE unit ${label} output`);
+    // Phase 3 (TeX-out-of-JSON): resolve `{"tex_ref": ...}` fields from the raw
+    // companion file AFTER the JSON-channel defenses above — companion bytes are
+    // never JSON-decoded, so the escaping class cannot occur in them and they
+    // must not be "repaired". Missing/duplicate refs fail loud here, before any
+    // store is touched. Inline strings remain valid indefinitely (no companion,
+    // no refs → no-op). Read-only: archiving the blocks is the DISPATCH flow's
+    // job (`archiveSolveCompanion`), so replay can call this on real files.
+    {
+      const companionPath = companionPathFor(outPath);
+      const blocks = existsSync(companionPath)
+        ? sliceTexCompanion(await readFile(companionPath, "utf8"), companionPath)
+        : new Map<string, string>();
+      const used = resolveTexRefs(body, blocks, companionPath);
+      // UNUSED blocks fail loud too (audit P23F2): a header-lookalike line
+      // inside a block silently TRUNCATES the field and strands the remainder
+      // as an extra block — strictness here converts that silent corruption
+      // into a re-dispatchable error.
+      const unused = [...blocks.keys()].filter((ref) => !used.has(ref));
+      if (unused.length > 0) {
+        throw new Error(
+          `TeX companion ${companionPath} has block(s) no tex_ref cites: ${unused.join(", ")} — ` +
+            "either the JSON forgot a ref or a '%%% FIELD' look-alike line inside a block mis-sliced it",
+        );
+      }
+    }
     // NORMALISE IDS FIRST. The schema's id grammar is lowercase-kebab, and a solver
     // reliably names a helper after a capital-letter symbol (`lem:Ghat-envelope` for an
     // estimator Ĝ). A downstream auto-heal exists for exactly that — but it ran over
@@ -324,8 +479,13 @@ function healSolveUnitIds(body: unknown): void {
     // "invalid solve JSON". Heal at the input boundary so the heal is reachable and a
     // capitalised id costs a rename instead of a round.
     healSolveUnitIds(body);
-    // why: validate solve-unit item shapes at the file boundary before merging.
-    return SolveUnitOutputSchema.parse(body);
+    // Validate solve-unit item shapes and every nested TeX string at the same
+    // boundary. The worker runs this reader before returning, so a mechanical
+    // delimiter/environment defect is repaired inside the paid call instead of
+    // forcing a new full-context D0 round after mathematical adjudication.
+    const parsed = SolveUnitOutputSchema.parse(body);
+    assertSealableLatexPayload(parsed, `Stage 0-SOLVE unit ${label} output`);
+    return parsed;
   } catch (err) {
     throw new Error(`Stage 0-SOLVE unit ${label} wrote invalid solve JSON at ${outPath}: ${err instanceof Error ? err.message : String(err)}`);
   }
@@ -422,9 +582,17 @@ export async function dispatchSolveUnits(args: {
   // One agent per weakly-connected component of the OPEN spec statements. Coupling
   // edges run only through open (still-changeable) statements, so consumers connected
   // ONLY through a now-valid node split into separate groups and parallelize.
+  // Pruned proto orphans are not part of the frontier (audit R2F3): the proto
+  // still defines them, but the durable prune record excludes them from the
+  // paper, so dispatching one as an ordinary open member would re-pay for a
+  // node nothing references and "revive" it. An exact-target directive naming
+  // one was already removed from the list by the context carry.
+  const prunedOrphans = new Set(sctx.next.pruned_proto_orphans ?? []);
   const openById = new Map<string, CoreStatement>();
   for (const statement of [
-    ...proto.statements.filter((m) => !validIds.has(m.id) && !persistedOeqReplacements.has(m.id)),
+    ...proto.statements.filter(
+      (m) => !validIds.has(m.id) && !persistedOeqReplacements.has(m.id) && !prunedOrphans.has(m.id),
+    ),
     ...staleAgentTargets,
   ]) openById.set(statement.id, statement);
   if (hasPendingDirective) {
@@ -538,6 +706,14 @@ export async function dispatchSolveUnits(args: {
     ? null
     : dispatch.findIndex((unit) => unit.label === directiveOwnerLabel);
 
+  if (dispatch.length === 0) {
+    return { dispatch, rawOutputs: [], proseOwnerIndex, directiveOwnerLabel, semanticTargetOwners };
+  }
+
+  // Publish one immutable, content-addressed snapshot before parallel dispatch.
+  // Every unit sees the exact same round even if a prior canonical core.json is
+  // concurrently replaced later at commit.
+  const coreSnapshot = await publishFrozenCoreSnapshot(ctx, core);
   const rawOutputs = await Promise.all(
     dispatch.map((u, i) =>
       solveUnit({
@@ -554,14 +730,25 @@ export async function dispatchSolveUnits(args: {
           ? "none"
           : u.label === directiveOwnerLabel ? "owner" : "local",
         requiredCoreTargets: [...requiredCoreTargets].sort(),
+        requiredCoreEdits: sctx.requiredCoreEdits,
         ownedSemanticTargets: semanticTargetEntries
           .filter(([, owner]) => owner === u.label)
           .map(([id]) => id),
         siblingSemanticTargets: semanticTargetEntries
           .filter(([, owner]) => owner !== u.label)
           .map(([id, owner]) => ({ id, owner })),
+        fullCoreContext:
+          (proseOwnerIndex !== null && i === proseOwnerIndex) ||
+          (directiveOwnerLabel !== null && u.label === directiveOwnerLabel),
+        coreSnapshotPath: coreSnapshot.path,
+        coreSnapshotSha256: coreSnapshot.sha256,
       }),
     ),
   );
+  // The snapshot is a read-only input contract. Detect an accidental worker edit
+  // before accepting any output from the round.
+  if (await readFile(coreSnapshot.path, "utf8") !== coreSnapshot.bytes) {
+    throw new Error(`D0 solver modified immutable frozen-core snapshot ${coreSnapshot.path}`);
+  }
   return { dispatch, rawOutputs, proseOwnerIndex, directiveOwnerLabel, semanticTargetOwners };
 }

@@ -57,17 +57,14 @@ lemma stdNormalCDF_nonneg (x : ℝ) : 0 ≤ stdNormalCDF x := cdf_nonneg _ x
 /-- The standard-normal CDF is at most one at every real point. -/
 lemma stdNormalCDF_le_one (x : ℝ) : stdNormalCDF x ≤ 1 := cdf_le_one _ x
 
-/-- **Symmetry of the standard normal CDF:** `Φ(−t) = 1 − Φ(t)`, from the reflection symmetry
-of the Gaussian law and its atomlessness. -/
-lemma stdNormalCDF_neg (t : ℝ) : stdNormalCDF (-t) = 1 - stdNormalCDF t := by
-  have hreal : ∀ s : ℝ, stdNormalCDF s = (gaussianReal 0 1).real (Set.Iic s) := by
-    intro s; rw [stdNormalCDF_def]; exact cdf_eq_real _ s
-  set μ : Measure ℝ := gaussianReal 0 1 with hμ
-  haveI : NoAtoms μ := noAtoms_gaussianReal (v := 1) one_ne_zero
+/-- The CDF of an atomless probability measure invariant under reflection is symmetric. -/
+lemma cdf_neg_of_map_neg {μ : Measure ℝ} [IsProbabilityMeasure μ] [NoAtoms μ]
+    (hmap : μ.map (fun x : ℝ => -x) = μ) (t : ℝ) : cdf μ (-t) = 1 - cdf μ t := by
+  have hreal : ∀ s : ℝ, cdf μ s = μ.real (Set.Iic s) := by
+    intro s; exact cdf_eq_real _ s
   -- Reflection symmetry of the law: `Φ(-t) = μ.real (Ici t)`.
-  have hmap : μ.map (fun x => -x) = μ := by rw [hμ, gaussianReal_map_neg, neg_zero]
   have hpre : (fun x : ℝ => -x) ⁻¹' Set.Iic (-t) = Set.Ici t := by ext x; simp
-  have step1 : stdNormalCDF (-t) = μ.real (Set.Ici t) := by
+  have step1 : cdf μ (-t) = μ.real (Set.Ici t) := by
     rw [hreal (-t)]
     conv_lhs => rw [← hmap]
     rw [MeasureTheory.map_measureReal_apply measurable_neg measurableSet_Iic, hpre]
@@ -75,17 +72,24 @@ lemma stdNormalCDF_neg (t : ℝ) : stdNormalCDF (-t) = 1 - stdNormalCDF t := by
     MeasureTheory.measureReal_congr MeasureTheory.Iio_ae_eq_Iic, MeasureTheory.probReal_univ,
     hreal t]
 
+/-- **Symmetry of the standard normal CDF:** `Φ(−t) = 1 − Φ(t)`, from the reflection symmetry
+of the Gaussian law and its atomlessness. -/
+lemma stdNormalCDF_neg (t : ℝ) : stdNormalCDF (-t) = 1 - stdNormalCDF t := by
+  have hmap : (gaussianReal 0 1).map (fun x : ℝ => -x) = gaussianReal 0 1 := by
+    rw [gaussianReal_map_neg, neg_zero]
+  haveI : NoAtoms (gaussianReal 0 1) := noAtoms_gaussianReal (v := 1) one_ne_zero
+  exact cdf_neg_of_map_neg hmap t
+
 /-- `Φ → 0` at `-∞`. -/
 lemma stdNormalCDF_tendsto_atBot : Tendsto stdNormalCDF atBot (𝓝 0) := tendsto_cdf_atBot _
 
 /-- `Φ → 1` at `+∞`. -/
 lemma stdNormalCDF_tendsto_atTop : Tendsto stdNormalCDF atTop (𝓝 1) := tendsto_cdf_atTop _
 
-/-- `Φ` is continuous: the standard normal has no atoms. -/
-lemma stdNormalCDF_continuous : Continuous stdNormalCDF := by
-  haveI : NoAtoms (gaussianReal 0 1) := noAtoms_gaussianReal (v := 1) one_ne_zero
-  set f := cdf (gaussianReal 0 1) with hf
-  rw [show stdNormalCDF = f from by ext x; simp [stdNormalCDF, hf]]
+/-- The CDF of an atomless real probability measure is continuous. -/
+lemma cdf_continuous_of_noAtoms (μ : Measure ℝ) [IsProbabilityMeasure μ] [NoAtoms μ] :
+    Continuous (cdf μ) := by
+  set f := cdf μ with hf
   refine continuous_iff_continuousAt.2 fun x => ?_
   refine (f.mono.continuousAt_iff_leftLim_eq_rightLim).2 ?_
   rw [f.rightLim_eq x]
@@ -98,6 +102,11 @@ lemma stdNormalCDF_continuous : Continuous stdNormalCDF := by
   have hle : Function.leftLim (f : ℝ → ℝ) x ≤ f x :=
     f.mono.leftLim_le (le_refl x)
   linarith [hjump, hle]
+
+/-- `Φ` is continuous: the standard normal has no atoms. -/
+lemma stdNormalCDF_continuous : Continuous stdNormalCDF := by
+  haveI : NoAtoms (gaussianReal 0 1) := noAtoms_gaussianReal (v := 1) one_ne_zero
+  simpa only [stdNormalCDF_def] using cdf_continuous_of_noAtoms (gaussianReal 0 1)
 
 /-- `Φ` is strictly monotone: the standard normal has full support. -/
 lemma stdNormalCDF_strictMono : StrictMono stdNormalCDF := by

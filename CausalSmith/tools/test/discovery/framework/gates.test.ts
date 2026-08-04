@@ -1,10 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { registerGate, allGates, runGates, _resetRegistryForTests } from "../../../src/discovery/framework/gates.js";
+import { defineGate, runGates } from "../../../src/discovery/framework/gates.js";
 
-describe("gate registry", () => {
-  it("registers a gate, lists it, and enforces unique ids", () => {
-    _resetRegistryForTests();
-    const g = registerGate({
+describe("explicit gates", () => {
+  it("defines an immutable gate with evidence", () => {
+    const g = defineGate({
       id: "demo-nonempty",
       tier: "hard",
       stages: ["0"],
@@ -12,20 +11,19 @@ describe("gate registry", () => {
       check: (input: { items: string[] }) =>
         input.items.length === 0 ? [{ gateId: "demo-nonempty", detail: "no items" }] : [],
     });
-    expect(allGates().map((x) => x.id)).toContain("demo-nonempty");
-    expect(() => registerGate({ ...g })).toThrow(/duplicate gate id/i);
+    expect(g.id).toBe("demo-nonempty");
+    expect(Object.isFrozen(g)).toBe(true);
   });
 
   it("runGates partitions violations by tier and tags each with its gate id", () => {
-    _resetRegistryForTests();
-    const hard = registerGate({
+    const hard = defineGate({
       id: "h",
       tier: "hard",
       stages: ["0"],
       evidence: "e",
       check: (_: { x: number }) => [{ gateId: "h", detail: "boom" }],
     });
-    const warn = registerGate({
+    const warn = defineGate({
       id: "w",
       tier: "warn",
       stages: ["0"],
@@ -38,9 +36,8 @@ describe("gate registry", () => {
   });
 
   it("rejects registration with empty evidence — every gate must cite its incident", () => {
-    _resetRegistryForTests();
     expect(() =>
-      registerGate({ id: "no-evidence", tier: "warn", stages: ["0"], evidence: "  ", check: () => [] }),
+      defineGate({ id: "no-evidence", tier: "warn", stages: ["0"], evidence: "  ", check: () => [] }),
     ).toThrow(/evidence/i);
   });
 });

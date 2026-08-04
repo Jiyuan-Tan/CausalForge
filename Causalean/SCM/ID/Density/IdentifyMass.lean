@@ -111,24 +111,24 @@ namespace SCM
 /-- Marginalize a full-observed mass function by summing over the coordinates
 in `W` and overriding those coordinates in the evaluation point. -/
 noncomputable def marginalizeOn [∀ n, Fintype (Ω n)]
-    (M : Causalean.SCM N Ω) (W : Finset (SWIGNode N)) (hW : W ⊆ M.observed)
-    (q : ValuesOn M.observed (swigΩ Ω) → ENNReal) :
-    ValuesOn M.observed (swigΩ Ω) → ENNReal :=
-  fun x => ∑ y : ValuesOn W (swigΩ Ω), q (overrideOn hW x y)
+    (O W : Finset (SWIGNode N)) (hW : W ⊆ O)
+    (q : ValuesOn O (swigΩ Ω) → ENNReal) :
+    ValuesOn O (swigΩ Ω) → ENNReal :=
+  fun x => ∑ y : ValuesOn W (swigΩ Ω), q (overrideOn x y)
 
 /-- Extract the district factor for `C'` from a mass function on `A` by
 multiplying adjacent prefix marginal ratios along the topological order of
 `G'`. -/
 noncomputable def extractDistrict [∀ n, Fintype (Ω n)]
-    (M : Causalean.SCM N Ω) (G' : SWIGGraph N)
-    (A C' : Finset (SWIGNode N)) (hA : A ⊆ M.observed)
-    (q : ValuesOn M.observed (swigΩ Ω) → ENNReal) :
-    ValuesOn M.observed (swigΩ Ω) → ENNReal :=
+    (O : Finset (SWIGNode N)) (G' : SWIGGraph N)
+    (A C' : Finset (SWIGNode N)) (hA : A ⊆ O)
+    (q : ValuesOn O (swigΩ Ω) → ENNReal) :
+    ValuesOn O (swigΩ Ω) → ENNReal :=
   fun x =>
     ∏ i ∈ Finset.univ.filter (fun i : Fin A.card => (G'.nodesAt A i).val ∈ C'),
-      M.marginalizeOn (A \ G'.prefixIn A (i.val + 1))
+      marginalizeOn O (A \ G'.prefixIn A (i.val + 1))
           (fun _ hv => hA ((Finset.mem_sdiff.mp hv).1)) q x /
-        M.marginalizeOn (A \ G'.prefixIn A i.val)
+        marginalizeOn O (A \ G'.prefixIn A i.val)
           (fun _ hv => hA ((Finset.mem_sdiff.mp hv).1)) q x
 
 /-- The mass-level IDENTIFY recursion.  Starting with a mass function for `T`,
@@ -137,27 +137,27 @@ containing district there, and stops when the induced ancestral set is exactly
 `C`.  The hedge branch `A = T` returns the current mass function; successful
 reachability proofs never use that branch. -/
 noncomputable def identifyMassRec [∀ n, Fintype (Ω n)]
-    (M : Causalean.SCM N Ω) (G : SWIGGraph N) :
-    (T C : Finset (SWIGNode N)) → (hT : T ⊆ M.observed) →
-      (q : ValuesOn M.observed (swigΩ Ω) → ENNReal) →
-        ValuesOn M.observed (swigΩ Ω) → ENNReal
+    (O : Finset (SWIGNode N)) (G : SWIGGraph N) :
+    (T C : Finset (SWIGNode N)) → (hT : T ⊆ O) →
+      (q : ValuesOn O (swigΩ Ω) → ENNReal) →
+        ValuesOn O (swigΩ Ω) → ENNReal
   | T, C, hT, q =>
     let A := ID.inducedAncestral G T C
-    let hA : A ⊆ M.observed := fun _ hv =>
+    let hA : A ⊆ O := fun _ hv =>
       hT (ID.inducedAncestral_subset_left G T C hv)
     if _hAC : A = C then
-      M.marginalizeOn (T \ C)
+      marginalizeOn O (T \ C)
         (fun _ hv => hT ((Finset.mem_sdiff.mp hv).1)) q
     else if _hAT : A = T then
       q
     else
       let C₁ := ID.containingCComponent (G.induce A) C
-      let hC₁ : C₁ ⊆ M.observed := fun _ hv =>
+      let hC₁ : C₁ ⊆ O := fun _ hv =>
         hT (ID.inducedAncestral_subset_left G T C
           (ID.containingCComponent_induce_subset G A C hv))
-      M.identifyMassRec G C₁ C hC₁
-        (M.extractDistrict (G.induce A) A C₁ hA
-          (M.marginalizeOn (T \ A)
+      identifyMassRec O G C₁ C hC₁
+        (extractDistrict O (G.induce A) A C₁ hA
+          (marginalizeOn O (T \ A)
             (fun _ hv => hT ((Finset.mem_sdiff.mp hv).1)) q))
 termination_by T _ _ _ => T.card
 decreasing_by
@@ -175,8 +175,8 @@ the target, the result is the corresponding marginal. -/
     (T C : Finset (SWIGNode N)) (hT : T ⊆ M.observed)
     (q : ValuesOn M.observed (swigΩ Ω) → ENNReal)
     (hAC : ID.inducedAncestral G T C = C) :
-    M.identifyMassRec G T C hT q =
-      M.marginalizeOn (T \ C)
+    identifyMassRec M.observed G T C hT q =
+      marginalizeOn M.observed (T \ C)
         (fun _ hv => hT ((Finset.mem_sdiff.mp hv).1)) q := by
   rw [identifyMassRec]
   simp [hAC]
@@ -189,7 +189,7 @@ the target, the result is the corresponding marginal. -/
     (q : ValuesOn M.observed (swigΩ Ω) → ENNReal)
     (hAC : ID.inducedAncestral G T C ≠ C)
     (hAT : ID.inducedAncestral G T C = T) :
-    M.identifyMassRec G T C hT q = q := by
+    identifyMassRec M.observed G T C hT q = q := by
   have hTC : T ≠ C := by
     intro h
     exact hAC (hAT.trans h)
@@ -205,7 +205,7 @@ ancestral graph after extracting that district. -/
     (q : ValuesOn M.observed (swigΩ Ω) → ENNReal)
     (hAC : ID.inducedAncestral G T C ≠ C)
     (hAT : ID.inducedAncestral G T C ≠ T) :
-    M.identifyMassRec G T C hT q =
+    identifyMassRec M.observed G T C hT q =
       let A := ID.inducedAncestral G T C
       let hA : A ⊆ M.observed := fun _ hv =>
         hT (ID.inducedAncestral_subset_left G T C hv)
@@ -213,9 +213,9 @@ ancestral graph after extracting that district. -/
       let hC₁ : C₁ ⊆ M.observed := fun _ hv =>
         hT (ID.inducedAncestral_subset_left G T C
           (ID.containingCComponent_induce_subset G A C hv))
-      M.identifyMassRec G C₁ C hC₁
-        (M.extractDistrict (G.induce A) A C₁ hA
-          (M.marginalizeOn (T \ A)
+      identifyMassRec M.observed G C₁ C hC₁
+        (extractDistrict M.observed (G.induce A) A C₁ hA
+          (marginalizeOn M.observed (T \ A)
             (fun _ hv => hT ((Finset.mem_sdiff.mp hv).1)) q)) := by
   rw [identifyMassRec]
   simp [hAC, hAT]

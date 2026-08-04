@@ -78,26 +78,10 @@ lemma obsCondKernel_dSep_collapse_ae
     (hZ_fixed : ∀ D ∈ Z, SWIGNode.fixed D ∉ M'.fixed)
     (Y W : Finset (SWIGNode N))
     (hY : Y ⊆ M'.observed) (hW : W ⊆ M'.observed)
-    (hZrW : Z.image SWIGNode.random ∪ W ⊆ M'.observed)
-    (hDisj_YZr : Disjoint Y (Z.image SWIGNode.random))
-    (hDisj_ZrW : Disjoint (Z.image SWIGNode.random) W)
-    (hDisj_YW : Disjoint Y W)
     [∀ n, StandardBorelSpace (swigΩ Ω n)] [∀ n, Nonempty (swigΩ Ω n)]
     (hdSep : (M'.fixSet Z hZ_obs hZ_fixed).dag.dSep
               Y (Z.image SWIGNode.random)
               (W ∪ (M'.fixSet Z hZ_obs hZ_fixed).fixed))
-    [StandardBorelSpace (M'.fixSet Z hZ_obs hZ_fixed).RandomValues]
-    [StandardBorelSpace (M'.fixSet Z hZ_obs hZ_fixed).ObservedValues]
-    [StandardBorelSpace (ValuesOn Y (swigΩ Ω))]
-    [Nonempty (ValuesOn Y (swigΩ Ω))]
-    [StandardBorelSpace (ValuesOn (Z.image SWIGNode.random) (swigΩ Ω))]
-    [Nonempty (ValuesOn (Z.image SWIGNode.random) (swigΩ Ω))]
-    [∀ s : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues,
-      MeasureTheory.IsFiniteMeasure
-        ((M'.fixSet Z hZ_obs hZ_fixed).jointKernel s)]
-    [∀ s : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues,
-      MeasureTheory.IsFiniteMeasure
-        ((M'.fixSet Z hZ_obs hZ_fixed).obsKernel s)]
     [MeasurableSpace.CountableOrCountablyGenerated
       (M'.fixSet Z hZ_obs hZ_fixed).FixedValues
       (ValuesOn (Z.image SWIGNode.random ∪ W) (swigΩ Ω))]
@@ -105,6 +89,12 @@ lemma obsCondKernel_dSep_collapse_ae
       (M'.fixSet Z hZ_obs hZ_fixed).FixedValues (ValuesOn W (swigΩ Ω))]
     (s : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues)
     {B : Set (ValuesOn Y (swigΩ Ω))} (hB : MeasurableSet B) :
+    let hZr : Z.image SWIGNode.random ⊆ M'.observed := by
+      intro v hv
+      rcases Finset.mem_image.mp hv with ⟨D, hD, rfl⟩
+      exact hZ_obs D hD
+    let hZrW : Z.image SWIGNode.random ∪ W ⊆ M'.observed :=
+      Finset.union_subset hZr hW
     ∀ᵐ c ∂((MeasureTheory.Measure.map
               (valuesProjection
                 ((fixSet_observed M' Z hZ_obs hZ_fixed).symm ▸ hZrW))
@@ -121,6 +111,16 @@ lemma obsCondKernel_dSep_collapse_ae
                 (Finset.subset_union_right
                   (s₁ := Z.image SWIGNode.random) (s₂ := W)) c)) B := by
   classical
+  have hZr : Z.image SWIGNode.random ⊆ M'.observed := by
+    intro v hv
+    rcases Finset.mem_image.mp hv with ⟨D, hD, rfl⟩
+    exact hZ_obs D hD
+  have hZrW : Z.image SWIGNode.random ∪ W ⊆ M'.observed := Finset.union_subset hZr hW
+  have hDisj_YZr : Disjoint Y (Z.image SWIGNode.random) := hdSep.1
+  have hDisj_ZrW : Disjoint (Z.image SWIGNode.random) W :=
+    Disjoint.mono_right Finset.subset_union_left hdSep.2.2.1
+  have hDisj_YW : Disjoint Y W :=
+    Disjoint.mono_right Finset.subset_union_left hdSep.2.1
   -- Abbreviations.
   let M2 := M'.fixSet Z hZ_obs hZ_fixed
   let Zr := Z.image SWIGNode.random
@@ -151,7 +151,7 @@ lemma obsCondKernel_dSep_collapse_ae
   -- d-sep hypothesis into observational conditional independence.
   have hCI : ObsCondIndep M2 Y Zr W hY_M2 hZr_M2 hW_M2 μ :=
     globalMarkov_with_fixed M2 Y Zr W M2.fixed hY_M2 hZr_M2 hW_M2
-      (Finset.Subset.refl _) hDisj_YZr hDisj_YW hDisj_ZrW hdSep s
+      (Finset.Subset.refl _) hdSep s
   -- (ii) Symmetrize and apply Mathlib's `condIndepFun_iff_condDistrib_…`.
   have hπY_meas : Measurable π_Y := measurable_valuesProjection _
   have hπW_meas : Measurable π_W := measurable_valuesProjection _
@@ -192,11 +192,11 @@ lemma obsCondKernel_dSep_collapse_ae
     have e_left :
         valuesProjection hW_sub (π_C ω) = π_W ω := by
       rw [hπW_def, hπC_def]
-      exact congrFun (valuesProjection_comp hW_sub hZrW_M2 hW_M2).symm ω
+      exact congrFun (valuesProjection_comp hW_sub hZrW_M2).symm ω
     have e_right :
         valuesProjection hZr_sub (π_C ω) = π_Zr ω := by
       rw [hπZr_def, hπC_def]
-      exact congrFun (valuesProjection_comp hZr_sub hZrW_M2 hZr_M2).symm ω
+      exact congrFun (valuesProjection_comp hZr_sub hZrW_M2).symm ω
     -- Both sides are pairs; use `Prod.ext` and pointwise.
     apply Prod.ext
     · -- `(e (π_C ω)).1 = π_W ω`
@@ -263,7 +263,7 @@ lemma obsCondKernel_dSep_collapse_ae
   have hπW_C_meas : Measurable π_W_C := measurable_valuesProjection _
   have hπW_factor : π_W = π_W_C ∘ π_C := by
     rw [hπW_def, hπW_C_def, hπC_def]
-    exact valuesProjection_comp hW_sub hZrW_M2 hW_M2
+    exact valuesProjection_comp hW_sub hZrW_M2
   have hmap_W_via_C :
       μ.map π_W = (μ.map π_C).map π_W_C := by
     rw [hπW_factor, ← MeasureTheory.Measure.map_map hπW_C_meas hπC_meas]
@@ -353,10 +353,6 @@ lemma obsCondKernel_cross_SCM_ae_eq_on_fillZrW
     (hDisj_ZrW : Disjoint (Z.image SWIGNode.random) W)
     [StandardBorelSpace (ValuesOn Y (swigΩ Ω))]
     [Nonempty (ValuesOn Y (swigΩ Ω))]
-    [∀ s : M'.FixedValues, MeasureTheory.IsFiniteMeasure (M'.obsKernel s)]
-    [∀ s : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues,
-      MeasureTheory.IsFiniteMeasure
-        ((M'.fixSet Z hZ_obs hZ_fixed).obsKernel s)]
     [MeasurableSpace.CountableOrCountablyGenerated
       M'.FixedValues (ValuesOn (Z.image SWIGNode.random ∪ W) (swigΩ Ω))]
     [MeasurableSpace.CountableOrCountablyGenerated

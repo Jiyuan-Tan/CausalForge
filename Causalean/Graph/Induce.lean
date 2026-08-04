@@ -37,7 +37,7 @@ preserving its topological order. The main constructor `SWIGGraph.induce` builds
 the restricted SWIG and proves all structural invariants; `inducedDag_edge_iff`
 and the parent/child subset lemmas expose the relationship with the ambient
 graph. The theorem `induce_isAncestor_mem_R` shows that every nontrivial
-descendant in an induced subgraph lies in the retained observed support `R`. -/
+descendant in an induced subgraph lies in the retained observed part of `R`. -/
 
 namespace Causalean
 
@@ -91,23 +91,15 @@ lemma inducedDag_children_subset (active : Finset (SWIGNode N)) (u : SWIGNode N)
   have h := (G.inducedDag active).mem_children.mp hv
   exact G.dag.mem_children.mpr h.1
 
-/-- If `(G.inducedDag active).isAncestor u v`, then `v ∈ active`. -/
+/-- If `(G.inducedDag active).isAncestor u v`, then both endpoints belong to `active`. -/
 lemma inducedDag_isAncestor_mem_active (active : Finset (SWIGNode N)) {u v : SWIGNode N}
-    (h : (G.inducedDag active).isAncestor u v) : v ∈ active := by
+    (h : (G.inducedDag active).isAncestor u v) : u ∈ active ∧ v ∈ active := by
   induction h with
-  | edge he => exact ((G.inducedDag_edge_iff active _ _).mp he).2.2
-  | trans _ he _ => exact ((G.inducedDag_edge_iff active _ _).mp he).2.2
-
-/-- If `isAncestor u v`, then `v` has at least one parent (the last edge on the path). -/
-lemma inducedDag_isAncestor_has_parent (active : Finset (SWIGNode N)) {u v : SWIGNode N}
-    (h : (G.inducedDag active).isAncestor u v) :
-    (G.inducedDag active).parents v ≠ ∅ := by
-  intro hempty
-  have hmem : ∀ w, w ∉ (G.inducedDag active).parents v :=
-    fun w => (Finset.eq_empty_iff_forall_notMem.mp hempty) w
-  induction h with
-  | edge he => exact hmem u ((G.inducedDag active).mem_parents.mpr he)
-  | trans _ he _ => exact hmem _ ((G.inducedDag active).mem_parents.mpr he)
+  | edge he =>
+    exact ⟨((G.inducedDag_edge_iff active _ _).mp he).2.1,
+      ((G.inducedDag_edge_iff active _ _).mp he).2.2⟩
+  | trans _ he ih =>
+    exact ⟨ih.1, ((G.inducedDag_edge_iff active _ _).mp he).2.2⟩
 
 -- ============================================================
 -- The induce operation
@@ -251,8 +243,8 @@ def induce (R : Finset (SWIGNode N)) : SWIGGraph N :=
         exact (Finset.disjoint_left.mp G.obs_unobs_disjoint hvOldObs
           (Finset.mem_filter.mp hv').1).elim }
 
-/-- In the induced subgraph `G.induce R`, any vertex that is a descendant
-    of some other vertex must lie in `R`.
+/-- In the induced subgraph, every vertex with a proper ancestor lies in the retained
+observed support.
 
     **Proof idea**: A descendant `w` has a parent in the induced DAG (the
     last edge of the `isAncestor` path), so `w` is not a root.  Since
@@ -260,15 +252,15 @@ def induce (R : Finset (SWIGNode N)) : SWIGGraph N :=
     make all fixed and unobserved nodes roots, `w` must lie in
     `newObserved = R ∩ G.observed ⊆ R`. -/
 lemma induce_isAncestor_mem_R (R : Finset (SWIGNode N)) {u v : SWIGNode N}
-    (h : (G.induce R).dag.isAncestor u v) : v ∈ R := by
+    (h : (G.induce R).dag.isAncestor u v) : v ∈ R ∩ G.observed := by
   -- v has at least one parent in the induced DAG
   have hpar : (G.induce R).dag.parents v ≠ ∅ :=
-    G.inducedDag_isAncestor_has_parent _ h
+    (G.induce R).dag.isAncestor_has_parent h
   -- v is in the active set of the induced DAG
   have hactive : v ∈ (G.fixed.filter (fun s => iotaMap s ∈ R ∩ G.observed)) ∪
       (R ∩ G.observed) ∪
         (G.unobserved.filter (fun u => ∃ w ∈ R ∩ G.observed, G.dag.edge u w)) :=
-    G.inducedDag_isAncestor_mem_active _ h
+    (G.inducedDag_isAncestor_mem_active _ h).2
   -- v is not fixed (fixed nodes are roots, but v has a parent)
   have hnotFixed : v ∉ G.fixed.filter (fun s => iotaMap s ∈ R ∩ G.observed) := by
     intro hv
@@ -280,11 +272,11 @@ lemma induce_isAncestor_mem_R (R : Finset (SWIGNode N)) {u v : SWIGNode N}
     intro hv
     have := (G.induce R).unobs_are_roots v hv
     exact hpar this
-  -- So v ∈ R ∩ G.observed ⊆ R
+  -- So v ∈ R ∩ G.observed.
   rcases Finset.mem_union.mp hactive with hv | hv
   · rcases Finset.mem_union.mp hv with hv | hv
     · exact absurd hv hnotFixed
-    · exact (Finset.mem_inter.mp hv).1
+    · exact hv
   · exact absurd hv hnotUnobs
 
 end SWIGGraph

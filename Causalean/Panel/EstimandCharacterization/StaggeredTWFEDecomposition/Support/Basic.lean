@@ -55,7 +55,7 @@ Membership predicate (predicate-style, residualization_core D1 option (b)):
         f =ᵐ[μ] (fun ω => ∑ g, cG g · 𝟙{G ω = g}
                         + ∑ t, cT t · 𝟙{T_rv ω = t}). -/
 noncomputable def panelClass
-    (μ : Measure Ω) [IsProbabilityMeasure μ]
+    (μ : Measure Ω) [IsFiniteMeasure μ]
     (G : Ω → 𝒢) (T_rv : Ω → Fin T)
     (G_meas : Measurable G) (T_meas : Measurable T_rv) : LinearL2Class μ :=
   CellBridge.twoAxisIndicatorSpan μ G T_rv G_meas T_meas
@@ -89,10 +89,14 @@ noncomputable def cellMean (μ : Measure Ω) (Y : Ω → ℝ) (G : Ω → 𝒢)
     * Set.indicator {ω' | G ω' = g ∧ T_rv ω' = t} (fun _ => (1 : ℝ)) ω ∂μ)
     / cellMass μ G T_rv g t
 
-private theorem cellMean_eq_cellBridge (μ : Measure Ω) (Y : Ω → ℝ) (G : Ω → 𝒢)
+omit [Fintype 𝒢] [DecidableEq 𝒢] [MeasurableSpace 𝒢] [MeasurableSingletonClass 𝒢] in
+/-- The panel cell mean for a cohort and period equals the generic cell-mean operator applied to
+the joint cohort-period cell. -/
+theorem cellMean_eq_cellBridge (μ : Measure Ω) (Y : Ω → ℝ) (G : Ω → 𝒢)
     (T_rv : Ω → Fin T) (g : 𝒢) (t : Fin T) :
     cellMean μ Y G T_rv g t =
       CellBridge.cellMean μ Y (fun ω => (G ω, T_rv ω)) (g, t) := by
+  classical
   unfold cellMean CellBridge.cellMean cellMass CellBridge.jointCellMass CellBridge.cellMass
   congr 2
   · ext ω
@@ -111,10 +115,10 @@ noncomputable def cohortBarD (μ : Measure Ω) (D : Ω → ℝ) (G : Ω → 𝒢
 /-! ### B2. `panelOf` — Layer A panel built from the law -/
 
 /-- **B2. Bridge to Layer A.** Constructs a `CohortPanel 𝒢 T` from a
-probability space carrying the cell-level data plus an explicit adoption
+measure carrying the cell-level data plus an explicit adoption
 date `A : 𝒢 → WithTop (Fin T)`. -/
 noncomputable def panelOf
-    (μ : Measure Ω) [IsProbabilityMeasure μ]
+    (μ : Measure Ω)
     (Y : Ω → ℝ) (G : Ω → 𝒢) (T_rv : Ω → Fin T)
     (A : 𝒢 → WithTop (Fin T))
     (hT_pos : 0 < T)
@@ -171,7 +175,7 @@ noncomputable def panelMeanReg
 `panelClass μ G T_rv G_meas T_meas`. Coefficient maps:
 `cG g := cohortBarD μ D G g`, `cT t := (∫ D · 𝟙{T=t} dμ) / periodMass t - ∫ D dμ`. -/
 theorem panelPropensity_mem_panelClass
-    (μ : Measure Ω) [IsProbabilityMeasure μ]
+    (μ : Measure Ω) [IsFiniteMeasure μ]
     (D : Ω → ℝ) (G : Ω → 𝒢) (T_rv : Ω → Fin T)
     (G_meas : Measurable G) (T_meas : Measurable T_rv) :
     (panelClass μ G T_rv G_meas T_meas).mem (panelPropensity μ D G T_rv) := by
@@ -187,7 +191,7 @@ theorem panelPropensity_mem_panelClass
 /-- The pointwise representative `panelMeanReg μ Y G T_rv` lies in
 `panelClass μ G T_rv G_meas T_meas`. -/
 theorem panelMeanReg_mem_panelClass
-    (μ : Measure Ω) [IsProbabilityMeasure μ]
+    (μ : Measure Ω) [IsFiniteMeasure μ]
     (Y : Ω → ℝ) (G : Ω → 𝒢) (T_rv : Ω → Fin T)
     (G_meas : Measurable G) (T_meas : Measurable T_rv) :
     (panelClass μ G T_rv G_meas T_meas).mem (panelMeanReg μ Y G T_rv) := by
@@ -204,10 +208,12 @@ theorem panelMeanReg_mem_panelClass
 
 /-! ### B2. Elementary cell-mass bounds -/
 
+omit [Fintype 𝒢] [DecidableEq 𝒢] [MeasurableSpace 𝒢] [MeasurableSingletonClass 𝒢] in
 /-- Cell mass is nonnegative. -/
 theorem cellMass_nonneg (μ : Measure Ω) (G : Ω → 𝒢) (T_rv : Ω → Fin T)
     (g : 𝒢) (t : Fin T) : 0 ≤ cellMass μ G T_rv g t := ENNReal.toReal_nonneg
 
+omit [Fintype 𝒢] [DecidableEq 𝒢] [MeasurableSpace 𝒢] [MeasurableSingletonClass 𝒢] in
 /-- Cohort mass is nonnegative. -/
 theorem cohortMass_nonneg (μ : Measure Ω) (G : Ω → 𝒢) (g : 𝒢) :
     0 ≤ cohortMass μ G g := ENNReal.toReal_nonneg

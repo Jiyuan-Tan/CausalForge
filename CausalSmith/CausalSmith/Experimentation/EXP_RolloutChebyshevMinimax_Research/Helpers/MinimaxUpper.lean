@@ -65,7 +65,9 @@ lemma chebyshev_amplification_upper (c qmax Cupper K : ℝ) (hCupper_pos : 0 < C
     dsimp [dualSet]
     simpa [_root_.Causalean.Mathlib.Analysis.FiniteDimL1LinfDuality.dualValSet] using
       (_root_.Causalean.Mathlib.Analysis.FiniteDimL1LinfDuality.dualValSet_bddAbove
-        (p := p) (β := beta) hp.2.2.1.injective hkβ)
+        (p := p) (β := beta)
+        (_root_.Causalean.Mathlib.Analysis.FiniteDimL1LinfDuality.primalNormSet_nonempty
+          hp.2.2.1.injective hkβ))
   have hzero_mem : (0 : ℝ) ∈ dualSet := by
     refine ⟨0, by simp, ?_, by simp⟩
     intro j

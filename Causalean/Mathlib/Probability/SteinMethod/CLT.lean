@@ -39,50 +39,44 @@ open scoped Real Topology
 namespace Causalean
 namespace SteinMethod
 
-/-- **CDF convergence from characteristic-function convergence (to the standard Gaussian).**
-A reusable corollary of Lévy continuity (`clt` package) + the portmanteau theorem: if the
-characteristic functions of a sequence of probability measures converge pointwise to that of the
-standard normal, then their CDFs converge pointwise (the Gaussian law is atomless). -/
+/-- **CDF convergence from characteristic-function convergence.** A sequence of real probability
+laws whose characteristic functions converge to those of an atomless target law has convergent
+CDF values at every threshold. -/
 theorem cdf_tendsto_of_charFun_tendsto (lawn : ℕ → ProbabilityMeasure ℝ)
+    (ν : ProbabilityMeasure ℝ) [NoAtoms (ν : Measure ℝ)]
     (hchar : ∀ t : ℝ, Tendsto (fun n => charFun (lawn n : Measure ℝ) t) atTop
-      (𝓝 (charFun (gaussianReal 0 1) t)))
+      (𝓝 (charFun (ν : Measure ℝ) t)))
     (s : ℝ) :
     Tendsto (fun n => (lawn n : Measure ℝ).real (Set.Iic s)) atTop
-      (𝓝 ((gaussianReal 0 1).real (Set.Iic s))) := by
-  -- Package the standard Gaussian as a `ProbabilityMeasure`.
-  set ν₀ : ProbabilityMeasure ℝ := ⟨gaussianReal 0 1, inferInstance⟩ with hν₀
+      (𝓝 ((ν : Measure ℝ).real (Set.Iic s))) := by
   -- Lévy continuity (`clt` package): char-function convergence ⇒ weak convergence.
-  have hweak : Tendsto lawn atTop (𝓝 ν₀) := by
+  have hweak : Tendsto lawn atTop (𝓝 ν) := by
     rw [MeasureTheory.ProbabilityMeasure.tendsto_iff_tendsto_charFun]
     intro t
-    have : (ν₀ : Measure ℝ) = gaussianReal 0 1 := rfl
-    simpa [this] using hchar t
-  -- The Gaussian is atomless, so the frontier of `Iic s` is null.
-  haveI hatoms : NoAtoms (gaussianReal 0 1) := noAtoms_gaussianReal one_ne_zero
-  have hnull : (ν₀ : Measure ℝ) (frontier (Set.Iic s)) = 0 := by
-    have hcoe : (ν₀ : Measure ℝ) = gaussianReal 0 1 := rfl
-    rw [hcoe, frontier_Iic]
+    exact hchar t
+  -- Atomlessness makes the frontier of `Iic s` null.
+  have hnull : (ν : Measure ℝ) (frontier (Set.Iic s)) = 0 := by
+    rw [frontier_Iic]
     exact measure_singleton s
   -- Portmanteau: weak convergence ⇒ measure convergence on null-frontier sets.
   have hmeas := MeasureTheory.ProbabilityMeasure.tendsto_measure_of_null_frontier_of_tendsto'
-    (μ := ν₀) (μs := lawn) hweak (E := Set.Iic s) hnull
+    (μ := ν) (μs := lawn) hweak (E := Set.Iic s) hnull
   -- Pass to real-valued measures.
   have hfin : ∀ n, (lawn n : Measure ℝ) (Set.Iic s) ≠ ⊤ := fun n => measure_ne_top _ _
   refine (ENNReal.tendsto_toReal ?_).comp hmeas
   exact measure_ne_top _ _
 
-/-- A bounded real function of a measurable map is integrable on a probability measure. -/
+/-- A bounded real function of a measurable map is integrable on a finite measure. -/
 private theorem integrable_bdd_real {Ω : Type*} [MeasurableSpace Ω] {ν : Measure Ω}
-    [IsProbabilityMeasure ν] (g : Ω → ℝ) (hg : Measurable g) {c : ℝ} (hc : ∀ ω, |g ω| ≤ c) :
+    [IsFiniteMeasure ν] (g : Ω → ℝ) (hg : Measurable g) {c : ℝ} (hc : ∀ ω, |g ω| ≤ c) :
     Integrable g ν :=
   (MemLp.of_bound hg.aestronglyMeasurable c
     (Filter.Eventually.of_forall (fun ω => by rw [Real.norm_eq_abs]; exact hc ω))).integrable le_rfl
 
-/-- **Characteristic function of a pushforward law in cos/sin form.**  For a measurable real
-`W` on a probability space, `charFun (ν.map W) t` decomposes into its real and imaginary parts
-`∫ cos(t·W) ∂ν` and `∫ sin(t·W) ∂ν`. -/
-private theorem charFun_map_eq_cos_sin {Ω : Type*} [MeasurableSpace Ω] (ν : Measure Ω)
-    [IsProbabilityMeasure ν] (W : Ω → ℝ) (hW : Measurable W) (t : ℝ) :
+/-- A measurable real random variable under a finite measure has a characteristic function whose
+real and imaginary components are the corresponding cosine and sine integrals. -/
+theorem charFun_map_eq_cos_sin {Ω : Type*} [MeasurableSpace Ω] (ν : Measure Ω)
+    [IsFiniteMeasure ν] (W : Ω → ℝ) (hW : Measurable W) (t : ℝ) :
     charFun (ν.map W) t
       = (↑(∫ ω, Real.cos (t * W ω) ∂ν) : ℂ) + (↑(∫ ω, Real.sin (t * W ω) ∂ν) : ℂ) * Complex.I := by
   -- Move the integral back to `ν` via `integral_map`.
@@ -114,10 +108,10 @@ private theorem charFun_map_eq_cos_sin {Ω : Type*} [MeasurableSpace Ω] (ν : M
     congr 1
     exact integral_complex_ofReal
 
-/-- **Expectation convergence for a fixed Stein test function.**  Under the local-dependence CLT
-hypotheses, for any bounded `C¹` test function `h` (`|h| ≤ C`, `|h'| ≤ L`) the expectations
-`E[h(Wₙ)]` converge to the Gaussian expectation `E[h(Z)]`, because both Stein error terms vanish. -/
-private theorem stein_expect_tendsto
+/-- For uniformly bounded, mean-zero locally dependent sums with unit variance whose Stein error
+terms vanish, expectations of a differentiable test function converge to its standard-normal
+expectation. -/
+theorem stein_expect_tendsto
     {Ω : ℕ → Type*} [∀ n, MeasurableSpace (Ω n)] (μ : ∀ n, Measure (Ω n))
     [∀ n, IsProbabilityMeasure (μ n)]
     {ι : ℕ → Type*} [∀ n, Fintype (ι n)] [∀ n, DecidableEq (ι n)]
@@ -125,14 +119,13 @@ private theorem stein_expect_tendsto
     (hmeas : ∀ n i, Measurable (X n i))
     (B : ℕ → ℝ) (hB : ∀ n, 0 ≤ B n) (hbound : ∀ n i ω, |X n i ω| ≤ B n)
     (hmean : ∀ n i, ∫ ω, X n i ω ∂(μ n) = 0)
-    (hself : ∀ n i, i ∈ N n i)
     (hindep : ∀ n i, IndepFun (X n i) (fun ω => ∑ j ∈ Finset.univ \ N n i, X n j ω) (μ n))
     (hvar : ∀ n, ∫ ω, (depSum (X n) ω) ^ 2 ∂(μ n) = 1)
     (herr1 : Tendsto
       (fun n => variance (fun ω => ∑ i, X n i ω * nbhdSum (X n) (N n) i ω) (μ n)) atTop (𝓝 0))
     (herr2 : Tendsto
       (fun n => ∑ i, ∫ ω, |X n i ω| * (nbhdSum (X n) (N n) i ω) ^ 2 ∂(μ n)) atTop (𝓝 0))
-    (h : ℝ → ℝ) (hh : Continuous h) {C L : ℝ} (hC : 0 ≤ C) (hL : 0 ≤ L)
+    (h : ℝ → ℝ) {C L : ℝ}
     (hb : ∀ x, |h x| ≤ C) (hd : ∀ x, |deriv h x| ≤ L) (hdiff : Differentiable ℝ h) :
     Tendsto (fun n => ∫ ω, h (depSum (X n) ω) ∂(μ n)) atTop (𝓝 (gExpect h)) := by
   -- The Stein bound: `|E[h(Wₙ)] − E[h(Z)]| ≤ err₁(n) + err₂(n)` with both errors → 0.
@@ -142,7 +135,7 @@ private theorem stein_expect_tendsto
       + L * ∑ i, ∫ ω, |X n i ω| * (nbhdSum (X n) (N n) i ω) ^ 2 ∂(μ n) with hrhs
   have hbound_n : ∀ n, |lhs n - gExpect h| ≤ rhs n := fun n =>
     stein_local_dependence_bound (X n) (N n) (hmeas n) (hB n) (hbound n) (hmean n)
-      (hself n) (hindep n) (hvar n) h hh hC hL hb hd hdiff
+      (hindep n) (hvar n) h hb hd hdiff
   -- The error sequence converges to `0`.
   have hrhs0 : Tendsto rhs atTop (𝓝 0) := by
     have ht1 : Tendsto (fun n => 2 * L *
@@ -171,7 +164,6 @@ theorem stein_cdf_clt
     (hmeas : ∀ n i, Measurable (X n i))
     (B : ℕ → ℝ) (hB : ∀ n, 0 ≤ B n) (hbound : ∀ n i ω, |X n i ω| ≤ B n)
     (hmean : ∀ n i, ∫ ω, X n i ω ∂(μ n) = 0)
-    (hself : ∀ n i, i ∈ N n i)
     (hindep : ∀ n i, IndepFun (X n i) (fun ω => ∑ j ∈ Finset.univ \ N n i, X n j ω) (μ n))
     (hvar : ∀ n, ∫ ω, (depSum (X n) ω) ^ 2 ∂(μ n) = 1)
     (herr1 : Tendsto
@@ -193,7 +185,9 @@ theorem stein_cdf_clt
     fun n => ⟨(μ n).map (depSum (X n)), inferInstance⟩ with hlawn
   -- Reduce to characteristic-function convergence via Theorem 1.
   have hcoe : ∀ n, (lawn n : Measure ℝ) = (μ n).map (depSum (X n)) := fun n => rfl
-  refine cdf_tendsto_of_charFun_tendsto lawn ?_ s
+  let ν₀ : ProbabilityMeasure ℝ := ⟨gaussianReal 0 1, inferInstance⟩
+  letI : NoAtoms (ν₀ : Measure ℝ) := noAtoms_gaussianReal one_ne_zero
+  refine cdf_tendsto_of_charFun_tendsto lawn ν₀ ?_ s
   intro t
   -- Test functions `cos(t·)` and `sin(t·)`: both bounded by `1` with derivative bounded by `|t|`.
   have hcos_cont : Continuous (fun x => Real.cos (t * x)) := by fun_prop
@@ -224,13 +218,13 @@ theorem stein_cdf_clt
   have hcos_tendsto :
       Tendsto (fun n => ∫ ω, Real.cos (t * depSum (X n) ω) ∂(μ n)) atTop
         (𝓝 (gExpect (fun x => Real.cos (t * x)))) :=
-    stein_expect_tendsto μ X N hmeas B hB hbound hmean hself hindep hvar herr1 herr2
-      (fun x => Real.cos (t * x)) hcos_cont zero_le_one (abs_nonneg t) hcos_b hcos_d hcos_diff
+    stein_expect_tendsto μ X N hmeas B hB hbound hmean hindep hvar herr1 herr2
+      (fun x => Real.cos (t * x)) hcos_b hcos_d hcos_diff
   have hsin_tendsto :
       Tendsto (fun n => ∫ ω, Real.sin (t * depSum (X n) ω) ∂(μ n)) atTop
         (𝓝 (gExpect (fun x => Real.sin (t * x)))) :=
-    stein_expect_tendsto μ X N hmeas B hB hbound hmean hself hindep hvar herr1 herr2
-      (fun x => Real.sin (t * x)) hsin_cont zero_le_one (abs_nonneg t) hsin_b hsin_d hsin_diff
+    stein_expect_tendsto μ X N hmeas B hB hbound hmean hindep hvar herr1 herr2
+      (fun x => Real.sin (t * x)) hsin_b hsin_d hsin_diff
   -- Decompose `charFun` of the limit Gaussian into the cos/sin Gaussian expectations.
   have hgauss : charFun (gaussianReal 0 1) t
       = (↑(gExpect (fun x => Real.cos (t * x))) : ℂ)
@@ -247,7 +241,8 @@ theorem stein_cdf_clt
     rw [hcoe n]
     exact charFun_map_eq_cos_sin (μ n) (depSum (X n)) (hWmeas n) t
   -- Combine: real and imaginary parts converge, hence the complex char-functions converge.
-  rw [hgauss]
+  have hν₀ : (ν₀ : Measure ℝ) = gaussianReal 0 1 := rfl
+  rw [hν₀, hgauss]
   simp_rw [hlaw]
   refine Tendsto.add ?_ (Tendsto.mul_const Complex.I ?_)
   · exact (Complex.continuous_ofReal.tendsto _).comp hcos_tendsto

@@ -16,7 +16,7 @@ open scoped BigOperators
 
 /-- At `κ = 0` the weighted-simplex objective collapses to the linear form
 `Σ αᵢ tᵢ`. -/
-lemma wsObj_kappa_zero (α β : Fin 3 → ℝ) (t : Fin 3 → ℝ) :
+@[simp] lemma wsObj_kappa_zero (α β : Fin 3 → ℝ) (t : Fin 3 → ℝ) :
     wsObj α β 0 t = ∑ i, α i * t i := by
   simp [wsObj]
 
@@ -30,9 +30,10 @@ Proof plan: pick `k` with `α k = min_j α j` (`Finite.exists_min`). Write
   (`αᵢ ≥ m₀`, `tᵢ ≥ 0`), forcing each `(αᵢ − m₀) tᵢ = 0`. Hence `tᵢ ≠ 0 ⇒ αᵢ = m₀ ≤ αⱼ`.
 * (←) If `t ∈ exposedMinFace`, then `Σ αᵢ tᵢ = Σ m₀ tᵢ = M m₀` (each nonzero coord has
   `αᵢ = m₀`), and for any `s ∈ Δ_M`, `Σ αⱼ sⱼ ≥ Σ m₀ sⱼ = M m₀`. -/
-lemma kappa_zero_face (M : ℝ) (hM : 0 < M) (α β : Fin 3 → ℝ) (t : Fin 3 → ℝ) :
+lemma kappa_zero_face (M : ℝ) (α : Fin 3 → ℝ) (t : Fin 3 → ℝ) :
     (InSimplex M t ∧
-        ∀ s : Fin 3 → ℝ, InSimplex M s → wsObj α β 0 t ≤ wsObj α β 0 s)
+        ∀ s : Fin 3 → ℝ, InSimplex M s →
+          (∑ i, α i * t i) ≤ ∑ i, α i * s i)
       ↔ t ∈ exposedMinFace M α := by
   classical
   obtain ⟨k, hk⟩ := (Finite.exists_min α : ∃ k, ∀ i, α k ≤ α i)
@@ -41,7 +42,9 @@ lemma kappa_zero_face (M : ℝ) (hM : 0 < M) (α β : Fin 3 → ℝ) (t : Fin 3 
     refine ⟨htS, ?_⟩
     intro i hti j
     let v : Fin 3 → ℝ := fun i => if i = k then M else 0
-    have hM_nonneg : 0 ≤ M := le_of_lt hM
+    have hM_nonneg : 0 ≤ M := by
+      rw [← htS.2]
+      exact Finset.sum_nonneg (fun i _ => htS.1 i)
     have hv : InSimplex M v := by
       constructor
       · intro i
@@ -56,7 +59,6 @@ lemma kappa_zero_face (M : ℝ) (hM : 0 < M) (α β : Fin 3 → ℝ) (t : Fin 3 
       fin_cases k <;> simp
     have ht_le : ∑ i, α i * t i ≤ α k * M := by
       have h := hmin v hv
-      rw [wsObj_kappa_zero, wsObj_kappa_zero] at h
       simpa [hv_sum] using h
     have hsum_diff_le : ∑ i, (α i - α k) * t i ≤ 0 := by
       have hconst : ∑ i, α k * t i = α k * M := by
@@ -98,7 +100,6 @@ lemma kappa_zero_face (M : ℝ) (hM : 0 < M) (α β : Fin 3 → ℝ) (t : Fin 3 
     rcases htFace with ⟨htS, hface⟩
     refine ⟨htS, ?_⟩
     intro s hsS
-    rw [wsObj_kappa_zero, wsObj_kappa_zero]
     have ht_term_eq (i : Fin 3) : α i * t i = α k * t i := by
       by_cases hti : t i = 0
       · simp [hti]

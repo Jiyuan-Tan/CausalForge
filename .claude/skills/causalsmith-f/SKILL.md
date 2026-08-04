@@ -10,6 +10,11 @@ live PID main started; never launch/resume it before that process exits at its f
 line counts in both `pipeline.jsonl` and `reviews/reviews.jsonl` plus a real-process argv token (not
 `tail -F | grep`, which misses sparse verdicts/self-matches). Never set `CAUSALSMITH_ALLOW_PARALLEL=1`.
 At every F halt, apply the lever, resume yourself, and re-arm the watcher.
+**Codex monitoring:** use one fixed 30-minute logical window in one blocking tool call, with every internal
+probe at least 120 seconds apart. A tool cap continues the same deadline. Routine growth only updates cursors;
+complete the call only for an actionable halt, exact-PID exit, or deadline. Healthy renewal is silent. Call
+completion is not lease return: classify/self-resume in the same turn. Require two fully stale windows before
+`pipeline-bug`. This overrides shared 15-second/per-event examples. Message main only on an allowed escalation.
 
 **Every F resume must be detached**—plain `run_in_background` dies near 60 minutes:
 `setsid bash -c 'source ~/.nvm/nvm.sh && nvm use 20.20.2 && npx --prefix tools tsx tools/bin/causalsmith.ts research --resume --from-stage <F-stage> --auto <qid> <spec> > <logfile> 2>&1' < /dev/null & disown`.
@@ -35,13 +40,14 @@ proof, tactic, substrate lemma, or compile repair:** you own the decision, state
 writes proof bodies. Loop: **diagnose → author statement → Codex proves → verify**.
 
 Prompts decompose leaves-first, name the statement/helpers, and require `lake build <module>` green with
-zero sorry. Unspecified model/effort may use managed `spawn_agent`; F proof workers specify
-`gpt-5.6-sol` medium, so use `codex exec` with lean-lsp rooted at the edited package and stdin prompts.
+zero sorry. Unspecified model/effort may use managed `spawn_agent` for orchestrator children. F proof
+workers specify `gpt-5.6-sol` medium and remain pipeline-managed `codex exec` calls with lean-lsp rooted
+at the edited package and stdin prompts.
 **Paper-local scratch:** put every disposable Lean probe, `#check` file, generated test, and temporary
 script (including `Main.lean`) in `<paper lean directory>/tmp/`, never the CausalSmith package root.
 `tmp/` is excluded from the paper inventory/build barrel; write actual paper modules only to their explicit
 production paths.
-For long proof jobs, launch Codex detached with its own `TMPDIR` and logfile, then foreground-poll; never
+For long pipeline proof jobs, launch Codex detached with its own `TMPDIR` and logfile, then foreground-poll; never
 overlap edit scopes or dispatch a nested Claude worker that cannot report back. After every round,
 rebuild, grep source for `sorry|axiom`, run `#print axioms`, and diff signatures. A green build does not
 prove zero sorry (sorries are warnings), stale oleans mislead, and an unapproved statement change is a defect.
@@ -191,7 +197,7 @@ never headline/headline-support. Persist reason in plan/graph, emit no Lean decl
 remark. F2.5/F3/F4 still converge over delivered work, and both F4 reviewers must independently verify role
 and complete reverse closure.
 
-Assume small until proved otherwise. Default: use `gpt-5.6-sol`, `--full-auto`, lean-lsp, and disjoint
+Assume small until proved otherwise. Default: use `gpt-5.6-sol`, `--sandbox workspace-write`, lean-lsp, and disjoint
 leaves-first Codex workers to build an in-place research/`Helpers`/`CausalSmith/Mathlib` lemma; prompts
 require `lake build <module>` green, zero sorry, and no new axioms. Rebuild, source-grep, and `lean_verify`
 yourself; green exit alone is not proof. Parallelize only disjoint import closures, serialize coupled ones,
@@ -239,7 +245,7 @@ cited owes source match). Keep modules ≤600 lines, split independent clusters 
 A within-F continue is NOT a message to main — you hold the lease, so you `--resume --from-stage <F-stage>`
 yourself and keep going. You return to main ONLY to **return the lease**: hand back
 `{escalation: <type>, receipts: [...]}` (+ an `escalation` decision-log entry) and STOP resuming. Use
-`request-reseed` (no receipts, not terminal) if your own context is degrading. Required receipts:
+`request-reseed` only for a concrete context-capacity problem, never silence/timeout/routine monitoring. Required receipts:
 
 | Escalation | Receipts |
 |---|---|

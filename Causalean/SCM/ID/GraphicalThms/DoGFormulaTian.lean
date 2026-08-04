@@ -6,6 +6,7 @@ Authors: Jiyuan Tan
 
 import Causalean.SCM.ID.GraphicalThms.DoGFormula
 import Causalean.SCM.Do.ObsMarkov
+import Causalean.SCM.Factored.ObsChainKernel
 import Causalean.SCM.ID.Density.QFactor
 import Causalean.SCM.ID.Density.DoLawMarginal
 import Causalean.SCM.ID.GraphicalThms.QFactorIdentity
@@ -181,25 +182,9 @@ lemma valuesUnionEquiv_extendTianPrefix (H : SWIGGraph N) (D : Finset (SWIGNode 
         ((valuesEquivOfEq (Ω := swigΩ Ω) (prefixIn_succ H D hn))
           (extendTianPrefix (Ω := Ω) H D hn p))
       = p := by
-  change valuesUnionEquiv (Ω := Ω) (prefixIn_disjoint_singleton_next H D hn)
-      ((valuesEquivOfEq (Ω := swigΩ Ω) (prefixIn_succ H D hn))
-        ((valuesEquivOfEq (Ω := swigΩ Ω) (prefixIn_succ H D hn)).symm
-          (valuesUnionMk p.1 p.2))) = p
-  have hcast :
-      (valuesEquivOfEq (Ω := swigΩ Ω) (prefixIn_succ H D hn))
-        ((valuesEquivOfEq (Ω := swigΩ Ω) (prefixIn_succ H D hn)).symm
-          (valuesUnionMk p.1 p.2))
-        =
-      valuesUnionMk p.1 p.2 := by
-    change (valuesEquivOfEq (Ω := swigΩ Ω) (prefixIn_succ H D hn)).toFun
-        ((valuesEquivOfEq (Ω := swigΩ Ω) (prefixIn_succ H D hn)).invFun
-          (valuesUnionMk p.1 p.2))
-      = valuesUnionMk p.1 p.2
-    exact (valuesEquivOfEq (Ω := swigΩ Ω) (prefixIn_succ H D hn)).right_inv _
-  rw [hcast]
-  change (valuesUnionEquiv (Ω := Ω) (prefixIn_disjoint_singleton_next H D hn)).toFun
-      ((valuesUnionEquiv (Ω := Ω) (prefixIn_disjoint_singleton_next H D hn)).invFun p) = p
-  exact (valuesUnionEquiv (Ω := Ω) (prefixIn_disjoint_singleton_next H D hn)).right_inv p
+  unfold extendTianPrefix
+  exact valuesUnionEquiv_valuesEquivOfEq_symm_valuesUnionMk
+    (prefixIn_disjoint_singleton_next H D hn) (prefixIn_succ H D hn) p
 
 /-- The successor prefix extension carries the product of the old-prefix
 reference and the next singleton reference to the successor-prefix reference. -/
@@ -669,7 +654,7 @@ lemma measure_prefixIn_rnDeriv_eq_tianPrefixDensityProductInPrefix
               (fun p : ValuesOn A (swigΩ Ω) × ValuesOn B (swigΩ Ω) =>
                 (stepK p.1).rnDeriv ρ p.2)
               (νk.prod ρ) :=
-          Causalean.SCM.aemeasurable_fiber_rnDeriv_of_finite νk ρ stepK
+          Causalean.SCM.aemeasurable_fiber_rnDeriv_of_finite (νk.prod ρ) ρ stepK
         exact MeasureTheory.rnDeriv_compProd_prod_sigmaFinite
           chain νk ρ stepK (tianPrefixDensityProductInPrefix H D μ ref k)
           hchain_ac hfiber hfiber_meas (ih hkprev)
@@ -827,13 +812,13 @@ theorem doObsKernelAncestralMarginal_globalMarkovOn
     let A := fixAncestralSet M X hObs hFix Y
       let D := fixObservedAncestralSet M X hObs hFix Y
       let H := (M.fixSet X hObs hFix).toSWIGGraph.induce A
-      KernelGlobalMarkovOn H D (by rfl)
+      KernelGlobalMarkovOn H D
         (doObsKernelAncestralMarginal M X hObs hFix Y s) := by
   classical
   let M' := M.fixSet X hObs hFix
   let A := fixAncestralSet M X hObs hFix Y
   let D := fixObservedAncestralSet M X hObs hFix Y
-  change KernelGlobalMarkovOn (M'.toSWIGGraph.induce A) D (by rfl)
+  change KernelGlobalMarkovOn (M'.toSWIGGraph.induce A) D
     ((doObsKernelAncestralMarginal M X hObs hFix Y) s)
   dsimp [KernelGlobalMarkovOn]
   intro X' Y' Z' hX hY hZ hXY hXZ hYZ hdSep
@@ -849,12 +834,12 @@ theorem doObsKernelAncestralMarginal_globalMarkovOn
   have hdSep_fixed : M'.dag.dSep X' Y' (Z' ∪ M'.fixed) := by
     simpa [A, D, M'] using
       (M'.toSWIGGraph.dSep_union_fixed_of_induce_dSep A X' Y' Z'
-        hX hY hZ hA_closed hdSep)
+        hX hY hZ (by simp [hA_closed]) hdSep)
   have hCI_obs : SCM.ObsCondIndep M' X' Y' Z' hX_obs hY_obs hZ_obs
       (M'.obsKernel s) :=
     SCM.globalMarkov_with_fixed M' X' Y' Z' M'.fixed
       hX_obs hY_obs hZ_obs (by intro v hv; exact hv)
-      hXY hXZ hYZ hdSep_fixed s
+      hdSep_fixed s
   unfold KernelObsCondIndepOn
   unfold SCM.ObsCondIndep at hCI_obs
   have hCI_pre :

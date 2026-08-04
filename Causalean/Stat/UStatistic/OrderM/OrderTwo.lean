@@ -51,10 +51,11 @@ section Bridge
 
 variable [IsProbabilityMeasure P] {h : X → X → ℝ}
 
+omit [IsProbabilityMeasure P] in
 /-- The order-`2` population mean of `pairKernel h` is the order-2 mean of `h`.
 Requires product-integrability of `h` so that the joint integral over
 `Fin 2 → X` agrees (via Fubini) with the iterated integral defining `uMean`. -/
-theorem uMeanOrder_pairKernel
+theorem uMeanOrder_pairKernel [SigmaFinite P]
     (hh_int : Integrable (fun p : X × X => h p.1 p.2) (P.prod P)) :
     uMeanOrder (pairKernel h) P = uMean h P := by
   let e := MeasurableEquiv.piFinTwo (fun _ : Fin 2 => X)
@@ -180,7 +181,7 @@ using the bridge identities above — demonstrating that the general fixed-order
 theory subsumes the order-2 result. -/
 theorem uStatistic_clt_of_symmetric_via_orderM
     {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
-    {μ : Measure Ω} {P : Measure X} [IsProbabilityMeasure μ] [IsProbabilityMeasure P]
+    {μ : Measure Ω} {P : Measure X}
     (S : IIDSample Ω X μ P) (h : X → X → ℝ)
     (hsymm : ∀ x y, h x y = h y x)
     (hmeas : Measurable fun p : X × X => h p.1 p.2)
@@ -190,16 +191,18 @@ theorem uStatistic_clt_of_symmetric_via_orderM
     (hproj_sq : Integrable (fun x => (uProj h P x) ^ 2) P)
     (hθn_meas : ∀ n : ℕ, AEMeasurable
       (IsAsymLinear.rescaledEstimator (uStatistic S h) (uMean h P)
-        (fun m => Finset.range m) n) μ)
-    (hSum_meas : ∀ n : ℕ, AEMeasurable
-      (IsAsymLinear.normalizedSum S (fun x => 2 * uProj h P x)
         (fun m => Finset.range m) n) μ) :
+    letI : IsProbabilityMeasure μ := S.indep.isProbabilityMeasure
     Tendsto_dist
       (IsAsymLinear.rescaledEstimator (uStatistic S h) (uMean h P)
         (fun m => Finset.range m))
       (gaussianMeasure 0 (∫ x, ((fun x => 2 * uProj h P x) x) ^ 2 ∂P))
       μ
       hθn_meas := by
+  letI : IsProbabilityMeasure μ := S.indep.isProbabilityMeasure
+  letI : IsProbabilityMeasure P := by
+    rw [← S.law]
+    exact Measure.isProbabilityMeasure_map (S.meas 0).aemeasurable
   let e := MeasurableEquiv.piFinTwo (fun _ : Fin 2 => X)
   have hmp : MeasurePreserving e
       (Measure.pi fun _ : Fin 2 => P) (P.prod P) := by
@@ -442,14 +445,9 @@ theorem uStatistic_clt_of_symmetric_via_orderM
         (uMeanOrder (pairKernel h) P) (fun r => Finset.range r) n) μ := by
     intro n
     simpa [hstat_bridge, hmean_bridge] using hθn_meas n
-  have hSum_meas' : ∀ n : ℕ, AEMeasurable
-      (IsAsymLinear.normalizedSum S (uInfluenceOrder (pairKernel h) P)
-        (fun r => Finset.range r) n) μ := by
-    intro n
-    simpa [hψ_bridge] using hSum_meas n
   have hclt := uStatisticOrder_clt_of_regular S (pairKernel h)
     hmeas' hL2' hslice_int' hmean' hrow' hψ_meas' hψ_mean' hψ_sq'
-    hθn_meas' hSum_meas'
+    hθn_meas'
   simpa [hstat_bridge, hmean_bridge, hψ_bridge] using hclt
 
 end Causalean.Stat

@@ -34,55 +34,9 @@ const input = (over: Partial<RoundInvariantInput>): RoundInvariantInput =>
 const ids = (i: RoundInvariantInput, code: Parameters<typeof violationsOf>[1]): string[] =>
   violationsOf(i, code).flatMap((v) => v.ids);
 
-describe("store-incoherent", () => {
-  it("REPORTS a proved core node with no working record", () => {
-    // The morning's silent loss: in core.json with a 4561-char proof, absent from
-    // `solved`, therefore deleted on the next round.
-    const i = input({ core: core([stmt({ proof_tex: "PROOF" })]) });
-    expect(ids(i, "store-incoherent")).toEqual(["core-only:thm:x"]);
-  });
-
-  it("REPORTS the REVERSE direction — an agent node carried but absent from core", () => {
-    // The check was one-directional and therefore blind to exactly this. On 2026-07-19 two
-    // agent-authored lemmas sat in the working cursor with full proofs while absent from
-    // the assembled core, and the invariant whose job is store divergence stayed silent.
-    // An agent-authored node is defined nowhere else, so it renders nowhere.
-    const i = input({
-      core: core([]),
-      after: working({
-        solved: {
-          "lem:orphan": {
-            proof_tex: "PROOF", snapshot: {} as never,
-            node: { id: "lem:orphan", kind: "lemma", statement: "S", depends_on: [], status: "proved" } as never,
-          },
-        },
-      }),
-    });
-    expect(ids(i, "store-incoherent")).toEqual(["working-only:lem:orphan"]);
-  });
-
-  it("does NOT report a proto-member record absent from core", () => {
-    // Only agent-authored records are reported: a frozen member is still defined in
-    // proto_core.json, so its absence from core is recoverable, not a lost definition.
-    const i = input({
-      core: core([]),
-      after: working({ solved: { "thm:x": { proof_tex: "PROOF", snapshot: {} as never } } }),
-    });
-    expect(ids(i, "store-incoherent")).toEqual([]);
-  });
-
-  it("accepts a coherent pair", () => {
-    const i = input({
-      core: core([stmt({ proof_tex: "PROOF" })]),
-      after: working({ solved: { "thm:x": { proof_tex: "PROOF", snapshot: {} as never } } }),
-    });
-    expect(ids(i, "store-incoherent")).toEqual([]);
-  });
-
-  it("ignores nodes carrying no proof, which legitimately have no record", () => {
-    expect(ids(input({ core: core([stmt({ status: "to-prove" })]) }), "store-incoherent")).toEqual([]);
-  });
-});
+// (Retired, Phase 1 of the store consolidation: the `store-incoherent` detector.
+// Both directions are unrepresentable under the pure render — see
+// test/discovery/assemble.test.ts for the construction-level replacements.)
 
 describe("dangling-resolution", () => {
   it("REPORTS a resolution naming a theorem in neither store", () => {

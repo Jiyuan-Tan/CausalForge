@@ -244,17 +244,15 @@ lemma residualize_idem_apply (c : WeightedSupport R)
 
 /-! ### Vector-form residualization -/
 
-variable {K : ℕ}
-
-/-- Column-by-column residualization for vector arrays `X : Fin K → (R → ℝ)`. -/
-noncomputable def tildeXVec (c : WeightedSupport R) (H : Submodule ℝ (R → ℝ))
-    (X : Fin K → R → ℝ) : Fin K → R → ℝ :=
+/-- Column-by-column residualization for vector arrays `X : J → (R → ℝ)`. -/
+noncomputable def tildeXVec {J : Type*} (c : WeightedSupport R) (H : Submodule ℝ (R → ℝ))
+    (X : J → R → ℝ) : J → R → ℝ :=
   fun k => c.tildeX H (X k)
 
 /-- The residualized vector array applies scalar residualization to the chosen
 column. -/
 @[simp] lemma tildeXVec_apply (c : WeightedSupport R)
-    (H : Submodule ℝ (R → ℝ)) (X : Fin K → R → ℝ) (k : Fin K) :
+    (H : Submodule ℝ (R → ℝ)) (X : J → R → ℝ) (k : J) :
     c.tildeXVec H X k = c.tildeX H (X k) := rfl
 
 end WeightedSupport

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from "vitest";
 import { mkdtemp, mkdir, readFile, writeFile, readdir, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import { createHash } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import {
@@ -9,12 +10,23 @@ import {
   repairSolveUnitLatexSerialization,
   selectDirectiveEmissionOwnerLabel,
   selectSemanticTargetOwners,
+  collectConflictingSolveEmissions,
+  projectOutputsToWriteCapabilities,
 } from "../../src/discovery/stages/d0_solve.js";
 import { runStage0Typed, partitionProposedChanges, findingKeys } from "../../src/discovery/stages/d0.js";
-import { applyProposedChanges } from "../../src/discovery/stages/d0_apply.js";
+import { applyProposedChanges, discardAllProposedChanges } from "../../src/discovery/stages/d0_apply.js";
 import { protoCoreJsonPath } from "../../src/discovery/stages/neg1_2_author.js";
 import { coreJsonPath } from "../../src/discovery/stages/d0_core.js";
 import { SolveUnitOutputSchema } from "../../src/discovery/solve/schemas.js";
+import { proposalReviewPacketPath } from "../../src/discovery/discovery_paths.js";
+import { readProofArchiveIndex } from "../../src/discovery/proof_archive.js";
+import {
+  assertMandateIntegrity,
+  makeRequiredCoreEditMandate,
+  makeRequiredCoreEditMandateCancellation,
+  RequiredCoreEditMandateCancellationSchema,
+  resolveRequiredCoreEditMandates,
+} from "../../src/discovery/solve/mandates.js";
 
 /** Seed proposal kinds onto the SOLE carrier (`d0_working.json:proposals`),
  *  merging with any working state a test already wrote. */
@@ -44,6 +56,8 @@ async function readSurfacedProposals(ctx: PipelineContext): Promise<Record<strin
 import {
   appendEscalationLog,
   escalationLogPath,
+  loadWorkingState,
+  readEscalationLog,
   saveWorkingState,
   snapshotMember,
   workingPath,
@@ -51,6 +65,7 @@ import {
 } from "../../src/discovery/stages/d0_working.js";
 import { canonicalLeanSubdir, promptPath, statePath } from "../../src/paths.js";
 import type { PipelineContext, StateJson } from "../../src/types.js";
+import type { CoreStatement } from "../../src/discovery/core/schema.js";
 import type { StageDeps } from "../../src/pipeline_support.js";
 
 const QID = "stat_solvetest";
@@ -71,6 +86,67 @@ it("canonicalizes under-escaped LaTeX throughout a solve-unit payload", () => {
   // letter is a lost TeX backslash and is restored (a wrong restore is visible
   // TeX garbage; the pre-repair alternative was silent corruption).
   expect(body.prose_updates.tldr).toBe(String.raw`ordinary\ttab`);
+});
+
+it("rejects empty obligation evidence and divergent duplicate dispositions", () => {
+  expect(SolveUnitOutputSchema.safeParse({
+    open_obligations: [{
+      node_id: "oeq:tightness",
+      what_is_open: "",
+      obstruction: "",
+      attempted: "",
+    }],
+  }).success).toBe(false);
+  expect(SolveUnitOutputSchema.safeParse({
+    proofs: [{ id: "thm:main", proof_tex: "   " }],
+  }).success).toBe(false);
+
+  const output = SolveUnitOutputSchema.parse({
+    open_obligations: [
+      {
+        node_id: "oeq:tightness",
+        what_is_open: "first disposition",
+        obstruction: "first obstruction",
+        attempted: "first route",
+      },
+      {
+        node_id: "oeq:tightness",
+        what_is_open: "second disposition",
+        obstruction: "second obstruction",
+        attempted: "second route",
+      },
+    ],
+  });
+  expect(() => collectConflictingSolveEmissions([output], ["thm:main"])).toThrow(
+    /conflicting duplicate open-obligation payloads for oeq:tightness/i,
+  );
+});
+
+it("allows only the semantic or directive owner to emit an obligation", () => {
+  const empty = () => SolveUnitOutputSchema.parse({});
+  const obligation = SolveUnitOutputSchema.parse({
+    open_obligations: [{
+      node_id: "oeq:tightness",
+      what_is_open: "the exact residual",
+      obstruction: "no construction",
+      attempted: "standard routes",
+    }],
+  });
+  expect(() => projectOutputsToWriteCapabilities({
+    outputs: [empty(), empty(), obligation],
+    dispatch: [
+      { label: "oeq:tightness", targets: [{ id: "oeq:tightness" } as any], priorContext: "" },
+      { label: "thm:main", targets: [{ id: "thm:main" } as any], priorContext: "" },
+      { label: "lem:unrelated", targets: [{ id: "lem:unrelated" } as any], priorContext: "" },
+    ],
+    semanticTargetOwners: new Map([
+      ["oeq:tightness", "oeq:tightness"],
+      ["thm:main", "thm:main"],
+      ["lem:unrelated", "lem:unrelated"],
+    ]),
+    directiveOwnerLabel: "thm:main",
+    requiredCoreTargets: new Set(["oeq:tightness"]),
+  })).toThrow(/unauthorized-only open-obligation.*lem:unrelated/i);
 });
 
 const PROTO = {
@@ -126,6 +202,12 @@ function makeState(): StateJson {
     proposed_from: { topic: "t", novelty_target: "field", cluster: "stat" },
     flags: {},
   } as unknown as StateJson;
+}
+function makeVersionedState(version = 1): StateJson {
+  const state = makeState();
+  state.proposed_from!.current_angle_index = 0;
+  state.proposed_from!.current_version = version;
+  return state;
 }
 
 /** Mock solver: parse SOLVE_OUTPUT_PATH + the TARGET block from the prompt, write
@@ -242,6 +324,27 @@ const REUSE_PROTO = {
 };
 
 describe("incremental reuse across escalation rounds", () => {
+  it("rejects a worker that mutates the immutable frozen-core snapshot", async () => {
+    const ctx = makeCtx(repoRoot);
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(REUSE_PROTO), "utf8");
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const snapshotPath = /CORE_SNAPSHOT_PATH:\s*(\S+)/.exec(prompt)![1];
+        await writeFile(snapshotPath, '{"corrupt":true}\n', "utf8");
+        await writeFile(outPath, JSON.stringify({
+          proofs: [{ id: "thm:a", proof_tex: "QED." }],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+    await expect(runStage0Solve({ ctx, state: makeState(), deps })).rejects.toThrow(
+      /modified immutable frozen-core snapshot/i,
+    );
+  });
+
   it("fails before dispatch when the D0 escalation journal has a torn row", async () => {
     const ctx = makeCtx(repoRoot);
     await writeFile(escalationLogPath(ctx), '{"round":1,"directive":"truncated', "utf8");
@@ -530,14 +633,6 @@ describe("incremental reuse across escalation rounds", () => {
           reason: `${marker} bibliography repair`, direction: "correct",
         }),
       },
-      {
-        name: "reverse-dependency metadata edit",
-        diagnostic: "core-edit.*metadata:reverse-dependencies",
-        edit: (marker: string) => ({
-          kind: "rebuild-reverse-dependencies", id: "metadata:reverse-dependencies",
-          reason: `${marker} reverse-edge rebuild`, direction: "correct",
-        }),
-      },
     ] as const).map(({ name, diagnostic, edit }) => ({
       name,
       diagnostic,
@@ -602,21 +697,16 @@ describe("incremental reuse across escalation rounds", () => {
         directive: "exercise the centralized singleton write-capability matrix",
         ...(required ? { require_core_changes: true, required_core_targets: [required] } : {}),
       });
-      const completionOrder: string[] = [];
       const deps: StageDeps = {
         runCodex: async ({ prompt }: { prompt: string }) => {
           const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
           const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
           const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
           const owner = prompt.includes("You are the ONLY solve unit allowed to emit directive-wide shared payloads");
-          if (owner && diagnostic.includes("metadata:reverse-dependencies")) {
-            await new Promise((resolve) => setTimeout(resolve, 20));
-          }
           await writeFile(outPath, JSON.stringify({
             proofs: targets.map(({ id }) => ({ id, proof_tex: `Proof of ${id}.` })),
             ...build(owner ? "OWNER" : "SIBLING"),
           }), "utf8");
-          completionOrder.push(owner ? "owner" : "sibling");
           return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
         },
         runClaude: async () => { throw new Error("unused"); },
@@ -631,9 +721,6 @@ describe("incremental reuse across escalation rounds", () => {
         ));
       } finally {
         warn.mockRestore();
-      }
-      if (diagnostic.includes("metadata:reverse-dependencies")) {
-        expect(completionOrder).toEqual(["sibling", "owner"]);
       }
       const canonical = await readFile(artifact(ctx), "utf8");
       expect(canonical).toContain("OWNER");
@@ -713,10 +800,12 @@ describe("incremental reuse across escalation rounds", () => {
       lean: undefined as never,
     };
 
-    // The round survives to the normal proposal checkpoint (a core edit always gates
-    // for orchestrator adjudication) instead of aborting on a rationale mismatch.
+    // The round survives the rationale mismatch, and the derived-metadata request is
+    // normalized away instead of buying an adjudication checkpoint.
     const result = await runStage0Solve({ ctx, state: makeState(), deps });
-    expect(result.message).toMatch(/rebuild-reverse-dependencies/i);
+    expect("status" in result ? result.status : undefined).toBeUndefined();
+    expect(result.message).not.toMatch(/rebuild-reverse-dependencies/i);
+    expect((await readSurfacedProposals(ctx)).coreEdits).toEqual([]);
   });
 
   // Solvers re-emit a statement-replace that ECHOES the node wholesale (statement,
@@ -1134,6 +1223,60 @@ describe("incremental reuse across escalation rounds", () => {
     );
   });
 
+  it("allows a later auditable directive to retire a mistaken bare structured-core guard", async () => {
+    const ctx = makeCtx(repoRoot);
+    await appendEscalationLog(ctx, {
+      round: 1,
+      changed: [],
+      directive: "repair what was initially believed to be a frozen-core defect",
+      require_core_changes: true,
+    });
+    await appendEscalationLog(ctx, {
+      round: 1,
+      changed: [],
+      directive: "review determined the repair is prose-only",
+      cancel_require_core_changes: true,
+    });
+    const c = countingDeps();
+    await expect(runStage0Solve({ ctx, state: makeState(), deps: c.deps })).resolves.toBeDefined();
+  });
+
+  it("allows a later auditable directive to retire a required target that normalizes to a no-op", async () => {
+    const ctx = makeCtx(repoRoot);
+    await appendEscalationLog(ctx, {
+      round: 1,
+      changed: [],
+      directive: "repair the theorem and rebuild already-correct reverse edges",
+      require_core_changes: true,
+      required_core_targets: ["thm:main", "metadata:reverse-dependencies"],
+    });
+    await appendEscalationLog(ctx, {
+      round: 1,
+      changed: [],
+      directive: "review confirmed reverse edges are already exact; retain the theorem repair",
+      cancelled_core_targets: ["metadata:reverse-dependencies"],
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        await writeFile(outPath, JSON.stringify({
+          proofs: [{ id: "thm:main", proof_tex: "QED.", argues_proposed: true }],
+          proposed_statement_changes: [{
+            id: "thm:main",
+            current: PROTO.statements[0].statement,
+            proposed: `${PROTO.statements[0].statement} Sharpened.`,
+            reason: "substantive theorem repair",
+            direction: "narrow",
+          }],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+    await expect(runStage0Solve({ ctx, state: makeState(), deps })).resolves.toBeDefined();
+  });
+
   it("does not let an unrelated structured edit satisfy an exact required target", async () => {
     const ctx = makeCtx(repoRoot);
     await appendEscalationLog(ctx, {
@@ -1315,7 +1458,15 @@ describe("incremental reuse across escalation rounds", () => {
           proposed_statement_changes: [],
           proposed_definition_changes: [],
           proposed_assumptions: [],
-          proposed_core_edits: [],
+          // Adversarial reason drift must not create a second copy or replace the
+          // orchestrator's canonical operation.
+          proposed_core_edits: [{
+            kind: "statement-delete",
+            id: "thm:main",
+            replacement_id: "prop:aux",
+            reason: "worker supplied a different rationale",
+            direction: "delete-obsolete",
+          }],
           open_obligations: [],
         }), "utf8");
         return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
@@ -1365,7 +1516,13 @@ describe("incremental reuse across escalation rounds", () => {
     expect(persisted.bibliography).toContainEqual({ key: "NewSource2026" });
   });
 
-  it("recovers an exact required agent-added target omitted from working state", async () => {
+  it("re-opens an exact required agent-added target held as a checkpoint partial", async () => {
+    // Phase 1 (store consolidation): a proposal checkpoint records every
+    // checkpoint-withheld agent node into the WORKING STATE as a partial (the
+    // cursor is the durable catalog), and the old recovery that re-read the
+    // prior published core.json as truth is deleted. This test seeds exactly
+    // the record `surfaceProposalCheckpoint` writes and requires the next
+    // directed round to re-open it as a dispatchable target.
     const ctx = makeCtx(repoRoot);
     const required = {
       id: "thm:agent-result",
@@ -1377,14 +1534,17 @@ describe("incremental reuse across escalation rounds", () => {
       gap: "not frozen in the proposal",
       consumer: "main theorem",
     };
-    await writeFile(coreJsonPath(ctx), JSON.stringify({
-      ...PROTO,
-      statements: [...PROTO.statements, required],
-    }), "utf8");
     await saveWorkingState(ctx, {
       round: 3,
       escalation_entries_consumed: 0,
-      solved: {},
+      solved: {
+        [required.id]: {
+          proof_tex: "",
+          snapshot: snapshotMember(PROTO as any, required as any),
+          node: required as never,
+          partial: true,
+        },
+      },
       resolved_oeqs: {},
     });
     await appendEscalationLog(ctx, {
@@ -1425,6 +1585,335 @@ describe("incremental reuse across escalation rounds", () => {
     expect(calls.some((targets) => targets.includes(required.id))).toBe(true);
     expect(result.status).toBe("checkpoint");
     expect(result.message).toMatch(/STATEMENT change/i);
+  });
+
+  it("reopens a stale agent helper through the accepted proof snapshot when a catalog re-emission lost the edge", async () => {
+    const ctx = makeCtx(repoRoot);
+    const helper: CoreStatement = {
+      id: "lem:agent-helper",
+      kind: "lemma",
+      statement: "The agent helper holds.",
+      depends_on: ["ass:overlap"],
+      status: "to-prove",
+    };
+    const consumer: CoreStatement = {
+      id: "thm:agent-consumer",
+      kind: "theorem",
+      statement: "The agent consumer holds.",
+      // Reproduce the incident: a later catalog re-emission lost this edge,
+      // while the accepted proof snapshot still records that it used the helper.
+      depends_on: [],
+      status: "to-prove",
+    };
+    await saveWorkingState(ctx, {
+      round: 3,
+      escalation_entries_consumed: 0,
+      solved: {
+        [helper.id]: {
+          proof_tex: "Prior helper proof.",
+          snapshot: {
+            stmt: helper.statement,
+            depends_on: helper.depends_on,
+            defs: {},
+            assumptions: { "ass:overlap": PROTO.assumptions[0].condition },
+          },
+          node: helper,
+          partial: true,
+        },
+        [consumer.id]: {
+          proof_tex: "Prior consumer proof using lem:agent-helper.",
+          snapshot: {
+            stmt: consumer.statement,
+            depends_on: [helper.id],
+            defs: {},
+            assumptions: {},
+          },
+          node: consumer,
+          partial: true,
+        },
+      },
+      resolved_oeqs: {},
+    });
+    const calls: string[][] = [];
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        calls.push(targets.map(({ id }) => id));
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.filter(({ id }) => id !== helper.id)
+            .map(({ id }) => ({ id, proof_tex: `Fresh proof for ${id}.` })),
+          added_lemmas: targets.some(({ id }) => id === helper.id)
+            ? [{ ...helper, status: "proved", proof_tex: "Fresh helper proof." }]
+            : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(calls.flat()).toContain(consumer.id);
+    expect(calls.flat()).toContain(helper.id);
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(working.solved[helper.id].partial).toBeUndefined();
+    expect(working.solved[helper.id].shelved).toBeUndefined();
+    const published = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+    expect(published.statements.some((statement: any) => statement.id === helper.id)).toBe(true);
+  });
+
+  it("adopts ALL legacy checkpoint-only agent nodes into the cursor, not just the targeted one (audit R2F1)", async () => {
+    // A pre-migration cursor + a published core holding two agent nodes the cursor
+    // never catalogued. The first post-migration round targets only one; the OTHER
+    // must survive as shelved debt in the (now format-2) cursor — otherwise the
+    // commit's render drops it and no later directive can ever recover it.
+    const ctx = makeCtx(repoRoot);
+    const agentNode = (id: string) => ({
+      id, kind: "theorem", statement: `${id} holds.`, depends_on: ["ass:overlap"], status: "to-prove",
+      justification: "agent-added", gap: "g", consumer: "c",
+    });
+    await writeFile(coreJsonPath(ctx), JSON.stringify({
+      ...PROTO,
+      statements: [...PROTO.statements, agentNode("thm:agent-a"), agentNode("thm:agent-b")],
+    }), "utf8");
+    // Legacy cursor: written directly, no store_format stamp.
+    await writeFile(workingPath(ctx), JSON.stringify({
+      round: 3, escalation_entries_consumed: 0, solved: {}, resolved_oeqs: {},
+      proposals: { statements: [], definitions: [], assumptions: [], coreEdits: [], proofs: [] },
+    }), "utf8");
+    await appendEscalationLog(ctx, {
+      round: 4,
+      changed: [],
+      directive: "correct thm:agent-a",
+      require_core_changes: true,
+      required_core_targets: ["thm:agent-a"],
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.filter((t) => t.id !== "thm:agent-a").map((t) => ({ id: t.id, proof_tex: "QED." })),
+          added_lemmas: [],
+          proposed_statement_changes: targets.some((t) => t.id === "thm:agent-a") ? [{
+            id: "thm:agent-a",
+            current: "thm:agent-a holds.",
+            proposed: "thm:agent-a holds on the overlap region.",
+            reason: "directed correction",
+            direction: "narrow",
+          }] : [],
+          proposed_definition_changes: [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+    const result = await runStage0Solve({ ctx, state: makeState(), deps }) as any;
+    expect(result.status).toBe("checkpoint");
+    const cursor = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(cursor.store_format).toBe(2);
+    const adopted = cursor.solved["thm:agent-b"];
+    expect(adopted).toBeDefined();
+    expect(adopted.partial).toBe(true);
+    expect(adopted.shelved).toBe(true);
+    expect(adopted.node.statement).toBe("thm:agent-b holds.");
+    // The shelved adoption is catalog-only: the published render must not carry it.
+    const published = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+    expect(published.statements.some((s: any) => s.id === "thm:agent-b")).toBe(false);
+  });
+
+  it("resolves solver TeX from the companion file end-to-end: raw bytes reach the committed core (Phase 3)", async () => {
+    const ctx = makeCtx(repoRoot);
+    // Deliberately under-escaped TeX that the JSON channel would corrupt.
+    const rawTex = "Assume \\theta; then\n\\[ \\theta \\le \\tau(\\bar d). \\]";
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const companionPath = /SOLVE_COMPANION_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const blocks = targets.map((t) => `%%% FIELD ${t.id}.proof\n${rawTex}\n`).join("");
+        await writeFile(companionPath, blocks, "utf8");
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.map((t) => ({ id: t.id, proof_tex: { tex_ref: `${t.id}.proof` } })),
+          added_lemmas: [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+    const result = await runStage0Solve({ ctx, state: makeState(), deps }) as any;
+    expect(result.solved).toBeGreaterThan(0);
+    const published = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+    for (const s of published.statements) {
+      expect(s.status).toBe("proved");
+      expect(s.proof_tex).toBe(rawTex);
+    }
+    // The companion blocks were content-addressed into the proof archive at ingest.
+    const archive = await readProofArchiveIndex(path.dirname(coreJsonPath(ctx)));
+    expect(archive.some((e) => e.node_id.startsWith("companion:") && e.reason.startsWith("solve-companion/"))).toBe(true);
+  });
+
+  it("pipeline-pins an omitted statement-replace revision across a status echo drift", async () => {
+    const ctx = makeCtx(repoRoot);
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<Record<string, any>>;
+        const main = targets.find((t) => t.id === "thm:main");
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.filter((t) => t.id !== "thm:main").map((t) => ({ id: t.id, proof_tex: "QED." })),
+          added_lemmas: [],
+          proposed_core_edits: main ? [{
+            kind: "statement-replace",
+            id: "thm:main",
+            // Deliberately omit based_on_revision and echo the assembled/settled
+            // status rather than the open dispatch status. The pipeline owns the
+            // target revision and must bind it before the fragile echo fallback.
+            proposed: {
+              id: main.id, kind: main.kind, statement: main.statement, status: "proved",
+              depends_on: ["def:env"],
+              justification: main.justification, gap: main.gap, consumer: main.consumer,
+            },
+            reason: "wire the environment definition the proof uses",
+            direction: "correct",
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+    const result = await runStage0Solve({ ctx, state: makeState(), deps }) as any;
+    expect(result.status).toBe("checkpoint");
+    expect(result.message).toMatch(/STRUCTURED CORE edit/);
+    expect((await readSurfacedProposals(ctx)).coreEdits).toContainEqual(
+      expect.objectContaining({
+        kind: "statement-replace",
+        id: "thm:main",
+        based_on_revision: expect.stringMatching(/^rev:[a-f0-9]{64}$/),
+      }),
+    );
+    await applyProposedChanges({ ctx });
+    const proto = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    expect(proto.statements.find((s: any) => s.id === "thm:main").depends_on).toEqual(["def:env"]);
+    expect(proto.assumptions.find((a: any) => a.id === "ass:overlap").used_by)
+      .toEqual(["def:class", "prop:aux"]);
+  });
+
+  it("a revision pinned to the DISPLAYED settled view survives a same-bundle claim change (audit R2P23F1)", async () => {
+    // The claim-change loop marks the working record partial before the
+    // core-edit loop runs, so the settled-overlay view is no longer derivable
+    // from the record — the unconditional {...original, status:"proved"}
+    // candidate is what keeps the solver's rev(proved) applicable.
+    const ctx = makeCtx(repoRoot);
+    const main = PROTO.statements[0];
+    await saveWorkingState(ctx, {
+      round: 2,
+      escalation_entries_consumed: 0,
+      solved: {
+        "thm:main": { proof_tex: "Settled proof.", snapshot: snapshotMember(PROTO as any, main as any) },
+        "prop:aux": { proof_tex: "Aux proof.", snapshot: snapshotMember(PROTO as any, PROTO.statements[1] as any) },
+      },
+      resolved_oeqs: {},
+      proposals: { statements: [], definitions: [], assumptions: [], coreEdits: [], proofs: [] },
+    } as never);
+    const { statementRevision } = await import("../../src/discovery/core/revision.js");
+    // The packet/dispatch showed the ASSEMBLED settled view: proved.
+    const displayedRevision = statementRevision({ ...main, status: "proved" });
+    await seedWorkingProposals(ctx, {
+      statements: [{
+        id: "thm:main",
+        current: main.statement,
+        proposed: "tau is identified on the overlap region",
+        reason: "narrow to the provable claim",
+        direction: "narrow",
+      }],
+      coreEdits: [{
+        kind: "statement-replace",
+        id: "thm:main",
+        based_on_revision: displayedRevision,
+        proposed: {
+          id: main.id, kind: main.kind, statement: main.statement, status: main.status,
+          depends_on: [...main.depends_on, "def:env"],
+          justification: main.justification, gap: main.gap, consumer: main.consumer,
+        },
+        reason: "wire def:env alongside the narrowing",
+        direction: "correct",
+      }],
+    });
+    const changed = await applyProposedChanges({ ctx });
+    expect(changed.map((c) => c.id).filter((id) => id === "thm:main").length).toBeGreaterThanOrEqual(2);
+    const proto = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    const applied = proto.statements.find((s: any) => s.id === "thm:main");
+    expect(applied.statement).toBe("tau is identified on the overlap region");
+    expect(applied.depends_on).toContain("def:env");
+  });
+
+  it("skips fail-safe on a stale based_on_revision (unknown hash)", async () => {
+    const ctx = makeCtx(repoRoot);
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<Record<string, any>>;
+        const main = targets.find((t) => t.id === "thm:main");
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.filter((t) => t.id !== "thm:main").map((t) => ({ id: t.id, proof_tex: "QED." })),
+          added_lemmas: [],
+          proposed_core_edits: main ? [{
+            kind: "statement-replace",
+            id: "thm:main",
+            based_on_revision: "rev:" + "0".repeat(64),
+            proposed: {
+              id: main.id, kind: main.kind, statement: main.statement, status: main.status,
+              depends_on: [...main.depends_on, "def:env"],
+              justification: main.justification, gap: main.gap, consumer: main.consumer,
+            },
+            reason: "authored against a stale view",
+            direction: "correct",
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+    const result = await runStage0Solve({ ctx, state: makeState(), deps }) as any;
+    expect(result.status).toBe("checkpoint");
+    // The apply refuses the stale edit fail-safe, naming the hash.
+    await expect(applyProposedChanges({ ctx })).rejects.toThrow(/rev:0{64}|matches no current view/);
+  });
+
+  it("does not re-dispatch or republish a pruned proto orphan on an unrelated round (audit R2F3)", async () => {
+    const ctx = makeCtx(repoRoot);
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify({
+      ...PROTO,
+      statements: [
+        ...PROTO.statements,
+        { id: "lem:orphan", kind: "lemma", statement: "an abandoned helper", depends_on: [], status: "to-prove", justification: "j", gap: "g", consumer: "c" },
+      ],
+    }), "utf8");
+    await saveWorkingState(ctx, {
+      round: 6,
+      escalation_entries_consumed: 0,
+      solved: {},
+      resolved_oeqs: {},
+      pruned_proto_orphans: ["lem:orphan"],
+      store_format: 2,
+      proposals: { statements: [], definitions: [], assumptions: [], coreEdits: [], proofs: [] },
+    } as never);
+    const c = countingDeps();
+    await runStage0Solve({ ctx, state: makeState(), deps: c.deps });
+    expect(c.calls().flat()).not.toContain("lem:orphan");
+    const published = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+    expect(published.statements.some((s: any) => s.id === "lem:orphan")).toBe(false);
   });
 
   it("dispatches a metadata-only directive after every mathematical node is valid", async () => {
@@ -1478,6 +1967,63 @@ describe("incremental reuse across escalation rounds", () => {
     expect((await readSurfacedProposals(ctx)).coreEdits).toContainEqual(expect.objectContaining({
       kind: "comparator-promise-table-replace",
       id: "metadata:comparator-promise-table",
+    }));
+  });
+
+  it("surfaces a statement-replace whose ONLY delta is free_symbols", async () => {
+    // Regression (stat_doseresponse_minimax_elbow, 2026-07-29). `free_symbols` on a
+    // proto-frozen statement is writable through exactly ONE channel, `statement-replace`,
+    // and apply REQUIRES that channel to echo the claim text byte-for-byte. But the merge
+    // no-op filter compared only {status, kind, statement, depends_on, source} — so a
+    // payload whose sole delta was `free_symbols` matched "no-op" and was spliced out,
+    // while anything altered enough to survive the filter was then refused by apply's echo
+    // check. The field was unwritable BY CONSTRUCTION, and because the splice happens
+    // upstream of apply's `skipped` ledger it left no receipt: the round just reported
+    // fewer edits than the model emitted. Two orchestrators mis-attributed it (to the
+    // ownership projection, and to the echo view) before the emitted-vs-persisted diff
+    // located it.
+    const ctx = makeCtx(repoRoot);
+    const target = PROTO.statements[0] as any;
+    await saveWorkingState(ctx, {
+      round: 3,
+      escalation_entries_consumed: 0,
+      solved: Object.fromEntries(PROTO.statements.map((statement) => [statement.id, {
+        proof_tex: `Proof of ${statement.id}.`,
+        snapshot: snapshotMember(PROTO as any, statement as any),
+      }])),
+    });
+    await appendEscalationLog(ctx, {
+      round: 4,
+      changed: [],
+      directive: "drop the retired symbol from the declaration; change nothing else",
+      require_core_changes: true,
+      required_core_targets: [target.id],
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        await writeFile(outPath, JSON.stringify({
+          proposed_core_edits: [{
+            kind: "statement-replace",
+            id: target.id,
+            // The solver sees the assembled proved overlay, not the frozen to-prove
+            // storage node. Echo that apply-time status exactly; ONLY free_symbols moves.
+            proposed: { ...target, status: "proved", free_symbols: [] },
+            reason: "retired symbol removed from the declaration",
+            direction: "correct",
+          }],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    await runStage0Solve({ ctx, state: makeState(), deps });
+
+    expect((await readSurfacedProposals(ctx)).coreEdits).toContainEqual(expect.objectContaining({
+      kind: "statement-replace",
+      id: target.id,
     }));
   });
 
@@ -1727,6 +2273,294 @@ describe("incremental reuse across escalation rounds", () => {
     expect(core.statements.find((s: any) => s.id === "oeq:tightness")).toMatchObject({ status: "to-prove" });
   });
 
+  it.each([
+    ["directive owner", true],
+    ["semantic owner", false],
+  ] as const)("keeps an exact OEQ obligation emitted by the %s", async (_label, emitFromDirectiveOwner) => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO);
+    proto.statements.push({
+      id: "oeq:tightness",
+      kind: "openendedquestion",
+      statement: "Is the identification bound tight?",
+      depends_on: [],
+      status: "to-prove",
+      justification: "residual question",
+      gap: "vs prior",
+      consumer: "applied",
+    });
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await appendEscalationLog(ctx, {
+      round: 1,
+      changed: [],
+      directive: "repair the frontier transaction and leave the residual tightness question open",
+      required_core_targets: ["oeq:tightness"],
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const owner = prompt.includes("You are the ONLY solve unit allowed to emit directive-wide shared payloads");
+        const semanticOwner = targets.some(({ id }) => id === "oeq:tightness");
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.filter((target) => !target.id.startsWith("oeq:"))
+            .map(({ id }) => ({ id, proof_tex: "QED." })),
+          open_obligations: (emitFromDirectiveOwner ? owner : semanticOwner) ? [{
+            node_id: "oeq:tightness",
+            what_is_open: "canonical residual",
+            obstruction: "no matching lower-bound construction is known",
+            attempted: "searched the standard two-point families",
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    await runStage0Solve({ ctx, state: makeState(), deps });
+    const obligations = JSON.parse(await readFile(
+      path.join(path.dirname(coreJsonPath(ctx)), "open_obligations.json"),
+      "utf8",
+    ));
+    expect(JSON.stringify(obligations)).toContain("canonical residual");
+  });
+
+  it("credits a substantive scoped statement note for its exact metadata target", async () => {
+    const ctx = makeCtx(repoRoot);
+    await appendEscalationLog(ctx, {
+      round: 1,
+      changed: [],
+      directive: "correct only the theorem's stale consumer metadata",
+      required_core_targets: ["thm:main"],
+      require_core_changes: true,
+    });
+    const updatedConsumer = "The residual open question consumes this theorem.";
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        await writeFile(outPath, JSON.stringify({
+          prose_updates: { statement_notes: [{ id: "thm:main", consumer: updatedConsumer }] },
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    await runStage0Solve({ ctx, state: makeState(), deps });
+
+    // Phase 1: prose durability lives in the working state's overlay and the
+    // rendered core.json — the frozen proto is NEVER written mid-round.
+    expect(JSON.parse(await readFile(coreJsonPath(ctx), "utf8")).statements.find(
+      (statement: any) => statement.id === "thm:main",
+    ).consumer).toBe(updatedConsumer);
+    const cursor = await loadWorkingState(ctx);
+    expect(cursor?.prose_overlay?.statement_notes?.["thm:main"]?.consumer).toBe(updatedConsumer);
+    expect(JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8")).statements.find(
+      (statement: any) => statement.id === "thm:main",
+    ).consumer).toBe(PROTO.statements[0].consumer);
+  });
+
+  it("does not credit a byte-identical statement note for an exact metadata target", async () => {
+    const ctx = makeCtx(repoRoot);
+    await appendEscalationLog(ctx, {
+      round: 1,
+      changed: [],
+      directive: "require a substantive theorem metadata correction",
+      required_core_targets: ["thm:main"],
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        await writeFile(outPath, JSON.stringify({
+          prose_updates: {
+            statement_notes: [{ id: "thm:main", consumer: PROTO.statements[0].consumer }],
+          },
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    await expect(runStage0Solve({ ctx, state: makeState(), deps })).rejects.toThrow(
+      /required exact structured target.*thm:main.*omitted thm:main/i,
+    );
+  });
+
+  it("rejects an open obligation that competes with a proof disposition", async () => {
+    const ctx = makeCtx(repoRoot);
+    await appendEscalationLog(ctx, {
+      round: 1,
+      changed: [],
+      directive: "settle each target exactly once",
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const semanticOwner = targets.some(({ id }) => id === "prop:aux");
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.map(({ id }) => ({ id, proof_tex: "QED." })),
+          open_obligations: semanticOwner ? [{
+            node_id: "prop:aux",
+            what_is_open: "a competing claimed gap",
+            obstruction: "claimed obstruction",
+            attempted: "claimed route",
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    await expect(runStage0Solve({ ctx, state: makeState(), deps })).rejects.toThrow(
+      /mutually exclusive terminal dispositions for prop:aux.*open-obligation.*proof/i,
+    );
+  });
+
+  it("rejects settling an existing OEQ through added_lemmas while leaving it open", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO);
+    proto.statements.push({
+      id: "oeq:tightness",
+      kind: "openendedquestion",
+      statement: "Is the identification bound tight?",
+      depends_on: [],
+      status: "to-prove",
+      justification: "residual question",
+      gap: "vs prior",
+      consumer: "applied",
+    });
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsOeq = targets.some(({ id }) => id === "oeq:tightness");
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.filter(({ id }) => !id.startsWith("oeq:")).map(({ id }) => ({ id, proof_tex: "QED." })),
+          added_lemmas: ownsOeq ? [{
+            id: "oeq:tightness",
+            kind: "openendedquestion",
+            statement: "Is the identification bound tight?",
+            depends_on: [],
+            status: "proved",
+            proof_tex: "An in-place answer.",
+          }] : [],
+          open_obligations: ownsOeq ? [{
+            node_id: "oeq:tightness",
+            what_is_open: "the same question",
+            obstruction: "no construction",
+            attempted: "standard routes",
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    await expect(runStage0Solve({ ctx, state: makeState(), deps })).rejects.toThrow(
+      /attempted to settle OEQ oeq:tightness in added_lemmas.*must use resolved_oeqs/i,
+    );
+  });
+
+  it("does not let a definition-change payload masquerade as an exact OEQ disposition", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO);
+    proto.statements.push({
+      id: "oeq:tightness",
+      kind: "openendedquestion",
+      statement: "Is the identification bound tight?",
+      depends_on: [],
+      status: "to-prove",
+      justification: "residual question",
+      gap: "vs prior",
+      consumer: "applied",
+    });
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await appendEscalationLog(ctx, {
+      round: 1,
+      changed: [],
+      directive: "settle or attest the exact OEQ target",
+      required_core_targets: ["oeq:tightness"],
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const owner = prompt.includes("You are the ONLY solve unit allowed to emit directive-wide shared payloads");
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.filter(({ id }) => !id.startsWith("oeq:")).map(({ id }) => ({ id, proof_tex: "QED." })),
+          proposed_definition_changes: owner ? [{
+            id: "oeq:tightness",
+            current: "not a definition",
+            proposed: "still not a definition",
+            reason: "wrong payload channel",
+            direction: "correct",
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    await expect(runStage0Solve({ ctx, state: makeState(), deps })).rejects.toThrow(
+      /required exact structured target.*oeq:tightness.*omitted oeq:tightness/i,
+    );
+  });
+
+  it("does not let a no-op definition echo consume an exact structured target", async () => {
+    const ctx = makeCtx(repoRoot);
+    await appendEscalationLog(ctx, {
+      round: 1,
+      changed: [],
+      directive: "change the exact envelope definition substantively",
+      require_core_changes: true,
+      required_core_targets: ["def:env"],
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const owner = prompt.includes("You are the ONLY solve unit allowed to emit directive-wide shared payloads");
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.map(({ id }) => ({ id, proof_tex: "QED." })),
+          proposed_definition_changes: owner ? [{
+            id: "def:env",
+            current: "U = a",
+            proposed: "U = a",
+            reason: "echo only",
+            direction: "correct",
+          }] : [],
+          proposed_statement_changes: owner ? [{
+            id: "def:env",
+            current: "not a statement",
+            proposed: "still not a statement",
+            reason: "wrong-channel fallback",
+            direction: "narrow",
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    await expect(runStage0Solve({ ctx, state: makeState(), deps })).rejects.toThrow(
+      /no accepted substantive payload remained for def:env after normalization/i,
+    );
+  });
+
   it("drops a re-proposal of an assumption the proto already holds verbatim (no-op echo)", async () => {
     // The statement/definition no-op filters already drop already-applied echoes;
     // assumptions had no such filter, so a solver re-emitting an applied assumption
@@ -1884,14 +2718,7 @@ describe("incremental reuse across escalation rounds", () => {
     expect(existsSync(obPath), "a zero-obligation round must clear the stale file").toBe(false);
   });
 
-  it("keeps a round-added lemma's catalog node when ANOTHER unit supplies its proof", async () => {
-    // The parking mechanism only covers the ordering where the proving unit runs BEFORE
-    // the installing unit. In the other ordering the id is already in statementIds, so
-    // the proof takes the inline branch, whose `priorAgent` reads the PREVIOUS round —
-    // undefined for a lemma added this round — and recordProof then replaced the
-    // node-carrying record with a node-less one. Next round carryPlan drops the lemma
-    // ("record carries no statement definition"): a proved lemma silently vanishes, or
-    // its consumers dangle. Ownership must come from the SAME-round install.
+  it("rejects a sibling proof for a round-added lemma and keeps the installer's bytes", async () => {
     const ctx = makeCtx(repoRoot);
     const deps: StageDeps = {
       runCodex: async ({ prompt }: { prompt: string }) => {
@@ -1907,7 +2734,7 @@ describe("incremental reuse across escalation rounds", () => {
           ],
           added_lemmas: isMainUnit
             ? [{ id: "lem:cross-helper", kind: "lemma", statement: "the cross-unit helper claim",
-                 depends_on: [], status: "to-prove" }]
+                 depends_on: [], status: "proved", proof_tex: "Proved by the installing unit." }]
             : [],
         }), "utf8");
         return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
@@ -1917,12 +2744,12 @@ describe("incremental reuse across escalation rounds", () => {
     };
 
     const result = await runStage0Solve({ ctx, state: makeState(), deps });
-    expect(String((result as { message?: string }).message ?? "")).not.toMatch(/PLUMBING FAULT/);
+    expect(String((result as { message?: string }).message ?? "")).toMatch(/PLUMBING FAULT.*lem:cross-helper/);
     const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
     const rec = working.solved["lem:cross-helper"];
     expect(rec?.node, "the agent-added lemma must keep its catalog node definition").toBeDefined();
     expect(rec?.node?.id).toBe("lem:cross-helper");
-    expect(rec?.proof_tex).toBe("Proved by the sibling unit.");
+    expect(rec?.proof_tex).toBe("Proved by the installing unit.");
     const core = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
     expect(core.statements.find((s: any) => s.id === "lem:cross-helper")?.status).toBe("proved");
   });
@@ -2090,7 +2917,8 @@ describe("incremental reuse across escalation rounds", () => {
       runCodex: async ({ prompt }: { prompt: string }) => {
         calls += 1;
         const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
-        const targetBlock = prompt.split("=== TARGET STATEMENT(S) TO SOLVE")[1] ?? "";
+        const targetBlock = (prompt.split("=== TARGET STATEMENT(S) TO SOLVE")[1] ?? "")
+          .split("SOLVE_OUTPUT_PATH")[0];
         const reproveAgentNodes = targetBlock.includes('"id": "thm:replicated-boundary"');
         const definitionAlreadyFrozen = prompt.includes('"id": "def:replicated-frontier"');
         const canonicalDirectiveOwner = prompt.includes(
@@ -2175,6 +3003,7 @@ describe("incremental reuse across escalation rounds", () => {
     const ctx = makeCtx(repoRoot);
     const proto = structuredClone(PROTO) as any;
     proto.statements[1].depends_on = ["thm:main"];
+    proto.statements[1].consumer = "canonical downstream applications";
     await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
     const deps: StageDeps = {
       runCodex: async ({ prompt }: { prompt: string }) => {
@@ -2203,6 +3032,782 @@ describe("incremental reuse across escalation rounds", () => {
       id: "thm:main",
       replacement_id: "prop:aux",
     })]);
+  });
+
+  it("carries an orchestrator-mandated delete even when its owner re-proves the obsolete target", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    proto.statements[1].depends_on = ["ass:overlap"];
+    proto.statements[1].consumer = "canonical downstream applications";
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    const requiredEdit = {
+      kind: "statement-delete" as const,
+      id: "thm:main",
+      replacement_id: "prop:aux",
+      reason: "independently adjudicated obsolete duplicate",
+      direction: "delete-obsolete" as const,
+    };
+    await appendEscalationLog(ctx, {
+      round: 1,
+      changed: [],
+      directive: "delete the obsolete headline in favor of the canonical proposition",
+      require_core_changes: true,
+      required_core_edit_mandates: [makeRequiredCoreEditMandate({
+        core: proto,
+        working: null,
+        edit: requiredEdit,
+        proposalRevision: "angle:0/version:1",
+      })],
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const targetBlock = (prompt.split("=== TARGET STATEMENT(S) TO SOLVE")[1] ?? "")
+          .split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(
+          targetBlock.slice(targetBlock.indexOf("["), targetBlock.lastIndexOf("]") + 1),
+        ) as Array<{ id: string }>;
+        await writeFile(outPath, JSON.stringify({
+          // Reproduces the live defect: the semantic owner follows the generic
+          // prove-target instruction instead of the requested deletion.
+          proofs: targets.map((target) => ({ id: target.id, proof_tex: `Reproved ${target.id}.` })),
+          proposed_core_edits: [{ ...requiredEdit, reason: "worker rationale must not replace canonical provenance" }],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const state = makeVersionedState();
+    const result = await runStage0Solve({ ctx, state, deps });
+    expect(result).toHaveProperty("status", "checkpoint");
+    const surfaced = await readSurfacedProposals(ctx);
+    expect(surfaced.coreEdits).toContainEqual(expect.objectContaining({
+      kind: "statement-delete",
+      id: "thm:main",
+      replacement_id: "prop:aux",
+    }));
+    expect(surfaced.proofs ?? []).not.toContainEqual(expect.objectContaining({ id: "thm:main" }));
+    const assembled = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+    expect(assembled.statements.find((statement: any) => statement.id === "thm:main").proof_tex).toBeUndefined();
+    const workingAfterFirst = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(workingAfterFirst.required_core_edit_mandates).toHaveLength(1);
+    const mandateId = workingAfterFirst.required_core_edit_mandates[0].mandate_id;
+    expect(surfaced.coreEdits).toHaveLength(1);
+    const packet = JSON.parse(await readFile(proposalReviewPacketPath(ctx), "utf8"));
+    expect(packet.required_core_edit_mandates).toEqual([
+      expect.objectContaining({ mandate_id: mandateId }),
+    ]);
+    await expect(discardAllProposedChanges({ ctx, note: "reject everything" })).rejects.toThrow(/required core edits/i);
+    await expect(applyProposedChanges({ ctx, ids: new Set(["statement:prop:aux"]) })).rejects.toThrow(/mandated edits apply atomically/i);
+
+    // The journal row is now consumed; durability must come from the working cursor.
+    await runStage0Solve({ ctx, state, deps });
+    const workingAfterSecond = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(workingAfterSecond.required_core_edit_mandates).toEqual([
+      expect.objectContaining({ mandate_id: mandateId }),
+    ]);
+    expect((await readSurfacedProposals(ctx)).coreEdits).toHaveLength(1);
+    const archived = await readProofArchiveIndex(path.dirname(coreJsonPath(ctx)));
+    expect(archived).toContainEqual(expect.objectContaining({
+      node_id: "thm:main",
+      reason: "mandated-delete",
+    }));
+
+    await applyProposedChanges({ ctx });
+    const appliedProto = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    expect(appliedProto.statements.some((statement: any) => statement.id === "thm:main")).toBe(false);
+    const workingAfterApply = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(workingAfterApply.required_core_edit_mandates).toEqual([]);
+  });
+
+  it("preserves and applies a metadata-only mandated statement replacement", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    const edit = {
+      kind: "statement-replace" as const,
+      id: "thm:main",
+      proposed: { ...proto.statements[0], consumer: "revised canonical consumer" },
+      reason: "independently adjudicated metadata repair",
+      direction: "correct" as const,
+    };
+    const mandate = makeRequiredCoreEditMandate({
+      core: proto,
+      working: null,
+      edit,
+      proposalRevision: "angle:0/version:1",
+    });
+    await appendEscalationLog(ctx, {
+      round: 1,
+      changed: [],
+      directive: "repair the theorem metadata",
+      require_core_changes: true,
+      required_core_edit_mandates: [mandate],
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        await writeFile(outPath, JSON.stringify({
+          proofs: [{ id: "thm:main", proof_tex: "Worker proof against the old metadata." }],
+          proposed_statement_changes: [{
+            id: "thm:main", current: proto.statements[0].statement,
+            proposed: "an adversarial claim rewrite", reason: "ignore mandate", direction: "narrow",
+          }],
+          proposed_core_edits: [{ ...edit, reason: "worker rationale" }],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+    await runStage0Solve({ ctx, state: makeVersionedState(), deps });
+    const surfaced = await readSurfacedProposals(ctx);
+    expect(surfaced.coreEdits).toEqual([expect.objectContaining({
+      kind: "statement-replace", id: "thm:main", reason: edit.reason,
+    })]);
+    expect(surfaced.statements).toEqual([]);
+    const archived = await readProofArchiveIndex(path.dirname(coreJsonPath(ctx)));
+    expect(archived).toContainEqual(expect.objectContaining({
+      node_id: "thm:main", reason: "mandated-statement-replace",
+    }));
+    await applyProposedChanges({ ctx });
+    const applied = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    expect(applied.statements.find((statement: any) => statement.id === "thm:main").consumer)
+      .toBe("revised canonical consumer");
+  });
+
+  it("applies a claim change with its paired structural statement replacement", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    const proposedStatement = "tau is identified on the overlap region";
+    await saveWorkingState(ctx, {
+      round: 1, solved: {},
+      proposals: {
+        statements: [{
+          id: "thm:main", current: proto.statements[0].statement,
+          proposed: proposedStatement, reason: "narrow the claim", direction: "narrow",
+        }],
+        definitions: [], assumptions: [],
+        coreEdits: [{
+          kind: "statement-replace", id: "thm:main",
+          proposed: { ...proto.statements[0], statement: proposedStatement, consumer: "revised consumer" },
+          reason: "synchronize structural metadata", direction: "correct",
+        }],
+        proofs: [],
+      },
+    });
+    await expect(applyProposedChanges({ ctx })).resolves.toHaveLength(2);
+    const applied = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    expect(applied.statements.find((statement: any) => statement.id === "thm:main"))
+      .toMatchObject({ statement: proposedStatement, consumer: "revised consumer", status: "to-prove" });
+  });
+
+  it("applies a paired claim+structural replacement echoing the assembled settled-overlay view", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    const frozen = proto.statements[0];
+    const proposedStatement = "tau is identified on the overlap region";
+    await saveWorkingState(ctx, {
+      round: 1,
+      solved: {
+        "thm:main": {
+          proof_tex: "Settled proof of the frozen claim.",
+          snapshot: {
+            stmt: frozen.statement, depends_on: frozen.depends_on, defs: {},
+            assumptions: { "ass:overlap": PROTO.assumptions[0].condition },
+          },
+          node: { ...frozen, status: "proved", proof_tex: "Settled proof of the frozen claim." },
+        },
+      },
+      proposals: {
+        statements: [{
+          id: "thm:main", current: frozen.statement,
+          proposed: proposedStatement, reason: "narrow the claim", direction: "narrow",
+        }],
+        definitions: [], assumptions: [],
+        coreEdits: [{
+          kind: "statement-replace", id: "thm:main",
+          // The solver saw the ASSEMBLED pre-bundle view: frozen statement with the
+          // settled overlay's proved status. Echoing that view must be accepted.
+          proposed: { ...frozen, status: "proved", consumer: "revised consumer" },
+          reason: "synchronize structural metadata", direction: "correct",
+        }],
+        proofs: [],
+      },
+    });
+    await expect(applyProposedChanges({ ctx })).resolves.toHaveLength(2);
+    const applied = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    expect(applied.statements.find((statement: any) => statement.id === "thm:main"))
+      .toMatchObject({ statement: proposedStatement, consumer: "revised consumer", status: "to-prove" });
+  });
+
+  it("allows an exact reviewed cancellation to retire one mandate while preserving every other mandate", () => {
+    const proto = structuredClone(PROTO) as any;
+    const first = makeRequiredCoreEditMandate({
+      core: proto, working: null,
+      edit: { kind: "statement-delete", id: "thm:main", reason: "rejected edit", direction: "delete-obsolete" },
+      proposalRevision: "angle:0/version:1",
+    });
+    const second = makeRequiredCoreEditMandate({
+      core: proto, working: null,
+      edit: { kind: "statement-delete", id: "prop:aux", reason: "accepted edit", direction: "delete-obsolete" },
+      proposalRevision: "angle:0/version:1",
+    });
+    const cancellation = makeRequiredCoreEditMandateCancellation({
+      mandateId: first.mandate_id,
+      reason: "mandatory reviewer rejected stale metadata in the frozen edit",
+    });
+    expect(resolveRequiredCoreEditMandates({
+      mandates: [first, second], cancellations: [cancellation], core: proto, working: null,
+      proposalRevision: "angle:0/version:1",
+    })).toEqual([second]);
+  });
+
+  it("refuses a cancellation that names no outstanding exact mandate", () => {
+    const proto = structuredClone(PROTO) as any;
+    const cancellation = makeRequiredCoreEditMandateCancellation({
+      mandateId: `d0m:${"0".repeat(64)}`,
+      reason: "attempt to clear an unrelated mandate",
+    });
+    expect(() => resolveRequiredCoreEditMandates({
+      mandates: [], cancellations: [cancellation], core: proto, working: null,
+      proposalRevision: "angle:0/version:1",
+    })).toThrow(/names no outstanding mandate/i);
+  });
+
+  it("permits audited discard after the sole exact mandate is cancelled", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    const edit = {
+      kind: "statement-delete" as const, id: "thm:main",
+      reason: "later review rejected this frozen edit", direction: "delete-obsolete" as const,
+    };
+    const mandate = makeRequiredCoreEditMandate({
+      core: proto, working: null, edit, proposalRevision: "angle:0/version:1",
+    });
+    await saveWorkingState(ctx, {
+      round: 2, proposal_revision: "angle:0/version:1", escalation_entries_consumed: 0, solved: {},
+      proposals: { statements: [], definitions: [], assumptions: [], coreEdits: [edit], proofs: [] },
+      required_core_edit_mandates: [mandate],
+    });
+    await appendEscalationLog(ctx, {
+      round: 2, changed: [], provenance_only: true,
+      cancelled_core_edit_mandates: [makeRequiredCoreEditMandateCancellation({
+        mandateId: mandate.mandate_id,
+        reason: "mandatory reviewer rejected stale metadata in the frozen edit",
+      })],
+    });
+    await expect(discardAllProposedChanges({ ctx, note: "mandatory review rejected the stale bundle" }))
+      .resolves.toBe(1);
+    expect((await readEscalationLog(ctx)).at(-1)?.note).toMatch(/DISCARDED ALL 1/);
+  });
+
+  it("round-trips a mandate and its cancellation through the persisted escalation journal bytes", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    const mandate = makeRequiredCoreEditMandate({
+      core: proto, working: null,
+      edit: { kind: "statement-delete", id: "thm:main", reason: "rejected edit", direction: "delete-obsolete" },
+      proposalRevision: "angle:0/version:1",
+    });
+    await appendEscalationLog(ctx, {
+      round: 2, changed: [], provenance_only: true,
+      required_core_edit_mandates: [mandate],
+    });
+    await appendEscalationLog(ctx, {
+      round: 2, changed: [], provenance_only: true,
+      cancelled_core_edit_mandates: [makeRequiredCoreEditMandateCancellation({
+        mandateId: mandate.mandate_id,
+        reason: "mandatory reviewer rejected the exact edit",
+      })],
+    });
+    // Integrity hashes must verify against what was actually persisted and re-read,
+    // not against the in-memory objects that produced them: writer/reader
+    // canonicalization drift is exactly the live-resume failure class.
+    const journal = await readEscalationLog(ctx);
+    const persistedMandates = journal.flatMap((entry) => entry.required_core_edit_mandates ?? []);
+    const persistedCancellations = journal.flatMap((entry) => entry.cancelled_core_edit_mandates ?? []);
+    expect(persistedMandates).toHaveLength(1);
+    expect(persistedCancellations).toHaveLength(1);
+    expect(resolveRequiredCoreEditMandates({
+      mandates: persistedMandates, cancellations: persistedCancellations, core: proto, working: null,
+      proposalRevision: "angle:0/version:1",
+    })).toEqual([]);
+  });
+
+  it("refuses to delete a mandated replacement endpoint in the same atomic bundle", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    const mandatedDelete = {
+      kind: "statement-delete" as const,
+      id: "thm:main",
+      replacement_id: "prop:aux",
+      reason: "replace the obsolete headline by the canonical endpoint",
+      direction: "delete-obsolete" as const,
+    };
+    const endpointDelete = {
+      kind: "statement-delete" as const,
+      id: "prop:aux",
+      reason: "adversarial worker deletion of the endpoint",
+      direction: "delete-obsolete" as const,
+    };
+    await saveWorkingState(ctx, {
+      round: 2,
+      proposal_revision: "angle:0/version:1",
+      escalation_entries_consumed: 0,
+      solved: {},
+      proposals: {
+        statements: [], definitions: [], assumptions: [],
+        coreEdits: [mandatedDelete, endpointDelete], proofs: [],
+      },
+      required_core_edit_mandates: [makeRequiredCoreEditMandate({
+        core: proto, working: null, edit: mandatedDelete,
+        proposalRevision: "angle:0/version:1",
+      })],
+    });
+    await expect(applyProposedChanges({ ctx }))
+      .rejects.toThrow(/stable surviving replacement endpoint/i);
+    const unchanged = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    expect(unchanged.statements.some((statement: any) => statement.id === "thm:main")).toBe(true);
+    expect(unchanged.statements.some((statement: any) => statement.id === "prop:aux")).toBe(true);
+  });
+
+  it("applies a mandated A-to-B deletion with the reviewed dependency cleanup of B", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    const endpoint = proto.statements.find((statement: any) => statement.id === "prop:aux");
+    endpoint.depends_on = ["thm:main"];
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    const mandatedDelete = {
+      kind: "statement-delete" as const, id: "thm:main", replacement_id: "prop:aux",
+      reason: "replace obsolete headline", direction: "delete-obsolete" as const,
+    };
+    const endpointCleanup = {
+      kind: "statement-replace" as const, id: "prop:aux",
+      proposed: { ...endpoint, depends_on: [], consumer: "canonical downstream applications" },
+      reason: "remove the obsolete predecessor edge", direction: "correct" as const,
+    };
+    delete endpointCleanup.proposed.proof_tex;
+    await saveWorkingState(ctx, {
+      round: 2, proposal_revision: "angle:0/version:1", escalation_entries_consumed: 0, solved: {},
+      proposals: {
+        statements: [], definitions: [], assumptions: [],
+        // Mandates are seeded before worker cleanup in the live merge. Apply must
+        // canonicalize the dependency order rather than trusting packet order.
+        coreEdits: [mandatedDelete, endpointCleanup], proofs: [],
+      },
+      required_core_edit_mandates: [makeRequiredCoreEditMandate({
+        core: proto, working: null, edit: mandatedDelete, proposalRevision: "angle:0/version:1",
+      })],
+    });
+    await applyProposedChanges({ ctx });
+    const applied = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    expect(applied.statements.some((statement: any) => statement.id === "thm:main")).toBe(false);
+    expect(applied.statements.find((statement: any) => statement.id === "prop:aux").depends_on).toEqual([]);
+  });
+
+  it("replays a pending apply transaction before an ordinary resumed solve", async () => {
+    const ctx = makeCtx(repoRoot);
+    const protoBytes = await readFile(protoCoreJsonPath(ctx), "utf8");
+    const proto = JSON.parse(protoBytes);
+    const carried = {
+      id: "lem:carried-obsolete", kind: "lemma", statement: "obsolete helper",
+      depends_on: [], status: "proved", proof_tex: "Old proof.",
+    };
+    const edit = {
+      kind: "statement-delete" as const,
+      id: carried.id,
+      reason: "obsolete carried route",
+      direction: "delete-obsolete" as const,
+    };
+    const working = {
+      round: 3,
+      proposal_revision: "angle:0/version:1",
+      escalation_entries_consumed: 0,
+      solved: { [carried.id]: { node: carried, proof_tex: carried.proof_tex, snapshot: snapshotMember(proto, carried as any) } },
+      proposals: { statements: [], definitions: [], assumptions: [], coreEdits: [edit], proofs: [] },
+      required_core_edit_mandates: [makeRequiredCoreEditMandate({
+        core: proto, working: { solved: { [carried.id]: { node: carried as any } } }, edit,
+        proposalRevision: "angle:0/version:1",
+      })],
+    };
+    await saveWorkingState(ctx, working as any);
+    const transactionId = "d0apply:test-recovery";
+    await writeFile(path.join(path.dirname(coreJsonPath(ctx)), "d0_apply_transaction.json"), JSON.stringify({
+      version: 1,
+      transaction_id: transactionId,
+      proto_before: protoBytes,
+      proto_after: protoBytes,
+      working_after: {
+        ...working,
+        solved: {},
+        proposals: { statements: [], definitions: [], assumptions: [], coreEdits: [], proofs: [] },
+        required_core_edit_mandates: [],
+      },
+      escalation_entry: {
+        transaction_id: transactionId,
+        round: 3,
+        changed: [{ id: carried.id, kind: "statement", from: JSON.stringify(carried), to: "<deleted>", reason: edit.reason }],
+      },
+    }), "utf8");
+    await runStage0Solve({ ctx, state: makeVersionedState(), deps: solverDeps("prove") });
+    const recoveredWorking = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(recoveredWorking.solved[carried.id]).toBeUndefined();
+    expect(recoveredWorking.required_core_edit_mandates).toEqual([]);
+    expect((await readEscalationLog(ctx)).filter((entry) => entry.transaction_id === transactionId)).toHaveLength(1);
+    expect(existsSync(path.join(path.dirname(coreJsonPath(ctx)), "d0_apply_transaction.json"))).toBe(false);
+  });
+
+  it("cannot apply or discard a stale packet while a new journal mandate is pending", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    const edit = {
+      kind: "statement-delete" as const, id: "thm:main",
+      reason: "new independent adjudication", direction: "delete-obsolete" as const,
+    };
+    await saveWorkingState(ctx, {
+      round: 2, proposal_revision: "angle:0/version:1", escalation_entries_consumed: 0, solved: {},
+      proposals: {
+        statements: [], definitions: [], assumptions: [],
+        coreEdits: [{
+          kind: "rebuild-reverse-dependencies", id: "metadata:reverse-dependencies",
+          reason: "stale packet", direction: "correct",
+        }], proofs: [],
+      },
+    });
+    await appendEscalationLog(ctx, {
+      round: 2, changed: [], directive: "delete exact target", require_core_changes: true,
+      required_core_edit_mandates: [makeRequiredCoreEditMandate({
+        core: proto, working: null, edit, proposalRevision: "angle:0/version:1",
+      })],
+    });
+    await expect(applyProposedChanges({ ctx })).rejects.toThrow(/lost or altered exact required/i);
+    await expect(discardAllProposedChanges({ ctx, note: "discard stale packet" }))
+      .rejects.toThrow(/required core edits/i);
+  });
+
+  it("refuses a same-operation proposal whose rationale differs from its V2 mandate", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    const edit = {
+      kind: "statement-delete" as const, id: "thm:main",
+      reason: "canonical adjudicated rationale", direction: "delete-obsolete" as const,
+    };
+    await saveWorkingState(ctx, {
+      round: 1, proposal_revision: "angle:0/version:1", solved: {},
+      proposals: {
+        statements: [], definitions: [], assumptions: [],
+        coreEdits: [{ ...edit, reason: "worker substituted rationale" }], proofs: [],
+      },
+      required_core_edit_mandates: [makeRequiredCoreEditMandate({
+        core: proto, working: null, edit, proposalRevision: "angle:0/version:1",
+      })],
+    });
+    await expect(applyProposedChanges({ ctx }))
+      .rejects.toThrow(/lost or altered exact required core-edit mandate/i);
+    const unchanged = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    expect(unchanged.statements.some((statement: any) => statement.id === "thm:main")).toBe(true);
+  });
+
+  it("refuses a durable required edit after its semantic target changes", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    const edit = {
+      kind: "statement-delete" as const,
+      id: "thm:main",
+      reason: "obsolete",
+      direction: "delete-obsolete" as const,
+    };
+    const mandate = makeRequiredCoreEditMandate({
+      core: proto, working: null, edit, proposalRevision: "angle:0/version:1",
+    });
+    await saveWorkingState(ctx, {
+      round: 1,
+      proposal_revision: "angle:0/version:1",
+      escalation_entries_consumed: 0,
+      solved: {},
+      proposals: { statements: [], definitions: [], assumptions: [], coreEdits: [edit], proofs: [] },
+      required_core_edit_mandates: [mandate],
+    });
+    proto.statements[0].statement = "an intervening reviewer changed the claim";
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await expect(runStage0Solve({ ctx, state: makeVersionedState(), deps: solverDeps("prove") }))
+      .rejects.toThrow(/target changed since adjudication/i);
+  });
+
+  it("refuses a durable required edit after the proposal revision advances", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    const edit = {
+      kind: "statement-delete" as const,
+      id: "thm:main",
+      reason: "obsolete",
+      direction: "delete-obsolete" as const,
+    };
+    const mandate = makeRequiredCoreEditMandate({
+      core: proto,
+      working: null,
+      edit,
+      proposalRevision: "angle:0/version:1",
+    });
+    await saveWorkingState(ctx, {
+      round: 1,
+      proposal_revision: "angle:0/version:1",
+      escalation_entries_consumed: 0,
+      solved: {},
+      proposals: { statements: [], definitions: [], assumptions: [], coreEdits: [edit], proofs: [] },
+      required_core_edit_mandates: [mandate],
+    });
+    const state = makeState();
+    state.proposed_from!.current_angle_index = 0;
+    state.proposed_from!.current_version = 2;
+    await expect(runStage0Solve({ ctx, state, deps: solverDeps("prove") }))
+      .rejects.toThrow(/proposal revision.*not angle:0\/version:2/i);
+  });
+
+  it("refuses mutually exclusive required edits on one target", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    const deletion = {
+      kind: "statement-delete" as const,
+      id: "thm:main",
+      reason: "obsolete",
+      direction: "delete-obsolete" as const,
+    };
+    const replacement = {
+      kind: "statement-replace" as const,
+      id: "thm:main",
+      proposed: { ...proto.statements[0] },
+      reason: "rewire instead",
+      direction: "correct" as const,
+    };
+    delete replacement.proposed.proof_tex;
+    await saveWorkingState(ctx, {
+      round: 1,
+      escalation_entries_consumed: 0,
+      solved: {},
+      proposals: { statements: [], definitions: [], assumptions: [], coreEdits: [], proofs: [] },
+      required_core_edit_mandates: [
+        makeRequiredCoreEditMandate({ core: proto, working: null, edit: deletion, proposalRevision: "angle:0/version:1" }),
+        makeRequiredCoreEditMandate({ core: proto, working: null, edit: replacement, proposalRevision: "angle:0/version:1" }),
+      ],
+    });
+    await expect(runStage0Solve({ ctx, state: makeVersionedState(), deps: solverDeps("prove") }))
+      .rejects.toThrow(/conflicting required core-edit mandates.*thm:main/i);
+  });
+
+  it("rejects a working-state mandate whose content-addressed id was forged", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    const mandate = makeRequiredCoreEditMandate({
+      core: proto,
+      working: null,
+      edit: {
+        kind: "statement-delete",
+        id: "thm:main",
+        reason: "obsolete",
+        direction: "delete-obsolete",
+      },
+      proposalRevision: "angle:0/version:1",
+    });
+    mandate.mandate_id = `d0m:${"0".repeat(64)}`;
+    await writeFile(workingPath(ctx), JSON.stringify({
+      round: 1,
+      solved: {},
+      proposals: { statements: [], definitions: [], assumptions: [], coreEdits: [], proofs: [] },
+      required_core_edit_mandates: [mandate],
+    }), "utf8");
+    await expect(runStage0Solve({ ctx, state: makeState(), deps: solverDeps("prove") }))
+      .rejects.toThrow(/mandate id\/content mismatch/i);
+  });
+
+  it("rejects a mandate whose adjudicated rationale was mutated at rest", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    const mandate = makeRequiredCoreEditMandate({
+      core: proto, working: null,
+      edit: { kind: "statement-delete", id: "thm:main", reason: "original rationale", direction: "delete-obsolete" },
+      proposalRevision: "angle:0/version:1",
+    });
+    mandate.edit.reason = "tampered rationale";
+    await writeFile(workingPath(ctx), JSON.stringify({
+      round: 1, solved: {}, required_core_edit_mandates: [mandate],
+      proposals: { statements: [], definitions: [], assumptions: [], coreEdits: [], proofs: [] },
+    }), "utf8");
+    await expect(runStage0Solve({ ctx, state: makeVersionedState(), deps: solverDeps("prove") }))
+      .rejects.toThrow(/sealed bytes diverge|mandate id\/content mismatch/i);
+  });
+
+  it("validates a durable pre-versioning mandate with its original operation digest", () => {
+    const legacy = {
+      mandate_id: "d0m:7b11a6cfd38e2a117f0c97c19f2890ef095fb8d638bec30c52dbac87d60d2410",
+      edit: {
+        kind: "assumption-replace" as const,
+        id: "ass:strict-overlap",
+        proposed: {
+          id: "ass:strict-overlap",
+          kind: "support" as const,
+          condition: String.raw`\(c_\pi\le\pi(x)\le1-c_\pi\ \text{for }x\in\mathcal X\).`,
+          free_symbols: ["c_\\pi", "\\pi", "x", "\\mathcal X"],
+          standard: { name: "strict overlap", cite: "BonviniKennedyKeele2023MinimaxSubgroup" },
+          used_by: [
+            "def:smooth-model", "def:transverse-model", "lem:estimator-construction",
+            "lem:local-gram", "thm:identified-version",
+          ],
+        },
+        reason: "Byte-only LaTeX serialization correction: move the trailing domain qualifier inside inline math; the assumption is mathematically identical.",
+        direction: "correct" as const,
+      },
+      proposal_revision: "angle:0/version:6",
+      target_snapshot: "{\"id\":\"ass:strict-overlap\",\"kind\":\"support\",\"condition\":\"\\\\(c_\\\\pi\\\\le\\\\pi(x)\\\\le1-c_\\\\pi\\\\)\\\\ \\\\text{for }x\\\\in\\\\mathcal X.\",\"free_symbols\":[\"c_\\\\pi\",\"\\\\pi\",\"x\",\"\\\\mathcal X\"],\"standard\":{\"name\":\"strict overlap\",\"cite\":\"BonviniKennedyKeele2023MinimaxSubgroup\"},\"used_by\":[\"def:smooth-model\",\"def:transverse-model\",\"lem:estimator-construction\",\"lem:local-gram\",\"thm:identified-version\"]}",
+    };
+    expect(() => assertMandateIntegrity(legacy)).not.toThrow();
+  });
+
+  it("emits byte-anchored v3 mandates whose id is the hash of the persisted sealed bytes", () => {
+    const proto = structuredClone(PROTO) as any;
+    const mandate = makeRequiredCoreEditMandate({
+      core: proto, working: null,
+      edit: { kind: "statement-delete", id: "thm:main", reason: "rejected edit", direction: "delete-obsolete" },
+      proposalRevision: "angle:0/version:1",
+    });
+    expect(mandate.hash_version).toBe(3);
+    expect(mandate.sealed).toBeTypeOf("string");
+    const digest = createHash("sha256").update(mandate.sealed!).digest("hex");
+    expect(mandate.mandate_id).toBe(`d0m:${digest}`);
+    expect(JSON.parse(mandate.sealed!)).toEqual({
+      edit: mandate.edit,
+      proposal_revision: mandate.proposal_revision,
+      target_snapshot: mandate.target_snapshot,
+    });
+  });
+
+  it("verifies a v3 mandate from persisted bytes regardless of field key order, and rejects tampering", () => {
+    const proto = structuredClone(PROTO) as any;
+    const mandate = makeRequiredCoreEditMandate({
+      core: proto, working: null,
+      edit: { kind: "statement-delete", id: "thm:main", reason: "rejected edit", direction: "delete-obsolete" },
+      proposalRevision: "angle:0/version:1",
+    });
+    // Round-trip through JSON with reordered record keys: integrity must not
+    // depend on any re-canonicalization of the parsed object.
+    const reordered = JSON.parse(JSON.stringify({
+      target_snapshot: mandate.target_snapshot,
+      sealed: mandate.sealed,
+      proposal_revision: mandate.proposal_revision,
+      mandate_id: mandate.mandate_id,
+      hash_version: mandate.hash_version,
+      edit: mandate.edit,
+    }));
+    expect(() => assertMandateIntegrity(reordered)).not.toThrow();
+    const tamperedEdit = structuredClone(reordered);
+    tamperedEdit.edit.id = "prop:aux";
+    expect(() => assertMandateIntegrity(tamperedEdit)).toThrow(/sealed|mismatch/i);
+    const tamperedSealed = structuredClone(reordered);
+    tamperedSealed.sealed = tamperedSealed.sealed.replace("thm:main", "prop:aux");
+    expect(() => assertMandateIntegrity(tamperedSealed)).toThrow(/mismatch/i);
+  });
+
+  it("passes integrity before persistence even when an optional edit property is explicitly undefined", () => {
+    const proto = structuredClone(PROTO) as any;
+    const mandate = makeRequiredCoreEditMandate({
+      core: proto, working: null,
+      edit: {
+        kind: "statement-delete", id: "thm:main", reason: "rejected edit",
+        direction: "delete-obsolete", replacement_id: undefined,
+      } as any,
+      proposalRevision: "angle:0/version:1",
+    });
+    // JSON.stringify drops explicitly-undefined keys from `sealed`; the record's
+    // semantic fields must match those JSON semantics BEFORE any round-trip, or
+    // a freshly minted mandate fails its own integrity check in memory.
+    expect(() => assertMandateIntegrity(mandate)).not.toThrow();
+    expect(() => assertMandateIntegrity(JSON.parse(JSON.stringify(mandate)))).not.toThrow();
+  });
+
+  it("emits v2 cancellations hashed over their persisted sealed bytes", () => {
+    const cancellation = makeRequiredCoreEditMandateCancellation({
+      mandateId: `d0m:${"1".repeat(64)}`,
+      reason: "mandatory review rejected the exact edit",
+    });
+    expect(cancellation.hash_version).toBe(2);
+    const digest = createHash("sha256").update(cancellation.sealed!).digest("hex");
+    expect(cancellation.cancellation_id).toBe(`d0c:${digest}`);
+    expect(JSON.parse(cancellation.sealed!)).toEqual({
+      mandate_id: cancellation.mandate_id,
+      reason: cancellation.reason,
+    });
+  });
+
+  it("refuses to seal a mandate whose payload carries unsealable LaTeX", () => {
+    const proto = structuredClone(PROTO) as any;
+    expect(() => makeRequiredCoreEditMandate({
+      core: proto, working: null,
+      edit: {
+        kind: "statement-delete", id: "thm:main",
+        reason: "construction has \\(x\\in\\mathcal X outside math mode", direction: "delete-obsolete",
+      },
+      proposalRevision: "angle:0/version:1",
+    })).toThrow(/cannot be sealed/);
+  });
+
+  it("canonicalizes a valid pre-versioning mandate cancellation without rewriting its journal row", () => {
+    const mandateId = `d0m:${"1".repeat(64)}`;
+    const reason = "mandatory review rejected the exact edit";
+    const digest = createHash("sha256")
+      .update(JSON.stringify({ mandate_id: mandateId, reason }))
+      .digest("hex");
+    expect(RequiredCoreEditMandateCancellationSchema.parse({
+      cancellation_id: `d0mc:${digest}`,
+      mandate_id: mandateId,
+      reason,
+    })).toEqual({
+      cancellation_id: `d0c:${digest}`,
+      hash_version: 1,
+      mandate_id: mandateId,
+      reason,
+    });
+  });
+
+  it("fails closed on a consumed legacy raw required edit that never became durable", async () => {
+    const ctx = makeCtx(repoRoot);
+    await appendEscalationLog(ctx, {
+      round: 1, changed: [], directive: "legacy delete",
+      required_core_edits: [{
+        kind: "statement-delete", id: "thm:main", reason: "legacy raw authority", direction: "delete-obsolete",
+      }],
+    });
+    await saveWorkingState(ctx, {
+      round: 1, escalation_entries_consumed: 1, proposal_revision: "angle:0/version:1", solved: {},
+      proposals: { statements: [], definitions: [], assumptions: [], coreEdits: [], proofs: [] },
+    });
+    await expect(runStage0Solve({ ctx, state: makeVersionedState(), deps: solverDeps("prove") }))
+      .rejects.toThrow(/legacy required_core_edits.*re-adjudicate/i);
+  });
+
+  it("refuses a delete mandate whose replacement is independently deleted", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    const first = {
+      kind: "statement-delete" as const, id: "thm:main", replacement_id: "prop:aux",
+      reason: "replace headline", direction: "delete-obsolete" as const,
+    };
+    const second = {
+      kind: "statement-delete" as const, id: "prop:aux",
+      reason: "delete endpoint", direction: "delete-obsolete" as const,
+    };
+    await saveWorkingState(ctx, {
+      round: 1, proposal_revision: "angle:0/version:1", solved: {},
+      proposals: { statements: [], definitions: [], assumptions: [], coreEdits: [], proofs: [] },
+      required_core_edit_mandates: [
+        makeRequiredCoreEditMandate({ core: proto, working: null, edit: first, proposalRevision: "angle:0/version:1" }),
+        makeRequiredCoreEditMandate({ core: proto, working: null, edit: second, proposalRevision: "angle:0/version:1" }),
+      ],
+    });
+    await expect(runStage0Solve({ ctx, state: makeVersionedState(), deps: solverDeps("prove") }))
+      .rejects.toThrow(/replacement.*itself mandated for deletion/i);
   });
 
   it("applies typed assumption, deletion, symbol, bibliography, and reverse-edge edits", async () => {
@@ -2285,6 +3890,115 @@ describe("incremental reuse across escalation rounds", () => {
     expect(updated.assumptions[0].used_by).toContain("def:new-derived-object");
   });
 
+  it("orders an accepted definition-add before existing definition consumers", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    proto.definitions.push({
+      id: "def:region",
+      name: "region",
+      construction: "The relative neighborhood inside def:constrained-model.",
+      inputs: ["def:constrained-model"],
+    });
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await seedWorkingProposals(ctx, { coreEdits: [{
+      kind: "definition-add",
+      id: "def:constrained-model",
+      proposed: {
+        id: "def:constrained-model",
+        name: "constrained model",
+        construction: "The finite-cell model satisfying the witness restrictions.",
+        inputs: [],
+      },
+      reason: "name the model used by the existing region",
+      direction: "correct",
+    }] });
+
+    await applyProposedChanges({ ctx });
+
+    const updated = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    const ids = updated.definitions.map((definition: { id: string }) => definition.id);
+    expect(ids.indexOf("def:constrained-model")).toBeLessThan(ids.indexOf("def:region"));
+  });
+
+  it("rejects an accepted bundle whose final post-image has an unbalanced TeX group", async () => {
+    const ctx = makeCtx(repoRoot);
+    await seedWorkingProposals(ctx, { coreEdits: [{
+      kind: "definition-add",
+      id: "def:malformed-model",
+      proposed: {
+        id: "def:malformed-model",
+        name: "malformed model",
+        construction: String.raw`The family \(\operatorname{binary\).`,
+        inputs: [],
+      },
+      reason: "name the accepted model family",
+      direction: "correct",
+    }] });
+
+    await expect(applyProposedChanges({ ctx })).rejects.toThrow(/unbalanced TeX grouping braces/);
+  });
+
+  it("does not reject legacy proto DSL while validating a newly selected edit", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    // Historical formal fields use set-difference notation whose escaped opening
+    // brace is intentionally not a TeX grouping token. Strictly scanning the
+    // whole proto would reject this old, renderer-supported DSL on every apply.
+    proto.target_estimand = String.raw`E_n\{a,b}`;
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await seedWorkingProposals(ctx, { coreEdits: [{
+      kind: "definition-add",
+      id: "def:valid-new-model",
+      proposed: {
+        id: "def:valid-new-model",
+        name: "valid new model",
+        construction: String.raw`The family \(\mathcal M\).`,
+        inputs: [],
+      },
+      reason: "exercise the selected-payload seal boundary",
+      direction: "correct",
+    }] });
+
+    await expect(applyProposedChanges({ ctx })).resolves.toHaveLength(1);
+    const updated = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    expect(updated.target_estimand).toBe(String.raw`E_n\{a,b}`);
+    expect(updated.definitions.some((definition: any) => definition.id === "def:valid-new-model")).toBe(true);
+  });
+
+  it("rejects a malformed provisional proof selected for promotion", async () => {
+    const ctx = makeCtx(repoRoot);
+    await seedWorkingProposals(ctx, {
+      statements: [{
+        id: "thm:main",
+        current: PROTO.statements[0].statement,
+        proposed: "tau is identified on the overlap region",
+        reason: "narrow to the proved region",
+        direction: "narrow",
+      }],
+      proofs: [{
+        id: "thm:main",
+        proof_tex: String.raw`By \(\operatorname{broken\).`,
+        argues_proposed: true,
+      }],
+    });
+
+    await expect(applyProposedChanges({ ctx })).rejects.toThrow(/unbalanced TeX grouping braces/);
+  });
+
+  it("validates the full assumption node that a selected proposal would persist", async () => {
+    const ctx = makeCtx(repoRoot);
+    await seedWorkingProposals(ctx, { assumptions: [{
+      id: "ass:malformed-tag",
+      condition: "the overlap condition holds",
+      standard_or_novel: String.raw`novel: justified by \(\operatorname{broken\).`,
+      reason: "add the required scope restriction",
+      not_crux: "technical regularity only",
+      free_symbols: [],
+    }] });
+
+    await expect(applyProposedChanges({ ctx })).rejects.toThrow(/unbalanced TeX grouping braces/);
+  });
+
   it("rejects an apply bundle that leaves an assumption free symbol undeclared", async () => {
     const ctx = makeCtx(repoRoot);
     const proto = structuredClone(PROTO) as any;
@@ -2358,6 +4072,106 @@ describe("incremental reuse across escalation rounds", () => {
     expect(updated.comparator_promises).toBeUndefined();
   });
 
+  it("qualifies target_estimand through the typed channel when `current` echoes the core", async () => {
+    // Regression (stat_doseresponse_minimax_elbow, 2026-07-29): `target_estimand` had NO
+    // edit channel, so a referee finding against the estimand line itself was unfixable —
+    // the repair stage could not touch the field, and every in-core workaround (relocating
+    // the causal claim into class membership) is laundering, because the counterfactual
+    // mean then stops being a functional of the observed law.
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    proto.target_estimand = "\\(\\theta_P(t_0)=\\int \\mu_P(t_0,x)p_X(x)dx = E[Y(t_0)]\\)";
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    const edit = {
+      kind: "target-estimand-replace",
+      id: "metadata:target-estimand",
+      current: proto.target_estimand,
+      proposed: "\\(\\theta_P(t_0)=\\int \\mu_P(t_0,x)p_X(x)dx\\), equal to \\(E[Y(t_0)]\\) under prop:causal-identification-at-t0",
+      reason: "the causal equality holds only under the identification proposition",
+      direction: "correct",
+    };
+    expect(SolveUnitOutputSchema.parse({ proposed_core_edits: [edit] }).proposed_core_edits).toHaveLength(1);
+    await seedWorkingProposals(ctx, { coreEdits: [edit] });
+
+    await applyProposedChanges({ ctx });
+
+    const updated = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    expect(updated.target_estimand).toBe(edit.proposed);
+  });
+
+  it("refuses a target_estimand edit whose `current` does not echo the core", async () => {
+    // The echo is the field's anti-drift guarantee: an edit that never saw the text it
+    // overwrites cannot be distinguished from silently swapping the deliverable. The skip
+    // then meets the apply stage's fail-closed rule — a round whose every selected proposal
+    // was dropped throws rather than half-applying — so the estimand is left untouched and
+    // the solver must re-emit against the text it actually read.
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    proto.target_estimand = "\\(\\theta_P(t_0)=\\int \\mu_P(t_0,x)p_X(x)dx = E[Y(t_0)]\\)";
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await seedWorkingProposals(ctx, {
+      coreEdits: [{
+        kind: "target-estimand-replace",
+        id: "metadata:target-estimand",
+        current: "\\(\\theta_P(t_0)=\\text{something the core never said}\\)",
+        proposed: "\\(\\theta_P(t_0)=\\text{a different deliverable}\\)",
+        reason: "stale echo",
+        direction: "correct",
+      }],
+    });
+
+    await expect(applyProposedChanges({ ctx })).rejects.toThrow(/does not echo the core's target_estimand/);
+
+    const updated = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    expect(updated.target_estimand).toBe(proto.target_estimand);
+  });
+
+  it("rewrites estimand_functional through the typed channel, echo-guarded", async () => {
+    // Regression (same run, one round later): clearing `target_estimand` immediately hit
+    // the neighbouring frozen field. A class repair that drops a parameter leaves the
+    // headline functional still advertising it — the referee's own objection, relocated
+    // one line over — and the solver's escape was to keep the parameter as a decorative
+    // index ("preserving the current notational parameter list").
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    proto.estimand_functional = "\\(M_n(\\alpha,\\beta,s,d,\\bar p)\\)";
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    const edit = {
+      kind: "estimand-functional-replace",
+      id: "metadata:estimand-functional",
+      current: proto.estimand_functional,
+      proposed: "\\(M_n(\\alpha,\\beta,s,d)\\)",
+      reason: "the dropped assumption no longer constrains this parameter",
+      direction: "correct",
+    };
+    expect(SolveUnitOutputSchema.parse({ proposed_core_edits: [edit] }).proposed_core_edits).toHaveLength(1);
+    await seedWorkingProposals(ctx, { coreEdits: [edit] });
+
+    await applyProposedChanges({ ctx });
+
+    expect(JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8")).estimand_functional).toBe(edit.proposed);
+  });
+
+  it("refuses an estimand_functional edit whose `current` does not echo the core", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    proto.estimand_functional = "\\(M_n(\\alpha,\\beta,s,d,\\bar p)\\)";
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await seedWorkingProposals(ctx, {
+      coreEdits: [{
+        kind: "estimand-functional-replace",
+        id: "metadata:estimand-functional",
+        current: "\\(M_n(\\text{never said this})\\)",
+        proposed: "\\(M_n(\\alpha)\\)",
+        reason: "stale echo",
+        direction: "correct",
+      }],
+    });
+
+    await expect(applyProposedChanges({ ctx })).rejects.toThrow(/does not echo the core's estimand_functional/);
+    expect(JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8")).estimand_functional).toBe(proto.estimand_functional);
+  });
+
   it("deletes an obsolete statement, remaps inbound edges, and prevents carried-state resurrection", async () => {
     const ctx = makeCtx(repoRoot);
     const proto = structuredClone(PROTO) as any;
@@ -2428,7 +4242,10 @@ describe("incremental reuse across escalation rounds", () => {
       "ass:overlap",
       "thm:canonical-result",
     ]);
-    expect(updated.assumptions[0].used_by).toEqual(["def:class", "prop:aux"]);
+    // The replacement theorem is agent-added and therefore lives only in the working
+    // cursor.  An unrelated delete must not erase it from the assumption's direct
+    // reverse edges when rebuilding the frozen proto.
+    expect(updated.assumptions[0].used_by).toEqual(["def:class", "prop:aux", "thm:canonical-result"]);
 
     const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
     expect(working.solved["conj:obsolete-result"]).toBeUndefined();
@@ -2823,6 +4640,70 @@ describe("incremental reuse across escalation rounds", () => {
     expect(calls).toBe(2);
   });
 
+  it("rediscovers a partial agent cited lemma consumed directly by a frozen statement", async () => {
+    const ctx = makeCtx(repoRoot);
+    const citedNode: CoreStatement = {
+      id: "lem:carried-comparator",
+      kind: "lemma",
+      statement: "The cited comparator proves the conditional upper bound.",
+      depends_on: [],
+      status: "cited",
+      source: {
+        cite: "Rosenbaum1983",
+        locator: "Section 1",
+        verbatim_statement: "A conditional upper bound.",
+      },
+    };
+    const proto = structuredClone(PROTO) as any;
+    proto.statements[0].depends_on = ["ass:overlap", citedNode.id];
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await saveWorkingState(ctx, {
+      round: 3,
+      solved: {
+        "thm:main": {
+          proof_tex: "Use the cited comparator.",
+          snapshot: {
+            stmt: proto.statements[0].statement,
+            depends_on: proto.statements[0].depends_on,
+            defs: {},
+            assumptions: { "ass:overlap": proto.assumptions[0].condition },
+          },
+        },
+        [citedNode.id]: {
+          proof_tex: "",
+          snapshot: { stmt: citedNode.statement, depends_on: [], defs: {}, assumptions: {} },
+          node: citedNode,
+          partial: true,
+        },
+      },
+    });
+    const prompts: string[] = [];
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        prompts.push(prompt);
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.filter(({ id }) => id !== citedNode.id).map(({ id }) => ({ id, proof_tex: "QED." })),
+          added_lemmas: targets.some(({ id }) => id === citedNode.id) ? [citedNode] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    await runStage0Solve({ ctx, state: makeState(), deps });
+
+    expect(prompts.some((prompt) => prompt.includes(`"id": "${citedNode.id}"`))).toBe(true);
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(working.solved[citedNode.id].partial).toBeUndefined();
+    expect(JSON.parse(await readFile(coreJsonPath(ctx), "utf8")).statements.find(
+      (statement: any) => statement.id === citedNode.id,
+    )).toMatchObject({ status: "cited" });
+  });
+
   it("documents byte-faithful added_lemmas revalidation for reopened cited targets", async () => {
     const prompt = await readFile(
       new URL("../../src/discovery/prompts/D0/stage0_solve.txt", import.meta.url),
@@ -2872,7 +4753,18 @@ describe("incremental reuse across escalation rounds", () => {
     expect(prompts).toHaveLength(2);
     expect(prompts.filter((p) => p.includes("You are the ONLY solve unit allowed"))).toHaveLength(1);
     expect(prompts.filter((p) => p.includes("OMIT `prose_updates` entirely"))).toHaveLength(1);
-    expect(prompts.find((p) => p.includes("You are the ONLY solve unit allowed"))).toContain(
+    const ownerPrompt = prompts.find((p) => p.includes("You are the ONLY solve unit allowed"))!;
+    const localPrompt = prompts.find((p) => p.includes("OMIT `prose_updates` entirely"))!;
+    expect(ownerPrompt).toContain('"mode": "full"');
+    expect(localPrompt).toContain('"mode": "projected"');
+    expect(localPrompt).toContain("CORE_SNAPSHOT_PATH:");
+    expect(localPrompt).toContain("inspect that id selectively");
+    const snapshotPath = /CORE_SNAPSHOT_PATH:\s*(\S+)/.exec(localPrompt)![1];
+    expect(/CORE_SNAPSHOT_PATH:\s*(\S+)/.exec(ownerPrompt)![1]).toBe(snapshotPath);
+    const snapshot = JSON.parse(await readFile(snapshotPath, "utf8"));
+    expect(snapshot.statements.map((statement: any) => statement.id)).toEqual(["thm:main", "prop:aux"]);
+    expect(snapshot.statements.every((statement: any) => /^rev:[a-f0-9]{64}$/.test(statement.revision))).toBe(true);
+    expect(ownerPrompt).toContain(
       "sibling-only ids",
     );
     const core = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
@@ -2998,15 +4890,17 @@ describe("incremental reuse across escalation rounds", () => {
     expect(directedPrompts[0]).toContain("derive the sharp operational threshold before advancing");
     const directedCore = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
     const directedProto = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
-    for (const artifact of [directedCore, directedProto]) {
-      expect(artifact.tldr).toBe("The sharp operational threshold is now proved.");
-      expect(artifact.honest_scope).toContain("threshold is settled");
-      expect(artifact.sampling_model).toEqual({
-        design: "The corrected scoped design description.",
-        units: "Independent replicated units; this sibling must survive a design-only update.",
-      });
-      expect(artifact.statements.find((s: any) => s.id === "thm:a").consumer).toBe("Operational design screening.");
-    }
+    // Phase 1: prose lands in the rendered core (via the working overlay); the
+    // frozen proto is NEVER written mid-round.
+    expect(directedCore.tldr).toBe("The sharp operational threshold is now proved.");
+    expect(directedCore.honest_scope).toContain("threshold is settled");
+    expect(directedCore.sampling_model).toEqual({
+      design: "The corrected scoped design description.",
+      units: "Independent replicated units; this sibling must survive a design-only update.",
+    });
+    expect(directedCore.statements.find((s: any) => s.id === "thm:a").consumer).toBe("Operational design screening.");
+    expect(directedProto.tldr).not.toBe("The sharp operational threshold is now proved.");
+    expect(directedProto.statements.find((s: any) => s.id === "thm:a").consumer).not.toBe("Operational design screening.");
 
     const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
     expect(working.escalation_entries_consumed).toBe(1);
@@ -3095,6 +4989,55 @@ describe("incremental reuse across escalation rounds", () => {
     const c2 = countingDeps();
     await runStage0Solve({ ctx, state: makeState(), deps: c2.deps });
     expect(c2.calls()).toEqual([]);
+  });
+});
+
+describe("records-only merge (Batch B constructions)", () => {
+  it("a frozen claim CANNOT be silently altered: the emission is withheld and the render keeps the proto text", async () => {
+    // The old `silentAlterationViolations` guard policed this after the fact;
+    // with a records-only merge the state is unrepresentable — an added_lemmas
+    // emission under a frozen id with a different claim is a withheld collision.
+    const ctx = makeCtx(repoRoot);
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.filter((t) => t.id !== "thm:main").map((t) => ({ id: t.id, proof_tex: "QED." })),
+          // An ALTERED frozen claim smuggled through added_lemmas:
+          added_lemmas: targets.some((t) => t.id === "thm:main") ? [{
+            id: "thm:main", kind: "theorem", statement: "a silently weakened claim",
+            depends_on: ["ass:overlap"], status: "proved", proof_tex: "bogus",
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+    const result = await runStage0Solve({ ctx, state: makeState(), deps }) as any;
+    // The collision is surfaced for adjudication, never applied.
+    expect(result.status).toBe("checkpoint");
+    expect(result.message).toMatch(/WITHHELD/);
+    const published = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+    const main = published.statements.find((s: any) => s.id === "thm:main");
+    expect(main.statement).toBe("tau is identified");
+    expect(main.status).toBe("to-prove");
+  });
+
+  it("every published agent node has a working record — nothing exists outside the cursor", async () => {
+    // The deleted checkpoint-withheld recording loop's guarantee, now structural:
+    // installs ARE records, so render ⊆ proto ∪ cursor on any halt.
+    const ctx = makeCtx(repoRoot);
+    const result = await runStage0Solve({ ctx, state: makeState(), deps: solverDeps("propose") }) as any;
+    expect(result.status).toBe("checkpoint");
+    const published = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+    const cursor = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    const protoIds = new Set(PROTO.statements.map((s) => s.id));
+    for (const s of published.statements) {
+      expect(protoIds.has(s.id) || cursor.solved[s.id] !== undefined).toBe(true);
+    }
   });
 });
 
@@ -3319,8 +5262,12 @@ describe("Stage 0-SOLVE (per thm/conj + props; proofs + lemmas + statement-chang
     const answer = core.statements.find((s: any) => s.id === "thm:sharp-rate-answer");
     expect(answer.justification).toBe("This closes the rate question.");
     expect(answer.consumer).toBe("Use the exact rate for inference.");
+    // Batch B (records-only merge): the ONE durable carrier of prose notes is
+    // the working overlay — every render re-applies it, so the note survives
+    // re-opens without a per-record copy to keep in sync.
     const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
-    expect(working.solved["thm:sharp-rate-answer"].node.consumer).toBe("Use the exact rate for inference.");
+    expect(working.prose_overlay.statement_notes["thm:sharp-rate-answer"].consumer)
+      .toBe("Use the exact rate for inference.");
     const proto = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
     expect(proto.statements.some((s: any) => s.id === "thm:sharp-rate-answer")).toBe(false);
   });
@@ -3345,7 +5292,38 @@ describe("Stage 0-SOLVE (per thm/conj + props; proofs + lemmas + statement-chang
     // the change is NOT applied — the core keeps the original claim
     const core = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
     expect(core.statements.find((s: any) => s.id === "thm:main").statement).toBe("tau is identified");
-    expect((await readSurfacedProposals(ctx)).statements.length).toBeGreaterThan(0);
+    const surfaced = await readSurfacedProposals(ctx);
+    expect(surfaced.statements.length).toBeGreaterThan(0);
+    const packet = JSON.parse(await readFile(proposalReviewPacketPath(ctx), "utf8"));
+    expect(packet.durable_working_state.proposals).toEqual(surfaced);
+  });
+
+  it("pipeline-pins an omitted proposal revision and repairs non-whitespace current serialization", async () => {
+    const ctx = makeCtx(repoRoot);
+    const deps = solverDeps("propose");
+    const originalRunCodex = deps.runCodex;
+    deps.runCodex = async (args: any) => {
+      const result = await originalRunCodex(args);
+      const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(args.prompt)![1];
+      const output = JSON.parse(await readFile(outPath, "utf8"));
+      const change = output.proposed_statement_changes?.find((candidate: any) => candidate.id === "thm:main");
+      if (change) {
+        expect(change.based_on_revision).toBeUndefined();
+        change.current = String.raw`tau is identifi\"ed`;
+        await writeFile(outPath, JSON.stringify(output), "utf8");
+      }
+      return result;
+    };
+
+    const res = await runStage0Solve({ ctx, state: makeState(), deps }) as any;
+    expect(res.status).toBe("checkpoint");
+    expect((await readSurfacedProposals(ctx)).statements).toContainEqual(
+      expect.objectContaining({
+        id: "thm:main",
+        current: "tau is identified",
+        based_on_revision: expect.stringMatching(/^rev:[a-f0-9]{64}$/),
+      }),
+    );
   });
 
   it("escalates a GENUINE OPEN GAP as an orchestrator-guidance checkpoint (not auto-looped)", async () => {

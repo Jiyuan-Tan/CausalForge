@@ -55,7 +55,8 @@ open scoped MeasureTheory ProbabilityTheory
 -- § 5. Parent factorization of `evalMap` at observed nodes
 -- ============================================================
 
-/-- The evaluated value of an observed node is a measurable function of its random parent coordinates.
+/-- The evaluated value of an observed node is a measurable function of its
+random parent coordinates.
 
     **Parent factorization of `evalMap` at observed nodes.**
 
@@ -144,7 +145,8 @@ theorem evalMap_factors_through_parents (M : Causalean.SCM N Ω)
 -- § 6. Ancestor factorization of `evalMap` at observed nodes
 -- ============================================================
 
-/-- The latent ancestors of a node are the unobserved nodes that are either that node or ancestors of it.
+/-- The latent ancestors of a node are the unobserved nodes equal to that node
+or ancestral to it.
 
     Latent-or-self ancestors of `v` among `M.unobserved`.
 
@@ -159,14 +161,16 @@ noncomputable def latentAncestorsOfNode (M : Causalean.SCM N Ω) (v : SWIGNode N
     Classical.decPred _
   M.unobserved.filter (fun u => u = v ∨ M.dag.isAncestor u v)
 
-/-- The fixed ancestors of a node are the fixed nodes that are either that node or ancestors of it. -/
+/-- The fixed ancestors of a node are the fixed nodes equal to that node or
+ancestral to it. -/
 noncomputable def fixedAncestorsOfNode (M : Causalean.SCM N Ω) (v : SWIGNode N) :
     Finset (SWIGNode N) :=
   letI : DecidablePred (fun d : SWIGNode N => d = v ∨ M.dag.isAncestor d v) :=
     Classical.decPred _
   M.fixed.filter (fun d => d = v ∨ M.dag.isAncestor d v)
 
-/-- Membership in the latent-ancestor set means being unobserved and equal to or ancestral to the node. -/
+/-- Membership in the latent-ancestor set means being unobserved and equal to
+or ancestral to the node. -/
 lemma mem_latentAncestorsOfNode (M : Causalean.SCM N Ω) {v u : SWIGNode N} :
     u ∈ M.latentAncestorsOfNode v ↔
       u ∈ M.unobserved ∧ (u = v ∨ M.dag.isAncestor u v) := by
@@ -196,7 +200,8 @@ lemma latentAncestorsOfNode_subset (M : Causalean.SCM N Ω) (v : SWIGNode N) :
   intro u hu
   exact ((M.mem_latentAncestorsOfNode).mp hu).1
 
-/-- The evaluated value of an observed node is a measurable function of only its fixed and latent ancestor values.
+/-- The evaluated value of an observed node is a measurable function of only
+its fixed and latent ancestor values.
 
     **Ancestor factorization (existence form).**
 
@@ -295,7 +300,7 @@ theorem evalMap_factors_through_ancestors (M : Causalean.SCM N Ω)
     have hT_sub : ({v} : Finset (SWIGNode N)) ⊆ M.observed :=
       Finset.singleton_subset_iff.mpr hv
     have hv_mem : v ∈ ({v} : Finset (SWIGNode N)) := Finset.mem_singleton.mpr rfl
-    refine M.ancestralFactorization ({v} : Finset (SWIGNode N)) hT_sub ?_ ?_ hv_mem
+    refine M.ancestralFactorization ({v} : Finset (SWIGNode N)) ?_ ?_ hv_mem hv
     · -- Agreement on fixed ancestors of {v}.
       intro d hd hAnc
       obtain ⟨v', hv', hOr⟩ := hAnc

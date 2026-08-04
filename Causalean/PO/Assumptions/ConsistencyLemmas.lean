@@ -57,11 +57,11 @@ theorem factualAgrees_sqcup
   intro v hv
   -- `v ∈ r₁.target ∪ r₂.target`.
   have hv' : v ∈ r₁.target ∪ r₂.target := by
-    simpa [Regime.sqcup] using hv
+    simpa only [Regime.sqcup_target] using hv
   by_cases hv₁ : v ∈ r₁.target
   · -- `r₁.sqcup r₂` agrees with `r₁` on `r₁.target`.
     have hassign : (r₁.sqcup r₂ h).assign v hv = r₁.assign v hv₁ := by
-      simp [Regime.sqcup, hv₁]
+      exact Regime.sqcup_assign_pos r₁ r₂ h v hv₁
     rw [hassign]
     exact h₁ v hv₁
   · -- Must be in `r₂.target`.
@@ -70,7 +70,7 @@ theorem factualAgrees_sqcup
       · exact (hv₁ h₁).elim
       · exact h₂
     have hassign : (r₁.sqcup r₂ h).assign v hv = r₂.assign v hv₂ := by
-      simp [Regime.sqcup, hv₁]
+      exact Regime.sqcup_assign_neg r₁ r₂ h v hv₁ hv₂
     rw [hassign]
     exact h₂ v hv₂
 

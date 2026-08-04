@@ -1,0 +1,15 @@
+import CausalSmith.Experimentation.EXP_SnipeDegreeFrontier_Research.Helpers.BlockScore
+import CausalSmith.Experimentation.EXP_SnipeDegreeFrontier_Research.Helpers.BernoulliFourier
+import CausalSmith.Experimentation.EXP_SnipeDegreeFrontier_Research.Helpers.BlockRepresenter
+import CausalSmith.Experimentation.EXP_SnipeDegreeFrontier_Research.Helpers.OverlapCount
+import CausalSmith.Experimentation.EXP_SnipeDegreeFrontier_Research.Helpers.SnipeVariance
+import CausalSmith.Experimentation.EXP_SnipeDegreeFrontier_Research.Helpers.LeastFavourable
+import CausalSmith.Experimentation.EXP_SnipeDegreeFrontier_Research.Helpers.HellingerAffinity
+import CausalSmith.Experimentation.EXP_SnipeDegreeFrontier_Research.Helpers.LocalLinearClass
+
+/-!
+# SNIPE degree-frontier helpers
+
+Thin barrel re-exporting the independent block-score, overlap, variance,
+least-favourable, affinity, and local-linear proof chains.
+-/

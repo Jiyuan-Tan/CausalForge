@@ -132,11 +132,21 @@ theorem bootstrapVar_tendsto_inProb (S : IIDSample Ω X μ P)
     (hψ_sq_int : Integrable (fun ω => (ψ (S.Z 0 ω)) ^ 2) μ)
     (hmean : ∫ x, ψ x ∂P = 0) :
     Tendsto_inProb (bootstrapVar S ψ) (fun _ => ∫ x, (ψ x) ^ 2 ∂P) μ := by
+  have hψ_int_P : Integrable ψ P := by
+    have hψ_int_map : Integrable ψ (μ.map (S.Z 0)) :=
+      (MeasureTheory.integrable_map_measure hψ_meas.aestronglyMeasurable
+        (S.meas 0).aemeasurable).mpr (by simpa [Function.comp_def] using hψ_int)
+    rwa [S.law] at hψ_int_map
+  have hψ_sq_int_P : Integrable (fun x => (ψ x) ^ 2) P := by
+    have hψ_sq_int_map : Integrable (fun x => (ψ x) ^ 2) (μ.map (S.Z 0)) :=
+      (MeasureTheory.integrable_map_measure (hψ_meas.pow_const 2).aestronglyMeasurable
+        (S.meas 0).aemeasurable).mpr (by simpa [Function.comp_def] using hψ_sq_int)
+    rwa [S.law] at hψ_sq_int_map
   have h2 : Tendsto_inProb (S.sampleMean (fun x => (ψ x) ^ 2))
       (fun _ => ∫ x, (ψ x) ^ 2 ∂P) μ :=
-    S.sampleSecondMoment_tendsto_inProb hψ_meas hψ_sq_int
+    S.sampleSecondMoment_tendsto_inProb hψ_meas hψ_sq_int_P
   have h1 : Tendsto_inProb (S.sampleMean ψ) (fun _ => ∫ x, ψ x ∂P) μ :=
-    S.sampleMean_tendsto_inProb hψ_meas hψ_int
+    S.sampleMean_tendsto_inProb hψ_meas hψ_int_P
   have h1sq : Tendsto_inProb (fun n ω => (S.sampleMean ψ n ω) ^ 2)
       (fun _ => (∫ x, ψ x ∂P) ^ 2) μ := by
     have hcont : ContinuousAt (fun x : ℝ => x ^ 2) (∫ x, ψ x ∂P) :=

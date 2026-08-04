@@ -65,7 +65,7 @@ lemma cellWidth_pos {lo hi : ℝ} {J : ℕ} (hlohi : lo < hi) (hJ : 0 < J) :
 
 /-- The cell base point lies inside the window `[lo, hi]`. -/
 lemma cellBase_mem {lo hi : ℝ} {J : ℕ} (hlohi : lo < hi) (hJ : 0 < J)
-    {x : ℝ} (hx : x ∈ Set.Icc lo hi) :
+    {x : ℝ} :
     cellBase lo hi J x ∈ Set.Icc lo hi := by
   let δ := cellWidth lo hi J
   have hδ : 0 < δ := cellWidth_pos hlohi hJ
@@ -74,7 +74,7 @@ lemma cellBase_mem {lo hi : ℝ} {J : ℕ} (hlohi : lo < hi) (hJ : 0 < J)
     have hnonneg : 0 ≤ (cellIdx lo hi J x : ℝ) * δ :=
       mul_nonneg (Nat.cast_nonneg _) hδ.le
     dsimp [δ] at hnonneg ⊢
-    linarith [hx.1]
+    linarith
   · unfold cellBase
     change lo + (cellIdx lo hi J x : ℝ) * δ ≤ hi
     have hJone : 1 ≤ J := Nat.succ_le_of_lt hJ
@@ -179,7 +179,7 @@ theorem piecewiseTaylor_sup_approx {f : ℝ → ℝ} {M β lo hi : ℝ} {J : ℕ
     {x : ℝ} (hx : x ∈ Set.Icc lo hi) :
     |f x - piecewiseTaylorApprox (holderDerivOrder β) f lo hi J x|
       ≤ M / ((holderDerivOrder β)).factorial * ((hi - lo) / (J : ℝ)) ^ β := by
-  have hbase_mem := cellBase_mem hlohi hJ hx
+  have hbase_mem := cellBase_mem (x := x) hlohi hJ
   have hdist := cellBase_dist hlohi hJ hx
   have hwpos := cellWidth_pos hlohi hJ
   -- Hölder–Taylor remainder at base point `cellBase`.

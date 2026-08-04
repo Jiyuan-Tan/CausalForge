@@ -52,7 +52,7 @@ This is the pure real-analysis kernel of the optimization step: `h⁻ᵈ = c_*�
 Δ^{-d/γ}`, so `3Δ/4 ≤ ‖K‖_∞ c_*⁻ᵈ Δ^{-d/γ} I` rearranges to the claim via
 `Δ · Δ^{d/γ} = Δ^{1 + d/γ}`. -/
 theorem l1_lower_of_bias_bound {d : ℕ} {γ Ksup Δ Ival cstar h : ℝ}
-    (hγ : 0 < γ) (hKsup : 0 < Ksup) (hΔ : 0 < Δ) (hcstar : 0 < cstar)
+    (_hγ : 0 < γ) (hKsup : 0 < Ksup) (hΔ : 0 < Δ) (hcstar : 0 < cstar)
     (hheq : h = cstar * Δ ^ ((1 : ℝ) / γ))
     (hbound : 3 * Δ / 4 ≤ Ksup * h⁻¹ ^ d * Ival) :
     (3 / (4 * Ksup)) * cstar ^ d * Δ ^ (1 + (d : ℝ) / γ) ≤ Ival := by
@@ -84,26 +84,9 @@ theorem l1_lower_of_bias_bound {d : ℕ} {γ Ksup Δ Ival cstar h : ℝ}
   rw [hΔadd, goaleq, div_le_iff₀ hKsup, mul_comm Ival Ksup]
   exact hmul
 
-/-- `supBall x0 r` is the closed cube `∏ᵢ [x0 i - r, x0 i + r]`. -/
-private lemma supBall_eq_pi {d : ℕ} (x0 : Fin d → ℝ) (r : ℝ) :
-    supBall x0 r = Set.univ.pi (fun i => Set.Icc (x0 i - r) (x0 i + r)) := by
-  ext x
-  simp only [supBall, Set.mem_setOf_eq, Set.mem_univ_pi, Set.mem_Icc]
-  refine ⟨fun h i => ?_, fun h i => ?_⟩
-  · have := (abs_le).mp (h i); constructor <;> linarith [this.1, this.2]
-  · rw [abs_le]; have := h i; constructor <;> linarith [this.1, this.2]
-
-private lemma isCompact_supBall {d : ℕ} (x0 : Fin d → ℝ) (r : ℝ) :
-    IsCompact (supBall x0 r) := by
-  rw [supBall_eq_pi]; exact isCompact_univ_pi (fun _ => isCompact_Icc)
-
-private lemma measurableSet_supBall {d : ℕ} (x0 : Fin d → ℝ) (r : ℝ) :
-    MeasurableSet (supBall x0 r) := by
-  rw [supBall_eq_pi]; exact MeasurableSet.univ_pi (fun _ => measurableSet_Icc)
-
-private lemma mem_supBall_self {d : ℕ} (x0 : Fin d → ℝ) {r : ℝ} (hr : 0 ≤ r) :
-    x0 ∈ supBall x0 r := by
-  intro i; simp only [sub_self, abs_zero]; exact hr
+-- The basic geometry/measure API for `supBall` (`supBall_eq_pi`, `isCompact_supBall`,
+-- `measurableSet_supBall`, `mem_supBall_self`, `volume_supBall`) lives next to the
+-- definition in `HolderInterpolation/Defs.lean`.
 
 /-- **Change-of-variables control of the kernel-smoothed value (Milestone 3 plumbing).**
 The absolute value of the kernel-smoothed value in `u`-coordinates is bounded by the
@@ -112,7 +95,7 @@ Uses `|K| ≤ B^d`, the affine change of variables `x = x0 + h•u`, and that th
 `supBall x0 h ⊆ supBall x0 r` when `h ≤ r`. -/
 private lemma smoothed_abs_le {d : ℕ} {γ M r : ℝ} {x0 : Fin d → ℝ} {S : Set (Fin d → ℝ)}
     {k : ℝ → ℝ} {B : ℝ}
-    (hr : 0 < r) (hS : supBall x0 r ⊆ S)
+    (_hr : 0 < r) (hS : supBall x0 r ⊆ S)
     (hkbd : ∀ u : Fin d → ℝ, |prodKernel k d u| ≤ B ^ d)
     (g : (Fin d → ℝ) → ℝ) (hg : HolderBallStd g γ M S)
     (h : ℝ) (hh : 0 < h) (hhr : h ≤ r) :
@@ -313,7 +296,7 @@ private lemma ae_lt_one_on_cube {d : ℕ} :
         ⊆ Set.univ.pi (fun j => if j = i then ({c} : Set ℝ) else Set.univ) := by
       intro u hu j _
       by_cases hj : j = i
-      · subst hj; simp only [if_pos rfl, Set.mem_singleton_iff]; exact hu
+      · subst hj; simpa using hu
       · simp [hj]
     refine measure_mono_null hsub ?_
     rw [MeasureTheory.volume_pi_pi]
@@ -636,7 +619,7 @@ private lemma holder_line_taylor {d : ℕ} {γ M : ℝ} {g : (Fin d → ℝ) →
 /-- **Taylor + moment-cancellation bias bound (Milestone 2).** -/
 private lemma holder_taylor_bias {d : ℕ} {γ M r : ℝ} {x0 : Fin d → ℝ} {S : Set (Fin d → ℝ)}
     {k : ℝ → ℝ} {B : ℝ}
-    (hγ : 0 < γ) (hM : 0 < M) (hr : 0 < r) (hS : supBall x0 r ⊆ S)
+    (hγ : 0 < γ) (hM : 0 < M) (_hr : 0 < r) (hS : supBall x0 r ⊆ S)
     (hk_cont : Continuous k) (hk_supp : ∀ u : ℝ, 1 < |u| → k u = 0)
     (hk_mass : (∫ u in Set.Icc (-1 : ℝ) 1, k u) = 1)
     (hk_mom : ∀ j : ℕ, 1 ≤ j → j ≤ ⌈γ⌉₊ - 1 →
@@ -733,7 +716,7 @@ private lemma holder_taylor_bias {d : ℕ} {γ M r : ℝ} {x0 : Fin d → ℝ} {
         simp only [hU_def, Set.mem_setOf_eq]
         intro i
         have he : (x0 + t • (h • u)) i - x0 i = t * (h * u i) := by
-          simp [Pi.add_apply, Pi.smul_apply, smul_eq_mul, mul_assoc]
+          simp [Pi.add_apply, Pi.smul_apply, smul_eq_mul]
         rw [he, abs_mul, abs_mul, abs_of_nonneg ht.1, abs_of_pos hh]
         have hb : h * |u i| < h := by simpa using mul_lt_mul_of_pos_left (hu i) hh
         calc t * (h * |u i|) ≤ 1 * (h * |u i|) :=

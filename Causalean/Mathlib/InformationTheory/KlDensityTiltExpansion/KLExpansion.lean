@@ -5,6 +5,7 @@ Authors: Jiyuan Tan
 -/
 import Causalean.Mathlib.InformationTheory.KlDensityTiltExpansion.Basic
 import Causalean.Mathlib.InformationTheory.KlDensityTiltExpansion.CubicRemainder
+import Mathlib.InformationTheory.KullbackLeibler.Basic
 
 /-!
 # Second-order Kullback–Leibler expansion of the linear density tilt
@@ -109,10 +110,13 @@ integrand `(1 + h·s)·log(1 + h·s) = h·s + h²·s²/2 + R(h·s)`; integrate t
 `|h·s y| ≤ |h|·C ≤ 1/2` holds), and `∫ |h·s|³ = |h|³ ∫ |s|³ ≤ |h|³·C³` since
 `|s| ≤ C` and `μ` is a probability measure. -/
 lemma abs_klRemainder_le {μ : Measure Z} [IsProbabilityMeasure μ] {s : Z → ℝ}
-    {C h : ℝ} (hC : 0 ≤ C) (hs_meas : Measurable s) (hsC : ∀ y, |s y| ≤ C)
+    {C h : ℝ} (hs_meas : Measurable s) (hsC : ∀ y, |s y| ≤ C)
     (hs_mean : ∫ y, s y ∂μ = 0) (hh : |h| * C ≤ 1 / 2) :
     |(InformationTheory.klDiv (tiltMeasure μ s h) μ).toReal
         - (h ^ 2 / 2) * ∫ y, s y ^ 2 ∂μ| ≤ C ^ 3 * |h| ^ 3 := by
+  have hC : 0 ≤ C := by
+    rcases (nonempty_of_isProbabilityMeasure μ : Nonempty Z) with ⟨z⟩
+    exact le_trans (abs_nonneg (s z)) (hsC z)
   have hh_one : |h| * C ≤ 1 := by linarith
   rw [klDiv_tiltMeasure_toReal_eq hs_meas hsC hs_mean hh_one]
   let R : Z → ℝ := fun y =>
@@ -134,13 +138,14 @@ lemma abs_klRemainder_le {μ : Measure Z} [IsProbabilityMeasure μ] {s : Z → �
           ≤ |h * s y| ^ 3 := hrem
       _ ≤ C ^ 3 * |h| ^ 3 := by
         nlinarith [hpow, hprod_nonneg, hconst_nonneg]
-  have hs_int : Integrable s μ := integrable_of_bounded hs_meas hsC
+  have hs_int : Integrable s μ :=
+    Integrable.of_bound hs_meas.aestronglyMeasurable C (.of_forall hsC)
   have hs2_int : Integrable (fun y => s y ^ 2) μ := by
-    refine integrable_of_bounded (μ := μ) (s := fun y => s y ^ 2) (C := C ^ 2) ?_ ?_
+    refine Integrable.of_bound (μ := μ) (f := fun y => s y ^ 2) ?_ (C ^ 2) ?_
     · fun_prop
-    · intro y
+    · refine .of_forall fun y => ?_
       have hsq : |s y| ^ 2 ≤ C ^ 2 := pow_le_pow_left₀ (abs_nonneg _) (hsC y) 2
-      simpa [abs_pow] using hsq
+      simpa [abs_pow, Real.norm_eq_abs] using hsq
   have hlin_int : Integrable (fun y => h * s y) μ := hs_int.const_mul h
   have hquad_int : Integrable (fun y => (h ^ 2 / 2) * s y ^ 2) μ :=
     hs2_int.const_mul (h ^ 2 / 2)
@@ -249,7 +254,7 @@ theorem klDiv_tilt_expansion {μ : Measure Z} [IsProbabilityMeasure μ] {s : Z �
   filter_upwards [hsmall, hcoef] with h hh_small hh_coef
   have hrem :=
     abs_klRemainder_le (μ := μ) (s := s) (C := C) (h := h)
-      hC hs_meas hsC hs_mean hh_small
+      hs_meas hsC hs_mean hh_small
   calc
     ‖(InformationTheory.klDiv (tiltMeasure μ s h) μ).toReal
         - (h ^ 2 / 2) * ∫ y, s y ^ 2 ∂μ‖

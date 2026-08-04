@@ -47,9 +47,15 @@ variable {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
 /-- The population mean of a statistic equals its sample-point expectation:
 `∫ ω, f (S.Z i ω) ∂μ = ∫ x, f x ∂P`. -/
 lemma IIDSample.integral_comp_eq (S : IIDSample Ω X μ P) {f : X → ℝ}
-    (hf : Measurable f) (i : ℕ) :
+    (hf : AEMeasurable f P) (i : ℕ) :
     ∫ ω, f (S.Z i ω) ∂μ = ∫ x, f x ∂P := by
-  rw [← integral_map (S.meas i).aemeasurable hf.aestronglyMeasurable, S.map_eq i]
+  have hf' : AEStronglyMeasurable f (μ.map (S.Z i)) := by
+    rw [S.map_eq i]
+    exact hf.aestronglyMeasurable
+  calc
+    ∫ ω, f (S.Z i ω) ∂μ = ∫ x, f x ∂μ.map (S.Z i) :=
+      (integral_map (S.meas i).aemeasurable hf').symm
+    _ = ∫ x, f x ∂P := by rw [S.map_eq i]
 
 /-- Independence of the composed family `fun i ↦ f ∘ S.Z i`. -/
 lemma IIDSample.iIndepFun_comp (S : IIDSample Ω X μ P) {f : X → ℝ} (hf : Measurable f) :
@@ -106,7 +112,7 @@ theorem hoeffding_ge (S : IIDSample Ω X μ P) {f : X → ℝ} (hf : Measurable 
   -- per-term sub-Gaussian
   have hsubg : ∀ i < n, HasSubgaussianMGF (Y i) c μ := by
     intro i _
-    have hmean : (∫ ω, f (S.Z i ω) ∂μ) = m := S.integral_comp_eq hf i
+    have hmean : (∫ ω, f (S.Z i ω) ∂μ) = m := S.integral_comp_eq hf.aemeasurable i
     have := hasSubgaussianMGF_of_mem_Icc (μ := μ) (X := fun ω => f (S.Z i ω))
       (hf.comp (S.meas i)).aemeasurable (hbound_i i)
     simpa [hY, hmean] using this
@@ -134,10 +140,10 @@ theorem hoeffding_ge (S : IIDSample Ω X μ P) {f : X → ℝ} (hf : Measurable 
 covered by the two one-sided events, so its measure is at most the sum of their
 one-sided bounds.  Reused by the Hoeffding and Bernstein two-sided tail bounds. -/
 lemma measureReal_abs_dev_le_two_sided {Ω : Type*} [MeasurableSpace Ω]
-    {μ : Measure Ω} [IsFiniteMeasure μ] (T : Ω → ℝ) (m B ε : ℝ)
-    (hup : μ.real {ω | ε ≤ T ω - m} ≤ B)
-    (hlow : μ.real {ω | ε ≤ -T ω + m} ≤ B) :
-    μ.real {ω | ε ≤ |T ω - m|} ≤ 2 * B := by
+    {μ : Measure Ω} [IsFiniteMeasure μ] (T : Ω → ℝ) (m Bup Blow ε : ℝ)
+    (hup : μ.real {ω | ε ≤ T ω - m} ≤ Bup)
+    (hlow : μ.real {ω | ε ≤ -T ω + m} ≤ Blow) :
+    μ.real {ω | ε ≤ |T ω - m|} ≤ Bup + Blow := by
   have hunion : {ω | ε ≤ |T ω - m|}
       ⊆ {ω | ε ≤ T ω - m} ∪ {ω | ε ≤ -T ω + m} := by
     intro ω hω
@@ -148,8 +154,7 @@ lemma measureReal_abs_dev_le_two_sided {Ω : Type*} [MeasurableSpace Ω]
   calc μ.real {ω | ε ≤ |T ω - m|}
       ≤ μ.real ({ω | ε ≤ T ω - m} ∪ {ω | ε ≤ -T ω + m}) := measureReal_mono hunion
     _ ≤ μ.real {ω | ε ≤ T ω - m} + μ.real {ω | ε ≤ -T ω + m} := measureReal_union_le _ _
-    _ ≤ B + B := add_le_add hup hlow
-    _ = 2 * B := by ring
+    _ ≤ Bup + Blow := add_le_add hup hlow
 
 /-- **Two-sided Hoeffding inequality** for the sample mean of a bounded
 statistic.  If `f` takes values in `[a, b]` (`a < b`) `P`-almost everywhere,
@@ -176,7 +181,8 @@ theorem hoeffding_abs_ge (S : IIDSample Ω X μ P) {f : X → ℝ} (hf : Measura
   have hrange : (-a) - (-b) = b - a := by ring
   rw [hint_neg, hrange] at hlow
   simp only [hmean_neg, sub_neg_eq_add] at hlow
-  exact measureReal_abs_dev_le_two_sided (S.sampleMean f n) m _ ε hup hlow
+  simpa [two_mul] using
+    (measureReal_abs_dev_le_two_sided (S.sampleMean f n) m _ _ ε hup hlow)
 
 end Concentration
 

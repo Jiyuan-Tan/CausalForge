@@ -143,7 +143,7 @@ theorem evalMap_factors_excluding_latent (M : Causalean.SCM N Ω)
           M.evalMap s (extend (fun i => ℓ i.val))
             ⟨w.val, Finset.mem_union_left _ hw_obs⟩ := by
         refine M.ancestralFactorization ({w.val} : Finset (SWIGNode N))
-          hwT_sub ?_ ?_ hwmem
+          ?_ ?_ hwmem hw_obs
         · -- Fixed agreement: same `s` on both sides, `rfl`.
           intro d hd _; rfl
         · -- Latent agreement: `extend (fun i => ℓ i.val) ⟨u, hu⟩ = ℓ ⟨u, hu⟩`.

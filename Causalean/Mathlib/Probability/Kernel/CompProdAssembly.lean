@@ -14,8 +14,8 @@ This file packages recurring measure-kernel assembly steps for composition produ
 The main lemmas turn an almost-everywhere equality of inner kernels on a product space
 into equality of the resulting outer composition products:
 
-* `compProd_eq_of_inner_ae`: the inner kernels are mixed against a fixed finite measure;
-* `compProd_eq_of_inner_ae_kernel`: the inner kernels are mixed against an indexed finite
+* `compProd_eq_of_inner_ae`: the inner kernels are mixed against a fixed s-finite measure;
+* `compProd_eq_of_inner_ae_kernel`: the inner kernels are mixed against an indexed s-finite
   kernel;
 * `compProd_map_snd_apply`: the second-coordinate marginal of a kernel composition product
   is the bind of the section of the inner kernel against the outer kernel value.
@@ -30,45 +30,6 @@ namespace Causalean.Mathlib.CompProdAssembly
 open MeasureTheory ProbabilityTheory
 open scoped MeasureTheory ProbabilityTheory
 
-/-- **CompProd assembly from an a.e. inner equality.**
-
-    If `KL`/`KR` are the `μ`-mixtures of the `a`-sections of `fL`/`fR`
-    (`KL a = (fL.sectR a) ∘ₘ μ`), and `fL = fR` holds `(ν ⊗ₘ const μ)`-a.e., then
-    `ν ⊗ₘ KL = ν ⊗ₘ KR`. -/
-theorem compProd_eq_of_inner_ae
-    {α γ β : Type*} [MeasurableSpace α] [MeasurableSpace γ] [MeasurableSpace β]
-    (ν : Measure α) [IsFiniteMeasure ν] (μ : Measure γ) [IsFiniteMeasure μ]
-    (KL KR : Kernel α β) [IsFiniteKernel KL] [IsSFiniteKernel KR]
-    (fL fR : Kernel (α × γ) β)
-    (hL : ∀ a, KL a = (fL.sectR a) ∘ₘ μ)
-    (hR : ∀ a, KR a = (fR.sectR a) ∘ₘ μ)
-    (hae : ∀ᵐ p ∂(ν ⊗ₘ Kernel.const α μ), fL p = fR p) :
-    ν ⊗ₘ KL = ν ⊗ₘ KR := by
-  refine MeasureTheory.Measure.ext_prod (fun {A B} hA hB => ?_)
-  rw [MeasureTheory.Measure.compProd_apply_prod hA hB,
-      MeasureTheory.Measure.compProd_apply_prod hA hB]
-  have hInnerL : ∀ a, (KL a) B = ∫⁻ c, (fL (a, c)) B ∂μ := by
-    intro a
-    rw [hL a, MeasureTheory.Measure.bind_apply hB
-        (ProbabilityTheory.Kernel.aemeasurable _)]
-    simp only [ProbabilityTheory.Kernel.sectR_apply]
-  have hInnerR : ∀ a, (KR a) B = ∫⁻ c, (fR (a, c)) B ∂μ := by
-    intro a
-    rw [hR a, MeasureTheory.Measure.bind_apply hB
-        (ProbabilityTheory.Kernel.aemeasurable _)]
-    simp only [ProbabilityTheory.Kernel.sectR_apply]
-  simp only [hInnerL, hInnerR]
-  have hae' := MeasureTheory.Measure.ae_ae_of_ae_compProd hae
-  have hInnerAE :
-      ∀ᵐ a ∂ν, (∫⁻ c, (fL (a, c)) B ∂μ) = ∫⁻ c, (fR (a, c)) B ∂μ := by
-    filter_upwards [hae'] with a ha
-    refine MeasureTheory.lintegral_congr_ae ?_
-    have ha' : ∀ᵐ c ∂μ, fL (a, c) = fR (a, c) := by
-      simpa only [ProbabilityTheory.Kernel.const_apply] using ha
-    filter_upwards [ha'] with c hc
-    rw [hc]
-  exact MeasureTheory.lintegral_congr_ae (MeasureTheory.ae_restrict_of_ae hInnerAE)
-
 /-- **CompProd assembly from an a.e. inner equality, indexed-integrator form.**
 
     If `KL`/`KR` are mixtures of the `a`-sections of `fL`/`fR` against an
@@ -78,7 +39,7 @@ theorem compProd_eq_of_inner_ae
     conditional kernel rather than a fixed marginal. -/
 theorem compProd_eq_of_inner_ae_kernel
     {α γ β : Type*} [MeasurableSpace α] [MeasurableSpace γ] [MeasurableSpace β]
-    (ν : Measure α) [IsFiniteMeasure ν] (κ : Kernel α γ) [IsFiniteKernel κ]
+    (ν : Measure α) [IsFiniteMeasure ν] (κ : Kernel α γ) [IsSFiniteKernel κ]
     (KL KR : Kernel α β) [IsFiniteKernel KL] [IsSFiniteKernel KR]
     (fL fR : Kernel (α × γ) β)
     (hL : ∀ a, KL a = (fL.sectR a) ∘ₘ κ a)
@@ -107,6 +68,24 @@ theorem compProd_eq_of_inner_ae_kernel
     filter_upwards [ha] with c hc
     rw [hc]
   exact MeasureTheory.lintegral_congr_ae (MeasureTheory.ae_restrict_of_ae hInnerAE)
+
+/-- **CompProd assembly from an a.e. inner equality.**
+
+    If `KL`/`KR` are the `μ`-mixtures of the `a`-sections of `fL`/`fR`
+    (`KL a = (fL.sectR a) ∘ₘ μ`), and `fL = fR` holds `(ν ⊗ₘ const μ)`-a.e., then
+    `ν ⊗ₘ KL = ν ⊗ₘ KR`. -/
+theorem compProd_eq_of_inner_ae
+    {α γ β : Type*} [MeasurableSpace α] [MeasurableSpace γ] [MeasurableSpace β]
+    (ν : Measure α) [IsFiniteMeasure ν] (μ : Measure γ) [SFinite μ]
+    (KL KR : Kernel α β) [IsFiniteKernel KL] [IsSFiniteKernel KR]
+    (fL fR : Kernel (α × γ) β)
+    (hL : ∀ a, KL a = (fL.sectR a) ∘ₘ μ)
+    (hR : ∀ a, KR a = (fR.sectR a) ∘ₘ μ)
+    (hae : ∀ᵐ p ∂(ν ⊗ₘ Kernel.const α μ), fL p = fR p) :
+    ν ⊗ₘ KL = ν ⊗ₘ KR := by
+  refine compProd_eq_of_inner_ae_kernel ν (Kernel.const α μ) KL KR fL fR ?_ ?_ hae
+  · simpa only [Kernel.const_apply] using hL
+  · simpa only [Kernel.const_apply] using hR
 
 /-- **Snd-marginal of a composition product, pointwise (disintegration backbone).**
 

@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { spawnSync } from "node:child_process";
-import os from "node:os";
-import path from "node:path";
+import { readFileSync } from "node:fs";
 import { renderCoreTex } from "../../src/discovery/core/render_tex.js";
 import { alignedRowTerminatorViolations, repairSerializedLatex } from "../../src/discovery/core/latex_serialization.js";
 import { CoreSchema, type Core } from "../../src/discovery/core/schema.js";
@@ -112,6 +109,13 @@ describe("renderCoreTex (deterministic core → .tex)", () => {
     expect(tex).not.toContain(String.raw`\]\nand hence`);
   });
 
+  it("repairs serialized newlines before digits and operators", () => {
+    expect(repairSerializedLatex(String.raw`r_\n1n + a\n=b + c\n_d`))
+      .toBe("r_\n1n + a\n=b + c\n_d".replaceAll("\\n", "\n"));
+    expect(repairSerializedLatex(String.raw`A \nRightarrow B and \nu>0`))
+      .toBe(String.raw`A \nRightarrow B and \nu>0`);
+  });
+
   it("repairs JSON-over-escaped authored LaTeX without changing legitimate line breaks", () => {
     const doubled = String.raw`\\(\\pi_{ij}\\)`;
     const core = CoreSchema.parse({
@@ -150,6 +154,53 @@ describe("renderCoreTex (deterministic core → .tex)", () => {
         : statement),
     });
     expect(renderCoreTex(core)).toContain(String.raw`,\\(1-A_i)`);
+  });
+
+  it("keeps sub/superscripts live inside a standalone math ENVIRONMENT", () => {
+    // Regression (2026-08-01 TeX audit): the math-mode scanner knew only
+    // `\(`/`\[`/`$`, so everything inside `\begin{align*}…\end{align*}` was
+    // scanned as TEXT and every `_`/`^` escaped — compiling fine but printing
+    // literal underscores instead of subscripts (45 in one live corpus proof).
+    const core = golden();
+    const proved = core.statements[0];
+    proved.status = "proved";
+    proved.proof_tex = "We compute\n\\begin{align*}\nb_{1\\ell} &= Q^{s}_{m} \\\\\n&= \\sum_{k=1}^{s} r^{Q}_{mk}\n\\end{align*}\nas claimed.";
+    const tex = renderCoreTex(core);
+    expect(tex).toContain("b_{1\\ell}");
+    expect(tex).toContain("Q^{s}_{m}");
+    // metadata still escapes ITS underscores; the proof's math must not.
+    expect(tex).not.toContain("b\\_{1\\ell}");
+    expect(tex).not.toContain("Q\\textasciicircum");
+  });
+
+  it("treats $$…$$ as one display toggle, not two inline toggles", () => {
+    const core = golden();
+    const proved = core.statements[0];
+    proved.status = "proved";
+    proved.proof_tex = "Consider $$\\hat\\theta_n = n^{-1}\\sum_i Y_i$$ and conclude.";
+    const tex = renderCoreTex(core);
+    expect(tex).toContain("\\hat\\theta_n = n^{-1}\\sum_i Y_i");
+  });
+
+  it("supplies the missing display wrapper for an undelimited SUBSIDIARY math env", () => {
+    // `aligned` requires an enclosing math context: emitting it verbatim is
+    // invalid TeX, and escaping it as legacy DSL shows the reader raw source.
+    const core = golden();
+    const target = core.assumptions[0];
+    target.condition = "\\begin{aligned}a &= b \\\\\nc &= d\\end{aligned}";
+    const tex = renderCoreTex(core);
+    expect(tex).toContain("\\[\n\\begin{aligned}a &= b");
+    expect(tex).not.toContain("\\texttt{\\begin");
+  });
+
+  it("wraps only a proof that does not ALREADY START with a proof env (nested proofs stay outer-wrapped)", () => {
+    const core = golden();
+    const proved = core.statements[0];
+    proved.status = "proved";
+    proved.proof_tex = "We argue in two steps. \\begin{proof}[Proof of Claim 1]trivial\\end{proof} This finishes.";
+    const tex = renderCoreTex(core);
+    // The outer wrapper must be added even though a NESTED proof env exists.
+    expect(tex).toContain("\\begin{proof}\nWe argue in two steps.");
   });
 
   it("repairs an under-escaped forall in a legacy formal field without emitting control bytes", () => {
@@ -212,7 +263,7 @@ describe("renderCoreTex (deterministic core → .tex)", () => {
     expect(tex).toContain("For every \\(m\\in\\mathcal M_n\\), \\widehat\\theta=\\theta.");
   });
 
-  it("renders legacy symbol spaces/signatures through the formal adapter and compiles", () => {
+  it("renders legacy symbol spaces/signatures through the formal adapter", () => {
     const core = CoreSchema.parse({
       qid: "exp_symbol_contract",
       specialization: "v1_sig",
@@ -228,6 +279,11 @@ describe("renderCoreTex (deterministic core → .tex)", () => {
       assumptions: [{
         id: "ass:positive", condition: "\\(0<\\pi_{\\exp}\\)", free_symbols: ["pi_exp"],
         standard: { name: "positivity", cite: "Ref" },
+      }, {
+        id: "ass:long-layout",
+        condition: "\\(0<\\pi_{\\exp}\\ \\text{and the same positive calibration applies for Lebesgue-almost every point in the fixed support.}\\)",
+        free_symbols: ["pi_exp"],
+        standard: { name: "long positivity", cite: "Ref" },
       }],
       definitions: [],
       statements: [{
@@ -257,28 +313,7 @@ describe("renderCoreTex (deterministic core → .tex)", () => {
     expect(tex).toContain("\\mathscr{F}");
     expect(tex).toContain("\\citet{RefA}");
     expect(tex).toContain("\\texttt{stat\\_rosenbaum\\_lf\\_family\\_minimax}");
-    expect(tex).toContain("\\resizebox{0.98\\linewidth}");
-
-    const available = spawnSync("pdflatex", ["--version"], { encoding: "utf8" });
-    if (available.error) return;
-    const dir = mkdtempSync(path.join(os.tmpdir(), "causalsmith-render-test-"));
-    try {
-      const file = path.join(dir, "writeup.tex");
-      writeFileSync(file, tex, "utf8");
-      for (let pass = 1; pass <= 2; pass++) {
-        const compiled = spawnSync(
-          "pdflatex",
-          ["-interaction=nonstopmode", "-halt-on-error", `-output-directory=${dir}`, file],
-          { encoding: "utf8" },
-        );
-        expect(`${compiled.stdout}\n${compiled.stderr}`, `${compiled.stdout}\n${compiled.stderr}`).toBeTruthy();
-        expect(compiled.status, `pdflatex pass ${pass}:\n${compiled.stdout}\n${compiled.stderr}`).toBe(0);
-      }
-      const log = readFileSync(path.join(dir, "writeup.log"), "utf8");
-      expect(log).not.toContain("Overfull \\hbox");
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
+    expect(tex).toContain("\\sup_{p_1,\\ldots,p_n\\in\\mathcal P_m(\\Gamma)}");
   });
 
   it("preserves authored bibliography LaTeX while escaping raw prose ampersands", () => {
@@ -315,7 +350,7 @@ describe("renderCoreTex (deterministic core → .tex)", () => {
     const tex = renderCoreTex(core);
     expect(tex).toContain("\\section*{Technical internal limitation (diagnostic only)}");
     // `_` and `^` are both math-mode-only; in undelimited text both are escaped
-    // (a raw `^` would abort pdflatex with "Missing $ inserted").
+    // (a raw `^` is invalid TeX text and commonly reports "Missing $ inserted").
     expect(tex).toContain(
       "P\\_+\\textasciicircum{}n(D\\_n=-)=e\\textasciicircum{}{-n C\\_*}K\\_{+,n}",
     );

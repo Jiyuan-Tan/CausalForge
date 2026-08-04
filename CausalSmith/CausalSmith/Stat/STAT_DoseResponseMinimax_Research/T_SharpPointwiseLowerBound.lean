@@ -8,7 +8,7 @@ Authors: Jiyuan Tan
 Stage-2 scaffold. The certified kernel theorem `thm:sharp-pointwise-lower-bound`:
 a thin assembly of the crux two-point construction
 `lem:oracle-dose-regression-lower-all-beta` on the Hölder dose-response class with
-the slack baseline. Every proof body is `sorry`.
+the slack baseline.
 -/
 
 import CausalSmith.Stat.STAT_DoseResponseMinimax_Research.Helpers.TwoPointConstruction

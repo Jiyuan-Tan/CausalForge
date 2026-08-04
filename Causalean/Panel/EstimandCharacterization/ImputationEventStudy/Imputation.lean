@@ -254,17 +254,18 @@ structure HasImputationRepresentation (L : P.LinearEstimator) where
 
 end LinearEstimator
 
-/-- Witness-based BJS linear-unbiased representation lemma, exposed as an
-estimator identity for arbitrary outcome arrays.
+/-- Witness-based BJS linear-estimator representation from its treated
+coefficients and an imputation witness, exposed as an estimator identity for
+arbitrary outcome arrays.
 
 The source derives the imputation representation from raw row-span and
 left-null-space infrastructure.  This lemma deliberately takes an explicit
 `hImputationWitness` carrying both the row identity and untreated-weight
 representation; it proves the algebraic representation once that finite
 linear-algebra existence step has been supplied. -/
-theorem linear_unbiased_of_imputation_representation
+theorem linear_unbiased_of_imputation_representation_of_vT_eq_a
     (L : P.LinearEstimator)
-    (hUnbiasedForAllTau : L.unbiasedForAllTau)
+    (hVT : ∀ c : Treated, L.vT c = P.a c)
     (hImputationWitness : L.HasImputationRepresentation) :
     ∃ H : P.ImputationWeights,
       (∀ c : Treated, L.vT c = P.a c) ∧
@@ -276,11 +277,6 @@ theorem linear_unbiased_of_imputation_representation
             L.observedValue = P.psiImp H.weight := by
   classical
   let H : P.ImputationWeights := hImputationWitness.weights
-  have hVT : ∀ c : Treated, L.vT c = P.a c := by
-    intro c
-    have h := hUnbiasedForAllTau (fun _ : Regressor => 0)
-      (fun d : Treated => if d = c then (1 : ℝ) else 0)
-    simpa [LinearEstimator.modelValue, LinearEstimator.value, targetForTau, dot] using h
   have hVU : ∀ u : Untreated, L.vU u = - ∑ c : Treated, P.a c * H.weight c u := by
     intro u
     exact hImputationWitness.untreated_weight_representation u
@@ -363,6 +359,27 @@ theorem linear_unbiased_of_imputation_representation
   refine ⟨H, hVT, hVU, hValue, ?_⟩
   unfold LinearEstimator.observedValue psiImp
   exact hValue P.EY_T P.EY_U
+
+/-- Universal unbiasedness supplies the treated-coefficient identity required
+by `linear_unbiased_of_imputation_representation_of_vT_eq_a`. -/
+theorem linear_unbiased_of_imputation_representation
+    (L : P.LinearEstimator)
+    (hUnbiasedForAllTau : L.unbiasedForAllTau)
+    (hImputationWitness : L.HasImputationRepresentation) :
+    ∃ H : P.ImputationWeights,
+      (∀ c : Treated, L.vT c = P.a c) ∧
+        (∀ u : Untreated, L.vU u = - ∑ c : Treated, P.a c * H.weight c u) ∧
+          (∀ (YT : Treated → ℝ) (YU : Untreated → ℝ),
+            L.value YT YU =
+              ∑ c : Treated, P.a c *
+                (YT c - ∑ u : Untreated, H.weight c u * YU u)) ∧
+            L.observedValue = P.psiImp H.weight := by
+  classical
+  apply linear_unbiased_of_imputation_representation_of_vT_eq_a P L ?_ hImputationWitness
+  intro c
+  have h := hUnbiasedForAllTau (fun _ : Regressor => 0)
+    (fun d : Treated => if d = c then (1 : ℝ) else 0)
+  simpa [LinearEstimator.modelValue, LinearEstimator.value, targetForTau, dot] using h
 
 /-!
 ## Note on the Efficiency / BLUE / Gauss-Markov Result

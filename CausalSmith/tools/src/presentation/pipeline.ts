@@ -30,6 +30,8 @@ export interface PaperDeps {
     model: ClaudeModel;
     cwd: string;
     allowedTools?: string[];
+    /** See ClaudeRunInput.onResolvedModel — surfaces the id an alias like "opus" resolved to. */
+    onResolvedModel?: (modelId: string) => void;
   }) => Promise<string>;
   runCodex: (args: {
     prompt: string;

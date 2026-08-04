@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jiyuan Tan
 -/
 import Causalean.Stat.Nonparametric.MomentProblems.ResidualQuadratic.MeasureBridge
+import Mathlib.MeasureTheory.Function.L2Space
 
 /-!
 # Projection residual function for the moment score program

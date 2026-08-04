@@ -159,7 +159,7 @@ def zEvent (z : Bool) : Set P.Ω := S.Zvar.event z
 
 /-- The factual eligibility event is measurable. -/
 lemma measurableSet_zEvent (z : Bool) : MeasurableSet (S.zEvent z) :=
-  S.Zvar.measurableSet_event z
+  by simpa [zEvent] using S.Zvar.measurableSet_event z
 
 /-- The fuzzy RDD assumption bundle records consistency, deterministic
 cutoff eligibility, cutoff-neighborhood monotonicity of treatment take-up, regression

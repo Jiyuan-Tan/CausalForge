@@ -3,10 +3,10 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { runStage0_5Core } from "../../src/discovery/stages/d0_5_core.js";
+import { compactD05DecisionAdapter, compactD05DecisionPrompt, runStage0_5Core } from "../../src/discovery/stages/d0_5_core.js";
 import { citationVerificationCheckpoint, runStage0_5Typed } from "../../src/discovery/stages/d0.js";
 import { coreJsonPath } from "../../src/discovery/stages/d0_core.js";
-import { promptPath } from "../../src/paths.js";
+import { promptPath, statePath } from "../../src/paths.js";
 import { artifactPaths, type StageDeps } from "../../src/pipeline_support.js";
 import type { Core } from "../../src/discovery/core/schema.js";
 import type { PipelineContext, StateJson } from "../../src/types.js";
@@ -27,6 +27,18 @@ describe("D0.5 ExactID reviewer contract", () => {
     expect(prompt).toContain("Do NOT re-anchor such a note to Stat merely because it proves a recovery-risk limit");
     expect(prompt).toContain("local information boundary for graph/order/mechanism recovery");
     expect(prompt).toContain("Generic testing, LAN, concentration, or algebra used as the **proof engine** does not by itself demote");
+    const effective = compactD05DecisionPrompt(prompt);
+    expect(effective).not.toContain("=== TIER-AWARENESS REASONING");
+    expect(effective).toContain("=== PROPOSAL_PROMISE_GAP");
+    expect(effective).toContain("Proof correctness belongs to the math referee");
+    const adapter = await readFile(
+      new URL("../../src/discovery/prompts/D0.5/stage0_5_core_adapter.txt", import.meta.url),
+      "utf8",
+    );
+    const decisionAdapter = compactD05DecisionAdapter(adapter);
+    expect(decisionAdapter).not.toContain("REPRODUCE its `proof_tex`");
+    expect(decisionAdapter).not.toContain("math CLAIM itself is wrong");
+    expect(decisionAdapter).not.toContain("Tiering still informs");
   });
 
   it("does not force optional envelope optimization or construct an open maintained trainer", async () => {
@@ -56,7 +68,13 @@ async function stubPrompts(root: string): Promise<void> {
   ]) {
     const target = promptPath(root, name);
     await mkdir(path.dirname(target), { recursive: true });
-    await writeFile(target, `stub ${name}`, "utf8");
+    await writeFile(
+      target,
+      name === "stage0_5_core_adapter.txt"
+        ? `stub ${name}\n=== VERDICT OUTPUT ===\nUse \`revise\` for fixable defects,\n\`fail\` only if the math CLAIM itself is wrong, \`pass\` if the core is sound at your role's\nstandard.\n`
+        : `stub ${name}`,
+      "utf8",
+    );
   }
 }
 
@@ -67,7 +85,7 @@ function makeCtx(root: string): PipelineContext {
 function makeState(): StateJson {
   return {
     stage_completed: "0",
-    lean_subdir: `CausalSmith/Stat/${QID}`,
+    lean_subdir: "CausalSmith/Stat/STAT_AteOverlapDecay_Research",
     pending_sorries: [],
     design_decisions: {},
     added_assumptions: [],
@@ -160,7 +178,7 @@ describe("runStage0_5Core (D0.5 math+decision core review)", () => {
     expect(res.verdicts).toHaveLength(2); // why: the cold general referee runs separately after this core panel.
   });
 
-  it("gives every panel referee the full paper rendered from the exact current core", async () => {
+  it("gives every panel referee one authoritative core without a duplicate TeX render", async () => {
     const current = structuredClone(baseCore);
     current.tldr = "CURRENT WHOLE PAPER MARKER";
     await writeFile(coreJsonPath(makeCtx(repoRoot)), JSON.stringify(current), "utf8");
@@ -178,10 +196,16 @@ describe("runStage0_5Core (D0.5 math+decision core review)", () => {
 
     expect(prompts).toHaveLength(2);
     for (const prompt of prompts) {
-      expect(prompt).toContain("=== FULL CURRENT PAPER UNDER REVIEW ===");
       expect(prompt).toContain("CURRENT WHOLE PAPER MARKER");
       expect(prompt).toContain("=== CORE UNDER REVIEW ===");
+      expect(prompt).not.toContain("=== FULL CURRENT PAPER UNDER REVIEW ===");
+      expect(prompt).not.toContain("Substrate-survey rule:");
+      expect(prompt).not.toContain("Lean artifact directory:");
     }
+    const decisionPrompt = prompts.find((prompt) => prompt.includes("stub stage0_5_review.txt"))!;
+    expect(decisionPrompt).toContain("Do not reproduce proofs or assess tier");
+    expect(decisionPrompt).not.toContain("REPRODUCE its `proof_tex`");
+    expect(decisionPrompt).not.toContain("focus on the MATH");
   });
 
   it("combines to revise when the decision referee asks for a revise", async () => {
@@ -352,7 +376,7 @@ describe("runStage0_5Typed provisional D0.R transaction", () => {
     await rm(repoRoot, { recursive: true, force: true });
   });
 
-  it("rolls back core, tex, pending changes, and state metadata when the follow-up panel does not converge", async () => {
+  it("rolls back core, pending changes, and state metadata when the follow-up panel does not converge", async () => {
     const ctx = makeCtx(repoRoot);
     const state = makeState();
     state.design_decisions = { keep: "authoritative" };
@@ -366,9 +390,6 @@ describe("runStage0_5Typed provisional D0.R transaction", () => {
     const cp = coreJsonPath(ctx);
     const initialCore = JSON.stringify(baseCore, null, 2);
     await writeFile(cp, initialCore, "utf8");
-    const texPath = artifactPaths(ctx, state).tex;
-    await mkdir(path.dirname(texPath), { recursive: true });
-    await writeFile(texPath, "authoritative tex", "utf8");
     const pendingPath = path.join(path.dirname(cp), "d0r_pending_changes.json");
     const initialPending = JSON.stringify({ changes: [{ id: "authoritative-prior" }] }, null, 2);
     await writeFile(pendingPath, initialPending, "utf8");
@@ -403,7 +424,6 @@ describe("runStage0_5Typed provisional D0.R transaction", () => {
 
     expect(result.message).toMatch(/non-converging/i);
     expect(await readFile(cp, "utf8")).toBe(initialCore);
-    expect(await readFile(texPath, "utf8")).toBe("authoritative tex");
     expect(await readFile(pendingPath, "utf8")).toBe(initialPending);
     expect(state.design_decisions).toEqual({ keep: "authoritative" });
     expect(state.added_assumptions).toEqual([expect.objectContaining({ label: "ass:existing" })]);
@@ -420,12 +440,10 @@ describe("runStage0_5Typed provisional D0.R transaction", () => {
     const cp = coreJsonPath(ctx);
     const initialCore = JSON.stringify(baseCore, null, 2);
     await writeFile(cp, initialCore, "utf8");
-    const texPath = artifactPaths(ctx, state).tex;
-    await mkdir(path.dirname(texPath), { recursive: true });
-    await writeFile(texPath, "authoritative tex", "utf8");
     const pendingPath = path.join(path.dirname(cp), "d0r_pending_changes.json");
     await rm(pendingPath, { force: true });
     let panelCalls = 0;
+    let d0rCalls = 0;
 
     const deps: StageDeps = {
       runCodex: async ({ prompt }: { prompt: string }) => {
@@ -446,6 +464,7 @@ describe("runStage0_5Typed provisional D0.R transaction", () => {
         }
         const coreMatch = prompt.match(/CORE_FILE: (.+)/);
         if (coreMatch) {
+          d0rCalls++;
           const editedPath = coreMatch[1].trim();
           const edited = JSON.parse(await readFile(editedPath, "utf8")) as Core;
           edited.assumptions[0]!.condition += " (provisional D0.R edit)";
@@ -455,11 +474,15 @@ describe("runStage0_5Typed provisional D0.R transaction", () => {
         return {
           stdout: JSON.stringify({
             tier: "subfield",
-            salvageable: false,
-            // Empty per the prompt's emission contract: `improvement_directive` is
-            // written only when `salvageable`, `flagship_directive` only when
-            // `flagship_potential`. Both keys are still always present.
-            improvement_directive: "",
+            // SALVAGEABLE, deliberately. The D0.5.G triage read now runs concurrently with
+            // round 0's panel, and `decideTriageKill` halts the run outright on
+            // below-floor + NOT salvageable — which would return before D0.R ever runs and
+            // leave every rollback assertion below vacuously true. Keeping it salvageable
+            // holds this test on the path it exists to cover: revise → D0.R edit → panel
+            // pass → authoritative below-floor tier → rollback. The kill path is covered by
+            // the next test.
+            salvageable: true,
+            improvement_directive: "derive the constant from primitive rate conditions",
             flagged_conjecture_labels: [],
             critique: "valid mathematics, below the requested field floor",
             flagship_potential: false,
@@ -475,11 +498,64 @@ describe("runStage0_5Typed provisional D0.R transaction", () => {
     const result = await runStage0_5Typed({ ctx, state, deps });
 
     expect(result.message).toMatch(/below novelty floor/i);
+    // The point of the test: D0.R DID run and its provisional edit was rolled back.
+    expect(d0rCalls).toBeGreaterThan(0);
     expect(await readFile(cp, "utf8")).toBe(initialCore);
-    expect(await readFile(texPath, "utf8")).toBe("authoritative tex");
     expect(existsSync(pendingPath)).toBe(false);
     expect(state.design_decisions).toEqual({ keep: "authoritative" });
     expect(state.added_assumptions).toEqual([]);
+  });
+
+  it("halts at the D0.5.G triage kill before D0.R spends the revise budget", async () => {
+    const ctx = makeCtx(repoRoot);
+    const state = makeState();
+    const cp = coreJsonPath(ctx);
+    const initialCore = JSON.stringify(baseCore, null, 2);
+    await writeFile(cp, initialCore, "utf8");
+    let d0rCalls = 0;
+
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const verdictMatch = prompt.match(/VERDICT_OUTPUT_PATH: (.+)/);
+        if (verdictMatch) {
+          const outPath = verdictMatch[1].trim();
+          await writeFile(outPath, JSON.stringify({
+            referee: outPath.endsWith("review_rubric.json") ? "decision" : "math",
+            verdict: "revise",
+            findings: [{ node_id: "thm:lower", code: "omission", one_line: "repair once" }],
+            cited_checks: [],
+          }), "utf8");
+          return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+        }
+        if (prompt.match(/CORE_FILE: (.+)/)) {
+          d0rCalls++;
+          throw new Error("D0.R must not run: the triage kill returns first");
+        }
+        return {
+          stdout: JSON.stringify({
+            tier: "subfield",
+            salvageable: false,
+            improvement_directive: "",
+            flagged_conjecture_labels: [],
+            critique: "the kernel is a relabelling of a known result",
+            flagship_potential: false,
+            flagship_directive: "",
+          }),
+          stderr: "",
+        };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0_5Typed({ ctx, state, deps });
+
+    expect(result.message).toMatch(/below novelty floor \(triage/i);
+    expect(d0rCalls).toBe(0);
+    expect(await readFile(cp, "utf8")).toBe(initialCore);
+    // The halt must still say the math was never cleared, so the note is not banked as
+    // merely under-novel.
+    expect(result.message).toMatch(/unrepaired/i);
   });
 
   it("rolls back a worker write when D0.R fails after touching core.json", async () => {
@@ -489,9 +565,6 @@ describe("runStage0_5Typed provisional D0.R transaction", () => {
     const cp = coreJsonPath(ctx);
     const initialCore = JSON.stringify(baseCore, null, 2);
     await writeFile(cp, initialCore, "utf8");
-    const texPath = artifactPaths(ctx, state).tex;
-    await mkdir(path.dirname(texPath), { recursive: true });
-    await writeFile(texPath, "authoritative tex", "utf8");
 
     const deps: StageDeps = {
       runCodex: async ({ prompt }: { prompt: string }) => {
@@ -523,16 +596,20 @@ describe("runStage0_5Typed provisional D0.R transaction", () => {
 
     // A corrupt worker write is contained gracefully: the stage checkpoints to the
     // orchestrator (no throw) and the transaction restores the pre-stage core
-    // and .tex, so no worker garbage survives.
+    // so no worker garbage survives.
     const res = await runStage0_5Typed({ ctx, state, deps });
     expect(res.status).toBe("checkpoint");
     expect(res.message).toMatch(/corrupt or unparseable/i);
     expect(JSON.parse(await readFile(cp, "utf8"))).toEqual(baseCore);
-    expect(await readFile(texPath, "utf8")).toBe("authoritative tex");
     expect(state.design_decisions).toEqual({ keep: "authoritative" });
+    const persistedState = JSON.parse(await readFile(
+      statePath(ctx.repoRoot, ctx.qid, ctx.specialization),
+      "utf8",
+    )) as StateJson;
+    expect(persistedState.flags.d0_loop_counters?.revise_rounds).toBe(1);
   });
 
-  it("rebuilds the verified render bundle before committing a passing D0.R edit", async () => {
+  it("publishes the updated TeX source only after a passing D0.R transaction", async () => {
     const ctx = makeCtx(repoRoot);
     const state = makeState();
     const cp = coreJsonPath(ctx);
@@ -588,10 +665,182 @@ describe("runStage0_5Typed provisional D0.R transaction", () => {
     expect(result.message).toMatch(/PASS/i);
     const tex = await readFile(texPath, "utf8");
     expect(tex).toContain("A passing D0.R render-bundle revision.");
-    const stem = path.basename(texPath, path.extname(texPath));
-    const pdf = await readFile(path.join(path.dirname(texPath), `${stem}.pdf`));
-    const log = await readFile(path.join(path.dirname(texPath), `${stem}.log`), "utf8");
-    expect(pdf.subarray(0, 5).toString("ascii")).toBe("%PDF-");
-    expect(log).toContain("Output written on");
+  });
+
+  it("reviews and commits the third allowed D0.R edit instead of rolling it back at the cap", async () => {
+    const ctx = makeCtx(repoRoot);
+    const state = makeState();
+    const cp = coreJsonPath(ctx);
+    await writeFile(cp, JSON.stringify(baseCore, null, 2), "utf8");
+    let panelRound = 0;
+    let panelCallsInRound = 0;
+    let d0rCalls = 0;
+
+    const findingsByRound = [
+      [
+        { node_id: "thm:lower", code: "first-a", one_line: "first repair" },
+        { node_id: "thm:lower", code: "first-b", one_line: "first repair" },
+        { node_id: "thm:lower", code: "first-c", one_line: "first repair" },
+      ],
+      [
+        { node_id: "thm:lower", code: "second-a", one_line: "second repair" },
+        { node_id: "thm:lower", code: "second-b", one_line: "second repair" },
+      ],
+      [{ node_id: "thm:lower", code: "third", one_line: "third repair" }],
+      [],
+    ];
+
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const verdictMatch = prompt.match(/VERDICT_OUTPUT_PATH: (.+)/);
+        if (verdictMatch) {
+          const outPath = verdictMatch[1].trim();
+          const role = outPath.endsWith("review_rubric.json") ? "decision" : "math";
+          const findings = findingsByRound[panelRound]!;
+          await writeFile(outPath, JSON.stringify({
+            referee: role,
+            verdict: findings.length === 0 ? "pass" : "revise",
+            findings,
+            cited_checks: [],
+          }), "utf8");
+          panelCallsInRound++;
+          if (panelCallsInRound === 2) {
+            panelCallsInRound = 0;
+            panelRound++;
+          }
+          return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+        }
+        const coreMatch = prompt.match(/CORE_FILE: (.+)/);
+        if (coreMatch) {
+          d0rCalls++;
+          const editedPath = coreMatch[1].trim();
+          const edited = JSON.parse(await readFile(editedPath, "utf8")) as Core;
+          edited.tldr = `D0.R repair ${d0rCalls}`;
+          await writeFile(editedPath, JSON.stringify(edited, null, 2), "utf8");
+          return { stdout: JSON.stringify({ status: "completed", artifacts: [editedPath] }), stderr: "" };
+        }
+        return {
+          stdout: JSON.stringify({
+            tier: "field",
+            salvageable: false,
+            improvement_directive: "",
+            flagged_conjecture_labels: [],
+            critique: "field-tier pass",
+            flagship_potential: false,
+            flagship_directive: "",
+          }),
+          stderr: "",
+        };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0_5Typed({ ctx, state, deps });
+    expect(result.message).toMatch(/PASS/i);
+    expect(d0rCalls).toBe(3);
+    expect(panelRound).toBe(4);
+    expect((JSON.parse(await readFile(cp, "utf8")) as Core).tldr).toBe("D0.R repair 3");
+    expect(state.flags.d0_loop_counters?.revise_rounds).toBe(3);
+  });
+
+  it("does not consume another D0.R edit when a resumed panel passes", async () => {
+    const ctx = makeCtx(repoRoot);
+    const state = makeState();
+    state.flags.d0_loop_counters = { solve_rounds: 2, revise_rounds: 2, consistency_heals: 0 };
+    await writeFile(coreJsonPath(ctx), JSON.stringify(baseCore, null, 2), "utf8");
+
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const verdictMatch = prompt.match(/VERDICT_OUTPUT_PATH: (.+)/);
+        if (verdictMatch) {
+          const outPath = verdictMatch[1].trim();
+          await writeFile(outPath, JSON.stringify({
+            referee: outPath.endsWith("review_rubric.json") ? "decision" : "math",
+            verdict: "pass",
+            findings: [],
+            cited_checks: [],
+          }), "utf8");
+          return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+        }
+        return {
+          stdout: JSON.stringify({
+            tier: "field",
+            salvageable: false,
+            improvement_directive: "",
+            flagged_conjecture_labels: [],
+            critique: "field-tier pass",
+            flagship_potential: false,
+            flagship_directive: "",
+          }),
+          stderr: "",
+        };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0_5Typed({ ctx, state, deps });
+    expect(result.message).toMatch(/PASS/i);
+    expect(state.flags.d0_loop_counters).toEqual({
+      solve_rounds: 2,
+      revise_rounds: 2,
+      consistency_heals: 0,
+    });
+  });
+
+  it("routes a proposal-topic mismatch before dispatching or charging D0.R", async () => {
+    const ctx = { ...makeCtx(repoRoot), noveltyTarget: "incremental" as const };
+    const state = makeState();
+    state.flags.d0_loop_counters = { solve_rounds: 2, revise_rounds: 1, consistency_heals: 0 };
+    await writeFile(coreJsonPath(ctx), JSON.stringify(baseCore, null, 2), "utf8");
+    let d0rCalls = 0;
+
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const verdictMatch = prompt.match(/VERDICT_OUTPUT_PATH: (.+)/);
+        if (verdictMatch) {
+          const outPath = verdictMatch[1].trim();
+          const decision = outPath.endsWith("review_rubric.json");
+          await writeFile(outPath, JSON.stringify({
+            referee: decision ? "decision" : "math",
+            verdict: decision ? "revise" : "pass",
+            findings: decision ? [{
+              node_id: "thm:lower",
+              code: "novelty-kernel-substituted",
+              one_line: "delivered kernel is narrower than the durable topic",
+            }] : [],
+            cited_checks: [],
+          }), "utf8");
+          return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+        }
+        if (prompt.includes("CORE_FILE:")) {
+          d0rCalls++;
+          throw new Error("D0.R must not run for a durable topic mismatch");
+        }
+        return {
+          stdout: JSON.stringify({
+            tier: "incremental",
+            salvageable: false,
+            improvement_directive: "",
+            flagged_conjecture_labels: [],
+            critique: "incremental scope",
+            flagship_potential: false,
+            flagship_directive: "",
+          }),
+          stderr: "",
+        };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0_5Typed({ ctx, state, deps });
+    expect(result.message).toMatch(/state\.proposed_from\.topic|proposed-topic update/i);
+    expect(d0rCalls).toBe(0);
+    expect(state.flags.d0_loop_counters?.revise_rounds).toBe(1);
+    const entries = await readEscalationLog(ctx);
+    expect(entries.at(-1)?.provenance_only).toBe(true);
+    expect(entries.at(-1)?.required_core_targets ?? []).toEqual([]);
   });
 });

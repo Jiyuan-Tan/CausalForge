@@ -78,11 +78,11 @@ lemma expoInd_mul_Yobs_sq (y : ι → Δ → ℝ) (f : Ω → Θ → Δ) (θ : �
   by_cases h : expo f θ i z = d <;> simp [h]
 
 omit [Fintype Ω] [Fintype Δ] in
-/-- Joint-event substitution for cross terms: the product of two exposure indicators lets the
-observed outcome for unit `i` be replaced by its potential-outcome value. -/
-lemma expoInd₂_mul_Yobs (y : ι → Δ → ℝ) (f : Ω → Θ → Δ) (θ : ι → Θ) (i j : ι) (di dj : Δ) (z : Ω) :
-    expoInd f θ i di z * expoInd f θ j dj z * Yobs y f θ i z
-      = expoInd f θ i di z * expoInd f θ j dj z * y i di := by
+/-- On the event `expo i = di`, multiplying the observed outcome for unit `i` by any real
+quantity leaves it valid to replace that outcome by potential outcome `y i di`. -/
+lemma expoInd₂_mul_Yobs (y : ι → Δ → ℝ) (f : Ω → Θ → Δ) (θ : ι → Θ) (i : ι) (di : Δ)
+    (q : Ω → ℝ) (z : Ω) :
+    expoInd f θ i di z * q z * Yobs y f θ i z = expoInd f θ i di z * q z * y i di := by
   unfold expoInd FiniteDesign.ind Yobs
   by_cases h : expo f θ i z = di <;> simp [h]
 

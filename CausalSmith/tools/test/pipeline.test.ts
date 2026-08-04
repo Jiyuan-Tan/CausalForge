@@ -142,6 +142,23 @@ describe("pipeline", () => {
     expect(seen).toEqual(["0"]);
   });
 
+  it("plain resume advances cleanly from completed D0 to D0.5 when no directive is pending", async () => {
+    const repoRoot = await mkdtemp(path.join(os.tmpdir(), "causalsmith-clean-d05-route-"));
+    const qid = "stat_clean_d05_route";
+    const spec = "v1";
+    const ctx: PipelineContext = { repoRoot, qid, specialization: spec, resume: true, dryRun: true };
+    const state = createInitialState(qid);
+    state.stage_completed = "0";
+    await saveState(repoRoot, qid, spec, state);
+
+    const seen: string[] = [];
+    await runPipeline(ctx, async ({ stage }) => {
+      seen.push(stage);
+      return { stage, status: "checkpoint", advance: false, message: "stop after routing check" };
+    });
+    expect(seen).toEqual(["0.5"]);
+  });
+
   it("plain resume from completed D0.5 also rewinds to D0 for an unconsumed directive", async () => {
     const repoRoot = await mkdtemp(path.join(os.tmpdir(), "causalsmith-pending-after-d05-"));
     const qid = "stat_pending_after_d05";

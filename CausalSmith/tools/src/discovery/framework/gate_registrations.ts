@@ -1,12 +1,8 @@
-// Registry entries for the D-stage gates (spec §Gate registry). Each entry
-// DELEGATES to the existing gate implementation — the registry adds the
-// enumerable declaration (id / tier / stages / evidence), not a second
-// implementation. Import this module for its side effect; entries accumulate
-// here as each stage is ported.
-import { registerGate, type GateViolation } from "./gates.js";
+// Explicit D-stage gate declarations. Runtime call sites import the gate they
+// execute; no global registry or import-order side effect is involved.
+import { defineGate, type GateViolation } from "./gates.js";
 import { runStructuralGate } from "../core/gate.js";
 import { runProposalGate } from "../core/proposal_gate.js";
-import { checkProposalClosure, type ClosureCoreView } from "../core/coherence.js";
 import { checkSymbolDeclarations, checkSymbolDeclarationDrift } from "../core/preflight.js";
 import { checkRoundInvariants, formatRoundViolation, type RoundInvariantInput } from "../core/coherence.js";
 import { checkProseConsistency } from "../core/prose_consistency.js";
@@ -22,7 +18,7 @@ function toViolations(
 /** G1–G7 structural gate over a (possibly not-yet-schema-valid) core.
  *  `requireDischarged` defaults to false; the D0 final assembly and the D0.R
  *  post-edit re-check pass `requireDischarged: true` at their call sites. */
-export const structuralGate = registerGate<{ core: unknown; requireDischarged?: boolean }>({
+export const structuralGate = defineGate<{ core: unknown; requireDischarged?: boolean }>({
   id: "structural-gate",
   tier: "hard",
   stages: ["-1.2", "0", "0.5"],
@@ -34,7 +30,7 @@ export const structuralGate = registerGate<{ core: unknown; requireDischarged?: 
 
 /** GP1 (standardness tags) + GP2 (all-to-prove) + GP3 (prose fields present),
  *  layered over the structural gate, for the D-1.2 authored proposal core. */
-export const proposalGate = registerGate<unknown>({
+export const proposalGate = defineGate<unknown>({
   id: "proposal-gate",
   tier: "hard",
   stages: ["-1.2"],
@@ -43,25 +39,13 @@ export const proposalGate = registerGate<unknown>({
   check: (core) => toViolations("proposal-gate", runProposalGate(core).violations),
 });
 
-/** Atomic-apply closure invariant: ids(core) ⊆ ids(proto) ∪ ids(proposals) ∪
- *  durable agent nodes. Checked deterministically at D0 surface time. The D0
- *  checkpoint invokes `checkProposalClosure` directly (not via runGates): it
- *  consumes the full ClosureReport — including the advisory `protoOnly`
- *  direction, which is deliberately NOT a violation. */
-export const closureGate = registerGate<{ core: ClosureCoreView; proto: ClosureCoreView; proposalIds: Set<string> }>({
-  id: "proposal-closure",
-  tier: "hard",
-  stages: ["0"],
-  evidence:
-    "PIPELINE_NOTES 2026-07-18 (invariant broke 3×, each caught only by paid adjudication AFTER a full solve round — rounds 30-33 re-litigated a plumbing fault as math)",
-  check: (input) => {
-    const report = checkProposalClosure(input);
-    return report.ok ? [] : [{ gateId: "proposal-closure", detail: `closure violated`, ids: report.uncarried }];
-  },
-});
+// (Retired, Phase 1 of the store consolidation: the `proposal-closure` gate.
+// The published core is `assembleCore(proto, working)`, so
+// `ids(core) ⊆ ids(proto) ∪ ids(working)` holds by construction — the state the
+// gate policed is unrepresentable. See test/discovery/assemble.test.ts.)
 
 /** G1 symbol-table membership, hoisted to run BEFORE a solve dispatch. */
-export const symbolPreflightGate = registerGate<Parameters<typeof checkSymbolDeclarations>[0]>({
+export const symbolPreflightGate = defineGate<Parameters<typeof checkSymbolDeclarations>[0]>({
   id: "symbol-preflight",
   tier: "hard",
   stages: ["0"],
@@ -77,7 +61,7 @@ export const symbolPreflightGate = registerGate<Parameters<typeof checkSymbolDec
  *  contradicts the author's own declaration on 10.1% of the 1186 declaring assumptions
  *  in the real corpus even after de-noising, so blocking on it would burn the D0 round
  *  budget the scoping is meant to save. See `checkSymbolDeclarationDrift`. */
-export const symbolDriftGate = registerGate<Parameters<typeof checkSymbolDeclarationDrift>[0]>({
+export const symbolDriftGate = defineGate<Parameters<typeof checkSymbolDeclarationDrift>[0]>({
   id: "symbol-declaration-drift",
   tier: "warn",
   stages: ["0"],
@@ -90,10 +74,10 @@ export const symbolDriftGate = registerGate<Parameters<typeof checkSymbolDeclara
     checkSymbolDeclarationDrift(core).map((v) => ({ gateId: "symbol-declaration-drift", detail: `[${v.check}] ${v.detail}`, ids: v.ids })),
 });
 
-/** Cross-store round invariants (store-incoherent, dangling-resolution, hollow
- *  proof, silent node loss, ...). Policy: DETECT AND WARN, never throw — see
- *  core/coherence.ts header; `reconcileProofStores` is the hard tier of the same module. */
-export const roundInvariantsGate = registerGate<RoundInvariantInput>({
+/** Round invariants over the rendered core (dangling-resolution, hollow proof,
+ *  silent node loss, snapshot basis, oeq-answer-churn, dependency-cycle).
+ *  Policy: DETECT AND WARN, never throw — see core/coherence.ts header. */
+export const roundInvariantsGate = defineGate<RoundInvariantInput>({
   id: "round-invariants",
   tier: "warn",
   stages: ["0"],
@@ -106,7 +90,7 @@ export const roundInvariantsGate = registerGate<RoundInvariantInput>({
 });
 
 /** Prose↔formal drift lint (PROSE-DANGLING-REF / PROSE-OPEN-OVERCLAIM). */
-export const proseConsistencyGate = registerGate<Core>({
+export const proseConsistencyGate = defineGate<Core>({
   id: "prose-consistency",
   tier: "warn",
   stages: ["0"],

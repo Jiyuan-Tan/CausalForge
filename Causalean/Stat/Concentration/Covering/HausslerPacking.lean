@@ -9,7 +9,7 @@ packing bounds from Sauer-Shelah.  The public API includes
 `weightedHammingSq`, the separating-subsample extraction
 `exists_separating_subsample`, the self-referential logarithmic solver
 `self_log_solve`, and the final `vc_weightedHamming_packing_card_le` /
-`vc_weightedHamming_log_packing_le` bounds.
+`vc_weightedHamming_packing_card_le` bounds.
 -/
 
 namespace Causalean.Stat.Concentration
@@ -40,13 +40,17 @@ lemma weightedHammingSq_nonneg {n : ℕ} (w : Fin n → ℝ)
     · simp [h]
     · simp [h, hw j]
 
-private lemma subsamplePattern_mem_iff {n m : ℕ} {J : Fin m → Fin n}
+/-- A sampled coordinate belongs to a Boolean pattern exactly when the original
+Boolean vector is true at the coordinate from which it was sampled. -/
+lemma subsamplePattern_mem_iff {n m : ℕ} {J : Fin m → Fin n}
     {a : Fin n → Bool} {i : Fin m} :
     i ∈ subsamplePattern J a ↔ a (J i) = true := by
   classical
   simp [subsamplePattern]
 
-private lemma sum_choose_le_succ_pow (n d : ℕ) :
+/-- A partial sum of binomial coefficients is no larger than a polynomial
+power, providing the elementary growth bound used in VC estimates. -/
+lemma sum_choose_le_succ_pow (n d : ℕ) :
     (∑ k ∈ Finset.Iic d, n.choose k) ≤ (n + 1) ^ d := by
   calc
     (∑ k ∈ Finset.Iic d, n.choose k) ≤ ∑ k ∈ Finset.Iic d, n ^ k := by
@@ -73,7 +77,9 @@ private lemma product_sum_normalization {n m : ℕ} (g : Fin n → ℝ) :
     ∑ J : Fin m → Fin n, ∏ t : Fin m, g (J t) = (∑ j : Fin n, g j) ^ m := by
   rw [Fintype.sum_pow]
 
-private lemma subsamplePattern_eq_iff {n m : ℕ} {J : Fin m → Fin n}
+/-- Equality of sampled Boolean patterns means that the two patterns agree at
+every coordinate selected by the sample. -/
+lemma subsamplePattern_eq_iff {n m : ℕ} {J : Fin m → Fin n}
     {a b : Fin n → Bool} :
     subsamplePattern J a = subsamplePattern J b ↔ ∀ t : Fin m, a (J t) = b (J t) := by
   classical
@@ -100,7 +106,9 @@ private lemma subsamplePattern_eq_iff {n m : ℕ} {J : Fin m → Fin n}
     ext t
     simp [subsamplePattern_mem_iff, h t]
 
-private lemma per_pair_collision_sum {n m : ℕ} (w : Fin n → ℝ)
+/-- The weighted sum over all fixed-length coordinate selections that agree under two
+    Boolean patterns equals the corresponding power of the total weight of their agreeing coordinates. -/
+lemma per_pair_collision_sum {n m : ℕ} (w : Fin n → ℝ)
     (a b : Fin n → Bool) :
     (∑ J : Fin m → Fin n,
         (∏ t : Fin m, w (J t)) *
@@ -138,7 +146,9 @@ private lemma per_pair_collision_sum {n m : ℕ} (w : Fin n → ℝ)
       congr 1
       simp [g, Finset.sum_filter]
 
-private lemma averaging_exists_zero_count {ι : Type*} [Fintype ι]
+/-- A nonnegative finite probability weighting with average count below one
+must assign count zero to at least one index. -/
+lemma averaging_exists_zero_count {ι : Type*} [Fintype ι]
     (μ : ι → ℝ) (cnt : ι → ℕ)
     (hμsum : ∑ i : ι, μ i = 1)
     (hμnonneg : ∀ i, 0 ≤ μ i)
@@ -159,9 +169,12 @@ private lemma averaging_exists_zero_count {ι : Type*} [Fintype ι]
           (hμnonneg i)
   exact not_lt_of_ge hge hmean
 
-private lemma collision_bound {n m : ℕ} (w : Fin n → ℝ)
+/-- When two Boolean vectors are separated under nonnegative coordinate
+weights, their probability of agreeing on every coordinate of a repeated
+weighted sample decays exponentially with the sample length. -/
+lemma collision_bound {n m : ℕ} (w : Fin n → ℝ)
     (hw : ∀ j, 0 ≤ w j) (r ε W : ℝ)
-    (hr : 0 < r) (_hε : 0 < ε) (_hεr : ε ≤ r)
+    (hr : 0 < r)
     (hW : W = ∑ j : Fin n, w j) (hWpos : 0 < W)
     (hwsum : W ≤ r ^ 2) (a b : Fin n → Bool)
     (hsep : ε ^ 2 ≤ weightedHammingSq w a b) :
@@ -307,7 +320,7 @@ ordered distinct pairs from `P`, and uses
 unseparated pairs strictly less than one. -/
 lemma finite_averaging_exists_separating_subsample {n : ℕ} (w : Fin n → ℝ)
     (hw : ∀ j, 0 ≤ w j)
-    (r ε : ℝ) (hr : 0 < r) (hε : 0 < ε) (hεr : ε ≤ r)
+    (r ε : ℝ) (hr : 0 < r) (hε : 0 < ε)
     (hwsum : ∑ j, w j ≤ r ^ 2)
     (P : Finset (Fin n → Bool)) (hPcard : 2 ≤ P.card)
     (hsep : ∀ a ∈ P, ∀ b ∈ P, a ≠ b → ε ^ 2 ≤ weightedHammingSq w a b) :
@@ -430,7 +443,7 @@ lemma finite_averaging_exists_separating_subsample {n : ℕ} (w : Fin n → ℝ)
           intro ab hab
           rw [hinner ab hab]
           rcases Finset.mem_offDiag.mp hab with ⟨haP, hbP, habne⟩
-          exact collision_bound w hw r ε W hr hε hεr hWdef hWpos hwsumW ab.1 ab.2
+          exact collision_bound w hw r ε W hr hWdef hWpos hwsumW ab.1 ab.2
             (hsep ab.1 haP ab.2 hbP habne)
       _ = (P.offDiag.card : ℝ) * Real.exp (-(m : ℝ) * ε ^ 2 / r ^ 2) := by
           simp
@@ -513,7 +526,7 @@ A separating subsample of length `m ≤ 1 + (2 r²/ε²) * log(P.card)` exists. 
 `log(P.card)` dependence is essential: injectivity forces `2^m ≥ P.card`. -/
 lemma exists_separating_subsample {n : ℕ} (d : ℕ) (w : Fin n → ℝ)
     (hw : ∀ j, 0 ≤ w j)
-    (r ε : ℝ) (hr : 0 < r) (hε : 0 < ε) (hεr : ε ≤ r)
+    (r ε : ℝ) (hr : 0 < r) (hε : 0 < ε)
     (hwsum : ∑ j, w j ≤ r ^ 2)
     (P : Finset (Fin n → Bool)) (hPcard : 2 ≤ P.card)
     (hvc : (P.image (fun a => (Finset.univ.filter (fun j => a j = true)))).vcDim ≤ d)
@@ -523,7 +536,7 @@ lemma exists_separating_subsample {n : ℕ} (d : ℕ) (w : Fin n → ℝ)
       (P.image (subsamplePattern J)).vcDim ≤ d ∧
       Set.InjOn (subsamplePattern J) ↑P := by
   obtain ⟨m, J, hm, hinj⟩ :=
-    finite_averaging_exists_separating_subsample w hw r ε hr hε hεr hwsum P hPcard hsep
+    finite_averaging_exists_separating_subsample w hw r ε hr hε hwsum P hPcard hsep
   exact ⟨m, J, hm, subsample_image_vcDim_le d J P hvc, hinj⟩
 
 /-- A self-referential logarithmic inequality implies an explicit linear-log
@@ -606,7 +619,7 @@ Hamming separation at least `ε²` has log-cardinality bounded by a quantity
 depending on `d` and `r²/ε²`, with no ambient-coordinate dependence. -/
 theorem vc_weightedHamming_packing_card_le
     {n : ℕ} (d : ℕ) (w : Fin n → ℝ) (hw : ∀ j, 0 ≤ w j)
-    (r ε : ℝ) (hr : 0 < r) (hε : 0 < ε) (hεr : ε ≤ r)
+    (r ε : ℝ) (hε : 0 < ε) (hεr : ε ≤ r)
     (hwsum : ∑ j, w j ≤ r ^ 2)
     (P : Finset (Fin n → Bool))
     (hvc : (P.image (fun a => (Finset.univ.filter (fun j => a j = true)))).vcDim ≤ d)
@@ -622,8 +635,9 @@ theorem vc_weightedHamming_packing_card_le
       · simp [hone]
     exact le_trans hlog_nonpos (haussler_log_rhs_nonneg hε hεr)
   have hPcard : 2 ≤ P.card := by omega
+  have hr : 0 < r := hε.trans_le hεr
   obtain ⟨m, J, hm, hvcJ, hinj⟩ :=
-    exists_separating_subsample d w hw r ε hr hε hεr hwsum P hPcard hvc hsep
+    exists_separating_subsample d w hw r ε hr hε hwsum P hPcard hvc hsep
   have hcard_image : (P.image (subsamplePattern J)).card = P.card :=
     Finset.card_image_of_injOn hinj
   have hcard_nat : P.card ≤ (m + 1) ^ d := by
@@ -673,17 +687,5 @@ theorem vc_weightedHamming_packing_card_le
   dsimp [L, a] at hsolve
   convert hsolve using 2
   ring_nf
-
-/-- Logarithmic form of the finite Boolean Haussler packing bound. -/
-theorem vc_weightedHamming_log_packing_le
-    {n : ℕ} (d : ℕ) (w : Fin n → ℝ) (hw : ∀ j, 0 ≤ w j)
-    (r ε : ℝ) (hr : 0 < r) (hε : 0 < ε) (hεr : ε ≤ r)
-    (hwsum : ∑ j, w j ≤ r ^ 2)
-    (P : Finset (Fin n → Bool))
-    (hvc : (P.image (fun a => (Finset.univ.filter (fun j => a j = true)))).vcDim ≤ d)
-    (hsep : ∀ a ∈ P, ∀ b ∈ P, a ≠ b → ε ^ 2 ≤ weightedHammingSq w a b) :
-    Real.log (P.card) ≤
-      1 + 2 * (d : ℝ) * Real.log (4 * (d : ℝ) * r ^ 2 / ε ^ 2) := by
-  exact vc_weightedHamming_packing_card_le d w hw r ε hr hε hεr hwsum P hvc hsep
 
 end Causalean.Stat.Concentration

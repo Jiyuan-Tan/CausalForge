@@ -238,8 +238,6 @@ theorem cutset_factor_pointwise (M : Causalean.SCM N Ω)
     [∀ n, Nonempty (Ω n)]
     (Y W : Finset (SWIGNode N)) (Z : Finset N)
     (hY : Y ⊆ M.observed)
-    (hZr : Z.image SWIGNode.random ⊆ M.observed)
-    (hW : W ⊆ M.observed)
     (hZrW : Z.image SWIGNode.random ∪ W ⊆ M.observed)
     (s : M.FixedValues) :
     ∃ h : ValuesOn (Z.image SWIGNode.random) (swigΩ Ω) → ValuesOn W (swigΩ Ω)
@@ -251,8 +249,10 @@ theorem cutset_factor_pointwise (M : Causalean.SCM N Ω)
           h p.1.1 p.1.2 p.2) ∧
       (∀ ℓ : M.LatentValues,
         valuesProjection hY (M.randomToObserved (M.evalMap s ℓ))
-          = h (valuesProjection hZr (M.randomToObserved (M.evalMap s ℓ)))
-              (valuesProjection hW (M.randomToObserved (M.evalMap s ℓ)))
+          = h (valuesProjection (fun _ hz => hZrW (Finset.mem_union_left _ hz))
+                (M.randomToObserved (M.evalMap s ℓ)))
+              (valuesProjection (fun _ hw => hZrW (Finset.mem_union_right _ hw))
+                (M.randomToObserved (M.evalMap s ℓ)))
               (valuesProjection (M.cutsetLatent_subset Y (Z.image SWIGNode.random ∪ W)) ℓ)) ∧
       -- Override-form characterization: `h` evaluated at the cut-set projection of
       -- *any* latent `ℓ` equals the override map at that `ℓ` with override block
@@ -264,6 +264,10 @@ theorem cutset_factor_pointwise (M : Causalean.SCM N Ω)
             (valuesProjection (M.cutsetLatent_subset Y (Z.image SWIGNode.random ∪ W)) ℓ)
           = M.evalMap_overrideC hY hZrW s (valuesUnionMk zr w') ℓ) := by
   classical
+  have hZr : Z.image SWIGNode.random ⊆ M.observed :=
+    fun _ hz => hZrW (Finset.mem_union_left _ hz)
+  have hW : W ⊆ M.observed :=
+    fun _ hw => hZrW (Finset.mem_union_right _ hw)
   set C := Z.image SWIGNode.random ∪ W with hC_def
   set CW := M.cutsetLatent Y C with hCW_def
   have hCWsub : CW ⊆ M.unobserved := M.cutsetLatent_subset Y C
@@ -314,9 +318,9 @@ theorem cutset_factor_pointwise (M : Causalean.SCM N Ω)
         = valuesProjection hZrW E := by
       funext ⟨v, hv⟩
       by_cases hvZr : v ∈ Z.image SWIGNode.random
-      · rw [valuesUnionMk_apply_left _ _ hv hvZr]; rfl
+      · rw [valuesUnionMk_apply_left _ _ hvZr]; rfl
       · have hvW : v ∈ W := (Finset.mem_union.mp hv).resolve_left hvZr
-        rw [valuesUnionMk_apply_right _ _ hv hvZr hvW]; rfl
+        rw [valuesUnionMk_apply_right _ _ hv hvZr]; rfl
     -- (b) override agrees with `ℓ` after the cutset section, by cutset agreement.
     have hb : M.evalMap_overrideC hY hZrW s (valuesProjection hZrW E)
                 (extendCutset (valuesProjection hCWsub ℓ))
@@ -394,7 +398,6 @@ theorem cutset_condIndep_condDistrib (M : Causalean.SCM N Ω)
     [Nonempty (ValuesOn (M.cutsetLatent Y (Z.image SWIGNode.random ∪ W)) (swigΩ Ω))]
     (hZr : Z.image SWIGNode.random ⊆ M.observed)
     (hW : W ⊆ M.observed)
-    (hDisj_ZrW : Disjoint (Z.image SWIGNode.random) W)
     (hdSepCW : M.dag.dSep (M.cutsetLatent Y (Z.image SWIGNode.random ∪ W))
       (Z.image SWIGNode.random) (W ∪ M.fixed))
     (s : M.FixedValues) :
@@ -463,13 +466,13 @@ theorem cutset_condIndep_condDistrib (M : Causalean.SCM N Ω)
   have hdSepCW : M.dag.dSep CW Zr (W ∪ M.fixed) := hdSepCW
   have hDisj_CWZr : Disjoint CW Zr := by
     rw [Finset.disjoint_left]; intro a haCW haZr
-    exact M.not_obs_of_unobs (hCWsub haCW) (hZr haZr)
+    exact not_obs_of_unobs M.toSWIGGraph (hCWsub haCW) (hZr haZr)
   have hDisj_CWW : Disjoint CW W := by
     rw [Finset.disjoint_left]; intro a haCW haW
-    exact M.not_obs_of_unobs (hCWsub haCW) (hW haW)
+    exact not_obs_of_unobs M.toSWIGGraph (hCWsub haCW) (hW haW)
   have hFCI : FullCondIndep M CW Zr W hCW_rv hZr_rv hW_rv (M.jointKernel s) :=
     full_globalMarkov_with_fixed M CW Zr W M.fixed hCW_rv hZr_rv hW_rv (Finset.Subset.refl _)
-      hDisj_CWZr hDisj_CWW hDisj_ZrW hdSepCW s
+      hdSepCW s
   -- `Zr ⟂ CW | W` form (swap X↔Y), which the Mathlib iff consumes as `g ⟂ᵢ[k] f`.
   have hFCI_symm : FullCondIndep M Zr CW W hZr_rv hCW_rv hW_rv (M.jointKernel s) :=
     fullCondIndep_symm M hCW_rv hZr_rv hW_rv hFCI
@@ -616,7 +619,6 @@ theorem obsSide_eq_witness (M : Causalean.SCM N Ω)
     [StandardBorelSpace M.RandomValues]
     [∀ n, StandardBorelSpace (swigΩ Ω n)] [∀ n, Nonempty (swigΩ Ω n)]
     [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.jointKernel s)]
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.obsKernel s)]
     (Y W : Finset (SWIGNode N)) (Z : Finset N)
     [StandardBorelSpace (ValuesOn (M.cutsetLatent Y (Z.image SWIGNode.random ∪ W)) (swigΩ Ω))]
     [Nonempty (ValuesOn (M.cutsetLatent Y (Z.image SWIGNode.random ∪ W)) (swigΩ Ω))]
@@ -624,8 +626,6 @@ theorem obsSide_eq_witness (M : Causalean.SCM N Ω)
     (hY : Y ⊆ M.observed)
     (hZr : Z.image SWIGNode.random ⊆ M.observed)
     (hW : W ⊆ M.observed)
-    (_hZrW : Z.image SWIGNode.random ∪ W ⊆ M.observed)
-    (hDisj_ZrW : Disjoint (Z.image SWIGNode.random) W)
     (hdSepCW : M.dag.dSep (M.cutsetLatent Y (Z.image SWIGNode.random ∪ W))
       (Z.image SWIGNode.random) (W ∪ M.fixed))
     (s : M.FixedValues)
@@ -689,7 +689,7 @@ theorem obsSide_eq_witness (M : Causalean.SCM N Ω)
     (C := valuesProjection (M.cutsetLatent_subset Y (Z.image SWIGNode.random ∪ W)))
     (h := h)
     hX hZmeas hCmeas hh
-    (cutset_condIndep_condDistrib M Y W Z hZr hW hDisj_ZrW hdSepCW s)
+    (cutset_condIndep_condDistrib M Y W Z hZr hW hdSepCW s)
   -- `hwit` conditions `condDistrib (fun ℓ => h (X ℓ)(Z ℓ)(C ℓ)) ...`; rewrite via `hY_eq`.
   rw [hY_eq]
   exact hwit
@@ -708,7 +708,6 @@ theorem obsCondKernel_union_eq_witness (M : Causalean.SCM N Ω)
     [StandardBorelSpace M.RandomValues]
     [∀ n, StandardBorelSpace (swigΩ Ω n)] [∀ n, Nonempty (swigΩ Ω n)]
     [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.jointKernel s)]
-    [∀ s : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.obsKernel s)]
     (Y W : Finset (SWIGNode N)) (Z : Finset N)
     [StandardBorelSpace
       (ValuesOn (M.cutsetLatent Y (Z.image SWIGNode.random ∪ W)) (swigΩ Ω))]
@@ -717,8 +716,6 @@ theorem obsCondKernel_union_eq_witness (M : Causalean.SCM N Ω)
     [MeasurableSpace.CountableOrCountablyGenerated M.FixedValues
       (ValuesOn (Z.image SWIGNode.random ∪ W) (swigΩ Ω))]
     (hY : Y ⊆ M.observed)
-    (hZr : Z.image SWIGNode.random ⊆ M.observed)
-    (hW : W ⊆ M.observed)
     (hZrW : Z.image SWIGNode.random ∪ W ⊆ M.observed)
     (hDisj_ZrW : Disjoint (Z.image SWIGNode.random) W)
     (hdSepCW : M.dag.dSep (M.cutsetLatent Y (Z.image SWIGNode.random ∪ W))
@@ -733,8 +730,14 @@ theorem obsCondKernel_union_eq_witness (M : Causalean.SCM N Ω)
         h p.1.1 p.1.2 p.2))
     (hfac : ∀ ℓ : M.LatentValues,
         valuesProjection hY (M.randomToObserved (M.evalMap s ℓ))
-          = h (valuesProjection hZr (M.randomToObserved (M.evalMap s ℓ)))
-              (valuesProjection hW (M.randomToObserved (M.evalMap s ℓ)))
+          = h (valuesProjection
+                ((Finset.subset_union_left
+                  (s₁ := Z.image SWIGNode.random) (s₂ := W)).trans hZrW)
+                (M.randomToObserved (M.evalMap s ℓ)))
+              (valuesProjection
+                ((Finset.subset_union_right
+                  (s₁ := Z.image SWIGNode.random) (s₂ := W)).trans hZrW)
+                (M.randomToObserved (M.evalMap s ℓ)))
               (valuesProjection (M.cutsetLatent_subset Y
                 (Z.image SWIGNode.random ∪ W)) ℓ)) :
     (fun c => M.obsCondKernel Y (Z.image SWIGNode.random ∪ W) hY hZrW (s, c))
@@ -744,12 +747,19 @@ theorem obsCondKernel_union_eq_witness (M : Causalean.SCM N Ω)
               (valuesProjection
                 (M.cutsetLatent_subset Y (Z.image SWIGNode.random ∪ W)))
               (fun ℓ : M.LatentValues =>
-                valuesProjection hW (M.randomToObserved (M.evalMap s ℓ)))
+                valuesProjection (Finset.subset_union_right.trans hZrW)
+                  (M.randomToObserved (M.evalMap s ℓ)))
               M.latentProduct)
-            (valuesProjection (Finset.subset_union_right) c)).map
-            (h (valuesProjection (Finset.subset_union_left) c)
-               (valuesProjection (Finset.subset_union_right) c))) := by
+            (valuesProjection (Finset.subset_union_right
+              (s₁ := Z.image SWIGNode.random) (s₂ := W)) c)).map
+            (h (valuesProjection (Finset.subset_union_left
+              (s₁ := Z.image SWIGNode.random) (s₂ := W)) c)
+                 (valuesProjection (Finset.subset_union_right
+                   (s₁ := Z.image SWIGNode.random) (s₂ := W)) c))) := by
   classical
+  have hZr : Z.image SWIGNode.random ⊆ M.observed :=
+    Finset.subset_union_left.trans hZrW
+  have hW : W ⊆ M.observed := Finset.subset_union_right.trans hZrW
   -- Abbreviations: the observed-eval pullback `E` and the conditioning maps.
   set E : M.LatentValues → M.ObservedValues :=
     fun ℓ => M.randomToObserved (M.evalMap s ℓ) with hE_def
@@ -775,7 +785,7 @@ theorem obsCondKernel_union_eq_witness (M : Causalean.SCM N Ω)
     M.latentProduct (Y := valuesProjection hY ∘ E) (X := valuesProjection hZrW ∘ E)
     (valuesUnionEquiv hDisj_ZrW) (hπY.comp hEmeas) (hπZrW.comp hEmeas)
   -- Step 4: the witness identity (pair-conditioned).
-  have h4 := obsSide_eq_witness M Y W Z hY hZr hW hZrW hDisj_ZrW hdSepCW s h hh hfac
+  have h4 := obsSide_eq_witness M Y W Z hY hZr hW hdSepCW s h hh hfac
   -- The pair map equals `e ∘ (π_{Zr∪W} ∘ E)` (both pick the `Zr`- and `W`-coords).
   have hpair : (fun ℓ : M.LatentValues =>
         (valuesProjection hZr (E ℓ), valuesProjection hW (E ℓ)))
@@ -865,15 +875,12 @@ theorem doSide_M2_pullback_eq_M1_witness
     (hZ_obs : ∀ D ∈ Z, SWIGNode.random D ∈ M'.observed)
     (hZ_fixed : ∀ D ∈ Z, SWIGNode.fixed D ∉ M'.fixed)
     (Y W : Finset (SWIGNode N))
-    (hY : Y ⊆ M'.observed) (hW : W ⊆ M'.observed)
-    (hZr : Z.image SWIGNode.random ⊆ M'.observed)
+    (hY : Y ⊆ M'.observed)
     (hZrW : Z.image SWIGNode.random ∪ W ⊆ M'.observed)
-    (hDisj_ZrW : Disjoint (Z.image SWIGNode.random) W)
     (hDisj_YZr : Disjoint Y (Z.image SWIGNode.random))
     (hWNonDesc : ∀ z ∈ Z, ∀ v ∈ W,
       ¬ (M'.fixSet Z hZ_obs hZ_fixed).dag.isAncestor (SWIGNode.fixed z) v)
     [StandardBorelSpace M'.RandomValues]
-    [∀ n, StandardBorelSpace (swigΩ Ω n)] [∀ n, Nonempty (swigΩ Ω n)]
     [StandardBorelSpace (ValuesOn Y (swigΩ Ω))]
     [Nonempty (ValuesOn Y (swigΩ Ω))]
     [StandardBorelSpace
@@ -884,12 +891,6 @@ theorem doSide_M2_pullback_eq_M1_witness
     [StandardBorelSpace (M'.fixSet Z hZ_obs hZ_fixed).ObservedValues]
     [StandardBorelSpace (ValuesOn (Z.image SWIGNode.random) (swigΩ Ω))]
     [Nonempty (ValuesOn (Z.image SWIGNode.random) (swigΩ Ω))]
-    [∀ s : M'.FixedValues, MeasureTheory.IsFiniteMeasure (M'.jointKernel s)]
-    [∀ s : M'.FixedValues, MeasureTheory.IsFiniteMeasure (M'.obsKernel s)]
-    [∀ s : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues,
-      MeasureTheory.IsFiniteMeasure ((M'.fixSet Z hZ_obs hZ_fixed).jointKernel s)]
-    [∀ s : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues,
-      MeasureTheory.IsFiniteMeasure ((M'.fixSet Z hZ_obs hZ_fixed).obsKernel s)]
     [MeasurableSpace.CountableOrCountablyGenerated
       (M'.fixSet Z hZ_obs hZ_fixed).FixedValues (ValuesOn W (swigΩ Ω))]
     [MeasurableSingletonClass
@@ -903,12 +904,6 @@ theorem doSide_M2_pullback_eq_M1_witness
         (ValuesOn (Z.image SWIGNode.random) (swigΩ Ω) × ValuesOn W (swigΩ Ω))
           × ValuesOn (M'.cutsetLatent Y (Z.image SWIGNode.random ∪ W)) (swigΩ Ω) =>
         h p.1.1 p.1.2 p.2))
-    (_hfac : ∀ ℓ : M'.LatentValues,
-        valuesProjection hY (M'.randomToObserved (M'.evalMap s0 ℓ))
-          = h (valuesProjection hZr (M'.randomToObserved (M'.evalMap s0 ℓ)))
-              (valuesProjection hW (M'.randomToObserved (M'.evalMap s0 ℓ)))
-              (valuesProjection (M'.cutsetLatent_subset Y
-                (Z.image SWIGNode.random ∪ W)) ℓ))
     (hoverride : ∀ (zr : ValuesOn (Z.image SWIGNode.random) (swigΩ Ω))
           (w' : ValuesOn W (swigΩ Ω)) (ℓ : M'.LatentValues),
         h zr w'
@@ -921,20 +916,24 @@ theorem doSide_M2_pullback_eq_M1_witness
               (M'.fixSet Z hZ_obs hZ_fixed).randomToObserved
                 ((M'.fixSet Z hZ_obs hZ_fixed).evalMap
                   (M'.fixSetExtend Z hZ_obs hZ_fixed s0 t) ℓ))
-          (valuesProjection ((fixSet_observed M' Z hZ_obs hZ_fixed).symm ▸ hW)
+          (valuesProjection ((fixSet_observed M' Z hZ_obs hZ_fixed).symm ▸
+            (fun _ hw => hZrW (Finset.mem_union_right _ hw)))
             ∘ fun ℓ : (M'.fixSet Z hZ_obs hZ_fixed).LatentValues =>
               (M'.fixSet Z hZ_obs hZ_fixed).randomToObserved
                 ((M'.fixSet Z hZ_obs hZ_fixed).evalMap
                   (M'.fixSetExtend Z hZ_obs hZ_fixed s0 t) ℓ))
           (M'.fixSet Z hZ_obs hZ_fixed).latentProduct w)
-      =ᵐ[(M'.obsKernel s0).map (valuesProjection hW)]
+      =ᵐ[(M'.obsKernel s0).map
+        (valuesProjection (fun _ hw => hZrW (Finset.mem_union_right _ hw)))]
         (fun w => ((ProbabilityTheory.condDistrib
               (valuesProjection
                 (M'.cutsetLatent_subset Y (Z.image SWIGNode.random ∪ W)))
               (fun ℓ : M'.LatentValues =>
-                valuesProjection hW (M'.randomToObserved (M'.evalMap s0 ℓ)))
+                valuesProjection (fun _ hw => hZrW (Finset.mem_union_right _ hw))
+                  (M'.randomToObserved (M'.evalMap s0 ℓ)))
               M'.latentProduct) w).map (h t w)) := by
   classical
+  have hW : W ⊆ M'.observed := fun _ hw => hZrW (Finset.mem_union_right _ hw)
   set M2 := M'.fixSet Z hZ_obs hZ_fixed with hM2
   set s' := M'.fixSetExtend Z hZ_obs hZ_fixed s0 t with hs'
   haveI : MeasureTheory.IsProbabilityMeasure M'.latentProduct := inferInstance
@@ -995,7 +994,7 @@ theorem doSide_M2_pullback_eq_M1_witness
             (M'.fillZrW Z hZ_obs hZ_fixed W s' w) ℓ
           = M2.evalMap_overrideC hY_M2 hW_M2 s' w ℓ :=
       evalMap_overrideC_dropZr_on_fillZrW M' Z hZ_obs hZ_fixed Y W
-        hY_M2 hW_M2 hZrW_M2 hDisj_YZr s' ℓ w
+        hY_M2 hZrW_M2 hDisj_YZr s' ℓ w
     -- (c) cross-SCM compat: M2 override over `Zr∪W` at `fillZrW` = M1 override over `Zr∪W`
     --     at `fillZrW`, base `fixSetProj s' = s0`, latent reindex = identity.
     have hcompat : M2.evalMap_overrideC hY_M2 hZrW_M2 s'
@@ -1010,7 +1009,7 @@ theorem doSide_M2_pullback_eq_M1_witness
       -- the compat lemma compares the full-observed-output overrides at node `v.val`;
       -- both unfold to the same `evalObservedAuxOverride` value, so transport via it.
       have hcv := evalMap_overrideC_fixSet_compat_on_fillZrW M' Z hZ_obs hZ_fixed W
-        hZrW_M2 hZrW s' w ℓ (v := v.val) (hY_M2 v.property)
+        hZrW_M2 s' w ℓ (v := v.val) (hY_M2 v.property)
       -- `hcv` (read right→left) equates M2 and M1 full-output overrides at `⟨v.val, _⟩`.
       rw [evalMap_overrideC_eq M2 (Finset.Subset.refl _) hZrW_M2 s' _ ℓ
             ⟨v.val, hY_M2 v.property⟩,
@@ -1102,12 +1101,10 @@ theorem doSide_M2_condDistrib_eq_M1_witness
     (hY : Y ⊆ M'.observed) (hW : W ⊆ M'.observed)
     (hZr : Z.image SWIGNode.random ⊆ M'.observed)
     (hZrW : Z.image SWIGNode.random ∪ W ⊆ M'.observed)
-    (hDisj_ZrW : Disjoint (Z.image SWIGNode.random) W)
     (hDisj_YZr : Disjoint Y (Z.image SWIGNode.random))
     (hWNonDesc : ∀ z ∈ Z, ∀ v ∈ W,
       ¬ (M'.fixSet Z hZ_obs hZ_fixed).dag.isAncestor (SWIGNode.fixed z) v)
     [StandardBorelSpace M'.RandomValues]
-    [∀ n, StandardBorelSpace (swigΩ Ω n)] [∀ n, Nonempty (swigΩ Ω n)]
     [StandardBorelSpace (ValuesOn Y (swigΩ Ω))]
     [Nonempty (ValuesOn Y (swigΩ Ω))]
     [StandardBorelSpace
@@ -1118,12 +1115,6 @@ theorem doSide_M2_condDistrib_eq_M1_witness
     [StandardBorelSpace (M'.fixSet Z hZ_obs hZ_fixed).ObservedValues]
     [StandardBorelSpace (ValuesOn (Z.image SWIGNode.random) (swigΩ Ω))]
     [Nonempty (ValuesOn (Z.image SWIGNode.random) (swigΩ Ω))]
-    [∀ s : M'.FixedValues, MeasureTheory.IsFiniteMeasure (M'.jointKernel s)]
-    [∀ s : M'.FixedValues, MeasureTheory.IsFiniteMeasure (M'.obsKernel s)]
-    [∀ s : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues,
-      MeasureTheory.IsFiniteMeasure ((M'.fixSet Z hZ_obs hZ_fixed).jointKernel s)]
-    [∀ s : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues,
-      MeasureTheory.IsFiniteMeasure ((M'.fixSet Z hZ_obs hZ_fixed).obsKernel s)]
     [MeasurableSpace.CountableOrCountablyGenerated
       (M'.fixSet Z hZ_obs hZ_fixed).FixedValues (ValuesOn W (swigΩ Ω))]
     [MeasurableSingletonClass
@@ -1204,8 +1195,8 @@ theorem doSide_M2_condDistrib_eq_M1_witness
     rw [← hobs]; exact hbase
   rw [hbase'] at hstepA
   -- Step B+C (isolated TRUE core): the M2-pullback condDistrib equals the M1 witness kernel.
-  have hcore := doSide_M2_pullback_eq_M1_witness M' Z hZ_obs hZ_fixed Y W hY hW hZr
-    hZrW hDisj_ZrW hDisj_YZr hWNonDesc s0 t h hh hfac hoverride
+  have hcore := doSide_M2_pullback_eq_M1_witness M' Z hZ_obs hZ_fixed Y W hY hZrW
+    hDisj_YZr hWNonDesc s0 t h hh hoverride
   -- Align the goal's LHS (over `M2.obsKernel s'`) to `hstepA`'s LHS (over `latentProduct.map E2`)
   -- via `hobs`, handling the dependent `IsFiniteMeasure` instance with `subst`.
   refine Filter.EventuallyEq.trans ?_ (hstepA.trans hcore)
@@ -1263,7 +1254,6 @@ theorem doSide_eq_witness
     (hWNonDesc : ∀ z ∈ Z, ∀ v ∈ W,
       ¬ (M'.fixSet Z hZ_obs hZ_fixed).dag.isAncestor (SWIGNode.fixed z) v)
     [StandardBorelSpace M'.RandomValues]
-    [∀ n, StandardBorelSpace (swigΩ Ω n)] [∀ n, Nonempty (swigΩ Ω n)]
     [StandardBorelSpace (ValuesOn Y (swigΩ Ω))]
     [Nonempty (ValuesOn Y (swigΩ Ω))]
     [StandardBorelSpace
@@ -1274,12 +1264,6 @@ theorem doSide_eq_witness
     [StandardBorelSpace (M'.fixSet Z hZ_obs hZ_fixed).ObservedValues]
     [StandardBorelSpace (ValuesOn (Z.image SWIGNode.random) (swigΩ Ω))]
     [Nonempty (ValuesOn (Z.image SWIGNode.random) (swigΩ Ω))]
-    [∀ s : M'.FixedValues, MeasureTheory.IsFiniteMeasure (M'.jointKernel s)]
-    [∀ s : M'.FixedValues, MeasureTheory.IsFiniteMeasure (M'.obsKernel s)]
-    [∀ s : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues,
-      MeasureTheory.IsFiniteMeasure ((M'.fixSet Z hZ_obs hZ_fixed).jointKernel s)]
-    [∀ s : (M'.fixSet Z hZ_obs hZ_fixed).FixedValues,
-      MeasureTheory.IsFiniteMeasure ((M'.fixSet Z hZ_obs hZ_fixed).obsKernel s)]
     [MeasurableSpace.CountableOrCountablyGenerated
       M'.FixedValues (ValuesOn (Z.image SWIGNode.random ∪ W) (swigΩ Ω))]
     [MeasurableSpace.CountableOrCountablyGenerated
@@ -1354,7 +1338,7 @@ theorem doSide_eq_witness
   rw [hbase] at h1
   -- Step 2: the analytic core — that condDistrib equals the M1 witness kernel.
   have h2 := doSide_M2_condDistrib_eq_M1_witness M' Z hZ_obs hZ_fixed Y W hY hW hZr
-    hZrW hDisj_ZrW hDisj_YZr hWNonDesc s0 t h hh hfac hoverride
+    hZrW hDisj_YZr hWNonDesc s0 t h hh hfac hoverride
   -- Both `h1` and `h2` are stated over the base `μW`; chain.
   filter_upwards [h1, h2] with w hw1 hw2
   -- `hw1 : M2.obsCondKernel Y W (s', w) = condDistrib π_Y π_W (M2.obsKernel s') w`
@@ -1478,7 +1462,7 @@ theorem obsCondKernel_fixSet_M1_eq_ae_product
   have hG_meas : Measurable G := measurable_valuesUnionMk
   haveI hΩne : ∀ n, Nonempty (Ω n) := fun n =>
     (inferInstance : Nonempty (swigΩ Ω (SWIGNode.random n)))
-  obtain ⟨h, hh, hfac, hoverride⟩ := cutset_factor_pointwise M' Y W Z hY hZr hW hZrW s0
+  obtain ⟨h, hh, hfac, hoverride⟩ := cutset_factor_pointwise M' Y W Z hY hZrW s0
   -- The shared posterior witness kernel, as a function of the conditioning pair.
   set wk : ValuesOn (Z.image SWIGNode.random) (swigΩ Ω) × ValuesOn W (swigΩ Ω)
       → MeasureTheory.Measure (ValuesOn Y (swigΩ Ω)) :=
@@ -1494,14 +1478,14 @@ theorem obsCondKernel_fixSet_M1_eq_ae_product
       (w : ValuesOn W (swigΩ Ω)),
       valuesProjection (Finset.subset_union_left) (valuesUnionMk t w) = t := by
     intro t w; funext v
-    exact valuesUnionMk_apply_left t w (Finset.subset_union_left v.property) v.property
+    exact valuesUnionMk_apply_left t w v.property
   have hproj_right : ∀ (t : ValuesOn (Z.image SWIGNode.random) (swigΩ Ω))
       (w : ValuesOn W (swigΩ Ω)),
       valuesProjection (Finset.subset_union_right) (valuesUnionMk t w) = w := by
     intro t w; funext v
     have hnotleft : v.val ∉ Z.image SWIGNode.random := fun hv =>
       (Finset.disjoint_left.mp hDisj_ZrW) hv v.property
-    exact valuesUnionMk_apply_right t w (Finset.subset_union_right v.property) hnotleft v.property
+    exact valuesUnionMk_apply_right t w (Finset.subset_union_right v.property) hnotleft
   haveI hM2Markov : ProbabilityTheory.IsMarkovKernel
       (M2.obsCondKernel Y W hY_M2 hW_M2) := by
     unfold SCM.obsCondKernel; infer_instance
@@ -1520,7 +1504,7 @@ theorem obsCondKernel_fixSet_M1_eq_ae_product
     have hdSepCW : M'.dag.dSep (M'.cutsetLatent Y (Z.image SWIGNode.random ∪ W))
         (Z.image SWIGNode.random) (W ∪ M'.fixed) :=
       M'.cutsetLatent_dSep_of_fixSet_dSep Z hZ_obs hZ_fixed Y W hW hWNonDescM1 hdSep
-    have hunion := obsCondKernel_union_eq_witness M' Y W Z hY hZr hW hZrW
+    have hunion := obsCondKernel_union_eq_witness M' Y W Z hY hZrW
       hDisj_ZrW hdSepCW s0 h hh hfac
     -- `lam.map G ≪ μ_C` (the positivity assumption) transports the `μ_C`-a.e. identity.
     have hAC : MeasureTheory.Measure.map G lam

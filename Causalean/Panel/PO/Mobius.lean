@@ -2,9 +2,10 @@
 Copyright (c) 2026 Causalean contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 
-# Möbius / inclusion-exclusion expansion on the Boolean cube `{0,1}^{p+1}`
+# Möbius / inclusion-exclusion expansion on a finite Boolean cube
 
-For `τ : (Fin (p+1) → Fin 2) → ℝ` with `τ 0 = 0`, define for each
+For a real-valued response on binary histories indexed by an arbitrary finite
+type, with value zero at the all-zero history, define for each
 `S ⊆ Finset.univ`,
 
 ```
@@ -42,30 +43,30 @@ open Finset BigOperators
 
 namespace Causalean.Panel.PO.Mobius
 
-variable {p : ℕ}
+variable {ι : Type*} [DecidableEq ι]
 
-/-- Indicator history `𝟙_A : Fin (p + 1) → Fin 2`, equal to `1` on `A` and `0`
+/-- Indicator history `𝟙_A : ι → Fin 2`, equal to `1` on `A` and `0`
 elsewhere. -/
-def indicator (A : Finset (Fin (p + 1))) : Fin (p + 1) → Fin 2 :=
+def indicator (A : Finset ι) : ι → Fin 2 :=
   fun k => if k ∈ A then 1 else 0
 
 /-- The indicator history of the empty subset is the all-zero treatment
 history. -/
 @[simp] lemma indicator_empty :
-    indicator (∅ : Finset (Fin (p + 1))) = fun _ => 0 := by
+    indicator (∅ : Finset ι) = fun _ => 0 := by
   funext k; simp [indicator]
 
 /-- The interaction effect at a subset `S`. The main lemma uses this only for
 non-empty `S`, but the definition is total. -/
-noncomputable def delta (τ : (Fin (p + 1) → Fin 2) → ℝ)
-    (S : Finset (Fin (p + 1))) : ℝ :=
+noncomputable def delta (τ : (ι → Fin 2) → ℝ)
+    (S : Finset ι) : ℝ :=
   ∑ A ∈ S.powerset, (-1 : ℝ) ^ (S.card - A.card) * τ (indicator A)
 
 /-- Indicator product: `∏ k ∈ S, ((h k).val : ℝ)` equals `1` if `S ⊆ B` and
 `0` otherwise, where `B = {k : h k = 1}`. -/
-lemma prod_indicator_eq (h : Fin (p + 1) → Fin 2)
-    (B : Finset (Fin (p + 1))) (hB : ∀ k, k ∈ B ↔ h k = 1)
-    (S : Finset (Fin (p + 1))) :
+lemma prod_indicator_eq (h : ι → Fin 2)
+    (B : Finset ι) (hB : ∀ k, k ∈ B ↔ h k = 1)
+    (S : Finset ι) :
     Finset.prod S (fun k => ((h k).val : ℝ)) = if S ⊆ B then 1 else 0 := by
   classical
   by_cases hSB : S ⊆ B
@@ -93,7 +94,7 @@ lemma prod_indicator_eq (h : Fin (p + 1) → Fin 2)
 `∑ S, A ⊆ S ⊆ B, (-1)^(|S|-|A|) = if A = B then 1 else 0`.
 
 This is the alternating-sum identity that drives Möbius inversion. -/
-lemma coeff_sum (A B : Finset (Fin (p + 1))) (hAB : A ⊆ B) :
+lemma coeff_sum (A B : Finset ι) (hAB : A ⊆ B) :
     (∑ S ∈ B.powerset.filter (A ⊆ ·), (-1 : ℝ) ^ (S.card - A.card))
       = if A = B then 1 else 0 := by
   classical
@@ -173,23 +174,24 @@ lemma coeff_sum (A B : Finset (Fin (p + 1))) (hAB : A ⊆ B) :
 recovered as the sum of its nonempty inclusion-exclusion interaction coefficients, with an
 interaction contributing only when all of its lags are active in the history.
 
-In Lean notation, for `τ : (Fin (p + 1) → Fin 2) → ℝ` with
-`τ (fun _ => 0) = 0` and any binary history `h`,
+For a real-valued response on binary histories indexed by a finite type, with
+value zero at the all-zero history, and any binary history `h`,
 ```
 τ h = ∑ S ∈ univ.powerset.filter (·.Nonempty),
         δ τ S * ∏ k ∈ S, ((h k).val : ℝ).
 ```
 -/
 theorem mobius_expansion
-    (τ : (Fin (p + 1) → Fin 2) → ℝ)
+    [Fintype ι]
+    (τ : (ι → Fin 2) → ℝ)
     (hτ0 : τ (fun _ => 0) = 0)
-    (h : Fin (p + 1) → Fin 2) :
+    (h : ι → Fin 2) :
     τ h =
-      ∑ S ∈ (((Finset.univ : Finset (Fin (p + 1))).powerset.filter (·.Nonempty)) :
-        Finset (Finset (Fin (p + 1)))),
+      ∑ S ∈ (((Finset.univ : Finset ι).powerset.filter (·.Nonempty)) :
+        Finset (Finset ι)),
         delta τ S * Finset.prod S (fun k => ((h k).val : ℝ)) := by
   classical
-  let B : Finset (Fin (p + 1)) := Finset.univ.filter (fun k => h k = 1)
+  let B : Finset ι := Finset.univ.filter (fun k => h k = 1)
   have hBmem : ∀ k, k ∈ B ↔ h k = 1 := by
     intro k
     simp [B, Finset.mem_filter]
@@ -210,9 +212,9 @@ theorem mobius_expansion
           simpa using hv
         omega
       simp [indicator, hk, h2]
-  let u : Finset (Finset (Fin (p + 1))) :=
-    (Finset.univ : Finset (Fin (p + 1))).powerset.filter (·.Nonempty)
-  let s : Finset (Finset (Fin (p + 1))) := B.powerset.filter (·.Nonempty)
+  let u : Finset (Finset ι) :=
+    (Finset.univ : Finset ι).powerset.filter (·.Nonempty)
+  let s : Finset (Finset ι) := B.powerset.filter (·.Nonempty)
   change τ h = ∑ S ∈ u, delta τ S * Finset.prod S (fun k => ((h k).val : ℝ))
   have hstep1 :
       (∑ S ∈ u, delta τ S * Finset.prod S (fun k => ((h k).val : ℝ)))
@@ -289,7 +291,7 @@ theorem mobius_expansion
         by_cases hB0 : B = ∅
         · rw [hB0]
           simp [hτ0]
-        · have hne : (∅ : Finset (Fin (p + 1))) ≠ B := by
+        · have hne : (∅ : Finset ι) ≠ B := by
             intro h
             exact hB0 h.symm
           simp [hτ0, hne]

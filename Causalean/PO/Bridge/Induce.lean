@@ -178,8 +178,8 @@ lemma liftRegime_sqcup
   by_cases hw1 : w ∈ r₁'.target
   · have hv_in_lift1 : (w.val : P.V) ∈ (P.liftRegime R r₁').target :=
       Finset.mem_map.mpr ⟨w, hw1, rfl⟩
-    rw [Regime.sqcup_assign_pos _ _ _ _ _ hw1,
-        Regime.sqcup_assign_pos _ _ _ _ _ hv_in_lift1,
+    rw [Regime.sqcup_assign_pos _ _ _ _ hw1,
+        Regime.sqcup_assign_pos _ _ _ _ hv_in_lift1,
         P.liftRegime_assign R r₁' w hw1]
   · have hw2 : w ∈ r₂'.target := by
       rcases Finset.mem_union.mp hwU with hw | hw
@@ -194,8 +194,8 @@ lemma liftRegime_sqcup
       exact hw1 hw'
     have hv_in_lift2 : (w.val : P.V) ∈ (P.liftRegime R r₂').target :=
       Finset.mem_map.mpr ⟨w, hw2, rfl⟩
-    rw [Regime.sqcup_assign_neg _ _ _ _ _ hw1 hw2,
-        Regime.sqcup_assign_neg _ _ _ _ _ hv_not_in_lift1 hv_in_lift2,
+    rw [Regime.sqcup_assign_neg _ _ _ _ hw1 hw2,
+        Regime.sqcup_assign_neg _ _ _ _ hv_not_in_lift1 hv_in_lift2,
         P.liftRegime_assign R r₂' w hw2]
 
 /-! ### Consistency propagates to the sub-system -/

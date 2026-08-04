@@ -73,7 +73,7 @@ private lemma integral_sq_le_ball_mass' {d : ℕ} (P : CateLaw d) (hiid : IidSam
   have hball : MeasurableSet (supBall x0 h) := by
     rw [show supBall x0 h = ⋂ i : Fin d, {x | |x i - x0 i| ≤ h} by
       ext x
-      simp [supBall]]
+      simp [supBall, Causalean.Stat.Nonparametric.supBall]]
     apply MeasurableSet.iInter
     intro i
     change MeasurableSet ((fun x : Fin d → ℝ ↦ |x i - x0 i|) ⁻¹' Set.Iic h)
@@ -127,35 +127,8 @@ private lemma sqrt_sum_sq_le_sum_abs {ι : Type*} [Fintype ι] (v : ι → ℝ) 
   · simpa [sq_abs] using Finset.sum_sq_le_sq_sum_of_nonneg
       (s := Finset.univ) (f := fun i ↦ |v i|) (fun _ _ ↦ abs_nonneg _)
 
-private lemma integrable_euclidean_of_integrable
-    {Ω ι : Type*} [MeasurableSpace Ω] [Fintype ι] {μ : Measure Ω}
-    (v : Ω → ι → ℝ) (hv : ∀ i, Integrable (fun ω ↦ v ω i) μ) :
-    Integrable (fun ω ↦ Real.sqrt (∑ i, (v ω i) ^ 2)) μ := by
-  have hsum : Integrable (fun ω ↦ ∑ i, |v ω i|) μ :=
-    integrable_finset_sum _ fun i _ ↦ (hv i).abs
-  have hmeas : AEStronglyMeasurable (fun ω ↦ Real.sqrt (∑ i, (v ω i) ^ 2)) μ := by
-    fun_prop
-  refine hsum.mono' hmeas (ae_of_all _ fun ω ↦ ?_)
-  rw [Real.norm_of_nonneg (Real.sqrt_nonneg _)]
-  exact sqrt_sum_sq_le_sum_abs (v ω)
-
-private lemma integrable_iid_mean_euclidean
-    {Ω ι : Type*} [MeasurableSpace Ω] [Fintype ι]
-    (μ : Measure Ω) [IsProbabilityMeasure μ] {n : ℕ}
-    (ξ : ι → Ω → ℝ) (hξ : ∀ k, Measurable (ξ k))
-    (B : ℝ) (hbounded : ∀ k ω, |ξ k ω| ≤ B) :
-    Integrable (fun s ↦ Real.sqrt (∑ k,
-      ((n : ℝ)⁻¹ * ∑ i : Fin n, ξ k (s i) - ∫ ω, ξ k ω ∂μ) ^ 2))
-      (Measure.pi fun _ : Fin n ↦ μ) := by
-  apply integrable_euclidean_of_integrable
-  intro k
-  have hk : Integrable (ξ k) μ :=
-    Integrable.of_bound (hξ k).aestronglyMeasurable B (ae_of_all μ (hbounded k))
-  apply Integrable.sub
-  · apply Integrable.const_mul
-    exact integrable_finset_sum _ fun i _ ↦
-      (measurePreserving_eval (fun _ : Fin n ↦ μ) i).integrable_comp_of_integrable hk
-  · exact integrable_const _
+-- `integrable_euclidean_of_integrable` and `integrable_iid_mean_euclidean` are now public in
+-- `Causalean.Mathlib.Probability` (opened above); the local copies were deleted.
 
 private lemma empMom_eq_mean_momSummand {d n m : ℕ} (h : ℝ) (x0 : Fin d → ℝ)
     (a : Fin 2) (s : Fin n → CateObs d) (hn : 0 < n) (k : Fin (pDim d m)) :
@@ -185,11 +158,12 @@ private lemma integral_empMom_sub_popMom_le {d n m : ℕ}
   letI : IsProbabilityMeasure P.dataMeasure := hiid.1
   let ξ : Fin (pDim d m) → CateObs d → ℝ := fun k O ↦
     momSummand h x0 (expoOf d m) (unifKernel d) a O k
-  have hb := iid_mean_euclidean_abs_le P.dataMeasure hn ξ
-    (fun k ↦ measurable_momSummand' h x0 a k)
-    (h ^ (-(d : ℝ))) (fun k O ↦ by
-      simpa using abs_momSummand_le hh (unifKernel_nonneg d) (unifKernel_le_one d)
-        (unifKernel_eq_zero d) a O k)
+  have hξLp : ∀ k, MemLp (ξ k) 2 P.dataMeasure := fun k =>
+    MemLp.of_bound (measurable_momSummand' h x0 a k).aestronglyMeasurable
+      (h ^ (-(d : ℝ))) (ae_of_all _ fun O => by
+        simpa using abs_momSummand_le hh (unifKernel_nonneg d) (unifKernel_le_one d)
+          (unifKernel_eq_zero d) a O k)
+  have hb := iid_mean_euclidean_abs_le P.dataMeasure hn ξ hξLp
   calc
     _ = ∫ s, Real.sqrt (∑ k, ((n : ℝ)⁻¹ * ∑ i, ξ k (s i) -
           ∫ O, ξ k O ∂P.dataMeasure) ^ 2)
@@ -243,11 +217,12 @@ private lemma integral_empGram_sub_popGram_le {d n m : ℕ}
   letI : IsProbabilityMeasure P.dataMeasure := hiid.1
   let ξ : (Fin (pDim d m) × Fin (pDim d m)) → CateObs d → ℝ := fun q O ↦
     gramSummand h x0 (expoOf d m) (unifKernel d) a O q.1 q.2
-  have hb := iid_mean_euclidean_abs_le P.dataMeasure hn ξ
-    (fun q ↦ measurable_gramSummand' h x0 a q.1 q.2)
-    (h ^ (-(d : ℝ))) (fun q O ↦ by
-      simpa using abs_gramSummand_le hh (unifKernel_nonneg d) (unifKernel_le_one d)
-        (unifKernel_eq_zero d) a O q.1 q.2)
+  have hξLp : ∀ q, MemLp (ξ q) 2 P.dataMeasure := fun q =>
+    MemLp.of_bound (measurable_gramSummand' h x0 a q.1 q.2).aestronglyMeasurable
+      (h ^ (-(d : ℝ))) (ae_of_all _ fun O => by
+        simpa using abs_gramSummand_le hh (unifKernel_nonneg d) (unifKernel_le_one d)
+          (unifKernel_eq_zero d) a O q.1 q.2)
+  have hb := iid_mean_euclidean_abs_le P.dataMeasure hn ξ hξLp
   calc
     _ = ∫ s, Real.sqrt (∑ q, ((n : ℝ)⁻¹ * ∑ i, ξ q (s i) -
           ∫ O, ξ q O ∂P.dataMeasure) ^ 2)
@@ -410,21 +385,25 @@ theorem mechOf_risk_bound (d : ℕ) (beta f1 : ℝ) :
       (Measure.pi fun _ : Fin n ↦ P.dataMeasure) := by
     let ξ : Fin (pDim d m) → CateObs d → ℝ := fun k O ↦
       momSummand h x0 (expoOf d m) (unifKernel d) a O k
-    have hi := integrable_iid_mean_euclidean P.dataMeasure (n := n) ξ
-      (fun k ↦ measurable_momSummand' h x0 a k)
-      (h ^ (-(d : ℝ))) (fun k O ↦ by
-        simpa using abs_momSummand_le hh (unifKernel_nonneg d) (unifKernel_le_one d)
-          (unifKernel_eq_zero d) a O k)
+    have hξInt : ∀ k, Integrable (ξ k) P.dataMeasure := fun k =>
+      Integrable.of_bound (measurable_momSummand' h x0 a k).aestronglyMeasurable
+        (h ^ (-(d : ℝ))) (ae_of_all _ fun O => by
+          rw [Real.norm_eq_abs]
+          simpa using abs_momSummand_le hh (unifKernel_nonneg d) (unifKernel_le_one d)
+            (unifKernel_eq_zero d) a O k)
+    have hi := integrable_iid_mean_euclidean P.dataMeasure (n := n) ξ hξInt
     convert hi using 1
   have hGramInt (a : Fin 2) : Integrable (fun s ↦ Gram s a)
       (Measure.pi fun _ : Fin n ↦ P.dataMeasure) := by
     let ξ : (Fin (pDim d m) × Fin (pDim d m)) → CateObs d → ℝ := fun q O ↦
       gramSummand h x0 (expoOf d m) (unifKernel d) a O q.1 q.2
-    have hi := integrable_iid_mean_euclidean P.dataMeasure (n := n) ξ
-      (fun q ↦ measurable_gramSummand' h x0 a q.1 q.2)
-      (h ^ (-(d : ℝ))) (fun q O ↦ by
-        simpa using abs_gramSummand_le hh (unifKernel_nonneg d) (unifKernel_le_one d)
-          (unifKernel_eq_zero d) a O q.1 q.2)
+    have hξInt : ∀ q, Integrable (ξ q) P.dataMeasure := fun q =>
+      Integrable.of_bound (measurable_gramSummand' h x0 a q.1 q.2).aestronglyMeasurable
+        (h ^ (-(d : ℝ))) (ae_of_all _ fun O => by
+          rw [Real.norm_eq_abs]
+          simpa using abs_gramSummand_le hh (unifKernel_nonneg d) (unifKernel_le_one d)
+            (unifKernel_eq_zero d) a O q.1 q.2)
+    have hi := integrable_iid_mean_euclidean P.dataMeasure (n := n) ξ hξInt
     convert hi using 1
     funext s
     dsimp [Gram, frobDist]

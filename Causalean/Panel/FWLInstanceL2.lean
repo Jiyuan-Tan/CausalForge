@@ -78,7 +78,7 @@ theorem inner_eq_integral (f g : Lp ℝ 2 μ) :
 
 section FWL
 
-variable {K : ℕ} (H : Submodule ℝ (Lp ℝ 2 μ)) [FiniteDimensional ℝ H]
+variable {K : ℕ} (H : Submodule ℝ (Lp ℝ 2 μ)) [H.HasOrthogonalProjection]
   (X : Fin K → Lp ℝ 2 μ) (Y : Lp ℝ 2 μ)
 
 /-- **Residualized normal equations on `L²(μ)`.** The FWL coefficient solves

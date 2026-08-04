@@ -46,7 +46,9 @@ bridge theorem signatures. -/
 def IsBalancedPanelLaw (μ : Measure Ω) (G : Ω → 𝒢) (T_rv : Ω → Fin T) : Prop :=
   ∀ g t, cellMass μ G T_rv g t = cohortMass μ G g * periodMass μ T_rv t
 
-private theorem memLp_two_of_binary
+/-- Under a probability measure, a measurable real-valued variable that equals either zero or one
+almost surely has a finite second moment. -/
+theorem memLp_two_of_binary
     (μ : Measure Ω) [IsProbabilityMeasure μ] (D : Ω → ℝ)
     (D_meas : Measurable D)
     (D_binary : ∀ᵐ ω ∂μ, D ω = 0 ∨ D ω = 1) :
@@ -59,6 +61,7 @@ private theorem memLp_two_of_binary
   exact memLp_of_bounded (f := D) hD_bounded
     D_meas.aestronglyMeasurable (2 : ENNReal)
 
+omit [DecidableEq 𝒢] in
 private theorem integral_cohort_sum_mul_cohort_indicator
     (μ : Measure Ω) [IsProbabilityMeasure μ]
     (G : Ω → 𝒢) (G_meas : Measurable G)
@@ -67,6 +70,7 @@ private theorem integral_cohort_sum_mul_cohort_indicator
           * Set.indicator {ω' | G ω' = g'} (fun _ => (1 : ℝ)) ω)
         * Set.indicator {ω' | G ω' = g} (fun _ => (1 : ℝ)) ω ∂μ
       = a g * cohortMass μ G g := by
+  classical
   let I : 𝒢 → Ω → ℝ := fun g ω =>
     Set.indicator {ω' | G ω' = g} (fun _ => (1 : ℝ)) ω
   let term : 𝒢 → Ω → ℝ := fun g' ω => (a g' * I g' ω) * I g ω
@@ -198,6 +202,7 @@ private theorem integral_period_sum_mul_period_indicator
           · intro ht
             exact False.elim (ht (Finset.mem_univ _))
 
+omit [Fintype 𝒢] [DecidableEq 𝒢] in
 private theorem integral_period_sum_mul_cohort_indicator
     (μ : Measure Ω) [IsProbabilityMeasure μ]
     (G : Ω → 𝒢) (T_rv : Ω → Fin T)
@@ -207,6 +212,7 @@ private theorem integral_period_sum_mul_cohort_indicator
           * Set.indicator {ω' | T_rv ω' = t} (fun _ => (1 : ℝ)) ω)
         * Set.indicator {ω' | G ω' = g} (fun _ => (1 : ℝ)) ω ∂μ
       = ∑ t, b t * cellMass μ G T_rv g t := by
+  classical
   let IG : Ω → ℝ := fun ω =>
     Set.indicator {ω' | G ω' = g} (fun _ => (1 : ℝ)) ω
   let IT : Fin T → Ω → ℝ := fun t ω =>
@@ -253,6 +259,7 @@ private theorem integral_period_sum_mul_cohort_indicator
     _ = ∑ t, b t * cellMass μ G T_rv g t := by
           exact Finset.sum_congr rfl (fun t _ => hterm_eval t)
 
+omit [DecidableEq 𝒢] in
 private theorem integral_cohort_sum_mul_period_indicator
     (μ : Measure Ω) [IsProbabilityMeasure μ]
     (G : Ω → 𝒢) (T_rv : Ω → Fin T)
@@ -262,6 +269,7 @@ private theorem integral_cohort_sum_mul_period_indicator
           * Set.indicator {ω' | G ω' = g} (fun _ => (1 : ℝ)) ω)
         * Set.indicator {ω' | T_rv ω' = t} (fun _ => (1 : ℝ)) ω ∂μ
       = ∑ g, a g * cellMass μ G T_rv g t := by
+  classical
   let IG : 𝒢 → Ω → ℝ := fun g ω =>
     Set.indicator {ω' | G ω' = g} (fun _ => (1 : ℝ)) ω
   let IT : Ω → ℝ := fun ω =>
@@ -307,7 +315,9 @@ private theorem integral_cohort_sum_mul_period_indicator
     _ = ∑ g, a g * cellMass μ G T_rv g t := by
           exact Finset.sum_congr rfl (fun g _ => hterm_eval g)
 
-private theorem sum_periodMass_eq_one
+/-- Under a probability distribution, the probabilities assigned to every period by a measurable
+finite-valued period variable sum to one. -/
+theorem sum_periodMass_eq_one
     (μ : Measure Ω) [IsProbabilityMeasure μ]
     (T_rv : Ω → Fin T) (T_meas : Measurable T_rv) :
     ∑ t, periodMass μ T_rv t = 1 := by
@@ -325,7 +335,9 @@ private theorem sum_periodMass_eq_one
             T_rv T_meas hOneInt]
     _ = 1 := by simp
 
-private theorem period_centered_sum_eq_zero
+/-- Under a probability distribution, period-specific means of an integrable outcome, centered
+by the overall mean and weighted by their period probabilities, sum to zero. -/
+theorem period_centered_sum_eq_zero
     (μ : Measure Ω) [IsProbabilityMeasure μ]
     (F : Ω → ℝ) (T_rv : Ω → Fin T) (T_meas : Measurable T_rv)
     (F_int : Integrable F μ) :
@@ -339,7 +351,7 @@ private theorem period_centered_sum_eq_zero
         / periodMass μ T_rv t) * periodMass μ T_rv t =
         ∫ ω, F ω
           * Set.indicator {ω' | T_rv ω' = t} (fun _ => (1 : ℝ)) ω ∂μ :=
-    fun t => period_integral_div_mul_periodMass μ F T_rv T_meas t
+    fun t => period_integral_div_mul_periodMass μ F T_rv t
   calc
     ∑ t, (((∫ ω, F ω
           * Set.indicator {ω' | T_rv ω' = t} (fun _ => (1 : ℝ)) ω ∂μ)
@@ -356,7 +368,10 @@ private theorem period_centered_sum_eq_zero
             sum_periodMass_eq_one μ T_rv T_meas]
     _ = 0 := by ring
 
-private theorem panelMeanReg_cohort_axis_orthogonal
+omit [DecidableEq 𝒢] in
+/-- Under a balanced panel law, the residual from the panel mean regression has zero average
+product with the indicator of any fixed cohort. -/
+theorem panelMeanReg_cohort_axis_orthogonal
     (μ : Measure Ω) [IsProbabilityMeasure μ]
     (F : Ω → ℝ) (G : Ω → 𝒢) (T_rv : Ω → Fin T)
     (G_meas : Measurable G) (T_meas : Measurable T_rv)
@@ -364,6 +379,7 @@ private theorem panelMeanReg_cohort_axis_orthogonal
     (B_balanced : IsBalancedPanelLaw μ G T_rv) (g : 𝒢) :
     ∫ ω, (F ω - panelMeanReg μ F G T_rv ω)
         * Set.indicator {ω' | G ω' = g} (fun _ => (1 : ℝ)) ω ∂μ = 0 := by
+  classical
   let IG : 𝒢 → Ω → ℝ := fun g ω =>
     Set.indicator {ω' | G ω' = g} (fun _ => (1 : ℝ)) ω
   let IT : Fin T → Ω → ℝ := fun t ω =>
@@ -405,7 +421,7 @@ private theorem panelMeanReg_cohort_axis_orthogonal
               integral_cohort_sum_mul_cohort_indicator μ G G_meas a g
       _ = ∫ ω, F ω * IG g ω ∂μ := by
             simpa [a, IG, mul_comm] using
-              (cohort_integral_div_mul_cohortMass μ F G G_meas g)
+              (cohort_integral_div_mul_cohortMass μ F G g)
   have hperiod :
       ∫ ω, (∑ t, b t * IT t ω) * IG g ω ∂μ = 0 := by
     calc
@@ -464,7 +480,10 @@ private theorem panelMeanReg_cohort_axis_orthogonal
                   integral_sub hFI_int hPanelI_int
     _ = 0 := by rw [hpanel]; ring
 
-private theorem panelMeanReg_period_axis_orthogonal
+omit [DecidableEq 𝒢] in
+/-- Under a balanced panel law, the residual from the panel mean regression has zero average
+product with the indicator of any fixed period. -/
+theorem panelMeanReg_period_axis_orthogonal
     (μ : Measure Ω) [IsProbabilityMeasure μ]
     (F : Ω → ℝ) (G : Ω → 𝒢) (T_rv : Ω → Fin T)
     (G_meas : Measurable G) (T_meas : Measurable T_rv)
@@ -472,6 +491,7 @@ private theorem panelMeanReg_period_axis_orthogonal
     (B_balanced : IsBalancedPanelLaw μ G T_rv) (t : Fin T) :
     ∫ ω, (F ω - panelMeanReg μ F G T_rv ω)
         * Set.indicator {ω' | T_rv ω' = t} (fun _ => (1 : ℝ)) ω ∂μ = 0 := by
+  classical
   let IG : 𝒢 → Ω → ℝ := fun g ω =>
     Set.indicator {ω' | G ω' = g} (fun _ => (1 : ℝ)) ω
   let IT : Fin T → Ω → ℝ := fun t ω =>
@@ -532,7 +552,7 @@ private theorem panelMeanReg_period_axis_orthogonal
                     refine Finset.sum_congr rfl ?_
                     intro g _
                     simpa [a, IG, mul_comm] using
-                      (cohort_integral_div_mul_cohortMass μ F G G_meas g)
+                      (cohort_integral_div_mul_cohortMass μ F G g)
               _ = ∫ ω, F ω ∂μ := by
                     rw [integral_eq_sum_cohort μ F G G_meas hF_int]
   have hperiod :
@@ -549,7 +569,7 @@ private theorem panelMeanReg_period_axis_orthogonal
                     * periodMass μ T_rv t =
                   ∫ ω, F ω * IT t ω ∂μ := by
               simpa [IT] using
-                period_integral_div_mul_periodMass μ F T_rv T_meas t
+                period_integral_div_mul_periodMass μ F T_rv t
             dsimp [b]
             calc
               ((∫ ω, F ω * IT t ω ∂μ) / periodMass μ T_rv t
@@ -597,6 +617,7 @@ private theorem panelMeanReg_period_axis_orthogonal
 
 /-! ### Per-cohort orthogonality under the balanced-cell bridge hypotheses -/
 
+omit [DecidableEq 𝒢] in
 /-- The treatment residual is orthogonal to every cohort indicator
 `𝟙{G = g}`. Reduces to the defining identity of `cohortBarD`. -/
 theorem residD_cohort_orthogonal
@@ -608,6 +629,7 @@ theorem residD_cohort_orthogonal
     (B_balanced : IsBalancedPanelLaw μ G T_rv) (g : 𝒢) :
     ∫ ω, (D ω - panelPropensity μ D G T_rv ω)
         * Set.indicator {ω' | G ω' = g} (fun _ => (1 : ℝ)) ω ∂μ = 0 := by
+  classical
   have hD_mem : MemLp D 2 μ :=
     memLp_two_of_binary μ D D_meas D_binary
   have hproj : panelPropensity μ D G T_rv = panelMeanReg μ D G T_rv := by
@@ -617,6 +639,7 @@ theorem residD_cohort_orthogonal
     panelMeanReg_cohort_axis_orthogonal μ D G T_rv G_meas T_meas
       hD_mem B_balanced g
 
+omit [DecidableEq 𝒢] in
 /-- The outcome residual is orthogonal to every cohort indicator. -/
 theorem residY_cohort_orthogonal
     (μ : Measure Ω) [IsProbabilityMeasure μ]
@@ -626,11 +649,13 @@ theorem residY_cohort_orthogonal
     (B_balanced : IsBalancedPanelLaw μ G T_rv) (g : 𝒢) :
     ∫ ω, (Y ω - panelMeanReg μ Y G T_rv ω)
         * Set.indicator {ω' | G ω' = g} (fun _ => (1 : ℝ)) ω ∂μ = 0 := by
+  classical
   exact panelMeanReg_cohort_axis_orthogonal μ Y G T_rv G_meas T_meas
     Y_memLp B_balanced g
 
 /-! ### Per-period orthogonality (requires balanced-cell hypothesis) -/
 
+omit [DecidableEq 𝒢] in
 /-- The treatment residual is orthogonal to every period indicator
 `𝟙{T_rv = t}`. Requires `B_balanced` to make the cross-cohort sum cancel. -/
 theorem residD_period_orthogonal
@@ -642,6 +667,7 @@ theorem residD_period_orthogonal
     (B_balanced : IsBalancedPanelLaw μ G T_rv) (t : Fin T) :
     ∫ ω, (D ω - panelPropensity μ D G T_rv ω)
         * Set.indicator {ω' | T_rv ω' = t} (fun _ => (1 : ℝ)) ω ∂μ = 0 := by
+  classical
   have hD_mem : MemLp D 2 μ :=
     memLp_two_of_binary μ D D_meas D_binary
   have hproj : panelPropensity μ D G T_rv = panelMeanReg μ D G T_rv := by
@@ -651,6 +677,7 @@ theorem residD_period_orthogonal
     panelMeanReg_period_axis_orthogonal μ D G T_rv G_meas T_meas
       hD_mem B_balanced t
 
+omit [DecidableEq 𝒢] in
 /-- The outcome residual is orthogonal to every period indicator. -/
 theorem residY_period_orthogonal
     (μ : Measure Ω) [IsProbabilityMeasure μ]
@@ -660,6 +687,7 @@ theorem residY_period_orthogonal
     (B_balanced : IsBalancedPanelLaw μ G T_rv) (t : Fin T) :
     ∫ ω, (Y ω - panelMeanReg μ Y G T_rv ω)
         * Set.indicator {ω' | T_rv ω' = t} (fun _ => (1 : ℝ)) ω ∂μ = 0 := by
+  classical
   exact panelMeanReg_period_axis_orthogonal μ Y G T_rv G_meas T_meas
     Y_memLp B_balanced t
 

@@ -59,6 +59,10 @@ else `0`. -/
 private noncomputable def Usel (i : ι) : StratAssign ι → ℝ :=
   FiniteDesign.ind (fun s : StratAssign ι => s i = true)
 
+section
+
+omit [DecidableEq ι]
+
 /-- Key pointwise rewrite: for a fixed stage-1 assignment `s`, the aggregate estimator on the
 ψ-groups built from the per-group statistic `g`, as a function of the within-group assignment `w`,
 is the `Usel`-weighted linear combination `∑ i, (Usel i s / C) · g i (w i)`. -/
@@ -66,11 +70,14 @@ private lemma agg_as_linear_comb (g : ∀ i, WAssign n i → ℝ) (C : ℝ)
     (s : StratAssign ι) (w : ∀ i, WAssign n i) :
     (∑ i, if s i = true then g i (w i) else 0) / C
       = ∑ i, (Usel i s / C) * g i (w i) := by
+  classical
   unfold Usel FiniteDesign.ind
   simp only
   rw [Finset.sum_div]
   refine Finset.sum_congr rfl (fun i _ => ?_)
   by_cases h : s i = true <;> simp [h, div_eq_inv_mul]
+
+end
 
 section
 

@@ -220,7 +220,10 @@ theorem first_stage_identity (hA : S.Assumptions) (z₀ z₁ : α)
       exact hω
     rw [hcond_d, hcond_ind,
       POSystem.eventCondExp_of_consistency_IndepCF hA.instrumentIndep
-        (a := S.zVar) hh_meas h_cons (hμne_zero z hZ) (hμne_top z)]
+      (a := S.zVar) hh_meas
+      (MeasurableSet.singleton z)
+      (ae_restrict_of_forall_mem (S.measurableSet_zEvent z) h_cons)
+      (hμne_zero z hZ) (hμne_top z)]
     refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
     intro ω
     dsimp [h_proj]
@@ -342,7 +345,10 @@ theorem reduced_form_identity (hA : S.Assumptions) (z₀ z₁ : α)
       exact hω hin
     rw [hbridge,
       POSystem.eventCondExp_of_consistency_IndepCF hA.instrumentIndep
-        (a := S.zVar) hh_meas h_cons (hμne_zero z hZ) (hμne_top z)]
+      (a := S.zVar) hh_meas
+      (MeasurableSet.singleton z)
+      (ae_restrict_of_forall_mem (S.measurableSet_zEvent z) h_cons)
+      (hμne_zero z hZ) (hμne_top z)]
     refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
     intro ω
     dsimp [h_proj]

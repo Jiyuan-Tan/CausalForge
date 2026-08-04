@@ -22,14 +22,13 @@ Frisch–Waugh–Lovell ratio
 
     β_sat = E[D̃·Y] / E[D̃²].
 
-The theorem `saturated_ols_overlap_weighted_ate` proves the nondegenerate
+The theorem `saturated_ols_overlap_weighted_ate` proves the totalized
 ratio identity
 
     β_sat = E[p(1−p)·(μ[Y1 | m] − μ[Y0 | m])] / E[p(1−p)].
 
-The statement assumes strictly positive integrated overlap
-`0 < E[p(1−p)]`, so the denominator is in the ordinary nondegenerate regime
-where the ratio has the saturated-OLS coefficient interpretation.
+The equality also covers zero integrated overlap because both ratios use Lean's
+totalized division convention.
 
 ## Conditional-mean-independence faithfulness note
 
@@ -67,10 +66,11 @@ open MeasureTheory ProbabilityTheory
 
 section General
 
-variable {Ω : Type*} {m mΩ : MeasurableSpace Ω} (μ : Measure Ω) [IsProbabilityMeasure μ]
+variable {Ω : Type*} {m mΩ : MeasurableSpace Ω} (μ : Measure Ω) [IsFiniteMeasure μ]
 
-/-- `μ[1 − D | m] =ᵐ[μ] 1 − μ[D | m]` for an integrable `D`. -/
-private lemma condExp_one_sub (hm : m ≤ mΩ) {D : Ω → ℝ} (hD_int : Integrable D μ) :
+/-- The conditional expectation of one minus an integrable real-valued variable, given a
+sub-σ-algebra, equals one minus that variable's conditional expectation almost surely. -/
+lemma condExp_one_sub (hm : m ≤ mΩ) {D : Ω → ℝ} (hD_int : Integrable D μ) :
     μ[(fun ω => 1 - D ω) | m] =ᵐ[μ] fun ω => 1 - (μ[D | m]) ω := by
   have hone : (fun ω : Ω => 1 - D ω) = (fun _ : Ω => (1 : ℝ)) - D := by
     funext ω; simp [Pi.sub_apply]
@@ -81,8 +81,9 @@ private lemma condExp_one_sub (hm : m ≤ mΩ) {D : Ω → ℝ} (hD_int : Integr
   filter_upwards [] with ω
   simp [Pi.sub_apply, hc]
 
-/-- For binary `D`, the propensity `p := μ[D | m]` satisfies `0 ≤ p ≤ 1` a.e. -/
-private lemma condExp_D_bounds (hm : m ≤ mΩ) {D : Ω → ℝ} (hD_int : Integrable D μ)
+/-- A real-valued variable that is zero or one almost surely has conditional expectation,
+given a sub-σ-algebra, between zero and one almost surely. -/
+lemma condExp_D_bounds (hm : m ≤ mΩ) {D : Ω → ℝ} (hD_int : Integrable D μ)
     (hDbin : ∀ᵐ ω ∂μ, D ω = 0 ∨ D ω = 1) :
     (∀ᵐ ω ∂μ, 0 ≤ (μ[D | m]) ω) ∧ (∀ᵐ ω ∂μ, (μ[D | m]) ω ≤ 1) := by
   have h0 : (0 : Ω → ℝ) ≤ᵐ[μ] D := by
@@ -95,8 +96,9 @@ private lemma condExp_D_bounds (hm : m ≤ mΩ) {D : Ω → ℝ} (hD_int : Integ
   filter_upwards [hmono] with ω hω
   rwa [hc] at hω
 
-/-- `‖μ[D|m] ω‖ ≤ 1` a.e. for binary `D`. -/
-private lemma condExp_D_norm_le (hm : m ≤ mΩ) {D : Ω → ℝ} (hD_int : Integrable D μ)
+/-- The conditional expectation of a real-valued variable that is zero or one almost surely
+has absolute value at most one almost surely. -/
+lemma condExp_D_norm_le (hm : m ≤ mΩ) {D : Ω → ℝ} (hD_int : Integrable D μ)
     (hDbin : ∀ᵐ ω ∂μ, D ω = 0 ∨ D ω = 1) :
     ∀ᵐ ω ∂μ, ‖(μ[D | m]) ω‖ ≤ 1 := by
   obtain ⟨hlo, hhi⟩ := condExp_D_bounds μ hm hD_int hDbin
@@ -258,6 +260,27 @@ lemma numer_identity (hm : m ≤ mΩ)
         refine integral_congr_ae ?_
         filter_upwards [] with ω; ring
 
+/-- Positivity-free core of the saturated-control OLS overlap-weighted ratio
+identity. Both ratios are totalized, so the algebraic equality also holds when
+the common denominator is zero. -/
+theorem saturated_ols_overlap_weighted_ate_core (hm : m ≤ mΩ)
+    (D Y Y0 Y1 : Ω → ℝ) (hDbin : ∀ᵐ ω ∂μ, D ω = 0 ∨ D ω = 1)
+    (hD_int : Integrable D μ)
+    (hDY1_int : Integrable (fun ω => D ω * Y1 ω) μ)
+    (h1DY0_int : Integrable (fun ω => (1 - D ω) * Y0 ω) μ)
+    (hcons : Y =ᵐ[μ] fun ω => D ω * Y1 ω + (1 - D ω) * Y0 ω)
+    (hCMI1 : μ[(fun ω => D ω * Y1 ω) | m] =ᵐ[μ]
+      fun ω => (μ[D | m]) ω * (μ[Y1 | m]) ω)
+    (hCMI0 : μ[(fun ω => (1 - D ω) * Y0 ω) | m] =ᵐ[μ]
+      fun ω => (μ[(fun ω => 1 - D ω) | m]) ω * (μ[Y0 | m]) ω) :
+    (∫ ω, (D ω - (μ[D | m]) ω) * Y ω ∂μ) /
+        (∫ ω, (D ω - (μ[D | m]) ω) ^ 2 ∂μ)
+      = (∫ ω, (μ[D | m]) ω * (1 - (μ[D | m]) ω) *
+          ((μ[Y1 | m]) ω - (μ[Y0 | m]) ω) ∂μ) /
+        (∫ ω, (μ[D | m]) ω * (1 - (μ[D | m]) ω) ∂μ) := by
+  rw [denom_identity μ hm D hDbin hD_int,
+    numer_identity μ hm D Y Y0 Y1 hDbin hD_int hDY1_int h1DY0_int hcons hCMI1 hCMI0]
+
 /-- **Saturated-control OLS overlap-weighted ATE identity.**
 For binary treatment with consistency, integrability, factored
 conditional-mean-independence, and strictly positive integrated propensity
@@ -266,18 +289,14 @@ the overlap-weighted average of conditional treatment effects:
 
     E[p(1−p)·(μ[Y1 | m] − μ[Y0 | m])] / E[p(1−p)].
 
-The positive-overlap hypothesis excludes the totalized zero-denominator cases
-and is the nondegenerate regime in which the displayed ratio has the usual
-saturated-OLS coefficient interpretation. This is the paper-facing
-nondegenerate statement corresponding to LaTeX
-`thm:po-estimand-sloczynski-ols-overlap-weighted-ate`. -/
+Both ratios use Lean's totalized division convention, so the equality includes
+the zero-denominator case. This is the paper-facing statement corresponding to
+LaTeX `thm:po-estimand-sloczynski-ols-overlap-weighted-ate`. -/
 theorem saturated_ols_overlap_weighted_ate (hm : m ≤ mΩ)
     (D Y Y0 Y1 : Ω → ℝ) (hDbin : ∀ᵐ ω ∂μ, D ω = 0 ∨ D ω = 1)
     (hD_int : Integrable D μ)
     (hDY1_int : Integrable (fun ω => D ω * Y1 ω) μ)
     (h1DY0_int : Integrable (fun ω => (1 - D ω) * Y0 ω) μ)
-    (hOverlap_pos :
-      0 < ∫ ω, (μ[D | m]) ω * (1 - (μ[D | m]) ω) ∂μ)
     (hcons : Y =ᵐ[μ] fun ω => D ω * Y1 ω + (1 - D ω) * Y0 ω)
     (hCMI1 : μ[(fun ω => D ω * Y1 ω) | m] =ᵐ[μ] fun ω => (μ[D | m]) ω * (μ[Y1 | m]) ω)
     (hCMI0 : μ[(fun ω => (1 - D ω) * Y0 ω) | m]
@@ -285,9 +304,8 @@ theorem saturated_ols_overlap_weighted_ate (hm : m ≤ mΩ)
     (∫ ω, (D ω - (μ[D | m]) ω) * Y ω ∂μ) / (∫ ω, (D ω - (μ[D | m]) ω) ^ 2 ∂μ)
       = (∫ ω, (μ[D | m]) ω * (1 - (μ[D | m]) ω) * ((μ[Y1 | m]) ω - (μ[Y0 | m]) ω) ∂μ)
         / (∫ ω, (μ[D | m]) ω * (1 - (μ[D | m]) ω) ∂μ) := by
-  have _ := hOverlap_pos
-  rw [denom_identity μ hm D hDbin hD_int,
-    numer_identity μ hm D Y Y0 Y1 hDbin hD_int hDY1_int h1DY0_int hcons hCMI1 hCMI0]
+  exact saturated_ols_overlap_weighted_ate_core μ hm D Y Y0 Y1 hDbin hD_int
+    hDY1_int h1DY0_int hcons hCMI1 hCMI0
 
 end General
 

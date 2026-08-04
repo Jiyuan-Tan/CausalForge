@@ -67,8 +67,8 @@ private lemma residual_integrable
   have hYind_int : Integrable
       (fun ω => S.toPOBackdoorSystem.factualY ω *
         S.toPOBackdoorSystem.dVar.indicator d ω) P.μ :=
-    S.toPOBackdoorSystem.dVar.integrable_mul_indicator d hA.integrable_factualY
-      S.toPOBackdoorSystem.measurable_factualY
+    S.toPOBackdoorSystem.dVar.integrable_mul_indicator d (measurableSet_singleton d)
+      hA.integrable_factualY
   have hμx_int :
       Integrable (fun ω => S.μ_val d (S.toPOBackdoorSystem.factualX ω)) P.μ := by
     have hcate_int : Integrable (S.toPOBackdoorSystem.CATE d) P.μ := by
@@ -81,7 +81,7 @@ private lemma residual_integrable
   have hμind_int : Integrable
       (fun ω => S.μ_val d (S.toPOBackdoorSystem.factualX ω) *
         S.toPOBackdoorSystem.dVar.indicator d ω) P.μ :=
-    S.toPOBackdoorSystem.dVar.integrable_mul_indicator d hμx_int hμx_meas
+    S.toPOBackdoorSystem.dVar.integrable_mul_indicator d (measurableSet_singleton d) hμx_int
   have hYind_int' : Integrable
       (fun ω => S.toPOBackdoorSystem.dVar.indicator d ω *
         S.toPOBackdoorSystem.factualY ω) P.μ := by

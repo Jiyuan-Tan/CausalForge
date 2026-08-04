@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jiyuan Tan
 -/
 import Causalean.Mathlib.Optimization.SimplexActiveSetDefs
+import Causalean.Mathlib.Optimization.WeightedSimplexFace
+import Causalean.Mathlib.Analysis.WeightedCauchySchwarz
 import Mathlib.Analysis.MeanInequalities
 import Mathlib.Analysis.SpecialFunctions.Pow.NNReal
 
@@ -24,48 +26,6 @@ truncation lemma really are global minimizers of `wsObj` over the full simplex
 namespace Causalean.Mathlib.Optimization
 
 open scoped BigOperators
-
-private lemma weighted_cauchy_sqrt (β x y : Fin 3 → ℝ) (hβ : ∀ i, 0 ≤ β i) :
-    (∑ i, β i * x i * y i) ≤
-      Real.sqrt (∑ i, β i * x i ^ 2) * Real.sqrt (∑ i, β i * y i ^ 2) := by
-  let f : Fin 3 → ℝ := fun i => Real.sqrt (β i) * x i
-  let g : Fin 3 → ℝ := fun i => Real.sqrt (β i) * y i
-  have hsq := Finset.sum_mul_sq_le_sq_mul_sq (Finset.univ : Finset (Fin 3)) f g
-  have hfg : (∑ i, f i * g i) = ∑ i, β i * x i * y i := by
-    apply Finset.sum_congr rfl
-    intro i _
-    dsimp [f, g]
-    calc
-      Real.sqrt (β i) * x i * (Real.sqrt (β i) * y i)
-          = (Real.sqrt (β i) * Real.sqrt (β i)) * x i * y i := by ring
-      _ = β i * x i * y i := by
-        rw [Real.mul_self_sqrt (hβ i)]
-  have hf2 : (∑ i, f i ^ 2) = ∑ i, β i * x i ^ 2 := by
-    apply Finset.sum_congr rfl
-    intro i _
-    dsimp [f]
-    rw [mul_pow, Real.sq_sqrt (hβ i)]
-  have hg2 : (∑ i, g i ^ 2) = ∑ i, β i * y i ^ 2 := by
-    apply Finset.sum_congr rfl
-    intro i _
-    dsimp [g]
-    rw [mul_pow, Real.sq_sqrt (hβ i)]
-  have hsq' : (∑ i, β i * x i * y i) ^ 2 ≤
-      (∑ i, β i * x i ^ 2) * (∑ i, β i * y i ^ 2) := by
-    simpa [hfg, hf2, hg2] using hsq
-  have hxnonneg : 0 ≤ ∑ i, β i * x i ^ 2 := by
-    exact Finset.sum_nonneg (fun i _ => mul_nonneg (hβ i) (sq_nonneg (x i)))
-  have hynonneg : 0 ≤ ∑ i, β i * y i ^ 2 := by
-    exact Finset.sum_nonneg (fun i _ => mul_nonneg (hβ i) (sq_nonneg (y i)))
-  have hrhs_nonneg :
-      0 ≤ Real.sqrt (∑ i, β i * x i ^ 2) * Real.sqrt (∑ i, β i * y i ^ 2) := by
-    exact mul_nonneg (Real.sqrt_nonneg _) (Real.sqrt_nonneg _)
-  have hsqrhs :
-      (Real.sqrt (∑ i, β i * x i ^ 2) * Real.sqrt (∑ i, β i * y i ^ 2)) ^ 2 =
-        (∑ i, β i * x i ^ 2) * (∑ i, β i * y i ^ 2) := by
-    rw [mul_pow, Real.sq_sqrt hxnonneg, Real.sq_sqrt hynonneg]
-  exact le_trans (le_abs_self _) <|
-    abs_le_of_sq_le_sq (by simpa [hsqrhs] using hsq') hrhs_nonneg
 
 /-- **KKT admissible ⟹ global minimizer (`κ > 0`).** For positive weights and a
 KKT-admissible support/multiplier pair `(S, λ)`, the induced active-set point lies in
@@ -183,7 +143,10 @@ lemma activeSetPoint_isMinimizer (M : ℝ) (hM : 0 < M) (α β : Fin 3 → ℝ) 
     rw [htS i hi, hNt_formula]
     field_simp [(hβ i).ne', hDpos.ne']
   have hCS : (∑ i, β i * t i * s i) ≤ Nt * Ns := by
-    simpa [Nt, Ns] using weighted_cauchy_sqrt β t s (fun i => (hβ i).le)
+    exact (le_abs_self _).trans (by
+      simpa [Nt, Ns, mul_assoc] using
+        Causalean.Mathlib.Analysis.abs_weighted_inner_le
+          (Finset.univ : Finset (Fin 3)) β t s (fun i _ => (hβ i).le))
   have hcross_eq : ∀ y : Fin 3 → ℝ,
       kappa * (∑ i, β i * t i * y i) =
         Nt * ∑ i ∈ S, (lam - α i) * y i := by
@@ -306,54 +269,10 @@ lemma activeSetPoint_isMinimizer (M : ℝ) (hM : 0 < M) (α β : Fin 3 → ℝ) 
 
 /-- **Exposed face ⟹ global minimizer (`κ = 0`).** A point of the exposed
 `α`-minimizing face globally minimizes the linear objective `wsObj α β 0` over `Δ_M`. -/
-lemma exposedMinFace_isMinimizer (M : ℝ) (hM : 0 < M) (α β : Fin 3 → ℝ)
+lemma exposedMinFace_isMinimizer (M : ℝ) (α β : Fin 3 → ℝ)
     (t_rel : Fin 3 → ℝ) (hface : t_rel ∈ exposedMinFace M α) :
     ∀ s : Fin 3 → ℝ, InSimplex M s →
       wsObj α β 0 t_rel ≤ wsObj α β 0 s := by
-  intro s hs
-  rcases hface with ⟨htsimplex, hface_min⟩
-  have hnonzero : ∃ i, t_rel i ≠ 0 := by
-    by_contra h
-    push_neg at h
-    have hsum_zero : ∑ i, t_rel i = 0 := by
-      simp [h]
-    linarith [htsimplex.2, hM]
-  rcases hnonzero with ⟨i0, hi0⟩
-  have hαmin : ∀ j, α i0 ≤ α j := hface_min i0 hi0
-  have hterm_rel : ∀ i, α i * t_rel i = α i0 * t_rel i := by
-    intro i
-    by_cases hi : t_rel i = 0
-    · simp [hi]
-    · have hle₁ : α i ≤ α i0 := hface_min i hi i0
-      have hle₂ : α i0 ≤ α i := hface_min i0 hi0 i
-      have hα : α i = α i0 := le_antisymm hle₁ hle₂
-      simp [hα]
-  have hobj_rel : (∑ i, α i * t_rel i) = α i0 * M := by
-    calc
-      (∑ i, α i * t_rel i) = ∑ i, α i0 * t_rel i := by
-        exact Finset.sum_congr rfl (fun i _ => hterm_rel i)
-      _ = α i0 * ∑ i, t_rel i := by
-        rw [Finset.mul_sum]
-      _ = α i0 * M := by
-        rw [htsimplex.2]
-  have hterm_s : ∀ i, α i0 * s i ≤ α i * s i := by
-    intro i
-    exact mul_le_mul_of_nonneg_right (hαmin i) (hs.1 i)
-  have hsum_s : (∑ i, α i0 * s i) ≤ ∑ i, α i * s i :=
-    Finset.sum_le_sum (fun i _ => hterm_s i)
-  have hobj_s_const : (∑ i, α i0 * s i) = α i0 * M := by
-    calc
-      (∑ i, α i0 * s i) = α i0 * ∑ i, s i := by
-        rw [Finset.mul_sum]
-      _ = α i0 * M := by
-        rw [hs.2]
-  calc
-    wsObj α β 0 t_rel = ∑ i, α i * t_rel i := by
-      simp [wsObj]
-    _ = α i0 * M := hobj_rel
-    _ = ∑ i, α i0 * s i := hobj_s_const.symm
-    _ ≤ ∑ i, α i * s i := hsum_s
-    _ = wsObj α β 0 s := by
-      simp [wsObj]
+  simpa [wsObj] using ((kappa_zero_face M α t_rel).2 hface).2
 
 end Causalean.Mathlib.Optimization

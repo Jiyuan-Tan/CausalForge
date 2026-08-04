@@ -198,11 +198,11 @@ lemma seqDR_remainder_identity
     exact S.μ₁_meas.comp hH1_meas
   have hI0M0_int : Integrable (fun ω => I0 ω * M0 ω) P.μ := by
     have h := (S.toPODTRSystem.dVar ⟨0, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨0, by decide⟩) hM0_int hM0_meas
+      (S.dbar ⟨0, by decide⟩) (MeasurableSet.singleton _) hM0_int
     exact h.congr (Filter.Eventually.of_forall (fun ω => by simp [I0, M0, mul_comm]))
   have hI0M1_int : Integrable (fun ω => I0 ω * M1 ω) P.μ := by
     have h := (S.toPODTRSystem.dVar ⟨0, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨0, by decide⟩) hM1_int hM1_meas
+      (S.dbar ⟨0, by decide⟩) (MeasurableSet.singleton _) hM1_int
     exact h.congr (Filter.Eventually.of_forall (fun ω => by simp [I0, M1, mul_comm]))
   have hR0_int : Integrable R0 P.μ := by
     have hsub := hI0M1_int.sub hI0M0_int
@@ -212,12 +212,11 @@ lemma seqDR_remainder_identity
       ring)
   have hI1Y_int : Integrable (fun ω => I1 ω * Y ω) P.μ := by
     have h := (S.toPODTRSystem.dVar ⟨1, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨1, by decide⟩) hA.integrable_factualY
-      S.toPODTRSystem.measurable_factualY
+      (S.dbar ⟨1, by decide⟩) (MeasurableSet.singleton _) hA.integrable_factualY
     exact h.congr (Filter.Eventually.of_forall (fun ω => by simp [I1, Y, mul_comm]))
   have hI1M1_int : Integrable (fun ω => I1 ω * M1 ω) P.μ := by
     have h := (S.toPODTRSystem.dVar ⟨1, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨1, by decide⟩) hM1_int hM1_meas
+      (S.dbar ⟨1, by decide⟩) (MeasurableSet.singleton _) hM1_int
     exact h.congr (Filter.Eventually.of_forall (fun ω => by simp [I1, M1, mul_comm]))
   have hI1_res_int :
       Integrable (fun ω => I1 ω * (Y ω - M1 ω)) P.μ := by
@@ -228,11 +227,11 @@ lemma seqDR_remainder_identity
       ring)
   have hI1_res_meas : Measurable (fun ω => I1 ω * (Y ω - M1 ω)) := by
     exact ((S.toPODTRSystem.dVar ⟨1, by decide⟩).measurable_indicator
-      (S.dbar ⟨1, by decide⟩)).mul
+      (S.dbar ⟨1, by decide⟩) (MeasurableSet.singleton _)).mul
       (S.toPODTRSystem.measurable_factualY.sub hM1_meas)
   have hR1_int : Integrable R1 P.μ := by
     have h := (S.toPODTRSystem.dVar ⟨0, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨0, by decide⟩) hI1_res_int hI1_res_meas
+      (S.dbar ⟨0, by decide⟩) (MeasurableSet.singleton _) hI1_res_int
     exact h.congr (Filter.Eventually.of_forall (fun ω => by
       change (I1 ω * (Y ω - M1 ω)) * I0 ω = R1 ω
       simp [R1]

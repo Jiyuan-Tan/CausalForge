@@ -152,7 +152,11 @@ function renderReuseCandidates(
       '`cd CausalSmith/tools && npm run search -- "<concept words>"` ' +
       '(also `--type "<sig pattern>"`, `--goal "<goal type>"`, `--cluster <cluster>`). ' +
       "NOTE: `lean_loogle`/`lean_leansearch` index MATHLIB ONLY — they do not see " +
-      "Causalean declarations; use them for Mathlib lemmas, the CLI for Causalean.",
+      "Causalean declarations; use them for Mathlib lemmas, the CLI for Causalean. " +
+      "The converse holds too: this block and the CLI cover CAUSALEAN ONLY — no candidate " +
+      "below is NOT evidence a fact is absent, so before a `no-candidate-fits` verdict (or " +
+      "planning to build) on a plausibly-standard fact, search Mathlib (lean_leansearch / " +
+      "lean_loogle) as well.",
   ];
   const symbolTopK = Math.min(2, perItem);
   const render = (c: Candidate, bullet: string) => {

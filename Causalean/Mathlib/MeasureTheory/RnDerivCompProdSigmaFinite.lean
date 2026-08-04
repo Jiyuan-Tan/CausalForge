@@ -44,7 +44,10 @@ namespace MeasureTheory
 
 variable {α β : Type*} [MeasurableSpace α] [MeasurableSpace β]
 
-private lemma compProd_eq_prod_withDensity_fiber
+/-- A composition product is the product reference measure weighted by the fibrewise
+Radon–Nikodym derivative whenever the fibres are almost everywhere dominated by the reference
+measure and that derivative is almost everywhere measurable. -/
+lemma compProd_eq_prod_withDensity_fiber
     (μ : Measure α) (ρ : Measure β) (κ : Kernel α β)
     [SFinite μ] [SigmaFinite ρ] [IsSFiniteKernel κ]
     (hfiber : ∀ᵐ a ∂μ, κ a ≪ ρ)
@@ -66,8 +69,8 @@ private lemma compProd_eq_prod_withDensity_fiber
 
 /-- **σ-finite-reference Radon–Nikodym derivative of a composition-product.**
 
-For a finite measure `μ`, a σ-finite base reference `ν`, a **σ-finite** fibre
-reference `ρ`, and a finite kernel `κ`, assume base domination `μ ≪ ν`, μ-a.e.
+For an s-finite measure `μ`, a σ-finite base reference `ν`, a **σ-finite** fibre
+reference `ρ`, and an s-finite kernel `κ`, assume base domination `μ ≪ ν`, μ-a.e.
 fibre domination `κ_a ≪ ρ`, and product a.e.-measurability of the raw per-slice
 fibre derivative.  Then the Radon–Nikodym derivative of the composition-product
 `μ ⊗ₘ κ` with respect to the product reference `ν ×ₘ ρ` is, almost everywhere, the
@@ -75,13 +78,14 @@ product of the base derivative and the fibre derivative:
 `d(μ ⊗ₘ κ)/d(ν ×ₘ ρ)(a, b) = f(a) · (dκ_a/dρ)(b)` for any `f =ᵐ[ν] dμ/dν`. -/
 lemma rnDeriv_compProd_prod_sigmaFinite
     (μ ν : Measure α) (ρ : Measure β) (κ : Kernel α β) (f : α → ℝ≥0∞)
-    [IsFiniteMeasure μ] [SigmaFinite ν] [SigmaFinite ρ] [IsFiniteKernel κ]
+    [SigmaFinite ν] [SigmaFinite ρ] [IsSFiniteKernel κ]
     (hμν : μ ≪ ν) (hfiber : ∀ᵐ a ∂μ, κ a ≪ ρ)
     (hfiber_meas :
       AEMeasurable (fun p : α × β => (κ p.1).rnDeriv ρ p.2) (ν.prod ρ))
     (hf : μ.rnDeriv ν =ᵐ[ν] f) :
     (μ ⊗ₘ κ).rnDeriv (ν.prod ρ)
       =ᵐ[ν.prod ρ] fun p => f p.1 * (κ p.1).rnDeriv ρ p.2 := by
+  letI : SFinite μ := sFinite_of_absolutelyContinuous hμν
   have hprod_ac : μ.prod ρ ≪ ν.prod ρ := hμν.prod Measure.AbsolutelyContinuous.rfl
   have hfiber_meas_mu :
       AEMeasurable (fun p : α × β => (κ p.1).rnDeriv ρ p.2) (μ.prod ρ) :=

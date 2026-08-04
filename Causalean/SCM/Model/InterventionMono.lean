@@ -41,7 +41,8 @@ namespace SCM
 -- Monolithic parent reindex
 -- ============================================================
 
-/-- The monolithic parent reindexer converts split-graph parent values into the parent values expected by the original structural function.
+/-- The monolithic parent reindexer converts split-graph parent values into the parent values
+expected by the original structural function.
 
     Parent reindexing used by `fixMono`: takes a parent-value tuple over the
     monolithically-split graph `G.splitMono X …` at vertex `v` and produces
@@ -74,7 +75,9 @@ noncomputable def fixMonoParentMap
         (SWIGGraph.splitMono_parents_char G X hObs hFix v (SWIGNode.fixed d)).2
           (Or.inl ⟨hwVal, fun _ _ heq => by cases heq⟩)⟩
 
-/-- At a fixed-coordinate parent, the monolithic parent reindexer reads the same fixed coordinate from the split graph.
+omit [∀ n, MeasurableSpace (Ω n)] in
+/-- At a fixed-coordinate parent, the monolithic parent reindexer reads the same fixed coordinate
+from the split graph.
 
     Pointwise evaluation of `fixMonoParentMap` at a `.fixed d` coordinate:
     the input tuple is read directly at `.fixed d`. -/
@@ -93,7 +96,9 @@ lemma fixMonoParentMap_apply_fixed
               (SWIGNode.fixed d)).2
             (Or.inl ⟨hwVal, fun _ _ heq => by cases heq⟩)⟩ := rfl
 
-/-- At an untreated random-coordinate parent, the monolithic parent reindexer reads the same random coordinate from the split graph.
+omit [∀ n, MeasurableSpace (Ω n)] in
+/-- At an untreated random-coordinate parent, the monolithic parent reindexer reads the same
+random coordinate from the split graph.
 
     Pointwise evaluation of `fixMonoParentMap` at a `.random u` coordinate
     with `u ∉ X`: the input tuple is read directly at `.random u`. -/
@@ -111,11 +116,13 @@ lemma fixMonoParentMap_apply_random_notMem
           (SWIGGraph.splitMono_parents_char G X hObs hFix v
               (SWIGNode.random u)).2
             (Or.inl ⟨hwVal,
-              fun D hD heq => hu (SWIGNode.random.inj heq ▸ hD)⟩)⟩ := by
+              fun _ hD heq => hu (SWIGNode.random.inj heq ▸ hD)⟩)⟩ := by
   unfold fixMonoParentMap
   simp only [dif_neg hu]
 
-/-- At a treated random-coordinate parent, the monolithic parent reindexer reads the corresponding fixed coordinate from the split graph.
+omit [∀ n, MeasurableSpace (Ω n)] in
+/-- At a treated random-coordinate parent, the monolithic parent reindexer reads the corresponding
+fixed coordinate from the split graph.
 
     Pointwise evaluation of `fixMonoParentMap` at a `.random D` coordinate
     (D ∈ X): value is read from the `.fixed D` position of the split-graph
@@ -137,9 +144,10 @@ lemma fixMonoParentMap_apply_random
   unfold fixMonoParentMap
   simp only [dif_pos hD]
 
-/-- Measurability of `fixMonoParentMap` at a fixed vertex, as a function of
-    the input parent tuple. -/
-private lemma measurable_fixMonoParentMap
+/-- The parent values used by a monolithic intervention depend measurably on the original
+    parent values, so this reindexing can be used safely when constructing intervened
+    structural equations and probability kernels. -/
+lemma measurable_fixMonoParentMap
     (G : SWIGGraph N) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ G.observed)
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ G.fixed)
@@ -192,7 +200,8 @@ private lemma measurable_fixMonoParentMap
 -- The monolithic do operation
 -- ============================================================
 
-/-- The monolithic generalized intervention applies all target splits at once while inheriting latent laws and reindexing structural parents.
+/-- The monolithic generalized intervention applies all target splits at once while inheriting
+latent laws and reindexing structural parents.
 
     **Monolithic multi-target generalized do.** (Definition 8, one-shot form.)
 
@@ -262,22 +271,23 @@ noncomputable def fixMono (M : Causalean.SCM N Ω) (X : Finset N)
 -- ============================================================
 
 /-- The monolithic intervention preserves the observed node set. -/
-@[simp] lemma fixMono_observed (M : Causalean.SCM N Ω) (X : Finset N)
-    (hObs : ∀ D ∈ X, SWIGNode.random D ∈ M.observed)
-    (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ M.fixed) :
-    (M.fixMono X hObs hFix).observed = M.observed := rfl
+@[simp] lemma fixMono_observed (G : SWIGGraph N) (X : Finset N)
+    (hObs : ∀ D ∈ X, SWIGNode.random D ∈ G.observed)
+    (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ G.fixed) :
+    (G.splitMono X hObs hFix).observed = G.observed := rfl
 
 /-- The monolithic intervention preserves the unobserved node set. -/
-@[simp] lemma fixMono_unobserved (M : Causalean.SCM N Ω) (X : Finset N)
-    (hObs : ∀ D ∈ X, SWIGNode.random D ∈ M.observed)
-    (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ M.fixed) :
-    (M.fixMono X hObs hFix).unobserved = M.unobserved := rfl
+@[simp] lemma fixMono_unobserved (G : SWIGGraph N) (X : Finset N)
+    (hObs : ∀ D ∈ X, SWIGNode.random D ∈ G.observed)
+    (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ G.fixed) :
+    (G.splitMono X hObs hFix).unobserved = G.unobserved := rfl
 
-/-- The monolithic intervention's fixed node set is the old fixed set plus the fixed copies of the targets. -/
-@[simp] lemma fixMono_fixed (M : Causalean.SCM N Ω) (X : Finset N)
-    (hObs : ∀ D ∈ X, SWIGNode.random D ∈ M.observed)
-    (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ M.fixed) :
-    (M.fixMono X hObs hFix).fixed = M.fixed ∪ X.image SWIGNode.fixed := rfl
+/-- The monolithic intervention's fixed node set is the old fixed set plus the fixed copies of
+the targets. -/
+@[simp] lemma fixMono_fixed (G : SWIGGraph N) (X : Finset N)
+    (hObs : ∀ D ∈ X, SWIGNode.random D ∈ G.observed)
+    (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ G.fixed) :
+    (G.splitMono X hObs hFix).fixed = G.fixed ∪ X.image SWIGNode.fixed := rfl
 
 /-- The monolithic intervention leaves every latent-root distribution unchanged. -/
 @[simp] lemma fixMono_latentDist (M : Causalean.SCM N Ω) (X : Finset N)
@@ -286,25 +296,28 @@ noncomputable def fixMono (M : Causalean.SCM N Ω) (X : Finset N)
     (u : {u // u ∈ (M.fixMono X hObs hFix).unobserved}) :
     (M.fixMono X hObs hFix).latentDist u = M.latentDist u := rfl
 
-/-- The original fixed node set is contained in the fixed node set after the monolithic intervention. -/
-lemma fixMono_fixed_subset (M : Causalean.SCM N Ω) (X : Finset N)
-    (hObs : ∀ D ∈ X, SWIGNode.random D ∈ M.observed)
-    (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ M.fixed) :
-    M.fixed ⊆ (M.fixMono X hObs hFix).fixed := by
+/-- The original fixed node set is contained in the fixed node set after the monolithic
+intervention. -/
+lemma fixMono_fixed_subset (G : SWIGGraph N) (X : Finset N)
+    (hObs : ∀ D ∈ X, SWIGNode.random D ∈ G.observed)
+    (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ G.fixed) :
+    G.fixed ⊆ (G.splitMono X hObs hFix).fixed := by
   intro x hx
   rw [fixMono_fixed]
   exact Finset.mem_union_left _ hx
 
-/-- The fixed copies of the intervention targets are contained in the fixed node set after the monolithic intervention. -/
-lemma fixMono_image_fixed_subset (M : Causalean.SCM N Ω) (X : Finset N)
-    (hObs : ∀ D ∈ X, SWIGNode.random D ∈ M.observed)
-    (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ M.fixed) :
-    X.image SWIGNode.fixed ⊆ (M.fixMono X hObs hFix).fixed := by
+/-- The fixed copies of the intervention targets are contained in the fixed node set after the
+monolithic intervention. -/
+lemma fixMono_image_fixed_subset (G : SWIGGraph N) (X : Finset N)
+    (hObs : ∀ D ∈ X, SWIGNode.random D ∈ G.observed)
+    (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ G.fixed) :
+    X.image SWIGNode.fixed ⊆ (G.splitMono X hObs hFix).fixed := by
   intro x hx
   rw [fixMono_fixed]
   exact Finset.mem_union_right _ hx
 
-/-- If no fixed copy of a target is a parent of a vertex after intervention, that vertex has the same parents as before.
+/-- If no fixed copy of a target is a parent of a vertex after intervention, that vertex has the
+same parents as before.
 
     **Parent-set coincidence at non-`.fixed`-targeted vertices (SCM level).**
 

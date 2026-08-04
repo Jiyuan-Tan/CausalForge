@@ -41,7 +41,6 @@ noncomputable def partitionOf {Ω 𝒢 : Type*} [MeasurableSpace Ω] [Fintype �
     (μ : Measure Ω) [IsProbabilityMeasure μ]
     (D Y0 Y1 : Ω → ℝ) (G : Ω → 𝒢)
     (G_meas : Measurable G)
-    (D_meas : Measurable D)
     (D_binary : ∀ᵐ ω ∂μ, D ω = 0 ∨ D ω = 1)
     (overlap : 0 < ∑ g, cellMass μ G g
                   * (cellShare μ D G g * (1 - cellShare μ D G g))) :
@@ -51,8 +50,12 @@ noncomputable def partitionOf {Ω 𝒢 : Type*} [MeasurableSpace Ω] [Fintype �
   , cellTau μ Y0 Y1 G
   , fun g => cellMass_nonneg μ G g
   , cellMass_sum_eq_one μ G G_meas
-  , fun g => cellShare_nonneg μ D G D_meas D_binary g
-  , fun g => cellShare_le_one μ D G G_meas D_meas D_binary g
+  , fun g => cellShare_nonneg μ D G (by
+      filter_upwards [D_binary] with ω hD
+      rcases hD with hD | hD <;> simp [hD]) g
+  , fun g => cellShare_le_one μ D G G_meas (by
+      filter_upwards [D_binary] with ω hD
+      rcases hD with hD | hD <;> simp [hD]) g
   , overlap ⟩
 
 /-- **Population-cell certificate for `partitionOf`.** The treated share `p_g` of
@@ -61,11 +64,11 @@ the Słoczyński partition is the shared population cell mean `E[D | G = g]` (vi
 theorem partitionOf_p_eq_eventCondExp {Ω 𝒢 : Type*} [MeasurableSpace Ω]
     [Fintype 𝒢] [DecidableEq 𝒢] [MeasurableSpace 𝒢] [MeasurableSingletonClass 𝒢]
     (μ : Measure Ω) [IsProbabilityMeasure μ]
-    (D Y0 Y1 : Ω → ℝ) (G : Ω → 𝒢) (G_meas : Measurable G) (D_meas : Measurable D)
+    (D Y0 Y1 : Ω → ℝ) (G : Ω → 𝒢) (G_meas : Measurable G)
     (D_binary : ∀ᵐ ω ∂μ, D ω = 0 ∨ D ω = 1)
     (overlap : 0 < ∑ g, cellMass μ G g
                   * (cellShare μ D G g * (1 - cellShare μ D G g))) (g : 𝒢) :
-    (partitionOf μ D Y0 Y1 G G_meas D_meas D_binary overlap).p g
+    (partitionOf μ D Y0 Y1 G G_meas D_binary overlap).p g
       = Causalean.PO.eventCondExp μ {ω | G ω = g} D :=
   cellShare_eq_eventCondExp μ D G G_meas g
 
@@ -76,11 +79,11 @@ estimand is built from genuine potential-outcome cell means. -/
 theorem partitionOf_tau_eq_eventCondExp {Ω 𝒢 : Type*} [MeasurableSpace Ω]
     [Fintype 𝒢] [DecidableEq 𝒢] [MeasurableSpace 𝒢] [MeasurableSingletonClass 𝒢]
     (μ : Measure Ω) [IsProbabilityMeasure μ]
-    (D Y0 Y1 : Ω → ℝ) (G : Ω → 𝒢) (G_meas : Measurable G) (D_meas : Measurable D)
+    (D Y0 Y1 : Ω → ℝ) (G : Ω → 𝒢) (G_meas : Measurable G)
     (D_binary : ∀ᵐ ω ∂μ, D ω = 0 ∨ D ω = 1)
     (overlap : 0 < ∑ g, cellMass μ G g
                   * (cellShare μ D G g * (1 - cellShare μ D G g))) (g : 𝒢) :
-    (partitionOf μ D Y0 Y1 G G_meas D_meas D_binary overlap).τ g
+    (partitionOf μ D Y0 Y1 G G_meas D_binary overlap).τ g
       = Causalean.PO.eventCondExp μ {ω | G ω = g} (fun ω => Y1 ω - Y0 ω) :=
   cellTau_eq_eventCondExp μ Y0 Y1 G G_meas g
 
@@ -116,11 +119,14 @@ noncomputable def residWitnessD {Ω 𝒢 : Type*} [MeasurableSpace Ω] [Fintype 
             rcases hD with hD0 | hD1
             · simp [hD0]
             · simp [hD1]
-          exact memLp_of_bounded (f := D) hD_bounded (D_meas.aestronglyMeasurable) (2 : ENNReal)
-        exact hD_mem.sub ((saturatedClass μ G G_meas).memLp (propensity_mem_saturatedClass μ D G G_meas))
+          exact memLp_of_bounded (f := D) hD_bounded
+            (D_meas.aestronglyMeasurable) (2 : ENNReal)
+        exact hD_mem.sub
+          ((saturatedClass μ G G_meas).memLp
+            (propensity_mem_saturatedClass μ D G G_meas))
       , decomp := by
           filter_upwards [] with ω
-          simp [sub_eq_add_neg, add_assoc, add_left_comm, add_comm]
+          simp [sub_eq_add_neg, add_left_comm]
       , orthogonal := by
           intro h hh
           rcases hh with ⟨c, hc⟩
@@ -171,7 +177,7 @@ noncomputable def residWitnessY {Ω 𝒢 : Type*} [MeasurableSpace Ω] [Fintype 
         exact Y_memLp.sub ((saturatedClass μ G G_meas).memLp (meanReg_mem_saturatedClass μ Y G G_meas))
       , decomp := by
           filter_upwards [] with ω
-          simp [sub_eq_add_neg, add_assoc, add_left_comm, add_comm]
+          simp [sub_eq_add_neg, add_left_comm]
       , orthogonal := by
           intro h hh
           rcases hh with ⟨c, hc⟩

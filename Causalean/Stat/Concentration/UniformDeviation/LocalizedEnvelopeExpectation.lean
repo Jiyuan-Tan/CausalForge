@@ -282,7 +282,6 @@ theorem localized_offset_expectation
     {ρ Rmax : ℝ}
     (hcrit_le_ρ : criticalRadius (R.ψ n) ≤ ρ)
     (hρ_pos : 0 < ρ)
-    (hRmax_lb : ρ ≤ Rmax)
     (hcrit_pos : 0 < criticalRadius (R.ψ n))
     (hcrit_fp : R.ψ n (criticalRadius (R.ψ n)) ≤ (criticalRadius (R.ψ n)) ^ 2)
     (hrad_bdd : ∀ r : ℝ, ρ ≤ r →
@@ -333,7 +332,7 @@ theorem localized_offset_expectation
   have hsharp := localized_uniform_deviation_sharp
     (F := F) (norm := norm) (μ := μ) (X := X)
     hX hF_meas R hδ hδ' n hn
-    hcrit_le_ρ hρ_pos hRmax_lb hcrit_pos hcrit_fp hrad_bdd hrad_int hδ_dom
+    hcrit_le_ρ hρ_pos hcrit_pos hcrit_fp hrad_bdd hrad_int hδ_dom
   rcases hsharp with ⟨E, hE_meas, hE_prob, hE_bound⟩
   let dev : ι → (Fin n → Ω) → ℝ := fun i ω =>
     (n : ℝ)⁻¹ * (Finset.univ.sum fun k : Fin n => F i (X (ω k)))
@@ -350,7 +349,7 @@ theorem localized_offset_expectation
     dsimp [Cgood]
     have hC :
         0 ≤ offsetPeelingConstantC (1 / 8) κ :=
-      offsetPeelingConstantC_nonneg (1 / 8) κ (by norm_num) hκ_nonneg hκ_lt
+      offsetPeelingConstantC_nonneg (1 / 8) κ (by norm_num) hκ_nonneg (le_of_lt hκ_lt)
     have hpow : 0 ≤ (16 * ρ * A) ^ (1 / (1 - κ)) :=
       Real.rpow_nonneg h16ρA_nonneg _
     nlinarith [mul_nonneg hC hpow, sq_nonneg ρ]

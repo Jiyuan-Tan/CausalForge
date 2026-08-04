@@ -208,7 +208,8 @@ noncomputable def inducedEval
   fun v =>
     -- v.val ∈ M.observed = M'.observed, so v.val ∈ M'.randomVars
     let hmem : v.val ∈ M'.randomVars := by
-      simp [SCM.randomVars, v.property]
+      change v.val ∈ M.observed ∪ M.unobserved
+      exact Finset.mem_union_left _ v.property
     M'.evalMap (combinedFixed M s r) ℓ ⟨v.val, hmem⟩
 
 /-- The induced joint evaluation map of a structural model is measurable in the latent draw. -/
@@ -224,7 +225,9 @@ lemma inducedEval_measurable (M : Causalean.SCM N Ω)
         Function.uncurry M'.evalMap (combinedFixed M s r, ℓ)) :=
       hmeas.comp (Measurable.prod measurable_const measurable_id')
     simpa [Function.uncurry] using this
-  exact (measurable_pi_apply ⟨v.val, by simp [SCM.randomVars, v.property]⟩).comp h
+  exact (measurable_pi_apply ⟨v.val, by
+    change v.val ∈ M.observed ∪ M.unobserved
+    exact Finset.mem_union_left _ v.property⟩).comp h
 
 -- ============================================================
 -- § 5. The induced PO system `PO(M; s)` — def:po-from-scm
@@ -258,7 +261,8 @@ lemma combinedFixed_old (M : Causalean.SCM N Ω) (s : SCM.FixedValues M)
     combinedFixed M s r ⟨v, Finset.mem_union_left _ hv⟩ = s ⟨v, hv⟩ := by
   simp only [combinedFixed, dif_pos hv]
 
-/-- `regimeTargetN M r` is the image of the structurally eligible regime targets under `obsName M`. -/
+/-- `regimeTargetN M r` is the image of the structurally eligible regime
+targets under `obsName M`. -/
 lemma regimeTargetN_eq_image_obsName (M : Causalean.SCM N Ω)
     (r : Regime (ObsIdx M) (obsValue M)) :
     regimeTargetN M r =
@@ -282,21 +286,21 @@ lemma obsName_injective (M : Causalean.SCM N Ω) : Function.Injective (obsName M
   fun v w hvw => obsIdx_val_injective (by rw [obsName_spec M v, obsName_spec M w, hvw])
 
 /-- `Regime.sqcup` agrees with `r₁` on `r₁.target`. -/
-lemma sqcup_assign_left {V : Type*} [DecidableEq V] [Fintype V]
+lemma sqcup_assign_left {V : Type*} [DecidableEq V]
     {X : V → Type*} [∀ v, MeasurableSpace (X v)]
     (r₁ r₂ : Regime V X) (h : r₁.Disjoint r₂)
     (v : V) (hv : v ∈ r₁.target) :
     (r₁.sqcup r₂ h).assign v (Finset.mem_union_left _ hv) = r₁.assign v hv := by
-  simp [Regime.sqcup, hv]
+  simp [Regime.sqcup, Regime.leftBiasedUnion, hv]
 
 /-- `Regime.sqcup` agrees with `r₂` on `r₂.target`. -/
-lemma sqcup_assign_right {V : Type*} [DecidableEq V] [Fintype V]
+lemma sqcup_assign_right {V : Type*} [DecidableEq V]
     {X : V → Type*} [∀ v, MeasurableSpace (X v)]
     (r₁ r₂ : Regime V X) (h : r₁.Disjoint r₂)
     (v : V) (hv : v ∈ r₂.target) :
     (r₁.sqcup r₂ h).assign v (Finset.mem_union_right _ hv) = r₂.assign v hv := by
   have h1 : v ∉ r₁.target := fun hv₁ => Finset.disjoint_left.mp h hv₁ hv
-  simp [Regime.sqcup, h1]
+  simp [Regime.sqcup, Regime.leftBiasedUnion, h1]
 
 /-- On new intervention coordinates, `combinedFixed` at `⟨.fixed D, _⟩`
     equals `r.assign v' hv'tgt`, both at type `Ω D`.  The internal
@@ -336,12 +340,15 @@ lemma inducedEval_empty_eq_evalMap (M : Causalean.SCM N Ω) (s : SCM.FixedValues
     (ℓ : SCM.LatentValues M) (v : ObsIdx M) :
     inducedEval M s Regime.empty ℓ v =
     M.evalMap s ℓ ⟨v.val, Finset.mem_union_left _ v.property⟩ := by
-  -- `inducedEval M s Regime.empty ℓ v = (M.fixSet ∅ ...).evalMap (combinedFixed M s Regime.empty) ℓ ⟨v.val, _⟩`
+  -- `inducedEval M s Regime.empty ℓ v = (M.fixSet ∅ ...).evalMap
+  -- (combinedFixed M s Regime.empty) ℓ ⟨v.val, _⟩`
   -- Use `evalMap_eq_of_equiv (fixSet_empty_equiv M ...)`.
   unfold inducedEval
-  simp only [regimeTargetN_empty]
   -- RHS of inducedEval: `(M.fixSet ∅ ...).evalMap (combinedFixed M s Regime.empty) ℓ ⟨v.val, _⟩`
-  apply SCM.evalMap_eq_of_equiv (SCM.fixSet_empty_equiv M _ _)
+  let hObs : ∀ D ∈ (∅ : Finset N), SWIGNode.random D ∈ M.observed := by simp
+  let hFix : ∀ D ∈ (∅ : Finset N), SWIGNode.fixed D ∉ M.fixed := by simp
+  let hEq := SCM.fixSet_empty_equiv M
+  apply SCM.evalMap_eq_of_equiv hEq.1 hEq.2.2.1
   · -- Fixed coords agree: combinedFixed at M.fixed = s
     intro d hd₁ hd₂
     -- `(M.fixSet ∅).fixed = M.fixed ∪ ∅ = M.fixed` (by rfl since ∅.image = ∅)
@@ -375,7 +382,7 @@ private lemma evalMap_fixSet_transport
     (M.fixSet X₁ hO₁ hF₁).evalMap s₁ ℓ ⟨v, hv₁⟩ =
     (M.fixSet X₂ hO₂ hF₂).evalMap s₂ ℓ ⟨v, hv₂⟩ := by
   subst hX
-  exact SCM.evalMap_eq_of_equiv (SCM.Equiv.refl _) s₁ ℓ s₂ ℓ
+  exact SCM.evalMap_eq_of_equiv (SCM.Equiv.refl _).1 (SCM.Equiv.refl _).2.2.1 s₁ ℓ s₂ ℓ
     (fun {d} hd₁ hd₂ => hs d hd₁ hd₂) (fun {_} _ _ => rfl) hv₁ hv₂
 
 /-- The potential-outcome system induced by an SCM satisfies consistency.
@@ -417,12 +424,7 @@ theorem POSystem.ofSCM_consistency
         obtain ⟨v'val, v'prop⟩ := v'
         cases hDval
         exact hfa)
-      -- hv_disj: v.val.val ≠ .random D for all D ∈ regimeTargetN M r
       ⟨v.val.val, v.val.property⟩
-      (fun D hD heq => by
-        obtain ⟨v', hv'tgt, hv'val⟩ := regimeTargetN_mem_val M r D hD
-        have hvv' : v.val = v' := obsIdx_val_injective (heq.trans hv'val.symm)
-        exact Finset.disjoint_left.mp hY_disj v.property (hvv' ▸ hv'tgt))
   -- ---------------------------------------------------------------
   -- Composition consistency
   -- ---------------------------------------------------------------
@@ -461,7 +463,7 @@ theorem POSystem.ofSCM_consistency
         (combinedFixed M s (r₁.sqcup r₂ h)) sxU
         (fun _ _ _ => rfl)]
     rotate_left
-    · simp only [SCM.randomVars, SCM.fixSet_observed, SCM.fixSet_unobserved]
+    · change v.val.val ∈ M.observed ∪ M.unobserved
       exact Finset.mem_union_left _ v.val.property
     -- Disjointness of X₁ and X₂ in N
     have hDisjN : Disjoint X₁ X₂ := by
@@ -471,11 +473,10 @@ theorem POSystem.ofSCM_consistency
         intro v hv₁ hv₂
         exact Finset.disjoint_left.mp h (Finset.mem_filter.mp hv₁).1 (Finset.mem_filter.mp hv₂).1)
     -- Apply evalMap_fixSet_union_eq
-    refine SCM.evalMap_fixSet_union_eq M X₁ X₂ hDisjN
+    refine SCM.evalMap_fixSet_union_eq M X₁ X₂
       (regimeTargetN_obs M r₁) (regimeTargetN_notFixed M r₁)
-      (regimeTargetN_obs M r₂) (regimeTargetN_notFixed M r₂)
-      hObsU hFixU s ℓ (combinedFixed M s r₁) sxU
-      ?_ ?_ ?_ ⟨v.val.val, v.val.property⟩ ?_
+      hObsU hFixU ℓ (combinedFixed M s r₁) sxU
+      ?_ ?_ ?_ ⟨v.val.val, v.val.property⟩
     · -- hCompat_old: sxU and combinedFixed M s r₁ both equal s on M.fixed
       intro w hw
       change combinedFixed M s (r₁.sqcup r₂ h) ⟨w, Finset.mem_union_left _ hw⟩ =
@@ -520,13 +521,6 @@ theorem POSystem.ofSCM_consistency
       obtain ⟨v'val, v'prop⟩ := v'
       cases hDval
       simpa using hThis
-    · -- hv_disj: v.val.val ≠ .random D for all D ∈ X₁ ∪ X₂
-      intro D hD heq
-      have hD' : D ∈ regimeTargetN M (r₁.sqcup r₂ h) := hUnion ▸ hD
-      obtain ⟨v', hv'tgt, hv'val⟩ := regimeTargetN_mem_val M (r₁.sqcup r₂ h) D hD'
-      have hvv' : v.val = v' := obsIdx_val_injective (heq.trans hv'val.symm)
-      simp only [Regime.sqcup_target] at hv'tgt
-      exact Finset.disjoint_left.mp hY_disj v.property (hvv' ▸ hv'tgt)
 
 end PO
 end Causalean

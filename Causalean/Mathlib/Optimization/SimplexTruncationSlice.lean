@@ -26,7 +26,9 @@ private lemma truncSeg_radicand_pos {A d s : ℝ} (hA : 0 ≤ A) (hd : 0 < d) :
     0 < A + s ^ 2 + (d - s) ^ 2 := by
   nlinarith [hA, sq_nonneg (s - (d - s)), sq_pos_of_pos hd]
 
-private lemma truncSeg_cs_sqrt {A d s σ : ℝ} (hA : 0 ≤ A) :
+/-- For a nonnegative baseline component, the inner product of two three-dimensional boundary
+vectors is no greater than the product of their Euclidean norms. -/
+lemma truncSeg_cs_sqrt {A d s σ : ℝ} (hA : 0 ≤ A) :
     A + s * σ + (d - s) * (d - σ)
       ≤ Real.sqrt (A + s ^ 2 + (d - s) ^ 2)
           * Real.sqrt (A + σ ^ 2 + (d - σ) ^ 2) := by
@@ -62,7 +64,10 @@ private lemma truncSeg_cs_sqrt {A d s σ : ℝ} (hA : 0 ≤ A) :
           * Real.sqrt (A + σ ^ 2 + (d - σ) ^ 2) := by
         rw [Real.sqrt_mul hX]
 
-private lemma truncSelector_interior_sq_bound {A d kappa δ : ℝ}
+/-- If the truncation offset lies strictly between the two interior guard bounds, then its
+squared size times the radicand is strictly smaller than the squared truncation scale times the
+squared interval width. -/
+lemma truncSelector_interior_sq_bound {A d kappa δ : ℝ}
     (hd : 0 < d) (hA : 0 ≤ A) (hk : 0 ≤ kappa)
     (hlo : ¬ kappa * d / Real.sqrt (A + d ^ 2) ≤ δ)
     (hhi : ¬ δ ≤ -(kappa * d / Real.sqrt (A + d ^ 2))) :
@@ -87,7 +92,9 @@ private lemma truncSelector_interior_sq_bound {A d kappa δ : ℝ}
   field_simp [ne_of_gt hBpos] at hsquare
   nlinarith [hBsq, hsquare]
 
-private lemma truncSelector_interior_den_pos {A d kappa δ : ℝ}
+/-- Under the selector's strict interior guard inequalities, a positive interval width, and
+nonnegative baseline and scale, the squared-scale denominator minus half the squared offset is positive. -/
+lemma truncSelector_interior_den_pos {A d kappa δ : ℝ}
     (hd : 0 < d) (hA : 0 ≤ A) (hk : 0 ≤ kappa)
     (hlo : ¬ kappa * d / Real.sqrt (A + d ^ 2) ≤ δ)
     (hhi : ¬ δ ≤ -(kappa * d / Real.sqrt (A + d ^ 2))) :
@@ -252,16 +259,17 @@ private lemma truncSelector_sign_core {A d kappa δ σ : ℝ}
     simp
 
 /-- **Objective on the truncation face.** Evaluating `wsObj` at the face point
-`truncSegPoint M d σ = (M−d, σ, d−σ)` (with `β_y = β_z = 1`) gives the explicit 1-D
-form `α_x(M−d) + α_y σ + α_z(d−σ) + κ √(β_x(M−d)² + σ² + (d−σ)²)`. -/
+`truncSegPoint M d σ = (M−d, σ, d−σ)` gives the explicit 1-D form
+`α_x(M−d) + α_y σ + α_z(d−σ) + κ √(β_x(M−d)² + β_yσ² + β_z(d−σ)²)`. -/
 lemma wsObj_truncSeg_eq (M d : ℝ) (α β : Fin 3 → ℝ) (kappa σ : ℝ)
-    (hβy : β 1 = 1) (hβz : β 2 = 1) :
+    :
     wsObj α β kappa (truncSegPoint M d σ)
       = α 0 * (M - d) + α 1 * σ + α 2 * (d - σ)
-        + kappa * Real.sqrt (β 0 * (M - d) ^ 2 + σ ^ 2 + (d - σ) ^ 2) := by
+        + kappa * Real.sqrt
+            (β 0 * (M - d) ^ 2 + β 1 * σ ^ 2 + β 2 * (d - σ) ^ 2) := by
   unfold wsObj truncSegPoint
   rw [Fin.sum_univ_three, Fin.sum_univ_three]
-  simp [Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, hβy, hβz]
+  simp [Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two]
 
 /-- **The selector lands in `[0,d]`.** The endpoint/interior selector `truncSelector`
 satisfies `0 ≤ s⋆ ≤ d`: the two endpoint branches give `0` and `d` directly, and in
@@ -294,8 +302,8 @@ lemma truncSeg_selector_le (M d : ℝ) (α β : Fin 3 → ℝ) (kappa : ℝ)
     wsObj α β kappa (truncSegPoint M d (truncSelector M d α β kappa))
       ≤ wsObj α β kappa (truncSegPoint M d σ) := by
   set s := truncSelector M d α β kappa with hs
-  rw [wsObj_truncSeg_eq M d α β kappa s hβy hβz,
-    wsObj_truncSeg_eq M d α β kappa σ hβy hβz]
+  rw [wsObj_truncSeg_eq M d α β kappa s, wsObj_truncSeg_eq M d α β kappa σ]
+  simp only [hβy, hβz, one_mul]
   set A := β 0 * (M - d) ^ 2 with hAdef
   set δ := α 1 - α 2 with hδdef
   let Rs := A + s ^ 2 + (d - s) ^ 2

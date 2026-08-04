@@ -72,10 +72,9 @@ noncomputable def treatmentMarginal (M : Causalean.SCM N Ω) (X : Finset N)
 def BackdoorPositivityAE (M : Causalean.SCM N Ω) (X : Finset N)
     (Z : Finset (SWIGNode N))
     (hZ : Z ⊆ M.observed)
-    (hXr : X.image SWIGNode.random ⊆ M.observed)
     (hXrZ : X.image SWIGNode.random ∪ Z ⊆ M.observed)
     (s0 : M.FixedValues) : Prop :=
-  (((M.treatmentMarginal X hXr s0) ⊗ₘ
+  (((M.treatmentMarginal X (Finset.subset_union_left.trans hXrZ) s0) ⊗ₘ
       (ProbabilityTheory.Kernel.const _
         ((M.obsKernel s0).map (valuesProjection hZ)))).map
       (fun p => valuesUnionMk p.1 p.2))
@@ -200,17 +199,25 @@ theorem backdoor_completeness_ae_compProd
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ M.fixed)
     (Y Z : Finset (SWIGNode N))
     (hY : Y ⊆ M.observed) (hZ : Z ⊆ M.observed)
-    (hXr : X.image SWIGNode.random ⊆ M.observed)
-    (hXrZ : X.image SWIGNode.random ∪ Z ⊆ M.observed)
     (_h_bd : M.toSWIGGraph.backdoorCriterion X hObs hFix Y Z)
     (hDisj_YXr : Disjoint Y (X.image SWIGNode.random))
     (hDisj_XrZ : Disjoint (X.image SWIGNode.random) Z)
     (s0 : M.FixedValues)
     (hOverlap : ∀ s : (M.fixSet X hObs hFix).FixedValues,
-      Causalean.SCM.ID.Rule2JointOverlap M X hObs hFix Z hXrZ s)
-    (_hPositivity : M.BackdoorPositivityAE X Z hZ hXr hXrZ s0) :
-    (M.treatmentMarginal X hXr s0) ⊗ₘ (M.doKernelY X hObs hFix Y hY s0)
-      = (M.treatmentMarginal X hXr s0) ⊗ₘ (M.adjustmentKernelY X hObs hFix Y Z hY hZ s0) := by
+      Causalean.SCM.ID.Rule2JointOverlap M X hObs hFix Z
+        (Finset.union_subset (Finset.image_subset_iff.mpr hObs) hZ) s)
+    (_hPositivity : M.BackdoorPositivityAE X Z hZ
+      (Finset.union_subset (Finset.image_subset_iff.mpr hObs) hZ) s0) :
+    (M.treatmentMarginal X (Finset.subset_union_left.trans
+      (Finset.union_subset (Finset.image_subset_iff.mpr hObs) hZ)) s0) ⊗ₘ
+        (M.doKernelY X hObs hFix Y hY s0)
+      = (M.treatmentMarginal X (Finset.subset_union_left.trans
+        (Finset.union_subset (Finset.image_subset_iff.mpr hObs) hZ)) s0) ⊗ₘ
+        (M.adjustmentKernelY X hObs hFix Y Z hY hZ s0) := by
+  have hXrZ : X.image SWIGNode.random ∪ Z ⊆ M.observed :=
+    Finset.union_subset (Finset.image_subset_iff.mpr hObs) hZ
+  have hXr : X.image SWIGNode.random ⊆ M.observed :=
+    Finset.subset_union_left.trans hXrZ
   -- Abbreviations.
   set sT := fun t => M.fixSetExtend X hObs hFix s0 t with hsT
   set hZ_post : Z ⊆ (M.fixSet X hObs hFix).observed :=
@@ -355,23 +362,28 @@ theorem backdoor_completeness_ae
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ M.fixed)
     (Y Z : Finset (SWIGNode N))
     (hY : Y ⊆ M.observed) (hZ : Z ⊆ M.observed)
-    (hXr : X.image SWIGNode.random ⊆ M.observed)
-    (hXrZ : X.image SWIGNode.random ∪ Z ⊆ M.observed)
     (h_bd : M.toSWIGGraph.backdoorCriterion X hObs hFix Y Z)
     (hDisj_YXr : Disjoint Y (X.image SWIGNode.random))
     (hDisj_XrZ : Disjoint (X.image SWIGNode.random) Z)
     (s0 : M.FixedValues)
     (hOverlap : ∀ s : (M.fixSet X hObs hFix).FixedValues,
-      Causalean.SCM.ID.Rule2JointOverlap M X hObs hFix Z hXrZ s)
-    (hPositivity : M.BackdoorPositivityAE X Z hZ hXr hXrZ s0) :
-    ∀ᵐ t ∂(M.treatmentMarginal X hXr s0),
+      Causalean.SCM.ID.Rule2JointOverlap M X hObs hFix Z
+        (Finset.union_subset (Finset.image_subset_iff.mpr hObs) hZ) s)
+    (hPositivity : M.BackdoorPositivityAE X Z hZ
+      (Finset.union_subset (Finset.image_subset_iff.mpr hObs) hZ) s0) :
+    ∀ᵐ t ∂(M.treatmentMarginal X (Finset.subset_union_left.trans
+      (Finset.union_subset (Finset.image_subset_iff.mpr hObs) hZ)) s0),
       M.doKernelY X hObs hFix Y hY s0 t
         = M.adjustmentKernelY X hObs hFix Y Z hY hZ s0 t := by
+  have hXrZ : X.image SWIGNode.random ∪ Z ⊆ M.observed :=
+    Finset.union_subset (Finset.image_subset_iff.mpr hObs) hZ
+  have hXr : X.image SWIGNode.random ⊆ M.observed :=
+    Finset.subset_union_left.trans hXrZ
   haveI : MeasureTheory.IsFiniteMeasure (M.treatmentMarginal X hXr s0) := by
     unfold treatmentMarginal
     exact (M.obsKernel s0).isFiniteMeasure_map _
   exact ProbabilityTheory.Kernel.ae_eq_of_compProd_eq
-    (M.backdoor_completeness_ae_compProd X hObs hFix Y Z hY hZ hXr hXrZ h_bd
+    (M.backdoor_completeness_ae_compProd X hObs hFix Y Z hY hZ h_bd
       hDisj_YXr hDisj_XrZ s0 hOverlap hPositivity)
 
 /-- **Backdoor identifiability, a.e. in the treatment value (cross-SCM corollary).**
@@ -401,25 +413,26 @@ theorem backdoor_identifiable_ae
     (hFix₂ : ∀ D ∈ X, SWIGNode.fixed D ∉ M₂.fixed)
     (hY₁ : Y ⊆ M₁.observed) (hZ₁ : Z ⊆ M₁.observed)
     (hY₂ : Y ⊆ M₂.observed) (hZ₂ : Z ⊆ M₂.observed)
-    (hXr₁ : X.image SWIGNode.random ⊆ M₁.observed)
-    (hXr₂ : X.image SWIGNode.random ⊆ M₂.observed)
-    (hXrZ₁ : X.image SWIGNode.random ∪ Z ⊆ M₁.observed)
-    (hXrZ₂ : X.image SWIGNode.random ∪ Z ⊆ M₂.observed)
     (h_bd₁ : M₁.toSWIGGraph.backdoorCriterion X hObs₁ hFix₁ Y Z)
     (h_bd₂ : M₂.toSWIGGraph.backdoorCriterion X hObs₂ hFix₂ Y Z)
     (hDisj_YXr : Disjoint Y (X.image SWIGNode.random))
     (hDisj_XrZ : Disjoint (X.image SWIGNode.random) Z)
     (s0₁ : M₁.FixedValues) (s0₂ : M₂.FixedValues)
     (hOverlap₁ : ∀ s : (M₁.fixSet X hObs₁ hFix₁).FixedValues,
-      Causalean.SCM.ID.Rule2JointOverlap M₁ X hObs₁ hFix₁ Z hXrZ₁ s)
+      Causalean.SCM.ID.Rule2JointOverlap M₁ X hObs₁ hFix₁ Z
+        (Finset.union_subset (Finset.image_subset_iff.mpr hObs₁) hZ₁) s)
     (hOverlap₂ : ∀ s : (M₂.fixSet X hObs₂ hFix₂).FixedValues,
-      Causalean.SCM.ID.Rule2JointOverlap M₂ X hObs₂ hFix₂ Z hXrZ₂ s)
-    (hPositivity₁ : M₁.BackdoorPositivityAE X Z hZ₁ hXr₁ hXrZ₁ s0₁)
-    (hPositivity₂ : M₂.BackdoorPositivityAE X Z hZ₂ hXr₂ hXrZ₂ s0₂)
+      Causalean.SCM.ID.Rule2JointOverlap M₂ X hObs₂ hFix₂ Z
+        (Finset.union_subset (Finset.image_subset_iff.mpr hObs₂) hZ₂) s)
+    (hPositivity₁ : M₁.BackdoorPositivityAE X Z hZ₁
+      (Finset.union_subset (Finset.image_subset_iff.mpr hObs₁) hZ₁) s0₁)
+    (hPositivity₂ : M₂.BackdoorPositivityAE X Z hZ₂
+      (Finset.union_subset (Finset.image_subset_iff.mpr hObs₂) hZ₂) s0₂)
     (h_obs : HEq M₁.obsKernel M₂.obsKernel)
     (h_s0 : HEq s0₁ s0₂) :
     (M₁.doKernelY X hObs₁ hFix₁ Y hY₁ s0₁)
-      =ᵐ[M₁.treatmentMarginal X hXr₁ s0₁]
+      =ᵐ[M₁.treatmentMarginal X (Finset.subset_union_left.trans
+        (Finset.union_subset (Finset.image_subset_iff.mpr hObs₁) hZ₁)) s0₁]
       (M₂.doKernelY X hObs₂ hFix₂ Y hY₂ s0₂) := by
   -- Destructure both SCMs and `cases h_swig` to align the SWIGGraph-derived
   -- type indices (FixedValues, observed, fixSet, treatmentMarginal); then the
@@ -437,16 +450,20 @@ theorem backdoor_identifiable_ae
   -- distinct structure literals and use `h_obs` as a rewrite (obsKernel is a
   -- *derived* def, not a structure field, hence not `cases`-able).
   cases h_s0
+  have hXr₁ : X.image SWIGNode.random ⊆ observed₁ :=
+    Finset.image_subset_iff.mpr hObs₁
+  have hXr₂ : X.image SWIGNode.random ⊆ observed₁ :=
+    Finset.image_subset_iff.mpr hObs₂
   -- Step 1: do-side ≡ adjustment-side on each SCM, a.e.
   have hc1 := backdoor_completeness_ae
     ⟨⟨dag₁, fixed₁, observed₁, unobserved₁, fio₁, oi₁, od₁, oou₁,
        foi₁, fou₁, aic₁, dc₁, foff₁, aco₁⟩, eT₁, iota₁, sf₁, mf₁, lD₁, pL₁⟩
-    X hObs₁ hFix₁ Y Z hY₁ hZ₁ hXr₁ hXrZ₁ h_bd₁ hDisj_YXr hDisj_XrZ
+    X hObs₁ hFix₁ Y Z hY₁ hZ₁ h_bd₁ hDisj_YXr hDisj_XrZ
     s0₁ hOverlap₁ hPositivity₁
   have hc2 := backdoor_completeness_ae
     ⟨⟨dag₁, fixed₁, observed₁, unobserved₁, fio₁, oi₁, od₁, oou₁,
        foi₁, fou₁, aic₁, dc₁, foff₁, aco₁⟩, eT₂, iota₂, sf₂, mf₂, lD₂, pL₂⟩
-    X hObs₂ hFix₂ Y Z hY₂ hZ₂ hXr₂ hXrZ₂ h_bd₂ hDisj_YXr hDisj_XrZ
+    X hObs₂ hFix₂ Y Z hY₂ hZ₂ h_bd₂ hDisj_YXr hDisj_XrZ
     s0₁ hOverlap₂ hPositivity₂
   -- Step 2: cross-SCM invariance of the adjustment kernel.
   have hinv :

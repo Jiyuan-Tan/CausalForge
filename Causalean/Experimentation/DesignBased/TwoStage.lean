@@ -44,21 +44,25 @@ variable {Ω₁ : Type*} [Fintype Ω₁]
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 variable {α : ι → Type*} [∀ i, Fintype (α i)]
 
+/-- Generic conditional composition of a first-stage finite design with a finite second-stage
+design chosen after observing the first-stage outcome. -/
+def compoundCore {Ω₂ : Type*} [Fintype Ω₂]
+    (D₁ : FiniteDesign Ω₁) (D₂ : Ω₁ → FiniteDesign Ω₂) : FiniteDesign (Ω₁ × Ω₂) where
+  p sw := D₁.p sw.1 * (D₂ sw.1).p sw.2
+  p_nonneg sw :=
+    mul_nonneg (D₁.p_nonneg sw.1) ((D₂ sw.1).p_nonneg sw.2)
+  p_sum := by
+    rw [Fintype.sum_prod_type]
+    have hs : ∀ s, (∑ w : Ω₂, D₁.p s * (D₂ s).p w) = D₁.p s := by
+      intro s
+      rw [← Finset.mul_sum, (D₂ s).p_sum, mul_one]
+    rw [Finset.sum_congr rfl (fun s _ => hs s), D₁.p_sum]
+
 /-- The **compound (two-stage) design**: stage-1 design `D₁` on `Ω₁`, then, conditionally on
 the stage-1 outcome `s`, the independent within-coordinate designs `D₂ s i`. -/
 def compound (D₁ : FiniteDesign Ω₁) (D₂ : Ω₁ → ∀ i, FiniteDesign (α i)) :
-    FiniteDesign (Ω₁ × ∀ i, α i) where
-  p sw := D₁.p sw.1 * ∏ i, (D₂ sw.1 i).p (sw.2 i)
-  p_nonneg sw :=
-    mul_nonneg (D₁.p_nonneg sw.1)
-      (Finset.prod_nonneg fun i _ => (D₂ sw.1 i).p_nonneg (sw.2 i))
-  p_sum := by
-    rw [Fintype.sum_prod_type]
-    have hs : ∀ s, (∑ w : ∀ i, α i, D₁.p s * ∏ i, (D₂ s i).p (w i)) = D₁.p s := by
-      intro s
-      rw [← Finset.mul_sum,
-        show (∑ w : ∀ i, α i, ∏ i, (D₂ s i).p (w i)) = 1 from (prodDesign (D₂ s)).p_sum, mul_one]
-    rw [Finset.sum_congr rfl (fun s _ => hs s), D₁.p_sum]
+    FiniteDesign (Ω₁ × ∀ i, α i) :=
+  compoundCore D₁ (fun s => prodDesign (D₂ s))
 
 namespace FiniteDesign
 
@@ -67,7 +71,7 @@ lemma E_compound (D₁ : FiniteDesign Ω₁) (D₂ : Ω₁ → ∀ i, FiniteDesi
     (X : (Ω₁ × ∀ i, α i) → ℝ) :
     (compound D₁ D₂).E X
       = ∑ s, ∑ w : ∀ i, α i, D₁.p s * (∏ i, (D₂ s i).p (w i)) * X (s, w) := by
-  simp only [FiniteDesign.E, compound]
+  simp only [FiniteDesign.E, compound, compoundCore, prodDesign_p]
   rw [Fintype.sum_prod_type]
 
 /-- **Stage-2 collapse.** The expectation of a stage-1 quantity `h(s)` times a function `g`

@@ -90,6 +90,7 @@ theorem aipw_pop_mean [Nonempty C] {m : C → ℝ} {g : Bool → C → ℝ} (hv 
   unfold obsPMF
   rw [PMF.ofFintype_apply, ENNReal.toReal_ofReal (obsReal_nonneg hv z)]
 
+omit [MeasurableSpace C] [MeasurableSingletonClass C] in
 /-- **Doubly-robust bias identity.**  The population AIPW mean minus the true ATE equals the
 finite doubly-robust remainder: a sum of products of nuisance errors. -/
 theorem aipw_bias_identity [Nonempty C] {m : C → ℝ} {g : Bool → C → ℝ}
@@ -123,6 +124,7 @@ theorem aipw_bias_identity [Nonempty C] {m : C → ℝ} {g : Bool → C → ℝ}
   field_simp
   ring
 
+omit [MeasurableSpace C] [MeasurableSingletonClass C] in
 /-- **Uniform lower bound on the center weights.**  With `mhat` strictly inside `(0,1)` on the
 finite type `C`, there is `ε > 0` with `ε ≤ mhat x` and `ε ≤ 1 − mhat x` for all `x`. -/
 theorem exists_center_overlap [Nonempty C] (mhat : C → ℝ)
@@ -138,6 +140,7 @@ theorem exists_center_overlap [Nonempty C] (mhat : C → ℝ)
       (fun x => min (mhat x) (1 - mhat x)) (Finset.mem_univ x)
     exact ⟨le_trans h (min_le_left _ _), le_trans h (min_le_right _ _)⟩
 
+omit [MeasurableSpace C] [MeasurableSingletonClass C] in
 /-- **Doubly-robust bias bound.**  The plug-in bias is bounded by the product of the
 `L²(P_X)` nuisance errors, with constant `1/ε` set by the center overlap. -/
 theorem aipw_bias_bound [Nonempty C] {m : C → ℝ} {g : Bool → C → ℝ}
@@ -239,6 +242,7 @@ theorem aipw_bias_bound [Nonempty C] {m : C → ℝ} {g : Bool → C → ℝ}
     _ = ε⁻¹ * ((Real.sqrt (l2sq (g true) (ghat true)) + Real.sqrt (l2sq (g false) (ghat false)))
           * Real.sqrt (l2sq m mhat)) := by ring
 
+omit [Fintype C] [MeasurableSpace C] [MeasurableSingletonClass C] in
 /-- **Score bound.**  The AIPW score is bounded by `B = 1 + 2/ε` whenever the center
 nuisances are valid and `mhat` is `ε`-bounded off `{0,1}`. -/
 theorem aipwScore_bound [Nonempty C]

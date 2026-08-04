@@ -49,8 +49,9 @@ variable (D : FiniteDesign Ω)
 noncomputable def toMeasure : Measure Ω := ∑ z, ENNReal.ofReal (D.p z) • Measure.dirac z
 
 omit [MeasurableSingletonClass Ω] in
-/-- `toMeasure` applied to any set is the design-weighted sum of dirac masses. -/
-private lemma toMeasure_apply (s : Set Ω) :
+/-- The measure induced by a finite randomization design assigns each set the sum, over
+assignments, of each assignment's probability times the point mass of that assignment on the set. -/
+lemma toMeasure_apply (s : Set Ω) :
     D.toMeasure s = ∑ z, ENNReal.ofReal (D.p z) * Measure.dirac z s := by
   rw [toMeasure, Measure.finset_sum_apply]
   refine Finset.sum_congr rfl (fun z _ => ?_)

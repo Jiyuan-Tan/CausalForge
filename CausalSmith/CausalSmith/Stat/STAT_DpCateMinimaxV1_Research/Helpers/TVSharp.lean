@@ -226,7 +226,8 @@ lemma localized_bump_tv_single_le {d : ℕ}
     rw [abs_div, abs_of_pos hh] at hni
     simpa using (div_le_iff₀ hh).mp hni
   have htv := cateWitness_tv_single_le_mass Q e0 (cB * h ^ gamma) b S
-    hbmeas hb (measurableSet_supBall x0 h) (mul_nonneg hcB (Real.rpow_nonneg hh.le _))
+    hbmeas hb (Causalean.Stat.Nonparametric.measurableSet_supBall x0 h)
+      (mul_nonneg hcB (Real.rpow_nonneg hh.le _))
     hlocal hsupp he0 he1
   change tvDist (cateWitnessLaw Q e0 b).dataMeasure
       (cateWitnessLaw Q e0 0).dataMeasure ≤ _

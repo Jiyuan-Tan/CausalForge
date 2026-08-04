@@ -141,7 +141,7 @@ lemma IIDSample.empProcess_increment_tendsto_zero (S : IIDSample Ω ℝ μ P)
         have h01 : g n z = 0 ∨ g n z = 1 := by
           simp only [hg, cdfStat, hyn]
           by_cases h1 : z ≤ yn n <;> by_cases h2 : z ≤ q₀ <;>
-            simp_all [Set.indicator_of_mem, Set.indicator_of_notMem, Set.mem_Iic] <;>
+            simp_all [Set.indicator_of_mem, Set.indicator_of_notMem, Set.mem_Iic] ;
             linarith
         rcases h01 with h | h <;> simp [h]
       have hcong : ∫ z, (g n z) ^ 2 ∂P = ∫ z, g n z ∂P :=
@@ -155,7 +155,7 @@ lemma IIDSample.empProcess_increment_tendsto_zero (S : IIDSample Ω ℝ μ P)
         have h01 : g n z = 0 ∨ g n z = -1 := by
           simp only [hg, cdfStat, hyn]
           by_cases h1 : z ≤ yn n <;> by_cases h2 : z ≤ q₀ <;>
-            simp_all [Set.indicator_of_mem, Set.indicator_of_notMem, Set.mem_Iic] <;>
+            simp_all [Set.indicator_of_mem, Set.indicator_of_notMem, Set.mem_Iic] ;
             linarith
         rcases h01 with h | h <;> simp [h]
       have hcong : ∫ z, (g n z) ^ 2 ∂P = ∫ z, - g n z ∂P :=
@@ -315,6 +315,7 @@ lemma IIDSample.empProcess_increment_tendsto_zero (S : IIDSample Ω ℝ μ P)
 
 /-! ## Monotone-grid oscillation -/
 
+omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- **Pointwise monotone sandwich for the empirical process.**  Fix `n, ω` and a
 bracketing cell `a ≤ u ≤ b` of local shifts.  Writing `Gₙ(y) := empProcess n ω y`
 and `ya = q₀+a/√n`, `yb = q₀+b/√n`, monotonicity of *both* `F̂ₙ` and `F`

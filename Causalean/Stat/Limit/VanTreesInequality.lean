@@ -76,9 +76,6 @@ theorem van_trees_inequality
     (hfisher : ∀ h ∈ Icc a b, ∫ z, (S h z) ^ 2 ∂(P h) = I h)
     (hDQM : ∀ h ∈ Icc a b,
         HasDerivAt (fun h' => ∫ z, δ z ∂(P h')) (∫ z, δ z * S h z ∂(P h)) h)
-    -- integrability regularity (square-integrable estimator and score under each `P h`)
-    (hδ_L2 : ∀ h ∈ Icc a b, MemLp δ 2 (P h))
-    (hS_L2 : ∀ h ∈ Icc a b, MemLp (S h) 2 (P h))
     -- integrability side conditions for Bochner/interval integral linearity
     (hδ_int : ∀ h ∈ Icc a b, Integrable δ (P h))
     (hS_int : ∀ h ∈ Icc a b, Integrable (S h) (P h))
@@ -122,8 +119,6 @@ theorem van_trees_inequality
     fun f g => ∫ h in a..b, (∫ z, f h z * g h z ∂(P h)) * q h with hBdef
   set e : ℝ → Z → ℝ := fun h z => δ z - ψ h with hedef
   set Ψ : ℝ → Z → ℝ := fun h z => S h z + dq h / q h with hΨdef
-  have _hδ_L2_used : ∀ h ∈ Icc a b, MemLp δ 2 (P h) := hδ_L2
-  have _hS_L2_used : ∀ h ∈ Icc a b, MemLp (S h) 2 (P h) := hS_L2
   -- === The five genuine analytic obligations (van Trees content) ===
   -- (0) The bilinear form on the error reproduces the Bayes risk.
   have hExx : Bform e e = R := by

@@ -53,14 +53,15 @@ namespace Causalean.Mathlib.InformationTheory
 
 variable {m₀ m₁ : ℝ} {v : ℝ≥0}
 
-/-- **Absolute continuity of equal-variance Gaussians.** For `v ≠ 0` the Gaussian
-`gaussianReal m₀ v` is absolutely continuous with respect to `gaussianReal m₁ v`:
+/-- **Absolute continuity of nondegenerate Gaussians.** For `v₀ ≠ 0` and `v₁ ≠ 0`,
+`gaussianReal m₀ v₀` is absolutely continuous with respect to `gaussianReal m₁ v₁`:
 both are `volume.withDensity` of a strictly positive density, so each is mutually
 absolutely continuous with Lebesgue measure, and absolute continuity is transitive. -/
-lemma gaussianReal_ac_gaussianReal (m₀ m₁ : ℝ) (hv : v ≠ 0) :
-    gaussianReal m₀ v ≪ gaussianReal m₁ v :=
-  (gaussianReal_absolutelyContinuous m₀ hv).trans
-    (gaussianReal_absolutelyContinuous' m₁ hv)
+lemma gaussianReal_ac_gaussianReal (m₀ m₁ : ℝ) {v₀ v₁ : ℝ≥0}
+    (hv₀ : v₀ ≠ 0) (hv₁ : v₁ ≠ 0) :
+    gaussianReal m₀ v₀ ≪ gaussianReal m₁ v₁ :=
+  (gaussianReal_absolutelyContinuous m₀ hv₀).trans
+    (gaussianReal_absolutelyContinuous' m₁ hv₁)
 
 /-- **Radon–Nikodym ratio of equal-variance Gaussians, as a real number.** For `v ≠ 0`,
 the real part of the Radon–Nikodym derivative `∂(gaussianReal m₀ v)/∂(gaussianReal m₁ v)`
@@ -73,7 +74,7 @@ lemma rnDeriv_toReal_gaussianReal_ae (m₀ m₁ : ℝ) (hv : v ≠ 0) :
   let μ : Measure ℝ := gaussianReal m₀ v
   let ν : Measure ℝ := gaussianReal m₁ v
   have hμvol : μ ≪ volume := gaussianReal_absolutelyContinuous m₀ hv
-  have hμν : μ ≪ ν := gaussianReal_ac_gaussianReal m₀ m₁ hv
+  have hμν : μ ≪ ν := gaussianReal_ac_gaussianReal m₀ m₁ hv hv
   have hvolν : volume ≪ ν := gaussianReal_absolutelyContinuous' m₁ hv
   have hchain : μ.rnDeriv volume * volume.rnDeriv ν =ᵐ[μ] μ.rnDeriv ν := by
     exact hμν (Measure.rnDeriv_mul_rnDeriv (μ := μ) (ν := volume) (κ := ν) hμvol)
@@ -182,7 +183,7 @@ theorem gaussianKL_eq (m₀ m₁ : ℝ) (hv : 0 < v) :
     InformationTheory.klDiv (gaussianReal m₀ v) (gaussianReal m₁ v)
       = ENNReal.ofReal ((m₀ - m₁) ^ 2 / (2 * (v : ℝ))) := by
   have hv0 : v ≠ 0 := hv.ne'
-  rw [InformationTheory.klDiv_of_ac_of_integrable (gaussianReal_ac_gaussianReal m₀ m₁ hv0)
+  rw [InformationTheory.klDiv_of_ac_of_integrable (gaussianReal_ac_gaussianReal m₀ m₁ hv0 hv0)
     (integrable_llr_gaussianReal m₀ m₁ hv0)]
   rw [integral_llr_gaussianReal m₀ m₁ hv0]
   simp

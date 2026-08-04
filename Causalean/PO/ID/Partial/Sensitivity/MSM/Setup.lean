@@ -148,7 +148,8 @@ theorem candMean_completeProp_eq_Y1mean
     have he_meas : Measurable[S.sigmaXY1] e := he_smeas.measurable
     exact (hY1_meas.div he_meas).stronglyMeasurable
   -- Integrability of `f` and `g * f`.
-  have hf_int : Integrable f P.μ := S.dVar.integrable_indicator true
+  have hf_int : Integrable f P.μ :=
+    S.dVar.integrable_indicator true (measurableSet_singleton true)
   have hgf_int : Integrable (fun ω => g ω * f ω) P.μ := by
     refine hcand_int.congr (Filter.Eventually.of_forall ?_)
     intro ω

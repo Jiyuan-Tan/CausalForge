@@ -21,7 +21,7 @@ variance `Var_prod_apply`, and the cross-coordinate covariance vanishing
 `Cov_prod_apply_of_ne`.
 -/
 
-import Causalean.Experimentation.DesignBased.Product
+import Causalean.Experimentation.DesignBased.ProductBlock
 
 /-! # Product-design variance identities
 
@@ -53,43 +53,12 @@ lemma E_prod_apply₂ (D : ∀ i, FiniteDesign (α i)) {i j : ι} (h : i ≠ j)
     (g : α i → ℝ) (hfun : α j → ℝ) :
     (prodDesign D).E (fun w => g (w i) * hfun (w j))
       = (D i).E g * (D j).E hfun := by
-  -- The family whose product over all coordinates reconstructs `g (w i) * hfun (w j)`.
-  set F : ∀ k, α k → ℝ :=
-    fun k a => if hk : k = i then g (hk ▸ a) else if hk' : k = j then hfun (hk' ▸ a) else 1
-    with hF
-  -- Evaluate `F` at the two special coordinates.
-  have hFi : ∀ a : α i, F i a = g a := by
-    intro a; simp only [hF, dif_pos rfl]
-  have hFj : ∀ a : α j, F j a = hfun a := by
-    intro a; simp only [hF, dif_neg h.symm, dif_pos]
-  -- Rewrite the integrand as a product over all coordinates.
-  have hpoint : (fun w : ∀ i, α i => g (w i) * hfun (w j))
-      = (fun w => ∏ k, F k (w k)) := by
-    funext w
-    -- Only the `{i, j}` factors are nontrivial; the rest are `1`.
-    rw [show (∏ k, F k (w k)) = ∏ k ∈ ({i, j} : Finset ι), F k (w k) from ?_]
-    · rw [Finset.prod_pair h, hFi, hFj]
-    · symm
-      apply Finset.prod_subset (Finset.subset_univ _)
-      intro k _ hk
-      simp only [Finset.mem_insert, Finset.mem_singleton, not_or] at hk
-      obtain ⟨hki, hkj⟩ := hk
-      simp only [hF, dif_neg hki, dif_neg hkj]
-  rw [hpoint, E_prod_prod D F]
-  -- Now reduce the product of marginal expectations the same way.
-  rw [show (∏ k, (D k).E (F k)) = ∏ k ∈ ({i, j} : Finset ι), (D k).E (F k) from ?_]
-  · rw [Finset.prod_pair h]
-    congr 1
-    · exact (D i).E_congr hFi
-    · exact (D j).E_congr hFj
-  · symm
-    apply Finset.prod_subset (Finset.subset_univ _)
-    intro k _ hk
-    simp only [Finset.mem_insert, Finset.mem_singleton, not_or] at hk
-    obtain ⟨hki, hkj⟩ := hk
-    have hFk : F k = (fun _ => (1 : ℝ)) := by
-      funext a; simp only [hF, dif_neg hki, dif_neg hkj]
-    rw [hFk, (D k).E_const]
+  rw [E_prod_block_mul D {i} (fun w => g (w i)) (fun w => hfun (w j))]
+  · rw [E_prod_apply D i g, E_prod_apply D j hfun]
+  · intro w w' hw
+    exact congrArg g (hw i (by simp))
+  · intro w w' hw
+    exact congrArg hfun (hw j (by simpa using h.symm))
 
 /-- Single-coordinate variance: under the product design, the variance of a function of one
 coordinate equals the variance of that function under the coordinate's own design. -/

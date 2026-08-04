@@ -28,13 +28,12 @@ namespace Causalean.Mathlib
 open MeasureTheory ProbabilityTheory Real
 open scoped NNReal ENNReal
 
-private lemma gaussianReal_eq_map_std (m : ℝ) (v : ℝ≥0) (hv : v ≠ 0) :
+/-- A real Gaussian distribution with nonnegative variance is the standard
+normal distribution after scaling by the standard deviation and shifting by
+the mean. -/
+lemma gaussianReal_eq_map_std (m : ℝ) (v : ℝ≥0) :
     gaussianReal m v = (gaussianReal 0 1).map (fun z => Real.sqrt (v : ℝ) * z + m) := by
-  have hvpos_nn : (0 : ℝ≥0) < v := by
-    exact bot_lt_iff_ne_bot.mpr hv
-  have hvpos : 0 < (v : ℝ) := by
-    exact_mod_cast hvpos_nn
-  have hcoe : (⟨(v : ℝ), hvpos.le⟩ : ℝ≥0) = v := by
+  have hcoe : (⟨(v : ℝ), v.2⟩ : ℝ≥0) = v := by
     ext
     simp
   calc
@@ -44,15 +43,19 @@ private lemma gaussianReal_eq_map_std (m : ℝ) (v : ℝ≥0) (hv : v ≠ 0) :
     _ = ((gaussianReal 0 1).map (Real.sqrt (v : ℝ) * ·)).map (· + m) := by
       congr 1
       rw [gaussianReal_map_const_mul]
-      simp [Real.sq_sqrt hvpos.le, hcoe]
+      simp [hcoe]
     _ = (gaussianReal 0 1).map (fun z => Real.sqrt (v : ℝ) * z + m) := by
       rw [Measure.map_map]
       · rfl
       · exact (continuous_id.add continuous_const).measurable
       · exact (continuous_const.mul continuous_id).measurable
 
-private lemma affine_preimage_Ioi {s c m : ℝ} (hs : 0 < s) :
-    (fun z : ℝ => s * z + m) ⁻¹' Set.Ioi c = Set.Ioi ((c - m) / s) := by
+/-- The inverse image of a right-hand tail under a positive affine
+transformation is a right-hand tail whose threshold is transformed by the
+inverse affine formula. -/
+lemma affine_preimage_Ioi {α : Type*} [Field α] [LinearOrder α] [IsStrictOrderedRing α]
+    {s c m : α} (hs : 0 < s) :
+    (fun z : α => s * z + m) ⁻¹' Set.Ioi c = Set.Ioi ((c - m) / s) := by
   ext z
   dsimp [Set.preimage, Set.Ioi]
   constructor
@@ -63,7 +66,9 @@ private lemma affine_preimage_Ioi {s c m : ℝ} (hs : 0 < s) :
     have hz' : c - m < z * s := (div_lt_iff₀ hs).1 hz
     nlinarith [hz']
 
-private lemma stdNormalMeasure_Ioi_toReal_eq_integral (t : ℝ) :
+/-- The standard normal probability of values above t equals the integral of the standard-normal
+density over that upper-tail region. -/
+lemma stdNormalMeasure_Ioi_toReal_eq_integral (t : ℝ) :
     ((gaussianReal 0 1) (Set.Ioi t)).toReal = ∫ x in Set.Ioi t, stdNormalPDF x := by
   have hmeasure := ProbabilityTheory.gaussianReal_apply_eq_integral
     (μ := 0) (v := 1) (by norm_num) (Set.Ioi t)
@@ -73,7 +78,8 @@ private lemma stdNormalMeasure_Ioi_toReal_eq_integral (t : ℝ) :
   rw [ENNReal.toReal_ofReal hnonneg]
   simp [stdNormalPDF]
 
-private lemma integrable_id_mul_stdNormalPDF : Integrable (fun x : ℝ => x * stdNormalPDF x) := by
+/-- The standard normal density has a finite first absolute moment. -/
+lemma integrable_id_mul_stdNormalPDF : Integrable (fun x : ℝ => x * stdNormalPDF x) := by
   have hbase : Integrable (fun x : ℝ => x * Real.exp (-(1 / 2 : ℝ) * x ^ 2)) := by
     simpa using integrable_mul_exp_neg_mul_sq (b := (1 / 2 : ℝ)) (by norm_num)
   have hpdf : ∀ x : ℝ,
@@ -90,7 +96,9 @@ private lemma integrable_id_mul_stdNormalPDF : Integrable (fun x : ℝ => x * st
   rw [stdNormalPDF, hpdf x]
   ring
 
-private lemma integral_Ioi_affine_stdNormal (s m t : ℝ) :
+/-- Above a threshold, integrating an affine function against the standard-normal density
+equals its slope times the truncated first moment plus its intercept times the tail mass. -/
+lemma integral_Ioi_affine_stdNormal (s m t : ℝ) :
     ∫ z in Set.Ioi t, gaussianPDFReal 0 1 z * (s * z + m)
       = s * (∫ z in Set.Ioi t, z * stdNormalPDF z)
         + m * (∫ z in Set.Ioi t, stdNormalPDF z) := by
@@ -117,7 +125,9 @@ private lemma integral_Ioi_affine_stdNormal (s m t : ℝ) :
         + m * (∫ z in Set.Ioi t, stdNormalPDF z) := by
           rw [integral_const_mul, integral_const_mul]
 
-private lemma integral_Ioi_affine_gaussianReal_eq_density (s m t : ℝ) :
+/-- Above a threshold, the integral of an affine function under the standard-normal law
+equals the integral of that function against its density. -/
+lemma integral_Ioi_affine_gaussianReal_eq_density (s m t : ℝ) :
     ∫ z in Set.Ioi t, (s * z + m) ∂(gaussianReal 0 1)
       = ∫ z in Set.Ioi t, gaussianPDFReal 0 1 z * (s * z + m) := by
   rw [ProbabilityTheory.gaussianReal_of_var_ne_zero]
@@ -149,7 +159,7 @@ lemma gaussianReal_Ioi_eq (m : ℝ) (v : ℝ≥0) (hv : v ≠ 0) (c : ℝ) :
   calc
     ((gaussianReal m v) (Set.Ioi c)).toReal
         = (((gaussianReal 0 1).map (fun z : ℝ => s * z + m)) (Set.Ioi c)).toReal := by
-          rw [gaussianReal_eq_map_std m v hv]
+          rw [gaussianReal_eq_map_std m v]
     _ = ((gaussianReal 0 1) (Set.Ioi t)).toReal := by
           rw [Measure.map_apply]
           · rw [hpre]
@@ -182,7 +192,7 @@ lemma integral_Ioi_id_gaussianReal (m : ℝ) (v : ℝ≥0) (hv : v ≠ 0) (c : �
     ∫ y in Set.Ioi c, y ∂(gaussianReal m v)
         = ∫ y in Set.Ioi c, y ∂Measure.map
             (fun z : ℝ => s * z + m) (gaussianReal 0 1) := by
-          rw [gaussianReal_eq_map_std m v hv]
+          rw [gaussianReal_eq_map_std m v]
     _ = ∫ z in (fun z : ℝ => s * z + m) ⁻¹' Set.Ioi c,
           (s * z + m) ∂(gaussianReal 0 1) := by
           rw [setIntegral_map]

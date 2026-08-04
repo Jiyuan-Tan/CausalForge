@@ -114,6 +114,10 @@ theorem centeredNormalizedField_sq_integral
       rw [hvarS]
       exact div_self (pow_ne_zero 2 hs_ne)
 
+section
+
+omit [IsProbabilityMeasure μ]
+
 /-- **Uniform summand bound.** If the centered outcomes are bounded, `|Yᵢ − E[Yᵢ]| ≤ c`, then each
 standardized summand satisfies `|Xᵢ| ≤ 2c/s` (with `s > 0`).  The tight bound is `c/s`, weakened to
 `2c/s` to match the engine's `card·Bₙ³ → 0` smallness with `Bₙ = 2c/s`. -/
@@ -129,5 +133,7 @@ theorem centeredNormalizedField_abs_le
       exact div_le_div_of_nonneg_right (hc i ω) hs_pos.le
     _ ≤ 2 * c / s := by
       exact div_le_div_of_nonneg_right (by nlinarith) hs_pos.le
+
+end
 
 end Causalean.Experimentation.SuperPopulation.MeanCLT

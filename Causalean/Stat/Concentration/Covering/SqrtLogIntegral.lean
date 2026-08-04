@@ -45,7 +45,9 @@ private lemma continuousOn_sqrt_log_div_Icc {δ ε : ℝ} (hε : 0 < ε)
   · intro x hx
     exact div_ne_zero (ne_of_gt hδ) (by linarith [hx.1])
 
-private lemma intervalIntegrable_sqrt_log_div {δ ε : ℝ} (hε : 0 < ε)
+/-- When ε is positive and no larger than δ, the square-root log-ratio kernel is integrable on
+the interval from ε to δ with respect to Lebesgue measure. -/
+lemma intervalIntegrable_sqrt_log_div {δ ε : ℝ} (hε : 0 < ε)
     (hεδ : ε ≤ δ) :
     IntervalIntegrable (fun x : ℝ => Real.sqrt (Real.log (δ / x))) volume ε δ := by
   have hcont : ContinuousOn (fun x : ℝ => Real.sqrt (Real.log (δ / x))) [[ε, δ]] := by
@@ -69,7 +71,9 @@ private lemma intervalIntegrable_log_div_avg {δ ε : ℝ} (hε : 0 < ε)
     simpa [Set.uIcc_of_le hεδ] using continuousOn_log_div_avg_Icc hε hεδ
   exact hcont.intervalIntegrable
 
-private lemma intervalIntegrable_log_div {δ ε : ℝ} (hε : 0 < ε)
+/-- When ε is positive and no larger than δ, the logarithm of the ratio δ divided by x is
+interval-integrable from ε to δ with respect to Lebesgue measure. -/
+lemma intervalIntegrable_log_div {δ ε : ℝ} (hε : 0 < ε)
     (hεδ : ε ≤ δ) :
     IntervalIntegrable (fun x : ℝ => Real.log (δ / x)) volume ε δ := by
   have hδ : 0 < δ := lt_of_lt_of_le hε hεδ
@@ -120,11 +124,11 @@ lemma integral_log_div_le {δ ε : ℝ} (hε : 0 < ε) (hεδ : ε ≤ δ) :
   rw [integral_log_div_eq hε hεδ]
   linarith
 
-/-- Dudley entropy-integral evaluation: `∫_ε^δ √(log(δ/x)) dx ≤ δ`.
+/-- Dudley entropy-integral evaluation: `∫_ε^δ √(log(δ/x)) dx ≤ δ - ε`.
 Elementary (AM-GM `√t ≤ (t+1)/2` + `∫ log(δ/x) ≤ δ - ε`); no special
 functions beyond `Real.log`. -/
 lemma sqrtLog_integral_le {δ ε : ℝ} (hε : 0 < ε) (hεδ : ε ≤ δ) :
-    (∫ x in ε..δ, Real.sqrt (Real.log (δ / x))) ≤ δ := by
+    (∫ x in ε..δ, Real.sqrt (Real.log (δ / x))) ≤ δ - ε := by
   have hmono :
       (∫ x in ε..δ, Real.sqrt (Real.log (δ / x))) ≤
         ∫ x in ε..δ, (Real.log (δ / x) + 1) / 2 := by
@@ -153,6 +157,5 @@ lemma sqrtLog_integral_le {δ ε : ℝ} (hε : 0 < ε) (hεδ : ε ≤ δ) :
     (∫ x in ε..δ, Real.sqrt (Real.log (δ / x)))
         ≤ ∫ x in ε..δ, (Real.log (δ / x) + 1) / 2 := hmono
     _ ≤ δ - ε := havg
-    _ ≤ δ := by linarith [hε]
 
 end Causalean.Stat.Concentration

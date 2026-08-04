@@ -76,6 +76,7 @@ theorem obsCondIndep_symm (M : Causalean.SCM N Ω)
     ObsCondIndep M Y X W hY hX hW μ :=
   h.symm
 
+omit [DecidableEq N] [Fintype N] in
 /-- Symmetry for `CondIndepFun` when coordinates are given by `valuesProjection`. -/
 theorem condIndep_valuesProjection_symm
     {I X Y Z : Finset (SWIGNode N)}
@@ -97,6 +98,7 @@ theorem condIndep_valuesProjection_symm
       μ :=
   h.symm
 
+omit [DecidableEq N] [Fintype N] in
 /-- Subset-right for `CondIndepFun` when coordinates are given by `valuesProjection`. -/
 theorem condIndep_valuesProjection_subset_right
     {I X Y Y' Z : Finset (SWIGNode N)}
@@ -118,12 +120,13 @@ theorem condIndep_valuesProjection_subset_right
       (valuesProjection (Ω := swigΩ Ω) hY')
       μ := by
   have h' := h.comp measurable_id (measurable_valuesProjection (Ω' := swigΩ Ω) hY'Y)
-  simpa [Function.id_comp, valuesProjection_comp (Ω' := swigΩ Ω) hY'Y hY hY'] using h'
+  simpa [Function.id_comp, valuesProjection_comp (Ω' := swigΩ Ω) hY'Y hY] using h'
 
+omit [Fintype N] in
 /-- Decomposition for `CondIndepFun` when coordinates are given by `valuesProjection`. -/
 theorem condIndep_valuesProjection_decomposition
     {I X Y W Z : Finset (SWIGNode N)}
-    (hX : X ⊆ I) (hYW : (Y ∪ W) ⊆ I) (hY : Y ⊆ I) (hZ : Z ⊆ I)
+    (hX : X ⊆ I) (hYW : (Y ∪ W) ⊆ I) (hZ : Z ⊆ I)
     [StandardBorelSpace (ValuesOn I (swigΩ Ω))]
     {μ : MeasureTheory.Measure (ValuesOn I (swigΩ Ω))}
     [MeasureTheory.IsFiniteMeasure μ]
@@ -137,14 +140,16 @@ theorem condIndep_valuesProjection_decomposition
       (MeasurableSpace.comap (valuesProjection (Ω := swigΩ Ω) hZ) inferInstance)
       (comap_valuesProjection_le (Ω' := swigΩ Ω) hZ)
       (valuesProjection (Ω := swigΩ Ω) hX)
-      (valuesProjection (Ω := swigΩ Ω) hY)
+      (valuesProjection (Ω := swigΩ Ω) (Finset.subset_union_left.trans hYW))
       μ :=
-  condIndep_valuesProjection_subset_right hX hYW hY hZ Finset.subset_union_left h
+  condIndep_valuesProjection_subset_right hX hYW (Finset.subset_union_left.trans hYW) hZ
+    Finset.subset_union_left h
 
+omit [Fintype N] in
 /-- Weak union for `CondIndepFun` when coordinates are given by `valuesProjection`. -/
 theorem condIndep_valuesProjection_weak_union_axiom
     {I X Y W Z : Finset (SWIGNode N)}
-    (hX : X ⊆ I) (hYW : (Y ∪ W) ⊆ I) (hY : Y ⊆ I) (hZ : Z ⊆ I) (hZW : (Z ∪ W) ⊆ I)
+    (hX : X ⊆ I) (hYW : (Y ∪ W) ⊆ I) (hZ : Z ⊆ I)
     [StandardBorelSpace (ValuesOn I (swigΩ Ω))]
     {μ : MeasureTheory.Measure (ValuesOn I (swigΩ Ω))}
     [MeasureTheory.IsFiniteMeasure μ]
@@ -155,26 +160,29 @@ theorem condIndep_valuesProjection_weak_union_axiom
       (valuesProjection (Ω := swigΩ Ω) hYW)
       μ) :
     ProbabilityTheory.CondIndepFun
-      (MeasurableSpace.comap (valuesProjection (Ω := swigΩ Ω) hZW) inferInstance)
-      (comap_valuesProjection_le (Ω' := swigΩ Ω) hZW)
+      (MeasurableSpace.comap (valuesProjection (Ω := swigΩ Ω)
+        (Finset.union_subset hZ (Finset.subset_union_right.trans hYW))) inferInstance)
+      (comap_valuesProjection_le (Ω' := swigΩ Ω)
+        (Finset.union_subset hZ (Finset.subset_union_right.trans hYW)))
       (valuesProjection (Ω := swigΩ Ω) hX)
-      (valuesProjection (Ω := swigΩ Ω) hY)
+      (valuesProjection (Ω := swigΩ Ω) (Finset.subset_union_left.trans hYW))
       μ :=
   condIndep_valuesProjection_weak_union
     (M := SWIGNode N) (I := I) (X := X) (Y := Y) (W := W) (Z := Z) (Ω := swigΩ Ω)
-    hX hYW hY hZ hZW h
+    hX hYW (Finset.union_subset hZ (Finset.subset_union_right.trans hYW)) h
 
+omit [Fintype N] in
 /-- Contraction for `CondIndepFun` when coordinates are given by `valuesProjection`. -/
 theorem condIndep_valuesProjection_contraction_axiom
     {I X Y W Z : Finset (SWIGNode N)}
     (hX : X ⊆ I) (hY : Y ⊆ I) (hW : W ⊆ I) (hZ : Z ⊆ I)
-    (hYW : (Y ∪ W) ⊆ I) (hZW : (Z ∪ W) ⊆ I)
     [StandardBorelSpace (ValuesOn I (swigΩ Ω))]
     {μ : MeasureTheory.Measure (ValuesOn I (swigΩ Ω))}
     [MeasureTheory.IsFiniteMeasure μ]
     (h1 : ProbabilityTheory.CondIndepFun
-      (MeasurableSpace.comap (valuesProjection (Ω := swigΩ Ω) hZW) inferInstance)
-      (comap_valuesProjection_le (Ω' := swigΩ Ω) hZW)
+      (MeasurableSpace.comap
+        (valuesProjection (Ω := swigΩ Ω) (Finset.union_subset hZ hW)) inferInstance)
+      (comap_valuesProjection_le (Ω' := swigΩ Ω) (Finset.union_subset hZ hW))
       (valuesProjection (Ω := swigΩ Ω) hX)
       (valuesProjection (Ω := swigΩ Ω) hY)
       μ)
@@ -188,11 +196,11 @@ theorem condIndep_valuesProjection_contraction_axiom
       (MeasurableSpace.comap (valuesProjection (Ω := swigΩ Ω) hZ) inferInstance)
       (comap_valuesProjection_le (Ω' := swigΩ Ω) hZ)
       (valuesProjection (Ω := swigΩ Ω) hX)
-      (valuesProjection (Ω := swigΩ Ω) hYW)
+      (valuesProjection (Ω := swigΩ Ω) (Finset.union_subset hY hW))
       μ :=
   condIndep_valuesProjection_contraction
     (M := SWIGNode N) (I := I) (X := X) (Y := Y) (W := W) (Z := Z) (Ω := swigΩ Ω)
-    hX hY hW hZ hYW hZW h1 h2
+    hX hY hW hZ h1 h2
 
 /-- **Subset right.** If X ⊥ Y | Z and Y' ⊆ Y, then X ⊥ Y' | Z. -/
 theorem obsCondIndep_subset_right (M : Causalean.SCM N Ω)
@@ -212,25 +220,26 @@ theorem obsCondIndep_decomposition (M : Causalean.SCM N Ω)
     [StandardBorelSpace M.ObservedValues]
     {X Y W Z : Finset (SWIGNode N)}
     (hX : X ⊆ M.observed) (hYW : (Y ∪ W) ⊆ M.observed)
-    (hY : Y ⊆ M.observed) (hZ : Z ⊆ M.observed)
+    (hZ : Z ⊆ M.observed)
     {μ : MeasureTheory.Measure M.ObservedValues} [MeasureTheory.IsFiniteMeasure μ]
     (h : ObsCondIndep M X (Y ∪ W) Z hX hYW hZ μ) :
-    ObsCondIndep M X Y Z hX hY hZ μ := by
+    ObsCondIndep M X Y Z hX (Finset.subset_union_left.trans hYW) hZ μ := by
   unfold ObsCondIndep at h ⊢
-  exact condIndep_valuesProjection_decomposition (μ := μ) hX hYW hY hZ h
+  exact condIndep_valuesProjection_decomposition (μ := μ) hX hYW
+    hZ h
 
 /-- **Weak union.** X ⊥ (Y ∪ W) | Z → X ⊥ Y | (Z ∪ W). -/
 theorem obsCondIndep_weak_union (M : Causalean.SCM N Ω)
     [StandardBorelSpace M.ObservedValues]
     {X Y W Z : Finset (SWIGNode N)}
     (hX : X ⊆ M.observed) (hYW : (Y ∪ W) ⊆ M.observed)
-    (hY : Y ⊆ M.observed) (hZ : Z ⊆ M.observed)
-    (hZW : (Z ∪ W) ⊆ M.observed)
+    (hZ : Z ⊆ M.observed)
     {μ : MeasureTheory.Measure M.ObservedValues} [MeasureTheory.IsFiniteMeasure μ]
     (h : ObsCondIndep M X (Y ∪ W) Z hX hYW hZ μ) :
-    ObsCondIndep M X Y (Z ∪ W) hX hY hZW μ := by
+    ObsCondIndep M X Y (Z ∪ W) hX (Finset.subset_union_left.trans hYW)
+      (Finset.union_subset hZ (Finset.subset_union_right.trans hYW)) μ := by
   unfold ObsCondIndep at h ⊢
-  exact condIndep_valuesProjection_weak_union_axiom hX hYW hY hZ hZW h
+  exact condIndep_valuesProjection_weak_union_axiom hX hYW hZ h
 
 /-- **Contraction.** X ⊥ Y | (Z ∪ W) ∧ X ⊥ W | Z → X ⊥ (Y ∪ W) | Z. -/
 theorem obsCondIndep_contraction (M : Causalean.SCM N Ω)
@@ -238,13 +247,12 @@ theorem obsCondIndep_contraction (M : Causalean.SCM N Ω)
     {X Y W Z : Finset (SWIGNode N)}
     (hX : X ⊆ M.observed) (hY : Y ⊆ M.observed)
     (hW : W ⊆ M.observed) (hZ : Z ⊆ M.observed)
-    (hYW : (Y ∪ W) ⊆ M.observed) (hZW : (Z ∪ W) ⊆ M.observed)
     {μ : MeasureTheory.Measure M.ObservedValues} [MeasureTheory.IsFiniteMeasure μ]
-    (h1 : ObsCondIndep M X Y (Z ∪ W) hX hY hZW μ)
+    (h1 : ObsCondIndep M X Y (Z ∪ W) hX hY (Finset.union_subset hZ hW) μ)
     (h2 : ObsCondIndep M X W Z hX hW hZ μ) :
-    ObsCondIndep M X (Y ∪ W) Z hX hYW hZ μ := by
+    ObsCondIndep M X (Y ∪ W) Z hX (Finset.union_subset hY hW) hZ μ := by
   unfold ObsCondIndep at h1 h2 ⊢
-  exact condIndep_valuesProjection_contraction_axiom hX hY hW hZ hYW hZW h1 h2
+  exact condIndep_valuesProjection_contraction_axiom hX hY hW hZ h1 h2
 
 end SCM
 

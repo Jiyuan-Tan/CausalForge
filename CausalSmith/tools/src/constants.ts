@@ -1,5 +1,12 @@
 import { MODELS } from "./models.js";
 
+/** Start of the D0.5.G triage tier line appended to non-pass D0.5 checkpoint messages
+ *  (`formatTriageTier`). `checkpoint_playbook` classifies a D0.5 halt by keyword over that
+ *  message, so it must CUT the note off first: the note carries `floor=` and the referee's
+ *  free-text critique, and either can flip the classifier — a cap-exhausted halt whose
+ *  triage met the floor otherwise matches the PASS branch on the word `floor` alone. */
+export const D0_5_TRIAGE_MARKER = "\nD0.5.G TRIAGE";
+
 export const STAGE_ORDER = [
   "-1.1",
   "-1.2",
@@ -32,9 +39,9 @@ export const MODEL_PLAN = {
   // was codexKernel. Kept at `high` effort. Env: CAUSALEAN_MODEL_CODEX_MECH.
   stageNeg0_5_review: { runner: "codex", model: MODELS.codexMechanical, effort: "high" },
   // Shared "mechanical / clerical" codex tier (default gpt-5.6-terra, env CAUSALEAN_MODEL_CODEX_MECH).
-  // NOT a stage — three consumers each pass `MODEL_PLAN.mechanicalTier.model`:
-  // stage_neg1_2_proto_core (proposal typed-core author), stage0_5_core (the D0-solve loop's
-  // per-round review), stage0_R_core (its directed revise). The HARD D0 derivation is
+  // NOT a stage — the D0.5 core review and D0.R directed revision pass
+  // `MODEL_PLAN.mechanicalTier.model`. D-1.2 uses its stage-specific kernel/Sol
+  // author configuration above. The HARD D0 derivation is
   // `stage0_solve` on the kernel tier, not this. (Formerly `stage0_0`, named after the removed
   // legacy D0.0 setup pass — see doc/API.md §4.0.)
   mechanicalTier: { runner: "codex", model: MODELS.codexMechanical, effort: "high" },

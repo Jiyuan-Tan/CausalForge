@@ -50,7 +50,7 @@ lemma doubledExponent_injective {n : ℕ} :
     exact congrArg Sum.inr (Fin.ext (Nat.add_left_cancel hij))
 
 /-- Every doubled exponent is strictly below `2n`. -/
-lemma doubledExponent_lt {n : ℕ} (hn : 1 ≤ n) (i : Fin n ⊕ Fin n) :
+lemma doubledExponent_lt {n : ℕ} (i : Fin n ⊕ Fin n) :
     doubledExponent i < 2 * n := by
   rcases i with i | i <;> simp only [doubledExponent]
   · omega
@@ -58,16 +58,17 @@ lemma doubledExponent_lt {n : ℕ} (hn : 1 ≤ n) (i : Fin n ⊕ Fin n) :
     omega
 
 /-- Monomial coefficients encoded by the doubled finite index. -/
-def doubledCoefficientPolynomial {n : ℕ} (v : Fin n ⊕ Fin n → ℂ) : Polynomial ℂ :=
+def doubledCoefficientPolynomial {n : ℕ} {K : Type*} [Semiring K]
+    (v : Fin n ⊕ Fin n → K) : Polynomial K :=
   ∑ i, Polynomial.monomial (doubledExponent i) (v i)
 
 /-- Reading a doubled coefficient polynomial at an encoded exponent recovers
 the corresponding coefficient. -/
-lemma coeff_doubledCoefficientPolynomial {n : ℕ}
-    (v : Fin n ⊕ Fin n → ℂ) (i : Fin n ⊕ Fin n) :
+lemma coeff_doubledCoefficientPolynomial {n : ℕ} {K : Type*} [Semiring K]
+    (v : Fin n ⊕ Fin n → K) (i : Fin n ⊕ Fin n) :
     (doubledCoefficientPolynomial v).coeff (doubledExponent i) = v i := by
   classical
-  change (Polynomial.lcoeff ℂ (doubledExponent i))
+  change (Polynomial.lcoeff K (doubledExponent i))
       (∑ j, Polynomial.monomial (doubledExponent j) (v j)) = v i
   rw [map_sum]
   rw [Finset.sum_eq_single i]
@@ -79,37 +80,40 @@ lemma coeff_doubledCoefficientPolynomial {n : ℕ}
 
 /-- A doubled coefficient polynomial vanishes exactly when its coefficient
 vector vanishes. -/
-lemma doubledCoefficientPolynomial_eq_zero_iff {n : ℕ}
-    (v : Fin n ⊕ Fin n → ℂ) : doubledCoefficientPolynomial v = 0 ↔ v = 0 := by
+lemma doubledCoefficientPolynomial_eq_zero_iff {n : ℕ} {K : Type*} [Semiring K]
+    (v : Fin n ⊕ Fin n → K) : doubledCoefficientPolynomial v = 0 ↔ v = 0 := by
   constructor
   · intro hp
     funext i
-    have := congrArg (fun p : Polynomial ℂ => p.coeff (doubledExponent i)) hp
+    have := congrArg (fun p : Polynomial K => p.coeff (doubledExponent i)) hp
     simpa [coeff_doubledCoefficientPolynomial] using this
   · rintro rfl
     simp [doubledCoefficientPolynomial]
 
-/-- A nonzero doubled coefficient polynomial has degree below `2n`. -/
-lemma natDegree_doubledCoefficientPolynomial_lt {n : ℕ} (hn : 1 ≤ n)
-    {v : Fin n ⊕ Fin n → ℂ} (hv : v ≠ 0) :
+/-- A doubled coefficient polynomial has degree below `2n` when `n` is positive. -/
+lemma natDegree_doubledCoefficientPolynomial_lt {n : ℕ} {K : Type*} [Semiring K]
+    (hn : 1 ≤ n) {v : Fin n ⊕ Fin n → K} :
     (doubledCoefficientPolynomial v).natDegree < 2 * n := by
   apply lt_of_le_of_lt
     (Polynomial.natDegree_sum_le_of_forall_le (Finset.univ) _
       (fun i _ => (Polynomial.natDegree_monomial_le _).trans
-        (Nat.le_pred_of_lt (doubledExponent_lt hn i))))
+        (Nat.le_pred_of_lt (doubledExponent_lt i))))
   have hpos : 0 < 2 * n := by omega
   exact Nat.pred_lt hpos.ne'
 
 /-- The square Hermite-evaluation matrix with value and first-derivative
 columns at every node.  Rows are monomials of degrees `0, ..., 2n-1`. -/
-def confluentVandermonde (s : Fin n → ℂ) :
-    Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℂ :=
+def confluentVandermonde {K : Type*} [Semiring K] (s : Fin n → K) :
+    Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) K :=
   fun a b => match b with
     | Sum.inl i => s i ^ doubledExponent a
-    | Sum.inr i => (doubledExponent a : ℂ) * s i ^ (doubledExponent a - 1)
+    | Sum.inr i => (doubledExponent a : K) * s i ^ (doubledExponent a - 1)
 
-private lemma eval_doubledCoefficientPolynomial {n : ℕ}
-    (v : Fin n ⊕ Fin n → ℂ) (x : ℂ) :
+/-- Evaluating a polynomial whose coefficients are indexed by two blocks of
+monomial powers gives the finite sum of those coefficients weighted by the
+corresponding powers of the evaluation point. -/
+lemma eval_doubledCoefficientPolynomial {n : ℕ} {K : Type*} [CommSemiring K]
+    (v : Fin n ⊕ Fin n → K) (x : K) :
     (doubledCoefficientPolynomial v).eval x =
       ∑ a, x ^ doubledExponent a * v a := by
   simp only [doubledCoefficientPolynomial]
@@ -119,10 +123,13 @@ private lemma eval_doubledCoefficientPolynomial {n : ℕ}
   intro a _
   ring
 
-private lemma eval_derivative_doubledCoefficientPolynomial {n : ℕ}
-    (v : Fin n ⊕ Fin n → ℂ) (x : ℂ) :
+/-- Evaluating the derivative of a polynomial whose coefficients are indexed by
+two blocks of monomial powers gives the finite sum of coefficients weighted by
+their monomial exponents and the corresponding reduced powers. -/
+lemma eval_derivative_doubledCoefficientPolynomial {n : ℕ} {K : Type*} [CommSemiring K]
+    (v : Fin n ⊕ Fin n → K) (x : K) :
     (doubledCoefficientPolynomial v).derivative.eval x =
-      ∑ a, ((doubledExponent a : ℂ) * x ^ (doubledExponent a - 1)) * v a := by
+      ∑ a, ((doubledExponent a : K) * x ^ (doubledExponent a - 1)) * v a := by
   simp only [doubledCoefficientPolynomial, map_sum,
     Polynomial.derivative_monomial]
   rw [Polynomial.eval_finset_sum]
@@ -134,8 +141,8 @@ private lemma eval_derivative_doubledCoefficientPolynomial {n : ℕ}
 /-- A polynomial of degree below `2n` whose value and derivative vanish at
 `n` distinct points is zero. -/
 lemma doubledCoefficientPolynomial_eq_zero_of_eval_derivative
-    {n : ℕ} (hn : 1 ≤ n) (s : Fin n → ℂ) (hs : Function.Injective s)
-    (v : Fin n ⊕ Fin n → ℂ)
+    {n : ℕ} {K : Type*} [Field K] (hn : 1 ≤ n) (s : Fin n → K)
+    (hs : Function.Injective s) (v : Fin n ⊕ Fin n → K)
     (heval : ∀ i, (doubledCoefficientPolynomial v).eval (s i) = 0)
     (hderiv : ∀ i, (doubledCoefficientPolynomial v).derivative.eval (s i) = 0) :
     v = 0 := by
@@ -164,16 +171,15 @@ lemma doubledCoefficientPolynomial_eq_zero_of_eval_derivative
         apply Polynomial.natDegree_prod
         intro i _
         exact pow_ne_zero _ (Polynomial.X_sub_C_ne_zero (s i))
-      _ = 2 * n := by simp [Polynomial.natDegree_pow,
-        Polynomial.natDegree_X_sub_C, Nat.mul_comm]
+      _ = 2 * n := by simp [Polynomial.natDegree_pow, Nat.mul_comm]
   rw [hleft] at hdegree
   exact (not_lt_of_ge hdegree)
-    (natDegree_doubledCoefficientPolynomial_lt hn hv)
+    (natDegree_doubledCoefficientPolynomial_lt hn)
 
 /-- The confluent Vandermonde determinant is nonzero at pairwise distinct
 nodes. -/
-theorem det_confluentVandermonde_ne_zero {n : ℕ} (hn : 1 ≤ n)
-    (s : Fin n → ℂ) (hs : Function.Injective s) :
+theorem det_confluentVandermonde_ne_zero {n : ℕ} {K : Type*} [Field K] (hn : 1 ≤ n)
+    (s : Fin n → K) (hs : Function.Injective s) :
     (confluentVandermonde s).det ≠ 0 := by
   let M := confluentVandermonde s
   have hmul : Function.Injective M.transpose.mulVec := by
@@ -197,7 +203,7 @@ theorem det_confluentVandermonde_ne_zero {n : ℕ} (hn : 1 ≤ n)
         mul_assoc] using hi
   have hu : IsUnit M.transpose := Matrix.mulVec_injective_iff_isUnit.mp hmul
   have hdet : IsUnit M.transpose.det :=
-    hu.map (Matrix.detMonoidHom (n := Fin n ⊕ Fin n) (R := ℂ))
+    hu.map (Matrix.detMonoidHom (n := Fin n ⊕ Fin n) (R := K))
   simpa [M, Matrix.det_transpose] using hdet.ne_zero
 
 /-! ### A pinned Hermite minor: one simple node and the remaining double nodes -/
@@ -208,12 +214,12 @@ def pinnedExponent {n : ℕ} : Fin n ⊕ Fin (n - 1) → ℕ
   | Sum.inr i => n + i.val
 
 /-- Embed the doubled-node index as a positive node index. -/
-def pinnedSucc {n : ℕ} (hn : 1 ≤ n) (i : Fin (n - 1)) : Fin n :=
+def pinnedSucc {n : ℕ} (i : Fin (n - 1)) : Fin n :=
   ⟨i.val + 1, by have := i.isLt; omega⟩
 
 /-- The positive-node embedding is injective. -/
-lemma pinnedSucc_injective {n : ℕ} (hn : 1 ≤ n) :
-    Function.Injective (pinnedSucc hn) := by
+lemma pinnedSucc_injective {n : ℕ} :
+    Function.Injective (pinnedSucc (n := n)) := by
   intro i j hij
   apply Fin.ext
   have := congrArg Fin.val hij
@@ -222,7 +228,7 @@ lemma pinnedSucc_injective {n : ℕ} (hn : 1 ≤ n) :
 
 /-- A positive-node index never equals the distinguished zero node. -/
 lemma pinnedSucc_ne_zero {n : ℕ} (hn : 1 ≤ n) (i : Fin (n - 1)) :
-    pinnedSucc hn i ≠ ⟨0, hn⟩ := by
+    pinnedSucc i ≠ ⟨0, hn⟩ := by
   intro h
   have := congrArg Fin.val h
   simp [pinnedSucc] at this
@@ -245,7 +251,7 @@ lemma pinnedExponent_injective {n : ℕ} :
     exact congrArg Sum.inr (Fin.ext (Nat.add_left_cancel hij))
 
 /-- Every pinned exponent is strictly below `2n - 1`. -/
-lemma pinnedExponent_lt {n : ℕ} (hn : 1 ≤ n)
+lemma pinnedExponent_lt {n : ℕ}
     (i : Fin n ⊕ Fin (n - 1)) : pinnedExponent i < 2 * n - 1 := by
   rcases i with i | i <;> simp only [pinnedExponent]
   · have := i.isLt
@@ -254,17 +260,17 @@ lemma pinnedExponent_lt {n : ℕ} (hn : 1 ≤ n)
     omega
 
 /-- Encode pinned Hermite coefficients as a polynomial. -/
-def pinnedCoefficientPolynomial {n : ℕ}
-    (v : Fin n ⊕ Fin (n - 1) → ℂ) : Polynomial ℂ :=
+def pinnedCoefficientPolynomial {n : ℕ} {K : Type*} [Semiring K]
+    (v : Fin n ⊕ Fin (n - 1) → K) : Polynomial K :=
   ∑ i, Polynomial.monomial (pinnedExponent i) (v i)
 
 /-- Reading a pinned coefficient polynomial at an encoded exponent recovers
 the corresponding coefficient. -/
-lemma coeff_pinnedCoefficientPolynomial {n : ℕ}
-    (v : Fin n ⊕ Fin (n - 1) → ℂ) (i : Fin n ⊕ Fin (n - 1)) :
+lemma coeff_pinnedCoefficientPolynomial {n : ℕ} {K : Type*} [Semiring K]
+    (v : Fin n ⊕ Fin (n - 1) → K) (i : Fin n ⊕ Fin (n - 1)) :
     (pinnedCoefficientPolynomial v).coeff (pinnedExponent i) = v i := by
   classical
-  change (Polynomial.lcoeff ℂ (pinnedExponent i))
+  change (Polynomial.lcoeff K (pinnedExponent i))
       (∑ j, Polynomial.monomial (pinnedExponent j) (v j)) = v i
   rw [map_sum, Finset.sum_eq_single i]
   · simp
@@ -275,40 +281,43 @@ lemma coeff_pinnedCoefficientPolynomial {n : ℕ}
 
 /-- A pinned coefficient polynomial vanishes exactly when its coefficient
 vector vanishes. -/
-lemma pinnedCoefficientPolynomial_eq_zero_iff {n : ℕ}
-    (v : Fin n ⊕ Fin (n - 1) → ℂ) :
+lemma pinnedCoefficientPolynomial_eq_zero_iff {n : ℕ} {K : Type*} [Semiring K]
+    (v : Fin n ⊕ Fin (n - 1) → K) :
     pinnedCoefficientPolynomial v = 0 ↔ v = 0 := by
   constructor
   · intro hp
     funext i
     have hi := congrArg
-      (fun p : Polynomial ℂ => p.coeff (pinnedExponent i)) hp
+      (fun p : Polynomial K => p.coeff (pinnedExponent i)) hp
     simpa [coeff_pinnedCoefficientPolynomial] using hi
   · rintro rfl
     simp [pinnedCoefficientPolynomial]
 
 /-- A pinned coefficient polynomial has degree below `2n - 1`. -/
-lemma natDegree_pinnedCoefficientPolynomial_lt {n : ℕ} (hn : 1 ≤ n)
-    {v : Fin n ⊕ Fin (n - 1) → ℂ} :
+lemma natDegree_pinnedCoefficientPolynomial_lt {n : ℕ} {K : Type*} [Semiring K]
+    (hn : 1 ≤ n) {v : Fin n ⊕ Fin (n - 1) → K} :
     (pinnedCoefficientPolynomial v).natDegree < 2 * n - 1 := by
   have hpos : 0 < 2 * n - 1 := by omega
   apply lt_of_le_of_lt
     (Polynomial.natDegree_sum_le_of_forall_le (Finset.univ) _
       (fun i _ => (Polynomial.natDegree_monomial_le _).trans
-        (Nat.le_pred_of_lt (pinnedExponent_lt hn i))))
+        (Nat.le_pred_of_lt (pinnedExponent_lt i))))
   exact Nat.pred_lt hpos.ne'
 
 /-- The pinned Hermite matrix records values at all nodes and derivatives at
 nodes `1, ..., n-1`, with the derivative at node zero deleted. -/
-def pinnedConfluentVandermonde (hn : 1 ≤ n) (s : Fin n → ℂ) :
-    Matrix (Fin n ⊕ Fin (n - 1)) (Fin n ⊕ Fin (n - 1)) ℂ :=
+def pinnedConfluentVandermonde {K : Type*} [Semiring K]
+    (s : Fin n → K) :
+    Matrix (Fin n ⊕ Fin (n - 1)) (Fin n ⊕ Fin (n - 1)) K :=
   fun a b => match b with
     | Sum.inl i => s i ^ pinnedExponent a
-    | Sum.inr i => (pinnedExponent a : ℂ) *
-        s (pinnedSucc hn i) ^ (pinnedExponent a - 1)
+    | Sum.inr i => (pinnedExponent a : K) *
+        s (pinnedSucc i) ^ (pinnedExponent a - 1)
 
-private lemma eval_pinnedCoefficientPolynomial {n : ℕ}
-    (v : Fin n ⊕ Fin (n - 1) → ℂ) (x : ℂ) :
+/-- Evaluating a pinned coefficient polynomial at a point equals the sum of its coefficients,
+    each weighted by that point raised to the coefficient's associated pinned exponent. -/
+lemma eval_pinnedCoefficientPolynomial {n : ℕ} {K : Type*} [Field K]
+    (v : Fin n ⊕ Fin (n - 1) → K) (x : K) :
     (pinnedCoefficientPolynomial v).eval x =
       ∑ a, x ^ pinnedExponent a * v a := by
   simp only [pinnedCoefficientPolynomial]
@@ -318,10 +327,12 @@ private lemma eval_pinnedCoefficientPolynomial {n : ℕ}
   intro a _
   ring
 
-private lemma eval_derivative_pinnedCoefficientPolynomial {n : ℕ}
-    (v : Fin n ⊕ Fin (n - 1) → ℂ) (x : ℂ) :
+/-- Evaluating the derivative of a pinned coefficient polynomial at a point equals the sum of
+    its coefficients weighted by the corresponding derivative monomial values at that point. -/
+lemma eval_derivative_pinnedCoefficientPolynomial {n : ℕ} {K : Type*} [Field K]
+    (v : Fin n ⊕ Fin (n - 1) → K) (x : K) :
     (pinnedCoefficientPolynomial v).derivative.eval x =
-      ∑ a, ((pinnedExponent a : ℂ) * x ^ (pinnedExponent a - 1)) * v a := by
+      ∑ a, ((pinnedExponent a : K) * x ^ (pinnedExponent a - 1)) * v a := by
   simp only [pinnedCoefficientPolynomial, map_sum,
     Polynomial.derivative_monomial]
   rw [Polynomial.eval_finset_sum]
@@ -333,18 +344,18 @@ private lemma eval_derivative_pinnedCoefficientPolynomial {n : ℕ}
 /-- A polynomial in the pinned coefficient model is zero when it vanishes at
 all nodes and its derivative vanishes at every nondistinguished node. -/
 lemma pinnedCoefficientPolynomial_eq_zero_of_eval_derivative
-    {n : ℕ} (hn : 1 ≤ n) (s : Fin n → ℂ) (hs : Function.Injective s)
-    (v : Fin n ⊕ Fin (n - 1) → ℂ)
+    {n : ℕ} {K : Type*} [Field K] (hn : 1 ≤ n) (s : Fin n → K)
+    (hs : Function.Injective s) (v : Fin n ⊕ Fin (n - 1) → K)
     (heval : ∀ i, (pinnedCoefficientPolynomial v).eval (s i) = 0)
     (hderiv : ∀ i : Fin (n - 1),
-      (pinnedCoefficientPolynomial v).derivative.eval (s (pinnedSucc hn i)) = 0) :
+      (pinnedCoefficientPolynomial v).derivative.eval (s (pinnedSucc i)) = 0) :
     v = 0 := by
   by_contra hv
   have hp : pinnedCoefficientPolynomial v ≠ 0 :=
     (pinnedCoefficientPolynomial_eq_zero_iff v).not.mpr hv
   let first := Polynomial.X - Polynomial.C (s ⟨0, hn⟩)
-  let rest : Fin (n - 1) → Polynomial ℂ := fun i =>
-    (Polynomial.X - Polynomial.C (s (pinnedSucc hn i))) ^ 2
+  let rest : Fin (n - 1) → Polynomial K := fun i =>
+    (Polynomial.X - Polynomial.C (s (pinnedSucc i))) ^ 2
   have hfirst : first ∣ pinnedCoefficientPolynomial v := by
     rw [Polynomial.dvd_iff_isRoot]
     exact heval ⟨0, hn⟩
@@ -352,15 +363,15 @@ lemma pinnedCoefficientPolynomial_eq_zero_of_eval_derivative
     dsimp [rest]
     rw [← Polynomial.le_rootMultiplicity_iff hp]
     apply (Polynomial.one_lt_rootMultiplicity_iff_isRoot hp).2
-    exact ⟨heval (pinnedSucc hn i), hderiv i⟩
+    exact ⟨heval (pinnedSucc i), hderiv i⟩
   have hrestcop : Pairwise (Function.onFun IsCoprime rest) := by
     intro i j hij
     apply (Polynomial.isCoprime_X_sub_C_of_isUnit_sub
-      (show IsUnit (s (pinnedSucc hn i) - s (pinnedSucc hn j)) from
+      (show IsUnit (s (pinnedSucc i) - s (pinnedSucc j)) from
         (sub_ne_zero.mpr (by
           intro h
           apply hij
-          apply pinnedSucc_injective hn
+          apply pinnedSucc_injective
           exact hs h)).isUnit)).pow
   have hrestprod : (∏ i, rest i) ∣ pinnedCoefficientPolynomial v :=
     Fintype.prod_dvd_of_coprime hrestcop hrest
@@ -369,7 +380,7 @@ lemma pinnedCoefficientPolynomial_eq_zero_of_eval_derivative
     intro i _
     dsimp [first, rest]
     exact (Polynomial.isCoprime_X_sub_C_of_isUnit_sub
-      (show IsUnit (s ⟨0, hn⟩ - s (pinnedSucc hn i)) from
+      (show IsUnit (s ⟨0, hn⟩ - s (pinnedSucc i)) from
         (sub_ne_zero.mpr (hs.ne (pinnedSucc_ne_zero hn i).symm)).isUnit)).pow_right
   have htotal : first * (∏ i, rest i) ∣ pinnedCoefficientPolynomial v :=
     hfirstrest.mul_dvd hfirst hrestprod
@@ -387,7 +398,7 @@ lemma pinnedCoefficientPolynomial_eq_zero_of_eval_derivative
         _ = 2 * (n - 1) := by simp [rest, Polynomial.natDegree_pow,
           Nat.mul_comm]
     rw [hrestdeg]
-    simp [first]
+    simp
     omega
   rw [hleft] at hdegree
   exact (not_lt_of_ge hdegree)
@@ -396,10 +407,10 @@ lemma pinnedCoefficientPolynomial_eq_zero_of_eval_derivative
 /-- The pinned confluent Vandermonde determinant is nonzero at pairwise distinct
 nodes: one node contributes only value evaluation and every other node contributes
 both value and first-derivative evaluation. -/
-theorem det_pinnedConfluentVandermonde_ne_zero {n : ℕ} (hn : 1 ≤ n)
-    (s : Fin n → ℂ) (hs : Function.Injective s) :
-    (pinnedConfluentVandermonde hn s).det ≠ 0 := by
-  let M := pinnedConfluentVandermonde hn s
+theorem det_pinnedConfluentVandermonde_ne_zero {n : ℕ} {K : Type*} [Field K]
+    (hn : 1 ≤ n) (s : Fin n → K) (hs : Function.Injective s) :
+    (pinnedConfluentVandermonde s).det ≠ 0 := by
+  let M := pinnedConfluentVandermonde s
   have hmul : Function.Injective M.transpose.mulVec := by
     intro u v huv
     apply sub_eq_zero.mp
@@ -421,7 +432,7 @@ theorem det_pinnedConfluentVandermonde_ne_zero {n : ℕ} (hn : 1 ≤ n)
         mul_assoc] using hi
   have hu : IsUnit M.transpose := Matrix.mulVec_injective_iff_isUnit.mp hmul
   have hdet : IsUnit M.transpose.det := hu.map
-    (Matrix.detMonoidHom (n := Fin n ⊕ Fin (n - 1)) (R := ℂ))
+    (Matrix.detMonoidHom (n := Fin n ⊕ Fin (n - 1)) (R := K))
   simpa [M, Matrix.det_transpose] using hdet.ne_zero
 
 end

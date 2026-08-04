@@ -20,7 +20,8 @@ imputation, pooled least squares, and extended two-way fixed effects
 difference-in-differences estimands. It defines staggered-adoption cell means,
 support conditions, untreated-outcome regressions, normal-equation-based
 POLS/ETWFE coefficients, and aggregate ATT quantities. The main public theorem
-is `flexible_did_scaffold_characterization`, the finite-cell characterization, with cell and aggregate components
+is `flexible_did_scaffold_characterization`, the finite-cell characterization, with cell and
+aggregate components
 available as `flexible_did_cell_characterization` and
 `flexible_did_aggregate_characterization`. -/
 
@@ -167,6 +168,33 @@ structure SaturatedUntreatedRegression
   target_cell_support :
     ∀ ⦃g : Cohort⦄ ⦃t : Time⦄, P.treatedCell g t → 0 < P.cohortShare g
 
+/-- The part of an untreated-regression witness needed to prove exact fit on
+the untreated design. -/
+structure UntreatedFitWitness
+    (P : StaggeredATTCells Cohort Time Covar) where
+  m0 : Cohort → Time → Covar → ℝ
+  additive : IsCellAdditive (Cohort := Cohort) m0
+  untreatedWeight : Cohort → Time → Covar → ℝ
+  untreatedWeight_pos :
+    ∀ ⦃g : Cohort⦄ ⦃t : Time⦄, P.untreatedCell g t →
+      ∀ c, 0 < untreatedWeight g t c
+  untreatedNormalEq :
+    ∀ d : Cohort → Time → Covar → ℝ, IsCellAdditive (Cohort := Cohort) d →
+      ∑ gt ∈ P.untreatedCells, ∑ c,
+          untreatedWeight gt.1 gt.2 c *
+            (P.observedMean gt.1 gt.2 c - m0 gt.1 gt.2 c) * d gt.1 gt.2 c = 0
+
+/-- Forget the target-support and design-identification fields that are not
+needed for exact fit on untreated cells. -/
+def SaturatedUntreatedRegression.toUntreatedFitWitness
+    {P : StaggeredATTCells Cohort Time Covar}
+    (S : SaturatedUntreatedRegression P) : UntreatedFitWitness P where
+  m0 := S.m0
+  additive := S.additive
+  untreatedWeight := S.untreatedWeight
+  untreatedWeight_pos := S.untreatedWeight_pos
+  untreatedNormalEq := S.untreatedNormalEq
+
 namespace SaturatedUntreatedRegression
 
 /-- The weighted projection `m0` reproduces the factual cohort-`g` outcome mean
@@ -180,7 +208,7 @@ positively-weighted sum of its squares over the untreated design vanishes, so th
 residual is zero on every untreated cell — the projection is exact there. -/
 theorem untreatedFit
     {P : StaggeredATTCells Cohort Time Covar}
-    (S : SaturatedUntreatedRegression P)
+    (S : UntreatedFitWitness P)
     (hNA : NoAnticipation P) (hCPT : ConditionalParallelTrendsAdditive P)
     ⦃g : Cohort⦄ ⦃t : Time⦄ (hgt : P.untreatedCell g t) (c : Covar) :
     S.m0 g t c = P.YgMean g t c := by
@@ -277,7 +305,10 @@ theorem recovers_target_Y0
       ∀ ⦃g : Cohort⦄ ⦃t : Time⦄, P.untreatedCell g t → ∀ c, d g t c = 0 := by
     intro g t hut c
     have h1 : S.m0 g t c = P.Y0Mean g t c := by
-      rw [S.untreatedFit hNA hCPT hut c, hNA hut c]
+      have hfit := SaturatedUntreatedRegression.untreatedFit
+        S.toUntreatedFitWitness hNA hCPT hut c
+      rw [show S.m0 g t c = P.YgMean g t c by
+        simpa [SaturatedUntreatedRegression.toUntreatedFitWitness] using hfit, hNA hut c]
     simp [hd, h1]
   have hzero : d g t c = 0 := S.design_identifies d hd_add hd_untreated hgt c
   have := sub_eq_zero.mp (by simpa [hd] using hzero)
@@ -303,33 +334,33 @@ def cellResidualNormalEq (P : StaggeredATTCells Cohort Time Covar)
     Prop :=
   ∑ c, P.covarWeight g c * (P.observedMean g t c - S.m0 g t c - theta) = 0
 
+omit [Fintype Cohort] [Fintype Time] in
 /-- A finite-cell residual normal equation identifies the coefficient with
 the imputation residual mean. -/
 theorem cellResidualNormalEq_eq_imputationTheta
-    (P : StaggeredATTCells Cohort Time Covar)
-    (S : SaturatedUntreatedRegression P)
+    (outcome fitted : Cohort → Time → Covar → ℝ)
+    (covarWeight : Cohort → Covar → ℝ)
+    (covarWeight_sum_one : ∀ g, ∑ c, covarWeight g c = 1)
     {theta : ℝ} {g : Cohort} {t : Time}
-    (hθ : cellResidualNormalEq P S theta g t) :
-    theta = imputationTheta P S g t := by
-  unfold cellResidualNormalEq at hθ
-  unfold imputationTheta
+    (hθ : ∑ c, covarWeight g c * (outcome g t c - fitted g t c - theta) = 0) :
+    theta = ∑ c, covarWeight g c * (outcome g t c - fitted g t c) := by
   have hsum :
-      (∑ c, P.covarWeight g c *
-          (P.observedMean g t c - S.m0 g t c - theta)) =
-        (∑ c, P.covarWeight g c * (P.observedMean g t c - S.m0 g t c)) -
-          (∑ c, P.covarWeight g c) * theta := by
+      (∑ c, covarWeight g c *
+          (outcome g t c - fitted g t c - theta)) =
+        (∑ c, covarWeight g c * (outcome g t c - fitted g t c)) -
+          (∑ c, covarWeight g c) * theta := by
     simp only [mul_sub, Finset.sum_sub_distrib, Finset.sum_mul]
   have hnormal :
-      (∑ c, P.covarWeight g c * (P.observedMean g t c - S.m0 g t c)) -
+      (∑ c, covarWeight g c * (outcome g t c - fitted g t c)) -
           theta = 0 := by
     calc
-      (∑ c, P.covarWeight g c * (P.observedMean g t c - S.m0 g t c)) - theta
-          = (∑ c, P.covarWeight g c * (P.observedMean g t c - S.m0 g t c)) -
-              (∑ c, P.covarWeight g c) * theta := by
-                rw [P.covarWeight_sum_one g]
+      (∑ c, covarWeight g c * (outcome g t c - fitted g t c)) - theta
+          = (∑ c, covarWeight g c * (outcome g t c - fitted g t c)) -
+              (∑ c, covarWeight g c) * theta := by
+                rw [covarWeight_sum_one g]
                 ring
-      _ = ∑ c, P.covarWeight g c *
-            (P.observedMean g t c - S.m0 g t c - theta) := by
+      _ = ∑ c, covarWeight g c *
+            (outcome g t c - fitted g t c - theta) := by
               rw [hsum]
       _ = 0 := hθ
   exact (sub_eq_zero.mp hnormal).symm
@@ -353,21 +384,22 @@ orthogonality of the saturated indicators.  This is the concrete content behind
 the `pols_cell_normalEq` / `etwfe_cell_normalEq` fields below. -/
 theorem cellIndicator_normalEq_eq_cellResidual
     [DecidableEq Cohort] [DecidableEq Time]
-    (P : StaggeredATTCells Cohort Time Covar)
-    (S : SaturatedUntreatedRegression P) (theta : ℝ) (g : Cohort) (t : Time) :
+    (outcome fitted : Cohort → Time → Covar → ℝ)
+    (covarWeight : Cohort → Covar → ℝ)
+    (theta : ℝ) (g : Cohort) (t : Time) :
     (∑ g', ∑ t', ∑ c, cellIndicator g t g' t' *
-        P.covarWeight g' c * (P.observedMean g' t' c - S.m0 g' t' c
+        covarWeight g' c * (outcome g' t' c - fitted g' t' c
           - cellIndicator g t g' t' * theta) = 0)
-      ↔ cellResidualNormalEq P S theta g t := by
+      ↔ ∑ c, covarWeight g c * (outcome g t c - fitted g t c - theta) = 0 := by
   classical
-  unfold cellResidualNormalEq cellIndicator
+  unfold cellIndicator
   -- The full saturated sum collapses to the single-cell residual sum, because
   -- the saturated indicator vanishes off cell `(g,t)`.
   have hcollapse :
       (∑ g', ∑ t', ∑ c, (if g' = g ∧ t' = t then (1 : ℝ) else 0) *
-          P.covarWeight g' c * (P.observedMean g' t' c - S.m0 g' t' c
+          covarWeight g' c * (outcome g' t' c - fitted g' t' c
             - (if g' = g ∧ t' = t then (1 : ℝ) else 0) * theta))
-        = ∑ c, P.covarWeight g c * (P.observedMean g t c - S.m0 g t c - theta) := by
+        = ∑ c, covarWeight g c * (outcome g t c - fitted g t c - theta) := by
     rw [Finset.sum_eq_single g, Finset.sum_eq_single t]
     · refine Finset.sum_congr rfl ?_
       intro c _
@@ -424,7 +456,8 @@ theorem thetaPOLS_eq_imputationTheta
     (E : FlexibleDIDEstimands P S)
     {g : Cohort} {t : Time} (hgt : P.treatedCell g t) :
     E.thetaPOLS g t = imputationTheta P S g t :=
-  cellResidualNormalEq_eq_imputationTheta P S (E.pols_cell_normalEq hgt)
+  cellResidualNormalEq_eq_imputationTheta P.observedMean S.m0 P.covarWeight
+    P.covarWeight_sum_one (E.pols_cell_normalEq hgt)
 
 /-- ETWFE cell coefficients equal imputation because the FWL/TWFE-Mundlak
 bridge supplies the same finite-cell residualized normal equation. -/
@@ -434,7 +467,8 @@ theorem thetaETWFE_eq_imputationTheta
     (E : FlexibleDIDEstimands P S)
     {g : Cohort} {t : Time} (hgt : P.treatedCell g t) :
     E.thetaETWFE g t = imputationTheta P S g t :=
-  cellResidualNormalEq_eq_imputationTheta P S (E.etwfe_cell_normalEq hgt)
+  cellResidualNormalEq_eq_imputationTheta P.observedMean S.m0 P.covarWeight
+    P.covarWeight_sum_one (E.etwfe_cell_normalEq hgt)
 
 /-- Compatibility alias: the POLS/imputation equality is now derived from the
 POLS normal equation, rather than stored as a field. -/
@@ -512,30 +546,17 @@ theorem flexible_did_cell_characterization
     rw [E.etwfe_cell_eq_pols P S hgt, hpols]
   exact ⟨himp, hpols, hetwfe⟩
 
-/-- Compatibility theorem for the cell characterization name used by earlier
-clients. The proof uses normal-equation-derived equalities. -/
-theorem flexible_did_cell_characterization_of_estimand_equalities
-    (P : StaggeredATTCells Cohort Time Covar)
-    (S : SaturatedUntreatedRegression P)
-    (E : FlexibleDIDEstimands P S)
-    (hNA : NoAnticipation P) (hCPT : ConditionalParallelTrendsAdditive P)
-    {g : Cohort} {t : Time} (hgt : P.treatedCell g t) :
-    E.thetaImp g t = P.tauCell g t ∧
-      E.thetaPOLS g t = P.tauCell g t ∧
-      E.thetaETWFE g t = P.tauCell g t :=
-  flexible_did_cell_characterization P S E hNA hCPT hgt
-
-/-- Aggregate characterization: every requested nonnegative treated-cell
-weighting of the three bundled estimands equals the weighted ATT aggregate. -/
+/-- Aggregate characterization: every requested treated-cell weighting of the
+three bundled estimands equals the weighted ATT aggregate. -/
 theorem flexible_did_aggregate_characterization
     (P : StaggeredATTCells Cohort Time Covar)
     (S : SaturatedUntreatedRegression P)
     (E : FlexibleDIDEstimands P S)
     (hNA : NoAnticipation P) (hCPT : ConditionalParallelTrendsAdditive P)
-    (a : AggregateWeights P) :
-    psiImp P E a.weight = P.tauAgg a.weight ∧
-      psiPOLS P E a.weight = P.tauAgg a.weight ∧
-      psiETWFE P E a.weight = P.tauAgg a.weight := by
+    (a : Cohort → Time → ℝ) :
+    psiImp P E a = P.tauAgg a ∧
+      psiPOLS P E a = P.tauAgg a ∧
+      psiETWFE P E a = P.tauAgg a := by
   classical
   have hcell :
       ∀ gt ∈ P.treatedCells,
@@ -561,27 +582,14 @@ theorem flexible_did_aggregate_characterization
     intro gt hgt
     rw [(hcell gt hgt).2.2]
 
-/-- Compatibility theorem for the aggregate characterization name used by
-earlier clients. The proof uses normal-equation-derived cell equalities. -/
-theorem flexible_did_aggregate_characterization_of_estimand_equalities
-    (P : StaggeredATTCells Cohort Time Covar)
-    (S : SaturatedUntreatedRegression P)
-    (E : FlexibleDIDEstimands P S)
-    (hNA : NoAnticipation P) (hCPT : ConditionalParallelTrendsAdditive P)
-    (a : AggregateWeights P) :
-    psiImp P E a.weight = P.tauAgg a.weight ∧
-      psiPOLS P E a.weight = P.tauAgg a.weight ∧
-      psiETWFE P E a.weight = P.tauAgg a.weight :=
-  flexible_did_aggregate_characterization P S E hNA hCPT a
-
 /-- **Headline finite-cell characterization** (Wooldridge, Theorem B).
 
 Under **no anticipation** (`hNA`) and **conditional parallel trends**
 (`hCPT`) — the two causal assumptions the source proof invokes — together with
 the saturated untreated regression `S` and the POLS/ETWFE finite-cell residual
 normal equations carried by `E`, the flexible imputation, POLS, and ETWFE cell
-estimands all equal the ATT cell `τ_gt`, and hence every nonnegative weighted
-aggregate equals `τ_agg(a)`.
+estimands all equal the ATT cell `τ_gt`, and hence every weighted aggregate
+equals `τ_agg(a)`.
 
 The assumptions `hNA` and `hCPT` drive
 `SaturatedUntreatedRegression.recovers_target_Y0`, which feeds
@@ -597,10 +605,10 @@ theorem flexible_did_scaffold_characterization
       E.thetaImp g t = P.tauCell g t ∧
         E.thetaPOLS g t = P.tauCell g t ∧
         E.thetaETWFE g t = P.tauCell g t) ∧
-      (∀ a : AggregateWeights P,
-        psiImp P E a.weight = P.tauAgg a.weight ∧
-          psiPOLS P E a.weight = P.tauAgg a.weight ∧
-          psiETWFE P E a.weight = P.tauAgg a.weight) := by
+      (∀ a : Cohort → Time → ℝ,
+        psiImp P E a = P.tauAgg a ∧
+          psiPOLS P E a = P.tauAgg a ∧
+          psiETWFE P E a = P.tauAgg a) := by
   constructor
   · intro g t hgt
     exact flexible_did_cell_characterization P S E hNA hCPT hgt

@@ -67,13 +67,14 @@ open scoped MeasureTheory ProbabilityTheory
 -- § 1. Parent-tuple assembly with C-override short-circuit
 -- ============================================================
 
-/-- The override parent-value tuple reads latent, fixed, overridden, or recursively evaluated observed parent values as appropriate.
+/-- The override parent-value tuple reads latent, fixed, overridden, or recursively evaluated
+observed parent values as appropriate.
 
     Parent-value assembly for the observed node at topological index `n` with the
     extra C-override.  Observed parents `w ∈ C` are read directly from `c`; all
     other parents follow the same three-way classification as `parentMap`. -/
 noncomputable def parentMapOverride (M : Causalean.SCM N Ω)
-    {C : Finset (SWIGNode N)} (hC : C ⊆ M.observed)
+    {C : Finset (SWIGNode N)}
     (s : FixedValues M) (c : ValuesOn C (swigΩ Ω)) (ℓ : LatentValues M)
     {n : ℕ} (hn : n < M.observed.card)
     (prev : ∀ m : ℕ, m < n → ∀ hm : m < M.observed.card,
@@ -109,11 +110,12 @@ lemma parentMapOverride_unobserved (M : Causalean.SCM N Ω)
               swigΩ Ω (M.observedAt ⟨m, hm⟩).val)
     (w : {w // w ∈ M.dag.parents (M.observedAt ⟨n, hn⟩).val})
     (huo : w.val ∈ M.unobserved) :
-    parentMapOverride M hC s c ℓ hn prev w = ℓ ⟨w.val, huo⟩ := by
+    parentMapOverride M s c ℓ hn prev w = ℓ ⟨w.val, huo⟩ := by
   unfold parentMapOverride
   rw [dif_pos huo]
 
-/-- The override parent-value tuple reads a fixed parent directly from the fixed-value assignment. -/
+/-- The override parent-value tuple reads a fixed parent directly from the fixed-value
+assignment. -/
 lemma parentMapOverride_fixed (M : Causalean.SCM N Ω)
     {C : Finset (SWIGNode N)} (hC : C ⊆ M.observed)
     (s : FixedValues M) (c : ValuesOn C (swigΩ Ω)) (ℓ : LatentValues M)
@@ -121,9 +123,15 @@ lemma parentMapOverride_fixed (M : Causalean.SCM N Ω)
     (prev : ∀ m : ℕ, m < n → ∀ hm : m < M.observed.card,
               swigΩ Ω (M.observedAt ⟨m, hm⟩).val)
     (w : {w // w ∈ M.dag.parents (M.observedAt ⟨n, hn⟩).val})
-    (huo : w.val ∉ M.unobserved) (hfix : w.val ∈ M.fixed) :
-    parentMapOverride M hC s c ℓ hn prev w = s ⟨w.val, hfix⟩ := by
+    (hfix : w.val ∈ M.fixed) :
+    parentMapOverride M s c ℓ hn prev w = s ⟨w.val, hfix⟩ := by
   unfold parentMapOverride
+  have huo : w.val ∉ M.unobserved := by
+    intro h
+    obtain ⟨m, hm⟩ := M.unobserved_is_random _ h
+    obtain ⟨k, hk⟩ := M.fixed_is_fixed _ hfix
+    rw [hk] at hm
+    exact absurd hm (by simp)
   rw [dif_neg huo, dif_pos hfix]
 
 /-- The override parent-value tuple reads an overridden observed parent directly from the override assignment. -/
@@ -134,10 +142,12 @@ lemma parentMapOverride_C (M : Causalean.SCM N Ω)
     (prev : ∀ m : ℕ, m < n → ∀ hm : m < M.observed.card,
               swigΩ Ω (M.observedAt ⟨m, hm⟩).val)
     (w : {w // w ∈ M.dag.parents (M.observedAt ⟨n, hn⟩).val})
-    (huo : w.val ∉ M.unobserved) (hfix : w.val ∉ M.fixed)
     (hc : w.val ∈ C) :
-    parentMapOverride M hC s c ℓ hn prev w = c ⟨w.val, hc⟩ := by
+    parentMapOverride M s c ℓ hn prev w = c ⟨w.val, hc⟩ := by
   unfold parentMapOverride
+  have hobs : w.val ∈ M.observed := hC hc
+  have huo : w.val ∉ M.unobserved := not_unobs_of_obs M.toSWIGGraph hobs
+  have hfix : w.val ∉ M.fixed := not_fixed_of_obs M.toSWIGGraph hobs
   rw [dif_neg huo, dif_neg hfix, dif_pos hc]
 
 /-- The override parent-value tuple reads a non-overridden observed parent from the previous recursive values. -/
@@ -148,22 +158,24 @@ lemma parentMapOverride_observed (M : Causalean.SCM N Ω)
     (prev : ∀ m : ℕ, m < n → ∀ hm : m < M.observed.card,
               swigΩ Ω (M.observedAt ⟨m, hm⟩).val)
     (w : {w // w ∈ M.dag.parents (M.observedAt ⟨n, hn⟩).val})
-    (huo : w.val ∉ M.unobserved) (hfix : w.val ∉ M.fixed)
     (hobs : w.val ∈ M.observed) (hc : w.val ∉ C) :
-    parentMapOverride M hC s c ℓ hn prev w =
+    parentMapOverride M s c ℓ hn prev w =
       (M.observedAt_observedIndex ⟨w.val, hobs⟩) ▸
         prev (M.observedIndex ⟨w.val, hobs⟩).val
              (M.observed_parent_index_lt hn
                 (M.dag.mem_parents.mp w.property) hobs)
              (M.observedIndex ⟨w.val, hobs⟩).isLt := by
   unfold parentMapOverride
+  have huo : w.val ∉ M.unobserved := not_unobs_of_obs M.toSWIGGraph hobs
+  have hfix : w.val ∉ M.fixed := not_fixed_of_obs M.toSWIGGraph hobs
   rw [dif_neg huo, dif_neg hfix, dif_neg hc]
 
 -- ============================================================
 -- § 2. Strong recursion over topological order with C-override
 -- ============================================================
 
-/-- The override auxiliary evaluator computes each observed node in topological order, short-circuiting nodes in the override block.
+/-- The override auxiliary evaluator computes each observed node in topological order,
+short-circuiting nodes in the override block.
 
     Value of the observed node at topological index `n` under the C-override,
     computed by strong recursion using `parentMapOverride`.  If the node itself
@@ -181,9 +193,10 @@ noncomputable def evalObservedAuxOverride (M : Causalean.SCM N Ω)
         c ⟨(M.observedAt ⟨k, hk⟩).val, hcSelf⟩
       else
         M.structFun (M.observedAt ⟨k, hk⟩)
-          (fun w => parentMapOverride M hC s c ℓ hk ih w))
+          (fun w => parentMapOverride M s c ℓ hk ih w))
 
-/-- The override auxiliary evaluator unfolds to either the override value or the structural function applied to overridden parents. -/
+/-- The override auxiliary evaluator unfolds to either the override value or the structural
+function applied to overridden parents. -/
 lemma evalObservedAuxOverride_eq (M : Causalean.SCM N Ω)
     {C : Finset (SWIGNode N)} (hC : C ⊆ M.observed)
     (s : FixedValues M) (c : ValuesOn C (swigΩ Ω)) (ℓ : LatentValues M)
@@ -193,7 +206,7 @@ lemma evalObservedAuxOverride_eq (M : Causalean.SCM N Ω)
          c ⟨(M.observedAt ⟨n, hn⟩).val, hcSelf⟩
        else
          M.structFun (M.observedAt ⟨n, hn⟩)
-           (fun w => parentMapOverride M hC s c ℓ hn
+           (fun w => parentMapOverride M s c ℓ hn
              (fun m _ hm_card => evalObservedAuxOverride M hC s c ℓ m hm_card) w)) := by
   unfold evalObservedAuxOverride
   rw [Nat.strongRecOn'_beta]
@@ -202,7 +215,8 @@ lemma evalObservedAuxOverride_eq (M : Causalean.SCM N Ω)
 -- § 3. The C-overridden evaluation map
 -- ============================================================
 
-/-- The overridden evaluation map returns target observed values while holding the override block fixed.
+/-- The overridden evaluation map returns target observed values while holding the override block
+fixed.
 
     The C-overridden evaluation map.  Returns values on `Y ⊆ M.observed`, with
     every `v ∈ C` short-circuited to `c`.  The recursion mirrors `evalMap` but
@@ -313,7 +327,7 @@ theorem evalMap_overrideC_apply_of_not_mem_C
     M.evalMap_overrideC hY hC s c ℓ v =
       (M.observedAt_observedIndex ⟨v.val, hY v.property⟩) ▸
         M.structFun (M.observedAt (M.observedIndex ⟨v.val, hY v.property⟩))
-          (fun w => parentMapOverride M hC s c ℓ
+          (fun w => parentMapOverride M s c ℓ
             (M.observedIndex ⟨v.val, hY v.property⟩).isLt
             (fun m _ hm_card => evalObservedAuxOverride M hC s c ℓ m hm_card) w) := by
   rw [evalMap_overrideC_eq]
@@ -331,14 +345,9 @@ theorem evalMap_overrideC_apply_of_not_mem_C
 -- § 4. Cornerstone: override at self equals evalMap
 -- ============================================================
 
-/-- Cast-collapse helper for the C-membership branch.  Given a Fin index `j`
-    and an observed node `v_obs := M.observedAt j`, the transported
-    `evalObservedAux` at the round-tripped index equals `evalObservedAux` at
-    `j` directly.
-
-    Proof: introduce a fresh witness `hw : M.observedAt k = v_obs` at a free
-    Fin `k`, then `subst k` collapses the cast to a reflexive identity. -/
-private lemma evalObservedAux_cast_collapse_at_observedAt
+/-- For an observed node, transporting its recursively evaluated value through the round-trip
+topological-index lookup leaves that value unchanged. -/
+lemma evalObservedAux_cast_collapse_at_observedAt
     (M : Causalean.SCM N Ω) (s : FixedValues M) (ℓ : LatentValues M)
     (j : Fin M.observed.card) (hvObs : (M.observedAt j).val ∈ M.observed) :
     ((M.observedAt_observedIndex ⟨(M.observedAt j).val, hvObs⟩) ▸
@@ -374,16 +383,9 @@ private lemma evalObservedAux_cast_collapse_at_observedAt
   have hpr_rfl : hcast = rfl := Subsingleton.elim _ _
   rw [hpr_rfl]
 
-/-- Helper: if `c` is defined by transporting `evalObservedAux M s ℓ` at the
-    topological index of each C-coordinate, then `evalObservedAuxOverride` and
-    `evalObservedAux` agree at every topological index.
-
-    Proof by strong recursion: at each step, either the node is in `C` (the
-    override reads `c`, which by construction is `evalObservedAux`'s value at
-    that node) or both sides apply `M.structFun` to parent tuples that agree
-    coordinate-by-coordinate (latent/fixed slots are equal definitionally; C
-    slots match by the same argument; observed-but-not-C slots match by IH). -/
-private lemma evalObservedAuxOverride_eq_evalObservedAux_at_self
+/-- When an observed-node override uses the model's own recursively evaluated values, the
+overridden recursive evaluator agrees with the original evaluator at every topological position. -/
+lemma evalObservedAuxOverride_eq_evalObservedAux_at_self
     (M : Causalean.SCM N Ω) {C : Finset (SWIGNode N)} (hC : C ⊆ M.observed)
     (s : FixedValues M) (ℓ : LatentValues M) :
     ∀ (n : ℕ) (hn : n < M.observed.card),
@@ -421,11 +423,11 @@ private lemma evalObservedAuxOverride_eq_evalObservedAux_at_self
       have hedge : M.dag.edge w.val (M.observedAt ⟨n, hn⟩).val :=
         M.dag.mem_parents.mp w.property
       by_cases huo : w.val ∈ M.unobserved
-      · rw [parentMapOverride_unobserved _ _ _ _ _ _ _ _ huo,
+      · rw [parentMapOverride_unobserved M hC s _ _ _ _ _ huo,
             parentMap_unobserved _ _ _ _ _ _ huo]
       · by_cases hfix : w.val ∈ M.fixed
-        · rw [parentMapOverride_fixed _ _ _ _ _ _ _ _ huo hfix,
-              parentMap_fixed _ _ _ _ _ _ huo hfix]
+        · rw [parentMapOverride_fixed M hC s _ _ _ _ _ hfix,
+              parentMap_fixed _ _ _ _ _ _ hfix]
         · have hobs : w.val ∈ M.observed := by
             rcases Finset.mem_union.mp (M.dag_edges_classified _ _ hedge).1 with h1 | h2
             · rcases Finset.mem_union.mp h1 with hfx | hob
@@ -435,12 +437,12 @@ private lemma evalObservedAuxOverride_eq_evalObservedAux_at_self
           have hj : (M.observedIndex ⟨w.val, hobs⟩).val < n :=
             M.observed_parent_index_lt hn hedge hobs
           by_cases hcW : w.val ∈ C
-          · rw [parentMapOverride_C _ _ _ _ _ _ _ _ huo hfix hcW]
+          · rw [parentMapOverride_C M hC s _ _ _ _ _ hcW]
             -- Goal: c ⟨w.val, hcW⟩ = parentMap s ℓ hn _ w
             -- The c-lambda body at w.val matches parentMap_observed's body (def. eq).
-            rw [parentMap_observed _ _ _ _ _ _ huo hfix hobs]
-          · rw [parentMapOverride_observed _ _ _ _ _ _ _ _ huo hfix hobs hcW]
-            rw [parentMap_observed _ _ _ _ _ _ huo hfix hobs]
+            rw [parentMap_observed _ _ _ _ _ _ hobs]
+          · rw [parentMapOverride_observed M hC s _ _ _ _ _ hobs hcW]
+            rw [parentMap_observed _ _ _ _ _ _ hobs]
             congr 1
             exact ih _ hj _
 
@@ -479,16 +481,10 @@ theorem evalMap_overrideC_at_self
 -- § 5. Joint measurability of the override map
 -- ============================================================
 
-/-- A measurable map into `swigΩ Ω v` transports along a SWIGNode equality. -/
-private lemma measurable_swigΩ_cast' {γ : Type*} [MeasurableSpace γ]
-    {v w : SWIGNode N} (h : v = w) {f : γ → swigΩ Ω v} (hf : Measurable f) :
-    Measurable (fun x => (h ▸ f x : swigΩ Ω w)) := by
-  subst h; exact hf
-
-/-- Measurability of `evalObservedAuxOverride` at each topological index, by
-    strong induction.  Mirrors `evalObservedAux_measurable` from `Evaluation.lean`
-    with the added C-branch (read from the `c` factor via `measurable_pi_apply`). -/
-private lemma evalObservedAuxOverride_measurable
+/-- At every position in an SCM's topological order, its observed-variable evaluator with
+    specified observed values overridden is jointly measurable in fixed, override, and latent
+    inputs. -/
+lemma evalObservedAuxOverride_measurable
     (M : Causalean.SCM N Ω) {C : Finset (SWIGNode N)} (hC : C ⊆ M.observed) :
     ∀ (n : ℕ) (hn : n < M.observed.card),
       Measurable (fun p : (FixedValues M × ValuesOn C (swigΩ Ω)) × LatentValues M =>
@@ -505,7 +501,7 @@ private lemma evalObservedAuxOverride_measurable
             p.1.2 ⟨(M.observedAt ⟨n, hn⟩).val, hcSelf⟩
           else
             M.structFun (M.observedAt ⟨n, hn⟩)
-              (fun w => parentMapOverride M hC p.1.1 p.1.2 p.2 hn
+              (fun w => parentMapOverride M p.1.1 p.1.2 p.2 hn
                 (fun m _ hm_card =>
                   evalObservedAuxOverride M hC p.1.1 p.1.2 p.2 m hm_card) w)) := by
       funext p
@@ -520,7 +516,7 @@ private lemma evalObservedAuxOverride_measurable
       by_cases huo : w.val ∈ M.unobserved
       · have hfun :
             (fun p : (FixedValues M × ValuesOn C (swigΩ Ω)) × LatentValues M =>
-                parentMapOverride M hC p.1.1 p.1.2 p.2 hn
+                parentMapOverride M p.1.1 p.1.2 p.2 hn
                   (fun m _ hm_card =>
                     evalObservedAuxOverride M hC p.1.1 p.1.2 p.2 m hm_card) w) =
             (fun p => p.2 ⟨w.val, huo⟩) := by
@@ -531,12 +527,12 @@ private lemma evalObservedAuxOverride_measurable
       · by_cases hfix : w.val ∈ M.fixed
         · have hfun :
               (fun p : (FixedValues M × ValuesOn C (swigΩ Ω)) × LatentValues M =>
-                  parentMapOverride M hC p.1.1 p.1.2 p.2 hn
+                  parentMapOverride M p.1.1 p.1.2 p.2 hn
                     (fun m _ hm_card =>
                       evalObservedAuxOverride M hC p.1.1 p.1.2 p.2 m hm_card) w) =
               (fun p => p.1.1 ⟨w.val, hfix⟩) := by
             funext p
-            exact parentMapOverride_fixed M hC p.1.1 p.1.2 p.2 hn _ w huo hfix
+            exact parentMapOverride_fixed M hC p.1.1 p.1.2 p.2 hn _ w hfix
           rw [hfun]
           exact (measurable_pi_apply _).comp (measurable_fst.comp measurable_fst)
         · have hedge : M.dag.edge w.val (M.observedAt ⟨n, hn⟩).val :=
@@ -551,19 +547,19 @@ private lemma evalObservedAuxOverride_measurable
           by_cases hcW : w.val ∈ C
           · have hfun :
                 (fun p : (FixedValues M × ValuesOn C (swigΩ Ω)) × LatentValues M =>
-                    parentMapOverride M hC p.1.1 p.1.2 p.2 hn
+                    parentMapOverride M p.1.1 p.1.2 p.2 hn
                       (fun m _ hm_card =>
                         evalObservedAuxOverride M hC p.1.1 p.1.2 p.2 m hm_card) w) =
                 (fun p => p.1.2 ⟨w.val, hcW⟩) := by
               funext p
-              exact parentMapOverride_C M hC p.1.1 p.1.2 p.2 hn _ w huo hfix hcW
+              exact parentMapOverride_C M hC p.1.1 p.1.2 p.2 hn _ w hcW
             rw [hfun]
             exact (measurable_pi_apply _).comp (measurable_snd.comp measurable_fst)
           · have hj : (M.observedIndex ⟨w.val, hobs⟩).val < n :=
               M.observed_parent_index_lt hn hedge hobs
             have hfun :
                 (fun p : (FixedValues M × ValuesOn C (swigΩ Ω)) × LatentValues M =>
-                    parentMapOverride M hC p.1.1 p.1.2 p.2 hn
+                  parentMapOverride M p.1.1 p.1.2 p.2 hn
                       (fun m _ hm_card =>
                         evalObservedAuxOverride M hC p.1.1 p.1.2 p.2 m hm_card) w) =
                 (fun p =>
@@ -572,9 +568,9 @@ private lemma evalObservedAuxOverride_measurable
                       (M.observedIndex ⟨w.val, hobs⟩).val
                       (M.observedIndex ⟨w.val, hobs⟩).isLt) := by
               funext p
-              exact parentMapOverride_observed M hC p.1.1 p.1.2 p.2 hn _ w huo hfix hobs hcW
+              exact parentMapOverride_observed M hC p.1.1 p.1.2 p.2 hn _ w hobs hcW
             rw [hfun]
-            exact measurable_swigΩ_cast' _ (ih _ hj _)
+            exact measurable_family_cast _ (ih _ hj _)
 
 /-- The overridden evaluation map is jointly measurable in fixed values, override values, and the latent realization.
 
@@ -599,7 +595,7 @@ theorem measurable_evalMap_overrideC
     funext p
     exact evalMap_overrideC_eq M hY hC p.1.1 p.1.2 p.2 v
   rw [hfun]
-  exact measurable_swigΩ_cast' _ (evalObservedAuxOverride_measurable M hC _ _)
+  exact measurable_family_cast _ (evalObservedAuxOverride_measurable M hC _ _)
 
 /- Equiv transport (`Equiv.evalMap_overrideC_heq`) deferred — see Phase F. -/
 

@@ -31,20 +31,9 @@ namespace DAG
 
 variable (G : DAG (SWIGNode N))
 
-/-- A proper ancestor gives the target a parent. -/
-private lemma isAncestor_has_parent {u v : SWIGNode N} (h : G.isAncestor u v) :
-    G.parents v ≠ ∅ := by
-  intro hempty
-  have hmem : ∀ w, w ∉ G.parents v :=
-    fun w => (Finset.eq_empty_iff_forall_notMem.mp hempty) w
-  induction h with
-  | edge he => exact hmem u (G.mem_parents.mpr he)
-  | trans _ he _ => exact hmem _ (G.mem_parents.mpr he)
-
-/-- Taking the ancestors of an ancestral set gives back the same set.
-
-This certifies that post-intervention ancestral query supports are already ancestrally closed. -/
-theorem ancestralSet_idem (S : Finset (SWIGNode N)) :
+/-- Taking the ancestors of an ancestral set gives back the same set. -/
+theorem ancestralSet_idem {V : Type*} [DecidableEq V] [Fintype V]
+    (G : DAG V) (S : Finset V) :
     G.ancestralSet (G.ancestralSet S) = G.ancestralSet S := by
   apply Finset.Subset.antisymm
   · intro u hu
@@ -68,7 +57,7 @@ namespace SWIGGraph
 variable (G : SWIGGraph N)
 
 /-- Observed SWIG vertices are not members of the fixed intervention set. -/
-private lemma not_mem_fixed_of_mem_observed {v : SWIGNode N}
+lemma not_mem_fixed_of_mem_observed {v : SWIGNode N}
     (hv : v ∈ G.observed) : v ∉ G.fixed := by
   intro hfix
   obtain ⟨n, hn⟩ := G.fixed_is_fixed v hfix
@@ -159,7 +148,7 @@ private lemma induced_edge_of_edge_of_active
 inside an ancestral induced SWIG. -/
 private lemma induced_isAncestor_of_isAncestor_to_R_with_parent
     {R : Finset (SWIGNode N)} {u v : SWIGNode N}
-    (hR : G.dag.ancestralSet R = R)
+    (hR : G.dag.ancestralSet R ⊆ R)
     (hanc : G.dag.isAncestor u v) (hvR : v ∈ R)
     (hupar : G.dag.parents u ≠ ∅) :
     (G.induce R).dag.isAncestor u v := by
@@ -170,7 +159,7 @@ private lemma induced_isAncestor_of_isAncestor_to_R_with_parent
       intro hvR
       have huR_anc : u ∈ G.dag.ancestralSet R :=
         G.dag.mem_ancestralSet_of_isAncestor hvR (DAG.isAncestor.edge he)
-      have huR : u ∈ R := by simpa [hR] using huR_anc
+      have huR : u ∈ R := hR huR_anc
       have hvpar : G.dag.parents b ≠ ∅ := by
         intro hempty
         have : u ∈ G.dag.parents b := G.dag.mem_parents.mpr he
@@ -184,7 +173,7 @@ private lemma induced_isAncestor_of_isAncestor_to_R_with_parent
       intro hvR
       have hwR_anc : b ∈ G.dag.ancestralSet R :=
         G.dag.mem_ancestralSet_of_isAncestor hvR (DAG.isAncestor.edge he)
-      have hwR : b ∈ R := by simpa [hR] using hwR_anc
+      have hwR : b ∈ R := hR hwR_anc
       have hInd₁ := ih hwR
       have hwpar : G.dag.parents b ≠ ∅ := G.dag.isAncestor_has_parent h₁
       have hvpar : G.dag.parents c ≠ ∅ := by
@@ -202,7 +191,7 @@ private lemma mem_R_of_ancestor_union_not_fixed
     {R X Y Z : Finset (SWIGNode N)}
     (hX : X ⊆ R ∩ G.observed) (hY : Y ⊆ R ∩ G.observed)
     (hZ : Z ⊆ R ∩ G.observed)
-    (hR : G.dag.ancestralSet R = R)
+    (hR : G.dag.ancestralSet R ⊆ R)
     {v : SWIGNode N}
     (hvAnc : v ∈ G.dag.ancestralSet (X ∪ Y ∪ (Z ∪ G.fixed)))
     (hvNotFixed : v ∉ G.fixed) : v ∈ R := by
@@ -220,14 +209,14 @@ private lemma mem_R_of_ancestor_union_not_fixed
     · rcases Finset.mem_union.mp hwXY with hwX | hwY
       · have hvR_anc : v ∈ G.dag.ancestralSet R :=
           G.dag.mem_ancestralSet_of_isAncestor (Finset.mem_inter.mp (hX hwX)).1 hvw
-        simpa [hR] using hvR_anc
+        exact hR hvR_anc
       · have hvR_anc : v ∈ G.dag.ancestralSet R :=
           G.dag.mem_ancestralSet_of_isAncestor (Finset.mem_inter.mp (hY hwY)).1 hvw
-        simpa [hR] using hvR_anc
+        exact hR hvR_anc
     · rcases Finset.mem_union.mp hwZF with hwZ | hwF
       · have hvR_anc : v ∈ G.dag.ancestralSet R :=
           G.dag.mem_ancestralSet_of_isAncestor (Finset.mem_inter.mp (hZ hwZ)).1 hvw
-        simpa [hR] using hvR_anc
+        exact hR hvR_anc
       · exact ((G.not_isAncestor_to_fixed_mem hwF v) hvw).elim
 
 /-- A collider activation witness for `Z ∪ fixed` whose collider has a parent
@@ -235,7 +224,7 @@ is already a collider activation witness for `Z` in the induced graph. -/
 private lemma induced_bbZAncestors_of_ambient_union_fixed
     {R Z : Finset (SWIGNode N)} {m : SWIGNode N}
     (hZ : Z ⊆ R ∩ G.observed)
-    (hR : G.dag.ancestralSet R = R)
+    (hR : G.dag.ancestralSet R ⊆ R)
     (hmpar : G.dag.parents m ≠ ∅)
     (hmAnc : m ∈ G.dag.bbZAncestors (Z ∪ G.fixed)) :
     m ∈ (G.induce R).dag.bbZAncestors Z := by
@@ -254,20 +243,21 @@ private lemma induced_bbZAncestors_of_ambient_union_fixed
           (Finset.mem_inter.mp (hZ hwZ)).1 hmpar⟩
     · exact ((G.not_isAncestor_to_fixed_mem hwF m) hmw).elim
 
-/-- Nodes on an active path given `Z ∪ fixed` between observed endpoints are
-not members of the fixed intervention set. -/
-private lemma activePath_node_not_fixed
+/-- Every node on an active path conditioned on the union of a conditioning set
+and the fixed intervention nodes, with observed endpoints, is not fixed. -/
+lemma activePath_node_not_fixed
     {R X Y Z : Finset (SWIGNode N)} {x y v : SWIGNode N} {p : List (SWIGNode N)}
     (hX : X ⊆ R ∩ G.observed) (hY : Y ⊆ R ∩ G.observed)
     (hxX : x ∈ X) (hyY : y ∈ Y)
-    (hlen : p.length ≥ 2)
     (hact : G.dag.IsActivePath (Z ∪ G.fixed) p)
     (hhead : p.head? = some x) (hlast : p.getLast? = some y)
     (hv : v ∈ p) : v ∉ G.fixed := by
   rw [List.mem_iff_get] at hv
   obtain ⟨i, rfl⟩ := hv
   by_cases hi0 : i.val = 0
-  · have hpne : p ≠ [] := List.ne_nil_of_length_pos (by omega)
+  · have hpne : p ≠ [] := by
+      intro hp
+      simp [hp] at hhead
     have hhead_get : p.get ⟨0, by omega⟩ = x := by
       have h := List.head?_eq_some_head hpne
       rw [h] at hhead
@@ -278,7 +268,9 @@ private lemma activePath_node_not_fixed
     rw [hidx, hhead_get]
     exact G.not_mem_fixed_of_mem_observed (Finset.mem_inter.mp (hX hxX)).2
   · by_cases hilast : i.val = p.length - 1
-    · have hpne : p ≠ [] := List.ne_nil_of_length_pos (by omega)
+    · have hpne : p ≠ [] := by
+        intro hp
+        simp [hp] at hlast
       have hlast_get : p.get ⟨p.length - 1, by omega⟩ = y := by
         have h := List.getLast?_eq_some_getLast hpne
         rw [h] at hlast
@@ -319,7 +311,7 @@ theorem dSep_union_fixed_of_induce_dSep
     (R X Y Z : Finset (SWIGNode N))
     (hX : X ⊆ R ∩ G.observed) (hY : Y ⊆ R ∩ G.observed)
     (hZ : Z ⊆ R ∩ G.observed)
-    (hR : G.dag.ancestralSet R = R)
+    (hR : G.dag.ancestralSet R ⊆ R)
     (h : (G.induce R).dag.dSep X Y Z) :
     G.dag.dSep X Y (Z ∪ G.fixed) := by
   rcases h with ⟨hXY, hXZ, hYZ, hReach⟩
@@ -340,7 +332,7 @@ theorem dSep_union_fixed_of_induce_dSep
   obtain ⟨x, hxX, p, hlen, hact, hhead, hlast⟩ := hyReach
   have hnotFixed : ∀ v ∈ p, v ∉ G.fixed := by
     intro v hv
-    exact G.activePath_node_not_fixed hX hY hxX hyY hlen hact hhead hlast hv
+    exact G.activePath_node_not_fixed hX hY hxX hyY hact hhead hlast hv
   have hnodeR : ∀ v ∈ p, v ∈ R := by
     intro v hv
     have hvAnc : v ∈ G.dag.ancestralSet (X ∪ Y ∪ (Z ∪ G.fixed)) :=

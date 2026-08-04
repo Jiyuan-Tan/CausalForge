@@ -111,8 +111,9 @@ The headline theorem of the substrate.  Joint minimization in `(β, α)` over
 `(Fin K → ℝ) × H` of the long-regression WLS objective forces
 `β = thetaHat`. -/
 
-/-- `c.ip` of a finite sum on the left distributes. -/
-private lemma ip_sum_left_finset (c : WeightedSupport R) {ι : Type*}
+/-- For a weighted inner product, the inner product of a finite sum of functions with another
+function equals the corresponding finite sum of inner products. -/
+lemma ip_sum_left_finset (c : WeightedSupport R) {ι : Type*}
     (s : Finset ι) (f : ι → R → ℝ) (B : R → ℝ) :
     c.ip (∑ i ∈ s, f i) B = ∑ i ∈ s, c.ip (f i) B := by
   classical
@@ -126,17 +127,18 @@ private lemma ip_sum_left (c : WeightedSupport R)
     c.ip (∑ k, f k) B = ∑ k, c.ip (f k) B :=
   c.ip_sum_left_finset Finset.univ f B
 
-/-- `c.ip` of a finite sum on the right distributes. -/
-private lemma ip_sum_right (c : WeightedSupport R)
+/-- The weighted inner product of a function with a finite sum of functions
+    equals the sum of its weighted inner products with the summands. -/
+lemma ip_sum_right (c : WeightedSupport R)
     (A : R → ℝ) (f : Fin K → R → ℝ) :
     c.ip A (∑ k, f k) = ∑ k, c.ip A (f k) := by
   rw [c.ip_symm, c.ip_sum_left]
   refine Finset.sum_congr rfl ?_
   intro k _; exact c.ip_symm _ _
 
-/-- Inner product with the residualized regressor absorbs the H-projection
-of the other argument: `⟨X̃ k, A⟩ = ⟨X̃ k, A - proj H A⟩`. -/
-private lemma ip_tildeX_eq_ip_tildeX_residual (c : WeightedSupport R)
+/-- A regressor residualized against a control space has the same weighted inner product with
+any function as with that function after residualizing it against the same control space. -/
+lemma ip_tildeX_eq_ip_tildeX_residual (c : WeightedSupport R)
     (H : Submodule ℝ (R → ℝ)) (X : Fin K → R → ℝ) (A : R → ℝ) (k : Fin K) :
     c.ip (c.tildeX H (X k)) A = c.ip (c.tildeX H (X k)) (c.tildeX H A) := by
   have h1 : c.ip (c.tildeX H (X k)) (c.proj H A) = 0 := by

@@ -103,8 +103,10 @@ lemma m0_eq_eventCondExp_Y0_alwaysSelected
               ∫ ω, S.selOfAFalseSet.indicator (S.YofA false) ω ∂P.μ := by
       have hraw :=
         (hA.randAssign false).integral_restrict_preimage_eq_mul
-          S.measurable_factualA hpair_meas
-          (measurableSet_singleton false) hφ_meas
+          S.measurable_factualA.aemeasurable hpair_meas.aemeasurable
+          (measurableSet_singleton false)
+          (S.measurable_factualA (measurableSet_singleton false))
+          hφ_meas.aestronglyMeasurable
       simpa [aEvent, factualA, POVar.event, hφ_indicator] using hraw
     have hnum :
         ∫ ω in S.aEvent false ∩ S.selOfAFalseSet, S.YofA false ω ∂P.μ

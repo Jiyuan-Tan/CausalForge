@@ -3,7 +3,8 @@ Copyright (c) 2026 Jiyuan Tan. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jiyuan Tan
 -/
-import Mathlib
+import Mathlib.Analysis.Normed.Ring.Basic
+import Mathlib.LinearAlgebra.Vandermonde
 
 /-!
 # Finite-dimensional ℓ¹/ℓ∞ duality for minimum-norm node representation — definitions

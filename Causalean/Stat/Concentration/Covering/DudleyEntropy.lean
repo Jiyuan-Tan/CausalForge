@@ -28,7 +28,7 @@ namespace Causalean.Stat.Concentration
 
 universe v u
 open scoped BigOperators
-open Classical ProbabilityTheory
+open ProbabilityTheory
 
 section Empirical
 variable {Z : Type v}
@@ -38,24 +38,25 @@ variable {S : Fin m → Z}
 
 /-- A nonnegative term in a finite sum is bounded by the full sum of
 nonnegative terms. -/
-theorem term_le_total_sum_of_nonneg (m : ℕ) (j : Fin m) (f : Fin m → ℝ) (h0 : ∀ j, 0 ≤ f j) :
-  f j ≤ ∑ i : Fin m, f i := by
+theorem term_le_total_sum_of_nonneg {α : Type u} [Fintype α]
+    {M : Type*} [AddCommMonoid M] [Preorder M] [IsOrderedAddMonoid M]
+    (j : α) (f : α → M) (h0 : ∀ j, 0 ≤ f j) :
+  f j ≤ ∑ i : α, f i := by
   classical
-  have hj : j ∈ (Finset.univ : Finset (Fin m)) := by simp
+  have hj : j ∈ (Finset.univ : Finset α) := by simp
   have hsum :
-      (Finset.univ.erase j).sum (fun i : Fin m => f i) + f j =
-        ∑ i : Fin m, f i := by
-    simp
+      (Finset.univ.erase j).sum (fun i : α => f i) + f j =
+        ∑ i : α, f i := by
+    exact Finset.sum_erase_add _ _ hj
   have h_nonneg :
-      0 ≤ (Finset.univ.erase j).sum (fun i : Fin m => f i) := by
+      0 ≤ (Finset.univ.erase j).sum (fun i : α => f i) := by
     refine Finset.sum_nonneg ?_
     intro i hi
     exact h0 i
   have h_le :
-      f j ≤ (Finset.univ.erase j).sum (fun i : Fin m => f i) + f j := by
+      f j ≤ (Finset.univ.erase j).sum (fun i : α => f i) + f j := by
     simpa [add_comm] using add_le_add_left h_nonneg (f j)
-  apply le_trans h_le
-  simp
+  exact h_le.trans_eq hsum
 
 
 variable {c : ℝ}
@@ -155,7 +156,10 @@ private lemma chain_decomposition (c_pos : 0 < c)
     ring_nf
 
 omit [Nonempty ι] in
-private lemma pointwise_bound_from_empirical_norm
+/-- If every function has empirical norm at most a given bound on a positive-size
+sample, then its absolute value at each sampled observation is at most the
+sample-size square root times that bound. -/
+lemma pointwise_bound_from_empirical_norm
     (cs : ∀ f : ι, empiricalNorm S (F f) ≤ c) (i : Fin m) (hm_pos : 0 < m) :
     ∀ (f : ι), |F f (S i)| ≤ √↑m * c := by
   intro f
@@ -189,12 +193,10 @@ private lemma chainApprox_pointwise_bound (c_pos : 0 < c) (m_pos : 0 < m)
     intro i_2
     have : 0 ≤ √↑m := by simp
     exact (mul_nonneg_iff_of_pos_right c_pos).mpr this
-  · simp [h0]
-    intro i_2
-    apply pointwise_bound_from_empirical_norm
-    intro f
-    apply cs
-    exact m_pos
+  · simp only [if_neg h0]
+    intro i_2 a
+    exact pointwise_bound_from_empirical_norm cs i_2 m_pos
+      (coverApprox c_pos h a i_1).index
 
 private lemma chainApprox_increment_bound (c_pos : 0 < c) (m_pos : 0 < m)
     (cs : ∀ f : ι, empiricalNorm S (F f) ≤ c) (i_1 : ℕ)
@@ -207,13 +209,9 @@ private lemma chainApprox_increment_bound (c_pos : 0 < c) (m_pos : 0 < m)
   _ ≤ |chainApprox c_pos h a (i_1 + 1) (S i_2)| + |chainApprox c_pos h a i_1 (S i_2)| := by
     exact abs_sub (chainApprox c_pos h a (i_1 + 1) (S i_2)) (chainApprox c_pos h a i_1 (S i_2))
   _ ≤ √↑m * c + √↑m * c := by
-    apply add_le_add
-    apply chainApprox_pointwise_bound
-    exact m_pos
-    exact cs
-    apply chainApprox_pointwise_bound
-    exact m_pos
-    exact cs
+    exact add_le_add
+      (chainApprox_pointwise_bound c_pos m_pos cs (i_1 + 1) h i_2 a)
+      (chainApprox_pointwise_bound c_pos m_pos cs i_1 h i_2 a)
   _ = _ := by ring
 
 /-- The main remainder term in the Dudley chain has a finite upper bound. -/
@@ -571,7 +569,9 @@ private lemma empiricalDist_to_chainApprox_le_ej (c_pos : 0 < c)
   · simpa [chainApprox_def c_pos h, h'] using
       (Classical.choose_spec (exists_cover_approximation c_pos h fh n)).2
 
-private lemma signed_sum_le_empiricalDist (f g : Z → ℝ) (σ : Signs m) :
+/-- A signed sum of pointwise differences is at most the sample size times
+the empirical distance between the two functions. -/
+lemma signed_sum_le_empiricalDist (f g : Z → ℝ) (σ : Signs m) :
   ∑ i : Fin m, (σ i : ℝ) * (f (S i) - g (S i)) ≤ m * empiricalDist S f g := by
   calc
   _ = @inner ℝ (EuclideanSpace ℝ (Fin m)) _
@@ -653,7 +653,7 @@ private lemma finite_chainApprox_image (c_pos : 0 < c)
     simp at hp
     obtain ⟨r, hpr⟩ := hp
     simp
-    use choose (exists_cover_approximation c_pos h' r (j : ℕ))
+    use Classical.choose (exists_cover_approximation c_pos h' r (j : ℕ))
     constructor
     · rcases Classical.choose_spec (exists_cover_approximation c_pos h' r (j : ℕ)) with ⟨hmem, hle⟩
       exact hmem
@@ -1044,31 +1044,6 @@ private lemma massart_bound_for_increment_term (c_pos : 0 < c)
     apply le_of_le_of_eq
     · apply massart_lemma_pmf
       · exact incrementFinset_nonempty c_pos h' n j
-      · exact m_pos
-      · change ∀ i ∈ incrementFinset c_pos h' n j, ∀ (j : Fin m), |i (S j)| ≤ C
-        intro i hi j
-        dsimp [C]
-        simp
-        use i
-        constructor
-        · exact hi
-        · have hnonneg : ∀ x : Fin m, 0 ≤ i (S x) ^ 2 := by
-            intro x
-            nlinarith
-          have hsq : i (S j) ^ 2 ≤ ∑ x : Fin m, i (S x) ^ 2 := by
-            simpa using
-              (Finset.single_le_sum
-                (s := (Finset.univ : Finset (Fin m)))
-                (f := fun x : Fin m => i (S x) ^ 2)
-                (a := j)
-                (by
-                  intro x hx
-                  exact hnonneg x)
-                (by simp))
-          have : Real.sqrt (i (S j) ^ 2) ≤ Real.sqrt (∑ x : Fin m, i (S x) ^ 2) := by
-            exact Real.sqrt_le_sqrt hsq
-          simpa [Real.sqrt_sq_eq_abs] using this
-      · exact incrementFinset_nonempty c_pos h' n j
     · have :
           √(2 * Real.log ((Set.Finite.toFinset (finite_incrementSet c_pos h' n j)).card)) =
             √(2 * Real.log ↑(incrementFinset c_pos h' n j).card) := by
@@ -1429,7 +1404,7 @@ private lemma partB_bound (c_pos : 0 < c)
           simp
           apply ej_pos c_pos)).mpr ?_
         · norm_cast
-          apply converingNumber_antitone
+          apply coveringNumber_antitone
           repeat (apply ej_pos c_pos)
           dsimp [ej]
           refine (div_le_div_iff_of_pos_left c_pos ?_ ?_).mpr ?_
@@ -1759,7 +1734,7 @@ private lemma entropy_sum_to_integral_bound (c_pos : 0 < c) (h' : TotallyBounded
         simp at hb
         linarith
       norm_cast
-      apply converingNumber_antitone
+      apply coveringNumber_antitone
       simp
       simp at ha
       linarith
@@ -1869,9 +1844,9 @@ private lemma choose_dyadic_scale_for_epsilon (ε : ℝ) (ε_pos : 0 < ε) (c_ε
     rw [<- h2]
     exact Int.le_ceil (Real.logb 2 (c / ε))
 
-/-- Dudley's entropy-integral bound controls empirical Rademacher complexity by
-a small-radius term plus an integral of square-root log covering numbers. -/
-theorem dudley_entropy_integral' {ε : ℝ} (ε_pos : 0 < ε) (h' : TotallyBounded (Set.univ : Set (EmpiricalFunctionSpace F S)))
+/-- Dudley's entropy-integral bound controls the signed empirical Rademacher
+average without the outer absolute value. -/
+theorem dudley_entropy_integral_bound {ε : ℝ} (ε_pos : 0 < ε) (h' : TotallyBounded (Set.univ : Set (EmpiricalFunctionSpace F S)))
   (m_pos : 0 < m) (cs : ∀ f : ι, empiricalNorm S (F f) ≤ c)
   (ε_le_c_div_2 : ε < c/2) :
     empiricalRademacherComplexity_without_abs m F S ≤
@@ -1918,7 +1893,7 @@ theorem dudley_entropy_integral' {ε : ℝ} (ε_pos : 0 < ε) (h' : TotallyBound
           · exact e_nonempty
           linarith
         · norm_cast
-          apply converingNumber_antitone
+          apply coveringNumber_antitone
           · simp
             linarith
           · simp
@@ -1928,19 +1903,6 @@ theorem dudley_entropy_integral' {ε : ℝ} (ε_pos : 0 < ε) (h' : TotallyBound
       · simp
       · norm_cast
         simp
-
-/-- Dudley's entropy-integral bound controls the signed empirical Rademacher
-average without the outer absolute value, using the sample length as the
-public sample-size parameter. -/
-theorem dudley_entropy_integral_bound
-  {𝒳 : Type v} {n : ℕ} {ι : Type u} [Nonempty ι] {F : ι → 𝒳 → ℝ} {S : Fin n → 𝒳} {c ε : ℝ}
-  (ε_pos : 0 < ε) (h' : TotallyBounded (Set.univ : Set (EmpiricalFunctionSpace F S)))
-  (m_pos : 0 < n) (cs : ∀ f : ι, empiricalNorm S (F f) ≤ c)
-  (ε_le_c_div_2 : ε < c/2) :
-    empiricalRademacherComplexity_without_abs n F S ≤
-    (4 * ε + (12 / Real.sqrt n) *
-    (∫ (x : ℝ) in ε..(c/2),√(Real.log (coveringNumber h' x)))) := by
-  exact dudley_entropy_integral' ε_pos h' m_pos cs ε_le_c_div_2
 
 end Empirical
 end Causalean.Stat.Concentration

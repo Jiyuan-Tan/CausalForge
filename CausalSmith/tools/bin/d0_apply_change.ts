@@ -32,7 +32,13 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
-import { applyProposedChanges, discardAllProposedChanges, parseProposalSelectors, validateProposalSelectors } from "../src/discovery/stages/d0_apply.js";
+import {
+  applyProposedChanges,
+  discardAllProposedChanges,
+  parseProposalSelectors,
+  recoverPendingApply,
+  validateProposalSelectors,
+} from "../src/discovery/stages/d0_apply.js";
 import type { PipelineContext } from "../src/types.js";
 import { findCausalSmithRoot } from "../src/shared/repo_root.js";
 
@@ -138,6 +144,14 @@ export async function main(): Promise<void> {
   }
   const repoRoot = findCausalSmithRoot(process.cwd());
   const ctx: PipelineContext = { repoRoot, qid, specialization: spec, dryRun: false, resume: false };
+  const recovered = await recoverPendingApply(ctx);
+  if (recovered !== null) {
+    console.log(
+      `Recovered and committed interrupted D0 apply (${recovered.length} change(s)); ` +
+      "re-run the command against the new state if another action is needed.",
+    );
+    return;
+  }
   if (discardAll !== -1) {
     if (!note?.trim()) {
       console.error("d0_apply_change: --discard-all requires --note with the review rejection rationale.");

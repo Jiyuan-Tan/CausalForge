@@ -264,12 +264,12 @@ def commonAxisTopRow (m : ℕ) (a : CommonAxisTopIndex m) :
     RetainedCumCoord (2 * m + 2) :=
   ⟨(⟨2 * m + 2, by omega⟩,
       ⟨pinnedExponent a, by
-        have h := pinnedExponent_lt (n := m + 1) (by omega) a
+        have h := pinnedExponent_lt (n := m + 1) a
         omega⟩),
     by change 2 ≤ 2 * m + 2; omega,
     by
       change pinnedExponent a ≤ 2 * m + 2
-      have h := pinnedExponent_lt (n := m + 1) (by omega) a
+      have h := pinnedExponent_lt (n := m + 1) a
       omega⟩
 
 /-- The slope associated with the derivative node `i+1`: the first is the
@@ -280,7 +280,7 @@ def commonAxisUnpinnedSlope (m : ℕ) (i : Fin m) : ForwardSlopeIndex m :=
 lemma forwardSlopeSourceIndex_commonAxisUnpinnedSlope
     (m : ℕ) (hm : 1 ≤ m) (i : Fin m) :
     forwardSlopeSourceIndex m (commonAxisUnpinnedSlope m i) =
-      commonAxisNodeSource m hm (pinnedSucc (n := m + 1) (by omega) i) := by
+      commonAxisNodeSource m hm (pinnedSucc (n := m + 1) i) := by
   apply Fin.ext
   by_cases h0 : i.val = 0
   · change (forwardSlopeSourceIndex m (commonAxisUnpinnedSlope m i)).val = _
@@ -322,7 +322,7 @@ def canonicalCommonAxisTopJacobianAtWitness (m : ℕ) (hm : 1 ≤ m) :
 theorem canonicalCommonAxisTopJacobianAtWitness_eq_pinned
     (m : ℕ) (hm : 1 ≤ m) :
     canonicalCommonAxisTopJacobianAtWitness m hm =
-      pinnedConfluentVandermonde (n := m + 1) (by omega)
+      pinnedConfluentVandermonde (n := m + 1)
         (commonAxisNodeValue m) := by
   ext a b
   rcases b with j | i
@@ -356,14 +356,14 @@ theorem canonicalCommonAxisTopJacobianAtWitness_eq_pinned
       (decodeBandParam
           (commonAxisBandInsert hm (commonAxisJacobianWitnessCoord m hm))).2.2
             (commonAxisNodeSource m hm
-              (pinnedSucc (n := m + 1) (by omega) i)) (2 * m + 2) *
+              (pinnedSucc (n := m + 1) i)) (2 * m + 2) *
         (forwardLoading m
           (decodeBandParam
             (commonAxisBandInsert hm (commonAxisJacobianWitnessCoord m hm))).1
           (decodeBandParam
             (commonAxisBandInsert hm (commonAxisJacobianWitnessCoord m hm))).2.1
           (commonAxisNodeSource m hm
-            (pinnedSucc (n := m + 1) (by omega) i))).1 ^
+            (pinnedSucc (n := m + 1) i))).1 ^
               (2 * m + 2 - pinnedExponent a) *
         ((pinnedExponent a : ℂ) *
           (forwardLoading m
@@ -372,7 +372,7 @@ theorem canonicalCommonAxisTopJacobianAtWitness_eq_pinned
             (decodeBandParam
               (commonAxisBandInsert hm (commonAxisJacobianWitnessCoord m hm))).2.1
             (commonAxisNodeSource m hm
-              (pinnedSucc (n := m + 1) (by omega) i))).2 ^
+              (pinnedSucc (n := m + 1) i))).2 ^
                 (pinnedExponent a - 1)) = _
     rw [commonAxisJacobianWitness_weight _ _ _ _ (by omega),
       commonAxisJacobianWitness_loading]
@@ -447,7 +447,7 @@ theorem canonicalCommonAxisTopAugmentedJacobianAtWitness_eq
       (0 : ℂ) ^ (2 * m + 2 - pinnedExponent a) *
         1 ^ pinnedExponent a = 0
     simp [show 2 * m + 2 - pinnedExponent a ≠ 0 by
-      have h := pinnedExponent_lt (n := m + 1) (by omega) a
+      have h := pinnedExponent_lt (n := m + 1) a
       omega]
   · rfl
   · obtain rfl : u = () := Subsingleton.elim _ _

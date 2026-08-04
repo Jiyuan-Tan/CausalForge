@@ -1,0 +1,1684 @@
+{
+  "qid": "stat_trae_adaptive_misspecification",
+  "specialization": "deepiv_robust_v1",
+  "cluster": "stat",
+  "symbols": [
+    {
+      "name": "n",
+      "type": "integer",
+      "space": "\\(n\\ge2\\)",
+      "def": "Total sample size.",
+      "role": "index"
+    },
+    {
+      "name": "W_i",
+      "type": "random vector",
+      "space": "\\(\\mathcal W\\)",
+      "def": "Observation \\(W_i=(Y_i,X_i,Z_i)\\).",
+      "role": "data"
+    },
+    {
+      "name": "P",
+      "type": "probability law",
+      "space": "\\(\\mathcal P(\\mathcal W)\\)",
+      "def": "Law of \\(W=(Y,X,Z)\\).",
+      "role": "sampling law"
+    },
+    {
+      "name": "Y",
+      "type": "random variable",
+      "space": "\\(\\mathbb R\\)",
+      "def": "Outcome.",
+      "role": "outcome"
+    },
+    {
+      "name": "X",
+      "type": "random vector",
+      "space": "\\(\\mathcal X\\)",
+      "def": "Endogenous regressor.",
+      "role": "regressor"
+    },
+    {
+      "name": "Z",
+      "type": "random vector",
+      "space": "\\(\\mathcal Z\\)",
+      "def": "Instrument.",
+      "role": "instrument"
+    },
+    {
+      "name": "P_X",
+      "type": "marginal law",
+      "space": "\\(\\mathcal P(\\mathcal X)\\)",
+      "def": "The \\(X\\)-marginal of \\(P\\).",
+      "role": "marginal",
+      "refs": [
+        "P",
+        "X"
+      ]
+    },
+    {
+      "name": "P_Z",
+      "type": "marginal law",
+      "space": "\\(\\mathcal P(\\mathcal Z)\\)",
+      "def": "The \\(Z\\)-marginal of \\(P\\).",
+      "role": "marginal",
+      "refs": [
+        "P",
+        "Z"
+      ]
+    },
+    {
+      "name": "L_X",
+      "type": "Hilbert space",
+      "space": "\\(L_2(P_X)\\)",
+      "def": "Square-integrable functions of \\(X\\).",
+      "role": "primal space",
+      "refs": [
+        "P_X"
+      ]
+    },
+    {
+      "name": "L_Z",
+      "type": "Hilbert space",
+      "space": "\\(L_2(P_Z)\\)",
+      "def": "Square-integrable functions of \\(Z\\).",
+      "role": "residual space",
+      "refs": [
+        "P_Z"
+      ]
+    },
+    {
+      "name": "T",
+      "type": "linear operator",
+      "sig": "\\(T:L_X\\to L_Z\\)",
+      "def": "\\((Th)(z)=E_P[h(X)\\mid Z=z]\\).",
+      "role": "conditional-expectation operator",
+      "refs": [
+        "P",
+        "L_X",
+        "L_Z"
+      ]
+    },
+    {
+      "name": "T^*",
+      "type": "adjoint operator",
+      "sig": "\\(T^*:L_Z\\to L_X\\)",
+      "def": "Hilbert-space adjoint of \\(T\\).",
+      "role": "source operator",
+      "refs": [
+        "T",
+        "L_X",
+        "L_Z"
+      ]
+    },
+    {
+      "name": "r",
+      "type": "function",
+      "space": "\\(L_Z\\)",
+      "def": "\\(r(z)=E_P[Y\\mid Z=z]\\).",
+      "role": "reduced form",
+      "refs": [
+        "P",
+        "Y",
+        "Z",
+        "L_Z"
+      ]
+    },
+    {
+      "name": "h_0",
+      "type": "function",
+      "space": "\\(L_X\\)",
+      "def": "Structural response in the valid NPIV calibration.",
+      "role": "causal response",
+      "refs": [
+        "L_X"
+      ]
+    },
+    {
+      "name": "h^\\dagger",
+      "type": "function",
+      "space": "\\(L_X\\)",
+      "def": "Minimum-norm attained pseudo-true inverse projection.",
+      "role": "sensitivity target",
+      "refs": [
+        "T",
+        "r",
+        "L_X",
+        "L_Z"
+      ]
+    },
+    {
+      "name": "q_h",
+      "type": "function",
+      "space": "\\(L_Z\\)",
+      "def": "\\(q_h=r-Th\\).",
+      "role": "conditional-moment residual",
+      "refs": [
+        "r",
+        "T",
+        "L_Z"
+      ]
+    },
+    {
+      "name": "\\beta",
+      "type": "scalar",
+      "space": "\\((0,2]\\)",
+      "def": "Source-smoothness index.",
+      "role": "regularity index"
+    },
+    {
+      "name": "\\bar\\beta",
+      "type": "scalar",
+      "space": "\\((0,1]\\)",
+      "def": "\\(\\bar\\beta=\\min\\{\\beta,1\\}\\).",
+      "role": "Tikhonov saturation index",
+      "refs": [
+        "\\beta"
+      ]
+    },
+    {
+      "name": "w",
+      "type": "function",
+      "space": "\\(L_X\\)",
+      "def": "Source representer.",
+      "role": "source representer",
+      "refs": [
+        "L_X"
+      ]
+    },
+    {
+      "name": "B",
+      "type": "positive scalar",
+      "def": "Common envelope and source-radius bound.",
+      "role": "constant"
+    },
+    {
+      "name": "C",
+      "type": "positive scalar",
+      "def": "Universal finite inequality constant.",
+      "role": "constant"
+    },
+    {
+      "name": "\\mathcal K",
+      "type": "finite set",
+      "def": "Candidate target--witness-pair indices.",
+      "role": "model collection"
+    },
+    {
+      "name": "k",
+      "type": "index",
+      "space": "\\(\\mathcal K\\)",
+      "def": "Candidate-pair index.",
+      "role": "index",
+      "refs": [
+        "\\mathcal K"
+      ]
+    },
+    {
+      "name": "k_0",
+      "type": "index",
+      "space": "\\(\\mathcal K\\)",
+      "def": "Exact-specification candidate-pair index.",
+      "role": "benchmark index",
+      "refs": [
+        "\\mathcal K"
+      ]
+    },
+    {
+      "name": "K",
+      "type": "integer",
+      "def": "\\(K=|\\mathcal K|\\).",
+      "role": "model count",
+      "refs": [
+        "\\mathcal K"
+      ]
+    },
+    {
+      "name": "\\mathcal H_k",
+      "type": "function class",
+      "space": "\\(L_X\\)",
+      "def": "Closed convex candidate target class.",
+      "role": "target class",
+      "refs": [
+        "L_X",
+        "k"
+      ]
+    },
+    {
+      "name": "\\mathcal F_k",
+      "type": "function class",
+      "space": "\\(L_Z\\)",
+      "def": "Candidate adversarial witness class.",
+      "role": "witness class",
+      "refs": [
+        "L_Z",
+        "k"
+      ]
+    },
+    {
+      "name": "h_{k,\\ell}",
+      "type": "function",
+      "space": "\\(\\mathcal H_k\\)",
+      "def": "The \\(\\ell\\)-th member of a fixed countable dense enumeration of \\(\\mathcal H_k\\).",
+      "role": "measurable optimization path",
+      "refs": [
+        "\\mathcal H_k",
+        "k"
+      ]
+    },
+    {
+      "name": "\\ell",
+      "type": "integer",
+      "space": "\\(\\mathbb N\\)",
+      "def": "Enumeration index.",
+      "role": "index"
+    },
+    {
+      "name": "I_{\\mathrm{tr}}",
+      "type": "index set",
+      "space": "\\(\\{1,\\ldots,n\\}\\)",
+      "def": "Training indices.",
+      "role": "sample split",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "I_{\\mathrm{va}}",
+      "type": "index set",
+      "space": "\\(\\{1,\\ldots,n\\}\\)",
+      "def": "Validation indices.",
+      "role": "sample split",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "n_{\\mathrm{tr}}",
+      "type": "integer",
+      "def": "\\(n_{\\mathrm{tr}}=|I_{\\mathrm{tr}}|\\).",
+      "role": "training size",
+      "refs": [
+        "I_{\\mathrm{tr}}"
+      ]
+    },
+    {
+      "name": "n_{\\mathrm{va}}",
+      "type": "integer",
+      "def": "\\(n_{\\mathrm{va}}=|I_{\\mathrm{va}}|\\).",
+      "role": "validation size",
+      "refs": [
+        "I_{\\mathrm{va}}"
+      ]
+    },
+    {
+      "name": "P_{\\mathrm{tr}}",
+      "type": "empirical measure",
+      "def": "\\(P_{\\mathrm{tr}}=n_{\\mathrm{tr}}^{-1}\\sum_{i\\in I_{\\mathrm{tr}}}\\delta_{W_i}\\).",
+      "role": "training measure",
+      "refs": [
+        "n_{\\mathrm{tr}}",
+        "I_{\\mathrm{tr}}",
+        "W_i"
+      ]
+    },
+    {
+      "name": "P_{\\mathrm{va}}",
+      "type": "empirical measure",
+      "def": "\\(P_{\\mathrm{va}}=n_{\\mathrm{va}}^{-1}\\sum_{i\\in I_{\\mathrm{va}}}\\delta_{W_i}\\).",
+      "role": "validation measure",
+      "refs": [
+        "n_{\\mathrm{va}}",
+        "I_{\\mathrm{va}}",
+        "W_i"
+      ]
+    },
+    {
+      "name": "J_n",
+      "type": "integer",
+      "def": "Technical finite-grid truncation index.",
+      "role": "grid index",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "\\Lambda_n",
+      "type": "finite set",
+      "space": "\\((0,1]\\)",
+      "def": "Geometric regularization grid.",
+      "role": "tuning grid",
+      "refs": [
+        "J_n"
+      ]
+    },
+    {
+      "name": "\\lambda",
+      "type": "scalar",
+      "space": "\\(\\Lambda_n\\)",
+      "def": "Tikhonov level.",
+      "role": "tuning parameter",
+      "refs": [
+        "\\Lambda_n"
+      ]
+    },
+    {
+      "name": "\\eta",
+      "type": "scalar",
+      "space": "\\((0,1)\\)",
+      "def": "Failure-probability index.",
+      "role": "confidence index"
+    },
+    {
+      "name": "\\rho_{k,\\lambda,n}",
+      "type": "nonnegative scalar",
+      "def": "Localized training critical radius at confidence allocation \\(\\eta/(2K|\\Lambda_n|)\\).",
+      "role": "candidate critical radius",
+      "refs": [
+        "k",
+        "\\lambda",
+        "n",
+        "\\eta",
+        "K",
+        "\\Lambda_n"
+      ]
+    },
+    {
+      "name": "\\delta_{k,n}",
+      "type": "positive scalar",
+      "def": "Simultaneous training stochastic scale.",
+      "role": "training scale",
+      "refs": [
+        "\\rho_{k,\\lambda,n}",
+        "B",
+        "K",
+        "\\Lambda_n",
+        "\\eta",
+        "n_{\\mathrm{tr}}"
+      ]
+    },
+    {
+      "name": "s_{k,n}",
+      "type": "positive scalar",
+      "def": "Training plus validation scale.",
+      "role": "oracle scale",
+      "refs": [
+        "\\delta_{k,n}",
+        "B",
+        "K",
+        "\\Lambda_n",
+        "\\eta",
+        "n_{\\mathrm{va}}"
+      ]
+    },
+    {
+      "name": "\\lambda^\\circ_{k,n}",
+      "type": "positive scalar",
+      "def": "\\(\\lambda^\\circ_{k,n}=s_{k,n}^{1/(1+\\bar\\beta)}\\).",
+      "role": "continuous oracle scale",
+      "refs": [
+        "s_{k,n}",
+        "\\bar\\beta"
+      ]
+    },
+    {
+      "name": "h_{\\mathcal H,k}^\\dagger",
+      "type": "function",
+      "space": "\\(\\mathcal H_k\\)",
+      "def": "Hilbert-space metric projection of \\(h^\\dagger\\) on \\(\\mathcal H_k\\).",
+      "role": "target projection",
+      "refs": [
+        "\\mathcal H_k",
+        "h^\\dagger"
+      ]
+    },
+    {
+      "name": "\\varepsilon_{H,k}",
+      "type": "nonnegative scalar",
+      "def": "Target-class approximation radius.",
+      "role": "target approximation",
+      "refs": [
+        "h_{\\mathcal H,k}^\\dagger",
+        "h^\\dagger"
+      ]
+    },
+    {
+      "name": "D_{\\mathcal F_k}",
+      "type": "functional",
+      "sig": "\\(L_Z\\to\\mathbb R_+\\)",
+      "def": "Restricted quadratic dual norm induced by \\(\\mathcal F_k\\).",
+      "role": "witness-detectable residual size",
+      "refs": [
+        "\\mathcal F_k",
+        "P",
+        "L_Z"
+      ]
+    },
+    {
+      "name": "\\varepsilon_{F,k}",
+      "type": "nonnegative scalar",
+      "def": "Worst residual-coordinate deficiency of \\(\\mathcal F_k\\) over \\(\\mathcal H_k\\).",
+      "role": "witness deficiency",
+      "refs": [
+        "\\mathcal H_k",
+        "D_{\\mathcal F_k}",
+        "q_h"
+      ]
+    },
+    {
+      "name": "A_{k,\\lambda,\\ell}",
+      "type": "scalar",
+      "def": "Training objective evaluated at \\(h_{k,\\ell}\\).",
+      "role": "measurable criterion",
+      "refs": [
+        "P_{\\mathrm{tr}}",
+        "h_{k,\\ell}",
+        "\\mathcal F_k",
+        "\\lambda"
+      ]
+    },
+    {
+      "name": "a_{k,\\lambda}",
+      "type": "scalar",
+      "def": "Countable infimum of the training objective.",
+      "role": "criterion infimum",
+      "refs": [
+        "A_{k,\\lambda,\\ell}",
+        "\\ell"
+      ]
+    },
+    {
+      "name": "\\widehat\\ell_{k,\\lambda}",
+      "type": "integer",
+      "def": "Least admissible countable training index, with deterministic fallback one.",
+      "role": "measurable selection index",
+      "refs": [
+        "A_{k,\\lambda,\\ell}",
+        "a_{k,\\lambda}",
+        "n"
+      ]
+    },
+    {
+      "name": "\\widehat h_{k,\\lambda}",
+      "type": "function",
+      "space": "\\(\\mathcal H_k\\)",
+      "def": "Measurable approximate training TRAE solution.",
+      "role": "regularized estimator",
+      "refs": [
+        "h_{k,\\ell}",
+        "\\widehat\\ell_{k,\\lambda}"
+      ]
+    },
+    {
+      "name": "\\widehat V_{k,\\lambda}",
+      "type": "scalar",
+      "def": "Holdout adversarial Tikhonov score.",
+      "role": "validation statistic",
+      "refs": [
+        "P_{\\mathrm{va}}",
+        "\\widehat h_{k,\\lambda}",
+        "\\mathcal F_k",
+        "\\lambda"
+      ]
+    },
+    {
+      "name": "\\operatorname{pen}_{k,\\lambda}",
+      "type": "nonnegative scalar",
+      "def": "Observable validation penalty.",
+      "role": "selection penalty",
+      "refs": [
+        "B",
+        "K",
+        "\\Lambda_n",
+        "n_{\\mathrm{va}}",
+        "\\eta"
+      ]
+    },
+    {
+      "name": "\\widehat k",
+      "type": "element",
+      "space": "\\(\\mathcal K\\)",
+      "def": "Lexicographically selected model-pair index.",
+      "role": "selected model",
+      "refs": [
+        "\\mathcal K"
+      ]
+    },
+    {
+      "name": "\\widehat\\lambda",
+      "type": "scalar",
+      "space": "\\(\\Lambda_n\\)",
+      "def": "Lexicographically selected regularization level.",
+      "role": "selected tuning",
+      "refs": [
+        "\\Lambda_n"
+      ]
+    },
+    {
+      "name": "\\widehat h",
+      "type": "function",
+      "space": "\\(L_X\\)",
+      "def": "\\(\\widehat h=\\widehat h_{\\widehat k,\\widehat\\lambda}\\).",
+      "role": "adaptive estimator",
+      "refs": [
+        "\\widehat h_{k,\\lambda}",
+        "\\widehat k",
+        "\\widehat\\lambda"
+      ]
+    },
+    {
+      "name": "U",
+      "type": "random variable",
+      "space": "\\(\\{-1,1\\}\\)",
+      "def": "First Rademacher coordinate.",
+      "role": "domain-separation coordinate"
+    },
+    {
+      "name": "V",
+      "type": "random variable",
+      "space": "\\(\\{-1,1\\}\\)",
+      "def": "Second Rademacher coordinate.",
+      "role": "domain-separation coordinate"
+    },
+    {
+      "name": "\\xi",
+      "type": "random variable",
+      "space": "\\(\\{-1,1\\}\\)",
+      "def": "Independent mean-zero Rademacher noise.",
+      "role": "domain-separation noise"
+    },
+    {
+      "name": "a_0",
+      "type": "scalar",
+      "space": "\\([-1/4,1/4]\\)",
+      "def": "First structural coefficient.",
+      "role": "construction coefficient"
+    },
+    {
+      "name": "b_0",
+      "type": "scalar",
+      "space": "\\([-1/4,1/4]\\setminus\\{0\\}\\)",
+      "def": "Second structural coefficient.",
+      "role": "construction coefficient"
+    },
+    {
+      "name": "\\mathcal H^\\circ",
+      "type": "function class",
+      "space": "\\(L_X\\)",
+      "def": "Bounded two-coordinate target class.",
+      "role": "domain-separation class",
+      "refs": [
+        "L_X"
+      ]
+    },
+    {
+      "name": "\\mathcal F_1^\\circ",
+      "type": "function class",
+      "space": "\\(L_Z\\)",
+      "def": "Full two-coordinate witness class.",
+      "role": "domain-separation class",
+      "refs": [
+        "L_Z"
+      ]
+    },
+    {
+      "name": "\\mathcal F_2^\\circ",
+      "type": "function class",
+      "space": "\\(L_Z\\)",
+      "def": "First-coordinate-only witness class.",
+      "role": "domain-separation class",
+      "refs": [
+        "L_Z"
+      ]
+    },
+    {
+      "name": "a",
+      "type": "positive scalar",
+      "def": "Diagonal singular-value exponent.",
+      "role": "inverse severity"
+    },
+    {
+      "name": "s",
+      "type": "positive scalar",
+      "def": "Diagonal ellipsoid smoothness exponent.",
+      "role": "smoothness"
+    },
+    {
+      "name": "R",
+      "type": "positive scalar",
+      "def": "Diagonal ellipsoid radius.",
+      "role": "radius"
+    },
+    {
+      "name": "c_0",
+      "type": "positive scalar",
+      "def": "Small perturbation constant.",
+      "role": "lower-bound constant"
+    },
+    {
+      "name": "m_n",
+      "type": "integer",
+      "def": "Dimension of the diagonal experiment.",
+      "role": "dimension",
+      "refs": [
+        "n",
+        "a",
+        "s",
+        "R",
+        "c_0"
+      ]
+    },
+    {
+      "name": "\\sigma_j",
+      "type": "positive scalar",
+      "def": "\\(\\sigma_j=j^{-a}\\).",
+      "role": "diagonal singular value",
+      "refs": [
+        "a"
+      ]
+    },
+    {
+      "name": "\\gamma_n",
+      "type": "positive scalar",
+      "def": "Diagonal perturbation amplitude.",
+      "role": "lower-bound amplitude",
+      "refs": [
+        "c_0",
+        "m_n",
+        "a",
+        "n"
+      ]
+    },
+    {
+      "name": "\\Theta_{s,R,m_n}",
+      "type": "parameter set",
+      "space": "\\(\\mathbb R^{m_n}\\)",
+      "def": "Sobolev ellipsoid in the diagonal experiment.",
+      "role": "parameter class",
+      "refs": [
+        "s",
+        "R",
+        "m_n"
+      ]
+    },
+    {
+      "name": "\\theta",
+      "type": "vector",
+      "space": "\\(\\Theta_{s,R,m_n}\\)",
+      "def": "Diagonal signal.",
+      "role": "parameter",
+      "refs": [
+        "\\Theta_{s,R,m_n}"
+      ]
+    },
+    {
+      "name": "B_n",
+      "type": "index set",
+      "space": "\\(\\{1,\\ldots,m_n\\}\\)",
+      "def": "High-frequency perturbation block.",
+      "role": "lower-bound block",
+      "refs": [
+        "m_n"
+      ]
+    },
+    {
+      "name": "\\omega",
+      "type": "sign vector",
+      "space": "\\(\\{-1,1\\}^{|B_n|}\\)",
+      "def": "Assouad hypercube index.",
+      "role": "lower-bound index",
+      "refs": [
+        "B_n"
+      ]
+    },
+    {
+      "name": "\\theta^\\omega",
+      "type": "vector",
+      "space": "\\(\\Theta_{s,R,m_n}\\)",
+      "def": "Diagonal Assouad alternative.",
+      "role": "lower-bound alternative",
+      "refs": [
+        "\\omega",
+        "\\Theta_{s,R,m_n}"
+      ]
+    },
+    {
+      "name": "\\zeta_j^{\\mathrm{tr}}",
+      "type": "random variable",
+      "space": "\\(N(0,1)\\)",
+      "def": "Training Gaussian noise in coordinate \\(j\\).",
+      "role": "lower-bound noise"
+    },
+    {
+      "name": "\\zeta_j^{\\mathrm{va}}",
+      "type": "random variable",
+      "space": "\\(N(0,1)\\)",
+      "def": "Validation Gaussian noise in coordinate \\(j\\).",
+      "role": "lower-bound noise"
+    },
+    {
+      "name": "G_j^{\\mathrm{tr}}",
+      "type": "random variable",
+      "space": "\\(\\mathbb R\\)",
+      "def": "Training Gaussian inverse coordinate.",
+      "role": "lower-bound observation",
+      "refs": [
+        "\\sigma_j",
+        "n"
+      ]
+    },
+    {
+      "name": "G_j^{\\mathrm{va}}",
+      "type": "random variable",
+      "space": "\\(\\mathbb R\\)",
+      "def": "Validation Gaussian inverse coordinate.",
+      "role": "lower-bound observation",
+      "refs": [
+        "\\sigma_j",
+        "n"
+      ]
+    },
+    {
+      "name": "\\mathcal H_{k,m_n}",
+      "type": "function class",
+      "space": "\\(\\Theta_{s,R,m_n}\\)",
+      "def": "Diagonal target cutoff class.",
+      "role": "lower-bound target class",
+      "refs": [
+        "k",
+        "m_n",
+        "\\Theta_{s,R,m_n}"
+      ]
+    },
+    {
+      "name": "\\mathcal F_{k,m_n}",
+      "type": "function class",
+      "space": "\\(\\mathbb R^{m_n}\\)",
+      "def": "Diagonal witness class that annihilates \\(B_n\\).",
+      "role": "lower-bound witness class",
+      "refs": [
+        "k",
+        "m_n",
+        "B_n"
+      ]
+    },
+    {
+      "name": "\\mathcal L^{\\mathrm{tr}}_{k,\\lambda}",
+      "type": "functional",
+      "sig": "\\(\\mathcal H_{k,m_n}\\times\\mathcal F_{k,m_n}\\to\\mathbb R\\)",
+      "def": "Gaussian training TRAE score.",
+      "role": "lower-bound training score",
+      "refs": [
+        "k",
+        "\\lambda",
+        "G_j^{\\mathrm{tr}}",
+        "\\sigma_j",
+        "m_n"
+      ]
+    },
+    {
+      "name": "\\mathcal L^{\\mathrm{va}}_{k,\\lambda}",
+      "type": "functional",
+      "sig": "\\(\\mathcal H_{k,m_n}\\times\\mathcal F_{k,m_n}\\to\\mathbb R\\)",
+      "def": "Gaussian validation TRAE score.",
+      "role": "lower-bound validation score",
+      "refs": [
+        "k",
+        "\\lambda",
+        "G_j^{\\mathrm{va}}",
+        "\\sigma_j",
+        "m_n"
+      ]
+    },
+    {
+      "name": "\\mathscr S_n",
+      "type": "class of procedures",
+      "def": "Borel split-sample path selectors in the diagonal experiment.",
+      "role": "selector class",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "\\widehat\\theta",
+      "type": "estimator",
+      "space": "\\(\\mathbb R^{m_n}\\)",
+      "def": "Output of a selector in \\(\\mathscr S_n\\).",
+      "role": "lower-bound estimator",
+      "refs": [
+        "\\mathscr S_n",
+        "m_n"
+      ]
+    },
+    {
+      "name": "\\mathcal R_n",
+      "type": "functional",
+      "def": "Squared strong \\(\\ell_2\\) risk in the diagonal experiment.",
+      "role": "risk",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "\\mathcal M_n",
+      "type": "class",
+      "def": "Configurations satisfying the proposal member conditions at sample size \\(n\\).",
+      "role": "proposal class",
+      "refs": [
+        "n",
+        "P",
+        "\\mathcal K",
+        "\\mathcal H_k",
+        "\\mathcal F_k"
+      ]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ass:iid",
+      "kind": "sampling",
+      "condition": "\\((W_i)_{i=1}^n\\stackrel{\\mathrm{iid}}{\\sim}P\\).",
+      "free_symbols": [
+        "W_i",
+        "n",
+        "P"
+      ],
+      "standard": {
+        "name": "independent and identically distributed sampling",
+        "cite": "TanSyrgkanis2026Adaptive"
+      },
+      "used_by": [
+        "conj:validated-misspecified-trae"
+      ]
+    },
+    {
+      "id": "ass:split",
+      "kind": "sampling",
+      "condition": "\\(I_{\\mathrm{tr}}\\dot\\cup I_{\\mathrm{va}}=\\{1,\\ldots,n\\}\\) and \\(n_{\\mathrm{tr}}\\wedge n_{\\mathrm{va}}\\ge n/3\\).",
+      "free_symbols": [
+        "I_{\\mathrm{tr}}",
+        "I_{\\mathrm{va}}",
+        "n_{\\mathrm{tr}}",
+        "n_{\\mathrm{va}}",
+        "n"
+      ],
+      "standard": {
+        "name": "balanced sample splitting",
+        "cite": "LiLanSyrgkanisWangUehara2024RegularizedDeepIV"
+      },
+      "used_by": [
+        "lem:well-defined-path",
+        "conj:validated-misspecified-trae"
+      ]
+    },
+    {
+      "id": "ass:pseudotrue-attainment",
+      "kind": "identification",
+      "condition": "\\(\\operatorname*{arg\\,min}_{h\\in L_X}\\|Th-r\\|_{L_2(P_Z)}\\ne\\varnothing\\).",
+      "free_symbols": [
+        "T",
+        "r",
+        "L_X",
+        "L_Z"
+      ],
+      "standard": {
+        "name": "attained pseudo-true projection in misspecified conditional moments",
+        "cite": "AiChen2007MisspecifiedConditionalMoments"
+      },
+      "used_by": [
+        "lem:pseudotrue-projections",
+        "conj:validated-misspecified-trae"
+      ]
+    },
+    {
+      "id": "ass:source",
+      "kind": "regularity",
+      "condition": "\\(\\exists w\\in L_X:\\ h^\\dagger=(T^*T)^{\\beta/2}w\\ \\text{ and }\\ \\|w\\|_{L_2(P_X)}\\le B\\).",
+      "free_symbols": [
+        "w",
+        "L_X",
+        "h^\\dagger",
+        "T",
+        "T^*",
+        "\\beta",
+        "P_X",
+        "B"
+      ],
+      "standard": {
+        "name": "Hölder source condition with Tikhonov qualification two",
+        "cite": "TanSyrgkanis2026Adaptive"
+      },
+      "used_by": [
+        "conj:validated-misspecified-trae",
+        "prop:zero-defect-calibration"
+      ]
+    },
+    {
+      "id": "ass:iv-validity",
+      "kind": "causal",
+      "condition": "\\(E_P[Y-h_0(X)\\mid Z]=0\\quad P\\text{-a.s.}\\).",
+      "free_symbols": [
+        "P",
+        "Y",
+        "h_0",
+        "X",
+        "Z"
+      ],
+      "standard": {
+        "name": "valid NPIV structural conditional moment",
+        "cite": "BennettKallusMaoNeweySyrgkanisUehara2023MinimaxIV"
+      },
+      "used_by": [
+        "prop:zero-defect-calibration"
+      ]
+    },
+    {
+      "id": "ass:completeness",
+      "kind": "identification",
+      "condition": "\\(\\ker(T)=\\{0\\}\\).",
+      "free_symbols": [
+        "T"
+      ],
+      "standard": {
+        "name": "NPIV completeness or injectivity",
+        "cite": "BennettKallusMaoNeweySyrgkanisUehara2023MinimaxIV"
+      },
+      "used_by": [
+        "prop:zero-defect-calibration"
+      ]
+    },
+    {
+      "id": "ass:finite-candidates",
+      "kind": "complexity",
+      "condition": "\\(|\\mathcal K|=K<\\infty\\).",
+      "free_symbols": [
+        "\\mathcal K",
+        "K"
+      ],
+      "standard": {
+        "name": "finite candidate-model collection",
+        "cite": "LiLanSyrgkanisWangUehara2024RegularizedDeepIV"
+      },
+      "used_by": [
+        "lem:well-defined-path",
+        "conj:validated-misspecified-trae"
+      ]
+    },
+    {
+      "id": "ass:target-origin",
+      "kind": "geometry",
+      "condition": "\\(\\forall k\\in\\mathcal K:\\ 0\\in\\mathcal H_k\\).",
+      "free_symbols": [
+        "k",
+        "\\mathcal K",
+        "\\mathcal H_k"
+      ],
+      "standard": {
+        "name": "zero-contained sieve class",
+        "cite": "DikkalaLewisMackeySyrgkanis2020Minimax"
+      },
+      "used_by": [
+        "lem:well-defined-path"
+      ]
+    },
+    {
+      "id": "ass:target-closed",
+      "kind": "geometry",
+      "condition": "\\(\\forall k\\in\\mathcal K:\\ \\mathcal H_k\\subset L_X\\text{ is closed}\\).",
+      "free_symbols": [
+        "k",
+        "\\mathcal K",
+        "\\mathcal H_k",
+        "L_X"
+      ],
+      "standard": {
+        "name": "closed sieve class",
+        "cite": "AiChen2007MisspecifiedConditionalMoments"
+      },
+      "used_by": [
+        "lem:pseudotrue-projections"
+      ]
+    },
+    {
+      "id": "ass:target-convex",
+      "kind": "geometry",
+      "condition": "\\(\\forall k\\in\\mathcal K:\\ \\mathcal H_k\\text{ is convex}\\).",
+      "free_symbols": [
+        "k",
+        "\\mathcal K",
+        "\\mathcal H_k"
+      ],
+      "standard": {
+        "name": "convex sieve class",
+        "cite": "AiChen2007MisspecifiedConditionalMoments"
+      },
+      "used_by": [
+        "lem:pseudotrue-projections"
+      ]
+    },
+    {
+      "id": "ass:witness-nonempty",
+      "kind": "geometry",
+      "condition": "\\(\\forall k\\in\\mathcal K:\\ \\mathcal F_k\\ne\\varnothing\\).",
+      "free_symbols": [
+        "k",
+        "\\mathcal K",
+        "\\mathcal F_k"
+      ],
+      "standard": {
+        "name": "nonempty minimax witness class",
+        "cite": "DikkalaLewisMackeySyrgkanis2020Minimax"
+      },
+      "used_by": [
+        "lem:well-defined-path"
+      ]
+    },
+    {
+      "id": "ass:witness-star",
+      "kind": "geometry",
+      "condition": "\\(\\forall(k,t)\\in\\mathcal K\\times[0,1]:\\ t\\mathcal F_k\\subseteq\\mathcal F_k\\).",
+      "free_symbols": [
+        "k",
+        "\\mathcal K",
+        "\\mathcal F_k"
+      ],
+      "standard": {
+        "name": "star-convex minimax witness class",
+        "cite": "DikkalaLewisMackeySyrgkanis2020Minimax"
+      },
+      "used_by": [
+        "conj:validated-misspecified-trae"
+      ]
+    },
+    {
+      "id": "ass:witness-symmetry",
+      "kind": "geometry",
+      "condition": "\\(\\forall k\\in\\mathcal K,\\forall f\\in\\mathcal F_k:\\ -f\\in\\mathcal F_k\\).",
+      "free_symbols": [
+        "k",
+        "\\mathcal K",
+        "\\mathcal F_k"
+      ],
+      "standard": {
+        "name": "symmetric minimax witness class",
+        "cite": "DikkalaLewisMackeySyrgkanis2020Minimax"
+      },
+      "used_by": [
+        "conj:validated-misspecified-trae"
+      ]
+    },
+    {
+      "id": "ass:bounded-envelope",
+      "kind": "moments",
+      "condition": "\\(|Y|\\vee\\sup_{k\\in\\mathcal K}\\sup_{h\\in\\mathcal H_k}|h(X)|\\vee\\sup_{k\\in\\mathcal K}\\sup_{f\\in\\mathcal F_k}|f(Z)|\\le B\\quad P\\text{-a.s.}\\).",
+      "free_symbols": [
+        "Y",
+        "k",
+        "\\mathcal K",
+        "\\mathcal H_k",
+        "X",
+        "\\mathcal F_k",
+        "Z",
+        "B",
+        "P"
+      ],
+      "standard": {
+        "name": "uniform bounded-envelope condition",
+        "cite": "DikkalaLewisMackeySyrgkanis2020Minimax"
+      },
+      "used_by": [
+        "lem:well-defined-path",
+        "conj:validated-misspecified-trae"
+      ]
+    },
+    {
+      "id": "ass:residual-calibration",
+      "kind": "identification",
+      "condition": "\\(\\forall k\\in\\mathcal K,\\forall f\\in\\mathcal F_k:\\ E_P[q_{h^\\dagger}(Z)f(Z)]=0\\).",
+      "free_symbols": [
+        "k",
+        "\\mathcal K",
+        "\\mathcal F_k",
+        "P",
+        "q_h",
+        "h^\\dagger",
+        "Z"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "This holds for candidate critics contained in the closure of the conditional-expectation range, since the least-squares pseudo-true residual is orthogonal to that range. Sieve critics made from conditional expectations of target-basis functions give a concrete implementation."
+      },
+      "used_by": [
+        "conj:validated-misspecified-trae"
+      ]
+    },
+    {
+      "id": "ass:dense-enumeration",
+      "kind": "measurability",
+      "condition": "\\(\\forall k\\in\\mathcal K:\\ (h_{k,\\ell})_{\\ell\\ge1}\\subset\\mathcal H_k\\text{ is fixed and dense in }\\mathcal H_k\\text{ under }\\|\\cdot\\|_{L_2(P_X)}\\).",
+      "free_symbols": [
+        "k",
+        "\\mathcal K",
+        "h_{k,\\ell}",
+        "\\ell",
+        "\\mathcal H_k",
+        "P_X"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "Fixed countable neural-network or sieve dictionaries with rational coefficients are dense in their separable closures. Fixing the enumeration before observing the sample makes an implementable deterministic tie-break possible."
+      },
+      "used_by": [
+        "lem:well-defined-path"
+      ]
+    },
+    {
+      "id": "ass:training-evaluation-measurable",
+      "kind": "measurability",
+      "condition": "\\(\\forall(k,\\lambda,\\ell)\\in\\mathcal K\\times\\Lambda_n\\times\\mathbb N:\\ A_{k,\\lambda,\\ell}\\text{ is Borel measurable}\\).",
+      "free_symbols": [
+        "k",
+        "\\mathcal K",
+        "\\lambda",
+        "\\Lambda_n",
+        "\\ell",
+        "A_{k,\\lambda,\\ell}"
+      ],
+      "standard": {
+        "name": "pointwise measurable empirical-process criterion",
+        "cite": "VanDerVaartWellner1996"
+      },
+      "used_by": [
+        "lem:well-defined-path"
+      ]
+    },
+    {
+      "id": "ass:criterion-lsc",
+      "kind": "measurability",
+      "condition": "\\(\\forall(k,\\lambda)\\in\\mathcal K\\times\\Lambda_n:\\ h\\mapsto\\sup_{f\\in\\mathcal F_k}\\{2P_{\\mathrm{tr}}[(Y-h(X))f(Z)]-P_{\\mathrm{tr}}f(Z)^2\\}+\\lambda P_{\\mathrm{tr}}h(X)^2\\text{ is lower semicontinuous on }\\mathcal H_k\\).",
+      "free_symbols": [
+        "k",
+        "\\mathcal K",
+        "\\lambda",
+        "\\Lambda_n",
+        "\\mathcal F_k",
+        "P_{\\mathrm{tr}}",
+        "Y",
+        "X",
+        "Z",
+        "\\mathcal H_k"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "Finite sieves and rationally parameterized continuous neural classes with compact parameter closure have lower-semicontinuous empirical objectives. This primitive regularity lets a fixed dense dictionary approximate the empirical infimum without selecting a nonmeasurable optimizer."
+      },
+      "used_by": [
+        "lem:well-defined-path"
+      ]
+    },
+    {
+      "id": "ass:validation-score-measurable",
+      "kind": "measurability",
+      "condition": "\\(\\forall(k,\\lambda)\\in\\mathcal K\\times\\Lambda_n:\\ \\widehat V_{k,\\lambda}\\text{ is Borel measurable}\\).",
+      "free_symbols": [
+        "k",
+        "\\mathcal K",
+        "\\lambda",
+        "\\Lambda_n",
+        "\\widehat V_{k,\\lambda}"
+      ],
+      "standard": {
+        "name": "pointwise measurable validation criterion",
+        "cite": "VanDerVaartWellner1996"
+      },
+      "used_by": [
+        "lem:well-defined-path"
+      ]
+    },
+    {
+      "id": "ass:enumeration-infimum",
+      "kind": "measurability",
+      "condition": "\\(\\forall(k,\\lambda)\\in\\mathcal K\\times\\Lambda_n:\\ \\inf_{\\ell\\ge1}A_{k,\\lambda,\\ell}=\\inf_{h\\in\\mathcal H_k}\\{\\sup_{f\\in\\mathcal F_k}[2P_{\\mathrm{tr}}[(Y-h(X))f(Z)]-P_{\\mathrm{tr}}f(Z)^2]+\\lambda P_{\\mathrm{tr}}h(X)^2\\}\\).",
+      "free_symbols": [
+        "k",
+        "\\mathcal K",
+        "\\lambda",
+        "\\Lambda_n",
+        "\\ell",
+        "A_{k,\\lambda,\\ell}",
+        "\\mathcal H_k",
+        "\\mathcal F_k",
+        "P_{\\mathrm{tr}}",
+        "Y",
+        "X",
+        "Z"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "It is satisfied when the empirical criterion is lower semicontinuous along the fixed dense dictionary and the dictionary is chosen to be criterion-dense, as for finite sieves and rationally parameterized continuous neural classes with compact parameter closure. It rules out a nonconstructive optimizer without assuming a statistical rate."
+      },
+      "used_by": [
+        "lem:well-defined-path"
+      ]
+    },
+    {
+      "id": "ass:localized-radius",
+      "kind": "complexity",
+      "condition": "\\(\\forall(k,\\lambda)\\in\\mathcal K\\times\\Lambda_n:\\ 0\\le\\rho_{k,\\lambda,n}<\\infty\\text{ at confidence }\\eta/(2K|\\Lambda_n|)\\).",
+      "free_symbols": [
+        "k",
+        "\\mathcal K",
+        "\\lambda",
+        "\\Lambda_n",
+        "\\rho_{k,\\lambda,n}",
+        "n",
+        "\\eta",
+        "K"
+      ],
+      "standard": {
+        "name": "localized Rademacher critical-radius condition",
+        "cite": "DikkalaLewisMackeySyrgkanis2020Minimax"
+      },
+      "used_by": [
+        "conj:validated-misspecified-trae"
+      ]
+    },
+    {
+      "id": "ass:grid-coverage",
+      "kind": "technical",
+      "condition": "\\(\\forall k\\in\\mathcal K:\\ 0<s_{k,n}\\le1\\Longrightarrow 2^{-J_n}\\le\\lambda^\\circ_{k,n}/2=s_{k,n}^{1/(1+\\bar\\beta)}/2\\).",
+      "free_symbols": [
+        "k",
+        "\\mathcal K",
+        "s_{k,n}",
+        "J_n",
+        "\\lambda^\\circ_{k,n}",
+        "\\bar\\beta"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "This proposal-specific truncation condition only requires the displayed finite grid to reach the continuous oracle scale. With \\(J_n=\\lceil\\log_2 n\\rceil\\), it follows elementarily if \\(s_{k,n}\\ge2^{-(1+\\bar\\beta)}n^{-(1+\\bar\\beta)}\\) for every candidate, which is directly checkable from the declared scale."
+      },
+      "used_by": [
+        "prop:zero-defect-calibration"
+      ]
+    },
+    {
+      "id": "ass:diagonal-dimension",
+      "kind": "technical",
+      "condition": "\\(m_n\\ge2\\).",
+      "free_symbols": [
+        "m_n"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "The explicit Assouad handle needs a nonempty high-frequency block. Its displayed dimension formula satisfies this eventually for fixed positive \\(R\\) and sufficiently small \\(c_0\\)."
+      },
+      "used_by": [
+        "oeq:sharp-witness-and-target-floor"
+      ]
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def:proposal-class",
+      "name": "Misspecified TRAE configuration class",
+      "construction": "\\(\\mathcal M_n=\\{(P,(\\mathcal H_k,\\mathcal F_k,h_{k,\\ell})_{k\\in\\mathcal K,\\ell\\ge1}):\\texttt{ass:iid},\\texttt{ass:split},\\texttt{ass:pseudotrue-attainment},\\texttt{ass:finite-candidates},\\texttt{ass:target-origin},\\texttt{ass:target-closed},\\texttt{ass:target-convex},\\texttt{ass:witness-nonempty},\\texttt{ass:witness-star},\\texttt{ass:witness-symmetry},\\texttt{ass:bounded-envelope},\\texttt{ass:residual-calibration},\\texttt{ass:dense-enumeration},\\texttt{ass:training-evaluation-measurable},\\texttt{ass:criterion-lsc},\\texttt{ass:validation-score-measurable},\\texttt{ass:enumeration-infimum},\\texttt{ass:localized-radius}\\}\\).",
+      "by_member_properties": [
+        "ass:iid",
+        "ass:split",
+        "ass:pseudotrue-attainment",
+        "ass:finite-candidates",
+        "ass:target-origin",
+        "ass:target-closed",
+        "ass:target-convex",
+        "ass:witness-nonempty",
+        "ass:witness-star",
+        "ass:witness-symmetry",
+        "ass:bounded-envelope",
+        "ass:residual-calibration",
+        "ass:dense-enumeration",
+        "ass:training-evaluation-measurable",
+        "ass:criterion-lsc",
+        "ass:validation-score-measurable",
+        "ass:enumeration-infimum",
+        "ass:localized-radius"
+      ]
+    },
+    {
+      "id": "def:split",
+      "name": "Training and validation measures",
+      "construction": "\\(P_{\\mathrm{tr}}=n_{\\mathrm{tr}}^{-1}\\sum_{i\\in I_{\\mathrm{tr}}}\\delta_{W_i}\\) and \\(P_{\\mathrm{va}}=n_{\\mathrm{va}}^{-1}\\sum_{i\\in I_{\\mathrm{va}}}\\delta_{W_i}\\).",
+      "inputs": [
+        "I_{\\mathrm{tr}}",
+        "I_{\\mathrm{va}}",
+        "n_{\\mathrm{tr}}",
+        "n_{\\mathrm{va}}",
+        "W_i"
+      ]
+    },
+    {
+      "id": "def:grid",
+      "name": "Technically truncated simultaneous grid",
+      "construction": "\\(J_n=\\lceil\\log_2n\\rceil\\), \\(\\Lambda_n=\\{2^{-j}:j=0,\\ldots,J_n\\}\\), \\(\\delta_{k,n}^2=\\max_{\\lambda\\in\\Lambda_n}\\rho_{k,\\lambda,n}^2+B^2\\sqrt{\\log(4K|\\Lambda_n|/\\eta)/n_{\\mathrm{tr}}}\\), \\(s_{k,n}=\\delta_{k,n}^2+B^2\\sqrt{\\log(4K|\\Lambda_n|/\\eta)/n_{\\mathrm{va}}}\\), and \\(\\lambda^\\circ_{k,n}=s_{k,n}^{1/(1+\\bar\\beta)}\\).",
+      "inputs": [
+        "n",
+        "\\rho_{k,\\lambda,n}",
+        "B",
+        "K",
+        "\\Lambda_n",
+        "\\eta",
+        "n_{\\mathrm{tr}}",
+        "n_{\\mathrm{va}}",
+        "\\bar\\beta"
+      ]
+    },
+    {
+      "id": "def:pseudotrue-target",
+      "name": "Minimum-norm pseudo-true inverse projection",
+      "construction": "\\(h^\\dagger=\\operatorname*{arg\\,min}_{h\\in\\operatorname*{arg\\,min}_{g\\in L_X}\\|Tg-r\\|_{L_2(P_Z)}}\\|h\\|_{L_2(P_X)}\\).",
+      "inputs": [
+        "T",
+        "r",
+        "L_X",
+        "L_Z",
+        "P_X",
+        "P_Z"
+      ]
+    },
+    {
+      "id": "def:misspecification",
+      "name": "Target approximation and witness deficiency",
+      "construction": "\\(h_{\\mathcal H,k}^\\dagger=\\operatorname*{arg\\,min}_{h\\in\\mathcal H_k}\\|h-h^\\dagger\\|_{L_2(P_X)}\\), \\(\\varepsilon_{H,k}=\\|h_{\\mathcal H,k}^\\dagger-h^\\dagger\\|_{L_2(P_X)}\\), \\(D_{\\mathcal F_k}(q)=\\sup_{f\\in\\mathcal F_k}\\{2E_P[q(Z)f(Z)]-E_P[f(Z)^2]\\}\\), and \\(\\varepsilon_{F,k}^2=\\sup_{h\\in\\mathcal H_k}\\{\\|q_h-q_{h^\\dagger}\\|_{L_2(P_Z)}^2-D_{\\mathcal F_k}(q_h-q_{h^\\dagger})\\}_+\\).",
+      "inputs": [
+        "\\mathcal H_k",
+        "\\mathcal F_k",
+        "h^\\dagger",
+        "P",
+        "T",
+        "r",
+        "P_X",
+        "P_Z"
+      ]
+    },
+    {
+      "id": "def:trae-path",
+      "name": "Explicit measurable training TRAE path",
+      "construction": "For \\(k\\in\\mathcal K,\\lambda\\in\\Lambda_n,\\ell\\ge1\\), set \\(A_{k,\\lambda,\\ell}=\\sup_{f\\in\\mathcal F_k}\\{2P_{\\mathrm{tr}}[(Y-h_{k,\\ell}(X))f(Z)]-P_{\\mathrm{tr}}[f(Z)^2]\\}+\\lambda P_{\\mathrm{tr}}[h_{k,\\ell}(X)^2]\\) and \\(a_{k,\\lambda}=\\inf_{\\ell\\ge1}A_{k,\\lambda,\\ell}\\). On \\(\\{\\exists\\ell:A_{k,\\lambda,\\ell}\\le a_{k,\\lambda}+n^{-1}\\}\\), let \\(\\widehat\\ell_{k,\\lambda}=\\min\\{\\ell\\ge1:A_{k,\\lambda,\\ell}\\le a_{k,\\lambda}+n^{-1}\\}\\); on its complement set \\(\\widehat\\ell_{k,\\lambda}=1\\). Define \\(\\widehat h_{k,\\lambda}=h_{k,\\widehat\\ell_{k,\\lambda}}\\).",
+      "inputs": [
+        "P_{\\mathrm{tr}}",
+        "\\mathcal H_k",
+        "\\mathcal F_k",
+        "h_{k,\\ell}",
+        "\\lambda",
+        "Y",
+        "X",
+        "Z",
+        "n"
+      ]
+    },
+    {
+      "id": "def:validation-selector",
+      "name": "Observable split-sample validation selector",
+      "construction": "\\(\\widehat V_{k,\\lambda}=\\sup_{f\\in\\mathcal F_k}\\{2P_{\\mathrm{va}}[(Y-\\widehat h_{k,\\lambda}(X))f(Z)]-P_{\\mathrm{va}}[f(Z)^2]\\}+\\lambda P_{\\mathrm{va}}[\\widehat h_{k,\\lambda}(X)^2]\\), \\(\\operatorname{pen}_{k,\\lambda}=8B^2\\sqrt{\\log(4K|\\Lambda_n|/\\eta)/n_{\\mathrm{va}}}\\), and \\((\\widehat k,\\widehat\\lambda)\\) is the lexicographically least minimizer of \\(\\widehat V_{k,\\lambda}+\\operatorname{pen}_{k,\\lambda}\\) on \\(\\mathcal K\\times\\Lambda_n\\); set \\(\\widehat h=\\widehat h_{\\widehat k,\\widehat\\lambda}\\).",
+      "inputs": [
+        "P_{\\mathrm{va}}",
+        "\\widehat h_{k,\\lambda}",
+        "\\mathcal F_k",
+        "\\lambda",
+        "B",
+        "K",
+        "\\Lambda_n",
+        "\\eta",
+        "n_{\\mathrm{va}}",
+        "\\mathcal K"
+      ]
+    },
+    {
+      "id": "def:two-coordinate-diagonal",
+      "name": "Bounded two-coordinate domain-separation construction",
+      "construction": "Let \\(U,V,\\xi\\) be mutually independent Rademacher variables, set \\(Z=X=(U,V)\\) and \\(Y=a_0U+b_0V+\\xi\\). Take \\(\\mathcal H^\\circ=\\{aU+bV:|a|\\vee|b|\\le1/4\\}\\), \\(\\mathcal F_1^\\circ=\\{sU+tV:|s|\\vee|t|\\le1\\}\\), and \\(\\mathcal F_2^\\circ=\\{sU:|s|\\le1\\}\\).",
+      "inputs": [
+        "U",
+        "V",
+        "\\xi",
+        "a_0",
+        "b_0",
+        "\\mathcal H^\\circ",
+        "\\mathcal F_1^\\circ",
+        "\\mathcal F_2^\\circ"
+      ]
+    },
+    {
+      "id": "def:witness-floor-handle",
+      "name": "Quantified diagonal Assouad handle",
+      "construction": "Set \\(m_n=\\lfloor(R^2n/(16c_0^2))^{1/(2a+2s+1)}\\rfloor\\), \\(\\sigma_j=j^{-a}\\), \\(\\gamma_n=c_0(m_n/2)^a/\\sqrt n\\), \\(\\Theta_{s,R,m_n}=\\{u\\in\\mathbb R^{m_n}:\\sum_{j=1}^{m_n}j^{2s}u_j^2\\le R^2\\}\\), and \\(B_n=\\{\\lceil m_n/2\\rceil,\\ldots,m_n\\}\\). For \\(\\omega\\in\\{-1,1\\}^{|B_n|}\\), set \\(\\theta_j^\\omega=\\gamma_n\\omega_j\\) on \\(B_n\\) and zero otherwise. In independent halves observe \\(G_j^{\\mathrm{tr}}=\\sigma_j\\theta_j+\\sqrt{2/n}\\zeta_j^{\\mathrm{tr}}\\) and \\(G_j^{\\mathrm{va}}=\\sigma_j\\theta_j+\\sqrt{2/n}\\zeta_j^{\\mathrm{va}}\\), with independent standard Gaussian noises. For \\(k=0,\\ldots,m_n\\), let \\(\\mathcal H_{k,m_n}=\\{u\\in\\Theta_{s,R,m_n}:u_j=0\\text{ for }j>k\\}\\) and \\(\\mathcal F_{k,m_n}=\\{f\\in\\mathbb R^{m_n}:f_j=0\\text{ for }j\\in B_n\\}\\). Thus \\(\\mathcal H_{m_n,m_n}=\\Theta_{s,R,m_n}\\) and every witness annihilates \\(B_n\\). Define \\(\\mathcal L^{\\mathrm{tr}}_{k,\\lambda}(u,f)=2\\sum_{j=1}^{m_n}(G_j^{\\mathrm{tr}}-\\sigma_ju_j)f_j-\\sum_{j=1}^{m_n}f_j^2+\\lambda\\sum_{j=1}^{m_n}u_j^2\\), with \\(\\mathcal L^{\\mathrm{va}}_{k,\\lambda}\\) obtained by replacing \\(G_j^{\\mathrm{tr}}\\) by \\(G_j^{\\mathrm{va}}\\). Let \\(\\mathscr S_n\\) be the Borel maps that choose a training minimizer for every finite \\((k,\\lambda)\\) path and the lexicographically least validation-score minimizer. For \\(\\theta=\\theta^\\omega\\), \\(\\varepsilon_{H,k}^2=\\sum_{j>k}(\\theta_j^\\omega)^2\\), \\(\\varepsilon_{H,m_n}=0\\), and \\(\\varepsilon_{F,m_n}^2\\ge\\sum_{j\\in B_n}\\sigma_j^2(\\theta_j^\\omega)^2\\ge|B_n|\\sigma_{m_n}^2\\gamma_n^2\\). At \\(\\lambda=m_n^{-2a}\\), \\(\\varepsilon_{F,m_n}^2/\\lambda\\ge|B_n|\\gamma_n^2\\). Neighboring Gaussian alternatives have Kullback--Leibler divergence at most \\(2c_0^2\\). The Handle is Assouad comparison under \\(\\mathcal R_n(\\widehat\\theta,\\theta)=E_\\theta\\|\\widehat\\theta-\\theta\\|_2^2\\).",
+      "inputs": [
+        "a",
+        "s",
+        "R",
+        "c_0",
+        "m_n",
+        "\\sigma_j",
+        "\\gamma_n",
+        "\\Theta_{s,R,m_n}",
+        "\\theta",
+        "B_n",
+        "\\omega",
+        "\\theta^\\omega",
+        "\\zeta_j^{\\mathrm{tr}}",
+        "\\zeta_j^{\\mathrm{va}}",
+        "G_j^{\\mathrm{tr}}",
+        "G_j^{\\mathrm{va}}",
+        "\\mathcal H_{k,m_n}",
+        "\\mathcal F_{k,m_n}",
+        "\\mathcal L^{\\mathrm{tr}}_{k,\\lambda}",
+        "\\mathcal L^{\\mathrm{va}}_{k,\\lambda}",
+        "\\mathscr S_n",
+        "\\mathcal R_n"
+      ]
+    }
+  ],
+  "statements": [
+    {
+      "id": "lem:operator-contraction",
+      "kind": "lemma",
+      "statement": "For the conditional-expectation operator \\(T\\), \\(\\|T(h-h')\\|_{L_2(P_Z)}\\le\\|h-h'\\|_{L_2(P_X)}\\) for all \\(h,h'\\in L_X\\).",
+      "depends_on": [],
+      "status": "to-prove",
+      "justification": "Jensen contraction gives the needed continuity without a separate continuity assumption.",
+      "gap": "This is a derived property of conditional expectation rather than a restriction imposed by TRAE or RDIV.",
+      "consumer": "It supplies the continuity step for the pseudo-true and approximation geometry."
+    },
+    {
+      "id": "lem:pseudotrue-projections",
+      "kind": "lemma",
+      "statement": "Under \\(\\texttt{ass:pseudotrue-attainment}\\), \\(\\texttt{ass:target-closed}\\), and \\(\\texttt{ass:target-convex}\\), \\(h^\\dagger\\) in \\(\\texttt{def:pseudotrue-target}\\) and every \\(h_{\\mathcal H,k}^\\dagger\\) in \\(\\texttt{def:misspecification}\\) are uniquely defined.",
+      "depends_on": [
+        "ass:pseudotrue-attainment",
+        "ass:target-closed",
+        "ass:target-convex",
+        "def:pseudotrue-target",
+        "def:misspecification",
+        "lem:operator-contraction"
+      ],
+      "status": "to-prove",
+      "justification": "Both defect coordinates require unique reference points.",
+      "gap": "The argument uses Hilbert-space metric projections rather than an unspecified pseudo-true witness.",
+      "consumer": "It makes the candidate-specific approximation coordinates reproducible."
+    },
+    {
+      "id": "lem:well-defined-path",
+      "kind": "lemma",
+      "statement": "Under \\(\\texttt{ass:split}\\), \\(\\texttt{ass:finite-candidates}\\), \\(\\texttt{ass:target-origin}\\), \\(\\texttt{ass:witness-nonempty}\\), \\(\\texttt{ass:witness-star}\\), \\(\\texttt{ass:bounded-envelope}\\), \\(\\texttt{ass:dense-enumeration}\\), \\(\\texttt{ass:training-evaluation-measurable}\\), \\(\\texttt{ass:criterion-lsc}\\), \\(\\texttt{ass:validation-score-measurable}\\), and \\(\\texttt{ass:enumeration-infimum}\\), the least-index map \\(\\widehat\\ell_{k,\\lambda}\\) in \\(\\texttt{def:trae-path}\\) is measurable and \\(A_{k,\\lambda,\\widehat\\ell_{k,\\lambda}}\\le a_{k,\\lambda}+n^{-1}\\) almost surely. Consequently every \\(\\widehat h_{k,\\lambda}\\) and holdout score is measurable, finite, and the lexicographic validation selector is a measurable finite argmin.",
+      "depends_on": [
+        "ass:split",
+        "ass:finite-candidates",
+        "ass:target-origin",
+        "ass:witness-nonempty",
+        "ass:witness-star",
+        "ass:bounded-envelope",
+        "ass:dense-enumeration",
+        "ass:training-evaluation-measurable",
+        "ass:criterion-lsc",
+        "ass:validation-score-measurable",
+        "ass:enumeration-infimum",
+        "def:split",
+        "def:grid",
+        "def:trae-path",
+        "def:validation-selector"
+      ],
+      "status": "to-prove",
+      "justification": "The selector is an explicit measurable algorithm, not an appeal to an unverified measurable-selection theorem.",
+      "gap": "Existing TRAE analyses may state an approximate optimizer abstractly; the countable least-index construction fixes an implementable version for validation.",
+      "consumer": "It makes the selected estimator a legitimate random element for high-probability oracle analysis."
+    },
+    {
+      "id": "conj:validated-misspecified-trae",
+      "kind": "conjecture",
+      "statement": "Under the member conditions of \\(\\mathcal M_n\\) and \\(\\texttt{ass:source}\\), the measurable observable selector in \\(\\texttt{def:validation-selector}\\) should satisfy, with probability at least \\(1-\\eta\\), \\[\\|\\widehat h-h^\\dagger\\|_{L_2(P_X)}^2\\le C\\inf_{k\\in\\mathcal K,\\lambda\\in\\Lambda_n}\\left\\{\\lambda^{\\bar\\beta}+\\frac{\\delta_{k,n}^2+\\varepsilon_{H,k}^2+\\varepsilon_{F,k}^2+B^2\\sqrt{\\log(4K|\\Lambda_n|/\\eta)/n_{\\mathrm{va}}}}{\\lambda}\\right\\},\\] and \\[\\|T(\\widehat h-h^\\dagger)\\|_{L_2(P_Z)}^2\\le C\\inf_{k\\in\\mathcal K,\\lambda\\in\\Lambda_n}\\left\\{\\lambda^{\\bar\\beta}+\\delta_{k,n}^2+\\varepsilon_{H,k}^2+\\varepsilon_{F,k}^2+B^2\\sqrt{\\log(4K|\\Lambda_n|/\\eta)/n_{\\mathrm{va}}}\\right\\}.\\] Here \\(\\delta_{k,n}\\) uses candidate radii at allocation \\(\\eta/(2K|\\Lambda_n|)\\), so the training event is simultaneous over every \\((k,\\lambda)\\). Under \\(\\texttt{ass:iv-validity}\\) and \\(\\texttt{ass:completeness}\\), \\(h^\\dagger=h_0\\); absent that calibration, \\(h^\\dagger\\) is only the stated pseudo-true sensitivity target.",
+      "depends_on": [
+        "def:proposal-class",
+        "ass:source",
+        "ass:iv-validity",
+        "ass:completeness",
+        "def:grid",
+        "def:pseudotrue-target",
+        "def:misspecification",
+        "def:trae-path",
+        "def:validation-selector",
+        "lem:operator-contraction",
+        "lem:pseudotrue-projections",
+        "lem:well-defined-path"
+      ],
+      "status": "to-prove",
+      "justification": "This is the load-bearing proposed result: an observable model-pair and regularization selector with separate target and witness defects.",
+      "gap": "Tan and Syrgkanis (2026, Theorem 3.13 and Remark 3.8) use realizability and exact witness closeness. Li et al. (2024, Theorem 12 and Section 8) validate misspecified RDIV with an explicit learned operator, not an implicit adversarial critic that omits residual coordinates.",
+      "consumer": "If proved, it supplies computable joint class selection for NPIV and proximal bridge estimation with imperfect target and critic sieves."
+    },
+    {
+      "id": "prop:zero-defect-calibration",
+      "kind": "proposition",
+      "statement": "Under \\(\\texttt{ass:iv-validity}\\) and \\(\\texttt{ass:completeness}\\), \\(h^\\dagger=h_0\\) is defined without \\(\\texttt{ass:pseudotrue-attainment}\\). If some \\(k_0\\in\\mathcal K\\) satisfies \\(h_0\\in\\mathcal H_{k_0}\\) and \\(D_{\\mathcal F_{k_0}}(q_h-q_{h_0})=\\|q_h-q_{h_0}\\|_{L_2(P_Z)}^2\\) for every \\(h\\in\\mathcal H_{k_0}\\), then \\(\\varepsilon_{H,k_0}=\\varepsilon_{F,k_0}=0\\). If also \\(\\texttt{ass:grid-coverage}\\) holds, the strong-error display proposed in \\(\\texttt{conj:validated-misspecified-trae}\\) is bounded by \\(C\\inf_{\\lambda\\in\\Lambda_n}\\{\\lambda^{\\bar\\beta}+s_{k_0,n}/\\lambda\\}\\le C s_{k_0,n}^{\\bar\\beta/(1+\\bar\\beta)}\\). When the holdout scale is no larger than \\(\\delta_{k_0,n}^2\\), this is \\(\\delta_{k_0,n}^{2\\bar\\beta/(1+\\bar\\beta)}\\), with the \\(\\beta>1\\) saturation of Tan--Syrgkanis Theorem 3.13.",
+      "depends_on": [
+        "ass:iv-validity",
+        "ass:completeness",
+        "ass:source",
+        "ass:grid-coverage",
+        "def:pseudotrue-target",
+        "def:misspecification",
+        "def:grid",
+        "conj:validated-misspecified-trae"
+      ],
+      "status": "to-prove",
+      "justification": "The calibration imports standard causal identification and records the observable holdout cost.",
+      "gap": "It is an equivalence calibration, not a claimed improvement over Tan and Syrgkanis.",
+      "consumer": "It checks that exact-closure NPIV applications recover the known saturated benchmark."
+    },
+    {
+      "id": "thm:domain-separation",
+      "kind": "theorem",
+      "statement": "In \\(\\texttt{def:two-coordinate-diagonal}\\), \\(T\\) is the identity on \\(\\mathcal H^\\circ\\), \\(h^\\dagger=h_0=a_0U+b_0V\\), and target approximation is zero. For \\(\\mathcal F_1^\\circ\\), witness deficiency is zero; for \\(\\mathcal F_2^\\circ\\), \\(\\varepsilon_{F,2}^2\\ge b_0^2>0\\), while no learned-operator error is present. This bounded nondegenerate law violates exact witness closeness while satisfying target realizability and is in the positive-witness-deficiency domain of \\(\\texttt{conj:validated-misspecified-trae}\\).",
+      "depends_on": [
+        "def:two-coordinate-diagonal",
+        "def:misspecification"
+      ],
+      "status": "to-prove",
+      "justification": "The construction isolates a residual coordinate omitted by a critic.",
+      "gap": "Li et al. (2024, Theorem 12) separate target and learned-operator errors; neither represents critic blindness when the operator is exact.",
+      "consumer": "It provides a diagnostic for witness enrichment in minimax inverse estimation."
+    },
+    {
+      "id": "oeq:sharp-witness-and-target-floor",
+      "kind": "openendedquestion",
+      "statement": "Under \\(\\texttt{ass:diagonal-dimension}\\), for the diagonal ellipsoid, the alternatives \\(\\theta^\\omega\\), full target class \\(\\mathcal H_{m_n,m_n}\\), restricted witness class \\(\\mathcal F_{m_n,m_n}\\), Gaussian training and validation scores, and Borel split selectors in \\(\\texttt{def:witness-floor-handle}\\), can Assouad's method establish a constant \\(c>0\\) such that every \\(\\widehat\\theta\\in\\mathscr S_n\\) has \\[\\sup_{\\omega\\in\\{-1,1\\}^{|B_n|}}\\mathcal R_n(\\widehat\\theta,\\theta^\\omega)\\ge c|B_n|\\gamma_n^2,\\] and can a companion cutoff family determine whether the displayed \\(\\varepsilon_{F,m_n}^2/m_n^{-2a}\\) and \\(\\varepsilon_{H,k}^2\\) coordinates are jointly unavoidable for this selector class?",
+      "depends_on": [
+        "ass:diagonal-dimension",
+        "def:witness-floor-handle"
+      ],
+      "status": "to-prove",
+      "justification": "The question tests whether critic-blindness amplification is information-theoretic rather than an upper-bound artifact.",
+      "gap": "Neither adaptive TRAE nor misspecified RDIV gives a lower bound for a residual block annihilated by an adversarial witness class.",
+      "consumer": "Its resolution determines whether selectors must explicitly trade target approximation against witness deficiency."
+    }
+  ],
+  "sampling_model": {
+    "design": "Independent sampling from \\(P\\), followed by a deterministic balanced training--validation split.",
+    "units": "\\(W_i=(Y_i,X_i,Z_i)\\), \\(i=1,\\ldots,n\\).",
+    "treatment": "\\(X_i\\) is endogenous and \\(Z_i\\) defines the NPIV conditional moment.",
+    "overlap": "No treatment-overlap condition is used; inverse regularity is expressed through the source condition and the derived conditional-expectation contraction.",
+    "nuisance_estimation": "The operator is not explicitly estimated. A countable, measurable adversarial TRAE path is trained on one split and scored by an independent holdout adversarial Tikhonov loss."
+  },
+  "estimand_functional": "\\(\\|\\widehat h-h^\\dagger\\|_{L_2(P_X)}^2\\lesssim\\inf_{k,\\lambda}\\{\\lambda^{\\bar\\beta}+[\\delta_{k,n}^2+\\varepsilon_{H,k}^2+\\varepsilon_{F,k}^2+B^2\\sqrt{\\log(4K|\\Lambda_n|/\\eta)/n_{\\mathrm{va}}}]/\\lambda\\}\\)",
+  "target_estimand": "\\(h_0\\)",
+  "bibliography": [
+    {
+      "key": "TanSyrgkanis2026Adaptive",
+      "citation": "J. Tan and V. Syrgkanis (2026). Adaptive estimation and inference in conditional moment models via the discrepancy principle. arXiv:2603.01337, Theorem 3.13 and Remark 3.8."
+    },
+    {
+      "key": "LiLanSyrgkanisWangUehara2024RegularizedDeepIV",
+      "citation": "Z. Li, H. Lan, V. Syrgkanis, M. Wang, and M. Uehara (2024). Regularized DeepIV with model selection. arXiv:2403.04236, Theorem 12 and Section 8."
+    },
+    {
+      "key": "DikkalaLewisMackeySyrgkanis2020Minimax",
+      "citation": "N. Dikkala, G. Lewis, L. Mackey, and V. Syrgkanis (2020). Minimax estimation of conditional moment models. NeurIPS 33, 12248--12262."
+    },
+    {
+      "key": "BennettKallusMaoNeweySyrgkanisUehara2023MinimaxIV",
+      "citation": "A. Bennett, N. Kallus, X. Mao, W. Newey, V. Syrgkanis, and M. Uehara (2023). Minimax IV estimation with general function approximation. COLT 2023, arXiv:2302.05404."
+    },
+    {
+      "key": "BennettKallusMaoNeweySyrgkanisUehara2023SourceConditionDR",
+      "citation": "A. Bennett, N. Kallus, X. Mao, W. Newey, V. Syrgkanis, and M. Uehara (2023). Source condition double robust inference on functionals of inverse problems. arXiv:2307.13793."
+    },
+    {
+      "key": "AiChen2007MisspecifiedConditionalMoments",
+      "citation": "C. Ai and X. Chen (2007). Estimation of possibly misspecified semiparametric conditional moment restriction models with different conditioning variables. Journal of Econometrics 141, 5--43."
+    },
+    {
+      "key": "VanDerVaartWellner1996",
+      "citation": "A. van der Vaart and J. Wellner (1996). Weak Convergence and Empirical Processes. Springer."
+    }
+  ],
+  "comparator_promise_table": [
+    {
+      "comparator_bibkey": "TanSyrgkanis2026Adaptive",
+      "comparator_claim": "Theorem 3.13 gives discrepancy-selected TRAE adaptive rates under target realizability and exact witness closeness, with saturation for \\(\\beta>1\\).",
+      "matched_by": "Proposition prop:zero-defect-calibration",
+      "match_kind": "equivalence"
+    },
+    {
+      "comparator_bibkey": "LiLanSyrgkanisWangUehara2024RegularizedDeepIV",
+      "comparator_claim": "Theorem 12 and Section 8 give misspecified RDIV bounds and validation model selection with target-class and learned-operator approximation terms.",
+      "matched_by": "Theorem thm:domain-separation",
+      "match_kind": "non_representability"
+    },
+    {
+      "comparator_bibkey": "BennettKallusMaoNeweySyrgkanisUehara2023SourceConditionDR",
+      "comparator_claim": "The paper analyzes fixed-tuning adversarial Tikhonov estimators under exact inverse equations for source-condition double-robust inference.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "DikkalaLewisMackeySyrgkanis2020Minimax",
+      "comparator_claim": "Localized-Rademacher minimax analysis controls conditional-moment estimation with sufficiently rich witnesses.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "BennettKallusMaoNeweySyrgkanisUehara2023MinimaxIV",
+      "comparator_claim": "A constrained minimax IV estimator gives strong convergence with general function approximation under realizability.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    }
+  ],
+  "tldr": "Adaptive TRAE has exact-target and exact-witness theory but no established misspecified validation result. The central conjecture targets a wholly observable split-sample adversarial Tikhonov selector whose countable least-index training path is measurable and whose simultaneous oracle comparison separately charges target approximation and witness blindness. Under a valid and complete NPIV calibration, its pseudo-true target equals the causal structural response; under moment failure, it is only a sensitivity projection. A bounded two-coordinate theorem separates critic blindness from learned-operator error, and a specified Gaussian diagonal question asks whether inverse amplification is unavoidable.",
+  "project_justification": {
+    "gap": "Tan and Syrgkanis, Remark 3.8, leave approximation error outside discrepancy calibration, and Theorem 3.13 assumes target realizability and exact witness closeness. Li et al. validate misspecified explicit-operator RDIV, but not a TRAE critic blind to residual directions.",
+    "niche": "The misspecified adversarial inverse problem has an attained pseudo-true projection, target-class approximation, and witness deficiency. The last is an implicit-critic defect, and an observable selector must avoid tuning with its unknown population radius while still being measurable.",
+    "fill": "The proposal fixes a countable least-index training algorithm, a holdout adversarial validation statistic, and a simultaneous \\(\\eta/(2K|\\Lambda_n|)\\) training allocation. The headline conjecture targets their oracle comparison, the domain-separation theorem exhibits a nonzero-defect law outside exact-witness TRAE, and the diagonal question supplies explicit Gaussian scores and an Assouad handle."
+  },
+  "related_work": "Tan and Syrgkanis (2026, Theorem 3.13 and Remark 3.8) are the exact-specification benchmark; Proposition \\(\\texttt{prop:zero-defect-calibration}\\) conditionally recovers its saturated rate with an observable holdout cost and makes no tightening claim. Li, Lan, Syrgkanis, Wang, and Uehara (2024, Theorem 12 and Section 8) provide the misspecified validation architecture for explicit-operator RDIV. The bounded domain-separation theorem shows why their learned-operator term cannot represent a missing adversarial witness coordinate. Bennett, Kallus, Mao, Newey, Syrgkanis, and Uehara (2023, Source Condition DR) are the closest fixed-tuning exact-witness TRAE ancestor and inform the adversarial Tikhonov geometry. Dikkala, Lewis, Mackey, and Syrgkanis (2020) supply localized-Rademacher tools for the implicit witness loss. Bennett et al. (2023, Minimax IV) supply the standard NPIV identification calibration. Ai and Chen (2007) motivate pseudo-true centering under conditional-moment misspecification.",
+  "honest_scope": "The validated misspecified TRAE oracle inequality is a conjecture. The exact branch is a conditional calibration of that conjecture, not an established new adaptive rate; it matches the Tan--Syrgkanis saturated benchmark only if the displayed finite grid reaches the oracle scale and the holdout scale is dominated by the training scale. Under valid IV and completeness, \\(h^\\dagger=h_0\\) is causal without a separate pseudo-true-attainment premise; under moment failure, the attained projection is only a sensitivity target. The diagonal Assouad question remains open, and no minimax-sharpness claim is made for the defect terms."
+}

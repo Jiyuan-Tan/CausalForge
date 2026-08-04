@@ -217,14 +217,15 @@ theorem CATT_eq_zero_of_noAnticipation (P : EventStudySystem T)
 
 /-- Cell-mean decomposition into additive untreated fixed effects and CATT. -/
 theorem observedCellMean_eq_fixedEffects_add_CATT (P : EventStudySystem T)
-    (hCausal : P.EventStudyCausalRestrictions) {g : Fin T} {e : ℤ}
+    (hConsistency : P.Consistency) (hMeanParallelUntreated : P.MeanParallelUntreated)
+    {g : Fin T} {e : ℤ}
     (hg : g ∈ P.cohorts) :
     ∃ alpha : Fin T → ℝ, ∃ lambda : Fin T → ℝ,
       P.observedCellMean g e =
         ((P.targetPeriods g e).card : ℝ)⁻¹ *
           ∑ t ∈ P.targetPeriods g e, (alpha g + lambda t) +
         P.CATT g e := by
-  rcases hCausal.hMeanParallelUntreated with ⟨hFE, ⟨alpha, lambda, hFE_add⟩, hUntreated⟩
+  rcases hMeanParallelUntreated with ⟨hFE, ⟨alpha, lambda, hFE_add⟩, hUntreated⟩
   refine ⟨alpha, lambda, ?_⟩
   unfold observedCellMean CATT meanCellContrast
   have hsum :
@@ -237,7 +238,7 @@ theorem observedCellMean_eq_fixedEffects_add_CATT (P : EventStudySystem T)
             ((alpha g + lambda t) + (P.treatedMean g t - P.untreatedMean g t)) := by
         apply Finset.sum_congr rfl
         intro t ht
-        rw [hCausal.hConsistency g hg t, hUntreated g hg t, hFE_add g t]
+        rw [hConsistency g hg t, hUntreated g hg t, hFE_add g t]
         calc
           P.treatedMean g t =
               P.treatedMean g t - (alpha g + lambda t) + (alpha g + lambda t) := by

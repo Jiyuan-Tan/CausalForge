@@ -118,7 +118,7 @@ lemma evalMap_fixSet_observed_apply
     - `hOld`: `sx` agrees with `s` on the original `M.fixed` coordinates.
     - `hNew`: for each `D ∈ X`, the base evaluation at `.random D` already
       matches the intervention value `sx ⟨.fixed D, _⟩`.
-    - `hv_disj`: the target `v.val` is not one of the intervened `.random D`. -/
+    The induction below establishes agreement at every observed node. -/
 theorem evalMap_fixSet_factual_eq
     (M : Causalean.SCM N Ω)
     (X : Finset N)
@@ -135,9 +135,7 @@ theorem evalMap_fixSet_factual_eq
             Finset.mem_union_left _ (hObs D hD)⟩ =
         sx ⟨SWIGNode.fixed D,
               Finset.mem_union_right _ (Finset.mem_image.mpr ⟨D, hD, rfl⟩)⟩)
-    -- target is not one of the intervened nodes
-    (v : {v // v ∈ M.observed})
-    (hv_disj : ∀ D ∈ X, v.val ≠ SWIGNode.random D) :
+    (v : {v // v ∈ M.observed}) :
     (M.fixSet X hObs hFix).evalMap sx ℓ
         ⟨v.val, Finset.mem_union_left _ v.property⟩ =
     M.evalMap s ℓ ⟨v.val, Finset.mem_union_left _ v.property⟩ := by
@@ -299,14 +297,11 @@ theorem evalMap_fixSet_factual_eq
 theorem evalMap_fixSet_union_eq
     (M : Causalean.SCM N Ω)
     (X₁ X₂ : Finset N)
-    (hDisj : Disjoint X₁ X₂)
     (hObs₁ : ∀ D ∈ X₁, SWIGNode.random D ∈ M.observed)
     (hFix₁ : ∀ D ∈ X₁, SWIGNode.fixed D ∉ M.fixed)
-    (hObs₂ : ∀ D ∈ X₂, SWIGNode.random D ∈ M.observed)
-    (hFix₂ : ∀ D ∈ X₂, SWIGNode.fixed D ∉ M.fixed)
     (hObsU : ∀ D ∈ X₁ ∪ X₂, SWIGNode.random D ∈ M.observed)
     (hFixU : ∀ D ∈ X₁ ∪ X₂, SWIGNode.fixed D ∉ M.fixed)
-    (s : SCM.FixedValues M) (ℓ : SCM.LatentValues M)
+    (ℓ : SCM.LatentValues M)
     (sx₁ : SCM.FixedValues (M.fixSet X₁ hObs₁ hFix₁))
     (sxU : SCM.FixedValues (M.fixSet (X₁ ∪ X₂) hObsU hFixU))
     -- compatibility: sxU agrees with sx₁ on M.fixed ∪ X₁.image .fixed coords
@@ -323,13 +318,11 @@ theorem evalMap_fixSet_union_eq
     (hIntermediate : ∀ D (hD : D ∈ X₂),
         (M.fixSet X₁ hObs₁ hFix₁).evalMap sx₁ ℓ
             ⟨SWIGNode.random D,
-              Finset.mem_union_left _ (hObs₂ D hD)⟩ =
+              Finset.mem_union_left _ (hObsU D (Finset.mem_union_right _ hD))⟩ =
         sxU ⟨SWIGNode.fixed D,
               Finset.mem_union_right _
                 (Finset.mem_image.mpr ⟨D, Finset.mem_union_right _ hD, rfl⟩)⟩)
-    -- target is not one of the intervened nodes
-    (v : {v // v ∈ M.observed})
-    (hv_disj : ∀ D ∈ X₁ ∪ X₂, v.val ≠ SWIGNode.random D) :
+    (v : {v // v ∈ M.observed}) :
     (M.fixSet (X₁ ∪ X₂) hObsU hFixU).evalMap sxU ℓ
         ⟨v.val, Finset.mem_union_left _ v.property⟩ =
     (M.fixSet X₁ hObs₁ hFix₁).evalMap sx₁ ℓ
@@ -458,7 +451,8 @@ theorem evalMap_fixSet_union_eq
         · -- u ∈ X₂ \ X₁: union fixes it (reads sxU ⟨.fixed u⟩);
           -- do(X₁) recurses (reads (M.fixSet X₁).evalMap sx₁ ⟨.random u⟩).
           have huU : u ∈ X₁ ∪ X₂ := Finset.mem_union_right _ hu2
-          have hru_obs : SWIGNode.random u ∈ M.observed := hObs₂ u hu2
+          have hru_obs : SWIGNode.random u ∈ M.observed :=
+            hObsU u (Finset.mem_union_right _ hu2)
           have hru_nuo : SWIGNode.random u ∉ M.unobserved := fun h =>
             (Finset.disjoint_left.mp M.obs_unobs_disjoint hru_obs) h
           -- RHS (do X₁) side: u ∉ X₁, so reads .random u; classify it.
@@ -474,8 +468,10 @@ theorem evalMap_fixSet_union_eq
             intro h
             obtain ⟨m, hm⟩ := (M.fixSet (X₁ ∪ X₂) hObsU hFixU).unobserved_is_random _ h
             exact absurd hm (by simp)
-          rw [fixMonoParentMap_apply_random_notMem M.toSWIGGraph X₁ hObs₁ hFix₁ w₀.val _ u hu1 hwMem,
-              fixMonoParentMap_apply_random M.toSWIGGraph (X₁ ∪ X₂) hObsU hFixU w₀.val u huU _ hwMem]
+          rw [fixMonoParentMap_apply_random_notMem M.toSWIGGraph X₁ hObs₁ hFix₁
+                w₀.val _ u hu1 hwMem,
+              fixMonoParentMap_apply_random M.toSWIGGraph (X₁ ∪ X₂) hObsU hFixU
+                w₀.val u huU _ hwMem]
           simp only [Subtype.coe_mk]
           rw [dif_neg hru_nd1uo, dif_neg hru_nd1fix, dif_neg hfU_nuo, dif_pos hfU]
           -- Goal: (M.fixSet X₁).evalMap sx₁ ℓ ⟨.random u⟩ = sxU ⟨.fixed u⟩.

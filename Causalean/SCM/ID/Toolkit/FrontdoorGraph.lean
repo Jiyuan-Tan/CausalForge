@@ -38,15 +38,14 @@ variable (hX_fixed : ∀ D ∈ X, SWIGNode.fixed D ∉ M.fixed)
 variable (hW_obs : ∀ D ∈ W, SWIGNode.random D ∈ M.observed)
 variable (hW_fixed : ∀ D ∈ W, SWIGNode.fixed D ∉ M.fixed)
 
-private lemma disjoint_base_of_disjoint_random_image
+/-- Disjoint random-node images have disjoint underlying base-variable sets. -/
+lemma disjoint_base_of_disjoint_random_image
     (hDisj : Disjoint (W.image SWIGNode.random) (X.image SWIGNode.random)) :
-    Disjoint W X := by
-  rw [Finset.disjoint_left] at hDisj ⊢
-  intro d hdW hdX
-  exact hDisj (Finset.mem_image.mpr ⟨d, hdW, rfl⟩)
-    (Finset.mem_image.mpr ⟨d, hdX, rfl⟩)
+    Disjoint W X :=
+  (Finset.disjoint_image SWIGNode.random_injective).mp hDisj
 
-private lemma fixSet_fixed_not_mem_of_disjoint
+/-- Fixing one intervention block does not add fixed copies from a disjoint block. -/
+lemma fixSet_fixed_not_mem_of_disjoint
     (hX_fixed : ∀ D ∈ X, SWIGNode.fixed D ∉ M.fixed)
     (hDisj : Disjoint W X) :
     ∀ D ∈ X, SWIGNode.fixed D ∉ (M.fixSet W hW_obs hW_fixed).fixed := by
@@ -58,19 +57,9 @@ private lemma fixSet_fixed_not_mem_of_disjoint
     cases hEq
     exact (Finset.disjoint_left.mp hDisj) hD0W hD
 
-private lemma fixSet_fixed_not_mem
-    (hW_fixed : ∀ D ∈ W, SWIGNode.fixed D ∉ M.fixed)
-    (hDisj : Disjoint X W) :
-    ∀ D ∈ W, SWIGNode.fixed D ∉ (M.fixSet X hX_obs hX_fixed).fixed := by
-  intro D hD hmem
-  rw [SCM.fixSet_fixed] at hmem
-  rcases Finset.mem_union.mp hmem with hM | hXF
-  · exact hW_fixed D hD hM
-  · rcases Finset.mem_image.mp hXF with ⟨D0, hD0X, hEq⟩
-    cases hEq
-    exact (Finset.disjoint_left.mp hDisj) hD0X hD
-
-private lemma double_edge_to_doX_of_not_fixedW
+/-- For two disjoint intervention blocks, an edge remaining after first fixing the W block and
+then the X block also remains after fixing X alone when its source is not a fixed copy from W. -/
+lemma double_edge_to_doX_of_not_fixedW
     (hDisj : Disjoint W X) {u v : SWIGNode N}
     (huW : ∀ D ∈ W, u ≠ SWIGNode.fixed D)
     (he : ((M.fixSet W hW_obs hW_fixed).fixSet X
@@ -124,7 +113,9 @@ lemma isAncestorAvoiding_of_sinks {V : Type*} [DecidableEq V] [Fintype V]
           exact hSink w hwC v he)
         he
 
-private lemma not_fixedW_of_incoming_doX
+/-- If fixed copies of the W block are absent in the original model, no edge after fixing X can
+end at a fixed copy from W. -/
+lemma not_fixedW_of_incoming_doX
     (hW_fixed : ∀ D ∈ W, SWIGNode.fixed D ∉ M.fixed)
     {u w : SWIGNode N} (he : (M.fixSet X hX_obs hX_fixed).dag.edge u w) :
     ∀ D ∈ W, w ≠ SWIGNode.fixed D := by
@@ -179,17 +170,19 @@ private lemma not_fixedW_of_incoming_doX
   rw [hEq, hroot] at hmem
   exact (Finset.notMem_empty _) hmem
 
-private lemma double_edge_to_doW_of_not_fixedX
+/-- For two disjoint intervention blocks, an edge remaining after first fixing the X block and
+then the W block also remains after fixing W alone when its source is not a fixed copy from X. -/
+lemma double_edge_to_doW_of_not_fixedX
     (hDisj : Disjoint X W) {u v : SWIGNode N}
     (huX : ∀ D ∈ X, u ≠ SWIGNode.fixed D)
     (he : ((M.fixSet X hX_obs hX_fixed).fixSet W
         (by intro D hD; simpa [SCM.fixSet_observed] using hW_obs D hD)
-        (fixSet_fixed_not_mem M X W hX_obs hX_fixed hW_fixed hDisj)).dag.edge u v) :
+        (fixSet_fixed_not_mem_of_disjoint M W X hX_obs hX_fixed hW_fixed hDisj)).dag.edge u v) :
     (M.fixSet W hW_obs hW_fixed).dag.edge u v := by
   have hXWedge :
       ((M.fixSet X hX_obs hX_fixed).fixSet W
         (by intro D hD; simpa [SCM.fixSet_observed] using hW_obs D hD)
-        (fixSet_fixed_not_mem M X W hX_obs hX_fixed hW_fixed hDisj)).dag.edge u v ↔
+        (fixSet_fixed_not_mem_of_disjoint M W X hX_obs hX_fixed hW_fixed hDisj)).dag.edge u v ↔
         SWIGGraph.splitMonoEdgeRel
           (SWIGGraph.splitMonoEdgeRel M.toSWIGGraph.dag.edge X) W u v := by
     simp only [SCM.fixSet, SCM.fixMono, SWIGGraph.splitMono, SWIGGraph.splitMonoDAG]
@@ -237,7 +230,7 @@ theorem frontdoor_fd1_rule3_nonDesc
     (hFD1 : (M.fixSet X hX_obs hX_fixed).dag.dSep
       Y (X.image SWIGNode.fixed) (Wbase.image SWIGNode.random))
     (hDisj_WX : Disjoint (Wbase.image SWIGNode.random) (X.image SWIGNode.random)) :
-    ∀ v ∈ Y ∪ (∅ : Finset (SWIGNode N)), ∀ d ∈ X,
+    ∀ v ∈ Y, ∀ d ∈ X,
       ¬ ((M.fixSet Wbase hW_obs hW_fixed).fixSet X
           (by intro D hD; simpa [SCM.fixSet_observed] using hX_obs D hD)
           (fixSet_fixed_not_mem_of_disjoint M X Wbase hW_obs hW_fixed hX_fixed
@@ -309,7 +302,7 @@ theorem frontdoor_fd1_rule3_nonDesc
       exact (Finset.notMem_empty _) hmem
   have hpact : (M.fixSet X hX_obs hX_fixed).dag.IsActivePath
       (Wbase.image SWIGNode.random) p :=
-    (M.fixSet X hX_obs hX_fixed).dag.isActivePath_of_directed_interior
+    (M.fixSet X hX_obs hX_fixed).dag.isActivePath_of_directed
       hpedge_doX hpintW
   have hvReach : v ∈ (M.fixSet X hX_obs hX_fixed).dag.bbReachableVertices
       (Wbase.image SWIGNode.random) (X.image SWIGNode.fixed) := by
@@ -318,7 +311,6 @@ theorem frontdoor_fd1_rule3_nonDesc
     · exact hphead
     · exact hplast
   have hSepSymm := (M.fixSet X hX_obs hX_fixed).dag.dSep_symm _ _ _ hFD1
-  rw [Finset.union_empty] at hv
   exact (Finset.disjoint_left.mp hSepSymm.2.2.2) hvReach hv
 
 /-- Rule-2 d-separation premise for the frontdoor third condition.
@@ -338,13 +330,13 @@ theorem frontdoor_fd3_rule2_dSep
     (hDisj_WX : Disjoint (Wbase.image SWIGNode.random) (X.image SWIGNode.random)) :
     ((M.fixSet X hX_obs hX_fixed).fixSet Wbase
         (by intro D hD; simpa [SCM.fixSet_observed] using hW_obs D hD)
-        (fixSet_fixed_not_mem M X Wbase hX_obs hX_fixed hW_fixed
+        (fixSet_fixed_not_mem_of_disjoint M Wbase X hX_obs hX_fixed hW_fixed
           ((disjoint_base_of_disjoint_random_image X Wbase hDisj_WX).symm))).dag.dSep
       Y (Wbase.image SWIGNode.random)
       ((∅ : Finset (SWIGNode N)) ∪
         ((M.fixSet X hX_obs hX_fixed).fixSet Wbase
           (by intro D hD; simpa [SCM.fixSet_observed] using hW_obs D hD)
-          (fixSet_fixed_not_mem M X Wbase hX_obs hX_fixed hW_fixed
+          (fixSet_fixed_not_mem_of_disjoint M Wbase X hX_obs hX_fixed hW_fixed
             ((disjoint_base_of_disjoint_random_image X Wbase hDisj_WX).symm))).fixed) := by
   classical
   have hDisjBaseWX : Disjoint Wbase X :=
@@ -355,7 +347,7 @@ theorem frontdoor_fd3_rule2_dSep
     by intro D hD; simpa [SCM.fixSet_observed] using hW_obs D hD
   let hW_fixed_X : ∀ D ∈ Wbase, SWIGNode.fixed D ∉
       (M.fixSet X hX_obs hX_fixed).fixed :=
-    fixSet_fixed_not_mem M X Wbase hX_obs hX_fixed hW_fixed hDisjBaseXW
+    fixSet_fixed_not_mem_of_disjoint M Wbase X hX_obs hX_fixed hW_fixed hDisjBaseXW
   let Gdouble := ((M.fixSet X hX_obs hX_fixed).fixSet Wbase hW_obs_X hW_fixed_X).dag
   let Cdouble := (∅ : Finset (SWIGNode N)) ∪
     ((M.fixSet X hX_obs hX_fixed).fixSet Wbase hW_obs_X hW_fixed_X).fixed
@@ -367,7 +359,8 @@ theorem frontdoor_fd3_rule2_dSep
     rw [Finset.disjoint_left]
     intro v hvY hvC
     simp only [Cdouble, Finset.empty_union] at hvC
-    exact (((M.fixSet X hX_obs hX_fixed).fixSet Wbase hW_obs_X hW_fixed_X).not_fixed_of_obs
+    exact (not_fixed_of_obs
+      ((M.fixSet X hX_obs hX_fixed).fixSet Wbase hW_obs_X hW_fixed_X).toSWIGGraph
       (hY_double hvY)) hvC
   · have hW_double : Wbase.image SWIGNode.random ⊆
         ((M.fixSet X hX_obs hX_fixed).fixSet Wbase hW_obs_X hW_fixed_X).observed := by
@@ -377,7 +370,8 @@ theorem frontdoor_fd3_rule2_dSep
     rw [Finset.disjoint_left]
     intro v hvW hvC
     simp only [Cdouble, Finset.empty_union] at hvC
-    exact (((M.fixSet X hX_obs hX_fixed).fixSet Wbase hW_obs_X hW_fixed_X).not_fixed_of_obs
+    exact (not_fixed_of_obs
+      ((M.fixSet X hX_obs hX_fixed).fixSet Wbase hW_obs_X hW_fixed_X).toSWIGGraph
       (hW_double hvW)) hvC
   · rw [Finset.disjoint_left]
     intro v hvReach hvW

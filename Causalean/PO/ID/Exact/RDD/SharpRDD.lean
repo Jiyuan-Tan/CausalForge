@@ -74,7 +74,7 @@ def dEvent (d : Bool) : Set P.Ω := S.Dvar.event d
 
 /-- The factual treatment event is measurable. -/
 lemma measurableSet_dEvent (d : Bool) : MeasurableSet (S.dEvent d) :=
-  S.Dvar.measurableSet_event d
+  by simpa [dEvent] using S.Dvar.measurableSet_event d
 
 /-- Sharp RDD assumptions — def:po-sharp-rdd-assumptions.
 

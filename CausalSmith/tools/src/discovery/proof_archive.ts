@@ -23,6 +23,7 @@ import { existsSync } from "node:fs";
 import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { normalizeRawModelJson, repairLatexStringsDeep } from "./core/latex_serialization.js";
+import { sliceTexCompanion, resolveTexRefs } from "./solve/tex_companion.js";
 
 export interface ProofArchiveEntry {
   /** sha256 (hex) of the proof bytes; names the body file under objects/. */
@@ -84,7 +85,16 @@ export async function readProofArchiveIndex(discoveryDir: string): Promise<Proof
  *  must archive these first. Tolerant of shape drift on purpose: it walks the fields it
  *  knows and ignores the rest. A torn file is returned wholesale (reason suffixed
  *  `-unparsed`) — it still holds paid-for bytes. */
-export function proofBytesInRoundFile(fileName: string, raw: string, reason = "round-cleared"): ProofToArchive[] {
+export function proofBytesInRoundFile(
+  fileName: string,
+  raw: string,
+  reason = "round-cleared",
+  /** Phase 3: the sibling TeX companion's raw bytes, when one exists. Its blocks
+   *  are resolved into the payload before extraction so `{"tex_ref"}` proofs
+   *  archive as their real bytes; on a slicing/resolution failure the whole
+   *  companion archives as one blob rather than vanishing. */
+  companionText?: string,
+): ProofToArchive[] {
   let parsed: unknown;
   try {
     // Round files are agent-raw (solve units) or pre-defense legacy: normalize
@@ -93,7 +103,35 @@ export function proofBytesInRoundFile(fileName: string, raw: string, reason = "r
     parsed = JSON.parse(normalizeRawModelJson(raw));
     repairLatexStringsDeep(parsed);
   } catch {
-    return [{ nodeId: `file:${fileName}`, proofTex: raw, reason: `${reason}-unparsed` }];
+    const blobs = [{ nodeId: `file:${fileName}`, proofTex: raw, reason: `${reason}-unparsed` }];
+    if (companionText !== undefined && companionText.trim().length > 0) {
+      blobs.push({ nodeId: `file:${fileName}.companion`, proofTex: companionText, reason: `${reason}-unparsed` });
+    }
+    return blobs;
+  }
+  const unusedBlockBytes: ProofToArchive[] = [];
+  if (companionText !== undefined) {
+    try {
+      const blocks = sliceTexCompanion(companionText, `${fileName} companion`);
+      const used = resolveTexRefs(parsed, blocks, `${fileName} companion`);
+      // UNUSED blocks are exactly the bytes the ingest's strictness stranded
+      // (audit R2P23F2: a mis-sliced proof's second half) — archive them as
+      // blobs so the sweep's deletion cannot destroy the only copy.
+      for (const [ref, tex] of blocks) {
+        if (!used.has(ref) && tex.trim().length > 0) {
+          unusedBlockBytes.push({
+            nodeId: `file:${fileName}.companion:${ref}`,
+            proofTex: tex,
+            reason: `${reason}-unused-block`,
+          });
+        }
+      }
+    } catch {
+      return [
+        ...proofBytesInRoundFile(fileName, raw, reason),
+        { nodeId: `file:${fileName}.companion`, proofTex: companionText, reason: `${reason}-unresolved` },
+      ];
+    }
   }
   const out: ProofToArchive[] = [];
   const push = (nodeId: unknown, proofTex: unknown): void => {
@@ -101,6 +139,7 @@ export function proofBytesInRoundFile(fileName: string, raw: string, reason = "r
       out.push({ nodeId, proofTex, reason });
     }
   };
+  out.push(...unusedBlockBytes);
   // legacy proposed_proofs.json: a bare array of {id, proof_tex}
   const o = (Array.isArray(parsed) ? { proofs: parsed } : parsed) as Record<string, unknown>;
   if (o === null || typeof o !== "object") return out;

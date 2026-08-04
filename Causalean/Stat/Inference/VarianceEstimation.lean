@@ -74,7 +74,13 @@ theorem sampleMean_mul_tendsto_inProb
     (hint : Integrable (fun ω => g₁ (S.Z 0 ω) * g₂ (S.Z 0 ω)) μ) :
     Tendsto_inProb (S.sampleMean (fun x => g₁ x * g₂ x))
       (fun _ => ∫ x, g₁ x * g₂ x ∂P) μ :=
-  S.sampleMean_tendsto_inProb (hg₁_meas.mul hg₂_meas) hint
+  have hintP : Integrable (fun x => g₁ x * g₂ x) P := by
+    have hint_map : Integrable (fun x => g₁ x * g₂ x) (μ.map (S.Z 0)) :=
+      (MeasureTheory.integrable_map_measure
+        (hg₁_meas.mul hg₂_meas).aestronglyMeasurable (S.meas 0).aemeasurable).mpr
+        (by simpa [Function.comp_def] using hint)
+    rwa [S.law] at hint_map
+  S.sampleMean_tendsto_inProb (hg₁_meas.mul hg₂_meas) hintP
 
 /-! ## Covariance-matrix consistency (entrywise)
 

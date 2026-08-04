@@ -56,11 +56,12 @@ noncomputable def contrastCausal (P : CohortPanel 𝒢 T) (Y0 Y1 : 𝒢 → Fin 
     | CompTag.TN => ATT_window Y0 Y1 k.2.1 (S1_TN P k.2.1)
     | CompTag.EL => ATT_window Y0 Y1 k.2.1 (S1_EL P k.2.1 k.2.2)
     | CompTag.LE =>
-        ATT_window Y0 Y1 k.2.2 (S1_LE P k.2.1 k.2.2)
-          - (ATT_window Y0 Y1 k.2.1 (S1_LE P k.2.1 k.2.2)
+        ATT_window Y0 Y1 k.2.2 (S1_LE P k.2.2)
+          - (ATT_window Y0 Y1 k.2.1 (S1_LE P k.2.2)
               - ATT_window Y0 Y1 k.2.1 (S0_LE P k.2.1 k.2.2))
   else 0
 
+omit [DecidableEq 𝒢] in
 /-- On an admissible comparison, the algebraic contrast equals the causal
 potential-outcome contrast, by the Layer C corollaries. -/
 theorem contrast_eq_contrastCausal (P : CohortPanel 𝒢 T)
@@ -76,7 +77,7 @@ theorem contrast_eq_contrastCausal (P : CohortPanel 𝒢 T)
   · obtain ⟨hlt, hfin, _, _⟩ := hk
     exact Δ_EL_eq_ATT P Y0 Y1 hA g u hlt hfin
   · obtain ⟨hlt, hfin, _, _⟩ := hk
-    exact Δ_LE_eq_bad_comparison P Y0 Y1 hA g u hlt hfin
+    simpa using Δ_LE_eq_bad_comparison P Y0 Y1 hA g u hlt hfin
 
 /-- **Fused causal Goodman-Bacon decomposition.** Under the two-state
 potential-outcome assumptions and strictly positive residualized-treatment
@@ -88,9 +89,9 @@ The positive-variance hypothesis is the nondegenerate condition needed for the
 normalized comparison weights to have their coefficient interpretation and sum
 to one. -/
 theorem twfe_po_decomposition (P : CohortPanel 𝒢 T) (Y0 Y1 : 𝒢 → Fin T → ℝ)
-    (hA : CausalAssumptions P Y0 Y1) (hVD_pos : 0 < VD P) :
+    (hA : CausalAssumptions P Y0 Y1) :
     betaTWFE P = ∑ k ∈ 𝒦 P, weight P k * contrastCausal P Y0 Y1 k := by
-  rw [twfe_eq_weighted_avg P hVD_pos]
+  rw [twfe_eq_weighted_avg_core P]
   refine Finset.sum_congr rfl ?_
   intro k hk
   have hk' : admissible P k := by simpa [𝒦] using hk

@@ -106,7 +106,7 @@ private theorem obsCondKernel_ae_eq_joint_condDistrib
       let hPrv : F.paObs i₀ ⊆ (F.M i).randomVars := by
         rw [F.paObs_eq i₀ i]
         exact (Finset.inter_subset_right).trans (by
-          show (F.M i).observed ⊆ (F.M i).observed ∪ (F.M i).unobserved
+          change (F.M i).observed ⊆ (F.M i).observed ∪ (F.M i).unobserved
           exact Finset.subset_union_left)
       exact
         (fun c => (F.M i).obsCondKernel F.targetSet (F.paObs i₀)
@@ -135,13 +135,13 @@ private theorem obsCondKernel_ae_eq_joint_condDistrib
   let hPrv : F.paObs i₀ ⊆ (F.M i).randomVars := by
     rw [F.paObs_eq i₀ i]
     exact (Finset.inter_subset_right).trans (by
-      show (F.M i).observed ⊆ (F.M i).observed ∪ (F.M i).unobserved
+      change (F.M i).observed ⊆ (F.M i).observed ∪ (F.M i).unobserved
       exact Finset.subset_union_left)
   have hbase :=
     (F.M i).obsCondKernel_ae_eq_condDistrib
       F.targetSet (F.paObs i₀) hYobs hPobs (F.s i)
   have hMarg :=
-    Causalean.Discovery.InvariantPrediction.EnvFamily.obsKernel_map_valuesProjection_eq_jointKernel_map
+    obsKernel_map_valuesProjection_eq_jointKernel_map
       (F.M i) (F.s i) (F.paObs i₀) hPobs hPrv
   have hObsEq :
       (F.M i).obsKernel (F.s i) =
@@ -202,7 +202,7 @@ theorem mechanism_invariant (F : EnvFamily N Ω ι) (i₀ : ι) :
   -- The latent-parent set is a random-variable subset in every environment.
   have hLrvOf : ∀ i : ι, F.paLat i ⊆ (F.M i).randomVars := fun i =>
     (Finset.inter_subset_right).trans (by
-      show (F.M i).unobserved ⊆ (F.M i).observed ∪ (F.M i).unobserved
+      change (F.M i).unobserved ⊆ (F.M i).observed ∪ (F.M i).unobserved
       exact Finset.subset_union_right)
   -- The witness conditional law `κ`: the mechanism factor for environment `i`,
   -- parameterized by the explicit fixed-parent values `cf`.
@@ -221,7 +221,7 @@ theorem mechanism_invariant (F : EnvFamily N Ω ι) (i₀ : ι) :
     have hPrv : F.paObs i₀ ⊆ (F.M i).randomVars := by
       rw [F.paObs_eq i₀ i]
       exact (Finset.inter_subset_right).trans (by
-        show (F.M i).observed ⊆ (F.M i).observed ∪ (F.M i).unobserved
+        change (F.M i).observed ⊆ (F.M i).observed ∪ (F.M i).unobserved
         exact Finset.subset_union_left)
     -- Rewrite the ambient a.e. measure from `obsKernel` to `jointKernel`.
     rw [obsKernel_map_valuesProjection_eq_jointKernel_map (F.M i) (F.s i)

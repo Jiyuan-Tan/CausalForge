@@ -84,8 +84,10 @@ private lemma stratumOddsRatio_spec
       =ᵐ[μ]
     (μ[Set.indicator {ω' | S.A ω' ≠ a} (fun _ => (1 : ℝ)) | S.σ_X]) := by
   have hpos := Causalean.ae_pos_condExp_indicator_of_le
-    (m₁ := S.σ_X) (m₂ := S.σ_UX) S.σ_X_le S.σ_UX_le S.σ_X_le_σ_UX
-    (A := S.A) S.measurable_A a (HA.overlap_strong a)
+    (m₁ := S.σ_X) S.σ_X_le
+    (E := {ω' | S.A ω' = a})
+    (S.measurable_A (measurableSet_singleton a))
+    (fun s hs hnull => HA.overlap_strong a s (S.σ_X_le_σ_UX s hs) hnull)
   filter_upwards [hpos] with ω hω
   show (μ[Set.indicator {ω' | S.A ω' = a} (fun _ => (1 : ℝ)) | S.σ_X]) ω
         * S.stratumOddsRatio μ a ω
@@ -435,7 +437,11 @@ lemma condExp_q_eq_stratumOddsRatio_arm_AX
         exact Filter.Eventually.of_forall hgX_le
       have hL2 :=
         Causalean.setIntegral_eq_setIntegral_mul_of_likelihoodRatio_swap
-          S.σ_UX_le S.measurable_A a (!a) hLa_m_UX hgX_meas_UX
+          S.σ_UX_le {ω | S.A ω = a} {ω | S.A ω = !a}
+          (S.measurable_A (measurableSet_singleton a))
+          (S.measurable_A (measurableSet_singleton (!a)))
+          (hgX_meas_UX.aestronglyMeasurable.mul hLa_m_UX.aestronglyMeasurable)
+          hgX_meas_UX.aestronglyMeasurable
           hgX_int.integrableOn hgXL_int.integrableOn
           (by rw [h_ind_eq]; exact hSpec)
       -- hL2: ∫_{A=!a} g_X = ∫_{A=a} g_X · L_a. We want the symmetric form.
@@ -450,7 +456,11 @@ lemma condExp_q_eq_stratumOddsRatio_arm_AX
         exact ae_restrict_of_ae (Filter.Eventually.of_forall hgX_le)
       have hL2 :=
         Causalean.setIntegral_eq_setIntegral_mul_of_likelihoodRatio_swap
-          S.σ_X_le S.measurable_A a (!a) hR_meas_X hgX_meas_X
+          S.σ_X_le {ω | S.A ω = a} {ω | S.A ω = !a}
+          (S.measurable_A (measurableSet_singleton a))
+          (S.measurable_A (measurableSet_singleton (!a)))
+          (hgX_meas_X.aestronglyMeasurable.mul hR_meas_X.aestronglyMeasurable)
+          hgX_meas_X.aestronglyMeasurable
           hgX_int.integrableOn hgXR_armOn
           (by rw [h_ind_eq]; exact hSpec)
       -- hL2: ∫_{A=!a} g_X = ∫_{A=a} g_X · R.

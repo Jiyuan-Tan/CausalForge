@@ -38,13 +38,14 @@ local notation "μⁿ" => Measure.pi (fun _ ↦ μ)
 /-- **ERM basic inequality (deterministic).** If `ihat` beats the comparator `istar` in
 empirical risk on the sample `X ∘ ω` (`Rₙ(ihat) ≤ Rₙ(istar)`), then its excess population
 risk is at most twice the uniform deviation of the loss class on that sample. -/
-theorem erm_excess_le_two_uniformDeviation [Nonempty ι] [IsProbabilityMeasure μ]
-    (X : Ω → 𝒳) (hf : ∀ i, Measurable (f i ∘ X)) (ω : Fin n → Ω)
+theorem erm_excess_le_two_uniformDeviation [IsProbabilityMeasure μ]
+    (X : Ω → 𝒳) (hf : ∀ i, AEMeasurable (f i ∘ X) μ) (ω : Fin n → Ω)
     {b : ℝ} (hb : 0 ≤ b) (hf' : ∀ i x, |f i x| ≤ b) (ihat istar : ι)
     (hERM : (n : ℝ)⁻¹ * ∑ k, f ihat (X (ω k)) ≤ (n : ℝ)⁻¹ * ∑ k, f istar (X (ω k))) :
     μ[fun ω' => f ihat (X ω')] - μ[fun ω' => f istar (X ω')]
       ≤ 2 * uniformDeviation n f μ X (X ∘ ω) := by
   classical
+  letI : Nonempty ι := ⟨istar⟩
   let R : ι → ℝ := fun i => μ[fun ω' => f i (X ω')]
   let Rn : ι → ℝ := fun i => (n : ℝ)⁻¹ * ∑ k : Fin n, f i (X (ω k))
   have hRn_bound : ∀ i, |Rn i| ≤ b := by
@@ -120,7 +121,7 @@ with `|loss| ≤ b`, the excess population risk exceeds `4·𝔯ₙ + 2ε` with 
 `exp(−ε² t n)`, where `𝔯ₙ = rademacherComplexity n f μ X` is the Rademacher complexity of
 the loss class.  Chains the deterministic ERM inequality with FoML's symmetrization +
 McDiarmid tail. -/
-theorem erm_oracle_inequality [MeasurableSpace 𝒳] [Nonempty 𝒳] [Nonempty ι] [Countable ι]
+theorem erm_oracle_inequality [MeasurableSpace 𝒳] [Nonempty 𝒳] [Countable ι]
     [IsProbabilityMeasure μ] (hf : ∀ i, Measurable (f i))
     (X : Ω → 𝒳) (hX : Measurable X) {b : ℝ} (hb : 0 ≤ b) (hf' : ∀ i x, |f i x| ≤ b)
     {t : ℝ} (ht' : t * b ^ 2 ≤ 1 / 2) {ε : ℝ} (hε : 0 ≤ ε)
@@ -132,6 +133,7 @@ theorem erm_oracle_inequality [MeasurableSpace 𝒳] [Nonempty 𝒳] [Nonempty �
           < μ[fun ω' => f (ihat ω) (X ω')] - μ[fun ω' => f istar (X ω')])).toReal
       ≤ (- ε ^ 2 * t * n).exp := by
   classical
+  letI : Nonempty ι := ⟨istar⟩
   apply le_trans ?_
     (uniform_deviation_tail_bound_countable (μ := μ) (n := n) (f := f) hf X hX hb hf'
       ht' hε)
@@ -140,7 +142,7 @@ theorem erm_oracle_inequality [MeasurableSpace 𝒳] [Nonempty 𝒳] [Nonempty �
   intro ω hω
   have hbasic :=
     erm_excess_le_two_uniformDeviation (μ := μ) (n := n) (f := f) X
-      (fun i => (hf i).comp hX) ω hb hf' (ihat ω) istar (hERM ω)
+      (fun i => ((hf i).comp hX).aemeasurable) ω hb hf' (ihat ω) istar (hERM ω)
   have hlt :
       4 • rademacherComplexity n f μ X + 2 * ε
         < 2 * uniformDeviation n f μ X (X ∘ ω) := by
@@ -161,7 +163,7 @@ theorem erm_oracle_inequality [MeasurableSpace 𝒳] [Nonempty 𝒳] [Nonempty �
 but for a separable, first-countable parameter space `ι` with the loss continuous in the
 parameter — the form that applies to the (uncountable but separable) `L²`/`L¹`-ball linear
 classes.  Chains the deterministic ERM inequality with FoML's separable tail bound. -/
-theorem erm_oracle_inequality_separable [MeasurableSpace 𝒳] [Nonempty 𝒳] [Nonempty ι]
+theorem erm_oracle_inequality_separable [MeasurableSpace 𝒳] [Nonempty 𝒳]
     [TopologicalSpace ι] [SeparableSpace ι] [FirstCountableTopology ι]
     [IsProbabilityMeasure μ] (hf : ∀ i, Measurable (f i))
     (X : Ω → 𝒳) (hX : Measurable X) {b : ℝ} (hb : 0 ≤ b) (hf' : ∀ i x, |f i x| ≤ b)
@@ -175,6 +177,7 @@ theorem erm_oracle_inequality_separable [MeasurableSpace 𝒳] [Nonempty 𝒳] [
           < μ[fun ω' => f (ihat ω) (X ω')] - μ[fun ω' => f istar (X ω')])).toReal
       ≤ (- ε ^ 2 * t * n).exp := by
   classical
+  letI : Nonempty ι := ⟨istar⟩
   apply le_trans ?_
     (uniform_deviation_tail_bound_separable (μ := μ) (n := n) (f := f) hf X hX hb hf'
       hf'' ht' hε)
@@ -183,7 +186,7 @@ theorem erm_oracle_inequality_separable [MeasurableSpace 𝒳] [Nonempty 𝒳] [
   intro ω hω
   have hbasic :=
     erm_excess_le_two_uniformDeviation (μ := μ) (n := n) (f := f) X
-      (fun i => (hf i).comp hX) ω hb hf' (ihat ω) istar (hERM ω)
+      (fun i => ((hf i).comp hX).aemeasurable) ω hb hf' (ihat ω) istar (hERM ω)
   have hlt :
       4 • rademacherComplexity n f μ X + 2 * ε
         < 2 * uniformDeviation n f μ X (X ∘ ω) :=

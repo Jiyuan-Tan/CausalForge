@@ -64,32 +64,11 @@ noncomputable def starHullZeroOut
     starHullParam ι → 𝒳 → ℝ :=
   fun p x => if norm (starHullEval F p) ≤ r then starHullEval F p x else 0
 
-private lemma ciSup_mul_const_of_Icc {A : Type*} [Nonempty A]
-    (c : A → ℝ) (b : ℝ) (hc_le : ∀ a, c a ≤ 1) (hb : 0 ≤ b) :
+/-- A supremum commutes with multiplication by a nonnegative constant. -/
+lemma ciSup_mul_const_of_le_one {A : Type*}
+    (c : A → ℝ) (b : ℝ) (hb : 0 ≤ b) :
     (⨆ a : A, c a * b) = (⨆ a : A, c a) * b := by
-  classical
-  have hc_bdd : BddAbove (Set.range c) := by
-    refine ⟨1, ?_⟩
-    rintro _ ⟨a, rfl⟩
-    exact hc_le a
-  have hcb_bdd : BddAbove (Set.range fun a : A => c a * b) := by
-    refine ⟨b, ?_⟩
-    rintro _ ⟨a, rfl⟩
-    calc
-      c a * b ≤ 1 * b := mul_le_mul_of_nonneg_right (hc_le a) hb
-      _ = b := one_mul b
-  apply le_antisymm
-  · refine ciSup_le ?_
-    intro a
-    exact mul_le_mul_of_nonneg_right (le_ciSup hc_bdd a) hb
-  · by_cases hb0 : b = 0
-    · simp [hb0]
-    · have hbpos : 0 < b := lt_of_le_of_ne hb (Ne.symm hb0)
-      have hsup_le : (⨆ a : A, c a) ≤ (⨆ a : A, c a * b) / b := by
-        refine ciSup_le ?_
-        intro a
-        exact (le_div_iff₀ hbpos).mpr (le_ciSup hcb_bdd a)
-      exact (le_div_iff₀ hbpos).mp hsup_le
+  exact (Real.iSup_mul_of_nonneg hb c).symm
 
 /-- The largest active star-hull scalar for a fixed base index. -/
 noncomputable def starHullZeroOutScaleCoeff
@@ -152,16 +131,10 @@ lemma starHullZeroOut_inner_sup_eq
         |(n : ℝ)⁻¹ * ∑ k : Fin n, (σ k : ℝ) * F i (ω k)| := by
   classical
   simp_rw [starHullZeroOut_inner_term_eq F norm r ω σ]
-  exact ciSup_mul_const_of_Icc
+  exact ciSup_mul_const_of_le_one
     (fun a : Set.Icc (0 : ℝ) 1 =>
       if norm (starHullEval F (a, i)) ≤ r then (a : ℝ) else 0)
-    _ (by
-      intro a
-      dsimp
-      split_ifs
-      · exact a.property.2
-      · norm_num)
-    (abs_nonneg _)
+    _ (abs_nonneg _)
 
 /-- **Deterministic upper envelope on the localized Rademacher
     complexity.** For every radius `r ≥ 0`, the population Rademacher
@@ -294,10 +267,9 @@ lemma subRoot_continuousOn_Ioi {ψ : ℝ → ℝ} (h : SubRoot ψ) :
       rw [div_le_iff₀ hrpos] at hratio
       simpa [mul_comm] using hratio
 
-/-- **Fixed-point property at the critical radius.** If `ψ` is sub-root
-    and there exists a witness `r₀ > 0` with `ψ r₀ ≤ r₀²`, then the
-    critical radius itself satisfies `ψ (criticalRadius ψ) ≤ (criticalRadius ψ)²`,
-    provided `0 < criticalRadius ψ`.
+/-- **Fixed-point property at the critical radius.** If `ψ` is sub-root and
+    its critical radius is positive, then the critical radius itself satisfies
+    `ψ (criticalRadius ψ) ≤ (criticalRadius ψ)²`.
 
     Proof sketch: by sub-root continuity (see `subRoot_continuousOn_Ioi`)
     the function `r ↦ ψ r - r²` is continuous on `(0, ∞)`, and the set
@@ -305,12 +277,16 @@ lemma subRoot_continuousOn_Ioi {ψ : ℝ → ℝ} (h : SubRoot ψ) :
     therefore attained (it is a limit of a decreasing sequence in a closed
     set). -/
 lemma criticalRadius_fp_of_subRoot {ψ : ℝ → ℝ} (h : SubRoot ψ)
-    {r₀ : ℝ} (hr₀ : 0 < r₀) (hψ_r₀ : ψ r₀ ≤ r₀ ^ 2)
     (hpos : 0 < criticalRadius ψ) :
     ψ (criticalRadius ψ) ≤ (criticalRadius ψ) ^ 2 := by
   let c := criticalRadius ψ
   let S : Set ℝ := {δ | 0 < δ ∧ ψ δ ≤ δ ^ 2}
-  have hS_nonempty : S.Nonempty := ⟨r₀, hr₀, hψ_r₀⟩
+  have hS_nonempty : S.Nonempty := by
+    by_contra hS
+    have hS_empty : S = ∅ := Set.not_nonempty_iff_eq_empty.mp hS
+    rw [criticalRadius, ← show S = {δ | 0 < δ ∧ ψ δ ≤ δ ^ 2} from rfl,
+      hS_empty] at hpos
+    simp at hpos
   have hS_bdd : BddBelow S := by
     refine ⟨0, ?_⟩
     rintro δ ⟨hδ, _⟩
@@ -381,43 +357,45 @@ lemma criticalRadius_pos_of_subRoot {ψ : ℝ → ℝ} (h : SubRoot ψ)
     exact le_csInf hS_nonempty hlower
   exact lt_of_lt_of_le hεpos hcrit_ge
 
+/-- A zeroed-out star-hull value inherits a bound on its corresponding base-family value. -/
+lemma abs_starHullZeroOut_le_bound
+    {𝒳 ι : Type*} (F : ι → 𝒳 → ℝ) (norm : (𝒳 → ℝ) → ℝ)
+    {b r : ℝ} (hb : 0 ≤ b) {p : starHullParam ι} {x : 𝒳}
+    (hbound : |F p.2 x| ≤ b) :
+    |starHullZeroOut F norm r p x| ≤ b := by
+  by_cases hp : norm (starHullEval F p) ≤ r
+  · have ha_nonneg : 0 ≤ (p.1 : ℝ) := p.1.property.1
+    have ha_le : (p.1 : ℝ) ≤ 1 := p.1.property.2
+    calc
+      |starHullZeroOut F norm r p x| = |(p.1 : ℝ) * F p.2 x| := by
+        simp [starHullZeroOut, hp, starHullEval]
+      _ = |(p.1 : ℝ)| * |F p.2 x| := abs_mul _ _
+      _ = (p.1 : ℝ) * |F p.2 x| := by rw [abs_of_nonneg ha_nonneg]
+      _ ≤ (p.1 : ℝ) * b := mul_le_mul_of_nonneg_left hbound ha_nonneg
+      _ ≤ 1 * b := mul_le_mul_of_nonneg_right ha_le hb
+      _ = b := one_mul b
+  · simp [starHullZeroOut, hp, hb]
+
 /-- The signed empirical average over the zero-out star hull is bounded above by
-the uniform bound on the base family: if `|F i x| ≤ b` for every index and point,
-then for any sample and sign vector the family of signed averages indexed by
-star-hull parameters has `b` as an upper bound.
+the uniform bound on the base family at the sampled points: if
+`|F i (S_fin k)| ≤ b` for every index and sample coordinate, then for any sign
+vector the family of signed averages indexed by star-hull parameters has `b` as
+an upper bound.
 
 This discharges the `BddAbove` side condition (`hrad_bdd`) that the localized
 uniform-deviation bound demands of the empirical star-hull Rademacher process,
-from a uniform bound on the base class. The bound `b` holds at *every* point `x`
-(not only at the sampled points), which is what the supremum over all
-star-hull parameters requires. -/
+from a bound on the sampled base-class values. -/
 lemma starHullZeroOut_bddAbove_of_bound
     {𝒳 ι : Type*} (F : ι → 𝒳 → ℝ) (norm : (𝒳 → ℝ) → ℝ)
     {b : ℝ} (hb : 0 ≤ b)
-    (hbound : ∀ i x, |F i x| ≤ b)
-    (m : ℕ) (r : ℝ) (S_fin : Fin m → 𝒳) (σ : Signs m) :
+    (m : ℕ) (r : ℝ) (S_fin : Fin m → 𝒳)
+    (hbound : ∀ i k, |F i (S_fin k)| ≤ b) (σ : Signs m) :
     BddAbove (Set.range fun p : starHullParam ι =>
       |(m : ℝ)⁻¹ * ∑ k : Fin m, (σ k : ℝ) *
         starHullZeroOut F norm r p (S_fin k)|) := by
   classical
   refine ⟨b, ?_⟩
   rintro _ ⟨p, rfl⟩
-  have hzero_abs : ∀ x, |starHullZeroOut F norm r p x| ≤ b := by
-    intro x
-    by_cases hp : norm (starHullEval F p) ≤ r
-    · have ha_nonneg : 0 ≤ (p.1 : ℝ) := p.1.property.1
-      have ha_le : (p.1 : ℝ) ≤ 1 := p.1.property.2
-      calc
-        |starHullZeroOut F norm r p x| = |(p.1 : ℝ) * F p.2 x| := by
-          simp [starHullZeroOut, hp, starHullEval]
-        _ = |(p.1 : ℝ)| * |F p.2 x| := abs_mul _ _
-        _ = (p.1 : ℝ) * |F p.2 x| := by rw [abs_of_nonneg ha_nonneg]
-        _ ≤ (p.1 : ℝ) * b := by
-          exact mul_le_mul_of_nonneg_left (hbound p.2 x) ha_nonneg
-        _ ≤ 1 * b := by
-          exact mul_le_mul_of_nonneg_right ha_le hb
-        _ = b := one_mul b
-    · simp [starHullZeroOut, hp, hb]
   by_cases hm0 : m = 0
   · subst m
     simp [hb]
@@ -445,7 +423,8 @@ lemma starHullZeroOut_bddAbove_of_bound
                       rw [abs_mul, Signs.apply_abs']
                       simp
                 _ ≤ ∑ _k : Fin m, b :=
-                      Finset.sum_le_sum fun k _hk => hzero_abs (S_fin k)
+                      Finset.sum_le_sum fun k _hk =>
+                        abs_starHullZeroOut_le_bound F norm hb (hbound p.2 k)
             · exact inv_nonneg.mpr (Nat.cast_nonneg _)
       _ = b := by
             simp

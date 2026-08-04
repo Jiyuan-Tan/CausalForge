@@ -29,11 +29,19 @@ export function checkSymbolDeclarations(core: {
   definitions?: Array<{ id?: string; free_symbols?: string[] }>;
   statements?: Array<{ id?: string; free_symbols?: string[] }>;
 }): PreflightViolation[] {
-  const declared = new Set<string>();
+  const declaredExact = new Set<string>();
+  const declaredNormalized = new Set<string>();
   for (const s of core.symbols ?? []) {
+    // The EXACT set mirrors what post-solve G1 will match against: symbols[].name
+    // (the legacy `symbol` key only stands in when `name` is absent). Adding the
+    // `symbol` spelling unconditionally re-opened the paid-round hole: a
+    // free_symbols entry equal to `symbol` but not `name` exact-passed here and
+    // failed G1 after the solve.
+    const g1Spelling = typeof s.name === "string" ? s.name : typeof s.symbol === "string" ? s.symbol : undefined;
+    if (g1Spelling !== undefined) declaredExact.add(g1Spelling);
     for (const raw of [s.name, s.symbol]) {
       if (typeof raw !== "string") continue;
-      declared.add(normalizeSymbol(raw));
+      declaredNormalized.add(normalizeSymbol(raw));
     }
   }
   const violations: PreflightViolation[] = [];
@@ -42,15 +50,31 @@ export function checkSymbolDeclarations(core: {
   // scope reads it as the complete list of symbols the claim rests on — a name that
   // matches no symbol contributes nothing and the real symbol goes unwatched.
   for (const node of [...(core.assumptions ?? []), ...(core.definitions ?? []), ...(core.statements ?? [])]) {
-    const missing = (node.free_symbols ?? [])
-      .filter((sym) => typeof sym === "string")
-      .filter((sym) => !declared.has(normalizeSymbol(sym)));
+    const declared = (node.free_symbols ?? []).filter((sym): sym is string => typeof sym === "string");
+    const missing = declared.filter((sym) => !declaredNormalized.has(normalizeSymbol(sym)));
     if (missing.length > 0) {
       violations.push({
         check: "symbol-declaration",
         detail:
           `${node.id ?? "<unnamed>"} names free symbol(s) absent from the symbol table: ${missing.join(", ")}. ` +
           `Declare them in symbols[] before dispatching a solve round.`,
+        ids: [node.id ?? "<unnamed>"],
+      });
+    }
+    // The post-solve G1 gate matches free_symbols EXACTLY against symbols[].name —
+    // no delimiter normalization. A declaration that resolves only after stripping
+    // `\( \)`/`$ $` therefore passes here and then fails G1 AFTER the round is paid
+    // for, which is precisely the failure preflight exists to catch. Flag it now.
+    const styleMismatched = declared.filter(
+      (sym) => !declaredExact.has(sym) && declaredNormalized.has(normalizeSymbol(sym)),
+    );
+    if (styleMismatched.length > 0) {
+      violations.push({
+        check: "symbol-declaration-style",
+        detail:
+          `${node.id ?? "<unnamed>"} declares free symbol(s) whose spelling differs from the symbol table ` +
+          `only by math delimiters: ${styleMismatched.join(", ")}. The post-solve G1 gate matches exactly — ` +
+          `align the spelling with symbols[].name before dispatching a solve round.`,
         ids: [node.id ?? "<unnamed>"],
       });
     }
@@ -123,8 +147,15 @@ export function checkSymbolDeclarationDrift(core: {
     const undeclared = [...names].filter((n) => {
       if (declared.has(n)) return false;
       // `Y_it` inside a declared `Y_it(d)` (or vice versa) is the same object written at
-      // a different arity, not a missing declaration.
-      if ([...declared].some((d) => d.includes(n) || n.includes(d))) return false;
+      // a different arity, not a missing declaration. TOKEN-boundary containment, not a
+      // raw substring: a declared 1-char index `i` must not silence the warning for
+      // `psi` (i inside a word), while a declared `Y` still exempts `Y(d)`/`Y_it`
+      // (Y at a token edge — the documented arity-variant case).
+      const tokenIn = (hay: string, sub: string): boolean => {
+        const esc = sub.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        return new RegExp(`(^|[^A-Za-z0-9])${esc}($|[^A-Za-z0-9])`).test(hay);
+      };
+      if ([...declared].some((d) => tokenIn(d, n) || tokenIn(n, d))) return false;
       return mentionsSymbol(node.text as string, n);
     });
     if (undeclared.length > 0) {

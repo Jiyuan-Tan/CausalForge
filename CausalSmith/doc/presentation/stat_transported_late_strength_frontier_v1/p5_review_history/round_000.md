@@ -1,0 +1,29 @@
+# Referee review
+
+**Recommendation:** minor_revision
+**Overall score:** 8.1/10 — The paper delivers a coherent and verified minimax frontier for transported complier-ratio inference, with remaining issues concentrated in claim precision and presentation rather than in the formal results.
+
+The paper studies honest expected length for transported complier effects under weak transported first stages and transport-weight dispersion. The central contribution, a matched oracle frontier of order min{1,t0^{-1/2}} and feasible finite-cell procedures attaining the same order, is meaningful for weak-IV and transportability readers. The verified statements support the main claims, but several prose passages should be tightened so that conditional, oracle, fixed-geometry, and finite-cell scopes remain clear.
+
+## Strengths
+- The effective-strength scalar n mu_n^2/kappa_n is a clean and useful synthesis of weak compliance and transport-weight dispersion.
+- The paper gives both lower and upper expected-length results, including feasible finite-cell constructions rather than only oracle procedures.
+- The formal statements are unusually explicit about honesty, parameter-space length, overlap, weight-envelope, and cell-growth conditions.
+- The related-work framing identifies the relevant weak-IV, LATE, and transportability literatures.
+
+## Findings
+- **[minor·prose] abstract** — The sentence "Under bounded outcomes, binary receipt, source-IV conditions, transport of the reduced-form outcome and first-stage contrasts, target complier positivity, transport domination, fixed instrument overlap, and controlled transport-weight dispersion..." slightly overstates the transport assumptions: the verified receipt-transport condition is an integrated target-average first-stage transport condition, whereas outcome transport is conditional on target-relevant covariates.
+  - *Fix:* Rewrite this clause to distinguish the two assumptions, e.g. "conditional transport of the reduced-form outcome contrast and target-average transport of the receipt contrast."
+- **[minor·prose] Oracle Frontier and Score Inversion** — The first display in the score-inversion definition writes the radius as "{ (1/n) sum_i w(X_i)^2/n }^{1/2}", while the theorem later uses the clearer "sqrt{hat{kappa}_n/n}". The two are algebraically aligned, but the definition is easy to misread as an extra normalization or typographical error.
+  - *Fix:* Replace the radius in \cref{obj:def:inversion-handle} with the notation used in \cref{obj:thm:oracle-score-inversion-attainment}: define \widehat\kappa_n=n^{-1}\sum_i w(X_i)^2 and write L_\alpha\sqrt{\widehat\kappa_n/n}.
+- **[minor·prose] intro** — The sentence "The lower bound applies uniformly across ways of producing a given t0, so a small transported complier share and concentrated transport weights enter through the same scalar" is broadly supported, but the surrounding paragraph does not restate the envelope, second-moment, row-rate, and fixed-overlap gates that make this scalar comparison valid.
+  - *Fix:* Add a short qualifying phrase to the sentence or the preceding one, tying the scalar comparison to the stated overlap, domination, envelope, second-moment, and k_n=o(n^{1/2}) conditions.
+- **[minor·prose] Fixed Geometry and Feasible Cell Weight Learning** — The text says the finite-cell construction "replaces oracle-known target weights with finite-cell estimates," but the regular-cell theorem also uses known source-cell probabilities and known cell propensities as inputs. A reader could incorrectly infer a fully unknown-geometry procedure for the regular-cell case.
+  - *Fix:* When introducing the feasible results, separate the uniform finite-cell sample-only case from the regular-cell case with known q_{x,n} and e_{x,n}.
+- **[nit·prose] global** — Several explanatory paragraphs repeatedly call assumptions "standard" and cite ChenHuang2025, including assumptions that are partly specialized to this paper's formal model. This is not false, but it weakens the reader's ability to see which restrictions are substantive innovations of the setup.
+  - *Fix:* Reduce repetitive "standard" language and group assumptions into causal-IV, transport, and rate/geometry blocks, with one concise motivation paragraph per block.
+
+## Questions for authors
+- Can the introduction state more explicitly whether the target covariate sample contributes to the oracle procedures, or whether it is present mainly to align the oracle benchmark with the feasible finite-cell setting?
+- Are the finite-cell procedures intended as practical estimators or as constructive attainability results? A sentence clarifying this would help position the contribution.
+

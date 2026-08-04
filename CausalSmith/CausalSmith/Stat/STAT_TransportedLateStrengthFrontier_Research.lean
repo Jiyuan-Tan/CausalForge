@@ -1,0 +1,44 @@
+/-
+Copyright (c) 2026 Jiyuan Tan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Jiyuan Tan
+-/
+
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Basic
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Frontier
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers.CellEstimators
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers.Divergence
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers.ExpectedLength
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers.FiniteCellBridge
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers.FrontierOrder
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers.InversionRisk
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers.RateAlgebra
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers.RegularCellRisk
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers.RegularCellRisk_Part1
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers.RegularCellRisk_Part2
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers.RegularCellRisk_Part3
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers.RegularCellRisk_Part4
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers.RegularCellRisk_Part5
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers.RegularCellRisk_Part5_Part1
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers.RegularCellRisk_Part5_Part2
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers.RegularCellRisk_Part5_Part3
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers.RegularCellRisk_Part5_Part4
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers.RegularCellRisk_Part5_Part5
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers.ScoreInversion
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers.ScoreRisk
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.Helpers.Witness
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.T_CompactCausalRange
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.T_FiniteCellUnknownWeightAttainment
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.T_FixedGeometryFrontier
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.T_NoShiftReduction
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.T_OracleConverse
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.T_OracleScoreInversionAttainment
+import CausalSmith.Stat.STAT_TransportedLateStrengthFrontier_Research.T_RegularCellUnknownWeightAttainment
+
+/-! # Run barrel (auto-generated)
+
+Aggregates every module of this causalsmith run so the whole run is ONE buildable target
+(`lake build <this module>`). Research modules are not reachable from the top-level
+`CausalSmith.lean` barrel, so the default lake target skips them and reports green on stale
+oleans. Rewritten from the run's module set on every F-stage entry — do not hand-edit. -/

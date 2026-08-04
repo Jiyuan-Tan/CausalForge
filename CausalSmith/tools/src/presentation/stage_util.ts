@@ -132,7 +132,15 @@ export function reconcileXrefAdvisories(
   return advisories.map((advisory) => {
     const ids = [...advisory.detail.matchAll(/obj:[A-Za-z0-9:_'-]+/g)].map((m) => m[0]);
     if (ids.length === 0) return { advisory, resolved: null };
-    return { advisory, resolved: ids.every((id) => paperTex.includes(`ref{${id}}`)) };
+    // An id may be referenced inside a MULTI-target `\cref{obj:a,obj:b}` (which
+    // `repairObjRefs` legitimately produces) — a bare `ref{<id>}` substring test
+    // reported those references unresolved in the shipped paper.
+    return {
+      advisory,
+      resolved: ids.every((id) =>
+        new RegExp(`ref\\{[^}]*${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![A-Za-z0-9:_'-])[^}]*\\}`).test(paperTex),
+      ),
+    };
   });
 }
 

@@ -33,7 +33,10 @@
  * statements. `acknowledgeMarker` exists as the auditable escape for what remains.
  */
 const UPSTREAM_MARKERS: ReadonlyArray<{ readonly label: string; readonly re: RegExp }> = [
-  { label: "LaTeX citation macro", re: /\\cite(?:al[pt]|[pt]|author|year)?\s*[[{]/ },
+  // `[A-Za-z]*\*?` covers the whole natbib family in one shape — `\citep*`,
+  // `\citealt*`, `\citeyearpar`, `\citenum`, `\Citet`, … — instead of an
+  // enumerated list that missed the starred/`par` variants.
+  { label: "LaTeX citation macro", re: /\\[Cc]ite[A-Za-z]*\*?\s*[[{]/ },
   { label: "\"adapted from\"", re: /\badapted from\b/i },
   { label: "\"restated from\"", re: /\brestated (?:from|as)\b/i },
   { label: "\"reproduced from\"", re: /\breproduced (?:from|in)\b/i },

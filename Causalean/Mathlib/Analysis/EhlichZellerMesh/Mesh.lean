@@ -152,16 +152,21 @@ theorem eval_node_le_czMeshMax (R : Polynomial ℝ) (k : ℕ) {j : ℕ}
     le_ciSup_of_le houter_bdd j hinner
   simpa [czMeshMax, s, f] using houter
 
-private lemma czMeshMax_nonneg (R : Polynomial ℝ) (k : ℕ) :
+/-- The mesh maximum of the absolute values of a real polynomial at the
+Chebyshev–Lobatto nodes is nonnegative. -/
+lemma czMeshMax_nonneg (R : Polynomial ℝ) (k : ℕ) :
     0 ≤ czMeshMax R k := by
   have hmem : 0 ∈ Finset.range (k + 1) := by simp
   exact (abs_nonneg (R.eval (czNode k 0))).trans (eval_node_le_czMeshMax R k hmem)
 
-private lemma czTrig_neg (R : Polynomial ℝ) (t : ℝ) :
+/-- Negating a real polynomial negates its trigonometric transform at every point. -/
+lemma czTrig_neg (R : Polynomial ℝ) (t : ℝ) :
     czTrig (-R) t = -czTrig R t := by
   simp [czTrig, Polynomial.eval_neg]
 
-private lemma czSup_neg (R : Polynomial ℝ) :
+/-- Negating a real polynomial leaves unchanged the supremum of the absolute
+value of its trigonometric transform over the cosine interval. -/
+lemma czSup_neg (R : Polynomial ℝ) :
     czSup (-R) = czSup R := by
   apply congrArg sSup
   ext y
@@ -171,11 +176,15 @@ private lemma czSup_neg (R : Polynomial ℝ) :
   · rintro ⟨t, ht, rfl⟩
     exact ⟨t, ht, by simp [czTrig_neg]⟩
 
-private lemma czMeshMax_neg (R : Polynomial ℝ) (k : ℕ) :
+/-- Negating a real polynomial leaves unchanged its mesh maximum at the
+Chebyshev–Lobatto nodes. -/
+lemma czMeshMax_neg (R : Polynomial ℝ) (k : ℕ) :
     czMeshMax (-R) k = czMeshMax R k := by
   simp [czMeshMax, Polynomial.eval_neg]
 
-private lemma meshParam_mem_Icc (k : ℕ) (hk : 0 < k) {j : ℕ}
+/-- For a positive mesh order, every valid Chebyshev–Lobatto mesh parameter
+lies in the interval from zero to π. -/
+lemma meshParam_mem_Icc (k : ℕ) (hk : 0 < k) {j : ℕ}
     (hj : j ∈ Finset.range (k + 1)) :
     Real.pi * j / k ∈ Set.Icc (0 : ℝ) Real.pi := by
   have hkℝ : 0 < (k : ℝ) := by exact_mod_cast hk

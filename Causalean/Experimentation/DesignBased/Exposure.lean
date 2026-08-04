@@ -63,11 +63,6 @@ def propPairSame (D : FiniteDesign Ω) (f : Ω → Θ → Δ) (θ : ι → Θ) (
 def propPairCross (D : FiniteDesign Ω) (f : Ω → Θ → Δ) (θ : ι → Θ) (i j : ι) (d d' : Δ) : ℝ :=
   D.E (fun z => expoInd f θ i d z * expoInd f θ j d' z)
 
-/-- The generalized exposure probability is definitionally the expectation of the exposure
-indicator. -/
-@[simp] lemma prop_eq_E_expoInd (D : FiniteDesign Ω) (f : Ω → Θ → Δ) (θ : ι → Θ) (i : ι) (d : Δ) :
-    prop D f θ i d = D.E (expoInd f θ i d) := rfl
-
 /-- The generalized probability of exposure is the expectation of the exposure indicator. -/
 @[simp] lemma E_expoInd (D : FiniteDesign Ω) (f : Ω → Θ → Δ) (θ : ι → Θ) (i : ι) (d : Δ) :
     D.E (expoInd f θ i d) = prop D f θ i d := rfl

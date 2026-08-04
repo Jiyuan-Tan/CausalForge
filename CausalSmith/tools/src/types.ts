@@ -228,8 +228,6 @@ export interface DiscoveryFlags {
   escalate_to_proposer?: string | null;
   /** Set when proposal §8 has more than the 4-conjecture cap; surfaced to the user. */
   stage0_too_many_conjectures?: string;
-  /** Set when the post-stitch validator (Stage 0.M) cannot trace §9 to per-conjecture verdicts. */
-  stage0_stitch_invariant_violated?: string;
 }
 
 /**
@@ -565,6 +563,11 @@ export interface DiscoveryState {
     };
     kernel_replace_used_angles?: number[];
     draft_rebuild_used_angles?: number[];
+    /** Version of the completed draft awaiting review. Equal to
+     * `current_version` exactly when the current proto core is fresh. */
+    last_draft_version?: number;
+    /** @deprecated Read-only compatibility for states written before the
+     * compact version marker. `loadState` migrates it in memory. */
     last_draft_handoff?: string;
     last_draft_status?: "completed" | "needs-pivot" | "invalid-draft" | "env-failure";
     exhausted_angles?: number[];

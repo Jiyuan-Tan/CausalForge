@@ -303,7 +303,7 @@ that contains every exponent up to the required Taylor order, with error proport
 smoothness radius times bandwidth raised to the Hölder exponent. -/
 theorem holder_taylor_monomial_approx {d p : ℕ} {β L r : ℝ} {x0 : Fin d → ℝ}
     {S : Set (Fin d → ℝ)}
-    (hβ : 0 < β) (hL : 0 < L) (hr : 0 < r)
+    (hβ : 0 < β) (hL : 0 < L) (_hr : 0 < r)
     (hS : {x : Fin d → ℝ | ∀ i, |x i - x0 i| ≤ r} ⊆ S)
     (expo : Fin p → (Fin d → ℕ))
     (hcover : ∀ e : Fin d → ℕ, (∑ j, e j) ≤ ⌈β⌉₊ - 1 → ∃ k, expo k = e) :

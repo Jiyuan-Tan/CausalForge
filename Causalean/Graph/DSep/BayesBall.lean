@@ -401,7 +401,9 @@ private abbrev x : ChainNode := ⟨2, by decide⟩
 private def chainDAG : DAG ChainNode where
   edge u v := (u = y ∧ v = w) ∨ (u = w ∧ v = x)
   decEdge := by infer_instance
-  acyclic := DAG.acyclic_of_topoOrder (τ := fun v => v.val)
+  acyclic := DAG.acyclic_of_topoOrder
+    (r := (· < · : ℕ → ℕ → Prop))
+    (τ := fun v : ChainNode => (v.val : ℕ))
     (by intro u v h; rcases h with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;> decide)
 
 example : y ∉ chainDAG.bbReachableVertices {w} {x} := by

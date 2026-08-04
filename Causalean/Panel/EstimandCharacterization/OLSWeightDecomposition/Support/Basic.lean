@@ -45,7 +45,7 @@ is square-integrable on the finite measure `μ` because each indicator is
 bounded. -/
 noncomputable def saturatedClass {Ω 𝒢 : Type*} [MeasurableSpace Ω] [Fintype 𝒢]
     [DecidableEq 𝒢] [MeasurableSpace 𝒢] [MeasurableSingletonClass 𝒢]
-    (μ : Measure Ω) [IsProbabilityMeasure μ]
+    (μ : Measure Ω) [IsFiniteMeasure μ]
     (G : Ω → 𝒢) (G_meas : Measurable G) : LinearL2Class μ :=
   CellBridge.indicatorSpan μ G G_meas
 
@@ -146,10 +146,11 @@ theorem cellMass_nonneg {Ω 𝒢 : Type*} [MeasurableSpace Ω]
 family partitions `Ω` (up to `μ`-null sets) and the `μ`-mass of each is
 finite. This supplies the `π_sum_one` field for the finite-partition algebra. -/
 theorem cellMass_sum_eq_one {Ω 𝒢 : Type*} [MeasurableSpace Ω] [Fintype 𝒢]
-    [DecidableEq 𝒢] [MeasurableSpace 𝒢] [MeasurableSingletonClass 𝒢]
+    [MeasurableSpace 𝒢] [MeasurableSingletonClass 𝒢]
   (μ : Measure Ω) [IsProbabilityMeasure μ]
   (G : Ω → 𝒢) (G_meas : Measurable G) :
   ∑ g, cellMass μ G g = 1 := by
+  classical
   have hsum :
       (Finset.univ).sum (fun g => (μ (G ⁻¹' ({g} : Set 𝒢))).toReal) =
         (μ (G ⁻¹' (Set.univ : Set 𝒢))).toReal := by
@@ -162,46 +163,37 @@ theorem cellMass_sum_eq_one {Ω 𝒢 : Type*} [MeasurableSpace Ω] [Fintype 𝒢
         (h := by
           intro g hg
           exact ne_of_lt <| lt_of_le_of_lt (measure_mono (Set.subset_univ _))
-            (by simpa [IsProbabilityMeasure.measure_univ])))
+            (by simp [IsProbabilityMeasure.measure_univ])))
   simpa [cellMass, preimage_univ] using hsum
 
-/-- Cell-wise treated share is nonnegative under `D_binary`. The integrand
-`D · 𝟙{G = g}` is a.e. nonnegative because `D ∈ {0, 1}` a.e. -/
+/-- Cell-wise treated share is nonnegative when `D` is a.e. nonnegative. -/
 theorem cellShare_nonneg {Ω 𝒢 : Type*} [MeasurableSpace Ω]
-    [MeasurableSpace 𝒢] [MeasurableSingletonClass 𝒢]
     (μ : Measure Ω) (D : Ω → ℝ) (G : Ω → 𝒢)
-    (D_meas : Measurable D)
-    (D_binary : ∀ᵐ ω ∂μ, D ω = 0 ∨ D ω = 1) (g : 𝒢) :
+    (D_nonneg : ∀ᵐ ω ∂μ, 0 ≤ D ω) (g : 𝒢) :
     0 ≤ cellShare μ D G g := by
   have h_num_nonneg :
       0 ≤ ∫ ω, D ω * Set.indicator {ω' | G ω' = g} (fun _ => (1 : ℝ)) ω ∂μ := by
     refine integral_nonneg_of_ae ?_
-    filter_upwards [D_binary] with ω hD
-    rcases hD with hD0 | hD1
-    · simp [hD0]
-    · by_cases hG : G ω = g
-      · simp [hD1, hG]
-      · simp [hD1, hG]
+    filter_upwards [D_nonneg] with ω hD
+    exact mul_nonneg hD (Set.indicator_nonneg (fun _ _ => by norm_num) ω)
   have h_den_nonneg : 0 ≤ cellMass μ G g := cellMass_nonneg (μ := μ) G g
   exact div_nonneg h_num_nonneg h_den_nonneg
 
-/-- Cell-wise treated share is at most `1` under `D_binary`. The integrand
-`D · 𝟙{G = g} ≤ 𝟙{G = g}` a.e., so the numerator is at most
+/-- Cell-wise treated share is at most `1` when `D` lies a.e. between zero and
+one. The integrand `D · 𝟙{G = g} ≤ 𝟙{G = g}` a.e., so the numerator is at most
 `cellMass μ G g`. -/
-theorem cellShare_le_one {Ω 𝒢 : Type*} [MeasurableSpace Ω] [Fintype 𝒢]
-    [DecidableEq 𝒢] [MeasurableSpace 𝒢] [MeasurableSingletonClass 𝒢]
-  (μ : Measure Ω) [IsProbabilityMeasure μ]
+theorem cellShare_le_one {Ω 𝒢 : Type*} [MeasurableSpace Ω]
+    [MeasurableSpace 𝒢] [MeasurableSingletonClass 𝒢]
+  (μ : Measure Ω) [IsFiniteMeasure μ]
   (D : Ω → ℝ) (G : Ω → 𝒢)
-  (G_meas : Measurable G) (D_meas : Measurable D)
-  (D_binary : ∀ᵐ ω ∂μ, D ω = 0 ∨ D ω = 1) (g : 𝒢) :
+  (G_meas : Measurable G)
+  (D_bounds : ∀ᵐ ω ∂μ, 0 ≤ D ω ∧ D ω ≤ 1) (g : 𝒢) :
   cellShare μ D G g ≤ 1 := by
   let s : Set Ω := {ω | G ω = g}
   let I : Ω → ℝ := fun ω => Set.indicator s (1 : Ω → ℝ) ω
   have hI_meas : MeasurableSet s := by
     exact G_meas (measurableSet_singleton g)
-  have hI_top : μ s ≠ ⊤ := by
-    refine ne_of_lt <| lt_of_le_of_lt (measure_mono (Set.subset_univ s))
-      (by simpa [IsProbabilityMeasure.measure_univ])
+  have hI_top : μ s ≠ ⊤ := (measure_lt_top μ s).ne
   have h_num_le_den :
       ∫ ω, D ω * I ω ∂μ ≤ ∫ ω, I ω ∂μ := by
     have hI_integrable : Integrable I μ := by
@@ -213,20 +205,16 @@ theorem cellShare_le_one {Ω 𝒢 : Type*} [MeasurableSpace Ω] [Fintype 𝒢]
       intro ω
       exact Set.indicator_nonneg (fun _ _ => (show 0 ≤ (1 : ℝ) by norm_num)) ω
     have h_nonneg : 0 ≤ᵐ[μ] fun ω => D ω * I ω := by
-      filter_upwards [D_binary, hI_nonneg] with ω hD hI
-      rcases hD with hD0 | hD1
-      · simpa [I, hD0] using hI
-      · simpa [I, hD1] using mul_nonneg (by norm_num : (0:ℝ) ≤ 1) hI
+      filter_upwards [D_bounds, hI_nonneg] with ω hD hI
+      exact mul_nonneg hD.1 hI
     have h_le : (fun ω => D ω * I ω) ≤ᵐ[μ] I := by
-      filter_upwards [D_binary, hI_nonneg] with ω hD hI
-      rcases hD with hD0 | hD1
-      · simpa [I, hD0] using hI
-      · simpa [I, hD1] using (le_rfl : I ω ≤ I ω)
+      filter_upwards [D_bounds, hI_nonneg] with ω hD hI
+      simpa [mul_comm] using mul_le_of_le_one_right hI hD.2
     exact integral_mono_of_nonneg h_nonneg hI_integrable h_le
   have hI_int : (∫ ω, I ω ∂μ) = cellMass μ G g := by
     change (∫ ω, Set.indicator s (1 : Ω → ℝ) ω ∂μ) = (μ s).toReal
     rw [MeasureTheory.integral_indicator_one hI_meas]
-    simp [Measure.real, cellMass, s]
+    simp [Measure.real, s]
   have h_num_le_cellmass : ∫ ω, D ω * I ω ∂μ ≤ cellMass μ G g := by
     simpa [hI_int] using h_num_le_den
   exact div_le_one_of_le₀ h_num_le_cellmass (cellMass_nonneg (μ := μ) G g)
@@ -237,7 +225,7 @@ theorem cellShare_le_one {Ω 𝒢 : Type*} [MeasurableSpace Ω] [Fintype 𝒢]
 theorem propensity_mem_saturatedClass {Ω 𝒢 : Type*} [MeasurableSpace Ω]
     [Fintype 𝒢] [DecidableEq 𝒢] [MeasurableSpace 𝒢]
     [MeasurableSingletonClass 𝒢]
-    (μ : Measure Ω) [IsProbabilityMeasure μ]
+    (μ : Measure Ω) [IsFiniteMeasure μ]
     (D : Ω → ℝ) (G : Ω → 𝒢)
     (G_meas : Measurable G) :
     (saturatedClass μ G G_meas).mem (propensity μ D G) := by
@@ -248,7 +236,7 @@ Take the coefficient map `c g := (∫ Y · 𝟙{G = g} dμ) / cellMass μ G g`. 
 theorem meanReg_mem_saturatedClass {Ω 𝒢 : Type*} [MeasurableSpace Ω]
     [Fintype 𝒢] [DecidableEq 𝒢] [MeasurableSpace 𝒢]
     [MeasurableSingletonClass 𝒢]
-    (μ : Measure Ω) [IsProbabilityMeasure μ]
+    (μ : Measure Ω) [IsFiniteMeasure μ]
     (Y : Ω → ℝ) (G : Ω → 𝒢)
     (G_meas : Measurable G) :
     (saturatedClass μ G G_meas).mem (meanReg μ Y G) := by

@@ -97,7 +97,7 @@ lemma localized_omega_event_sharp_for_bundle
   obtain ⟨E₀, hE₀_meas, hE₀_prob, hE₀_bound⟩ :=
     localized_uniform_deviation_sharp B.F B.norm P_W B.X B.X_meas B.F_meas
       B.regime hζ_pos hζ_le n hn (ρ := δ_n) (Rmax := Rmax)
-      B.crit_le hδn_pos hRmax_lb B.crit_pos B.crit_fp
+      B.crit_le hδn_pos B.crit_pos B.crit_fp
       B.rad_bdd B.rad_int hslack
   let Ψ : Ω → (Fin n → S.𝒲) := fun ω k => sample.Z k ω
   let E : Set Ω := Ψ ⁻¹' E₀

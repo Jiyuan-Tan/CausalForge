@@ -45,7 +45,7 @@ open Finset
 
 variable {ι κ : Type*} [Fintype ι] [Fintype κ]
 
-private lemma double_sum_mul (a : ι → ℝ) (b : κ → ℝ) :
+private lemma double_sum_mul {K : Type*} [CommRing K] (a : ι → K) (b : κ → K) :
     (∑ i, ∑ j, a i * b j) = (∑ i, a i) * (∑ j, b j) := by
   rw [Finset.sum_mul]
   refine Finset.sum_congr rfl ?_
@@ -55,25 +55,31 @@ private lemma double_sum_mul (a : ι → ℝ) (b : κ → ℝ) :
 variable {ι : Type*} [Fintype ι]
 
 /-- Generic normalized finite weight `a_i / Σ_k a_k`. -/
-noncomputable def normalizedWeight (a : ι → ℝ) (i : ι) : ℝ :=
+noncomputable def normalizedWeight {K : Type*} [Field K] (a : ι → K) (i : ι) : K :=
   a i / ∑ k, a k
 
 /-- Nonnegativity of normalized weights from nonnegative raw weights and a
 positive normalizing sum. -/
-lemma normalizedWeight_nonneg (a : ι → ℝ)
+lemma normalizedWeight_nonneg {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
+    (a : ι → K)
     (ha : ∀ i, 0 ≤ a i) (hsum : 0 < ∑ i, a i) (i : ι) :
     0 ≤ normalizedWeight a i := by
   unfold normalizedWeight
   exact div_nonneg (ha i) (le_of_lt hsum)
 
-/-- Normalized finite weights sum to one when the normalizing sum is positive. -/
-lemma sum_normalizedWeight_eq_one (a : ι → ℝ) (hsum : 0 < ∑ i, a i) :
+/-- Normalized finite weights sum to one when the normalizing sum is nonzero. -/
+lemma sum_normalizedWeight_eq_one {K : Type*} [Field K]
+    (a : ι → K) (hsum : ∑ i, a i ≠ 0) :
     ∑ i, normalizedWeight a i = 1 := by
   unfold normalizedWeight
   rw [← Finset.sum_div]
-  exact div_self (ne_of_gt hsum)
+  exact div_self hsum
 
-private lemma weighted_center_cov_left (p x y : ι → ℝ) (hp : ∑ i, p i = 1) :
+/-- When finite weights sum to one, the weighted covariance of two centered
+variables equals their weighted cross-moment minus the product of their
+weighted means. -/
+lemma weighted_center_cov_left {K : Type*} [CommRing K]
+    (p x y : ι → K) (hp : ∑ i, p i = 1) :
     ∑ i, p i * (x i - ∑ j, p j * x j) * (y i - ∑ j, p j * y j) =
       (∑ i, p i * x i * y i) - (∑ j, p j * x j) * (∑ j, p j * y j) := by
   classical
@@ -114,7 +120,11 @@ private lemma weighted_center_cov_left (p x y : ι → ℝ) (hp : ∑ i, p i = 1
     _ = (∑ i, p i * x i * y i) - (∑ j, p j * x j) * (∑ j, p j * y j) := by
           rfl
 
-private lemma pairwise_cov_right (p x y : ι → ℝ) (hp : ∑ i, p i = 1) :
+/-- When finite weights sum to one, the weighted sum of pairwise products of
+differences equals twice the weighted cross-moment minus twice the product of
+the weighted means. -/
+lemma pairwise_cov_right {K : Type*} [CommRing K]
+    (p x y : ι → K) (hp : ∑ i, p i = 1) :
     (∑ i, ∑ j, p i * p j * (x i - x j) * (y i - y j)) =
       2 * ((∑ i, p i * x i * y i) -
         (∑ j, p j * x j) * (∑ j, p j * y j)) := by
@@ -149,17 +159,19 @@ This is the finite-population identity
 `Σᵢ pᵢ (xᵢ − x̄)(yᵢ − ȳ) =
   1/2 Σᵢ Σⱼ pᵢpⱼ (xᵢ − xⱼ)(yᵢ − yⱼ)`.
 -/
-lemma weighted_center_cov (p x y : ι → ℝ) (hp : ∑ i, p i = 1) :
+lemma weighted_center_cov {K : Type*} [Field K]
+    (p x y : ι → K) (hp : ∑ i, p i = 1) (h2 : (2 : K) ≠ 0) :
     ∑ i, p i * (x i - ∑ j, p j * x j) * (y i - ∑ j, p j * y j) =
       (1 / 2) * ∑ i, ∑ j, p i * p j * (x i - x j) * (y i - y j) := by
   rw [weighted_center_cov_left p x y hp, pairwise_cov_right p x y hp]
-  ring
+  simp [h2]
 
 /-- Weighted centered variance as half the average pairwise squared gap. -/
-lemma weighted_center_var (p x : ι → ℝ) (hp : ∑ i, p i = 1) :
+lemma weighted_center_var {K : Type*} [Field K]
+    (p x : ι → K) (hp : ∑ i, p i = 1) (h2 : (2 : K) ≠ 0) :
     ∑ i, p i * (x i - ∑ j, p j * x j)^2 =
       (1 / 2) * ∑ i, ∑ j, p i * p j * (x i - x j)^2 := by
-  have h := weighted_center_cov p x x hp
+  have h := weighted_center_cov p x x hp h2
   calc
     ∑ i, p i * (x i - ∑ j, p j * x j)^2
         = ∑ i, p i * (x i - ∑ j, p j * x j) *

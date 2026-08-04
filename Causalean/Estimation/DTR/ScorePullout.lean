@@ -129,11 +129,11 @@ theorem weighted_residual_integral_zero_stage0
     exact S.μ₁_meas.comp (hs1.prod (hd0.prod hs0))
   have hI0M0_int : Integrable (fun ω => I0 ω * M0 ω) P.μ := by
     have h := (S.toPODTRSystem.dVar ⟨0, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨0, by decide⟩) hM0_int hM0_meas
+      (S.dbar ⟨0, by decide⟩) (MeasurableSet.singleton _) hM0_int
     exact h.congr (Filter.Eventually.of_forall (fun ω => by simp [I0, M0, mul_comm]))
   have hI0M1_int : Integrable (fun ω => I0 ω * M1 ω) P.μ := by
     have h := (S.toPODTRSystem.dVar ⟨0, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨0, by decide⟩) hM1_int hM1_meas
+      (S.dbar ⟨0, by decide⟩) (MeasurableSet.singleton _) hM1_int
     exact h.congr (Filter.Eventually.of_forall (fun ω => by simp [I0, M1, mul_comm]))
   have hR_int : Integrable R P.μ := by
     have hsub := hI0M1_int.sub hI0M0_int
@@ -209,7 +209,7 @@ theorem indicator_to_propScore_integral_stage0
       ((S.toPODTRSystem.dVar ⟨0, by decide⟩).indicator
         (S.dbar ⟨0, by decide⟩)) P.μ :=
     (S.toPODTRSystem.dVar ⟨0, by decide⟩).integrable_indicator
-      (S.dbar ⟨0, by decide⟩)
+      (S.dbar ⟨0, by decide⟩) (MeasurableSet.singleton _)
   have hCE_pull :=
     B.condExpGiven_mul_of_stronglyMeasurable_left
       (μ := P.μ) hf_sm hf_ind_int hind_int
@@ -327,11 +327,11 @@ theorem weighted_residual_integral_zero_stage1
   have hI1Yf_int : Integrable
       (fun ω => I1 ω * S.toPODTRSystem.factualY ω) P.μ := by
     have h := (S.toPODTRSystem.dVar ⟨1, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨1, by decide⟩) hYf_int S.toPODTRSystem.measurable_factualY
+      (S.dbar ⟨1, by decide⟩) (MeasurableSet.singleton _) hYf_int
     exact h.congr (Filter.Eventually.of_forall (fun ω => by simp [I1, mul_comm]))
   have hI1M1_int : Integrable (fun ω => I1 ω * M1 ω) P.μ := by
     have h := (S.toPODTRSystem.dVar ⟨1, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨1, by decide⟩) hM1_int hM1_meas
+      (S.dbar ⟨1, by decide⟩) (MeasurableSet.singleton _) hM1_int
     exact h.congr (Filter.Eventually.of_forall (fun ω => by simp [I1, M1, mul_comm]))
   have hI1_res_int : Integrable
       (fun ω => I1 ω * (S.toPODTRSystem.factualY ω - M1 ω)) P.μ := by
@@ -343,11 +343,11 @@ theorem weighted_residual_integral_zero_stage1
   have hI1_res_meas : Measurable
       (fun ω => I1 ω * (S.toPODTRSystem.factualY ω - M1 ω)) :=
     ((S.toPODTRSystem.dVar ⟨1, by decide⟩).measurable_indicator
-      (S.dbar ⟨1, by decide⟩)).mul
+      (S.dbar ⟨1, by decide⟩) (MeasurableSet.singleton _)).mul
       (S.toPODTRSystem.measurable_factualY.sub hM1_meas)
   have hR_int : Integrable R P.μ := by
     have h := (S.toPODTRSystem.dVar ⟨0, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨0, by decide⟩) hI1_res_int hI1_res_meas
+      (S.dbar ⟨0, by decide⟩) (MeasurableSet.singleton _) hI1_res_int
     exact h.congr (Filter.Eventually.of_forall (fun ω => by
       simp [R, I0, I1, M1, mul_comm]))
   have hcondexp_pull :=
@@ -436,7 +436,7 @@ theorem indicator_to_propScore_integral_stage1
       ((S.toPODTRSystem.dVar ⟨1, by decide⟩).indicator
         (S.dbar ⟨1, by decide⟩)) P.μ :=
     (S.toPODTRSystem.dVar ⟨1, by decide⟩).integrable_indicator
-      (S.dbar ⟨1, by decide⟩)
+      (S.dbar ⟨1, by decide⟩) (MeasurableSet.singleton _)
   have hCE_pull :=
     B.condExpGiven_mul_of_stronglyMeasurable_left
       (μ := P.μ) hf_sm hf_ind_int hind_int

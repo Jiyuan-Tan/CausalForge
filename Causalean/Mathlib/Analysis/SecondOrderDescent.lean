@@ -8,12 +8,12 @@ import Mathlib.Analysis.Calculus.Taylor
 # Second-order descent for one real variable
 
 This module provides the one-dimensional smooth-optimization descent lemma. A real
-function whose second derivative is bounded above on a segment lies below the
+function whose second derivative is bounded above in a segment's interior lies below the
 corresponding quadratic Taylor model, and a negative initial slope gives an explicit
 positive decrease at the clipped quadratic-model step.
 
 The statements are objective-agnostic. Callers supply the regularity on `Set.Icc 0 T`
-and the pointwise second-derivative bound; this file only turns those hypotheses into
+and the interior pointwise second-derivative bound; this file only turns those hypotheses into
 the quadratic upper bound and the optimized descent gap.
 -/
 
@@ -53,18 +53,17 @@ theorem descentStep_mem_Icc {M c T : ℝ} (hM : 0 ≤ M) (hc : 0 ≤ c) (hT : 0 
 /-! ### Quadratic upper bound -/
 
 /-- A twice differentiable real function whose second derivative is bounded above on an
-interval is no larger than its tangent at the left endpoint plus the quadratic curvature
+interval's interior is no larger than its tangent at the left endpoint plus the quadratic curvature
 allowance.
 
 The formal statement is on `[0, T]`. It assumes twice continuous differentiability on that
 closed interval, differentiability at the left endpoint, and a pointwise bound
-`deriv (deriv f) ≤ M` throughout the interval. Mathlib's Taylor theorem with Lagrange
+`deriv (deriv f) ≤ M` throughout the open interval. Mathlib's Taylor theorem with Lagrange
 remainder supplies an intermediate point, and the pointwise bound controls the remainder. -/
-theorem second_order_upper_bound {f : ℝ → ℝ} {M T : ℝ} (hT : 0 ≤ T)
+theorem second_order_upper_bound {f : ℝ → ℝ} {M T : ℝ}
     (hf : ContDiffOn ℝ 2 f (Icc 0 T)) (hf0 : DifferentiableAt ℝ f 0)
-    (hM : ∀ t ∈ Icc 0 T, deriv (deriv f) t ≤ M) {t : ℝ} (ht : t ∈ Icc 0 T) :
+    (hM : ∀ t ∈ Ioo 0 T, deriv (deriv f) t ≤ M) {t : ℝ} (ht : t ∈ Icc 0 T) :
     f t ≤ f 0 + deriv f 0 * t + (M / 2) * t ^ 2 := by
-  have _hT : 0 ≤ T := hT
   rcases ht with ⟨ht0, htT⟩
   rcases ht0.eq_or_lt with rfl | htpos
   · simp
@@ -85,7 +84,7 @@ theorem second_order_upper_bound {f : ℝ → ℝ} {M T : ℝ} (hT : 0 ≤ T)
     have hid : iteratedDeriv 2 f = deriv (deriv f) := by
       rw [iteratedDeriv_succ, iteratedDeriv_one]
     rcases htay with ⟨ξ, hξ, heq⟩
-    have hb : deriv (deriv f) ξ ≤ M := hM ξ ⟨hξ.1.le, hξ.2.le.trans htT⟩
+    have hb : deriv (deriv f) ξ ≤ M := hM ξ ⟨hξ.1, hξ.2.trans_le htT⟩
     have heq' :
         f t - (f 0 + deriv f 0 * t) = deriv (deriv f) ξ * t ^ 2 / 2 := by
       rw [hpoly, hid] at heq
@@ -95,17 +94,17 @@ theorem second_order_upper_bound {f : ℝ → ℝ} {M T : ℝ} (hT : 0 ≤ T)
       nlinarith [sq_nonneg t, hb]
     nlinarith
 
-/-- A real function with nonpositive second derivative on an interval lies below its tangent
-line at the left endpoint.
+/-- A real function with nonpositive second derivative in an interval's interior lies below
+its tangent line at the left endpoint.
 
 This is the zero-curvature specialization of the second-order upper bound. It is useful
 when the caller has concavity along the segment rather than a strictly positive curvature
 constant. -/
-theorem first_order_upper_bound {f : ℝ → ℝ} {T : ℝ} (hT : 0 ≤ T)
+theorem first_order_upper_bound {f : ℝ → ℝ} {T : ℝ}
     (hf : ContDiffOn ℝ 2 f (Icc 0 T)) (hf0 : DifferentiableAt ℝ f 0)
-    (hM : ∀ t ∈ Icc 0 T, deriv (deriv f) t ≤ 0) {t : ℝ} (ht : t ∈ Icc 0 T) :
+    (hM : ∀ t ∈ Ioo 0 T, deriv (deriv f) t ≤ 0) {t : ℝ} (ht : t ∈ Icc 0 T) :
     f t ≤ f 0 + deriv f 0 * t := by
-  have h := second_order_upper_bound (M := 0) hT hf hf0 hM ht
+  have h := second_order_upper_bound (M := 0) hf hf0 hM ht
   simpa using h
 
 /-! ### Optimized descent gap -/
@@ -116,18 +115,18 @@ the clipped quadratic-model step.
 The conclusion exposes both feasibility of the chosen step and the raw quadratic-model
 gap. This form is intended for callers that want to keep their own constants visible before
 using the simplified closed forms below. -/
-theorem second_order_descent_gap {f : ℝ → ℝ} {M c T : ℝ} (hT : 0 ≤ T) (hc : 0 < c)
+theorem second_order_descent_gap {f : ℝ → ℝ} {M c T : ℝ} (hT : 0 ≤ T) (hc : 0 ≤ c)
     (hMnn : 0 ≤ M) (hf : ContDiffOn ℝ 2 f (Icc 0 T)) (hf0 : DifferentiableAt ℝ f 0)
-    (hM : ∀ t ∈ Icc 0 T, deriv (deriv f) t ≤ M) (hslope : deriv f 0 ≤ -c) :
+    (hM : ∀ t ∈ Ioo 0 T, deriv (deriv f) t ≤ M) (hslope : deriv f 0 ≤ -c) :
     descentStep M c T ∈ Icc 0 T ∧
       f 0 - f (descentStep M c T) ≥
         c * descentStep M c T - (M / 2) * descentStep M c T ^ 2 := by
   let s := descentStep M c T
-  have hs : s ∈ Icc 0 T := descentStep_mem_Icc hMnn hc.le hT
+  have hs : s ∈ Icc 0 T := descentStep_mem_Icc hMnn hc hT
   refine ⟨hs, ?_⟩
   have hs0 : 0 ≤ s := hs.1
   have hub : f s ≤ f 0 + deriv f 0 * s + (M / 2) * s ^ 2 :=
-    second_order_upper_bound hT hf hf0 hM hs
+    second_order_upper_bound hf hf0 hM hs
   have hslope_mul : deriv f 0 * s ≤ -c * s :=
     mul_le_mul_of_nonneg_right hslope hs0
   nlinarith
@@ -138,9 +137,9 @@ linear descent term.
 The selected step is `min T (c / M)`, so the guaranteed decrease is at least
 `(c / 2) * min T (c / M)`. The factor one half is the standard smooth-optimization
 constant from optimizing a quadratic upper model. -/
-theorem second_order_descent_gap_min {f : ℝ → ℝ} {M c T : ℝ} (hT : 0 ≤ T) (hc : 0 < c)
+theorem second_order_descent_gap_min {f : ℝ → ℝ} {M c T : ℝ} (hT : 0 ≤ T) (hc : 0 ≤ c)
     (hMpos : 0 < M) (hf : ContDiffOn ℝ 2 f (Icc 0 T)) (hf0 : DifferentiableAt ℝ f 0)
-    (hM : ∀ t ∈ Icc 0 T, deriv (deriv f) t ≤ M) (hslope : deriv f 0 ≤ -c) :
+    (hM : ∀ t ∈ Ioo 0 T, deriv (deriv f) t ≤ M) (hslope : deriv f 0 ≤ -c) :
     f 0 - f (min T (c / M)) ≥ (c / 2) * min T (c / M) := by
   let s := min T (c / M)
   have hraw :
@@ -149,20 +148,19 @@ theorem second_order_descent_gap_min {f : ℝ → ℝ} {M c T : ℝ} (hT : 0 ≤
       (second_order_descent_gap hT hc hMpos.le hf hf0 hM hslope).2
   have hsle : s ≤ c / M := min_le_right T (c / M)
   have hMs : s * M ≤ c := (le_div_iff₀ hMpos).mp hsle
-  have hs0 : 0 ≤ s := le_min hT (div_nonneg hc.le hMpos.le)
+  have hs0 : 0 ≤ s := le_min hT (div_nonneg hc hMpos.le)
   nlinarith
 
 /-- With zero curvature, the endpoint step gives the full linear descent guaranteed by the
 negative initial slope.
 
 This is the closed-form descent bound for the concave or affine-along-the-segment case. -/
-theorem first_order_descent_gap {f : ℝ → ℝ} {c T : ℝ} (hT : 0 ≤ T) (hc : 0 < c)
+theorem first_order_descent_gap {f : ℝ → ℝ} {c T : ℝ} (hT : 0 ≤ T)
     (hf : ContDiffOn ℝ 2 f (Icc 0 T)) (hf0 : DifferentiableAt ℝ f 0)
-    (hM : ∀ t ∈ Icc 0 T, deriv (deriv f) t ≤ 0) (hslope : deriv f 0 ≤ -c) :
+    (hM : ∀ t ∈ Ioo 0 T, deriv (deriv f) t ≤ 0) (hslope : deriv f 0 ≤ -c) :
     f 0 - f T ≥ c * T := by
-  have _hc : 0 ≤ c := hc.le
   have hub : f T ≤ f 0 + deriv f 0 * T :=
-    first_order_upper_bound hT hf hf0 hM (right_mem_Icc.mpr hT)
+    first_order_upper_bound hf hf0 hM (right_mem_Icc.mpr hT)
   have hslope_mul : deriv f 0 * T ≤ -c * T :=
     mul_le_mul_of_nonneg_right hslope hT
   nlinarith
@@ -173,18 +171,18 @@ uniform half-linear decrease.
 For zero curvature the sharper endpoint bound is `c * T`; for positive curvature the
 selected step is `min T (c / M)`. This theorem packages the common guarantee together with
 feasibility of the step. -/
-theorem second_order_descent_gap_half {f : ℝ → ℝ} {M c T : ℝ} (hT : 0 ≤ T) (hc : 0 < c)
+theorem second_order_descent_gap_half {f : ℝ → ℝ} {M c T : ℝ} (hT : 0 ≤ T) (hc : 0 ≤ c)
     (hMnn : 0 ≤ M) (hf : ContDiffOn ℝ 2 f (Icc 0 T)) (hf0 : DifferentiableAt ℝ f 0)
-    (hM : ∀ t ∈ Icc 0 T, deriv (deriv f) t ≤ M) (hslope : deriv f 0 ≤ -c) :
+    (hM : ∀ t ∈ Ioo 0 T, deriv (deriv f) t ≤ M) (hslope : deriv f 0 ≤ -c) :
     descentStep M c T ∈ Icc 0 T ∧
       f 0 - f (descentStep M c T) ≥ (c / 2) * descentStep M c T := by
-  refine ⟨descentStep_mem_Icc hMnn hc.le hT, ?_⟩
+  refine ⟨descentStep_mem_Icc hMnn hc hT, ?_⟩
   rcases hMnn.eq_or_lt with hMzero | hMpos
   · rw [← hMzero, descentStep_of_eq_zero]
-    have hM0 : ∀ t ∈ Icc 0 T, deriv (deriv f) t ≤ 0 := by
+    have hM0 : ∀ t ∈ Ioo 0 T, deriv (deriv f) t ≤ 0 := by
       simpa [← hMzero] using hM
     have hgap : f 0 - f T ≥ c * T :=
-      first_order_descent_gap hT hc hf hf0 hM0 hslope
+      first_order_descent_gap hT hf hf0 hM0 hslope
     nlinarith
   · rw [descentStep_of_pos hMpos]
     exact second_order_descent_gap_min hT hc hMpos hf hf0 hM hslope

@@ -2,11 +2,10 @@
 // Extracted from pipeline_stages.ts in Step 2.2 of the three-submodules refactor.
 
 import path from "node:path";
-import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { MODEL_PLAN } from "../../constants.js";
-import { extractJsonObject } from "../../judgment.js";
-import { formalizationDir, resolveInDir, templatePath } from "../../paths.js";
+import { formalizationDir, resolveInDir } from "../../paths.js";
 import { saveState } from "../../state.js";
 import type { PipelineContext, StageResult, StateJson } from "../../types.js";
 import {
@@ -16,12 +15,11 @@ import {
   readPrompt,
   type StageDeps,
 } from "../../pipeline_support.js";
-import { meetsNoveltyFloor, tierFloorBlock } from "../../pipeline_stages.js";
+import { tierFloorBlock } from "../../pipeline_stages.js";
 import type { NoveltyTarget } from "../../novelty.js";
 import {
   runStageNeg1_2,
   logNeg1Review,
-  buildDrafterHandoff,
   NEG1_NONFLAGSHIP_KILL_VERSION,
   NEG1_PIVOT_BUDGET,
   NEG1_REVISE_CAP,
@@ -35,20 +33,30 @@ import {
   decideTierSaturationPromote,
   normalizeReviewVerdict,
 } from "./neg0_5_decision.js";
-import { renderRefereeTemplate, runReferee, stripTemplateScaffolding } from "../framework/referee.js";
+import { renderRefereeTemplate, runReferee } from "../framework/referee.js";
 import { parseRepairedModelJson } from "../core/core_io.js";
 
 /**
- * Dual-producer retarget block for the D-0.5 reviewer (D0_CORE_REDESIGN.md §12.5).
+ * Single-artifact review block for the D-0.5 reviewer (D0_CORE_REDESIGN.md §12.5).
  *
- * Once D-1.2 emits a `proto_core.json`, the reviewer judges that ONE artifact:
- * the typed proto_core (the authoritative formal content and prose). This returns
- * the core inlined, or "" when no proto_core exists yet (the legacy monolithic
- * `.tex` path is unchanged — the block is simply absent). Safe in both regimes.
+ * The reviewer judges ONE artifact: the typed proto_core (the authoritative
+ * formal content and prose), inlined canonically. Its absence is a plumbing
+ * failure (throws), never a review verdict.
  */
 export async function buildProtoCoreReviewBlock(ctx: PipelineContext): Promise<string> {
   const src = await readIfExists(protoCoreJsonPath(ctx));
-  if (!src) return "";
+  if (!src) {
+    // Single-artifact regime: the proto core IS the proposal, and the producer
+    // either writes it or halts before the review boundary. Its absence here is
+    // a plumbing failure, never a review verdict. (The legacy monolithic-.tex
+    // review path this used to fall back to was removed in the 2026-07-31
+    // dead-code sweep — it had been unreachable since the single-artifact
+    // rollout, and its rubric referenced a prompt file that no longer exists.)
+    throw new Error(
+      `D-0.5 cannot review: proto_core.json is absent or empty at ${protoCoreJsonPath(ctx)}. ` +
+        `Re-run the D-1.2 producer before the review boundary.`,
+    );
+  }
   // Validate AND canonicalize before inlining. The proto core is written by the
   // AGENT (no atomic wrapper), and the resume guard only checks `existsSync` while
   // this function only checked non-empty — so a torn file was inlined verbatim and
@@ -72,17 +80,6 @@ export async function buildProtoCoreReviewBlock(ctx: PipelineContext): Promise<s
   return ["=== PROPOSAL CORE (the artifact under review — typed source of truth) ===", canonical, "=== END PROPOSAL CORE ==="].join("\n");
 }
 
-/** Resolve the artifact D-0.5 must record and hand to the reviewer.
- *
- * Proto-core runs are deliberately single-artifact: `proposal.tex` may be a
- * legacy file from an earlier producer version and therefore MUST NOT remain
- * the reviewer path once the typed core exists. Keeping this decision in one
- * helper prevents the template, prompt, and checkpoint receipts from drifting.
- */
-export function neg1ReviewArtifactPath(ctx: PipelineContext, legacyProposalTexPath: string): string {
-  const corePath = protoCoreJsonPath(ctx);
-  return existsSync(corePath) ? corePath : legacyProposalTexPath;
-}
 
 /**
  * Inspect a Stage -0.5 reviewer JSON and, when REJECTed for a localized
@@ -128,7 +125,7 @@ async function dispatchRejectEscape(args: {
 }
 
 /**
- * Stage -0.5 reviewer: review the current `proposal.tex` and own the
+ * Stage -0.5 reviewer: review the current proto core and own the
  * angle / revise / pivot loop. On REVISE / REJECT / cap-exhausted, calls the
  * Stage -1.2 producer as a callback to draft the next version. Exits with
  * ACCEPT (advance forward) or NO-PASS (checkpoint).
@@ -157,33 +154,23 @@ export async function runStageNeg0_5(args: {
     };
   }
   const paths = artifactPaths(args.ctx, args.state);
-  const currentProposalArtifact = (): string => neg1ReviewArtifactPath(args.ctx, paths.proposalTex);
+  const currentProposalArtifact = (): string => protoCoreJsonPath(args.ctx);
   // The flagship rubric (regime axes (a)–(j), soft tier-movers, hard caps) is
   // a single shared block injected into BOTH the -0.5 and 0.5 reviewers so the
   // two stages key off the same definitions (prevents the proposal/derivation
   // calibration drift). The review prompt keeps only its stage-specific routing.
-  // Single-artifact path: when a proposal core exists, use the self-contained
-  // core reviewer rubric (retargeted at the typed core; no .tex-structure / SC10
-  // machinery). Otherwise the legacy monolithic-.tex rubric. The flagship rubric
-  // is shared by both.
-  // Resolved PER REVIEW ATTEMPT, not once per stage entry. `buildProtoCoreReviewBlock`
-  // re-reads proto_core.json inside the loop, so hoisting this pinned the rubric to
-  // whatever existed at stage entry: if the proto core first appears mid-loop, the
-  // reviewer was handed the legacy .tex rubric while the prompt inlined a typed core —
-  // mismatched rubric and artifact, and every finding it produces is suspect.
-  const rubricCache = new Map<boolean, string>();
-  const resolveReviewPrompt = async (): Promise<string> => {
-    const hasCore = (await readIfExists(protoCoreJsonPath(args.ctx))).length > 0;
-    const cached = rubricCache.get(hasCore);
-    if (cached !== undefined) return cached;
+  // Single-artifact regime: the self-contained core reviewer rubric, always —
+  // the legacy monolithic-.tex rubric (and the per-attempt rubric re-resolution
+  // that kept the two from mismatching mid-loop) was removed in the 2026-07-31
+  // dead-code sweep; the producer either writes the core or halts pre-review.
+  const reviewPromptOnce = (async () => {
     const [neg1ReviewBody, flagshipRubric] = await Promise.all([
-      readPrompt(args.ctx, hasCore ? "stage_neg1_review_core.txt" : "stage_neg1_review.txt"),
+      readPrompt(args.ctx, "stage_neg1_review_core.txt"),
       readPrompt(args.ctx, "stage_flagship_rubric.txt"),
     ]);
-    const prompt = `${neg1ReviewBody}\n\n${flagshipRubric}`;
-    rubricCache.set(hasCore, prompt);
-    return prompt;
-  };
+    return `${neg1ReviewBody}\n\n${flagshipRubric}`;
+  })();
+  const resolveReviewPrompt = (): Promise<string> => reviewPromptOnce;
 
   // Stage 0.5 rejection context (load-bearing on resume after rewound_from_stage0).
   // Built once per Stage -0.5 entry so each reviewer attempt sees the same evidence.
@@ -351,43 +338,50 @@ export async function runStageNeg0_5(args: {
     }
 
     // Resume-aware producer-first guard. If we are entering -0.5 in
-    // revise/pivot mode with no fresh draft handoff, drive the producer once
+    // revise/pivot mode with no fresh draft version, drive the producer once
     // before reviewing — otherwise we would either (a) burn a Codex call
     // re-reviewing the already-judged proposal, or (b) push an iteration row
     // with version=0 (cross-stage pivot path, where intervention_routing
     // wipes last_reviewer_verdict and resets current_version=0 expecting
     // stageNeg1_2 to bump it before the next review).
-    const hasFreshDraft =
-      typeof pf.last_draft_handoff === "string" && pf.last_draft_handoff.length > 0;
+    const hasFreshDraft = pf.last_draft_version === (pf.current_version ?? 0);
     if (!hasFreshDraft && (mode === "revise" || mode === "pivot")) {
       await runStageNeg1_2({ ctx: args.ctx, state: args.state, deps: args.deps });
       // The next operation is another remote reviewer call. Persist the newly
-      // authored version/handoff first so a reviewer crash resumes from review
+      // authored version marker first so a reviewer crash resumes from review
       // instead of silently re-running and overwriting the proposer output.
       await persistState();
       continue;
     }
 
+    // SINGLE SOURCE for drafter context: the RAW proto core. The persisted core
+    // already carries everything the drafter handoff shows — the checklist and
+    // comparator table via CoreSchema/CORE_HANDOFF_KEYS, and the UM8 upgrade
+    // receipt folded in from stdout at the author's persist boundary
+    // (UPGRADE_RECEIPT_KEYS). The state stores only a compact freshness version,
+    // never a second serialized copy of the author output.
     let draftJson: Record<string, unknown> = {};
-    if (typeof pf.last_draft_handoff === "string" && pf.last_draft_handoff.length > 0) {
+    const rawCoreForHandoff = await readIfExists(protoCoreJsonPath(args.ctx));
+    if (rawCoreForHandoff) {
       try {
-        // Three-layer defense: the handoff is a persisted model stdout receipt and
-        // can carry under-escaped TeX (comparator claims, checklist lines).
         draftJson = parseRepairedModelJson(
-          pf.last_draft_handoff,
-          "stage -0.5 producer handoff",
+          rawCoreForHandoff,
+          protoCoreJsonPath(args.ctx),
         ) as Record<string, unknown>;
-      } catch (err) {
-        // An unparseable handoff silently blanks the drafter context (comparator
-        // table, upgrade_mode, checklist), which the reviewer then reads as genuine
-        // omissions — spurious findings, each costing a revise round.
-        console.warn(
-          `[stage -0.5] producer handoff is unparseable (${err instanceof Error ? err.message : String(err)}); ` +
-            `the reviewer will see EMPTY drafter context and may report spurious omissions this round.`,
-        );
+      } catch {
+        // buildProtoCoreReviewBlock throws the loud, actionable error for a torn
+        // core moments later; an empty drafter context here is fine meanwhile.
         draftJson = {};
       }
     }
+    // Orchestrator-known identity rows the stdout handoff used to carry.
+    draftJson = {
+      ...draftJson,
+      chosen_qid: args.ctx.qid,
+      chosen_specialization: args.ctx.specialization,
+      version: pf.current_version ?? 0,
+      mode: pf.current_mode ?? "cold-start",
+    };
     // Resolve this per attempt: a proto core can first appear during the loop.
     // In single-artifact mode every reviewer-facing path must name the core,
     // never a possibly stale legacy proposal.tex.
@@ -719,62 +713,13 @@ export async function runNeg1Review(args: {
   stage0_5RejectionBlock?: string;
   methodScopedNoveltyBlock?: string;
 }): Promise<{ raw: string; verdict: string | null; json: Record<string, unknown>; parseError: string | null }> {
-  // Fail-closed on the proposal source. `readIfExists` returns "" for a missing file,
-  // which would send the reviewer a prompt with an empty proposal body and let it
-  // render a verdict on nothing — the same class of fault that fabricated a novelty
-  // tier at D0.5.G.
-  if (!existsSync(args.proposalPath)) {
-    throw new Error(
-      `D-0.5 cannot review: the proposal is absent at ${args.proposalPath}. This is a plumbing failure, ` +
-        `not a review verdict — re-run the D-1.2 producer before the review boundary.`,
-    );
-  }
-  const proposalSrc = await readIfExists(args.proposalPath);
-  if (proposalSrc.trim().length === 0) {
-    throw new Error(`D-0.5 cannot review: the proposal at ${args.proposalPath} is empty (0 non-whitespace chars).`);
-  }
-  // Proto path: the SC6 comparator table lives in `proto_core.json` as
-  // `comparator_promises`; the proto producer's stdout handoff only carries
-  // {status, message, artifacts, literature_checklist} (see
-  // stage_neg1_2_proto_core.ts), so buildDrafterHandoff would always render the
-  // table as <MISSING> and the reviewer would fire N-comparator-drift every
-  // round. Surface the core's comparator_promises into the handoff object.
-  const draftForHandoff: Record<string, unknown> = { ...args.draftJson };
-  if (
-    draftForHandoff.comparator_promise_table == null &&
-    draftForHandoff.comparator_promises == null
-  ) {
-    try {
-      const coreRaw = await readIfExists(protoCoreJsonPath(args.ctx));
-      if (coreRaw) {
-        // Three-layer defense: comparator claims are verbatim TeX-bearing
-        // summaries from a (possibly agent-raw / legacy) proto core.
-        const core = parseRepairedModelJson(
-          coreRaw,
-          protoCoreJsonPath(args.ctx),
-        ) as Record<string, unknown>;
-        // The producer may store the table under either name (canonical proto
-        // field `comparator_promises`, or `comparator_promise_table` when it
-        // self-aligns to the reviewer's wording). Accept either.
-        const coreTable =
-          core.comparator_promise_table ?? core.comparator_promises;
-        if (Array.isArray(coreTable) && coreTable.length > 0) {
-          draftForHandoff.comparator_promise_table = coreTable;
-        }
-      }
-    } catch (err) {
-      // Do NOT fail silently. The comment 25 lines above explains that a missing
-      // comparator table makes the reviewer fire N-comparator-drift EVERY round —
-      // i.e. this catch converts a proto_core read/parse error into a recurring
-      // fabricated review finding, and each one costs a revise round.
-      console.warn(
-        `[stage -0.5] comparator table unavailable from proto_core (${err instanceof Error ? err.message : String(err)}); ` +
-          `the handoff will render <MISSING> and the reviewer is LIKELY to fire a spurious N-comparator-drift. ` +
-          `Treat any comparator finding this round as suspect.`,
-      );
-    }
-  }
-  const handoff = buildDrafterHandoff(draftForHandoff);
+  // (Fail-closed on the proposal source lives in `buildProtoCoreReviewBlock`
+  // below: absent/empty/torn proto core throws a plumbing error there, never a
+  // review verdict — the class of fault that fabricated a novelty tier at
+  // D0.5.G.)
+  // (The comparator backfill is retired: `draftJson` IS the raw proto core,
+  // which carries `comparator_promises` and the checklist directly — there is
+  // no second copy left to reconcile.)
   const upgradeMode = args.draftJson.upgrade_mode === true;
   const upgradeDirective = upgradeMode
     ? await readPrompt(args.ctx, "stage_neg1_review_upgrade_directive.txt")
@@ -783,13 +728,10 @@ export async function runNeg1Review(args: {
   if (upgradeDirective) {
     parts.push(upgradeDirective, "");
   }
-  // Single-artifact retarget: when a proto_core exists, use the core rubric and
-  // inline the authoritative artifact. Empty (no-op) under the legacy monolithic
-  // `.tex` path.
+  // Single-artifact: inline the authoritative typed core (throws loud on an
+  // absent/torn core — a plumbing failure, never a review verdict).
   const protoCoreBlock = await buildProtoCoreReviewBlock(args.ctx);
-  if (protoCoreBlock) {
-    parts.push(protoCoreBlock, "");
-  }
+  parts.push(protoCoreBlock, "");
   parts.push(
     "=== ORCHESTRATOR-PROVIDED INPUTS ===",
     `proposal_path: ${args.proposalPath}`,
@@ -798,16 +740,7 @@ export async function runNeg1Review(args: {
     "Return ONLY the JSON object obtained by filling the output template.",
     "",
     tierFloorBlock(args.noveltyTarget),
-    "=== DRAFTER HANDOFF (load-bearing — this is the named literature checklist the reviewer prompt expects) ===",
-    handoff,
-    "=== END DRAFTER HANDOFF ===",
   );
-  // Single-artifact path: the core is already inlined above (protoCoreBlock) and
-  // the .tex is just its deterministic render — do not double-feed it. Legacy
-  // monolithic path: inline the proposal .tex (the artifact under review).
-  if (!protoCoreBlock) {
-    parts.push("", "=== PROPOSAL .TEX (verbatim) ===", proposalSrc, "=== END PROPOSAL .TEX ===");
-  }
   if (args.stage0_5RejectionBlock && args.stage0_5RejectionBlock.length > 0) {
     parts.push("", args.stage0_5RejectionBlock);
   }

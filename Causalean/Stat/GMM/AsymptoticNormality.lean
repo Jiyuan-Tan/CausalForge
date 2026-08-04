@@ -60,6 +60,10 @@ variable {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
   [NormedAddCommGroup F] [InnerProductSpace ℝ F] [FiniteDimensional ℝ F]
     [MeasurableSpace F] [BorelSpace F]
 
+section
+
+omit [BorelSpace F]
+
 /-- **GMM asymptotic linearity.**  A GMM estimator that solves the combined
 empirical moment equation and satisfies the Z-estimator consistency, stochastic
 equicontinuity, and root-n rate conditions has the usual GMM asymptotic-linear
@@ -113,7 +117,6 @@ theorem gmm_tendsto_normal_vec
       ∀ᶠ n in atTop, ∀ᵐ ω ∂μ,
         ∑ i ∈ Finset.range n, prob.score (θn n ω) (S.Z i ω) = 0)
     (Q : ProbabilityMeasure E)
-    (hIF_meas : Measurable prob.influence)
     (hθn_meas : ∀ n : ℕ, AEMeasurable
       (IsAsymLinearVec.rescaledEstimator θn prob.θ₀ (fun m => Finset.range m) n) μ)
     (hSum_meas : ∀ n : ℕ, AEMeasurable
@@ -129,8 +132,9 @@ theorem gmm_tendsto_normal_vec
         Measure.isProbabilityMeasure_map (hθn_meas n)⟩)
       atTop (𝓝 Q) := by
   exact IsAsymLinearVec.tendsto_normal_vec Q
-    (gmm_asymptotically_linear prob reg hJinv S θn hConsistent hStochEquicont hRate hMoment)
-    hIF_meas hθn_meas hSum_meas hCLT
+    (gmm_asymptotically_linear prob reg hJinv S θn hConsistent
+      hStochEquicont hRate hMoment).remainder
+    hθn_meas hSum_meas hCLT
 
 /-- **GMM asymptotic linearity from extremum primitives.**  The GMM analogue of
 `zEstimator_clt_of_extremum`: `gmm_asymptotically_linear` with the consistency
@@ -214,5 +218,7 @@ theorem gmm_asymptotically_linear_of_extremum_donsker
   gmm_asymptotically_linear prob reg hJinv S θn hcons
     (stochEquicontAt_of_asymptoticEquicont prob.score prob.θ₀ S θn hAEC hcons)
     hRate hMoment
+
+end
 
 end Causalean.Stat

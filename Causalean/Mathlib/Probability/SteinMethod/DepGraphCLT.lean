@@ -68,45 +68,55 @@ variable {X : ι → Ω → ℝ} (D : DepGraph X μ)
 noncomputable def nbhd (i : ι) : Finset ι := by
   letI := D.decG; exact Finset.univ.filter (fun j => D.G i j)
 
+omit [IsProbabilityMeasure μ] [DecidableEq ι] in
 /-- Membership in the neighborhood is exactly adjacency. -/
 theorem mem_nbhd_iff {i j : ι} : j ∈ D.nbhd i ↔ D.G i j := by
   letI := D.decG
   simp only [nbhd, Finset.mem_filter, Finset.mem_univ, true_and]
 
+omit [IsProbabilityMeasure μ] [DecidableEq ι] in
 /-- Each index is in its own neighborhood. -/
 theorem self_mem_nbhd (i : ι) : i ∈ D.nbhd i := D.mem_nbhd_iff.mpr (D.refl i)
 
+omit [IsProbabilityMeasure μ] [DecidableEq ι] in
 /-- The neighborhood sum is measurable. -/
 private theorem measurable_nbhdSum (i : ι) :
     Measurable (fun ω => ∑ k ∈ D.nbhd i, X k ω) :=
   Finset.measurable_sum _ (fun k _ => D.meas k)
 
+omit [IsProbabilityMeasure μ] [DecidableEq ι] in
 /-- The localized product `gᵢ = Xᵢ · Tᵢ` is measurable. -/
 private theorem measurable_locProd (i : ι) :
     Measurable (fun ω => X i ω * ∑ k ∈ D.nbhd i, X k ω) :=
   (D.meas i).mul (D.measurable_nbhdSum i)
 
-/-- Pointwise bound on the neighborhood sum: `|Tᵢ| ≤ (card Nᵢ)·B ≤ m·B`. -/
-private theorem abs_nbhdSum_le {B : ℝ} (hB : 0 ≤ B) (hbound : ∀ i ω, |X i ω| ≤ B)
-    {m : ℕ} (hdeg : ∀ i, (D.nbhd i).card ≤ m) (i : ι) (ω : Ω) :
+omit [IsProbabilityMeasure μ] [DecidableEq ι] in
+/-- If each summand is bounded in absolute value by B and every closed neighborhood has at most m
+indices, then the absolute value of each neighborhood sum is at most m times B. -/
+theorem abs_nbhdSum_le {B : ℝ} (hB : 0 ≤ B) (hbound : ∀ i ω, |X i ω| ≤ B)
+    {m : ℕ} (i : ι) (hdeg : (D.nbhd i).card ≤ m) (ω : Ω) :
     |∑ k ∈ D.nbhd i, X k ω| ≤ (m : ℝ) * B := by
   calc |∑ k ∈ D.nbhd i, X k ω| ≤ ∑ k ∈ D.nbhd i, |X k ω| := Finset.abs_sum_le_sum_abs _ _
     _ ≤ ∑ _k ∈ D.nbhd i, B := Finset.sum_le_sum (fun k _ => hbound k ω)
     _ = (D.nbhd i).card * B := by rw [Finset.sum_const, nsmul_eq_mul]
     _ ≤ (m : ℝ) * B := by
         apply mul_le_mul_of_nonneg_right _ hB
-        exact_mod_cast hdeg i
+        exact_mod_cast hdeg
 
-/-- Pointwise bound on the localized product `|gᵢ| ≤ m·B²`. -/
-private theorem abs_locProd_le {B : ℝ} (hB : 0 ≤ B) (hbound : ∀ i ω, |X i ω| ≤ B)
+omit [IsProbabilityMeasure μ] [DecidableEq ι] in
+/-- If each summand has absolute value at most B and each neighborhood has at
+    most m members, then a summand times its neighborhood sum has absolute
+    value at most m times B squared. -/
+theorem abs_locProd_le {B : ℝ} (hB : 0 ≤ B) (hbound : ∀ i ω, |X i ω| ≤ B)
     {m : ℕ} (hdeg : ∀ i, (D.nbhd i).card ≤ m) (i : ι) (ω : Ω) :
     |X i ω * ∑ k ∈ D.nbhd i, X k ω| ≤ (m : ℝ) * B ^ 2 := by
   rw [abs_mul]
   calc |X i ω| * |∑ k ∈ D.nbhd i, X k ω|
       ≤ B * ((m : ℝ) * B) :=
-        mul_le_mul (hbound i ω) (D.abs_nbhdSum_le hB hbound hdeg i ω) (abs_nonneg _) hB
+        mul_le_mul (hbound i ω) (D.abs_nbhdSum_le hB hbound i (hdeg i) ω) (abs_nonneg _) hB
     _ = (m : ℝ) * B ^ 2 := by ring
 
+omit [IsProbabilityMeasure μ] in
 /-- **Leave-out independence** (the `stein_cdf_clt` hypothesis `hindep`). -/
 theorem indepFun_leaveOut (i : ι) :
     IndepFun (X i) (fun ω => ∑ j ∈ Finset.univ \ D.nbhd i, X j ω) μ := by
@@ -137,6 +147,7 @@ theorem indepFun_leaveOut (i : ι) :
   rw [h1, h2] at hcomp
   exact hcomp
 
+omit [IsProbabilityMeasure μ] [DecidableEq ι] in
 /-- **Covariance vanishing for separated indices.** If `Nᵢ` and `Nⱼ` have no edges between them,
 the localized products `Xᵢ·Tᵢ` and `Xⱼ·Tⱼ` are uncorrelated. -/
 theorem cov_mul_nbhd_eq_zero {i j : ι}
@@ -177,16 +188,22 @@ theorem cov_mul_nbhd_eq_zero {i j : ι}
   simp only [eφ, eψ] at key
   exact key
 
-/-- The localized product `gᵢ` lies in `L²`. -/
-private theorem memLp_locProd {B : ℝ} (hB : 0 ≤ B) (hbound : ∀ i ω, |X i ω| ≤ B)
+omit [DecidableEq ι] in
+/-- If every variable is bounded in absolute value by a nonnegative constant and each closed
+dependency neighborhood has bounded size, each variable times its neighborhood sum has a finite
+second moment. -/
+theorem memLp_locProd {B : ℝ} (hB : 0 ≤ B) (hbound : ∀ i ω, |X i ω| ≤ B)
     {m : ℕ} (hdeg : ∀ i, (D.nbhd i).card ≤ m) (i : ι) :
     MemLp (fun ω => X i ω * ∑ k ∈ D.nbhd i, X k ω) 2 μ :=
   MemLp.of_bound (D.measurable_locProd i).aestronglyMeasurable ((m : ℝ) * B ^ 2)
     (Filter.Eventually.of_forall (fun ω => by
       rw [Real.norm_eq_abs]; exact D.abs_locProd_le hB hbound hdeg i ω))
 
-/-- The covariance of two localized products is bounded by `2(mB²)²` in absolute value. -/
-private theorem abs_cov_locProd_le {B : ℝ} (hB : 0 ≤ B) (hbound : ∀ i ω, |X i ω| ≤ B)
+omit [DecidableEq ι] in
+/-- If every variable is bounded in absolute value by a nonnegative constant and each closed
+dependency neighborhood has at most m members, the absolute covariance of any two localized
+products is at most twice the square of m times that bound squared. -/
+theorem abs_cov_locProd_le {B : ℝ} (hB : 0 ≤ B) (hbound : ∀ i ω, |X i ω| ≤ B)
     {m : ℕ} (hdeg : ∀ i, (D.nbhd i).card ≤ m) (i j : ι) :
     |covariance (fun ω => X i ω * ∑ k ∈ D.nbhd i, X k ω)
         (fun ω => X j ω * ∑ k ∈ D.nbhd j, X k ω) μ|
@@ -231,6 +248,7 @@ private theorem abs_cov_locProd_le {B : ℝ} (hB : 0 ≤ B) (hbound : ∀ i ω, 
     _ ≤ ((m : ℝ) * B ^ 2) ^ 2 + ((m : ℝ) * B ^ 2) ^ 2 := add_le_add hprod hmean_prod
     _ = 2 * ((m : ℝ) * B ^ 2) ^ 2 := by ring
 
+omit [DecidableEq ι] in
 /-- **Pair-counting variance bound (`herr1`).** With bounded summands `|Xᵢ| ≤ B` and degree
 `≤ m`, the covariance double sum collapses to the `≤ N·m³` pairs at graph distance at most
 three, each
@@ -312,43 +330,54 @@ theorem var_nbhd_prod_le {B : ℝ} (hB : 0 ≤ B) (hbound : ∀ i ω, |X i ω| �
         rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
     _ = 2 * (m : ℝ) ^ 5 * (Fintype.card ι : ℝ) * B ^ 4 := by ring
 
-/-- **Negligibility bound (`herr2`).** `∑ᵢ E[|Xᵢ|·Tᵢ²] ≤ m²·N·B³`. -/
-theorem sum_E_nbhd_sq_le {B : ℝ} (hB : 0 ≤ B) (hbound : ∀ i ω, |X i ω| ≤ B)
-    {m : ℕ} (hdeg : ∀ i, (D.nbhd i).card ≤ m) :
-    ∑ i, ∫ ω, |X i ω| * (∑ k ∈ D.nbhd i, X k ω) ^ 2 ∂μ
+omit [DecidableEq ι] in
+/-- **Negligibility bound (`herr2`).** For any finite neighborhoods of size at most `m`, measurable
+summands bounded by `B` satisfy `∑ᵢ E[|Xᵢ|·Tᵢ²] ≤ m²·N·B³`. -/
+theorem sum_E_nbhd_sq_le (N : ι → Finset ι) (hmeas : ∀ i, Measurable (X i))
+    {B : ℝ} (hB : 0 ≤ B) (hbound : ∀ i ω, |X i ω| ≤ B)
+    {m : ℕ} (hdeg : ∀ i, (N i).card ≤ m) :
+    ∑ i, ∫ ω, |X i ω| * (∑ k ∈ N i, X k ω) ^ 2 ∂μ
       ≤ (m : ℝ) ^ 2 * (Fintype.card ι : ℝ) * B ^ 3 := by
   classical
+  have hnbhd : ∀ i ω, |∑ k ∈ N i, X k ω| ≤ (m : ℝ) * B := by
+    intro i ω
+    calc |∑ k ∈ N i, X k ω| ≤ ∑ k ∈ N i, |X k ω| := Finset.abs_sum_le_sum_abs _ _
+      _ ≤ ∑ _k ∈ N i, B := Finset.sum_le_sum (fun k _ => hbound k ω)
+      _ = (N i).card * B := by rw [Finset.sum_const, nsmul_eq_mul]
+      _ ≤ (m : ℝ) * B := by
+          apply mul_le_mul_of_nonneg_right _ hB
+          exact_mod_cast hdeg i
   -- Per `i`, the integrand is bounded by the constant `m²·B³`.
-  have hpt : ∀ i ω, |X i ω| * (∑ k ∈ D.nbhd i, X k ω) ^ 2 ≤ (m : ℝ) ^ 2 * B ^ 3 := by
+  have hpt : ∀ i ω, |X i ω| * (∑ k ∈ N i, X k ω) ^ 2 ≤ (m : ℝ) ^ 2 * B ^ 3 := by
     intro i ω
     have h1 : |X i ω| ≤ B := hbound i ω
-    have h2 : (∑ k ∈ D.nbhd i, X k ω) ^ 2 ≤ ((m : ℝ) * B) ^ 2 := by
+    have h2 : (∑ k ∈ N i, X k ω) ^ 2 ≤ ((m : ℝ) * B) ^ 2 := by
       rw [← sq_abs]
-      exact pow_le_pow_left₀ (abs_nonneg _) (D.abs_nbhdSum_le hB hbound hdeg i ω) 2
-    calc |X i ω| * (∑ k ∈ D.nbhd i, X k ω) ^ 2
+      exact pow_le_pow_left₀ (abs_nonneg _) (hnbhd i ω) 2
+    calc |X i ω| * (∑ k ∈ N i, X k ω) ^ 2
         ≤ B * ((m : ℝ) * B) ^ 2 :=
           mul_le_mul h1 h2 (sq_nonneg _) hB
       _ = (m : ℝ) ^ 2 * B ^ 3 := by ring
   -- Hence each integral is `≤ m²·B³`.
-  have hint : ∀ i, ∫ ω, |X i ω| * (∑ k ∈ D.nbhd i, X k ω) ^ 2 ∂μ ≤ (m : ℝ) ^ 2 * B ^ 3 := by
+  have hint : ∀ i, ∫ ω, |X i ω| * (∑ k ∈ N i, X k ω) ^ 2 ∂μ ≤ (m : ℝ) ^ 2 * B ^ 3 := by
     intro i
-    have hmeas_i : Measurable (fun ω => |X i ω| * (∑ k ∈ D.nbhd i, X k ω) ^ 2) :=
-      ((D.meas i).abs).mul ((D.measurable_nbhdSum i).pow_const 2)
-    have hbdd : ∀ ω, |(|X i ω| * (∑ k ∈ D.nbhd i, X k ω) ^ 2)| ≤ (m : ℝ) ^ 2 * B ^ 3 := by
+    have hmeas_i : Measurable (fun ω => |X i ω| * (∑ k ∈ N i, X k ω) ^ 2) :=
+      ((hmeas i).abs).mul ((Finset.measurable_sum _ (fun k _ => hmeas k)).pow_const 2)
+    have hbdd : ∀ ω, |(|X i ω| * (∑ k ∈ N i, X k ω) ^ 2)| ≤ (m : ℝ) ^ 2 * B ^ 3 := by
       intro ω
       rw [abs_of_nonneg (by positivity)]
       exact hpt i ω
-    have hintegrable : Integrable (fun ω => |X i ω| * (∑ k ∈ D.nbhd i, X k ω) ^ 2) μ :=
+    have hintegrable : Integrable (fun ω => |X i ω| * (∑ k ∈ N i, X k ω) ^ 2) μ :=
       (MemLp.of_bound hmeas_i.aestronglyMeasurable ((m : ℝ) ^ 2 * B ^ 3)
         (Filter.Eventually.of_forall (fun ω => by
           rw [Real.norm_eq_abs]; exact hbdd ω))).integrable le_rfl
-    calc ∫ ω, |X i ω| * (∑ k ∈ D.nbhd i, X k ω) ^ 2 ∂μ
+    calc ∫ ω, |X i ω| * (∑ k ∈ N i, X k ω) ^ 2 ∂μ
         ≤ ∫ _ω, (m : ℝ) ^ 2 * B ^ 3 ∂μ :=
           integral_mono hintegrable (integrable_const _) (fun ω => hpt i ω)
       _ = (m : ℝ) ^ 2 * B ^ 3 := by
           rw [integral_const, probReal_univ, one_smul]
   -- Sum over `i` (there are `N = card ι` of them).
-  calc ∑ i, ∫ ω, |X i ω| * (∑ k ∈ D.nbhd i, X k ω) ^ 2 ∂μ
+  calc ∑ i, ∫ ω, |X i ω| * (∑ k ∈ N i, X k ω) ^ 2 ∂μ
       ≤ ∑ _i : ι, (m : ℝ) ^ 2 * B ^ 3 := Finset.sum_le_sum (fun i _ => hint i)
     _ = (Fintype.card ι : ℝ) * ((m : ℝ) ^ 2 * B ^ 3) := by
         rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
@@ -363,9 +392,8 @@ Stein negligibility limits are derived internally. -/
 theorem stein_cdf_clt_of_depGraph
     {Ω : ℕ → Type*} [∀ n, MeasurableSpace (Ω n)] (μ : ∀ n, Measure (Ω n))
     [∀ n, IsProbabilityMeasure (μ n)]
-    {ι : ℕ → Type*} [∀ n, Fintype (ι n)] [∀ n, DecidableEq (ι n)]
+    {ι : ℕ → Type*} [∀ n, Fintype (ι n)]
     (X : ∀ n, ι n → Ω n → ℝ) (D : ∀ n, DepGraph (X n) (μ n))
-    (hmeas : ∀ n i, Measurable (X n i))
     (m : ℕ) (hdeg : ∀ n i, ((D n).nbhd i).card ≤ m)
     (B : ℕ → ℝ) (hB : ∀ n, 0 ≤ B n) (hbound : ∀ n i ω, |X n i ω| ≤ B n)
     (hB0 : Tendsto B atTop (𝓝 0))
@@ -378,7 +406,6 @@ theorem stein_cdf_clt_of_depGraph
   classical
   -- `nbhdSum (X n) (Nₙ) i ω = ∑_{k∈Nₙ i} X n k ω` definitionally.
   -- Leave-out independence and the self-membership hypothesis come from the dependency graph.
-  have hself : ∀ n i, i ∈ (D n).nbhd i := fun n i => (D n).self_mem_nbhd i
   have hindep : ∀ n i, IndepFun (X n i)
       (fun ω => ∑ j ∈ Finset.univ \ (D n).nbhd i, X n j ω) (μ n) :=
     fun n i => (D n).indepFun_leaveOut i
@@ -419,9 +446,12 @@ theorem stein_cdf_clt_of_depGraph
       intro ω
       positivity
     refine squeeze_zero hnonneg (fun n => ?_) hub
-    have := (D n).sum_E_nbhd_sq_le (hB n) (hbound n) (hdeg n)
+    have := DepGraph.sum_E_nbhd_sq_le (X := X n) (μ := μ n)
+      (fun i => (D n).nbhd i) (fun i => (D n).meas i)
+      (hB n) (hbound n) (hdeg n)
     simpa only [nbhdSum] using this
-  exact stein_cdf_clt μ X (fun n => (D n).nbhd) hmeas B hB hbound hmean hself hindep hvar
+  exact stein_cdf_clt μ X (fun n => (D n).nbhd) (fun n i => (D n).meas i)
+    B hB hbound hmean hindep hvar
     herr1 herr2 s
 
 end SteinMethod

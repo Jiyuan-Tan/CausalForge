@@ -8,13 +8,12 @@ import type { PipelineContext, StageResult, StateJson } from "../../types.js";
 import { appendReviewLog, type ReviewLogEntry } from "../../log.js";
 import {
   artifactPaths,
-  ensureSkeleton,
   readPrompt,
   type StageDeps,
 } from "../../pipeline_support.js";
 import { buildGapsContextBlock } from "./neg1_1.js";
 import { buildStage0_5RejectionContext } from "./neg0_5.js";
-import { runStageNeg1_2ProtoCore } from "./neg1_2_author.js";
+import { runStageNeg1_2ProtoCore, protoCoreJsonPath } from "./neg1_2_author.js";
 import { formatNeg1EscalationContext, readNeg1EscalationLog } from "../stageNeg1_directive.js";
 import { laterStageEverRan } from "../../shared/resume_mode.js";
 
@@ -94,6 +93,12 @@ export function handoffSignalsEnvFailure(json: Record<string, unknown>): boolean
  * only drafts. State is mutated in place; on cold start `proposed_from` is
  * initialized here.
  */
+export function modeUsesGapsContext(
+  mode: "cold-start" | "revise" | "pivot" | "kernel-replace" | "draft-rebuild",
+): boolean {
+  return mode === "cold-start" || mode === "pivot";
+}
+
 export async function runStageNeg1_2(args: {
   ctx: PipelineContext;
   state: StateJson;
@@ -117,7 +122,9 @@ export async function runStageNeg1_2(args: {
       novelty_target: args.ctx.noveltyTarget ?? "field",
       pivot_budget_used: 0,
       final_verdict: "pending",
-      proposal_path: paths.proposalTex,
+      // The proto core IS the proposal; runStageNeg1_2ProtoCore re-points this
+      // after authoring, so the default only ever shows pre-first-author.
+      proposal_path: protoCoreJsonPath(args.ctx),
       novelty_justification: "",
       chosen_qid: args.ctx.qid,
       chosen_specialization: args.ctx.specialization,
@@ -152,24 +159,11 @@ export async function runStageNeg1_2(args: {
   const angleIndex = pf.current_angle_index ?? 0;
   const nextVersion = (pf.current_version ?? 0) + 1;
 
-  if (mode === "cold-start" || mode === "pivot") {
-    await ensureSkeleton({
-      ctx: args.ctx,
-      templateName: "stage_neg1_skeleton.tex",
-      target: paths.proposalTex,
-    });
-  }
-
-  // Refresh the per-qid output JSON template (mode/version/qid pre-filled,
-  // mode-inapplicable fields stripped). Re-rendered every invocation so revise
-  // / pivot iterations see the correct mode + version without manual edits.
-  await renderProposalOutputTemplate({
-    ctx: args.ctx,
-    targetPath: paths.proposalOutputJson,
-    mode,
-    version: nextVersion,
-    proposalTexPath: paths.proposalTex,
-  });
+  // (Dead-code sweep 2026-07-31: the `proposal.tex` skeleton and the
+  // `proposal_output_template.json` render are gone. No code has written
+  // content into the .tex since the single-artifact rollout — the proto core
+  // IS the proposal — and no D-1 prompt ever referenced the rendered template;
+  // the author inlines its stdout contract directly.)
 
   // Cold-start only: load the (tier-general) motif library + anti-pattern
   // reservoir. On revise/pivot the chosen seed inherits its `motif` +
@@ -209,23 +203,27 @@ export async function runStageNeg1_2(args: {
     state: args.state,
   });
 
-  // Stage -1.1 gaps payload: read the open-problem substrate produced upstream
-  // and inject it as a load-bearing prompt block. Seeds in the proposer's F1
-  // step must anchor to one of these open problems (paper bibkey OR prior
-  // proposal ref). The block is empty on revise/pivot resumes that lost the
-  // gaps.json file but still carry state.gaps in JSON — the proposer falls
-  // back to the literature_map cached on proposed_from.
-  const gapsBlock = await buildGapsContextBlock({
-    ctx: args.ctx,
-    state: args.state,
-    gapsPath: paths.gapsJson,
-  });
+  // Stage -1.1 gaps are ideation substrate, so inject them only when choosing a
+  // kernel (cold-start/pivot). Revision/rebuild modes already receive the prior
+  // typed core and current rejection/directive context; replaying the complete
+  // gaps payload there made the prompt substantially larger without adding a
+  // current obligation.
+  const gapsBlock = modeUsesGapsContext(mode)
+    ? await buildGapsContextBlock({
+        ctx: args.ctx,
+        state: args.state,
+        gapsPath: paths.gapsJson,
+      })
+    : "";
 
-  // Orchestrator directive channel (mirrors D0's escalation-log directive): a
-  // standalone, cumulative steer injected via `bin/dneg1_directive.ts`. Read on
-  // every mode (cold-start included, matching D0 applying on every round) so an
-  // injected direction is never silently dropped.
-  const directiveBlock = formatNeg1EscalationContext(await readNeg1EscalationLog(args.ctx));
+  // Orchestrator directive channel (mirrors D0's escalation-log directive).
+  // The durable JSONL retains history, while the formatter injects only the
+  // current angle's directives. Directives within that angle remain live:
+  // draft-version advance alone is not proof that the author discharged them.
+  const directiveBlock = formatNeg1EscalationContext(
+    await readNeg1EscalationLog(args.ctx),
+    angleIndex,
+  );
 
   // Required-precondition guard (cold-start only). The proposer must never run
   // cold-start ideation without a literature substrate: the Stage -1.1 GAPS
@@ -341,7 +339,8 @@ export async function runStageNeg1_2Dual(args: {
   // to the pivot even when no advancing core was authored this round.
   if (authored.status === "needs-pivot") {
     pf.current_version = args.nextVersion;
-    pf.last_draft_handoff = JSON.stringify(handoff);
+    pf.last_draft_version = args.nextVersion;
+    delete pf.last_draft_handoff;
     // A sandbox/process-startup failure arrives as a well-formed needs-pivot receipt
     // (blocking_reason names the environment fault). Classifying it here is what feeds
     // the D-0.5 retry branch (`neg1_env_failure_retries`); the monolith made this call
@@ -363,9 +362,11 @@ export async function runStageNeg1_2Dual(args: {
   // also rehydrates them from the authoritative core when persisted state is
   // empty, so an interrupted/legacy run cannot turn real seeds into fake
   // `needs-pivot` rounds. Every mode may refresh cluster + novelty justification.
-  // The full handoff JSON feeds the -0.5 reviewer (including its checklist).
+  // The version marker records that a draft was authored after the last review.
+  // Reviewer context comes from the raw proto core itself.
   pf.current_version = args.nextVersion;
-  pf.last_draft_handoff = JSON.stringify(handoff);
+  pf.last_draft_version = args.nextVersion;
+  delete pf.last_draft_handoff;
   pf.last_draft_status = "completed";
   // The proto_core JSON is the sole artifact (no proposal .tex). Point
   // proposal_path at it so pipeline.ts's resume-safety guard (re-enter -1.2 when
@@ -380,67 +381,24 @@ export async function runStageNeg1_2Dual(args: {
   };
 }
 
-/**
- * Render the stdout JSON template into the qid folder, pre-filling values the
- * orchestrator already knows (chosen_qid, chosen_specialization, version,
- * mode, proposal_path) and stripping mode-inapplicable fields. The proposer
- * agent reads THIS file (right next to the .tex), not the static template
- * under tools/src/templates/. Refreshed on every invocation so mode / version
- * stay current across revise / pivot iterations.
- */
-async function renderProposalOutputTemplate(args: {
-  ctx: PipelineContext;
-  targetPath: string;
-  mode: "cold-start" | "revise" | "pivot" | "kernel-replace" | "draft-rebuild";
-  version: number;
-  proposalTexPath: string;
-}): Promise<void> {
-  const src = await readFile(
-    templatePath(args.ctx.repoRoot, "stage_neg1_2_output_template.json"),
-    "utf8",
-  );
-  const tmpl = JSON.parse(src) as Record<string, unknown>;
-
-  tmpl.chosen_qid = args.ctx.qid;
-  tmpl.chosen_specialization = args.ctx.specialization;
-  tmpl.version = args.version;
-  tmpl.mode = args.mode;
-  tmpl.proposal_path = args.proposalTexPath;
-
-  // Mode-conditional field stripping. Mirrors the rules in _emit_rules but
-  // enforces them HERE so the agent never sees a field it should not emit
-  // (eliminates the most common drift mode). revise / draft-rebuild /
-  // kernel-replace all inherit the cold-start literature_map + seeds payload
-  // from the angle's prior version, so they MUST NOT re-emit those fields;
-  // only cold-start and pivot are allowed to author fresh seeds.
-  const inheritsFromColdStart =
-    args.mode === "revise" || args.mode === "draft-rebuild" || args.mode === "kernel-replace";
-  if (inheritsFromColdStart) {
-    delete tmpl.literature_map;
-    delete tmpl.seeds;
-    delete tmpl.seed_details;
-    delete tmpl.prior_work_summary;
-  } else {
-    delete tmpl.addressed_flags;
-  }
-
-  await mkdir(path.dirname(args.targetPath), { recursive: true });
-  await writeFile(args.targetPath, `${JSON.stringify(tmpl, null, 2)}\n`, "utf8");
-}
-
 /** Move an existing archive aside under the first free `.prevN` name, so archiving is
  *  never destructive. Returns the path it was parked at, or null if nothing was there. */
 export async function preserveExistingArchive(target: string): Promise<string | null> {
-  try {
-    await access(target);
-  } catch {
-    return null;
-  }
+  // ONLY absence means "nothing to park". Any other access failure must
+  // propagate — treating it as absence let the caller copy ONTO an existing
+  // archive, destroying the only prior recovery snapshot (audit B2).
+  const missing = async (file: string): Promise<boolean> =>
+    access(file).then(
+      () => false,
+      (err: NodeJS.ErrnoException) => {
+        if (err?.code === "ENOENT") return true;
+        throw err;
+      },
+    );
+  if (await missing(target)) return null;
   for (let n = 1; n < 1000; n++) {
     const parked = `${target}.prev${n}`;
-    try {
-      await access(parked);
-    } catch {
+    if (await missing(parked)) {
       await rename(target, parked);
       return parked;
     }
@@ -448,38 +406,35 @@ export async function preserveExistingArchive(target: string): Promise<string | 
   throw new Error(`[archive] refusing to overwrite ${target}: 999 prior archives already parked alongside it.`);
 }
 
+/** Snapshot the angle's converged proto core aside before a pivot, so a later
+ *  cursor-reset can restore it (see bin/reset_proposal_cursor.ts). The proto
+ *  core IS the proposal (single-artifact regime — the legacy `proposal.tex` leg
+ *  was retired in the 2026-07-31 dead-code sweep). Returns the archive path, or
+ *  null when there is nothing to archive.
+ *
+ *  Archive names are keyed by angle only, so a SECOND pivot off the same angle
+ *  used to overwrite the first — never destroy an archive: on collision, park
+ *  the incumbent under a numbered suffix first. Snapshot (copy) rather than
+ *  move so the live file is intact for the next angle's producer to overwrite. */
 export async function archiveProposalForPivot(
-  proposalPath: string,
+  protoCorePath: string,
   angleIndex: number,
 ): Promise<string | null> {
-  const dir = path.dirname(proposalPath);
-  const base = path.basename(proposalPath, ".tex");
-  // Archive names are keyed by angle only, so a SECOND pivot off the same angle used to
-  // overwrite the first — and `reset_proposal_cursor` would then re-seat the cursor at
-  // version V while restoring whichever draft happened to survive. Never destroy an
-  // archive: on collision, park the incumbent under a numbered suffix first.
-  const archived = path.join(dir, `${base}_angle${angleIndex}_rejected.tex`);
-  await preserveExistingArchive(archived);
-  // Single-artifact mode (stage -1.2): the substance is in proto_core.json, not
-  // the .tex. Snapshot it alongside the .tex so a later cursor-reset can restore
-  // the converged core (see bin/reset_proposal_cursor.ts). Best-effort: absent in
-  // .tex-only mode. Snapshot (copy) rather than move so the live file is intact
-  // for the next angle's producer to overwrite.
-  const protoCore = path.join(dir, "proto_core.json");
+  const dir = path.dirname(protoCorePath);
   try {
-    await access(protoCore);
-    const protoArchive = path.join(dir, `proto_core_angle${angleIndex}_rejected.json`);
-    await preserveExistingArchive(protoArchive);
-    await copyFile(protoCore, protoArchive);
-  } catch {
-    /* no proto_core to snapshot — .tex-only mode */
+    await access(protoCorePath);
+  } catch (err) {
+    // ONLY absence means "nothing authored on this angle yet". Any other
+    // failure (EACCES, EIO) must abort the angle switch — swallowing it would
+    // advance the cursor while silently losing the prior angle's only
+    // sanctioned recovery snapshot (audit A4).
+    if ((err as NodeJS.ErrnoException)?.code === "ENOENT") return null;
+    throw err;
   }
-  try {
-    await rename(proposalPath, archived);
-    return archived;
-  } catch {
-    return null;
-  }
+  const protoArchive = path.join(dir, `proto_core_angle${angleIndex}_rejected.json`);
+  await preserveExistingArchive(protoArchive);
+  await copyFile(protoCorePath, protoArchive);
+  return protoArchive;
 }
 
 async function persistReviewJson(
@@ -517,111 +472,14 @@ export async function logNeg1Review(args: {
     stage: "stage_neg1",
     attempt: args.angle * NEG1_REVISE_CAP + args.version,
     status,
+    // Structured `angle` is what `--fresh-angle` row removal keys on; the
+    // summary stays prose-only (a wording change must not affect row removal).
+    angle: args.angle,
     report_summary: `angle=${args.angle} v${args.version} verdict=${args.verdict} tier=${tier} S=${flagCounts.S} N=${flagCounts.N} C=${flagCounts.C}`,
   };
   await appendReviewLog(args.ctx, entry);
   await persistReviewJson(args.ctx, args.angle, args.version, args.json);
 }
-export function buildDrafterHandoff(json: Record<string, unknown>): string {
-  const lines: string[] = [];
-  const stringField = (key: string) =>
-    typeof json[key] === "string" ? (json[key] as string) : null;
-  const obj = (key: string) =>
-    json[key] && typeof json[key] === "object" ? (json[key] as Record<string, unknown>) : null;
-
-  for (const key of ["chosen_qid", "chosen_specialization", "version", "mode"] as const) {
-    const v = json[key];
-    if (v !== undefined) lines.push(`${key}: ${JSON.stringify(v)}`);
-  }
-
-  if (json.upgrade_mode === true) {
-    lines.push(
-      "",
-      `upgrade_mode: true`,
-      `parent_qid: ${JSON.stringify(json.parent_qid ?? "")}`,
-      `parent_spec: ${JSON.stringify(json.parent_spec ?? "")}`,
-      `upgrade_axis: ${JSON.stringify(json.upgrade_axis ?? "")}`,
-    );
-    if (typeof json.delta_summary === "string") {
-      lines.push(`delta_summary: ${json.delta_summary}`);
-    }
-    if (Array.isArray(json.reused_bibkeys)) {
-      lines.push(`reused_bibkeys: ${JSON.stringify(json.reused_bibkeys)}`);
-    }
-    if (Array.isArray(json.new_bibkeys)) {
-      lines.push(`new_bibkeys: ${JSON.stringify(json.new_bibkeys)}`);
-    }
-  }
-
-  // Honor the exact key `literature_checklist`, but fall back to the paraphrase
-  // keys the producer model empirically drifts to (e.g. `named_literature_checklist`)
-  // so a renamed-but-present checklist is not silently treated as MISSING and
-  // does not spuriously trigger N-thin-survey.
-  const checklist =
-    json.literature_checklist ??
-    json.named_literature_checklist ??
-    json.literature_check_list;
-  if (Array.isArray(checklist) && checklist.length > 0) {
-    lines.push("", "literature_checklist (drafter-emitted; the reviewer must verify each entry):");
-    for (const item of checklist) {
-      lines.push(`- ${JSON.stringify(item)}`);
-    }
-  } else {
-    lines.push(
-      "",
-      "literature_checklist: <MISSING — drafter did not emit a checklist; reviewer must reconstruct from §5 and treat thin/absent coverage as N-thin-survey>",
-    );
-  }
-
-  const labels = json.statement_labels;
-  if (Array.isArray(labels) && labels.length > 0) {
-    lines.push("", "statement_labels (Theorem vs Conjecture per result):");
-    for (const item of labels) {
-      lines.push(`- ${JSON.stringify(item)}`);
-    }
-  }
-
-  const justification = obj("novelty_justification");
-  if (justification) {
-    lines.push("", "novelty_justification:");
-    if (typeof justification.repo_axis === "string") {
-      lines.push(`  repo_axis: ${justification.repo_axis}`);
-    }
-    if (typeof justification.published_axis === "string") {
-      lines.push(`  published_axis: ${justification.published_axis}`);
-    }
-  } else {
-    const flat = stringField("novelty_justification");
-    if (flat) lines.push("", `novelty_justification: ${flat}`);
-  }
-
-  const message = stringField("message");
-  if (message) lines.push("", `drafter_message: ${message}`);
-
-  // The typed-core (proto) producer emits the SC6 comparator table under
-  // `comparator_promises`; the legacy template uses `comparator_promise_table`.
-  // Accept either so the reviewer sees the table on the proto path (otherwise
-  // N-comparator-drift fires unfixably every revise round on a present table).
-  const promiseTable =
-    json.comparator_promise_table ?? json.comparator_promises;
-  if (Array.isArray(promiseTable) && promiseTable.length > 0) {
-    lines.push(
-      "",
-      "comparator_promise_table (drafter SC6 output — every published comparator named in §1/§3 abstract must map to a §8 conjecture, or be downgraded / dropped):",
-    );
-    for (const item of promiseTable) {
-      lines.push(`- ${JSON.stringify(item)}`);
-    }
-  } else {
-    lines.push(
-      "",
-      "comparator_promise_table: <MISSING — drafter did not emit the SC6 table; reviewer MUST emit N-comparator-drift unless §1/§3 abstract names NO published comparator at all>",
-    );
-  }
-
-  return lines.length > 0 ? lines.join("\n") : "<empty handoff>";
-}
-
 export function countFlags(value: unknown): number {
   return Array.isArray(value) ? value.length : 0;
 }

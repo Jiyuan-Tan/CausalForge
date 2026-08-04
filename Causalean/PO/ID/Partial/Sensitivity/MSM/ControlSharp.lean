@@ -70,7 +70,8 @@ theorem completeProp0_calibrated
     rw [he_def]; exact stronglyMeasurable_condExp
   have hinv_smeas : StronglyMeasurable[S.sigmaXY0] (fun ω => 1 / e ω) :=
     (measurable_const.div he_smeas.measurable).stronglyMeasurable
-  have hA_int : Integrable A P.μ := S.dVar.integrable_indicator false
+  have hA_int : Integrable A P.μ :=
+    S.dVar.integrable_indicator false (measurableSet_singleton false)
   have hinvA_int : Integrable (fun ω => (1 / e ω) * A ω) P.μ := by
     refine hint.congr (Filter.Eventually.of_forall ?_)
     intro ω

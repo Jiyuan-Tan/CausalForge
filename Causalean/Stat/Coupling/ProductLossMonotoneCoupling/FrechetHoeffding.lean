@@ -69,8 +69,8 @@ theorem frechet_hoeffding_upper (h : IsCoupling π μ ν) (x y : ℝ) :
           simp
         _ = (π.map Prod.fst) (Iic x) := by
           rw [Measure.map_apply]
-          exact measurable_fst
-          exact measurableSet_Iic
+          · exact measurable_fst
+          · exact measurableSet_Iic
         _ = μ (Iic x) := by rw [h.map_fst]
   · unfold jointCdf
     change (π (Iic x ×ˢ Iic y)).toReal ≤ cdf ν y
@@ -89,8 +89,8 @@ theorem frechet_hoeffding_upper (h : IsCoupling π μ ν) (x y : ℝ) :
           simp
         _ = (π.map Prod.snd) (Iic y) := by
           rw [Measure.map_apply]
-          exact measurable_snd
-          exact measurableSet_Iic
+          · exact measurable_snd
+          · exact measurableSet_Iic
         _ = ν (Iic y) := by rw [h.map_snd]
 
 /-- **Fréchet–Hoeffding lower bound.** For any coupling `π` of `(μ, ν)`,
@@ -123,8 +123,8 @@ theorem frechet_hoeffding_lower (h : IsCoupling π μ ν) (x y : ℝ) :
     calc
       π A = (π.map Prod.fst) (Iic x) := by
         rw [Measure.map_apply]
-        exact measurable_fst
-        exact measurableSet_Iic
+        · exact measurable_fst
+        · exact measurableSet_Iic
       _ = μ (Iic x) := by rw [h.map_fst]
   have hB : π.real B = cdf ν y := by
     rw [cdf_eq_real]
@@ -133,8 +133,8 @@ theorem frechet_hoeffding_lower (h : IsCoupling π μ ν) (x y : ℝ) :
     calc
       π B = (π.map Prod.snd) (Iic y) := by
         rw [Measure.map_apply]
-        exact measurable_snd
-        exact measurableSet_Iic
+        · exact measurable_snd
+        · exact measurableSet_Iic
       _ = ν (Iic y) := by rw [h.map_snd]
   have hinc := measureReal_union_add_inter (μ := π) (s := A) (t := B) hB_meas
   have hUle : π.real (A ∪ B) ≤ 1 := by

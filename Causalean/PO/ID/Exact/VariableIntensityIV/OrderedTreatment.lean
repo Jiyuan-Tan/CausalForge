@@ -126,7 +126,7 @@ lemma normalizedWeight_nonneg {ι : Type*} [Fintype ι] (a : ι → ℝ)
 lemma sum_normalizedWeight_eq_one {ι : Type*} [Fintype ι] (a : ι → ℝ)
     (hsum : 0 < ∑ i, a i) :
     ∑ i, normalizedWeight a i = 1 := by
-  exact Causalean.Panel.Weighted.NormalizedWeights.sum_normalizedWeight_eq_one a hsum
+  exact Causalean.Panel.Weighted.NormalizedWeights.sum_normalizedWeight_eq_one a hsum.ne'
 
 end OrderedTreatment
 end VariableIntensityIV

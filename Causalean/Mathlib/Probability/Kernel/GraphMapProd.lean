@@ -12,7 +12,7 @@ import Mathlib.Probability.Kernel.Composition.Lemmas
 /-!
 # The graph push-forward of a product measure is a composition product
 
-If `νₗ` is a probability measure on `γ` and `Φ : β × γ → δ` is measurable, then
+If `νₗ` is an s-finite measure on `γ` and `Φ : β × γ → δ` is measurable, then
 pushing a product measure `α ⊗ νₗ` forward along the *graph map*
 `(o, l) ↦ (o, Φ (o, l))` produces a composition product `α.compProd κ`, where the
 disintegration kernel `κ o = νₗ.map (fun l => Φ (o, l))` reads the first
@@ -62,11 +62,11 @@ instance instIsMarkovKernelMechanismKernel (νₗ : Measure γ)
 
 /-- **Graph push-forward of a product measure is a composition product.**
 
-For a finite first marginal `α`, a probability measure `νₗ` on the second factor,
+For an s-finite first marginal `α`, an s-finite measure `νₗ` on the second factor,
 and a measurable mechanism `Φ : β × γ → δ`, pushing `α.prod νₗ` forward along the
 graph map `(o, l) ↦ (o, Φ (o, l))` equals `α.compProd (mechanismKernel νₗ Φ)`. -/
 theorem map_graph_prod_eq_compProd
-    (α : Measure β) [SFinite α] (νₗ : Measure γ) [IsProbabilityMeasure νₗ]
+    (α : Measure β) [SFinite α] (νₗ : Measure γ) [SFinite νₗ]
     {Φ : β × γ → δ} (hΦ : Measurable Φ) :
     Measure.map (fun p : β × γ => (p.1, Φ p)) (α.prod νₗ)
       = α.compProd (mechanismKernel νₗ Φ) := by

@@ -42,7 +42,7 @@ the remaining covariance terms by `k^4`, and the headline theorem `var_htEst_le`
 the `dbarCount = n * dbar` dependent ordered pairs.
 -/
 
-open scoped BigOperators Classical
+open scoped BigOperators
 open Finset
 
 namespace Causalean
@@ -53,6 +53,7 @@ open DesignBased
 
 variable {U : Type*} [Fintype U] [DecidableEq U]
 
+open Classical in
 /-- The block of units that interfere with `i` (its own treatment included): the coordinate support
 of the `i`ᵗʰ HT summand. -/
 noncomputable def interferers (y : U → (U → Bool) → ℝ) (i : U) : Finset U :=
@@ -62,6 +63,7 @@ noncomputable def interferers (y : U → (U → Bool) → ℝ) (i : U) : Finset 
 theorem htSummand_depends_on_interferers (p : U → ℝ) (y : U → (U → Bool) → ℝ) (i : U)
     (z z' : U → Bool) (h : ∀ ℓ ∈ interferers y i, z ℓ = z' ℓ) :
     htSummand p y i z = htSummand p y i z' := by
+  classical
   have hmem : ∀ ℓ : U, Interferes y ℓ i → ℓ ∈ interferers y i := by
     intro ℓ hℓ
     exact Finset.mem_filter.mpr ⟨Finset.mem_univ ℓ, hℓ⟩
@@ -77,6 +79,7 @@ theorem htSummand_depends_on_interferers (p : U → ℝ) (y : U → (U → Bool)
 theorem disjoint_interferers_of_not_interfDep (y : U → (U → Bool) → ℝ) {i j : U}
     (h : ¬ InterfDep y i j) :
     Disjoint (interferers y i) (interferers y j) := by
+  classical
   rw [Finset.disjoint_left]
   intro ℓ hℓi hℓj
   have hi : Interferes y ℓ i := (Finset.mem_filter.mp hℓi).2
@@ -171,6 +174,7 @@ theorem var_htEst_le (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, p i 
     (hplo : ∀ i, k⁻¹ ≤ p i) (hphi : ∀ i, p i ≤ 1 - k⁻¹)
     (hmom : ∀ i, (bernoulliDesign p hp0 hp1).E (fun z => (y i z) ^ 2) ≤ k ^ 2) :
     (bernoulliDesign p hp0 hp1).Var (htEst p y) ≤ k ^ 4 * dbar y / (Fintype.card U : ℝ) := by
+  classical
   set D := bernoulliDesign p hp0 hp1 with hD
   set n : ℝ := (Fintype.card U : ℝ) with hn
   have hn0 : (0 : ℝ) < n := by

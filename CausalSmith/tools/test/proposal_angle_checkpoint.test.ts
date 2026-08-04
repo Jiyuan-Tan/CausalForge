@@ -28,7 +28,7 @@ async function seed(kind: "revise" | "angle-boundary") {
     current_version: 5,
     current_mode: "revise",
     last_draft_status: "completed",
-    last_draft_handoff: "stale-reviewed-draft",
+    last_draft_version: 5,
     exhausted_angles: [],
     archived_proposals: [],
     iterations: [],
@@ -65,7 +65,7 @@ describe("proposal angle checkpoint actions", () => {
     expect(result).toMatchObject({ action: "continue", directivePersisted: true, resume: true });
     const state = await loadState(repoRoot, qid, spec);
     expect(state.proposed_from!.angle_checkpoint).toBeUndefined();
-    expect(state.proposed_from!.last_draft_handoff).toBeUndefined();
+    expect(state.proposed_from!.last_draft_version).toBeUndefined();
     expect(state.proposed_from!.current_mode).toBe("revise");
     const log = await readFile(neg1EscalationLogPath({
       repoRoot, qid, specialization: spec, dryRun: false, resume: true,
@@ -83,13 +83,14 @@ describe("proposal angle checkpoint actions", () => {
     const state = await loadState(repoRoot, qid, spec);
     expect(state.proposed_from!.revision_cap_by_angle).toEqual({ "0": 7 });
     expect(state.proposed_from!.current_angle_index).toBe(0);
-    expect(state.proposed_from!.last_draft_handoff).toBeUndefined();
+    expect(state.proposed_from!.last_draft_version).toBeUndefined();
   });
 
   it("archives the old artifacts and switches only after explicit action", async () => {
     await seed("angle-boundary");
     const result = await applyProposalAngleAction({
       repoRoot, qid, specialization: spec, action: "switch",
+      directive: "carry the reviewed kernel into the next angle",
     });
     expect(result.nextAngle).toBe(1);
     const state = await loadState(repoRoot, qid, spec);
@@ -97,9 +98,24 @@ describe("proposal angle checkpoint actions", () => {
     expect(state.proposed_from!.current_version).toBe(0);
     expect(state.proposed_from!.current_mode).toBe("pivot");
     expect(state.proposed_from!.exhausted_angles).toEqual([0]);
+    const directiveRows = (await readFile(neg1EscalationLogPath({
+      repoRoot, qid, specialization: spec, dryRun: false, resume: true,
+    }), "utf8")).trim().split("\n").map((row) => JSON.parse(row));
+    expect(directiveRows).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        angle: 1,
+        version: 5,
+        directive: "carry the reviewed kernel into the next angle",
+      }),
+      expect.objectContaining({
+        angle: 1,
+        provenance_only: true,
+        note: "angle-action:switch",
+      }),
+    ]));
+    // Single-artifact regime: the proto core is the ONLY archived artifact (the
+    // legacy proposal.tex archive leg was removed in the 2026-07-31 sweep).
     const dir = path.dirname(proposalTexPath(repoRoot, qid, spec));
-    await expect(readFile(path.join(dir, "proposal_angle0_rejected.tex"), "utf8"))
-      .resolves.toContain("angle zero");
     await expect(readFile(path.join(dir, "proto_core_angle0_rejected.json"), "utf8"))
       .resolves.toContain("{}");
   });

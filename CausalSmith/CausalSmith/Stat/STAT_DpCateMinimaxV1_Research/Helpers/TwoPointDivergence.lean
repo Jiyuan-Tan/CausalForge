@@ -63,8 +63,9 @@ lemma cateWitness_kl_single_le {d : ℕ} (Q : CateLaw d) (e0 : ℝ)
       cateWitnessDataMeasure_eq_AXbind Q e0 0 measurable_const]
     exact Causalean.Mathlib.InformationTheory.Measure.klDiv_bind_eq_of_base_recording
       m κ η cateWitnessProj hproj hgraph
-      (cateWitnessChannel_fibre_support e0 b hbmeas)
-      (cateWitnessChannel_fibre_support e0 0 measurable_const) hκη
+      (Filter.Eventually.of_forall (cateWitnessChannel_fibre_support e0 b hbmeas))
+      (Filter.Eventually.of_forall (cateWitnessChannel_fibre_support e0 0 measurable_const))
+      (Filter.Eventually.of_forall hκη)
   rw [hchain]
   apply lintegral_mono
   intro p
@@ -85,8 +86,12 @@ lemma cateWitness_kl_single_le {d : ℕ} (Q : CateLaw d) (e0 : ℝ)
   rw [hmap]
   calc
     InformationTheory.klDiv (twoPointMean 1 u) (twoPointMean 1 0)
-        ≤ ENNReal.ofReal (2 * (u - 0) ^ 2 / 1 ^ 2) :=
+        ≤ ENNReal.ofReal ((u - 0) ^ 2 / 1 ^ 2) :=
       bernoulli_mean_channel_kl 1 u 0 (by norm_num) hu (by norm_num)
+    _ ≤ ENNReal.ofReal (2 * (u - 0) ^ 2 / 1 ^ 2) := by
+      apply ENNReal.ofReal_le_ofReal
+      rw [mul_div_assoc]
+      nlinarith [div_nonneg (sq_nonneg (u - 0)) (sq_nonneg (1 : ℝ))]
     _ ≤ ENNReal.ofReal (2 * (b p.1) ^ 2) := by
       apply ENNReal.ofReal_le_ofReal
       dsimp [u]

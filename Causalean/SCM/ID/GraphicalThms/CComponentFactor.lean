@@ -139,7 +139,6 @@ noncomputable def qFactor
     factors according to the c-components of `M.toSWIGGraph`. -/
 theorem c_component_factorization
     (M : Causalean.SCM N Ω) (s : M.FixedValues)
-    [∀ s' : M.FixedValues, MeasureTheory.IsFiniteMeasure (M.obsKernel s')]
     [∀ (k : ℕ) (hk : k < M.observed.card),
       StandardBorelSpace
         (ValuesOn ({(M.observedAt ⟨k, hk⟩).val} : Finset (SWIGNode N)) (swigΩ Ω))]

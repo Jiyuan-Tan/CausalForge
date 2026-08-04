@@ -1,6 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { renderMechanicalLayer, routeFinding } from "../src/presentation/p1_loop.js";
-import { presentedBody, safelyFramesUndeliveredRemark, undeliveredRemarkBody } from "../src/presentation/stages/p1_plan.js";
+import {
+  p1SynthResumeMarker,
+  presentedBody,
+  recoverSynthesizedDefinitions,
+  safelyFramesUndeliveredRemark,
+  selectSynthRecoveryLayer,
+  undeliveredRemarkBody,
+} from "../src/presentation/stages/p1_plan.js";
 import { topoOrder, renderedNodes } from "../src/presentation/graph_view.js";
 import { parseAnchoredEnvs } from "../src/presentation/tex_anchors.js";
 import type { FormalizationGraph, GraphNode, GraphEdge } from "../src/graph/types.js";
@@ -31,6 +38,46 @@ describe("renderMechanicalLayer", () => {
     expect(envs[2].env).toBe("theoremv");
     expect(envs[1].body).toContain("stmt a1");
     expect(layer).not.toContain("{s1}");
+  });
+});
+
+describe("P1 synthesized-definition recovery", () => {
+  const marker = p1SynthResumeMarker("test-model");
+  const synth = (id: string, title = "The unhalved squared Hellinger distance $H^2$") =>
+    `\\begin{definitionv}{${id}}[${title}]\nThe convention is unhalved.\n\\end{definitionv}`;
+  const recover = (layer: string, realized = (_symbol: string | undefined) => false) =>
+    recoverSynthesizedDefinitions(layer, {
+      isLeanRealizedNotation: realized,
+      titleById: new Map(),
+      graphDefinitionNotation: [],
+      normalizeBody: (body) => body,
+      note: () => {},
+    });
+
+  it("replays synthesized definitions from a stamped successful formal layer ahead of a stale rejected receipt", () => {
+    const selected = selectSynthRecoveryLayer(
+      `${marker}\n% DERIVED from formal_layer.json\n${synth("synth_2")}`,
+      `${marker}\n${synth("synth_9", "Stale $S$")}`,
+      marker,
+    );
+    expect(selected?.source).toBe("formal_layer.tex");
+    const replayed = recover(selected!.tex);
+    expect(replayed.envs).toMatchObject([{ id: "synth_2", body: "The convention is unhalved." }]);
+    expect(replayed.synthCount).toBe(2);
+  });
+
+  it("reapplies the current Lean-realized filter to a successful-run definition", () => {
+    const selected = selectSynthRecoveryLayer(`${marker}\n${synth("synth_1")}`, "", marker);
+    const replayed = recover(selected!.tex, (symbol) => symbol === "H^2");
+    expect(replayed.envs).toEqual([]);
+    // Keep the old id reserved even when its definition is no longer eligible to replay.
+    expect(replayed.synthCount).toBe(1);
+  });
+
+  it("keeps the established rejected-run recovery fallback", () => {
+    const selected = selectSynthRecoveryLayer("", `${marker}\n${synth("synth_3")}`, marker);
+    expect(selected?.source).toBe("formal_layer_rejected.tex");
+    expect(recover(selected!.tex).envs.map((e) => e.id)).toEqual(["synth_3"]);
   });
 });
 

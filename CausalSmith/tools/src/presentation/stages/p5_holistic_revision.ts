@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { presentationPrompt } from "../prompt_io.js";
 import type { StageIO } from "../pipeline.js";
@@ -10,18 +10,7 @@ import { FormalLayerSource, normalizeCitedScopeFootnotes, texEnvFor, type Formal
 import { normalizeFrozenEnvs, parseAnchoredEnvs } from "../tex_anchors.js";
 
 async function editableFiles(outDir: string): Promise<string[]> {
-  const paths = [
-    join(outDir, "outline.md"),
-    join(outDir, "front_matter.tex"),
-    join(outDir, "appendix_proofs.tex"),
-    join(outDir, "references.bib"),
-    join(outDir, "paper.tex"),
-  ];
-  for (const dir of ["sections", "proofs"]) {
-    const names = await readdir(join(outDir, dir)).catch(() => []);
-    paths.push(...names.filter((name) => name.endsWith(".tex")).sort().map((name) => join(outDir, dir, name)));
-  }
-  return paths;
+  return [join(outDir, "paper.tex")];
 }
 
 function protectedFiles(outDir: string): string[] {
@@ -35,6 +24,20 @@ function protectedFiles(outDir: string): string[] {
   ];
 }
 
+async function protectedAuthoredCaches(outDir: string): Promise<string[]> {
+  const paths = [
+    join(outDir, "outline.md"),
+    join(outDir, "front_matter.tex"),
+    join(outDir, "appendix_proofs.tex"),
+    join(outDir, "references.bib"),
+  ];
+  for (const dir of ["sections", "proofs"]) {
+    const names = await readdir(join(outDir, dir)).catch(() => []);
+    paths.push(...names.filter((name) => name.endsWith(".tex")).sort().map((name) => join(outDir, dir, name)));
+  }
+  return paths;
+}
+
 async function contentDigest(paths: string[]): Promise<string> {
   const hash = createHash("sha256");
   for (const path of paths) {
@@ -44,6 +47,31 @@ async function contentDigest(paths: string[]): Promise<string> {
     hash.update("\0");
   }
   return hash.digest("hex");
+}
+
+// P4 owns these purely derived publishable views of the authored manuscript. If
+// P5 changes an editable source, retaining any one of them would make a directory
+// look publishable while mixing revisions. Do not re-emit here: P3 must first
+// gate the revision, and a full P4 re-emit is expensive (LaTeX plus citation
+// verification). `paper_library_index.json` is deliberately retained: it is a
+// decl-level Lean index whose contents do not depend on prose, and P4 writes it
+// best-effort while the site requires a non-empty index for Lean-backed entries.
+// `meta.json` is also deliberately retained: it carries sticky TL;DR and scoring
+// state, and its presence keeps an interrupted revision visible to site integrity
+// checks rather than silently dropping the bundle. The pipeline immediately runs
+// P3 -> P4 after a changed P5 pass; until then, the remaining absent derived
+// inputs make the mixed-revision bundle fail those checks loudly.
+const P4_DERIVED_ARTIFACTS = [
+  "paper.pdf",
+  "paper_body.html",
+  "lean_snippets.json",
+  "presentation_crosswalk.json",
+  "formal_layer_web.json",
+  "assumption_table.md",
+];
+
+async function invalidateP4DerivedArtifacts(outDir: string): Promise<void> {
+  await Promise.all(P4_DERIVED_ARTIFACTS.map((name) => rm(join(outDir, name), { force: true })));
 }
 
 /**
@@ -117,7 +145,8 @@ export async function stageP5HolisticRevision(
   const sourceBefore = new Map<string, string>();
   for (const path of files) sourceBefore.set(path, await readFile(path, "utf8").catch(() => ""));
   const before = await contentDigest(files);
-  const protectedBefore = await contentDigest(protectedFiles(io.outDir));
+  const protectedPaths = [...protectedFiles(io.outDir), ...await protectedAuthoredCaches(io.outDir)];
+  const protectedBefore = await contentDigest(protectedPaths);
   const formalLayer = FormalLayerSource.safeParse(
     JSON.parse(await readFile(join(io.outDir, "formal_layer.json"), "utf8").catch(() => "{}")),
   );
@@ -142,9 +171,9 @@ export async function stageP5HolisticRevision(
     model: MODELS.codexPresentation,
     multiAgent: false,
   });
-  const protectedAfter = await contentDigest(protectedFiles(io.outDir));
+  const protectedAfter = await contentDigest(protectedPaths);
   if (protectedAfter !== protectedBefore) {
-    throw new Error("P5 holistic reviser modified a protected formal/crosswalk artifact; restore it before continuing.");
+    throw new Error("P5 holistic reviser modified a protected formal or P2 cache artifact; restore it before continuing.");
   }
   if (formalLayer.success) {
     const envBlocks = formalLayer.data.blocks.filter((b): b is FormalBlock & { env: NonNullable<FormalBlock["env"]> } => b.env != null);
@@ -161,6 +190,7 @@ export async function stageP5HolisticRevision(
     for (const [path, restored] of restoredByPath) await writeFile(path, restored, "utf8");
   }
   const after = await contentDigest(files);
+  if (after !== before) await invalidateP4DerivedArtifacts(io.outDir);
   await writeFile(
     join(io.outDir, `p5_revision_pass_${pass}.md`),
     `# Holistic revision pass ${pass}\n\n- mode: ${mode}\n- source digest before: \`${before}\`\n- source digest after: \`${after}\`\n\n## Reviser report\n\n${stdout.trim()}\n`,

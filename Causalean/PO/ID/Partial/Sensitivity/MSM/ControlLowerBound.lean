@@ -96,7 +96,7 @@ theorem cutoff_optimal0_lower (Λ : ℝ) (hΛ : 1 ≤ Λ)
     rw [hMax, hMin, and_comm]
   have hAm : Measurable A := by
     rw [hA_def]
-    exact S.dVar.measurable_indicator false
+    exact S.dVar.measurable_indicator false (measurableSet_singleton false)
   have hYm : Measurable Y := by
     rw [hY_def]
     exact S.measurable_factualY
@@ -410,7 +410,7 @@ theorem lowerControl_calibValue_eq (Λ : ℝ) (c : P.Ω → ℝ) (hc_meas : Meas
     (hwMax_smeas.measurable.sub hwMin_smeas.measurable).stronglyMeasurable
   have hA_int : Integrable A P.μ := by
     rw [hA_def]
-    exact S.dVar.integrable_indicator false
+    exact S.dVar.integrable_indicator (μ := P.μ) false (measurableSet_singleton false)
   have hI_int : Integrable (fun ω => A ω * I ω) P.μ := by
     rw [hA_def, hI_def]
     exact hint1
@@ -649,7 +649,7 @@ theorem exists_calibrating_cutoff0_lower (Λ : ℝ) (hΛ : 1 < Λ)
     infer_instance
   obtain ⟨hq_meas, hq_attain⟩ :=
     Causalean.Mathlib.measurable_condQuantile_and_attains
-      S.controlXYLaw τ hτ_meas hτ0 hτ1 hatomless
+      S.controlXYLaw τ hτ_meas hτ0 hτ1 (fun a => (hatomless a).continuousAt)
   let c : P.Ω → ℝ := fun ω =>
     Causalean.Mathlib.condQuantile S.controlXYLaw τ (S.factualX ω)
   have hc_meas : Measurable[S.sigmaX] c := by

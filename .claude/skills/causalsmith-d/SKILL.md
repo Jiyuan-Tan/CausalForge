@@ -7,33 +7,48 @@ description: CausalSmith research D-stage (discovery) sub-orchestrator — drive
 
 You drive discovery (D-1, D0, D0.5) to the D0.5→F1 go/no-go and no further. **You HOLD THE RESUME-LEASE
 for discovery** (granted at dispatch): you OWN monitoring of this run from the moment you are dispatched.
-**First thing on dispatch — after re-grounding (below) — ARM YOUR OWN WATCHER on the run, immediately,
-before any halt.** Under the immediate-dispatch model the node process is ALREADY LIVE at cold start (main
-launched it and handed it to you PRE-halt; main is NOT watching this run), so you watch the live process
-right away and handle the FIRST halt yourself — do NOT wait for a halt to start watching. Then at each
-D-stage halt you apply your lever and resume yourself, RE-arming the watcher
-on each resume, looping round after round WITHOUT a main hop between rounds. **How to arm it** (shared
-reference § "Watching a live run"): a POLL-based line-count watcher over BOTH `pipeline.jsonl` and
-`reviews/reviews.jsonl` (NOT `tail -F | grep` — it silently misses sparse verdicts), armed in the SAME turn
-you start watching/resume; detect process liveness/exit WITHOUT self-matching your own watcher command —
-match a token that is in the real process argv but NOT in your watcher's own text (e.g. the qid or spec),
-never a bare `pgrep -f "<qid>"` your own loop also matches. D0 routinely takes 10+ rounds; self-driving them
-is the whole point of the lease (it keeps main out of every round).
+After re-grounding, read the exact pipeline PID from `logs/.run.active` and check whether it is alive. A cold-start
+dispatch commonly arrives with the node already live; a re-grant after escalation may arrive halted. If live,
+arm one integrated logical watcher immediately. If halted, classify the persisted event before resuming.
+After every resume, re-arm the watcher and self-drive D without a main hop.
+
+**Codex monitoring:** use one fixed 30-minute logical window in one blocking tool call, with every internal
+probe at least 120 seconds apart. A tool cap continues the same deadline. Carry exact PID/start/cursors/mtimes.
+Poll BOTH `pipeline.jsonl` and `reviews/reviews.jsonl` and test the heartbeat PID with `kill -0`. During a
+healthy window emit nothing; update cursors in memory only. On allowed completion emit one compact trigger
+summary only for an actionable halt or exact-PID exit (paths/counts and newest pipeline event; no review bodies). Complete the call only for an actionable halt, exact-PID exit, or deadline;
+healthy renewal is silent. Call completion is not lease return: classify/self-resume in the same turn. Suspect
+a hang only after two complete windows in which exact-PID CPU/state,
+heartbeat mtime/age, recursively scoped descendants, logfile mtime, and both event counts are all idle/stale;
+return those receipts as `pipeline-bug` and do not kill the process.
+Never use a qid-only `pgrep`
+(the watcher self-matches), `tail -F | grep` (it misses sparse/new files), or routine messages to main.
+Attach to main's already-running cold-start PID; D does not cold-launch. Only when D resumes, launch the long
+TS node with `setsid`, Node 20.20.2 verified inside the detached shell, stdout/stderr redirected under the
+run's `logs/`, and `causalsmith research --resume <qid> <spec> [--auto iff dispatch auto_mode=true]` (add `--from-stage` only when the
+cursor rules below explicitly authorize replay). Never pipe the command. The managed D agent stays in its
+turn and polls the watcher. D0 routinely takes many rounds; that is why the lease exists.
 **But resume authority is ALL you get — terminal authority is main's:** you never bank, never stop/SIGINT
 the process, never cross the D/F boundary, never touch F. You resume ONLY into D-stages. You **return the
 lease to main** (stop resuming; hand back one directive) at exactly: the D0.5→F1 go/no-go, any terminal /
-cap / pipeline-bug, or — if you feel yourself degrading — a `request-reseed` — each with **verbatim
-receipts**. (An F→D `rewind:fix-source` is main's to order; if main dispatches YOU to execute one, you do
+cap / citation / codex / pipeline block, or — if you feel yourself degrading — a `request-reseed` — each with **verbatim
+receipts except the receipt-free `request-reseed`.** (An F→D `rewind:fix-source` is main's to order; if main dispatches YOU to execute one, you do
 it within your D-lease — you never *emit* a rewind.) Shared recipes: [`.claude/skills/causalsmith-shared/reference.md`](../causalsmith-shared/reference.md).
+For D, this skill's watcher, cursor, and process-ownership rules override generic watcher/death-recovery
+examples in that reference, including its 15-second/per-event recipes.
 
 **Re-ground first (every dispatch):**
-`npx --prefix tools tsx tools/bin/decision_log.ts read <qid> <spec> --phase D` + read `state.json`.
-That is what has already been tried — do NOT re-suggest a construction the log records as FAILED; the log
-is how you avoid re-walking rounds after a re-seed. **Log each resume you drive** as a `judgment` entry so
-that if you die mid-lease, main (or your successor) knows exactly which round you reached.
+Run every CLI below from `<AUTOID>/CausalSmith` under Node 20.20.2. Read
+`npx --prefix tools tsx tools/bin/decision_log.ts read <qid> <spec> --phase D`, `state.json`, the last
+`pipeline.jsonl` event, and the heartbeat/PID once. Do not duplicate a live resume or re-suggest a failed
+construction. At each halt/action, append one combined `judgment` entry
+`{type:"judgment",phase:"D",stage,round,tried,codex:"n/a",why}`; a real math judgment uses the consulted
+payload in `codex`, never `n/a`. Below, `bin/x.ts` abbreviates
+`npx --prefix tools tsx tools/bin/x.ts`, and `causalsmith research` abbreviates
+`npx --prefix tools tsx tools/bin/causalsmith.ts research`.
 
-**Shorthand:** `{resume-from}` / `{resume-from: <stage>}` below means **you run `--resume --from-stage <that
-stage>` yourself** (you hold the lease) — it is NOT a message to main. Only a *lease-return* (an
+**Shorthand:** `{resume}` below means **you run the cursor-appropriate resume yourself** (normally plain
+`--resume`; add `--from-stage` only for an explicitly authorized replay/reroute). It is NOT a message to main. Only a *lease-return* (an
 `{escalation:…}`) goes to main.
 
 **Resume cursor discipline.** Plain `--resume` advances from the last successfully completed stage;
@@ -47,40 +62,46 @@ fresh-angle reset, or when a persisted verdict/directive explicitly routes back 
 
 At every halt: **READ the verdict BODY**, not just its `status` (`tail` the raw file, never full Codex
 stdout). Classify: **revise-iteration** (a `revise`, or *different* load-bearing defects resolving
-across rounds = convergence through a hard problem) → let it run, apply your lever, `{resume-from}`;
-**terminal** (see § "Escalating") → escalate with receipts. RECORD each call as a `judgment` decision-log
-entry with a one-line reason. Faithfulness is the bar: only the *same* defect recurring, a laundering,
-or a wrong-direction pivot is a stop signal.
+across rounds = convergence through a hard problem) → apply the scoped lever and `{resume}`. A repeated
+defect demands a root fix or cap handoff, not automatic terminal classification. Terminal means the
+specific terminal cases below (laundering, no faithful repair, or unsalvageable floor failure). Put the
+classification and chosen lever in the same halt/action `judgment` entry.
 
 ## Per-stage event → action
 
-**D-1 proposal** (`stage_neg1`). Duplicate / not-novel AND revises exhausted → terminal NO-PASS →
-escalate `terminal:...` (bank `failed`). A single revise is iteration. Prompt fix → flag `pipeline-bug`
+**D-1 proposal** (`stage_neg1`). Duplicate / not-novel AND revises exhausted → return
+`terminal:proposal-no-pass`; main decides the bank. A single revise is iteration. Prompt fix → flag `pipeline-bug`
 (main edits `discovery/prompts/stage_neg1_*`). A recurring revise-round drift the automatic Stage 0.5
 rejection context isn't fixing (a literature-grounded reframe, a donor/witness to anchor the kernel to)
 → inject a directive via **`bin/dneg1_directive.ts <qid> <spec> --directive "…"`** (mirrors
-`d0_directive.ts`: appends `{version,directive}` to `discovery/dneg1_escalation_log.jsonl` — NEVER a
-hand-append; accumulates and is read on EVERY subsequent draft, cold-start included), then `{resume-from}`.
+`d0_directive.ts`: appends `{angle,version,directive}` to `discovery/dneg1_escalation_log.jsonl` — NEVER a
+hand-append). It accumulates across drafts of the current angle; an angle switch excludes old-angle steers,
+and a fresh-angle reset removes the log. Then `{resume}`.
 
 **D-0.5 CLI checkpoints (load-bearing).** The node halts after every `REVISE` *before* starting the
 next proposer. Read/consult the verdict, then persist the repair and continue atomically with
-`causalsmith research --angle-action continue <qid> <spec> --angle-directive - --auto` (directive on
+`causalsmith research --angle-action continue <qid> <spec> --angle-directive - [--auto iff auto_mode=true]` (directive on
 stdin). At an `angle-boundary` checkpoint, YOU choose from the receipts: `switch`,
 `retry --extra-revisions N`, or `give-up`. You may execute `switch`; you may execute a bounded `retry`
 only with a concrete non-identical root directive in the same command and must log the granted extra
 count. This persisted per-angle retry is the sole D-1 exception to the general main-only cap-reset rule.
-Choosing `give-up` is a terminal recommendation: return the lease with terminal receipts; main executes
-the irreversible action/bank. The same defect after one bounded retry, or retry without a root change,
+Choosing `give-up` means no viable proposal angle remains: return `terminal:proposal-no-pass`; main executes
+the irreversible action/bank. Classify `stage_neg1_fallback` by its body: final duplicate/novelty NO-PASS is
+terminal; environment/tooling failure or a retryable pivot/cap obstruction is `cap-block` or `codex-blocked`
+as its receipt indicates. The same defect after one bounded retry, or retry without a root change,
 returns `cap-block` to main. Never use plain `--resume` while `angle_checkpoint` is present.
 
-**Delegate every D-stage math call to codex** (gpt-5.6-sol, medium — the orchestrator D-stage
-consultation model, env `CAUSALEAN_MODEL_CODEX_CONSULT`; shared reference / CLAUDE.md codex
-recipe; it is stronger at this math). For a proposed-change checkpoint, hand codex the canonical
+**Pipeline math calls:** keep the long-lived D-orchestrator at **medium** for coordination. Dispatch a
+separate `gpt-5.6-sol` **high** consult for every required mathematical judgment; do not inflate the
+orchestrator's effort/context to perform it inline.
+
+For a proposed-change checkpoint, hand codex the canonical
 `proposal_review_packet.json` in full (it contains the whole current paper/core, every same-round delta,
-and `proposed_proofs`; those proof payloads MUST replace stale `core.json` proof text for adjudication),
-plus the checkpoint and source proposal JSON for traceability. Never adjudicate from `core.json` alone. For other calls hand the `.tex`/note /
+and `provisional_proofs`; obey its `contract` field so those payloads replace stale `core.json` proof text
+for adjudication), plus the checkpoint and source proposal JSON for traceability. Never adjudicate from
+`core.json` alone. For other calls hand the `.tex`/note /
 `open_obligations` JSON (+ the literature recipe for an open_obligation, consulted FIRST); relay its
-call verbatim into the mechanical step and `{resume-from}`. You STILL enforce the faithfulness guards —
+call verbatim into the mechanical step and `{resume}`. You STILL enforce the faithfulness guards —
 codex does NOT override a faithfulness stop. **If the harness DENIES/cancels the codex dispatch, return the
 lease with `{escalation:"codex-blocked", receipts:[…]}` — do NOT substitute your own math judgment for the
 codex call you were required to make** (shared reference § "A DENIED / CANCELLED codex call is an
@@ -93,13 +114,19 @@ a real verbatim `codex` field, NOT `n/a`. `n/a` is only for classifying a pipeli
 with no math judgment. About to write a maximality/reachability/adjust conclusion with `codex:"n/a"`? STOP —
 that decision goes to codex first.
 
-**D0 solve — three checkpoint events** (all proposed changes escalated within the pipeline, never
-auto-applied). Each is FIXABLE; DO NOT stop while there is hope:
+**D0 solve — three mathematical checkpoint classes** (proposed changes are never auto-applied).
+Mechanical citation/cap halts are handled under D0.5 review below. Repair within D while a faithful
+same-topic result remains:
 1. **proposed-change** — `direction:"narrow"` (claim too strong → narrow toward truth, never
    weaken-to-prove) or `direction:"correct"` (a constructed-object formula mis-specified → fix the
-   formula; NEVER a class def, never gerrymander to the proof's objects). Adjudicate faithful narrowing /
-   genuine formula-fix vs the `.tex` CLAIM being wrong (the only bank-down). Apply accepted ones:
-   `npx tsx tools/bin/d0_apply_change.ts <qid> <spec> [--ids … | --all]` then `{resume-from}`.
+   formula; NEVER a class def, never gerrymander to the proof's objects). Adjudicate whether the proposal
+   is a faithful narrowing/formula correction; a wrong current claim routes to repair unless no faithful
+   same-topic result exists. Preview with `bin/d0_apply_change.ts <qid> <spec> ... --check`, then apply. Prefer
+   repeatable `--id <kind-qualified-id>` (comma-safe); use `--all` only when every variant is accepted.
+   If any variant/mandate is accepted, include it in one apply; that consumes the whole bundle, so do not
+   discard afterward. Only when every variant and mandate is rejected, cancel each outstanding mandate with
+   `bin/d0_cancel_mandate.ts <qid> <spec> --mandate-id <d0m:id> --reason "<review rationale>"`, then use
+   `--discard-all --note "<why>"`. Never leave proposals live.
 2. **open_obligation** (`discovery/open_obligations.json`) — a load-bearing step that won't close from
    frozen primitives. Provide a **direction**, not a blind re-solve: **consult the literature FIRST**
    (bibliography → focused agent on ar5iv/LaTeX source, PDFs unreliable) to extract the concrete
@@ -107,19 +134,24 @@ auto-applied). Each is FIXABLE; DO NOT stop while there is hope:
    --require-core-target <node-id>`** (repeat `--require-core-target` for every named proof/repair node;
    never send a node-specific math repair unscoped, because an unscoped directive intentionally opens
    the whole core and wastes a solve on unrelated valid nodes). This appends
-   the standalone `{round,changed:[],directive}` entry to `discovery/d0_escalation_log.jsonl` — NEVER a hand-append),
-   then `{resume-from}`. A construction's repeated failure ≠ impossible: swap to the SIMPLEST standard
-   construction (plain estimator + standard named assumptions) before declaring a wall, and trust your
-   own hand-derivation over the pipeline's failure on a bad setup.
+   the standalone `{round,changed:[],directive}` entry to `discovery/d0_escalation_log.jsonl` — never hand-append —
+   then `{resume}`. A construction's repeated failure ≠ impossible: swap to the SIMPLEST standard
+   construction (plain estimator + standard named assumptions) before declaring a wall. Diagnose and fix a
+   bad setup from I/O receipts; never override contrary pipeline evidence with an unaudited hand judgment.
 3. **`D0 MAXIMALITY CHECKPOINT`** (clean discharge, run halted) — proved ≠ best paper. **CONSULT CODEX
    FIRST — this judgment is a mandatory codex call, not an eyeball.** Hand codex the full discharged
    `.tex`/note and ask the WHOLE-paper maximization question: is there a sharper bound, better
-   construction, stronger reframing, a tighter constant, an elbow the current statement misses? If codex
-   surfaces a concrete improvement, inject it (`d0_apply_change`/directive) and `{resume-from}` to
-   re-solve; only once codex confirms no room `{resume-from}` into D0.5. **Default to IMPROVING**; pull to
-   a weaker tier only when codex confirms improvement is genuinely impossible. Open rate/constant → phrase
+   construction, stronger reframing, a tier-relevant rate/constant, or an elbow the current statement misses? If codex
+   surfaces a concrete improvement that passes the materiality filter below, apply it only if it already exists as a solver-authored proposal;
+   otherwise inject it through `d0_directive`. Then `{resume}` to
+   re-solve; only once codex confirms no material room `{resume}` into D0.5. **Default to IMPROVING**; pull to
+   a weaker tier only when codex confirms material improvement is genuinely impossible. A material,
+   tier-relevant open rate/constant → phrase
    as a construct-and-determine `conj` and let codex derive it; never hard-code a guessed exponent. Log
    the maximality decision with codex's verbatim finding in the `codex` field (NOT `n/a`).
+   **Materiality filter:** pursue broad improvements that strengthen the headline, construction, scope, or
+   achieved tier. Do not iterate a small coefficient/constant/local refinement unless sharp constants are
+   themselves the main contribution or the refinement could materially change the tier.
    - **Any directive that changes the headline/positioning MUST also tell the solver to SYNC THE PROSE
      FIELDS** (`tldr`, `project_justification.{gap,niche,fill}`, `related_work`) to the new headline. The
      D0 change-apply loop has NO prose channel and D0-RENDER emits prose verbatim, so a reframe otherwise
@@ -136,23 +168,21 @@ auto-applied). Each is FIXABLE; DO NOT stop while there is hope:
      (laundering — caught at D0.5). A derived best-available nontrivial result beats both an OPEN gap and
      a strong-but-laundered claim.
 
-**Pick the CLI by WHO AUTHORED the bytes.** `d0_apply_change` = vote yes/no on text the SOLVER emitted in
-`proposed_*.json`. `d0_directive` = the change is YOURS; it mutates nothing and the solver authors it AND
-re-proves in one round. Both cost the same round count for a statement change; the difference is that
-applying your own claim text leaves the solver proving a claim it did not write (and free to bounce it back
-as a new proposal), and puts the orchestrator in the business of drafting claims.
-**Apply is also the only DISPOSAL path**: `working.proposals` is cleared solely by `clearRoundOutputs` at
-the tail of a successful apply, so directive-only on a round that proposed something leaves that bundle
-live into the next round, where reviewers overlay it onto a newer paper. Never leave a bundle unadjudicated
-— apply the accepted subset (and record the drops in `--note`), then direct whatever else you want.
+**Pick the CLI by WHO AUTHORED the bytes.** `d0_apply_change` = vote yes/no on solver-emitted variants in
+`d0_working.json:proposals`. `d0_directive` = the change is YOURS; it mutates nothing and the solver authors it AND
+re-proves it. Never draft your own accepted claim through apply. Disposal also goes through
+`d0_apply_change`: a single apply selects accepted variants, records drops in `--note`, and consumes the
+bundle. If all are rejected, cancel every outstanding exact mandate with `d0_cancel_mandate`, then
+`--discard-all --note`. A directive alone does not clear `working.proposals`.
 
-**`partial` = re-derive flag, NOT proof deletion.** `apply` clears `node.proof_tex`, but the RECORD-level
-`proof_tex` survives (frozen and carried nodes alike) and returns next round as `PRIOR PARTIAL PROGRESS …
+**`partial` = re-derive flag, NOT proof deletion.** An applied claim change clears its node-level proof and
+marks the durable record partial; a metadata-only edit preserves a proof when its proof-relevant basis stays
+valid. The record-level prior proof survives invalidation (frozen and carried nodes alike) and returns next round as `PRIOR PARTIAL PROGRESS …
 EXTEND this`, labeled with the previous statement text when the claim has moved. Staleness propagates
-along `depends_on` to a fixpoint, so one statement edit can flag a subtree: budget a re-solve round per
-applied statement edit — EXCEPT when the solver paired the proposal with a proof marked
-`argues_proposed:true` (it proved the PROPOSED text in the same round): applying that statement change
-as proposed attaches the proof in the same apply, and no re-solve round is owed for that node. Displaced
+along `depends_on` to a fixpoint. For a non-cited node, an accepted `argues_proposed:true` proof can attach
+in the same apply and avoid a re-solve. A reopened `status:"cited"` node ALWAYS owes the base D0 contract's
+complete byte-faithful `added_lemmas` revalidation receipt, including its exact source and current metadata.
+Do not replace that receipt with a no-op `statement-replace`. Displaced
 proof bytes are never lost: every overwrite/delete is copied to the cold append-only
 `discovery/proof_archive/` (objects by sha256 + `index.jsonl`; never read by dispatch — restore is a
 manual act naming a hash).
@@ -160,7 +190,9 @@ manual act naming a hash).
 **A working-state record with no `node` key is proto-frozen, not unproved** — its definition lives in
 `proto_core.json`. Reading `rec.node.status` on those returns undefined and miscounts proved nodes.
 
-**A third option besides "prove it" and "retract to an OEQ": `d0_maintain <qid> <spec>`.** Marks a frozen
+**A third option besides "prove it" and "retract to an OEQ":**
+`bin/d0_maintain.ts <qid> <spec> --assumption ass:<id> --reason "..." --open-object "..." --separate-object "..."`
+marks a frozen
 proto assumption MAINTAINED — a disclosed high-level condition the note is stated CONDITIONAL on and does
 not derive. This is the sanctioned slot for "proved under condition A, where verifying A is itself the open
 object", and it is the legitimate alternative to the laundering shortcut. It restates every consuming
@@ -168,63 +200,95 @@ theorem explicitly conditional on the assumption; D0.5 then checks only the assu
 SEPARATENESS, and caps the tier one notch. The solver may NEVER self-serve it — it is an accountable
 orchestrator judgment.
 
-**Recovery, when a round is interrupted rather than wrong:** `d0_rebuild_review_packet <qid> <spec>`
-rebuilds an adjudication packet from the durable cursor WITHOUT re-running the solver (it mutates nothing)
-— use it instead of paying a solve round to recover a lost packet. `reset_proposal_cursor <qid> <spec>
+**Recovery, when a round is interrupted rather than wrong:** `bin/d0_rebuild_review_packet.ts <qid> <spec>` is a
+mechanical no-solver recovery: it rewrites `d0_working.json:proposals` and the review packet, but not the
+frozen proto, and consumes no solve round. `bin/reset_proposal_cursor.ts <qid> <spec>
 --angle N` re-seats a D-1.2 cursor after a cap-exhausted NO-PASS so a bumped-cap resume continues a good
 angle instead of re-entering the dead one.
 
-**`--ids` selectors take an optional kind prefix**: `statement:<id>`, `core-edit:<id>`, or an exact kind
-(`statement-replace:<id>`). Bare id = every channel. Splits on the first colon, so ids keep theirs. A
-`statement-replace` must echo the current statement byte-for-byte, so it can never be bundled with a claim
-change on the same node — take the claim change, re-request the rewiring next round.
+**Reroute only mathematical work.** Re-dispatch D0 only for new mathematics, claim authorship, or reproof.
+After math acceptance, use deterministic apply/rebuild first. If it cannot fix a small, unambiguous mechanical
+defect (for example LaTeX/serialization, carrier drift, ordering, or derived metadata), D may `apply_patch` every
+identical live D carrier; preserve the adjudicated semantic post-image, never edit `proof_archive`/`_bank`, and
+never change a claim/formula by inference. Do not add content-guessing normalization for a one-off typo. Patch
+pipeline code only for a reproducible, non-heuristic mechanical invariant, with a focused regression. Log exact
+before/after, run the relevant replay/schema/render/tests, and continue without re-solving. Return `pipeline-bug`
+only when the repair is ambiguous, semantic, architectural, or cannot be verified locally.
 
-**Whack-a-mole at D0.5 is convergence, NOT terminal — fix at the ROOT.** When every open D0.5 finding is
-hygiene/presentation (redundant assumption/dep, hidden domain, normalization label, buried formula, "add
-one more comparator") AND the novelty/tier rubric keeps PASSING, that IS convergence through a hard
-problem — KEEP FIXING however many rounds; symptom-patching ONE finding per round is what PROLONGS the
-rotation. Two root-fix disciplines end it: (1) a finding that RECURS on a node (e.g.
-`novelty-thin-positioning` demanding a *different* comparator each round) means you patched the symptom —
-fix it WHOLESALE (write the COMPLETE comparator set covering every distinct close prior-art approach with
-systematic differentiation, not one comparator at a time); (2) for the hygiene classes, run ONE
-exhaustive minimal-hypothesis / domain / dependency / normalization audit across ALL nodes at once (not
-one class per round). Only if a genuine wholesale root-fix STILL rotates is a `terminal` escalation even
-on the table — and even then main re-checks it via the codex-validity-gate before stopping.
+**D0 context is hybrid and automatic.** Ordinary solve units receive their target/upstream closure inline plus
+an omitted-node revision manifest and a read-only content-addressed full-core snapshot for selective lookup;
+the prose/cross-cutting owner receives the full formal view inline. Do not manually paste the whole core into a
+directive. When diagnosing a suspected omission, inspect the exact snapshot path/hash recorded in that worker's
+prompt log before rerouting mathematics.
 
-**D0.5 review** (`stage_0.5_to_0` below-floor, or a PASS halt = the D0.5→F1 go/no-go). **Delegate the
-verdict to codex.** Two shapes: (a) panel reject / `BELOW NOVELTY FLOOR` → escalate `terminal:...` —
-kernel laundered/substituted or math wrong → bank `failed`; sound-but-below-floor → `terminal:below-floor`
-(bank `downgraded`; field-unreachable → main surfaces, don't silently lower `--novelty`). (b) a PASS
-HALTS as the go/no-go → escalate `go-no-go` with the maximized-paper summary; main decides whether to
-commit to the expensive F1–F5. Review the *maximized* paper, not a draft.
+**D renders source; it does not compile PDFs.** `D0-RENDER` publishes the deterministic `.tex` preview only.
+Never run or require `pdflatex` in D, and never reroute mathematics for layout/package/compile errors; defer those
+to the paper/publication stage. D0.R edits `core.json` only; its provisional rounds do not render or roll back `.tex`.
+The pipeline republishes the preview once after the complete D0.5 gate passes. Repair in D only when a structural
+carrier defect changes or obscures mathematical content.
+
+**Proposal selectors are independent channels.** Use `statement:<id>`, `core-edit:<id>`, or an exact kind
+such as `statement-replace:<id>`; bare id selects every channel. Same-node claim and metadata variants may
+be selected together when the packet adjudicator found the combined post-image coherent. A
+`statement-replace` is warranted only for a concrete dependency/metadata delta. For `free_symbols`, name
+the exact registered `symbols[].name` spellings and require any missing `symbol-add` in the same atomic
+directive; never require a byte-identical replacement merely to acknowledge the new revision.
+
+**D0.5 rotation is not itself terminal.** For recurring hygiene/positioning findings, replace one-at-a-time
+patches with one whole-core audit: minimal hypotheses, domains, dependencies, normalization, and the
+complete close-comparator set. If a wholesale root repair still rotates, return `cap-block` with receipts;
+main decides whether any terminal classification is justified.
+
+**D0.5 review:** delegate every boundary judgment to a fresh `gpt-5.6-sol` high consult, then classify the persisted
+checkpoint precisely:
+
+- `PASS` + tier at/above floor → return `go-no-go` with the maximized-paper summary. Never enter F.
+- `FAIL`, D0.R escalation/non-convergence, or a salvageable below-floor directive → fixable D0
+  re-derivation by default. Use the already-injected review payload plus one concrete scoped
+  `d0_directive`, then re-enter D0. A wrong claim is not terminal while an honest same-topic repair exists.
+- `d0_loop_cap_hit` / D0.R cap → return `cap-block`; only main may clear it, and only after a recorded
+  root change. Include the flag, counters, halt, and attempted root fix.
+- `CITATION VERIFICATION REQUIRED` / `cited-source-unverifiable` → return `citation-verification` with
+  node ids, source/locator, and verbatim access failure. Main obtains lawful source evidence and uses
+  `bin/d0_attest_cited_source.ts`; do not re-solve mathematics or invent a transcription.
+- Below floor and explicitly not salvageable in scope → `terminal:below-floor`. State whether panel
+  findings remain unrepaired; never present a triage-only halt as a sound downgraded result.
+- Laundering/kernel substitution, or a false headline with no faithful same-topic repair after consult →
+  the corresponding terminal escalation.
 
 ## Faithfulness (D-side)
 
 Detect laundering / kernel-substitution at D0.5 (a premise that is the crux; a kernel silently
 substituted; strengthen-to-prove). A catch is NOT yours to bank — **escalate** it: `terminal:laundering`
-(claim laundered) or `terminal:tex-claim-wrong` (the `.tex` claim itself is wrong), each with the
-`.tex` audit receipt. Your authority is to *detect and prove* the defect (audit the `.tex` to confirm it
-is THERE), not to execute the irreversible bank.
+(claim laundered) or `terminal:tex-claim-wrong` only when the `.tex` claim has no faithful same-topic
+repair, each with the `.tex` audit receipt. Otherwise route the defect back to D0. Your authority is to
+detect and prove the defect, not to execute the irreversible bank.
 
 ## Returning the lease to main
 
 A within-phase continue is NOT a message to main — you hold the lease, so you just
-`--resume --from-stage <D-stage>` yourself and keep going. You come back to main ONLY to **return the
-lease**: hand back `{escalation: <type>, receipts: [...]}` (append an `escalation` decision-log entry) and
-STOP resuming. Use `request-reseed` (no receipts, not terminal) if you feel your own context degrading —
+run the cursor-appropriate resume yourself and keep going. Default to plain `--resume`; use `--from-stage`
+only for an explicit persisted reroute/replay. You come back to main ONLY to **return the lease**: append
+`{type:"escalation",phase:"D",from:"D",subtype:"<type>",receipts:[...]}` and STOP resuming. Use
+`request-reseed` only for a concrete context-capacity problem, never silence/timeout/routine monitoring —
 main respawns a fresh D-orch for the same phase and re-grants the lease. Required receipts:
 
 | Escalation | Receipts |
 |---|---|
 | `go-no-go` | maximized-paper summary + panel/novelty verdicts |
+| `terminal:proposal-no-pass` | exhausted angle/version counts + final proposal and reviewer duplicate/novelty receipts |
 | `terminal:tex-claim-wrong` / `terminal:laundering` | the `.tex` line + the reviewer phrase naming the collapsed conjecture |
-| `terminal:below-floor` | the panel verdict + the floor |
-| `cap-block` | the halt + what the attempt showed (e.g. `stage_neg1_fallback`, `stage0_budget_exhausted`) |
-| `pipeline-bug` | the agent-I/O diff (EMITTED vs PERSISTED) + recurrence count |
+| `terminal:below-floor` | panel + cold-tier verdict, floor, salvageability, and unrepaired-findings caveat |
+| `cap-block` | exact persisted flag (for example `stage_neg1_fallback`, `d0_loop_cap_hit`, or `stage0_budget_exhausted`), counters, halt, and attempted root fix |
+| `citation-verification` | node ids, citation/locator, and verbatim source-access failure |
+| `codex-blocked` | verbatim denial, exact command, and purpose |
+| `pipeline-bug` | mapping/contract failure: agent-I/O diff (EMITTED vs PERSISTED) + recurrence count; suspected hang: two-window PID/heartbeat/descendant/log/event liveness receipts |
 
 ## Recording (decision_log)
 
-Append via `decision_log.ts append <qid> <spec> --json '<entry>'`. Per round: a `judgment` entry
+Append via `npx --prefix tools tsx tools/bin/decision_log.ts append <qid> <spec> --json '<entry>'`. Per halt/action, append one `judgment` entry
 (`{type:"judgment",phase:"D",stage,round,tried,codex,why}`) — note what you tried and, on failure,
-"do NOT re-suggest". On escalation: an `escalation` entry with receipts. This is what a re-seeded D-orch
-reads to avoid re-walking dead constructions.
+"do NOT re-suggest". For an agent-output `pipeline-bug`, compare the model's emitted bytes with the
+persisted bytes; a suspected hang instead uses the two-window liveness receipts above. A correctly rejected omission/no-op is an orchestration or model-compliance failure:
+correct the scoped directive once; never weaken the gate. A mapping/drop or a recurrent general contract
+failure is a pipeline bug. This log is what a re-seeded D-orch reads to avoid re-walking dead constructions.

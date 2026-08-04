@@ -264,7 +264,8 @@ lemma measurable_indD (S : PODTRSystem P n δ γ) (dbar : Fin n → δ) :
       by_cases hk : k < n
       · simp only [hk, ↓reduceDIte]
         exact (S.measurable_indD dbar k).mul
-          ((S.dVar ⟨k, hk⟩).measurable_indicator (dbar ⟨k, hk⟩))
+          ((S.dVar ⟨k, hk⟩).measurable_indicator (dbar ⟨k, hk⟩)
+            (measurableSet_singleton _))
       · simp only [hk, ↓reduceDIte]
         exact S.measurable_indD dbar k
 

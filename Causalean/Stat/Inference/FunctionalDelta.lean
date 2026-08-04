@@ -187,8 +187,12 @@ theorem deltaMethod_max_tie
       (fun ω => (fun z : ℝ × ℝ => max z.1 z.2)
         (Real.sqrt (n : ℝ) • ((an n ω, bn n ω) - (a, a)))) μ := fun (n : ℕ) =>
     (continuous_fst.max continuous_snd).measurable.comp_aemeasurable (hSn_meas n)
-  have hmap := Tendsto_dist_vec.map_continuous (continuous_fst.max continuous_snd)
-    hSn_meas hgmeas hCLT
+  have hmap : Tendsto_dist_vec
+      (fun (n : ℕ) ω => (fun z : ℝ × ℝ => max z.1 z.2)
+        (Real.sqrt (n : ℝ) • ((an n ω, bn n ω) - (a, a))))
+      (Q.map (fun z : ℝ × ℝ => max z.1 z.2)) μ hgmeas := by
+    exact Tendsto_dist_vec.map_continuous (continuous_fst.max continuous_snd)
+      hSn_meas hCLT
   -- transport `max ∘ Sₙ ⇒ Q.map max` to the (pointwise-equal) rescaled image
   exact hmap.congr_ae hgmeas (maxStat_aemeasurable an bn a hSn_meas)
     (Eventually.of_forall fun n => Eventually.of_forall fun ω =>
@@ -210,8 +214,12 @@ theorem deltaMethod_min_tie
       (fun ω => (fun z : ℝ × ℝ => min z.1 z.2)
         (Real.sqrt (n : ℝ) • ((an n ω, bn n ω) - (a, a)))) μ := fun (n : ℕ) =>
     (continuous_fst.min continuous_snd).measurable.comp_aemeasurable (hSn_meas n)
-  have hmap := Tendsto_dist_vec.map_continuous (continuous_fst.min continuous_snd)
-    hSn_meas hgmeas hCLT
+  have hmap : Tendsto_dist_vec
+      (fun (n : ℕ) ω => (fun z : ℝ × ℝ => min z.1 z.2)
+        (Real.sqrt (n : ℝ) • ((an n ω, bn n ω) - (a, a))))
+      (Q.map (fun z : ℝ × ℝ => min z.1 z.2)) μ hgmeas := by
+    exact Tendsto_dist_vec.map_continuous (continuous_fst.min continuous_snd)
+      hSn_meas hCLT
   -- transport `min ∘ Sₙ ⇒ Q.map min` to the (pointwise-equal) rescaled image
   exact hmap.congr_ae hgmeas (minStat_aemeasurable an bn a hSn_meas)
     (Eventually.of_forall fun n => Eventually.of_forall fun ω =>

@@ -30,10 +30,11 @@ namespace MeasureTheory
 variable {Ω ι : Type*} [MeasurableSpace Ω] {μ : Measure Ω}
   {l : Filter ι}
 
-/-- A deterministic real sequence that converges in the usual topological
-sense also converges in measure when regarded as a sequence of constant
-random variables. -/
-lemma tendstoInMeasure_const_of_tendsto_real {a : ι → ℝ} {a₀ : ℝ}
+/-- A deterministic sequence in a seminormed additive commutative group that
+converges in the usual topological sense also converges in measure when
+regarded as a sequence of constant random variables. -/
+lemma tendstoInMeasure_const_of_tendsto_real {E : Type*} [SeminormedAddCommGroup E]
+    {a : ι → E} {a₀ : E}
     (ha : Tendsto a l (𝓝 a₀)) :
     TendstoInMeasure μ (fun n => fun _ : Ω => a n) l (fun _ => a₀) := by
   rw [tendstoInMeasure_iff_norm]
@@ -43,14 +44,20 @@ lemma tendstoInMeasure_const_of_tendsto_real {a : ι → ℝ} {a₀ : ℝ}
     simpa [dist_eq_norm] using hn
   refine tendsto_const_nhds.congr' ?_
   filter_upwards [hev] with n hn
-  have hlt_abs : |a n - a₀| < ε := by
-    simpa [Real.norm_eq_abs] using hn
   have hset :
       {x : Ω | ε ≤ ‖(fun _ : Ω => a n) x - (fun _ : Ω => a₀) x‖} = ∅ := by
     ext x
-    simp [not_le.mpr hlt_abs, Real.norm_eq_abs]
+    simp [not_le.mpr hn]
   rw [hset]
   simp
+
+/-- Alias for `tendstoInMeasure_const_of_tendsto_real` whose name reflects
+that the result holds in any seminormed additive commutative group. -/
+lemma tendstoInMeasure_const_of_tendsto {E : Type*} [SeminormedAddCommGroup E]
+    {a : ι → E} {a₀ : E}
+    (ha : Tendsto a l (𝓝 a₀)) :
+    TendstoInMeasure μ (fun n => fun _ : Ω => a n) l (fun _ => a₀) :=
+  tendstoInMeasure_const_of_tendsto_real ha
 
 /-- Deterministic-scalar Slutsky theorem for Mathlib's random-variable
 `TendstoInDistribution`.
@@ -74,9 +81,9 @@ theorem TendstoInDistribution.const_mul_of_tendsto_const
 
 namespace ProbabilityMeasure
 
-/-- Pushing forward `δ_c × ν` by multiplication is the same as pushing forward
-`ν` by left multiplication by `c`. -/
-private lemma map_mul_eq_map_prod_dirac (c : ℝ) (ν : ProbabilityMeasure ℝ) :
+/-- Multiplying a deterministic real value and a random draw has the same distribution as
+scaling that random draw by the deterministic value. -/
+lemma map_mul_eq_map_prod_dirac (c : ℝ) (ν : ProbabilityMeasure ℝ) :
     ((diracProba c).prod ν).map
         ((by fun_prop : Measurable (fun p : ℝ × ℝ => p.1 * p.2)).aemeasurable) =
       ν.map ((measurable_const.mul measurable_id).aemeasurable :

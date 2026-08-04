@@ -27,16 +27,19 @@ local instance jacobianCoordinateSubalgebraAlgebra {ι κ : Type*}
 
 /-- A polynomial Jacobian minor records the determinant of selected derivative
 coordinates of a polynomial parameterization before evaluating it at any point. -/
-def polynomialJacobianMinor {ι κ : Type*} {d : ℕ}
-    (f : κ → MvPolynomial ι ℂ) (rows : Fin d → κ) (cols : Fin d → ι) :
-    MvPolynomial ι ℂ :=
+def polynomialJacobianMinor {R ι κ : Type*} [CommRing R] {d : ℕ}
+    (f : κ → MvPolynomial ι R) (rows : Fin d → κ) (cols : Fin d → ι) :
+    MvPolynomial ι R :=
   Matrix.det (fun a b => MvPolynomial.pderiv (cols b) (f (rows a)))
 
 -- The next three lemmas are the reusable algebraic core of the Jacobian
 -- criterion.  Keeping them private avoids enlarging the public API while giving
 -- the proof below independently checkable intermediate statements.
 
-private lemma pderiv_polynomialPullback
+/-- The partial derivative of a polynomial after polynomial substitution equals the sum of the
+substituted partial derivatives, each weighted by the corresponding derivative of the
+substituted polynomial. -/
+lemma pderiv_polynomialPullback
     {ι κ : Type*} [Fintype κ]
     (f : κ → MvPolynomial ι ℂ) (P : MvPolynomial κ ℂ) (i : ι) :
     MvPolynomial.pderiv i (polynomialPullback f P) =
@@ -64,8 +67,10 @@ private lemma pderiv_polynomialPullback
         ring
       · simp [polynomialPullback, Pi.single_apply]
 
-private lemma totalDegree_pderiv_lt
-    {σ R : Type*} [CommRing R] {i : σ} {P : MvPolynomial σ R}
+/-- A nonzero partial derivative of a polynomial has strictly smaller total degree than the
+original polynomial. -/
+lemma totalDegree_pderiv_lt
+    {σ R : Type*} [CommSemiring R] {i : σ} {P : MvPolynomial σ R}
     (hP : MvPolynomial.pderiv i P ≠ 0) :
     (MvPolynomial.pderiv i P).totalDegree < P.totalDegree := by
   classical
@@ -98,8 +103,11 @@ private lemma totalDegree_pderiv_lt
       omega
   exact hle.trans_lt (Nat.sub_lt hdeg_pos Nat.zero_lt_one)
 
-private lemma sum_X_mul_pderiv_eq_sum_degree
-    {σ : Type*} [Fintype σ] (P : MvPolynomial σ ℂ) :
+/-- For a polynomial over a commutative semiring in finitely many variables, the sum of each
+variable times its partial derivative equals the sum of its monomials weighted by their total
+degrees. -/
+lemma sum_X_mul_pderiv_eq_sum_degree
+    {σ R : Type*} [Fintype σ] [CommSemiring R] (P : MvPolynomial σ R) :
     (∑ i : σ, MvPolynomial.X i * MvPolynomial.pderiv i P) =
       ∑ m ∈ P.support,
         m.degree • MvPolynomial.monomial m (P.coeff m) := by
@@ -120,30 +128,33 @@ private lemma sum_X_mul_pderiv_eq_sum_degree
       intro m _
       rw [← Finset.sum_smul, ← Finsupp.degree_eq_sum]
 
-private lemma eq_C_of_forall_pderiv_eq_zero
-    {σ : Type*} [Fintype σ] (P : MvPolynomial σ ℂ)
+/-- A polynomial over a characteristic-zero field in finitely many variables whose partial
+derivatives all vanish equals its constant coefficient. -/
+lemma eq_C_of_forall_pderiv_eq_zero
+    {σ K : Type*} [Finite σ] [Field K] [CharZero K] (P : MvPolynomial σ K)
     (hP : ∀ i, MvPolynomial.pderiv i P = 0) :
     P = MvPolynomial.C (P.coeff 0) := by
   classical
-  have heuler := sum_X_mul_pderiv_eq_sum_degree P
+  letI := Fintype.ofFinite σ
+  have heuler := sum_X_mul_pderiv_eq_sum_degree (R := K) P
   have hleft : (∑ i : σ,
-      MvPolynomial.X i * MvPolynomial.pderiv i P) = 0 := by
+      (MvPolynomial.X i : MvPolynomial σ K) * MvPolynomial.pderiv i P) = 0 := by
     simp [hP]
-  rw [hleft] at heuler
+  have heuler0 : (0 : MvPolynomial σ K) = _ := hleft.symm.trans heuler
   have hdegree : ∀ m ∈ P.support, m.degree = 0 := by
     intro m hm
-    have hc := congrArg (MvPolynomial.coeff m) heuler
+    have hc := congrArg (MvPolynomial.coeff m) heuler0
     have hrhs : MvPolynomial.coeff m
         (∑ x ∈ P.support,
           x.degree • MvPolynomial.monomial x (P.coeff x)) =
-          (m.degree : ℂ) * P.coeff m := by
+          (m.degree : K) * P.coeff m := by
       calc
         _ = ∑ x ∈ P.support, MvPolynomial.coeff m
               (x.degree • MvPolynomial.monomial x (P.coeff x)) :=
           MvPolynomial.coeff_sum P.support
             (fun x => x.degree • MvPolynomial.monomial x (P.coeff x)) m
         _ = _ := by
-          have hcoeff_nsmul (n : ℕ) (Q : MvPolynomial σ ℂ) :
+          have hcoeff_nsmul (n : ℕ) (Q : MvPolynomial σ K) :
               MvPolynomial.coeff m (n • Q) = n • MvPolynomial.coeff m Q :=
             (MvPolynomial.coeffAddMonoidHom m).map_nsmul Q n
           simp_rw [hcoeff_nsmul, MvPolynomial.coeff_monomial]
@@ -152,11 +163,13 @@ private lemma eq_C_of_forall_pderiv_eq_zero
           · intro x hx hxm
             simp [hxm]
           · exact fun hnot => (hnot hm).elim
-    have hmul : (m.degree : ℂ) * P.coeff m = 0 := by
-      rw [hrhs] at hc
-      exact hc.symm
+    have hmul : (m.degree : K) * P.coeff m = 0 := by
+      calc
+        _ = MvPolynomial.coeff m _ := hrhs.symm
+        _ = MvPolynomial.coeff m 0 := hc.symm
+        _ = 0 := by simp
     have hcoeff : P.coeff m ≠ 0 := MvPolynomial.mem_support_iff.mp hm
-    have hcast : (m.degree : ℂ) = 0 :=
+    have hcast : (m.degree : K) = 0 :=
       (mul_eq_zero.mp hmul).resolve_right hcoeff
     exact_mod_cast hcast
   apply MvPolynomial.totalDegree_eq_zero_iff_eq_C.mp
@@ -268,7 +281,7 @@ theorem polynomialImageClosure_dimension_of_jacobian_and_surjection
     (hsurj : Function.Surjective present) :
     HasAffineZariskiDimension d (polynomialImageClosure f) := by
   exact polynomialImageClosure_dimension_of_jacobian f rows cols hminor
-    (coordinateSubalgebra_trdeg_le_of_surjection f d present hsurj)
+    (by simpa using coordinateSubalgebra_trdeg_le_of_surjection f present hsurj)
 
 end
 

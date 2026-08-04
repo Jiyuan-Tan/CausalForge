@@ -74,7 +74,9 @@ theorem randomParam_event_le
   have hmap : @Measure.map Ω (Ω × β) mΩ (m_A.prod mβ)
         (fun ω => (ω, Y ω)) μ
       = @Measure.prod Ω β m_A mβ (μ.trim hm_A_le) ν := by
-    have h := @Causalean.Mathlib.indep_trim_prod_map_eq Ω β mΩ mβ μ _ m_A hm_A_le Y hY hindep
+    have h :=
+      @Causalean.Mathlib.indep_trim_prod_map_eq Ω β mΩ mβ μ _ m_A hm_A_le Y
+        hY.aemeasurable hindep
     rw [hY_law] at h
     exact h
   -- The random event is the `(ω ↦ (ω, Y ω))`-preimage of the joint bad set.

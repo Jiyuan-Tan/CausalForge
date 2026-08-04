@@ -17,8 +17,7 @@ The five Layer A propositions (NL doc A5.1–A5.5):
 * `raw_weight_sum_eq_VD` — denominator identity `Λ P = V_D P`.
 * `twfe_numerator_eq_lambda_delta_sum` — numerator identity.
 * `weights_sum_one` — normalized weights sum to one (uses `hVD_pos`).
-* `twfe_eq_weighted_avg` — weighted-average identity under positive residualized
-  treatment variance.
+* `twfe_eq_weighted_avg` — totalized weighted-average identity.
 
 NL artifact:
 `doc/basic_concepts/po/estimand_characterization/goodman_bacon_twfe_timing.md`.
@@ -54,11 +53,13 @@ open Finset
 
 variable {𝒢 : Type*} [Fintype 𝒢] [DecidableEq 𝒢] {T : ℕ}
 
+omit [DecidableEq 𝒢] in
 /-- **Prop A5.1 (`weights_nonneg`).** Every admissible raw weight is
 nonnegative. Pure algebra: uses `0 ≤ p_g`, `0 ≤ \overline{D}_g ≤ 1`, and
 `0 ≤ q_{eℓ} ≤ 1`. -/
 theorem weights_nonneg (P : CohortPanel 𝒢 T) (k : CompTag × 𝒢 × 𝒢) :
     0 ≤ lambdaWeight P k := by
+  classical
   unfold lambdaWeight
   have hTpos : 0 < (T : ℝ) := by exact_mod_cast P.T_pos
   have hTnonneg : 0 ≤ (T : ℝ) := le_of_lt hTpos
@@ -196,26 +197,37 @@ theorem weights_nonneg (P : CohortPanel 𝒢 T) (k : CompTag × 𝒢 × 𝒢) :
         simpa [lambdaLE, mul_assoc, mul_left_comm, mul_comm] using hmul
   · simp [h]
 
-private lemma barD_eq_zero_of_isInf (P : CohortPanel 𝒢 T) {g : 𝒢}
+omit [DecidableEq 𝒢] in
+/-- A never-treated cohort has zero average treatment over the panel. -/
+lemma barD_eq_zero_of_isInf (P : CohortPanel 𝒢 T) {g : 𝒢}
     (hg : AdoptionDate.isInf (P.A g)) : barD P g = 0 := by
   unfold barD D AdoptionDate.isInf AdoptionDate.le at *
   simp [hg]
 
-private lemma lambdaTN_eq_gap_of_isInf (P : CohortPanel 𝒢 T) {g u : 𝒢}
+omit [DecidableEq 𝒢] in
+/-- When one cohort is never treated, its raw comparison weight with another cohort equals the
+product of their cohort shares, the gap in their average treatment rates, and one minus that gap. -/
+lemma lambdaTN_eq_gap_of_isInf (P : CohortPanel 𝒢 T) {g u : 𝒢}
     (hu : AdoptionDate.isInf (P.A u)) :
     lambdaTN P g u = P.p g * P.p u * q P g u * (1 - q P g u) := by
   unfold lambdaTN q
   rw [barD_eq_zero_of_isInf P hu]
   ring
 
-private lemma lambdaEL_add_lambdaLE_eq_gap (P : CohortPanel 𝒢 T) (e ℓ : 𝒢) :
+omit [DecidableEq 𝒢] in
+/-- The two ordered raw comparison weights between two cohorts sum to the product of their cohort
+shares, the gap in their average treatment rates, and one minus that gap. -/
+lemma lambdaEL_add_lambdaLE_eq_gap (P : CohortPanel 𝒢 T) (e ℓ : 𝒢) :
     lambdaEL P e ℓ + lambdaLE P e ℓ =
       P.p e * P.p ℓ * q P e ℓ * (1 - q P e ℓ) := by
   unfold lambdaEL lambdaLE
   ring
 
+omit [DecidableEq 𝒢] in
 open Classical in
-private lemma Lambda_eq_gap_sums (P : CohortPanel 𝒢 T) :
+/-- The raw denominator of the staggered-adoption two-way fixed-effects decomposition equals the
+sum of treated-versus-never comparison terms and ordered early-versus-late comparison terms. -/
+lemma Lambda_eq_gap_sums (P : CohortPanel 𝒢 T) :
     Lambda P =
       (∑ g, ∑ u, if AdoptionDate.isFin (P.A g) ∧ AdoptionDate.isInf (P.A u) then
               P.p g * P.p u * q P g u * (1 - q P g u) else 0)
@@ -238,11 +250,15 @@ private lemma Lambda_eq_gap_sums (P : CohortPanel 𝒢 T) :
     · simp [h, lambdaEL_add_lambdaLE_eq_gap P e ℓ]
     · simp [h]
 
-private lemma D_eq_of_A_eq (P : CohortPanel 𝒢 T) {g u : 𝒢}
+omit [DecidableEq 𝒢] in
+/-- Cohorts that share the same adoption date have identical treatment status
+    in every time period. -/
+lemma D_eq_of_A_eq (P : CohortPanel 𝒢 T) {g u : 𝒢}
     (hA : P.A g = P.A u) (t : Fin T) : D P g t = D P u t := by
   unfold D
   rw [hA]
 
+omit [DecidableEq 𝒢] in
 private lemma barD_eq_of_A_eq (P : CohortPanel 𝒢 T) {g u : 𝒢}
     (hA : P.A g = P.A u) : barD P g = barD P u := by
   unfold barD
@@ -251,12 +267,14 @@ private lemma barD_eq_of_A_eq (P : CohortPanel 𝒢 T) {g u : 𝒢}
   intro t _ht
   exact D_eq_of_A_eq P hA t
 
+omit [DecidableEq 𝒢] in
 private lemma centeredD_eq_of_A_eq (P : CohortPanel 𝒢 T) {g u : 𝒢}
     (hA : P.A g = P.A u) (t : Fin T) :
     centeredD P g t = centeredD P u t := by
   unfold centeredD
   rw [D_eq_of_A_eq P hA t, barD_eq_of_A_eq P hA]
 
+omit [DecidableEq 𝒢] in
 private lemma vdPairContribution_eq_zero_of_A_eq (P : CohortPanel 𝒢 T) {g u : 𝒢}
     (hA : P.A g = P.A u) : vdPairContribution P g u = 0 := by
   unfold vdPairContribution
@@ -268,6 +286,7 @@ private lemma vdPairContribution_eq_zero_of_A_eq (P : CohortPanel 𝒢 T) {g u :
   rw [hsum]
   ring
 
+omit [DecidableEq 𝒢] in
 private lemma numPairContribution_eq_zero_of_A_eq (P : CohortPanel 𝒢 T) {g u : 𝒢}
     (hA : P.A g = P.A u) : numPairContribution P g u = 0 := by
   unfold numPairContribution
@@ -281,6 +300,7 @@ private lemma numPairContribution_eq_zero_of_A_eq (P : CohortPanel 𝒢 T) {g u 
   rw [hsum]
   ring
 
+omit [DecidableEq 𝒢] in
 private lemma adoption_pair_cases (P : CohortPanel 𝒢 T) (g u : 𝒢) :
     P.A g = P.A u ∨
       (AdoptionDate.isFin (P.A g) ∧ AdoptionDate.isInf (P.A u)) ∨
@@ -312,6 +332,7 @@ private lemma adoption_pair_cases (P : CohortPanel 𝒢 T) (g u : 𝒢) :
       exact ⟨hgt, hg⟩
 
 open Classical in
+omit [DecidableEq 𝒢] in
 private lemma adoption_pair_pointwise (P : CohortPanel 𝒢 T) (f : 𝒢 → 𝒢 → ℝ)
     (hzero : ∀ g u, P.A g = P.A u → f g u = 0) (g u : 𝒢) :
     f g u =
@@ -346,7 +367,11 @@ private lemma adoption_pair_pointwise (P : CohortPanel 𝒢 T) (f : 𝒢 → �
     simp [AdoptionDate.isFin, AdoptionDate.isInf, hgt, huf, hgf, not_lt_of_gt hgt]
 
 open Classical in
-private lemma adoption_pair_sum_decomp (P : CohortPanel 𝒢 T) (f : 𝒢 → 𝒢 → ℝ)
+omit [DecidableEq 𝒢] in
+/-- When a pairwise cohort contribution is zero for cohorts sharing an adoption
+    date, its total over all cohort pairs decomposes into the four possible
+    ordered timing comparisons. -/
+lemma adoption_pair_sum_decomp (P : CohortPanel 𝒢 T) (f : 𝒢 → 𝒢 → ℝ)
     (hzero : ∀ g u, P.A g = P.A u → f g u = 0) :
     (∑ g, ∑ u, f g u) =
       (∑ g, ∑ u,
@@ -376,6 +401,7 @@ private lemma sum_swap₂ (f : 𝒢 → 𝒢 → ℝ) :
     (∑ g, ∑ u, f u g) = ∑ g, ∑ u, f g u := by
   rw [Finset.sum_comm]
 
+omit [DecidableEq 𝒢] in
 open Classical in
 private lemma TN_sum_pair (P : CohortPanel 𝒢 T) (f : 𝒢 → 𝒢 → ℝ) :
     (∑ g, ∑ u,
@@ -407,6 +433,7 @@ private lemma TN_sum_pair (P : CohortPanel 𝒢 T) (f : 𝒢 → 𝒢 → ℝ) :
           rw [sum_swap₂ (fun g u =>
             if AdoptionDate.isFin (P.A u) ∧ AdoptionDate.isInf (P.A g) then f g u else 0)]
 
+omit [DecidableEq 𝒢] in
 open Classical in
 private lemma TT_sum_pair (P : CohortPanel 𝒢 T) (f : 𝒢 → 𝒢 → ℝ) :
     (∑ e, ∑ ℓ,
@@ -439,6 +466,7 @@ private lemma TT_sum_pair (P : CohortPanel 𝒢 T) (f : 𝒢 → 𝒢 → ℝ) :
             if P.A u < P.A g ∧ AdoptionDate.isFin (P.A g) then f g u else 0)]
 
 open Classical in
+omit [DecidableEq 𝒢] in
 private lemma adoption_pair_sum_grouped (P : CohortPanel 𝒢 T) (f : 𝒢 → 𝒢 → ℝ)
     (hzero : ∀ g u, P.A g = P.A u → f g u = 0) :
     (∑ g, ∑ u, f g u) =
@@ -451,7 +479,10 @@ private lemma adoption_pair_sum_grouped (P : CohortPanel 𝒢 T) (f : 𝒢 → �
   linarith
 
 open Classical in
-private lemma gap_sums_eq_VD (P : CohortPanel 𝒢 T) :
+/-- The total of cohort-share products times each pair's treatment-rate gap and one minus that
+gap, over treated-versus-never and ordered early-versus-later pairs, equals the residualized
+treatment variance. -/
+lemma gap_sums_eq_VD (P : CohortPanel 𝒢 T) :
     (∑ g, ∑ u, if AdoptionDate.isFin (P.A g) ∧ AdoptionDate.isInf (P.A u) then
               P.p g * P.p u * q P g u * (1 - q P g u) else 0)
       + (∑ e, ∑ ℓ, if P.A e < P.A ℓ ∧ AdoptionDate.isFin (P.A ℓ) then
@@ -469,14 +500,14 @@ private lemma gap_sums_eq_VD (P : CohortPanel 𝒢 T) :
     refine Finset.sum_congr rfl ?_
     intro u _hu
     by_cases h : AdoptionDate.isFin (P.A g) ∧ AdoptionDate.isInf (P.A u)
-    · simp [h, TN_pair_vd_contribution_eq_gap P h.1 h.2]
+    · simp [h, TN_pair_vd_contribution_eq_gap P h.2]
     · simp [h]
   · refine Finset.sum_congr rfl ?_
     intro e _he
     refine Finset.sum_congr rfl ?_
     intro ℓ _hℓ
     by_cases h : P.A e < P.A ℓ ∧ AdoptionDate.isFin (P.A ℓ)
-    · simp [h, TT_pair_vd_contribution_eq_gap P h.1 h.2]
+    · simp [h, TT_pair_vd_contribution_eq_gap P h.1]
     · simp [h]
 
 /-- **Prop A5.2 (`raw_weight_sum_eq_VD`).** The aggregate raw-weight
@@ -534,7 +565,10 @@ private lemma if_mul_dup (c : Prop) [Decidable c] (x y : ℝ) :
       if c then x * y else 0 := by
   by_cases h : c <;> simp [h]
 
-private lemma sum_lambdaWeight_eq_Lambda (P : CohortPanel 𝒢 T) :
+omit [DecidableEq 𝒢] in
+/-- Across all admissible comparison types and cohort pairs, the raw comparison
+    weights sum to the aggregate normalizing denominator. -/
+lemma sum_lambdaWeight_eq_Lambda (P : CohortPanel 𝒢 T) :
     ∑ k ∈ 𝒦 P, lambdaWeight P k = Lambda P := by
   classical
   rw [show (∑ k ∈ 𝒦 P, lambdaWeight P k)
@@ -564,6 +598,7 @@ private lemma sum_lambdaWeight_eq_Lambda (P : CohortPanel 𝒢 T) :
   rw [← hELLE]
   rw [add_assoc]
 
+omit [DecidableEq 𝒢] in
 open Classical in
 private lemma sum_lambdaWeight_mul_contrast_eq (P : CohortPanel 𝒢 T) :
     ∑ k ∈ 𝒦 P, lambdaWeight P k * contrast P k =
@@ -623,20 +658,12 @@ theorem weights_sum_one (P : CohortPanel 𝒢 T) (hVD_pos : 0 < VD P) :
     _ = Lambda P / Lambda P := by rw [hsum_lambda]
     _ = 1 := by exact div_self hL_ne
 
-/-- **Theorem A5.5 (`twfe_eq_weighted_avg`,
-`thm:po-estimand-goodman-bacon-decomposition`).** When the residualized treatment
-has strictly positive variance, the TWFE coefficient equals the normalized
-Goodman-Bacon weighted average of admissible two-by-two DID contrasts.
-
-The positivity hypothesis is the nondegenerate condition that makes
-`weight P k = lambdaWeight P k / Lambda P` a normalized coefficient system:
-`weights_sum_one` then shows the weights sum to one. It also rules out the
-totalized zero-variance cases where the algebraic ratio still has a Lean value
-but no coefficient interpretation. -/
-theorem twfe_eq_weighted_avg (P : CohortPanel 𝒢 T) (hVD_pos : 0 < VD P) :
+/-- The positivity-free algebraic core of the Goodman-Bacon decomposition: the
+totalized TWFE ratio equals the totalized weighted sum of admissible two-by-two
+DID contrasts, including in zero-variance cases. -/
+theorem twfe_eq_weighted_avg_core (P : CohortPanel 𝒢 T) :
     betaTWFE P = ∑ k ∈ 𝒦 P, weight P k * contrast P k := by
   classical
-  have _ := hVD_pos
   have hnum := twfe_numerator_eq_lambda_delta_sum P
   have hsum :
       ∑ k ∈ 𝒦 P, lambdaWeight P k * contrast P k =
@@ -667,6 +694,14 @@ theorem twfe_eq_weighted_avg (P : CohortPanel 𝒢 T) (hVD_pos : 0 < VD P) :
           rw [← raw_weight_sum_eq_VD P]
     _ = ∑ k ∈ 𝒦 P, weight P k * contrast P k := by
           rw [hweighted]
+
+/-- **Theorem A5.5 (`twfe_eq_weighted_avg`,
+`thm:po-estimand-goodman-bacon-decomposition`).** Under the totalized
+zero-variance convention, the TWFE coefficient equals the weighted sum of
+admissible two-by-two DID contrasts. -/
+theorem twfe_eq_weighted_avg (P : CohortPanel 𝒢 T) :
+    betaTWFE P = ∑ k ∈ 𝒦 P, weight P k * contrast P k :=
+  twfe_eq_weighted_avg_core P
 
 end StaggeredTWFEDecomposition
 end Panel.EstimandCharacterization

@@ -1,11 +1,10 @@
 import { mkdtemp, mkdir, readFile, writeFile, rm } from "node:fs/promises";
-import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { runStage0RCore } from "../../src/discovery/stages/d0_r_core.js";
+import { proposalFindingRoute, runStage0RCore } from "../../src/discovery/stages/d0_r_core.js";
 import { coreJsonPath } from "../../src/discovery/stages/d0_core.js";
-import { artifactPaths, type StageDeps } from "../../src/pipeline_support.js";
+import { type StageDeps } from "../../src/pipeline_support.js";
 import { promptPath } from "../../src/paths.js";
 import type { Core } from "../../src/discovery/core/schema.js";
 import type { Stage0_5CoreResult } from "../../src/discovery/stages/d0_5_core.js";
@@ -56,7 +55,7 @@ const review: Stage0_5CoreResult = {
   citation_verification_required: [],
 };
 
-/** Mock editor: overwrites CORE_FILE with `coreBody` (the .tex is re-rendered by the stage). */
+/** Mock editor: overwrites CORE_FILE with `coreBody`. */
 function makeDeps(coreBody: string): StageDeps {
   return {
     runCodex: async ({ prompt }: { prompt: string }) => {
@@ -81,7 +80,7 @@ async function seed(ctx: PipelineContext): Promise<void> {
   await writeFile(cp, goldenCore, "utf8");
 }
 
-describe("runStage0RCore (D0.R in-place core editor; .tex re-rendered deterministically)", () => {
+describe("runStage0RCore (D0.R provisional core-only editor)", () => {
   beforeAll(async () => {
     repoRoot = await mkdtemp(path.join(os.tmpdir(), "stage0R-"));
     await stubPrompts(repoRoot);
@@ -95,16 +94,36 @@ describe("runStage0RCore (D0.R in-place core editor; .tex re-rendered determinis
     await rm(repoRoot, { recursive: true, force: true });
   });
 
-  it("accepts a revise that keeps the core gate-clean, and re-renders the .tex from it", async () => {
+  it("routes only decision-owned exact proposal taxonomy codes", () => {
+    const mathOnly: Stage0_5CoreResult = {
+      ...review,
+      verdicts: [{
+        referee: "math",
+        verdict: "revise",
+        findings: [{ node_id: "thm:lower", code: "assumption_omitted", one_line: "math premise" }],
+        cited_checks: [],
+      }],
+    };
+    expect(proposalFindingRoute(mathOnly)).toBeNull();
+
+    const decisionDrift: Stage0_5CoreResult = {
+      ...review,
+      verdicts: [{
+        referee: "decision",
+        verdict: "revise",
+        findings: [{ node_id: "thm:lower", code: "proposal_drift", one_line: "wrong anchor" }],
+        cited_checks: [],
+      }],
+    };
+    expect(proposalFindingRoute(decisionDrift)?.action).toMatch(/D-1\.2|redraft|re-anchor/i);
+  });
+
+  it("accepts a revise that keeps the core gate-clean without publishing another artifact", async () => {
     const ctx = makeCtx(repoRoot);
     await seed(ctx);
     const res = await runStage0RCore({ ctx, state: makeState(), deps: makeDeps(goldenCore), review });
     expect(res.coreJsonPath).toBe(coreJsonPath(ctx));
-    expect(res.texPath).toBe(artifactPaths(ctx, makeState()).tex);
-    // the .tex is regenerated from the core (not hand-edited)
-    expect(existsSync(res.texPath)).toBe(true);
-    const tex = await readFile(res.texPath, "utf8");
-    expect(tex).toContain("\\label{thm:lower}");
+    expect(await readFile(res.coreJsonPath, "utf8")).toContain('"id": "thm:lower"');
   });
 
   it("ESCALATES (no throw) when the revise leaves a gate violation (A6 membership)", async () => {
@@ -136,6 +155,41 @@ describe("runStage0RCore (D0.R in-place core editor; .tex re-rendered determinis
     const res = await runStage0RCore({ ctx, state: makeState(), deps: failDeps, review });
     expect(res.escalate).toBeDefined();
     expect(res.escalate?.reason).toMatch(/open converse/i);
+  });
+
+  it("routes a durable proposal-promise mismatch to the orchestrator without dispatching D0.R", async () => {
+    const ctx = makeCtx(repoRoot);
+    await seed(ctx);
+    let dispatched = false;
+    const proposalReview: Stage0_5CoreResult = {
+      ...review,
+      verdicts: [
+        { referee: "math", verdict: "pass", findings: [], cited_checks: [] },
+        {
+          referee: "decision",
+          verdict: "revise",
+          findings: [{
+            node_id: "thm:lower",
+            code: "novelty-kernel-substituted",
+            one_line: "the delivered kernel is narrower than the durable proposal topic",
+          }],
+          cited_checks: [],
+        },
+      ],
+    };
+    const deps: StageDeps = {
+      runCodex: async () => {
+        dispatched = true;
+        throw new Error("D0.R must not be dispatched for a state-topic mismatch");
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const res = await runStage0RCore({ ctx, state: makeState(), deps, review: proposalReview });
+    expect(dispatched).toBe(false);
+    expect(res.escalate?.reason).toMatch(/state\.proposed_from\.topic|proposed-topic update/i);
+    expect(JSON.parse(await readFile(coreJsonPath(ctx), "utf8"))).toEqual(JSON.parse(goldenCore));
   });
 
   it("restores the whole core when D0.R edits an orchestrator-maintained assumption", async () => {

@@ -1,0 +1,15 @@
+# Revision routing plan (major_revision)
+
+## holistic revision (reframe)
+- [major·structure·rewrite] (Appendix: Proofs, Auxiliary Arguments, and Verification Note) The appendix contains long proof narratives that repeatedly describe formal verification mechanics rather than the econometric argument, for example the verification table discussion and phrases such as "presentation-synthesized definitions acquire checked status when separately named by a checked declaration in the verification contract." This material weakens the paper's readability as a journal submission even though the theorem claims are verified.
+- [major·structure·rewrite] (Fixed Geometry and Feasible Cell Weight Learning) The object titled "Geometry handle Q_{n,h}^{\mathfrak g}" is presented as a definition but contains substantive chi-square and total-variation inequalities: "the corresponding least-favorable laws satisfy..." This is a proved separation claim, not notation.
+- [major·structure·rewrite] (Setup, Transport, and Honest Risk) The finite-cell class definition repeats the full \mathcal P_n assumption checklist immediately after the text already defines \mathcal N_n={P\in\mathcal P_n:P satisfies \cref{obj:ass:finite-cell-source}}. This obscures the simple nesting relationship and burdens the reader with duplicated assumptions.
+- [minor·prose·rewrite] (Oracle Frontier and Score Inversion) The "Nonempty admissible carrier" bullet in \cref{obj:thm:oracle-score-inversion-attainment} can still make readers think the global oracle score rule is conditional on a fixed geometry, even though the procedure is evaluated law by law with each law's canonical weight and propensity.
+- [minor·structure·rewrite] (Fixed Geometry and Feasible Cell Weight Learning / Appendix) The no-shift result is stated before the general fixed-geometry theorem but its proof invokes \cref{obj:thm:fixed-geometry-frontier}. This makes the logical dependency harder to follow.
+- [minor·prose·rewrite] (Setup, Transport, and Honest Risk) The paper repeatedly labels assumptions as "standard" while also using specialized variants, for example receipt transport is imposed only after averaging over the target law. The prose does note this distinction, but the surrounding wording can make the assumptions sound more conventional than they are.
+- [nit·prose·rewrite] (global) The manuscript contains many Lean-oriented inline symbols and references, such as \leanref{S-1}{...} and \leanref{sym:k_n}{...}. These may be useful for artifact traceability but interrupt the reader-facing exposition.
+
+## escalate — out of causalsmith scope (bank/causalsmith)
+- [minor·citation·citation_research] (Related Literature and Discussion) The close recent references are named but not yet bibliographically unambiguous in the manuscript excerpt, especially Chen--Huang, Ross et al., and Smucler--Lanni--Masip. Because these papers define the nearest comparison class, readers need enough bibliographic detail to locate them and assess novelty.
+
+→ one holistic reframe pass; formal statements remain frozen

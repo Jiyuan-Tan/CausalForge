@@ -37,7 +37,7 @@ variable (G : DAG V)
 -- ============================================================
 
 /-- A vertex with no incoming edges has no proper ancestors. -/
-private lemma not_isAncestor_of_root {r : V}
+lemma not_isAncestor_of_root' {r : V}
     (hr : ∀ u, ¬ G.edge u r) (u : V) : ¬ G.isAncestor u r := by
   intro h
   cases h with
@@ -123,7 +123,7 @@ theorem dSep_union_roots_right {X Y Z R : Finset V}
         · refine Finset.mem_union_right _ ?_
           simp only [ancestorsSet, Finset.mem_filter, Finset.mem_univ, true_and]
           exact ⟨w, hwZ, hma⟩
-        · exact absurd hma (G.not_isAncestor_of_root (hRoots w hwR) m)
+        · exact absurd hma (G.not_isAncestor_of_root' (hRoots w hwR) m)
     · -- Non-collider case.
       simp only [hColl, if_false] at hc
       simp only [hColl, if_false]

@@ -103,15 +103,14 @@ theorem measurable_sSup_image_of_countable_dense {Ω ι : Type*} [MeasurableSpac
       exact ⟨π, Set.mem_univ _, rfl⟩
   rw [huniv, sSup_range]
 
-/-- A uniform absolute bound `|F ω π| ≤ C` over the index class `S` makes the image
-`(F ω) '' S` bounded above (for every `ω`).  Companion `BddAbove` fact accompanying the
-integrability lemma. -/
+/-- A uniform upper bound `F ω π ≤ C` over the index class `S` makes the image `(F ω) '' S`
+bounded above (for every `ω`).  Companion `BddAbove` fact accompanying the integrability lemma. -/
 theorem bddAbove_image_of_bound {Ω ι : Type*} (S : Set ι) (F : Ω → ι → ℝ) (C : ℝ)
-    (hbound : ∀ ω, ∀ π ∈ S, |F ω π| ≤ C) (ω : Ω) :
+    (hbound : ∀ ω, ∀ π ∈ S, F ω π ≤ C) (ω : Ω) :
     BddAbove ((fun π => F ω π) '' S) := by
   exact bddAbove_def.mpr ⟨C, by
     rintro _ ⟨π, hπ, rfl⟩
-    exact (le_abs_self _).trans (hbound ω π hπ)⟩
+    exact hbound ω π hπ⟩
 
 /-- On a finite measure, the pointwise supremum `ω ↦ sSup ((F ω) '' S)` over a
 countable-dense-skeletoned index class is integrable, given per-index measurability on the
@@ -136,7 +135,8 @@ theorem integrable_sSup_image_of_countable_dense {Ω ι : Type*} [MeasurableSpac
     · obtain ⟨y, hy⟩ := hne
       rcases hy with ⟨π, hπ, rfl⟩
       exact (abs_le.mp (hbound ω π hπ)).1.trans
-        (le_csSup (bddAbove_image_of_bound S F C hbound ω) ⟨π, hπ, rfl⟩)
+        (le_csSup (bddAbove_image_of_bound S F C
+          (fun ω π hπ => (le_abs_self _).trans (hbound ω π hπ)) ω) ⟨π, hπ, rfl⟩)
     · refine csSup_le hne fun y hy => ?_
       rcases hy with ⟨π, hπ, rfl⟩
       exact (abs_le.mp (hbound ω π hπ)).2

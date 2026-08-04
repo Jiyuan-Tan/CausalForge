@@ -66,7 +66,7 @@ noncomputable def marginalizeOnObserved [∀ n, Fintype (Ω n)]
     (O W : Finset (SWIGNode N)) (hW : W ⊆ O)
     (q : ValuesOn O (swigΩ Ω) → ENNReal) :
     ValuesOn O (swigΩ Ω) → ENNReal :=
-  fun x => ∑ y : ValuesOn W (swigΩ Ω), q (overrideOn hW x y)
+  fun x => ∑ y : ValuesOn W (swigΩ Ω), q (overrideOn x y)
 
 /-- Observed-set form of `SCM.extractDistrict`. -/
 noncomputable def extractDistrictObserved [∀ n, Fintype (Ω n)]
@@ -117,7 +117,7 @@ decreasing_by
 @[simp] lemma marginalizeOnObserved_eq_marginalizeOn [∀ n, Fintype (Ω n)]
     (M : Causalean.SCM N Ω) (W : Finset (SWIGNode N)) (hW : W ⊆ M.observed)
     (q : ValuesOn M.observed (swigΩ Ω) → ENNReal) :
-    marginalizeOnObserved M.observed W hW q = M.marginalizeOn W hW q := by
+    marginalizeOnObserved M.observed W hW q = SCM.marginalizeOn M.observed W hW q := by
   rfl
 
 @[simp] lemma extractDistrictObserved_eq_extractDistrict [∀ n, Fintype (Ω n)]
@@ -125,7 +125,7 @@ decreasing_by
     (A C' : Finset (SWIGNode N)) (hA : A ⊆ M.observed)
     (q : ValuesOn M.observed (swigΩ Ω) → ENNReal) :
     extractDistrictObserved M.observed G' A C' hA q =
-      M.extractDistrict G' A C' hA q := by
+      SCM.extractDistrict M.observed G' A C' hA q := by
   funext x
   unfold extractDistrictObserved SCM.extractDistrict
   rfl
@@ -135,14 +135,14 @@ lemma identifyMassRecObserved_eq_identifyMassRec [∀ n, Fintype (Ω n)]
     (T C : Finset (SWIGNode N)) (hT : T ⊆ M.observed)
     (q : ValuesOn M.observed (swigΩ Ω) → ENNReal) :
     identifyMassRecObserved M.observed G T C hT q =
-      M.identifyMassRec G T C hT q := by
+      SCM.identifyMassRec M.observed G T C hT q := by
   classical
   let P : ℕ → Prop := fun n =>
     ∀ (T C : Finset (SWIGNode N)) (hT : T ⊆ M.observed)
       (q : ValuesOn M.observed (swigΩ Ω) → ENNReal),
       T.card = n →
         identifyMassRecObserved M.observed G T C hT q =
-          M.identifyMassRec G T C hT q
+          SCM.identifyMassRec M.observed G T C hT q
   have hP : ∀ n, P n := by
     intro n
     induction n using Nat.strong_induction_on with
@@ -192,7 +192,7 @@ reference atom. -/
   fun x =>
     if hC : C ⊆ M.observed then
       if hSobs : S ⊆ M.observed then
-        M.identifyMassRec M.toSWIGGraph C S hC
+        SCM.identifyMassRec M.observed M.toSWIGGraph C S hC
           (fun x' =>
             (∏ i ∈ Finset.univ.filter
                 (fun i : Fin M.observed.card => (M.observedAt i).val ∈ C),
@@ -290,8 +290,8 @@ lemma recoveredFactorRec_heq_of_obsKernel_heq
   · by_cases hSobs : S ⊆ observed₁
     · rw [dif_pos hC, dif_pos hSobs, dif_pos hC, dif_pos hSobs]
       change
-        M₁'.identifyMassRec M₁'.toSWIGGraph C S hC _ x / _ =
-          M₂'.identifyMassRec M₂'.toSWIGGraph C S hC _ x / _
+        SCM.identifyMassRec M₁'.observed M₁'.toSWIGGraph C S hC _ x / _ =
+          SCM.identifyMassRec M₂'.observed M₂'.toSWIGGraph C S hC _ x / _
       rw [← identifyMassRecObserved_eq_identifyMassRec M₁' M₁'.toSWIGGraph C S hC]
       rw [← identifyMassRecObserved_eq_identifyMassRec M₂' M₂'.toSWIGGraph C S hC]
       have hseed :
@@ -476,7 +476,7 @@ theorem doAncestralDistrictDensity_recovered_from_obs_rec
       _ = M.qLocalMass sObs C hCobs x' := by
               exact ENNReal.div_mul_cancel hatom0 hatomtop
   have hidentify :
-      M.identifyMassRec M.toSWIGGraph C S hCobs
+      SCM.identifyMassRec M.observed M.toSWIGGraph C S hCobs
           (fun x' =>
             (∏ i ∈ Finset.univ.filter
                 (fun i : Fin M.observed.card => (M.observedAt i).val ∈ C),
@@ -532,13 +532,15 @@ theorem doObsKernelAncestralMarginal_heq_of_obsDensity_heq_rec
     (_hsg₁ : M₁.toSWIGGraph = G) (_hsg₂ : M₂.toSWIGGraph = G)
     (_hdom₁ : DominatedObs M₁ ref) (_hdom₂ : DominatedObs M₂ ref)
     (hpos₁ : DiscreteID.DiscretePositive M₁) (hpos₂ : DiscreteID.DiscretePositive M₂)
-    (hYX : ∀ D ∈ X, SWIGNode.random D ∉ Y)
     (_hden : HEq (M₁.obsDensity ref) (M₂.obsDensity ref))
     (hvalid₁ : interventionalQueryValid X Y M₁)
     (hvalid₂ : interventionalQueryValid X Y M₂) :
     HEq (doObsKernelAncestralMarginal M₁ X hvalid₁.1 hvalid₁.2.1 Y)
         (doObsKernelAncestralMarginal M₂ X hvalid₂.1 hvalid₂.2.1 Y) := by
   classical
+  have hYX : ∀ D ∈ X, SWIGNode.random D ∉ Y := by
+    rcases _hID with ⟨_hX, hIDrest⟩
+    exact hIDrest.2.1
   have hobs : HEq M₁.obsKernel M₂.obsKernel :=
     obsKernel_heq_of_obsDensity_heq M₁ M₂ ref (_hsg₁.trans _hsg₂.symm)
       _hdom₁ _hdom₂ _hden
@@ -582,7 +584,7 @@ theorem doObsKernelAncestralMarginal_heq_of_obsDensity_heq_rec
   subst aco₂
   apply heq_of_eq
   refine ProbabilityTheory.Kernel.ext (fun s => ?_)
-  refine MeasureTheory.Measure.eq_of_rnDeriv_eq (hfin1 s) (hfin2 s)
+  refine MeasureTheory.Measure.eq_of_rnDeriv_eq
     (doObsKernelAncestralMarginal_dominated _ X hvalid₁.1 hvalid₁.2.1 Y ref href s)
     (doObsKernelAncestralMarginal_dominated _ X hvalid₂.1 hvalid₂.2.1 Y ref href s) ?_
   have w1 := doObsKernelAncestralMarginal_tian_cfactorization_density _ X hvalid₁.1 hvalid₁.2.1
@@ -759,7 +761,6 @@ theorem doObsKernelYMarginal_heq_of_obsDensity_heq_rec
     (_hsg₁ : M₁.toSWIGGraph = G) (_hsg₂ : M₂.toSWIGGraph = G)
     (_hdom₁ : DominatedObs M₁ ref) (_hdom₂ : DominatedObs M₂ ref)
     (hpos₁ : DiscreteID.DiscretePositive M₁) (hpos₂ : DiscreteID.DiscretePositive M₂)
-    (hYX : ∀ D ∈ X, SWIGNode.random D ∉ Y)
     (_hden : HEq (M₁.obsDensity ref) (M₂.obsDensity ref))
     (hvalid₁ : interventionalQueryValid X Y M₁)
     (hvalid₂ : interventionalQueryValid X Y M₂) :
@@ -769,7 +770,7 @@ theorem doObsKernelYMarginal_heq_of_obsDensity_heq_rec
   exact doObsKernelYMarginal_heq_of_ancestralMarginal_heq X Y M₁ M₂ hsg
     hvalid₁.1 hvalid₁.2.1 hvalid₂.1 hvalid₂.2.1 hvalid₁.2.2.1 hvalid₂.2.2.1
     (doObsKernelAncestralMarginal_heq_of_obsDensity_heq_rec X Y G ref href _hID M₁ M₂
-      _hsg₁ _hsg₂ _hdom₁ _hdom₂ hpos₁ hpos₂ hYX _hden hvalid₁ hvalid₂)
+      _hsg₁ _hsg₂ _hdom₁ _hdom₂ hpos₁ hpos₂ _hden hvalid₁ hvalid₂)
 
 /-- Recursive observational-kernel wrapper.  Equal observational kernels give
 equal observational densities, which feed the recursive density core. -/
@@ -784,14 +785,13 @@ theorem doObsKernelYMarginal_heq_of_obsKernel_heq_rec
     (hsg₁ : M₁.toSWIGGraph = G) (hsg₂ : M₂.toSWIGGraph = G)
     (hdom₁ : DominatedObs M₁ ref) (hdom₂ : DominatedObs M₂ ref)
     (hpos₁ : DiscreteID.DiscretePositive M₁) (hpos₂ : DiscreteID.DiscretePositive M₂)
-    (hYX : ∀ D ∈ X, SWIGNode.random D ∉ Y)
     (hobs : HEq M₁.obsKernel M₂.obsKernel)
     (hvalid₁ : interventionalQueryValid X Y M₁)
     (hvalid₂ : interventionalQueryValid X Y M₂) :
     HEq (doObsKernelYMarginal M₁ X hvalid₁.1 hvalid₁.2.1 Y hvalid₁.2.2.1)
         (doObsKernelYMarginal M₂ X hvalid₂.1 hvalid₂.2.1 Y hvalid₂.2.2.1) :=
   doObsKernelYMarginal_heq_of_obsDensity_heq_rec X Y G ref href hID M₁ M₂ hsg₁ hsg₂
-    hdom₁ hdom₂ hpos₁ hpos₂ hYX
+    hdom₁ hdom₂ hpos₁ hpos₂
     (obsDensity_heq_of_obsKernel_heq M₁ M₂ ref (hsg₁.trans hsg₂.symm) hobs)
     hvalid₁ hvalid₂
 
@@ -809,7 +809,6 @@ theorem doKernelY_eq_cfactor_decomposition_rec
     (_hsg₁ : M₁.toSWIGGraph = G) (_hsg₂ : M₂.toSWIGGraph = G)
     (_hdom₁ : DominatedObs M₁ ref) (_hdom₂ : DominatedObs M₂ ref)
     (hpos₁ : DiscreteID.DiscretePositive M₁) (hpos₂ : DiscreteID.DiscretePositive M₂)
-    (hYX : ∀ D ∈ X, SWIGNode.random D ∉ Y)
     (_hobs : HEq M₁.obsKernel M₂.obsKernel)
     (hvalid₁ : interventionalQueryValid X Y M₁)
     (hvalid₂ : interventionalQueryValid X Y M₂) :
@@ -822,9 +821,9 @@ theorem doKernelY_eq_cfactor_decomposition_rec
   exact doKernelY_eq_of_doObsKernel_heq X Y M₁ M₂ hsg
     hvalid₁.1 hvalid₁.2.1 hvalid₂.1 hvalid₂.2.1 hvalid₁.2.2.1 hvalid₂.2.2.1
     (standardFixedValues M₁ hvalid₁.2.2.2) (standardFixedValues M₂ hvalid₂.2.2.2)
-    (standardFixedValues_heq M₁ M₂ hsg hvalid₁.2.2.2 hvalid₂.2.2.2)
+    (standardFixedValues_heq M₁ M₂ (congrArg SWIGGraph.fixed hsg) hvalid₁.2.2.2)
     (doObsKernelYMarginal_heq_of_obsKernel_heq_rec X Y G ref href _hID M₁ M₂ _hsg₁ _hsg₂
-      _hdom₁ _hdom₂ hpos₁ hpos₂ hYX _hobs hvalid₁ hvalid₂)
+      _hdom₁ _hdom₂ hpos₁ hpos₂ _hobs hvalid₁ hvalid₂)
 
 /-- **Soundness of the full recursive ID algorithm for finite discrete-positive models.**
 A successful recursive certificate identifies the interventional query among
@@ -843,19 +842,16 @@ theorem id_sound_rec [∀ n, StandardBorelSpace (Ω n)] [∀ n, Nonempty (Ω n)]
         (interventionalQuery (Ω := Ω) X Y) := by
   classical
   intro hID M₁ M₂ hsg₁ hsg₂ _ _ hM₁ hM₂ hobs
-  have hYX : ∀ D ∈ X, SWIGNode.random D ∉ Y := by
-    rcases hID with ⟨_hX, hIDrest⟩
-    exact hIDrest.2.1
   have hvalid_iff :
       interventionalQueryValid X Y M₁ ↔ interventionalQueryValid X Y M₂ :=
-    interventionalQueryValid_iff_of_obsKernel_heq
-      (Ω := Ω) X Y G M₁ M₂ hsg₁ hsg₂ hobs
+    interventionalQueryValid_iff_of_toSWIGGraph_eq
+      (Ω := Ω) X Y M₁ M₂ (hsg₁.trans hsg₂.symm)
   by_cases hvalid₁ : interventionalQueryValid X Y M₁
   · have hvalid₂ : interventionalQueryValid X Y M₂ := hvalid_iff.mp hvalid₁
     rw [interventionalQuery_eq_doKernelY_of_valid (Ω := Ω) X Y M₁ hvalid₁,
       interventionalQuery_eq_doKernelY_of_valid (Ω := Ω) X Y M₂ hvalid₂]
     exact doKernelY_eq_cfactor_decomposition_rec
-      (Ω := Ω) X Y G ref href hID M₁ M₂ hsg₁ hsg₂ hM₁.1 hM₂.1 hM₁.2 hM₂.2 hYX
+      (Ω := Ω) X Y G ref href hID M₁ M₂ hsg₁ hsg₂ hM₁.1 hM₂.1 hM₁.2 hM₂.2
       hobs hvalid₁ hvalid₂
   · have hvalid₂ : ¬ interventionalQueryValid X Y M₂ := by
       intro h
@@ -883,17 +879,5 @@ theorem id_sound_rec_discrete
     (fun M => DominatedObs M (countingRef (Ω := Ω)) ∧ DiscretePositive M)
     StandardDiscretePositive (interventionalQuery (Ω := Ω) X Y)
     (fun _ h => h) (fun M hM => ⟨dominatedObs_countingRef M, hM.2⟩) hdom
-
-/-- **The no-fixing discrete headline is subsumed by the recursive one.**  A sanity
-corollary: `id_sound_discrete` follows from `id_sound_rec_discrete` through the
-certificate subsumption `idSucceeds_toRec`. -/
-theorem id_sound_discrete_of_rec
-    [∀ n, StandardBorelSpace (Ω n)] [∀ n, Nonempty (Ω n)]
-    [∀ n, Fintype (Ω n)] [∀ n, MeasurableSingletonClass (Ω n)]
-    (X : Finset N) (Y : Finset (SWIGNode N)) (G : SWIGGraph N)
-    (h : idSucceeds X Y G) :
-    IdentifiableUnder G (fun _ => True) StandardDiscretePositive
-      (interventionalQuery (Ω := Ω) X Y) :=
-  id_sound_rec_discrete X Y G (idSucceeds_toRec X Y G h)
 
 end Causalean.SCM.ID

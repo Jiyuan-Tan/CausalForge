@@ -362,7 +362,7 @@ theorem normalizedTypeWeight_sum_eq_one_of_pos
     (hden : 0 < R.typeWeightDenom I) :
     ∑ g : ResponseType K, R.normalizedTypeWeight I g = 1 := by
   exact Causalean.Panel.Weighted.NormalizedWeights.sum_normalizedWeight_eq_one
-    (R.unnormTypeWeight I) hden
+    (R.unnormTypeWeight I) hden.ne'
 
 /-- Response-type form of the finite MTW ratio
 (`prop:po-estimand-mtw-response-type-form`). -/

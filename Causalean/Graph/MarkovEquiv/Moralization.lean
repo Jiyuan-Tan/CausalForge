@@ -73,24 +73,24 @@ theorem moralAdj_symm {S : Finset V} {u v : V} (h : G.MoralAdj S u v) :
 -- ============================================================
 
 /-- A single moral step yields moral connectivity. -/
-private theorem moralConn_of_step {S Z : Finset V} {u v : V}
+theorem moralConn_of_step {S Z : Finset V} {u v : V}
     (h : G.MoralStep S Z u v) : G.MoralConn S Z u v :=
   Relation.ReflTransGen.single h
 
 /-- Moral connectivity is transitive. -/
-private theorem moralConn_trans {S Z : Finset V} {u v w : V}
+theorem moralConn_trans {S Z : Finset V} {u v w : V}
     (h₁ : G.MoralConn S Z u v) (h₂ : G.MoralConn S Z v w) : G.MoralConn S Z u w :=
   Relation.ReflTransGen.trans h₁ h₂
 
 /-- A skeleton edge between two non-`Z` vertices of `S` is a moral step. -/
-private theorem moralStep_of_uAdj {S Z : Finset V} {u v : V}
+theorem moralStep_of_uAdj {S Z : Finset V} {u v : V}
     (hne : u ≠ v) (hu : u ∈ S) (hv : v ∈ S) (hadj : G.UAdj u v)
     (huZ : u ∉ Z) (hvZ : v ∉ Z) : G.MoralStep S Z u v :=
   ⟨⟨hne, hu, hv, Or.inl hadj⟩, huZ, hvZ⟩
 
 /-- A married pair (common child `c ∈ S`) of distinct non-`Z` vertices of `S` is a
 moral step. -/
-private theorem moralStep_of_married {S Z : Finset V} {u v c : V}
+theorem moralStep_of_married {S Z : Finset V} {u v c : V}
     (hne : u ≠ v) (hu : u ∈ S) (hv : v ∈ S) (hc : c ∈ S)
     (huc : G.edge u c) (hvc : G.edge v c) (huZ : u ∉ Z) (hvZ : v ∉ Z) :
     G.MoralStep S Z u v :=
@@ -100,39 +100,36 @@ private theorem moralStep_of_married {S Z : Finset V} {u v c : V}
 -- Active-path cons destructors (local copies, the originals are file-private)
 -- ============================================================
 
-/-- Head adjacency of a cons active path. -/
-private theorem activePath_head_uAdj {Z : Finset V} {a b : V} {r : List V}
+/-- In an active path whose first two vertices are `a` and `b`, those vertices are adjacent in
+the underlying undirected graph. -/
+theorem activePath_head_uAdj {Z : Finset V} {a b : V} {r : List V}
     (h : G.IsActivePath Z (a :: b :: r)) : G.UAdj a b := by
   have := h.1 0 (by simp)
   simpa using this
 
-/-- The collider/non-collider clause at the head triple of a cons active path. -/
-private theorem activePath_head_triple {Z : Finset V} {a b c : V} {r : List V}
+/-- In an active path whose first three vertices are `a`, `b`, and `c`, the middle vertex obeys
+the active-path condition: a collider belongs to the ancestral closure of the conditioning set,
+and a non-collider is not conditioned on. -/
+theorem activePath_head_triple {Z : Finset V} {a b c : V} {r : List V}
     (h : G.IsActivePath Z (a :: b :: c :: r)) :
     if G.IsCollider a b c then b ∈ G.bbZAncestors Z else b ∉ Z := by
   have := h.2 0 (by simp)
   simpa using this
 
-/-- The tail of a cons active path is active. -/
-private theorem activePath_tail {Z : Finset V} {a b : V} {r : List V}
-    (h : G.IsActivePath Z (a :: b :: r)) : G.IsActivePath Z (b :: r) := by
-  obtain ⟨hadj, hcoll⟩ := h
-  refine ⟨fun i hi => ?_, fun i hi => ?_⟩
-  · have h' := hadj (i + 1) (by simpa [Nat.add_assoc] using Nat.succ_lt_succ hi)
-    simpa using h'
-  · have h' := hcoll (i + 1) (by simpa [Nat.add_assoc] using Nat.succ_lt_succ hi)
-    simpa [Nat.add_assoc] using h'
-
-/-- The `drop 2` of an active path `a :: b :: c :: r` is the active path `c :: r`. -/
-private theorem activePath_drop2 {Z : Finset V} {a b c : V} {r : List V}
+/-- Removing the first two vertices of an active path with at least three vertices leaves an
+active path. -/
+theorem activePath_drop2 {Z : Finset V} {a b c : V} {r : List V}
     (h : G.IsActivePath Z (a :: b :: c :: r)) : G.IsActivePath Z (c :: r) :=
-  G.activePath_tail (G.activePath_tail h)
+  G.isActivePath_cons_tail (G.isActivePath_cons_tail h)
 
 -- ============================================================
 -- Direction 1: an active path induces a moral path (active ⇒ moral)
 -- ============================================================
 
-/-- **Active path ⇒ moral path (core induction).** If `p` is an active path given `Z`
+/-- An active path inside a ground set, with endpoints outside the conditioning set,
+induces a connection in the corresponding moral graph.
+
+If `p` is an active path given `Z`
 of length ≥ 2, all of whose nodes lie in the ground set `S`, and both endpoints avoid
 `Z`, then the head and last of `p` are moral-connected inside `S` avoiding `Z`.
 
@@ -140,7 +137,7 @@ The moral path threads the *non-collider* vertices of `p`: consecutive non-colli
 skeleton-adjacent, and across a collider apex `b` (skipped) the two flanking parents are
 married through `b ∈ S`. The proof is strong induction on `p.length`, peeling one vertex
 (skeleton step) or two vertices (across a collider) from the front. -/
-private theorem moralConn_of_activePath
+theorem moralConn_of_activePath
     {S Z : Finset V} :
     ∀ (n : ℕ) {x y : V} {p : List V}, p.length ≤ n →
     G.IsActivePath Z p → p.length ≥ 2 →
@@ -195,7 +192,7 @@ private theorem moralConn_of_activePath
               exact hstep hyZ
           | d :: r'', hp, hn, hnodes, hlast =>
               -- triple `(b, c, d)`; `c` cannot be a collider (would clash with `b`).
-              have htri2 := G.activePath_head_triple (G.activePath_tail hp)
+              have htri2 := G.activePath_head_triple (G.isActivePath_cons_tail hp)
               have hncoll2 : ¬ G.IsCollider b c d := by
                 rintro ⟨hbc, _⟩
                 exact G.asymm hcb_edge hbc
@@ -215,7 +212,7 @@ private theorem moralConn_of_activePath
           have hstep : G.MoralConn S Z a b :=
             G.moralConn_of_step (G.moralStep_of_uAdj hne haS hbS hadj_ab hxZ hbZ)
           have hrest : G.MoralConn S Z b y := by
-            apply ih (p := b :: c :: r') (by simp at hn ⊢; omega) (G.activePath_tail hp)
+            apply ih (p := b :: c :: r') (by simp at hn ⊢; omega) (G.isActivePath_cons_tail hp)
               (by simp) (fun v hv => hnodes v (by simp [hv])) rfl (by simpa using hlast) hbZ hyZ
           exact G.moralConn_trans hstep hrest
 
@@ -331,9 +328,9 @@ private theorem bbReachableVertices_of_descent {X Z : Finset V} {a w : V}
     w ∈ G.bbReachableVertices Z X :=
   Finset.mem_image.mpr ⟨(w, BBDir.fromParent), G.bbReach_descent ha_reach haAncZ haw, rfl⟩
 
-/-- Membership in `An(A)` as either membership in the seed `A` (descend trivially) or being
-a strict ancestor of a seed element. -/
-private theorem ancestralSet_cases {A : Finset V} {a : V} (h : a ∈ G.ancestralSet A) :
+/-- A vertex in the ancestral closure of a set either belongs to that set itself or is a strict
+ancestor of one of its elements. -/
+theorem ancestralSet_cases {A : Finset V} {a : V} (h : a ∈ G.ancestralSet A) :
     a ∈ A ∨ ∃ w ∈ A, G.isAncestor a w := by
   rcases Finset.mem_union.mp h with hA | hAnc
   · exact Or.inl hA

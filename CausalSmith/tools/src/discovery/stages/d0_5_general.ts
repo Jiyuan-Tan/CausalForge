@@ -1,7 +1,6 @@
 // D0.5.G — the COLD general referee (rubric-free, fresh eyes).
 //
-// Runs only after D0.5.2 (the rubric reviewer) reaches ACCEPT and a novelty
-// target is set. Anti-Goodhart: the rubric became the producer's optimization
+// Anti-Goodhart: the rubric became the producer's optimization
 // target (and the statement_correction route literally rewrites the headline
 // until the rubric is satisfied), so rubric-compliance stopped measuring
 // quality. This referee is given ONLY the paper + plain tier definitions — never
@@ -16,15 +15,24 @@
 //   tier < floor, NOT salvageable → ACCEPT downgraded to REJECT + `halt_reason`,
 //                               which runReviewBoundary short-circuits to a clean
 //                               checkpoint (pipeline halts for the user).
+//
+// TWO CALL ROLES (see runStage0_5Typed). The AUTHORITATIVE call is the one on the
+// round the core panel passes — it decides the accept, exactly as above. A second
+// TRIAGE call is dispatched CONCURRENTLY with the panel on the first round of a D0.5
+// invocation, so that the non-pass exits (math `fail`, the convergence backstops, D0.R
+// self-escalation, cap exhaustion) carry a tier at all: every one of them routes back
+// to a D0 re-solve, the priciest step in the pipeline, and used to do so blind to
+// whether the note could ever clear the floor. `decideTriageKill` below is the ONLY
+// authority a triage read has to end a run early, and it is deliberately narrow.
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
-import { MODEL_PLAN } from "../../constants.js";
+import { D0_5_TRIAGE_MARKER, MODEL_PLAN } from "../../constants.js";
 import { runReferee } from "../framework/referee.js";
 import type { ReviewResult } from "../../judgment.js";
 import { formalizationDir, resolveInDir } from "../../paths.js";
 import {
-  baseBrief,
+  discoveryBrief,
   readIfExists,
   readPrompt,
   type StageDeps,
@@ -177,7 +185,7 @@ export async function runGeneralReview(args: {
   const prompt = [
     await readPrompt(args.ctx, "stage0_5_general_review.txt"),
     "",
-    baseBrief(args.ctx, args.state),
+    discoveryBrief(args.ctx, args.state),
     "",
     `novelty_target: ${target}  (floor tier you must clear: ${floor})`,
     "",
@@ -219,6 +227,9 @@ export async function runGeneralReview(args: {
  * `review_rubric.json` (the full per-attempt history lives in `reviews/reviews.jsonl`).
  * The `attempt` and `stage` fields are kept inside the record. Best-effort: errors
  * are logged but never block the pipeline.
+ *
+ * READERS: this file EXISTING no longer means D0.5 passed — the triage call writes it on
+ * non-passing rounds too. `meets_floor` is the pass signal.
  */
 async function persistGeneralReviewJson(
   ctx: PipelineContext,
@@ -259,6 +270,62 @@ async function persistGeneralReviewJson(
 /** Order tiers low→high so the saved record can flag whether the floor was met. */
 export function tierRank(tier: GeneralTier): number {
   return ["incremental", "subfield", "field", "flagship"].indexOf(tier);
+}
+
+/**
+ * May a TRIAGE tier read (taken concurrently with the core panel, BEFORE D0.R has
+ * repaired anything) end the run on its own?
+ *
+ * Only when the referee places the note below the floor AND reports no bounded fix.
+ * That combination is a judgment about the KERNEL, and a directed in-place math repair
+ * does not change the kernel — so spending the rest of the revise cap, and then a D0
+ * re-solve, on it is pure waste.
+ *
+ * A `salvageable` below-floor read deliberately does NOT kill. Two reasons: it names a
+ * bounded upgrade the loop may yet deliver, and the triage referee is reading a draft
+ * whose flagged proofs are still under repair while its prompt asks it to judge what is
+ * PROVED — so it under-tiers. This referee class already over-rejects on complete work
+ * (internal/memory/feedback_topics_gate_over_rejects.md: 7 consecutive field candidates
+ * down-tiered to subfield); handing it a mid-repair draft compounds that. Everything it
+ * says short of "no bounded fix exists" is therefore advisory, and the floor call stays
+ * with the authoritative read on the passing round.
+ */
+export function decideTriageKill(
+  gen: Pick<GeneralReviewResult, "tier" | "salvageable">,
+  target: NoveltyTarget,
+): boolean {
+  return tierRank(gen.tier) < tierRank(TARGET_FLOOR_LABEL[target]) && !gen.salvageable;
+}
+
+/**
+ * One-line provenance of a triage tier read, appended to every non-pass D0.5 checkpoint
+ * message. Those halts all hand the run back for a D0 re-solve; without this the operator
+ * pays for that re-solve with no signal about whether the note can clear the floor.
+ *
+ * WORDING IS LOAD-BEARING. Both the machine classifier and the human/agent orchestrator
+ * decide a D0.5 halt by reading its message, so this note must not be mistakable for the
+ * halt's own verdict. It therefore avoids every token those readers key on: no `PASS`, no
+ * `BELOW NOVELTY FLOOR`, and no `tier=X ≥ floor=Y` — that last one is verbatim the PASS
+ * signal in internal/memory/feedback_d05_verify_verdict_body.md, and emitting it on a
+ * cap-exhausted halt made a non-pass satisfy the documented pass check.
+ * `checkpoint_playbook` additionally cuts the message at D0_5_TRIAGE_MARKER, which requires
+ * this string to OPEN with that marker.
+ */
+export function formatTriageTier(gen: GeneralReviewResult, target: NoveltyTarget): string {
+  const floor = TARGET_FLOOR_LABEL[target];
+  const meets = tierRank(gen.tier) >= tierRank(floor);
+  return (
+    `${D0_5_TRIAGE_MARKER} — advisory context only, NOT the verdict for this halt (a cold read of ` +
+    `this invocation's first-round draft, taken while the panel was still reviewing). ` +
+    `Graded tier '${gen.tier}' against target '${target}' (floor '${floor}'): ` +
+    `${meets ? "meets the bar" : "under the bar"}; ` +
+    `${gen.salvageable ? "salvageable" : "no bounded fix in scope"}. ${gen.critique}` +
+    (meets
+      ? ""
+      : ` A re-solve that does not lift the tier will stop here again` +
+        (gen.improvement_directive ? `; the referee's bounded upgrade: ${gen.improvement_directive}` : "") +
+        `.`)
+  );
 }
 
 /** Normalize the harness-parsed referee JSON into the typed review result. The
