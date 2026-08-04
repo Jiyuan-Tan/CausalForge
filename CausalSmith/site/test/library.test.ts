@@ -458,7 +458,7 @@ describe("site library loader", () => {
     const lib = loadLibrary(libraryRoot());
     const core = [
       "Causalean.Mathlib.LinearAlgebra.perm_uniqueness",
-      "Causalean.Mathlib.LinearAlgebra.genPerm_of_invertible_of_colSupport",
+      "Causalean.Mathlib.LinearAlgebra.genPerm_of_det_ne_zero_of_colSupport",
       "Causalean.Mathlib.LinearAlgebra.eq_of_genPerm_triangular_unitDiag",
     ];
     const entries = new Map(lib.entries.map((e) => [e.name, e]));

@@ -117,7 +117,8 @@ lemma finiteDesign_abs_E_mul_le_sqrt
       Real.sqrt (D.E (fun z => f z ^ 2)) *
         Real.sqrt (D.E (fun z => g z ^ 2)) := by
   unfold FiniteDesign.E
-  exact Causalean.Mathlib.Analysis.abs_weighted_inner_le D.p f g D.p_nonneg
+  exact Causalean.Mathlib.Analysis.abs_weighted_inner_le
+    (Finset.univ : Finset Ω) D.p f g (fun i _ => D.p_nonneg i)
 
 /-- Establishes the stated mathematical result for finite design e add sq le. -/
 lemma finiteDesign_E_add_sq_le

@@ -370,7 +370,9 @@ lemma doseWitness_kl_single_le {p0 : (Fin d → ℝ) → ℝ} {q0 : ℝ → ℝ}
         = ∫⁻ b, InformationTheory.klDiv (κ b) (η b) ∂m := by
     rw [doseDataMeasure_eq_AXbind, doseDataMeasure_eq_AXbind]
     exact Causalean.Mathlib.InformationTheory.Measure.klDiv_bind_eq_of_base_recording
-      (m := m) (κ := κ) (η := η) (proj := proj) hproj hgraph hκ_fib hη_fib hκη
+      (m := m) (κ := κ) (η := η) (proj := proj) hproj hgraph
+      (Filter.Eventually.of_forall hκ_fib) (Filter.Eventually.of_forall hη_fib)
+      (Filter.Eventually.of_forall hκη)
   have hfiber_bound : ∀ b,
       InformationTheory.klDiv (κ b) (η b) ≤
         ENNReal.ofReal (K * doseBump ((b.1 - t0) / h) ^ 2) := by
@@ -405,8 +407,13 @@ lemma doseWitness_kl_single_le {p0 : (Fin d → ℝ) → ℝ} {q0 : ℝ → ℝ}
     calc
       InformationTheory.klDiv (κ b) (η b)
           = InformationTheory.klDiv (twoPointMean B u) (twoPointMean B v) := hmap
-      _ ≤ ENNReal.ofReal (2 * (u - v) ^ 2 / B ^ 2) :=
-          bernoulli_mean_channel_kl B u v hB (hmu_neg_half b.1 b.2) (hmu_pos_half b.1 b.2)
+      _ ≤ ENNReal.ofReal (2 * (u - v) ^ 2 / B ^ 2) := by
+          refine le_trans
+            (bernoulli_mean_channel_kl B u v hB (hmu_neg_half b.1 b.2) (hmu_pos_half b.1 b.2))
+            (ENNReal.ofReal_le_ofReal ?_)
+          rw [mul_div_assoc]
+          have h0 : (0 : ℝ) ≤ (u - v) ^ 2 / B ^ 2 := by positivity
+          linarith
       _ = ENNReal.ofReal (K * doseBump ((b.1 - t0) / h) ^ 2) := by rw [hgap]
   have hK_nonneg : 0 ≤ K := by
     dsimp [K]
@@ -545,7 +552,9 @@ private lemma doseWitness_kl_ne_top_of_half {p0 : (Fin d → ℝ) → ℝ} {q0 :
         = ∫⁻ b, InformationTheory.klDiv (κ b) (η b) ∂m := by
     rw [doseDataMeasure_eq_AXbind, doseDataMeasure_eq_AXbind]
     exact Causalean.Mathlib.InformationTheory.Measure.klDiv_bind_eq_of_base_recording
-      (m := m) (κ := κ) (η := η) (proj := proj) hproj hgraph hκ_fib hη_fib hκη
+      (m := m) (κ := κ) (η := η) (proj := proj) hproj hgraph
+      (Filter.Eventually.of_forall hκ_fib) (Filter.Eventually.of_forall hη_fib)
+      (Filter.Eventually.of_forall hκη)
   have hfiber_le_two : ∀ b, InformationTheory.klDiv (κ b) (η b) ≤ ENNReal.ofReal (2 : ℝ) := by
     intro b
     let u : ℝ := doseWitnessMu (d := d) alpha t0 lambda h zeta₁ b.1 b.2
@@ -573,8 +582,13 @@ private lemma doseWitness_kl_ne_top_of_half {p0 : (Fin d → ℝ) → ℝ} {q0 :
     calc
       InformationTheory.klDiv (κ b) (η b)
           = InformationTheory.klDiv (twoPointMean B u) (twoPointMean B v) := hmap
-      _ ≤ ENNReal.ofReal (2 * (u - v) ^ 2 / B ^ 2) :=
-          bernoulli_mean_channel_kl B u v hB (hmu₁ b.1 b.2) (hmu₂ b.1 b.2)
+      _ ≤ ENNReal.ofReal (2 * (u - v) ^ 2 / B ^ 2) := by
+          refine le_trans
+            (bernoulli_mean_channel_kl B u v hB (hmu₁ b.1 b.2) (hmu₂ b.1 b.2))
+            (ENNReal.ofReal_le_ofReal ?_)
+          rw [mul_div_assoc]
+          have h0 : (0 : ℝ) ≤ (u - v) ^ 2 / B ^ 2 := by positivity
+          linarith
       _ ≤ ENNReal.ofReal (2 : ℝ) := ENNReal.ofReal_le_ofReal hquad
   have hlt :
       (∫⁻ b, InformationTheory.klDiv (κ b) (η b) ∂m) < ∞ := by

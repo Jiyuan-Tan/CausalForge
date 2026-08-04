@@ -15,7 +15,7 @@ This is the **Marcinkiewicz-free** route to LiNGAM identifiability.  Instead of 
 general Darmois–Skitovich theorem (which needs Marcinkiewicz), we assume the
 sources have **non-zero fourth cumulant of one common sign** (a standard ICA
 assumption: all super-Gaussian or all sub-Gaussian).  Then the key column-support
-fact `Wᵢⱼ · Wₖⱼ = 0` — the input to `genPerm_of_invertible_of_colSupport` — follows
+fact `Wᵢⱼ · Wₖⱼ = 0` — the input to `genPerm_of_det_ne_zero_of_colSupport` — follows
 from a single fourth-cumulant identity and a sum-of-same-sign argument, with no
 characteristic-function functional equation at all.
 
@@ -610,7 +610,7 @@ theorem cross_fourth_cumulant_eq_sum {n : ℕ} {e : Ω → Fin n → ℝ} (a b :
 with finite fourth moment and non-zero fourth cumulant of one common sign, and the
 two linear forms `Σⱼ Wᵢⱼ eⱼ` and `Σⱼ Wₖⱼ eⱼ` are independent (for `i ≠ k`), then for
 every `j`, `Wᵢⱼ · Wₖⱼ = 0`.  This is the input required by
-`genPerm_of_invertible_of_colSupport`. -/
+`genPerm_of_det_ne_zero_of_colSupport`. -/
 theorem colSupport_of_kurtosis {n : ℕ} {e : Ω → Fin n → ℝ} {W : Matrix (Fin n) (Fin n) ℝ}
     (hmeas : ∀ j, Measurable (fun ω => e ω j))
     (hindep : iIndepFun (fun j ω => e ω j) P)

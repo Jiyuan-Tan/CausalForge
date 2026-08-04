@@ -1,4 +1,6 @@
 import CausalSmith.Substrate.FiniteExponentialTiltCalculus.Core
+import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+import Mathlib.MeasureTheory.Integral.IntervalIntegral.IntegrationByParts
 
 /-!
 # Integral identities for finite exponential tilts

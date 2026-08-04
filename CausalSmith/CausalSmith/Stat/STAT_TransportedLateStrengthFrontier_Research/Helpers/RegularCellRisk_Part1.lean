@@ -962,6 +962,6 @@ lemma iid_average_variance
           (m : ℝ)⁻¹ * ∑ i, F (sample i))
       (Measure.pi (fun _ : Fin m => μ)) =
       (m : ℝ)⁻¹ * variance F μ := by
-  exact Causalean.Mathlib.Probability.iid_average_variance μ m hm F hF
+  exact Causalean.Mathlib.Probability.iid_average_variance μ m F hF
 
 end CausalSmith.Stat.TransportedLateStrengthFrontier

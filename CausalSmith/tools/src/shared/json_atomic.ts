@@ -23,10 +23,17 @@ import process from "node:process";
  * matches every other store writer in the tree (state.ts, log.ts, graph/store.ts).
  */
 export async function writeJsonAtomic(target: string, value: unknown): Promise<void> {
+  await mkdir(path.dirname(target), { recursive: true });
+  await writeTextAtomic(target, JSON.stringify(value, null, 2));
+}
+
+/** Atomic raw-text variant of `writeJsonAtomic`, for writers that must preserve
+ * exact prior bytes (e.g. transaction rollbacks) rather than re-serialize. */
+export async function writeTextAtomic(target: string, text: string): Promise<void> {
   const temp = `${target}.tmp-${process.pid}-${Date.now()}`;
   await mkdir(path.dirname(target), { recursive: true });
   try {
-    await writeFile(temp, JSON.stringify(value, null, 2), "utf8");
+    await writeFile(temp, text, "utf8");
     await rename(temp, target);
   } finally {
     await rm(temp, { force: true });

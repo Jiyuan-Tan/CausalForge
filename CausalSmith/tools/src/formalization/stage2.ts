@@ -39,7 +39,7 @@ import {
   missingArchitectureLedgerPath,
 } from "../shared/missing_architecture_ledger.js";
 import { seedAnnotations } from "../graph/annotate.js";
-import { extractFromLean } from "../graph/extractor.js";
+import { extractFromLean, parseAnnotatedDecls } from "../graph/extractor.js";
 import { graphPath, loadGraph, saveGraph } from "../graph/store.js";
 import { validate } from "../graph/validator.js";
 import type { FormalizationGraph, Finding } from "../graph/types.js";
@@ -703,6 +703,16 @@ export async function runStage2(args: {
         const planObj = parseJsonWithEscapeRepair(await readFile(paths.plan, "utf8"));
         const leanTags = await parseLeanNodeTags(paths.leanDir);
         const leanDeclNames = new Set((await parseLeanDecls(paths.leanDir, { includeLemmas: true })).map((decl) => decl.name));
+        const annotatedDecls = await parseAnnotatedDecls(paths.leanDir);
+        // The graph on disk is still the pre-F2 snapshot here (linkGraphFromStage2 runs
+        // after this gate), which is what the P7 reviewed-helper exemption needs. A run's
+        // first F2 pass has no graph yet; the exemption simply stays off then.
+        let preF2Graph;
+        try {
+          preF2Graph = await loadGraph(graphPath(paths.formalizationDir, args.ctx.qid, args.ctx.specialization));
+        } catch {
+          preF2Graph = undefined;
+        }
         let knownDecls: Set<string> | undefined;
         try {
           const lib = createRetrieval(args.ctx.repoRoot).library;
@@ -715,7 +725,7 @@ export async function runStage2(args: {
             "[causalsmith] library index unavailable (doc/library_index.json missing/unreadable) — the P5 reuse-existence check is SKIPPED this pass; hallucinated reuse decls will surface only at compile. Run `lake build && lake exe library_index`.",
           );
         }
-        const gate = runPlanGate(planObj, core, { knownDecls, leanTags, leanDeclNames });
+        const gate = runPlanGate(planObj, core, { knownDecls, leanTags, leanDeclNames, preF2Graph, annotatedDecls });
         if (!gate.ok) {
           const blockingViolations = blockingPostSyncPlanViolations(gate.violations);
           if (blockingViolations.length > 0) {

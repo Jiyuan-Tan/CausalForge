@@ -194,7 +194,7 @@ lemma centeredEstimator_mean {n d : ℕ} (P : DiscreteLaw d) (hn : 0 < n) :
   rw [show productLaw P n = Measure.pi (fun _ : Fin n => obsLaw P) by rfl]
   simp_rw [centeredEstimator_eq_scoreMean]
   exact Causalean.Mathlib.Probability.iid_average_integral (obsLaw P) n hn
-    centeredUnitScore (MemLp.of_discrete.integrable (by norm_num))
+    centeredUnitScore .of_finite
 
 -- @node: centeredUnitScore_variance_le_one
 /-- Establishes the stated upper bound for centered Unit Score variance le one. -/
@@ -214,7 +214,7 @@ lemma centeredEstimator_variance_le {n d : ℕ} (P : DiscreteLaw d) (hn : 0 < n)
     variance (fun sample => centeredEstimator sample) (productLaw P n) ≤ 1 / (n : ℝ) := by
   rw [show productLaw P n = Measure.pi (fun _ : Fin n => obsLaw P) by rfl]
   simp_rw [centeredEstimator_eq_scoreMean]
-  rw [Causalean.Mathlib.Probability.iid_average_variance (obsLaw P) n hn
+  rw [Causalean.Mathlib.Probability.iid_average_variance (obsLaw P) n
     centeredUnitScore MemLp.of_discrete]
   calc
     (n : ℝ)⁻¹ * variance centeredUnitScore (obsLaw P)

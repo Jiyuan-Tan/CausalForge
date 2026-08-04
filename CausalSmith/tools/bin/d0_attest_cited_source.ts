@@ -9,6 +9,7 @@ import { CoreSchema } from "../src/discovery/core/schema.js";
 import { coreJsonPath } from "../src/discovery/stages/d0_core.js";
 import { loadWorkingState, saveWorkingState } from "../src/discovery/stages/d0_working.js";
 import { writeJsonAtomic } from "../src/shared/json_atomic.js";
+import { readTypedCore } from "../src/discovery/core/core_io.js";
 import { resolveUpstreamDecision } from "../src/discovery/core/cited_provenance.js";
 
 const USAGE =
@@ -29,7 +30,7 @@ async function main(): Promise<void> {
   const repoRoot = findCausalSmithRoot(process.cwd());
   const ctx: PipelineContext = { repoRoot, qid, specialization: spec, dryRun: false, resume: true };
   const cp = coreJsonPath(ctx);
-  const core = CoreSchema.parse(JSON.parse(await readFile(cp, "utf8")));
+  const core = await readTypedCore(cp);
   const working = await loadWorkingState(ctx);
   if (!working) throw new Error("missing D0 working state");
   const coreNode = core.statements.find((statement) => statement.id === id);

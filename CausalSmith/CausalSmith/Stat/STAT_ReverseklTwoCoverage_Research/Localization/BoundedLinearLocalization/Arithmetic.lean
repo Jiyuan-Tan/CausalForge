@@ -88,7 +88,10 @@ lemma log_five_le_nine_fifths :
   norm_num [Finset.sum_range_succ] at h08
   have he : (5 : ℝ) < Real.exp ((9 : ℝ) / 5) := by
     rw [show (9 : ℝ) / 5 = 1 + 4 / 5 by norm_num, Real.exp_add]
-    nlinarith [Real.exp_one_gt_d9, Real.exp_pos ((4 : ℝ) / 5)]
+    have h1 : (2.7182818283 : ℝ) < Real.exp 1 := Real.exp_one_gt_d9
+    calc (5 : ℝ) < 2.7182818283 * (1 + 4 / 5 + 8 / 25) := by norm_num
+      _ ≤ Real.exp 1 * Real.exp (4 / 5) :=
+          mul_le_mul h1.le h08 (by norm_num) (Real.exp_pos 1).le
   exact (Real.log_le_iff_le_exp (by norm_num : (0 : ℝ) < 5)).2 he.le
 
 lemma projectionThreshold_le_rate

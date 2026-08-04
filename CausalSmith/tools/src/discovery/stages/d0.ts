@@ -50,6 +50,7 @@ import {
 import { type Core, CoreSchema } from "../core/schema.js";
 import { assembleCore } from "../core/assemble.js";
 import { readTypedCore } from "../core/core_io.js";
+import { writeJsonAtomic, writeTextAtomic } from "../../shared/json_atomic.js";
 import { maskNonBoundaryPeriods } from "../../shared/tex_text.js";
 import {
   loadSemanticManifest,
@@ -342,7 +343,7 @@ async function renderAndComplete(args: { ctx: PipelineContext; state: StateJson;
         }
         coreForGate = CoreSchema.parse(assembleCore(proto, working));
         working.store_format = WORKING_STORE_FORMAT;
-        await writeFile(args.corePath, JSON.stringify(coreForGate, null, 2), "utf8");
+        await writeJsonAtomic(args.corePath, coreForGate);
         await saveWorkingState(args.ctx, working);
         pruneNote =
           `\nPruned ${pruned.length} orphan lemma(s) no longer reachable from any result: ${pruned.join(", ")}.` +
@@ -601,9 +602,9 @@ export async function runStage0_5Typed(args: {
   let d0_5Passed = false;
   const rollbackUnvettedD0R = async (): Promise<void> => {
     if (!d0rTouched || d0_5Passed) return;
-    await writeFile(corePath, transaction.core, "utf8");
+    await writeTextAtomic(corePath, transaction.core);
     if (transaction.pending === null) await rm(pendingPath, { force: true });
-    else await writeFile(pendingPath, transaction.pending, "utf8");
+    else await writeTextAtomic(pendingPath, transaction.pending);
     args.state.design_decisions = transaction.designDecisions;
     args.state.added_assumptions = transaction.addedAssumptions;
   };

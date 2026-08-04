@@ -163,8 +163,9 @@ lemma doseDataMeasure_ae_Y_mem_Icc {d : ℕ}
       ∀ x a, ((twoPointMean B (mu a x)).map (fun y => DoseObs.mk y a x)) Sbad = 0 := by
     intro x a
     rw [Measure.map_apply (measurable_doseObs_mk a x) hSbad]
-    simpa [Sbad] using
-      twoPointMean_bad_support_zero (B := B) (M := M) (u := mu a x) hBM
+    simpa [Sbad, twoPointMean] using
+      twoPointMean_bad_support_zero (B := B) (M := M)
+        (ENNReal.ofReal ((1 + mu a x / B) / 2)) (ENNReal.ofReal ((1 - mu a x / B) / 2)) hBM
   have hmid_zero :
       ∀ x, (mA.bind fun a =>
         (twoPointMean B (mu a x)).map (fun y => DoseObs.mk y a x)) Sbad = 0 := by

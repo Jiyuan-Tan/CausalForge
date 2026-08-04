@@ -253,7 +253,7 @@ lemma linearizedScore_snd_eq_weightedFWL (T : ℕ) (C : Finset (Cohort T))
       field_simp [ne_of_gt hZ]
       ]
     exact div_pos henergy hZ
-  have hfwl := scalar_fwl_of_normalEqs c H X Y v.2 alpha halpha hpos hnormalX hnormalH
+  have hfwl := scalar_fwl_of_normalEqs c H X Y v.2 alpha halpha (ne_of_gt hpos) hnormalX hnormalH
   rw [hfwl]
   have hW : c.tildeX H X = W := rfl
   rw [hW]

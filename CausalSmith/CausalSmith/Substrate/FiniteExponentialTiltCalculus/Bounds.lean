@@ -1,5 +1,6 @@
 import CausalSmith.Substrate.FiniteExponentialTiltCalculus.Integration
 import Causalean.Mathlib.Analysis.WeightedCauchySchwarz
+import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 
 /-!
 # Bounds for finite exponential tilts
@@ -32,8 +33,9 @@ theorem abs_mean_le_sqrt_secondMoment (w h : ι → ℝ) (t : ℝ)
     (hw : ∀ i, 0 ≤ w i) (hmass : ∑ i, w i = 1) :
     |mean w h t| ≤ Real.sqrt (secondMoment w h t) := by
   rw [mean_eq_sum_tilt, secondMoment_eq_sum_tilt]
-  exact Causalean.Mathlib.Analysis.abs_weighted_mean_le_sqrt_weighted_sq
-    (tilt w h t) h (tilt_nonneg w h t hw hmass) (sum_tilt w h t hw hmass).le
+  simpa using Causalean.Mathlib.Analysis.abs_weighted_mean_le_sqrt_weighted_sq
+    Finset.univ (tilt w h t) h (fun i _ => tilt_nonneg w h t hw hmass i)
+    1 (sum_tilt w h t hw hmass).le
 
 /-- For nonpositive observations, the covariance of the square and the observation
 itself is nonpositive under any finite probability weights. -/

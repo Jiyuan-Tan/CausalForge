@@ -178,12 +178,13 @@ EQUIVALENT to the Lean hypothesis — "the paper implies the Lean" is NOT suffic
   emit `faithful-refinement` only when source, paper, and Lean are self-contained and equivalent; emit
   `derived` for verified non-equivalence. If source text is unavailable but Lean and paper are
   self-contained and equivalent, emit `faithful-refinement` with `cited-source-unverifiable`: this
-  blocks as unverified without asserting non-equivalence or source agreement. Also emit ONE `substrate_gates` entry with
+  records the citation as unverified — without asserting non-equivalence or source agreement — and is
+  surfaced as a flag rather than a banking block. Also emit ONE `substrate_gates` entry with
   `gate_class:"cited"`, `source:{cite_id, locator}`, and a `check_status`: `cited-verified` (matches
   the FETCHED source) / `cited-verified-attested` (matches the attested statement) /
   `cited-mismatch` (Lean or paper disagrees with it — BLOCKS banking) / `cited-underspecified`
   (not self-contained — BLOCKS banking) / `cited-source-unverifiable` (source text unavailable —
-  BLOCKS banking). The block states which OK-status applies. A cited node is NEVER routed to
+  recorded as an unverified-citation flag, does not block banking). The block states which OK-status applies. A cited node is NEVER routed to
   `content-gate` or `needs-substrate` — it is a sanctioned citation, not laundering.
 
 === SETUP / ENVIRONMENT TARGETS (the world scaffolding: core symbols realized by Lean decls) ===
@@ -225,20 +226,20 @@ framing, and its complete delivered reverse uses-closure. Independently audit th
 rubber-stamp `delivery_role:"secondary"` merely because the plan/graph declares it.
 
 Emit exactly one `statement_verdicts` row for the target:
-- `derived` when all hold: (1) it is genuinely a SECONDARY theorem, or it is a CITED node;
+- `matched` ONLY when all hold: (1) it is genuinely a SECONDARY theorem, or it is a CITED node;
   (2) it is neither an advertised HEADLINE nor HEADLINE-SUPPORT; and (3) no delivered theorem/lemma
-  consumes it directly or transitively. The delivery-role classification is valid, but the absent
-  Lean statement cannot be equivalent to the paper claim, so this remains blocking. Escalate as
-  `unadjudicable`, explaining that the runner supplied no Lean side for an equivalence judgment.
+  consumes it directly or transitively. `matched` here certifies the OMISSION is legal under the
+  delivery-role rule, not that any Lean statement is equivalent — there is intentionally none.
 - `drift` when it is a headline, headline-support, consumed by a delivered result, or the evidence is
-  too ambiguous to certify omission. Escalate as `unadjudicable`, naming the delivery-role conflict.
-  This is an orchestrator/source-classification stop, never an F2 request to fabricate a Lean declaration.
+  too ambiguous to certify omission. Also emit `escalate:{kind:"delivery-role-conflict", obj_id,
+  reason}`. This is an orchestrator/source-classification stop, never an F2 request to fabricate a
+  Lean declaration.
 
 Do not infer headline status merely from `status:"proved"`, mathematical difficulty/length, or a
 plan-local `crux:true` proof flag. Judge whether the core advertises the node as a principal result or
 whether a delivered principal result needs it. Conversely, a declared secondary label never overrides
 the core's advertised contribution or the graph's consumer evidence. Both convergence reviewers must
-emit the verdict; every undelivered target remains flagged until it has an equivalent Lean statement.
+emit the verdict; an omission is licensed only when both convergence reviewers return `matched`.
 
 === OPEN-ENDED-QUESTION (OEQ) NODES — DO NOT APPLY THE OVER-CLAIM TEST ===
 A node whose note kind is an open-ended question / open residual is realized as a NAMED `Prop` that is
@@ -311,9 +312,10 @@ Set `obj_id` to the target at fault and `reason` to one precise line naming the 
 (which hypothesis/term, and — for scaffold-mismatch vs note-wrong — what the `.tex` actually says).
 
 === OUTPUT FORMAT IS STRICT ===
-Set `status:"flagged"` exactly when the output contains a blocking result: a statement `derived`,
+Set `status:"flagged"` exactly when the output contains a blocking result — a statement `derived`,
 `drift`, or `untagged`; an assumption `derived`, `substrate-gate`, or `content-gate`; a cited
-`cited-mismatch`, `cited-underspecified`, or `cited-source-unverifiable`; or a non-null `escalate`.
+`cited-mismatch` or `cited-underspecified`; or a non-null `escalate` — or the non-blocking
+unverified-citation flag `cited-source-unverifiable`.
 `matched`, `faithful-refinement`, `regularity-bookkeeping`, and verified cited gates do not flag by
 themselves. Never emit `status:"ok"` with a blocking result.
 

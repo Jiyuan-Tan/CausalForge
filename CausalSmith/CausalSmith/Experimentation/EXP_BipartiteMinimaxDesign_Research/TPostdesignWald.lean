@@ -95,6 +95,6 @@ theorem postdesign_wald
     (fun n => (E n).hajekEstimator (p n)) (fun n => (E n).tau)
     (fun n => (E n).varScale (D n) (p n)) (fun n => (E n).varEstCons (p n))
     (fun n => (Fintype.card (Ox n) : ℝ))
-    hmpos hvarpos hvar_le hclt.2 α z hz0 hz
+    hmpos hvarpos (Filter.Eventually.of_forall hvar_le) α z (hclt.2 z) (hclt.2 (-z)) hz0 hz
 
 end CausalSmith.Experimentation.BipartiteMinimaxDesign

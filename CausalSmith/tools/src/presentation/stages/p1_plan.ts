@@ -43,7 +43,9 @@ const OPEN_DIRECTION_RE = /\b(?:open (?:question|problem|direction)|unresolved (
 const ASSERTED_RESULT_RE = /\b(?:(?:we|this (?:paper|work)|our (?:paper|work|result|analysis))\s+(?:prove|proves|establish|establishes|show|shows|derive|derives|demonstrate|demonstrates)|(?:theorem|corollary|proposition|our result)\b[^.!?]{0,100}\b(?:prove|proves|establish|establishes|show|shows|imply|implies)|it follows that|we conclude that|is established here|has been proved)\b/i;
 const ASSERTIVE_REVERSAL_RE = /\b(?:nevertheless|in fact|indeed|therefore|thus|hence)\b/i;
 const LEGALISTIC_UNDELIVERED_RE = /^\s*this work does not (?:establish|prove|deliver)/i;
-const P1_SYNTH_RESUME_VERSION = "notation-definition-order-v7";
+// v8: invalidates v7-era receipts written while normalizeSynthNotation's tab repair
+// used "\\\\t" and could freeze `\to` row-breaks into environment bodies.
+const P1_SYNTH_RESUME_VERSION = "notation-definition-order-v8";
 
 /** The stamped successful layer is newer evidence than a rejected receipt that a prior failed
  * attempt may have left behind. Keep the marker in the TeX view rather than extending the

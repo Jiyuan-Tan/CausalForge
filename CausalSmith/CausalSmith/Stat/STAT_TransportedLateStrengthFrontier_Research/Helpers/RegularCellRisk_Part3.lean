@@ -577,7 +577,8 @@ lemma variance_prod_eq_integral_variance_add
       (∫ t, variance (fun s => F (s, t)) μ ∂ν) +
         variance m ν := by
   exact Causalean.Mathlib.Probability.variance_prod_eq_integral_variance_add
-    μ ν F m hF hsection hm hmean
+    μ ν F m hF (Filter.Eventually.of_forall hsection) hm
+    (Filter.Eventually.of_forall hmean)
 
 /-- The weighted cross-sample average is almost-everywhere strongly measurable under the joint two-sample distribution. -/
 lemma weighted_cross_aestronglyMeasurable

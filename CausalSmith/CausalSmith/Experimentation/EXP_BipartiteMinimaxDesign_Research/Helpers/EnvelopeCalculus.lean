@@ -219,7 +219,8 @@ lemma fderiv_envelopeQuarterExt_single (ε B : ℝ) (hε : 0 < ε) {q : I → �
     fderiv ℝ f q e = deriv (fun s : ℝ => f (q + s • e)) 0 := by
       rw [deriv_line]
       · simp
-      · simpa [f] using (E.envelopeQuarterExt_contDiff_two ε hε).differentiable two_ne_zero
+      · simpa [f] using
+          ((E.envelopeQuarterExt_contDiff_two ε hε).differentiable two_ne_zero).differentiableAt
     _ = deriv (fun s : ℝ => E.varEnvelopeExt ε (fun l => q l + s * e l) / 4) 0 := by
       rw [hextline]
     _ = deriv (fun s : ℝ => E.varEnvelope (fun l => q l + s * e l) / 4) 0 :=
@@ -280,7 +281,8 @@ lemma deriv_envelope_line_zero (ε B : ℝ) (hε : 0 < ε) {q : I → ℝ}
     _ = fderiv ℝ f q d := by
       rw [deriv_line]
       · simp
-      · simpa [f] using (E.envelopeQuarterExt_contDiff_two ε hε).differentiable two_ne_zero
+      · simpa [f] using
+          ((E.envelopeQuarterExt_contDiff_two ε hε).differentiable two_ne_zero).differentiableAt
     _ = ∑ k, d k * E.envelopeGrad q k :=
       E.fderiv_envelopeQuarterExt_apply ε B hε hq d
 

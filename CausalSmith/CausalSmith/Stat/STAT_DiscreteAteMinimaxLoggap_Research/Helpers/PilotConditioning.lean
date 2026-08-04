@@ -60,7 +60,8 @@ lemma oneShot_integral_estimate_restrict_pilot
   have heTuple : Measurable (fun ω => fun i : split.foldB n => S.Z i ω) :=
     measurable_pi_lambda _ (fun i : split.foldB n => S.meas i)
   have hind := oneShot_statistics_indep split n pilot estimate hpilot hestimate
-  exact hind.integral_restrict_preimage_eq_mul (hpilot.comp hpTuple)
-    (hestimate.comp heTuple) hE measurable_id
+  exact hind.integral_restrict_preimage_eq_mul (hpilot.comp hpTuple).aemeasurable
+    (hestimate.comp heTuple).aemeasurable hE ((hpilot.comp hpTuple) hE)
+    measurable_id.aestronglyMeasurable
 
 end CausalSmith.Stat.DiscreteAteMinimaxLoggap

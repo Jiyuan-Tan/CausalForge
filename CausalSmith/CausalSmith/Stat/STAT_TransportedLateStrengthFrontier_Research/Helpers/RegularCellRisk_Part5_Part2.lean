@@ -371,9 +371,9 @@ set_option maxHeartbeats 800000 in
 /-- A bounded off-diagonal kernel average from an independent sample has variance at most 32 times the squared kernel bound divided by the sample size. -/
 lemma variance_offDiag_kernel_le
     {X : Type*} [MeasurableSpace X] (μ : Measure X)
-    [IsProbabilityMeasure μ] (N : ℕ) (hNtwo : 2 ≤ N)
+    [IsProbabilityMeasure μ] (N : ℕ)
     (kernel : X → X → ℝ) (hkernel : Measurable (Function.uncurry kernel))
-    (M : ℝ) (hM : 0 ≤ M)
+    (M : ℝ) (_hM : 0 ≤ M)
     (hbound : ∀ x y, |kernel x y| ≤ M) :
     variance
         (fun target : Fin N → X =>

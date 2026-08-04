@@ -19,6 +19,7 @@ import {
 import type { PipelineContext, StateJson } from "../../types.js";
 import { resolveInDir } from "../../paths.js";
 import { coreJsonPath } from "./d0_core.js";
+import { writeJsonAtomic } from "../../shared/json_atomic.js";
 import { dispatchAgent } from "../../framework/agent_dispatch.js";
 import { CoreSchema, type Core } from "../core/schema.js";
 import {
@@ -111,7 +112,7 @@ export async function runStage0RCore(args: {
   logPaperView(view, "D0.R");
   const core = view.core;
   const restoreProtectedCore = async (): Promise<void> => {
-    await writeFile(corePath, JSON.stringify(core, null, 2), "utf8");
+    await writeJsonAtomic(corePath, core);
   };
   const preStatementText = new Map(
     core.statements
@@ -232,7 +233,7 @@ export async function runStage0RCore(args: {
     // Persist ONLY the schema-shaped core (core.json carries no sanctioned
     // non-schema keys, and a raw spread would let the worker persist arbitrary
     // extra keys into the artifact downstream prompts inline verbatim).
-    await writeFile(corePath, JSON.stringify(edited, null, 2), "utf8");
+    await writeJsonAtomic(corePath, edited);
   } catch (err) {
     await restoreProtectedCore();
     return {

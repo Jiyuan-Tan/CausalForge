@@ -522,7 +522,8 @@ lemma envelope_segment_descent_gap
       s ∈ Set.Icc (0 : ℝ) T ∧ g 0 - g s ≥ (Δ / 2) * s := by
     simpa [s] using
       (Causalean.Mathlib.Analysis.second_order_descent_gap_half
-        (f := g) (M := L) (c := Δ) (T := T) hT hdelta hLnn hgC2 hgdiff hgcurv hslope)
+        (f := g) (M := L) (c := Δ) (T := T) hT hdelta.le hLnn hgC2 hgdiff
+        (fun t ht => hgcurv t (Set.Ioo_subset_Icc_self ht)) hslope)
   have hq_feas :
       (fun k => phom k + s * d k) ∈ feasibleSet (I := I) ε B := by
     exact homogeneous_pair_segment_feasible (I := I) ε B rho hε hrbox hphom hfeas a b
