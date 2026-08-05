@@ -1,5 +1,9 @@
 # CausalForge
 
+**🌐 Website: [jiyuan-tan.github.io/CausalForge](https://jiyuan-tan.github.io/CausalForge/)** —
+browse the Causalean library (every definition and theorem with a plain-English
+translation) and the machine-verified working papers.
+
 CausalForge lays foundations for **formalized, machine-checked causal inference**
 and builds an **AI theorem pipeline** on top of it. It contains two
 [Lean 4](https://leanprover.github.io/) packages with a one-way dependency:
