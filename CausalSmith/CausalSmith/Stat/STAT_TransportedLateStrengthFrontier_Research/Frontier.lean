@@ -197,6 +197,7 @@ noncomputable def paperSetLength (A : BorelParameterSet) : Set.Icc (0 : ℝ) 2 :
 
 /-! ## Coverage and expected-length functionals -/
 
+/-- Gives the confidence set produced by an oracle procedure from a two-sample dataset, the population transport weight, and the population propensity score. -/
 noncomputable def oracleSet (C : OracleProcedure 𝒳 N k c epsilon)
     (P : TransportedArray 𝒳) (n : ℕ) (s : TwoSample 𝒳 n (N n)) : Set ℝ :=
   C.set n (s, transportWeightInput P n, P.propensity n)
@@ -209,10 +210,12 @@ noncomputable def oracleSetAtWeight (C : OracleProcedure 𝒳 N k c epsilon)
     (s : TwoSample 𝒳 n (N n)) : Set ℝ :=
   C.set n (s, w.1, P.propensity n)
 
+/-- Gives the probability that an oracle confidence set contains the target complier average causal effect. -/
 noncomputable def oracleCoverage (C : OracleProcedure 𝒳 N k c epsilon)
     (P : TransportedArray 𝒳) (n : ℕ) : ℝ :=
   (twoSampleLaw P N n {s | targetCACE P n ∈ oracleSet C P n s}).toReal
 
+/-- Gives the coverage probability of an oracle confidence set when evaluated with a specified admissible transport-weight version. -/
 noncomputable def oracleCoverageAtWeight
     (C : OracleProcedure 𝒳 N k c epsilon)
     (P : TransportedArray 𝒳) (n : ℕ)
@@ -241,12 +244,14 @@ noncomputable def fixedGeometryOracleSet
     (g : Geometry 𝒳) (n : ℕ) (s : TwoSample 𝒳 n (N n)) : Set ℝ :=
   C.set n (s, geometryWeightInput g n, g.propensity n)
 
+/-- Gives the coverage probability of an oracle confidence set under a fixed geometry and its declared weight and propensity functions. -/
 noncomputable def fixedGeometryOracleCoverage
     (C : OracleProcedure 𝒳 N k c epsilon)
     (g : Geometry 𝒳) (P : TransportedArray 𝒳) (n : ℕ) : ℝ :=
   (twoSampleLaw P N n
     {s | targetCACE P n ∈ fixedGeometryOracleSet C g n s}).toReal
 
+/-- Gives the expected length of an oracle confidence set under a fixed geometry and its declared weight and propensity functions. -/
 noncomputable def fixedGeometryOracleExpectedLength
     (C : OracleProcedure 𝒳 N k c epsilon) (g : Geometry 𝒳)
     (P : TransportedArray 𝒳) (n : ℕ) : ℝ :=
@@ -305,6 +310,7 @@ noncomputable def cellVectorExtension (design : RegularCellDesign 𝒳 m)
   classical
   exact fun x => if h : ∃ i, design.cell i = x then v (Classical.choose h) else 0
 
+/-- Constructs the regular-cell procedure input from a model in the regular finite-cell class and a two-sample dataset, including the class-supplied cell design, source-cell masses, and propensity scores. -/
 noncomputable def regularCellInputOfClass
     (P : TransportedArray 𝒳)
     (hP : RegularFiniteCellClass P N k c epsilon cminus cplus n)
@@ -452,11 +458,13 @@ noncomputable def frontierRisk
   frontierRiskTotal N k c epsilon C t0.1
   -- @realizes R(limsup_n sup_{P∈P_n:t_n≥t_0} E[lambda(C_n)])
 
+/-- Gives the limiting worst-case expected length of an oracle procedure over finite-cell model rows whose effective strength meets the supplied threshold. -/
 noncomputable def finiteCellOracleRisk
     (C : OracleProcedure 𝒳 N k c epsilon)
     (t0 : ℝ) : ℝ :=
   Filter.limsup (finiteCellOracleRiskRow N k c epsilon C t0) atTop
 
+/-- Gives the limiting worst-case expected length of an oracle procedure over model rows in a fixed geometry whose effective strength meets the supplied threshold. -/
 noncomputable def fixedGeometryRisk (g : Geometry 𝒳)
     (C : OracleProcedure 𝒳 N k c epsilon) (t0 : ℝ) : ℝ :=
   Filter.limsup
@@ -499,6 +507,7 @@ noncomputable def oracleValue (t0 : PositiveThreshold) : ℝ :=
 
 /- The global oracle-honest procedure class, with risk restricted to the
 growing finite-cell submodel.  This total helper is untagged. -/
+/-- Gives the smallest limiting worst-case expected length attainable by an oracle-honest procedure over finite-cell models at the supplied strength threshold. -/
 noncomputable def finiteCellOracleValueTotal (t0 : ℝ) : ℝ :=
   ⨅ C : {C : OracleProcedure 𝒳 N k c epsilon //
       OracleHonest N k c epsilon alpha C},

@@ -207,7 +207,7 @@ describe("stages P0-P2 against the real bank entry (stubbed models)", () => {
     const bib = await readFile(join(dir, "references.bib"), "utf8");
     expect(bib).toContain("robins1994");
     const layer = await readFile(join(dir, "formal_layer.tex"), "utf8");
-    expect(layer).toMatch(/^% causalsmith-p1-synth model=.* version=notation-definition-order-v8\n/);
+    expect(layer).toMatch(/^% causalsmith-p1-synth model=.* version=notation-definition-order-v9\n/);
     const envs = parseAnchoredEnvs(layer);
     expect(envs.length).toBeGreaterThan(20);
     // Every env has a non-empty body. (Loose nodes carry the stub render's "Touched statement body.";

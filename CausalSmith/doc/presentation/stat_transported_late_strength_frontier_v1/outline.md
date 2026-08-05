@@ -18,15 +18,15 @@
 \(c\) | \(c\) | asymptotic target-to-source sample-size ratio | ass:two-sample-array
 \(e(X)\) | \(e(X)\) | source propensity score | ass:instrument-overlap
 \(\varepsilon\) | \(\varepsilon\) | instrument-overlap constant | ass:instrument-overlap
-\(w(X)\) | \(w(X)\) | target-to-source covariate density ratio | def:admissible-geometry-class
+\(w(X)\) | \(w(X)\) | target-to-source covariate density ratio | synth_6
 \(k_n\) | \(k_n\) | envelope and cell-count scale | ass:degrading-array
-\(\kappa_n\) | \(\kappa_n\) | second moment of the transport weight | def:admissible-geometry-class
-\(\mu_n\) | \(\mu_n\) | transported first-stage mean | prop:compact-causal-range
-\(\mu_{Y,n}\) | \(\mu_{Y,n}\) | transported reduced-form outcome mean | prop:compact-causal-range
-\(\theta_T\) | \(\theta_T\) | target complier-conditional contrast | prop:compact-causal-range
+\(\kappa_n\) | \(\kappa_n\) | second moment of the transport weight | synth_6
+\(\mu_n\) | \(\mu_n\) | transported first-stage mean | synth_6
+\(\mu_{Y,n}\) | \(\mu_{Y,n}\) | transported reduced-form outcome mean | synth_6
+\(\theta_T\) | \(\theta_T\) | target complier-conditional contrast | synth_7
 \(\Theta\) | \(\Theta\) | compact causal parameter space \([-1,1]\) | prop:compact-causal-range
-\(\Delta_Y(x)\) | \(\Delta_Y(x)\) | source conditional outcome contrast | prop:compact-causal-range
-\(\Delta_D(x)\) | \(\Delta_D(x)\) | source conditional receipt contrast | prop:compact-causal-range
+\(\Delta_Y(x)\) | \(\Delta_Y(x)\) | source conditional outcome contrast | synth_6
+\(\Delta_D(x)\) | \(\Delta_D(x)\) | source conditional receipt contrast | synth_6
 \(\mathcal P_n\) | \(\mathcal P_n\) | full transported LATE model class | def:model-class
 \(\mathcal N_n\) | \(\mathcal N_n\) | finite-cell submodel with uniform source cells | def:finite-cell-class
 \(\mathfrak C^{\mathrm{or}}\) | \(\mathfrak C^{\mathrm{or}}\) | oracle honest confidence-set sequences | def:oracle-honesty
@@ -81,7 +81,7 @@ bib: Bloom1984, ImbensAngrist1994, AngristImbensRubin1996, BroockmanKalla2016, K
 
 ## section: Setup, Transport, and Honest Risk
 This section introduces the two-population full-data world, source and target sampling scheme, IV and transport restrictions, weight-dispersion geometry, model classes, honest confidence-set classes, and minimax expected-length values. It groups assumptions into causal-IV, transport, and rate/geometry blocks; presents the finite-cell class as \(\mathcal P_n\) plus the uniform finite-cell source condition; and records the compact causal range and transported LATE identification result.
-objs: synth_5, synth_1, synth_2, synth_3, synth_4, ass:full-data-support, ass:population-presence, ass:two-sample-array, ass:instrument-overlap, ass:source-observation, ass:iv-randomization, ass:iv-exclusion, ass:iv-monotonicity, ass:outcome-transport, ass:receipt-transport, ass:target-complier-positivity, ass:transport-domination, ass:weight-envelope, ass:weight-second-moment, ass:degrading-array, ass:finite-cell-source, def:model-class, def:finite-cell-class, def:oracle-honesty, def:frontier-risk, def:oracle-value, def:finite-cell-oracle-value, def:finite-cell-feasible-honesty, prop:compact-causal-range
+objs: synth_5, synth_1, synth_2, synth_3, synth_4, ass:full-data-support, ass:population-presence, ass:two-sample-array, ass:instrument-overlap, ass:source-observation, ass:iv-randomization, ass:iv-exclusion, ass:iv-monotonicity, ass:outcome-transport, ass:receipt-transport, ass:target-complier-positivity, ass:transport-domination, synth_6, ass:weight-envelope, ass:weight-second-moment, ass:degrading-array, ass:finite-cell-source, def:model-class, def:finite-cell-class, synth_7, def:oracle-honesty, def:frontier-risk, def:oracle-value, def:finite-cell-oracle-value, def:finite-cell-feasible-honesty, prop:compact-causal-range
 bib: ImbensAngrist1994, AngristImbensRubin1996, BalkePearl1997, ImbensRubin1997, FrangakisRubin2002, HotzImbensMortimer2005, ColeStuart2010, StuartColeBradshawLeaf2011, Tipton2013, Dahabreh2020, DahabrehPetitoRobertson2020, Nguyen2017
 
 ## section: Oracle Frontier and Score Inversion

@@ -5040,6 +5040,7 @@ private lemma geometryCompliance_eventually_valid
 /-- Potential coordinates `(D(0),D(1),Y(0),Y(1))` conditional on `X`. -/
 abbrev PotentialCoordinates := Bool × Bool × ℝ × ℝ
 
+/-- Collects a unit's two potential treatment receipts and two potential outcomes into its potential-coordinate vector. -/
 def potentialCoordinates (o : FullData 𝒳) : PotentialCoordinates :=
   (fullD0 o, fullD1 o, fullY0 o, fullY1 o)
 
@@ -5210,6 +5211,7 @@ noncomputable def geometryWitnessFamily (g : Geometry 𝒳) (t0 h : ℝ) :
     (fun m => measurable_const.min (geometryCompliance_measurable g t0 m))
     g.propensity_measurable
 
+/-- The source-observation chi-square divergence between a geometry witness at perturbation level `h` and its zero-perturbation counterpart is bounded by eight times the squared perturbation, scaled by the geometry's signal and inverse Kish dispersion. -/
 lemma geometryWitnessFamily_source_chiSq_bound
     (g : Geometry 𝒳) (k : ℕ → ℕ) (epsilon t0 : ℝ)
     (hepsilon : 0 < epsilon) (hg : AdmissibleGeometry g k epsilon)

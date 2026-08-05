@@ -15,6 +15,7 @@ import {
   hashEnvBody,
   parseAnchoredEnvs,
   containsNotation,
+  displaysDefiningEquality,
   sameEstimatorNotationFamily,
   type LintProblem,
 } from "../tex_anchors.js";
@@ -45,7 +46,10 @@ const ASSERTIVE_REVERSAL_RE = /\b(?:nevertheless|in fact|indeed|therefore|thus|h
 const LEGALISTIC_UNDELIVERED_RE = /^\s*this work does not (?:establish|prove|deliver)/i;
 // v8: invalidates v7-era receipts written while normalizeSynthNotation's tab repair
 // used "\\\\t" and could freeze `\to` row-breaks into environment bodies.
-const P1_SYNTH_RESUME_VERSION = "notation-definition-order-v8";
+// v9: realized-symbol suppression became conditional on a displayed defining equality
+// (a Lean `@realizes` tag alone no longer blocks a paper-side definition), so v8-era
+// receipts were filtered under a different eligibility rule.
+const P1_SYNTH_RESUME_VERSION = "notation-definition-order-v9";
 
 /** The stamped successful layer is newer evidence than a rejected receipt that a prior failed
  * attempt may have left behind. Keep the marker in the TeX view rather than extending the
@@ -85,9 +89,23 @@ export function recoverSynthesizedDefinitions(
   let synthCount = 0;
   const envs: P1Env[] = [];
   const recoveredFamilies = new Set<string>();
-  const candidates = parseAnchoredEnvs(layer)
+  const allEnvs = parseAnchoredEnvs(layer);
+  const candidates = allEnvs
     .filter((x) => /^synth_\d+$/.test(x.obj_id))
     .sort((a, b) => Number(a.obj_id.slice("synth_".length)) - Number(b.obj_id.slice("synth_".length)));
+  // A recovered definition is a duplicate only when the layer OUTSIDE the pending synth
+  // candidates already displays the symbol's defining equality — the candidate's own body
+  // always does (it IS the definition), so it must not vouch for itself, and two recovered
+  // definitions of the same symbol must not vouch for each other (that would drop BOTH;
+  // keep-first-drop-rest is the correct semantics). Already-kept candidates re-enter the
+  // evidence base so a later same-symbol duplicate is still recognized.
+  const synthCandidateIds = new Set(candidates.map((x) => x.obj_id));
+  const keptSynthIds = new Set<string>();
+  const vouchingLayerFor = (objId: string): string =>
+    allEnvs
+      .filter((x) => x.obj_id !== objId && (!synthCandidateIds.has(x.obj_id) || keptSynthIds.has(x.obj_id)))
+      .map((x) => `[${x.title ?? ""}]\n${x.body}`)
+      .join("\n");
   for (const e of candidates) {
     const n = Number(e.obj_id.slice("synth_".length));
     if (Number.isFinite(n)) synthCount = Math.max(synthCount, n);
@@ -103,7 +121,14 @@ export function recoverSynthesizedDefinitions(
       options.note(`P1: discarded recovered notation definition ${e.obj_id} with no parseable notation in its title`);
       continue;
     }
-    const hasLeanHome = mathFragments.some((fragment) => options.isLeanRealizedNotation(fragment));
+    // A Lean realization suppresses the recovered definition only when the rest of the
+    // layer also DISPLAYS the symbol's defining equality; an `@realizes` tag alone leaves
+    // a PDF reader with no definition (the transported-LATE θ_T regression).
+    const hasLeanHome = mathFragments.some(
+      (fragment) =>
+        options.isLeanRealizedNotation(fragment) &&
+        displaysDefiningEquality(vouchingLayerFor(e.obj_id), fragment),
+    );
     const familyPeer = [...recoveredFamilies, ...options.titleById.values()]
       .some((title) => sameEstimatorNotationFamily(title, e.title!)) ||
       options.graphDefinitionNotation.some((text) => sameEstimatorNotationFamily(text, e.title!));
@@ -112,6 +137,7 @@ export function recoverSynthesizedDefinitions(
       continue;
     }
     recoveredFamilies.add(e.title);
+    keptSynthIds.add(e.obj_id);
     options.titleById.set(e.obj_id, e.title);
     const body = options.normalizeBody(e.body.trim());
     envs.push({ id: e.obj_id, env: "definitionv", statement: body, body, refSet: [] });
@@ -708,6 +734,9 @@ export async function stageP1(io: StageIO): Promise<void> {
     return canonicalOut();
   };
 
+  // The most recent layer the review hook saw — the synthesize hook's evidence base for
+  // the conditional Lean-realized skip (the loop always reviews before it synthesizes).
+  let lastReviewedLayer = "";
   const review: P1LoopHooks["review"] = async (layer, envs) => {
     log("review: lints + codex notation…");
     // `known` must include the LOCKED env ids too: they are present in the assembled layer (as fixed
@@ -735,17 +764,21 @@ export async function stageP1(io: StageIO): Promise<void> {
       f.fixLocus === "synthesize-def" && !!f.symbol && anchored.some((e) =>
         containsNotation(e.title ?? "", f.symbol!) || sameEstimatorNotationFamily(e.title ?? "", f.symbol!)
       );
-    // Lean-realized symbols are filtered out of the ACTION list below
-    // (`isLeanRealizedNotation`) because a paper-side duplicate would compete with the
-    // Lean declaration for authority. That decision was invisible to the reviewer, which
-    // therefore re-derived the same gaps every round — in one run `q_k`/`p_k`/`\pi_k`/
-    // `\mu_{ak}` were re-reported 7/6/6/5 times across 10 high-effort ~39.5k-char calls,
-    // all of them structurally unactionable. Tell the reviewer instead of discarding its
-    // output. Part of the cache key: a changed realization set changes the valid findings.
+    // Lean-realized symbols are suppressed from the ACTION list below ONLY when the layer
+    // already DISPLAYS their defining equality (`displaysDefiningEquality`): there a
+    // paper-side duplicate would compete with the displayed definition for authority (and
+    // the reviewer re-derived exactly those gaps every round — in one run `q_k`/`p_k`/
+    // `\pi_k`/`\mu_{ak}` were re-reported 7/6/6/5 times across 10 high-effort ~39.5k-char
+    // calls, all structurally unactionable — so the prompt still tells it about the
+    // realization list). An `@realizes` tag WITHOUT a displayed definition is NOT
+    // suppression grounds: it resolves the symbol for the web drawer only, and the
+    // transported-LATE paper shipped with its central estimand θ_T undefined because the
+    // old unconditional filter ate the finding. Part of the cache key: a changed
+    // realization set changes the valid findings.
     const realizedList = realizedSymbols.length > 0
       ? realizedSymbols.map((s) => `- ${s}`).join("\n")
       : "(none — this paper has no @realizes-tagged symbols)";
-    const layerKey = hashEnvBody(`notation-definition-order-v9§${deps.codexModel ?? "?"}§${layer}§${notation}§${realizedList}`);
+    const layerKey = hashEnvBody(`notation-definition-order-v10§${deps.codexModel ?? "?"}§${layer}§${notation}§${realizedList}`);
     if (cache.notation[layerKey]) {
       // Cached model findings are advisory evidence, not authority. Reapply
       // deterministic duplicate suppression on every read so an old spelling
@@ -800,24 +833,41 @@ export async function stageP1(io: StageIO): Promise<void> {
     // Report what the reviewer emitted but the pipeline discarded. A silently dropped
     // finding is indistinguishable from a reviewer that never raised it, which is how the
     // Lean-realized re-report loop stayed invisible across runs.
-    const leanSuppressed = findings.filter(
-      (f) => f.fixLocus === "synthesize-def" && isLeanRealizedNotation(f.symbol),
-    );
+    const realizedAndDisplayed = (f: P1Finding): boolean =>
+      f.fixLocus === "synthesize-def" &&
+      isLeanRealizedNotation(f.symbol) &&
+      displaysDefiningEquality(layer, f.symbol ?? "");
+    const leanSuppressed = findings.filter(realizedAndDisplayed);
     if (leanSuppressed.length > 0) {
       log(
         `notation: suppressed ${leanSuppressed.length} synthesize-def finding(s) for Lean-realized ` +
-          `symbol(s) ${leanSuppressed.map((f) => f.symbol).join(", ")} — the reviewer should have ` +
-          `been told these are resolvable; recurrence across rounds means the prompt is not landing`,
+          `symbol(s) ${leanSuppressed.map((f) => f.symbol).join(", ")} whose defining equality the ` +
+          `layer already displays — the reviewer should have been told these are resolvable; ` +
+          `recurrence across rounds means the prompt is not landing`,
       );
     }
+    const leanOnlyAllowed = findings.filter(
+      (f) => f.fixLocus === "synthesize-def" && isLeanRealizedNotation(f.symbol) && !realizedAndDisplayed(f),
+    );
+    if (leanOnlyAllowed.length > 0) {
+      log(
+        `notation: ${leanOnlyAllowed.length} Lean-realized symbol(s) ${leanOnlyAllowed
+          .map((f) => f.symbol)
+          .join(", ")} are used in statements but no environment displays their defining ` +
+          `equality — eligible for paper-side synthesis, subject to the duplicate/locked ` +
+          `filters (the Lean link alone leaves a PDF reader with an undefined symbol)`,
+      );
+    }
+    lastReviewedLayer = layer;
     return findings.filter((f) =>
       (!f.objId || !lockedIds.has(f.objId)) &&
       !duplicateSynthFinding(f) &&
-      // A paper-side definition is unnecessary when the notation already has an
-      // explicit Lean realization. P2 links these symbols directly to `sym:*`;
-      // synthesizing a second definition weakens the trust story and creates the
-      // duplicate setup blocks seen in the panel-PPML presentation.
-      !(f.fixLocus === "synthesize-def" && isLeanRealizedNotation(f.symbol))
+      // A paper-side definition is unnecessary ONLY when the notation is Lean-realized
+      // AND some environment already displays its defining equality — there a second
+      // definition would compete for authority (the duplicate setup blocks seen in the
+      // panel-PPML presentation). A Lean realization by itself must not suppress: that
+      // is how the transported-LATE paper shipped with θ_T undefined.
+      !realizedAndDisplayed(f)
     );
   };
 
@@ -853,12 +903,18 @@ export async function stageP1(io: StageIO): Promise<void> {
     const out: P1Env[] = [];
     // A notation-heavy setup can legitimately expose more than four missing
     // anchors at once (panel arrays + collapsed design + target definitions).
-    // Keep synthesis bounded, but allow eight per round so the four-round loop
-    // can repair up to 32 anchors instead of failing solely by batch arithmetic.
+    // Keep synthesis bounded, but allow eight per round so the capped loop
+    // can repair dozens of anchors instead of failing solely by batch arithmetic.
     for (const symbol of symbols.slice(0, 8)) {
-      // Defensive backstop: even if a future reviewer bypasses the filtering
-      // above, an `@realizes` symbol must never become presentation-synthesized.
-      if (isLeanRealizedNotation(symbol)) continue;
+      // Defensive backstop: even if a future reviewer bypasses the filtering above, an
+      // `@realizes` symbol whose defining equality the layer ALREADY displays must never
+      // become presentation-synthesized (a duplicate would compete for authority). A
+      // realized symbol the layer never defines is legitimate synthesis input. When no
+      // layer has been reviewed yet, fail closed (skip) as before.
+      if (
+        isLeanRealizedNotation(symbol) &&
+        (lastReviewedLayer === "" || displaysDefiningEquality(lastReviewedLayer, symbol))
+      ) continue;
       // A reviewer may spell an already-defined estimator with its semantic
       // tag in a different script position.  Do not create a second synthetic
       // definition for that cosmetic variant.

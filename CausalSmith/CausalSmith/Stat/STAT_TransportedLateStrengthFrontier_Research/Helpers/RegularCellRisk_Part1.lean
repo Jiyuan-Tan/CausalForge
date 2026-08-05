@@ -67,6 +67,7 @@ noncomputable def regularCellKhat (q : 𝒳 → ℝ) {N : ℕ}
 
 /-! ## The feasible procedure bundle -/
 
+/-- The zero-extended cell-value function returns a cell's assigned value at every point in that cell. -/
 lemma cellVectorExtension_apply_cell
     {m : ℕ} (design : RegularCellDesign 𝒳 m)
     (v : Fin m → ℝ) (i : Fin m) :

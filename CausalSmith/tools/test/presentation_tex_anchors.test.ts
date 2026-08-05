@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseAnchoredEnvs, lintAnchors, lintCrossRefs, lintSelfContainment, lintClarity, lintDefinitionOrder, lintNegativeContributionFraming, lintNestedMathDelimiters, lintReferences, lintHypothesisPresentation, lintNotation, hashEnvBody, texSafeTitle, repairObjRefs, normalizeCrefs, estimatorNotationFamily, estimatorNotationFamilies, sameEstimatorNotationFamily } from "../src/presentation/tex_anchors.js";
+import { parseAnchoredEnvs, lintAnchors, lintCrossRefs, lintSelfContainment, lintClarity, lintDefinitionOrder, lintNegativeContributionFraming, lintNestedMathDelimiters, lintReferences, lintHypothesisPresentation, lintNotation, hashEnvBody, texSafeTitle, repairObjRefs, normalizeCrefs, estimatorNotationFamily, estimatorNotationFamilies, sameEstimatorNotationFamily, displaysDefiningEquality } from "../src/presentation/tex_anchors.js";
 
 const TEX = `
 \\section{Main results}
@@ -398,6 +398,66 @@ Let \(v_0=(1,0)\), \(v_j=(\sigma_j,1)\), and \(v_{m+1}=(\delta,1)\).
     expect(lintAnchors(ok, known, frozen)).toEqual([]);
     // ids inside frozen env bodies are not prose
     expect(lintAnchors(TEX, known, frozen)).toEqual([]);
+  });
+});
+
+describe("displaysDefiningEquality (reader-facing definition signal)", () => {
+  // The transported-LATE regression: θ_T appeared only on the RIGHT of the Wald
+  // identity and inside coverage events, so the paper never defined it.
+  const buggyLayer = [
+    "\\begin{theoremv}{prop:ccr}[Compact causal range]",
+    "the transported first-stage mean satisfies \\[\\mu_n = P_n^F\\{D(1)=1,\\ D(0)=0\\mid S=0\\},\\]",
+    "and the Wald ratio equals the target contrast, \\[\\frac{\\mu_{Y,n}}{\\mu_n}=\\theta_T.\\]",
+    "Finally, \\(\\theta_T\\in\\Theta=[-1,1]\\).",
+    "\\end{theoremv}",
+    "\\begin{definitionv}{def:oh}[Oracle honesty]",
+    "\\(\\liminf_{n\\to\\infty}\\inf_{P}P(\\theta_T\\in C_n)\\ge1-\\alpha\\).",
+    "\\end{definitionv}",
+  ].join("\n");
+  it("RHS-only + set-membership appearances do NOT count as a definition", () => {
+    expect(displaysDefiningEquality(buggyLayer, "\\theta_T")).toBe(false);
+  });
+  it("an LHS defining display counts", () => {
+    expect(displaysDefiningEquality(buggyLayer, "\\mu_n")).toBe(true);
+    expect(displaysDefiningEquality(buggyLayer, "\\Theta")).toBe(true);
+    expect(
+      displaysDefiningEquality("\\(\\theta_T=\\mathbb E[Y(1)-Y(0)\\mid D(1)>D(0),S=0]\\)", "\\theta_T"),
+    ).toBe(true);
+  });
+  it("is whitespace / thin-space / script-brace insensitive", () => {
+    expect(displaysDefiningEquality("\\(\\mu_{n} \\, = 3\\)", "\\mu_n")).toBe(true);
+    expect(displaysDefiningEquality("\\(t_n := n\\mu_n^2/\\kappa_n\\)", "t_n")).toBe(true);
+    expect(displaysDefiningEquality("\\(\\kappa_n\\coloneqq\\mathbb E_S[w^2]\\)", "\\kappa_n")).toBe(true);
+    expect(displaysDefiningEquality("\\begin{align}\\theta_T &= \\mu_{Y,n}/\\mu_n\\end{align}", "\\theta_T")).toBe(true);
+  });
+  it("respects token boundaries", () => {
+    // A decorated variant must not vouch for the base symbol, nor a longer
+    // subscript for a shorter one, nor a longer command word for its prefix.
+    expect(displaysDefiningEquality("\\(\\hat t_n = 1\\)", "t_n")).toBe(false);
+    expect(displaysDefiningEquality("\\(\\mu_{Y,n}=1\\)", "\\mu_n")).toBe(false);
+    expect(displaysDefiningEquality("\\(\\muY=1\\)", "\\mu")).toBe(false);
+    expect(displaysDefiningEquality("\\(\\theta_T=1\\)", "\\theta")).toBe(false);
+  });
+  it("an accented LHS defines the estimator, never the base symbol (audit: one hat away)", () => {
+    expect(displaysDefiningEquality("\\(\\hat\\theta_T = \\hat\\mu_{Y,n}/\\hat\\mu_n\\)", "\\theta_T")).toBe(false);
+    expect(displaysDefiningEquality("\\(\\widehat\\kappa_n = 1\\)", "\\kappa_n")).toBe(false);
+    expect(displaysDefiningEquality("\\(\\bar Y = 0\\)", "Y")).toBe(false);
+    expect(displaysDefiningEquality("\\(\\boldsymbol\\theta_T = 1\\)", "\\theta_T")).toBe(false);
+    expect(displaysDefiningEquality("\\(\\bm\\theta = 1\\)", "\\theta")).toBe(false);
+    expect(displaysDefiningEquality("\\(\\mathbf\\Sigma = I\\)", "\\Sigma")).toBe(false);
+  });
+  it("a symbol embedded as a sub/superscript is not being defined", () => {
+    expect(displaysDefiningEquality("\\(w_\\pi = 3\\)", "\\pi")).toBe(false);
+    expect(displaysDefiningEquality("\\(w_{\\pi} = 3\\)", "\\pi")).toBe(false);
+    expect(displaysDefiningEquality("\\(x^\\theta = 1\\)", "\\theta")).toBe(false);
+  });
+  it("a primed LHS defines the derived symbol, not the base", () => {
+    expect(displaysDefiningEquality("\\(\\theta' = 2\\theta\\)", "\\theta")).toBe(false);
+    expect(displaysDefiningEquality("\\(t_n' = 1\\)", "t_n")).toBe(false);
+  });
+  it("single-char script braces canonicalize beyond alphanumerics", () => {
+    expect(displaysDefiningEquality("\\(\\mu^{*} := 1\\)", "\\mu^*")).toBe(true);
+    expect(displaysDefiningEquality("\\(\\mu^* := 1\\)", "\\mu^{*}")).toBe(true);
   });
 });
 

@@ -706,6 +706,51 @@ export function containsNotation(tex: string, symbol: string): boolean {
 }
 
 /**
+ * TRUE iff some anchored environment DISPLAYS a defining equality for `symbol`: an
+ * occurrence of the symbol immediately followed by `=`, `:=`, `\coloneqq`, or `\equiv`
+ * (whitespace/thin-space insensitive; an alignment `&` may intervene). This is the
+ * deterministic "the paper shows what this symbol IS" signal used to decide whether a
+ * Lean-realized symbol still needs a paper-side definition: an `@realizes` tag makes a
+ * symbol machine-resolvable (the web drawer), but a PDF reader can resolve it only from
+ * a printed defining display. RHS-only appearances (`\frac{\mu_Y}{\mu_D}=\theta`)
+ * deliberately do NOT count — an identification theorem that equates a ratio TO an
+ * otherwise-undefined symbol is exactly the failure this check exists to surface.
+ */
+export function displaysDefiningEquality(tex: string, symbol: string): boolean {
+  // Thin spaces and single-char script braces are display sugar; erase them the same
+  // way in haystack and needle so `\mu_{n}\,=` still matches the needle `\mu_n` and
+  // `\mu^{*}` matches `\mu^*` (the braced token may be any single non-brace char).
+  const canon = (s: string) =>
+    notationSearchText(s)
+      .replace(/\\[,;!:]/g, "")
+      .replace(/([_^])\{([^{}])\}/g, "$1$2");
+  // A display defines the DECORATED variant, not the base symbol: `\hat\theta_T = …`
+  // defines the estimator of θ_T, not θ_T itself (the audit's "one hat away" re-ship
+  // of the θ_T defect), and `w_\pi = …` / `x^\theta = …` embed the symbol as a script.
+  const ACCENT_BEFORE_RE =
+    /\\(?:hat|widehat|bar|overline|underline|tilde|widetilde|dot|ddot|vec|overrightarrow|check|breve|acute|grave|mathring|bm|boldsymbol|mathbf)\{?$/;
+  const needle = canon(symbol);
+  if (!needle) return false;
+  const haystack = canon(tex);
+  for (let at = haystack.indexOf(needle); at >= 0; at = haystack.indexOf(needle, at + 1)) {
+    // Token boundary before: a plain-letter needle must not match the tail of a longer
+    // identifier or a command argument (`\hat t_n`, whose canon form carries the U+0001 command/argument sentinel, must not define `t_n`).
+    const before = haystack[at - 1] ?? "";
+    if (/^[A-Za-z]/.test(needle) && /[A-Za-z0-9\\\u0001]/.test(before)) continue;
+    // Script/accent context (ANY needle, including command words): skip one opening
+    // brace, then reject a subscript/superscript position or a preceding accent command.
+    if (/[_^]$/.test(haystack.slice(0, at).replace(/\{$/, "")) || ACCENT_BEFORE_RE.test(haystack.slice(0, at))) continue;
+    // A primed occurrence is the DERIVED symbol: `\theta' = …` does not define `\theta`,
+    // so primes are NOT skipped before requiring the equality sign.
+    const rest = haystack.slice(at + needle.length).replace(/^&/, "");
+    // A command-word needle ends before the next letter (`\mu` must not match `\muY`).
+    if (/\\[A-Za-z]+$/.test(needle) && /^[A-Za-z]/.test(rest)) continue;
+    if (/^(?::?=|\\coloneqq(?![A-Za-z])|\\equiv(?![A-Za-z]))/.test(rest)) return true;
+  }
+  return false;
+}
+
+/**
  * A deliberately narrow semantic signature for decorated estimator notation.
  * Presentation reviewers often alternate between, for example,
  * `\widehat\tau_{\mathrm{sel}}` and

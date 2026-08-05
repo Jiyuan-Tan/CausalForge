@@ -46,18 +46,27 @@ abbrev SourceObs (𝒳 : Type*) := 𝒳 × Bool × Bool × ℝ
 /-- The assigned source overlay `(full data,Z)`. -/
 abbrev AssignedFullData (𝒳 : Type*) := FullData 𝒳 × Bool
 
+/-- Returns the indicator for whether a full-data unit belongs to the source population. -/
 def fullS {𝒳 : Type*} (o : FullData 𝒳) : Bool := o.1
+/-- Returns a full-data unit's covariate value. -/
 def fullX {𝒳 : Type*} (o : FullData 𝒳) : 𝒳 := o.2.1
+/-- Returns a unit's potential treatment receipt under instrument value zero. -/
 def fullD0 {𝒳 : Type*} (o : FullData 𝒳) : Bool := o.2.2.1
+/-- Returns a unit's potential treatment receipt under instrument value one. -/
 def fullD1 {𝒳 : Type*} (o : FullData 𝒳) : Bool := o.2.2.2.1
+/-- Returns a unit's potential outcome under treatment receipt zero. -/
 def fullY0 {𝒳 : Type*} (o : FullData 𝒳) : ℝ := o.2.2.2.2.1
+/-- Returns a unit's potential outcome under treatment receipt one. -/
 def fullY1 {𝒳 : Type*} (o : FullData 𝒳) : ℝ := o.2.2.2.2.2
 
+/-- Converts a binary indicator to its real-valued zero-one representation. -/
 def boolReal (b : Bool) : ℝ := if b then 1 else 0
 
+/-- Returns the treatment receipt a unit would have under the specified instrument assignment. -/
 def potentialReceipt {𝒳 : Type*} (o : FullData 𝒳) (z : Bool) : Bool :=
   if z then fullD1 o else fullD0 o
 
+/-- Returns the outcome a unit would have under the specified treatment receipt. -/
 def potentialOutcome {𝒳 : Type*} (o : FullData 𝒳) (d : Bool) : ℝ :=
   if d then fullY1 o else fullY0 o
 
@@ -153,6 +162,7 @@ noncomputable def TransportedArray.deltaY (P : TransportedArray 𝒳)
   P.assignmentContrast n true
   -- @realizes \Delta_Y(observed conditional outcome contrast)
 
+/-- The source conditional outcome contrast is measurable as a function of covariates. -/
 lemma TransportedArray.deltaY_measurable (P : TransportedArray 𝒳) (n : ℕ) :
     Measurable (P.deltaY n) :=
   P.assignmentContrast_measurable n true
@@ -174,6 +184,7 @@ noncomputable def TransportedArray.deltaD (P : TransportedArray 𝒳)
   P.receiptContrast n true
   -- @realizes \Delta_D(observed conditional receipt contrast)
 
+/-- The source conditional treatment-receipt contrast is measurable as a function of covariates. -/
 lemma TransportedArray.deltaD_measurable (P : TransportedArray 𝒳) (n : ℕ) :
     Measurable (P.deltaD n) :=
   P.receiptContrast_measurable n true

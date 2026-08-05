@@ -66,11 +66,41 @@ describe("P1 synthesized-definition recovery", () => {
     expect(replayed.synthCount).toBe(2);
   });
 
-  it("reapplies the current Lean-realized filter to a successful-run definition", () => {
-    const selected = selectSynthRecoveryLayer(`${marker}\n${synth("synth_1")}`, "", marker);
+  it("drops a recovered Lean-realized definition only when another env already displays its defining equality", () => {
+    const displayed = `\\begin{definitionv}{def:hell}[Hellinger affinity]\n$H^2 = \\int (\\sqrt{p}-\\sqrt{q})^2$\n\\end{definitionv}`;
+    const selected = selectSynthRecoveryLayer(`${marker}\n${displayed}\n${synth("synth_1")}`, "", marker);
     const replayed = recover(selected!.tex, (symbol) => symbol === "H^2");
     expect(replayed.envs).toEqual([]);
     // Keep the old id reserved even when its definition is no longer eligible to replay.
+    expect(replayed.synthCount).toBe(1);
+  });
+
+  it("keeps a recovered definition when only an ESTIMATOR display exists elsewhere (audit case C)", () => {
+    // `\hat\kappa_n = \kappa_n + o_p(1)` displays the estimator, not κ_n — the real
+    // recovered definition of κ_n must survive.
+    const thm = `\\begin{theoremv}{t1}[Consistency]\n\\(\\hat H^2 = H^2 + o_p(1)\\)\n\\end{theoremv}`;
+    const selected = selectSynthRecoveryLayer(`${marker}\n${thm}\n${synth("synth_1")}`, "", marker);
+    const replayed = recover(selected!.tex, (symbol) => symbol === "H^2");
+    expect(replayed.envs.map((e) => e.id)).toEqual(["synth_1"]);
+  });
+
+  it("two recovered definitions of the same symbol keep the first instead of vouching each other away", () => {
+    // Each candidate's BODY displays the defining equality; under the old rest-of-layer
+    // scan they vouched for each other and BOTH were dropped.
+    const defEnv = (id: string) =>
+      `\\begin{definitionv}{${id}}[Kish dispersion $\\kappa_n$]\nWe define $\\kappa_n = \\int w^2$.\n\\end{definitionv}`;
+    const selected = selectSynthRecoveryLayer(`${marker}\n${defEnv("synth_1")}\n${defEnv("synth_2")}`, "", marker);
+    const replayed = recover(selected!.tex, (symbol) => symbol === "\\kappa_n");
+    expect(replayed.envs.map((e) => e.id)).toEqual(["synth_1"]);
+    expect(replayed.synthCount).toBe(2);
+  });
+
+  it("keeps a recovered Lean-realized definition when nothing else displays the symbol (θ_T regression)", () => {
+    // An `@realizes` tag makes the symbol web-resolvable but leaves the PDF reader with no
+    // definition; the recovered paper-side definition is the only printed one and must survive.
+    const selected = selectSynthRecoveryLayer(`${marker}\n${synth("synth_1")}`, "", marker);
+    const replayed = recover(selected!.tex, (symbol) => symbol === "H^2");
+    expect(replayed.envs).toMatchObject([{ id: "synth_1", body: "The convention is unhalved." }]);
     expect(replayed.synthCount).toBe(1);
   });
 
