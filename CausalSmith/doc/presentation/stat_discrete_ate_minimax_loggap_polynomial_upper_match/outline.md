@@ -53,7 +53,7 @@ notation_gaps: \(p_k\)=cell covariate marginal used in the ATE and overlap notat
 \(\mathsf R_{n,d,\epsilon}\) | \(\mathsf R_{n,d,\epsilon}\) | minimax mean-squared-error risk | def:minimax-risk
 \(\widehat\tau\) | \(\widehat\tau\) | measurable estimator based on the sample | def:minimax-risk
 \(\widehat{\mathcal H}\) | \(\widehat{\mathcal H}\) | pilot heavy set in the sandwich lemma | lem:pilot-sandwich
-\(\widehat{\mathcal L}\) | \(\widehat{\mathcal L}\) | pilot light set in the sandwich lemma | lem:pilot-sandwich
+\(\widehat{\mathcal L}\) | \(\widehat{\mathcal L}\) | pilot light set (the sandwich lemma's unsubscripted form of \(\widehat{\mathcal L}_n\)) | def:hybrid-estimator-handle
 \(B_-\) | \(B_-=tL/(2m_0)\) | lower population-mass sandwich threshold | lem:pilot-sandwich
 \(B_+\) | \(B_+=2tL/m_0\) | upper population-mass sandwich threshold | lem:pilot-sandwich
 \(\widehat\tau_{\mathrm{ctr}}\) | \(\widehat\tau_{\mathrm{ctr}}\) | centered near-randomization linear estimator | lem:near-randomization-linear-upper
