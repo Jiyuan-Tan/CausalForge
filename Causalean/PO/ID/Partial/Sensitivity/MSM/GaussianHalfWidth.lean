@@ -293,7 +293,7 @@ theorem msmUpperCalib_gaussian_halfWidth (Λ : ℝ) (hΛ : 1 < Λ)
           P.μ[fun ω => A ω * Y ω | S.sigmaX] ω ∂P.μ := by
     simpa [Pi.mul_apply] using
       integral_mul_condExp_eq (μ := P.μ) (m0 := S.sigmaX) S.sigmaX_le
-        hwMin_smeas hAY_int (by simpa [A, Y] using hint_candMin)
+        hwMin_smeas hAY_int (by exact hint_candMin)
   have hmin_ae :
       (fun ω => S.wMin Λ ω *
           P.μ[fun ω => A ω * Y ω | S.sigmaX] ω)
@@ -307,7 +307,7 @@ theorem msmUpperCalib_gaussian_halfWidth (Λ : ℝ) (hΛ : 1 < Λ)
             P.μ[fun ω => A ω * Y ω | S.sigmaX] ω :=
       MeasureTheory.condExp_mul_of_stronglyMeasurable_left
         (m := S.sigmaX) (μ := P.μ) hwMin_smeas
-        (by simpa [A, Y] using hint_candMin) hAY_int
+        (by exact hint_candMin) hAY_int
     exact (MeasureTheory.integrable_condExp
       (μ := P.μ) (m := S.sigmaX)
       (f := fun ω => S.wMin Λ ω * (A ω * Y ω))).congr

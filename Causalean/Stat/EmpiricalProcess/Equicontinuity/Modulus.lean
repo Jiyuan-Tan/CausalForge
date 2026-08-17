@@ -221,6 +221,6 @@ theorem empProcVec_isLittleOp_of_L2 [IsProbabilityMeasure μ] [IsProbabilityMeas
     rw [← ENNReal.ofReal_zero]
     exact (ENNReal.continuous_ofReal.tendsto 0).comp hreal
   exact tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hdiv
-    (fun n => zero_le _) hbound
+    (fun n => zero_le) hbound
 
 end Causalean.Stat

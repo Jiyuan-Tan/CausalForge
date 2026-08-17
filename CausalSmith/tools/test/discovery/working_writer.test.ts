@@ -32,6 +32,7 @@ describe("recordProof", () => {
     recordProof(w, makeCore([node]), { id: node.id, snapshotOf: node, proofTex: "P", node, owner: "unit-1" });
 
     expect(w.solved["lem:a"].proof_tex).toBe("P");
+    expect(w.solved["lem:a"].node?.proof_tex).toBe("P");
     expect(w.solved["lem:a"].owner).toBe("unit-1");
     expect(w.solved["lem:a"].snapshot.stmt).toBe("S");
   });
@@ -64,6 +65,7 @@ describe("recordProof", () => {
 
     expect(w.solved["lem:a"].snapshot.stmt).toBe("AS-WRITTEN");
     expect(w.solved["lem:a"].node?.status).toBe("to-prove");
+    expect(w.solved["lem:a"].node?.proof_tex).toBeUndefined();
     expect(w.solved["lem:a"].partial).toBe(true);
   });
 

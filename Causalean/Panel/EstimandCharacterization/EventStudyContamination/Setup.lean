@@ -257,9 +257,11 @@ theorem targetPeriods_subsingleton_of_injective (P : EventStudySystem T)
     (hInj : Function.Injective P.time) (g : Fin T) (e : ℤ) :
     (P.targetPeriods g e : Set (Fin T)).Subsingleton := by
   intro a ha b hb
-  simp only [Finset.coe_filter, Set.mem_setOf_eq, targetPeriods, relTime] at ha hb
+  simp only [Finset.mem_coe, targetPeriods, Finset.mem_filter, Finset.mem_univ,
+    true_and] at ha hb
+  simp only [relTime] at ha hb
   have hab : P.time a = P.time b := by
-    have := ha.2.trans hb.2.symm
+    have := ha.trans hb.symm
     linarith [this]
   exact hInj hab
 

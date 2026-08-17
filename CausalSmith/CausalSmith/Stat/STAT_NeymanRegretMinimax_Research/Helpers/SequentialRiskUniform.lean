@@ -44,7 +44,7 @@ theorem cumulative_risk_engine_uniform_threshold
     nlinarith
   obtain ⟨Nlog, hNlog⟩ := Causalean.Stat.log_lin_log_le_half_log hC₁_pos
   have htend : Tendsto (fun T : ℕ => Real.log (T : ℝ)) atTop atTop := by
-    simpa using Real.tendsto_log_atTop.comp (tendsto_natCast_atTop_atTop (R := ℝ))
+    exact Real.tendsto_log_atTop.comp (tendsto_natCast_atTop_atTop (R := ℝ))
   obtain ⟨NIq, hNIq⟩ :=
     Filter.eventually_atTop.mp (htend.eventually_ge_atTop (4 * Iq / (J * C₁)))
   refine ⟨Nlog ⊔ NIq ⊔ 3, ?_⟩

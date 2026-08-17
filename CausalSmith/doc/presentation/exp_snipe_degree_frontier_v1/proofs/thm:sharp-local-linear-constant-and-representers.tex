@@ -1,140 +1,355 @@
 \begin{proof}[Proof of \cref{obj:thm:sharp-local-linear-constant-and-representers}]
-\begin{enumerate}
-\item Fix \(t\) and write \(n=n_t\), \(d=d_t\), and \(m=m_t\).  On the complete-block graph, every active block is a full neighborhood of size \(d\), and \(n=md\).  The canonical block-local weights
+Throughout, when \(t\) is fixed we write \(n=n_t\), \(d=d_t\), \(m=m_t\), \(A=A_{d_t}\) and \(\bar\beta=\bar\beta_{d_t}=\min\{\beta,d\}\).  The population \(V_{n}\) is partitioned into the blocks \(V_1,\ldots,V_m\), each of size \(d\); \(b(i)\) is the block containing \(i\), \(Z_b=(Z_j)_{j\in V_b}\), and \(Z_S=\prod_{j\in S}Z_j\).  Since \(G_t\) is the directed complete-block graph,
 \[
-w^0_{i,t}(Z)=g_d(Z_{b(i)})
+N_i^{G_t}=V_{b(i)}\quad\text{for every }i\in V_{n},
+\qquad
+n=md .
 \]
-belong to \(\mathcal E_t^{\mathrm{loc,lin}}\).  The block program identities in \cref{obj:lem:block-energy-representer}, applied block by block, give value \(A_d\) per unit score and therefore \(d^2A_d\) per block in the block-extremal criterion.  Thus every admissible local-linear rule has worst-case risk at least
-\[
-\frac{B^2}{n^2}\sum_{b=1}^{m}d^2A_d
- = \frac{B^2A_d}{m},
-\]
-while the canonical rule attains this value.  Since \(n=md\),
-\[
-\frac{B^2A_d}{m}=\frac{B^2dA_d}{n}.
-\]
-This proves the finite minimax identity. % lean: locLinMinimaxRisk_exact
+The clauses are proved in the order in which their ingredients are established: the exact worst-case formula, then the per-block lower bound, then the minimax constant, then the two asymptotic criteria, then the witness sequence.
 
-\item For a fixed \(w\in\mathcal E_t^{\mathrm{loc,lin}}\), the squared error decomposes across complete blocks.  Maximizing the coefficient signs and low-order monomials independently on each block gives
+We first record the three block-score identities that every step uses.  The block score \(g_{d}\) of \cref{obj:def:block-score-energy} lies in \(\mathcal P_{d}\), and \cref{obj:lem:block-energy-representer} gives, under \cref{obj:ass:bernoulli-design},
+\[
+\mathbb E_Z[g_{d}(Z_b)]=0,
+\qquad
+\mathbb E_Z[g_{d}(Z_b)Z_S]=1
+\quad\text{for every }\varnothing\ne S\subseteq V_b\text{ with }|S|\le\bar\beta ,
+\]
+\[
+\mathbb E_Z[g_{d}(Z_b)^2]=L_{d}(g_{d})=A>0 .
+\]
+The first two displays are the representer identity \(\mathbb E_Z[g_{d}(Z)f(Z)]=L_{d}(f)\) at \(f\equiv1\) and at \(f=Z_S\); the third combines that identity at \(f=g_{d}\) with \(\mathbb E_Z[h_{d}(Z)^2]=A^{-1}\) and \(g_{d}=Ah_{d}\), and the strict positivity is the energy-scale bound \(A\ge c_1\binom{d}{k_\star(d,\beta,p)}>0\). % lean: blockScore_mean_zero, blockScore_raw_moment, snipeScore_sq_expectation_global, blockEnergy_pos
+
+\begin{enumerate}
+\item \textbf{The exact worst-case risk formula.}  Fix \(t\) and \(w\in\mathcal E_t^{\mathrm{loc,lin}}\).  For \(c\in\mathcal M_t(G_t)\) the potential outcomes are \(Y_i(Z)=\sum_{S\subseteq V_{b(i)},\,|S|\le\bar\beta}c_{i,S}Z_S\), and the target is the all-treated versus all-control contrast
+\[
+\tau_{n}
+=
+\frac1n\sum_{i\in V_{n}}\{Y_i(\mathbf 1_{n})-Y_i(\mathbf 0_{n})\}
+=
+\frac1n\sum_{i\in V_{n}}
+\sum_{\substack{S\subseteq V_{b(i)}\\ |S|\le\bar\beta}}
+c_{i,S}\mathbf 1(S\ne\varnothing).
+\]
+Subtracting this from \(\widehat\tau_{w,t}=n^{-1}\sum_i w_{i,t}(Z_{b(i)})Y_i(Z)\) and grouping units by block,
+\[
+\widehat\tau_{w,t}-\tau_{n}
+=
+\frac1n\sum_{b=1}^{m}e_{b}(c;Z),
+\qquad
+e_{b}(c;Z)
+:=
+\sum_{i\in V_b}
+\sum_{\substack{S\subseteq V_b\\ |S|\le\bar\beta}}
+c_{i,S}\bigl\{w_{i,t}(Z_b)Z_S-\mathbf 1(S\ne\varnothing)\bigr\}.
+\]
+% lean: locLinEstimator_error_expansion, sum_blockScheduleError_eq_total
+Each \(e_{b}(c;Z)\) is a function of \(Z_b\) alone, and the moment restrictions defining \(\mathcal E_t^{\mathrm{loc,lin}}\) give \(\mathbb E_Z[e_{b}(c;Z)]=0\) termwise.  Distinct blocks use disjoint assignment coordinates, so under \cref{obj:ass:bernoulli-design} the variables \(e_1(c;Z),\ldots,e_{m}(c;Z)\) are independent and the cross terms vanish:
+\[
+\mathbb E_Z\!\left[(\widehat\tau_{w,t}-\tau_{n})^2\right]
+=
+\frac{1}{n^2}\sum_{b=1}^{m}\mathbb E_Z\!\left[e_{b}(c;Z)^2\right].
+\]
+% lean: E_completeBlock_scheduleError_sum_sq, locLinRiskAt_block_decomposition
+For a fixed block, \(c\mapsto e_{b}(c;Z)\) is linear in the rows \((c_{i,S})_{S}\) and the only constraint \(\mathcal M_t(G_t)\) places on a row is \(\sum_{S}|c_{i,S}|\le B\) with \(S\subseteq V_b\) and \(|S|\le\bar\beta\).  The criterion \(c\mapsto\mathbb E_Z[e_{b}(c;Z)^2]\) is convex in each row, so its maximum over the row simplex of radius \(B\) is attained at a vertex \(c_{i,S}=\varepsilon_iB\mathbf 1(S=S_i)\) with \(\varepsilon_i\in\{-1,1\}\), for which \(e_{b}(c;Z)=B\sum_{i\in V_b}\varepsilon_i\{w_{i,t}(Z_b)Z_{S_i}-\mathbf 1(S_i\ne\varnothing)\}\).  Hence
+\[
+\sup_{c\in\mathcal M_t(G_t)}\mathbb E_Z\!\left[e_{b}(c;Z)^2\right]
+=
+B^2\Psi_{b,t}(w).
+\]
+% lean: blockScheduleError_sq_le_extremal, exists_blockExtremal_choice, extremeBlockSchedule
+The row constraint is unitwise, so the maximizing vertices may be chosen block by block and assembled into one schedule in \(\mathcal M_t(G_t)\) that attains every block maximum simultaneously.  Therefore
 \[
 \sup_{c\in\mathcal M_t(G_t)}
-\mathbb E_Z[(\widehat\tau_{w,t}-\tau_{n_t})^2]
+\mathbb E_Z\!\left[(\widehat\tau_{w,t}-\tau_{n})^2\right]
 =
-\frac{B^2}{n_t^2}\sum_{b=1}^{m_t}\Psi_{b,t}(w),
+\frac{B^2}{n^2}\sum_{b=1}^{m}\Psi_{b,t}(w),
 \]
-where the finite maximum in \(\Psi_{b,t}\) is the same block-extreme functional after translating the sign coding to \(\varepsilon_i\in\{-1,1\}\) and writing block monomials as \(Z_{S_i}\). % lean: locLinWorstRisk_exact_blockExtremal
+which is the asserted worst-case identity. % lean: locLinWorstRisk_exact_blockExtremal
 
-\item The per-block lower bound follows from the all-empty monomial candidate and the block score identity.  Let \(g\) be the common complete-block score on \(V_b\).  For every \(i\in V_b\), blockwise unbiasedness gives
+\item \textbf{The per-block lower bound.}  Fix \(t\), \(w\in\mathcal E_t^{\mathrm{loc,lin}}\) and a block \(V_b\).  Every \(i\in V_b\) has \(N_i^{G_t}=V_b\), so the single function \(g_{d}(Z_b)\) is the common block score for all of them.  Expand it in the raw monomials it is spanned by,
 \[
-\mathbb E_Z[w_{i,t}(Z_b)g(Z_b)]=A_{d_t},
+g_{d}(Z_b)=\sum_{\substack{T\subseteq V_b\\ |T|\le\bar\beta}}a_TZ_T,
 \qquad
-\mathbb E_Z[g(Z_b)^2]=A_{d_t}.
+\sum_{\substack{T\subseteq V_b\\ |T|\le\bar\beta}}a_T=g_{d}(\mathbf 1_{d}),
+\qquad
+a_\varnothing=g_{d}(\mathbf 0_{d}).
 \]
-Hence
+Applying \(\mathbb E_Z[w_{i,t}]=0\) to the term \(T=\varnothing\) and \(\mathbb E_Z[w_{i,t}Z_T]=1\) to every other term gives, for every \(i\in V_b\),
+\[
+\mathbb E_Z[w_{i,t}(Z_b)g_{d}(Z_b)]
+=
+\sum_{\substack{\varnothing\ne T\subseteq V_b\\ |T|\le\bar\beta}}a_T
+=
+g_{d}(\mathbf 1_{d})-g_{d}(\mathbf 0_{d})
+=
+L_{d}(g_{d})
+=
+A .
+\]
+% lean: locLinWeight_snipeScore_pair
+Summing over the \(d\) units of \(V_b\) and using \(\mathbb E_Z[g_{d}(Z_b)^2]=A\), the expansion of a nonnegative square gives
 \[
 0\le
 \mathbb E_Z\!\left[
-\left\{\sum_{i\in V_b}w_{i,t}(Z_b)-d_t g(Z_b)\right\}^2
+\left\{\sum_{i\in V_b}w_{i,t}(Z_b)-dg_{d}(Z_b)\right\}^2
 \right]
 =
 \mathbb E_Z\!\left[
 \left\{\sum_{i\in V_b}w_{i,t}(Z_b)\right\}^2
 \right]
--d_t^2A_{d_t}.
+-2d(dA)+d^2A ,
 \]
-The all-empty choice in \(\Psi_{b,t}\) contains the first expectation on the right, so
+that is,
 \[
+d^2A
+\le
+\mathbb E_Z\!\left[
+\left\{\sum_{i\in V_b}w_{i,t}(Z_b)\right\}^2
+\right].
+\]
+The choice \(\varepsilon_i=1\) and \(S_i=\varnothing\) for every \(i\in V_b\) is admissible in \(\Psi_{b,t}\), since \(\varnothing\subseteq V_b\) and \(|\varnothing|=0\le\bar\beta\), and it produces exactly that expectation; as \(\Psi_{b,t}\) is a maximum over admissible choices,
+\[
+\mathbb E_Z\!\left[
+\left\{\sum_{i\in V_b}w_{i,t}(Z_b)\right\}^2
+\right]
+\le\Psi_{b,t}(w),
+\qquad\text{hence}\qquad
 d_t^2A_{d_t}\le \Psi_{b,t}(w).
 \]
-% lean: completeBlock_blockExtremal_lower
+% lean: blockExtremal_all_empty_le, completeBlock_blockExtremal_lower
 
-\item Define
+\item \textbf{The exact minimax constant.}  Define the canonical block-local weights
+\[
+w^0_{i,t}(Z):=g_{d}(Z_{b(i)}),
+\]
+which are the SNIPE scores of \cref{obj:def:snipe-score} on \(G_t\) because \(N_i^{G_t}=V_{b(i)}\) has exactly \(d\) elements.  They depend on \(Z\) only through \(Z_{b(i)}\), and the three block-score identities recorded above are precisely the centering and unit raw-moment restrictions, so \(w^0\in\mathcal E_t^{\mathrm{loc,lin}}\). % lean: canonicalLocLinWeights
+
+Fix a block \(V_b\) and an admissible choice \((\varepsilon_i,S_i)_{i\in V_b}\) in \(\Psi_{b,t}\).  All units of \(V_b\) carry the same weight \(g_{d}(Z_b)\), so
+\[
+\sum_{i\in V_b}\varepsilon_i\bigl\{w^0_{i,t}(Z_b)Z_{S_i}-\mathbf 1(S_i\ne\varnothing)\bigr\}
+=
+g_{d}(Z_b)F(Z_b)-\Lambda,
+\]
+\[
+F(Z_b):=\sum_{i\in V_b}\varepsilon_iZ_{S_i},
+\qquad
+\Lambda:=\sum_{i\in V_b}\varepsilon_i\mathbf 1(S_i\ne\varnothing).
+\]
+The block-score identities give \(\mathbb E_Z[g_{d}(Z_b)F(Z_b)]=\Lambda\), whence
+\[
+\mathbb E_Z\!\left[\bigl(g_{d}(Z_b)F(Z_b)-\Lambda\bigr)^2\right]
+=
+\mathbb E_Z\!\left[\bigl(g_{d}(Z_b)F(Z_b)\bigr)^2\right]-\Lambda^2
+\le
+\mathbb E_Z\!\left[\bigl(g_{d}(Z_b)F(Z_b)\bigr)^2\right].
+\]
+Since \(0\le Z_{S_i}\le1\), \(|\varepsilon_i|=1\) and \(|V_b|=d\), we have \(|F(Z_b)|\le d\) pointwise, so
+\[
+\mathbb E_Z\!\left[\bigl(g_{d}(Z_b)F(Z_b)\bigr)^2\right]
+\le
+d^2\,\mathbb E_Z[g_{d}(Z_b)^2]
+=
+d^2A .
+\]
+Maximizing over admissible choices and combining with the preceding item,
+\[
+\Psi_{b,t}(w^0)\le d^2A,
+\qquad\text{hence}\qquad
+\Psi_{b,t}(w^0)=d^2A .
+\]
+% lean: canonical_completeBlock_blockExtremal_upper
+By the worst-case identity and the per-block lower bound, every \(w\in\mathcal E_t^{\mathrm{loc,lin}}\) satisfies
+\[
+\sup_{c\in\mathcal M_t(G_t)}\mathbb E_Z\!\left[(\widehat\tau_{w,t}-\tau_{n})^2\right]
+=
+\frac{B^2}{n^2}\sum_{b=1}^{m}\Psi_{b,t}(w)
+\ge
+\frac{B^2}{n^2}m d^2A
+=
+\frac{B^2A}{m},
+\]
+the last equality because \(n=md\); and the same computation with \(\Psi_{b,t}(w^0)=d^2A\) turns the inequality into an equality for \(w^0\).  Taking the infimum over \(\mathcal E_t^{\mathrm{loc,lin}}\),
+\[
+R_t^{\mathrm{loc,lin}}=\frac{B^2A_{d_t}}{m_t}
+=\frac{B^2d_tA_{d_t}}{n_t},
+\]
+where the second equality is again \(n_t=m_td_t\). % lean: completeBlock_benchmark_algebra, locLinMinimaxRisk_exact
+
+\item \textbf{The risk ratio equals one plus the normalized block excess.}  For a sequence \(w_t\in\mathcal E_t^{\mathrm{loc,lin}}\) set
 \[
 Y_t:=
-\frac{1}{m_t d_t^2 A_{d_t}}
-\sum_{b=1}^{m_t}\{\Psi_{b,t}(w_t)-d_t^2A_{d_t}\}.
+\frac{1}{m_td_t^2A_{d_t}}
+\sum_{b=1}^{m_t}\bigl\{\Psi_{b,t}(w_t)-d_t^2A_{d_t}\bigr\}.
 \]
-The preceding finite identity gives, for every \(t\),
+Dividing the worst-case identity by \(B^2A_{d_t}/m_t\) and using \(n_t^2=m_t^2d_t^2\),
 \[
 \frac{
-\sup_{c\in\mathcal M_t(G_t)}
-\mathbb E_Z[(\widehat\tau_{w_t,t}-\tau_{n_t})^2]
+\sup_{c\in\mathcal M_t(G_t)}\mathbb E_Z[(\widehat\tau_{w_t,t}-\tau_{n_t})^2]
 }{
 B^2A_{d_t}/m_t
 }
-=1+Y_t.
+=
+\frac{m_t}{n_t^2A_{d_t}}\sum_{b=1}^{m_t}\Psi_{b,t}(w_t)
+=
+\frac{1}{m_td_t^2A_{d_t}}\sum_{b=1}^{m_t}\Psi_{b,t}(w_t)
+=
+1+Y_t .
 \]
-Therefore convergence of the risk ratio to \(1\) is equivalent to convergence of \(Y_t\) to \(0\), by subtracting and adding the constant sequence \(1\). % lean: riskRatio_tendsto_iff_normalizedBlockExcess
+% lean: locLinRiskRatio_eq_one_add_normalizedBlockExcess
+Adding, respectively subtracting, the constant sequence \(1\) therefore shows that the left-hand ratio converges to \(1\) if and only if \(Y_t\to0\), which is the asserted equivalence. % lean: riskRatio_tendsto_iff_normalizedBlockExcess
 
-\item Let
+\item \textbf{Score closeness implies attainment.}  Put \(\delta_{i,t}:=w_{i,t}-g_{d_t}\) on the block of \(i\), and set
 \[
-X_t:=
+E_{b,t}:=\sum_{i\in V_b}\mathbb E_Z\!\left[\delta_{i,t}(Z_b)^2\right],
+\qquad
+E_t:=\sum_{b=1}^{m_t}E_{b,t}
+=\sum_{i\in V_{n_t}}\mathbb E_Z\!\left[\bigl\{w_{i,t}(Z_{b(i)})-g_{d_t}(Z_{b(i)})\bigr\}^2\right],
+\]
+\[
+X_t:=\frac{E_t}{n_tA_{d_t}}
+=
 \frac{1}{n_tA_{d_t}}
 \sum_{i\in V_{n_t}}
-\mathbb E_Z\!\left[
-\{w_{i,t}(Z_{b(i)})-g_{d_t}(Z_{b(i)})\}^2
-\right].
+\mathbb E_Z\!\left[\bigl\{w_{i,t}(Z_{b(i)})-g_{d_t}(Z_{b(i)})\bigr\}^2\right],
 \]
-The block-excess sum is nonnegative by the lower bound above.  The blockwise distance inequality gives
+so that the hypothesis of this clause is \(X_t\to0\).  The per-block lower bound gives \(Y_t\ge0\) for every \(t\).
+
+Fix \(t\), a block \(V_b\) and an admissible choice \((\varepsilon_i,S_i)_{i\in V_b}\).  Splitting each weight into its canonical part and its deviation,
 \[
-Y_t\le 2\sqrt{X_t}+X_t,
+\sum_{i\in V_b}\varepsilon_i\bigl\{w_{i,t}(Z_b)Z_{S_i}-\mathbf 1(S_i\ne\varnothing)\bigr\}
+=
+f(Z_b)+v(Z_b),
 \]
-after using \(n_t=m_td_t\) and simplifying
+\[
+f(Z_b):=\sum_{i\in V_b}\varepsilon_i\bigl\{g_{d_t}(Z_b)Z_{S_i}-\mathbf 1(S_i\ne\varnothing)\bigr\},
+\qquad
+v(Z_b):=\sum_{i\in V_b}\varepsilon_i\delta_{i,t}(Z_b)Z_{S_i}.
+\]
+The canonical bound of the third item applies to \(f\), and for \(v\) the Cauchy--Schwarz inequality over the \(d_t\) summands together with \(0\le Z_{S_i}\le1\) and \(|\varepsilon_i|=1\) gives \(v(Z_b)^2\le d_t\sum_{i\in V_b}\delta_{i,t}(Z_b)^2\) pointwise, so
+\[
+\mathbb E_Z[f(Z_b)^2]\le d_t^2A_{d_t},
+\qquad
+\mathbb E_Z[v(Z_b)^2]\le d_tE_{b,t}.
+\]
+% lean: blockCandidatePerturb_energy_le
+Bounding the cross term by Cauchy--Schwarz, \(\mathbb E_Z[(f+v)^2]\le\mathbb E_Z[f^2]+2\sqrt{\mathbb E_Z[f^2]}\sqrt{\mathbb E_Z[v^2]}+\mathbb E_Z[v^2]\), and maximizing over admissible choices,
+\[
+\Psi_{b,t}(w_t)-d_t^2A_{d_t}
+\le
+2\sqrt{d_t^2A_{d_t}}\sqrt{d_tE_{b,t}}+d_tE_{b,t}.
+\]
+% lean: finiteDesign_E_add_sq_le, blockExtremal_le_of_weight_distance
+Summing over \(b\) and applying Cauchy--Schwarz once more, \(\sum_{b=1}^{m_t}\sqrt{d_tE_{b,t}}\le\sqrt{m_t}\sqrt{d_tE_t}\), so
+\[
+\sum_{b=1}^{m_t}\bigl\{\Psi_{b,t}(w_t)-d_t^2A_{d_t}\bigr\}
+\le
+2\sqrt{d_t^2A_{d_t}}\sqrt{m_t}\sqrt{d_tE_t}+d_tE_t .
+\]
+% lean: completeBlockExtremal_excess_le_distance
+Dividing by \(m_td_t^2A_{d_t}\) and using \(n_t=m_td_t\),
 \[
 \frac{
-2\sqrt{d_t^2A_{d_t}}\sqrt{m_t}\sqrt{d_tE_t}
-+d_tE_t
+2\sqrt{d_t^2A_{d_t}}\sqrt{m_t}\sqrt{d_tE_t}+d_tE_t
 }{
 m_td_t^2A_{d_t}
 }
 =
-2\sqrt{\frac{E_t}{n_tA_{d_t}}}
-+\frac{E_t}{n_tA_{d_t}}.
+2\sqrt{\frac{E_t}{n_tA_{d_t}}}+\frac{E_t}{n_tA_{d_t}}
+=
+2\sqrt{X_t}+X_t ,
 \]
-Thus \(X_t\to0\) implies \(Y_t\to0\) by squeezing, and the identity in the previous step gives the asserted convergence of the risk ratio. % lean: normalizedWeightDistance_tendsto_implies_riskRatio
+% lean: normalized_sqrt_excess_identity
+so that
+\[
+0\le Y_t\le 2\sqrt{X_t}+X_t .
+\]
+If \(X_t\to0\) then the right-hand bound tends to \(0\) by continuity of the square root, so \(Y_t\to0\) by squeezing, and the identity of the preceding item turns this into the asserted convergence of the risk ratio to \(1\). % lean: normalizedWeightDistance_tendsto_implies_riskRatio
 
-\item Assume \(d_t\to\infty\).  For all sufficiently large \(t\), \(\beta<d_t\).  Define \(w_t\) by adding to the canonical weights a centered full-block perturbation on one distinguished unit in each block:
+\item \textbf{An optimal sequence at normalized distance two.}  Assume \(d_t\to\infty\).  Then \(\beta<d_t\) for all sufficiently large \(t\), and for such \(t\) we have \(\bar\beta_{d_t}=\beta\).  Fix, for each block \(V_b\), a distinguished unit \(i_b^\star\in V_b\), write
+\[
+\psi_b(Z_b)
+:=
+\left\{\frac{2d_tA_{d_t}}{[p(1-p)]^{d_t}}\right\}^{1/2}
+\prod_{j\in V_b}(Z_j-p),
+\]
+and define
 \[
 w_{i,t}(Z)
-=
+:=
 g_{d_t}(Z_{b(i)})
 +
-\mathbf 1\{i=i_b^\star\}
-\left\{
-\frac{2d_tA_{d_t}}{(p(1-p))^{d_t}}
-\right\}^{1/2}
-\prod_{j\in V_{b(i)}}(Z_j-p).
+\mathbf 1\bigl(i=i^\star_{b(i)}\bigr)\,\psi_{b(i)}(Z_{b(i)}).
 \]
-The full-block centered monomial has order \(d_t\), so it is orthogonal under \cref{obj:ass:bernoulli-design} to every monomial of order at most \(\beta\); consequently these weights remain in \(\mathcal E_t^{\mathrm{loc,lin}}\).  The exact identity above gives the lower bound \(1\) for the risk ratio.  The witness block bound gives, eventually,
+% lean: orthogonalBlockPerturb, orthogonalWitnessWeights
+
+\textbf{Admissibility.}  Each \(\psi_b\) is a function of \(Z_b\) alone.  For every \(S\subseteq V_b\) with \(|S|\le\beta<d_t\), including \(S=\varnothing\), at least one index \(j\in V_b\) outside \(S\) occurs in the product, and under \cref{obj:ass:bernoulli-design} that coordinate is independent of \(Z_S\) and of the remaining factors and satisfies \(\mathbb E_Z[Z_j-p]=0\); hence
+\[
+\mathbb E_Z\!\left[\bigl(\prod_{j\in V_b}(Z_j-p)\bigr)Z_S\right]=0
+\qquad\text{for every }S\subseteq V_b\text{ with }|S|<d_t .
+\]
+% lean: E_global_centered_mul_raw_eq_zero
+So the perturbation changes neither the centering nor the unit raw moments inherited from \(g_{d_t}\), and \(w_t\in\mathcal E_t^{\mathrm{loc,lin}}\).
+
+\textbf{Perturbation energy.}  By independence and \(\mathbb E_Z[(Z_j-p)^2]=p(1-p)\),
+\[
+\mathbb E_Z\!\left[\bigl(\prod_{j\in V_b}(Z_j-p)\bigr)^2\right]=[p(1-p)]^{d_t},
+\qquad\text{hence}\qquad
+\mathbb E_Z\!\left[\psi_b(Z_b)^2\right]=2d_tA_{d_t}.
+\]
+% lean: E_global_centeredMonomial_mul, orthogonalBlockPerturb_energy
+
+\textbf{Block bound and the risk ratio.}  Fix a block \(V_b\) and an admissible choice, and split the inner sum as in the preceding item.  Because the perturbation is carried by the single unit \(i_b^\star\), the deviation part reduces to one summand, \(v(Z_b)=\varepsilon_{i_b^\star}\psi_b(Z_b)Z_{S_{i_b^\star}}\), and \(0\le Z_{S_{i_b^\star}}\le1\) gives \(\mathbb E_Z[v(Z_b)^2]\le\mathbb E_Z[\psi_b(Z_b)^2]=2d_tA_{d_t}\); the canonical part still obeys \(\mathbb E_Z[f(Z_b)^2]\le d_t^2A_{d_t}\).  The same Cauchy--Schwarz bound on the cross term therefore yields, for all sufficiently large \(t\) and every \(b\),
 \[
 \Psi_{b,t}(w_t)
 \le
 d_t^2A_{d_t}
 +2\sqrt{d_t^2A_{d_t}}\sqrt{2d_tA_{d_t}}
-+2d_tA_{d_t},
++2d_tA_{d_t}.
 \]
-and therefore
+% lean: monomial_mul_sq_energy_le, orthogonalWitness_blockExtremal_upper
+Dividing the excess by \(d_t^2A_{d_t}\) gives \(2\sqrt{2/d_t}+2/d_t\) for each block, hence the same bound for \(Y_t\), while \(Y_t\ge0\) by the per-block lower bound.  With the identity of the fourth item,
 \[
+1
+\le
 \frac{
-\sup_{c\in\mathcal M_t(G_t)}
-\mathbb E_Z[(\widehat\tau_{w_t,t}-\tau_{n_t})^2]
+\sup_{c\in\mathcal M_t(G_t)}\mathbb E_Z[(\widehat\tau_{w_t,t}-\tau_{n_t})^2]
 }{
 B^2A_{d_t}/m_t
 }
 \le
-1+2\sqrt{\frac{2}{d_t}}+\frac{2}{d_t}.
+1+2\sqrt{\frac{2}{d_t}}+\frac{2}{d_t}
 \]
-Since \(d_t\to\infty\), squeezing proves the displayed risk-ratio convergence for this sequence. % lean: orthogonalWitness_riskRatio_tendsto_one
+for all sufficiently large \(t\).  Since \(d_t\to\infty\), squeezing proves the asserted convergence of the risk ratio to \(1\). % lean: orthogonalWitness_riskRatio_tendsto_one
 
-\item For the same sufficiently large \(t\), the perturbation has squared energy \(2d_tA_{d_t}\) on the distinguished unit of each block and zero perturbation energy on the other units.  Hence
+\textbf{Normalized distance.}  For the same sufficiently large \(t\), the deviation \(w_{i,t}-g_{d_t}\) equals \(\psi_b\) at \(i=i_b^\star\) and vanishes at every other unit, so
 \[
 \sum_{i\in V_{n_t}}
-\mathbb E_Z\!\left[
-\{w_{i,t}(Z_{b(i)})-g_{d_t}(Z_{b(i)})\}^2
-\right]
+\mathbb E_Z\!\left[\bigl\{w_{i,t}(Z_{b(i)})-g_{d_t}(Z_{b(i)})\bigr\}^2\right]
 =
-m_t(2d_tA_{d_t}),
+\sum_{b=1}^{m_t}\mathbb E_Z\!\left[\psi_b(Z_b)^2\right]
+=
+2m_td_tA_{d_t},
 \]
-and division by \(n_tA_{d_t}=m_td_tA_{d_t}\) gives the value \(2\).  If \(\pi\) preserves block membership, the complete-block score is invariant under the induced within-block relabeling, and the full-block centered perturbation has the same squared energy after the relabeling.  The same calculation gives the relabeled normalized distance \(2\). % lean: orthogonalWitness_normalized_relabel_distance_eq_two
+and dividing by \(n_tA_{d_t}=m_td_tA_{d_t}\) gives the value \(2\). % lean: orthogonalWitnessWeights_distance_energy, orthogonalWitness_normalized_distance_eq_two
+
+\textbf{Invariance under block-preserving relabeling.}  Let \(\pi\) be a bijection of \(V_{n_t}\) with \(b(\pi(i))=b(i)\) for every \(i\); then \(\pi\) maps each block onto itself and therefore permutes the coordinates of \(Z_b\) among themselves.  The relabeled distance moves the score term only: at the unit \(i\) it compares the weight \(w_{i,t}\), read at the unit \(i\) and at the original assignment, with the canonical score of the relabeled unit \(\pi(i)\), whose neighborhood is again \(V_{b(i)}\), read at the relabeled assignment whose \(j\)th coordinate is \(Z_{\pi^{-1}(j)}\).  Since \(g_{d_t}\) is a symmetric function of the coordinates of its block, that relabeled score is the original one,
+\[
+g_{d_t}\bigl((Z_{\pi^{-1}(j)})_{j\in V_{b(i)}}\bigr)
+=
+g_{d_t}(Z_{b(i)})
+\qquad\text{for every }i\in V_{n_t}.
+\]
+% lean: canonicalBlockScore_relabel_within_blocks
+Each summand of the normalized distance is therefore unchanged, and the previous display gives
+\[
+\frac{1}{n_tA_{d_t}}
+\sum_{i\in V_{n_t}}
+\mathbb E_Z\!\left[
+\Bigl\{w_{i,t}(Z_{b(i)})-g_{d_t}\bigl((Z_{\pi^{-1}(j)})_{j\in V_{b(i)}}\bigr)\Bigr\}^2
+\right]
+=2 ,
+\]
+which is the asserted invariance.
+% lean: orthogonalWitness_normalized_relabel_distance_eq_two
 \end{enumerate}
 \end{proof}

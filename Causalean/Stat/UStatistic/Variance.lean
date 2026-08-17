@@ -136,7 +136,7 @@ theorem toOrderDegenKernel [SigmaFinite P] (hg : DegenKernel P g) :
   · change Measurable (fun z : Fin 2 → X => g (z 0) (z 1))
     have hcoord : Measurable (fun z : Fin 2 → X => (z 0, z 1)) :=
       (measurable_pi_apply (0 : Fin 2)).prodMk (measurable_pi_apply (1 : Fin 2))
-    simpa using hg.meas.comp hcoord
+    exact hg.meas.comp hcoord
   · intro σ z
     have hneq : σ (1 : Fin 2) ≠ σ (0 : Fin 2) := by
       intro h
@@ -191,7 +191,7 @@ theorem toOrderDegenKernel [SigmaFinite P] (hg : DegenKernel P g) :
     have hmp : MeasurePreserving e
         (Measure.pi fun _ : Fin 2 => P) (P.prod P) := by
       simpa [e] using (measurePreserving_piFinTwo (fun _ : Fin 2 => P))
-    simpa [pairKernel, e] using hmp.integrable_comp_of_integrable hg.sq
+    simpa [pairKernel, e, Function.comp_def] using hmp.integrable_comp_of_integrable hg.sq
 
 end DegenKernel
 
@@ -405,7 +405,8 @@ lemma variance_offDiag_kernel_le
         (fun r => measurable_pi_apply r) i j k l hik hil hjk hjl
     have hindep : b i j ⟂ᵢ[μN] b k l := by
       have hc := hpairs.comp hkernel hkernel
-      simpa only [Function.comp_apply, b, if_pos hij, if_pos hkl] using hc
+      simpa only [Function.comp_def, Function.uncurry_apply_pair, b, if_pos hij,
+        if_pos hkl] using hc
     exact hindep.covariance_eq_zero (hbmem i j) (hbmem k l)
   let χ : Prop → ℝ := fun p => if p then 1 else 0
   let bracket : Fin N → Fin N → Fin N → Fin N → ℝ := fun i j k l =>

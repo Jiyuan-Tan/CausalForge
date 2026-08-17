@@ -311,8 +311,7 @@ lemma regularCellProcedure_coverage_liminf
       have hp :
           Measurable fun s : TwoSample 𝒳 n (N n) => (s, theta) :=
         measurable_id.prodMk measurable_const
-      have hpre := hgraph.preimage hp
-      convert hpre using 1
+      exact hgraph.preimage hp
     have hrangeMeas : MeasurableSet (Set.range cell) := by
       rw [show Set.range cell = ⋃ i, {cell i} by
         ext x

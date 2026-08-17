@@ -94,7 +94,7 @@ noncomputable def parentValuesFromPrefix (M : Causalean.SCM N Ω) {n : ℕ}
             M.observed_parent_index_lt hn
               (M.dag.mem_parents.mp w.property) hobs
           let iobs : Fin n :=
-            ⟨(M.observedIndex ⟨w.val, hobs⟩ : ℕ), by simpa using hlt⟩
+            ⟨(M.observedIndex ⟨w.val, hobs⟩ : ℕ), hlt⟩
           have hEq :
               swigΩ Ω (M.observedAt (M.observedIndex ⟨w.val, hobs⟩)).val =
                 swigΩ Ω w.val := by
@@ -123,18 +123,20 @@ theorem measurable_parentValuesFromPrefix (M : Causalean.SCM N Ω) {n : ℕ}
   intro w
   by_cases hfix : w.val ∈ M.fixed
   · -- Fixed case: projection `sℓξ ↦ sℓξ.1 ⟨w.val, hfix⟩`.
-    let wf : {x // x ∈ M.fixed} := ⟨w.val, hfix⟩
-    simpa [SCM.parentValuesFromPrefix, hfix, wf] using
-      ((measurable_pi_apply (a := wf)) :
-          Measurable fun x : M.FixedValues => x wf).comp
-        (measurable_fst : Measurable Prod.fst)
+    have h0 : Measurable fun x : M.FixedValues =>
+        x (⟨w.val, hfix⟩ : {x // x ∈ M.fixed}) := measurable_pi_apply _
+    have h : Measurable fun c : M.FixedValues ×
+        M.OrderedLatentPrefixValues n (Nat.le_of_succ_le hn) =>
+        c.1 (⟨w.val, hfix⟩ : {x // x ∈ M.fixed}) :=
+      h0.comp measurable_fst
+    simpa [SCM.parentValuesFromPrefix, hfix] using h
   · by_cases hobs : w.val ∈ M.observed
     · -- Observed case: `cast ∘ observedPrefixValue ∘ snd ∘ snd`.
       have hlt : M.observedIndex ⟨w.val, hobs⟩ < ⟨n, hn⟩ :=
         M.observed_parent_index_lt hn
           (M.dag.mem_parents.mp w.property) hobs
       let iobs : Fin n :=
-        ⟨(M.observedIndex ⟨w.val, hobs⟩ : ℕ), by simpa using hlt⟩
+        ⟨(M.observedIndex ⟨w.val, hobs⟩ : ℕ), hlt⟩
       have hNode :
           (M.observedAt (M.observedIndex ⟨w.val, hobs⟩)).val = w.val := by
         simpa using M.observedAt_observedIndex ⟨w.val, hobs⟩
@@ -168,12 +170,13 @@ theorem measurable_parentValuesFromPrefix (M : Causalean.SCM N Ω) {n : ℕ}
       have hunobs : w.val ∈ M.unobserved :=
         parent_unobserved_of_not_fixed_not_observed M.toSWIGGraph
           (M.dag.mem_parents.mp w.property) hfix hobs
-      let wu : {x // x ∈ M.unobserved} := ⟨w.val, hunobs⟩
-      simpa [SCM.parentValuesFromPrefix, hfix, hobs, hunobs, wu] using
-        ((measurable_pi_apply (a := wu)) :
-            Measurable fun x : M.LatentValues => x wu).comp
-          ((measurable_fst : Measurable Prod.fst).comp
-            (measurable_snd : Measurable Prod.snd))
+      have h0 : Measurable fun x : M.LatentValues =>
+          x (⟨w.val, hunobs⟩ : {x // x ∈ M.unobserved}) := measurable_pi_apply _
+      have h : Measurable fun c : M.FixedValues ×
+          M.OrderedLatentPrefixValues n (Nat.le_of_succ_le hn) =>
+          c.2.1 (⟨w.val, hunobs⟩ : {x // x ∈ M.unobserved}) :=
+        h0.comp (measurable_fst.comp measurable_snd)
+      simpa [SCM.parentValuesFromPrefix, hfix, hobs, hunobs] using h
 
 end SCM
 

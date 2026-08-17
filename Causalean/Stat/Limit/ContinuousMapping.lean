@@ -54,7 +54,7 @@ theorem Tendsto_inProb.comp_continuousAt
   rcases Metric.eventually_nhds_iff.mp hev with ⟨η, hηpos, hη⟩
   have ht := h η hηpos
   refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds ht
-    (fun _ => zero_le _) ?_
+    (fun _ => zero_le) ?_
   intro n
   apply measure_mono
   intro ω hω
@@ -76,7 +76,7 @@ theorem Tendsto_inProb.inv
   rcases Metric.eventually_nhds_iff.mp hev with ⟨η, hηpos, hη⟩
   have ht := h η hηpos
   refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds ht
-    (fun _ => zero_le _) ?_
+    (fun _ => zero_le) ?_
   intro n
   apply measure_mono
   intro ω hω
@@ -115,7 +115,7 @@ theorem Tendsto_inProb.sub
         atTop (𝓝 0) := by
     simpa using (hX (ε / 2) hhalf).add (hY (ε / 2) hhalf)
   refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hupper
-    (fun _ => zero_le _) ?_
+    (fun _ => zero_le) ?_
   intro n
   refine le_trans (measure_mono ?_) (measure_union_le _ _)
   intro ω hω
@@ -146,7 +146,7 @@ theorem Tendsto_inProb.isLittleOp_one
   rw [tendstoInMeasure_iff_norm] at h
   have ht := h ε hε
   refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds ht
-    (fun _ => zero_le _) ?_
+    (fun _ => zero_le) ?_
   intro n
   apply measure_mono
   intro ω hω
@@ -180,7 +180,7 @@ theorem Tendsto_inProb.isBigOp_one
           have htri := abs_sub_abs_le_abs_sub (Xn n ω) c
           linarith
     _ = 0 := hlim
-    _ ≤ ENNReal.ofReal ε := zero_le _
+    _ ≤ ENNReal.ofReal ε := zero_le
 
 set_option linter.unusedFintypeInType false
 
@@ -238,7 +238,7 @@ theorem Tendsto_inProb.pi_comp_continuousAt
     intro n
     exact MeasureTheory.measure_iUnion_fintype_le μ (fun i => Bad n i)
   refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hupper
-    (fun _ => zero_le _) ?_
+    (fun _ => zero_le) ?_
   intro n
   calc
     μ {ω | ε ≤ dist (g (Yn n ω)) (g c)} ≤ μ (⋃ i, Bad n i) :=
@@ -274,6 +274,6 @@ theorem Tendsto_inProb.matrix_comp_continuousAt
     (c := fun p => M₀ p.1 p.2)
     (g := fun y : (K × K) → ℝ => g (reindex y)) hg'
     (fun p => h p.1 p.2)
-  simpa [reindex, Matrix.of_apply] using hpi
+  exact hpi
 
 end Causalean.Stat

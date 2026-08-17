@@ -177,7 +177,7 @@ private lemma tendsto_inProb_zero_of_isLittleOp_one {Xn : ℕ → P.Ω → ℝ}
   -- weak-`≤` tail at threshold `ε`.
   have ht := h (ε / 2) (by linarith)
   refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds ht
-    (fun _ => zero_le _) ?_
+    (fun _ => zero_le) ?_
   intro n
   apply measure_mono
   intro ω hω

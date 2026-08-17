@@ -108,10 +108,11 @@ atoms.  The squared first coordinate already has an atomless law (its preimage
 under squaring is finite, and `gaussianReal` is atomless), and adding the
 independent remainder preserves atomlessness via Fubini. -/
 theorem noAtoms_pi_normSq {n : ℕ} (hn : 1 ≤ n) :
-    NoAtoms ((Measure.pi (fun _ : Fin n => gaussianReal 0 1)).map
+    NullSingletonClass ((Measure.pi (fun _ : Fin n => gaussianReal 0 1)).map
       (fun w => ∑ i, (w i) ^ 2)) := by
   classical
-  haveI hG : NoAtoms (gaussianReal 0 1) := noAtoms_gaussianReal (by norm_num)
+  haveI hG : NullSingletonClass (gaussianReal 0 1) :=
+    nullSingletonClass_gaussianReal (by norm_num)
   refine ⟨fun c => ?_⟩
   rw [Measure.map_apply (by fun_prop) (measurableSet_singleton c)]
   obtain ⟨m, rfl⟩ := Nat.exists_eq_succ_of_ne_zero (by omega : n ≠ 0)
@@ -160,7 +161,7 @@ theorem noAtoms_pi_normSq {n : ℕ} (hn : 1 ≤ n) :
   simp_rw [hfib, lintegral_zero]
 
 /-- **`χ²_d` has no atoms for `d ≥ 1`.** -/
-theorem noAtoms_chiSqDist {d : ℕ} (hd : 1 ≤ d) : NoAtoms (chiSqDist d) := by
+theorem noAtoms_chiSqDist {d : ℕ} (hd : 1 ≤ d) : NullSingletonClass (chiSqDist d) := by
   rw [chiSqDist, stdGaussian_map_normSq_eq_pi]
   exact noAtoms_pi_normSq (by rwa [finrank_euclideanSpace_fin])
 

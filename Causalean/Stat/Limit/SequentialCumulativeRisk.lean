@@ -133,7 +133,7 @@ lemma log_lin_log_le_half_log {c : ℝ} (hc : 0 < c) :
     ∃ N : ℕ, ∀ T : ℕ, N ≤ T →
       Real.log (c * Real.log (T : ℝ) + 1) ≤ (1 / 2) * Real.log (T : ℝ) := by
   have htend : Tendsto (fun T : ℕ => Real.log (T : ℝ)) atTop atTop := by
-    simpa using Real.tendsto_log_atTop.comp (tendsto_natCast_atTop_atTop (R := ℝ))
+    simpa [Function.comp_def] using Real.tendsto_log_atTop.comp (tendsto_natCast_atTop_atTop (R := ℝ))
   obtain ⟨N, hN⟩ :=
     Filter.eventually_atTop.mp (htend.eventually_ge_atTop (16 * c + 16))
   exact ⟨N, fun T hT => log_lin_log_le_half_log_of_log_ge hc (hN T hT)⟩
@@ -207,7 +207,7 @@ theorem cumulative_risk_engine
     nlinarith
   obtain ⟨Nlog, hNlog⟩ := log_lin_log_le_half_log hC₁_pos
   have htend : Tendsto (fun T : ℕ => Real.log (T : ℝ)) atTop atTop := by
-    simpa using Real.tendsto_log_atTop.comp (tendsto_natCast_atTop_atTop (R := ℝ))
+    simpa [Function.comp_def] using Real.tendsto_log_atTop.comp (tendsto_natCast_atTop_atTop (R := ℝ))
   obtain ⟨NIq, hNIq⟩ :=
     Filter.eventually_atTop.mp (htend.eventually_ge_atTop (4 * Iq / (J * C₁)))
   refine ⟨Nlog ⊔ NIq ⊔ 3, ?_⟩

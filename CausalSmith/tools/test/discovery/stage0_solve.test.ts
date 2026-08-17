@@ -4258,6 +4258,38 @@ describe("incremental reuse across escalation rounds", () => {
     expect(rebuilt.statements.some((s: any) => s.id === "thm:canonical-result")).toBe(true);
   });
 
+  it("deletes a helper and its sole consumer as one atomic bundle", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    proto.statements = [
+      {
+        ...proto.statements[0], id: "lem:bundle-helper", kind: "lemma",
+        statement: "an intermediate fact", depends_on: ["ass:overlap"], status: "to-prove",
+      },
+      {
+        ...proto.statements[1], id: "thm:bundle-consumer", kind: "theorem",
+        statement: "a result using the intermediate fact", depends_on: ["lem:bundle-helper"], status: "to-prove",
+      },
+    ];
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await seedWorkingProposals(ctx, { coreEdits: [
+      {
+        kind: "statement-delete", id: "lem:bundle-helper",
+        reason: "remove rejected helper", direction: "delete-obsolete",
+      },
+      {
+        kind: "statement-delete", id: "thm:bundle-consumer",
+        reason: "remove rejected consumer", direction: "delete-obsolete",
+      },
+    ] });
+
+    await applyProposedChanges({ ctx });
+
+    const updated = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    expect(updated.statements.some((statement: any) => statement.id === "lem:bundle-helper")).toBe(false);
+    expect(updated.statements.some((statement: any) => statement.id === "thm:bundle-consumer")).toBe(false);
+  });
+
   it("applies a metadata-only statement replacement while preserving the frozen claim", async () => {
     const ctx = makeCtx(repoRoot);
     const proto = structuredClone(PROTO) as any;
@@ -4527,7 +4559,16 @@ describe("incremental reuse across escalation rounds", () => {
       lean: undefined as never,
     };
 
-    await runStage0Solve({ ctx, state: makeState(), deps });
+    const invariantWarnings: string[] = [];
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation((...args: unknown[]) => {
+      invariantWarnings.push(args.map(String).join(" "));
+    });
+    try {
+      await runStage0Solve({ ctx, state: makeState(), deps });
+    } finally {
+      warnSpy.mockRestore();
+    }
+    expect(invariantWarnings.join("\n")).not.toContain("silent-node-loss");
 
     const core = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
     expect(core.statements.some((s: any) => s.id === "oeq:agent-added-open-question")).toBe(false);

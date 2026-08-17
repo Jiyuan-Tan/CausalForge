@@ -346,7 +346,7 @@ theorem exp_neg_half_klDiv_le_bhattacharyya (hac : μ ≪ ν)
       (convexOn_exp.map_integral_le
         (μ := μ) (f := fun x => (-(1 / 2 : ℝ)) * llr μ ν x)
         Real.continuous_exp.continuousOn isClosed_univ hfs hfi
-        (by simpa only [Function.comp_apply] using hgi))
+        (by simpa only [Function.comp_def] using hgi))
   have harg :
       ∫ x, (-(1 / 2 : ℝ)) * llr μ ν x ∂μ
         = -(1 / 2) * (klDiv μ ν).toReal := by

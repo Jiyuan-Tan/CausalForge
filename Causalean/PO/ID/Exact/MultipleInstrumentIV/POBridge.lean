@@ -232,6 +232,10 @@ theorem treatmentDrop [IsFiniteMeasure P.μ] (hA : S.Assumptions) (k : Fin K)
   let h_proj : (∀ i : Fin (S.cfCell k).n, (S.cfCell k).type i) → ℝ :=
     fun f => boolToReal ((f (0 : Fin 3)) : Bool)
   have hh_meas : Measurable h_proj := by
+    -- Instance search no longer unfolds `cfCell` to see `n = 3`, so supply the
+    -- coordinate measurable-space family at index type `Fin 3` directly.
+    let _ : ∀ i : Fin 3, MeasurableSpace ((S.cfCell k).type i) :=
+      fun i => (S.cfCell k).inst i
     change Measurable fun f : ∀ i : Fin (S.cfCell k).n, (S.cfCell k).type i =>
       boolToReal ((f (0 : Fin 3)) : Bool)
     exact (by fun_prop : Measurable fun b : Bool => boolToReal b).comp
@@ -272,6 +276,10 @@ theorem outcomeDrop [IsFiniteMeasure P.μ] (hA : S.Assumptions) (k : Fin K)
   let h_proj : (∀ i : Fin (S.cfCell k).n, (S.cfCell k).type i) → ℝ :=
     fun f => cond (getD f) (getY1 f) (getY0 f)
   have hh_meas : Measurable h_proj := by
+    -- Instance search no longer unfolds `cfCell` to see `n = 3`, so supply the
+    -- coordinate measurable-space family at index type `Fin 3` directly.
+    let _ : ∀ i : Fin 3, MeasurableSpace ((S.cfCell k).type i) :=
+      fun i => (S.cfCell k).inst i
     have hD_meas : Measurable getD := by
       dsimp [getD]
       exact measurable_pi_apply (0 : Fin 3)
@@ -425,7 +433,6 @@ lemma telescoped_eq (hK : 0 < K) (g : ResponseType K) (k : Fin K) :
     · intro j hj
       have hjle : j.1.val ≤ k.val := by simpa using hj
       rw [Finset.mem_range]
-      change j.1.val - 1 < k.val
       have hpos : 0 < j.1.val := j.2
       omega
     · intro j1 hj1 j2 hj2 h
@@ -442,7 +449,9 @@ lemma telescoped_eq (hK : 0 < K) (g : ResponseType K) (k : Fin K) :
       refine ⟨⟨⟨r + 1, ?_⟩, ?_⟩, ?_, ?_⟩
       · exact Nat.lt_of_le_of_lt (Nat.succ_le_of_lt hrlt) k.isLt
       · exact Nat.succ_pos r
-      · simpa using (show r + 1 ≤ k.val by omega)
+      · refine Finset.mem_filter.mpr ⟨Finset.mem_univ _, ?_⟩
+        show r + 1 ≤ k.val
+        omega
       · change r + 1 - 1 = r
         omega
     · intro j hj

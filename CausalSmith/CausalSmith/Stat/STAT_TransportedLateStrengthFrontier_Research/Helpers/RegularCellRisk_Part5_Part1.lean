@@ -352,8 +352,9 @@ lemma regularCell_eventually_uniform_moment_variance
           (1 / epsilon) ^ 2 / n ≤ (2 / epsilon) ^ 2 / n := by
         apply div_le_div_of_nonneg_right _ hnreal.le
         have hs := sq_nonneg (1 / epsilon)
-        convert (show (1 / epsilon) ^ 2 ≤ 4 * (1 / epsilon) ^ 2 by
-          nlinarith) using 1 <;> ring
+        have h4 : (2 / epsilon) ^ 2 = 4 * (1 / epsilon) ^ 2 := by ring
+        rw [h4]
+        nlinarith
       have htarget : 1 / (N n : ℝ) ≤ 4 / (N n : ℝ) := by
         exact div_le_div_of_nonneg_right (by norm_num) hNreal.le
       exact add_le_add (mul_le_mul_of_nonneg_right hcoef hsum0) htarget

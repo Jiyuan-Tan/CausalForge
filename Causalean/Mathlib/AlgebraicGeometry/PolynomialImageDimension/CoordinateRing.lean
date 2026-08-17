@@ -76,7 +76,7 @@ theorem affineZariskiDimension_iff_coordinateRingKrullDim
       have hle : (d + 1 : WithBot ℕ∞) ≤
           Order.krullDim (PrimeSpectrum.zeroLocus
             (↑(MvPolynomial.vanishingIdeal ℂ Z) : Set (MvPolynomial ι ℂ))) := by
-        exact WithBot.add_one_le_iff.mpr (lt_of_not_ge hlt)
+        exact ENat.WithBot.add_one_le_iff.mpr (lt_of_not_ge hlt)
       obtain ⟨series, hseries⟩ := Order.le_krullDim_iff.mp hle
       let castIndex : Fin (d + 2) → Fin (series.length + 1) :=
         Fin.cast (congrArg (· + 1) hseries.symm)

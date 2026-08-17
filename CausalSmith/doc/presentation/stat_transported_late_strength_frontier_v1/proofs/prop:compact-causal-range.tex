@@ -1,5 +1,33 @@
 \begin{proof}[Proof of \cref{obj:prop:compact-causal-range}]
-Write
+Throughout, write \(F=(S,X,D(0),D(1),Y(0),Y(1))\) for the full-data record, and let
+\[
+P_{\mathrm{assign},S}
+=
+\text{the joint law of }(F,Z)\text{ in the source encouragement experiment.}
+\]
+Model membership in \(\mathcal P_n\), as specified in \cref{obj:def:model-class}, supplies through \cref{obj:ass:source-observation} that \(P_{\mathrm{assign},S}\) is a probability law whose full-data marginal is the source full-data law and that the observed source law is its image under the observation map \(g\):
+\[
+\text{law of }F\text{ under }P_{\mathrm{assign},S}=P_n^F(\cdot\mid S=1),
+\qquad
+g(F,Z)=(X,\ Z,\ D(Z),\ Y(D(Z))),
+\]
+\[
+P_S=\text{law of }g(F,Z)\text{ under }P_{\mathrm{assign},S}.
+\]
+The map \(g\) is measurable: its first two coordinates are coordinate projections, and its last two are two-branch selections between projections indexed by the measurable sets \(\{Z=1\}\) and \(\{D(Z)=1\}\).
+% lean: measurable_observeSource, observeSource, sourceObsLaw, SourceAssignmentConsistency
+We also abbreviate
+\[
+\mu=P_n^F(\cdot\mid S=0),
+\qquad
+C=\{D(1)=1,\ D(0)=0\},
+\]
+and we fix, alongside the source contrasts \(\Delta_Y,\Delta_D\) of \cref{obj:synth_6}, measurable versions of the corresponding target conditional contrasts
+\begin{align*}
+\Delta_Y^T(x)&=\mathbb E_{P_n^F}\!\left[Y^Z(1)-Y^Z(0)\mid X=x,\ S=0\right],\\
+\Delta_D^T(x)&=\mathbb E_{P_n^F}\!\left[D(1)-D(0)\mid X=x,\ S=0\right].
+\end{align*}
+Finally, \(H\) is the score of \cref{obj:synth_1}; in the two branches of the binary instrument it takes the values
 \[
 H(O)=
 \begin{cases}
@@ -7,15 +35,81 @@ H(O)=
 -1/\{1-e(X)\}, & Z=0.
 \end{cases}
 \]
+% lean: instrumentScore, TransportedArray.deltaY, TransportedArray.deltaD
+
 \begin{enumerate}
-\item Model membership in \(\mathcal P_n\), as specified in \cref{obj:def:model-class}, supplies the full-data support, population presence, two-sample laws, overlap, source observation, randomization, exclusion, monotonicity, transport, target-complier positivity, domination, and envelope facts used below.  The source observation map \((S,X,D(0),D(1),Y(0),Y(1),Z)\mapsto (X,Z,D(Z),Y(D(Z)))\) is measurable, and its \(X\)-marginal agrees with the source full-data \(X\)-marginal.  Therefore overlap transfers to the observed source law:
+\item \textbf{Source marginals, overlap on the observed law, and the score bound.}
+The first coordinate of \(g\) is \(X\), so composing the two displays above shows that the source covariate marginal is also the covariate marginal of the source full-data law:
+\[
+P_S^X
+=
+\text{law of }X\text{ under }P_n^F(\cdot\mid S=1).
+\]
+% lean: sourceXLaw_eq_populationXLaw_source
+Since \(P_S^X\) is by construction the \(X\)-marginal of \(P_S\), the overlap statement of \cref{obj:ass:instrument-overlap} transfers verbatim to the observed source law and, by the last display, to the source full-data law:
 \[
 \varepsilon\le e(X)\le 1-\varepsilon
-\qquad P_S\text{-a.s.}
+\qquad
+P_S\text{-a.s. and }P_n^F(\cdot\mid S=1)\text{-a.s.}
 \]
-Consequently \(H\) is measurable and \(|H|\le 1/\varepsilon\) \(P_S\)-almost surely.  Since the observed outcome lies in \([0,1]\) and the receipt indicator is bounded by one, both \(H(O)Y\) and \(H(O)D\) are integrable under \(P_S\).
+The score \(H\) is measurable, being a two-branch selection between \(1/e\) and \(-1/(1-e)\) along the measurable set \(\{Z=1\}\), and the two branches are bounded as follows: on \(\{Z=1\}\), \(|H(O)|=1/e(X)\le 1/\varepsilon\) because \(e(X)\ge\varepsilon>0\); on \(\{Z=0\}\), \(|H(O)|=1/\{1-e(X)\}\le1/\varepsilon\) because \(1-e(X)\ge\varepsilon>0\). Hence
+\[
+|H(O)|\le 1/\varepsilon
+\qquad
+P_S\text{-a.s.}
+\]
+% lean: compact_causal_range (hOverlapObs, hInstrumentScoreMeasurable, hInstrumentScoreBound)
+By \cref{obj:ass:full-data-support} the potential outcomes lie in \([0,1]\), and \(P_n^F(\cdot\mid S=1)\ll P_n^F\); pushing this through \(g\), whose outcome coordinate is one of \(Y(0),Y(1)\), gives \(Y\in[0,1]\) \(P_S\)-almost surely, while \(D=D(Z)\in\{0,1\}\) by construction. Therefore
+\[
+|H(O)Y|\le 1/\varepsilon,
+\qquad
+|H(O)D|\le 1/\varepsilon
+\qquad
+P_S\text{-a.s.},
+\]
+and since \(P_S\) is a probability law both \(H(O)Y\) and \(H(O)D\) are \(P_S\)-integrable.
+% lean: compact_causal_range (hScoreIntegrable, hOutcomeScoreIntegrable, hReceiptScoreIntegrable)
 
-\item The inverse-propensity calculation used for the full-data contrasts is as follows.  Let \(F_0,F_1\) be measurable and integrable under \(P_n^F(\cdot\mid S=1)\), and assume that the assigned-source inverse-propensity integrand displayed below is integrable.  For each measurable \(A\), conditional randomization and overlap identify the \(Z=z\) slice of the assigned source law, mapped back to full data, as the source full-data law weighted by \(e(X)\) when \(z=1\) and by \(1-e(X)\) when \(z=0\).  Splitting the assigned law into the two slices gives
+\item \textbf{The instrument slice of the assigned source law.}
+For each \(z\in\{0,1\}\) put
+\[
+\pi_z(F)=z\,e(X)+(1-z)\{1-e(X)\}.
+\]
+Conditional randomization in \cref{obj:ass:iv-randomization}, combined with the assignment-propensity clause \(P(Z=1\mid X,S=1)=e(X)\) of \cref{obj:ass:source-observation}, says exactly that for every measurable full-data set \(B\),
+\[
+P_{\mathrm{assign},S}\{(F,Z):F\in B,\ Z=z\}
+=
+\int_B \pi_z(F)\,dP_n^F(\cdot\mid S=1).
+\]
+The overlap bound of the previous step gives \(0<\varepsilon\le\pi_z\le1-\varepsilon<1\) \(P_n^F(\cdot\mid S=1)\)-almost surely, so \(\pi_z\) is a nonnegative integrable density and \(P_n^F(\cdot\mid S=1)\) is a probability law; the restricted image measure on the left is finite. A finite measure whose mass on every measurable set equals the integral of a fixed nonnegative integrable density is that weighted measure, so the displayed set identity upgrades to the measure identity
+\[
+\text{image under }F\text{ of }P_{\mathrm{assign},S}\text{ restricted to }\{Z=z\}
+=
+\pi_z\cdot P_n^F(\cdot\mid S=1).
+\]
+% lean: ivRandomization_slice_eq_withDensity, measure_eq_withDensity_of_toReal_setIntegral
+
+\item \textbf{The inverse-propensity contrast identity for full-data integrands.}
+Let \(F_0,F_1\) be measurable full-data functions, integrable under \(P_n^F(\cdot\mid S=1)\), and suppose that
+\[
+(F,Z)\mapsto
+\frac{\mathbf 1\{Z=1\}}{e(X)}F_1
+-\frac{\mathbf 1\{Z=0\}}{1-e(X)}F_0
+\]
+is \(P_{\mathrm{assign},S}\)-integrable. Fix a measurable \(A\subseteq\mathcal X\). Splitting the domain \(\{X\in A\}\) into its two instrument slices, the integrand reduces on each slice to a function of \(F\) alone, so the measure identity of the previous step applies after the change of variables \((F,Z)\mapsto F\):
+\begin{align*}
+\int_{\{X\in A,\ Z=1\}}\frac{F_1}{e(X)}\,dP_{\mathrm{assign},S}
+&=
+\int_{\{X\in A\}}\frac{1}{e(X)}\,e(X)F_1\,dP_n^F(\cdot\mid S=1)\\
+&=
+\int_{\{X\in A\}}F_1\,dP_n^F(\cdot\mid S=1),\\
+\int_{\{X\in A,\ Z=0\}}\frac{F_0}{1-e(X)}\,dP_{\mathrm{assign},S}
+&=
+\int_{\{X\in A\}}\frac{1}{1-e(X)}\,\{1-e(X)\}F_0\,dP_n^F(\cdot\mid S=1)\\
+&=
+\int_{\{X\in A\}}F_0\,dP_n^F(\cdot\mid S=1),
+\end{align*}
+where the cancellations are legitimate because \(e(X)\ge\varepsilon>0\) and \(1-e(X)\ge\varepsilon>0\) almost surely. Subtracting the second line from the first,
 \[
 \int_{\{X\in A\}}
 \left[
@@ -25,43 +119,88 @@ Consequently \(H\) is measurable and \(|H|\le 1/\varepsilon\) \(P_S\)-almost sur
 =
 \int_{\{X\in A\}}(F_1-F_0)\,dP_n^F(\cdot\mid S=1).
 \]
-On the \(Z=1\) slice the density \(e(X)\) cancels \(1/e(X)\), and on the \(Z=0\) slice the density \(1-e(X)\) cancels \(-1/\{1-e(X)\}\); the two slice integrals then add to the displayed contrast.
+% lean: ivRandomization_ipw_contrast
 
-\item The chosen version \(\Delta_Y\) is measurable, and the source-observation facts give, for every measurable covariate set \(A\),
+\item \textbf{The observed source representation of \(\Delta_Y\).}
+The chosen version \(\Delta_Y\) is measurable, and we claim that for every measurable \(A\subseteq\mathcal X\),
 \[
 \int_{\{O:X\in A\}}H(O)Y\,dP_S(O)
 =
-\int_A \Delta_Y(x)\,dP_S^X(x).
+\int_A \Delta_Y(x)\,dP_S^X(x),
 \]
-For the source full-data comparison used in the transport step, apply the preceding identity with \(F_z=Y(D(z))\).  The required integrability of the assigned-source inverse-propensity integrand follows by pulling back the already established integrability of \(H(O)Y\) through the source observation map.  Pulling the observed integral back through that map and splitting over \(Z,D(0),D(1)\) gives
+which is the first asserted representation. Changing variables through the representation of \(P_S\) as the image of \(P_{\mathrm{assign},S}\) under \(g\), and using that \(g\) sends \((F,Z)\) to \((X,Z,D(Z),Y(D(Z)))\), so that \(H(O)Y\) pulls back to the displayed inverse-propensity integrand with \(F_z=Y(D(z))\),
+\[
+\int_{\{O:X\in A\}}H(O)Y\,dP_S(O)
+=
+\int_{\{X\in A\}}
+\left[
+\frac{\mathbf 1\{Z=1\}}{e(X)}Y(D(1))
+-\frac{\mathbf 1\{Z=0\}}{1-e(X)}Y(D(0))
+\right] dP_{\mathrm{assign},S}.
+\]
+The two integrands \(Y(D(0)),Y(D(1))\) are measurable and, by \cref{obj:ass:full-data-support}, bounded by one, hence \(P_n^F(\cdot\mid S=1)\)-integrable; and the assigned-source integrand above is the pull-back through \(g\) of \(H(O)Y\), whose \(P_S\)-integrability was established in the first step. The identity of the previous step therefore applies and gives
 \[
 \int_{\{O:X\in A\}}H(O)Y\,dP_S(O)
 =
 \int_{\{X\in A\}}\{Y(D(1))-Y(D(0))\}\,dP_n^F(\cdot\mid S=1).
 \]
-Exclusion rewrites \(Y(D(z))\) as \(Y^Z(z)\), and the source outcome-transport identity rewrites the last display as the integral over \(A\) of the source conditional assignment-outcome contrast.  Hence \(\Delta_Y\) agrees \(P_S^X\)-almost surely with that source contrast, while the displayed source-observation identity is the required observed source representation.
+By \cref{obj:ass:iv-exclusion} at \(s=1\) we may replace \(Y(D(z))\) by \(Y^Z(z)\) up to a null set, and then the defining conditional-expectation property of \(\Delta_Y\) in \cref{obj:synth_6}, together with the identification of \(P_S^X\) with the source full-data covariate marginal from the first step, gives
+\[
+\int_{\{X\in A\}}\{Y^Z(1)-Y^Z(0)\}\,dP_n^F(\cdot\mid S=1)
+=
+\int_A \Delta_Y(x)\,dP_S^X(x),
+\]
+which completes the claim.
+% lean: compact_causal_range (hDeltaY), sourceObservationFacts_of_class, OutcomeContrastRepresentation
 
-\item The chosen version \(\Delta_D\) is measurable, and the source-observation facts give, for every measurable covariate set \(A\),
+\item \textbf{The observed source representation of \(\Delta_D\).}
+The chosen version \(\Delta_D\) is measurable, and the same three moves, with the real-valued receipt indicators \(F_z=D(z)\in\{0,1\}\) in place of \(Y(D(z))\) and with no exclusion step needed, give for every measurable \(A\subseteq\mathcal X\)
+\begin{align*}
+\int_{\{O:X\in A\}}H(O)D\,dP_S(O)
+&=
+\int_{\{X\in A\}}
+\left[
+\frac{\mathbf 1\{Z=1\}}{e(X)}D(1)
+-\frac{\mathbf 1\{Z=0\}}{1-e(X)}D(0)
+\right] dP_{\mathrm{assign},S}\\
+&=
+\int_{\{X\in A\}}\{D(1)-D(0)\}\,dP_n^F(\cdot\mid S=1),
+\end{align*}
+the first equality by the change of variables through \(g\) (which sends the observed receipt coordinate to \(D(Z)\)) and the second by the contrast identity, whose integrability hypotheses hold because \(D(0),D(1)\) are bounded by one and because the assigned-source integrand is the pull-back of the \(P_S\)-integrable \(H(O)D\). The defining conditional-expectation property of \(\Delta_D\) in \cref{obj:synth_6}, again read against \(P_S^X\), turns the right-hand side into \(\int_A\Delta_D(x)\,dP_S^X(x)\), so
 \[
 \int_{\{O:X\in A\}}H(O)D\,dP_S(O)
 =
-\int_A \Delta_D(x)\,dP_S^X(x).
+\int_A \Delta_D(x)\,dP_S^X(x),
 \]
-For the source full-data comparison, apply the inverse-propensity identity with \(F_z=D(z)\), written as the real indicator of receipt.  The required integrability of the assigned-source inverse-propensity integrand follows by pulling back the already established integrability of \(H(O)D\) through the source observation map.  Pulling the observed integral back and splitting over \(Z,D(0),D(1)\) gives
-\[
-\int_{\{O:X\in A\}}H(O)D\,dP_S(O)
-=
-\int_{\{X\in A\}}\{D(1)-D(0)\}\,dP_n^F(\cdot\mid S=1).
-\]
-The source receipt-transport identity rewrites the last display as the integral over \(A\) of the source conditional receipt contrast.  Hence \(\Delta_D\) agrees \(P_S^X\)-almost surely with that source contrast, while the displayed source-observation identity is the required observed source representation.
+which is the second asserted representation.
+% lean: compact_causal_range (hDeltaD), sourceObservationFacts_of_class, ReceiptContrastRepresentation
 
-\item For the transported reduced-form outcome mean, the already proved source almost-sure equality between \(\Delta_Y\) and the source conditional assignment-outcome contrast first rewrites the integrand in \(\mu_{Y,n}\).  The Radon--Nikodym transport identity and target domination then change measure from \(P_S^X\) to \(P_T\).  The target outcome-transport equality replaces the transported source contrast by the target contrast, and the target full-data integral identity gives
+\item \textbf{The transported reduced-form outcome mean.}
+By \cref{obj:synth_6}, \(\mu_{Y,n}=\int w(x)\Delta_Y(x)\,dP_S^X(x)\). Since \(P_T\ll P_S^X\) by \cref{obj:ass:transport-domination} and \(w\) is a version of \(dP_T/dP_S^X\), the change of measure
 \[
-\mu_{Y,n}
+\int w(x)\Delta_Y(x)\,dP_S^X(x)
 =
-\int \{Y^Z(1)-Y^Z(0)\}\,dP_n^F(\cdot\mid S=0).
+\int \Delta_Y(x)\,dP_T(x)
 \]
-Exclusion changes \(Y^Z(z)\) to \(Y(D(z))\).  Finally, monotonicity permits a pointwise case split over \(D(0),D(1)\), yielding
+holds. \Cref{obj:ass:outcome-transport} states \(\Delta_Y^T=\Delta_Y\) \(P_T\)-almost surely, and \(P_T\) is the covariate marginal of \(\mu\), so applying the defining property of \(\Delta_Y^T\) with \(A=\mathcal X\),
+\[
+\int \Delta_Y(x)\,dP_T(x)
+=
+\int \Delta_Y^T(x)\,dP_T(x)
+=
+\int \{Y^Z(1)-Y^Z(0)\}\,d\mu .
+\]
+\Cref{obj:ass:iv-exclusion} at \(s=0\) rewrites the integrand as \(Y(D(1))-Y(D(0))\). \Cref{obj:ass:iv-monotonicity} at \(s=0\) makes the pair \((D(0),D(1))=(1,0)\) \(\mu\)-null, so off a \(\mu\)-null set exactly one of the three remaining cases holds, and in each of them the integrand coincides with the complier-weighted contrast:
+\[
+Y(D(1))-Y(D(0))
+=
+\begin{cases}
+Y(0)-Y(0)=0=\{Y(1)-Y(0)\}\mathbf 1_C, & (D(0),D(1))=(0,0),\\
+Y(1)-Y(1)=0=\{Y(1)-Y(0)\}\mathbf 1_C, & (D(0),D(1))=(1,1),\\
+Y(1)-Y(0)=\{Y(1)-Y(0)\}\mathbf 1_C, & (D(0),D(1))=(0,1).
+\end{cases}
+\]
+Hence
 \[
 \mu_{Y,n}
 =
@@ -69,42 +208,83 @@ Exclusion changes \(Y^Z(z)\) to \(Y(D(z))\).  Finally, monotonicity permits a po
 \{Y(1)-Y(0)\}\mathbf 1\{D(1)=1,\ D(0)=0\}
 \,dP_n^F(\cdot\mid S=0).
 \]
+% lean: compact_causal_range (hOutcomeEq), transportedOutcomeITT
 
-\item For the transported first-stage mean, the weighted source representation first unfolds \(\mu_n\) as
+\item \textbf{The transported first-stage mean.}
+By \cref{obj:synth_6}, \(\mu_n=\int w(x)\Delta_D(x)\,dP_S^X(x)\). The relevant integrands are bounded: \(0\le w\le 2k_n\) by \cref{obj:ass:weight-envelope} and \(0\le\Delta_D\le1\) because \(\Delta_D\) is the conditional mean of \(D(1)-D(0)\in\{0,1\}\) under \cref{obj:ass:iv-monotonicity}, so \(|w\Delta_D|\le 2k_n\) and all integrals below are absolutely convergent. Exactly as in the previous step, transport domination and \(w=dP_T/dP_S^X\) give
 \[
-\mu_n=\int w(x)\Delta_D(x)\,dP_S^X(x).
+\int w(x)\Delta_D(x)\,dP_S^X(x)
+=
+\int \Delta_D(x)\,dP_T(x),
 \]
-The envelope \(0\le w\le 2k_n\), the bound \(|H|\le 1/\varepsilon\), and the receipt-indicator bound give integrability of the weighted observed receipt-score integrand.  Separately, the envelope and \(0\le\Delta_D\le1\) give integrability of \(w\Delta_D\).  Using the source almost-sure equality between \(\Delta_D\) and the source receipt contrast, Radon--Nikodym transport, the target receipt-transport equality, and then the target full-data receipt identity,
+and \cref{obj:ass:receipt-transport}, which equates the two \(P_T\)-averages of the conditional receipt contrasts rather than the contrasts themselves, gives
+\[
+\int \Delta_D(x)\,dP_T(x)
+=
+\int \Delta_D^T(x)\,dP_T(x)
+=
+\int \{D(1)-D(0)\}\,d\mu ,
+\]
+the second equality being the defining property of \(\Delta_D^T\) with \(A=\mathcal X\). \Cref{obj:ass:iv-monotonicity} at \(s=0\) again removes \((D(0),D(1))=(1,0)\), and in the three remaining cases
+\[
+D(1)-D(0)
+=
+\begin{cases}
+0=\mathbf 1_C, & (D(0),D(1))=(0,0),\\
+0=\mathbf 1_C, & (D(0),D(1))=(1,1),\\
+1=\mathbf 1_C, & (D(0),D(1))=(0,1),
+\end{cases}
+\]
+so \(D(1)-D(0)=\mathbf 1_C\) \(\mu\)-almost surely. Integrating the indicator,
 \[
 \mu_n
 =
-\int \{D(1)-D(0)\}\,dP_n^F(\cdot\mid S=0).
-\]
-Monotonicity turns \(D(1)-D(0)\) into \(\mathbf 1\{D(1)=1,D(0)=0\}\), and integration of this indicator gives
-\[
-\mu_n
+\int \mathbf 1_C\,d\mu
+=
+\mu(C)
 =
 P_n^F\{D(1)=1,\ D(0)=0\mid S=0\}.
 \]
+% lean: compact_causal_range (hFirstEq), transportedFirstStage_eq_weighted_deltaD, targetComplierShare
 
-\item By the definition of \(\theta_T\), the numerator is the target complier-weighted outcome contrast and the denominator is the target complier share.  Substituting the two identities just proved gives
+\item \textbf{The Wald ratio.}
+By \cref{obj:synth_7},
+\[
+\theta_T
+=
+\frac{\int \{Y(1)-Y(0)\}\mathbf 1_C\,d\mu}{\mu(C)} .
+\]
+The previous two steps identify the numerator with \(\mu_{Y,n}\) and the denominator with \(\mu_n\), so
 \[
 \frac{\mu_{Y,n}}{\mu_n}=\theta_T.
 \]
+% lean: compact_causal_range (targetCACE)
 
-\item Let \(\mu=P_n^F(\cdot\mid S=0)\) and \(C=\{D(1)=1,D(0)=0\}\).  Full-data support makes \(P_n^F\) a probability law, and together with population presence for \(S=0\) it makes \(\mu\) a probability law.  Target-complier positivity gives \(0<\mu(C)\).  The conditional law \(\mu\) is absolutely continuous with respect to \(P_n^F\), so bounded full-data support gives
+\item \textbf{The forced range.}
+\Cref{obj:ass:full-data-support} makes \(P_n^F\) a probability law, and \cref{obj:ass:population-presence} gives \(P_n^F(S=0)>0\), so the conditional law \(\mu\) is a well-defined probability law and \(\mu\ll P_n^F\). Consequently the bounded-support clause of \cref{obj:ass:full-data-support} transfers to \(\mu\), and subtracting the two bounds \(Y(0),Y(1)\in[0,1]\) yields
 \[
 -1\le Y(1)-Y(0)\le 1
 \qquad \mu\text{-a.s.}
 \]
-The set \(C\) is measurable, so integral monotonicity gives
+The set \(C\) is measurable, so \(\mathbf 1_C\in\{0,1\}\); multiplying the last display by \(\mathbf 1_C\) gives \(-\mathbf 1_C\le\{Y(1)-Y(0)\}\mathbf 1_C\le\mathbf 1_C\) \(\mu\)-almost surely, all three functions being bounded and hence \(\mu\)-integrable. Integral monotonicity then gives
 \[
 -\mu(C)
+=
+-\int \mathbf 1_C\,d\mu
 \le
-\int (Y(1)-Y(0))\mathbf 1_C\,d\mu
+\int \{Y(1)-Y(0)\}\mathbf 1_C\,d\mu
 \le
+\int \mathbf 1_C\,d\mu
+=
 \mu(C).
 \]
-Dividing by the positive number \(\mu(C)\) yields \(\theta_T\in[-1,1]=\Theta\).
+\Cref{obj:ass:target-complier-positivity} gives \(\mu(C)>0\); dividing the display by this positive number and comparing with the expression for \(\theta_T\) in the previous step yields
+\[
+\theta_T
+=
+\frac{\int \{Y(1)-Y(0)\}\mathbf 1_C\,d\mu}{\mu(C)}
+\in[-1,1]=\Theta .
+\]
+% lean: compact_causal_range (hbounds, hnumLower, hnumUpper, hindicator), parameterSpace
 \end{enumerate}
 \end{proof}

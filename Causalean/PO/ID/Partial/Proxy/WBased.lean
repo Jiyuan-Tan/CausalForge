@@ -503,19 +503,19 @@ theorem meanYofA_W_bounds
   have hfU_h_int : Integrable
       ((fun ω => S.stratumOddsRatio μ a ω * Uenv (a, S.X ω)) *
        (fun ω => HA.h (a, S.W ω, S.X ω))) μ := by
-    simpa [Pi.mul_apply] using hU_int_h
+    exact hU_int_h
   have hfU_condY_int : Integrable
       ((fun ω => S.stratumOddsRatio μ a ω * Uenv (a, S.X ω)) *
        (fun ω => (μ[S.Y | S.σ_AX]) ω)) μ := by
-    simpa [Pi.mul_apply] using hU_int_Y
+    exact hU_int_Y
   have hfL_h_int : Integrable
       ((fun ω => S.stratumOddsRatio μ a ω * Lenv (a, S.X ω)) *
        (fun ω => HA.h (a, S.W ω, S.X ω))) μ := by
-    simpa [Pi.mul_apply] using hL_int_h
+    exact hL_int_h
   have hfL_condY_int : Integrable
       ((fun ω => S.stratumOddsRatio μ a ω * Lenv (a, S.X ω)) *
        (fun ω => (μ[S.Y | S.σ_AX]) ω)) μ := by
-    simpa [Pi.mul_apply] using hL_int_Y
+    exact hL_int_Y
   -- Apply L1 (twice on each side) and then `condExp_Y_eq_condExp_h_arm_AX`.
   have hU_collapse : (∫ ω in s,
           S.stratumOddsRatio μ a ω * Uenv (a, S.X ω) * HA.h (a, S.W ω, S.X ω) ∂μ)

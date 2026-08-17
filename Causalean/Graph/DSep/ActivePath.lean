@@ -284,7 +284,7 @@ theorem take_suffix_at_last_S
           simp [q, List.getElem_drop]
         rw [hq_i, hq_i1]
         have hadj' := hadj (i₀.val + i) (by omega)
-        convert hadj' using 2
+        exact hadj'
       · have hq_len : q.length = p.length - i₀.val := by
           simp only [q, List.length_drop]
         have hi' : i₀.val + i + 2 < p.length := by
@@ -297,7 +297,7 @@ theorem take_suffix_at_last_S
           simp [q, List.getElem_drop]
         rw [hq_i, hq_i1, hq_i2]
         have hcoll' := hcoll (i₀.val + i) (by omega)
-        convert hcoll' using 2
+        exact hcoll'
     · -- q.head? = some (p.get i₀)
       have hq_ne : q ≠ [] := by
         simp only [q, ne_eq, List.drop_eq_nil_iff]
@@ -416,29 +416,34 @@ private theorem bbStep_of_active_triple
       intro hC
       exact G.asymm hout hC.2
     have hwZ : w ∉ Z := by simpa [hnotcoll] using htri
-    simp [bbStep, hwZ, mem_children, hout]
+    simp only [bbStep, if_pos hwZ]
+    exact Finset.mem_union_left _ (Finset.mem_map.mpr ⟨z, G.mem_children.mpr hout, rfl⟩)
   · -- parent -> parent: collider, so parents are allowed when `w` is conditioned
     -- or ancestor-activated.
     simp only [StateMatchesEdge] at hin hout
     have hcoll : G.IsCollider u w z := ⟨hin, hout⟩
     have hanc : w ∈ G.bbZAncestors Z := by simpa [hcoll] using htri
     by_cases hwZ : w ∈ Z
-    · simp [bbStep, hwZ, mem_parents, hout]
-    · simp [bbStep, hwZ, hanc, mem_parents, hout]
+    · simp only [bbStep, if_neg (not_not_intro hwZ)]
+      exact Finset.mem_map.mpr ⟨z, G.mem_parents.mpr hout, rfl⟩
+    · simp only [bbStep, if_pos hwZ, if_pos hanc]
+      exact Finset.mem_union_right _ (Finset.mem_map.mpr ⟨z, G.mem_parents.mpr hout, rfl⟩)
   · -- child -> child: non-collider, so `w ∉ Z`, then children are allowed.
     simp only [StateMatchesEdge] at hin hout
     have hnotcoll : ¬ G.IsCollider u w z := by
       intro hC
       exact G.asymm hin hC.1
     have hwZ : w ∉ Z := by simpa [hnotcoll] using htri
-    simp [bbStep, hwZ, mem_children, hout]
+    simp only [bbStep, if_neg hwZ]
+    exact Finset.mem_union_right _ (Finset.mem_map.mpr ⟨z, G.mem_children.mpr hout, rfl⟩)
   · -- child -> parent: non-collider, so `w ∉ Z`, then parents are allowed.
     simp only [StateMatchesEdge] at hin hout
     have hnotcoll : ¬ G.IsCollider u w z := by
       intro hC
       exact G.asymm hin hC.1
     have hwZ : w ∉ Z := by simpa [hnotcoll] using htri
-    simp [bbStep, hwZ, mem_parents, hout]
+    simp only [bbStep, if_neg hwZ]
+    exact Finset.mem_union_left _ (Finset.mem_map.mpr ⟨z, G.mem_parents.mpr hout, rfl⟩)
 
 private theorem active_triple_of_bbStep
     {Z : Finset V} {u w z : V} {d dz : BBDir}
@@ -446,17 +451,23 @@ private theorem active_triple_of_bbStep
     (hstep : (z, dz) ∈ G.bbStep Z (w, d)) :
     G.StateMatchesEdge w z dz ∧
       (if G.IsCollider u w z then w ∈ G.bbZAncestors Z else w ∉ Z) := by
+  -- `Function.Embedding.coeFn_mk` no longer fires as a `simp` rewrite, so `simp`
+  -- stalls on `⟨(·, d), _⟩ a = (z, dz)` inside the `Finset.map` membership
+  -- existentials produced by unfolding `bbStep`. The reduction is still `rfl`;
+  -- supplying it as a local rewrite restores the intended `simp` behaviour.
+  have hcoe : ∀ (d : BBDir) (hinj : ∀ ⦃a b : V⦄, (a, d) = (b, d) → a = b) (x : V),
+      (⟨(·, d), hinj⟩ : V ↪ BBState V) x = (x, d) := fun _ _ _ => rfl
   cases d <;> cases dz
   · simp only [StateMatchesEdge] at hin ⊢
     have hout : G.edge w z := by
       by_cases hwZ : w ∈ Z
-      · simp [bbStep, hwZ] at hstep
+      · simp [bbStep, hwZ, hcoe] at hstep
       · by_cases hanc : w ∈ G.bbZAncestors Z
-        · simpa [bbStep, hwZ, hanc, mem_children, mem_parents] using hstep
-        · simpa [bbStep, hwZ, hanc, mem_children, mem_parents] using hstep
+        · simpa [bbStep, hwZ, hanc, mem_children, mem_parents, hcoe] using hstep
+        · simpa [bbStep, hwZ, hanc, mem_children, mem_parents, hcoe] using hstep
     have hwZ : w ∉ Z := by
       by_contra hwZ
-      simp [bbStep, hwZ] at hstep
+      simp [bbStep, hwZ, hcoe] at hstep
     have hnotcoll : ¬ G.IsCollider u w z := by
       intro hC
       exact G.asymm hout hC.2
@@ -464,22 +475,22 @@ private theorem active_triple_of_bbStep
   · simp only [StateMatchesEdge] at hin ⊢
     have hout : G.edge z w := by
       by_cases hwZ : w ∈ Z
-      · simpa [bbStep, hwZ, mem_parents] using hstep
+      · simpa [bbStep, hwZ, mem_parents, hcoe] using hstep
       · by_cases hanc : w ∈ G.bbZAncestors Z
-        · simpa [bbStep, hwZ, hanc, mem_parents, mem_children] using hstep
-        · simp [bbStep, hwZ, hanc, mem_children] at hstep
+        · simpa [bbStep, hwZ, hanc, mem_parents, mem_children, hcoe] using hstep
+        · simp [bbStep, hwZ, hanc, mem_children, hcoe] at hstep
     have hcoll : G.IsCollider u w z := ⟨hin, hout⟩
     have hanc : w ∈ G.bbZAncestors Z := by
       by_cases hwZ : w ∈ Z
       · simp [bbZAncestors, ancestralSet, hwZ]
       · by_contra hanc
-        simp [bbStep, hwZ, hanc, mem_children] at hstep
+        simp [bbStep, hwZ, hanc, mem_children, hcoe] at hstep
     exact ⟨hout, by simp [hcoll, hanc]⟩
   · simp only [StateMatchesEdge] at hin ⊢
     have hout : G.edge w z := by
       by_cases hwZ : w ∈ Z
       · simp [bbStep, hwZ] at hstep
-      · simpa [bbStep, hwZ, mem_children, mem_parents] using hstep
+      · simpa [bbStep, hwZ, mem_children, mem_parents, hcoe] using hstep
     have hwZ : w ∉ Z := by
       by_contra hwZ
       simp [bbStep, hwZ] at hstep
@@ -491,7 +502,7 @@ private theorem active_triple_of_bbStep
     have hout : G.edge z w := by
       by_cases hwZ : w ∈ Z
       · simp [bbStep, hwZ] at hstep
-      · simpa [bbStep, hwZ, mem_parents, mem_children] using hstep
+      · simpa [bbStep, hwZ, mem_parents, mem_children, hcoe] using hstep
     have hwZ : w ∉ Z := by
       by_contra hwZ
       simp [bbStep, hwZ] at hstep
@@ -566,6 +577,12 @@ private theorem bbReachable_state_has_reverse_activePath
     (X Z : Finset V) {s : BBState V} (hs : s ∈ G.bbReachable Z X) :
     G.StateHasReverseActivePath X Z s := by
   classical
+  -- `Function.Embedding.coeFn_mk` no longer fires as a `simp` rewrite, so `simp`
+  -- stalls on `⟨(·, d), _⟩ a = (w, d')` inside the `Finset.map` membership
+  -- existentials produced by unfolding `bbInit`. The reduction is still `rfl`;
+  -- supplying it as a local rewrite restores the intended `simp` behaviour.
+  have hcoe : ∀ (d : BBDir) (hinj : ∀ ⦃a b : V⦄, (a, d) = (b, d) → a = b) (x : V),
+      (⟨(·, d), hinj⟩ : V ↪ BBState V) x = (x, d) := fun _ _ _ => rfl
   let S : Finset (BBState V) :=
     Finset.univ.filter (fun s => G.StateHasReverseActivePath X Z s)
   have hinit : G.bbInit X ⊆ S := by
@@ -574,7 +591,7 @@ private theorem bbReachable_state_has_reverse_activePath
     simp only [S, Finset.mem_filter, Finset.mem_univ, true_and]
     cases d
     · simp only [bbInit, Finset.mem_biUnion, Finset.mem_union, Finset.mem_map,
-        Function.Embedding.coeFn_mk, Prod.mk.injEq, reduceCtorEq] at hs
+        hcoe, Prod.mk.injEq, reduceCtorEq] at hs
       obtain ⟨x, hxX, hxw⟩ := hs
       rcases hxw with hchild | hparent
       · obtain ⟨a, ha, haw, _⟩ := hchild
@@ -585,7 +602,7 @@ private theorem bbReachable_state_has_reverse_activePath
       · obtain ⟨a, _ha, _haw, hbad⟩ := hparent
         cases hbad
     · simp only [bbInit, Finset.mem_biUnion, Finset.mem_union, Finset.mem_map,
-        Function.Embedding.coeFn_mk, Prod.mk.injEq, reduceCtorEq] at hs
+        hcoe, Prod.mk.injEq, reduceCtorEq] at hs
       obtain ⟨x, hxX, hwx⟩ := hs
       rcases hwx with hchild | hparent
       · obtain ⟨a, _ha, _haw, hbad⟩ := hchild

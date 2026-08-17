@@ -9,19 +9,25 @@ relaxedAutoImplicit = false
 weak.linter.mathlibStandardSet = true
 maxSynthPendingDepth = 3
 
-[[require]]
-name = "mathlib"
-scope = "leanprover-community"
-rev = "bf8875c7dc7162b23cdb881f33cc97caab1c688a"
+# NOTE ON REQUIRE ORDER: `mathlib` MUST stay LAST among the requires.  The two
+# vendored packages below (`FoML`, `optlib`) each `require mathlib from git`
+# themselves, and lake resolves shared transitive dependencies (batteries, aesop,
+# Qq, proofwidgets, importGraph, plausible, Cli, LeanSearchClient) in require
+# order.  With `mathlib` first, those resolve to the vendored packages' stale
+# pins, `lake exe cache get` then computes wrong hashes and refuses to fetch.
+# Listing `mathlib` last makes Mathlib's own pins win.  Do not reorder.
 
-# Upstream CLT formalisation (RemyDegenne/CLT).  Pinned to a specific commit
-# known to build against the Mathlib pin above (reproducible; not a moving
-# branch); consumed in `Causalean/Stat/CLT/AsymptoticLinearity.lean` (the
-# `IIDSample.clt_normalized_sum` contact-point lemma).
-[[require]]
-name = "clt"
-git = "https://github.com/RemyDegenne/CLT.git"
-rev = "50990c17040e099e3f6891bf332c28277046351d"
+# The former `clt` require (RemyDegenne/CLT) was dropped when this package moved
+# to Mathlib v4.33.0: Mathlib now carries both results we consumed from it.
+#   Clt.CLT.central_limit          -> ProbabilityTheory.tendstoInDistribution_inv_sqrt_mul_sum
+#                                     (Mathlib.Probability.CentralLimitTheorem; the
+#                                     `..._sum_sub` variant additionally covers general
+#                                     mean/variance, which `clt` never had)
+#   Clt.Inversion.tendsto_iff_tendsto_charFun
+#                                  -> same name in Mathlib.MeasureTheory.Measure.LevyConvergence
+#                                     (Mathlib upstreamed that file essentially verbatim)
+# Upstream CLT was abandoned at Mathlib bf8875c7 (2026-03-04) and has no build for
+# any later toolchain, so keeping it would have pinned the whole workspace.
 
 # Vendored FoML (Foundations of ML, lean-rademacher) — Rademacher complexity,
 # McDiarmid, symmetrization, separable-sup. Consumed across
@@ -41,6 +47,12 @@ path = "third_party/lean-rademacher"
 [[require]]
 name = "optlib"
 path = "third_party/optlib"
+
+# Mathlib LAST — see the require-order note at the top of this file.
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "db584cd6d46c92f209a44c0f1c829460d327499d"
 
 [[lean_lib]]
 name = "Causalean"

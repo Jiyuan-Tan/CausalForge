@@ -56,6 +56,10 @@ noncomputable def cosSqDensity (s u : ℝ) : ℝ :=
 -- @realizes f_s(cosine-squared compactly supported density)
 -- @realizes s(positive baseline halfwidth B/2)
 
+/-- The cosine-squared baseline density with halfwidth `s` is a measurable function of the
+baseline value: it is the indicator of the interval from `−s` to `s` times a continuous
+function. This is the regularity needed before the density can be integrated against or
+used to build the least-favourable prior. -/
 lemma cosSqDensity_measurable (s : ℝ) :
     Measurable (cosSqDensity s) := by
   rw [show cosSqDensity s =
@@ -125,7 +129,6 @@ lemma cosSqDensity_integral_one (s : ℝ) (hs : 0 < s) :
     Real.sin_pi_div_two]
   norm_num [smul_eq_mul]
   field_simp
-  noncomm_ring
 
 /-- Establishes the stated mathematical result for cos sq density translate integral one. -/
 lemma cosSqDensity_translate_integral_one

@@ -130,7 +130,9 @@ theorem linear_predictor_l1_bound'
         intro jb hj i
         -- |sign*x_j| ≤ X∞
         have hx := (Y' i).2 jb.1
-        simpa [coordSigned, abs_mul, abs_boolSign] using hx)
+        have hx' : |coordSigned (d := d) jb (Y' i).1| ≤ Xinf := by
+          simpa [coordSigned, abs_mul, abs_boolSign] using hx
+        exact hx')
       hs
 
   -- (2) bound the sup term by X∞/sqrt(n)
@@ -174,7 +176,9 @@ theorem linear_predictor_l1_bound'
       intro i
       have hxi : |coordSigned (d := d) jb ((Subtype.val ∘ Y') i)| ≤ Xinf := by
         have hx := (Y' i).2 jb.1
-        simpa [coordSigned, abs_mul, abs_boolSign] using hx
+        have hx' : |coordSigned (d := d) jb (Y' i).1| ≤ Xinf := by
+          simpa [coordSigned, abs_mul, abs_boolSign] using hx
+        exact hx'
       have hmuli :
           (n : ℝ)⁻¹ * |coordSigned (d := d) jb ((Subtype.val ∘ Y') i)| ≤ (n : ℝ)⁻¹ * Xinf := by
         exact mul_le_mul_of_nonneg_left hxi (inv_nonneg.mpr (le_of_lt hnR))

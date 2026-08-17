@@ -243,7 +243,10 @@ lemma globalCenteredMonomial_empty_coef_eq_zero
         (bernoulliDesign (fun _ : V => p) (fun _ => hp0)
           (fun _ => hp1)).E (globalCenteredMonomial p S) =
             if S = ∅ then (p * (1 - p)) ^ S.card else 0 := by
-      simpa [globalCenteredMonomial] using h
+      have hempty : globalCenteredMonomial p (∅ : Finset V) = fun _ => (1 : ℝ) :=
+        funext fun _ => Finset.prod_empty
+      rw [hempty] at h
+      simpa using h
     change a S *
         (bernoulliDesign (fun _ : V => p) (fun _ => hp0)
           (fun _ => hp1)).E (globalCenteredMonomial p S) =

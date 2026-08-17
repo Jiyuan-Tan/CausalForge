@@ -15,6 +15,11 @@ open scoped BigOperators
 namespace CausalSmith.Experimentation.RolloutChebyshev
 
 -- @node: prod_Iic_erase_abs_sub_eq_factorial
+/-- On the integer grid `{0, 1, ..., β}`, the product of the distances from a fixed index `i` to
+all the other indices equals `i! (β - i)!`.
+
+This product is exactly the denominator of the `i`-th Lagrange basis polynomial for an equally
+spaced grid, which is what gives the equal-spacing weight bounds their binomial shape. -/
 lemma prod_Iic_erase_abs_sub_eq_factorial (beta i : ℕ) (hi : i ≤ beta) :
     (∏ m ∈ (Finset.Iic beta).erase i, |(i : ℝ) - (m : ℝ)|) =
       (i.factorial : ℝ) * ((beta - i).factorial : ℝ) := by
@@ -85,6 +90,8 @@ lemma prod_Iic_erase_abs_sub_eq_factorial (beta i : ℕ) (hi : i ≤ beta) :
   rw [hunion, Finset.prod_union hdisjoint, hleft, hright]
 
 -- @node: two_pow_le_two_mul_factorial
+/-- For every natural number `n ≥ 1`, `2ⁿ ≤ 2 · n!`. Arithmetic step that converts the binomial
+total `2^β` arising in the equal-spacing weight bound into a factorial denominator. -/
 lemma two_pow_le_two_mul_factorial (n : ℕ) (hn : 1 ≤ n) : 2 ^ n ≤ 2 * n.factorial := by
   induction n with
   | zero => omega
@@ -105,6 +112,11 @@ lemma two_pow_le_two_mul_factorial (n : ℕ) (hn : 1 ≤ n) : 2 ^ n ≤ 2 * n.fa
               exact Nat.mul_le_mul_left 2 hmul
 
 -- @node: factorial_reciprocal_sum_le_two
+/-- For every order `β ≥ 1`, the reciprocal-factorial sum `∑_{j=0}^{β} 1 / (j! (β - j)!)` is at
+most `2`; the sum in fact equals `2^β / β!`, and the bound follows from `2^β ≤ 2 · β!`.
+
+This is the step that collapses the per-node Lagrange bounds on the equal grid into a bound with
+a universal constant, producing the equal-spacing benchmark. -/
 lemma factorial_reciprocal_sum_le_two (beta : ℕ) (hbeta : 1 ≤ beta) :
     (∑ j : Fin (beta + 1),
       (1 : ℝ) / ((j.val.factorial : ℝ) * ((beta - j.val).factorial : ℝ))) ≤ 2 := by

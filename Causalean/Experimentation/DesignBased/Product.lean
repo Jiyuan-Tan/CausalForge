@@ -87,7 +87,6 @@ lemma E_prod_apply (D : ∀ i, FiniteDesign (α i)) (j : ι) (g : α j → ℝ) 
   · intro i _ hij
     have hF : (fun a : α i => (if h : i = j then g (h ▸ a) else (1 : ℝ))) = (fun _ => 1) := by
       funext a; rw [dif_neg hij]
-    simp only at hF ⊢
     rw [hF, (D i).E_const]
   · intro h; exact absurd (Finset.mem_univ j) h
 

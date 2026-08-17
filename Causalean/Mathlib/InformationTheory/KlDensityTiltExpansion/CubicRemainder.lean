@@ -32,42 +32,28 @@ namespace Causalean.Mathlib.InformationTheory.KlDensityTiltExpansion
 private lemma tiltAux_hasDerivAt_negR (t : ℝ) (ht : 1 + t ≠ 0) :
     HasDerivAt (fun u : ℝ => u + u ^ 2 / 2 - (1 + u) * Real.log (1 + u))
       (t - Real.log (1 + t)) t := by
-  have hlog : HasDerivAt (fun u : ℝ => Real.log (1 + u)) (1 / (1 + t)) t := by
-    have h := (Real.hasDerivAt_log (x := 1 + t) ht).comp t
-      ((hasDerivAt_const t (1 : ℝ)).add (hasDerivAt_id t))
-    simpa [one_div] using h
-  have hsq : HasDerivAt (fun u : ℝ => u ^ 2 / 2) t t := by
-    have h := (((hasDerivAt_id t).pow 2).const_mul ((2 : ℝ)⁻¹))
-    simpa [div_eq_mul_inv, pow_two, two_mul, mul_comm, mul_left_comm, mul_assoc] using h
+  have hlin : HasDerivAt (fun u : ℝ => 1 + u) 1 t := (hasDerivAt_id' t).const_add (1 : ℝ)
+  have hlog : HasDerivAt (fun u : ℝ => Real.log (1 + u)) (1 / (1 + t)) t := hlin.log ht
+  have hsq : HasDerivAt (fun u : ℝ => u ^ 2 / 2) t t :=
+    (((hasDerivAt_id' t).fun_pow 2).div_const 2).congr_deriv (by norm_num)
   have hprod : HasDerivAt (fun u : ℝ => (1 + u) * Real.log (1 + u))
-      (Real.log (1 + t) + 1) t := by
-    have hlin : HasDerivAt (fun u : ℝ => 1 + u) 1 t := by
-      simpa using (hasDerivAt_const t (1 : ℝ)).add (hasDerivAt_id t)
-    convert hlin.mul hlog using 1
-    field_simp [ht]
-  convert ((hasDerivAt_id t).add hsq).sub hprod using 1
-  ring
+      (Real.log (1 + t) + 1) t :=
+    (hlin.fun_mul hlog).congr_deriv (by field_simp)
+  exact (((hasDerivAt_id' t).fun_add hsq).fun_sub hprod).congr_deriv (by ring)
 
 private lemma tiltAux_hasDerivAt_R_add_cube (t : ℝ) (ht : 1 + t ≠ 0) :
     HasDerivAt (fun u : ℝ => (1 + u) * Real.log (1 + u) - u - u ^ 2 / 2 + u ^ 3)
       (Real.log (1 + t) - t + 3 * t ^ 2) t := by
-  have hlog : HasDerivAt (fun u : ℝ => Real.log (1 + u)) (1 / (1 + t)) t := by
-    have h := (Real.hasDerivAt_log (x := 1 + t) ht).comp t
-      ((hasDerivAt_const t (1 : ℝ)).add (hasDerivAt_id t))
-    simpa [one_div] using h
-  have hsq : HasDerivAt (fun u : ℝ => u ^ 2 / 2) t t := by
-    have h := (((hasDerivAt_id t).pow 2).const_mul ((2 : ℝ)⁻¹))
-    simpa [div_eq_mul_inv, pow_two, two_mul, mul_comm, mul_left_comm, mul_assoc] using h
-  have hcube : HasDerivAt (fun u : ℝ => u ^ 3) (3 * t ^ 2) t := by
-    simpa [pow_two, mul_comm, mul_left_comm, mul_assoc] using (hasDerivAt_id t).pow 3
+  have hlin : HasDerivAt (fun u : ℝ => 1 + u) 1 t := (hasDerivAt_id' t).const_add (1 : ℝ)
+  have hlog : HasDerivAt (fun u : ℝ => Real.log (1 + u)) (1 / (1 + t)) t := hlin.log ht
+  have hsq : HasDerivAt (fun u : ℝ => u ^ 2 / 2) t t :=
+    (((hasDerivAt_id' t).fun_pow 2).div_const 2).congr_deriv (by norm_num)
+  have hcube : HasDerivAt (fun u : ℝ => u ^ 3) (3 * t ^ 2) t :=
+    ((hasDerivAt_id' t).fun_pow 3).congr_deriv (by norm_num)
   have hprod : HasDerivAt (fun u : ℝ => (1 + u) * Real.log (1 + u))
-      (Real.log (1 + t) + 1) t := by
-    have hlin : HasDerivAt (fun u : ℝ => 1 + u) 1 t := by
-      simpa using (hasDerivAt_const t (1 : ℝ)).add (hasDerivAt_id t)
-    convert hlin.mul hlog using 1
-    field_simp [ht]
-  convert (((hprod.sub (hasDerivAt_id t)).sub hsq).add hcube) using 1
-  ring
+      (Real.log (1 + t) + 1) t :=
+    (hlin.fun_mul hlog).congr_deriv (by field_simp)
+  exact (((hprod.fun_sub (hasDerivAt_id' t)).fun_sub hsq).fun_add hcube).congr_deriv (by ring)
 
 private lemma tiltAux_monotone_negR (a b : ℝ) (hlo : -(1 / 2 : ℝ) ≤ a) :
     MonotoneOn (fun t : ℝ => t + t ^ 2 / 2 - (1 + t) * Real.log (1 + t))

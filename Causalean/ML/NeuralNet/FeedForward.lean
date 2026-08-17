@@ -45,14 +45,17 @@ theorem evalLayers_lipschitz {n : ℕ} (σ : Activation) (Ls : List (DenseLayer 
     LipschitzWith (Ls.map k).prod (evalLayers σ Ls) := by
   induction Ls with
   | nil =>
-      simpa [evalLayers] using
-        (LipschitzWith.id :
-          LipschitzWith (1 : NNReal) (id : (Fin n → ℝ) → (Fin n → ℝ)))
+      -- `simp` no longer unfolds `id`, so state the identity bound in the
+      -- lambda form the goal uses.
+      have hid : LipschitzWith (1 : NNReal) (fun x : Fin n → ℝ => x) :=
+        LipschitzWith.id
+      simpa [evalLayers] using hid
   | cons L Ls ih =>
       have hL : LipschitzWith (k L) (layerMap σ L) := hk L (by simp)
       have hLs : ∀ L' ∈ Ls, LipschitzWith (k L') (layerMap σ L') := by
         intro L' hL'
         exact hk L' (by simp [hL'])
-      simpa [evalLayers, List.map_cons, List.prod_cons, mul_comm] using (ih hLs).comp hL
+      simpa [evalLayers, List.map_cons, List.prod_cons, mul_comm,
+        Function.comp_def] using (ih hLs).comp hL
 
 end Causalean.ML

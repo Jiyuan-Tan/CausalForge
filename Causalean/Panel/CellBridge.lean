@@ -113,8 +113,16 @@ noncomputable def indicatorSpan {Ω 𝒢 : Type*} [MeasurableSpace Ω] [Fintype 
                   * Set.indicator {ω' | G ω' = g} (fun _ => (1 : ℝ)) ω)
                 (2 : ENNReal) μ := by
               simpa [mul_comm] using hconst.const_mul (c g)
-            simpa [Finset.sum_insert, hg, add_comm, add_left_comm, add_assoc]
-              using hterm.add hs
+            have hins : (fun ω => (insert g s).sum (fun g' => c g'
+                  * Set.indicator {ω' | G ω' = g'} (fun _ => (1 : ℝ)) ω))
+                = (fun ω => c g
+                    * Set.indicator {ω' | G ω' = g} (fun _ => (1 : ℝ)) ω)
+                  + (fun ω => s.sum (fun g' => c g'
+                      * Set.indicator {ω' | G ω' = g'} (fun _ => (1 : ℝ)) ω)) := by
+              funext ω
+              simp [Finset.sum_insert hg, Pi.add_apply]
+            rw [hins]
+            exact hterm.add hs
         exact hsum' (Finset.univ : Finset 𝒢)
       exact (memLp_congr_ae hfc.symm).1 hsum
     , zero_mem := by

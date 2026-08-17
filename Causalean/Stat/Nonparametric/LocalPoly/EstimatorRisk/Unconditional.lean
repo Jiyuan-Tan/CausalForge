@@ -157,7 +157,7 @@ theorem estimatorVariance_unconditional {est : Ω → ℝ} {θ Bsq Vrate M : ℝ
       nlinarith [hVr, hμG, ENNReal.toReal_nonneg (a := μ G)]
     linarith
   -- ===== Term 2: `Var(𝔼[est | m]) ≤ Bsq + 4M²·μ(Gᶜ)` =====
-  have hcE_memLp : MemLp (μ[est | m]) 2 μ := hest.condExp
+  have hcE_memLp : MemLp (μ[est | m]) 2 μ := MemLp.condExp (by norm_num) hest
   have hZ_memLp : MemLp (fun ω => (μ[est | m]) ω - θ) 2 μ := hcE_memLp.sub (memLp_const θ)
   have hZsq_int : Integrable (fun ω => ((μ[est | m]) ω - θ) ^ 2) μ := hZ_memLp.integrable_sq
   have habsM := abs_condExp_le_of_bound hm hest_int hM

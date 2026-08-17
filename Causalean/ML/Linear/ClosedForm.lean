@@ -99,7 +99,10 @@ theorem ols_normalEq_of_minimizer
     simpa [g, dotProduct, Pi.single_apply] using hj
   have hz : Xᵀ *ᵥ y - (Xᵀ * X) *ᵥ βhat = 0 := by
     have hg' : Xᵀ *ᵥ (y - X *ᵥ βhat) = 0 := by
-      simpa [g, r] using hg_zero
+      -- `y - X *ᵥ βhat` and `fun i => y i - (X *ᵥ βhat) i` are definitionally
+      -- equal, but `simp` no longer bridges them, so close by `exact`.
+      have h : Xᵀ *ᵥ r = 0 := hg_zero
+      exact h
     rw [Matrix.mulVec_sub] at hg'
     simpa [Matrix.mulVec_mulVec] using hg'
   exact (sub_eq_zero.mp hz).symm

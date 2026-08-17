@@ -68,11 +68,11 @@ CausalSmith/
 |---|---|---|
 | Lean 4 | as pinned in `lean-toolchain` | Build CausalSmith + Causalean |
 | Lake | bundled with Lean | Build orchestration |
-| Node.js | `20.20.2` (via nvm) | TypeScript pipeline runtime — the default shell is often older and silently fails |
+| Node.js | ≥ `20.20.2` (the `engines.node` floor; 22.x verified) | TypeScript pipeline runtime — `source tools/scripts/node_env.sh` selects a satisfying install; an older default shell node fails silently |
 | Codex CLI | latest | Pipeline worker/reviewer dispatch for D-1 / D0 / F2 / F3 / F4 / F5 |
 
 ```bash
-source ~/.nvm/nvm.sh && nvm use 20.20.2
+source tools/scripts/node_env.sh
 ```
 
 Install TS deps once:
@@ -114,7 +114,7 @@ The `/causalsmith research` slash command (`.claude/skills/causalsmith/SKILL.md`
 
 ```bash
 cd <AUTOID>/CausalSmith
-source ~/.nvm/nvm.sh && nvm use 20.20.2
+source tools/scripts/node_env.sh
 npx --prefix tools tsx tools/bin/causalsmith.ts research <ARGS>
 ```
 
@@ -131,7 +131,7 @@ re-enters theorem verification at F2.5.
 | `research --resume <qid> <spec>` | Resume after CKPT 1 / 1.5 / 2 or a `missing_architecture` block. |
 | `research --propose <topic> <qid> <spec>` | Run D-1 (question proposal) first, then proceed. |
 | `research --angle-action <continue\|switch\|retry\|give-up> <qid> <spec>` | Resolve a D-0.5 proposal checkpoint before another proposer starts. Add `--angle-directive <text\|->` to persist the D-orchestrator repair atomically; `retry` also accepts `--extra-revisions N`. |
-| `research --propose <topic> --novelty flagship --upgrade <parent>_<spec> --upgrade-axis <axis> <qid> <spec>` | Flagship upgrade of a banked accepted/downgraded parent. `--propose <topic>` is optional here (topic auto-derived from the parent README). |
+| `research --propose <topic> --novelty <tier> --upgrade <parent>_<spec> --upgrade-axis <axis> <qid> <spec>` | Upgrade a banked accepted/downgraded parent. `<tier>` must be at or above the parent's `banked_novelty_tier` — equal is allowed (e.g. field→field). `--propose <topic>` is optional here (topic auto-derived from the parent README). |
 | `research --from-question <oq_id> <qid> <spec>` | Cold start from an existing OpenQuestion node. Atomically claims the OQ (`open` → `in_progress`) under the graph write lock before the pipeline begins, so it cannot be double-consumed. Mutually exclusive with `--propose` and `--upgrade`. On `--resume` the claim is a no-op. |
 | `study <slug> [--resume]` | **Substrate-build mode** — builds ONE missing Causalean substrate module. The first invocation writes a blank `requirement.md` template and halts for you to fill in; re-run to proceed. Boots one shared warm `lean-lsp` for the whole run. |
 | `present <qid> <spec>` | Create or resume a verified paper bundle from an accepted bank entry. |
@@ -143,7 +143,7 @@ Useful flags:
 - `--auto` — run autonomously: the orchestrator decides every checkpoint per its skill, halting only on terminal failure or CKPT 2 (bank/promote/commit). Without it the run stops at each checkpoint for a human call.
 - `--novelty <incremental|subfield|field|flagship>` — D0.5 acceptance threshold for proposal mode. The vocabulary **is** the reviewer publishability-tier ladder (`flagship > field > subfield > incremental`): the target you pass is the floor tier a note must clear. Default `field`. (The pre-unification spellings `relative-to-repo` → `incremental` and `relative-to-literature` → `subfield` are still accepted and normalized, so old scripts and banked runs keep working.)
 - `--proposer <codex|claude>` — override which draft runner writes the D-1 proposal. Defaults to the model configured in `models.ts`.
-- `--upgrade <parent_qid>_<parent_spec>` — only with `--novelty flagship`. Starts D-1 from a banked entry; the accepted child carries a `supersedes:` link to the parent.
+- `--upgrade <parent_qid>_<parent_spec>` — requires an explicit `--novelty <tier>` at or **above** the parent's achieved `banked_novelty_tier`; a target below it is refused as a downgrade. Equal-tier upgrades are legitimate (field→field): the tier is not the delta — the declared `--upgrade-axis` is, and D-0.5 fires `N-upgrade-thin` on any draft that does not deliver it. Starts D-1 from a banked entry; the accepted child carries a `supersedes:` link to the parent.
 - `--upgrade-axis <computation|estimation|generalization|mechanism>` — required with `--upgrade`. Declares the typed delta the upgrade must deliver.
 - `--clear-gate <flag>` — repeatable, **`--resume`-only**. Clears one resume-blocking cap-gate flag in `state.flags` instead of hand-editing it. A cap-gate is a deliberate halt the run must not blow through silently, so clearing it is an explicit act. Valid flags: `stage_neg1_fallback`, `general_review_halt`, `substrate_build_required`, `theorem_splits_cap_hit`, `stage0_budget_exhausted`, `stage1_rewinds_cap_hit`, `scaffold_redirect_cap_hit`. (Distinct from a *substrate*-gate — see "Discharging a gate" below; the two share the word but are unrelated mechanisms.)
 - `--stop-after <stage>` — halt cleanly after the named stage completes. Valid stages (in order): `D-1.1`, `D-1.2`, `D-0.5`, `D0`, `D0.5`, `F1`, `F1.5`, `F2`, `F2.5`, `F3`, `F3.5`, `F4`, `F5`. Useful for smoke-testing one stage in isolation (e.g. `--stop-after F4` to inspect equivalence review without auto-banking; old numeric forms are accepted but deprecated). Validated at parse time; plumbed via `CAUSALSMITH_STOP_AFTER` env var.

@@ -169,7 +169,7 @@ theorem fixSet_evalMap_nonAnc_compat
     -- parent tuples over `M'.dag.parents v`.
     change M'.structFun ⟨v, hv_M1⟩
         (fixMonoParentMap M'.toSWIGGraph Z hZ_obs hZ_fixed v
-          (fun w : {w // w ∈ M2.dag.parents v} =>
+          (fun w : {w // w ∈ (M'.splitMono Z hZ_obs hZ_fixed).dag.parents v} =>
             if huo : w.val ∈ M2.unobserved then ℓ ⟨w.val, huo⟩
             else if hfix : w.val ∈ M2.fixed then s' ⟨w.val, hfix⟩
             else

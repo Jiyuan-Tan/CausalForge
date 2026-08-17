@@ -5,7 +5,7 @@ Authors: Jiyuan Tan
 -/
 import Causalean.Mathlib.Probability.ConvergingTogether.CharFunBound
 import Mathlib.Probability.Distributions.Gaussian.Real
-import Clt.Inversion
+import Mathlib.MeasureTheory.Measure.LevyConvergence
 
 /-!
 # The converging-together theorem (Billingsley Thm 3.2 / Slutsky for `⇒`)

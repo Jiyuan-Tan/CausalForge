@@ -83,8 +83,7 @@ theorem optScore_feasible (μ : Measure ℝ) [IsProbabilityMeasure μ] (h : Fini
     (hnd : moment μ 1 ^ 2 < moment μ 2) (hr : 0 < l2ResidualQuadratic μ) (x : ℝ) :
     FeasibleScore μ x (optScore μ x) := by
   refine ⟨?_, ?_, ?_, ?_⟩
-  · simpa [optScore] using
-      (projResidual_memL2 μ h).const_mul (x / l2ResidualQuadratic μ)
+  · exact (projResidual_memL2 μ h).const_mul (x / l2ResidualQuadratic μ)
   · simp [optScore, integral_const_mul, integral_projResidual μ h hnd]
   · calc
       ∫ y, y * optScore μ x y ∂μ

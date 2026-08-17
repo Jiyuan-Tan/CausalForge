@@ -352,6 +352,8 @@ lemma integral_comp_YofD_eq [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
       | true  => f (0 : Fin 2)
       | false => f (1 : Fin 2)
   have hψ_meas : Measurable ψ := by
+    let instCf : ∀ a : Fin 2, MeasurableSpace (S.cfBundle.type a) :=
+      fun a => S.cfBundle.inst a
     cases d with
     | true  => exact measurable_pi_apply (0 : Fin 2)
     | false => exact measurable_pi_apply (1 : Fin 2)
@@ -411,7 +413,7 @@ lemma integral_comp_YofD_eq [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
       have h := MeasureTheory.condExp_mul_of_stronglyMeasurable_left (μ := P.μ)
         (m := S.sigmaX) (f := k)
         (g := fun ω => S.dVar.indicator d ω * g (S.YofD d ω)) hk_sm kprod_int prod_int
-      filter_upwards [h] with ω hω; simpa [Pi.mul_apply] using hω
+      filter_upwards [h] with ω hω; exact hω
     filter_upwards [hpull, hstar, he_pos] with ω h1 h2 hpos
     rw [h1]
     simp only [Pi.mul_apply] at h2 ⊢

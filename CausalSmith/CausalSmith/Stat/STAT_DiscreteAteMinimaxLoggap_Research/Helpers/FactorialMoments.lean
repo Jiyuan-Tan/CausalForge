@@ -321,7 +321,7 @@ lemma factorial_cross_ratio_bound {m r s : ℕ} (hdeg : r ≤ s)
       field_simp
       ring
     rw [← heq]
-    convert hb using 1 <;> ring
+    exact le_trans (le_of_eq (by ring)) hb
   rw [abs_of_nonpos (sub_nonpos.mpr hratio_le_one)]
   linarith [hbern.trans hratio_lower]
 

@@ -5,6 +5,7 @@ Authors: Jiyuan Tan
 -/
 import Mathlib.MeasureTheory.Constructions.BorelSpace.Order
 import Mathlib.MeasureTheory.Integral.Bochner.Basic
+import Mathlib.MeasureTheory.Integral.IntegrableOn
 
 /-!
 # Integrability of suprema over a countable-dense-skeletoned index class
@@ -75,7 +76,7 @@ theorem measurable_sSup_image_of_countable_dense {Ω ι : Type*} [MeasurableSpac
     (heq : ∀ ω, sSup ((fun π => F ω π) '' S) = sSup ((fun π => F ω π) '' D)) :
     Measurable (fun ω => sSup ((fun π => F ω π) '' S)) := by
   classical
-  letI : Countable D := hD.to_subtype
+  let _ : Countable D := hD.to_subtype
   have hsup :
       Measurable (fun ω : Ω => ⨆ π : D, F ω π.1) :=
     Measurable.iSup (fun π => hF π.1 π.2)

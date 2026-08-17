@@ -64,7 +64,9 @@ theorem bernstein_ge (X : Ω → ℝ) {c v ε : ℝ} (hc : 0 ≤ c)
   have hsub := D.hasSubexponentialMGF_of_bounded X hc hmean hbound hvar
   have h := hsub.measure_ge_le hε
   rw [D.toMeasure_real_setOf (fun z => ε ≤ X z)] at h
-  simpa only [NNReal.coe_mk] using h
+  -- `((⟨_, _⟩ : ℝ≥0) : ℝ)` is definitionally the underlying real, so `exact` closes this
+  -- at default transparency (`simpa`'s final check no longer unfolds it).
+  exact h
 
 /-- **Bernstein tail for a bounded design statistic (two-sided).** Under the same hypotheses, the
 absolute deviation exceeds `ε` with probability at most twice the one-sided bound. -/
@@ -80,10 +82,12 @@ theorem bernstein_abs_ge (X : Ω → ℝ) {c v ε : ℝ} (hc : 0 ≤ c)
     (by simpa only [hvarneg] using hvar)
   have hup : D.toMeasure.real {ω | ε ≤ X ω - 0} ≤
       Real.exp (-ε ^ 2 / (2 * (2 * v + c * ε))) := by
-    simpa only [sub_zero, NNReal.coe_mk] using hsub.measure_ge_le hε
+    simp only [sub_zero]
+    exact hsub.measure_ge_le hε
   have hlow : D.toMeasure.real {ω | ε ≤ -X ω + 0} ≤
       Real.exp (-ε ^ 2 / (2 * (2 * v + c * ε))) := by
-    simpa only [add_zero, NNReal.coe_mk] using hpos.measure_ge_le hε
+    simp only [add_zero]
+    exact hpos.measure_ge_le hε
   have h := measureReal_abs_dev_le_two_sided (μ := D.toMeasure) X 0
     (Real.exp (-ε ^ 2 / (2 * (2 * v + c * ε))))
     (Real.exp (-ε ^ 2 / (2 * (2 * v + c * ε)))) ε hup hlow

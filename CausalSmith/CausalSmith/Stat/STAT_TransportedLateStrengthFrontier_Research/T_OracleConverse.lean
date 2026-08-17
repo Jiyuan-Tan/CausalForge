@@ -557,6 +557,6 @@ theorem oracle_converse
     have hone : min 1 (t0 ^ (-1 / 2 : ℝ)) = 1 := by
       rw [min_eq_left]
       exact Real.one_le_rpow_of_pos_of_le_one_of_nonpos ht0 ht1 (by norm_num)
-    simpa [hone] using hOracleLower t0 ht0
+    simpa [hone, oracleValue] using hOracleLower t0 ht0
 
 end CausalSmith.Stat.TransportedLateStrengthFrontier

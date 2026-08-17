@@ -147,7 +147,6 @@ lemma eLpNorm_two_sq_toReal_eq_integral_sq
       norm_num [Real.rpow_two]]
     rw [← Real.rpow_mul]
     · norm_num
-      exact Real.rpow_one (∫ x, ‖f x‖ ^ 2 ∂P)
     · exact integral_nonneg fun x => Real.rpow_nonneg (norm_nonneg _) _
   rw [hsq]
 
@@ -163,7 +162,7 @@ lemma centered_sq_lintegral_le_eLpNorm_two_sq
       ENNReal.ofReal ((eLpNorm f 2 P).toReal ^ 2) := by
   have hcenter_int : Integrable (fun x => (f x - ∫ y, f y ∂P) ^ 2) P := by
     have hcenter : MemLp (fun x => f x - ∫ y, f y ∂P) 2 P := by
-      simpa [sub_eq_add_neg] using hf.sub (memLp_const (∫ y, f y ∂P))
+      exact hf.sub (memLp_const (∫ y, f y ∂P))
     exact hcenter.integrable_sq
   have hcenter_nn : 0 ≤ᵐ[P] fun x => (f x - ∫ y, f y ∂P) ^ 2 :=
     Filter.Eventually.of_forall fun x => sq_nonneg _
@@ -194,7 +193,7 @@ lemma pi_centered_sum_sq_lintegral_le
   let Y : ∀ i, (∀ i, X i) → ℝ := fun i v => f i (v i) - c i
   have hcenterP : ∀ i, MemLp (fun x => f i x - c i) 2 (P i) := by
     intro i
-    simpa [c, sub_eq_add_neg] using (hf i).sub (memLp_const (∫ x, f i x ∂P i))
+    exact (hf i).sub (memLp_const (∫ x, f i x ∂P i))
   have hYmem : ∀ i, MemLp (Y i) 2 ν := by
     intro i
     have hcomp := (hcenterP i).comp_measurePreserving (measurePreserving_eval P i)

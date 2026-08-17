@@ -135,9 +135,9 @@ theorem kernel_erm_excess_rate {d n : ℕ} {Ω : Type*} [MeasurableSpace Ω]
         empiricalRademacherComplexity n f (X ∘ ω) ≤ Xb * W / Real.sqrt (n : ℝ) := by
       intro ω
       let Y' : Fin n → Metric.closedBall (0 : EuclideanSpace ℝ (Fin d)) Xb := X ∘ ω
-      simpa [f, Y', 𝒳, ι, Function.comp_def] using
-        (linear_predictor_l2_bound' (d := d) (n := n) (W := W) (X := Xb)
-          hXb hW Y' id)
+      have h := linear_predictor_l2_bound' (d := d) (n := n) (ι := ι)
+        (W := W) (X := Xb) hXb hW Y' id
+      exact h
     have hnonneg : ∀ ω : Fin n → Ω, 0 ≤ empiricalRademacherComplexity n f (X ∘ ω) := by
       intro ω
       unfold empiricalRademacherComplexity
@@ -163,8 +163,7 @@ theorem kernel_erm_excess_rate {d n : ℕ} {Ω : Type*} [MeasurableSpace Ω]
   have key := erm_oracle_inequality_separable (μ := μ) (n := n) (f := f)
     hf X hX (b := Xb * W) hb hf' hf'' ht' hε ŵ wstar hERM
   refine le_trans ?_ key
-  rw [ENNReal.toReal_le_toReal (measure_ne_top _ _) (measure_ne_top _ _)]
-  apply measure_mono
+  refine ENNReal.toReal_mono (measure_ne_top _ _) (measure_mono ?_)
   intro ω hω
   have hthreshold :
       4 • rademacherComplexity n f μ X + 2 * ε

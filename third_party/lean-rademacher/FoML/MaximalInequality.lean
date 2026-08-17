@@ -127,7 +127,7 @@ private lemma enorm_mono (a b : ℝ) (p : a ≤ b) (q : 0 ≤ a):
 
 private lemma enorm_nonneg (a : ℝ) : 0 ≤ ‖a‖ₑ := by
   rw [<- ofReal_norm_eq_enorm]
-  exact zero_le (ENNReal.ofReal ‖a‖)
+  exact zero_le
 
 omit [IsProbabilityMeasure μ] [DecidableEq ι] in
 private theorem Finset.aemeasurable_sup' {s : Finset ι} (hs : s.Nonempty) {f : ι → Ω → ℝ}

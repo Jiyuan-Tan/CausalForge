@@ -55,10 +55,8 @@ instance : @MeasurableSingletonClass (Signs m) MeasurableSpace.pi := by
     simp only [Set.mem_singleton_iff]
     dsimp [Signs]
     ext i
-    have := Set.mem_iInter.mp h i
-    dsimp [f] at this
-    simp only [Int.reduceNeg, Set.mem_preimage, Function.eval, Set.mem_singleton_iff] at this
-    exact congrArg Subtype.val this
+    have hi : y i = x i := Set.mem_iInter.mp h i
+    exact congrArg Subtype.val hi
 
 /-- The sign-vector measurable space agrees with the product measurable space. -/
 lemma measurablespace_eq : instMeasurableSpaceSigns m = MeasurableSpace.pi := by
@@ -77,12 +75,16 @@ lemma measure_eq :
       fun (_ : Fin m) ↦ (PMF.uniformOfFintype ({-1, 1} : Finset ℤ)).toMeasure := by
   classical
   rw [measurablespace_eq]
-  refine (Equiv.cast_eq_iff_heq ?_).mp ?_
-  · rfl
+  -- After `measurablespace_eq` both sides carry the product σ-algebra, so the two
+  -- measure types are definitionally equal and the `HEq` reduces to an `Eq`.
+  refine heq_of_eq ?_
   · apply Eq.symm
     apply Measure.pi_eq
     intro s hs
-    dsimp [signVecPMF, Signs]
+    -- `Signs m` is a semireducible `def`, so `dsimp` cannot unfold it together with
+    -- its `Fintype` instance; state the unfolded goal instead.
+    show (PMF.uniformOfFintype (Fin m → ({-1, 1} : Finset ℤ))).toMeasure (Set.univ.pi s)
+        = ∏ i : Fin m, (PMF.uniformOfFintype ({-1, 1} : Finset ℤ)).toMeasure (s i)
     rw [PMF.toMeasure_uniformOfFintype_apply (Set.univ.pi s) (MeasurableSet.univ_pi hs)]
     have :
         (Fintype.card (Set.univ.pi s) : ENNReal) /
@@ -299,7 +301,7 @@ lemma massart_lemma_pmf
           iIndepFun
             (fun i ↦ MassartNotation.Y (F:=F) (S:=S) (m:=m) i a)
             (signVecPMF m).toMeasure := by
-        dsimp [MassartNotation.Y]
+        unfold MassartNotation.Y
         have h :
             ∀ (i : Fin m),
               Measurable (fun (σi : ({-1, 1} : Finset ℤ)) ↦
@@ -308,8 +310,12 @@ lemma massart_lemma_pmf
           measurability
         convert iIndepFun.comp pi_eval_iIndepFun
           (fun i ↦ fun (σi : ({-1, 1} : Finset ℤ)) => (m : ℝ)⁻¹ * (σi.1 : ℝ) * F a (S i)) h
-        · exact measurablespace_eq
-        · aesop
+        · exact heq_of_eq measurablespace_eq
+        · rename_i _e1 i i' hi σ σ' hσ
+          subst hi
+          have hσ' : σ = σ' := eq_of_heq hσ
+          subst hσ'
+          rfl
         · exact measure_eq
         · exact PMF.toMeasure.isProbabilityMeasure (PMF.uniformOfFintype { x // x ∈ {-1, 1} })
       exact signs_coord_indep

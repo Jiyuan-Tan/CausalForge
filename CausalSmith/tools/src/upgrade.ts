@@ -15,7 +15,7 @@ export interface ParentEntry {
   parent_qid: string;
   parent_spec: string;
   tier: ParentTier;
-  /** Achieved novelty tier frozen at bank time; upgrade targets must be strictly higher. */
+  /** Achieved novelty tier frozen at bank time; upgrade targets must be at least this high. */
   banked_novelty_tier: NoveltyTarget;
   topic: string;
   cluster: "panel" | "exactid" | "partialid" | "stat" | "experimentation" | "scm" | null;
@@ -198,7 +198,14 @@ async function resolveBankedNoveltyTier(args: {
   );
 }
 
-/** Require an upgrade target to be strictly above the parent's achieved banked tier. */
+/**
+ * Require an upgrade target at or above the parent's achieved banked tier.
+ *
+ * Equal-tier upgrades are legitimate: the substantive gate is the per-axis
+ * `upgrade_axis` rubric at D-0.5 (`N-upgrade-thin`), which rejects a draft that
+ * does not deliver its declared delta regardless of the tier it targets. Only a
+ * target BELOW the parent is refused — that is a downgrade, not an upgrade.
+ */
 export function assertUpgradeNoveltyTarget(
   target: NoveltyTarget | string | undefined,
   parent: ParentEntry,
@@ -210,9 +217,9 @@ export function assertUpgradeNoveltyTarget(
         `parent ${parent.parent_qid}_${parent.parent_spec} is ${parent.banked_novelty_tier}.`,
     );
   }
-  if (REVIEWER_TIER_RANK[normalized] <= REVIEWER_TIER_RANK[parent.banked_novelty_tier]) {
+  if (REVIEWER_TIER_RANK[normalized] < REVIEWER_TIER_RANK[parent.banked_novelty_tier]) {
     throw new Error(
-      `--upgrade target '${normalized}' must be strictly above parent ` +
+      `--upgrade target '${normalized}' must be at least parent ` +
         `${parent.parent_qid}_${parent.parent_spec}'s banked novelty tier ` +
         `'${parent.banked_novelty_tier}'.`,
     );
@@ -302,7 +309,7 @@ export function renderUpgradeContextBlock(args: {
     lines.push(directiveText.trim(), "");
   }
   lines.push(
-    "=== UPGRADE CONTEXT (load-bearing — this run targets a strictly higher novelty tier than its banked parent) ===",
+    "=== UPGRADE CONTEXT (load-bearing — this run targets a novelty tier at or above its banked parent's) ===",
     `parent_qid: ${upgradeFrom.parent_qid}`,
     `parent_spec: ${upgradeFrom.parent_spec}`,
     `parent_tier: ${parent.tier}`,

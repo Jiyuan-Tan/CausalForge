@@ -486,7 +486,6 @@ lemma rnDeriv_setIntegral_le_sqrt_chi {Ω : Type*} [MeasurableSpace Ω]
     exact hdev.add ((hp_int.const_mul 2).sub (integrable_const 1))
   have hp_sq_eq : ∫ x, p x ^ 2 ∂Q = chiSqDiv P Q + 1 := by
     have h := chiSqDiv_eq (μ := P) (ν := Q) hac hint
-    simp only at h
     linarith
   have hp_sq_le : ∫ x, p x ^ 2 ∂Q ≤ C + 1 := by
     linarith
@@ -523,7 +522,7 @@ lemma rnDeriv_setIntegral_le_sqrt_chi {Ω : Type*} [MeasurableSpace Ω]
         filter_upwards with x
         by_cases hx : x ∈ A <;> simp [ind, hx]
       _ = Q.real A := by
-        simpa [ind] using integral_indicator_one (μ := Q) hA
+        exact integral_indicator_one (μ := Q) hA
   have hp_sq_eq_rpow : ∫ x, p x ^ (2 : ℝ) ∂Q = ∫ x, p x ^ 2 ∂Q := by
     apply integral_congr_ae
     filter_upwards with x

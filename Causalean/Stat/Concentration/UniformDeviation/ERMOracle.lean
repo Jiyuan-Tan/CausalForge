@@ -137,8 +137,7 @@ theorem erm_oracle_inequality [MeasurableSpace 𝒳] [Nonempty 𝒳] [Countable 
   apply le_trans ?_
     (uniform_deviation_tail_bound_countable (μ := μ) (n := n) (f := f) hf X hX hb hf'
       ht' hε)
-  rw [ENNReal.toReal_le_toReal (measure_ne_top _ _) (measure_ne_top _ _)]
-  apply measure_mono
+  refine ENNReal.toReal_mono (measure_ne_top _ _) (measure_mono ?_)
   intro ω hω
   have hbasic :=
     erm_excess_le_two_uniformDeviation (μ := μ) (n := n) (f := f) X
@@ -181,8 +180,7 @@ theorem erm_oracle_inequality_separable [MeasurableSpace 𝒳] [Nonempty 𝒳]
   apply le_trans ?_
     (uniform_deviation_tail_bound_separable (μ := μ) (n := n) (f := f) hf X hX hb hf'
       hf'' ht' hε)
-  rw [ENNReal.toReal_le_toReal (measure_ne_top _ _) (measure_ne_top _ _)]
-  apply measure_mono
+  refine ENNReal.toReal_mono (measure_ne_top _ _) (measure_mono ?_)
   intro ω hω
   have hbasic :=
     erm_excess_le_two_uniformDeviation (μ := μ) (n := n) (f := f) X

@@ -52,7 +52,7 @@ private theorem tendsto_measure_zero_of_le {E : ℕ → Set Ω} {g : ℕ → ℝ
     (hle : ∀ n, μ (E n) ≤ g n) (hg : Tendsto g atTop (𝓝 0)) :
     Tendsto (fun n => μ (E n)) atTop (𝓝 0) :=
   tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds hg
-    (Eventually.of_forall fun _ => zero_le _) (Eventually.of_forall hle)
+    (Eventually.of_forall fun _ => zero_le) (Eventually.of_forall hle)
 
 /-- Transfer `P`-integrability of a measurable statistic to `μ`-integrability of
 its pullback along the first sample point. -/
@@ -200,7 +200,7 @@ theorem glivenkoCantelli_of_hasL1Bracketing [IsProbabilityMeasure P]
   -- the bad event is covered by the endpoint events
   have hsupport_fail_zero :
       μ {ω | ∃ k : Fin n, S.Z k.1 ω ∉ B.support} = 0 := by
-    apply le_antisymm ?_ (zero_le _)
+    apply le_antisymm ?_ zero_le
     calc μ {ω | ∃ k : Fin n, S.Z k.1 ω ∉ B.support}
         = μ (⋃ k : Fin n, {ω | S.Z k.1 ω ∉ B.support}) := by
           rw [Set.iUnion_setOf]
@@ -210,7 +210,7 @@ theorem glivenkoCantelli_of_hasL1Bracketing [IsProbabilityMeasure P]
           have hzero : ∀ k : Fin n, μ {ω | S.Z k.1 ω ∉ B.support} = 0 := by
             intro k
             have hmap_zero : (μ.map (S.Z k.1)) B.supportᶜ = 0 := by
-              simpa [S.map_eq k.1] using MeasureTheory.ae_iff.mp B.support_ae
+              simpa [S.map_eq k.1, Set.compl_def] using MeasureTheory.ae_iff.mp B.support_ae
             rw [← hmap_zero]
             rw [Measure.map_apply_of_aemeasurable (S.meas k.1).aemeasurable
               B.support_meas.compl]

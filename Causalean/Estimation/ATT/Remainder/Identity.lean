@@ -171,14 +171,14 @@ theorem aipw_remainder_identity_ATT
     have hcond_L2 :
         MemLp (P.μ[S.toPOBackdoorSystem.YofD false |
           S.toPOBackdoorSystem.sigmaX]) 2 P.μ :=
-      hY0_L2.condExp
+      hY0_L2.condExp (by norm_num)
     exact hcond_L2.ae_eq (by
       simpa [X] using S.μ₀_compat hA)
   have hdμ_L2 : MemLp dμ 2 P.μ := by
     have hd :=
       MemLp.comp_of_map (f := S.toPOBackdoorSystem.factualX) hΔμ₀_memLp
         S.toPOBackdoorSystem.measurable_factualX.aemeasurable
-    simpa [dμ, X] using hd
+    exact hd
   have hdμ_int : Integrable dμ P.μ := hdμ_L2.integrable (by norm_num)
   have hA_meas : Measurable A := by
     simpa [A] using S.toPOBackdoorSystem.dVar.measurable_indicator true
@@ -213,11 +213,11 @@ theorem aipw_remainder_identity_ATT
       filter_upwards with ω
       simp [dμ]
     have hL2 : MemLp (fun ω => A ω * (Y ω - η.μ₀_fn (X ω))) 2 P.μ := by
-      simpa [mul_comm] using (hY_L2.sub hημ_L2).mul hA_Linf
+      exact (hY_L2.sub hημ_L2).mul' hA_Linf
     exact hL2.integrable (by norm_num)
   have htreated₀_int : Integrable (fun ω => A ω * (Y ω - S.μ₀_val (X ω))) P.μ := by
     have hL2 : MemLp (fun ω => A ω * (Y ω - S.μ₀_val (X ω))) 2 P.μ := by
-      simpa [mul_comm] using (hY_L2.sub hμ₀_L2).mul hA_Linf
+      exact (hY_L2.sub hμ₀_L2).mul' hA_Linf
     exact hL2.integrable (by norm_num)
   have hAθ_int : Integrable (fun ω => A ω * S.θ₀) P.μ := by
     have hL2 : MemLp (fun ω => A ω * S.θ₀) 2 P.μ := by
@@ -325,8 +325,7 @@ theorem aipw_remainder_identity_ATT
     have hmul : MemLp
         (fun x => (η.e_fn x - S.e_val x) * (η.μ₀_fn x - S.μ₀_val x)) 1 S.P_X :=
       by
-        simpa [mul_comm, mul_left_comm, mul_assoc] using
-          hΔμ₀_memLp.mul hΔe_memLp
+        exact hΔμ₀_memLp.mul' hΔe_memLp
     exact hmul.integrable (by norm_num)
   have hden_inv_Linf : MemLp (fun x => (1 - η.e_fn x)⁻¹) ⊤ S.P_X := by
     refine MemLp.of_bound ?_ ε⁻¹ ?_
@@ -345,8 +344,7 @@ theorem aipw_remainder_identity_ATT
         haveI : ENNReal.HolderTriple (2 : ENNReal) (2 : ENNReal) (1 : ENNReal) := by
           constructor
           simpa using ENNReal.inv_two_add_inv_two
-        simpa [mul_comm, mul_left_comm, mul_assoc] using
-          hΔμ₀_memLp.mul hΔe_memLp
+        exact hΔμ₀_memLp.mul' hΔe_memLp
       have h := MemLp.mul' (p := 1) (q := ⊤) (r := 1)
         hden_inv_Linf hprod_L1
       refine h.ae_eq ?_
@@ -363,10 +361,10 @@ theorem aipw_remainder_identity_ATT
     have hcomp := (MeasureTheory.integrable_map_measure hrem_meas
       S.toPOBackdoorSystem.measurable_factualX.aemeasurable).1 (by
         simpa [TreatedEstimationSystem.P_X] using hremX_int)
-    simpa [TreatedEstimationSystem.P_X, remΩ, remX, X, dμ] using hcomp
+    exact hcomp
   have hAdμ_int : Integrable (fun ω => A ω * dμ ω) P.μ := by
     have hL2 : MemLp (fun ω => A ω * dμ ω) 2 P.μ := by
-      simpa [mul_comm] using hdμ_L2.mul hA_Linf
+      exact hdμ_L2.mul' hA_Linf
     exact hL2.integrable (by norm_num)
   have he_bound_px : ∀ᵐ x ∂S.P_X, ‖S.e_val x‖ ≤ (1 : ℝ) := by
     have hset : MeasurableSet {x : γ | ‖S.e_val x‖ ≤ (1 : ℝ)} := by
@@ -394,7 +392,7 @@ theorem aipw_remainder_identity_ATT
     have hcomp := (MeasureTheory.integrable_map_measure hpx_meas
       S.toPOBackdoorSystem.measurable_factualX.aemeasurable).1 (by
         simpa [TreatedEstimationSystem.P_X] using hpx_int)
-    simpa [X, dμ] using hcomp
+    exact hcomp
   have hresid_int : Integrable resid P.μ := by
     have hsum : Integrable (fun ω =>
         F ω * gηX ω * (Y ω - η.μ₀_fn (X ω)) +
@@ -436,7 +434,7 @@ theorem aipw_remainder_identity_ATT
           have hcomp := (MeasureTheory.integrable_map_measure hgηdμX_meas
             S.toPOBackdoorSystem.measurable_factualX.aemeasurable).1 (by
               simpa [TreatedEstimationSystem.P_X] using hgηdμX_int)
-          simpa [TreatedEstimationSystem.P_X, gηX, dμ, X] using hcomp
+          exact hcomp
         have hL1 : MemLp (fun ω => (gηX ω * dμ ω) * F ω) 1 P.μ := by
           have hbase : MemLp (fun ω => gηX ω * dμ ω) 1 P.μ :=
             memLp_one_iff_integrable.2 hgηdμΩ_int

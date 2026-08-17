@@ -91,14 +91,17 @@ theorem lasso_erm_excess_rate {d n : ℕ} (hd : 0 < d) (hn : 0 < n) {Ω : Type*}
   let ι := L1Ball (d := d) W
   letI : MeasurableSpace 𝒳 :=
     MeasurableSpace.comap (fun a : 𝒳 => (a.1 : EuclideanSpace ℝ (Fin d))) inferInstance
-  letI : TopologicalSpace ι :=
+  -- State these on `L1Ball` itself, not on the `let`-bound `ι`: abstracting the
+  -- `let` variable while the instance value's type stays at the unfolded subtype
+  -- makes the auto-generated `_aux`/`_proof` declarations kernel-ill-typed.
+  letI : TopologicalSpace (L1Ball (d := d) W) :=
     inferInstanceAs
       (TopologicalSpace {w : EuclideanSpace ℝ (Fin d) // l1Norm (d := d) w ≤ W})
-  haveI : TopologicalSpace.SeparableSpace ι :=
+  haveI : TopologicalSpace.SeparableSpace (L1Ball (d := d) W) :=
     inferInstanceAs
       (TopologicalSpace.SeparableSpace
         {w : EuclideanSpace ℝ (Fin d) // l1Norm (d := d) w ≤ W})
-  haveI : FirstCountableTopology ι :=
+  haveI : FirstCountableTopology (L1Ball (d := d) W) :=
     inferInstanceAs
       (FirstCountableTopology {w : EuclideanSpace ℝ (Fin d) // l1Norm (d := d) w ≤ W})
   let f : ι → 𝒳 → ℝ := fun w a => ∑ j, w.1 j * a.1 j
@@ -145,7 +148,7 @@ theorem lasso_erm_excess_rate {d n : ℕ} (hd : 0 < d) (hn : 0 < n) {Ω : Type*}
         (Xinf := Xinf) (W := W) hXinf hW hd hn
         (Y' := X ∘ ω)
         (w' := id)
-      simpa [C, f, 𝒳, ι, Function.comp_def] using h
+      exact h
     unfold rademacherComplexity
     calc
       (∫ ω : Fin n → Ω, empiricalRademacherComplexity n f (X ∘ ω)
@@ -163,8 +166,7 @@ theorem lasso_erm_excess_rate {d n : ℕ} (hd : 0 < d) (hn : 0 < n) {Ω : Type*}
   have key := erm_oracle_inequality_separable (μ := μ) (n := n) (f := f)
     hf X hXmeas (b := Xinf * W) hb hf' hf'' ht' hε ŵ wstar hERM
   refine le_trans ?_ key
-  rw [ENNReal.toReal_le_toReal (measure_ne_top _ _) (measure_ne_top _ _)]
-  apply measure_mono
+  refine ENNReal.toReal_mono (measure_ne_top _ _) (measure_mono ?_)
   intro ω hω
   have hthreshold :
       4 • rademacherComplexity n f μ X + 2 * ε

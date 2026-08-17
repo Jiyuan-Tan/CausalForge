@@ -134,7 +134,6 @@ async function solveUnit(args: {
    * snapshot only when the omission manifest shows relevant extra context. */
   fullCoreContext: boolean;
   coreSnapshotPath: string;
-  coreSnapshotSha256: string;
 }): Promise<SolveUnitOutput> {
   const { ctx, targets, label } = args;
   const outPath = unitOutPath(ctx, label);
@@ -203,7 +202,6 @@ async function solveUnit(args: {
     "",
     "=== FROZEN CORE SNAPSHOT + OMISSION MANIFEST ===",
     `CORE_SNAPSHOT_PATH: ${args.coreSnapshotPath}`,
-    `CORE_SNAPSHOT_SHA256: ${args.coreSnapshotSha256}`,
     JSON.stringify(projectedCore.manifest, null, 2),
     args.fullCoreContext
       ? "The complete formal view is inline. The immutable snapshot additionally carries prose, sources, bibliography, and proof bytes; inspect it only if those fields are needed."
@@ -588,12 +586,14 @@ export async function dispatchSolveUnits(args: {
   // node nothing references and "revive" it. An exact-target directive naming
   // one was already removed from the list by the context carry.
   const prunedOrphans = new Set(sctx.next.pruned_proto_orphans ?? []);
+  const sealedOpenOeqs = new Set(Object.keys(sctx.next.sealed_open_oeqs ?? {}));
   const openById = new Map<string, CoreStatement>();
   for (const statement of [
     ...proto.statements.filter(
-      (m) => !validIds.has(m.id) && !persistedOeqReplacements.has(m.id) && !prunedOrphans.has(m.id),
+      (m) => !validIds.has(m.id) && !persistedOeqReplacements.has(m.id) &&
+        !prunedOrphans.has(m.id) && !sealedOpenOeqs.has(m.id),
     ),
-    ...staleAgentTargets,
+    ...staleAgentTargets.filter((m) => !sealedOpenOeqs.has(m.id)),
   ]) openById.set(statement.id, statement);
   if (hasPendingDirective) {
     const forcedIds = requiredCoreTargets.size > 0
@@ -741,7 +741,6 @@ export async function dispatchSolveUnits(args: {
           (proseOwnerIndex !== null && i === proseOwnerIndex) ||
           (directiveOwnerLabel !== null && u.label === directiveOwnerLabel),
         coreSnapshotPath: coreSnapshot.path,
-        coreSnapshotSha256: coreSnapshot.sha256,
       }),
     ),
   );

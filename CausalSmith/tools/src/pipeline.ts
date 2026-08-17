@@ -11,8 +11,18 @@ import { createInitialState, loadState, saveState } from "./state.js";
 import { dryRunStageHandler, liveStageHandler, type StageHandler } from "./pipeline_stages.js";
 import { PaperHasNoCompletedTheorems } from "./shared/close_open_question.js";
 import { withRunHeartbeat } from "./shared/run_heartbeat.js";
-import { loadWorkingState, readEscalationLog } from "./discovery/stages/d0_working.js";
+import { assembleCore } from "./discovery/core/assemble.js";
+import { readTypedCore } from "./discovery/core/core_io.js";
+import { coreJsonPath } from "./discovery/stages/d0_core.js";
+import { hasValidD05AcceptanceReceipt } from "./discovery/stages/d0_acceptance.js";
+import { protoCoreJsonPath } from "./discovery/stages/neg1_2_author.js";
+import {
+  loadWorkingState,
+  proposalRevision,
+  readEscalationLog,
+} from "./discovery/stages/d0_working.js";
 import type { PipelineContext, Stage, StateJson } from "./types.js";
+import { legacyCrossBoundaryRewindGuard } from "./discovery/stages/d0_cross_boundary_rewind.js";
 
 export function nextStage(stage: Stage): Stage | null {
   const index = STAGE_ORDER.indexOf(stage);
@@ -34,6 +44,127 @@ async function hasPendingD0Directive(ctx: PipelineContext): Promise<boolean> {
   // so routing on it would re-enter D0 and force the whole paper open.
   const unconsumed = entries.slice(working?.escalation_entries_consumed ?? 0);
   return unconsumed.some((entry) => entry.provenance_only !== true);
+}
+
+function isFStage(stage: Stage): boolean {
+  return STAGE_ORDER.indexOf(stage) >= STAGE_ORDER.indexOf("1");
+}
+
+function canonicalJson(value: unknown): string {
+  const sortKeys = (item: unknown): unknown => {
+    if (Array.isArray(item)) return item.map(sortKeys);
+    if (item !== null && typeof item === "object") {
+      return Object.fromEntries(
+        Object.entries(item as Record<string, unknown>)
+          .filter(([, child]) => child !== undefined)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([key, child]) => [key, sortKeys(child)]),
+      );
+    }
+    return item;
+  };
+  return JSON.stringify(sortKeys(value));
+}
+
+/** Fail closed at the discovery/formalization boundary.
+ *
+ * `--from-stage F1` used to override the stage cursor without proving that the
+ * accepted D store belonged to the proposal revision named by state.json.  A
+ * real run therefore entered F1 with state/proto at v8 while d0_working/core
+ * still described v7.  This check is deliberately read-only and runs before
+ * resume-preflight state is saved.
+ */
+export async function assertFStageDStoreCoherence(
+  ctx: PipelineContext,
+  state: StateJson,
+  targetStage: Stage,
+): Promise<void> {
+  if (!isFStage(targetStage) || !state.proposed_from) return;
+
+  if (STAGE_ORDER.indexOf(state.stage_completed) < STAGE_ORDER.indexOf("0.5")) {
+    throw new Error(
+      `refusing ${formatStageLabel(targetStage)} entry: D0.5 has not completed ` +
+        `(state.stage_completed=${formatStageLabel(state.stage_completed)}); re-enter D0/D0.5 first`,
+    );
+  }
+
+  const pf = state.proposed_from;
+  const angle = pf.current_angle_index;
+  const version = pf.current_version;
+  const stateRevision = proposalRevision(state);
+  if (stateRevision === undefined) {
+    throw new Error(
+      `refusing ${formatStageLabel(targetStage)} entry: proposed run has no complete proposal revision; ` +
+        `re-enter D-1.2/D-0.5 before formalization`,
+    );
+  }
+  const acceptedReview = pf.iterations?.some(
+    (it) => it.angle === angle && it.version === version && it.verdict.toUpperCase() === "ACCEPT",
+  ) ?? false;
+  const acceptedProposalRevision = typeof angle === "number" && typeof version === "number" && version > 0 &&
+    pf.last_draft_status === "completed" && pf.last_draft_version === version &&
+    acceptedReview && pf.final_verdict === "ACCEPT";
+
+  const working = await loadWorkingState(ctx);
+  if (!working) {
+    throw new Error(
+      `refusing ${formatStageLabel(targetStage)} entry: no accepted d0_working store exists for ${stateRevision}; ` +
+        `re-enter D0/D0.5 first`,
+    );
+  }
+  if (working.proposal_revision !== stateRevision) {
+    throw new Error(
+      `refusing ${formatStageLabel(targetStage)} entry: split D revision ` +
+        `(state/proto=${stateRevision}, d0_working=${working.proposal_revision ?? "<none>"}); ` +
+        `rebase or re-run D0/D0.5 before formalization`,
+    );
+  }
+
+  // A typed-D0.5 receipt is the direct authority. Keep the proposal-review
+  // predicate as a compatibility path for pre-receipt runs, but do not confuse
+  // D-0.5 with D0.5 for sanctioned transactional rebases.
+  const acceptedD05Store = await hasValidD05AcceptanceReceipt(ctx, state);
+  if (!acceptedProposalRevision && !acceptedD05Store) {
+    throw new Error(
+      `refusing ${formatStageLabel(targetStage)} entry: ${stateRevision} has neither a current accepted ` +
+        `D-0.5 proposal review nor an exact-byte typed D0.5 acceptance receipt; re-run D0/D0.5`,
+    );
+  }
+
+  const proposals = working.proposals;
+  const proposalCount = proposals
+    ? proposals.statements.length + proposals.definitions.length + proposals.assumptions.length +
+      proposals.coreEdits.length + proposals.proofs.length
+    : 0;
+  if (proposalCount > 0 || (working.required_core_edit_mandates ?? []).length > 0) {
+    throw new Error(
+      `refusing ${formatStageLabel(targetStage)} entry: accepted D store is not quiescent ` +
+        `(${proposalCount} unadjudicated proposal item(s), ` +
+        `${working.required_core_edit_mandates?.length ?? 0} outstanding mandate(s)); re-enter D0`,
+    );
+  }
+
+  // Legacy cursors predate the pure-render store contract.  Their revision and
+  // review checks above still apply; format >=2 additionally promises exact
+  // proto+working -> core reproducibility and is rejected if that promise broke.
+  if ((working.store_format ?? 0) >= 2) {
+    const protoPath = protoCoreJsonPath(ctx);
+    const corePath = coreJsonPath(ctx);
+    if (!existsSync(protoPath) || !existsSync(corePath)) {
+      throw new Error(
+        `refusing ${formatStageLabel(targetStage)} entry: modern accepted D store is missing ` +
+          `${!existsSync(protoPath) ? "proto_core.json" : "core.json"}; re-enter D0/D0.5`,
+      );
+    }
+    const [proto, core] = await Promise.all([readTypedCore(protoPath), readTypedCore(corePath)]);
+    const rendered = assembleCore(proto, working);
+    if (canonicalJson(rendered) !== canonicalJson(core) && !acceptedD05Store) {
+      throw new Error(
+        `refusing ${formatStageLabel(targetStage)} entry: frozen proto + d0_working do not render ` +
+          `the committed core.json for ${stateRevision}; rebase or re-run D0/D0.5`,
+      );
+    }
+  }
 }
 
 export interface RunPipelineOptions {
@@ -116,9 +247,10 @@ async function runPipelineInner(
   options: RunPipelineOptions,
 ): Promise<StateJson> {
   // Resolve and validate upgrade lineage before creating any run state. The
-  // target may be any novelty tier, but it must be STRICTLY above the parent's
-  // achieved banked tier. Loading here also makes the resolved bank bucket
-  // available to D-1.1 instead of carrying the CLI's placeholder `accepted`.
+  // target may be any novelty tier at or above the parent's achieved banked
+  // tier (equal is legal; the delta gate is the D-0.5 upgrade_axis rubric).
+  // Loading here also makes the resolved bank bucket available to D-1.1
+  // instead of carrying the CLI's placeholder `accepted`.
   if (ctx.upgradeFrom) {
     const { assertUpgradeNoveltyTarget, loadParentEntry } = await import("./upgrade.js");
     const parent = await loadParentEntry(ctx.repoRoot, {
@@ -133,6 +265,32 @@ async function runPipelineInner(
   }
 
   const state = await initializeOrLoadState(ctx);
+
+  // Pre-fix F→D rewinds carry only `rewound_from_stage0`; that does not prove
+  // whether the operator intended an incremental repair, additive extension,
+  // or replacement. Stop before stage selection: both draftIncomplete and a
+  // forced --from-stage D-1.2 can otherwise dispatch the author against the
+  // ordinary pre-D0 proto before the D-0.5 local guard ever runs.
+  if (ctx.resume) {
+    const legacyRewindBlock = legacyCrossBoundaryRewindGuard(state);
+    if (legacyRewindBlock) throw new Error(legacyRewindBlock);
+  }
+
+  // Check both forced and natural forward entry before any resume-preflight
+  // mutation can be persisted. A pending D0 directive legitimately reroutes a
+  // natural D0.5 resume to D0, so it is resolved first and reused below.
+  const pendingD0DirectiveAtLoad =
+    ctx.resume &&
+    (state.stage_completed === "0" || state.stage_completed === "0.5") &&
+    await hasPendingD0Directive(ctx);
+  const preflightFStage = options.startStage && isFStage(options.startStage)
+    ? options.startStage
+    : !options.startStage && ctx.resume && !pendingD0DirectiveAtLoad
+      ? nextStage(state.stage_completed)
+      : null;
+  if (preflightFStage && isFStage(preflightFStage)) {
+    await assertFStageDStoreCoherence(ctx, state, preflightFStage);
+  }
 
   // Persist `--auto` onto state so a run stays autonomous across resumes even if
   // a later `--resume` omits the flag. Latching: `--auto` turns it on; it is
@@ -286,10 +444,7 @@ async function runPipelineInner(
     state.stage_completed === "-1.2" &&
     !!proposalPathFromState &&
     !existsSync(proposalPathFromState);
-  const pendingD0Directive =
-    ctx.resume &&
-    (state.stage_completed === "0" || state.stage_completed === "0.5") &&
-    await hasPendingD0Directive(ctx);
+  const pendingD0Directive = pendingD0DirectiveAtLoad;
   if (
     pendingD0Directive &&
     options.startStage &&
@@ -318,6 +473,9 @@ async function runPipelineInner(
   const MAX_STAGE_ITERATIONS = 100;
   let stageIters = 0;
   while (stage && stageIters++ < MAX_STAGE_ITERATIONS) {
+    if (isFStage(stage)) {
+      await assertFStageDStoreCoherence(ctx, state, stage);
+    }
     // Re-check at every transition, not just process startup. A D-stage action
     // can append a directive while this process is alive; D0.5 must never review
     // a core whose durable repair request is still beyond the working cursor.

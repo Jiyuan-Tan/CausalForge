@@ -165,7 +165,7 @@ private lemma holder_line_taylor {d : ℕ} {γ M : ℝ} {g : (Fin d → ℝ) →
       fun_prop
     set φ : ℝ → ℝ := fun s => gt (x0 + s • y) with hφdef
     have hφCD : ContDiff ℝ ((⌈γ⌉₊ - 1 : ℕ) : WithTop ℕ∞) φ := by
-      simpa [hφdef, Function.comp] using hgt_cd.comp hlineCD
+      simpa [hφdef, Function.comp_def] using hgt_cd.comp hlineCD
     have hcoef : ∀ k : ℕ, k ≤ ⌈γ⌉₊ - 1 →
         iteratedDerivWithin k φ (Set.Icc (0 : ℝ) 1) 0
           = iteratedFDeriv ℝ k g x0 (fun _ => y) := by
@@ -186,8 +186,13 @@ private lemma holder_line_taylor {d : ℕ} {γ M : ℝ} {g : (Fin d → ℝ) →
         (Set.Ioo 0 1) :=
       (hφn1.differentiableOn_iteratedDerivWithin (natCast_lt_withTop (Nat.lt_succ_self n))
         uniqueDiffOn_Icc_zero_one).mono Set.Ioo_subset_Icc_self
+    have huIcc : Set.uIcc (0 : ℝ) 1 = Set.Icc (0 : ℝ) 1 := Set.uIcc_of_le zero_le_one
+    have huIoo : Set.uIoo (0 : ℝ) 1 = Set.Ioo (0 : ℝ) 1 := Set.uIoo_of_le zero_le_one
     obtain ⟨ξ, hξ, htay⟩ :=
-      taylor_mean_remainder_lagrange (f := φ) zero_lt_one hφn hf'
+      taylor_mean_remainder_lagrange (f := φ) (x₀ := (0 : ℝ)) (x := (1 : ℝ))
+        (by norm_num) (by rw [huIcc]; exact hφn) (by rw [huIcc, huIoo]; exact hf')
+    rw [huIoo] at hξ
+    rw [huIcc] at htay
     have hφ1 : φ 1 = g (x0 + y) := by
       have := (hgt_eq (x0 + y) hx0yK).eq_of_nhds; simpa [hφdef, one_smul] using this
     have hsum : taylorWithinEval φ n (Set.Icc (0 : ℝ) 1) 0 1

@@ -117,79 +117,86 @@ private theorem hasDerivAt_gibbsPath
     ∑ a, w a * Real.exp (eta * (y s).1 a) * ((y s).2 a) ^ 2
   have hy1 (a : A) :
       HasDerivAt (fun s => (y s).1 a) (z'.1 a - z.1 a) t := by
-    convert (hasDerivAt_const t (z.1 a)).add
-      ((hasDerivAt_id t).mul_const (z'.1 a - z.1 a)) using 1 <;>
-      simp [y] <;> ring
+    have hfun : (fun s : ℝ => (y s).1 a)
+        = fun s : ℝ => z.1 a + s * (z'.1 a - z.1 a) := by
+      funext s; simp [y]
+    rw [hfun]
+    exact (hasDerivAt_mul_const (z'.1 a - z.1 a)).const_add (z.1 a)
   have hy2 (a : A) :
       HasDerivAt (fun s => (y s).2 a) (z'.2 a - z.2 a) t := by
-    convert (hasDerivAt_const t (z.2 a)).add
-      ((hasDerivAt_id t).mul_const (z'.2 a - z.2 a)) using 1 <;>
-      simp [y] <;> ring
+    have hfun : (fun s : ℝ => (y s).2 a)
+        = fun s : ℝ => z.2 a + s * (z'.2 a - z.2 a) := by
+      funext s; simp [y]
+    rw [hfun]
+    exact (hasDerivAt_mul_const (z'.2 a - z.2 a)).const_add (z.2 a)
+  have hexpTerm (a : A) :
+      HasDerivAt (Real.exp ∘ fun s => eta * (y s).1 a)
+        (Real.exp (eta * (y t).1 a) * (eta * (z'.1 a - z.1 a))) t :=
+    (Real.hasDerivAt_exp (eta * (y t).1 a)).comp t ((hy1 a).const_mul eta)
   have hD : HasDerivAt D
       (∑ a, w a * Real.exp (eta * (y t).1 a) *
         (eta * (z'.1 a - z.1 a))) t := by
     unfold D finiteGibbsDenominator
-    exact HasDerivAt.fun_sum fun a _ => by
-      convert (((Real.hasDerivAt_exp (eta * (y t).1 a)).comp t
-        ((hy1 a).const_mul eta)).const_mul (w a)) using 1 <;> ring
+    exact HasDerivAt.fun_sum fun a _ =>
+      ((hexpTerm a).const_mul (w a)).congr_deriv (by ring)
   have hN : HasDerivAt N
       (∑ a, w a * Real.exp (eta * (y t).1 a) *
         (eta * (z'.1 a - z.1 a) * ((y t).2 a) ^ 2 +
           2 * (y t).2 a * (z'.2 a - z.2 a))) t := by
     unfold N
-    exact HasDerivAt.fun_sum fun a _ => by
-      have he :=
-        (Real.hasDerivAt_exp (eta * (y t).1 a)).comp t
-          ((hy1 a).const_mul eta)
-      have hv := (hy2 a).pow 2
-      convert ((he.const_mul (w a)).mul hv) using 1 <;>
-        simp only [Function.comp_apply, Pi.pow_apply] <;> ring
+    refine HasDerivAt.fun_sum fun a _ => ?_
+    have hv := (hy2 a).pow 2
+    exact (((hexpTerm a).const_mul (w a)).mul hv).congr_deriv (by
+      simp only [Pi.pow_apply, Function.comp_apply]
+      push_cast
+      ring)
   have hDpos : 0 < D t := by
     exact finiteGibbsDenominator_pos w (y t).1 eta hw hmass
   have hquot := hN.div hD hDpos.ne'
   change HasDerivAt (gibbsPath w eta z z')
     (gibbsPathDerivative w eta z z' t) t
-  convert hquot using 1
-  · simp only [gibbsPathDerivative]
-    let np : A → ℝ := fun a =>
-      w a * Real.exp (eta * (y t).1 a) *
+  refine hquot.congr_deriv ?_
+  simp only [gibbsPathDerivative]
+  let np : A → ℝ := fun a =>
+    w a * Real.exp (eta * (y t).1 a) *
+      (eta * (z'.1 a - z.1 a) * (y t).2 a ^ 2 +
+        2 * (y t).2 a * (z'.2 a - z.2 a))
+  let dp : A → ℝ := fun a =>
+    w a * Real.exp (eta * (y t).1 a) *
+      (eta * (z'.1 a - z.1 a))
+  have hpoint (a : A) :
+      (w a * Real.exp (eta * (y t).1 a) / D t) *
+        (eta * (z'.1 a - z.1 a) * ((y t).2 a ^ 2 - N t / D t) +
+          2 * (y t).2 a * (z'.2 a - z.2 a)) =
+      np a / D t - N t * dp a / D t ^ 2 := by
+    dsimp [np, dp]
+    field_simp [hDpos.ne']
+    ring
+  change
+    ((∑ a, w a * Real.exp (eta * (y t).1 a) *
         (eta * (z'.1 a - z.1 a) * (y t).2 a ^ 2 +
-          2 * (y t).2 a * (z'.2 a - z.2 a))
-    let dp : A → ℝ := fun a =>
-      w a * Real.exp (eta * (y t).1 a) *
-        (eta * (z'.1 a - z.1 a))
-    have hpoint (a : A) :
-        (w a * Real.exp (eta * (y t).1 a) / D t) *
-          (eta * (z'.1 a - z.1 a) * ((y t).2 a ^ 2 - N t / D t) +
-            2 * (y t).2 a * (z'.2 a - z.2 a)) =
-        np a / D t - N t * dp a / D t ^ 2 := by
-      dsimp [np, dp]
-      field_simp [hDpos.ne']
-      ring
-    change
-      (∑ a, (w a * Real.exp (eta * (y t).1 a) / D t) *
+          2 * (y t).2 a * (z'.2 a - z.2 a))) * D t -
+      N t * ∑ a, w a * Real.exp (eta * (y t).1 a) *
+        (eta * (z'.1 a - z.1 a))) / D t ^ 2 =
+    (∑ a, (w a * Real.exp (eta * (y t).1 a) / D t) *
+      (eta * (z'.1 a - z.1 a) * ((y t).2 a ^ 2 - N t / D t) +
+        2 * (y t).2 a * (z'.2 a - z.2 a)))
+  symm
+  calc
+    (∑ a, (w a * Real.exp (eta * (y t).1 a) / D t) *
         (eta * (z'.1 a - z.1 a) * ((y t).2 a ^ 2 - N t / D t) +
           2 * (y t).2 a * (z'.2 a - z.2 a))) =
-      ((∑ a, w a * Real.exp (eta * (y t).1 a) *
-          (eta * (z'.1 a - z.1 a) * (y t).2 a ^ 2 +
-            2 * (y t).2 a * (z'.2 a - z.2 a))) * D t -
-        N t * ∑ a, w a * Real.exp (eta * (y t).1 a) *
-          (eta * (z'.1 a - z.1 a))) / D t ^ 2
-    calc
-      (∑ a, (w a * Real.exp (eta * (y t).1 a) / D t) *
-          (eta * (z'.1 a - z.1 a) * ((y t).2 a ^ 2 - N t / D t) +
-            2 * (y t).2 a * (z'.2 a - z.2 a))) =
-          ∑ a, (np a / D t - N t * dp a / D t ^ 2) :=
-        Finset.sum_congr rfl fun a _ => hpoint a
-      _ = (∑ a, np a) / D t - N t * (∑ a, dp a) / D t ^ 2 := by
-        rw [Finset.sum_sub_distrib, ← Finset.sum_div]
-        congr 1
-        rw [← Finset.sum_div]
-        congr 1
-        rw [Finset.mul_sum]
-      _ = _ := by
-        dsimp [np, dp]
-        field_simp [hDpos.ne']
+        ∑ a, (np a / D t - N t * dp a / D t ^ 2) :=
+      Finset.sum_congr rfl fun a _ => hpoint a
+    _ = (∑ a, np a) / D t - N t * (∑ a, dp a) / D t ^ 2 := by
+      rw [Finset.sum_sub_distrib, ← Finset.sum_div]
+      congr 1
+      rw [← Finset.sum_div]
+      congr 1
+      rw [Finset.mul_sum]
+    _ = _ := by
+      dsimp [np, dp]
+      field_simp [hDpos.ne']
 
 private theorem gibbsPathDerivative_bound
     (w : A → ℝ) (eta : ℝ)

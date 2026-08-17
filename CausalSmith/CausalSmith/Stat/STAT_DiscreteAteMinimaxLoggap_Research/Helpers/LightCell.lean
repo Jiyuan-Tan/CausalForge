@@ -30,8 +30,8 @@ lemma lightCells_eq_pilotHeavyAt_compl_of_cutoff_le {n d : ℕ}
   rw [lightCells_eq_compl, heavyCells_eq_filter_of_cutoff_le sample hcut]
   congr 1
   ext k
-  simp only [pilotHeavyAt, Finset.mem_filter, Finset.mem_univ, true_and,
-    lambda0]
+  simp only [pilotHeavyAt, Finset.mem_filter, Finset.mem_univ, true_and]
+  simp only [lambda0]
   exact (Int.floor_lt).symm
 
 -- @node: selected_light_mass_le_bandwidth_quarter
@@ -187,7 +187,7 @@ lemma integrable_factorialPolynomialContribution_trunc {n d : ℕ}
     exact Integrable.const_mul
       (integrable_factorialMonomial_trunc P k
         (factorialExpansionIndex a ay j t)) _
-  simpa only [factorialPolynomialContribution, arm] using (harm 1).sub (harm 0)
+  exact (harm 1).sub (harm 0)
 
 -- @node: integral_factorialPolynomialContribution_trunc
 /-- Evaluates or bounds the stated integral involving integral factorial Polynomial Contribution trunc. -/

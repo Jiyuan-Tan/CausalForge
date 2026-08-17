@@ -22,6 +22,7 @@ import { workingPath, saveWorkingState, normalizeWorkingState, WORKING_STORE_FOR
 import type { ProposedStatementChange } from "./schemas.js";
 import { formatSolveEmissionConflicts } from "./ownership.js";
 import type { SolveRoundContext } from "./context.js";
+import { oeqSourceFingerprint } from "./oeq_source.js";
 import type { SolveMergeResult } from "./merge.js";
 import {
   warnRoundInvariants,
@@ -166,6 +167,14 @@ export async function surfaceProposalCheckpoint(args: {
         `${mr.openObligations.length} OPEN OBLIGATION(s) also isolated this round (kept in open_obligations.json): ` +
           mr.openObligations.map((o) => `${o.node_id} — ${o.what_is_open}`).join("; "),
       );
+      next.sealed_open_oeqs ??= {};
+      const sourceById = new Map(renderRoundCore(sctx).statements.map((statement) => [statement.id, statement]));
+      for (const obligation of mr.openObligations) {
+        const source = sourceById.get(obligation.node_id);
+        if (source?.kind === "openendedquestion") {
+          next.sealed_open_oeqs[source.id] = oeqSourceFingerprint(source);
+        }
+      }
     }
     // The working carrier is the single durable proposal source. Populate it
     // before snapshotting `durable_working_state` into the review packet; doing
@@ -350,6 +359,14 @@ export async function finalizeRound(args: {
       };
     }
     // All open obligations are on OEQ nodes → acknowledged-open residual(s); proceed to D0.5.
+    next.sealed_open_oeqs ??= {};
+    const sourceById = new Map(core.statements.map((statement) => [statement.id, statement]));
+    for (const obligation of openObligations) {
+      const source = sourceById.get(obligation.node_id);
+      if (source?.kind === "openendedquestion") {
+        next.sealed_open_oeqs[source.id] = oeqSourceFingerprint(source);
+      }
+    }
     state.design_decisions["d0_open_oeq_residuals"] =
       `Open-ended question(s) left as the note's acknowledged open problem for D0.5 review: ` +
       openObligations.map((o) => o.node_id).join(", ");

@@ -20,12 +20,24 @@ open scoped BigOperators
 namespace CausalSmith.Experimentation.RolloutChebyshev
 
 -- @node: neg_one_pow_mul_le_of_abs_le_one
+/-- A real number of absolute value at most one remains at most one after multiplication by a
+sign `(-1)ⁱ`. Arithmetic step in the alternation argument, where polynomial values at the
+Chebyshev extremal nodes are compared against the alternating signs carried by those nodes. -/
 lemma neg_one_pow_mul_le_of_abs_le_one {a : ℝ} {i : ℕ} (ha : |a| ≤ 1) :
     (-1 : ℝ) ^ i * a ≤ 1 := by
   apply le_of_abs_le
   rwa [abs_mul, abs_neg_one_pow, one_mul]
 
 -- @node: chebyshev_exterior_lagrange_coeff_nonneg
+/-- Sign pattern of Lagrange interpolation coefficients at an exterior point: interpolating on
+the `n + 1` Chebyshev extremal nodes of `[-1, 1]`, the `i`-th Lagrange basis polynomial evaluated
+at any point `x₀ > 1` agrees in sign with `(-1)ⁱ`, i.e. `(-1)ⁱ ℓ_i(x₀) ≥ 0` for every index
+`i ≤ n`.
+
+Since the degree-`n` Chebyshev polynomial itself takes the value `(-1)ⁱ` at the `i`-th node, this
+says that evaluation at an exterior point is a nonnegative combination of the node values once
+the alternating signs are stripped — the form of the alternation argument used to prove the
+exterior extremal inequality. -/
 lemma chebyshev_exterior_lagrange_coeff_nonneg {n i : ℕ} (hi : i ∈ Finset.Iic n)
     {x0 : ℝ} (hx0 : 1 < x0) :
     0 ≤ (-1 : ℝ) ^ i *
@@ -134,9 +146,7 @@ lemma chebyshev_exterior_lagrange_coeff_nonneg {n i : ℕ} (hi : i ∈ Finset.Ii
         ∏ j ∈ (Finset.Iic n).erase i,
           (x0 - Polynomial.Chebyshev.node n j) :=
     mul_pos hden_inv_signed_pos hnum_pos
-  refine le_of_lt ?_
-  convert hprod_pos using 1
-  ring
+  exact le_of_lt (lt_of_lt_of_eq hprod_pos (by ring))
 
 -- @node: lem:chebyshev-exterior-extremal
 /-- Classical exterior-point Chebyshev extremal inequality (Rivlin1974): every real polynomial

@@ -57,9 +57,19 @@ def MonotoneMechanism [∀ n, Preorder (Ω n)]
 inductive BoolChainNode
   | d
   | y
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
 
 namespace BoolChainNode
+
+/-- The Boolean witness type has exactly the two elements `d` and `y`.
+
+Written out by hand rather than obtained from `deriving Fintype`: Mathlib's
+enum `Fintype` deriving handler currently emits a `Finset.mk` whose `nodup`
+field is only defeq-correct at default transparency, which the `rw` in its
+generated completeness proof rejects. -/
+instance instFintype : Fintype BoolChainNode where
+  elems := {d, y}
+  complete := by intro x; cases x <;> decide
 
 /-- The Boolean witness has one directed edge, from treatment `d` to outcome `y`. -/
 def edge : BoolChainNode → BoolChainNode → Prop
@@ -261,7 +271,7 @@ theorem monotoneBoolSCM_satisfies :
       (SWIGNode.random y) (SWIGNode.random d) monotoneBoolSCM := by
   refine ⟨by simp [monotoneBoolSCM, boolChainSWIG], boolChainDParent.property, ?_⟩
   intro x y hxy _
-  simpa [monotoneBoolSCM, copyStructFun] using hxy
+  exact hxy
 
 /-- The reversing Boolean SCM violates monotonicity of the outcome mechanism in
 the parent coordinate.
@@ -287,9 +297,9 @@ theorem antitoneBoolSCM_violates :
     | random n =>
         cases n with
         | d => simp at hw
-        | y => simp [boolParentAssignment]
+        | y => rfl
     | fixed n =>
-        cases n <;> simp [boolParentAssignment]
+        cases n <;> rfl
   have hbad := hmono (boolParentAssignment false) (boolParentAssignment true) hle hsame
   change Bool.not (boolParentAssignment false boolChainDParent) ≤
       Bool.not (boolParentAssignment true boolChainDParent) at hbad

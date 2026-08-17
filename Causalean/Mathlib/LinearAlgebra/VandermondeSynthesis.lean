@@ -118,7 +118,7 @@ lemma endpointOrderSynthesis_injective {n r : ℕ} {K : Type*} [CommRing K] [IsD
   refine Fin.lastCases ?_ (fun i => ?_) j
   · have hcoord := congrFun hv (Fin.last r)
     have hzero : ∀ i : Fin n, v i.castSucc = 0 := fun i => congrFun hfinite i
-    simpa [endpointOrderSynthesis, hzero] using hcoord
+    simpa [v, endpointOrderSynthesis, hzero] using hcoord
   · exact congrFun hfinite i
 
 /-- The order-`r` synthesis kernel has dimension `n-r` below the square

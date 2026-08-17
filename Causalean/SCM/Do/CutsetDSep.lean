@@ -421,7 +421,7 @@ lemma DAG.isActivePath_drop {V : Type*} [DecidableEq V] [Fintype V]
       simp [List.getElem_drop]
     rw [e0, e1]
     have := hadj (j + i) (by omega)
-    convert this using 2
+    exact this
   · have hi' : j + i + 2 < p.length := by rw [hlen] at hi; omega
     have e0 : (p.drop j).get ⟨i, by omega⟩ = p.get ⟨j + i, by omega⟩ := by
       simp [List.getElem_drop]
@@ -431,7 +431,7 @@ lemma DAG.isActivePath_drop {V : Type*} [DecidableEq V] [Fintype V]
       simp [List.getElem_drop]
     rw [e0, e1, e2]
     have := hcoll (j + i) (by omega)
-    convert this using 2
+    exact this
   /- (`convert … using 2` aligns the `Fin` index arithmetic `j + (i+k)` with
       `(j+i)+k`.) -/
 

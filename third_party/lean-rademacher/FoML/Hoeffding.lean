@@ -75,7 +75,10 @@ theorem cgf_le_quadratic_of_nonneg [IsProbabilityMeasure μ] (t a b : ℝ) {X : 
       · rw [← (by ring : 0 - f' x + (f' x - f'' x * (t - x)) = - f'' x * (t - x))]
         apply ((hasDerivAt_const x _).sub (cgf_deriv_one a b hX h x)).add
         convert (cgf_deriv_two a b hX h x).mul ((hasDerivAt_id' x).add_const (-t)) using 1
-        · ext; simp; grind only
+        · rfl
+        · funext y
+          simp only [Pi.mul_apply]
+          ring
         · dsimp [f', f'']
           have p : variance X (Measure.tilted μ fun ω ↦ x * X ω) =
               (μ.tilted fun ω ↦ x * X ω)[X ^ 2] - ((μ.tilted fun ω ↦ x * X ω)[X]) ^ 2 := by
@@ -179,9 +182,10 @@ theorem hoeffding [IsProbabilityMeasure μ] (t a b : ℝ) {X : Ω → ℝ} (hX :
       rw [<- (by ring : (-a + b) = b - a)]
       exact this
     apply hoeffding_nonneg _ _ _ _ (by linarith : 0 ≤ - t) hX.neg
-    · simp only [Set.mem_Icc, neg_le_neg_iff, Filter.eventually_and]
+    · simp only [Pi.neg_apply, Set.mem_Icc, neg_le_neg_iff, Filter.eventually_and]
       exact ⟨h.mono fun ω h ↦ h.2, h.mono fun ω h ↦ h.1⟩
-    · rw [integral_neg]
+    · simp only [Pi.neg_apply]
+      rw [integral_neg]
       simp only [neg_eq_zero]
       exact h0
 

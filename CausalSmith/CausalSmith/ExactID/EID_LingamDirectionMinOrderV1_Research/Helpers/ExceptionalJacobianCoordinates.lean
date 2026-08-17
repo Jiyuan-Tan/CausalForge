@@ -65,6 +65,11 @@ def explicitForwardBandCoordinatePolynomial (m L : ℕ) (hL : 2 ≤ L)
       (forwardBandLoadingPolynomial m L j).1 ^ (q.1.1 - q.1.2.1) *
       (forwardBandLoadingPolynomial m L j).2 ^ q.1.2.1
 
+/-- The explicit representative computes the right thing: evaluated at any
+finite parameter coordinate vector it returns the corresponding retained
+cumulant coordinate of the forward band map, namely the sum over sources of
+that source's weight at the given order times the binary-form monomial in the
+source's loading direction. -/
 lemma eval_explicitForwardBandCoordinatePolynomial (m L : ℕ) (hL : 2 ≤ L)
     (q : RetainedCumCoord L) (x : BandParamCoord m L → ℂ) :
     MvPolynomial.eval x (explicitForwardBandCoordinatePolynomial m L hL q) =
@@ -425,6 +430,10 @@ source. -/
 def finiteSourceSlope (m : ℕ) : Fin (m + 1) → ForwardSlopeIndex m :=
   Fin.cases (Sum.inl ()) (fun i => Sum.inr i)
 
+/-- The slope coordinate attached to the `j`-th finite source — the direct
+slope when `j` is zero and the corresponding latent slope otherwise — is indeed
+carried by source `j`, viewed among the `m + 1` finite sources, that is, all
+sources except the one at infinity. -/
 lemma forwardSlopeSourceIndex_finiteSourceSlope (m : ℕ)
     (j : Fin (m + 1)) :
     forwardSlopeSourceIndex m (finiteSourceSlope m j) = j.castSucc := by
@@ -464,6 +473,9 @@ def forwardJacobianWitnessCoord (m : ℕ) :
   | Sum.inr (Sum.inl i) => ((i.val + 2 : ℕ) : ℂ)
   | Sum.inr (Sum.inr _) => 1
 
+/-- At the Jacobian witness parameter the loading direction of the `j`-th
+finite source is the vector with first entry one and second entry `j + 1`, so
+the finite loading slopes are the distinct numbers `1, ..., m + 1`. -/
 lemma forwardJacobianWitness_loading_castSucc (m : ℕ)
     (j : Fin (m + 1)) :
     forwardLoading m (decodeBandParam (forwardJacobianWitnessCoord m)).1
@@ -573,6 +585,9 @@ def canonicalForwardTopJacobianAtWitness (m : ℕ) :
         (forwardBandCoordinatePolynomial m (2 * m + 2) (by omega)
           (forwardTopRow m a)))
 
+/-- The selected top-order finite-source Jacobian block is the same matrix
+whether it is built from the canonical coordinate family used by the
+polynomial-image dimension interface or from the explicit representative. -/
 theorem canonicalForwardTopJacobianAtWitness_eq (m : ℕ) :
     canonicalForwardTopJacobianAtWitness m = forwardTopJacobianAtWitness m := by
   ext a b
@@ -844,9 +859,21 @@ private def forwardHighWeightBlock (m : ℕ) (k : Fin (m + 1)) :
     (fun _ j => ((j.val + 1 : ℕ) : ℂ) ^ forwardHighOrder m k)
     1
 
+/-- The high-weight block, restated with its lower-left entry presented through
+`Matrix.of` so that the `Matrix.fromBlocks` API lemmas apply. -/
+private theorem forwardHighWeightBlock_eq (m : ℕ) (k : Fin (m + 1)) :
+    forwardHighWeightBlock m k =
+      Matrix.fromBlocks
+        (Matrix.vandermonde
+          (fun j : Fin (m + 1) => ((j.val + 1 : ℕ) : ℂ))).transpose
+        0
+        (Matrix.of fun _ j => ((j.val + 1 : ℕ) : ℂ) ^ forwardHighOrder m k)
+        1 :=
+  rfl
+
 private theorem det_forwardHighWeightBlock_ne_zero (m : ℕ)
     (k : Fin (m + 1)) : (forwardHighWeightBlock m k).det ≠ 0 := by
-  rw [forwardHighWeightBlock, Matrix.det_fromBlocks_zero₁₂,
+  rw [forwardHighWeightBlock_eq, Matrix.det_fromBlocks_zero₁₂,
     Matrix.det_transpose, Matrix.det_one, mul_one]
   exact Matrix.det_vandermonde_ne_zero_iff.mpr
     (forwardContractionMinorWitness_slope_injective m)
@@ -864,7 +891,7 @@ theorem canonicalForwardHighWeightJacobianAtWitness_eq (m : ℕ) (hm : 1 ≤ m) 
     rcases a with a | u <;> rcases b with b | v
     · simp only [canonicalForwardHighWeightJacobianAtWitness,
         forwardHighWeightColumn, forwardHighWeightRow,
-        forwardHighWeightBlock, Matrix.fromBlocks_apply₁₁]
+        forwardHighWeightBlock_eq, Matrix.fromBlocks_apply₁₁]
       rw [pderiv_forwardBandCoordinatePolynomial_eq_explicit,
         eval_pderiv_explicitForwardBandCoordinatePolynomial_weight_general,
         if_pos (by simp only [forwardHighOrder]; omega)]
@@ -880,7 +907,7 @@ theorem canonicalForwardHighWeightJacobianAtWitness_eq (m : ℕ) (hm : 1 ≤ m) 
     · obtain rfl : v = () := Subsingleton.elim _ _
       simp only [canonicalForwardHighWeightJacobianAtWitness,
         forwardHighWeightColumn, forwardHighWeightRow,
-        forwardHighWeightBlock, Matrix.fromBlocks_apply₁₂, Pi.zero_apply]
+        forwardHighWeightBlock_eq, Matrix.fromBlocks_apply₁₂, Pi.zero_apply]
       rw [pderiv_forwardBandCoordinatePolynomial_eq_explicit,
         eval_pderiv_explicitForwardBandCoordinatePolynomial_weight_general,
         if_pos (by simp only [forwardHighOrder]; omega),
@@ -892,7 +919,7 @@ theorem canonicalForwardHighWeightJacobianAtWitness_eq (m : ℕ) (hm : 1 ≤ m) 
     · obtain rfl : u = () := Subsingleton.elim _ _
       simp only [canonicalForwardHighWeightJacobianAtWitness,
         forwardHighWeightColumn, forwardHighWeightRow,
-        forwardHighWeightBlock, Matrix.fromBlocks_apply₂₁]
+        forwardHighWeightBlock_eq, Matrix.fromBlocks_apply₂₁]
       rw [pderiv_forwardBandCoordinatePolynomial_eq_explicit,
         eval_pderiv_explicitForwardBandCoordinatePolynomial_weight_general,
         if_pos (by simp only [forwardHighOrder]; omega),
@@ -902,7 +929,7 @@ theorem canonicalForwardHighWeightJacobianAtWitness_eq (m : ℕ) (hm : 1 ≤ m) 
       obtain rfl : v = () := Subsingleton.elim _ _
       simp only [canonicalForwardHighWeightJacobianAtWitness,
         forwardHighWeightColumn, forwardHighWeightRow,
-        forwardHighWeightBlock, Matrix.fromBlocks_apply₂₂, Matrix.one_apply]
+        forwardHighWeightBlock_eq, Matrix.fromBlocks_apply₂₂, Matrix.one_apply]
       rw [pderiv_forwardBandCoordinatePolynomial_eq_explicit,
         eval_pderiv_explicitForwardBandCoordinatePolynomial_weight_general,
         if_pos (by simp only [forwardHighOrder]; omega),

@@ -20,7 +20,7 @@ CDF has no atoms) yields pointwise CDF convergence.
 
 import Causalean.Mathlib.Probability.SteinMethod.DependencyCLT
 import Mathlib.Probability.Distributions.Gaussian.CharFun
-import Clt.CLT
+import Mathlib.MeasureTheory.Measure.LevyConvergence
 
 /-!
 # Local-dependence central limit theorem via Stein bounds
@@ -43,7 +43,7 @@ namespace SteinMethod
 laws whose characteristic functions converge to those of an atomless target law has convergent
 CDF values at every threshold. -/
 theorem cdf_tendsto_of_charFun_tendsto (lawn : ℕ → ProbabilityMeasure ℝ)
-    (ν : ProbabilityMeasure ℝ) [NoAtoms (ν : Measure ℝ)]
+    (ν : ProbabilityMeasure ℝ) [NullSingletonClass (ν : Measure ℝ)]
     (hchar : ∀ t : ℝ, Tendsto (fun n => charFun (lawn n : Measure ℝ) t) atTop
       (𝓝 (charFun (ν : Measure ℝ) t)))
     (s : ℝ) :
@@ -145,7 +145,7 @@ theorem stein_expect_tendsto
           (fun n => Real.sqrt (variance (fun ω => ∑ i, X n i ω * nbhdSum (X n) (N n) i ω) (μ n)))
           atTop (𝓝 0) := by
         have := (Real.continuous_sqrt.tendsto 0).comp herr1
-        simpa [Real.sqrt_zero] using this
+        simpa [Real.sqrt_zero, Function.comp_def] using this
       simpa using hsqrt.const_mul (2 * L)
     have ht2 : Tendsto (fun n => L * ∑ i, ∫ ω, |X n i ω| * (nbhdSum (X n) (N n) i ω) ^ 2 ∂(μ n))
         atTop (𝓝 0) := by simpa using herr2.const_mul L
@@ -186,7 +186,7 @@ theorem stein_cdf_clt
   -- Reduce to characteristic-function convergence via Theorem 1.
   have hcoe : ∀ n, (lawn n : Measure ℝ) = (μ n).map (depSum (X n)) := fun n => rfl
   let ν₀ : ProbabilityMeasure ℝ := ⟨gaussianReal 0 1, inferInstance⟩
-  letI : NoAtoms (ν₀ : Measure ℝ) := noAtoms_gaussianReal one_ne_zero
+  letI : NullSingletonClass (ν₀ : Measure ℝ) := nullSingletonClass_gaussianReal one_ne_zero
   refine cdf_tendsto_of_charFun_tendsto lawn ν₀ ?_ s
   intro t
   -- Test functions `cos(t·)` and `sin(t·)`: both bounded by `1` with derivative bounded by `|t|`.
@@ -197,7 +197,7 @@ theorem stein_cdf_clt
     intro x
     have hderiv : deriv (fun x => Real.cos (t * x)) x = -(t * Real.sin (t * x)) := by
       have h := (Real.hasDerivAt_cos (t * x)).comp x ((hasDerivAt_id x).const_mul t)
-      simpa [mul_comm] using h.deriv
+      simpa [mul_comm, Function.comp_def] using h.deriv
     rw [hderiv, abs_neg, abs_mul]
     calc |t| * |Real.sin (t * x)| ≤ |t| * 1 :=
           mul_le_mul_of_nonneg_left (Real.abs_sin_le_one _) (abs_nonneg _)
@@ -209,7 +209,7 @@ theorem stein_cdf_clt
     intro x
     have hderiv : deriv (fun x => Real.sin (t * x)) x = t * Real.cos (t * x) := by
       have h := (Real.hasDerivAt_sin (t * x)).comp x ((hasDerivAt_id x).const_mul t)
-      simpa [mul_comm] using h.deriv
+      simpa [mul_comm, Function.comp_def] using h.deriv
     rw [hderiv, abs_mul]
     calc |t| * |Real.cos (t * x)| ≤ |t| * 1 :=
           mul_le_mul_of_nonneg_left (Real.abs_cos_le_one _) (abs_nonneg _)

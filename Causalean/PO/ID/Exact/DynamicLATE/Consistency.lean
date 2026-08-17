@@ -61,18 +61,16 @@ theorem YofZ2_eq_factualY_on_z2Event (As : S.Assumptions)
     S.YofZ2 z₂ ω = S.factualY ω := by
   -- Direct application of `POVar.cf_eq_factual_on_event` with `a := S.yVar`,
   -- `w := S.z2Var`, `y := z₂`.  Distinctness `S.Y ≠ S.Z2` from `S.Z2_ne_Y`.
-  simpa [YofZ2, encZ2Regime, factualY, factualZ2, z2Var, yVar, POVar.cfUnder]
-    using POVar.cf_eq_factual_on_event As.consistency S.yVar S.z2Var z₂
-      S.Z2_ne_Y.symm hω
+  exact POVar.cf_eq_factual_on_event As.consistency S.yVar S.z2Var z₂
+    S.Z2_ne_Y.symm hω
 
 /-- On `{Z₂ = z₂}`, `D₂(Z₁, z₂) = factualD2` pointwise. -/
 theorem D2ofZ2_eq_factualD2_on_z2Event (As : S.Assumptions)
     (z₂ : Bool) {ω : P.Ω} (hω : S.factualZ2 ω = z₂) :
     S.D2ofZ2 z₂ ω = S.factualD2 ω := by
   -- Same pattern as above with `a := S.d2Var`, distinctness `S.D2 ≠ S.Z2`.
-  simpa [D2ofZ2, encZ2Regime, factualD2, factualZ2, z2Var, d2Var, POVar.cfUnder]
-    using POVar.cf_eq_factual_on_event As.consistency S.d2Var S.z2Var z₂
-      S.Z2_ne_D2.symm hω
+  exact POVar.cf_eq_factual_on_event As.consistency S.d2Var S.z2Var z₂
+    S.Z2_ne_D2.symm hω
 
 /-! ### Stage-1 composition consistency between regimes
 
@@ -220,9 +218,8 @@ theorem D1ofZ_eq_factualD1_on_z1Event (As : S.Assumptions)
         = S.d1Var.cf (Regime.single S.Z1 (S.hZ1bool.symm (z 0))) ω := by
           simpa [D1ofZ] using As.exclusion_D1 z ω
     _ = S.factualD1 ω := by
-          simpa [factualD1, factualZ1, z1Var, d1Var, POVar.cfUnder]
-            using POVar.cf_eq_factual_on_event As.consistency S.d1Var S.z1Var
-              (z 0) S.Z1_ne_D1.symm hω
+          exact POVar.cf_eq_factual_on_event As.consistency S.d1Var S.z1Var
+            (z 0) S.Z1_ne_D1.symm hω
 
 end PODynLATESystem
 

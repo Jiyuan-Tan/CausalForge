@@ -18,9 +18,9 @@ env_overrides: def:real-atlas-handle=remarkv, def:effective-rational-groebner-ca
 \((X,Y)^T\) | \((X,Y)^\top\) | bivariate observed outcome vector | ass:forward-axis-model
 \(u_j\) | \(u_j\) | forward loading vector | ass:forward-axis-model
 \(v_j\) | \(v_j\) | reverse loading vector | ass:reverse-axis-model
-\(\gamma\) | \(\gamma\) | forward direct-edge slope | ass:forward-noncollinearity
+\(\gamma\) | \(\gamma\) | forward direct-edge slope | ass:forward-axis-model
 \(\rho_i\) | \(\rho_i\) | forward latent finite slope | ass:forward-noncollinearity
-\(\delta\) | \(\delta\) | reverse direct-edge slope | ass:reverse-noncollinearity
+\(\delta\) | \(\delta\) | reverse direct-edge slope | ass:reverse-axis-model
 \(\sigma_i\) | \(\sigma_i\) | reverse latent finite slope | ass:reverse-noncollinearity
 \(\{P \in \operatorname{Laws}(\mathbb R^2):\cdots\}\) | \(\mathcal P^{\mathrm{right}}_{m,K}\) | laws admitting the forward latent linear non-Gaussian representation | def:forward-lvlingam-class
 \(\{P \in \operatorname{Laws}(\mathbb R^2):\cdots\}\) | \(\mathcal P^{\mathrm{left}}_{m,K}\) | laws admitting the reverse latent linear non-Gaussian representation | def:reverse-lvlingam-class

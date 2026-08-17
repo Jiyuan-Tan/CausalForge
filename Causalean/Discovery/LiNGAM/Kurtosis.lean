@@ -154,8 +154,7 @@ theorem cross_fourth_cumulant_eq_sum {n : ℕ} {e : Ω → Fin n → ℝ} (a b :
             (if x = y then m x else 0) * (if z = w then m z else 0) := by
         intro x y z w hxz hxw hyz hyw
         have h_ind : IndepFun (fun ω => e ω x * e ω y) (fun ω => e ω z * e ω w) P := by
-          simpa only [Pi.mul_apply] using
-            hindep.indepFun_mul_mul hmeas x y z w hxz hxw hyz hyw
+          exact hindep.indepFun_mul_mul hmeas x y z w hxz hxw hyz hyw
         haveI h442 : ENNReal.HolderTriple 4 4 2 := by
           change ENNReal.HolderTriple ((4 : NNReal) : ENNReal) ((4 : NNReal) : ENNReal)
             ((2 : NNReal) : ENNReal)
@@ -666,8 +665,7 @@ theorem colSupport_of_kurtosis {n : ℕ} {e : Ω → Fin n → ℝ} {W : Matrix 
   have hy2z2_int :
       (∫ ω, y ω ^ 2 * z ω ^ 2 ∂P) = (∫ ω, y ω ^ 2 ∂P) * (∫ ω, z ω ^ 2 ∂P) := by
     have hsq_indep : IndepFun (fun ω => y ω ^ 2) (fun ω => z ω ^ 2) P := by
-      simpa [y, z] using
-        hyindep.comp (measurable_id.pow_const 2) (measurable_id.pow_const 2)
+      exact hyindep.comp (measurable_id.pow_const 2) (measurable_id.pow_const 2)
     exact hsq_indep.integral_fun_mul_eq_mul_integral
       (hy_meas.pow_const 2).aestronglyMeasurable (hz_meas.pow_const 2).aestronglyMeasurable
   have hsum0 :

@@ -36,18 +36,17 @@ theorem representer_theorem {X H : Type*}
     ∃ α : Fin n → ℝ, fhat = ∑ i, α i • representer (x i) := by
   classical
   let M : Submodule ℝ H := Submodule.span ℝ (Set.range fun i : Fin n => representer (x i))
-  haveI : FiniteDimensional ℝ M := FiniteDimensional.span_of_finite ℝ (Set.finite_range _)
-  haveI : CompleteSpace M := by infer_instance
-  let p : H := M.orthogonalProjectionFn fhat
-  have hp_mem : p ∈ M := by
-    exact Submodule.orthogonalProjectionFn_mem (K := M) fhat
+  have : FiniteDimensional ℝ M := FiniteDimensional.span_of_finite ℝ (Set.finite_range _)
+  have : CompleteSpace M := by infer_instance
+  let p : H := M.starProjection fhat
+  have hp_mem : p ∈ M := M.starProjection_apply_mem fhat
   have hrep_mem : ∀ i : Fin n, representer (x i) ∈ M := by
     intro i
     exact Submodule.subset_span ⟨i, rfl⟩
   have heval_eq : ∀ i : Fin n, feval fhat (x i) = feval p (x i) := by
     intro i
     have horth : inner ℝ (fhat - p) (representer (x i)) = 0 := by
-      exact Submodule.orthogonalProjectionFn_inner_eq_zero (K := M) fhat
+      exact Submodule.starProjection_inner_eq_zero (K := M) fhat
         (representer (x i)) (hrep_mem i)
     rw [hrkhs.reproducing fhat (x i), hrkhs.reproducing p (x i)]
     calc
@@ -73,31 +72,24 @@ theorem representer_theorem {X H : Type*}
       linarith
     nlinarith
   have hnorm_decomp :
-      ‖fhat‖ ^ 2 = ‖p‖ ^ 2 + ‖((Mᗮ).orthogonalProjection fhat : H)‖ ^ 2 := by
-    simpa [p, Submodule.orthogonalProjectionFn_eq] using
-      (Submodule.norm_sq_eq_add_norm_sq_projection fhat M)
+      ‖fhat‖ ^ 2 = ‖p‖ ^ 2 + ‖(Mᗮ).starProjection fhat‖ ^ 2 :=
+    Submodule.norm_sq_eq_add_norm_sq_starProjection fhat M
   have hperp_sq :
-      ‖((Mᗮ).orthogonalProjection fhat : H)‖ ^ 2 = 0 := by
-    have hnonneg : 0 ≤ ‖((Mᗮ).orthogonalProjection fhat : H)‖ ^ 2 :=
+      ‖(Mᗮ).starProjection fhat‖ ^ 2 = 0 := by
+    have hnonneg : 0 ≤ ‖(Mᗮ).starProjection fhat‖ ^ 2 :=
       sq_nonneg _
     nlinarith
-  have hperp_zero : ((Mᗮ).orthogonalProjection fhat : H) = 0 := by
+  have hperp_zero : (Mᗮ).starProjection fhat = 0 := by
     apply norm_eq_zero.mp
-    have hnonneg : 0 ≤ ‖((Mᗮ).orthogonalProjection fhat : H)‖ :=
+    have hnonneg : 0 ≤ ‖(Mᗮ).starProjection fhat‖ :=
       norm_nonneg _
     nlinarith
   have hfhat_eq_p : fhat = p := by
     have hsplit := Submodule.starProjection_add_starProjection_orthogonal (K := M) fhat
-    have hperp_star : (Mᗮ).starProjection fhat = 0 := by
-      change ((Mᗮ).orthogonalProjection fhat : H) = 0
-      exact hperp_zero
     calc
       fhat = M.starProjection fhat + (Mᗮ).starProjection fhat := hsplit.symm
-      _ = M.starProjection fhat + 0 := by rw [hperp_star]
-      _ = p := by
-          rw [add_zero]
-          change M.orthogonalProjectionFn fhat = p
-          rfl
+      _ = M.starProjection fhat + 0 := by rw [hperp_zero]
+      _ = p := by rw [add_zero]
   have hfhat_mem : fhat ∈ M := by
     simpa [hfhat_eq_p] using hp_mem
   rcases (Submodule.mem_span_range_iff_exists_fun (R := ℝ)

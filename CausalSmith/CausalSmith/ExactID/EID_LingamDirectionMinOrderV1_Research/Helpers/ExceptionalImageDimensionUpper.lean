@@ -273,6 +273,22 @@ private def commonAxisVariablePolynomial (m : ℕ) (hm : 1 ≤ m) :
   fun c => if h : c = Sum.inr (Sum.inl (⟨0, hm⟩ : Fin m)) then 0
     else MvPolynomial.X ⟨c, h⟩
 
+/-- Away from the pinned slope, the generator substitution is the corresponding
+common-axis variable.  Stated with the exclusion proof as a hypothesis so the
+subtype witness stays opaque. -/
+private lemma fullToCommonAxisGeneratorPolynomial_of_ne (m : ℕ) (hm : 1 ≤ m)
+    {g : ForwardImageGenerator m} (h : g ≠ fixedAxisForwardGenerator m hm) :
+    fullToCommonAxisGeneratorPolynomial m hm g = MvPolynomial.X ⟨g, h⟩ :=
+  dif_neg h
+
+/-- Away from the pinned slope, the band substitution is the corresponding
+common-axis variable. -/
+private lemma commonAxisVariablePolynomial_of_ne (m : ℕ) (hm : 1 ≤ m)
+    {c : BandParamCoord m (2 * m + 2)}
+    (h : c ≠ Sum.inr (Sum.inl (⟨0, hm⟩ : Fin m))) :
+    commonAxisVariablePolynomial m hm c = MvPolynomial.X ⟨c, h⟩ :=
+  dif_neg h
+
 private lemma commonAxisPolynomial_eq_bind (m : ℕ) (hm : 1 ≤ m)
     (P : MvPolynomial (BandParamCoord m (2 * m + 2)) ℂ) :
     commonAxisPolynomial hm P =
@@ -301,33 +317,55 @@ private lemma commonAxisGeneratorPolynomial_compat
   rw [commonAxisPolynomial_eq_bind]
   rcases g with s | (q | ⟨j, k⟩)
   · rcases s with u | i
-    · simp [fullToCommonAxisGeneratorPolynomial, fixedAxisForwardGenerator,
-        commonAxisGeneratorPolynomial, forwardImageGeneratorPolynomial,
-        commonAxisVariablePolynomial, slopeBandCoord, commonAxisBandInsert]
+    · have hne : (Sum.inl (Sum.inl u) : ForwardImageGenerator m) ≠
+          fixedAxisForwardGenerator m hm := by
+        simp [fixedAxisForwardGenerator]
+      have hne' : (Sum.inl u : BandParamCoord m (2 * m + 2)) ≠
+          Sum.inr (Sum.inl (⟨0, hm⟩ : Fin m)) := by simp
+      rw [fullToCommonAxisGeneratorPolynomial_of_ne m hm hne,
+        MvPolynomial.bind₁_X_right,
+        show forwardImageGeneratorPolynomial m hm (Sum.inl (Sum.inl u)) =
+            MvPolynomial.X (Sum.inl u) from rfl,
+        MvPolynomial.bind₁_X_right,
+        commonAxisVariablePolynomial_of_ne m hm hne']
+      rfl
     · by_cases hi : i = (⟨0, hm⟩ : Fin m)
       · subst i
         simp [fullToCommonAxisGeneratorPolynomial, fixedAxisForwardGenerator,
           forwardImageGeneratorPolynomial, commonAxisVariablePolynomial,
           slopeBandCoord]
-      · simp [fullToCommonAxisGeneratorPolynomial, fixedAxisForwardGenerator, hi,
-          commonAxisGeneratorPolynomial, forwardImageGeneratorPolynomial,
-          commonAxisVariablePolynomial, slopeBandCoord, commonAxisBandInsert]
-        intro h
-        apply hi
-        exact Sum.inl.inj (Sum.inr.inj h)
-  · simp only [fullToCommonAxisGeneratorPolynomial, fixedAxisForwardGenerator,
-      reduceCtorEq, ↓reduceDIte, MvPolynomial.bind₁_X_right,
-      commonAxisGeneratorPolynomial, forwardImageGeneratorPolynomial]
+      · have hne : (Sum.inl (Sum.inr i) : ForwardImageGenerator m) ≠
+            fixedAxisForwardGenerator m hm := by
+          simp [fixedAxisForwardGenerator, hi]
+        have hne' : (Sum.inr (Sum.inl i) : BandParamCoord m (2 * m + 2)) ≠
+            Sum.inr (Sum.inl (⟨0, hm⟩ : Fin m)) := by simp [hi]
+        rw [fullToCommonAxisGeneratorPolynomial_of_ne m hm hne,
+          MvPolynomial.bind₁_X_right,
+          show forwardImageGeneratorPolynomial m hm (Sum.inl (Sum.inr i)) =
+              MvPolynomial.X (Sum.inr (Sum.inl i)) from rfl,
+          MvPolynomial.bind₁_X_right,
+          commonAxisVariablePolynomial_of_ne m hm hne']
+        rfl
+  · have hne : (Sum.inr (Sum.inl q) : ForwardImageGenerator m) ≠
+        fixedAxisForwardGenerator m hm := by
+      simp [fixedAxisForwardGenerator]
+    rw [fullToCommonAxisGeneratorPolynomial_of_ne m hm hne,
+      MvPolynomial.bind₁_X_right, ← commonAxisPolynomial_eq_bind]
     exact (commonAxisPolynomial_forwardBandCoordinatePolynomial m hm _).symm
-  · simp [fullToCommonAxisGeneratorPolynomial, fixedAxisForwardGenerator,
-      commonAxisGeneratorPolynomial, forwardImageGeneratorPolynomial,
-      commonAxisVariablePolynomial, commonAxisBandInsert, highWeightBandIndex]
-    intro h
-    have h' :
-        (Sum.inr (j, highWeightBandIndex m hm k) :
-          Fin m ⊕ (Fin (m + 2) × Fin (2 * m + 1))) =
-          Sum.inl (⟨0, hm⟩ : Fin m) := Sum.inr.inj h
-    cases h'
+  · have hne : (Sum.inr (Sum.inr (j, k)) : ForwardImageGenerator m) ≠
+        fixedAxisForwardGenerator m hm := by
+      simp [fixedAxisForwardGenerator]
+    have hne' : (Sum.inr (Sum.inr (j, highWeightBandIndex m hm k)) :
+        BandParamCoord m (2 * m + 2)) ≠
+        Sum.inr (Sum.inl (⟨0, hm⟩ : Fin m)) := by simp
+    rw [fullToCommonAxisGeneratorPolynomial_of_ne m hm hne,
+      MvPolynomial.bind₁_X_right,
+      show forwardImageGeneratorPolynomial m hm (Sum.inr (Sum.inr (j, k))) =
+          MvPolynomial.X
+            (Sum.inr (Sum.inr (j, highWeightBandIndex m hm k))) from rfl,
+      MvPolynomial.bind₁_X_right,
+      commonAxisVariablePolynomial_of_ne m hm hne']
+    rfl
 
 /-- Every common-axis coordinate polynomial factors through the generator
 family obtained by deleting the fixed slope. -/

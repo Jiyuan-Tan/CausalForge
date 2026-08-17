@@ -3,6 +3,7 @@ import Causalean.Stat.Concentration.TailBounds
 import Causalean.Stat.Concentration.Rademacher
 import Causalean.Stat.Concentration.Covering
 import Causalean.Stat.Concentration.UniformDeviation
+import Causalean.Stat.Concentration.VarianceAdaptiveVCExpectedMaximal
 import Causalean.Stat.Concentration.Matrix
 import Causalean.Stat.Concentration.ConditionalKernel
 import Causalean.Stat.Concentration.FiniteDimensionalNet
@@ -20,6 +21,7 @@ see `UPSTREAM.md`). Organized into topic subfolders, each with its own barrel:
 * `Rademacher`      — Rademacher / local Rademacher complexity, symmetrization, contraction, star-hull
 * `Covering`        — covering / packing numbers, Dudley entropy, VC covering and localized regime, √log integral
 * `UniformDeviation`— localized uniform deviation, ERM oracle, critical radius, confidence intervals
+* `VarianceAdaptiveVCExpectedMaximal` — countable-class VC-type expected suprema with an L² radius
 * `Matrix`          — resolvent, inverse perturbation / union bound, design inverse, i.i.d. matrix sums
 * `ConditionalKernel` — almost-everywhere bridges for regular conditional probability fibers
 * `FiniteDimensionalNet` — dimension-explicit internal nets of bounded sets at an arbitrary scale

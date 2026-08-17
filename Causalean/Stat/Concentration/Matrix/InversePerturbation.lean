@@ -60,7 +60,7 @@ theorem linftyOp_abs_entry_le {α β R : Type*}
   rw [Matrix.linfty_opNorm_def]
   have hrow : ‖A i j‖₊ ≤ ∑ k, ‖A i k‖₊ :=
     Finset.single_le_sum (s := Finset.univ) (f := fun k => ‖A i k‖₊)
-      (fun _ _ => zero_le _) (Finset.mem_univ j)
+      (fun _ _ => zero_le) (Finset.mem_univ j)
   have hsup : (∑ k, ‖A i k‖₊) ≤
       Finset.univ.sup (fun i => ∑ k, ‖A i k‖₊) :=
     Finset.le_sup (s := Finset.univ) (f := fun i => ∑ k, ‖A i k‖₊)
@@ -180,7 +180,9 @@ theorem designInv_perturb (S M : Matrix (Fin (p + 1)) (Fin (p + 1)) ℝ)
   have hvinv_norm : ‖(↑v⁻¹ : R)‖ ≤ (1 - ‖u‖)⁻¹ := by
     rw [hv_def]
     change ‖∑' n : ℕ, u ^ n‖ ≤ (1 - ‖u‖)⁻¹
-    simpa [norm_one] using tsum_geometric_le_of_norm_lt_one u hu1
+    have hgeo := tsum_geometric_le_of_norm_lt_one u hu1
+    rw [norm_one, sub_self, zero_add] at hgeo
+    exact hgeo
   have hvinv2 : ‖(↑v⁻¹ : R)‖ ≤ 2 := by
     have hhalf_le : (1 / 2 : ℝ) ≤ 1 - ‖u‖ := by linarith
     have hhalf_pos : 0 < (1 / 2 : ℝ) := by norm_num

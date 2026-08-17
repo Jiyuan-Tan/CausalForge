@@ -1,5 +1,5 @@
 \begin{proof}[Proof of \cref{obj:lem:exact-chebyshev-rate-feasible}]
-By \cref{obj:thm:chebyshev-minimax}, applied with the fixed cap \(q_{\max}\) and the oversampling constant \(c>1\), there is a constant \(C_+(c,q_{\max})>0\) such that, whenever \(\beta\ge1\), \(k\ge c\beta\), and the low-budget cap holds,
+By \cref{obj:thm:chebyshev-minimax}, applied with the fixed cap \(q_{\max}\) and the oversampling constant \(c>1\), there is a constant \(C_+(c,q_{\max})>0\) such that, whenever \(\beta\ge1\), \(k\ge c\beta\), \(q>0\), and the low-budget cap holds,
 \[
 A_\beta\!\left(p^{\mathrm{Ch}}(k,q)\right)
 \le
@@ -7,33 +7,61 @@ C_+(c,q_{\max})
 \left(\frac{(1+\sqrt{1-q})^2}{q}\right)^{2\beta}.
 \]
 % lean: chebyshev_minimax
-Now fix \(n,\beta,k,\Omega,\pi,q,\sigma_0^2\) satisfying the hypotheses of the lemma. Since \(k=\lceil c\beta\rceil\), one has \(c\beta\le k\). Because \(c>1\) and \(\beta\ge1\), this implies \(\beta\le k\). % lean: Nat.le_ceil
-The low-budget cap gives \(q\le q_{\max}<1\), hence \(0<q\le1\). % lean: LowBudgetCap
-Thus \(k\ge1\), and \cref{obj:lem:chebyshev-schedule-admissible} gives
+This is the constant used in the statement; it depends only on \(c\) and \(q_{\max}\).
+
+Now fix \(n,\beta,k,\Omega,\pi,q,\sigma_0^2\) satisfying the hypotheses of the lemma, and write \(p^{\mathrm{Ch}}=p^{\mathrm{Ch}}(k,q)\).
+
+\emph{The hypotheses of the two inputs hold.}
+Since \(k=\lceil c\beta\rceil\) is the least integer at or above \(c\beta\), and since \(c>1\) and \(\beta\ge1\) give \(\beta\le c\beta\), we have
 \[
-p^{\mathrm{Ch}}(k,q)\in S_{k,q}.
+\beta\le c\beta\le k .
+\] % lean: Nat.le_ceil
+In particular \(k\ge\beta\ge1\), so \(k\ge1\). The low-budget cap of \cref{obj:ass:low-budget-cap} gives \(q\le q_{\max}<1\), which together with \(q>0\) yields
+\[
+0<q\le1 .
+\] % lean: LowBudgetCap
+Therefore \cref{obj:lem:chebyshev-schedule-admissible} applies and gives
+\[
+p^{\mathrm{Ch}}\in S_{k,q}.
 \]
 % lean: chebyshev_schedule_admissible
-
-Apply \cref{obj:lem:exact-risk-envelope-upper} to this Chebyshev-Lobatto schedule. Its fixed-schedule part gives
+Finally, \(\sigma_0^2\ge0\) and \(n\ge0\) give
 \[
-\inf_{w\in W_\beta(p^{\mathrm{Ch}}(k,q))}
+\frac{\sigma_0^2}{n}\ge0 .
+\] % lean: div_nonneg
+
+\emph{Envelope comparison at the Chebyshev schedule.}
+For any weight vector \(w\), the exact quadratic form is by definition the design variance of the corresponding linear rollout estimator,
+\[
+w^\prime\Gamma_P\!\left(p^{\mathrm{Ch}}\right)w
+=
+\operatorname{Var}_\pi\!\left(\sum_{j=0}^k w_j\bar Y_j\right),
+\]
+because \(\Gamma_P(p)\) is the design covariance matrix of \((\bar Y_0,\ldots,\bar Y_k)\). Applying the fixed-schedule part of \cref{obj:lem:exact-risk-envelope-upper} to the admissible schedule \(p^{\mathrm{Ch}}\), whose hypotheses \(\beta\ge1\), \(k\ge\beta\), \(0<q\le1\), \(\sigma_0^2\ge0\) and \(p^{\mathrm{Ch}}\in S_{k,q}\) were just verified, gives
+\[
+\inf_{w\in W_\beta(p^{\mathrm{Ch}})}
 \sup_{P\in\mathcal P_\beta}
 \operatorname{Var}_\pi\!\left(\sum_{j=0}^k w_j\bar Y_j\right)
 \le
 \frac{\sigma_0^2}{n}
-A_\beta\!\left(p^{\mathrm{Ch}}(k,q)\right).
+A_\beta\!\left(p^{\mathrm{Ch}}\right).
 \]
 % lean: exact_risk_envelope_upper
-Since \(\sigma_0^2/n\ge0\), multiplying the Chebyshev upper bound for \(A_\beta(p^{\mathrm{Ch}}(k,q))\) by \(\sigma_0^2/n\) preserves the inequality. Therefore
+
+\emph{Conclusion.}
+Since \(\sigma_0^2/n\ge0\), multiplying the Chebyshev upper bound for \(A_\beta(p^{\mathrm{Ch}})\) by \(\sigma_0^2/n\) preserves the inequality, so chaining the last two displays gives
 \[
-\inf_{w\in W_\beta(p^{\mathrm{Ch}}(k,q))}
+\inf_{w\in W_\beta(p^{\mathrm{Ch}})}
 \sup_{P\in\mathcal P_\beta}
 \operatorname{Var}_\pi\!\left(\sum_{j=0}^k w_j\bar Y_j\right)
 \le
+\frac{\sigma_0^2}{n}
+A_\beta\!\left(p^{\mathrm{Ch}}\right)
+\le
 \frac{\sigma_0^2}{n}\,
 C_+(c,q_{\max})
-\left(\frac{(1+\sqrt{1-q})^2}{q}\right)^{2\beta}.
+\left(\frac{(1+\sqrt{1-q})^2}{q}\right)^{2\beta},
 \]
+which is the asserted bound.
 % lean: mul_le_mul_of_nonneg_left
 \end{proof}

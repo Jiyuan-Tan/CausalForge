@@ -1023,7 +1023,35 @@ The finite-cell arguments show that sample-learned weights preserve the oracle r
 The top-level theorem statements and proof obligations corresponding to \cref{obj:prop:compact-causal-range,obj:thm:fixed-geometry-frontier,obj:prop:no-shift-reduction,obj:thm:oracle-converse,obj:thm:oracle-score-inversion-attainment,obj:thm:regular-cell-unknown-weight-attainment,obj:thm:finite-cell-unknown-weight-attainment} are checked in Lean 4.  The auxiliary notation objects \cref{obj:synth_1,obj:synth_2,obj:synth_3,obj:synth_4,obj:synth_5} organize the manuscript notation used by those checked declarations, and \cref{obj:def:geometry-handle} records the checked fixed-geometry separation calculation used in the lower-bound proofs.
 
 \begin{proof}[Proof of \cref{obj:prop:compact-causal-range}]
-Write
+Throughout, write \(F=(S,X,D(0),D(1),Y(0),Y(1))\) for the full-data record, and let
+\[
+P_{\mathrm{assign},S}
+=
+\text{the joint law of }(F,Z)\text{ in the source encouragement experiment.}
+\]
+Model membership in \(\mathcal P_n\), as specified in \cref{obj:def:model-class}, supplies through \cref{obj:ass:source-observation} that \(P_{\mathrm{assign},S}\) is a probability law whose full-data marginal is the source full-data law and that the observed source law is its image under the observation map \(g\):
+\[
+\text{law of }F\text{ under }P_{\mathrm{assign},S}=P_n^F(\cdot\mid S=1),
+\qquad
+g(F,Z)=(X,\ Z,\ D(Z),\ Y(D(Z))),
+\]
+\[
+P_S=\text{law of }g(F,Z)\text{ under }P_{\mathrm{assign},S}.
+\]
+The map \(g\) is measurable: its first two coordinates are coordinate projections, and its last two are two-branch selections between projections indexed by the measurable sets \(\{Z=1\}\) and \(\{D(Z)=1\}\).
+% lean: measurable_observeSource, observeSource, sourceObsLaw, SourceAssignmentConsistency
+We also abbreviate
+\[
+\mu=P_n^F(\cdot\mid S=0),
+\qquad
+C=\{D(1)=1,\ D(0)=0\},
+\]
+and we fix, alongside the source contrasts \(\Delta_Y,\Delta_D\) of \cref{obj:synth_6}, measurable versions of the corresponding target conditional contrasts
+\begin{align*}
+\Delta_Y^T(x)&=\mathbb E_{P_n^F}\!\left[Y^Z(1)-Y^Z(0)\mid X=x,\ S=0\right],\\
+\Delta_D^T(x)&=\mathbb E_{P_n^F}\!\left[D(1)-D(0)\mid X=x,\ S=0\right].
+\end{align*}
+Finally, \(H\) is the score of \cref{obj:synth_1}; in the two branches of the binary instrument it takes the values
 \[
 H(O)=
 \begin{cases}
@@ -1031,15 +1059,81 @@ H(O)=
 -1/\{1-e(X)\}, & Z=0.
 \end{cases}
 \]
+% lean: instrumentScore, TransportedArray.deltaY, TransportedArray.deltaD
+
 \begin{enumerate}
-\item Model membership in \(\mathcal P_n\), as specified in \cref{obj:def:model-class}, supplies the full-data support, population presence, two-sample laws, overlap, source observation, randomization, exclusion, monotonicity, transport, target-complier positivity, domination, and envelope facts used below.  The source observation map \((S,X,D(0),D(1),Y(0),Y(1),Z)\mapsto (X,Z,D(Z),Y(D(Z)))\) is measurable, and its \(X\)-marginal agrees with the source full-data \(X\)-marginal.  Therefore overlap transfers to the observed source law:
+\item \textbf{Source marginals, overlap on the observed law, and the score bound.}
+The first coordinate of \(g\) is \(X\), so composing the two displays above shows that the source covariate marginal is also the covariate marginal of the source full-data law:
+\[
+P_S^X
+=
+\text{law of }X\text{ under }P_n^F(\cdot\mid S=1).
+\]
+% lean: sourceXLaw_eq_populationXLaw_source
+Since \(P_S^X\) is by construction the \(X\)-marginal of \(P_S\), the overlap statement of \cref{obj:ass:instrument-overlap} transfers verbatim to the observed source law and, by the last display, to the source full-data law:
 \[
 \varepsilon\le e(X)\le 1-\varepsilon
-\qquad P_S\text{-a.s.}
+\qquad
+P_S\text{-a.s. and }P_n^F(\cdot\mid S=1)\text{-a.s.}
 \]
-Consequently \(H\) is measurable and \(|H|\le 1/\varepsilon\) \(P_S\)-almost surely.  Since the observed outcome lies in \([0,1]\) and the receipt indicator is bounded by one, both \(H(O)Y\) and \(H(O)D\) are integrable under \(P_S\).
+The score \(H\) is measurable, being a two-branch selection between \(1/e\) and \(-1/(1-e)\) along the measurable set \(\{Z=1\}\), and the two branches are bounded as follows: on \(\{Z=1\}\), \(|H(O)|=1/e(X)\le 1/\varepsilon\) because \(e(X)\ge\varepsilon>0\); on \(\{Z=0\}\), \(|H(O)|=1/\{1-e(X)\}\le1/\varepsilon\) because \(1-e(X)\ge\varepsilon>0\). Hence
+\[
+|H(O)|\le 1/\varepsilon
+\qquad
+P_S\text{-a.s.}
+\]
+% lean: compact_causal_range (hOverlapObs, hInstrumentScoreMeasurable, hInstrumentScoreBound)
+By \cref{obj:ass:full-data-support} the potential outcomes lie in \([0,1]\), and \(P_n^F(\cdot\mid S=1)\ll P_n^F\); pushing this through \(g\), whose outcome coordinate is one of \(Y(0),Y(1)\), gives \(Y\in[0,1]\) \(P_S\)-almost surely, while \(D=D(Z)\in\{0,1\}\) by construction. Therefore
+\[
+|H(O)Y|\le 1/\varepsilon,
+\qquad
+|H(O)D|\le 1/\varepsilon
+\qquad
+P_S\text{-a.s.},
+\]
+and since \(P_S\) is a probability law both \(H(O)Y\) and \(H(O)D\) are \(P_S\)-integrable.
+% lean: compact_causal_range (hScoreIntegrable, hOutcomeScoreIntegrable, hReceiptScoreIntegrable)
 
-\item The inverse-propensity calculation used for the full-data contrasts is as follows.  Let \(F_0,F_1\) be measurable and integrable under \(P_n^F(\cdot\mid S=1)\), and assume that the assigned-source inverse-propensity integrand displayed below is integrable.  For each measurable \(A\), conditional randomization and overlap identify the \(Z=z\) slice of the assigned source law, mapped back to full data, as the source full-data law weighted by \(e(X)\) when \(z=1\) and by \(1-e(X)\) when \(z=0\).  Splitting the assigned law into the two slices gives
+\item \textbf{The instrument slice of the assigned source law.}
+For each \(z\in\{0,1\}\) put
+\[
+\pi_z(F)=z\,e(X)+(1-z)\{1-e(X)\}.
+\]
+Conditional randomization in \cref{obj:ass:iv-randomization}, combined with the assignment-propensity clause \(P(Z=1\mid X,S=1)=e(X)\) of \cref{obj:ass:source-observation}, says exactly that for every measurable full-data set \(B\),
+\[
+P_{\mathrm{assign},S}\{(F,Z):F\in B,\ Z=z\}
+=
+\int_B \pi_z(F)\,dP_n^F(\cdot\mid S=1).
+\]
+The overlap bound of the previous step gives \(0<\varepsilon\le\pi_z\le1-\varepsilon<1\) \(P_n^F(\cdot\mid S=1)\)-almost surely, so \(\pi_z\) is a nonnegative integrable density and \(P_n^F(\cdot\mid S=1)\) is a probability law; the restricted image measure on the left is finite. A finite measure whose mass on every measurable set equals the integral of a fixed nonnegative integrable density is that weighted measure, so the displayed set identity upgrades to the measure identity
+\[
+\text{image under }F\text{ of }P_{\mathrm{assign},S}\text{ restricted to }\{Z=z\}
+=
+\pi_z\cdot P_n^F(\cdot\mid S=1).
+\]
+% lean: ivRandomization_slice_eq_withDensity, measure_eq_withDensity_of_toReal_setIntegral
+
+\item \textbf{The inverse-propensity contrast identity for full-data integrands.}
+Let \(F_0,F_1\) be measurable full-data functions, integrable under \(P_n^F(\cdot\mid S=1)\), and suppose that
+\[
+(F,Z)\mapsto
+\frac{\mathbf 1\{Z=1\}}{e(X)}F_1
+-\frac{\mathbf 1\{Z=0\}}{1-e(X)}F_0
+\]
+is \(P_{\mathrm{assign},S}\)-integrable. Fix a measurable \(A\subseteq\mathcal X\). Splitting the domain \(\{X\in A\}\) into its two instrument slices, the integrand reduces on each slice to a function of \(F\) alone, so the measure identity of the previous step applies after the change of variables \((F,Z)\mapsto F\):
+\begin{align*}
+\int_{\{X\in A,\ Z=1\}}\frac{F_1}{e(X)}\,dP_{\mathrm{assign},S}
+&=
+\int_{\{X\in A\}}\frac{1}{e(X)}\,e(X)F_1\,dP_n^F(\cdot\mid S=1)\\
+&=
+\int_{\{X\in A\}}F_1\,dP_n^F(\cdot\mid S=1),\\
+\int_{\{X\in A,\ Z=0\}}\frac{F_0}{1-e(X)}\,dP_{\mathrm{assign},S}
+&=
+\int_{\{X\in A\}}\frac{1}{1-e(X)}\,\{1-e(X)\}F_0\,dP_n^F(\cdot\mid S=1)\\
+&=
+\int_{\{X\in A\}}F_0\,dP_n^F(\cdot\mid S=1),
+\end{align*}
+where the cancellations are legitimate because \(e(X)\ge\varepsilon>0\) and \(1-e(X)\ge\varepsilon>0\) almost surely. Subtracting the second line from the first,
 \[
 \int_{\{X\in A\}}
 \left[
@@ -1049,43 +1143,88 @@ Consequently \(H\) is measurable and \(|H|\le 1/\varepsilon\) \(P_S\)-almost sur
 =
 \int_{\{X\in A\}}(F_1-F_0)\,dP_n^F(\cdot\mid S=1).
 \]
-On the \(Z=1\) slice the density \(e(X)\) cancels \(1/e(X)\), and on the \(Z=0\) slice the density \(1-e(X)\) cancels \(-1/\{1-e(X)\}\); the two slice integrals then add to the displayed contrast.
+% lean: ivRandomization_ipw_contrast
 
-\item The chosen version \(\Delta_Y\) is measurable, and the source-observation facts give, for every measurable covariate set \(A\),
+\item \textbf{The observed source representation of \(\Delta_Y\).}
+The chosen version \(\Delta_Y\) is measurable, and we claim that for every measurable \(A\subseteq\mathcal X\),
 \[
 \int_{\{O:X\in A\}}H(O)Y\,dP_S(O)
 =
-\int_A \Delta_Y(x)\,dP_S^X(x).
+\int_A \Delta_Y(x)\,dP_S^X(x),
 \]
-For the source full-data comparison used in the transport step, apply the preceding identity with \(F_z=Y(D(z))\).  The required integrability of the assigned-source inverse-propensity integrand follows by pulling back the already established integrability of \(H(O)Y\) through the source observation map.  Pulling the observed integral back through that map and splitting over \(Z,D(0),D(1)\) gives
+which is the first asserted representation. Changing variables through the representation of \(P_S\) as the image of \(P_{\mathrm{assign},S}\) under \(g\), and using that \(g\) sends \((F,Z)\) to \((X,Z,D(Z),Y(D(Z)))\), so that \(H(O)Y\) pulls back to the displayed inverse-propensity integrand with \(F_z=Y(D(z))\),
+\[
+\int_{\{O:X\in A\}}H(O)Y\,dP_S(O)
+=
+\int_{\{X\in A\}}
+\left[
+\frac{\mathbf 1\{Z=1\}}{e(X)}Y(D(1))
+-\frac{\mathbf 1\{Z=0\}}{1-e(X)}Y(D(0))
+\right] dP_{\mathrm{assign},S}.
+\]
+The two integrands \(Y(D(0)),Y(D(1))\) are measurable and, by \cref{obj:ass:full-data-support}, bounded by one, hence \(P_n^F(\cdot\mid S=1)\)-integrable; and the assigned-source integrand above is the pull-back through \(g\) of \(H(O)Y\), whose \(P_S\)-integrability was established in the first step. The identity of the previous step therefore applies and gives
 \[
 \int_{\{O:X\in A\}}H(O)Y\,dP_S(O)
 =
 \int_{\{X\in A\}}\{Y(D(1))-Y(D(0))\}\,dP_n^F(\cdot\mid S=1).
 \]
-Exclusion rewrites \(Y(D(z))\) as \(Y^Z(z)\), and the source outcome-transport identity rewrites the last display as the integral over \(A\) of the source conditional assignment-outcome contrast.  Hence \(\Delta_Y\) agrees \(P_S^X\)-almost surely with that source contrast, while the displayed source-observation identity is the required observed source representation.
+By \cref{obj:ass:iv-exclusion} at \(s=1\) we may replace \(Y(D(z))\) by \(Y^Z(z)\) up to a null set, and then the defining conditional-expectation property of \(\Delta_Y\) in \cref{obj:synth_6}, together with the identification of \(P_S^X\) with the source full-data covariate marginal from the first step, gives
+\[
+\int_{\{X\in A\}}\{Y^Z(1)-Y^Z(0)\}\,dP_n^F(\cdot\mid S=1)
+=
+\int_A \Delta_Y(x)\,dP_S^X(x),
+\]
+which completes the claim.
+% lean: compact_causal_range (hDeltaY), sourceObservationFacts_of_class, OutcomeContrastRepresentation
 
-\item The chosen version \(\Delta_D\) is measurable, and the source-observation facts give, for every measurable covariate set \(A\),
+\item \textbf{The observed source representation of \(\Delta_D\).}
+The chosen version \(\Delta_D\) is measurable, and the same three moves, with the real-valued receipt indicators \(F_z=D(z)\in\{0,1\}\) in place of \(Y(D(z))\) and with no exclusion step needed, give for every measurable \(A\subseteq\mathcal X\)
+\begin{align*}
+\int_{\{O:X\in A\}}H(O)D\,dP_S(O)
+&=
+\int_{\{X\in A\}}
+\left[
+\frac{\mathbf 1\{Z=1\}}{e(X)}D(1)
+-\frac{\mathbf 1\{Z=0\}}{1-e(X)}D(0)
+\right] dP_{\mathrm{assign},S}\\
+&=
+\int_{\{X\in A\}}\{D(1)-D(0)\}\,dP_n^F(\cdot\mid S=1),
+\end{align*}
+the first equality by the change of variables through \(g\) (which sends the observed receipt coordinate to \(D(Z)\)) and the second by the contrast identity, whose integrability hypotheses hold because \(D(0),D(1)\) are bounded by one and because the assigned-source integrand is the pull-back of the \(P_S\)-integrable \(H(O)D\). The defining conditional-expectation property of \(\Delta_D\) in \cref{obj:synth_6}, again read against \(P_S^X\), turns the right-hand side into \(\int_A\Delta_D(x)\,dP_S^X(x)\), so
 \[
 \int_{\{O:X\in A\}}H(O)D\,dP_S(O)
 =
-\int_A \Delta_D(x)\,dP_S^X(x).
+\int_A \Delta_D(x)\,dP_S^X(x),
 \]
-For the source full-data comparison, apply the inverse-propensity identity with \(F_z=D(z)\), written as the real indicator of receipt.  The required integrability of the assigned-source inverse-propensity integrand follows by pulling back the already established integrability of \(H(O)D\) through the source observation map.  Pulling the observed integral back and splitting over \(Z,D(0),D(1)\) gives
-\[
-\int_{\{O:X\in A\}}H(O)D\,dP_S(O)
-=
-\int_{\{X\in A\}}\{D(1)-D(0)\}\,dP_n^F(\cdot\mid S=1).
-\]
-The source receipt-transport identity rewrites the last display as the integral over \(A\) of the source conditional receipt contrast.  Hence \(\Delta_D\) agrees \(P_S^X\)-almost surely with that source contrast, while the displayed source-observation identity is the required observed source representation.
+which is the second asserted representation.
+% lean: compact_causal_range (hDeltaD), sourceObservationFacts_of_class, ReceiptContrastRepresentation
 
-\item For the transported reduced-form outcome mean, the already proved source almost-sure equality between \(\Delta_Y\) and the source conditional assignment-outcome contrast first rewrites the integrand in \(\mu_{Y,n}\).  The Radon--Nikodym transport identity and target domination then change measure from \(P_S^X\) to \(P_T\).  The target outcome-transport equality replaces the transported source contrast by the target contrast, and the target full-data integral identity gives
+\item \textbf{The transported reduced-form outcome mean.}
+By \cref{obj:synth_6}, \(\mu_{Y,n}=\int w(x)\Delta_Y(x)\,dP_S^X(x)\). Since \(P_T\ll P_S^X\) by \cref{obj:ass:transport-domination} and \(w\) is a version of \(dP_T/dP_S^X\), the change of measure
 \[
-\mu_{Y,n}
+\int w(x)\Delta_Y(x)\,dP_S^X(x)
 =
-\int \{Y^Z(1)-Y^Z(0)\}\,dP_n^F(\cdot\mid S=0).
+\int \Delta_Y(x)\,dP_T(x)
 \]
-Exclusion changes \(Y^Z(z)\) to \(Y(D(z))\).  Finally, monotonicity permits a pointwise case split over \(D(0),D(1)\), yielding
+holds. \Cref{obj:ass:outcome-transport} states \(\Delta_Y^T=\Delta_Y\) \(P_T\)-almost surely, and \(P_T\) is the covariate marginal of \(\mu\), so applying the defining property of \(\Delta_Y^T\) with \(A=\mathcal X\),
+\[
+\int \Delta_Y(x)\,dP_T(x)
+=
+\int \Delta_Y^T(x)\,dP_T(x)
+=
+\int \{Y^Z(1)-Y^Z(0)\}\,d\mu .
+\]
+\Cref{obj:ass:iv-exclusion} at \(s=0\) rewrites the integrand as \(Y(D(1))-Y(D(0))\). \Cref{obj:ass:iv-monotonicity} at \(s=0\) makes the pair \((D(0),D(1))=(1,0)\) \(\mu\)-null, so off a \(\mu\)-null set exactly one of the three remaining cases holds, and in each of them the integrand coincides with the complier-weighted contrast:
+\[
+Y(D(1))-Y(D(0))
+=
+\begin{cases}
+Y(0)-Y(0)=0=\{Y(1)-Y(0)\}\mathbf 1_C, & (D(0),D(1))=(0,0),\\
+Y(1)-Y(1)=0=\{Y(1)-Y(0)\}\mathbf 1_C, & (D(0),D(1))=(1,1),\\
+Y(1)-Y(0)=\{Y(1)-Y(0)\}\mathbf 1_C, & (D(0),D(1))=(0,1).
+\end{cases}
+\]
+Hence
 \[
 \mu_{Y,n}
 =
@@ -1093,146 +1232,363 @@ Exclusion changes \(Y^Z(z)\) to \(Y(D(z))\).  Finally, monotonicity permits a po
 \{Y(1)-Y(0)\}\mathbf 1\{D(1)=1,\ D(0)=0\}
 \,dP_n^F(\cdot\mid S=0).
 \]
+% lean: compact_causal_range (hOutcomeEq), transportedOutcomeITT
 
-\item For the transported first-stage mean, the weighted source representation first unfolds \(\mu_n\) as
+\item \textbf{The transported first-stage mean.}
+By \cref{obj:synth_6}, \(\mu_n=\int w(x)\Delta_D(x)\,dP_S^X(x)\). The relevant integrands are bounded: \(0\le w\le 2k_n\) by \cref{obj:ass:weight-envelope} and \(0\le\Delta_D\le1\) because \(\Delta_D\) is the conditional mean of \(D(1)-D(0)\in\{0,1\}\) under \cref{obj:ass:iv-monotonicity}, so \(|w\Delta_D|\le 2k_n\) and all integrals below are absolutely convergent. Exactly as in the previous step, transport domination and \(w=dP_T/dP_S^X\) give
 \[
-\mu_n=\int w(x)\Delta_D(x)\,dP_S^X(x).
+\int w(x)\Delta_D(x)\,dP_S^X(x)
+=
+\int \Delta_D(x)\,dP_T(x),
 \]
-The envelope \(0\le w\le 2k_n\), the bound \(|H|\le 1/\varepsilon\), and the receipt-indicator bound give integrability of the weighted observed receipt-score integrand.  Separately, the envelope and \(0\le\Delta_D\le1\) give integrability of \(w\Delta_D\).  Using the source almost-sure equality between \(\Delta_D\) and the source receipt contrast, Radon--Nikodym transport, the target receipt-transport equality, and then the target full-data receipt identity,
+and \cref{obj:ass:receipt-transport}, which equates the two \(P_T\)-averages of the conditional receipt contrasts rather than the contrasts themselves, gives
+\[
+\int \Delta_D(x)\,dP_T(x)
+=
+\int \Delta_D^T(x)\,dP_T(x)
+=
+\int \{D(1)-D(0)\}\,d\mu ,
+\]
+the second equality being the defining property of \(\Delta_D^T\) with \(A=\mathcal X\). \Cref{obj:ass:iv-monotonicity} at \(s=0\) again removes \((D(0),D(1))=(1,0)\), and in the three remaining cases
+\[
+D(1)-D(0)
+=
+\begin{cases}
+0=\mathbf 1_C, & (D(0),D(1))=(0,0),\\
+0=\mathbf 1_C, & (D(0),D(1))=(1,1),\\
+1=\mathbf 1_C, & (D(0),D(1))=(0,1),
+\end{cases}
+\]
+so \(D(1)-D(0)=\mathbf 1_C\) \(\mu\)-almost surely. Integrating the indicator,
 \[
 \mu_n
 =
-\int \{D(1)-D(0)\}\,dP_n^F(\cdot\mid S=0).
-\]
-Monotonicity turns \(D(1)-D(0)\) into \(\mathbf 1\{D(1)=1,D(0)=0\}\), and integration of this indicator gives
-\[
-\mu_n
+\int \mathbf 1_C\,d\mu
+=
+\mu(C)
 =
 P_n^F\{D(1)=1,\ D(0)=0\mid S=0\}.
 \]
+% lean: compact_causal_range (hFirstEq), transportedFirstStage_eq_weighted_deltaD, targetComplierShare
 
-\item By the definition of \(\theta_T\), the numerator is the target complier-weighted outcome contrast and the denominator is the target complier share.  Substituting the two identities just proved gives
+\item \textbf{The Wald ratio.}
+By \cref{obj:synth_7},
+\[
+\theta_T
+=
+\frac{\int \{Y(1)-Y(0)\}\mathbf 1_C\,d\mu}{\mu(C)} .
+\]
+The previous two steps identify the numerator with \(\mu_{Y,n}\) and the denominator with \(\mu_n\), so
 \[
 \frac{\mu_{Y,n}}{\mu_n}=\theta_T.
 \]
+% lean: compact_causal_range (targetCACE)
 
-\item Let \(\mu=P_n^F(\cdot\mid S=0)\) and \(C=\{D(1)=1,D(0)=0\}\).  Full-data support makes \(P_n^F\) a probability law, and together with population presence for \(S=0\) it makes \(\mu\) a probability law.  Target-complier positivity gives \(0<\mu(C)\).  The conditional law \(\mu\) is absolutely continuous with respect to \(P_n^F\), so bounded full-data support gives
+\item \textbf{The forced range.}
+\Cref{obj:ass:full-data-support} makes \(P_n^F\) a probability law, and \cref{obj:ass:population-presence} gives \(P_n^F(S=0)>0\), so the conditional law \(\mu\) is a well-defined probability law and \(\mu\ll P_n^F\). Consequently the bounded-support clause of \cref{obj:ass:full-data-support} transfers to \(\mu\), and subtracting the two bounds \(Y(0),Y(1)\in[0,1]\) yields
 \[
 -1\le Y(1)-Y(0)\le 1
 \qquad \mu\text{-a.s.}
 \]
-The set \(C\) is measurable, so integral monotonicity gives
+The set \(C\) is measurable, so \(\mathbf 1_C\in\{0,1\}\); multiplying the last display by \(\mathbf 1_C\) gives \(-\mathbf 1_C\le\{Y(1)-Y(0)\}\mathbf 1_C\le\mathbf 1_C\) \(\mu\)-almost surely, all three functions being bounded and hence \(\mu\)-integrable. Integral monotonicity then gives
 \[
 -\mu(C)
+=
+-\int \mathbf 1_C\,d\mu
 \le
-\int (Y(1)-Y(0))\mathbf 1_C\,d\mu
+\int \{Y(1)-Y(0)\}\mathbf 1_C\,d\mu
 \le
+\int \mathbf 1_C\,d\mu
+=
 \mu(C).
 \]
-Dividing by the positive number \(\mu(C)\) yields \(\theta_T\in[-1,1]=\Theta\).
+\Cref{obj:ass:target-complier-positivity} gives \(\mu(C)>0\); dividing the display by this positive number and comparing with the expression for \(\theta_T\) in the previous step yields
+\[
+\theta_T
+=
+\frac{\int \{Y(1)-Y(0)\}\mathbf 1_C\,d\mu}{\mu(C)}
+\in[-1,1]=\Theta .
+\]
+% lean: compact_causal_range (hbounds, hnumLower, hnumUpper, hindicator), parameterSpace
 \end{enumerate}
 \end{proof}
 
 \begin{proof}[Proof of \cref{obj:thm:fixed-geometry-frontier}]
-Fix \(t_0>0\).  The assumptions on \(N_n\), \(k_n\), \(\varepsilon\), and the admissible geometry imply that, for all sufficiently large \(n\), the fixed-geometry slice contains a law with effective strength at least \(t_0\).  On those indices, the liminf coverage term is the ordinary slice infimum, and the strength-restricted risk supremum is over a nonempty set.
+Throughout, \(\Theta=[-1,1]\), \(\lambda(A)\) is the Lebesgue length of \(A\cap\Theta\), and for a row law \(P\) we abbreviate the functionals of \cref{obj:synth_6},
+\[
+\mu_{Y,n}=\mathbb E_{P_S^X}\!\left[w(X)\Delta_Y(X)\right],
+\qquad
+\mu_n=\mathbb E_{P_S^X}\!\left[w(X)\Delta_D(X)\right],
+\qquad
+\kappa_n=\mathbb E_{P_S^X}\!\left[w(X)^2\right],
+\qquad
+t_n=\frac{n\mu_n^2}{\kappa_n},
+\]
+writing \(t_n(P)\) and \(\theta_T(P)\) when the law has to be displayed.  Fix \(t_0>0\).
 
-1. For the lower bound, set
+\emph{Step 0 (the slice is eventually inhabited).}  The admissible geometry \(\mathfrak g\) of \cref{obj:def:admissible-geometry-class}, together with \(N_n/n\to c>0\), \(k_n>0\), \(k_n\to\infty\), and \(k_n/\sqrt n\to0\), supplies an explicit row law at every late index: for all sufficiently large \(n\),
+\[
+\exists\,P\in\mathcal P_n(\mathfrak g)
+\quad\text{with}\quad
+t_n(P)\ge t_0 .
+\]
+In particular \(\mathcal P_n(\mathfrak g)\neq\varnothing\) at those indices, so the coverage row appearing in \cref{obj:def:fixed-geometry-honesty} is an infimum over a nonempty set and the strength-restricted supremum in \cref{obj:def:fixed-geometry-value} is over a nonempty set. % lean: fixedGeometrySlice_eventually_inhabited
+
+\medskip
+\noindent\textbf{Part A: the lower bound.}
+
+\emph{Step 1 (the least-favorable family).}  Following \cref{obj:def:least-favorable-witness}, set the Le Cam separation scale \(\rho\) and the outcome-tilt radius \(H(t_0)\),
 \[
 \rho=\frac{1-\alpha}{8},
 \qquad
-H=\min\{1/4,\rho t_0^{-1/2}\}.
+H(t_0)=\min\left\{\frac14,\ \rho\,t_0^{-1/2}\right\}.
 \]
-Then \(\rho>0\) and \(H>0\).  The fixed-geometry least-favorable construction supplies, for all sufficiently large \(n\), a family \(\{Q_{n,h}^{\mathfrak g}: |h|\le H\}\) from \cref{obj:def:least-favorable-witness,obj:def:geometry-handle}.  Each member lies in the fixed-geometry slice of \cref{obj:def:fixed-geometry-slice}; the centered member has effective strength \(t_0\); the target contrast equals \(1/2+h\); and
+Since \(0<\alpha<1\) and \(t_0>0\) we have \(\rho>0\) and \(H(t_0)>0\), and by construction \(H(t_0)\le 1/4\).  For all sufficiently large \(n\) the construction of \cref{obj:def:least-favorable-witness} supplies a family \(\{Q_{n,h}^{\mathfrak g}:|h|\le H(t_0)\}\) with
 \[
-\|Q_{n,h}^{\mathfrak g}-Q_{n,0}^{\mathfrak g}\|_{\mathrm{TV}}\le 2\rho .
+Q_{n,h}^{\mathfrak g}\in\mathcal P_n(\mathfrak g),
+\qquad
+t_n\!\left(Q_{n,h}^{\mathfrak g}\right)=t_0,
+\qquad
+\theta_T\!\left(Q_{n,h}^{\mathfrak g}\right)=\frac12+h ,
 \]
+the strength identity because the complier probability \(p_n(x)=\mu_nw(x)/\kappa_n\) with \(\mu_n=(t_0\kappa_n/n)^{1/2}\) makes the transported first stage exactly \((t_0\kappa_n/n)^{1/2}\), and the contrast identity because \(Y(0)=0\) while complier \(Y(1)\) is Bernoulli with mean \(1/2+h\).  The separation calculation of \cref{obj:def:geometry-handle} gives, for the same range of \(h\),
+\[
+\left\|Q_{n,h}^{\mathfrak g}-Q_{n,0}^{\mathfrak g}\right\|_{\mathrm{TV}}\le 2\rho .
+\]
+% lean: geometryHandle_eventually_inhabited, leastFavorableWitness, geometryHandle
 
-
-2. Let \((C_n)\in\mathfrak C^{\mathrm{or}}(\mathfrak g)\) be any fixed-geometry honest oracle procedure.  For each row define
+\emph{Step 2 (the two rowwise scalars).}  Let \((C_n)\in\mathfrak C^{\mathrm{or}}(\mathfrak g)\) be an arbitrary fixed-geometry honest oracle procedure, evaluated as in \cref{obj:def:fixed-geometry-honesty} at the weight and propensity of \(\mathfrak g\).  For each row put
 \[
 a_n=\inf_{P\in\mathcal P_n(\mathfrak g)}
 P\{\theta_T(P)\in C_n\},
 \qquad
 r_n=\sup_{\substack{P\in\mathcal P_n(\mathfrak g)\\ t_n(P)\ge t_0}}
-\mathbb E_P[\lambda(C_n)] .
+\mathbb E_P[\lambda(C_n)],
 \]
-The coverage values lie in \([0,1]\).  Since every confidence set is contained in \(\Theta=[-1,1]\), every expected length is at most \(2\), and the strength-restricted risk terms are bounded between \(0\) and \(2\) for all sufficiently large \(n\).
+and write, in the notation of \cref{obj:def:frontier-risk} restricted to the slice,
+\[
+R_{\mathfrak g}((C_n),t_0)
+=
+\limsup_{n\to\infty} r_n
+=
+\limsup_{n\to\infty}
+\sup_{\substack{P\in\mathcal P_n(\mathfrak g)\\ t_n(P)\ge t_0}}
+\mathbb E_P[\lambda(C_n)],
+\]
+so that \(V_{\mathfrak g}^\star(t_0)=\inf_{(C_n)\in\mathfrak C^{\mathrm{or}}(\mathfrak g)}R_{\mathfrak g}((C_n),t_0)\) by \cref{obj:def:fixed-geometry-value}.  Each \(P\{\theta_T(P)\in C_n\}\) is a probability, so \(0\le a_n\le 1\); each \(C_n\) is contained in \(\Theta\) and \(\lambda(\Theta)=2\), so \(0\le\mathbb E_P[\lambda(C_n)]\le2\) for every \(P\) and hence \(0\le r_n\le2\). % lean: fixed_geometry_frontier
 
-3. Fix a sufficiently large \(n\) and put \(I=[1/2-H,1/2+H]\).  For \(u\in I\), compare the law \(Q_{n,u-1/2}^{\mathfrak g}\) to the centered law \(Q_{n,0}^{\mathfrak g}\).  Because the target contrast under \(Q_{n,u-1/2}^{\mathfrak g}\) is \(u\), fixed-geometry coverage gives
+\emph{Step 3 (the rowwise Le Cam inequality).}  Fix an index \(n\) at which Step 1 applies and put
+\[
+I=\left[\frac12-H(t_0),\ \frac12+H(t_0)\right].
+\]
+Because \(H(t_0)\le1/4\) we have \(I\subseteq[1/4,3/4]\subseteq\Theta\), and \(|u-1/2|\le H(t_0)\) for \(u\in I\), so \(Q_{n,u-1/2}^{\mathfrak g}\) is a member of the family of Step 1.  Its target contrast is \(\theta_T(Q_{n,u-1/2}^{\mathfrak g})=u\), and it lies in \(\mathcal P_n(\mathfrak g)\), so the definition of \(a_n\) gives
 \[
 a_n\le
-Q_{n,u-1/2}^{\mathfrak g}\{u\in C_n\}.
+Q_{n,u-1/2}^{\mathfrak g}\{u\in C_n\},
+\qquad u\in I .
 \]
-The total-variation bound gives the comparison with \(Q_{n,0}^{\mathfrak g}\).  Applying the coverage-to-expected-length reduction over the interval \(I\), whose Lebesgue length is \(2H\), yields
+Total variation compares any single event under the two laws, \(|Q_{n,u-1/2}^{\mathfrak g}(A)-Q_{n,0}^{\mathfrak g}(A)|\le\|Q_{n,u-1/2}^{\mathfrak g}-Q_{n,0}^{\mathfrak g}\|_{\mathrm{TV}}\), so the bound of Step 1 transfers the display to the centered law:
 \[
-2H(a_n-2\rho)
+a_n-2\rho\le Q_{n,0}^{\mathfrak g}\{u\in C_n\},
+\qquad u\in I .
+\]
+The sample-by-parameter graph of \(C_n\) is measurable and \(C_n\subseteq\Theta\), so Tonelli's theorem writes expected length as an inclusion integral, and integrating the previous display over \(I\) gives
+\[
+\mathbb E_{Q_{n,0}^{\mathfrak g}}[\lambda(C_n)]
+=
+\int_\Theta Q_{n,0}^{\mathfrak g}\{u\in C_n\}\,du
+\ \ge\
+\int_I Q_{n,0}^{\mathfrak g}\{u\in C_n\}\,du
+\ \ge\
+2H(t_0)\,(a_n-2\rho),
+\]
+the first inequality because the integrand is nonnegative and \(I\subseteq\Theta\), the second because \(I\) has Lebesgue length \(2H(t_0)\). % lean: coverage_tv_expectedLength_lower, expected_setLength_eq_integral_inclusion
+Finally \(Q_{n,0}^{\mathfrak g}\in\mathcal P_n(\mathfrak g)\) and \(t_n(Q_{n,0}^{\mathfrak g})=t_0\ge t_0\), so the centered law is admissible in the supremum defining \(r_n\), and
+\[
+2H(t_0)\,(a_n-2\rho)
 \le
 \mathbb E_{Q_{n,0}^{\mathfrak g}}[\lambda(C_n)]
 \le r_n .
 \]
 
-
-4. Pass the preceding inequality to limits.  The honesty condition in \cref{obj:def:fixed-geometry-honesty} gives
+\emph{Step 4 (passage to the limit).}  The map \(x\mapsto 2H(t_0)(x-2\rho)\) is affine with nonnegative slope, hence monotone and continuous, and \(a_n\in[0,1]\), so it commutes with the liminf; \(r_n\in[0,2]\), so \(\liminf_n r_n\le\limsup_n r_n\).  Honesty in \cref{obj:def:fixed-geometry-honesty} states \(1-\alpha\le\liminf_n a_n\).  Chaining these with the rowwise inequality of Step 3,
 \[
-1-\alpha\le \liminf_{n\to\infty} a_n .
-\]
-The affine map \(x\mapsto 2H(x-2\rho)\) is monotone, and the boundedness from Step 2 justifies the liminf--limsup comparison.  Hence every honest \((C_n)\) satisfies
-\[
-2H(1-\alpha-2\rho)
+2H(t_0)\,(1-\alpha-2\rho)
 \le
-\limsup_{n\to\infty} r_n
+\liminf_{n\to\infty}2H(t_0)\,(a_n-2\rho)
+\le
+\liminf_{n\to\infty}r_n
+\le
+\limsup_{n\to\infty}r_n
 =
 R_{\mathfrak g}((C_n),t_0).
 \]
+% lean: fixed_geometry_frontier
 
-
-5. The constants reduce by elementary arithmetic.  If \(\rho t_0^{-1/2}\le 1/4\), then \(H=\rho t_0^{-1/2}\) and
+\emph{Step 5 (calibrating the constant).}  Since \(2\rho=(1-\alpha)/4\),
 \[
-2H(1-\alpha-2\rho)
+1-\alpha-2\rho=\frac{3(1-\alpha)}{4}.
+\]
+Two cases, according to which term attains the minimum in \(H(t_0)\).  If \(\rho\,t_0^{-1/2}\le1/4\), then \(H(t_0)=\rho\,t_0^{-1/2}=(1-\alpha)t_0^{-1/2}/8\) and
+\[
+2H(t_0)\,(1-\alpha-2\rho)
 =
-\frac{3(1-\alpha)^2}{16}\,t_0^{-1/2}.
+2\cdot\frac{(1-\alpha)t_0^{-1/2}}{8}\cdot\frac{3(1-\alpha)}{4}
+=
+\frac{3(1-\alpha)^2}{16}\,t_0^{-1/2}
+\ \ge\
+c_\alpha\min\{1,t_0^{-1/2}\}.
 \]
-If \(1/4\le \rho t_0^{-1/2}\), then \(H=1/4\), and the same expression dominates
+If instead \(1/4\le\rho\,t_0^{-1/2}\), then \(H(t_0)=1/4\) and
 \[
-\frac{3(1-\alpha)^2}{16}\min\{1,t_0^{-1/2}\}.
+2H(t_0)\,(1-\alpha-2\rho)
+=
+\frac12\cdot\frac{3(1-\alpha)}{4}
+=
+\frac{3(1-\alpha)}{8}
+\ \ge\
+\frac{3(1-\alpha)^2}{16}
+\ \ge\
+c_\alpha\min\{1,t_0^{-1/2}\},
 \]
-Thus
+the middle inequality because \(1-\alpha\le1\le2\).  Hence in both cases
 \[
 c_\alpha\min\{1,t_0^{-1/2}\}
-\le R_{\mathfrak g}((C_n),t_0)
-\]
-for every \((C_n)\in\mathfrak C^{\mathrm{or}}(\mathfrak g)\).  The procedure \(C_n=\Theta\) has coverage one on every row, so the honest class is nonempty; taking the infimum in \cref{obj:def:fixed-geometry-value} gives the lower bound for \(V_{\mathfrak g}^{\star}(t_0)\).
-
-6. For the upper bound, put
-\[
-L=L_\alpha=\left(\frac{8}{\alpha\varepsilon^2}\right)^{1/2}
-\]
-and define an oracle score-inversion rule using the fixed geometry:
-for every sufficiently large index, take the set in \cref{obj:def:inversion-handle} with \(w\) equal to the Radon--Nikodym weight of the target covariate law relative to the source covariate law in \(\mathfrak g\), and with propensity \(e\) equal to the fixed propensity in \(\mathfrak g\). Choose any measurable value at the finitely many earlier indices; changing finitely many values leaves the limiting statements unchanged. Measurability and containment in \(\Theta\) follow from the measurability of the fixed weight and propensity and from the construction of the inversion set.
-
-7. Fix \(n>0\) and \(P\in\mathcal P_n(\mathfrak g)\).  The slice condition identifies the oracle weight and propensity with those of \(P\), up to the admissible almost-sure weight version.  The compact range result in \cref{obj:prop:compact-causal-range} gives \(\theta_T\in\Theta\), identifies the transported first stage with the target complier share, and gives
-\[
-\frac{\mu_{Y,n}}{\mu_n}=\theta_T,
-\qquad
-\mu_n>0 .
-\]
-The Radon--Nikodym change-of-measure identity gives \(\mathbb E_S[w(X)]=1\), so the Kish dispersion satisfies \(\kappa_n\ge1\).  A conditional-expectation pullout identity converts weighted source-score integrals into the corresponding covariate integrals.  Applying it to the receipt score gives mean \(\mu_n\), while instrument overlap bounds its variance by \(\kappa_n/\varepsilon^2\).  Chebyshev's inequality therefore yields
-\[
-P\!\left(\mu_n/2<
-\left|\widehat B_n-\mu_n\right|\right)
 \le
+R_{\mathfrak g}((C_n),t_0)
+\qquad\text{for every }(C_n)\in\mathfrak C^{\mathrm{or}}(\mathfrak g).
+\]
+% lean: fixed_geometry_frontier
+
+\emph{Step 6 (the honest class is nonempty, and the lower bound for the value).}  Let \(D_n\equiv\Theta\) for every \(n\).  This is an oracle procedure: it is contained in \(\Theta\), its sample-by-parameter graph is the measurable set of pairs whose parameter coordinate lies in \(\Theta\), and it does not depend on the weight input at all.  By \cref{obj:prop:compact-causal-range}, \(\theta_T(P)\in\Theta\) for every \(P\in\mathcal P_n(\mathfrak g)\), so
+\[
+P\{\theta_T(P)\in D_n\}=1
+\qquad\text{for every }P\in\mathcal P_n(\mathfrak g),
+\]
+whence the coverage row equals \(1\) at every index at which the slice is nonempty and \(\liminf_n\inf_{P\in\mathcal P_n(\mathfrak g)}P\{\theta_T(P)\in D_n\}=1\ge1-\alpha\) by Step 0; thus \((D_n)\in\mathfrak C^{\mathrm{or}}(\mathfrak g)\) and the class is nonempty.  Taking the infimum of Step 5 over \(\mathfrak C^{\mathrm{or}}(\mathfrak g)\) in \cref{obj:def:fixed-geometry-value},
+\[
+c_\alpha\min\{1,t_0^{-1/2}\}\le V_{\mathfrak g}^\star(t_0).
+\]
+% lean: abstractClass_coverage_liminf, scoreRiskClass_compact_causal_range
+
+\medskip
+\noindent\textbf{Part B: the upper bound.}
+
+\emph{Step 7 (the oracle score-inversion rule).}  Write \(L=L_\alpha=(8/(\alpha\varepsilon^2))^{1/2}\), let \(e_{\mathfrak g}\) be the index-\(n\) propensity of \(\mathfrak g\), and let
+\[
+w_{\mathfrak g,n}(x)=\frac{dP_{T,\mathfrak g,n}}{dP_{S,\mathfrak g,n}^X}(x)
+\]
+be the canonical density-ratio version determined by the two index-\(n\) covariate laws of \(\mathfrak g\); it is measurable, as is \(e_{\mathfrak g}\).  With the inverse-propensity instrument score of \cref{obj:synth_1} formed at \(e_{\mathfrak g}\),
+\[
+H_i=\frac{Z_i}{e_{\mathfrak g}(X_i)}-\frac{1-Z_i}{1-e_{\mathfrak g}(X_i)},
+\qquad
+\widehat A_n=\frac1n\sum_{i=1}^n w_{\mathfrak g,n}(X_i)H_iY_i,
+\qquad
+\widehat B_n=\frac1n\sum_{i=1}^n w_{\mathfrak g,n}(X_i)H_iD_i,
+\]
+\[
+\widehat\kappa_n=\frac1n\sum_{i=1}^n w_{\mathfrak g,n}(X_i)^2,
+\]
+define the procedure
+\[
+C_n=
+\begin{cases}
+\varnothing, & n=0,\\[0.4em]
+\displaystyle
+\left\{\vartheta\in\Theta:\ \left|\widehat A_n-\vartheta\widehat B_n\right|\le L\sqrt{\frac{\widehat\kappa_n}{n}}\right\}, & n\ge1,
+\end{cases}
+\]
+that is, the score-inversion set of \cref{obj:def:inversion-handle} evaluated at \((w_{\mathfrak g,n},e_{\mathfrak g})\).  Each \(C_n\) is contained in \(\Theta\); its sample-by-parameter graph is measurable because \(\widehat A_n\), \(\widehat B_n\), and \(\widehat\kappa_n\) are measurable functions of the source sample and \((s,\vartheta)\mapsto|\widehat A_n-\vartheta\widehat B_n|-L\sqrt{\widehat\kappa_n/n}\) is jointly measurable; and it is unchanged if the supplied weight input is replaced by another version, since the rule does not read that input.  Changing the single index \(n=0\) affects neither the liminf in \cref{obj:def:fixed-geometry-honesty} nor the limsup in \cref{obj:def:fixed-geometry-value}. % lean: inversionHandle, OracleProcedure
+
+\emph{Step 8 (what the slice fixes at a row).}  Fix \(n\ge1\) and \(P\in\mathcal P_n(\mathfrak g)\).  By \cref{obj:def:fixed-geometry-slice} the source covariate marginal, the target covariate law, and the propensity of \(P\) are exactly the index-\(n\) components of \(\mathfrak g\), so the two density ratios and the two propensities coincide as functions:
+\[
+w_{\mathfrak g,n}=w=\frac{dP_T}{dP_S^X},
+\qquad
+e_{\mathfrak g}=e .
+\]
+Thus \(\widehat A_n,\widehat B_n,\widehat\kappa_n\) are formed with \(P\)'s own oracle inputs.  By \cref{obj:prop:compact-causal-range},
+\[
+\theta_T\in\Theta,
+\qquad
+\mu_n=P_n^F\{D(1)=1,\ D(0)=0\mid S=0\},
+\qquad
+\frac{\mu_{Y,n}}{\mu_n}=\theta_T,
+\]
+and target complier positivity, \cref{obj:ass:target-complier-positivity}, therefore gives \(\mu_n>0\).  Transport domination, \cref{obj:ass:transport-domination}, makes \(w\) a genuine density ratio, so change of measure gives
+\[
+\mathbb E_{P_S^X}[w(X)]=P_T(\mathcal X)=1,
+\]
+and Cauchy--Schwarz then yields
+\[
+\kappa_n=\mathbb E_{P_S^X}\!\left[w(X)^2\right]\ \ge\ \left(\mathbb E_{P_S^X}[w(X)]\right)^2=1 .
+\]
+% lean: one_le_secondMoment_of_mean_one, scoreRiskClass_compact_causal_range
+
+\emph{Step 9 (the pullout identity).}  Let \(F\) be a function of the source observation and \(d\) a measurable function of the covariate, both integrable under \(P_S\) and \(P_S^X\) respectively, such that \(w(X)F\) is \(P_S\)-integrable, \(w\,d\) is \(P_S^X\)-integrable, and
+\[
+\int_{\{O:X\in A\}}F(O)\,dP_S(O)=\int_A d(x)\,dP_S^X(x)
+\qquad\text{for every measurable }A\subseteq\mathcal X .
+\]
+Then
+\[
+\int w(X)F(O)\,dP_S(O)=\int w(x)d(x)\,dP_S^X(x).
+\]
+Indeed the hypothesis says exactly that \(d(X)\) is a version of \(\mathbb E_{P_S}[F\mid X]\); since \(w(X)\) is a measurable function of \(X\) alone and both \(w(X)F(O)\) and \(w\,d\) are integrable under the two stated laws, \(w(X)\) may be pulled out of that conditional expectation, and the tower property gives the display. % lean: pullout
+
+\emph{Step 10 (first-stage moments and the bad-slope event).}  The representation identities of \cref{obj:prop:compact-causal-range} are the hypothesis of Step 9 with \(F=H(O)D\), \(d=\Delta_D\), and with \(F=H(O)Y\), \(d=\Delta_Y\).  Hence
+\[
+\int w(X)H(O)D\,dP_S=\mathbb E_{P_S^X}\!\left[w(X)\Delta_D(X)\right]=\mu_n,
+\qquad
+\int w(X)H(O)Y\,dP_S=\mathbb E_{P_S^X}\!\left[w(X)\Delta_Y(X)\right]=\mu_{Y,n}.
+\]
+Instrument overlap, \cref{obj:ass:instrument-overlap}, gives \(|H(O)|\le1/\varepsilon\) \(P_S\)-almost surely, and \(D\in\{0,1\}\), so
+\[
+\operatorname{Var}_{P_S}\!\left(w(X)H(O)D\right)
+\le
+\int w(X)^2H(O)^2D^2\,dP_S
+\le
+\frac1{\varepsilon^2}\int w(X)^2\,dP_S
+=
+\frac{\kappa_n}{\varepsilon^2}.
+\]
+Since \(\widehat B_n\) is the average of \(n\) independent copies of \(w(X)H(O)D\),
+\[
+\mathbb E_P\!\left[\widehat B_n\right]=\mu_n,
+\qquad
+\operatorname{Var}_P\!\left(\widehat B_n\right)\le\frac{\kappa_n}{\varepsilon^2 n},
+\]
+and Chebyshev's inequality at the deviation \(\mu_n/2\) gives
+\[
+P\!\left(\frac{\mu_n}{2}<\left|\widehat B_n-\mu_n\right|\right)
+\le
+\frac{\kappa_n/(\varepsilon^2n)}{(\mu_n/2)^2}
+=
 \frac{4}{\varepsilon^2 t_n}.
 \]
-The generic affine-inversion length bound then gives the pointwise inequality
+% lean: scoreReceiptMean_bad_probability, iid_empiricalAverage_mean_variance, transportedFirstStage_eq_weighted_deltaD
+
+\emph{Step 11 (pointwise expected length).}  Write \(r=L\sqrt{\widehat\kappa_n/n}\), so that \(C_n=\{\vartheta\in\Theta:|\widehat A_n-\vartheta\widehat B_n|\le r\}\).  When \(\widehat B_n\neq0\) this set is the intersection of \(\Theta\) with the interval of centre \(\widehat A_n/\widehat B_n\) and length \(2r/|\widehat B_n|\); and \(\lambda(C_n)\le\lambda(\Theta)=2\) always.  Hence
+\[
+\lambda(C_n)\le\min\left\{2,\ \frac{2r}{|\widehat B_n|}\right\}.
+\]
+On the event \(\{|\widehat B_n-\mu_n|\le\mu_n/2\}\) we have \(|\widehat B_n|\ge\mu_n/2\) and therefore \(\lambda(C_n)\le 4L\sqrt{\widehat\kappa_n/n}/\mu_n\); on its complement we use \(\lambda(C_n)\le2\).  Since \(\widehat\kappa_n\ge0\) with \(\mathbb E_P[\widehat\kappa_n]=\kappa_n\), concavity of the square root gives \(\mathbb E_P[\sqrt{\widehat\kappa_n}]\le\sqrt{\kappa_n}\), and combining with the tail bound of Step 10,
 \[
 \mathbb E_P[\lambda(C_n)]
 \le
-\max\left\{2,\,4L+\frac{8}{\varepsilon^2}\right\}
+\frac{4L}{\mu_n}\sqrt{\frac{\kappa_n}{n}}+2\cdot\frac{4}{\varepsilon^2t_n}
+=
+4L\,t_n^{-1/2}+\frac{8}{\varepsilon^2t_n},
+\]
+using \(\mu_n^{-1}\sqrt{\kappa_n/n}=t_n^{-1/2}\).  If \(t_n\le1\) then \(\min\{1,t_n^{-1/2}\}=1\) and \(\mathbb E_P[\lambda(C_n)]\le2\) already suffices; if \(t_n>1\) then \(t_n^{-1}\le t_n^{-1/2}=\min\{1,t_n^{-1/2}\}\).  In both cases
+\[
+\mathbb E_P[\lambda(C_n)]
+\le
+\max\left\{2,\ 4L+\frac{8}{\varepsilon^2}\right\}
 \min\{1,t_n^{-1/2}\}.
 \]
-Changing finitely many initial indices leaves the limiting expected-length bound unchanged.
+At \(n=0\) the reported set is empty, so its expected length vanishes; moreover the restriction \(t_n\ge t_0>0\) forces \(n\ge1\), so the index \(n=0\) never enters the strength-restricted supremum. % lean: scoreInversion_expectedLength_frontier_le, affineInversionSet_length_le, inversionHandle_eq_affineInversionSet
 
-8. Define
+\emph{Step 12 (the coverage deficit sequence).}  Define
 \[
 \delta_n=
 \begin{cases}
@@ -1240,125 +1596,227 @@ Changing finitely many initial indices leaves the limiting expected-length bound
 16k_n^2/n, & n>0 .
 \end{cases}
 \]
-Since \(k_n/\sqrt n\to0\), we have \(\delta_n\to0\).
+For \(n>0\), \(\delta_n=16(k_n/\sqrt n)^2\), so \(k_n/\sqrt n\to0\) gives \(\delta_n\to0\). % lean: fixed_geometry_frontier
 
-9. The same fixed row \(n>0\) also gives the coverage bound.  For the true \(\theta_T\), the transported residual score has mean zero and variance at most \(4\kappa_n/\varepsilon^2\).  The empirical Kish statistic has mean \(\kappa_n\), and the envelope \(0\le w\le2k_n\) gives
+\emph{Step 13 (rowwise coverage).}  Fix \(n\ge1\) and \(P\in\mathcal P_n(\mathfrak g)\), and set
 \[
-P(\widehat\kappa_n<\kappa_n/2)\le \frac{16k_n^2}{n\kappa_n}
-\le \delta_n .
+\psi(O)=w(X)H(O)\left\{Y-\theta_T D\right\},
+\qquad
+S_n=\widehat A_n-\theta_T\widehat B_n=\frac1n\sum_{i=1}^n \psi(O_i^S).
 \]
-With
+By the two moment identities of Step 10 and \(\mu_{Y,n}/\mu_n=\theta_T\) from Step 8,
+\[
+\int \psi\,dP_S=\mu_{Y,n}-\theta_T\mu_n=0 .
+\]
+Overlap gives \(|H(O)|\le1/\varepsilon\), while \(Y\in[0,1]\), \(D\in\{0,1\}\), and \(\theta_T\in\Theta\) give \(|Y-\theta_TD|\le2\); hence \(\psi^2\le 4w(X)^2/\varepsilon^2\) pointwise, so
+\[
+\operatorname{Var}_{P_S}(\psi)\le\int \psi^2\,dP_S\le\frac{4\kappa_n}{\varepsilon^2},
+\qquad
+\operatorname{Var}_P(S_n)\le\frac{4\kappa_n}{\varepsilon^2 n},
+\qquad
+\mathbb E_P[S_n]=0 .
+\]
+For the dispersion statistic, the weight envelope \(0\le w\le 2k_n\) of \cref{obj:ass:weight-envelope} gives the pointwise fourth-moment bound \(w^4\le 4k_n^2w^2\), so
+\[
+\mathbb E_P\!\left[\widehat\kappa_n\right]=\kappa_n,
+\qquad
+\operatorname{Var}_P\!\left(\widehat\kappa_n\right)\le\frac{4k_n^2\kappa_n}{n},
+\]
+and Chebyshev's inequality at the deviation \(\kappa_n/2\) yields
+\[
+P\!\left(\widehat\kappa_n<\frac{\kappa_n}{2}\right)
+\le
+\frac{4k_n^2\kappa_n/n}{(\kappa_n/2)^2}
+=
+\frac{16k_n^2}{n\kappa_n}
+\le
+\frac{16k_n^2}{n}
+=\delta_n,
+\]
+the last step by \(\kappa_n\ge1\) from Step 8. % lean: empiricalKish_mean, empiricalKish_variance_le, empiricalKish_lower_tail_le, weight_fourth_le_envelope
+Next put
 \[
 a=L\sqrt{\frac{\kappa_n}{2n}},
+\qquad\text{so that}\qquad
+a^2=\frac{L^2\kappa_n}{2n}=\frac{4\kappa_n}{\alpha\varepsilon^2 n}
+\quad\text{since }L^2=\frac{8}{\alpha\varepsilon^2},
 \]
-the identity \(L^2=8/(\alpha\varepsilon^2)\) and Chebyshev's inequality give
+and Chebyshev's inequality applied to the mean-zero statistic \(S_n\) gives
 \[
-P\!\left(
-\left|\widehat A_n-\theta_T\widehat B_n\right|>a
-\right)\le \alpha .
+P\left(a<\left|\widehat A_n-\theta_T\widehat B_n\right|\right)
+\le
+\frac{4\kappa_n/(\varepsilon^2n)}{a^2}
+=\alpha .
 \]
-On the complement of these two bad events,
+% lean: oracleAffineScore_mean_zero, oracleAffineScore_sq_le, probability_abs_sub_mean_gt_le
+On the complement of the two bad events \(\{\widehat\kappa_n<\kappa_n/2\}\) and \(\{a<|S_n|\}\) we have \(\widehat\kappa_n\ge\kappa_n/2\), hence \(\sqrt{\kappa_n/(2n)}\le\sqrt{\widehat\kappa_n/n}\), and therefore
 \[
 \left|\widehat A_n-\theta_T\widehat B_n\right|
 \le
-L\sqrt{\widehat\kappa_n/n},
+a
+=
+L\sqrt{\frac{\kappa_n}{2n}}
+\le
+L\sqrt{\frac{\widehat\kappa_n}{n}},
 \]
-so \(\theta_T\in C_n\).  Hence, for every \(P\in\mathcal P_n(\mathfrak g)\),
+so \(\theta_T\in C_n\) because also \(\theta_T\in\Theta\).  Both bad events are events of the source sample, and the two-sample law is the product of the source and target sampling laws, so the union bound gives, for every \(P\in\mathcal P_n(\mathfrak g)\),
 \[
 1-\alpha-\delta_n
 \le
 P\{\theta_T(P)\in C_n\}.
 \]
-Changing the value assigned at \(n=0\) leaves the limiting coverage statement unchanged.
+At \(n=0\) the left-hand side is \(-\alpha<0\), so the display holds there as well.
 
-10. The coverage values lie in \([0,1]\), the slice is nonempty for all sufficiently large \(n\), and \(\delta_n\to0\).  The preceding coverage inequality therefore implies
+\emph{Step 14 (honesty).}  Coverage values lie in \([0,1]\), the slice is nonempty for all sufficiently large \(n\) by Step 0, and \(\delta_n\to0\) by Step 12.  Taking the rowwise infimum of Step 13 and then the liminf,
 \[
-(C_n)\in\mathfrak C^{\mathrm{or}}(\mathfrak g)
+1-\alpha
+\le
+\liminf_{n\to\infty}\ \inf_{P\in\mathcal P_n(\mathfrak g)}P\{\theta_T(P)\in C_n\},
 \]
-in the sense of \cref{obj:def:fixed-geometry-honesty}.
+which is exactly the requirement of \cref{obj:def:fixed-geometry-honesty}, so \((C_n)\in\mathfrak C^{\mathrm{or}}(\mathfrak g)\). % lean: abstractClass_coverage_liminf
 
-11. Let
+\emph{Step 15 (frontier risk and the value).}  Recall the upper-bound constant of the statement,
 \[
-C_0=\max\left\{2,\,4L+\frac{8}{\varepsilon^2}\right\}.
+C_\alpha=\max\left\{2,\ 4L_\alpha+\frac{8}{\varepsilon^2}\right\}.
 \]
-The pointwise length inequality in Step 7 and the strength restriction \(t_n\ge t_0\) imply, row by row and then after taking the limsup frontier risk in \cref{obj:def:frontier-risk},
+The map \(t\mapsto\min\{1,t^{-1/2}\}\) is nonincreasing on \((0,\infty)\), so \(t_n\ge t_0\) gives \(\min\{1,t_n^{-1/2}\}\le\min\{1,t_0^{-1/2}\}\); combined with Step 11, for every \(n\) and every \(P\in\mathcal P_n(\mathfrak g)\) with \(t_n(P)\ge t_0\),
 \[
+\mathbb E_P[\lambda(C_n)]\le C_\alpha\min\{1,t_0^{-1/2}\}.
+\]
+Taking the supremum over such \(P\) and then the limsup in \(n\),
+\[
+R_{\mathfrak g}((C_n),t_0)\le C_\alpha\min\{1,t_0^{-1/2}\}.
+\]
+% lean: abstractClassFrontierRisk_le, min_one_inverseSqrt_anti
+Expected lengths are nonnegative, so \(R_{\mathfrak g}((D_n),t_0)\ge0\) for every \((D_n)\in\mathfrak C^{\mathrm{or}}(\mathfrak g)\) and the infimum in \cref{obj:def:fixed-geometry-value} is over a set bounded below; since \((C_n)\) is admissible for that infimum by Step 14,
+\[
+V_{\mathfrak g}^\star(t_0)
+\le
 R_{\mathfrak g}((C_n),t_0)
 \le
-C_0\min\{1,t_0^{-1/2}\}.
+C_\alpha\min\{1,t_0^{-1/2}\}.
 \]
-Since \((C_n)\) is admissible for the infimum in \cref{obj:def:fixed-geometry-value}, and the risk functional is nonnegative by compactness of \(\Theta\), this gives
-\[
-V_{\mathfrak g}^{\star}(t_0)
-\le
-C_0\min\{1,t_0^{-1/2}\}.
-\]
-Substituting \(L=L_\alpha\) makes \(C_0=C_\alpha\).
+% lean: fixedGeometryValue, fixedGeometryValueTotal
 
-Combining Steps 5 and 11 gives the asserted two-sided bound.  The constants used in both arguments depend only on \(\alpha\) and \(\varepsilon\), so they are uniform over all admissible deterministic geometries \(\mathfrak g\).
+Combining Steps 6 and 15 gives
+\[
+c_\alpha\min\{1,t_0^{-1/2}\}
+\le
+V_{\mathfrak g}^\star(t_0)
+\le
+C_\alpha\min\{1,t_0^{-1/2}\},
+\]
+and \(t_0>0\) was arbitrary.  The constants \(c_\alpha=3(1-\alpha)^2/16\) and \(C_\alpha=\max\{2,4L_\alpha+8\varepsilon^{-2}\}\) were built only from \(\alpha\) and \(\varepsilon\), never from \(\mathfrak g\), so they are uniform over all admissible deterministic geometries. % lean: fixed_geometry_frontier
 \end{proof}
 
 \begin{proof}[Proof of \cref{obj:prop:no-shift-reduction}]
-Fix the admissible geometry array \(\mathfrak g\). We prove the three asserted conclusions in the order in which they appear.
+Fix the admissible geometry array \(\mathfrak g=(P_{S,n}^X,w_n,e_n)_{n\ge1}\). We prove the three asserted conclusions in the order in which they appear.
 
 \begin{enumerate}
-\item For each \(n\), the unit-weight hypothesis gives
+\item Fix \(n\).  By \cref{obj:def:admissible-geometry-class} the geometry second moment at index \(n\) is
+\[
+\kappa_n
+=
+\int w_n(x)^2\,dP_{S,n}^X(x),
+\]
+and \(P_{S,n}^X\) is a probability law on \(\mathcal X\).
+% lean: geometryKish, AdmissibleGeometry
+The unit-weight hypothesis states \(w_n(x)=1\) for \(P_{S,n}^X\)-almost every \(x\), hence also
 \[
 w_n(x)^2=1
 \qquad
-P_{S,n}^X\text{-a.s.}
+P_{S,n}^X\text{-a.s.},
 \]
-Hence, by the definition of the geometry second moment and because \(P_{S,n}^X\) is a probability law under \cref{obj:def:admissible-geometry-class},
+and two functions that agree almost everywhere have the same integral, so
 \[
 \kappa_n
 =
 \int w_n(x)^2\,dP_{S,n}^X(x)
 =
-\int 1\,dP_{S,n}^X
+\int 1\,dP_{S,n}^X(x)
 =
 1 .
 \]
-For the equality of covariate laws, let \(A\subseteq\mathcal X\) be measurable. The change-of-measure clause in \cref{obj:def:admissible-geometry-class} gives
+% lean: no_shift_reduction (hGeom, first component), geometryKish
+
+For the equality of covariate laws, let \(A\subseteq\mathcal X\) be measurable.  The change-of-measure clause of \cref{obj:def:admissible-geometry-class} states
 \[
 P_{T,n}(A)
 =
 \int_A w_n(x)\,dP_{S,n}^X(x).
 \]
-The same almost-sure equality \(w_n=1\) remains valid after restricting \(P_{S,n}^X\) to \(A\), so
+A \(P_{S,n}^X\)-null set is also null for the restriction of \(P_{S,n}^X\) to \(A\), so the almost-sure identity \(w_n=1\) persists after that restriction, and therefore
 \[
 P_{T,n}(A)
 =
-\int_A 1\,dP_{S,n}^X
+\int_A 1\,dP_{S,n}^X(x)
 =
 P_{S,n}^X(A).
 \]
-Since this holds for every measurable \(A\), the measures agree:
+Two measures that assign the same value to every measurable set are equal, so
 \[
 P_{T,n}=P_{S,n}^X .
 \]
+% lean: no_shift_reduction (hGeom, second component), AdmissibleGeometry (change-of-measure clause)
 
-
-\item Let \(P\in\mathcal P_n(\mathfrak g)\). By \cref{obj:def:fixed-geometry-slice}, its source covariate marginal is \(P_{S,n}^X\) from \(\mathfrak g\), and its Radon--Nikodym transport weight agrees \(P_{S,n}^X\)-almost surely with the geometry weight \(w_n\). Therefore the law-induced Kish dispersion of \(P\) equals the geometry second moment:
+\item Let \(P\in\mathcal P_n(\mathfrak g)\).  Write
 \[
-\int \{w_n^P(x)\}^2\,dP_{S,n}^X(x)
+w_n^P=\frac{dP_{T,n}}{dP_{S,n}^X}
+\]
+for the nonnegative Radon--Nikodym transport weight induced by the laws of \(P\) itself, and let
+\[
+\kappa_n^P
+=
+\int \bigl\{w_n^P(x)\bigr\}^2\,dP_{S,n}^X(x),
+\qquad
+\mu_n
+=
+\int w_n^P(x)\,\Delta_D(x)\,dP_{S,n}^X(x)
+\]
+be the associated dispersion and transported first stage of \cref{obj:synth_6}, so that the effective strength of \(P\) at index \(n\) is
+\[
+t_n
+=
+\frac{n\mu_n^2}{\kappa_n^P}.
+\]
+% lean: transportWeight, kishDispersion, transportedFirstStage, effectiveStrength
+
+By \cref{obj:def:fixed-geometry-slice}, membership \(P\in\mathcal P_n(\mathfrak g)\) means that \(P\in\mathcal P_n\) and that the index-\(n\) triple of \(P\) is the index-\(n\) component of \(\mathfrak g\); in particular the source covariate marginal of \(P\) is \(P_{S,n}^X\) and
+\[
+w_n^P(x)=w_n(x)
+\qquad
+P_{S,n}^X\text{-a.s.}
+\]
+(the almost-sure form is the correct one, since a density ratio is pinned only up to \(P_{S,n}^X\)-null sets).  Integrating the squares of two functions that agree \(P_{S,n}^X\)-almost everywhere against the common law \(P_{S,n}^X\) gives
+\[
+\kappa_n^P
+=
+\int \bigl\{w_n^P(x)\bigr\}^2\,dP_{S,n}^X(x)
 =
 \int w_n(x)^2\,dP_{S,n}^X(x)
 =
 \kappa_n .
 \]
-By the first step, this common value is \(1\). Substituting this into the definition of effective strength in \cref{obj:def:frontier-risk} yields
+% lean: no_shift_reduction (hkish), fixedGeometrySlice, kishDispersion, geometryKish
+
+By the first step \(\kappa_n=1\), so \(\kappa_n^P=1\), and substituting this into the display for \(t_n\) yields
 \[
 t_n
 =
-\frac{n\mu_n^2}{\kappa_n}
+\frac{n\mu_n^2}{\kappa_n^P}
 =
 \frac{n\mu_n^2}{1}
 =
 n\mu_n^2 .
 \]
+% lean: no_shift_reduction (second conjunct), effectiveStrength
 
+\item Fix \(t_0>0\).  We verify the hypotheses of \cref{obj:thm:fixed-geometry-frontier} for the same \(\mathfrak g\), \(c\), \(\varepsilon\), \(\alpha\), \(k_n\), and \(N_n\).  Its target-sample-ratio hypothesis is \(c>0\) with \(N_n/n\to c\); its envelope-scale hypothesis is \(k_n>0\) for every \(n\), \(k_n\to\infty\), and \(k_n/\sqrt n\to0\); its overlap and noncoverage hypotheses are \(0<\varepsilon<1/2\) and \(0<\alpha<1\); and its geometry hypothesis is admissibility of \(\mathfrak g\) at scale \(k_n\) and overlap constant \(\varepsilon\).  These are exactly the standing hypotheses of the present statement.
 
-\item Fix \(t_0>0\). The hypotheses on \(c\), \(N_n/n\), \(\varepsilon\), \(\alpha\), \(k_n\), and the admissibility of \(\mathfrak g\) are exactly the structural hypotheses required by \cref{obj:thm:fixed-geometry-frontier}. For every \(P\in\mathcal P_n(\mathfrak g)\), the defining membership condition in \cref{obj:def:fixed-geometry-slice} contains the transported-IV model assumptions needed there: the two-sample array condition, instrument overlap, the weight envelope, the weight second-moment condition, and the degrading-array condition. Applying \cref{obj:thm:fixed-geometry-frontier} therefore gives, with
+Its remaining hypothesis is the fixed-geometry slice condition: for every \(n\) and every transported array whose index-\(n\) law lies in \(\mathcal P_n(\mathfrak g)\), the conditions of \cref{obj:ass:two-sample-array,obj:ass:instrument-overlap,obj:ass:weight-envelope,obj:ass:weight-second-moment,obj:ass:degrading-array} hold.  This holds because \cref{obj:def:fixed-geometry-slice} defines \(\mathcal P_n(\mathfrak g)\) as a subset of \(\mathcal P_n\), and each of those five conditions is one of the requirements listed in \cref{obj:def:model-class}; membership in \(\mathcal P_n\) therefore supplies all five directly.  (The unit-weight hypothesis is not needed here: this part of the conclusion is the fixed-geometry frontier for \(\mathfrak g\) verbatim.)
+% lean: no_shift_reduction (third conjunct), fixedGeometrySlice, TransportedIVClass
+
+Applying \cref{obj:thm:fixed-geometry-frontier} at this \(t_0\) therefore gives, with
 \[
 L_\alpha=\sqrt{\frac{8}{\alpha\varepsilon^2}},
 \qquad
@@ -1366,143 +1824,397 @@ c_\alpha=\frac{3(1-\alpha)^2}{16},
 \qquad
 C_\alpha=\max\left\{2,\;4L_\alpha+\frac{8}{\varepsilon^2}\right\},
 \]
-the bounds
+the two-sided bound on the fixed-geometry minimax value of \cref{obj:def:fixed-geometry-value},
 \[
 c_\alpha \min\{1,t_0^{-1/2}\}
 \le
 V_{\mathfrak g}^\star(t_0)
 \le
-C_\alpha \min\{1,t_0^{-1/2}\}.
+C_\alpha \min\{1,t_0^{-1/2}\},
 \]
+which is the asserted conclusion since \(t_0>0\) was arbitrary.
+% lean: fixed_geometry_frontier, fixedGeometryValue
 
 \end{enumerate}
 \end{proof}
 
 \begin{proof}[Proof of \cref{obj:thm:oracle-converse}]
 \begin{enumerate}
-\item Set
+\item \emph{The constants.}  Set
 \[
 c_0=\frac{3(1-\alpha)^2}{16},
 \qquad
 t_c=1 .
 \]
-Since \(0<\alpha<1\), \(1-\alpha>0\), and hence \(c_0>0\); also \(t_c>0\).  Fix an arbitrary measurable covariate space, arbitrary arrays \(N_n,k_n\) satisfying the displayed size and cell-scale assumptions, and a threshold \(t_0>0\).
+Since \(0<\alpha<1\) we have \(1-\alpha>0\), hence \(c_0>0\); and \(t_c=1>0\).  Both numbers are fixed at this point, before any covariate space, any arrays \(N_n,k_n\), any transported law, and any threshold are named.  Fix from here on a measurable covariate space \(\mathcal X\), arrays \(N_n,k_n\) with \(N_n/n\to c\), \(k_n>0\) for every \(n\), \(k_n\to\infty\), and \(k_n/\sqrt n\to0\), and a threshold \(t_0>0\). % lean: oracle_converse
 
-\item Choose the measurable singleton carriers \(x_{n,i}\), \(i\in\{1,\ldots,k_n\}\), supplied by the carrier assumption.  Let
+\item \emph{A uniform finite-cell geometry.}  By the measurable-carrier hypothesis, choose for each \(n\) distinct points \(x_{n,1},\dots,x_{n,k_n}\in\mathcal X\) whose singletons \(\{x_{n,i}\}\) are measurable, and set
 \[
-\mu_n=\sum_{i=1}^{k_n} k_n^{-1}\delta_{x_{n,i}} .
+\nu_n=\frac1{k_n}\sum_{i=1}^{k_n}\delta_{x_{n,i}} .
 \]
-The positivity of \(k_n\) gives \(k_n k_n^{-1}=1\), so each \(\mu_n\) is a probability measure.  Define the deterministic geometry
+Since \(k_n>0\), \(\nu_n(\mathcal X)=k_n\cdot k_n^{-1}=1\), so \(\nu_n\) is a probability law; because the carriers are distinct,
 \[
-P_{S,n}^X=\mu_n,\qquad P_{T,n}=\mu_n,\qquad w_n\equiv 1,\qquad e_n\equiv \frac12 .
+\nu_n(\{x_{n,i}\})=\frac1{k_n}\ \ (1\le i\le k_n),
+\qquad
+\nu_n\left(\{x_{n,1},\dots,x_{n,k_n}\}\right)=1 .
 \]
-The probability, overlap, envelope, second-moment, and domination requirements in \cref{obj:def:admissible-geometry-class} follow directly from these definitions and from \(0<\varepsilon<1/2\), with the change-of-measure identity reducing to integration of the constant weight \(1\).
+Define the deterministic array \(\mathfrak g=(P_S^X,w,e)_{n\ge1}\) by
+\[
+P_{S,n}^X=\nu_n,
+\qquad
+P_{T,n}=\nu_n,
+\qquad
+w_n(x)=1,
+\qquad
+e_n(x)=\frac12
+\qquad(x\in\mathcal X).
+\] % lean: oracle_converse
 
-\item The fixed-geometry slice associated with this \(\mathfrak g\) is contained in the finite-cell class \(\mathcal N_n\) of \cref{obj:def:finite-cell-class} at each \(n\).  Indeed, the source covariate law is the uniform measure on the displayed \(k_n\) carriers, the carrier cells are measurable singletons, each cell has source mass \(1/k_n\), the target law agrees with the source law, and the transport weight is \(1\) almost surely.
+\item \emph{\(\mathfrak g\in\mathcal G\).}  We verify each clause of \cref{obj:def:admissible-geometry-class}.  Source and target laws are the probability law \(\nu_n\).  Overlap holds because \(0<\varepsilon<1/2\):
+\[
+\varepsilon\le\frac12=e_n(x)\le1-\varepsilon .
+\]
+The envelope holds because \(k_n\) is a positive integer, so \(k_n\ge1\) and
+\[
+0\le w_n(x)=1\le 2k_n .
+\]
+Normalization and the second-moment bound follow from \(\nu_n(\mathcal X)=1\):
+\[
+\mathbb E_{P_{S,n}^X}\!\left[w_n(X)\right]=\int 1\,d\nu_n=1,
+\qquad
+\kappa_n=\mathbb E_{P_{S,n}^X}\!\left[w_n(X)^2\right]=\int 1\,d\nu_n=1\le k_n .
+\]
+Finally, the change-of-measure clause reduces to integrating the constant weight: for every measurable \(A\subseteq\mathcal X\),
+\[
+\mathbb E_{P_{S,n}^X}\!\left[w_n(X)\mathbf 1\{X\in A\}\right]
+=\int_A 1\,d\nu_n
+=\nu_n(A)
+=P_{T,n}(A).
+\] % lean: oracle_converse
 
-\item Consider the oracle procedure \(D^{\mathrm{full}}\) that always returns the whole compact parameter space \(\Theta=[-1,1]\).  Its graph is measurable, its values are subsets of \(\Theta\), and it is invariant to almost-sure changes of the supplied weight.  For every transported-IV row \(P\), \cref{obj:prop:compact-causal-range} places \(\theta_T(P,n)\) in \(\Theta\), so the coverage of \(D^{\mathrm{full}}\) is exactly one.  Taking the infimum over the nonempty transported class preserves the value one, and therefore \(D^{\mathrm{full}}\) is oracle-honest in the sense of \cref{obj:def:oracle-honesty}.  Thus the class over which \(V^\star(t_0)\) and \(V_{\mathcal N}^\star(t_0)\) take their infima is nonempty.
+\item \emph{The fixed-geometry slice lies in the finite-cell submodel:} for every \(n\),
+\[
+\mathcal P_n(\mathfrak g)\subseteq\mathcal N_n .
+\]
+Indeed, let \(P\in\mathcal P_n(\mathfrak g)\).  By \cref{obj:def:fixed-geometry-slice} we have \(P\in\mathcal P_n\), so by \cref{obj:def:finite-cell-class} the only condition left to check is \cref{obj:ass:finite-cell-source}, and it holds with the carriers of the previous step: the source covariate marginal of \(P\) is \(P_{S,n}^X=\nu_n\), a probability law carried by the \(k_n\) distinct measurable singletons \(\{x_{n,i}\}\) with
+\[
+P_{S,n}^X(\{x_{n,i}\})=\frac1{k_n},
+\qquad
+P_{S,n}^X\left(\{x_{n,1},\dots,x_{n,k_n}\}\right)=1,
+\]
+and the propensity of \(P\) is the geometry propensity, so that
+\[
+e(X)=\frac12
+\qquad P_S\text{-almost surely.}
+\] % lean: oracle_converse
 
-\item On the unit-weight geometry just constructed, the weight is \(1\) almost surely for every \(n\).  Applying \cref{obj:prop:no-shift-reduction} yields, for every \(t_0>0\),
+\item \emph{The oracle honest class is nonempty.}  Let \(D^{\mathrm{full}}\) be the procedure returning the whole parameter space at every input,
+\[
+D_n^{\mathrm{full}}\!\left((O_i^S)_{i=1}^n,(X_j^T)_{j=1}^{N_n},w,e\right)=\Theta ,
+\]
+which satisfies the structural requirements in \cref{obj:def:oracle-honesty}: its values are subsets of \(\Theta\); for each fixed measurable \((w,e)\) its sample-by-parameter graph is the preimage of the closed interval \(\Theta=[-1,1]\) under \(\left(((O_i^S)_i,(X_j^T)_j),\vartheta\right)\mapsto\vartheta\), hence measurable; and its output does not depend on \(w\), so two almost surely equal weight versions give the same set.  For every \(n\) and every \(P\in\mathcal P_n\), \cref{obj:prop:compact-causal-range} gives \(\theta_T\in\Theta\), so the covering event has full probability:
+\[
+P\!\left(\theta_T\in D_n^{\mathrm{full}}\right)=1 .
+\]
+Moreover \(\mathcal P_n\neq\varnothing\) for every \(n\), because the measurable carriers \(x_{n,1},\dots,x_{n,k_n}\) together with the size and cell-scale hypotheses carry a uniform finite-cell transported law, which lies in \(\mathcal N_n\subseteq\mathcal P_n\); hence the first branch of the coverage functional in \cref{obj:def:oracle-honesty} applies and
+\[
+\inf_{P\in\mathcal P_n}P\!\left(\theta_T\in D_n^{\mathrm{full}}\right)=1
+\quad\text{for every }n,
+\qquad
+\liminf_{n\to\infty}\ \inf_{P\in\mathcal P_n}P\!\left(\theta_T\in D_n^{\mathrm{full}}\right)=1\ge1-\alpha ,
+\]
+the last inequality because \(\alpha>0\).  Thus \(D^{\mathrm{full}}\in\mathfrak C^{\mathrm{or}}\), and the infima defining \(V^\star(t_0)\) and \(V_{\mathcal N}^\star(t_0)\) in \cref{obj:def:oracle-value,obj:def:finite-cell-oracle-value} range over a nonempty class. % lean: finiteCellClass_inhabited, transportedIVClass_inhabited, scoreRiskClass_compact_causal_range, coverageInfOrOne_of_nonempty, oracleCoverageClassInf_le_canonical
+
+\item \emph{The fixed-geometry lower bound.}  Under \(\mathfrak g\) the transport weight is identically one, so in particular \(w_n(X)=1\) holds \(P_{S,n}^X\)-almost surely for every \(n\), and \cref{obj:prop:no-shift-reduction} applies to \(\mathfrak g\).  Its lower-bound constant is \(c_\alpha=3(1-\alpha)^2/16=c_0\), so for every \(t_0>0\),
 \[
 c_0\min\{1,t_0^{-1/2}\}
 \le
 V_{\mathfrak g}^\star(t_0),
 \]
-where \(V_{\mathfrak g}^\star(t_0)\) is the fixed-geometry value from \cref{obj:def:fixed-geometry-value}.
+with \(V_{\mathfrak g}^\star(t_0)\) the fixed-geometry value of \cref{obj:def:fixed-geometry-value}. % lean: no_shift_reduction
 
-\item Let \(C\) be any oracle-honest procedure.  Restricting \(C\) to the fixed geometry gives a fixed-geometry honest procedure, and the global frontier risk from \cref{obj:def:frontier-risk} dominates the corresponding fixed-geometry risk.  Hence
+\item \emph{First conclusion.}  Let \((C_n)\in\mathfrak C^{\mathrm{or}}\) be arbitrary.  Evaluated at the fixed oracle inputs \((w_n,e_n)\) of \(\mathfrak g\), the sequence \((C_n)\) is itself a member of \(\mathfrak C^{\mathrm{or}}(\mathfrak g)\), and its fixed-geometry risk does not exceed its global risk:
 \[
-V_{\mathfrak g}^\star(t_0)\le R((C_n),t_0).
+V_{\mathfrak g}^\star(t_0)
+\le
+\limsup_{n\to\infty}\ \sup_{P\in\mathcal P_n(\mathfrak g):\,t_n\ge t_0}\mathbb E_P[\lambda(C_n)]
+\le
+R((C_n),t_0).
 \]
-Taking the infimum over all oracle-honest \(C\) in \cref{obj:def:oracle-value} gives
+The first inequality is the definition of \(V_{\mathfrak g}^\star(t_0)\) once slice honesty is known, and slice honesty holds because on each row \(P\in\mathcal P_n(\mathfrak g)\) the geometry's declared weight \(w_n\) is a version of \(dP_{T,n}/dP_{S,n}^X\) under \(P\), so by the weight-invariance requirement of \cref{obj:def:oracle-honesty} the fixed-geometry evaluation of \(C_n\) coincides almost surely with its evaluation at \(P\)'s canonical density ratio, whence the two coverage probabilities and the two expected lengths agree row by row.  The second inequality holds because \(\mathcal P_n(\mathfrak g)\subseteq\mathcal P_n\), so the strength-restricted supremum in \cref{obj:def:frontier-risk} is over a larger family at every \(n\).  Combining with the previous step and taking the infimum over \((C_n)\in\mathfrak C^{\mathrm{or}}\) in \cref{obj:def:oracle-value},
 \[
 c_0\min\{1,t_0^{-1/2}\}\le V^\star(t_0).
-\]
+\] % lean: OracleHonest.fixedGeometry, fixedGeometryValue_le_frontierRisk, oracle_converse
 
-\item For the finite-cell value, first note the two boundedness facts used in the limsup comparison.  The length criterion is always between \(0\) and \(2\), since it is Lebesgue length after intersecting with \(\Theta=[-1,1]\).  Therefore every fixed-geometry risk term is nonnegative: if the strength-indexed slice is empty the supremum is zero, and otherwise the expected length of any selected law is nonnegative.  The same length bound gives an eventual upper bound by \(2\) for the relevant fixed and finite-cell risk terms.
-
-\item Fix an arbitrary oracle-honest procedure \(C\).  Build a fixed-geometry oracle procedure \(D\) by feeding \(C\) the observed sample together with the canonical Radon--Nikodym weight \(dP_{T,n}/dP_{S,n}^X\) of \(\mathfrak g\) and the fixed propensity \(e_n\).  On every row \(P\in\mathcal P_n(\mathfrak g)\), the source law, target law, weight, and propensity agree with those inputs, so \(D\)'s confidence set, coverage probability, and expected length agree with those of \(C\) on that row.  For all sufficiently large \(n\), the fixed-geometry strength slice is nonempty, which supplies the required coverage comparison; the coverage probabilities lie between \(0\) and \(1\), so the liminf comparison transfers oracle honesty of \(C\) to fixed-geometry honesty of \(D\).
-
-\item For all sufficiently large \(n\), the fixed-geometry strength slice has admissible laws.  On such rows,
+\item \emph{Two length bounds.}  For every \(A\subseteq\mathbb R\) the length criterion of \cref{obj:def:frontier-risk} is Lebesgue measure after intersecting with \(\Theta=[-1,1]\), so
 \[
-\sup_{P\in\mathcal P_n(\mathfrak g):\,t_n\ge t_0}
-\mathbb E_P\lambda(D_n)
-\le
-\sup_{P\in\mathcal N_n:\,t_n\ge t_0}
-\mathbb E_P\lambda(C_n),
+0\le\lambda(A)\le\lambda(\Theta)=2 .
 \]
-because \(\mathcal P_n(\mathfrak g)\subseteq\mathcal N_n\) and the expected lengths of \(D\) and \(C\) agree on the slice.  The nonnegativity and boundedness from the previous step allow the limsup comparison, hence the fixed-geometry risk of \(D\) is bounded by the finite-cell oracle risk of \(C\).  Taking the infimum over oracle-honest \(C\), and using the fixed-geometry lower bound, gives
+Consequently, for any oracle procedure \((E_n)\) and any \(n\), each expected length \(\mathbb E_P[\lambda(E_n)]\) lies in \([0,2]\), and therefore, with the convention that a supremum over an empty family is zero,
+\[
+0\le\sup_{P\in\mathcal P_n(\mathfrak g):\,t_n\ge t_0}\mathbb E_P[\lambda(E_n)],
+\qquad
+\sup_{P\in\mathcal N_n:\,t_n\ge t_0}\mathbb E_P[\lambda(E_n)]\le 2 .
+\]
+Taking limits superior, the fixed-geometry risk of every oracle procedure is nonnegative, so the family of fixed-geometry risks over \(\mathfrak C^{\mathrm{or}}(\mathfrak g)\) is bounded below and \(V_{\mathfrak g}^\star(t_0)\) is the infimum of that family; and the finite-cell risk rows are bounded above by \(2\).  These two facts license the comparison of limits superior used below. % lean: finiteCellOracleRiskRow_le_two, oracle_converse
+
+\item \emph{A slice procedure attached to a finite-cell oracle.}  Fix \((C_n)\in\mathfrak C^{\mathrm{or}}\).  Write
+\[
+w_n^{\mathfrak g}=\frac{dP_{T,n}}{dP_{S,n}^X}
+\]
+for the canonical nonnegative density-ratio version of the geometry \(\mathfrak g\), which is measurable, and define the oracle procedure \((D_n)\) that discards its own weight and propensity inputs and feeds \((C_n)\) the geometry's canonical inputs:
+\[
+D_n\!\left((O_i^S)_{i=1}^n,(X_j^T)_{j=1}^{N_n},w,e\right)
+=
+C_n\!\left((O_i^S)_{i=1}^n,(X_j^T)_{j=1}^{N_n},w_n^{\mathfrak g},e_n\right).
+\]
+Its values lie in \(\Theta\), its graph is measurable because \(w_n^{\mathfrak g}\) and \(e_n\) are measurable, and it is trivially invariant to the supplied weight.  For every \(n\), every \(P\in\mathcal P_n(\mathfrak g)\), and every realized sample, the fixed-geometry evaluation of \(D_n\) and the evaluation of \(C_n\) at \(P\)'s own oracle inputs are the same set,
+\[
+D_n\!\left((O_i^S)_{i=1}^n,(X_j^T)_{j=1}^{N_n},w_n,e_n\right)
+=
+C_n\!\left((O_i^S)_{i=1}^n,(X_j^T)_{j=1}^{N_n},\tfrac{dP_T}{dP_S^X},e\right),
+\]
+because on the slice the source law, the target law, and the propensity of \(P\) are exactly \(P_{S,n}^X\), \(P_{T,n}\), and \(e_n\), so \(P\)'s canonical density ratio is \(w_n^{\mathfrak g}\).  Hence coverage probabilities and expected lengths agree row by row on the slice:
+\[
+P\!\left(\theta_T\in D_n\right)=P\!\left(\theta_T\in C_n\right),
+\qquad
+\mathbb E_P[\lambda(D_n)]=\mathbb E_P[\lambda(C_n)],
+\qquad P\in\mathcal P_n(\mathfrak g).
+\] % lean: oracle_converse
+
+\item \emph{\((D_n)\in\mathfrak C^{\mathrm{or}}(\mathfrak g)\).}  The least-favorable construction of \cref{obj:def:least-favorable-witness} at the threshold \(t_0\), applied to the admissible geometry \(\mathfrak g\), supplies for all sufficiently large \(n\) a law
+\[
+P\in\mathcal P_n(\mathfrak g)
+\quad\text{with}\quad
+t_n\ge t_0 ,
+\]
+so in particular the slice \(\mathcal P_n(\mathfrak g)\) is eventually nonempty.  For such \(n\) and every \(P\in\mathcal P_n(\mathfrak g)\subseteq\mathcal P_n\), the row identity of the previous step gives \(\inf_{Q\in\mathcal P_n}Q(\theta_T\in C_n)\le P(\theta_T\in C_n)=P(\theta_T\in D_n)\); taking the infimum over the slice,
+\[
+\inf_{Q\in\mathcal P_n}Q\!\left(\theta_T\in C_n\right)
+\le
+\inf_{P\in\mathcal P_n(\mathfrak g)}P\!\left(\theta_T\in D_n\right)
+\qquad\text{for all large }n .
+\]
+Coverage probabilities lie in \([0,1]\), so both sides are bounded sequences and the inequality passes to the limit inferior; combined with the honesty of \((C_n)\),
+\[
+1-\alpha
+\le
+\liminf_{n\to\infty}\ \inf_{Q\in\mathcal P_n}Q\!\left(\theta_T\in C_n\right)
+\le
+\liminf_{n\to\infty}\ \inf_{P\in\mathcal P_n(\mathfrak g)}P\!\left(\theta_T\in D_n\right),
+\]
+which is the honesty requirement of \cref{obj:def:fixed-geometry-honesty}. % lean: fixedGeometrySlice_eventually_inhabited, oracleCoverageClassInf_le_canonical, oracleCoverageClassInf_nonneg, coverageInfOrOne_of_nonempty
+
+\item \emph{Second conclusion.}  For all sufficiently large \(n\) the slice \(\mathcal P_n(\mathfrak g)\) contains a law of strength at least \(t_0\), and by step 4 every such law lies in \(\mathcal N_n\); together with the equality of expected lengths on the slice this gives, for all large \(n\),
+\[
+\sup_{P\in\mathcal P_n(\mathfrak g):\,t_n\ge t_0}\mathbb E_P[\lambda(D_n)]
+\le
+\sup_{P\in\mathcal N_n:\,t_n\ge t_0}\mathbb E_P[\lambda(C_n)] .
+\]
+By the two length bounds of step 8 the left side is nonnegative and the right side is at most \(2\), so the comparison passes to the limits superior:
+\[
+\limsup_{n\to\infty}\ \sup_{P\in\mathcal P_n(\mathfrak g):\,t_n\ge t_0}\mathbb E_P[\lambda(D_n)]
+\le
+\limsup_{n\to\infty}\ \sup_{P\in\mathcal N_n:\,t_n\ge t_0}\mathbb E_P[\lambda(C_n)] .
+\]
+Since \((D_n)\in\mathfrak C^{\mathrm{or}}(\mathfrak g)\), the left side dominates the infimum defining \(V_{\mathfrak g}^\star(t_0)\) in \cref{obj:def:fixed-geometry-value}, so with step 6,
+\[
+c_0\min\{1,t_0^{-1/2}\}
+\le
+V_{\mathfrak g}^\star(t_0)
+\le
+\limsup_{n\to\infty}\ \sup_{P\in\mathcal N_n:\,t_n\ge t_0}\mathbb E_P[\lambda(C_n)] .
+\]
+As \((C_n)\in\mathfrak C^{\mathrm{or}}\) was arbitrary, taking the infimum over \(\mathfrak C^{\mathrm{or}}\) in \cref{obj:def:finite-cell-oracle-value} yields
 \[
 c_0\min\{1,t_0^{-1/2}\}
 \le
 V_{\mathcal N}^\star(t_0).
-\]
+\] % lean: oracleExpectedLength_le_finiteCellOracleRiskRow, finiteCellOracleRiskRow_le_two, oracle_converse
 
-\item Combining the preceding inequalities proves the two displayed lower bounds for every \(t_0>0\).  If \(0<t_0\le t_c=1\), then \(t_0^{-1/2}\ge1\), so
+\item \emph{Third conclusion and uniformity.}  Let \(0<t_0\le t_c=1\).  Since the exponent \(-1/2\) is nonpositive and \(0<t_0\le1\), we get \(t_0^{-1/2}\ge1\) and therefore
 \[
-\min\{1,t_0^{-1/2}\}=1,
+\min\{1,t_0^{-1/2}\}=1 ,
 \]
-and the oracle lower bound yields \(c_0\le V^\star(t_0)\).  The constants \(c_0\) and \(t_c\) were chosen before the covariate space, arrays, transported laws, and effective-strength decomposition; the argument uses a row only through the threshold condition \(t_n=n\mu_n^2/\kappa_n\ge t_0\).  Thus the same constants apply uniformly over all decompositions of \(t_0\) into \(\mu_n\) and \(\kappa_n\).
+so the bound of step 7 reads \(c_0\le V^\star(t_0)\).  Finally, \(c_0\) and \(t_c\) were fixed in step 1, before the covariate space, the arrays \(N_n,k_n\), the transported laws, and the threshold \(t_0\) were chosen, and no step above constrains a row of the model beyond its membership in \(\mathcal P_n\) (or \(\mathcal N_n\)) and the strength condition \(t_n=n\mu_n^2/\kappa_n\ge t_0\).  The same two constants therefore serve uniformly over all decompositions of the effective strength \(t_0\) into a transported first-stage mean \(\mu_n\) and a weight dispersion \(\kappa_n\). % lean: oracle_converse
 \end{enumerate}
 \end{proof}
 
 \begin{proof}[Proof of \cref{obj:thm:oracle-score-inversion-attainment}]
 \begin{enumerate}
 \item \textbf{Construction.}
-Choose an admissible geometry \(\mathfrak g\) supplied by the hypothesis.  For every \(t_0>0\), the fixed-geometry construction supplies admissible comparison laws for all sufficiently large \(n\), and hence the full class \(\mathcal P_n\) is nonempty at those indices.  Set
+Because \(\alpha\in(0,1)\) and \(\varepsilon\in(0,1/2)\), the constant
 \[
-L_\alpha=\left(\frac{8}{\alpha\varepsilon^2}\right)^{1/2},
+L_\alpha=\left(\frac{8}{\alpha\varepsilon^2}\right)^{1/2}
+\]
+is a positive real number, and
+\[
+C_0=\max\left\{2,\ 4L_\alpha+\frac8{\varepsilon^2}\right\}\ge 2>0 .
+\]
+% lean: oracle_score_inversion_attainment
+
+For each \(n\), each source sample \((O_i^S)_{i=1}^n\), each target covariate sample \((X_j^T)_{j=1}^{N_n}\), each measurable nonnegative \(w:\mathcal X\to\mathbb R\) and each measurable \(e:\mathcal X\to\mathbb R\), let \(C_n\) be the score-inversion set of \cref{obj:def:inversion-handle} formed from those inputs,
+\[
+C_n
+=
+\left\{\vartheta\in\Theta:
+\left|\widehat A_n-\vartheta\widehat B_n\right|
+\le L_\alpha\sqrt{\widehat\kappa_n/n}\right\},
 \qquad
-C_0=\max\left\{2,\ 4L_\alpha+\frac8{\varepsilon^2}\right\}.
+\widehat A_n=\frac1n\sum_{i=1}^n w(X_i)H_iY_i,
+\quad
+\widehat B_n=\frac1n\sum_{i=1}^n w(X_i)H_iD_i,
 \]
-Since \(C_0\ge 2\), \(C_0>0\).  Define \(C_n\) by the score-inversion construction in \cref{obj:def:inversion-handle}, using the oracle weight and propensity as inputs.  Thus, for every source sample,
 \[
-C_n=\left\{\theta\in\Theta:
-\left|\widehat A_n-\theta\widehat B_n\right|
-\le L_\alpha\sqrt{\widehat\kappa_n/n}\right\}.
+\widehat\kappa_n=\frac1n\sum_{i=1}^n w(X_i)^2,
+\qquad
+H_i=\frac{Z_i}{e(X_i)}-\frac{1-Z_i}{1-e(X_i)} .
 \]
-The range condition follows from the defining intersection with \(\Theta\).  The graph is measurable because \(\widehat A_n\), \(\widehat B_n\), and \(\widehat\kappa_n\) are measurable functions of the source sample whenever the supplied weight and propensity are measurable.  If two versions of the oracle weight agree almost surely under \(P_S^X\), then the corresponding inversion sets agree almost surely under the two-sample law.
+% lean: inversionHandle
+Only the source sample enters; the target covariate sample is not used.  We check the three requirements that \cref{obj:def:oracle-honesty} imposes on an oracle procedure.
+
+\emph{Range.} \(C_n\subseteq\Theta\), because membership is defined by intersecting the score restriction with \(\Theta\).
+
+\emph{Measurable graph.} For measurable \(w\) and \(e\) the multiplier \(H\) is measurable, hence so are the sample functions \(\widehat A_n\), \(\widehat B_n\), \(\widehat\kappa_n\); the sample-by-parameter graph is
+\[
+\left\{\left(\left((O_i^S)_{i=1}^n,(X_j^T)_{j=1}^{N_n}\right),\vartheta\right):
+\vartheta\in\Theta\right\}
+\cap
+\left\{\left(\left((O_i^S)_{i=1}^n,(X_j^T)_{j=1}^{N_n}\right),\vartheta\right):
+\left|\widehat A_n-\vartheta\widehat B_n\right|\le L_\alpha\sqrt{\widehat\kappa_n/n}\right\},
+\]
+an intersection of a preimage of the closed interval \(\Theta\) with a sublevel set of a jointly measurable function of the sample and \(\vartheta\).
+% lean: oracle_score_inversion_attainment
+
+\emph{Weight-version invariance.} The three statistics \(\widehat A_n,\widehat B_n,\widehat\kappa_n\) depend on \(w\) only through the realized vector \((w(X_1),\dots,w(X_n))\), so
+\[
+w(X_i)=w'(X_i)\ \text{for all }i\le n
+\quad\Longrightarrow\quad
+C_n\!\left((O_i^S)_{i=1}^n,(X_j^T)_{j=1}^{N_n},w,e\right)
+=
+C_n\!\left((O_i^S)_{i=1}^n,(X_j^T)_{j=1}^{N_n},w',e\right).
+\]
+% lean: inversionHandle_congr_of_sample
+If \(w=w'\) holds \(P_S^X\)-almost surely, then, each \(X_i\) having marginal law \(P_S^X\) and the source sample being an independent product, the antecedent holds almost surely under the two-sample law; hence the two evaluations agree almost surely.
+% lean: sourceSample_weight_version_ae_eq, inversionHandle_weight_version_ae_eq
+
+Finally we record that the comparison class is eventually nonempty.  Let \(\mathfrak g\in\mathcal G\) be the admissible geometry supplied by the hypothesis.  For every \(t_0>0\), the least-favorable family of \cref{obj:def:least-favorable-witness} at geometry \(\mathfrak g\) and threshold \(t_0\) supplies, for all sufficiently large \(n\), a law
+\[
+P\in\mathcal P_n(\mathfrak g)
+\quad\text{with}\quad
+t_n\ge t_0 ;
+\]
+since \(\mathcal P_n(\mathfrak g)\subseteq\mathcal P_n\), the full class \(\mathcal P_n\) is nonempty at all sufficiently large \(n\).
+% lean: fixedGeometrySlice_eventually_inhabited
 
 \item \textbf{Weighted conditional-expectation reduction.}
-The proof uses the following pull-out identity.  Suppose \(F\) is a source-observation function, \(d\) is a covariate function, and \(w\) is a measurable transport weight.  If, for every measurable \(A\),
+The proof uses the following pull-out identity.  Suppose \(F\) is a source-observation function, \(d\) is a covariate function, and \(w\) is a measurable transport weight, with \(F\), \(d\), \(w(X)F\) and \(wd\) integrable under the indicated laws.  If, for every measurable \(A\subseteq\mathcal X\),
 \[
-\int_{\{o:X(o)\in A\}} F(o)\,dP_S(o)
+\int_{\{O:X\in A\}} F(O)\,dP_S(O)
 =
 \int_A d(x)\,dP_S^X(x),
 \]
 then
 \[
-\int w(X(o))F(o)\,dP_S(o)
+\int w(X)F(O)\,dP_S(O)
 =
 \int w(x)d(x)\,dP_S^X(x).
 \]
 Indeed, the set-integral identity identifies \(d(X)\) with the conditional expectation of \(F\) given \(X\); multiplying by the \(X\)-measurable function \(w(X)\) and integrating gives the displayed equality.  The measurability and integrability requirements are supplied by overlap, the weight envelope, and the bounded source-observation variables.
+% lean: weighted_observed_contrast_eq
 
 \item \textbf{Pointwise expected length.}
-Fix \(n>0\) and \(P\in\mathcal P_n\).  The compact causal-range conclusion in \cref{obj:prop:compact-causal-range} gives \(\theta_n=\theta_T(P,n)\in\Theta\), identifies the transported first stage with the target complier share, and therefore gives \(\mu_n>0\).  The Radon--Nikodym weight has mean one under \(P_S^X\), so its second moment \(\kappa_n\) satisfies \(\kappa_n\ge1\).
-
-Let
+Fix \(n\ge1\) and \(P\in\mathcal P_n\), and write \(\mu_{Y,n},\mu_n,\kappa_n,t_n\) for the functionals of \cref{obj:synth_6} at \(P\) and \(\theta_n=\theta_T\) for the target complier effect of \cref{obj:synth_7} at \(P\).  By \cref{obj:prop:compact-causal-range},
 \[
-B_n=\frac1n\sum_{i=1}^n w(X_i)H_iD_i .
-\]
-The score identities and the pull-out identity give \(\mathbb E_P B_n=\mu_n\).  The overlap bound gives
-\[
-\operatorname{Var}_P(B_n)\le \frac{\kappa_n}{\varepsilon^2 n},
-\]
-and hence
-\[
-\Pr_P\left\{\frac{\mu_n}{2}<|B_n-\mu_n|\right\}
-\le
-\frac{4}{\varepsilon^2 t_n},
+\mu_n=P_n^F\{D(1)=1,\ D(0)=0\mid S=0\},
 \qquad
-t_n=\frac{n\mu_n^2}{\kappa_n}.
+\frac{\mu_{Y,n}}{\mu_n}=\theta_n,
+\qquad
+\theta_n\in\Theta,
 \]
-The empirical Kish statistic \(\widehat\kappa_n=n^{-1}\sum_i w(X_i)^2\) is nonnegative and has mean \(\kappa_n\).  Applying the affine score-inversion length bound to \(\widehat A_n\), \(\widehat B_n\), and \(\widehat\kappa_n\) gives
+and target complier positivity makes the first display positive, so \(\mu_n>0\).  Under transport domination \(w=dP_T/dP_S^X\) satisfies \(\mathbb E_{P_S^X}[w(X)]=P_T(\mathcal X)=1\), whence by the Cauchy--Schwarz inequality
+\[
+1=\left(\mathbb E_{P_S^X}[w(X)]\right)^2
+\le
+\mathbb E_{P_S^X}\!\left[w(X)^2\right]=\kappa_n,
+\]
+so \(\kappa_n\ge1>0\).
+% lean: one_le_secondMoment_of_mean_one
+
+Consider the per-observation weighted receipt score
+\[
+\varphi(O)=w(X)H(O)D .
+\]
+Instrument overlap \(\varepsilon\le e(X)\le1-\varepsilon\) gives \(|H(O)|\le1/\varepsilon\); together with \(D\in\{0,1\}\) and the envelope \(0\le w\le 2k_n\) this yields
+\[
+|\varphi(O)|\le \frac{2k_n}{\varepsilon},
+\]
+so \(\varphi\) is square integrable under \(P_S\).  Applying the pull-out identity with \(F(O)=H(O)D\) and \(d=\Delta_D\), whose set-integral hypothesis is the receipt identity of \cref{obj:prop:compact-causal-range},
+\[
+\mathbb E_{P_S}[\varphi]
+=
+\mathbb E_{P_S^X}\!\left[w(X)\Delta_D(X)\right]
+=
+\mu_n ,
+\]
+and, bounding the variance by the second moment and using \(|H(O)D|\le1/\varepsilon\),
+\[
+\operatorname{Var}_{P_S}(\varphi)
+\le
+\mathbb E_{P_S}\!\left[\varphi^2\right]
+\le
+\mathbb E_{P_S^X}\!\left[\frac{w(X)^2}{\varepsilon^2}\right]
+=
+\frac{\kappa_n}{\varepsilon^2}.
+\]
+Since \(\widehat B_n=n^{-1}\sum_{i\le n}\varphi(O_i^S)\) averages \(n\) independent copies of \(\varphi\),
+\[
+\mathbb E_P\widehat B_n=\mu_n,
+\qquad
+\operatorname{Var}_P(\widehat B_n)\le\frac{\kappa_n}{\varepsilon^2 n} .
+\]
+% lean: iid_empiricalAverage_mean_variance
+Chebyshev's inequality at radius \(\mu_n/2\) then gives, with \(t_n=n\mu_n^2/\kappa_n\),
+\[
+\Pr_P\left\{\frac{\mu_n}{2}<\left|\widehat B_n-\mu_n\right|\right\}
+\le
+\frac{\kappa_n/(\varepsilon^2n)}{(\mu_n/2)^2}
+=
+\frac{4}{\varepsilon^2 t_n}.
+\]
+% lean: scoreReceiptMean_bad_probability
+Likewise \(\widehat\kappa_n=n^{-1}\sum_{i\le n}w(X_i)^2\ge0\) averages \(n\) independent copies of \(w(X)^2\), so it is integrable with
+\[
+\mathbb E_P\widehat\kappa_n=\mathbb E_{P_S^X}\!\left[w(X)^2\right]=\kappa_n .
+\]
+% lean: empiricalKish_mean
+
+We now convert these moments into a length bound.  Whenever \(\widehat B_n\ne0\), the score restriction \(|\widehat A_n-\vartheta\widehat B_n|\le L_\alpha\sqrt{\widehat\kappa_n/n}\) confines \(\vartheta\) to the interval centred at \(\widehat A_n/\widehat B_n\) of half-length \(L_\alpha\sqrt{\widehat\kappa_n/n}\,/|\widehat B_n|\), while \(C_n\subseteq\Theta\) and \(\lambda(\Theta)=2\) always; hence
+\[
+\lambda(C_n)
+\le
+\min\left\{2,\ \frac{2L_\alpha\sqrt{\widehat\kappa_n/n}}{|\widehat B_n|}\right\}.
+\]
+% lean: inversionHandle_length_le, affineInversionSet_length_le
+On the event \(\{|\widehat B_n-\mu_n|\le\mu_n/2\}\) one has \(|\widehat B_n|\ge\mu_n/2\), so there \(\lambda(C_n)\le 4L_\alpha\sqrt{\widehat\kappa_n/n}\,/\mu_n\); off that event use \(\lambda(C_n)\le2\).  Splitting the expectation accordingly and using concavity of the square root, \(\mathbb E_P\sqrt{\widehat\kappa_n}\le\sqrt{\mathbb E_P\widehat\kappa_n}=\sqrt{\kappa_n}\),
 \[
 \mathbb E_P\lambda(C_n)
 \le
-C_0\min\{1,t_n^{-1/2}\}.
+\frac{4L_\alpha}{\mu_n}\sqrt{\frac{\kappa_n}{n}}
++
+2\Pr_P\left\{\frac{\mu_n}{2}<\left|\widehat B_n-\mu_n\right|\right\}
+\le
+4L_\alpha t_n^{-1/2}+\frac{8}{\varepsilon^2 t_n},
 \]
+where the first term was rewritten using \(\sqrt{\kappa_n/n}\,/\mu_n=t_n^{-1/2}\).
+% lean: expectedLength_affineInversion_le
+If \(t_n\le1\) then \(\min\{1,t_n^{-1/2}\}=1\) and \(\lambda(C_n)\le2\le C_0\) already gives the claim; if \(t_n\ge1\) then \(t_n^{-1}\le t_n^{-1/2}\), so the last display is at most \((4L_\alpha+8/\varepsilon^2)t_n^{-1/2}\le C_0\min\{1,t_n^{-1/2}\}\).  In both cases
+\[
+\mathbb E_P\lambda(C_n)
+\le
+C_0\min\{1,t_n^{-1/2}\} .
+\]
+% lean: scoreInversion_expectedLength_frontier_le
 
 \item \textbf{Pointwise coverage.}
 Define
@@ -1510,319 +2222,893 @@ Define
 \delta_n=
 \begin{cases}
 1, & n=0,\\
-16k_n^2/n, & n>0.
+16k_n^2/n, & n\ge1 .
 \end{cases}
 \]
-The scale condition \(k_n/\sqrt n\to0\) gives \(\delta_n\to0\).  Changing finitely many initial indices leaves the limiting coverage requirement unchanged.  For every sufficiently large \(n\), set
+The scale condition \(k_n/\sqrt n\to0\) gives \(\delta_n\to0\).  At the index \(n=0\) the asserted bound reads \(1-\alpha-1=-\alpha\le\Pr_P\{\theta_T\in C_n\}\), which holds because probabilities are nonnegative and \(\alpha>0\).
+
+Fix \(n\ge1\) and \(P\in\mathcal P_n\), retaining the notation of the previous item, and set
 \[
 S_n=\widehat A_n-\theta_n\widehat B_n,
 \qquad
-K_n=\widehat\kappa_n,
+\psi_n(O)=w(X)H(O)\left\{Y-\theta_n D\right\}.
 \]
-and use the ratio identity from \cref{obj:prop:compact-causal-range}.  The pull-out identity gives mean zero for the affine score \(w(X_i)H_i(Y_i-\theta_nD_i)\), and overlap and boundedness give
+Expanding \(\widehat A_n\) and \(\widehat B_n\) and collecting terms observation by observation,
 \[
-\operatorname{Var}_P(S_n)\le \frac{4\kappa_n}{\varepsilon^2 n}.
+S_n=\frac1n\sum_{i=1}^n\psi_n(O_i^S) .
 \]
-The envelope \(0\le w\le 2k_n\) gives the empirical-Kish lower-tail bound
+% lean: scoreOutcomeMean_sub_receiptMean
+Applying the pull-out identity twice, with \((F,d)=(H\cdot Y,\Delta_Y)\) and with \((F,d)=(H\cdot D,\Delta_D)\), whose set-integral hypotheses are exactly the two identities of \cref{obj:prop:compact-causal-range},
 \[
-\Pr_P\{K_n<\kappa_n/2\}
+\mathbb E_{P_S}\!\left[w(X)H(O)Y\right]=\mu_{Y,n},
+\qquad
+\mathbb E_{P_S}\!\left[w(X)H(O)D\right]=\mu_n ,
+\]
+so by the ratio identity \(\mu_{Y,n}=\theta_n\mu_n\) of \cref{obj:prop:compact-causal-range},
+\[
+\mathbb E_{P_S}[\psi_n]=\mu_{Y,n}-\theta_n\mu_n=0 .
+\]
+% lean: oracleAffineScore_mean_zero
+Since \(Y\in[0,1]\), \(D\in\{0,1\}\) and \(\theta_n\in\Theta=[-1,1]\), we have \(|Y-\theta_nD|\le2\); with \(|H(O)|\le1/\varepsilon\) from overlap this gives the pointwise bounds
+\[
+\left|H(O)\left\{Y-\theta_nD\right\}\right|\le\frac2\varepsilon,
+\qquad
+\psi_n(O)^2\le\frac{4w(X)^2}{\varepsilon^2}.
+\]
+% lean: abs_oracleInstrumentScore_residual_le, oracleAffineScore_sq_le
+Hence \(\operatorname{Var}_{P_S}(\psi_n)\le\mathbb E_{P_S}[\psi_n^2]\le4\kappa_n/\varepsilon^2\), and averaging \(n\) independent copies,
+\[
+\mathbb E_P S_n=0,
+\qquad
+\operatorname{Var}_P(S_n)\le\frac{4\kappa_n}{\varepsilon^2 n}.
+\]
+% lean: iid_empiricalAverage_mean_variance
+
+For the empirical dispersion, the envelope \(0\le w\le2k_n\) gives the pointwise fourth-moment bound
+\[
+w(x)^4\le 4k_n^2\,w(x)^2 ,
+\]
+% lean: weight_fourth_le_envelope
+so \(\operatorname{Var}_{P_S^X}(w(X)^2)\le\mathbb E_{P_S^X}[w(X)^4]\le4k_n^2\kappa_n\) and therefore
+\[
+\operatorname{Var}_P(\widehat\kappa_n)\le\frac{4k_n^2\kappa_n}{n},
+\qquad
+\Pr_P\left\{\widehat\kappa_n<\frac{\kappa_n}2\right\}
 \le
+\frac{4k_n^2\kappa_n/n}{(\kappa_n/2)^2}
+=
 \frac{16k_n^2}{n\kappa_n}
 \le
-\frac{16k_n^2}{n}.
+\frac{16k_n^2}{n}
+=\delta_n ,
 \]
+the second inequality being Chebyshev's inequality at radius \(\kappa_n/2\) and the last step using \(\kappa_n\ge1\).
+% lean: empiricalKish_variance_le, empiricalKish_lower_tail_le
+
 With
 \[
-a_n=L_\alpha\sqrt{\frac{\kappa_n}{2n}},
+a_n=L_\alpha\sqrt{\frac{\kappa_n}{2n}}>0,
 \]
-the identity \(L_\alpha^2=8/(\alpha\varepsilon^2)\) and Chebyshev's inequality yield
+Chebyshev's inequality and the identity \(L_\alpha^2=8/(\alpha\varepsilon^2)\) yield
 \[
-\Pr_P\{|S_n|>a_n\}\le\alpha.
+\Pr_P\left\{|S_n|>a_n\right\}
+\le
+\frac{\operatorname{Var}_P(S_n)}{a_n^2}
+\le
+\frac{4\kappa_n/(\varepsilon^2n)}{L_\alpha^2\kappa_n/(2n)}
+=
+\frac{8}{\varepsilon^2L_\alpha^2}
+=\alpha .
 \]
-On the complement of these two bad events,
+% lean: probability_abs_sub_mean_gt_le
+
+Write \(\mathcal B_n^{\kappa}=\{\widehat\kappa_n<\kappa_n/2\}\) and \(\mathcal B_n^{S}=\{|S_n|>a_n\}\).  On the complement of \(\mathcal B_n^{\kappa}\cup\mathcal B_n^{S}\) we have \(\widehat\kappa_n\ge\kappa_n/2\) and hence
 \[
-|S_n|\le a_n\le L_\alpha\sqrt{K_n/n},
+|S_n|\le a_n=L_\alpha\sqrt{\frac{\kappa_n}{2n}}\le L_\alpha\sqrt{\frac{\widehat\kappa_n}{n}} ,
 \]
-and \(\theta_n\in\Theta\), so \(\theta_n\in C_n\).  Therefore, uniformly over \(P\in\mathcal P_n\),
+which together with \(\theta_n\in\Theta\) puts \(\theta_n\in C_n\).  Both bad events are functions of the source sample alone, and under the two-sample law the target covariate sample is independent of it, so the two-sample probability of the good event equals its source-sample probability.  A union bound therefore gives
 \[
 1-\alpha-\delta_n
 \le
-\Pr_P\{\theta_n\in C_n\}.
+1-\Pr_P(\mathcal B_n^{S})-\Pr_P(\mathcal B_n^{\kappa})
+\le
+\Pr_P\left\{\theta_T\in C_n\right\},
 \]
+and this holds for every \(P\in\mathcal P_n\).
 
 \item \textbf{Oracle honesty.}
-Coverage probabilities lie in \([0,1]\), the class is nonempty for all sufficiently large \(n\), and \(\delta_n\to0\).  On those indices, the infimum over \(P\in\mathcal P_n\) agrees with the oracle coverage infimum for the constructed score-inversion procedure.  Taking the liminf of these infima in \cref{obj:def:oracle-honesty} gives
+Coverage probabilities lie in \([0,1]\), and by the first item \(\mathcal P_n\ne\varnothing\) for all sufficiently large \(n\).  On those indices the worst-case row of \cref{obj:def:oracle-honesty}, which is set to \(1\) when the class is empty, is the genuine infimum, and the previous item bounds it uniformly:
+\[
+\inf_{P\in\mathcal P_n}\Pr_P\left\{\theta_T\in C_n\right\}\ge 1-\alpha-\delta_n .
+\]
+% lean: scoreProcedure_oracleCoverageClassInf_eq
+Since \(\delta_n\to0\), taking the liminf of these rows gives
 \[
 1-\alpha
 \le
 \liminf_{n\to\infty}\inf_{P\in\mathcal P_n}
-\Pr_P\{\theta_T(P,n)\in C_n\}.
+\Pr_P\left\{\theta_T\in C_n\right\}.
 \]
-Thus \((C_n)\in\mathfrak C^{\mathrm{or}}\).
+% lean: abstractClass_coverage_liminf
+Together with \(0<\alpha<1\) this is exactly the requirement of \cref{obj:def:oracle-honesty}, so \((C_n)\in\mathfrak C^{\mathrm{or}}\).
 
 \item \textbf{Frontier risk of the constructed sequence.}
-Fix \(t_0>0\).  Changing finitely many initial indices leaves the limiting risk unchanged, and every sufficiently large \(n\) uses the pointwise expected-length bound above.  Since \(t\mapsto \min\{1,t^{-1/2}\}\) is decreasing on \((0,\infty)\), every row with \(t_n\ge t_0\) satisfies
+Fix \(t_0>0\).  The map \(t\mapsto\min\{1,t^{-1/2}\}\) is nonincreasing on \((0,\infty)\), so for every \(n\ge1\) and every \(P\in\mathcal P_n\) with \(t_n\ge t_0\) the pointwise bound of the third item gives
 \[
 \mathbb E_P\lambda(C_n)
 \le
-C_0\min\{1,t_0^{-1/2}\}.
+C_0\min\{1,t_n^{-1/2}\}
+\le
+C_0\min\{1,t_0^{-1/2}\} .
 \]
-Taking the supremum over such \(P\) and then the limsup in \cref{obj:def:frontier-risk} gives
+% lean: min_one_inverseSqrt_anti
+The right-hand side is nonnegative and does not depend on \(P\), so the row supremum obeys the same bound, including on rows where no such \(P\) exists and the supremum is \(0\); the single index \(n=0\) does not affect a limsup.  Taking the limsup in \cref{obj:def:frontier-risk},
 \[
 R((C_n),t_0)
 \le
-C_0\min\{1,t_0^{-1/2}\}.
+C_0\min\{1,t_0^{-1/2}\} .
 \]
+% lean: scoreProcedure_frontierRiskRow_eq, abstractClassFrontierRisk_le
 
 \item \textbf{Oracle value.}
-For every admissible geometry \(\mathfrak g'\in\mathcal G\), \cref{obj:thm:fixed-geometry-frontier} gives
+Every reported set \(A\) satisfies \(\lambda(A)\le\lambda(\Theta)=2\), so for every oracle honest \((E_n)\in\mathfrak C^{\mathrm{or}}\) each row supremum in \cref{obj:def:frontier-risk} lies in \([0,2]\) and hence
+\[
+0\le R((E_n),t_0)\le 2 .
+\]
+The infimum in \cref{obj:def:oracle-value} is therefore over a set of reals bounded below by \(0\), and that set is nonempty because \((C_n)\in\mathfrak C^{\mathrm{or}}\) by the fifth item.  Evaluating the infimum at \((C_n)\) and using the previous item,
+\[
+V^\star(t_0)\le R((C_n),t_0)\le C_0\min\{1,t_0^{-1/2}\} .
+\]
+
+For the reverse direction, take the admissible geometry \(\mathfrak g\) of the first item.  Its declared weight is a version of \(dP_T/dP_S^X\) for every law in the slice \(\mathcal P_n(\mathfrak g)\), so a globally oracle honest sequence, evaluated with that declared weight and propensity, is honest for the fixed geometry and its fixed-geometry risk is at most its global risk; consequently
+\[
+V_{\mathfrak g}^\star(t_0)\le R((E_n),t_0)
+\qquad\text{for every }(E_n)\in\mathfrak C^{\mathrm{or}} .
+\]
+% lean: fixedGeometryValue_le_frontierRisk
+By \cref{obj:thm:fixed-geometry-frontier} applied at \(\mathfrak g\), whose constants are \(c_\alpha=3(1-\alpha)^2/16\) and \(C_\alpha=C_0\),
 \[
 \frac{3(1-\alpha)^2}{16}\min\{1,t_0^{-1/2}\}
 \le
-V_{\mathfrak g'}^\star(t_0)
+V_{\mathfrak g}^\star(t_0)
 \le
-C_0\min\{1,t_0^{-1/2}\}.
+C_0\min\{1,t_0^{-1/2}\} .
 \]
-Using the selected geometry \(\mathfrak g\), every globally oracle-honest procedure induces a fixed-geometry honest procedure, so the same lower bound applies to the global oracle risk of any \((E_n)\in\mathfrak C^{\mathrm{or}}\).  Since the constructed \((C_n)\) is oracle honest, the infimum defining \(V^\star(t_0)\) is over a nonempty class.  Also, \(\lambda(A)\le\lambda(\Theta)=2\) for every reported set \(A\), so the relevant suprema are uniformly bounded for the limsup comparison.  Hence the risks over oracle-honest procedures are bounded below, and evaluating the infimum at the constructed sequence gives
+Chaining the last two displays and taking the infimum over \((E_n)\in\mathfrak C^{\mathrm{or}}\),
 \[
+\frac{3(1-\alpha)^2}{16}\min\{1,t_0^{-1/2}\}
+\le
 V^\star(t_0)
 \le
-C_0\min\{1,t_0^{-1/2}\}.
+C_0\min\{1,t_0^{-1/2}\} .
 \]
-Combining the displayed bounds proves the asserted frontier-risk bound and the corresponding attainable oracle-value order for every fixed \(t_0>0\).
+% lean: oracle_score_inversion_attainment
+Together with the sixth item this establishes the asserted frontier-risk bound and the corresponding attainable oracle-value order at every fixed \(t_0>0\).
 \end{enumerate}
 \end{proof}
 
 \begin{proof}[Proof of \cref{obj:thm:regular-cell-unknown-weight-attainment}]
-\begin{enumerate}
-\item The measurable-carrier hypothesis and the regular-cell mass bounds give a member of \(\mathcal N_n^{\mathrm{reg}}\) in every row \(n\), so the coverage term in \(\mathfrak C^{\mathrm{reg}}\) is evaluated by an ordinary infimum.  Put
+Throughout, \(L\) is the fixed constant of the statement, so that
 \[
 B_{\varepsilon,c}=8(\varepsilon^{-2}+c^{-1}),
 \qquad
-C_0=\max\{2,4\sqrt2L+8B_{\varepsilon,c}\}.
+L\ge\left(\frac{2B_{\varepsilon,c}}{\alpha}\right)^{1/2},
+\qquad
+C_0=\max\left\{2,\ 4\sqrt2\,L+8B_{\varepsilon,c}\right\}.
 \]
-Then \(B_{\varepsilon,c}\ge0\), \(L\ge0\), and \(C_0>0\).  Define \(C_n^{\mathrm{reg}}\) by the regular-cell inversion rule, with the stated \(\Theta\)-valued convention when \(N_n<2\).  The rule is the measurable regular-cell procedure obtained by applying the known source masses \(q_{x,n}\), the known propensity values, and the source and target samples to the score inversion map.
+Because \(\varepsilon>0\) and \(c>0\) we have \(B_{\varepsilon,c}\ge0\), hence \(L\ge0\), and since \(C_0\) is a maximum with \(2\) as one of its arguments,
+\[
+0<2\le C_0 .
+\]
+% lean: regular_cell_unknown_weight_attainment
 
-\item For every \(P\in\mathcal N_n^{\mathrm{reg}}\), the constructed random set agrees almost surely with the regular-cell inversion rule using the ambient source-cell mass function and propensity score.  This is the representation used in the honesty argument.  On rows with \(2\le N_n\), that same inversion rule is the affine set
+\begin{enumerate}
+\item \textbf{Every row of the class is nonempty.}  The carrier hypothesis supplies, for each \(n\), distinct points \(x_{1,n},\dots,x_{k_n,n}\in\mathcal X\) whose singletons are measurable; write
 \[
-\left\{\vartheta\in\Theta:
-|\widehat M_{Y,n}-\vartheta\widehat M_{D,n}|
-\le L\sqrt{\widehat K_n/n}\right\},
+\mathcal X_n=\{x_{1,n},\dots,x_{k_n,n}\}
 \]
-whereas on rows with \(N_n<2\) it is \(\Theta\) by definition.  Since the class is nonempty in every row, the coverage term in \cref{obj:def:regular-cell-feasible-honesty} is
+for the resulting realized support.  Under \(N_n/n\to c>0\), \(k_n\to\infty\), and \(k_n/\sqrt n\to0\), the uniform finite-cell array carried on \(\mathcal X_n\), with source cell masses \(1/k_n\) and propensity \(1/2\), satisfies all conditions of \(\mathcal P_n\) in \cref{obj:def:model-class} together with \cref{obj:ass:finite-cell-source}.  Since \(0<c_-\le1\le c_+\),
 \[
-\inf_{P\in\mathcal N_n^{\mathrm{reg}}}
-P(\theta_T\in C_n^{\mathrm{reg}}).
+\frac{c_-}{k_n}\le\frac1{k_n}\le\frac{c_+}{k_n},
 \]
-The uniform coverage bound for the regular-cell inversion rule applies at the critical inequality
-\(L\ge\{2B_{\varepsilon,c}/\alpha\}^{1/2}\), and yields
+so this array also satisfies the cell-mass bounds of \cref{obj:def:regular-finite-cell-class} and therefore
+\[
+\mathcal N_n^{\mathrm{reg}}\neq\varnothing
+\qquad\text{for every }n .
+\]
+Consequently the empty-row convention in \cref{obj:def:regular-cell-feasible-honesty} is never invoked, and the coverage requirement there reads
 \[
 1-\alpha\le
-\liminf_{n\to\infty}
-\inf_{P\in\mathcal N_n^{\mathrm{reg}}}
-P(\theta_T\in C_n^{\mathrm{reg}}).
+\liminf_{n\to\infty}\ \inf_{P\in\mathcal N_n^{\mathrm{reg}}} P\left(\theta_T\in C_n^{\mathrm{reg}}\right).
 \]
-Thus \((C_n^{\mathrm{reg}})\in\mathfrak C^{\mathrm{reg}}\).
+% lean: regularFiniteCellClass_inhabited
 
-\item Fix \(t_0>0\).  From \(N_n/n\to c>0\), eventually \(n>0\) and \(2\le N_n\).  On this tail, for every \(P\in\mathcal N_n^{\mathrm{reg}}\), the compact causal-range identities give a positive transported first stage \(\mu_n\).  The regular-cell moment calculations give integrability of the outcome and receipt score moments, nonnegativity of \(\widehat K_n\), and
+\item \textbf{The rule, and its almost-sure agreement with the displayed statistics.}  The procedure receives at row \(n\) the source sample \((O_i^S)_{i=1}^n\), the target sample \((X_j^T)_{j=1}^{N_n}\), the realized support \(\mathcal X_n\), and the two known \(k_n\)-vectors \((q_{x,n})_{x\in\mathcal X_n}\) and \((e_{x,n})_{x\in\mathcal X_n}\).  It extends those two vectors off \(\mathcal X_n\) by zero, i.e.\ it works with
 \[
-\mathbb E_P[\widehat K_n]=1+\kappa_n\le2\kappa_n .
-\]
-The first-stage deviation event satisfies
-\[
-P\{|\widehat M_{D,n}-\mu_n|>\mu_n/2\}
-\le
-\frac{4B_{\varepsilon,c}}{t_n},
+\widetilde q_n(x)=q_{x,n}\mathbf 1\{x\in\mathcal X_n\},
 \qquad
-t_n=\frac{n\mu_n^2}{\kappa_n}.
+\widetilde e_n(x)=e_{x,n}\mathbf 1\{x\in\mathcal X_n\},
 \]
-Using the almost-sure representation from the preceding step together with the nondegenerate identity for the regular-cell inversion rule, the expected length of \(C_n^{\mathrm{reg}}\) is the expected length of this affine inversion set for all sufficiently large \(n\).  Applying the inflated affine-inversion length bound with \(Y=8B_{\varepsilon,c}\) gives, uniformly over \(P\in\mathcal N_n^{\mathrm{reg}}\),
+and returns the set displayed in the statement, namely \(\Theta\) when \(N_n<2\) and otherwise
 \[
-\mathbb E_P[\lambda(C_n^{\mathrm{reg}})]
-\le
-C_0\min\{1,t_n^{-1/2}\}
+\left\{\vartheta\in\Theta:
+\left|\widehat M_{Y,n}-\vartheta\widehat M_{D,n}\right|
+\le L\sqrt{\widehat K_n/n}\right\},
 \]
-on that tail.  The abstract frontier-risk monotonicity then converts the pointwise bound into
-\[
-\limsup_{n\to\infty}\sup_{P\in\mathcal N_n^{\mathrm{reg}}:\,t_n\ge t_0}
-\mathbb E_P[\lambda(C_n^{\mathrm{reg}})]
-\le
-C_0\min\{1,t_0^{-1/2}\}.
-\]
+with \(H_i\), \(\widehat p_{x,n}\), \(\widehat m_{G,n}\), \(\widehat M_{G,n}\), \(\widehat\kappa_{U,n}\), and \(\widehat K_n\) formed from \(\widetilde q_n\) and \(\widetilde e_n\) in place of \(q_{x,n}\) and \(e(\cdot)\).  This rule uses only the source and target samples, the known cell masses, and the known propensity values, and its sample-by-\(\vartheta\) graph on the realized support is measurable because \(\mathcal X_n\) is a finite union of measurable singletons and the maps \(s\mapsto\widehat M_{Y,n}\), \(s\mapsto\widehat M_{D,n}\), \(s\mapsto\widehat K_n\) are measurable.  Hence it is a regular-cell procedure in the sense of \cref{obj:def:regular-cell-feasible-honesty}.
+% lean: regularCellProcedure
 
-\item For the lower bound, choose the injected singleton carrier in each row and put the same uniform law on the source and target covariates:
+Fix \(n\) and \(P\in\mathcal N_n^{\mathrm{reg}}\).  By \cref{obj:def:regular-finite-cell-class} the source covariate marginal is carried by the realized support, \(P_S^X(\mathcal X_n)=1\), and by \cref{obj:ass:transport-domination} \(P_T\ll P_S^X\), so also \(P_T(\mathcal X_n)=1\).  Therefore
 \[
-\nu_n=\sum_{i=1}^{k_n} k_n^{-1}\delta_{x_{i,n}},
+P\left\{X_i\in\mathcal X_n\ \text{for all }i\le n,\ \text{and}\ X_j^T\in\mathcal X_n\ \text{for all }j\le N_n\right\}=1,
+\]
+and on that event \(\widetilde q_n\) and \(\widetilde e_n\) agree with \(q_{x,n}=P_S^X(X=x)\) and \(e(\cdot)\) at every realized covariate.  Since \(\widehat m_{G,n}\), \(\widehat M_{G,n}\), and \(\widehat\kappa_{U,n}\) depend on the mass and propensity functions only through their values at realized covariates, the set returned by the procedure coincides \(P\)-almost surely with the set built from \(q_{x,n}\) and \(e(\cdot)\):
+\[
+P\left\{C_n^{\mathrm{reg}}\ \text{equals the rule of the statement evaluated at }q_{x,n}\text{ and }e\right\}=1 .
+\]
+% lean: regularCellProcedure_set_eq_ambient_ae
+
+\item \textbf{Honesty.}  Since \(N_n/n\to c>0\), there is an index beyond which \(n\ge1\) and \(N_n\ge2\); fix such an \(n\) and let \(P\in\mathcal N_n^{\mathrm{reg}}\).  Write the centered inversion statistic at the true value,
+\[
+\zeta_n=\widehat M_{Y,n}-\theta_T\widehat M_{D,n},
+\]
+which is well defined because \(\theta_T\in\Theta\) by \cref{obj:prop:compact-causal-range}.  Three facts control \(\zeta_n\).
+
+First, \(\zeta_n\) is exactly centered:
+\[
+\mathbb E_P[\zeta_n]=0 .
+\]
+Indeed, the inverse-propensity weighting makes \(\mathbb E_P[\widehat m_{G,n}(x)]=\Delta_G(x)\) for each cell \(x\), the independent target sample gives \(\mathbb E_P[\widehat p_{x,n}]=P_T(X=x)=q_{x,n}w(x)\), so \(\mathbb E_P[\widehat M_{G,n}]\) equals the transported mean of \(\Delta_G\), and \(\mu_{Y,n}-\theta_T\mu_n=0\) by \cref{obj:prop:compact-causal-range}.
+% lean: regularCell_contrastMoment_mean_zero
+
+Second, uniformly over \(P\in\mathcal N_n^{\mathrm{reg}}\) for all large \(n\),
+\[
+\operatorname{Var}_P(\zeta_n)\le\frac{B_{\varepsilon,c}\,\kappa_n}{n},
+\qquad
+\operatorname{Var}_P\!\left(\widehat M_{D,n}\right)\le\frac{B_{\varepsilon,c}\,\kappa_n}{n},
+\qquad
+\mathbb E_P\!\left[\widehat M_{D,n}\right]=\mu_n .
+\]
+The two variance bounds hold because the cross-average splits into a source-sample part and a target-sample part: conditionally on the target sample the source part is an average of \(n\) independent terms whose inverse-propensity factor is bounded by \(\varepsilon^{-1}\) under \cref{obj:ass:instrument-overlap} and whose inverse-mass weighting contributes the dispersion \(\kappa_n\), giving at most \(8\varepsilon^{-2}\kappa_n/n\); the target part is an average of \(N_n\) independent bounded terms, giving at most \(4/N_n\le8/(cn)\le8c^{-1}\kappa_n/n\) once \(N_n/n\to c>0\) and \(\kappa_n\ge1\).  The two contributions add to \(B_{\varepsilon,c}\kappa_n/n\) with \(B_{\varepsilon,c}=8(\varepsilon^{-2}+c^{-1})\).
+% lean: regularCell_eventually_uniform_moment_variance
+
+Third, the transport weight is a probability density with respect to \(P_S^X\), so by Jensen's inequality its second moment satisfies
+\[
+1\le\kappa_n .
+\]
+% lean: one_le_regularCell_kish
+
+Now decompose the noncoverage event.  Off the full-measure support event of the previous step, and off the event \(\{\widehat K_n\ge\kappa_n/2\}\), we discard; on the intersection of both, \(L\sqrt{\widehat K_n/n}\ge L\sqrt{\kappa_n/(2n)}\), so \(|\zeta_n|\le L\sqrt{\kappa_n/(2n)}\) already forces \(\theta_T\in C_n^{\mathrm{reg}}\).  Chebyshev's inequality applied with the variance bound gives
+\[
+P\left\{|\zeta_n|>L\sqrt{\frac{\kappa_n}{2n}}\right\}
+\le
+\frac{B_{\varepsilon,c}\kappa_n/n}{L^2\kappa_n/(2n)}
+=\frac{2B_{\varepsilon,c}}{L^2}
+\le\alpha,
+\]
+the last step because \(L^2\ge2B_{\varepsilon,c}/\alpha\).  For the remaining event put
+\[
+\delta_n=\sup_{P\in\mathcal N_n^{\mathrm{reg}}}
+P\left\{\widehat K_n<\kappa_n/2\right\}.
+\]
+A Chebyshev bound for the target-sample U-statistic \(\widehat\kappa_{U,n}\), whose variance is at most a constant multiple of \(k_n^2/N_n\) under the cell-mass lower bound \(q_{x,n}\ge c_-/k_n\), gives
+\[
+\delta_n\le\frac{128\,k_n^2}{c_-^2\,N_n}
+\xrightarrow[n\to\infty]{}0,
+\]
+because \(N_n/n\to c>0\) and \(k_n/\sqrt n\to0\).
+% lean: regularCell_Khat_lower_tail_uniform
+
+Combining the three events, for all large \(n\) and every \(P\in\mathcal N_n^{\mathrm{reg}}\),
+\[
+P\left(\theta_T\in C_n^{\mathrm{reg}}\right)\ge1-\alpha-\delta_n,
+\]
+hence
+\[
+1-\alpha\le
+\liminf_{n\to\infty}\ \inf_{P\in\mathcal N_n^{\mathrm{reg}}}
+P\left(\theta_T\in C_n^{\mathrm{reg}}\right),
+\]
+and \((C_n^{\mathrm{reg}})\in\mathfrak C^{\mathrm{reg}}\).
+% lean: regularCellProcedure_coverage_liminf
+
+\item \textbf{Pointwise expected-length bound.}  Fix \(t_0>0\).  Choose \(n_0\) so that for every \(n\ge n_0\) one has \(n\ge1\), \(N_n\ge2\), and, for every \(P\in\mathcal N_n^{\mathrm{reg}}\),
+\[
+P\left\{\left|\widehat M_{D,n}-\mu_n\right|>\frac{\mu_n}{2}\right\}
+\le\frac{4B_{\varepsilon,c}}{t_n},
+\qquad
+t_n=\frac{n\mu_n^2}{\kappa_n};
+\]
+this is Chebyshev's inequality applied to \(\widehat M_{D,n}\) at radius \(\mu_n/2\), using the mean and variance recorded in the previous step, since \((B_{\varepsilon,c}\kappa_n/n)/(\mu_n/2)^2=4B_{\varepsilon,c}/t_n\).
+% lean: regularCell_firstStage_bad_probability
+
+Fix \(n\ge n_0\) and \(P\in\mathcal N_n^{\mathrm{reg}}\).  By \cref{obj:prop:compact-causal-range} the transported first stage equals the target complier share,
+\[
+\mu_n=P_n^F\{D(1)=1,\ D(0)=0\mid S=0\},
+\]
+which is positive by \cref{obj:ass:target-complier-positivity}; thus \(\mu_n>0\).  The collision terms are nonnegative because \(q_{x,n}>0\) on \(\mathcal X_n\), so
+\[
+\widehat\kappa_{U,n}\ge0,
+\qquad
+\widehat K_n=1+\widehat\kappa_{U,n}\ge1 ,
+\]
+and \(\widehat K_n\) is integrable under the two-sample law.  Its mean is
+\[
+\mathbb E_P\!\left[\widehat K_n\right]=1+\kappa_n\le2\kappa_n,
+\]
+the identity because \(\widehat\kappa_{U,n}\) is an unbiased U-statistic for \(\kappa_n\) over the \(N_n(N_n-1)\) ordered distinct target pairs, and the inequality because \(1\le\kappa_n\).
+% lean: regularCell_Khat_mean, regularCell_moments_memLp
+
+By the previous step, \(C_n^{\mathrm{reg}}\) agrees almost surely with the inversion of one affine inequality intersected with \(\Theta\).  If \(\widehat M_{D,n}\neq0\), that inversion is the interval of centre \(\widehat M_{Y,n}/\widehat M_{D,n}\) and half-length \(L\sqrt{\widehat K_n/n}\,/\,|\widehat M_{D,n}|\), so
+\[
+\lambda\!\left(C_n^{\mathrm{reg}}\right)
+\le
+\min\left\{2,\ \frac{2L\sqrt{\widehat K_n/n}}{\left|\widehat M_{D,n}\right|}\right\},
+\]
+and in all cases \(\lambda(C_n^{\mathrm{reg}})\le\lambda(\Theta)=2\).
+% lean: regularCellInversion_eq_affineInversionSet, affineInversionSet_length_le
+
+On the event \(\{|\widehat M_{D,n}-\mu_n|\le\mu_n/2\}\) we have \(|\widehat M_{D,n}|\ge\mu_n/2\), hence
+\[
+\lambda\!\left(C_n^{\mathrm{reg}}\right)\le\frac{4L}{\mu_n}\sqrt{\frac{\widehat K_n}{n}} ,
+\]
+while on the complementary event we use \(\lambda(C_n^{\mathrm{reg}})\le2\).  Taking expectations and bounding the complementary event by the displayed deviation probability,
+\[
+\mathbb E_P\!\left[\lambda\!\left(C_n^{\mathrm{reg}}\right)\right]
+\le
+\frac{4L}{\mu_n}\,\mathbb E_P\!\left[\sqrt{\frac{\widehat K_n}{n}}\right]
++2\cdot\frac{4B_{\varepsilon,c}}{t_n}
+\le
+\frac{4L}{\mu_n}\sqrt{\frac{\mathbb E_P[\widehat K_n]}{n}}+\frac{8B_{\varepsilon,c}}{t_n},
+\]
+the second inequality by concavity of the square root.  Inserting \(\mathbb E_P[\widehat K_n]\le2\kappa_n\) and \(t_n=n\mu_n^2/\kappa_n\),
+\[
+\frac{4L}{\mu_n}\sqrt{\frac{2\kappa_n}{n}}=4\sqrt2\,L\,t_n^{-1/2},
+\qquad\text{so}\qquad
+\mathbb E_P\!\left[\lambda\!\left(C_n^{\mathrm{reg}}\right)\right]
+\le
+\min\left\{2,\ 4\sqrt2\,L\,t_n^{-1/2}+\frac{8B_{\varepsilon,c}}{t_n}\right\}.
+\]
+% lean: expectedLength_affineInversion_le, expectedLength_affineInversion_frontier_le_inflated
+
+Finally, for \(t>0\), \(u\ge0\), and \(v\ge0\),
+\[
+\min\left\{2,\ u\,t^{-1/2}+v\,t^{-1}\right\}
+\le
+\max\{2,u+v\}\,\min\{1,t^{-1/2}\}:
+\]
+for \(t\le1\) the left side is at most \(2\le\max\{2,u+v\}=\max\{2,u+v\}\min\{1,t^{-1/2}\}\), and for \(t\ge1\) one has \(t^{-1}\le t^{-1/2}\), so the left side is at most \((u+v)t^{-1/2}\).  With \(u=4\sqrt2\,L\), \(v=8B_{\varepsilon,c}\), and \(t=t_n\) this gives, for every \(n\ge n_0\) and every \(P\in\mathcal N_n^{\mathrm{reg}}\),
+\[
+\mathbb E_P\!\left[\lambda\!\left(C_n^{\mathrm{reg}}\right)\right]
+\le
+C_0\min\left\{1,t_n^{-1/2}\right\}.
+\]
+% lean: inverse_strength_to_frontier
+
+\item \textbf{The frontier upper bound.}  Expected lengths are nonnegative and the rows \(n<n_0\) do not affect a \(\limsup\).  Since \(t\mapsto\min\{1,t^{-1/2}\}\) is nonincreasing on \((0,\infty)\), the pointwise bound of the previous step gives, for every \(n\ge n_0\),
+\[
+\sup_{P\in\mathcal N_n^{\mathrm{reg}}:\,t_n\ge t_0}
+\mathbb E_P\!\left[\lambda\!\left(C_n^{\mathrm{reg}}\right)\right]
+\le
+C_0\min\left\{1,t_0^{-1/2}\right\},
+\]
+and therefore
+\[
+\limsup_{n\to\infty}\ \sup_{P\in\mathcal N_n^{\mathrm{reg}}:\,t_n\ge t_0}
+\mathbb E_P\!\left[\lambda\!\left(C_n^{\mathrm{reg}}\right)\right]
+\le
+C_0\min\left\{1,t_0^{-1/2}\right\}
+=\max\left\{2,4\sqrt2\,L+8B_{\varepsilon,c}\right\}\min\left\{1,t_0^{-1/2}\right\}.
+\]
+This is the asserted upper bound.
+% lean: abstractClassFrontierRisk_le
+
+\item \textbf{A deterministic geometry inside the regular-cell class.}  Fix \(t_0>0\).  Using the points \(x_{1,n},\dots,x_{k_n,n}\) of the first step, define the deterministic array \(\mathfrak g=(\nu_n,w_n,e_n)_{n\ge1}\) by
+\[
+\nu_n=\sum_{i=1}^{k_n}\frac1{k_n}\,\delta_{x_{i,n}},
 \qquad
 w_n\equiv1,
 \qquad
-e_n\equiv\frac12 .
+e_n\equiv\frac12,
 \]
-This deterministic geometry is admissible: \(\nu_n\) is a probability measure supported on the chosen cells, the propensity obeys the overlap interval, the weight envelope and second-moment bounds hold, and the equal cell masses satisfy
+with both the source covariate law and the target covariate law taken equal to \(\nu_n\).  Since \(k_n\cdot k_n^{-1}=1\), each \(\nu_n\) is a probability measure, and
 \[
-\frac{c_-}{k_n}\le \frac1{k_n}\le \frac{c_+}{k_n}.
+\nu_n(\mathcal X_n)=1,
+\qquad
+\nu_n(\{x_{i,n}\})=\frac1{k_n}\quad\text{for every }i .
 \]
-Consequently, every fixed-geometry slice for this geometry is contained in \(\mathcal N_n^{\mathrm{reg}}\).  By \cref{obj:thm:fixed-geometry-frontier}, its fixed-geometry honest minimax risk is bounded below by
+The four clauses of \cref{obj:def:admissible-geometry-class} hold:
 \[
-\frac{3(1-\alpha)^2}{16}\min\{1,t_0^{-1/2}\}.
+\varepsilon\le\frac12\le1-\varepsilon
+\quad\text{(from }0<\varepsilon<1/2\text{)},
+\qquad
+0\le1\le2k_n
+\quad\text{(from }k_n\ge1\text{)},
+\]
+\[
+\int w_n\,d\nu_n=1,
+\qquad
+\kappa_n=\int w_n^2\,d\nu_n=1\le k_n,
+\qquad
+\nu_n(A)=\int_A w_n\,d\nu_n\ \ \text{for every measurable }A .
+\]
+Hence \(\mathfrak g\in\mathcal G\).  Moreover, since \(0<c_-\le1\le c_+\) gives \(c_-/k_n\le1/k_n\le c_+/k_n\), every law in the fixed-geometry slice \(\mathcal P_n(\mathfrak g)\) of \cref{obj:def:fixed-geometry-slice} has source covariate marginal \(\nu_n\), which is carried by the \(k_n\) measurable singletons of \(\mathcal X_n\) with masses in \([c_-/k_n,c_+/k_n]\); therefore
+\[
+\mathcal P_n(\mathfrak g)\subseteq\mathcal N_n^{\mathrm{reg}}
+\qquad\text{for every }n .
+\]
+Through this inclusion the model restrictions assumed in the statement supply \cref{obj:ass:two-sample-array,obj:ass:instrument-overlap,obj:ass:degrading-array} on every slice row, and \cref{obj:ass:weight-envelope,obj:ass:weight-second-moment} hold there because slice rows belong to \(\mathcal P_n\).  \Cref{obj:thm:fixed-geometry-frontier} therefore applies and gives
+\[
+\frac{3(1-\alpha)^2}{16}\min\left\{1,t_0^{-1/2}\right\}
+\le
+V_{\mathfrak g}^{\star}(t_0).
+\]
+% lean: fixed_geometry_frontier
+
+We also record, from the least-favorable construction of \cref{obj:def:least-favorable-witness} at this geometry, that the slices are eventually inhabited at strength \(t_0\):
+\[
+\text{for all large }n,\quad
+\left\{P\in\mathcal P_n(\mathfrak g):t_n\ge t_0\right\}\neq\varnothing .
+\]
+% lean: fixedGeometrySlice_eventually_inhabited
+
+\item \textbf{Domination of the fixed-geometry problem by the regular-cell problem.}  Let \(C=(C_n)\in\mathfrak C^{\mathrm{reg}}\) be arbitrary.  Define a fixed-geometry oracle procedure \(D=(D_n)\) by
+\[
+D_n\!\left((O_i^S)_{i=1}^n,(X_j^T)_{j=1}^{N_n},w,e\right)
+=
+\begin{cases}
+C_n\!\left((O_i^S)_{i=1}^n,(X_j^T)_{j=1}^{N_n},\mathcal X_n,(1/k_n)_{x\in\mathcal X_n},(e(x))_{x\in\mathcal X_n}\right),
+& E_n\ \text{holds},\\[0.5em]
+\Theta, & \text{otherwise},
+\end{cases}
+\]
+where
+\[
+E_n=\left\{X_i\in\mathcal X_n\ \text{for all }i\le n,\ \text{and}\ X_j^T\in\mathcal X_n\ \text{for all }j\le N_n\right\}.
+\]
+Then \(D_n\subseteq\Theta\) because \(C_n\subseteq\Theta\); the event \(E_n\) is measurable, being a finite intersection of preimages of the measurable set \(\mathcal X_n\), and the sample-by-\(\vartheta\) graph of \(D_n\) is the union of the graph of \(C_n\) restricted to \(E_n\) with \(E_n^{\,c}\times\Theta\), hence measurable by the graph-measurability clause of \cref{obj:def:regular-cell-feasible-honesty}.  Finally, \(D_n\) does not read the weight input \(w\) at all, so it is trivially invariant across versions of \(dP_T/dP_S^X\).  Thus \(D\) is an admissible oracle procedure for the class in \cref{obj:def:fixed-geometry-honesty}.
+
+Let \(n\) be arbitrary and \(P\in\mathcal P_n(\mathfrak g)\).  Both the source and the target covariate law of \(P\) equal \(\nu_n\), and \(\nu_n(\mathcal X_n)=1\), so
+\[
+P(E_n)=1 .
+\]
+On \(E_n\) the arguments passed to \(C_n\) by \(D_n\) are exactly the class-supplied ones, because the source cell masses of \(P\) are \(q_{x,n}=\nu_n(\{x\})=1/k_n\) on \(\mathcal X_n\) and the propensity of \(P\) is \(e_n\equiv1/2\).  Hence \(D_n\) and \(C_n\) return the same set \(P\)-almost surely, and therefore, for every \(n\) and every \(P\in\mathcal P_n(\mathfrak g)\),
+\[
+P\left(\theta_T\in D_n\right)=P\left(\theta_T\in C_n\right),
+\qquad
+\mathbb E_P[\lambda(D_n)]=\mathbb E_P[\lambda(C_n)].
 \]
 
-\item Let \(C\in\mathfrak C^{\mathrm{reg}}\) be arbitrary.  Construct a fixed-geometry oracle procedure \(D\) by feeding \(C\) the observed two-sample draw, the selected regular-cell design, the mass vector \(q_{x,n}=1/k_n\), and the propensity vector \(e_{x,n}=1/2\) whenever the sample lies on the selected support; on the complementary event set \(D_n=\Theta\).  Under every law in the fixed-geometry slice, the support event has probability one, so \(D_n\) and \(C_n\) agree almost surely after the slice is viewed as a regular-cell law.  Hence their coverages agree on the slice, and on the tail where the fixed-geometry slice has admissible laws, the fixed-geometry coverage infimum is at least the corresponding regular-cell infimum.  Thus \(D\) is fixed-geometry honest.  The same almost-sure equality gives equality of expected lengths on the slice, while every set length is bounded by \(\lambda(\Theta)=2\); therefore the fixed-geometry risk of \(D\) is at most the regular-cell risk of \(C\).  Combining this domination with the previous fixed-geometry lower bound and then taking the infimum over all \(C\in\mathfrak C^{\mathrm{reg}}\) proves
+Because \(\mathcal P_n(\mathfrak g)\subseteq\mathcal N_n^{\mathrm{reg}}\) and both index sets are nonempty for all large \(n\) by the previous step, taking infima over the two classes and using the displayed coverage identity gives, for all large \(n\),
 \[
-\frac{3(1-\alpha)^2}{16}\min\{1,t_0^{-1/2}\}
+\inf_{P\in\mathcal N_n^{\mathrm{reg}}}P\left(\theta_T\in C_n\right)
 \le
-\inf_{C\in\mathfrak C^{\mathrm{reg}}}
-\limsup_{n\to\infty}
-\sup_{P\in\mathcal N_n^{\mathrm{reg}}:\,t_n\ge t_0}
+\inf_{P\in\mathcal P_n(\mathfrak g)}P\left(\theta_T\in D_n\right).
+\]
+Coverages lie in \([0,1]\), so both sequences are bounded and the \(\liminf\) comparison is legitimate; combined with \(C\in\mathfrak C^{\mathrm{reg}}\) this yields
+\[
+1-\alpha
+\le
+\liminf_{n\to\infty}\inf_{P\in\mathcal N_n^{\mathrm{reg}}}P\left(\theta_T\in C_n\right)
+\le
+\liminf_{n\to\infty}\inf_{P\in\mathcal P_n(\mathfrak g)}P\left(\theta_T\in D_n\right),
+\]
+so \(D\in\mathfrak C^{\mathrm{or}}(\mathfrak g)\).
+
+The same almost-sure equality gives the length comparison.  Every reported set lies in \(\Theta\), so all expected lengths lie in \([0,\lambda(\Theta)]=[0,2]\); using the inclusion \(\{P\in\mathcal P_n(\mathfrak g):t_n\ge t_0\}\subseteq\{P\in\mathcal N_n^{\mathrm{reg}}:t_n\ge t_0\}\) rowwise and the boundedness for the \(\limsup\) comparison,
+\[
+\limsup_{n\to\infty}\sup_{P\in\mathcal P_n(\mathfrak g):\,t_n\ge t_0}
+\mathbb E_P[\lambda(D_n)]
+\le
+\limsup_{n\to\infty}\sup_{P\in\mathcal N_n^{\mathrm{reg}}:\,t_n\ge t_0}
 \mathbb E_P[\lambda(C_n)].
 \]
-Together with the constructed upper bound, this gives the stated regular-cell attainment conclusion.
+Fixed-geometry risks are nonnegative, so the infimum defining \(V_{\mathfrak g}^{\star}(t_0)\) in \cref{obj:def:fixed-geometry-value} is bounded below and, \(D\) being admissible for it,
+\[
+V_{\mathfrak g}^{\star}(t_0)
+\le
+\limsup_{n\to\infty}\sup_{P\in\mathcal P_n(\mathfrak g):\,t_n\ge t_0}
+\mathbb E_P[\lambda(D_n)]
+\le
+\limsup_{n\to\infty}\sup_{P\in\mathcal N_n^{\mathrm{reg}}:\,t_n\ge t_0}
+\mathbb E_P[\lambda(C_n)].
+\]
+Chaining with the lower bound of the previous step and taking the infimum over \(C\in\mathfrak C^{\mathrm{reg}}\) gives
+\[
+\frac{3(1-\alpha)^2}{16}\min\left\{1,t_0^{-1/2}\right\}
+\le
+\inf_{C\in\mathfrak C^{\mathrm{reg}}}
+\limsup_{n\to\infty}\sup_{P\in\mathcal N_n^{\mathrm{reg}}:\,t_n\ge t_0}
+\mathbb E_P[\lambda(C_n)] .
+\]
+% lean: regular_cell_unknown_weight_attainment
 \end{enumerate}
+
+Together with \(C_0>0\), the almost-sure representation, the membership \((C_n^{\mathrm{reg}})\in\mathfrak C^{\mathrm{reg}}\), the upper bound of the fifth step, and this lower bound, the stated regular-cell attainment conclusion follows for every \(t_0>0\).
+% lean: regular_cell_unknown_weight_attainment
 \end{proof}
 
 \begin{proof}[Proof of \cref{obj:thm:finite-cell-unknown-weight-attainment}]
+Throughout, \(\lambda(A)\) is the Lebesgue measure of \(A\cap\Theta\) as in \cref{obj:def:frontier-risk}, and rows over an empty family are read with the standard conventions: a rowwise coverage infimum is evaluated as \(1\), and a rowwise strength-restricted expected-length supremum as \(0\).  The coverage convention is the one \cref{obj:def:regular-cell-feasible-honesty} records for \(\mathcal N_n^{\mathrm{reg}}\) and \cref{obj:def:oracle-honesty} records for \(\mathcal P_n\); the same reading is used below for the coverage rows over \(\mathcal N_n\) and over \(\mathcal P_n(\mathfrak g)\), and the length convention for every strength-restricted row.
+
 \begin{enumerate}
 \item
-First record that every finite-cell row class contains an admissible law.  The carrier condition, the sampling-ratio limit, the positivity and growth conditions on \(k_n\), and the overlap bounds give an element of \(\mathcal N_n\) for each \(n\).  Define
+Fix the constants of the statement,
 \[
 B_c=32(1+c^{-1}),\qquad
 L_{\alpha,c}=\left(\frac{2B_c}{\alpha}\right)^{1/2},\qquad
-C_0=\max\{2,4\sqrt2\,L_{\alpha,c}+8B_c\}.
+C_0=\max\{2,4\sqrt2\,L_{\alpha,c}+8B_c\},
 \]
-To compare with the regular-cell construction, set
+so that \(C_0\ge2>0\).  This is the first assertion.
+% lean: finite_cell_unknown_weight_attainment (hC0pos)
+
+Next, every finite-cell row class is inhabited:
 \[
-x=4+\frac3c,\qquad a=x^{-1/2},\qquad
-\bar\varepsilon=\frac14+\frac12 a .
+\mathcal N_n\neq\varnothing
+\qquad\text{for every }n .
 \]
-Since \(c>0\), \(x>4\), hence \(\sqrt{x}>2\), \(0<a<1/2\), and
-\(0<\bar\varepsilon<1/2\).  Moreover
+An explicit witness is available: put the uniform law on \(k_n\) injected measurable singletons of the ambient carrier, take the target covariate law equal to it, transport weight \(w\equiv1\), source propensity \(e\equiv1/2\), and conditional complier probability \(1/(n+1)\) at row \(n\); under \(c>0\) with \(N_n/n\to c\), \(k_n>0\) with \(k_n\to\infty\) and \(k_n/\sqrt n\to0\), and \(0<\varepsilon<1/2\), this array satisfies every clause of \cref{obj:def:finite-cell-class}.
+% lean: finiteCellClass_inhabited
+
+Finally we calibrate an auxiliary overlap level at which the regular-cell result will be invoked.  Set
 \[
-\bar\varepsilon\sqrt{x}\ge 1,
+\gamma=4+\frac3c,\qquad
+a=\gamma^{-1/2},\qquad
+\bar\varepsilon=\frac14+\frac a2 .
+\]
+Since \(c>0\) we have \(\gamma>4\) and hence \(\sqrt\gamma>2\), so
+\[
+0<a=\frac1{\sqrt\gamma}<\frac12,
 \qquad
-\bar\varepsilon^{-2}\le x .
+0<\frac14<\bar\varepsilon<\frac12 .
 \]
-With
+Moreover \(a\sqrt\gamma=1\), so
 \[
-B=8(\bar\varepsilon^{-2}+c^{-1}),
+\bar\varepsilon\sqrt\gamma
+=\frac{\sqrt\gamma}4+\frac{a\sqrt\gamma}2
+=\frac{\sqrt\gamma}4+\frac12
+>\frac12+\frac12
+=1 .
 \]
-this gives \(0\le B\le B_c\).  Consequently
+Dividing by \(\bar\varepsilon>0\) gives \(\bar\varepsilon^{-1}\le\sqrt\gamma\), and squaring gives
 \[
-\left(\frac{2B}{\alpha}\right)^{1/2}\le L_{\alpha,c},
+\bar\varepsilon^{-2}\le \gamma=4+\frac3c .
 \]
-and \(C_0>0\) because \(C_0\ge2\).
+% lean: finite_cell_unknown_weight_attainment (hx, hsqrtTwo, haPos, haHalf, hBar, haMul, hepsSqrt, hinvLeSqrt, hinvSq)
 
-\item
-Apply \cref{obj:thm:regular-cell-unknown-weight-attainment} with overlap level
-\(\bar\varepsilon\), regular-cell constants \(c_-=c_+=1\), and critical constant
-\(L_{\alpha,c}\).  The hypotheses required there are supplied by the corresponding regular-cell row assumptions: the row supplies the two-sample condition, bounded overlap for its own propensity, and the degrading-array condition. The common propensity \(1/2\) enters the uniform finite-cell argument through \cref{obj:ass:finite-cell-source} and the reduction to the regular-cell design with \(c_-=c_+=1\). The preceding bound on \(L_{\alpha,c}\) supplies the required critical-value inequality. Thus there is a regular-cell procedure \(C^{\mathrm{reg}}\) whose set agrees almost surely with the regular-cell score-inversion rule, which is honest, and whose risk is bounded by
+Write \(B_{\bar\varepsilon,c}\) for the regular-cell variance constant of \cref{obj:thm:regular-cell-unknown-weight-attainment} evaluated at overlap level \(\bar\varepsilon\),
 \[
-\max\{2,4\sqrt2\,L_{\alpha,c}+8B\}\min\{1,t_0^{-1/2}\}
+B_{\bar\varepsilon,c}=8\left(\bar\varepsilon^{-2}+c^{-1}\right).
 \]
-for every \(t_0>0\).
-
-\item
-Transport this regular-cell rule to the finite-cell experiment.  On each finite-cell row, the finite-cell inversion rule, the ambient regular-cell rule, and the regular-cell procedure just obtained agree almost surely after identifying the uniform source-cell masses and the common propensity \(1/2\).  This reduction gives finite-cell honesty for the sample-only procedure
+Then \(B_{\bar\varepsilon,c}\ge0\), and the previous display gives the calibration that fixes \(\gamma\):
 \[
-C_n(s)=\text{the finite-cell score-inversion set with critical constant }L_{\alpha,c}.
-\]
-Equivalently, this is exactly the rule displayed in the theorem statement, with \(C_n=\Theta\) when \(N_n<2\).
-
-\item
-For the upper expected-length bound, use the regular-cell risk bound from Step 2, the risk comparison induced by the reduction to the regular-cell design, and the constant comparison \(B\le B_c\).  Since
-\[
-\min\{1,t_0^{-1/2}\}\ge0,
-\]
-\[
-\max\{2,4\sqrt2\,L_{\alpha,c}+8B\}
+B_{\bar\varepsilon,c}
 \le
-\max\{2,4\sqrt2\,L_{\alpha,c}+8B_c\}=C_0
+8\left(4+\frac3c+\frac1c\right)
+=32+\frac{32}c
+=B_c .
 \]
-implies
+Since \(\alpha>0\) and \(t\mapsto t^{1/2}\) is increasing,
 \[
-\limsup_{n\to\infty}\sup_{P\in\mathcal N_n:\,t_n\ge t_0}
-\mathbb E_P[\lambda(C_n)]
+\left(\frac{2B_{\bar\varepsilon,c}}{\alpha}\right)^{1/2}
 \le
+\left(\frac{2B_c}{\alpha}\right)^{1/2}
+=L_{\alpha,c}.
+\]
+% lean: finite_cell_unknown_weight_attainment (hBnonneg, hBLe, hBcPos, hLreg)
+
+\item
+Apply \cref{obj:thm:regular-cell-unknown-weight-attainment} with sampling ratio \(c\), noncoverage level \(\alpha\), overlap constant \(\bar\varepsilon\), regular-cell mass constants \(c_-=c_+=1\), the same sequences \(N_n\) and \(k_n\), the same measurable carrier, and critical constant \(L_{\alpha,c}\).  Write \(\mathcal N_n^{\mathrm{reg}}\) for the regular finite-cell class of \cref{obj:def:regular-finite-cell-class} formed with these constants, and \(\mathfrak C^{\mathrm{reg}}\) for the corresponding feasible class of \cref{obj:def:regular-cell-feasible-honesty}.  Its hypotheses hold: \(c>0\) and \(N_n/n\to c\); \(0<\bar\varepsilon<1/2\) by Step 1 and \(0<\alpha<1\); \(0<c_-=1\le1\le c_+=1\); \(k_n>0\), \(k_n\to\infty\) and \(k_n/\sqrt n\to0\); the ambient-carrier condition; the two-sample, instrument-overlap and degrading-array restrictions, each of which is one of the defining conditions of \(\mathcal N_n^{\mathrm{reg}}\), since \cref{obj:def:regular-finite-cell-class} places \(\mathcal N_n^{\mathrm{reg}}\) inside \(\mathcal P_n\) of \cref{obj:def:model-class}; and the critical-value requirement \((2B_{\bar\varepsilon,c}/\alpha)^{1/2}\le L_{\alpha,c}\) established in Step 1.
+
+The conclusion supplies a regular-cell procedure \(C^{\mathrm{reg}}=(C_n^{\mathrm{reg}})\) with three properties.  First, for every \(n\) and every \(P\in\mathcal N_n^{\mathrm{reg}}\), \(P\)-almost surely
+\[
+C_n^{\mathrm{reg}}
+=
+\left\{\vartheta\in\Theta:
+\left|\widehat M_{Y,n}-\vartheta\widehat M_{D,n}\right|
+\le L_{\alpha,c}\sqrt{\widehat K_n/n}\right\}
+\quad(N_n\ge2),
+\qquad
+C_n^{\mathrm{reg}}=\Theta
+\quad(N_n<2),
+\]
+where \(\widehat M_{Y,n}\), \(\widehat M_{D,n}\) and \(\widehat K_n\) are built from the law's own source-cell masses \(q_{x,n}=P_S^X(X=x)\) and its own propensity \(e\) exactly as displayed in \cref{obj:thm:regular-cell-unknown-weight-attainment}; call this set \(C_n^{\dagger}\).  Second, \(C^{\mathrm{reg}}\in\mathfrak C^{\mathrm{reg}}\).  Third, for every \(t_0>0\),
+\[
+\limsup_{n\to\infty}
+\sup_{P\in\mathcal N_n^{\mathrm{reg}}:\,t_n\ge t_0}
+\mathbb E_P[\lambda(C_n^{\mathrm{reg}})]
+\le
+\max\{2,4\sqrt2\,L_{\alpha,c}+8B_{\bar\varepsilon,c}\}
+\min\{1,t_0^{-1/2}\}.
+\]
+% lean: regular_cell_unknown_weight_attainment
+
+\item
+Transport this regular-cell rule to the finite-cell experiment.  First, every uniform finite-cell law is a regular finite-cell law with unit mass constants:
+\[
+\mathcal N_n\subseteq\mathcal N_n^{\mathrm{reg}}
+\qquad\text{for every }n .
+\]
+Indeed, let \(P\in\mathcal N_n\).  By \cref{obj:ass:finite-cell-source} its source covariate marginal is supported on exactly \(k_n\) measurable cells with
+\[
+q_{x,n}=\frac1{k_n},
+\]
+which meets the two-sided mass bound \(c_-/k_n\le q_{x,n}\le c_+/k_n\) of \cref{obj:def:regular-finite-cell-class} with \(c_-=c_+=1\) as an equality; and \(e(X)=1/2\) \(P_S\)-almost surely, so that \(0<\bar\varepsilon<1/2\) gives the overlap requirement at level \(\bar\varepsilon\),
+\[
+\bar\varepsilon\le e(X)=\frac12\le1-\bar\varepsilon
+\qquad P_S\text{-a.s.}
+\]
+The remaining conditions of \cref{obj:def:regular-finite-cell-class} are those of \cref{obj:def:model-class}, which \(\mathcal N_n\) inherits by \cref{obj:def:finite-cell-class}.
+% lean: FiniteCellClass.toRegularFiniteCellClass
+
+Let \(C=(C_n)\) be the sample-only rule displayed in the statement: for \(N_n\ge2\),
+\[
+C_n=\left\{\vartheta\in\Theta:
+\left|\widehat M_{Y,n}-\vartheta\widehat M_{D,n}\right|
+\le L_{\alpha,c}\sqrt{\widehat K_n/n}\right\},
+\qquad
+C_n=\Theta\ \ (N_n<2),
+\]
+with \(H_i=2(2Z_i-1)\), \(\widehat p_{x,n}\), \(\widehat m_{G,n}\), \(\widehat M_{G,n}\), \(\widehat\kappa_{U,n}\) and \(\widehat K_n=1+\widehat\kappa_{U,n}\) as in the statement.  This is exactly the regular-cell inversion rule of Step 2 run with the constant inputs
+\[
+q_{x,n}\equiv\frac1{k_n},
+\qquad
+e\equiv\frac12 ,
+\]
+so it uses only \((O_i^S)_{i=1}^n\) and \((X_j^T)_{j=1}^{N_n}\), takes values in \(\Theta\), and has a measurable sample-by-\(\vartheta\) graph on the realized cell experiment.  In particular the almost-sure agreement with the finite-cell score-inversion rule asserted in the statement holds by construction.
+% lean: finiteCellProcedure, finiteCellInversion
+
+Now fix \(n\) and \(P\in\mathcal N_n\).  Three almost-sure identities combine.  (i) \(P\)-almost surely every sampled source covariate \(X_i\) and every sampled target covariate \(X_j^T\) lies in the \(k_n\) cells of \(P_S^X\), and on those points the constant inputs \(1/k_n\) and \(1/2\) coincide with the law's own \(q_{x,n}\) and \(e\); hence \(P\)-almost surely \(C_n\) equals the regular-cell inversion rule fed \(P\)'s own cell design, masses and propensity.
+% lean: finiteCellProcedure_eq_regularCellSet_ae
+(ii) That rule, evaluated on the law's own finite cell vectors, agrees \(P\)-almost surely with \(C_n^{\dagger}\), because the sampled covariates almost surely lie in the realized support where the finite vectors and their ambient extensions coincide.
+% lean: regularCellProcedure_set_eq_ambient_ae
+(iii) \(C_n^{\mathrm{reg}}=C_n^{\dagger}\) \(P\)-almost surely by Step 2.  Chaining (i)--(iii),
+\[
+C_n=C_n^{\mathrm{reg}}
+\qquad P\text{-almost surely, for every }n\text{ and every }P\in\mathcal N_n,
+\]
+and therefore
+\[
+P(\theta_T\in C_n)=P(\theta_T\in C_n^{\mathrm{reg}}),
+\qquad
+\mathbb E_P[\lambda(C_n)]=\mathbb E_P[\lambda(C_n^{\mathrm{reg}})].
+\]
+% lean: finiteCellProcedure_upper_bridge (hcoverageEq, hlengthEq)
+
+Two consequences follow.  For coverage: by the inclusion above, both row classes are nonempty for every \(n\) by Step 1, and an infimum over the larger class is no larger, so
+\[
+\inf_{P\in\mathcal N_n^{\mathrm{reg}}}P(\theta_T\in C_n^{\mathrm{reg}})
+\le
+\inf_{P\in\mathcal N_n}P(\theta_T\in C_n)
+\qquad\text{for every }n .
+\]
+Coverage probabilities lie in \([0,1]\), so both row sequences are bounded and the inequality passes through \(\liminf\); with \(C^{\mathrm{reg}}\in\mathfrak C^{\mathrm{reg}}\) from Step 2 this gives
+\[
+1-\alpha
+\le
+\liminf_{n\to\infty}\inf_{P\in\mathcal N_n^{\mathrm{reg}}}P(\theta_T\in C_n^{\mathrm{reg}})
+\le
+\liminf_{n\to\infty}\inf_{P\in\mathcal N_n}P(\theta_T\in C_n),
+\]
+that is, \(C\in\mathfrak C^{\mathrm{cell}}\) in the sense of \cref{obj:def:finite-cell-feasible-honesty}.
+% lean: finiteCellProcedure_upper_bridge (hcovRows, hfiniteHonest)
+
+For risk: fix \(t_0>0\).  The inclusion also preserves the strength restriction \(t_n\ge t_0\), so for every \(n\)
+\[
+\sup_{P\in\mathcal N_n:\,t_n\ge t_0}\mathbb E_P[\lambda(C_n)]
+\le
+\sup_{P\in\mathcal N_n^{\mathrm{reg}}:\,t_n\ge t_0}\mathbb E_P[\lambda(C_n^{\mathrm{reg}})].
+\]
+Every expected length is nonnegative and, by \(\lambda(A)\le\lambda(\Theta)=2\), at most \(2\); hence both row sequences lie in \([0,2]\) and the inequality passes through \(\limsup\):
+\[
+\limsup_{n\to\infty}\sup_{P\in\mathcal N_n:\,t_n\ge t_0}\mathbb E_P[\lambda(C_n)]
+\le
+\limsup_{n\to\infty}\sup_{P\in\mathcal N_n^{\mathrm{reg}}:\,t_n\ge t_0}\mathbb E_P[\lambda(C_n^{\mathrm{reg}})].
+\]
+% lean: finiteCellProcedure_upper_bridge (hrowRisk, hriskDC)
+
+\item
+Fix \(t_0>0\).  Chaining the risk comparison of Step 3, the regular-cell bound of Step 2, and the constant comparison \(B_{\bar\varepsilon,c}\le B_c\) of Step 1 (legitimate because \(\min\{1,t_0^{-1/2}\}\ge0\)),
+\begin{align*}
+\limsup_{n\to\infty}\sup_{P\in\mathcal N_n:\,t_n\ge t_0}\mathbb E_P[\lambda(C_n)]
+&\le
+\limsup_{n\to\infty}\sup_{P\in\mathcal N_n^{\mathrm{reg}}:\,t_n\ge t_0}\mathbb E_P[\lambda(C_n^{\mathrm{reg}})]\\
+&\le
+\max\{2,4\sqrt2\,L_{\alpha,c}+8B_{\bar\varepsilon,c}\}\min\{1,t_0^{-1/2}\}\\
+&\le
+\max\{2,4\sqrt2\,L_{\alpha,c}+8B_c\}\min\{1,t_0^{-1/2}\}\\
+&=
 C_0\min\{1,t_0^{-1/2}\}.
-\]
-This proves the asserted attainment bound for every \(t_0>0\).
+\end{align*}
+This is the asserted attainment bound, for every \(t_0>0\).
+% lean: finite_cell_unknown_weight_attainment (hrisk, hconst, hminNonneg)
 
 \item
-For the converse bound, fix \(t_0>0\).  Choose, for every \(n\), an injection from \(\{1,\ldots,k_n\}\) into the measurable carrier with measurable singleton image.  In the deterministic geometry \(\mathfrak g\), take both covariate laws to be
+For the converse, fix \(t_0>0\).  For each \(n\) choose an injection \(i\mapsto x_{i,n}\) of \(\{1,\dots,k_n\}\) into the measurable carrier whose singletons \(\{x_{i,n}\}\) are measurable, and write
 \[
-P_{S,n}^X=P_{T,n}=\sum_{i=1}^{k_n} k_n^{-1}\delta_{x_{i,n}},
+\mathcal X_n=\{x_{1,n},\dots,x_{k_n,n}\}.
 \]
-take \(w=1\), and take \(e=1/2\).  The cancellation \(k_n k_n^{-1}=1\) shows that these covariate laws are probability measures.  The bounds \(0<\varepsilon<1/2\) put the propensity inside the overlap interval, while \(k_n\ge1\) gives the weight envelope and second-moment requirements.  Hence \(\mathfrak g\in\mathcal G\).
+Define the deterministic geometry \(\mathfrak g=(P_{S,n}^X,w,e)_{n\ge1}\) by
+\[
+P_{S,n}^X=P_{T,n}=\sum_{i=1}^{k_n}k_n^{-1}\delta_{x_{i,n}},
+\qquad
+w\equiv1,
+\qquad
+e\equiv\frac12 .
+\]
+Then \(\mathfrak g\in\mathcal G\) in the sense of \cref{obj:def:admissible-geometry-class}.  Both covariate laws are probability measures because \(k_n\cdot k_n^{-1}=1\).  The overlap clause holds because \(0<\varepsilon<1/2\) gives
+\[
+\varepsilon\le e(x)=\frac12\le1-\varepsilon .
+\]
+The envelope clause holds because \(k_n\ge1\) gives
+\[
+0\le w(x)=1\le 2k_n .
+\]
+The normalization and second-moment clauses are
+\[
+\mathbb E_S[w(X)]=1,
+\qquad
+\kappa_n=\mathbb E_S[w(X)^2]=1\le k_n ,
+\]
+and the target-law clause holds because, for every measurable \(A\subseteq\mathcal X\),
+\[
+\mathbb E_S\!\left[w(X)\mathbf 1\{X\in A\}\right]
+=
+P_{S,n}^X(A)
+=
+P_{T,n}(A).
+\]
+% lean: finite_cell_unknown_weight_attainment (hkinv, hmu, hg), AdmissibleGeometry
 
 \item
-For this geometry, the selected cell range is measurable, has both \(P_{S,n}^X\)- and \(P_{T,n}\)-probability one, and each chosen singleton has mass \(k_n^{-1}\).  Therefore any row in the fixed-geometry slice \(\mathcal P_n(\mathfrak g)\) satisfies the finite-cell source condition with this cell injection, and the remaining model-class conditions are inherited from the fixed-geometry slice.  Thus every such row lies in \(\mathcal N_n\).  The same measurable range also makes the event that all source and target sample covariates lie in the selected range a measurable sample event.
+The selected range is measurable, being the finite union \(\mathcal X_n=\bigcup_{i=1}^{k_n}\{x_{i,n}\}\) of measurable singletons, and
+\[
+P_{S,n}^X(\mathcal X_n)=P_{T,n}(\mathcal X_n)=1,
+\qquad
+P_{S,n}^X(\{x_{i,n}\})=k_n^{-1}
+\quad(1\le i\le k_n).
+\]
+Hence every \(P\in\mathcal P_n(\mathfrak g)\) satisfies \cref{obj:ass:finite-cell-source} with these cells: by \cref{obj:def:fixed-geometry-slice} its source covariate marginal is exactly \(P_{S,n}^X\), which is supported on the \(k_n\) cells and assigns each mass \(1/k_n\), and its propensity is \(e\equiv1/2\).  All remaining conditions of \cref{obj:def:finite-cell-class} are the conditions of \cref{obj:def:model-class}, which hold because \(\mathcal P_n(\mathfrak g)\subseteq\mathcal P_n\).  Therefore
+\[
+\mathcal P_n(\mathfrak g)\subseteq\mathcal N_n
+\qquad\text{for every }n .
+\]
+% lean: finite_cell_unknown_weight_attainment (hrange, hatom, hsliceFinite), FiniteCellSource
+
+The same measurable range also makes
+\[
+E_n
+=
+\bigcap_{i=1}^{n}\{X_i\in\mathcal X_n\}
+\ \cap\
+\bigcap_{j=1}^{N_n}\{X_j^T\in\mathcal X_n\}
+\]
+a measurable event of the two-sample space, being a finite intersection of preimages of \(\mathcal X_n\) under coordinate projections.
+% lean: finite_cell_unknown_weight_attainment (hrangeMeas, hsampleSupportMeas)
 
 \item
-Invoke the lower-bound half of \cref{obj:thm:fixed-geometry-frontier} for the geometry \(\mathfrak g\):
+\Cref{obj:thm:fixed-geometry-frontier} applies to \(\mathfrak g\): its target-sample-ratio, envelope-scale, overlap and noncoverage hypotheses are the standing hypotheses of the present statement, its geometry hypothesis is Step 5, and its fixed-geometry-slice hypothesis holds because \(\mathcal P_n(\mathfrak g)\subseteq\mathcal P_n\) and the five conditions it lists are among those of \cref{obj:def:model-class}.  Its lower half gives, with \(c_\alpha=3(1-\alpha)^2/16\),
 \[
 \frac{3(1-\alpha)^2}{16}\min\{1,t_0^{-1/2}\}
 \le
 V_{\mathfrak g}^{\star}(t_0).
 \]
-It is enough to show that \(V_{\mathfrak g}^{\star}(t_0)\) is bounded above by the feasible finite-cell minimax value.
+% lean: fixed_geometry_frontier
 
-\item
-Take an arbitrary feasible finite-cell honest procedure \(\widetilde C\).  Construct a fixed-geometry oracle procedure \(D\) as follows: on samples whose source and target covariates all lie in the selected cell range, set
-\[
-D_n=\widetilde C_n;
-\]
-off that support, set \(D_n=\Theta\).  The graph measurability follows by splitting the sample space into the measurable support event and its complement; weight-invariance is immediate because this sample-and-support rule is fixed on each such event.
-
-\item
-On every fixed-geometry row, the source and target covariate laws assign probability one to the selected range, so the product sampling law assigns probability one to the support event from Step 8.  Hence \(D_n\) and \(\widetilde C_n\) agree almost surely on that row.  Their coverage probabilities and expected lengths are therefore equal on fixed-geometry rows.  For all sufficiently large \(n\), the fixed-geometry threshold slice has admissible laws, and the finite-cell row class has admissible laws for every \(n\).  On those rows, the inclusion from Step 6 and the equality of coverage probabilities give
-\[
-\inf_{P\in\mathcal N_n}\Pr_P\{\theta_T\in \widetilde C_n\}
-\le
-\inf_{P\in\mathcal P_n(\mathfrak g)}
-\Pr_P\{\theta_T\in D_n\}.
-\]
-The coverage quantities are bounded below by \(0\), and the fixed-geometry coverage infimum is eventually bounded above by \(1\).  Passing to liminf therefore preserves the displayed inequality, so finite-cell honesty of \(\widetilde C\) gives fixed-geometry oracle honesty of \(D\).
-
-\item
-For the risk comparison, first note that every set length is computed inside \(\Theta=[-1,1]\), so every realized length is at most \(2\).  Hence, for \(\widetilde C\), each finite-cell expected length is at most \(2\).  For all sufficiently large \(n\), the fixed-geometry threshold slice has admissible laws.  On those \(n\), the equality of expected lengths on fixed-geometry rows and the inclusion from Step 6 give
-\[
-\sup_{P\in\mathcal P_n(\mathfrak g):\,t_n\ge t_0}
-\mathbb E_P[\lambda(D_n)]
-\le
-\sup_{P\in\mathcal N_n:\,t_n\ge t_0}
-\mathbb E_P[\lambda(\widetilde C_n)],
-\]
-where the finite-cell supremum is controlled by the preceding length bound.  The fixed-geometry supremum is eventually nonnegative because the threshold slice is nonempty and expected length is nonnegative.  The compact parameter space bounds every finite-cell supremum by \(2\) under the stated supremum convention.  These lower and upper bounds supply the boundedness hypotheses for passing the eventual inequality through limsup, yielding
-\[
-\text{fixed-geometry risk of }D
-\le
-\limsup_{n\to\infty}
-\sup_{P\in\mathcal N_n:\,t_n\ge t_0}
-\mathbb E_P[\lambda(\widetilde C_n)].
-\]
-
-\item
-It remains to place the fixed-geometry value below the risk of this particular \(D\).  The same length bound applies to every fixed-geometry oracle procedure: for any such procedure, every fixed-geometry expected length is at most \(2\).  The supremum convention and nonnegativity of expected length keep each fixed-geometry row supremum between \(0\) and \(2\) on the relevant tail.  These facts imply that every fixed-geometry oracle risk is nonnegative, so the collection of fixed-geometry honest risks is bounded below by \(0\).  Since \(D\) is fixed-geometry honest by Step 9, the defining infimum for \(V_{\mathfrak g}^{\star}(t_0)\) satisfies
+It therefore suffices to show that for every feasible finite-cell honest \(\widetilde C\in\mathfrak C^{\mathrm{cell}}\),
 \[
 V_{\mathfrak g}^{\star}(t_0)
 \le
-\text{fixed-geometry risk of }D.
+\limsup_{n\to\infty}\sup_{P\in\mathcal N_n:\,t_n\ge t_0}\mathbb E_P[\lambda(\widetilde C_n)];
 \]
-Combining this with Step 10 gives
+taking the infimum over \(\widetilde C\) then yields the asserted converse.  That infimum is over a nonempty class, since \(C\in\mathfrak C^{\mathrm{cell}}\) by Step 3.
+
+\item
+Fix \(\widetilde C\in\mathfrak C^{\mathrm{cell}}\) and define a fixed-geometry oracle procedure \(D=(D_n)\) by
+\[
+D_n=
+\begin{cases}
+\widetilde C_n, & \text{on }E_n,\\
+\Theta, & \text{on }E_n^{\mathrm c}.
+\end{cases}
+\]
+Then \(D_n\subseteq\Theta\).  Its sample-by-\(\vartheta\) graph is
+\[
+\left\{(s,\vartheta):s\in E_n,\ \vartheta\in\widetilde C_n(s)\right\}
+\ \cup\
+\left(E_n^{\mathrm c}\times\Theta\right),
+\]
+which is measurable: the first set is the restriction to the measurable event \(E_n\) of the graph of \(\widetilde C_n\), which is measurable on the realized cell experiment with cells \(\mathcal X_n\), and the second is a product of measurable sets.  Finally \(D_n\) is a function of the samples alone, so it does not change when the oracle density-ratio input is replaced by another version, which is the weight-invariance requirement imposed on oracle procedures in \cref{obj:def:oracle-honesty}.
+% lean: finite_cell_unknown_weight_attainment (D, subset, measurableGraph, weightAEInvariant)
+
+\item
+Let \(P\in\mathcal P_n(\mathfrak g)\).  Its source and target covariate laws are both \(P_{S,n}^X=P_{T,n}\), which gives \(\mathcal X_n\) probability one by Step 6, and the two samples have independent coordinates, so
+\[
+P(E_n)=1 .
+\]
+Hence \(D_n=\widetilde C_n\) \(P\)-almost surely, and therefore
+\[
+P(\theta_T\in D_n)=P(\theta_T\in\widetilde C_n),
+\qquad
+\mathbb E_P[\lambda(D_n)]=\mathbb E_P[\lambda(\widetilde C_n)].
+\]
+% lean: finite_cell_unknown_weight_attainment (hsupportAE, hsetEq, hcoverageEq, hlengthEq)
+
+For all sufficiently large \(n\) the fixed-geometry threshold slice \(\{P\in\mathcal P_n(\mathfrak g):t_n\ge t_0\}\) is inhabited, hence so is \(\mathcal P_n(\mathfrak g)\); and \(\mathcal N_n\neq\varnothing\) for every \(n\) by Step 1.
+% lean: fixedGeometrySlice_eventually_inhabited
+For such \(n\), the inclusion of Step 6 and the coverage equality just displayed give
+\[
+\inf_{P\in\mathcal N_n}P(\theta_T\in\widetilde C_n)
+\le
+\inf_{P\in\mathcal P_n(\mathfrak g)}P(\theta_T\in D_n).
+\]
+The left-hand row sequence is bounded below by \(0\) and the right-hand one is eventually bounded above by \(1\), since coverage probabilities lie in \([0,1]\); so \(\liminf\) preserves this eventual inequality, and honesty of \(\widetilde C\) over \(\mathcal N_n\) gives
+\[
+1-\alpha
+\le
+\liminf_{n\to\infty}\inf_{P\in\mathcal N_n}P(\theta_T\in\widetilde C_n)
+\le
+\liminf_{n\to\infty}\inf_{P\in\mathcal P_n(\mathfrak g)}P(\theta_T\in D_n),
+\]
+that is, \(D\in\mathfrak C^{\mathrm{or}}(\mathfrak g)\) in the sense of \cref{obj:def:fixed-geometry-honesty}.
+% lean: finite_cell_unknown_weight_attainment (hcovRows, hcovCnonneg, hcovFone, hDhonest)
+
+\item
+Every confidence set is measured inside the compact parameter space, so
+\[
+\lambda(A)\le\lambda(\Theta)=2
+\qquad\text{for every }A\subseteq\mathbb R .
+\]
+Consequently \(\mathbb E_P[\lambda(\widetilde C_n)]\le2\) for every \(n\) and every \(P\in\mathcal N_n\), and \(\mathbb E_P[\lambda(E_n')]\le2\) for every fixed-geometry oracle procedure \((E_n')\) and every \(P\in\mathcal P_n(\mathfrak g)\); all these expectations are nonnegative.
+% lean: finite_cell_unknown_weight_attainment (hsetLengthTwo, hfiniteExpectedTwo, hfixedExpectedTwo)
+
+For all sufficiently large \(n\) the fixed-geometry threshold slice is inhabited; on those \(n\), the inclusion of Step 6 (which also preserves the restriction \(t_n\ge t_0\)) and the equality of expected lengths from Step 9 give
+\[
+\sup_{P\in\mathcal P_n(\mathfrak g):\,t_n\ge t_0}\mathbb E_P[\lambda(D_n)]
+\le
+\sup_{P\in\mathcal N_n:\,t_n\ge t_0}\mathbb E_P[\lambda(\widetilde C_n)].
+\]
+The left-hand row sequence is eventually nonnegative, because the slice is eventually inhabited and expected lengths are nonnegative, and the right-hand row sequence is bounded above by \(2\) for every \(n\) by the length bound (with the empty-row supremum evaluated as \(0\)).  These two bounds let the eventual inequality pass through \(\limsup\):
+\[
+\limsup_{n\to\infty}\sup_{P\in\mathcal P_n(\mathfrak g):\,t_n\ge t_0}\mathbb E_P[\lambda(D_n)]
+\le
+\limsup_{n\to\infty}\sup_{P\in\mathcal N_n:\,t_n\ge t_0}\mathbb E_P[\lambda(\widetilde C_n)].
+\]
+% lean: finite_cell_unknown_weight_attainment (hrowRisk, hrowFnonneg, hrowCtwo, hriskDC)
+
+\item
+It remains to place the fixed-geometry value below the risk of this particular \(D\).  By the length bound of Step 10, for every fixed-geometry oracle procedure \((E_n')\) each row supremum lies in \([0,2]\), so
+\[
+0
+\le
+\limsup_{n\to\infty}\sup_{P\in\mathcal P_n(\mathfrak g):\,t_n\ge t_0}\mathbb E_P[\lambda(E_n')].
+\]
+The set of fixed-geometry risks over \(\mathfrak C^{\mathrm{or}}(\mathfrak g)\) is therefore bounded below by \(0\), and it contains the risk of \(D\) because \(D\in\mathfrak C^{\mathrm{or}}(\mathfrak g)\) by Step 9.  Hence the infimum defining \(V_{\mathfrak g}^{\star}(t_0)\) in \cref{obj:def:fixed-geometry-value} satisfies
 \[
 V_{\mathfrak g}^{\star}(t_0)
 \le
-\limsup_{n\to\infty}\sup_{P\in\mathcal N_n:\,t_n\ge t_0}
-\mathbb E_P[\lambda(\widetilde C_n)].
+\limsup_{n\to\infty}\sup_{P\in\mathcal P_n(\mathfrak g):\,t_n\ge t_0}\mathbb E_P[\lambda(D_n)].
 \]
-Taking the infimum over all feasible finite-cell honest \(\widetilde C\) and combining with Step 7 yields
+% lean: finite_cell_unknown_weight_attainment (hfixedRiskNonneg, hvaluesBdd)
+
+Combining with Step 10,
+\[
+V_{\mathfrak g}^{\star}(t_0)
+\le
+\limsup_{n\to\infty}\sup_{P\in\mathcal N_n:\,t_n\ge t_0}\mathbb E_P[\lambda(\widetilde C_n)].
+\]
+Since \(\widetilde C\in\mathfrak C^{\mathrm{cell}}\) was arbitrary, taking the infimum over that nonempty class and combining with Step 7 yields
 \[
 \frac{3(1-\alpha)^2}{16}\min\{1,t_0^{-1/2}\}
 \le
+V_{\mathfrak g}^{\star}(t_0)
+\le
 \inf_{\widetilde C\in\mathfrak C^{\mathrm{cell}}}
 \limsup_{n\to\infty}\sup_{P\in\mathcal N_n:\,t_n\ge t_0}
-\mathbb E_P[\lambda(\widetilde C_n)] .
+\mathbb E_P[\lambda(\widetilde C_n)] ,
 \]
-This completes the proof.
+which is the asserted converse for every \(t_0>0\).  This completes the proof.
+% lean: fixed_geometry_frontier, finite_cell_unknown_weight_attainment (converse branch)
 \end{enumerate}
 \end{proof}
 

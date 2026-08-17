@@ -114,13 +114,11 @@ private theorem h_lipschitz {h : ℝ → ℝ} {L : ℝ} (hd : ∀ x, |deriv h x|
 private theorem neg_phi_hasDerivAt (x : ℝ) : HasDerivAt (fun y => -phi y) (x * phi x) x := by
   unfold phi
   have hpow : HasDerivAt (fun y : ℝ => -y ^ 2 / 2) (-x) x := by
-    have := ((hasDerivAt_pow 2 x).div_const 2).neg
+    have := ((hasDerivAt_pow 2 x).div_const 2).fun_neg
     simpa [neg_div, pow_one] using this.congr_deriv (by ring)
   have hcomp : HasDerivAt (fun y => Real.exp (-y ^ 2 / 2))
       (Real.exp (-x ^ 2 / 2) * (-x)) x := (Real.hasDerivAt_exp _).comp x hpow
-  have := hcomp.neg
-  convert this using 1
-  ring
+  exact hcomp.fun_neg.congr_deriv (by ring)
 
 /-- The absolute value of any real number is at most the exponential of one quarter of its square. -/
 theorem abs_le_exp_sq_div_four (x : ℝ) : |x| ≤ Real.exp (x ^ 2 / 4) := by
@@ -151,7 +149,7 @@ private theorem mul_phi_integrableOn_Iic (w : ℝ) :
 
 private theorem neg_mul_phi_integrableOn_Iic (w : ℝ) :
     IntegrableOn (fun x => (-x) * phi x) (Set.Iic w) := by
-  simpa only [neg_mul] using (mul_phi_integrableOn_Iic w).neg
+  simpa only [neg_mul] using (mul_phi_integrableOn_Iic w).fun_neg
 
 /-- `φ → 0` at `-∞`. -/
 private theorem phi_tendsto_atBot : Filter.Tendsto phi Filter.atBot (nhds 0) := by
@@ -593,22 +591,19 @@ private theorem hMills_hasDerivAt (w : ℝ) :
   have hphi : HasDerivAt phi (-w * phi w) w := by
     unfold phi
     have hpow : HasDerivAt (fun y : ℝ => -y ^ 2 / 2) (-w) w := by
-      have := ((hasDerivAt_pow 2 w).div_const 2).neg
+      have := ((hasDerivAt_pow 2 w).div_const 2).fun_neg
       simpa [neg_div, pow_one] using this.congr_deriv (by ring)
-    have := (Real.hasDerivAt_exp (-w ^ 2 / 2)).comp w hpow
-    convert this using 1; ring
+    have hcomp : HasDerivAt (fun y => Real.exp (-y ^ 2 / 2))
+        (Real.exp (-w ^ 2 / 2) * (-w)) w := (Real.hasDerivAt_exp _).comp w hpow
+    exact hcomp.congr_deriv (by ring)
   have hr : HasDerivAt (fun u => u / (u ^ 2 + 1)) ((1 - w ^ 2) / (w ^ 2 + 1) ^ 2) w := by
     have hnum : HasDerivAt (fun u : ℝ => u) 1 w := hasDerivAt_id w
     have hden' : HasDerivAt (fun u : ℝ => u ^ 2 + 1) (2 * w) w := by
       simpa using (hasDerivAt_pow 2 w).add_const 1
-    have := hnum.div hden' hden
-    convert this using 1; field_simp; ring
+    exact (hnum.fun_div hden' hden).congr_deriv (by field_simp; ring)
   have hrp : HasDerivAt (fun u => (u / (u ^ 2 + 1)) * phi u)
       ((1 - w ^ 2) / (w ^ 2 + 1) ^ 2 * phi w + (w / (w ^ 2 + 1)) * (-w * phi w)) w := hr.mul hphi
-  have := hm.sub hrp
-  convert this using 1
-  field_simp
-  ring
+  exact (hm.fun_sub hrp).congr_deriv (by field_simp; ring)
 
 private theorem hMills_antitone : Antitone hMills := by
   apply antitone_of_deriv_nonpos (fun x => (hMills_hasDerivAt x).differentiableAt)
@@ -980,9 +975,7 @@ theorem steinSol_deriv_hasDerivAt (h : ℝ → ℝ) {C : ℝ}
     (hasDerivAt_id w).mul hf
   have hh' : HasDerivAt (fun u => h u - gExpect h) (deriv h w) w :=
     ((hdiff w).hasDerivAt).sub_const _
-  have := hprod.add hh'
-  convert this using 1
-  rw [hfderiv]; ring
+  exact (hprod.fun_add hh').congr_deriv (by rw [hfderiv]; ring)
 
 /-- The absolute second derivative of the standard-normal Stein solution at each point is at most
 twice the uniform bound on the derivative of the test function. -/

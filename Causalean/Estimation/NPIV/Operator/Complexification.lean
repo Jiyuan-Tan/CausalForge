@@ -80,6 +80,24 @@ open MeasureTheory ContinuousLinearMap
 
 variable {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω}
 
+/-- Local disambiguation of the real-scalar algebra structure on the complex
+operator algebra `Lp ℂ 2 μ →L[ℂ] Lp ℂ 2 μ`.
+
+There are two definitionally equal but syntactically different ways to view this
+algebra over `ℝ`: restriction of scalars from `ℂ` (`Algebra.complexToReal`, which
+is what Mathlib's real continuous functional calculus for self-adjoint elements
+is stated over) and the continuous-linear-map algebra `ContinuousLinearMap.algebra`
+with real scalars.  Typeclass search picks the latter and, since it only unfolds
+instance-reducible definitions, never identifies it with the former; Mathlib's
+`IsSelfAdjoint.instContinuousFunctionalCalculus` then fails to apply (this is the
+known diamond of `Mathlib.LinearAlgebra.Complex.Module`, mathlib4#10906).  Pinning
+the restriction-of-scalars structure inside this file makes the real functional
+calculus available and keeps every `cfc`-level rewrite in one instance path.  The
+two structures agree by `rfl`, so nothing about the mathematics changes. -/
+noncomputable local instance (priority := 2000) instAlgebraRealLpCLM :
+    Algebra ℝ (Lp ℂ 2 μ →L[ℂ] Lp ℂ 2 μ) :=
+  Algebra.complexToReal
+
 /-! ## Section 1.  Real ↔ complex `L²` glue -/
 
 /-- Pointwise real part on `L²(Ω, ℂ)`, bundled as a continuous
@@ -708,7 +726,7 @@ private lemma complexLift_isUnit_early
     IsUnit (complexLift B) := by
   have hone : complexLift (1 : Lp ℝ 2 μ →L[ℝ] Lp ℝ 2 μ) =
       (1 : Lp ℂ 2 μ →L[ℂ] Lp ℂ 2 μ) := by
-    simpa using complexLift_one_early (μ := μ)
+    exact complexLift_one_early (μ := μ)
   refine Units.isUnit ⟨complexLift B, complexLift ↑hB.unit⁻¹, ?_, ?_⟩
   · calc
       complexLift B * complexLift ↑hB.unit⁻¹ = complexLift (B * ↑hB.unit⁻¹) := by
@@ -965,7 +983,7 @@ private lemma complexLift_isUnit
     IsUnit (complexLift B) := by
   have hone : complexLift (1 : Lp ℝ 2 μ →L[ℝ] Lp ℝ 2 μ) =
       (1 : Lp ℂ 2 μ →L[ℂ] Lp ℂ 2 μ) := by
-    simpa using complexLift_one (μ := μ)
+    exact complexLift_one (μ := μ)
   refine Units.isUnit ⟨complexLift B, complexLift ↑hB.unit⁻¹, ?_, ?_⟩
   · calc
       complexLift B * complexLift ↑hB.unit⁻¹ = complexLift (B * ↑hB.unit⁻¹) := by

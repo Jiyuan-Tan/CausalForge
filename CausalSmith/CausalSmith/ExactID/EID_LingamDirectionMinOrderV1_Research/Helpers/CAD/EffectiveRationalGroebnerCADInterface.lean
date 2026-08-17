@@ -67,14 +67,17 @@ def effectiveCanonicalPolynomialPool (r : ℕ) : List (EffectivePolynomialCode r
   effectiveZeroPolynomialCode r :: effectiveOnePolynomialCode r ::
     List.ofFn effectiveVariablePolynomialCode
 
+/-- The canonical code for zero denotes the zero polynomial. -/
 @[simp] theorem effectiveZeroPolynomialCode_toPolynomial (r : ℕ) :
     (effectiveZeroPolynomialCode r).toPolynomial = 0 := by
   simp [effectiveZeroPolynomialCode, EffectivePolynomialCode.toPolynomial]
 
+/-- The canonical code for one denotes the constant polynomial one. -/
 @[simp] theorem effectiveOnePolynomialCode_toPolynomial (r : ℕ) :
     (effectiveOnePolynomialCode r).toPolynomial = 1 := by
   simp [effectiveOnePolynomialCode, EffectivePolynomialCode.toPolynomial]
 
+/-- The canonical code for a coordinate variable denotes exactly that coordinate variable. -/
 @[simp] theorem effectiveVariablePolynomialCode_toPolynomial {r : ℕ} (i : Fin r) :
     (effectiveVariablePolynomialCode i).toPolynomial = MvPolynomial.X i := by
   simp [effectiveVariablePolynomialCode, EffectivePolynomialCode.toPolynomial,
@@ -88,6 +91,9 @@ def EffectivePolynomialCodesRealize {r : ℕ} (codes : List (EffectivePolynomial
 /-- The Gaussian rational field `ℚ(i)`, presented by the relation `i² = -1`. -/
 abbrev GaussianRational := QuadraticAlgebra ℚ (-1) 0
 
+/-- No rational number satisfies the defining quadratic relation of the adjoined imaginary unit,
+that is, no rational number squares to minus one.  Registering this fact is what makes the
+presented quadratic extension of the rationals a field. -/
 local instance gaussianRationalIrreducible :
     Fact (∀ q : ℚ, q ^ 2 ≠ (-1 : ℚ) + 0 * q) := by
   constructor
@@ -97,6 +103,8 @@ local instance gaussianRationalIrreducible :
   rw [hq'] at hnonneg
   exact (not_le_of_gt neg_one_lt_zero) hnonneg
 
+/-- The Gaussian rationals have an effective numerical encoding and decoding, obtained from the
+pair consisting of their rational real and imaginary parts. -/
 noncomputable local instance gaussianRationalEncodable : Encodable GaussianRational :=
   Encodable.ofEquiv (ℚ × ℚ) (QuadraticAlgebra.equivProd (-1) 0)
 
@@ -1929,6 +1937,97 @@ Basu–Pollack–Roy, *Algorithms in Real Algebraic Geometry*, Chs. 11 and 14; B
 def effectiveRationalGroebnerCADOutput : Prop := EffectiveRationalGroebnerCADInterface
 
 end
+
+/-- Every finite syntactic code for a multivariate polynomial with rational coefficients has an
+effective numerical encoding and decoding, so such codes can be listed one by one. -/
+add_decl_doc instEncodableEffectivePolynomialCode
+
+/-- Every finite syntactic code for a polynomial over an effectively encodable coefficient field
+has an effective numerical encoding and decoding, obtained from the encoding of the
+coefficients. -/
+add_decl_doc instEncodableEffectivePolynomialCodeOver
+
+/-- Every finite machine presentation of a monomial order has an effective numerical encoding and
+decoding. -/
+add_decl_doc instEncodableEffectiveMonomialOrderCode
+
+/-- Provides a procedure that decides whether two high-level stages of a coefficient-polymorphic
+exact algebra trace are equal. -/
+add_decl_doc instDecidableEqEffectiveGroebnerTraceOperation
+
+/-- Every high-level stage of a coefficient-polymorphic exact algebra trace has an effective
+numerical encoding and decoding. -/
+add_decl_doc instEncodableEffectiveGroebnerTraceOperation
+
+/-- Provides a procedure that decides whether two primitive charged field operations of the exact
+algebra trace are equal. -/
+add_decl_doc instDecidableEqEffectiveGroebnerPrimitiveOperation
+
+/-- Every primitive charged field operation used by the exact algebra trace has an effective
+numerical encoding and decoding. -/
+add_decl_doc instEncodableEffectiveGroebnerPrimitiveOperation
+
+/-- Every high-level algebra step, together with its supplied input families, its displayed output
+families, and its charged primitive program, has an effective numerical encoding and decoding. -/
+add_decl_doc instEncodableEffectiveGroebnerTraceStep
+
+/-- Every finite machine output of one Gröbner computation over an effectively encodable
+coefficient field — its input presentations, its computed bases, and its trace — has an effective
+numerical encoding and decoding. -/
+add_decl_doc instEncodableEffectiveGroebnerPayloadOver
+
+/-- Provides a procedure that decides whether two exact signs from the three-valued alphabet
+(negative, zero, positive) are equal. -/
+add_decl_doc instDecidableEqEffectivePolynomialSign
+
+/-- Every exact sign from the three-valued alphabet emitted by the effective CAD algorithm has an
+effective numerical encoding and decoding. -/
+add_decl_doc instEncodableEffectivePolynomialSign
+
+/-- Every finite exact algebraic-root certificate — its defining rational polynomial, its index in
+the ordered root stack, and its Thom-sign row — has an effective numerical encoding and
+decoding. -/
+add_decl_doc instEncodableEffectiveAlgebraicRootCertificate
+
+/-- Every recursive finite syntax tree describing a lifted CAD cell geometry has an effective
+numerical encoding and decoding. -/
+add_decl_doc instEncodableEffectiveCADCellCertificate
+
+/-- Every complete CAD cell certificate, consisting of its encoded geometry together with its
+exhaustive constant-sign row, has an effective numerical encoding and decoding. -/
+add_decl_doc instEncodableEffectiveCertifiedCADCell
+
+/-- Every finite encoded sign-condition query — its equations together with its nonnegativity and
+positivity requirements — has an effective numerical encoding and decoding. -/
+add_decl_doc instEncodableEffectiveCADSignQuery
+
+/-- Every encoded cellwise truth row has an effective numerical encoding and decoding. -/
+add_decl_doc instEncodableEffectiveCADTruthRow
+
+/-- Every encoded witness-retention row has an effective numerical encoding and decoding. -/
+add_decl_doc instEncodableEffectiveCADRetentionRow
+
+/-- Every finite exact sign-vector presentation of a basic CAD cell has an effective numerical
+encoding and decoding. -/
+add_decl_doc instEncodableEffectiveCADBasicSignCondition
+
+/-- Every fully encoded prefix-projected CAD cell certificate — its eliminated and retained
+variables, its source-cell links, its projected geometry, its basic sign presentation, and its
+truth- and retention-row links — has an effective numerical encoding and decoding. -/
+add_decl_doc instEncodableEffectiveCADPrefixProjectionCertificate
+
+/-- Every finite certificate for one charged member of a reducta family — its source polynomial,
+the reduction variable and iteration number, and the output polynomial — has an effective numerical
+encoding and decoding. -/
+add_decl_doc instEncodableEffectiveReductumCertificate
+
+/-- Provides a procedure that decides whether two primitive operations of the real-algebraic cost
+model are equal. -/
+add_decl_doc instDecidableEqEffectiveRealAlgebraicPrimitiveOperation
+
+/-- Every primitive operation of the real-algebraic cost model has an effective numerical encoding
+and decoding. -/
+add_decl_doc instEncodableEffectiveRealAlgebraicPrimitiveOperation
 
 /-- General effective-algebra trace operations have a decidable equality test: any two operations
 can be effectively determined to be the same or different. -/

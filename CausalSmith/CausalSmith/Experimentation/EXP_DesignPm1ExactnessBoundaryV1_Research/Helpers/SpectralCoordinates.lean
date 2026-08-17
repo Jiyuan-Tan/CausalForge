@@ -99,17 +99,17 @@ lemma block_spectral_coordinates (m : ℕ) (a b r kappa u v : ℝ)
       have hOnesProj : Matrix.trace (onesProj m * blockSymMatrix m u v)
           = 1 + ((m : ℝ) - 1) * u + (m : ℝ) * v := by
         simp [Matrix.trace, Matrix.mul_apply, onesProj, blockSymMatrix]
-        rw [← Finset.mul_sum]
         have h' : (∑ x : Fin (2 * m), ∑ x_1 : Fin (2 * m),
-            if x_1 = x then (2 : ℝ)⁻¹
-            else if x_1.val < m ↔ x.val < m then 2⁻¹ * u else 2⁻¹ * v)
-            = 2 * (m : ℝ) * 2⁻¹
-              + 2 * (m : ℝ) * ((m : ℝ) - 1) * (2⁻¹ * u)
-              + 2 * (m : ℝ) * (m : ℝ) * (2⁻¹ * v) := by
+            if x_1 = x then (m : ℝ)⁻¹ * 2⁻¹
+            else if x_1.val < m ↔ x.val < m then (m : ℝ)⁻¹ * 2⁻¹ * u
+            else (m : ℝ)⁻¹ * 2⁻¹ * v)
+            = 2 * (m : ℝ) * ((m : ℝ)⁻¹ * 2⁻¹)
+              + 2 * (m : ℝ) * ((m : ℝ) - 1) * ((m : ℝ)⁻¹ * 2⁻¹ * u)
+              + 2 * (m : ℝ) * (m : ℝ) * ((m : ℝ)⁻¹ * 2⁻¹ * v) := by
           simpa [eq_comm, iff_comm] using
-            block_pair_sum m ((2 : ℝ)⁻¹) (2⁻¹ * u) (2⁻¹ * v)
+            block_pair_sum m ((m : ℝ)⁻¹ * 2⁻¹) ((m : ℝ)⁻¹ * 2⁻¹ * u) ((m : ℝ)⁻¹ * 2⁻¹ * v)
         rw [h']
-        field_simp [hm0R]
+        field_simp
       have hSign : Matrix.trace (signProj m * blockSymMatrix m u v)
           = 1 + ((m : ℝ) - 1) * u - (m : ℝ) * v := by
         simp [Matrix.trace, Matrix.mul_apply, signProj, blockSymMatrix]
@@ -293,8 +293,11 @@ lemma block_spectral_coordinates (m : ℕ) (a b r kappa u v : ℝ)
       rw [hL, hPinv, hFrob, hJ]
       ring
     · constructor
-      · exact ⟨cutCovariance_eq_blockSym m, by
-          norm_num; exact ⟨rfl, by ring⟩⟩
-      · exact ⟨identity_eq_blockSym m, by ring_nf⟩
+      · refine ⟨cutCovariance_eq_blockSym m, ?_⟩
+        simp only [Prod.mk.injEq]
+        exact ⟨by ring, by ring, by ring⟩
+      · refine ⟨identity_eq_blockSym m, ?_⟩
+        simp only [Prod.mk.injEq]
+        exact ⟨by ring, by ring, by ring⟩
 
 end CausalSmith.Experimentation.DesignPm1

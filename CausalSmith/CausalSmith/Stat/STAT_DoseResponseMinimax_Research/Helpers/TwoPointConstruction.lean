@@ -146,13 +146,11 @@ lemma minimaxRisk_two_point_lower {alpha beta s M c0 eps0 t0 : ℝ}
     have hIntEq0 :
         (∫ s, (Tu s - θ0) ^ 2 ∂Q0u) =
           ∫ s, (T s - θ0) ^ 2 ∂Q0 := by
-      simpa [Q0u, Tu, e] using
-        MeasureTheory.integral_map_equiv e (fun s => (Tu s - θ0) ^ 2) (μ := Q0)
+      exact MeasureTheory.integral_map_equiv e (fun s => (Tu s - θ0) ^ 2) (μ := Q0)
     have hIntEq1 :
         (∫ s, (Tu s - θ1) ^ 2 ∂Q1u) =
           ∫ s, (T s - θ1) ^ 2 ∂Q1 := by
-      simpa [Q1u, Tu, e] using
-        MeasureTheory.integral_map_equiv e (fun s => (Tu s - θ1) ^ 2) (μ := Q1)
+      exact MeasureTheory.integral_map_equiv e (fun s => (Tu s - θ1) ^ 2) (μ := Q1)
     simpa [hIntEq0, hIntEq1] using hLCu
   let A : ℝ := M + M * M * volume.real (cube d)
   have hA_nonneg : 0 ≤ A := by
@@ -350,8 +348,8 @@ lemma oracle_dose_regression_lower_all_beta {d : ℕ}
       (Measure.pi fun _ : Fin n => P0.dataMeasure)
       (Measure.pi fun _ : Fin n => P1.dataMeasure)
       ≤ ENNReal.ofReal K := by
-    dsimp [P0, P1]
-    simpa [hbudget_eq] using hKL0
+    rw [← hbudget_eq]
+    exact hKL0
   have hlow := minimaxRisk_two_point_lower (d := d) (alpha := alpha) (beta := beta)
     (s := s) (M := M) (c0 := c0) (eps0 := eps0) (t0 := t0)
     hMpos heps.1.le n P0 P1 hmem0 hmem1 K cK hcK hbody hKL

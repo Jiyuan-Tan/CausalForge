@@ -57,7 +57,10 @@ theorem convexOn_l1penalty : ConvexOn ℝ Set.univ (l1penalty (Param := Param)) 
           (convexOn_const (𝕜 := ℝ) (E := Param → ℝ) (β := ℝ)
             (s := Set.univ) (0 : ℝ) convex_univ)
     | insert k t hk ht =>
-        simpa [Finset.sum_insert hk, Pi.add_apply] using (hcoord k).add ht
+        -- `ConvexOn.add` concludes about the point-free sum `f + g`; `simp` no
+        -- longer bridges it to the lambda form, so close by `exact`.
+        simp only [Finset.sum_insert hk]
+        exact (hcoord k).add ht
   simpa [Real.norm_eq_abs] using hfin Finset.univ
 
 /-- The least-squares objective is convex in the coefficients. -/
@@ -98,7 +101,8 @@ theorem convexOn_olsObjective (X : Matrix Obs Param ℝ) (y : Obs → ℝ) :
           (convexOn_const (𝕜 := ℝ) (E := Param → ℝ) (β := ℝ)
             (s := Set.univ) (0 : ℝ) convex_univ)
     | insert i t hi ht =>
-        simpa [Finset.sum_insert hi, Pi.add_apply] using (hsummand i).add ht
+        simp only [Finset.sum_insert hi]
+        exact (hsummand i).add ht
   simpa using hfin Finset.univ
 
 /-- The lasso objective is convex for `λ ≥ 0`. -/
@@ -106,7 +110,7 @@ theorem convexOn_lassoObjective
     (X : Matrix Obs Param ℝ) (y : Obs → ℝ) {lam : ℝ} (hlam : 0 ≤ lam) :
     ConvexOn ℝ Set.univ (lassoObjective X y lam) := by
   unfold lassoObjective
-  simpa [smul_eq_mul] using
-    (convexOn_olsObjective X y).add ((convexOn_l1penalty (Param := Param)).smul hlam)
+  exact (convexOn_olsObjective X y).add
+    ((convexOn_l1penalty (Param := Param)).smul hlam)
 
 end Causalean.ML

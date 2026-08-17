@@ -173,7 +173,7 @@ theorem seqDR_score_diff_isLittleOp_one
     rw [DTREstimationSystem.P_Z]
     exact (memLp_map_measure_iff hprojY_meas.aestronglyMeasurable
       S.measurable_factualZ.aemeasurable).2 (by
-        simpa [DTREstimationSystem.factualZ, projY] using hY_L2)
+        simpa [DTREstimationSystem.factualZ, projY, Function.comp_def] using hY_L2)
   have hR1_meas : Measurable R1 := by
     simpa [R1, Function.comp_def] using
       (continuous_abs.measurable.comp
@@ -186,7 +186,7 @@ theorem seqDR_score_diff_isLittleOp_one
         (continuous_abs.measurable.comp
           ((S.μ₁_meas.comp measurable_histH₁).sub
             (S.μ₀_meas.comp measurable_projS₀)))
-    simpa [R0] using hres.add hR1_meas
+    exact hres.add hR1_meas
   have hR1_nonneg : ∀ z, 0 ≤ R1 z := by
     intro z
     dsimp [R1]
@@ -201,53 +201,47 @@ theorem seqDR_score_diff_isLittleOp_one
     have h01 : MemLp (fun z =>
         |S.μ₁_val (histH₁ z) - S.μ₀_val (projS₀ z)|) 2 S.P_Z := by
       simpa [Real.norm_eq_abs] using (hμ1Z_val_memLp.sub hμ0Z_val_memLp).norm
-    simpa [R0] using h01.add hR1_memLp
+    exact h01.add hR1_memLp
   have hdμ0Z_memLp : ∀ n ω, MemLp (dμ0Z n ω) 2 S.P_Z := by
     intro n ω
     have hmap : MemLp
         (fun s₀ => (η_hat n ω).μ₀_fn s₀ - S.μ₀_val s₀) 2
         (S.P_Z.map (fun z : γ 0 × δ × γ 1 × δ × ℝ => projS₀ z)) := by
       simpa [P_Z_map_projS₀_eq_P_H₀ S] using h_mu0_memLp n ω
-    simpa [dμ0Z] using
-      (memLp_map_measure_iff hmap.aestronglyMeasurable
-        measurable_projS₀.aemeasurable).1 hmap
+    exact (memLp_map_measure_iff hmap.aestronglyMeasurable
+      measurable_projS₀.aemeasurable).1 hmap
   have hdμ1Z_memLp : ∀ n ω, MemLp (dμ1Z n ω) 2 S.P_Z := by
     intro n ω
     have hmap : MemLp
         (fun h => (η_hat n ω).μ₁_fn h - S.μ₁_val h) 2
         (S.P_Z.map (fun z : γ 0 × δ × γ 1 × δ × ℝ => histH₁ z)) := by
       simpa [P_Z_map_histH₁_eq_P_H₁ S] using h_mu1_memLp n ω
-    simpa [dμ1Z] using
-      (memLp_map_measure_iff hmap.aestronglyMeasurable
-        measurable_histH₁.aemeasurable).1 hmap
+    exact (memLp_map_measure_iff hmap.aestronglyMeasurable
+      measurable_histH₁.aemeasurable).1 hmap
   have hde0Z_memLp : ∀ n ω, MemLp (de0Z n ω) 2 S.P_Z := by
     intro n ω
     have hmap : MemLp
         (fun s₀ => (η_hat n ω).e₀_fn s₀ - S.e₀_val s₀) 2
         (S.P_Z.map (fun z : γ 0 × δ × γ 1 × δ × ℝ => projS₀ z)) := by
       simpa [P_Z_map_projS₀_eq_P_H₀ S] using h_e0_memLp n ω
-    simpa [de0Z] using
-      (memLp_map_measure_iff hmap.aestronglyMeasurable
-        measurable_projS₀.aemeasurable).1 hmap
+    exact (memLp_map_measure_iff hmap.aestronglyMeasurable
+      measurable_projS₀.aemeasurable).1 hmap
   have hde1Z_memLp : ∀ n ω, MemLp (de1Z n ω) 2 S.P_Z := by
     intro n ω
     have hmap : MemLp
         (fun h => (η_hat n ω).e₁_fn h - S.e₁_val h) 2
         (S.P_Z.map (fun z : γ 0 × δ × γ 1 × δ × ℝ => histH₁ z)) := by
       simpa [P_Z_map_histH₁_eq_P_H₁ S] using h_e1_memLp n ω
-    simpa [de1Z] using
-      (memLp_map_measure_iff hmap.aestronglyMeasurable
-        measurable_histH₁.aemeasurable).1 hmap
+    exact (memLp_map_measure_iff hmap.aestronglyMeasurable
+      measurable_histH₁.aemeasurable).1 hmap
   have hde0Z_meas : ∀ n ω, Measurable (de0Z n ω) := by
     intro n ω
-    simpa [de0Z] using
-      ((η_hat n ω).e₀_meas.comp measurable_projS₀).sub
-        (S.e₀_meas.comp measurable_projS₀)
+    exact ((η_hat n ω).e₀_meas.comp measurable_projS₀).sub
+      (S.e₀_meas.comp measurable_projS₀)
   have hde1Z_meas : ∀ n ω, Measurable (de1Z n ω) := by
     intro n ω
-    simpa [de1Z] using
-      ((η_hat n ω).e₁_meas.comp measurable_histH₁).sub
-        (S.e₁_meas.comp measurable_histH₁)
+    exact ((η_hat n ω).e₁_meas.comp measurable_histH₁).sub
+      (S.e₁_meas.comp measurable_histH₁)
   have hde0Z_bdd : ∀ n ω z, |de0Z n ω z| ≤ 1 := by
     intro n ω z
     have hη := h_in_H n ω
@@ -385,7 +379,7 @@ theorem seqDR_score_diff_isLittleOp_one
           (fun z : γ 0 × δ × γ 1 × δ × ℝ => |de0Z n ω z|) := by
         simpa [Function.comp_def] using
           (continuous_abs.measurable.comp (hde0Z_meas n ω))
-      simpa [cross0] using hR0_meas.mul h_abs
+      exact hR0_meas.mul h_abs
     refine hR0_memLp.mono' hcross_meas.aestronglyMeasurable ?_
     filter_upwards with z
     have hRz : 0 ≤ R0 z := hR0_nonneg z
@@ -399,7 +393,7 @@ theorem seqDR_score_diff_isLittleOp_one
           (fun z : γ 0 × δ × γ 1 × δ × ℝ => |de1Z n ω z|) := by
         simpa [Function.comp_def] using
           (continuous_abs.measurable.comp (hde1Z_meas n ω))
-      simpa [cross1] using hR1_meas.mul h_abs
+      exact hR1_meas.mul h_abs
     refine hR1_memLp.mono' hcross_meas.aestronglyMeasurable ?_
     filter_upwards with z
     have hRz : 0 ≤ R1 z := hR1_nonneg z
@@ -418,7 +412,7 @@ theorem seqDR_score_diff_isLittleOp_one
       have h1 : MemLp (fun z => |dμ1Z n ω z|) 2 S.P_Z := by
         simpa [Real.norm_eq_abs] using (hdμ1Z_memLp n ω).norm
       exact ((h0.add h1).add hcross0_memLp).add hcross1_memLp
-    simpa [upper, Pi.smul_apply, smul_eq_mul] using hsum.const_smul (K_seqDR ε)
+    exact hsum.const_smul (K_seqDR ε)
   have hmono :
       (eLpNorm (score n ω) 2 S.P_Z).toReal ≤
         (eLpNorm upper 2 S.P_Z).toReal := by
@@ -441,7 +435,7 @@ theorem seqDR_score_diff_isLittleOp_one
         simpa [Real.norm_eq_abs] using (hdμ0Z_memLp n ω).norm
       have h1 : MemLp (fun z => |dμ1Z n ω z|) 2 S.P_Z := by
         simpa [Real.norm_eq_abs] using (hdμ1Z_memLp n ω).norm
-      simpa [total] using ((h0.add h1).add hcross0_memLp).add hcross1_memLp
+      exact ((h0.add h1).add hcross0_memLp).add hcross1_memLp
     have hupper_eq : upper = K_seqDR ε • total := by
       funext z
       simp [upper, total, smul_eq_mul]
@@ -499,7 +493,7 @@ theorem seqDR_score_diff_isLittleOp_one
             lpNorm (fun z => |dμ1Z n ω z|) 2 S.P_Z := by
       have h0 : MemLp (fun z => |dμ0Z n ω z|) 2 S.P_Z := by
         simpa [Real.norm_eq_abs] using (hdμ0Z_memLp n ω).norm
-      simpa using lpNorm_add_le
+      exact lpNorm_add_le
         (f := fun z => |dμ0Z n ω z|)
         (g := fun z => |dμ1Z n ω z|) (μ := S.P_Z) h0
         (by norm_num : (1 : ENNReal) ≤ 2)

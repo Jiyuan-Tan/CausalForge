@@ -26,13 +26,15 @@ variable {V : Type*} [Fintype V] [DecidableEq V]
 lemma nbhdB_edgeFn_eq_nbhd (M : ModelClass V d β B) (i : V) :
     nbhdB (edgeFn M) i = nbhd M.edge i := by
   ext j
-  simp [nbhdB, edgeFn, nbhd]
+  simp only [nbhdB, nbhd, Finset.mem_filter, Finset.mem_univ, true_and]
+  simp [edgeFn]
 
 /-- The bounded-outcome graph encoding has exactly the original relation's neighborhood. -/
 lemma nbhdB_edgeFnBdd_eq_nbhd (M : BddOutcomeModelClass V d β B) (i : V) :
     nbhdB (edgeFnBdd M) i = nbhd M.edge i := by
   ext j
-  simp [nbhdB, edgeFnBdd, nbhd]
+  simp only [nbhdB, nbhd, Finset.mem_filter, Finset.mem_univ, true_and]
+  simp [edgeFnBdd]
 
 /-- Coordinatewise products factor under a common-probability Bernoulli design. -/
 lemma E_global_coordinate_prod

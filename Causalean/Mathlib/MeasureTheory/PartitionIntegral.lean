@@ -141,6 +141,6 @@ theorem integral_cellConst {ι : Type*} [Fintype ι]
     ∫ ω, c (H ω) ∂μ = ∑ h : ι, c h * (μ (H ⁻¹' {h})).toReal := by
   have h := integral_cellConst_mul hfiber c
     (f := fun _ => (1 : ℝ)) (hf := (integrable_const (1 : ℝ) : Integrable (fun _ : Ω => (1 : ℝ)) μ))
-  simpa [mul_one, setIntegral_const, smul_eq_mul] using h
+  simpa [mul_one, setIntegral_const, smul_eq_mul, measureReal_def] using h
 
 end Causalean.Mathlib.MeasureTheory

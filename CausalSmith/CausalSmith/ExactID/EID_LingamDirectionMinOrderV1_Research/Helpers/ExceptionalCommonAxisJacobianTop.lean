@@ -73,7 +73,7 @@ theorem pderiv_commonAxisPolynomial {m L : ℕ} (hm : 1 ≤ m)
         · have hsub : (⟨d, hd⟩ : CommonAxisBandCoord m L hm) ≠ c := by
             intro h
             exact hdc (congrArg Subtype.val h)
-          simp [commonAxisPolynomial, hd, hdc, hsub, hP, mul_comm]
+          simp [commonAxisPolynomial, hd, hdc, hsub, hP]
 
 /-- Evaluation form of `pderiv_commonAxisPolynomial`. -/
 theorem eval_pderiv_commonAxisPolynomial {m L : ℕ} (hm : 1 ≤ m)
@@ -149,12 +149,16 @@ def commonAxisNodeSource (m : ℕ) (hm : 1 ≤ m) (j : Fin (m + 1)) :
 def commonAxisNodeValue (m : ℕ) (j : Fin (m + 1)) : ℂ :=
   (j.val : ℂ)
 
+/-- The permuted finite nodes carry pairwise distinct values, since node `j` is
+assigned the number `j` itself and the nodes are `0, 1, ..., m`. -/
 theorem commonAxisNodeValue_injective (m : ℕ) :
     Function.Injective (commonAxisNodeValue m) := by
   intro i j h
   apply Fin.ext
   exact_mod_cast (show (i.val : ℂ) = j.val by simpa [commonAxisNodeValue] using h)
 
+/-- Reinstating the pinned latent-slope coordinate at the common-axis witness
+leaves the direct slope equal to one. -/
 lemma commonAxisJacobianWitness_insert_direct (m : ℕ) (hm : 1 ≤ m) :
     commonAxisBandInsert hm (commonAxisJacobianWitnessCoord m hm)
         (Sum.inl ()) = 1 := by
@@ -277,6 +281,10 @@ direct slope; all later ones are their same-index latent slopes. -/
 def commonAxisUnpinnedSlope (m : ℕ) (i : Fin m) : ForwardSlopeIndex m :=
   if h0 : i.val = 0 then Sum.inl () else Sum.inr i
 
+/-- The slope differentiated at the `i`-th unpinned node — the direct slope
+when `i` is zero and the latent slope of the same index otherwise — is carried
+by exactly the source that the common-axis permutation places at node
+`i + 1`. -/
 lemma forwardSlopeSourceIndex_commonAxisUnpinnedSlope
     (m : ℕ) (hm : 1 ≤ m) (i : Fin m) :
     forwardSlopeSourceIndex m (commonAxisUnpinnedSlope m i) =

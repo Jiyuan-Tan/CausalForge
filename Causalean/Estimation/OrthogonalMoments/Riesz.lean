@@ -240,16 +240,16 @@ theorem rieszScore_bilinearRem
     rw [h_pushforward]
     have h_asm :
         AEStronglyMeasurable (fun x => α x * γ_target γ x) (P_Z.map proj_X) := by
-      simpa [← h_pushforward] using
-        h_int_α.aestronglyMeasurable.mul h_int_γ.aestronglyMeasurable
+      rw [← h_pushforward]
+      exact h_int_α.aestronglyMeasurable.fun_mul h_int_γ.aestronglyMeasurable
     exact (MeasureTheory.integrable_map_measure h_asm h_proj_meas.aemeasurable).2 h_int_αγ
   have h_int_αγ₀_X :
       Integrable (fun x => α x * γ_target γ₀ x) P_X := by
     rw [h_pushforward]
     have h_asm :
         AEStronglyMeasurable (fun x => α x * γ_target γ₀ x) (P_Z.map proj_X) := by
-      simpa [← h_pushforward] using
-        h_int_α.aestronglyMeasurable.mul h_int_γ₀.aestronglyMeasurable
+      rw [← h_pushforward]
+      exact h_int_α.aestronglyMeasurable.fun_mul h_int_γ₀.aestronglyMeasurable
     exact (MeasureTheory.integrable_map_measure h_asm h_proj_meas.aemeasurable).2 h_int_αγ₀
   have hscore :
       ∫ z, rieszScore γ_target L proj_X Y_obs γ α (L γ₀) z ∂P_Z

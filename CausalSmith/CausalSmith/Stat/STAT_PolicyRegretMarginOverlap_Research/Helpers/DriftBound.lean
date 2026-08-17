@@ -96,7 +96,11 @@ lemma clipped_region_localization (P : ObservedLaw 𝒳)
         add_le_add hsmall hbig
 
 -- @node: l2_abs_product_integral_le
-private lemma l2_abs_product_integral_le {Ω : Type*} [MeasurableSpace Ω]
+/-- Cauchy–Schwarz in the shape used to form product rates: if two square-integrable
+functions have mean squares bounded by `r_f^2` and `r_g^2`, then the integral of the
+product of their absolute values is at most `r_f r_g`. This is the step that turns two
+separate root-mean-square nuisance rates into a single product rate. -/
+lemma l2_abs_product_integral_le {Ω : Type*} [MeasurableSpace Ω]
     {μ : Measure Ω} {f g : Ω → ℝ} {rf rg : ℝ}
     (hf : MemLp f 2 μ) (hg : MemLp g 2 μ)
     (hsqf : ∫ x, f x ^ 2 ∂μ ≤ rf ^ 2)
@@ -152,7 +156,11 @@ private lemma l2_abs_product_integral_le {Ω : Type*} [MeasurableSpace Ω]
           (Real.rpow_nonneg (by positivity) _) hrf
 
 -- @node: l2_set_abs_integral_le
-private lemma l2_set_abs_integral_le {Ω : Type*} [MeasurableSpace Ω]
+/-- Cauchy-Schwarz against an indicator. Under a probability measure, the integral of a
+function's absolute value over a measurable set is at most the square root of that set's
+probability times the function's root-mean-square bound. This is what converts an integral
+localized to a small region into a mass factor multiplied by a rate. -/
+lemma l2_set_abs_integral_le {Ω : Type*} [MeasurableSpace Ω]
     {μ : Measure Ω} [IsProbabilityMeasure μ] {S : Set Ω} (hS : MeasurableSet S)
     {f : Ω → ℝ} {r : ℝ}
     (hf : MemLp f 2 μ) (hsq : ∫ x, f x ^ 2 ∂μ ≤ r ^ 2) (hr : 0 ≤ r) :
@@ -188,7 +196,7 @@ private lemma l2_set_abs_integral_le {Ω : Type*} [MeasurableSpace Ω]
         filter_upwards with x
         by_cases hx : x ∈ S <;> simp [ind, hx]
       _ = μ.real S := by
-        simpa [ind] using integral_indicator_one (μ := μ) hS
+        exact integral_indicator_one (μ := μ) hS
   have hf_sq_eq : (∫ x, |f x| ^ (2 : ℝ) ∂μ) = ∫ x, f x ^ 2 ∂μ := by
     apply integral_congr_ae
     filter_upwards with x
@@ -212,7 +220,9 @@ private lemma l2_set_abs_integral_le {Ω : Type*} [MeasurableSpace Ω]
         mul_le_mul_of_nonneg_left hf_sqrt_le (Real.sqrt_nonneg _)
 
 -- @node: clippedPropensity_lipschitz
-private lemma clippedPropensity_lipschitz (q y z : ℝ) :
+/-- Truncating a real number into the band between `q` and `1-q` never pushes two inputs
+further apart than they already were: the operation is nonexpansive. -/
+lemma clippedPropensity_lipschitz (q y z : ℝ) :
     |min (1 - q) (max q y) - min (1 - q) (max q z)| ≤ |y - z| := by
   have hmax : |max q y - max q z| ≤ |y - z| := by
     simpa [abs_sub_comm, max_comm] using (abs_max_sub_max_le_abs y z q)
@@ -222,7 +232,12 @@ private lemma clippedPropensity_lipschitz (q y z : ℝ) :
   exact le_trans hmin hmax
 
 -- @node: clippedPropensity_error_le_error_plus_overlap_indicator
-private lemma clippedPropensity_error_le_error_plus_overlap_indicator
+/-- Pointwise error of the clipped propensity. For a clip level between zero and one half,
+the distance between the clipped estimated propensity and the true propensity is at most the
+raw estimation error plus the clip level itself, and that extra charge is incurred only at
+covariate values whose true overlap is at or below the clip level. Away from the clipped
+region, clipping costs nothing. -/
+lemma clippedPropensity_error_le_error_plus_overlap_indicator
     (P : ObservedLaw 𝒳) (q : ℝ) (eHat : 𝒳 → ℝ) (x : 𝒳)
     (hwf : WellFormedLaw P) (hq : 0 < q) (hq_half : q ≤ 1 / 2) :
     |clippedPropensity q eHat x - P.propensity x| ≤
@@ -293,7 +308,12 @@ private lemma clippedPropensity_error_le_error_plus_overlap_indicator
         add_le_add hlip hself_le
 
 -- @node: policy_overlap_indicator_mul_le_inter_indicator
-private lemma policy_overlap_indicator_mul_le_inter_indicator
+/-- The disagreement weight between two policies, restricted to a set, is dominated by the
+indicator of the intersection. The absolute difference of the two policies' treatment
+indicators is at most one and is zero wherever the policies agree, so multiplying it by the
+indicator of any set is bounded by the indicator of that set intersected with the region
+where the policies disagree. -/
+lemma policy_overlap_indicator_mul_le_inter_indicator
     (π πstar : Policy 𝒳) (S : Set 𝒳) (x : 𝒳) :
     |boolIndicator (π x) - boolIndicator (πstar x)| *
         (S.indicator (fun _ : 𝒳 => (1 : ℝ)) x)
@@ -316,7 +336,13 @@ private lemma policy_overlap_indicator_mul_le_inter_indicator
     by_cases hxS : x ∈ S <;> simp [hz, hxD, hxS]
 
 -- @node: policy_clipBias_abs_pointwise_le
-private lemma policy_clipBias_abs_pointwise_le (P : ObservedLaw 𝒳) (q : ℝ)
+/-- Pointwise bound on the disagreement-weighted clipped-AIPW bias. At each covariate value,
+the product of the policy-disagreement weight and the clip bias is at most the propensity
+error times each of the two outcome-regression errors, divided by the clip level, plus each
+outcome-regression error restricted to the part of the disagreement region whose overlap is
+at or below the clip level. The first group is the familiar product-bias term; the second is
+the price of clipping, and it is charged only inside the clipped region. -/
+lemma policy_clipBias_abs_pointwise_le (P : ObservedLaw 𝒳) (q : ℝ)
     (muHat0 muHat1 eHat : 𝒳 → ℝ) (π : Policy 𝒳) (x : 𝒳)
     (hwf : WellFormedLaw P) (hq : 0 < q) (hq_half : q ≤ 1 / 2) :
     |(boolIndicator (π x) - boolIndicator (lawOptimalPolicy P x)) *
@@ -440,7 +466,13 @@ private lemma policy_clipBias_abs_pointwise_le (P : ObservedLaw 𝒳) (q : ℝ)
         ring
 
 -- @node: clipBias_drift_l2_mass_bound
-private lemma clipBias_drift_l2_mass_bound (P : ObservedLaw 𝒳)
+/-- Integrated clip-bias drift bound in terms of the clipped-region mass. If the two
+outcome-regression errors have root-mean-square bound `r_μ` and the propensity error has
+root-mean-square bound `r_e`, then the policy-weighted population drift is at most twice the
+product rate divided by the clip level, plus twice `r_μ` times the square root of the
+probability that a covariate both lies in the disagreement region and has overlap at or
+below the clip level. Only that mass enters; bounding it is left to the localization step. -/
+lemma clipBias_drift_l2_mass_bound (P : ObservedLaw 𝒳)
     (q rMu rE : ℝ) (muHat0 muHat1 eHat : 𝒳 → ℝ)
     (hsq0 : ∫ x, (muHat0 x - P.mu0 x) ^ 2 ∂P.PX ≤ rMu ^ 2)
     (hsq1 : ∫ x, (muHat1 x - P.mu1 x) ^ 2 ∂P.PX ≤ rMu ^ 2)
@@ -489,9 +521,9 @@ private lemma clipBias_drift_l2_mass_bound (P : ObservedLaw 𝒳)
   have hμ0_abs : MemLp (fun x => |muHat0 x - P.mu0 x|) 2 P.PX := by
     simpa using hμ0L2.norm
   have hprod1_int : Integrable prod1 P.PX := by
-    simpa [prod1] using (he_abs.integrable_mul hμ1_abs)
+    exact he_abs.integrable_mul hμ1_abs
   have hprod0_int : Integrable prod0 P.PX := by
-    simpa [prod0] using (he_abs.integrable_mul hμ0_abs)
+    exact he_abs.integrable_mul hμ0_abs
   have hset1_int : Integrable set1 P.PX := by
     let ind : 𝒳 → ℝ := T.indicator (fun _ : 𝒳 => (1 : ℝ))
     have hind_meas : AEStronglyMeasurable ind P.PX :=
@@ -504,7 +536,7 @@ private lemma clipBias_drift_l2_mass_bound (P : ObservedLaw 𝒳)
       simpa using (memLp_two_iff_integrable_sq hind_meas).2 hind_int_sq
     have hmul : Integrable (ind * fun x => |muHat1 x - P.mu1 x|) P.PX :=
       hind_L2.integrable_mul hμ1_abs
-    simpa [set1, ind] using hmul
+    exact hmul
   have hset0_int : Integrable set0 P.PX := by
     let ind : 𝒳 → ℝ := T.indicator (fun _ : 𝒳 => (1 : ℝ))
     have hind_meas : AEStronglyMeasurable ind P.PX :=
@@ -517,7 +549,7 @@ private lemma clipBias_drift_l2_mass_bound (P : ObservedLaw 𝒳)
       simpa using (memLp_two_iff_integrable_sq hind_meas).2 hind_int_sq
     have hmul : Integrable (ind * fun x => |muHat0 x - P.mu0 x|) P.PX :=
       hind_L2.integrable_mul hμ0_abs
-    simpa [set0, ind] using hmul
+    exact hmul
   have hprod_div_int : Integrable (fun x => (prod1 x + prod0 x) / q) P.PX := by
     simpa [div_eq_mul_inv, mul_comm] using (hprod1_int.add hprod0_int).const_mul q⁻¹
   have hmajor_int : Integrable major P.PX := by
@@ -605,7 +637,9 @@ private lemma clipBias_drift_l2_mass_bound (P : ObservedLaw 𝒳)
         ring
 
 -- @node: sqrt_add_le_sqrt_add_sqrt
-private lemma sqrt_add_le_sqrt_add_sqrt {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) :
+/-- The square root is subadditive: the square root of a sum of two nonnegative numbers is
+at most the sum of their square roots. -/
+lemma sqrt_add_le_sqrt_add_sqrt {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) :
     Real.sqrt (a + b) ≤ Real.sqrt a + Real.sqrt b := by
   rw [Real.sqrt_le_iff]
   constructor
@@ -618,7 +652,11 @@ private lemma sqrt_add_le_sqrt_add_sqrt {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b
       _ = (Real.sqrt a + Real.sqrt b) ^ 2 := by ring
 
 -- @node: sqrt_margin_overlap_product
-private lemma sqrt_margin_overlap_product {Creg u q α γ : ℝ}
+/-- Taking the square root of the localized-mass bound distributes across its three positive
+factors and halves each exponent: the square root of a constant times the margin window
+raised to `α` times the clip level raised to `1/γ` equals the square root of the constant
+times the window raised to `α/2` times the clip level raised to `1/(2γ)`. -/
+lemma sqrt_margin_overlap_product {Creg u q α γ : ℝ}
     (hC : 0 < Creg) (hu : 0 < u) (hq : 0 < q) :
     Real.sqrt (Creg * u ^ α * q ^ (1 / γ)) =
       Creg ^ (1 / 2 : ℝ) * u ^ (α / 2) * q ^ (1 / (2 * γ)) := by
@@ -641,14 +679,17 @@ private lemma sqrt_margin_overlap_product {Creg u q α γ : ℝ}
           ring_nf
 
 -- @node: lem:localized-clipped-drift-bound
-/-- `lem:localized-clipped-drift-bound`. Deterministic drift bound for the actual
-policy-weighted drift `|P[(π-π_⋆) b_q]| = |driftIntegral …|`, in BOTH overlap
-regimes, from `clip_bias`, clipping, and clipped-region localization (which needs
-overlap-decay and zero-effect). For `γ>0` and `q ≤ c_o u^γ` it is the three-term
-bound; for `γ=0` with fixed `q ≤ underline_p/2` (the strict-overlap endpoint
-`underline_p`, NOT hard-coded), strict overlap collapses it to `C r_μ r_e`. -/
+/-- Drift bound from a supplied localization estimate. Given as an input a bound on the mass
+of the clipped disagreement region of the form `C u^α q^{1/γ} + R_P(π)/u`, the policy-weighted
+clip-bias drift is at most `4` times the sum of the product-rate term `r_μ r_e / q`, the
+clipped-region term `r_μ C^{1/2} u^{α/2} q^{1/(2γ)}` and the regret-localization term
+`r_μ (R_P(π)/u)^{1/2}`. At the strict-overlap endpoint, where the overlap exponent is zero
+and the clip level is fixed at no more than half the overlap floor, the drift instead
+collapses to `max(1, 2/q)` times the product rate `r_μ r_e`. This is the form that takes the
+localization estimate as a hypothesis; the companion result derives that estimate itself from
+overlap decay and zero-effect regularity. -/
 -- @node: lem:clip-bias-drift-l2-localized-from-region
-private lemma clipBias_drift_l2_localized_from_region (P : ObservedLaw 𝒳)
+lemma clipBias_drift_l2_localized_from_region (P : ObservedLaw 𝒳)
     (q rMu rE α γ underlineP : ℝ) (muHat0 muHat1 eHat : 𝒳 → ℝ)
     (hsq0 : ∫ x, (muHat0 x - P.mu0 x) ^ 2 ∂P.PX ≤ rMu ^ 2)
     (hsq1 : ∫ x, (muHat1 x - P.mu1 x) ^ 2 ∂P.PX ≤ rMu ^ 2)
@@ -767,6 +808,18 @@ private lemma clipBias_drift_l2_localized_from_region (P : ObservedLaw 𝒳)
             mul_le_mul_of_nonneg_right hCge hprod_nonneg
 
 -- @node: lem:localized-clipped-drift-bound
+/-- Deterministic bound on the policy-weighted clip-bias drift — the population average of
+the clipped-AIPW conditional-mean error weighted by the disagreement between the
+candidate policy and the law-optimal policy — in BOTH overlap regimes.
+
+In the decaying-overlap regime (positive `γ`), for every policy of the class and every
+margin window `u ≤ u₀` whose clip level obeys `q ≤ c_o u^γ`, the drift is at most a
+constant times the sum of three terms: the product-rate term `r_μ r_e / q`, the
+clipped-region term `r_μ u^{α/2} q^{1/(2γ)}`, and the regret-localization term
+`r_μ (R_P(π)/u)^{1/2}`. At the strict-overlap endpoint (`γ = 0`), with a fixed clip level
+at most half the overlap floor, strict overlap kills the last two terms and the drift
+collapses to a constant times the product rate `r_μ r_e`. Both constants are explicit:
+`4(1 + max(C_o,1)^{1/2})` in the first regime, `max(1, 2/q)` in the second. -/
 lemma localized_clipped_drift_bound (P : ObservedLaw 𝒳)
     (policySet : Set (Policy 𝒳)) (q rMu rE α γ Co co u0 underlineP : ℝ)
     (muHat0 muHat1 eHat : 𝒳 → ℝ)

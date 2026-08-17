@@ -17,7 +17,7 @@ completion is not lease return: classify/self-resume in the same turn. Require t
 `pipeline-bug`. This overrides shared 15-second/per-event examples. Message main only on an allowed escalation.
 
 **Every F resume must be detached**—plain `run_in_background` dies near 60 minutes:
-`setsid bash -c 'source ~/.nvm/nvm.sh && nvm use 20.20.2 && npx --prefix tools tsx tools/bin/causalsmith.ts research --resume --from-stage <F-stage> --auto <qid> <spec> > <logfile> 2>&1' < /dev/null & disown`.
+`setsid bash -c 'source tools/scripts/node_env.sh && npx --prefix tools tsx tools/bin/causalsmith.ts research --resume --from-stage <F-stage> --auto <qid> <spec> > <logfile> 2>&1' < /dev/null & disown`.
 Foreground-poll it; never pipe the node command through `grep` (masked exit/SIGPIPE). State ratchets, so
 after death/lock contention re-resume detached. Resume freely within F, including the work-owed
 `--clear-gate substrate_build_required`, but never clear any iteration/round/budget cap: it enables
@@ -160,6 +160,11 @@ ESCALATES has NOT reached that gate — so F4 did NOT run.** Therefore:
 
 **F5 bank/API** (`stage_5`, CKPT 2). Escalate `f5-clean` to main with the F4 both-reviewer verdicts +
 recommended tier. **No F4 verdicts ⇒ no `f5-clean`** (above). Bank + promote are user-approved — never yours.
+F5 also owns DOCSTRING COVERAGE: every declaration in the run's Lean modules (umbrella root included)
+gets a docstring (first paragraph = the NL translation) via one codex pass, build-validated with
+byte-for-byte rollback — run before the bank-soundness token scan (the scan must cover the pass's
+edits) and before the crosswalk emit (insertions shift line numbers). A residual undocumented decl
+blocks F5; the presentation pipeline's P4 only VERIFIES coverage and refuses an undocumented bundle.
 
 ## Faithfulness — enforce in-phase; escalate only two outcomes
 

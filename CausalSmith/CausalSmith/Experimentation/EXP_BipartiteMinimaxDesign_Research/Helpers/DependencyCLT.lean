@@ -46,7 +46,7 @@ lemma bounded_degree_dependency_clt
   apply Causalean.SteinMethod.bounded_degree_dependency_clt
     μ X Dep Dmax hdeg M hM hbound hmean v hv c hc
   · simpa only [hcard] using hvc
-  · simpa only [hcard] using
-      (tendsto_id : Tendsto (fun n : ℕ => n) atTop atTop)
+  · simp only [hcard]
+    exact tendsto_id
 
 end CausalSmith.Experimentation.BipartiteMinimaxDesign

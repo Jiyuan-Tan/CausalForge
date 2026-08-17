@@ -284,31 +284,24 @@ theorem aipw_dml_isAsymLinear
           (fun x => (η_hat n ω).μ_fn a x - S.μ_val a x) 2 S.P_X).toReal| ≤
           |(((aipwGeneralMoment S hη₀_mem).ρ₁
             (η_hat n ω) S.η₀ : NNReal) : ℝ)| := by
+      -- `ρ₁` is an `NNReal` structure literal; unfolding it in the goal blocks
+      -- every later rewrite, so bridge to its real value with a `rfl` equation.
+      have hval : (((aipwGeneralMoment S hη₀_mem).ρ₁
+            (η_hat n ω) S.η₀ : NNReal) : ℝ)
+          = (eLpNorm
+              (fun x => (η_hat n ω).μ_fn true x - S.μ_val true x) 2 S.P_X).toReal +
+            (eLpNorm
+              (fun x => (η_hat n ω).μ_fn false x - S.μ_val false x) 2 S.P_X).toReal :=
+        rfl
       by_cases ha : a = true
       · subst a
-        simp only [aipwGeneralMoment, BackdoorEstimationSystem.η₀]
-        rw [abs_of_nonneg ENNReal.toReal_nonneg]
-        rw [abs_of_nonneg (NNReal.coe_nonneg _)]
-        change (eLpNorm
-          (fun x => (η_hat n ω).μ_fn true x - S.μ_val true x) 2 S.P_X).toReal ≤
-          (eLpNorm
-            (fun x => (η_hat n ω).μ_fn true x - S.μ_val true x) 2 S.P_X).toReal +
-            (eLpNorm
-              (fun x => (η_hat n ω).μ_fn false x - S.μ_val false x) 2 S.P_X).toReal
-        exact le_add_of_nonneg_right ENNReal.toReal_nonneg
+        rw [hval, abs_of_nonneg ENNReal.toReal_nonneg]
+        exact (le_add_of_nonneg_right ENNReal.toReal_nonneg).trans (le_abs_self _)
       · have ha_false : a = false := by
           cases a <;> simp_all
         subst a
-        simp only [aipwGeneralMoment, BackdoorEstimationSystem.η₀]
-        rw [abs_of_nonneg ENNReal.toReal_nonneg]
-        rw [abs_of_nonneg (NNReal.coe_nonneg _)]
-        change (eLpNorm
-          (fun x => (η_hat n ω).μ_fn false x - S.μ_val false x) 2 S.P_X).toReal ≤
-          (eLpNorm
-            (fun x => (η_hat n ω).μ_fn true x - S.μ_val true x) 2 S.P_X).toReal +
-            (eLpNorm
-              (fun x => (η_hat n ω).μ_fn false x - S.μ_val false x) 2 S.P_X).toReal
-        exact le_add_of_nonneg_left ENNReal.toReal_nonneg
+        rw [hval, abs_of_nonneg ENNReal.toReal_nonneg]
+        exact (le_add_of_nonneg_left ENNReal.toReal_nonneg).trans (le_abs_self _)
     exact lt_of_lt_of_le hω hcoord_le
   have h_e_rate :
       IsLittleOp
@@ -316,7 +309,7 @@ theorem aipw_dml_isAsymLinear
           (eLpNorm
             (fun x => (η_hat n ω).e_fn x - S.e_val x) 2 S.P_X).toReal)
         (fun _ => (1 : ℝ)) P.μ := by
-    simpa [aipwGeneralMoment, BackdoorEstimationSystem.η₀] using h_indiv_rate_ρ₂
+    exact h_indiv_rate_ρ₂
   have h_score_diff_rate :
       IsLittleOp
         (fun n ω =>

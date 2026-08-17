@@ -5,6 +5,7 @@ Authors: Jiyuan Tan
 -/
 import Mathlib.Analysis.InnerProductSpace.Basic
 import Mathlib.MeasureTheory.Integral.Bochner.Basic
+import Mathlib.MeasureTheory.Integral.IntegrableOn
 
 /-!
 # The linear density tilt and its probability-measure property

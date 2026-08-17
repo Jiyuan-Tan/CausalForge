@@ -232,6 +232,13 @@ export interface Intervention {
     | "user_required"
     | "redraft_proposal";
   /**
+   * Required when `stage_0` crosses back into discovery from an F stage.  The
+   * three routes have different persistence semantics; leaving this implicit
+   * used to send every request through D-1.2 and silently replace the accepted
+   * D0 store with the older pre-D0 proposal.
+   */
+  d0_rewind_intent?: "incremental_repair" | "extension" | "replacement";
+  /**
    * Corrected, standard-form restatement of an OVER-PRECISE headline object,
    * emitted with `action_kind: "statement_correction"`. Unlike a
    * `theorem_split` (which demotes the original claim to a conjecture and proves
@@ -379,7 +386,7 @@ export const reviewResultSchema = z.union([
 export const interventionSchema: z.ZodType<Intervention> = z
   .object({
     route: z.enum(["user", "stage_0", "stage_1", "stage_2", "stage_3_local", "stage_4d", "stage_neg1"]),
-    reason: z.string(),
+    reason: z.string().min(1),
     proposed_action: z.string().optional(),
     cite: z.string().optional(),
     proposed_assumption: z
@@ -402,6 +409,9 @@ export const interventionSchema: z.ZodType<Intervention> = z
         "redraft_proposal",
       ])
       .optional(),
+    d0_rewind_intent: z
+      .enum(["incremental_repair", "extension", "replacement"])
+      .optional(),
     proposed_restatement: z
       .object({
         statement: z.string().min(1),
@@ -419,6 +429,20 @@ export const interventionSchema: z.ZodType<Intervention> = z
       .optional(),
   })
   .superRefine((value, ctx) => {
+    if (value.route === "stage_0" && !value.d0_rewind_intent) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["d0_rewind_intent"],
+        message: "route=stage_0 requires an explicit d0_rewind_intent",
+      });
+    }
+    if (value.route !== "stage_0" && value.d0_rewind_intent) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["d0_rewind_intent"],
+        message: "d0_rewind_intent is only valid with route=stage_0",
+      });
+    }
     if (value.route !== "user" && !value.proposed_action?.trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

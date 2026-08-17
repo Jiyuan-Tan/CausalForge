@@ -62,6 +62,15 @@ returns the lease, escalates, or dies and triggers orphan recovery.
 
 ## Dispatching sub-orchestrators
 
+- **Codex runtime — managed dispatch is mandatory at every orchestration level.** If the current
+  orchestrator is Codex, route **every orchestrator-initiated agent call**—sub-orchestrators, fresh
+  mathematical consults, adjudicators, auditors, reviewers, and one-off builders—through the managed
+  collaboration channel (`spawn_agent`, then `followup_task`/`send_message`/`wait_agent` as appropriate).
+  Never shell-launch `codex exec` from main or from a nested orchestrator, even for a read-only or
+  "mandatory fresh" consult, and do not use it as a fallback when managed slots are busy; wait for a
+  slot or return the skill-defined escalation. The sole exception is a worker/reviewer process launched
+  internally by the TypeScript pipeline through its configured `codex exec` adapter—an orchestrator does
+  not launch or imitate that command itself.
 - **Cold:** dispatch through the current runtime's native agent mechanism. Under Codex, use native
   `spawn_agent`: D math-facing orchestration uses `high`, routine orchestration `medium`. Set
   model/effort explicitly. Pipeline workers/reviewers still use their configured `codex exec` adapter.
@@ -202,7 +211,7 @@ correctness/structure/NO-PASS, `downgraded` for sound-but-not-novel. Pass `--rer
 sub's hopeless-vs-fixable receipts (`true-negative` / `re-raise` / `retry`). Fill the generated
 `_bank/<tier>/<qid>_<spec>/README.md` `gap_reasons` (verbatim reviewer phrases) + `proof_attempt_summary`.
 For a below-floor `downgraded` bank, pass `--achieved-tier` from the validity-gate receipt so a later
-`--upgrade` can enforce that its target is strictly higher.
+`--upgrade` can enforce that its target is at or above it.
 Append a `terminal` decision-log entry. Bank `failed` only if the *math claim* is wrong.
 
 ## S6 — SUBSTRATE ATTEMPT (MAIN-owned; post-F5, BEFORE CKPT 2)
@@ -308,25 +317,27 @@ escalation) plus every terminal/rewind already committed.
 | `<qid> <spec>` | Cold start. |
 | `--resume <qid> <spec>` | Resume after CKPT 1 / 1.5 / 2 or a `missing_architecture` block. |
 | `--propose <topic> <qid> <spec>` | Run with D-1 question proposal first. |
-| `--propose <topic> --novelty <higher-tier> --upgrade <parent_qid>_<parent_spec> --upgrade-axis <axis> <qid> <spec>` | Upgrade a banked accepted / downgraded parent. `<higher-tier>` must be strictly above the parent's `banked_novelty_tier`. |
+| `--propose <topic> --novelty <tier> --upgrade <parent_qid>_<parent_spec> --upgrade-axis <axis> <qid> <spec>` | Upgrade a banked accepted / downgraded parent. `<tier>` must be at or above the parent's `banked_novelty_tier` (equal is allowed — e.g. field→field; the delta is enforced by the D-0.5 `upgrade_axis` rubric, not by the tier). |
 | `--from-question <oq_id> <qid> <spec>` | Phase 3 — seed from a graph-resident OpenQuestion. Atomically claims the OQ. On clean F5 the `close_open_question` hook mints a BankedTheorem. Repair a `close_oq_failed` via `close_oq.ts <qid> <spec> <oq_id>`. |
 | `--downgrade-tier <tier> <qid> <spec>` | Accept an achieved lower tier on a `terminal:below-floor` run: lower the persisted novelty floor to `<tier>` and re-pass D0.5, then continue per `--auto` (into F) or halt at the go/no-go. Guarded — `<tier>` must be strictly below the current floor AND ≤ the reviewer-assessed tier; logs a `command` decision-log entry. Use after the codex-validity-gate confirms + the user opts to carry the sound sub-tier result into F rather than bank `downgraded`. |
 | `--angle-action <continue\|switch\|retry\|give-up> <qid> <spec>` | Resolve a persisted D-0.5 checkpoint. `continue` acknowledges a routine REVISE; `switch` archives the exhausted angle; `retry --extra-revisions N` persists a per-angle cap; `give-up` writes a terminal proposal block. Add `--angle-directive <text\|->` to persist the D-orchestrator repair before any next proposer starts. Non-give-up actions resume in the same CLI process. |
 
-Optional pass-through flags: `--auto` (§ "Auto mode"); `--novelty <incremental|subfield|field|flagship>` (D0.5 threshold = the floor tier, default `field`; the vocabulary IS the reviewer tier ladder — legacy `relative-to-repo`→`incremental` / `relative-to-literature`→`subfield` still accepted); `--upgrade <parent>` + `--upgrade-axis <computation|estimation|generalization|mechanism>` (requires an explicit novelty target strictly above the parent's achieved `banked_novelty_tier`); `--stop-after <stage>` (`D-1.1`,`D-1.2`,`D-0.5`,`D0`,`D0.5`,`F1`,`F1.5`,`F2`,`F2.5`,`F3`,`F3.5`,`F4`,`F5`); `--from-stage <stage>` (resume-entry override — re-run a stage instead of hand-editing `stage_completed`); `--clear-gate <flag>` (resume-only, repeatable — clears a cap-gate flag as part of the resume instead of hand-editing `state.flags`; flags: `substrate_build_required`, `scaffold_redirect_cap_hit`, `stage1_rewinds_cap_hit`, `theorem_splits_cap_hit`, `stage0_budget_exhausted`, `general_review_halt`, `stage_neg1_fallback`, `d0_loop_cap_hit`, **`proof_loop_cap_hit`**; clearing `scaffold_redirect_cap_hit`/`stage1_rewinds_cap_hit` also resets its paired counter; clearing `d0_loop_cap_hit` resets `d0_loop_counters.{solve_rounds,revise_rounds,consistency_heals}`. **`proof_loop_cap_hit` covers EVERY proof-review-loop iteration budget** — total iters, Phase-A scaffold-reroute rounds, per-node strikes, tag reroutes, the no-progress bound — all now PERSISTED in `state.flags.proof_loop_counters` and cumulative across resumes; clearing it resets them all. **Clearing ANY iteration cap is MAIN's authority alone** (a sub escalates `cap-block`; see that row) and is legitimate only once the ROOT cause has changed — a reset that re-runs the identical scaffold/review is a re-roll, not a retry); `--proposer <codex|claude>`; `--from-study-gaps`; `--dry-run` (state-machine mechanics only, no Codex — **NEVER use `--dry-run` to move the stage pointer on a live run: it fast-forwards `stage_completed` and corrupts the run; use `--from-stage` to re-enter a stage**). Parsing failure → stop and report; do NOT invent a qid.
+Optional pass-through flags: `--auto` (§ "Auto mode"); `--novelty <incremental|subfield|field|flagship>` (D0.5 threshold = the floor tier, default `field`; the vocabulary IS the reviewer tier ladder — legacy `relative-to-repo`→`incremental` / `relative-to-literature`→`subfield` still accepted); `--upgrade <parent>` + `--upgrade-axis <computation|estimation|generalization|mechanism>` (requires an explicit novelty target at or above the parent's achieved `banked_novelty_tier`; equal-tier upgrades are legitimate — the delta gate is the axis rubric); `--stop-after <stage>` (`D-1.1`,`D-1.2`,`D-0.5`,`D0`,`D0.5`,`F1`,`F1.5`,`F2`,`F2.5`,`F3`,`F3.5`,`F4`,`F5`); `--from-stage <stage>` (resume-entry override — re-run a stage instead of hand-editing `stage_completed`); `--clear-gate <flag>` (resume-only, repeatable — clears a cap-gate flag as part of the resume instead of hand-editing `state.flags`; flags: `substrate_build_required`, `scaffold_redirect_cap_hit`, `stage1_rewinds_cap_hit`, `theorem_splits_cap_hit`, `stage0_budget_exhausted`, `general_review_halt`, `stage_neg1_fallback`, `d0_loop_cap_hit`, **`proof_loop_cap_hit`**; clearing `scaffold_redirect_cap_hit`/`stage1_rewinds_cap_hit` also resets its paired counter; clearing `d0_loop_cap_hit` resets `d0_loop_counters.{solve_rounds,revise_rounds,consistency_heals}`. **`proof_loop_cap_hit` covers EVERY proof-review-loop iteration budget** — total iters, Phase-A scaffold-reroute rounds, per-node strikes, tag reroutes, the no-progress bound — all now PERSISTED in `state.flags.proof_loop_counters` and cumulative across resumes; clearing it resets them all. **Clearing ANY iteration cap is MAIN's authority alone** (a sub escalates `cap-block`; see that row) and is legitimate only once the ROOT cause has changed — a reset that re-runs the identical scaffold/review is a re-roll, not a retry); `--proposer <codex|claude>`; `--from-study-gaps`; `--dry-run` (state-machine mechanics only, no Codex — **NEVER use `--dry-run` to move the stage pointer on a live run: it fast-forwards `stage_completed` and corrupts the run; use `--from-stage` to re-enter a stage**). Parsing failure → stop and report; do NOT invent a qid.
 
 ## Launch
 
 ```bash
 cd <AUTOID>/CausalSmith
-source ~/.nvm/nvm.sh && nvm use 20.20.2 >/dev/null 2>&1
+source tools/scripts/node_env.sh
 npx --prefix tools tsx tools/bin/causalsmith.ts research $ARGUMENTS      # slash form; substitute literal args for conversational
 ```
 
 **cwd must be the CausalSmith package root** (`<AUTOID>/CausalSmith/`, a sibling of `Causalean/`) —
 `cli.ts:findRepoRoot` walks upward for the `CausalSmith` `lakefile.toml`. `--prefix tools` keeps `npx`
-reading `tools/package.json`. Node 20.20.2 is mandatory (default shell is node 12; the CLI silently
-fails otherwise). Run in background (`run_in_background: true`) — the completion notification fires only
+reading `tools/package.json`. `source tools/scripts/node_env.sh` is mandatory — it puts a Node meeting
+`engines.node` (≥ 20.20.2; any newer major is fine) on PATH, finding nvm via `$NVM_DIR` rather than
+assuming `$HOME`. Never hand-write `nvm use <version>`: an exact-version pin breaks whenever the box's
+installed set moves, and an older default node makes the CLI fail silently. Run in background (`run_in_background: true`) — the completion notification fires only
 on process **exit**, so **dispatch the D-orch (which arms the watcher) in the same turn** and hand it the
 run; main itself does not watch the cold-start→first-halt window. Do NOT wrap with `... > log 2>&1 &`.
 

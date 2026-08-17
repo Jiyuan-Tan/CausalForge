@@ -16,6 +16,11 @@ open scoped BigOperators
 namespace CausalSmith.Experimentation.RolloutChebyshev
 
 -- @node: chebyshev_lambda_eq_rho_div_q
+/-- The endpoint growth factor written directly in terms of the budget: for `0 < q < 1`,
+`(2/q - 1) + √((2/q - 1)² - 1) = (1 + √(1 - q))² / q`.
+
+The right-hand side is the exponential base `ρ(q)` in which the rollout minimax rate is stated,
+so this identity is what lets the Chebyshev endpoint bounds be restated as bounds in `ρ(q)^β`. -/
 lemma chebyshev_lambda_eq_rho_div_q {q : ℝ} (hq : 0 < q) (hq_lt_one : q < 1) :
     (2 / q - 1) + Real.sqrt ((2 / q - 1) ^ 2 - 1) =
       (1 + Real.sqrt (1 - q)) ^ 2 / q := by
@@ -37,6 +42,9 @@ lemma chebyshev_lambda_eq_rho_div_q {q : ℝ} (hq : 0 < q) (hq_lt_one : q < 1) :
   ring
 
 -- @node: amplification_nonneg
+/-- The total-variation amplification of a rollout schedule is never negative, being an infimum
+of squared total-variation norms of unbiased weight vectors. The bound also holds vacuously when
+no unbiased weights exist for the schedule, since an infimum over an empty set of reals is `0`. -/
 lemma amplification_nonneg (beta k : ℕ) (p : Fin (k + 1) → ℝ) :
     0 ≤ amplification beta k p := by
   unfold amplification
@@ -45,6 +53,10 @@ lemma amplification_nonneg (beta k : ℕ) (p : Fin (k + 1) → ℝ) :
   exact sq_nonneg _
 
 -- @node: minimaxAmplification_le_of_budgeted
+/-- Exhibiting one admissible design bounds the minimax value: if `p` is a budgeted rollout
+schedule with budget `q` on `k + 1` rounds, then the minimax amplification `M_{β,k,q}` is at most
+that schedule's own amplification `A_β(p)`. This is the direction used to convert an explicit
+design, such as the shifted Chebyshev–Lobatto grid, into an upper bound on the minimax value. -/
 lemma minimaxAmplification_le_of_budgeted (beta k : ℕ) (q : ℝ)
     (p : Fin (k + 1) → ℝ) (hp : BudgetedSchedule k q p) :
     minimaxAmplification beta k q ≤ amplification beta k p := by
@@ -56,6 +68,12 @@ lemma minimaxAmplification_le_of_budgeted (beta k : ℕ) (q : ℝ)
   · exact ⟨p, hp, rfl⟩
 
 -- @node: minimaxAmplification_lower_of_forall
+/-- A lower bound holding for every admissible design is a lower bound on the minimax value: if
+at least one budgeted schedule with budget `q` on `k + 1` rounds exists, and every such schedule
+`p` satisfies `B ≤ A_β(p)`, then `B ≤ M_{β,k,q}`.
+
+The nonemptiness premise cannot be dropped: an infimum over an empty set of reals is `0` by
+convention, so without a feasible schedule the conclusion would fail for positive `B`. -/
 lemma minimaxAmplification_lower_of_forall (beta k : ℕ) (q B : ℝ)
     (hne : ∃ p : Fin (k + 1) → ℝ, BudgetedSchedule k q p)
     (hlower : ∀ p : Fin (k + 1) → ℝ, BudgetedSchedule k q p →
@@ -69,6 +87,9 @@ lemma minimaxAmplification_lower_of_forall (beta k : ℕ) (q B : ℝ)
     exact hlower p hp
 
 -- @node: budgetedSchedule_le_endpoint
+/-- The budget is respected at every round: in a budgeted rollout schedule the treated fraction
+increases across rounds and equals `q` at the final round, so every round `j` has `p_j ≤ q`.
+This is what confines all schedule nodes to the budget window `[0, q]`. -/
 lemma budgetedSchedule_le_endpoint {k : ℕ} {q : ℝ} {p : Fin (k + 1) → ℝ}
     (hp : BudgetedSchedule k q p) (j : Fin (k + 1)) :
     p j ≤ q := by
@@ -79,6 +100,10 @@ lemma budgetedSchedule_le_endpoint {k : ℕ} {q : ℝ} {p : Fin (k + 1) → ℝ}
   simpa [hlast] using hmono hjle
 
 -- @node: affine_mem_Icc_neg_one_one
+/-- The change of variables carrying the budget window onto the Chebyshev interval is
+well-defined: with a positive budget `q`, any treated fraction `u` with `0 ≤ u ≤ q` is mapped by
+`u ↦ 2u/q - 1` into `[-1, 1]`. Under this reparametrisation the rollout schedule's nodes become
+points of the standard interval on which Chebyshev polynomials are bounded by one. -/
 lemma affine_mem_Icc_neg_one_one {q u : ℝ} (hq : 0 < q) (hu0 : 0 ≤ u) (huq : u ≤ q) :
     2 * u / q - 1 ∈ Set.Icc (-1 : ℝ) 1 := by
   constructor
@@ -89,6 +114,10 @@ lemma affine_mem_Icc_neg_one_one {q u : ℝ} (hq : 0 < q) (hu0 : 0 ≤ u) (huq :
     nlinarith
 
 -- @node: chebyshev_affine_natDegree_le
+/-- Composing the degree-`β` Chebyshev polynomial with the affine rescaling `u ↦ (2/q) u - 1`
+again yields a polynomial of degree at most `β`. Degree bookkeeping for the test polynomial used
+in the minimax lower bound, which must remain admissible for the degree-`β` dual problem after
+being transported from the standard interval to the budget window. -/
 lemma chebyshev_affine_natDegree_le (beta : ℕ) (q : ℝ) :
     ((Polynomial.Chebyshev.T ℝ (beta : ℤ)).comp
         (Polynomial.C (2 / q) * Polynomial.X - Polynomial.C 1)).natDegree ≤ beta := by
@@ -108,6 +137,15 @@ lemma chebyshev_affine_natDegree_le (beta : ℕ) (q : ℝ) :
     _ = beta := by simp
 
 -- @node: chebyshev_amplification_lower
+/-- No rollout design can beat the Chebyshev exponential base. Granted an endpoint growth bound
+for the Chebyshev polynomial with a positive constant `c` — that `T_β(2/q - 1) - 1 ≥ c λ(q)^β`
+uniformly over orders `β ≥ 1` and budgets `q ∈ (0, q_max]` — EVERY budgeted rollout schedule `p`
+with budget `q ≤ q_max < 1` on `k + 1` rounds, where the number of rounds satisfies `k ≥ β`, has
+total-variation amplification at least `c² · ((1 + √(1 - q))² / q)^{2β}`.
+
+The bound is obtained by feeding the Chebyshev polynomial, rescaled from `[-1, 1]` to the budget
+window `[0, q]`, into the dual description of the amplification: it is a degree-`β` polynomial
+bounded by one at every schedule node whose endpoint contrast is already of order `ρ(q)^β`. -/
 lemma chebyshev_amplification_lower (qmax clower : ℝ) (hclower_pos : 0 < clower)
     (hendpoint_lower :
       ∀ (beta : ℕ) (q : ℝ), 1 ≤ beta → 0 < q → q ≤ qmax →

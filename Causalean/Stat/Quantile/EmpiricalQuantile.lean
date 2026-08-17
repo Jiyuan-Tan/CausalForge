@@ -151,7 +151,7 @@ lemma IIDSample.sampleQuantile_atom_bound [IsProbabilityMeasure μ] (S : IIDSamp
   haveI hP : IsProbabilityMeasure P := by
     rw [← S.law]
     exact MeasureTheory.Measure.isProbabilityMeasure_map (S.meas 0).aemeasurable
-  haveI hPna : NoAtoms P := by
+  haveI hPna : NullSingletonClass P := by
     refine ⟨fun x => ?_⟩
     have heq : P = (cdf P).measure := (measure_cdf P).symm
     rw [heq, StieltjesFunction.measure_singleton,

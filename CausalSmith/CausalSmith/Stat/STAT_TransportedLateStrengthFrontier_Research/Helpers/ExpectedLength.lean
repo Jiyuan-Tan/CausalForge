@@ -22,7 +22,7 @@ lemma expected_setLength_eq_integral_inclusion
     (∫ ω, setLength (C ω) ∂Q) =
       ∫ u in parameterSpace, (Q {ω | u ∈ C ω}).toReal := by
   clear hsub
-  simpa [setLength] using
+  simpa [setLength, Causalean.Stat.restrictedSetVolume] using
     Causalean.Stat.expected_restrictedSetVolume_eq_integral_inclusion
       (Q := Q) C parameterSpace hgraph measurableSet_Icc
       (by simp [parameterSpace, Real.volume_Icc])
@@ -41,7 +41,7 @@ lemma coverage_tv_expectedLength_lower
     (volume I).toReal * (coverage - tv) ≤
       ∫ ω, setLength (C ω) ∂Q 0 := by
   clear hsub
-  simpa [setLength] using
+  simpa [setLength, Causalean.Stat.restrictedSetVolume] using
     Causalean.Stat.coverage_tv_expectedRestrictedVolume_lower
       Q C parameterSpace I 0 coverage tv hQ hcover htv hgraph
       measurableSet_Icc (by simp [parameterSpace, Real.volume_Icc]) hI hI_sub

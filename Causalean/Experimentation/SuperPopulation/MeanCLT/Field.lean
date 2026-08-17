@@ -73,7 +73,7 @@ noncomputable def centeredNormalizedField (s : ℝ) : NetworkDependence V Ω μ 
           measurable_const
         simpa [ψ] using
           ((measurable_pi_apply k).sub hc).div_const s
-    simpa only [φ, ψ, Function.comp] using h.comp hφ hψ
+    exact h.comp hφ hψ
 
 /-- Defining unfolding of the standardized summand: the `X` field of `centeredNormalizedField`
 evaluated at unit `i` and sample `ω` is `(Yᵢ ω − E[Yᵢ]) / s`. -/

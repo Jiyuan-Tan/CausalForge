@@ -18,7 +18,7 @@ packages it as convergence in distribution for the project's normalized
 i.i.d. sums.
 -/
 
-import Clt.CLT
+import Mathlib.Probability.CentralLimitTheorem
 import Causalean.Stat.Sample
 import Causalean.Stat.Limit.Convergence
 
@@ -148,152 +148,59 @@ theorem IIDSample.clt_normalized_sum
     unfold IsAsymLinear.normalizedSum
     exact ((Finset.measurable_sum _
       (fun i _ => hψ_meas.comp (S.meas i))).const_mul _).aemeasurable
-  let σ2 : ℝ := ∫ x, (ψ x) ^ 2 ∂P
-  have hσ2_nonneg : 0 ≤ σ2 := by
-    dsimp [σ2]
-    exact integral_nonneg fun x => sq_nonneg (ψ x)
-  by_cases hσ2_zero : σ2 = 0
-  · have hsq_zero_ae : (fun x => (ψ x) ^ 2) =ᵐ[P] 0 := by
-      exact (integral_eq_zero_iff_of_nonneg (fun x => sq_nonneg (ψ x)) hψ_sq_int).1 hσ2_zero
-    have hψ_zero_ae : ψ =ᵐ[P] 0 := by
-      filter_upwards [hsq_zero_ae] with x hx
-      exact eq_zero_of_pow_eq_zero hx
-    have hlaw_i : ∀ i, μ.map (S.Z i) = P := by
-      intro i
-      rw [← (S.identDist i).map_eq, S.law]
-    have hY_zero_ae : ∀ i, (fun ω => ψ (S.Z i ω)) =ᵐ[μ] 0 := by
-      intro i
-      have hset : MeasurableSet {x | ψ x = 0} := hψ_meas (measurableSet_singleton 0)
-      have hmap : ∀ᵐ x ∂μ.map (S.Z i), ψ x = 0 := by
-        simpa [hlaw_i i] using hψ_zero_ae
-      rwa [ae_map_iff (S.meas i).aemeasurable hset] at hmap
-    have hnorm_zero_ae : ∀ n,
-        IsAsymLinear.normalizedSum S ψ (fun m => Finset.range m) n =ᵐ[μ] 0 := by
-      intro n
-      rw [Filter.EventuallyEq]
-      have hfin : ∀ᶠ ω in ae μ, ∀ i ∈ Finset.range n, ψ (S.Z i ω) = 0 := by
-        simpa using (Finset.eventually_all (Finset.range n)).2 fun i _ => hY_zero_ae i
-      filter_upwards [hfin] with ω hω
-      have hsum : ∑ i ∈ Finset.range n, ψ (S.Z i ω) = 0 := by
-        exact Finset.sum_eq_zero fun i hi => hω i hi
-      simp [IsAsymLinear.normalizedSum, hsum]
-    have hmap_zero : ∀ n,
-        μ.map (IsAsymLinear.normalizedSum S ψ (fun m => Finset.range m) n)
-          = Measure.dirac 0 := by
-      intro n
-      rw [Measure.map_congr (hnorm_zero_ae n)]
-      change μ.map (fun _ : Ω => (0 : ℝ)) = Measure.dirac 0
-      rw [Measure.map_const]
-      simp
-    unfold Tendsto_dist
-    have hseq :
-        (fun n =>
-          (⟨μ.map (IsAsymLinear.normalizedSum S ψ (fun m => Finset.range m) n),
-              Measure.isProbabilityMeasure_map (hSum_meas n)⟩ : ProbabilityMeasure ℝ))
-          = fun _ => (⟨Measure.dirac 0, inferInstance⟩ : ProbabilityMeasure ℝ) := by
-      funext n
-      apply Subtype.ext
-      exact hmap_zero n
-    have htarget :
-        (⟨gaussianMeasure 0 (∫ x, (ψ x) ^ 2 ∂P),
-            instIsProbabilityMeasureGaussianMeasure 0 (∫ x, (ψ x) ^ 2 ∂P)⟩ : ProbabilityMeasure ℝ)
-          = (⟨Measure.dirac 0, inferInstance⟩ : ProbabilityMeasure ℝ) := by
-      apply Subtype.ext
-      simp [gaussianMeasure, σ2, hσ2_zero, gaussianReal_zero_var]
-    rw [hseq, htarget]
-    exact tendsto_const_nhds
-  · have hσ2_pos : 0 < σ2 := lt_of_le_of_ne hσ2_nonneg (Ne.symm hσ2_zero)
-    let σ : ℝ := Real.sqrt σ2
-    have hσ_pos : 0 < σ := by
-      dsimp [σ]
-      exact Real.sqrt_pos.2 hσ2_pos
-    have hσ_ne : σ ≠ 0 := ne_of_gt hσ_pos
-    let Y : ℕ → Ω → ℝ := fun i ω => ψ (S.Z i ω) / σ
-    have hY_meas : ∀ i, Measurable (Y i) := by
-      intro i
-      exact (hψ_meas.comp (S.meas i)).div_const σ
-    let μprob : ProbabilityMeasure Ω := ⟨μ, inferInstance⟩
-    have hlaw0 : μ.map (S.Z 0) = P := S.law
-    have hmean0 : μprob[Y 0] = 0 := by
-      change ∫ ω, ψ (S.Z 0 ω) / σ ∂μ = 0
-      rw [integral_div]
-      have hmap_int : ∫ ω, ψ (S.Z 0 ω) ∂μ = ∫ x, ψ x ∂P := by
-        calc
-          ∫ ω, ψ (S.Z 0 ω) ∂μ
-              = ∫ x, ψ x ∂(μ.map (S.Z 0)) := by
-                rw [integral_map (S.meas 0).aemeasurable hψ_meas.aestronglyMeasurable]
-          _ = ∫ x, ψ x ∂P := by rw [hlaw0]
-      rw [hmap_int, hψ_mean, zero_div]
-    have hsq_int_Z0 : Integrable (fun ω => (ψ (S.Z 0 ω)) ^ 2) μ := by
-      have hmap_int : Integrable (fun x => (ψ x) ^ 2) (μ.map (S.Z 0)) := by
-        simpa [hlaw0] using hψ_sq_int
-      exact hmap_int.comp_measurable (S.meas 0)
-    have hvar1 : μprob[Y 0 ^ 2] = 1 := by
-      change ∫ ω, (ψ (S.Z 0 ω) / σ) ^ 2 ∂μ = 1
-      have hmap_sq : ∫ ω, (ψ (S.Z 0 ω)) ^ 2 ∂μ = σ2 := by
-        dsimp [σ2]
-        calc
-          ∫ ω, (ψ (S.Z 0 ω)) ^ 2 ∂μ
-              = ∫ x, (ψ x) ^ 2 ∂(μ.map (S.Z 0)) := by
-                rw [integral_map (S.meas 0).aemeasurable]
-                exact (hψ_meas.pow_const 2).aestronglyMeasurable
-          _ = ∫ x, (ψ x) ^ 2 ∂P := by rw [hlaw0]
-      calc
-        ∫ ω, (ψ (S.Z 0 ω) / σ) ^ 2 ∂μ
-            = (∫ ω, (ψ (S.Z 0 ω)) ^ 2 ∂μ) / σ ^ 2 := by
-              rw [← integral_div]
-              · congr with ω
-                ring
-        _ = σ2 / σ ^ 2 := by rw [hmap_sq]
-        _ = 1 := by
-          rw [show σ ^ 2 = σ2 by
-            dsimp [σ]
-            exact Real.sq_sqrt hσ2_nonneg]
-          field_simp [hσ2_pos.ne']
-    have hindep : iIndepFun Y μ := by
-      simpa [Y, Function.comp_def] using
-        S.indep.comp (fun _ x => ψ x / σ) (fun _ => hψ_meas.div_const σ)
-    have hident : ∀ i, IdentDistrib (Y i) (Y 0) μ μ := by
-      intro i
-      simpa [Y, Function.comp_def] using
-        (S.identDist i).symm.comp (hψ_meas.div_const σ)
-    have hclt :
-        Tendsto (fun n : ℕ => μprob.map (aemeasurable_invSqrtMulSum n hY_meas))
-          atTop (𝓝 stdGaussian) :=
-      ProbabilityTheory.central_limit hY_meas hmean0 hvar1 hindep hident
-    have hcont : Continuous (fun x : ℝ => σ * x) := continuous_const.mul continuous_id
-    have hscaled :=
-      ProbabilityMeasure.tendsto_map_of_tendsto_of_continuous
-        (fun n : ℕ => μprob.map (aemeasurable_invSqrtMulSum n hY_meas))
-        stdGaussian hclt hcont
-    unfold Tendsto_dist
-    convert hscaled using 1
-    · funext n
-      apply Subtype.ext
-      change (μ.map (IsAsymLinear.normalizedSum S ψ (fun m => Finset.range m) n))
-        = Measure.map (fun x : ℝ => σ * x) (Measure.map (invSqrtMulSum Y n) μ)
-      rw [Measure.map_map]
-      · apply Measure.map_congr
-        filter_upwards with ω
-        simp only [Function.comp_apply]
-        dsimp [IsAsymLinear.normalizedSum, invSqrtMulSum, Y]
-        rw [show ((Finset.range n).card : ℝ) = (n : ℝ) by simp [Finset.card_range]]
-        rw [← Fin.sum_univ_eq_sum_range]
-        calc
-          (Real.sqrt (n : ℝ))⁻¹ * ∑ i : Fin n, ψ (S.Z i ω)
-              = σ * ((Real.sqrt (n : ℝ))⁻¹ * ∑ i : Fin n, ψ (S.Z i ω) / σ) := by
-                rw [← Finset.sum_div Finset.univ (fun i : Fin n => ψ (S.Z i ω)) σ]
-                field_simp [hσ_ne]
-          _ = σ * ((Real.sqrt (n : ℝ))⁻¹ * ∑ i : Fin n, Y i ω) := by
-                rfl
-      · exact hcont.measurable
-      · exact (measurable_invSqrtMulSum n hY_meas)
-    · congr 1
-      apply Subtype.ext
-      change gaussianMeasure 0 (∫ x, (ψ x) ^ 2 ∂P)
-        = Measure.map (fun x : ℝ => σ * x) (stdGaussian : Measure ℝ)
-      simp [gaussianMeasure, stdGaussian, σ2, σ, gaussianReal_map_const_mul,
-        Real.sq_sqrt hσ2_nonneg, Real.toNNReal_of_nonneg hσ2_nonneg]
+  -- The transformed sample `W i = ψ ∘ Z i` is i.i.d., centred, and square integrable.
+  have hW_meas : ∀ i, Measurable (fun ω => ψ (S.Z i ω)) := fun i => hψ_meas.comp (S.meas i)
+  have hlaw0 : μ.map (S.Z 0) = P := S.law
+  have hmean : ∫ ω, ψ (S.Z 0 ω) ∂μ = 0 := by
+    rw [← integral_map (S.meas 0).aemeasurable hψ_meas.aestronglyMeasurable, hlaw0, hψ_mean]
+  have hsq_int : Integrable (fun ω => (ψ (S.Z 0 ω)) ^ 2) μ := by
+    have h : Integrable (fun x => (ψ x) ^ 2) (μ.map (S.Z 0)) := by
+      rw [hlaw0]; exact hψ_sq_int
+    exact h.comp_measurable (S.meas 0)
+  have hmemLp : MemLp (fun ω => ψ (S.Z 0 ω)) 2 μ :=
+    (memLp_two_iff_integrable_sq (hW_meas 0).aestronglyMeasurable).2 hsq_int
+  have hsq_mean : ∫ ω, (ψ (S.Z 0 ω)) ^ 2 ∂μ = ∫ x, (ψ x) ^ 2 ∂P := by
+    rw [← integral_map (S.meas 0).aemeasurable (hψ_meas.pow_const 2).aestronglyMeasurable,
+      hlaw0]
+  have hvar : Var[fun ω => ψ (S.Z 0 ω); μ] = ∫ x, (ψ x) ^ 2 ∂P := by
+    have h := variance_eq_sub hmemLp
+    simp only [Pi.pow_apply] at h
+    rw [h, hmean, hsq_mean]
+    ring
+  have hindep : iIndepFun (fun i ω => ψ (S.Z i ω)) μ := by
+    simpa [Function.comp_def] using S.indep.comp (fun _ x => ψ x) (fun _ => hψ_meas)
+  have hident : ∀ i, IdentDistrib (fun ω => ψ (S.Z i ω)) (fun ω => ψ (S.Z 0 ω)) μ μ := by
+    intro i
+    simpa [Function.comp_def] using ((S.identDist i).comp hψ_meas).symm
+  -- Mathlib's CLT, with the Gaussian limit realised on its own probability space.
+  haveI hPG : IsProbabilityMeasure (gaussianMeasure 0 (∫ x, (ψ x) ^ 2 ∂P)) :=
+    instIsProbabilityMeasureGaussianMeasure 0 (∫ x, (ψ x) ^ 2 ∂P)
+  have hY : HasLaw (id : ℝ → ℝ)
+      (gaussianReal 0 (Var[fun ω => ψ (S.Z 0 ω); μ]).toNNReal)
+      (gaussianMeasure 0 (∫ x, (ψ x) ^ 2 ∂P)) := by
+    rw [hvar]
+    exact HasLaw.id
+  have hCLT := ProbabilityTheory.tendstoInDistribution_inv_sqrt_mul_sum_sub
+    (X := fun i ω => ψ (S.Z i ω)) (P := μ)
+    (P' := gaussianMeasure 0 (∫ x, (ψ x) ^ 2 ∂P)) hY hmemLp hindep hident
+  -- Since `ψ` is centred, Mathlib's centred normalised sum is literally ours.
+  have hfun : ∀ n : ℕ,
+      (fun ω => (Real.sqrt (n : ℝ))⁻¹ *
+          (∑ k ∈ Finset.range n, ψ (S.Z k ω) - (n : ℝ) * ∫ ω, ψ (S.Z 0 ω) ∂μ))
+        = IsAsymLinear.normalizedSum S ψ (fun m => Finset.range m) n := by
+    intro n
+    funext ω
+    simp [IsAsymLinear.normalizedSum, hmean, Finset.card_range]
+  unfold Tendsto_dist
+  have htgt : (⟨gaussianMeasure 0 (∫ x, (ψ x) ^ 2 ∂P),
+        instIsProbabilityMeasureGaussianMeasure 0 (∫ x, (ψ x) ^ 2 ∂P)⟩ : ProbabilityMeasure ℝ)
+      = ⟨(gaussianMeasure 0 (∫ x, (ψ x) ^ 2 ∂P)).map id,
+          Measure.isProbabilityMeasure_map hCLT.aemeasurable_limit⟩ :=
+    Subtype.ext Measure.map_id.symm
+  rw [htgt]
+  refine Filter.Tendsto.congr' ?_ hCLT.tendsto
+  filter_upwards with n
+  exact Subtype.ext (congrArg (fun f : Ω → ℝ => Measure.map f μ) (hfun n))
 
 /-! ## Slutsky absorption at the `Tendsto_dist` level
 
@@ -303,6 +210,11 @@ preserves the limit.  Mathlib has the analogous fact for
 (`tendstoInDistribution_of_tendstoInMeasure_sub`); here we restate it for
 our measure-level wrapper. -/
 
+-- The same `set_option` guards Mathlib's `tendstoInDistribution_of_tendstoInMeasure_sub`, whose
+-- proof this one mirrors: without it the rewrites by
+-- `tendsto_iff_forall_lipschitz_integral_tendsto` fail to see through the `ProbabilityMeasure ℝ`
+-- topology instance.
+set_option backward.isDefEq.respectTransparency.types false in
 /-- If `Xn ⇒ Q` in distribution and `Yn − Xn = o_p(1)`, then `Yn ⇒ Q`. -/
 theorem Tendsto_dist.add_isLittleOp_one
     {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω} [IsProbabilityMeasure μ]
@@ -407,7 +319,7 @@ theorem Tendsto_dist.add_isLittleOp_one
     · simp only [tendstoInMeasure_iff_measureReal_norm, Pi.zero_apply, sub_zero] at hXY
       exact hXY (ε / 2) (by positivity)
     · simp_rw [tendsto_iff_forall_lipschitz_integral_tendsto] at hX
-      simpa [tendsto_iff_dist_tendsto_zero] using hX F ⟨M, hF_bounded⟩ ⟨L, hF_lip⟩
+      simpa [tendsto_iff_dist_tendsto_zero, Real.dist_eq] using hX F ⟨M, hF_bounded⟩ ⟨L, hF_lip⟩
   have h_lt : L * ε / 2 < L * ε := half_lt_self (by positivity)
   filter_upwards [h_tendsto.eventually_lt_const h_lt] with n hn using (h_le n).trans_lt hn
 

@@ -207,18 +207,16 @@ lemma sum_admissible_mul_eventIndicator (P : EventStudySystem T) (D : P.Conventi
     ext ge
     rcases ge with ⟨g, e⟩
     simp only [admissibleCells, product_eq_sprod, mem_filter, mem_product, cohortsAtEvent,
-      mem_map, Function.Embedding.coeFn_mk, Prod.mk.injEq, ↓existsAndEq, true_and]
+      mem_map]
     constructor
-    · intro h
-      have hg : g ∈ P.cohorts := h.1.1.1
-      have heSupport : e ∈ D.eventSupport := h.1.1.2
-      have hAdm : P.AdmissibleCell g e := h.1.2
-      have heq : e = e' := h.2
-      exact ⟨⟨hg, ⟨by simpa [← heq] using heSupport, by simpa [← heq] using hAdm⟩⟩,
-        heq.symm⟩
-    · rintro ⟨⟨hg, hSupport, hAdm⟩, heq⟩
-      exact ⟨⟨⟨hg, by simpa [heq] using hSupport⟩, by simpa [heq] using hAdm⟩,
-        heq.symm⟩
+    · rintro ⟨⟨⟨hg, heSupport⟩, hAdm⟩, rfl⟩
+      exact ⟨g, ⟨hg, heSupport, hAdm⟩, rfl⟩
+    · rintro ⟨a, ⟨ha, hSupport, hAdm⟩, hEq⟩
+      have hEq' : (a, e') = (g, e) := hEq
+      injection hEq' with h1 h2
+      subst h1
+      subst h2
+      exact ⟨⟨⟨ha, hSupport⟩, hAdm⟩, rfl⟩
   calc
     ∑ ge ∈ P.admissibleCells D.eventSupport, f ge.1 ge.2 * eventIndicator e' ge.2
         = ∑ ge ∈ P.admissibleCells D.eventSupport,

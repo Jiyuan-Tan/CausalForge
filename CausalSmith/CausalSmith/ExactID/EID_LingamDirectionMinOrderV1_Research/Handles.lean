@@ -490,12 +490,18 @@ def IsAtlasFiberVariableOrder {m : ℕ} (order : List (AtlasFiberCoord m)) : Pro
 local instance atlasObservablePolynomialDecidableEq :
     DecidableEq (MvPolynomial (ℕ × ℕ) ℝ) := Classical.decEq _
 
+/-- Provides a procedure that decides whether two coordinates of the complex
+generic two-arrow incidence space are equal. -/
 local instance atlasComplexIncidenceCoordDecidableEq (m : ℕ) :
     DecidableEq (AtlasComplexIncidenceCoord m) := Classical.decEq _
 
+/-- Provides a procedure that decides whether two complex polynomials in the
+generic two-arrow incidence coordinates are equal. -/
 local instance atlasComplexIncidencePolynomialDecidableEq (m : ℕ) :
     DecidableEq (MvPolynomial (AtlasComplexIncidenceCoord m) ℂ) := Classical.decEq _
 
+/-- Provides a procedure that decides whether two complex polynomials in the
+observable cumulant coordinates are equal. -/
 local instance atlasComplexObservablePolynomialDecidableEq :
     DecidableEq (MvPolynomial (ℕ × ℕ) ℂ) := Classical.decEq _
 
@@ -545,6 +551,9 @@ def AtlasSignOracleProgram.evaluateWith
 noncomputable def exactAtlasSignOracle : AtlasExactSignOracle := fun P t =>
   polynomialSign (MvPolynomial.eval (fun ra => t ra.1 ra.2) P)
 
+/-- The canonical sign oracle is exact: for every displayed observable
+polynomial and every vector of observable cumulants it returns the mathematical
+sign of the real value that polynomial takes there. -/
 theorem exactAtlasSignOracle_isExact :
     IsExactAtlasSignOracle exactAtlasSignOracle := by
   intro P t
@@ -709,6 +718,10 @@ def atlasRationalCADPrimitiveCharges
     List AtlasCitedPrimitiveCharge :=
   atlasRationalCADPrimitiveChargesFrom 0 result.result.payload.trace
 
+/-- Charging a real-algebraic CAD trace bills exactly one primitive charge per
+primitive operation: the resulting charge list is as long as the total number of
+primitive operations recorded across the trace steps.  The offset at which the
+source steps are indexed does not change the count. -/
 theorem atlasRationalCADPrimitiveChargesFrom_length
     (sourceStepIndex : ℕ) {r : ℕ} (steps : List (EffectiveAlgebraTraceStep r)) :
     (atlasRationalCADPrimitiveChargesFrom sourceStepIndex steps).length =
@@ -787,6 +800,11 @@ noncomputable def rationalFamilyToComplexOnUsedCoordinates {r : ℕ} {σ : Type}
   classical
   exact family.image fun P => (P.map (Rat.castHom ℂ)).rename coordinateMap
 
+/-- Real counterpart of the previous transport: rename a finite rational
+polynomial family into a displayed coordinate space and extend its coefficients
+to the reals, requiring only the variables that actually occur in the family to
+receive an image.  This is the transport used for the `(t, lambda)` fiber and
+observable outputs, where the eliminated coordinates need no image. -/
 noncomputable def rationalFamilyToRealOnUsedCoordinates {r : ℕ} {σ : Type}
     [DecidableEq σ] (coordinateMap : Fin r → σ)
     (family : Finset (MvPolynomial (Fin r) ℚ)) :
@@ -921,17 +939,29 @@ theorem AtlasCitedEffectiveExecution.primitiveCharges_length
       forwardMapInjective, reverseMapInjective, forwardReverseExact,
       hforward, hreverse, intersectionResult⟩
   cases gaussianResults
-  simp [AtlasCitedEffectiveExecution.primitiveCharges,
-    AtlasCitedEffectiveExecution.rationalResults,
-    atlasRationalBatchPrimitiveCharges,
-    atlasRationalCADPrimitiveCharges,
-    AtlasCitedEffectiveExecution.symbolicOperationCount,
-    EffectiveGroebnerBatchResultsOver.symbolicOperationCount,
-    EffectiveGroebnerPayloadOver.symbolicOperationCount,
-    EffectiveRationalGroebnerCADPayload.symbolicOperationCount,
-    atlasRationalCADPrimitiveChargesFrom_length,
-    List.length_flatMap, Nat.add_assoc]
-  rfl
+  show ((forwardResult.result.payload.trace.flatMap fun step =>
+            step.primitiveOperations.map fun primitive =>
+              AtlasCitedPrimitiveCharge.rationalAlgebra
+                AtlasRationalAlgebraJob.forwardElimination step.operation primitive) ++
+        (reverseResult.result.payload.trace.flatMap fun step =>
+            step.primitiveOperations.map fun primitive =>
+              AtlasCitedPrimitiveCharge.rationalAlgebra
+                AtlasRationalAlgebraJob.reverseElimination step.operation primitive) ++
+        (intersectionResult.result.payload.trace.flatMap fun step =>
+            step.primitiveOperations.map fun primitive =>
+              AtlasCitedPrimitiveCharge.rationalAlgebra
+                AtlasRationalAlgebraJob.observableIntersection step.operation primitive) ++
+        atlasRationalCADPrimitiveChargesFrom 0 cadResult.result.payload.trace).length =
+      ((forwardResult.result.payload.trace.map
+            fun a => a.primitiveOperations.length).sum +
+          ((reverseResult.result.payload.trace.map
+              fun a => a.primitiveOperations.length).sum +
+            (intersectionResult.result.payload.trace.map
+              fun a => a.primitiveOperations.length).sum)) +
+        (cadResult.result.payload.trace.map EffectiveAlgebraTraceStep.operationCount).sum
+  simp [List.length_append, List.length_flatMap,
+    atlasRationalCADPrimitiveChargesFrom_length]
+  omega
 
 /-- A cited primitive may be assigned only to the atlas operation consuming
 its source job.  Rational algebra charges go to the corresponding forward,
@@ -1744,6 +1774,9 @@ def atlasCADJobDegreeMaximum (job : EffectiveRationalCADJob) : ℕ :=
     (max (atlasPolynomialFamilyDegreeMaximum job.secondInput)
       job.saturating.totalDegree)
 
+/-- The largest total degree occurring in a finite polynomial family is a valid
+uniform degree envelope for that family: every member has total degree at most
+that maximum. -/
 theorem atlasPolynomialFamily_degreeBoundedBy_maximum
     {K : Type} [Field K] [DecidableEq K] {r : ℕ}
     (family : Finset (MvPolynomial (Fin r) K)) :
@@ -1752,6 +1785,9 @@ theorem atlasPolynomialFamily_degreeBoundedBy_maximum
   intro P hP
   exact Finset.le_sup hP
 
+/-- The largest total degree charged by an algebra job is a valid uniform degree
+bound for it: both input families and the saturating polynomial have total degree
+at most that maximum. -/
 theorem atlasGroebnerJob_degreeBoundedBy_maximum
     {K : Type} [Field K] [DecidableEq K]
     (job : EffectiveGroebnerJobOver K) :
@@ -2447,5 +2483,22 @@ add_decl_doc instEncodableAtlasTraceOperation
 /-- Every encoded atlas construction, including its finite polynomial and trace data, has an
 effective numerical encoding and decoding. -/
 add_decl_doc instEncodableEncodedAtlasConstruction
+
+/-- The three rational algebra jobs of the paper-specific atlas have a decidable equality test:
+any two of them can be effectively determined to be the same or different. -/
+add_decl_doc instDecidableEqAtlasRationalAlgebraJob
+
+/-- Each of the three rational algebra jobs of the paper-specific atlas can be encoded as a
+natural number and decoded back, so the type is countable. -/
+add_decl_doc instEncodableAtlasRationalAlgebraJob
+
+/-- Finite rational syntax for a polynomial — its list of coefficients with exponent lists — can
+be encoded as a natural number and decoded back, so the type of polynomial codes is countable
+whenever its variables are. -/
+add_decl_doc instEncodableAtlasPolynomialCode
+
+/-- Finite syntax for one recursively lifted CAD cell can be encoded as a natural number and
+decoded back, so the type of cell codes is countable. -/
+add_decl_doc instEncodableAtlasCellCode
 
 end CausalSmith.ExactID.EID_LingamDirectionMinOrderV1

@@ -164,7 +164,7 @@ theorem cellMass_sum_eq_one {Ω 𝒢 : Type*} [MeasurableSpace Ω] [Fintype 𝒢
           intro g hg
           exact ne_of_lt <| lt_of_le_of_lt (measure_mono (Set.subset_univ _))
             (by simp [IsProbabilityMeasure.measure_univ])))
-  simpa [cellMass, preimage_univ] using hsum
+  simpa [cellMass, CellBridge.cellMass, Set.preimage, preimage_univ] using hsum
 
 /-- Cell-wise treated share is nonnegative when `D` is a.e. nonnegative. -/
 theorem cellShare_nonneg {Ω 𝒢 : Type*} [MeasurableSpace Ω]

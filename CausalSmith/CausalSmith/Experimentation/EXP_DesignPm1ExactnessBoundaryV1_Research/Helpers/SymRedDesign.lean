@@ -301,9 +301,17 @@ lemma orbitAvg_secondMoment_entry (m : ℕ) (D : FiniteDesign (Fin (2 * m) → B
         invFun := fun z => pbAct m σ⁻¹ z
         left_inv := by intro z; funext k; simp [pbAct]
         right_inv := by intro z; funext k; simp [pbAct] }
-    simpa [assignmentSecondMoment, FiniteDesign.E, e, pbAct, signOf] using
-      (Equiv.sum_comp e (fun w => D.p w *
-        (signOf m (pbAct m σ⁻¹ w) i * signOf m (pbAct m σ⁻¹ w) j)))
+    calc
+      (∑ z : Fin (2 * m) → Bool, D.p (pbAct m σ z) * (signOf m z i * signOf m z j))
+          = ∑ z : Fin (2 * m) → Bool,
+              D.p (e z) * (signOf m (e z) (σ⁻¹ i) * signOf m (e z) (σ⁻¹ j)) := by
+            refine Finset.sum_congr rfl fun z _ => ?_
+            simp [e, signOf, pbAct]
+      _ = ∑ w : Fin (2 * m) → Bool,
+              D.p w * (signOf m w (σ⁻¹ i) * signOf m w (σ⁻¹ j)) :=
+            Equiv.sum_comp e (fun w => D.p w *
+              (signOf m w (σ⁻¹ i) * signOf m w (σ⁻¹ j)))
+      _ = assignmentSecondMoment m D (σ⁻¹ i) (σ⁻¹ j) := rfl
   have hinvsum :
       (∑ σ ∈ blockAutoFinset m, assignmentSecondMoment m D (σ⁻¹ i) (σ⁻¹ j))
         = ∑ σ ∈ blockAutoFinset m, assignmentSecondMoment m D (σ i) (σ j) := by

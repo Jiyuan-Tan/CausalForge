@@ -165,7 +165,7 @@ theorem localized_uniform_deviation
   have hf_meas : ∀ i, Measurable (fΩ i) := by
     intro i
     by_cases hi : norm (F i) ≤ r
-    · simpa [fΩ, hi] using (hF_meas i).comp hX
+    · simpa [fΩ, hi] using (hF_meas i).fun_comp hX
     · simp [fΩ, hi]
   have hf_bdd : ∀ i ω, |fΩ i ω| ≤ R.b := by
     intro i ω

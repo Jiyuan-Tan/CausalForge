@@ -43,6 +43,9 @@ noncomputable def dispersionComparisonDesign (n : ℕ) (ε : ℝ) :
   | Sum.inr _ => dispersionFillerRho ε
 
 -- @node: dispersionRho_bounds
+/-- Under an admissible positivity floor, the interior homogeneous propensity used by the
+surrogate lies strictly between that floor and one half, so it is an interior point of the
+feasible propensity range. -/
 lemma dispersionRho_bounds {ε : ℝ} (hε : EpsilonAdmissible ε) :
     ε < dispersionRho ε ∧ dispersionRho ε < 1 / 2 := by
   rcases hε with ⟨h0, h2⟩
@@ -50,6 +53,9 @@ lemma dispersionRho_bounds {ε : ℝ} (hε : EpsilonAdmissible ε) :
   constructor <;> linarith
 
 -- @node: dispersionFillerRho_bounds
+/-- Under an admissible positivity floor, the compensating filler propensity likewise lies
+strictly between that floor and one half, so the comparison design that moves the clique
+coordinates to a fair coin stays interior. -/
 lemma dispersionFillerRho_bounds {ε : ℝ} (hε : EpsilonAdmissible ε) :
     ε < dispersionFillerRho ε ∧ dispersionFillerRho ε < 1 / 2 := by
   rcases hε with ⟨h0, h2⟩
@@ -164,8 +170,7 @@ lemma dispersion_surrogateDesign_eq_homogeneous (n : ℕ) {ε : ℝ}
   have hmean : ∑ k, ps k =
       (Fintype.card (DispersionIntervention n) : ℝ) * dispersionRho ε := by
     exact hs.1.budget
-  simpa [ps, E, B, dispersionHomogeneousDesign] using
-    reciprocalBarrier_sum_unique_minimizer ps (dispersionRho ε) hp0 hp1
-      (lt_trans hε.1 hr.1) (lt_trans hr.2 (by norm_num)) hmean hsumle
+  exact reciprocalBarrier_sum_unique_minimizer ps (dispersionRho ε) hp0 hp1
+    (lt_trans hε.1 hr.1) (lt_trans hr.2 (by norm_num)) hmean hsumle
 
 end CausalSmith.Experimentation.BipartiteMinimaxDesign

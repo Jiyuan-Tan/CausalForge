@@ -105,7 +105,9 @@ theorem supermartingale_maximal_ineq [IsFiniteMeasure μ] {M : ℕ → Ω → �
           - μ[M 0] := by
       rw [show stoppedValue (fun k ω => -M k ω) (fun _ : Ω => ((0 : ℕ) : ℕ∞)) =
           fun ω => -M 0 ω by
-        simpa only using stoppedValue_const (fun k ω => -M k ω) 0]
+        funext ω
+        simp only [stoppedValue]
+        rfl]
       exact integral_neg (M 0)
     have hright :
         μ[stoppedValue (fun k ω => -M k ω) τ] = - μ[stoppedValue M τ] := by

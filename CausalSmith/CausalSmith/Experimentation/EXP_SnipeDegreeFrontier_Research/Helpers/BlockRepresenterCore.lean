@@ -408,7 +408,8 @@ lemma blockEnergy_pos (β d : ℕ) (p : ℝ) (hβ : 1 ≤ β) (hd : 1 ≤ d)
         (p * (1 - p)) ^ 1 := by
     simp only [Nat.choose_one_right, bernoulliContrast, pow_one, neg_neg]
     have hdpos : 0 < (d : ℝ) := by exact_mod_cast hd
-    convert div_pos hdpos hq using 1 <;> ring
+    rw [show (1 : ℝ) - p - -p = 1 by ring, one_pow, mul_one]
+    exact div_pos hdpos hq
   unfold blockEnergy
   exact lt_of_lt_of_le hterm_pos
     (Finset.single_le_sum (fun r hr => hterm_nonneg r) hmem)
@@ -555,7 +556,8 @@ lemma kStar_mem_exposedOrder
   have heff : 1 ≤ effBeta β d := by
     simp [effBeta, hβ, hd]
   have hone : 1 ∈ exposed := by
-    simp [exposed, heff, bernoulliContrast]
+    simp only [exposed, Finset.mem_filter, Finset.mem_Icc]
+    exact ⟨⟨le_rfl, heff⟩, by norm_num [bernoulliContrast]⟩
   have hne : exposed.Nonempty := ⟨1, hone⟩
   rw [show kStar d β p = exposed.max' hne by
     simp only [kStar, exposed]

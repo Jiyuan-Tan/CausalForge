@@ -50,8 +50,8 @@ private lemma measurable_indEq_left (d : δ) :
     Measurable (fun x : δ => indEq x d) := by
   have hset : MeasurableSet {x : δ | x = d} :=
     MeasurableSet.singleton d
-  convert (measurable_const.indicator hset :
-    Measurable (Set.indicator {x : δ | x = d} (fun _ => (1 : ℝ)))) using 1
+  exact (measurable_const.indicator hset :
+    Measurable (Set.indicator {x : δ | x = d} (fun _ => (1 : ℝ))))
 
 /-- **Finite variance of `ψ_seqDR`** — sequential DR (DTR) analogue of
 `aipw_finite_var`.
@@ -73,8 +73,7 @@ theorem seqDR_finite_var (S : DTREstimationSystem P δ γ) {ε : ℝ}
       Integrable (fun ω => (S.toPODTRSystem.Y_of dbar ω) ^ 2) P.μ) :
     Integrable (fun z => (S.ψ_seqDR z) ^ 2) (S.P_Z) := by
   have hψ_meas : Measurable S.ψ_seqDR := by
-    simpa [DTREstimationSystem.ψ_seqDR] using
-      S.measurable_seqDRMomentFunctional S.η₀ S.θ₀
+    exact S.measurable_seqDRMomentFunctional S.η₀ S.θ₀
   have hY_L2 : MemLp S.toPODTRSystem.factualY 2 P.μ :=
     (memLp_two_iff_integrable_sq
       S.toPODTRSystem.measurable_factualY.aestronglyMeasurable).2 h_y2
@@ -270,7 +269,7 @@ theorem seqDR_finite_var (S : DTREstimationSystem P δ γ) {ε : ℝ}
              S.toPODTRSystem.factualD ⟨0, by decide⟩ ω,
              S.toPODTRSystem.factualS ⟨0, by decide⟩ ω) -
             S.μ₀_val (S.toPODTRSystem.factualS ⟨0, by decide⟩ ω))) 2 P.μ := by
-    simpa using (hμ1_L2.sub hμ0_L2).mul hw0_Linf
+    exact (hμ1_L2.sub hμ0_L2).mul hw0_Linf
   have hterm1_L2 :
       MemLp
         (fun ω =>
@@ -288,15 +287,16 @@ theorem seqDR_finite_var (S : DTREstimationSystem P δ γ) {ε : ℝ}
               (S.toPODTRSystem.factualS ⟨1, by decide⟩ ω,
                S.toPODTRSystem.factualD ⟨0, by decide⟩ ω,
                S.toPODTRSystem.factualS ⟨0, by decide⟩ ω))) 2 P.μ := by
-    simpa using (hY_L2.sub hμ1_L2).mul hw1_Linf
+    exact (hY_L2.sub hμ1_L2).mul hw1_Linf
   have hψ_comp_L2 : MemLp (fun ω => S.ψ_seqDR (S.factualZ ω)) 2 P.μ := by
     have hconst_L2 : MemLp (fun _ : P.Ω => S.θ₀) 2 P.μ := memLp_const _
     have hsum_L2 :=
       ((hμ0_L2.add hterm0_L2).add hterm1_L2).sub hconst_L2
-    simpa [DTREstimationSystem.ψ_seqDR, DTREstimationSystem.seqDRMoment,
+    simp only [DTREstimationSystem.ψ_seqDR, DTREstimationSystem.seqDRMoment,
       Causalean.Estimation.DTR.seqDRMoment, DTREstimationSystem.factualZ,
       projS₀, projD₀, projS₁, projD₁, projY, histH₁,
-      DTREstimationSystem.η₀] using hsum_L2
+      DTREstimationSystem.η₀]
+    exact hsum_L2
   have hψ_L2 : MemLp S.ψ_seqDR 2 (S.P_Z) := by
     rw [DTREstimationSystem.P_Z]
     exact (memLp_map_measure_iff hψ_meas.aestronglyMeasurable

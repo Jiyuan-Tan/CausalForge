@@ -90,7 +90,7 @@ private lemma lpNorm_bdd_mul_le
   have hCabs_memLp : MemLp (fun z => C * |f z|) 2 μ := by
     have hg : MemLp (fun z => |f z|) 2 μ := by
       simpa [Real.norm_eq_abs] using hf.norm
-    simpa [Pi.smul_apply, smul_eq_mul] using hg.const_smul C
+    exact hg.const_smul C
   have hmono :
       eLpNorm (fun z => φ z * f z) 2 μ ≤ eLpNorm (fun z => C * |f z|) 2 μ := by
     refine eLpNorm_mono_ae_real ?_
@@ -211,12 +211,12 @@ private theorem plr_score_diff_abs_le
     have hL : MemLp (fun z => cL * |dL z|) 2 S.P_Z := by
       have hg : MemLp (fun z => |dL z|) 2 S.P_Z := by
         simpa [Real.norm_eq_abs] using hdL_memLp.norm
-      simpa [Pi.smul_apply, smul_eq_mul] using hg.const_smul cL
+      exact hg.const_smul cL
     have hM : MemLp (fun z => cM * |dM z|) 2 S.P_Z := by
       have hg : MemLp (fun z => |dM z|) 2 S.P_Z := by
         simpa [Real.norm_eq_abs] using hdM_memLp.norm
-      simpa [Pi.smul_apply, smul_eq_mul] using hg.const_smul cM
-    simpa [upper] using hL.add hM
+      exact hg.const_smul cM
+    exact hL.add hM
   -- Pointwise (a.e.) domination of the score by the envelope.
   have hpoint : ∀ᵐ z ∂S.P_Z, ‖sc z‖ ≤ upper z := by
     filter_upwards [hA_bdd, hv_bdd] with z hAz hvz
@@ -285,7 +285,7 @@ private theorem plr_score_diff_abs_le
     have hL_memLp : MemLp (fun z => cL * |dL z|) 2 S.P_Z := by
       have hg : MemLp (fun z => |dL z|) 2 S.P_Z := by
         simpa [Real.norm_eq_abs] using hdL_memLp.norm
-      simpa [Pi.smul_apply, smul_eq_mul] using hg.const_smul cL
+      exact hg.const_smul cL
     have htri :
         lpNorm upper 2 S.P_Z ≤
           lpNorm (fun z => cL * |dL z|) 2 S.P_Z +

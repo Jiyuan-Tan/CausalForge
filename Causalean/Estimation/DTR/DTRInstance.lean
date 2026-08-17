@@ -244,7 +244,8 @@ theorem seqDR_dml_isAsymLinear
           (seqDRGeneralMoment S h_e_pointwise).η₀ z
           (seqDRGeneralMoment S h_e_pointwise).θ₀) ^ 2) S.P_Z := by
     simpa [seqDRGeneralMoment, DTREstimationSystem.ψ_seqDR,
-      DTREstimationSystem.η₀, DTREstimationSystem.seqDRMomentFunctional] using
+      DTREstimationSystem.η₀, DTREstimationSystem.seqDRMomentFunctional,
+      DTREstimationSystem.seqDRMoment] using
         seqDR_finite_var S h_overlap hA h_y2 h_yd2
   have hBR_at :
       ∀ n ω,
@@ -288,8 +289,7 @@ theorem seqDR_dml_isAsymLinear
             (η_hat n ω) S.η₀ : NNReal) : ℝ)| := by
       simp only [seqDRGeneralMoment, DTREstimationSystem.η₀]
       rw [abs_of_nonneg ENNReal.toReal_nonneg]
-      rw [abs_of_nonneg (NNReal.coe_nonneg _)]
-      exact le_add_of_nonneg_right ENNReal.toReal_nonneg
+      exact (le_add_of_nonneg_right ENNReal.toReal_nonneg).trans (le_abs_self _)
     exact lt_of_lt_of_le hω hcoord_le
   have h_mu1_rate :
       IsLittleOp
@@ -312,8 +312,7 @@ theorem seqDR_dml_isAsymLinear
             (η_hat n ω) S.η₀ : NNReal) : ℝ)| := by
       simp only [seqDRGeneralMoment, DTREstimationSystem.η₀]
       rw [abs_of_nonneg ENNReal.toReal_nonneg]
-      rw [abs_of_nonneg (NNReal.coe_nonneg _)]
-      exact le_add_of_nonneg_left ENNReal.toReal_nonneg
+      exact (le_add_of_nonneg_left ENNReal.toReal_nonneg).trans (le_abs_self _)
     exact lt_of_lt_of_le hω hcoord_le
   have h_e0_rate :
       IsLittleOp
@@ -336,8 +335,7 @@ theorem seqDR_dml_isAsymLinear
             (η_hat n ω) S.η₀ : NNReal) : ℝ)| := by
       simp only [seqDRGeneralMoment, DTREstimationSystem.η₀]
       rw [abs_of_nonneg ENNReal.toReal_nonneg]
-      rw [abs_of_nonneg (NNReal.coe_nonneg _)]
-      exact le_add_of_nonneg_right ENNReal.toReal_nonneg
+      exact (le_add_of_nonneg_right ENNReal.toReal_nonneg).trans (le_abs_self _)
     exact lt_of_lt_of_le hω hcoord_le
   have h_e1_rate :
       IsLittleOp
@@ -360,8 +358,7 @@ theorem seqDR_dml_isAsymLinear
             (η_hat n ω) S.η₀ : NNReal) : ℝ)| := by
       simp only [seqDRGeneralMoment, DTREstimationSystem.η₀]
       rw [abs_of_nonneg ENNReal.toReal_nonneg]
-      rw [abs_of_nonneg (NNReal.coe_nonneg _)]
-      exact le_add_of_nonneg_left ENNReal.toReal_nonneg
+      exact (le_add_of_nonneg_left ENNReal.toReal_nonneg).trans (le_abs_self _)
     exact lt_of_lt_of_le hω hcoord_le
   have h_score_diff_rate :
       IsLittleOp

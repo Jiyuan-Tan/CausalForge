@@ -518,8 +518,8 @@ private lemma TN_filter_not_treated_eq_S0
     Finset.univ.filter (fun t => ¬ AdoptionDate.le (P.A g) t) = S0_TN P g := by
   rw [S0_TN]
   ext t
-  simp only [Finset.mem_filter, Finset.mem_univ, true_and, AdoptionDate.le,
-    AdoptionDate.lt]
+  simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+  simp only [AdoptionDate.le, AdoptionDate.lt]
   exact not_le
 
 open Classical in
@@ -672,7 +672,8 @@ private lemma TT_middle_complement_eq_pre_union_post
         (fun t => ¬ (AdoptionDate.le (P.A e) t ∧ AdoptionDate.lt (P.A ℓ) t)) =
       S0_EL P e ∪ S1_LE P ℓ := by
   ext t
-  simp [S0_EL, S1_LE, AdoptionDate.le, AdoptionDate.lt]
+  simp only [Finset.mem_union, S0_EL, S1_LE, Finset.mem_filter, Finset.mem_univ, true_and]
+  simp [AdoptionDate.le, AdoptionDate.lt]
   constructor
   · intro h
     by_cases hpre : (t : WithTop (Fin T)) < P.A e
@@ -690,7 +691,8 @@ private lemma TT_disjoint_pre_mid
     Disjoint (S0_EL P e) (S1_EL P e ℓ) := by
   rw [Finset.disjoint_left]
   intro t ht0 ht1
-  simp [S0_EL, S1_EL, AdoptionDate.le, AdoptionDate.lt] at ht0 ht1
+  simp only [S0_EL, S1_EL, Finset.mem_filter, Finset.mem_univ, true_and] at ht0 ht1
+  simp only [AdoptionDate.le, AdoptionDate.lt] at ht0 ht1
   exact not_lt_of_ge ht1.1 ht0
 
 set_option linter.flexible false in
@@ -699,7 +701,8 @@ private lemma TT_disjoint_mid_post
     Disjoint (S1_EL P e ℓ) (S1_LE P ℓ) := by
   rw [Finset.disjoint_left]
   intro t htm htp
-  simp [S1_EL, S1_LE, AdoptionDate.le, AdoptionDate.lt] at htm htp
+  simp only [S1_EL, S1_LE, Finset.mem_filter, Finset.mem_univ, true_and] at htm htp
+  simp only [AdoptionDate.le, AdoptionDate.lt] at htm htp
   exact not_lt_of_ge htp htm.2
 
 set_option linter.flexible false in
@@ -708,7 +711,8 @@ private lemma TT_disjoint_pre_post
     Disjoint (S0_EL P e) (S1_LE P ℓ) := by
   rw [Finset.disjoint_left]
   intro t ht0 ht1
-  simp [S0_EL, S1_LE, AdoptionDate.le, AdoptionDate.lt] at ht0 ht1
+  simp only [S0_EL, S1_LE, Finset.mem_filter, Finset.mem_univ, true_and] at ht0 ht1
+  simp only [AdoptionDate.le, AdoptionDate.lt] at ht0 ht1
   exact not_lt_of_ge ht1 (lt_trans ht0 hord)
 
 private lemma TT_pre_mid_post_union
@@ -716,7 +720,9 @@ private lemma TT_pre_mid_post_union
     S0_EL P e ∪ S1_EL P e ℓ ∪ S1_LE P ℓ =
       (Finset.univ : Finset (Fin T)) := by
   ext t
-  simp [S0_EL, S1_EL, S1_LE, AdoptionDate.le, AdoptionDate.lt]
+  simp only [Finset.mem_union, S0_EL, S1_EL, S1_LE, Finset.mem_filter, Finset.mem_univ,
+    true_and]
+  simp [AdoptionDate.le, AdoptionDate.lt]
   by_cases hpre : (t : WithTop (Fin T)) < P.A e
   · simp [hpre]
   · have he : P.A e ≤ (t : WithTop (Fin T)) := le_of_not_gt hpre
@@ -768,7 +774,9 @@ private lemma TT_mu_eq_pre_complement_share
   have htreated_e :
       Finset.univ.filter (fun t => AdoptionDate.le (P.A e) t) = M ∪ B := by
     ext t
-    simp [M, B, S1_EL, S1_LE, AdoptionDate.le, AdoptionDate.lt]
+    simp only [M, B, Finset.mem_union, S1_EL, S1_LE, Finset.mem_filter, Finset.mem_univ,
+      true_and]
+    simp [AdoptionDate.le, AdoptionDate.lt]
     constructor
     · intro he
       by_cases hlt : (t : WithTop (Fin T)) < P.A ℓ

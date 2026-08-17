@@ -146,7 +146,7 @@ theorem boundArm_lo_le_cond_YofD [IsFiniteMeasure P.μ]
                      + hA.lo * S.dVar.indicator (!d) ω)
         ≤ eventCondExp P.μ (S.zEvent z) (S.YofD d) := by
     refine eventCondExp_mono_ae P.μ hint_sum hint_Yd ?_
-    simpa using (ae_restrict_of_ae hbound_ae)
+    exact ae_restrict_of_ae hbound_ae
   calc
     S.boundArm d hA.lo z
         = eventCondExp P.μ (S.zEvent z)
@@ -186,7 +186,7 @@ theorem cond_YofD_le_boundArm_hi [IsFiniteMeasure P.μ]
             (fun ω => S.YofD d ω * S.dVar.indicator d ω
                        + hA.hi * S.dVar.indicator (!d) ω) := by
     refine eventCondExp_mono_ae P.μ hint_Yd hint_sum ?_
-    simpa using (ae_restrict_of_ae hbound_ae)
+    exact ae_restrict_of_ae hbound_ae
   calc
     eventCondExp P.μ (S.zEvent z) (S.YofD d)
         ≤ eventCondExp P.μ (S.zEvent z)

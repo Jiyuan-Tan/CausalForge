@@ -1277,7 +1277,7 @@ theorem localEmpProcessModulus_of_localized_sharp_ae
         (by
           filter_upwards with z
           simpa [Real.norm_eq_abs] using hclamp_abs (S.ℓ z θ g - S.ℓ z S.θ₀ g))
-    simpa [Sc] using (hℓ_int S.θ₀ S.θ₀_mem).add hcenter_int
+    simpa [Sc] using (hℓ_int S.θ₀ S.θ₀_mem).fun_add hcenter_int
   have hSc_rad_bdd : ∀ m r, ∀ S_fin : Fin m → Z, ∀ σ : Signs m,
       BddAbove (Set.range fun p : starHullParam Sc.Θ_set =>
         |(m : ℝ)⁻¹ * ∑ k : Fin m, (σ k : ℝ) *

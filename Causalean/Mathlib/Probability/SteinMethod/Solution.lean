@@ -117,7 +117,7 @@ theorem steinSol_hasDerivAt (h : ℝ → ℝ) (hh : Continuous h) {C : ℝ} (hb 
     have hpow : HasDerivAt (fun u : ℝ => u ^ 2 / 2) w w := by
       have := (hasDerivAt_pow 2 w).div_const 2
       simpa using this
-    have := (Real.hasDerivAt_exp (w ^ 2 / 2)).comp w hpow
+    have := hpow.exp
     simpa [mul_comm] using this
   -- Product rule.
   have hprod := hexp_deriv.mul hG_deriv
@@ -130,9 +130,7 @@ theorem steinSol_hasDerivAt (h : ℝ → ℝ) (hh : Continuous h) {C : ℝ} (hb 
       mul_assoc, ← Real.exp_add]
     rw [show w ^ 2 / 2 + -w ^ 2 / 2 = 0 by ring, Real.exp_zero, mul_one]
   rw [hsol_eq]
-  convert hprod using 1
-  change w * (Real.exp (w ^ 2 / 2) * G w) + (h w - gExpect h)
-    = w * Real.exp (w ^ 2 / 2) * G w + Real.exp (w ^ 2 / 2) * g w
+  refine hprod.congr_deriv ?_
   rw [hgcancel]; ring
 
 /-- The Stein equation in subtractive form. -/

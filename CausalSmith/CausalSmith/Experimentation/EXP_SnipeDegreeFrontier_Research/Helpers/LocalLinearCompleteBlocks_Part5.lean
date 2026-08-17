@@ -130,6 +130,7 @@ lemma blockScheduleError_sq_le_extremal
                   (∏ j ∈ choice.2 i, if z j then (1 : ℝ) else 0) -
                     if (choice.2 i).Nonempty then 1 else 0)) ^ 2))
           hchoice using 1
+        rfl
       · positivity
 
 /-- Defines extreme block schedule. -/

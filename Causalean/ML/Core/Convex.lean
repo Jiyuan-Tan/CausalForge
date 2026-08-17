@@ -43,7 +43,15 @@ theorem empiricalRiskP_convexOn_of_loss_convex
           simpa using
             (convexOn_const (𝕜 := ℝ) (E := Θ) (β := ℝ) (s := Θset) (0 : ℝ) hconv)
       | insert i t hi ht =>
-          simpa [Finset.sum_insert hi, Pi.add_apply] using (hloss i).add ht
+          have hadd := (hloss i).add ht
+          have hfun :
+              ((fun θ => loss (M.predict θ (S i).1) (S i).2) +
+                  fun θ => t.sum (fun i => loss (M.predict θ (S i).1) (S i).2))
+                = fun θ => (insert i t).sum
+                    (fun i => loss (M.predict θ (S i).1) (S i).2) := by
+            funext θ
+            simp [Finset.sum_insert hi]
+          rwa [hfun] at hadd
     simpa using hfin Finset.univ
   simpa [smul_eq_mul] using
     hsum.smul (inv_nonneg.mpr (Nat.cast_nonneg (Fintype.card ι)))

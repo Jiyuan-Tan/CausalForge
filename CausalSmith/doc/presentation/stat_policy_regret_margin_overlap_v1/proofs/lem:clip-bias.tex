@@ -1,34 +1,128 @@
 \begin{proof}[Proof of \cref{obj:lem:clip-bias}]
-Fix a bounded measurable covariate test function \(\phi\), and write \(\bar e_q(x)=e_q(x;\bar\eta)\).  Since \(q\in(0,1)\), the clipped denominators \(\bar e_q\) and \(1-\bar e_q\) are bounded away from zero; the bounded-outcome and bounded-nuisance assumptions make all terms below integrable.  Expanding \cref{obj:def:clipped-aipw-score} gives
+Fix a bounded measurable covariate test function \(\varphi\), and write \(\bar e_q(x)=e_q(x;\bar\eta)\) for the clipped plug-in propensity of \cref{obj:def:clipped-propensity}, whose clipping level is fixed in \(q\in(0,1/2]\).  Since \(q\le 1/2\), we have \(q\le 1-q\), and the definition \(\bar e_q(x)=\min\{1-q,\max\{q,\bar e(x)\}\}\) therefore gives the two-sided bound
+\[
+q\le \bar e_q(x)\le 1-q
+\qquad\text{for every }x,
+\]
+so both denominators are bounded away from zero: \(\bar e_q(x)\ge q>0\) and \(1-\bar e_q(x)\ge q>0\).  Together with \cref{obj:ass:bounded-outcome} (which gives \(|Y|\le1\) \(P\)-a.s.\ and \(|\mu_a|\le1\)) and \cref{obj:ass:bounded-crossfit-nuisances} (which bounds \(\bar\mu_0,\bar\mu_1\)), every integrand appearing below is measurable and bounded, hence \(P\)- and \(P_X\)-integrable; this is the only role of the boundedness hypotheses. % lean: clippedPropensity_pos % lean: one_sub_clippedPropensity_pos % lean: bounded_clipBias
+
+\emph{Step 1: expand the score and pass to covariate integrals.}  Multiplying the score of \cref{obj:def:clipped-aipw-score} by \(\varphi(X)\) and splitting it into five terms,
+\[
+\varphi(X)\Gamma_q(O;\bar\eta)
+=
+\varphi(X)\{\bar\mu_1(X)-\bar\mu_0(X)\}
++\frac{AY\varphi(X)}{\bar e_q(X)}
+-\frac{A\bar\mu_1(X)\varphi(X)}{\bar e_q(X)}
+-\frac{(1-A)Y\varphi(X)}{1-\bar e_q(X)}
++\frac{(1-A)\bar\mu_0(X)\varphi(X)}{1-\bar e_q(X)} .
+\]
+% lean: clippedAIPWScore_test_expand_pointwise
+Each of the five terms is integrable, so the integral of the sum splits into the sum of the integrals. % lean: hscore_split
+The defining conditional-mean relations of the observed law, namely \(e_P(x)=P(A=1\mid X=x)\) and \(\mu_a(x)=E_P[Y\mid A=a,X=x]\), state that for every bounded measurable \(\psi\),
+\[
+E_P[\psi(X)]=\int \psi\,dP_X,
+\qquad
+E_P[A\,\psi(X)]=\int e_P\psi\,dP_X,
+\qquad
+E_P[(1-A)\,\psi(X)]=\int(1-e_P)\psi\,dP_X,
+\]
+\[
+E_P[A\,Y\,\psi(X)]=\int e_P\mu_1\psi\,dP_X,
+\qquad
+E_P[(1-A)\,Y\,\psi(X)]=\int(1-e_P)\mu_0\psi\,dP_X .
+\]
+% lean: hI0 % lean: hI1 % lean: hI2 % lean: hI3 % lean: hI4
+Applying these with \(\psi=\varphi/\bar e_q\), \(\psi=\bar\mu_1\varphi/\bar e_q\), \(\psi=\varphi/(1-\bar e_q)\), and \(\psi=\bar\mu_0\varphi/(1-\bar e_q)\) — all bounded and measurable by the previous paragraph — converts the five terms into \(P_X\)-integrals:
 \[
 \begin{aligned}
-\int \phi(X)\Gamma_q(O;\bar\eta)\,dP
-&=\int \phi(\bar\mu_1-\bar\mu_0)\,dP_X  \\
-&\quad+\int e_P\mu_1\,\frac{\phi}{\bar e_q}\,dP_X
-      -\int e_P\bar\mu_1\,\frac{\phi}{\bar e_q}\,dP_X \\
-&\quad-\int (1-e_P)\mu_0\,\frac{\phi}{1-\bar e_q}\,dP_X
-      +\int (1-e_P)\bar\mu_0\,\frac{\phi}{1-\bar e_q}\,dP_X .
+\int \varphi(X)\Gamma_q(O;\bar\eta)\,dP
+&=\int \varphi(\bar\mu_1-\bar\mu_0)\,dP_X  \\
+&\quad+\int e_P\mu_1\,\frac{\varphi}{\bar e_q}\,dP_X
+      -\int e_P\bar\mu_1\,\frac{\varphi}{\bar e_q}\,dP_X \\
+&\quad-\int (1-e_P)\mu_0\,\frac{\varphi}{1-\bar e_q}\,dP_X
+      +\int (1-e_P)\bar\mu_0\,\frac{\varphi}{1-\bar e_q}\,dP_X .
 \end{aligned}
 \]
-Here the treated and control terms have been converted to \(P_X\)-integrals using the defining conditional-mean relations for \(e_P,\mu_1,\mu_0\). % lean: clippedAIPWScore_test_expand_pointwise % lean: hscore_split % lean: hI0 % lean: hI1 % lean: hI2 % lean: hI3 % lean: hI4
+% lean: hscore_px
 
-Collecting the integrand pointwise and using \(\tau_P=\mu_1-\mu_0\), \(\Delta_a=\bar\mu_a-\mu_a\), one obtains
+\emph{Step 2: collect the integrand pointwise.}  Fix \(x\).  Using \(\bar\mu_a=\mu_a+\Delta_a\) and \(\tau_P=\mu_1-\mu_0\), the two treated terms combine as
 \[
-\int \phi(X)\Gamma_q(O;\bar\eta)\,dP
--
-\int \phi(x)\tau_P(x)\,dP_X(x)
+\Delta_1(x)-\frac{e_P(x)\Delta_1(x)}{\bar e_q(x)}
 =
-\int \phi(x)\,
-(\bar e_q(x)-e_P(x))
+\frac{\{\bar e_q(x)-e_P(x)\}\Delta_1(x)}{\bar e_q(x)},
+\]
+and the two control terms combine as
+\[
+-\Delta_0(x)+\frac{\{1-e_P(x)\}\Delta_0(x)}{1-\bar e_q(x)}
+=
+\frac{\{\bar e_q(x)-e_P(x)\}\Delta_0(x)}{1-\bar e_q(x)} .
+\]
+Both rearrangements are legitimate because \(\bar e_q(x)\) and \(1-\bar e_q(x)\) are nonzero.  Adding them to \(\tau_P(x)\) gives the pointwise identity
+\[
+\varphi(x)(\bar\mu_1-\bar\mu_0)(x)
++\frac{e_P\mu_1\varphi}{\bar e_q}(x)
+-\frac{e_P\bar\mu_1\varphi}{\bar e_q}(x)
+-\frac{(1-e_P)\mu_0\varphi}{1-\bar e_q}(x)
++\frac{(1-e_P)\bar\mu_0\varphi}{1-\bar e_q}(x)
+=
+\varphi(x)\{\tau_P(x)+b_q(x)\},
+\]
+with \(b_q\) exactly the function displayed in the statement. % lean: clipBias_integrand_collect_pointwise
+
+\emph{Step 3: integrate.}  Both \(\varphi\tau_P\) and \(\varphi b_q\) are bounded measurable, hence \(P_X\)-integrable, so the integral of the right-hand side splits and Step 1 becomes
+\[
+\int \varphi(X)\Gamma_q(O;\bar\eta)\,dP
+-
+\int \varphi(x)\tau_P(x)\,dP_X(x)
+=
+\int \varphi(x)\,
+\{\bar e_q(x)-e_P(x)\}
 \left\{
 \frac{\Delta_1(x)}{\bar e_q(x)}
 +
 \frac{\Delta_0(x)}{1-\bar e_q(x)}
-\right\}\,dP_X(x).
+\right\}\,dP_X(x)
+=
+\int \varphi\,b_q\,dP_X .
 \]
-Since this holds for every bounded measurable \(\phi\), it is precisely the displayed conditional-mean drift identity. % lean: clipBias_integrand_collect_pointwise % lean: hpx_collect % lean: clip_bias
+Since this holds for every bounded measurable \(\varphi\), it is precisely the asserted conditional-mean drift identity \(E_P[\Gamma_q(O;\bar\eta)\mid X=x]-\tau_P(x)=b_q(x)\) for \(P_X\)-almost every \(x\). % lean: hpx_collect % lean: clip_bias
 
-The same formula gives the cancellation mechanisms recorded in the statement: if \(\bar e_q(x)=e_P(x)\), the leading factor is zero; if \(\Delta_0(x)=\Delta_1(x)=0\), the bracket is zero. % lean: clip_bias
+\emph{Step 4: the cancellation mechanisms.}  The closed form
+\[
+b_q(x)=\{\bar e_q(x)-e_P(x)\}\left\{\frac{\Delta_1(x)}{\bar e_q(x)}+\frac{\Delta_0(x)}{1-\bar e_q(x)}\right\}
+\]
+is a product of two factors.  If \(\bar e_q(x)=e_P(x)\), the first factor is \(0\); if \(\Delta_0(x)=\Delta_1(x)=0\), the second factor is \(0\).  In either case \(b_q(x)=0\). % lean: clip_bias
 
-Finally, the assumptions alone do not allow one to replace this algebra by a cancellation claim on the region \(p_P(x)>q\).  There is a well-formed bounded positive law on \(\mathbb R\), with \(q'=1/4\), plug-ins \(m_0\equiv0\), \(m_1\equiv1\), \(e'\equiv0\), and \(x=0\), for which \(q'<p_{P'}(0)\) but the displayed drift is nonzero.  Thus no additive clipped-region bound of the asserted form follows from the frozen assumptions alone. % lean: clipBiasCounterLaw_overlap % lean: clipBiasCounterLaw_bias_ne % lean: clip_bias
+\emph{Step 5: no cancellation from \(p_P(x)>q\) alone.}  It remains to show that the stated assumptions do not permit replacing this algebra by a cancellation claim on the region \(\{p_P>q\}\).  Take the covariate space \(\mathbb R\), and let \(P'\) be the law that puts covariate mass \(1\) at \(x=0\), assigns treatment by a fair coin, and returns \(Y=0\) always; explicitly, \(P'\) is the two-atom law
+\[
+P'=\tfrac12\,\delta_{(0,1,0)}+\tfrac12\,\delta_{(0,0,0)},
+\qquad
+P'_X=\delta_0,
+\qquad
+e_{P'}\equiv\tfrac12,
+\qquad
+\mu_0\equiv\mu_1\equiv 0,
+\qquad
+\tau_{P'}\equiv 0 .
+\]
+This \(P'\) is a well-formed observed law with bounded outcomes and satisfies positivity, since \(0<1/2<1\). % lean: clipBiasCounterLaw_wf % lean: clipBiasCounterLaw_bounded % lean: clipBiasCounterLaw_pos
+Take \(q'=1/4\) and the plug-in triple \(\bar\mu_0\equiv0\), \(\bar\mu_1\equiv1\), \(\bar e\equiv0\), and evaluate at \(x=0\).  The overlap score is
+\[
+p_{P'}(0)=\min\{e_{P'}(0),1-e_{P'}(0)\}=\tfrac12>\tfrac14=q',
+\]
+so \(x=0\) lies strictly inside the region where clipping is claimed not to matter. % lean: clipBiasCounterLaw_overlap
+Yet the clipped plug-in propensity is \(\bar e_{q'}(0)=\min\{3/4,\max\{1/4,0\}\}=1/4\), while \(\Delta_1(0)=1-0=1\) and \(\Delta_0(0)=0-0=0\), so the drift formula gives
+\[
+b_{q'}(0)
+=
+\left(\tfrac14-\tfrac12\right)
+\left\{\frac{1}{1/4}+\frac{0}{3/4}\right\}
+=
+-\tfrac14\cdot 4
+=
+-1
+\ne 0 .
+\]
+% lean: clipBiasCounterLaw_bias_ne
+Hence \(p_P(x)>q\) alone does not force the drift to vanish, and no additive clipped-region cancellation bound follows from the stated boundedness, positivity, and observed-law conditions alone. % lean: clip_bias
 \end{proof}

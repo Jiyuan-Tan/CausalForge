@@ -177,11 +177,11 @@ theorem first_stage_identity (hA : S.Assumptions) (z₀ z₁ : α)
     let getU : (∀ i : Fin S.cfBundle.n, S.cfBundle.type i) → ℝ := fun f => by
       exact f (0 : Fin 3)
     have hgetU_meas : Measurable getU := by
-      change Measurable fun f : ∀ i : Fin 3,
-          (POCFBundle.cons (RegimedVar.ofFactual S.uVar) <|
-            POCFBundle.cons (S.yUnderD true) <|
-            POCFBundle.cons (S.yUnderD false) <|
-            POCFBundle.nil P).type i =>
+      -- Instance search no longer unfolds `cfBundle` to see `n = 3`, so supply
+      -- the coordinate measurable-space family at index type `Fin 3` directly.
+      let _ : ∀ i : Fin 3, MeasurableSpace (S.cfBundle.type i) :=
+        fun i => S.cfBundle.inst i
+      change Measurable fun f : ∀ i : Fin S.cfBundle.n, S.cfBundle.type i =>
         f (0 : Fin 3)
       exact measurable_pi_apply (0 : Fin 3)
     have hgetU_joint : ∀ ω, getU (S.cfBundle.jointValue ω) = S.factualU ω := by
@@ -297,11 +297,11 @@ theorem reduced_form_identity (hA : S.Assumptions) (z₀ z₁ : α)
     let getU : (∀ i : Fin S.cfBundle.n, S.cfBundle.type i) → ℝ := fun f => by
       exact f (0 : Fin 3)
     have hgetU_meas : Measurable getU := by
-      change Measurable fun f : ∀ i : Fin 3,
-          (POCFBundle.cons (RegimedVar.ofFactual S.uVar) <|
-            POCFBundle.cons (S.yUnderD true) <|
-            POCFBundle.cons (S.yUnderD false) <|
-            POCFBundle.nil P).type i =>
+      -- Instance search no longer unfolds `cfBundle` to see `n = 3`, so supply
+      -- the coordinate measurable-space family at index type `Fin 3` directly.
+      let _ : ∀ i : Fin 3, MeasurableSpace (S.cfBundle.type i) :=
+        fun i => S.cfBundle.inst i
+      change Measurable fun f : ∀ i : Fin S.cfBundle.n, S.cfBundle.type i =>
         f (0 : Fin 3)
       exact measurable_pi_apply (0 : Fin 3)
     have hgetU_joint : ∀ ω, getU (S.cfBundle.jointValue ω) = S.factualU ω := by
@@ -311,6 +311,8 @@ theorem reduced_form_identity (hA : S.Assumptions) (z₀ z₁ : α)
       fun f => if getU f ≤ S.p z
         then ((f (1 : Fin 3)) : ℝ) else ((f (2 : Fin 3)) : ℝ)
     have hh_meas : Measurable h_proj := by
+      let _ : ∀ i : Fin 3, MeasurableSpace (S.cfBundle.type i) :=
+        fun i => S.cfBundle.inst i
       change Measurable fun f : ∀ i : Fin S.cfBundle.n, S.cfBundle.type i =>
         if getU f ≤ S.p z
         then ((f (1 : Fin 3)) : ℝ) else ((f (2 : Fin 3)) : ℝ)

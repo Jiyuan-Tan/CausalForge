@@ -37,7 +37,7 @@ private lemma map_fin_castSucc {α : Type*} (n : ℕ) (f : Fin (n + 1) → α) :
     Finset.univ.val.map f =
       f (Fin.last n) ::ₘ Finset.univ.val.map (fun i : Fin n => f i.castSucc) := by
   have h := congrArg Finset.val (Fin.univ_castSuccEmb n)
-  simpa [Finset.cons_val, Finset.map_val, Multiset.map_map] using
+  simpa [Finset.cons_val, Finset.map_val, Multiset.map_map, Function.comp_def] using
     congrArg (Multiset.map f) h
 
 private lemma roots_prod_X_sub_C {n : ℕ} (f : Fin n → ℂ) :

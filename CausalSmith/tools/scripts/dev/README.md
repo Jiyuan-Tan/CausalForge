@@ -2,7 +2,7 @@
 
 Reusable, parameterized dev utilities for inspecting / testing the CausalSmith research
 formalization gates without running the whole pipeline. Run from `tools/` on node 20
-(`source ~/.nvm/nvm.sh && nvm use 20.20.2`).
+(`source scripts/node_env.sh`).
 
 ## `hidden_defs.ts` — inspect the F2.5 hidden-def surface (no LLM)
 

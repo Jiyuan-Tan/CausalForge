@@ -126,18 +126,21 @@ launch/resume so a *meaningful pipeline event* wakes you instantly (the `run_in_
 notification only fires on process EXIT — no signal during a long F3/F4/F5, and even the exit signal can
 LAG under codex contention with a concurrent run, so the watcher is your PRIMARY event signal):
 
-**⚠ NESTED-SUBAGENT CAVEAT (a dispatched D/F/topics sub — NOT top-level main).** A sub that starts a `run_in_background` task and then ENDS ITS TURN is NOT re-woken: the completion notification misroutes to the PARENT (main), stalling the sub idle (observed live 2026-07-10). A sub must STAY IN ITS TURN and self-drive with FOREGROUND, BLOCKING calls — launch the long node process so it OUTLIVES both harness time-caps, then FOREGROUND-poll-watch it (`pgrep` + `wc -l` on `pipeline.jsonl` / `reviews/reviews.jsonl`), re-issuing the poll if it hits the time-cap — never yield-and-wait-for-the-notification. **⚠ The node `--resume` must be launched DETACHED via `setsid`, NOT a plain `run_in_background` and NOT foreground:** a foreground `--resume` dies at the ~10-min Bash cap, and a plain `run_in_background` node process is KILLED by the harness at a **~60-minute cap** (observed live 2026-07-10 — long F2.5/F3 fills died at exactly 60 min, twice). Detached survives both (verified 63 min past the cap): `setsid bash -c 'source ~/.nvm/nvm.sh && nvm use 20.20.2 && npx --prefix tools tsx tools/bin/causalsmith.ts research --resume --from-stage <stage> --auto <qid> <spec> > <logfile> 2>&1' < /dev/null & disown`. **NEVER pipe the node command through `| grep …`** — the pipeline's exit code becomes grep's (1 on no-match), masking a real success as a failure and risking a SIGPIPE kill; redirect to `<logfile>` and inspect it. State ratchets forward across stages, so on ANY death (either cap, or cluster contention) just re-resume detached from the current stage. Dispatch any **shell-based** Codex consult FOREGROUND for the same reason; native Codex subagents use the managed wait/message API. (Top-level MAIN is exempt — it receives its own background-task notifications; the two recipes below are for main or an in-turn watcher. A sub must NOT arm a background `Monitor`/`until`-loop and then stop.)
+**⚠ NESTED-SUBAGENT CAVEAT (a dispatched D/F/topics sub — NOT top-level main).** A sub that starts a `run_in_background` task and then ENDS ITS TURN is NOT re-woken: the completion notification misroutes to the PARENT (main), stalling the sub idle (observed live 2026-07-10). A sub must STAY IN ITS TURN and self-drive with FOREGROUND, BLOCKING calls — launch the long node process so it OUTLIVES both harness time-caps, then FOREGROUND-poll-watch it (`pgrep` + `wc -l` on `pipeline.jsonl` / `reviews/reviews.jsonl`), re-issuing the poll if it hits the time-cap — never yield-and-wait-for-the-notification. **⚠ The node `--resume` must be launched DETACHED via `setsid`, NOT a plain `run_in_background` and NOT foreground:** a foreground `--resume` dies at the ~10-min Bash cap, and a plain `run_in_background` node process is KILLED by the harness at a **~60-minute cap** (observed live 2026-07-10 — long F2.5/F3 fills died at exactly 60 min, twice). Detached survives both (verified 63 min past the cap): `setsid bash -c 'source tools/scripts/node_env.sh && npx --prefix tools tsx tools/bin/causalsmith.ts research --resume --from-stage <stage> --auto <qid> <spec> > <logfile> 2>&1' < /dev/null & disown`. **NEVER pipe the node command through `| grep …`** — the pipeline's exit code becomes grep's (1 on no-match), masking a real success as a failure and risking a SIGPIPE kill; redirect to `<logfile>` and inspect it. State ratchets forward across stages, so on ANY death (either cap, or cluster contention) just re-resume detached from the current stage. Dispatch any **shell-based** Codex consult FOREGROUND for the same reason; native Codex subagents use the managed wait/message API. (Top-level MAIN is exempt — it receives its own background-task notifications; the two recipes below are for main or an in-turn watcher. A sub must NOT arm a background `Monitor`/`until`-loop and then stop.)
 
 **Host-specific architectural rule.** Under Claude, ONLY MAIN dispatches Claude subagents: completion
 does not route back to a nested Claude orchestrator, so a sub drives detached OS processes and returns
 `{escalation:"dispatch-request", spec:…}` when it genuinely needs a Claude worker. Under Codex, the
-managed collaboration API is different: a Codex main or Codex sub-orchestrator may `spawn_agent` a
-bounded Codex child and drive it with `wait_agent`/messages. Use native dispatch for orchestrator
-children: D math-facing orchestration uses `high`, routine orchestration `medium`. Set model/effort
-explicitly. The TypeScript pipeline's own worker/reviewer/
-consult processes still use its configured `codex exec` adapter. Assign disjoint edit scopes whichever route is selected, and respect
-the managed concurrency limit. A detached OS process is still the route for the long TypeScript pipeline
-node itself, which is not a Codex worker. Under Claude, a sub dispatches codex DETACHED via `setsid`, redirects
+managed collaboration API is mandatory: a Codex main or Codex sub-orchestrator must use `spawn_agent`
+for **every** orchestrator-initiated child, including fresh consults, adjudicators, auditors, reviewers,
+and builders, and drive it with `wait_agent`/messages. Never shell-launch `codex exec` from a Codex
+orchestrator, including for read-only or mandatory-fresh work; if the managed concurrency limit is full,
+wait for a slot or return the skill-defined escalation. D math-facing orchestration uses `high`, routine
+orchestration `medium`; set model/effort explicitly. The only `codex exec` exception is a worker,
+reviewer, or consult process launched internally by the TypeScript pipeline through its configured
+adapter—an orchestrator must not launch or imitate that command. Assign disjoint edit scopes whichever
+route is selected, and respect the managed concurrency limit. A detached OS process is still the route
+for the long TypeScript pipeline node itself, which is not a Codex worker. Under Claude, a sub dispatches codex DETACHED via `setsid`, redirects
 to a logfile, and foreground-polls all node/build processes together; it must never
 `run_in_background`+end-turn.
 
@@ -222,7 +225,7 @@ From the CausalSmith package root:
 
 ```bash
 cd <AUTOID>/CausalSmith
-source ~/.nvm/nvm.sh && nvm use 20.20.2 >/dev/null 2>&1
+source tools/scripts/node_env.sh
 
 # Standard bank (accepted | downgraded | failed)
 npx --prefix tools tsx tools/bin/bank_entry.ts \
@@ -243,7 +246,7 @@ npx --prefix tools tsx tools/bin/bank_drift.ts --json   # machine-readable
 
 `bank_entry.ts` atomically: (1) patches `banked: true`, `banked_tier`, `banked_on`, `banked_reason` into state.json; (2) moves the run directory to `_bank/<tier>/<qid>_<spec>/`; (3) generates a README scaffold with TODOs for `gap_reasons[]`, `reusable_artifacts[]`, `proof_attempt_summary`; (4) on `--seeds-burned`, flags the seed entries and emits a top-level `seeds_burned[]` array — cold-start D-1 reads this to filter future proposals (no manual wiring). Refuses to re-bank an already-banked state or overwrite an existing destination.
 
-Extra flags: `--achieved-tier <incremental|subfield|field|flagship>` — persist the validity-gate's achieved tier on a below-floor bank so later upgrades can enforce a strictly higher target; `--reraise-status <re-raise|retry|true-negative|unknown>` — your hopeless-vs-fixable call (`true-negative` = hopeless topic/deterrent; `re-raise` = sound math, novelty over-framed; `retry` = sound math, one construction fell short — drives the `/causalsmith-topics` saturation check; default `unknown` forces a future reviews-skim); `--reusable <solver_blocked|not_reusable|unknown>` — tag whether the proposal is worth retrying with a stronger solver (default auto-inferred from the proposal-promise gap); `--proposal-promise-gap <gap>` — override the README's `proposal_promise_gap` field (otherwise parsed from the reviews log); `--no-mint-oqs` — skip minting failed-theorem OpenQuestions into the study graph.
+Extra flags: `--achieved-tier <incremental|subfield|field|flagship>` — persist the validity-gate's achieved tier on a below-floor bank so later upgrades can enforce a target at or above it; `--reraise-status <re-raise|retry|true-negative|unknown>` — your hopeless-vs-fixable call (`true-negative` = hopeless topic/deterrent; `re-raise` = sound math, novelty over-framed; `retry` = sound math, one construction fell short — drives the `/causalsmith-topics` saturation check; default `unknown` forces a future reviews-skim); `--reusable <solver_blocked|not_reusable|unknown>` — tag whether the proposal is worth retrying with a stronger solver (default auto-inferred from the proposal-promise gap); `--proposal-promise-gap <gap>` — override the README's `proposal_promise_gap` field (otherwise parsed from the reviews log); `--no-mint-oqs` — skip minting failed-theorem OpenQuestions into the study graph.
 
 Schema and per-entry README format: [`_bank/README.md`](../../../CausalSmith/doc/research/_bank/README.md). Worked example: [`_bank/downgraded/stat_sa_cate_pointwise_v1/README.md`](../../../CausalSmith/doc/research/_bank/downgraded/stat_sa_cate_pointwise_v1/README.md).
 

@@ -159,14 +159,13 @@ theorem backdoor_rule3_Z_marginal
   have hmap := congrArg
     (fun μ : MeasureTheory.Measure (ValuesOn (∅ ∪ Z) (swigΩ Ω)) =>
       μ.map (valuesEquivOfEq (Ω := swigΩ Ω) hU)) _h
-  simp only at hmap
   rw [MeasureTheory.Measure.map_map
         (valuesEquivOfEq (Ω := swigΩ Ω) hU).measurable
         (measurable_valuesProjection _),
       MeasureTheory.Measure.map_map
         (valuesEquivOfEq (Ω := swigΩ Ω) hU).measurable
         (measurable_valuesProjection _)] at hmap
-  convert hmap using 2
+  exact hmap
 
 end SCM
 

@@ -356,7 +356,7 @@ theorem modulus_of_not_badData
       rademacherComplexity m fθ P_Z id
           = rademacherComplexity m (fθ ∘ idx) P_Z id := hfull_dense
       _ = rademacherComplexity m (fθ ∘ idx) μ (S_iid.Z 0) := hmap
-      _ ≤ R n := by simpa [m, fθ] using (hR n).2
+      _ ≤ R n := by simpa [m, fθ, Function.comp_def] using (hR n).2
   let e : Fin m ≃o split.foldB n := (split.foldB n).orderIsoOfFin rfl
   let Y : Ω → Fin m → Z := fun ω j => S_iid.Z (e j).val ω
   have hgood : ¬ (2 • rademacherComplexity m fθ P_Z id + ε ≤

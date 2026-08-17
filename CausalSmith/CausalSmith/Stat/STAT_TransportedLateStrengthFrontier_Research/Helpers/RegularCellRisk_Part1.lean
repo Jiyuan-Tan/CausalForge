@@ -204,7 +204,7 @@ lemma regularCellInversion_measurableGraph_on_cells
     · have hp : Measurable (fun target : TargetSample 𝒳 (N n) =>
           (target j, target l)) :=
         (measurable_pi_apply j).prodMk (measurable_pi_apply l)
-      simpa [Function.uncurry] using hkernel.comp hp
+      simpa [Function.uncurry] using hkernel.fun_comp hp
     · exact measurable_const
   have hrange : MeasurableSet (Set.range cell) := by
     rw [show Set.range cell = ⋃ i, {cell i} by
@@ -287,8 +287,8 @@ lemma regularCellInversion_measurableGraph_on_cells
     change MeasurableSet (support ∩
       {p : TwoSample 𝒳 n (N n) × ℝ | p.2 ∈
         regularCellInversion q e L p.1.1 p.1.2})
-    simpa only [regularCellInversion, hsmall, ↓reduceIte] using
-      hsupport.inter (hparam.preimage measurable_snd)
+    simp only [regularCellInversion, hsmall, ↓reduceIte]
+    exact hsupport.inter (hparam.preimage measurable_snd)
   · have htheta : MeasurableSet {p : TwoSample 𝒳 n (N n) × ℝ |
         p.2 ∈ parameterSpace} := by
       exact (by simp [parameterSpace] :

@@ -23,6 +23,9 @@ const stats = areas.map((area) => {
     decls: ds.length,
     tier1: t1.length,
     reviewed: t1.filter((d) => reviewStatus(d, lib.sidecars) === "reviewed").length,
+    // Published site reports what is NOT yet reviewed; that is the figure a reader
+    // can act on. Review PROGRESS stays behind import.meta.env.DEV.
+    unreviewed: t1.filter((d) => reviewStatus(d, lib.sidecars) !== "reviewed").length,
     sorried: ds.filter((d) => d.usesSorry).length,
   };
 });
@@ -60,10 +63,15 @@ const fmt = (n: number) => n.toLocaleString("en-US");
           <dt>Declarations</dt>
           <dd>{fmt(totalDecls)}</dd>
         </div>
-        <div title="Core declarations — the library's definitions and headline results, whose natural-language translations receive human review.">
-          <dt>Core declarations reviewed</dt>
-          <dd>{reviewedPct}<span class="unit">%</span></dd>
-        </div>
+        {/* Review PROGRESS is authoring chrome, shown only in review mode. The
+            published site keeps the per-module "N to review" badge instead: what
+            is NOT yet reviewed is useful to a reader, a completion percentage is not. */}
+        {import.meta.env.DEV && (
+          <div title="Core declarations — the library's definitions and headline results, whose natural-language translations receive human review.">
+            <dt>Core declarations reviewed</dt>
+            <dd>{reviewedPct}<span class="unit">%</span></dd>
+          </div>
+        )}
         <div>
           <dt>Sorry-tainted</dt>
           <dd class={totalSorried === 0 ? "clean" : "warn"}>{fmt(totalSorried)}</dd>
@@ -72,9 +80,10 @@ const fmt = (n: number) => n.toLocaleString("en-US");
       <p class="lib-intro">
         The foundational Lean 4 library for causal inference that every paper on this site
         builds on. Each declaration carries a natural-language translation — the first
-        paragraph of its docstring. A translation is marked <em>reviewed</em> once a human
-        has confirmed that it faithfully renders the formal statement at the listed commit,
-        and <em>stale</em> if that formal statement has since changed.
+        paragraph of its docstring. Every formal statement here is machine-checked; the
+        translation beside it is prose, so it is separately confirmed by a human against
+        the formal statement. Translations still awaiting that confirmation are flagged
+        <em>to review</em>, so you can see exactly which prose has not yet been checked.
       </p>
 
       <LibSearch base={base} />
@@ -110,7 +119,7 @@ const fmt = (n: number) => n.toLocaleString("en-US");
       <table class="area-table">
         <thead>
           <tr>
-            <th>Module</th><th>What it provides</th><th class="num">Declarations</th><th class="num">Reviewed</th><th class="num">Sorried</th>
+            <th>Module</th><th>What it provides</th><th class="num">Declarations</th><th class="num">{import.meta.env.DEV ? "Reviewed" : "To review"}</th><th class="num">Sorried</th>
           </tr>
         </thead>
         <tbody>
@@ -120,10 +129,20 @@ const fmt = (n: number) => n.toLocaleString("en-US");
               <td class="intro-cell" title={s.intro}><span class="intro-clamp">{s.intro}</span></td>
               <td class="num size-cell">{fmt(s.decls)}</td>
               <td class="num review-cell">
-                <span class="stat-n">{s.reviewed}<span class="stat-of">/{s.tier1}</span></span>
-                <span class="bar" role="img" aria-label={`${s.reviewed} of ${s.tier1} core declarations reviewed`}>
-                  <span class="bar-fill bar-review" style={`width:${revPct(s.reviewed, s.tier1)}%`}></span>
-                </span>
+                {import.meta.env.DEV ? (
+                  <>
+                    <span class="stat-n">{s.reviewed}<span class="stat-of">/{s.tier1}</span></span>
+                    <span class="bar" role="img" aria-label={`${s.reviewed} of ${s.tier1} core declarations reviewed`}>
+                      <span class="bar-fill bar-review" style={`width:${revPct(s.reviewed, s.tier1)}%`}></span>
+                    </span>
+                  </>
+                ) : (
+                  s.unreviewed === 0 ? (
+                    <span class="glyph-clean" title="all core declarations reviewed">—</span>
+                  ) : (
+                    <span class="stat-n" title={`${s.unreviewed} core declaration${s.unreviewed === 1 ? "" : "s"} not yet reviewed`}>{s.unreviewed}</span>
+                  )
+                )}
               </td>
               <td class="num">
                 {s.sorried === 0 ? (

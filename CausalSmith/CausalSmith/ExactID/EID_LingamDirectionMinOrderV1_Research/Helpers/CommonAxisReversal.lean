@@ -18,12 +18,18 @@ def reverseRetainedCoordinates {L : ℕ}
     (x : RetainedCumCoord L → ℂ) : RetainedCumCoord L → ℂ :=
   fun p => x (reverseRetainedCumCoord p)
 
+/-- Relabelling the retained cumulant coordinates by the observable coordinate exchange
+twice returns the original point of the retained affine space, so this relabelling is an
+involution there. -/
 @[simp] lemma reverseRetainedCoordinates_involutive {L : ℕ}
     (x : RetainedCumCoord L → ℂ) :
     reverseRetainedCoordinates (reverseRetainedCoordinates x) = x := by
   funext p
   simp [reverseRetainedCoordinates]
 
+/-- The observable coordinate exchange on the retained band is a polynomial map: each output
+coordinate is literally one of the input coordinates, hence a degree-one polynomial in them.
+This is what lets the exchange be pushed through Zariski closures. -/
 lemma reverseRetainedCoordinates_isPolynomial (L : ℕ) :
     IsPolynomialMap (@reverseRetainedCoordinates L) := by
   intro p

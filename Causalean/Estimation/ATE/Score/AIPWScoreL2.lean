@@ -395,7 +395,7 @@ theorem yMuVal_residual_sq_integrable
     have hcond_L2 :
         MemLp (P.μ[S.toPOBackdoorSystem.YofD d |
           S.toPOBackdoorSystem.sigmaX]) 2 P.μ :=
-      hYd_L2.condExp
+      hYd_L2.condExp one_le_two
     exact hcond_L2.ae_eq (S.μ_compat hA d)
   let g : γ × Bool × ℝ → ℝ :=
     fun z => |projY z - S.μ_val true (projX z)|
@@ -421,13 +421,12 @@ theorem yMuVal_residual_sq_integrable
         (fun ω => S.toPOBackdoorSystem.factualY ω -
           S.μ_val false (S.toPOBackdoorSystem.factualX ω)) 2 P.μ :=
       hY_L2.sub (hμ_L2 false)
-    simpa [g, BackdoorEstimationSystem.factualZ, projX, projY, Real.norm_eq_abs]
-      using ht.norm.add hf.norm
+    exact ht.norm.add hf.norm
   have hg_L2 : MemLp g 2 S.P_Z := by
     rw [BackdoorEstimationSystem.P_Z]
     exact (memLp_map_measure_iff hg_meas.aestronglyMeasurable
       S.measurable_factualZ.aemeasurable).2 hg_comp_L2
-  simpa [BackdoorEstimationSystem.YMuVal_residual_sq, g] using hg_L2.integrable_sq
+  exact hg_L2.integrable_sq
 
 private lemma yMuVal_residual_memLp
     (S : BackdoorEstimationSystem P γ)
@@ -439,9 +438,7 @@ private lemma yMuVal_residual_memLp
       |projY z - S.μ_val true (projX z)|
         + |projY z - S.μ_val false (projX z)|) 2 S.P_Z := by
   exact (memLp_two_iff_integrable_sq (yMuVal_residual_meas S).aestronglyMeasurable).2
-    (by
-      simpa [BackdoorEstimationSystem.YMuVal_residual_sq] using
-        yMuVal_residual_sq_integrable S hA h_y2 h_yd2)
+    (yMuVal_residual_sq_integrable S hA h_y2 h_yd2)
 
 private lemma eLpNorm_comp_projX_eq
     (S : BackdoorEstimationSystem P γ) {f : γ → ℝ}
@@ -521,8 +518,7 @@ private theorem residual_mul_e_error_isLittleOp_one
       simpa [BackdoorEstimationSystem.P_Z_map_projX_eq_P_X S] using h_e_memLp n ω
     have hproj_ae : AEMeasurable (fun z : γ × Bool × ℝ => z.1) S.P_Z :=
       measurable_fst.aemeasurable
-    simpa [deZ, projX] using
-      (memLp_map_measure_iff hmap.aestronglyMeasurable hproj_ae).1 hmap
+    exact (memLp_map_measure_iff hmap.aestronglyMeasurable hproj_ae).1 hmap
   have hdeZ_meas : ∀ n ω, Measurable (deZ n ω) := by
     intro n ω
     have hx : Measurable (fun z : γ × Bool × ℝ => projX z) := by
@@ -581,9 +577,9 @@ private theorem residual_mul_e_error_isLittleOp_one
     have hbulk_memLp : MemLp bulk 2 S.P_Z := by
       have h_abs : MemLp (fun z => |deZ n ω z|) 2 S.P_Z := by
         simpa [Real.norm_eq_abs] using (hdeZ_memLp n ω).norm
-      simpa [bulk, Pi.smul_apply, smul_eq_mul] using h_abs.const_smul M
+      exact h_abs.const_smul M
     have hupper_memLp : MemLp upper 2 S.P_Z := by
-      simpa [upper] using hbulk_memLp.add htail_memLp
+      exact hbulk_memLp.add htail_memLp
     have hpoint : ∀ᵐ z ∂S.P_Z, ‖R z * |deZ n ω z|‖ ≤ upper z := by
       filter_upwards [hdeZ_bdd n ω] with z hdez_le
       have hRz : 0 ≤ R z := hR_nonneg z
@@ -614,7 +610,7 @@ private theorem residual_mul_e_error_isLittleOp_one
         (eLpNorm_mono_ae_real hpoint)
     have htri :
         lpNorm upper 2 S.P_Z ≤ lpNorm bulk 2 S.P_Z + lpNorm tail 2 S.P_Z := by
-      simpa [upper] using lpNorm_add_le (f := bulk) (g := tail)
+      exact lpNorm_add_le (f := bulk) (g := tail)
         (μ := S.P_Z) hbulk_memLp
         (by norm_num : (1 : ENNReal) ≤ 2)
     have hbulk_norm :
@@ -759,8 +755,7 @@ private theorem aipw_score_diff_isLittleOp_one_truncation_core
       simpa [BackdoorEstimationSystem.P_Z_map_projX_eq_P_X S] using h_mu_memLp n ω a
     have hproj_ae : AEMeasurable (fun z : γ × Bool × ℝ => z.1) S.P_Z :=
       measurable_fst.aemeasurable
-    simpa [dμZ, projX] using
-      (memLp_map_measure_iff hmap.aestronglyMeasurable hproj_ae).1 hmap
+    exact (memLp_map_measure_iff hmap.aestronglyMeasurable hproj_ae).1 hmap
   have hdeZ_memLp : ∀ n ω, MemLp (deZ n ω) 2 S.P_Z := by
     intro n ω
     have hmap : MemLp (fun x => (η_hat n ω).e_fn x - S.e_val x)
@@ -768,8 +763,7 @@ private theorem aipw_score_diff_isLittleOp_one_truncation_core
       simpa [BackdoorEstimationSystem.P_Z_map_projX_eq_P_X S] using h_e_memLp n ω
     have hproj_ae : AEMeasurable (fun z : γ × Bool × ℝ => z.1) S.P_Z :=
       measurable_fst.aemeasurable
-    simpa [deZ, projX] using
-      (memLp_map_measure_iff hmap.aestronglyMeasurable hproj_ae).1 hmap
+    exact (memLp_map_measure_iff hmap.aestronglyMeasurable hproj_ae).1 hmap
   have hdeZ_bdd : ∀ n ω, ∀ᵐ z ∂S.P_Z, |deZ n ω z| ≤ 1 := by
     intro n ω
     filter_upwards [H_ε_aeL2_overlap_P_Z S (h_in_H n ω)] with z hη
@@ -834,7 +828,7 @@ private theorem aipw_score_diff_isLittleOp_one_truncation_core
           simpa [projX] using
             (measurable_fst : Measurable (fun z : γ × Bool × ℝ => z.1))
         exact ((η_hat n ω).e_meas.comp hx).sub (S.e_meas.comp hx)
-      simpa [cross] using hR_meas.mul (continuous_abs.measurable.comp hde_meas)
+      exact hR_meas.mul (continuous_abs.measurable.comp hde_meas)
     refine hR_memLp.mono' hcross_meas.aestronglyMeasurable ?_
     filter_upwards [hdeZ_bdd n ω] with z hdez_le
     have hRz : 0 ≤ R z := hR_nonneg z
@@ -850,7 +844,7 @@ private theorem aipw_score_diff_isLittleOp_one_truncation_core
       have hf : MemLp (fun z => |dμZ false n ω z|) 2 S.P_Z := by
         simpa [Real.norm_eq_abs] using (hdμZ_memLp false n ω).norm
       exact (ht.add hf).add hcross_memLp
-    simpa [upper, Pi.smul_apply, smul_eq_mul] using hsum.const_smul (K_AIPW ε)
+    exact hsum.const_smul (K_AIPW ε)
   have hmono :
       (eLpNorm (score n ω) 2 S.P_Z).toReal ≤
         (eLpNorm upper 2 S.P_Z).toReal := by
@@ -872,7 +866,7 @@ private theorem aipw_score_diff_isLittleOp_one_truncation_core
         simpa [Real.norm_eq_abs] using (hdμZ_memLp true n ω).norm
       have hf : MemLp (fun z => |dμZ false n ω z|) 2 S.P_Z := by
         simpa [Real.norm_eq_abs] using (hdμZ_memLp false n ω).norm
-      simpa [total] using (ht.add hf).add hcross_memLp
+      exact (ht.add hf).add hcross_memLp
     have hupper_eq : upper = K_AIPW ε • total := by
       funext z
       simp [upper, total, smul_eq_mul]
@@ -909,7 +903,7 @@ private theorem aipw_score_diff_isLittleOp_one_truncation_core
             lpNorm (fun z => |dμZ false n ω z|) 2 S.P_Z := by
       have ht : MemLp (fun z => |dμZ true n ω z|) 2 S.P_Z := by
         simpa [Real.norm_eq_abs] using (hdμZ_memLp true n ω).norm
-      simpa using lpNorm_add_le (f := fun z => |dμZ true n ω z|)
+      exact lpNorm_add_le (f := fun z => |dμZ true n ω z|)
         (g := fun z => |dμZ false n ω z|) (μ := S.P_Z) ht
         (by norm_num : (1 : ENNReal) ≤ 2)
     have hnormT :

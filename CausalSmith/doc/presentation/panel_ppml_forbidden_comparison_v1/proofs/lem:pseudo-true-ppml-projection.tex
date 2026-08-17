@@ -1,24 +1,98 @@
 \begin{proof}[Proof of \cref{obj:lem:pseudo-true-ppml-projection}]
-First \(T>0\) and \(\mathcal C\neq\varnothing\).  Indeed, if either the time index set or the supported cohort set were empty, the nonzero pure-treatment direction would have zero weighted quadratic form, contradicting the collapsed rank condition.
-Index the supported cell table by \(z=(g,t)\), put \(q_z=q_{gt}=\pi_g/T\), \(m_z=m_{gt}(\delta)\), and let the design map send \(\theta\) to the table \((r_{gt}'\theta)_{(g,t)}\).  The nested criterion \(L(\theta;\delta)\) is exactly the ordinary finite Poisson objective on this supported-cell table.
-The weights \(q_z\) are strictly positive because \(\pi_g>0\) and \(T>0\), and the means \(m_z\) are strictly positive because they are products of positive baselines and exponentials.  The same rank condition makes the supported-cell design injective: if two parameter vectors give the same index in every supported cell, their difference has zero weighted squared index sum, so rank forces the difference to be zero.
-The finite Poisson existence-and-uniqueness theorem therefore gives a unique maximizer \(x^\star\) of this supported-cell objective.  Since \(L\) is the same objective under the preceding identification, the selected \(\theta^\star(\delta)\) equals \(x^\star\), and \(\theta^\star(\delta)\) is the unique global maximizer of \(L(\cdot;\delta)\).
-At the maximizer, the finite Poisson score vanishes in every parameter direction \(d\):
+Throughout, a \textit{supported cell} is a pair \((g,t)\) with \(g\in\mathcal C\) and \(t\in\{1,\ldots,T\}\), and a collapsed parameter is written \(\theta=(a,\beta)\) with nuisance block \(a\) and treatment coordinate \(\beta\), so that the collapsed linear index is
+\[
+r_{gt}'\theta
+=
+\sum_j X_{gt,j}a_j+D_{gt}\beta .
+\]
+Recall from \cref{obj:def:collapsed-population-projection} that \(q_{gt}=\pi_g/T\), \(m_{gt}(\delta)=B_{gt}\exp(D_{gt}\delta_{gt})\) with \(B_{gt}=\bar b_g\exp(\gamma_{t0})\), and \(\mu^\star_{gt}(\delta)=\exp\{r_{gt}'\theta^\star(\delta)\}\).
+
+\textit{Step 1: the supported-cell table is nonempty.} Take the collapsed parameter \(a^{0}=(0,1)\), whose nuisance block is zero and whose treatment coordinate is one, so \(a^{0}\neq0\). If \(T=0\) or \(\mathcal C\) is empty, then
+\[
+\sum_{g\in\mathcal C}\sum_{t=1}^T q_{gt}\,(r_{gt}'a^{0})^2=0,
+\]
+because the sum is empty; this contradicts \cref{obj:ass:collapsed-design-rank}, which requires the displayed quantity to be strictly positive at every nonzero collapsed parameter. Hence \(T>0\) and \(\mathcal C\) is nonempty, and at least one supported cell exists.
+% lean: pseudo_true_ppml_projection
+
+\textit{Step 2: masses and observed means are strictly positive.} For every supported cell,
+\[
+q_{gt}=\frac{\pi_g}{T}>0,
+\qquad
+m_{gt}(\delta)=\bar b_g\exp(\gamma_{t0})\exp(D_{gt}\delta_{gt})>0,
+\]
+the first because \(\pi_g\in(0,1)\) and \(T>0\) by Step 1, the second because \(\bar b_g>0\) and the exponential is positive.
+% lean: limitingCellMass, observedCohortMean
+
+\textit{Step 3: the collapsed design is injective.} If two collapsed parameters \(\theta_1,\theta_2\) satisfy \(r_{gt}'\theta_1=r_{gt}'\theta_2\) at every supported cell, then \(a=\theta_1-\theta_2\) satisfies \(r_{gt}'a=0\) at every supported cell by linearity of \(\theta\mapsto r_{gt}'\theta\), whence
+\[
+\sum_{g\in\mathcal C}\sum_{t=1}^T q_{gt}\,(r_{gt}'a)^2=0 .
+\]
+By \cref{obj:ass:collapsed-design-rank} this forces \(a=0\), i.e. \(\theta_1=\theta_2\). Thus the linear map \(\theta\mapsto(r_{gt}'\theta)_{(g,t)}\) from \(\mathbb R^{|\mathcal C|+T}\) into the space of supported-cell tables is injective.
+% lean: collapsedDesignMap, pseudo_true_ppml_projection
+
+\textit{Step 4: existence and uniqueness of the maximizer.} Written cellwise,
+\[
+L(\theta;\delta)
+=
+\sum_{g\in\mathcal C}\sum_{t=1}^T
+q_{gt}\bigl\{m_{gt}(\delta)\,\eta_{gt}-\exp(\eta_{gt})\bigr\},
+\qquad
+\eta_{gt}=r_{gt}'\theta ,
+\]
+so \(L(\cdot;\delta)\) is a finite positive-mass, positive-mean Poisson criterion composed with the injective linear design of Step 3.
+% lean: limitingCriterion_eq_finitePoissonObjective
+Two elementary cell facts drive the argument. First, for every \(m>0\) and every real \(\eta\),
+\[
+m\eta-\exp(\eta)
+\le
+\frac{(m+1)^2}{2}-\min(m,1)\,|\eta| ,
+\]
+which follows from \(\exp(\eta)\ge0\) for \(\eta\le0\) and from \(\exp(\eta)\ge \eta^2/2\) for \(\eta\ge0\).
+% lean: Causalean.Stat.poissonCell_linear_coercive_bound
+Second, for every \(q>0\), every \(m\), and every pair \(\eta\neq\eta'\),
+\[
+\frac{q\{m\eta-\exp(\eta)\}+q\{m\eta'-\exp(\eta')\}}{2}
+<
+q\left\{m\,\frac{\eta+\eta'}{2}-\exp\!\left(\frac{\eta+\eta'}{2}\right)\right\},
+\]
+by strict convexity of the exponential.
+% lean: Causalean.Stat.poissonCell_strictConcave_midpoint
+The first display makes \(L(\cdot;\delta)\) bounded above and coercive: by injectivity the map \(\theta\mapsto\sum_{g,t}q_{gt}\min\{m_{gt}(\delta),1\}|r_{gt}'\theta|\) is a norm on the finite-dimensional parameter space, hence bounded below by a positive multiple of \(\|\theta\|\), so \(L(\theta;\delta)\to-\infty\) as \(\|\theta\|\to\infty\); since \(L(\cdot;\delta)\) is continuous, a global maximizer exists on a large enough closed ball. The second display makes \(L(\cdot;\delta)\) strictly midpoint concave: if \(\theta\neq\theta'\) were two global maximizers, injectivity would give a supported cell with \(r_{gt}'\theta\neq r_{gt}'\theta'\), and the strict inequality in that cell together with the weak inequality in the others would make the midpoint \((\theta+\theta')/2\) strictly better, a contradiction. Hence
+\[
+L(\cdot;\delta)\ \text{has exactly one global maximizer.}
+\]
+% lean: Causalean.Stat.finitePoissonObjective_exists_unique_max
+
+\textit{Step 5: the selected projection is that maximizer.} \Cref{obj:def:collapsed-population-projection} selects \(\theta^\star(\delta)\) from the set of global maximizers of \(L(\cdot;\delta)\). By Step 4 that set is a single point, so \(\theta^\star(\delta)\) equals it; in particular \(L(\theta;\delta)\le L(\theta^\star(\delta);\delta)\) for all \(\theta\), and \(L(\theta;\delta)=L(\theta^\star(\delta);\delta)\) implies \(\theta=\theta^\star(\delta)\). This is the asserted unique global maximality.
+% lean: Causalean.Stat.maximizerOrZero, Causalean.Stat.IsUniqueGlobalMax, pseudo_true_ppml_projection
+
+\textit{Step 6: every directional score vanishes.} Fix a direction \(d\in\mathbb R^{|\mathcal C|+T}\) and consider \(s\mapsto L(\theta^\star(\delta)+sd;\delta)\). In each cell the index is affine in \(s\),
+\[
+r_{gt}'\{\theta^\star(\delta)+sd\}=r_{gt}'\theta^\star(\delta)+s\,r_{gt}'d ,
+\]
+and \(\eta\mapsto m\eta-\exp(\eta)\) is differentiable with derivative \(m-\exp(\eta)\). Differentiating the finite sum term by term at \(s=0\) and using \(\mu^\star_{gt}(\delta)=\exp\{r_{gt}'\theta^\star(\delta)\}\),
+\[
+\frac{d}{ds}L(\theta^\star(\delta)+sd;\delta)\Big|_{s=0}
+=
+\sum_{g\in\mathcal C}\sum_{t=1}^T
+q_{gt}\,(r_{gt}'d)\{m_{gt}(\delta)-\mu^\star_{gt}(\delta)\}.
+\]
+By Step 5 the scalar function \(s\mapsto L(\theta^\star(\delta)+sd;\delta)\) attains its maximum at \(s=0\), so its derivative there is zero:
 \[
 \sum_{g\in\mathcal C}\sum_{t=1}^T
 q_{gt}\,(r_{gt}'d)\{m_{gt}(\delta)-\mu^\star_{gt}(\delta)\}=0 .
 \]
+% lean: Causalean.Stat.finitePoissonObjective_score
 
-Taking \(d\) to be the unit vector in nuisance coordinate \(j\) gives \(r_{gt}'d=X_{gt,j}\), which yields
+\textit{Step 7: the two stated score equations.} Take \(d\) to be the unit vector in nuisance coordinate \(j\), so that \(r_{gt}'d=X_{gt,j}\); Step 6 gives
 \[
 \sum_{g\in\mathcal C}\sum_{t=1}^T
 q_{gt}X_{gt,j}\{m_{gt}(\delta)-\mu^\star_{gt}(\delta)\}=0 .
 \]
-
-Taking instead the pure treatment-coordinate direction gives \(r_{gt}'d=D_{gt}\), and hence
+Take instead \(d\) to be the pure treatment direction, with zero nuisance block and treatment coordinate one, so that \(r_{gt}'d=D_{gt}\); Step 6 gives
 \[
 \sum_{g\in\mathcal C}\sum_{t=1}^T
 q_{gt}D_{gt}\{m_{gt}(\delta)-\mu^\star_{gt}(\delta)\}=0 .
 \]
-
+% lean: pseudo_true_ppml_projection
 \end{proof}

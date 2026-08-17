@@ -11,6 +11,7 @@ import { loadWorkingState, saveWorkingState } from "../src/discovery/stages/d0_w
 import { writeJsonAtomic } from "../src/shared/json_atomic.js";
 import { readTypedCore } from "../src/discovery/core/core_io.js";
 import { resolveUpstreamDecision } from "../src/discovery/core/cited_provenance.js";
+import { withRunHeartbeat } from "../src/shared/run_heartbeat.js";
 
 const USAGE =
   "Usage: d0_attest_cited_source.ts <qid> <spec> --id <lem:id> --expect-locator <text> " +
@@ -29,6 +30,7 @@ async function main(): Promise<void> {
   }
   const repoRoot = findCausalSmithRoot(process.cwd());
   const ctx: PipelineContext = { repoRoot, qid, specialization: spec, dryRun: false, resume: true };
+  await withRunHeartbeat(repoRoot, qid, spec, async () => {
   const cp = coreJsonPath(ctx);
   const core = await readTypedCore(cp);
   const working = await loadWorkingState(ctx);
@@ -48,35 +50,50 @@ async function main(): Promise<void> {
       v && typeof v === "object" && !Array.isArray(v)
         ? Object.fromEntries(Object.entries(v as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)))
         : v);
-  if (canon(coreNode) !== canon({ ...workingNode, proof_tex: coreNode.proof_tex })) {
-    // Both stores may differ only in the conventional absent/empty proof_tex rendering.
-    const stripProof = (value: typeof coreNode) => { const copy = { ...value }; delete copy.proof_tex; return copy; };
-    if (canon(stripProof(coreNode)) !== canon(stripProof(workingNode))) {
-      throw new Error(`${id} core/working source bytes disagree; refusing attestation`);
+  // D0.R may sanction presentation-only repairs directly in the published core. Those
+  // repairs deliberately need not flow back into the solver cursor (a later full render
+  // would erase them), and they do not alter what source is being attested. Compare the
+  // claim/source identity while ignoring only proof and presentation prose. Keep every
+  // structural field -- statement, status, dependencies, symbols, and source locator --
+  // fail-closed. For a one-sided partial attestation, ignore exactly the source fields
+  // this CLI writes here, then validate their complete persisted payload below.
+  const attestationComparable = (value: typeof coreNode): unknown => {
+    const copy = structuredClone(value) as unknown as Record<string, unknown>;
+    delete copy.proof_tex;
+    delete copy.consumer;
+    delete copy.gap;
+    delete copy.justification;
+    const sourceCopy = copy.source;
+    if (sourceCopy && typeof sourceCopy === "object" && !Array.isArray(sourceCopy)) {
+      const sourceRecord = { ...(sourceCopy as Record<string, unknown>) };
+      if (sourceRecord.verbatim_statement !== undefined) {
+        delete sourceRecord.verbatim_statement;
+        delete sourceRecord.attestation;
+        delete sourceRecord.upstream;
+      }
+      copy.source = sourceRecord;
     }
+    return copy;
+  };
+  if (canon(attestationComparable(coreNode)) !== canon(attestationComparable(workingNode))) {
+    throw new Error(`${id} core/working source identity disagrees; refusing attestation`);
   }
   if (!coreNode.source || !workingNode.source || coreNode.source.locator !== locator || workingNode.source.locator !== locator) {
     throw new Error(`${id} locator mismatch; expected ${locator}`);
   }
-  // Refuse a genuine OVERWRITE (both stores already attested), but allow RESUME after a
-  // partial write. The two stores are written in sequence, so an I/O failure between them
-  // leaves exactly one attested; refusing on "either store has it" made that state
-  // unrecoverable through this CLI — the tool permanently locked itself out of the run.
-  // A one-sided attestation may only be completed with byte-identical text, never edited.
-  const existingVerbatim = coreNode.source.verbatim_statement ?? workingNode.source.verbatim_statement;
-  if (coreNode.source.verbatim_statement && workingNode.source.verbatim_statement) {
-    throw new Error(`${id} already has a verbatim source statement; refusing overwrite`);
-  }
-  if (existingVerbatim && existingVerbatim !== verbatim.trim()) {
-    throw new Error(
-      `${id} is half-attested (one store carries a verbatim statement) and the supplied --verbatim differs from it. ` +
-        "Re-run with the exact existing text to complete the partial write, or repair the stores by hand.",
-    );
+  const suppliedVerbatim = verbatim.trim();
+  for (const [store, node] of [["core", coreNode], ["working", workingNode]] as const) {
+    const effectiveText = node.source?.verbatim_statement?.trim() || node.proof_tex?.trim();
+    if (effectiveText && effectiveText !== suppliedVerbatim) {
+      throw new Error(
+        `${id} ${store} effective cited text disagrees with --verbatim; refusing attestation`,
+      );
+    }
   }
   // Provenance is decided explicitly: a verbatim match proves the source SAYS this,
   // not that the result is DUE TO this source. See cited_provenance.ts.
   const acknowledgeMarker = cli.value("--acknowledge-marker");
-  const upstream = resolveUpstreamDecision({
+  const requestedUpstream = resolveUpstreamDecision({
     upstream: cli.value("--upstream"),
     upstreamLocator: cli.value("--upstream-locator"),
     upstreamCite: cli.value("--upstream-cite"),
@@ -85,17 +102,62 @@ async function main(): Promise<void> {
     verbatim,
     bibkeys: new Set(core.bibliography.map((entry) => entry.key)),
   });
+  // Refuse a genuine OVERWRITE (both stores already attested), but allow RESUME after a
+  // partial write. The two stores are written in sequence, so an I/O failure between them
+  // leaves exactly one attested; refusing on "either store has it" made that state
+  // unrecoverable through this CLI — the tool permanently locked itself out of the run.
+  // A one-sided attestation may only be completed with byte-identical text, never edited.
+  const existingSource = coreNode.source.verbatim_statement
+    ? coreNode.source
+    : workingNode.source.verbatim_statement
+      ? workingNode.source
+      : undefined;
+  const existingVerbatim = existingSource?.verbatim_statement;
+  if (coreNode.source.verbatim_statement && workingNode.source.verbatim_statement) {
+    throw new Error(`${id} already has a verbatim source statement; refusing overwrite`);
+  }
+  if (existingVerbatim && existingVerbatim !== suppliedVerbatim) {
+    throw new Error(
+      `${id} is half-attested (one store carries a verbatim statement) and the supplied --verbatim differs from it. ` +
+        "Re-run with the exact existing text to complete the partial write, or repair the stores by hand.",
+    );
+  }
+  if (existingSource && (
+    existingSource.attestation?.by !== "main" ||
+    !existingSource.attestation.note.trim() ||
+    !existingSource.attestation.at
+  )) {
+    throw new Error(
+      `${id} has a one-sided verbatim payload that is not an authenticated partial write from this main CLI; ` +
+        "refusing to launder it as a recovered attestation",
+    );
+  }
+  if (existingSource && canon(existingSource.upstream) !== canon(requestedUpstream)) {
+    throw new Error(
+      `${id} is half-attested and the requested upstream provenance differs from the persisted payload`,
+    );
+  }
   // A marker acknowledgement is a judgement call that overrode a check; it belongs in
   // the durable note, not only in the operator's shell history.
   const attestationNote = acknowledgeMarker?.trim()
     ? `${note.trim()} [marker acknowledged: ${acknowledgeMarker.trim()}]`
     : note.trim();
-  const source = {
-    ...coreNode.source,
-    verbatim_statement: verbatim.trim(),
-    ...(upstream ? { upstream } : {}),
-    attestation: { by: "main" as const, note: attestationNote, at: new Date().toISOString() },
-  };
+  const source = existingSource
+    ? structuredClone(existingSource)
+    : (() => {
+        const {
+          verbatim_statement: _oldVerbatim,
+          attestation: _oldAttestation,
+          upstream: _oldUpstream,
+          ...baseSource
+        } = coreNode.source;
+        return {
+          ...baseSource,
+          verbatim_statement: suppliedVerbatim,
+          ...(requestedUpstream ? { upstream: requestedUpstream } : {}),
+          attestation: { by: "main" as const, note: attestationNote, at: new Date().toISOString() },
+        };
+      })();
   // Phase 1 (store consolidation): the working record is the authoritative truth —
   // write the attestation there first. The published core.json is then PATCHED in
   // place on the one attested node, never re-rendered: a full re-render from
@@ -112,8 +174,9 @@ async function main(): Promise<void> {
     locator,
     verbatimLength: verbatim.trim().length,
     attestedBy: "main",
-    upstream: upstream ?? "none (affirmed original to the cited work)",
+    upstream: requestedUpstream ?? "none (affirmed original to the cited work)",
   }, null, 2));
+  });
 }
 
 main().catch((error: unknown) => {

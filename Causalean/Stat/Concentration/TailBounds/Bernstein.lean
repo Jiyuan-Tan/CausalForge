@@ -145,7 +145,8 @@ lemma bounded_hasSubexponentialMGF [IsProbabilityMeasure μ] {c σ : ℝ}
     exact Real.exp_le_exp.mpr <| (le_abs_self _).trans <| by
       rw [abs_mul]; gcongr
   · -- mgf bound: `2σ² · t²/2 = σ²t²`
-    simp only [NNReal.coe_mk] at ht ⊢
+    replace ht : c * |t| < 1 := ht
+    show mgf X μ t ≤ Real.exp (2 * σ ^ 2 * t ^ 2 / 2)
     calc mgf X μ t ≤ Real.exp (σ ^ 2 * t ^ 2) :=
           bounded_mgf_le_exp_sq hc hmeas hmean hbound hvar (le_of_lt ht)
       _ = Real.exp (2 * σ ^ 2 * t ^ 2 / 2) := by
@@ -196,10 +197,14 @@ theorem bernstein_ge (S : IIDSample Ω X' μ P) {f : X' → ℝ} (hf : Measurabl
     S.indep.comp (fun _ => g) (fun _ => hg_meas)
   have hmeasZ : ∀ i, AEMeasurable (fun ω => g (S.Z i ω)) μ :=
     fun i => (hg_meas.comp (S.meas i)).aemeasurable
+  -- name the two `ℝ≥0` parameters opaquely: subtype literals block later rewriting
+  obtain ⟨V, C, hV, hC, hYsub⟩ : ∃ V C : ℝ≥0, (V : ℝ) = 2 * σ ^ 2 ∧ (C : ℝ) = c ∧
+      ∀ i, HasSubexponentialMGF (fun ω => g (S.Z i ω)) V C μ :=
+    ⟨⟨2 * σ ^ 2, by positivity⟩, ⟨c, hc⟩, rfl, rfl, hYsubexp⟩
   -- the sum of `n` of them is sub-exponential with parameters `(n•(2σ²), c)`
   have hsum := HasSubexponentialMGF.sum_range_of_iIndepFun hindep hmeasZ
-    (v := ⟨2 * σ ^ 2, by positivity⟩) (b := ⟨c, hc⟩) (n := n)
-    (fun i _ => hYsubexp i)
+    (v := V) (b := C) (n := n)
+    (fun i _ => hYsub i)
   have hcher := hsum.measure_ge_le (ε := (n : ℝ) * ε) (by positivity)
   rw [sampleMean_sub_ge_setEq S f m hn ε]
   -- the two centered-sum events coincide definitionally (`g (Z i) = f (Z i) − m`)
@@ -207,7 +212,7 @@ theorem bernstein_ge (S : IIDSample Ω X' μ P) {f : X' → ℝ} (hf : Measurabl
   -- simplify the exponent: cancel the common factor `n > 0`
   have hn' : (n : ℝ) ≠ 0 := ne_of_gt (by exact_mod_cast hn)
   congr 1
-  simp only [nsmul_eq_mul, NNReal.coe_mul, NNReal.coe_natCast, NNReal.coe_mk]
+  simp only [nsmul_eq_mul, NNReal.coe_mul, NNReal.coe_natCast, hV, hC]
   rw [show -((n : ℝ) * ε) ^ 2 = (n : ℝ) * (-(n : ℝ) * ε ^ 2) from by ring,
     show 2 * ((n : ℝ) * (2 * σ ^ 2) + c * ((n : ℝ) * ε))
       = (n : ℝ) * (2 * (2 * σ ^ 2 + c * ε)) from by ring,

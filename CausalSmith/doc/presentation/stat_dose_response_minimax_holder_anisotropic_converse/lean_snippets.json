@@ -1,5 +1,5 @@
 {
-  "commit": "6e3ba5a09e998cb7c7b15f45d6a11634157a62aa",
+  "commit": "a90838033b0efece90be38573811c11b651f0e5c",
   "snippets": {
     "ass:iid-sampling": {
       "decl": "CausalSmith.Stat.DoseResponseMinimax.IidSampling",
@@ -154,6 +154,18 @@
           "statement": "/-- Covariate-density smoothness and range: `p_{X,P}` lies in a Hölder ball of order\n`s`, radius `M`, on `[0,1]^d`, is NONNEGATIVE (`0 ≤ p_{X,P}` on the cube — the declared\ndensity range `[0,∞)`), and is bounded above by `M`. The nonnegativity conjunct makes\n`p_{X,P}` a genuine density object: with it `ENNReal.ofReal (P.px x) = P.px x` on the\ncube, so the `PxIsXDensity` tie realizes the ACTUAL `p_{X,P}` density rather than only\nits `ofReal` positive part. -/\ndef PxHolder {d : ℕ} (P : DoseLaw d) (s M : ℝ) : Prop :=\n  HolderBallND P.px s M (cube d) ∧\n    (∀ x ∈ cube d, 0 ≤ P.px x) ∧     -- @realizes p_{X,P}(0 ≤ p_{X,P} on cube; enforces the declared density range [0,∞), so the `ofReal` `PxIsXDensity` tie realizes the actual nonnegative density object)\n    (∀ x ∈ cube d, P.px x ≤ M)"
         },
         {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.MuIsRegression",
+          "statement": "/-- **Semantic tie (`μ` is the data regression).** The conditional mean of `Y` given\n`(A,X)` under the data law equals `μ_P(A,X)`. This pins the free `mu` field to the\nactual law, so `thetaFunctional = ∫ μ_P(t_0,·)·p_{X,P}` is the GENUINE causal value\n`E_P[Y(t_0)]` (under consistency + ignorability). Without it `mu` is disconnected from\n`dataMeasure`, which permits a vacuous two-point construction (a Dirac data law with\nthe separation carried only by the free `mu`); enforcing it makes `minimaxRisk` the\ntrue causal minimax risk. -/\ndef MuIsRegression {d : ℕ} (P : DoseLaw d) : Prop :=\n  P.dataMeasure[(fun O => O.Y) |\n      MeasurableSpace.comap (fun O : DoseObs d => (O.A, O.X)) inferInstance]\n    =ᵐ[P.dataMeasure] (fun O => P.mu O.A O.X)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.PxIsXDensity",
+          "statement": "/-- **Semantic tie (`p_{X,P}` is the X-marginal density).** The pushforward of the\ndata law under `X` is `p_{X,P}·(Lebesgue ↾ [0,1]^d)`, tying the free `px` field to the\nactual covariate law so `thetaFunctional` integrates `μ` against the genuine `P_X`. -/\ndef PxIsXDensity {d : ℕ} (P : DoseLaw d) : Prop :=\n  P.dataMeasure.map (fun O => O.X)\n    = (volume.restrict (cube d)).withDensity (fun x => ENNReal.ofReal (P.px x))"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.PiIsCondTreatmentDensity",
+          "statement": "/-- **Semantic tie / range-normalization (`π_P` is the conditional treatment density).**\nThe pushforward of the data law under `(A,X)` equals the measure with joint density\n`(a,x) ↦ π_P(a∣x)·p_{X,P}(x)` w.r.t. Lebesgue on `[0,1]×[0,1]^d`. Together with\n`PxIsXDensity` (the `X`-marginal is `p_{X,P}·Leb`) this pins `π_P(·∣x)` to be the GENUINE\nconditional density of `A` given `X = x` under `P` — it is normalized\n(`∫_{[0,1]} π_P(a∣x) da = 1` for `P_X`-a.e. `x`, forced by consistency of the joint with\nits `X`-marginal) and tied to `dataMeasure`. Without it the `pi` field is disconnected\nfrom `dataMeasure`, so the class `P_{α,β,s}` would be strictly BROADER than the paper\nclass (an arbitrary `π` field satisfying only the Hölder/positivity atoms, never required\nto be the law's actual treatment density). The core symbol `pi_P(a∣x)` is *defined* as the\nconditional density of `A` given `X = x` under `P`, so this tie is exactly the note's\nstated meaning of `π_P`, not an added restriction. The leading conjunct ENFORCES the\ndeclared density range `0 ≤ π_P` on `[0,1]×[0,1]^d`: with it `ENNReal.ofReal (π_P·p_{X,P})`\ngenuinely equals `π_P·p_{X,P}` (both factors nonnegative, using `PxHolder`'s `0 ≤ p_{X,P}`),\nso the tie realizes the ACTUAL nonnegative conditional treatment density object, not only\nits `ofReal` positive part.\n@realizes pi_P(`0 ≤ π_P` on `[0,1]×cube` enforcing the declared range `[0,∞)`, AND `P.dataMeasure.map (A,X) = (Leb↾[0,1] ⊗ Leb↾[0,1]^d).withDensity (π_P·p_{X,P})`; together the range-clause + joint-factorization tie pin `pi` to the law's genuine nonnegative conditional treatment density) -/\ndef PiIsCondTreatmentDensity {d : ℕ} (P : DoseLaw d) : Prop :=\n  (∀ a ∈ Set.Icc (0 : ℝ) 1, ∀ x ∈ cube d, 0 ≤ P.pi a x) ∧   -- @realizes pi_P(0 ≤ pi_P on [0,1]×cube; enforces the declared density range [0,∞), so the `ofReal` joint-density tie realizes the actual nonnegative conditional treatment density)\n    P.dataMeasure.map (fun O => (O.A, O.X))\n      = ((volume.restrict (Set.Icc (0 : ℝ) 1)).prod (volume.restrict (cube d))).withDensity\n          (fun p => ENNReal.ofReal (P.pi p.1 p.2 * P.px p.2))"
+        },
+        {
           "label": "CausalSmith.Stat.DoseResponseMinimax.minimaxRisk",
           "statement": "/-- Pointwise minimax mean-squared risk\n`R_n(C, t_0) = inf_{θ̂_n} sup_{P ∈ C} E_P[(θ̂_n - θ_P(t_0))^2]`.\nThe infimum ranges over MEASURABLE estimators truncated to `[-M,M]` (the\nbounded-estimand range: truncating to the interval containing every `θ_P(t_0)`\nnever increases MSE and yields the SAME minimax value, while keeping the inner\nsquared loss bounded by `(2M)^2` under each `n`-fold probability law — so the\n`⨆`/`⨅` are well-posed, with no junk-`0` inflation of the converse). -/\nnoncomputable def minimaxRisk {d : ℕ} (M : ℝ) (n : ℕ)\n    (C : DoseLaw d → Prop) (t0 : ℝ) : ℝ :=\n  ⨅ est : {est : (Fin n → DoseObs d) → ℝ //\n      Measurable est ∧ ∀ s, est s ∈ Set.Icc (-M) M},\n      -- @realizes O_1, ..., O_n(estimator domain is the size-`n` sample `Fin n → DoseObs d`)\n    ⨆ P : {P : DoseLaw d // C P},\n      -- @realizes O_1, ..., O_n(the i.i.d. `n`-sample as the `n`-fold PRODUCT LAW `Measure.pi (fun _ : Fin n => P.dataMeasure)` over `Fin n → DoseObs d` — THIS `minimaxRisk` product law is the second of the two load-bearing realizers of the sample symbol (the first is the `IidSampling` i.i.d. realizer); its factors are mutually independent and identically `P.dataMeasure`-distributed exactly by the `Causalean.Stat.IIDSample` conjunct of `IidSampling`. It is NOT realized by the FOLLOWING `publishedHoifRate` declaration; the tag is placed BEFORE the integral so it attaches to `minimaxRisk`, not to the next decl.)\n      ∫ s, (est.1 s - thetaFunctional P.1 t0) ^ 2\n        ∂(Measure.pi fun _ : Fin n => (P.1).dataMeasure)"
         },
@@ -286,7 +298,7 @@
     "sym:O": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 55,
+      "line": 57,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -304,7 +316,7 @@
     "sym:Y": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 57,
+      "line": 59,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -318,7 +330,7 @@
     "sym:A": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 58,
+      "line": 60,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -336,7 +348,7 @@
     "sym:X": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 59,
+      "line": 61,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -354,7 +366,7 @@
     "sym:P(the single-observation data law of the unit O = (Y,A,X); the i.i.d. n-sample O_1,…,O_n is NOT realized here — it is the n-fold product of this law, carried by IidSampling + minimaxRisk, see their": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 101,
+      "line": 100,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -368,7 +380,7 @@
     "sym:tags)": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 101,
+      "line": 100,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -382,7 +394,7 @@
     "sym:P_X": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 102,
+      "line": 101,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -396,7 +408,7 @@
     "sym:mu_P": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 103,
+      "line": 102,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -410,7 +422,7 @@
     "sym:pi_P(carrier [0,1]×[0,1]^d→ℝ; the conditional density A∣X, its declared range [0,∞) enforced by the `0 ≤ π_P` conjunct of `PiIsCondTreatmentDensity` and pinned to the law by that tie's joint factorization)": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 104,
+      "line": 103,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -424,7 +436,7 @@
     "sym:p_{X,P}(carrier [0,1]^d→ℝ; density of P_X, its declared range [0,∞) enforced by the `0 ≤ p_{X,P}` conjunct of `PxHolder` and pinned to the law by the `PxIsXDensity` tie)": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 105,
+      "line": 104,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -438,7 +450,7 @@
     "sym:Y(a)": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 106,
+      "line": 105,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -452,7 +464,7 @@
     "sym:O_1": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 126,
+      "line": 125,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -470,7 +482,7 @@
     "sym:...": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 126,
+      "line": 125,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -488,7 +500,7 @@
     "sym:O_n": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 126,
+      "line": 125,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -506,7 +518,7 @@
     "sym:p_{X,P}(0 ≤ p_{X,P} on cube; enforces the declared density range [0,∞), so the `ofReal` `PxIsXDensity` tie realizes the actual nonnegative density object)": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 205,
+      "line": 204,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -520,7 +532,7 @@
     "sym:pi_P(`0 ≤ π_P` on `[0,1]×cube` enforcing the declared range `[0,∞)`, AND `P.dataMeasure.map (A,X) = (Leb↾[0,1] ⊗ Leb↾[0,1]^d).withDensity (π_P·p_{X,P})`; together the range-clause + joint-factorization tie pin `pi` to the law's genuine nonnegative conditional treatment density)": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 263,
+      "line": 262,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -534,7 +546,7 @@
     "sym:pi_P(0 ≤ pi_P on [0,1]×cube; enforces the declared density range [0,∞), so the `ofReal` joint-density tie realizes the actual nonnegative conditional treatment density)": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 265,
+      "line": 264,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -548,7 +560,7 @@
     "sym:alpha": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 309,
+      "line": 308,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -566,7 +578,7 @@
     "sym:beta": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 310,
+      "line": 309,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -584,7 +596,7 @@
     "sym:s": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 311,
+      "line": 310,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -602,7 +614,7 @@
     "sym:M": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 312,
+      "line": 311,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -620,7 +632,7 @@
     "sym:c_0": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 313,
+      "line": 312,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -638,7 +650,7 @@
     "sym:t_0": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 314,
+      "line": 313,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -656,7 +668,7 @@
     "sym:epsilon_0": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 315,
+      "line": 314,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -674,7 +686,7 @@
     "sym:R_n(frontier sequence `n ↦ minimaxRisk M n C t0 : ℝ`, declared space `[0,∞)^ℕ`; pointwise minimax MSE, `def:minimax-risk`)": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 317,
+      "line": 316,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -688,7 +700,7 @@
     "sym:evaluation window": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 343,
+      "line": 342,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -702,7 +714,7 @@
     "sym:rho_n": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 375,
+      "line": 374,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -717,14 +729,42 @@
         }
       ]
     },
+    "ass:mu-is-regression": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.MuIsRegression",
+      "file": "Basic.lean",
+      "line": 232,
+      "statement": "/-- **Semantic tie (`μ` is the data regression).** The conditional mean of `Y` given\n`(A,X)` under the data law equals `μ_P(A,X)`. This pins the free `mu` field to the\nactual law, so `thetaFunctional = ∫ μ_P(t_0,·)·p_{X,P}` is the GENUINE causal value\n`E_P[Y(t_0)]` (under consistency + ignorability). Without it `mu` is disconnected from\n`dataMeasure`, which permits a vacuous two-point construction (a Dirac data law with\nthe separation carried only by the free `mu`); enforcing it makes `minimaxRisk` the\ntrue causal minimax risk. -/\ndef MuIsRegression {d : ℕ} (P : DoseLaw d) : Prop :=\n  P.dataMeasure[(fun O => O.Y) |\n      MeasurableSpace.comap (fun O : DoseObs d => (O.A, O.X)) inferInstance]\n    =ᵐ[P.dataMeasure] (fun O => P.mu O.A O.X)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:px-is-x-density": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.PxIsXDensity",
+      "file": "Basic.lean",
+      "line": 241,
+      "statement": "/-- **Semantic tie (`p_{X,P}` is the X-marginal density).** The pushforward of the\ndata law under `X` is `p_{X,P}·(Lebesgue ↾ [0,1]^d)`, tying the free `px` field to the\nactual covariate law so `thetaFunctional` integrates `μ` against the genuine `P_X`. -/\ndef PxIsXDensity {d : ℕ} (P : DoseLaw d) : Prop :=\n  P.dataMeasure.map (fun O => O.X)\n    = (volume.restrict (cube d)).withDensity (fun x => ENNReal.ofReal (P.px x))",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:pi-is-cond-treatment-density": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.PiIsCondTreatmentDensity",
+      "file": "Basic.lean",
+      "line": 263,
+      "statement": "/-- **Semantic tie / range-normalization (`π_P` is the conditional treatment density).**\nThe pushforward of the data law under `(A,X)` equals the measure with joint density\n`(a,x) ↦ π_P(a∣x)·p_{X,P}(x)` w.r.t. Lebesgue on `[0,1]×[0,1]^d`. Together with\n`PxIsXDensity` (the `X`-marginal is `p_{X,P}·Leb`) this pins `π_P(·∣x)` to be the GENUINE\nconditional density of `A` given `X = x` under `P` — it is normalized\n(`∫_{[0,1]} π_P(a∣x) da = 1` for `P_X`-a.e. `x`, forced by consistency of the joint with\nits `X`-marginal) and tied to `dataMeasure`. Without it the `pi` field is disconnected\nfrom `dataMeasure`, so the class `P_{α,β,s}` would be strictly BROADER than the paper\nclass (an arbitrary `π` field satisfying only the Hölder/positivity atoms, never required\nto be the law's actual treatment density). The core symbol `pi_P(a∣x)` is *defined* as the\nconditional density of `A` given `X = x` under `P`, so this tie is exactly the note's\nstated meaning of `π_P`, not an added restriction. The leading conjunct ENFORCES the\ndeclared density range `0 ≤ π_P` on `[0,1]×[0,1]^d`: with it `ENNReal.ofReal (π_P·p_{X,P})`\ngenuinely equals `π_P·p_{X,P}` (both factors nonnegative, using `PxHolder`'s `0 ≤ p_{X,P}`),\nso the tie realizes the ACTUAL nonnegative conditional treatment density object, not only\nits `ofReal` positive part.\n@realizes pi_P(`0 ≤ π_P` on `[0,1]×cube` enforcing the declared range `[0,∞)`, AND `P.dataMeasure.map (A,X) = (Leb↾[0,1] ⊗ Leb↾[0,1]^d).withDensity (π_P·p_{X,P})`; together the range-clause + joint-factorization tie pin `pi` to the law's genuine nonnegative conditional treatment density) -/\ndef PiIsCondTreatmentDensity {d : ℕ} (P : DoseLaw d) : Prop :=\n  (∀ a ∈ Set.Icc (0 : ℝ) 1, ∀ x ∈ cube d, 0 ≤ P.pi a x) ∧   -- @realizes pi_P(0 ≤ pi_P on [0,1]×cube; enforces the declared density range [0,∞), so the `ofReal` joint-density tie realizes the actual nonnegative conditional treatment density)\n    P.dataMeasure.map (fun O => (O.A, O.X))\n      = ((volume.restrict (Set.Icc (0 : ℝ) 1)).prod (volume.restrict (cube d))).withDensity\n          (fun p => ENNReal.ofReal (P.pi p.1 p.2 * P.px p.2))",
+      "sorry_free": true,
+      "axioms": null
+    },
     "minimaxRisk-two-point-lower": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 0,
+      "file": "Helpers/TwoPointConstruction.lean",
+      "line": 61,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.minimaxRisk_two_point_lower",
+          "statement": "/-- The two-point Le Cam reduction in minimax form: two class members with bounded KL\nbetween their `n`-fold product laws force the pointwise minimax risk to be at least\n`c_K` times their squared target separation. -/\nlemma minimaxRisk_two_point_lower {alpha beta s M c0 eps0 t0 : ℝ}\n    (hM : 0 < M) (heps : 0 ≤ eps0) (n : ℕ)\n    (P0 P1 : DoseLaw d)\n    (h0 : HolderDoseClass d alpha beta s M c0 eps0 t0 P0)\n    (h1 : HolderDoseClass d alpha beta s M c0 eps0 t0 P1)\n    (K cK : ℝ) (hcK : 0 < cK)\n    (hbody : ∀ {S : Type*} [MeasurableSpace S]\n        (Q0 Q1 : Measure S) [IsProbabilityMeasure Q0] [IsProbabilityMeasure Q1]\n        (theta0 theta1 : ℝ),\n        InformationTheory.klDiv Q0 Q1 ≤ ENNReal.ofReal K →\n        ∀ T : S → ℝ, Measurable T →\n          Integrable (fun s => (T s - theta0) ^ 2) Q0 →\n          Integrable (fun s => (T s - theta1) ^ 2) Q1 →\n          cK * (theta1 - theta0) ^ 2\n            ≤ max (∫ s, (T s - theta0) ^ 2 ∂Q0) (∫ s, (T s - theta1) ^ 2 ∂Q1))\n    (hKL : InformationTheory.klDiv\n        (Measure.pi fun _ : Fin n => P0.dataMeasure)\n        (Measure.pi fun _ : Fin n => P1.dataMeasure)\n        ≤ ENNReal.ofReal K) :\n    cK * (thetaFunctional P1 t0 - thetaFunctional P0 t0) ^ 2\n      ≤ minimaxRisk M n (HolderDoseClass d alpha beta s M c0 eps0 t0) t0"
+        },
         {
           "label": "CausalSmith.Stat.DoseResponseMinimax.HolderDoseClass",
           "statement": "/-- The anisotropic Hölder dose-response model class\n`P_{α,β,s}(M,c_0,ε_0,t_0)`: the bundle of the member-atom properties, including the three\nSEMANTIC TIES (`μ_P` is the data regression, `p_{X,P}` is the X-marginal density, and\n`π_P` is the law's conditional treatment density) that make it a genuine CAUSAL class and\npin it to EXACTLY the paper class (so `minimaxRisk` over it is the true causal minimax\nrisk and `thetaFunctional` is `E_P[Y(t_0)]`, not a free-field artifact, and the class is\nnot strictly broader than `P_{α,β,s}` through a free `π` field).\n(`ass:baseline-submodel-slack` is NOT a member; it is a separate theorem hypothesis.)\nThe two regime theorems take `(hP : HolderDoseClass … P)`. -/\nstructure HolderDoseClass (d : ℕ) (alpha beta s M c0 eps0 t0 : ℝ)\n    (P : DoseLaw d) : Prop where\n  iid : IidSampling P\n  consistency : Consistency P\n  ignorability : NoUnmeasuredConfounding P\n  bdd : BoundedOutcome P M\n  interior : InteriorDose t0 eps0\n  positivity : LocalPositivity P c0 t0 eps0\n  muT : MuTreatmentHolder P alpha M t0 eps0\n  piT : PiTreatmentHolder P beta M t0 eps0\n  muX : MuCovariateHolder P s M t0\n  piX : PiCovariateHolder P s M t0\n  pxH : PxHolder P s M\n  muReg : MuIsRegression P\n  pxDens : PxIsXDensity P\n  piCond : PiIsCondTreatmentDensity P"
@@ -739,89 +779,717 @@
         }
       ]
     },
-    "dose-witness-consistency": {
+    "measurable-set-cube": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.measurableSet_cube",
+      "file": "Helpers/Witness/Base.lean",
+      "line": 28,
+      "statement": "/-- The unit covariate cube is a measurable set. -/\nlemma measurableSet_cube (d : ℕ) : MeasurableSet (cube d)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "restrict-withDensity-ofReal-isProbability": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.restrict_withDensity_ofReal_isProbabilityMeasure",
+      "file": "Helpers/Witness/Base.lean",
+      "line": 35,
+      "statement": "/-- A nonnegative density on a measurable restriction that integrates to one defines\na probability measure after weighting the restricted measure. -/\nlemma restrict_withDensity_ofReal_isProbabilityMeasure {α : Type*} [MeasurableSpace α]\n    {μ : Measure α} {s : Set α} {f : α → ℝ}\n    (hs : MeasurableSet s) (h_nonneg : ∀ x ∈ s, 0 ≤ f x)\n    (h_int : (∫ x, f x ∂(μ.restrict s)) = 1) :\n    IsProbabilityMeasure ((μ.restrict s).withDensity fun x => ENNReal.ofReal (f x))",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "integrable-of-ae-bounded": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.integrable_of_measurable_ae_bounded",
+      "file": "Helpers/Witness/Base.lean",
+      "line": 54,
+      "statement": "/-- On a finite measure space, a measurable real function that is almost surely\nbounded in absolute value is integrable. -/\nlemma integrable_of_measurable_ae_bounded {α : Type*} [MeasurableSpace α]\n    {μ : Measure α} [IsFiniteMeasure μ] {f : α → ℝ}\n    (hfmeas : Measurable f) (C : ℝ) (hC : ∀ᵐ x ∂μ, |f x| ≤ C) :\n    Integrable f μ",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "doseObs-measurability": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.measurable_doseObs_tuple",
+      "file": "Helpers/Witness/Base.lean",
+      "line": 65,
+      "statement": "/-- The map sending an observation to its outcome, treatment, and covariate tuple is\nmeasurable. -/\nlemma measurable_doseObs_tuple {d : ℕ} :\n    Measurable (fun O : DoseObs d => (O.Y, O.A, O.X))",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "bump-holder-substrate-gate": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 0,
+      "file": "Helpers/Witness/BumpHolder.lean",
+      "line": 217,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
         {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseBump_holder_gate",
+          "statement": "/-- SUBSTRATE GATE (the only one of the genuine construction). For a positive Hölder\norder `α` and radius `M`, there is a fixed amplitude `λ ∈ (0, M/4]` such that for every\nsign `ζ ∈ {−1, +1}` and every bandwidth `h ∈ (0,1]`, the scaled smooth bump slice\n`a ↦ ζ·λ·h^α·doseBump((a−t_0)/h)` lies in the univariate order-`α` radius-`M` Hölder\nball on the evaluation window `[t_0−ε_0, t_0+ε_0]`. This is the classical\n`h^α`-normalized Hölder estimate for `ContDiffBump`; everything else in the\nconstruction is proved. The amplitude bound `λ ≤ M/4` is the constraint consumed by\nthe two-point KL band (`|μ_ζ| ≤ λ ≤ B/2` with `B = M/2`). -/\nlemma doseBump_holder_gate (alpha M t0 eps0 : ℝ)\n    (halpha : 0 < alpha) (hM : 0 < M) :\n    ∃ lam : ℝ, 0 < lam ∧ lam ≤ M / 4 ∧\n      ∀ {ζ h : ℝ}, (ζ = -1 ∨ ζ = 1) → 0 < h → h ≤ 1 →\n        HolderBall1D\n          (fun a => ζ * lam * h ^ alpha * doseBump ((a - t0) / h))\n          alpha M (doseWindow t0 eps0)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseBump",
+          "statement": "/-- The treatment bump is the fixed smooth bump function evaluated at a real argument. -/\nnoncomputable def doseBump (z : ℝ) : ℝ :=\n  doseContDiffBump z"
+        }
+      ]
+    },
+    "dose-channel-ax": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.doseChannelAX",
+      "file": "Helpers/Witness/Channel.lean",
+      "line": 30,
+      "statement": "/-- The outcome Markov kernel `(a,x) ↦ twoPointMean B (μ_ζ(a,x))` pushed onto the\nobserved-unit space by `y ↦ (y, a, x)`. This is the single conditional kernel that,\ncomposed with the shared `(A,X)`-marginal `doseAXMeasure`, reproduces the genuine\njoint law `doseDataMeasure`. -/\nnoncomputable def doseChannelAX (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ)\n    (B alpha t0 lambda h zeta : ℝ) :\n    Kernel (ℝ × (Fin d → ℝ)) (DoseObs d) where\n  toFun := fun p =>\n    (twoPointMean B (doseWitnessMu (d := d) alpha t0 lambda h zeta p.1 p.2)).map\n      (fun y => DoseObs.mk y p.1 p.2)\n  measurable' := by\n    refine Measure.measurable_of_measurable_coe _ ?_\n    intro S hS\n    exact (measurable_twoPointMean_map_doseObs_pair (d := d) B alpha t0 lambda h zeta S hS).comp\n      (measurable_snd.prodMk measurable_fst)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "dose-ax-probability": {
+      "decl": "(composite)",
+      "file": "Helpers/Witness/Channel.lean",
+      "line": 67,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseAXMeasure_isProbabilityMeasure",
+          "statement": "/-- If the witness covariate and treatment measures are probability measures, then\ntheir joint treatment-covariate measure is also a probability measure. -/\nlemma doseAXMeasure_isProbabilityMeasure {p0 : (Fin d → ℝ) → ℝ} {q0 : ℝ → ℝ}\n    (hpX : IsProbabilityMeasure (doseXMeasure p0))\n    (hpA : IsProbabilityMeasure (doseAMeasure q0)) :\n    IsProbabilityMeasure (doseAXMeasure (d := d) p0 q0)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseXMeasure",
+          "statement": "/-- The witness covariate measure is Lebesgue measure on the unit covariate cube\nweighted by the covariate density. -/\nnoncomputable def doseXMeasure {d : ℕ} (p0 : (Fin d → ℝ) → ℝ) :\n    Measure (Fin d → ℝ) :=\n  (volume.restrict (cube d)).withDensity fun x => ENNReal.ofReal (p0 x)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseAMeasure",
+          "statement": "/-- The witness treatment measure is Lebesgue measure on the unit treatment interval\nweighted by the treatment density. -/\nnoncomputable def doseAMeasure (q0 : ℝ → ℝ) : Measure ℝ :=\n  (volume.restrict (Set.Icc (0 : ℝ) 1)).withDensity fun a => ENNReal.ofReal (q0 a)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseAXMeasure",
+          "statement": "/-- The joint treatment-covariate measure first samples covariates from their witness\nmeasure and then samples treatment from its witness measure. -/\nnoncomputable def doseAXMeasure {d : ℕ}\n    (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ) :\n    Measure (ℝ × (Fin d → ℝ)) :=\n  (doseXMeasure p0).bind fun x =>\n    (doseAMeasure q0).map fun a => (a, x)"
+        }
+      ]
+    },
+    "dose-data-eq-axbind": {
+      "decl": "(composite)",
+      "file": "Helpers/Witness/Channel.lean",
+      "line": 90,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseDataMeasure_eq_AXbind",
+          "statement": "/-- The genuine nested `X → A → Y` joint law equals the single bind of the shared\n`(A,X)`-marginal against the outcome channel. This is the bridge that lets the\nregression, ignorability, and KL leaves work over one `Measure.bind`. -/\nlemma doseDataMeasure_eq_AXbind {p0 : (Fin d → ℝ) → ℝ} {q0 : ℝ → ℝ}\n    {B alpha t0 lambda h zeta : ℝ} :\n    doseDataMeasure (d := d) p0 q0 B alpha t0 lambda h zeta =\n      (doseAXMeasure (d := d) p0 q0).bind\n        (doseChannelAX (d := d) p0 q0 B alpha t0 lambda h zeta)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseDataMeasure",
+          "statement": "/-- The witness data law samples covariates, then treatment, and then a two-point\noutcome distribution whose mean is the witness conditional mean. -/\nnoncomputable def doseDataMeasure {d : ℕ}\n    (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ)\n    (B alpha t0 lambda h zeta : ℝ) : Measure (DoseObs d) :=\n  (doseXMeasure p0).bind fun x =>\n    (doseAMeasure q0).bind fun a =>\n      (twoPointMean B (doseWitnessMu (d := d) alpha t0 lambda h zeta a x)).map\n        (fun y => DoseObs.mk y a x)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseAXMeasure",
+          "statement": "/-- The joint treatment-covariate measure first samples covariates from their witness\nmeasure and then samples treatment from its witness measure. -/\nnoncomputable def doseAXMeasure {d : ℕ}\n    (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ) :\n    Measure (ℝ × (Fin d → ℝ)) :=\n  (doseXMeasure p0).bind fun x =>\n    (doseAMeasure q0).map fun a => (a, x)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseChannelAX",
+          "statement": "/-- The outcome Markov kernel `(a,x) ↦ twoPointMean B (μ_ζ(a,x))` pushed onto the\nobserved-unit space by `y ↦ (y, a, x)`. This is the single conditional kernel that,\ncomposed with the shared `(A,X)`-marginal `doseAXMeasure`, reproduces the genuine\njoint law `doseDataMeasure`. -/\nnoncomputable def doseChannelAX (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ)\n    (B alpha t0 lambda h zeta : ℝ) :\n    Kernel (ℝ × (Fin d → ℝ)) (DoseObs d) where\n  toFun := fun p =>\n    (twoPointMean B (doseWitnessMu (d := d) alpha t0 lambda h zeta p.1 p.2)).map\n      (fun y => DoseObs.mk y p.1 p.2)\n  measurable' := by\n    refine Measure.measurable_of_measurable_coe _ ?_\n    intro S hS\n    exact (measurable_twoPointMean_map_doseObs_pair (d := d) B alpha t0 lambda h zeta S hS).comp\n      (measurable_snd.prodMk measurable_fst)"
+        }
+      ]
+    },
+    "dose-bump": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.doseContDiffBump",
+      "file": "Helpers/Witness/Core.lean",
+      "line": 22,
+      "statement": "/-- A fixed smooth bump supported in `(-1,1)` and equal to one near zero. -/\nnoncomputable def doseContDiffBump : ContDiffBump (0 : ℝ) :=\n  ⟨(1 / 2 : ℝ), 1, by norm_num, by norm_num⟩",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "dose-bump-function": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.doseBump",
+      "file": "Helpers/Witness/Core.lean",
+      "line": 27,
+      "statement": "/-- The treatment bump is the fixed smooth bump function evaluated at a real argument. -/\nnoncomputable def doseBump (z : ℝ) : ℝ :=\n  doseContDiffBump z",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "twoPointMean-map-doseObs-measurable": {
+      "decl": "(composite)",
+      "file": "Helpers/Witness/Core.lean",
+      "line": 108,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.measurable_twoPointMean_map_doseObs",
+          "statement": "/-- For fixed covariates, the two-point outcome law pushed to observed triples varies\nmeasurably with the treatment value. -/\nlemma measurable_twoPointMean_map_doseObs {d : ℕ}\n    (B alpha t0 lambda h zeta : ℝ) (x : Fin d → ℝ) :\n    Measurable fun a : ℝ =>\n      (twoPointMean B (doseWitnessMu (d := d) alpha t0 lambda h zeta a x)).map\n        (fun y => DoseObs.mk y a x)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitnessMu",
+          "statement": "/-- The witness conditional mean is a localized treatment bump with amplitude\ngiven by the product of the sign, scale, bandwidth power, and smoothness constant. -/\nnoncomputable def doseWitnessMu {d : ℕ} (alpha t0 lambda h zeta : ℝ) :\n    ℝ → (Fin d → ℝ) → ℝ :=\n  fun a _x => zeta * lambda * h ^ alpha * doseBump ((a - t0) / h)"
+        }
+      ]
+    },
+    "twoPointMean-map-doseObs-pair-measurable": {
+      "decl": "(composite)",
+      "file": "Helpers/Witness/Core.lean",
+      "line": 135,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.measurable_twoPointMean_map_doseObs_pair",
+          "statement": "/-- The probability assigned by the pushed-forward two-point outcome law to any\nmeasurable event is a measurable function of covariates and treatment. -/\nlemma measurable_twoPointMean_map_doseObs_pair {d : ℕ}\n    (B alpha t0 lambda h zeta : ℝ) (S : Set (DoseObs d)) (hS : MeasurableSet S) :\n    Measurable fun p : (Fin d → ℝ) × ℝ =>\n      ((twoPointMean B (doseWitnessMu (d := d) alpha t0 lambda h zeta p.2 p.1)).map\n        (fun y => DoseObs.mk y p.2 p.1)) S"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitnessMu",
+          "statement": "/-- The witness conditional mean is a localized treatment bump with amplitude\ngiven by the product of the sign, scale, bandwidth power, and smoothness constant. -/\nnoncomputable def doseWitnessMu {d : ℕ} (alpha t0 lambda h zeta : ℝ) :\n    ℝ → (Fin d → ℝ) → ℝ :=\n  fun a _x => zeta * lambda * h ^ alpha * doseBump ((a - t0) / h)"
+        }
+      ]
+    },
+    "dose-x-measure": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.doseXMeasure",
+      "file": "Helpers/Witness/Core.lean",
+      "line": 160,
+      "statement": "/-- The witness covariate measure is Lebesgue measure on the unit covariate cube\nweighted by the covariate density. -/\nnoncomputable def doseXMeasure {d : ℕ} (p0 : (Fin d → ℝ) → ℝ) :\n    Measure (Fin d → ℝ) :=\n  (volume.restrict (cube d)).withDensity fun x => ENNReal.ofReal (p0 x)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "dose-a-measure": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.doseAMeasure",
+      "file": "Helpers/Witness/Core.lean",
+      "line": 167,
+      "statement": "/-- The witness treatment measure is Lebesgue measure on the unit treatment interval\nweighted by the treatment density. -/\nnoncomputable def doseAMeasure (q0 : ℝ → ℝ) : Measure ℝ :=\n  (volume.restrict (Set.Icc (0 : ℝ) 1)).withDensity fun a => ENNReal.ofReal (q0 a)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "dose-outcome-kernel-measurable": {
+      "decl": "(composite)",
+      "file": "Helpers/Witness/Core.lean",
+      "line": 173,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.measurable_doseOutcomeKernel",
+          "statement": "/-- Integrating the treatment law against the two-point outcome law gives an outcome\nkernel that is measurable as a function of covariates. -/\nlemma measurable_doseOutcomeKernel {d : ℕ} (q0 : ℝ → ℝ)\n    (B alpha t0 lambda h zeta : ℝ) :\n    Measurable fun x : Fin d → ℝ =>\n      (doseAMeasure q0).bind fun a =>\n        (twoPointMean B (doseWitnessMu (d := d) alpha t0 lambda h zeta a x)).map\n          (fun y => DoseObs.mk y a x)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseAMeasure",
+          "statement": "/-- The witness treatment measure is Lebesgue measure on the unit treatment interval\nweighted by the treatment density. -/\nnoncomputable def doseAMeasure (q0 : ℝ → ℝ) : Measure ℝ :=\n  (volume.restrict (Set.Icc (0 : ℝ) 1)).withDensity fun a => ENNReal.ofReal (q0 a)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitnessMu",
+          "statement": "/-- The witness conditional mean is a localized treatment bump with amplitude\ngiven by the product of the sign, scale, bandwidth power, and smoothness constant. -/\nnoncomputable def doseWitnessMu {d : ℕ} (alpha t0 lambda h zeta : ℝ) :\n    ℝ → (Fin d → ℝ) → ℝ :=\n  fun a _x => zeta * lambda * h ^ alpha * doseBump ((a - t0) / h)"
+        }
+      ]
+    },
+    "dose-ax-measure": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.doseAXMeasure",
+      "file": "Helpers/Witness/Core.lean",
+      "line": 203,
+      "statement": "/-- The joint treatment-covariate measure first samples covariates from their witness\nmeasure and then samples treatment from its witness measure. -/\nnoncomputable def doseAXMeasure {d : ℕ}\n    (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ) :\n    Measure (ℝ × (Fin d → ℝ)) :=\n  (doseXMeasure p0).bind fun x =>\n    (doseAMeasure q0).map fun a => (a, x)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "dose-data-measure": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.doseDataMeasure",
+      "file": "Helpers/Witness/Core.lean",
+      "line": 212,
+      "statement": "/-- The witness data law samples covariates, then treatment, and then a two-point\noutcome distribution whose mean is the witness conditional mean. -/\nnoncomputable def doseDataMeasure {d : ℕ}\n    (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ)\n    (B alpha t0 lambda h zeta : ℝ) : Measure (DoseObs d) :=\n  (doseXMeasure p0).bind fun x =>\n    (doseAMeasure q0).bind fun a =>\n      (twoPointMean B (doseWitnessMu (d := d) alpha t0 lambda h zeta a x)).map\n        (fun y => DoseObs.mk y a x)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "dose-potential": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.dosePotential",
+      "file": "Helpers/Witness/Core.lean",
+      "line": 223,
+      "statement": "/-- The witness potential-outcome process returns the observed outcome at the realized\ntreatment and otherwise returns the witness conditional mean at the queried treatment. -/\nnoncomputable def dosePotential {d : ℕ} (alpha t0 lambda h zeta : ℝ) :\n    ℝ → DoseObs d → ℝ :=\n  fun a O => if O.A = a then O.Y else doseWitnessMu (d := d) alpha t0 lambda h zeta a O.X",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "dose-witness": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.doseWitness",
+      "file": "Helpers/Witness/Core.lean",
+      "line": 230,
+      "statement": "/-- The witness law packages the explicit data law, covariate law, conditional mean,\ntreatment density, covariate density, and potential-outcome process into one model. -/\nnoncomputable def doseWitness {d : ℕ}\n    (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ)\n    (B alpha t0 lambda h zeta : ℝ) : DoseLaw d where\n  dataMeasure := doseDataMeasure p0 q0 B alpha t0 lambda h zeta\n  PX := doseXMeasure p0\n  mu := doseWitnessMu alpha t0 lambda h zeta\n  pi := fun a _x => q0 a\n  px := p0\n  pot := dosePotential alpha t0 lambda h zeta",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "dose-base-probability": {
+      "decl": "(composite)",
+      "file": "Helpers/Witness/Core.lean",
+      "line": 243,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseXMeasure_isProbabilityMeasure",
+          "statement": "/-- If the covariate density is nonnegative on the cube and integrates to one there,\nthen the witness covariate measure is a probability measure. -/\nlemma doseXMeasure_isProbabilityMeasure {d : ℕ}\n    {p0 : (Fin d → ℝ) → ℝ}\n    (hp0_nonneg : ∀ x ∈ cube d, 0 ≤ p0 x)\n    (hp0_int : (∫ x in cube d, p0 x) = 1) :\n    IsProbabilityMeasure (doseXMeasure p0)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseXMeasure",
+          "statement": "/-- The witness covariate measure is Lebesgue measure on the unit covariate cube\nweighted by the covariate density. -/\nnoncomputable def doseXMeasure {d : ℕ} (p0 : (Fin d → ℝ) → ℝ) :\n    Measure (Fin d → ℝ) :=\n  (volume.restrict (cube d)).withDensity fun x => ENNReal.ofReal (p0 x)"
+        }
+      ]
+    },
+    "dose-witness-kl-single": {
+      "decl": "(composite)",
+      "file": "Helpers/Witness/KL.lean",
+      "line": 282,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitness_kl_single_le",
+          "statement": "/-- Single-observation KL budget: the joint KL between the two witness data laws is at\nmost `16 λ² (M−η_0) / B² · h^{2α+1}`. GENUINE and bump-driven (NONZERO): it is the\n`(A,X)`-integral of the per-fibre two-point-channel KL, not a Dirac collapse. -/\nlemma doseWitness_kl_single_le {p0 : (Fin d → ℝ) → ℝ} {q0 : ℝ → ℝ}\n    {B M alpha lambda eta0 t0 eps0 h : ℝ}\n    (hB : 0 < B) (halpha : 0 < alpha)\n    (hh : 0 < h) (hhle : h ≤ 1) (hhe : h ≤ eps0)\n    (hwin : doseWindow t0 eps0 ⊆ Set.Ioo (0 : ℝ) 1)\n    (hpX : IsProbabilityMeasure (doseXMeasure p0))\n    (hpA : IsProbabilityMeasure (doseAMeasure q0))\n    (hp0_int : (∫ x in cube d, p0 x) = 1)\n    (hlam_nonneg : 0 ≤ lambda) (hlam_le : lambda ≤ B / 2)\n    (hq0_nonneg : ∀ a, 0 ≤ q0 a)\n    (hq0_bd : ∀ a ∈ doseWindow t0 eps0, q0 a ≤ M - eta0) :\n    InformationTheory.klDiv\n      (doseDataMeasure (d := d) p0 q0 B alpha t0 lambda h (-1))\n      (doseDataMeasure (d := d) p0 q0 B alpha t0 lambda h 1)\n      ≤ ENNReal.ofReal (16 * lambda ^ 2 * (M - eta0) / B ^ 2 * h ^ (2 * alpha + 1))"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseXMeasure",
+          "statement": "/-- The witness covariate measure is Lebesgue measure on the unit covariate cube\nweighted by the covariate density. -/\nnoncomputable def doseXMeasure {d : ℕ} (p0 : (Fin d → ℝ) → ℝ) :\n    Measure (Fin d → ℝ) :=\n  (volume.restrict (cube d)).withDensity fun x => ENNReal.ofReal (p0 x)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseAMeasure",
+          "statement": "/-- The witness treatment measure is Lebesgue measure on the unit treatment interval\nweighted by the treatment density. -/\nnoncomputable def doseAMeasure (q0 : ℝ → ℝ) : Measure ℝ :=\n  (volume.restrict (Set.Icc (0 : ℝ) 1)).withDensity fun a => ENNReal.ofReal (q0 a)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseDataMeasure",
+          "statement": "/-- The witness data law samples covariates, then treatment, and then a two-point\noutcome distribution whose mean is the witness conditional mean. -/\nnoncomputable def doseDataMeasure {d : ℕ}\n    (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ)\n    (B alpha t0 lambda h zeta : ℝ) : Measure (DoseObs d) :=\n  (doseXMeasure p0).bind fun x =>\n    (doseAMeasure q0).bind fun a =>\n      (twoPointMean B (doseWitnessMu (d := d) alpha t0 lambda h zeta a x)).map\n        (fun y => DoseObs.mk y a x)"
+        }
+      ]
+    },
+    "dose-witness-kl-nfold": {
+      "decl": "(composite)",
+      "file": "Helpers/Witness/KL.lean",
+      "line": 643,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitness_kl_nfold_le",
+          "statement": "/-- `n`-fold KL budget via product tensorization: the KL between the `n`-fold product\nwitness laws is at most `n · (single-obs budget)`. -/\nlemma doseWitness_kl_nfold_le {p0 : (Fin d → ℝ) → ℝ} {q0 : ℝ → ℝ}\n    {B M alpha lambda eta0 t0 eps0 h : ℝ} (n : ℕ)\n    (hB : 0 < B) (halpha : 0 < alpha)\n    (hh : 0 < h) (hhle : h ≤ 1) (hhe : h ≤ eps0)\n    (hwin : doseWindow t0 eps0 ⊆ Set.Ioo (0 : ℝ) 1)\n    (hpX : IsProbabilityMeasure (doseXMeasure p0))\n    (hpA : IsProbabilityMeasure (doseAMeasure q0))\n    (hp0_int : (∫ x in cube d, p0 x) = 1)\n    (hlam_nonneg : 0 ≤ lambda) (hlam_le : lambda ≤ B / 2)\n    (hmu : ∀ a x, |doseWitnessMu (d := d) alpha t0 lambda h (1 : ℝ) a x| ≤ B / 2)\n    (hmu' : ∀ a x, |doseWitnessMu (d := d) alpha t0 lambda h (-1 : ℝ) a x| ≤ B / 2)\n    (hq0_nonneg : ∀ a, 0 ≤ q0 a)\n    (hq0_bd : ∀ a ∈ doseWindow t0 eps0, q0 a ≤ M - eta0) :\n    InformationTheory.klDiv\n      (Measure.pi fun _ : Fin n =>\n        doseDataMeasure (d := d) p0 q0 B alpha t0 lambda h (-1))\n      (Measure.pi fun _ : Fin n =>\n        doseDataMeasure (d := d) p0 q0 B alpha t0 lambda h 1)\n      ≤ ENNReal.ofReal\n          ((n : ℝ) * (16 * lambda ^ 2 * (M - eta0) / B ^ 2 * h ^ (2 * alpha + 1)))"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseXMeasure",
+          "statement": "/-- The witness covariate measure is Lebesgue measure on the unit covariate cube\nweighted by the covariate density. -/\nnoncomputable def doseXMeasure {d : ℕ} (p0 : (Fin d → ℝ) → ℝ) :\n    Measure (Fin d → ℝ) :=\n  (volume.restrict (cube d)).withDensity fun x => ENNReal.ofReal (p0 x)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseAMeasure",
+          "statement": "/-- The witness treatment measure is Lebesgue measure on the unit treatment interval\nweighted by the treatment density. -/\nnoncomputable def doseAMeasure (q0 : ℝ → ℝ) : Measure ℝ :=\n  (volume.restrict (Set.Icc (0 : ℝ) 1)).withDensity fun a => ENNReal.ofReal (q0 a)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitnessMu",
+          "statement": "/-- The witness conditional mean is a localized treatment bump with amplitude\ngiven by the product of the sign, scale, bandwidth power, and smoothness constant. -/\nnoncomputable def doseWitnessMu {d : ℕ} (alpha t0 lambda h zeta : ℝ) :\n    ℝ → (Fin d → ℝ) → ℝ :=\n  fun a _x => zeta * lambda * h ^ alpha * doseBump ((a - t0) / h)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseDataMeasure",
+          "statement": "/-- The witness data law samples covariates, then treatment, and then a two-point\noutcome distribution whose mean is the witness conditional mean. -/\nnoncomputable def doseDataMeasure {d : ℕ}\n    (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ)\n    (B alpha t0 lambda h zeta : ℝ) : Measure (DoseObs d) :=\n  (doseXMeasure p0).bind fun x =>\n    (doseAMeasure q0).bind fun a =>\n      (twoPointMean B (doseWitnessMu (d := d) alpha t0 lambda h zeta a x)).map\n        (fun y => DoseObs.mk y a x)"
+        }
+      ]
+    },
+    "dose-data-probability": {
+      "decl": "(composite)",
+      "file": "Helpers/Witness/Measure.lean",
+      "line": 21,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseDataMeasure_isProbabilityMeasure",
+          "statement": "/-- If the component laws are probability measures and the two-point means are bounded\ninside the outcome range, then the witness data law is a probability measure. -/\nlemma doseDataMeasure_isProbabilityMeasure {d : ℕ}\n    {p0 : (Fin d → ℝ) → ℝ} {q0 : ℝ → ℝ}\n    {B alpha t0 lambda h zeta : ℝ}\n    (hB : 0 < B)\n    (hpX : IsProbabilityMeasure (doseXMeasure p0))\n    (hpA : IsProbabilityMeasure (doseAMeasure q0))\n    (hmu : ∀ a x, |doseWitnessMu (d := d) alpha t0 lambda h zeta a x| ≤ B) :\n    IsProbabilityMeasure (doseDataMeasure p0 q0 B alpha t0 lambda h zeta)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseXMeasure",
+          "statement": "/-- The witness covariate measure is Lebesgue measure on the unit covariate cube\nweighted by the covariate density. -/\nnoncomputable def doseXMeasure {d : ℕ} (p0 : (Fin d → ℝ) → ℝ) :\n    Measure (Fin d → ℝ) :=\n  (volume.restrict (cube d)).withDensity fun x => ENNReal.ofReal (p0 x)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseAMeasure",
+          "statement": "/-- The witness treatment measure is Lebesgue measure on the unit treatment interval\nweighted by the treatment density. -/\nnoncomputable def doseAMeasure (q0 : ℝ → ℝ) : Measure ℝ :=\n  (volume.restrict (Set.Icc (0 : ℝ) 1)).withDensity fun a => ENNReal.ofReal (q0 a)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitnessMu",
+          "statement": "/-- The witness conditional mean is a localized treatment bump with amplitude\ngiven by the product of the sign, scale, bandwidth power, and smoothness constant. -/\nnoncomputable def doseWitnessMu {d : ℕ} (alpha t0 lambda h zeta : ℝ) :\n    ℝ → (Fin d → ℝ) → ℝ :=\n  fun a _x => zeta * lambda * h ^ alpha * doseBump ((a - t0) / h)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseDataMeasure",
+          "statement": "/-- The witness data law samples covariates, then treatment, and then a two-point\noutcome distribution whose mean is the witness conditional mean. -/\nnoncomputable def doseDataMeasure {d : ℕ}\n    (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ)\n    (B alpha t0 lambda h zeta : ℝ) : Measure (DoseObs d) :=\n  (doseXMeasure p0).bind fun x =>\n    (doseAMeasure q0).bind fun a =>\n      (twoPointMean B (doseWitnessMu (d := d) alpha t0 lambda h zeta a x)).map\n        (fun y => DoseObs.mk y a x)"
+        }
+      ]
+    },
+    "dose-data-x-marginal": {
+      "decl": "(composite)",
+      "file": "Helpers/Witness/Measure.lean",
+      "line": 67,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseDataMeasure_map_X",
+          "statement": "/-- Under the valid two-point outcome construction, marginalizing the witness data law\nto covariates recovers the witness covariate measure. -/\nlemma doseDataMeasure_map_X {d : ℕ}\n    {p0 : (Fin d → ℝ) → ℝ} {q0 : ℝ → ℝ}\n    {B alpha t0 lambda h zeta : ℝ}\n    (hB : 0 < B)\n    (hpA : IsProbabilityMeasure (doseAMeasure q0))\n    (hmu : ∀ a x, |doseWitnessMu (d := d) alpha t0 lambda h zeta a x| ≤ B) :\n    (doseDataMeasure p0 q0 B alpha t0 lambda h zeta).map (fun O : DoseObs d => O.X) =\n      doseXMeasure p0"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseAMeasure",
+          "statement": "/-- The witness treatment measure is Lebesgue measure on the unit treatment interval\nweighted by the treatment density. -/\nnoncomputable def doseAMeasure (q0 : ℝ → ℝ) : Measure ℝ :=\n  (volume.restrict (Set.Icc (0 : ℝ) 1)).withDensity fun a => ENNReal.ofReal (q0 a)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitnessMu",
+          "statement": "/-- The witness conditional mean is a localized treatment bump with amplitude\ngiven by the product of the sign, scale, bandwidth power, and smoothness constant. -/\nnoncomputable def doseWitnessMu {d : ℕ} (alpha t0 lambda h zeta : ℝ) :\n    ℝ → (Fin d → ℝ) → ℝ :=\n  fun a _x => zeta * lambda * h ^ alpha * doseBump ((a - t0) / h)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseDataMeasure",
+          "statement": "/-- The witness data law samples covariates, then treatment, and then a two-point\noutcome distribution whose mean is the witness conditional mean. -/\nnoncomputable def doseDataMeasure {d : ℕ}\n    (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ)\n    (B alpha t0 lambda h zeta : ℝ) : Measure (DoseObs d) :=\n  (doseXMeasure p0).bind fun x =>\n    (doseAMeasure q0).bind fun a =>\n      (twoPointMean B (doseWitnessMu (d := d) alpha t0 lambda h zeta a x)).map\n        (fun y => DoseObs.mk y a x)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseXMeasure",
+          "statement": "/-- The witness covariate measure is Lebesgue measure on the unit covariate cube\nweighted by the covariate density. -/\nnoncomputable def doseXMeasure {d : ℕ} (p0 : (Fin d → ℝ) → ℝ) :\n    Measure (Fin d → ℝ) :=\n  (volume.restrict (cube d)).withDensity fun x => ENNReal.ofReal (p0 x)"
+        }
+      ]
+    },
+    "dose-witness-px-density": {
+      "decl": "(composite)",
+      "file": "Helpers/Witness/Measure.lean",
+      "line": 111,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitness_pxDens",
+          "statement": "/-- Under the stated outcome and treatment-law assumptions, the witness covariate\ndensity is tied to the covariate marginal of the witness data law. -/\nlemma doseWitness_pxDens {d : ℕ}\n    {p0 : (Fin d → ℝ) → ℝ} {q0 : ℝ → ℝ}\n    {B alpha t0 lambda h zeta : ℝ}\n    (hB : 0 < B)\n    (hpA : IsProbabilityMeasure (doseAMeasure q0))\n    (hmu : ∀ a x, |doseWitnessMu (d := d) alpha t0 lambda h zeta a x| ≤ B) :\n    PxIsXDensity (doseWitness p0 q0 B alpha t0 lambda h zeta)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseAMeasure",
+          "statement": "/-- The witness treatment measure is Lebesgue measure on the unit treatment interval\nweighted by the treatment density. -/\nnoncomputable def doseAMeasure (q0 : ℝ → ℝ) : Measure ℝ :=\n  (volume.restrict (Set.Icc (0 : ℝ) 1)).withDensity fun a => ENNReal.ofReal (q0 a)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitnessMu",
+          "statement": "/-- The witness conditional mean is a localized treatment bump with amplitude\ngiven by the product of the sign, scale, bandwidth power, and smoothness constant. -/\nnoncomputable def doseWitnessMu {d : ℕ} (alpha t0 lambda h zeta : ℝ) :\n    ℝ → (Fin d → ℝ) → ℝ :=\n  fun a _x => zeta * lambda * h ^ alpha * doseBump ((a - t0) / h)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.PxIsXDensity",
+          "statement": "/-- **Semantic tie (`p_{X,P}` is the X-marginal density).** The pushforward of the\ndata law under `X` is `p_{X,P}·(Lebesgue ↾ [0,1]^d)`, tying the free `px` field to the\nactual covariate law so `thetaFunctional` integrates `μ` against the genuine `P_X`. -/\ndef PxIsXDensity {d : ℕ} (P : DoseLaw d) : Prop :=\n  P.dataMeasure.map (fun O => O.X)\n    = (volume.restrict (cube d)).withDensity (fun x => ENNReal.ofReal (P.px x))"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitness",
+          "statement": "/-- The witness law packages the explicit data law, covariate law, conditional mean,\ntreatment density, covariate density, and potential-outcome process into one model. -/\nnoncomputable def doseWitness {d : ℕ}\n    (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ)\n    (B alpha t0 lambda h zeta : ℝ) : DoseLaw d where\n  dataMeasure := doseDataMeasure p0 q0 B alpha t0 lambda h zeta\n  PX := doseXMeasure p0\n  mu := doseWitnessMu alpha t0 lambda h zeta\n  pi := fun a _x => q0 a\n  px := p0\n  pot := dosePotential alpha t0 lambda h zeta"
+        }
+      ]
+    },
+    "dose-witness-consistency": {
+      "decl": "(composite)",
+      "file": "Helpers/Witness/Measure.lean",
+      "line": 126,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitness_consistency",
+          "statement": "/-- The witness potential-outcome process is consistent with the observed outcome at\nthe realized treatment for every observation. -/\nlemma doseWitness_consistency {d : ℕ}\n    (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ)\n    (B alpha t0 lambda h zeta : ℝ) :\n    Consistency (doseWitness (d := d) p0 q0 B alpha t0 lambda h zeta)"
+        },
+        {
           "label": "CausalSmith.Stat.DoseResponseMinimax.Consistency",
           "statement": "/-- Consistency `Y = Y(A)` almost surely under `P`: the realized outcome equals the\npotential outcome at the realized treatment level. -/\ndef Consistency {d : ℕ} (P : DoseLaw d) : Prop :=\n  ∀ᵐ O ∂P.dataMeasure, O.Y = P.pot O.A O"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitness",
+          "statement": "/-- The witness law packages the explicit data law, covariate law, conditional mean,\ntreatment density, covariate density, and potential-outcome process into one model. -/\nnoncomputable def doseWitness {d : ℕ}\n    (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ)\n    (B alpha t0 lambda h zeta : ℝ) : DoseLaw d where\n  dataMeasure := doseDataMeasure p0 q0 B alpha t0 lambda h zeta\n  PX := doseXMeasure p0\n  mu := doseWitnessMu alpha t0 lambda h zeta\n  pi := fun a _x => q0 a\n  px := p0\n  pot := dosePotential alpha t0 lambda h zeta"
+        }
+      ]
+    },
+    "dose-data-y-support": {
+      "decl": "(composite)",
+      "file": "Helpers/Witness/Measure.lean",
+      "line": 136,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseDataMeasure_ae_Y_mem_Icc",
+          "statement": "/-- If the two-point outcome support is contained in the target bound, then the witness\ndata law almost surely has outcomes inside that bounded interval. -/\nlemma doseDataMeasure_ae_Y_mem_Icc {d : ℕ}\n    {p0 : (Fin d → ℝ) → ℝ} {q0 : ℝ → ℝ}\n    {B M alpha t0 lambda h zeta : ℝ}\n    (hBM : |B| ≤ M) :\n    ∀ᵐ O ∂doseDataMeasure p0 q0 B alpha t0 lambda h zeta, O.Y ∈ Set.Icc (-M) M"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseDataMeasure",
+          "statement": "/-- The witness data law samples covariates, then treatment, and then a two-point\noutcome distribution whose mean is the witness conditional mean. -/\nnoncomputable def doseDataMeasure {d : ℕ}\n    (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ)\n    (B alpha t0 lambda h zeta : ℝ) : Measure (DoseObs d) :=\n  (doseXMeasure p0).bind fun x =>\n    (doseAMeasure q0).bind fun a =>\n      (twoPointMean B (doseWitnessMu (d := d) alpha t0 lambda h zeta a x)).map\n        (fun y => DoseObs.mk y a x)"
         }
       ]
     },
     "dose-witness-bounded-outcome": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 0,
+      "file": "Helpers/Witness/Measure.lean",
+      "line": 184,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
         {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitness_bdd",
+          "statement": "/-- If the two-point outcome support is contained in the target bound, then the witness\nlaw satisfies the bounded-outcome condition at that bound. -/\nlemma doseWitness_bdd {d : ℕ}\n    {p0 : (Fin d → ℝ) → ℝ} {q0 : ℝ → ℝ}\n    {B M alpha t0 lambda h zeta : ℝ}\n    (hBM : |B| ≤ M) :\n    BoundedOutcome (doseWitness (d := d) p0 q0 B alpha t0 lambda h zeta) M"
+        },
+        {
           "label": "CausalSmith.Stat.DoseResponseMinimax.BoundedOutcome",
           "statement": "/-- Bounded outcome `|Y| ≤ M` almost surely under `P`. -/\ndef BoundedOutcome {d : ℕ} (P : DoseLaw d) (M : ℝ) : Prop :=\n  ∀ᵐ O ∂P.dataMeasure, |O.Y| ≤ M"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitness",
+          "statement": "/-- The witness law packages the explicit data law, covariate law, conditional mean,\ntreatment density, covariate density, and potential-outcome process into one model. -/\nnoncomputable def doseWitness {d : ℕ}\n    (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ)\n    (B alpha t0 lambda h zeta : ℝ) : DoseLaw d where\n  dataMeasure := doseDataMeasure p0 q0 B alpha t0 lambda h zeta\n  PX := doseXMeasure p0\n  mu := doseWitnessMu alpha t0 lambda h zeta\n  pi := fun a _x => q0 a\n  px := p0\n  pot := dosePotential alpha t0 lambda h zeta"
         }
       ]
     },
     "dose-witness-membership": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 0,
+      "file": "Helpers/Witness/Membership.lean",
+      "line": 150,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
         {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitness_mem_class",
+          "statement": "/-- The genuine two-point witness lies in the anisotropic Hölder dose-response class.\nOnly the treatment regression is perturbed (by the bump), the slack baseline\n`(p_0, q_0)` is frozen, and the two semantic ties hold for the genuine joint law. -/\nlemma doseWitness_mem_class {alpha beta s M c0 eps0 t0 eta0 B lambda h zeta : ℝ}\n    {p0 : (Fin d → ℝ) → ℝ} {q0 : ℝ → ℝ}\n    (hreg : RegimeConstants alpha beta s M c0 eps0 t0)\n    (heta : 0 < eta0) (hB : 0 < B) (hBM : B ≤ M)\n    (hp0_nonneg : ∀ x ∈ cube d, 0 ≤ p0 x) (hp0_int : (∫ x in cube d, p0 x) = 1)\n    (hpxH : HolderBallND p0 s (M - eta0) (cube d))\n    (hpxbd : ∀ x ∈ cube d, p0 x ≤ M - eta0)\n    (hq0_nonneg : ∀ a, 0 ≤ q0 a) (hq0_int : (∫ a in Set.Icc (0 : ℝ) 1, q0 a) = 1)\n    (hqH : HolderBall1D q0 beta (M - eta0) (doseWindow t0 eps0))\n    (hqpos : ∀ a ∈ doseWindow t0 eps0, c0 + eta0 ≤ q0 a)\n    (hmu : ∀ a x, |doseWitnessMu (d := d) alpha t0 lambda h zeta a x| ≤ B)\n    (hMuHolder : HolderBall1D\n      (fun a => zeta * lambda * h ^ alpha * doseBump ((a - t0) / h)) alpha M\n      (doseWindow t0 eps0))\n    (hζ : zeta = -1 ∨ zeta = 1) (hhpos : 0 < h) (hhle : h ≤ 1) :\n    HolderDoseClass d alpha beta s M c0 eps0 t0\n      (doseWitness (d := d) p0 q0 B alpha t0 lambda h zeta)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitnessMu",
+          "statement": "/-- The witness conditional mean is a localized treatment bump with amplitude\ngiven by the product of the sign, scale, bandwidth power, and smoothness constant. -/\nnoncomputable def doseWitnessMu {d : ℕ} (alpha t0 lambda h zeta : ℝ) :\n    ℝ → (Fin d → ℝ) → ℝ :=\n  fun a _x => zeta * lambda * h ^ alpha * doseBump ((a - t0) / h)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseBump",
+          "statement": "/-- The treatment bump is the fixed smooth bump function evaluated at a real argument. -/\nnoncomputable def doseBump (z : ℝ) : ℝ :=\n  doseContDiffBump z"
+        },
+        {
           "label": "CausalSmith.Stat.DoseResponseMinimax.HolderDoseClass",
           "statement": "/-- The anisotropic Hölder dose-response model class\n`P_{α,β,s}(M,c_0,ε_0,t_0)`: the bundle of the member-atom properties, including the three\nSEMANTIC TIES (`μ_P` is the data regression, `p_{X,P}` is the X-marginal density, and\n`π_P` is the law's conditional treatment density) that make it a genuine CAUSAL class and\npin it to EXACTLY the paper class (so `minimaxRisk` over it is the true causal minimax\nrisk and `thetaFunctional` is `E_P[Y(t_0)]`, not a free-field artifact, and the class is\nnot strictly broader than `P_{α,β,s}` through a free `π` field).\n(`ass:baseline-submodel-slack` is NOT a member; it is a separate theorem hypothesis.)\nThe two regime theorems take `(hP : HolderDoseClass … P)`. -/\nstructure HolderDoseClass (d : ℕ) (alpha beta s M c0 eps0 t0 : ℝ)\n    (P : DoseLaw d) : Prop where\n  iid : IidSampling P\n  consistency : Consistency P\n  ignorability : NoUnmeasuredConfounding P\n  bdd : BoundedOutcome P M\n  interior : InteriorDose t0 eps0\n  positivity : LocalPositivity P c0 t0 eps0\n  muT : MuTreatmentHolder P alpha M t0 eps0\n  piT : PiTreatmentHolder P beta M t0 eps0\n  muX : MuCovariateHolder P s M t0\n  piX : PiCovariateHolder P s M t0\n  pxH : PxHolder P s M\n  muReg : MuIsRegression P\n  pxDens : PxIsXDensity P\n  piCond : PiIsCondTreatmentDensity P"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitness",
+          "statement": "/-- The witness law packages the explicit data law, covariate law, conditional mean,\ntreatment density, covariate density, and potential-outcome process into one model. -/\nnoncomputable def doseWitness {d : ℕ}\n    (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ)\n    (B alpha t0 lambda h zeta : ℝ) : DoseLaw d where\n  dataMeasure := doseDataMeasure p0 q0 B alpha t0 lambda h zeta\n  PX := doseXMeasure p0\n  mu := doseWitnessMu alpha t0 lambda h zeta\n  pi := fun a _x => q0 a\n  px := p0\n  pot := dosePotential alpha t0 lambda h zeta"
+        }
+      ]
+    },
+    "dose-data-ax-marginal": {
+      "decl": "(composite)",
+      "file": "Helpers/Witness/PiCond.lean",
+      "line": 21,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseDataMeasure_map_AX",
+          "statement": "/-- Under a valid two-point outcome construction, marginalizing the witness data law\nto treatment and covariates gives exactly the witness treatment-covariate measure. -/\nlemma doseDataMeasure_map_AX {p0 : (Fin d → ℝ) → ℝ} {q0 : ℝ → ℝ}\n    {B alpha t0 lambda h zeta : ℝ}\n    (hB : 0 < B)\n    (hmu : ∀ a x, |doseWitnessMu (d := d) alpha t0 lambda h zeta a x| ≤ B) :\n    (doseDataMeasure (d := d) p0 q0 B alpha t0 lambda h zeta).map\n        (fun O : DoseObs d => (O.A, O.X)) = doseAXMeasure (d := d) p0 q0"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitnessMu",
+          "statement": "/-- The witness conditional mean is a localized treatment bump with amplitude\ngiven by the product of the sign, scale, bandwidth power, and smoothness constant. -/\nnoncomputable def doseWitnessMu {d : ℕ} (alpha t0 lambda h zeta : ℝ) :\n    ℝ → (Fin d → ℝ) → ℝ :=\n  fun a _x => zeta * lambda * h ^ alpha * doseBump ((a - t0) / h)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseDataMeasure",
+          "statement": "/-- The witness data law samples covariates, then treatment, and then a two-point\noutcome distribution whose mean is the witness conditional mean. -/\nnoncomputable def doseDataMeasure {d : ℕ}\n    (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ)\n    (B alpha t0 lambda h zeta : ℝ) : Measure (DoseObs d) :=\n  (doseXMeasure p0).bind fun x =>\n    (doseAMeasure q0).bind fun a =>\n      (twoPointMean B (doseWitnessMu (d := d) alpha t0 lambda h zeta a x)).map\n        (fun y => DoseObs.mk y a x)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseAXMeasure",
+          "statement": "/-- The joint treatment-covariate measure first samples covariates from their witness\nmeasure and then samples treatment from its witness measure. -/\nnoncomputable def doseAXMeasure {d : ℕ}\n    (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ) :\n    Measure (ℝ × (Fin d → ℝ)) :=\n  (doseXMeasure p0).bind fun x =>\n    (doseAMeasure q0).map fun a => (a, x)"
+        }
+      ]
+    },
+    "dose-ax-product": {
+      "decl": "(composite)",
+      "file": "Helpers/Witness/PiCond.lean",
+      "line": 71,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseAXMeasure_eq_prod",
+          "statement": "/-- The witness treatment-covariate measure is the product of the treatment measure\nand the covariate measure. -/\nlemma doseAXMeasure_eq_prod {p0 : (Fin d → ℝ) → ℝ} {q0 : ℝ → ℝ} :\n    doseAXMeasure (d := d) p0 q0 = (doseAMeasure q0).prod (doseXMeasure p0)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseAXMeasure",
+          "statement": "/-- The joint treatment-covariate measure first samples covariates from their witness\nmeasure and then samples treatment from its witness measure. -/\nnoncomputable def doseAXMeasure {d : ℕ}\n    (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ) :\n    Measure (ℝ × (Fin d → ℝ)) :=\n  (doseXMeasure p0).bind fun x =>\n    (doseAMeasure q0).map fun a => (a, x)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseAMeasure",
+          "statement": "/-- The witness treatment measure is Lebesgue measure on the unit treatment interval\nweighted by the treatment density. -/\nnoncomputable def doseAMeasure (q0 : ℝ → ℝ) : Measure ℝ :=\n  (volume.restrict (Set.Icc (0 : ℝ) 1)).withDensity fun a => ENNReal.ofReal (q0 a)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseXMeasure",
+          "statement": "/-- The witness covariate measure is Lebesgue measure on the unit covariate cube\nweighted by the covariate density. -/\nnoncomputable def doseXMeasure {d : ℕ} (p0 : (Fin d → ℝ) → ℝ) :\n    Measure (Fin d → ℝ) :=\n  (volume.restrict (cube d)).withDensity fun x => ENNReal.ofReal (p0 x)"
+        }
+      ]
+    },
+    "dose-ax-density": {
+      "decl": "(composite)",
+      "file": "Helpers/Witness/PiCond.lean",
+      "line": 96,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseAXMeasure_density",
+          "statement": "/-- If the treatment density is nonnegative and both component densities integrate to\none, then the joint treatment-covariate measure has product density. -/\nlemma doseAXMeasure_density {p0 : (Fin d → ℝ) → ℝ} {q0 : ℝ → ℝ}\n    (hq0_nonneg : ∀ a, 0 ≤ q0 a)\n    (hp0_int : (∫ x in cube d, p0 x) = 1)\n    (hq0_int : (∫ a in Set.Icc (0 : ℝ) 1, q0 a) = 1) :\n    doseAXMeasure (d := d) p0 q0 =\n      ((volume.restrict (Set.Icc (0 : ℝ) 1)).prod (volume.restrict (cube d))).withDensity\n        (fun p => ENNReal.ofReal (q0 p.1 * p0 p.2))"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseAXMeasure",
+          "statement": "/-- The joint treatment-covariate measure first samples covariates from their witness\nmeasure and then samples treatment from its witness measure. -/\nnoncomputable def doseAXMeasure {d : ℕ}\n    (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ) :\n    Measure (ℝ × (Fin d → ℝ)) :=\n  (doseXMeasure p0).bind fun x =>\n    (doseAMeasure q0).map fun a => (a, x)"
+        }
+      ]
+    },
+    "dose-witness-pi-cond": {
+      "decl": "(composite)",
+      "file": "Helpers/Witness/PiCond.lean",
+      "line": 131,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitness_piCond",
+          "statement": "/-- Under the stated positivity, normalization, and bounded-mean assumptions, the\nwitness treatment density is a valid conditional treatment density for the witness law. -/\nlemma doseWitness_piCond {p0 : (Fin d → ℝ) → ℝ} {q0 : ℝ → ℝ}\n    {B alpha t0 lambda h zeta : ℝ}\n    (hB : 0 < B)\n    (hq0_nonneg : ∀ a, 0 ≤ q0 a)\n    (hp0_int : (∫ x in cube d, p0 x) = 1)\n    (hq0_int : (∫ a in Set.Icc (0 : ℝ) 1, q0 a) = 1)\n    (hmu : ∀ a x, |doseWitnessMu (d := d) alpha t0 lambda h zeta a x| ≤ B) :\n    PiIsCondTreatmentDensity (doseWitness (d := d) p0 q0 B alpha t0 lambda h zeta)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitnessMu",
+          "statement": "/-- The witness conditional mean is a localized treatment bump with amplitude\ngiven by the product of the sign, scale, bandwidth power, and smoothness constant. -/\nnoncomputable def doseWitnessMu {d : ℕ} (alpha t0 lambda h zeta : ℝ) :\n    ℝ → (Fin d → ℝ) → ℝ :=\n  fun a _x => zeta * lambda * h ^ alpha * doseBump ((a - t0) / h)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.PiIsCondTreatmentDensity",
+          "statement": "/-- **Semantic tie / range-normalization (`π_P` is the conditional treatment density).**\nThe pushforward of the data law under `(A,X)` equals the measure with joint density\n`(a,x) ↦ π_P(a∣x)·p_{X,P}(x)` w.r.t. Lebesgue on `[0,1]×[0,1]^d`. Together with\n`PxIsXDensity` (the `X`-marginal is `p_{X,P}·Leb`) this pins `π_P(·∣x)` to be the GENUINE\nconditional density of `A` given `X = x` under `P` — it is normalized\n(`∫_{[0,1]} π_P(a∣x) da = 1` for `P_X`-a.e. `x`, forced by consistency of the joint with\nits `X`-marginal) and tied to `dataMeasure`. Without it the `pi` field is disconnected\nfrom `dataMeasure`, so the class `P_{α,β,s}` would be strictly BROADER than the paper\nclass (an arbitrary `π` field satisfying only the Hölder/positivity atoms, never required\nto be the law's actual treatment density). The core symbol `pi_P(a∣x)` is *defined* as the\nconditional density of `A` given `X = x` under `P`, so this tie is exactly the note's\nstated meaning of `π_P`, not an added restriction. The leading conjunct ENFORCES the\ndeclared density range `0 ≤ π_P` on `[0,1]×[0,1]^d`: with it `ENNReal.ofReal (π_P·p_{X,P})`\ngenuinely equals `π_P·p_{X,P}` (both factors nonnegative, using `PxHolder`'s `0 ≤ p_{X,P}`),\nso the tie realizes the ACTUAL nonnegative conditional treatment density object, not only\nits `ofReal` positive part.\n@realizes pi_P(`0 ≤ π_P` on `[0,1]×cube` enforcing the declared range `[0,∞)`, AND `P.dataMeasure.map (A,X) = (Leb↾[0,1] ⊗ Leb↾[0,1]^d).withDensity (π_P·p_{X,P})`; together the range-clause + joint-factorization tie pin `pi` to the law's genuine nonnegative conditional treatment density) -/\ndef PiIsCondTreatmentDensity {d : ℕ} (P : DoseLaw d) : Prop :=\n  (∀ a ∈ Set.Icc (0 : ℝ) 1, ∀ x ∈ cube d, 0 ≤ P.pi a x) ∧   -- @realizes pi_P(0 ≤ pi_P on [0,1]×cube; enforces the declared density range [0,∞), so the `ofReal` joint-density tie realizes the actual nonnegative conditional treatment density)\n    P.dataMeasure.map (fun O => (O.A, O.X))\n      = ((volume.restrict (Set.Icc (0 : ℝ) 1)).prod (volume.restrict (cube d))).withDensity\n          (fun p => ENNReal.ofReal (P.pi p.1 p.2 * P.px p.2))"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitness",
+          "statement": "/-- The witness law packages the explicit data law, covariate law, conditional mean,\ntreatment density, covariate density, and potential-outcome process into one model. -/\nnoncomputable def doseWitness {d : ℕ}\n    (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ)\n    (B alpha t0 lambda h zeta : ℝ) : DoseLaw d where\n  dataMeasure := doseDataMeasure p0 q0 B alpha t0 lambda h zeta\n  PX := doseXMeasure p0\n  mu := doseWitnessMu alpha t0 lambda h zeta\n  pi := fun a _x => q0 a\n  px := p0\n  pot := dosePotential alpha t0 lambda h zeta"
+        }
+      ]
+    },
+    "dose-witness-mu-regression": {
+      "decl": "(composite)",
+      "file": "Helpers/Witness/Regression.lean",
+      "line": 307,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitness_muReg",
+          "statement": "/-- **Semantic tie 1 (genuine regression).** Under the genuine joint law, the\nconditional mean of `Y` given `(A,X)` equals `μ_ζ(A,X)`, because the outcome channel\n`twoPointMean B (μ_ζ(a,x))` has mean exactly `μ_ζ(a,x)`. This forbids the Dirac/\ndecoupled laundering: `μ` is the real regression of the data law. -/\nlemma doseWitness_muReg {p0 : (Fin d → ℝ) → ℝ} {q0 : ℝ → ℝ}\n    {B M alpha t0 lambda h zeta : ℝ}\n    (hB : 0 < B) (hBM : |B| ≤ M)\n    (hpX : IsProbabilityMeasure (doseXMeasure p0))\n    (hpA : IsProbabilityMeasure (doseAMeasure q0))\n    (hmu : ∀ a x, |doseWitnessMu (d := d) alpha t0 lambda h zeta a x| ≤ B) :\n    MuIsRegression (doseWitness (d := d) p0 q0 B alpha t0 lambda h zeta)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseXMeasure",
+          "statement": "/-- The witness covariate measure is Lebesgue measure on the unit covariate cube\nweighted by the covariate density. -/\nnoncomputable def doseXMeasure {d : ℕ} (p0 : (Fin d → ℝ) → ℝ) :\n    Measure (Fin d → ℝ) :=\n  (volume.restrict (cube d)).withDensity fun x => ENNReal.ofReal (p0 x)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseAMeasure",
+          "statement": "/-- The witness treatment measure is Lebesgue measure on the unit treatment interval\nweighted by the treatment density. -/\nnoncomputable def doseAMeasure (q0 : ℝ → ℝ) : Measure ℝ :=\n  (volume.restrict (Set.Icc (0 : ℝ) 1)).withDensity fun a => ENNReal.ofReal (q0 a)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitnessMu",
+          "statement": "/-- The witness conditional mean is a localized treatment bump with amplitude\ngiven by the product of the sign, scale, bandwidth power, and smoothness constant. -/\nnoncomputable def doseWitnessMu {d : ℕ} (alpha t0 lambda h zeta : ℝ) :\n    ℝ → (Fin d → ℝ) → ℝ :=\n  fun a _x => zeta * lambda * h ^ alpha * doseBump ((a - t0) / h)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.MuIsRegression",
+          "statement": "/-- **Semantic tie (`μ` is the data regression).** The conditional mean of `Y` given\n`(A,X)` under the data law equals `μ_P(A,X)`. This pins the free `mu` field to the\nactual law, so `thetaFunctional = ∫ μ_P(t_0,·)·p_{X,P}` is the GENUINE causal value\n`E_P[Y(t_0)]` (under consistency + ignorability). Without it `mu` is disconnected from\n`dataMeasure`, which permits a vacuous two-point construction (a Dirac data law with\nthe separation carried only by the free `mu`); enforcing it makes `minimaxRisk` the\ntrue causal minimax risk. -/\ndef MuIsRegression {d : ℕ} (P : DoseLaw d) : Prop :=\n  P.dataMeasure[(fun O => O.Y) |\n      MeasurableSpace.comap (fun O : DoseObs d => (O.A, O.X)) inferInstance]\n    =ᵐ[P.dataMeasure] (fun O => P.mu O.A O.X)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitness",
+          "statement": "/-- The witness law packages the explicit data law, covariate law, conditional mean,\ntreatment density, covariate density, and potential-outcome process into one model. -/\nnoncomputable def doseWitness {d : ℕ}\n    (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ)\n    (B alpha t0 lambda h zeta : ℝ) : DoseLaw d where\n  dataMeasure := doseDataMeasure p0 q0 B alpha t0 lambda h zeta\n  PX := doseXMeasure p0\n  mu := doseWitnessMu alpha t0 lambda h zeta\n  pi := fun a _x => q0 a\n  px := p0\n  pot := dosePotential alpha t0 lambda h zeta"
         }
       ]
     },
     "dose-witness-ignorability": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 0,
+      "file": "Helpers/Witness/Regression.lean",
+      "line": 375,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
         {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitness_ignorability",
+          "statement": "/-- **Semantic tie 2 (ignorability).** The potential outcome `Y(a)` equals the\nregression mean `μ_ζ(a,X)` almost surely (the realized `A` hits the fixed level `a`\nonly on a `q0`-null set), so `Y(a)` is `X`-measurable and `Y(a) ⟂ A | X`. -/\nlemma doseWitness_ignorability {p0 : (Fin d → ℝ) → ℝ} {q0 : ℝ → ℝ}\n    {B alpha t0 lambda h zeta : ℝ}\n    (hB : 0 < B)\n    (hpX : IsProbabilityMeasure (doseXMeasure p0))\n    (hpA : IsProbabilityMeasure (doseAMeasure q0))\n    (hmu : ∀ a x, |doseWitnessMu (d := d) alpha t0 lambda h zeta a x| ≤ B) :\n    NoUnmeasuredConfounding (doseWitness (d := d) p0 q0 B alpha t0 lambda h zeta)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseXMeasure",
+          "statement": "/-- The witness covariate measure is Lebesgue measure on the unit covariate cube\nweighted by the covariate density. -/\nnoncomputable def doseXMeasure {d : ℕ} (p0 : (Fin d → ℝ) → ℝ) :\n    Measure (Fin d → ℝ) :=\n  (volume.restrict (cube d)).withDensity fun x => ENNReal.ofReal (p0 x)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseAMeasure",
+          "statement": "/-- The witness treatment measure is Lebesgue measure on the unit treatment interval\nweighted by the treatment density. -/\nnoncomputable def doseAMeasure (q0 : ℝ → ℝ) : Measure ℝ :=\n  (volume.restrict (Set.Icc (0 : ℝ) 1)).withDensity fun a => ENNReal.ofReal (q0 a)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitnessMu",
+          "statement": "/-- The witness conditional mean is a localized treatment bump with amplitude\ngiven by the product of the sign, scale, bandwidth power, and smoothness constant. -/\nnoncomputable def doseWitnessMu {d : ℕ} (alpha t0 lambda h zeta : ℝ) :\n    ℝ → (Fin d → ℝ) → ℝ :=\n  fun a _x => zeta * lambda * h ^ alpha * doseBump ((a - t0) / h)"
+        },
+        {
           "label": "CausalSmith.Stat.DoseResponseMinimax.NoUnmeasuredConfounding",
           "statement": "/-- Conditional ignorability for the continuous treatment: for every level\n`a ∈ [0,1]`, the potential outcome `Y(a)` is independent of `A` given `X` under `P`\n(the note restricts the dose to the treatment range `[0,1]`). Encoded in\nthe faithful tested form `E[f(Y(a)) ∣ A, X] = E[f(Y(a)) ∣ X]` for every bounded\nmeasurable test `f` of the potential outcome (the standard conditional-independence\ncharacterization, no `StandardBorelSpace` requirement). -/\ndef NoUnmeasuredConfounding {d : ℕ} (P : DoseLaw d) : Prop :=\n  ∀ a ∈ Set.Icc (0 : ℝ) 1,\n    Measurable (P.pot a) ∧\n    ∀ (f : ℝ → ℝ), Measurable f → (∃ Mf : ℝ, ∀ y, |f y| ≤ Mf) →\n      Integrable (fun O => f (P.pot a O)) P.dataMeasure ∧\n      P.dataMeasure[(fun O => f (P.pot a O)) |\n          MeasurableSpace.comap (fun O : DoseObs d => (O.A, O.X)) inferInstance]\n        =ᵐ[P.dataMeasure]\n      P.dataMeasure[(fun O => f (P.pot a O)) |\n          MeasurableSpace.comap (fun O : DoseObs d => O.X) inferInstance]"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitness",
+          "statement": "/-- The witness law packages the explicit data law, covariate law, conditional mean,\ntreatment density, covariate density, and potential-outcome process into one model. -/\nnoncomputable def doseWitness {d : ℕ}\n    (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ)\n    (B alpha t0 lambda h zeta : ℝ) : DoseLaw d where\n  dataMeasure := doseDataMeasure p0 q0 B alpha t0 lambda h zeta\n  PX := doseXMeasure p0\n  mu := doseWitnessMu alpha t0 lambda h zeta\n  pi := fun a _x => q0 a\n  px := p0\n  pot := dosePotential alpha t0 lambda h zeta"
         }
       ]
     },
     "dose-witness-theta": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 0,
+      "file": "Helpers/Witness/Theta.lean",
+      "line": 19,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
         {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitness_theta",
+          "statement": "/-- For a normalized covariate density, the witness target value at the center\ntreatment equals the signed bump amplitude. -/\nlemma doseWitness_theta {d : ℕ} (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ)\n    (B alpha t0 lambda h zeta : ℝ)\n    (hp0_int : (∫ x in cube d, p0 x) = 1) :\n    thetaFunctional (doseWitness (d := d) p0 q0 B alpha t0 lambda h zeta) t0 =\n      zeta * lambda * h ^ alpha"
+        },
+        {
           "label": "CausalSmith.Stat.DoseResponseMinimax.thetaFunctional",
           "statement": "/-- Identifying partial-mean (backdoor-adjustment) functional\n`θ_P(t_0) = ∫_{[0,1]^d} μ_P(t_0,x) p_{X,P}(x) dx` (Lebesgue). Under consistency and\nignorability this equals the causal dose-response value `E_P[Y(t_0)]`. -/\nnoncomputable def thetaFunctional {d : ℕ} (P : DoseLaw d) (t0 : ℝ) : ℝ :=\n  ∫ x in cube d, P.mu t0 x * P.px x"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitness",
+          "statement": "/-- The witness law packages the explicit data law, covariate law, conditional mean,\ntreatment density, covariate density, and potential-outcome process into one model. -/\nnoncomputable def doseWitness {d : ℕ}\n    (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ)\n    (B alpha t0 lambda h zeta : ℝ) : DoseLaw d where\n  dataMeasure := doseDataMeasure p0 q0 B alpha t0 lambda h zeta\n  PX := doseXMeasure p0\n  mu := doseWitnessMu alpha t0 lambda h zeta\n  pi := fun a _x => q0 a\n  px := p0\n  pot := dosePotential alpha t0 lambda h zeta"
         }
       ]
     },
     "dose-witness-theta-sep": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 0,
+      "file": "Helpers/Witness/Theta.lean",
+      "line": 34,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
         {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitness_theta_sep",
+          "statement": "/-- For a normalized covariate density, the separation between the positive and\nnegative witness target values is twice the bump amplitude without the sign. -/\nlemma doseWitness_theta_sep {d : ℕ} (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ)\n    (B alpha t0 lambda h : ℝ)\n    (hp0_int : (∫ x in cube d, p0 x) = 1) :\n    thetaFunctional (doseWitness (d := d) p0 q0 B alpha t0 lambda h 1) t0 -\n      thetaFunctional (doseWitness (d := d) p0 q0 B alpha t0 lambda h (-1)) t0 =\n      2 * lambda * h ^ alpha"
+        },
+        {
           "label": "CausalSmith.Stat.DoseResponseMinimax.thetaFunctional",
           "statement": "/-- Identifying partial-mean (backdoor-adjustment) functional\n`θ_P(t_0) = ∫_{[0,1]^d} μ_P(t_0,x) p_{X,P}(x) dx` (Lebesgue). Under consistency and\nignorability this equals the causal dose-response value `E_P[Y(t_0)]`. -/\nnoncomputable def thetaFunctional {d : ℕ} (P : DoseLaw d) (t0 : ℝ) : ℝ :=\n  ∫ x in cube d, P.mu t0 x * P.px x"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.doseWitness",
+          "statement": "/-- The witness law packages the explicit data law, covariate law, conditional mean,\ntreatment density, covariate density, and potential-outcome process into one model. -/\nnoncomputable def doseWitness {d : ℕ}\n    (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ)\n    (B alpha t0 lambda h zeta : ℝ) : DoseLaw d where\n  dataMeasure := doseDataMeasure p0 q0 B alpha t0 lambda h zeta\n  PX := doseXMeasure p0\n  mu := doseWitnessMu alpha t0 lambda h zeta\n  pi := fun a _x => q0 a\n  px := p0\n  pot := dosePotential alpha t0 lambda h zeta"
         }
       ]
+    },
+    "map-bind-map-proj": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.map_bind_map_proj",
+      "file": "Helpers/Witness/Base.lean",
+      "line": 116,
+      "statement": "/-- Base-coordinate marginal of a `bind` whose fibre is reattached by a map. -/\nlemma map_bind_map_proj {α β δ : Type*}\n    [MeasurableSpace α] [MeasurableSpace β] [MeasurableSpace δ]\n    {m : Measure α} {κ : α → Measure β} {g : α → β → δ} {π : δ → α}\n    (_hκ : Measurable κ) (hp : ∀ a, IsProbabilityMeasure (κ a))\n    (hg : ∀ a, Measurable (g a))\n    (hmap : Measurable fun a => (κ a).map (g a))\n    (hπ : Measurable π) (hπg : ∀ a b, π (g a b) = a) :\n    (m.bind fun a => (κ a).map (g a)).map π = m",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "dose-witness-mu": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.doseWitnessMu",
+      "file": "Helpers/Witness/Core.lean",
+      "line": 68,
+      "statement": "/-- The witness conditional mean is a localized treatment bump with amplitude\ngiven by the product of the sign, scale, bandwidth power, and smoothness constant. -/\nnoncomputable def doseWitnessMu {d : ℕ} (alpha t0 lambda h zeta : ℝ) :\n    ℝ → (Fin d → ℝ) → ℝ :=\n  fun a _x => zeta * lambda * h ^ alpha * doseBump ((a - t0) / h)",
+      "sorry_free": true,
+      "axioms": null
     }
   }
 }

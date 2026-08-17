@@ -1,32 +1,220 @@
 \begin{proof}[Proof of \cref{obj:lem:light-cell-polynomial}]
-The computability assertion is obtained by expanding the hybrid rule of \cref{obj:def:hybrid-estimator-handle} into a real-arithmetic expression tree, including the threshold comparisons and the final truncation.  The resulting program reads the hybrid count vector, evaluates exactly \(\widehat\tau_n^{\mathrm{hyb}}\), and has operation count bounded by \(450\,d\,M(n)^4\).  Thus the first assertion holds with the universal constant \(K=450\).
+\emph{Computability.}  The program reads the \(8d\) split counts \(N^{(j)}_{aky}\) of \cref{obj:def:split-cell-counts} and evaluates the expression tree obtained by transcribing \cref{obj:def:hybrid-estimator-handle} literally; a ratio with vanishing denominator returns \(0\), which is what the indicators \(\mathbf1\{N^{(1)}_{ak}>0\}\) in \(\widehat h_k\) prescribe.  We count one operation for each arithmetic operation and each comparison, and none for reading an input or a constant.  Recall \(M=M(n)\ge2\).
+% lean: hybridEstimatorComputable, hybridArithmeticProgram, hybridArithmeticProgram_eval
+Building up from the innermost term:
+\begin{itemize}
+\item a falling factorial \((N^{(1)}_{aky})_{r_{ay}}\) costs \(4r_{ay}\) operations, four per factor \(N^{(1)}_{aky}-\ell\); the four-cell product followed by the division by \((m_1)_{|r|}\) therefore makes one factorial monomial \(\prod_{a,y}(N^{(1)}_{aky})_{r_{ay}}/(m_1)_{|r|}\) cost \(4|r|+5\) operations;
+% lean: operationCount_fallingExpression, operationCount_factorialMonomialExpression
+\item the monomials that occur in the expansion of \(P_{M,B}\) are indexed by an arm \(a\), a cell \((a',y')\), and integers \(0\le t\le j\le M-2\), and the corresponding multi-index has \(|r|=j+2\), so one coefficient-times-monomial term costs \(4j+14\) operations;
+% lean: multiDegree_hybridTermIndex, operationCount_factorialTerm
+\item summing the four cells costs \(16j+60\le 50M\); summing over \(t\le j\) costs at most \(M(50M+1)\le51M^2\); summing over \(j\le M-2\) costs at most \((M-1)(51M^2+1)\le52M^3\); hence each arm costs at most \(52M^3\), and \(\widehat P_k=\)\,(arm \(1\))\,\(-\)\,(arm \(0\)) costs at most \(2\cdot52M^3+1\le105M^4\);
+% lean: operationCount_armFactorialExpression_le, operationCount_lightCellExpression_le
+\item for one category \(k\), forming the pilot count \(\sum_{a,y}N^{(0)}_{aky}\) costs \(4\), comparing it with \(\lambda_0L\) costs \(2\), and the ratio contribution \(\widehat h_k\) costs \(11\); so a category costs at most \(105M^4+17\le110M^4\) when \(n\ge N_0\), and exactly \(11\le110M^4\) when \(n<N_0\), where every category takes the ratio branch;
+% lean: operationCount_heavyCellExpression, operationCount_selectedCellExpression_le
+\item adding the \(d\) category contributions costs at most \(d\cdot110M^4+d\le111\,dM^4\), and the truncation \(\max\{-1,\min(1,\cdot)\}\) multiplies the count by four and adds six, giving at most \(4\cdot111\,dM^4+6\le450\,dM^4\) because \(dM^4\ge1\).
+% lean: operationCount_untruncatedHybridExpression_le, operationCount_clampExpression, operationCount_hybridExpression_le
+\end{itemize}
+For \(d=0\) the program is the constant \(0\) and costs nothing.  In both cases the program returns \(\widehat\tau_n^{\mathrm{hyb}}\) exactly, so the first assertion holds with the universal constant \(K=450\).
+% lean: hybridEstimatorComputable
 
-For the risk bound, take
+\emph{Risk bound.}  Write \(\mathsf r_{n,d}=1/n+d^2/\{n^2(\log n)^2\}\) for the target rate, put
 \[
 K_c=4(e+1)8192^2+16\cdot8192^2,\qquad
 K_b=\left(\frac{65536}{\epsilon\alpha_0^2}\right)^2,\qquad
-K_f=8(e+1)8192^2
+K_f=8(e+1)8192^2,
 \]
-and \(C_\epsilon=3(K_c+K_b+K_f)\), while \(c_\epsilon=1\).  These constants are positive and depend only on \(\epsilon\).
-After replacing the sample law by \(P^{\otimes n}\) using \cref{obj:def:experiment-class}, split into the two cases \(n\ge N_0\) and \(n<N_0\).  If \(n<N_0\), the light set is empty by construction, so both \(\widehat T_{\mathcal L}\) and its target sum vanish and the bound is immediate from nonnegativity of the rate.
+and take \(C_\epsilon=3(K_c+K_b+K_f)\) and \(c_\epsilon=1\).  These are positive and depend only on \(\epsilon\), since \(\alpha_0\) is the numerical constant of \cref{obj:def:hybrid-estimator-handle}.
+% lean: light_cell_polynomial
+Fix \(n,d,P\) and a sample law in \(\mathcal E_{n,d,\epsilon}\); by \cref{obj:def:experiment-class} that law is \(P^{\otimes n}\) and \(P\) obeys \cref{obj:ass:overlap} with constant \(\epsilon\).  All expectations below are under \(P^{\otimes n}\), equivalently under the law of an infinite iid sequence with marginal \(P\), because every integrand depends only on \(O_1,\ldots,O_n\); all of them are finite sums over a finite sample space, so every expectation exists and integration is linear and monotone.
+% lean: light_integral_productLaw_eq_infinite
 
-Assume now \(n\ge N_0\).  The light error decomposes pointwise as
+If \(n<N_0\), then \(\widehat{\mathcal L}_n=\varnothing\) by \cref{obj:def:hybrid-estimator-handle}, so \(\widehat T_{\mathcal L}=0\) and \(\sum_{k\in\widehat{\mathcal L}_n}\phi(q_k)=0\); the left-hand side vanishes and \(C_\epsilon\mathsf r_{n,d}\ge0\).
+% lean: lightCells_eq_empty_of_lt_cutoff
+
+Assume from now on \(n\ge N_0\), so that the three calibration inequalities of \cref{obj:def:hybrid-estimator-handle} are available:
+\[
+\alpha_0L\ge2,\qquad 4M^2\le m_1,\qquad \frac{4M}{m_1}\le\frac{3B}4 .
+\]
+% lean: cutoffProperty, calibrationCutoff
+Four consequences are used repeatedly.  First, \(D_A=8\log(27/4)>8\) because \(\log(27/4)>1\), hence \(\alpha_0\le1/(256D_A)\le1/120\) and therefore
+\[
+L\ \ge\ \frac2{\alpha_0}\ \ge\ 240 .
+\]
+% lean: cutoff_logScale_ge_240
+Second, \(m_1=n-\lfloor n/2\rfloor\ge n/2\), so
+\[
+B=\frac{4096\,L}{m_1}\le\frac{8192\,L}{n},
+\qquad\text{and}\qquad
+\frac1{m_1}\le\frac2n .
+\]
+% lean: large_calibration_bounds
+Third, \(\log n\le L\le2\log n\) and \(M\le L\), and the calibration also gives the growth inequality
+\[
+6^{4M}L^6\le n .
+\]
+% lean: large_calibration_bounds, calibrated_polynomial_log_growth
+Fourth, \(\alpha_0L\ge2\) forces \(\lfloor\alpha_0L\rfloor\ge2\), so \(M=\lfloor\alpha_0L\rfloor\ge\alpha_0L-1\ge\alpha_0L/2\), i.e.
+\[
+M\ \ge\ \frac{\alpha_0L}2 .
+\]
+% lean: polynomialDegree_lower_half
+
+\emph{The three error terms.}  Split the categories by their population mass into the deterministic sets
+\[
+\mathcal G_n=\left\{k\in\{1,\ldots,d\}:p_k\le B/4\right\},
+\qquad
+\mathcal G_n^{c}=\left\{k\in\{1,\ldots,d\}:p_k>B/4\right\},
+\]
+the genuinely light categories and the rest; \(\mathcal G_n\) depends on \(P\) only, whereas the selected set \(\widehat{\mathcal L}_n\) is random.
+% lean: genuineLightSet, falseLightSet
+Every factorial monomial appearing in \(\widehat P_k\) has multi-index of total order at most \(M\le4M^2\le m_1\), and for \(|r|\le m_1\) the ratio \(\prod_{a,y}(N^{(1)}_{aky})_{r_{ay}}/(m_1)_{|r|}\) is an unbiased estimator of the monomial \(\prod_{a,y}q_{aky}^{r_{ay}}\); summing the expansion of \(P_{M,B}\) term by term therefore gives, for every category \(k\),
+\[
+E_{P^{\otimes n}}\left[\widehat P_k\right]=P_{M,B}(q_k).
+\]
+% lean: integral_factorialPolynomialContribution_trunc, sparsePolynomialMean_eq_cellApprox
+Define
+\begin{align*}
+X&=\sum_{k\in\mathcal G_n}\mathbf1\{k\in\widehat{\mathcal L}_n\}
+\left\{\widehat P_k-P_{M,B}(q_k)\right\},\\
+Y&=\sum_{k\in\mathcal G_n}\mathbf1\{k\in\widehat{\mathcal L}_n\}
+\left\{P_{M,B}(q_k)-\phi(q_k)\right\},\\
+Z&=\sum_{k\in\mathcal G_n^{c}}\mathbf1\{k\in\widehat{\mathcal L}_n\}
+\left\{\widehat P_k-\phi(q_k)\right\}.
+\end{align*}
+Since the selection indicator annihilates the categories outside \(\widehat{\mathcal L}_n\), splitting the sum over all categories at \(\mathcal G_n\) and inserting \(\pm P_{M,B}(q_k)\) on \(\mathcal G_n\) gives the pointwise identity
 \[
 \widehat T_{\mathcal L}-\sum_{k\in\widehat{\mathcal L}_n}\phi(q_k)
-=
-X+Y+Z,
+=\sum_{k=1}^{d}\mathbf1\{k\in\widehat{\mathcal L}_n\}\left\{\widehat P_k-\phi(q_k)\right\}
+=X+Y+Z .
 \]
-where \(X\) is the centered fixed-light factorial-polynomial term on genuinely light cells, \(Y\) is the selected genuine-light approximation bias, and \(Z\) is the selected false-light error.
-The centered term has second moment at most \(K_c\{n^{-1}+d^2/(n^2\log^2 n)\}\), after transporting the finite product integral to the infinite iid product space.
-The false-light term is bounded similarly by \(K_f\{n^{-1}+d^2/(n^2\log^2 n)\}\).
-For the bias term, the definition of the genuine-light set gives each genuinely light cell mass at most \(B/4\), hence its cell vector has total mass at most \(B\).  The Chebyshev approximation bound gives the per-cell error \(2B/(\epsilon M^2)\); the light-selection indicator is bounded by one, and there are at most \(d\) cells.  The calibration inequalities then convert the squared summed bias into
+% lean: light_error_decompose
+
+\emph{Bound for \(X\).}  Every \(k\in\mathcal G_n\) satisfies \(p_k+4M/m_1\le B/4+3B/4=B\) by the third calibration inequality, and \(4M^2\le m_1\); for such categories the factorial-moment estimator obeys the variance and covariance bounds
+\begin{align*}
+E_{P^{\otimes n}}\left[\left\{\widehat P_k-P_{M,B}(q_k)\right\}^2\right]
+&\le8(e+1)\left(B6^M\right)^2,\\
+E_{P^{\otimes n}}\left[\left\{\widehat P_k-P_{M,B}(q_k)\right\}
+\left\{\widehat P_l-P_{M,B}(q_l)\right\}\right]
+&\le\frac{8M^2}{m_1}\left(B6^M\right)^2
+\end{align*}
+for \(k\ne l\), the factor \(6^M\) being the coefficient envelope of \(P_{M,B}\) on categories of mass at most \(B\).
+% lean: integral_factorialPolynomial_centered_sq_le, integral_factorialPolynomial_centered_cross_le
+The selection indicators are measurable functions of the pilot split \(I_0\) and the centered errors are functions of the estimation split \(I_1\), so the two factor in each pairwise expectation, and the indicator factor lies in \([0,1]\); expanding \(X^2\) into its \(|\mathcal G_n|^2\) pairs and using \(|\mathcal G_n|\le d\) gives
 \[
-Y^2\le K_b\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\}
+E_{P^{\otimes n}}\left[X^2\right]
+\le |\mathcal G_n|\cdot8(e+1)\left(B6^M\right)^2+|\mathcal G_n|^2\cdot\frac{8M^2}{m_1}\left(B6^M\right)^2
+\le 8(e+1)8192^2\,\frac{d\,L^26^{2M}}{n^2}+16\cdot8192^2\,\frac{d^2L^46^{2M}}{n^3},
 \]
-pointwise, and integrating preserves the same bound.
-Finally,
+where the second step used \(B\le8192L/n\), \(M\le L\) and \(1/m_1\le2/n\).
+% lean: selectedFixedLightCentered_second_moment_le
+The growth inequality \(6^{4M}L^6\le n\) together with \(0<\log n\le L\) converts these into rate terms,
 \[
-(X+Y+Z)^2\le 3(X^2+Y^2+Z^2),
+\frac{d\,L^26^{2M}}{n^2}\le\frac{\mathsf r_{n,d}}2,
+\qquad
+\frac{d^2L^46^{2M}}{n^3}\le\mathsf r_{n,d},
 \]
-so adding the three estimates gives the asserted inequality with \(C_\epsilon\).
+% lean: diagonal_rate_algebra, cross_rate_algebra
+so that
+\[
+E_{P^{\otimes n}}\left[X^2\right]\le K_c\,\mathsf r_{n,d}.
+\]
+% lean: selectedGenuineLightCentered_rate
+
+\emph{Bound for \(Y\).}  Fix \(k\in\mathcal G_n\).  The four-cell vector \(q_k\) has total mass \(s(q_k)=p_k\le B/4\le B\), and it lies in the cone \(\mathcal C_\epsilon\) of \cref{obj:def:overlap-cone}: on categories with \(p_k>0\) this is \cref{obj:ass:overlap} written as \(\epsilon s(q_k)\le s_1(q_k)\le(1-\epsilon)s(q_k)\), and on categories with \(p_k=0\) all four coordinates vanish.
+% lean: cellVector_mem_overlapCone
+The Chebyshev polynomial of \cref{obj:def:chebyshev-polynomial} satisfies \(T_M(1-2x)=1-2M^2x+2M^2x^2G_M(x)\) for the continuation \(G_M\) of \cref{obj:def:hybrid-estimator-handle}, and \(|T_M|\le1\) on \([-1,1]\), whence the reciprocal-approximation certificate
+\[
+x\left|1-xG_M(x)\right|\le\frac1{M^2},\qquad 0\le x\le1 .
+\]
+% lean: chebyshev_gPolynomial_identity, gPolynomial_certificate
+Applying it at \(x=s_a(u)/B\in[0,1]\) for each arm \(a\), and using \(t_a(u)\le s_a(u)\) and \(s_a(u)\ge\epsilon s(u)\) from \cref{obj:def:overlap-cone}, the two arms of \(P_{M,B}\) each approximate the corresponding arm of \(\phi\) to within \(B/(\epsilon M^2)\), so
+\[
+\left|P_{M,B}(u)-\phi(u)\right|\le\frac{2B}{\epsilon M^2}
+\qquad\text{for all }u\in\mathcal C_\epsilon\text{ with }s(u)\le B .
+\]
+% lean: cellApproxPolynomial_error
+Since the selection indicator is bounded by one and \(|\mathcal G_n|\le d\), the triangle inequality gives, pointwise in the sample,
+\[
+|Y|\le\sum_{k\in\mathcal G_n}\left|P_{M,B}(q_k)-\phi(q_k)\right|\le d\,\frac{2B}{\epsilon M^2}.
+\]
+% lean: selectedGenuineLightBias_abs
+Now insert the calibration bounds \(2B\le16384L/n\) and \(M\ge\alpha_0L/2\), and then \(\log n\le L\):
+\[
+\frac{2B}{\epsilon M^2}
+\le\frac{16384\,L/n}{\epsilon\left(\alpha_0L/2\right)^2}
+=\frac{65536}{\epsilon\alpha_0^2\,nL}
+\le\frac{65536}{\epsilon\alpha_0^2\,n\log n}.
+\]
+Squaring \(|Y|\le 65536\,d/(\epsilon\alpha_0^2n\log n)\) gives, pointwise in the sample,
+\[
+Y^2\le\left(\frac{65536}{\epsilon\alpha_0^2}\right)^2\frac{d^2}{n^2(\log n)^2}\le K_b\,\mathsf r_{n,d},
+\]
+and taking expectations of a pointwise bound by a constant preserves it:
+\(E_{P^{\otimes n}}[Y^2]\le K_b\,\mathsf r_{n,d}\).
+% lean: selectedGenuineLightBias_sq_rate
+
+\emph{Bound for \(Z\).}  Fix \(k\) with \(p_k>B/4\).  Such a category is selected as light only when its pilot count on \(I_0\) falls below \(\lambda_0L\), an event of probability at most \(\exp\{-\lfloor n/2\rfloor p_k/8\}\) by the Bernoulli lower-tail estimate.
+% lean: falseLight_selection_probability
+The selection indicator is a function of \(I_0\) and the cell error a function of \(I_1\), so they factor, and the unselected second moment is controlled by the coefficient envelope of \(P_{M,B}\) at a category of mass \(p_k\):
+\[
+E_{P^{\otimes n}}\left[\mathbf1\{k\in\widehat{\mathcal L}_n\}\left\{\widehat P_k-\phi(q_k)\right\}^2\right]
+=\Pr\left(k\in\widehat{\mathcal L}_n\right)\,
+E_{P^{\otimes n}}\left[\left\{\widehat P_k-\phi(q_k)\right\}^2\right]
+\le e^{-\lfloor n/2\rfloor p_k/8}\cdot8(e+1)B^2\left\{6^M\left(1+\frac{p_k}B\right)^M\right\}^2 .
+\]
+% lean: falseLight_selection_probability, falseLight_selected_error_sq
+The pilot tail now absorbs the coefficient growth, uniformly over the whole range \(p_k>B/4\).  Write \(z=p_k/B\), so that \(z>1/4\) and hence \(1+z\le5z\) and \(6(1+z)\le30z\).  Since \(\log x\le x-1\) for \(x>0\),
+\[
+\log\left\{6(1+z)\right\}\le6(1+z)-1\le30z ,
+\]
+and this logarithm is nonnegative because \(6(1+z)\ge1\); combining with \(M\le L\) gives the growth exponent bound
+\[
+2M\log\left\{6\left(1+\frac{p_k}B\right)\right\}\le60Lz .
+\]
+For the tail exponent, \(p_k=Bz\) with \(B=4096L/m_1\), and \(m_1=n-\lfloor n/2\rfloor\le2\lfloor n/2\rfloor\), so
+\[
+\frac{\lfloor n/2\rfloor\,p_k}8
+=512Lz\,\frac{\lfloor n/2\rfloor}{m_1}
+\ge256Lz .
+\]
+Subtracting the two displays and using \(z\ge1/4\) and \(L>0\),
+\[
+-\frac{\lfloor n/2\rfloor\,p_k}8+2M\log\left\{6\left(1+\frac{p_k}B\right)\right\}
+\le-196Lz\le-49L ,
+\]
+and exponentiating gives the calibration inequality
+\[
+e^{-\lfloor n/2\rfloor p_k/8}\left\{6^M\left(1+\frac{p_k}B\right)^M\right\}^2\le e^{-49L}.
+\]
+% lean: falseLight_tail_times_growth
+Multiplying it by \(8(e+1)B^2\ge0\) therefore yields
+\[
+E_{P^{\otimes n}}\left[\mathbf1\{k\in\widehat{\mathcal L}_n\}\left\{\widehat P_k-\phi(q_k)\right\}^2\right]
+\le 8(e+1)B^2e^{-49L}.
+\]
+% lean: falseLight_selected_error_sq
+By Cauchy--Schwarz, \(Z^2\le|\mathcal G_n^{c}|\sum_{k\in\mathcal G_n^{c}}\mathbf1\{k\in\widehat{\mathcal L}_n\}\{\widehat P_k-\phi(q_k)\}^2\) pointwise, and \(|\mathcal G_n^{c}|\le d\), so
+\[
+E_{P^{\otimes n}}\left[Z^2\right]\le d^2\cdot8(e+1)B^2e^{-49L}.
+\]
+% lean: selectedFalseLightError_second_moment_le
+Since \(L\ge1\) and \(e^{L}=en\), we have \(e^{-49L}\le e^{-L}\le1/n\); with \(B\le8192L/n\) this yields
+\[
+E_{P^{\otimes n}}\left[Z^2\right]\le K_f\,\frac{d^2L^2}{n^3}\le K_f\,\mathsf r_{n,d},
+\]
+the last step because \(L^2(\log n)^2\le L^4\le6^{4M}L^6\le n\).
+% lean: selectedFalseLightError_rate
+
+\emph{Assembly.}  From \((X-Y)^2+(X-Z)^2+(Y-Z)^2\ge0\) one gets the pointwise inequality
+\[
+(X+Y+Z)^2\le3\left(X^2+Y^2+Z^2\right),
+\]
+so, taking expectations and adding the three bounds,
+\[
+E_{P^{\otimes n}}\left[\left\{\widehat T_{\mathcal L}-\sum_{k\in\widehat{\mathcal L}_n}\phi(q_k)\right\}^2\right]
+\le3\left(K_c+K_b+K_f\right)\mathsf r_{n,d}
+=C_\epsilon\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\},
+\]
+which is the asserted bound.
+% lean: light_cell_polynomial
 \end{proof}

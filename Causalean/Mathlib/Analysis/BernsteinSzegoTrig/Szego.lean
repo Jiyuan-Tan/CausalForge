@@ -312,7 +312,9 @@ theorem szego_deriv_sq_bound (R : Polynomial ℝ) (β : ℕ) (hβ : R.natDegree 
         dsimp [Sfun]
         exact szegoInterp_hasDerivAt β hβ1 Q₀ Q₁ t₀
       have hg_deriv : HasDerivAt g 0 t₀ := by
-        simpa [g, sub_self] using hQ_hasDeriv.sub hS_hasDeriv
+        have h := hQ_hasDeriv.fun_sub hS_hasDeriv
+        rw [sub_self] at h
+        exact h
       have hg_nonzero : ∃ t, g t ≠ 0 := by
         obtain ⟨φ, hφ⟩ := szegoInterp_amplitude β Q₀ Q₁ t₀
         let u : ℝ := t₀ + φ / (β : ℝ)

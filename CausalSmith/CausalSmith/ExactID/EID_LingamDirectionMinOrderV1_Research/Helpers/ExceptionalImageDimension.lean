@@ -28,6 +28,10 @@ def forwardBandFiniteMap (m L : ℕ) (x : BandParamCoord m L → ℂ) :
     RetainedCumCoord L → ℂ :=
   restrictCumBand L (forwardCumulantMap m L (decodeBandParam x))
 
+/-- Every retained cumulant coordinate of the forward map is a polynomial in
+the finitely many retained parameter coordinates, so the forward map on the
+finite band is a polynomial map.  The truncation order is assumed to be at
+least two. -/
 lemma forwardBandFiniteMap_isPolynomial (m L : ℕ) (hL : 2 ≤ L) :
     IsPolynomialMap (forwardBandFiniteMap m L) := by
   obtain ⟨coord, hcoord⟩ := forwardCumulantMap_isPolynomial m L
@@ -42,12 +46,17 @@ noncomputable def forwardBandCoordinatePolynomial (m L : ℕ) (hL : 2 ≤ L)
     (q : RetainedCumCoord L) : MvPolynomial (BandParamCoord m L) ℂ :=
   Classical.choose (forwardBandFiniteMap_isPolynomial m L hL q)
 
+/-- The chosen coordinate polynomial of a retained cumulant coordinate does
+what it is supposed to do: evaluated at any finite parameter coordinate vector
+it returns that coordinate of the forward band map. -/
 lemma eval_forwardBandCoordinatePolynomial (m L : ℕ) (hL : 2 ≤ L)
     (x : BandParamCoord m L → ℂ) (q : RetainedCumCoord L) :
     MvPolynomial.eval x (forwardBandCoordinatePolynomial m L hL q) =
       forwardBandFiniteMap m L x q :=
   Classical.choose_spec (forwardBandFiniteMap_isPolynomial m L hL q) x
 
+/-- Assembling the chosen coordinate polynomials into a single vector-valued
+map recovers exactly the forward map on the finite retained band. -/
 lemma polynomialCoordinateMap_forwardBand (m L : ℕ) (hL : 2 ≤ L) :
     polynomialCoordinateMap (forwardBandCoordinatePolynomial m L hL) =
       forwardBandFiniteMap m L := by
@@ -70,6 +79,11 @@ lemma forwardCumulantMap_decode_encodeBandParam (m L : ℕ) (hL : 2 ≤ L)
     simp [decodeBandParam, encodeBandParam, h]
   · rfl
 
+/-- The set of retained cumulant vectors produced by the finite forward map is
+exactly the retained-band restriction of the set produced by the full forward
+cumulant map.  Nothing is lost by pinning the off-band weights to zero, because
+cumulants of orders two through `L` never depend on them; the truncation order
+is assumed to be at least two. -/
 lemma range_forwardBandFiniteMap (m L : ℕ) (hL : 2 ≤ L) :
     Set.range (forwardBandFiniteMap m L) =
       restrictCumBand L '' Set.range (forwardCumulantMap m L) := by
@@ -108,6 +122,10 @@ noncomputable def forwardCommonAxisCoordinatePolynomial (m L : ℕ)
     MvPolynomial (CommonAxisBandCoord m L hm) ℂ :=
   Classical.choose (forwardCommonAxisFiniteMap_isPolynomial m L hm hL q)
 
+/-- Assembling the chosen common-axis coordinate polynomials into a single
+vector-valued map recovers exactly the forward map on the common-axis band,
+where the first latent slope is pinned to zero.  At least one latent source and
+a truncation order of at least two are assumed. -/
 lemma polynomialCoordinateMap_forwardCommonAxis (m L : ℕ)
     (hm : 1 ≤ m) (hL : 2 ≤ L) :
     polynomialCoordinateMap

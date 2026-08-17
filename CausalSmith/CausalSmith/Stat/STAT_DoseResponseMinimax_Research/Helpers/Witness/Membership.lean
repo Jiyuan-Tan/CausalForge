@@ -260,8 +260,11 @@ lemma doseWitness_mem_class {alpha beta s M c0 eps0 t0 eta0 B lambda h zeta : �
       have hder := hqH.2.1 0 (by simp) t0 ht0win
       simpa using hder
     have hq0M : |q0 t0| ≤ M := hq0_eta.trans (by linarith)
-    simpa [doseWitness] using
-      HolderBallND_const (d := d) (q0 t0) s M (cube d) hq0M hM.le
+    change HolderBallND
+      (fun x : Fin d → ℝ =>
+        (doseWitness (d := d) p0 q0 B alpha t0 lambda h zeta).pi t0 x)
+      s M (cube d)
+    exact HolderBallND_const (d := d) (q0 t0) s M (cube d) hq0M hM.le
   · refine ⟨?_, ?_, ?_⟩
     · exact HolderBallND_mono_radius p0 hpxH (by linarith)
     · intro x hx

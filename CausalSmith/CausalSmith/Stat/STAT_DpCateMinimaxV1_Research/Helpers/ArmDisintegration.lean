@@ -129,8 +129,10 @@ theorem measurable_indicator_armReg {d : ℕ} {alpha beta gamma L e0 f0 f1 r0 : 
     hreg.2.2.2.2.2.2.2.2
   have hc : ContinuousOn (armReg P a) S :=
     (continuousOn_armReg hreg P hP ha).mono hsub
-  simpa only [Set.piecewise, Set.indicator] using
-    hc.measurable_piecewise (g := fun _ => (0 : ℝ)) continuousOn_const hS
+  have hmp := hc.measurable_piecewise (g := (0 : (Fin d → ℝ) → ℝ))
+    (by exact continuousOn_const) hS
+  rw [Set.piecewise_eq_indicator] at hmp
+  exact hmp
 
 /-- The arm design weight is at least `e0*f0` throughout the localization ball. -/
 theorem armWeight_ge {d : ℕ} {alpha beta gamma L e0 f0 f1 r0 : ℝ}
@@ -215,8 +217,10 @@ theorem measurable_indicator_armPi {d : ℕ} {alpha beta gamma L e0 f0 f1 r0 : �
       unfold armPi
       simp only [if_pos rfl]
       exact hpi
-  simpa only [Set.piecewise, Set.indicator] using
-    hc.measurable_piecewise (g := fun _ => (0 : ℝ)) continuousOn_const hS
+  have hmp := hc.measurable_piecewise (g := (0 : (Fin d → ℝ) → ℝ))
+    (by exact continuousOn_const) hS
+  rw [Set.piecewise_eq_indicator] at hmp
+  exact hmp
 
 /-- Measure form of the local density-floor domination. -/
 theorem smul_volume_restrict_le_xMarginal_restrict {d : ℕ}
@@ -353,7 +357,8 @@ theorem integral_arm_pairing {d : ℕ} {alpha beta gamma L e0 f0 f1 r0 : ℝ}
       (if O.A = a then (1 : ℝ) else 0) * g O.X * O.Y) P.dataMeasure := by
     apply Integrable.of_bound
       (((Measurable.ite (measurableSet_eq_fun measurable_CateObs_A measurable_const)
-        measurable_const measurable_const).mul (hg.comp measurable_CateObs_X)).mul
+        measurable_const measurable_const).fun_mul
+          (hg.fun_comp measurable_CateObs_X)).fun_mul
           measurable_CateObs_Y).aestronglyMeasurable 1
     filter_upwards [hIid.2.1] with O hY
     rw [Real.norm_eq_abs, abs_mul, abs_mul]
@@ -365,7 +370,8 @@ theorem integral_arm_pairing {d : ℕ} {alpha beta gamma L e0 f0 f1 r0 : ℝ}
       (if O.A = a then (1 : ℝ) else 0) * (g O.X * c O.X)) P.dataMeasure := by
     apply Integrable.of_bound
       ((Measurable.ite (measurableSet_eq_fun measurable_CateObs_A measurable_const)
-        measurable_const measurable_const).mul (hgcmeas.comp measurable_CateObs_X)
+        measurable_const measurable_const).fun_mul
+        (hgcmeas.fun_comp measurable_CateObs_X)
         |>.aestronglyMeasurable) 1
     filter_upwards with O
     rw [Real.norm_eq_abs, abs_mul]
@@ -576,7 +582,7 @@ theorem armReg_abs_le_one_ae {d : ℕ} {alpha beta gamma L e0 f0 f1 r0 : ℝ}
     change armPi P a x = 0 at hxq
     linarith [hreg.2.2.2.2.1.1]
   have hxNzero : xMarginal P N = 0 := by
-    simpa only [not_not] using (ae_iff.mp hnotN)
+    simpa only [not_not, Set.ofPred_mem_eq] using (ae_iff.mp hnotN)
   have hvolN : volume N = 0 := by
     have hlo := ofReal_f0_mul_volume_le_xMarginal hreg P hP N hN hNsub
     rw [hxNzero] at hlo
@@ -587,7 +593,7 @@ theorem armReg_abs_le_one_ae {d : ℕ} {alpha beta gamma L e0 f0 f1 r0 : ℝ}
     rw [ae_iff]
     have hrN : (volume.restrict S) N = 0 := by
       rw [Measure.restrict_apply hN, Set.inter_eq_left.mpr hNsub, hvolN]
-    simpa only [not_not] using hrN
+    simpa only [not_not, Set.ofPred_mem_eq] using hrN
   filter_upwards [ae_restrict_mem hS, hnotNvol] with x hxS hxN
   by_contra hbad
   apply hxN

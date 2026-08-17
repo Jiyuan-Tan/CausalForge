@@ -105,12 +105,13 @@ lemma symmetrization_signed_sup_le_add
             rw [← hi]
             apply abs_signed_sum_le_card_mul_bound hf'
         intro i
-        convert abs_sub _ _
-        rw [←Finset.sum_sub_distrib]
-        congr
-        ext k
-        exact mul_sub_left_distrib ((σ k : ℝ)) (f i (X (ω k).1)) (f i (X (ω k).2))
-        exact instIsOrderedAddMonoid
+        have hsplit : ∑ k : Fin n, (σ k : ℝ) * (f i (X (ω k).1) - f i (X (ω k).2))
+            = (∑ k : Fin n, (σ k : ℝ) * f i (X (ω k).1))
+              - ∑ k : Fin n, (σ k : ℝ) * f i (X (ω k).2) := by
+          simp only [mul_sub]
+          rw [Finset.sum_sub_distrib]
+        rw [hsplit]
+        exact abs_sub _ _
        _ ≤ _ := by
         apply ciSup_add_le_add_ciSup
         · apply bddAbove_range_abs_signed_sum hf'

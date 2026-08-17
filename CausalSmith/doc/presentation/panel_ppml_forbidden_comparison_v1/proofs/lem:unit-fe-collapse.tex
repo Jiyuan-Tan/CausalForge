@@ -1,20 +1,208 @@
 \begin{proof}[Proof of \cref{obj:lem:unit-fe-collapse}]
-The horizon assumption gives \(T>0\), and the cohort-support assumption gives \(\top\in\mathcal C\), so \(\mathcal C\) is nonempty.  The deterministic support assumption gives \(G_i\in\mathcal C\) for every array \(N\) and every unit \(i\).  Fix \(N\ge |\mathcal C|\).  The share-limit assumption supplies \(N>0\) and strictly positive finite cohort counts for every \(g\in\mathcal C\).  With these positive counts and the collapsed rank condition, the finite collapsed PPML criterion has a unique maximizer.  Lift any collapsed parameter to unit fixed effects by choosing unit levels whose linear index equals the collapsed cohort-time index plus
+Throughout, a collapsed parameter \(\theta\in\mathbb R^{|\mathcal C|+T}\) is written through the levels it induces,
 \[
-\log\{b_{iN}/\bar b_{G_iN}\},
+c_g(\theta)=
+\begin{cases}
+\theta_{\text{int}}, & g=\infty,\\
+\theta_{\text{int}}+\theta_{\text{coh},g}, & g\neq\infty,
+\end{cases}
+\qquad
+w_t(\theta)=
+\begin{cases}
+0, & t=1,\\
+\theta_{\text{time},t}, & t\neq1,
+\end{cases}
+\qquad
+\beta(\theta)=\theta_{\text{trt}},
 \]
-while keeping the same time levels and treatment coefficient.  At this lifted parameter, each unit residual is exactly this baseline ratio times the residual in its cohort-period cell.  Summing within a supported cohort uses
+so that for every supported cell \((g,t)\), \(g\in\mathcal C\),
 \[
-\sum_{i\in I_{gN}} b_{iN}/\bar b_{gN}=n_{gN}.
+r_{gt}'\theta=c_g(\theta)+w_t(\theta)+\beta(\theta)D_{gt}.
 \]
-Consequently, in every unit-FE direction the lifted unit score equals the collapsed score in the corresponding baseline-ratio-aggregated direction.  Since the collapsed maximizer has zero score in every collapsed direction, its lift has zero score in every unit-FE direction and therefore maximizes the unit-FE criterion.  Together with \(T>0\) and \(\top\in\mathcal C\), the same deterministic support, positive supported counts, and collapsed rank condition give full column rank for the unit design, so this unit maximizer is unique.  Its treatment coordinate is the treatment coordinate of the finite collapsed maximizer.
-This proves, for every \(N\ge|\mathcal C|\), the asserted uniqueness of the finite unit-FE and finite collapsed maximizers and the equality between \(\beta_N^\star(\delta)\) and the finite collapsed treatment coordinate.
-Next, the finite cell masses \(n_{gN}/(NT)\) converge to \(q_{gt}=\pi_g/T\), and the finite observed cohort means converge to \(m_{gt}(\delta)\), because the within-cohort baseline averages converge to \(\bar b_g\) and the factors \(\exp(\gamma_{t0})\exp\{D_{gt}\delta_{gt}\}\) are fixed.  The selected finite collapsed maximizers therefore converge to the limiting collapsed maximizer by the finite Poisson argmax-continuity theorem, using the same collapsed rank condition and the uniqueness supplied by \cref{obj:lem:pseudo-true-ppml-projection}.
-Taking the treatment-coordinate projection gives convergence of the finite collapsed treatment coordinates to \(\beta^\star(\delta)\); since those coordinates equal \(\beta_N^\star(\delta)\) for all sufficiently large \(N\), it follows that \(\beta_N^\star(\delta)\to\beta^\star(\delta)\).
-Finally fix \(N\ge|\mathcal C|\) and an alternative positive baseline array \(b'_{iN}\) with the same within-cohort averages as \(b_{iN}\) for every \(g\in\mathcal C\).  The finite untreated cohort mean is \(\bar b_{gN}\exp(\gamma_{t0})\), and the finite observed cohort mean only multiplies this by \(\exp\{D_{gt}\delta_{gt}\}\); hence all finite observed cohort means are unchanged under \(b'\).  The entire finite collapsed criterion is therefore unchanged, so its selected maximizer is unchanged.
-Applying the exact finite unit-FE/collapsed treatment-coordinate equality once for \(b'\) and once for \(b\) gives
+A unit parameter \(\theta_N\in\mathbb R^{N+T}\) is written the same way,
 \[
-\beta_N^\star(\delta;b')=\beta_N^\star(\delta;b).
+\alpha_i(\theta_N)=
+\begin{cases}
+\theta_{N,\text{int}}, & i=1,\\
+\theta_{N,\text{int}}+\theta_{N,\text{unit},i}, & i\neq1,
+\end{cases}
+\qquad
+w_t(\theta_N)=
+\begin{cases}
+0, & t=1,\\
+\theta_{N,\text{time},t}, & t\neq1,
+\end{cases}
+\qquad
+\beta(\theta_N)=\theta_{N,\text{trt}},
+\]
+so that
+\[
+v_{itN}'\theta_N=\alpha_i(\theta_N)+w_t(\theta_N)+\beta(\theta_N)D_{it},
+\qquad D_{it}=D_{G_it}.
+\]
+Both identities are the statement that the intercept, dummy, and treatment coordinates of the regressor pick out exactly these terms.
+% lean: unitIndex_eq_levels, collapsedIndex_eq_levels
+
+Write the finite-array collapsed primitives as
+\[
+q_{gtN}=\frac{n_{gN}}{NT},
+\qquad
+m_{gtN}(\delta)=\bar b_{gN}\exp(\gamma_{t0})\exp(D_{gt}\delta_{gt}),
+\]
+\[
+L_{Nc}(\theta;\delta)
+=
+\sum_{g\in\mathcal C}\sum_{t=1}^T q_{gtN}\{m_{gtN}(\delta)\,r_{gt}'\theta-\exp(r_{gt}'\theta)\},
+\]
+and write the unit-time observed mean entering the criterion \(L_N(\theta_N;\delta)\) of \cref{obj:def:unit-fe-population-projection} as
+\[
+m_{itN}(\delta)=b_{iN}\exp(\gamma_{t0}+D_{it}\delta_{G_it}),
+\]
+which is the form generated by the untreated mean of \cref{obj:ass:unit-untreated-exponential-mean} together with the proportional effects of \cref{obj:ass:proportional-effects}.
+
+\textit{Step 0: standing positivity.} The horizon assumption \(T\ge4\) gives \(T>0\), and \(\infty\in\mathcal C\) makes \(\mathcal C\) nonempty, so at least one supported cell exists. Fix \(N\) with \(|\mathcal C|\le N\). \Cref{obj:ass:cohort-share-limit} then supplies \(N>0\) and \(n_{gN}>0\) for every \(g\in\mathcal C\); every unit label lies in \(\mathcal C\) by the array-support hypothesis. Consequently, for every \(g\in\mathcal C\) and every \(t\),
+\[
+q_{gtN}=\frac{n_{gN}}{NT}>0,
+\qquad
+\bar b_{gN}=n_{gN}^{-1}\sum_{i\in I_{gN}}b_{iN}>0,
+\qquad
+m_{gtN}(\delta)>0,
+\qquad
+m_{itN}(\delta)>0 ,
+\]
+the last two because they are products of positive baselines and exponentials.
+% lean: unit_fe_collapse, withinCohortBaseline_pos, finiteObservedCohortMean_pos
+
+\textit{Step 1: the collapsed designs are injective, and \(L_{Nc}\) has a unique maximizer.} If \(r_{gt}'\theta_1=r_{gt}'\theta_2\) at every supported cell, then \(a=\theta_1-\theta_2\) has \(r_{gt}'a=0\) at every supported cell, so \(\sum_{g\in\mathcal C}\sum_t q_{gt}(r_{gt}'a)^2=0\), and \cref{obj:ass:collapsed-design-rank} forces \(a=0\). Thus \(\theta\mapsto(r_{gt}'\theta)_{(g,t)}\) is injective.
+% lean: collapsedDesignMap_injective
+With positive masses \(q_{gtN}\), positive means \(m_{gtN}(\delta)\), and this injective design, the finite collapsed criterion is a finite positive-mass, positive-mean Poisson criterion, so it has exactly one global maximizer \(\theta_N^c\): each cell contribution \(\eta\mapsto m\eta-\exp(\eta)\) is strictly concave and satisfies \(m\eta-\exp(\eta)\le (m+1)^2/2-\min(m,1)|\eta|\), which by injectivity makes \(L_{Nc}(\cdot;\delta)\) continuous, coercive, and strictly concave.
+% lean: finiteCollapsedCriterion_exists_unique_max, Causalean.Stat.finitePoissonObjective_exists_unique_max
+Because \(\theta_N^c\) maximizes and the criterion is differentiable, every collapsed directional score vanishes: for every \(a\in\mathbb R^{|\mathcal C|+T}\),
+\[
+\sum_{g\in\mathcal C}\sum_{t=1}^T
+q_{gtN}\,(r_{gt}'a)\{m_{gtN}(\delta)-\exp(r_{gt}'\theta_N^c)\}=0 .
+\]
+% lean: Causalean.Stat.finitePoissonObjective_score
+
+\textit{Step 2: lifting the collapsed maximizer to unit fixed effects.} Define the unit parameter \(\theta_N^{\text{lift}}\) by
+\[
+\alpha_i(\theta_N^{\text{lift}})
+=
+\log\frac{b_{iN}}{\bar b_{G_iN}}+c_{G_i}(\theta_N^c),
+\qquad
+w_t(\theta_N^{\text{lift}})=w_t(\theta_N^c),
+\qquad
+\beta(\theta_N^{\text{lift}})=\beta(\theta_N^c).
+\]
+(Any prescribed levels are realized by a unique choice of intercept, dummy, and treatment coordinates.) By the two level identities,
+\[
+v_{itN}'\theta_N^{\text{lift}}
+=
+\log\frac{b_{iN}}{\bar b_{G_iN}}+r_{G_it}'\theta_N^c .
+\]
+% lean: liftCollapsedParameter, unitIndex_liftCollapsedParameter
+Exponentiating and using \(m_{itN}(\delta)=(b_{iN}/\bar b_{G_iN})\,m_{G_it,N}(\delta)\), which holds because \(m_{itN}(\delta)=b_{iN}\exp(\gamma_{t0})\exp(D_{G_it}\delta_{G_it})\) and \(m_{G_it,N}(\delta)=\bar b_{G_iN}\exp(\gamma_{t0})\exp(D_{G_it}\delta_{G_it})\), each unit residual is the corresponding cell residual scaled by the baseline ratio:
+\[
+m_{itN}(\delta)-\exp(v_{itN}'\theta_N^{\text{lift}})
+=
+\frac{b_{iN}}{\bar b_{G_iN}}
+\left\{m_{G_it,N}(\delta)-\exp(r_{G_it}'\theta_N^c)\right\}.
+\]
+% lean: unitResidual_liftCollapsedParameter
+
+\textit{Step 3: unit scores at the lift are collapsed scores.} For every \(g\in\mathcal C\), the definition of \(\bar b_{gN}\) gives
+\[
+\sum_{i\in I_{gN}}\frac{b_{iN}}{\bar b_{gN}}=n_{gN}.
+\]
+% lean: sum_baselineRatio_within_cohort
+Given a unit direction \(d\in\mathbb R^{N+T}\), define the collapsed direction \(d^{c}\in\mathbb R^{|\mathcal C|+T}\) by its levels
+\[
+c_g(d^{c})=n_{gN}^{-1}\sum_{i\in I_{gN}}\frac{b_{iN}}{\bar b_{gN}}\,\alpha_i(d),
+\qquad
+w_t(d^{c})=w_t(d),
+\qquad
+\beta(d^{c})=\beta(d).
+\]
+% lean: aggregateUnitDirection, collapsedIndex_aggregateUnitDirection
+Then
+\[
+(NT)^{-1}\sum_{i=1}^N\sum_{t=1}^T
+(v_{itN}'d)\left\{m_{itN}(\delta)-\exp(v_{itN}'\theta_N^{\text{lift}})\right\}
+=
+\sum_{g\in\mathcal C}\sum_{t=1}^T
+q_{gtN}\,(r_{gt}'d^{c})\left\{m_{gtN}(\delta)-\exp(r_{gt}'\theta_N^c)\right\}.
+\]
+Indeed, substituting the residual identity of Step 2 and grouping units by cohort (legitimate because every \(G_i\) lies in \(\mathcal C\)), the inner sum over \(i\in I_{gN}\) at fixed \((g,t)\) is
+\[
+(NT)^{-1}\left\{m_{gtN}(\delta)-\exp(r_{gt}'\theta_N^c)\right\}
+\sum_{i\in I_{gN}}\frac{b_{iN}}{\bar b_{gN}}
+\left\{\alpha_i(d)+w_t(d)+\beta(d)D_{gt}\right\},
+\]
+and the displayed baseline-ratio identity turns that bracketed sum into \(n_{gN}\{c_g(d^{c})+w_t(d^{c})+\beta(d^{c})D_{gt}\}=n_{gN}\,r_{gt}'d^{c}\), while \(n_{gN}/(NT)=q_{gtN}\).
+% lean: unitScore_eq_collapsedScore, sum_baselineRatio_fiberwise, sum_units_by_supported_cohort
+Applying the vanishing collapsed score of Step 1 to \(a=d^{c}\), we conclude that every unit directional score at \(\theta_N^{\text{lift}}\) vanishes:
+\[
+(NT)^{-1}\sum_{i=1}^N\sum_{t=1}^T
+(v_{itN}'d)\left\{m_{itN}(\delta)-\exp(v_{itN}'\theta_N^{\text{lift}})\right\}=0
+\qquad\text{for every }d .
 \]
 
+\textit{Step 4: the lift maximizes the unit criterion.} For a Poisson criterion with nonnegative weights, vanishing of all directional scores is sufficient for global maximality:
+\[
+L_N(\theta_N;\delta)\le L_N(\theta_N^{\text{lift}};\delta)
+\qquad\text{for every }\theta_N\in\mathbb R^{N+T},
+\]
+because the tangent-line bound \(\exp(\eta')\ge\exp(\eta)\{1+(\eta'-\eta)\}\) makes each cell increment at most its linearization, and the sum of the linearizations is the score in the direction \(\theta_N-\theta_N^{\text{lift}}\), which is zero by Step 3.
+% lean: Causalean.Stat.finitePoissonObjective_isMax_of_score
+
+\textit{Step 5: the unit design is injective.} Suppose \(v_{itN}'d=0\) for every unit \(i\) and every period \(t\). For each \(g\in\mathcal C\) choose a representative unit \(j_g\in I_{gN}\); this is possible because \(n_{gN}>0\). Define a collapsed parameter \(a\) by \(c_g(a)=\alpha_{j_g}(d)\), \(w_t(a)=w_t(d)\), \(\beta(a)=\beta(d)\). Then for every supported cell,
+\[
+r_{gt}'a
+=
+\alpha_{j_g}(d)+w_t(d)+\beta(d)D_{gt}
+=
+v_{j_gtN}'d
+=
+0,
+\]
+using \(G_{j_g}=g\). Hence \(\sum_{g\in\mathcal C}\sum_t q_{gt}(r_{gt}'a)^2=0\), so \cref{obj:ass:collapsed-design-rank} gives \(a=0\); in particular \(\beta(d)=0\) and \(w_t(d)=0\) for every \(t\). Evaluating \(0=v_{i1N}'d=\alpha_i(d)+w_1(d)+\beta(d)D_{i1}\) in the first period and substituting \(w_1(d)=0\) and \(\beta(d)=0\) gives \(\alpha_i(d)=0\) for every unit \(i\). All levels of \(d\) vanish, so \(d=0\), and the unit design \(\theta_N\mapsto(v_{itN}'\theta_N)_{i,t}\) is injective.
+% lean: unitDesignMap_injective
+
+\textit{Step 6: unique unit maximizer and equality of treatment coordinates.} The unit criterion \(L_N(\cdot;\delta)\) is a finite Poisson criterion with the constant positive weights \((NT)^{-1}\), positive means \(m_{itN}(\delta)\), and, by Step 5, an injective design; exactly as in Step 1 it therefore has a unique global maximizer. By Step 4 that maximizer is \(\theta_N^{\text{lift}}\). Hence \(L_N(\cdot;\delta)\) and \(L_{Nc}(\cdot;\delta)\) each have a unique global maximizer, and
+\[
+\beta_N^\star(\delta)=\beta(\theta_N^{\text{lift}})=\beta(\theta_N^c),
+\]
+i.e. \(\beta_N^\star(\delta)\) is the treatment coordinate of the unique maximizer of \(L_{Nc}(\theta;\delta)\).
+% lean: finite_unit_and_collapsed_unique_beta, Causalean.Stat.uniqueGlobalMax_maximizerOrZero
+
+\textit{Step 7: convergence to the limiting collapsed projection.} Fix a supported cell \((g,t)\). By \cref{obj:ass:cohort-share-limit},
+\[
+q_{gtN}=\frac{n_{gN}/N}{T}\longrightarrow \frac{\pi_g}{T}=q_{gt},
+\]
+and by \cref{obj:ass:within-cohort-baseline-limit}, since \(\exp(\gamma_{t0})\exp(D_{gt}\delta_{gt})\) does not depend on \(N\),
+\[
+m_{gtN}(\delta)=\bar b_{gN}\exp(\gamma_{t0})\exp(D_{gt}\delta_{gt})
+\longrightarrow
+\bar b_g\exp(\gamma_{t0})\exp(D_{gt}\delta_{gt})=m_{gt}(\delta).
+\]
+The limiting masses \(q_{gt}\) and means \(m_{gt}(\delta)\) are strictly positive, the design is injective by Step 1, the points \(\theta_N^c\) are global maximizers of \(L_{Nc}(\cdot;\delta)\) for all \(N\ge|\mathcal C|\), and by \cref{obj:lem:pseudo-true-ppml-projection} the limiting criterion \(L(\cdot;\delta)\) has the unique global maximizer \(\theta^\star(\delta)\). For finitely many cells, convergence of the masses and means makes \(L_{Nc}(\cdot;\delta)\to L(\cdot;\delta)\) uniformly on compacta and traps the maximizers \(\theta_N^c\) eventually in one compact set (the common coercivity bound of Step 1 holds with constants converging to those of the limit), so
+\[
+\theta_N^c\longrightarrow\theta^\star(\delta).
+\]
+% lean: selectedFiniteCollapsed_tendsto, Causalean.Stat.finitePoissonObjective_argmax_tendsto
+Taking the treatment coordinate, which is a continuous function of the parameter, gives \(\beta(\theta_N^c)\to\beta^\star(\delta)\); since \(\beta_N^\star(\delta)=\beta(\theta_N^c)\) for every \(N\ge|\mathcal C|\) by Step 6,
+\[
+\beta_N^\star(\delta)\longrightarrow\beta^\star(\delta).
+\]
+
+\textit{Step 8: invariance to within-cohort baseline rearrangement.} Fix \(N\ge|\mathcal C|\) and a positive baseline array \(b'_{iN}\) with \(\bar b'_{gN}=\bar b_{gN}\) for every \(g\in\mathcal C\). The finite collapsed observed mean depends on the baselines only through the within-cohort average,
+\[
+m_{gtN}(\delta;b')=\bar b'_{gN}\exp(\gamma_{t0})\exp(D_{gt}\delta_{gt})
+=\bar b_{gN}\exp(\gamma_{t0})\exp(D_{gt}\delta_{gt})=m_{gtN}(\delta;b),
+\]
+and the masses \(q_{gtN}\) do not involve the baselines at all. Hence \(L_{Nc}(\cdot;\delta;b')=L_{Nc}(\cdot;\delta;b)\) as functions of \(\theta\), so their unique maximizers coincide. Applying Step 6 once with \(b'\) and once with \(b\),
+\[
+\beta_N^\star(\delta;b')=\beta(\theta_N^c)=\beta_N^\star(\delta;b).
+\]
+% lean: unit_fe_collapse
 \end{proof}

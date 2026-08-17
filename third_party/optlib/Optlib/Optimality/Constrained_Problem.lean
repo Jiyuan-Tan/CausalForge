@@ -5,7 +5,7 @@ Authors: Chenyi Li, Shengyang Xu, Yuxuan Wu
 -/
 import Mathlib.Analysis.Convex.Cone.Basic
 import Mathlib.Analysis.Calculus.LocalExtr.Basic
-import Mathlib.Analysis.NormedSpace.HahnBanach.Separation
+import Mathlib.Analysis.LocallyConvex.Separation
 import Mathlib.LinearAlgebra.Matrix.Rank
 import Mathlib.LinearAlgebra.FiniteDimensional.Basic
 import Mathlib.Analysis.Calculus.Implicit
@@ -236,8 +236,10 @@ theorem linearized_feasible_directions_contain_tagent_cone (xf : x ∈ p.FeasSet
       rw [(yf.2.1 i itau), (xf.2.1 i itau)]
   . intro i itau
     apply ge_antisymm
-    . apply posTangentCone_localmin_inner_pos (imin i itau) (diffable i itau) v hv
-    . rw [← neg_neg (inner ℝ (gradient (equality_constraints p i) x) v)]
+    . rw [← inner_gradient_left]
+      apply posTangentCone_localmin_inner_pos (imin i itau) (diffable i itau) v hv
+    . rw [← inner_gradient_left,
+        ← neg_neg (inner ℝ (gradient (equality_constraints p i) x) v)]
       apply neg_nonpos_of_nonneg
       rw [← inner_neg_left]
       have a₁ : ∀ i ∈ τ, DifferentiableAt ℝ (-equality_constraints p i) x :=
@@ -271,6 +273,7 @@ theorem linearized_feasible_directions_contain_tagent_cone (xf : x ∈ p.FeasSet
           rw [FeasSet] at yf xf
           rw [inezero]
           apply yf.2.2 i is
+      rw [← inner_gradient_left]
       apply posTangentCone_localmin_inner_pos (jmin j js ineq) (diffable₂ j js) v hv
 
 /-
@@ -289,6 +292,7 @@ theorem local_Minimum_TangentCone' (loc : E) (hl : p.Local_Minimum loc)
   ext d
   simp
   intro hd
+  rw [← inner_gradient_left]
   exact local_Minimum_TangentCone loc hl hf d hd
 
 lemma contdiff_equiv {x : E} (c : E → ℝ) (hc : ContDiffAt ℝ (1 : ℕ) c x) :
@@ -625,15 +629,16 @@ lemma LICQ_strictfderiv_Ax_elem {x : EuclideanSpace ℝ (Fin n)}
     · have hgrad := (hε (show x ∈ Metric.ball x ε by simp [εpos])).1 i hi
       rw [hasGradientAt_iff_hasFDerivAt] at hgrad
       convert hgrad using 1
+      · rfl
+      · rfl
       ext y
       rw [gradceq]
-      simp [Matrix.toEuclideanLin_apply, Matrix.mulVec, dotProduct, hi,
+      simp [Matrix.ofLp_toLpLin, Matrix.mulVec, dotProduct, hi,
         InnerProductSpace.toDual_apply_apply, EuclideanSpace.inner_eq_star_dotProduct,
-        dotProduct_comm]
-      change dotProduct (gradient (p.equality_constraints ↑i) x).ofLp y.ofLp =
-        inner ℝ (gradient (p.equality_constraints ↑i) x) y
-      rw [show inner ℝ (gradient (p.equality_constraints ↑i) x) y =
-        y.ofLp ⬝ᵥ (gradient (p.equality_constraints ↑i) x).ofLp by rfl]
+        dotProduct_comm, -toDual_gradient, -inner_gradient_left]
+      change (if (↑i : ℕ) ∈ τ then gradient (p.equality_constraints ↑i) x
+          else gradient (p.inequality_constraints ↑i) x).ofLp ⬝ᵥ y.ofLp = _
+      rw [if_pos hi]
       exact dotProduct_comm _ _
     · exact one_ne_zero
   · have hi' : i.1 ∈ σ := by
@@ -647,15 +652,16 @@ lemma LICQ_strictfderiv_Ax_elem {x : EuclideanSpace ℝ (Fin n)}
     · have hgrad := (hε (show x ∈ Metric.ball x ε by simp [εpos])).2 i hi'
       rw [hasGradientAt_iff_hasFDerivAt] at hgrad
       convert hgrad using 1
+      · rfl
+      · rfl
       ext y
       rw [gradceq]
-      simp [Matrix.toEuclideanLin_apply, Matrix.mulVec, dotProduct, hi,
+      simp [Matrix.ofLp_toLpLin, Matrix.mulVec, dotProduct, hi,
         InnerProductSpace.toDual_apply_apply, EuclideanSpace.inner_eq_star_dotProduct,
-        dotProduct_comm]
-      change dotProduct (gradient (p.inequality_constraints ↑i) x).ofLp y.ofLp =
-        inner ℝ (gradient (p.inequality_constraints ↑i) x) y
-      rw [show inner ℝ (gradient (p.inequality_constraints ↑i) x) y =
-        y.ofLp ⬝ᵥ (gradient (p.inequality_constraints ↑i) x).ofLp by rfl]
+        dotProduct_comm, -toDual_gradient, -inner_gradient_left]
+      change (if (↑i : ℕ) ∈ τ then gradient (p.equality_constraints ↑i) x
+          else gradient (p.inequality_constraints ↑i) x).ofLp ⬝ᵥ y.ofLp = _
+      rw [if_neg hi]
       exact dotProduct_comm _ _
     · exact one_ne_zero
 
@@ -895,6 +901,7 @@ theorem LICQ_linearized_feasible_directions_sub_posTangentCone
       rw [hasStrictFDerivAt_euclidean]
       refine LICQ_strictfderiv_Ax_elem c ?_ gradc ?_ A ?_ Jz ?_ conte conti
       repeat simp only [c, gradc, A, Jz]
+      all_goals rfl
     · let N : EuclideanSpace ℝ (Fin n) →L[ℝ] (Fin (n - m) → ℝ) :=
         ((EuclideanSpace.equiv (Fin (n - m)) ℝ).toContinuousLinearMap.comp
           (LinearMap.toContinuousLinearMap (toEuclideanLin Zᵀ)))
@@ -946,7 +953,7 @@ theorem LICQ_linearized_feasible_directions_sub_posTangentCone
   rcases implicit_f with ⟨N, d, hfd, dtend⟩
   have dtend0 : Filter.Tendsto (fun n ↦ d n - x) atTop (𝓝 0) := by
     simpa using dtend.sub (tendsto_const_nhds (x := x))
-  rw [LinearMapClass.ker_eq_bot] at Mxinj
+  rw [LinearMap.ker_eq_bot] at Mxinj
   rw [LinearMap.range_eq_top] at Mxsurj
   obtain deriv := (hasFDerivAt_iff_tendsto.1 (HasStrictFDerivAt.hasFDerivAt Rzgrad))
   obtain deriv := tendsto_nhds_iff_seq_tendsto.1 deriv d dtend
@@ -978,7 +985,8 @@ theorem LICQ_linearized_feasible_directions_sub_posTangentCone
         obtain h := hvh1 i hi
         obtain eq := Axroweq ⟨i, iina⟩; simp [c, hi, gradc] at eq
         rw [eq]; simp; right
-        simpa [dotProduct_comm] using h
+        simpa [dotProduct_comm, EuclideanSpace.inner_eq_star_dotProduct,
+            -inner_gradient_left] using h
       constructor
       · rw [hdomain]; simp
       · intro j hj
@@ -992,7 +1000,8 @@ theorem LICQ_linearized_feasible_directions_sub_posTangentCone
           obtain eq := Axroweq ⟨j, hj1⟩; simp [c, hj1, notin, gradc] at eq
           rw [eq]; field_simp
           rw [div_nonneg_iff]; left
-          simpa [dotProduct_comm] using h
+          simpa [dotProduct_comm, EuclideanSpace.inner_eq_star_dotProduct,
+            -inner_gradient_left] using h
         · specialize inactive j; simp [hj, hj1] at inactive
           specialize inactive (d nn)
           specialize dtendx nn (le_of_max_le_right hnn); rw [← dist_eq_norm] at dtendx
@@ -1001,7 +1010,7 @@ theorem LICQ_linearized_feasible_directions_sub_posTangentCone
   · have Mxbij : Function.Bijective Mx := ⟨Mxinj, Mxsurj⟩
     have hlim : Filter.Tendsto (fun i : ℕ ↦ (i : ℝ) • (d i - x)) atTop (𝓝 v) := by
       refine LICQ_tendsto v veq0 ?_ Rxeq0 hfd dtend_metric Mxbij deriv; simp [Rt]
-    simpa using hlim
+    exact hlim
 
 theorem LICQ_linearized_feasible_directions_eq_posTangentCone
     (x : EuclideanSpace ℝ (Fin n)) (xf : x ∈ p.FeasSet)
@@ -1053,6 +1062,7 @@ lemma subtype_sum (σ τ : Finset ℕ) (f : σ → EuclideanSpace ℝ (Fin n))
       f {val := i.1, property := by obtain hi := i.2; rw [Finset.mem_inter] at hi; exact hi.1} =
       ∑ i ∈ (σ ∩ τ), f₁ i := by
     convert (Finset.sum_attach (σ ∩ τ) f₁) using 2
+    · exact Finset.univ_eq_attach _
     · rename_i x hx
       ext i
       have hxσ : ↑x ∈ σ := (Finset.mem_inter.mp x.2).1

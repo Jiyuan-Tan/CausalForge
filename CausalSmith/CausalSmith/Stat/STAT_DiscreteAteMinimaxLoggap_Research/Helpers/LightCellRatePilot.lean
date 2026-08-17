@@ -21,6 +21,10 @@ noncomputable def lightBalancedSplit {d : ℕ} (P : DiscreteLaw d) :
       omega
     · exact Nat.tendsto_div_const_atTop (by norm_num)
 
+/-- Reassembles a full n-observation sample out of the pilot half alone: positions below
+the floor of n over two take the supplied pilot observations, and every later position
+takes a fixed filler observation.  Statistics that read only the pilot half are
+unaffected by the choice of filler. -/
 def rebuildPilotSample {n d : ℕ} (P : DiscreteLaw d) (base : Obs d)
     (x : (lightBalancedSplit P).foldA n → Obs d) : Fin n → Obs d :=
   fun i => if h : i.1 < n / 2 then
@@ -31,10 +35,7 @@ def rebuildPilotSample {n d : ℕ} (P : DiscreteLaw d) (base : Obs d)
 def rebuildEstimationSample {n d : ℕ} (P : DiscreteLaw d) (base : Obs d)
     (x : (lightBalancedSplit P).foldB n → Obs d) : Fin n → Obs d :=
   fun i => if h : n / 2 ≤ i.1 then
-    x ⟨i.1, by
-      simp only [Causalean.Stat.OneShotSplit.foldB, lightBalancedSplit,
-        Finset.mem_filter, Finset.mem_range]
-      exact ⟨i.2, h⟩⟩
+    x ⟨i.1, Finset.mem_filter.mpr ⟨Finset.mem_range.mpr i.2, h⟩⟩
   else base
 
 /-- Establishes the stated property of split Category Count rebuild Pilot in the discrete average-treatment-effect construction. -/
@@ -876,7 +877,7 @@ lemma integral_factorialPolynomial_target_sq_growth {n d : ℕ}
     · exact hpoint
   refine hmono.trans ?_
   rw [integral_add, integral_const_mul, integral_const]
-  simp only [measureReal_univ_eq_one, one_smul]
+  simp only [probReal_univ, one_smul]
   · have hX := integral_factorialPolynomial_sq_growth P k hn hM hB hsize hshift
     change 2 * (∫ ω, X ω ^ 2 ∂_) + 2 * t ^ 2 ≤ _
     nlinarith [Real.exp_pos 1, sq_nonneg (bandwidth n * G)]
@@ -1081,9 +1082,12 @@ lemma selectedFalseLightError_second_moment_le {n d : ℕ} {epsilon : ℝ}
     apply integral_mono
     · have hs := integrable_finset_sum F fun k _ =>
           integrable_finset_sum F fun l _ => hepair k l
-      convert hs using 1
-      funext ω
-      rw [pow_two, Finset.sum_mul_sum]
+      have hfun : (fun ω => (∑ k ∈ F, e k ω) ^ 2) =
+          fun ω => ∑ k ∈ F, ∑ l ∈ F, e k ω * e l ω := by
+        funext ω
+        rw [pow_two, Finset.sum_mul_sum]
+      rw [hfun]
+      exact hs
     · have hs : Integrable (fun ω => ∑ k ∈ F, (e k ω) ^ 2)
           (Measure.infinitePi (fun _ : ℕ => obsLaw P)) :=
         integrable_finset_sum F fun k _ => hesq k

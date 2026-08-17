@@ -319,10 +319,8 @@ lemma integrable_factualY_of_consistency_integrable_YofZ2 [IsFiniteMeasure P.μ]
   refine hsum_int.congr (Filter.Eventually.of_forall ?_)
   intro ω
   by_cases hω : S.factualZ2 ω = true
-  · have hcf : S.YofZ2 true ω = S.factualY ω := by
-      simpa [YofZ2, encZ2Regime, factualY, factualZ2, z2Var, yVar, POVar.cfUnder]
-        using POVar.cf_eq_factual_on_event hC S.yVar S.z2Var true
-          S.Z2_ne_Y.symm hω
+  · have hcf : S.YofZ2 true ω = S.factualY ω :=
+      POVar.cf_eq_factual_on_event hC S.yVar S.z2Var true S.Z2_ne_Y.symm hω
     have hind_true : S.z2Var.indicator true ω = 1 := by
       exact S.z2Var.indicator_apply_eq_one hω
     have hfalse : S.factualZ2 ω ≠ false := by
@@ -333,10 +331,8 @@ lemma integrable_factualY_of_consistency_integrable_YofZ2 [IsFiniteMeasure P.μ]
     simp [Pi.add_apply, hcf, hind_true, hind_false]
   · have hω_false : S.factualZ2 ω = false := by
       cases hz : S.factualZ2 ω <;> simp_all
-    have hcf : S.YofZ2 false ω = S.factualY ω := by
-      simpa [YofZ2, encZ2Regime, factualY, factualZ2, z2Var, yVar, POVar.cfUnder]
-        using POVar.cf_eq_factual_on_event hC S.yVar S.z2Var false
-          S.Z2_ne_Y.symm hω_false
+    have hcf : S.YofZ2 false ω = S.factualY ω :=
+      POVar.cf_eq_factual_on_event hC S.yVar S.z2Var false S.Z2_ne_Y.symm hω_false
     have hind_true : S.z2Var.indicator true ω = 0 := by
       exact S.z2Var.indicator_apply_eq_zero hω
     have hind_false : S.z2Var.indicator false ω = 1 := by

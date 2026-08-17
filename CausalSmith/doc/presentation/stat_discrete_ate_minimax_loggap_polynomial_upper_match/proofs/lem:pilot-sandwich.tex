@@ -1,26 +1,192 @@
 \begin{proof}[Proof of \cref{obj:lem:pilot-sandwich}]
-For a fixed category \(k\), the pilot count on \(I_0\) is exactly a Bernoulli count with success probability \(p_k\) and \(m_0=|I_0|\) trials.
-If the sandwich event fails, then for some \(k\) either \(p_k<tL/(2m_0)\) while the pilot count exceeds \(tL\), or \(p_k>2tL/m_0\) while the pilot count is at most \(tL\).  This is just the definition of the pilot heavy set together with the floor inequalities.
-The first alternative is bounded by the Bernoulli upper-tail estimate
+Throughout, \(L=\log(en)\), the first split \(I_0\) of \cref{obj:def:balanced-sample-split} has size \(m_0=|I_0|=\lfloor n/2\rfloor\), and for a category \(k\in\{1,\ldots,d\}\) we write, with \(N^{(0)}_{aky}\) as in \cref{obj:def:split-cell-counts},
 \[
-\exp\{-tL(\log2-1/2)\},
+N_k^{(0)}=\sum_{a,y}N^{(0)}_{aky}=\sum_{i\in I_0}\mathbf 1\{X_i=k\},
+\qquad
+p_k=P(X=k)=\sum_{a,y}q_{aky},
 \]
-and the second by the lower-tail estimate
+so that \(N_k^{(0)}\) is the pilot count of category \(k\) and \(p_k\) is its population mass. The pilot heavy set at threshold \(t\) and its complement are
 \[
-\exp\{-tL/4\}.
+\widehat{\mathcal H}=\left\{k:\lfloor tL\rfloor<N_k^{(0)}\right\},
+\qquad
+\widehat{\mathcal L}=\widehat{\mathcal H}^{c}=\left\{k:N_k^{(0)}\le\lfloor tL\rfloor\right\}.
 \]
-A union bound over the \(d\) categories therefore gives, for \(n\ge2\) and \(t\ge0\),
+Because \(N_k^{(0)}\) is an integer, \(\lfloor tL\rfloor<N_k^{(0)}\) holds exactly when \(tL<N_k^{(0)}\), and \(N_k^{(0)}\le\lfloor tL\rfloor\) exactly when \(N_k^{(0)}\le tL\); at \(t=\lambda_0=256\) this is the set \(\widehat{\mathcal H}_n\) of \cref{obj:def:hybrid-estimator-handle}. % lean: pilotHeavyAt
+Write \(\mathcal B_t\) for the failure event of the statement, that is, the event that
 \[
-\Pr(\text{pilot bad})
+\widehat{\mathcal H}\not\subseteq\{k:p_k\ge B_-\}
+\quad\text{or}\quad
+\widehat{\mathcal L}\not\subseteq\{k:p_k\le B_+\},
+\qquad
+B_-=\frac{tL}{2m_0},
+\qquad
+B_+=\frac{2tL}{m_0}.
+\]
+% lean: pilotBadEvent
+
+On \(\mathcal B_t\) there is a category \(k\) for which either
+\[
+p_k<\frac{tL}{2m_0}
+\quad\text{and}\quad
+tL<N_k^{(0)},
+\]
+or
+\[
+\frac{2tL}{m_0}<p_k
+\quad\text{and}\quad
+N_k^{(0)}\le tL .
+\]
+Indeed, if the first inclusion fails there is a \(k\in\widehat{\mathcal H}\) with \(p_k<B_-\), and membership in \(\widehat{\mathcal H}\) means \(\lfloor tL\rfloor<N_k^{(0)}\), i.e. \(tL<N_k^{(0)}\); if the second inclusion fails there is a \(k\in\widehat{\mathcal L}\) with \(p_k>B_+\), and membership in \(\widehat{\mathcal L}\) means \(N_k^{(0)}\le\lfloor tL\rfloor\), i.e. \(N_k^{(0)}\le tL\). Consequently
+\[
+\Pr\left(\mathcal B_t\right)
 \le
-d\left[\exp\{-tL(\log2-1/2)\}+\exp\{-tL/4\}\right].
+\sum_{k=1}^{d}\Pr\!\left(p_k<\frac{tL}{2m_0}\ \text{and}\ tL<N_k^{(0)}\right)
++
+\sum_{k=1}^{d}\Pr\!\left(\frac{2tL}{m_0}<p_k\ \text{and}\ N_k^{(0)}\le tL\right).
 \]
+% lean: pilotBadEvent_subset_cellwise
 
-Since \(\log2-1/2>0\), choose
+Fix \(k\) and assume \(n\ge2\), so that \(m_0=\lfloor n/2\rfloor\ge1\). Under \cref{obj:ass:iid-sampling} the sample law is \(P^{\otimes n}\), and the coordinates indexed by \(I_0\) are \(m_0\) independent draws from \(P\); the pilot count is therefore a sum
 \[
-t_0=\max\left\{\frac{K+4}{\log2-1/2},\,4(K+4)\right\},\qquad C=2c,\qquad N=2 .
+N_k^{(0)}=\sum_{i=1}^{m_0}\mathbf 1\{X_i=k\}
 \]
-For every \(t\ge t_0\), both exponential factors are at most \(\exp\{-(K+4)L\}\).  Using \(d\le cnL\), \(L\le n\), and \(\exp\{-q\log(en)\}=e^{-q}n^{-q}\), the preceding display is bounded by \(2c\,n^{-K}\).  Replacing the sample law by \(P^{\otimes n}\) under iid sampling proves the first assertion.
+of \(m_0\) independent copies of the indicator \(\mathbf 1\{X=k\}\), which takes values in \(\{0,1\}\) and has population mean
+\[
+E_P\!\left[\mathbf 1\{X=k\}\right]=p_k .
+\]
+% lean: pilot_count_eq_bernoulliCount, categoryIndicator_mean, finProductLaw_eq_map
 
-For the stated numerical specialization, take \(K=4\) and \(t=256\).  The inequalities \(8\le256(\log2-1/2)\) and \(8\le256/4\) satisfy the same threshold requirements, so the preceding argument gives constants \(C=2c\) and \(N=2\), after harmless enlargement, and hence the displayed \(n^{-4}\) bound.
+For such a count the exponential Markov inequality gives, for every level \(a\) and every tilt \(s\ge0\),
+\[
+\Pr\!\left(N_k^{(0)}>a\right)\le\exp\left\{-sa+m_0p_k(e^{s}-1)\right\},
+\]
+and, for every tilt \(s\le0\),
+\[
+\Pr\!\left(N_k^{(0)}\le a\right)\le\exp\left\{-sa+m_0p_k(e^{s}-1)\right\},
+\]
+because a single indicator with mean \(p_k\) has moment generating function \(1+p_k(e^{s}-1)\le\exp\{p_k(e^{s}-1)\}\) and the \(m_0\) summands are independent. Taking \(s=\log2\) in the first display and \(s=-\log2\) in the second, so that \(e^{s}-1\) equals \(1\) respectively \(-1/2\),
+\[
+\Pr\!\left(N_k^{(0)}>a\right)\le\exp\left\{-a\log2+m_0p_k\right\},
+\qquad
+\Pr\!\left(N_k^{(0)}\le a\right)\le\exp\left\{a\log2-\frac{m_0p_k}{2}\right\}.
+\]
+Hence, if \(m_0p_k<a/2\), then
+\[
+\Pr\!\left(N_k^{(0)}>a\right)\le\exp\left\{-a\left(\log2-\tfrac12\right)\right\},
+\]
+and if \(2a<m_0p_k\), then
+\[
+\Pr\!\left(N_k^{(0)}\le a\right)\le\exp\left\{-\frac{m_0p_k}{8}\right\},
+\]
+the second because \(2a<m_0p_k\), \(m_0p_k\ge0\) and \(\log2<3/4\) give \(a\log2\le\tfrac34\max\{a,0\}\le\tfrac38m_0p_k\). % lean: bernoulliCount_upper_tail, bernoulliCount_lower_tail
+
+Apply these two bounds at the level \(a=tL\), with \(t\ge0\). If \(p_k<tL/(2m_0)\), then multiplying by \(m_0\ge1\) gives \(m_0p_k<tL/2\), so
+\[
+\Pr\!\left(p_k<\frac{tL}{2m_0}\ \text{and}\ tL<N_k^{(0)}\right)
+\le
+\Pr\!\left(N_k^{(0)}>tL\right)
+\le
+\exp\left\{-tL\left(\log2-\tfrac12\right)\right\}.
+\]
+% lean: pilotCategory_upper_tail
+If instead \(p_k>2tL/m_0\), then \(m_0p_k>2tL\), so
+\[
+\Pr\!\left(\frac{2tL}{m_0}<p_k\ \text{and}\ N_k^{(0)}\le tL\right)
+\le
+\Pr\!\left(N_k^{(0)}\le tL\right)
+\le
+\exp\left\{-\frac{m_0p_k}{8}\right\}
+\le
+\exp\left\{-\frac{tL}{4}\right\},
+\]
+the last step by monotonicity of the exponential and \(m_0p_k>2tL\). % lean: pilotCategory_lower_tail
+For a category \(k\) whose mass violates the stated condition, the corresponding event is empty and its probability is \(0\), so every one of the \(2d\) terms in the previous sum obeys the displayed bound, and for all \(n\ge2\) and \(t\ge0\),
+\[
+\Pr\left(\mathcal B_t\right)
+\le
+d\left[\exp\left\{-tL\left(\log2-\tfrac12\right)\right\}+\exp\left\{-\frac{tL}{4}\right\}\right].
+\]
+% lean: pilotBadEvent_probability
+
+We convert this into a polynomial bound. Let \(q>0\), and suppose \(n\ge1\), \(d\le cnL\), \(t\ge0\), and
+\[
+q\le t\left(\log2-\tfrac12\right),
+\qquad
+q\le\frac{t}{4}.
+\]
+Since \(n\ge1\), the scale \(L=\log(en)=1+\log n\) satisfies
+\[
+1\le L\le n,
+\]
+the upper bound because \(\log n\le n-1\). Multiplying the two threshold inequalities by \(L>0\) gives \(tL(\log2-\tfrac12)\ge qL\) and \(tL/4\ge qL\), so both exponential factors are at most \(e^{-qL}\), and therefore
+\[
+d\left[\exp\left\{-tL\left(\log2-\tfrac12\right)\right\}+\exp\left\{-\frac{tL}{4}\right\}\right]
+\le
+cnL\cdot2e^{-qL}
+\le
+2cn^{2}e^{-qL},
+\]
+using \(d\le cnL\) and then \(L\le n\). Because \(L=\log(en)\),
+\[
+e^{-qL}=\exp\{-q\log(en)\}=e^{-q}n^{-q},
+\]
+so that, using \(e^{-q}\le1\),
+\[
+2cn^{2}e^{-qL}
+=
+2ce^{-q}n^{2-q}
+\le
+2cn^{2-q}.
+\]
+% lean: exp_neg_mul_logScale, pilot_decay_bound
+
+For the first assertion, let \(K>0\) and \(c>0\) be given. Since \(\log2>0.693\) we have \(\log2-\tfrac12>0\), so we may set
+\[
+t_0=\max\left\{\frac{K+4}{\log2-1/2},\,4(K+4)\right\},
+\qquad
+C=2c,
+\qquad
+N=2,
+\]
+and then \(t_0>0\) and \(C>0\), because \(K+4>0\) and \(c>0\). Let \(t\ge t_0\), let \(n\ge N=2\), let \(d\le cnL\), and let the sample law satisfy \cref{obj:ass:iid-sampling} with single-observation law \(P\), so that it equals \(P^{\otimes n}\). Then \(t\ge t_0>0\) and
+\[
+t\left(\log2-\tfrac12\right)
+\ge
+\frac{K+4}{\log2-1/2}\left(\log2-\tfrac12\right)
+=
+K+4,
+\qquad
+\frac{t}{4}\ge\frac{4(K+4)}{4}=K+4 .
+\]
+So the last two displays apply with \(q=K+4\), and since \(2-q=-K-2\le-K\) and \(n\ge1\),
+\[
+\Pr\left(\mathcal B_t\right)
+\le
+2cn^{-K-2}
+\le
+2cn^{-K}
+=
+Cn^{-K}.
+\]
+This is the first assertion. % lean: pilot_sandwich
+
+For the numerical specialization, let \(c>0\) and take \(t=256\), so that the two threshold inequalities hold outright with \(q=4+4=8\):
+\[
+8\le256\left(\log2-\tfrac12\right),
+\qquad
+8\le\frac{256}{4}=64,
+\]
+the first because \(\log2>0.693\) gives \(256(\log2-\tfrac12)>49\). Hence, with \(C=2c\) and \(N=2\), the same two paragraphs give, for every \(n\ge2\) with \(d\le cnL\) and every sample law satisfying \cref{obj:ass:iid-sampling} with single-observation law \(P\),
+\[
+\Pr\left(\mathcal B_{256}\right)
+\le
+2cn^{2-8}
+=
+2cn^{-6}
+\le
+2cn^{-4}
+=
+Cn^{-4},
+\]
+which is the stated bound at the thresholds \(B_-=256L/(2m_0)\) and \(B_+=512L/m_0\). % lean: pilot_sandwich
 \end{proof}

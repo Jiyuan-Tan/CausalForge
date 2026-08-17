@@ -97,12 +97,12 @@ lemma measurable_condBias (η η₀ : NuisanceVec γ) :
         ((η.μ_meas false).sub (η₀.μ_meas false))
     have h_den : Measurable (fun x : γ => 1 - η.e_fn x) :=
       measurable_const.sub η.e_meas
-    simpa using h_num.div h_den
+    simpa using h_num.fun_div h_den
   · have h_num : Measurable (fun x : γ =>
         (η.e_fn x - η₀.e_fn x) * (η.μ_fn true x - η₀.μ_fn true x)) :=
       (η.e_meas.sub η₀.e_meas).mul
         ((η.μ_meas true).sub (η₀.μ_meas true))
-    simpa using h_num.div η.e_meas
+    simpa using h_num.fun_div η.e_meas
 
 /-! ## Generalized residual-conditional-expectation helper -/
 
@@ -201,7 +201,8 @@ private lemma cond_exp_residual_at_h
             S.toPOBackdoorSystem.propScore d := by
     have hpull := MeasureTheory.condExp_mul_of_stronglyMeasurable_left
       (μ := P.μ) (m := S.toPOBackdoorSystem.sigmaX) hh_sm hh_int hind_int
-    simpa [POBackdoorSystem.propScore] using hpull
+    simp only [POBackdoorSystem.propScore]
+    exact hpull
   rw [hres_eq]
   refine hsub.trans ?_
   filter_upwards [hYce, hhce, S.μ_compat hA d] with ω hY hh hcompat
@@ -708,7 +709,7 @@ theorem phi_eta_minus_phi₀_at_x
   unfold BackdoorEstimationSystem.P_X
   rw [MeasureTheory.ae_map_iff
     S.toPOBackdoorSystem.measurable_factualX.aemeasurable hset]
-  simpa using hΩ
+  exact hΩ
 
 /-! ## Double-robustness corollaries (`rem:est-cate-double-robust`) -/
 
@@ -881,7 +882,8 @@ theorem cond_exp_phi_eta_dir_deriv_at_truth_zero
     · intro ω
       simpa [X, Real.norm_eq_abs] using le_trans (hCμ d (X ω)) (le_abs_self Cμ)
   have hT1_int : Integrable T1 P.μ := by
-    simpa [T1] using (hvμ_int true).sub (hvμ_int false)
+    simp only [T1]
+    exact (hvμ_int true).sub (hvμ_int false)
   have hT1_sm : StronglyMeasurable[S.toPOBackdoorSystem.sigmaX] T1 := by
     change StronglyMeasurable[
       MeasurableSpace.comap S.toPOBackdoorSystem.factualX inferInstance]
@@ -1048,7 +1050,8 @@ theorem cond_exp_phi_eta_dir_deriv_at_truth_zero
     have hpull := MeasureTheory.condExp_mul_of_stronglyMeasurable_left
       (μ := P.μ) (m := S.toPOBackdoorSystem.sigmaX) hg_sm hprod_int
       (S.toPOBackdoorSystem.dVar.integrable_indicator d (MeasurableSet.singleton d))
-    simpa [POBackdoorSystem.propScore] using hpull
+    simp only [POBackdoorSystem.propScore]
+    exact hpull
   have hT2_ce : P.μ[T2 | S.toPOBackdoorSystem.sigmaX]
       =ᵐ[P.μ] (fun _ => (0 : ℝ)) := by
     simpa [T2, X, Y, indT] using

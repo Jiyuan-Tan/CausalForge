@@ -1503,6 +1503,20 @@ export function mergeSolveOutputs(args: {
   // edges against the FINAL render.
   let finalRendered = assembleCore(proto, next);
   {
+    // A sealed statement deletion is part of this round's reviewed postimage even
+    // when the worker correctly emits no copy of the mandated edit.  Do not inspect
+    // that soon-to-be-deleted node's dependency closure before the structural-edit
+    // receipt/apply pass below: doing so makes an obsolete carried answer with a
+    // dependency on a simultaneously rejected declaration impossible to remove.
+    //
+    // We skip only the deletion TARGETS here.  Other nodes that still point at a
+    // target remain visible, so statementDeleteApplicable/d0_apply continue to fail
+    // closed on unsafe inbound references or missing replacement endpoints.
+    const preValidationDeleteIds = new Set(
+      [...pendingSupersessionEdits, ...requiredCoreEdits]
+        .filter((edit) => edit.kind === "statement-delete")
+        .map((edit) => edit.id),
+    );
     const prospectiveKnown = new Set<string>([
       ...proposedAssumptions.map((a) => a.id),
       ...proposedCoreEdits
@@ -1519,6 +1533,7 @@ export function mergeSolveOutputs(args: {
       const known = knownOf(finalRendered);
       let repaired = false;
       for (const st of finalRendered.statements) {
+        if (preValidationDeleteIds.has(st.id)) continue;
         for (const dep of st.depends_on ?? []) {
           if (!known.has(dep) && prev?.solved[dep]?.node && next.solved[dep] === undefined) {
             const rec = prev.solved[dep];
@@ -1544,6 +1559,7 @@ export function mergeSolveOutputs(args: {
     const known = knownOf(finalRendered);
     const dangling: string[] = [];
     for (const st of finalRendered.statements) {
+      if (preValidationDeleteIds.has(st.id)) continue;
       if (!Array.isArray(st.depends_on)) continue;
       for (const dep of st.depends_on) {
         if (!known.has(dep) && !prospectiveKnown.has(dep)) dangling.push(`${st.id}->${dep}`);
@@ -1653,6 +1669,11 @@ export function mergeSolveOutputs(args: {
   // durable cursor, not the pre-round `prev`, so same-round nodes/edges participate
   // in delete/replacement applicability exactly as they will transactionally.
   const receiptWorking = structuredClone(next);
+  const atomicStatementDeleteIds = new Set(
+    coreEditsInApplyOrder
+      .filter((edit) => edit.kind === "statement-delete")
+      .map((edit) => edit.id),
+  );
   // Claim/definition proposal channels apply before structural core edits.
   for (const change of applicableAnyStatementChanges) {
     const frozen = receiptCore.statements.find((statement) => statement.id === change.id);
@@ -1682,12 +1703,25 @@ export function mergeSolveOutputs(args: {
     if (!receiptStatement(preview, working, edit.id) || edit.replacement_id === edit.id) return false;
     if (edit.replacement_id !== undefined &&
         !receiptStatement(preview, working, edit.replacement_id)) return false;
-    if (findUnsafeDeleteTextReferences(preview, working, edit.id).length > 0) return false;
+    // Judge a reviewed deletion bundle against its atomic postimage.  A helper's
+    // only consumer may itself be deleted later in apply order; treating that
+    // consumer as live here drops the helper edit before the bundle can land.
+    const validationCore = {
+      ...preview,
+      statements: preview.statements.filter(
+        (statement) => statement.id === edit.id || !atomicStatementDeleteIds.has(statement.id),
+      ),
+    };
+    const validationWorking = working === null ? null : structuredClone(working);
+    if (validationWorking) {
+      for (const id of atomicStatementDeleteIds) if (id !== edit.id) delete validationWorking.solved[id];
+    }
+    if (findUnsafeDeleteTextReferences(validationCore, validationWorking, edit.id).length > 0) return false;
     if (edit.replacement_id !== undefined) return true;
-    const structuredInbound = preview.statements.some(
+    const structuredInbound = validationCore.statements.some(
       (statement) => statement.id !== edit.id && statement.depends_on.includes(edit.id),
     );
-    const carriedInbound = Object.entries(working?.solved ?? {}).some(
+    const carriedInbound = Object.entries(validationWorking?.solved ?? {}).some(
       ([id, record]) => id !== edit.id && record.node?.depends_on.includes(edit.id),
     );
     const symbolInbound = preview.symbols.some((symbol) => symbol.ref === edit.id);

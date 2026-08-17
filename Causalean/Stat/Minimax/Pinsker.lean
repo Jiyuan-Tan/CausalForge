@@ -92,16 +92,16 @@ private theorem hasDerivAt_pinskerPhi {x : ℝ} (hx : 0 < x) :
       (klFun x + (x + 2) * Real.log x) x := by
     have h1 : HasDerivAt (fun y : ℝ => y + 2) 1 x := by
       simpa using (hasDerivAt_id x).add_const 2
-    have := h1.mul hk
+    have := h1.fun_mul hk
     simpa using this
   have hsq : HasDerivAt (fun y : ℝ => (3 / 2) * (y - 1) ^ 2) (3 * (x - 1)) x := by
     have h2 : HasDerivAt (fun y : ℝ => (y - 1) ^ 2) (2 * (x - 1)) x := by
-      have := ((hasDerivAt_id x).sub_const 1).pow 2
+      have := ((hasDerivAt_id x).sub_const 1).fun_pow 2
       simpa [mul_comm] using this
     have := h2.const_mul (3 / 2 : ℝ)
-    convert this using 1; ring
-  have := hxlog.sub hsq
-  convert this using 1
+    exact this.congr_deriv (by ring)
+  have := hxlog.fun_sub hsq
+  refine this.congr_deriv ?_
   rw [klFun]; ring
 
 /-- Second derivative of `pinskerPhi`'s derivative: `φ'' x = 2(log x + 1/x - 1)`. -/
@@ -116,14 +116,14 @@ private theorem hasDerivAt_pinskerDeriv {x : ℝ} (hx : 0 < x) :
     simpa using this
   have hprod : HasDerivAt (fun y : ℝ => 2 * (y + 1) * Real.log y)
       (2 * Real.log x + 2 * (x + 1) * (1 / x)) x := by
-    have := h1.mul hlog
+    have := h1.fun_mul hlog
     convert this using 1
   have hlin : HasDerivAt (fun y : ℝ => 4 * (y - 1)) 4 x := by
     have : HasDerivAt (fun y : ℝ => 4 * (y - 1)) (4 * 1) x :=
       (((hasDerivAt_id x).sub_const 1).const_mul 4)
     simpa using this
-  have := hprod.sub hlin
-  convert this using 1
+  have := hprod.fun_sub hlin
+  refine this.congr_deriv ?_
   field_simp
   ring
 

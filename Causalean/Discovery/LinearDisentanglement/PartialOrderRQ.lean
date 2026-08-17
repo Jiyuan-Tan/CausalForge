@@ -269,8 +269,8 @@ theorem toLp_H_linearIndependent (S : Solution d p K) :
       (WithLp.toLp 2 (S.H j) : EuclideanSpace ℝ (Fin p))) := by
   have hker : ((WithLp.linearEquiv 2 ℝ (Fin p → ℝ)).symm.toLinearMap).ker = ⊥ :=
     LinearMap.ker_eq_bot.mpr (WithLp.linearEquiv 2 ℝ (Fin p → ℝ)).symm.injective
-  have := S.hH.map' (WithLp.linearEquiv 2 ℝ (Fin p → ℝ)).symm.toLinearMap hker
-  simpa [Function.comp] using this
+  have h := S.hH.map' (WithLp.linearEquiv 2 ℝ (Fin p → ℝ)).symm.toLinearMap hker
+  exact h
 
 open Classical in
 /-- The `i`-th residual lies in the span of `{toLp hₘ : i ⪯ m}` (the row itself and its

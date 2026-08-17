@@ -131,7 +131,8 @@ private theorem exists_lex_least_compact :
       · apply htmin (Fin.tail y)
         · refine ⟨y, ⟨hyS, ?_⟩, rfl⟩
           exact hyhead.trans hxhead
-        · simpa [← hxt] using hytail
+        · rw [← hxt]
+          exact hytail
 
 private theorem exists_isLexArgmin {d : ℕ} (K : Set (Fin d → ℝ))
     (hK : IsCompact K) (hKne : K.Nonempty)

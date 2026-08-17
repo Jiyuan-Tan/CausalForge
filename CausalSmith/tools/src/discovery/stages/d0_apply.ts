@@ -12,7 +12,7 @@ import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { artifactPath, statePath } from "../../paths.js";
 import { loadState, saveState } from "../../state.js";
-import type { PipelineContext } from "../../types.js";
+import type { PipelineContext, StateJson } from "../../types.js";
 import { assertMandateBasis, coreEditOperationKey, resolveRequiredCoreEditMandates } from "../solve/mandates.js";
 import { protoCoreJsonPath } from "./neg1_2_author.js";
 import { coreJsonPath } from "./d0_core.js";
@@ -39,7 +39,8 @@ import {
 } from "../core/schema.js";
 import { archiveProofs, proofBytesInRoundFile, type ProofToArchive } from "../proof_archive.js";
 import { statementRevision } from "../core/revision.js";
-import { wiredSnapshot } from "../working_writer.js";
+import { recordProof, wiredSnapshot } from "../working_writer.js";
+import { agentOeqSourceFromFingerprint, oeqSourceFingerprint } from "../solve/oeq_source.js";
 import { companionPathFor } from "../solve/tex_companion.js";
 import { proofContentClosureIntersects, rebuildAssumptionUsedBy } from "../core/dependencies.js";
 import { normalizeSymbol } from "../core/preflight.js";
@@ -488,10 +489,54 @@ interface D0ApplyTransaction {
   proto_after: string;
   working_after: WorkingState | null;
   escalation_entry: EscalationLogEntry;
+  /** Optional complete state post-image for exceptional replayable store repairs. */
+  state_after?: StateJson;
 }
 
 function applyTransactionPath(ctx: PipelineContext): string {
   return path.join(path.dirname(coreJsonPath(ctx)), "d0_apply_transaction.json");
+}
+
+/** Commit a fully prevalidated proto+working store replacement through the same
+ * replayable transaction used by ordinary D0 applies.  Exceptional repair CLIs
+ * must not hand-sequence these two authoritative stores. */
+export async function commitD0StoreReplacement(args: {
+  ctx: PipelineContext;
+  expectedProtoBytes: string;
+  protoAfter: Core;
+  workingAfter: WorkingState;
+  note: string;
+  stateAfter?: StateJson;
+}): Promise<string> {
+  const txPath = applyTransactionPath(args.ctx);
+  if (existsSync(txPath)) {
+    throw new Error(`pending D0 apply transaction exists at ${txPath}; recover it before replacing stores`);
+  }
+  const protoPath = protoCoreJsonPath(args.ctx);
+  const live = await readFile(protoPath, "utf8");
+  if (live !== args.expectedProtoBytes) {
+    throw new Error("D0 store replacement basis changed after validation; nothing was mutated");
+  }
+  const transactionId = `d0replace:${randomUUID()}`;
+  const escalationEntry: EscalationLogEntry = {
+    transaction_id: transactionId,
+    round: args.workingAfter.round,
+    changed: [],
+    note: args.note,
+    provenance_only: true,
+  };
+  await writeJsonAtomic(txPath, {
+    version: 1,
+    transaction_id: transactionId,
+    proto_before: live,
+    proto_after: JSON.stringify(CoreSchema.parse(args.protoAfter), null, 2),
+    working_after: args.workingAfter,
+    escalation_entry: escalationEntry,
+    ...(args.stateAfter ? { state_after: args.stateAfter } : {}),
+  } satisfies D0ApplyTransaction);
+  const recovered = await recoverPendingApply(args.ctx);
+  if (recovered === null) throw new Error("D0 store replacement transaction disappeared before commit");
+  return transactionId;
 }
 
 async function writeTextAtomic(file: string, contents: string): Promise<void> {
@@ -550,7 +595,9 @@ export async function recoverPendingApply(ctx: PipelineContext): Promise<Escalat
   );
 
   const sp = statePath(ctx.repoRoot, ctx.qid, ctx.specialization ?? "v1");
-  if (existsSync(sp)) {
+  if (tx.state_after) {
+    await saveState(ctx.repoRoot, ctx.qid, ctx.specialization ?? "v1", tx.state_after);
+  } else if (existsSync(sp)) {
     const state = await loadState(ctx.repoRoot, ctx.qid, ctx.specialization ?? "v1");
     if (state.stage_completed !== "-0.5") {
       state.stage_completed = "-0.5";
@@ -936,6 +983,9 @@ export async function applyProposedChanges(args: {
   const selectedDefinitions = definitions.filter((change) => !sel || sel.matchesDefinition(change.id));
   const selectedAssumptions = assumptions.filter((change) => !sel || sel.matchesAssumption(change.id));
   const selectedCoreEdits = coreEdits.filter((edit) => !sel || sel.matchesCoreEdit(edit));
+  const atomicStatementDeleteIds = new Set(
+    selectedCoreEdits.filter((edit) => edit.kind === "statement-delete").map((edit) => edit.id),
+  );
   const selectedProofIds = new Set<string>([
     ...selectedStatements.map((change) => change.id),
     ...selectedCoreEdits
@@ -1546,14 +1596,24 @@ export async function applyProposedChanges(args: {
           `Cannot delete statement ${edit.id}: replacement ${replacementId} is not a frozen or carried statement node`,
         );
       }
-      const inbound = proto.statements
+      const validationProto = {
+        ...proto,
+        statements: proto.statements.filter(
+          (statement) => statement.id === edit.id || !atomicStatementDeleteIds.has(statement.id),
+        ),
+      };
+      const validationWorking = working === null ? null : structuredClone(working);
+      if (validationWorking) {
+        for (const id of atomicStatementDeleteIds) if (id !== edit.id) delete validationWorking.solved[id];
+      }
+      const inbound = validationProto.statements
         .filter((s) => s.id !== edit.id && s.depends_on.includes(edit.id))
         .map((s) => s.id);
-      const carriedInbound = Object.entries(working?.solved ?? {})
+      const carriedInbound = Object.entries(validationWorking?.solved ?? {})
         .filter(([id, rec]) => id !== edit.id && rec.node?.depends_on.includes(edit.id))
         .map(([id]) => id);
       const symbolInbound = proto.symbols.filter((s) => s.ref === edit.id).map((s) => s.name);
-      const textInbound = findUnsafeDeleteTextReferences(proto, working, edit.id);
+      const textInbound = findUnsafeDeleteTextReferences(validationProto, validationWorking, edit.id);
       if (textInbound.length > 0) {
         throw new Error(
           `Cannot delete statement ${edit.id}${replacementId ? ` in favour of ${replacementId}` : ""}: ` +
@@ -1593,6 +1653,38 @@ export async function applyProposedChanges(args: {
         }
         for (const [sourceId, resolution] of Object.entries(working.resolved_oeqs ?? {})) {
           const theoremId = typeof resolution === "string" ? resolution : resolution.theorem_id;
+          if (sourceId !== edit.id && theoremId === edit.id &&
+              !proto.statements.some((statement) => statement.id === sourceId) &&
+              working.solved[sourceId] === undefined) {
+            if (typeof resolution === "string") {
+              throw new Error(
+                `Cannot delete OEQ answer ${edit.id}: legacy resolution ${sourceId}->${theoremId} ` +
+                  "has no source fingerprint from which to restore the agent-authored question",
+              );
+            }
+            const restored = agentOeqSourceFromFingerprint(sourceId, resolution.source_fingerprint);
+            if (!restored) {
+              throw new Error(
+                `Cannot delete OEQ answer ${edit.id}: source fingerprint for ${sourceId} is not a valid open question`,
+              );
+            }
+            recordProof(working, proto, {
+              id: sourceId,
+              snapshotOf: restored,
+              proofTex: "",
+              node: restored,
+              owner: sourceId,
+              partial: true,
+            });
+          }
+          if (sourceId !== edit.id && theoremId === edit.id) {
+            const reopened = proto.statements.find((statement) => statement.id === sourceId) ??
+              working.solved[sourceId]?.node;
+            if (reopened?.kind === "openendedquestion") {
+              working.sealed_open_oeqs ??= {};
+              working.sealed_open_oeqs[sourceId] = oeqSourceFingerprint(reopened);
+            }
+          }
           if (sourceId === edit.id || theoremId === edit.id) delete working.resolved_oeqs![sourceId];
         }
         workingChanged = true;

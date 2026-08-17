@@ -13,6 +13,10 @@ open scoped BigOperators
 namespace CausalSmith.Experimentation.RolloutChebyshev
 
 -- @node: lobatto_affine_comp_natDegree_le
+/-- Composing a polynomial of degree at most `β` with the affine map `x ↦ (q/2)(x + 1)`, which
+carries the standard interval `[-1, 1]` onto the budget window `[0, q]`, leaves the degree at
+most `β`. Degree bookkeeping for moving a dual test polynomial between the two parametrisations
+in the amplification upper bound. -/
 lemma lobatto_affine_comp_natDegree_le {beta : ℕ} {q : ℝ} {r : Polynomial ℝ}
     (hrdeg : r.natDegree ≤ beta) :
     (r.comp (Polynomial.C (q / 2) * (Polynomial.X + Polynomial.C 1))).natDegree ≤ beta := by
@@ -30,6 +34,18 @@ lemma lobatto_affine_comp_natDegree_le {beta : ℕ} {q : ℝ} {r : Polynomial �
     _ = beta := by simp
 
 -- @node: chebyshev_amplification_upper
+/-- The shifted Chebyshev–Lobatto rollout design attains the exponential base, matching the lower
+bound. Granted two inputs — an endpoint upper bound with constant `C`, namely
+`|R(2/q - 1) - R(-1)| ≤ C λ(q)^β` for every polynomial `R` of degree at most `β` bounded by one
+on `[-1, 1]`; and a norming-set inequality with constant `K`, valid once the number of rounds
+satisfies `k ≥ c β`, controlling the largest value of such an `R` on all of `[-1, 1]` by `K`
+times its largest value on the `k + 1` Chebyshev–Lobatto nodes — the Chebyshev–Lobatto schedule
+`p^Ch(k,q)` has total-variation amplification at most `(K C)² · ((1 + √(1 - q))² / q)^{2β}` for
+every order `β ≥ 1` with `β ≤ k` and every budget `q ≤ q_max < 1`.
+
+Combined with the matching lower bound over all budgeted schedules, this pins the exponential
+base of the minimax amplification at `ρ(q) = (1 + √(1 - q))² / q`, so that placing rollout nodes
+on the Chebyshev grid is rate-optimal in the low-budget regime. -/
 lemma chebyshev_amplification_upper (c qmax Cupper K : ℝ) (hCupper_pos : 0 < Cupper)
     (hKpos : 0 < K)
     (hendpoint_upper :

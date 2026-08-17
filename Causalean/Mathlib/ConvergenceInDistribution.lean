@@ -67,9 +67,9 @@ If `X n ⇒ Z` and `a n → a₀` deterministically, then
 theorem TendstoInDistribution.const_mul_of_tendsto_const
     [IsProbabilityMeasure μ] [l.IsCountablyGenerated]
     {X : ι → Ω → ℝ} {Z : Ω → ℝ} {a : ι → ℝ} {a₀ : ℝ}
-    (hXZ : TendstoInDistribution X l Z μ)
+    (hXZ : TendstoInDistribution X l Z (fun _ => μ) μ)
     (ha : Tendsto a l (𝓝 a₀)) :
-    TendstoInDistribution (fun n ω => a n * X n ω) l (fun ω => a₀ * Z ω) μ := by
+    TendstoInDistribution (fun n ω => a n * X n ω) l (fun ω => a₀ * Z ω) (fun _ => μ) μ := by
   have hY : TendstoInMeasure μ (fun n => fun _ : Ω => a n) l (fun _ => a₀) :=
     tendstoInMeasure_const_of_tendsto_real (μ := μ) ha
   have hY_meas : ∀ n, AEMeasurable (fun _ : Ω => a n) μ := by

@@ -1745,7 +1745,7 @@ theorem tianDistrictDensity_eq_mechCFactor_doModel
     have hSHobs : S ⊆ H.observed := by
       exact H.cComponentSet_subset_observed S (by
         simpa [H, MX, fixTruncCComponentSet] using hS)
-    simpa [H, D, MX, fixObservedAncestralSet] using hSHobs
+    exact hSHobs
   have hμpos : DiscreteID.PositiveMass μ := by
     simpa [μ] using
       doObsKernelAncestralMarginal_positiveMass M X hObs hFix Y hpos hYX sDo
@@ -1994,7 +1994,7 @@ theorem tianDistrictDensity_eq_qLocalMass_div_jointRef_district
                 (by simpa [H, MX, fixTruncCComponentSet] using hS)
             have hvD : v ∈ D := by
               dsimp [H, D, SWIGGraph.induce, fixObservedAncestralSet] at hSHobs ⊢
-              simpa using hSHobs hv
+              exact hSHobs hv
             exact (Finset.mem_inter.mp hvD).2)
           (extend xD) /
         jointRef ref S
@@ -2005,7 +2005,7 @@ theorem tianDistrictDensity_eq_qLocalMass_div_jointRef_district
                 H.cComponentSet_subset_observed S
                   (by simpa [H, MX, fixTruncCComponentSet] using hS)
               dsimp [H, D, SWIGGraph.induce, fixObservedAncestralSet] at hSHobs ⊢
-              simpa using hSHobs hv) xD} :
+              exact hSHobs hv) xD} :
             Set (ValuesOn S (swigΩ Ω))) := by
   classical
   let MX := M.fixSet X hObs hFix
@@ -2021,13 +2021,13 @@ theorem tianDistrictDensity_eq_qLocalMass_div_jointRef_district
     have hSHobs : S ⊆ H.observed := H.cComponentSet_subset_observed S hScomp
     have hvD : v ∈ D := by
       dsimp [H, D, SWIGGraph.induce, fixObservedAncestralSet] at hSHobs ⊢
-      simpa using hSHobs hv
+      exact hSHobs hv
     exact (Finset.mem_inter.mp hvD).2
   have hSD : S ⊆ D := by
     intro v hv
     have hSHobs : S ⊆ H.observed := H.cComponentSet_subset_observed S hScomp
     dsimp [H, D, SWIGGraph.induce, fixObservedAncestralSet] at hSHobs ⊢
-    simpa using hSHobs hv
+    exact hSHobs hv
   have hdisj :
       (↑H.cComponentSet : Set (Finset (SWIGNode N))).Pairwise
         (fun U U' => Disjoint U U') := by
@@ -2291,7 +2291,7 @@ lemma tian_full_cComponent_density_recovery_core_direct
     have hSHobs : S ⊆ H.observed := by
       exact H.cComponentSet_subset_observed S (by
         simpa [H, fixTruncCComponentSet] using hS)
-    simpa [H, D, fixObservedAncestralSet] using hSHobs
+    exact hSHobs
   have hSX : ∀ n ∈ X, SWIGNode.random n ∉ S := by
     intro n hn hnS
     have hnD : SWIGNode.random n ∈ D := hSD hnS

@@ -181,7 +181,7 @@ describe("loadParentEntry", () => {
     expect(parent.banked_novelty_tier).toBe("subfield");
   });
 
-  it("accepts only novelty targets strictly above the parent's banked tier", async () => {
+  it("accepts novelty targets at or above the parent's banked tier", async () => {
     const repoRoot = await mkdtemp(path.join(os.tmpdir(), "causalsmith-upgrade-"));
     await makeBankEntry({
       repoRoot,
@@ -198,8 +198,49 @@ describe("loadParentEntry", () => {
     });
     expect(assertUpgradeNoveltyTarget("field", parent)).toBe("field");
     expect(assertUpgradeNoveltyTarget("flagship", parent)).toBe("flagship");
-    expect(() => assertUpgradeNoveltyTarget("subfield", parent)).toThrow(/strictly above/);
-    expect(() => assertUpgradeNoveltyTarget("incremental", parent)).toThrow(/strictly above/);
+    // Equal-tier upgrade is allowed; the D-0.5 axis rubric supplies the delta gate.
+    expect(assertUpgradeNoveltyTarget("subfield", parent)).toBe("subfield");
+    expect(() => assertUpgradeNoveltyTarget("incremental", parent)).toThrow(/at least parent/);
+  });
+
+  it("rejects a novelty target below the parent's banked tier", async () => {
+    const repoRoot = await mkdtemp(path.join(os.tmpdir(), "causalsmith-upgrade-"));
+    await makeBankEntry({
+      repoRoot,
+      tier: "accepted",
+      qid: "stat_parent_field",
+      spec: "v1",
+      topic: "Parent",
+      cluster: "partialid",
+      bankedNoveltyTier: "field",
+    });
+    const parent = await loadParentEntry(repoRoot, {
+      parent_qid: "stat_parent_field",
+      parent_spec: "v1",
+    });
+    expect(assertUpgradeNoveltyTarget("field", parent)).toBe("field");
+    expect(() => assertUpgradeNoveltyTarget("subfield", parent)).toThrow(/at least parent/);
+  });
+
+  it("makes a flagship parent upgradable at flagship (top of the ladder)", async () => {
+    const repoRoot = await mkdtemp(path.join(os.tmpdir(), "causalsmith-upgrade-"));
+    await makeBankEntry({
+      repoRoot,
+      tier: "accepted",
+      qid: "stat_parent_flagship",
+      spec: "v1",
+      topic: "Parent",
+      cluster: "partialid",
+      bankedNoveltyTier: "flagship",
+    });
+    const parent = await loadParentEntry(repoRoot, {
+      parent_qid: "stat_parent_flagship",
+      parent_spec: "v1",
+    });
+    // Under the old strictly-above rule a flagship parent was un-upgradable at
+    // any tier; equal-tier is the only legal target and must be accepted.
+    expect(assertUpgradeNoveltyTarget("flagship", parent)).toBe("flagship");
+    expect(() => assertUpgradeNoveltyTarget("field", parent)).toThrow(/at least parent/);
   });
 
   it("rejects parents in failed/legacy tiers", async () => {

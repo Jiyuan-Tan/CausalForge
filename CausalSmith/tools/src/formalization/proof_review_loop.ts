@@ -589,6 +589,8 @@ export async function runProofReviewLoop(args: {
         r.escalate.kind === "claim-false" || // a refuted claim can't be rescaffolded — never reroute to F2
         r.escalate.kind === "missing-review-evidence" ||
         r.escalate.kind === "missing-review-target" ||
+        r.escalate.kind === "ambiguous-review-target-alias" ||
+        r.escalate.kind === "review-target-resolution-error" ||
         r.escalate.kind === "unparsable-output" ||
         r.escalate.kind === "missing-peer-reviewer";
       if (!futile) {

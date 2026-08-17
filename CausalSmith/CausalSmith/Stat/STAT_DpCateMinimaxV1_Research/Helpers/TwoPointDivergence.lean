@@ -173,7 +173,7 @@ lemma cateWitness_single_ac_and_int {d : ℕ} (Q : CateLaw d) (e0 : ℝ)
   have hacmap := hacprod.map measurable_snd
   change (m ⊗ₘ η).snd ≪ (m ⊗ₘ κ).snd at hacmap
   rw [Measure.snd_compProd, Measure.snd_compProd] at hacmap
-  simpa [m, κ, η,
+  simpa [m, κ, η, cateWitnessLaw,
     ← cateWitnessDataMeasure_eq_AXbind Q e0 b hbmeas,
     ← cateWitnessDataMeasure_eq_AXbind Q e0 (0 : (Fin d → ℝ) → ℝ) measurable_const] using hacmap
 

@@ -94,7 +94,12 @@ export function recordProof(working: WorkingState, proto: Core, spec: ProofRecor
   // statement and a frozen-member record must NOT pretend to.
   working.solved[spec.id] =
     spec.node !== undefined
-      ? { ...common, ...partial, node: spec.node, ...(spec.owner !== undefined ? { owner: spec.owner } : {}) }
+      ? {
+          ...common,
+          ...partial,
+          node: spec.partial ? spec.node : { ...spec.node, proof_tex: spec.proofTex },
+          ...(spec.owner !== undefined ? { owner: spec.owner } : {}),
+        }
       : { ...common, ...partial };
 }
 

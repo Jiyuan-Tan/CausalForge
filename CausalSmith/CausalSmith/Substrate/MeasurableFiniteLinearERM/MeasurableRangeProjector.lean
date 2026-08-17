@@ -113,7 +113,7 @@ private theorem normalizedColumnMatrix_gram_apply
     ((normalizedColumnMatrix X).transpose * normalizedColumnMatrix X) j k =
       if j = k then (if normalizedColumn X j = 0 then 0 else 1) else 0 := by
   rw [Matrix.mul_apply]
-  simpa [normalizedColumnMatrix, PiLp.inner_apply, real_inner_eq_mul] using
+  simpa [normalizedColumnMatrix, PiLp.inner_apply, real_inner_eq_mul, mul_comm] using
     normalizedColumn_orthonormal_or_zero X j k
 
 private theorem normalizedColumnMatrix_gram_mul_transpose
@@ -290,7 +290,7 @@ private theorem orthogonalColumn_measurable_coord
       (ih k hk l).mul (hX l j)
     convert hsum using 1
     funext ω
-    simp [PiLp.inner_apply, real_inner_eq_mul, euclideanColumn]
+    simp [PiLp.inner_apply, real_inner_eq_mul, euclideanColumn, mul_comm]
   have hsum :
       Measurable fun ω ↦
         ∑ k ∈ Finset.Iio j,
@@ -342,8 +342,10 @@ theorem normalizedColumn_measurable_coord
             (fun l ↦ orthogonalColumn (X ω) j l : Fin n → ℝ) :=
       (PiLp.continuous_toLp 2 (fun _ : Fin n ↦ ℝ)).measurable.comp hraw
     simpa only [WithLp.toLp_ofLp] using htoLp
-  simpa [normalizedColumn, orthogonalColumn, gramSchmidtNormed] using
+  have hmul : Measurable fun ω : Ω ↦
+      ‖orthogonalColumn (X ω) j‖⁻¹ * orthogonalColumn (X ω) j i :=
     heuc.norm.inv.mul (orthogonalColumn_measurable_coord X hX j i)
+  simpa [normalizedColumn, orthogonalColumn, gramSchmidtNormed] using hmul
 
 /-- Every coordinate of the ordered Gram--Schmidt range projector is Borel
 measurable, without a constant-rank assumption. -/

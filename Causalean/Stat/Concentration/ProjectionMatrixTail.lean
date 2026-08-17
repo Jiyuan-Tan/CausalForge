@@ -98,7 +98,9 @@ theorem measure_projection_energy_gt_le
     have hlin_one :
         ProbabilityTheory.HasSubgaussianMGF
           (fun ω ↦ ∑ i, v i * eps i ω) 1 P := by
-      simpa only [hsumsq] using hlin
+      have hnn : (⟨∑ i, (v i) ^ 2, by positivity⟩ : NNReal) = 1 :=
+        NNReal.coe_injective hsumsq
+      rwa [hnn] at hlin
     convert hlin_one using 1
     funext ω
     exact hinner v hv ω

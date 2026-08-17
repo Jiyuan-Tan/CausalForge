@@ -125,7 +125,7 @@ theorem ofSCM_condIndepCF_of_dSep
   let E : M.LatentValues → M.RandomValues := fun ℓ => M.evalMap s ℓ
   have hE : Measurable E := by
     have hmeas := M.evalMap_measurable
-    simpa [E, Function.uncurry] using
+    simpa [E, Function.uncurry, Function.comp_def] using
       hmeas.comp (Measurable.prodMk measurable_const measurable_id)
   have hFull : SCM.FullCondIndep M X Y Z hX hY hZ (M.jointKernel s) :=
     SCM.full_globalMarkov M X Y Z hX hY hZ hdSep s
@@ -162,6 +162,12 @@ theorem ofSCM_condIndepCF_of_dSep
     simpa [Function.comp_assoc] using hPull.comp haMap hBMap
   unfold CondIndepCF
   convert hComp using 3
+  · rfl
+  · exact heq_of_eq hc_value
+  · exact HEq.rfl
+  · exact heq_of_eq ha_value
+  · exact heq_of_eq hB_value
+  · exact HEq.rfl
 
 end POSystem
 

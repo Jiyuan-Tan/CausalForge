@@ -1,0 +1,14 @@
+import Causalean.Stat.Minimax.MaximalCoupling
+
+/-!
+# Re-exported maximal-coupling substrate
+
+The reusable result now lives in Causalean; this module keeps the accepted run’s
+original unqualified names as aliases.
+-/
+
+namespace CausalSmith.Stat.BddUniformLogPenalty
+
+export Causalean.Stat (measurableEqOfStandardBorel tvDist_eq_half_integral_abs_rnDeriv_sub rnCommonPart rnCommonPart_le_left rnCommonPart_le_right rnCommonPart_mass_eq_one_sub_tvDist measure_eq_of_tvDist_eq_zero maximalCoupling maximalCoupling_map_fst maximalCoupling_map_snd maximalCoupling_eq_mass_ge compressionCoupling compressionCoupling_map_fst compressionCoupling_map_snd compressionCoupling_map_compress_pair compressionCoupling_equal_compression_mass_ge)
+
+end CausalSmith.Stat.BddUniformLogPenalty

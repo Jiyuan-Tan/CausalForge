@@ -107,7 +107,7 @@ theorem no_three_chain_of_minimalPrime_span
   have hbotK : (⊥ : Ideal ((MvPolynomial ι ℂ) ⧸ I)) < K.map q := by
     simpa [hmapIbot] using hmapIK
   have hheightK_pos : (0 : ℕ∞) < (K.map q).height := by
-    have hstrict := Ideal.height_strict_mono_of_is_prime hbotK
+    have hstrict := Ideal.height_strict_mono_of_isPrime hbotK
     simpa [Ideal.height_bot] using hstrict
   have hheightK_zero : (K.map q).height = 0 :=
     ENat.lt_one_iff_eq_zero.mp hheightK_lt

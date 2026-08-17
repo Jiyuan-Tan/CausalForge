@@ -305,9 +305,9 @@ lemma conditional_block_hellinger_le
       (Real.continuous_sqrt.measurable.comp_aemeasurable
         (hfint b).aestronglyMeasurable.aemeasurable).aestronglyMeasurable
     rw [memLp_two_iff_integrable_sq hasm]
-    convert hfint b using 1
-    funext u
-    exact Real.sq_sqrt (hf0 b u)
+    rw [show (fun u => Real.sqrt (f b u) ^ 2) = f b from
+      funext fun u => Real.sq_sqrt (hf0 b u)]
+    exact hfint b
   have hglp (b : Fin (blockCount n d)) :
       MemLp (fun u => Real.sqrt (g b u)) 2 volume := by
     have hasm :
@@ -315,16 +315,19 @@ lemma conditional_block_hellinger_le
       (Real.continuous_sqrt.measurable.comp_aemeasurable
         (hgint b).aestronglyMeasurable.aemeasurable).aestronglyMeasurable
     rw [memLp_two_iff_integrable_sq hasm]
-    convert hgint b using 1
-    funext u
-    exact Real.sq_sqrt (hg0 b u)
+    rw [show (fun u => Real.sqrt (g b u) ^ 2) = g b from
+      funext fun u => Real.sq_sqrt (hg0 b u)]
+    exact hgint b
   have haint : ∀ b,
       Integrable (fun u => Real.sqrt (f b u * g b u)) volume := by
     intro b
-    convert (hflp b).integrable_mul (hglp b) using 1
-    funext u
-    simp only [Pi.mul_apply]
-    rw [Real.sqrt_mul (hf0 b u)]
+    have hEq : (fun u => Real.sqrt (f b u * g b u)) =
+        (fun u => Real.sqrt (f b u)) * fun u => Real.sqrt (g b u) := by
+      funext u
+      simp only [Pi.mul_apply]
+      rw [Real.sqrt_mul (hf0 b u)]
+    rw [hEq]
+    exact (hflp b).integrable_mul (hglp b)
   change hellingerSqDensity
       (Measure.pi (fun _ : Fin (blockCount n d) => volume))
       (fun y => ∏ b, f b (y b)) (fun y => ∏ b, g b (y b)) ≤

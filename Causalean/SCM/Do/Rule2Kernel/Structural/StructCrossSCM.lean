@@ -263,7 +263,7 @@ theorem evalMap_overrideC_fixSet_compat_on_fillZrW
       symm
       change M1.structFun ⟨v, hv_M1⟩
             (fixMonoParentMap M1.toSWIGGraph Z hZ_obs hZ_fixed v
-              (fun w' : {w' // w' ∈ M2.dag.parents v} =>
+              (fun w' : {w' // w' ∈ (M1.splitMono Z hZ_obs hZ_fixed).dag.parents v} =>
                 parentDispatchOverride M2 hZrW_M2 s Fw ℓ ⟨v, hv⟩ w'))
         = M1.structFun ⟨v, hv_M1⟩
             (parentDispatchOverride M1 hZrW_M1 s_M1 Fw ℓ_M1 ⟨v, hv_M1⟩)

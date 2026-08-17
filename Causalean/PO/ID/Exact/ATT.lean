@@ -208,6 +208,8 @@ private lemma att_numerator_arm [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
       | true => f (0 : Fin 2)
       | false => f (1 : Fin 2)
   have hψ_meas : Measurable ψ := by
+    let instCf : ∀ a : Fin 2, MeasurableSpace (S.cfBundle.type a) :=
+      fun a => S.cfBundle.inst a
     cases d with
     | true => exact measurable_pi_apply (0 : Fin 2)
     | false => exact measurable_pi_apply (1 : Fin 2)
@@ -251,8 +253,7 @@ private lemma att_numerator_arm [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
     have h :=
       S.xVar.condExpGiven_mul_of_stronglyMeasurable_left
         (S.stronglyMeasurable_adjustedCE_comap d) hAdjA_int hindT_integrable
-    simpa [POVar.condExpGiven, POBackdoorSystem.propScore,
-      POBackdoorSystem.sigmaX, POBackdoorSystem.factualX] using h
+    exact h
   have hpull_comm :
       P.μ[fun ω => S.dVar.indicator true ω * S.adjustedCE d ω | S.sigmaX]
         =ᵐ[P.μ] S.propScore true * S.adjustedCE d := by
@@ -325,8 +326,7 @@ private lemma condExp_indicator_residual_adjusted_zero
     have h :=
       S.xVar.condExpGiven_mul_of_stronglyMeasurable_left
         (S.stronglyMeasurable_adjustedCE_comap d) hAdjind_int hind_int
-    simpa [POVar.condExpGiven, POBackdoorSystem.propScore,
-      POBackdoorSystem.sigmaX, POBackdoorSystem.factualX] using h
+    exact h
   rw [hres_eq]
   refine hsub.trans ?_
   filter_upwards [hYce, hpull, hcate] with ω hy hp hcat

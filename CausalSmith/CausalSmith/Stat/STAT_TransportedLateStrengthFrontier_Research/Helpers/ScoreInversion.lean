@@ -73,7 +73,7 @@ lemma sourceSample_weight_version_ae_eq
   have hwObs :
       (fun o : SourceObs 𝒳 => w.1.1 o.1) =ᵐ[sourceObsLaw P n]
         (fun o : SourceObs 𝒳 => transportWeight P n o.1) := by
-    simpa only [sourceXLaw, Function.comp_apply] using
+    simpa only [sourceXLaw, Function.comp_def] using
       (MeasureTheory.ae_eq_comp measurable_fst.aemeasurable w.property.2)
   exact Measure.ae_eq_pi (fun _ => hwObs)
 
@@ -131,7 +131,7 @@ lemma scoreProcedure_set_weight_version_ae_eq
           inversionHandle (transportWeight P n) (P.propensity n) n L s) := by
       rw [hmap]
       exact hs
-    simpa only [twoSampleLaw, μS, μT, Function.comp_apply] using
+    simpa only [twoSampleLaw, μS, μT, Function.comp_def] using
       (MeasureTheory.ae_eq_comp measurable_fst.aemeasurable hsmap)
   filter_upwards [hs'] with z hz
   simpa only [oracleSetAtWeight, oracleSet, hC, transportWeightInput] using hz
@@ -152,7 +152,7 @@ lemma scoreProcedure_coverage_weight_version_eq
   filter_upwards [
     scoreProcedure_set_weight_version_ae_eq N k c epsilon L C hC P n hP w
   ] with s hs
-  simpa using congrArg (fun A : Set ℝ => targetCACE P n ∈ A) hs
+  exact congrArg (fun A : Set ℝ => targetCACE P n ∈ A) hs
 
 /-- For a score-inversion procedure, expected confidence-set length is unchanged when the canonical transport weight is replaced by any admissible version. -/
 lemma scoreProcedure_expectedLength_weight_version_eq
@@ -188,10 +188,8 @@ lemma scoreProcedure_oracleCoverageClassInf_eq
           TransportedIVClass P N k c epsilon n},
         oracleCoverage C P n) := by
   letI := hrow
-  simp [oracleCoverageClassInf, coverageInfOrOne,
-    Causalean.Stat.coverageInfOrOne,
-    inferInstanceAs (Nonempty {P : TransportedArray 𝒳 //
-      TransportedIVClass P N k c epsilon n})]
+  simp only [oracleCoverageClassInf, coverageInfOrOne]
+  exact Causalean.Stat.coverageInfOrOne_of_nonempty _
 
 set_option maxHeartbeats 3000000 in
 /-- For score inversion, the full representative-fiber risk row equals the

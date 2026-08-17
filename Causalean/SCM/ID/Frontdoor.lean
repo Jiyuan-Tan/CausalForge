@@ -935,7 +935,8 @@ private theorem frontdoor_fd1_interception_compProd
             M.doKernelY Wbase hWobs hWfix Y hY s0 z
               = M.adjustmentKernelY Wbase hWobs hWfix Y
                   (X.image SWIGNode.random) hY hXr s0 z := by
-        simpa [hκComp] using hLegB_ae
+        rw [hκComp]
+        exact hLegB_ae
       exact MeasureTheory.Measure.ae_ae_of_ae_bind (ProbabilityTheory.Kernel.aemeasurable κ) hb
     have hInner : ∀ a z,
         M.adjustmentKernelY Wbase hWobs hWfix Y (X.image SWIGNode.random)

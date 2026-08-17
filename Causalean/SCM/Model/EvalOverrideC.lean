@@ -185,15 +185,15 @@ noncomputable def evalObservedAuxOverride (M : Causalean.SCM N Ω)
     {C : Finset (SWIGNode N)} (hC : C ⊆ M.observed)
     (s : FixedValues M) (c : ValuesOn C (swigΩ Ω)) (ℓ : LatentValues M) (n : ℕ) :
     ∀ hn : n < M.observed.card, swigΩ Ω (M.observedAt ⟨n, hn⟩).val :=
-  Nat.strongRecOn'
-    (P := fun k => ∀ hk : k < M.observed.card, swigΩ Ω (M.observedAt ⟨k, hk⟩).val)
-    n
+  Nat.strongRec
+    (motive := fun k => ∀ hk : k < M.observed.card, swigΩ Ω (M.observedAt ⟨k, hk⟩).val)
     (fun k ih hk =>
       if hcSelf : (M.observedAt ⟨k, hk⟩).val ∈ C then
         c ⟨(M.observedAt ⟨k, hk⟩).val, hcSelf⟩
       else
         M.structFun (M.observedAt ⟨k, hk⟩)
           (fun w => parentMapOverride M s c ℓ hk ih w))
+    n
 
 /-- The override auxiliary evaluator unfolds to either the override value or the structural
 function applied to overridden parents. -/
@@ -209,7 +209,7 @@ lemma evalObservedAuxOverride_eq (M : Causalean.SCM N Ω)
            (fun w => parentMapOverride M s c ℓ hn
              (fun m _ hm_card => evalObservedAuxOverride M hC s c ℓ m hm_card) w)) := by
   unfold evalObservedAuxOverride
-  rw [Nat.strongRecOn'_beta]
+  rw [Nat.strongRec_eq]
 
 -- ============================================================
 -- § 3. The C-overridden evaluation map

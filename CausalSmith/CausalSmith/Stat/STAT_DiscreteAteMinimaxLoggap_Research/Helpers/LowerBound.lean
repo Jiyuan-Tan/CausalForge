@@ -10,6 +10,9 @@ structure ControlZeroClass (n : ℕ) {d : ℕ} (epsilon : ℝ)
     extends ExperimentClass n epsilon P (productLaw P n) where
   control_zero : ∀ k, outcomeMean P false k = 0
 
+/-- A law of the control-zero subclass: an observation law together with the evidence
+that it belongs to the overlap experiment class and has an identically zero
+control-arm outcome regression in every category. -/
 def ControlZeroLaw (n d : ℕ) (epsilon : ℝ) :=
   {P : DiscreteLaw d // ControlZeroClass n epsilon P}
 
@@ -17,11 +20,17 @@ def ControlZeroLaw (n d : ℕ) (epsilon : ℝ) :=
 noncomputable def treatedFunctional {d : ℕ} (P : DiscreteLaw d) : ℝ :=
   ∑ k : Fin d, cellMass P k * outcomeMean P true k
 
+/-- The worst-case mean squared error of a single estimator over the control-zero
+subclass, taken against the treated-arm functional -- the category-mass weighted
+average of the treated outcome regression. -/
 noncomputable def oneArmWorstCaseMSE (n d : ℕ) (epsilon : ℝ)
     (est : (Fin n → Obs d) → ℝ) : ℝ :=
   ⨆ P : ControlZeroLaw n d epsilon,
     mse (productLaw P.1 n) est (treatedFunctional P.1)
 
+/-- The minimax risk for estimating the treated-arm functional over the control-zero
+subclass: the infimum, over measurable estimators, of their worst-case mean squared
+error on that subclass. -/
 noncomputable def oneArmMinimaxRisk (n d : ℕ) (epsilon : ℝ) : ℝ :=
   ⨅ est : {f : (Fin n → Obs d) → ℝ // Measurable f},
     oneArmWorstCaseMSE n d epsilon est.1

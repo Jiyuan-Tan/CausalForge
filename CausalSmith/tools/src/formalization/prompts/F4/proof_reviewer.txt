@@ -40,6 +40,15 @@ order-reflection is not required. Never use emptiness or an unrealizable quantif
 direction of implication. Paper and Lean may faithfully share an empty domain, but their domains and
 resulting propositions must still be equivalent. If the source meaning or either implication cannot be
 established, use a blocking verdict; an easier non-equivalent rendering is never `matched`.
+This two-way bar compares Lean with the FROZEN core/paper node. Citation verification is a separate
+source-support check, not permission to replace that node by every claim in its source. When the frozen
+node explicitly presents a specialization or one-directional consequence of a cited result, require a
+reproducible implication from the fetched/attested source to that exact frozen consequence under only
+specialization premises already explicit in the node. Do NOT require the consequence to imply the whole
+source theorem and do NOT import unused source conjuncts or a broader source domain into Lean. Verify the
+implication's direction, quantifier order, constants, and domain, and reject any extra Lean-only premise.
+If source ⟹ frozen consequence cannot be established, report `cited-mismatch`/`derived`; if Lean is not
+equivalent to the frozen consequence, report ordinary statement drift regardless of source support.
 For non-cluster targets, inspect any outside declarations or consumer dependency paths needed for
 equivalence; do not assume the development is sound. Symbol clusters use the own-members-only rule below.
 Auxiliary representation fields may be pinned only as a CONSERVATIVE extension at the SAME binder scope
@@ -171,12 +180,14 @@ EQUIVALENT to the Lean hypothesis — "the paper implies the Lean" is NOT suffic
   DERIVES ⇒ content-gate, REJECT.
 - `cited` — classify a target carrying a "CITED SOURCE TO MATCH" block only here. It is a
   `gate_class:"cited"` node: an
-  EXTERNAL result the paper ASSUMES, never proves here. Verify BOTH that the Lean def faithfully
-  encodes the cited statement of record and that the paper's statement/use agrees with that source
-  (correct quantifiers, constants, inequality direction, and domain; with no Lean-only vacuity).
-  Source agreement cannot be replaced by Lean-vs-paper agreement. With a fetched or attested source,
-  emit `faithful-refinement` only when source, paper, and Lean are self-contained and equivalent; emit
-  `derived` for verified non-equivalence. If source text is unavailable but Lean and paper are
+  EXTERNAL result the paper ASSUMES, never proves here. First require Lean to be equivalent to the
+  frozen paper/core node. Then verify source support with the rule above: an explicitly specialized or
+  one-directional cited consequence is source-faithful when the fetched/attested source entails it under
+  only specialization premises already explicit in the frozen node. Do not demand the reverse implication
+  to the whole source theorem or add unused source conjuncts. Check quantifiers, constants, inequality
+  direction, and domain, with no Lean-only vacuity or assumptions. If that source implication fails, emit
+  `derived` and `cited-mismatch`; source agreement cannot be replaced by Lean-vs-paper agreement. If source
+  text is unavailable but Lean and paper are
   self-contained and equivalent, emit `faithful-refinement` with `cited-source-unverifiable`: this
   records the citation as unverified — without asserting non-equivalence or source agreement — and is
   surfaced as a flag rather than a banking block. Also emit ONE `substrate_gates` entry with
@@ -186,6 +197,18 @@ EQUIVALENT to the Lean hypothesis — "the paper implies the Lean" is NOT suffic
   (not self-contained — BLOCKS banking) / `cited-source-unverifiable` (source text unavailable —
   recorded as an unverified-citation flag, does not block banking). The block states which OK-status applies. A cited node is NEVER routed to
   `content-gate` or `needs-substrate` — it is a sanctioned citation, not laundering.
+
+  CITED EXTERNAL-OBJECT HANDLES: when the source names one specific external estimator, algorithm,
+  or other object whose construction is not formalized in this development, a single explicit
+  NOMINAL handle parameter is a faithful cited boundary if and only if (i) a cited proposition about
+  that same handle encodes the source statement, (ii) the identical handle is threaded unchanged
+  through every conclusion and consumer, and (iii) no consumer claims an unconditional inhabitant or
+  existence theorem for the handle. Do NOT demand a module-level constant, `opaque` inhabitant,
+  choice term, axiom, or fabricated implementation merely to make the external object syntactically
+  global. A universally quantified handle is not an "arbitrary estimator" escape when use is
+  conditional on the matching cited proposition; it exposes the citation dependency. Flag drift or
+  underspecification if the handle can change between cited premise and conclusion, appears without
+  the source-matched predicate, or is used to claim unconditional existence.
 
 === SETUP / ENVIRONMENT TARGETS (the world scaffolding: core symbols realized by Lean decls) ===
 These are judged via the **SYMBOL CLUSTERS** block above, NOT by reading structures decl-by-decl. Each
@@ -242,16 +265,19 @@ the core's advertised contribution or the graph's consumer evidence. Both conver
 emit the verdict; an omission is licensed only when both convergence reviewers return `matched`.
 
 === OPEN-ENDED-QUESTION (OEQ) NODES — DO NOT APPLY THE OVER-CLAIM TEST ===
-A node whose note kind is an open-ended question / open residual is realized as a NAMED `Prop` that is
-NEVER PROVED (no theorem inhabits it; depended on by nothing) and exists ONLY to STATE the question.
-Because it is never proved, WRITING the Prop asserts NOTHING: a disjunction of the note's listed
-alternatives (`A ∨ B ∨ C`) is the FAITHFUL encoding of "the open question is whether A, B, or C" — it
-RECORDS the question, it does NOT certify that the answer is resolved; a single open proposition is fine
-when the note poses one. Judge an OEQ node ONLY on whether the Prop faithfully encodes the note's STATED
-open question. `matched` exactly when it records an equivalent question with no logical content added
-or dropped. Flag omissions/additions, an actual proof or certified conjunct the note leaves open, a
-trivialization, or a false relation. Do not flag merely because the never-proved Prop states its
-alternatives; defining that Prop does not certify them.
+An unresolved OEQ is always a NAMED `def`, is never proved, is depended on by no delivered theorem, and
+is judged by this TWO-CASE rule from the frozen node text. (A) If the frozen node fully specifies every
+quantified domain, alternative, rate/performance predicate, inference/coverage criterion, and requested
+relation, a never-proved `Prop` is faithful when it records exactly that complete question. Defining such
+a Prop does not prove it. (B) If the frozen node explicitly says that a procedure, sharp-rate functional,
+inference/coverage criterion, lower-bound target, or any other truth-condition is undefined and prescribes
+a nonassertive carrier, then a `Prop` necessarily invents or trivializes content. The faithful realization
+is instead a descriptive NON-`Prop` payload (normally a full `String`) recording every stated regime,
+alternative, desideratum, and explicit nonassertion disclaimer, with no witness fields. It must not be
+`PUnit`, `Unit`, `True`, or an empty tag, because those drop the question text; it must not be an existential
+Prop, because that fabricates the undefined criteria. In both cases require exclusion from theorem manifests
+and absence from delivered theorem dependencies. Return `matched` only when the selected case and payload
+preserve the frozen node without added or dropped logical content.
 
 === ESCALATE — AND CLASSIFY THE FIX SOURCE ===
 Any round with `drift` MUST set the single `escalate` object for one drifted target. For mixed kinds,

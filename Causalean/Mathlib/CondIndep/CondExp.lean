@@ -212,7 +212,7 @@ theorem setIntegral_condExp_indep_indicator
     have h2 := MeasureTheory.condExp_smul (μ := μ) (c := c) (f := oneS) (m := m)
     refine h1.trans ?_
     filter_upwards [h2] with ω hω
-    simpa [oneS, Pi.smul_apply, smul_eq_mul] using hω
+    exact hω
   calc
     ∫ x in A ∩ F, (μ[S.indicator (fun _ : Ω => c) | m]) x ∂μ
         = ∫ x in A ∩ F, (fun ω => c * (μ⟦S | m⟧) ω) x ∂μ := by
@@ -486,8 +486,7 @@ theorem condExp_mul_of_condIndep
       @MeasureTheory.StronglyMeasurable Ω ℝ _ mg (fun ω => v (g ω)) := by
     exact (hv.comp hg_mg).stronglyMeasurable
   have huv' :
-      MeasureTheory.Integrable ((fun ω => u (f ω)) * (fun ω => v (g ω))) μ := by
-    simpa [Pi.mul_apply] using huv
+      MeasureTheory.Integrable ((fun ω => u (f ω)) * (fun ω => v (g ω))) μ := huv
   have htower :
       μ[fun ω => u (f ω) * v (g ω) | m]
         =ᵐ[μ] μ[μ[fun ω => u (f ω) * v (g ω) | mg] | m] := by
@@ -497,9 +496,8 @@ theorem condExp_mul_of_condIndep
   have hinner :
       μ[fun ω => u (f ω) * v (g ω) | mg]
         =ᵐ[μ] μ[fun ω => u (f ω) | mg] * (fun ω => v (g ω)) := by
-    simpa [Pi.mul_apply] using
-      (MeasureTheory.condExp_mul_of_stronglyMeasurable_right (m := mg)
-        (f := fun ω => u (f ω)) (g := fun ω => v (g ω)) hvg_mg huv' huf)
+    exact MeasureTheory.condExp_mul_of_stronglyMeasurable_right (m := mg)
+      (f := fun ω => u (f ω)) (g := fun ω => v (g ω)) hvg_mg huv' huf
   have hdrop :
       μ[fun ω => u (f ω) | mg] =ᵐ[μ] μ[fun ω => u (f ω) | m] := by
     dsimp [mg]
@@ -601,7 +599,11 @@ theorem condIndepFun_weak_union_of_prodMk
     have hs_ind_meas :
         Measurable (s.indicator (fun _ : α => (1 : ℝ))) :=
       measurable_const.indicator hs
-    simpa [mVA, pair, oneS, S] using
+    have hone : oneS = fun ω => s.indicator (fun _ : α => (1 : ℝ)) (W ω) := by
+      funext ω
+      by_cases hω : W ω ∈ s <;> simp [oneS, S, hω]
+    rw [hone]
+    simpa [mVA, pair] using
       (condExp_sup_comap_eq_of_condIndep hm hpair hW hCI
         (h := s.indicator (fun _ : α => (1 : ℝ))) hs_ind_meas hS_int)
   have hdrop_mA :
@@ -609,7 +611,11 @@ theorem condIndepFun_weak_union_of_prodMk
     have hs_ind_meas :
         Measurable (s.indicator (fun _ : α => (1 : ℝ))) :=
       measurable_const.indicator hs
-    simpa [mA, oneS, S] using
+    have hone : oneS = fun ω => s.indicator (fun _ : α => (1 : ℝ)) (W ω) := by
+      funext ω
+      by_cases hω : W ω ∈ s <;> simp [oneS, S, hω]
+    rw [hone]
+    simpa [mA] using
       (condExp_sup_comap_eq_of_condIndep hm hA hW hCI_A
         (h := s.indicator (fun _ : α => (1 : ℝ))) hs_ind_meas hS_int)
   have htower :
@@ -888,7 +894,11 @@ theorem condIndepFun_contraction_of_prodMk
         μ[oneA | mW] =ᵐ[μ] μ[oneA | m] := by
       have hs_ind_meas : Measurable (s.indicator (fun _ : α => (1 : ℝ))) :=
         measurable_const.indicator hs_meas
-      simpa [mW, oneA, A] using
+      have hone : oneA = fun ω => s.indicator (fun _ : α => (1 : ℝ)) (X ω) := by
+        funext ω
+        by_cases hω : X ω ∈ s <;> simp [oneA, A, hω]
+      rw [hone]
+      simpa [mW] using
         (condExp_sup_comap_eq_of_condIndep hm hW hX h2
           (h := s.indicator (fun _ : α => (1 : ℝ))) hs_ind_meas hA_int)
     have hpullC_AB :

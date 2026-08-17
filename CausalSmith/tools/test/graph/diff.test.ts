@@ -57,6 +57,24 @@ describe("dirtyFrontier", () => {
     expect(dirtyFrontier(g, { l1: "h_l1", d1: "h_d1", t1: "h_t1", aux1: "h_aux1" })).toEqual([]);
   });
 
+  it("an orphaned prior hash on an agent-introduced helper cannot create an uncleareable dirty source", () => {
+    let g = chain();
+    g = addNode(g, { id: "aux1", kind: "lemma", provenance: "agent-introduced", nl_statement: "(agent-introduced lemma helper)", tex_anchor: "" });
+    g = addEdge(g, { kind: "statement-uses", from: "t1", to: "aux1", source: "extracted" });
+    // mintAnnotatedNodes records the Lean hash when the tag first appears. If a later F3 rewrite
+    // removes/moves that tag, extraction supplies no hash; the synthetic NL fallback is unrelated.
+    g = markPassed(g, "aux1", "old-lean-statement-hash");
+    expect(dirtyFrontier(g, { l1: "h_l1", d1: "h_d1", t1: "h_t1" })).toEqual([]);
+  });
+
+  it("a changed agent-introduced helper is not a dirty source because delta review has no target that can clear it", () => {
+    let g = chain();
+    g = addNode(g, { id: "aux1", kind: "definition", provenance: "agent-introduced", nl_statement: "aux", tex_anchor: "" });
+    g = addEdge(g, { kind: "statement-uses", from: "t1", to: "aux1", source: "extracted" });
+    g = markPassed(g, "aux1", "old-hash");
+    expect(dirtyFrontier(g, { l1: "h_l1", d1: "h_d1", t1: "h_t1", aux1: "new-hash" })).toEqual([]);
+  });
+
   // ── Hypothesis-backed nodes (no standalone `@node:` decl → absent from freshHashes).
   // Their freshness falls back to the hash of their NL statement, so they are verifiable
   // rather than trusted forever behind a constant `passed_hash` sentinel.

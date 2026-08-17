@@ -1,70 +1,158 @@
 \begin{proof}[Proof of \cref{obj:lem:localized-clipped-drift-bound}]
-Fix one evaluation fold, and abbreviate the foldwise nuisance estimators by \((\widehat\mu_0,\widehat\mu_1,\widehat e)\).  The formal proof first proves a pointwise clipped-drift majorization.  Using the exact drift identity in \cref{obj:lem:clip-bias}, the clipped propensity map is \(1\)-Lipschitz in \(\widehat e\), and the extra discrepancy from clipping the true propensity is bounded by \(q\mathbf 1\{p_P(x)\le q\}\).  Hence, after multiplying by \(\pi-\pi^\star_P\), the clipped-region indicator can be reduced to the disagreement set, giving an integrand bounded by two nuisance-product terms divided by \(q\), plus two outcome-regression errors restricted to \(D_\pi\cap\{p_P\le q\}\). % lean: clippedPropensity_lipschitz, clippedPropensity_error_le_error_plus_overlap_indicator, policy_overlap_indicator_mul_le_inter_indicator, policy_clipBias_abs_pointwise_le
-
-Integrating this pointwise bound, the two product terms are controlled by Cauchy--Schwarz and the nuisance \(L_2(P_X)\) rates:
+Fix the evaluation fold and abbreviate the foldwise estimators by \((\widehat\mu_0,\widehat\mu_1,\widehat e)\).  Write
 \[
-\int |\widehat e-e_P|\,|\widehat\mu_a-\mu_a|\,dP_X
-   \le r_{e,n}r_{\mu,n},\qquad a=0,1.
+\bar e_q(x)=\min\{1-q,\max\{q,\widehat e(x)\}\},
+\qquad
+\Delta_a(x)=\widehat\mu_a(x)-\mu_a(x),
+\qquad
+\Delta_e(x)=\widehat e(x)-e_P(x),
 \]
-The two restricted outcome-error terms are bounded by Cauchy--Schwarz on the set
+and, for a policy \(\pi\),
 \[
 T_\pi(q)=D_\pi\cap\{x:p_P(x)\le q\},
+\qquad
+P\!\left[(\pi-\pi^\star_P)b_q\right]
+=\int_{\mathcal X}\left\{\mathbf 1\{\pi(x)=1\}-\mathbf 1\{\pi^\star_P(x)=1\}\right\}b_q(x)\,dP_X(x).
 \]
-namely by \(r_{\mu,n}P_X(T_\pi(q))^{1/2}\).  Therefore the policy-weighted drift satisfies
+By the exact drift identity of \cref{obj:lem:clip-bias}, the conditional-mean drift defined in the statement has the closed form
 \[
-\left|P[(\pi-\pi^\star_P)b_q]\right|
+b_q(x)=\{\bar e_q(x)-e_P(x)\}\left\{\frac{\Delta_1(x)}{\bar e_q(x)}+\frac{\Delta_0(x)}{1-\bar e_q(x)}\right\}.
+\]
+% lean: clip_bias
+
+\emph{Step 1: a pointwise majorization.}  We bound the two factors of \(b_q\) separately.
+
+First, the clipping map \(z\mapsto\min\{1-q,\max\{q,z\}\}\) is \(1\)-Lipschitz, being a composition of the \(1\)-Lipschitz maps \(z\mapsto\max\{q,z\}\) and \(z\mapsto\min\{1-q,z\}\); applying it to \(\widehat e(x)\) and to \(e_P(x)\) therefore gives
+\[
+\left|\bar e_q(x)-\min\{1-q,\max\{q,e_P(x)\}\}\right|\le|\Delta_e(x)| .
+\]
+% lean: clippedPropensity_lipschitz
+Second, clipping the true propensity moves it only inside the weak-overlap region: if \(p_P(x)>q\), then \(q<e_P(x)<1-q\) and the clip is inactive, so the displacement is zero; and in all cases the displacement is at most \(q\), because \(e_P(x)\in[0,1]\) and the clipped value lies in \([q,1-q]\).  Hence
+\[
+\left|\min\{1-q,\max\{q,e_P(x)\}\}-e_P(x)\right|\le q\,\mathbf 1\{p_P(x)\le q\},
+\]
+and by the triangle inequality
+\[
+\left|\bar e_q(x)-e_P(x)\right|\le|\Delta_e(x)|+q\,\mathbf 1\{p_P(x)\le q\} .
+\]
+% lean: clippedPropensity_error_le_error_plus_overlap_indicator
+Third, since \(q\le\bar e_q(x)\le1-q\), both denominators are at least \(q>0\), so
+\[
+\left|\frac{\Delta_1(x)}{\bar e_q(x)}+\frac{\Delta_0(x)}{1-\bar e_q(x)}\right|
+\le\frac{|\Delta_1(x)|+|\Delta_0(x)|}{q}.
+\]
+Multiplying the last two displays,
+\[
+|b_q(x)|
+\le
+\left\{|\Delta_e(x)|+q\,\mathbf 1\{p_P(x)\le q\}\right\}\cdot\frac{|\Delta_1(x)|+|\Delta_0(x)|}{q}.
+\]
+Finally, the policy factor satisfies \(|\mathbf 1\{\pi(x)=1\}-\mathbf 1\{\pi^\star_P(x)=1\}|\le1\), and it vanishes off \(D_\pi\); consequently
+\[
+\left|\mathbf 1\{\pi(x)=1\}-\mathbf 1\{\pi^\star_P(x)=1\}\right|\cdot\mathbf 1\{p_P(x)\le q\}
+\le
+\mathbf 1\{x\in T_\pi(q)\} .
+\]
+% lean: policy_overlap_indicator_mul_le_inter_indicator
+Combining the last two displays and cancelling the factor \(q\) against \(q^{-1}\) in the indicator term gives the pointwise majorization
+\[
+\left|\left\{\mathbf 1\{\pi(x)=1\}-\mathbf 1\{\pi^\star_P(x)=1\}\right\}b_q(x)\right|
+\le
+\frac{|\Delta_e(x)||\Delta_1(x)|+|\Delta_e(x)||\Delta_0(x)|}{q}
++\mathbf 1\{x\in T_\pi(q)\}\left\{|\Delta_1(x)|+|\Delta_0(x)|\right\}.
+\]
+% lean: policy_clipBias_abs_pointwise_le
+
+\emph{Step 2: integrate.}  All four majorant terms are \(P_X\)-integrable, being products of \(L_2(P_X)\) functions (the assumed \(L_2\) memberships of the three nuisance errors, and the indicator, which is bounded).  Integrating and applying Cauchy--Schwarz with the assumed \(L_2(P_X)\) rates gives, for \(a=0,1\),
+\[
+\int |\Delta_e|\,|\Delta_a|\,dP_X
+   \le \left(\int\Delta_e^2\,dP_X\right)^{1/2}\left(\int\Delta_a^2\,dP_X\right)^{1/2}
+   \le r_{e,n}r_{\mu,n},
+\]
+% lean: l2_abs_product_integral_le
+and, again by Cauchy--Schwarz with the indicator in the first slot,
+\[
+\int \mathbf 1_{T_\pi(q)}\,|\Delta_a|\,dP_X
+\le
+P_X\!\left(T_\pi(q)\right)^{1/2}r_{\mu,n}.
+\]
+% lean: l2_set_abs_integral_le
+Summing the four contributions yields the basic drift bound
+\[
+\left|P\!\left[(\pi-\pi^\star_P)b_q\right]\right|
 \le
 2\,\frac{r_{\mu,n}r_{e,n}}{q}
 +
-2r_{\mu,n}P_X(T_\pi(q))^{1/2}.
+2\,r_{\mu,n}\,P_X\!\left(T_\pi(q)\right)^{1/2}.
 \]
-% lean: l2_abs_product_integral_le, l2_set_abs_integral_le, clipBias_drift_l2_mass_bound
+% lean: clipBias_drift_l2_mass_bound
 
-Assume first that \(\gamma>0\).  By \cref{obj:lem:clipped-region-localization}, whenever \(0<u\le u_0\) and \(q\le c_o u^\gamma\),
+\emph{Step 3: the case \(\gamma>0\).}  Assume \(\gamma>0\), \(0<u\le u_0\), and \(q\le c_ou^\gamma\), and write \(r=R_P(\pi)\) and \(C_{\mathrm{reg}}=\max\{C_o,1\}>0\).  By \cref{obj:lem:clipped-region-localization},
 \[
-P_X(T_\pi(q))
+P_X\!\left(T_\pi(q)\right)
 \le
-(\max\{C_o,1\})u^\alpha q^{1/\gamma}+\frac{R_P(\pi)}{u}.
+C_{\mathrm{reg}}\,u^\alpha q^{1/\gamma}+\frac{r}{u}.
 \]
-Taking square roots and using \(\sqrt{a+b}\le \sqrt a+\sqrt b\), together with
+Both summands are nonnegative, so taking square roots and using \(\sqrt{a+b}\le\sqrt a+\sqrt b\), together with the exponent identity
 \[
-\sqrt{(\max\{C_o,1\})u^\alpha q^{1/\gamma}}
+\sqrt{C_{\mathrm{reg}}\,u^\alpha q^{1/\gamma}}
 =
-(\max\{C_o,1\})^{1/2}u^{\alpha/2}q^{1/(2\gamma)},
+C_{\mathrm{reg}}^{1/2}\,u^{\alpha/2}\,q^{1/(2\gamma)},
 \]
 gives
 \[
-P_X(T_\pi(q))^{1/2}
+P_X\!\left(T_\pi(q)\right)^{1/2}
 \le
-(\max\{C_o,1\})^{1/2}u^{\alpha/2}q^{1/(2\gamma)}
+C_{\mathrm{reg}}^{1/2}\,u^{\alpha/2}q^{1/(2\gamma)}
 +
-\left(\frac{R_P(\pi)}{u}\right)^{1/2}.
+\left(\frac{r}{u}\right)^{1/2}.
 \]
-Substitution into the preceding drift inequality and absorption of the numerical and overlap constants into one finite constant yields
+% lean: sqrt_add_le_sqrt_add_sqrt % lean: sqrt_margin_overlap_product
+Substituting into Step 2 and abbreviating the four nonnegative quantities
 \[
-\left|P[(\pi-\pi^\star_P)b_q]\right|
+J_1=\frac{r_{\mu,n}r_{e,n}}{q},
+\qquad
+J_2=u^{\alpha/2}q^{1/(2\gamma)},
+\qquad
+J_3=\left(\frac{r}{u}\right)^{1/2},
+\qquad
+S=C_{\mathrm{reg}}^{1/2}=\sqrt{\max\{C_o,1\}},
+\]
+we get \(\left|P[(\pi-\pi^\star_P)b_q]\right|\le 2J_1+2r_{\mu,n}(SJ_2+J_3)\le 4\left(J_1+r_{\mu,n}SJ_2+r_{\mu,n}J_3\right)\), all terms being nonnegative.  Since \(J_1\le(1+S)J_1\), \(Sr_{\mu,n}J_2\le(1+S)r_{\mu,n}J_2\), and \(r_{\mu,n}J_3\le(1+S)r_{\mu,n}J_3\),
+\[
+4\left(J_1+r_{\mu,n}SJ_2+r_{\mu,n}J_3\right)
 \le
-C\left\{
+4\left(1+\sqrt{\max\{C_o,1\}}\right)\left(J_1+r_{\mu,n}J_2+r_{\mu,n}J_3\right),
+\]
+that is, with \(C_0=4\{1+\sqrt{\max\{C_o,1\}}\}\) exactly as in the statement,
+\[
+\left|P\!\left[(\pi-\pi^\star_P)b_q\right]\right|
+\le
+C_0\left\{
 \frac{r_{\mu,n}r_{e,n}}{q}
 +
 r_{\mu,n}u^{\alpha/2}q^{1/(2\gamma)}
 +
 r_{\mu,n}\left(\frac{r}{u}\right)^{1/2}
-\right\},
+\right\}.
 \]
-where \(r=R_P(\pi)\). % lean: clipped_region_localization, sqrt_add_le_sqrt_add_sqrt, sqrt_margin_overlap_product, clipBias_drift_l2_localized_from_region, localized_clipped_drift_bound
+% lean: clipBias_drift_l2_localized_from_region % lean: localized_clipped_drift_bound
 
-Now assume \(\gamma=0\) and \(q\le \underline p/2\).  The strict-overlap endpoint assumption gives \(p_P(X)\ge \underline p\) almost surely, so \(\{p_P\le q\}\) has \(P_X\)-measure zero.  Hence \(P_X(T_\pi(q))=0\), and the same basic drift bound reduces to
+\emph{Step 4: the case \(\gamma=0\).}  Assume \(\gamma=0\) and \(q\le\underline p/2\).  \Cref{obj:ass:strict-overlap-endpoint} gives \(\underline p>0\) and \(p_P(X)\ge\underline p\) \(P_X\)-almost surely.  Since \(q\le\underline p/2<\underline p\), the set \(\{p_P\le q\}\) is \(P_X\)-null, hence so is its subset \(T_\pi(q)\):
 \[
-\left|P[(\pi-\pi^\star_P)b_q]\right|
-\le
-2\,\frac{r_{\mu,n}r_{e,n}}{q}.
+P_X\!\left(T_\pi(q)\right)=0 .
 \]
-Since \(q\) is fixed in this branch, \(2/q\) is absorbed into a finite constant, giving
+The second term of the basic drift bound of Step 2 therefore vanishes, leaving
 \[
-\left|P[(\pi-\pi^\star_P)b_q]\right|
+\left|P\!\left[(\pi-\pi^\star_P)b_q\right]\right|
 \le
-C r_{\mu,n}r_{e,n}.
+2\,\frac{r_{\mu,n}r_{e,n}}{q}
+=
+\frac2q\,r_{\mu,n}r_{e,n}
+\le
+C_1\,r_{\mu,n}r_{e,n},
+\qquad
+C_1=\max\{1,2/q\},
 \]
-% lean: clipBias_drift_l2_mass_bound, clipBias_drift_l2_localized_from_region, localized_clipped_drift_bound
+the last step because \(2/q\le\max\{1,2/q\}\) and \(r_{\mu,n}r_{e,n}\ge0\).  This is the asserted strict-overlap bound. % lean: clipBias_drift_l2_localized_from_region % lean: localized_clipped_drift_bound
 \end{proof}

@@ -203,7 +203,7 @@ lemma aipw_remainder_identity
     have hcond_L2 :
         MemLp (P.μ[S.toPOBackdoorSystem.YofD d |
           S.toPOBackdoorSystem.sigmaX]) 2 P.μ :=
-      hYd_L2.condExp
+      hYd_L2.condExp one_le_two
     exact hcond_L2.ae_eq (by
       simpa [X] using S.μ_compat hA d)
   have hdμ_L2 : ∀ d : Bool, MemLp
@@ -211,9 +211,9 @@ lemma aipw_remainder_identity
     intro d
     have hd : MemLp (fun x => η.μ_fn d x - S.μ_val d x) 2 S.P_X :=
       hΔμ_memLp d
-    simpa [X] using
-      MemLp.comp_of_map (f := S.toPOBackdoorSystem.factualX) hd
-        S.toPOBackdoorSystem.measurable_factualX.aemeasurable
+    simp only [X]
+    exact MemLp.comp_of_map (f := S.toPOBackdoorSystem.factualX) hd
+      S.toPOBackdoorSystem.measurable_factualX.aemeasurable
   have hwT_bound : ∀ᵐ ω ∂P.μ, ‖wT ω‖ ≤ ε⁻¹ := by
     filter_upwards [hη_X] with ω hηω
     have hη_pos_ω : 0 < η.e_fn (X ω) := lt_of_lt_of_le h_overlap.1 hηω.1
@@ -256,23 +256,23 @@ lemma aipw_remainder_identity
       (measurable_const.sub (η.e_meas.comp S.toPOBackdoorSystem.measurable_factualX))
   have hrT_int : Integrable rT P.μ := by
     have hL2 : MemLp rT 2 P.μ := by
-      simpa [rT, Y, X, wT] using
-        (hY_L2.sub (hμ_L2 true)).mul hwT_Linf
+      simp only [rT, Y, X, wT]
+      exact (hY_L2.sub (hμ_L2 true)).mul hwT_Linf
     exact hL2.integrable (by norm_num)
   have hrF_int : Integrable rF P.μ := by
     have hL2 : MemLp rF 2 P.μ := by
-      simpa [rF, Y, X, wF] using
-        (hY_L2.sub (hμ_L2 false)).mul hwF_Linf
+      simp only [rF, Y, X, wF]
+      exact (hY_L2.sub (hμ_L2 false)).mul hwF_Linf
     exact hL2.integrable (by norm_num)
   have hiT_int : Integrable iT P.μ := by
     have hL2 : MemLp iT 2 P.μ := by
-      simpa [iT, dμT, X, wT] using
-        (hdμ_L2 true).mul hwT_Linf
+      simp only [iT, dμT, X, wT]
+      exact (hdμ_L2 true).mul hwT_Linf
     exact hL2.integrable (by norm_num)
   have hiF_int : Integrable iF P.μ := by
     have hL2 : MemLp iF 2 P.μ := by
-      simpa [iF, dμF, X, wF] using
-        (hdμ_L2 false).mul hwF_Linf
+      simp only [iF, dμF, X, wF]
+      exact (hdμ_L2 false).mul hwF_Linf
     exact hL2.integrable (by norm_num)
   have hdμT_int : Integrable dμT P.μ :=
     (hdμ_L2 true).integrable (by norm_num)
@@ -283,8 +283,8 @@ lemma aipw_remainder_identity
       ((hμ_L2 true).sub (hμ_L2 false)).integrable (by norm_num)
     simpa [base, sub_eq_add_neg] using hdiff.sub (integrable_const (S.θ₀))
   have hcrossInd_int : Integrable crossInd P.μ := by
-    simpa [crossInd, sub_eq_add_neg, add_assoc] using
-      ((hdμT_int.sub hdμF_int).sub hiT_int).add hiF_int
+    simp only [crossInd]
+    exact ((hdμT_int.sub hdμF_int).sub hiT_int).add hiF_int
   have hbase_zero : ∫ ω, base ω ∂P.μ = 0 := by
     have hθ : S.θ₀ = ∫ ω, S.μ_val true (X ω) - S.μ_val false (X ω) ∂P.μ := by
       simpa [X] using theta_zero_factualX_integral S
@@ -497,8 +497,8 @@ lemma aipw_remainder_identity
           _ = |dμF ω| * ε⁻¹ := by ring
       _ = ‖dμF ω‖ * ε⁻¹ := by simp [Real.norm_eq_abs]
   have hcrossProp_int : Integrable crossProp P.μ := by
-    simpa [crossProp, sub_eq_add_neg, add_assoc] using
-      ((hdμT_int.sub hdμF_int).sub hpT_int).add hpF_int
+    simp only [crossProp]
+    exact ((hdμT_int.sub hdμF_int).sub hpT_int).add hpF_int
   have hcross_to_prop :
       ∫ ω, crossInd ω ∂P.μ = ∫ ω, crossProp ω ∂P.μ := by
     have hIT_prop : ∫ ω, iT ω ∂P.μ = ∫ ω, pT ω ∂P.μ := by

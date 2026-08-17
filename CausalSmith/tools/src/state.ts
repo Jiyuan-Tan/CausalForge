@@ -59,7 +59,6 @@ const pendingSorrySchema = z.object({
   // Per-sorry convergence memory (Stage 3); all optional + backward compatible.
   track: z.union([z.enum(["1", "2", "3", "4", "5"]), z.null()]).optional(),
   attempts: z.number().int().nonnegative().optional(),
-  last_goal_hash: z.union([z.string(), z.null()]).optional(),
   escalations: z.number().int().nonnegative().optional(),
   bursted: z.boolean().optional(),
 }).passthrough();
@@ -232,6 +231,21 @@ export const stateSchema = z
         })
         .optional(),
       d0_loop_cap_hit: z.string().optional(),
+      // Typed cross-boundary D0 rewind receipt.  It distinguishes a local
+      // re-solve from an additive proposal extension and an explicit paper
+      // replacement; D0 consumes the first two fail-closed.
+      d0_cross_boundary_rewind: z
+        .object({
+          intent: z.enum(["incremental_repair", "extension", "replacement"]),
+          status: z.enum(["pending", "rebased", "retired"]),
+          source_stage: stageSchema,
+          source_revision: z.string(),
+          reason: z.string(),
+          source_core_sha256: z.string().optional(),
+          source_ids: z.array(z.string()).optional(),
+        })
+        .optional(),
+      stage0_rewind_intent_required: z.string().optional(),
       neg1_env_failure_retries: z.number().int().nonnegative().optional(),
       proof_review_escalation_pending: z
         .object({
@@ -260,7 +274,8 @@ export const stateSchema = z
         .nullable()
         .optional(),
       // D0.5.G directed-reroute counter (below-floor but bounded-fix salvageable →
-      // re-run D0 with the directive); capped so a stuck topic still halts.
+      // re-run D0 with the directive); gated on GENERAL_REROUTE_CAP in runStage0_5Typed,
+      // so a stuck topic stops being offered re-solves. Persisted across `--resume`.
       general_reroute_count: z.number().int().nonnegative().optional(),
       // D0.R loop: operator injection (cleared after use), flagship-upside counter,
       // and best-note-by-tier tracking (deliverable = best, not last).

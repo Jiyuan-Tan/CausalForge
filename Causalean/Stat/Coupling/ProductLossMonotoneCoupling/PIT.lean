@@ -44,7 +44,6 @@ instance instIsProbabilityMeasure_unifOI : IsProbabilityMeasure unifOI := by
   constructor
   rw [unifOI, Measure.restrict_apply_univ, Real.volume_Ioo]
   norm_num
-  rfl
 
 /-- The quantile function is monotone on the open unit interval `(0,1)`
 (immediate from `quantile_mono`, whose hypotheses `0 < τ`, `τ' < 1` hold
@@ -82,7 +81,6 @@ private lemma volume_Ioo_zero_one_inter_Iic {c : ℝ} (hc0 : 0 ≤ c) (hc1 : c �
         exact ⟨h, h.2.le⟩
     rw [hset, Real.volume_Ioo]
     norm_num
-    rfl
 
 /-- **Probability integral transform.** For a Borel probability measure `μ` on
 `ℝ`, the pushforward of `Unif(0,1)` under the quantile function `quantile μ`

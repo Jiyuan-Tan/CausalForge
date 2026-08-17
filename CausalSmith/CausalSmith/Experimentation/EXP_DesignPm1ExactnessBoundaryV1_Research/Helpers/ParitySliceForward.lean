@@ -181,6 +181,11 @@ lemma E_sumAr_sq (m : ℕ) (u v : ℝ)
             rw [card_blockAFin]
             cases m <;> simp
 
+/-- `E[S_B²] = m + m(m−1) u`: whenever a design's assignment second moment is the
+block-symmetric matrix `X(u,v)`, the mean square of the community-`B` sign sum depends
+only on the common within-block correlation `u` (not on the across-block entry `v`), and
+equals the corresponding community-`A` quantity. The two blocks have the same size `m`,
+so this is the mirror image of `E_sumAr_sq`. -/
 lemma E_sumBr_sq (m : ℕ) (u v : ℝ)
     (D : FiniteDesign (Fin (2 * m) → Bool))
     (hD : assignmentSecondMoment m D = blockSymMatrix m u v) :
@@ -404,6 +409,10 @@ lemma one_le_E_sumAr_sq (m : ℕ) (hOdd : Odd m)
     rw [D.E_sub, D.E_const]
   nlinarith
 
+/-- For odd `m`, `E[S_B²] ≥ 1` under every design. Community `B` has an odd number `m` of
+units, so its sign sum is an odd integer for every assignment and therefore has square at
+least one; averaging preserves the bound. This is the parity obstruction that keeps the
+odd-`m` reduced slice away from the spread vertex. -/
 lemma one_le_E_sumBr_sq (m : ℕ) (hOdd : Odd m)
     (D : FiniteDesign (Fin (2 * m) → Bool)) :
     (1 : ℝ) ≤ D.E (fun z => sumBr m z * sumBr m z) := by

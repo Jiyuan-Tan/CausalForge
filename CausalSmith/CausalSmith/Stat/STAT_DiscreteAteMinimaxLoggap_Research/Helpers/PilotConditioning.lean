@@ -21,8 +21,7 @@ lemma oneShot_statistics_indep
     IndepFun
       (fun ω => pilot (fun i : split.foldA n => S.Z i ω))
       (fun ω => estimate (fun i : split.foldB n => S.Z i ω)) μ := by
-  simpa only [Function.comp_apply] using
-    (split.folds_indep n).comp hpilot hestimate
+  exact (split.folds_indep n).comp hpilot hestimate
 
 /-- Integral factorization after the pilot/estimation split. -/
 lemma oneShot_integral_mul_factorization

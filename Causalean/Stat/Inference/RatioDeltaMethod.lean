@@ -85,7 +85,7 @@ theorem hasFDerivAt_ratio {t₀ : EuclideanSpace ℝ (Fin 2)} (hb : t₀ 1 ≠ 0
     funext v; rw [div_eq_mul_inv]
   rw [heq]
   have hmul := h0.mul hinv
-  convert hmul using 1
+  refine hmul.congr_fderiv ?_
   ext v
   simp only [ratioDeriv, ContinuousLinearMap.sub_apply,
     ContinuousLinearMap.smulRight_apply, ContinuousLinearMap.add_apply,

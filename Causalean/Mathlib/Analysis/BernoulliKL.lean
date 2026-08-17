@@ -40,19 +40,22 @@ lemma hasDerivAt_bernEntropy (x : ℝ) (hx0 : x ≠ 0) (hx1 : 1 - x ≠ 0) :
       (Real.log x - Real.log (1 - x)) x := by
   have h1 : HasDerivAt (fun t : ℝ => t * Real.log t) (Real.log x + 1) x :=
     Real.hasDerivAt_mul_log hx0
+  have hsub : HasDerivAt (fun t : ℝ => 1 - t) (0 - 1) x :=
+    (hasDerivAt_const x (1 : ℝ)).fun_sub (hasDerivAt_id' (x := x))
   have h2log : HasDerivAt (fun t : ℝ => Real.log (1 - t)) (-(1 - x)⁻¹) x := by
-    simpa [div_eq_mul_inv] using (Real.hasDerivAt_log hx1).comp x
-      ((hasDerivAt_const x (1 : ℝ)).sub (hasDerivAt_id x))
-  have h2raw := (((hasDerivAt_const x (1 : ℝ)).sub (hasDerivAt_id x)).mul h2log)
+    have h : HasDerivAt (fun t : ℝ => Real.log (1 - t)) ((1 - x)⁻¹ * (0 - 1)) x :=
+      (Real.hasDerivAt_log hx1).comp x hsub
+    convert h using 1
+    ring
   have h2 : HasDerivAt (fun t : ℝ => (1 - t) * Real.log (1 - t))
       (-(Real.log (1 - x)) - 1) x := by
-    convert h2raw using 1
-    simp only [Pi.sub_apply, id_eq]
-    have hmul : (1 - x) * (-(1 - x)⁻¹) = -1 := by
-      rw [mul_neg, mul_inv_cancel₀ hx1]
-    rw [hmul]
+    have h : HasDerivAt (fun t : ℝ => (1 - t) * Real.log (1 - t)) _ x := hsub.fun_mul h2log
+    convert h using 1
+    rw [mul_neg, mul_inv_cancel₀ hx1]
     ring
-  convert h1.add h2 using 1
+  have h : HasDerivAt (fun t : ℝ => t * Real.log t + (1 - t) * Real.log (1 - t)) _ x :=
+    h1.fun_add h2
+  convert h using 1
   ring
 
 /-- The negative Bernoulli entropy at a probability is the sum of that probability times its
@@ -71,23 +74,38 @@ private lemma hasDerivAt_bernH (q x : ℝ) (hx0 : x ≠ 0) (hx1 : 1 - x ≠ 0) :
     HasDerivAt (bernH q) (bernHDeriv q x) x := by
   unfold bernH bernHDeriv bernD
   have hd := hasDerivAt_bernEntropy x hx0 hx1
-  have hquad := (hasDerivAt_const x (4 : ℝ)).mul (((hasDerivAt_id x).sub_const q).pow 2)
-  have hlin := (hasDerivAt_const x (Real.log q - Real.log (1 - q))).mul
-    ((hasDerivAt_id x).sub_const q)
-  convert (((hquad.add hlin).add_const
-      (q * Real.log q + (1 - q) * Real.log (1 - q))).sub hd) using 1
-  simp only [id_eq, Nat.cast_ofNat]
+  have hbase : HasDerivAt (fun t : ℝ => t - q) 1 x := (hasDerivAt_id' (x := x)).sub_const q
+  have hquad : HasDerivAt (fun t : ℝ => 4 * (t - q) ^ 2) _ x :=
+    HasDerivAt.const_mul (4 : ℝ) (hbase.fun_pow 2)
+  have hlin : HasDerivAt (fun t : ℝ => (Real.log q - Real.log (1 - q)) * (t - q)) _ x :=
+    HasDerivAt.const_mul _ hbase
+  have h : HasDerivAt (fun t : ℝ => 4 * (t - q) ^ 2
+      + (Real.log q - Real.log (1 - q)) * (t - q)
+      + (q * Real.log q + (1 - q) * Real.log (1 - q))
+      - (t * Real.log t + (1 - t) * Real.log (1 - t))) _ x :=
+    ((hquad.fun_add hlin).add_const
+      (q * Real.log q + (1 - q) * Real.log (1 - q))).fun_sub hd
+  convert h using 1
+  push_cast
   ring
 
 private lemma hasDerivAt_bernHDeriv (q x : ℝ) (hx0 : x ≠ 0) (hx1 : 1 - x ≠ 0) :
     HasDerivAt (bernHDeriv q) (8 - (x⁻¹ + (1 - x)⁻¹)) x := by
   unfold bernHDeriv
   have hlog1 : HasDerivAt (fun t : ℝ => Real.log t) x⁻¹ x := Real.hasDerivAt_log hx0
+  have hsub : HasDerivAt (fun t : ℝ => 1 - t) (0 - 1) x :=
+    (hasDerivAt_const x (1 : ℝ)).fun_sub (hasDerivAt_id' (x := x))
   have hlog2 : HasDerivAt (fun t : ℝ => Real.log (1 - t)) (-(1 - x)⁻¹) x := by
-    simpa [div_eq_mul_inv] using (Real.hasDerivAt_log hx1).comp x
-      ((hasDerivAt_const x (1 : ℝ)).sub (hasDerivAt_id x))
-  convert (((hasDerivAt_const x (8 : ℝ)).mul ((hasDerivAt_id x).sub_const q)).add_const
-      (Real.log q - Real.log (1 - q))).sub (hlog1.sub hlog2) using 1
+    have h : HasDerivAt (fun t : ℝ => Real.log (1 - t)) ((1 - x)⁻¹ * (0 - 1)) x :=
+      (Real.hasDerivAt_log hx1).comp x hsub
+    convert h using 1
+    ring
+  have hlin : HasDerivAt (fun t : ℝ => 8 * (t - q)) _ x :=
+    HasDerivAt.const_mul (8 : ℝ) ((hasDerivAt_id' (x := x)).sub_const q)
+  have h : HasDerivAt (fun t : ℝ => 8 * (t - q) + (Real.log q - Real.log (1 - q))
+      - (Real.log t - Real.log (1 - t))) _ x :=
+    (hlin.add_const (Real.log q - Real.log (1 - q))).fun_sub (hlog1.fun_sub hlog2)
+  convert h using 1
   ring
 
 private lemma bernH_convexOn (q : ℝ) :

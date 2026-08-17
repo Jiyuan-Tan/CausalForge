@@ -80,7 +80,7 @@ theorem relative_fixed_function_bad_le
         _ = n := by simp
     have hmgf := Causalean.Stat.Concentration.boundedCount_mgf_le_integral
       S hf h01 n (Real.log 2)
-    simp only [Causalean.Stat.Concentration.bernoulliCount] at hmgf
+    unfold Causalean.Stat.Concentration.bernoulliCount at hmgf
     rw [Real.exp_log (by norm_num : (0 : ℝ) < 2)] at hmgf
     have hmgf' :
         mgf (fun ω => ∑ i ∈ Finset.range n, f (S.Z i ω)) μ
@@ -162,7 +162,7 @@ theorem relative_fixed_function_bad_le
           _ = 1 := Real.exp_zero
       have hmgf := Causalean.Stat.Concentration.boundedCount_mgf_le_integral
         S hf h01 n (-Real.log 2)
-      simp only [Causalean.Stat.Concentration.bernoulliCount] at hmgf
+      unfold Causalean.Stat.Concentration.bernoulliCount at hmgf
       have hexp : Real.exp (-Real.log (2 : ℝ)) = 1 / 2 := by
         rw [Real.exp_neg, Real.exp_log (by norm_num : (0 : ℝ) < 2)]
         norm_num
@@ -261,7 +261,7 @@ theorem finite_relative_comparison_core
   · exact le_trans (by linarith) (measureReal_nonneg)
   by_cases hH : H = ∅
   · subst H
-    simp [measureReal_univ_eq_one]
+    simp [probReal_univ]
     exact hzeta.le
   have hcard : 0 < H.card := Finset.card_pos.mpr (Finset.nonempty_iff_ne_empty.mpr hH)
   have hratio : 1 < 2 * (H.card : ℝ) / zeta := by
@@ -327,7 +327,7 @@ theorem finite_relative_comparison_core
     ext ω
     simp [bad, not_lt, and_comm, and_left_comm, and_assoc]
   rw [show relativeLogRemainder n H.card zeta = a from rfl, hgood,
-    measureReal_compl hbadmeas, measureReal_univ_eq_one]
+    measureReal_compl hbadmeas, probReal_univ]
   linarith
 
 /-- Exact finite-union form with the requested additional `3/n` slack. -/

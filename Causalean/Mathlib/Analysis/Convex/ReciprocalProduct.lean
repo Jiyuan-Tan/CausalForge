@@ -38,7 +38,8 @@ lemma neg_log_coord_convexOn {s : Set (ι → ℝ)} (hs : Convex ℝ s) (k : ι)
   have hneglog : ConvexOn ℝ (Set.Ioi (0 : ℝ)) (fun x : ℝ => -Real.log x) :=
     strictConcaveOn_log_Ioi.concaveOn.neg
   have hcomp : ConvexOn ℝ (eval ⁻¹' Set.Ioi (0 : ℝ)) (fun p : ι → ℝ => -Real.log (p k)) := by
-    simpa [eval] using hneglog.comp_linearMap eval
+    have h0 := hneglog.comp_linearMap eval
+    exact h0
   exact hcomp.subset (fun p hp => hk p hp) hs
 
 /-- `∑ k ∈ S, -log (p k)` is convex on a convex set `s` whose coordinates indexed by `S` are
@@ -54,7 +55,15 @@ lemma neg_log_sum_convexOn {s : Set (ι → ℝ)} (hs : Convex ℝ s) (S : Finse
       have hTpos : ∀ p ∈ s, ∀ j ∈ T, 0 < p j :=
         fun p hp j hj => hS p hp j (Finset.mem_insert_of_mem hj)
       have hkconv := neg_log_coord_convexOn hs k hkpos
-      simpa [Finset.sum_insert hk] using hkconv.add (ih hTpos)
+      have h0 : ConvexOn ℝ s
+          (fun p : ι → ℝ => -Real.log (p k) + ∑ j ∈ T, -Real.log (p j)) :=
+        hkconv.add (ih hTpos)
+      have hfun : (fun p : ι → ℝ => ∑ j ∈ insert k T, -Real.log (p j))
+          = fun p : ι → ℝ => -Real.log (p k) + ∑ j ∈ T, -Real.log (p j) := by
+        funext p
+        exact Finset.sum_insert hk
+      rw [hfun]
+      exact h0
 
 /-- **Convexity of a reciprocal product.** On a convex set `s` whose coordinates indexed by `S`
 stay positive, `p ↦ (∏ k ∈ S, p k)⁻¹` is convex. -/
@@ -122,7 +131,15 @@ lemma neg_log_one_sub_sum_convexOn {s : Set (ι → ℝ)} (hs : Convex ℝ s) (S
       have hTlt : ∀ p ∈ s, ∀ j ∈ T, p j < 1 :=
         fun p hp j hj => hS p hp j (Finset.mem_insert_of_mem hj)
       have hkconv := neg_log_one_sub_coord_convexOn hs k hklt
-      simpa [Finset.sum_insert hk] using hkconv.add (ih hTlt)
+      have h0 : ConvexOn ℝ s
+          (fun p : ι → ℝ => -Real.log (1 - p k) + ∑ j ∈ T, -Real.log (1 - p j)) :=
+        hkconv.add (ih hTlt)
+      have hfun : (fun p : ι → ℝ => ∑ j ∈ insert k T, -Real.log (1 - p j))
+          = fun p : ι → ℝ => -Real.log (1 - p k) + ∑ j ∈ T, -Real.log (1 - p j) := by
+        funext p
+        exact Finset.sum_insert hk
+      rw [hfun]
+      exact h0
 
 /-- **Convexity of a reciprocal product of complements.** On a convex set `s` whose coordinates
 indexed by `S` stay below `1`, `p ↦ (∏ k ∈ S, (1 - p k))⁻¹` is convex. -/

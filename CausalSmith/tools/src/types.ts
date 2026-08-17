@@ -30,8 +30,6 @@ export interface PendingSorry {
   // this the classifier re-rolls the bucket from scratch on every resume.
   /** Committed remediation track (bucket family). */
   track?: "1" | "2" | "3" | "4" | "5" | null;
-  /** Goal hash at last sighting — a change means proof progress. */
-  last_goal_hash?: string | null;
   /** Times escalated one rung (telemetry). */
   escalations?: number;
   /** Whether the Bucket-4 decomposition burst already fired. */
@@ -133,6 +131,18 @@ export interface DiscoveryFlags {
   rewound_from_stage0_5_pivot?: string | null;
   stage_neg1_fallback?: string | null;
   stage0_budget_exhausted?: string;
+  /** Typed F→D0 rewind intent; consumed by D0 or retained as a replacement receipt. */
+  d0_cross_boundary_rewind?: {
+    intent: "incremental_repair" | "extension" | "replacement";
+    status: "pending" | "rebased" | "retired";
+    source_stage: Stage;
+    source_revision: string;
+    reason: string;
+    source_core_sha256?: string;
+    source_ids?: string[];
+  };
+  /** Fail-closed diagnostic for a stage_0 request lacking typed intent. */
+  stage0_rewind_intent_required?: string;
   stage1_rewinds?: number;
   stage1_rewinds_cap_hit?: string;
   /**
@@ -171,10 +181,14 @@ export interface DiscoveryFlags {
    */
   substrate_built?: SubstrateBuiltDecl[] | null;
   /**
-   * D0.5.G directed-reroute counter. Incremented each time a below-floor note is
-   * sent back to D0 with a bounded improvement directive (better estimator / derive
-   * an assumed condition / tighten a bound) instead of halting. Capped (2) so a
-   * genuinely-stuck topic still halts deterministically for the operator.
+   * D0.5.G directed-reroute counter. Incremented when a below-floor note is offered a
+   * reroute — sent back to D0 with a bounded improvement directive (better estimator /
+   * derive an assumed condition / tighten a bound) rather than halted as unsalvageable.
+   * Both paths stop at an operator checkpoint; this counts only the ones that hand D0
+   * something to re-solve. Enforced against `GENERAL_REROUTE_CAP` (default 2) in
+   * `runStage0_5Typed`, so a topic whose referee keeps emitting plausible-but-ineffective
+   * directives cannot re-solve indefinitely. Persisted because each reroute ends the
+   * process — an in-process bound would reset on every `--resume` and never bind.
    */
   general_reroute_count?: number;
   /**
@@ -696,8 +710,6 @@ export interface PipelineLogEntry {
   timestamp: string;
   stage: Stage | "resume" | "init";
   model?: string;
-  input_digest?: string;
-  output_digest?: string;
   status: string;
   duration_ms: number;
   message?: string;

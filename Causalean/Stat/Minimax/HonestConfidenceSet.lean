@@ -86,7 +86,8 @@ theorem expected_restrictedSetVolume_eq_integral_inclusion
             funext ω
             simp only [f, S, Set.indicator]
             split_ifs <;> simp_all]
-        simpa [hu] using integral_indicator_one (μ := Q)
+        rw [Set.indicator_of_mem hu]
+        exact integral_indicator_one (μ := Q)
           (hgraph.preimage (measurable_id.prodMk measurable_const))
       · simp [f, S, hu]
 
@@ -290,7 +291,8 @@ noncomputable def coverageInfOrOne {ι : Sort*} (f : ι → ℝ) : ℝ := by
 ordinary infimum of coverage across the class. -/
 theorem coverageInfOrOne_of_nonempty {ι : Sort*} [Nonempty ι] (f : ι → ℝ) :
     coverageInfOrOne f = ⨅ i, f i := by
-  simp [coverageInfOrOne, inferInstanceAs (Nonempty ι)]
+  have hne : Nonempty ι := inferInstance
+  simp [coverageInfOrOne, hne]
 
 /-- On an empty model class, worst-case coverage with the empty-class convention is one,
 expressing that the coverage requirement is vacuously satisfied. -/

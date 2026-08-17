@@ -14,7 +14,7 @@ import { clusterFor, loadDiscoveryClusterSetupBlock } from "../cluster_setup.js"
 import { recordProof } from "../working_writer.js";
 import { coreJsonPath } from "../stages/d0_core.js";
 import { protoCoreJsonPath } from "../stages/neg1_2_author.js";
-import { CoreSchema, StatementSchema, type Core, type CoreStatement } from "../core/schema.js";
+import { CoreSchema, type Core, type CoreStatement } from "../core/schema.js";
 import { planCarry } from "../carry_plan.js";
 import { solvedStatus } from "../core/status.js";
 import {
@@ -30,6 +30,7 @@ import {
 import { coreEditTarget, recoverPendingApply, type RawCoreEdit } from "../stages/d0_apply.js";
 import { loadSemanticManifest, validateCoreManifest, type SemanticManifest } from "../semantic_manifest.js";
 import { emptyProposals, readRoundProposals } from "./proposals.js";
+import { agentOeqSourceFromFingerprint, oeqSourceFingerprint } from "./oeq_source.js";
 import { readTypedCore } from "../core/core_io.js";
 import {
   resolveRequiredCoreEditMandates,
@@ -40,14 +41,6 @@ import {
  * absent: changing a gap/consumer note cannot make a theorem stop answering the same
  * question. Dependencies are a set throughout proof reuse, so order/repeats are
  * canonicalized here too. */
-export function oeqSourceFingerprint(s: CoreStatement): string {
-  return JSON.stringify({
-    kind: s.kind,
-    statement: s.statement,
-    depends_on: [...new Set(s.depends_on)].sort(),
-  });
-}
-
 /** Accept fingerprints written by the earlier, prose-sensitive format when their
  * mathematical source is unchanged. The next successful carry rewrites them in the
  * canonical format, avoiding a one-time re-answer across existing runs. */
@@ -63,25 +56,7 @@ export function oeqSourceFingerprintMatches(s: CoreStatement, fingerprint: strin
   }
 }
 
-/** Recover the minimal mathematical source catalog from a canonical fingerprint.
- * This is used only for an agent-authored OEQ whose durable answer theorem still
- * declares that OEQ as owner. Frozen OEQs continue to come from proto_core. */
-export function agentOeqSourceFromFingerprint(sourceId: string, fingerprint: string): CoreStatement | null {
-  try {
-    const prior = JSON.parse(fingerprint) as { kind?: unknown; statement?: unknown; depends_on?: unknown };
-    if (prior.kind !== "openendedquestion" || typeof prior.statement !== "string") return null;
-    if (!Array.isArray(prior.depends_on) || !prior.depends_on.every((x) => typeof x === "string")) return null;
-    return StatementSchema.parse({
-      id: sourceId,
-      kind: "openendedquestion",
-      statement: prior.statement,
-      depends_on: prior.depends_on,
-      status: "to-prove",
-    });
-  } catch {
-    return null;
-  }
-}
+export { agentOeqSourceFromFingerprint, oeqSourceFingerprint } from "./oeq_source.js";
 
 // A `cited` statement is INVOKED (its justification IS the citation), never
 // derived by us — assembly must PRESERVE `cited` (and its `source`). Forcing a
@@ -274,6 +249,17 @@ export async function assembleSolveContext(args: {
   // Keep ordinary snapshot validity intact; a forced-target overlay below delivers
   // the directive without converting unrelated carried proofs into partial debt.
   let validIds = computeValidNodes(prev, proto);
+  const sealCatalog = new Map<string, CoreStatement>(proto.statements.map((s) => [s.id, s]));
+  for (const [id, rec] of Object.entries(prev?.solved ?? {})) {
+    if (rec.node) sealCatalog.set(id, rec.node);
+  }
+  const carriedOpenSeals = Object.fromEntries(
+    Object.entries(prev?.sealed_open_oeqs ?? {}).filter(([id, fingerprint]) => {
+      const source = sealCatalog.get(id);
+      return !requiredCoreTargets.has(id) && source?.kind === "openendedquestion" &&
+        oeqSourceFingerprint(source) === fingerprint;
+    }),
+  );
   const next: WorkingState = {
     round,
     proposal_revision: currentProposalRevision,
@@ -283,6 +269,7 @@ export async function assembleSolveContext(args: {
     escalation_entries_consumed: escalationLog.length,
     solved: {},
     resolved_oeqs: {},
+    ...(Object.keys(carriedOpenSeals).length > 0 ? { sealed_open_oeqs: carriedOpenSeals } : {}),
     // CARRY THE CONSUMED MARKER. `readRoundProposals` treats an ABSENT `proposals`
     // field with legacy leftovers on disk as an unmigrated run and fails loud, so the
     // rebuilt state always carries an explicit (empty) payload. A round that surfaces

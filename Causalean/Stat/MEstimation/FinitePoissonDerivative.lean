@@ -79,8 +79,10 @@ lemma finitePoissonObjective_expCell_argmax_snd_hasDerivAt
         (((ContinuousLinearMap.proj j).comp
           (A.toContinuousLinearMap.comp (ContinuousLinearMap.snd ℝ ℝ E))).hasFDerivAt
             (x := (x₀, theta₀))).exp
-      convert (hleft.sub hright).const_mul (q j * A (b k) j) using 1 <;>
-        ext z <;> simp
+      convert (hleft.fun_sub hright).const_mul (q j * A (b k) j) using 1 <;>
+        first
+          | rfl
+          | (ext z <;> simp)
     · have hleft : HasFDerivAt (fun _p : ℝ × E ↦ m i)
           (0 : (ℝ × E) →L[ℝ] ℝ) (x₀, theta₀) :=
         hasFDerivAt_const (x := (x₀, theta₀)) (c := m i)
@@ -88,8 +90,10 @@ lemma finitePoissonObjective_expCell_argmax_snd_hasDerivAt
         (((ContinuousLinearMap.proj i).comp
           (A.toContinuousLinearMap.comp (ContinuousLinearMap.snd ℝ ℝ E))).hasFDerivAt
             (x := (x₀, theta₀))).exp
-      convert (hleft.sub hright).const_mul (q i * A (b k) i) using 1 <;>
-        ext z <;> simp [hij]
+      convert (hleft.fun_sub hright).const_mul (q i * A (b k) i) using 1 <;>
+        first
+          | rfl
+          | (ext z <;> simp [hij])
   let L : E →L[ℝ] (Basis.ofVectorSpaceIndex ℝ E → ℝ) :=
     D.comp (ContinuousLinearMap.inr ℝ ℝ E)
   have hL_inj : Function.Injective L := by
@@ -168,12 +172,15 @@ lemma finitePoissonObjective_expCell_argmax_snd_hasDerivAt
     · have hmconst : ContDiffAt ℝ 1 (fun _p : ℝ × E ↦ m i) (x₀, theta₀) :=
         contDiffAt_const
       simpa [hij] using contDiffAt_const.mul (hmconst.sub heta.exp)
-  let himp : IsContDiffImplicitAt 1 S D (x₀, theta₀) :=
-    { hasFDerivAt := hSD
-      contDiffAt := hScont
-      bijective := hL_bij
-      ne_zero := by norm_num }
-  let phi : ℝ → E := himp.implicitFunction
+  have hpn : (1 : WithTop ℕ∞) ≠ 0 := by norm_num
+  have hfd : fderiv ℝ S (x₀, theta₀) = D := hSD.fderiv
+  have hinv : ((fderiv ℝ S (x₀, theta₀)).comp
+      (ContinuousLinearMap.inr ℝ ℝ E)).IsInvertible := by
+    rw [hfd]
+    exact ⟨ContinuousLinearEquiv.ofBijective L
+      (LinearMap.ker_eq_bot.mpr hL_bij.1) (LinearMap.range_eq_top.mpr hL_bij.2),
+      ContinuousLinearEquiv.coe_ofBijective _ _ _⟩
+  let phi : ℝ → E := hScont.implicitFunction hpn hinv
   have hmexp (x : ℝ) : ∀ i, 0 < expCellUpdatedMean m j B x i := by
     intro i
     simp only [expCellUpdatedMean, Function.update_apply]
@@ -194,12 +201,10 @@ lemma finitePoissonObjective_expCell_argmax_snd_hasDerivAt
     have hs := finitePoissonObjective_score q (expCellUpdatedMean m j B x₀) A theta₀
       (b k) hmax0
     simpa [S, expCellUpdatedMean, Function.update_apply] using hs
-  have hphi0 : phi x₀ = theta₀ := by
-    have he := himp.eventually_implicitFunction_apply_eq
-    exact he.self_of_nhds (hS0.trans hS0.symm)
+  have hphi0 : phi x₀ = theta₀ := hScont.implicitFunction_apply_self hpn hinv
   have hphi_score : ∀ᶠ x in nhds x₀, S (x, phi x) = 0 := by
-    filter_upwards [himp.apply_implicitFunction] with x hx
-    change S (x, himp.implicitFunction x) = 0
+    filter_upwards [hScont.eventually_apply_implicitFunction hpn hinv] with x hx
+    change S (x, phi x) = 0
     simpa only [hS0] using hx
   have hselected_phi :
       (fun x ↦ maximizerOrZero (finitePoissonObjective q (expCellUpdatedMean m j B x) A))
@@ -242,7 +247,7 @@ lemma finitePoissonObjective_expCell_argmax_snd_hasDerivAt
     have hphi : phi x = xstar := huniq _ hphimax
     exact hchoose.trans hphi.symm
   have hphidiff : DifferentiableAt ℝ phi x₀ := by
-    exact himp.contDiffAt_implicitFunction.differentiableAt (by norm_num)
+    exact (hScont.contDiffAt_implicitFunction hpn hinv).differentiableAt (by norm_num)
   let v : E := fderiv ℝ phi x₀ 1
   let P : ℝ →L[ℝ] (ℝ × E) :=
     (ContinuousLinearMap.id ℝ ℝ).prod (fderiv ℝ phi x₀)
@@ -296,7 +301,7 @@ lemma finitePoissonObjective_expCell_argmax_snd_hasDerivAt
   have hphi_snd : HasDerivAt (fun x ↦ (phi x).2) v.2 x₀ := by
     have hsnd :=
       (ContinuousLinearMap.snd ℝ U ℝ).hasFDerivAt.comp x₀ hphidiff.hasFDerivAt
-    convert hsnd.hasDerivAt using 1
+    exact hsnd.hasDerivAt
   rw [← hvbeta]
   apply hphi_snd.congr_of_eventuallyEq
   exact hselected_phi.fun_comp (fun z : E ↦ z.2)

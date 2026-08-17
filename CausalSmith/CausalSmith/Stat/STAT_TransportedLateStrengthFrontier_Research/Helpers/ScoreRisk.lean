@@ -476,8 +476,9 @@ lemma transportedIVClass_contrast_integrable
         intro _
         simpa [Real.norm_eq_abs] using ho)
     rw [one_mul] at hbound
-    rw [populationXLaw, Measure.map_apply hFullX hA]
-    simpa [Real.norm_eq_abs] using hbound
+    rw [populationXLaw, Measure.map_apply hFullX hA, ← measureReal_def]
+    simp only [Real.norm_eq_abs] at hbound
+    exact hbound
   have hReceiptDom : ∀ A, MeasurableSet A →
       |∫ x in A, P.receiptContrast n true x
           ∂populationXLaw P n true| ≤
@@ -493,8 +494,9 @@ lemma transportedIVClass_contrast_integrable
         intro _
         simpa [Real.norm_eq_abs] using ho)
     rw [one_mul] at hbound
-    rw [populationXLaw, Measure.map_apply hFullX hA]
-    simpa [Real.norm_eq_abs] using hbound
+    rw [populationXLaw, Measure.map_apply hFullX hA, ← measureReal_def]
+    simp only [Real.norm_eq_abs] at hbound
+    exact hbound
   have hAssignmentAE :
       ∀ᵐ x ∂populationXLaw P n true,
         |P.assignmentContrast n true x| ≤ 1 :=

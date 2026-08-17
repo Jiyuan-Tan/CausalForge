@@ -601,8 +601,9 @@ private theorem swigInterventionSet_insert_equiv_aux
         have hξ_eq : ξ₁ = ξ₂ := eq_of_heq hξ
         subst hξ_eq
         rfl
-      have h_obs_M : v.val ∈ M.observed := by
-        simp [SCM.fixSet, SCM.fixMono, SWIGGraph.splitMono]
+      -- `SCM.fixSet` is semireducible, so `simp` no longer sees
+      -- `(… .fixSet …).observed = M.observed`; take the witness at term level instead.
+      have h_obs_M : v.val ∈ M.observed := v.property
       have h_y_obs' : ∀ D ∈ ({y} : Finset N),
           SWIGNode.random D ∈ (M.toSWIGGraph.splitMono X hX_obs hX_fixed).observed := by
         intro D hD
@@ -653,12 +654,15 @@ private theorem swigInterventionSet_insert_equiv_aux
               · exact huX hX
             rw [fixMonoParentMap_apply_random_notMem M.toSWIGGraph X hX_obs hX_fixed
                 v.val _ u huX hw]
+            -- `ξ₁` must be supplied explicitly: left as a placeholder it is assigned
+            -- during `rw`'s keyed matching, where `SCM.fixSet`/`SCM.fixMono` no longer
+            -- unfold to `SWIGGraph.splitMono`.
             rw [fixMonoParentMap_apply_random_notMem
                 (M.toSWIGGraph.splitMono X hX_obs hX_fixed)
-                ({y} : Finset N) h_y_obs' h_y_fix' v.val _ u
+                ({y} : Finset N) h_y_obs' h_y_fix' v.val ξ₁ u
                 (by simpa [Finset.mem_singleton] using huy) _]
             rw [fixMonoParentMap_apply_random_notMem M.toSWIGGraph (insert y X)
-                hInsert_obs hInsert_fixed v.val _ u hu_insert hw]
+                hInsert_obs hInsert_fixed v.val ξ₂ u hu_insert hw]
             exact hξ_apply (SWIGNode.random u) _ _
       | fixed d =>
         rw [fixMonoParentMap_apply_fixed M.toSWIGGraph X hX_obs hX_fixed

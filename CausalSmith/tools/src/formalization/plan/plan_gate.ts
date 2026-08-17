@@ -10,7 +10,6 @@ import type { Core } from "../../discovery/core/schema.js";
 import { coreNodeIds } from "../../discovery/core/schema.js";
 import { buildDagFromCore } from "../../discovery/core/dag.js";
 import type { ExtractedDecl } from "../../graph/extractor.js";
-import { statementHash } from "../../graph/hash.js";
 import type { FormalizationGraph } from "../../graph/types.js";
 import { PlanSchema, deriveFeasibility, type Plan } from "./schema.js";
 
@@ -49,11 +48,16 @@ export interface PlanGateOptions {
    * undelivered plan node, which tag-only P7 cannot see. */
   leanDeclNames?: Set<string>;
   /** Formalization graph captured before F2. Enables the narrow P7 exemption for
-   * already-reviewed agent-introduced helpers that intentionally have no plan node. */
+   * exact, already-present agent-introduced helpers that intentionally have no plan node. */
   preF2Graph?: FormalizationGraph;
   /** Declarations extracted from the emitted Lean. Required with `preF2Graph` to
-   * verify that an exempt helper still matches its reviewed receipt exactly. */
+   * verify that an exempt helper is still linked to the same declaration. */
   annotatedDecls?: ExtractedDecl[];
+  /** Declarations snapshotted from disk immediately before the F2 worker ran. A
+   * plan-less helper is preserved only when its emitted declaration is byte-for-byte
+   * identical at the extractor level; graph review hashes can be stale across parser
+   * upgrades and therefore are not an adequate pre-image. */
+  preF2AnnotatedDecls?: ExtractedDecl[];
 }
 
 const MODULE_RE = /^[A-Z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)*$/;
@@ -197,30 +201,45 @@ export function runPlanGate(planInput: unknown, core: Core, opts: PlanGateOption
       decls.push(decl);
       extractedByNode.set(decl.nodeId, decls);
     }
-    const hasExactPreF2HelperReceipt = (id: string): boolean => {
+    const preF2ExtractedByNode = new Map<string, ExtractedDecl[]>();
+    for (const decl of opts.preF2AnnotatedDecls ?? []) {
+      const decls = preF2ExtractedByNode.get(decl.nodeId) ?? [];
+      decls.push(decl);
+      preF2ExtractedByNode.set(decl.nodeId, decls);
+    }
+    const sameExtractedDecl = (a: ExtractedDecl, b: ExtractedDecl): boolean =>
+      a.nodeId === b.nodeId &&
+      a.declKind === b.declKind &&
+      a.declName === b.declName &&
+      a.namespace === b.namespace &&
+      a.file === b.file &&
+      a.statement === b.statement &&
+      a.hasSorry === b.hasSorry;
+    const isExactPreservedPreF2Helper = (id: string): boolean => {
       const node = preF2Nodes.get(id);
       const decls = extractedByNode.get(id) ?? [];
+      const preF2Decls = preF2ExtractedByNode.get(id) ?? [];
       if (
-        node?.kind !== "lemma" ||
+        (node?.kind !== "lemma" && node?.kind !== "definition") ||
         node.provenance !== "agent-introduced" ||
         node.proof.state !== "complete" ||
         node.proof.sorry_count !== 0 ||
-        node.review.status === "unreviewed" ||
         node.review.status === "drift" ||
-        node.review.passed_hash === null ||
         node.lean.decl_name === null ||
         node.lean.file === null ||
-        decls.length !== 1
+        decls.length !== 1 ||
+        preF2Decls.length !== 1
       ) return false;
       const decl = decls[0];
+      const preF2Decl = preF2Decls[0];
       return !decl.hasSorry &&
         decl.declName === node.lean.decl_name &&
         decl.file === node.lean.file &&
-        statementHash(decl.statement) === node.review.passed_hash;
+        sameExtractedDecl(decl, preF2Decl);
     };
     for (const t of opts.leanTags.nodes) {
-      if (!planNodeKeys.has(t) && !hasExactPreF2HelperReceipt(t)) {
-        violations.push({ code: "P7", where: t, message: `emitted Lean tags '@node ${t}' but no plan entry or exact completed pre-F2 helper receipt` });
+      if (!planNodeKeys.has(t) && !isExactPreservedPreF2Helper(t)) {
+        violations.push({ code: "P7", where: t, message: `emitted Lean tags '@node ${t}' but no plan entry or exact completed pre-F2 helper` });
       }
     }
     for (const id of planNodeKeys) {

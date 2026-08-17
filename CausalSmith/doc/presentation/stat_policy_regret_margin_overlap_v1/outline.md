@@ -83,7 +83,7 @@ notation_gaps: $p_P(x)$=the frozen layer uses the overlap score but no definitio
 | envelope | $B$ | uniform bound for centered policy-indexed processes | ass:vc-localized-envelope |
 | logarithmic power | $p$ | finite logarithmic exponent in empirical-process bounds | ass:vc-localized-envelope |
 | centered process | $z_\pi$ | centered empirical process indexed by policies | ass:vc-localized-offset-envelope |
-| localized radius | $r$ | regret radius for localized process bounds | lem:localized-vc-process-bound |
+| localized radius | $r$ | regret radius for localized process bounds | ass:vc-localized-envelope |
 | localization exponent | $\kappa$ | exponent $\alpha/(2+2\alpha)$ | lem:localized-vc-process-bound |
 | increments | $g_\pi$ | centered policy-indexed functions in localized bounds | ass:vc-localized-envelope |
 | i.i.d. localized supremum | $Z_m(r)$ | fixed-radius supremum over policies with regret at most $r$ | lem:localized-vc-process-bound |

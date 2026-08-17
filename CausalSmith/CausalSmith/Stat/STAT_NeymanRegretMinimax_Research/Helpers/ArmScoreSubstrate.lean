@@ -159,7 +159,7 @@ lemma armTangentStrength_eq_l2ResidualQuadratic (nu : Measure (ℝ × ℝ)) (hnu
     intro b
     change l2ResidualQuadratic μ ≤
       ∫ y, (y ^ 2 - b.1 - b.2 * y) ^ 2 ∂armMarginal nu a
-    simpa [μ] using Causalean.Stat.MomentProblems.ResidualQuadratic.MeasureBridge.l2ResidualQuadratic_le
+    exact Causalean.Stat.MomentProblems.ResidualQuadratic.MeasureBridge.l2ResidualQuadratic_le
       μ hfin hnd b.1 b.2
 
 -- @node: projResidual_bounded_Icc

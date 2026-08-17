@@ -1,28 +1,118 @@
 \begin{proof}[Proof of \cref{obj:lem:crossfit-localized-offset-control}]
-Apply the uniform localized offset envelope of \cref{obj:ass:vc-localized-offset-envelope} with constants \(C_0,p\), and enlarge the constant to \(C=C_0K\), where \(K\) is the fixed number of folds.  The fixed-fold assumption gives \(K>0\), hence \(C>0\). % lean: crossfit_localized_offset_control
-
-Fix \(P,n,B\) and the foldwise increments.  Let \(w_k=|I_k|/n\), let the pooled offset supremum be
+Write \(m_k=|I_k|\) for the size of fold \(k\), \(w_k=m_k/n\) for its weight, and
 \[
-\sup_{\pi\in\Pi}\left\{2|G_{\mathrm{cf}}(\pi)|-\frac{R_P(\pi)}4\right\}_+,
+A_\alpha=\frac{1+\alpha}{2+\alpha}.
 \]
-and let the \(k\)-th folded supremum be the analogous offset supremum on fold \(I_k\).  Pointwise in the sample, the pooled supremum is bounded by the weighted sum of the folded suprema, because the pooled cross-fit process is the corresponding fold-size weighted average and the positive-part offset is subadditively controlled after taking the supremum. % lean: pooledOffsetSup_pointwise_le_sum_fold
-
-After integrating, monotonicity of the integral and the fold-projection identities reduce the pooled expectation to a sum of weighted fold expectations.  For a fold of size \(m=0\) the weight is zero.  For a nonempty fold, the localized offset envelope applies to that fold with sample size \(m\), envelope \(B\), and the same second-moment bound \(B^2P_X(D_\pi)\). % lean: integral_foldOffsetSup_eq_expected
-
-The remaining bookkeeping compares each weighted fold rate with the target \(n\)-rate:
+The pooled cross-fit centered process and its foldwise pieces are
 \[
-\frac{m}{n}\left(\frac{B^2}{m}\right)^{A_\alpha}
+G_{\mathrm{cf}}(\pi)
+=
+\frac1n\sum_{i=1}^n\left\{g_{k(i),\pi}(O_i)-\int g_{k(i),\pi}(O)\,dP(O)\right\},
+\qquad
+G_k(\pi)
+=
+\frac1{m_k}\sum_{i\in I_k}\left\{g_{k,\pi}(O_i)-\int g_{k,\pi}(O)\,dP(O)\right\},
+\]
+the latter defined for nonempty folds.  Grouping the pooled sum by fold gives the exact decomposition
+\[
+G_{\mathrm{cf}}(\pi)=\sum_{k=1}^K w_kG_k(\pi),
+\qquad
+\sum_{k=1}^K w_k=1,
+\qquad
+w_k\ge0,
+\]
+the weight identity because \(I_1,\ldots,I_K\) partitions \(\{1,\ldots,n\}\). % lean: pooledCrossfitProcess_eq_sum_fold % lean: sum_foldWeights_eq_one
+
+Apply \cref{obj:ass:vc-localized-offset-envelope} in its uniform class-level form: it supplies constants \(C_0>0\) and \(p\ge0\), not depending on the law, and we set
+\[
+C=C_0K,
+\]
+which is positive because \cref{obj:ass:fixed-crossfit-fold-count} gives \(K\ge1\). % lean: crossfit_localized_offset_control
+Also, \cref{obj:ass:margin} gives \(\alpha\ge0\), hence
+\[
+A_\alpha=\frac{1+\alpha}{2+\alpha}\le1 .
+\]
+
+\emph{Step 1: a pointwise foldwise bound on the offset supremum.}  Fix a sample and a policy \(\pi\in\Pi\), and write \(R=R_P(\pi)\).  By the triangle inequality and \(\sum_kw_k=1\),
+\[
+2\left|G_{\mathrm{cf}}(\pi)\right|-\frac R4
+\le
+\sum_{k=1}^K w_k\left\{2|G_k(\pi)|-\frac R4\right\}
+\le
+\sum_{k=1}^K w_k\left\{2|G_k(\pi)|-\frac R4\right\}_+ ,
+\]
+the second step because \(w_k\ge0\) and \(z\le\{z\}_+\).  The right-hand side is a nonnegative sum, so it also dominates \(0\), and therefore dominates the positive part on the left:
+\[
+\left\{2\left|G_{\mathrm{cf}}(\pi)\right|-\frac{R_P(\pi)}4\right\}_+
+\le
+\sum_{k=1}^K w_k\left\{2|G_k(\pi)|-\frac{R_P(\pi)}4\right\}_+ .
+\]
+The regret is bounded below by a fixed constant on all of \(\Pi\): the setup identity \(\tau_P=\mu_1-\mu_0\) and \cref{obj:ass:bounded-outcome} give \(|\tau_P(x)|\le2\) for every \(x\), every \(\pi\in\Pi\) is measurable by \cref{obj:ass:policy-class}, and the oracle \(\pi^\star_P=\mathbf 1\{\tau_P\ge0\}\) is measurable because \(\tau_P\) is; hence
+\[
+\left|V_P(\pi)\right|
+=
+\left|\int \mathbf 1\{\pi(x)=1\}\tau_P(x)\,dP_X(x)\right|
+\le 2
+\qquad\text{for }\pi\in\Pi\text{ and for }\pi=\pi^\star_P,
+\]
+so \(R_P(\pi)=V_P(\pi^\star_P)-V_P(\pi)\ge-2-2=-4\). % lean: abs_lawWelfare_le_two % lean: lawRegret_lower_bound
+Each foldwise offset term is therefore bounded above uniformly over \(\pi\in\Pi\) — the envelope hypothesis gives \(|G_k(\pi)|\le2B\), and \(R_P(\pi)\ge-4\) — so each foldwise supremum
+\[
+\Omega_k=\sup_{\pi\in\Pi}\left\{2|G_k(\pi)|-\frac{R_P(\pi)}4\right\}_+
+\]
+is finite, and taking the supremum over \(\pi\in\Pi\) in the previous display yields the pointwise-in-sample bound
+\[
+\sup_{\pi\in\Pi}\left\{2\left|G_{\mathrm{cf}}(\pi)\right|-\frac{R_P(\pi)}4\right\}_+
+\le
+\sum_{k=1}^K w_k\,\Omega_k .
+\]
+% lean: max_weighted_abs_sub_le_sum % lean: abs_foldCenteredProcess_le % lean: lawRegret_lower_bound % lean: pooledOffsetSup_pointwise_le_sum_fold
+
+\emph{Step 2: integrate and reduce each fold to an i.i.d.\ sample of its own size.}  The pooled offset supremum and each \(\Omega_k\) are integrable by the stated regularity hypotheses, so integrating the last display over the product law and exchanging the finite sum with the integral gives
+\[
+\mathbb E_P\sup_{\pi\in\Pi}\left\{2\left|G_{\mathrm{cf}}(\pi)\right|-\frac{R_P(\pi)}4\right\}_+
+\le
+\sum_{k=1}^K w_k\,\mathbb E_P\Omega_k .
+\]
+The coordinate projection of the size-\(n\) product sample onto the indices in \(I_k\) is measure preserving onto the product law of \(m_k\) i.i.d.\ observations from \(P\); since \(\Omega_k\) depends on the sample only through those coordinates, \(\mathbb E_P\Omega_k\) equals the offset-supremum expectation for an i.i.d.\ sample of size \(m_k\). % lean: measurePreserving_foldProjection % lean: integral_foldOffsetSup_eq_expected
+
+If \(m_k=0\) then \(w_k=0\) and that fold contributes nothing.  If \(m_k>0\), then \(g_{k,\pi}\) is policy-compatible with envelope \(|g_{k,\pi}(O)|\le B\) and second moment \(\int g_{k,\pi}^2\,dP\le B^2P_X(D_\pi)\), so \cref{obj:ass:vc-localized-offset-envelope} applies at sample size \(m_k\) and gives
+\[
+\mathbb E_P\Omega_k
+\le
+C_0\left(\frac{B^2}{m_k}\right)^{A_\alpha}(\log m_k)^p .
+\]
+
+\emph{Step 3: compare each weighted fold rate with the target \(n\)-rate.}  Put \(x=m_k/n\in(0,1]\).  Then \(B^2/m_k=(B^2/n)/x\), so
+\[
+w_k\left(\frac{B^2}{m_k}\right)^{A_\alpha}
+=
+x\cdot\frac{(B^2/n)^{A_\alpha}}{x^{A_\alpha}}
+=
+\left(\frac{B^2}{n}\right)^{A_\alpha}x^{1-A_\alpha}
 \le
 \left(\frac{B^2}{n}\right)^{A_\alpha},
-\qquad
-(\log m)^p\le(\log n)^p,
 \]
-using \(A_\alpha=(1+\alpha)/(2+\alpha)\le1\), \(m\le n\), and \(p\ge0\). % lean: fold_weight_mul_offset_rpow_le
-Summing over the finitely many folds gives
+because \(0<x\le1\) and \(1-A_\alpha\ge0\).  Moreover \(m_k\le n\) and \(p\ge0\) give
 \[
-E_P\sup_{\pi\in\Pi}
-\left\{2|G_{\mathrm{cf}}(\pi)|-\frac{R_P(\pi)}4\right\}_+
-\le C\left(\frac{B^2}{n}\right)^{A_\alpha}(\log n)^p,
+(\log m_k)^p\le(\log n)^p .
 \]
-with the enlarged constant absorbing the fold count. % lean: crossfit_localized_offset_control
+% lean: fold_weight_mul_offset_rpow_le % lean: log_nat_rpow_le
+Combining the last three displays, every fold contributes at most
+\[
+w_k\,\mathbb E_P\Omega_k
+\le
+C_0\left(\frac{B^2}{n}\right)^{A_\alpha}(\log n)^p .
+\]
+
+\emph{Conclusion.}  Summing over the \(K\) folds,
+\[
+\mathbb E_P\sup_{\pi\in\Pi}
+\left\{2\lvert G_{\mathrm{cf}}(\pi)\rvert-\frac{R_P(\pi)}{4}\right\}_{+}
+\le
+C_0K\left(\frac{B^2}{n}\right)^{A_\alpha}(\log n)^p
+=
+C\left(\frac{B^2}{n}\right)^{(1+\alpha)/(2+\alpha)}(\log n)^p ,
+\]
+which is the asserted bound. % lean: crossfit_localized_offset_control
 \end{proof}

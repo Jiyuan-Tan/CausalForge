@@ -213,14 +213,12 @@ theorem restrict_consistency (hP : P.Consistency) :
       change P.eval Regime.empty ω w.val =
         (P.liftRegime R r').assign w.val hv'
       rw [P.liftRegime_assign R r' w hw]
-      have hwsub := hag w hw
-      simp only [restrict_eval] at hwsub
-      exact hwsub
+      exact hag w hw
     -- Lift Y.
     set Yamb : Finset P.V :=
       Y.map ⟨Subtype.val, Subtype.val_injective⟩ with hYamb_def
     have hYr_amb : _root_.Disjoint Yamb (P.liftRegime R r').target := by
-      rw [hYamb_def, liftRegime_target, Finset.disjoint_left]
+      rw [hYamb_def, Finset.disjoint_left]
       intro v hvY hvr
       rcases Finset.mem_map.mp hvY with ⟨y, hy, rfl⟩
       rcases Finset.mem_map.mp hvr with ⟨w, hw, hwy⟩
@@ -248,9 +246,7 @@ theorem restrict_consistency (hP : P.Consistency) :
       change P.eval (P.liftRegime R r₁') ω w.val =
         (P.liftRegime R r₂').assign w.val hv'
       rw [P.liftRegime_assign R r₂' w hw]
-      have hwsub := hag w hw
-      simp only [restrict_eval] at hwsub
-      exact hwsub
+      exact hag w hw
     -- Lift Y.
     set Yamb : Finset P.V :=
       Y.map ⟨Subtype.val, Subtype.val_injective⟩ with hYamb_def
@@ -284,7 +280,7 @@ theorem restrict_consistency (hP : P.Consistency) :
             (P.liftRegime_disjoint R hd) := by
       exact P.liftRegime_sqcup R hd
     rw [hsq]
-    convert heq using 2
+    exact heq
 
 end POSystem
 

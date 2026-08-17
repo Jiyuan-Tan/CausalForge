@@ -326,7 +326,7 @@ theorem mulVec_sub_norm_le (A B : Matrix (Fin p) (Fin p) ℝ) (v : Fin p → ℝ
   rw [Finset.sum_mul]
   apply Finset.sum_le_sum
   intro k _
-  simpa [Matrix.mulVec, frobDist, Matrix.sub_apply] using
+  simpa [Matrix.mulVec, dotProduct, frobDist, Matrix.sub_apply] using
     (Finset.sum_mul_sq_le_sq_mul_sq Finset.univ (fun l : Fin p => A k l - B k l) v)
 
 /-- The inverse of a matrix in a Loewner interval with a positive lower endpoint expands Euclidean

@@ -103,11 +103,10 @@ theorem Tendsto_dist_vec.add_isLittleOp_one
         simpa using hω
       exact lt_of_lt_of_le (by linarith) hω'
     exact le_trans (measure_mono hsubset) hn
-  unfold Tendsto_dist_vec at hX ⊢
   suffices ∀ (F : E → ℝ) (hF_bounded : ∃ (C : ℝ), ∀ x y, dist (F x) (F y) ≤ C)
       (hF_lip : ∃ L, LipschitzWith L F),
       Tendsto (fun n ↦ ∫ y, F y ∂(μ.map (Yn n))) atTop (𝓝 (∫ y, F y ∂Q)) by
-    rwa [tendsto_iff_forall_lipschitz_integral_tendsto]
+    exact tendsto_iff_forall_lipschitz_integral_tendsto.mpr this
   rintro F ⟨M, hF_bounded⟩ ⟨L, hF_lip⟩
   have hF_cont : Continuous F := hF_lip.continuous
   have hM_nonneg : 0 ≤ M := by
@@ -205,8 +204,10 @@ theorem Tendsto_dist_vec.add_isLittleOp_one
       exact tendsto_const_nhds
     · simp only [tendstoInMeasure_iff_measureReal_norm, Pi.zero_apply, sub_zero] at hXY
       exact hXY (ε / 2) (by positivity)
-    · simp_rw [tendsto_iff_forall_lipschitz_integral_tendsto] at hX
-      simpa [tendsto_iff_dist_tendsto_zero] using hX F ⟨M, hF_bounded⟩ ⟨L, hF_lip⟩
+    · have hXF : Tendsto (fun n ↦ ∫ y, F y ∂(μ.map (Xn n))) atTop (𝓝 (∫ y, F y ∂Q)) :=
+        tendsto_iff_forall_lipschitz_integral_tendsto.mp hX F ⟨M, hF_bounded⟩ ⟨L, hF_lip⟩
+      rw [tendsto_iff_dist_tendsto_zero] at hXF
+      simpa only [Real.dist_eq] using hXF
   have h_lt : L * ε / 2 < L * ε := half_lt_self (by positivity)
   filter_upwards [h_tendsto.eventually_lt_const h_lt] with n hn using (h_le n).trans_lt hn
 

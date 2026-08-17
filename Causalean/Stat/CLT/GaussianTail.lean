@@ -53,7 +53,7 @@ lemma finite_measure_halfline_tails_small (Q : Measure ℝ) [IsFiniteMeasure Q]
       have hf : ∃ n, Q (s n) ≠ ⊤ := ⟨0, measure_ne_top Q _⟩
       have ht := tendsto_measure_iInter_atTop
         (fun n => (hmeas n).nullMeasurableSet) hanti hf
-      simpa [hinter] using ht
+      simpa [hinter, Function.comp_def] using ht
     have hpos : 0 < ENNReal.ofReal ε := ENNReal.ofReal_pos.mpr hε
     obtain ⟨N, hN⟩ := ((ENNReal.tendsto_nhds_zero.mp hlim) (ENNReal.ofReal ε) hpos).exists
     exact ⟨N, hN⟩

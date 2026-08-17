@@ -6,7 +6,7 @@ Authors: Chenyi Li
 import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
 import Mathlib.Analysis.Calculus.ContDiff.Defs
-import Mathlib.Topology.Semicontinuous
+import Mathlib.Topology.Semicontinuity.Basic
 import Mathlib.Analysis.Normed.Lp.ProdLp
 import Optlib.Differential.Calculation
 
@@ -543,7 +543,7 @@ instance instNormedSpaceProdL2 : NormedSpace ℝ (WithLp 2 (E × F)) where
     exact norm_smul_le a b
 
 -- drift: `IsBoundedLinearMap` now infers domain/codomain from the function argument.
-instance instIsBoundedLinearMapL2equiv :
+theorem instIsBoundedLinearMapL2equiv :
     IsBoundedLinearMap ℝ (WithLp.ofLp : WithLp 2 (E × F) → E × F) where
   map_add := by intro x y; rfl
   map_smul := by intro c x; rfl

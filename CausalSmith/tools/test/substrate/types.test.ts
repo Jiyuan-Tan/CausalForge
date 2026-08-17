@@ -18,6 +18,15 @@ describe("substrate types", () => {
     expect(out.codex_prompts).toEqual([]);
   });
 
+  it("normalizes a singleton target_decls string without losing it", () => {
+    const out = parseScaffolderOutput({
+      decision: "build",
+      plan_markdown: "plan",
+      codex_prompts: [{ id: "p1", target_decls: "all declarations in Basic.lean", prompt: "prove them" }],
+    });
+    expect(out.codex_prompts[0]?.target_decls).toEqual(["all declarations in Basic.lean"]);
+  });
+
   it("rejects an unknown decision", () => {
     expect(() => parseScaffolderOutput({ decision: "ship", plan_markdown: "x" })).toThrow();
   });

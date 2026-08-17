@@ -452,6 +452,20 @@ export async function runStage2(args: {
   // signature match (see injectCarryoverComments after the producer runs). Empty
   // on a first scaffold or a sorry-only prior (nothing to preserve).
   const priorProofs = await snapshotPriorProofs(paths.leanDir);
+  // P7 needs the actual pre-worker declaration image. The graph's passed_hash is a
+  // review receipt, not a durable source snapshot (and can predate extractor fixes),
+  // so it cannot distinguish an exact preserved helper from an F2 rewrite reliably.
+  const preF2AnnotatedDecls = existsSync(paths.leanDir)
+    ? await parseAnnotatedDecls(paths.leanDir)
+    : [];
+  // Snapshot the graph before granting the worker production-write access as well.
+  // Reloading it only after dispatch would let a worker-created node certify its own tag.
+  let preF2Graph: FormalizationGraph | undefined;
+  try {
+    preF2Graph = await loadGraph(graphPath(paths.formalizationDir, args.ctx.qid, args.ctx.specialization));
+  } catch {
+    preF2Graph = undefined;
+  }
   const priorReviseFiles = new Map<string, string>();
   if (patchInPlace && existsSync(paths.leanDir)) {
     for (const file of await listLeanFiles(paths.leanDir)) {
@@ -704,15 +718,8 @@ export async function runStage2(args: {
         const leanTags = await parseLeanNodeTags(paths.leanDir);
         const leanDeclNames = new Set((await parseLeanDecls(paths.leanDir, { includeLemmas: true })).map((decl) => decl.name));
         const annotatedDecls = await parseAnnotatedDecls(paths.leanDir);
-        // The graph on disk is still the pre-F2 snapshot here (linkGraphFromStage2 runs
-        // after this gate), which is what the P7 reviewed-helper exemption needs. A run's
-        // first F2 pass has no graph yet; the exemption simply stays off then.
-        let preF2Graph;
-        try {
-          preF2Graph = await loadGraph(graphPath(paths.formalizationDir, args.ctx.qid, args.ctx.specialization));
-        } catch {
-          preF2Graph = undefined;
-        }
+        // `preF2Graph` and `preF2AnnotatedDecls` were snapshotted before dispatch.
+        // A run's first F2 pass has neither, so the exemption simply stays off then.
         let knownDecls: Set<string> | undefined;
         try {
           const lib = createRetrieval(args.ctx.repoRoot).library;
@@ -725,7 +732,14 @@ export async function runStage2(args: {
             "[causalsmith] library index unavailable (doc/library_index.json missing/unreadable) — the P5 reuse-existence check is SKIPPED this pass; hallucinated reuse decls will surface only at compile. Run `lake build && lake exe library_index`.",
           );
         }
-        const gate = runPlanGate(planObj, core, { knownDecls, leanTags, leanDeclNames, preF2Graph, annotatedDecls });
+        const gate = runPlanGate(planObj, core, {
+          knownDecls,
+          leanTags,
+          leanDeclNames,
+          preF2Graph,
+          annotatedDecls,
+          preF2AnnotatedDecls,
+        });
         if (!gate.ok) {
           const blockingViolations = blockingPostSyncPlanViolations(gate.violations);
           if (blockingViolations.length > 0) {

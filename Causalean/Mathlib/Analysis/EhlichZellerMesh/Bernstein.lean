@@ -126,7 +126,10 @@ theorem czTrig_szego_deriv (R : Polynomial ℝ) (β : ℕ) (hβ : R.natDegree �
   have hsq' :
       (deriv (czTrig R) t) ^ 2 + (β : ℝ) ^ 2 * (czTrig R t) ^ 2
         ≤ (β : ℝ) ^ 2 * (czSup R) ^ 2 := by
-    simpa [S, czTrig] using hsq
+    have hfun : czTrig R = fun s => S.eval (Real.cos s) :=
+      funext fun s => by simp [czTrig, hS_eval]
+    rw [hfun]
+    exact hsq
   by_cases hβ0 : β = 0
   · have hderiv_sq_nonpos : (deriv (czTrig R) t) ^ 2 ≤ 0 := by
       simpa [hβ0] using hsq'
@@ -210,7 +213,8 @@ theorem czTrig_arccos_lipschitz_regularized (R : Polynomial ℝ) (β : ℕ)
         HasDerivAt f
           (-(1 / Real.sqrt (1 - (czTrig R x / d) ^ 2)) *
             (deriv (czTrig R) x / d)) x := by
-      simpa [f] using (Real.hasDerivAt_arccos hne_neg hne_pos).comp x hinner_hasDeriv
+      simpa [f, Function.comp_def] using
+        (Real.hasDerivAt_arccos hne_neg hne_pos).comp x hinner_hasDeriv
     have hderiv_eq :
         deriv f x =
           -(1 / Real.sqrt (1 - (czTrig R x / d) ^ 2)) *
@@ -292,15 +296,15 @@ theorem czTrig_arccos_lipschitz (R : Polynomial ℝ) (β : ℕ) (hβ : R.natDegr
   have ht_arg_tendsto :
       Filter.Tendsto (fun n => czTrig R t / (czSup R + ε n)) Filter.atTop
         (nhds (czTrig R t / czSup R)) := by
-    simpa using
-      (tendsto_const_nhds.div (tendsto_const_nhds.add hε_tendsto)
-        (show czSup R + 0 ≠ 0 by simpa using ne_of_gt hM))
+    have hden : Filter.Tendsto (fun n => czSup R + ε n) Filter.atTop (nhds (czSup R)) := by
+      simpa using tendsto_const_nhds.add hε_tendsto
+    exact tendsto_const_nhds.div hden (ne_of_gt hM)
   have hs_arg_tendsto :
       Filter.Tendsto (fun n => czTrig R s / (czSup R + ε n)) Filter.atTop
         (nhds (czTrig R s / czSup R)) := by
-    simpa using
-      (tendsto_const_nhds.div (tendsto_const_nhds.add hε_tendsto)
-        (show czSup R + 0 ≠ 0 by simpa using ne_of_gt hM))
+    have hden : Filter.Tendsto (fun n => czSup R + ε n) Filter.atTop (nhds (czSup R)) := by
+      simpa using tendsto_const_nhds.add hε_tendsto
+    exact tendsto_const_nhds.div hden (ne_of_gt hM)
   have ht_acos_tendsto :
       Filter.Tendsto (fun n => Real.arccos (czTrig R t / (czSup R + ε n))) Filter.atTop
         (nhds (Real.arccos (czTrig R t / czSup R))) :=

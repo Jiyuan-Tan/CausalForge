@@ -29,6 +29,10 @@ import { runGates } from "../framework/gates.js";
 import { dispatchAgent } from "../../framework/agent_dispatch.js";
 import { proposalGate } from "../framework/gate_registrations.js";
 import { writeJsonAtomic } from "../../shared/json_atomic.js";
+import {
+  extensionEditBasePath,
+  sealPendingExtensionSource,
+} from "./d0_cross_boundary_rewind.js";
 
 /** Filesystem path for `<qid>_proto_core.json` (the D-1-authored proposal core). */
 export function protoCoreJsonPath(ctx: PipelineContext): string {
@@ -150,9 +154,9 @@ async function modeInputBlock(mode: Neg1_2Mode, state: StateJson, corePath: stri
   const editsPrior = mode === "revise" || mode === "kernel-replace" || mode === "draft-rebuild";
   if (editsPrior && existsSync(corePath)) {
     blocks.push(
-      "=== PRIOR PROPOSAL CORE (edit in place — re-emit the FULL revised core to this same path) ===",
+      "=== PRIOR CORE EDIT BASE (preserve it and re-emit the FULL revised proposal to the requested output path) ===",
       await readFile(corePath, "utf8"),
-      "=== END PRIOR PROPOSAL CORE ===",
+      "=== END PRIOR CORE EDIT BASE ===",
     );
   }
   if (mode === "pivot") {
@@ -187,8 +191,19 @@ export async function runStageNeg1_2ProtoCore(args: {
   const corePath = protoCoreJsonPath(args.ctx);
   await mkdir(path.dirname(corePath), { recursive: true });
 
+  // An additive F→D extension is based on the accepted D0 core, which may
+  // contain nodes D0 added after the original proposal. Seal that source before
+  // dispatch and use it for the first draft only; later revisions edit the
+  // immediately prior extension proto in the ordinary way.
+  await sealPendingExtensionSource({ ctx: args.ctx, state: args.state });
+  const editBasePath = extensionEditBasePath({
+    ctx: args.ctx,
+    state: args.state,
+    ordinaryProtoPath: corePath,
+  });
+
   const headName = `stage_neg1_2_proto_head_${args.mode.replace(/-/g, "_")}.txt`;
-  const modeBlock = await modeInputBlock(args.mode, args.state, corePath);
+  const modeBlock = await modeInputBlock(args.mode, args.state, editBasePath);
 
   const basePrompt = [
     await readPrompt(args.ctx, headName),

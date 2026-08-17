@@ -75,14 +75,17 @@ theorem lasso_erm_squaredLoss_excess_rate {d n : ℕ} (hd : 0 < d) (hn : 0 < n)
   let dataVal : 𝒳 → EuclideanSpace ℝ (Fin d) × ℝ :=
     fun a => (((a.1).1 : EuclideanSpace ℝ (Fin d)), (a.2 : ℝ))
   letI : MeasurableSpace 𝒳 := MeasurableSpace.comap dataVal inferInstance
-  letI : TopologicalSpace ι :=
+  -- State these on `L1Ball` itself, not on the `let`-bound `ι`: abstracting the
+  -- `let` variable while the instance value's type stays at the unfolded subtype
+  -- makes the auto-generated `_aux`/`_proof` declarations kernel-ill-typed.
+  letI : TopologicalSpace (L1Ball (d := d) W) :=
     inferInstanceAs
       (TopologicalSpace {w : EuclideanSpace ℝ (Fin d) // l1Norm (d := d) w ≤ W})
-  haveI : TopologicalSpace.SeparableSpace ι :=
+  haveI : TopologicalSpace.SeparableSpace (L1Ball (d := d) W) :=
     inferInstanceAs
       (TopologicalSpace.SeparableSpace
         {w : EuclideanSpace ℝ (Fin d) // l1Norm (d := d) w ≤ W})
-  haveI : FirstCountableTopology ι :=
+  haveI : FirstCountableTopology (L1Ball (d := d) W) :=
     inferInstanceAs
       (FirstCountableTopology {w : EuclideanSpace ℝ (Fin d) // l1Norm (d := d) w ≤ W})
   haveI : Nonempty 𝒳 := ⟨(⟨0, by intro j; simpa using hXinf⟩, ⟨0, by simpa using hYb⟩)⟩
@@ -179,7 +182,7 @@ theorem lasso_erm_squaredLoss_excess_rate {d n : ℕ} (hd : 0 < d) (hn : 0 < n)
           (Xinf := Xinf) (W := W) hXinf hW hd hn
           (Y' := fun k => (S k).1)
           (w' := id)
-        simpa [p, hp, logFactor, hlogFactor, Function.comp_def] using h
+        exact h
       -- (2) quadratic part via contraction with the clamped square
       have hquadbd : ∀ (w : ι) (a : 𝒳), |φ (p w a)| ≤ (Xinf * W) ^ 2 := by
         intro w a
@@ -227,7 +230,7 @@ theorem lasso_erm_squaredLoss_excess_rate {d n : ℕ} (hd : 0 < d) (hn : 0 < n)
           (Xinf := 2 * Yb * Xinf) (W := W) (by positivity) hW hd hn
           (Y' := fun k => ⟨featCross (S k), hmem (S k)⟩)
           (w' := id)
-        simpa [logFactor, hlogFactor, Function.comp_def] using h
+        exact h
       -- (4) combine the two parts via sub-additivity
       have hcrossbd : ∀ (w : ι) (a : 𝒳),
           |2 * (a.2 : ℝ) * p w a| ≤ 2 * Yb * (Xinf * W) := by
@@ -289,7 +292,7 @@ theorem lasso_erm_squaredLoss_excess_rate {d n : ℕ} (hd : 0 < d) (hn : 0 < n)
     hfcont_w ht' hε ŵ wstar hERMf
   -- transport from `f`-excess to genuine squared-loss excess
   refine le_trans ?_ key
-  rw [ENNReal.toReal_le_toReal (measure_ne_top _ _) (measure_ne_top _ _)]
+  refine ENNReal.toReal_mono (measure_ne_top _ _) ?_
   apply measure_mono
   intro ω hω
   -- population split: `∫ f w = ∫ sqLoss w − ∫ y²`

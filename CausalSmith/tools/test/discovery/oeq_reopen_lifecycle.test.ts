@@ -102,6 +102,75 @@ async function seedReopenedQuestion(h: Awaited<ReturnType<typeof createDStageHar
 }
 
 describe("resolved OEQ reopen lifecycle", () => {
+  it("restores an agent-authored source when its adjudicated answer theorem is deleted", async () => {
+    const agentProto = {
+      ...structuredClone(proto),
+      statements: [],
+      assumptions: [{ ...structuredClone(proto.assumptions[0]), used_by: [] }],
+    };
+    const h = await createDStageHarness({ qid: proto.qid, specialization: "v1", proto: agentProto as never });
+    try {
+      await saveWorkingState(h.ctx(), {
+        round: 3,
+        solved: {
+          [answer.id]: {
+            proof_tex: answer.proof_tex,
+            snapshot: snapshotMember(agentProto as never, answer as never),
+            node: answer as never,
+            owner: question.id,
+          },
+        },
+        resolved_oeqs: {
+          [question.id]: {
+            theorem_id: answer.id,
+            source_fingerprint: oeqSourceFingerprint(question as never),
+          },
+        },
+        proposals: {
+          statements: [], definitions: [], assumptions: [], proofs: [],
+          coreEdits: [{
+            kind: "statement-delete", id: answer.id,
+            reason: "the proposed answer was rejected after review",
+            direction: "delete-obsolete",
+          }],
+        },
+      });
+
+      await applyProposedChanges({ ctx: h.ctx() });
+
+      const working = await h.readWorking();
+      expect(working.solved[answer.id]).toBeUndefined();
+      expect(working.resolved_oeqs?.[question.id]).toBeUndefined();
+      expect(working.solved[question.id]).toMatchObject({
+        partial: true,
+        proof_tex: "",
+        node: {
+          id: question.id,
+          kind: "openendedquestion",
+          statement: question.statement,
+          // Spread: the fixture is `as const`, so `depends_on` is a readonly tuple and
+          // `arrayContaining` takes a mutable `unknown[]`.
+          depends_on: expect.arrayContaining([...question.depends_on]),
+          status: "to-prove",
+        },
+      });
+      expect(working.sealed_open_oeqs?.[question.id]).toBe(oeqSourceFingerprint(question as never));
+
+      await expect(runStage0Solve({
+        ctx: h.ctx(), state: h.state(),
+        deps: {
+          runCodex: async () => { throw new Error("a sealed residual OEQ must not be redispatched"); },
+          runClaude: async () => { throw new Error("unused"); },
+          lean: undefined as never,
+        },
+      })).resolves.toBeDefined();
+      expect((await h.readWorking()).sealed_open_oeqs?.[question.id])
+        .toBe(oeqSourceFingerprint(question as never));
+    } finally {
+      await h.dispose();
+    }
+  });
+
   it("detaches an accepted narrowing while preserving the old answer theorem and proof", async () => {
     const h = await createDStageHarness({ qid: proto.qid, specialization: "v1", proto });
     try {

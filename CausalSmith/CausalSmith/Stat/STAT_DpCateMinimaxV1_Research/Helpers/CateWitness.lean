@@ -71,7 +71,7 @@ private lemma measurable_cateWitness_indicator {d : ℕ} (y : ℝ)
   have hset : MeasurableSet
       ((fun p : (Fin d → ℝ) × Bool => cateWitnessPack p.1 p.2 y) ⁻¹' S) :=
     hS.preimage hmk
-  convert measurable_const.indicator hset using 1
+  exact measurable_const.indicator hset
 
 /-- The pushed-forward two-point outcome kernel is measurable jointly in the
 covariate and Boolean treatment arguments. -/
@@ -93,12 +93,13 @@ lemma measurable_cateWitnessOutcomeKernel {d : ℕ}
       (hb.comp measurable_fst) measurable_const
   unfold twoPointMean
   simp only [Measure.add_apply, Measure.smul_apply, Measure.dirac_apply, smul_eq_mul]
-  simpa only [div_one] using
+  simp only [div_one]
+  exact
     ((by fun_prop (disch := assumption) : Measurable fun p : (Fin d → ℝ) × Bool =>
-      ENNReal.ofReal ((1 + (if p.2 then b p.1 else 0)) / 2)).mul
-      (measurable_cateWitness_indicator (d := d) 1 S hS)).add
+      ENNReal.ofReal ((1 + (if p.2 then b p.1 else 0)) / 2)).fun_mul
+      (measurable_cateWitness_indicator (d := d) 1 S hS)).fun_add
     ((by fun_prop (disch := assumption) : Measurable fun p : (Fin d → ℝ) × Bool =>
-      ENNReal.ofReal ((1 - (if p.2 then b p.1 else 0)) / 2)).mul
+      ENNReal.ofReal ((1 - (if p.2 then b p.1 else 0)) / 2)).fun_mul
       (measurable_cateWitness_indicator (d := d) (-1) S hS))
 
 /-- Integrating the Bernoulli treatment law against the outcome channel gives a
@@ -187,12 +188,13 @@ private lemma measurable_cateWitnessFullOutcomeKernel {d : ℕ}
   simp_rw [Measure.map_apply (hmap _) hS]
   unfold twoPointMean
   simp only [Measure.add_apply, Measure.smul_apply, Measure.dirac_apply, smul_eq_mul]
-  simpa only [div_one] using
+  simp only [div_one]
+  exact
     ((by fun_prop (disch := assumption) : Measurable fun q :
-        ((Fin d → ℝ) × Bool) × ℝ => ENNReal.ofReal ((1 + b q.1.1) / 2)).mul
-      (measurable_cateWitnessFull_indicator (d := d) 1 S hS)).add
+        ((Fin d → ℝ) × Bool) × ℝ => ENNReal.ofReal ((1 + b q.1.1) / 2)).fun_mul
+      (measurable_cateWitnessFull_indicator (d := d) 1 S hS)).fun_add
     ((by fun_prop (disch := assumption) : Measurable fun q :
-        ((Fin d → ℝ) × Bool) × ℝ => ENNReal.ofReal ((1 - b q.1.1) / 2)).mul
+        ((Fin d → ℝ) × Bool) × ℝ => ENNReal.ofReal ((1 - b q.1.1) / 2)).fun_mul
       (measurable_cateWitnessFull_indicator (d := d) (-1) S hS))
 
 private lemma measurable_cateWitnessFullYKernel {d : ℕ}
@@ -989,7 +991,7 @@ private lemma cateWitness_regression_setIntegral_eq {d : ℕ} (Q : CateLaw d) (e
   have hobsprob (x) : IsProbabilityMeasure (obs x) := by
     letI (a : Bool) : IsProbabilityMeasure (κ x a) := hκprob x a
     apply isProbabilityMeasure_bind
-    · simpa [κ, pack] using ((measurable_cateWitnessOutcomeKernel hbmeas).comp
+    · simpa [κ, pack] using ((measurable_cateWitnessOutcomeKernel hbmeas).fun_comp
         (measurable_const.prodMk measurable_id)).aemeasurable
     · exact Filter.Eventually.of_forall fun a =>
         Measure.isProbabilityMeasure_map ((by
@@ -1037,7 +1039,7 @@ private lemma cateWitness_regression_setIntegral_eq {d : ℕ} (Q : CateLaw d) (e
       rw [measurable_comap_iff]
       fun_prop
     have hmapmeas : Measurable (fun a : Bool => (κ x a).map (pack x a)) := by
-      simpa [κ, pack] using (measurable_cateWitnessOutcomeKernel hbmeas).comp
+      simpa [κ, pack] using (measurable_cateWitnessOutcomeKernel hbmeas).fun_comp
         (measurable_const.prodMk measurable_id)
     rw [show obs x = ν.bind fun a => (κ x a).map (pack x a) by rfl]
     rw [Causalean.Mathlib.MeasureTheory.integral_bind_map hpackmeas hmapmeas hHi]
@@ -1196,7 +1198,7 @@ private lemma cateWitness_propensity_setIntegral_eq {d : ℕ} (Q : CateLaw d) (e
   have hobsprob (x) : IsProbabilityMeasure (obs x) := by
     letI (a : Bool) : IsProbabilityMeasure (κ x a) := hκprob x a
     apply isProbabilityMeasure_bind
-    · simpa [κ, pack] using ((measurable_cateWitnessOutcomeKernel hbmeas).comp
+    · simpa [κ, pack] using ((measurable_cateWitnessOutcomeKernel hbmeas).fun_comp
         (measurable_const.prodMk measurable_id)).aemeasurable
     · exact Filter.Eventually.of_forall fun a =>
         Measure.isProbabilityMeasure_map ((by
@@ -1238,7 +1240,7 @@ private lemma cateWitness_propensity_setIntegral_eq {d : ℕ} (Q : CateLaw d) (e
       rw [measurable_comap_iff]
       fun_prop
     have hmapmeas : Measurable (fun a : Bool => (κ x a).map (pack x a)) := by
-      simpa [κ, pack] using (measurable_cateWitnessOutcomeKernel hbmeas).comp
+      simpa [κ, pack] using (measurable_cateWitnessOutcomeKernel hbmeas).fun_comp
         (measurable_const.prodMk measurable_id)
     rw [show obs x = ν.bind fun a => (κ x a).map (pack x a) by rfl]
     rw [Causalean.Mathlib.MeasureTheory.integral_bind_map hpackmeas hmapmeas hHi]
@@ -1338,7 +1340,7 @@ lemma cateWitnessLaw_pxIsXDensity {d : ℕ} (Q : CateLaw d) (e0 : ℝ)
     _ = Q.dataMeasure.map (fun O => O.X) := hQmarg
     _ = (volume.restrict (cube d)).withDensity
         (fun x => ENNReal.ofReal ((cateWitnessLaw Q e0 b).px x)) := by
-      simpa [cateWitnessLaw] using hQdens
+      simpa [cateWitnessLaw, PxIsXDensity] using hQdens
 
 /-- The witness's retained `PX` field equals its induced X-pushforward. -/
 lemma cateWitnessLaw_pXIsXMarginal {d : ℕ} (Q : CateLaw d) (e0 : ℝ)

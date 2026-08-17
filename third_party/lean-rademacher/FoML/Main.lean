@@ -28,7 +28,9 @@ theorem uniform_deviation_expectation_le_two_smul_rademacher_complexity
     μⁿ[fun ω : Fin n → Ω ↦ uniformDeviation n f μ X (X ∘ ω)] ≤ 2 • rademacherComplexity n f μ X := by
   apply le_of_mul_le_mul_left _ (Nat.cast_pos.mpr hn)
   convert expectation_le_rademacher (μ := μ) (n := n) hf hb hf' using 1
-  · rw [← integral_const_mul]
+  case e'_2 => rfl
+  case e'_3 =>
+    rw [← integral_const_mul]
     apply integral_congr_ae (Filter.EventuallyEq.of_eq _)
     ext ω
     rw [uniformDeviation, Real.mul_iSup_of_nonneg (by norm_num)]
@@ -37,7 +39,7 @@ theorem uniform_deviation_expectation_le_two_smul_rademacher_complexity
     apply congr_arg
     simp only [Nat.abs_cast, Function.comp_apply, nsmul_eq_mul]
     field_simp
-  · ring
+  case e'_4 => ring
 
 /-- McDiarmid tail bound for the centered empirical uniform deviation. -/
 theorem uniform_deviation_mcdiarmid_tail
@@ -52,7 +54,7 @@ theorem uniform_deviation_mcdiarmid_tail
       μⁿ[fun ω : Fin n → Ω ↦ uniformDeviation n f μ X (X ∘ ω)] ≥ ε)).toReal ≤
         (- ε ^ 2 * t * n).exp := by
   by_cases hn : n = 0
-  · simpa [hn] using measureReal_le_one
+  · simpa [hn, measureReal_def] using measureReal_le_one
   have hn : 0 < n := Nat.pos_of_ne_zero hn
   have hn' : 0 < (n : ℝ) := Nat.cast_pos.mpr hn
   let c : Fin n → ℝ := fun i ↦ (n : ℝ)⁻¹ * 2 * b
@@ -81,11 +83,10 @@ theorem uniform_deviation_tail_bound_countable
     (μⁿ (fun ω ↦ 2 • rademacherComplexity n f μ X + ε ≤ uniformDeviation n f μ X (X ∘ ω))).toReal ≤
       (- ε ^ 2 * t * n).exp := by
   by_cases hn : n = 0
-  · simpa [hn] using measureReal_le_one
+  · simpa [hn, measureReal_def] using measureReal_le_one
   have hn : 0 < n := Nat.pos_of_ne_zero hn
   apply le_trans _ (uniform_deviation_mcdiarmid_tail (μ := μ) hX hf hb hf' ht' hε)
-  simp only [ge_iff_le, ne_eq, measure_ne_top, not_false_eq_true, ENNReal.toReal_le_toReal]
-  apply measure_mono
+  refine ENNReal.toReal_mono (measure_ne_top _ _) (measure_mono ?_)
   intro ω h
   have : 2 • rademacherComplexity n f μ X + ε ≤ uniformDeviation n f μ X (X ∘ ω) := h
   have : μⁿ[fun ω ↦ uniformDeviation n f μ X (X ∘ ω)] ≤ 2 • rademacherComplexity n f μ X :=

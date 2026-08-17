@@ -72,15 +72,16 @@ private lemma condExp_armIndicator {d : ℕ} (P : CateLaw d) (hiid : IidSampling
             =ᵐ[P.dataMeasure] (fun O => 1 -
               P.dataMeasure[(fun O => if O.A = 1 then (1 : ℝ) else 0) |
                 MeasurableSpace.comap (fun O : CateObs d => O.X) inferInstance] O)
-        simpa only [hone, Pi.sub_apply, Pi.one_apply,
-          condExp_const measurable_CateObs_X.comap_le (1 : ℝ)] using
-          condExp_sub (integrable_const (μ := P.dataMeasure) (1 : ℝ))
+        have hsub := condExp_sub (integrable_const (μ := P.dataMeasure) (1 : ℝ))
             (integrable_armIndicator P hiid 1)
             (MeasurableSpace.comap (fun O : CateObs d => O.X) inferInstance)
+        simp only [hone, Pi.one_apply,
+          condExp_const measurable_CateObs_X.comap_le (1 : ℝ)] at hsub
+        exact hsub
       _ =ᵐ[P.dataMeasure] (fun O => armProb P 0 O.X) := by
         filter_upwards [hpi] with O hO
         simp [armProb, hO]
-  · simpa [armProb] using hpi
+  · simpa [armProb, PiIsPropensity] using hpi
 
 /-- Integrating a bounded covariate function in arm `a` equals weighting it by the arm probability. -/
 theorem integral_arm_indicator_mul {d : ℕ} (P : CateLaw d) (hiid : IidSampling P)
@@ -280,7 +281,11 @@ theorem armMu_aemeasurable {d : ℕ} (P : CateLaw d) (beta L : ℝ) (hbeta : 0 <
   have hcont : ContinuousOn (armMu P a) (cube d) := by
     by_cases ha : a = 1
     · subst a
-      simpa [armMu] using hcont1
+      have hf : armMu P 1 = P.mu1 := by
+        funext x
+        exact if_pos rfl
+      rw [hf]
+      exact hcont1
     · have hf : armMu P a = P.mu0 := by
         funext x
         exact if_neg ha
@@ -363,7 +368,7 @@ private lemma design_restrict_bounds {d : ℕ} (P : CateLaw d) (f0 f1 r0 : ℝ)
       _ ≤ ENNReal.ofReal f1 • volume.restrict S := by
         intro T
         simp only [Measure.smul_apply]
-        exact mul_le_mul_of_nonneg_left (hνS T) (zero_le _)
+        exact mul_le_mul_of_nonneg_left (hνS T) zero_le
 
 /-- On a measurable local set inside the cube, the design integral dominates `f₀` times its Lebesgue integral. -/
 theorem design_lower_bound {d : ℕ} (P : CateLaw d) (f0 f1 r0 : ℝ) (x0 : Fin d → ℝ)

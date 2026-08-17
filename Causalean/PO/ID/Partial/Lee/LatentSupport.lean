@@ -62,12 +62,14 @@ lemma YofA_true_in_finset_ae_alwaysSelected
       have hsel_cf : S.SelOfA true ω = S.factualSel ω :=
         POVar.cf_eq_factual_on_event hA.consistency
           S.selVar S.aVar true S.hASel.symm hω.1
-      exact ⟨hω.1, by simpa [selOfATrueSet, hsel_cf] using hω.2⟩
+      exact ⟨hω.1, by
+        simpa [selOfATrueSet, selEvent, POVar.event, factualSel, hsel_cf] using hω.2⟩
     · intro hω
       have hsel_cf : S.SelOfA true ω = S.factualSel ω :=
         POVar.cf_eq_factual_on_event hA.consistency
           S.selVar S.aVar true S.hASel.symm hω.1
-      exact ⟨hω.1, by simpa [selOfATrueSet, hsel_cf] using hω.2⟩
+      exact ⟨hω.1, by
+        simpa [selOfATrueSet, selEvent, POVar.event, factualSel, hsel_cf] using hω.2⟩
   have hFactBad_meas : MeasurableSet {ω | S.factualY ω ∉ 𝒴} :=
     ((S.measurable_factualY) ((𝒴.finite_toSet).measurableSet)).compl
   have hSupp_null_restrict :
@@ -105,7 +107,7 @@ lemma YofA_true_in_finset_ae_alwaysSelected
       (hA.randAssign true).measure_inter_preimage_eq_mul
         {true} {p : ℝ × Bool | p.1 ∉ 𝒴 ∧ p.2 = true}
         (measurableSet_singleton true) hbadPair_meas
-    simpa [aEvent, factualA, POVar.event, selOfATrueSet] using hraw
+    exact hraw
   have hBad_selOfATrue :
       P.μ ({ω | S.YofA true ω ∉ 𝒴} ∩ S.selOfATrueSet) = 0 := by
     have hmul_zero :
@@ -129,10 +131,16 @@ lemma YofA_true_in_finset_ae_alwaysSelected
   constructor
   · apply (MeasureTheory.ae_restrict_iff' S.measurableSet_alwaysSelected).mpr
     rw [MeasureTheory.ae_iff]
-    simpa [Classical.not_imp, Set.inter_comm] using hBad_alwaysSelected
+    refine MeasureTheory.measure_mono_null (fun ω hω => ?_) hBad_alwaysSelected
+    have hω' : ¬ (ω ∈ S.alwaysSelected → S.YofA true ω ∈ 𝒴) := hω
+    obtain ⟨hmem, hbad⟩ := Classical.not_imp.mp hω'
+    exact ⟨hbad, hmem⟩
   · apply (MeasureTheory.ae_restrict_iff' S.measurableSet_helpedSelected).mpr
     rw [MeasureTheory.ae_iff]
-    simpa [Classical.not_imp, Set.inter_comm] using hBad_helpedSelected
+    refine MeasureTheory.measure_mono_null (fun ω hω => ?_) hBad_helpedSelected
+    have hω' : ¬ (ω ∈ S.helpedSelected → S.YofA true ω ∈ 𝒴) := hω
+    obtain ⟨hmem, hbad⟩ := Classical.not_imp.mp hω'
+    exact ⟨hbad, hmem⟩
 
 end POLeeSystem
 

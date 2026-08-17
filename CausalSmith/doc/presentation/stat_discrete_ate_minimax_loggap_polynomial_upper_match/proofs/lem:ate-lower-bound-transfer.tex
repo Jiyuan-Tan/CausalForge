@@ -1,18 +1,89 @@
 \begin{proof}[Proof of \cref{obj:lem:ate-lower-bound-transfer}]
-Fix \(0<\epsilon<1/2\).  By the cited fixed-sample control-zero lower bound \citep{ZengBalakrishnanHanKennedy2024}, there are constants \(a_\epsilon,b_\epsilon>0\) and \(N_\epsilon\) such that, for every \(n,d\),
-\[
- a_\epsilon\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\}
-\]
-is no larger than the treated-arm minimax risk over the subclass with \(\mu_{0k}=0\) whenever \(0<d\), \(N_\epsilon\le n\), and \(d\le b_\epsilon n\log n\).
+Fix \(0<\epsilon<1/2\), and write \(\mathcal O_n:=(\{1,\ldots,d\}\times\{0,1\}\times\{0,1\})^n\) for the finite sample space, so that a measurable estimator is any map \(\widehat\tau:\mathcal O_n\to\mathbb R\) and \(E_P\) denotes expectation under \(P^{\otimes n}\).  A supremum over an empty index set is read as \(0\), the convention already in force in \cref{obj:def:minimax-risk}.
 
-On that control-zero subclass, \cref{obj:def:ate-functional} reduces \(\tau(P)\) law by law to the treated-arm functional, since the control regression mean is zero in every category.
-It remains to compare the treated-arm minimax risk on this subclass with the unrestricted ATE minimax risk. For any fixed measurable estimator, every control-zero law is also a law in \(\mathcal E_{n,d,\epsilon}\), and the preceding target identity makes its treated-arm loss equal to its ATE loss. Thus the subclass worst-case risk is bounded by the unrestricted worst-case risk.
-
-Passing from fixed estimators to the estimator infimum gives that the treated-arm minimax risk over the control-zero subclass is no larger than \(\mathsf R_{n,d,\epsilon}\).
-Combining this comparison with the cited lower bound gives, for the same constants \(a_\epsilon,b_\epsilon,N_\epsilon\),
+\textbf{Step 1: the control-zero subclass and its treated-arm risk.}  Define the subclass of laws whose control regression vanishes in every category,
 \[
- a_\epsilon\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\}
- \le \mathsf R_{n,d,\epsilon}
+\mathcal D_{n,d,\epsilon}
+:=
+\left\{P: P^{\otimes n}\in\mathcal E_{n,d,\epsilon},\ \mu_{0k}=0\ \text{for every }k=1,\ldots,d\right\},
 \]
-for all \(n,d\) satisfying \(0<d\), \(N_\epsilon\le n\), and \(d\le b_\epsilon n\log n\).
+% lean: ControlZeroClass, ControlZeroLaw
+the treated-arm functional
+\[
+\psi_1(P):=\sum_{k=1}^{d}p_k\mu_{1k},
+\]
+% lean: treatedFunctional
+and the treated-arm minimax risk over that subclass,
+\[
+\mathsf R^{(1)}_{n,d,\epsilon}
+:=
+\inf_{\widehat\tau}\ \sup_{P\in\mathcal D_{n,d,\epsilon}}E_P\!\left[(\widehat\tau-\psi_1(P))^2\right],
+\]
+% lean: oneArmWorstCaseMSE, oneArmMinimaxRisk
+the infimum again ranging over all measurable estimators based on \(O_1,\ldots,O_n\), exactly as in \cref{obj:def:minimax-risk}.  The cited fixed-sample control-zero lower bound \citep{ZengBalakrishnanHanKennedy2024} is imported in the following form: there exist constants \(a_\epsilon>0\), \(b_\epsilon>0\) and a cutoff \(N_\epsilon\in\mathbb N\), depending only on \(\epsilon\), such that
+\[
+a_\epsilon\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\}
+\le
+\mathsf R^{(1)}_{n,d,\epsilon}
+\qquad\text{whenever } d>0,\ n\ge N_\epsilon,\ d\le b_\epsilon n\log n.
+\]
+% lean: ZengOneArmMinimaxLower, minimaxRate
+
+\textbf{Step 2: a uniform risk envelope.}  For every law \(P\) satisfying \cref{obj:ass:overlap} and every estimator \(\widehat\tau\),
+\[
+E_P\!\left[(\widehat\tau-\tau(P))^2\right]
+\le
+\left(S(\widehat\tau)+1\right)^2,
+\qquad
+S(\widehat\tau):=\sum_{o\in\mathcal O_n}|\widehat\tau(o)|.
+\]
+% lean: mse_le_estimator_abs_sum_bound
+Indeed, the weighted-regression form of \cref{obj:def:ate-functional} gives \(\tau(P)=\sum_{k=1}^{d}p_k(\mu_{1k}-\mu_{0k})\) with \(\sum_{k=1}^{d}p_k=1\), \(p_k\ge0\) and \(|\mu_{1k}-\mu_{0k}|\le1\), whence
+\[
+|\tau(P)|\le 1;
+\]
+% lean: ateFunctional_eq_weighted_regression, ateFunctional_mem_interval
+and \(|\widehat\tau(o)|\le S(\widehat\tau)\) for each \(o\in\mathcal O_n\), since \(S(\widehat\tau)\) is a finite sum of nonnegative terms one of which is \(|\widehat\tau(o)|\).  Therefore \(|\widehat\tau(o)-\tau(P)|\le S(\widehat\tau)+1\) pointwise on \(\mathcal O_n\), and integrating the squared bound against the probability law \(P^{\otimes n}\) gives the display.  Two consequences are used below: for each fixed \(\widehat\tau\), both the supremum over \(\mathcal E_{n,d,\epsilon}\) and the supremum over \(\mathcal D_{n,d,\epsilon}\) are taken over sets of reals bounded above by \((S(\widehat\tau)+1)^2\), so both are genuine finite suprema.
+
+\textbf{Step 3: the target identity on the subclass.}  Let \(P\in\mathcal D_{n,d,\epsilon}\).  Then \(P\) satisfies \cref{obj:ass:overlap}, so the weighted-regression form of \cref{obj:def:ate-functional} applies, and \(\mu_{0k}=0\) for every \(k\) gives
+\[
+\tau(P)=\sum_{k=1}^{d}p_k(\mu_{1k}-\mu_{0k})=\sum_{k=1}^{d}p_k\mu_{1k}=\psi_1(P).
+\]
+% lean: ateFunctional_eq_treated_on_controlZero
+
+\textbf{Step 4: the risk comparison.}  We claim
+\[
+\mathsf R^{(1)}_{n,d,\epsilon}\le\mathsf R_{n,d,\epsilon}.
+\]
+% lean: oneArmMinimaxRisk_le_minimaxRisk
+Fix a measurable estimator \(\widehat\tau\) and split on whether the subclass is inhabited.
+
+If no law belongs to \(\mathcal D_{n,d,\epsilon}\), then \(\sup_{P\in\mathcal D_{n,d,\epsilon}}E_P[(\widehat\tau-\psi_1(P))^2]=0\) by the empty-supremum convention, and the right-hand worst-case risk is nonnegative: if \(\mathcal E_{n,d,\epsilon}\) is likewise empty it too equals \(0\), and otherwise it dominates the single nonnegative value \(E_{P}[(\widehat\tau-\tau(P))^2]\ge0\) attained at any member \(P^{\otimes n}\in\mathcal E_{n,d,\epsilon}\), that domination being legitimate because Step 2 makes the supremum finite.
+
+If instead \(\mathcal D_{n,d,\epsilon}\) contains a law, take any \(P\in\mathcal D_{n,d,\epsilon}\).  By definition of \(\mathcal D_{n,d,\epsilon}\) we have \(P^{\otimes n}\in\mathcal E_{n,d,\epsilon}\), and by Step 3 the treated-arm loss of \(\widehat\tau\) at \(P\) is its ATE loss, so
+\[
+E_P\!\left[(\widehat\tau-\psi_1(P))^2\right]
+=
+E_P\!\left[(\widehat\tau-\tau(P))^2\right]
+\le
+\sup_{Q^{\otimes n}\in\mathcal E_{n,d,\epsilon}}E_Q\!\left[(\widehat\tau-\tau(Q))^2\right],
+\]
+the last step again using the finiteness supplied by Step 2.  Taking the supremum over \(P\in\mathcal D_{n,d,\epsilon}\),
+\[
+\sup_{P\in\mathcal D_{n,d,\epsilon}}E_P\!\left[(\widehat\tau-\psi_1(P))^2\right]
+\le
+\sup_{P^{\otimes n}\in\mathcal E_{n,d,\epsilon}}E_P\!\left[(\widehat\tau-\tau(P))^2\right].
+\]
+Both cases give this inequality for every measurable \(\widehat\tau\).  Moreover the left-hand side is bounded below by \(0\) uniformly in \(\widehat\tau\): it is \(0\) when the subclass is empty, and otherwise it dominates the nonnegative squared-error risk at any one member of the subclass, whose supremum is finite by Step 2.  Hence the infima over measurable estimators may be compared termwise, which is the claimed inequality \(\mathsf R^{(1)}_{n,d,\epsilon}\le\mathsf R_{n,d,\epsilon}\).
+
+\textbf{Step 5: conclusion.}  Let \(a_\epsilon,b_\epsilon,N_\epsilon\) be the constants of Step 1 and let \(n,d\in\mathbb N\) satisfy \(d>0\), \(n\ge N_\epsilon\) and \(d\le b_\epsilon n\log n\).  Chaining the cited bound of Step 1 with the comparison of Step 4,
+\[
+a_\epsilon\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\}
+\le
+\mathsf R^{(1)}_{n,d,\epsilon}
+\le
+\mathsf R_{n,d,\epsilon},
+\]
+which is the asserted lower bound, with the same constants \(a_\epsilon>0\), \(b_\epsilon>0\) and cutoff \(N_\epsilon\).
+% lean: ate_lower_bound_transfer
 \end{proof}

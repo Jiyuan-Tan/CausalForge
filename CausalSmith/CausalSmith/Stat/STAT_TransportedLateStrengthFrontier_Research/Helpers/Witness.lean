@@ -2534,7 +2534,7 @@ private lemma witnessSourceObsKernelH_eq_coinKernel
         ENNReal.ofReal (1 - e (fullX o)) *
           Measure.dirac (observeSource (o, false)) A) := by
     simpa [witnessCoin_map, Measure.add_apply, Measure.smul_apply,
-      smul_eq_mul] using (Measure.measurable_coe hA).comp hinner
+      smul_eq_mul] using (Measure.measurable_coe hA).fun_comp hinner
   unfold witnessSourceObsKernelH witnessPotentialKernelH
     witnessObservedCoinKernelH
   rw [Measure.bind_apply hA hinner.aemeasurable]
@@ -4475,7 +4475,7 @@ private lemma transportWeight_eq_of_integral
     (ENNReal.measurable_ofReal.comp hwmeas)] with x hx
   have hx' : (μ.withDensity (fun x => ENNReal.ofReal (w x))).rnDeriv μ x =
       ENNReal.ofReal (w x) := by
-    simpa only [Function.comp_apply] using hx
+    simpa only [Function.comp_def] using hx
   rw [hx', ENNReal.toReal_ofReal (hw0 x)]
 
 private lemma witnessArray_mem_transportedIVClass

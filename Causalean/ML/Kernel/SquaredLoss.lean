@@ -140,7 +140,8 @@ theorem kernel_erm_squaredLoss_excess_rate {d n : ℕ} {Ω : Type*} [MeasurableS
       have hpS : empiricalRademacherComplexity n p S ≤ Xb * W / Real.sqrt (n : ℝ) := by
         have h := linear_predictor_l2_bound' (d := d) (n := n) (ι := KWeight d W) (W := W)
           (X := Xb) hXb hW (fun k => (S k).1) (fun w => w)
-        simpa [hp, Function.comp_def] using h
+        rw [hp]
+        exact h
       -- (2) quadratic part via contraction with the clamped square
       have hquadbd : ∀ (w : KWeight d W) (a : KFeat d Xb Yb), |φ (p w a)| ≤ (Xb * W) ^ 2 := by
         intro w a
@@ -182,7 +183,7 @@ theorem kernel_erm_squaredLoss_excess_rate {d n : ℕ} {Ω : Type*} [MeasurableS
         have h := linear_predictor_l2_bound' (d := d) (n := n) (ι := KWeight d W)
           (W := W) (X := 2 * Yb * Xb) (by positivity) hW
           (fun k => ⟨featCross (S k), hmem (S k)⟩) (fun w => w)
-        simpa [Function.comp_def] using h
+        exact h
       -- (4) combine the two parts via sub-additivity
       have hcrossbd : ∀ (w : KWeight d W) (a : KFeat d Xb Yb),
           |2 * (a.2 : ℝ) * p w a| ≤ 2 * Yb * (Xb * W) := by
@@ -239,8 +240,7 @@ theorem kernel_erm_squaredLoss_excess_rate {d n : ℕ} {Ω : Type*} [MeasurableS
     hfmeas X hX (b := (Xb * W) ^ 2 + 2 * Yb * (Xb * W)) hb0 hfbound hfcont_w ht' hε ŵ wstar hERMf
   -- transport from `f`-excess to genuine squared-loss excess
   refine le_trans ?_ key
-  rw [ENNReal.toReal_le_toReal (measure_ne_top _ _) (measure_ne_top _ _)]
-  apply measure_mono
+  refine ENNReal.toReal_mono (measure_ne_top _ _) (measure_mono ?_)
   intro ω hω
   -- population split: `∫ f w = ∫ sqLoss w − ∫ y²`
   have hsqcont_a : ∀ w : KWeight d W, Continuous (fun a : KFeat d Xb Yb => sqLoss w a) := by

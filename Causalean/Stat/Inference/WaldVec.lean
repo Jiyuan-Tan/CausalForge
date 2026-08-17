@@ -117,7 +117,7 @@ hypothesis of `wald_coverage_Iic` is automatic: `frontier (Iic c) = {c}` and
 theorem Tendsto_dist.wald_coverage_Iic_of_noAtoms
     {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω} [IsProbabilityMeasure μ]
     {Wn : ℕ → Ω → ℝ} (hWn : ∀ n, AEMeasurable (Wn n) μ)
-    {χ : Measure ℝ} [IsProbabilityMeasure χ] [NoAtoms χ]
+    {χ : Measure ℝ} [IsProbabilityMeasure χ] [NullSingletonClass χ]
     (hW : Tendsto_dist Wn χ μ hWn)
     (c : ℝ)
     (coverProb : ℕ → ℝ)

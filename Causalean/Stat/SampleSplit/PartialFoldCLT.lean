@@ -36,6 +36,7 @@ that exploits `iIndepFun` + `IdentDistrib` to package fold-B as a fresh
 i.i.d. sample.
 -/
 
+import Mathlib.Probability.CentralLimitTheorem
 import Causalean.Stat.Sample
 import Causalean.Stat.SampleSplit
 import Causalean.Stat.Limit.Convergence
@@ -96,7 +97,7 @@ lemma charFun_normalizedSum_finset_eq_range_card
     intro i
     simpa [Y, Function.comp_def] using (S.identDist i).symm.comp hψ_meas
   have hindep_Y : iIndepFun Y μ := by
-    simpa [Y] using
+    simpa [Y, Function.comp_def] using
       S.indep.comp (fun _ x => ψ x) (fun _ => hψ_meas)
   have hindep_s : iIndepFun (fun i : s => Y i) μ := by
     exact hindep_Y.precomp Subtype.val_injective
@@ -140,18 +141,9 @@ lemma charFun_normalizedSum_finset_eq_range_card
   have hright_scaled :
       charFun (μ.map (fun ω => c * ∑ i ∈ Finset.range s.card, Y i ω)) t
         = charFun (μ.map (Y 0)) (c * t) ^ s.card := by
-    calc
-      charFun (μ.map (fun ω => c * ∑ i ∈ Finset.range s.card, Y i ω)) t
-          = charFun (μ.map (invSqrtMulSum Y s.card)) t := by
-              congr 1
-              apply Measure.map_congr
-              filter_upwards with ω
-              dsimp [invSqrtMulSum, c]
-              rw [← Fin.sum_univ_eq_sum_range]
-      _ = charFun (μ.map (Y 0)) (c * t) ^ s.card := by
-              simpa [c] using
-                (ProbabilityTheory.charFun_invSqrtMulSum (fun i => hY_meas i)
-                  (P := μ) hindep_Y (fun i => hY_ident i) (n := s.card) (t := t))
+    simpa [c] using
+      (ProbabilityTheory.charFun_inv_sqrt_mul_sum (X := Y) (P := μ)
+        hindep_Y (fun i => hY_ident i) (n := s.card) (t := t))
   simpa [Y, c] using hleft_scaled.trans hright_scaled.symm
 
 /-- **Fold-B CLT.**  Along an i.i.d. sample `S` with mean-zero,
@@ -265,7 +257,8 @@ theorem IsAsymLinear.tendsto_normal_foldB_sqrt_n
     by_cases hn : n = 0
     · subst n
       unfold IsAsymLinear.rescaledEstimator
-      simp
+      have hcard : (split.foldB 0).card = 0 := by simp [split.card_foldB]
+      simp [hcard]
     · have hn_pos_nat : 0 < n := Nat.pos_of_ne_zero hn
       have hsqrtn_ne : Real.sqrt (n : ℝ) ≠ 0 := by
         rw [Real.sqrt_ne_zero']

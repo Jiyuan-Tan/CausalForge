@@ -82,7 +82,7 @@ private theorem integral_cohort_sum_mul_cohort_indicator
       simpa [I] using indicator_cohort_memLp μ G G_meas g
     have haI' : MemLp (fun ω => a g' * I g' ω) 2 μ := by
       simpa using hI'.const_mul (a g')
-    simpa [term] using haI'.integrable_mul hI
+    exact haI'.integrable_mul hI
   have hterm_eval : ∀ g', ∫ ω, term g' ω ∂μ =
       if g' = g then a g * cohortMass μ G g else 0 := by
     intro g'
@@ -152,7 +152,7 @@ private theorem integral_period_sum_mul_period_indicator
       simpa [I] using indicator_period_memLp μ T_rv T_meas t
     have hbI' : MemLp (fun ω => b t' * I t' ω) 2 μ := by
       simpa using hI'.const_mul (b t')
-    simpa [term] using hbI'.integrable_mul hI
+    exact hbI'.integrable_mul hI
   have hterm_eval : ∀ t', ∫ ω, term t' ω ∂μ =
       if t' = t then b t * periodMass μ T_rv t else 0 := by
     intro t'
@@ -227,7 +227,7 @@ private theorem integral_period_sum_mul_cohort_indicator
       simpa [IG] using indicator_cohort_memLp μ G G_meas g
     have hbIT : MemLp (fun ω => b t * IT t ω) 2 μ := by
       simpa using hIT.const_mul (b t)
-    simpa [term] using hbIT.integrable_mul hIG
+    exact hbIT.integrable_mul hIG
   have hterm_eval : ∀ t, ∫ ω, term t ω ∂μ =
       b t * cellMass μ G T_rv g t := by
     intro t
@@ -283,7 +283,7 @@ private theorem integral_cohort_sum_mul_period_indicator
       simpa [IT] using indicator_period_memLp μ T_rv T_meas t
     have haIG : MemLp (fun ω => a g * IG g ω) 2 μ := by
       simpa using hIG.const_mul (a g)
-    simpa [term] using haIG.integrable_mul hIT
+    exact haIG.integrable_mul hIT
   have hterm_eval : ∀ g, ∫ ω, term g ω ∂μ =
       a g * cellMass μ G T_rv g t := by
     intro g

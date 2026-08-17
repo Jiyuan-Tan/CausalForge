@@ -95,8 +95,10 @@ lemma congr (hX : HasSubexponentialMGF X v b μ) {Y : Ω → ℝ} (hXY : X =ᵐ[
 lemma const_mul (hX : HasSubexponentialMGF X v b μ) (r : ℝ) :
     HasSubexponentialMGF (fun ω => r * X ω) (⟨r ^ 2, sq_nonneg r⟩ * v)
       (⟨|r|, abs_nonneg r⟩ * b) μ := by
-  have hbcoe : ((⟨|r|, abs_nonneg r⟩ * b : ℝ≥0) : ℝ) = |r| * b := by push_cast; ring
-  have hvcoe : ((⟨r ^ 2, sq_nonneg r⟩ * v : ℝ≥0) : ℝ) = r ^ 2 * v := by push_cast; ring
+  have hbcoe : ((⟨|r|, abs_nonneg r⟩ * b : ℝ≥0) : ℝ) = |r| * b := by
+    rfl
+  have hvcoe : ((⟨r ^ 2, sq_nonneg r⟩ * v : ℝ≥0) : ℝ) = r ^ 2 * v := by
+    rfl
   have hbnd : ∀ t : ℝ, ((⟨|r|, abs_nonneg r⟩ * b : ℝ≥0) : ℝ) * |t| < 1 →
       (b : ℝ) * |r * t| < 1 := by
     intro t ht; rw [hbcoe] at ht; rw [abs_mul]; nlinarith [abs_nonneg t, abs_nonneg r, b.coe_nonneg]

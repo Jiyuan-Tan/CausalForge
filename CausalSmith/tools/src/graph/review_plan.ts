@@ -17,7 +17,7 @@ export interface GateReviewPlan {
 }
 
 /**
- * The graph-native replacement for `splitCrosswalkByCache` + the freeze floor:
+ * The graph-native replacement for the legacy crosswalk cache-split + freeze floor:
  * partition the skeleton into the dirty frontier (re-audit) and the carried
  * verdicts (everything else, reusing `node.review.status`). `dirty` is the node-id
  * frontier from `dirtyFrontier` (hash-changed nodes + their dependents).

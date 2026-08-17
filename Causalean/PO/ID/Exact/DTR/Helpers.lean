@@ -53,6 +53,12 @@ lemma measurable_hb_step_proj (S : PODTRSystem P n δ γ) (k : ℕ) (h : k + 1 <
     Measurable (S.hb_step_proj k h) := by
   apply measurable_pi_lambda
   intro j
+  -- Instance search no longer unfolds `historyBundle (k+1)` to see that its
+  -- index type is `Fin (… + 1 + 1)`, so supply the coordinate measurable-space
+  -- family explicitly.
+  let _ : ∀ i : Fin ((S.historyBundle k (Nat.lt_of_succ_lt h)).n + 1 + 1),
+      MeasurableSpace ((S.historyBundle (k + 1) h).type i) :=
+    fun i => (S.historyBundle (k + 1) h).inst i
   exact measurable_pi_apply j.succ.succ
 
 /-- Key algebraic identity: the stage-`k` joint value factors through the

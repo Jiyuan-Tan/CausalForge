@@ -35,6 +35,14 @@ export function runFinalAssemblyGates(sctx: SolveRoundContext): void {
  *  ∪ ids(working)` holds by construction of `assembleCore`.) */
 export function warnRoundInvariants(sctx: SolveRoundContext, rendered: Core): void {
   const { proto, prev, next } = sctx;
+  // Resolving an agent-authored OEQ intentionally retires its source record
+  // from `solved`: `resolved_oeqs` becomes the durable semantic carrier and
+  // `assembleCore` publishes the replacement theorem.  Treat only those
+  // consumed sources as allowed losses; every other disappeared authored node
+  // must still trigger `silent-node-loss`.
+  const allowedLoss = Object.keys(prev?.solved ?? {}).filter(
+    (id) => prev?.solved[id]?.node && !next.solved[id] && next.resolved_oeqs?.[id] !== undefined,
+  );
   // SELF-CHECK EVERY REAL ROUND. The faults found on 2026-07-19 were all
   // invisible until something downstream broke, sometimes rounds later. These checks
   // run here — before anything is persisted — so a live run reports its own
@@ -44,7 +52,10 @@ export function warnRoundInvariants(sctx: SolveRoundContext, rendered: Core): vo
   //
   // Warn, do not throw: the danger is silence, not survivable damage, and aborting a
   // round that cost real agent time over a repairable inconsistency is a worse trade.
-  for (const violation of runGates([roundInvariantsGate], { proto, core: rendered, before: prev, after: next }).warn) {
+  for (const violation of runGates(
+    [roundInvariantsGate],
+    { proto, core: rendered, before: prev, after: next, allowedLoss },
+  ).warn) {
     console.warn(violation.detail);
   }
 }

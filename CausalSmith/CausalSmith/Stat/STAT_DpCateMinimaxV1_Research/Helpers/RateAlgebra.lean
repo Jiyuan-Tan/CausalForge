@@ -67,13 +67,11 @@ lemma private_regression_calibration_algebra {d : ℕ} (r0 gamma : ℝ)
     have hpriv := private_regression_privacy_objective_lower
       ((n : ℝ) * eps n) h.1 gamma d hy h.2.1 hgamma
     apply max_le
-    · dsimp
-      have hpowpos : 0 < h.1 ^ (d : ℝ) := Real.rpow_pos_of_pos h.2.1 _
+    · have hpowpos : 0 < h.1 ^ (d : ℝ) := Real.rpow_pos_of_pos h.2.1 _
       have hlast : 0 ≤ 1 / ((n : ℝ) * eps n * h.1 ^ (d : ℝ)) :=
         one_div_nonneg.mpr (mul_nonneg hy.le hpowpos.le)
       linarith
-    · dsimp
-      have hmiddle : 0 ≤ ((n : ℝ) * h.1 ^ (d : ℝ)) ^ (-(1 / 2 : ℝ)) :=
+    · have hmiddle : 0 ≤ ((n : ℝ) * h.1 ^ (d : ℝ)) ^ (-(1 / 2 : ℝ)) :=
         Real.rpow_nonneg (mul_nonneg hx.le (Real.rpow_nonneg h.2.1.le _)) _
       linarith
   constructor

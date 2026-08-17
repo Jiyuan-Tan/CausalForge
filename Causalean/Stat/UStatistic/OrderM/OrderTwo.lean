@@ -229,8 +229,7 @@ theorem uStatistic_clt_of_symmetric_via_orderM
         hproj_int.comp_fst P
       have hsnd : Integrable (fun p : X × X => uProj h P p.2) (P.prod P) :=
         hproj_int.comp_snd P
-      simpa [add_assoc] using
-        (((integrable_const (uMean h P)).add hfst).add hsnd).add hdegen_int
+      exact (((integrable_const (uMean h P)).add hfst).add hsnd).add hdegen_int
     have hfun :
         (fun p : X × X =>
           uMean h P + uProj h P p.1 + uProj h P p.2 + uDegen h P p.1 p.2)
@@ -253,13 +252,13 @@ theorem uStatistic_clt_of_symmetric_via_orderM
     uDegenOrder_pairKernel_of_symm (P := P) (h := h) hsymm hh_int hrow
   have hmeas' : Measurable (uDegenOrder (pairKernel h) P) := by
     have hraw : Measurable (fun z : Fin 2 → X => uDegen h P (z 0) (z 1)) := by
-      simpa [e] using hdeg_meas_prod.comp e.measurable
+      exact hdeg_meas_prod.comp e.measurable
     simpa [hdeg_bridge] using hraw
   have hL2' : Integrable (fun z => (uDegenOrder (pairKernel h) P z) ^ 2)
       (Measure.pi fun _ : Fin 2 => P) := by
     have hraw : Integrable (fun z : Fin 2 → X => (uDegen h P (z 0) (z 1)) ^ 2)
         (Measure.pi fun _ : Fin 2 => P) := by
-      simpa [e] using hmp.integrable_comp_of_integrable hL2
+      exact hmp.integrable_comp_of_integrable hL2
     simpa [hdeg_bridge] using hraw
   have hslice_int' : ∀ j : Fin 2, Integrable
       (fun x => ∫ tail : ({k : Fin 2 // k ≠ j}) → X,

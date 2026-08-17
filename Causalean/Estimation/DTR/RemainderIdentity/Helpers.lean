@@ -135,7 +135,7 @@ lemma indicator_weighted_delta_mu0_integrable
     have hd := MemLp.comp_of_map
       (f := S.toPODTRSystem.factualS ⟨0, by decide⟩) hΔμ₀_memLp
       (S.toPODTRSystem.measurable_factualS ⟨0, by decide⟩).aemeasurable
-    simpa [dμ0, DTREstimationSystem.P_H₀] using hd
+    exact hd
   have hW0_meas : Measurable W0 := by
     dsimp [W0, I0]
     exact ((S.toPODTRSystem.dVar ⟨0, by decide⟩).measurable_indicator
@@ -207,7 +207,7 @@ lemma indicator_weighted_delta_mu1_stage0_integrable
         (S.toPODTRSystem.measurable_factualS ⟨0, by decide⟩))
   have hdμ1_L2 : MemLp dμ1 2 P.μ := by
     have hd := MemLp.comp_of_map (f := H1) hΔμ₁_memLp hH1_meas.aemeasurable
-    simpa [dμ1, H1, DTREstimationSystem.P_H₁] using hd
+    exact hd
   have hW0_meas : Measurable W0 := by
     dsimp [W0, I0]
     exact ((S.toPODTRSystem.dVar ⟨0, by decide⟩).measurable_indicator
@@ -290,7 +290,7 @@ lemma indicator_weighted_delta_mu1_stage1_integrable
         (S.toPODTRSystem.measurable_factualS ⟨0, by decide⟩))
   have hdμ1_L2 : MemLp dμ1 2 P.μ := by
     have hd := MemLp.comp_of_map (f := H1) hΔμ₁_memLp hH1_meas.aemeasurable
-    simpa [dμ1, H1, DTREstimationSystem.P_H₁] using hd
+    exact hd
   have hW1_meas : Measurable W1 := by
     dsimp [W1, I0, I1, H1]
     exact (((S.toPODTRSystem.dVar ⟨0, by decide⟩).measurable_indicator

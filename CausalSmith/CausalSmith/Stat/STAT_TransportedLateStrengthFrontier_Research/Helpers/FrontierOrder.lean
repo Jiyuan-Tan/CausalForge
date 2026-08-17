@@ -235,8 +235,8 @@ lemma OracleHonest.fixedGeometry
       C.weightAEInvariant n P hP.1 (geometryVersion n P hP)
         (canonicalTransportWeightVersion P n)
     ] with s hs
-    simpa only [hset_eq n P hP, oracleSet, oracleSetAtWeight] using
-      congrArg (fun A : Set ℝ => targetCACE P n ∈ A) hs
+    simp only [hset_eq n P hP, oracleSet, oracleSetAtWeight]
+    exact congrArg (fun A : Set ℝ => targetCACE P n ∈ A) hs
   have hexpectedLength_eq (n : ℕ) (P : TransportedArray 𝒳)
       (hP : fixedGeometrySlice P g N k c epsilon n) :
       fixedGeometryOracleExpectedLength D g P n =
@@ -247,8 +247,8 @@ lemma OracleHonest.fixedGeometry
       C.weightAEInvariant n P hP.1 (geometryVersion n P hP)
         (canonicalTransportWeightVersion P n)
     ] with s hs
-    simpa only [hset_eq n P hP, oracleSet, oracleSetAtWeight] using
-      congrArg setLength hs
+    simp only [hset_eq n P hP, oracleSet, oracleSetAtWeight]
+    exact congrArg setLength hs
   have hcoverage_nonneg (E : OracleProcedure 𝒳 N k c epsilon)
       (P : TransportedArray 𝒳) (n : ℕ) :
       0 ≤ oracleCoverage E P n := by

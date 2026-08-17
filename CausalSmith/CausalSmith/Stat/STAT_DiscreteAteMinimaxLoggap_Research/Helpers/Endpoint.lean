@@ -19,12 +19,16 @@ noncomputable def centeredUnitScore {d : ℕ} (z : Obs d) : ℝ :=
   2 * (if z.2.1 then 1 else -1) * ((if z.2.2 then 1 else 0) - 1 / 2)
 
 -- @node: centeredUnitScore_sq
+/-- The bounded one-observation score used by the centering estimator always squares to
+one: it takes only the two values plus one and minus one. -/
 lemma centeredUnitScore_sq {d : ℕ} (z : Obs d) : centeredUnitScore z ^ 2 = 1 := by
   rcases z with ⟨k, a, y⟩
   cases a <;> cases y <;> norm_num [centeredUnitScore]
   all_goals exact Or.inl rfl
 
 -- @node: centeredEstimator_eq_scoreMean
+/-- The centering estimator is exactly the sample average of the bounded
+one-observation score. -/
 lemma centeredEstimator_eq_scoreMean {n d : ℕ} (sample : Fin n → Obs d) :
     centeredEstimator sample = (n : ℝ)⁻¹ * ∑ i : Fin n, centeredUnitScore (sample i) := by
   rfl

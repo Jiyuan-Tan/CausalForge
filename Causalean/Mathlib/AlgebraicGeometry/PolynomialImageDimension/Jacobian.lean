@@ -30,7 +30,13 @@ coordinates of a polynomial parameterization before evaluating it at any point. 
 def polynomialJacobianMinor {R ι κ : Type*} [CommRing R] {d : ℕ}
     (f : κ → MvPolynomial ι R) (rows : Fin d → κ) (cols : Fin d → ι) :
     MvPolynomial ι R :=
-  Matrix.det (fun a b => MvPolynomial.pderiv (cols b) (f (rows a)))
+  -- `Matrix.of` is definitionally the identity, so this does not change the value.
+  -- It matters because `Matrix m n α` is semireducible from v4.33.0 on: a bare
+  -- `fun a b => …` in a `Matrix` slot still elaborates, but leaves a goal that is
+  -- ill-typed at implicit transparency, after which every `Matrix.*` keyed match
+  -- (`fromBlocks_apply*`, `det_fromBlocks_zero₁₂`, `RingHom.map_det`) fails to fire
+  -- for every downstream consumer.  See doc/MATHLIB_UPGRADE.md §2a-quater.
+  Matrix.det (Matrix.of fun a b => MvPolynomial.pderiv (cols b) (f (rows a)))
 
 -- The next three lemmas are the reusable algebraic core of the Jacobian
 -- criterion.  Keeping them private avoids enlarging the public API while giving
@@ -99,7 +105,7 @@ lemma totalDegree_pderiv_lt
           (Finsupp.weight_sub_single_add
             (w := fun _ : σ => (1 : ℕ)) hmi)
       have hmle : m.degree ≤ P.totalDegree := by
-        simpa [Finsupp.degree_apply] using MvPolynomial.le_totalDegree hm
+        simpa [Finsupp.degree_apply, Finsupp.sum] using MvPolynomial.le_totalDegree hm
       omega
   exact hle.trans_lt (Nat.sub_lt hdeg_pos Nat.zero_lt_one)
 
@@ -156,7 +162,7 @@ lemma eq_C_of_forall_pderiv_eq_zero
         _ = _ := by
           have hcoeff_nsmul (n : ℕ) (Q : MvPolynomial σ K) :
               MvPolynomial.coeff m (n • Q) = n • MvPolynomial.coeff m Q :=
-            (MvPolynomial.coeffAddMonoidHom m).map_nsmul Q n
+            (MvPolynomial.coeffAddMonoidHom m).map_nsmul n Q
           simp_rw [hcoeff_nsmul, MvPolynomial.coeff_monomial]
           rw [Finset.sum_eq_single m]
           · simp [nsmul_eq_mul]
@@ -200,7 +206,7 @@ theorem algebraicIndependent_of_polynomialJacobianMinor_ne_zero
   let n := Nat.find hbad
   obtain ⟨P, hPne, hPker, hPdeg⟩ : bad n := Nat.find_spec hbad
   let J : Matrix (Fin d) (Fin d) (MvPolynomial ι ℂ) :=
-    fun a b => MvPolynomial.pderiv (cols b) (g a)
+    Matrix.of fun a b => MvPolynomial.pderiv (cols b) (g a)
   let v : Fin d → MvPolynomial ι ℂ :=
     fun a => polynomialPullback g (MvPolynomial.pderiv a P)
   have hchain (b : Fin d) :
@@ -211,8 +217,9 @@ theorem algebraicIndependent_of_polynomialJacobianMinor_ne_zero
     simpa [pderiv_polynomialPullback] using hp
   have hmul : Matrix.mulVec J.transpose v = 0 := by
     funext b
-    simpa [J, v, Matrix.mulVec, dotProduct, mul_comm] using hchain b
+    simpa [J, v, Matrix.mulVec, Matrix.transpose, dotProduct, mul_comm] using hchain b
   have hdet : J.transpose.det ≠ 0 := by
+    rw [Matrix.det_transpose]
     simpa [J, g, polynomialJacobianMinor] using hminor
   have hv : v = 0 := Matrix.eq_zero_of_mulVec_eq_zero hdet hmul
   have hpartials : ∀ a : Fin d, MvPolynomial.pderiv a P = 0 := by

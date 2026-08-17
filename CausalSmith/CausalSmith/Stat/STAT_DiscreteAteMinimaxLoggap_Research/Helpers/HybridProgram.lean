@@ -24,6 +24,13 @@ inductive RealArithmeticExpression (ι : Type*) where
 
 namespace RealArithmeticExpression
 
+/-- The value of an arithmetic syntax tree under a given assignment of its inputs.
+Input and constant nodes return their own value; the addition, subtraction,
+multiplication and division nodes apply the corresponding real operation to the
+values of their two subtrees, division following the total convention that dividing
+by zero returns zero; the branch node returns the value of its second subtree when
+its first subtree evaluates to a nonpositive number and of its third subtree
+otherwise. -/
 noncomputable def eval {ι : Type*} (input : ι → ℝ) : RealArithmeticExpression ι → ℝ
   | .input i => input i
   | .const x => x
@@ -370,6 +377,10 @@ def natSubExpression {ι : Type*} (x : RealArithmeticExpression ι) (i : ℕ) :
     RealArithmeticExpression ι :=
   .branchNonpos (.sub x (.const i)) (.const 0) (.sub x (.const i))
 
+/-- The expression that implements truncated subtraction is correct: if a subexpression
+evaluates to a whole number, then guarding it by the branch node and subtracting a
+whole constant returns the truncated difference, which is zero whenever the constant
+is at least as large. -/
 lemma eval_natSubExpression {ι : Type*} (input : ι → ℝ)
     (x : RealArithmeticExpression ι) (z i : ℕ) (hx : eval input x = z) :
     eval input (natSubExpression x i) = (z - i : ℕ) := by
@@ -862,6 +873,9 @@ noncomputable def hybridArithmeticProgram (n d : ℕ) :
   if d = 0 then RealArithmeticExpression.program (.const 0)
   else RealArithmeticExpression.program (hybridExpression n d)
 
+/-- The compiled straight-line program computes the hybrid estimator exactly: run on the
+vector of split counts of any sample, its designated output register holds the value
+of the hybrid estimator at that sample. -/
 lemma hybridArithmeticProgram_eval {n d : ℕ} (sample : Fin n → Obs d) :
     (hybridArithmeticProgram n d).eval (hybridCountVector sample) =
       hybridEstimator sample := by

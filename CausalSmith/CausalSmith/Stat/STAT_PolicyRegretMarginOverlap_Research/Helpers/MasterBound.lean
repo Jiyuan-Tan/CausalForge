@@ -67,7 +67,7 @@ lemma feasible_erm_welfare_bridge {n K : ℕ} (P : ObservedLaw 𝒳) (q : ℝ)
       ∀ π ∈ policySet, lawRegret P π = G π + D π - (S π - S πstar) := by
     intro π hπmem
     have hπmeas : Measurable π := hvc.1 π hπmem
-    have hstar_mem : πstar ∈ policySet := by simpa [πstar] using hopt
+    have hstar_mem : πstar ∈ policySet := hopt
     have hstarmeas : Measurable πstar := hvc.1 πstar hstar_mem
     have hπind_meas : Measurable (fun x : 𝒳 => boolIndicator (π x)) :=
       (measurable_of_finite (fun b : Bool => boolIndicator b)).comp hπmeas
@@ -208,7 +208,7 @@ lemma feasible_erm_welfare_bridge {n K : ℕ} (P : ObservedLaw 𝒳) (q : ℝ)
       hvc hopt hskel.1 hskel.2 hμ0meas hμ1meas hemeas hn).2 sample
   have hπhat_mem : πhat ∈ policySet := hbasic.1
   have hstar_near : S πstar ≤ S πhat + (n : ℝ)⁻¹ := by
-    exact hbasic.2 πstar (by simpa [πstar] using hopt)
+    exact hbasic.2 πstar hopt
   have hslack : -(S πhat - S πstar) ≤ (n : ℝ)⁻¹ := by
     linarith
   have hfinal :
@@ -316,7 +316,12 @@ private lemma crude_self_large {n : ℕ} {α B C p : ℝ}
   exact le_trans hterm_ge_inv (le_trans hmul_log hCmul)
 
 -- @node: young_sqrt_absorb
-private lemma young_sqrt_absorb {D m R u : ℝ}
+/-- Young's inequality in the form used to absorb a regret-localization term. For
+nonnegative `D`, `m` and `R` and a positive window `u`, the product of `D`, `m` and the
+square root of `R/u` is at most half of `R` plus `D²m²/(2u)`. Half the regret can therefore
+be moved to the other side of a self-bounding inequality, leaving a remainder that no longer
+involves the regret. -/
+lemma young_sqrt_absorb {D m R u : ℝ}
     (hD : 0 ≤ D) (hm : 0 ≤ m) (hR : 0 ≤ R) (hu : 0 < u) :
     D * m * (R / u) ^ (1 / 2 : ℝ) ≤ R / 2 + D ^ 2 * m ^ 2 / (2 * u) := by
   have hsqrt_u_pos : 0 < Real.sqrt u := Real.sqrt_pos.2 hu
@@ -345,7 +350,14 @@ private lemma young_sqrt_absorb {D m R u : ℝ}
   nlinarith [htarget]
 
 -- @node: weighted_drift_sum_bound_pos
-private lemma weighted_drift_sum_bound_pos {n K : ℕ} (P : ObservedLaw 𝒳)
+/-- Cross-fitted drift bound in the decaying-overlap regime. When every fold's nuisance
+estimates share the same root-mean-square rates, the fold-size weighted average of the
+per-fold policy-weighted drifts obeys the same three-term bound as a single fold: an explicit
+constant, `4(1 + max(C_o,1)^{1/2})`, times the sum of the product-rate term `r_μ r_e / q`,
+the clipped-region term `r_μ u^{α/2} q^{1/(2γ)}` and the regret-localization term
+`r_μ (R_P(π)/u)^{1/2}`. The fold weights are nonnegative and sum to one, so cross-fitting
+costs nothing here. -/
+lemma weighted_drift_sum_bound_pos {n K : ℕ} (P : ObservedLaw 𝒳)
     (policySet : Set (Policy 𝒳)) (q rMu rE α γ Co co u0 underlineP : ℝ)
     (muHat0 muHat1 eHat : Fin K → 𝒳 → ℝ) (assign : Fin n → Fin K)
     (hsq0 : ∀ k : Fin K, ∫ x, (muHat0 k x - P.mu0 x) ^ 2 ∂P.PX ≤ rMu ^ 2)
@@ -410,7 +422,12 @@ private lemma weighted_drift_sum_bound_pos {n K : ℕ} (P : ObservedLaw 𝒳)
           ring
 
 -- @node: weighted_drift_sum_bound_zero
-private lemma weighted_drift_sum_bound_zero {n K : ℕ} (P : ObservedLaw 𝒳)
+/-- Cross-fitted drift bound at the strict-overlap endpoint. When the overlap exponent is
+zero and the clip level is fixed at no more than half the overlap floor, the fold-size
+weighted average of the per-fold policy-weighted drifts is at most `max(1, 2/q)` times the
+product rate `r_μ r_e`: strict overlap removes the clipped-region and regret-localization
+terms, and averaging over folds with weights summing to one preserves the bound. -/
+lemma weighted_drift_sum_bound_zero {n K : ℕ} (P : ObservedLaw 𝒳)
     (policySet : Set (Policy 𝒳)) (q rMu rE α γ Co co u0 underlineP : ℝ)
     (muHat0 muHat1 eHat : Fin K → 𝒳 → ℝ) (assign : Fin n → Fin K)
     (hsq0 : ∀ k : Fin K, ∫ x, (muHat0 k x - P.mu0 x) ^ 2 ∂P.PX ≤ rMu ^ 2)

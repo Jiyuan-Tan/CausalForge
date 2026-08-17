@@ -60,10 +60,17 @@ def reverseDirectLatentSwap {m : ℕ} (i : Fin m) (η : ParamSpace ℂ m) :
       (Function.update η.2.2 (Fin.last (m + 1)) (η.2.2 (latentSourceIndex i)))
       (latentSourceIndex i) (η.2.2 (Fin.last (m + 1))))
 
+/-- The explicitly constructed forward swap really does interchange the direct source with
+the i-th latent source: the new direct slope is the old i-th latent slope, the new i-th latent
+slope is the old direct slope, and the source-weight families of the two sources are exchanged. -/
 lemma forwardDirectLatentSwap_spec {m : ℕ} (i : Fin m) (θ : ParamSpace ℂ m) :
     IsForwardDirectLatentSwap i θ (forwardDirectLatentSwap i θ) := by
   exact ⟨rfl, rfl, rfl⟩
 
+/-- The explicitly constructed reverse swap really does interchange the reverse arrow's direct
+source with the i-th latent source: the new direct slope is the old i-th latent slope, the new
+i-th latent slope is the old direct slope, and the source-weight families of the two sources are
+exchanged. -/
 lemma reverseDirectLatentSwap_spec {m : ℕ} (i : Fin m) (η : ParamSpace ℂ m) :
     IsReverseDirectLatentSwap i η (reverseDirectLatentSwap i η) := by
   exact ⟨rfl, rfl, rfl⟩

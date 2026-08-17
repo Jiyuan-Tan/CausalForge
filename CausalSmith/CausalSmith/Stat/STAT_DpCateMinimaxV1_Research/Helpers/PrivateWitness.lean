@@ -140,7 +140,7 @@ private lemma witness_norm_popMom_le {d p : ℕ}
     have hm := design_mass_le P f0 f1 r0 x0 hiid hP.pxDens hP.localDensity hf10 hh hhr
     calc
       _ ≤ h ^ (-(d : ℝ)) *
-          (P.dataMeasure.map (fun O ↦ O.X)).real (supBall x0 h) := by simpa using hb
+          (P.dataMeasure.map (fun O ↦ O.X)).real (supBall x0 h) := by simpa [popMom] using hb
       _ ≤ h ^ (-(d : ℝ)) * (f1 * (2 * h) ^ d) := by gcongr
       _ = f1 * 2 ^ d := by
         rw [show h ^ (-(d : ℝ)) * (f1 * (2 * h) ^ d) =

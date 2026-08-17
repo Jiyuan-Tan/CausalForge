@@ -218,9 +218,13 @@ lemma plr_remainder_bound (η : PLRNuisance γ)
   have hb_nonneg : 0 ≤ b := ENNReal.toReal_nonneg
   -- The right-hand side is `(1 + |θ₀|)·(max a b)·(max a b)`.
   have hrhs1 : ((S.plrGeneralMoment.ρ₁ η S.η₀ : NNReal) : ℝ) = max a b := by
-    simp only [plrGeneralMoment, η₀, NNReal.coe_mk, ← ha_def, ← hb_def]
+    -- `NNReal.coe_mk` no longer fires as a simp rewrite; it is still `rfl`.
+    simp only [plrGeneralMoment, η₀, ← ha_def, ← hb_def]
+    rfl
   have hrhs2 : ((S.plrGeneralMoment.ρ₂ η S.η₀ : NNReal) : ℝ) = max a b := by
-    simp only [plrGeneralMoment, η₀, NNReal.coe_mk, ← ha_def, ← hb_def]
+    -- `NNReal.coe_mk` no longer fires as a simp rewrite; it is still `rfl`.
+    simp only [plrGeneralMoment, η₀, ← ha_def, ← hb_def]
+    rfl
   rw [hrhs1, hrhs2]
   -- L²(μ) ↔ L²(P_X) bridge for the two pulled-back nuisance errors.
   have hbridge_l : (eLpNorm δl 2 P.μ).toReal = a := by

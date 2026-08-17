@@ -171,7 +171,7 @@ theorem jointCdf_countermonotoneCoupling (μ ν : Measure ℝ)
             volume ({0} ∪ {1} : Set ℝ) ≤ volume ({0} : Set ℝ) + volume ({1} : Set ℝ) :=
               measure_union_le _ _
             _ = 0 := by simp
-        · exact zero_le _
+        · exact zero_le
       apply le_antisymm
       · exact measure_mono inter_subset_left
       · calc

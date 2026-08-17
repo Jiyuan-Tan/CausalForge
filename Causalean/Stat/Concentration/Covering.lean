@@ -8,12 +8,22 @@ import Causalean.Stat.Concentration.Covering.VCUniformDeviation
 import Causalean.Stat.Concentration.Covering.EmpiricalPseudoMetric
 import Causalean.Stat.Concentration.Covering.Separable
 import Causalean.Stat.Concentration.Covering.SqrtLogIntegral
+import Causalean.Stat.Concentration.Covering.RealValuedVCSubgraph.Basic
+import Causalean.Stat.Concentration.Covering.RealValuedVCSubgraph.Algebra
+import Causalean.Stat.Concentration.Covering.RealValuedVCSubgraph.Parametric
+import Causalean.Stat.Concentration.Covering.RealValuedVCSubgraph.Empirical
+import Causalean.Stat.Concentration.Covering.EuclideanRadialPolynomial
+
+
+
+
 
 /-!
 # Concentration · Covering / entropy (barrel)
 
 Covering and packing numbers, the empirical pseudo-metric, Dudley's entropy
 integral, Haussler's packing bound, VC-class covering and its localized regime,
-the resulting uniform deviation, separability, and the √log entropy integral.
+Euclidean radial-polynomial VC-subgraph certificates, the resulting uniform
+deviation, separability, and the √log entropy integral.
 Re-exports `Causalean.Stat.Concentration.Covering.*`.
 -/

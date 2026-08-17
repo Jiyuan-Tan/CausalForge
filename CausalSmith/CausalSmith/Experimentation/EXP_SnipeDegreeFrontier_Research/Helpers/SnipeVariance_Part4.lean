@@ -158,7 +158,7 @@ private lemma snipe_model_mse_le
     congr 1
     apply Finset.sum_congr rfl
     intro i hi
-    simpa [W] using hWmean i
+    exact hWmean i
   rw [D.mse_eq_var_of_unbiased hUnbiased]
   rw [show (fun z =>
       snipeEstimator β p (fun j i => decide (G j i)) z

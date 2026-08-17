@@ -54,8 +54,8 @@ lemma causalNullLaw {d : ℕ}
     · exact he0.1.le
     · exact he0.2.le
     · exact he0L
-    · simpa using hzeroBeta
-    · simpa using hzeroGamma
+    · exact hzeroBeta
+    · exact hzeroGamma
   have hiid : IidSampling P0 := by
     dsimp [P0]
     exact cateWitnessLaw_iidSampling Q e0 hiidQ hQ.pxMarginal measurable_const

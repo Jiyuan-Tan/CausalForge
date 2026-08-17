@@ -269,8 +269,7 @@ theorem obsCondKernel_slice_ae_eq_of_pairMeasure_eq
     simpa [MeasureTheory.Measure.fst_compProd] using hfst
   have hComp' : μ₁ ⊗ₘ κ₁ = μ₁ ⊗ₘ κ₂ := by
     simpa [hμ] using hComp
-  simpa [μ₁, κ₁, κ₂] using
-    ProbabilityTheory.Kernel.ae_eq_of_compProd_eq hComp'
+  exact ProbabilityTheory.Kernel.ae_eq_of_compProd_eq hComp'
 
 /-- **Proposition 2.19 (Q-factor identity / Tian's lemma).**
 
@@ -426,8 +425,7 @@ theorem q_factor_identity
     obsCondKernel_slice_ae_eq_of_pairMeasure_eq
       MI Mdo T P hT_induce hP_induce hT_do hP_do
       sInduce s' hPairMeasure
-  simpa [MI, Mdo, P, sInduce, SCM.qFactor, ProbabilityTheory.Kernel.sectR]
-    using hAE
+  exact hAE
 
 -- ============================================================
 -- Intervention target simplification (fact4)

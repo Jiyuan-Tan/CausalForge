@@ -275,7 +275,7 @@ theorem sharp_minimax_fixed_interior (epsilon : ℝ)
     have hnsCast : Tendsto (fun j => (ns j : ℝ)) atTop atTop :=
       tendsto_natCast_atTop_atTop.comp hns
     have hinv : Tendsto (fun j => 1 / (ns j : ℝ)) atTop (nhds 0) := by
-      simpa [one_div] using tendsto_inv_atTop_zero.comp hnsCast
+      simpa [one_div, Function.comp_def] using tendsto_inv_atTop_zero.comp hnsCast
     have hq_nonneg : ∀ᶠ j in atTop, 0 ≤ q j := by
       filter_upwards [hns (eventually_ge_atTop 2)] with j hj
       dsimp [q]

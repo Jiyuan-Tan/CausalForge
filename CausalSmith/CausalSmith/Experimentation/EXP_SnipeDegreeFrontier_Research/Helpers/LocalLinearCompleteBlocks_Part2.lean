@@ -45,9 +45,11 @@ lemma blockExtremal_all_empty_le
                   if (choice.2 i).Nonempty then 1 else 0)) ^ 2))
     (b := ((fun _ => true), (fun _ => ∅)))
     (by simp) using 1
-  apply FiniteDesign.E_congr
-  intro z
-  simp
+  case e'_2 => rfl
+  case e'_3 =>
+    apply FiniteDesign.E_congr
+    intro z
+    simp
 
 /-- Establishes the stated mathematical result for block first unit mem complete block units. -/
 lemma blockFirstUnit_mem_completeBlockUnits

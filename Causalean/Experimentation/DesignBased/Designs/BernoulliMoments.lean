@@ -221,8 +221,13 @@ theorem bernoulliDesign_E_centeredMonomial (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p
   · subst hS
     simp
   · have h := bernoulliDesign_E_centeredMonomial_mul p hp0 hp1 S ∅
-    rw [if_neg hS] at h
-    simpa [centeredMonomial, hS] using h
+    have hfun : (fun z => centeredMonomial p S z * centeredMonomial p (∅ : Finset U) z) =
+        centeredMonomial p S := by
+      funext z
+      simp
+    rw [hfun, if_neg hS] at h
+    rw [if_neg hS]
+    exact h
 
 /-- **Pairing a centered monomial with a raw monomial.** The expectation of the `S`-centered
 monomial times the product of the treatment indicators of a set `T` vanishes unless every unit of

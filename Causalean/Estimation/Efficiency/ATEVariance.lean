@@ -90,10 +90,10 @@ private lemma hahn_weight_true_Linf (S : BackdoorEstimationSystem P γ) {ε : �
   refine MemLp.of_bound ?_ ε⁻¹ hbound
   apply Measurable.aestronglyMeasurable
   have hind : Measurable (fun ω => indA (S.factualZ ω)) := by
-    simpa [indA, projA, BackdoorEstimationSystem.factualZ] using
-      (Measurable.of_discrete
-        (f := fun b : Bool => if b = true then (1 : ℝ) else 0)).comp
-          S.toPOBackdoorSystem.measurable_factualD
+    simp only [indA, projA, BackdoorEstimationSystem.factualZ]
+    exact (Measurable.of_discrete
+      (f := fun b : Bool => if b = true then (1 : ℝ) else 0)).comp
+        S.toPOBackdoorSystem.measurable_factualD
   exact hind.div (S.e_meas.comp S.toPOBackdoorSystem.measurable_factualX)
 
 /-- The `L∞` propensity weight `(1−a) / (1−e(X))` is bounded by `ε⁻¹`. -/
@@ -123,10 +123,10 @@ private lemma hahn_weight_false_Linf (S : BackdoorEstimationSystem P γ) {ε : �
   refine MemLp.of_bound ?_ ε⁻¹ hbound
   apply Measurable.aestronglyMeasurable
   have hind : Measurable (fun ω => indA (S.factualZ ω)) := by
-    simpa [indA, projA, BackdoorEstimationSystem.factualZ] using
-      (Measurable.of_discrete
-        (f := fun b : Bool => if b = true then (1 : ℝ) else 0)).comp
-          S.toPOBackdoorSystem.measurable_factualD
+    simp only [indA, projA, BackdoorEstimationSystem.factualZ]
+    exact (Measurable.of_discrete
+      (f := fun b : Bool => if b = true then (1 : ℝ) else 0)).comp
+        S.toPOBackdoorSystem.measurable_factualD
   exact (measurable_const.sub hind).div
     (measurable_const.sub (S.e_meas.comp S.toPOBackdoorSystem.measurable_factualX))
 
@@ -142,7 +142,7 @@ private lemma hahn_mu_L2 (S : BackdoorEstimationSystem P γ)
   have hYd_L2 : MemLp (S.toPOBackdoorSystem.YofD d) 2 P.μ :=
     (memLp_two_iff_integrable_sq
       (S.toPOBackdoorSystem.measurable_YofD d).aestronglyMeasurable).2 (h_yd2 d)
-  exact (hYd_L2.condExp).ae_eq (S.μ_compat hA d)
+  exact (hYd_L2.condExp (by norm_num)).ae_eq (S.μ_compat hA d)
 
 /-! ## Hahn variance decomposition -/
 
@@ -225,11 +225,11 @@ theorem aipw_variance_hahn_decomposition (S : BackdoorEstimationSystem P γ)
   have hA_L2 : MemLp Afn 2 P.μ := (hμ1_L2.sub hμ0_L2).sub (memLp_const _)
   have hBfn_L2' :
       MemLp (fun ω => (a ω / e ω) * (Y ω - μ1 ω)) 2 P.μ := by
-    simpa using (hY_L2.sub hμ1_L2).mul hwT_Linf
+    exact (hY_L2.sub hμ1_L2).mul hwT_Linf
   have hB_L2 : MemLp Bfn 2 P.μ := by simpa [hBfn] using hBfn_L2'
   have hCfn_L2' :
       MemLp (fun ω => ((1 - a ω) / (1 - e ω)) * (Y ω - μ0 ω)) 2 P.μ := by
-    simpa using (hY_L2.sub hμ0_L2).mul hwF_Linf
+    exact (hY_L2.sub hμ0_L2).mul hwF_Linf
   have hC_L2 : MemLp Cfn 2 P.μ := by simpa [hCfn] using hCfn_L2'
   -- Integrability of the five squared/cross pieces (each a product of two L²).
   have hAB_int : Integrable (fun ω => Afn ω * Bfn ω) P.μ :=
@@ -237,11 +237,14 @@ theorem aipw_variance_hahn_decomposition (S : BackdoorEstimationSystem P γ)
   have hAC_int : Integrable (fun ω => Afn ω * Cfn ω) P.μ :=
     hA_L2.integrable_mul hC_L2
   have hA2_int : Integrable (fun ω => Afn ω ^ 2) P.μ := by
-    simpa [sq] using hA_L2.integrable_mul hA_L2
+    simp only [sq]
+    exact hA_L2.integrable_mul hA_L2
   have hB2_int : Integrable (fun ω => Bfn ω ^ 2) P.μ := by
-    simpa [sq] using hB_L2.integrable_mul hB_L2
+    simp only [sq]
+    exact hB_L2.integrable_mul hB_L2
   have hC2_int : Integrable (fun ω => Cfn ω ^ 2) P.μ := by
-    simpa [sq] using hC_L2.integrable_mul hC_L2
+    simp only [sq]
+    exact hC_L2.integrable_mul hC_L2
   -- Pointwise expansion `ψ(factualZ ω)² = A² + B² + C² + 2AB − 2AC`.
   have hψ_sq : ∀ ω, (S.ψ_AIPW (S.factualZ ω)) ^ 2 =
       Afn ω ^ 2 + Bfn ω ^ 2 + Cfn ω ^ 2 +

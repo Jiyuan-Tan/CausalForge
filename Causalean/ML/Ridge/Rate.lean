@@ -472,7 +472,11 @@ theorem sampleRidgeCoef_isBigOp (φ : FeatureMap γ K) (P : Measure (γ × ℝ))
       simp [empiricalGram, IIDSample.sampleMean, smul_eq_mul, Matrix.smul_apply,
         Matrix.sum_apply, Matrix.vecMulVec_apply, Finset.mul_sum]
     rw [hfun]
-    simpa [populationGram] using hmean
+    -- `MemLp.mul` now concludes about the point-free product `f * g`; restate it
+    -- in the (definitionally equal) lambda form the goal is phrased with.
+    have hmean' : Tendsto_inProb (S.sampleMean fun z : γ × ℝ => φ.φ z.1 i * φ.φ z.1 j)
+        (fun _ => ∫ z : γ × ℝ, φ.φ z.1 i * φ.φ z.1 j ∂P) μ := hmean
+    simpa [populationGram] using hmean'
   have hInv_entry : ∀ k l,
       Causalean.Stat.IsBigOp (fun n ω => Inv n ω k l) (fun _ => (1 : ℝ)) μ := by
     intro k l

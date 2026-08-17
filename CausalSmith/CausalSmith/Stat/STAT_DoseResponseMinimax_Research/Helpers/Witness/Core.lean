@@ -87,7 +87,7 @@ private lemma measurable_doseObs_support_indicator_A {d : ℕ}
     fun_prop
   have hset : MeasurableSet ((fun a : ℝ => DoseObs.mk y a x) ⁻¹' S) :=
     hS.preimage hmk
-  convert measurable_const.indicator hset using 1
+  exact measurable_const.indicator hset
 
 private lemma measurable_doseObs_support_indicator_pair {d : ℕ}
     (y : ℝ) (S : Set (DoseObs d)) (hS : MeasurableSet S) :
@@ -100,7 +100,7 @@ private lemma measurable_doseObs_support_indicator_pair {d : ℕ}
   have hset : MeasurableSet
       ((fun p : (Fin d → ℝ) × ℝ => DoseObs.mk y p.2 p.1) ⁻¹' S) :=
     hS.preimage hmk
-  convert measurable_const.indicator hset using 1
+  exact measurable_const.indicator hset
 
 -- @node: twoPointMean-map-doseObs-measurable
 /-- For fixed covariates, the two-point outcome law pushed to observed triples varies

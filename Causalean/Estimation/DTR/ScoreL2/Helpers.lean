@@ -195,9 +195,9 @@ theorem residual_mul_error_isLittleOp_one
     have hbulk_memLp : MemLp bulk 2 ν := by
       have h_abs : MemLp (fun z => |deZ n ω z|) 2 ν := by
         simpa [Real.norm_eq_abs] using (hdeZ_memLp n ω).norm
-      simpa [bulk, Pi.smul_apply, smul_eq_mul] using h_abs.const_smul M
+      exact h_abs.const_smul M
     have hupper_memLp : MemLp upper 2 ν := by
-      simpa [upper] using hbulk_memLp.add htail_memLp
+      exact hbulk_memLp.add htail_memLp
     have hpoint : ∀ z, ‖R z * |deZ n ω z|‖ ≤ upper z := by
       intro z
       have hRz : 0 ≤ R z := hR_nonneg z
@@ -226,7 +226,7 @@ theorem residual_mul_error_isLittleOp_one
       lpNorm_mono_real hupper_memLp hpoint
     have htri :
         lpNorm upper 2 ν ≤ lpNorm bulk 2 ν + lpNorm tail 2 ν := by
-      simpa [upper] using lpNorm_add_le (f := bulk) (g := tail)
+      exact lpNorm_add_le (f := bulk) (g := tail)
         (μ := ν) hbulk_memLp (by norm_num : (1 : ENNReal) ≤ 2)
     have hbulk_norm :
         lpNorm bulk 2 ν = M * (eLpNorm (deZ n ω) 2 ν).toReal := by
@@ -246,7 +246,7 @@ theorem residual_mul_error_isLittleOp_one
             have h_abs : Measurable (fun z : α => |deZ n ω z|) := by
               simpa [Function.comp_def] using
                 (continuous_abs.measurable.comp (hdeZ_meas n ω))
-            rw [toReal_eLpNorm (hR_meas.mul h_abs).aestronglyMeasurable]
+            rw [toReal_eLpNorm (hR_meas.fun_mul h_abs).aestronglyMeasurable]
       _ ≤ lpNorm upper 2 ν := hmono
       _ ≤ lpNorm bulk 2 ν + lpNorm tail 2 ν := htri
       _ = M * (eLpNorm (deZ n ω) 2 ν).toReal + (eLpNorm tail 2 ν).toReal := by

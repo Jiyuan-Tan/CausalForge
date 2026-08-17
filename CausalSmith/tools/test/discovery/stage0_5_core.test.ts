@@ -6,11 +6,21 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { compactD05DecisionAdapter, compactD05DecisionPrompt, runStage0_5Core } from "../../src/discovery/stages/d0_5_core.js";
 import { citationVerificationCheckpoint, runStage0_5Typed } from "../../src/discovery/stages/d0.js";
 import { coreJsonPath } from "../../src/discovery/stages/d0_core.js";
+import {
+  hasValidD05AcceptanceReceipt,
+  writeD05AcceptanceReceipt,
+} from "../../src/discovery/stages/d0_acceptance.js";
+import { protoCoreJsonPath } from "../../src/discovery/stages/neg1_2_author.js";
 import { promptPath, statePath } from "../../src/paths.js";
 import { artifactPaths, type StageDeps } from "../../src/pipeline_support.js";
 import type { Core } from "../../src/discovery/core/schema.js";
 import type { PipelineContext, StateJson } from "../../src/types.js";
-import { readEscalationLog } from "../../src/discovery/stages/d0_working.js";
+import {
+  readEscalationLog,
+  saveWorkingState,
+  workingPath,
+  WORKING_STORE_FORMAT,
+} from "../../src/discovery/stages/d0_working.js";
 
 const QID = "stat_ate_overlap_decay";
 const SPEC = "v1";
@@ -390,6 +400,16 @@ describe("runStage0_5Typed provisional D0.R transaction", () => {
     const cp = coreJsonPath(ctx);
     const initialCore = JSON.stringify(baseCore, null, 2);
     await writeFile(cp, initialCore, "utf8");
+    Object.assign(state.proposed_from!, { current_angle_index: 0, current_version: 8 });
+    await writeFile(protoCoreJsonPath(ctx), initialCore, "utf8");
+    await saveWorkingState(ctx, {
+      round: 40,
+      proposal_revision: "angle:0/version:8",
+      solved: {},
+      store_format: WORKING_STORE_FORMAT,
+    });
+    await writeD05AcceptanceReceipt(ctx, state);
+    expect(await hasValidD05AcceptanceReceipt(ctx, state)).toBe(true);
     const pendingPath = path.join(path.dirname(cp), "d0r_pending_changes.json");
     const initialPending = JSON.stringify({ changes: [{ id: "authoritative-prior" }] }, null, 2);
     await writeFile(pendingPath, initialPending, "utf8");
@@ -416,7 +436,12 @@ describe("runStage0_5Typed provisional D0.R transaction", () => {
         await writeFile(editedPath, JSON.stringify(edited, null, 2), "utf8");
         return { stdout: JSON.stringify({ status: "completed", artifacts: [editedPath] }), stderr: "" };
       },
-      runClaude: async () => { throw new Error("unused"); },
+      // D0.5.G moved to the claude runner (constants.ts::MODEL_PLAN.stage0_5_general),
+      // so a D0.5 fixture has to answer BOTH runners. Delegating to this mock's own
+      // runCodex keeps the fixture modelling ONE referee panel, and keeps these
+      // scenarios byte-identical to what they asserted while D0.5.G was a codex call.
+      runClaude: async ({ prompt }: { prompt: string }) =>
+        (await deps.runCodex({ prompt } as never)).stdout,
       lean: undefined as never,
     };
 
@@ -427,10 +452,93 @@ describe("runStage0_5Typed provisional D0.R transaction", () => {
     expect(await readFile(pendingPath, "utf8")).toBe(initialPending);
     expect(state.design_decisions).toEqual({ keep: "authoritative" });
     expect(state.added_assumptions).toEqual([expect.objectContaining({ label: "ass:existing" })]);
+    expect(await hasValidD05AcceptanceReceipt(ctx, state)).toBe(false);
     const injected = (await readEscalationLog(ctx)).at(-1)!;
     expect(injected.directive).toContain("persistent mock finding");
     expect(injected.directive).toContain("complete current reviewer payload");
     expect(injected.required_core_targets).toContain("thm:lower");
+  });
+
+  it("banks panel-cleared D0.R prose before a later different-finding fail rollback", async () => {
+    const localRoot = await mkdtemp(path.join(os.tmpdir(), "stage05prose-"));
+    try {
+      await stubPrompts(localRoot);
+      const ctx = makeCtx(localRoot);
+      const state = makeState();
+      const cp = coreJsonPath(ctx);
+      await mkdir(path.dirname(cp), { recursive: true });
+      await writeFile(cp, JSON.stringify(baseCore, null, 2), "utf8");
+      await writeFile(protoCoreJsonPath(ctx), JSON.stringify(baseCore, null, 2), "utf8");
+      await saveWorkingState(ctx, {
+        round: 0,
+        solved: {},
+        store_format: WORKING_STORE_FORMAT,
+      });
+      const originalLower = baseCore.statements.find((statement) => statement.id === "thm:lower")!;
+      let panelRound = 0;
+      let panelCalls = 0;
+
+      const deps: StageDeps = {
+        runCodex: async ({ prompt }: { prompt: string }) => {
+          const verdictMatch = prompt.match(/VERDICT_OUTPUT_PATH: (.+)/);
+          if (verdictMatch) {
+            const outPath = verdictMatch[1].trim();
+            const finding = panelRound === 0
+              ? { node_id: "thm:lower", code: "accepted-bank-omitted", one_line: "add the accepted comparison" }
+              : { node_id: "thm:lower", code: "new-comparator-omitted", one_line: "different later issue" };
+            const role = outPath.endsWith("review_rubric.json") ? "decision" : "math";
+            await writeFile(outPath, JSON.stringify({
+              referee: role,
+              verdict: panelRound > 0 && role === "math" ? "fail" : "revise",
+              findings: [finding],
+              cited_checks: [],
+            }), "utf8");
+            panelCalls += 1;
+            if (panelCalls === 2) {
+              panelCalls = 0;
+              panelRound += 1;
+            }
+            return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+          }
+          const coreMatch = prompt.match(/CORE_FILE: (.+)/);
+          if (coreMatch) {
+            const editedPath = coreMatch[1].trim();
+            const edited = JSON.parse(await readFile(editedPath, "utf8")) as Core;
+            edited.related_work = "Panel-cleared accepted-bank comparison.";
+            const lower = edited.statements.find((statement) => statement.id === "thm:lower")!;
+            lower.gap = "Panel-cleared exact comparison gap.";
+            lower.proof_tex = "PROVISIONAL FORMAL BYTES MUST ROLL BACK";
+            await writeFile(editedPath, JSON.stringify(edited, null, 2), "utf8");
+            return { stdout: JSON.stringify({ status: "completed", artifacts: [editedPath] }), stderr: "" };
+          }
+          return { stdout: JSON.stringify({
+            tier: "field", salvageable: false, improvement_directive: "",
+            flagged_conjecture_labels: [], critique: "field-tier triage",
+            flagship_potential: false, flagship_directive: "",
+          }), stderr: "" };
+        },
+        runClaude: async ({ prompt }: { prompt: string }) =>
+          (await deps.runCodex({ prompt } as never)).stdout,
+        lean: undefined as never,
+      };
+
+      const result = await runStage0_5Typed({ ctx, state, deps });
+      expect(result.message).toMatch(/FAIL/i);
+      const persisted = JSON.parse(await readFile(cp, "utf8")) as Core;
+      const persistedLower = persisted.statements.find((statement) => statement.id === "thm:lower")!;
+      expect(persisted.related_work).toBe("Panel-cleared accepted-bank comparison.");
+      expect(persistedLower.gap).toBe("Panel-cleared exact comparison gap.");
+      expect(persistedLower.proof_tex).toBe(originalLower.proof_tex);
+      const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+      expect(working.prose_overlay.related_work).toBe("Panel-cleared accepted-bank comparison.");
+      expect((JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8")) as Core).related_work)
+        .toBe(baseCore.related_work);
+      const rendered = await readFile(artifactPaths(ctx, state).tex, "utf8");
+      expect(rendered).toContain("Panel-cleared accepted-bank comparison.");
+      expect(rendered).not.toContain("PROVISIONAL FORMAL BYTES MUST ROLL BACK");
+    } finally {
+      await rm(localRoot, { recursive: true, force: true });
+    }
   });
 
   it("rolls back provisional D0.R edits when math passes but the cold tier is below the target floor", async () => {
@@ -491,7 +599,12 @@ describe("runStage0_5Typed provisional D0.R transaction", () => {
           stderr: "",
         };
       },
-      runClaude: async () => { throw new Error("unused"); },
+      // D0.5.G moved to the claude runner (constants.ts::MODEL_PLAN.stage0_5_general),
+      // so a D0.5 fixture has to answer BOTH runners. Delegating to this mock's own
+      // runCodex keeps the fixture modelling ONE referee panel, and keeps these
+      // scenarios byte-identical to what they asserted while D0.5.G was a codex call.
+      runClaude: async ({ prompt }: { prompt: string }) =>
+        (await deps.runCodex({ prompt } as never)).stdout,
       lean: undefined as never,
     };
 
@@ -544,7 +657,12 @@ describe("runStage0_5Typed provisional D0.R transaction", () => {
           stderr: "",
         };
       },
-      runClaude: async () => { throw new Error("unused"); },
+      // D0.5.G moved to the claude runner (constants.ts::MODEL_PLAN.stage0_5_general),
+      // so a D0.5 fixture has to answer BOTH runners. Delegating to this mock's own
+      // runCodex keeps the fixture modelling ONE referee panel, and keeps these
+      // scenarios byte-identical to what they asserted while D0.5.G was a codex call.
+      runClaude: async ({ prompt }: { prompt: string }) =>
+        (await deps.runCodex({ prompt } as never)).stdout,
       lean: undefined as never,
     };
 
@@ -590,7 +708,12 @@ describe("runStage0_5Typed provisional D0.R transaction", () => {
           stderr: "",
         };
       },
-      runClaude: async () => { throw new Error("unused"); },
+      // D0.5.G moved to the claude runner (constants.ts::MODEL_PLAN.stage0_5_general),
+      // so a D0.5 fixture has to answer BOTH runners. Delegating to this mock's own
+      // runCodex keeps the fixture modelling ONE referee panel, and keeps these
+      // scenarios byte-identical to what they asserted while D0.5.G was a codex call.
+      runClaude: async ({ prompt }: { prompt: string }) =>
+        (await deps.runCodex({ prompt } as never)).stdout,
       lean: undefined as never,
     };
 
@@ -657,7 +780,12 @@ describe("runStage0_5Typed provisional D0.R transaction", () => {
           stderr: "",
         };
       },
-      runClaude: async () => { throw new Error("unused"); },
+      // D0.5.G moved to the claude runner (constants.ts::MODEL_PLAN.stage0_5_general),
+      // so a D0.5 fixture has to answer BOTH runners. Delegating to this mock's own
+      // runCodex keeps the fixture modelling ONE referee panel, and keeps these
+      // scenarios byte-identical to what they asserted while D0.5.G was a codex call.
+      runClaude: async ({ prompt }: { prompt: string }) =>
+        (await deps.runCodex({ prompt } as never)).stdout,
       lean: undefined as never,
     };
 
@@ -732,7 +860,12 @@ describe("runStage0_5Typed provisional D0.R transaction", () => {
           stderr: "",
         };
       },
-      runClaude: async () => { throw new Error("unused"); },
+      // D0.5.G moved to the claude runner (constants.ts::MODEL_PLAN.stage0_5_general),
+      // so a D0.5 fixture has to answer BOTH runners. Delegating to this mock's own
+      // runCodex keeps the fixture modelling ONE referee panel, and keeps these
+      // scenarios byte-identical to what they asserted while D0.5.G was a codex call.
+      runClaude: async ({ prompt }: { prompt: string }) =>
+        (await deps.runCodex({ prompt } as never)).stdout,
       lean: undefined as never,
     };
 
@@ -748,6 +881,17 @@ describe("runStage0_5Typed provisional D0.R transaction", () => {
     const ctx = makeCtx(repoRoot);
     const state = makeState();
     state.flags.d0_loop_counters = { solve_rounds: 2, revise_rounds: 2, consistency_heals: 0 };
+    Object.assign(state.proposed_from!, {
+      current_angle_index: 0,
+      current_version: 8,
+    });
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(baseCore, null, 2), "utf8");
+    await saveWorkingState(ctx, {
+      round: 40,
+      proposal_revision: "angle:0/version:8",
+      solved: {},
+      store_format: WORKING_STORE_FORMAT,
+    });
     await writeFile(coreJsonPath(ctx), JSON.stringify(baseCore, null, 2), "utf8");
 
     const deps: StageDeps = {
@@ -776,7 +920,12 @@ describe("runStage0_5Typed provisional D0.R transaction", () => {
           stderr: "",
         };
       },
-      runClaude: async () => { throw new Error("unused"); },
+      // D0.5.G moved to the claude runner (constants.ts::MODEL_PLAN.stage0_5_general),
+      // so a D0.5 fixture has to answer BOTH runners. Delegating to this mock's own
+      // runCodex keeps the fixture modelling ONE referee panel, and keeps these
+      // scenarios byte-identical to what they asserted while D0.5.G was a codex call.
+      runClaude: async ({ prompt }: { prompt: string }) =>
+        (await deps.runCodex({ prompt } as never)).stdout,
       lean: undefined as never,
     };
 
@@ -787,6 +936,7 @@ describe("runStage0_5Typed provisional D0.R transaction", () => {
       revise_rounds: 2,
       consistency_heals: 0,
     });
+    expect(await hasValidD05AcceptanceReceipt(ctx, state)).toBe(true);
   });
 
   it("routes a proposal-topic mismatch before dispatching or charging D0.R", async () => {
@@ -831,7 +981,12 @@ describe("runStage0_5Typed provisional D0.R transaction", () => {
           stderr: "",
         };
       },
-      runClaude: async () => { throw new Error("unused"); },
+      // D0.5.G moved to the claude runner (constants.ts::MODEL_PLAN.stage0_5_general),
+      // so a D0.5 fixture has to answer BOTH runners. Delegating to this mock's own
+      // runCodex keeps the fixture modelling ONE referee panel, and keeps these
+      // scenarios byte-identical to what they asserted while D0.5.G was a codex call.
+      runClaude: async ({ prompt }: { prompt: string }) =>
+        (await deps.runCodex({ prompt } as never)).stdout,
       lean: undefined as never,
     };
 

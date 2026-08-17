@@ -126,7 +126,7 @@ lemma residualize_inner_swap_right (v w : V) :
   -- `w = residualize H w + P_H w` and `P_H w ∈ H`, which is orthogonal
   -- to `residualize H v`.
   have hPw : H.orthogonalProjectionFn w ∈ H :=
-    Submodule.orthogonalProjectionFn_mem (K := H) w
+    Submodule.starProjection_apply_mem H w
   have horth :
       inner ℝ (residualize H v) (H.orthogonalProjectionFn w) = 0 :=
     inner_residualize_of_mem H v hPw
@@ -330,7 +330,7 @@ theorem originalObjective_eq_residualizedObjective_add_projectionError
   let r : V := residualize H v
   let p : V := H.orthogonalProjectionFn v - h
   have hp_mem : p ∈ H := by
-    exact Submodule.sub_mem H (Submodule.orthogonalProjectionFn_mem (K := H) v) hh
+    exact Submodule.sub_mem H (Submodule.starProjection_apply_mem H v) hh
   have horth : inner ℝ r p = 0 := by
     exact inner_residualize_of_mem H v hp_mem
   have horth' : inner ℝ p r = 0 := by
@@ -371,7 +371,7 @@ theorem originalObjective_projection_eq_residualizedObjective
     originalObjective X Y β (H.orthogonalProjectionFn (Y - fittedValue X β)) =
       residualizedObjective H X Y β := by
   have hmem : H.orthogonalProjectionFn (Y - fittedValue X β) ∈ H :=
-    Submodule.orthogonalProjectionFn_mem (K := H) (Y - fittedValue X β)
+    Submodule.starProjection_apply_mem H (Y - fittedValue X β)
   rw [originalObjective_eq_residualizedObjective_add_projectionError H X Y β hmem]
   simp
 
@@ -410,7 +410,7 @@ theorem fwlCoef_eq_of_original_minimizer
   let hp : V := H.orthogonalProjectionFn (Y - fittedValue X b)
   have hp_mem : hp ∈ H := by
     dsimp [hp]
-    exact Submodule.orthogonalProjectionFn_mem (K := H) (Y - fittedValue X b)
+    exact Submodule.starProjection_apply_mem H (Y - fittedValue X b)
   have hle₁ : residualizedObjective H X Y β ≤ residualizedObjective H X Y b := by
     calc
       residualizedObjective H X Y β ≤ originalObjective X Y β h :=
@@ -462,7 +462,7 @@ theorem original_minimizer_eq_fwlCoef_projection
     let p : V := H.orthogonalProjectionFn (Y - fittedValue X β)
     have hp_mem : p ∈ H := by
       dsimp [p]
-      exact Submodule.orthogonalProjectionFn_mem (K := H) (Y - fittedValue X β)
+      exact Submodule.starProjection_apply_mem H (Y - fittedValue X β)
     have hle : originalObjective X Y β h ≤ originalObjective X Y β p :=
       hmin β hp_mem
     have hsplit := originalObjective_eq_residualizedObjective_add_projectionError H X Y β hh

@@ -81,9 +81,13 @@ noncomputable def expectedPooledOffsetSup {n K : ℕ} (P : ObservedLaw 𝒳)
       '' policySet)
     ∂(Measure.pi (fun _ : Fin n => P.dataMeasure))
 
+/-- Index set of cross-fitting fold `k`: the observations of a size-`n` sample whose fold
+assignment is `k`. -/
 abbrev foldIndex {n K : ℕ} (assign : Fin n → Fin K) (k : Fin K) :=
   {i : Fin n // assign i = k}
 
+/-- Restriction of a sample to cross-fitting fold `k`: the sub-sample listing only the
+observations assigned to that fold. -/
 def foldProjection {n K : ℕ} (assign : Fin n → Fin K) (k : Fin K)
     (sample : Fin n → Observation 𝒳) : foldIndex assign k → Observation 𝒳 :=
   fun i => sample i.1
@@ -137,6 +141,10 @@ private lemma measurable_sSup_of_countable_skeleton {n : ℕ}
   rw [huniv]
   rw [sSup_range]
 
+/-- Centered empirical process of cross-fitting fold `k`: the average of the fold-`k`
+increment at the policy over the fold's OWN observations, minus that increment's
+population mean under the data law. The average is normalized by the number of
+observations in the fold, not by the total sample size. -/
 noncomputable def foldCenteredProcess {n K : ℕ} (P : ObservedLaw 𝒳)
     (g : Fin K → Policy 𝒳 → Observation 𝒳 → ℝ) (assign : Fin n → Fin K)
     (k : Fin K) (sample : Fin n → Observation 𝒳) (π : Policy 𝒳) : ℝ :=
@@ -144,6 +152,9 @@ noncomputable def foldCenteredProcess {n K : ℕ} (P : ObservedLaw 𝒳)
     ∑ i : foldIndex assign k,
       (g k π (sample i.1) - ∫ O, g k π O ∂P.dataMeasure)
 
+/-- Localized supremum of the fold-`k` centered process: the largest absolute deviation
+attained over the policies of the class whose regret is at most the localization radius
+`r`. -/
 noncomputable def foldLocalizedSup {n K : ℕ} (P : ObservedLaw 𝒳)
     (g : Fin K → Policy 𝒳 → Observation 𝒳 → ℝ) (assign : Fin n → Fin K)
     (policySet : Set (Policy 𝒳)) (r : ℝ) (k : Fin K)
@@ -151,6 +162,10 @@ noncomputable def foldLocalizedSup {n K : ℕ} (P : ObservedLaw 𝒳)
   sSup ((fun π => |foldCenteredProcess P g assign k sample π|) ''
       {π | π ∈ policySet ∧ lawRegret P π ≤ r})
 
+/-- Offset supremum of the fold-`k` centered process: the largest value over the whole
+policy class of twice the absolute deviation minus a quarter of that policy's regret,
+truncated below at zero. Charging each policy its own regret is what makes the supremum
+finite without fixing a localization radius in advance. -/
 noncomputable def foldOffsetSup {n K : ℕ} (P : ObservedLaw 𝒳)
     (g : Fin K → Policy 𝒳 → Observation 𝒳 → ℝ) (assign : Fin n → Fin K)
     (policySet : Set (Policy 𝒳)) (k : Fin K)
@@ -159,6 +174,10 @@ noncomputable def foldOffsetSup {n K : ℕ} (P : ObservedLaw 𝒳)
       max 0 (2 * |foldCenteredProcess P g assign k sample π| - lawRegret P π / 4))
     '' policySet)
 
+/-- The fold-`k` localized supremum read as a function of the FOLD'S OWN sub-sample rather
+than of the full sample. This is the form that can be integrated against the product law
+over the fold's index set, which is how a fold is treated as an independent sample of its
+own size. -/
 noncomputable def foldLocalizedSubSup {n K : ℕ} (P : ObservedLaw 𝒳)
     (g : Fin K → Policy 𝒳 → Observation 𝒳 → ℝ) (assign : Fin n → Fin K)
     (policySet : Set (Policy 𝒳)) (r : ℝ) (k : Fin K)
@@ -169,6 +188,9 @@ noncomputable def foldLocalizedSubSup {n K : ℕ} (P : ObservedLaw 𝒳)
           (g k π (sample i) - ∫ O, g k π O ∂P.dataMeasure)|) ''
       {π | π ∈ policySet ∧ lawRegret P π ≤ r})
 
+/-- The fold-`k` offset supremum read as a function of the FOLD'S OWN sub-sample rather
+than of the full sample — the form that can be integrated against the product law over
+the fold's index set. -/
 noncomputable def foldOffsetSubSup {n K : ℕ} (P : ObservedLaw 𝒳)
     (g : Fin K → Policy 𝒳 → Observation 𝒳 → ℝ) (assign : Fin n → Fin K)
     (policySet : Set (Policy 𝒳)) (k : Fin K)
@@ -397,6 +419,13 @@ private lemma integral_foldOffsetSubSup_eq_expected {n K : ℕ} (P : ObservedLaw
           (fun _ : Fin (Fintype.card (foldIndex assign k)) => P.dataMeasure)) := by
           rfl
 
+/-- Averaging the fold-`k` localized supremum over the full-sample product law gives
+exactly the expected localized supremum for an i.i.d. sample whose size is the number of
+observations in that fold.
+
+So each cross-fitting fold behaves as an independent sample of its own size, and the
+assumed localized empirical-process envelope may be invoked at that reduced sample
+size. -/
 lemma integral_foldLocalizedSup_eq_expected {n K : ℕ} (P : ObservedLaw 𝒳)
     (g : Fin K → Policy 𝒳 → Observation 𝒳 → ℝ) (assign : Fin n → Fin K)
     (policySet : Set (Policy 𝒳)) (r : ℝ) (k : Fin K)
@@ -425,6 +454,10 @@ lemma integral_foldLocalizedSup_eq_expected {n K : ℕ} (P : ObservedLaw 𝒳)
     _ = expectedLocalizedSup (m := Fintype.card (foldIndex assign k)) P (g k) policySet r :=
           integral_foldLocalizedSubSup_eq_expected P g assign policySet r k hm
 
+/-- Averaging the fold-`k` offset supremum over the full-sample product law gives exactly
+the expected offset supremum of the centered empirical process for an i.i.d. sample whose
+size is the number of observations in that fold — the offset counterpart of the localized
+fold reduction. -/
 lemma integral_foldOffsetSup_eq_expected {n K : ℕ} (P : ObservedLaw 𝒳)
     (g : Fin K → Policy 𝒳 → Observation 𝒳 → ℝ) (assign : Fin n → Fin K)
     (policySet : Set (Policy 𝒳)) (k : Fin K)
@@ -559,6 +592,9 @@ private lemma sum_foldIndex_card {n K : ℕ} (assign : Fin n → Fin K) :
           (Fintype.card_sigma (α := foldIndex assign)).symm
     _ = n := hcard
 
+/-- The cross-fitting fold weights — each fold's size divided by the total sample size —
+sum to one. So the pooled cross-fit process is a genuine convex combination of the
+foldwise processes. -/
 lemma sum_foldWeights_eq_one {n K : ℕ} (assign : Fin n → Fin K) (hn : 0 < n) :
     (∑ k : Fin K, (Fintype.card (foldIndex assign k) : ℝ) / (n : ℝ)) = 1 := by
   classical
@@ -572,6 +608,9 @@ lemma sum_foldWeights_eq_one {n K : ℕ} (assign : Fin n → Fin K) (hn : 0 < n)
           rw [← Nat.cast_sum, hcard]
           field_simp [hnR]
 
+/-- Averaging any fold-indexed quantity across the observations of the sample is the same
+as taking its fold-weighted average, with each fold weighted by its size relative to the
+sample size. -/
 lemma inv_card_sum_assign_eq_sum_foldWeights {n K : ℕ}
     (assign : Fin n → Fin K) (H : Fin K → ℝ) (hn : 0 < n) :
     (n : ℝ)⁻¹ * ∑ i : Fin n, H (assign i) =
@@ -613,6 +652,7 @@ lemma inv_card_sum_assign_eq_sum_foldWeights {n K : ℕ}
           intro k _hk
           simp [div_eq_inv_mul, mul_comm, mul_left_comm]
 
+/-- No cross-fitting fold contains more observations than the whole sample. -/
 lemma foldIndex_card_le {n K : ℕ} (assign : Fin n → Fin K) (k : Fin K) :
     Fintype.card (foldIndex assign k) ≤ n := by
   classical
@@ -620,6 +660,11 @@ lemma foldIndex_card_le {n K : ℕ} (assign : Fin n → Fin K) (k : Fin K) :
     Fintype.card_le_of_injective (fun i : foldIndex assign k => (i.1 : Fin n))
       (by intro a b h; exact Subtype.ext h)
 
+/-- A fold's weight times its own root-`m` rate is at most the full-sample root-`n` rate:
+`(m/n)·m^{-1/2} ≤ n^{-1/2}` whenever `0 < m ≤ n`.
+
+This is what lets the foldwise `m^{-1/2}` envelopes be pooled into a single `n^{-1/2}`
+bound with no loss in the number of folds. -/
 lemma fold_weight_mul_inv_sqrt_le {m n : ℕ} (hm : 0 < m) (hmn : m ≤ n) :
     ((m : ℝ) / (n : ℝ)) * (m : ℝ) ^ (-(1 / 2 : ℝ)) ≤
       (n : ℝ) ^ (-(1 / 2 : ℝ)) := by
@@ -652,6 +697,11 @@ lemma fold_weight_mul_inv_sqrt_le {m n : ℕ} (hm : 0 < m) (hmn : m ≤ n) :
   field_simp [hmR.ne', hnR.ne', Real.sqrt_pos.2 hmR, Real.sqrt_pos.2 hnR]
   exact hcross
 
+/-- The pooling step for the offset rate: `(m/n)·(B²/m)^A ≤ (B²/n)^A` whenever
+`0 < m ≤ n` and the exponent `A` is at most one.
+
+The offset envelope's exponent `A_α = (1+α)/(2+α)` is always at most one, so foldwise
+offset bounds pool into a full-sample bound with no loss in the number of folds. -/
 lemma fold_weight_mul_offset_rpow_le {m n : ℕ} {B A : ℝ}
     (hm : 0 < m) (hmn : m ≤ n) (hA1 : A ≤ 1) :
     ((m : ℝ) / (n : ℝ)) * (B ^ 2 / (m : ℝ)) ^ A ≤
@@ -686,6 +736,9 @@ lemma fold_weight_mul_offset_rpow_le {m n : ℕ} {B A : ℝ}
           exact mul_le_mul_of_nonneg_left hxpow_le (Real.rpow_nonneg hbnonneg A)
     _ = (B ^ 2 / (n : ℝ)) ^ A := by ring
 
+/-- The logarithmic factor is monotone in the sample size: `(log m)^p ≤ (log n)^p` for a
+nonnegative power `p` and `1 ≤ m ≤ n`. So replacing a fold's size by the full sample size
+in a `(log ·)^p` factor only weakens the bound. -/
 lemma log_nat_rpow_le {m n : ℕ} {p : ℝ}
     (hm : 0 < m) (hmn : m ≤ n) (hp : 0 ≤ p) :
     (Real.log (m : ℝ)) ^ p ≤ (Real.log (n : ℝ)) ^ p := by
@@ -769,6 +822,9 @@ private lemma contrast_abs_le_two (P : ObservedLaw 𝒳)
     _ ≤ 1 + 1 := add_le_add hmu1 hmu0
     _ = (2 : ℝ) := by norm_num
 
+/-- The law-optimal policy — treat exactly where the contrast is nonnegative — is a
+measurable policy whenever the law is well formed, since well-formedness makes the
+contrast measurable. -/
 lemma lawOptimalPolicy_measurable (P : ObservedLaw 𝒳)
     (hwf : WellFormedLaw P) : Measurable (lawOptimalPolicy P) := by
   rcases hwf with ⟨_hPprob, _hPXprob, _hmap, hτmeas, _⟩
@@ -806,7 +862,7 @@ private lemma abs_lawWelfare_le_two (P : ObservedLaw 𝒳) (π : Policy 𝒳)
       cases π x <;> simp [boolIndicator]
     nlinarith [mul_le_mul hb (hτbound x) (abs_nonneg (P.contrast x))
       (by norm_num : (0 : ℝ) ≤ 1)]
-  simpa [lawWelfare, Real.norm_eq_abs] using hnorm
+  simpa [lawWelfare, welfare, Real.norm_eq_abs] using hnorm
 
 private lemma lawRegret_lower_bound (P : ObservedLaw 𝒳) (π : Policy 𝒳)
     (hwf : WellFormedLaw P) (hbdd : BoundedOutcome P) (hπ : Measurable π) :
@@ -820,6 +876,9 @@ private lemma lawRegret_lower_bound (P : ObservedLaw 𝒳) (π : Policy 𝒳)
     linarith
   simpa [lawRegret, regret, lawWelfare, lawOptimalPolicy] using hmain
 
+/-- Welfare regret is nonnegative for every measurable policy, under a well-formed law with
+bounded outcomes. By the welfare identity it is the integral of the absolute contrast
+against the disagreement indicator, and both factors are nonnegative. -/
 lemma lawRegret_nonneg (P : ObservedLaw 𝒳) (π : Policy 𝒳)
     (hwf : WellFormedLaw P) (hbdd : BoundedOutcome P) (hπ : Measurable π) :
     0 ≤ lawRegret P π := by
@@ -874,6 +933,12 @@ private lemma max_weighted_abs_sub_le_sum {K : ℕ} (w H : Fin K → ℝ) (R : �
           exact mul_le_mul_of_nonneg_left (le_max_right _ _) (hw_nonneg k)
   exact max_le hzero hlinle
 
+/-- Sample by sample, the localized supremum of the pooled cross-fit process is at most the
+fold-weighted sum of the foldwise localized suprema.
+
+The pooled process is the fold-weighted average of the foldwise centered processes, so
+the triangle inequality distributes the supremum across folds; the envelope hypothesis
+supplies the boundedness needed for the foldwise suprema to be finite. -/
 lemma pooledLocalizedSup_pointwise_le_sum_fold {n K : ℕ} (P : ObservedLaw 𝒳)
     (g : Fin K → Policy 𝒳 → Observation 𝒳 → ℝ) (assign : Fin n → Fin K)
     (policySet : Set (Policy 𝒳)) (r B : ℝ) (sample : Fin n → Observation 𝒳)
@@ -922,6 +987,12 @@ lemma pooledLocalizedSup_pointwise_le_sum_fold {n K : ℕ} (P : ObservedLaw 𝒳
             exact mul_le_mul_of_nonneg_left
               (le_csSup (hbdd_fold k) ⟨π, hπloc, rfl⟩) (hw_nonneg k)
 
+/-- Sample by sample, the offset supremum of the pooled cross-fit process is at most the
+fold-weighted sum of the foldwise offset suprema.
+
+Because the fold weights sum to one, each policy's regret subtraction can be shared
+across folds, so the offset positive part distributes as well — this is what makes the
+foldwise offset envelopes poolable. -/
 lemma pooledOffsetSup_pointwise_le_sum_fold {n K dPi : ℕ} (P : ObservedLaw 𝒳)
     (g : Fin K → Policy 𝒳 → Observation 𝒳 → ℝ) (assign : Fin n → Fin K)
     (policySet : Set (Policy 𝒳)) (B : ℝ) (sample : Fin n → Observation 𝒳)

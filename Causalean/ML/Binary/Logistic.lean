@@ -28,12 +28,18 @@ private lemma hasDerivAt_softplus (x : ℝ) : HasDerivAt softplus (Real.sigmoid 
   have harg : 1 + Real.exp x ≠ 0 := by positivity
   have h := (Real.hasDerivAt_log harg).comp x
     ((hasDerivAt_const x (1 : ℝ)).add (Real.hasDerivAt_exp x))
-  convert h using 1
-  rw [Real.sigmoid_def]
-  field_simp [Real.exp_ne_zero]
-  ring_nf
-  rw [← Real.exp_add, add_neg_cancel, Real.exp_zero]
-  ring
+  -- `convert` now also descends into typeclass-instance equalities, so match the
+  -- derivative explicitly instead.
+  have h' : HasDerivAt (fun t : ℝ => Real.log (1 + Real.exp t))
+      ((1 + Real.exp x)⁻¹ * (0 + Real.exp x)) x := h
+  have hd : Real.sigmoid x = (1 + Real.exp x)⁻¹ * (0 + Real.exp x) := by
+    rw [Real.sigmoid_def]
+    field_simp [Real.exp_ne_zero]
+    ring_nf
+    rw [← Real.exp_add, add_neg_cancel, Real.exp_zero]
+    ring
+  rw [hd]
+  exact h'
 
 private theorem continuous_softplus : Continuous softplus := by
   exact continuous_iff_continuousAt.2 fun x => (hasDerivAt_softplus x).continuousAt
@@ -64,7 +70,10 @@ theorem convexOn_logisticScoreLoss (y : Bool) :
         ring }
   have hlin : ConvexOn ℝ Set.univ (fun t : ℝ => -bool01 y * t) := by
     simpa [Function.comp_def, lin] using (convexOn_id convex_univ).comp_linearMap lin
-  simpa [logisticScoreLoss, sub_eq_add_neg] using (convexOn_softplus.add hlin)
+  -- `ConvexOn.add` concludes about the point-free sum `f + g`; put the goal in
+  -- that shape and close by `exact`.
+  simp only [logisticScoreLoss, sub_eq_add_neg, ← neg_mul]
+  exact convexOn_softplus.add hlin
 
 /-- The empirical logistic risk is convex in the coefficient. -/
 theorem convexOn_logisticEmpRisk (Z : ι → E × Bool) :
@@ -85,7 +94,8 @@ theorem convexOn_logisticEmpRisk (Z : ι → E × Bool) :
           (convexOn_const (𝕜 := ℝ) (E := E) (β := ℝ)
             (s := Set.univ) (0 : ℝ) convex_univ)
     | insert i t hi ht =>
-        simpa [Finset.sum_insert hi, Pi.add_apply] using (hsummand i).add ht
+        simp only [Finset.sum_insert hi]
+        exact (hsummand i).add ht
   simpa [smul_eq_mul] using
     (hfin Finset.univ).smul (inv_nonneg.mpr (Nat.cast_nonneg (Fintype.card ι)))
 
@@ -96,18 +106,19 @@ theorem continuous_logisticEmpRisk (Z : ι → E × Bool) :
   unfold logisticEmpRisk
   have hscore : ∀ y : Bool, Continuous (fun t : ℝ => logisticScoreLoss y t) := by
     intro y
-    simpa [logisticScoreLoss] using
-      continuous_softplus.sub (continuous_const.mul continuous_id)
+    simp only [logisticScoreLoss]
+    exact continuous_softplus.sub (continuous_const.mul continuous_id)
   have hterm : ∀ i : ι,
       Continuous (fun β : E => logisticScoreLoss (Z i).2 (inner ℝ β (Z i).1)) := by
     intro i
     have hinner : Continuous (fun β : E => inner ℝ β (Z i).1) := by
-      simpa using continuous_inner.comp (continuous_id.prodMk continuous_const)
+      simpa [Function.comp_def] using
+        continuous_inner.comp (continuous_id.prodMk continuous_const)
     exact (hscore (Z i).2).comp hinner
   have hsum : Continuous (fun β : E =>
       ∑ i, logisticScoreLoss (Z i).2 (inner ℝ β (Z i).1)) := by
     exact continuous_finset_sum Finset.univ fun i _ => hterm i
-  simpa using (continuous_const.mul hsum)
+  exact continuous_const.mul hsum
 
 /-- A logistic-risk minimizer exists on any nonempty compact parameter set. -/
 theorem logistic_exists_minimizer_on_compact (Z : ι → E × Bool)

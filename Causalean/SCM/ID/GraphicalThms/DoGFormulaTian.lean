@@ -48,6 +48,18 @@ variable {Ω : N → Type*} [∀ n, MeasurableSpace (Ω n)]
 
 namespace SCM.ID
 
+/-- The canonical equivalence between value spaces over propositionally equal index sets
+acts as plain coordinate restriction.
+
+Reading `valuesEquivOfEq h` as a function is the same as restricting coordinates along
+`h`; the equality holds by definition and is stated so that `simp` can rewrite the
+coercion without unfolding the bundled structure. -/
+private lemma coe_valuesEquivOfEq {M : Type*}
+    {I J : Finset M} {Ω' : M → Type*} [∀ n, MeasurableSpace (Ω' n)]
+    (h : I = J) :
+    (⇑(valuesEquivOfEq (Ω := Ω') h) : ValuesOn I Ω' → ValuesOn J Ω')
+      = valuesProjection (le_of_eq h.symm) := rfl
+
 /-- Membership in a graph-ordered prefix of `D` is exactly index membership
 below the prefix length. -/
 lemma mem_prefixIn_iff (H : SWIGGraph N) (D : Finset (SWIGNode N))
@@ -452,7 +464,7 @@ lemma tianPrefixDensityProductInPrefix_card_eq_tianDensityProduct
   rw [tianPrefixDensityProductInPrefix_eq_range_product H D μ ref D.card (le_refl _) y]
   rw [Finset.prod_range]
   simp only [tianDensityProduct, tianPrefixStepDensity, tianPrefixStepDensityInPrefix,
-    valuesEquivOfEq]
+    coe_valuesEquivOfEq]
   refine Finset.prod_congr rfl ?_
   intro i _hi
   have hproj :
@@ -573,9 +585,9 @@ lemma measure_prefixIn_rnDeriv_eq_tianPrefixDensityProductInPrefix
         ext a
         by_cases hmem : a.val ∈ H.prefixIn D k
         · simp [ext, prefixMap, nodeMap, succMap, A, B, node, extendTianPrefix,
-            valuesEquivOfEq, valuesProjection, valuesUnionMk, hmem]
+            coe_valuesEquivOfEq, valuesProjection, valuesUnionMk, hmem]
         · simp [ext, prefixMap, nodeMap, succMap, A, B, node, extendTianPrefix,
-            valuesEquivOfEq, valuesProjection, valuesUnionMk, hmem]
+            coe_valuesEquivOfEq, valuesProjection, valuesUnionMk, hmem]
       have hchainSucc :
           μ.map succMap = (chain ⊗ₘ stepK).map ext := by
         have hpair :
@@ -669,7 +681,7 @@ lemma measure_prefixIn_rnDeriv_eq_tianPrefixDensityProductInPrefix
               (extendTianPrefix (Ω := Ω) H D hkc p) = p.1 := by
         funext i
         have hi := congrArg (fun q => q.1 i) hpair
-        simpa [valuesUnionEquiv, valuesProjection] using hi
+        simpa [valuesUnionEquiv, valuesProjection, coe_valuesEquivOfEq] using hi
       have hnode_ext :
           valuesProjection
               (show ({(H.nodesAt D ⟨k, hkc⟩).val} : Finset (SWIGNode N)) ⊆
@@ -682,7 +694,7 @@ lemma measure_prefixIn_rnDeriv_eq_tianPrefixDensityProductInPrefix
               (extendTianPrefix (Ω := Ω) H D hkc p) = p.2 := by
         funext i
         have hi := congrArg (fun q => q.2 i) hpair
-        simpa [valuesUnionEquiv, valuesProjection] using hi
+        simpa [valuesUnionEquiv, valuesProjection, coe_valuesEquivOfEq] using hi
       rw [tianPrefixDensityProductInPrefix]
       simp [hkc, hproj_ext, hnode_ext, A, B, node, prefixMap, nodeMap]
 
@@ -852,7 +864,7 @@ theorem doObsKernelAncestralMarginal_globalMarkovOn
         (valuesProjection hX ∘ valuesProjection hD_obs)
         (valuesProjection hY ∘ valuesProjection hD_obs)
         (M'.obsKernel s) := by
-    convert hCI_obs using 2
+    convert hCI_obs using 2 <;> rfl
   have hCI_map :
       ProbabilityTheory.CondIndepFun
         (MeasurableSpace.comap (valuesProjection hZ) inferInstance)

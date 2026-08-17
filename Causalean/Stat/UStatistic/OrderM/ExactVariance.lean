@@ -249,7 +249,7 @@ theorem crossterm_eq_zero_of_image_ne (hmeas : Measurable g)
       by_cases hj : j = p
       · subst j
         simpa [insertCoord] using measurable_fst
-      · simpa [tailOf, insertCoord, hj] using
+      · simpa [tailOf, insertCoord, hj, Function.comp_def] using
           (measurable_pi_apply
             (⟨t j, by
               have hmemA : t j ∈ A :=

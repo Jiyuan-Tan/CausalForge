@@ -369,6 +369,8 @@ lemma orthogonalWitness_blockExtremal_upper
                 (if choice.1 i then (1 : ℝ) else -1) *
                   locLinUnitError w0 i (choice.2 i) z) ^ 2))
           hchoiceMem using 1
+        case e'_2 => rfl
+        case e'_4 => rfl
       _ ≤ (d : ℝ) ^ 2 * blockEnergy β p d :=
         canonical_completeBlock_blockExtremal_upper
           n d β p hp0 hp1 hn hd hdiv b
@@ -443,6 +445,7 @@ lemma orthogonalWitness_blockExtremal_upper
     ((d : ℝ) ^ 2 * blockEnergy β p d)
     (2 * (d : ℝ) * blockEnergy β p d) hf hg hA0 hG0
   convert hadd using 1
+  case e'_2 => rfl
   apply FiniteDesign.E_congr
   intro z
   congr 1

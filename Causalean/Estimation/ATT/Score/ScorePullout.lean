@@ -216,7 +216,8 @@ lemma residual_false_condExp_zero (S : TreatedEstimationSystem P γ)
             S.toPOBackdoorSystem.propScore false := by
     have hpull := MeasureTheory.condExp_mul_of_stronglyMeasurable_left
       (μ := P.μ) (m := S.toPOBackdoorSystem.sigmaX) hμ₀x_sm hμ₀ind_int hind_int
-    simpa [POBackdoorSystem.propScore] using hpull
+    simp only [POBackdoorSystem.propScore]
+    exact hpull
   rw [hres_eq]
   refine hsub.trans ?_
   filter_upwards [hYce, hμce, S.μ₀_compat hA] with ω hy hmu hcompat

@@ -277,10 +277,13 @@ theorem endpointRemainder_le_expIntegral
       fun_prop
     exact hc.intervalIntegrable 0 1
   rw [← intervalIntegral.integral_mul_const]
-  exact intervalIntegral.integral_mono_on zero_le_one hleft hright fun t ht => by
-    convert mul_le_mul_of_nonneg_left
+  refine intervalIntegral.integral_mono_on zero_le_one hleft hright fun t ht => ?_
+  have hstep : t * variance w h t ≤
+      t * (Real.exp (2 * eta * t) * secondMoment w h 0) :=
+    mul_le_mul_of_nonneg_left
       (variance_le_exp_two_mul_secondMoment_zero
-        w h t eta hw hmass ht.1 hbound) ht.1 using 1 <;> ring
+        w h t eta hw hmass ht.1 hbound) ht.1
+  exact hstep.trans_eq (mul_assoc t _ _).symm
 
 theorem endpointRemainder_le_neg_mean_zero_of_nonpos
     (w h : ι → ℝ)

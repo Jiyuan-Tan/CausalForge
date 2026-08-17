@@ -151,7 +151,7 @@ theorem oracle_score_inversion_attainment
                 inversionHandle (transportWeight P n) (P.propensity n) n L s) := by
             rw [hmap]
             exact hv
-          simpa only [twoSampleLaw, μS, μT, Function.comp_apply] using
+          simpa only [twoSampleLaw, μS, μT, Function.comp_def] using
             (MeasureTheory.ae_eq_comp measurable_fst.aemeasurable hv')
         exact (hpull w).trans (hpull w').symm }
   have hCset : ∀ n x, C.set n x =
@@ -230,7 +230,7 @@ theorem oracle_score_inversion_attainment
           (sourceObsLaw P n)[(fun o => w o.1 * F o) | mX] =ᵐ[
             sourceObsLaw P n]
               fun o => w o.1 * (sourceObsLaw P n)[F | mX] o := by
-        simpa only [Pi.mul_apply] using hpull
+        exact hpull
       calc
         (∫ o, w o.1 * F o ∂sourceObsLaw P n) =
             ∫ o, (sourceObsLaw P n)[(fun o => w o.1 * F o) | mX] o
@@ -363,7 +363,7 @@ theorem oracle_score_inversion_attainment
         filter_upwards [hoverObs,
           (ae_map_iff measurable_fst.aemeasurable
             (measurableSet_Icc.preimage hweightMeas)).mp
-              (by simpa only [Set.mem_setOf_eq] using hIV.weightEnvelope)
+              (by simpa only [WeightEnvelope, sourceXLaw, Set.mem_Icc] using hIV.weightEnvelope)
         ] with o ho hw
         have hscore :
             |oracleInstrumentScore (P.propensity n) o| ≤ 1 / epsilon := by
@@ -562,7 +562,7 @@ theorem oracle_score_inversion_attainment
         filter_upwards [
           (ae_map_iff measurable_fst.aemeasurable
             (measurableSet_Icc.preimage hweightMeas)).mp
-              (by simpa only [Set.mem_setOf_eq] using hIV.weightEnvelope)
+              (by simpa only [WeightEnvelope, sourceXLaw, Set.mem_Icc] using hIV.weightEnvelope)
         ] with o hw
         rw [Real.norm_eq_abs, abs_pow, abs_of_nonneg hw.1]
         exact pow_le_pow_left₀ hw.1 hw.2 2
@@ -638,7 +638,7 @@ theorem oracle_score_inversion_attainment
         (hK₂mem.integrable (by norm_num)) hK₂mean
         hbad₂ hkappa hepsilon.1 le_rfl rfl
       simpa [oracleExpectedLength, oracleSet,
-        C, L, A₂, B₂, B, K₂, K,
+        C, L, A₂, B₂, B, K₂, K, transportWeightInput,
         inversionHandle_eq_affineInversionSet] using hfront
     let delta : ℕ → ℝ := fun n =>
       if n = 0 then 1 else 16 * (k n : ℝ) ^ 2 / n
@@ -729,7 +729,7 @@ theorem oracle_score_inversion_attainment
             transportWeight P n o.1 ≤ 2 * (k n : ℝ) := by
         exact (ae_map_iff measurable_fst.aemeasurable
           (measurableSet_Icc.preimage hweightMeas)).mp
-            (by simpa only [Set.mem_setOf_eq] using hIV.weightEnvelope)
+            (by simpa only [WeightEnvelope, sourceXLaw, Set.mem_Icc] using hIV.weightEnvelope)
       have hInstMeas : Measurable
           (oracleInstrumentScore (P.propensity n)) := by
         have he : Measurable (fun o : SourceObs 𝒳 =>
@@ -1155,7 +1155,7 @@ theorem oracle_score_inversion_attainment
               mul_le_mul_of_nonneg_left hroot hLpos.le
         change targetCACE P n ∈ oracleSet C P n s
         simp only [oracleSet, C]
-        exact ⟨htheta, by simpa [S, theta, K] using hscore⟩
+        exact ⟨htheta, by simpa [S, theta, K, transportWeightInput] using hscore⟩
       calc
         1 - alpha - delta n ≤
             (QS ((BK ∪ BS)ᶜ)).toReal := hgoodSource
@@ -1272,7 +1272,7 @@ theorem oracle_score_inversion_attainment
         max 2 (4 * L + 8 / epsilon ^ 2) *
           min 1 (t0 ^ (-1 / 2 : ℝ)) := by
     intro g' hg'
-    simpa [L] using
+    simpa [L, fixedGeometryValue] using
       fixed_geometry_frontier N k c epsilon alpha g' hc hN hkPos hkInf
         hkRoot hepsilon hg'
         (fun n P hP => hTwo n P hP.1)

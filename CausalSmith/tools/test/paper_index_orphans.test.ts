@@ -9,6 +9,7 @@ describe("findOrphanPaperModules", () => {
     const runDir = await mkdtemp(path.join(tmpdir(), "paper-index-orphans-"));
     try {
       await mkdir(path.join(runDir, "Helpers"));
+      await mkdir(path.join(runDir, "tmp"));
       await writeFile(
         path.join(runDir, "Orphan.lean"),
         `-- theorem commentedOut : True := by trivial
@@ -33,6 +34,10 @@ private noncomputable def hiddenDef : Nat := 0
       await writeFile(
         path.join(runDir, "Indexed.lean"),
         "def represented : Nat := 1\n",
+      );
+      await writeFile(
+        path.join(runDir, "tmp", "Probe.lean"),
+        "lemma disposableProbe : True := by trivial\n",
       );
 
       const prefix = "CausalSmith.Stat.SCRATCH_Research";

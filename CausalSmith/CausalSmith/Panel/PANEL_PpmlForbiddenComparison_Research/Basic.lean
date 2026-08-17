@@ -34,9 +34,15 @@ abbrev PosReal := {x : ℝ // 0 < x}
 /-- Limiting shares, whose carrier records the open-unit-interval restriction. -/
 abbrev OpenUnit := {x : ℝ // x ∈ Set.Ioo (0 : ℝ) 1}
 
+/-- The index set of cohort dummies: the supported adoption cohorts other than the
+never-treated one. The never-treated cohort is the omitted category, absorbed by the
+intercept, so one cohort effect is carried by each remaining supported cohort. -/
 abbrev CohortDummy (T : ℕ) (C : Finset (Cohort T)) :=
   {g : ↑C // (g.1 : Cohort T) ≠ ⊤}
 
+/-- The index set of time dummies: every calendar period other than the base period.
+Lean period zero is the paper's first period and is the omitted category, so one time
+effect is carried by each remaining period. -/
 abbrev TimeDummy (T : ℕ) := {t : Fin T // t.val ≠ 0}
 
 /-- Intercept, non-never-treated cohort effects, and non-base-period time effects. -/
@@ -47,6 +53,8 @@ abbrev CollapsedNuisanceIndex (T : ℕ) (C : Finset (Cohort T)) :=
 abbrev CollapsedParameter (T : ℕ) (C : Finset (Cohort T)) :=
   (CollapsedNuisanceIndex T C → ℝ) × ℝ
 
+/-- The index set of unit dummies: every unit other than the first, which is the
+omitted category absorbed by the intercept. -/
 abbrev UnitDummy (N : ℕ) := {i : Fin N // i.val ≠ 0}
   -- @realizes j(non-base unit-dummy index {2,...,N})
 
@@ -60,9 +68,14 @@ abbrev PeriodIndex (T : ℕ) := Fin T
 abbrev UnitIndex (N : ℕ) := Fin N
   -- @realizes i(unit index {1,...,N})
 
+/-- Intercept, non-base unit effects, and non-base-period time effects: the coordinates
+of the nuisance block of a unit-and-time fixed-effect specification. -/
 abbrev UnitNuisanceIndex (N T : ℕ) :=
   Unit ⊕ (UnitDummy N ⊕ TimeDummy T)
 
+/-- A full unit-and-time fixed-effect coefficient vector: the nuisance coordinates
+together with the single treatment coefficient, which is stored last as the second
+factor. -/
 abbrev UnitParameter (N T : ℕ) := (UnitNuisanceIndex N T → ℝ) × ℝ
 
 /-! ## Collapsed cohort-time world -/
@@ -255,6 +268,10 @@ noncomputable def fittedMean (pi : Cohort T → OpenUnit) (barB : Cohort T → P
 
 /-! ## Finite unit-and-time fixed-effect world -/
 
+/-- An abstract sampling law on an outcome sample space, represented by the expectation
+functional it induces on real-valued functions of that space. Nothing beyond expectations
+of the outcome array is ever used, so the law is carried by this functional rather than
+by a probability measure. -/
 abbrev SamplingLaw (Omega : Type*) := (Omega → ℝ) → ℝ
   -- @realizes Omega_N(finite-array outcome sample space)
   -- @realizes Pcal(array family of abstract sampling laws)
@@ -323,6 +340,11 @@ noncomputable def extendedExp : Option ℝ → ℝ
   | some x => Real.exp x
   -- @realizes exp(-infty)(extended exponential convention)
 
+/-- A candidate for the unit fixed-effect Poisson fit in which unit effects may take the
+value minus infinity: one extended unit effect per unit (the absent value standing for
+minus infinity), together with finite time effects and a finite treatment coefficient.
+Admitting minus infinity is what makes the maximum attained for units whose entire
+outcome path is zero. -/
 abbrev ExtendedCandidate (N T : ℕ) := (Fin N → Option ℝ) × ((Fin T → ℝ) × ℝ)
 
 /-- Extended unit-FE sample objective with finite time and treatment coordinates. -/
@@ -368,6 +390,10 @@ noncomputable def hatBetaN (G : Fin N → Cohort T) (Y : Fin N → Fin T → ℝ
 /-! ## Named assumption atoms -/
 
 -- @node: ass:cohort-share-limit
+/-- Cohort shares stabilize along the array: once the panel holds at least as many units
+as there are supported cohorts, every supported cohort contains at least one unit, and the
+sample share of each supported cohort converges as the panel grows to a limiting share
+lying strictly between zero and one. -/
 def CohortShareLimit (G : ∀ N, Fin N → Cohort T) (pi : Cohort T → OpenUnit) : Prop :=
   (∀ N, C.card ≤ N →
     0 < N ∧ -- @realizes pi_gN(positive denominator N)

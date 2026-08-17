@@ -1,0 +1,819 @@
+{
+  "qid": "exp_exposure_ambiguity_design_frontier",
+  "specialization": "v1",
+  "cluster": "experimentation",
+  "target_dir": "CausalSmith/Experimentation/EXP_ExposureAmbiguityDesignFrontier_Research",
+  "namespace": "CausalSmith.Experimentation.ExposureAmbiguityFrontier",
+  "plan_conventions": {
+    "carrier": "One assignment carrier `A := V → Bool` (`V` the unit set, `V := Fin n` for sequence statements). Exposure mappings and the fixed table live on ALL of `A` (the endpoints `0_n`, `1_n` are needed and are NOT feasible), while a design is a `Causalean.Experimentation.DesignBased.FiniteDesign A` whose mass is supported on the exact-budget slice `Omega_n = {z | (univ.filter (z . = true)).card = m_n}`. This single-carrier choice (rather than a subtype carrier) is what makes `crdOn` reusable verbatim, keeps `pi_z` a plain design mass, and lets endpoint exposures be evaluated without a coercion.",
+    "admissibility": "`n in N_pbar` is an S1 side condition `Admissible pbar n : Prop := 2 <= n and 1 <= m_n and m_n <= n - 1` with `m_n := Nat.floor (pbar * n)`, threaded as an ordinary Lean hypothesis on every statement. It is NOT a core assumption node and never appears in `hyps`.",
+    "exposure_values": "A shared finite exposure-value type `X` (`[Fintype X] [DecidableEq X]`); unit `i`'s range for candidate `e` is the Finset `exposureRange e i := Finset.image (fun z => e z i) univ`, so `d_{e,n} = sum_i (exposureRange e i).card` is literal and a sign schedule is `b : forall i, {x // x in exposureRange e i} -> Bool`, giving `|B_n(E)| = sum_{e in E} 2^{d_{e,n}}` exactly.",
+    "complexity_clauses": "The `O(|E|^2 n 8^{R_n})` arithmetic-operation clause of lem:joint-signature-fractional-compression (and the `polynomial-time` wording it feeds in thm:exposure-signature-...) is realized as the Lean-expressible content the note's own proof derives: an explicit unitwise dynamic program (`signatureDP`), its correctness lemma, and its state/transition-count bounds (`2^{R_n}` states, `<= 16 * 4^{R_n}` local choices per unit, `n` units). Program SIZE claims (`R_n + 1` variables, `<= 2^{R_n}` loss rows; `K + 1` variables, `R` pair rows, `K` nonnegativity rows, one simplex equality) are formalized literally as index-type cardinalities. No machine cost model is asserted, because Mathlib has none; nothing mathematical is dropped."
+  },
+  "env": [
+    {
+      "id": "S1",
+      "world": "Design-based finite-population randomization experiment: a Causalean `FiniteDesign` on the assignment cube `A = V -> Bool`, with the design class cut down to laws supported on the exact-budget slice, the fixed potential-outcome table, the observed experiment, the unrestricted decision rule, the total-treatment-effect estimand, and design MSE/RMSE as the loss.",
+      "binds_symbols": [
+        "\\bar p",
+        "\\mathcal N_{\\bar p}",
+        "n",
+        "V_n",
+        "m_n",
+        "\\mathcal A_n",
+        "\\Omega_n",
+        "\\mathbf 0_n",
+        "\\mathbf 1_n",
+        "y",
+        "Z",
+        "\\Theta",
+        "\\mathcal D_n(\\bar p)",
+        "Y^{\\mathrm{obs}}",
+        "\\mathsf O_n",
+        "\\widehat\\theta",
+        "\\theta_n(y)",
+        "\\operatorname{RMSE}_n(\\Theta,\\widehat\\theta;y)",
+        "\\pi",
+        "\\pi_z",
+        "\\Theta_n^\\star",
+        "\\widehat\\theta_n^\\star",
+        "B",
+        "\\widehat\\theta^{\\mathrm{loc}}",
+        "\\widehat\\theta^{\\mathrm{nl}}",
+        "\\Theta_n^{\\mathrm{CR}}",
+        "\\widehat\\theta_n^{\\mathrm{DM}}",
+        "V_n^\\star(\\mathcal E,\\bar p)"
+      ],
+      "binds_sampling_model": true,
+      "disposition": "reuse",
+      "reuse": "Causalean.Experimentation.DesignBased.FiniteDesign",
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Causalean.Experimentation.DesignBased.Risk",
+        "Causalean.Experimentation.DesignBased.Optimality",
+        "Causalean.Experimentation.DesignBased.Designs.CompleteRandomization",
+        "Causalean.Experimentation.TwoStageInterference.CompleteRandomization",
+        "Mathlib.Data.Finset.Powerset",
+        "Mathlib.Data.Nat.Choose.Basic"
+      ],
+      "notes": "Highest-leverage reuse in the run. `FiniteDesign` (DesignCore.lean:45, fields `p`,`p_nonneg`,`p_sum`) IS the design object: `pi = D.p`, `pi_z = D.p z`, `E_{Z~Theta}[.] = D.E`, `Pr = D.Pr`, and the whole `E`/`Var`/`Cov` finite-sum algebra (`E_sum`, `E_congr`, `Var_eq`, `Var_linear_comb`, `Cov_linear_comb`, `E_nonneg`) comes free. The loss layer is `FiniteDesign.mse` / `bias` / `Unbiased` / `mse_eq_var_add_bias_sq` / `mse_eq_var_of_unbiased` / `Var_nonneg` (Risk.lean:42-88), so `RMSE_n = sqrt (D.mse est theta)`. `DesignFamily Omega := Set (FiniteDesign Omega)` (Optimality.lean:43) types the design class, and `FiniteDesign.map`/`E_map`/`Pr_map` (DesignCore.lean:296-330) is the pushforward used by every selector/signature quotient step. Fixed-table, no-superpopulation semantics matches the DesignBased flavour exactly (probability is randomization only), so no measure-theoretic `PO/` world is needed."
+    },
+    {
+      "id": "S2",
+      "world": "Finite exposure-mapping menu and its induced sign-schedule decision experiment: a finite nonempty menu of exposure mappings on the assignment cube, the induced bounded-table class, the sign schedules with their targets and observations, the observation-fiber collision geometry, and the sign/multilinear decision rules.",
+      "binds_symbols": [
+        "\\mathcal E",
+        "G_n",
+        "e",
+        "\\mathcal X_{i,e,n}",
+        "e_{i,n}",
+        "d_{e,n}",
+        "h_{i,e,n}",
+        "\\mathcal Y_n(\\mathcal E)",
+        "\\mathcal S_n",
+        "\\mathcal B_n(\\mathcal E)",
+        "\\alpha",
+        "t_\\alpha",
+        "s_{\\alpha z}",
+        "C_n(\\pi)",
+        "d_n(z,s)",
+        "U_n(\\pi)",
+        "\\delta^{\\mathrm{bin}}",
+        "\\delta^{\\mathrm{ml}}",
+        "H_n(e)",
+        "e^{(0)}",
+        "e^{(-)}",
+        "e^{(+)}",
+        "\\mathcal E_-",
+        "\\mathcal E_+",
+        "\\rho_B",
+        "\\widetilde e^{\\kappa}",
+        "\\widetilde{\\mathcal E}_{B,-}",
+        "\\widetilde{\\mathcal E}_{B,+}",
+        "\\delta_-",
+        "\\delta_+",
+        "e^{\\mathrm{loc}}",
+        "e^{\\mathrm c}",
+        "\\mathcal E^{\\mathrm{loc}}",
+        "e^{\\mathrm{all}}",
+        "\\mathcal E^{\\mathrm{nl}}",
+        "e^{\\mathrm{NI}}",
+        "\\mathcal E^{\\mathrm{NI}}"
+      ],
+      "binds_sampling_model": false,
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.Exposure",
+        "Causalean.Experimentation.DesignBased.PotentialOutcome",
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Mathlib.Combinatorics.SimpleGraph.Basic"
+      ],
+      "notes": "Search trace: grep '^## ' ../doc/API.md then read section 18 `Experimentation/` (DesignBased, ExposureMappingInterference, TwoStageInterference, UnknownInterference); grep -i 'exposure|menu|misspecif|ambiguity|sign schedule' over ../Causalean/Experimentation; read ../Causalean/Experimentation/DesignBased/{Exposure,PotentialOutcome}.lean in full. Result: Causalean has the SINGLE-known-mapping exposure world only. PARTIAL, and genuinely useful, fit: with `Theta := V`, `theta := id`, `Delta := X`, Causalean's `expo f theta i z = f z (theta i)` (Exposure.lean:46) is literally our `e_{i,n}(z)`, and `ProperlySpecified y yr f theta : forall i z, yr i z = y i (expo f theta i z)` (PotentialOutcome.lean:45) is literally the inner clause of ass:menu-measurability for one candidate; `Yobs` (PotentialOutcome.lean:49) is `Y^obs`. So S2 is built ON those decls rather than beside them. What is absent and must be new: the LATENT FINITE MENU (a `Finset` of candidates with a cross-candidate union class), per-unit exposure ranges as Finsets, the sign-schedule experiment (`t_alpha`, `s_{alpha z}`), observation fibers and the two collision moduli, and the multilinear extension. Causalean's exposure layer exists only to feed Horvitz-Thompson propensity weighting (`prop`, `propPairSame`, `htTotal`), which this paper deliberately does not use (its estimator class is unrestricted), so the HT half of that module is bypass-justified: wrong abstraction (inverse-propensity linear estimators vs arbitrary measurable rules). `H_n(e)` is a `SimpleGraph (V x Bool)` built by the explicit non-joint-realizability rule; `G_n` is a `SimpleGraph V` carried as ancillary data (the invariance clauses of thm:finite-saddle are exactly the statement that it does not occur in any other object)."
+    },
+    {
+      "id": "S3",
+      "world": "Finite-dimensional real convex-program world: `Finset`-indexed real vectors, the probability simplex, compact convex hulls, and Hahn-Banach separation - the ambient for the primal/dual perspective (second-order-cone) programs and their common value.",
+      "binds_symbols": [
+        "w_{zs}",
+        "q_{\\alpha z}",
+        "r",
+        "\\mathsf P_n",
+        "\\mu_\\alpha",
+        "a_{zs}",
+        "b_{zs}",
+        "c_{zs}",
+        "u_{zs}",
+        "v",
+        "\\mathsf Q_n",
+        "L_n(\\mathcal E,\\bar p)"
+      ],
+      "binds_sampling_model": false,
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.LocallyConvex.Separation",
+        "Mathlib.Analysis.Convex.StdSimplex",
+        "Mathlib.Analysis.Convex.Topology",
+        "Mathlib.Analysis.Convex.Combination",
+        "Mathlib.Analysis.Convex.Jensen",
+        "Mathlib.Analysis.SpecialFunctions.Sqrt"
+      ],
+      "notes": "Search trace: lean_local_search 'minimax' / 'bayesRisk' / 'Sion' / 'farkas' / 'geometric_hahn_banach' / 'isCompact_stdSimplex' / 'isCompact_convexHull' / 'ConvexOn.map_sum_le'; lean_leansearch 'minimax theorem: inf sup equals sup inf for convex compact sets (Sion / von Neumann)'. Result: Mathlib has NO Sion/von Neumann minimax theorem, NO LP duality and NO Farkas lemma ('Sion' and 'farkas' both return zero hits; the only minimax-shaped hits are `Mathlib.Order.SaddlePoint`'s order-theoretic `IsSaddlePointOn`/`isSaddlePointOn_value` and the trivial `iSup_iInf_le_iInf_iSup`, plus `ProbabilityTheory.{minimaxRisk,bayesRisk,bayesRisk_le_minimaxRisk}` in `Mathlib/Probability/Decision/Risk/`, which are ENNReal kernel-decision objects with no equality theorem). Causalean has no convex-program layer either; the nearest CausalSmith item, `CausalSmith.Experimentation.SaturationSkew.fin_dim_supporting_hyperplane` (EXP_SaturationSkewThreshold_Research/Helpers/Convex.lean:17), is an unproved `sorry` in an in-flight run and is therefore deliberately NOT reused. The engines that DO exist and are reused directly: `geometric_hahn_banach_compact_closed`, `isCompact_stdSimplex`, `Set.Finite.isCompact_convexHull`, `ConvexOn.map_sum_le`. Bypass-justified over the Causalean cluster: the programs are pure finite real vector algebra over `Omega_n x S_n` and `B_n(E)` with no design-based content of their own; the bridge back to S1 is the recovery map."
+    }
+  ],
+  "nodes": {
+    "ass:fixed-schedule": {
+      "lean_kind": "assumption",
+      "lean_name": "FixedSchedule",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.PotentialOutcome",
+        "Causalean.Experimentation.DesignBased.DesignCore"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "assumption_kind": "modeling",
+      "notes": "MODELING assumption (design-based framework restriction), not a substrate fact: keep as a threaded Prop hypothesis; no discharge, no escalation. `def FixedSchedule (y : (V -> Bool) -> V -> R) (Yreal : (V -> Bool) -> V -> R) : Prop := forall z i, Yreal z i = y i z` - the realized response at every assignment is the value of one table fixed before the draw, i.e. the table is a function of `z` alone and carries no design or superpopulation randomness. Search trace: grep -i 'fixed.schedule|fixed potential outcome|design-based' over ../Causalean/Experimentation + read PotentialOutcome.lean; result: no named Prop, because in Causalean this is encoded STRUCTURALLY (`y : iota -> Delta -> R` is a bare function, `Yobs y f theta i z` reads it at the realized assignment). We keep the note's own atom as a named Prop so that its role in def:ambiguity-class and lem:sign-reduction is printable, and prove it definitionally satisfied by the `Yobs`-shaped construction."
+    },
+    "ass:bounded-table": {
+      "lean_kind": "assumption",
+      "lean_name": "BoundedTable",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.PotentialOutcome"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "assumption_kind": "modeling",
+      "notes": "MODELING/support assumption: `def BoundedTable (y : (V -> Bool) -> V -> R) : Prop := forall z i, y i z in Set.Icc (-1 : R) 1`. Keep threaded; never discharged. Search trace: grep -i 'BoundedOutcomes|bounded.*outcome' over ../Causalean and CausalSmith/Experimentation; result: only paper-scoped analogues exist - `CausalSmith.Experimentation.BipartiteMinimaxDesign.BoundedOutcomes` (bipartite outcome arrays) and the SNIPE `BddOutcomeModelClass` (EXP_SnipeDegreeFrontier_Research/Basic.lean:207); no cluster-level `[-1,1]` table predicate in Causalean. Deliberately re-stated locally rather than imported from a sibling paper's model class, whose bundled fields (graph, coefficient mass, degree index) do not apply here."
+    },
+    "ass:menu-measurability": {
+      "lean_kind": "assumption",
+      "lean_name": "MenuMeasurable",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.Exposure",
+        "Causalean.Experimentation.DesignBased.PotentialOutcome"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "assumption_kind": "modeling",
+      "notes": "CAUSAL-STRUCTURAL modeling assumption (the paper's novel ambiguity primitive): `def MenuMeasurable (Emenu : Finset (Exposure V X)) (y : (V -> Bool) -> V -> R) : Prop := exists e in Emenu, exists h : V -> X -> R, Causalean...ProperlySpecified h (fun i z => y i z) (fun z i => e z i) id` - i.e. the table factors through SOME candidate's exposure coordinate. Keep as a threaded hypothesis / class member; it is the note's declared modeling boundary, not a proof obligation, so it is neither discharged nor escalated. Search trace: read ../Causalean/Experimentation/DesignBased/PotentialOutcome.lean (`ProperlySpecified` at line 45, `Yobs` at 49) and Exposure.lean (`expo` at 46); result: the SINGLE-candidate clause is an exact fit and is reused verbatim as the body; the existential over a finite MENU (the whole point of the paper) has no analogue anywhere in Causalean or in the CausalSmith experimentation entries (grep -i 'menu|latent.*mapping|misspecified exposure' returns nothing)."
+    },
+    "def:ambiguity-class": {
+      "lean_kind": "structure",
+      "lean_name": "AmbiguityClass",
+      "members": [
+        "ass:fixed-schedule",
+        "ass:bounded-table",
+        "ass:menu-measurability"
+      ],
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.PotentialOutcome",
+        "Causalean.Experimentation.DesignBased.Exposure"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "One structure with exactly three fields, one per member atom, each typed by that atom's Prop def: `fixed_schedule : FixedSchedule y Yreal`, `bounded_table : BoundedTable y`, `menu_measurable : MenuMeasurable Emenu y`. Membership `y in Y_n(E)` is `AmbiguityClass Emenu y Yreal`; the class is what every worst-case supremum ranges over, and it is the bundled hypothesis threaded into lem:sign-reduction and prop:no-interference-calibration. Search trace: grep -i 'outcome class|model class|Y_n' over ../Causalean/Experimentation; the only model-class bundles are the SNIPE `ModelClass`/`BddOutcomeModelClass` (coefficient-mass + graph fields, wrong content), so this bundle is new."
+    },
+    "def:design-class": {
+      "lean_kind": "def",
+      "lean_name": "budgetDesigns",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Causalean.Experimentation.DesignBased.Optimality"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "`def budgetDesigns (m : Nat) : DesignFamily (V -> Bool) := {D | forall z, D.p z <> 0 -> (univ.filter (fun i => z i = true)).card = m}`, reusing the Causalean type abbreviation `DesignFamily Omega := Set (FiniteDesign Omega)` (Optimality.lean:43) and `FiniteDesign` itself; only the exact-budget support predicate is new. Search trace: grep -i 'exactBudget|budget|feasible design|DesignFamily' over ../Causalean/Experimentation/DesignBased - found `DesignFamily`, `IsOptimalOn`, `Dominates`, `exists_isOptimalOn` (Optimality.lean:43-74) and the concrete `completeRandomization`/`crdOn` members, but no exact-treated-count design CLASS; that predicate is one line and is build-inline. Nonemptiness of the class at admissible `n` is witnessed by `crdOn` (see def:complete-randomization)."
+    },
+    "def:observed-experiment": {
+      "lean_kind": "def",
+      "lean_name": "observedExperiment",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.PotentialOutcome",
+        "Causalean.Experimentation.DesignBased.DesignCore"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "`def observedExperiment (y) (z : V -> Bool) : (V -> Bool) x (V -> R) := (z, fun i => y i z)` - the one-shot revealed pair `O_n = (Z, Y^obs)`; the design supplies the law of `z`, so no separate randomness object is needed. Its second component is Causalean's `Yobs` shape (PotentialOutcome.lean:49) once the table is written through a candidate; search trace: grep 'Yobs|observed' ../Causalean/Experimentation/DesignBased/PotentialOutcome.lean - `Yobs` is exposure-indexed (`y i (expo f theta i z)`) and so presupposes a KNOWN mapping, which is exactly what this paper refuses to fix, hence the raw-table form here."
+    },
+    "def:minimax-risk": {
+      "lean_kind": "def",
+      "lean_name": "minimaxRMSE",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.Risk",
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Mathlib.Analysis.SpecialFunctions.Sqrt"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "`V_n^*(E,pbar) = sInf {r | exists D in budgetDesigns m, exists est : (V -> Bool) -> (V -> R) -> R, r = sSup (range (fun y : {y // AmbiguityClass Emenu y} => sqrt (D.mse (fun z => est z (Yobs y z)) (tte y))))}`, with the loss coming from `FiniteDesign.mse` (Risk.lean:45) and the target `theta_n(y)` a one-line `tte` def. Analogous module to adapt (same shape, one fewer infimum): `CausalSmith.Experimentation.SnipeDegreeFrontier.minimaxRisk` (EXP_SnipeDegreeFrontier_Research/Estimator.lean:104), which is `sInf {r | exists est, AdmissibleEstimator ... and r = worstRisk ...}` with `worstRisk = sSup (range riskAt)` and `riskAt = (bernoulliDesign ...).mse ...`; copy its `Admissible`/`BddAbove` guard against the conditionally-complete `sSup` junk value, and its `minimaxRisk_le_worstRisk_of_admissible` / `minimaxRisk_nonneg_of_nonneg` proof patterns. Gap to bridge: our infimum ALSO ranges over designs in `budgetDesigns`, and the value is a root-mean-square, so the `[0,2]` range bound and boundedness of the risk range must be re-established (both immediate from `BoundedTable`, `|t| <= 2` and clipping to `[-2,2]`). Search trace: grep -i 'minimax' over ../Causalean (nothing in the experimentation cluster; `Causalean/Stat/Minimax/` is the Le Cam / Fano / Assouad TESTING layer over measure-theoretic laws - wrong world, no design-inclusive risk) and lean_local_search 'minimax' (only paper-scoped CausalSmith defs and Mathlib's ENNReal `ProbabilityTheory.minimaxRisk`)."
+    },
+    "def:sign-schedules": {
+      "lean_kind": "def",
+      "lean_name": "signExperiment",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.Exposure",
+        "Causalean.Experimentation.DesignBased.DesignCore"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "The finite decision experiment induced by the menu, packaged by one `def signExperiment (Emenu) : SignExperimentData V X` whose components are the companion defs `SignSchedule Emenu := Sigma e : Emenu, (forall i, {x // x in exposureRange e i} -> Bool)` (so `card = sum_e 2^{d_{e,n}}` literally), `signTarget alpha := n^{-1} * sum_i (b i (e i 1_n) - b i (e i 0_n))`, and `signObs alpha z := fun i => b i (e i z) : S_n = V -> Bool` (signs encoded as `Bool` and read out by `pm1 : Bool -> R`). Search trace: grep -i 'sign schedule|sign vertex|two-valued|pm1' over ../Causalean/Experimentation and CausalSmith/Experimentation; result: nothing (the closest, `TwoStageInterference` two-valued outcomes `a j`/`b j` in Variance.lean, are outcome arrays for a KNOWN design, not an adversary index set). Build-inline, definitional."
+    },
+    "def:collision-moduli": {
+      "lean_kind": "def",
+      "lean_name": "collisionModuli",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Mathlib.Analysis.SpecialFunctions.Sqrt"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "`def collisionModuli (Emenu) (D : FiniteDesign (V -> Bool)) : R x R := (pairCollisionModulus, fiberModulus)` with companions `pairCollisionModulus D := max over unordered pairs of |t_alpha - t_beta| * sqrt (D.Pr (fun z => signObs alpha z = signObs beta z))`, `fiberDiameter z s := max over the fiber of t - min over the fiber of t` (zero on singletons, via `Finset.max'`/`min'` on the nonempty fiber filter), `fiberModulus D := sqrt (max over alpha of D.E (fun z => fiberDiameter z (signObs alpha z) ^ 2))`. The design-weighted sums are `D.Pr` / `D.E` from `FiniteDesign` (DesignCore.lean:58-70), so the whole modulus layer is a thin wrapper on reused algebra. Search trace: grep -i 'collision|fiber|diameter|congestion' over ../Causalean and CausalSmith/Experimentation - no hits; these two moduli are the paper's own primitive certificates."
+    },
+    "def:finite-primal": {
+      "lean_kind": "def",
+      "lean_name": "primalProgram",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.Convex.StdSimplex",
+        "Mathlib.Analysis.Convex.Topology",
+        "Causalean.Experimentation.DesignBased.DesignCore"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Programs.lean",
+      "notes": "`structure`-free encoding: `def primalFeasible (Emenu m) (pi : (V -> Bool) -> R) (w : (V -> Bool) -> S_n -> R) (q : SignSchedule -> (V -> Bool) -> R) (r : R) : Prop` conjoining nonnegativity, `sum_z pi z = 1` with `pi` supported on the budget slice, `-2 * pi z <= w z s <= 2 * pi z` (which forces the closed-perspective convention `pi z = 0 -> w z s = 0` automatically, so no side convention is needed), `sum_z q alpha z <= r`, and the rotated-cone rows `pi z * q alpha z >= (w z (signObs alpha z) - pi z * t alpha)^2`; then `def primalProgram ... : R := sInf {r | exists pi w q, primalFeasible ...}`. Search trace: lean_local_search 'farkas' (0 hits), 'Sion' (0 hits), lean_leansearch for a convex-program/LP-duality API; result: neither Mathlib nor Causalean has any conic- or linear-program datatype, so the program is encoded directly as a feasibility predicate plus a value `sInf` - the standard route used by the sibling run EXP_DesignPm1ExactnessBoundaryV1 for its covariance program. Build-inline, definitional."
+    },
+    "def:finite-dual": {
+      "lean_kind": "def",
+      "lean_name": "dualProgram",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.Convex.StdSimplex",
+        "Mathlib.Analysis.Convex.Topology"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Programs.lean",
+      "notes": "`def dualFeasible (Emenu m) (mu : SignSchedule -> R) (a b c u : (V -> Bool) -> S_n -> R) (v : R) : Prop` with `mu in stdSimplex R (SignSchedule Emenu)`, the three defining cell moments `a/b/c` as fiber sums of `mu`, `mu . t`, `mu . t^2`, the rotated cone `a z s * u z s >= (b z s)^2`, and `v <= sum_s (c z s - u z s)` for every feasible `z`; `def dualProgram ... : R := sSup {v | exists mu a b c u, dualFeasible ...}`. Simplex compactness for attainment is `isCompact_stdSimplex`. Same search trace as def:finite-primal (no program datatype anywhere in Mathlib/Causalean). Build-inline, definitional."
+    },
+    "def:multilinear-extension": {
+      "lean_kind": "def",
+      "lean_name": "multilinearExtension",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "`def multilinearExtension (delta : (V -> Bool) -> (V -> Bool) -> R) (z) (x : V -> R) : R := sum over s : V -> Bool of delta z s * prod i, (1 + pm1 (s i) * x i) / 2`. Search trace: lean_leansearch 'multilinear extension of a Boolean function / Fourier-Walsh expansion' and lean_local_search 'multilinear' / grep -i 'multilinear|harmonic extension|Walsh' over ../Causalean and Mathlib index; result: Mathlib has `MultilinearMap` (a different object: linear in each slot over modules, not the Boolean-cube interpolation) and no Boolean-cube harmonic-extension API, Causalean has none. Build-inline; the weight family `wgt x s := prod i, (1 + pm1 (s i) * x i)/2` and its two facts (`sum_s wgt = 1`; `0 <= wgt` on `[-1,1]^n`) go in Helpers/SignMixture.lean and are the engine of lem:sign-reduction."
+    },
+    "def:primal-recovery": {
+      "lean_kind": "def",
+      "lean_name": "primalRecovery",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Programs.lean",
+      "notes": "`def primalRecovery (pi w) : FiniteDesign (V -> Bool) x ((V -> Bool) -> (V -> R) -> R)` returning `Theta^*_n := <p := pi, p_nonneg, p_sum>` (a `FiniteDesign` built from the primal feasibility fields - the reuse that makes the recovered object a first-class design, hence automatically a member of `budgetDesigns`) and `thetahat^*_n := multilinearExtension (fun z s => if pi z = 0 then 0 else w z s / pi z)`. Search trace: grep -i 'recovery|recover' over ../Causalean/Experimentation - no hits; build-inline, definitional."
+    },
+    "def:minimal-witness-mappings": {
+      "lean_kind": "def",
+      "lean_name": "minimalWitnessMappings",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.Exposure"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Witnesses.lean",
+      "notes": "Three explicit two-unit tables on `A_2 = {00,10,01,11}` with `X := Bool`, plus the two menus `E_-`, `E_+` and the minimal exact-budget data (`m_2 = 1`, `Omega_2 = {10,01}`, empty `G_2`), returned as one record by `def minimalWitnessMappings : MinimalWitnessData`. Realized with `V := Fin 2` and `decide`-friendly literal tables (`![.,.]`). Search trace: grep -i 'witness' over ../Causalean/Experimentation and CausalSmith/Experimentation - the hits are paper-specific witnesses of other objects (`skewed_witness`, `two_category_confounding`, `orthogonalWitness`), none an exposure-mapping table. Build-inline, definitional."
+    },
+    "def:minimal-witness-graphs": {
+      "lean_kind": "def",
+      "lean_name": "minimalWitnessGraphs",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Combinatorics.SimpleGraph.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Witnesses.lean",
+      "notes": "The three labeled conflict graphs `H_2(e^{(0)})`, `H_2(e^{(-)})`, `H_2(e^{(+)})` on `{a,b,c,d} = V_2 x Bool` with the literal edge sets `{ab,bc,bd,cd}` and `{ab,ad,bd,cd}`, plus the two identity isomorphisms, as `SimpleGraph (Fin 2 x Bool)` values with `DecidableRel` adjacency so the multiset agreement is `decide`-able. Search trace: grep -i 'conflict graph|conflictGraph' over ../Causalean and CausalSmith - no hits (Causalean's graph layer is `Graph/DAG`, `SimpleGraph` DAG/d-separation machinery for SCMs, wrong object); `Mathlib.Combinatorics.SimpleGraph.Basic` supplies the datatype and `SimpleGraph.Iso`. Build-inline, definitional."
+    },
+    "def:minimal-witness-arrays": {
+      "lean_kind": "def",
+      "lean_name": "minimalWitnessArrays",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.Convex.StdSimplex"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Witnesses.lean",
+      "notes": "The two colliding bounded response arrays for `E_-` (targets `1` and `-1`, identical observations on `Omega_2`) and the explicit eight-atom least-favourable prior for `E_+` with masses `15/112, 15/112, 5/32, 5/32, 5/224, 5/224, 3/16, 3/16` and targets `(-1,1,1,-1,-1,1,2,-2)`, as literal `Rat`-valued tables cast to `R`. The three checkable facts (masses sum to one; conditional target means `-3 s_2/4` and `-3 s_1/4`; averaged conditional target variance `25/16`) are `norm_num`/`decide` computations that live in Helpers/WitnessArith.lean and are shared with prop:singleton-witness-oracle-values. Search trace: grep -i 'least-favourable|least favorable|prior mass' over ../Causalean (only `Stat/Minimax/` Le Cam two-point priors over measure-theoretic laws - wrong world, no finite atom table) and CausalSmith/Experimentation (none). Build-inline, definitional."
+    },
+    "def:minimal-witness-estimators": {
+      "lean_kind": "def",
+      "lean_name": "minimalWitnessEstimators",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Witnesses.lean",
+      "notes": "`delta_-` with all design mass on `z = 10` and `delta_-(10,x) = -(x_1+x_2)/2`, and `delta_+` under the uniform design on `{10,01}` with `delta_+(10,x) = -3 x_2/4`, `delta_+(01,x) = -3 x_1/4`; each returned together with its design (a two-point / one-point `FiniteDesign` on the cube supported on `Omega_2`, reusing the `FiniteDesign` constructor). Search trace: as for def:minimal-witness-mappings; build-inline, definitional."
+    },
+    "def:persistent-witness": {
+      "lean_kind": "def",
+      "lean_name": "persistentWitness",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Causalean.Experimentation.DesignBased.Exposure"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Witnesses.lean",
+      "notes": "The even-population blow-up: unit labels `(j,a) : Fin B x Fin 2`, the four-cell selector `rho_B : (V -> Bool) -> Fin 4` (endpoints to `00`/`11`, otherwise by `z_{(1,1)}`), the blown-up mappings `tilde e^kappa_{(j,a)}(z) = e^{(kappa)}_a (rho_B z)`, and the two menus. The selector is the pushforward map fed to `FiniteDesign.map` (DesignCore.lean:296) in every downstream two-cell reduction. Search trace: grep -i 'blow.?up|replicat|selector' over ../Causalean/Experimentation and CausalSmith/Experimentation - no hits (the nearest replication idea, `TwoStageInterference`'s identical groups + `prodDesign_Pr_reindex`, is a product-design permutation argument, not a common-selector blow-up). Build-inline, definitional."
+    },
+    "def:local-solved-menu": {
+      "lean_kind": "def",
+      "lean_name": "localSolvedMenu",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Calibrations.lean",
+      "notes": "`E^loc = {e^loc, e^c}` on the empty graph (`e^loc_1(z) = z_1`, all other coordinates and all of `e^c` constant zero) together with `thetahat^loc(Z,Y) = (2 Z_1 - 1) Y_1 / n`, returned as one pair-valued def. Search trace: grep -i 'graph-local|locality|radius' over ../Causalean/Experimentation - hits are the Aronow-Samii local-dependence CLT machinery (`LocalDependenceCLT`, `gdep`), a variance/dependency notion, not an exposure-locality predicate. Build-inline, definitional."
+    },
+    "def:nonlocal-solved-menu": {
+      "lean_kind": "def",
+      "lean_name": "nonlocalSolvedMenu",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Calibrations.lean",
+      "notes": "`E^nl = {e^all, e^c}` with `e^all_i(z) = if z = 1_n then 1 else 0`, plus `thetahat^nl(Z,Y) = -n^{-1} sum_i Y_i`. Same search trace as def:local-solved-menu; build-inline, definitional."
+    },
+    "def:complete-randomization": {
+      "lean_kind": "def",
+      "lean_name": "crDesign",
+      "disposition": "reuse",
+      "reuse": "Causalean.Experimentation.TwoStageInterference.crdOn",
+      "modules": [
+        "Causalean.Experimentation.TwoStageInterference.CompleteRandomization",
+        "Causalean.Experimentation.DesignBased.Designs.CompleteRandomization"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Calibrations.lean",
+      "notes": "EXACT reuse, found by grep -i 'completeRandom|uniformDesign|exactBudget' over ../Causalean (NOT listed in ../doc/API.md section 18, which is stale for `DesignBased/Designs/` and `DesignBased/Estimators/`). `crdOn K hK : FiniteDesign (U -> Bool)` (TwoStageInterference/CompleteRandomization.lean:68) IS `Theta^{CR}_n`: the uniform law on assignments treating exactly `K` of `card U` units, on our very carrier `V -> Bool`, for a general `[Fintype U] [DecidableEq U]`. It comes with `crdOn_mean` (`E[T_i] = K/N`, line 73), `crdOn_mean_compl` (line 83), `crdOn_pair` (`E[T_i T_j] = K(K-1)/(N(N-1))`, line 94) and `crdOn_supp` (deterministic treated count on the support, line 110) - which simultaneously discharges membership in `budgetDesigns m` and supplies the counting moments prop:no-interference-calibration needs. The subtype sibling `Causalean.Experimentation.DesignBased.completeRandomization` (Designs/CompleteRandomization.lean:57, with `completeRandomization_incl` / `_incl_pair`) is the same object on `{S : Finset V // S.card = n1}` and is available through `crdToBoolOn` if a set-indexed argument is more convenient. `crdOn` also witnesses nonemptiness of `budgetDesigns m` at every admissible `n`. Verify the exact argument order with `lean_hover_info` before use."
+    },
+    "def:difference-in-means": {
+      "lean_kind": "def",
+      "lean_name": "dmEstimator",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.Estimators.DifferenceInMeans",
+        "Causalean.Experimentation.TwoStageInterference.Variance",
+        "Causalean.Experimentation.DesignBased.DesignCore"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Calibrations.lean",
+      "notes": "`def dmEstimator (m) (z : V -> Bool) (Y : V -> R) : R := m^{-1} * sum_i (if z i then Y i else 0) - (n - m)^{-1} * sum_i (if z i then 0 else Y i)` - the OBSERVED-VECTOR form the paper's unrestricted rule class requires. PARTIAL fits found, both recorded as analogous modules to adapt rather than reused outright (discharging a partial fit here would strand an unprovable bridge on F3): (i) `Causalean.Experimentation.DesignBased.diffInMeans` (Estimators/DifferenceInMeans.lean:60) with `sateEstimand`, `E_treatedMean`, `E_controlMean`, `E_diffInMeans_eq_sate`, `unbiased_diffInMeans` - same estimator but as a function of the two FIXED arrays `Y1 Y0` on the subtype carrier `{S : Finset U // S.card = n1}`; (ii) `Causalean.Experimentation.TwoStageInterference.tauHat` (Variance.lean:115) on `Fin n -> Bool`, which is exactly `-dmEstimator` for two-valued outcomes. Under the singleton no-interference menu the observed vector IS the `Y1/Y0` selection, so both bridge by `rfl`-level rewriting; (ii) is the one that carries the variance theorem (see prop:no-interference-calibration)."
+    },
+    "def:structural-handle": {
+      "lean_kind": "def",
+      "lean_name": "structuralHandle",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Mathlib.Analysis.Convex.StdSimplex"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Programs.lean",
+      "notes": "The interface the compression theorems consume, packaged as one def over the menu-induced sign experiment: a finite group action on `Omega_n` and on `B_n(E)` with target invariance `t_{g alpha} = t_alpha` and an observation bijection `phi_{g,z}` (`SignExperimentAction`), the orbit tables, and the `FractionalDiameterCover` predicate with congestion `kappa_n` (`sum_l q_{h l} <= kappa_n` plus the pointwise fiber-diameter domination). Naming this node is load-bearing: lem:no-interference-collision-scale quantifies over EVERY equivariant cover, so the predicate must be a named object, not an inline hypothesis. It also records that `G_n` enters only through the menu it organizes. Search trace: grep -i 'orbit|equivariant|group action|quotient' over ../Causalean/Experimentation and CausalSmith/Experimentation - the only hit is `prodDesign_Pr_reindex` (DesignBased/ProductReindex.lean, a permutation-invariance lemma for product designs, reusable as the pattern for the group-averaging step but not for the general action); `Mathlib.GroupTheory` supplies `MulAction`/orbits. Build-inline, definitional."
+    },
+    "def:oracle-menu-benchmark": {
+      "lean_kind": "def",
+      "lean_name": "oracleMenuBenchmark",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.Risk"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "`def oracleMenuBenchmark (Emenu) : R := (Emenu.image (fun e => minimaxRMSE {e} pbar)).max' (by simpa using Emenu nonempty)` - the mapping-known benchmark, a one-line `Finset.max'` over def:minimax-risk restricted to singletons; finiteness and nonemptiness of the menu make it well defined. Search trace: grep -i 'oracle' over ../Causalean/Experimentation and CausalSmith/Experimentation - hits are `wald_coverage_oracle` and `oracleValue` (oracle-KNOWN-nuisance confidence objects in other papers), not a mapping-known minimax benchmark. Build-inline, definitional."
+    },
+    "lem:sign-reduction": {
+      "lean_kind": "lemma",
+      "lean_name": "sign_reduction",
+      "local_id": "t1",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.Convex.Jensen",
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Causalean.Experimentation.DesignBased.PotentialOutcome"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_sign_reduction.lean",
+      "hyps": [
+        "def:ambiguity-class",
+        "ass:bounded-table"
+      ],
+      "notes": "The paper's lossless finite reduction; build-inline, medium. Proof skeleton for F3, all pieces reused: (a) clipping to `[-2,2]` cannot increase square loss (one `abs`/`max` case split, since `|t_alpha| <= 2`); (b) the sign-mixture weights `wgt x s = prod i (1 + pm1 (s i) x i)/2` are a probability vector on `S_n` when `x in [-1,1]^n` (`Finset.prod_nonneg` + the product-over-cube expansion `Finset.prod_sum` / induction on `univ`), and `sum_s wgt x s * pm1 (s i) = x i`; (c) `E_B[delta^bin(z, s)] = multilinearExtension delta z x` is then definitional, and `E_B[t_{(e,B)}] = theta_n(y)` is linearity; (d) Jensen for the square is `ConvexOn.map_sum_le` (Mathlib.Analysis.Convex.Jensen, verified) with `Even.convexOn_pow`; (e) the design average is `FiniteDesign.E_sum`/`E_congr` and the finite Fubini swap is `Finset.sum_comm`. The converse inclusion (sign arrays are members of the class) is an `AmbiguityClass` constructor application. Helpers/SignMixture.lean owns (b)-(d). Search trace for a ready-made reduction: grep -i 'sign reduction|randomiz.*sign|Bernoulli randomization of outcomes' over ../Causalean and CausalSmith - no hits; `Causalean/Mathlib/Probability/BernoulliMeasure.lean` (`bernoulliLaw`, `bernoulliBool`) is the measure-theoretic two-point law and is deliberately NOT used, since the whole argument here is finite-sum algebra inside the `FiniteDesign` world (measure-theoretic detour would need the `FiniteDesignMeasure` bridge for no gain)."
+    },
+    "thm:finite-saddle": {
+      "lean_kind": "theorem",
+      "lean_name": "finite_saddle",
+      "local_id": "t2",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.LocallyConvex.Separation",
+        "Mathlib.Analysis.Convex.Topology",
+        "Mathlib.Analysis.Convex.StdSimplex",
+        "Mathlib.Analysis.Convex.Combination",
+        "Mathlib.Analysis.SpecialFunctions.Sqrt",
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Causalean.Experimentation.DesignBased.Risk"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_finite_saddle.lean",
+      "hyps": [],
+      "notes": "The paper's crux and the heaviest build-inline item; NOT deferred and NOT gated. The one clause that could look like external substrate - classical finite minimax-maximin equality - is PROVED in the note itself ('We prove the required finite minimax equality rather than assume it') and every ingredient exists in Mathlib, so assuming it would be a silent gate on derivable content. Search trace: lean_leansearch 'minimax theorem: inf sup equals sup inf for convex compact sets (Sion / von Neumann)', lean_local_search 'Sion' (0 hits), 'farkas' (0 hits), 'minimax', 'bayesRisk' -> Mathlib has NO Sion/von Neumann minimax theorem and no LP duality; `Mathlib.Order.SaddlePoint` only defines `IsSaddlePointOn` and proves `iSup_iInf_le_iInf_iSup` (the easy direction), and `ProbabilityTheory.bayesRisk_le_minimaxRisk` is likewise only the easy direction over ENNReal kernels. Reused engines (all verified to exist): `Set.Finite.isCompact_convexHull` (K = convex hull of the finitely many loss vectors is compact), `geometric_hahn_banach_compact_closed` (strict separation of K from the closed lower orthant D_eps), `isCompact_stdSimplex` (prior compactness for the eps -> 0 limit and for dual attainment), `IsCompact.exists_isMinOn` (attainment of the min-max), `ConvexOn.map_sum_le` (derandomisation of randomized rules to conditional means). Planned helper split so no file explodes: Helpers/FiniteMinimax.lean (compactness/convexity of K, separation, the prior with `min_{x in K} <mu,x> >= rho`, the limit argument) and Helpers/PerspectiveProgram.lean (per-cell quadratic minimisation `a d^2 - 2 b d + c` with the `0/0 = 0` convention and `|b| <= 2a`, the primal <-> `(pi,d)` feasibility correspondence, both attainments), with T_finite_saddle.lean assembling `V^* = L_n = sqrt(val P) = sqrt(val Q)`, the recovery attainment via def:primal-recovery + lem:sign-reduction, the universal converse, and the `G_n`-invariance clauses (the last is a pure `rfl`/currying argument: no defined object mentions `G_n`)."
+    },
+    "thm:minimal-nonrepresentability": {
+      "lean_kind": "theorem",
+      "lean_name": "minimal_nonrepresentability",
+      "local_id": "t3",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Combinatorics.SimpleGraph.Basic",
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Causalean.Experimentation.DesignBased.Risk"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_minimal_nonrepresentability.lean",
+      "hyps": [],
+      "notes": "Build-inline. Finite and largely decidable: minimality of `(n,m) = (2,1)` is `omega`; the conflict-graph multiset agreement is `decide` on the explicit `SimpleGraph (Fin 2 x Bool)` tables; `V_2^*(E_-) = 1` is the two-colliding-schedule identity `sum_z pi_z ((D_z-1)^2 + (D_z+1)^2) >= 2` plus the explicit `delta_-` upper bound; `V_2^*(E_+) = 5/4` is the eight-atom posterior computation (table (2) scaled by 224) plus the sixteen-sign-vertex check of `delta_+`, extended off the vertices by lem:sign-reduction rather than by a separate coordinatewise-convexity argument. Numeric work is `norm_num`/`decide` over explicit rationals in Helpers/WitnessArith.lean. Search trace: grep -i 'posterior variance|Bayes risk|square-loss identity' over ../Causalean - the posterior square-loss identity (Bayes risk = averaged posterior variance) has no finite-design analogue in Causalean (`Stat/Minimax/` is measure-theoretic Le Cam), so it is proved once as a small helper (`E[(D - t)^2] = E[Var(t|obs)] + E[(D - E[t|obs])^2]`) via `FiniteDesign` algebra and shared with prop:local-program-solution, prop:no-interference-calibration and prop:singleton-witness-oracle-values."
+    },
+    "thm:persistent-nonrepresentability": {
+      "lean_kind": "theorem",
+      "lean_name": "persistent_nonrepresentability",
+      "local_id": "t4",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Mathlib.Combinatorics.SimpleGraph.Basic",
+        "Mathlib.Analysis.Convex.Jensen"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_persistent_nonrepresentability.lean",
+      "hyps": [],
+      "notes": "Build-inline, medium. Three reusable steps in Helpers/BlockAveraging.lean: (a) `rho_B(Omega_{2B}) = {10,01}` from admissibility (`1 <= m <= 2B-1`, an explicit two-assignment construction, `Finset.card`/`omega`); (b) the labeled type blow-up of the conflict graph, whose adjacency reduces to the base rule by (a); (c) the block-average bound `(B^{-1} sum_j E_j)^2 <= B^{-1} sum_j E_j^2`, which is Cauchy-Schwarz - `Finset.inner_mul_le_norm_mul_norm` or `ConvexOn.map_sum_le` with `Even.convexOn_pow`, the same Jensen engine as lem:sign-reduction. The `5/6` singleton benchmark is imported from prop:singleton-witness-oracle-values, and the arithmetic of the four gap/ratio numbers is `norm_num`. The design pushforward through `rho_B` is `FiniteDesign.map`/`E_map` (DesignCore.lean:296-330)."
+    },
+    "prop:local-program-solution": {
+      "lean_kind": "theorem",
+      "lean_name": "local_program_solution",
+      "local_id": "t5",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Causalean.Experimentation.DesignBased.Risk"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_local_program_solution.lean",
+      "hyps": [],
+      "notes": "Build-inline, small. Upper half is a pointwise error bound (`|error| <= 1/n` by a two-case split on `Z_1`) so it needs only `FiniteDesign.mse` monotonicity (`E_nonneg` + `E_le_one`-style bounds from Risk.lean/DesignCore.lean); lower half is the two-independent-symmetric-signs prior with the shared posterior square-loss helper. No new substrate. Search trace: as for thm:minimal-nonrepresentability (posterior square-loss identity absent in Causalean, proved once locally)."
+    },
+    "prop:nonlocal-program-solution": {
+      "lean_kind": "theorem",
+      "lean_name": "nonlocal_program_solution",
+      "local_id": "t6",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Causalean.Experimentation.DesignBased.Risk"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_nonlocal_program_solution.lean",
+      "hyps": [],
+      "notes": "Build-inline, small. `1 <= m_n <= n-1` excludes `1_n` from the support, so every feasible observation is the exposure-zero vector; the lower certificate is the explicit two-schedule average `(D_z-1)^2/2 + (D_z+1)^2/2 = D_z^2 + 1 >= 1` and the upper is `|-n^{-1} sum_i b_i| <= 1`. Same helper set as prop:local-program-solution; no new substrate."
+    },
+    "thm:collision-geometry-sandwich": {
+      "lean_kind": "theorem",
+      "lean_name": "collision_geometry_sandwich",
+      "local_id": "t7",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Causalean.Experimentation.DesignBased.Risk",
+        "Mathlib.Analysis.SpecialFunctions.Sqrt"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_collision_geometry_sandwich.lean",
+      "hyps": [],
+      "notes": "Build-inline, small-to-medium. Lower half: the algebraic identity `(a-t_alpha)^2 + (a-t_beta)^2 = 2(a - (t_alpha+t_beta)/2)^2 + (t_alpha-t_beta)^2/2` is `ring`/`nlinarith`, then `max >= average` and `FiniteDesign.E` monotonicity. Upper half: the midpoint rule on each nonempty fiber (`Finset.max'`/`min'`), the pointwise bound `|delta^bin - t| <= d_n/2`, and lem:sign-reduction + def:multilinear-extension to carry it to arbitrary bounded tables. The four asymptotic implications are immediate `Filter.Tendsto`/`liminf` consequences of the two inequalities. No new substrate."
+    },
+    "prop:no-interference-calibration": {
+      "lean_kind": "theorem",
+      "lean_name": "no_interference_calibration",
+      "local_id": "t8",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.TwoStageInterference.Variance",
+        "Causalean.Experimentation.TwoStageInterference.CompleteRandomization",
+        "Causalean.Experimentation.DesignBased.Estimators.DifferenceInMeans",
+        "Causalean.Experimentation.DesignBased.Risk",
+        "Causalean.Experimentation.DesignBased.DesignCore"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_no_interference_calibration.lean",
+      "hyps": [
+        "def:ambiguity-class"
+      ],
+      "notes": "Build-inline, but the hard half is REUSED, which is the biggest single saving in the run and was invisible to ../doc/API.md (stale for these files). Upper half: under `E^{NI}` the observed vector is the two-valued `a`/`b` selection, so our `dmEstimator` is `-tauHat` and `Causalean.Experimentation.TwoStageInterference.Var_tauHat_CRD` (Variance.lean:266) gives the Neyman identity `Var = S1/K + S0/(n-K) - Stau/n` under the ACTUAL complete-randomization design `crd`/`crdOn` with NO moment hypotheses (its `Var_tauHat` sibling at line 181 is the hypothesis-carrying form, discharged there by `crd_mean`/`crd_pair`). Then unbiasedness (`FiniteDesign.mse_eq_var_of_unbiased`, Risk.lean:62, with `E_diffInMeans_eq_sate`/`unbiased_diffInMeans` as the cross-check), `S_a^2, S_b^2 <= n/(n-1)` from `BoundedTable` (a `sum_sub_mean_sq`-style bound; Causalean's `sum_sub_mean_sq` in Variance.lean is the same algebra), and dropping the nonpositive `-Stau/n` term. Bridge to build: our carrier is `V -> Bool` with `V := Fin n` and `crdOn`, Causalean's is `Fin n -> Bool` with `crd` - the two are the same design (`crd = crdOn` specialized, CompleteRandomization.lean:143) so the bridge is a definitional unfolding, not a pushforward. Lower half (`1/sqrt n`): the `2n` independent symmetric endpoint signs + the shared posterior square-loss helper; then thm:finite-saddle converts the sandwich into the `n^{-1/2}` order for `L_n`."
+    },
+    "prop:singleton-witness-oracle-values": {
+      "lean_kind": "theorem",
+      "lean_name": "singleton_witness_oracle_values",
+      "local_id": "t9",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Causalean.Experimentation.DesignBased.Risk",
+        "Mathlib.Analysis.Convex.Jensen"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_singleton_witness_oracle_values.lean",
+      "hyps": [],
+      "notes": "Build-inline, medium (numeric). The three mappings are put in the common canonical form (1) by an explicit relabeling (a coordinate permutation the estimator can undo - a `Equiv`-level rewriting, not an isomorphism-invariance principle); the upper bound is the eight-triple evaluation of rule (2) giving worst value `25/36` (`decide`/`norm_num` over `Fin 8`), extended by lem:sign-reduction; the lower bound is the six-atom prior with moments (4), `E R^2 = 41/36` and squared conditional means `4/9`, giving `25/36` by the shared posterior square-loss helper. The `n = 2B` half reuses the Helpers/BlockAveraging.lean block-average Cauchy-Schwarz and the selector pushforward. All arithmetic in Helpers/WitnessArith.lean."
+    },
+    "prop:nonlocal-collision-sharpness": {
+      "lean_kind": "theorem",
+      "lean_name": "nonlocal_collision_sharpness",
+      "local_id": "t10",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_nonlocal_collision_sharpness.lean",
+      "hyps": [],
+      "notes": "Build-inline, small. Both moduli are computed to the constant `2` for EVERY probability vector (the target interval (3) has length two and contains zero, so the fiber diameter is exactly two and colliding pairs separate by at most two), then prop:nonlocal-program-solution supplies `V^* = 1` and substitution into thm:collision-geometry-sandwich makes both inequalities equalities. No new substrate."
+    },
+    "thm:orbit-fractional-cover-compression": {
+      "lean_kind": "theorem",
+      "lean_name": "orbit_fractional_cover_compression",
+      "local_id": "t11",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.Convex.StdSimplex",
+        "Mathlib.Analysis.Convex.Jensen",
+        "Mathlib.Analysis.Convex.Topology",
+        "Causalean.Experimentation.DesignBased.DesignCore"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_orbit_fractional_cover_compression.lean",
+      "hyps": [],
+      "notes": "Build-inline, medium. A CONDITIONAL theorem: the group action and the fractional diameter cover are hypotheses supplied through def:structural-handle, not obligations. Steps, all with existing engines: group-averaging of a design (`F_{gp}(g pi) = F_p(pi)`, then convexity of a finite max of linear functions gives `C_n(bar pi) <= C_n(pi)`) - the pattern to adapt is `Causalean.Experimentation.DesignBased.prodDesign_Pr_reindex` (ProductReindex.lean) and `FiniteDesign.map` for the relabeled design; invariant designs are parameterized by orbit masses on `stdSimplex R (Fin K)` with `isCompact_stdSimplex` for attainment; `U_n >= C_n` is a fiber-diameter comparison; `U_n <= sqrt(kappa_n) C_n` is the cover inequality summed against the invariant design. The size clause (`K+1` variables, `R` pair rows, `K` nonnegativity rows, one simplex equality) is stated as index-type cardinalities, which is literally what the note asserts. Search trace: lean_local_search 'minimax'/'Sion'/'farkas' and grep -i 'orbit|congestion|fractional cover' over ../Causalean and CausalSmith/Experimentation - nothing; Mathlib supplies only `MulAction` orbit plumbing, no LP-with-symmetry API."
+    },
+    "lem:joint-signature-fractional-compression": {
+      "lean_kind": "lemma",
+      "lean_name": "joint_signature_fractional_compression",
+      "local_id": "t12",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Mathlib.Analysis.Convex.StdSimplex",
+        "Mathlib.Data.Finset.Powerset"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_joint_signature_fractional_compression.lean",
+      "hyps": [],
+      "notes": "Build-inline, medium-heavy. Core: assignments with equal joint signature are identical columns of the whole sign experiment (a one-line congruence from the definition of `signObs`), so mass aggregation is exactly `FiniteDesign.map` along `xi_n` (DesignCore.lean:296, with `E_map`/`Pr_map` at 316/330) and every simplex vector lifts back by putting mass on a representative. The universal congestion-`R_n` cover is CONSTRUCTED (one unit-weight pair per signature, chosen by `Finset.max'`/`min'` on the fiber), then thm:orbit-fractional-cover-compression is applied with the trivial action. Complexity clause: the `D_A` coefficients are computed by an explicit unitwise dynamic program `signatureDP` over states `Finset (Fin R_n)` (`2^{R_n}` states, `<= 16 * 4^{R_n}` local sign choices per unit, `n` units, `<= |E|^2` ordered mapping pairs), with a correctness lemma (`signatureDP` returns the extremal attainable target-difference numerators) and explicit state/transition-count bounds; the program-size clause (`R_n + 1` variables, `<= 2^{R_n}` loss rows) is a literal cardinality statement. Search trace: lean_leansearch/lean_local_search for a Lean cost model or `Complexity`/`TimeBound` API, and grep -i 'complexity|polynomial time|arithmetic operations' over ../Causalean and CausalSmith - nothing exists (Mathlib has no algorithmic cost model), which is exactly why the operation-count wrapper is realized as the state/transition-count bound its own proof derives; no mathematical content is dropped and no gate is needed."
+    },
+    "lem:split-graph-local-witness": {
+      "lean_kind": "lemma",
+      "lean_name": "split_graph_local_witness",
+      "local_id": "t13",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Combinatorics.SimpleGraph.Basic",
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Mathlib.Analysis.Convex.Jensen",
+        "Mathlib.Data.Nat.Choose.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_split_graph_local_witness.lean",
+      "hyps": [],
+      "notes": "Build-inline, the second-heaviest item after thm:finite-saddle; split across T_split_graph_local_witness.lean plus Helpers/CountingBounds.lean and Helpers/BlockAveraging.lean. Steps: radius-one locality on the complete split graph (every closed neighbourhood contains the clique `S_n`, so the selector is neighbourhood-measurable - `SimpleGraph.neighborFinset` reasoning); `|S_n| = max(m_n, n-m_n)+1` forces `z|_{S_n}` mixed on every feasible assignment (`Finset.card` counting + `omega`); exactly two joint signatures; the polynomial orbit counts `2(n+1)^4` and `48(n+1)^60` by injections into tuples of class-wise type counts (`Fintype.card_le_of_injective` + `Nat.pow` bounds); congestion two from lem:joint-signature-fractional-compression; and the exact-risk transfer, whose one genuinely new step is the derandomisation 'repeated physical assignments inside one selector cell cannot help' (condition on the cell, replace rule values by their design-weighted conditional means, apply `ConvexOn.map_sum_le`) giving an isomorphism with the persistent two-cell experiment, after which thm:persistent-nonrepresentability supplies `1` and `5/4`. Search trace: grep -i 'split graph|clique|neighborFinset|radius' over ../Causalean/Experimentation and CausalSmith/Experimentation - no exposure-locality or split-graph construction anywhere; `Mathlib.Combinatorics.SimpleGraph.Basic` supplies the graph and neighbourhood API."
+    },
+    "lem:no-interference-collision-scale": {
+      "lean_kind": "lemma",
+      "lean_name": "no_interference_collision_scale",
+      "local_id": "t14",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.TwoStageInterference.CompleteRandomization",
+        "Causalean.Experimentation.DesignBased.Designs.CompleteRandomization",
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Mathlib.Data.Nat.Choose.Basic",
+        "Mathlib.Analysis.Convex.Jensen"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_no_interference_collision_scale.lean",
+      "hyps": [],
+      "notes": "Build-inline, medium-heavy (the sharpest negative result). Reuse: the collision probability (5) is the hypergeometric count `choose (n-a-b) (m-a) / choose n m`, exactly the counting layer of `completeRandomization_card` / `completeRandomization_incl` / `completeRandomization_incl_pair` (Designs/CompleteRandomization.lean:44/245/285) and `crdOn_mean`/`crdOn_pair`, whose `Finset.powersetCard` technique (`card_powersetCard_filter_mem_succ`, line 75) is the pattern to adapt for the general `(a,b)` count; optimality of complete randomization over designs is the permutation-averaging Jensen step shared with thm:orbit-fractional-cover-compression (pattern: `prodDesign_Pr_reindex`). Then `U_n(pi) = 2` for every `pi` (one endpoint sign per unit stays free), `inf C_n = Theta(n^{-1})` from the `(1,0)`/`(0,1)` lower bound and the geometric bound `sup_k k q^{k/4} < infinity`, the `binom(n+15,15)` pair-orbit count by a type-count injection, and `kappa_n = Omega(n^2)` by summing any equivariant cover against the (invariant) uniform design. Search trace: grep -i 'hypergeometric|inclusion probability|without replacement' over ../Causalean - the inclusion-probability lemmas above are the only such counting facts and they cover only `(a,b) in {(1,0),(1,1)}`, so the general two-set count is build-inline; Mathlib-side check `Mathlib.Data.Nat.Choose.Basic`/`Nat.choose` supplies the binomial algebra but no hypergeometric collision identity."
+    },
+    "thm:exposure-signature-compression-and-local-boundaries": {
+      "lean_kind": "theorem",
+      "lean_name": "exposure_signature_compression_and_local_boundaries",
+      "local_id": "t15",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Mathlib.Analysis.SpecialFunctions.Sqrt"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_exposure_signature_compression_and_local_boundaries.lean",
+      "hyps": [],
+      "notes": "Build-inline, light: a pure assembly of lem:joint-signature-fractional-compression (constructive half, with `K = sqrt (sup_n R_n)` and the `R_n = O(log n)` size/statecount reading), lem:no-interference-collision-scale + prop:no-interference-calibration (the negative half, whose contradiction step is `2 <= K * O(n^{-1})` as `n -> infinity`), and lem:split-graph-local-witness (the dense graph-local separation `5/4 - 1 = 1/4`). Only `Filter`-level bookkeeping is new. No new substrate."
+    }
+  },
+  "file_plan": {
+    "Basic.lean": [
+      "ass:fixed-schedule",
+      "ass:bounded-table",
+      "ass:menu-measurability",
+      "def:ambiguity-class",
+      "def:design-class",
+      "def:observed-experiment",
+      "def:minimax-risk",
+      "def:sign-schedules",
+      "def:collision-moduli",
+      "def:multilinear-extension",
+      "def:oracle-menu-benchmark"
+    ],
+    "Programs.lean": [
+      "def:finite-primal",
+      "def:finite-dual",
+      "def:primal-recovery",
+      "def:structural-handle"
+    ],
+    "Witnesses.lean": [
+      "def:minimal-witness-mappings",
+      "def:minimal-witness-graphs",
+      "def:minimal-witness-arrays",
+      "def:minimal-witness-estimators",
+      "def:persistent-witness"
+    ],
+    "Calibrations.lean": [
+      "def:local-solved-menu",
+      "def:nonlocal-solved-menu",
+      "def:complete-randomization",
+      "def:difference-in-means"
+    ],
+    "Helpers/SignMixture.lean": "sign-mixture weight algebra (probability-vector facts, coordinate means), Jensen-for-the-square wrapper, clipping-to-[-2,2] lemma; feeds lem:sign-reduction, thm:collision-geometry-sandwich.",
+    "Helpers/FiniteMinimax.lean": "compact convex hull of the finite loss-vector family, strict separation from the lower orthant, existence of a least-favourable prior, min-max attainment; feeds thm:finite-saddle.",
+    "Helpers/PerspectiveProgram.lean": "per-cell quadratic minimisation with the 0/0 convention, primal <-> (pi,d) feasibility correspondence, primal and dual attainment; feeds thm:finite-saddle.",
+    "Helpers/PosteriorRisk.lean": "the finite-design posterior square-loss identity (Bayes risk = averaged posterior target variance) and the Bayes <= worst-case step; feeds thm:minimal-nonrepresentability, prop:local-program-solution, prop:nonlocal-program-solution, prop:no-interference-calibration, prop:singleton-witness-oracle-values.",
+    "Helpers/WitnessArith.lean": "explicit rational evaluations (eight-atom prior tables, sixteen sign vertices, six-atom prior moments, 25/16 and 25/36 posterior variances); feeds thm:minimal-nonrepresentability, prop:singleton-witness-oracle-values, thm:persistent-nonrepresentability.",
+    "Helpers/BlockAveraging.lean": "selector pushforward via FiniteDesign.map, rho_B(Omega)={10,01}, block-average Cauchy-Schwarz, within-cell derandomisation; feeds thm:persistent-nonrepresentability, prop:singleton-witness-oracle-values, lem:split-graph-local-witness.",
+    "Helpers/OrbitAveraging.lean": "group averaging of designs, invariance of the pair-collision functional, orbit-mass parameterisation and simplex attainment; feeds thm:orbit-fractional-cover-compression, lem:no-interference-collision-scale.",
+    "Helpers/SignatureDP.lean": "joint-signature aggregation, the universal congestion-R_n cover, the unitwise dynamic program with its correctness and state/transition-count bounds; feeds lem:joint-signature-fractional-compression.",
+    "Helpers/CountingBounds.lean": "hypergeometric collision counts, sup_k k q^(k/4) bound, orbit-count injections (binom(n+15,15), 2(n+1)^4, 48(n+1)^60); feeds lem:no-interference-collision-scale, lem:split-graph-local-witness.",
+    "T_*.lean": "one file per statement node, named in the node's target_file field."
+  },
+  "bypass_justified": [
+    {
+      "module": "Causalean/Experimentation/DesignBased/HT/{Estimator,Unbiased,Variance}.lean and Exposure.lean's propensity layer (prop, propPairSame, propPairCross, htTotal, htMean, htEffect, E_htEffect, Var_htTotal, var_htMean_le)",
+      "reason": "Wrong abstraction: the entire HT layer presumes a single KNOWN exposure mapping with positive known propensities and an inverse-probability-weighted LINEAR estimator; this paper's decision class is all measurable rules and its adversary is a latent menu, so no propensity is even defined. The exposure PRIMITIVES from the same cluster (`expo`, `ProperlySpecified`, `Yobs`) are reused."
+    },
+    {
+      "module": "Causalean/Experimentation/DesignBased/{Chebyshev,GaussianCDF,SteinMethod,DependencyCLT,LocalDependenceVariance,IndepSummandsCLT,WaldCoverage,WaldPipeline}.lean",
+      "reason": "Wrong regime: the reuse list's asymptotic-inference stack (Chebyshev consistency, Stein/dependency-graph CLT, Wald coverage) targets sampling distributions of a fixed estimator; every claim here is an exact finite-n minimax value or an explicit finite-n rate, with no distributional limit anywhere."
+    },
+    {
+      "module": "Causalean/Experimentation/DesignBased/{Product,TwoStage,ProductVariance,CompoundVariance}.lean (prodDesign, compound, Var_prod_linear_comb, E_compound_tower, Var_compound_eq_tower)",
+      "reason": "Wrong design family: these encode cross-coordinate independence (Bernoulli/product and two-stage compound designs); the exact-treated-count slice is by construction NOT a product measure. `ProductReindex.prodDesign_Pr_reindex` is still cited as the pattern for the permutation-averaging step."
+    },
+    {
+      "module": "Causalean/Stat/Minimax/ (LeCam, Fano, Assouad, TotalVariation, Pinsker, MinimaxRisk)",
+      "reason": "Wrong world and wrong direction: that layer lower-bounds TESTING error between measure-theoretic sampling laws via TV/KL. Here the randomness is one randomization draw on a finite cube, the lower bounds are exact least-favourable-prior Bayes risks (not divergence bounds), and the value is attained rather than sandwiched."
+    },
+    {
+      "module": "Causalean/Experimentation/DesignBased/EdgeVarianceBound.lean (var_edge_sum_le) and UnknownInterference/",
+      "reason": "Wrong object: both bound the variance of a specific (HT/Hajek) estimator under restricted or unknown interference with a Bernoulli design; nothing here estimates a variance of a fixed estimator, and the interference structure is a declared finite menu, not an unknown graph."
+    },
+    {
+      "module": "CausalSmith/Experimentation/EXP_SaturationSkewThreshold_Research/Helpers/Convex.lean (fin_dim_supporting_hyperplane)",
+      "reason": "Present in the index but UNPROVED (`sorry`) in an in-flight, unbanked run; the same separation is taken directly from Mathlib's `geometric_hahn_banach_compact_closed` instead."
+    }
+  ]
+}

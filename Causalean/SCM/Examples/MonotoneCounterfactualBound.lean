@@ -135,9 +135,9 @@ theorem monotoneCounterfactualBound :
     | random n =>
         cases n with
         | d => simp at hw
-        | y => simp [boolParentAssignmentIn]
+        | y => rfl
     | fixed n =>
-        cases n <;> simp [boolParentAssignmentIn]
+        cases n <;> rfl
   have hresp :
       M.structFun ⟨SWIGNode.random y, hchild⟩ (boolParentAssignmentIn M false) ≤
         M.structFun ⟨SWIGNode.random y, hchild⟩ (boolParentAssignmentIn M true) :=

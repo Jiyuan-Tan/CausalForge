@@ -212,7 +212,7 @@ at `s` and `w`. -/
 lemma estD_equivariant (s s' : StratAssign R.ι) (σ : R.ι ≃ R.ι) (hσ : ∀ i, s' i = s (σ i))
     (w : R.ι → (Fin R.K → Bool)) :
     R.toExp.estD (s', fun i => w (σ i)) = R.toExp.estD (s, w) := by
-  rw [estD_eq_agg, estD_eq_agg]
+  rw [estD_eq_agg R.toExp s' (fun i => w (σ i)), estD_eq_agg R.toExp s w]
   congr 1
   refine Fintype.sum_equiv σ
     (fun i => (if s' i then (1 : ℝ) else 0) * groupDiff R.toExp i (w (σ i)))
@@ -327,6 +327,7 @@ noncomputable def homogeneous_of_identical (R : ℕ → IdenticalRef) (t δ M : 
     (R n).hhom_of_identical t s s' (hcount n s hs) (hcount n s' hs')
 
 open DesignBased in
+open scoped Classical in
 /-- **Proposition 5.1 under literally identical groups.** When the groups are identical across the
 sequence — common size, allocation strategies, potential outcomes, and unit counts, all sharing one
 group-level treatment-minus-control direct-effect contrast `δ` — with a uniform bound `M` on the

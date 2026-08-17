@@ -28,10 +28,16 @@ def reverseFixedLoadingFiber (m L : ℕ) (η : ParamSpace ℂ m) :
   { η' | η' ∈ fiberCorrespondence L (reverseCumulantMap m L)
       (reverseCumulantMap m L η) ∧ η'.1 = η.1 ∧ η'.2.1 = η.2.1 }
 
+/-- Every parameter point lying in a forward fiber with the loading coordinates held fixed is
+band-supported, meaning its source weights vanish at every cumulant order below two or above
+the truncation order. -/
 lemma forwardFixedLoadingFiber_subset_band {m L : ℕ} {θ : ParamSpace ℂ m} :
     forwardFixedLoadingFiber m L θ ⊆ bandSupportedParams m L :=
   fun _ h => h.1.1
 
+/-- Every parameter point lying in a reverse fiber with the loading coordinates held fixed is
+band-supported, meaning its source weights vanish at every cumulant order below two or above
+the truncation order. -/
 lemma reverseFixedLoadingFiber_subset_band {m L : ℕ} {η : ParamSpace ℂ m} :
     reverseFixedLoadingFiber m L η ⊆ bandSupportedParams m L :=
   fun _ h => h.1.1

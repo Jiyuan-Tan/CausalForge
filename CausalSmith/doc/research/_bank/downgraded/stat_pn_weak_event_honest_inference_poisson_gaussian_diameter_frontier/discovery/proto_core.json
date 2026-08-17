@@ -1,0 +1,1201 @@
+{
+  "qid": "stat_pn_weak_event_honest_inference",
+  "specialization": "gaussian_shell_directional_minimax_frontier",
+  "cluster": "stat",
+  "symbols": [
+    {
+      "name": "\\(n\\)",
+      "type": "integer",
+      "space": "\\(\\{1,2,\\ldots\\}\\)",
+      "def": "\\(n\\) indexes a triangular-array row.",
+      "role": "row index"
+    },
+    {
+      "name": "\\(p\\)",
+      "type": "integer",
+      "space": "\\(\\{1,2,\\ldots\\}\\)",
+      "def": "\\(p\\) is the fixed covariate dimension.",
+      "role": "dimension"
+    },
+    {
+      "name": "\\(K\\)",
+      "type": "integer",
+      "space": "\\(\\{2,3,\\ldots\\}\\)",
+      "def": "\\(K\\) is the fixed number of balanced cross-fitting folds.",
+      "role": "fold count"
+    },
+    {
+      "name": "\\(X\\)",
+      "type": "random vector",
+      "space": "\\([0,1]^p\\)",
+      "def": "\\(X\\) is the covariate vector.",
+      "role": "covariate"
+    },
+    {
+      "name": "\\(A\\)",
+      "type": "random variable",
+      "space": "\\(\\{0,1\\}\\)",
+      "def": "\\(A\\) is the treatment indicator.",
+      "role": "treatment"
+    },
+    {
+      "name": "\\(Y\\)",
+      "type": "random variable",
+      "space": "\\(\\{0,1\\}\\)",
+      "def": "\\(Y\\) is the observed outcome.",
+      "role": "outcome"
+    },
+    {
+      "name": "\\(O\\)",
+      "type": "random vector",
+      "space": "\\([0,1]^p\\times\\{0,1\\}^2\\)",
+      "def": "\\(O=(X,A,Y)\\).",
+      "role": "observed unit"
+    },
+    {
+      "name": "\\(Z_n\\)",
+      "type": "random sample",
+      "space": "\\(([0,1]^p\\times\\{0,1\\}^2)^n\\)",
+      "def": "\\(Z_n=(O_{1,n},\\ldots,O_{n,n})\\).",
+      "role": "observed row"
+    },
+    {
+      "name": "\\(P_n\\)",
+      "type": "probability law",
+      "space": "observed-data laws",
+      "def": "\\(P_n\\) is the observed-data law in row \\(n\\).",
+      "role": "row law"
+    },
+    {
+      "name": "\\(P\\)",
+      "type": "probability law",
+      "space": "observed-data laws",
+      "def": "\\(P\\) is an individual observed-data law with its row index suppressed.",
+      "role": "generic law"
+    },
+    {
+      "name": "\\(\\widetilde P_n\\)",
+      "type": "probability law",
+      "space": "full-data laws",
+      "def": "\\(\\widetilde P_n\\) is a law of \\(X,A,Y(0),Y(1)\\) whose observed projection is \\(P_n\\).",
+      "role": "causal extension"
+    },
+    {
+      "name": "\\(Y(0)\\)",
+      "type": "random variable",
+      "space": "\\(\\{0,1\\}\\)",
+      "def": "\\(Y(0)\\) is the control potential outcome.",
+      "role": "potential outcome"
+    },
+    {
+      "name": "\\(Y(1)\\)",
+      "type": "random variable",
+      "space": "\\(\\{0,1\\}\\)",
+      "def": "\\(Y(1)\\) is the treated potential outcome.",
+      "role": "potential outcome"
+    },
+    {
+      "name": "\\(e_n\\)",
+      "type": "function",
+      "space": "\\([0,1]^p\\to[0,1]\\)",
+      "def": "\\(e_n(x)=P_n(A=1\\mid X=x)\\).",
+      "role": "propensity"
+    },
+    {
+      "name": "\\(m_{0,n}\\)",
+      "type": "function",
+      "space": "\\([0,1]^p\\to[0,1]\\)",
+      "def": "\\(m_{0,n}(x)=E_{P_n}[Y\\mid A=0,X=x]\\).",
+      "role": "control regression"
+    },
+    {
+      "name": "\\(m_{1,n}\\)",
+      "type": "function",
+      "space": "\\([0,1]^p\\to[0,1]\\)",
+      "def": "\\(m_{1,n}(x)=E_{P_n}[Y\\mid A=1,X=x]\\).",
+      "role": "treated regression"
+    },
+    {
+      "name": "\\(f_{X,n}\\)",
+      "type": "function",
+      "space": "Lebesgue densities on \\([0,1]^p\\)",
+      "def": "\\(f_{X,n}\\) is a Lebesgue density of the \\(P_n\\)-marginal law of \\(X\\) on \\([0,1]^p\\).",
+      "role": "design density"
+    },
+    {
+      "name": "\\(\\varepsilon\\)",
+      "type": "constant",
+      "space": "\\((0,1/2]\\)",
+      "def": "\\(\\varepsilon\\) is the overlap bound.",
+      "role": "regularity constant"
+    },
+    {
+      "name": "\\(\\alpha\\)",
+      "type": "constant",
+      "space": "\\((0,1/2)\\)",
+      "def": "\\(\\alpha\\) is the nominal confidence-set error probability.",
+      "role": "inference level"
+    },
+    {
+      "name": "\\(z_{1-\\alpha/2}\\)",
+      "type": "constant",
+      "space": "\\(\\mathbb R\\)",
+      "def": "\\(z_{1-\\alpha/2}\\) is the \\(1-\\alpha/2\\) standard-normal quantile.",
+      "role": "critical value"
+    },
+    {
+      "name": "\\(B_\\varepsilon\\)",
+      "type": "constant",
+      "space": "\\([1,\\infty)\\)",
+      "def": "\\(B_\\varepsilon=2/\\varepsilon-1\\) is the common fitted-score envelope.",
+      "role": "score envelope"
+    },
+    {
+      "name": "\\(c_X\\)",
+      "type": "constant",
+      "space": "\\((0,\\infty)\\)",
+      "def": "\\(c_X\\) is the lower design-density bound.",
+      "role": "regularity constant"
+    },
+    {
+      "name": "\\(C_X\\)",
+      "type": "constant",
+      "space": "\\([c_X,\\infty)\\)",
+      "def": "\\(C_X\\) is the upper design-density bound.",
+      "role": "regularity constant"
+    },
+    {
+      "name": "\\(\\bar d\\)",
+      "type": "constant",
+      "space": "\\((0,1/2]\\)",
+      "def": "\\(\\bar d\\) is the probability-simplex cap used only by least-favorable and bounded-count witness constructions.",
+      "role": "LF witness cap"
+    },
+    {
+      "name": "\\(c_G\\)",
+      "type": "constant",
+      "space": "\\((0,\\infty)\\)",
+      "def": "\\(c_G\\) is the lower score-information constant.",
+      "role": "information constant"
+    },
+    {
+      "name": "\\(C_G\\)",
+      "type": "constant",
+      "space": "\\(\\{\\varepsilon^{-1}\\}\\)",
+      "def": "\\(C_G=\\varepsilon^{-1}\\) is the sharp derived monotone-overlap score-variance coefficient; it is not a free primitive.",
+      "role": "derived structural bound"
+    },
+    {
+      "name": "\\(\\beta_j\\)",
+      "type": "constant",
+      "space": "\\((0,\\infty)\\) for \\(j\\in\\{e,0,1\\}\\)",
+      "def": "\\(\\beta_j\\) is a Hölder smoothness index.",
+      "role": "smoothness"
+    },
+    {
+      "name": "\\(L_j\\)",
+      "type": "constant",
+      "space": "\\((0,\\infty)\\) for \\(j\\in\\{e,0,1\\}\\)",
+      "def": "\\(L_j\\) is a Hölder-ball radius.",
+      "role": "smoothness"
+    },
+    {
+      "name": "\\(r_j\\)",
+      "type": "integer",
+      "space": "\\(\\{0,1,\\ldots\\}\\) for \\(j\\in\\{e,0,1\\}\\)",
+      "def": "\\(r_j\\) is a spline degree.",
+      "role": "sieve parameter"
+    },
+    {
+      "name": "\\(s_j\\)",
+      "type": "constant",
+      "space": "\\((0,1/2)\\) for \\(j\\in\\{e,0,1\\}\\)",
+      "def": "\\(s_j=\\beta_j/(2\\beta_j+p)\\).",
+      "role": "rate exponent"
+    },
+    {
+      "name": "\\(a_{j,n}\\)",
+      "type": "positive sequence",
+      "space": "\\(\\mathbb R_+\\) for \\(j\\in\\{e,0,1\\}\\)",
+      "def": "For every integer \\(n\\ge1\\), \\(a_{j,n}=\\{\\log(n\\vee3)/(n\\vee3)\\}^{s_j}>0\\).",
+      "role": "spline rate"
+    },
+    {
+      "name": "\\(d\\)",
+      "type": "label",
+      "space": "\\(\\{\\mathrm{PN},\\mathrm{PS}\\}\\)",
+      "def": "\\(d\\) indexes a causal direction.",
+      "role": "direction"
+    },
+    {
+      "name": "\\(b(d)\\)",
+      "type": "map",
+      "space": "\\(\\{\\mathrm{PN},\\mathrm{PS}\\}\\to\\{0,1\\}\\)",
+      "def": "\\(b(\\mathrm{PN})=0\\) and \\(b(\\mathrm{PS})=1\\).",
+      "role": "regression index"
+    },
+    {
+      "name": "\\(r_n\\)",
+      "type": "positive sequence",
+      "space": "\\((0,1]\\)",
+      "def": "\\(r_n\\) is a deterministic probability-valued directional factual-probability schedule; LF uses the separately capped subclass.",
+      "role": "Gaussian upper shell index"
+    },
+    {
+      "name": "\\(q_d(P)\\)",
+      "type": "scalar functional",
+      "space": "\\([0,1]\\)",
+      "def": "\\(q_{\\mathrm{PN}}(P)=E_P[AY]\\) and \\(q_{\\mathrm{PS}}(P)=E_P[(1-A)(1-Y)]\\).",
+      "role": "factual probability"
+    },
+    {
+      "name": "\\(\\Theta_d(P)\\)",
+      "type": "scalar functional",
+      "space": "\\([0,1]\\)",
+      "def": "\\(\\Theta_d(P)\\) is the direction-\\(d\\) functional in \\texttt{def:functionals} when \\(q_d(P)>0\\).",
+      "role": "causal target"
+    },
+    {
+      "name": "\\(t_d(P)\\)",
+      "type": "scalar functional",
+      "space": "\\([0,1]\\)",
+      "def": "\\(t_d(P)=\\Theta_d(P)\\).",
+      "role": "true target"
+    },
+    {
+      "name": "\\(\\eta^d(P)\\)",
+      "type": "nuisance tuple functional",
+      "space": "functions on \\([0,1]^p\\)",
+      "def": "\\(\\eta^{\\mathrm{PN}}(P)=(e,m_0)\\) and \\(\\eta^{\\mathrm{PS}}(P)=(1-e,1-m_1)\\).",
+      "role": "score input"
+    },
+    {
+      "name": "\\(\\psi_t^d\\)",
+      "type": "function",
+      "space": "\\(([0,1]^p\\times\\{0,1\\}^2)\\times[0,1]\\to\\mathbb R\\)",
+      "def": "\\(\\psi_t^d\\) is the direction-\\(d\\) score in \\texttt{def:scores} with the row index suppressed.",
+      "role": "orthogonal score"
+    },
+    {
+      "name": "\\(V_d(P)\\)",
+      "type": "scalar functional",
+      "space": "\\(\\mathbb R_+\\)",
+      "def": "\\(V_d(P)=\\operatorname{Var}_P[\\psi^d_{t_d(P)}(O;\\eta^d(P))]\\).",
+      "role": "score variance"
+    },
+    {
+      "name": "\\(\\mathsf I_d(P;c_G,C_G)\\)",
+      "type": "predicate",
+      "space": "laws with \\(q_d(P)>0\\)",
+      "def": "\\(\\mathsf I_d(P;c_G,C_G)\\) holds exactly when \\(V_d(P)\\ge c_Gq_d(P)\\); its second displayed argument is the sharp derived coefficient \\(C_G=\\varepsilon^{-1}\\) and imposes no additional restriction.",
+      "role": "information property"
+    },
+    {
+      "name": "\\(\\mathcal B_n\\)",
+      "type": "set",
+      "space": "observed-data laws",
+      "def": "\\(\\mathcal B_n\\) is the retained three-smoothness witness and comparison class in \\(\\texttt{def:base-class}\\); it is not a Gaussian upper parent.",
+      "role": "LF witness and comparison class",
+      "ref": "def:base-class"
+    },
+    {
+      "name": "\\(\\mathcal R^d\\)",
+      "type": "set",
+      "space": "probability-valued positive sequences",
+      "def": "\\(\\mathcal R^d\\) is the uncapped Gaussian-upper schedule class in \\(\\texttt{def:admissible-schedules}\\).",
+      "role": "Gaussian upper schedule class",
+      "ref": "def:admissible-schedules"
+    },
+    {
+      "name": "\\(\\mathcal M_{G,n}^d(r_n;c_G,C_G)\\)",
+      "type": "set",
+      "space": "observed-data laws",
+      "def": "\\(\\mathcal M_{G,n}^d(r_n;c_G,C_G)\\) is the generalized direction-\\(d\\) Gaussian shell defined by \\(q_d(P)=r_n\\) and \\(V_d(P)\\ge c_Gr_n\\) for any fixed \\(c_G>0\\); \\(C_G=\\varepsilon^{-1}\\) is only the sharp derived structural coefficient.",
+      "role": "Gaussian upper and identical-shell lower domain"
+    },
+    {
+      "name": "\\(\\mathcal M_{B,n}^d(r)\\)",
+      "type": "set",
+      "space": "observed-data laws",
+      "def": "\\(\\mathcal M_{B,n}^d(r)\\) is the direction-\\(d\\) bounded-count shell.",
+      "role": "bounded-count shell"
+    },
+    {
+      "name": "\\(\\mathcal K_{\\mathrm{LF}}\\)",
+      "type": "set",
+      "space": "derived-compatible pairs",
+      "def": "\\(\\mathcal K_{\\mathrm{LF}}\\) contains the admissible lower-information constants paired with the sharp derived coefficient \\(C_G=\\varepsilon^{-1}\\).",
+      "role": "lower-information compatibility domain"
+    },
+    {
+      "name": "\\(\\widehat g_{d,n}\\)",
+      "type": "random function",
+      "space": "\\([0,1]\\to\\mathbb R\\)",
+      "def": "\\(\\widehat g_{d,n}\\) is the cross-fitted direction-\\(d\\) score mean.",
+      "role": "estimating equation"
+    },
+    {
+      "name": "\\(\\widehat\\sigma_{d,n}^2\\)",
+      "type": "random function",
+      "space": "\\([0,1]\\to\\mathbb R_+\\)",
+      "def": "\\(\\widehat\\sigma_{d,n}^2\\) is the held-out direction-\\(d\\) empirical score variance.",
+      "role": "studentizer"
+    },
+    {
+      "name": "\\(\\mathcal A_{n,\\alpha}^d\\)",
+      "type": "random set",
+      "space": "subsets of \\([0,1]\\)",
+      "def": "\\(\\mathcal A_{n,\\alpha}^d\\) is the preliminary direction-\\(d\\) score-acceptance set.",
+      "role": "preliminary inversion"
+    },
+    {
+      "name": "\\(\\mathcal C_{n,\\alpha}^{\\mathrm{score},d}\\)",
+      "type": "random set",
+      "space": "subsets of \\([0,1]\\)",
+      "def": "\\(\\mathcal C_{n,\\alpha}^{\\mathrm{score},d}\\) is the direction-\\(d\\) score-inversion set.",
+      "role": "confidence set"
+    },
+    {
+      "name": "\\(D_n\\)",
+      "type": "random set",
+      "space": "measurable subsets of \\([0,1]\\)",
+      "def": "\\(D_n\\) is an arbitrary measurable direction-\\(d\\) confidence set based on \\(Z_n\\).",
+      "role": "competitor set"
+    },
+    {
+      "name": "\\(\\mathcal R_{\\mathrm{LF}}^d\\)",
+      "type": "set",
+      "space": "capped probability-valued positive sequences",
+      "def": "\\(\\mathcal R_{\\mathrm{LF}}^d\\) is the least-favorable schedule subclass in \\(\\texttt{def:lf-admissible-schedules}\\).",
+      "role": "LF Gaussian schedule class",
+      "ref": "def:lf-admissible-schedules",
+      "refs": [
+        "\\(\\mathcal R^d\\)",
+        "\\(\\bar d\\)"
+      ]
+    },
+    {
+      "name": "\\(\\mathcal B_n^{\\mathrm{PN}}\\)",
+      "type": "set",
+      "space": "observed-data laws",
+      "def": "\\(\\mathcal B_n^{\\mathrm{PN}}\\) is the PN upper law class requiring smooth \\(e_n\\) and \\(m_{0,n}\\), but not smooth \\(m_{1,n}\\).",
+      "role": "PN Gaussian upper parent",
+      "ref": "def:pn-upper-base-class"
+    },
+    {
+      "name": "\\(\\mathcal B_n^{\\mathrm{PS}}\\)",
+      "type": "set",
+      "space": "observed-data laws",
+      "def": "\\(\\mathcal B_n^{\\mathrm{PS}}\\) is the PS upper law class requiring smooth \\(e_n\\) and \\(m_{1,n}\\), but not smooth \\(m_{0,n}\\).",
+      "role": "PS Gaussian upper parent",
+      "ref": "def:ps-upper-base-class"
+    },
+    {
+      "name": "\\(\\bar{\\mathcal C}_{n,\\alpha}^d\\)",
+      "type": "random set",
+      "space": "nonempty compact subsets of \\([0,1]\\)",
+      "def": "\\(\\bar{\\mathcal C}_{n,\\alpha}^d\\) is the uncapped propensity-only score-inversion set in \\(\\texttt{def:boundary-score-inversion}\\).",
+      "role": "propensity-only confidence set",
+      "ref": "def:boundary-score-inversion"
+    },
+    {
+      "name": "\\(\\mathsf B_e\\)",
+      "type": "constant",
+      "space": "\\((0,\\infty)\\)",
+      "def": "\\(\\mathsf B_e=1+\\log\\{(1-\\varepsilon)/\\varepsilon\\}+C_{\\mathrm{QI}}\\), where \\(C_{\\mathrm{QI}}<\\infty\\) is the fixed coefficient-deviation constant of the chosen degree-\\(r_e\\) tensor-product B-spline quasi-interpolation rule on the H\\\"older class obtained by applying the logit map to \\(\\mathcal H^{\\beta_e}(L_e)\\cap[\\varepsilon,1-\\varepsilon]\\). The constant depends only on \\(\\varepsilon,\\beta_e,L_e,p,r_e\\), never on \\(n\\) or the sample.",
+      "role": "propensity logit coefficient bound"
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ass:iid-row",
+      "kind": "sampling",
+      "condition": "\\(Z_n\\sim P_n^{\\otimes n}\\).",
+      "free_symbols": [
+        "\\(Z_n\\)",
+        "\\(P_n\\)"
+      ],
+      "standard": {
+        "name": "row-wise independent sampling",
+        "cite": "ChernozhukovEtAl2018DML"
+      },
+      "used_by": [
+        "conj:gaussian-lower",
+        "lem:lf-membership",
+        "oeq:bounded-count-diameter"
+      ]
+    },
+    {
+      "id": "ass:consistency",
+      "kind": "causal",
+      "condition": "\\(\\widetilde P_n\\{Y=Y(A)\\}=1\\).",
+      "free_symbols": [
+        "\\(\\widetilde P_n\\)",
+        "\\(Y\\)",
+        "\\(A\\)"
+      ],
+      "standard": {
+        "name": "consistency",
+        "cite": "TianPearl2000"
+      },
+      "used_by": [
+        "def:base-class",
+        "def:boundary-base-class",
+        "def:pn-upper-base-class",
+        "def:ps-upper-base-class",
+        "lem:identification",
+        "lem:lf-membership"
+      ]
+    },
+    {
+      "id": "ass:conditional-exchangeability",
+      "kind": "causal",
+      "condition": "\\((Y(0),Y(1))\\perp_{\\widetilde P_n}A\\mid X\\).",
+      "free_symbols": [
+        "\\(\\widetilde P_n\\)",
+        "\\(A\\)",
+        "\\(X\\)"
+      ],
+      "standard": {
+        "name": "conditional exchangeability",
+        "cite": "TianWu2025"
+      },
+      "used_by": [
+        "def:base-class",
+        "def:boundary-base-class",
+        "def:pn-upper-base-class",
+        "def:ps-upper-base-class",
+        "lem:identification",
+        "lem:lf-membership"
+      ]
+    },
+    {
+      "id": "ass:monotonicity",
+      "kind": "causal",
+      "condition": "\\(\\widetilde P_n\\{Y(1)\\ge Y(0)\\}=1\\).",
+      "free_symbols": [
+        "\\(\\widetilde P_n\\)"
+      ],
+      "standard": {
+        "name": "outcome monotonicity",
+        "cite": "TianPearl2000"
+      },
+      "used_by": [
+        "def:base-class",
+        "def:boundary-base-class",
+        "def:pn-upper-base-class",
+        "def:ps-upper-base-class",
+        "lem:identification",
+        "lem:lf-membership"
+      ]
+    },
+    {
+      "id": "ass:overlap",
+      "kind": "regularity",
+      "condition": "\\(P_n\\{\\varepsilon\\le e_n(X)\\le1-\\varepsilon\\}=1\\) for fixed \\(\\varepsilon\\in(0,1/2]\\).",
+      "free_symbols": [
+        "\\(P_n\\)",
+        "\\(e_n\\)",
+        "\\(X\\)"
+      ],
+      "constants": [
+        "\\(\\varepsilon\\)"
+      ],
+      "standard": {
+        "name": "uniform overlap",
+        "cite": "ChernozhukovEtAl2018DML"
+      },
+      "used_by": [
+        "def:base-class",
+        "def:boundary-base-class",
+        "def:pn-upper-base-class",
+        "def:ps-upper-base-class",
+        "lem:identification",
+        "lem:lf-membership"
+      ]
+    },
+    {
+      "id": "ass:design-density",
+      "kind": "regularity",
+      "condition": "For every row \\(n\\), \\(c_X\\le f_{X,n}(x)\\le C_X\\) for Lebesgue-almost every \\(x\\in[0,1]^p\\), where the fixed constants satisfy \\(0<c_X\\le C_X<\\infty\\) and do not depend on \\(n\\).",
+      "free_symbols": [
+        "\\(c_X\\)",
+        "\\(C_X\\)",
+        "\\(f_{X,n}\\)"
+      ],
+      "constants": [
+        "\\(c_X\\)",
+        "\\(C_X\\)"
+      ],
+      "standard": {
+        "name": "bounded design density",
+        "cite": "Chen2007"
+      },
+      "used_by": [
+        "def:base-class",
+        "def:boundary-base-class",
+        "def:pn-upper-base-class",
+        "def:ps-upper-base-class",
+        "lem:lf-membership"
+      ]
+    },
+    {
+      "id": "ass:holder-propensity",
+      "kind": "smoothness",
+      "condition": "\\(e_n\\in\\mathcal H^{\\beta_e}(L_e)\\) for fixed \\(\\beta_e,L_e>0\\).",
+      "free_symbols": [
+        "\\(e_n\\)"
+      ],
+      "constants": [
+        "\\(\\beta_e\\)",
+        "\\(L_e\\)"
+      ],
+      "standard": {
+        "name": "Hölder smoothness",
+        "cite": "Chen2007"
+      },
+      "used_by": [
+        "def:base-class",
+        "def:boundary-base-class",
+        "def:holder",
+        "def:pn-upper-base-class",
+        "def:ps-upper-base-class",
+        "lem:lf-membership"
+      ]
+    },
+    {
+      "id": "ass:holder-control",
+      "kind": "smoothness",
+      "condition": "\\(m_{0,n}\\in\\mathcal H^{\\beta_0}(L_0)\\) for fixed \\(\\beta_0,L_0>0\\).",
+      "free_symbols": [
+        "\\(m_{0,n}\\)"
+      ],
+      "constants": [
+        "\\(\\beta_0\\)",
+        "\\(L_0\\)"
+      ],
+      "standard": {
+        "name": "Hölder smoothness",
+        "cite": "Chen2007"
+      },
+      "used_by": [
+        "def:base-class",
+        "def:holder",
+        "def:pn-upper-base-class",
+        "lem:lf-membership"
+      ]
+    },
+    {
+      "id": "ass:holder-treated",
+      "kind": "smoothness",
+      "condition": "\\(m_{1,n}\\in\\mathcal H^{\\beta_1}(L_1)\\) for fixed \\(\\beta_1,L_1>0\\).",
+      "free_symbols": [
+        "\\(m_{1,n}\\)"
+      ],
+      "constants": [
+        "\\(\\beta_1\\)",
+        "\\(L_1\\)"
+      ],
+      "standard": {
+        "name": "Hölder smoothness",
+        "cite": "Chen2007"
+      },
+      "used_by": [
+        "def:base-class",
+        "def:holder",
+        "def:ps-upper-base-class",
+        "lem:lf-membership"
+      ]
+    },
+    {
+      "id": "ass:rarity-cap",
+      "kind": "parameter-space",
+      "condition": "\\(0<\\bar d\\le1/2\\).",
+      "free_symbols": [
+        "\\(\\bar d\\)"
+      ],
+      "constants": [
+        "\\(\\bar d\\)"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "This construction-specific cap makes the capped monotone family a probability model: in \\(def:least-favorable\\), the type mass \\(1-2r\\) must be nonnegative, so \\(r\\le1/2\\) is the probability-simplex cap."
+      },
+      "used_by": [
+        "def:bounded-count-shell",
+        "lem:lf-membership",
+        "oeq:bounded-count-diameter"
+      ]
+    },
+    {
+      "id": "ass:score-information",
+      "kind": "nondegeneracy",
+      "condition": "\\(\\mathsf I_d(P;c_G,C_G)\\Longleftrightarrow V_d(P)\\ge c_Gq_d(P)\\).",
+      "free_symbols": [
+        "\\(P\\)",
+        "\\(q_d(P)\\)",
+        "\\(V_d(P)\\)",
+        "\\(\\mathsf I_d(P;c_G,C_G)\\)",
+        "\\(c_G\\)",
+        "\\(C_G\\)"
+      ],
+      "constants": [
+        "\\(c_G\\)",
+        "\\(C_G\\)"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "Rare factual events can retain a nonvanishing fraction of score information when the causal contrast is interior. Only the lower nondegeneracy condition is primitive; the monotone binary structural class yields the upper bound mechanically."
+      },
+      "used_by": [
+        "conj:gaussian-lower",
+        "def:boundary-raw-shell",
+        "def:gaussian-shells",
+        "lem:lf-membership"
+      ]
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def:holder",
+      "name": "Hölder balls",
+      "construction": "For \\(\\beta>0\\), put \\(q_\\beta=\\lceil\\beta\\rceil-1\\) and \\(\\gamma_\\beta=\\beta-q_\\beta\\in(0,1]\\). For a function \\(f:[0,1]^p\\to\\mathbb R\\) with continuous partial derivatives through order \\(q_\\beta\\), define the full H\\\"older norm by\n\\[\\lVert f\\rVert_{\\mathcal H^\\beta}=\\sum_{|\\nu|\\le q_\\beta}\\lVert D^\\nu f\\rVert_\\infty+\\max_{|\\nu|=q_\\beta}\\sup_{x\\ne x'}\\frac{|D^\\nu f(x)-D^\\nu f(x')|}{\\lVert x-x'\\rVert_2^{\\gamma_\\beta}}.\\]\nHere \\(\\nu\\in\\mathbb N_0^p\\) is a multi-index, and \\(D^0f=f\\). Define\n\\[\\mathcal H^\\beta(L)=\\{f:[0,1]^p\\to\\mathbb R:\\lVert f\\rVert_{\\mathcal H^\\beta}\\le L\\}.\\]\nUnder this full-norm convention, a constant map \\(f(x)\\equiv c\\) has \\(\\lVert f\\rVert_{\\mathcal H^\\beta}=|c|\\). Hence a H\\\"older ball contains every constant map with value in \\([0,1]\\) exactly when \\(L\\ge1\\).",
+      "by_member_properties": [
+        "ass:holder-propensity",
+        "ass:holder-control",
+        "ass:holder-treated"
+      ]
+    },
+    {
+      "id": "def:functionals",
+      "name": "identified directional functionals",
+      "construction": "\\(\\Theta_{\\mathrm{PN}}(P)=1-E_P[e(X)m_0(X)]/E_P[e(X)m_1(X)]\\) and \\(\\Theta_{\\mathrm{PS}}(P)=1-E_P[(1-e(X))(1-m_1(X))]/E_P[(1-e(X))(1-m_0(X))]\\), each defined only when its denominator is positive.",
+      "inputs": [
+        "\\(P\\)",
+        "\\(e\\)",
+        "\\(m_0\\)",
+        "\\(m_1\\)"
+      ]
+    },
+    {
+      "id": "def:scores",
+      "name": "directional orthogonal scores",
+      "construction": "\\(\\psi_{t,n}^{\\mathrm{PN}}(O;\\eta)=A\\{Y-m_0(X)\\}-e(X)\\{1-e(X)\\}^{-1}(1-A)\\{Y-m_0(X)\\}-tAY\\). Define \\(\\psi_{t,n}^{\\mathrm{PS}}(O;\\eta^{\\mathrm{PS}})=\\psi_{t,n}^{\\mathrm{PN}}((X,1-A,1-Y);(1-e,1-m_1))\\). With the fitted inputs from \\(def:learners\\), both scores satisfy \\( |\\psi_t^d(O;\\widehat\\eta)|\\le B_\\varepsilon=2/\\varepsilon-1\\) for \\(t\\in[0,1]\\).",
+      "inputs": [
+        "\\(O\\)",
+        "\\(t\\)",
+        "\\(e\\)",
+        "\\(m_0\\)",
+        "\\(m_1\\)",
+        "\\(\\varepsilon\\)"
+      ]
+    },
+    {
+      "id": "def:learners",
+      "name": "fixed-fold ridge-regularized clipped spline learners",
+      "construction": "Fix a deterministic balanced fold map \\(k(i)\\in\\{1,\\ldots,K\\}\\). For \\(j\\in\\{e,0,1\\}\\), set \\(s_j=\\beta_j/(2\\beta_j+p)\\) and, for every integer \\(n\\ge1\\), define\n\\[K_{j,n}=\\begin{cases}1,&n<3,\\\\ \\left\\lceil(n/\\log n)^{1/(2\\beta_j+p)}\\right\\rceil,&n\\ge3,\\end{cases}\\qquad J_{j,n}=(K_{j,n}+r_j+1)^p,\\qquad \\lambda_{j,n}=n^{-2},\\qquad a_{j,n}=\\left\\{\\frac{\\log(n\\vee3)}{n\\vee3}\\right\\}^{s_j}>0,\\]\nwith \\(r_j\\ge\\lceil\\beta_j\\rceil\\). Let \\(B_{j,n}(x)\\in\\mathbb R^{J_{j,n}}\\) be the nonnegative partition-of-unity tensor-product B-spline basis of degree \\(r_j\\) on the deterministic quasi-uniform grid with \\(K_{j,n}\\) cells per coordinate. For the fixed constant \\(\\mathsf B_e\\), define the compact convex coefficient cube\n\\[\\Theta_{e,n}=\\{\\theta\\in\\mathbb R^{J_{e,n}}:\\lVert\\theta\\rVert_\\infty\\le\\mathsf B_e\\}.\\]\nOn the training complement \\(I_{-k,n}\\), with \\(N_{-k,n}=|I_{-k,n}|\\), use the deterministic fallback \\(\\widehat\\theta_{e,-k,n}=\\widehat\\theta_{0,-k,n}=\\widehat\\theta_{1,-k,n}=0\\) when \\(N_{-k,n}=0\\), and skip the next two minimizations. When \\(N_{-k,n}>0\\), define \\(\\widehat\\theta_{e,-k,n}\\) as the unique minimizer over \\(\\Theta_{e,n}\\) of\n\\[\\frac1{N_{-k,n}}\\sum_{i\\in I_{-k,n}}\\left[\\log\\{1+\\exp(B_{e,n}(X_{i,n})^\\top\\theta)\\}-A_{i,n}B_{e,n}(X_{i,n})^\\top\\theta\\right]+\\lambda_{e,n}\\lVert\\theta\\rVert_2^2.\\]\nFor \\(a\\in\\{0,1\\}\\), define \\(\\widehat\\theta_{a,-k,n}\\) as the unique minimizer over \\(\\mathbb R^{J_{a,n}}\\) of\n\\[\\frac1{N_{-k,n}}\\sum_{i\\in I_{-k,n}}\\mathbf 1\\{A_{i,n}=a\\}\\{Y_{i,n}-B_{a,n}(X_{i,n})^\\top\\theta\\}^2+\\lambda_{a,n}\\lVert\\theta\\rVert_2^2.\\]\nSet\n\\[\\widehat e_{-k,n}(x)=\\Pi_{[\\varepsilon/2,1-\\varepsilon/2]}\\!\\left(\\frac{\\exp\\{B_{e,n}(x)^\\top\\widehat\\theta_{e,-k,n}\\}}{1+\\exp\\{B_{e,n}(x)^\\top\\widehat\\theta_{e,-k,n}\\}}\\right),\\qquad \\widehat m_{a,-k,n}(x)=\\Pi_{[0,1]}\\{B_{a,n}(x)^\\top\\widehat\\theta_{a,-k,n}\\}.\\]\nThe propensity objective is continuous and strictly convex on the compact convex set \\(\\Theta_{e,n}\\), and each outcome objective is coercive and strictly convex, so every displayed minimizer exists uniquely, including for separated logistic samples and samples containing no observation from one treatment arm. The propensity minimizer is measurable as the pointwise limit of deterministic projected gradient descent from zero with a deterministic step below the reciprocal of the common gradient-Lipschitz bound; projection onto \\(\\Theta_{e,n}\\) is coordinatewise clipping and hence continuous. The outcome minimizers are measurable by deterministic gradient descent. Cross-fitting evaluates at observation \\(i\\) the learner trained on \\(I_{-k(i),n}\\). Casewise evaluation of the clipped score gives \\(|\\psi_t^d(O;\\widehat\\eta)|\\le B_\\varepsilon=2/\\varepsilon-1\\) and \\(|\\psi_t^d(O;\\widehat\\eta)-E\\psi_t^d(O;\\widehat\\eta)|\\le2B_\\varepsilon\\) for both directions and every \\(t\\in[0,1]\\).",
+      "inputs": [
+        "\\(Z_n\\)",
+        "\\(K\\)",
+        "\\(\\beta_e\\)",
+        "\\(\\beta_0\\)",
+        "\\(\\beta_1\\)",
+        "\\(r_e\\)",
+        "\\(r_0\\)",
+        "\\(r_1\\)",
+        "\\(\\varepsilon\\)",
+        "\\(\\mathsf B_e\\)"
+      ]
+    },
+    {
+      "id": "def:base-class",
+      "name": "three-smoothness witness and comparison class",
+      "construction": "\\(\\mathcal B_n=\\{P_n:P_n\\text{ is the observed projection of a full-data law satisfying consistency, conditional exchangeability, monotonicity, overlap, the support-wide condition }c_X\\le f_{X,n}(x)\\le C_X\\text{ for Lebesgue-almost every }x\\in[0,1]^p,\\text{ and all three declared H\\\"older conditions}\\}\\). This intersection class is retained for capped witnesses, bounded-count results, and internal comparisons; it is not the parent of either directional Gaussian upper shell.",
+      "by_member_properties": [
+        "ass:consistency",
+        "ass:conditional-exchangeability",
+        "ass:monotonicity",
+        "ass:overlap",
+        "ass:design-density",
+        "ass:holder-propensity",
+        "ass:holder-control",
+        "ass:holder-treated"
+      ]
+    },
+    {
+      "id": "def:admissible-schedules",
+      "name": "uncapped Gaussian-upper directional schedules",
+      "construction": "For \\(d\\in\\{\\mathrm{PN},\\mathrm{PS}\\}\\),\n\\[\\mathcal R^d=\\left\\{(r_n)_{n\\ge1}:0<r_n\\le1,\\quad\\frac{r_n}{na_{e,n}^2a_{b(d),n}^2}\\longrightarrow\\infty\\right\\},\\]\nwhere \\(b(\\mathrm{PN})=0\\) and \\(b(\\mathrm{PS})=1\\).",
+      "inputs": [
+        "\\(r_n\\)",
+        "\\(a_{e,n}\\)",
+        "\\(a_{0,n}\\)",
+        "\\(a_{1,n}\\)"
+      ]
+    },
+    {
+      "id": "def:lf-compatible-domain",
+      "name": "least-favorable-compatible lower-information domain",
+      "construction": "\\(\\mathcal K_{\\mathrm{LF}}=\\{(c_G,C_G):0<c_G\\le3/16,\\ C_G=\\varepsilon^{-1}\\}\\), where the second coordinate records the sharp derived structural score-variance coefficient and is not a primitive information restriction. A primitive tuple is LF-compatible when \\(c_X\\le1\\le C_X\\), overlap admits \\(e\\equiv1/2\\), the declared H\\\"older balls contain \\(e\\equiv1/2\\) and all constant regressions generated by \\(\\texttt{def:least-favorable}\\) for \\(0<r\\le\\bar d\\), and \\(0<\\bar d\\le1/2\\).",
+      "inputs": [
+        "\\(c_X\\)",
+        "\\(C_X\\)",
+        "\\(\\varepsilon\\)",
+        "\\(c_G\\)",
+        "\\(\\bar d\\)"
+      ]
+    },
+    {
+      "id": "def:gaussian-shells",
+      "name": "direction-specific generalized Gaussian upper shells",
+      "construction": "For fixed \\(c_G>0\\), set \\(C_G=\\varepsilon^{-1}\\). For \\((r_n)\\in\\mathcal R^{\\mathrm{PN}}\\),\n\\[\\mathcal M_{G,n}^{\\mathrm{PN}}(r_n;c_G,C_G)=\\{P\\in\\mathcal B_n^{\\mathrm{PN}}:q_{\\mathrm{PN}}(P)=r_n,\\ V_{\\mathrm{PN}}(P)\\ge c_Gr_n\\}.\\]\nFor \\((r_n)\\in\\mathcal R^{\\mathrm{PS}}\\),\n\\[\\mathcal M_{G,n}^{\\mathrm{PS}}(r_n;c_G,C_G)=\\{P\\in\\mathcal B_n^{\\mathrm{PS}}:q_{\\mathrm{PS}}(P)=r_n,\\ V_{\\mathrm{PS}}(P)\\ge c_Gr_n\\}.\\]\nThe coordinate \\(C_G\\) records the sharp derived structural upper coefficient and imposes no primitive restriction. LF compatibility and \\(\\bar d\\) are absent from both upper shells.",
+      "by_member_properties": [
+        "ass:score-information"
+      ]
+    },
+    {
+      "id": "def:bounded-count-shell",
+      "name": "directional bounded-count shell",
+      "construction": "\\(\\mathcal M_{B,n}^d(r)=\\{P\\in\\mathcal B_n:q_d(P)=r\\}\\) for \\(d\\in\\{\\mathrm{PN},\\mathrm{PS}\\}\\) and \\(0<r\\le\\bar d\\).",
+      "by_member_properties": [
+        "ass:rarity-cap"
+      ]
+    },
+    {
+      "id": "def:score-inversion",
+      "name": "directional score-inversion set",
+      "construction": "With fold map \\(k(i)\\), set \\(\\widehat g_{d,n}(t)=n^{-1}\\sum_{i=1}^n\\psi_{t,n}^d(O_{i,n};\\widehat\\eta_{d,-k(i),n})\\) and \\(\\widehat\\sigma_{d,n}^2(t)=n^{-1}\\sum_{i=1}^n[\\psi_{t,n}^d(O_{i,n};\\widehat\\eta_{d,-k(i),n})-\\widehat g_{d,n}(t)]^2\\). Define \\(\\mathcal A_{n,\\alpha}^d=\\{t\\in[0,1]:n\\widehat g_{d,n}(t)^2\\le z_{1-\\alpha/2}^2\\widehat\\sigma_{d,n}^2(t)\\}\\), and set \\(\\mathcal C_{n,\\alpha}^{\\mathrm{score},d}=\\mathcal A_{n,\\alpha}^d\\) when \\(\\mathcal A_{n,\\alpha}^d\\ne\\varnothing\\), and \\(\\mathcal C_{n,\\alpha}^{\\mathrm{score},d}=\\{0\\}\\) otherwise. The score is affine in \\(t\\) and its empirical variance is continuous, so \\(\\mathcal A_{n,\\alpha}^d\\) is a random closed subset of compact \\([0,1]\\); the fallback gives a measurable nonempty compact-valued output and a defined measurable diameter. The fallback preserves coverage because \\(\\{\\Theta_d(P_n)\\in\\mathcal A_{n,\\alpha}^d\\}\\subseteq\\{\\Theta_d(P_n)\\in\\mathcal C_{n,\\alpha}^{\\mathrm{score},d}\\}\\), and cannot enlarge diameter. The common envelope \\(B_\\varepsilon\\) bounds the held-out score and twice bounds its centered version, supporting both variance and score-set diameter control.",
+      "inputs": [
+        "\\(Z_n\\)",
+        "\\(\\psi_{t,n}^d\\)",
+        "\\(\\widehat\\eta_{d,-k,n}\\)",
+        "\\(\\alpha\\)",
+        "\\(\\varepsilon\\)"
+      ]
+    },
+    {
+      "id": "def:least-favorable",
+      "name": "capped monotone least-favorable construction",
+      "construction": "Let \\(X\\sim\\operatorname{Unif}([0,1]^p)\\), let \\(A\\sim\\operatorname{Bernoulli}(1/2)\\) independently of \\(X,Y(0),Y(1)\\), and set\n\\[P\\{(Y(0),Y(1))=(1,1)\\mid X\\}=2(1-t)r,\\quad P\\{(Y(0),Y(1))=(0,1)\\mid X\\}=2tr,\\quad P\\{(Y(0),Y(1))=(0,0)\\mid X\\}=1-2r\\]\nfor \\(t\\in[1/4,3/4]\\) and \\(0<r\\le\\bar d\\), with observed outcome \\(Y=Y(A)\\). This is the PN construction and has \\(e=1/2\\), \\(m_0=2(1-t)r\\), and \\(m_1=2r\\). Define the PS construction explicitly by\n\\[A^{\\mathrm s}=1-A,\\qquad Y^{\\mathrm s}(0)=1-Y(1),\\qquad Y^{\\mathrm s}(1)=1-Y(0),\\qquad Y^{\\mathrm s}=Y^{\\mathrm s}(A^{\\mathrm s})=1-Y.\\]\nIts observed regressions are \\(e^{\\mathrm s}=1/2\\), \\(m_0^{\\mathrm s}=1-2r\\), and \\(m_1^{\\mathrm s}=1-2(1-t)r\\).",
+      "inputs": [
+        "\\(t\\)",
+        "\\(r\\)",
+        "\\(\\bar d\\)"
+      ]
+    },
+    {
+      "id": "def:sharpness-handle",
+      "name": "rare-learning sharpness handle",
+      "construction": "Use a direction-specific regression perturbation with \\(L_2(P_X)\\) size comparable to \\(a_{b(d),n}\\) inside the monotone shell, then compare its score drift with \\(\\sqrt{r_n/n}\\) through a testing-affinity calculation.",
+      "inputs": [
+        "\\(r_n\\)",
+        "\\(a_{b(d),n}\\)",
+        "\\(\\psi_{t,n}^d\\)"
+      ]
+    },
+    {
+      "id": "def:boundary-base-class",
+      "name": "propensity-only monotone boundary class",
+      "construction": "\\(\\mathcal B_n^\\partial\\) is the set of observed-data laws \\(P_n\\) that are observed projections of full-data laws satisfying consistency, conditional exchangeability, monotonicity, overlap, and the support-wide bounded design-density condition, and whose propensity satisfies \\(e_n\\in\\mathcal H^{\\beta_e}(L_e)\\). The outcome regressions \\(m_{0,n}\\) and \\(m_{1,n}\\) are otherwise arbitrary measurable \\([0,1]\\)-valued functions satisfying \\(m_{0,n}(X)\\le m_{1,n}(X)\\) \\(P_n\\)-almost surely; no outcome-regression H\\\"older condition is imposed.",
+      "by_member_properties": [
+        "ass:consistency",
+        "ass:conditional-exchangeability",
+        "ass:monotonicity",
+        "ass:overlap",
+        "ass:design-density",
+        "ass:holder-propensity"
+      ]
+    },
+    {
+      "id": "def:boundary-raw-shell",
+      "name": "uncapped propensity-only raw boundary shell",
+      "construction": "For \\(d\\in\\{\\mathrm{PN},\\mathrm{PS}\\}\\), fixed \\(c_G>0\\), \\(0<r\\le1\\), and row \\(n\\),\n\\[\\mathcal S_{G,n}^{\\partial,d}(r;c_G)=\\{P\\in\\mathcal B_n^\\partial:q_d(P)=r,\\ V_d(P)\\ge c_Gr\\}.\\]",
+      "by_member_properties": [
+        "ass:score-information"
+      ]
+    },
+    {
+      "id": "def:pn-upper-base-class",
+      "name": "PN directional upper observed-law class",
+      "construction": "\\(\\mathcal B_n^{\\mathrm{PN}}=\\{P_n:P_n\\text{ is the observed projection of a full-data law satisfying consistency, conditional exchangeability, monotonicity, overlap, }c_X\\le f_{X,n}(x)\\le C_X\\text{ for Lebesgue-almost every }x\\in[0,1]^p,\\ e_n\\in\\mathcal H^{\\beta_e}(L_e),\\text{ and }m_{0,n}\\in\\mathcal H^{\\beta_0}(L_0)\\}\\). No condition on the H\\\"older regularity of \\(m_{1,n}\\) is imposed.",
+      "by_member_properties": [
+        "ass:consistency",
+        "ass:conditional-exchangeability",
+        "ass:monotonicity",
+        "ass:overlap",
+        "ass:design-density",
+        "ass:holder-propensity",
+        "ass:holder-control"
+      ]
+    },
+    {
+      "id": "def:ps-upper-base-class",
+      "name": "PS directional upper observed-law class",
+      "construction": "\\(\\mathcal B_n^{\\mathrm{PS}}=\\{P_n:P_n\\text{ is the observed projection of a full-data law satisfying consistency, conditional exchangeability, monotonicity, overlap, }c_X\\le f_{X,n}(x)\\le C_X\\text{ for Lebesgue-almost every }x\\in[0,1]^p,\\ e_n\\in\\mathcal H^{\\beta_e}(L_e),\\text{ and }m_{1,n}\\in\\mathcal H^{\\beta_1}(L_1)\\}\\). No condition on the H\\\"older regularity of \\(m_{0,n}\\) is imposed.",
+      "by_member_properties": [
+        "ass:consistency",
+        "ass:conditional-exchangeability",
+        "ass:monotonicity",
+        "ass:overlap",
+        "ass:design-density",
+        "ass:holder-propensity",
+        "ass:holder-treated"
+      ]
+    },
+    {
+      "id": "def:lf-admissible-schedules",
+      "name": "least-favorable capped Gaussian schedules",
+      "construction": "For \\(d\\in\\{\\mathrm{PN},\\mathrm{PS}\\}\\),\n\\[\\mathcal R_{\\mathrm{LF}}^d=\\{(r_n)\\in\\mathcal R^d:0<r_n\\le\\bar d\\text{ for every }n\\}.\\]",
+      "inputs": [
+        "\\(\\mathcal R^d\\)",
+        "\\(\\bar d\\)"
+      ]
+    },
+    {
+      "id": "def:propensity-learner",
+      "name": "cross-fitted clipped ridge-spline propensity learner",
+      "construction": "For each fold \\(k\\), \\(\\widehat e_{-k,n}\\) is the propensity component of \\(\\texttt{def:learners}\\): it is the clipped logistic tensor-product B-spline ridge minimizer trained on \\(I_{-k,n}\\), with \\(K_{e,n}\\), \\(J_{e,n}\\), and \\(\\lambda_{e,n}\\) exactly as displayed there. This component is a measurable function only of \\((X_i,A_i)_{i\\in I_{-k,n}}\\) and is unchanged if both outcome-regression minimizations are omitted.",
+      "inputs": [
+        "\\(Z_n\\)",
+        "\\(K\\)",
+        "\\(\\beta_e\\)",
+        "\\(r_e\\)",
+        "\\(\\varepsilon\\)"
+      ]
+    },
+    {
+      "id": "def:pn-learners",
+      "name": "PN direction-specific cross-fitted learner",
+      "construction": "For each fold \\(k\\), define \\(\\widehat\\eta_{\\mathrm{PN},-k,n}=(\\widehat e_{-k,n},\\widehat m_{0,-k,n})\\), where the first component is \\(\\texttt{def:propensity-learner}\\) and the second is the clipped control-arm ridge least-squares tensor-product B-spline component displayed in \\(\\texttt{def:learners}\\). The two objectives are separable, so this pair is unchanged if the treated-regression objective is omitted. It uses no fitted \\(m_1\\).",
+      "inputs": [
+        "\\(Z_n\\)",
+        "\\(K\\)",
+        "\\(\\beta_e\\)",
+        "\\(\\beta_0\\)",
+        "\\(r_e\\)",
+        "\\(r_0\\)",
+        "\\(\\varepsilon\\)"
+      ]
+    },
+    {
+      "id": "def:ps-learners",
+      "name": "PS direction-specific cross-fitted learner",
+      "construction": "For each fold \\(k\\), define \\(\\widehat\\eta_{\\mathrm{PS},-k,n}=(1-\\widehat e_{-k,n},1-\\widehat m_{1,-k,n})\\), where \\(\\widehat e_{-k,n}\\) is \\(\\texttt{def:propensity-learner}\\) and \\(\\widehat m_{1,-k,n}\\) is the clipped treated-arm ridge least-squares tensor-product B-spline component displayed in \\(\\texttt{def:learners}\\). The objectives are separable, so this tuple is unchanged if the control-regression objective is omitted. It uses no fitted \\(m_0\\).",
+      "inputs": [
+        "\\(Z_n\\)",
+        "\\(K\\)",
+        "\\(\\beta_e\\)",
+        "\\(\\beta_1\\)",
+        "\\(r_e\\)",
+        "\\(r_1\\)",
+        "\\(\\varepsilon\\)"
+      ]
+    },
+    {
+      "id": "def:boundary-score-inversion",
+      "name": "uncapped propensity-only affine score inversion",
+      "construction": "Define\n\\[\\begin{array}{c|cc}d&U_d^\\star(O)&J_d^\\star(O)\\\\ \\hline\\mathrm{PN}&AY&(1-A)Y\\\\\\mathrm{PS}&(1-A)(1-Y)&A(1-Y)\\end{array}\\]\nand put \\(\\widehat\\pi_{\\mathrm{PN},-k}=\\widehat e_{-k}\\), \\(\\widehat\\pi_{\\mathrm{PS},-k}=1-\\widehat e_{-k}\\). Set\n\\[\\bar\\phi_{t,-k}^d(O)=(1-t)U_d^\\star(O)-\\frac{\\widehat\\pi_{d,-k}(X)}{1-\\widehat\\pi_{d,-k}(X)}J_d^\\star(O),\\]\n\\[\\bar g_{d,n}(t)=n^{-1}\\sum_{i=1}^n\\bar\\phi_{t,-k(i)}^d(O_{i,n}),\\qquad \\bar\\sigma_{d,n}^2(t)=n^{-1}\\sum_{i=1}^n\\{\\bar\\phi_{t,-k(i)}^d(O_{i,n})-\\bar g_{d,n}(t)\\}^2.\\]\nLet \\(\\bar{\\mathcal A}_{n,\\alpha}^d=\\{t\\in[0,1]:n\\bar g_{d,n}(t)^2\\le z_{1-\\alpha/2}^2\\bar\\sigma_{d,n}^2(t)\\}\\), and report \\(\\bar{\\mathcal C}_{n,\\alpha}^d=\\bar{\\mathcal A}_{n,\\alpha}^d\\) when this set is nonempty and \\(\\bar{\\mathcal C}_{n,\\alpha}^d=\\{0\\}\\) otherwise.",
+      "inputs": [
+        "\\(Z_n\\)",
+        "\\(\\widehat e_{-k,n}\\)",
+        "\\(d\\)",
+        "\\(\\alpha\\)",
+        "\\(\\varepsilon\\)"
+      ]
+    }
+  ],
+  "statements": [
+    {
+      "id": "lem:identification",
+      "kind": "lemma",
+      "statement": "Known supporting result. Under consistency, conditional exchangeability, monotonicity, and positive directional factual denominators, \\(\\widetilde P_n\\{Y(0)=0\\mid A=1,Y(1)=1\\}=\\Theta_{\\mathrm{PN}}(P_n)\\) and \\(\\widetilde P_n\\{Y(1)=1\\mid A=0,Y(0)=0\\}=\\Theta_{\\mathrm{PS}}(P_n)\\), invariant across admitted full-data extensions with observed margin \\(P_n\\). Under overlap, \\(E_{P_n}[\\psi^d_{\\Theta_d(P_n),n}(O;\\eta_n^d)]=0\\).",
+      "depends_on": [
+        "ass:consistency",
+        "ass:conditional-exchangeability",
+        "ass:monotonicity",
+        "ass:overlap",
+        "def:functionals",
+        "def:scores"
+      ],
+      "status": "to-prove",
+      "justification": "This supporting lemma fixes the known causal interpretations of the observed-law PN and PS functionals before the rare-event inference analysis.",
+      "gap": "No identification novelty is claimed; the formulas are the established monotonicity benchmarks.",
+      "consumer": "It interprets externally fixed climate and stroke attribution targets without validating event construction, law selection, or shell membership."
+    },
+    {
+      "id": "prop:causal-localization",
+      "kind": "proposition",
+      "statement": "On \\(\\mathcal B_n^{\\mathrm{PN}}\\), \\texttt{prop:pn-causal-localization} gives \\(m_{0,n}(X)\\le m_{1,n}(X)\\) \\(P_{X,n}\\)-almost surely,\n\\[E[m_{0,n}(X)]\\le E[m_{1,n}(X)]\\le\\varepsilon^{-1}q_{\\mathrm{PN}}(P_n),\\]\nand the PN fitted-score remainder is\n\\[O_{P_n^{\\otimes n}}\\!\\left(\\frac{a_{0,n}}{\\sqrt n}+a_{e,n}\\sqrt{\\frac{q_{\\mathrm{PN}}(P_n)}n}+a_{e,n}a_{0,n}\\right),\\]\nwhich is \\(o_{P_n^{\\otimes n}}(\\sqrt{r_n/n})\\) on every schedule in \\(\\mathcal R^{\\mathrm{PN}}\\). On \\(\\mathcal B_n^{\\mathrm{PS}}\\), \\texttt{prop:ps-causal-localization} gives \\(1-m_{1,n}(X)\\le1-m_{0,n}(X)\\) \\(P_{X,n}\\)-almost surely,\n\\[E[1-m_{1,n}(X)]\\le E[1-m_{0,n}(X)]\\le\\varepsilon^{-1}q_{\\mathrm{PS}}(P_n),\\]\nand the PS fitted-score remainder is\n\\[O_{P_n^{\\otimes n}}\\!\\left(\\frac{a_{1,n}}{\\sqrt n}+a_{e,n}\\sqrt{\\frac{q_{\\mathrm{PS}}(P_n)}n}+a_{e,n}a_{1,n}\\right),\\]\nwhich is \\(o_{P_n^{\\otimes n}}(\\sqrt{r_n/n})\\) on every schedule in \\(\\mathcal R^{\\mathrm{PS}}\\).",
+      "depends_on": [
+        "prop:pn-causal-localization",
+        "prop:ps-causal-localization"
+      ],
+      "status": "to-prove",
+      "justification": "The corrected proposition localizes PN on \\(\\mathcal B_n^{\\mathrm{PN}}\\) and PS on \\(\\mathcal B_n^{\\mathrm{PS}}\\), avoiding any import of the opposite regression's smoothness.",
+      "gap": "The result is a sufficient remainder calculation for the declared learners, not a universal necessity boundary.",
+      "consumer": "The direction-specific Gaussian upper proofs consume the matching branch."
+    },
+    {
+      "id": "lem:variance-consistency",
+      "kind": "lemma",
+      "statement": "On \\(\\mathcal M_{G,n}^d(r_n;c_G,C_G)\\), let \\(t_d=\\Theta_d(P_n)\\) and let \\(\\Delta_d\\) denote the matching direction's fitted-minus-oracle held-out score difference. Then, uniformly over that direction-specific shell,\n\\[\\mathbb P_n\\Delta_d^2=O_{P_n^{\\otimes n}}\\!\\left(a_{b(d),n}^2+r_na_{e,n}^2\\right)=o_{P_n^{\\otimes n}}(r_n),\\qquad \\frac{\\widehat\\sigma_{d,n}^2(t_d)}{V_d(P_n)}\\longrightarrow_{P_n^{\\otimes n}}1.\\]\nMoreover \\(B_\\varepsilon/\\sqrt{nr_n}\\to0\\). For \\(d=\\mathrm{PN}\\) these assertions are supplied by \\texttt{lem:pn-variance-consistency}; for \\(d=\\mathrm{PS}\\) they are supplied by \\texttt{lem:ps-variance-consistency}. The closed preliminary inversion and singleton fallback in \\texttt{def:score-inversion} occur after score and variance calculation and do not alter these conclusions.",
+      "depends_on": [
+        "lem:pn-variance-consistency",
+        "lem:ps-variance-consistency",
+        "def:score-inversion"
+      ],
+      "status": "to-prove",
+      "justification": "The corrected wrapper states only the held-out error and studentization conclusion matching the shell's direction.",
+      "gap": "No opposite-regression rate is available or needed on a directional shell.",
+      "consumer": "The Gaussian frontier invokes \\texttt{lem:pn-variance-consistency} or \\texttt{lem:ps-variance-consistency} casewise."
+    },
+    {
+      "id": "lem:lf-membership",
+      "kind": "lemma",
+      "statement": "For every LF-compatible primitive tuple, every \\(d\\in\\{\\mathrm{PN},\\mathrm{PS}\\}\\), every \\((c_G,C_G)\\in\\mathcal K_{\\mathrm{LF}}\\), and every \\((r_n)\\in\\mathcal R^d\\) satisfying \\(r_n\\le\\bar d\\) for all sufficiently large \\(n\\), the construction in \\texttt{def:least-favorable} at \\(r=r_n\\), including \\(t_\\pm=1/2\\pm h(nr_n)^{-1/2}\\) for bounded sufficiently small \\(h\\), lies in the exact direction-specific shell \\(\\mathcal M_{G,n}^d(r_n;c_G,C_G)\\) for all sufficiently large \\(n\\). In the PN case,\n\\[(e,m_0,m_1)=\\left(\\frac12,2(1-t)r,2r\\right),\\]\nwhereas in the PS case,\n\\[(e,m_0,m_1)=\\left(\\frac12,1-2r,1-2(1-t)r\\right).\\]\nIn both cases \\(q_d(P)=r\\), \\(\\Theta_d(P)=t\\), and \\(V_d(P)/r\\in[3/16,21/16]\\); the two product laws have Kullback--Leibler divergence \\(O(h^2)\\). Thus every such eventually capped direction-specific shell is eventually nonempty.",
+      "depends_on": [
+        "ass:iid-row",
+        "ass:consistency",
+        "ass:conditional-exchangeability",
+        "ass:monotonicity",
+        "ass:overlap",
+        "ass:design-density",
+        "ass:holder-propensity",
+        "ass:holder-control",
+        "ass:holder-treated",
+        "ass:rarity-cap",
+        "ass:score-information",
+        "def:functionals",
+        "def:scores",
+        "def:base-class",
+        "def:admissible-schedules",
+        "def:lf-compatible-domain",
+        "def:gaussian-shells",
+        "def:least-favorable",
+        "lem:upper-schedule-consequences"
+      ],
+      "status": "to-prove",
+      "justification": "The casewise statement displays the distinct PN and PS nuisance triples and retains the common target, information, and affinity conclusions.",
+      "gap": "This capped witness alone does not cover schedules above \\(\\bar d\\).",
+      "consumer": "The capped Gaussian lower bound and bounded-count frontier use this exact-shell certificate."
+    },
+    {
+      "id": "conj:gaussian-lower",
+      "kind": "theorem",
+      "statement": "Fix \\(\\alpha\\in(0,1/2)\\), \\(d\\in\\{\\mathrm{PN},\\mathrm{PS}\\}\\), an LF-compatible primitive tuple, \\((c_G,C_G)\\in\\mathcal K_{\\mathrm{LF}}\\), and \\((r_n)\\in\\mathcal R^d\\) such that \\(r_n\\le\\bar d\\) for all sufficiently large \\(n\\). Every measurable \\(D_n\\subseteq[0,1]\\) satisfying \\(\\liminf_n\\inf_{P_n\\in\\mathcal M_{G,n}^d(r_n;c_G,C_G)}P_n^{\\otimes n}\\{\\Theta_d(P_n)\\in D_n\\}\\ge1-\\alpha\\) obeys \\(\\liminf_n\\sup_{P_n\\in\\mathcal M_{G,n}^d(r_n;c_G,C_G)}(nr_n)^{1/2}E_{P_n^{\\otimes n}}[\\operatorname{diam}(D_n)]\\ge c_\\alpha>0\\).",
+      "depends_on": [
+        "ass:iid-row",
+        "ass:score-information",
+        "lem:lf-membership",
+        "lem:elementary-total-variation-from-kl",
+        "def:admissible-schedules",
+        "def:lf-compatible-domain",
+        "def:gaussian-shells"
+      ],
+      "status": "to-prove",
+      "justification": "The explicit least-favorable pair gives the matching expected-diameter converse inside the identical Gaussian shell.",
+      "gap": "The two-point technique is standard; the causal same-shell witness is result-specific.",
+      "consumer": "It certifies that no uniformly honest directional set improves the effective-count rate on this shell."
+    },
+    {
+      "id": "prop:regular-reduction",
+      "kind": "proposition",
+      "statement": "Known sanity reduction. If \\(\\inf_n r_n>0\\), then \\(nr_n\\to\\infty\\) is automatic and the single retained product-rate condition in \\(\\texttt{def:admissible-schedules}\\) is equivalent to \\(a_{e,n}a_{b(d),n}=o(n^{-1/2})\\). The proposed directional score formulas agree with TianWu2025 Section 3.1 and Theorem 1 for PN, Section 4.2 and Theorem 3 for PN inference, and Section 7.1--7.2 with Theorems 5--6 for PS, together with the regular variance-inference context of CaiKuroki2005.",
+      "depends_on": [
+        "def:functionals",
+        "def:scores",
+        "def:admissible-schedules",
+        "def:score-inversion",
+        "def:learners",
+        "lem:tian-wu-regular-benchmark",
+        "lem:cai-kuroki-regular-variance-context"
+      ],
+      "status": "to-prove",
+      "justification": "For a factual schedule bounded away from zero, the retained rare-event product condition is exactly the direction-specific root-\\(n\\) nuisance-product condition, and the affine PN/PS scores reduce algebraically to the cited regular efficient-influence-function formulas.",
+      "gap": "This is a sanity check against the regular benchmark, not a novelty claim and not an equivalence with every condition in Tian and Wu's regular theorem.",
+      "consumer": "It tells regular-regime users how the rare-event score inversion, ratio root, and observation-specific factual-indicator studentizer specialize when \\(r_n\\) does not vanish."
+    },
+    {
+      "id": "oeq:sharp-learning-boundary",
+      "kind": "openendedquestion",
+      "statement": "For each direction \\(d\\), are \\(r_n\\gg a_{b(d),n}^2\\) and \\(r_n\\gg na_{e,n}^2a_{b(d),n}^2\\) necessary up to logarithmic factors for a first-order cross-fitted score to attain the conjectured \\((nr_n)^{-1/2}\\) honest-diameter rate on \\(\\mathcal M_{G,n}^d(r_n;c_G,C_G)\\)?",
+      "depends_on": [
+        "def:sharpness-handle",
+        "def:admissible-schedules",
+        "def:lf-compatible-domain",
+        "def:gaussian-shells",
+        "thm:gaussian-frontier"
+      ],
+      "status": "to-prove",
+      "justification": "The sufficient Gaussian shell should not silently be mistaken for a necessary boundary.",
+      "gap": "ChernozhukovNeweySingh2022Riesz develops global and point-local debiased regression-functionals, not necessity of this direction-specific PN or PS rare-score boundary.",
+      "consumer": "A resolution would tell the conditional climate and stroke users whether better learners can enlarge the Gaussian regime."
+    },
+    {
+      "id": "oeq:bounded-count-diameter",
+      "kind": "openendedquestion",
+      "statement": "For fixed \\(\\alpha\\in(0,1/2)\\), \\(d\\in\\{\\mathrm{PN},\\mathrm{PS}\\}\\), an LF-compatible primitive tuple, and \\(0<r_n\\le\\bar d\\) with \\(\\sup_nnr_n<\\infty\\), is there \\(c_\\alpha>0\\) and a subsequence \\(n_k\\) such that every measurable \\(D_n\\subseteq[0,1]\\) with \\(\\liminf_n\\inf_{P\\in\\mathcal M_{B,n}^d(r_n)}P^{\\otimes n}\\{\\Theta_d(P)\\in D_n\\}\\ge1-\\alpha\\) also has \\(\\liminf_k\\sup_{P\\in\\mathcal M_{B,n_k}^d(r_{n_k})}E_{P^{\\otimes n_k}}[\\operatorname{diam}(D_{n_k})]\\ge c_\\alpha\\)?",
+      "depends_on": [
+        "ass:iid-row",
+        "ass:rarity-cap",
+        "def:base-class",
+        "def:bounded-count-shell",
+        "def:least-favorable",
+        "def:lf-compatible-domain"
+      ],
+      "status": "to-prove",
+      "justification": "It keeps the finite-information warning explicit without claiming a calibration or a limit experiment.",
+      "gap": "GleserHwang1987 Theorem 1 is an adjacent unbounded-target weak-information obstruction; no capped monotone PN or PS bounded-count result is asserted here.",
+      "consumer": "It warns a HannartNaveau2018-style climate analysis with an externally fixed event that a bounded factual count may prevent honest intervals from shrinking; it does not cover their event selection or post-selection inference."
+    }
+  ],
+  "sampling_model": {
+    "design": "For every row, \\(Z_n=(O_{1,n},\\ldots,O_{n,n})\\sim P_n^{\\otimes n}\\).",
+    "units": "Each \\(O=(X,A,Y)\\) has \\(X\\in[0,1]^p\\) and binary \\(A,Y\\).",
+    "treatment": "An admitted full-data extension satisfies consistency, conditional exchangeability, monotonicity, and overlap.",
+    "overlap": "\\(\\varepsilon\\le e_n(X)\\le1-\\varepsilon\\) almost surely.",
+    "nuisance_estimation": "Fixed-fold clipped tensor-product spline empirical-risk minimization estimates the propensity and the direction-specific outcome regression on training observations."
+  },
+  "estimand_functional": "\\(\\Theta_{\\mathrm{PN}}(P)=1-E_P[e(X)m_0(X)]/E_P[e(X)m_1(X)]\\), and \\(\\Theta_{\\mathrm{PS}}(P)=1-E_P[(1-e(X))(1-m_1(X))]/E_P[(1-e(X))(1-m_0(X))]\\)",
+  "target_estimand": "\\(\\Theta_d(P_n),\\ d\\in\\{\\mathrm{PN},\\mathrm{PS}\\}\\)",
+  "bibliography": [
+    {
+      "key": "TianPearl2000",
+      "citation": "Jin Tian and Judea Pearl. Probabilities of causation: Bounds and identification. Annals of Mathematics and Artificial Intelligence 28:287--313, 2000. DOI \\(10.1023/A:1018912507879\\)."
+    },
+    {
+      "key": "TianWu2025",
+      "citation": "Zhaoqing Tian and Peng Wu. Semiparametric efficient inference for the probability of necessary and sufficient causation. Statistics in Medicine, 2025. arXiv:2407.10185v1. DOI \\(10.1002/\\mathrm{sim}.70242\\). Relevance: Lemmas 1--2 identify PN and PS, Theorems 1 and 5 give efficiency bounds, Algorithm 1 supplies cross-fitting, and Theorems 3 and 6 give regular inference; the work does not analyze a denominator or score variance shrinking along a triangular array."
+    },
+    {
+      "key": "CaiKuroki2005",
+      "citation": "Zhihong Cai and Manabu Kuroki. Variance estimators for three probabilities of causation. Risk Analysis 25:1611--1620, 2005. DOI \\(10.1111/j.1539\\text{-}6924.2005.00696.x\\)."
+    },
+    {
+      "key": "ZhangWangMiao2025",
+      "citation": "Ping Zhang, Ruoyu Wang, and Wang Miao. Causal attribution with confidence. arXiv:2504.08294, 2025."
+    },
+    {
+      "key": "ChernozhukovEtAl2018DML",
+      "citation": "Victor Chernozhukov, Denis Chetverikov, Mert Demirer, Esther Duflo, Christian Hansen, Whitney Newey, and James Robins. Double/debiased machine learning for treatment and causal parameters. The Econometrics Journal, 2018. arXiv:1608.00060v6. DOI \\(10.1111/\\mathrm{ectj}.12097\\). Relevance: Assumption 3.2(d) of arXiv version 6 requires nondegenerate score variance, so its uniform Gaussian theorem does not cover the vanishing score scale \\(V_d(P_n)\\asymp r_n\\to0\\)."
+    },
+    {
+      "key": "Chen2007",
+      "citation": "Xiaohong Chen. Large sample sieve estimation of semi-nonparametric models. Handbook of Econometrics, volume 6B, 2007. DOI \\(10.1016/\\mathrm{S1573-4412}(07)06076-X\\)."
+    },
+    {
+      "key": "ChernozhukovNeweySingh2022Riesz",
+      "citation": "Victor Chernozhukov, Whitney Newey, and Rahul Singh. De-biased machine learning of global and local parameters using regularized Riesz representers. The Econometrics Journal, 2022. DOI \\(10.1093/\\mathrm{ectj}/\\mathrm{utac002}\\)."
+    },
+    {
+      "key": "GleserHwang1987",
+      "citation": "Leon Jay Gleser and Jiunn T. Hwang. The nonexistence of confidence sets of finite expected diameter in errors-in-variables and related models. Annals of Statistics 15(4):1351--1362, 1987. DOI \\(10.1214/\\mathrm{aos}/1176350597\\)."
+    },
+    {
+      "key": "KhanTamer2010",
+      "citation": "Shakeeb Khan and Elie Tamer. Irregular identification, support conditions, and inverse weight estimation. Econometrica, 2010. DOI \\(10.3982/\\mathrm{ECTA7372}\\)."
+    },
+    {
+      "key": "CuellarKennedy2020",
+      "citation": "Maria Cuellar and Edward H. Kennedy. A nonparametric projection-based estimator for the probability of causation, with application to water sanitation in Kenya. Journal of the Royal Statistical Society: Series A 183(4):1793--1818, 2020. DOI \\(10.1111/\\mathrm{rssa}.12548\\)."
+    },
+    {
+      "key": "LiMaoPearl2022",
+      "citation": "Ang Li, Ruirui Mao, and Judea Pearl. Probabilities of causation: Adequate size of experimental and observational samples. nCSI Workshop at NeurIPS, 2022. arXiv:2210.05027."
+    },
+    {
+      "key": "HannartNaveau2018",
+      "citation": "Alexis Hannart and Philippe Naveau. Probabilities of causation of climate changes. Journal of Climate, 2018. DOI \\(10.1175/\\mathrm{JCLI-D-17-0304.1}\\)."
+    },
+    {
+      "key": "ChengMaoPearlLi2026",
+      "citation": "Tianyuan Cheng, Ruirui Mao, Judea Pearl, and Ang Li. General sample size analysis for probabilities of causation: a delta method approach. arXiv:2602.17070, 2026."
+    },
+    {
+      "key": "vonLuxburgFranz2009",
+      "citation": "Ulrike von Luxburg and Volker H. Franz. A Geometric Approach to Confidence Sets for Ratios: Fieller's Theorem, Generalizations, and Bootstrap. Statistica Sinica, 19(3):1095--1117, 2009. arXiv:0711.0198."
+    },
+    {
+      "key": "BaiLam2023",
+      "citation": "Yuanlu Bai and Henry Lam. Uncertainty Quantification and Confidence Intervals for Naive Rare-Event Estimators. arXiv:2305.02434, 2023."
+    },
+    {
+      "key": "DerumignyGirardGuyonvarch2019",
+      "citation": "Alexis Derumigny, Lucas Girard, and Yannick Guyonvarch. On the construction of confidence intervals for ratios of expectations. arXiv:1904.07111, 2019. Relevance: Theorem 3.1 and Theorems 4.1 and 5.1 already treat drifting denominators and a ratio-uniformity obstruction; they do not give causal PN/PS nuisance-robust inference or a matched expected-diameter frontier."
+    },
+    {
+      "key": "SmuclerLanniMasip2025",
+      "citation": "Ezequiel Smucler, Ludovico Lanni, and David Masip. A note on the properties of the confidence set for the local average treatment effect obtained by inverting the score test. arXiv:2506.10449v1, 2025. Relevance: Proposition 1 and Theorem 1 analyze the geometry and fixed-law Wald equivalence of a cross-fitted weak-instrument LATE score inversion; they give no drifting-shell expected-diameter rate or minimax converse."
+    },
+    {
+      "key": "Dufour1997",
+      "citation": "Jean-Marie Dufour. Some impossibility theorems in econometrics with applications to structural and dynamic models. Econometrica 65(6):1365--1388, 1997. Relevance: Dufour is the nearest vanishing-denominator ratio impossibility, but its unbounded-parameter conclusion does not yield the local nonshrinking diameter or matched rate for the bounded PN/PS target."
+    },
+    {
+      "key": "BertanhaMoreira2016",
+      "citation": "Marinho Bertanha and Marcelo J. Moreira. Impossible inference in econometrics: Theory and applications. arXiv:1612.02024, 2016. Relevance: Theorems 2 and 3 organize trivial-power and unbounded-confidence-set impossibilities near nonidentification; they do not provide a shrinking-rate frontier for a bounded causal ratio that remains point identified in every row."
+    },
+    {
+      "key": "Low1997",
+      "citation": "Mark G. Low. On nonparametric confidence intervals. Annals of Statistics 25(6):2547--2554, 1997. Relevance: Low's obstruction concerns adaptation to unknown smoothness; the present schedule is known and the obstruction is instead the effective information count \\(nr_n\\)."
+    },
+    {
+      "key": "CaiLow2004",
+      "citation": "T. Tony Cai and Mark G. Low. An adaptation theory for nonparametric confidence intervals. Annals of Statistics 32(5):1805--1840, 2004. DOI \\(10.1214/009053604000000049\\). Relevance: Proposition 1, equation (6), is the standard two-point expected-length lower-bound route used here; its modulus attainment theory requires linear functionals and convex spaces and therefore does not supply either side of the PN/PS ratio frontier."
+    },
+    {
+      "key": "Donoho1994",
+      "citation": "David L. Donoho. Statistical estimation and optimal recovery. Annals of Statistics 22(1):238--270, 1994. Relevance: Donoho characterizes linear-functional recovery over fixed convex classes; the nonlinear PN/PS ratio on an \\(n\\)-indexed monotone shell lies outside that characterization."
+    },
+    {
+      "key": "ArmstrongKolesar2018",
+      "citation": "Timothy B. Armstrong and Michal Kolesar. Optimal inference in a class of regression models. Econometrica 86(2):655--683, 2018. Relevance: Theorem 3.2 and Corollary 3.3 sharpen minimax inference to constants for linear functionals over convex, centrosymmetric classes; this note matches only rates, and monotonicity plus a nonlinear ratio fall outside their key geometry."
+    },
+    {
+      "key": "CaiLowXia2013",
+      "citation": "T. Tony Cai, Mark G. Low, and Yin Xia. Adaptive confidence intervals for regression functions under shape constraints. Annals of Statistics 41(2):722--750, 2013. Relevance: Theorem 1, equations (4)--(5), gives a local-modulus bound at a fixed function in a fixed class; replacing that function by a sequence does not establish uniform attainment on an \\(n\\)-indexed causal ratio shell."
+    },
+    {
+      "key": "CaiGuo2017",
+      "citation": "T. Tony Cai and Zijian Guo. Confidence intervals for high-dimensional linear regression: Minimax rates and adaptivity. Annals of Statistics 45(2):615--646, 2017. DOI \\(10.1214/16\\text{-}\\mathrm{AOS}1461\\). Relevance: Theorem 1, equation (3.1), and Theorem 2, equation (3.12), provide the matched honest expected-length framing with sparsity as model complexity; they do not treat a causal estimand whose own denominator scale drifts."
+    },
+    {
+      "key": "AndrewsChengGuggenberger2020",
+      "citation": "Donald W. K. Andrews, Xu Cheng, and Patrik Guggenberger. Generic results for establishing the asymptotic size of confidence sets and tests. Journal of Econometrics 218(2):496--531, 2020. Relevance: Their drifting-sequence machinery establishes uniform asymptotic size; it does not supply an expected-diameter rate, a causal shell witness, or a matching converse."
+    },
+    {
+      "key": "MaWang2020",
+      "citation": "Xinwei Ma and Jingshen Wang. Robust inference using inverse probability weighting. Journal of the American Statistical Association 115(532):1851--1860, 2020. DOI \\(10.1080/01621459.2019.1660173\\). Relevance: The paper treats weak-overlap inverse-weight irregularity, not a score variance that vanishes with a factual-event probability or a PN/PS diameter frontier."
+    },
+    {
+      "key": "HeilerKazak2021",
+      "citation": "Philipp Heiler and Ekaterina Kazak. Valid inference for treatment effect parameters under irregular identification and many extreme propensity scores. Journal of Econometrics 222(2):1083--1108, 2021. DOI \\(10.1016/j.jeconom.2020.03.025\\). Relevance: Theorem 4.1(i)--(ii) gives stable-law behavior, bootstrap failure, and \\(m\\)-out-of-\\(n\\) responses to diverging inverse-weight variance; it addresses scale explosion, not the vanishing score scale studied here."
+    },
+    {
+      "key": "MaSantAnnaSasakiUra2023",
+      "citation": "Xinwei Ma, Pedro H. C. Sant'Anna, Yuya Sasaki, and Takuya Ura. Doubly robust estimators with weak overlap. arXiv:2304.08974, 2023. Relevance: Theorem 1(ii) obtains Gaussian behavior only with influence-function variance bounded away from zero; it therefore does not cover \\(V_d(P_n)\\asymp r_n\\to0\\)."
+    },
+    {
+      "key": "Dorn2025",
+      "citation": "Jacob Dorn. How much weak overlap can doubly robust t-statistics handle? arXiv:2504.13273, 2025. Relevance: Thresholded doubly robust inference makes weak-overlap nuisance costs explicit, but it does not analyze a point-identified PN/PS ratio with score information shrinking as \\(r_n\\) or its minimax expected diameter."
+    },
+    {
+      "key": "HiranoPorter2012",
+      "citation": "Keisuke Hirano and Jack R. Porter. Impossibility results for nondifferentiable functionals. Econometrica 80(4):1769--1790, 2012. Relevance: Their nonregular-functional impossibility theory does not give a uniformly honest expected-diameter frontier for this smooth-in-each-row but drifting-scale causal ratio."
+    },
+    {
+      "key": "Ma2023IdentificationRobustLATE",
+      "citation": "Yukun Ma. Identification-robust inference for the LATE with high-dimensional covariates. arXiv:2302.09756, February 2023."
+    }
+  ],
+  "tldr": "Tian and Wu's identified PN/PS functionals, efficient influence functions, and cross-fitting architecture are taken as given. The contribution is an identical-shell achievability/converse pair for the nonlinear PN/PS ratio under known drifting factual-event schedules, with matched expected-diameter order \\((nr_n)^{-1/2}\\), plus a nonshrinking obstruction when \\(nr_n=O(1)\\). The achievability proof now includes finite-sample Bernstein bounds for the explicit ridge-spline learners and a direct tensor-lattice inverse-row-sum theorem for their empirical Gram and logistic Hessian matrices.",
+  "project_justification": {
+    "gap": "Regular PN/PS theory does not analyze triangular arrays with factual denominator \\(q_d(P_n)=r_n\\to0\\). Generic weak-ratio and weak-instrument results provide nearby nonuniformity and inversion ideas, but not a matched expected-diameter frontier on one point-identified monotone PN/PS shell. The prior achievability sketch also left the spline inverse and concentration steps insufficiently justified; those steps are now discharged explicitly.",
+    "niche": "The note fixes a known factual-probability schedule and studies relative score and studentizer accuracy at variance scale \\(V_d(P_n)\\asymp r_n\\). PN uses smooth \\(e_n,m_{0,n}\\), while PS uses smooth \\(e_n,m_{1,n}\\). Local spline support, bounded design density, overlap, and the constrained propensity coefficient cube yield finite-sample learner control without importing opposite-direction outcome smoothness.",
+    "fill": "The explicit cross-fitted score inversion has uniform Gaussian coverage and expected diameter \\(O((nr_n)^{-1/2})\\). The learner proof uses a written-out bounded-variable Bernstein inequality, an \\(O(J)\\)-cardinality union bound, spectral stability of the local empirical Gram matrices, and a proved \\(O(J)\\) inverse-row-sum bound. A causally valid two-point family in the identical shell supplies the matching lower order, while a separate bounded-count theorem gives nonshrinking diameter."
+  },
+  "related_work": "Tian and Wu provide the PN/PS identifying formulas, efficient influence functions, and cross-fitted regular inference. Cai and Kuroki provide regular variance-estimation context. Zhang--Wang--Miao study generally partially identified PN bounds, and Cuellar--Kennedy study regular inference for a projection of conditional probability of causation; neither target is the marginal monotonicity-identified PN/PS ratio considered here. Derumigny, Girard, and Guyonvarch analyze generic weak ratios, while Smucler, Lanni, and Masip and Ma develop identification-robust causal-ratio score inversion. Those works do not give the present identical-shell expected-diameter upper and lower pair at effective count \\(nr_n\\). Low and Cai--Low supply the standard two-point confidence-length route; the new converse work is the causal same-shell construction. Cheng, Mao, Pearl, and Li study partially identified finite-discrete endpoints, a different estimand and regime. Hannart--Naveau climate attribution and Tian--Wu stroke attribution are conditional consumers after their factual schedules and shell conditions are justified.",
+  "interpretation": "The factual conditioning event supplies effective count \\(nr_n\\). Once the directional spline errors are proved smaller than the score scale, the affine score mean fluctuates at order \\(\\sqrt{r_n/n}\\); division by factual slope \\(r_n\\) gives diameter \\((nr_n)^{-1/2}\\). The direct inverse-row-sum argument is what converts coordinatewise empirical concentration into the required uniform fitted-function rates. The identical-shell least-favorable pair proves that the resulting diameter order cannot be uniformly improved. When \\(nr_n\\) is bounded, separated attribution values remain statistically close and honest sets cannot shrink.",
+  "technical_internal_limitation": "The Gaussian upper theorem requires \\(r_n/\\{na_{e,n}^2a_{b(d),n}^2\\}\\to\\infty\\), eventual shell nonemptiness, and \\(V_d(P_n)\\ge c_Gr_n\\). The matching converse additionally requires least-favorable compatibility, \\(c_G\\le3/16\\), and a vanishing eventually capped schedule, and it matches rates rather than constants. The finite-sample learner argument uses fixed dimension \\(p\\), fixed spline degree, fixed fold count, quasi-uniform tensor grids, bounded outcomes, and support-wide design-density bounds. The bounded-count theorem remains a lower obstruction rather than a Poisson-calibrated upper procedure.",
+  "honest_scope": "The contribution is inference for already identified PN/PS, not new identification, a new efficient influence function, a new cross-fitting principle, or a new generic inverse-decay method. The headline is the conjunction of a known drifting schedule, a nonlinear causal ratio, an identical-shell matched expected-diameter order, and the bounded-effective-count obstruction. The matrix and concentration arguments complete the explicit estimator's achievability proof but create no separate novelty claim. The climate and stroke examples remain consumers rather than demonstrations of shell membership."
+}

@@ -258,6 +258,12 @@ lemma implementableReducedValue_eq_of_min (m : ℕ) (a b r kappa : ℝ)
         X_impl.1 X_impl.2.1 X_impl.2.2,
       ⟨X_impl.1, X_impl.2.1, X_impl.2.2, hImplMin.1, hImplMin.2.1, rfl⟩, hw⟩
 
+/-- The relaxed reduced problem attains its minimum: some point of the reduced triangle
+minimizes the reduced objective over the whole triangle. This is the existence statement
+behind the relaxed value being a genuine minimum rather than only an infimum; it is proved
+by transporting the triangle to the weighted simplex, where the linear-plus-weighted-norm
+objective has an explicit minimizer (an active-set point when the robustness weight is
+positive, an exposed-face vertex when it is zero). -/
 lemma exists_relaxed_reduced_minimizer (m : ℕ) (a b r kappa : ℝ)
     (hHom : TwoBlockHomophily m a b) (hk : 0 ≤ kappa) :
     ∃ X_rel : ℝ × ℝ × ℝ,
@@ -344,6 +350,11 @@ lemma exists_relaxed_reduced_minimizer (m : ℕ) (a b r kappa : ℝ)
       kappa x y z (ne_of_gt hq)]
   simpa [hleft, hright] using hle
 
+/-- The implementable reduced problem attains its minimum: some point of the reduced
+triangle satisfies the parity constraint and minimizes the reduced objective over all
+triangle points that satisfy it. This is the parity-truncated counterpart of
+`exists_relaxed_reduced_minimizer`, and it is what makes the implementability gap a
+difference of two attained minima. -/
 lemma exists_implementable_reduced_minimizer (m : ℕ) (a b r kappa : ℝ)
     (hHom : TwoBlockHomophily m a b) (hk : 0 ≤ kappa) :
     ∃ X_impl : ℝ × ℝ × ℝ,
@@ -485,6 +496,11 @@ lemma exists_implementable_reduced_minimizer (m : ℕ) (a b r kappa : ℝ)
         kappa x y z (ne_of_gt hq)]
     simpa [t_impl, hleft, hright] using hle
 
+/-- The implementability gap is never negative: restricting a design to be realizable by an
+actual `±1` assignment law can only raise the achievable objective value. Formally, both
+reduced problems attain their minima and the implementable problem optimizes over a subset
+of the relaxed feasible set, so its minimum dominates. This is the range condition for
+`Δ_m^±` promised in the definition of `implementabilityGap`. -/
 lemma implementabilityGap_nonneg_of_reduced_minimizers (m : ℕ) (a b r kappa : ℝ)
     (hHom : TwoBlockHomophily m a b) (hk : 0 ≤ kappa) :
     0 ≤ implementabilityGap m a b r kappa := by

@@ -5,7 +5,7 @@ validation, resume, stage ordering, logging, and model worker wrappers.
 
 ## Prerequisites
 
-- Node 20.20.2 or newer.
+- Node 20.20.2 or newer (22.x verified). `source scripts/node_env.sh` selects one; do not hand-pin an exact version.
 - `claude` CLI logged in with the user's subscription account.
 - `codex` CLI logged in with the user's ChatGPT subscription account.
 - No API keys are required by this package.

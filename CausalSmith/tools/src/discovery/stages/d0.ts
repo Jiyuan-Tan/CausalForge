@@ -19,7 +19,9 @@ import type { Stage0_5CoreResult } from "./d0_5_core.js";
 import {
   runGeneralReview,
   buildGeneralTierVerdict,
+  decideGeneralReroute,
   decideTriageKill,
+  GENERAL_REROUTE_CAP,
   formatTriageTier,
   tierRank,
   TARGET_FLOOR_LABEL,
@@ -27,6 +29,7 @@ import {
 } from "./d0_5_general.js";
 import { proposalFindingRoute, runStage0RCore } from "./d0_r_core.js";
 import { coreJsonPath } from "./d0_core.js";
+import { d05AcceptanceReceiptPath, writeD05AcceptanceReceipt } from "./d0_acceptance.js";
 import { protoCoreJsonPath } from "./neg1_2_author.js";
 import { resolveInDir } from "../../paths.js";
 import { saveState } from "../../state.js";
@@ -48,7 +51,7 @@ import {
   type WorkingState,
 } from "./d0_working.js";
 import { type Core, CoreSchema } from "../core/schema.js";
-import { assembleCore } from "../core/assemble.js";
+import { assembleCore, mergeProseOverlay, type ProseUpdates } from "../core/assemble.js";
 import { readTypedCore } from "../core/core_io.js";
 import { writeJsonAtomic, writeTextAtomic } from "../../shared/json_atomic.js";
 import { maskNonBoundaryPeriods } from "../../shared/tex_text.js";
@@ -58,6 +61,10 @@ import {
   validateRenderedManifest,
   validateWorkingManifest,
 } from "../semantic_manifest.js";
+import {
+  consumePendingIncrementalRewind,
+  finalizePendingExtensionRebase,
+} from "./d0_cross_boundary_rewind.js";
 
 export function citationVerificationCheckpoint(review: Stage0_5CoreResult): StageResult | null {
   if (review.citation_verification_required.length === 0) return null;
@@ -89,6 +96,8 @@ export const D0_REVISE_CAP = (() => {
   const v = parseInt(process.env.CAUSALSMITH_D0_REVISE_CAP ?? "", 10);
   return Number.isFinite(v) && v > 0 ? v : 3;
 })();
+
+export { GENERAL_REROUTE_CAP } from "./d0_5_general.js";
 
 /** Persist the exact review payload before returning any D0.5 checkpoint that
  * routes back to D0. The content hash makes retries idempotent, and typed target
@@ -468,6 +477,11 @@ export async function runStage0Typed(args: {
   state: StateJson;
   deps: StageDeps;
 }): Promise<StageResult> {
+  // Cross-boundary intent is consumed before any solve context is assembled.
+  // Incremental repair preserves the accepted stores and adds a directive;
+  // extension performs the guarded, replayable proof-carry transaction.
+  await consumePendingIncrementalRewind({ ctx: args.ctx, state: args.state });
+  await finalizePendingExtensionRebase({ ctx: args.ctx, state: args.state });
   // Budget is CARRIED across resumes: `round` starts where the last invocation stopped.
   const solveStart = d0Counters(args.state).solve_rounds;
   for (let round = solveStart; round < D0_SOLVE_CAP; round++) {
@@ -567,6 +581,10 @@ export async function runStage0_5Typed(args: {
   state: StateJson;
   deps: StageDeps;
 }): Promise<StageResult> {
+  // A new review attempt revokes any prior pass authority immediately. If this
+  // attempt fails, checkpoints, or crashes, F entry must require another full
+  // pass even when the reviewed files happened to remain byte-identical.
+  await rm(d05AcceptanceReceiptPath(args.ctx), { force: true });
   // D0.R edits are provisional until a subsequent core panel passes. Snapshot every
   // durable and in-memory state field D0.R may mutate so a non-converging/failing
   // review cannot contaminate the authoritative D0 package or a same-revision resume.
@@ -600,6 +618,23 @@ export async function runStage0_5Typed(args: {
   // unvetted edit into the next resume.
   let d0rTouched = false;
   let d0_5Passed = false;
+  let promotedClearedProse = false;
+  let pendingD0RProse: ProseUpdates | null = null;
+  const promoteClearedD0RProse = async (): Promise<void> => {
+    if (!pendingD0RProse) return;
+    const working = await loadWorkingState(args.ctx);
+    if (!working) {
+      // Pre-store fixtures and legacy runs have no durable overlay carrier. Do
+      // not turn an otherwise passing in-memory transaction into a fault; real
+      // semantic-store runs are guarded above and always require this file.
+      return;
+    }
+    working.prose_overlay = mergeProseOverlay(working.prose_overlay, pendingD0RProse);
+    working.store_format = WORKING_STORE_FORMAT;
+    await saveWorkingState(args.ctx, working);
+    pendingD0RProse = null;
+    promotedClearedProse = true;
+  };
   const rollbackUnvettedD0R = async (): Promise<void> => {
     if (!d0rTouched || d0_5Passed) return;
     await writeTextAtomic(corePath, transaction.core);
@@ -607,6 +642,16 @@ export async function runStage0_5Typed(args: {
     else await writeTextAtomic(pendingPath, transaction.pending);
     args.state.design_decisions = transaction.designDecisions;
     args.state.added_assumptions = transaction.addedAssumptions;
+    if (promotedClearedProse) {
+      // Re-publish from the two authoritative stores. This keeps only prose the
+      // next panel actually cleared; every unvetted proof/formal edit remains
+      // rolled back with the transaction.
+      const proto = await readTypedCore(protoCoreJsonPath(args.ctx));
+      const working = await loadWorkingState(args.ctx);
+      if (!working) throw new Error("D0.R cleared prose promotion lost d0_working.json");
+      await writeJsonAtomic(corePath, CoreSchema.parse(assembleCore(proto, working)));
+      await runStage0Render({ ctx: args.ctx, state: args.state });
+    }
   };
 
   try {
@@ -641,7 +686,7 @@ export async function runStage0_5Typed(args: {
     // path of an invocation that reaches here — fail, both backstops, D0.R escalation, cap
     // exhaustion, citation halt, and revise-then-pass (which re-reads authoritatively on the
     // later round) — pays one extra call of the run's priciest model
-    // (MODEL_PLAN.stage0_5_general is codexKernel/high vs the panel's mechanicalTier).
+    // (MODEL_PLAN.stage0_5_general is claude/opus vs the panel's codex mechanicalTier).
     //
     // In aggregate that is roughly an EIGHTFOLD increase in cold-referee calls, not a
     // rounding error: measured over the 47 pipeline.jsonl histories under doc/research as of
@@ -685,6 +730,18 @@ export async function runStage0_5Typed(args: {
     // stand in for the authoritative call.
     const roundTriage = genSettled.status === "fulfilled" ? genSettled.value : null;
     lastReview = review;
+    const curKeys = findingKeys(review.verdicts);
+    // The first complete panel after a D0.R edit is the authority for whether
+    // that edit cleared its assigned findings. Bank cleared prose before ANY
+    // panel-result branch can return (citation, pass/tier, fail, proposal route,
+    // or convergence), while formal bytes remain inside the transaction.
+    if (
+      pendingD0RProse &&
+      round > reviseStart &&
+      [...prevKeys].every((key) => !curKeys.has(key))
+    ) {
+      await promoteClearedD0RProse();
+    }
     const citationCheckpoint = citationVerificationCheckpoint(review);
     if (citationCheckpoint) {
       // Source access failure is not evidence that the cited claim is false and
@@ -738,6 +795,10 @@ export async function runStage0_5Typed(args: {
         // D0.R is transactional across the ENTIRE D0.5 gate. Core-panel approval
         // alone is insufficient: a below-floor cold review leaves the run at D0,
         // so its provisional edits must not replace the authoritative package.
+        // This is the typed D0.5 authority for F entry. Emit it on EVERY full
+        // pass, including ordinary pure-render stores and sanctioned rebases;
+        // proposal-review iterations are a distinct earlier gate.
+        await writeD05AcceptanceReceipt(args.ctx, args.state);
         d0_5Passed = true;
         // Record the tier on PASS too (greppable history), then advance.
         await appendReview(args.ctx, "stage_0.5.G", round + 1, {
@@ -770,8 +831,17 @@ export async function runStage0_5Typed(args: {
       // buildGeneralTierVerdict transcribes it into the revise/reject ReviewResult
       // the D0.5 boundary knows; we log it and halt for the operator carrying the
       // tier + critique + (when salvageable) the directed improvement to re-solve with.
-      const canReroute = gen.salvageable && !!gen.improvement_directive;
-      const verdict = buildGeneralTierVerdict(gen, target, canReroute);
+      // Reroute budget. Each grant halts at an operator checkpoint and the next `--resume`
+      // pays for a full D0 re-derivation, so the counter must survive the process — an
+      // in-process bound would reset every resume and never bind. Counted only when the
+      // reroute is actually OFFERED: a not-salvageable halt spends nothing.
+      const reroutesUsed = args.state.flags.general_reroute_count ?? 0;
+      const { canReroute, capExhausted } = decideGeneralReroute({ gen, reroutesUsed });
+      if (canReroute) {
+        args.state.flags.general_reroute_count = reroutesUsed + 1;
+        await saveState(args.ctx.repoRoot, args.ctx.qid, args.ctx.specialization, args.state);
+      }
+      const verdict = buildGeneralTierVerdict(gen, target, canReroute, capExhausted);
       await appendReview(args.ctx, "stage_0.5.G", round + 1, verdict).catch(() => {});
       // Record the verdict on BOTH branches. Previously a non-salvageable below-floor
       // result wrote no escalation entry at all, so the referee's critique survived
@@ -784,7 +854,9 @@ export async function runStage0_5Typed(args: {
         ctx: args.ctx,
         reason: canReroute
           ? "The cold whole-paper referee placed the current paper below the requested novelty floor and supplied this directed improvement."
-          : "The cold whole-paper referee placed the current paper below the requested novelty floor and judged it NOT salvageable in scope. Recorded for provenance; do not re-solve on this entry alone.",
+          : capExhausted
+            ? `The cold whole-paper referee placed the current paper below the requested novelty floor with a directed improvement, but the reroute cap (${GENERAL_REROUTE_CAP}) is exhausted. Recorded for provenance; the topic is NOT refuted — only the automatic budget is spent.`
+            : "The cold whole-paper referee placed the current paper below the requested novelty floor and judged it NOT salvageable in scope. Recorded for provenance; do not re-solve on this entry alone.",
         payload: { stage: "D0.5.G", target, floor, general_review: gen },
         targetIds: canReroute ? gen.flagged_conjecture_labels : [],
         // A non-salvageable tier carries no targets by nature; without this it would
@@ -799,12 +871,19 @@ export async function runStage0_5Typed(args: {
           `Stage 0.5 (typed) BELOW NOVELTY FLOOR — D0.5.G tier=${gen.tier} < floor=${floor} ` +
           `(target=${target}). Critique: ${gen.critique}` +
           (canReroute
-            ? `\nSalvageable — inject this as a D0 directive and re-solve D0 to lift: ` +
+            ? `\nSalvageable (reroute ${reroutesUsed + 1}/${GENERAL_REROUTE_CAP}) — VET the directive for ` +
+              `soundness, then inject it as a D0 directive and re-solve D0 to lift: ` +
               `${gen.improvement_directive}` +
               (gen.flagged_conjecture_labels.length > 0
                 ? ` [targets: ${gen.flagged_conjecture_labels.join(", ")}]`
                 : "")
-            : `\nNot salvageable within scope — bank downgraded, or re-anchor the proposal (rewind D-1.2).`),
+            : capExhausted
+              ? `\nReroute cap ${GENERAL_REROUTE_CAP} exhausted after ${reroutesUsed} directed re-solve(s) that ` +
+                `did not lift the tier. The topic is NOT refuted — only the automatic budget is spent, so do ` +
+                `not bank this as a dead object. Escalate: a root change (rewind D-1.2 / a new angle), or ` +
+                `clear the cap deliberately via CAUSALSMITH_GENERAL_REROUTE_CAP. Last directive: ` +
+                `${gen.improvement_directive}`
+              : `\nNot salvageable within scope — bank downgraded, or re-anchor the proposal (rewind D-1.2).`),
       };
     }
     if (review.overall === "fail") {
@@ -861,7 +940,6 @@ export async function runStage0_5Typed(args: {
     // directed editor is not resolving it — escalate NOW rather than churn to the cap.
     // (D0.R self-escalation via `revised.escalate` only fires when D0.R itself reports
     // "failed"; this catches the case where D0.R keeps producing edits that don't land.)
-    const curKeys = findingKeys(review.verdicts);
     // `prevKeys` is per-INVOCATION state, initialized empty above, so "is there a previous
     // round to compare against?" is `round > reviseStart`, not `round > 0`. On a resume
     // (reviseStart >= 1) the old test passed the still-empty set as a real previous round,
@@ -995,6 +1073,7 @@ export async function runStage0_5Typed(args: {
     await saveState(args.ctx.repoRoot, args.ctx.qid, args.ctx.specialization, args.state);
     d0rTouched = true;
     const revised = await runStage0RCore({ ctx: args.ctx, state: args.state, deps: args.deps, review });
+    pendingD0RProse = revised.proseUpdates ?? null;
     // D0.R early-escalation: if the directed edit reports the findings are NOT fixable
     // in place (needs real math / re-derivation / substrate), checkpoint NOW — do not
     // burn the rest of the revise cap thrashing on something it cannot solve.

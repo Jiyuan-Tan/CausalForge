@@ -89,6 +89,10 @@ and all primitive mean-model inputs are replaced by equal values. -/
 add_decl_doc frontierNuisanceParameter.congr_simp
 
 -- @node: frontierNuisanceParameter_index
+/-- At the zero-treatment-coefficient frontier parameter, the linear index of every
+supported cohort-time cell is the log of that cohort's row margin divided by its limiting
+cohort share, plus the log of that period's column margin, minus the log of the total
+primitive mass. This is the row-column (independence-table) form of the fitted log mean. -/
 lemma frontierNuisanceParameter_index (T : ℕ) (C : Finset (Cohort T))
     (hT : 0 < T) (hTop : (⊤ : Cohort T) ∈ C) (pi : Cohort T → OpenUnit)
     (barB : Cohort T → PosReal) (gamma : Fin T → ℝ) (delta : Cell T → ℝ)
@@ -165,6 +169,11 @@ mean-model inputs, cohort, and period are replaced by equal values. -/
 add_decl_doc frontierConditionalResidual.congr_simp
 
 -- @node: frontierConditionalResidual_eq
+/-- The conditional residual at the zero-treatment-coefficient frontier equals the cell's
+primitive mass minus the product of its row and column margins divided by the total
+primitive mass, the whole difference divided by the number of periods. In other words the
+residual table is exactly the independence-table residual of the primitive mass matrix,
+rescaled by the panel length. -/
 lemma frontierConditionalResidual_eq (T : ℕ) (C : Finset (Cohort T))
     (hT : 0 < T) (hTop : (⊤ : Cohort T) ∈ C) (pi : Cohort T → OpenUnit)
     (barB : Cohort T → PosReal) (gamma : Fin T → ℝ) (delta : Cell T → ℝ)

@@ -1,6 +1,7 @@
 // CausalSmith/tools/src/substrate/pipeline.ts
 import { mkdir, writeFile, readdir, readFile } from "node:fs/promises";
 import path from "node:path";
+import { createHash } from "node:crypto";
 import { ensureRequirement } from "./requirement.js";
 import {
   substrateRunDir, substrateLeanDir, substrateModulePrefix, causaleanRoot,
@@ -19,7 +20,11 @@ import type { RoundReport, SubstrateState } from "./types.js";
 export const BUILD_CAP = 10;
 export const REVIEW_CAP = 3;
 export const COORD_CAP = 3;
-export const FILLER_CONCURRENCY = 4;
+// Study prompts commonly target modules in one import chain.  Until prompt
+// dependencies are represented explicitly, concurrent fillers can compile or
+// edit against an imported file that another filler is changing.  Serialize
+// the batch; dependency-aware parallel batches can be added later.
+export const FILLER_CONCURRENCY = 1;
 
 export interface SubstratePipelineDeps {
   runScaffolder: typeof realScaffolder;
@@ -80,7 +85,16 @@ function leanModuleTargets(leanDir: string, modulePrefix: string, files: string[
 }
 
 export async function runSubstratePipeline(
-  opts: { repoRoot: string; slug: string; resume: boolean; dryRun?: boolean },
+  opts: {
+    repoRoot: string;
+    slug: string;
+    resume: boolean;
+    dryRun?: boolean;
+    clearCoordinateCap?: boolean;
+    /** Explicit legacy recovery: asserts that an escalated scaffolder state predating requirement
+     * hashes is being resumed only after a real requirement correction. */
+    acceptRequirementChange?: boolean;
+  },
   deps?: SubstratePipelineDeps,
 ): Promise<SubstrateState> {
   const { repoRoot, slug } = opts;
@@ -105,12 +119,43 @@ export async function runSubstratePipeline(
     return { ...createInitialSubstrateState(slug), phase: "halted", terminalMessage: msg };
   }
   const requirement = req.text!;
+  const requirementHash = createHash("sha256").update(requirement, "utf8").digest("hex");
 
   // 2. State.
   if (!opts.resume && (await substrateStateExists(repoRoot, slug))) {
     throw new Error(`substrate state already exists for ${slug}; use --resume`);
   }
   let state = opts.resume ? await loadSubstrateState(repoRoot, slug) : createInitialSubstrateState(slug);
+  if (opts.acceptRequirementChange && !opts.resume) {
+    throw new Error("--accept-requirement-change requires --resume");
+  }
+  if (state.phase === "escalated") {
+    const scaffolderEscalation = state.terminalEscalationKind === "scaffolder"
+      || (state.terminalEscalationKind == null && state.terminalMessage?.startsWith("Scaffolder escalated:"));
+    const changed = state.terminalRequirementHash != null && state.terminalRequirementHash !== requirementHash;
+    const legacyAuthorized = state.terminalRequirementHash == null && opts.acceptRequirementChange === true;
+    if (scaffolderEscalation && (changed || legacyAuthorized)) {
+      // Preserve useful staged Lean, reports, plan, and all spent counters. Invalidate only
+      // requirement-dependent in-flight/review state, then let the scaffolder re-read the new bytes.
+      state.phase = "build";
+      state.pendingPrompts = [];
+      state.lastReview = null;
+      state.terminalMessage = null;
+      state.terminalRequirementHash = null;
+      state.terminalEscalationKind = null;
+      state.requirementVersion += 1;
+      await saveSubstrateState(repoRoot, slug, state);
+    }
+  }
+  if (opts.clearCoordinateCap) {
+    if (state.phase !== "halted" || !state.terminalMessage?.startsWith("Reached COORD_CAP")) {
+      throw new Error("--clear-coordinate-cap requires a study halted at COORD_CAP");
+    }
+    state.phase = "coordinate";
+    state.coordinateRounds = 0;
+    state.terminalMessage = null;
+    await saveSubstrateState(repoRoot, slug, state);
+  }
   let planMarkdown: string | null = null;
 
   // On resume, reload the plan ledger so the scaffolder regains its status
@@ -139,6 +184,8 @@ export async function runSubstratePipeline(
       if (out.decision === "escalate") {
         state.phase = "escalated";
         state.terminalMessage = `Scaffolder escalated: ${out.escalation?.reason ?? "(no reason)"}`;
+        state.terminalRequirementHash = requirementHash;
+        state.terminalEscalationKind = "scaffolder";
       } else if (out.decision === "review") {
         state.phase = "review";
       } else {
@@ -229,6 +276,8 @@ export async function runSubstratePipeline(
         // rollback is unsafe) and do NOT burn a retry. Escalate: a human verifies
         // and keeps or reverts. The promotion is UNVERIFIED until then.
         state.phase = "escalated";
+        state.terminalRequirementHash = requirementHash;
+        state.terminalEscalationKind = "coordinate-timeout";
         state.terminalMessage =
           "Coordinate verify chain timed out (watchdog kill after going silent) AFTER the substrate files were promoted into Causalean. NOT rolled back and NOT retried — a rollback would destroy already-promoted work, and the verify step may have hung or been mid-compile. The promotion is UNVERIFIED: a human must re-run the FULL integration gate — `lake build` → `lake exe library_index` (in the Causalean root) → `npm run embed:library` → `npm run lint:embeddings` → `npm run doc:gen` → `npm run doc:check` (in tools/) — then either keep the promotion or revert it manually. Last log tail:\n" +
           res.log.slice(-2000);

@@ -199,7 +199,7 @@ lemma cond_exp_residual_zero (S : BackdoorEstimationSystem P γ)
             S.toPOBackdoorSystem.propScore d := by
     have hpull := MeasureTheory.condExp_mul_of_stronglyMeasurable_left
       (μ := P.μ) (m := S.toPOBackdoorSystem.sigmaX) hμx_sm hμind_int hind_int
-    simpa [POBackdoorSystem.propScore] using hpull
+    exact hpull
   rw [hres_eq]
   refine hsub.trans ?_
   filter_upwards [hYce, hμce, S.μ_compat hA d] with ω hy hmu hcompat
@@ -388,8 +388,8 @@ private noncomputable def e_val_label (S : BackdoorEstimationSystem P γ)
 private lemma measurable_e_val_label (S : BackdoorEstimationSystem P γ) (d : Bool) :
     Measurable (S.e_val_label d) := by
   cases d
-  · simpa [e_val_label] using measurable_const.sub S.e_meas
-  · simpa [e_val_label] using S.e_meas
+  · exact measurable_const.sub S.e_meas
+  · exact S.e_meas
 
 /-- The σ(X)-conditional expectation of `1_{D=d}` is `e_val_label d (X)`
 a.s.  Combines `e_compat` (for `d = true`) with `propScore_false_ae`
@@ -709,7 +709,7 @@ theorem aipw_mean_zero_of_square_integrable (S : BackdoorEstimationSystem P γ)
     have hcond_L2 :
         MemLp (P.μ[S.toPOBackdoorSystem.YofD d |
           S.toPOBackdoorSystem.sigmaX]) 2 P.μ :=
-      hYd_L2.condExp
+      hYd_L2.condExp one_le_two
     exact hcond_L2.ae_eq (S.μ_compat hA d)
   have he_lower :
       ∀ᵐ ω ∂P.μ, ε ≤ S.e_val (S.toPOBackdoorSystem.factualX ω) := by
@@ -754,8 +754,8 @@ theorem aipw_mean_zero_of_square_integrable (S : BackdoorEstimationSystem P γ)
     refine MemLp.of_bound ?_ ε⁻¹ hw_true_bound
     apply Measurable.aestronglyMeasurable
     have hind : Measurable (fun ω => indA (S.factualZ ω)) := by
-      simpa [indA, projA, BackdoorEstimationSystem.factualZ] using
-        (Measurable.of_discrete
+      simp only [indA, projA, BackdoorEstimationSystem.factualZ]
+      exact (Measurable.of_discrete
           (f := fun b : Bool => if b = true then (1 : ℝ) else 0)).comp
             S.toPOBackdoorSystem.measurable_factualD
     exact hind.div (S.e_meas.comp S.toPOBackdoorSystem.measurable_factualX)
@@ -765,8 +765,8 @@ theorem aipw_mean_zero_of_square_integrable (S : BackdoorEstimationSystem P γ)
     refine MemLp.of_bound ?_ ε⁻¹ hw_false_bound
     apply Measurable.aestronglyMeasurable
     have hind : Measurable (fun ω => indA (S.factualZ ω)) := by
-      simpa [indA, projA, BackdoorEstimationSystem.factualZ] using
-        (Measurable.of_discrete
+      simp only [indA, projA, BackdoorEstimationSystem.factualZ]
+      exact (Measurable.of_discrete
           (f := fun b : Bool => if b = true then (1 : ℝ) else 0)).comp
             S.toPOBackdoorSystem.measurable_factualD
     exact (measurable_const.sub hind).div
@@ -777,7 +777,7 @@ theorem aipw_mean_zero_of_square_integrable (S : BackdoorEstimationSystem P γ)
           indA (S.factualZ ω) / S.e_val (S.toPOBackdoorSystem.factualX ω) *
           (S.toPOBackdoorSystem.factualY ω -
             S.μ_val true (S.toPOBackdoorSystem.factualX ω))) 2 P.μ := by
-    simpa using (hY_L2.sub (hμ_L2 true)).mul hw_true_Linf
+    exact (hY_L2.sub (hμ_L2 true)).mul hw_true_Linf
   have hC_L2 :
       MemLp
         (fun ω =>
@@ -785,7 +785,7 @@ theorem aipw_mean_zero_of_square_integrable (S : BackdoorEstimationSystem P γ)
             (1 - S.e_val (S.toPOBackdoorSystem.factualX ω)) *
           (S.toPOBackdoorSystem.factualY ω -
             S.μ_val false (S.toPOBackdoorSystem.factualX ω))) 2 P.μ := by
-    simpa using (hY_L2.sub (hμ_L2 false)).mul hw_false_Linf
+    exact (hY_L2.sub (hμ_L2 false)).mul hw_false_Linf
   have hB_eq :
       (fun ω => (1 / S.e_val (S.toPOBackdoorSystem.factualX ω)) *
         (S.toPOBackdoorSystem.dVar.indicator true ω *

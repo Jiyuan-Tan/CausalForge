@@ -81,9 +81,8 @@ theorem hasDerivAt_envelopeQuartic (t q : ℝ) :
   have e3 := hp2.const_mul (2 * q)
   have e4 : HasDerivAt (fun s : ℝ => (2 * q ^ 2) * s) (2 * q ^ 2) t := by
     simpa using (hasDerivAt_id t).const_mul (2 * q ^ 2)
-  have h := (((e1.sub e2).add e3).sub e4).add_const (q ^ 2)
-  convert h using 1
-  ring
+  have h := (((e1.fun_sub e2).fun_add e3).fun_sub e4).add_const (q ^ 2)
+  exact h.congr_deriv (by ring)
 
 /-- **Interior existence.** For `v ∈ (0,1)` and `q = v²`, the quartic has a root strictly inside
 `(v², v)`. Proof: the sign change `envelopeQuartic (v²) (v²) > 0`, `envelopeQuartic v (v²) < 0`

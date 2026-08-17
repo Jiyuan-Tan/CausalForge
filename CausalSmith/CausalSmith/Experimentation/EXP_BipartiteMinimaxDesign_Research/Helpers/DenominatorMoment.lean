@@ -29,12 +29,18 @@ noncomputable def denominatorKernelBound (ε dbar : ℝ) : ℝ :=
   ε⁻¹ * max 1 (ε ^ (-(dbar - 1)))
 
 -- @node: denominatorKernelBound_nonneg
+/-- The uniform reciprocal-product bound for a shared-neighborhood kernel is nonnegative
+whenever the positivity floor is strictly positive. -/
 lemma denominatorKernelBound_nonneg {ε dbar : ℝ} (hε0 : 0 < ε) :
     0 ≤ denominatorKernelBound ε dbar := by
   unfold denominatorKernelBound
   exact mul_nonneg (inv_nonneg.mpr hε0.le) (le_trans zero_le_one (le_max_left _ _))
 
 -- @node: denominatorKernelBound_le_of_floor
+/-- The uniform kernel bound is decreasing in the positivity floor: for an admissible floor
+that is at least as large as a strictly positive reference floor, the bound at the larger
+floor is at most the bound at the reference floor. This lets a single bound computed at the
+smallest floor of interest serve uniformly over all admissible larger floors. -/
 lemma denominatorKernelBound_le_of_floor {ε0 ε dbar : ℝ}
     (hε0 : 0 < ε0) (hε0le : ε0 ≤ ε) (hε : EpsilonAdmissible ε) :
     denominatorKernelBound ε dbar ≤ denominatorKernelBound ε0 dbar := by

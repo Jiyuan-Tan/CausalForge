@@ -73,7 +73,7 @@ theorem finiteTypeDomain_ringKrullDim_eq_trdeg
         fin_cases i
         fin_cases j
         exact (lt_irrefl _ hij).elim), rfl, ?_⟩
-      simpa [f] using hQ
+      exact hQ
     | succ n ih =>
       intro p hp
       let p' : LTSeries (PrimeSpectrum (MvPolynomial (Fin s) K)) := p.eraseLast

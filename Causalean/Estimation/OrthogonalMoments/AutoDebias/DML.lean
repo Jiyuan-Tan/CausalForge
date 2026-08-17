@@ -214,6 +214,7 @@ theorem linAuto_bilinearRem
           * (((linAutoGeneralMoment μ S rep ε hε_nn h_score_meas).ρ₂ η
             (linAutoGeneralMoment μ S rep ε hε_nn h_score_meas).η₀ : NNReal) : ℝ) := by
     simp [linAutoGeneralMoment, dα, dγ, mul_comm]
+    rfl
   exact h_abs_rewrite.trans_le ((h_abs_int.trans hcs).trans (le_of_eq hfin))
 
 /-- **One-shot linear Auto-DML estimator.**

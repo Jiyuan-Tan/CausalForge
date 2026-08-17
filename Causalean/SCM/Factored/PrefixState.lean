@@ -82,11 +82,20 @@ theorem measurable_observedPrefixValue (M : Causalean.SCM N Ω) :
   | 0, _, i => Fin.elim0 i
   | k + 1, hn, i =>
       Fin.lastCases
-        (by simpa [SCM.observedPrefixValue] using (measurable_snd : Measurable Prod.snd))
+        (by
+          have h : Measurable
+              (fun ξ : M.ObservedPrefixValues k (Nat.le_of_succ_le hn) ×
+                swigΩ Ω (M.observedAt ⟨k, hn⟩).val => ξ.2) := measurable_snd
+          simp only [SCM.observedPrefixValue, Fin.lastCases_last]
+          exact h)
         (fun j => by
-          simpa [SCM.observedPrefixValue] using
-            (M.measurable_observedPrefixValue (Nat.le_of_succ_le hn) j).comp
-              (measurable_fst : Measurable Prod.fst))
+          have h : Measurable
+              (fun ξ : M.ObservedPrefixValues k (Nat.le_of_succ_le hn) ×
+                swigΩ Ω (M.observedAt ⟨k, hn⟩).val =>
+                M.observedPrefixValue (Nat.le_of_succ_le hn) ξ.1 j) :=
+            (M.measurable_observedPrefixValue (Nat.le_of_succ_le hn) j).comp measurable_fst
+          simp only [SCM.observedPrefixValue, Fin.lastCases_castSucc]
+          exact h)
         i
 
 -- ============================================================

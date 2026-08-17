@@ -1,115 +1,346 @@
 \begin{proof}[Proof of \cref{obj:thm:oracle-score-inversion-attainment}]
 \begin{enumerate}
-\item Choose an admissible deterministic geometry \(\mathfrak g\) supplied by the carrier assumption.  The fixed-geometry inhabitation argument gives, for every \(t_0>0\), eventual existence of some \(P\in\mathcal P_n\); this is the nonemptiness input needed later for classwise infima and liminf coverage.  Since
+\item \textbf{Construction.}
+Because \(\alpha\in(0,1)\) and \(\varepsilon\in(0,1/2)\), the constant
 \[
-0<2\le \max\left\{2,\ 4L_\alpha+\frac8{\varepsilon^2}\right\},
+L_\alpha=\left(\frac{8}{\alpha\varepsilon^2}\right)^{1/2}
 \]
-the stated constant \(C_0\) is positive. % lean: fixedGeometrySlice_eventually_inhabited
+is a positive real number, and
+\[
+C_0=\max\left\{2,\ 4L_\alpha+\frac8{\varepsilon^2}\right\}\ge 2>0 .
+\]
+% lean: oracle_score_inversion_attainment
 
-\item Set \(L=L_\alpha\) and define the oracle procedure by
+For each \(n\), each source sample \((O_i^S)_{i=1}^n\), each target covariate sample \((X_j^T)_{j=1}^{N_n}\), each measurable nonnegative \(w:\mathcal X\to\mathbb R\) and each measurable \(e:\mathcal X\to\mathbb R\), let \(C_n\) be the score-inversion set of \cref{obj:def:inversion-handle} formed from those inputs,
 \[
-C_n=\left\{\vartheta\in\Theta:
-  |\widehat A_n-\vartheta\widehat B_n|
-  \le L\sqrt{\widehat\kappa_n/n}\right\}.
-\]
-The set is contained in \(\Theta\) by construction.  Its graph is measurable because the score \(H_i\), the empirical means \(\widehat A_n,\widehat B_n\), and \(\widehat\kappa_n\) are measurable functions of the source sample.  If two versions of the oracle weight agree almost everywhere under the source covariate law, the induced inversion sets agree almost surely under the two-sample law, so the procedure is a valid oracle procedure with the displayed handle. % lean: inversionHandle_weight_version_ae_eq
-
-\item Fix \(n>0\) and \(P\in\mathcal P_n\).  Write \(\mu_n\) for the transported first-stage mean and \(\kappa_n\) for the second moment of \(w(X)\).  The model restrictions give \(\theta_P\in\Theta\), \(\mu_n>0\), measurable weights, \(0\le w\le 2k_n\), \(\int w\,dP_S^X=1\), and hence \(\kappa_n\ge1\).  They also give the source score identities: conditional integrals of the inverse-propensity instrument score recover the reduced-form and first-stage covariate contrasts.  The conditional-expectation pullout identity therefore yields
-\[
-\int w(X)H D\,dP_S=\mu_n.
-\]
-The overlap bound gives \(|H|\le 1/\varepsilon\), and since \(D\in\{0,1\}\),
-\[
-\operatorname{Var}_{P_S}(w(X)HD)\le \frac{\kappa_n}{\varepsilon^2}.
-\]
-For the empirical first-stage score \(\widehat B_n\), independence of the source observations gives
-\[
-\mathbb E_P[\widehat B_n]=\mu_n,\qquad
-\operatorname{Var}_P(\widehat B_n)\le
-\frac{\kappa_n}{\varepsilon^2 n}.
-\]
-Chebyshev's inequality gives
-\[
-P\left(\frac{\mu_n}{2}<|\widehat B_n-\mu_n|\right)
-\le \frac{4}{\varepsilon^2\,t_n},
+C_n
+=
+\left\{\vartheta\in\Theta:
+\left|\widehat A_n-\vartheta\widehat B_n\right|
+\le L_\alpha\sqrt{\widehat\kappa_n/n}\right\},
 \qquad
-t_n=\frac{n\mu_n^2}{\kappa_n}.
+\widehat A_n=\frac1n\sum_{i=1}^n w(X_i)H_iY_i,
+\quad
+\widehat B_n=\frac1n\sum_{i=1}^n w(X_i)H_iD_i,
 \]
-Together with \(\mathbb E_P[\widehat\kappa_n]=\kappa_n\) and \(\widehat\kappa_n\ge0\), the score-inversion length bound gives the pointwise risk inequality
 \[
-\mathbb E_P[\lambda(C_n)]
+\widehat\kappa_n=\frac1n\sum_{i=1}^n w(X_i)^2,
+\qquad
+H_i=\frac{Z_i}{e(X_i)}-\frac{1-Z_i}{1-e(X_i)} .
+\]
+% lean: inversionHandle
+Only the source sample enters; the target covariate sample is not used.  We check the three requirements that \cref{obj:def:oracle-honesty} imposes on an oracle procedure.
+
+\emph{Range.} \(C_n\subseteq\Theta\), because membership is defined by intersecting the score restriction with \(\Theta\).
+
+\emph{Measurable graph.} For measurable \(w\) and \(e\) the multiplier \(H\) is measurable, hence so are the sample functions \(\widehat A_n\), \(\widehat B_n\), \(\widehat\kappa_n\); the sample-by-parameter graph is
+\[
+\left\{\left(\left((O_i^S)_{i=1}^n,(X_j^T)_{j=1}^{N_n}\right),\vartheta\right):
+\vartheta\in\Theta\right\}
+\cap
+\left\{\left(\left((O_i^S)_{i=1}^n,(X_j^T)_{j=1}^{N_n}\right),\vartheta\right):
+\left|\widehat A_n-\vartheta\widehat B_n\right|\le L_\alpha\sqrt{\widehat\kappa_n/n}\right\},
+\]
+an intersection of a preimage of the closed interval \(\Theta\) with a sublevel set of a jointly measurable function of the sample and \(\vartheta\).
+% lean: oracle_score_inversion_attainment
+
+\emph{Weight-version invariance.} The three statistics \(\widehat A_n,\widehat B_n,\widehat\kappa_n\) depend on \(w\) only through the realized vector \((w(X_1),\dots,w(X_n))\), so
+\[
+w(X_i)=w'(X_i)\ \text{for all }i\le n
+\quad\Longrightarrow\quad
+C_n\!\left((O_i^S)_{i=1}^n,(X_j^T)_{j=1}^{N_n},w,e\right)
+=
+C_n\!\left((O_i^S)_{i=1}^n,(X_j^T)_{j=1}^{N_n},w',e\right).
+\]
+% lean: inversionHandle_congr_of_sample
+If \(w=w'\) holds \(P_S^X\)-almost surely, then, each \(X_i\) having marginal law \(P_S^X\) and the source sample being an independent product, the antecedent holds almost surely under the two-sample law; hence the two evaluations agree almost surely.
+% lean: sourceSample_weight_version_ae_eq, inversionHandle_weight_version_ae_eq
+
+Finally we record that the comparison class is eventually nonempty.  Let \(\mathfrak g\in\mathcal G\) be the admissible geometry supplied by the hypothesis.  For every \(t_0>0\), the least-favorable family of \cref{obj:def:least-favorable-witness} at geometry \(\mathfrak g\) and threshold \(t_0\) supplies, for all sufficiently large \(n\), a law
+\[
+P\in\mathcal P_n(\mathfrak g)
+\quad\text{with}\quad
+t_n\ge t_0 ;
+\]
+since \(\mathcal P_n(\mathfrak g)\subseteq\mathcal P_n\), the full class \(\mathcal P_n\) is nonempty at all sufficiently large \(n\).
+% lean: fixedGeometrySlice_eventually_inhabited
+
+\item \textbf{Weighted conditional-expectation reduction.}
+The proof uses the following pull-out identity.  Suppose \(F\) is a source-observation function, \(d\) is a covariate function, and \(w\) is a measurable transport weight, with \(F\), \(d\), \(w(X)F\) and \(wd\) integrable under the indicated laws.  If, for every measurable \(A\subseteq\mathcal X\),
+\[
+\int_{\{O:X\in A\}} F(O)\,dP_S(O)
+=
+\int_A d(x)\,dP_S^X(x),
+\]
+then
+\[
+\int w(X)F(O)\,dP_S(O)
+=
+\int w(x)d(x)\,dP_S^X(x).
+\]
+Indeed, the set-integral identity identifies \(d(X)\) with the conditional expectation of \(F\) given \(X\); multiplying by the \(X\)-measurable function \(w(X)\) and integrating gives the displayed equality.  The measurability and integrability requirements are supplied by overlap, the weight envelope, and the bounded source-observation variables.
+% lean: weighted_observed_contrast_eq
+
+\item \textbf{Pointwise expected length.}
+Fix \(n\ge1\) and \(P\in\mathcal P_n\), and write \(\mu_{Y,n},\mu_n,\kappa_n,t_n\) for the functionals of \cref{obj:synth_6} at \(P\) and \(\theta_n=\theta_T\) for the target complier effect of \cref{obj:synth_7} at \(P\).  By \cref{obj:prop:compact-causal-range},
+\[
+\mu_n=P_n^F\{D(1)=1,\ D(0)=0\mid S=0\},
+\qquad
+\frac{\mu_{Y,n}}{\mu_n}=\theta_n,
+\qquad
+\theta_n\in\Theta,
+\]
+and target complier positivity makes the first display positive, so \(\mu_n>0\).  Under transport domination \(w=dP_T/dP_S^X\) satisfies \(\mathbb E_{P_S^X}[w(X)]=P_T(\mathcal X)=1\), whence by the Cauchy--Schwarz inequality
+\[
+1=\left(\mathbb E_{P_S^X}[w(X)]\right)^2
 \le
-\max\left\{2,\ 4L+\frac8{\varepsilon^2}\right\}
-\min\{1,t_n^{-1/2}\}.
+\mathbb E_{P_S^X}\!\left[w(X)^2\right]=\kappa_n,
+\]
+so \(\kappa_n\ge1>0\).
+% lean: one_le_secondMoment_of_mean_one
+
+Consider the per-observation weighted receipt score
+\[
+\varphi(O)=w(X)H(O)D .
+\]
+Instrument overlap \(\varepsilon\le e(X)\le1-\varepsilon\) gives \(|H(O)|\le1/\varepsilon\); together with \(D\in\{0,1\}\) and the envelope \(0\le w\le 2k_n\) this yields
+\[
+|\varphi(O)|\le \frac{2k_n}{\varepsilon},
+\]
+so \(\varphi\) is square integrable under \(P_S\).  Applying the pull-out identity with \(F(O)=H(O)D\) and \(d=\Delta_D\), whose set-integral hypothesis is the receipt identity of \cref{obj:prop:compact-causal-range},
+\[
+\mathbb E_{P_S}[\varphi]
+=
+\mathbb E_{P_S^X}\!\left[w(X)\Delta_D(X)\right]
+=
+\mu_n ,
+\]
+and, bounding the variance by the second moment and using \(|H(O)D|\le1/\varepsilon\),
+\[
+\operatorname{Var}_{P_S}(\varphi)
+\le
+\mathbb E_{P_S}\!\left[\varphi^2\right]
+\le
+\mathbb E_{P_S^X}\!\left[\frac{w(X)^2}{\varepsilon^2}\right]
+=
+\frac{\kappa_n}{\varepsilon^2}.
+\]
+Since \(\widehat B_n=n^{-1}\sum_{i\le n}\varphi(O_i^S)\) averages \(n\) independent copies of \(\varphi\),
+\[
+\mathbb E_P\widehat B_n=\mu_n,
+\qquad
+\operatorname{Var}_P(\widehat B_n)\le\frac{\kappa_n}{\varepsilon^2 n} .
+\]
+% lean: iid_empiricalAverage_mean_variance
+Chebyshev's inequality at radius \(\mu_n/2\) then gives, with \(t_n=n\mu_n^2/\kappa_n\),
+\[
+\Pr_P\left\{\frac{\mu_n}{2}<\left|\widehat B_n-\mu_n\right|\right\}
+\le
+\frac{\kappa_n/(\varepsilon^2n)}{(\mu_n/2)^2}
+=
+\frac{4}{\varepsilon^2 t_n}.
+\]
+% lean: scoreReceiptMean_bad_probability
+Likewise \(\widehat\kappa_n=n^{-1}\sum_{i\le n}w(X_i)^2\ge0\) averages \(n\) independent copies of \(w(X)^2\), so it is integrable with
+\[
+\mathbb E_P\widehat\kappa_n=\mathbb E_{P_S^X}\!\left[w(X)^2\right]=\kappa_n .
+\]
+% lean: empiricalKish_mean
+
+We now convert these moments into a length bound.  Whenever \(\widehat B_n\ne0\), the score restriction \(|\widehat A_n-\vartheta\widehat B_n|\le L_\alpha\sqrt{\widehat\kappa_n/n}\) confines \(\vartheta\) to the interval centred at \(\widehat A_n/\widehat B_n\) of half-length \(L_\alpha\sqrt{\widehat\kappa_n/n}\,/|\widehat B_n|\), while \(C_n\subseteq\Theta\) and \(\lambda(\Theta)=2\) always; hence
+\[
+\lambda(C_n)
+\le
+\min\left\{2,\ \frac{2L_\alpha\sqrt{\widehat\kappa_n/n}}{|\widehat B_n|}\right\}.
+\]
+% lean: inversionHandle_length_le, affineInversionSet_length_le
+On the event \(\{|\widehat B_n-\mu_n|\le\mu_n/2\}\) one has \(|\widehat B_n|\ge\mu_n/2\), so there \(\lambda(C_n)\le 4L_\alpha\sqrt{\widehat\kappa_n/n}\,/\mu_n\); off that event use \(\lambda(C_n)\le2\).  Splitting the expectation accordingly and using concavity of the square root, \(\mathbb E_P\sqrt{\widehat\kappa_n}\le\sqrt{\mathbb E_P\widehat\kappa_n}=\sqrt{\kappa_n}\),
+\[
+\mathbb E_P\lambda(C_n)
+\le
+\frac{4L_\alpha}{\mu_n}\sqrt{\frac{\kappa_n}{n}}
++
+2\Pr_P\left\{\frac{\mu_n}{2}<\left|\widehat B_n-\mu_n\right|\right\}
+\le
+4L_\alpha t_n^{-1/2}+\frac{8}{\varepsilon^2 t_n},
+\]
+where the first term was rewritten using \(\sqrt{\kappa_n/n}\,/\mu_n=t_n^{-1/2}\).
+% lean: expectedLength_affineInversion_le
+If \(t_n\le1\) then \(\min\{1,t_n^{-1/2}\}=1\) and \(\lambda(C_n)\le2\le C_0\) already gives the claim; if \(t_n\ge1\) then \(t_n^{-1}\le t_n^{-1/2}\), so the last display is at most \((4L_\alpha+8/\varepsilon^2)t_n^{-1/2}\le C_0\min\{1,t_n^{-1/2}\}\).  In both cases
+\[
+\mathbb E_P\lambda(C_n)
+\le
+C_0\min\{1,t_n^{-1/2}\} .
 \]
 % lean: scoreInversion_expectedLength_frontier_le
 
-\item Define
+\item \textbf{Pointwise coverage.}
+Define
 \[
 \delta_n=
 \begin{cases}
 1, & n=0,\\
-16k_n^2/n, & n>0.
+16k_n^2/n, & n\ge1 .
 \end{cases}
 \]
-The condition \(k_n/\sqrt n\to0\) gives \(\delta_n\to0\).  For \(n=0\), the coverage lower bound \(1-\alpha-\delta_n\le P(\theta_P\in C_n)\) is immediate.  For \(n>0\), let
-\[
-S_n=\widehat A_n-\theta_P\widehat B_n .
-\]
-The reduced-form and first-stage pullout identities imply that the single-observation affine score has mean zero; the compact range and overlap bounds give its variance bound
-\[
-\operatorname{Var}_P(S_n)\le \frac{4\kappa_n}{\varepsilon^2 n}.
-\]
-The empirical dispersion satisfies
-\[
-\mathbb E_P[\widehat\kappa_n]=\kappa_n,\qquad
-\operatorname{Var}_P(\widehat\kappa_n)\le \frac{4k_n^2\kappa_n}{n},
-\]
-using \(w^4\le 4k_n^2w^2\).  Hence
-\[
-P(\widehat\kappa_n<\kappa_n/2)\le 16k_n^2/n=\delta_n.
-\]
-With \(a=L\sqrt{\kappa_n/(2n)}\) and \(L^2=8/(\alpha\varepsilon^2)\), Chebyshev's inequality also gives
-\[
-P(a<|S_n|)\le \alpha.
-\]
-On the complement of these two bad events,
-\[
-|S_n|
-\le L\sqrt{\widehat\kappa_n/n},
-\]
-so \(\theta_P\in C_n\).  The source-sample event lifts unchanged to the two-sample law, and therefore
-\[
-1-\alpha-\delta_n\le P(\theta_P\in C_n).
-\]
-Taking the classwise liminf and using the eventual nonemptiness from the first step proves \((C_n)\in\mathfrak C^{\mathrm{or}}\) as in \cref{obj:def:oracle-honesty}. % lean: abstractClass_coverage_liminf
+The scale condition \(k_n/\sqrt n\to0\) gives \(\delta_n\to0\).  At the index \(n=0\) the asserted bound reads \(1-\alpha-1=-\alpha\le\Pr_P\{\theta_T\in C_n\}\), which holds because probabilities are nonnegative and \(\alpha>0\).
 
-\item Convert the pointwise length bound into the frontier bound.  Let the row loss be \(0\) at \(n=0\) and \(\mathbb E_P[\lambda(C_n)]\) for \(n>0\).  It is nonnegative and bounded by
+Fix \(n\ge1\) and \(P\in\mathcal P_n\), retaining the notation of the previous item, and set
 \[
-\max\left\{2,\ 4L+\frac8{\varepsilon^2}\right\}
-\min\{1,t_n^{-1/2}\}
+S_n=\widehat A_n-\theta_n\widehat B_n,
+\qquad
+\psi_n(O)=w(X)H(O)\left\{Y-\theta_n D\right\}.
 \]
-for every admissible \(P\).  The abstract frontier-risk monotonicity over rows with \(t_n\ge t_0\) gives, for every \(t_0>0\),
+Expanding \(\widehat A_n\) and \(\widehat B_n\) and collecting terms observation by observation,
+\[
+S_n=\frac1n\sum_{i=1}^n\psi_n(O_i^S) .
+\]
+% lean: scoreOutcomeMean_sub_receiptMean
+Applying the pull-out identity twice, with \((F,d)=(H\cdot Y,\Delta_Y)\) and with \((F,d)=(H\cdot D,\Delta_D)\), whose set-integral hypotheses are exactly the two identities of \cref{obj:prop:compact-causal-range},
+\[
+\mathbb E_{P_S}\!\left[w(X)H(O)Y\right]=\mu_{Y,n},
+\qquad
+\mathbb E_{P_S}\!\left[w(X)H(O)D\right]=\mu_n ,
+\]
+so by the ratio identity \(\mu_{Y,n}=\theta_n\mu_n\) of \cref{obj:prop:compact-causal-range},
+\[
+\mathbb E_{P_S}[\psi_n]=\mu_{Y,n}-\theta_n\mu_n=0 .
+\]
+% lean: oracleAffineScore_mean_zero
+Since \(Y\in[0,1]\), \(D\in\{0,1\}\) and \(\theta_n\in\Theta=[-1,1]\), we have \(|Y-\theta_nD|\le2\); with \(|H(O)|\le1/\varepsilon\) from overlap this gives the pointwise bounds
+\[
+\left|H(O)\left\{Y-\theta_nD\right\}\right|\le\frac2\varepsilon,
+\qquad
+\psi_n(O)^2\le\frac{4w(X)^2}{\varepsilon^2}.
+\]
+% lean: abs_oracleInstrumentScore_residual_le, oracleAffineScore_sq_le
+Hence \(\operatorname{Var}_{P_S}(\psi_n)\le\mathbb E_{P_S}[\psi_n^2]\le4\kappa_n/\varepsilon^2\), and averaging \(n\) independent copies,
+\[
+\mathbb E_P S_n=0,
+\qquad
+\operatorname{Var}_P(S_n)\le\frac{4\kappa_n}{\varepsilon^2 n}.
+\]
+% lean: iid_empiricalAverage_mean_variance
+
+For the empirical dispersion, the envelope \(0\le w\le2k_n\) gives the pointwise fourth-moment bound
+\[
+w(x)^4\le 4k_n^2\,w(x)^2 ,
+\]
+% lean: weight_fourth_le_envelope
+so \(\operatorname{Var}_{P_S^X}(w(X)^2)\le\mathbb E_{P_S^X}[w(X)^4]\le4k_n^2\kappa_n\) and therefore
+\[
+\operatorname{Var}_P(\widehat\kappa_n)\le\frac{4k_n^2\kappa_n}{n},
+\qquad
+\Pr_P\left\{\widehat\kappa_n<\frac{\kappa_n}2\right\}
+\le
+\frac{4k_n^2\kappa_n/n}{(\kappa_n/2)^2}
+=
+\frac{16k_n^2}{n\kappa_n}
+\le
+\frac{16k_n^2}{n}
+=\delta_n ,
+\]
+the second inequality being Chebyshev's inequality at radius \(\kappa_n/2\) and the last step using \(\kappa_n\ge1\).
+% lean: empiricalKish_variance_le, empiricalKish_lower_tail_le
+
+With
+\[
+a_n=L_\alpha\sqrt{\frac{\kappa_n}{2n}}>0,
+\]
+Chebyshev's inequality and the identity \(L_\alpha^2=8/(\alpha\varepsilon^2)\) yield
+\[
+\Pr_P\left\{|S_n|>a_n\right\}
+\le
+\frac{\operatorname{Var}_P(S_n)}{a_n^2}
+\le
+\frac{4\kappa_n/(\varepsilon^2n)}{L_\alpha^2\kappa_n/(2n)}
+=
+\frac{8}{\varepsilon^2L_\alpha^2}
+=\alpha .
+\]
+% lean: probability_abs_sub_mean_gt_le
+
+Write \(\mathcal B_n^{\kappa}=\{\widehat\kappa_n<\kappa_n/2\}\) and \(\mathcal B_n^{S}=\{|S_n|>a_n\}\).  On the complement of \(\mathcal B_n^{\kappa}\cup\mathcal B_n^{S}\) we have \(\widehat\kappa_n\ge\kappa_n/2\) and hence
+\[
+|S_n|\le a_n=L_\alpha\sqrt{\frac{\kappa_n}{2n}}\le L_\alpha\sqrt{\frac{\widehat\kappa_n}{n}} ,
+\]
+which together with \(\theta_n\in\Theta\) puts \(\theta_n\in C_n\).  Both bad events are functions of the source sample alone, and under the two-sample law the target covariate sample is independent of it, so the two-sample probability of the good event equals its source-sample probability.  A union bound therefore gives
+\[
+1-\alpha-\delta_n
+\le
+1-\Pr_P(\mathcal B_n^{S})-\Pr_P(\mathcal B_n^{\kappa})
+\le
+\Pr_P\left\{\theta_T\in C_n\right\},
+\]
+and this holds for every \(P\in\mathcal P_n\).
+
+\item \textbf{Oracle honesty.}
+Coverage probabilities lie in \([0,1]\), and by the first item \(\mathcal P_n\ne\varnothing\) for all sufficiently large \(n\).  On those indices the worst-case row of \cref{obj:def:oracle-honesty}, which is set to \(1\) when the class is empty, is the genuine infimum, and the previous item bounds it uniformly:
+\[
+\inf_{P\in\mathcal P_n}\Pr_P\left\{\theta_T\in C_n\right\}\ge 1-\alpha-\delta_n .
+\]
+% lean: scoreProcedure_oracleCoverageClassInf_eq
+Since \(\delta_n\to0\), taking the liminf of these rows gives
+\[
+1-\alpha
+\le
+\liminf_{n\to\infty}\inf_{P\in\mathcal P_n}
+\Pr_P\left\{\theta_T\in C_n\right\}.
+\]
+% lean: abstractClass_coverage_liminf
+Together with \(0<\alpha<1\) this is exactly the requirement of \cref{obj:def:oracle-honesty}, so \((C_n)\in\mathfrak C^{\mathrm{or}}\).
+
+\item \textbf{Frontier risk of the constructed sequence.}
+Fix \(t_0>0\).  The map \(t\mapsto\min\{1,t^{-1/2}\}\) is nonincreasing on \((0,\infty)\), so for every \(n\ge1\) and every \(P\in\mathcal P_n\) with \(t_n\ge t_0\) the pointwise bound of the third item gives
+\[
+\mathbb E_P\lambda(C_n)
+\le
+C_0\min\{1,t_n^{-1/2}\}
+\le
+C_0\min\{1,t_0^{-1/2}\} .
+\]
+% lean: min_one_inverseSqrt_anti
+The right-hand side is nonnegative and does not depend on \(P\), so the row supremum obeys the same bound, including on rows where no such \(P\) exists and the supremum is \(0\); the single index \(n=0\) does not affect a limsup.  Taking the limsup in \cref{obj:def:frontier-risk},
 \[
 R((C_n),t_0)
 \le
-\max\left\{2,\ 4L+\frac8{\varepsilon^2}\right\}
-\min\{1,t_0^{-1/2}\}.
+C_0\min\{1,t_0^{-1/2}\} .
 \]
-Substituting \(L=L_\alpha\) gives the asserted bound with \(C_0\). % lean: abstractClassFrontierRisk_le
+% lean: scoreProcedure_frontierRiskRow_eq, abstractClassFrontierRisk_le
 
-\item It remains to identify the value comparison.  For every admissible geometry, \cref{obj:thm:fixed-geometry-frontier} gives
+\item \textbf{Oracle value.}
+Every reported set \(A\) satisfies \(\lambda(A)\le\lambda(\Theta)=2\), so for every oracle honest \((E_n)\in\mathfrak C^{\mathrm{or}}\) each row supremum in \cref{obj:def:frontier-risk} lies in \([0,2]\) and hence
+\[
+0\le R((E_n),t_0)\le 2 .
+\]
+The infimum in \cref{obj:def:oracle-value} is therefore over a set of reals bounded below by \(0\), and that set is nonempty because \((C_n)\in\mathfrak C^{\mathrm{or}}\) by the fifth item.  Evaluating the infimum at \((C_n)\) and using the previous item,
+\[
+V^\star(t_0)\le R((C_n),t_0)\le C_0\min\{1,t_0^{-1/2}\} .
+\]
+
+For the reverse direction, take the admissible geometry \(\mathfrak g\) of the first item.  Its declared weight is a version of \(dP_T/dP_S^X\) for every law in the slice \(\mathcal P_n(\mathfrak g)\), so a globally oracle honest sequence, evaluated with that declared weight and propensity, is honest for the fixed geometry and its fixed-geometry risk is at most its global risk; consequently
+\[
+V_{\mathfrak g}^\star(t_0)\le R((E_n),t_0)
+\qquad\text{for every }(E_n)\in\mathfrak C^{\mathrm{or}} .
+\]
+% lean: fixedGeometryValue_le_frontierRisk
+By \cref{obj:thm:fixed-geometry-frontier} applied at \(\mathfrak g\), whose constants are \(c_\alpha=3(1-\alpha)^2/16\) and \(C_\alpha=C_0\),
 \[
 \frac{3(1-\alpha)^2}{16}\min\{1,t_0^{-1/2}\}
 \le
 V_{\mathfrak g}^\star(t_0)
 \le
-C_0\min\{1,t_0^{-1/2}\}.
+C_0\min\{1,t_0^{-1/2}\} .
 \]
-For the chosen \(\mathfrak g\), the fixed-geometry value is bounded above by the frontier risk of every oracle-honest procedure, so the lower display transfers to \(V^\star(t_0)\) in \cref{obj:def:oracle-value}.  Conversely, \(V^\star(t_0)\) is at most the risk of the specific oracle-honest procedure constructed above.  The uniform bound \(\lambda(A\cap\Theta)\le2\), since \(\Theta=[-1,1]\), supplies the bounded-below condition for this infimum.  Hence
+Chaining the last two displays and taking the infimum over \((E_n)\in\mathfrak C^{\mathrm{or}}\),
 \[
-V^\star(t_0)\le C_0\min\{1,t_0^{-1/2}\},
+\frac{3(1-\alpha)^2}{16}\min\{1,t_0^{-1/2}\}
+\le
+V^\star(t_0)
+\le
+C_0\min\{1,t_0^{-1/2}\} .
 \]
-and the oracle value has the stated attainable frontier order at each fixed \(t_0>0\). % lean: fixedGeometryValue_le_frontierRisk
+% lean: oracle_score_inversion_attainment
+Together with the sixth item this establishes the asserted frontier-risk bound and the corresponding attainable oracle-value order at every fixed \(t_0>0\).
 \end{enumerate}
 \end{proof}

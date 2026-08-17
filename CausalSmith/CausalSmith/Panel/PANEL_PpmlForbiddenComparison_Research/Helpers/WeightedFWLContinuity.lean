@@ -54,7 +54,7 @@ lemma collapsedPopulationProjection_continuousAt_effects
     exact (limitingCriterion_eq_finitePoissonObjective
       T C pi barB gamma delta theta).symm
   rw [← heq]
-  simpa only [Function.comp_apply] using hcomp
+  exact hcomp
 
 /-- Every fitted supported-cell mean varies continuously with the full effect
 array. -/
@@ -105,6 +105,11 @@ noncomputable def continuousNuisanceCoefficient (T : ℕ)
   (meanFWLNuisanceGram T C pi barB gamma delta)⁻¹.mulVec
     (meanFWLNuisanceRhs T C pi barB gamma delta)
 
+/-- The quadratic form of the mean-weighted nuisance Gram matrix is a weighted sum of
+squares over the supported cohort-time cells: for any coefficient direction, it equals the
+sum over cells of that cell's mean weight times the square of the cell's nuisance regressor
+evaluated in the direction. Since the mean weights are nonnegative, this exhibits the Gram
+matrix as positive semidefinite. -/
 lemma meanFWLNuisanceGram_quadratic (T : ℕ) (C : Finset (Cohort T))
     (pi : Cohort T → OpenUnit) (barB : Cohort T → PosReal)
     (gamma : Fin T → ℝ) (delta : Cell T → ℝ)

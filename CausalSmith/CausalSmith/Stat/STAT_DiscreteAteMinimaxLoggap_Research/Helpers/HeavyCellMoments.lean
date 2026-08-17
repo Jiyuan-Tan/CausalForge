@@ -251,10 +251,11 @@ lemma setBernoulli_inverse_ncard {J : Type*} [Fintype J] [DecidableEq J]
         (Nat.choose U.card l : ℝ) * rho ^ l * (1 - rho) ^ (U.card - l) *
           (if 0 < l then (l : ℝ)⁻¹ else 0) := by
   classical
-  rw [integral_fintype _ Integrable.of_finite]
+  rw [integral_fintype Integrable.of_finite]
   let q : unitInterval := ⟨rho, hr0, hr1⟩
   let e : Finset J ↪ Set J :=
     ⟨fun V => (V : Set J), fun V W h => Finset.coe_injective h⟩
+  have he : ∀ V : Finset J, e V = (V : Set J) := fun _ => rfl
   have hzero (S : Set J) (hS : ¬ S ⊆ (U : Set J)) :
       setBer((U : Set J), q).real {S} = 0 := by
     have hae := setBernoulli_ae_subset (u := (U : Set J)) (p := q)
@@ -279,9 +280,9 @@ lemma setBernoulli_inverse_ncard {J : Type*} [Fintype J] [DecidableEq J]
       refine ⟨V, ?_, ?_⟩
       · simpa [V] using hS
       · ext j
-        simp [e, V]
+        simp [he, V]
     · rintro ⟨V, hVU, rfl⟩
-      simpa [e] using hVU
+      simpa [he] using hVU
   calc
     (∑ S : Set J, setBer((U : Set J), q).real {S} •
         (if 0 < S.ncard then (S.ncard : ℝ)⁻¹ else 0)) =
@@ -301,7 +302,7 @@ lemma setBernoulli_inverse_ncard {J : Type*} [Fintype J] [DecidableEq J]
       rw [hfilter, Finset.sum_map]
       apply Finset.sum_congr rfl
       intro V hV
-      simp [e, Set.ncard_coe_finset]
+      simp [he, Set.ncard_coe_finset]
     _ = ∑ V ∈ U.powerset,
         rho ^ V.card * (1 - rho) ^ (U.card - V.card) *
           (if 0 < V.card then (V.card : ℝ)⁻¹ else 0) := by
@@ -455,6 +456,7 @@ lemma integral_armOutcomeResidual_eq_zero {d : ℕ} (P : DiscreteLaw d)
       ite_false, Bool.if_false_right, Bool.if_false_left, Bool.if_true_right,
       Bool.if_true_left]
     simp [jointMass]
+    simp only [Finset.sum_add_distrib, Finset.sum_ite_eq', Finset.mem_univ, if_true]
     have hy : (P.pmf (k, false, true)).toReal =
         outcomeMean P false k *
           ((P.pmf (k, false, true)).toReal +
@@ -524,11 +526,15 @@ noncomputable def replaceOutcome {I : Type*} [DecidableEq I] {d : ℕ}
     (z : I → Obs d) (i : I) (y : Bool) : I → Obs d :=
   Function.update z i ((z i).1, (z i).2.1, y)
 
+/-- Overwriting the outcome coordinate of one observation leaves that observation's
+category and treatment coordinates unchanged and installs the new outcome value. -/
 lemma replaceOutcome_apply_same {I : Type*} [DecidableEq I] {d : ℕ}
     (z : I → Obs d) (i : I) (y : Bool) :
     replaceOutcome z i y i = ((z i).1, (z i).2.1, y) := by
   simp [replaceOutcome]
 
+/-- Overwriting the outcome coordinate of one observation leaves every other
+observation of the tuple untouched. -/
 lemma replaceOutcome_apply_ne {I : Type*} [DecidableEq I] {d : ℕ}
     (z : I → Obs d) (i j : I) (hji : j ≠ i) (y : Bool) :
     replaceOutcome z i y j = z j := by
@@ -616,6 +622,7 @@ lemma integral_armOutcomeResidual_sq_le_armMass {d : ℕ} (P : DiscreteLaw d)
       Bool.false_eq_true, and_false, ite_false, Bool.if_false_right,
       Bool.if_false_left, Bool.if_true_right, Bool.if_true_left]
     simp [jointMass]
+    simp only [Finset.sum_add_distrib, Finset.sum_ite_eq', Finset.mem_univ, if_true]
     have hy : (P.pmf (k, false, true)).toReal =
         outcomeMean P false k * armMass P k false := by
       simpa [jointMass] using
@@ -707,16 +714,22 @@ noncomputable def armPropensity {d : ℕ} (P : DiscreteLaw d)
     (k : Fin d) (a : Bool) : ℝ :=
   armMass P k a / cellMass P k
 
+/-- The control-arm and treated-arm masses of a category add up to the total mass of
+that category. -/
 lemma armMass_add_eq_cellMass {d : ℕ} (P : DiscreteLaw d) (k : Fin d) :
     armMass P k false + armMass P k true = cellMass P k := by
   simp [armMass, cellMass]
   ring
 
+/-- The joint probability of a category together with a treatment value is
+nonnegative. -/
 lemma armMass_nonneg {d : ℕ} (P : DiscreteLaw d) (k : Fin d)
     (a : Bool) : 0 ≤ armMass P k a := by
   unfold armMass
   exact Finset.sum_nonneg fun y _ ↦ (jointMass_mem_unitInterval P k a y).1
 
+/-- The joint probability of a category together with a treatment value never exceeds
+the total probability of that category. -/
 lemma armMass_le_cellMass {d : ℕ} (P : DiscreteLaw d) (k : Fin d)
     (a : Bool) : armMass P k a ≤ cellMass P k := by
   rw [← armMass_add_eq_cellMass]
@@ -794,6 +807,8 @@ lemma obsLaw_categoryArmSet_mass {d : ℕ} (P : DiscreteLaw d) (k : Fin d)
     simp [categoryArmSet, hbk]
   · simp
 
+/-- The one-observation event that both the category and the treatment value are as
+prescribed is contained in the event that only the category is as prescribed. -/
 lemma categoryArmSet_subset_categorySet {d : ℕ} (k : Fin d) (a : Bool) :
     categoryArmSet k a ⊆ categorySet k := by
   intro z hz
@@ -814,7 +829,7 @@ lemma obsLaw_categoryArm_diff_mass {d : ℕ} (P : DiscreteLaw d)
 lemma obsLaw_categorySet_compl_mass {d : ℕ} (P : DiscreteLaw d)
     (k : Fin d) :
     (obsLaw P).real (categorySet k)ᶜ = 1 - cellMass P k := by
-  rw [measureReal_compl MeasurableSet.of_discrete, measureReal_univ_eq_one,
+  rw [measureReal_compl MeasurableSet.of_discrete, probReal_univ,
     obsLaw_categorySet_mass]
 
 /-- A design-only multiplier factors out of the one-observation residual
@@ -865,6 +880,7 @@ lemma integral_designWeight_mul_armIndicator_factor {d : ℕ}
   simp only [Fintype.sum_prod_type]
   fin_cases a
   · simp [categoryArmSet, finTwoEquiv, armMass, jointMass, Set.indicator]
+    simp only [Finset.sum_add_distrib, Finset.sum_ite_eq', Finset.mem_univ, if_true]
     rw [hq k false true false]
     ring
   · simp [categoryArmSet, finTwoEquiv, armMass, jointMass, Set.indicator]
@@ -1023,6 +1039,12 @@ def nestedIndexEvent {I A : Type*} [Fintype I] [DecidableEq I]
     (C R : Set A) (U V : Finset I) : Set (I → A) :=
   {z | indexSet z C = U ∧ indexSet z R = V}
 
+/-- Suppose one label set sits inside another and the prescribed inner index set sits
+inside the prescribed outer one.  Then the event that pins down both index sets is a
+product event over the observations: each inner index observation is confined to the
+inner label set, each remaining outer index observation to the part of the outer set
+not in the inner one, and every other observation to the complement of the outer
+set. -/
 lemma nestedIndexEvent_eq_pi {I A : Type*} [Fintype I] [DecidableEq I]
     (C R : Set A) (hRC : R ⊆ C) (U V : Finset I) (hVU : V ⊆ U) :
     nestedIndexEvent C R U V =
@@ -1143,7 +1165,7 @@ lemma nested_count_ratio_integral_eq {I A : Type*} [Fintype I]
         ∂(Measure.pi (fun _ : I => P))) =
       ∫ uv, f uv ∂((Measure.pi (fun _ : I => P)).map pairMap) by
         rw [integral_map hmap.aemeasurable hf.aestronglyMeasurable]]
-  rw [integral_fintype _ Integrable.of_finite]
+  rw [integral_fintype Integrable.of_finite]
   simp only [Fintype.sum_prod_type, smul_eq_mul]
   have hmass (U V : Finset I) :
       ((Measure.pi (fun _ : I => P)).map pairMap).real {(U, V)} =
@@ -1336,6 +1358,8 @@ noncomputable def fixedRatioResidual {I : Type*} [Fintype I]
   ∑ k ∈ H, tupleRatioCoeff z k a *
     ∑ i : I, armOutcomeResidual P k a (z i)
 
+/-- Overwriting the outcome coordinate of one observation does not change which
+observations belong to a given category. -/
 lemma indexSet_replaceOutcome_category {I : Type*} [Fintype I]
     [DecidableEq I] {d : ℕ} (z : I → Obs d) (i : I) (y : Bool)
     (k : Fin d) :
@@ -1345,8 +1369,10 @@ lemma indexSet_replaceOutcome_category {I : Type*} [Fintype I]
   ext j
   by_cases hji : j = i
   · subst j
-    simp [indexSet, categorySet, replaceOutcome]
-  · simp [indexSet, categorySet, replaceOutcome, hji]
+    simp only [indexSet, Finset.mem_filter, Finset.mem_univ, true_and, categorySet,
+      Set.mem_setOf_eq, replaceOutcome, Function.update_self]
+  · simp only [indexSet, Finset.mem_filter, Finset.mem_univ, true_and, categorySet,
+      Set.mem_setOf_eq, replaceOutcome, Function.update_of_ne hji]
 
 /-- Establishes the stated property of index Set replace Outcome arm in the discrete average-treatment-effect construction. -/
 lemma indexSet_replaceOutcome_arm {I : Type*} [Fintype I]
@@ -1359,8 +1385,10 @@ lemma indexSet_replaceOutcome_arm {I : Type*} [Fintype I]
   ext j
   by_cases hji : j = i
   · subst j
-    simp [indexSet, categoryArmSet, replaceOutcome]
-  · simp [indexSet, categoryArmSet, replaceOutcome, hji]
+    simp only [indexSet, Finset.mem_filter, Finset.mem_univ, true_and, categoryArmSet,
+      Set.mem_setOf_eq, replaceOutcome, Function.update_self]
+  · simp only [indexSet, Finset.mem_filter, Finset.mem_univ, true_and, categoryArmSet,
+      Set.mem_setOf_eq, replaceOutcome, Function.update_of_ne hji]
 
 /-- Establishes the stated upper bound for tuple Ratio Coeff replace Outcome. -/
 lemma tupleRatioCoeff_replaceOutcome {I : Type*} [Fintype I]
@@ -1470,7 +1498,7 @@ lemma integral_fixedRatioResidual_sq_eq_diagonal
             (armOutcomeResidual P k a (z i)) ^ 2
           ∂(Measure.pi (fun _ : I => obsLaw P)) := by
   classical
-  let S : Finset (Fin d × I) := H.product Finset.univ
+  let S : Finset (Fin d × I) := H ×ˢ (Finset.univ : Finset I)
   let f : (Fin d × I) → (I → Obs d) → ℝ := fun ki z =>
     tupleRatioCoeff z ki.1 a * armOutcomeResidual P ki.1 a (z ki.2)
   have hfixed (z : I → Obs d) :
@@ -1698,6 +1726,10 @@ forbidden label `r`. -/
 def oneSelectedAvoidEvent (i : I) (s r : A) : Set (I → A) :=
   {z | z i = s ∧ ∀ j, z j ≠ r}
 
+/-- When the prescribed label differs from the forbidden one, the event that a
+distinguished observation carries the prescribed label while no observation carries
+the forbidden one is a product event: the distinguished coordinate is confined to the
+prescribed label and every other coordinate to the complement of the forbidden one. -/
 lemma oneSelectedAvoidEvent_eq_pi (i : I) (s r : A) (hsr : s ≠ r) :
     oneSelectedAvoidEvent i s r =
       Set.univ.pi (fun j => if j = i then {s} else ({r} : Set A)ᶜ) := by
@@ -1741,6 +1773,10 @@ sample avoids a third, forbidden label. -/
 def twoSelectedAvoidEvent (i j : I) (s t r : A) : Set (I → A) :=
   {z | z i = s ∧ z j = t ∧ ∀ l, z l ≠ r}
 
+/-- When two distinct distinguished observations carry two labels, each different from a
+third forbidden label, the event that they do so while no observation carries the
+forbidden label is a product event: each distinguished coordinate is confined to its
+own label and every remaining coordinate to the complement of the forbidden one. -/
 lemma twoSelectedAvoidEvent_eq_pi (i j : I) (s t r : A)
     (hij : i ≠ j) (hsr : s ≠ r) (htr : t ≠ r) :
     twoSelectedAvoidEvent i j s t r =
@@ -1800,6 +1836,11 @@ observation belongs to `S`, and every observation avoids the disjoint set `R`. -
 def oneSelectedAvoidSetEvent (i : I) (S R : Set A) : Set (I → A) :=
   {z | z i ∈ S ∧ ∀ j, z j ∉ R}
 
+/-- When two sets of labels are disjoint, the event that a distinguished observation
+falls in the first set while no observation falls in the second is a product event:
+the distinguished coordinate is confined to the first set and every other coordinate
+to the complement of the second.  This is the form used when the first set is a whole
+treatment arm rather than a single label. -/
 lemma oneSelectedAvoidSetEvent_eq_pi (i : I) (S R : Set A)
     (hSR : Disjoint S R) :
     oneSelectedAvoidSetEvent i S R =
@@ -1890,6 +1931,10 @@ observations avoid the disjoint forbidden set `R`. -/
 def twoSelectedAvoidSetEvent (i j : I) (S R : Set A) : Set (I → A) :=
   {z | z i ∈ S ∧ z j ∈ S ∧ ∀ l, z l ∉ R}
 
+/-- When the two sets are disjoint, the event that two distinct distinguished
+observations both fall in the first set while no observation falls in the second is
+the product event confining the two distinguished coordinates to the first set and
+every remaining coordinate to the complement of the second. -/
 lemma twoSelectedAvoidSetEvent_eq_pi (i j : I) (S R : Set A)
     (hij : i ≠ j) (hSR : Disjoint S R) :
     twoSelectedAvoidSetEvent i j S R =
@@ -1984,7 +2029,7 @@ lemma integral_missingIndexCount_eq {d : ℕ} (P : DiscreteLaw d)
         (Measure.pi (fun _ : I => obsLaw P)).real
           (oneSelectedAvoidSetEvent i
             (categorySet k \ categoryArmSet k a) (categoryArmSet k a)) := by
-    simpa only [Pi.one_apply] using
+    exact
       (integral_indicator_one (MeasurableSet.of_discrete :
         MeasurableSet (oneSelectedAvoidSetEvent i
           (categorySet k \ categoryArmSet k a) (categoryArmSet k a))))
@@ -2002,7 +2047,7 @@ lemma integral_missingIndexCount_eq {d : ℕ} (P : DiscreteLaw d)
       1 - cellMass P k * armPropensity P k a by
         change (obsLaw P).real (categoryArmSet k a)ᶜ = _
         rw [measureReal_compl MeasurableSet.of_discrete,
-          measureReal_univ_eq_one, obsLaw_categoryArmSet_mass,
+          probReal_univ, obsLaw_categoryArmSet_mass,
           armMass_eq_cellMass_mul_armPropensity P k a hp]]
   ring
 
@@ -2122,7 +2167,7 @@ lemma integral_missingIndexCount_sq_eq {d : ℕ} (P : DiscreteLaw d)
           ∂(Measure.pi (fun _ : I => obsLaw P)) =
         (Measure.pi (fun _ : I => obsLaw P)).real
           (oneSelectedAvoidSetEvent i S R) := by
-    simpa only [Pi.one_apply] using
+    exact
       (integral_indicator_one (MeasurableSet.of_discrete :
         MeasurableSet (oneSelectedAvoidSetEvent i S R)))
   have hint2 (i j : I) :
@@ -2132,7 +2177,7 @@ lemma integral_missingIndexCount_sq_eq {d : ℕ} (P : DiscreteLaw d)
           ∂(Measure.pi (fun _ : I => obsLaw P)) =
         (Measure.pi (fun _ : I => obsLaw P)).real
           (twoSelectedAvoidSetEvent i j S R) := by
-    simpa only [Pi.one_apply] using
+    exact
       (integral_indicator_one (MeasurableSet.of_discrete :
         MeasurableSet (twoSelectedAvoidSetEvent i j S R)))
   simp_rw [hint1, hint2]
@@ -2175,7 +2220,7 @@ lemma integral_missingIndexCount_sq_eq {d : ℕ} (P : DiscreteLaw d)
       1 - cellMass P k * armPropensity P k a by
         change (obsLaw P).real (categoryArmSet k a)ᶜ = _
         rw [measureReal_compl MeasurableSet.of_discrete,
-          measureReal_univ_eq_one, obsLaw_categoryArmSet_mass,
+          probReal_univ, obsLaw_categoryArmSet_mass,
           armMass_eq_cellMass_mul_armPropensity P k a hp]]
   ring
 
@@ -2184,6 +2229,12 @@ different sets, and the full sample avoids a common forbidden set. -/
 def twoSelectedAvoidSetsEvent (i j : I) (S T R : Set A) : Set (I → A) :=
   {z | z i ∈ S ∧ z j ∈ T ∧ ∀ l, z l ∉ R}
 
+/-- When a forbidden set of labels is disjoint from each of two
+prescribed sets, the event that one distinguished observation falls in the first set,
+a second distinct distinguished observation falls in the second set, and no
+observation falls in the forbidden set, is the product event confining each
+distinguished coordinate to its own set and every remaining coordinate to the
+complement of the forbidden set. -/
 lemma twoSelectedAvoidSetsEvent_eq_pi (i j : I) (S T R : Set A)
     (hij : i ≠ j) (hSR : Disjoint S R) (hTR : Disjoint T R) :
     twoSelectedAvoidSetsEvent i j S T R =
@@ -2388,7 +2439,7 @@ lemma integral_missingIndexCount_mul_eq {d : ℕ} (P : DiscreteLaw d)
           ∂(Measure.pi (fun _ : I => obsLaw P)) =
         (Measure.pi (fun _ : I => obsLaw P)).real
           (twoSelectedAvoidSetsEvent i j S T U) := by
-    simpa only [Pi.one_apply] using
+    exact
       (integral_indicator_one (MeasurableSet.of_discrete :
         MeasurableSet (twoSelectedAvoidSetsEvent i j S T U)))
   simp_rw [hint, measureReal_def]
@@ -2424,7 +2475,7 @@ lemma integral_missingIndexCount_mul_eq {d : ℕ} (P : DiscreteLaw d)
       1 - cellMass P k * armPropensity P k a -
         cellMass P l * armPropensity P l a by
     change (obsLaw P).real (R ∪ Q)ᶜ = _
-    rw [measureReal_compl MeasurableSet.of_discrete, measureReal_univ_eq_one,
+    rw [measureReal_compl MeasurableSet.of_discrete, probReal_univ,
       measureReal_union hRQ MeasurableSet.of_discrete,
       obsLaw_categoryArmSet_mass, armMass_eq_cellMass_mul_armPropensity P k a hpk,
       obsLaw_categoryArmSet_mass, armMass_eq_cellMass_mul_armPropensity P l a hpl]
@@ -2752,7 +2803,7 @@ lemma integral_fixedMissingCount_sq_le {J : Type*} [Fintype J] [DecidableEq J]
             obsLaw_categorySet_mass]
         _ ≤ (obsLaw P).real Set.univ :=
           measureReal_mono (Set.subset_univ _)
-        _ = 1 := measureReal_univ_eq_one
+        _ = 1 := probReal_univ
     have hsum : cellMass P k * armPropensity P k a +
         cellMass P l * armPropensity P l a ≤ 1 := by
       have hkprod : cellMass P k * armPropensity P k a ≤ cellMass P k :=

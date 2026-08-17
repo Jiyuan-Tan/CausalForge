@@ -662,7 +662,7 @@ lemma sourceObservationFacts_of_class
           P.propensity n (fullX o) :=
         (P.propensity_measurable n).comp hFullX
       cases z
-      · simpa [w] using measurable_const.sub hecomp
+      · simpa [w] using measurable_const.fun_sub hecomp
       · simpa [w] using hecomp
     have hoverlapPop : ∀ᵐ o ∂μ,
         epsilon ≤ P.propensity n (fullX o) ∧
@@ -1232,8 +1232,9 @@ lemma sourceObservationFacts_of_class
         intro _
         simpa [Real.norm_eq_abs] using ho)
     rw [one_mul] at hbound
-    rw [populationXLaw, Measure.map_apply hFullX hA]
-    simpa [Real.norm_eq_abs] using hbound
+    rw [populationXLaw, Measure.map_apply hFullX hA, ← measureReal_def]
+    simp only [Real.norm_eq_abs] at hbound
+    exact hbound
   have hReceiptDom : ∀ A, MeasurableSet A →
       |∫ x in A, P.receiptContrast n true x
           ∂sourceXLaw P n| ≤ (sourceXLaw P n A).toReal := by
@@ -1249,8 +1250,9 @@ lemma sourceObservationFacts_of_class
         intro _
         simpa [Real.norm_eq_abs] using ho)
     rw [one_mul] at hbound
-    rw [populationXLaw, Measure.map_apply hFullX hA]
-    simpa [Real.norm_eq_abs] using hbound
+    rw [populationXLaw, Measure.map_apply hFullX hA, ← measureReal_def]
+    simp only [Real.norm_eq_abs] at hbound
+    exact hbound
   have hDeltaYBound :
       ∀ᵐ x ∂sourceXLaw P n, P.deltaY n x ∈ Set.Icc (-1 : ℝ) 1 := by
     have hAE := hAbsBound (sourceXLaw P n)
@@ -1358,7 +1360,7 @@ lemma weighted_observed_contrast_eq
       (sourceObsLaw P n)[(fun o => w o.1 * F o) | mX] =ᵐ[
         sourceObsLaw P n]
           fun o => w o.1 * (sourceObsLaw P n)[F | mX] o := by
-    simpa only [Pi.mul_apply] using hpull
+    exact hpull
   calc
     (∫ o, w o.1 * F o ∂sourceObsLaw P n) =
         ∫ o, (sourceObsLaw P n)[(fun o => w o.1 * F o) | mX] o
@@ -1531,7 +1533,7 @@ lemma transportedFunctionalRanges_of_class
           P.propensity n (fullX o) :=
         (P.propensity_measurable n).comp hFullX
       cases z
-      · simpa [w] using measurable_const.sub hecomp
+      · simpa [w] using measurable_const.fun_sub hecomp
       · simpa [w] using hecomp
     have hoverlapPop : ∀ᵐ o ∂μ,
         epsilon ≤ P.propensity n (fullX o) ∧
@@ -1989,6 +1991,7 @@ lemma transportedFunctionalRanges_of_class
         hReceipt.2.symm
       _ = ∫ o, (boolReal (fullD1 o) - boolReal (fullD0 o))
             ∂populationLaw P n false := by
+        unfold targetXLaw
         simpa using (hReceipt.1 false Set.univ MeasurableSet.univ).symm
       _ = ∫ o, (if fullD1 o = true ∧ fullD0 o = false
             then (1 : ℝ) else 0) ∂populationLaw P n false := by

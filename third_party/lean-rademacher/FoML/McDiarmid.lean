@@ -492,7 +492,6 @@ lemma hmartingale
       rw [dif_pos h]
       have : i.1 < k.castSucc.1 := h
       rw [dif_pos this]
-      rfl
     else
       rw [dif_neg h]
       have : ¬ i.1 < k.castSucc.1 := h
@@ -897,6 +896,7 @@ theorem mcdiarmid_inequality_aux
     integral_const, smul_eq_mul, Fin.val_zero,
     not_lt_zero', Y, expressionY, E] at hintegrable
   convert (ProbabilityTheory.measure_ge_le_exp_mul_mgf ε ht'' hintegrable).trans _
+  · rfl
   · simp only [Function.comp_apply, ge_iff_le, probReal_univ, one_mul]
     rfl
   dsimp only [mgf]

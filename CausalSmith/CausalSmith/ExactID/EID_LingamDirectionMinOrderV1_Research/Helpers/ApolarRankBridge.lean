@@ -313,6 +313,10 @@ is nonsingular. -/
 def forwardContractionMinorWitnessParameter (m : ℕ) : ParamSpace ℂ m :=
   witnessParameter m
 
+/-- At the explicitly constructed witness parameter, and whenever there is at least one latent
+source slot, the selected forward weighted-contraction matrix has nonzero determinant. This
+exhibits a single point at which the contraction minor is nonsingular, which is what makes the
+corresponding minor polynomial not identically zero. -/
 lemma forwardContractionMinorWitness_det_ne_zero (m : ℕ) (hm : 1 ≤ m) :
     (forwardSelectedContractionMatrix m
       (forwardContractionMinorWitnessParameter m)).det ≠ 0 := by

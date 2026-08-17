@@ -105,7 +105,7 @@ theorem fixSet_evalMap_levelset_compat
     -- Unfold `M2.structFun ⟨v, _⟩` to `M1.structFun ⟨v, _⟩ ∘ fixMonoParentMap`.
     change M1.structFun ⟨v, hv_M1⟩
         (fixMonoParentMap M1.toSWIGGraph Z hZ_obs hZ_fixed v
-          (fun w : {w // w ∈ M2.dag.parents v} =>
+          (fun w : {w // w ∈ (M1.splitMono Z hZ_obs hZ_fixed).dag.parents v} =>
             if huo : w.val ∈ M2.unobserved then ℓ ⟨w.val, huo⟩
             else if hfix : w.val ∈ M2.fixed then s' ⟨w.val, hfix⟩
             else
@@ -329,7 +329,7 @@ theorem fixSet_evalMap_levelset_compat_M2
         SCM.evalMap_observed_unfold M1 s_M1 ℓ_M1 ⟨v, hv_M1⟩]
     change M1.structFun ⟨v, hv_M1⟩
         (fixMonoParentMap M1.toSWIGGraph Z hZ_obs hZ_fixed v
-          (fun w : {w // w ∈ M2.dag.parents v} =>
+          (fun w : {w // w ∈ (M1.splitMono Z hZ_obs hZ_fixed).dag.parents v} =>
             if huo : w.val ∈ M2.unobserved then ℓ ⟨w.val, huo⟩
             else if hfix : w.val ∈ M2.fixed then s' ⟨w.val, hfix⟩
             else

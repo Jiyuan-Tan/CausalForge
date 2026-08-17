@@ -94,7 +94,7 @@ lemma absolutelyContinuous_of_singleton_ne_zero {α : Type*} [MeasurableSpace α
         simpa [hyx] using hx
       have hle : ν ({x} : Set α) ≤ ν s := MeasureTheory.measure_mono hsingle_subset
       have hzero : ν ({x} : Set α) = 0 :=
-        le_antisymm (by simpa [hνs] using hle) (zero_le _)
+        le_antisymm (by simpa [hνs] using hle) zero_le
       exact hν x hzero
     · intro hx
       cases hx

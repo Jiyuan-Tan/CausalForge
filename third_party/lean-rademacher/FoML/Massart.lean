@@ -40,7 +40,7 @@ instance : @MeasurableSingletonClass (Signs m) MeasurableSpace.pi :=
       ext i
       have := Set.mem_iInter.mp h i
       dsimp [f] at this
-      simp at this
+      replace this : y i = x i := this
       exact congrArg Subtype.val this
   )
 
@@ -60,7 +60,7 @@ lemma measure_eq :
   · apply Eq.symm
     apply Measure.pi_eq
     intro s hs
-    dsimp [signVecPMF, Signs]
+    change (PMF.uniformOfFintype (Fin m → ({-1, 1} : Finset ℤ))).toMeasure (Set.univ.pi s) = ∏ i, (PMF.uniformOfFintype ({-1, 1} : Finset ℤ)).toMeasure (s i)
     rw [PMF.toMeasure_uniformOfFintype_apply (Set.univ.pi s) (MeasurableSet.univ_pi hs)]
     have : (Fintype.card (Set.univ.pi s) : ENNReal) / (Fintype.card (Fin m → ({-1, 1} : Finset ℤ)) : ENNReal)
       = ∏ i : Fin m, (Fintype.card (s i) : ENNReal) / (2 : ENNReal) := by
@@ -286,13 +286,12 @@ lemma massart_lemma_pmf
     · intro a af
       have signs_coord_indep :
           iIndepFun (fun i ↦ MassartNotation.Y (F:=F) (S:=S) (m:=m) i a) (signVecPMF m).toMeasure := by
-        dsimp [MassartNotation.Y]
         have h : ∀ (i : Fin m), Measurable fun (σi : ({-1, 1} : Finset ℤ)) ↦ (↑m)⁻¹ * (σi.1 : ℝ) * F a (S i) := by
           intro i
           measurability
         convert iIndepFun.comp pi_eval_iIndepFun
           (fun i ↦ fun (σi : ({-1, 1} : Finset ℤ)) => (m : ℝ)⁻¹ * (σi.1 : ℝ) * F a (S i)) h
-        · exact measurablespace_eq
+        · exact heq_of_eq measurablespace_eq
         · aesop
         · exact measure_eq
         · exact PMF.toMeasure.isProbabilityMeasure (PMF.uniformOfFintype { x // x ∈ {-1, 1} })

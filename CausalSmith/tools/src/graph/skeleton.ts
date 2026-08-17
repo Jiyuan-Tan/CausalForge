@@ -5,6 +5,9 @@ import type { FormalizationGraph, GraphNode } from "./types.js";
 /** A crosswalk row enriched with the node's dependency edges. The `CrosswalkEntry`
  *  core is what the reviewer / cache consume unchanged; the edges are graph-only. */
 export interface GraphSkeletonRow extends CrosswalkEntry {
+  /** Exact graph identity behind this reviewer-facing row. Never derive ownership back
+   *  from obj_id: legacy aliases can intentionally be many-to-one. */
+  graph_node_id: string;
   uses: string[]; // obj_ids the STATEMENT references (outgoing statement-uses) — a faithfulness criterion
   proofUses: string[]; // obj_ids the PROOF will use (outgoing proof-uses) — proof-completeness, NOT statement drift
   usedBy: string[]; // obj_ids that depend on it (incoming)
@@ -56,8 +59,8 @@ export function renderDependencyBlock(rows: GraphSkeletonRow[]): string {
 
 /**
  * Project the graph into the legacy `CrosswalkEntry` shape (so it slots into
- * `splitCrosswalkByCache` / `crosswalkReviewInstruction` / `mergeCrosswalkVerdicts`
- * unchanged) PLUS per-row dependency edges. The `verdict` is the skeleton
+ * `crosswalkReviewInstruction` / `mergeCrosswalkVerdicts` unchanged) PLUS
+ * per-row dependency edges. The `verdict` is the skeleton
  * placeholder `unmatched`; durable review state lives on `node.review`.
  */
 export function graphDerivedSkeleton(graph: FormalizationGraph): GraphSkeletonRow[] {
@@ -85,6 +88,7 @@ export function graphDerivedSkeleton(graph: FormalizationGraph): GraphSkeletonRo
       }
     }
     rows.push({
+      graph_node_id: n.id,
       obj_id: rowObjId(n),
       // A cited gate reviews as an assumption (shallow tier — where the cited source-match block injects).
       kind: (isCitedGate ? "assumption" : n.kind) as CrosswalkEntry["kind"],

@@ -17,7 +17,7 @@ dropped** (mechanical grep verification, re-runnable — see the `chk` loop in t
 | Whack-a-mole D0.5 not terminal | "whack-a-mole", "hygiene-only rotation" |
 | Bank tool + tiers (terminal only) | "bank_entry", tier rules |
 | Argument forms | "from-question", "upgrade-axis" |
-| Launch — cwd = CausalSmith root, node 20.20.2, run-artifact paths | "cwd must be the CausalSmith", "20.20.2" |
+| Launch — cwd = CausalSmith root, node via `node_env.sh`, run-artifact paths | "cwd must be the CausalSmith", "node_env.sh" |
 | After TS exits | "After TS exits", "next_step_guidance" |
 | Mathlib helper staging | "Mathlib helper staging" |
 | Phase 4 CHECKPOINT_NEXT | "CHECKPOINT_NEXT" |

@@ -119,8 +119,8 @@ lemma localized_vc_self_bound {n K : ℕ} (P : ObservedLaw 𝒳)
   have hInt_rhs : Integrable
       (fun sample : Fin n → Observation 𝒳 =>
         (4 / 3 : ℝ) * offset sample + (4 / 3 : ℝ) * δ) μn := by
-    simpa [offset, μn] using
-      ((hInt_offset.const_mul (4 / 3 : ℝ)).add (integrable_const ((4 / 3 : ℝ) * δ)))
+    exact (hInt_offset.const_mul (4 / 3 : ℝ)).add
+      (integrable_const ((4 / 3 : ℝ) * δ))
   have hmono :
       ∫ sample, lawRegret P (πt sample) ∂μn
         ≤ ∫ sample, ((4 / 3 : ℝ) * offset sample + (4 / 3 : ℝ) * δ) ∂μn :=

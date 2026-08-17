@@ -84,7 +84,7 @@ lemma oracleAllocation_path_derivative (nu : Measure (ℝ × ℝ)) (hnu : MTan n
   have hden_ne :
       (fun h => rootSecondMoment (p h) 0 + rootSecondMoment (p h) 1) 0 ≠ 0 := by
     simpa [hp.1, m0, m1] using hS_ne
-  have hratio := hroot1.div hden hden_ne
+  have hratio := hroot1.fun_div hden hden_ne
   have hratio_clean :
       HasDerivAt
         (fun h => rootSecondMoment (p h) 1 /

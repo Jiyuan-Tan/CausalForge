@@ -68,7 +68,7 @@ theorem projResidual_memL2 (μ : Measure ℝ) [IsFiniteMeasure μ] (h : FiniteMo
   have : MemLp (fun y : ℝ => y ^ 2 - (optIntercept μ + optSlope μ * y)) 2 μ := by
     have h1 : MemLp (fun y : ℝ => optSlope μ * y) 2 μ := hid.const_mul _
     exact (hsq.sub (hconst.add h1))
-  simpa [projResidual] using this
+  exact this
 
 /-- `q` is integrable (finite measure + `q ∈ L²`). -/
 theorem integrable_projResidual (μ : Measure ℝ) [IsFiniteMeasure μ] (h : FiniteMoment4 μ) :

@@ -568,7 +568,7 @@ theorem moralConn_congr {G₁ G₂ : DAG V} (hskel : SameSkeleton G₁ G₂)
     G₁.MoralConn S Z u v ↔ G₂.MoralConn S Z u v := by
   unfold DAG.MoralConn
   constructor <;> intro h <;>
-    refine Relation.ReflTransGen.mono (fun a b hab => ?_) h
+    refine Relation.ReflTransGen.mono (fun a b hab => ?_) u v h
   · exact (moralStep_congr hskel himm S Z a b).mp hab
   · exact (moralStep_congr hskel himm S Z a b).mpr hab
 

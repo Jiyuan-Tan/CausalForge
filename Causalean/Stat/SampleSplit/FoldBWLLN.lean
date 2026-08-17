@@ -68,10 +68,10 @@ private lemma tendsto_inProb_of_chebyshev
     have hreal : Tendsto (fun n => V / (ε ^ 2 * b n)) atTop (𝓝 0) :=
       Tendsto.div_atTop tendsto_const_nhds hden
     have := (ENNReal.continuous_ofReal.tendsto 0).comp hreal
-    simpa [ENNReal.ofReal_zero, Function.comp] using this
+    simpa [ENNReal.ofReal_zero, Function.comp_def] using this
   -- Squeeze between the zero sequence and the vanishing Chebyshev bound.
   refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds hbound
-    (Eventually.of_forall (fun n => zero_le _)) ?_
+    (Eventually.of_forall (fun _ => zero_le)) ?_
   filter_upwards [hcheb'] with n hn using hn
 
 namespace OneShotSplit

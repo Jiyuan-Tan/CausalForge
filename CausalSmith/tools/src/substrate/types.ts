@@ -11,7 +11,14 @@ export type SubstratePhase =
 
 export const codexPromptSchema = z.object({
   id: z.string(),
-  target_decls: z.array(z.string()).default([]),
+  // Models occasionally summarize a declaration set as one string even though
+  // the structured-output schema requests an array.  The filler renders this
+  // field as prose only, so preserving that string as a singleton is lossless
+  // and avoids discarding an otherwise valid scaffold plan.
+  target_decls: z.preprocess(
+    (value) => typeof value === "string" ? [value] : value,
+    z.array(z.string()).default([]),
+  ),
   prompt: z.string(),
 });
 export type CodexPrompt = z.infer<typeof codexPromptSchema>;
@@ -115,6 +122,11 @@ export const substrateStateSchema = z.object({
   // layering check. It is never upgraded to a pass without a fresh review.
   layeringReviewStatus: z.enum(["current", "legacy-unreviewed"]).default("current"),
   terminalMessage: z.union([z.string(), z.null()]).default(null),
+  /** Exact requirement bytes used by a terminal scaffolder escalation. A changed hash permits
+   * one deterministic requirement-correction re-entry; unchanged input remains terminal. */
+  terminalRequirementHash: z.union([z.string(), z.null()]).default(null),
+  terminalEscalationKind: z.enum(["scaffolder", "coordinate-timeout"]).nullable().default(null),
+  requirementVersion: z.number().int().nonnegative().default(0),
 });
 export type SubstrateState = z.infer<typeof substrateStateSchema>;
 

@@ -21,11 +21,11 @@ lemma frobeniusCenterTangentXY_deriv (q cx cy cz kappa : ℝ) (hq : 0 < q) :
       (fun t : ℝ => reducedObjective q cx cy cz kappa (1 + t) (1 - q * t) 1)
       (cx - q * cy) 0 := by
   have h1 : HasDerivAt (fun t : ℝ => (1 : ℝ) + t) 1 0 := by
-    simpa using (hasDerivAt_const (0 : ℝ) (1 : ℝ)).add (hasDerivAt_id (0 : ℝ))
+    simpa using (hasDerivAt_const (0 : ℝ) (1 : ℝ)).fun_add (hasDerivAt_id (0 : ℝ))
   have hqt : HasDerivAt (fun t : ℝ => q * t) q 0 := by
-    simpa using (hasDerivAt_const (0 : ℝ) q).mul (hasDerivAt_id (0 : ℝ))
+    simpa using (hasDerivAt_const (0 : ℝ) q).fun_mul (hasDerivAt_id (0 : ℝ))
   have hy : HasDerivAt (fun t : ℝ => (1 : ℝ) - q * t) (-q) 0 := by
-    simpa using (hasDerivAt_const (0 : ℝ) (1 : ℝ)).sub hqt
+    simpa using (hasDerivAt_const (0 : ℝ) (1 : ℝ)).fun_sub hqt
   have hz : HasDerivAt (fun _t : ℝ => (1 : ℝ)) 0 0 :=
     hasDerivAt_const (0 : ℝ) (1 : ℝ)
   have hcx : HasDerivAt (fun _t : ℝ => cx) 0 0 := hasDerivAt_const (0 : ℝ) cx
@@ -78,9 +78,9 @@ lemma frobeniusCenterTangentYZ_deriv (q cx cy cz kappa : ℝ) (hq : 0 < q) :
   have hx : HasDerivAt (fun _t : ℝ => (1 : ℝ)) 0 0 :=
     hasDerivAt_const (0 : ℝ) (1 : ℝ)
   have hy : HasDerivAt (fun t : ℝ => (1 : ℝ) + t) 1 0 := by
-    simpa using (hasDerivAt_const (0 : ℝ) (1 : ℝ)).add (hasDerivAt_id (0 : ℝ))
+    simpa using (hasDerivAt_const (0 : ℝ) (1 : ℝ)).fun_add (hasDerivAt_id (0 : ℝ))
   have hz : HasDerivAt (fun t : ℝ => (1 : ℝ) - t) (-1) 0 := by
-    simpa using (hasDerivAt_const (0 : ℝ) (1 : ℝ)).sub (hasDerivAt_id (0 : ℝ))
+    simpa using (hasDerivAt_const (0 : ℝ) (1 : ℝ)).fun_sub (hasDerivAt_id (0 : ℝ))
   have hcx : HasDerivAt (fun _t : ℝ => cx) 0 0 := hasDerivAt_const (0 : ℝ) cx
   have hcy : HasDerivAt (fun _t : ℝ => cy) 0 0 := hasDerivAt_const (0 : ℝ) cy
   have hcz : HasDerivAt (fun _t : ℝ => cz) 0 0 := hasDerivAt_const (0 : ℝ) cz
@@ -93,7 +93,7 @@ lemma frobeniusCenterTangentYZ_deriv (q cx cy cz kappa : ℝ) (hq : 0 < q) :
         (fun t : ℝ => q * 1 ^ 2 + (1 + t) ^ 2 + (1 - t) ^ 2)
         (0 + (2 * (1 + (0 : ℝ)) ^ (2 - 1) * 1) +
           (2 * (1 - (0 : ℝ)) ^ (2 - 1) * (-1))) 0 := by
-      simpa using (hq1.add (hy.pow 2)).add (hz.pow 2)
+      simpa using (hq1.fun_add (hy.fun_pow 2)).fun_add (hz.fun_pow 2)
     convert hraw using 1
     ring
   have hval_ne : q * 1 ^ 2 + (1 + (0 : ℝ)) ^ 2 + (1 - (0 : ℝ)) ^ 2 ≠ 0 := by
@@ -158,7 +158,7 @@ lemma frobenius_center_certificate (m : ℕ) (cx cy cz kappa : ℝ) (hq : 0 < qP
       · norm_num
       constructor
       · norm_num
-      · dsimp [q]
+      · change q * 1 + 1 + 1 = 2 * (m : ℝ)
         nlinarith [hqM]
     · intro x y z hT hneq
       rcases hT with ⟨hx, hy, hz, hsum⟩
@@ -252,7 +252,7 @@ lemma frobenius_center_certificate (m : ℕ) (cx cy cz kappa : ℝ) (hq : 0 < qP
           · linarith
           constructor
           · linarith
-          · dsimp [q]
+          · change q * 1 + (1 + t) + (1 - t) = 2 * (m : ℝ)
             nlinarith [hqM]
         have := hmin 1 (1 + t) (1 - t) hT
         simpa [g, q] using this

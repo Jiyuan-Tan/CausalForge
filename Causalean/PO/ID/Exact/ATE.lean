@@ -330,6 +330,8 @@ theorem cate_backdoor_of_propScore_ne [StandardBorelSpace P.Ω] [IsFiniteMeasure
         | true  => f (0 : Fin 2)
         | false => f (1 : Fin 2)
     have hψ_meas : Measurable ψ := by
+      let instCf : ∀ a : Fin 2, MeasurableSpace (S.cfBundle.type a) :=
+        fun a => S.cfBundle.inst a
       cases d with
       | true  => exact measurable_pi_apply (0 : Fin 2)
       | false => exact measurable_pi_apply (1 : Fin 2)

@@ -627,7 +627,7 @@ theorem fixed_geometry_frontier
           (sourceObsLaw P n)[(fun o => w o.1 * F o) | mX] =ᵐ[
             sourceObsLaw P n]
               fun o => w o.1 * (sourceObsLaw P n)[F | mX] o := by
-        simpa only [Pi.mul_apply] using hpull
+        exact hpull
       calc
         (∫ o, w o.1 * F o ∂sourceObsLaw P n) =
             ∫ o, (sourceObsLaw P n)[(fun o => w o.1 * F o) | mX] o
@@ -771,7 +771,7 @@ theorem fixed_geometry_frontier
         filter_upwards [hoverObs,
           (ae_map_iff measurable_fst.aemeasurable
             (measurableSet_Icc.preimage hweightMeas)).mp
-              (by simpa only [Set.mem_setOf_eq] using hIV.weightEnvelope)
+              (by simpa only [WeightEnvelope, sourceXLaw, Set.mem_Icc] using hIV.weightEnvelope)
         ] with o ho hw
         have hscore :
             |oracleInstrumentScore (P.propensity n) o| ≤ 1 / epsilon := by
@@ -969,7 +969,7 @@ theorem fixed_geometry_frontier
         filter_upwards [
           (ae_map_iff measurable_fst.aemeasurable
             (measurableSet_Icc.preimage hweightMeas)).mp
-              (by simpa only [Set.mem_setOf_eq] using hIV.weightEnvelope)
+              (by simpa only [WeightEnvelope, sourceXLaw, Set.mem_Icc] using hIV.weightEnvelope)
         ] with o hw
         rw [Real.norm_eq_abs, abs_pow, abs_of_nonneg hw.1]
         exact pow_le_pow_left₀ hw.1 hw.2 2
@@ -1140,7 +1140,7 @@ theorem fixed_geometry_frontier
             transportWeight P n o.1 ≤ 2 * (k n : ℝ) := by
         exact (ae_map_iff measurable_fst.aemeasurable
           (measurableSet_Icc.preimage hweightMeas)).mp
-            (by simpa only [Set.mem_setOf_eq] using hIV.weightEnvelope)
+            (by simpa only [WeightEnvelope, sourceXLaw, Set.mem_Icc] using hIV.weightEnvelope)
       have hInstMeas : Measurable
           (oracleInstrumentScore (P.propensity n)) := by
         have he : Measurable (fun o : SourceObs 𝒳 =>
@@ -1630,7 +1630,8 @@ theorem fixed_geometry_frontier
     have hRisk :
         fixedGeometryRisk N k c epsilon g C t0 ≤
           C0 * min 1 (t0 ^ (-1 / 2 : ℝ)) := by
-      simpa [fixedGeometryRisk, abstractClassFrontierRisk] using
+      simpa [fixedGeometryRisk, abstractClassFrontierRisk,
+        Causalean.Stat.classFrontierRisk] using
         abstractClassFrontierRisk_le
           (fun n P => fixedGeometrySlice P g N k c epsilon n)
           (fun n P => effectiveStrength P n)
@@ -1726,6 +1727,6 @@ theorem fixed_geometry_frontier
         fixedGeometryValueTotal N k c epsilon alpha ⟨g, hg⟩ t0 ≤
           C0 * min 1 (t0 ^ (-1 / 2 : ℝ)) := by
       exact (ciInf_le hvaluesBdd ⟨C, hHonest⟩).trans hRisk
-    simpa [C0, L] using hvalue
+    simpa [C0, L, fixedGeometryValue] using hvalue
 
 end CausalSmith.Stat.TransportedLateStrengthFrontier

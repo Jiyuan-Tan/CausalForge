@@ -33,6 +33,16 @@ describe("graphDerivedSkeleton", () => {
     expect(t1.boundTo).toEqual(["setup"]);
     expect(skel.find((e) => e.obj_id === "A-1")!.usedBy).toEqual(["T-1"]);
   });
+  it("keeps a case-sensitive exact T1 target distinct from legacy t1", () => {
+    let x = createEmptyGraph("q", "v1");
+    x = addNode(x, { id: "t1", kind: "theorem", provenance: "from-note", nl_statement: "legacy", tex_anchor: "" });
+    x = addNode(x, { id: "T1", kind: "theorem", provenance: "from-note", nl_statement: "exact", tex_anchor: "" });
+
+    expect(graphDerivedSkeleton(x).map((row) => [row.graph_node_id, row.obj_id]).sort()).toEqual([
+      ["T1", "T1"],
+      ["t1", "T-1"],
+    ]);
+  });
 });
 
 describe("renderDependencyBlock", () => {

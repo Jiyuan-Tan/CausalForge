@@ -8,7 +8,7 @@ import { validate } from "./validator.js";
 import { setNodeReview } from "./mutate.js";
 import { statementHash } from "./hash.js";
 import { graphPath, loadGraph, saveGraph } from "./store.js";
-import type { FormalizationGraph, ReviewStatus, ValidationResult } from "./types.js";
+import type { FormalizationGraph, GraphNode, ReviewStatus, ValidationResult } from "./types.js";
 import type { CrosswalkEntry, CrosswalkVerdict } from "../types.js";
 
 export interface GateGraphRefresh {
@@ -69,6 +69,30 @@ function objIdToNode(objId: string): string {
 }
 
 /**
+ * Resolve a reviewer target without changing an exact graph id. Legacy note aliases
+ * (`T-1` → `t1`) remain available for legacy graph ids, while stamped `obj_id`
+ * aliases are accepted only for from-note nodes. AUX aliases remain available for
+ * the agent-introduced hidden-definition surface.
+ * Anything else is a persistence error, not a verdict that may be silently ignored.
+ */
+function resolveVerdictNode(graph: FormalizationGraph, objId: string): GraphNode {
+  const exact = graph.nodes.filter((n) => n.id === objId);
+  if (exact.length === 1) return exact[0];
+
+  const legacyId = objIdToNode(objId);
+  const candidates = graph.nodes.filter((n) =>
+    n.id === legacyId
+    || (n.provenance === "from-note" && n.obj_id === objId),
+  );
+  if (candidates.length === 1) return candidates[0];
+
+  const detail = candidates.length === 0
+    ? "no graph node or unambiguous legacy/from-note alias"
+    : `ambiguous aliases: ${candidates.map((n) => n.id).sort().join(", ")}`;
+  throw new Error(`review verdict target resolution failed for ${JSON.stringify(objId)}: ${detail}`);
+}
+
+/**
  * Write a gate's reviewer crosswalk verdicts back onto the graph's node review
  * state (status + the statement hash it was reviewed at). `derivedObjIds` (F4's
  * PRIMITIVE-vs-DERIVED audit) override a `matched` to `derived`. Pure; caller persists.
@@ -78,15 +102,35 @@ export function applyVerdictsToGraph(
   crosswalk: CrosswalkEntry[],
   hashes: Record<string, string>,
   derivedObjIds: Set<string> = new Set(),
+  /** Reviewer-facing target → exact graph node id. `null` marks a synthetic symbol-cluster
+   *  row, which is persisted separately in `symbolReview` by proof_reviewer. */
+  targetOwners?: ReadonlyMap<string, string | null>,
 ): FormalizationGraph {
-  let g = graph;
+  // Resolve the ENTIRE batch before changing a review. A later bad row must not leave an
+  // earlier row applied if callers catch the deterministic resolution error.
+  const resolved: { entry: CrosswalkEntry; node: GraphNode; status: ReviewStatus }[] = [];
   for (const e of crosswalk) {
     let status = verdictToStatus(e.verdict);
     if (status === "matched" && derivedObjIds.has(e.obj_id)) status = "derived";
     if (!status) continue;
-    const id = objIdToNode(e.obj_id);
-    const node = g.nodes.find((n) => n.id === id);
-    if (!node) continue;
+    let node: GraphNode;
+    if (targetOwners?.has(e.obj_id)) {
+      const owner = targetOwners.get(e.obj_id)!;
+      if (owner === null) continue;
+      const bound = graph.nodes.find((n) => n.id === owner);
+      if (!bound) {
+        throw new Error(`review verdict target resolution failed for ${JSON.stringify(e.obj_id)}: bound graph node ${JSON.stringify(owner)} is missing`);
+      }
+      node = bound;
+    } else {
+      node = resolveVerdictNode(graph, e.obj_id);
+    }
+    resolved.push({ entry: e, node, status });
+  }
+
+  let g = graph;
+  for (const { entry: e, node, status } of resolved) {
+    const id = node.id;
     // Record the hash the node was reviewed at. Prefer the Lean-extracted statement hash;
     // for a hypothesis-backed node with no standalone decl, fall back to the hash of its NL
     // statement (the symmetric convention `dirtyFrontier` reads) — never a constant sentinel,

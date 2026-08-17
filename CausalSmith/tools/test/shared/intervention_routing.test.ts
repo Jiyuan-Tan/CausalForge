@@ -4,6 +4,11 @@ import { NEG1_PIVOT_BUDGET, NEG1_REVISE_CAP } from "../../src/discovery/stages/n
 import { applyInterventionRoute } from "../../src/shared/intervention_routing.js";
 import { synthesizeInterventionFromReviews } from "../../src/pipeline_support.js";
 import type { StateJson } from "../../src/types.js";
+import { extensionEditBasePath } from "../../src/discovery/stages/d0_cross_boundary_rewind.js";
+import { coreJsonPath } from "../../src/discovery/stages/d0_core.js";
+import { legacyCrossBoundaryRewindGuard } from "../../src/discovery/stages/d0_cross_boundary_rewind.js";
+import { runStageNeg0_5 } from "../../src/discovery/stages/neg0_5.js";
+import { runStageNeg1_2 } from "../../src/discovery/stages/neg1_2.js";
 
 describe("synthesizeInterventionFromReviews — deterministic escalation (B)", () => {
   it("routes stage_neg1 + redraft_proposal when a 0.5 review sets escalate_to_proposer", () => {
@@ -252,6 +257,7 @@ describe("applyInterventionRoute", () => {
           statement: "New assumption statement.",
           source: "review",
         },
+        d0_rewind_intent: "replacement",
       }),
     );
 
@@ -263,6 +269,8 @@ describe("applyInterventionRoute", () => {
     expect(state.proposed_from?.current_mode).toBe("revise");
     expect(state.proposed_from?.last_draft_version).toBeUndefined();
     expect(state.proposed_from?.last_draft_status).toBeUndefined();
+    expect(state.flags.f1_plan_retired).toBe(true);
+    expect(state.flags.f2_scaffold_retired).toBe(true);
     expect(state.added_assumptions).toEqual([
       {
         label: "A_new",
@@ -271,6 +279,131 @@ describe("applyInterventionRoute", () => {
         source: "review",
       },
     ]);
+  });
+
+  it("refuses an ambiguous cross-boundary stage_0 rewind instead of silently using D-1.2", () => {
+    const state = makeState({ stage_completed: "4" });
+    const result = applyInterventionRoute(
+      state,
+      intervention({ route: "stage_0", reason: "add another result", action_kind: "re_derive" }),
+    );
+    expect(result).toBe(false);
+    expect(state.stage_completed).toBe("4");
+    expect(state.flags.stage0_rewind_intent_required).toMatch(/ambiguous cross-boundary/);
+  });
+
+  it("routes an incremental repair directly to D0 without changing the proposal cursor", () => {
+    const state = makeState({
+      stage_completed: "4",
+      proposed_from: makeProposedFrom({ current_angle_index: 2, current_version: 7 }),
+    });
+    const result = applyInterventionRoute(
+      state,
+      intervention({
+        route: "stage_0",
+        reason: "repair one accepted proof",
+        proposed_action: "repair one accepted proof",
+        action_kind: "re_derive",
+        d0_rewind_intent: "incremental_repair",
+      }),
+    );
+    expect(result).toBe(true);
+    expect(state.stage_completed).toBe("-0.5");
+    expect(state.proposed_from?.current_version).toBe(7);
+    expect(state.flags.d0_cross_boundary_rewind).toMatchObject({
+      intent: "incremental_repair",
+      source_revision: "angle:2/version:7",
+      status: "pending",
+    });
+  });
+
+  it("routes an extension through D-1.2 with a typed rebase receipt, without retiring F", () => {
+    const state = makeState({
+      stage_completed: "4",
+      proposed_from: makeProposedFrom({ current_angle_index: 1, current_version: 5 }),
+    });
+    const result = applyInterventionRoute(
+      state,
+      intervention({
+        route: "stage_0",
+        reason: "add a distinct theorem",
+        proposed_action: "add a distinct theorem",
+        action_kind: "re_derive",
+        d0_rewind_intent: "extension",
+      }),
+    );
+    expect(result).toBe(true);
+    expect(state.stage_completed).toBe("-1.2");
+    expect(state.flags.d0_cross_boundary_rewind).toMatchObject({
+      intent: "extension",
+      source_revision: "angle:1/version:5",
+      status: "pending",
+    });
+    expect(state.flags.f1_plan_retired).toBeUndefined();
+    expect(state.flags.f2_scaffold_retired).toBeUndefined();
+    const ctx = {
+      repoRoot: "/tmp/rewind-route",
+      qid: "stat_rewind_route",
+      specialization: "v1",
+    } as never;
+    expect(extensionEditBasePath({
+      ctx,
+      state,
+      ordinaryProtoPath: "/tmp/stale-pre-d0-proto.json",
+    })).toBe(coreJsonPath(ctx));
+  });
+
+  it("counts a replacement theorem split exactly once", () => {
+    const state = makeState({ stage_completed: "4", flags: { theorem_splits: 1 } });
+    expect(applyInterventionRoute(state, intervention({
+      route: "stage_0",
+      reason: "replace and split",
+      proposed_action: "replace and split",
+      action_kind: "theorem_split",
+      d0_rewind_intent: "replacement",
+      proposed_assumption: { label: "A-new", statement: "Q holds" },
+    }))).toBe(true);
+    expect(state.flags.theorem_splits).toBe(2);
+  });
+
+  it("blocks a legacy in-flight D-1.2 rewind whose intent cannot be proven", async () => {
+    const state = makeState({ stage_completed: "-1.2" });
+    state.flags.rewound_from_stage0 = "old untyped rewind";
+    expect(legacyCrossBoundaryRewindGuard(state)).toMatch(/no typed intent/);
+    expect(state.flags.stage0_rewind_intent_required).toMatch(/refusing to review\/edit/);
+    expect(state.stage_completed).toBe("-1.2");
+    const result = await runStageNeg0_5({
+      ctx: {
+        repoRoot: "/tmp/legacy-rewind-guard",
+        qid: "stat_legacy_rewind",
+        specialization: "v1",
+        dryRun: false,
+        resume: true,
+      },
+      state,
+      deps: {
+        runCodex: async () => { throw new Error("guard must stop before reviewer dispatch"); },
+        runClaude: async () => { throw new Error("guard must stop before producer dispatch"); },
+        lean: undefined as never,
+      },
+    });
+    expect(result).toMatchObject({ stage: "-0.5", status: "checkpoint", advance: false });
+    const authorResult = await runStageNeg1_2({
+      ctx: {
+        repoRoot: "/tmp/legacy-rewind-guard",
+        qid: "stat_legacy_rewind",
+        specialization: "v1",
+        dryRun: false,
+        resume: true,
+      },
+      state,
+      deps: {
+        runCodex: async () => { throw new Error("D-1.2 guard must stop before author dispatch"); },
+        runClaude: async () => { throw new Error("D-1.2 guard must stop before author dispatch"); },
+        lean: undefined as never,
+      },
+    });
+    expect(authorResult).toMatchObject({ stage: "-1.2", status: "checkpoint", advance: false });
   });
 
   it("route=stage_0 with exhausted angle and version budget returns false", () => {

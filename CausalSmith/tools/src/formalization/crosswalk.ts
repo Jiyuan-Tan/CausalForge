@@ -395,53 +395,6 @@ export function mergeCrosswalkVerdicts(
   });
 }
 
-/**
- * Split the fresh skeleton into rows that must be re-audited by codex (`stale`)
- * vs rows whose verdict can be REUSED from the last F2.5 PASS snapshot (`cached`).
- *
- * SOUND coarse rule (mirrors the freeze floor's snapshot, no graph trust needed):
- *  - If there is no prior snapshot, or ANY def/abbrev/structure changed
- *    (`defsUnchanged === false`), everything is stale — a changed definition can
- *    shift an unchanged theorem's meaning, so re-audit all.
- *  - Otherwise a row is reusable iff the prior snapshot has its obj_id, its .tex
- *    anchor is unchanged, AND: for a THEOREM row, its own decl-body hash is
- *    unchanged (`thmHashUnchanged`); for a def/abbrev/structure row, nothing more
- *    is needed (no def changed, by `defsUnchanged`).
- * Cached rows keep their FRESH anchors (line numbers may have shifted) with the
- * prior verdict/clauses/note spliced in.
- */
-export function splitCrosswalkByCache(
-  skeleton: CrosswalkEntry[],
-  prior: CrosswalkEntry[] | undefined,
-  defsUnchanged: boolean,
-  thmHashUnchanged: (declName: string) => boolean,
-): { stale: CrosswalkEntry[]; cached: CrosswalkEntry[] } {
-  if (!prior || prior.length === 0 || !defsUnchanged) return { stale: skeleton, cached: [] };
-  const priorById = new Map(prior.map((e) => [e.obj_id, e]));
-  const stale: CrosswalkEntry[] = [];
-  const cached: CrosswalkEntry[] = [];
-  for (const e of skeleton) {
-    const p = priorById.get(e.obj_id);
-    const anchorSame =
-      !!p && p.tex.label === e.tex.label && p.tex.line_range === e.tex.line_range;
-    const isThm = e.lean?.decl_kind === "theorem";
-    const reusable =
-      !!p && anchorSame && (isThm ? !!e.lean && thmHashUnchanged(e.lean.decl) : true);
-    if (reusable && p) {
-      cached.push({
-        ...e,
-        verdict: p.verdict,
-        clauses: p.clauses ?? e.clauses,
-        note: p.note ?? e.note,
-        fix_locus: p.fix_locus ?? e.fix_locus,
-      });
-    } else {
-      stale.push(e);
-    }
-  }
-  return { stale, cached };
-}
-
 /** Human-readable rendering of the crosswalk (sibling of the JSON backbone). */
 export function renderCrosswalkMd(entries: CrosswalkEntry[]): string {
   const lines: string[] = [

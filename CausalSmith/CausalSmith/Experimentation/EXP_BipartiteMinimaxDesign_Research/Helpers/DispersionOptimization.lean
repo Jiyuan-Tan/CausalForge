@@ -24,6 +24,10 @@ noncomputable def reciprocalBarrier (x : ℝ) : ℝ := x⁻¹ + (1 - x)⁻¹
 noncomputable def reciprocalBarrierSlope (r : ℝ) : ℝ := -(r⁻¹ ^ 2) + (1 - r)⁻¹ ^ 2
 
 -- @node: reciprocalBarrier_tangent_gap
+/-- The one-coordinate reciprocal barrier lies above each of its tangent lines: at any two
+interior propensities, the barrier's value at the first is at least its first-order
+expansion around the second. This is the convexity inequality that drives the surrogate
+minimization. -/
 lemma reciprocalBarrier_tangent_gap {x r : ℝ}
     (hx0 : 0 < x) (hx1 : x < 1) (hr0 : 0 < r) (hr1 : r < 1) :
     reciprocalBarrier r + reciprocalBarrierSlope r * (x - r) ≤ reciprocalBarrier x := by

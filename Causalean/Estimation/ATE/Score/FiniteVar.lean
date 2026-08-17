@@ -117,8 +117,8 @@ theorem aipw_finite_var (S : BackdoorEstimationSystem P γ) {ε : ℝ}
     refine MemLp.of_bound ?_ ε⁻¹ hw_true_bound
     apply Measurable.aestronglyMeasurable
     have hind : Measurable (fun ω => indA (S.factualZ ω)) := by
-      simpa [indA, projA, BackdoorEstimationSystem.factualZ] using
-        (Measurable.of_discrete
+      simp only [indA, projA, BackdoorEstimationSystem.factualZ]
+      exact (Measurable.of_discrete
           (f := fun b : Bool => if b = true then (1 : ℝ) else 0)).comp
             S.toPOBackdoorSystem.measurable_factualD
     exact hind.div (S.e_meas.comp S.toPOBackdoorSystem.measurable_factualX)
@@ -129,8 +129,8 @@ theorem aipw_finite_var (S : BackdoorEstimationSystem P γ) {ε : ℝ}
     refine MemLp.of_bound ?_ ε⁻¹ hw_false_bound
     apply Measurable.aestronglyMeasurable
     have hind : Measurable (fun ω => indA (S.factualZ ω)) := by
-      simpa [indA, projA, BackdoorEstimationSystem.factualZ] using
-        (Measurable.of_discrete
+      simp only [indA, projA, BackdoorEstimationSystem.factualZ]
+      exact (Measurable.of_discrete
           (f := fun b : Bool => if b = true then (1 : ℝ) else 0)).comp
             S.toPOBackdoorSystem.measurable_factualD
     exact (measurable_const.sub hind).div
@@ -142,7 +142,7 @@ theorem aipw_finite_var (S : BackdoorEstimationSystem P γ) {ε : ℝ}
             S.e_val (S.toPOBackdoorSystem.factualX ω)) *
           (S.toPOBackdoorSystem.factualY ω -
             S.μ_val true (S.toPOBackdoorSystem.factualX ω))) 2 P.μ := by
-    simpa using (hY_L2.sub (hμ_L2 true)).mul hw_true_Linf
+    exact (hY_L2.sub (hμ_L2 true)).mul hw_true_Linf
   have hterm_false_L2 :
       MemLp
         (fun ω =>
@@ -150,7 +150,7 @@ theorem aipw_finite_var (S : BackdoorEstimationSystem P γ) {ε : ℝ}
             (1 - S.e_val (S.toPOBackdoorSystem.factualX ω))) *
           (S.toPOBackdoorSystem.factualY ω -
             S.μ_val false (S.toPOBackdoorSystem.factualX ω))) 2 P.μ := by
-    simpa using (hY_L2.sub (hμ_L2 false)).mul hw_false_Linf
+    exact (hY_L2.sub (hμ_L2 false)).mul hw_false_Linf
   have hψ_comp_L2 : MemLp (fun ω => S.ψ_AIPW (S.factualZ ω)) 2 P.μ := by
     have hbase_L2 :
         MemLp
@@ -162,8 +162,7 @@ theorem aipw_finite_var (S : BackdoorEstimationSystem P γ) {ε : ℝ}
       memLp_const _
     have hsum_L2 :=
       ((hbase_L2.add hterm_true_L2).sub hterm_false_L2).sub hconst_L2
-    simpa [BackdoorEstimationSystem.ψ_AIPW, aipwMoment,
-      BackdoorEstimationSystem.factualZ, projX, projY] using hsum_L2
+    exact hsum_L2
   have hψ_L2 : MemLp S.ψ_AIPW 2 (S.P_Z) := by
     rw [BackdoorEstimationSystem.P_Z]
     exact (memLp_map_measure_iff hψ_meas.aestronglyMeasurable
@@ -194,7 +193,7 @@ theorem aipw_finite_var_of_counterfactual_sq
     have hcond_L2 :
         MemLp (P.μ[S.toPOBackdoorSystem.YofD d |
           S.toPOBackdoorSystem.sigmaX]) 2 P.μ :=
-      hYd_L2.condExp
+      hYd_L2.condExp one_le_two
     exact hcond_L2.ae_eq (S.μ_compat hA d)
   exact S.aipw_finite_var h_overlap h_y2 hμ_L2
 

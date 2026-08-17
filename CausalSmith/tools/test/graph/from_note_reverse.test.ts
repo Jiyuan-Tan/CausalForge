@@ -11,4 +11,8 @@ describe("nodeIdToObjId", () => {
     expect(nodeIdToObjId("setup")).toBe("setup");
     expect(nodeIdToObjId("aux_overlapBound")).toBe("aux_overlapBound");
   });
+  it("preserves case-sensitive exact ids instead of treating them as lowercase legacy ids", () => {
+    expect(nodeIdToObjId("T1")).toBe("T1");
+    expect(nodeIdToObjId("hP_pointwise_witness")).toBe("hP_pointwise_witness");
+  });
 });

@@ -316,7 +316,7 @@ theorem deltaMethod
   have hNormDistVec :
       Tendsto_dist_vec (fun n ω => ‖Sn n ω‖)
         (Q.toMeasure.map (fun x : E => ‖x‖)) μ hNormSn_meas := by
-    simpa using
+    exact
       Tendsto_dist_vec.map_continuous
         (Q := Q.toMeasure) (g := fun x : E => ‖x‖)
         continuous_norm hSn_meas hSnDist
@@ -495,7 +495,7 @@ theorem deltaMethod
         · linarith
       _ < δ := hfour_alpha_lt_delta
   have hZdist : Tendsto_dist_vec Zn (Q.toMeasure.map Dg) μ hZn_meas := by
-    simpa [Zn] using
+    exact
       Tendsto_dist_vec.map_continuous
         (Q := Q.toMeasure) (g := fun x : E => Dg x)
         Dg.continuous hSn_meas hSnDist

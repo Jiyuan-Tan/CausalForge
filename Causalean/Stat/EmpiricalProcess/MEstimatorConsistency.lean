@@ -91,7 +91,7 @@ theorem mEstimator_consistent_of_glivenkoCantelli
     -- contradiction with the separation gap
     linarith [h0.1, h0.2, h1.1, h1.2, ha, hs]
   refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds
-    (hGC (η / 2) hη2) (Eventually.of_forall fun n => zero_le _)
+    (hGC (η / 2) hη2) (Eventually.of_forall fun n => zero_le)
     (Eventually.of_forall fun n => measure_mono (hsub n))
 
 /-- **Bracketing corollary** (the econometrician's headline).  A criterion class

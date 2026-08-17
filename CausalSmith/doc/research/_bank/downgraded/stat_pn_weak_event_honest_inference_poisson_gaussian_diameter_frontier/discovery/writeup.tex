@@ -1,0 +1,1401 @@
+\documentclass{article}
+\usepackage[margin=0.8in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{mathrsfs,bm,bbm}
+\usepackage{graphicx,booktabs,array,multirow,tabularx,longtable}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{algorithm,algpseudocode}
+\usepackage{subcaption,tikz}
+\usepackage{siunitx,cancel,accents}
+\usepackage{microtype}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{cleveref}
+\setlength{\emergencystretch}{2em}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{openendedquestion}{Open-ended Question}
+\newtheorem{conjecture}{Conjecture}
+\newcommand{\coreref}[1]{\ref{#1}}
+
+\begin{document}
+
+\sloppy
+
+\section*{stat\_\allowbreak{}pn\_\allowbreak{}weak\_\allowbreak{}event\_\allowbreak{}honest\_\allowbreak{}inference}
+
+\noindent\textit{Specialization:} gaussian\_\allowbreak{}shell\_\allowbreak{}directional\_\allowbreak{}minimax\_\allowbreak{}frontier\par
+
+\paragraph{TL;DR.} Tian and Wu's identified PN/PS functionals, efficient influence functions, and cross-fitting architecture are taken as given. The contribution is an identical-shell achievability/converse pair for the nonlinear PN/PS ratio under known drifting factual-event schedules, with matched expected-diameter order \((nr_n)^{-1/2}\), plus a nonshrinking obstruction when \(nr_n=O(1)\). The achievability proof now includes finite-sample Bernstein bounds for the explicit ridge-spline learners and a direct tensor-lattice inverse-row-sum theorem for their empirical Gram and logistic Hessian matrices.
+
+\section{Project justification}
+
+\paragraph{Gap.} Regular PN/PS theory does not analyze triangular arrays with factual denominator \(q_d(P_n)=r_n\to0\). Generic weak-ratio and weak-instrument results provide nearby nonuniformity and inversion ideas, but not a matched expected-diameter frontier on one point-identified monotone PN/PS shell. The prior achievability sketch also left the spline inverse and concentration steps insufficiently justified; those steps are now discharged explicitly.
+
+\paragraph{Niche.} The note fixes a known factual-probability schedule and studies relative score and studentizer accuracy at variance scale \(V_d(P_n)\asymp r_n\). PN uses smooth \(e_n,m_{0,n}\), while PS uses smooth \(e_n,m_{1,n}\). Local spline support, bounded design density, overlap, and the constrained propensity coefficient cube yield finite-sample learner control without importing opposite-direction outcome smoothness.
+
+\paragraph{Fill.} The explicit cross-fitted score inversion has uniform Gaussian coverage and expected diameter \(O((nr_n)^{-1/2})\). The learner proof uses a written-out bounded-variable Bernstein inequality, an \(O(J)\)-cardinality union bound, spectral stability of the local empirical Gram matrices, and a proved \(O(J)\) inverse-row-sum bound. A causally valid two-point family in the identical shell supplies the matching lower order, while a separate bounded-count theorem gives nonshrinking diameter.
+
+\section{Related work}
+
+Tian and Wu provide the PN/PS identifying formulas, efficient influence functions, and cross-fitted regular inference. Cai and Kuroki provide regular variance-estimation context. Zhang--Wang--Miao study generally partially identified PN bounds, and Cuellar--Kennedy study regular inference for a projection of conditional probability of causation; neither target is the marginal monotonicity-identified PN/PS ratio considered here. Derumigny, Girard, and Guyonvarch analyze generic weak ratios, while Smucler, Lanni, and Masip and Ma develop identification-robust causal-ratio score inversion. Those works do not give the present identical-shell expected-diameter upper and lower pair at effective count \(nr_n\). Low and Cai--Low supply the standard two-point confidence-length route; the new converse work is the causal same-shell construction. Cheng, Mao, Pearl, and Li study partially identified finite-discrete endpoints, a different estimand and regime. Hannart--Naveau climate attribution and Tian--Wu stroke attribution are conditional consumers after their factual schedules and shell conditions are justified.
+
+\section{Setup}
+
+Target (estimand / structural parameter): \(\Theta_d(P_n),\ d\in\{\mathrm{PN},\mathrm{PS}\}\).
+Identifying functional / recovery map: \(\Theta_{\mathrm{PN}}(P)=1-E_P[e(X)m_0(X)]/E_P[e(X)m_1(X)]\), and \(\Theta_{\mathrm{PS}}(P)=1-E_P[(1-e(X))(1-m_1(X))]/E_P[(1-e(X))(1-m_0(X))]\).
+\begin{itemize}
+  \item \(n\) --- \texttt{integer}; \(\{1,2,\ldots\}\); \texttt{row index}
+  \par\smallskip\noindent\emph{Definition.} \(n\) indexes a triangular-array row.
+  \item \(p\) --- \texttt{integer}; \(\{1,2,\ldots\}\); \texttt{dimension}
+  \par\smallskip\noindent\emph{Definition.} \(p\) is the fixed covariate dimension.
+  \item \(K\) --- \texttt{integer}; \(\{2,3,\ldots\}\); \texttt{fold count}
+  \par\smallskip\noindent\emph{Definition.} \(K\) is the fixed number of balanced cross-fitting folds.
+  \item \(X\) --- \texttt{random vector}; \([0,1]^p\); \texttt{covariate}
+  \par\smallskip\noindent\emph{Definition.} \(X\) is the covariate vector.
+  \item \(A\) --- \texttt{random variable}; \(\{0,1\}\); \texttt{treatment}
+  \par\smallskip\noindent\emph{Definition.} \(A\) is the treatment indicator.
+  \item \(Y\) --- \texttt{random variable}; \(\{0,1\}\); \texttt{outcome}
+  \par\smallskip\noindent\emph{Definition.} \(Y\) is the observed outcome.
+  \item \(O\) --- \texttt{random vector}; \([0,1]^p\times\{0,1\}^2\); \texttt{observed unit}
+  \par\smallskip\noindent\emph{Definition.} \(O=(X,A,Y)\).
+  \item \(Z_n\) --- \texttt{random sample}; \(([0,1]^p\times\{0,1\}^2)^n\); \texttt{observed row}
+  \par\smallskip\noindent\emph{Definition.} \(Z_n=(O_{1,n},\ldots,O_{n,n})\).
+  \item \(P_n\) --- \texttt{probability law}; \texttt{observed-\allowbreak{}data laws}; \texttt{row law}
+  \par\smallskip\noindent\emph{Definition.} \(P_n\) is the observed-data law in row \(n\).
+  \item \(P\) --- \texttt{probability law}; \texttt{observed-\allowbreak{}data laws}; \texttt{generic law}
+  \par\smallskip\noindent\emph{Definition.} \(P\) is an individual observed-data law with its row index suppressed.
+  \item \(\widetilde P_n\) --- \texttt{probability law}; \texttt{full-\allowbreak{}data laws}; \texttt{causal extension}
+  \par\smallskip\noindent\emph{Definition.} \(\widetilde P_n\) is a law of \(X,A,Y(0),Y(1)\) whose observed projection is \(P_n\).
+  \item \(Y(0)\) --- \texttt{random variable}; \(\{0,1\}\); \texttt{potential outcome}
+  \par\smallskip\noindent\emph{Definition.} \(Y(0)\) is the control potential outcome.
+  \item \(Y(1)\) --- \texttt{random variable}; \(\{0,1\}\); \texttt{potential outcome}
+  \par\smallskip\noindent\emph{Definition.} \(Y(1)\) is the treated potential outcome.
+  \item \(e_n\) --- \texttt{function}; \([0,1]^p\to[0,1]\); \texttt{propensity}
+  \par\smallskip\noindent\emph{Definition.} \(e_n(x)=P_n(A=1\mid X=x)\).
+  \item \(m_{0,n}\) --- \texttt{function}; \([0,1]^p\to[0,1]\); \texttt{control regression}
+  \par\smallskip\noindent\emph{Definition.} \(m_{0,n}(x)=E_{P_n}[Y\mid A=0,X=x]\).
+  \item \(m_{1,n}\) --- \texttt{function}; \([0,1]^p\to[0,1]\); \texttt{treated regression}
+  \par\smallskip\noindent\emph{Definition.} \(m_{1,n}(x)=E_{P_n}[Y\mid A=1,X=x]\).
+  \item \(f_{X,n}\) --- \texttt{function}; Lebesgue densities on \([0,1]^p\); \texttt{design density}
+  \par\smallskip\noindent\emph{Definition.} \(f_{X,n}\) is a Lebesgue density of the \(P_n\)-marginal law of \(X\) on \([0,1]^p\).
+  \item \(\varepsilon\) --- \texttt{constant}; \((0,1/2]\); \texttt{regularity constant}
+  \par\smallskip\noindent\emph{Definition.} \(\varepsilon\) is the overlap bound.
+  \item \(\alpha\) --- \texttt{constant}; \((0,1/2)\); \texttt{inference level}
+  \par\smallskip\noindent\emph{Definition.} \(\alpha\) is the nominal confidence-set error probability.
+  \item \(z_{1-\alpha/2}\) --- \texttt{constant}; \(\mathbb R\); \texttt{critical value}
+  \par\smallskip\noindent\emph{Definition.} \(z_{1-\alpha/2}\) is the \(1-\alpha/2\) standard-normal quantile.
+  \item \(B_\varepsilon\) --- \texttt{constant}; \([1,\infty)\); \texttt{score envelope}
+  \par\smallskip\noindent\emph{Definition.} \(B_\varepsilon=2/\varepsilon-1\) is the common fitted-score envelope.
+  \item \(c_X\) --- \texttt{constant}; \((0,\infty)\); \texttt{regularity constant}
+  \par\smallskip\noindent\emph{Definition.} \(c_X\) is the lower design-density bound.
+  \item \(C_X\) --- \texttt{constant}; \([c_X,\infty)\); \texttt{regularity constant}
+  \par\smallskip\noindent\emph{Definition.} \(C_X\) is the upper design-density bound.
+  \item \(\bar d\) --- \texttt{constant}; \((0,1/2]\); \texttt{LF witness cap}
+  \par\smallskip\noindent\emph{Definition.} \(\bar d\) is the probability-simplex cap used only by least-favorable and bounded-count witness constructions.
+  \item \(c_G\) --- \texttt{constant}; \((0,\infty)\); \texttt{information constant}
+  \par\smallskip\noindent\emph{Definition.} \(c_G\) is the lower score-information constant.
+  \item \(C_G\) --- \texttt{constant}; \(\{\varepsilon^{-1}\}\); \texttt{derived structural bound}
+  \par\smallskip\noindent\emph{Definition.} \(C_G=\varepsilon^{-1}\) is the sharp derived monotone-overlap score-variance coefficient; it is not a free primitive.
+  \item \(\beta_j\) --- \texttt{constant}; \((0,\infty)\) for \(j\in\{e,0,1\}\); \texttt{smoothness}
+  \par\smallskip\noindent\emph{Definition.} \(\beta_j\) is a Hölder smoothness index.
+  \item \(L_j\) --- \texttt{constant}; \((0,\infty)\) for \(j\in\{e,0,1\}\); \texttt{smoothness}
+  \par\smallskip\noindent\emph{Definition.} \(L_j\) is a Hölder-ball radius.
+  \item \(r_j\) --- \texttt{integer}; \(\{0,1,\ldots\}\) for \(j\in\{e,0,1\}\); \texttt{sieve parameter}
+  \par\smallskip\noindent\emph{Definition.} \(r_j\) is a spline degree.
+  \item \(s_j\) --- \texttt{constant}; \((0,1/2)\) for \(j\in\{e,0,1\}\); \texttt{rate exponent}
+  \par\smallskip\noindent\emph{Definition.} \(s_j=\beta_j/(2\beta_j+p)\).
+  \item \(a_{j,n}\) --- \texttt{positive sequence}; \(\mathbb R_+\) for \(j\in\{e,0,1\}\); \texttt{spline rate}
+  \par\smallskip\noindent\emph{Definition.} For every integer \(n\ge1\), \(a_{j,n}=\{\log(n\vee3)/(n\vee3)\}^{s_j}>0\).
+  \item \(d\) --- \texttt{label}; \(\{\mathrm{PN},\mathrm{PS}\}\); \texttt{direction}
+  \par\smallskip\noindent\emph{Definition.} \(d\) indexes a causal direction.
+  \item \(b(d)\) --- \texttt{map}; \(\{\mathrm{PN},\mathrm{PS}\}\to\{0,1\}\); \texttt{regression index}
+  \par\smallskip\noindent\emph{Definition.} \(b(\mathrm{PN})=0\) and \(b(\mathrm{PS})=1\).
+  \item \(r_n\) --- \texttt{positive sequence}; \((0,1]\); \texttt{Gaussian upper shell index}
+  \par\smallskip\noindent\emph{Definition.} \(r_n\) is a deterministic probability-valued directional factual-probability schedule; LF uses the separately capped subclass.
+  \item \(q_d(P)\) --- \texttt{scalar functional}; \([0,1]\); \texttt{factual probability}
+  \par\smallskip\noindent\emph{Definition.} \(q_{\mathrm{PN}}(P)=E_P[AY]\) and \(q_{\mathrm{PS}}(P)=E_P[(1-A)(1-Y)]\).
+  \item \(\Theta_d(P)\) --- \texttt{scalar functional}; \([0,1]\); \texttt{causal target}
+  \par\smallskip\noindent\emph{Definition.} \(\Theta_d(P)\) is the direction-\(d\) functional in \texttt{def:functionals} when \(q_d(P)>0\).
+  \item \(t_d(P)\) --- \texttt{scalar functional}; \([0,1]\); \texttt{true target}
+  \par\smallskip\noindent\emph{Definition.} \(t_d(P)=\Theta_d(P)\).
+  \item \(\eta^d(P)\) --- \texttt{nuisance tuple functional}; functions on \([0,1]^p\); \texttt{score input}
+  \par\smallskip\noindent\emph{Definition.} \(\eta^{\mathrm{PN}}(P)=(e,m_0)\) and \(\eta^{\mathrm{PS}}(P)=(1-e,1-m_1)\).
+  \item \(\psi_t^d\) --- \texttt{function}; \(([0,1]^p\times\{0,1\}^2)\times[0,1]\to\mathbb R\); \texttt{orthogonal score}
+  \par\smallskip\noindent\emph{Definition.} \(\psi_t^d\) is the direction-\(d\) score in \texttt{def:scores} with the row index suppressed.
+  \item \(V_d(P)\) --- \texttt{scalar functional}; \(\mathbb R_+\); \texttt{score variance}
+  \par\smallskip\noindent\emph{Definition.} \(V_d(P)=\operatorname{Var}_P[\psi^d_{t_d(P)}(O;\eta^d(P))]\).
+  \item \(\mathsf I_d(P;c_G,C_G)\) --- \texttt{predicate}; laws with \(q_d(P)>0\); \texttt{information property}
+  \par\smallskip\noindent\emph{Definition.} \(\mathsf I_d(P;c_G,C_G)\) holds exactly when \(V_d(P)\ge c_Gq_d(P)\); its second displayed argument is the sharp derived coefficient \(C_G=\varepsilon^{-1}\) and imposes no additional restriction.
+  \item \(\mathcal B_n\) --- \texttt{set}; \texttt{observed-\allowbreak{}data laws}; \texttt{LF witness and comparison class}
+  \par\smallskip\noindent\emph{Definition.} \(\mathcal B_n\) is the retained three-smoothness witness and comparison class in \(\texttt{def:base-class}\); it is not a Gaussian upper parent.
+  \item \(\mathcal R^d\) --- \texttt{set}; \texttt{probability-\allowbreak{}valued positive sequences}; \texttt{Gaussian upper schedule class}
+  \par\smallskip\noindent\emph{Definition.} \(\mathcal R^d\) is the uncapped Gaussian-upper schedule class in \(\texttt{def:admissible-schedules}\).
+  \item \(\mathcal M_{G,n}^d(r_n;c_G,C_G)\) --- \texttt{set}; \texttt{observed-\allowbreak{}data laws}; \texttt{Gaussian upper and identical-\allowbreak{}shell lower domain}
+  \par\smallskip\noindent\emph{Definition.} \(\mathcal M_{G,n}^d(r_n;c_G,C_G)\) is the generalized direction-\(d\) Gaussian shell defined by \(q_d(P)=r_n\) and \(V_d(P)\ge c_Gr_n\) for any fixed \(c_G>0\); \(C_G=\varepsilon^{-1}\) is only the sharp derived structural coefficient.
+  \item \(\mathcal M_{B,n}^d(r)\) --- \texttt{set}; \texttt{observed-\allowbreak{}data laws}; \texttt{bounded-\allowbreak{}count shell}
+  \par\smallskip\noindent\emph{Definition.} \(\mathcal M_{B,n}^d(r)\) is the direction-\(d\) bounded-count shell.
+  \item \(\mathcal K_{\mathrm{LF}}\) --- \texttt{set}; \texttt{derived-\allowbreak{}compatible pairs}; \texttt{lower-\allowbreak{}information compatibility domain}
+  \par\smallskip\noindent\emph{Definition.} \(\mathcal K_{\mathrm{LF}}\) contains the admissible lower-information constants paired with the sharp derived coefficient \(C_G=\varepsilon^{-1}\).
+  \item \(\widehat g_{d,n}\) --- \texttt{random function}; \([0,1]\to\mathbb R\); \texttt{estimating equation}
+  \par\smallskip\noindent\emph{Definition.} \(\widehat g_{d,n}\) is the cross-fitted direction-\(d\) score mean.
+  \item \(\widehat\sigma_{d,n}^2\) --- \texttt{random function}; \([0,1]\to\mathbb R_+\); \texttt{studentizer}
+  \par\smallskip\noindent\emph{Definition.} \(\widehat\sigma_{d,n}^2\) is the held-out direction-\(d\) empirical score variance.
+  \item \(\mathcal A_{n,\alpha}^d\) --- \texttt{random set}; subsets of \([0,1]\); \texttt{preliminary inversion}
+  \par\smallskip\noindent\emph{Definition.} \(\mathcal A_{n,\alpha}^d\) is the preliminary direction-\(d\) score-acceptance set.
+  \item \(\mathcal C_{n,\alpha}^{\mathrm{score},d}\) --- \texttt{random set}; subsets of \([0,1]\); \texttt{confidence set}
+  \par\smallskip\noindent\emph{Definition.} \(\mathcal C_{n,\alpha}^{\mathrm{score},d}\) is the direction-\(d\) score-inversion set.
+  \item \(D_n\) --- \texttt{random set}; measurable subsets of \([0,1]\); \texttt{competitor set}
+  \par\smallskip\noindent\emph{Definition.} \(D_n\) is an arbitrary measurable direction-\(d\) confidence set based on \(Z_n\).
+  \item \(\mathcal R_{\mathrm{LF}}^d\) --- \texttt{set}; \texttt{capped probability-\allowbreak{}valued positive sequences}; \texttt{LF Gaussian schedule class}
+  \par\smallskip\noindent\emph{Definition.} \(\mathcal R_{\mathrm{LF}}^d\) is the least-favorable schedule subclass in \(\texttt{def:lf-admissible-schedules}\).
+  \item \(\mathcal B_n^{\mathrm{PN}}\) --- \texttt{set}; \texttt{observed-\allowbreak{}data laws}; \texttt{PN Gaussian upper parent}
+  \par\smallskip\noindent\emph{Definition.} \(\mathcal B_n^{\mathrm{PN}}\) is the PN upper law class requiring smooth \(e_n\) and \(m_{0,n}\), but not smooth \(m_{1,n}\).
+  \item \(\mathcal B_n^{\mathrm{PS}}\) --- \texttt{set}; \texttt{observed-\allowbreak{}data laws}; \texttt{PS Gaussian upper parent}
+  \par\smallskip\noindent\emph{Definition.} \(\mathcal B_n^{\mathrm{PS}}\) is the PS upper law class requiring smooth \(e_n\) and \(m_{1,n}\), but not smooth \(m_{0,n}\).
+  \item \(\bar{\mathcal C}_{n,\alpha}^d\) --- \texttt{random set}; nonempty compact subsets of \([0,1]\); \texttt{propensity-\allowbreak{}only confidence set}
+  \par\smallskip\noindent\emph{Definition.} \(\bar{\mathcal C}_{n,\alpha}^d\) is the uncapped propensity-only score-inversion set in \(\texttt{def:boundary-score-inversion}\).
+  \item \(\mathsf B_e\) --- \texttt{constant}; \((0,\infty)\); \texttt{propensity logit coefficient bound}
+  \par\smallskip\noindent\emph{Definition.} \(\mathsf B_e=1+\log\{(1-\varepsilon)/\varepsilon\}+C_{\mathrm{QI}}\), where \(C_{\mathrm{QI}}<\infty\) is the fixed coefficient-deviation constant of the chosen degree-\(r_e\) tensor-product B-spline quasi-interpolation rule on the H\"older class obtained by applying the logit map to \(\mathcal H^{\beta_e}(L_e)\cap[\varepsilon,1-\varepsilon]\). The constant depends only on \(\varepsilon,\beta_e,L_e,p,r_e\), never on \(n\) or the sample.
+\end{itemize}
+
+\section{Assumptions}
+
+\begin{assumption}[ass:iid-row]\label{ass:iid-row}
+\(Z_n\sim P_n^{\otimes n}\).
+\par\smallskip\noindent\emph{Standard} (row-wise independent sampling, \cite{ChernozhukovEtAl2018DML}).
+\end{assumption}
+
+\begin{assumption}[ass:consistency]\label{ass:consistency}
+\(\widetilde P_n\{Y=Y(A)\}=1\).
+\par\smallskip\noindent\emph{Standard} (consistency, \cite{TianPearl2000}).
+\end{assumption}
+
+\begin{assumption}[ass:conditional-exchangeability]\label{ass:conditional-exchangeability}
+\((Y(0),Y(1))\perp_{\widetilde P_n}A\mid X\).
+\par\smallskip\noindent\emph{Standard} (conditional exchangeability, \cite{TianWu2025}).
+\end{assumption}
+
+\begin{assumption}[ass:monotonicity]\label{ass:monotonicity}
+\(\widetilde P_n\{Y(1)\ge Y(0)\}=1\).
+\par\smallskip\noindent\emph{Standard} (outcome monotonicity, \cite{TianPearl2000}).
+\end{assumption}
+
+\begin{assumption}[ass:overlap]\label{ass:overlap}
+\(P_n\{\varepsilon\le e_n(X)\le1-\varepsilon\}=1\) for fixed \(\varepsilon\in(0,1/2]\).
+\par\smallskip\noindent\emph{Standard} (uniform overlap, \cite{ChernozhukovEtAl2018DML}).
+\end{assumption}
+
+\begin{assumption}[ass:design-density]\label{ass:design-density}
+For every row \(n\), \(c_X\le f_{X,n}(x)\le C_X\) for Lebesgue-almost every \(x\in[0,1]^p\), where the fixed constants satisfy \(0<c_X\le C_X<\infty\) and do not depend on \(n\).
+\par\smallskip\noindent\emph{Standard} (bounded design density, \cite{Chen2007}).
+\end{assumption}
+
+\begin{assumption}[ass:holder-propensity]\label{ass:holder-propensity}
+\(e_n\in\mathcal H^{\beta_e}(L_e)\) for fixed \(\beta_e,L_e>0\).
+\par\smallskip\noindent\emph{Standard} (Hölder smoothness, \cite{Chen2007}).
+\end{assumption}
+
+\begin{assumption}[ass:holder-control]\label{ass:holder-control}
+\(m_{0,n}\in\mathcal H^{\beta_0}(L_0)\) for fixed \(\beta_0,L_0>0\).
+\par\smallskip\noindent\emph{Standard} (Hölder smoothness, \cite{Chen2007}).
+\end{assumption}
+
+\begin{assumption}[ass:holder-treated]\label{ass:holder-treated}
+\(m_{1,n}\in\mathcal H^{\beta_1}(L_1)\) for fixed \(\beta_1,L_1>0\).
+\par\smallskip\noindent\emph{Standard} (Hölder smoothness, \cite{Chen2007}).
+\end{assumption}
+
+\begin{assumption}[ass:rarity-cap]\label{ass:rarity-cap}
+\(0<\bar d\le1/2\).
+\par\smallskip\noindent\emph{Novel.} This construction-specific cap makes the capped monotone family a probability model: in \(def:least-favorable\), the type mass \(1-2r\) must be nonnegative, so \(r\le1/2\) is the probability-simplex cap.
+\end{assumption}
+
+\begin{assumption}[ass:score-information]\label{ass:score-information}
+\(\mathsf I_d(P;c_G,C_G)\Longleftrightarrow V_d(P)\ge c_Gq_d(P)\).
+\par\smallskip\noindent\emph{Novel.} Rare factual events can retain a nonvanishing fraction of score information when the causal contrast is interior. Only the lower nondegeneracy condition is primitive; the monotone binary structural class yields the upper bound mechanically.
+\end{assumption}
+
+\section{Definitions}
+
+\begin{definition}[def:holder]\label{def:holder}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Hölder balls}
+\par\smallskip\noindent\emph{Construction.} For \(\beta>0\), put \(q_\beta=\lceil\beta\rceil-1\) and \(\gamma_\beta=\beta-q_\beta\in(0,1]\). For a function \(f:[0,1]^p\to\mathbb R\) with continuous partial derivatives through order \(q_\beta\), define the full H\"older norm by
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \lVert f\rVert_{\mathcal H^\beta}=\sum_{|\nu|\le q_\beta}\lVert D^\nu f\rVert_\infty+\max_{|\nu|=q_\beta}\sup_{x\ne x'}\frac{|D^\nu f(x)-D^\nu f(x')|}{\lVert x-x'\rVert_2^{\gamma_\beta}}.\)}}\par\noindent}}
+\]
+Here \(\nu\in\mathbb N_0^p\) is a multi-index, and \(D^0f=f\). Define
+\[\mathcal H^\beta(L)=\{f:[0,1]^p\to\mathbb R:\lVert f\rVert_{\mathcal H^\beta}\le L\}.\]
+Under this full-norm convention, a constant map \(f(x)\equiv c\) has \(\lVert f\rVert_{\mathcal H^\beta}=|c|\). Hence a H\"older ball contains every constant map with value in \([0,1]\) exactly when \(L\ge1\).
+\par\smallskip\noindent\emph{Member properties.} \texttt{ass:\allowbreak{}holder-\allowbreak{}propensity}; \texttt{ass:\allowbreak{}holder-\allowbreak{}control}; \texttt{ass:\allowbreak{}holder-\allowbreak{}treated}.
+\end{definition}
+
+\begin{definition}[def:functionals]\label{def:functionals}
+\par\smallskip\noindent\emph{Defined object.} \texttt{identified directional functionals}
+\par\smallskip\noindent\emph{Construction.} \(\Theta_{\mathrm{PN}}(P)=1-E_P[e(X)m_0(X)]/E_P[e(X)m_1(X)]\) and \(\Theta_{\mathrm{PS}}(P)=1-E_P[(1-e(X))(1-m_1(X))]/E_P[(1-e(X))(1-m_0(X))]\), each defined only when its denominator is positive.
+\par\smallskip\noindent\emph{Inputs.} \(P\); \(e\); \(m_0\); \(m_1\).
+\end{definition}
+
+\begin{definition}[def:scores]\label{def:scores}
+\par\smallskip\noindent\emph{Defined object.} \texttt{directional orthogonal scores}
+\par\smallskip\noindent\emph{Construction.} \(\psi_{t,n}^{\mathrm{PN}}(O;\eta)=A\{Y-m_0(X)\}-e(X)\{1-e(X)\}^{-1}(1-A)\{Y-m_0(X)\}-tAY\). Define \(\psi_{t,n}^{\mathrm{PS}}(O;\eta^{\mathrm{PS}})=\psi_{t,n}^{\mathrm{PN}}((X,1-A,1-Y);(1-e,1-m_1))\). With the fitted inputs from \(def:learners\), both scores satisfy \( |\psi_t^d(O;\widehat\eta)|\le B_\varepsilon=2/\varepsilon-1\) for \(t\in[0,1]\).
+\par\smallskip\noindent\emph{Inputs.} \(O\); \(t\); \(e\); \(m_0\); \(m_1\); \(\varepsilon\).
+\end{definition}
+
+\begin{definition}[def:learners]\label{def:learners}
+\par\smallskip\noindent\emph{Defined object.} \texttt{fixed-\allowbreak{}fold ridge-\allowbreak{}regularized clipped spline learners}
+\par\smallskip\noindent\emph{Construction.} Fix a deterministic balanced fold map \(k(i)\in\{1,\ldots,K\}\). For \(j\in\{e,0,1\}\), set \(s_j=\beta_j/(2\beta_j+p)\) and, for every integer \(n\ge1\), define
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle K_{j,n}=\begin{cases}1,&n<3,\\ \left\lceil(n/\log n)^{1/(2\beta_j+p)}\right\rceil,&n\ge3,\end{cases}\qquad J_{j,n}=(K_{j,n}+r_j+1)^p,\qquad \lambda_{j,n}=n^{-2},\qquad a_{j,n}=\left\{\frac{\log(n\vee3)}{n\vee3}\right\}^{s_j}>0,\)}}\par\noindent}}
+\]
+with \(r_j\ge\lceil\beta_j\rceil\). Let \(B_{j,n}(x)\in\mathbb R^{J_{j,n}}\) be the nonnegative partition-of-unity tensor-product B-spline basis of degree \(r_j\) on the deterministic quasi-uniform grid with \(K_{j,n}\) cells per coordinate. For the fixed constant \(\mathsf B_e\), define the compact convex coefficient cube
+\[\Theta_{e,n}=\{\theta\in\mathbb R^{J_{e,n}}:\lVert\theta\rVert_\infty\le\mathsf B_e\}.\]
+On the training complement \(I_{-k,n}\), with \(N_{-k,n}=|I_{-k,n}|\), use the deterministic fallback \(\widehat\theta_{e,-k,n}=\widehat\theta_{0,-k,n}=\widehat\theta_{1,-k,n}=0\) when \(N_{-k,n}=0\), and skip the next two minimizations. When \(N_{-k,n}>0\), define \(\widehat\theta_{e,-k,n}\) as the unique minimizer over \(\Theta_{e,n}\) of
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \frac1{N_{-k,n}}\sum_{i\in I_{-k,n}}\left[\log\{1+\exp(B_{e,n}(X_{i,n})^\top\theta)\}-A_{i,n}B_{e,n}(X_{i,n})^\top\theta\right]+\lambda_{e,n}\lVert\theta\rVert_2^2.\)}}\par\noindent}}
+\]
+For \(a\in\{0,1\}\), define \(\widehat\theta_{a,-k,n}\) as the unique minimizer over \(\mathbb R^{J_{a,n}}\) of
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \frac1{N_{-k,n}}\sum_{i\in I_{-k,n}}\mathbf 1\{A_{i,n}=a\}\{Y_{i,n}-B_{a,n}(X_{i,n})^\top\theta\}^2+\lambda_{a,n}\lVert\theta\rVert_2^2.\)}}\par\noindent}}
+\]
+Set
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \widehat e_{-k,n}(x)=\Pi_{[\varepsilon/2,1-\varepsilon/2]}\!\left(\frac{\exp\{B_{e,n}(x)^\top\widehat\theta_{e,-k,n}\}}{1+\exp\{B_{e,n}(x)^\top\widehat\theta_{e,-k,n}\}}\right),\qquad \widehat m_{a,-k,n}(x)=\Pi_{[0,1]}\{B_{a,n}(x)^\top\widehat\theta_{a,-k,n}\}.\)}}\par\noindent}}
+\]
+The propensity objective is continuous and strictly convex on the compact convex set \(\Theta_{e,n}\), and each outcome objective is coercive and strictly convex, so every displayed minimizer exists uniquely, including for separated logistic samples and samples containing no observation from one treatment arm. The propensity minimizer is measurable as the pointwise limit of deterministic projected gradient descent from zero with a deterministic step below the reciprocal of the common gradient-Lipschitz bound; projection onto \(\Theta_{e,n}\) is coordinatewise clipping and hence continuous. The outcome minimizers are measurable by deterministic gradient descent. Cross-fitting evaluates at observation \(i\) the learner trained on \(I_{-k(i),n}\). Casewise evaluation of the clipped score gives \(|\psi_t^d(O;\widehat\eta)|\le B_\varepsilon=2/\varepsilon-1\) and \(|\psi_t^d(O;\widehat\eta)-E\psi_t^d(O;\widehat\eta)|\le2B_\varepsilon\) for both directions and every \(t\in[0,1]\).
+\par\smallskip\noindent\emph{Inputs.} \(Z_n\); \(K\); \(\beta_e\); \(\beta_0\); \(\beta_1\); \(r_e\); \(r_0\); \(r_1\); \(\varepsilon\); \(\mathsf B_e\).
+\end{definition}
+
+\begin{definition}[def:base-class]\label{def:base-class}
+\par\smallskip\noindent\emph{Defined object.} \texttt{three-\allowbreak{}smoothness witness and comparison class}
+\par\smallskip\noindent\emph{Construction.} \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathcal B_n=\{P_n:P_n\text{ is the observed projection of a full-data law satisfying consistency, conditional exchangeability, monotonicity, overlap, the support-wide condition }c_X\le f_{X,n}(x)\le C_X\text{ for Lebesgue-almost every }x\in[0,1]^p,\text{ and all three declared H\"older conditions}\}\)}}\par\noindent. This intersection class is retained for capped witnesses, bounded-count results, and internal comparisons; it is not the parent of either directional Gaussian upper shell.
+\par\smallskip\noindent\emph{Member properties.} \texttt{ass:\allowbreak{}consistency}; \texttt{ass:\allowbreak{}conditional-\allowbreak{}exchangeability}; \texttt{ass:\allowbreak{}monotonicity}; \texttt{ass:\allowbreak{}overlap}; \texttt{ass:\allowbreak{}design-\allowbreak{}density}; \texttt{ass:\allowbreak{}holder-\allowbreak{}propensity}; \texttt{ass:\allowbreak{}holder-\allowbreak{}control}; \texttt{ass:\allowbreak{}holder-\allowbreak{}treated}.
+\end{definition}
+
+\begin{definition}[def:admissible-schedules]\label{def:admissible-schedules}
+\par\smallskip\noindent\emph{Defined object.} \texttt{uncapped Gaussian-\allowbreak{}upper directional schedules}
+\par\smallskip\noindent\emph{Construction.} For \(d\in\{\mathrm{PN},\mathrm{PS}\}\),
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \mathcal R^d=\left\{(r_n)_{n\ge1}:0<r_n\le1,\quad\frac{r_n}{na_{e,n}^2a_{b(d),n}^2}\longrightarrow\infty\right\},\)}}\par\noindent}}
+\]
+where \(b(\mathrm{PN})=0\) and \(b(\mathrm{PS})=1\).
+\par\smallskip\noindent\emph{Inputs.} \(r_n\); \(a_{e,n}\); \(a_{0,n}\); \(a_{1,n}\).
+\end{definition}
+
+\begin{definition}[def:lf-compatible-domain]\label{def:lf-compatible-domain}
+\par\smallskip\noindent\emph{Defined object.} \texttt{least-\allowbreak{}favorable-\allowbreak{}compatible lower-\allowbreak{}information domain}
+\par\smallskip\noindent\emph{Construction.} \(\mathcal K_{\mathrm{LF}}=\{(c_G,C_G):0<c_G\le3/16,\ C_G=\varepsilon^{-1}\}\), where the second coordinate records the sharp derived structural score-variance coefficient and is not a primitive information restriction. A primitive tuple is LF-compatible when \(c_X\le1\le C_X\), overlap admits \(e\equiv1/2\), the declared H\"older balls contain \(e\equiv1/2\) and all constant regressions generated by \(\texttt{def:least-favorable}\) for \(0<r\le\bar d\), and \(0<\bar d\le1/2\).
+\par\smallskip\noindent\emph{Inputs.} \(c_X\); \(C_X\); \(\varepsilon\); \(c_G\); \(\bar d\).
+\end{definition}
+
+\begin{definition}[def:gaussian-shells]\label{def:gaussian-shells}
+\par\smallskip\noindent\emph{Defined object.} \texttt{direction-\allowbreak{}specific generalized Gaussian upper shells}
+\par\smallskip\noindent\emph{Construction.} For fixed \(c_G>0\), set \(C_G=\varepsilon^{-1}\). For \((r_n)\in\mathcal R^{\mathrm{PN}}\),
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \mathcal M_{G,n}^{\mathrm{PN}}(r_n;c_G,C_G)=\{P\in\mathcal B_n^{\mathrm{PN}}:q_{\mathrm{PN}}(P)=r_n,\ V_{\mathrm{PN}}(P)\ge c_Gr_n\}.\)}}\par\noindent}}
+\]
+For \((r_n)\in\mathcal R^{\mathrm{PS}}\),
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \mathcal M_{G,n}^{\mathrm{PS}}(r_n;c_G,C_G)=\{P\in\mathcal B_n^{\mathrm{PS}}:q_{\mathrm{PS}}(P)=r_n,\ V_{\mathrm{PS}}(P)\ge c_Gr_n\}.\)}}\par\noindent}}
+\]
+The coordinate \(C_G\) records the sharp derived structural upper coefficient and imposes no primitive restriction. LF compatibility and \(\bar d\) are absent from both upper shells.
+\par\smallskip\noindent\emph{Member properties.} \texttt{ass:\allowbreak{}score-\allowbreak{}information}.
+\end{definition}
+
+\begin{definition}[def:bounded-count-shell]\label{def:bounded-count-shell}
+\par\smallskip\noindent\emph{Defined object.} \texttt{directional bounded-\allowbreak{}count shell}
+\par\smallskip\noindent\emph{Construction.} \(\mathcal M_{B,n}^d(r)=\{P\in\mathcal B_n:q_d(P)=r\}\) for \(d\in\{\mathrm{PN},\mathrm{PS}\}\) and \(0<r\le\bar d\).
+\par\smallskip\noindent\emph{Member properties.} \texttt{ass:\allowbreak{}rarity-\allowbreak{}cap}.
+\end{definition}
+
+\begin{definition}[def:score-inversion]\label{def:score-inversion}
+\par\smallskip\noindent\emph{Defined object.} \texttt{directional score-\allowbreak{}inversion set}
+\par\smallskip\noindent\emph{Construction.} With fold map \(k(i)\), set \(\widehat g_{d,n}(t)=n^{-1}\sum_{i=1}^n\psi_{t,n}^d(O_{i,n};\widehat\eta_{d,-k(i),n})\) and \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \widehat\sigma_{d,n}^2(t)=n^{-1}\sum_{i=1}^n[\psi_{t,n}^d(O_{i,n};\widehat\eta_{d,-k(i),n})-\widehat g_{d,n}(t)]^2\)}}\par\noindent. Define \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathcal A_{n,\alpha}^d=\{t\in[0,1]:n\widehat g_{d,n}(t)^2\le z_{1-\alpha/2}^2\widehat\sigma_{d,n}^2(t)\}\)}}\par\noindent, and set \(\mathcal C_{n,\alpha}^{\mathrm{score},d}=\mathcal A_{n,\alpha}^d\) when \(\mathcal A_{n,\alpha}^d\ne\varnothing\), and \(\mathcal C_{n,\alpha}^{\mathrm{score},d}=\{0\}\) otherwise. The score is affine in \(t\) and its empirical variance is continuous, so \(\mathcal A_{n,\alpha}^d\) is a random closed subset of compact \([0,1]\); the fallback gives a measurable nonempty compact-valued output and a defined measurable diameter. The fallback preserves coverage because \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \{\Theta_d(P_n)\in\mathcal A_{n,\alpha}^d\}\subseteq\{\Theta_d(P_n)\in\mathcal C_{n,\alpha}^{\mathrm{score},d}\}\)}}\par\noindent, and cannot enlarge diameter. The common envelope \(B_\varepsilon\) bounds the held-out score and twice bounds its centered version, supporting both variance and score-set diameter control.
+\par\smallskip\noindent\emph{Inputs.} \(Z_n\); \(\psi_{t,n}^d\); \(\widehat\eta_{d,-k,n}\); \(\alpha\); \(\varepsilon\).
+\end{definition}
+
+\begin{definition}[def:least-favorable]\label{def:least-favorable}
+\par\smallskip\noindent\emph{Defined object.} \texttt{capped monotone least-\allowbreak{}favorable construction}
+\par\smallskip\noindent\emph{Construction.} Let \(X\sim\operatorname{Unif}([0,1]^p)\), let \(A\sim\operatorname{Bernoulli}(1/2)\) independently of \(X,Y(0),Y(1)\), and set
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle P\{(Y(0),Y(1))=(1,1)\mid X\}=2(1-t)r,\quad P\{(Y(0),Y(1))=(0,1)\mid X\}=2tr,\quad P\{(Y(0),Y(1))=(0,0)\mid X\}=1-2r\)}}\par\noindent}}
+\]
+for \(t\in[1/4,3/4]\) and \(0<r\le\bar d\), with observed outcome \(Y=Y(A)\). This is the PN construction and has \(e=1/2\), \(m_0=2(1-t)r\), and \(m_1=2r\). Define the PS construction explicitly by
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle A^{\mathrm s}=1-A,\qquad Y^{\mathrm s}(0)=1-Y(1),\qquad Y^{\mathrm s}(1)=1-Y(0),\qquad Y^{\mathrm s}=Y^{\mathrm s}(A^{\mathrm s})=1-Y.\)}}\par\noindent}}
+\]
+Its observed regressions are \(e^{\mathrm s}=1/2\), \(m_0^{\mathrm s}=1-2r\), and \(m_1^{\mathrm s}=1-2(1-t)r\).
+\par\smallskip\noindent\emph{Inputs.} \(t\); \(r\); \(\bar d\).
+\end{definition}
+
+\begin{definition}[def:sharpness-handle]\label{def:sharpness-handle}
+\par\smallskip\noindent\emph{Defined object.} \texttt{rare-\allowbreak{}learning sharpness handle}
+\par\smallskip\noindent\emph{Construction.} Use a direction-specific regression perturbation with \(L_2(P_X)\) size comparable to \(a_{b(d),n}\) inside the monotone shell, then compare its score drift with \(\sqrt{r_n/n}\) through a testing-affinity calculation.
+\par\smallskip\noindent\emph{Inputs.} \(r_n\); \(a_{b(d),n}\); \(\psi_{t,n}^d\).
+\end{definition}
+
+\begin{definition}[def:boundary-base-class]\label{def:boundary-base-class}
+\par\smallskip\noindent\emph{Defined object.} \texttt{propensity-\allowbreak{}only monotone boundary class}
+\par\smallskip\noindent\emph{Construction.} \(\mathcal B_n^\partial\) is the set of observed-data laws \(P_n\) that are observed projections of full-data laws satisfying consistency, conditional exchangeability, monotonicity, overlap, and the support-wide bounded design-density condition, and whose propensity satisfies \(e_n\in\mathcal H^{\beta_e}(L_e)\). The outcome regressions \(m_{0,n}\) and \(m_{1,n}\) are otherwise arbitrary measurable \([0,1]\)-valued functions satisfying \(m_{0,n}(X)\le m_{1,n}(X)\) \(P_n\)-almost surely; no outcome-regression H\"older condition is imposed.
+\par\smallskip\noindent\emph{Member properties.} \texttt{ass:\allowbreak{}consistency}; \texttt{ass:\allowbreak{}conditional-\allowbreak{}exchangeability}; \texttt{ass:\allowbreak{}monotonicity}; \texttt{ass:\allowbreak{}overlap}; \texttt{ass:\allowbreak{}design-\allowbreak{}density}; \texttt{ass:\allowbreak{}holder-\allowbreak{}propensity}.
+\end{definition}
+
+\begin{definition}[def:boundary-raw-shell]\label{def:boundary-raw-shell}
+\par\smallskip\noindent\emph{Defined object.} \texttt{uncapped propensity-\allowbreak{}only raw boundary shell}
+\par\smallskip\noindent\emph{Construction.} For \(d\in\{\mathrm{PN},\mathrm{PS}\}\), fixed \(c_G>0\), \(0<r\le1\), and row \(n\),
+\[\mathcal S_{G,n}^{\partial,d}(r;c_G)=\{P\in\mathcal B_n^\partial:q_d(P)=r,\ V_d(P)\ge c_Gr\}.\]
+\par\smallskip\noindent\emph{Member properties.} \texttt{ass:\allowbreak{}score-\allowbreak{}information}.
+\end{definition}
+
+\begin{definition}[def:pn-upper-base-class]\label{def:pn-upper-base-class}
+\par\smallskip\noindent\emph{Defined object.} \texttt{PN directional upper observed-\allowbreak{}law class}
+\par\smallskip\noindent\emph{Construction.} \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathcal B_n^{\mathrm{PN}}=\{P_n:P_n\text{ is the observed projection of a full-data law satisfying consistency, conditional exchangeability, monotonicity, overlap, }c_X\le f_{X,n}(x)\le C_X\text{ for Lebesgue-almost every }x\in[0,1]^p,\ e_n\in\mathcal H^{\beta_e}(L_e),\text{ and }m_{0,n}\in\mathcal H^{\beta_0}(L_0)\}\)}}\par\noindent. No condition on the H\"older regularity of \(m_{1,n}\) is imposed.
+\par\smallskip\noindent\emph{Member properties.} \texttt{ass:\allowbreak{}consistency}; \texttt{ass:\allowbreak{}conditional-\allowbreak{}exchangeability}; \texttt{ass:\allowbreak{}monotonicity}; \texttt{ass:\allowbreak{}overlap}; \texttt{ass:\allowbreak{}design-\allowbreak{}density}; \texttt{ass:\allowbreak{}holder-\allowbreak{}propensity}; \texttt{ass:\allowbreak{}holder-\allowbreak{}control}.
+\end{definition}
+
+\begin{definition}[def:ps-upper-base-class]\label{def:ps-upper-base-class}
+\par\smallskip\noindent\emph{Defined object.} \texttt{PS directional upper observed-\allowbreak{}law class}
+\par\smallskip\noindent\emph{Construction.} \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathcal B_n^{\mathrm{PS}}=\{P_n:P_n\text{ is the observed projection of a full-data law satisfying consistency, conditional exchangeability, monotonicity, overlap, }c_X\le f_{X,n}(x)\le C_X\text{ for Lebesgue-almost every }x\in[0,1]^p,\ e_n\in\mathcal H^{\beta_e}(L_e),\text{ and }m_{1,n}\in\mathcal H^{\beta_1}(L_1)\}\)}}\par\noindent. No condition on the H\"older regularity of \(m_{0,n}\) is imposed.
+\par\smallskip\noindent\emph{Member properties.} \texttt{ass:\allowbreak{}consistency}; \texttt{ass:\allowbreak{}conditional-\allowbreak{}exchangeability}; \texttt{ass:\allowbreak{}monotonicity}; \texttt{ass:\allowbreak{}overlap}; \texttt{ass:\allowbreak{}design-\allowbreak{}density}; \texttt{ass:\allowbreak{}holder-\allowbreak{}propensity}; \texttt{ass:\allowbreak{}holder-\allowbreak{}treated}.
+\end{definition}
+
+\begin{definition}[def:lf-admissible-schedules]\label{def:lf-admissible-schedules}
+\par\smallskip\noindent\emph{Defined object.} \texttt{least-\allowbreak{}favorable capped Gaussian schedules}
+\par\smallskip\noindent\emph{Construction.} For \(d\in\{\mathrm{PN},\mathrm{PS}\}\),
+\[\mathcal R_{\mathrm{LF}}^d=\{(r_n)\in\mathcal R^d:0<r_n\le\bar d\text{ for every }n\}.\]
+\par\smallskip\noindent\emph{Inputs.} \(\mathcal R^d\); \(\bar d\).
+\end{definition}
+
+\begin{definition}[def:propensity-learner]\label{def:propensity-learner}
+\par\smallskip\noindent\emph{Defined object.} \texttt{cross-\allowbreak{}fitted clipped ridge-\allowbreak{}spline propensity learner}
+\par\smallskip\noindent\emph{Construction.} For each fold \(k\), \(\widehat e_{-k,n}\) is the propensity component of \(\texttt{def:learners}\): it is the clipped logistic tensor-product B-spline ridge minimizer trained on \(I_{-k,n}\), with \(K_{e,n}\), \(J_{e,n}\), and \(\lambda_{e,n}\) exactly as displayed there. This component is a measurable function only of \((X_i,A_i)_{i\in I_{-k,n}}\) and is unchanged if both outcome-regression minimizations are omitted.
+\par\smallskip\noindent\emph{Inputs.} \(Z_n\); \(K\); \(\beta_e\); \(r_e\); \(\varepsilon\).
+\end{definition}
+
+\begin{definition}[def:pn-learners]\label{def:pn-learners}
+\par\smallskip\noindent\emph{Defined object.} \texttt{PN direction-\allowbreak{}specific cross-\allowbreak{}fitted learner}
+\par\smallskip\noindent\emph{Construction.} For each fold \(k\), define \(\widehat\eta_{\mathrm{PN},-k,n}=(\widehat e_{-k,n},\widehat m_{0,-k,n})\), where the first component is \(\texttt{def:propensity-learner}\) and the second is the clipped control-arm ridge least-squares tensor-product B-spline component displayed in \(\texttt{def:learners}\). The two objectives are separable, so this pair is unchanged if the treated-regression objective is omitted. It uses no fitted \(m_1\).
+\par\smallskip\noindent\emph{Inputs.} \(Z_n\); \(K\); \(\beta_e\); \(\beta_0\); \(r_e\); \(r_0\); \(\varepsilon\).
+\end{definition}
+
+\begin{definition}[def:ps-learners]\label{def:ps-learners}
+\par\smallskip\noindent\emph{Defined object.} \texttt{PS direction-\allowbreak{}specific cross-\allowbreak{}fitted learner}
+\par\smallskip\noindent\emph{Construction.} For each fold \(k\), define \(\widehat\eta_{\mathrm{PS},-k,n}=(1-\widehat e_{-k,n},1-\widehat m_{1,-k,n})\), where \(\widehat e_{-k,n}\) is \(\texttt{def:propensity-learner}\) and \(\widehat m_{1,-k,n}\) is the clipped treated-arm ridge least-squares tensor-product B-spline component displayed in \(\texttt{def:learners}\). The objectives are separable, so this tuple is unchanged if the control-regression objective is omitted. It uses no fitted \(m_0\).
+\par\smallskip\noindent\emph{Inputs.} \(Z_n\); \(K\); \(\beta_e\); \(\beta_1\); \(r_e\); \(r_1\); \(\varepsilon\).
+\end{definition}
+
+\begin{definition}[def:boundary-score-inversion]\label{def:boundary-score-inversion}
+\par\smallskip\noindent\emph{Defined object.} \texttt{uncapped propensity-\allowbreak{}only affine score inversion}
+\par\smallskip\noindent\emph{Construction.} Define
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \begin{array}{c|cc}d&U_d^\star(O)&J_d^\star(O)\\ \hline\mathrm{PN}&AY&(1-A)Y\\\mathrm{PS}&(1-A)(1-Y)&A(1-Y)\end{array}\)}}\par\noindent}}
+\]
+and put \(\widehat\pi_{\mathrm{PN},-k}=\widehat e_{-k}\), \(\widehat\pi_{\mathrm{PS},-k}=1-\widehat e_{-k}\). Set
+\[\bar\phi_{t,-k}^d(O)=(1-t)U_d^\star(O)-\frac{\widehat\pi_{d,-k}(X)}{1-\widehat\pi_{d,-k}(X)}J_d^\star(O),\]
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \bar g_{d,n}(t)=n^{-1}\sum_{i=1}^n\bar\phi_{t,-k(i)}^d(O_{i,n}),\qquad \bar\sigma_{d,n}^2(t)=n^{-1}\sum_{i=1}^n\{\bar\phi_{t,-k(i)}^d(O_{i,n})-\bar g_{d,n}(t)\}^2.\)}}\par\noindent}}
+\]
+Let \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \bar{\mathcal A}_{n,\alpha}^d=\{t\in[0,1]:n\bar g_{d,n}(t)^2\le z_{1-\alpha/2}^2\bar\sigma_{d,n}^2(t)\}\)}}\par\noindent, and report \(\bar{\mathcal C}_{n,\alpha}^d=\bar{\mathcal A}_{n,\alpha}^d\) when this set is nonempty and \(\bar{\mathcal C}_{n,\alpha}^d=\{0\}\) otherwise.
+\par\smallskip\noindent\emph{Inputs.} \(Z_n\); \(\widehat e_{-k,n}\); \(d\); \(\alpha\); \(\varepsilon\).
+\end{definition}
+
+\section{Main results}
+
+\begin{lemma}[lem:identification]\label{lem:identification}
+Known supporting result. Under consistency, conditional exchangeability, monotonicity, and positive directional factual denominators, \(\widetilde P_n\{Y(0)=0\mid A=1,Y(1)=1\}=\Theta_{\mathrm{PN}}(P_n)\) and \(\widetilde P_n\{Y(1)=1\mid A=0,Y(0)=0\}=\Theta_{\mathrm{PS}}(P_n)\), invariant across admitted full-data extensions with observed margin \(P_n\). Under overlap, \(E_{P_n}[\psi^d_{\Theta_d(P_n),n}(O;\eta_n^d)]=0\).
+\end{lemma}
+\begin{proof}
+Suppress the row index. Consistency and conditional exchangeability imply, for \(a\in\{0,1\}\),
+\[E\{Y(a)\mid A=a,X\}=E\{Y(a)\mid X\}=m_a(X).\tag{1}\]
+For PN, positivity of the factual denominator and consistency give
+\[\widetilde P\{A=1,Y(1)=1\}=E[e(X)m_1(X)]=E[AY]>0.\tag{2}\]
+Binary monotonicity gives \(P\{Y(0)=0,Y(1)=1\mid X\}=m_1(X)-m_0(X)\). Conditional exchangeability of the pair of potential outcomes and \(A\), followed by \((2)\), therefore yields
+\[\widetilde P\{Y(0)=0\mid A=1,Y(1)=1\}=\frac{E[e(X)\{m_1(X)-m_0(X)\}]}{E[e(X)m_1(X)]}=\Theta_{\mathrm{PN}}(P).\tag{3}\]
+For PS,
+\[\widetilde P\{A=0,Y(0)=0\}=E[(1-e(X))\{1-m_0(X)\}]>0,\tag{4}\]
+and the numerator of \(\{Y(1)=1\}\) inside that event is \(E[(1-e(X))\{m_1(X)-m_0(X)\}]\). Hence
+\[\widetilde P\{Y(1)=1\mid A=0,Y(0)=0\}=1-\frac{E[(1-e(X))\{1-m_1(X)\}]}{E[(1-e(X))\{1-m_0(X)\}]}=\Theta_{\mathrm{PS}}(P).\tag{5}\]
+The right sides of \((3)\)--\((5)\) depend only on the observed margin, proving extension invariance. Finally, iterated expectation and overlap give
+\[E[\psi_t^{\mathrm{PN}}(O;\eta)]=E[e(X)\{m_1(X)-m_0(X)\}]-tE[AY].\tag{6}\]
+At \(t=\Theta_{\mathrm{PN}}(P)\), \texttt{def:functionals} makes the right side zero. Applying the same calculation to \((X,1-A,1-Y)\), as prescribed by \texttt{def:scores}, proves PS centering.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This supporting lemma fixes the known causal interpretations of the observed-law PN and PS functionals before the rare-event inference analysis. \textit{Gap.} No identification novelty is claimed; the formulas are the established monotonicity benchmarks. \textit{Consumer.} It interprets externally fixed climate and stroke attribution targets without validating event construction, law selection, or shell membership.
+
+\begin{proposition}[prop:causal-localization]\label{prop:causal-localization}
+On \(\mathcal B_n^{\mathrm{PN}}\), \texttt{prop:pn-causal-localization} gives \(m_{0,n}(X)\le m_{1,n}(X)\) \(P_{X,n}\)-almost surely,
+\[E[m_{0,n}(X)]\le E[m_{1,n}(X)]\le\varepsilon^{-1}q_{\mathrm{PN}}(P_n),\]
+and the PN fitted-score remainder is
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle O_{P_n^{\otimes n}}\!\left(\frac{a_{0,n}}{\sqrt n}+a_{e,n}\sqrt{\frac{q_{\mathrm{PN}}(P_n)}n}+a_{e,n}a_{0,n}\right),\)}}\par\noindent}}
+\]
+which is \(o_{P_n^{\otimes n}}(\sqrt{r_n/n})\) on every schedule in \(\mathcal R^{\mathrm{PN}}\). On \(\mathcal B_n^{\mathrm{PS}}\), \texttt{prop:ps-causal-localization} gives \(1-m_{1,n}(X)\le1-m_{0,n}(X)\) \(P_{X,n}\)-almost surely,
+\[E[1-m_{1,n}(X)]\le E[1-m_{0,n}(X)]\le\varepsilon^{-1}q_{\mathrm{PS}}(P_n),\]
+and the PS fitted-score remainder is
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle O_{P_n^{\otimes n}}\!\left(\frac{a_{1,n}}{\sqrt n}+a_{e,n}\sqrt{\frac{q_{\mathrm{PS}}(P_n)}n}+a_{e,n}a_{1,n}\right),\)}}\par\noindent}}
+\]
+which is \(o_{P_n^{\otimes n}}(\sqrt{r_n/n})\) on every schedule in \(\mathcal R^{\mathrm{PS}}\).
+\end{proposition}
+\begin{proof}
+There are two cases. If \(d=\mathrm{PN}\), every inequality and the displayed remainder are exactly the conclusions of \texttt{prop:pn-causal-localization}; in particular that proposition already states the \(o_{P_n^{\otimes n}}(\sqrt{r_n/n})\) conclusion on every PN schedule. If \(d=\mathrm{PS}\), every inequality and the displayed remainder are exactly the conclusions of \texttt{prop:ps-causal-localization}, including its corresponding little-oh conclusion. The identities \(b(\mathrm{PN})=0\) and \(b(\mathrm{PS})=1\) match the subscripts in the two displays. These cases exhaust the direction set, and each cited proposition is formulated on its own directional upper class.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The corrected proposition localizes PN on \(\mathcal B_n^{\mathrm{PN}}\) and PS on \(\mathcal B_n^{\mathrm{PS}}\), avoiding any import of the opposite regression's smoothness. \textit{Gap.} The result is a sufficient remainder calculation for the declared learners, not a universal necessity boundary. \textit{Consumer.} The direction-specific Gaussian upper proofs consume the matching branch.
+
+\begin{lemma}[lem:lf-membership]\label{lem:lf-membership}
+For every LF-compatible primitive tuple, every \(d\in\{\mathrm{PN},\mathrm{PS}\}\), every \((c_G,C_G)\in\mathcal K_{\mathrm{LF}}\), and every \((r_n)\in\mathcal R^d\) satisfying \(r_n\le\bar d\) for all sufficiently large \(n\), the construction in \texttt{def:least-favorable} at \(r=r_n\), including \(t_\pm=1/2\pm h(nr_n)^{-1/2}\) for bounded sufficiently small \(h\), lies in the exact direction-specific shell \(\mathcal M_{G,n}^d(r_n;c_G,C_G)\) for all sufficiently large \(n\). In the PN case,
+\[(e,m_0,m_1)=\left(\frac12,2(1-t)r,2r\right),\]
+whereas in the PS case,
+\[(e,m_0,m_1)=\left(\frac12,1-2r,1-2(1-t)r\right).\]
+In both cases \(q_d(P)=r\), \(\Theta_d(P)=t\), and \(V_d(P)/r\in[3/16,21/16]\); the two product laws have Kullback--Leibler divergence \(O(h^2)\). Thus every such eventually capped direction-specific shell is eventually nonempty.
+\end{lemma}
+\begin{proof}
+Fix an eventually capped schedule and take a sufficiently large row. Since \(r=r_n\le\bar d\le1/2\), the three masses in \texttt{def:least-favorable} are nonnegative and sum to one. The construction has consistency by definition, treatment is independent of \((X,Y(0),Y(1))\), and the only potential-outcome types are \((0,0),(0,1),(1,1)\); hence exchangeability and monotonicity hold. Its design density is one and \(e=1/2\), so LF compatibility gives the density, overlap, and H\"older requirements. In the PN case the regressions are
+\[(e,m_0,m_1)=\left(\frac12,2(1-t)r,2r\right),\tag{1}\]
+and in the transformed PS case they are
+\[(e,m_0,m_1)=\left(\frac12,1-2r,1-2(1-t)r\right).\tag{2}\]
+The transformation defining \((2)\) preserves all causal conditions. Direct substitution in \texttt{def:functionals} gives, in either direction,
+\[q_d(P)=r,\qquad \Theta_d(P)=t.\tag{3}\]
+For PN put \(a=1-t\). At the true target, the score is \(aY-2ar\) on the treated arm and \(-(Y-2ar)\) on the control arm. Therefore
+\[\frac{V_{\mathrm{PN}}(P)}r=a^2(1-2r)+a(1-2ar)=a+a^2(1-4r).\tag{4}\]
+Because \(a\in[1/4,3/4]\) and \(0<r\le1/2\), the right side lies between \(a(1-a)\) and \(a+a^2\), hence in \([3/16,21/16]\). The explicit PS bijection preserves this score law, so \((4)\) and the same bounds hold for PS. Since \((c_G,C_G)\in\mathcal K_{\mathrm{LF}}\), \(c_G\le3/16\), and shell membership follows from \((3)\)--\((4)\).
+
+It remains to check the local pair. By \texttt{lem:upper-schedule-consequences}, \(nr_n\to\infty\), so \(t_\pm=1/2\pm h/\sqrt{nr_n}\) eventually lie in \([1/4,3/4]\) for bounded sufficiently small \(h\). In the PN observed law only the two control-arm outcome cells change with \(t\). Their probability difference in absolute value is
+\[\delta_n=(t_+-t_-)r_n=\frac{2hr_n}{\sqrt{nr_n}}.\tag{5}\]
+The smaller rare-cell probability is at least \(r_n/4\), and the complementary control-cell probability is at least \(1/8\). The elementary inequality \(\operatorname{KL}(p,q)\le\sum_z\{p(z)-q(z)\}^2/q(z)\) therefore gives
+\[\operatorname{KL}(P_{+,n},P_{-,n})\le C\frac{\delta_n^2}{r_n}\le C\frac{h^2}{n}.\tag{6}\]
+The same bound holds in reverse and after the PS bijection. Independence makes product Kullback--Leibler divergence \(n\) times \((6)\), hence \(O(h^2)\). This proves every claimed membership, information, affinity, and nonemptiness assertion.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The casewise statement displays the distinct PN and PS nuisance triples and retains the common target, information, and affinity conclusions. \textit{Gap.} This capped witness alone does not cover schedules above \(\bar d\). \textit{Consumer.} The capped Gaussian lower bound and bounded-count frontier use this exact-shell certificate.
+
+\begin{theorem}[conj:gaussian-lower]\label{conj:gaussian-lower}
+Fix \(\alpha\in(0,1/2)\), \(d\in\{\mathrm{PN},\mathrm{PS}\}\), an LF-compatible primitive tuple, \((c_G,C_G)\in\mathcal K_{\mathrm{LF}}\), and \((r_n)\in\mathcal R^d\) such that \(r_n\le\bar d\) for all sufficiently large \(n\). Every measurable \(D_n\subseteq[0,1]\) satisfying \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \liminf_n\inf_{P_n\in\mathcal M_{G,n}^d(r_n;c_G,C_G)}P_n^{\otimes n}\{\Theta_d(P_n)\in D_n\}\ge1-\alpha\)}}\par\noindent obeys \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \liminf_n\sup_{P_n\in\mathcal M_{G,n}^d(r_n;c_G,C_G)}(nr_n)^{1/2}E_{P_n^{\otimes n}}[\operatorname{diam}(D_n)]\ge c_\alpha>0\)}}\par\noindent.
+\end{theorem}
+\begin{proof}
+Fix \(0<\eta<(1-2\alpha)/4\). By the assumed uniform coverage, for every sufficiently large \(n\) and every law in the shell,
+\[P_n^{\otimes n}\{\Theta_d(P_n)\in D_n\}\ge1-\alpha-\eta.\tag{1}\]
+Choose the two laws \(P_{+,n},P_{-,n}\) from \texttt{lem:lf-membership} with \(t_\pm=1/2\pm h/\sqrt{nr_n}\). That lemma places both laws in the identical shell and gives \(\operatorname{KL}(P_{+,n}^{\otimes n},P_{-,n}^{\otimes n})\le C h^2\). Pinsker's inequality, which follows from \((u-1)\log u\ge2(u-1)^2/(u+1)\) integrated against the dominated pair, yields
+\[\lVert P_{+,n}^{\otimes n}-P_{-,n}^{\otimes n}\rVert_{\mathrm{TV}}\le C_0h.\tag{2}\]
+Choose \(h>0\) so small that \(C_0h\le(1-2\alpha)/4\); this choice depends only on \(\alpha\) and the fixed primitive constants. By \((1)\)--\((2)\), under \(P_{+,n}^{\otimes n}\),
+\[\begin{aligned}P_{+,n}^{\otimes n}\{t_+,t_-\in D_n\}&\ge P_{+,n}^{\otimes n}\{t_+\in D_n\}+P_{+,n}^{\otimes n}\{t_-\in D_n\}-1\\&\ge1-2\alpha-2\eta-C_0h=:\kappa_\alpha>0.\end{aligned}\tag{3}\]
+On the event in \((3)\), \(\operatorname{diam}(D_n)\ge|t_+-t_-|=2h/\sqrt{nr_n}\). Hence
+\[\sup_{P_n\in\mathcal M_{G,n}^d(r_n;c_G,C_G)}\sqrt{nr_n}\,E_{P_n^{\otimes n}}[\operatorname{diam}(D_n)]\ge2h\kappa_\alpha.\tag{4}\]
+Taking the lower limit proves the result with \(c_\alpha=2h\kappa_\alpha>0\). This is the standard two-point Le Cam route; the contribution of the preceding membership lemma is that both testing points satisfy the causal assumptions and lie in the same directional shell.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The explicit least-favorable pair gives the matching expected-diameter converse inside the identical Gaussian shell. \textit{Gap.} The two-point technique is standard; the causal same-shell witness is result-specific. \textit{Consumer.} It certifies that no uniformly honest directional set improves the effective-count rate on this shell.
+
+\begin{proposition}[prop:regular-reduction]\label{prop:regular-reduction}
+Known sanity reduction. If \(\inf_n r_n>0\), then \(nr_n\to\infty\) is automatic and the single retained product-rate condition in \(\texttt{def:admissible-schedules}\) is equivalent to \(a_{e,n}a_{b(d),n}=o(n^{-1/2})\). The proposed directional score formulas agree with TianWu2025 Section 3.1 and Theorem 1 for PN, Section 4.2 and Theorem 3 for PN inference, and Section 7.1--7.2 with Theorems 5--6 for PS, together with the regular variance-inference context of CaiKuroki2005.
+\end{proposition}
+\begin{proof}
+Put \(b=b(d)\), let \((r_n)\in\mathcal R^d\), and suppose that \(c:=\inf_n r_n>0\). By \texttt{def:admissible-schedules}, \(0<r_n\le1\), and the retained product-rate condition is
+\[
+\frac{r_n}{n a_{e,n}^2a_{b,n}^2}\longrightarrow\infty.
+\tag{1}
+\]
+Because every term is positive, (1) is equivalent to
+\[
+\frac{n a_{e,n}^2a_{b,n}^2}{r_n}\longrightarrow0.
+\tag{2}
+\]
+If (2) holds, then \(r_n\le1\) gives
+\[
+0\le n a_{e,n}^2a_{b,n}^2=r_n\frac{n a_{e,n}^2a_{b,n}^2}{r_n}\le\frac{n a_{e,n}^2a_{b,n}^2}{r_n}\longrightarrow0.
+\tag{3}
+\]
+Conversely, if \(n a_{e,n}^2a_{b,n}^2\to0\), then \(r_n\ge c\) gives
+\[
+0\le\frac{n a_{e,n}^2a_{b,n}^2}{r_n}\le c^{-1}n a_{e,n}^2a_{b,n}^2\longrightarrow0.
+\tag{4}
+\]
+Thus (1) is equivalent to \(\sqrt n\,a_{e,n}a_{b(d),n}\to0\), or \(a_{e,n}a_{b(d),n}=o(n^{-1/2})\). Moreover, \(nr_n\ge cn\to\infty\), so effective-count divergence is automatic.
+
+Suppress the row index for the formula comparison. By iterated expectation and the definitions of the observed regressions,
+\[
+q_{\mathrm{PN}}=E[AY]=E[e(X)m_1(X)],\qquad q_{\mathrm{PS}}=E[(1-A)(1-Y)]=E[(1-e(X))(1-m_0(X))].
+\tag{5}
+\]
+Write \(\beta=\Theta_{\mathrm{PN}}(P)\) and \(\gamma=\Theta_{\mathrm{PS}}(P)\). The two formulas in \texttt{def:functionals}, together with (5), imply
+\[
+\beta=1-\frac{E[e(X)m_0(X)]}{q_{\mathrm{PN}}},\qquad \gamma=\frac{E[(1-e(X))\{m_1(X)-m_0(X)\}]}{q_{\mathrm{PS}}}.
+\tag{6}
+\]
+For the second equality, subtract the numerator in the defining display for \(\Theta_{\mathrm{PS}}\) from its denominator. These are the identifying ratios recorded in \texttt{lem:tian-wu-regular-benchmark}.
+
+For PN, direct expansion of \texttt{def:scores} at \(t=\beta\) gives
+\[
+\frac{\psi_{\beta}^{\mathrm{PN}}(O;\eta^{\mathrm{PN}})}{q_{\mathrm{PN}}}=\frac{1-\beta}{q_{\mathrm{PN}}}AY-\frac{e(X)}{q_{\mathrm{PN}}\{1-e(X)\}}(1-A)\{Y-m_0(X)\}-\frac{m_0(X)}{q_{\mathrm{PN}}}A.
+\tag{7}
+\]
+Thus the true PN score divided by its factual denominator is exactly the PN efficient influence function recorded in \texttt{lem:tian-wu-regular-benchmark}. For PS, the defining transformation \((A,Y,e,m_0)\mapsto(1-A,1-Y,1-e,1-m_1)\) gives
+\[
+\psi_t^{\mathrm{PS}}(O;\eta^{\mathrm{PS}})=(1-A)\{m_1(X)-Y\}+\frac{1-e(X)}{e(X)}A\{Y-m_1(X)\}-t(1-A)(1-Y).
+\tag{8}
+\]
+At \(t=\gamma\), equation (8) is \(q_{\mathrm{PS}}\) times the PS efficient influence function in \texttt{lem:tian-wu-regular-benchmark}. Indeed, that benchmark influence function can be written as
+\[
+\begin{aligned}
+\phi_{\mathrm{PS}}(O)
+&=\frac{1-e(X)}{q_{\mathrm{PS}}e(X)}A\{Y-m_1(X)\}-\frac{1-\gamma}{q_{\mathrm{PS}}}(1-A)\{Y-m_0(X)\}\\
+&\quad+\frac{m_0(X)-m_1(X)+\gamma\{1-m_0(X)\}}{q_{\mathrm{PS}}}(A-1).
+\end{aligned}
+\tag{9}
+\]
+For \(A=1\), the numerator in (9) equals the numerator in (8). For \(A=0\), the numerator of the last two terms in (9) is
+\[
+-(1-\gamma)\{Y-m_0(X)\}-\{m_0(X)-m_1(X)+\gamma(1-m_0(X))\}=m_1(X)-Y-\gamma(1-Y),
+\tag{10}
+\]
+which again is the corresponding value of (8). Hence \(\psi_{\gamma}^{\mathrm{PS}}/q_{\mathrm{PS}}=\phi_{\mathrm{PS}}\). Overlap and the positive factual denominators make all displayed divisions legitimate.
+
+It remains to compare the empirical ratio and its studentizer. For a held-out observation, write the fitted affine score as
+\[
+\psi_{t,n}^d(O_{i,n};\widehat\eta_{d,-k(i),n})=H_{i,d}-tQ_{i,d},
+\qquad Q_{i,\mathrm{PN}}=A_{i,n}Y_{i,n},\quad Q_{i,\mathrm{PS}}=(1-A_{i,n})(1-Y_{i,n}),
+\tag{11}
+\]
+where \(H_{i,d}\) is the part independent of \(t\). Therefore \texttt{def:score-inversion} gives the exact identity
+\[
+\widehat g_{d,n}(t)=\widehat h_{d,n}-t\widehat q_{d,n},\qquad \widehat h_{d,n}=\frac1n\sum_{i=1}^nH_{i,d},\qquad \widehat q_{d,n}=\frac1n\sum_{i=1}^nQ_{i,d}.
+\tag{12}
+\]
+On \(\{\widehat q_{d,n}>0\}\), its unconstrained root is the cross-fitted ratio
+\[
+\widetilde\Theta_{d,n}=\frac{\widehat h_{d,n}}{\widehat q_{d,n}}.
+\tag{13}
+\]
+At this root, the empirical variance of the estimated influence-function observations \((H_{i,d}-\widetilde\Theta_{d,n}Q_{i,d})/\widehat q_{d,n}\) is exactly
+\[
+\frac{\widehat\sigma_{d,n}^2(\widetilde\Theta_{d,n})}{\widehat q_{d,n}^2},
+\tag{14}
+\]
+so its standard error is \(\widehat\sigma_{d,n}(\widetilde\Theta_{d,n})/(\sqrt n\,\widehat q_{d,n})\). In particular, (14) retains the observation-specific factual indicator \(Q_{i,d}\), as required for the empirical influence-function variance of a ratio root. When \(\widehat q_{d,n}=0\), \texttt{def:score-inversion} remains defined without division. The clipping in \texttt{def:learners} keeps inverse propensity weights finite and changes none of the algebraic identities above.
+
+Equations (6)--(14), together with \texttt{lem:tian-wu-regular-benchmark}, establish agreement of the PN and PS targets, scores, cross-fitted ratio roots, and regular studentization formulas with the cited Tian--Wu sections and theorems. The rate equivalence in (1)--(4) concerns the direction-specific propensity--outcome-regression product appearing among their sufficient conditions; it does not identify that one rate with every condition in their regular theorem. Finally, \texttt{lem:cai-kuroki-regular-variance-context} supplies the stated historical regular variance-estimation context and makes no rare-event or honest-diameter claim.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} For a factual schedule bounded away from zero, the retained rare-event product condition is exactly the direction-specific root-\(n\) nuisance-product condition, and the affine PN/PS scores reduce algebraically to the cited regular efficient-influence-function formulas. \textit{Gap.} This is a sanity check against the regular benchmark, not a novelty claim and not an equivalence with every condition in Tian and Wu's regular theorem. \textit{Consumer.} It tells regular-regime users how the rare-event score inversion, ratio root, and observation-specific factual-indicator studentizer specialize when \(r_n\) does not vanish.
+
+\begin{theorem}[thm:two-nuisance-learning-boundary-not-necessary]\label{thm:two-nuisance-learning-boundary-not-necessary}
+The two inequalities in \texttt{oeq:sharp-learning-boundary} are sufficient for the declared two-nuisance score but are not necessary for first-order cross-fitted score inversion in the causal model. More precisely, fix \(d\in\{\mathrm{PN},\mathrm{PS}\}\), write \(b=b(d)\), and choose
+\[\max\{1-2s_e,\ 2s_b,\ 2s_e+2s_b-1\}<\gamma<1,\qquad r_n=\bar d\wedge n^{-\gamma}.\]
+Then \(nr_n\to\infty\), \(nr_na_{e,n}^2\to0\), but
+\[r_n/a_{b,n}^2\to0,\qquad r_n/\{na_{e,n}^2a_{b,n}^2\}\to0.\]
+On every eventually nonempty propensity-only raw shell \(\mathcal S_{G,n}^{\partial,d}(r_n;c_G)\), the first-order cross-fitted affine inversion \(\bar{\mathcal C}_{n,\alpha}^d\) nevertheless has uniform asymptotic coverage at least \(1-\alpha\) and uniform expected diameter \(O((nr_n)^{-1/2})\). The same conclusions hold on every nonempty sub-shell obtained by intersecting this raw shell with the matching directional upper class \(\mathcal B_n^d\). For LF-compatible primitives and \(0<c_G\le3/16\), those raw shells are nonempty. Formally, \(\mathcal M_{G,n}^d(r_n;c_G,C_G)\) in the frozen core is indexed only by \((r_n)\in\mathcal R^d\), and membership in \(\mathcal R^d\) already assumes the product inequality and implies the single-regression inequality. Thus necessity cannot be tested inside that restricted indexing domain; on the larger raw shells carrying the same causal and score-information restrictions, the claimed universal necessity is false.
+\end{theorem}
+\begin{proof}
+The schedule definition \texttt{def:admissible-schedules} requires
+\[\frac{r_n}{na_{e,n}^2a_{b,n}^2}\longrightarrow\infty,\]
+and \texttt{lem:upper-schedule-consequences} derives \(r_n/a_{b,n}^2\to\infty\). Hence, within the frozen indexing domain \(\mathcal R^d\), the proposed necessity conditions are imposed rather than testable.
+
+To test universal necessity, retain the same causal, overlap, and information restrictions but use the raw boundary shells. Since \(s_e,s_b<1/2\) and \(s_e+s_b<1\), the maximum in the theorem statement is strictly less than one, so such a \(\gamma\) exists. The explicit power calculation gives
+\[nr_n=n^{1-\gamma}\to\infty,\qquad nr_na_{e,n}^2=n^{1-\gamma-2s_e}(\log n)^{2s_e}\to0,\]
+and
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \frac{r_n}{a_{b,n}^2}=\frac{n^{2s_b-\gamma}}{(\log n)^{2s_b}}\to0,\qquad \frac{r_n}{na_{e,n}^2a_{b,n}^2}=\frac{n^{2s_e+2s_b-1-\gamma}}{(\log n)^{2s_e+2s_b}}\to0.\)}}\par\noindent}}
+\]
+The finite initial effect of capping by \(\bar d\) does not alter any limit. The inference and expected-diameter conclusions now follow directly from \texttt{thm:ultra-rare-boundary-score-robustness}. Because uniform coverage and a supremum expected-diameter bound pass to subsets, they also hold after intersecting the raw shell with \(\mathcal B_n^{\mathrm{PN}}\) or \(\mathcal B_n^{\mathrm{PS}}\), as appropriate. Its final clause, via the frozen least-favorable witness, gives nonemptiness under LF compatibility and \(c_G\le3/16\). Thus a first-order cross-fitted score attains the target diameter order while both proposed inequalities fail in the reverse direction, proving that they are not estimator-general necessity conditions.
+\end{proof}
+
+\begin{theorem}[thm:bounded-count-diameter-lower-bound]\label{thm:bounded-count-diameter-lower-bound}
+Fix \(\alpha\in(0,1/2)\), \(d\in\{\mathrm{PN},\mathrm{PS}\}\), an LF-compatible primitive tuple, and a deterministic sequence \(0<r_n\le\bar d\) such that \(M:=\sup_{n\ge1}nr_n<\infty\). Define
+\[\Delta_{\alpha,M}=\frac{1-2\alpha}{4\sqrt{M\vee1}}.\]
+Every measurable random set \(D_n\subseteq[0,1]\) satisfying
+\[\liminf_{n\to\infty}\inf_{P\in\mathcal M_{B,n}^d(r_n)}P^{\otimes n}\{\Theta_d(P)\in D_n\}\ge1-\alpha\]
+obeys the full-sequence lower bound
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \liminf_{n\to\infty}\sup_{P\in\mathcal M_{B,n}^d(r_n)}E_{P^{\otimes n}}[\operatorname{diam}(D_n)]\ge\frac{(1-2\alpha)\Delta_{\alpha,M}}2=\frac{(1-2\alpha)^2}{8\sqrt{M\vee1}}>0.\)}}\par\noindent}}
+\]
+Consequently the bounded-count question has an affirmative answer, and one may take the subsequence \(n_k=k\). The displayed constant is uniform over the fixed shell sequence and makes explicit its dependence on the bounded-count ceiling \(M\).
+\end{theorem}
+\begin{proof}
+Put \(\Delta=\Delta_{\alpha,M}\) and \(t_-=1/2-\Delta/2\), \(t_+=1/2+\Delta/2\). Since \(0<1-2\alpha<1\) and \(M\vee1\ge1\), we have \(0<\Delta<1/4\), so \(t_-,t_+\in[1/4,3/4]\). For each row \(n\) and sign \(s\in\{-,+\}\), let \(P_{s,n}\) be the direction-\(d\) observed law generated by \(\texttt{def:least-favorable}\) with \(r=r_n\) and \(t=t_s\). LF compatibility, together with \(0<r_n\le\bar d\), ensures that the uniform design, the constant propensity, and all constant outcome regressions in this construction meet the density, overlap, and declared H\"older-ball restrictions in \(\mathcal B_n\). The displayed potential-outcome type probabilities are nonnegative and sum to one by \(r_n\le\bar d\le1/2\); they satisfy consistency, conditional exchangeability, and monotonicity by construction. In the PN construction,
+\[(e,m_0,m_1)=\left(\frac12,2(1-t_s)r_n,2r_n\right),\]
+so \(q_{\mathrm{PN}}(P_{s,n})=r_n\) and direct substitution in \(\texttt{def:functionals}\) gives \(\Theta_{\mathrm{PN}}(P_{s,n})=t_s\). In the PS construction,
+\[(e,m_0,m_1)=\left(\frac12,1-2r_n,1-2(1-t_s)r_n\right),\]
+and the same substitution gives \(q_{\mathrm{PS}}(P_{s,n})=r_n\) and \(\Theta_{\mathrm{PS}}(P_{s,n})=t_s\). Hence, in either direction,
+\[P_{s,n}\in\mathcal M_{B,n}^d(r_n),\qquad \Theta_d(P_{s,n})=t_s.\tag{1}\]
+
+We next control the testing affinity of the two laws. For PN, after integrating out the common uniform covariate, the four probabilities of \((A,Y)=(1,1),(1,0),(0,1),(0,0)\) under parameter \(t\) are
+\[r_n,\quad \frac12-r_n,\quad (1-t)r_n,\quad \frac12-(1-t)r_n.\tag{2}\]
+The PS construction is the bijective transformation \((A,Y)\mapsto(1-A,1-Y)\), so it has exactly the same divergence between two values of \(t\). Only the last two masses in \((2)\) depend on \(t\). Taking \(P_{-,n}\) as the first argument and \(P_{+,n}\) as the second, the elementary inequality \(\log u\le u-1\) gives \(\operatorname{KL}(P_{-,n},P_{+,n})\le\chi^2(P_{-,n},P_{+,n})\). Moreover, because \(t_+\in[1/4,3/4]\) and \(r_n\le1/2\),
+\[\begin{aligned}
+\chi^2(P_{-,n},P_{+,n})
+&=\frac{\Delta^2r_n^2}{(1-t_+)r_n}+\frac{\Delta^2r_n^2}{1/2-(1-t_+)r_n}\\
+&\le4\Delta^2r_n+8\Delta^2r_n^2\le8\Delta^2r_n.
+\end{aligned}\tag{3}\]
+The common covariate factor contributes zero divergence. Row-wise independent sampling and additivity of product Kullback--Leibler divergence therefore yield
+\[\operatorname{KL}(P_{-,n}^{\otimes n},P_{+,n}^{\otimes n})\le8n r_n\Delta^2.\tag{4}\]
+By \(\texttt{lem:elementary-total-variation-from-kl}\),
+\[\left\lVert P_{-,n}^{\otimes n}-P_{+,n}^{\otimes n}\right\rVert_{\mathrm{TV}}\le2\Delta\sqrt{nr_n}\le2\Delta\sqrt M\le\frac{1-2\alpha}{2}=:\rho.\tag{5}\]
+
+Let \(E_{s,n}=\{t_s\in D_n\}\). By the assumed uniform coverage and membership \((1)\), for every \(\xi>0\) and all sufficiently large \(n\),
+\[P_{s,n}^{\otimes n}(E_{s,n})\ge1-\alpha-\xi,\qquad s\in\{-,+\}.\tag{6}\]
+Total-variation transfer using \((5)\), followed by the union bound, gives
+\[\begin{aligned}
+P_{-,n}^{\otimes n}(E_{-,n}\cap E_{+,n})
+&\ge P_{-,n}^{\otimes n}(E_{-,n})+P_{-,n}^{\otimes n}(E_{+,n})-1\\
+&\ge P_{-,n}^{\otimes n}(E_{-,n})+P_{+,n}^{\otimes n}(E_{+,n})-1-\rho\\
+&\ge1-2\alpha-2\xi-\rho.
+\end{aligned}\tag{7}\]
+On \(E_{-,n}\cap E_{+,n}\), the set \(D_n\) contains two points at distance \(t_+-t_-=\Delta\), and hence \(\operatorname{diam}(D_n)\ge\Delta\). Since \(P_{-,n}\) is one of the laws over which the supremum is taken, \((7)\) implies
+\[\sup_{P\in\mathcal M_{B,n}^d(r_n)}E_{P^{\otimes n}}[\operatorname{diam}(D_n)]\ge\Delta(1-2\alpha-2\xi-\rho)\]
+for all sufficiently large \(n\). Taking the lower limit, then letting \(\xi\downarrow0\), and using \(\rho\le(1-2\alpha)/2\), proves
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \liminf_{n\to\infty}\sup_{P\in\mathcal M_{B,n}^d(r_n)}E_{P^{\otimes n}}[\operatorname{diam}(D_n)]\ge\frac{(1-2\alpha)\Delta}{2}=\frac{(1-2\alpha)^2}{8\sqrt{M\vee1}}.\)}}\par\noindent}}
+\]
+This is a full-sequence assertion, so the requested subsequence may be chosen as \(n_k=k\).
+\end{proof}
+
+\begin{lemma}[lem:cheng-mao-pearl-li-2026-comparator]\label{lem:cheng-mao-pearl-li-2026-comparator}
+\texttt{Cheng,\allowbreak{} Mao,\allowbreak{} Pearl,\allowbreak{} and Li study generally partially identified probability-\allowbreak{}of-\allowbreak{}causation bound endpoints in finite discrete models. Their endpoints are finite minima or maxima of explicit linear or ratio-\allowbreak{}type functions of finitely many experimental and observational probabilities. They use an ordinary multivariate delta method at smooth unique-\allowbreak{}active endpoints,\allowbreak{} a directional numerical delta method at nonsmooth endpoints,\allowbreak{} and margin-\allowbreak{}of-\allowbreak{}error calculations for sample-\allowbreak{}size choice.}
+\end{lemma}
+\par\smallskip\noindent \textit{Justification.} The cited leaf fixes the finite-discrete partial-identification comparator's exact scope and methods. \textit{Gap.} Its positive-denominator endpoint delta method does not cover a point-identified score whose variance vanishes along a triangular array. \textit{Consumer.} It disciplines the non-subsumption claim in the Gaussian-frontier framing.
+
+\begin{lemma}[lem:cai-low-two-point-confidence-length-route]\label{lem:cai-low-two-point-confidence-length-route}
+For a normal observation \(X\sim N(\theta,\sigma^2)\) and a two-point parameter set \(\{\theta_0,\theta_1\}\), Cai and Low's Proposition 1 gives the standard honest-confidence-length lower bound
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle E_{\theta_i}L(CI)\ge(\theta_1-\theta_0)\left[1-\alpha-\Phi\left\{\frac{\theta_1-\theta_0}{\sigma}-z_\alpha\right\}\right]_+\)}}\par\noindent}}
+\]
+for at least one endpoint. It is the published two-point route to a confidence-set diameter converse; it does not provide the causal least-favorable shell or the matching PN/PS upper theorem.
+\end{lemma}
+
+\begin{lemma}[lem:derumigny-weak-ratio-comparator]\label{lem:derumigny-weak-ratio-comparator}
+\texttt{Derumigny,\allowbreak{} Girard,\allowbreak{} and Guyonvarch study ratios of expectations under sequences in which the denominator expectation may decrease to zero. They generalize the delta method,\allowbreak{} analyze percentile-\allowbreak{}bootstrap consistency,\allowbreak{} and prove a partial impossibility for nonasymptotic uniform ratio confidence intervals. Their generic ratio theory does not supply causal PN/\allowbreak{}PS nuisance localization or a matched expected-\allowbreak{}diameter frontier.}
+\end{lemma}
+
+\begin{lemma}[lem:smucler-lanni-masip-score-inversion-comparator]\label{lem:smucler-lanni-masip-score-inversion-comparator}
+Smucler, Lanni, and Masip analyze a cross-fitted score-test-inversion confidence set for LATE under arbitrarily weak instruments. They characterize six possible set shapes and prove fixed-law equivalence, up to order \(1/n\), with the doubly robust Wald interval; their work gives neither an expected-diameter rate over drifting shells nor a minimax diameter converse.
+\end{lemma}
+
+\begin{lemma}[lem:ma-identification-robust-late-comparator]\label{lem:ma-identification-robust-late-comparator}
+\texttt{Ma constructs identification-\allowbreak{}robust LATE inference with high-\allowbreak{}dimensional covariates by inverting a cross-\allowbreak{}fitted,\allowbreak{} Neyman-\allowbreak{}orthogonal test. The procedure controls asymptotic size without restricting identification strength. It is a weak-\allowbreak{}instrument size theorem,\allowbreak{} not an expected-\allowbreak{}diameter frontier for a bounded causal ratio whose factual-\allowbreak{}event probability determines a drifting score scale.}
+\end{lemma}
+
+\begin{lemma}[lem:generic]\label{lem:generic}
+Under consistency, conditional exchangeability, and overlap, for each \(a\in\{0,1\}\), \(m_{a,n}(x)=E_{\widetilde P_n}[Y(a)\mid X=x]\) for \(P_{X,n}\)-almost every \(x\). Under monotonicity, \(m_{0,n}(x)\le m_{1,n}(x)\) for \(P_{X,n}\)-almost every \(x\).
+\end{lemma}
+\begin{proof}
+Overlap makes both treatment values have positive conditional probability for \(P_{X,n}\)-almost every \(x\). Thus consistency and conditional exchangeability imply, for \(a\in\{0,1\}\),
+\[m_{a,n}(x)=E[Y\mid A=a,X=x]=E[Y(a)\mid A=a,X=x]=E[Y(a)\mid X=x].\tag{1}\]
+Monotonicity states \(Y(0)\le Y(1)\) almost surely. Taking conditional expectations given \(X=x\) in that inequality and using \((1)\) gives \(m_{0,n}(x)\le m_{1,n}(x)\) for \(P_{X,n}\)-almost every \(x\).
+\end{proof}
+
+\begin{lemma}[lem:bounded-iid-normal-approximation]\label{lem:bounded-iid-normal-approximation}
+Let \(\mathcal Q_n\) be a triangular array of classes of laws. Under each \(Q\in\mathcal Q_n\), let \(U_{1,n},\ldots,U_{n,n}\) be independent and identically distributed with \(E_QU_{i,n}=0\), \(E_QU_{i,n}^2=v_n(Q)>0\), and \(|U_{i,n}|\le B\) almost surely for a common finite \(B\). If \(\inf_{Q\in\mathcal Q_n}nv_n(Q)\to\infty\), then, with \(\Phi\) the standard-normal distribution function,
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \sup_{Q\in\mathcal Q_n}\sup_{x\in\mathbb R}\left|Q\left\{\frac{\sum_{i=1}^nU_{i,n}}{\sqrt{nv_n(Q)}}\le x\right\}-\Phi(x)\right|\to0.\)}}\par\noindent}}
+\]
+\end{lemma}
+\begin{proof}
+Fix \(Q\in\mathcal Q_n\), write \(v=v_n(Q)\), and let \(X_i=U_{i,n}/\sqrt{nv}\). Let \(G_1,\ldots,G_n\) be independent \(N(0,1/n)\) variables. The pairs \((X_i,G_i)\) have matching first two moments, and
+\[\sum_{i=1}^nE|X_i|^3=\frac{E|U_{1,n}|^3}{\sqrt n\,v^{3/2}}\le\frac{B}{\sqrt{nv}},\qquad \sum_{i=1}^nE|G_i|^3=\frac{E|N(0,1)|^3}{\sqrt n}.\tag{1}\]
+For \(0<\delta<1\), choose a thrice continuously differentiable cutoff \(f_{x,\delta}\) which is one on \(( -\infty,x]\), zero on \([x+\delta,\infty)\), takes values in \([0,1]\), and satisfies \(\lVert f_{x,\delta}^{(3)}\rVert_\infty\le C\delta^{-3}\). Replacing the \(X_i\)'s successively by the \(G_i\)'s and Taylor-expanding through order two cancels the first two moments. The integral remainder and \((1)\) give
+\[\left|Ef_{x,\delta}\!\left(\sum_iX_i\right)-Ef_{x,\delta}\!\left(\sum_iG_i\right)\right|\le C\delta^{-3}\left\{\frac{B}{\sqrt{nv}}+\frac1{\sqrt n}\right\}.\tag{2}\]
+The Gaussian sum is standard normal and its density is bounded. Cutoff inequalities at \(x\) and \(x-\delta\) therefore imply
+\[\sup_x\left|Q\left\{\sum_iX_i\le x\right\}-\Phi(x)\right|\le C\delta+C\delta^{-3}\left\{\frac{B}{\sqrt{nv}}+\frac1{\sqrt n}\right\}.\tag{3}\]
+Put \(\rho_n=\sup_{Q\in\mathcal Q_n}\{B/\sqrt{nv_n(Q)}+n^{-1/2}\}\). The hypothesis gives \(\rho_n\to0\). Taking \(\delta=\rho_n^{1/4}\) in \((3)\) proves the stated uniform convergence.
+\end{proof}
+
+\begin{lemma}[lem:upper-schedule-consequences]\label{lem:upper-schedule-consequences}
+For either direction \(d\), every \((r_n)\in\mathcal R^d\) satisfies \(0<r_n\le1\), \(a_{b(d),n}^2/r_n\to0\), and \(nr_n\to\infty\).
+\end{lemma}
+\begin{proof}
+Write \(b=b(d)\). The schedule definition gives
+\[\frac{r_n}{na_{e,n}^2a_{b,n}^2}\longrightarrow\infty.\tag{1}\]
+Since \(s_e<1/2\), \(na_{e,n}^2\to\infty\). Multiplying this fact by \((1)\) gives \(r_n/a_{b,n}^2\to\infty\), equivalently \(a_{b,n}^2/r_n\to0\). Moreover \(s_e+s_b<1\), so \(n^2a_{e,n}^2a_{b,n}^2\to\infty\). Multiplication by \((1)\) gives \(nr_n\to\infty\). Finally \(0<r_n\le1\) is part of \texttt{def:admissible-schedules}.
+\end{proof}
+
+\begin{lemma}[lem:pn-structural-score-variance-upper-bound]\label{lem:pn-structural-score-variance-upper-bound}
+For every \(P\in\mathcal B_n^{\mathrm{PN}}\) with \(q_{\mathrm{PN}}(P)>0\),
+\[V_{\mathrm{PN}}(P)\le\varepsilon^{-1}q_{\mathrm{PN}}(P).\]
+The coefficient \(\varepsilon^{-1}\) is sharp under the binary monotone and overlap restrictions.
+\end{lemma}
+\begin{proof}
+Put \(\pi=e\), \(\mu_a=m_a\), \(r=E[\pi(X)\mu_1(X)]>0\), \(t=\Theta_{\mathrm{PN}}(P)\), and \(a=1-t\). By \texttt{lem:generic}, \(0\le\mu_0\le\mu_1\le1\) almost surely, while \texttt{def:functionals} gives \(E[\pi(X)\mu_0(X)]=ar\). Direct substitution in \texttt{def:scores} gives, at the true value,
+\[\psi_t^{\mathrm{PN}}(O;\eta)=\begin{cases}aY-\mu_0(X),&A=1,\\-\pi(X)\{1-\pi(X)\}^{-1}\{Y-\mu_0(X)\},&A=0.\end{cases}\tag{1}\]
+The score is centered by \texttt{lem:identification}, so its variance is its second moment. The treated- and control-arm contributions are
+\[T=E\!\left[\pi\{a^2\mu_1-2a\mu_1\mu_0+\mu_0^2\}\right],\qquad C=E\!\left[\frac{\pi^2}{1-\pi}\mu_0(1-\mu_0)\right].\tag{2}\]
+If \(a\ge1/2\), then \(\mu_0^2-2a\mu_1\mu_0\le(1-2a)\mu_1\mu_0\le0\), whence \(T\le a^2r\le r\). If \(a<1/2\), the same first inequality and \(\mu_1\mu_0\le\mu_0\) give
+\[T\le a^2r+(1-2a)E[\pi\mu_0]=\{a^2+a(1-2a)\}r=a(1-a)r\le r.\tag{3}\]
+Overlap gives \(\pi/(1-\pi)\le\varepsilon^{-1}-1\); hence
+\[C\le(\varepsilon^{-1}-1)E[\pi\mu_0]\le(\varepsilon^{-1}-1)r.\tag{4}\]
+Equations \((2)\)--\((4)\) prove \(V_{\mathrm{PN}}(P)\le\varepsilon^{-1}r\).
+
+For sharpness, take \(\pi\equiv1-\varepsilon\) and \(Y(0)=Y(1)\sim\operatorname{Bernoulli}(u)\), independent of treatment and covariates. This law is binary, monotone, and satisfies overlap. Here \(q_{\mathrm{PN}}=(1-\varepsilon)u\), and direct evaluation of \((1)\) gives
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \frac{V_{\mathrm{PN}}}{q_{\mathrm{PN}}}=\frac{1-u}{\varepsilon}\longrightarrow\varepsilon^{-1}\qquad\text{as }u\downarrow0.\)}}\par\noindent}}
+\]
+Thus no smaller universal coefficient is possible under the stated binary monotone and overlap restrictions.
+\end{proof}
+
+\begin{lemma}[lem:ps-structural-score-variance-upper-bound]\label{lem:ps-structural-score-variance-upper-bound}
+For every \(P\in\mathcal B_n^{\mathrm{PS}}\) with \(q_{\mathrm{PS}}(P)>0\),
+\[V_{\mathrm{PS}}(P)\le\varepsilon^{-1}q_{\mathrm{PS}}(P).\]
+The coefficient \(\varepsilon^{-1}\) is sharp under the binary monotone and overlap restrictions.
+\end{lemma}
+\begin{proof}
+Set \(A^\dagger=1-A\), \(Y^\dagger=1-Y\), \(\pi=1-e\), \(\mu_0=1-m_1\), and \(\mu_1=1-m_0\). Then \(0\le\mu_0\le\mu_1\le1\), overlap is unchanged, and \texttt{def:scores} makes the PS score the PN score for \((X,A^\dagger,Y^\dagger)\). With \(r=E(\pi\mu_1)\), \(t=\Theta_{\mathrm{PS}}(P)\), and \(a=1-t\), one has \(E(\pi\mu_0)=ar\). The PN armwise calculation gives \(T\le r\) and \(C\le(\varepsilon^{-1}-1)r\), hence \(V_{\mathrm{PS}}\le\varepsilon^{-1}q_{\mathrm{PS}}\). For sharpness take \(e=\varepsilon\), \(m_0=m_1=1-u\), and a common potential outcome independent of treatment and covariates. The transformed model has \(\pi=1-\varepsilon\), \(\mu_0=\mu_1=u\), and \(V_{\mathrm{PS}}/q_{\mathrm{PS}}=(1-u)/\varepsilon\to\varepsilon^{-1}\).
+\end{proof}
+
+\begin{lemma}[lem:bounded-score-studentization]\label{lem:bounded-score-studentization}
+Let \(\mathcal Q_n\) be a triangular array of law collections. Under every \(Q\in\mathcal Q_n\), let \(U_{1,n},\ldots,U_{n,n}\) be independent and identically distributed with \(E_QU_{i,n}=0\), \(E_QU_{i,n}^2=\sigma_n^2(Q)>0\), and \(|U_{i,n}|\le B\) almost surely for a common finite \(B\). Let \(S_n=n^{-1}\sum_{i=1}^nU_{i,n}+R_n\), and let \(\widehat\sigma_n^2\ge0\). Suppose that, for every \(\delta>0\),
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \inf_{Q\in\mathcal Q_n}\sqrt n\,\sigma_n(Q)\longrightarrow\infty,\qquad \sup_{Q\in\mathcal Q_n}Q\left\{|R_n|>\delta\frac{\sigma_n(Q)}{\sqrt n}\right\}\longrightarrow0,\)}}\par\noindent}}
+\]
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \sup_{Q\in\mathcal Q_n}Q\left\{\left|\frac{\widehat\sigma_n^2}{\sigma_n^2(Q)}-1\right|>\delta\right\}\longrightarrow0.\)}}\par\noindent}}
+\]
+Define \(T_n=\sqrt n\,S_n/\widehat\sigma_n\) on \(\{\widehat\sigma_n>0\}\), with any fixed value on its complement. Then
+\[\sup_{Q\in\mathcal Q_n}\sup_{x\in\mathbb R}\left|Q\{T_n\le x\}-\Phi(x)\right|\longrightarrow0.\]
+Consequently, for \(z=z_{1-\alpha/2}\),
+\[\sup_{Q\in\mathcal Q_n}\left|Q\{|T_n|\le z\}-(1-\alpha)\right|\longrightarrow0.\]
+\end{lemma}
+\begin{proof}
+Write \(\bar U_n=n^{-1}\sum_iU_{i,n}\). The first hypothesis and \texttt{lem:bounded-iid-normal-approximation} give
+\[\sup_Q\sup_x\left|Q\left\{\frac{\sqrt n\,\bar U_n}{\sigma_n(Q)}\le x\right\}-\Phi(x)\right|\to0.\tag{1}\]
+Put \(A_n=\sqrt n\bar U_n/\sigma_n(Q)\), \(B_n=\sqrt nR_n/\sigma_n(Q)\), and \(C_n=\widehat\sigma_n/\sigma_n(Q)\). Uniformly, \(B_n=o_Q(1)\), while
+\[|C_n-1|=\frac{|C_n^2-1|}{C_n+1}\le |C_n^2-1|=o_Q(1).\tag{2}\]
+In particular \(Q(C_n=0)\to0\) uniformly. On \(C_n>0\), \(T_n=(A_n+B_n)/C_n\). Fix \(M>0\) and \(0<\delta<1/2\). On \(\{|A_n|\le M,|B_n|\le\delta,|C_n-1|\le\delta\}\), one has \(|T_n-A_n|\le2\delta(1+M)\). The resulting distribution-function sandwich, \((1)\), and the uniform continuity of \(\Phi\) show that the limsup Kolmogorov distance is at most \(P(|Z|>M)+2\delta(1+M)/\sqrt{2\pi}\). Letting first \(\delta\downarrow0\) and then \(M\uparrow\infty\) proves uniform normality. Evaluation at the two continuity points \(\pm z_{1-\alpha/2}\) proves the final assertion.
+\end{proof}
+
+\begin{lemma}[lem:control-spline-learning-tails]\label{lem:control-spline-learning-tails}
+Under row-wise sampling, overlap, support-wide bounded design density, the control-regression H\"older condition, and the PN learner, for every fixed \(M>0\) there is \(C_M<\infty\) such that, uniformly over the fixed balanced folds and all sufficiently large \(n\),
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle P_n^{\otimes n}\!\left\{\max_{1\le k\le K}\frac{\lVert\widehat m_{0,-k,n}-m_{0,n}\rVert_{2,P_n}}{a_{0,n}}>C_M\right\}\le C_Mn^{-M}.\)}}\par\noindent}}
+\]
+\end{lemma}
+\begin{proof}
+Fix a fold and write \(B=B_{0,n}\), \(J=J_{0,n}\), and \(K_0=K_{0,n}\). Overlap and bounded design density imply
+\[cJ^{-1}\lVert v\rVert_2^2\le E[(1-A)\{B(X)^\top v\}^2]\le CJ^{-1}\lVert v\rVert_2^2.\tag{1}\]
+H\"older spline approximation gives \(\theta^\circ\) with \(\lVert B^\top\theta^\circ-m_{0,n}\rVert_\infty\le CK_0^{-\beta_0}\). Applying the bounded exponential-series inequality to the locally overlapping Gram and normal-equation coordinates, followed by a union bound, gives deviation order \(C_M\{\sqrt{\log n/(nJ)}+\log n/n\}\) outside probability \(C_Mn^{-M}\). The fixed-range inverse argument used for the propensity Gram and a Neumann perturbation give empirical inverse row-sum norm \(O(J)\). The ridge normal equation then yields
+\[\lVert B^\top\widehat\theta_0-m_{0,n}\rVert_{2,P_n}\le C_M\left\{K_0^{-\beta_0}+\sqrt{\frac{J\log n}{n}}+\frac{J\log n}{n}+\frac{J}{n^2}\right\}\le C_Ma_{0,n}.\tag{2}\]
+Projection onto \([0,1]\) is contractive toward the true regression. A union bound over the fixed folds proves the claim. No property of \(m_{1,n}\) is used.
+\end{proof}
+
+\begin{lemma}[lem:treated-spline-learning-tails]\label{lem:treated-spline-learning-tails}
+Under row-wise sampling, overlap, support-wide bounded design density, the treated-regression H\"older condition, and the PS learner, for every fixed \(M>0\) there is \(C_M<\infty\) such that, uniformly over the fixed balanced folds and all sufficiently large \(n\),
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle P_n^{\otimes n}\!\left\{\max_{1\le k\le K}\frac{\lVert\widehat m_{1,-k,n}-m_{1,n}\rVert_{2,P_n}}{a_{1,n}}>C_M\right\}\le C_Mn^{-M}.\)}}\par\noindent}}
+\]
+\end{lemma}
+\begin{proof}
+Fix a fold and write \(B=B_{1,n}\), \(J=J_{1,n}\), and \(K_1=K_{1,n}\). Overlap and bounded design density give
+\[cJ^{-1}\lVert v\rVert_2^2\le E[A\{B(X)^\top v\}^2]\le CJ^{-1}\lVert v\rVert_2^2.\tag{1}\]
+H\"older spline approximation, bounded-coordinate exponential concentration, and local Gram sparsity give, outside probability \(C_Mn^{-M}\), a coefficient error bounded by
+\[C_M\left\{K_1^{-\beta_1}+\sqrt{\frac{J\log n}{n}}+\frac{J\log n}{n}+\frac{J}{n^2}\right\}.\tag{2}\]
+Indeed, the population inverse row-sum norm is \(O(J)\) by fixed-range polynomial approximation of the inverse, the empirical inverse has the same order by a Neumann perturbation, and the ridge normal equation gives \((2)\). With \(J\asymp K_1^p\), the declared tuning makes \((2)\) at most \(C_Ma_{1,n}\) in \(L_2(P_n)\). Projection is contractive and a fixed-fold union bound completes the proof. No property of \(m_{0,n}\) is used.
+\end{proof}
+
+\begin{lemma}[lem:boundary-shell-nonempty-witness]\label{lem:boundary-shell-nonempty-witness}
+Fix an LF-compatible primitive tuple, \(d\in\{\mathrm{PN},\mathrm{PS}\}\), \(0<c_G\le3/16\), \(0<r\le\bar d\), and \(t\in[1/4,3/4]\). The observed law induced by \(\texttt{def:least-favorable}\) in direction \(d\) belongs to \(\mathcal B_n^\partial\), has \(q_d(P)=r\), \(\Theta_d(P)=t\), and satisfies \(V_d(P)\ge(3/16)r\). Consequently \(\mathcal S_{G,n}^{\partial,d}(r;c_G)\) is nonempty for every row \(n\).
+\end{lemma}
+\begin{proof}
+The probability and causal checks in \texttt{def:least-favorable} give consistency, exchangeability, monotonicity, overlap, and uniform design density. LF compatibility places the constant propensity \(e=1/2\) in its H\"older ball. Since \(\mathcal B_n^\partial\) imposes no outcome-regression smoothness, the PN law and its explicit PS transform therefore belong to \(\mathcal B_n^\partial\). Direct substitution gives \(q_d(P)=r\) and \(\Theta_d(P)=t\). The score calculation in the witness gives
+\[\frac{V_d(P)}r=a+a^2(1-4r),\qquad a=1-t\in[1/4,3/4].\tag{1}\]
+For \(0<r\le1/2\), the right side is at least \(a(1-a)\ge3/16\). Thus \(V_d(P)\ge(3/16)r\ge c_Gr\), so the law belongs to \(\mathcal S_{G,n}^{\partial,d}(r;c_G)\). The construction is independent of the row, proving nonemptiness for every \(n\).
+\end{proof}
+
+\begin{lemma}[lem:elementary-total-variation-from-kl]\label{lem:elementary-total-variation-from-kl}
+For probability laws \(P\ll Q\),
+\[\lVert P-Q\rVert_{\mathrm{TV}}\le\sqrt{\operatorname{KL}(P,Q)/2}.\]
+\end{lemma}
+\begin{proof}
+Let \(L=dP/dQ\) and set \(A=\{L\ge1\}\). Then
+\[\lVert P-Q\rVert_{\mathrm{TV}}=P(A)-Q(A).\tag{1}\]
+Write \(p=P(A)\) and \(q=Q(A)\). Conditional Jensen inequality for the convex map \(u\mapsto u\log u\) gives
+\[\int_A L\log L\,dQ\ge p\log(p/q),\qquad \int_{A^c}L\log L\,dQ\ge(1-p)\log\{(1-p)/(1-q)\}.\tag{2}\]
+The boundary cases follow by the usual convention \(0\log0=0\) and by continuity. Hence
+\[\operatorname{KL}(P,Q)\ge k(p,q):=p\log(p/q)+(1-p)\log\{(1-p)/(1-q)\}.\tag{3}\]
+For fixed \(q\in(0,1)\), one has \(k(q,q)=0\), \(\partial_pk(q,q)=0\), and
+\[\partial_p^2k(p,q)=\frac1{p(1-p)}\ge4.\tag{4}\]
+Taylor's formula with integral remainder therefore yields \(k(p,q)\ge2(p-q)^2\); continuity gives the same conclusion at the boundary. Combining this inequality with \((1)\)--\((3)\) gives
+\[\lVert P-Q\rVert_{\mathrm{TV}}\le\sqrt{\operatorname{KL}(P,Q)/2},\]
+as claimed.
+\end{proof}
+
+\begin{lemma}[lem:uniform-propensity-spline-learning-tails]\label{lem:uniform-propensity-spline-learning-tails}
+Under row-wise sampling, overlap, the support-wide bounded design-density condition, the propensity H\"older condition, and the ridge-regularized clipped propensity learner, for every fixed \(M>0\) there is \(C_M<\infty\) such that, uniformly over the fixed balanced folds and all sufficiently large \(n\),
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle P_n^{\otimes n}\!\left\{\max_{1\le k\le K}\frac{\lVert\widehat e_{-k,n}-e_n\rVert_{\infty}}{a_{e,n}}>C_M\right\}\le C_Mn^{-M}.\)}}\par\noindent}}
+\]
+The same assertion holds with the supremum norm replaced by \(L_2(P_n)\). No smoothness condition on either outcome regression is required.
+\end{lemma}
+\begin{proof}
+Fix a fold and suppress its index. Its balanced training size \(N\) satisfies \(N\asymp n\). Write \(\beta=\beta_e\), \(\kappa=K_{e,n}\), \(J=J_{e,n}\), \(\lambda=n^{-2}\), and \(B(x)=B_{e,n}(x)\). All constants below are uniform over the row laws and fixed folds.
+
+Put \(\ell_n=\log\{e_n/(1-e_n)\}\). Overlap and the H\"older composition inequality give \(\lVert\ell_n\rVert_{\mathcal H^\beta}\le L_\ell\), with \(L_\ell\) depending only on \(\varepsilon,\beta,L_e,p\). Degree-\(r_e\) tensor-spline quasi-interpolation supplies \(\theta_n^\circ\in\mathbb R^J\) satisfying
+\[\lVert B^\top\theta_n^\circ-\ell_n\rVert_\infty\le C\kappa^{-\beta},\qquad \lVert\theta_n^\circ\rVert_\infty\le \log\{(1-\varepsilon)/\varepsilon\}+C_{\mathrm{QI}}=\mathsf B_e-1.\tag{1}\]
+Thus the approximant has fixed distance at least one from the boundary of the coefficient cube in \texttt{def:learners}.
+
+Nonnegativity, partition of unity, local support, quasi-uniform knots, and \(c_X\le f_{X,n}\le C_X\) imply the spline stability inequalities
+\[cJ^{-1}\lVert v\rVert_2^2\le v^\top G_nv\le CJ^{-1}\lVert v\rVert_2^2,\qquad G_n=E[B(X)B(X)^\top],\tag{2}\]
+and \(E B_j(X)\le C/J\). The overlap graph has bounded degree. Applying the elementary bounded exponential-moment inequality coordinatewise to the nonzero Gram entries and to \(B_j(X)\{A-e_n(X)\}\), then taking a union bound, gives an event \(\mathcal E_{M,n}\) with
+\[\sup_{P_n}P_n^{\otimes n}(\mathcal E_{M,n}^c)\le C_Mn^{-M}\tag{3}\]
+on which, for \(u_{M,n}=C_M\{\sqrt{\log n/(nJ)}+\log n/n\}\),
+\[\max_{j,l}|(G_{N,n}-G_n)_{jl}|\mathbf 1\{B_jB_l\not\equiv0\}\vee\max_j|\mathbb P_N[B_j(A-e_n)]|\le u_{M,n},\quad \max_j\mathbb P_NB_j\le C_MJ^{-1}.\tag{4}\]
+Here \(G_{N,n}=\mathbb P_N[BB^\top]\). Since \(Ju_{M,n}=o(1)\), bounded graph degree and \((2)\)--\((4)\) imply
+\[cJ^{-1}I_J\preceq G_{N,n}\preceq CJ^{-1}I_J.\tag{5}\]
+
+Let \(L_N\) be the ridge logistic objective, let \(p_n^\circ(x)=\{1+\exp(-B(x)^\top\theta_n^\circ)\}^{-1}\), and set \(s_N=\nabla L_N(\theta_n^\circ)\). The sigmoid is \(1/4\)-Lipschitz, so \((1)\) and the local-mass bound in \((4)\) give
+\[\lVert s_N\rVert_\infty\le C_M\left\{\sqrt{\frac{\log n}{nJ}}+\frac{\log n}{n}+\frac{\kappa^{-\beta}}J+n^{-2}\right\}.\tag{6}\]
+Because \(J\asymp\kappa^p\) and \(\kappa\asymp(n/\log n)^{1/(2\beta+p)}\),
+\[J\lVert s_N\rVert_\infty\le C_M\left\{\kappa^{-\beta}+\sqrt{\frac{J\log n}{n}}+\frac{J\log n}{n}+\frac J{n^2}\right\}\le C_Ma_{e,n}.\tag{7}\]
+
+We now justify the inverse bound and interiority. For \(\lVert\delta\rVert_\infty\le R_Ma_{e,n}\), define
+\[\overline H_N(\delta)=\int_0^1\nabla^2L_N(\theta_n^\circ+u\delta)\,du.\tag{8}\]
+For large \(n\), \(R_Ma_{e,n}<1/2\), and partition of unity plus \((1)\) ensures that every logit on the path in \((8)\) has absolute value below \(\mathsf B_e\). Hence every logistic weight is at least \(w_\star=\exp(\mathsf B_e)/\{1+\exp(\mathsf B_e)\}^2>0\), and
+\[w_\star G_{N,n}+2\lambda I_J\preceq\overline H_N(\delta)\preceq\tfrac14G_{N,n}+2\lambda I_J.\tag{9}\]
+Thus the spectrum of \(J\overline H_N(\delta)\) lies in one compact subinterval of \((0,\infty)\). Moreover this matrix has the fixed-range tensor-lattice sparsity graph. Uniform polynomial approximation of \(x^{-1}\) on that spectral interval shows that its inverse entries decay geometrically in graph distance. Since the number of indices at distance \(s\) is \(O((s+1)^{p-1})\), summation gives
+\[\sup_{\lVert\delta\rVert_\infty\le R_Ma_{e,n}}\lVert\overline H_N(\delta)^{-1}\rVert_{\infty\to\infty}\le CJ.\tag{10}\]
+This derives the required infinity-norm inverse bound from the density lower bound and sparse inverse decay, not merely from an eigenvalue comparison.
+
+Define \(T_N(\delta)=-\overline H_N(\delta)^{-1}s_N\). By \((7)\)--\((10)\), choosing \(R_M\) large makes \(T_N\) map the cube \(\{\lVert\delta\rVert_\infty\le R_Ma_{e,n}\}\) into itself. The bounded derivative of the logistic weight, partition of unity, and \((4)\) give \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \lVert\overline H_N(\delta_1)-\overline H_N(\delta_2)\rVert_{\infty\to\infty}\le CJ^{-1}\lVert\delta_1-\delta_2\rVert_\infty\)}}\par\noindent. The inverse identity, \((7)\), and \((10)\) therefore make the Lipschitz constant of \(T_N\) at most \(Ca_{e,n}<1/2\). Its iterates from zero converge to a fixed point \(\delta_N^\star\), and the fundamental theorem of calculus yields
+\[
+abla L_N(\theta_n^\circ+\delta_N^\star)=s_N+\overline H_N(\delta_N^\star)\delta_N^\star=0.\tag{11}\]
+The ridge makes the unrestricted objective strictly convex and coercive, so this is its unique minimizer. By \((1)\) and \(\lVert\delta_N^\star\rVert_\infty<1/2\), it lies strictly inside the coefficient cube and is therefore also the constrained minimizer in \texttt{def:learners}. This establishes interiority before the score equation is used. Existence, uniqueness, and measurability on every sample follow independently from compact strict convexity and the deterministic projected-gradient construction in that definition.
+
+Finally, nonnegativity and partition of unity, \((1)\), and the sigmoid Lipschitz bound give on \(\mathcal E_{M,n}\)
+\[\left\lVert\frac{\exp(B^\top\widehat\theta_e)}{1+\exp(B^\top\widehat\theta_e)}-e_n\right\rVert_\infty\le\tfrac14\lVert\delta_N^\star\rVert_\infty+C\kappa^{-\beta}\le C_Ma_{e,n}.\tag{12}\]
+Projection onto \([\varepsilon/2,1-\varepsilon/2]\) is contractive toward \(e_n\), so \((12)\) holds for \(\widehat e_{-k,n}\). Combine \((3)\) and \((12)\), enlarge \(C_M\), and take a union bound over fixed \(K\). The \(L_2(P_n)\) conclusion follows from \(\lVert f\rVert_{2,P_n}\le\lVert f\rVert_\infty\). No outcome variable entered the proof.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This is the sole canonical propensity-rate lemma after constraining the fitted logits at the optimization stage. \textit{Gap.} The repaired proof derives the quasi-interpolant's feasibility margin, the uniform weight floor, and the \(O(J_{e,n})\) inverse bound using the design-density lower bound, with explicit constrained-boundary handling. \textit{Consumer.} All score-remainder, studentizer, empirical-envelope, and propensity-only boundary results use this single migrated dependency.
+
+\begin{lemma}[lem:pn-score-learning-remainder]\label{lem:pn-score-learning-remainder}
+On the PN upper class, the PN learner satisfies \(\lVert\widehat e-e_n\rVert_\infty\vee\lVert\widehat e-e_n\rVert_{2,P_n}=O_P(a_{e,n})\), \(\lVert\widehat m_0-m_{0,n}\rVert_{2,P_n}=O_P(a_{0,n})\), and, uniformly in \(t\in[0,1]\),
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \mathbb P_n\{\psi_t^{\mathrm{PN}}(O;\widehat\eta)-\psi_t^{\mathrm{PN}}(O;\eta)\}=O_P\!\left(\frac{a_{0,n}}{\sqrt n}+a_{e,n}\sqrt{\frac{E[m_{0,n}(X)]}{n}}+a_{e,n}a_{0,n}\right).\)}}\par\noindent}}
+\]
+Conditionally on training, the score-difference mean is \(E[\delta_e(X)\delta_0(X)/\{1-\widehat e(X)\}]\), and its variance is at most \(C_\varepsilon\{a_{0,n}^2+a_{e,n}^2E[m_{0,n}(X)]\}\) on the learning event.
+\end{lemma}
+\begin{proof}
+Fix a held-out fold and condition on its training sample. Suppress row and fold indices, put \(m=m_{0,n}\), \(\widehat m=\widehat m_{0,-k,n}\), \(e=e_n\), \(\widehat e=\widehat e_{-k,n}\), \(\delta_0=\widehat m-m\), and \(\delta_e=\widehat e-e\). The two tail lemmas in the dependency list imply, outside an event of probability \(O(n^{-M})\) for every fixed \(M\),
+\[\lVert\delta_e\rVert_\infty\vee\lVert\delta_e\rVert_{2,P_n}\le C_Ma_{e,n},\qquad \lVert\delta_0\rVert_{2,P_n}\le C_Ma_{0,n}.\tag{1}\]
+The score difference does not depend on \(t\), because the term \(-tAY\) cancels. Direct subtraction in \texttt{def:scores} gives
+\[\Delta=-A\delta_0+\frac{\widehat e}{1-\widehat e}(1-A)\delta_0-\left\{\frac{\widehat e}{1-\widehat e}-\frac e{1-e}\right\}(1-A)(Y-m).\tag{2}\]
+Conditional expectation of the last term is zero, and elementary algebra in the first two terms yields
+\[E(\Delta\mid\text{training})=E\!\left[\frac{\delta_e(X)\delta_0(X)}{1-\widehat e(X)}\right].\tag{3}\]
+The fitted propensity lies in \([\varepsilon/2,1-\varepsilon/2]\), so Cauchy--Schwarz and \((1)\) bound \((3)\) by \(C_\varepsilon a_{e,n}a_{0,n}\). Also, the odds map has a bounded derivative on the common overlap interval. Squaring \((2)\), conditioning on \(X,A\), and using \(\operatorname{Var}(Y\mid A=0,X)\le m(X)\) gives
+\[\operatorname{Var}(\Delta\mid\text{training})\le E(\Delta^2\mid\text{training})\le C_\varepsilon\{a_{0,n}^2+a_{e,n}^2E[m_{0,n}(X)]\}.\tag{4}\]
+For each held-out fold, conditional Chebyshev applied to its average, followed by \((3)\)--\((4)\), gives
+\[\mathbb P_{n,k}\Delta=O_P\!\left(\frac{a_{0,n}}{\sqrt n}+a_{e,n}\sqrt{\frac{E[m_{0,n}(X)]}{n}}+a_{e,n}a_{0,n}\right).\tag{5}\]
+The number of balanced folds is fixed, so averaging \((5)\) over folds and taking a union bound proves the pooled assertion. Because \(\Delta\) is independent of \(t\), the assertion is uniform on \([0,1]\). The learning rates in the first sentence are exactly \((1)\), completing every part of the lemma.
+\end{proof}
+
+\begin{lemma}[lem:ps-score-learning-remainder]\label{lem:ps-score-learning-remainder}
+On the PS upper class, the PS learner satisfies \(\lVert\widehat e-e_n\rVert_\infty\vee\lVert\widehat e-e_n\rVert_{2,P_n}=O_P(a_{e,n})\), \(\lVert\widehat m_1-m_{1,n}\rVert_{2,P_n}=O_P(a_{1,n})\), and, uniformly in \(t\in[0,1]\),
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \mathbb P_n\{\psi_t^{\mathrm{PS}}(O;\widehat\eta^{\mathrm{PS}})-\psi_t^{\mathrm{PS}}(O;\eta^{\mathrm{PS}})\}=O_P\!\left(\frac{a_{1,n}}{\sqrt n}+a_{e,n}\sqrt{\frac{E[1-m_{1,n}(X)]}{n}}+a_{e,n}a_{1,n}\right).\)}}\par\noindent}}
+\]
+The corresponding conditional second moment is at most \(C_\varepsilon\{a_{1,n}^2+a_{e,n}^2E[1-m_{1,n}(X)]\}\) on the learning event.
+\end{lemma}
+\begin{proof}
+Apply the PN algebra to the transformed variables \(A^\dagger=1-A\), \(Y^\dagger=1-Y\), propensity \(\pi=1-e_n\), outcome regression \(\mu=1-m_{1,n}\), fitted propensity \(\widehat\pi=1-\widehat e\), and fitted regression \(\widehat\mu=1-\widehat m_1\). This is exactly the PS score by \texttt{def:scores}. The two learning-tail lemmas give
+\[\lVert\widehat\pi-\pi\rVert_\infty\vee\lVert\widehat\pi-\pi\rVert_{2,P_n}=O_P(a_{e,n}),\qquad \lVert\widehat\mu-\mu\rVert_{2,P_n}=O_P(a_{1,n}).\tag{1}\]
+Writing \(\delta_\pi=\widehat\pi-\pi\) and \(\delta_\mu=\widehat\mu-\mu\), direct subtraction gives a difference independent of \(t\), with conditional mean
+\[E\!\left[\frac{\delta_\pi(X)\delta_\mu(X)}{1-\widehat\pi(X)}\right],\tag{2}\]
+and conditional second moment at most
+\[C_\varepsilon\{\lVert\delta_\mu\rVert_{2,P_n}^2+\lVert\delta_\pi\rVert_\infty^2E[\mu(X)]\}\le C_\varepsilon\{a_{1,n}^2+a_{e,n}^2E[1-m_{1,n}(X)]\}.\tag{3}\]
+Here \((3)\) uses \(\operatorname{Var}(Y^\dagger\mid A^\dagger=0,X)\le\mu(X)\) and the common clipped-overlap bound. Conditional Chebyshev for each held-out fold, Cauchy--Schwarz in \((2)\), and a union bound over fixed \(K\) yield
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \mathbb P_n\{\psi_t^{\mathrm{PS}}(O;\widehat\eta^{\mathrm{PS}})-\psi_t^{\mathrm{PS}}(O;\eta^{\mathrm{PS}})\}=O_P\!\left(\frac{a_{1,n}}{\sqrt n}+a_{e,n}\sqrt{\frac{E[1-m_{1,n}(X)]}{n}}+a_{e,n}a_{1,n}\right).\)}}\par\noindent}}
+\]
+The cancellation of the affine \(t\)-term makes this uniform over \(t\in[0,1]\), and \((1)\)--\((3)\) prove all remaining assertions.
+\end{proof}
+
+\begin{proposition}[prop:pn-causal-localization]\label{prop:pn-causal-localization}
+On \(\mathcal B_n^{\mathrm{PN}}\), \(m_{0,n}(X)\le m_{1,n}(X)\) \(P_{X,n}\)-almost surely and \(E[m_{0,n}(X)]\le E[m_{1,n}(X)]\le q_{\mathrm{PN}}(P_n)/\varepsilon\). Consequently the PN fitted-score remainder is \(O_P(a_{0,n}/\sqrt n+a_{e,n}\sqrt{q_{\mathrm{PN}}(P_n)/n}+a_{e,n}a_{0,n})\), and on every \((r_n)\in\mathcal R^{\mathrm{PN}}\) it is \(o_P(\sqrt{r_n/n})\).
+\end{proposition}
+\begin{proof}
+By \texttt{lem:generic}, \(m_{0,n}(X)\le m_{1,n}(X)\) almost surely. Since \(e_n(X)\ge\varepsilon\),
+\[q_{\mathrm{PN}}(P_n)=E[e_n(X)m_{1,n}(X)]\ge\varepsilon E[m_{1,n}(X)],\]
+which proves \(E[m_{0,n}(X)]\le E[m_{1,n}(X)]\le q_{\mathrm{PN}}(P_n)/\varepsilon\). Substitution of this last bound into \texttt{lem:pn-score-learning-remainder} gives
+\[O_P\!\left(\frac{a_{0,n}}{\sqrt n}+a_{e,n}\sqrt{\frac{q_{\mathrm{PN}}(P_n)}n}+a_{e,n}a_{0,n}\right).\]
+On a PN Gaussian shell, \(q_{\mathrm{PN}}(P_n)=r_n\). Dividing the three terms by \(\sqrt{r_n/n}\) gives respectively \(a_{0,n}/\sqrt{r_n}\), \(a_{e,n}\), and \(\{na_{e,n}^2a_{0,n}^2/r_n\}^{1/2}\). The first tends to zero by \texttt{lem:upper-schedule-consequences}, the second because \(a_{e,n}\to0\), and the third by the defining membership \((r_n)\in\mathcal R^{\mathrm{PN}}\). This proves the asserted uniform little-oh remainder.
+\end{proof}
+
+\begin{proposition}[prop:ps-causal-localization]\label{prop:ps-causal-localization}
+On \(\mathcal B_n^{\mathrm{PS}}\), \(1-m_{1,n}(X)\le1-m_{0,n}(X)\) \(P_{X,n}\)-almost surely and \(E[1-m_{1,n}(X)]\le E[1-m_{0,n}(X)]\le q_{\mathrm{PS}}(P_n)/\varepsilon\). Consequently the PS fitted-score remainder is \(O_P(a_{1,n}/\sqrt n+a_{e,n}\sqrt{q_{\mathrm{PS}}(P_n)/n}+a_{e,n}a_{1,n})\), and on every \((r_n)\in\mathcal R^{\mathrm{PS}}\) it is \(o_P(\sqrt{r_n/n})\).
+\end{proposition}
+\begin{proof}
+By \texttt{lem:generic}, \(m_{0,n}\le m_{1,n}\), hence \(1-m_{1,n}\le1-m_{0,n}\) almost surely. Overlap gives
+\[q_{\mathrm{PS}}(P_n)=E[(1-e_n(X))\{1-m_{0,n}(X)\}]\ge\varepsilon E[1-m_{0,n}(X)].\]
+Therefore \(E[1-m_{1,n}(X)]\le E[1-m_{0,n}(X)]\le q_{\mathrm{PS}}(P_n)/\varepsilon\). Substitution in \texttt{lem:ps-score-learning-remainder} gives the displayed PS remainder. On the PS shell, divide its three terms by \(\sqrt{r_n/n}\). The ratios are \(a_{1,n}/\sqrt{r_n}\to0\), \(a_{e,n}\to0\), and \(\{na_{e,n}^2a_{1,n}^2/r_n\}^{1/2}\to0\), by \texttt{lem:upper-schedule-consequences} and the defining membership \((r_n)\in\mathcal R^{\mathrm{PS}}\). This proves the asserted little-oh statement uniformly on the shell.
+\end{proof}
+
+\begin{theorem}[thm:uncapped-ultra-rare-boundary-score-robustness]\label{thm:uncapped-ultra-rare-boundary-score-robustness}
+Fix \(\alpha\in(0,1/2)\), \(d\in\{\mathrm{PN},\mathrm{PS}\}\), and \(c_G>0\). For every schedule \(0<r_n\le1\) satisfying \(nr_n\to\infty\) and \(nr_na_{e,n}^2\to0\), suppose \(\mathcal S_{G,n}^{\partial,d}(r_n;c_G)\ne\varnothing\) eventually. The propensity-only inversion \(\bar{\mathcal C}_{n,\alpha}^d\) in \(\texttt{def:boundary-score-inversion}\) then has uniform asymptotic coverage at least \(1-\alpha\) and
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \sup_{P_n\in\mathcal S_{G,n}^{\partial,d}(r_n;c_G)}E_{P_n^{\otimes n}}[\operatorname{diam}(\bar{\mathcal C}_{n,\alpha}^d)]=O((nr_n)^{-1/2}).\)}}\par\noindent}}
+\]
+No outcome-regression smoothness or least-favorable cap is imposed.
+\end{theorem}
+\begin{proof}
+Use one transformed notation for both directions. For PN put \(A^\star=A\), \(Y^\star=Y\), \(\pi=e_n\), \(\mu_0=m_{0,n}\), and \(\mu_1=m_{1,n}\). For PS put \(A^\star=1-A\), \(Y^\star=1-Y\), \(\pi=1-e_n\), \(\mu_0=1-m_{1,n}\), and \(\mu_1=1-m_{0,n}\). Then in either case \(0\le\mu_0\le\mu_1\le1\), \(\varepsilon\le\pi\le1-\varepsilon\),
+\[U=A^\star Y^\star,\qquad J=(1-A^\star)Y^\star,\qquad E U=r_n,\qquad \theta_n=1-\frac{E[\pi(X)\mu_0(X)]}{r_n}.\tag{1}\]
+The last identity is \texttt{def:functionals}. The oracle affine score
+\[\phi_t=(1-t)U-\frac{\pi(X)}{1-\pi(X)}J\tag{2}\]
+is centered at \(t=\theta_n\). This is also the score identity in \texttt{lem:identification}. Since \(r_n=E[\pi\mu_1]\ge\varepsilon E\mu_1\),
+\[E\mu_0\le E\mu_1\le r_n/\varepsilon,\qquad E(U+J)\le C_\varepsilon r_n.\tag{3}\]
+Consequently \(E\phi_{\theta_n}^2\le C_\varepsilon r_n\). Let \(\psi_{\theta_n}^d\) be the frozen orthogonal score and set \(S=\phi_{\theta_n}-\psi_{\theta_n}^d=\mu_0(X)\{A^\star-\pi(X)(1-\pi(X))^{-1}(1-A^\star)\}\). Then \(ES^2=E[\pi(1-\pi)^{-1}\mu_0^2]\le\varepsilon^{-1}E\phi_{\theta_n}^2\), because the control-arm contribution to \(E\phi_{\theta_n}^2\) is \(E[\pi^2(1-\pi)^{-1}\mu_0]\). Hence \(V_d(P_n)=E(\phi_{\theta_n}-S)^2\le2(1+\varepsilon^{-1})E\phi_{\theta_n}^2\), and the raw-shell condition implies \(E\phi_{\theta_n}^2\ge c_Gr_n/\{2(1+\varepsilon^{-1})\}\). Define \(V_d^\star(P_n)=E\phi_{\theta_n}^2\); thus \(c_\star r_n\le V_d^\star(P_n)\le C_\varepsilon r_n\), where \(c_\star=c_G/\{2(1+\varepsilon^{-1})\}>0\).
+
+Let \(h(u)=u/(1-u)\), and let \(\widehat\pi\) denote the cross-fitted propensity in the selected direction. The fitted-minus-oracle difference at the truth is
+\[R_i=-\{h(\widehat\pi_{-k(i)}(X_i))-h(\pi(X_i))\}J_i.\tag{4}\]
+On the propensity-learning event, \(\lVert\widehat\pi-\pi\rVert_\infty\le C_Ma_{e,n}\). Since fitted and true propensities share a fixed overlap interval, conditioning on a training sample gives
+\[|E(R_i\mid\text{training})|\le C a_{e,n}E\mu_0\le Ca_{e,n}r_n,\qquad E(R_i^2\mid\text{training})\le Ca_{e,n}^2EJ\le Ca_{e,n}^2r_n.\tag{5}\]
+A fixed-fold conditional Chebyshev argument and the polynomial learning tails imply
+\[\bar g_{d,n}(\theta_n)=\mathbb P_n\phi_{\theta_n}+O_P(a_{e,n}r_n)+O_P\!\left(a_{e,n}\sqrt{\frac{r_n}{n}}\right)=\mathbb P_n\phi_{\theta_n}+o_P\!\left(\sqrt{\frac{r_n}{n}}\right),\tag{6}\]
+because \(nr_na_{e,n}^2\to0\). The same calculation gives \(\mathbb P_nR^2=o_P(r_n)\). Bounded exponential-moment estimates applied to the oracle first and second moments, using \((3)\) and \(nr_n\to\infty\), give
+\[\mathbb P_n\phi_{\theta_n}^2=V_d^\star(P_n)+o_P(r_n),\qquad \mathbb P_n\phi_{\theta_n}=O_P(\sqrt{r_n/n}).\tag{7}\]
+The empirical-variance comparison inequality and \((6)\)--\((7)\) therefore yield
+\[\frac{\bar\sigma_{d,n}^2(\theta_n)}{V_d^\star(P_n)}\longrightarrow_P1\tag{8}\]
+uniformly over the raw shell.
+
+The oracle variables in \((2)\) are iid, centered, bounded by a constant depending only on \(\varepsilon\), and have variance between \(c_\star r_n\) and \(C_\varepsilon r_n\). Since \(nr_n\to\infty\), \texttt{lem:bounded-iid-normal-approximation}, \((6)\), and \((8)\) imply the uniform studentized limit
+\[\frac{\sqrt n\,\bar g_{d,n}(\theta_n)}{\bar\sigma_{d,n}(\theta_n)}\rightsquigarrow N(0,1).\tag{9}\]
+Thus \(P_n^{\otimes n}\{\theta_n\in\bar{\mathcal A}_{n,\alpha}^d\}\to1-\alpha\) uniformly. The singleton fallback preserves this event, proving the coverage assertion.
+
+It remains to bound diameter in expectation. Put \(\widehat r_n=\mathbb P_nU\) and \(W=U+J\). Affinity in \(t\) gives
+\[\bar g_{d,n}(t)-\bar g_{d,n}(s)=-(t-s)\widehat r_n.\tag{10}\]
+Clipped overlap also gives \(\sup_t\bar\sigma_{d,n}^2(t)\le C_\varepsilon\mathbb P_nW\). The bounded exponential-moment inequality, \(EU=r_n\), and \((3)\) imply
+\[P\{\widehat r_n<r_n/2\}+P\{\mathbb P_nW>C_\varepsilon r_n\}\le C\exp(-cnr_n).\tag{11}\]
+On the complement of the events in \((11)\), any accepted \(s,t\) satisfy, by \((10)\),
+\[|t-s|\frac{r_n}{2}\le|\bar g_{d,n}(t)|+|\bar g_{d,n}(s)|\le\frac{2z_{1-\alpha/2}}{\sqrt n}\sup_u\bar\sigma_{d,n}(u)\le C\sqrt{\frac{r_n}{n}}.\tag{12}\]
+Hence the preliminary diameter is at most \(C(nr_n)^{-1/2}\) on the good event. It is always at most one, and the fallback has diameter zero when the preliminary set is empty. Since \(e^{-cnr_n}=O((nr_n)^{-1/2})\), taking expectations in \((11)\)--\((12)\) proves the asserted uniform expected-diameter rate. No bound above used an outcome-regression H\"older condition or the cap \(\bar d\).
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The propensity-only affine score supplies an outcome-smoothness-free internal robustness result when \(nr_na_{e,n}^2\to0\). \textit{Gap.} It is not positioned as a field-level necessity theorem and supplies no converse of its own. \textit{Consumer.} It provides an alternative score on verified raw boundary shells.
+
+\begin{lemma}[lem:rare-score-empirical-envelope]\label{lem:rare-score-empirical-envelope}
+Fix a direction \(d\), an admissible schedule \((r_n)\), and its Gaussian shell. For every fixed \(M>0\), there are constants \(C_M,c_M>0\), depending only on the frozen primitive tuple and \(M\), such that, uniformly over \(P_n\in\mathcal M_{G,n}^d(r_n;c_G,C_G)\),
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle P_n^{\otimes n}\left\{\sup_{t\in[0,1]}\mathbb P_n\bigl[\psi_{t,n}^d(O;\widehat\eta_{d,-k,n})^2\bigr]>C_Mr_n\right\}\le C_Mn^{-M}+C_Me^{-c_Mnr_n}\)}}\par\noindent}}
+\]
+for all sufficiently large \(n\), where \(\mathbb P_n\) is the pooled held-out average.
+\end{lemma}
+\begin{proof}
+If \(d=\mathrm{PN}\), the assertion is exactly \texttt{lem:pn-rare-score-empirical-envelope}; the learner and shell in the display are the PN learner and PN shell. If \(d=\mathrm{PS}\), it is exactly \texttt{lem:ps-rare-score-empirical-envelope}. The schedule and shell definitions select precisely one of these two cases, so the corresponding constants depend only on the fixed primitive tuple and \(M\). This proves the unified statement.
+\end{proof}
+
+\begin{lemma}[lem:pn-variance-consistency]\label{lem:pn-variance-consistency}
+Uniformly on \(\mathcal M_{G,n}^{\mathrm{PN}}(r_n;c_G,C_G)\), at \(t_n=\Theta_{\mathrm{PN}}(P_n)\), \(\mathbb P_n\Delta_{\mathrm{PN}}^2=O_P(a_{0,n}^2+r_na_{e,n}^2)=o_P(r_n)\), \(\widehat\sigma_{\mathrm{PN},n}^2(t_n)/V_{\mathrm{PN}}(P_n)\to_P1\), and \(B_\varepsilon/\sqrt{nr_n}\to0\).
+\end{lemma}
+\begin{proof}
+Put \(t_n=\Theta_{\mathrm{PN}}(P_n)\), let \(\Psi_i=\psi_{t_n,n}^{\mathrm{PN}}(O_{i,n};\eta_n^{\mathrm{PN}})\), and let \(\Delta_i\) be its fitted-minus-oracle held-out difference. The conditional second-moment calculation in \texttt{lem:pn-score-learning-remainder}, together with \texttt{prop:pn-causal-localization}, gives on the uniform learning event
+\[E(\Delta_i^2\mid\text{training})\le C\{a_{0,n}^2+r_na_{e,n}^2\}.\tag{1}\]
+Conditional Markov for each fold and a fixed-fold union bound therefore yield
+\[\mathbb P_n\Delta_{\mathrm{PN}}^2=O_P(a_{0,n}^2+r_na_{e,n}^2)=o_P(r_n),\tag{2}\]
+because \(a_{0,n}^2/r_n\to0\) by \texttt{lem:upper-schedule-consequences} and \(a_{e,n}\to0\).
+
+By \texttt{lem:identification}, \(E\Psi_i=0\). The structural upper bound and shell lower bound give
+\[c_Gr_n\le V_{\mathrm{PN}}(P_n)=E\Psi_i^2\le\varepsilon^{-1}r_n.\tag{3}\]
+The oracle score is bounded by \(B_\varepsilon\). The elementary bounded exponential-moment inequality applied to \(\Psi_i^2-E\Psi_i^2\), whose variance is at most \(B_\varepsilon^2E\Psi_i^2\), gives
+\[\mathbb P_n\Psi^2-E\Psi^2=O_P\!\left(\sqrt{\frac{r_n}{n}}+\frac1n\right)=o_P(r_n),\qquad \mathbb P_n\Psi=O_P\!\left(\sqrt{\frac{r_n}{n}}\right).\tag{4}\]
+The last equalities use \(nr_n\to\infty\). Hence the empirical variance of the oracle scores equals \(V_{\mathrm{PN}}(P_n)+o_P(r_n)\). For any vectors \(x,y\), the difference of their empirical centered second moments is bounded by
+\[\mathbb P_n y^2+2\{\mathbb P_n(x-\mathbb P_nx)^2\}^{1/2}\{\mathbb P_n(y-\mathbb P_ny)^2\}^{1/2}.\tag{5}\]
+Apply \((5)\) with \(x=\Psi\), \(y=\Delta\), and use \((2)\)--\((4)\). The fitted empirical variance is \(V_{\mathrm{PN}}(P_n)+o_P(r_n)\); division by the lower bound in \((3)\) proves the ratio consistency. Finally \(B_\varepsilon/\sqrt{nr_n}\to0\) follows from \(nr_n\to\infty\). All bounds are uniform because the learning events and constants in the cited nodes are uniform over the shell.
+\end{proof}
+
+\begin{lemma}[lem:ps-variance-consistency]\label{lem:ps-variance-consistency}
+Uniformly on \(\mathcal M_{G,n}^{\mathrm{PS}}(r_n;c_G,C_G)\), at \(t_n=\Theta_{\mathrm{PS}}(P_n)\), \(\mathbb P_n\Delta_{\mathrm{PS}}^2=O_P(a_{1,n}^2+r_na_{e,n}^2)=o_P(r_n)\), \(\widehat\sigma_{\mathrm{PS},n}^2(t_n)/V_{\mathrm{PS}}(P_n)\to_P1\), and \(B_\varepsilon/\sqrt{nr_n}\to0\).
+\end{lemma}
+\begin{proof}
+Transform to \(A^\dagger=1-A\), \(Y^\dagger=1-Y\), so that the PS score is the PN score with fitted-minus-oracle difference \(\Delta_{\mathrm{PS}}\). By \texttt{lem:ps-score-learning-remainder} and \texttt{prop:ps-causal-localization},
+\[\mathbb P_n\Delta_{\mathrm{PS}}^2=O_P(a_{1,n}^2+r_na_{e,n}^2)=o_P(r_n).\tag{1}\]
+The last equality uses \(a_{1,n}^2/r_n\to0\) and \(a_{e,n}\to0\). Identification centers the oracle score, while the PS shell lower bound and \texttt{lem:ps-structural-score-variance-upper-bound} give
+\[c_Gr_n\le V_{\mathrm{PS}}(P_n)\le\varepsilon^{-1}r_n.\tag{2}\]
+Because the oracle score is bounded, the bounded exponential-moment calculation for its first two empirical moments gives
+\[\mathbb P_n\Psi^2=V_{\mathrm{PS}}(P_n)+o_P(r_n),\qquad \mathbb P_n\Psi=O_P(\sqrt{r_n/n}),\tag{3}\]
+uniformly, using \(nr_n\to\infty\). The empirical-variance comparison inequality
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle |\widehat{\operatorname{Var}}(\Psi+\Delta)-\widehat{\operatorname{Var}}(\Psi)|\le\mathbb P_n\Delta^2+2\{\widehat{\operatorname{Var}}(\Psi)\mathbb P_n\Delta^2\}^{1/2}\)}}\par\noindent}}
+\]
+and \((1)\)--\((3)\) show that the difference is \(o_P(r_n)\). Division by \((2)\) proves \(\widehat\sigma_{\mathrm{PS},n}^2(t_n)/V_{\mathrm{PS}}(P_n)\to_P1\). The schedule consequence \(nr_n\to\infty\) also gives \(B_\varepsilon/\sqrt{nr_n}\to0\).
+\end{proof}
+
+\begin{lemma}[lem:pn-rare-score-empirical-envelope]\label{lem:pn-rare-score-empirical-envelope}
+For every fixed \(M>0\), uniformly over the PN Gaussian shell,
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle P_n^{\otimes n}\left\{\sup_{t\in[0,1]}\mathbb P_n[\psi_{t,n}^{\mathrm{PN}}(O;\widehat\eta_{-k,n}^{\mathrm{PN}})^2]>C_Mr_n\right\}\le C_Mn^{-M}+C_Me^{-c_Mnr_n}\)}}\par\noindent}}
+\]
+for constants \(C_M,c_M>0\).
+\end{lemma}
+\begin{proof}
+On the simultaneous learning event from \texttt{lem:uniform-propensity-spline-learning-tails} and \texttt{lem:control-spline-learning-tails}, write \(\widehat m_0=m_{0,n}+\delta_0\). Casewise evaluation of \texttt{def:scores}, using the clipped odds bound, gives for every \(t\in[0,1]\)
+\[\{\psi_{t,n}^{\mathrm{PN}}(O;\widehat\eta)\}^2\le C_\varepsilon\{Y+m_{0,n}(X)+\delta_0(X)^2\}.\tag{1}\]
+By \texttt{prop:pn-causal-localization}, \(E[m_{0,n}(X)]\le E[m_{1,n}(X)]\le r_n/\varepsilon\), and overlap also gives \(E[Y]\le C_\varepsilon r_n\). On the learning event, \(E\delta_0(X)^2\le C_Ma_{0,n}^2=o(r_n)\). For each held-out fold, the three variables on the right of \((1)\) are bounded. The elementary bounded exponential-moment inequality therefore gives, conditionally on training,
+\[P\left\{\mathbb P_{n,k}[Y+m_{0,n}(X)+\delta_0(X)^2]>C_Mr_n\mid\text{training}\right\}\le C_Me^{-c_Mnr_n}.\tag{2}\]
+For the last summand, use \(E\delta_0^2=o(r_n)\); its boundedness makes the exponent at threshold \(r_n\) at least a constant multiple of \(nr_n\). Taking a union bound over fixed folds and adding the \(C_Mn^{-M}\) learning-event failure probability proves the claimed inequality. The deterministic domination \((1)\) already takes the supremum over \(t\).
+\end{proof}
+
+\begin{lemma}[lem:ps-rare-score-empirical-envelope]\label{lem:ps-rare-score-empirical-envelope}
+For every fixed \(M>0\), uniformly over the PS Gaussian shell,
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle P_n^{\otimes n}\left\{\sup_{t\in[0,1]}\mathbb P_n[\psi_{t,n}^{\mathrm{PS}}(O;\widehat\eta_{-k,n}^{\mathrm{PS}})^2]>C_Mr_n\right\}\le C_Mn^{-M}+C_Me^{-c_Mnr_n}\)}}\par\noindent}}
+\]
+for constants \(C_M,c_M>0\).
+\end{lemma}
+\begin{proof}
+Use \(A^\dagger=1-A\), \(Y^\dagger=1-Y\), \(\mu=1-m_{1,n}\), and \(\widehat\mu=1-\widehat m_{1,n}=\mu+\delta_1^\dagger\). The clipped PS score obeys, uniformly over \(t\in[0,1]\),
+\[\{\psi_{t,n}^{\mathrm{PS}}(O;\widehat\eta^{\mathrm{PS}})\}^2\le C_\varepsilon\{Y^\dagger+\mu(X)+\delta_1^\dagger(X)^2\}.\tag{1}\]
+The PS localization inequalities give \(E\mu(X)\le r_n/\varepsilon\) and \(E[Y^\dagger]\le C_\varepsilon r_n\). On the treated-learning event, \(E(\delta_1^\dagger)^2\le C_Ma_{1,n}^2=o(r_n)\). Conditional bounded exponential-moment bounds at threshold \(C_Mr_n\) consequently have failure probability at most \(C_Me^{-c_Mnr_n}\) on each held-out fold. Add the \(C_Mn^{-M}\) probability of leaving either learning event and take a union bound over fixed \(K\). The result follows from \((1)\).
+\end{proof}
+
+\begin{theorem}[thm:pn-gaussian-frontier]\label{thm:pn-gaussian-frontier}
+Fix \(\alpha\in(0,1/2)\), \(c_G>0\), \(C_G=\varepsilon^{-1}\), and \((r_n)\in\mathcal R^{\mathrm{PN}}\). If the PN Gaussian shells are eventually nonempty, then uniformly over them the PN score has its oracle expansion with remainder \(o_P(\sqrt{r_n/n})\), its studentized value at \(\Theta_{\mathrm{PN}}(P_n)\) converges to \(N(0,1)\), its inversion has coverage at least \(1-\alpha\), and its expected diameter is \(O((nr_n)^{-1/2})\).
+\end{theorem}
+\begin{proof}
+Let \(t_n=\Theta_{\mathrm{PN}}(P_n)\). The remainder conclusion of \texttt{prop:pn-causal-localization} gives the uniform oracle expansion
+\[\widehat g_{\mathrm{PN},n}(t_n)=\mathbb P_n\psi_{t_n,n}^{\mathrm{PN}}(O;\eta_n^{\mathrm{PN}})+o_P(\sqrt{r_n/n}).\tag{1}\]
+By identification the oracle summands are centered. Their variance lies in \([c_Gr_n,\varepsilon^{-1}r_n]\), by the shell definition and \texttt{lem:pn-structural-score-variance-upper-bound}, and they are bounded by \(B_\varepsilon\). Since \(nr_n\to\infty\), the hypotheses of \texttt{lem:bounded-score-studentization} are satisfied by \((1)\) and \texttt{lem:pn-variance-consistency}. Hence
+\[\frac{\sqrt n\,\widehat g_{\mathrm{PN},n}(t_n)}{\widehat\sigma_{\mathrm{PN},n}(t_n)}\rightsquigarrow N(0,1)\tag{2}\]
+uniformly. The event \(|(2)|\le z_{1-\alpha/2}\) is exactly \(t_n\in\mathcal A_{n,\alpha}^{\mathrm{PN}}\), so the preliminary set has limiting coverage \(1-\alpha\), and the fallback preserves it.
+
+For diameter, put \(\widehat r_n=\mathbb P_n(AY)\). Affinity of the score gives \(\widehat g(t)-\widehat g(s)=-(t-s)\widehat r_n\). The factual indicator is Bernoulli with mean \(r_n\), so a bounded exponential-moment bound gives \(P(\widehat r_n<r_n/2)\le e^{-cnr_n}\). By \texttt{lem:pn-rare-score-empirical-envelope}, outside probability \(C_Mn^{-M}+C_Me^{-c_Mnr_n}\),
+\[\sup_{u\in[0,1]}\widehat\sigma_{\mathrm{PN},n}^2(u)\le\sup_u\mathbb P_n\psi_{u,n}^{\mathrm{PN}}(\widehat\eta)^2\le C_Mr_n.\tag{3}\]
+On the intersection of these events, any \(s,t\in\mathcal A_{n,\alpha}^{\mathrm{PN}}\) obey
+\[|t-s|\frac{r_n}{2}\le|\widehat g(t)|+|\widehat g(s)|\le\frac{2z_{1-\alpha/2}}{\sqrt n}\sup_u\widehat\sigma(u)\le C\sqrt{r_n/n}.\tag{4}\]
+Thus the diameter is at most \(C(nr_n)^{-1/2}\) there. It is always at most one, and the fallback cannot enlarge it. Taking \(M\ge1\), both \(n^{-M}\) and \(e^{-cnr_n}\) are \(O((nr_n)^{-1/2})\); taking expectations in \((4)\) proves the claimed rate.
+\end{proof}
+
+\begin{theorem}[thm:ps-gaussian-frontier]\label{thm:ps-gaussian-frontier}
+Fix \(\alpha\in(0,1/2)\), \(c_G>0\), \(C_G=\varepsilon^{-1}\), and \((r_n)\in\mathcal R^{\mathrm{PS}}\). If the PS Gaussian shells are eventually nonempty, then uniformly over them the PS score has its oracle expansion with remainder \(o_P(\sqrt{r_n/n})\), its studentized value at \(\Theta_{\mathrm{PS}}(P_n)\) converges to \(N(0,1)\), its inversion has coverage at least \(1-\alpha\), and its expected diameter is \(O((nr_n)^{-1/2})\).
+\end{theorem}
+\begin{proof}
+Let \(t_n=\Theta_{\mathrm{PS}}(P_n)\). The PS localization proposition gives
+\[\widehat g_{\mathrm{PS},n}(t_n)=\mathbb P_n\psi_{t_n,n}^{\mathrm{PS}}(O;\eta_n^{\mathrm{PS}})+o_P(\sqrt{r_n/n})\tag{1}\]
+uniformly. Identification centers the oracle score; its variance is between \(c_Gr_n\) and \(\varepsilon^{-1}r_n\), and its absolute value is bounded by \(B_\varepsilon\). Together with \(nr_n\to\infty\), \texttt{lem:ps-variance-consistency} and \texttt{lem:bounded-score-studentization} therefore prove uniform studentized convergence to \(N(0,1)\). Inversion at the true value gives limiting coverage \(1-\alpha\), and the singleton fallback preserves coverage.
+
+Put \(\widehat r_n=\mathbb P_n[(1-A)(1-Y)]\). The PS score is affine with slope \(-\widehat r_n\). The Bernoulli lower-tail bound gives \(P(\widehat r_n<r_n/2)\le e^{-cnr_n}\), and \texttt{lem:ps-rare-score-empirical-envelope} gives \(\sup_t\widehat\sigma_{\mathrm{PS},n}^2(t)\le Cr_n\) outside probability \(C_Mn^{-M}+C_Me^{-c_Mnr_n}\). Thus two accepted points \(s,t\) satisfy
+\[|s-t|\frac{r_n}{2}\le\frac{2z_{1-\alpha/2}}{\sqrt n}\sup_u\widehat\sigma_{\mathrm{PS},n}(u)\le C\sqrt{r_n/n}.\]
+The diameter is bounded by one on the exceptional event and is not enlarged by the fallback. Taking expectations, with \(nr_n\to\infty\), proves \(O((nr_n)^{-1/2})\).
+\end{proof}
+
+\begin{theorem}[thm:ultra-rare-boundary-score-robustness]\label{thm:ultra-rare-boundary-score-robustness}
+Fix \(\alpha\in(0,1/2)\), \(d\in\{\mathrm{PN},\mathrm{PS}\}\), any fixed \(c_G>0\), and every deterministic schedule \(0<r_n\le\bar d\) satisfying
+\[nr_n\longrightarrow\infty,\qquad nr_na_{e,n}^2\longrightarrow0.\]
+Define
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \begin{array}{c|cc}d&U_d^\star(O)&J_d^\star(O)\\ \hline\mathrm{PN}&AY&(1-A)Y\\\mathrm{PS}&(1-A)(1-Y)&A(1-Y)\end{array}\)}}\par\noindent}}
+\]
+and put \(\pi_{\mathrm{PN}}=e\), \(\pi_{\mathrm{PS}}=1-e\), \(\widehat\pi_{\mathrm{PN},-k}=\widehat e_{-k}\), and \(\widehat\pi_{\mathrm{PS},-k}=1-\widehat e_{-k}\). Let
+\[\bar\phi_{t,-k}^d(O)=(1-t)U_d^\star(O)-\frac{\widehat\pi_{d,-k}(X)}{1-\widehat\pi_{d,-k}(X)}J_d^\star(O),\]
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \bar g_{d,n}(t)=\frac1n\sum_{i=1}^n\bar\phi_{t,-k(i)}^d(O_{i,n}),\qquad \bar\sigma_{d,n}^2(t)=\frac1n\sum_{i=1}^n\{\bar\phi_{t,-k(i)}^d(O_{i,n})-\bar g_{d,n}(t)\}^2.\)}}\par\noindent}}
+\]
+Define \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \bar{\mathcal A}_{n,\alpha}^d=\{t\in[0,1]:n\bar g_{d,n}(t)^2\le z_{1-\alpha/2}^2\bar\sigma_{d,n}^2(t)\}\)}}\par\noindent, and report \(\bar{\mathcal C}_{n,\alpha}^d=\bar{\mathcal A}_{n,\alpha}^d\) when this set is nonempty and \(\bar{\mathcal C}_{n,\alpha}^d=\{0\}\) otherwise. Suppose \(\mathcal S_{G,n}^{\partial,d}(r_n;c_G)\ne\varnothing\) for all sufficiently large \(n\). Uniformly over this propensity-only boundary shell,
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \liminf_{n\to\infty}\inf_{P_n\in\mathcal S_{G,n}^{\partial,d}(r_n;c_G)}P_n^{\otimes n}\{\Theta_d(P_n)\in\bar{\mathcal C}_{n,\alpha}^d\}\ge1-\alpha\)}}\par\noindent}}
+\]
+and
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \sup_{P_n\in\mathcal S_{G,n}^{\partial,d}(r_n;c_G)}E_{P_n^{\otimes n}}[\operatorname{diam}(\bar{\mathcal C}_{n,\alpha}^d)]=O((nr_n)^{-1/2}).\)}}\par\noindent}}
+\]
+Writing \(b=b(d)\), choose
+\[\max\{1-2s_e,\ 2s_b,\ 2s_e+2s_b-1\}<\gamma<1,\qquad r_n=\bar d\wedge n^{-\gamma}.\]
+Then
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle nr_n\to\infty,\qquad nr_na_{e,n}^2\to0,\qquad \frac{r_n}{a_{b,n}^2}\to0,\qquad \frac{r_n}{na_{e,n}^2a_{b,n}^2}\to0.\)}}\par\noindent}}
+\]
+For LF-compatible primitives and \(0<c_G\le3/16\), \(\texttt{lem:boundary-shell-nonempty-witness}\) makes every shell in this display nonempty. Thus an alternative propensity-only first-order inversion remains honest and shrinking on explicit schedules outside the sufficient fixed two-nuisance spline regime. This is an internal robustness construction: it refutes no claim in the literature and asserts no negative literature novelty.
+\end{theorem}
+\begin{proof}
+For either direction make the transformation \((A,Y,e,m_0,m_1)\mapsto(A^\star,Y^\star,\pi,\mu_0,\mu_1)\) used in the preceding boundary argument: it is the identity for PN and \((1-A,1-Y,1-e,1-m_1,1-m_0)\) for PS. Monotonicity and overlap give \(0\le\mu_0\le\mu_1\le1\) and \(\varepsilon\le\pi\le1-\varepsilon\). With \(U=A^\star Y^\star\), \(J=(1-A^\star)Y^\star\), and \(q_d(P_n)=r_n\),
+\[\theta_n=\Theta_d(P_n)=1-\frac{E[\pi\mu_0]}{r_n},\qquad E[(1-\theta_n)U-\pi(1-\pi)^{-1}J]=0.\tag{1}\]
+Denote the oracle affine score by \(\phi_t=(1-t)U-\pi(1-\pi)^{-1}J\). Moreover \(E\mu_0\le E\mu_1\le r_n/\varepsilon\), so the affine oracle-score variance is at most \(C_\varepsilon r_n\). If \(S=\mu_0(X)\{A^\star-\pi(X)(1-\pi(X))^{-1}(1-A^\star)\}\), then the frozen orthogonal score equals the affine score minus \(S\), while \(ES^2\le\varepsilon^{-1}E\phi_{\theta_n}^2\). Thus \(V_d(P_n)\le2(1+\varepsilon^{-1})E\phi_{\theta_n}^2\), and the raw-shell lower bound yields affine-score variance at least \(c_Gr_n/\{2(1+\varepsilon^{-1})\}\). Write \(V_d^\star(P_n)=E\phi_{\theta_n}^2\) for this affine-score variance.
+
+For the cross-fitted score, the only fitted-minus-oracle term is \(-\{h(\widehat\pi)-h(\pi)\}J\), where \(h(u)=u/(1-u)\). Uniform propensity learning and clipped overlap give conditional mean \(O(a_{e,n}r_n)\) and conditional second moment \(O(a_{e,n}^2r_n)\). Consequently
+\[\bar g_{d,n}(\theta_n)=\mathbb P_n\phi_{\theta_n}+o_P(\sqrt{r_n/n}),\qquad \bar\sigma_{d,n}^2(\theta_n)/V_d^\star(P_n)\to_P1,\tag{2}\]
+uniformly, because \(nr_na_{e,n}^2\to0\) and \(nr_n\to\infty\). The bounded iid normal approximation applied to the oracle score then proves the studentized \(N(0,1)\) limit and hence uniform coverage; the fallback preserves coverage.
+
+For diameter, the affine slope is \(-\widehat r_n=-\mathbb P_nU\), and \(\sup_t\bar\sigma_{d,n}^2(t)\le C_\varepsilon\mathbb P_n(U+J)\). Bounded exponential-moment bounds give, outside probability \(Ce^{-cnr_n}\), \(\widehat r_n\ge r_n/2\) and \(\mathbb P_n(U+J)\le C_\varepsilon r_n\). Two accepted points are therefore separated by at most \(C(nr_n)^{-1/2}\). The random set always has diameter at most one and the empty-set fallback has diameter zero, so expectation has the same order. This proves the two inference conclusions.
+
+It remains to verify the advertised schedules. Since \(s_e,s_b\in(0,1/2)\) and \(s_e+s_b<1\), each of \(1-2s_e\), \(2s_b\), and \(2s_e+2s_b-1\) is strictly below one; hence the displayed open interval for \(\gamma\) is nonempty. Eventually \(r_n=n^{-\gamma}\), and, up to powers of \(\log n\),
+\[nr_n=n^{1-\gamma}\to\infty,\qquad nr_na_{e,n}^2=n^{1-\gamma-2s_e}(\log n)^{2s_e}\to0,\tag{3}\]
+\[\frac{r_n}{a_{b,n}^2}=\frac{n^{2s_b-\gamma}}{(\log n)^{2s_b}}\to0,\qquad \frac{r_n}{na_{e,n}^2a_{b,n}^2}=\frac{n^{2s_e+2s_b-1-\gamma}}{(\log n)^{2s_e+2s_b}}\to0.\tag{4}\]
+The cap by \(\bar d\) changes only finitely many rows. Under LF compatibility and \(c_G\le3/16\), \texttt{lem:boundary-shell-nonempty-witness} supplies nonemptiness. Equations \((3)\)--\((4)\) complete the robustness and boundary-refutation conclusions exactly as stated.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} A propensity-only first-order inversion remains honest and shrinking on an explicit ultra-rare schedule class without outcome-regression smoothness. \textit{Gap.} This is an internal estimator-robustness construction and does not assert that a published condition is necessary or false. \textit{Consumer.} It provides a separate score option when the factual event is rare enough that \(nr_na_{e,n}^2\to0\) and the boundary shell can be verified.
+
+\begin{lemma}[lem:tian-wu-regular-benchmark]\label{lem:tian-wu-regular-benchmark}
+With \(m_a=\mu_a\), under strong ignorability, monotonicity, and positive factual denominators, Tian and Wu identify \(\beta=\mathrm{PN}\) and \(\gamma=\mathrm{PS}\) by \[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \beta=1-\frac{E[e(X)m_0(X)]}{E[e(X)m_1(X)]},\qquad \gamma=\frac{E[(1-e(X))\{m_1(X)-m_0(X)\}]}{E[(1-e(X))(1-m_0(X))]}.\)}}\par\noindent}}
+\] Writing \(q_{\mathrm{PN}}=E[e(X)m_1(X)]\) and \(q_{\mathrm{PS}}=E[(1-e(X))(1-m_0(X))]\), their unknown-propensity monotonicity efficient influence functions are \[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \phi_{\mathrm{PN}}=\frac{1-\beta}{q_{\mathrm{PN}}}AY-\frac{e(X)}{q_{\mathrm{PN}}\{1-e(X)\}}(1-A)\{Y-m_0(X)\}-\frac{m_0(X)}{q_{\mathrm{PN}}}A\)}}\par\noindent}}
+\] and \[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \phi_{\mathrm{PS}}=\frac{1-e(X)}{q_{\mathrm{PS}}e(X)}A\{Y-m_1(X)\}-\frac{1-\gamma}{q_{\mathrm{PS}}}(1-A)\{Y-m_0(X)\}+\frac{m_0(X)-m_1(X)+\gamma\{1-m_0(X)\}}{q_{\mathrm{PS}}}(A-1).\)}}\par\noindent}}
+\] Their cross-fitted ratio estimators solve the corresponding empirical mean-zero influence-function equations; under their product-rate conditions, their regular inference theorems give root-\(n\) asymptotic normality, attainment of the respective efficiency bounds, and consistent empirical influence-function variance estimators.
+\end{lemma}
+
+\begin{lemma}[lem:cai-kuroki-regular-variance-context]\label{lem:cai-kuroki-regular-variance-context}
+\texttt{Cai and Kuroki introduce the three probabilities of causation discussed by Pearl,\allowbreak{} derive variance estimators corresponding to Pearl's cases,\allowbreak{} clarify their properties,\allowbreak{} and report simulations showing that the proposed method sufficiently approximates the variances. This is regular variance-\allowbreak{}estimation context,\allowbreak{} not a rare-\allowbreak{}event or honest-\allowbreak{}diameter theorem.}
+\end{lemma}
+
+\begin{theorem}[thm:gaussian-frontier]\label{thm:gaussian-frontier}
+Fix \(\alpha\in(0,1/2)\), \(d\in\{\mathrm{PN},\mathrm{PS}\}\), any fixed \(c_G>0\), set \(C_G=\varepsilon^{-1}\), and let \((r_n)\in\mathcal R^d\). Suppose \(\mathcal M_{G,n}^d(r_n;c_G,C_G)\ne\varnothing\) eventually. When \(d=\mathrm{PN}\), interpret every upper assertion below on \(\mathcal B_n^{\mathrm{PN}}\) using \(\texttt{prop:pn-causal-localization}\), \(\texttt{lem:pn-variance-consistency}\), and \(\texttt{lem:pn-structural-score-variance-upper-bound}\); when \(d=\mathrm{PS}\), use the corresponding three PS nodes on \(\mathcal B_n^{\mathrm{PS}}\). No upper assertion imports smoothness of the regression belonging to the opposite direction. Uniformly over the matching shell,
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \widehat g_{d,n}(\Theta_d(P_n))=\frac1n\sum_{i=1}^n\psi^d_{\Theta_d(P_n),n}(O_{i,n};\eta_n^d)+o_{P_n^{\otimes n}}\!\left(\sqrt{\frac{r_n}{n}}\right),\)}}\par\noindent}}
+\]
+the studentized score converges uniformly to \(N(0,1)\), its inversion has asymptotic coverage at least \(1-\alpha\), and
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \sup_{P_n\in\mathcal M_{G,n}^d(r_n;c_G,C_G)}E_{P_n^{\otimes n}}[\operatorname{diam}(\mathcal C_{n,\alpha}^{\mathrm{score},d})]=O((nr_n)^{-1/2}).\)}}\par\noindent}}
+\]
+These upper conclusions require no least-favorable compatibility. If the primitive tuple is least-favorable compatible, \(0<c_G\le3/16\), and \(r_n\to0\), every measurable \(D_n\subseteq[0,1]\) satisfying
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \liminf_{n\to\infty}\inf_{P_n\in\mathcal M_{G,n}^d(r_n;c_G,C_G)}P_n^{\otimes n}\{\Theta_d(P_n)\in D_n\}\ge1-\alpha\)}}\par\noindent}}
+\]
+obeys
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \liminf_{n\to\infty}\sup_{P_n\in\mathcal M_{G,n}^d(r_n;c_G,C_G)}\sqrt{nr_n}\,E_{P_n^{\otimes n}}[\operatorname{diam}(D_n)]\ge c_\alpha>0.\)}}\par\noindent}}
+\]
+Thus the score inversion has matched minimax expected-diameter order \((nr_n)^{-1/2}\) on each admissible vanishing-event identical shell under least-favorable compatibility. The theorem matches rates, not sharp constants, and asserts no converse for nonvanishing or oscillating schedules. The coordinate \(C_G=\varepsilon^{-1}\) is derived rather than primitive. Cheng, Mao, Pearl, and Li's partially identified finite-discrete endpoint analysis concerns a different estimand and asymptotic regime.
+\end{theorem}
+\begin{proof}
+Fix \(d\), put \(b=b(d)\), write \(t_n=\Theta_d(P_n)\), and define
+\[U_{i,n}=\psi^d_{t_n,n}(O_{i,n};\eta_n^d),\qquad V_n=V_d(P_n).\tag{1}\]
+By \(\texttt{lem:identification}\), \(E_{P_n}U_{i,n}=0\). The lower restriction in \(\texttt{def:gaussian-shells}\) and the matching structural score-variance upper bound give, uniformly over the direction-specific shell,
+\[c_Gr_n\le V_n\le\varepsilon^{-1}r_n.\tag{2}\]
+For PN the upper inequality is \(\texttt{lem:pn-structural-score-variance-upper-bound}\); for PS it is \(\texttt{lem:ps-structural-score-variance-upper-bound}\). The schedule consequences are
+\[nr_n\longrightarrow\infty,\qquad \frac{a_{b,n}^2}{r_n}\longrightarrow0,\qquad \frac{na_{e,n}^2a_{b,n}^2}{r_n}\longrightarrow0.\tag{3}\]
+They follow from \(\texttt{lem:upper-schedule-consequences}\) and the definition of \(\mathcal R^d\).
+
+We first prove the oracle expansion. The finite-sample learner theorem \(\texttt{lem:finite-sample-directional-spline-learning-tails}\) supplies, outside probability \(C_Mn^{-M}\) and simultaneously over the fixed folds,
+\[\lVert\widehat e-e_n\rVert_\infty\vee\lVert\widehat e-e_n\rVert_{2,P_n}\le C_Ma_{e,n},\qquad \lVert\widehat m_b-m_{b,n}\rVert_\infty\vee\lVert\widehat m_b-m_{b,n}\rVert_{2,P_n}\le C_Ma_{b,n}.\tag{4}\]
+In the PN branch this statement involves only \(m_{0,n}\); in the PS branch it involves only \(m_{1,n}\). Let \(\Delta_{i,n}\) be the fitted-minus-oracle held-out score difference at \(t_n\). Direct subtraction in \(\texttt{def:scores}\), conditional on the corresponding training fold, shows that its mean is a product of the two nuisance errors divided by a clipped overlap factor, and that
+\[|E(\Delta_{i,n}\mid\mathrm{training})|\le C_\varepsilon a_{e,n}a_{b,n},\qquad E(\Delta_{i,n}^2\mid\mathrm{training})\le C_\varepsilon\{a_{b,n}^2+a_{e,n}^2h_{d,n}\},\tag{5}\]
+where \(h_{\mathrm{PN},n}=E[m_{0,n}(X)]\) and \(h_{\mathrm{PS},n}=E[1-m_{1,n}(X)]\). The matching causal-localization proposition gives \(h_{d,n}\le r_n/\varepsilon\). Conditional Chebyshev on each held-out fold and a fixed-fold union bound therefore give
+\[\widehat g_{d,n}(t_n)-\frac1n\sum_{i=1}^nU_{i,n}=O_P\!\left(\frac{a_{b,n}}{\sqrt n}+a_{e,n}\sqrt{\frac{r_n}{n}}+a_{e,n}a_{b,n}\right)=o_P\!\left(\sqrt{\frac{r_n}{n}}\right)\tag{6}\]
+uniformly over the shell. The last equality follows term by term from \((3)\) and \(a_{e,n}\to0\). This proves the displayed oracle expansion.
+
+For studentization, the matching variance-consistency lemma gives
+\[\frac{\widehat\sigma_{d,n}^2(t_n)}{V_n}\longrightarrow_P1\tag{7}\]
+uniformly over the shell. The oracle score is bounded by the common constant \(B_\varepsilon\), and \((2)\)--\((3)\) give
+\[\frac{B_\varepsilon}{\sqrt{nV_n}}\le\frac{B_\varepsilon}{\sqrt{c_Gnr_n}}\longrightarrow0.\tag{8}\]
+Apply \(\texttt{lem:bounded-score-studentization}\) with \(S_n=\widehat g_{d,n}(t_n)\), oracle summands \(U_{i,n}\), remainder from \((6)\), and studentizer from \((7)\). We obtain
+\[\sup_{P_n\in\mathcal M_{G,n}^d(r_n;c_G,C_G)}\sup_{x\in\mathbb R}\left|P_n^{\otimes n}\!\left\{\frac{\sqrt n\,\widehat g_{d,n}(t_n)}{\widehat\sigma_{d,n}(t_n)}\le x\right\}-\Phi(x)\right|\longrightarrow0.\tag{9}\]
+The event \(\widehat\sigma_{d,n}(t_n)=0\) has probability tending to zero uniformly by \((2)\) and \((7)\). Evaluating \((9)\) at \(\pm z_{1-\alpha/2}\) proves
+\[\inf_{P_n\in\mathcal M_{G,n}^d(r_n;c_G,C_G)}P_n^{\otimes n}\{n\widehat g_{d,n}(t_n)^2\le z_{1-\alpha/2}^2\widehat\sigma_{d,n}^2(t_n)\}\longrightarrow1-\alpha.\tag{10}\]
+The event in \((10)\) is \(\{t_n\in\mathcal A_{n,\alpha}^d\}\). On this event the preliminary set is nonempty, so the fallback rule in \(\texttt{def:score-inversion}\) leaves it unchanged. Hence
+\[\liminf_{n\to\infty}\inf_{P_n\in\mathcal M_{G,n}^d(r_n;c_G,C_G)}P_n^{\otimes n}\{t_n\in\mathcal C_{n,\alpha}^{\mathrm{score},d}\}\ge1-\alpha.\tag{11}\]
+
+We next prove the expected-diameter upper bound. Define
+\[H_d(O)=\begin{cases}AY,&d=\mathrm{PN},\\(1-A)(1-Y),&d=\mathrm{PS},\end{cases}\qquad \widehat q_{d,n}=\mathbb P_nH_d.\tag{12}\]
+On the shell, \(EH_d=r_n\). Since \(H_d\in[0,1]\) and \(\operatorname{Var}(H_d)\le r_n\), \(\texttt{lem:bounded-bernstein-row-concentration}\), with \(x=c nr_n\) for a sufficiently small fixed \(c>0\), yields
+\[\sup_{P_n\in\mathcal M_{G,n}^d(r_n;c_G,C_G)}P_n^{\otimes n}\{\widehat q_{d,n}<r_n/2\}\le2e^{-cnr_n}.\tag{13}\]
+By \(\texttt{lem:rare-score-empirical-envelope}\), for any fixed \(M>0\), there are constants \(C_M,c_M>0\) such that
+\[P_n^{\otimes n}\left\{\sup_{t\in[0,1]}\mathbb P_n[\psi_{t,n}^d(O;\widehat\eta_{d,-k,n})^2]>C_Mr_n\right\}\le C_Mn^{-M}+C_Me^{-c_Mnr_n}\tag{14}\]
+uniformly over the shell. Let \(\mathcal E_n\) be the intersection of the complementary event in \((14)\) with \(\{\widehat q_{d,n}\ge r_n/2\}\). Taking \(M=2\), equations \((13)\)--\((14)\) give
+\[\sup_{P_n}P_n^{\otimes n}(\mathcal E_n^c)\le Cn^{-2}+Ce^{-cnr_n}.\tag{15}\]
+If \(t\in\mathcal A_{n,\alpha}^d\), then \(\widehat\sigma_{d,n}^2(t)\le\mathbb P_n[\psi_{t,n}^d(O;\widehat\eta_{d,-k,n})^2]\). Therefore, on \(\mathcal E_n\),
+\[|\widehat g_{d,n}(t)|\le z_{1-\alpha/2}\sqrt{\frac{C r_n}{n}}.\tag{16}\]
+The score is affine in \(t\), with exact slope \(-\widehat q_{d,n}\):
+\[\widehat g_{d,n}(t)-\widehat g_{d,n}(s)=-(t-s)\widehat q_{d,n}.\tag{17}\]
+Thus any \(s,t\in\mathcal A_{n,\alpha}^d\) satisfy, on \(\mathcal E_n\),
+\[|t-s|\le\frac{4z_{1-\alpha/2}\sqrt C}{\sqrt{nr_n}}.\tag{18}\]
+The fallback is a singleton when the preliminary set is empty, and every reported set is a subset of \([0,1]\). Hence
+\[\operatorname{diam}(\mathcal C_{n,\alpha}^{\mathrm{score},d})\le\frac{4z_{1-\alpha/2}\sqrt C}{\sqrt{nr_n}}\mathbf1_{\mathcal E_n}+\mathbf1_{\mathcal E_n^c}.\tag{19}\]
+Because \(r_n\le1\), one has \(n^{-2}=O((nr_n)^{-1/2})\). Since \(nr_n\to\infty\), also \(e^{-cnr_n}=O((nr_n)^{-1/2})\). Taking expectations in \((19)\) and using \((15)\) proves
+\[\sup_{P_n\in\mathcal M_{G,n}^d(r_n;c_G,C_G)}E_{P_n^{\otimes n}}[\operatorname{diam}(\mathcal C_{n,\alpha}^{\mathrm{score},d})]=O((nr_n)^{-1/2}).\tag{20}\]
+All upper-bound arguments were branch-specific: PN used only the PN learner, \(m_0\)-localization, PN variance consistency, and the PN structural variance bound, while PS used only the corresponding objects involving \(m_1\). No least-favorable compatibility and no opposite-direction regression smoothness were used.
+
+Finally, suppose the primitive tuple is least-favorable compatible, \(0<c_G\le3/16\), and \(r_n\to0\). Then \(r_n\le\bar d\) eventually and \((c_G,\varepsilon^{-1})\in\mathcal K_{\mathrm{LF}}\). The lemma \(\texttt{lem:lf-membership}\) places its local two-point pair in the identical direction-specific shell. Applying \(\texttt{conj:gaussian-lower}\) to any measurable set \(D_n\) satisfying the displayed honesty requirement gives
+\[\liminf_{n\to\infty}\sup_{P_n\in\mathcal M_{G,n}^d(r_n;c_G,C_G)}\sqrt{nr_n}\,E_{P_n^{\otimes n}}[\operatorname{diam}(D_n)]\ge c_\alpha>0.\tag{21}\]
+The single data-driven score inversion attaining \((20)\) therefore matches \((21)\) in order. The argument identifies no sharp constant and uses eventual capping through \(r_n\to0\), so it gives no converse for nonvanishing or oscillating schedules. The equality \(C_G=\varepsilon^{-1}\) records the proved structural upper coefficient and is not an additional primitive restriction. Finally, \(\texttt{lem:cheng-mao-pearl-li-2026-comparator}\) concerns partially identified finite-discrete endpoints, so it neither changes the estimand nor supplies any step in the identical-shell frontier proved here.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The mathematical closure is direction-specific: PN uses only PN localization, variance consistency, and structural variance, while PS uses only the corresponding PS nodes. The closest-work distinction has four axes. First, on identification, Zhang, Wang, and Miao \cite{ZhangWangMiao2025} study inference for generally partially identified PN bound endpoints, whereas Cuellar and Kennedy \cite{CuellarKennedy2020} impose identification conditions including monotonicity but target a finite-dimensional projection of covariate-specific PC; the present theorem takes the exact marginal PN or PS functional under ignorability and monotonicity as given. Second, on scale, both cited analyses establish ordinary root-sample-size asymptotics, while the present theorem is a triangular-array result with \(q_d(P_n)=r_n\to0\), score variance of order \(r_n\), and effective count \(nr_n\). Third, the estimator is an affine cross-fitted PN or PS score-test inversion. Fourth, neither cited source states an honest expected-diameter lower bound over an identical vanishing-event shell. The achievability proof derives the spline rates from explicit finite-sample concentration and a proved inverse-row-sum inequality rather than treating learner rates as black-box assertions. \textit{Gap.} The matched result is rate-only and its converse is restricted to admissible vanishing schedules under least-favorable compatibility. It does not identify a sharp constant or supply a converse for nonvanishing or oscillating schedules. The bounded-count result remains a lower obstruction rather than a Poisson-calibrated upper procedure. \textit{Consumer.} Climate PN/FAR and stroke PS users may apply only the matching direction after verifying the factual schedule, score-information lower bound, overlap, directional H\"older conditions, and the stated effective-count regime.
+
+\begin{lemma}[lem:tensor-spline-inverse-row-sum]\label{lem:tensor-spline-inverse-row-sum}
+Let \(A_J\) be a real symmetric positive-definite matrix indexed by a finite subset \(\Lambda_J\subset\mathbb Z^p\). Suppose fixed constants \(0<a\le b<\infty\), \(R<\infty\), and \(D<\infty\) satisfy \(\operatorname{spec}(A_J)\subset[a,b]\), \((A_J)_{\lambda\mu}=0\) when \(\lVert\lambda-\mu\rVert_\infty>R\), and, for the graph induced by the nonzero off-diagonal entries, every distance shell obeys
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \sup_{\lambda\in\Lambda_J}\#\{\mu\in\Lambda_J:\operatorname{dist}(\lambda,\mu)=s\}\le D(s+1)^{p-1},\qquad s\ge0.\)}}\par\noindent}}
+\]
+Then \(\lVert A_J^{-1}\rVert_{\infty\to\infty}\le C(a,b,D,p)\), uniformly in \(J\). Consequently, if \(H_J\) has the same sparsity and shell-growth properties and \(\operatorname{spec}(H_J)\subset[a/J,b/J]\), then
+\[
+\lVert H_J^{-1}\rVert_{\infty\to\infty}\le C(a,b,D,p)J.
+\]
+\end{lemma}
+\begin{proof}
+Put \(c=2/(a+b)\), \(\rho=(b-a)/(a+b)<1\), and \(R_J=I-cA_J\). Spectral calculus gives
+\[\lVert R_J\rVert_{2\to2}\le\rho,\qquad A_J^{-1}=c\sum_{k=0}^{\infty}R_J^k.\tag{1}\]
+The diagonal entries of \(R_J\) add only self-loops to the graph induced by the nonzero off-diagonal entries of \(A_J\). Consequently, if \(h=\operatorname{dist}(\lambda,\mu)\), then \((R_J^k)_{\lambda\mu}=0\) for every \(k<h\). Moreover,
+\[|(R_J^k)_{\lambda\mu}|\le\lVert R_J^k\rVert_{2\to2}\le\rho^k.\tag{2}\]
+Combining \((1)\) and \((2)\) yields
+\[|(A_J^{-1})_{\lambda\mu}|\le c\sum_{k=h}^{\infty}\rho^k=\frac{c}{1-\rho}\rho^h.\tag{3}\]
+For a fixed row \(\lambda\), sum \((3)\) over graph-distance shells and use the assumed shell-growth bound. Then
+\[\sum_{\mu\in\Lambda_J}|(A_J^{-1})_{\lambda\mu}|\le\frac{cD}{1-\rho}\sum_{s=0}^{\infty}(s+1)^{p-1}\rho^s=:C(a,b,D,p)<\infty.\tag{4}\]
+The series in \((4)\) converges because \(0\le\rho<1\). Taking the supremum over \(\lambda\) proves \(\lVert A_J^{-1}\rVert_{\infty\to\infty}\le C(a,b,D,p)\), uniformly in \(J\). For the final assertion, apply the first part to \(A_J=JH_J\). Its spectrum lies in \([a,b]\), and its sparsity graph is unchanged. Since \(H_J^{-1}=J A_J^{-1}\),
+\[\lVert H_J^{-1}\rVert_{\infty\to\infty}\le C(a,b,D,p)J,\]
+as required.
+\end{proof}
+
+\begin{lemma}[lem:bounded-bernstein-row-concentration]\label{lem:bounded-bernstein-row-concentration}
+Let \(Z_1,\ldots,Z_N\) be independent real random variables with \(E Z_i=0\), \(|Z_i|\le1\) almost surely, and \(N^{-1}\sum_{i=1}^NE Z_i^2\le\nu\). Then, for every \(x>0\),
+\[
+P\!\left\{\left|N^{-1}\sum_{i=1}^NZ_i\right|
+>\sqrt{\frac{2\nu x}{N}}+\frac{2x}{3N}\right\}\le2e^{-x}.
+\]
+\end{lemma}
+\begin{proof}
+For \(0<\lambda<3\), the conditions \(|Z_i|\le1\) and \(E Z_i=0\), together with \(k!\ge2\,3^{k-2}\) for \(k\ge2\), imply
+\[\begin{aligned}E e^{\lambda Z_i}&=1+\sum_{k=2}^{\infty}\frac{\lambda^kE Z_i^k}{k!}\le1+\frac{\lambda^2E Z_i^2}{2(1-\lambda/3)}.\end{aligned}\tag{1}\]
+Using \(\log(1+u)\le u\), independence, and \(\sum_iE Z_i^2\le N\nu\), we obtain
+\[\log E\exp\left(\lambda\sum_{i=1}^NZ_i\right)\le\frac{N\nu\lambda^2}{2(1-\lambda/3)}.\tag{2}\]
+Markov's inequality applied to the exponential in \((2)\), followed by minimization over \(0<\lambda<3\), gives the one-sided Bernstein inequality
+\[P\left\{\sum_{i=1}^NZ_i>\sqrt{2N\nu x}+\frac{2x}{3}\right\}\le e^{-x}.\tag{3}\]
+For completeness, if \(\nu>0\), substitution of
+\[\lambda=\frac{\sqrt{2x/(N\nu)}}{1+\sqrt{2x/(9N\nu)}}\]
+in the Chernoff bound from \((2)\) gives \((3)\) after elementary simplification; if \(\nu=0\), every \(Z_i\) vanishes almost surely and \((3)\) is immediate. Apply \((3)\) also to \(-Z_i\), add the two tail probabilities, and divide the threshold by \(N\). This gives
+\[P\!\left\{\left|N^{-1}\sum_{i=1}^NZ_i\right|>\sqrt{\frac{2\nu x}{N}}+\frac{2x}{3N}\right\}\le2e^{-x},\]
+which is the claimed result.
+\end{proof}
+
+\begin{lemma}[lem:finite-sample-directional-spline-learning-tails]\label{lem:finite-sample-directional-spline-learning-tails}
+Fix \(d\in\{\mathrm{PN},\mathrm{PS}\}\), put \(b=b(d)\), and use the direction-\(d\) learner from \(\texttt{def:pn-learners}\) or \(\texttt{def:ps-learners}\). Under row-wise sampling and the assumptions defining the matching directional upper class, for every fixed \(M>0\) there is \(C_M<\infty\), depending only on the frozen primitive constants and \(M\), such that, uniformly over that upper class and all sufficiently large \(n\),
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle P_n^{\otimes n}\!\left\{\max_{1\le k\le K}
+\left(
+\frac{\lVert\widehat e_{-k,n}-e_n\rVert_\infty}{a_{e,n}}
+\vee
+\frac{\lVert\widehat m_{b,-k,n}-m_{b,n}\rVert_\infty}{a_{b,n}}
+\right)>C_M\right\}\le C_Mn^{-M}.\)}}
+\]
+For \(d=\mathrm{PN}\) the second term uses only \(m_{0,n}\); for \(d=\mathrm{PS}\) it uses only \(m_{1,n}\). In particular, the same bounds hold in \(L_2(P_n)\), and no smoothness condition on the regression belonging to the opposite direction is used.
+\end{lemma}
+\begin{proof}
+Fix a direction \(d\), put \(b=b(d)\), and fix one training fold. Write \(N\) for its size. Balanced fixed-fold splitting gives constants \(0<c_K<C_K<\infty\) such that \(c_Kn\le N\le C_Kn\) for all sufficiently large \(n\). We first establish the deterministic spline bounds and the common high-probability event.
+
+For a degree-\(r\) tensor-product B-spline vector \(B(x)\) on a quasi-uniform grid with \(\kappa\) cells per coordinate and \(J=(\kappa+r+1)^p\), nonnegativity and partition of unity give
+\[0\le B_j(x)\le1,\qquad \sum_{j=1}^JB_j(x)=1.\tag{1}\]
+Each basis function overlaps only a fixed number of other basis functions. The overlap graph is a fixed-range graph on a subset of \(\mathbb Z^p\), and its graph-distance shell of radius \(s\) has at most \(D_{r,p}(s+1)^{p-1}\) vertices. On each grid cell, affine rescaling to the unit cube turns the active splines into a fixed-dimensional polynomial basis with a positive-definite Gram matrix. Quasi-uniformity restricts all rescaled knot configurations to a compact set. The smallest and largest eigenvalues of the local Gram matrices are therefore bounded away from zero and infinity uniformly in \(\kappa\). Summing the local inequalities over cells and using the support-wide bounds on \(f_{X,n}\) yields constants \(0<c<C<\infty\), depending only on the frozen primitives, such that
+\[cJ^{-1}\lVert v\rVert_2^2\le E\{B(X)^\top v\}^2\le CJ^{-1}\lVert v\rVert_2^2,\qquad EB_j(X)\le C/J.\tag{2}\]
+By overlap, multiplication by \(P(A=a\mid X)\), for \(a\in\{0,1\}\), preserves \((2)\) up to constants.
+
+The local Taylor formula through order \(\lceil\beta\rceil-1\), the H\"older remainder in \(\texttt{def:holder}\), and the fixed-degree local spline dual functionals construct a tensor quasi-interpolant \(B^\top\theta^\circ\) for every \(f\in\mathcal H^\beta(L)\) satisfying
+\[\lVert B^\top\theta^\circ-f\rVert_\infty\le C\kappa^{-\beta},\qquad \lVert\theta^\circ\rVert_\infty\le C.\tag{3}\]
+Indeed, the Taylor remainder on a cell is at most \(C\kappa^{-\beta}\); the local dual functionals reproduce its Taylor polynomial and have uniformly bounded operator norms by compactness of the rescaled knot configurations; and the fixed-overlap partition of unity combines the cellwise bounds. For the propensity, let \(\ell_n=\log\{e_n/(1-e_n)\}\). Overlap and the chain rule bound the full H\"older norm of \(\ell_n\) uniformly. The calibrated quasi-interpolation rule encoded by \(\mathsf B_e\) in \(\texttt{def:learners}\) therefore provides \(\theta_e^\circ\) such that
+\[\lVert B^\top\theta_e^\circ-\ell_n\rVert_\infty\le C\kappa^{-\beta_e},\qquad \lVert\theta_e^\circ\rVert_\infty\le\mathsf B_e-1.\tag{4}\]
+
+We now construct a finite-sample event. Every nonzero coordinate of \(B_jB_l\), \(\mathbf1\{A=a\}B_jB_l\), \(B_j\{A-e_n(X)\}\), and \(\mathbf1\{A=a\}B_j\{Y-m_{a,n}(X)\}\) is bounded by one and has second moment at most \(C/J\), by \((1)\)--\((2)\). There are at most \(D_rJ\) nonzero Gram coordinates and at most \(J\) score coordinates. Apply \(\texttt{lem:bounded-bernstein-row-concentration}\) with \(x=(M+4)\log n\), and take a union bound over these coordinates and the fixed number of folds. With
+\[u_{M,n}=C_M\left\{\sqrt{\frac{\log n}{nJ}}+\frac{\log n}{n}\right\},\tag{5}\]
+there is an event \(\mathcal E_{M,n}\) such that
+\[\sup_{P_n}P_n^{\otimes n}(\mathcal E_{M,n}^c)\le C_Mn^{-M},\tag{6}\]
+and, on this event, every preceding empirical coordinate differs from its expectation by at most \(u_{M,n}\). A further coordinatewise application gives \(\max_j\mathbb P_NB_j\le C_M/J\), since
+\[Ju_{M,n}\le C_M\left\{\sqrt{\frac{J\log n}{n}}+\frac{J\log n}{n}\right\}=o(1).\tag{7}\]
+
+Let \(G_N=\mathbb P_N[BB^\top]\) and \(G_{a,N}=\mathbb P_N[\mathbf1\{A=a\}BB^\top]\). Each row of an empirical-minus-population Gram matrix has only a fixed number of nonzero entries. Thus \((2)\), \((5)\), \((7)\), and the maximum-row-sum bound for the spectral norm imply, on \(\mathcal E_{M,n}\),
+\[cJ^{-1}I_J\preceq G_N\preceq CJ^{-1}I_J,\qquad cJ^{-1}I_J\preceq G_{a,N}\preceq CJ^{-1}I_J.\tag{8}\]
+Because \(\lambda=n^{-2}\), the scaled matrices \(J(G_{a,N}+\lambda I_J)\) have spectra in a fixed compact subset of \((0,\infty)\) for all sufficiently large \(n\). They have the fixed-range tensor-lattice sparsity and polynomial shell growth required by \(\texttt{lem:tensor-spline-inverse-row-sum}\). Consequently,
+\[\lVert(G_{a,N}+\lambda I_J)^{-1}\rVert_{\infty\to\infty}\le CJ.\tag{9}\]
+
+Consider the outcome learner for the matching arm \(a=b\), and choose \(\theta_a^\circ\) as in \((3)\). Its ridge normal equation is
+\[(G_{a,N}+\lambda I_J)(\widehat\theta_a-\theta_a^\circ)=\mathbb P_N[\mathbf1\{A=a\}B\{Y-m_{a,n}(X)\}]+\mathbb P_N[\mathbf1\{A=a\}B\{m_{a,n}(X)-B^\top\theta_a^\circ\}]-\lambda\theta_a^\circ.\tag{10}\]
+On \(\mathcal E_{M,n}\), the infinity norm of the right side is at most
+\[u_{M,n}+C\kappa^{-\beta_a}/J+C\lambda.\tag{11}\]
+Equations \((3)\), \((9)\)--\((11)\), and partition of unity give
+\[\lVert B^\top\widehat\theta_a-m_{a,n}\rVert_\infty\le C_M\left\{\kappa^{-\beta_a}+\sqrt{\frac{J\log n}{n}}+\frac{J\log n}{n}+\frac{J}{n^2}\right\}.\tag{12}\]
+For the declared \(\kappa=K_{a,n}\), one has \(J\asymp\kappa^p\), and direct substitution shows
+\[\kappa^{-\beta_a}+\sqrt{\frac{J\log n}{n}}+\frac{J\log n}{n}+\frac{J}{n^2}\le C\left\{\frac{\log n}{n}\right\}^{\beta_a/(2\beta_a+p)}=Ca_{a,n}.\tag{13}\]
+Pointwise projection onto \([0,1]\) is contractive toward the \([0,1]\)-valued true regression, so \((12)\)--\((13)\) prove the asserted outcome-regression bound. Only \(m_{0,n}\) is used in the PN branch, and only \(m_{1,n}\) is used in the PS branch.
+
+It remains to treat the propensity. Put \(p_\theta(x)=\{1+\exp(-B(x)^\top\theta)\}^{-1}\), let \(L_N\) denote the ridge-logistic objective, and set \(s_N=\nabla L_N(\theta_e^\circ)\). The sigmoid is \(1/4\)-Lipschitz. Hence \((4)\), \((5)\), and the local-mass bound imply
+\[\lVert s_N\rVert_\infty\le u_{M,n}+C\kappa^{-\beta_e}/J+Cn^{-2},\qquad J\lVert s_N\rVert_\infty\le C_Ma_{e,n}.\tag{14}\]
+Choose a fixed \(R_M\) larger than the constant in the second bound. For \(\lVert\delta\rVert_\infty\le R_Ma_{e,n}\), define the integrated Hessian
+\[\overline H_N(\delta)=\int_0^1\nabla^2L_N(\theta_e^\circ+u\delta)\,du.\tag{15}\]
+For large \(n\), \(R_Ma_{e,n}<1/2\). By \((4)\), the entire path in \((15)\) lies strictly inside the coefficient cube, and \(|B^\top(\theta_e^\circ+u\delta)|\le\mathsf B_e\). The logistic weights on the path are therefore between
+\[w_\star=\frac{\exp(\mathsf B_e)}{\{1+\exp(\mathsf B_e)\}^2}>0\qquad\text{and}\qquad\frac14.\tag{16}\]
+Equations \((8)\) and \((16)\) show that \(J\overline H_N(\delta)\) has spectrum in a fixed compact subinterval of \((0,\infty)\), uniformly over the displayed cube. It has the same fixed-range sparsity as \(G_N\). The inverse-row-sum lemma gives
+\[\sup_{\lVert\delta\rVert_\infty\le R_Ma_{e,n}}\lVert\overline H_N(\delta)^{-1}\rVert_{\infty\to\infty}\le CJ.\tag{17}\]
+Define \(T_N(\delta)=-\overline H_N(\delta)^{-1}s_N\). Equations \((14)\) and \((17)\) show that \(T_N\) maps the closed cube \(\{\lVert\delta\rVert_\infty\le R_Ma_{e,n}\}\) into itself. The derivative of the logistic weight is bounded, while partition of unity and the empirical local-mass bound give
+\[\lVert\overline H_N(\delta_1)-\overline H_N(\delta_2)\rVert_{\infty\to\infty}\le CJ^{-1}\lVert\delta_1-\delta_2\rVert_\infty.\tag{18}\]
+Using the inverse identity in \((18)\), together with \((14)\) and \((17)\), yields
+\[\lVert T_N(\delta_1)-T_N(\delta_2)\rVert_\infty\le Ca_{e,n}\lVert\delta_1-\delta_2\rVert_\infty\le\frac12\lVert\delta_1-\delta_2\rVert_\infty\tag{19}\]
+for all sufficiently large \(n\). Iteration from zero therefore converges to a fixed point \(\delta_N^\star\) in the cube. The fundamental theorem of calculus and the fixed-point equation give
+\[
+abla L_N(\theta_e^\circ+\delta_N^\star)=s_N+\overline H_N(\delta_N^\star)\delta_N^\star=0.\tag{20}\]
+The positive ridge makes the unrestricted objective strictly convex and coercive. Thus \(\theta_e^\circ+\delta_N^\star\) is its unique minimizer; since it is strictly inside the coefficient cube, it is also the constrained minimizer in \(\texttt{def:learners}\). Partition of unity, \((4)\), and sigmoid Lipschitz continuity now yield
+\[\lVert p_{\widehat\theta_e}-e_n\rVert_\infty\le\frac14\lVert\delta_N^\star\rVert_\infty+C\kappa^{-\beta_e}\le C_Ma_{e,n}.\tag{21}\]
+Projection onto \([\varepsilon/2,1-\varepsilon/2]\) is contractive toward \(e_n\), so \((21)\) also holds for \(\widehat e_{-k,n}\). Combining \((6)\), \((12)\)--\((13)\), and \((21)\), and retaining the fixed-fold union bound, proves the displayed probability inequality uniformly over the matching directional upper class. Supremum-norm control implies the asserted \(L_2(P_n)\) control. Every constant used only the frozen overlap, density, H\"older, degree, dimension, ridge, and fold constants. In particular, no smoothness property of the opposite-direction regression entered either branch.
+\end{proof}
+
+\section{Interpretation}
+
+The factual conditioning event supplies effective count \(nr_n\). Once the directional spline errors are proved smaller than the score scale, the affine score mean fluctuates at order \(\sqrt{r_n/n}\); division by factual slope \(r_n\) gives diameter \((nr_n)^{-1/2}\). The direct inverse-row-sum argument is what converts coordinatewise empirical concentration into the required uniform fitted-function rates. The identical-shell least-favorable pair proves that the resulting diameter order cannot be uniformly improved. When \(nr_n\) is bounded, separated attribution values remain statistically close and honest sets cannot shrink.
+
+\section*{Technical internal limitation (diagnostic only)}
+
+The Gaussian upper theorem requires \(r_n/\{na_{e,n}^2a_{b(d),n}^2\}\to\infty\), eventual shell nonemptiness, and \(V_d(P_n)\ge c_Gr_n\). The matching converse additionally requires least-favorable compatibility, \(c_G\le3/16\), and a vanishing eventually capped schedule, and it matches rates rather than constants. The finite-sample learner argument uses fixed dimension \(p\), fixed spline degree, fixed fold count, quasi-uniform tensor grids, bounded outcomes, and support-wide design-density bounds. The bounded-count theorem remains a lower obstruction rather than a Poisson-calibrated upper procedure.
+
+\section{Honest scope}
+
+The contribution is inference for already identified PN/PS, not new identification, a new efficient influence function, a new cross-fitting principle, or a new generic inverse-decay method. The headline is the conjunction of a known drifting schedule, a nonlinear causal ratio, an identical-shell matched expected-diameter order, and the bounded-effective-count obstruction. The matrix and concentration arguments complete the explicit estimator's achievability proof but create no separate novelty claim. The climate and stroke examples remain consumers rather than demonstrations of shell membership.
+
+\begin{thebibliography}{99}
+
+  \bibitem{TianPearl2000} Jin Tian and Judea Pearl. Probabilities of causation: Bounds and identification. Annals of Mathematics and Artificial Intelligence 28:287--313, 2000. DOI \(10.1023/A:1018912507879\).
+
+  \bibitem{TianWu2025} Zhaoqing Tian and Peng Wu. Semiparametric efficient inference for the probability of necessary and sufficient causation. Statistics in Medicine, 2025. arXiv:2407.10185v1. DOI \(10.1002/\mathrm{sim}.70242\). Relevance: Lemmas 1--2 identify PN and PS, Theorems 1 and 5 give efficiency bounds, Algorithm 1 supplies cross-fitting, and Theorems 3 and 6 give regular inference; the work does not analyze a denominator or score variance shrinking along a triangular array.
+
+  \bibitem{CaiKuroki2005} Zhihong Cai and Manabu Kuroki. Variance estimators for three probabilities of causation. Risk Analysis 25:1611--1620, 2005. DOI \(10.1111/j.1539\text{-}6924.2005.00696.x\).
+
+  \bibitem{ZhangWangMiao2025} Ping Zhang, Ruoyu Wang, and Wang Miao. Causal attribution with confidence. arXiv:2504.08294, 2025.
+
+  \bibitem{ChernozhukovEtAl2018DML} Victor Chernozhukov, Denis Chetverikov, Mert Demirer, Esther Duflo, Christian Hansen, Whitney Newey, and James Robins. Double/debiased machine learning for treatment and causal parameters. The Econometrics Journal, 2018. arXiv:1608.00060v6. DOI \(10.1111/\mathrm{ectj}.12097\). Relevance: Assumption 3.2(d) of arXiv version 6 requires nondegenerate score variance, so its uniform Gaussian theorem does not cover the vanishing score scale \(V_d(P_n)\asymp r_n\to0\).
+
+  \bibitem{Chen2007} Xiaohong Chen. Large sample sieve estimation of semi-nonparametric models. Handbook of Econometrics, volume 6B, 2007. DOI \(10.1016/\mathrm{S1573-4412}(07)06076-X\).
+
+  \bibitem{ChernozhukovNeweySingh2022Riesz} Victor Chernozhukov, Whitney Newey, and Rahul Singh. De-biased machine learning of global and local parameters using regularized Riesz representers. The Econometrics Journal, 2022. DOI \(10.1093/\mathrm{ectj}/\mathrm{utac002}\).
+
+  \bibitem{GleserHwang1987} Leon Jay Gleser and Jiunn T. Hwang. The nonexistence of confidence sets of finite expected diameter in errors-in-variables and related models. Annals of Statistics 15(4):1351--1362, 1987. DOI \(10.1214/\mathrm{aos}/1176350597\).
+
+  \bibitem{KhanTamer2010} Shakeeb Khan and Elie Tamer. Irregular identification, support conditions, and inverse weight estimation. Econometrica, 2010. DOI \(10.3982/\mathrm{ECTA7372}\).
+
+  \bibitem{CuellarKennedy2020} Maria Cuellar and Edward H. Kennedy. A nonparametric projection-based estimator for the probability of causation, with application to water sanitation in Kenya. Journal of the Royal Statistical Society: Series A 183(4):1793--1818, 2020. DOI \(10.1111/\mathrm{rssa}.12548\).
+
+  \bibitem{LiMaoPearl2022} Ang Li, Ruirui Mao, and Judea Pearl. Probabilities of causation: Adequate size of experimental and observational samples. nCSI Workshop at NeurIPS, 2022. arXiv:2210.05027.
+
+  \bibitem{HannartNaveau2018} Alexis Hannart and Philippe Naveau. Probabilities of causation of climate changes. Journal of Climate, 2018. DOI \(10.1175/\mathrm{JCLI-D-17-0304.1}\).
+
+  \bibitem{ChengMaoPearlLi2026} Tianyuan Cheng, Ruirui Mao, Judea Pearl, and Ang Li. General sample size analysis for probabilities of causation: a delta method approach. arXiv:2602.17070, 2026.
+
+  \bibitem{vonLuxburgFranz2009} Ulrike von Luxburg and Volker H. Franz. A Geometric Approach to Confidence Sets for Ratios: Fieller's Theorem, Generalizations, and Bootstrap. Statistica Sinica, 19(3):1095--1117, 2009. arXiv:0711.0198.
+
+  \bibitem{BaiLam2023} Yuanlu Bai and Henry Lam. Uncertainty Quantification and Confidence Intervals for Naive Rare-Event Estimators. arXiv:2305.02434, 2023.
+
+  \bibitem{DerumignyGirardGuyonvarch2019} Alexis Derumigny, Lucas Girard, and Yannick Guyonvarch. On the construction of confidence intervals for ratios of expectations. arXiv:1904.07111, 2019. Relevance: Theorem 3.1 and Theorems 4.1 and 5.1 already treat drifting denominators and a ratio-uniformity obstruction; they do not give causal PN/PS nuisance-robust inference or a matched expected-diameter frontier.
+
+  \bibitem{SmuclerLanniMasip2025} Ezequiel Smucler, Ludovico Lanni, and David Masip. A note on the properties of the confidence set for the local average treatment effect obtained by inverting the score test. arXiv:2506.10449v1, 2025. Relevance: Proposition 1 and Theorem 1 analyze the geometry and fixed-law Wald equivalence of a cross-fitted weak-instrument LATE score inversion; they give no drifting-shell expected-diameter rate or minimax converse.
+
+  \bibitem{Dufour1997} Jean-Marie Dufour. Some impossibility theorems in econometrics with applications to structural and dynamic models. Econometrica 65(6):1365--1388, 1997. Relevance: Dufour is the nearest vanishing-denominator ratio impossibility, but its unbounded-parameter conclusion does not yield the local nonshrinking diameter or matched rate for the bounded PN/PS target.
+
+  \bibitem{BertanhaMoreira2016} Marinho Bertanha and Marcelo J. Moreira. Impossible inference in econometrics: Theory and applications. arXiv:1612.02024, 2016. Relevance: Theorems 2 and 3 organize trivial-power and unbounded-confidence-set impossibilities near nonidentification; they do not provide a shrinking-rate frontier for a bounded causal ratio that remains point identified in every row.
+
+  \bibitem{Low1997} Mark G. Low. On nonparametric confidence intervals. Annals of Statistics 25(6):2547--2554, 1997. Relevance: Low's obstruction concerns adaptation to unknown smoothness; the present schedule is known and the obstruction is instead the effective information count \(nr_n\).
+
+  \bibitem{CaiLow2004} T. Tony Cai and Mark G. Low. An adaptation theory for nonparametric confidence intervals. Annals of Statistics 32(5):1805--1840, 2004. DOI \(10.1214/009053604000000049\). Relevance: Proposition 1, equation (6), is the standard two-point expected-length lower-bound route used here; its modulus attainment theory requires linear functionals and convex spaces and therefore does not supply either side of the PN/PS ratio frontier.
+
+  \bibitem{Donoho1994} David L. Donoho. Statistical estimation and optimal recovery. Annals of Statistics 22(1):238--270, 1994. Relevance: Donoho characterizes linear-functional recovery over fixed convex classes; the nonlinear PN/PS ratio on an \(n\)-indexed monotone shell lies outside that characterization.
+
+  \bibitem{ArmstrongKolesar2018} Timothy B. Armstrong and Michal Kolesar. Optimal inference in a class of regression models. Econometrica 86(2):655--683, 2018. Relevance: Theorem 3.2 and Corollary 3.3 sharpen minimax inference to constants for linear functionals over convex, centrosymmetric classes; this note matches only rates, and monotonicity plus a nonlinear ratio fall outside their key geometry.
+
+  \bibitem{CaiLowXia2013} T. Tony Cai, Mark G. Low, and Yin Xia. Adaptive confidence intervals for regression functions under shape constraints. Annals of Statistics 41(2):722--750, 2013. Relevance: Theorem 1, equations (4)--(5), gives a local-modulus bound at a fixed function in a fixed class; replacing that function by a sequence does not establish uniform attainment on an \(n\)-indexed causal ratio shell.
+
+  \bibitem{CaiGuo2017} T. Tony Cai and Zijian Guo. Confidence intervals for high-dimensional linear regression: Minimax rates and adaptivity. Annals of Statistics 45(2):615--646, 2017. DOI \(10.1214/16\text{-}\mathrm{AOS}1461\). Relevance: Theorem 1, equation (3.1), and Theorem 2, equation (3.12), provide the matched honest expected-length framing with sparsity as model complexity; they do not treat a causal estimand whose own denominator scale drifts.
+
+  \bibitem{AndrewsChengGuggenberger2020} Donald W. K. Andrews, Xu Cheng, and Patrik Guggenberger. Generic results for establishing the asymptotic size of confidence sets and tests. Journal of Econometrics 218(2):496--531, 2020. Relevance: Their drifting-sequence machinery establishes uniform asymptotic size; it does not supply an expected-diameter rate, a causal shell witness, or a matching converse.
+
+  \bibitem{MaWang2020} Xinwei Ma and Jingshen Wang. Robust inference using inverse probability weighting. Journal of the American Statistical Association 115(532):1851--1860, 2020. DOI \(10.1080/01621459.2019.1660173\). Relevance: The paper treats weak-overlap inverse-weight irregularity, not a score variance that vanishes with a factual-event probability or a PN/PS diameter frontier.
+
+  \bibitem{HeilerKazak2021} Philipp Heiler and Ekaterina Kazak. Valid inference for treatment effect parameters under irregular identification and many extreme propensity scores. Journal of Econometrics 222(2):1083--1108, 2021. DOI \(10.1016/j.jeconom.2020.03.025\). Relevance: Theorem 4.1(i)--(ii) gives stable-law behavior, bootstrap failure, and \(m\)-out-of-\(n\) responses to diverging inverse-weight variance; it addresses scale explosion, not the vanishing score scale studied here.
+
+  \bibitem{MaSantAnnaSasakiUra2023} Xinwei Ma, Pedro H. C. Sant'Anna, Yuya Sasaki, and Takuya Ura. Doubly robust estimators with weak overlap. arXiv:2304.08974, 2023. Relevance: Theorem 1(ii) obtains Gaussian behavior only with influence-function variance bounded away from zero; it therefore does not cover \(V_d(P_n)\asymp r_n\to0\).
+
+  \bibitem{Dorn2025} Jacob Dorn. How much weak overlap can doubly robust t-statistics handle? arXiv:2504.13273, 2025. Relevance: Thresholded doubly robust inference makes weak-overlap nuisance costs explicit, but it does not analyze a point-identified PN/PS ratio with score information shrinking as \(r_n\) or its minimax expected diameter.
+
+  \bibitem{HiranoPorter2012} Keisuke Hirano and Jack R. Porter. Impossibility results for nondifferentiable functionals. Econometrica 80(4):1769--1790, 2012. Relevance: Their nonregular-functional impossibility theory does not give a uniformly honest expected-diameter frontier for this smooth-in-each-row but drifting-scale causal ratio.
+
+  \bibitem{Ma2023IdentificationRobustLATE} Yukun Ma. Identification-robust inference for the LATE with high-dimensional covariates. arXiv:2302.09756, February 2023.
+
+\end{thebibliography}
+
+\end{document}

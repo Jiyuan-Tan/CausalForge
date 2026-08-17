@@ -269,15 +269,21 @@ noncomputable def dgpSCM (m : C → ℝ) (g : Bool → C → ℝ) :
               (fun vals : (∀ w : {w // w ∈
                   (initialSWIG wDAG).parents (SWIGNode.random A)},
                   swigΩ (WΩ C) w.val) => (show ℝ from vals iEa)) := by
-            simpa [iEa] using (measurable_pi_apply iEa)
+            exact measurable_pi_apply iEa
           have hX : Measurable
               (fun vals : (∀ w : {w // w ∈
                   (initialSWIG wDAG).parents (SWIGNode.random A)},
                   swigΩ (WΩ C) w.val) => (show C from vals iX)) := by
-            simpa [iX] using (measurable_pi_apply iX)
-          apply measurable_to_bool
-          simpa [Set.preimage, iEa, iX, decide_eq_true_eq] using
-            measurableSet_le hEa ((measurable_of_finite m).comp hX)
+            exact measurable_pi_apply iX
+          -- `decide P` and `if P then true else false` are definitionally equal,
+          -- so we may take the `ite` route and avoid any rewrite inside the goal.
+          show Measurable
+            (fun vals : (∀ w : {w // w ∈
+                (initialSWIG wDAG).parents (SWIGNode.random A)},
+                swigΩ (WΩ C) w.val) =>
+              if (show ℝ from vals iEa) ≤ m (show C from vals iX) then true else false)
+          refine Measurable.ite ?_ measurable_const measurable_const
+          exact measurableSet_le hEa ((measurable_of_finite m).comp hX)
         · let iEy : {w // w ∈ (initialSWIG wDAG).parents (SWIGNode.random Y)} :=
             ⟨SWIGNode.random Ey, wParent_mem (show wEdge Ey Y from trivial)⟩
           let iA : {w // w ∈ (initialSWIG wDAG).parents (SWIGNode.random Y)} :=
@@ -288,17 +294,17 @@ noncomputable def dgpSCM (m : C → ℝ) (g : Bool → C → ℝ) :
               (fun vals : (∀ w : {w // w ∈
                   (initialSWIG wDAG).parents (SWIGNode.random Y)},
                   swigΩ (WΩ C) w.val) => (show ℝ from vals iEy)) := by
-            simpa [iEy] using (measurable_pi_apply iEy)
+            exact measurable_pi_apply iEy
           have hA : Measurable
               (fun vals : (∀ w : {w // w ∈
                   (initialSWIG wDAG).parents (SWIGNode.random Y)},
                   swigΩ (WΩ C) w.val) => (show Bool from vals iA)) := by
-            simpa [iA] using (measurable_pi_apply iA)
+            exact measurable_pi_apply iA
           have hX : Measurable
               (fun vals : (∀ w : {w // w ∈
                   (initialSWIG wDAG).parents (SWIGNode.random Y)},
                   swigΩ (WΩ C) w.val) => (show C from vals iX)) := by
-            simpa [iX] using (measurable_pi_apply iX)
+            exact measurable_pi_apply iX
           have hg : Measurable
               (fun vals : (∀ w : {w // w ∈
                   (initialSWIG wDAG).parents (SWIGNode.random Y)},

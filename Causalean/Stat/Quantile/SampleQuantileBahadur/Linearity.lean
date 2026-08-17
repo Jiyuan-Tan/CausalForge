@@ -51,7 +51,7 @@ lemma Tendsto_inProb.add_zero_zero {Xn Yn : ℕ → Ω → ℝ}
   have hsum := hX2.add hY2
   rw [add_zero] at hsum
   refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hsum
-    (fun n => zero_le _) (fun n => ?_)
+    (fun n => zero_le) (fun n => ?_)
   refine le_trans (measure_mono ?_) (measure_union_le _ _)
   intro ω hω
   simp only [Set.mem_setOf_eq, sub_zero, Real.norm_eq_abs] at hω
@@ -79,7 +79,7 @@ lemma Tendsto_inProb.of_isLittleOp_one {Xn : ℕ → Ω → ℝ}
   have h2 := h (ε / 2) (by linarith)
   simp only [mul_one] at h2
   refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds h2
-    (fun n => zero_le _) (fun n => ?_)
+    (fun n => zero_le) (fun n => ?_)
   refine measure_mono fun ω hω => ?_
   simp only [Set.mem_setOf_eq, sub_zero, Real.norm_eq_abs] at hω ⊢
   linarith
@@ -364,7 +364,7 @@ lemma Tendsto_inProb.const_mul_zero {Xn : ℕ → Ω → ℝ} (c : ℝ)
     have hcpos : 0 < |c| := abs_pos.mpr hc
     have h' := h (ε / |c|) (div_pos hε hcpos)
     refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds h'
-      (fun _ => zero_le _) (fun n => ?_)
+      (fun _ => zero_le) (fun n => ?_)
     apply measure_mono
     intro ω hω
     simp only [Set.mem_setOf_eq, sub_zero, Real.norm_eq_abs] at hω ⊢
@@ -423,7 +423,6 @@ theorem IIDSample.sampleQuantile_isAsymLinear (S : IIDSample Ω ℝ μ P)
     rw [Finset.card_range, S.normalizedSum_quantileIF_eq hf0 hreg.cdf_eq n ω]
     field_simp
     ring
-  simp only [] at hsum
   rw [heq] at hsum
   exact hsum.isLittleOp_one
 

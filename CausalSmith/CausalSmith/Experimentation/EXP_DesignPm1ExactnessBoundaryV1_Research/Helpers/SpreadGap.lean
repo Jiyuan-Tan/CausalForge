@@ -19,6 +19,16 @@ open scoped BigOperators
 
 set_option maxHeartbeats 800000 in
 -- @node: spread_certificate_relaxed_minimizer_and_gap
+/-- Suppose the community size is odd and, in reduced spectral coordinates, the spread
+vertex is the *strict* minimizer of the reduced objective over the reduced triangle. Then
+three things follow at the matrix level: the spread covariance lies in the relaxed
+block-symmetric elliptope slice and is its unique minimizer of the design objective; it is
+not the second moment of any block-exchangeable `±1` design; and the implementability gap
+is strictly positive.
+
+This is the exactness-failure certificate: relaxation and implementation genuinely part
+company precisely when the relaxed optimum is pushed onto the spread vertex that odd
+community parity forbids. -/
 lemma spread_certificate_relaxed_minimizer_and_gap (m : ℕ) (a b r kappa : ℝ)
     (hHom : TwoBlockHomophily m a b) (hk : 0 ≤ kappa) (hOdd : OddCommunitySize m)
     (hcert :

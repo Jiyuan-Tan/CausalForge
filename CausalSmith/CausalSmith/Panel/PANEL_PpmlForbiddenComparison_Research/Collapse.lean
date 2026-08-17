@@ -65,8 +65,7 @@ lemma unit_fe_collapse (T : ℕ) (C : Finset (Cohort T))
     have hcollapsedBeta : Tendsto
         (fun N => (finiteCollapsedProjection T C (G N) (b N) gamma delta).2)
         atTop (nhds (betaStar T C pi barB gamma delta)) := by
-      simpa [finiteCollapsedProjection, betaStar] using
-        (continuous_snd.tendsto
+      exact (continuous_snd.tendsto
           (collapsedPopulationProjection T C pi barB gamma delta)).comp hcollapsed
     apply hcollapsedBeta.congr'
     filter_upwards [Filter.eventually_ge_atTop C.card] with N hcard

@@ -49,7 +49,7 @@ outcome law pushed forward to the observed-data space at that same pair. -/
 
 /-- If the two-point outcome laws are valid probability laws, then the witness outcome
 channel is a Markov kernel. -/
-instance instIsMarkovDoseChannelAX
+lemma instIsMarkovDoseChannelAX
     {p0 : (Fin d → ℝ) → ℝ} {q0 : ℝ → ℝ}
     {B alpha t0 lambda h zeta : ℝ} (hB : 0 < B)
     (hmu : ∀ a x, |doseWitnessMu (d := d) alpha t0 lambda h zeta a x| ≤ B) :

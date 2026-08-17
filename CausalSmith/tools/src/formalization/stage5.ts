@@ -21,6 +21,7 @@ import { PlanSchema } from "./plan/schema.js";
 import { auditCitedReview, auditDelivery } from "./delivery_audit.js";
 import { dispatchAgent } from "../framework/agent_dispatch.js";
 import { parseJsonWithEscapeRepair } from "../shared/codex_json.js";
+import { ensureDocstringCoverage } from "./stage5_docstrings.js";
 
 /**
  * Emit the COMPLETE tex↔Lean crosswalk (the visualization backbone AND the table
@@ -151,11 +152,24 @@ export async function runStage5(args: {
       };
     }
   }
+  // Docstring coverage (docstring-canonical workflow): every declaration in the run's Lean
+  // modules must carry a docstring whose first paragraph is the NL translation — the site
+  // renders it as the statement, and P4 refuses to emit an undocumented bundle. Authored here
+  // (the final Lean-edit point), BEFORE the bank-soundness scan below (the docstring pass
+  // edits Lean, and the token scan must cover the final text) and BEFORE the crosswalk emit
+  // (docstring insertion shifts line numbers; the banked crosswalk records post-docstring lines).
+  {
+    const docstringBlock = await ensureDocstringCoverage(args);
+    if (docstringBlock) {
+      return { stage: "5", status: "checkpoint", advance: false, message: docstringBlock, artifacts: [] };
+    }
+  }
   // Bank-soundness gate: refuse to reach CKPT 2 while the artifact (or any
   // reachable CausalSmith/Mathlib file) still contains a real `sorry` or a
   // cheat token (`axiom`/`opaque`/`native_decide`/`unsafe`). Text-based scan;
   // catches the false-completion class where F3's in-subdir count was clean
-  // but a dependency stub was not.
+  // but a dependency stub was not. Runs AFTER the docstring pass so an edit
+  // that pass made cannot introduce a token behind the scan's back.
   {
     const paths = artifactPaths(args.ctx, args.state);
     const issues = await bankSoundnessIssues(paths.leanDir, args.ctx.repoRoot);

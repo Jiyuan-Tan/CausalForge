@@ -110,8 +110,10 @@ theorem rademacher_orthogonality (n : ℕ) (k l : Fin n) (pkl : k ≠ l):
     _ = _ := by
       apply congrArg
       exact Eq.symm Finset.sum_add_distrib
-  rw [sum_partition]
-  simp [pair_sum_zero n k l pkl]
+  have sum_pairs_zero : ∑ σ : Signs n,
+      ((σ k : ℝ) * σ l + (rademacher_flip n k σ) k * (rademacher_flip n k σ) l) = 0 :=
+    Finset.sum_eq_zero fun σ _ ↦ pair_sum_zero n k l pkl σ
+  rw [sum_partition, sum_pairs_zero, mul_zero]
 
 noncomputable def signVecPMF (n : ℕ) : PMF (Signs n) :=
   PMF.uniformOfFintype (Signs n)

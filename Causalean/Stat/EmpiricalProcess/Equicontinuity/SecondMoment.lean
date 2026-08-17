@@ -121,7 +121,7 @@ theorem empProcVec_sq_lintegral_le [IsProbabilityMeasure μ] [IsProbabilityMeasu
     have h0 : ∀ ω, S.empProcVec f 0 ω = 0 := fun ω => by simp [IIDSample.empProcVec]
     simp only [h0, norm_zero, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow,
       ENNReal.ofReal_zero, lintegral_zero]
-    exact zero_le _
+    exact zero_le
   -- `n ≥ 1`.
   have hf_int : Integrable f P := hf_L2.integrable (by norm_num)
   set b := stdOrthonormalBasis ℝ E with hb

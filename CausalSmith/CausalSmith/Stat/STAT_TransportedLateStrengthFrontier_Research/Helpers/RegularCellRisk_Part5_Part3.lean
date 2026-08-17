@@ -218,7 +218,7 @@ lemma regularCell_collision_moments
           measurable_const measurable_const).aestronglyMeasurable
         |1 / q (cell i)|
       filter_upwards with z
-      split_ifs <;> simp
+      split_ifs with hsplit <;> simp [hsplit]
     rw [show (fun z : 𝒳 × 𝒳 => kernel z.1 z.2) =
         fun z => ∑ i : Fin (k n),
           if z.1 = cell i ∧ z.2 = cell i then 1 / q (cell i) else 0 by
@@ -233,13 +233,13 @@ lemma regularCell_collision_moments
         (Measurable.ite (hcell i) measurable_const measurable_const
           |>.aestronglyMeasurable) |1 / q (cell i)|
       filter_upwards with x
-      split_ifs <;> simp
+      split_ifs with hsplit <;> simp [hsplit]
     have hg : Integrable g μT := by
       apply Integrable.of_bound
         (Measurable.ite (hcell i) measurable_const measurable_const
           |>.aestronglyMeasurable) 1
       filter_upwards with x
-      split_ifs <;> simp
+      split_ifs with hsplit <;> simp [hsplit]
     have hfg :
         (fun z : 𝒳 × 𝒳 =>
           if z.1 = cell i ∧ z.2 = cell i then 1 / q (cell i) else 0) =
@@ -393,7 +393,7 @@ lemma regularCell_collision_moments
           hIV.transportDomination (hcell i)
       rw [integral_singleton' hrnStrong] at hRN
       apply (eq_div_iff (hqpos i).ne').2
-      simpa [transportWeight, sourceCellMass, measureReal_def, mul_comm] using hRN
+      simpa [q, transportWeight, sourceCellMass, measureReal_def, mul_comm] using hRN
     have hmeasure :
         sourceXLaw P n =
           ∑ i, sourceXLaw P n {cell i} • Measure.dirac (cell i) :=
@@ -593,7 +593,9 @@ lemma regularCell_Khat_lower_tail_uniform
         (fun n : ℕ =>
           (((k n : ℝ) / Real.sqrt n) ^ 2) /
             ((N n : ℝ) / (n : ℝ))) atTop (𝓝 0) := by
-    simpa using hkSq.div hN hc.ne'
+    have hdiv := hkSq.div hN hc.ne'
+    rw [zero_div] at hdiv
+    exact hdiv
   have hk2N :
       Tendsto (fun n : ℕ => (k n : ℝ) ^ 2 / (N n : ℝ))
         atTop (𝓝 0) := by

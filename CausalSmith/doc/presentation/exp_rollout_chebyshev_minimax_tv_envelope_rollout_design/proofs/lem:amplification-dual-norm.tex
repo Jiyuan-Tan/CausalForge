@@ -1,4 +1,21 @@
 \begin{proof}[Proof of \cref{obj:lem:amplification-dual-norm}]
+Throughout write
+\[
+\mathcal N=\left\{\sum_{j=0}^k |w_j|:w\in W_\beta(p)\right\},
+\qquad
+\mathcal A=\left\{\left(\sum_{j=0}^k |w_j|\right)^2:w\in W_\beta(p)\right\},
+\]
+and
+\[
+D=
+\sup\left\{
+|r(1)-r(0)|:
+r\in\mathbb R[x],\ \deg(r)\le\beta,\ \max_{0\le j\le k}|r(p_j)|\le1
+\right\}.
+\]
+Call a polynomial \(r\) \emph{admissible} if \(\deg(r)\le\beta\) and \(\max_{0\le j\le k}|r(p_j)|\le1\), so that \(D\) is the supremum of \(|r(1)-r(0)|\) over admissible \(r\).
+
+\emph{Step 1: the moment form of unbiasedness.}
 Rewrite the unbiasedness equations in the single moment form
 \[
 \sum_{j=0}^k w_jp_j^\ell=
@@ -9,13 +26,53 @@ Rewrite the unbiasedness equations in the single moment form
 \qquad 0\le\ell\le\beta .
 \]
 This is equivalent to \(w\in W_\beta(p)\): the case \(\ell=0\) is the zeroth-moment equation in \cref{obj:def:unbiased-weight-set}, while each positive \(\ell\le\beta\) is one of its remaining moment equations. % lean: key
-Consequently the set of attainable \(\ell^1\) norms
-\[
-\left\{\sum_{j=0}^k |w_j|:w\in W_\beta(p)\right\}
-\]
-is exactly the primal norm set for this moment system, and the assumed nonemptiness of \(W_\beta(p)\) gives primal feasibility. % lean: hprimal_set
+Consequently \(\mathcal N\) is exactly the set of attainable \(\ell^1\) norms for this moment system, and the assumed nonemptiness of \(W_\beta(p)\) gives primal feasibility: \(\mathcal N\ne\emptyset\) and \(\mathcal A\ne\emptyset\). % lean: hprimal_set
 
-Finite-dimensional \(\ell^1/\ell^\infty\) duality for the endpoint functional \(r\mapsto r(1)-r(0)\), restricted to polynomials of degree at most \(\beta\), therefore gives
+\emph{Step 2: representation identity.}
+For every \(w\in W_\beta(p)\) and every real polynomial \(r\) with \(\deg(r)\le\beta\),
+\[
+r(1)-r(0)=\sum_{j=0}^k w_j\,r(p_j).
+\]
+Indeed, writing \(r(x)=\sum_{\ell=0}^{\beta}c_\ell x^\ell\) and exchanging the two finite sums,
+\[
+\sum_{j=0}^k w_j\,r(p_j)
+=
+\sum_{\ell=0}^{\beta}c_\ell\sum_{j=0}^k w_jp_j^\ell
+=
+\sum_{\ell=1}^{\beta}c_\ell
+=
+r(1)-r(0),
+\]
+where the middle equality is the moment form of Step 1 and the last uses \(r(1)=\sum_{\ell=0}^{\beta}c_\ell\) and \(r(0)=c_0\). % lean: repr_identity
+
+\emph{Step 3: weak duality.}
+Let \(w\in W_\beta(p)\) and let \(r\) be admissible. By Step 2 and the triangle inequality,
+\[
+|r(1)-r(0)|
+=
+\left|\sum_{j=0}^k w_j\,r(p_j)\right|
+\le
+\sum_{j=0}^k |w_j|\,|r(p_j)|
+\le
+\sum_{j=0}^k |w_j| ,
+\]
+the last step because \(|r(p_j)|\le1\) for every node. % lean: dual_le_primal
+Thus every value \(|r(1)-r(0)|\) is bounded above by every element of \(\mathcal N\). Since \(\mathcal N\ne\emptyset\), the set of dual values is bounded above, so \(D\) is a finite real number, and
+\[
+D\le \inf\mathcal N .
+\] % lean: sSup_dual_le_sInf_primal_of_momentSol_nonempty
+Moreover the zero polynomial is admissible with \(|r(1)-r(0)|=0\), so \(0\) belongs to the dual value set and
+\[
+D\ge 0 .
+\] % lean: dual_nonneg_of_momentSol_nonempty
+
+\emph{Step 4: strong duality.}
+There exists \(w^\star\in W_\beta(p)\) with
+\[
+\sum_{j=0}^k |w^\star_j|\le D .
+\]
+Indeed, by Step 2 the endpoint value \(r(1)-r(0)\) depends on \(r\) only through the node-value vector \(\left(r(p_j)\right)_{j=0}^k\), so it defines a linear functional on the subspace of \(\mathbb R^{k+1}\) spanned by such vectors; by the definition of \(D\) that functional is dominated there by the sublinear majorant \(x\mapsto D\max_{0\le j\le k}|x_j|\). Extending it to all of \(\mathbb R^{k+1}\) under the same majorant, its coordinate values \(w^\star_j\) again satisfy the moment equations of Step 1, hence \(w^\star\in W_\beta(p)\); and evaluating the extension at the sign vector \(\varepsilon_j=\operatorname{sign}(w^\star_j)\) gives \(\sum_j|w^\star_j|\le D\max_j|\varepsilon_j|=D\). % lean: exists_moment_le_dual_of_momentSol_nonempty
+In particular \(\inf\mathcal N\le D\), which combined with Step 3 gives the first assertion,
 \[
 \inf_{w\in W_\beta(p)}\sum_{j=0}^k |w_j|
 =
@@ -25,23 +82,15 @@ Finite-dimensional \(\ell^1/\ell^\infty\) duality for the endpoint functional \(
 \right\}.
 \] % lean: l1_repr_eq_sup_dual_of_momentSol_nonempty
 
-For the squared identity, let
+\emph{Step 5: the squared identity.}
+The set \(\mathcal A\) is nonempty by Step 1 and bounded below by \(0\), so \(\inf\mathcal A\) is a well-defined real number.
+For every \(w\in W_\beta(p)\) we have \(0\le D\le \sum_j|w_j|\) by Steps 3 and 4, hence \(D^2\le\left(\sum_j|w_j|\right)^2\); taking the infimum over \(\mathcal A\) gives
 \[
-D=
-\sup\left\{
-|r(1)-r(0)|:
-\deg(r)\le\beta,\ \max_{0\le j\le k}|r(p_j)|\le1
-\right\}.
-\]
-The zero polynomial is feasible on the dual side, so \(D\ge0\). % lean: dual_nonneg_of_momentSol_nonempty
-Let
+D^2\le\inf\mathcal A .
+\] % lean: hAmp_lower
+Conversely, the weight \(w^\star\) of Step 4 satisfies \(0\le\sum_j|w^\star_j|\le D\), and therefore
 \[
-\mathcal A=\left\{\left(\sum_{j=0}^k |w_j|\right)^2:w\in W_\beta(p)\right\}.
-\]
-This set is nonempty and bounded below by \(0\). For every feasible \(w\), the first duality equality gives \(D\le \sum_j |w_j|\), hence \(D^2\le(\sum_j |w_j|)^2\); taking the infimum over \(\mathcal A\) gives \(D^2\le\inf\mathcal A\). % lean: hAmp_lower
-Conversely, strong duality supplies a feasible \(w\in W_\beta(p)\) with \(\sum_j |w_j|\le D\), and therefore
-\[
-\inf\mathcal A\le \left(\sum_j|w_j|\right)^2\le D^2.
+\inf\mathcal A\le \left(\sum_{j=0}^k|w^\star_j|\right)^2\le D^2 .
 \] % lean: exists_moment_le_dual_of_momentSol_nonempty
 Thus \(\inf\mathcal A=D^2\). Since \cref{obj:def:amplification-criterion} defines \(A_\beta(p)\) as precisely this infimum, the claimed squared formula follows. % lean: amplification_dual_norm
 \end{proof}

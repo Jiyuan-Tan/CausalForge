@@ -327,16 +327,17 @@ theorem contamination_representation_split (P : EventStudySystem T)
     rcases ge with ⟨g, e⟩
     simp [admissibleCells, cohortsAtEvent]
     constructor
-    · intro h
-      have hg : g ∈ P.cohorts := h.1.1.1
-      have heSupport : e ∈ D.eventSupport := h.1.1.2
-      have hAdm : P.AdmissibleCell g e := h.1.2
-      have heq : e = D.displayedEvent := h.2
-      exact ⟨⟨hg, ⟨by simpa [← heq] using heSupport,
-        by simpa [← heq] using hAdm⟩⟩, heq.symm⟩
-    · rintro ⟨⟨hg, hDisplayedSupport, hAdm⟩, heq⟩
-      exact ⟨⟨⟨hg, by simpa [heq] using hDisplayedSupport⟩,
-        by simpa [heq] using hAdm⟩, heq.symm⟩
+    · rintro ⟨⟨⟨hg, heSupport⟩, hAdm⟩, rfl⟩
+      exact ⟨g, ⟨hg, heSupport, hAdm⟩, rfl⟩
+    · rintro ⟨a, ⟨hg, hDisplayedSupport, hAdm⟩, hEq⟩
+      -- `simp` no longer reduces the `Function.Embedding` structure-literal application,
+      -- so restate the pair equation in reduced form (definitionally equal).
+      have hEq' : (a, D.displayedEvent) = (g, e) := hEq
+      have ha : a = g := congrArg Prod.fst hEq'
+      have he : D.displayedEvent = e := congrArg Prod.snd hEq'
+      subst ha
+      subst he
+      exact ⟨⟨⟨hg, hDisplayedSupport⟩, hAdm⟩, rfl⟩
   calc
     D.mu = ∑ ge ∈ P.admissibleCells D.eventSupport, F ge := hMain
     _ =

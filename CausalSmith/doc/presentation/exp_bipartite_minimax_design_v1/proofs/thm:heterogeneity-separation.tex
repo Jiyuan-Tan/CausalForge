@@ -1,30 +1,53 @@
 \begin{proof}[Proof of \cref{obj:thm:heterogeneity-separation}]
+Throughout, \(e_k\) is the \(k\)-th coordinate vector on \(\mathbb R^{I_n}\), and we write
+\[
+\eta_{\mathrm{box}}=\min\{\rho-\epsilon,\,1-\epsilon-\rho\}>0,
+\]
+which is positive because \(\epsilon<\rho<1-\epsilon\).  Recall from \cref{obj:def:kkt-gradient} that \(g_k(G_n,p)\) is the partial derivative of \(V_{\mathrm{env}}(G_n,\cdot)/4\) in coordinate \(k\).
+
 \begin{enumerate}
-\item Suppose that the homogeneous-point gradient scores are not all equal.  First, \(p^{\mathrm{hom}}\in\mathcal P_{n,B_n,\epsilon}\): each coordinate equals \(\rho\in(\epsilon,1-\epsilon)\), and
+\item Suppose that the homogeneous-point gradient scores are not all equal.  First, \(p^{\mathrm{hom}}\in\mathcal P_{n,B_n,\epsilon}\): each coordinate equals \(\rho\in(\epsilon,1-\epsilon)\subseteq[0,1]\), and
 \[
 \sum_{k\in I_n}p^{\mathrm{hom}}_k=m_n\rho=B_n.
 \]
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.homogeneous_feasible
 
 For later use, fix arbitrary \(a,b\in I_n\), write
 \[
-d=e_b-e_a,\qquad
-T=\min\{\rho-\epsilon,\,1-\epsilon-\rho\},
+d=e_b-e_a,
 \]
 and set
 \[
 \gamma(s)=\frac14V_{\mathrm{env}}(G_n,p^{\mathrm{hom}}+sd).
 \]
-The segment \(p^{\mathrm{hom}}+sd\) is feasible for \(s\in[-T,T]\).  For \(s\geq0\), this follows directly from the bounds defining \(T\); for \(s<0\), it follows by applying the same argument with \(a\) and \(b\) exchanged.  Moreover, \(|d_k|\leq1\) for every \(k\), and, on \(0\leq s\leq T\), both coordinates \(p^{\mathrm{hom}}_k+sd_k\) and their complements are at least \(\epsilon/2\).
-
-Consequently, \(\gamma\) is twice continuously differentiable on \([0,T]\), differentiable at \(0\), and
+The segment \(p^{\mathrm{hom}}+sd\) is feasible for \(s\in[-\eta_{\mathrm{box}},\eta_{\mathrm{box}}]\).  Indeed \(d_k\in\{-1,0,1\}\), so for \(0\le s\le\eta_{\mathrm{box}}\) every coordinate satisfies
 \[
-\gamma'(0)=g_b(G_n,p^{\mathrm{hom}})-g_a(G_n,p^{\mathrm{hom}}).
+\epsilon\le\rho-s\le\rho+sd_k\le\rho+s\le1-\epsilon
 \]
-Writing \(L_{ab}\) for the directional modulus along \(d\), convexity of the envelope from \cref{obj:thm:convex-design}, together with the directional curvature representation, gives
+by the two bounds defining \(\eta_{\mathrm{box}}\); the budget is preserved because
 \[
-0\leq L_{ab},
+\sum_{k\in I_n}d_k=1-1=0 ,
+\]
+so \(\sum_k(p^{\mathrm{hom}}_k+sd_k)=B_n\).  For \(s<0\) the same argument applies with \(a\) and \(b\) exchanged, since \(-(e_b-e_a)=e_a-e_b\).  Moreover \(|d_k|\leq1\) for every \(k\), and, on \(0\leq s\leq\eta_{\mathrm{box}}\),
+\[
+p^{\mathrm{hom}}_k+sd_k\ge\rho-s\ge\epsilon\ge\epsilon/2,
 \qquad
-\gamma''(s)\leq L_{ab}\quad(0\leq s\leq T).
+1-(p^{\mathrm{hom}}_k+sd_k)\ge1-\rho-s\ge\epsilon\ge\epsilon/2 .
+\]
+On that region the envelope coincides with the globally twice continuously differentiable extension obtained by replacing each reciprocal factor by a \(C^2\) cutoff that agrees with \(x^{-1}\) for \(x\ge\epsilon/2\); consequently \(\gamma\) is twice continuously differentiable on \([0,\eta_{\mathrm{box}}]\) and differentiable at \(0\).  Its first derivative at the origin is the directional derivative of \(V_{\mathrm{env}}(G_n,\cdot)/4\) along \(d\), namely
+\[
+\gamma'(0)=\sum_{k\in I_n}d_k\,g_k(G_n,p^{\mathrm{hom}})
+=g_b(G_n,p^{\mathrm{hom}})-g_a(G_n,p^{\mathrm{hom}}).
+\]
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.envelopeLineC2Data_holds
+
+Writing \(L_{ab}\) for the directional modulus along \(d\), the second derivative of \(\gamma\) at a parameter \(t\) is the directional curvature of \(V_{\mathrm{env}}(G_n,\cdot)/4\) at the feasible base point \(p^{\mathrm{hom}}+td\); since \(L_{ab}\) is by definition the supremum of that curvature over \(\mathcal P_{n,B_n,\epsilon}\) — a genuine finite supremum, because the curvature is continuous in the base point and the feasible class is compact by \cref{obj:thm:convex-design} — we get
+\[
+\gamma''(t)\leq L_{ab}\quad(0\leq t\leq \eta_{\mathrm{box}}).
+\]
+Convexity of the envelope from \cref{obj:thm:convex-design} makes \(\gamma\) convex on \([-\eta_{\mathrm{box}},\eta_{\mathrm{box}}]\) (a convex function restricted to an affine line), so \(\gamma''(0)\ge0\), and therefore
+\[
+0\leq\gamma''(0)\le L_{ab}.
 \]
 
 We next show that \(p^{\mathrm{hom}}\) is not a minimizer.  Otherwise, \cref{obj:thm:convex-design} supplies a budget multiplier \(\lambda_n\) and nonnegative upper- and lower-box multipliers \(\nu^+_{k,n}\) and \(\nu^-_{k,n}\) satisfying
@@ -38,16 +61,17 @@ together with the complementary-slackness identities
 \qquad
 \nu^-_{k,n}\bigl(\epsilon-p^{\mathrm{hom}}_k\bigr)=0.
 \]
-Since every homogeneous coordinate is strictly interior, both factors multiplying the respective multipliers are nonzero.  Thus \(\nu^+_{k,n}=\nu^-_{k,n}=0\) for every \(k\), so all gradient scores equal \(\lambda_n\), a contradiction.
+Since \(\epsilon<\rho<1-\epsilon\), both factors multiplying the respective multipliers are nonzero.  Thus \(\nu^+_{k,n}=\nu^-_{k,n}=0\) for every \(k\), so all gradient scores equal \(\lambda_n\), a contradiction.
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.homogeneous_not_minimizer_of_gradient_spread
 
 Choose \(a\) attaining the maximum and \(b\) attaining the minimum of
-\(k\mapsto g_k(G_n,p^{\mathrm{hom}})\).  If these extrema were equal, all scores would be equal, contrary to hypothesis.  Hence
+\(k\mapsto g_k(G_n,p^{\mathrm{hom}})\), which exist because \(I_n\) is finite and nonempty.  If these extrema were equal, all scores would be equal, contrary to hypothesis.  Hence
 \[
 \Delta_g
 =g_a(G_n,p^{\mathrm{hom}})-g_b(G_n,p^{\mathrm{hom}})
 >0.
 \]
-For the above line function associated with these extremal indices,
+For the line function associated with these extremal indices, the derivative identity above reads
 \[
 \gamma'(0)=-\Delta_g.
 \]
@@ -55,32 +79,43 @@ Define
 \[
 s_*=
 \begin{cases}
-T, & L_{ab}=0,\\
-\min\{T,\Delta_g/L_{ab}\}, & L_{ab}\ne0.
+\eta_{\mathrm{box}}, & L_{ab}=0,\\
+\min\{\eta_{\mathrm{box}},\,\Delta_g/L_{ab}\}, & L_{ab}\ne0 .
 \end{cases}
 \]
-The one-dimensional second-order descent estimate yields \(s_*\in[0,T]\) and
+Then \(s_*\in[0,\eta_{\mathrm{box}}]\), and integrating the curvature bound twice from the origin gives the quadratic model
+\[
+\gamma(s)\leq\gamma(0)+\gamma'(0)s+\frac{L_{ab}}{2}s^2
+=\gamma(0)-\Delta_gs+\frac{L_{ab}}{2}s^2
+\qquad(0\le s\le\eta_{\mathrm{box}}),
+\]
+so that \(\gamma(0)-\gamma(s)\ge\Delta_gs-\tfrac12L_{ab}s^2\).  At \(s=s_*\) we have \(L_{ab}s_*\le\Delta_g\) (trivially when \(L_{ab}=0\), and by \(s_*\le\Delta_g/L_{ab}\) otherwise), hence \(\tfrac12L_{ab}s_*^2\le\tfrac12\Delta_gs_*\) and
 \[
 \gamma(0)-\gamma(s_*)\geq \frac{\Delta_g}{2}s_*.
 \]
-The design \(q=p^{\mathrm{hom}}+s_*d\) is feasible.  Therefore, for every
+The design \(q=p^{\mathrm{hom}}+s_*d\) is feasible by the segment argument above.  Therefore, for every
 \(p_n^*(G_n)\in\operatorname{argmin}_{p\in\mathcal P_{n,B_n,\epsilon}}
 V_{\mathrm{env}}(G_n,p)\),
 \[
 V_{\mathrm{env}}(G_n,p_n^*(G_n))
 \leq V_{\mathrm{env}}(G_n,q).
 \]
-Multiplying the preceding descent inequality by \(4\) gives
+Multiplying the preceding descent inequality by \(4\), and using \(4\gamma(0)=V_{\mathrm{env}}(G_n,p^{\mathrm{hom}})\) and \(4\gamma(s_*)=V_{\mathrm{env}}(G_n,q)\), gives
 \[
 V_{\mathrm{env}}(G_n,p^{\mathrm{hom}})
 -
 V_{\mathrm{env}}(G_n,p_n^*(G_n))
-\geq 2\Delta_gs_*,
+\geq
+V_{\mathrm{env}}(G_n,p^{\mathrm{hom}})
+-
+V_{\mathrm{env}}(G_n,q)
+\geq 2\Delta_gs_* ,
 \]
-which is the asserted bound after substituting \(T\) and \(s_*\).
+which is the asserted bound after substituting \(\eta_{\mathrm{box}}\) and \(s_*\).
 
 Finally, \(p_n^*(G_n)\neq p^{\mathrm{hom}}\), since otherwise
-\(p^{\mathrm{hom}}\) would be a minimizer.  Optimality gives the corresponding weak inequality in envelope values; equality would again make \(p^{\mathrm{hom}}\) a minimizer.  Thus
+\(p^{\mathrm{hom}}\) would be a minimizer.  Optimality and feasibility of \(p^{\mathrm{hom}}\) give
+\(V_{\mathrm{env}}(G_n,p_n^*(G_n))\le V_{\mathrm{env}}(G_n,p^{\mathrm{hom}})\); equality would again make \(p^{\mathrm{hom}}\) a minimizer.  Thus
 \[
 V_{\mathrm{env}}(G_n,p_n^*(G_n))
 <
@@ -88,16 +123,24 @@ V_{\mathrm{env}}(G_n,p^{\mathrm{hom}}).
 \]
 % lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.envelope_segment_descent_gap
 
-\item Now suppose that \(|N_i(G_n)|=1\) for every \(i\in O_n\), and fix \(k\in I_n\).  If \(k\in S_{ij}(G_n)\), then \(S_{ij}(G_n)\) is a nonempty subset of \(N_i(G_n)\), and hence has cardinality one.  Therefore every nonzero summand in the homogeneous-point gradient formula equals
+\item Now suppose that \(|N_i(G_n)|=1\) for every \(i\in O_n\), and fix \(k\in I_n\).  If \(k\in S_{ij}(G_n)\), then \(S_{ij}(G_n)\) is a nonempty subset of \(N_i(G_n)\), and hence has cardinality one, so \(S_{ij}(G_n)=\{k\}\).  Therefore every nonzero summand in the gradient formula of \cref{obj:def:kkt-gradient}, evaluated at \(p^{\mathrm{hom}}\), equals
 \[
-(1-\rho)^{-2}-\rho^{-2}.
+-\left(\prod_{\ell\in\{k\}}\rho^{-1}\right)\rho^{-1}
++\left(\prod_{\ell\in\{k\}}(1-\rho)^{-1}\right)(1-\rho)^{-1}
+=(1-\rho)^{-2}-\rho^{-2}.
 \]
-The number of ordered pairs \((i,j)\) such that \(k\in S_{ij}(G_n)\) is \(s_k^2\).  Substitution into the gradient formula gives
+Moreover \(k\in S_{ij}(G_n)\) holds exactly when \(k\in N_i(G_n)\) and \(k\in N_j(G_n)\), that is when both \(i\) and \(j\) lie in \(M_k(G_n)\); the number of such ordered pairs is therefore
+\[
+\left|M_k(G_n)\right|^2=s_k^2 .
+\]
+Substitution into the gradient formula gives
 \[
 g_k(G_n,p^{\mathrm{hom}})
 =
 n^{-1}s_k^2\left((1-\rho)^{-2}-\rho^{-2}\right).
 \]
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.shared_card_eq_one_of_singleton
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.sum_indicator_shared_eq_sdeg_sq_mul
 % lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.singleton_envelopeGrad_eq_sdeg_sq
 
 \item Retain the singleton-neighborhood condition and suppose that
@@ -109,7 +152,12 @@ This scalar is nonzero.  Indeed, if \(C=0\), then
 \((1-\rho)^2=\rho^2\); thus either \(1-\rho=\rho\), contradicting
 \(\rho\neq1/2\), or \(1-\rho=-\rho\), which would imply \(1=0\).
 
-Also \(n>0\).  Otherwise \(O_n\) would be empty, every intervention-side degree quantity would vanish, and \(s_a^2\neq s_b^2\) would be impossible.  Hence \(n^{-1}C\neq0\).  The formula from the preceding step then implies
+Also \(n>0\).  Otherwise \(O_n\) would be empty, so \(M_k(G_n)\subseteq O_n\) would be empty and \(s_k=0\) for every \(k\), making \(s_a^2\neq s_b^2\) impossible.  Hence \(n^{-1}C\neq0\), and the formula of the preceding step gives
+\[
+g_a(G_n,p^{\mathrm{hom}})-g_b(G_n,p^{\mathrm{hom}})
+=n^{-1}C\left(s_a^2-s_b^2\right)\neq0 ,
+\]
+so that
 \[
 g_a(G_n,p^{\mathrm{hom}})\neq g_b(G_n,p^{\mathrm{hom}}).
 \]

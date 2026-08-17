@@ -278,10 +278,10 @@ private lemma finiteCondProb_iInter
         by_cases hmem : i ∈ I
         · have hi' : ω' i ∈ F i ∩ r ⁻¹' sets i := by
             simpa [G, hmem] using hi
-          simpa [F] using hi'.1
+          simpa [F, finiteProductDesign] using hi'.1
         · have hi' : ω' i ∈ F i := by
             simpa [G, hmem] using hi
-          simpa [F] using hi'
+          simpa [F, finiteProductDesign] using hi'
       · intro i hi
         have hi' : ω' i ∈ F i ∩ r ⁻¹' sets i := by
           simpa [G, hi] using hGω i
@@ -350,10 +350,10 @@ private lemma finiteCondProb_iInter
           · subst j
             have hj : ω' i ∈ F i ∩ r ⁻¹' sets i := by
               simpa [H] using hHω i
-            simpa [F] using hj.1
+            simpa [F, finiteProductDesign] using hj.1
           · have hj : ω' j ∈ F j := by
               simpa [H, hji] using hHω j
-            simpa [F] using hj
+            simpa [F, finiteProductDesign] using hj
         · have hj : ω' i ∈ F i ∩ r ⁻¹' sets i := by
             simpa [H] using hHω i
           simpa [finiteProductResidual] using hj.2

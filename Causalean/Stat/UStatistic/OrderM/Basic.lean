@@ -345,8 +345,8 @@ theorem sum_injectiveTuples_two_eq_offDiag (S : IIDSample Ω X μ P)
     intro a b hab
     fin_cases a <;> fin_cases b
     · rfl
-    · exact False.elim ((Finset.mem_offDiag.mp hp).2.2 (by simpa using congrArg Fin.val hab))
-    · exact False.elim ((Finset.mem_offDiag.mp hp).2.2 (by simpa using congrArg Fin.val hab.symm))
+    · exact False.elim ((Finset.mem_offDiag.mp hp).2.2 (congrArg Fin.val hab))
+    · exact False.elim ((Finset.mem_offDiag.mp hp).2.2 (congrArg Fin.val hab.symm))
     · rfl
   · intro t ht
     funext j
@@ -391,9 +391,9 @@ theorem uStatisticOrder_two_eq_uStatistic (S : IIDSample Ω X μ P)
         intro a b hab
         fin_cases a <;> fin_cases b
         · rfl
-        · exact False.elim ((Finset.mem_offDiag.mp hp).2.2 (by simpa using congrArg Fin.val hab))
+        · exact False.elim ((Finset.mem_offDiag.mp hp).2.2 (congrArg Fin.val hab))
         · exact False.elim ((Finset.mem_offDiag.mp hp).2.2
-            (by simpa using congrArg Fin.val hab.symm))
+            (congrArg Fin.val hab.symm))
         · rfl
       · exact Prod.ext rfl rfl)
   have hoff : ((Finset.range n).offDiag.card : ℝ) = (n : ℝ) * ((n : ℝ) - 1) := by

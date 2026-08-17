@@ -364,6 +364,7 @@ private lemma laplaceMechPi_eq_pi_shift {D ι : Type*} [Fintype ι]
       exact ⟨by fun_prop, rfl⟩)
   rw [laplaceMechPi]
   convert hmp.map_eq using 1
+  rfl
 
 /-- A finite vector query with a positive ℓ¹-sensitivity bound becomes purely differentially
 private when each coordinate receives independent Laplace noise calibrated by dividing that bound

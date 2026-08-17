@@ -212,7 +212,8 @@ theorem QmechMeasure_singleton_eq_qLocalMass
     intro D hD
     have hnew := M.fixSetExtend_apply_new_fixed W hWobs hWfix s
       (valuesProjection (M.mechComplementNames_image_random_subset_observed S) x) hD
-    simpa [s', W, mechDoValues, valuesProjection] using hnew.symm
+    simp only [s', mechDoValues]
+    exact hnew.symm
   have hproj : M.fixSetProj W hWobs hWfix s' = s := by
     simpa [s', W, hWobs, hWfix, mechDoValues] using
       (M.fixSetProj_fixSetExtend W hWobs hWfix s
@@ -606,7 +607,7 @@ private lemma obsStepCondKernel_singleton_eq_prefix_ratio
   have hfun :
       (fun ω : M.ObservedValues => (valuesProjection hCC ω, valuesProjection hY ω)) =
         e ∘ valuesProjection (M.prefixNodes_subset_observed (i.val + 1)) := by
-    simpa [e, hY, hCC] using (M.prefixSucc_projection_pair i.isLt).symm
+    exact (M.prefixSucc_projection_pair i.isLt).symm
   rw [hfun]
   rw [← MeasureTheory.Measure.map_map e.measurable
     (measurable_valuesProjection (M.prefixNodes_subset_observed (i.val + 1)))]

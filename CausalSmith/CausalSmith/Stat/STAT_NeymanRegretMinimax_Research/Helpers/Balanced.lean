@@ -23,10 +23,11 @@ constant is measurable. -/
 lemma badFirst_measurable (T : ℕ) (c : ℝ) :
     MeasurableSet {path : Fin T → NeymanRecord | ∃ t : Fin T, (path t).1 ≠ c} := by
   classical
-  simpa [Set.setOf_exists] using
-    (MeasurableSet.iUnion fun t : Fin T =>
-      (measurableSet_singleton c).compl.preimage
-        (measurable_fst.comp (measurable_pi_apply t)))
+  rw [Set.setOf_exists]
+  exact MeasurableSet.iUnion fun t : Fin T =>
+    (measurableSet_singleton c).compl.preimage
+      ((measurable_pi_apply t).fst :
+        Measurable fun path : Fin T → NeymanRecord => (path t).1)
 
 -- @node: stepKernel_const_first
 /-- A one-step kernel emitted at propensity `c` has first record coordinate `c`
@@ -62,10 +63,10 @@ lemma stepKernel_const_first (nu : Measure (ℝ × ℝ)) (c : ℝ) :
                       ∂(Causalean.Mathlib.Probability.bernoulliLaw c) :=
                     Measure.bind_apply_le _ hs
               _ = 0 := by simp [S]
-          · exact zero_le _
+          · exact zero_le
         exact le_of_eq hinner
       _ = 0 := by simp
-  · exact zero_le _
+  · exact zero_le
 
 -- @node: snocRecord_measurable
 /-- Appending a record to a finite history is measurable as a function of the new
@@ -75,7 +76,8 @@ lemma snocRecord_measurable {T : ℕ} (hist : Fin T → NeymanRecord) :
   rw [measurable_pi_iff]
   intro i
   refine Fin.lastCases ?_ ?_ i
-  · simpa [Fin.snoc_last] using (measurable_id : Measurable (fun r : NeymanRecord => r))
+  · simp only [Fin.snoc_last]
+    exact measurable_id
   · intro j
     simp [Fin.snoc_castSucc]
 
@@ -127,7 +129,7 @@ lemma pathLaw_const_policy_first (nu : Measure (ℝ × ℝ)) (c : ℝ) :
                 simpa [Fin.snoc_castSucc] using hhist j
             exact hnot hmem
           _ = 0 := by simp
-      · exact zero_le _
+      · exact zero_le
 
 -- @node: balanced_diagonal_threePoint_mtan_witness
 /-- A diagonal coupling of a symmetric three-point law on `{0, 1/2, 1}` gives a

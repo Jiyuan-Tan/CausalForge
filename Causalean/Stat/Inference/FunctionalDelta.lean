@@ -79,7 +79,7 @@ theorem isLittleOp_one_of_measure_ne_tendsto_zero {Xn Yn : ℕ → Ω → ℝ}
     rw [heq, sub_self, abs_zero, mul_one] at hω
     exact absurd hω (not_lt.2 (le_of_lt hε))
   refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds h
-    (fun n => zero_le _) (fun n => measure_mono (hsub n))
+    (fun n => zero_le) (fun n => measure_mono (hsub n))
 
 /-! ## Probability-measure instances for the lattice pushforwards
 

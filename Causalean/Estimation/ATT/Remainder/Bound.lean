@@ -131,7 +131,7 @@ theorem aipw_remainder_bound_ATT
     infer_instance
   have hprod_int : Integrable (fun x => de x * dμ x) S.P_X := by
     have hmul : MemLp (fun x => de x * dμ x) 1 S.P_X := by
-      simpa [dμ, de, mul_comm] using hΔe_memLp.mul hΔμ₀_memLp
+      exact hΔμ₀_memLp.mul' hΔe_memLp
     exact hmul.integrable (by norm_num)
   have hbound_int : Integrable bound S.P_X := by
     simpa [bound] using hprod_int.norm.const_mul (aipw_rem_const_ATT ε)

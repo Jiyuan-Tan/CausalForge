@@ -1,0 +1,1757 @@
+{
+  "qid": "stat_bdd_uniform_log_penalty",
+  "specialization": "v1",
+  "cluster": "stat",
+  "symbols": [
+    {
+      "name": "n",
+      "type": "sample size",
+      "space": "\\(\\mathbb{N}\\)",
+      "def": "The number of independently sampled units.",
+      "role": "index"
+    },
+    {
+      "name": "t",
+      "type": "treatment index",
+      "space": "\\(\\{0,1\\}\\)",
+      "def": "The treatment arm index.",
+      "role": "index"
+    },
+    {
+      "name": "s",
+      "type": "nonnegative radial distance",
+      "space": "\\([0,\\infty)\\)",
+      "def": "The unsigned radius from a boundary point used to index an exact-distance regression.",
+      "role": "index"
+    },
+    {
+      "name": "q",
+      "type": "regression smoothness order",
+      "space": "\\(\\mathbb{N}\\)",
+      "def": "The H\\\"older order of the bivariate potential-outcome regressions, with \\(q\\geq1\\).",
+      "role": "regime parameter"
+    },
+    {
+      "name": "\\iota",
+      "type": "boundary smoothness order",
+      "space": "\\(\\mathbb{N}\\)",
+      "def": "The order of the smooth embedded assignment-boundary chart, with \\(\\iota\\geq1\\).",
+      "role": "regime parameter"
+    },
+    {
+      "name": "L",
+      "type": "regularity envelope",
+      "space": "\\([4,\\infty)\\)",
+      "def": "A fixed envelope for support size, score density, outcome smoothness, and moments.",
+      "role": "law-class constant"
+    },
+    {
+      "name": "c_{-}",
+      "type": "two-sided design-thickness constant",
+      "space": "\\((0,1/(16L)]\\)",
+      "def": "The fixed lower constant for arm-specific probability mass in boundary balls.",
+      "role": "law-class constant",
+      "refs": [
+        "L"
+      ]
+    },
+    {
+      "name": "r_0",
+      "type": "localization radius",
+      "space": "\\((0,1/4]\\)",
+      "def": "The largest radius on which two-sided design thickness is imposed.",
+      "role": "law-class constant"
+    },
+    {
+      "name": "\\delta",
+      "type": "endpoint trim fraction",
+      "space": "\\((0,1/2)\\)",
+      "def": "A fixed fraction trimming the endpoints of a smooth boundary chart.",
+      "role": "target-set constant"
+    },
+    {
+      "name": "X",
+      "type": "bivariate score",
+      "space": "\\(\\mathbb{R}^2\\)",
+      "def": "The observed score that determines treatment through a known assignment partition.",
+      "role": "data component"
+    },
+    {
+      "name": "Y(0)",
+      "type": "control potential outcome",
+      "space": "\\(\\mathbb{R}\\)",
+      "def": "The potential outcome under control.",
+      "role": "causal primitive"
+    },
+    {
+      "name": "Y(1)",
+      "type": "treated potential outcome",
+      "space": "\\(\\mathbb{R}\\)",
+      "def": "The potential outcome under treatment.",
+      "role": "causal primitive"
+    },
+    {
+      "name": "T",
+      "type": "treatment indicator",
+      "space": "\\(\\{0,1\\}\\)",
+      "def": "The deterministic treatment assignment.",
+      "role": "data component"
+    },
+    {
+      "name": "Y",
+      "type": "observed outcome",
+      "space": "\\(\\mathbb{R}\\)",
+      "def": "The realized outcome.",
+      "role": "data component"
+    },
+    {
+      "name": "O",
+      "type": "observed data unit",
+      "space": "\\(\\mathbb{R}\\times\\mathbb{R}^2\\times\\{0,1\\}\\)",
+      "def": "\\(O=(Y,X,T)\\).",
+      "role": "data unit",
+      "refs": [
+        "Y",
+        "X",
+        "T"
+      ]
+    },
+    {
+      "name": "P",
+      "type": "data-generating law",
+      "space": "laws of \\((Y(0),Y(1),X,T,Y)\\)",
+      "def": "A law for the potential outcomes, score, assignment, and observed outcome.",
+      "role": "model",
+      "refs": [
+        "Y(0)",
+        "Y(1)",
+        "X",
+        "T",
+        "Y"
+      ]
+    },
+    {
+      "name": "O_{1:n}",
+      "type": "observed sample",
+      "space": "\\((\\mathbb{R}\\times\\mathbb{R}^2\\times\\{0,1\\})^n\\)",
+      "def": "\\(O_{1:n}=(O_1,\\ldots,O_n)\\).",
+      "role": "data",
+      "refs": [
+        "O",
+        "n"
+      ]
+    },
+    {
+      "name": "\\mathcal{X}_P",
+      "type": "score support",
+      "space": "compact subsets of \\(\\mathbb{R}^2\\)",
+      "def": "The support of \\(X\\) under \\(P\\).",
+      "role": "geometric primitive",
+      "refs": [
+        "X",
+        "P"
+      ]
+    },
+    {
+      "name": "\\mathcal{A}_{0,P}",
+      "type": "control assignment region",
+      "space": "Borel subsets of \\(\\mathcal{X}_P\\)",
+      "def": "The relatively closed score region assigned to control under \\(P\\), up to the boundary convention.",
+      "role": "geometric primitive",
+      "refs": [
+        "\\mathcal{X}_P",
+        "P"
+      ]
+    },
+    {
+      "name": "\\mathcal{A}_{1,P}",
+      "type": "treated assignment region",
+      "space": "Borel subsets of \\(\\mathcal{X}_P\\)",
+      "def": "The relatively closed score region assigned to treatment under \\(P\\), up to the boundary convention.",
+      "role": "geometric primitive",
+      "refs": [
+        "\\mathcal{X}_P",
+        "P"
+      ]
+    },
+    {
+      "name": "\\mathcal{B}_P",
+      "type": "assignment interface",
+      "space": "compact curves in \\(\\mathbb{R}^2\\)",
+      "def": "\\(\\mathcal{B}_P=\\operatorname{bd}_{\\mathcal{X}_P}(\\mathcal{A}_{0,P})\\cap\\operatorname{bd}_{\\mathcal{X}_P}(\\mathcal{A}_{1,P})\\).",
+      "role": "target index set",
+      "refs": [
+        "\\mathcal{X}_P",
+        "\\mathcal{A}_{0,P}",
+        "\\mathcal{A}_{1,P}"
+      ]
+    },
+    {
+      "name": "f_P",
+      "type": "score density",
+      "sig": "\\(\\mathcal{X}_P\\to(0,\\infty)\\)",
+      "def": "The Lebesgue density of \\(X\\) under \\(P\\).",
+      "role": "nuisance",
+      "refs": [
+        "X",
+        "P",
+        "\\mathcal{X}_P"
+      ]
+    },
+    {
+      "name": "\\mu_{t,P}",
+      "type": "potential-outcome regression",
+      "sig": "\\(\\mathcal{X}_P\\to\\mathbb{R}\\)",
+      "def": "\\(\\mu_{t,P}(x)=\\mathbb{E}_P[(1-t)Y(0)+tY(1)\\mid X=x]\\).",
+      "role": "nuisance",
+      "refs": [
+        "t",
+        "P",
+        "Y(0)",
+        "Y(1)",
+        "X",
+        "\\mathcal{X}_P"
+      ]
+    },
+    {
+      "name": "Q_{t,P,x}",
+      "type": "arm-specific circle density integral",
+      "sig": "\\((0,\\infty)\\to[0,\\infty)\\)",
+      "def": "For \\(x\\in\\mathcal{B}_P\\) and \\(s>0\\), \\(Q_{t,P,x}(s)=\\int_{\\partial B_2(x,s)\\cap\\mathcal{A}_{t,P}\\cap\\mathcal{X}_P}f_P(z)\\,d\\mathcal{H}^1(z)\\).",
+      "role": "radial denominator",
+      "refs": [
+        "t",
+        "s",
+        "P",
+        "\\mathcal{B}_P",
+        "\\mathcal{A}_{0,P}",
+        "\\mathcal{A}_{1,P}",
+        "\\mathcal{X}_P",
+        "f_P"
+      ]
+    },
+    {
+      "name": "N_{t,P,x}",
+      "type": "arm-specific outcome-weighted circle integral",
+      "sig": "\\((0,\\infty)\\to\\mathbb{R}\\)",
+      "def": "For \\(x\\in\\mathcal{B}_P\\) and \\(s>0\\), \\(N_{t,P,x}(s)=\\int_{\\partial B_2(x,s)\\cap\\mathcal{A}_{t,P}\\cap\\mathcal{X}_P}\\mu_{t,P}(z)f_P(z)\\,d\\mathcal{H}^1(z)\\).",
+      "role": "radial numerator",
+      "refs": [
+        "t",
+        "s",
+        "P",
+        "\\mathcal{B}_P",
+        "\\mathcal{A}_{0,P}",
+        "\\mathcal{A}_{1,P}",
+        "\\mathcal{X}_P",
+        "f_P",
+        "\\mu_{t,P}"
+      ]
+    },
+    {
+      "name": "g^{\\mathrm{dist}}_{t,P,x}",
+      "type": "canonical exact-distance regression",
+      "sig": "\\([0,\\infty)\\to\\mathbb{R}\\)",
+      "def": "The canonical representative constructed in \\(\\mathrm{def:canonical\\text{-}distance\\text{-}regression}\\), equal to the circle-integral ratio when its denominator is positive and to the H\\\"older representative \\(\\mu_{t,P}(x)\\) on zero-denominator radii and at the origin.",
+      "role": "identifying radial regression",
+      "refs": [
+        "t",
+        "s",
+        "P",
+        "Q_{t,P,x}",
+        "N_{t,P,x}",
+        "\\mu_{t,P}"
+      ]
+    },
+    {
+      "name": "\\sigma^2_{t,P}",
+      "type": "conditional variance",
+      "sig": "\\(\\mathcal{X}_P\\to(0,\\infty)\\)",
+      "def": "\\(\\sigma^2_{t,P}(x)=\\operatorname{Var}_P((1-t)Y(0)+tY(1)\\mid X=x)\\).",
+      "role": "nuisance",
+      "refs": [
+        "t",
+        "P",
+        "Y(0)",
+        "Y(1)",
+        "X",
+        "\\mathcal{X}_P"
+      ]
+    },
+    {
+      "name": "\\tau_P",
+      "type": "boundary average treatment effect curve",
+      "sig": "\\(\\mathcal{B}_P\\to\\mathbb{R}\\)",
+      "def": "\\(\\tau_P(x)=\\mu_{1,P}(x)-\\mu_{0,P}(x)=\\mathbb{E}_P[Y(1)-Y(0)\\mid X=x]\\) for \\(x\\in\\mathcal{B}_P\\).",
+      "role": "target estimand",
+      "refs": [
+        "P",
+        "\\mu_{t,P}",
+        "Y(0)",
+        "Y(1)",
+        "X",
+        "\\mathcal{B}_P"
+      ]
+    },
+    {
+      "name": "D_{P,x}",
+      "type": "signed distance score",
+      "space": "\\(\\mathbb{R}\\)",
+      "def": "\\(D_{P,x}=(2T-1)\\lVert X-x\\rVert_2\\) for \\(x\\in\\mathcal{B}_P\\).",
+      "role": "compressed observation",
+      "refs": [
+        "P",
+        "T",
+        "X",
+        "\\mathcal{B}_P"
+      ]
+    },
+    {
+      "name": "U_{n,P}(x)",
+      "type": "coordinatewise distance-compressed sample",
+      "space": "\\((\\mathbb{R}^2)^n\\)",
+      "def": "\\(U_{n,P}(x)=((Y_i,D_{P,x,i}):1\\leq i\\leq n)\\).",
+      "role": "restricted experiment",
+      "refs": [
+        "n",
+        "P",
+        "Y",
+        "D_{P,x}"
+      ]
+    },
+    {
+      "name": "\\mathbb{Q}_{n,P,x}",
+      "type": "compressed-experiment law",
+      "space": "probability laws on \\((\\mathbb{R}^2)^n\\)",
+      "def": "The law of \\(U_{n,P}(x)\\) under \\(P\\).",
+      "role": "lower-bound comparison law",
+      "refs": [
+        "U_{n,P}(x)",
+        "P",
+        "n"
+      ]
+    },
+    {
+      "name": "\\widehat{\\tau}_n",
+      "type": "distance-only boundary estimator",
+      "sig": "\\(x\\mapsto\\widehat{\\tau}_n(x)\\)",
+      "def": "A generic estimator whose value at \\(x\\) may use only \\(U_{n,P}(x)\\).",
+      "role": "distance-only decision rule",
+      "refs": [
+        "U_{n,P}(x)"
+      ]
+    },
+    {
+      "name": "\\widetilde{\\tau}_n",
+      "type": "full-location boundary estimator",
+      "sig": "\\(x\\mapsto\\widetilde{\\tau}_n(x)\\)",
+      "def": "A generic estimator whose boundary curve may use the full sample \\(O_{1:n}\\) and the known assignment geometry jointly.",
+      "role": "full-location decision rule",
+      "refs": [
+        "O_{1:n}",
+        "\\mathcal{A}_{0,P}",
+        "\\mathcal{A}_{1,P}",
+        "\\mathcal{B}_P"
+      ]
+    },
+    {
+      "name": "\\mathcal{T}^{\\mathrm{dist}}_n",
+      "type": "coordinatewise distance-only decision class",
+      "space": "families of measurable maps",
+      "def": "The decision class constructed in \\(\\mathrm{def:distance\\text{-}decision\\text{-}class}\\).",
+      "role": "restricted decision class",
+      "refs": [
+        "n",
+        "\\widehat{\\tau}_n"
+      ]
+    },
+    {
+      "name": "\\mathcal{T}^{\\mathrm{loc}}_n",
+      "type": "full-location decision class",
+      "space": "families of measurable maps",
+      "def": "The decision class constructed in \\(\\mathrm{def:location\\text{-}decision\\text{-}class}\\).",
+      "role": "full-information decision class",
+      "refs": [
+        "n",
+        "\\widetilde{\\tau}_n"
+      ]
+    },
+    {
+      "name": "\\gamma_P",
+      "type": "boundary chart",
+      "sig": "\\([0,1]\\to\\mathbb{R}^2\\)",
+      "def": "An injective parameterization of a smooth assignment boundary.",
+      "role": "geometric nuisance",
+      "refs": [
+        "P",
+        "\\mathcal{B}_P"
+      ]
+    },
+    {
+      "name": "\\mathcal{B}_{P,\\delta}",
+      "type": "endpoint-trimmed boundary",
+      "space": "compact curves in \\(\\mathbb{R}^2\\)",
+      "def": "\\(\\mathcal{B}_{P,\\delta}=\\gamma_P([\\delta,1-\\delta])\\).",
+      "role": "trimmed target index set",
+      "refs": [
+        "\\gamma_P",
+        "\\delta"
+      ]
+    },
+    {
+      "name": "K_\\triangle",
+      "type": "fixed triangular kernel",
+      "sig": "\\(\\mathbb{R}\\to[0,1]\\)",
+      "def": "\\(K_\\triangle(u)=\\max\\{1-|u|,0\\}\\).",
+      "role": "fixed estimator input"
+    },
+    {
+      "name": "h",
+      "type": "bandwidth",
+      "space": "\\((0,\\infty)\\)",
+      "def": "The distance or location bandwidth.",
+      "role": "estimator input"
+    },
+    {
+      "name": "\\Psi^{(0)}_{t,P,x}(h)",
+      "type": "degree-zero population design scalar",
+      "space": "\\((0,\\infty)\\)",
+      "def": "\\(\\Psi^{(0)}_{t,P,x}(h)=\\mathbb{E}_P[K_\\triangle(D_{P,x}/h)\\mathbf{1}\\{T=t\\}/h^2]\\).",
+      "role": "estimator stability functional",
+      "refs": [
+        "t",
+        "P",
+        "K_\\triangle",
+        "D_{P,x}",
+        "h",
+        "T"
+      ]
+    },
+    {
+      "name": "\\widehat{\\tau}^{\\mathrm{LC}}_{n,h}",
+      "type": "distance-based local-constant estimator",
+      "sig": "\\(\\mathcal{B}_P\\to\\mathbb{R}\\)",
+      "def": "The difference of the two arm-specific degree-zero triangular-kernel intercepts constructed in \\(\\mathrm{def:local\\text{-}constant\\text{-}estimator}\\).",
+      "role": "attaining distance estimator",
+      "refs": [
+        "n",
+        "h",
+        "K_\\triangle",
+        "\\mathcal{B}_P"
+      ]
+    },
+    {
+      "name": "\\mathcal{P}_{\\mathrm{rect}}",
+      "type": "primitive two-sided-thickness law class",
+      "space": "sets of laws \\(P\\)",
+      "def": "The primitive two-sided-thickness class constructed in \\(\\mathrm{def:rectifiable\\text{-}class}\\); the stable symbol name no longer denotes a rectifiability premise.",
+      "role": "model class",
+      "refs": [
+        "P"
+      ]
+    },
+    {
+      "name": "\\mathcal{P}_{\\mathrm{sm}}",
+      "type": "smooth-boundary primitive law class",
+      "space": "sets of laws \\(P\\)",
+      "def": "The endpoint-trimmed smooth-geometry class constructed in \\(\\mathrm{def:smooth\\text{-}class}\\).",
+      "role": "model class",
+      "refs": [
+        "P",
+        "q",
+        "\\iota"
+      ]
+    },
+    {
+      "name": "\\mathcal{P}_{\\mathrm{straight}}",
+      "type": "straight-boundary law class",
+      "space": "sets of laws \\(P\\)",
+      "def": "The canonical two-half-plane subclass constructed in \\(\\mathrm{def:straight\\text{-}class}\\).",
+      "role": "sanity and information-gap class",
+      "refs": [
+        "P",
+        "\\mathcal{P}_{\\mathrm{sm}}"
+      ]
+    },
+    {
+      "name": "R_n^{\\mathrm{dist}}(\\mathcal{C})",
+      "type": "untrimmed distance-only minimax risk",
+      "sig": "law classes \\(\\mathcal{C}\\to[0,\\infty)\\)",
+      "def": "The risk constructed in \\(\\mathrm{def:distance\\text{-}risk}\\).",
+      "role": "frontier object",
+      "refs": [
+        "n",
+        "\\mathcal{T}^{\\mathrm{dist}}_n",
+        "\\tau_P",
+        "\\mathcal{B}_P"
+      ]
+    },
+    {
+      "name": "R_{n,\\delta}^{\\mathrm{dist}}(\\mathcal{C})",
+      "type": "trimmed distance-only minimax risk",
+      "sig": "smooth law classes \\(\\mathcal{C}\\to[0,\\infty)\\)",
+      "def": "The trimmed distance risk constructed in \\(\\mathrm{def:trimmed\\text{-}distance\\text{-}risk}\\).",
+      "role": "frontier object",
+      "refs": [
+        "n",
+        "\\delta",
+        "\\mathcal{T}^{\\mathrm{dist}}_n",
+        "\\tau_P",
+        "\\mathcal{B}_{P,\\delta}"
+      ]
+    },
+    {
+      "name": "R_{n,\\delta}^{\\mathrm{loc}}(\\mathcal{C})",
+      "type": "trimmed full-location minimax risk",
+      "sig": "smooth law classes \\(\\mathcal{C}\\to[0,\\infty)\\)",
+      "def": "The trimmed full-location risk constructed in \\(\\mathrm{def:trimmed\\text{-}location\\text{-}risk}\\).",
+      "role": "comparison frontier object",
+      "refs": [
+        "n",
+        "\\delta",
+        "\\mathcal{T}^{\\mathrm{loc}}_n",
+        "\\tau_P",
+        "\\mathcal{B}_{P,\\delta}"
+      ]
+    },
+    {
+      "name": "a_n",
+      "type": "first-order distance rate",
+      "space": "positive sequences",
+      "def": "\\(a_n=(\\log n/n)^{1/4}\\).",
+      "role": "frontier rate",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "s_{n,q}",
+      "type": "full-location H\\\"older rate",
+      "space": "positive sequences",
+      "def": "\\(s_{n,q}=(\\log n/n)^{q/(2q+2)}\\).",
+      "role": "comparison frontier rate",
+      "refs": [
+        "n",
+        "q"
+      ]
+    },
+    {
+      "name": "\\mathfrak{H}_{\\mathrm{ang}}",
+      "type": "angular-density confounding handle",
+      "space": "proof-design handles",
+      "def": "The coarea and adversarial-density handle constructed in \\(\\mathrm{def:angular\\text{-}density\\text{-}handle}\\).",
+      "role": "lower-bound and open-question handle"
+    },
+    {
+      "name": "m",
+      "type": "normalized-coarea expansion order",
+      "space": "\\(\\mathbb{N}\\)",
+      "def": "The degree parameter for the order-\\(m\\) normalized-coarea remainder and the associated degree-\\((m-1)\\) local-polynomial rule.",
+      "role": "regime parameter"
+    },
+    {
+      "name": "\\widehat{\\tau}^{(m),\\mathrm{LP}}_{n,h}",
+      "type": "stabilized coordinatewise distance local-polynomial estimator",
+      "sig": "\\(\\mathcal B_P\\to\\mathbb R\\)",
+      "def": "The arm-intercept difference constructed in \\(\\mathrm{def:stabilized\\text{-}distance\\text{-}local\\text{-}polynomial}\\), with its cutoff constant suppressed from the notation.",
+      "role": "attaining order-m distance estimator",
+      "refs": [
+        "m",
+        "n",
+        "h",
+        "\\mathcal{B}_P",
+        "U_{n,P}(x)",
+        "K_\\triangle"
+      ]
+    },
+    {
+      "name": "\\mathcal{P}_{\\mathrm{coarea}}",
+      "type": "radial-coarea ambient law class",
+      "space": "sets of laws \\(P\\)",
+      "def": "The thickness-free baseline coarea class constructed in \\(\\mathrm{def:radial\\text{-}coarea\\text{-}ambient\\text{-}class}\\).",
+      "role": "model class",
+      "refs": [
+        "P",
+        "q",
+        "\\iota",
+        "L"
+      ]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ass:iid-sampling",
+      "kind": "sampling",
+      "condition": "\\(O_{1:n}\\sim P^{\\otimes n}\\).",
+      "free_symbols": [
+        "O_{1:n}",
+        "P",
+        "n"
+      ],
+      "standard": {
+        "name": "independent and identically distributed sampling",
+        "cite": "CattaneoTitiunikYu2026Distance"
+      },
+      "used_by": [
+        "def:radial-coarea-ambient-class",
+        "def:rectifiable-class",
+        "def:smooth-class",
+        "thm:angular-remainder-transition",
+        "thm:rectifiable-exact-frontier",
+        "thm:smooth-geometry-saturation",
+        "thm:straight-information-gap"
+      ]
+    },
+    {
+      "id": "ass:deterministic-assignment",
+      "kind": "causal structural",
+      "condition": "\\(T=\\mathbf{1}\\{X\\in\\mathcal{A}_{1,P}\\}\\) \\(P\\)-almost surely.",
+      "free_symbols": [
+        "T",
+        "X",
+        "\\mathcal{A}_{1,P}",
+        "P"
+      ],
+      "standard": {
+        "name": "boundary discontinuity assignment rule",
+        "cite": "CattaneoTitiunikYu2026Distance"
+      },
+      "used_by": [
+        "def:radial-coarea-ambient-class",
+        "def:rectifiable-class",
+        "def:signed-distance",
+        "def:smooth-class",
+        "lem:canonical-exact-distance-regression",
+        "lem:radial-coarea-identification",
+        "thm:angular-remainder-transition"
+      ]
+    },
+    {
+      "id": "ass:consistency",
+      "kind": "causal structural",
+      "condition": "\\(Y=T Y(1)+(1-T)Y(0)\\) \\(P\\)-almost surely.",
+      "free_symbols": [
+        "Y",
+        "T",
+        "Y(0)",
+        "Y(1)",
+        "P"
+      ],
+      "standard": {
+        "name": "consistency",
+        "cite": "CattaneoTitiunikYu2026Distance"
+      },
+      "used_by": [
+        "def:radial-coarea-ambient-class",
+        "def:rectifiable-class",
+        "def:smooth-class",
+        "lem:canonical-exact-distance-regression",
+        "lem:radial-coarea-identification",
+        "thm:angular-remainder-transition"
+      ]
+    },
+    {
+      "id": "ass:assignment-partition",
+      "kind": "geometric design",
+      "condition": "The pair \\(\\mathcal{A}_{0,P},\\mathcal{A}_{1,P}\\) is a measurable partition of \\(\\mathcal{X}_P\\) up to the boundary convention, and \\(\\mathcal{B}_P\\) is its common relative interface.",
+      "free_symbols": [
+        "\\mathcal{A}_{0,P}",
+        "\\mathcal{A}_{1,P}",
+        "\\mathcal{X}_P",
+        "\\mathcal{B}_P",
+        "P"
+      ],
+      "standard": {
+        "name": "binary assignment partition",
+        "cite": "CattaneoTitiunikYu2026Distance"
+      },
+      "used_by": [
+        "def:radial-coarea-ambient-class",
+        "def:rectifiable-class",
+        "def:smooth-class",
+        "lem:angular-density-packing",
+        "thm:angular-remainder-transition"
+      ]
+    },
+    {
+      "id": "ass:compact-support",
+      "kind": "support",
+      "condition": "\\(\\mathcal{X}_P\\subseteq[-L,L]^2\\) is compact.",
+      "free_symbols": [
+        "\\mathcal{X}_P",
+        "L",
+        "P"
+      ],
+      "standard": {
+        "name": "compact score support",
+        "cite": "CattaneoTitiunikYu2026Distance"
+      },
+      "used_by": [
+        "def:radial-coarea-ambient-class",
+        "def:rectifiable-class",
+        "def:smooth-class",
+        "thm:angular-remainder-transition"
+      ]
+    },
+    {
+      "id": "ass:density-continuity",
+      "kind": "support",
+      "condition": "\\(f_P\\) is continuous on \\(\\mathcal{X}_P\\).",
+      "free_symbols": [
+        "f_P",
+        "\\mathcal{X}_P",
+        "P"
+      ],
+      "standard": {
+        "name": "continuous random-design density without a common modulus",
+        "cite": "CattaneoTitiunikYu2026Distance"
+      },
+      "used_by": [
+        "def:smooth-class",
+        "lem:angular-density-packing",
+        "thm:angular-remainder-transition",
+        "thm:smooth-geometry-saturation",
+        "thm:straight-information-gap"
+      ]
+    },
+    {
+      "id": "ass:density-envelope",
+      "kind": "support",
+      "condition": "\\(L^{-1}\\leq f_P(x)\\leq L\\) for every \\(x\\in\\mathcal{X}_P\\).",
+      "free_symbols": [
+        "L",
+        "f_P",
+        "\\mathcal{X}_P",
+        "P"
+      ],
+      "standard": {
+        "name": "random-design density bounded away from zero and infinity",
+        "cite": "Stone1982OptimalGlobal"
+      },
+      "used_by": [
+        "def:radial-coarea-ambient-class",
+        "def:rectifiable-class",
+        "def:smooth-class",
+        "lem:angular-density-packing",
+        "lem:canonical-exact-distance-regression",
+        "lem:density-implies-upper-mass",
+        "lem:radial-coarea-identification",
+        "thm:angular-remainder-transition",
+        "thm:rectifiable-exact-frontier",
+        "thm:smooth-geometry-saturation",
+        "thm:straight-information-gap"
+      ]
+    },
+    {
+      "id": "ass:holder-regressions",
+      "kind": "smoothness",
+      "condition": "\\(\\mu_{t,P}\\in\\mathcal{H}^q(\\mathcal{X}_P,L)\\) for each \\(t\\in\\{0,1\\}\\).",
+      "free_symbols": [
+        "\\mu_{t,P}",
+        "q",
+        "\\mathcal{X}_P",
+        "L",
+        "t",
+        "P"
+      ],
+      "standard": {
+        "name": "isotropic H\\\"older regression ball",
+        "cite": "Stone1982OptimalGlobal"
+      },
+      "used_by": [
+        "def:radial-coarea-ambient-class",
+        "def:rectifiable-class",
+        "def:smooth-class",
+        "lem:angular-density-packing",
+        "lem:canonical-exact-distance-regression",
+        "thm:angular-remainder-transition",
+        "thm:rectifiable-exact-frontier",
+        "thm:smooth-geometry-saturation",
+        "thm:straight-information-gap"
+      ]
+    },
+    {
+      "id": "ass:variance-envelope",
+      "kind": "moment regularity",
+      "condition": "\\(L^{-1}\\leq\\sigma^2_{t,P}(x)\\leq L\\) for every \\(x\\in\\mathcal{X}_P\\) and \\(t\\in\\{0,1\\}\\).",
+      "free_symbols": [
+        "L",
+        "\\sigma^2_{t,P}",
+        "\\mathcal{X}_P",
+        "t",
+        "P"
+      ],
+      "standard": {
+        "name": "conditional variance bounded away from zero and infinity",
+        "cite": "CattaneoTitiunikYu2026Distance"
+      },
+      "used_by": [
+        "lem:angular-density-packing"
+      ]
+    },
+    {
+      "id": "ass:conditional-subgaussian",
+      "kind": "tail regularity",
+      "condition": "\\(\\mathbb{E}_P[\\exp\\{\\lambda((1-t)Y(0)+tY(1)-\\mu_{t,P}(X))\\}\\mid X]\\leq\\exp(L^2\\lambda^2/2)\\) for every \\(\\lambda\\in\\mathbb{R}\\) and \\(t\\in\\{0,1\\}\\).",
+      "free_symbols": [
+        "P",
+        "Y(0)",
+        "Y(1)",
+        "\\mu_{t,P}",
+        "X",
+        "L",
+        "t"
+      ],
+      "standard": {
+        "name": "uniform conditional sub-Gaussian errors",
+        "cite": "Tsybakov2009Nonparametric"
+      },
+      "used_by": [
+        "def:radial-coarea-ambient-class",
+        "def:rectifiable-class",
+        "def:smooth-class",
+        "thm:angular-remainder-transition",
+        "thm:rectifiable-exact-frontier",
+        "thm:smooth-geometry-saturation",
+        "thm:straight-information-gap"
+      ]
+    },
+    {
+      "id": "ass:uniform-two-sided-thickness",
+      "kind": "primitive design geometry",
+      "condition": "\\(P\\{X\\in\\mathcal{A}_{t,P}\\cap B_2(x,r)\\}\\geq c_{-}r^2\\) for every \\(x\\in\\mathcal{B}_P\\), \\(t\\in\\{0,1\\}\\), and \\(0<r\\leq r_0\\).",
+      "free_symbols": [
+        "c_{-}",
+        "r_0",
+        "P",
+        "X",
+        "\\mathcal{A}_{0,P}",
+        "\\mathcal{A}_{1,P}",
+        "\\mathcal{B}_P",
+        "t"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "This inspectable condition holds when the score density is bounded below and both assignment arms satisfy a uniform interior-cone or corkscrew condition at the known boundary, including smooth or polygonal geographic and administrative partitions whose opening angles stay away from zero. It excludes cusps, vanishing wedges, and arms that pinch out. The condition defines the primitive subclass and is load-bearing for both separated boundary packings and stable local estimation."
+      },
+      "used_by": [
+        "def:rectifiable-class",
+        "def:smooth-class",
+        "lem:angular-density-packing",
+        "lem:canonical-exact-distance-regression",
+        "lem:fixed-local-constant-stability",
+        "thm:rectifiable-exact-frontier",
+        "thm:smooth-geometry-saturation"
+      ]
+    },
+    {
+      "id": "ass:smooth-embedding",
+      "kind": "geometric regularity",
+      "condition": "\\(\\mathcal{B}_P=\\gamma_P([0,1])\\) for an injective \\(\\gamma_P\\in C^{\\iota+2}([0,1],\\mathbb{R}^2)\\).",
+      "free_symbols": [
+        "\\mathcal{B}_P",
+        "\\gamma_P",
+        "\\iota",
+        "P"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "The novel tag records provenance only because the schema requires a standard-or-novel classification; this routine quantitative uniform geometric regularity restriction is not claimed as an original contribution. An injective \\(C^{\\iota+2}\\) embedding covers smooth non-self-intersecting boundaries represented by geographic-information-system or spline charts, and it defines the smooth subclass and its trimmed chart."
+      },
+      "used_by": [
+        "def:radial-coarea-ambient-class",
+        "def:smooth-class",
+        "def:trimmed-boundary",
+        "thm:angular-remainder-transition",
+        "thm:smooth-geometry-saturation"
+      ]
+    },
+    {
+      "id": "ass:straight-half-plane-design",
+      "kind": "geometric submodel",
+      "condition": "\\(\\mathcal{X}_P=[-1,1]^2\\), \\(\\gamma_P(u)=(2u-1,0)\\), \\(\\mathcal{A}_{0,P}=\\{z\\in\\mathcal{X}_P:z_2<0\\}\\), and \\(\\mathcal{A}_{1,P}=\\{z\\in\\mathcal{X}_P:z_2\\geq0\\}\\), with the displayed convention on the interface.",
+      "free_symbols": [
+        "\\mathcal{X}_P",
+        "P",
+        "\\gamma_P",
+        "\\mathcal{A}_{0,P}",
+        "\\mathcal{A}_{1,P}"
+      ],
+      "standard": {
+        "name": "canonical straight boundary discontinuity submodel",
+        "cite": "CattaneoTitiunikYu2026Location"
+      },
+      "used_by": [
+        "def:straight-class",
+        "lem:angular-density-packing",
+        "thm:straight-information-gap"
+      ]
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def:circle-density-integral",
+      "name": "Q_{t,P,x}",
+      "construction": "For \\(x\\in\\mathcal{B}_P\\) and \\(s>0\\), define \\[Q_{t,P,x}(s)=\\int_{\\partial B_2(x,s)\\cap\\mathcal{A}_{t,P}\\cap\\mathcal{X}_P}f_P(z)\\,d\\mathcal{H}^1(z).\\]",
+      "free_symbols": [
+        "Q_{t,P,x}",
+        "t",
+        "s",
+        "P",
+        "\\mathcal{B}_P",
+        "\\mathcal{A}_{0,P}",
+        "\\mathcal{A}_{1,P}",
+        "\\mathcal{X}_P",
+        "f_P"
+      ],
+      "inputs": [],
+      "revision": "rev:9f609bda6d5120351b83c1b116556e151f21721e580283404a18c9803664f431"
+    },
+    {
+      "id": "def:circle-outcome-integral",
+      "name": "N_{t,P,x}",
+      "construction": "For \\(x\\in\\mathcal{B}_P\\) and \\(s>0\\), define \\[N_{t,P,x}(s)=\\int_{\\partial B_2(x,s)\\cap\\mathcal{A}_{t,P}\\cap\\mathcal{X}_P}\\mu_{t,P}(z)f_P(z)\\,d\\mathcal{H}^1(z).\\]",
+      "free_symbols": [
+        "N_{t,P,x}",
+        "t",
+        "s",
+        "P",
+        "\\mathcal{B}_P",
+        "\\mathcal{A}_{0,P}",
+        "\\mathcal{A}_{1,P}",
+        "\\mathcal{X}_P",
+        "\\mu_{t,P}",
+        "f_P"
+      ],
+      "inputs": [],
+      "revision": "rev:f63aef6527f8efb1a190380ebecd8042dfc6ac5b9d0d7d5d2758bc4a0758cf83"
+    },
+    {
+      "id": "def:canonical-distance-regression",
+      "name": "g^{\\mathrm{dist}}_{t,P,x}",
+      "construction": "For \\(x\\in\\mathcal{B}_P\\), define the canonical exact-distance regression on \\([0,\\infty)\\) by \\[g^{\\mathrm{dist}}_{t,P,x}(s)=\\begin{cases}N_{t,P,x}(s)/Q_{t,P,x}(s),&s>0\\text{ and }Q_{t,P,x}(s)>0,\\\\ \\mu_{t,P}(x),&s=0,\\\\ \\mu_{t,P}(x),&s>0\\text{ and }Q_{t,P,x}(s)=0.\\end{cases}\\]",
+      "free_symbols": [
+        "g^{\\mathrm{dist}}_{t,P,x}",
+        "t",
+        "s",
+        "P",
+        "\\mathcal{B}_P",
+        "Q_{t,P,x}",
+        "N_{t,P,x}",
+        "\\mu_{t,P}"
+      ],
+      "inputs": [
+        "def:circle-density-integral",
+        "def:circle-outcome-integral"
+      ],
+      "revision": "rev:a672a77c1efd6fbae1b2240b522b2fe471e057e5e78e93e075da988467d5d3db"
+    },
+    {
+      "id": "def:signed-distance",
+      "name": "D_{P,x}",
+      "construction": "\\[D_{P,x}=(2T-1)\\lVert X-x\\rVert_2,\\qquad x\\in\\mathcal{B}_P.\\]",
+      "free_symbols": [
+        "D_{P,x}",
+        "P",
+        "T",
+        "X",
+        "\\mathcal{B}_P"
+      ],
+      "inputs": [
+        "ass:deterministic-assignment"
+      ],
+      "revision": "rev:408b2691702d9db994c6b5430b47c039d05a220157a39aa958b4a46ff9b6b887"
+    },
+    {
+      "id": "def:distance-data",
+      "name": "U_{n,P}(x)",
+      "construction": "\\[U_{n,P}(x)=((Y_i,D_{P,x,i}):1\\leq i\\leq n),\\qquad x\\in\\mathcal{B}_P.\\]",
+      "free_symbols": [
+        "U_{n,P}(x)",
+        "n",
+        "P",
+        "Y",
+        "D_{P,x}",
+        "\\mathcal{B}_P"
+      ],
+      "inputs": [
+        "def:signed-distance"
+      ],
+      "revision": "rev:b56f45a66b9da6f7e77115776476bb704bd60d87673638f0abfdedac130da987"
+    },
+    {
+      "id": "def:distance-decision-class",
+      "name": "\\mathcal{T}^{\\mathrm{dist}}_n",
+      "construction": "\\[\\mathcal{T}^{\\mathrm{dist}}_n=\\left\\{\\widehat{\\tau}_n:\\widehat{\\tau}_n(x)=T_{n,x}(U_{n,P}(x))\\text{ for a measurable }T_{n,x}\\text{ at every }x\\in\\mathcal{B}_P\\right\\}.\\]",
+      "free_symbols": [
+        "\\mathcal{T}^{\\mathrm{dist}}_n",
+        "n",
+        "\\widehat{\\tau}_n",
+        "U_{n,P}(x)",
+        "P",
+        "\\mathcal{B}_P"
+      ],
+      "inputs": [
+        "def:distance-data"
+      ],
+      "revision": "rev:035aa45b3b9df1d578604504bb79d10f5c5bc1f3f3f685ad720755d378f18dc8"
+    },
+    {
+      "id": "def:location-decision-class",
+      "name": "\\mathcal{T}^{\\mathrm{loc}}_n",
+      "construction": "\\[\\mathcal{T}^{\\mathrm{loc}}_n=\\left\\{\\widetilde{\\tau}_n:\\widetilde{\\tau}_n(\\cdot)=L_n(O_{1:n},\\mathcal{A}_{0,P},\\mathcal{A}_{1,P},\\mathcal{B}_P)\\text{ for a jointly measurable }L_n\\right\\}.\\]",
+      "free_symbols": [
+        "\\mathcal{T}^{\\mathrm{loc}}_n",
+        "n",
+        "\\widetilde{\\tau}_n",
+        "O_{1:n}",
+        "\\mathcal{A}_{0,P}",
+        "\\mathcal{A}_{1,P}",
+        "\\mathcal{B}_P",
+        "P"
+      ],
+      "inputs": [],
+      "revision": "rev:d301bc73c80c9535e8dc2ed44b8ec0e9db036cb29425ad4036e02d325eadf8e3"
+    },
+    {
+      "id": "def:rectifiable-class",
+      "name": "\\mathcal{P}_{\\mathrm{rect}}",
+      "construction": "\\[\\mathcal{P}_{\\mathrm{rect}}(q,L,c_{-},r_0)=\\left\\{P:\\text{for every }n\\in\\mathbb{N},\\text{ all member properties enumerated below hold}\\right\\}.\\]",
+      "free_symbols": [
+        "\\mathcal{P}_{\\mathrm{rect}}",
+        "q",
+        "L",
+        "c_{-}",
+        "r_0",
+        "P",
+        "n"
+      ],
+      "by_member_properties": [
+        "ass:iid-sampling",
+        "ass:deterministic-assignment",
+        "ass:consistency",
+        "ass:assignment-partition",
+        "ass:compact-support",
+        "ass:density-envelope",
+        "ass:holder-regressions",
+        "ass:conditional-subgaussian",
+        "ass:uniform-two-sided-thickness"
+      ],
+      "revision": "rev:18e6667b4bb600b307003b2e7d8a08006480b68c8ceff5a006acdca7f7fa0e6a"
+    },
+    {
+      "id": "def:smooth-class",
+      "name": "\\mathcal{P}_{\\mathrm{sm}}",
+      "construction": "\\[\\mathcal{P}_{\\mathrm{sm}}(q,\\iota,L,c_{-},r_0)=\\left\\{P:\\text{for every }n\\in\\mathbb{N},\\text{ all member properties enumerated below hold}\\right\\}.\\]",
+      "free_symbols": [
+        "\\mathcal{P}_{\\mathrm{sm}}",
+        "q",
+        "\\iota",
+        "L",
+        "c_{-}",
+        "r_0",
+        "P",
+        "n"
+      ],
+      "by_member_properties": [
+        "ass:iid-sampling",
+        "ass:deterministic-assignment",
+        "ass:consistency",
+        "ass:assignment-partition",
+        "ass:compact-support",
+        "ass:density-continuity",
+        "ass:density-envelope",
+        "ass:holder-regressions",
+        "ass:conditional-subgaussian",
+        "ass:uniform-two-sided-thickness",
+        "ass:smooth-embedding"
+      ],
+      "revision": "rev:7fad7786eb6c2fc7a5127b659dac2ade0d43c24725e2e7980f610cd7be52f621"
+    },
+    {
+      "id": "def:straight-class",
+      "name": "\\mathcal{P}_{\\mathrm{straight}}",
+      "construction": "\\[\\mathcal{P}_{\\mathrm{straight}}=\\left\\{P\\in\\mathcal{P}_{\\mathrm{sm}}:P\\text{ satisfies }\\mathrm{ass:straight\\text{-}half\\text{-}plane\\text{-}design}\\right\\}.\\]",
+      "free_symbols": [
+        "\\mathcal{P}_{\\mathrm{straight}}",
+        "\\mathcal{P}_{\\mathrm{sm}}",
+        "P"
+      ],
+      "by_member_properties": [
+        "ass:straight-half-plane-design"
+      ],
+      "revision": "rev:c1f465f172369643bad8f29822d7dc6cdd90210b8fa3558a726f105b5ea5808c"
+    },
+    {
+      "id": "def:trimmed-boundary",
+      "name": "\\mathcal{B}_{P,\\delta}",
+      "construction": "\\[\\mathcal{B}_{P,\\delta}=\\gamma_P([\\delta,1-\\delta]),\\qquad0<\\delta<1/2.\\]",
+      "free_symbols": [
+        "\\mathcal{B}_{P,\\delta}",
+        "P",
+        "\\gamma_P",
+        "\\delta"
+      ],
+      "inputs": [
+        "ass:smooth-embedding"
+      ],
+      "revision": "rev:b64ddaec79135859f2bf69791ac450c0e92b2d4c26860e3f8d46a8eaceb1e9a6"
+    },
+    {
+      "id": "def:triangular-kernel",
+      "name": "K_\\triangle",
+      "construction": "\\[K_\\triangle(u)=\\max\\{1-|u|,0\\}.\\] This fixed kernel is nonnegative, symmetric, Lipschitz, supported on \\([-1,1]\\), and positive on \\((-1,1)\\).",
+      "free_symbols": [
+        "K_\\triangle"
+      ],
+      "inputs": [],
+      "revision": "rev:180c33301fe4c6b0b71e6348b3fdcc5c6885fe389a0597ff0ce2d2f3ae38f6f5"
+    },
+    {
+      "id": "def:local-constant-estimator",
+      "name": "\\widehat{\\tau}^{\\mathrm{LC}}_{n,h}",
+      "construction": "For \\(t\\in\\{0,1\\}\\), \\(x\\in\\mathcal B_P\\), and \\(h>0\\), define\n\\[\n \\widehat\\mu_{t,h}(x)=\n \\frac{\\sum_{i=1}^n\\mathbf1\\{(2t-1)D_{P,x,i}>0\\}\n K_\\triangle(|D_{P,x,i}|/h)Y_i}\n {\\sum_{i=1}^n\\mathbf1\\{(2t-1)D_{P,x,i}>0\\}\n K_\\triangle(|D_{P,x,i}|/h)}\n\\]\nwhen the denominator is positive, and set \\(\\widehat\\mu_{t,h}(x)=0\\) otherwise.  At \\(D_{P,x,i}=0\\), assign the observation to neither arm.  Set\n\\[\n \\widehat\\tau^{\\mathrm{LC}}_{n,h}(x)=\\widehat\\mu_{1,h}(x)-\\widehat\\mu_{0,h}(x).\n\\]\nStrict sign, absolute value, the fixed kernel, finite sums, the positive-denominator ratio, and the zero branch make this a pointwise Borel function of \\(U_{n,P}(x)\\); it does not observe \\(T\\) separately.",
+      "free_symbols": [
+        "\\widehat{\\tau}^{\\mathrm{LC}}_{n,h}",
+        "t",
+        "n",
+        "T",
+        "K_\\triangle",
+        "D_{P,x}",
+        "h",
+        "Y",
+        "P",
+        "U_{n,P}(x)",
+        "\\mathcal{B}_P"
+      ],
+      "inputs": [
+        "def:distance-data",
+        "def:triangular-kernel"
+      ],
+      "revision": "rev:1f677b83abea7fd88773641553c385286ddd6b925100be599eda5e22cd2f8b99"
+    },
+    {
+      "id": "def:distance-risk",
+      "name": "R_n^{\\mathrm{dist}}(\\mathcal{C})",
+      "construction": "\\[R_n^{\\mathrm{dist}}(\\mathcal{C})=\\inf_{\\widehat{\\tau}_n\\in\\mathcal{T}^{\\mathrm{dist}}_n}\\sup_{P\\in\\mathcal{C}}\\mathbb{E}_P\\left[\\sup_{x\\in\\mathcal{B}_P}|\\widehat{\\tau}_n(x)-\\tau_P(x)|\\right].\\]",
+      "free_symbols": [
+        "R_n^{\\mathrm{dist}}(\\mathcal{C})",
+        "n",
+        "\\widehat{\\tau}_n",
+        "\\mathcal{T}^{\\mathrm{dist}}_n",
+        "P",
+        "\\mathcal{B}_P",
+        "\\tau_P"
+      ],
+      "inputs": [
+        "def:distance-decision-class"
+      ],
+      "revision": "rev:1f25f8fecd5bcbe265d2e9414ca14ca161a06c9d36a6c7da357f52d34860fa39"
+    },
+    {
+      "id": "def:trimmed-distance-risk",
+      "name": "R_{n,\\delta}^{\\mathrm{dist}}(\\mathcal{C})",
+      "construction": "\\[R_{n,\\delta}^{\\mathrm{dist}}(\\mathcal{C})=\\inf_{\\widehat{\\tau}_n\\in\\mathcal{T}^{\\mathrm{dist}}_n}\\sup_{P\\in\\mathcal{C}}\\mathbb{E}_P\\left[\\sup_{x\\in\\mathcal{B}_{P,\\delta}}|\\widehat{\\tau}_n(x)-\\tau_P(x)|\\right].\\]",
+      "free_symbols": [
+        "R_{n,\\delta}^{\\mathrm{dist}}(\\mathcal{C})",
+        "n",
+        "\\delta",
+        "\\widehat{\\tau}_n",
+        "\\mathcal{T}^{\\mathrm{dist}}_n",
+        "P",
+        "\\mathcal{B}_{P,\\delta}",
+        "\\tau_P"
+      ],
+      "inputs": [
+        "def:distance-decision-class",
+        "def:trimmed-boundary"
+      ],
+      "revision": "rev:41835ff713b72180769d6a122c9d7906104fd0391c6f5122351452c35345712a"
+    },
+    {
+      "id": "def:trimmed-location-risk",
+      "name": "R_{n,\\delta}^{\\mathrm{loc}}(\\mathcal{C})",
+      "construction": "\\[R_{n,\\delta}^{\\mathrm{loc}}(\\mathcal{C})=\\inf_{\\widetilde{\\tau}_n\\in\\mathcal{T}^{\\mathrm{loc}}_n}\\sup_{P\\in\\mathcal{C}}\\mathbb{E}_P\\left[\\sup_{x\\in\\mathcal{B}_{P,\\delta}}|\\widetilde{\\tau}_n(x)-\\tau_P(x)|\\right].\\]",
+      "free_symbols": [
+        "R_{n,\\delta}^{\\mathrm{loc}}(\\mathcal{C})",
+        "n",
+        "\\delta",
+        "\\widetilde{\\tau}_n",
+        "\\mathcal{T}^{\\mathrm{loc}}_n",
+        "P",
+        "\\mathcal{B}_{P,\\delta}",
+        "\\tau_P"
+      ],
+      "inputs": [
+        "def:location-decision-class",
+        "def:trimmed-boundary"
+      ],
+      "revision": "rev:b69632ec7638600530b3ead86db60865fef12f20d7112cce95ad213a1a2beded"
+    },
+    {
+      "id": "def:frontier-rates",
+      "name": "a_n\\text{ and }s_{n,q}",
+      "construction": "\\[a_n=(\\log n/n)^{1/4},\\qquad s_{n,q}=(\\log n/n)^{q/(2q+2)}.\\]",
+      "free_symbols": [
+        "a_n",
+        "s_{n,q}",
+        "n",
+        "q"
+      ],
+      "inputs": [],
+      "revision": "rev:c1dee5f3ce983b53173ffe72afe60a2c0b4314d707fde0ea2b5b8dccc4a87111"
+    },
+    {
+      "id": "def:angular-density-handle",
+      "name": "\\mathfrak{H}_{\\mathrm{ang}}",
+      "construction": "Coarea angular-density confounding handle: expand each arm-specific radial conditional mean as a ratio of circle-level angular integrals; vary bounded continuous score densities through shrinking-scale angular imbalances while preserving the fixed radial mass envelope; pair those imbalances with disjoint \\(q\\)-H\\\"older bump perturbations of affine baselines and bounded or Bernoulli outcomes; and use the induced compressed likelihoods to determine both a separated-center packing and the primitive regularity that prevents such confounding.",
+      "free_symbols": [
+        "\\mathfrak{H}_{\\mathrm{ang}}",
+        "f_P",
+        "\\mu_{t,P}",
+        "Y",
+        "U_{n,P}(x)",
+        "\\mathcal{B}_{P,\\delta}"
+      ],
+      "inputs": [
+        "def:distance-data",
+        "def:trimmed-boundary"
+      ],
+      "revision": "rev:29e7d95764724107a82c918a8ace63f3ffb47c302a07125a9ce8a9a6a5e8732e"
+    },
+    {
+      "id": "def:stabilized-distance-local-polynomial",
+      "name": "\\widehat{\\tau}^{(m),\\mathrm{LP}}_{n,h}",
+      "construction": "Fix an integer \\(m\\geq1\\), a cutoff constant \\(c>0\\), a bandwidth \\(h>0\\), and \\(x\\in\\mathcal B_P\\).  Put \\(v_m(u)=(1,u,\\ldots,u^{m-1})^\\top\\), let \\(e_1=(1,0,\\ldots,0)^\\top\\), and set \\(S_{P,x,i}=|D_{P,x,i}|\\).  At the probability-zero value \\(D_{P,x,i}=0\\), assign the observation to neither arm.  Define\n\\[\n \\widehat G^{(m)}_{t,x}(h)\n =\\frac1{nh^2}\\sum_{i=1}^n\n \\mathbf 1\\{(2t-1)D_{P,x,i}>0\\}\n K_\\triangle(S_{P,x,i}/h)\n v_m(S_{P,x,i}/h)v_m(S_{P,x,i}/h)^\\top\n\\]\nand\n\\[\n \\widehat r^{(m)}_{t,x}(h)\n =\\frac1{nh^2}\\sum_{i=1}^n\n \\mathbf 1\\{(2t-1)D_{P,x,i}>0\\}\n K_\\triangle(S_{P,x,i}/h)\n v_m(S_{P,x,i}/h)Y_i.\n\\]\nLet\n\\[\n G_m=\\int_0^1uK_\\triangle(u)v_m(u)v_m(u)^\\top\\,du,\n \\qquad \\lambda_m(c)=c\\lambda_{\\min}(G_m),\n\\]\nand define the stabilized arm intercept and arm difference by\n\\[\n \\widehat\\mu^{(m),\\mathrm{LP}}_{t,h,c}(x)\n =\\begin{cases}\n e_1^\\top\\{\\widehat G^{(m)}_{t,x}(h)\\}^{-1}\n \\widehat r^{(m)}_{t,x}(h),\n &\\lambda_{\\min}\\{\\widehat G^{(m)}_{t,x}(h)\\}\\geq\\lambda_m(c)/2,\\\\\n 0,&\\lambda_{\\min}\\{\\widehat G^{(m)}_{t,x}(h)\\}<\\lambda_m(c)/2,\n \\end{cases}\n \\qquad\n \\widehat\\tau^{(m),\\mathrm{LP}}_{n,h}(x)\n =\\widehat\\mu^{(m),\\mathrm{LP}}_{1,h,c}(x)\n -\\widehat\\mu^{(m),\\mathrm{LP}}_{0,h,c}(x).\n\\]\nThe cutoff input \\(c\\) is suppressed from the notation for \\(\\widehat\\tau^{(m),\\mathrm{LP}}_{n,h}\\).  The formula is defined for every \\(h>0\\); in an order-\\(m\\) coarea class it is used with \\(c=\\underline c\\) and \\(0<h\\leq r_*\\).  The strict sign convention, eigenvalue cutoff, inverse branch, and zero branch make this a pointwise Borel formula of \\(U_{n,P}(x)\\).",
+      "free_symbols": [
+        "m",
+        "n",
+        "t",
+        "h",
+        "P",
+        "Y",
+        "\\mathcal{B}_P",
+        "D_{P,x}",
+        "U_{n,P}(x)",
+        "K_\\triangle",
+        "\\widehat{\\tau}^{(m),\\mathrm{LP}}_{n,h}"
+      ],
+      "inputs": [
+        "def:distance-data",
+        "def:distance-decision-class",
+        "def:triangular-kernel"
+      ],
+      "revision": "rev:93312c8ea3a1a9e7be8c2a0f53d5683930458839fe796e0403b2b7d1e5cfc902"
+    },
+    {
+      "id": "def:radial-coarea-ambient-class",
+      "name": "\\mathcal{P}_{\\mathrm{coarea}}",
+      "construction": "\\[\\mathcal P_{\\mathrm{coarea}}(q,\\iota,L)=\\left\\{P:\\text{for every }n\\in\\mathbb N,\\text{ all member properties enumerated below hold}\\right\\}.\\]",
+      "free_symbols": [
+        "\\mathcal{P}_{\\mathrm{coarea}}",
+        "q",
+        "\\iota",
+        "L",
+        "P",
+        "n"
+      ],
+      "by_member_properties": [
+        "ass:iid-sampling",
+        "ass:deterministic-assignment",
+        "ass:consistency",
+        "ass:assignment-partition",
+        "ass:compact-support",
+        "ass:density-envelope",
+        "ass:holder-regressions",
+        "ass:conditional-subgaussian",
+        "ass:smooth-embedding"
+      ],
+      "revision": "rev:791cc7fba505ff413f6f2b994398b85e2d0ec3bffbee5c7ae6802af73d638ff4"
+    }
+  ],
+  "statements": [
+    {
+      "id": "lem:density-implies-upper-mass",
+      "kind": "lemma",
+      "statement": "For every \\(P\\in\\mathcal{P}_{\\mathrm{rect}}\\cup\\mathcal{P}_{\\mathrm{sm}}\\), \\(x\\in\\mathcal{B}_P\\), \\(t\\in\\{0,1\\}\\), and \\(r>0\\), \\[P\\{X\\in\\mathcal{A}_{t,P}\\cap B_2(x,r)\\}\\leq\\pi Lr^2.\\]",
+      "free_symbols": [
+        "P",
+        "\\mathcal{P}_{\\mathrm{rect}}",
+        "\\mathcal{P}_{\\mathrm{sm}}",
+        "\\mathcal{B}_P",
+        "t",
+        "X",
+        "\\mathcal{A}_{0,P}",
+        "\\mathcal{A}_{1,P}",
+        "L"
+      ],
+      "depends_on": [
+        "ass:density-envelope",
+        "def:rectifiable-class",
+        "def:smooth-class"
+      ],
+      "status": "proved",
+      "justification": "The bounded density supplies the upper half of local mass control, so the class needs only the primitive lower-thickness condition.",
+      "gap": "This is a supporting consequence of the density envelope rather than an additional Ahlfors-type premise.",
+      "consumer": "The local-constant stochastic bound and its population denominator use this estimate uniformly over boundary points.",
+      "proof_tex": "Fix \\(P\\in\\mathcal P_{\\mathrm{rect}}\\cup\\mathcal P_{\\mathrm{sm}}\\), \\(x\\in\\mathcal B_P\\), \\(t\\in\\{0,1\\}\\), and \\(r>0\\).  Membership in either displayed class includes the density envelope, and \\(X\\) is supported on \\(\\mathcal X_P\\).  Therefore, using only nonnegativity and the upper density bound,\n\\[\n\\begin{aligned}\n P\\{X\\in\\mathcal A_{t,P}\\cap B_2(x,r)\\}\n &=\\int_{\\mathcal A_{t,P}\\cap\\mathcal X_P\\cap B_2(x,r)}f_P(z)\\,dz\\\\\n &\\leq L\\,\\operatorname{Leb}_2\\{B_2(x,r)\\}\n =\\pi Lr^2.\n\\end{aligned}\n\\]\nThe argument is valid for every \\(r>0\\); it requires neither a boundary regularity condition nor a lower mass condition.",
+      "revision": "rev:2d18a35a17286308c071fff1001ab9a28b18b94ac83953abd78bb869c3e0ff84"
+    },
+    {
+      "id": "lem:fixed-local-constant-stability",
+      "kind": "lemma",
+      "statement": "For the fixed kernel \\(K_\\triangle\\), there is \\(\\kappa_0=\\kappa_0(c_{-},r_0)>0\\) such that, for all sufficiently small \\(h\\), \\[\\inf_{P\\in\\mathcal{P}_{\\mathrm{rect}}}\\inf_{t\\in\\{0,1\\}}\\inf_{x\\in\\mathcal{B}_P}\\Psi^{(0)}_{t,P,x}(h)\\geq\\kappa_0,\\qquad \\inf_{P\\in\\mathcal{P}_{\\mathrm{sm}}}\\inf_{t\\in\\{0,1\\}}\\inf_{x\\in\\mathcal{B}_{P,\\delta}}\\Psi^{(0)}_{t,P,x}(h)\\geq\\kappa_0.\\]",
+      "free_symbols": [
+        "K_\\triangle",
+        "c_{-}",
+        "r_0",
+        "h",
+        "P",
+        "\\mathcal{P}_{\\mathrm{rect}}",
+        "\\mathcal{P}_{\\mathrm{sm}}",
+        "t",
+        "\\mathcal{B}_P",
+        "\\mathcal{B}_{P,\\delta}",
+        "\\Psi^{(0)}_{t,P,x}(h)",
+        "\\delta"
+      ],
+      "depends_on": [
+        "ass:uniform-two-sided-thickness",
+        "def:triangular-kernel",
+        "def:rectifiable-class",
+        "def:smooth-class",
+        "def:trimmed-boundary"
+      ],
+      "status": "proved",
+      "justification": "This theorem-local support verifies denominator stability for the one fixed degree-zero estimator used in both distance upper bounds.",
+      "gap": "CattaneoTitiunikYu2026Distance uses a broader high-level Gram condition for local-polynomial upper theory; this lemma derives only the scalar bound needed by the fixed triangular local-constant estimator.",
+      "consumer": "The rectifiable and smooth distance upper bounds use the same stable estimator without quantifying over kernels or polynomial degrees.",
+      "proof_tex": "Take \\(0<h\\leq2r_0\\).  Symmetry and the explicit formula for the triangular kernel give\n\\[\n K_\\triangle(D_{P,x}/h)=K_\\triangle(|D_{P,x}|/h)\\geq\\frac12\n \\quad\\text{on }\\{\\lVert X-x\\rVert_2\\leq h/2\\}.\n\\]\nUnder deterministic assignment, \\(T=t\\) almost surely on \\(\\{X\\in\\mathcal A_{t,P}\\}\\), subject only to the fixed interface convention.  Therefore the definition of \\(\\Psi^{(0)}_{t,P,x}(h)\\) and two-sided thickness at the admissible radius \\(h/2\\leq r_0\\) give\n\\[\n\\begin{aligned}\n \\Psi^{(0)}_{t,P,x}(h)\n &=\\frac1{h^2}\\mathbb E_P\\!\\left[K_\\triangle(D_{P,x}/h)\\mathbf1\\{T=t\\}\\right]\\\\\n &\\geq\\frac1{2h^2}P\\{X\\in\\mathcal A_{t,P}\\cap B_2(x,h/2)\\}\\\\\n &\\geq\\frac1{2h^2}c_-\\left(\\frac h2\\right)^2\n =\\frac{c_-}{8}.\n\\end{aligned}\n\\]\nEvery division is by \\(h^2>0\\).  The bound is uniform over \\(P\\in\\mathcal P_{\\mathrm{rect}}\\), both arms, and \\(x\\in\\mathcal B_P\\).  It is also uniform over \\(P\\in\\mathcal P_{\\mathrm{sm}}\\) and \\(x\\in\\mathcal B_{P,\\delta}\\), since \\(\\mathcal B_{P,\\delta}\\subseteq\\mathcal B_P\\).  Thus one may take \\(\\kappa_0=c_-/8\\), with ``sufficiently small'' meaning \\(0<h\\leq2r_0\\).",
+      "revision": "rev:cf0605e27a3fe9779da2883508fb61f9d56fcdfa9b2cb86fb12f81ba440c7e8b"
+    },
+    {
+      "id": "lem:canonical-exact-distance-regression",
+      "kind": "lemma",
+      "statement": "For every \\(P\\in\\mathcal{P}_{\\mathrm{rect}}\\cup\\mathcal{P}_{\\mathrm{sm}}\\), \\(x\\in\\mathcal{B}_P\\), and \\(t\\in\\{0,1\\}\\), coarea gives, for \\(0<r\\leq r_0\\), \\[P\\{X\\in\\mathcal{A}_{t,P}\\cap B_2(x,r)\\}=\\int_0^r Q_{t,P,x}(s)\\,ds\\geq c_{-}r^2.\\] Hence the set \\(\\{s>0:Q_{t,P,x}(s)>0\\}\\) accumulates at zero, without requiring positivity at every radius. For Lebesgue-almost every \\(s>0\\) with \\(Q_{t,P,x}(s)>0\\), \\(g^{\\mathrm{dist}}_{t,P,x}(s)=N_{t,P,x}(s)/Q_{t,P,x}(s)\\) is a version of \\(\\mathbb{E}_P[Y\\mid D_{P,x}=(2t-1)s]\\). The canonical values on zero-denominator radii satisfy \\[|g^{\\mathrm{dist}}_{t,P,x}(s)-\\mu_{t,P}(x)|\\leq Ls,\\qquad s\\geq0,\\] and therefore \\[\\tau_P(x)=\\lim_{s\\downarrow0}\\bigl(g^{\\mathrm{dist}}_{1,P,x}(s)-g^{\\mathrm{dist}}_{0,P,x}(s)\\bigr).\\]",
+      "free_symbols": [
+        "P",
+        "\\mathcal{P}_{\\mathrm{rect}}",
+        "\\mathcal{P}_{\\mathrm{sm}}",
+        "t",
+        "s",
+        "\\mathcal{B}_P",
+        "r_0",
+        "X",
+        "\\mathcal{A}_{0,P}",
+        "\\mathcal{A}_{1,P}",
+        "Q_{t,P,x}",
+        "c_{-}",
+        "g^{\\mathrm{dist}}_{t,P,x}",
+        "N_{t,P,x}",
+        "Y",
+        "D_{P,x}",
+        "\\mu_{t,P}",
+        "L",
+        "\\tau_P"
+      ],
+      "depends_on": [
+        "ass:deterministic-assignment",
+        "ass:consistency",
+        "ass:density-envelope",
+        "ass:holder-regressions",
+        "ass:uniform-two-sided-thickness",
+        "def:circle-density-integral",
+        "def:circle-outcome-integral",
+        "def:canonical-distance-regression",
+        "def:signed-distance",
+        "def:rectifiable-class",
+        "def:smooth-class"
+      ],
+      "status": "proved",
+      "justification": "The lemma makes exact-distance conditioning well posed without asserting that every circle has positive arm density and shows that the canonical representative identifies the boundary contrast.",
+      "gap": "CattaneoTitiunikYu2026Distance, Theorem 1, supplies the identification background; this supporting lemma makes the coarea version and its behavior on zero-denominator radii explicit for the present primitive classes.",
+      "consumer": "The two distance-only frontier theorems use this canonical radial regression for their bias calculations and causal interpretation.",
+      "proof_tex": "Fix a displayed law \\(P\\), boundary point \\(x\\), and arm \\(t\\), and put \\(A_t=\\mathcal A_{t,P}\\cap\\mathcal X_P\\).  The map \\(z\\mapsto\\lVert z-x\\rVert_2\\) is Lipschitz and has gradient of norm one away from the Lebesgue-null singleton \\(\\{x\\}\\).  The polar coarea formula and the density of \\(X\\) therefore give, for every \\(r>0\\),\n\\[\n\\begin{aligned}\n P\\{X\\in A_t\\cap B_2(x,r)\\}\n &=\\int_0^r\\int_{\\partial B_2(x,s)\\cap A_t}\n f_P(z)\\,d\\mathcal H^1(z)\\,ds\\\\\n &=\\int_0^rQ_{t,P,x}(s)\\,ds.\n\\end{aligned}\n\\]\nFor \\(0<r\\leq r_0\\), two-sided thickness bounds the last expression below by \\(c_-r^2\\).  If \\(Q_{t,P,x}=0\\) almost everywhere on some \\((0,r)\\), its nonnegative integral there would be zero, a contradiction.  Thus every neighborhood of zero contains a positive-denominator radius; positivity at every radius is neither used nor concluded.\n\nAbsolute continuity gives \\(P(X=x)=0\\).  Hence \\(D_{P,x}\\neq0\\) almost surely, and deterministic assignment makes its sign equal to \\(2T-1\\).  For any bounded Borel \\(a:(0,\\infty)\\to\\mathbb R\\), consistency and the definition of \\(\\mu_{t,P}\\) give\n\\[\n\\begin{aligned}\n \\mathbb E_P\\!\\left[Y\\mathbf1\\{T=t\\}a(\\lVert X-x\\rVert_2)\\right]\n &=\\int_{A_t}a(\\lVert z-x\\rVert_2)\\mu_{t,P}(z)f_P(z)\\,dz\\\\\n &=\\int_0^\\infty a(s)N_{t,P,x}(s)\\,ds,\n\\end{aligned}\n\\]\nwhereas the same calculation with \\(Y\\) replaced by one gives\n\\[\n \\mathbb E_P\\!\\left[\\mathbf1\\{T=t\\}a(\\lVert X-x\\rVert_2)\\right]\n =\\int_0^\\infty a(s)Q_{t,P,x}(s)\\,ds.\n\\]\nThe Radon--Nikodym characterization of conditional expectation therefore permits the version\n\\[\n \\mathbb E_P[Y\\mid D_{P,x}=(2t-1)s]\n =\\frac{N_{t,P,x}(s)}{Q_{t,P,x}(s)}\n\\]\nfor Lebesgue-almost every \\(s>0\\) for which \\(Q_{t,P,x}(s)>0\\).  Division occurs only on that set.\n\nBecause \\(q\\geq1\\), the stated H\\\"older ball supplies\n\\[\n |\\mu_{t,P}(z)-\\mu_{t,P}(x)|\\leq L\\lVert z-x\\rVert_2.\n\\]\nWhen \\(Q_{t,P,x}(s)>0\\), the ratio \\(N/Q\\) is an \\(f_P\\,d\\mathcal H^1\\)-weighted average over points at distance \\(s\\), and hence\n\\[\n \\left|\\frac{N_{t,P,x}(s)}{Q_{t,P,x}(s)}-\\mu_{t,P}(x)\\right|\n \\leq\\frac{\\int Ls f_P\\,d\\mathcal H^1}{Q_{t,P,x}(s)}=Ls.\n\\]\nAt \\(s=0\\), and at every positive zero-denominator radius, the canonical definition sets \\(g^{\\mathrm{dist}}_{t,P,x}(s)=\\mu_{t,P}(x)\\), so the same inequality holds for every \\(s\\geq0\\).  Therefore\n\\[\n \\lim_{s\\downarrow0}g^{\\mathrm{dist}}_{t,P,x}(s)=\\mu_{t,P}(x).\n\\]\nSubtracting the two arm limits and using the separately defined causal target yields\n\\[\n \\lim_{s\\downarrow0}\\{g^{\\mathrm{dist}}_{1,P,x}(s)-g^{\\mathrm{dist}}_{0,P,x}(s)\\}\n =\\mu_{1,P}(x)-\\mu_{0,P}(x)=\\tau_P(x).\n\\]\nThus the observed radial functional identifies, rather than defines, the causal contrast.",
+      "revision": "rev:9f9d49f96c2e28d918deab155554254af44b6b479687ff220d7ace43f8653143"
+    },
+    {
+      "id": "lem:angular-density-packing",
+      "kind": "lemma",
+      "statement": "There are constants \\(c_0,c_1>0\\) and \\(0<\\alpha<1/8\\), depending only on the law-class parameters and \\(\\delta\\), such that, for all sufficiently large \\(n\\), one can construct \\(M_n\\geq c_0a_n^{-1/q}\\) centers on a trimmed straight boundary, separated by a constant multiple of \\(a_n^{1/q}\\), and a finite hypercube family of laws in \\(\\mathcal P_{\\mathrm{rect}}\\cap\\mathcal P_{\\mathrm{sm}}\\).  The assignment interface is straight; the regressions are disjoint \\(q\\)-H\\\"older bump perturbations of affine baselines; every \\(f_P\\) is continuous and stays within the fixed density envelope; and the variance, tail, and arm-specific local-mass constants are common.  If two vertices differ only in the coordinate attached to a center \\(x_j\\), their target curves differ by at least \\(c_1a_n\\) at \\(x_j\\), both arm-specific radial mass densities at \\(x_j\\) agree at every radius, their arm-specific radial laws at \\(x_j\\) agree outside radii of order \\(a_n\\), and\n\\[\n \\operatorname{KL}\\!\\left(\\mathbb Q_{n,P_\\omega,x_j},\\mathbb Q_{n,P_{\\omega^{(j)}},x_j}\\right)\n \\leq\\alpha\\log M_n.\n\\]\nThe perturbations use \\(\\mathfrak H_{\\mathrm{ang}}\\), and the density envelope and arm-specific local-mass bounds hold uniformly over the whole hypercube.  If \\(L>4\\), the construction may be made on the canonical square, in which case the entire family also lies in \\(\\mathcal P_{\\mathrm{straight}}\\).",
+      "free_symbols": [
+        "n",
+        "q",
+        "c_{-}",
+        "L",
+        "r_0",
+        "\\delta",
+        "P",
+        "a_n",
+        "\\mathcal{P}_{\\mathrm{rect}}",
+        "\\mathcal{P}_{\\mathrm{sm}}",
+        "\\mathcal{P}_{\\mathrm{straight}}",
+        "\\mu_{t,P}",
+        "f_P",
+        "\\tau_P",
+        "\\mathbb{Q}_{n,P,x}",
+        "\\mathfrak{H}_{\\mathrm{ang}}"
+      ],
+      "depends_on": [
+        "ass:assignment-partition",
+        "ass:density-continuity",
+        "ass:density-envelope",
+        "ass:holder-regressions",
+        "ass:variance-envelope",
+        "ass:uniform-two-sided-thickness",
+        "ass:straight-half-plane-design",
+        "def:rectifiable-class",
+        "def:smooth-class",
+        "def:straight-class",
+        "def:frontier-rates",
+        "def:angular-density-handle"
+      ],
+      "proof_tex": "We verify an explicit family, including its support, normalization, positivity, smoothness, moment, local-mass, separation, and divergence properties.  Begin with \\(S=[-1/2,1/2]^2\\), the lower and upper half-square assignment regions, and\n\\[\n \\mathcal B=\\{(u-1/2,0):0\\leq u\\leq1\\},\n \\qquad \\gamma(u)=(u-1/2,0).\n\\]\nThe base density is one and the chart is injective and \\(C^\\infty\\).  At either endpoint, the intersection of either arm with a ball of radius at most \\(r_0\\leq1/4\\) contains a quarter disk.  Every density below is at least \\(3/4\\), so the arm mass is at least \\(3\\pi r^2/16>c_-r^2\\), because \\(c_-\\leq1/(16L)\\).  Away from the endpoints the same lower bound follows from a half disk.  Compact support, the assignment partition, and two-sided thickness are therefore uniform.\n\nChoose a nonnegative radial \\(C^\\infty\\) function \\(\\phi\\), compactly supported in the open unit disk, with \\(\\phi(0)=1\\).  For fixed constants \\(d,d_1>0\\), put\n\\[\n \\Delta=d a_n,\n \\qquad w=(d_1\\Delta)^{1/q}.\n\\]\nChoose centers \\(x_1,\\ldots,x_M\\) on \\(\\gamma([\\delta,1-\\delta])\\), separated by at least \\(3w\\).  For all sufficiently large \\(n\\), their radius-\\(w\\) disks are disjoint and lie in the interior of \\(S\\), and interval packing gives\n\\[\n M\\geq c w^{-1}\\geq c_0a_n^{-1/q}.\n\\]\nWriting \\(\\phi_j(z)=\\phi((z-x_j)/w)\\), for \\(0\\leq k\\leq q\\) one has\n\\[\n \\lVert D^k(\\Delta\\phi_j)\\rVert_\\infty\n \\leq C_\\phi\\Delta w^{-k}.\n\\]\nFor \\(k=q\\) the right side is \\(C_\\phi/d_1\\), and for \\(k<q\\) it tends to zero.  Disjoint supports give the same bounds for every signed sum.  Taking \\(d_1\\) large and then a fixed affine slope \\(b>0\\) small places all regressions below in the prescribed \\(q\\)-H\\\"older ball.\n\nFor \\(\\omega\\in\\{0,1\\}^M\\), define\n\\[\n p_{0,\\omega}(z)=\\frac12,\n \\qquad\n p_{1,\\omega}(z)=\\frac12+bz_1+\\Delta\\sum_{j=1}^M\\omega_j\\phi_j(z).\n\\]\nAfter decreasing \\(b\\) and \\(d\\), these functions lie in \\([1/4,3/4]\\).  Conditional on \\(X=z\\), take independent potential outcomes\n\\[\n Y(t)=B_t+\\varepsilon_t,\n \\qquad B_t\\sim\\operatorname{Bernoulli}(p_{t,\\omega}(z)),\n \\qquad \\varepsilon_t\\sim N(0,1),\n\\]\nand impose deterministic assignment and consistency.  Then \\(\\mu_{t,P_\\omega}=p_{t,\\omega}\\) and\n\\[\n 1\\leq\\sigma^2_{t,P_\\omega}(z)\n =1+p_{t,\\omega}(z)\\{1-p_{t,\\omega}(z)\\}\n \\leq\\frac54,\n\\]\nwhich lies in \\([L^{-1},L]\\).  Hoeffding's exponential bound and the Gaussian moment-generating identity give\n\\[\n \\mathbb E\\!\\left[e^{\\lambda\\{Y(t)-p_{t,\\omega}(X)\\}}\\mid X\\right]\n \\leq e^{\\lambda^2/8}e^{\\lambda^2/2}\n \\leq e^{L^2\\lambda^2/2}.\n\\]\n\nTo hide coordinate \\(j\\) in the radial experiment centered at \\(x_j\\), choose a continuous cutoff \\(\\chi\\) with \\(\\chi(v)=0\\) for \\(v\\leq1\\) and \\(\\chi(v)=1\\) for \\(v\\geq2\\), and define\n\\[\n A_n(r)=-\\frac{2\\Delta\\phi(r/w)}{br}\n \\chi\\!\\left(\\frac{br}{8\\Delta}\\right),\n\\]\nwith value zero on the neighborhood of zero where the cutoff vanishes.  There is consequently no division at zero.  On the active region \\(br\\geq8\\Delta\\), \\(|A_n(r)|\\leq1/4\\).  Increase \\(d_1\\), if necessary, so that \\(16\\Delta/b<w\\), including when \\(q=1\\).  Define\n\\[\n f_\\omega(z)=1+\\sum_{j=1}^M\\omega_jA_n(\\lVert z-x_j\\rVert_2)\n \\frac{z_1-(x_j)_1}{\\lVert z-x_j\\rVert_2}\n \\mathbf1\\{z\\in B_2(x_j,w)\\},\n\\]\nwith each summand set to zero at its center.  Disjointness makes the formula unambiguous.  Each angular correction integrates to zero on every full circle, so \\(\\int_Sf_\\omega=1\\).  The cutoff at the center and compact support of \\(\\phi\\) at the outer edge make \\(f_\\omega\\) continuous, and \\(3/4\\leq f_\\omega\\leq5/4\\), which is inside \\([L^{-1},L]\\).\n\nCompare adjacent vertices \\(\\omega\\) and \\(\\omega^{(j)}\\), oriented so that \\(\\omega_j=1\\).  On either half-circle centered at \\(x_j\\), \\(\\int\\cos\\theta\\,d\\theta=0\\); hence the two arm-specific radial mass densities agree at every radius.  On the treated upper half-circle, whenever \\(br\\geq16\\Delta\\),\n\\[\n\\begin{aligned}\n &\\int_0^\\pi p_{1,\\omega}(x_j+r e_\\theta)\n       \\{1+A_n(r)\\cos\\theta\\}\\,d\\theta\n -\\int_0^\\pi p_{1,\\omega^{(j)}}(x_j+r e_\\theta)\\,d\\theta\\\\\n &\\qquad=\\pi\\Delta\\phi(r/w)+\\frac\\pi2brA_n(r)=0.\n\\end{aligned}\n\\]\nThe control equality follows from its constant regression.  Angular mixing of a Bernoulli variable produces a Bernoulli variable with the averaged success probability, and addition of the common Gaussian noise is a common Markov kernel.  Thus the complete arm-specific radial outcome laws agree outside \\(r\\leq16\\Delta/b\\).\n\nInside that exceptional radius, the common radial density is at most \\(Cr\\), and the two averaged Bernoulli probabilities differ by at most \\(C\\Delta\\) while remaining in \\([1/4,3/4]\\).  From \\(\\log u\\leq u-1\\),\n\\[\n \\operatorname{kl}(p,p')\\leq\\frac{(p-p')^2}{p'(1-p')},\n\\]\nand relative entropy cannot increase through the common Gaussian channel.  Hence one compressed observation obeys\n\\[\n \\operatorname{KL}(P^{\\mathrm{dist}}_{\\omega,x_j},\n P^{\\mathrm{dist}}_{\\omega^{(j)},x_j})\n \\leq C\\int_0^{16\\Delta/b}\\Delta^2r\\,dr\n \\leq C'\\Delta^4.\n\\]\nIndependence tensorizes relative entropy, so the sample divergence is at most\n\\[\n C'n\\Delta^4=C'd^4\\log n.\n\\]\nMoreover \\(\\log M=(1/(4q)+o(1))\\log n\\).  Choosing \\(d\\) sufficiently small makes this at most \\(\\alpha\\log M\\) for a fixed \\(\\alpha<1/8\\), with enough slack that Poissonization at mean \\(2n\\) still has exponent below one.  At \\(x_j\\), the adjacent target values differ by \\(\\Delta\\phi_j(x_j)=d a_n\\), so take \\(c_1=d\\).  The fixed half-square geometry and the global density bounds give common local-mass constants.  This verifies membership in \\(\\mathcal P_{\\mathrm{rect}}\\cap\\mathcal P_{\\mathrm{sm}}\\).\n\nFor the canonical square \\([-1,1]^2\\), use \\(\\gamma(u)=(2u-1,0)\\) and base density \\(1/4\\).  If \\(L>4\\), put \\(\\varepsilon_L=1-4/L>0\\), replace the cutoff constant eight by a sufficiently large constant depending on \\(L\\), and multiply the preceding relative angular correction by the base density.  Choose \\(d_1\\) large enough that cancellation begins inside every bump and then choose \\(d/b\\) small enough that all disks stay inside the trimmed square.  The relative perturbation can be bounded by \\(\\varepsilon_L/2\\), whence\n\\[\n L^{-1}\\leq\\frac14(1-\\varepsilon_L/2)\n \\leq f_\\omega(z)\n \\leq\\frac14(1+\\varepsilon_L/2)\\leq L.\n\\]\nAll preceding cancellation and entropy calculations change only by constants depending on \\(L\\).  Thus the family lies in \\(\\mathcal P_{\\mathrm{straight}}\\).  At \\(L=4\\), normalization and \\(f_P\\geq1/4\\) on a square of area four force \\(f_P\\equiv1/4\\), explaining exactly why the canonical-square clause requires \\(L>4\\).",
+      "status": "proved",
+      "justification": "This explicit compressed-experiment construction converts angular-density confounding into the logarithmic uniform lower bound even under a perfectly smooth interface and smooth outcome regressions.",
+      "gap": "The published pointwise converse does not distribute continuous angular-density perturbations over separated trimmed-boundary centers with a logarithmic divergence budget.",
+      "consumer": "The rectifiable, smooth, and strict-slack straight-class distance converses use this family together with the coordinatewise overlap argument.",
+      "revision": "rev:214490399cfbc3971630630776079b3b0fff2b9c90bb7b1393acfe9c71653adb"
+    },
+    {
+      "id": "thm:rectifiable-exact-frontier",
+      "kind": "theorem",
+      "statement": "For every \\(q\\geq1\\), there exist constants \\(0<c_{\\mathrm{rect}}\\leq C_{\\mathrm{rect}}<\\infty\\), depending only on \\(q,L,c_{-},r_0\\), such that \\[c_{\\mathrm{rect}}\\leq\\liminf_{n\\to\\infty}\\frac{R_n^{\\mathrm{dist}}(\\mathcal{P}_{\\mathrm{rect}})}{a_n}\\leq\\limsup_{n\\to\\infty}\\frac{R_n^{\\mathrm{dist}}(\\mathcal{P}_{\\mathrm{rect}})}{a_n}\\leq C_{\\mathrm{rect}}.\\] The upper inequality is attained by the fixed degree-zero triangular-kernel estimator \\(\\widehat{\\tau}^{\\mathrm{LC}}_{n,h}\\) with \\(h\\asymp a_n\\). The lower inequality is supplied by the separated compressed-experiment family in \\(\\mathrm{lem:angular\\text{-}density\\text{-}packing}\\). This theorem concerns the explicitly defined primitive two-sided-thickness class and asserts no inclusion in, or same-class tightening of, the nonparametric class in Cattaneo, Titiunik, and Yu, Theorem 6.",
+      "free_symbols": [
+        "q",
+        "L",
+        "c_{-}",
+        "r_0",
+        "n",
+        "R_n^{\\mathrm{dist}}(\\mathcal{C})",
+        "\\mathcal{P}_{\\mathrm{rect}}",
+        "a_n",
+        "\\widehat{\\tau}^{\\mathrm{LC}}_{n,h}",
+        "h"
+      ],
+      "depends_on": [
+        "ass:iid-sampling",
+        "ass:density-envelope",
+        "ass:holder-regressions",
+        "ass:conditional-subgaussian",
+        "ass:uniform-two-sided-thickness",
+        "def:distance-decision-class",
+        "def:rectifiable-class",
+        "def:local-constant-estimator",
+        "def:distance-risk",
+        "def:frontier-rates",
+        "lem:density-implies-upper-mass",
+        "lem:fixed-local-constant-stability",
+        "lem:canonical-exact-distance-regression",
+        "lem:angular-density-packing",
+        "lem:coordinatewise-overlap-direct-product"
+      ],
+      "status": "proved",
+      "justification": "The theorem gives the sharp logarithm-bearing uniform frontier for the project-defined primitive two-sided-thickness coordinatewise-distance experiment.",
+      "gap": "The published lower bound is pointwise in its packing architecture. This theorem obtains the logarithmic factor on a separate class and makes no class-inclusion claim.",
+      "consumer": "Distance-based boundary analyses receive a rate-sharp bandwidth and worst-case uniform error guarantee under an inspectable arm-mass condition.",
+      "proof_tex": "We first prove the upper bound.  Fix an arm \\(t\\), a boundary point \\(x\\), and a bandwidth \\(0<h\\leq r_0\\).  Write \\(R_x=\\lVert X-x\\rVert_2\\) and\n\\[\n W_{t,x,h}=h^{-2}\\mathbf1\\{T=t\\}K_\\triangle(R_x/h).\n\\]\nFor each fixed \\(x\\), absolute continuity gives \\(P(X=x)=0\\), so replacing the strict-sign summand in the estimator by \\(W_{t,x,h}\\) does not change its population moments.  The stability lemma gives\n\\[\n d_{t,P,x}(h):=\\mathbb E_PW_{t,x,h}\\geq\\kappa_0.\n\\]\nThe upper-mass lemma, \\(0\\leq K_\\triangle\\leq1\\), and the bounded regression imply\n\\[\n \\mathbb E_PW_{t,x,h}^2\\leq \\pi Lh^{-2},\n \\qquad\n \\mathbb E_P\\{W_{t,x,h}Y\\}^2\\leq Ch^{-2}.\n\\]\nFor the second inequality, condition on \\(X\\), use consistency on arm \\(t\\), the uniform bound on \\(\\mu_{t,P}\\), and the conditional sub-Gaussian second-moment bound.\n\nThe same conditioning gives, for every integer \\(k\\geq2\\),\n\\[\n \\mathbb E_P|W_{t,x,h}\\{Y-\\mu_{t,P}(X)\\}|^k\n \\leq k!C^k h^{2-2k}.\n\\]\nExpanding the exponential series and applying exponential Markov inequality therefore yields constants \\(c,C>0\\), uniform in \\(P,t,x\\), such that for either the centered denominator or centered numerator average,\n\\[\n P\\!\\left(\\left|(\\mathbb P_n-P)Z_{t,x,h}\\right|>u\\right)\n \\leq2\\exp\\!\\left\\{-\\frac{cnu^2}{h^{-2}+h^{-2}u}\\right\\}.\n\\]\nThis is the required Bernstein inequality written with its variance and scale terms; no limit law is assumed.\n\nCover \\(\\mathcal B_P\\subseteq[-L,L]^2\\) by an ambient Euclidean \\(\\epsilon_n\\)-net with \\(\\epsilon_n=n^{-4}\\).  Its cardinality is at most \\(C_Ln^8\\), independently of the geometry of \\(\\mathcal B_P\\).  The map \\(x\\mapsto K_\\triangle(\\lVert X_i-x\\rVert_2/h)\\) is \\(h^{-1}\\)-Lipschitz.  Thus the normalized denominator and numerator oscillations between a point and its nearest net point are at most\n\\[\n C\\epsilon_nh^{-3},\n \\qquad\n C\\epsilon_nh^{-3}\\mathbb P_n|Y|,\n\\]\nrespectively, and the corresponding population oscillations obey the same bounds with \\(\\mathbb E_P|Y|\\) in place of \\(\\mathbb P_n|Y|\\).  The actual estimator excludes an observation when \\(X_i=x\\).  Since an absolutely continuous sample has no ties almost surely, this changes the normalized denominator by at most \\((nh^2)^{-1}\\) and the normalized numerator by at most \\((nh^2)^{-1}\\max_i|Y_i|\\), uniformly in \\(x\\).  Conditional sub-Gaussianity and the bounded regression give\n\\[\n \\sup_P\\mathbb E_P\\max_{i\\leq n}|Y_i|^2\\leq C\\log n,\n \\qquad\n \\sup_P\\mathbb E_P(\\mathbb P_n|Y|)^2\\leq C.\n\\]\nConsequently, a union bound over the net, followed by the displayed oscillation bounds, shows that for every fixed \\(A_0>0\\), after enlarging \\(C\\), with probability at least \\(1-Cn^{-A_0}\\),\n\\[\n \\sup_{t,x}\\left|\\mathbb P_nW_{t,x,h}-d_{t,P,x}(h)\\right|\n +\\sup_{t,x}\\left|\\mathbb P_n(W_{t,x,h}Y)-\\mathbb E_P(W_{t,x,h}Y)\\right|\n \\leq C\\left\\{\\sqrt{\\frac{\\log n}{nh^2}}+\\frac{\\log n}{nh^2}\\right\\},\n\\]\nprovided \\(h\\asymp a_n\\).  All suprema here range over the two arms and \\(x\\in\\mathcal B_P\\).\n\nFor large \\(n\\), the right side is smaller than \\(\\kappa_0/2\\), so every empirical denominator is positive and bounded below by \\(\\kappa_0/2\\).  The population ratio is a kernel-weighted average of \\(\\mu_{t,P}(z)\\) over \\(R_x\\leq h\\).  Since \\(q\\geq1\\),\n\\[\n \\left|\\frac{\\mathbb E_P(W_{t,x,h}Y)}{d_{t,P,x}(h)}-\\mu_{t,P}(x)\\right|\n \\leq Lh.\n\\]\nThe elementary ratio identity\n\\[\n \\frac{\\widehat r}{\\widehat d}-\\frac r d\n =\\frac{\\widehat r-r}{\\widehat d}\n +\\frac r d\\frac{d-\\widehat d}{\\widehat d}\n\\]\ntherefore gives, on the good event,\n\\[\n \\sup_{x\\in\\mathcal B_P}\n |\\widehat\\tau^{\\mathrm{LC}}_{n,h}(x)-\\tau_P(x)|\n \\leq C\\left\\{h+\\sqrt{\\frac{\\log n}{nh^2}}+\\frac{\\log n}{nh^2}\\right\\}.\n\\]\nThe causal target is not defined by this ratio: the canonical exact-distance lemma separately identifies its arm limits and the preceding display bounds the estimator of those limits.\n\nOn the exceptional event each arm estimate is either zero or a convex combination of observed outcomes, so the supremum loss is at most \\(2\\max_i|Y_i|+2L\\).  Cauchy--Schwarz and the preceding maximal second-moment bound make its expected contribution negligible when \\(A_0\\) is chosen large.  With \\(h\\asymp a_n\\), all three terms in braces are bounded by \\(Ca_n\\).  The estimator is a measurable member of \\(\\mathcal T_n^{\\mathrm{dist}}\\) by its explicit construction.  Hence\n\\[\n R_n^{\\mathrm{dist}}(\\mathcal P_{\\mathrm{rect}})\\leq C_{mathrm{rect}}a_n.\n\\]\n\nFor the converse, use the hypercube in the angular-density packing.  Poissonize the sample at mean \\(2n\\), attach independent continuous marks, and partition the Poisson process into the disjoint bump cells and their complement.  Conditional on the hypercube bits, these restrictions are independent, the complement is bit-independent, and the law in cell \\(j\\) depends only on bit \\(j\\).  Decoder \\(j\\), obtained by midpoint-thresholding \\(\\widehat\\tau_n(x_j)\\), observes its local cell only through the compressed statistic \\(U_{n,P}(x_j)\\), together with the other cells and the bit-independent complement.  Poisson tensorization multiplies the one-observation divergence by \\(2n\\); the slack \\(\\alpha<1/8\\) in the packing makes the resulting bound \\(2\\alpha\\log M_n\\) with \\(2\\alpha<1\\).  The coordinatewise-overlap direct-product lemma thus gives\n\\[\n \\Pr\\{\\text{at least one bit is decoded incorrectly}\\}\\geq\\frac12-o(1).\n\\]\nIf the boundary sup-norm loss were smaller than \\(c_1a_n/2\\), every midpoint decoder would be correct.  Hence the Poissonized expected loss is at least \\(c a_n\\).  Given a Poisson sample of mean \\(2n\\), marked subsampling produces exactly \\(n\\) independent observations on the event that its size is at least \\(n\\); the complement has probability at most \\(e^{-cn}\\).  Thus any estimator for exactly \\(n\\) observations would induce a Poissonized estimator with the same risk up to a negligible term.  It follows that\n\\[\n R_n^{\\mathrm{dist}}(\\mathcal P_{\\mathrm{rect}})\\geq c_{mathrm{rect}}a_n.\n\\]\nDividing the two inequalities by \\(a_n\\) and taking \\(\\liminf\\) and \\(\\limsup\\) proves the theorem.  The construction belongs to the project-defined class proved above; no inclusion in the class of the cited comparator theorem is used or asserted.",
+      "revision": "rev:679367203311426d51c3470bf90f710f8d0d10b9f26fd55bee9ef7499b5ab6ea"
+    },
+    {
+      "id": "thm:smooth-geometry-saturation",
+      "kind": "theorem",
+      "statement": "Fix \\(\\delta\\in(0,1/2)\\). For every \\(q\\geq1\\) and \\(\\iota\\geq1\\), there exist constants \\(0<c_{\\mathrm{sm},\\delta}\\leq C_{\\mathrm{sm},\\delta}<\\infty\\), depending only on \\(q,\\iota,L,c_{-},r_0,\\delta\\), such that \\[c_{\\mathrm{sm},\\delta}\\leq\\liminf_{n\\to\\infty}\\frac{R_{n,\\delta}^{\\mathrm{dist}}(\\mathcal{P}_{\\mathrm{sm}})}{a_n}\\leq\\limsup_{n\\to\\infty}\\frac{R_{n,\\delta}^{\\mathrm{dist}}(\\mathcal{P}_{\\mathrm{sm}})}{a_n}\\leq C_{\\mathrm{sm},\\delta}.\\] The upper inequality is attained by \\(\\widehat{\\tau}^{\\mathrm{LC}}_{n,h}\\) with \\(h\\asymp a_n\\) and uses only the first-order continuity implied by \\(q\\geq1\\), arm-specific local mass, and the fixed triangular kernel. The lower inequality is attained by the straight-interface, compact-support hard family in the narrowed \\(\\mathrm{lem:angular\\text{-}density\\text{-}packing}\\); its regressions are disjoint \\(q\\)-H\\\"older bump perturbations of affine baselines, and its bounded continuous score densities have no common modulus.",
+      "free_symbols": [
+        "\\delta",
+        "q",
+        "\\iota",
+        "L",
+        "c_{-}",
+        "r_0",
+        "n",
+        "R_{n,\\delta}^{\\mathrm{dist}}(\\mathcal{C})",
+        "\\mathcal{P}_{\\mathrm{sm}}",
+        "a_n",
+        "\\widehat{\\tau}^{\\mathrm{LC}}_{n,h}",
+        "h"
+      ],
+      "depends_on": [
+        "ass:iid-sampling",
+        "ass:density-continuity",
+        "ass:density-envelope",
+        "ass:holder-regressions",
+        "ass:conditional-subgaussian",
+        "ass:uniform-two-sided-thickness",
+        "ass:smooth-embedding",
+        "def:distance-decision-class",
+        "def:smooth-class",
+        "def:trimmed-boundary",
+        "def:local-constant-estimator",
+        "def:trimmed-distance-risk",
+        "def:frontier-rates",
+        "lem:density-implies-upper-mass",
+        "lem:fixed-local-constant-stability",
+        "lem:canonical-exact-distance-regression",
+        "lem:angular-density-packing",
+        "lem:coordinatewise-overlap-direct-product"
+      ],
+      "status": "proved",
+      "justification": "The theorem isolates the coordinatewise information bottleneck without quantitative chart geometry.",
+      "gap": "The published smooth-bias calculation is fixed-law and does not provide a class-uniform higher-order constant under only bounded continuity of the score density.",
+      "consumer": "Analysts with a smooth assignment map receive the stable degree-zero distance rule and its sharp uniform bandwidth.",
+      "proof_tex": "Fix \\(\\delta\\in(0,1/2)\\).  The local-constant proof for the primitive two-sided-thickness class applies on \\(\\mathcal B_{P,\\delta}\\).  Specifically, the stability lemma gives a uniform population denominator lower bound, the upper-mass lemma gives kernel-window probability at most \\(\\pi Lh^2\\), and \\(q\\geq1\\) gives first-order bias at most \\(Lh\\).  The trimmed boundary is compact and contained in \\([-L,L]^2\\), so an ambient \\(n^{-4}\\)-net has polynomial cardinality uniformly over the class.  The moment-series argument from the rectifiable proof, conditional sub-Gaussianity, and a union bound give probability at least \\(1-Cn^{-A_0}\\) that all net denominators are bounded below and all centered numerators and denominators are at most\n\\[\n C\\left\\{\\sqrt{\\frac{\\log n}{nh^2}}+\\frac{\\log n}{nh^2}\\right\\}.\n\\]\n\nAn injective \\(C^{\\iota+2}\\) chart is a \\(C^1\\) image of a compact interval, hence its image has two-dimensional Lebesgue measure zero.  Absolute continuity therefore implies that almost surely no sample score lies on \\(\\mathcal B_P\\).  Along the boundary the strict arm indicators are consequently constant, while the reverse triangle inequality and Lipschitz continuity of \\(K_\\triangle\\) give normalized denominator oscillation \\(C n^{-4}h^{-3}\\) and outcome-numerator oscillation\n\\[\n Cn^{-4}h^{-3}\\left(\\frac1n\\sum_{i=1}^n|Y_i|\\right).\n\\]\nAt \\(h\\asymp a_n\\) these terms are negligible.  Thus, on the good event,\n\\[\n \\sup_{x\\in\\mathcal B_{P,\\delta}}\n |\\widehat\\tau^{\\mathrm{LC}}_{n,h}(x)-\\tau_P(x)|\n \\leq C\\left\\{h+\\sqrt{\\frac{\\log n}{nh^2}}+\\frac{\\log n}{nh^2}\\right\\}.\n\\]\nOn its complement, the convex-combination and zero-branch structure of the estimator, together with\n\\(\\mathbb E_P\\max_i|Y_i|^2\\leq C\\log n\\), makes the expected contribution negligible by Cauchy--Schwarz.  Balancing at \\(h\\asymp a_n\\) proves\n\\[\n R_{n,\\delta}^{\\mathrm{dist}}(\\mathcal P_{\\mathrm{sm}})\n \\leq C_{\\mathrm{sm},\\delta}a_n.\n\\]\nNo quantitative derivative, speed, reach, or length constant for the chart is used; its image is covered by an ambient planar net.  No separate conditional-variance envelope is used either, because conditional sub-Gaussianity supplies the required moments and tails.\n\nFor the lower bound, use the unit-square straight-interface family in the angular-density packing.  Its affine chart is injective and \\(C^\\infty\\), its centers lie in \\(\\mathcal B_{P,\\delta}\\), and the packing proof verifies compact support, bounded continuous density, the H\\\"older regression envelope, common tail bounds, and two-sided thickness.  Thus every vertex lies in \\(\\mathcal P_{\\mathrm{sm}}\\).  Poissonization at mean \\(2n\\), independent restrictions to the disjoint bump cells, the coordinatewise-overlap direct-product lemma, midpoint decoding, and marked subsampling give\n\\[\n R_{n,\\delta}^{\\mathrm{dist}}(\\mathcal P_{\\mathrm{sm}})\n \\geq c_{mathrm{sm},\\delta}a_n,\n\\]\nexactly as in the rectifiable converse.  The lower densities are continuous law by law but have no common modulus.  Dividing the two bounds by \\(a_n\\) proves the displayed liminf and limsup and shows that smooth assignment geometry alone does not improve the coordinatewise-distance exponent.",
+      "revision": "rev:5fe81de164cfdb3240d0c79b14596641d79f8997518d678cdf200a1e4b97e1f7"
+    },
+    {
+      "id": "thm:straight-information-gap",
+      "kind": "theorem",
+      "statement": "Fix \\(\\delta\\in(0,1/2)\\).  On the nonempty canonical class \\(\\mathcal P_{\\mathrm{straight}}\\),\n\\[\n R_{n,\\delta}^{\\mathrm{loc}}(\\mathcal P_{\\mathrm{straight}})\\asymp s_{n,q}.\n\\]\nIf \\(L>4\\), then\n\\[\n R_{n,\\delta}^{\\mathrm{dist}}(\\mathcal P_{\\mathrm{straight}})\\asymp a_n,\n\\]\nand the distance lower bound is direct from the canonical-square version of the narrowed \\(\\mathrm{lem:angular\\text{-}density\\text{-}packing}\\).  If \\(L=4\\), then the density envelope and the fixed square support force \\(f_P\\equiv1/4\\), and\n\\[\n R_{n,\\delta}^{\\mathrm{dist}}(\\mathcal P_{\\mathrm{straight}})\\asymp s_{n,q}.\n\\]\nConsequently the distance and location exponents are strictly separated for \\(q>1\\) when \\(L>4\\), while they coincide when \\(q=1\\) and also throughout the no-density-slack boundary case \\(L=4\\).",
+      "free_symbols": [
+        "\\delta",
+        "n",
+        "q",
+        "L",
+        "f_P",
+        "R_{n,\\delta}^{\\mathrm{dist}}(\\mathcal{C})",
+        "R_{n,\\delta}^{\\mathrm{loc}}(\\mathcal{C})",
+        "\\mathcal{P}_{\\mathrm{straight}}",
+        "a_n",
+        "s_{n,q}"
+      ],
+      "depends_on": [
+        "ass:iid-sampling",
+        "ass:density-continuity",
+        "ass:density-envelope",
+        "ass:holder-regressions",
+        "ass:conditional-subgaussian",
+        "ass:straight-half-plane-design",
+        "def:distance-decision-class",
+        "def:location-decision-class",
+        "def:straight-class",
+        "def:trimmed-boundary",
+        "def:local-constant-estimator",
+        "def:triangular-kernel",
+        "def:stabilized-distance-local-polynomial",
+        "def:radial-coarea-ambient-class",
+        "def:trimmed-distance-risk",
+        "def:trimmed-location-risk",
+        "def:frontier-rates",
+        "lem:density-implies-upper-mass",
+        "lem:fixed-local-constant-stability",
+        "lem:radial-coarea-identification",
+        "lem:stabilized-distance-local-polynomial-admissible",
+        "lem:angular-density-packing",
+        "lem:coordinatewise-overlap-direct-product"
+      ],
+      "proof_tex": "All constants may depend on the frozen class parameters, \\(q\\), and \\(\\delta\\), but not on \\(n\\) or \\(P\\).  The class is nonempty: take \\(X\\) uniform on \\([-1,1]^2\\), the prescribed half-planes and chart, constant regressions in \\((1/4,3/4)\\), and Gaussian-noised Bernoulli potential outcomes.  The density is \\(1/4\\), each endpoint arm contains a quarter disk and hence has mass \\(\\pi r^2/16\\geq c_-r^2\\), and Hoeffding's bound times the Gaussian moment-generating identity verifies the tail envelope.\n\nFor the full-location upper bound, let \\(r_q(u)\\) be the vector of bivariate monomials of total degree at most \\(q-1\\), and let \\(K_2(u)=(1-\\lVert u\\rVert_2)_+\\).  Define, for each arm and trimmed boundary point,\n\\[\n \\widehat G^{\\mathrm{loc}}_{t,x}(h)=\\frac1{nh^2}\\sum_{i=1}^n\n \\mathbf1\\{T_i=t\\}K_2((X_i-x)/h)\n r_q((X_i-x)/h)r_q((X_i-x)/h)^\\top\n\\]\nand define \\(\\widehat r^{\\mathrm{loc}}_{t,x}(h)\\) by replacing the final copy of \\(r_q\\) by \\(r_qY_i\\).  Use the intercept of \\((\\widehat G^{\\mathrm{loc}})^{-1}\\widehat r^{\\mathrm{loc}}\\) when the empirical minimum eigenvalue exceeds half the population lower bound, and zero otherwise.  This is an explicit jointly measurable function of the full sample and known geometry.\n\nFor sufficiently small \\(h\\), the rescaled support in each arm contains a fixed open half-disk.  Hence, for every coefficient vector \\(v\\),\n\\[\n v^\\top\\mathbb E_P\\widehat G^{\\mathrm{loc}}_{t,x}(h)v\n \\geq L^{-1}\\int_{H_t\\cap B_2(0,1/2)}K_2(u)\n \\{v^\\top r_q(u)\\}^2\\,du.\n\\]\nA nonzero polynomial cannot vanish on that open set.  Compactness of the unit sphere in the fixed-dimensional coefficient space therefore supplies a uniform positive minimum eigenvalue.  Conditional sub-Gaussian concentration on a polynomial-size planar grid, extended by kernel Lipschitz continuity, gives stochastic error\n\\[\n C\\sqrt{\\frac{\\log n}{nh^2}}.\n\\]\nTaylor's formula through total degree \\(q-1\\) gives bias \\(Ch^q\\).  The cutoff controls the inverse, and its exceptional event is negligible by the conditional sub-Gaussian second-moment bound and Cauchy--Schwarz.  Thus\n\\[\n R_{n,\\delta}^{\\mathrm{loc}}(\\mathcal P_{\\mathrm{straight}})\n \\leq C\\left\\{h^q+\\sqrt{\\frac{\\log n}{nh^2}}\\right\\}.\n\\]\nBalancing at \\(h\\asymp(\\log n/n)^{1/(2q+2)}\\) gives the upper bound \\(Cs_{n,q}\\).\n\nFor the matching full-location lower bound, choose \\(M\\asymp h^{-1}\\) trimmed centers with disjoint radius-\\(h\\) disks.  Keep the uniform density and control regression fixed, and perturb the treated regression in alternative \\(j\\) by\n\\[\n \\Delta\\phi((z-x_j)/h),\n \\qquad \\Delta=\\eta h^q,\n\\]\nwhere \\(\\phi\\in C_c^\\infty(B_2(0,1))\\), \\(\\phi(0)=1\\), and \\(\\eta>0\\) is fixed and small.  For every \\(k\\leq q\\),\n\\[\n \\lVert D^k\\{\\Delta\\phi((\\cdot-x_j)/h)\\}\\rVert_\\infty\n \\leq C\\eta h^{q-k}\\leq C\\eta,\n\\]\nso all alternatives lie in the H\\\"older ball.  Gaussian-noised Bernoulli outcomes retain the common tail bounds.  Relative entropy from the null satisfies\n\\[\n \\operatorname{KL}(P_j^{\\otimes n},P_0^{\\otimes n})\n \\leq Cn\\Delta^2h^2=C\\eta^2nh^{2q+2}.\n\\]\nAt the displayed bandwidth this is a small multiple of \\(\\log M\\) after decreasing \\(\\eta\\).  If \\(J\\) is uniform on the alternatives, the log-sum inequality gives \\(I(J;O_{1:n})\\leq\\alpha\\log M\\).  For any decoder with error event \\(E\\),\n\\[\n H(J\\mid O_{1:n})\\leq\\log2+P(E)\\log M,\n\\]\nso \\(P(E)\\geq1-\\alpha-o(1)\\).  Sup-norm accuracy below \\(\\Delta/3\\) identifies the unique bumped center, proving\n\\[\n R_{n,\\delta}^{\\mathrm{loc}}(\\mathcal P_{\\mathrm{straight}})\n \\geq c\\Delta=cs_{n,q}.\n\\]\n\nSuppose \\(L>4\\).  The strict signed-distance local-constant estimator, the stability and upper-mass lemmas, and the straight-segment mesh yield\n\\[\n R_{n,\\delta}^{\\mathrm{dist}}(\\mathcal P_{\\mathrm{straight}})\n \\leq C\\left\\{h+\\sqrt{\\frac{\\log n}{nh^2}}\\right\\}\\leq Ca_n\n\\]\nat \\(h\\asymp a_n\\).  The canonical-square angular-density family lies in \\(\\mathcal P_{\\mathrm{straight}}\\).  Its Poissonized disjoint-cell factorization, the coordinatewise-overlap direct-product lemma, midpoint decoding, and marked subsampling give the reverse bound \\(ca_n\\).\n\nSuppose \\(L=4\\).  The support has area four and \\(f_P\\geq1/4\\), so\n\\[\n 1=\\int_{[-1,1]^2}f_P(z)\\,dz\n \\geq\\int_{[-1,1]^2}\\frac14\\,dz=1.\n\\]\nThus \\(f_P=1/4\\) almost everywhere, and continuity makes this equality pointwise.  The member properties of the straight class imply membership in \\(\\mathcal P_{\\mathrm{coarea}}(q,\\iota,L)\\), so radial coarea identifies the signed-radius regression.  At every trimmed boundary point, for all sufficiently small \\(s\\), each arm contributes a half-circle inside the square and\n\\[\n Q_{t,P,x}(s)=\\frac\\pi4s.\n\\]\nTaylor expansion of \\(\\mu_{t,P}\\) through degree \\(q-1\\), followed by half-circle integration, yields uniformly bounded coefficients such that\n\\[\n \\left|\\frac{N_{t,P,x}(s)}{Q_{t,P,x}(s)}-\\mu_{t,P}(x)\n -\\sum_{k=1}^{q-1}b_{t,k,P}(x)s^k\\right|\\leq Cs^q.\n\\]\nThe one-sided radial Gram matrix is a positive multiple of\n\\[\n G_q=\\int_0^1uK_\\triangle(u)v_q(u)v_q(u)^\\top\\,du,\n\\]\nwhich is positive definite because a nonzero polynomial cannot vanish on \\((0,1)\\).  Instantiate the stabilized distance local polynomial with \\(m=q\\) and lower radial constant \\(\\pi/4\\).  Its admissibility lemma makes it a member of \\(\\mathcal T_n^{\\mathrm{dist}}\\).  Gram and radial-error concentration on a polynomial mesh, polynomial reproduction, and the displayed remainder give\n\\[\n R_{n,\\delta}^{\\mathrm{dist}}(\\mathcal P_{\\mathrm{straight}})\n \\leq C\\left\\{h^q+\\sqrt{\\frac{\\log n}{nh^2}}\\right\\}\n \\leq Cs_{n,q}.\n\\]\nThe preceding full-location lower bound applies a fortiori to coordinatewise-distance rules, so the reverse bound is \\(cs_{n,q}\\).  Finally,\n\\[\n \\frac{q}{2q+2}>\\frac14\\quad\\Longleftrightarrow\\quad q>1,\n\\]\nwhich proves the stated elbow, including coincidence at \\(q=1\\) and throughout the no-density-slack case.",
+      "status": "proved",
+      "justification": "Holding geometry and the causal target fixed reveals the statistical price of releasing only one distance coordinate, and also identifies the no-density-slack exception.",
+      "gap": "The full-regressor benchmark and location-based boundary theory do not pair their rate with a direct distance-only angular-confounding converse on the identical straight class.",
+      "consumer": "A data steward can determine whether a distance-only release loses an exponent: it does for \\(q>1\\) only when \\(L>4\\), and it does not when \\(L=4\\).",
+      "revision": "rev:c35312ae6aaf617e9a1c7e375e4a25e56bba3a3599ba8d1a636e3312152df2bf"
+    },
+    {
+      "id": "thm:angular-remainder-transition",
+      "kind": "theorem",
+      "statement": "The operational sufficient condition for a faster coordinatewise-distance frontier is a joint coarea remainder of the density, regression, and boundary geometry.  Precisely, fix any integer \\(m\\geq1\\), with ambient indices \\(q\\geq1\\) and \\(\\iota\\geq1\\), and let \\(\\mathcal C\\subseteq\\mathcal P_{\\mathrm{coarea}}(q,\\iota,L)\\) be any subclass for which there are constants \\(A<\\infty\\), \\(r_*>0\\), and \\(0<\\underline c\\leq\\overline c<\\infty\\) such that, for every \\(P\\in\\mathcal C\\), \\(x\\in\\mathcal B_{P,\\delta}\\), \\(t\\in\\{0,1\\}\\), and \\(0<s\\leq r_*\\),\n\\[\n \\underline c s\\leq Q_{t,P,x}(s)\\leq\\overline c s,\n \\qquad\n \\left|\\frac{N_{t,P,x}(s)}{Q_{t,P,x}(s)}-\\mu_{t,P}(x)-\\sum_{k=1}^{m-1}b_{t,k,P}(x)s^k\\right|\\leq As^m,\n\\]\nwhere the coefficient functions are uniformly bounded over \\(P,t,x,k\\).  Let \\(\\widehat\\tau^{(m),\\mathrm{LP}}_{n,h}\\) be the stabilized coordinatewise degree-\\((m-1)\\) estimator in \\(\\mathrm{def:stabilized\\text{-}distance\\text{-}local\\text{-}polynomial}\\), built with \\(K_\\triangle\\) and the lower radial constant \\(\\underline c\\).  With\n\\[\n h_n\\asymp\\left(\\frac{\\log n}{n}\\right)^{1/(2m+2)},\n\\]\nthis estimator belongs to \\(\\mathcal T_n^{\\mathrm{dist}}\\) and satisfies\n\\[\n \\sup_{P\\in\\mathcal C}\\mathbb E_P\\!\\left[\n \\sup_{x\\in\\mathcal B_{P,\\delta}}\n \\left|\\widehat\\tau^{(m),\\mathrm{LP}}_{n,h_n}(x)-\\tau_P(x)\\right|\n \\right]\n \\leq C\\left(\\frac{\\log n}{n}\\right)^{m/(2m+2)}.\n\\]\nConsequently\n\\[\n R_{n,\\delta}^{\\mathrm{dist}}(\\mathcal C)\n \\leq C\\left(\\frac{\\log n}{n}\\right)^{m/(2m+2)}.\n\\]\nIf \\(m\\geq q\\) and \\(\\mathcal C\\) contains, for every sufficiently large \\(n\\), the uniform-design straight-interface \\(q\\)-H\\\"older bump submodel of width \\(h_n\\) and height proportional to \\(h_n^m\\) constructed in the proof, then the reverse inequality holds and the displayed rate is exact.  No matching converse is asserted when \\(m<q\\).  Independently, every law class containing the shrinking angular-imbalance family generated by \\(\\mathfrak H_{\\mathrm{ang}}\\) has coordinatewise-distance lower frontier \\(ca_n\\).  Thus the order-one upper rate is the first-order saturation rate when that hard family is contained, while every \\(m\\geq2\\) yields the faster displayed upper rate; the matching contained-bump certificate applies for every fixed \\(m\\geq q\\).\n\nFinally, there exists a bounded positive continuous density on a square with a straight interface such that a locally constant regression gives \\(N(s)/Q(s)\\) equal to that constant at every sufficiently small radius, whereas the affine regression \\(\\mu(z)=z_1\\) gives \\(N(s)/Q(s)=s^{1+\\alpha}/2\\) on the treated half-circle for some \\(0<\\alpha<1\\), and therefore fails an order-two polynomial remainder.  Hence density alone does not determine these examples' joint normalized-coarea remainder; no universal weakest-threshold impossibility is asserted.",
+      "free_symbols": [
+        "m",
+        "q",
+        "\\iota",
+        "n",
+        "t",
+        "s",
+        "P",
+        "L",
+        "\\delta",
+        "\\mathcal{P}_{\\mathrm{coarea}}",
+        "\\mathcal{B}_{P,\\delta}",
+        "Q_{t,P,x}",
+        "N_{t,P,x}",
+        "\\mu_{t,P}",
+        "\\tau_P",
+        "R_{n,\\delta}^{\\mathrm{dist}}(\\mathcal{C})",
+        "\\mathcal{T}^{\\mathrm{dist}}_n",
+        "K_\\triangle",
+        "h",
+        "a_n",
+        "\\mathfrak{H}_{\\mathrm{ang}}",
+        "f_P",
+        "\\widehat{\\tau}^{(m),\\mathrm{LP}}_{n,h}"
+      ],
+      "depends_on": [
+        "ass:iid-sampling",
+        "ass:deterministic-assignment",
+        "ass:consistency",
+        "ass:assignment-partition",
+        "ass:compact-support",
+        "ass:density-envelope",
+        "ass:holder-regressions",
+        "ass:conditional-subgaussian",
+        "ass:smooth-embedding",
+        "def:circle-density-integral",
+        "def:circle-outcome-integral",
+        "def:canonical-distance-regression",
+        "def:signed-distance",
+        "def:radial-coarea-ambient-class",
+        "def:trimmed-boundary",
+        "def:triangular-kernel",
+        "def:stabilized-distance-local-polynomial",
+        "def:trimmed-distance-risk",
+        "def:frontier-rates",
+        "def:angular-density-handle",
+        "lem:radial-coarea-identification",
+        "lem:angular-density-packing",
+        "lem:coordinatewise-overlap-direct-product",
+        "lem:stabilized-distance-local-polynomial-admissible"
+      ],
+      "status": "proved",
+      "proof_tex": "Put\n\\[\n g_{t,P,x}(s)=\\frac{N_{t,P,x}(s)}{Q_{t,P,x}(s)},\n \\qquad 0<s\\leq r_*.\n\\]\nThe assumed lower bound on \\(Q_{t,P,x}(s)\\) makes this division valid at every displayed radius.  The radial-coarea identification lemma then shows that \\(g_{t,P,x}\\) is an observed exact-distance regression almost everywhere and that its limit identifies the separately defined causal arm value \\(\\mu_{t,P}(x)\\).  Subtracting the arms identifies \\(\\tau_P(x)\\); identification is used here and is not made part of the target's definition.\n\nWe first prove the uniform upper bound.  Fix \\(0<h\\leq r_*\\), put \\(v(u)=v_m(u)\\), and define the population Gram matrix and moment vector\n\\[\n G_{t,P,x}(h)=\\frac1{h^2}\\int_0^hK_\\triangle(s/h)v(s/h)v(s/h)^\\top Q_{t,P,x}(s)\\,ds,\n\\]\n\\[\n r_{t,P,x}(h)=\\frac1{h^2}\\int_0^hK_\\triangle(s/h)v(s/h)g_{t,P,x}(s)Q_{t,P,x}(s)\\,ds.\n\\]\nCoarea, deterministic assignment, and consistency show that these are exactly the expectations of \\(\\widehat G^{(m)}_{t,x}(h)\\) and \\(\\widehat r^{(m)}_{t,x}(h)\\).  With\n\\[\n G_m=\\int_0^1uK_\\triangle(u)v(u)v(u)^\\top\\,du,\n\\]\nthe radial mass bounds imply the Loewner inequalities\n\\[\n \\underline cG_m\\preceq G_{t,P,x}(h)\\preceq\\overline cG_m.\n\\]\nThe matrix \\(G_m\\) is positive definite: for nonzero \\(a\\in\\mathbb R^m\\), the polynomial \\(a^\\top v(u)\\) cannot vanish on the open interval \\((0,1)\\), and hence\n\\[\n a^\\top G_ma=\\int_0^1uK_\\triangle(u)\\{a^\\top v(u)\\}^2,du>0.\n\\]\nThus every population inverse used below exists and\n\\[\n \\lVert G_{t,P,x}(h)^{-1}\\rVert_{\\mathrm{op}}\n \\leq\\{\\underline c\\lambda_{\\min}(G_m)\\}^{-1}.\n\\]\n\nLet \\(B\\) be a common bound for the displayed coefficient functions and set\n\\[\n \\beta_{t,P,x}(h)=\n \\bigl(\\mu_{t,P}(x),b_{t,1,P}(x)h,\\ldots,\n b_{t,m-1,P}(x)h^{m-1}\\bigr)^\\top.\n\\]\nThe H\\\"older-ball envelope bounds \\(|\\mu_{t,P}(x)|\\), so \\(\\|\\beta_{t,P,x}(h)\\|\\leq C\\) for \\(h\\leq1\\).  Polynomial reproduction and the assumed remainder give\n\\[\n r_{t,P,x}(h)=G_{t,P,x}(h)\\beta_{t,P,x}(h)+\\zeta_{t,P,x}(h),\n\\]\nwhere, using \\(Q(s)\\leq\\overline cs\\) and \\(\\|v(u)\\|\\leq\\sqrt m\\),\n\\[\n \\|\\zeta_{t,P,x}(h)\\|\n \\leq\\frac{A}{h^2}\\int_0^hK_\\triangle(s/h)\\|v(s/h)\\|s^mQ_{t,P,x}(s)\\,ds\n \\leq C h^m.\n\\]\nConsequently the population local-polynomial intercept differs from \\(\\mu_{t,P}(x)\\) by at most \\(Ch^m\\).\n\nIt remains to control the empirical matrices and moments uniformly.  The upper radial bound gives\n\\[\n P\\{T=t,\\lVert X-x\\rVert_2\\leq h\\}\n =\\int_0^hQ_{t,P,x}(s)\\,ds\\leq\\frac{\\overline c}{2}h^2.\n\\]\nEvery coordinate of a normalized Gram summand is bounded by \\(h^{-2}\\) and has second moment at most \\(Ch^{-2}\\).  Conditional sub-Gaussianity, consistency, and the bounded regression likewise imply, for every integer \\(k\\geq2\\), the coordinatewise moment inequality\n\\[\n \\mathbb E_P\\left|h^{-2}\\mathbf1\\{T=t,R_x\\leq h\\}\n K_\\triangle(R_x/h)v_\\ell(R_x/h)Y\\right|^k\n \\leq k!C^kh^{2-2k}.\n\\]\nExpanding the exponential series and applying exponential Markov inequality therefore gives, for every coordinate of either centered empirical object,\n\\[\n P\\{|(\\mathbb P_n-P)Z_{t,x,h}|>u\\}\n \\leq2\\exp\\!\\left\\{-\\frac{cnu^2}{h^{-2}+h^{-2}u}\\right\\}.\n\\]\n\nFor each law, cover \\(\\mathcal B_{P,\\delta}\\subseteq[-L,L]^2\\) by an \\(n^{-4}\\)-net of cardinality at most \\(C_Ln^8\\).  A \\(C^1\\) embedded curve has planar Lebesgue measure zero, so almost surely no sample score lies on \\(\\mathcal B_P\\); hence the strict arm indicator in the estimator equals \\(\\mathbf1\\{T=t\\}\\) simultaneously for every boundary point.  On \\([0,1]\\), the functions \\(K_\\triangle(u)v_k(u)v_\\ell(u)\\) and \\(K_\\triangle(u)v_k(u)\\) are Lipschitz, with constants depending only on \\(m\\).  The reverse triangle inequality therefore bounds empirical oscillations between neighboring centers by\n\\[\n C_mn^{-4}h^{-3},\n \\qquad\n C_mn^{-4}h^{-3}\\mathbb P_n|Y|,\n\\]\nand bounds the corresponding population oscillations analogously.  Conditional sub-Gaussianity gives uniformly bounded second moments of \\(\\mathbb P_n|Y|\\).  A union bound over the two arms, the finitely many matrix and vector coordinates, and the planar net now yields, for arbitrary fixed \\(A_0>0\\), an event \\(\\mathcal E_n\\) with\n\\[\n \\inf_{P\\in\\mathcal C}P(\\mathcal E_n)\\geq1-Cn^{-A_0}\n\\]\non which\n\\[\n \\sup_{t,x}\\left|\\widehat G^{(m)}_{t,x}(h)-G_{t,P,x}(h)\\right|_{\\mathrm{op}}\n +\\sup_{t,x}\\left|\\widehat r^{(m)}_{t,x}(h)-r_{t,P,x}(h)\\right|\n \\leq C\\left\\{\\sqrt{\\frac{\\log n}{nh^2}}+\\frac{\\log n}{nh^2}\\right\\}.\n\\]\nHere and below \\(x\\) ranges over \\(\\mathcal B_{P,\\delta}\\).  This argument uses only ambient planar covering, so no common length, speed, reach, or derivative bound for the charts is needed.\n\nFor large \\(n\\), the last display is at most \\(\\underline c\\lambda_{\\min}(G_m)/2\\).  Weyl's eigenvalue inequality then places every empirical matrix on the active-cutoff branch and gives\n\\[\n \\left\\|\\{\\widehat G^{(m)}_{t,x}(h)\\}^{-1}\\right\\|_{\\mathrm{op}}\n \\leq\\frac{2}{\\underline c\\lambda_{\\min}(G_m)}.\n\\]\nUsing the population decomposition above,\n\\[\n\\begin{aligned}\n \\widehat r^{(m)}_{t,x}(h)-\\widehat G^{(m)}_{t,x}(h)\\beta_{t,P,x}(h)\n &=\\{\\widehat r^{(m)}_{t,x}(h)-r_{t,P,x}(h)\\}\n +\\zeta_{t,P,x}(h)\\\\\n &\\quad+\\{G_{t,P,x}(h)-\\widehat G^{(m)}_{t,x}(h)\\}\n \\beta_{t,P,x}(h).\n\\end{aligned}\n\\]\nMultiplication by the uniformly bounded inverse and by \\(e_1^\\top\\), followed by subtraction of the two arms, proves on \\(\\mathcal E_n\\) that\n\\[\n \\sup_{x\\in\\mathcal B_{P,\\delta}}\n |\\widehat\\tau^{(m),\\mathrm{LP}}_{n,h}(x)-\\tau_P(x)|\n \\leq C\\left\\{h^m+\\sqrt{\\frac{\\log n}{nh^2}}+\n \\frac{\\log n}{nh^2}\\right\\}.\n\\]\nOn \\(\\mathcal E_n^c\\), the admissibility lemma bounds each arm intercept by \\(Ch^{-2}\\mathbb P_n|Y|\\), while the target is uniformly bounded.  Cauchy--Schwarz, the uniform second moment of \\(\\mathbb P_n|Y|\\), and a sufficiently large \\(A_0\\) make the expected exceptional contribution negligible.  Choose\n\\[\n h_n\\asymp\\left(\\frac{\\log n}{n}\\right)^{1/(2m+2)}.\n\\]\nThen \\(h_n^m=\\sqrt{\\log n/(nh_n^2)}\\), and \\(\\log n/(nh_n^2)=h_n^{2m}\\leq h_n^m\\).  The admissibility lemma places this single data-driven estimator in \\(\\mathcal T_n^{\\mathrm{dist}}\\), so\n\\[\n \\sup_{P\\in\\mathcal C}\\mathbb E_P\\sup_{x\\in\\mathcal B_{P,\\delta}}\n |\\widehat\\tau^{(m),\\mathrm{LP}}_{n,h_n}(x)-\\tau_P(x)|\n \\leq Ch_n^m,\n \\qquad\n R_{n,\\delta}^{\\mathrm{dist}}(\\mathcal C)\\leq Ch_n^m.\n\\]\n\nWe next prove the conditional converse.  Work on \\(S=[-1/2,1/2]^2\\) with uniform density, straight assignment interface, and trimmed centers \\(x_1,\\ldots,x_M\\) separated by \\(3h_n\\), where \\(M\\asymp h_n^{-1}\\).  Let \\(\\phi\\in C_c^\\infty(B_2(0,1))\\), \\(\\phi(0)=1\\), and set \\(\\Delta=\\eta h_n^m\\).  Keep the control regression fixed and, in alternative \\(j\\), add \\(\\Delta\\phi((z-x_j)/h_n)\\) to a fixed treated baseline.  Use the Gaussian-noised Bernoulli outcomes from the packing construction.  If \\(m\\geq q\\), then for every \\(k\\leq q\\),\n\\[\n \\left\\|D^k\\{\\Delta\\phi((\\cdot-x_j)/h_n)\\}\\right\\|_\\infty\n \\leq C\\eta h_n^{m-k}\\leq C\\eta,\n\\]\nso, after choosing \\(\\eta\\) small, all alternatives obey the common \\(q\\)-H\\\"older envelope.  In fact their derivatives through order \\(m\\) are uniformly bounded.  Taylor's formula through degree \\(m-1\\), integrated over each straight half-circle, therefore verifies the displayed order-\\(m\\) normalized-coarea remainder with constants independent of \\(n,j,t,x\\); moreover \\(Q_{t,P,x}(s)=\\pi s\\) for all sufficiently small radii at trimmed centers.  Thus these are valid contained bump laws of the asserted kind.  When \\(m<q\\), the derivative of order \\(q\\) has size \\(h_n^{m-q}\\), which is why this construction supplies no converse under the frozen \\(q\\)-H\\\"older envelope.\n\nFor each alternative versus the unperturbed law, the Bernoulli inequality and data processing through the common Gaussian channel give\n\\[\n \\operatorname{KL}(P_j^{\\otimes n},P_0^{\\otimes n})\n \\leq Cn\\Delta^2h_n^2\n =C\\eta^2nh_n^{2m+2}=C\\eta^2\\log n.\n\\]\nSince \\(\\log M=(1/(2m+2)+o(1))\\log n\\), choose \\(\\eta\\) so that this is at most \\(\\alpha\\log M\\) for a fixed \\(\\alpha<1/4\\).  If \\(J\\) is uniform on the \\(M\\) alternatives, the log-sum inequality gives \\(I(J;O_{1:n})\\leq\\alpha\\log M\\).  For any decoder with error event \\(E\\), partitioning the conditional entropy according to \\(E\\) gives\n\\[\n H(J\\mid O_{1:n})\\leq\\log2+P(E)\\log M.\n\\]\nSince \\(H(J)=\\log M\\), it follows that \\(P(E)\\geq1-\\alpha-o(1)\\).  Supremum error below \\(\\Delta/3\\) identifies the unique bumped center, and therefore every coordinatewise-distance estimator, indeed every full-sample estimator, has risk at least \\(c\\Delta=ch_n^m\\) on this contained family.  If \\(\\mathcal C\\) contains it, the upper and lower bounds match.\n\nThe angular-imbalance assertion is separate.  If a law class contains the family from the angular-density packing, Poissonization into its disjoint bump cells gives the conditional product experiment required by the coordinatewise-overlap direct-product lemma.  The local compressed divergences are at most \\(2\\alpha\\log M_n\\) with \\(2\\alpha<1\\), and midpoint decoding succeeds whenever the uniform loss is less than \\(c_1a_n/2\\).  The lemma and marked de-Poissonization therefore give the lower bound \\(ca_n\\).  For \\(m=1\\), \\(h_n^m=a_n\\); for every \\(m\\geq2\\),\n\\[\n \\frac{m}{2m+2}>\\frac14,\n\\]\nso the proved upper rate is strictly faster.  The contained-bump argument applies exactly in the stated regime \\(m\\geq q\\), and no converse has been inferred outside it.\n\nFinally we construct the announced obstruction.  On \\([-1,1]^2\\) with interface \\(z_2=0\\), choose \\(0<\\alpha<1\\), a continuous radial cutoff \\(\\chi\\) equal to one near zero and zero for \\(r\\geq r_c<1\\), and define, in polar coordinates with the value at zero set by continuity,\n\\[\n f(z)=\\frac14\\left\\{1+\\chi(\\lVert z\\rVert_2)\n \\lVert z\\rVert_2^\\alpha\\frac{z_1}{\\lVert z\\rVert_2}\\right\\}.\n\\]\nChoose the support radius of \\(\\chi\\) strictly below one.  Then the bracket is bounded above and bounded away from zero.  Its perturbation is odd in \\(z_1\\), so its integral over the square is zero; hence \\(f\\) is a bounded positive continuous density.  At the boundary point zero and every sufficiently small treated-half-circle radius \\(s\\),\n\\[\n Q(s)=\\frac{s}{4}\\int_0^\\pi(1+s^\\alpha\\cos\\theta)\\,d\\theta\n =\\frac{\\pi s}{4}.\n\\]\nFor a constant regression \\(\\mu\\equiv c\\), one has \\(N(s)/Q(s)=c\\) exactly.  For the affine regression \\(\\mu(z)=z_1\\),\n\\[\n \\frac{N(s)}{Q(s)}\n =\\frac{(s^2/4)\\int_0^\\pi\\cos\\theta(1+s^\\alpha\\cos\\theta)\\,d\\theta}\n {\\pi s/4}\n =\\frac{s^{1+\\alpha}}2.\n\\]\nIf an order-two polynomial remainder existed, there would be a constant \\(b\\) with \\(s^{1+\\alpha}/2-bs=O(s^2)\\).  Division by \\(s\\) and passage to zero force \\(b=0\\), after which division by \\(s^2\\) gives \\(s^{\\alpha-1}/2\\to\\infty\\), a contradiction.  The same density therefore yields an exact constant normalized-coarea regression for one outcome surface and failure of the order-two remainder for another.  This proves the stated jointness conclusion and no stronger weakest-threshold impossibility.",
+      "revision": "rev:b796a14b2e0681ab8e03ba0e7af338d30ee9b47d232fc515b1203c3ca2bbc0a4"
+    },
+    {
+      "id": "lem:coordinatewise-overlap-direct-product",
+      "kind": "lemma",
+      "statement": "Let all spaces carrying \\(Z_0,Z_1,\\ldots,Z_M,S_1,\\ldots,S_M\\) be standard Borel.  Let \\(\\Omega_1,\\ldots,\\Omega_M\\) be independent uniform binary variables.  Conditionally on them, let \\(Z_0,Z_1,\\ldots,Z_M\\) be independent, with the law of \\(Z_j\\) depending only on \\(\\Omega_j\\) for \\(1\\leq j\\leq M\\), and with the law of \\(Z_0\\) independent of \\((\\Omega_1,\\ldots,\\Omega_M)\\).  Suppose decoder \\(j\\) is measurable with respect to \\((S_j,Z_{-j},Z_0)\\), where \\(S_j\\) is a measurable compression of \\(Z_j\\), and write \\(Q_{j,b}=\\mathcal L(S_j\\mid\\Omega_j=b)\\) and \\(\\rho_j=1-\\lVert Q_{j,0}-Q_{j,1}\\rVert_{\\mathrm{TV}}\\).  Then every such decentralized decoder obeys\n\\[\n \\Pr\\{\\widehat\\Omega_j=\\Omega_j\\text{ for every }j\\}\n \\leq\\frac12\\left\\{1+\\prod_{j=1}^M(1-\\rho_j)\\right\\}.\n\\]\nIn particular, if \\(\\operatorname{KL}(Q_{j,0},Q_{j,1})\\leq\\kappa\\log M\\) for all \\(j\\) and a fixed \\(\\kappa<1\\), then the probability of at least one decoding error is at least \\(1/2-o(1)\\).",
+      "free_symbols": [],
+      "depends_on": [],
+      "status": "proved",
+      "proof_tex": "For each \\(j\\), dominate \\(Q_{j,0}\\) and \\(Q_{j,1}\\) by their sum and write their densities as \\(q_{j,0}\\) and \\(q_{j,1}\\).  The common subprobability measure has density \\(q_{j,0}\\wedge q_{j,1}\\) and mass\n\\[\n \\rho_j=\\int(q_{j,0}\\wedge q_{j,1})\n =1-\\lVert Q_{j,0}-Q_{j,1}\\rVert_{\\mathrm{TV}}.\n\\]\nGenerate the binary compressed experiment by first drawing an ambiguity indicator \\(A_j\\), independent of \\(\\Omega_j\\), with \\(\\Pr(A_j=1)=\\rho_j\\).  On \\(A_j=1\\), draw \\(S_j\\) from the normalized common submeasure, independently of \\(\\Omega_j\\); on \\(A_j=0\\), draw it from the normalized residual measure corresponding to \\(\\Omega_j\\).  Zero-mass cases may be assigned arbitrary kernels because their indicators then have probability zero.  Use independent indicators and seeds across \\(j\\).  Because all observation spaces are standard Borel, a regular conditional kernel for \\(Z_j\\) given \\((S_j,\\Omega_j)\\) exists; applying it reconstructs the original local experiment.  Independently draw the bit-independent ancillary \\(Z_0\\) from its fixed law.  The conditional product premise shows that this coupling preserves the joint law of the stated experiment.\n\nFix the ambiguity indicators, all non-bit seeds, and the bits outside the ambiguous coordinate set \\(A=\\{j:A_j=1\\}\\).  If \\(A\\neq\\varnothing\\), consider the configurations of \\((\\Omega_j:j\\in A)\\) on which every decoder is correct.  Two configurations that differ only at coordinate \\(j\\in A\\) cannot both succeed: decoder \\(j\\) sees the same \\(S_j\\), the same \\(Z_{-j}\\), and the same \\(Z_0\\) at the two endpoints, so its output is unchanged while the correct bit is reversed.  The successful configurations therefore form an independent set in the \\(|A|\\)-dimensional hypercube.  Pairing vertices along any coordinate shows that this set has at most \\(2^{|A|-1}\\) elements.  The ambiguous bits remain uniform, so conditional exact-success probability is at most \\(1/2\\).  If \\(A=\\varnothing\\), it is at most one.  Averaging proves\n\\[\n \\Pr\\{\\widehat\\Omega_j=\\Omega_j\\text{ for every }j\\}\n \\leq\\Pr(A=\\varnothing)+\\frac12\\Pr(A\\neq\\varnothing)\n =\\frac12\\left\\{1+\\prod_{j=1}^M(1-\\rho_j)\\right\\}.\n\\]\n\nFor the relative-entropy consequence, define the Hellinger affinity \\(H_j=\\int\\sqrt{q_{j,0}q_{j,1}}\\).  Jensen's inequality under \\(Q_{j,0}\\) gives\n\\[\n \\operatorname{KL}(Q_{j,0},Q_{j,1})\\geq-2\\log H_j.\n\\]\nCauchy--Schwarz gives\n\\[\n \\lVert Q_{j,0}-Q_{j,1}\\rVert_{\\mathrm{TV}}\n \\leq\\sqrt{1-H_j^2}\n \\leq\\sqrt{1-e^{-\\operatorname{KL}(Q_{j,0},Q_{j,1})}}.\n\\]\nSince \\(1-\\sqrt{1-u}\\geq u/2\\) for \\(0\\leq u\\leq1\\),\n\\[\n \\rho_j\\geq\\frac12e^{-\\operatorname{KL}(Q_{j,0},Q_{j,1})}\n \\geq\\frac12M^{-\\kappa}.\n\\]\nTherefore \\(\\prod_j(1-\\rho_j)\\leq\\exp\\{-M^{1-\\kappa}/2\\}=o(1)\\), and the preceding exact-success bound implies an any-error probability at least \\(1/2-o(1)\\).",
+      "revision": "rev:ea414e5c03ae729b24198e8a31d5fd81ba7658d3f4b536bfc2cf2ad4a370ae62"
+    },
+    {
+      "id": "lem:stabilized-distance-local-polynomial-admissible",
+      "kind": "lemma",
+      "statement": "For every integer \\(m\\geq1\\), cutoff constant \\(c>0\\), bandwidth \\(h>0\\), law \\(P\\), and boundary point \\(x\\in\\mathcal B_P\\), the rule in \\(\\mathrm{def:stabilized\\text{-}distance\\text{-}local\\text{-}polynomial}\\) is a measurable function of \\(U_{n,P}(x)\\), and therefore its arm difference is an element of \\(\\mathcal T_n^{\\mathrm{dist}}\\).  Moreover, on the active-cutoff branch,\n\\[\n \\left|\\widehat\\mu^{(m),\\mathrm{LP}}_{t,h,c}(x)\\right|\n \\leq\n \\frac{2\\sqrt m}{c\\lambda_{\\min}(G_m)}h^{-2}\n \\left(\\frac1n\\sum_{i=1}^n|Y_i|\\right),\n\\]\nwhereas on the failed-cutoff branch the arm intercept is exactly zero.",
+      "free_symbols": [
+        "m",
+        "n",
+        "t",
+        "h",
+        "P",
+        "Y",
+        "\\mathcal{B}_P",
+        "U_{n,P}(x)",
+        "\\mathcal{T}^{\\mathrm{dist}}_n",
+        "\\widehat{\\tau}^{(m),\\mathrm{LP}}_{n,h}"
+      ],
+      "depends_on": [
+        "def:distance-data",
+        "def:distance-decision-class",
+        "def:stabilized-distance-local-polynomial"
+      ],
+      "status": "proved",
+      "proof_tex": "All coordinates in the construction are Borel functions of the pairs \\((Y_i,D_{P,x,i})\\): absolute value and the strict sign indicators are Borel, \\(K_\\triangle\\) and \\(v_m\\) are continuous, finite sums and products are Borel, the minimum eigenvalue is continuous on the symmetric matrices, and matrix inversion is continuous on the invertible matrices.  The active branch is contained in the set on which the minimum eigenvalue is at least \\(c\\lambda_{\\min}(G_m)/2>0\\); the other branch is assigned the fixed value zero.  Thus the piecewise formula is Borel.  It uses only \\(U_{n,P}(x)\\), including the declared convention when \\(D_{P,x,i}=0\\), so the definition of \\(\\mathcal T_n^{\\mathrm{dist}}\\) gives admissibility.\n\nOn the active branch, the spectral cutoff gives\n\\[\n \\left\\|\\{\\widehat G^{(m)}_{t,x}(h)\\}^{-1}\\right\\|_{\\mathrm{op}}\n \\leq\\frac{2}{c\\lambda_{\\min}(G_m)}.\n\\]\nBecause \\(0\\leq K_\\triangle\\leq1\\) and \\(\\|v_m(u)\\|_2\\leq\\sqrt m\\) on \\(0\\leq u\\leq1\\),\n\\[\n \\left\\|\\widehat r^{(m)}_{t,x}(h)\\right\\|_2\n \\leq\\frac{\\sqrt m}{nh^2}\\sum_{i=1}^n|Y_i|.\n\\]\nMultiplication by \\(e_1^\\top\\), whose Euclidean norm is one, proves the displayed bound.  The failed-cutoff assertion is exactly the zero convention in the construction.",
+      "revision": "rev:ff76677f04fb184c1de7e0dab7bd70febb5fa9fe0121c0619b2c1884b217a907"
+    },
+    {
+      "id": "lem:radial-coarea-identification",
+      "kind": "lemma",
+      "statement": "For every \\(P\\in\\mathcal P_{\\mathrm{coarea}}(q,\\iota,L)\\), \\(x\\in\\mathcal B_P\\), and \\(t\\in\\{0,1\\}\\), polar coarea gives, for every \\(r>0\\),\n\\[\n P\\{X\\in\\mathcal A_{t,P}\\cap B_2(x,r)\\}=\\int_0^rQ_{t,P,x}(s)\\,ds.\n\\]\nAbsolute continuity gives \\(P(X=x)=0\\), so the sign of \\(D_{P,x}\\) recovers the treatment arm almost surely.  For Lebesgue-almost every \\(s>0\\) with \\(Q_{t,P,x}(s)>0\\),\n\\[\n \\mathbb E_P[Y\\mid D_{P,x}=(2t-1)s]=\\frac{N_{t,P,x}(s)}{Q_{t,P,x}(s)}.\n\\]\nIf, on some \\((0,r_*]\\), both arm denominators are positive and each ratio converges to \\(\\mu_{t,P}(x)\\) as \\(s\\downarrow0\\), then\n\\[\n \\tau_P(x)=\\lim_{s\\downarrow0}\\left\\{\\frac{N_{1,P,x}(s)}{Q_{1,P,x}(s)}-\\frac{N_{0,P,x}(s)}{Q_{0,P,x}(s)}\\right\\}.\n\\]",
+      "free_symbols": [
+        "P",
+        "q",
+        "\\iota",
+        "L",
+        "t",
+        "X",
+        "Y",
+        "\\mathcal{P}_{\\mathrm{coarea}}",
+        "\\mathcal{B}_P",
+        "\\mathcal{A}_{0,P}",
+        "\\mathcal{A}_{1,P}",
+        "Q_{t,P,x}",
+        "N_{t,P,x}",
+        "D_{P,x}",
+        "\\mu_{t,P}",
+        "\\tau_P"
+      ],
+      "depends_on": [
+        "ass:deterministic-assignment",
+        "ass:consistency",
+        "ass:density-envelope",
+        "def:circle-density-integral",
+        "def:circle-outcome-integral",
+        "def:signed-distance",
+        "def:radial-coarea-ambient-class"
+      ],
+      "status": "proved",
+      "proof_tex": "Fix \\(P\\in\\mathcal P_{\\mathrm{coarea}}(q,\\iota,L)\\), \\(x\\in\\mathcal B_P\\), and \\(t\\in\\{0,1\\}\\), and put\n\\[\n A_t=\\mathcal A_{t,P}\\cap\\mathcal X_P,\n \\qquad R_x=\\lVert X-x\\rVert_2.\n\\]\nThe density envelope gives an absolutely continuous score law supported on \\(\\mathcal X_P\\).  Polar coordinates centered at \\(x\\) and Tonelli's theorem therefore yield, for every \\(r>0\\),\n\\[\n\\begin{aligned}\n P\\{X\\in\\mathcal A_{t,P}\\cap B_2(x,r)\\}\n &=\\int_{A_t\\cap B_2(x,r)}f_P(z)\\,dz\\\\\n &=\\int_0^r\\int_{\\partial B_2(x,s)\\cap A_t}\n f_P(z)\\,d\\mathcal H^1(z)\\,ds\\\\\n &=\\int_0^rQ_{t,P,x}(s)\\,ds.\n\\end{aligned}\n\\]\nNo positivity condition and no division is used in this identity.\n\nBecause a singleton has planar Lebesgue measure zero, \\(P(X=x)=0\\).  On \\(\\{X\\neq x\\}\\), the signed-distance definition gives \\(D_{P,x}=(2T-1)R_x\\), so its sign recovers \\(T\\) almost surely.\n\nFor any bounded Borel \\(a:(0,\\infty)\\to\\mathbb R\\), deterministic assignment, consistency, and the definition of \\(\\mu_{t,P}\\) imply\n\\[\n\\begin{aligned}\n \\mathbb E_P[Y\\mathbf1\\{T=t\\}a(R_x)]\n &=\\int_{A_t}a(\\lVert z-x\\rVert_2)\\mu_{t,P}(z)f_P(z)\\,dz\\\\\n &=\\int_0^\\infty a(s)N_{t,P,x}(s)\\,ds.\n\\end{aligned}\n\\]\nThe same calculation with \\(Y\\) replaced by one gives\n\\[\n \\mathbb E_P[\\mathbf1\\{T=t\\}a(R_x)]\n =\\int_0^\\infty a(s)Q_{t,P,x}(s)\\,ds.\n\\]\nThus, on the half-line of sign \\(2t-1\\), the outcome-weighted law of \\(D_{P,x}\\) has density \\(N_{t,P,x}(s)\\), whereas its probability law has density \\(Q_{t,P,x}(s)\\).  The Radon--Nikodym characterization of conditional expectation permits the version\n\\[\n \\mathbb E_P[Y\\mid D_{P,x}=(2t-1)s]\n =\\frac{N_{t,P,x}(s)}{Q_{t,P,x}(s)}\n\\]\nfor Lebesgue-almost every \\(s>0\\) with positive denominator.  The version may be assigned arbitrarily when the denominator is zero.\n\nFinally, under the stated positivity and convergence conditions on \\((0,r_*]\\), subtraction of the two limits gives\n\\[\n\\begin{aligned}\n \\lim_{s\\downarrow0}\\left\\{\n \\frac{N_{1,P,x}(s)}{Q_{1,P,x}(s)}-\n \\frac{N_{0,P,x}(s)}{Q_{0,P,x}(s)}\\right\\}\n &=\\mu_{1,P}(x)-\\mu_{0,P}(x)\\\\\n &=\\tau_P(x).\n\\end{aligned}\n\\]\nThis is an identification statement for the separately defined causal target.",
+      "revision": "rev:8a61979cd3163ff9bf529e5c715e9e329fc5cc65531eb038826772cfb4186da1"
+    }
+  ],
+  "sampling_model": {
+    "design": "A boundary discontinuity design with a known binary assignment partition of a compact bivariate score support.",
+    "units": "\\(O_{1:n}\\sim P^{\\otimes n}\\).",
+    "treatment": "\\(T_i=\\mathbf{1}\\{X_i\\in\\mathcal{A}_{1,P}\\}\\).",
+    "overlap": "Each arm has probability mass at least \\(c_{-}r^2\\) in every boundary ball of radius \\(r\\) for \\(0<r\\leq r_0\\); \\(f_P\\leq L\\) yields the derived upper estimate \\(\\pi Lr^2\\).",
+    "nuisance_estimation": "The score density is bounded and continuous but has no class-uniform derivative or continuity modulus. Exact-distance regressions use the canonical coarea ratio on positive-denominator radii and the H\\\"older regression representative on zero-denominator radii. Both distance upper bounds use the fixed triangular kernel and degree zero; the comparison experiment permits estimators to use full score locations jointly."
+  },
+  "estimand_functional": "\\(\\tau_P(x)=\\lim_{s\\downarrow0}\\{g^{\\mathrm{dist}}_{1,P,x}(s)-g^{\\mathrm{dist}}_{0,P,x}(s)\\},\\quad g^{\\mathrm{dist}}_{t,P,x}(s)=N_{t,P,x}(s)/Q_{t,P,x}(s)\\text{ when }Q_{t,P,x}(s)>0\\text{ and }g^{\\mathrm{dist}}_{t,P,x}(s)=\\mu_{t,P}(x)\\text{ otherwise}\\)",
+  "target_estimand": "\\(\\tau_P(\\cdot)=\\mathbb{E}_P[Y(1)-Y(0)\\mid X=\\cdot]\\big|_{\\mathcal{B}_P}\\)",
+  "bibliography": [
+    {
+      "key": "CattaneoTitiunikYu2026Distance",
+      "citation": "Cattaneo, Matias D., Rocio Titiunik, and Ruiqi Rae Yu. 2026. Estimation and Inference in Boundary Discontinuity Designs: Distance-Based Methods. Journal of Econometrics 256, article 106266. arXiv:2510.26051."
+    },
+    {
+      "key": "CattaneoTitiunikYu2026Location",
+      "citation": "Cattaneo, Matias D., Rocio Titiunik, and Ruiqi Rae Yu. 2026. Estimation and Inference in Boundary Discontinuity Designs: Location-Based Methods. Public manuscript, arXiv:2505.05670."
+    },
+    {
+      "key": "CattaneoTitiunikYu2026Survey",
+      "citation": "Cattaneo, Matias D., Rocio Titiunik, and Ruiqi Rae Yu. 2026. Boundary Discontinuity Designs: Theory and Practice. Public manuscript, arXiv:2511.06474."
+    },
+    {
+      "key": "Stone1982OptimalGlobal",
+      "citation": "Stone, Charles J. 1982. Optimal Global Rates of Convergence for Nonparametric Regression. Annals of Statistics 10(4): 1040--1053. DOI: 10.1214/aos/1176345969."
+    },
+    {
+      "key": "ChenChristensen2018SupNorm",
+      "citation": "Chen, Xiaohong, and Timothy M. Christensen. 2018. Optimal Sup-Norm Rates and Uniform Inference on Nonlinear Functionals of Nonparametric IV Regression. Quantitative Economics 9(1): 39--84. arXiv:1508.03365."
+    },
+    {
+      "key": "AamariAaronLevrard2021Boundary",
+      "citation": "Aamari, Eddie, Cl\\'ement Aaron, and Cl\\'ement Levrard. 2021. Minimax Boundary Estimation and Estimation with Boundary. Public manuscript, arXiv:2108.03135."
+    },
+    {
+      "key": "Tsybakov2009Nonparametric",
+      "citation": "Tsybakov, Alexandre B. 2009. Introduction to Nonparametric Estimation. Springer."
+    }
+  ],
+  "comparator_promise_table": [
+    {
+      "comparator_bibkey": "CattaneoTitiunikYu2026Distance",
+      "comparator_claim": "The identification theorem supplies the distance-based causal functional; the smooth-bias theorem is fixed-law; the published nonparametric converse has order \\(n^{-1/4}\\), and its discussion predicts a missing uniform logarithm.",
+      "matched_by": "The primitive two-sided-thickness frontier establishes the logarithmic order on a separate two-sided-thickness class, the smooth theorem proves first-order saturation without a common density modulus, and the coarea theorem proves the order-\\(m\\) upper rate for every fixed \\(m\\geq1\\), with a matching contained-bump converse for every \\(m\\geq q\\).",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "CattaneoTitiunikYu2026Location",
+      "comparator_claim": "The location-based method retains the bivariate score and motivates the full-location comparison experiment.",
+      "matched_by": "The straight-class theorem proves the full-location benchmark and compares it with distance-only rates separately for \\(L>4\\) and \\(L=4\\).",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "Stone1982OptimalGlobal",
+      "comparator_claim": "Stone's global H\\\"older benchmark in dimension two has order \\((\\log n/n)^{q/(2q+2)}\\).",
+      "matched_by": "The straight-class full-location theorem derives this order and shows that the distance order coincides with it at \\(L=4\\).",
+      "match_kind": "equivalence"
+    },
+    {
+      "comparator_bibkey": "ChenChristensen2018SupNorm",
+      "comparator_claim": "Separated alternatives and multiple testing motivate logarithmic sup-norm converses under information restrictions.",
+      "matched_by": "The present converse adds an explicit overlap-coupling direct-product certificate for coordinatewise distance decisions with cross-center ancillary data.",
+      "match_kind": "downgraded_to_informed_by"
+    }
+  ],
+  "tldr": "The coordinatewise distance experiment has a sharp first-order uniform frontier even when the assignment boundary and outcome regressions are arbitrarily smooth. On the primitive rectifiable class with an inspectable arm-specific two-sided design-thickness condition, \\(R_n^{\\mathrm{dist}}(\\mathcal{P}_{\\mathrm{rect}})\\asymp(\\log n/n)^{1/4}\\). The same rate holds on the endpoint-trimmed smooth class because bounded continuous score densities have no common angular regularity modulus; a straight-boundary angular-density packing with affine regressions supplies the converse. On the identical straight geometry, full score locations recover \\((\\log n/n)^{q/(2q+2)}\\), strictly faster for \\(q>1\\). A central open question asks which primitive density or angular-balance regularity produces a transition to a faster distance-only frontier.",
+  "project_justification": {
+    "gap": "Cattaneo, Titiunik, and Yu, Theorem 6, gives an \\(n^{-1/4}\\) pointwise-style lower bound over its stated nonparametric class, while the following discussion predicts that uniform estimation carries a logarithmic factor. Their Theorem 3(ii) is a fixed-law interior smooth-bias result and does not determine a class-uniform minimax rate when continuous score densities have no common modulus.",
+    "niche": "The coordinatewise distance release discards angular locations. A primitive two-sided design-thickness condition stabilizes local estimation and supplies separated boundary neighborhoods, while unrestricted shrinking-scale angular imbalance can keep the induced radial regression only first-order regular even on a straight boundary.",
+    "fill": "The rectifiable theorem establishes the predicted logarithmic phenomenon on its own transparent primitive class. The smooth saturation theorem shows that geometry alone does not improve that frontier, and the straight-class comparison isolates the lost information by proving the faster Stone exponent for the full-location experiment."
+  },
+  "related_work": "CattaneoTitiunikYu2026Distance is the anchor. Its Theorem 1 supplies distance-based BATEC identification as background; the present supporting coarea lemma fixes a canonical exact-distance conditional representative, including its values on zero-denominator radii, for the proposal's primitive classes. Its Theorem 6 proves an \\(n^{-1/4}\\) lower bound over a class defined by independent sampling, bounded continuous density on compact support, a rectifiable support boundary, H\\\"older regression, and bounded continuous variance; Assumption 2(iv)'s Gram condition is not a premise of that theorem. The discussion after Theorem 6 conjectures that the missing logarithm reflects the pointwise lower-bound construction. The rectifiable result here establishes that logarithmic phenomenon on a separately defined primitive two-sided-thickness class, with no asserted inclusion or transfer. Theorem 3(ii) of the same paper is a fixed-law interior two-intersection bias statement; its supplemental angular-integral differentiation does not supply a common higher-order bias constant over the present bounded continuous density envelope, and the saturation theorem does not challenge the published fixed-law result. CattaneoTitiunikYu2026Location supplies the full-location benchmark experiment, while CattaneoTitiunikYu2026Survey documents the applied prevalence of location- and distance-based boundary analyses. Stone1982OptimalGlobal supplies the classical bivariate sup-norm exponent recovered by the full-location risk on the straight subclass. ChenChristensen2018SupNorm informs the separated-alternative multiple-testing architecture but studies a different inverse-regression experiment. AamariAaronLevrard2021Boundary supplies background for positive reach and \\(C^2\\) embedded-manifold geometry and is the source for the positive-reach premise. It is not the source of the proposal's two-sided length envelope, injective \\(C^{\\iota+2}\\) chart, uniform chart-derivative envelope, lower chart-speed bound, or arm-specific design-thickness condition.",
+  "technical_internal_limitation": "The decision restriction is coordinatewise: \\(\\widehat{\\tau}_n(x)\\) may use \\(U_{n,P}(x)\\) but may not triangulate score locations from distances released at other boundary points. A joint multi-center release is a different experiment. Exact-radius conditionals are only determined almost everywhere: the canonical representative uses the coarea ratio where \\(Q_{t,P,x}(s)>0\\) and the existing H\\\"older representative \\(\\mu_{t,P}(x)\\) otherwise. Two-sided thickness ensures only that positive-denominator radii accumulate at zero; it does not imply positivity at every radius. The angular-density packing must explicitly construct bounded continuous density perturbations whose imbalance varies at scale \\(a_n\\), verify common density, tail, variance, H\\\"older, assignment-partition, reach, and arm-mass constants, keep the straight geometry and affine regressions, and prove the stated compressed-law Kullback--Leibler and packing bounds. Rough density by itself is not a lower-bound proof. For fixed \\(P\\), the higher-order angular integrals in Cattaneo, Titiunik, and Yu, Theorem 3(ii), may be differentiable; the diagnostic point is only that no uniform derivative bound follows from this proposal's density envelope. The primitive class here and the anchor's nonparametric class are distinct, and no inclusion is asserted.",
+  "honest_scope": "The theorem-level targets are rate equivalences, not exact asymptotic constants. Exact-distance conditional expectations are identified only up to null radial sets; the canonical coarea representative fills those radii with \\(\\mu_{t,P}(x)\\), and H\\\"older continuity makes its boundary limit unique without assuming a positive circle denominator at every radius. The rectifiable result establishes the predicted logarithmic phenomenon only under the novel primitive two-sided design-thickness condition; the logarithmic frontier on the exact nonparametric class of Cattaneo, Titiunik, and Yu, Theorem 6, remains open. The smooth theorem concerns the fixed endpoint-trimmed target and uses no density modulus beyond continuity and fixed upper and lower bounds. Its lower bound has an explicit compressed-experiment construction obligation on a straight two-half-plane submodel with affine regressions. The full-location Stone exponent is stated only for the separately defined full-location decision class and is strictly faster than the distance exponent only when \\(q>1\\). The weakest empirically meaningful regularity producing a faster distance-only frontier is open."
+}

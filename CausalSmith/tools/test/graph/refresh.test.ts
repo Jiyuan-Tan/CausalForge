@@ -99,4 +99,82 @@ describe("applyVerdictsToGraph", () => {
     g = applyVerdictsToGraph(g, [cw("L-1", "exact")], {}, new Set(["L-1"]));
     expect(g.nodes[0].review.status).toBe("derived");
   });
+
+  it("prefers an exact case-sensitive uncolonized graph id over legacy normalization", () => {
+    let g = createEmptyGraph("q", "v1");
+    g = addNode(g, { id: "hP_pointwise_witness", kind: "assumption", provenance: "agent-introduced", nl_statement: "witness", tex_anchor: "" });
+    g = addNode(g, { id: "hp_pointwise_witness", kind: "assumption", provenance: "from-note", nl_statement: "legacy collision", tex_anchor: "" });
+
+    g = applyVerdictsToGraph(g, [cw("hP_pointwise_witness", "equivalent")], { hP_pointwise_witness: "exact-hash" });
+
+    expect(g.nodes.find((n) => n.id === "hP_pointwise_witness")!.review).toEqual({ status: "matched", passed_hash: "exact-hash" });
+    expect(g.nodes.find((n) => n.id === "hp_pointwise_witness")!.review.status).toBe("unreviewed");
+  });
+
+  it("preserves colon ids and unambiguous legacy from-note aliases", () => {
+    let g = createEmptyGraph("q", "v1");
+    g = addNode(g, { id: "thm:case-sensitive", kind: "theorem", provenance: "from-note", nl_statement: "core theorem", tex_anchor: "" });
+    g = addNode(g, { id: "t1", kind: "theorem", provenance: "from-note", nl_statement: "legacy theorem", tex_anchor: "" });
+
+    g = applyVerdictsToGraph(g, [cw("thm:case-sensitive", "exact"), cw("T-1", "equivalent")], {
+      "thm:case-sensitive": "core-hash",
+      t1: "legacy-hash",
+    });
+
+    expect(g.nodes.find((n) => n.id === "thm:case-sensitive")!.review.passed_hash).toBe("core-hash");
+    expect(g.nodes.find((n) => n.id === "t1")!.review.passed_hash).toBe("legacy-hash");
+  });
+
+  it("fails closed for ambiguous or missing reviewed targets", () => {
+    let ambiguous = createEmptyGraph("q", "v1");
+    ambiguous = addNode(ambiguous, { id: "a1", kind: "assumption", provenance: "from-note", nl_statement: "legacy", tex_anchor: "" });
+    ambiguous = addNode(ambiguous, { id: "ass:other", kind: "assumption", provenance: "from-note", nl_statement: "core", tex_anchor: "" });
+    ambiguous = {
+      ...ambiguous,
+      nodes: ambiguous.nodes.map((n) => n.id === "ass:other" ? { ...n, obj_id: "A-1" } : n),
+    };
+
+    expect(() => applyVerdictsToGraph(ambiguous, [cw("A-1", "equivalent")], {}))
+      .toThrow('review verdict target resolution failed for "A-1": ambiguous aliases: a1, ass:other');
+    expect(() => applyVerdictsToGraph(createEmptyGraph("q", "v1"), [cw("missing_Target", "equivalent")], {}))
+      .toThrow('review verdict target resolution failed for "missing_Target": no graph node or unambiguous legacy/from-note alias');
+  });
+
+  it("persists a real sym-prefixed graph node but skips an explicitly synthetic symbol row", () => {
+    let g = createEmptyGraph("q", "v1");
+    g = addNode(g, { id: "sym:r_star", kind: "definition", provenance: "from-note", nl_statement: "radius", tex_anchor: "" });
+    const owners = new Map<string, string | null>([
+      ["sym:r_star", "sym:r_star"],
+      ["sym:synthetic", null],
+    ]);
+
+    g = applyVerdictsToGraph(
+      g,
+      [cw("sym:r_star", "equivalent"), cw("sym:synthetic", "equivalent")],
+      { "sym:r_star": "real-sym-hash" },
+      new Set(),
+      owners,
+    );
+
+    expect(g.nodes[0].review).toEqual({ status: "matched", passed_hash: "real-sym-hash" });
+    expect(g.nodes).toHaveLength(1);
+  });
+
+  it("validates the whole verdict batch before applying any row", () => {
+    let g = createEmptyGraph("q", "v1");
+    g = addNode(g, { id: "t1", kind: "theorem", provenance: "from-note", nl_statement: "theorem", tex_anchor: "" });
+    const owners = new Map<string, string | null>([
+      ["T-1", "t1"],
+      ["missing", "does-not-exist"],
+    ]);
+
+    expect(() => applyVerdictsToGraph(
+      g,
+      [cw("T-1", "equivalent"), cw("missing", "equivalent")],
+      { t1: "h1" },
+      new Set(),
+      owners,
+    )).toThrow('review verdict target resolution failed for "missing": bound graph node "does-not-exist" is missing');
+    expect(g.nodes[0].review.status).toBe("unreviewed");
+  });
 });

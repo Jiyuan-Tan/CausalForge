@@ -97,8 +97,8 @@ noncomputable def empiricalPMet (S : Fin n → 𝒳) :
 /-- The empirical distance is symmetric. -/
 @[simp] lemma empiricalDist_comm (S : Fin n → 𝒳) (f g : 𝒳 → ℝ) :
     empiricalDist S f g = empiricalDist S g f := by
-  letI := empiricalPMet S
-  simpa [empiricalDist] using (dist_comm (x := f) (y := g))
+  dsimp [empiricalDist, empiricalNorm]
+  grind
 
 /-- A single sample coordinate is bounded by the empirical norm up to the
 sample-size scaling. -/

@@ -36,6 +36,8 @@ structure DiscreteLaw (d : ℕ) where
 noncomputable def obsLaw {d : ℕ} (P : DiscreteLaw d) : Measure (Obs d) :=
   P.pmf.toMeasure
 
+/-- The measure attached to a finite observation law is a probability measure: its total
+mass is one. -/
 instance {d : ℕ} (P : DiscreteLaw d) : IsProbabilityMeasure (obsLaw P) := by
   unfold obsLaw
   infer_instance
@@ -46,6 +48,8 @@ noncomputable def jointMass {d : ℕ} (P : DiscreteLaw d)
   (P.pmf (k, a, y)).toReal
   -- @realizes q_{aky}(P(X=k,A=a,Y=y); range [0,1])
 
+/-- Every atom probability of the observation law -- the chance of seeing a given
+category, treatment value and outcome value together -- lies between zero and one. -/
 lemma jointMass_mem_unitInterval {d : ℕ} (P : DiscreteLaw d)
     (k : Fin d) (a y : Bool) : jointMass P k a y ∈ Set.Icc (0 : ℝ) 1 := by
   constructor
@@ -58,6 +62,8 @@ noncomputable def cellVector {d : ℕ} (P : DiscreteLaw d) (k : Fin d) : Cell �
   fun ay => jointMass P k (finTwoEquiv ay.1) (finTwoEquiv ay.2)
   -- @realizes q_k(four-vector ordered by (A,Y))
 
+/-- Each of the four coordinates of a category's mass vector, indexed by the treatment
+and outcome values, lies between zero and one, so the vector lies in the unit cube. -/
 lemma cellVector_mem_unitCube {d : ℕ} (P : DiscreteLaw d) (k : Fin d) :
     ∀ ay, cellVector P k ay ∈ Set.Icc (0 : ℝ) 1 := by
   intro ay
@@ -69,6 +75,8 @@ noncomputable def cellMass {d : ℕ} (P : DiscreteLaw d) (k : Fin d) : ℝ :=
   ∑ a : Bool, ∑ y : Bool, jointMass P k a y
   -- @realizes p_k(P(X=k); range [0,1])
 
+/-- The marginal probability that the confounder takes a given category value lies
+between zero and one. -/
 lemma cellMass_mem_unitInterval {d : ℕ} (P : DiscreteLaw d) (k : Fin d) :
     cellMass P k ∈ Set.Icc (0 : ℝ) 1 := by
   have hnonneg : 0 ≤ cellMass P k := by
@@ -101,6 +109,9 @@ noncomputable def propensity {d : ℕ} (P : DiscreteLaw d) (k : Fin d) : ℝ :=
   armMass P k true / cellMass P k
   -- @realizes pi_k(P(A=1|X=k); constrained on positive cells by Overlap)
 
+/-- The propensity of any category lies between zero and one.  This holds
+unconditionally: on a category of zero mass the totalizing division convention
+returns zero, which is still in range. -/
 lemma propensity_mem_unitInterval {d : ℕ} (P : DiscreteLaw d) (k : Fin d) :
     propensity P k ∈ Set.Icc (0 : ℝ) 1 := by
   have harm_nonneg : 0 ≤ armMass P k true := by
@@ -123,6 +134,9 @@ noncomputable def outcomeMean {d : ℕ} (P : DiscreteLaw d)
   jointMass P k a true / armMass P k a
   -- @realizes mu_{ak}(E[Y|A=a,X=k]; range [0,1] on positive arm-cells)
 
+/-- The conditional mean of the binary outcome given a treatment arm and a category
+lies between zero and one.  This holds unconditionally: on an empty arm-cell the
+totalizing division convention returns zero, which is still in range. -/
 lemma outcomeMean_mem_unitInterval {d : ℕ} (P : DiscreteLaw d)
     (a : Bool) (k : Fin d) : outcomeMean P a k ∈ Set.Icc (0 : ℝ) 1 := by
   have hj_nonneg : 0 ≤ jointMass P k a true :=
@@ -144,6 +158,8 @@ noncomputable def productLaw {d : ℕ} (P : DiscreteLaw d) (n : ℕ) :
   Measure.pi (fun _ : Fin n => obsLaw P)
   -- @realizes O_i(i in Fin n; O_i=(X_i,A_i,Y_i))
 
+/-- The n-fold independent product of a finite observation law is again a probability
+measure. -/
 instance {d n : ℕ} (P : DiscreteLaw d) : IsProbabilityMeasure (productLaw P n) := by
   unfold productLaw
   infer_instance
@@ -192,6 +208,9 @@ structure PotentialLaw (d : ℕ) where
   pmf : PMF (FullObs d)
   -- @realizes Y(a)(binary potential outcomes carried in the last two coordinates)
 
+/-- The real-valued probability that a full-data law assigns to one atom of the
+extended alphabet, which records the category, the treatment, the observed outcome
+and both potential outcomes. -/
 noncomputable def fullMass {d : ℕ} (Q : PotentialLaw d)
     (z : FullObs d) : ℝ := (Q.pmf z).toReal
 
@@ -263,6 +282,9 @@ noncomputable def cellPhiOnCone (epsilon : ℝ) (u : overlapCone epsilon) : ℝ 
   cellPhi u.1
   -- @realizes \phi(homogeneous four-cell ATE contribution)
 
+/-- Evaluating the cell contribution functional at a point of the overlap cone returns
+the same number as applying the total arithmetic extension to the underlying
+four-vector of masses. -/
 @[simp] lemma cellPhiOnCone_apply (epsilon : ℝ) (u : overlapCone epsilon) :
     cellPhiOnCone epsilon u = cellPhi u.1 := rfl
 
@@ -354,6 +376,11 @@ noncomputable def minimaxRisk (n d : ℕ) (epsilon : ℝ) : ℝ :=
     worstCaseMSE n d epsilon est.1
 
 -- @realizes \(\mathsf R_{n,d,\epsilon}\)(minimax risk intrinsically lies in [0,1])
+/-- The minimax mean-squared-error risk over the overlap experiment class lies between
+zero and one.  It is nonnegative because every worst-case risk is an integral of a
+square, and it is at most one because the estimator that always reports zero
+already incurs squared error at most one against an average treatment effect that
+is confined to the interval from minus one to one. -/
 lemma minimaxRisk_mem_unitInterval (n d : ℕ) (epsilon : ℝ) :
     minimaxRisk n d epsilon ∈ Set.Icc (0 : ℝ) 1 := by
   have hnonneg (est : {f : (Fin n → Obs d) → ℝ // Measurable f}) :
@@ -426,6 +453,8 @@ noncomputable def twoCategoryMass (epsilon : ℝ) (z : FullObs 2) : ℝ :=
     (1 / 2 : ℝ) * propensityWeight
   else 0
 
+/-- The unnormalized masses of the explicit two-category confounding witness are
+nonnegative whenever the overlap constant lies between zero and one. -/
 lemma twoCategoryMass_nonneg (epsilon : ℝ) (h0 : 0 ≤ epsilon) (h1 : epsilon ≤ 1)
     (z : FullObs 2) : 0 ≤ twoCategoryMass epsilon z := by
   simp only [twoCategoryMass]

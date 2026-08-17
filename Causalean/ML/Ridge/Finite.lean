@@ -91,6 +91,7 @@ theorem ridge_is_regularized_squaredLoss_ERM_of_normalEq
       ext i
       simp
       ring
+    · rfl
   have hpen : lam * (β ⬝ᵥ β) - lam * (βhat ⬝ᵥ βhat) =
       lam * (2 * (βhat ⬝ᵥ δ) + δ ⬝ᵥ δ) := by
     rw [hβ]

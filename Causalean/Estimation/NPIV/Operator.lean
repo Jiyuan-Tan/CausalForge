@@ -369,9 +369,6 @@ lemma weakNorm_le_strongNorm (S : OperatorSystem Ω μ) (f : Lp ℝ 2 μ) :
   calc
     S.weakNorm f = ‖S.Qbar_L2.starProjection (S.condExpStep f)‖ := by
       rw [weakNorm, T]
-      change ‖S.Qbar_L2.orthogonalProjectionFn (S.condExpStep f)‖ =
-        ‖S.Qbar_L2.starProjection (S.condExpStep f)‖
-      rw [Submodule.orthogonalProjectionFn_eq, ← Submodule.starProjection_apply]
     _ ≤ ‖S.condExpStep f‖ := S.Qbar_L2.norm_starProjection_apply_le (S.condExpStep f)
     _ ≤ ‖f‖ := by
       simpa [condExpStep] using

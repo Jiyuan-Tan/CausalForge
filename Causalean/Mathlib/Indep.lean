@@ -125,9 +125,9 @@ theorem measurable_finsetCoordProjFromCondResidual
   dsimp [finsetCoordProjFromCondResidual]
   by_cases hiU : i.val ∈ U
   · let j : {j // j ∈ U} := ⟨i.val, hiU⟩
-    simpa [hiU, j] using (measurable_pi_apply j).comp measurable_fst
+    simpa [hiU, j, Function.comp_def] using (measurable_pi_apply j).comp measurable_fst
   · let j : {j // j ∈ S \ U} := ⟨i.val, Finset.mem_sdiff.mpr ⟨i.property, hiU⟩⟩
-    simpa [hiU, j] using (measurable_pi_apply j).comp measurable_snd
+    simpa [hiU, j, Function.comp_def] using (measurable_pi_apply j).comp measurable_snd
 
 /-- Reassembling `π_U` with the residual projection `π_{S \ U}` gives `π_S`. -/
 theorem finsetCoordProjFromCondResidual_comp

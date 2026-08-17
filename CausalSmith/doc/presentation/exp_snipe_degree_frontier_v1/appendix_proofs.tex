@@ -1,198 +1,461 @@
 \begin{proof}[Proof of \cref{obj:thm:sharp-local-linear-constant-and-representers}]
-\begin{enumerate}
-\item Fix \(t\) and write \(n=n_t\), \(d=d_t\), and \(m=m_t\).  On the complete-block graph, every active block is a full neighborhood of size \(d\), and \(n=md\).  The canonical block-local weights
+Throughout, when \(t\) is fixed we write \(n=n_t\), \(d=d_t\), \(m=m_t\), \(A=A_{d_t}\) and \(\bar\beta=\bar\beta_{d_t}=\min\{\beta,d\}\).  The population \(V_{n}\) is partitioned into the blocks \(V_1,\ldots,V_m\), each of size \(d\); \(b(i)\) is the block containing \(i\), \(Z_b=(Z_j)_{j\in V_b}\), and \(Z_S=\prod_{j\in S}Z_j\).  Since \(G_t\) is the directed complete-block graph,
 \[
-w^0_{i,t}(Z)=g_d(Z_{b(i)})
+N_i^{G_t}=V_{b(i)}\quad\text{for every }i\in V_{n},
+\qquad
+n=md .
 \]
-belong to \(\mathcal E_t^{\mathrm{loc,lin}}\).  The block program identities in \cref{obj:lem:block-energy-representer}, applied block by block, give value \(A_d\) per unit score and therefore \(d^2A_d\) per block in the block-extremal criterion.  Thus every admissible local-linear rule has worst-case risk at least
-\[
-\frac{B^2}{n^2}\sum_{b=1}^{m}d^2A_d
- = \frac{B^2A_d}{m},
-\]
-while the canonical rule attains this value.  Since \(n=md\),
-\[
-\frac{B^2A_d}{m}=\frac{B^2dA_d}{n}.
-\]
-This proves the finite minimax identity. % lean: locLinMinimaxRisk_exact
+The clauses are proved in the order in which their ingredients are established: the exact worst-case formula, then the per-block lower bound, then the minimax constant, then the two asymptotic criteria, then the witness sequence.
 
-\item For a fixed \(w\in\mathcal E_t^{\mathrm{loc,lin}}\), the squared error decomposes across complete blocks.  Maximizing the coefficient signs and low-order monomials independently on each block gives
+We first record the three block-score identities that every step uses.  The block score \(g_{d}\) of \cref{obj:def:block-score-energy} lies in \(\mathcal P_{d}\), and \cref{obj:lem:block-energy-representer} gives, under \cref{obj:ass:bernoulli-design},
+\[
+\mathbb E_Z[g_{d}(Z_b)]=0,
+\qquad
+\mathbb E_Z[g_{d}(Z_b)Z_S]=1
+\quad\text{for every }\varnothing\ne S\subseteq V_b\text{ with }|S|\le\bar\beta ,
+\]
+\[
+\mathbb E_Z[g_{d}(Z_b)^2]=L_{d}(g_{d})=A>0 .
+\]
+The first two displays are the representer identity \(\mathbb E_Z[g_{d}(Z)f(Z)]=L_{d}(f)\) at \(f\equiv1\) and at \(f=Z_S\); the third combines that identity at \(f=g_{d}\) with \(\mathbb E_Z[h_{d}(Z)^2]=A^{-1}\) and \(g_{d}=Ah_{d}\), and the strict positivity is the energy-scale bound \(A\ge c_1\binom{d}{k_\star(d,\beta,p)}>0\). % lean: blockScore_mean_zero, blockScore_raw_moment, snipeScore_sq_expectation_global, blockEnergy_pos
+
+\begin{enumerate}
+\item \textbf{The exact worst-case risk formula.}  Fix \(t\) and \(w\in\mathcal E_t^{\mathrm{loc,lin}}\).  For \(c\in\mathcal M_t(G_t)\) the potential outcomes are \(Y_i(Z)=\sum_{S\subseteq V_{b(i)},\,|S|\le\bar\beta}c_{i,S}Z_S\), and the target is the all-treated versus all-control contrast
+\[
+\tau_{n}
+=
+\frac1n\sum_{i\in V_{n}}\{Y_i(\mathbf 1_{n})-Y_i(\mathbf 0_{n})\}
+=
+\frac1n\sum_{i\in V_{n}}
+\sum_{\substack{S\subseteq V_{b(i)}\\ |S|\le\bar\beta}}
+c_{i,S}\mathbf 1(S\ne\varnothing).
+\]
+Subtracting this from \(\widehat\tau_{w,t}=n^{-1}\sum_i w_{i,t}(Z_{b(i)})Y_i(Z)\) and grouping units by block,
+\[
+\widehat\tau_{w,t}-\tau_{n}
+=
+\frac1n\sum_{b=1}^{m}e_{b}(c;Z),
+\qquad
+e_{b}(c;Z)
+:=
+\sum_{i\in V_b}
+\sum_{\substack{S\subseteq V_b\\ |S|\le\bar\beta}}
+c_{i,S}\bigl\{w_{i,t}(Z_b)Z_S-\mathbf 1(S\ne\varnothing)\bigr\}.
+\]
+% lean: locLinEstimator_error_expansion, sum_blockScheduleError_eq_total
+Each \(e_{b}(c;Z)\) is a function of \(Z_b\) alone, and the moment restrictions defining \(\mathcal E_t^{\mathrm{loc,lin}}\) give \(\mathbb E_Z[e_{b}(c;Z)]=0\) termwise.  Distinct blocks use disjoint assignment coordinates, so under \cref{obj:ass:bernoulli-design} the variables \(e_1(c;Z),\ldots,e_{m}(c;Z)\) are independent and the cross terms vanish:
+\[
+\mathbb E_Z\!\left[(\widehat\tau_{w,t}-\tau_{n})^2\right]
+=
+\frac{1}{n^2}\sum_{b=1}^{m}\mathbb E_Z\!\left[e_{b}(c;Z)^2\right].
+\]
+% lean: E_completeBlock_scheduleError_sum_sq, locLinRiskAt_block_decomposition
+For a fixed block, \(c\mapsto e_{b}(c;Z)\) is linear in the rows \((c_{i,S})_{S}\) and the only constraint \(\mathcal M_t(G_t)\) places on a row is \(\sum_{S}|c_{i,S}|\le B\) with \(S\subseteq V_b\) and \(|S|\le\bar\beta\).  The criterion \(c\mapsto\mathbb E_Z[e_{b}(c;Z)^2]\) is convex in each row, so its maximum over the row simplex of radius \(B\) is attained at a vertex \(c_{i,S}=\varepsilon_iB\mathbf 1(S=S_i)\) with \(\varepsilon_i\in\{-1,1\}\), for which \(e_{b}(c;Z)=B\sum_{i\in V_b}\varepsilon_i\{w_{i,t}(Z_b)Z_{S_i}-\mathbf 1(S_i\ne\varnothing)\}\).  Hence
+\[
+\sup_{c\in\mathcal M_t(G_t)}\mathbb E_Z\!\left[e_{b}(c;Z)^2\right]
+=
+B^2\Psi_{b,t}(w).
+\]
+% lean: blockScheduleError_sq_le_extremal, exists_blockExtremal_choice, extremeBlockSchedule
+The row constraint is unitwise, so the maximizing vertices may be chosen block by block and assembled into one schedule in \(\mathcal M_t(G_t)\) that attains every block maximum simultaneously.  Therefore
 \[
 \sup_{c\in\mathcal M_t(G_t)}
-\mathbb E_Z[(\widehat\tau_{w,t}-\tau_{n_t})^2]
+\mathbb E_Z\!\left[(\widehat\tau_{w,t}-\tau_{n})^2\right]
 =
-\frac{B^2}{n_t^2}\sum_{b=1}^{m_t}\Psi_{b,t}(w),
+\frac{B^2}{n^2}\sum_{b=1}^{m}\Psi_{b,t}(w),
 \]
-where the finite maximum in \(\Psi_{b,t}\) is the same block-extreme functional after translating the sign coding to \(\varepsilon_i\in\{-1,1\}\) and writing block monomials as \(Z_{S_i}\). % lean: locLinWorstRisk_exact_blockExtremal
+which is the asserted worst-case identity. % lean: locLinWorstRisk_exact_blockExtremal
 
-\item The per-block lower bound follows from the all-empty monomial candidate and the block score identity.  Let \(g\) be the common complete-block score on \(V_b\).  For every \(i\in V_b\), blockwise unbiasedness gives
+\item \textbf{The per-block lower bound.}  Fix \(t\), \(w\in\mathcal E_t^{\mathrm{loc,lin}}\) and a block \(V_b\).  Every \(i\in V_b\) has \(N_i^{G_t}=V_b\), so the single function \(g_{d}(Z_b)\) is the common block score for all of them.  Expand it in the raw monomials it is spanned by,
 \[
-\mathbb E_Z[w_{i,t}(Z_b)g(Z_b)]=A_{d_t},
+g_{d}(Z_b)=\sum_{\substack{T\subseteq V_b\\ |T|\le\bar\beta}}a_TZ_T,
 \qquad
-\mathbb E_Z[g(Z_b)^2]=A_{d_t}.
+\sum_{\substack{T\subseteq V_b\\ |T|\le\bar\beta}}a_T=g_{d}(\mathbf 1_{d}),
+\qquad
+a_\varnothing=g_{d}(\mathbf 0_{d}).
 \]
-Hence
+Applying \(\mathbb E_Z[w_{i,t}]=0\) to the term \(T=\varnothing\) and \(\mathbb E_Z[w_{i,t}Z_T]=1\) to every other term gives, for every \(i\in V_b\),
+\[
+\mathbb E_Z[w_{i,t}(Z_b)g_{d}(Z_b)]
+=
+\sum_{\substack{\varnothing\ne T\subseteq V_b\\ |T|\le\bar\beta}}a_T
+=
+g_{d}(\mathbf 1_{d})-g_{d}(\mathbf 0_{d})
+=
+L_{d}(g_{d})
+=
+A .
+\]
+% lean: locLinWeight_snipeScore_pair
+Summing over the \(d\) units of \(V_b\) and using \(\mathbb E_Z[g_{d}(Z_b)^2]=A\), the expansion of a nonnegative square gives
 \[
 0\le
 \mathbb E_Z\!\left[
-\left\{\sum_{i\in V_b}w_{i,t}(Z_b)-d_t g(Z_b)\right\}^2
+\left\{\sum_{i\in V_b}w_{i,t}(Z_b)-dg_{d}(Z_b)\right\}^2
 \right]
 =
 \mathbb E_Z\!\left[
 \left\{\sum_{i\in V_b}w_{i,t}(Z_b)\right\}^2
 \right]
--d_t^2A_{d_t}.
+-2d(dA)+d^2A ,
 \]
-The all-empty choice in \(\Psi_{b,t}\) contains the first expectation on the right, so
+that is,
 \[
+d^2A
+\le
+\mathbb E_Z\!\left[
+\left\{\sum_{i\in V_b}w_{i,t}(Z_b)\right\}^2
+\right].
+\]
+The choice \(\varepsilon_i=1\) and \(S_i=\varnothing\) for every \(i\in V_b\) is admissible in \(\Psi_{b,t}\), since \(\varnothing\subseteq V_b\) and \(|\varnothing|=0\le\bar\beta\), and it produces exactly that expectation; as \(\Psi_{b,t}\) is a maximum over admissible choices,
+\[
+\mathbb E_Z\!\left[
+\left\{\sum_{i\in V_b}w_{i,t}(Z_b)\right\}^2
+\right]
+\le\Psi_{b,t}(w),
+\qquad\text{hence}\qquad
 d_t^2A_{d_t}\le \Psi_{b,t}(w).
 \]
-% lean: completeBlock_blockExtremal_lower
+% lean: blockExtremal_all_empty_le, completeBlock_blockExtremal_lower
 
-\item Define
+\item \textbf{The exact minimax constant.}  Define the canonical block-local weights
+\[
+w^0_{i,t}(Z):=g_{d}(Z_{b(i)}),
+\]
+which are the SNIPE scores of \cref{obj:def:snipe-score} on \(G_t\) because \(N_i^{G_t}=V_{b(i)}\) has exactly \(d\) elements.  They depend on \(Z\) only through \(Z_{b(i)}\), and the three block-score identities recorded above are precisely the centering and unit raw-moment restrictions, so \(w^0\in\mathcal E_t^{\mathrm{loc,lin}}\). % lean: canonicalLocLinWeights
+
+Fix a block \(V_b\) and an admissible choice \((\varepsilon_i,S_i)_{i\in V_b}\) in \(\Psi_{b,t}\).  All units of \(V_b\) carry the same weight \(g_{d}(Z_b)\), so
+\[
+\sum_{i\in V_b}\varepsilon_i\bigl\{w^0_{i,t}(Z_b)Z_{S_i}-\mathbf 1(S_i\ne\varnothing)\bigr\}
+=
+g_{d}(Z_b)F(Z_b)-\Lambda,
+\]
+\[
+F(Z_b):=\sum_{i\in V_b}\varepsilon_iZ_{S_i},
+\qquad
+\Lambda:=\sum_{i\in V_b}\varepsilon_i\mathbf 1(S_i\ne\varnothing).
+\]
+The block-score identities give \(\mathbb E_Z[g_{d}(Z_b)F(Z_b)]=\Lambda\), whence
+\[
+\mathbb E_Z\!\left[\bigl(g_{d}(Z_b)F(Z_b)-\Lambda\bigr)^2\right]
+=
+\mathbb E_Z\!\left[\bigl(g_{d}(Z_b)F(Z_b)\bigr)^2\right]-\Lambda^2
+\le
+\mathbb E_Z\!\left[\bigl(g_{d}(Z_b)F(Z_b)\bigr)^2\right].
+\]
+Since \(0\le Z_{S_i}\le1\), \(|\varepsilon_i|=1\) and \(|V_b|=d\), we have \(|F(Z_b)|\le d\) pointwise, so
+\[
+\mathbb E_Z\!\left[\bigl(g_{d}(Z_b)F(Z_b)\bigr)^2\right]
+\le
+d^2\,\mathbb E_Z[g_{d}(Z_b)^2]
+=
+d^2A .
+\]
+Maximizing over admissible choices and combining with the preceding item,
+\[
+\Psi_{b,t}(w^0)\le d^2A,
+\qquad\text{hence}\qquad
+\Psi_{b,t}(w^0)=d^2A .
+\]
+% lean: canonical_completeBlock_blockExtremal_upper
+By the worst-case identity and the per-block lower bound, every \(w\in\mathcal E_t^{\mathrm{loc,lin}}\) satisfies
+\[
+\sup_{c\in\mathcal M_t(G_t)}\mathbb E_Z\!\left[(\widehat\tau_{w,t}-\tau_{n})^2\right]
+=
+\frac{B^2}{n^2}\sum_{b=1}^{m}\Psi_{b,t}(w)
+\ge
+\frac{B^2}{n^2}m d^2A
+=
+\frac{B^2A}{m},
+\]
+the last equality because \(n=md\); and the same computation with \(\Psi_{b,t}(w^0)=d^2A\) turns the inequality into an equality for \(w^0\).  Taking the infimum over \(\mathcal E_t^{\mathrm{loc,lin}}\),
+\[
+R_t^{\mathrm{loc,lin}}=\frac{B^2A_{d_t}}{m_t}
+=\frac{B^2d_tA_{d_t}}{n_t},
+\]
+where the second equality is again \(n_t=m_td_t\). % lean: completeBlock_benchmark_algebra, locLinMinimaxRisk_exact
+
+\item \textbf{The risk ratio equals one plus the normalized block excess.}  For a sequence \(w_t\in\mathcal E_t^{\mathrm{loc,lin}}\) set
 \[
 Y_t:=
-\frac{1}{m_t d_t^2 A_{d_t}}
-\sum_{b=1}^{m_t}\{\Psi_{b,t}(w_t)-d_t^2A_{d_t}\}.
+\frac{1}{m_td_t^2A_{d_t}}
+\sum_{b=1}^{m_t}\bigl\{\Psi_{b,t}(w_t)-d_t^2A_{d_t}\bigr\}.
 \]
-The preceding finite identity gives, for every \(t\),
+Dividing the worst-case identity by \(B^2A_{d_t}/m_t\) and using \(n_t^2=m_t^2d_t^2\),
 \[
 \frac{
-\sup_{c\in\mathcal M_t(G_t)}
-\mathbb E_Z[(\widehat\tau_{w_t,t}-\tau_{n_t})^2]
+\sup_{c\in\mathcal M_t(G_t)}\mathbb E_Z[(\widehat\tau_{w_t,t}-\tau_{n_t})^2]
 }{
 B^2A_{d_t}/m_t
 }
-=1+Y_t.
+=
+\frac{m_t}{n_t^2A_{d_t}}\sum_{b=1}^{m_t}\Psi_{b,t}(w_t)
+=
+\frac{1}{m_td_t^2A_{d_t}}\sum_{b=1}^{m_t}\Psi_{b,t}(w_t)
+=
+1+Y_t .
 \]
-Therefore convergence of the risk ratio to \(1\) is equivalent to convergence of \(Y_t\) to \(0\), by subtracting and adding the constant sequence \(1\). % lean: riskRatio_tendsto_iff_normalizedBlockExcess
+% lean: locLinRiskRatio_eq_one_add_normalizedBlockExcess
+Adding, respectively subtracting, the constant sequence \(1\) therefore shows that the left-hand ratio converges to \(1\) if and only if \(Y_t\to0\), which is the asserted equivalence. % lean: riskRatio_tendsto_iff_normalizedBlockExcess
 
-\item Let
+\item \textbf{Score closeness implies attainment.}  Put \(\delta_{i,t}:=w_{i,t}-g_{d_t}\) on the block of \(i\), and set
 \[
-X_t:=
+E_{b,t}:=\sum_{i\in V_b}\mathbb E_Z\!\left[\delta_{i,t}(Z_b)^2\right],
+\qquad
+E_t:=\sum_{b=1}^{m_t}E_{b,t}
+=\sum_{i\in V_{n_t}}\mathbb E_Z\!\left[\bigl\{w_{i,t}(Z_{b(i)})-g_{d_t}(Z_{b(i)})\bigr\}^2\right],
+\]
+\[
+X_t:=\frac{E_t}{n_tA_{d_t}}
+=
 \frac{1}{n_tA_{d_t}}
 \sum_{i\in V_{n_t}}
-\mathbb E_Z\!\left[
-\{w_{i,t}(Z_{b(i)})-g_{d_t}(Z_{b(i)})\}^2
-\right].
+\mathbb E_Z\!\left[\bigl\{w_{i,t}(Z_{b(i)})-g_{d_t}(Z_{b(i)})\bigr\}^2\right],
 \]
-The block-excess sum is nonnegative by the lower bound above.  The blockwise distance inequality gives
+so that the hypothesis of this clause is \(X_t\to0\).  The per-block lower bound gives \(Y_t\ge0\) for every \(t\).
+
+Fix \(t\), a block \(V_b\) and an admissible choice \((\varepsilon_i,S_i)_{i\in V_b}\).  Splitting each weight into its canonical part and its deviation,
 \[
-Y_t\le 2\sqrt{X_t}+X_t,
+\sum_{i\in V_b}\varepsilon_i\bigl\{w_{i,t}(Z_b)Z_{S_i}-\mathbf 1(S_i\ne\varnothing)\bigr\}
+=
+f(Z_b)+v(Z_b),
 \]
-after using \(n_t=m_td_t\) and simplifying
+\[
+f(Z_b):=\sum_{i\in V_b}\varepsilon_i\bigl\{g_{d_t}(Z_b)Z_{S_i}-\mathbf 1(S_i\ne\varnothing)\bigr\},
+\qquad
+v(Z_b):=\sum_{i\in V_b}\varepsilon_i\delta_{i,t}(Z_b)Z_{S_i}.
+\]
+The canonical bound of the third item applies to \(f\), and for \(v\) the Cauchy--Schwarz inequality over the \(d_t\) summands together with \(0\le Z_{S_i}\le1\) and \(|\varepsilon_i|=1\) gives \(v(Z_b)^2\le d_t\sum_{i\in V_b}\delta_{i,t}(Z_b)^2\) pointwise, so
+\[
+\mathbb E_Z[f(Z_b)^2]\le d_t^2A_{d_t},
+\qquad
+\mathbb E_Z[v(Z_b)^2]\le d_tE_{b,t}.
+\]
+% lean: blockCandidatePerturb_energy_le
+Bounding the cross term by Cauchy--Schwarz, \(\mathbb E_Z[(f+v)^2]\le\mathbb E_Z[f^2]+2\sqrt{\mathbb E_Z[f^2]}\sqrt{\mathbb E_Z[v^2]}+\mathbb E_Z[v^2]\), and maximizing over admissible choices,
+\[
+\Psi_{b,t}(w_t)-d_t^2A_{d_t}
+\le
+2\sqrt{d_t^2A_{d_t}}\sqrt{d_tE_{b,t}}+d_tE_{b,t}.
+\]
+% lean: finiteDesign_E_add_sq_le, blockExtremal_le_of_weight_distance
+Summing over \(b\) and applying Cauchy--Schwarz once more, \(\sum_{b=1}^{m_t}\sqrt{d_tE_{b,t}}\le\sqrt{m_t}\sqrt{d_tE_t}\), so
+\[
+\sum_{b=1}^{m_t}\bigl\{\Psi_{b,t}(w_t)-d_t^2A_{d_t}\bigr\}
+\le
+2\sqrt{d_t^2A_{d_t}}\sqrt{m_t}\sqrt{d_tE_t}+d_tE_t .
+\]
+% lean: completeBlockExtremal_excess_le_distance
+Dividing by \(m_td_t^2A_{d_t}\) and using \(n_t=m_td_t\),
 \[
 \frac{
-2\sqrt{d_t^2A_{d_t}}\sqrt{m_t}\sqrt{d_tE_t}
-+d_tE_t
+2\sqrt{d_t^2A_{d_t}}\sqrt{m_t}\sqrt{d_tE_t}+d_tE_t
 }{
 m_td_t^2A_{d_t}
 }
 =
-2\sqrt{\frac{E_t}{n_tA_{d_t}}}
-+\frac{E_t}{n_tA_{d_t}}.
+2\sqrt{\frac{E_t}{n_tA_{d_t}}}+\frac{E_t}{n_tA_{d_t}}
+=
+2\sqrt{X_t}+X_t ,
 \]
-Thus \(X_t\to0\) implies \(Y_t\to0\) by squeezing, and the identity in the previous step gives the asserted convergence of the risk ratio. % lean: normalizedWeightDistance_tendsto_implies_riskRatio
+% lean: normalized_sqrt_excess_identity
+so that
+\[
+0\le Y_t\le 2\sqrt{X_t}+X_t .
+\]
+If \(X_t\to0\) then the right-hand bound tends to \(0\) by continuity of the square root, so \(Y_t\to0\) by squeezing, and the identity of the preceding item turns this into the asserted convergence of the risk ratio to \(1\). % lean: normalizedWeightDistance_tendsto_implies_riskRatio
 
-\item Assume \(d_t\to\infty\).  For all sufficiently large \(t\), \(\beta<d_t\).  Define \(w_t\) by adding to the canonical weights a centered full-block perturbation on one distinguished unit in each block:
+\item \textbf{An optimal sequence at normalized distance two.}  Assume \(d_t\to\infty\).  Then \(\beta<d_t\) for all sufficiently large \(t\), and for such \(t\) we have \(\bar\beta_{d_t}=\beta\).  Fix, for each block \(V_b\), a distinguished unit \(i_b^\star\in V_b\), write
+\[
+\psi_b(Z_b)
+:=
+\left\{\frac{2d_tA_{d_t}}{[p(1-p)]^{d_t}}\right\}^{1/2}
+\prod_{j\in V_b}(Z_j-p),
+\]
+and define
 \[
 w_{i,t}(Z)
-=
+:=
 g_{d_t}(Z_{b(i)})
 +
-\mathbf 1\{i=i_b^\star\}
-\left\{
-\frac{2d_tA_{d_t}}{(p(1-p))^{d_t}}
-\right\}^{1/2}
-\prod_{j\in V_{b(i)}}(Z_j-p).
+\mathbf 1\bigl(i=i^\star_{b(i)}\bigr)\,\psi_{b(i)}(Z_{b(i)}).
 \]
-The full-block centered monomial has order \(d_t\), so it is orthogonal under \cref{obj:ass:bernoulli-design} to every monomial of order at most \(\beta\); consequently these weights remain in \(\mathcal E_t^{\mathrm{loc,lin}}\).  The exact identity above gives the lower bound \(1\) for the risk ratio.  The witness block bound gives, eventually,
+% lean: orthogonalBlockPerturb, orthogonalWitnessWeights
+
+\textbf{Admissibility.}  Each \(\psi_b\) is a function of \(Z_b\) alone.  For every \(S\subseteq V_b\) with \(|S|\le\beta<d_t\), including \(S=\varnothing\), at least one index \(j\in V_b\) outside \(S\) occurs in the product, and under \cref{obj:ass:bernoulli-design} that coordinate is independent of \(Z_S\) and of the remaining factors and satisfies \(\mathbb E_Z[Z_j-p]=0\); hence
+\[
+\mathbb E_Z\!\left[\bigl(\prod_{j\in V_b}(Z_j-p)\bigr)Z_S\right]=0
+\qquad\text{for every }S\subseteq V_b\text{ with }|S|<d_t .
+\]
+% lean: E_global_centered_mul_raw_eq_zero
+So the perturbation changes neither the centering nor the unit raw moments inherited from \(g_{d_t}\), and \(w_t\in\mathcal E_t^{\mathrm{loc,lin}}\).
+
+\textbf{Perturbation energy.}  By independence and \(\mathbb E_Z[(Z_j-p)^2]=p(1-p)\),
+\[
+\mathbb E_Z\!\left[\bigl(\prod_{j\in V_b}(Z_j-p)\bigr)^2\right]=[p(1-p)]^{d_t},
+\qquad\text{hence}\qquad
+\mathbb E_Z\!\left[\psi_b(Z_b)^2\right]=2d_tA_{d_t}.
+\]
+% lean: E_global_centeredMonomial_mul, orthogonalBlockPerturb_energy
+
+\textbf{Block bound and the risk ratio.}  Fix a block \(V_b\) and an admissible choice, and split the inner sum as in the preceding item.  Because the perturbation is carried by the single unit \(i_b^\star\), the deviation part reduces to one summand, \(v(Z_b)=\varepsilon_{i_b^\star}\psi_b(Z_b)Z_{S_{i_b^\star}}\), and \(0\le Z_{S_{i_b^\star}}\le1\) gives \(\mathbb E_Z[v(Z_b)^2]\le\mathbb E_Z[\psi_b(Z_b)^2]=2d_tA_{d_t}\); the canonical part still obeys \(\mathbb E_Z[f(Z_b)^2]\le d_t^2A_{d_t}\).  The same Cauchy--Schwarz bound on the cross term therefore yields, for all sufficiently large \(t\) and every \(b\),
 \[
 \Psi_{b,t}(w_t)
 \le
 d_t^2A_{d_t}
 +2\sqrt{d_t^2A_{d_t}}\sqrt{2d_tA_{d_t}}
-+2d_tA_{d_t},
++2d_tA_{d_t}.
 \]
-and therefore
+% lean: monomial_mul_sq_energy_le, orthogonalWitness_blockExtremal_upper
+Dividing the excess by \(d_t^2A_{d_t}\) gives \(2\sqrt{2/d_t}+2/d_t\) for each block, hence the same bound for \(Y_t\), while \(Y_t\ge0\) by the per-block lower bound.  With the identity of the fourth item,
 \[
+1
+\le
 \frac{
-\sup_{c\in\mathcal M_t(G_t)}
-\mathbb E_Z[(\widehat\tau_{w_t,t}-\tau_{n_t})^2]
+\sup_{c\in\mathcal M_t(G_t)}\mathbb E_Z[(\widehat\tau_{w_t,t}-\tau_{n_t})^2]
 }{
 B^2A_{d_t}/m_t
 }
 \le
-1+2\sqrt{\frac{2}{d_t}}+\frac{2}{d_t}.
+1+2\sqrt{\frac{2}{d_t}}+\frac{2}{d_t}
 \]
-Since \(d_t\to\infty\), squeezing proves the displayed risk-ratio convergence for this sequence. % lean: orthogonalWitness_riskRatio_tendsto_one
+for all sufficiently large \(t\).  Since \(d_t\to\infty\), squeezing proves the asserted convergence of the risk ratio to \(1\). % lean: orthogonalWitness_riskRatio_tendsto_one
 
-\item For the same sufficiently large \(t\), the perturbation has squared energy \(2d_tA_{d_t}\) on the distinguished unit of each block and zero perturbation energy on the other units.  Hence
+\textbf{Normalized distance.}  For the same sufficiently large \(t\), the deviation \(w_{i,t}-g_{d_t}\) equals \(\psi_b\) at \(i=i_b^\star\) and vanishes at every other unit, so
 \[
 \sum_{i\in V_{n_t}}
-\mathbb E_Z\!\left[
-\{w_{i,t}(Z_{b(i)})-g_{d_t}(Z_{b(i)})\}^2
-\right]
+\mathbb E_Z\!\left[\bigl\{w_{i,t}(Z_{b(i)})-g_{d_t}(Z_{b(i)})\bigr\}^2\right]
 =
-m_t(2d_tA_{d_t}),
+\sum_{b=1}^{m_t}\mathbb E_Z\!\left[\psi_b(Z_b)^2\right]
+=
+2m_td_tA_{d_t},
 \]
-and division by \(n_tA_{d_t}=m_td_tA_{d_t}\) gives the value \(2\).  If \(\pi\) preserves block membership, the complete-block score is invariant under the induced within-block relabeling, and the full-block centered perturbation has the same squared energy after the relabeling.  The same calculation gives the relabeled normalized distance \(2\). % lean: orthogonalWitness_normalized_relabel_distance_eq_two
+and dividing by \(n_tA_{d_t}=m_td_tA_{d_t}\) gives the value \(2\). % lean: orthogonalWitnessWeights_distance_energy, orthogonalWitness_normalized_distance_eq_two
+
+\textbf{Invariance under block-preserving relabeling.}  Let \(\pi\) be a bijection of \(V_{n_t}\) with \(b(\pi(i))=b(i)\) for every \(i\); then \(\pi\) maps each block onto itself and therefore permutes the coordinates of \(Z_b\) among themselves.  The relabeled distance moves the score term only: at the unit \(i\) it compares the weight \(w_{i,t}\), read at the unit \(i\) and at the original assignment, with the canonical score of the relabeled unit \(\pi(i)\), whose neighborhood is again \(V_{b(i)}\), read at the relabeled assignment whose \(j\)th coordinate is \(Z_{\pi^{-1}(j)}\).  Since \(g_{d_t}\) is a symmetric function of the coordinates of its block, that relabeled score is the original one,
+\[
+g_{d_t}\bigl((Z_{\pi^{-1}(j)})_{j\in V_{b(i)}}\bigr)
+=
+g_{d_t}(Z_{b(i)})
+\qquad\text{for every }i\in V_{n_t}.
+\]
+% lean: canonicalBlockScore_relabel_within_blocks
+Each summand of the normalized distance is therefore unchanged, and the previous display gives
+\[
+\frac{1}{n_tA_{d_t}}
+\sum_{i\in V_{n_t}}
+\mathbb E_Z\!\left[
+\Bigl\{w_{i,t}(Z_{b(i)})-g_{d_t}\bigl((Z_{\pi^{-1}(j)})_{j\in V_{b(i)}}\bigr)\Bigr\}^2
+\right]
+=2 ,
+\]
+which is the asserted invariance.
+% lean: orthogonalWitness_normalized_relabel_distance_eq_two
 \end{enumerate}
 \end{proof}
 
 \begin{proof}[Proof of \cref{obj:thm:fair-coin-energy-frontier}]
 \begin{enumerate}
-\item Fix admissible \(n,d,\beta,B\).  For every \(r\ge 1\),
+\item \textbf{Fair-coin contrasts.}
+Fix \(n,d,\beta\in\mathbb N\) and \(B\in\mathbb R\) with \(n\ge1\), \(1\le d\le n\), \(\beta\ge1\), and \(B\ge0\); the three identities of this and the next two steps involve only \(d\) and \(\beta\).  The contrast coefficient is \(\Delta_r(p)=(1-p)^r-(-p)^r\), so at \(p=1/2\) every \(r\ge1\) satisfies
 \[
 \Delta_r(1/2)
 =
-(1/2)^r-(-1/2)^r
+\left(\frac12\right)^r-\left(-\frac12\right)^r
 =
-2^{-r}\{1-(-1)^r\}.
+2^{-r}-(-1)^r2^{-r}
+=
+2^{-r}\bigl\{1-(-1)^r\bigr\}.
 \]
-Thus \(\Delta_r(1/2)=2^{1-r}\) when \(r\) is odd, and \(\Delta_r(1/2)=0\) when \(r\) is even. % lean: fairCoinContrast
+Since \(1-(-1)^r\) equals \(2\) for odd \(r\) and \(0\) for even \(r\),
+\[
+\Delta_r(1/2)=
+\begin{cases}
+2^{1-r}, & r\text{ odd},\\
+0, & r\text{ even}.
+\end{cases}
+\] % lean: fairCoinContrast
 
-\item Expanding \(A_d\) from \cref{obj:def:block-score-energy} at \(p=1/2\) gives
+\item \textbf{Fair-coin energy.}
+By \cref{obj:def:block-score-energy} at \(p=1/2\), the design variance factor is \([p(1-p)]^r=(1/4)^r\), so
 \[
 A_d
 =
 \sum_{r=1}^{\bar\beta_d}
 \binom{d}{r}
-\frac{\Delta_r(1/2)^2}{((1/2)(1-1/2))^r}.
+\frac{\Delta_r(1/2)^2}{\left[\frac12\left(1-\frac12\right)\right]^r}.
 \]
-The preceding calculation makes the even terms vanish.  For odd \(r\),
+Each summand is evaluated by the previous step: for every \(r\) with \(1\le r\le\bar\beta_d\),
 \[
-\frac{\Delta_r(1/2)^2}{((1/2)(1-1/2))^r}
+\binom{d}{r}
+\frac{\Delta_r(1/2)^2}{\left[\frac12\left(1-\frac12\right)\right]^r}
 =
-\frac{(2^{1-r})^2}{(1/4)^r}
-=
-4.
+\begin{cases}
+4\binom{d}{r}, & r\text{ odd},\\
+0, & r\text{ even},
+\end{cases}
 \]
-Therefore
+because for odd \(r\) the numerator is \(\binom dr(2^{1-r})^2=4\binom dr4^{-r}\) while the denominator is \((1/4)^r=4^{-r}\), and for even \(r\) the numerator vanishes.  Summing the surviving terms,
 \[
 A_d
 =
 4\sum_{\substack{1\le r\le \bar\beta_d\\ r\text{ odd}}}
 \binom{d}{r}.
 \] % lean: fairCoinEnergy
-The exposed set in \cref{obj:def:exposed-order} is exactly the set of odd integers in \(\{1,\ldots,\bar\beta_d\}\).  Hence \(k_\star(d,\beta,1/2)\) is its maximum, with the stated zero value when the set is empty. % lean: fairCoinKStar
 
-\item Apply \cref{obj:thm:bounded-outcome-degree-frontier} with \(\beta=1\) and \(p=1/2\).  It supplies constants \(a,C\) with \(0<a\le C\).  Set
+\item \textbf{Fair-coin exposed order.}
+The index set in \cref{obj:def:exposed-order} satisfies
 \[
-c_{\mathrm{lower}}:=a,
-\qquad
-c_{\mathrm{upper}}:=4C .
+\bigl\{r\in\{1,\ldots,\bar\beta_d\}:\Delta_r(1/2)\ne0\bigr\}
+=
+\bigl\{r\in\{1,\ldots,\bar\beta_d\}:r\text{ odd}\bigr\},
 \]
-Since \(C>0\), these constants satisfy \(0<c_{\mathrm{lower}}\le c_{\mathrm{upper}}\).  For fixed admissible \(n,d,B\), use the common fair Bernoulli product design on \(V_n\), which satisfies \cref{obj:ass:bernoulli-design}. % lean: bounded_outcome_degree_frontier
+since \(\Delta_r(1/2)=2^{1-r}\ne0\) for odd \(r\) and \(\Delta_r(1/2)=0\) for even \(r\).  Hence \(k_\star(d,\beta,1/2)\) is the maximum of the odd integers in \(\{1,\ldots,\bar\beta_d\}\) when that set is nonempty, and equals \(0\) otherwise, which is the value assigned by the zero-degree convention in \cref{obj:def:exposed-order}. % lean: fairCoinKStar
 
-\item The first-order interaction energy follows from the fair-coin energy identity.  Since \(d\ge1\), \(\bar\beta_d=\min\{1,d\}=1\), and the odd orders in \(\{1\}\) consist only of \(1\).  Hence
+\item \textbf{Choice of constants.}
+Apply \cref{obj:thm:bounded-outcome-degree-frontier} with interaction order \(\beta=1\), which satisfies \(\beta\ge1\), and treatment probability \(p=1/2\), which satisfies \(0<p<1\).  It supplies constants \(c_{1,1/2}\) and \(C_{1,1/2}\) with
+\[
+0<c_{1,1/2}\le C_{1,1/2}.
+\]
+Set
+\[
+c_{\mathrm{lower}}:=c_{1,1/2},
+\qquad
+c_{\mathrm{upper}}:=4C_{1,1/2}.
+\]
+Then \(c_{\mathrm{lower}}>0\), and since \(0<C_{1,1/2}\) gives \(C_{1,1/2}\le4C_{1,1/2}\),
+\[
+0<c_{\mathrm{lower}}\le C_{1,1/2}\le 4C_{1,1/2}=c_{\mathrm{upper}}.
+\] % lean: bounded_outcome_degree_frontier, hcUpper
+
+\item \textbf{Design.}
+Fix \(n,d\in\mathbb N\) and \(B\in\mathbb R\) with \(n\ge1\), \(1\le d\le n\), and \(B\ge0\), and take for \(P_Z\) the product Bernoulli law on \(V_n\) with common treatment probability \(1/2\), that is,
+\[
+\Pr(Z_j=1)=\frac12
+\qquad\text{for every }j\in V_n,
+\]
+with \(\{Z_j:j\in V_n\}\) mutually independent.  Since \(0<1/2<1\), this design satisfies \cref{obj:ass:bernoulli-design} at \(p=1/2\), so the conclusions of \cref{obj:thm:bounded-outcome-degree-frontier} are available at \((n,d,B)\) with \(\beta=1\) and \(p=1/2\). % lean: blockDesign, IsProductBernoulli
+
+\item \textbf{Degree-one energy.}
+With \(\beta=1\) and \(d\ge1\) the exposed order of \cref{obj:def:exposed-order} is
+\[
+\bar\beta_d=\min\{1,d\}=1,
+\]
+so the odd integers in \(\{1,\ldots,\bar\beta_d\}\) are the single index \(r=1\).  The energy identity of Step 2 therefore gives
 \[
 A_d
 =
 4\binom d1
 =
 4d.
+\] % lean: henergy
+
+\item \textbf{Reduction of the rate argument.}
+Put
+\[
+x:=\frac{d^2}{n}.
 \]
-Put \(x=d^2/n\).  Then \(x\ge0\), and
+Since \(n\ge1\), we have \(x\ge0\), and by the previous step
 \[
 \frac{dA_d}{n}
 =
@@ -200,11 +463,27 @@ Put \(x=d^2/n\).  Then \(x\ge0\), and
 =
 4x.
 \]
-Moreover \(\min\{1,x\}\le \min\{1,4x\}\). % lean: henergy, henergyArg, hminLower
-
-\item The lower bound from \cref{obj:thm:bounded-outcome-degree-frontier} gives
+% lean: henergyArg
+Two elementary comparisons of truncated arguments are used below.  First, \(x\le4x\) because \(x\ge0\), and truncation at \(1\) is monotone, so
 \[
-aB^2\min\!\left\{1,\frac{dA_d}{n}\right\}
+\min\{1,x\}\le\min\{1,4x\}.
+\]
+% lean: hminLower
+Second,
+\[
+\min\{1,4x\}\le4\min\{1,x\}.
+\]
+Indeed, if \(x\le1\) then \(\min\{1,x\}=x\), and either \(4x\le1\), in which case \(\min\{1,4x\}=4x=4\min\{1,x\}\), or \(4x>1\), in which case \(\min\{1,4x\}=1\le4x=4\min\{1,x\}\); while if \(x>1\) then \(\min\{1,x\}=1\) and \(\min\{1,4x\}\le1\le4=4\min\{1,x\}\). % lean: hminUpper
+
+\item \textbf{Lower bound.}
+Because \(c_{\mathrm{lower}}>0\) and \(B\ge0\),
+\[
+0\le c_{\mathrm{lower}}B^2,
+\]
+so multiplying the first comparison of Step 7 by this factor preserves the inequality. % lean: hcoef
+The lower frontier bound of \cref{obj:thm:bounded-outcome-degree-frontier} at \(\beta=1\), \(p=1/2\) reads
+\[
+c_{\mathrm{lower}}B^2\min\!\left\{1,\frac{dA_d}{n}\right\}
 \le
 R_{n,\ell_1}^{\star}(d,1,1/2,B),
 \]
@@ -214,136 +493,287 @@ R_{n,\ell_1}^{\star}(d,1,1/2,B)
 =
 R_n^\star(d,1,1/2,B).
 \]
-Using \(\min\{1,x\}\le\min\{1,4x\}\) and \(dA_d/n=4x\) yields
+Chaining these with the two identities of Step 7,
 \[
 c_{\mathrm{lower}}B^2\min\!\left\{1,\frac{d^2}{n}\right\}
+=
+c_{\mathrm{lower}}B^2\min\{1,x\}
+\le
+c_{\mathrm{lower}}B^2\min\{1,4x\}
+=
+c_{\mathrm{lower}}B^2\min\!\left\{1,\frac{dA_d}{n}\right\}
 \le
 R_n^\star(d,1,1/2,B).
 \] % lean: hminLower, henergyArg, hlower, hriskEq, hlower'
-The class comparison in \cref{obj:thm:bounded-outcome-degree-frontier} supplies
+
+\item \textbf{Class comparison.}
+The carrier inclusion recorded in \cref{obj:thm:bounded-outcome-degree-frontier} supplies
 \[
 R_{n,\ell_1}^{\star}(d,1,1/2,B)
 \le
 R_{n,\infty}^{\star}(d,1,1/2,B).
 \] % lean: hclassMono
-For the upper bound, the same result bounds the bounded-outcome minimax risk by the clipped bounded-outcome SNIPE worst risk and then by
+
+\item \textbf{Upper bound.}
+The clipped bounded-outcome estimator \(\widehat\tau_{n,\infty}^{\mathrm{up}}\) of \cref{obj:def:bounded-outcome-clipped-snipe} is one admissible competitor in the bounded-outcome minimax problem, and \cref{obj:thm:bounded-outcome-degree-frontier} bounds its worst-case risk, giving
 \[
-CB^2\min\!\left\{1,\frac{dA_d}{n}\right\}
+R_{n,\infty}^{\star}(d,1,1/2,B)
+\le
+\sup_{\mathcal M_{n,d,1}^{\infty}(B)}
+\mathbb E_Z\!\left[
+\bigl(\widehat\tau_{n,\infty}^{\mathrm{up}}-\tau_n\bigr)^2
+\right]
+\le
+C_{1,1/2}B^2\min\!\left\{1,\frac{dA_d}{n}\right\}.
+\]
+% lean: hbddToWorst, hworstUpper
+Since \(C_{1,1/2}>0\) and \(B\ge0\), the factor \(C_{1,1/2}B^2\) is nonnegative, so the second comparison of Step 7 may be multiplied by it.  With \(dA_d/n=4x\) this yields
+\[
+C_{1,1/2}B^2\min\!\left\{1,\frac{dA_d}{n}\right\}
 =
-CB^2\min\{1,4x\}.
+C_{1,1/2}B^2\min\{1,4x\}
+\le
+4C_{1,1/2}B^2\min\{1,x\}
+=
+c_{\mathrm{upper}}B^2\min\!\left\{1,\frac{d^2}{n}\right\},
 \]
-If \(x\le1\), then either \(4x\le1\), in which case \(\min\{1,4x\}=4x\), or \(4x>1\), in which case \(\min\{1,4x\}=1\le4x\).  If \(x>1\), then \(\min\{1,4x\}\le1\le4\min\{1,x\}\).  Thus
-\[
-\min\{1,4x\}\le4\min\{1,x\},
-\]
-and consequently
+and therefore
 \[
 R_{n,\infty}^{\star}(d,1,1/2,B)
 \le
 c_{\mathrm{upper}}B^2\min\!\left\{1,\frac{d^2}{n}\right\}.
-\] % lean: hbddToWorst, hworstUpper, henergyArg, hupper'
-Combining the displayed identities and inequalities gives the full minimax chain.
+\] % lean: henergyArg, hminUpper, hupper'
+Steps 8--10 together give the asserted chain
+\[
+c_{\mathrm{lower}}B^2\min\!\left\{1,\frac{d^2}{n}\right\}
+\le
+R_n^\star(d,1,1/2,B)
+=
+R_{n,\ell_1}^\star(d,1,1/2,B)
+\le
+R_{n,\infty}^\star(d,1,1/2,B)
+\le
+c_{\mathrm{upper}}B^2\min\!\left\{1,\frac{d^2}{n}\right\}.
+\]
 
-\item Finally assume \(d\mid n\).  The exact complete-block identities from \cref{obj:thm:bounded-outcome-degree-frontier} give, for the unprojected SNIPE estimator,
+\item \textbf{Exact complete-block identities.}
+Assume in addition that \(d\mid n\) and set \(m:=n/d\), the number of complete \(d\)-blocks.  The exact-block-risk clause of \cref{obj:thm:bounded-outcome-degree-frontier} gives, for the unprojected SNIPE estimator of \cref{obj:def:snipe-estimator},
 \[
 \sup_{\mathcal M_{n,d,1}(B)}
 \mathbb E\!\left[\bigl(\widehat\tau_n^{\mathrm{SNIPE}}-\tau_n\bigr)^2\right]
 =
-\frac{B^2A_d}{n/d}
+\frac{B^2A_d}{m}
 =
-\frac{B^2dA_d}{n},
+\sup_{\mathcal M_{n,d,1}^{\infty}(B)}
+\mathbb E\!\left[\bigl(\widehat\tau_n^{\mathrm{SNIPE}}-\tau_n\bigr)^2\right],
 \]
-and the same identity over \(\mathcal M_{n,d,1}^{\infty}(B)\).  Substituting \(A_d=4d\) gives both asserted values,
+together with the identity
+\[
+\frac{B^2A_d}{m}
+=
+\frac{B^2dA_d}{n}.
+\]
+Substituting \(A_d=4d\) from Step 6,
 \[
 \frac{B^2dA_d}{n}
 =
-\frac{4B^2d^2}{n}.
+\frac{B^2d(4d)}{n}
+=
+\frac{4B^2d^2}{n},
 \]
-% lean: fair_coin_energy_frontier
+which is the asserted common value of both worst-case risks.
+% lean: hexact, fair_coin_energy_frontier
 \end{enumerate}
 \end{proof}
 
 \begin{proof}[Proof of \cref{obj:thm:degree-frontier}]
 \begin{enumerate}
-\item Apply \cref{obj:thm:bounded-outcome-degree-frontier} with the fixed \(\beta\) and \(p\).  It gives constants \(a,b\) with \(0<a\le b\) and, for every admissible \(n,d,B\), the block-energy lower bound, the projected-SNIPE upper bound, the unprojected-SNIPE upper bound, the local-energy comparison, the exposed-order comparison
+\item \textbf{The two constants.}
+Apply \cref{obj:thm:bounded-outcome-degree-frontier} at the fixed \(\beta\ge 1\) and \(p\in(0,1)\), and write \(a\) and \(b\) for the pair of constants it produces.  That result calls them \(c_{\beta,p}\) and \(C_{\beta,p}\); they are renamed here because the present statement reserves those two names for the constants constructed in this proof.  They satisfy
 \[
-a\,d\binom{d}{k_\star(d,\beta,p)}
-\le dA_d
-\le b\,d\binom{d}{k_\star(d,\beta,p)},
+0<a\le b .
 \]
-and the block-mixture conclusions.  Set
+Define
 \[
 c_{\beta,p}:=\min\{1,a^2\},
 \qquad
 C_{\beta,p}:=\max\{1,b^2\}.
 \]
-Then \(0<c_{\beta,p}\le C_{\beta,p}\). % lean: degree_frontier
+Since \(a>0\) gives \(a^2>0\), the number \(\min\{1,a^2\}\) is positive, and \(\min\{1,a^2\}\le 1\le\max\{1,b^2\}\).  Hence
+\[
+0<c_{\beta,p}\le C_{\beta,p}.
+\]
+% lean: degree_frontier (cLower, cUpper, hcLower)
 
-\item Fix \(n,d\in\mathbb N\) and \(B\in\mathbb R\) with \(n\ge1\), \(d\le n\), and \(B\ge0\), and write
+\item \textbf{The clauses that are used.}
+Fix \(n,d\in\mathbb N\) and \(B\in\mathbb R\) with \(n\ge 1\), \(d\le n\), and \(B\ge 0\), write \(k_\star=k_\star(d,\beta,p)\), and set
 \[
-x:=\frac{d\binom{d}{k_\star(d,\beta,p)}}{n},
+x:=\frac{d\binom{d}{k_\star}}{n},
 \qquad
-y:=\frac{dA_d}{n}.
+y:=\frac{dA_d}{n},
 \]
-The common-\(p\) product Bernoulli design satisfies \cref{obj:ass:bernoulli-design}.  Since \(n\ge1\), the exposed-order comparison from the preceding item gives
+so that \(x\ge 0\).  The assignment law is the common-probability product Bernoulli design with probability \(p\), so it satisfies \cref{obj:ass:bernoulli-design}, and \cref{obj:thm:bounded-outcome-degree-frontier} therefore applies at this population size, this design, this degree bound, and this envelope.  Of its conclusions the argument below uses exactly five.  First, the lower frontier on the energy scale, together with the identity \(R_{n,\ell_1}^\star=R_n^\star\) of \cref{obj:def:two-class-minimax-risks},
 \[
-a x\le y\le b x,
+aB^2\min\{1,y\}
+\le
+R_{n,\ell_1}^\star(d,\beta,p,B)
+=
+R_n^\star(d,\beta,p,B).
 \]
-and hence
+Second, the projected-SNIPE upper bound on the energy scale,
+\[
+\sup_{(G,c)\in\mathcal M_{n,d,\beta}(B)}
+\mathbb E\!\left[
+  \bigl(\widehat\tau_n^{\mathrm{up}}-\tau_n\bigr)^2
+\right]
+\le
+bB^2\min\{1,y\}.
+\]
+Third, the unprojected-SNIPE bound, which carries no constant,
+\[
+\sup_{(G,c)\in\mathcal M_{n,d,\beta}(B)}
+\mathbb E\!\left[
+  \bigl(\widehat\tau_n^{\mathrm{SNIPE}}-\tau_n\bigr)^2
+\right]
+\le
+B^2y .
+\]
+Fourth, the local-energy comparison: for every \((G,c)\in\mathcal M_{n,d,\beta}(B)\) and every \(i\in V_n\),
+\[
+A_i\le A_d .
+\]
+Fifth, the exposed-order comparison between the block-energy scale and the binomial scale,
+\[
+a\,d\binom{d}{k_\star}
+\le
+dA_d
+\le
+b\,d\binom{d}{k_\star}.
+\]
+% lean: bounded_outcome_degree_frontier
+
+\item \textbf{Rescaling the frontier variable.}
+Since \(n\ge 1>0\), dividing the exposed-order comparison of the preceding item by \(n\) gives
+\[
+a x\le y\le b x .
+\]
+The map \(t\mapsto\min\{1,t\}\) is nondecreasing, so
 \[
 \min\{1,ax\}\le \min\{1,y\}\le \min\{1,bx\}.
 \]
-Also \(\min\{1,a^2\}\le a\): if \(a\le1\), then \(\min\{1,a^2\}\le a^2\le a\), while if \(a>1\), then \(\min\{1,a^2\}\le1\le a\).  Splitting on \(x\le1\) and \(ax\le1\), and using this comparison in the saturated branches, gives
+% lean: degree_frontier (haxy, hybx, hminLower, hminUpper)
+
+\item \textbf{Two constant comparisons.}
+First,
+\[
+\min\{1,a^2\}\le a .
+\]
+Indeed, if \(a\le 1\) then \(\min\{1,a^2\}\le a^2\le a\), while if \(a>1\) then \(\min\{1,a^2\}\le 1\le a\).  Second, since \(0<a\le b\) we have \(b>0\), and
+\[
+b\le\max\{1,b^2\}.
+\]
+Indeed, if \(b\le 1\) then \(b\le 1\le\max\{1,b^2\}\), while if \(b>1\) then \(b\le b^2\le\max\{1,b^2\}\).
+% lean: degree_frontier (hsmallA, hlargeB)
+
+\item \textbf{Lower rescaling.}
+We claim that
 \[
 \min\{1,a^2\}\min\{1,x\}
 \le
 a\min\{1,ax\}.
 \]
-Similarly \(b\le\max\{1,b^2\}\): if \(b\le1\), then \(b\le1\le\max\{1,b^2\}\), while if \(b>1\), then \(b\le b^2\le\max\{1,b^2\}\).  Splitting on \(x\le1\) and \(bx\le1\) gives
+Split on the two saturations.  If \(x\le 1\) and \(ax\le 1\), both minima are attained at their arguments and
+\[
+\min\{1,a^2\}\,x\le a^2x=a(ax).
+\]
+If \(x\le 1\) and \(ax>1\), then \(\min\{1,x\}=x\), \(\min\{1,ax\}=1\), and, by the first comparison of the preceding item followed by \(x\le 1\),
+\[
+\min\{1,a^2\}\,x\le ax\le a .
+\]
+If \(x>1\) and \(ax\le 1\), then \(\min\{1,x\}=1\), \(\min\{1,ax\}=ax\), and, using \(x\ge 1\),
+\[
+\min\{1,a^2\}\le a^2\le a^2x=a(ax).
+\]
+If \(x>1\) and \(ax>1\), both minima equal \(1\) and the claim is again \(\min\{1,a^2\}\le a\).
+% lean: degree_frontier (hscaleLower)
+
+\item \textbf{Upper rescaling.}
+We claim that
 \[
 b\min\{1,bx\}
 \le
 \max\{1,b^2\}\min\{1,x\}.
 \]
-In the branch \(x>1\) and \(bx\le1\), the needed bound is obtained by first deriving \(b<1\): otherwise \(b\ge1\) would imply \(x\le bx\), contradicting \(x>1\) and \(bx\le1\). % lean: degree_frontier
+If \(x\le 1\) and \(bx\le 1\), then
+\[
+b(bx)=b^2x\le\max\{1,b^2\}\,x .
+\]
+If \(x\le 1\) and \(bx>1\), then \(\min\{1,bx\}=1\) and, using \(bx\ge 1\) and \(b>0\),
+\[
+b\le b(bx)=b^2x\le\max\{1,b^2\}\,x .
+\]
+If \(x>1\) and \(bx\le 1\), then \(\min\{1,x\}=1\) and \(\min\{1,bx\}=bx\).  Here \(b<1\): otherwise \(b\ge 1\) would give \(x\le bx\), hence \(1<x\le bx\le 1\), a contradiction.  Consequently
+\[
+b(bx)\le b\le 1\le\max\{1,b^2\}.
+\]
+If \(x>1\) and \(bx>1\), both minima equal \(1\) and the claim is the second comparison of the fourth item, \(b\le\max\{1,b^2\}\).
+% lean: degree_frontier (hscaleUpper)
 
-\item The lower bound follows by chaining the previous inequalities with the block-energy lower bound supplied by \cref{obj:thm:bounded-outcome-degree-frontier} and the identification of the coefficient-mass minimax risk in \cref{obj:def:minimax-risk}:
+\item \textbf{The minimax lower bound.}
+Multiplying the lower rescaling of the fifth item by \(B^2\ge 0\), then inserting the min comparison of the third item, and finally the lower frontier of the second item,
 \[
 \begin{aligned}
 c_{\beta,p}B^2\min\{1,x\}
-&=B^2\min\{1,a^2\}\min\{1,x\} \\
-&\le B^2a\min\{1,ax\} \\
-&\le B^2a\min\{1,y\} \\
+&=B^2\bigl(\min\{1,a^2\}\min\{1,x\}\bigr) \\
+&\le B^2\bigl(a\min\{1,ax\}\bigr) \\
+&\le B^2\bigl(a\min\{1,y\}\bigr) \\
 &\le R_n^\star(d,\beta,p,B).
 \end{aligned}
-\] % lean: degree_frontier
-
-\item The projected-SNIPE upper bound at the block-energy scale from \cref{obj:thm:bounded-outcome-degree-frontier}, together with the upper rescaling above, gives
-\[
-\begin{aligned}
-\sup_{(G,c)\in\mathcal M_{n,d,\beta}(B)}
-\mathbb E\!\left[
-  \bigl(\widehat\tau_n^{\mathrm{up}}-\tau_n\bigr)^2
-\right]
-&\le bB^2\min\{1,y\} \\
-&\le bB^2\min\{1,bx\} \\
-&\le C_{\beta,p}B^2\min\{1,x\}.
-\end{aligned}
-\] % lean: degree_frontier
-
-\item The estimator \(\widehat\tau_n^{\mathrm{up}}\) is an admissible competitor for the minimax problem.  The finite-population estimator is measurable, and \cref{obj:ass:bounded-coefficient-mass} gives, for every model in \(\mathcal M_{n,d,\beta}(B)\),
-\[
-|Y_i(z)|\le
-\sum_{S\subseteq N_i}|c_{i,S}|\le B.
 \]
-Therefore
+This is the first assertion of the minimax frontier.
+% lean: degree_frontier (hlower')
+
+\item \textbf{The projected SNIPE estimator is an admissible competitor.}
+For every \((G,c)\in\mathcal M_{n,d,\beta}(B)\), every \(i\in V_n\), and every \(z\in\{0,1\}^{V_n}\),
+\[
+|Y_i(z)|
+=\left|\sum_{S\subseteq N_i}c_{i,S}\prod_{j\in S}z_j\right|
+\le\sum_{S\subseteq N_i}|c_{i,S}|
+\le B ,
+\]
+by the triangle inequality, the bound \(\bigl|\prod_{j\in S}z_j\bigr|\le 1\) valid because every factor lies in \(\{0,1\}\), and \cref{obj:ass:bounded-coefficient-mass}.
+% lean: potentialOutcome_abs_le_of_mem_modelClass
+Since \(n\ge 1\), the population is nonempty and the target is the average of the unitwise all-treated versus all-control contrasts,
+\[
+\tau_n=\frac1n\sum_{i\in V_n}\bigl(Y_i(\mathbf 1)-Y_i(\mathbf 0)\bigr),
+\]
+so
 \[
 |\tau_n|
 \le
 \frac1n\sum_{i\in V_n}\bigl(|Y_i(\mathbf 1)|+|Y_i(\mathbf 0)|\bigr)
-\le 2B.
+\le 2B .
 \]
-The projection defining \(\widehat\tau_n^{\mathrm{up}}\) places the estimator in \([-B,B]\), so its pointwise squared loss is bounded by \(9B^2\), and hence its risk is uniformly bounded over the class.  Since \(n\ge1\), the empty graph with the zero coefficient schedule supplies a member of \(\mathcal M_{n,d,\beta}(B)\).  The definition of \(R_n^\star(d,\beta,p,B)\) as the infimum over admissible estimators gives
+% lean: tte_abs_le_two_mul_of_mem_modelClass
+The estimator \(\widehat\tau_n^{\mathrm{up}}\) of \cref{obj:def:snipe-estimator} is the projection of \(\widehat\tau_n^{\mathrm{SNIPE}}\) onto \([-B,B]\), which is a nonempty interval because \(B\ge 0\); hence \(|\widehat\tau_n^{\mathrm{up}}|\le B\) pointwise in the assignment.  Combining the last two bounds,
+\[
+\bigl|\widehat\tau_n^{\mathrm{up}}-\tau_n\bigr|
+\le
+\bigl|\widehat\tau_n^{\mathrm{up}}\bigr|+|\tau_n|
+\le B+2B=3B ,
+\]
+so \(\bigl(\widehat\tau_n^{\mathrm{up}}-\tau_n\bigr)^2\le 9B^2\) pointwise, and averaging over the design,
+\[
+\mathbb E\!\left[
+  \bigl(\widehat\tau_n^{\mathrm{up}}-\tau_n\bigr)^2
+\right]
+\le 9B^2
+\qquad\text{for every }(G,c)\in\mathcal M_{n,d,\beta}(B).
+\]
+Thus the modelwise risks of \(\widehat\tau_n^{\mathrm{up}}\) are bounded above by a single constant; the estimator is also measurable in the observed outcomes for each fixed graph and assignment, being a clipped linear combination of them.  So \(\widehat\tau_n^{\mathrm{up}}\) is one of the estimators over which \cref{obj:def:minimax-risk} takes its infimum.
+% lean: snipeClipped_admissible
+
+Moreover \(\mathcal M_{n,d,\beta}(B)\) is nonempty: the empty graph has all neighborhoods empty, hence both degrees \(0\le d\), and the zero coefficient schedule is supported on those neighborhoods, has no monomial of order above \(\beta\), and has coefficient mass \(0\le B\).  Every competitor's worst-case risk is therefore a supremum of design mean squared errors over a nonempty class, so it is at least \(0\), and the set of worst-case risks appearing in \cref{obj:def:minimax-risk} is nonempty and bounded below.  Its infimum is at most the value attained at the admissible competitor \(\widehat\tau_n^{\mathrm{up}}\):
 \[
 R_n^\star(d,\beta,p,B)
 \le
@@ -351,247 +781,778 @@ R_n^\star(d,\beta,p,B)
 \mathbb E\!\left[
   \bigl(\widehat\tau_n^{\mathrm{up}}-\tau_n\bigr)^2
 \right].
-\] % lean: snipeClipped_admissible, minimaxRisk_le_worstRisk_of_admissible
+\]
+% lean: minimaxRisk_le_worstRisk_of_admissible
 
-\item The unprojected SNIPE bound is obtained from the block-energy bound in \cref{obj:thm:bounded-outcome-degree-frontier}:
+\item \textbf{The minimax upper bound.}
+Starting from the projected-SNIPE upper bound of the second item, then inserting the min comparison of the third item and the upper rescaling of the sixth item, each multiplied by \(B^2\ge 0\),
+\[
+\begin{aligned}
+\sup_{(G,c)\in\mathcal M_{n,d,\beta}(B)}
+\mathbb E\!\left[
+  \bigl(\widehat\tau_n^{\mathrm{up}}-\tau_n\bigr)^2
+\right]
+&\le bB^2\min\{1,y\} \\
+&\le B^2\bigl(b\min\{1,bx\}\bigr) \\
+&\le B^2\bigl(\max\{1,b^2\}\min\{1,x\}\bigr)
+=C_{\beta,p}B^2\min\{1,x\}.
+\end{aligned}
+\]
+Together with the preceding two items, this completes the minimax frontier assertion.
+% lean: degree_frontier (hupper')
+
+\item \textbf{The unprojected SNIPE estimator.}
+From the unprojected-SNIPE bound of the second item, then \(y\le bx\), then \(b\le\max\{1,b^2\}\) together with \(x\ge 0\),
 \[
 \begin{aligned}
 \sup_{(G,c)\in\mathcal M_{n,d,\beta}(B)}
 \mathbb E\!\left[
   \bigl(\widehat\tau_n^{\mathrm{SNIPE}}-\tau_n\bigr)^2
 \right]
-&\le B^2\,\frac{dA_d}{n} \\
-&\le B^2\,b\,x \\
-&\le C_{\beta,p}B^2\,x.
+&\le B^2y \\
+&\le B^2(bx) \\
+&\le C_{\beta,p}B^2x .
 \end{aligned}
-\] % lean: degree_frontier
+\]
+% lean: degree_frontier (hsnipe')
 
-\item The score-energy assertion is exactly the local-energy comparison supplied by \cref{obj:thm:bounded-outcome-degree-frontier}: for every \((G,c)\in\mathcal M_{n,d,\beta}(B)\) and every \(i\in V_n\),
-\[
-A_i\le A_d.
-\] % lean: degree_frontier
+\item \textbf{Score energy.}
+The score-energy assertion \(A_i\le A_d\) is the local-energy comparison recorded as the fourth clause of the second item.
+% lean: degree_frontier (hlocalL1)
 
-\item For every \((G,c)\in\mathcal M_{n,d,\beta}(B)\), every \(i\in V_n\), and every order \(r\) with \(1\le r\), the overlap-count assertion is \cref{obj:lem:overlap-count} applied to the graph \(G\), the degree bound \(d\), the order \(r\), and the unit \(i\):
+\item \textbf{Overlap counts.}
+Let \((G,c)\in\mathcal M_{n,d,\beta}(B)\), let \(i\in V_n\), and let \(r\ge 1\).  By \cref{obj:def:model-class} the graph \(G\) satisfies \cref{obj:ass:bounded-degree} with bound \(d\), so \cref{obj:lem:overlap-count}, applied to \(G\), the degree bound \(d\), the order \(r\), and the unit \(i\), gives precisely the asserted identity and the two asserted bounds.
+% lean: overlap_count_le
+
+\item \textbf{Block construction.}
+Assume \(B>0\) and \(d\ge 1\).  In the asserted clause, \(m\), \(\rho\), and \(\delta\) are the quantities of \cref{obj:def:block-family}: \(m=\lfloor n/d\rfloor\) is the number of complete \(d\)-blocks,
 \[
-\sum_{\ell\in V_n}\binom{|N_i\cap N_\ell|}{r}
+\rho=\frac{md}{n}
+\]
+is the active population fraction, and
+\[
+\delta
 =
-\sum_{\substack{S\subseteq N_i\\ |S|=r}}
-\#\{\ell\in V_n:S\subseteq N_\ell\}
-\le
-d\binom{|N_i|}{r}
-\le
-d\binom{d}{r}.
-\] % lean: overlap_count_le
-
-\item Assume \(B>0\) and \(d\ge1\).  The block-mixture component of \cref{obj:thm:bounded-outcome-degree-frontier}, with \(m=\lfloor n/d\rfloor\), \(\rho\) the active population fraction, and \(\delta\) the least-favourable perturbation amplitude, gives the two complete-block models \(M_+\) and \(M_-\) for every \(U=(U_1,\ldots,U_m)\) with \(|U_b|\le B/2\).  Their graph is the complete-block graph, their coefficient schedules are the corresponding \(+1\) and \(-1\) block schedules, and
+B\min\bigl\{(2H_{\beta,p})^{-1},(4\pi)^{-1}\bigr\}
+\min\bigl\{1,\sqrt{A_d/m}\bigr\}
+\]
+is the least-favourable perturbation amplitude, where
+\[
+H_{\beta,p}=\sup_{d\ge 1}\sum_T|h_{d,T}|
+\]
+is the representer mass bound of \cref{obj:def:block-family} and \(h_{d,T}\) are the raw-monomial coefficients of the normalized block representer of \cref{obj:def:block-score-energy}.  The two schedules attached to a baseline vector \(U=(U_1,\ldots,U_m)\) with \(|U_b|\le B/2\) for all \(b\) are the sign-\(\sigma\) schedules
+\[
+c_{i,T}=U_b\mathbf 1\{T=\varnothing\}+\sigma\delta h_{d,T},
+\qquad |T|\le k_\star,
+\]
+of \cref{obj:def:block-family} with \(\sigma=+1\) and \(\sigma=-1\), all remaining coefficients being zero, carried by the complete \(d\)-block graph; \(\Pi_+\) and \(\Pi_-\) are the corresponding priors of \cref{obj:synth_3,obj:synth_4}.  With these readings, the membership of \(M_+\) and \(M_-\) in \(\mathcal M_{n,d,\beta}(B)\), the two target values
 \[
 \tau_n(M_+)=\rho\delta,
 \qquad
-\tau_n(M_-)=-\rho\delta.
+\tau_n(M_-)=-\rho\delta,
 \]
-The same component gives
+the squared Hellinger bound
 \[
 H^2(\Pi_+,\Pi_-)
 \le
 \frac{4\pi^2m\delta^2}{B^2A_d},
-\qquad
-\frac12\le\rho\le1,
-\qquad
-\frac{A_d}{m}=\frac{dA_d/n}{\rho}.
 \]
-This proves the block-construction assertion and completes the proof. % lean: degree_frontier
+the bracketing \(\frac12\le\rho\le 1\), and the identity
+\[
+\frac{A_d}{m}=\frac{dA_d/n}{\rho}
+\]
+are verbatim the least-favourable block clause of \cref{obj:thm:bounded-outcome-degree-frontier} at the same \(n\), \(d\), and \(B\).  This proves the block-construction assertion and completes the proof.
+% lean: degree_frontier (hmixture), bounded_outcome_degree_frontier
 \end{enumerate}
 \end{proof}
 
 \begin{proof}[Proof of \cref{obj:thm:bounded-outcome-degree-frontier}]
 \begin{enumerate}
-\item By \cref{obj:lem:block-energy-representer}, choose constants
-\(c_1,c_2,H\) depending only on \((\beta,p)\), with
-\(0<c_1\le c_2\), and with
+\item \textbf{The two constants.}
+By \cref{obj:lem:block-energy-representer} there are constants \(c_1,c_2,K\),
+depending only on \((\beta,p)\), with \(0<c_1\le c_2\) and \(0<K\), such that for
+every \(d\ge 1\)
 \[
 c_1\binom{d}{k_\star(d,\beta,p)}
 \le A_d
 \le
-c_2\binom{d}{k_\star(d,\beta,p)}
-\qquad(d\ge 1).
+c_2\binom{d}{k_\star(d,\beta,p)},
+\qquad
+\sum_{T\subseteq\{1,\ldots,d\}}|h_{d,T}|\le K .
 \]
-Let \(H_{\beta,p}\) denote the corresponding uniform raw-representer mass
-supremum and set
+In particular the quantity \(H_{\beta,p}=\sup_{d\ge1}\sum_T|h_{d,T}|\) of
+\cref{obj:def:block-family} is finite, with \(H_{\beta,p}\le K\).  It is also at
+least one: evaluating the raw expansion of \cref{obj:def:block-score-energy} at
+the all-treated and the all-control assignment of a single-coordinate block and
+subtracting gives
+\[
+1=L_1(h_1)=\sum_{\varnothing\ne T\subseteq\{1\}}h_{1,T}
+\le\sum_{T\subseteq\{1\}}|h_{1,T}|\le H_{\beta,p},
+\]
+where \(L_1(h_1)=1\) is the representer identity of
+\cref{obj:lem:block-energy-representer}. Now set
 \[
 \kappa
-=
+:=
 \min\!\left\{(2H_{\beta,p})^{-1},(4\pi)^{-1}\right\},
 \qquad
 c_{\beta,p}
-=
+:=
 \min\!\left\{c_1,\frac{\kappa^2}{16}\right\},
 \qquad
 C_{\beta,p}
-=
+:=
 \max\{16,c_2\}.
 \]
-The representer-mass positivity and \(\pi>0\) give \(\kappa>0\), hence
-\(c_{\beta,p}>0\), and
+Since \(H_{\beta,p}\ge 1>0\) and \(\pi>0\), both entries in the definition of
+\(\kappa\) are positive, so \(\kappa>0\) and therefore \(c_{\beta,p}>0\).  Also
 \[
 c_{\beta,p}\le c_1\le c_2\le C_{\beta,p}.
 \]
-% lean: blockEnergy_representer
-
-\item Fix \(n,D,d,B\) satisfying the hypotheses. The degree-index condition gives
-\(d\le n\). The coefficient-mass envelope bounds every potential outcome by
-\(B\) on the same carrier, so
-\(\mathcal M_{n,d,\beta}(B)\subseteq
-\mathcal M_{n,d,\beta}^{\infty}(B)\) carrier by carrier. If \(B>0\) and
-\(d\ge 1\), the one-loop schedule with coefficients \(B\) and \(-2B\) has
-uniformly bounded outcomes and coefficient mass \(3B>B\), giving strict
-containment. The equality
-\(R_{n,\ell_1}^{\star}(d,\beta,p,B)=R_n^{\star}(d,\beta,p,B)\) is the
-definition of the coefficient-class minimax risk used here, and the carrier
-inclusion gives
+With this \(\kappa\), the perturbation amplitude of \cref{obj:def:block-family}
+reads
 \[
-R_{n,\ell_1}^{\star}(d,\beta,p,B)
-\le R_{n,\infty}^{\star}(d,\beta,p,B).
+\delta
+=
+B\kappa\eta,
+\qquad
+\eta:=\min\!\left\{1,\sqrt{A_d/m}\right\}.
 \]
-% lean: modelClassIncluded_of_coeffMass
+% lean: blockEnergy_representer, one_le_representerMass, representerMass_le_representerMassSup, representerMassSup_pos, tiltAmplitude
 
-\item The scaled block-prior lower bound gives
+\item \textbf{Standing data.}
+Fix \(n\ge 1\), a design \(D\) satisfying \cref{obj:ass:bernoulli-design} with
+probability \(p\), an integer \(d\) with \(d\le n\), and \(B\ge 0\).  Since
+\(p(1-p)>0\), every summand of \(A_d\) in \cref{obj:def:block-score-energy} is
+nonnegative, so \(A_d\ge0\); and by \cref{obj:def:zero-degree-conventions}
+\(A_0=0\).  For \(d\ge1\) the order \(r=1\) contributes
+\(\binom d1\Delta_1(p)^2/[p(1-p)]=d/[p(1-p)]>0\) to \(A_d\), so
 \[
-c_{\beta,p}B^2\min\!\left\{1,\frac{dA_d}{n}\right\}
+0<A_d\qquad (d\ge 1).
+\]
+% lean: blockEnergy_pos, zeroDegreeConventions_holds
+
+\item \textbf{Model comparison.}
+Let \((G_n,c)\in\mathcal M_{n,d,\beta}(B)\).  Every raw monomial takes values in
+\([0,1]\), so for every unit \(i\) and every assignment \(z\)
+\[
+|Y_i(z)|
+=
+\left|\sum_{S\subseteq N_i}c_{i,S}\prod_{j\in S}z_j\right|
 \le
-R_{n,\ell_1}^{\star}(d,\beta,p,B).
+\sum_{S\subseteq N_i}|c_{i,S}|
+\le B,
 \]
-For \(d\ge1\) and \(B>0\), this is obtained with
-\(m=\lfloor n/d\rfloor\), \(\rho=md/n\),
-\(t=\min\{1,\sqrt{A_d/m}\}\), and
-\(\delta=B\kappa t\). The choice
-\(\kappa\le(4\pi)^{-1}\) makes the squared Hellinger distance of the two block
-priors at most \(1/4\). Le Cam's block-prior lower bound then gives
-\((\rho\delta)^2/4\), and the identities
-\[
-\frac{dA_d}{n}=\rho\frac{A_d}{m},
-\qquad
-\frac12\le\rho\le1,
-\qquad
-t^2=\min\!\left\{1,\frac{A_d}{m}\right\}
-\]
-convert this to the displayed frontier lower bound. For \(B=0\), and also for
-\(d=0\), the left side is \(0\), and the minimax risk is nonnegative.
-% lean: minimaxRisk_scaled_block_lower
+the last step being \cref{obj:ass:bounded-coefficient-mass}.  The remaining
+requirements of \cref{obj:def:bounded-outcome-coefficient-class} — neighborhood
+support and \cref{obj:ass:low-order} — are already part of
+\cref{obj:def:coefficient-class}, and the graph requirement is unchanged.  Hence
+the same pair \((G_n,c)\) lies in \(\mathcal M_{n,d,\beta}^{\infty}(B)\): the
+containment holds carrier by carrier.
+% lean: modelClassIncluded_of_coeffMass, potentialOutcome_abs_le_mass
 
-\item The unclipped SNIPE variance calculation, with the local dependence
-aggregation controlled by \cref{obj:lem:overlap-count}, yields on both model
-classes
+Now let \(B>0\) and \(d\ge 1\).  Pick a unit \(i_0\in V_n\) (possible since
+\(n\ge1\)), let \(G^{0}\) consist of the single loop \(i_0\to i_0\), and set
 \[
-\sup \mathbb E_Z\!\left[
-(\widehat\tau_n^{\mathrm{SNIPE}}-\tau_n)^2
+c^{0}_{i_0,\varnothing}:=B,
+\qquad
+c^{0}_{i_0,\{i_0\}}:=-2B,
+\]
+with all other coefficients zero.  Then \(N_{i_0}=\{i_0\}\) and \(N_i=\varnothing\)
+for \(i\ne i_0\), so both degrees in \cref{obj:ass:bounded-degree} are at most
+\(1\le d\), and the only nonzero coefficients are indexed by sets of cardinality
+at most \(1\le\beta\).  The induced outcomes are
+\[
+Y_{i_0}(z)=B-2Bz_{i_0}\in\{B,-B\},
+\qquad
+Y_i(z)=0\quad(i\ne i_0),
+\]
+so \((G^{0},c^{0})\in\mathcal M_{n,d,\beta}^{\infty}(B)\).  Its coefficient mass
+at \(i_0\) is
+\[
+\sum_{S\subseteq N_{i_0}}|c^{0}_{i_0,S}|=B+2B=3B>B,
+\]
+so no member of \(\mathcal M_{n,d,\beta}(B)\) has graph \(G^{0}\) and schedule
+\(c^{0}\), and the containment is strict.
+% lean: strictModelClass_completeWitness
+
+\item \textbf{Local energy.}
+Let \((G_n,c)\) belong to either model class and let \(i\in V_n\).  By
+\cref{obj:ass:bounded-degree}, \(|N_i|\le d\), hence
+\(\min\{\beta,|N_i|\}\le\bar\beta_d\) and \(\binom{|N_i|}{r}\le\binom dr\) for
+every \(r\).  Since each term \(\Delta_r(p)^2/[p(1-p)]^r\) is nonnegative,
+\[
+A_i
+=
+\sum_{r=1}^{\min\{\beta,|N_i|\}}\binom{|N_i|}{r}\frac{\Delta_r(p)^2}{[p(1-p)]^r}
+\le
+\sum_{r=1}^{\bar\beta_d}\binom{d}{r}\frac{\Delta_r(p)^2}{[p(1-p)]^r}
+=A_d .
+\]
+The estimate uses only the degree bound of the carrier graph, so it holds
+verbatim on \(\mathcal M_{n,d,\beta}(B)\) and on
+\(\mathcal M_{n,d,\beta}^{\infty}(B)\).
+% lean: localEnergy_le_blockEnergy
+
+\item \textbf{Unbiasedness of SNIPE.}
+Under \cref{obj:ass:bernoulli-design} the design \(D\) is the common-\(p\)
+product Bernoulli law, so the centered monomials in
+\cref{obj:def:snipe-score} obey, for every unit \(i\) and every nonempty
+\(S\subseteq N_i\) with \(|S|\le\min\{\beta,|N_i|\}\),
+\[
+\mathbb E_Z\!\left[g_{i,\beta,p}(Z)\prod_{j\in S}Z_j\right]=1,
+\qquad
+\mathbb E_Z\!\left[g_{i,\beta,p}(Z)\right]=0 .
+\]
+The first identity collapses the double sum in \(g_{i,\beta,p}\) to the binomial
+contrast \(\sum_{r=1}^{|S|}\binom{|S|}{r}\Delta_r(p)p^{|S|-r}=1\); the second is
+the vanishing design mean of every nonconstant centered monomial.  Expanding
+\(Y_i\) over its raw monomials, using \cref{obj:ass:low-order} to discard the
+terms with \(|S|>\beta\), and applying the two identities term by term gives
+\[
+\mathbb E_Z\!\left[g_{i,\beta,p}(Z)Y_i(Z)\right]
+=
+\sum_{\varnothing\ne S\subseteq N_i}c_{i,S}
+=
+Y_i(\mathbf 1)-Y_i(\mathbf 0).
+\]
+Averaging over \(i\in V_n\) yields
+\(\mathbb E_Z[\widehat\tau_n^{\mathrm{SNIPE}}]=\tau_n\) at every model of
+\(\mathcal M_{n,d,\beta}(B)\) and of \(\mathcal M_{n,d,\beta}^{\infty}(B)\), since
+only the low-order and support properties of the schedule were used.
+% lean: snipeScore_raw_moment, snipeScore_mean_zero, snipeScore_potentialOutcome_moment, snipe_unbiased, snipe_unbiased_bdd
+
+\item \textbf{Unclipped SNIPE risk.}
+Fix a model in either class and write
+\[
+W_i(z):=Y_i(z)g_{i,\beta,p}(z),
+\qquad
+F_i(z):=W_i(z)-\mathbb E_Z[W_i(Z)] .
+\]
+Each \(F_i\) has design mean zero and depends on the assignment only through
+\(\{Z_j:j\in N_i\}\), because both \(Y_i\) and \(g_{i,\beta,p}\) do.  Expanding
+each \(F_i\) in the orthogonal basis of centered monomials
+\(\prod_{j\in S}(Z_j-p)\), only subsets \(S\subseteq N_i\) receive a nonzero
+coefficient, and the empty subset receives none.  For a fixed nonempty \(S\), the
+units that can contribute are those with \(S\subseteq N_i\), and there are at
+most \(d\) of them: choosing \(j\in S\) places every such unit in the
+out-neighborhood of \(j\), which is the out-degree count in
+\cref{obj:lem:overlap-count}.  Applying Cauchy--Schwarz to each such group of at
+most \(d\) coefficients and summing over \(S\) gives
+\[
+\mathbb E_Z\!\left[\Bigl(\sum_{i\in V_n}F_i(Z)\Bigr)^2\right]
+\le
+d\sum_{i\in V_n}\mathbb E_Z\!\left[F_i(Z)^2\right].
+\]
+% lean: E_sum_sq_le_degree_mul_sum_energy, globalCenteredMonomial_expansion_energy
+For each unit, \(|Y_i(z)|\le B\) — by the display of item 3 on
+\(\mathcal M_{n,d,\beta}(B)\), and by definition on
+\(\mathcal M_{n,d,\beta}^{\infty}(B)\) — while the exact score energy is
+\(\mathbb E_Z[g_{i,\beta,p}(Z)^2]=A_i\).  Hence, using item 4,
+\[
+\mathbb E_Z\!\left[F_i(Z)^2\right]
+\le
+\mathbb E_Z\!\left[W_i(Z)^2\right]
+\le
+B^2\,\mathbb E_Z\!\left[g_{i,\beta,p}(Z)^2\right]
+=B^2A_i
+\le B^2A_d .
+\]
+% lean: snipeScore_sq_expectation_for_variance, localEnergy_le_blockEnergy
+By item 5 the estimator is unbiased, so its mean squared error equals its
+variance, and
+\[
+\mathbb E_Z\!\left[
+\bigl(\widehat\tau_n^{\mathrm{SNIPE}}-\tau_n\bigr)^2
+\right]
+=
+\frac{1}{n^{2}}
+\mathbb E_Z\!\left[\Bigl(\sum_{i\in V_n}F_i(Z)\Bigr)^2\right]
+\le
+\frac{d}{n^{2}}\cdot n\cdot B^2A_d
+=
+B^2\frac{dA_d}{n}.
+\]
+Taking the supremum over each class,
+\[
+\sup_{\mathcal M_{n,d,\beta}(B)}
+\mathbb E_Z\!\left[
+\bigl(\widehat\tau_n^{\mathrm{SNIPE}}-\tau_n\bigr)^2
+\right]
+\le
+B^2\frac{dA_d}{n},
+\qquad
+\sup_{\mathcal M_{n,d,\beta}^{\infty}(B)}
+\mathbb E_Z\!\left[
+\bigl(\widehat\tau_n^{\mathrm{SNIPE}}-\tau_n\bigr)^2
 \right]
 \le
 B^2\frac{dA_d}{n}.
 \]
-For each model in the coefficient-mass class, and for each model in the
-uniformly bounded-outcome class, the product Bernoulli design assumption
-identifies \(D\) with the common-\(p\) Bernoulli law, and the SNIPE moment
-identity gives unbiasedness for \(\tau_n\).
-% lean: worstRisk_snipe_le
+% lean: riskAt_snipe_le, riskAtBdd_snipe_le, worstRisk_snipe_le, worstRiskBdd_snipe_le
 
-\item Projection to \([-B,B]\) on the coefficient-mass class and to
-\([-2B,2B]\) on the uniformly bounded-outcome class can only improve the
-modelwise squared error relative to the corresponding target envelopes, while
-the trivial saturated bounds are \(4B^2\) and \(16B^2\). Combining these with
-the unclipped risk bounds gives
+\item \textbf{Target envelopes and clipping.}
+On \(\mathcal M_{n,d,\beta}(B)\) the all-treated versus all-control contrast of a
+single unit is \(Y_i(\mathbf 1)-Y_i(\mathbf 0)=\sum_{\varnothing\ne S\subseteq N_i}c_{i,S}\),
+so by \cref{obj:ass:bounded-coefficient-mass}
+\[
+|\tau_n|
+\le
+\frac1n\sum_{i\in V_n}\sum_{\varnothing\ne S\subseteq N_i}|c_{i,S}|
+\le B ,
+\]
+whereas on \(\mathcal M_{n,d,\beta}^{\infty}(B)\) the uniform outcome envelope gives
+\[
+|\tau_n|
+\le
+\frac1n\sum_{i\in V_n}\bigl(|Y_i(\mathbf 1)|+|Y_i(\mathbf 0)|\bigr)
+\le 2B .
+\]
+% lean: tte_abs_le_of_modelClass, tte_abs_le_of_bddModelClass
+For \(R\ge0\) and any target \(t\) with \(|t|\le R\), Euclidean projection onto
+\([-R,R]\) is a contraction towards \(t\):
+\[
+\bigl(\Pi_{[-R,R]}(x)-t\bigr)^2\le (x-t)^2
+\qquad\text{for every }x\in\mathbb R .
+\]
+Applying this with \(R=B\), \(t=\tau_n\) on \(\mathcal M_{n,d,\beta}(B)\), and with
+\(R=2B\), \(t=\tau_n\) on \(\mathcal M_{n,d,\beta}^{\infty}(B)\), gives modelwise
+\[
+\mathbb E_Z\!\left[\bigl(\widehat\tau_n^{\mathrm{up}}-\tau_n\bigr)^2\right]
+\le
+\mathbb E_Z\!\left[\bigl(\widehat\tau_n^{\mathrm{SNIPE}}-\tau_n\bigr)^2\right],
+\qquad
+\mathbb E_Z\!\left[\bigl(\widehat\tau_{n,\infty}^{\mathrm{up}}-\tau_n\bigr)^2\right]
+\le
+\mathbb E_Z\!\left[\bigl(\widehat\tau_n^{\mathrm{SNIPE}}-\tau_n\bigr)^2\right].
+\]
+% lean: clipTo_sq_sub_le, riskAt_clipped_le_raw, riskAtBdd_clipped_le_raw
+The projections also give saturated bounds that do not involve the design at
+all: \(|\widehat\tau_n^{\mathrm{up}}|\le B\) together with \(|\tau_n|\le B\)
+yields \((\widehat\tau_n^{\mathrm{up}}-\tau_n)^2\le 4B^2\) pointwise, and
+\(|\widehat\tau_{n,\infty}^{\mathrm{up}}|\le 2B\) together with
+\(|\tau_n|\le 2B\) yields
+\((\widehat\tau_{n,\infty}^{\mathrm{up}}-\tau_n)^2\le 16B^2\) pointwise.  Using
+item 6 when \(dA_d/n\le1\) and the saturated bounds when \(dA_d/n>1\),
 \[
 \sup_{\mathcal M_{n,d,\beta}(B)}
 \mathbb E_Z\!\left[
-(\widehat\tau_n^{\mathrm{up}}-\tau_n)^2
+\bigl(\widehat\tau_n^{\mathrm{up}}-\tau_n\bigr)^2
 \right]
 \le
 4B^2\min\!\left\{1,\frac{dA_d}{n}\right\},
 \]
-and
 \[
 \sup_{\mathcal M_{n,d,\beta}^{\infty}(B)}
 \mathbb E_Z\!\left[
-(\widehat\tau_{n,\infty}^{\mathrm{up}}-\tau_n)^2
+\bigl(\widehat\tau_{n,\infty}^{\mathrm{up}}-\tau_n\bigr)^2
 \right]
 \le
 16B^2\min\!\left\{1,\frac{dA_d}{n}\right\}.
 \]
-Since \(4\le16\le C_{\beta,p}\), the coefficient-class clipped bound and the
-bounded-outcome clipped bound have the theorem's constant \(C_{\beta,p}\). The
-minimax risk over the bounded-outcome class is bounded above by the risk of the
-bounded-outcome clipped SNIPE estimator, giving the displayed minimax upper
-chain.
-% lean: worstRiskBdd_clipped_le_min
+Since \(4\le16\le C_{\beta,p}\) and \(B^2\min\{1,dA_d/n\}\ge0\), both right-hand
+sides are at most \(C_{\beta,p}B^2\min\{1,dA_d/n\}\), which proves the
+coefficient-class clipped bound of the theorem.
+% lean: worstRisk_clipped_le_min, worstRiskBdd_clipped_le_min
 
-\item For every unit \(i\), the exact local score energy is bounded by the
-complete-block energy:
+\item \textbf{Ordering of the two minimax risks.}
+The identity
 \[
-A_i\le A_d.
+R_{n,\ell_1}^{\star}(d,\beta,p,B)=R_n^{\star}(d,\beta,p,B)
 \]
-The same estimate applies on both model classes because it depends only on the
-degree bound of the carrier graph. Multiplying the energy scale from
-\cref{obj:lem:block-energy-representer} by \(d\) and using
-\(c_{\beta,p}\le c_1\) and \(c_2\le C_{\beta,p}\) gives, for \(d\ge1\),
+is the definition of the coefficient-mass risk in
+\cref{obj:def:two-class-minimax-risks}.
+% lean: minimaxRiskL1
+
+By item 3, each \((G_n,c)\in\mathcal M_{n,d,\beta}(B)\) is also a member of
+\(\mathcal M_{n,d,\beta}^{\infty}(B)\) with the same graph and the same schedule,
+hence with the same observed outcomes and the same target; the modelwise risk of
+any estimator is therefore unchanged by the embedding.  Consequently, for every
+graph-aware estimator \(\widehat\tau_n\),
 \[
-c_{\beta,p}d\binom{d}{k_\star(d,\beta,p)}
-\le dA_d
+\sup_{\mathcal M_{n,d,\beta}(B)}
+\mathbb E_Z\!\left[\bigl(\widehat\tau_n-\tau_n\bigr)^2\right]
 \le
-C_{\beta,p}d\binom{d}{k_\star(d,\beta,p)}.
+\sup_{\mathcal M_{n,d,\beta}^{\infty}(B)}
+\mathbb E_Z\!\left[\bigl(\widehat\tau_n-\tau_n\bigr)^2\right],
 \]
-For \(d=0\), both sides reduce by the zero-degree convention.
-% lean: localEnergy_le_blockEnergy
+and an estimator whose bounded-outcome risk range is bounded above has bounded
+coefficient-mass risk range as well, so it competes in the infimum defining
+\(R_{n,\ell_1}^{\star}\).  Taking the infimum over the estimators admissible for
+the bounded-outcome problem gives
+\[
+R_{n,\ell_1}^{\star}(d,\beta,p,B)
+\le
+R_{n,\infty}^{\star}(d,\beta,p,B).
+\]
+% lean: minimaxRiskL1_le_minimaxRiskBdd, riskAt_modelClassToBdd
 
-\item Assume \(d\ge1\) and \(d\mid n\), and put \(m=n/d\). On the complete
-directed \(d\)-block graph with loops, first consider \(B>0\). The canonical
-local-linear weights agree with the SNIPE score on each block. The block
-extremal criterion equals \(d^2A_d\) on every block, so summing over \(m\)
-blocks and normalizing yields
+The estimator \(\widehat\tau_{n,\infty}^{\mathrm{up}}\) of
+\cref{obj:def:bounded-outcome-clipped-snipe} is measurable in the observed
+outcomes, and by the saturated bound of item 7 its modelwise risk over
+\(\mathcal M_{n,d,\beta}^{\infty}(B)\) never exceeds \(16B^2\), so its risk range
+is bounded above and it is admissible in
+\cref{obj:def:two-class-minimax-risks}.  Hence the infimum is at most its
+worst-case risk, and with item 7,
 \[
-\frac{B^2A_d}{m}.
+R_{n,\infty}^{\star}(d,\beta,p,B)
+\le
+\sup_{\mathcal M_{n,d,\beta}^{\infty}(B)}
+\mathbb E_Z\!\left[
+\bigl(\widehat\tau_{n,\infty}^{\mathrm{up}}-\tau_n\bigr)^2
+\right]
+\le
+C_{\beta,p}B^2\min\!\left\{1,\frac{dA_d}{n}\right\}.
 \]
-The fixed-graph coefficient-class risk equals this value. The global
-coefficient-class risk is bracketed between that fixed-graph risk and the
-unclipped SNIPE upper bound at the same value; the fixed-graph
-bounded-outcome risk and the global bounded-outcome risk are obtained by the
-same comparison, using the carrier-preserving inclusion of the coefficient
-class in the bounded-outcome class. If \(B=0\), the target
-\(B^2A_d/m\) is zero; the zero schedule gives a nonnegative risk in the
-fixed-graph coefficient class, and the SNIPE upper bounds and fixed-to-global
-comparisons force the fixed-graph and global risks in both model classes to be
-zero. Thus, for all \(B\ge0\), the fixed-graph coefficient-class risk, the
-fixed-graph bounded-outcome risk, and the corresponding global worst risks all
-equal \(B^2A_d/m\). Since \(n=md\),
-\[
-\frac{B^2A_d}{m}=B^2\frac{dA_d}{n}.
-\]
-% lean: completeBlock_all_risks_exact
+% lean: snipeClippedBdd_admissible, minimaxRiskBdd_le_clipped
 
-\item Finally suppose \(B>0\) and \(d\ge1\), set
-\(m=\lfloor n/d\rfloor\), \(\rho=md/n\), and let
-\(\delta\) be the perturbation amplitude. For every
-\(U=(U_1,\ldots,U_m)\) with \(|U_b|\le B/2\), the two signed block schedules
-are members of \(\mathcal M_{n,d,\beta}(B)\) on the complete-block graph. Their
-targets are
+\item \textbf{The least-favourable block family.}
+Assume \(B>0\) and \(d\ge1\), and use the notation of
+\cref{obj:def:block-family}: \(m=\lfloor n/d\rfloor\), \(q=md\), \(\rho=q/n\),
+\(s=B/2\), and \(\delta=B\kappa\eta\) as in item 1.  Since \(1\le d\le n\) we have
+\(m\ge1\).  Fix \(U=(U_1,\ldots,U_m)\) with \(|U_b|\le B/2\) for all \(b\), and let
+\(\sigma\in\{-1,+1\}\).
+
+\emph{Membership.}  The signed schedule of \cref{obj:def:block-family} assigns to
+each active unit \(i\in V_b\) the coefficients
+\(c_{i,T}=U_b\mathbf 1\{T=\varnothing\}+\sigma\delta h_{d,T}\) for
+\(T\subseteq V_b\), and zero to every other coefficient.  It is supported in
+\(N_i=V_b\) on the complete-block graph, and it vanishes for \(|T|>\beta\)
+because \(h_{d,T}=0\) there, so \cref{obj:ass:low-order} holds; the complete-block
+graph has both degrees equal to \(d\), so \cref{obj:ass:bounded-degree} holds.
+For the mass, \(\eta\le1\) and \(\kappa\le(2H_{\beta,p})^{-1}\) give
 \[
-\rho\delta
-\qquad\text{and}\qquad
--\rho\delta .
+\sum_{T\subseteq N_i}|c_{i,T}|
+\le
+|U_b|+|\delta|\sum_T|h_{d,T}|
+\le
+\frac B2+B\kappa H_{\beta,p}
+\le
+\frac B2+\frac B2
+=B .
 \]
-The block-prior Hellinger calculation gives
+Hence both signed schedules define models \(M_+\) and \(M_-\) in
+\(\mathcal M_{n,d,\beta}(B)\) carried by the complete-block graph.
+% lean: blockScheduleModel, blockSchedule_supported, blockSchedule_lowOrder, blockSchedule_mass_le, tiltAmplitude_mul_representerMass_le_half
+
+\emph{Targets.}  On an active unit the baseline \(U_b\) cancels in the
+all-treated versus all-control contrast, and
+\(L_d(h_d)=h_d(\mathbf 1_d)-h_d(\mathbf 0_d)=1\) by
+\cref{obj:lem:block-energy-representer}, so
 \[
-H^2(\Pi_{+},\Pi_{-})
+Y_i(\mathbf 1)-Y_i(\mathbf 0)=\sigma\delta
+\qquad (i\text{ active}),
+\qquad
+Y_i(\mathbf 1)-Y_i(\mathbf 0)=0
+\qquad (i\text{ inactive}).
+\]
+There are \(q=md\) active units, so
+\[
+\tau_n(M_\sigma)=\frac{q}{n}\,\sigma\delta=\sigma\rho\delta,
+\qquad\text{i.e.}\qquad
+\tau_n(M_+)=\rho\delta,
+\quad
+\tau_n(M_-)=-\rho\delta .
+\]
+% lean: tte_blockSchedule, blockRepresenter_contrast_energy, potentialOutcome_blockSchedule, potentialOutcome_blockSchedule_inactive
+
+\emph{Hellinger distance.}  Every unit of an active block shares the block's
+outcome value, so the observation reduces to the pair
+\(\bigl(Z,(Y_b)_{b\le m}\bigr)\), whose law under \(\Pi_\sigma\) has density
+\[
+\Pr(Z=z)\prod_{b=1}^{m}
+f_s\!\left(y_b-\sigma\delta\,h_d(z_{V_b})\right)
+\]
+against counting measure on assignments times \(m\)-dimensional Lebesgue measure.
+Conditionally on \(Z=z\), the two laws \(\Pi_+\) and \(\Pi_-\) are products of
+\(m\) translates of \(f_s\) with separations \(2\delta h_d(z_{V_b})\), and the
+cosine-squared density has quadratic affinity defect
+\[
+1-\int\sqrt{f_s(u-a)f_s(u-a')}\,\mathrm{d}u
+\le
+\frac{\pi^2(a-a')^2}{8s^2}.
+\]
+Summing the defect over the \(m\) coordinates and using
+\(H^2=2(1-\text{affinity})\) with \(s=B/2\) gives the conditional bound
+\[
+H^2\bigl(\Pi_+(\cdot\mid z),\Pi_-(\cdot\mid z)\bigr)
+\le
+\frac{4\pi^2\delta^2}{B^2}\sum_{b=1}^{m}h_d(z_{V_b})^2 .
+\]
+Because the assignment marginal is common to the two laws, the unconditional
+squared Hellinger distance is the design average of the conditional ones.  Each
+block sees an independent copy of the Bernoulli law, so
+\(\mathbb E_Z[h_d(Z_{V_b})^2]=A_d^{-1}\) by
+\cref{obj:lem:block-energy-representer}, whence
+\(\mathbb E_Z\bigl[\sum_b h_d(Z_{V_b})^2\bigr]=m/A_d\) and
+\[
+H^2(\Pi_+,\Pi_-)
 \le
 \frac{4\pi^2m\delta^2}{B^2A_d}.
 \]
-The active-share arithmetic gives
+% lean: cosSqDensity_affinity_defect_sharp, conditional_block_hellinger_le, E_sum_blockRepresenter_sq, blockPrior_hellinger_le
+
+\emph{Active share.}  From \(q=md\le n\) we get \(\rho\le1\).  Writing
+\(n=q+(n-q)\) with \(n-q<d\le q\) (the second inequality because \(m\ge1\)) gives
+\(n<2q\), hence
 \[
-\frac12\le\rho\le1,
-\qquad
-\frac{A_d}{m}
-=
-\frac{dA_d/n}{\rho}.
+\frac12\le\rho\le1 .
 \]
-These are exactly the least-favourable family conclusions.
-% lean: blockScheduleModel
+Finally, \(q=md\) and \(\rho=q/n\) give \(\rho A_d/m=dA_d/n\), that is,
+\[
+\frac{A_d}{m}=\frac{dA_d/n}{\rho}.
+\]
+% lean: activeShare_bounds, n_lt_two_mul_activeCount, blockEnergy_div_blockCount
+
+\item \textbf{Lower frontier.}
+If \(d=0\) then \(A_0=0\) by \cref{obj:def:zero-degree-conventions} and the left
+side of the claimed bound is \(0\); if \(B=0\) it is \(0\) as well.  In both cases
+the bound holds because the minimax risk is nonnegative: every modelwise risk is
+a mean squared error, the zero estimator is admissible so the infimum is over a
+nonempty set, and the empty graph with the zero schedule is a member of
+\(\mathcal M_{n,d,\beta}(B)\).
+% lean: minimaxRisk_nonneg_of_nonneg, zeroEstimator_admissible
+
+Assume now \(B>0\) and \(d\ge1\), and keep the notation of item 9.  Since
+\(\eta\le\sqrt{A_d/m}\) we have \(\eta^2\le A_d/m\), i.e.
+\[
+m\eta^2\le A_d ,
+\]
+and since \(\kappa\le(4\pi)^{-1}\) we have \(16\pi^2\kappa^2\le1\), i.e.
+\(4\pi^2\kappa^2\le\tfrac14\).  Substituting \(\delta=B\kappa\eta\) into the
+Hellinger bound of item 9,
+\[
+H^2(\Pi_+,\Pi_-)
+\le
+\frac{4\pi^2m\delta^2}{B^2A_d}
+=
+4\pi^2\kappa^2\,\frac{m\eta^2}{A_d}
+\le
+\frac14\cdot\frac{m\eta^2}{A_d}
+\le
+\frac14 .
+\]
+In the unhalved convention the total variation distance is bounded by the
+Hellinger distance, so
+\[
+\sup_{A}\bigl|\Pi_+(A)-\Pi_-(A)\bigr|
+\le
+\sqrt{H^2(\Pi_+,\Pi_-)}
+\le
+\frac12 .
+\]
+The two targets \(\pm\rho\delta\) of item 9 are \(2\rho\delta\) apart.  Let
+\(\widehat\tau_n\) be any admissible estimator and let \(T\) be its value read on
+the block construction, a measurable function of \(\bigl(Z,(Y_b)_{b\le m}\bigr)\).
+Le Cam's two-point bound gives
+\[
+\max\Bigl\{
+\Pi_+\bigl(|T-\rho\delta|\ge\rho\delta\bigr),
+\;
+\Pi_-\bigl(|T+\rho\delta|\ge\rho\delta\bigr)
+\Bigr\}
+\ge
+\frac{1-\tfrac12}{2}
+=
+\frac14 .
+\]
+% lean: blockPrior_tvDist_le_sqrt_hellinger, two_point_lower_bound_of_tvDist_le
+Each of the two probabilities is dominated by the worst-case risk.  Indeed, for
+each sign \(\sigma\) and each baseline vector \(U\) in the support of the prior,
+the schedule of item 9 is a member of \(\mathcal M_{n,d,\beta}(B)\) whose target is
+\(\sigma\rho\delta\), and pointwise in the assignment
+\[
+(\rho\delta)^2\,\mathbf 1\bigl\{|\widehat\tau_n-\sigma\rho\delta|\ge\rho\delta\bigr\}
+\le
+\bigl(\widehat\tau_n-\sigma\rho\delta\bigr)^2 ,
+\]
+so taking design expectations and then averaging over \(U\) — a probability law —
+gives
+\[
+(\rho\delta)^2\,
+\Pi_\sigma\bigl(|T-\sigma\rho\delta|\ge\rho\delta\bigr)
+\le
+\sup_{\mathcal M_{n,d,\beta}(B)}
+\mathbb E_Z\!\left[\bigl(\widehat\tau_n-\tau_n\bigr)^2\right].
+\]
+Combining the last two displays, every admissible estimator has worst-case risk
+at least \((\rho\delta)^2/4\), and taking the infimum over admissible estimators,
+\[
+\frac{(\rho\delta)^2}{4}
+\le
+R_{n,\ell_1}^{\star}(d,\beta,p,B).
+\]
+% lean: blockPrior_miss_sq_le_worstRisk, minimaxRisk_blockPrior_lower
+
+It remains to convert the scale.  By the identity of item 9 and \(\rho\le1\),
+\[
+\frac{dA_d}{n}=\rho\,\frac{A_d}{m}\le\frac{A_d}{m},
+\qquad\text{hence}\qquad
+\min\!\left\{1,\frac{dA_d}{n}\right\}
+\le
+\min\!\left\{1,\frac{A_d}{m}\right\}
+=\eta^2 ,
+\]
+the last equality because \(\eta=\min\{1,\sqrt{A_d/m}\}\).  Also \(\rho\ge\tfrac12\)
+gives \(\rho^2/4\ge1/16\).  Therefore, using \(c_{\beta,p}\le\kappa^2/16\),
+\[
+\begin{aligned}
+c_{\beta,p}B^2\min\!\left\{1,\frac{dA_d}{n}\right\}
+&\le
+\frac{\kappa^2}{16}B^2\eta^2\\
+&\le
+\frac{\rho^2}{4}\,B^2\kappa^2\eta^2\\
+&=
+\frac{(\rho B\kappa\eta)^2}{4}
+=
+\frac{(\rho\delta)^2}{4}
+\le
+R_{n,\ell_1}^{\star}(d,\beta,p,B).
+\end{aligned}
+\]
+% lean: minimaxRisk_scaled_block_lower
+
+\item \textbf{Binomial scale.}
+Let \(d\ge1\) and write \(k_\star=k_\star(d,\beta,p)\).  Multiplying the energy
+scale of \cref{obj:lem:block-energy-representer} by \(d\ge0\) and using
+\(c_{\beta,p}\le c_1\) and \(c_2\le C_{\beta,p}\) from item 1,
+\[
+c_{\beta,p}\,d\binom{d}{k_\star}
+\le
+c_1\,d\binom{d}{k_\star}
+\le
+dA_d
+\le
+c_2\,d\binom{d}{k_\star}
+\le
+C_{\beta,p}\,d\binom{d}{k_\star}.
+\]
+For \(d=0\) all three quantities vanish, since the factor \(d\) is zero.
+% lean: blockEnergy_representer, blockEnergy_uniform_compare
+
+\item \textbf{Exact complete-block risk.}
+Assume \(d\ge1\) and \(d\mid n\), put \(m=n/d\), and let \(G\) be the disjoint
+union of \(m\) complete directed \(d\)-blocks with loops.  Since \(n=md\),
+\[
+\frac{B^2A_d}{m}=B^2\frac{dA_d}{n}.
+\]
+
+Suppose first \(B>0\).  On \(G\) every unit has \(N_i=V_{b(i)}\) with
+\(|N_i|=d\), so the SNIPE score of \cref{obj:def:snipe-score} is exactly the
+complete-block score of \cref{obj:def:block-score-energy} read on that unit's
+block,
+\[
+g_{i,\beta,p}(z)=g_d\bigl(z_{V_{b(i)}}\bigr),
+\]
+and consequently \(\widehat\tau_n^{\mathrm{SNIPE}}=\widehat\tau_{w,t}\) for the
+block-local weights \(w_{i,t}:=g_d\), which satisfy the mean-zero and raw-moment
+restrictions of \cref{obj:def:local-linear-estimator-class} by
+\cref{obj:lem:block-energy-representer}.  Apply
+\cref{obj:thm:sharp-local-linear-constant-and-representers} at the index with
+\(n_t=n\), \(d_t=d\), \(m_t=m\) and \(G_t=G\).  It gives the exact blockwise
+representation of the fixed-graph worst-case risk and the lower bound
+\(d^2A_d\le\Psi_{b,t}(w)\) for every admissible \(w\).  For the canonical choice
+\(w_{i,t}=g_d\) the matching upper bound
+\[
+\Psi_{b,t}(w)\le d^2A_d
+\]
+holds on every block \(V_b\).  Indeed, fix a block \(V_b\) and a signed choice
+\((\varepsilon_i,S_i)_{i\in V_b}\) admissible in the maximum defining
+\(\Psi_{b,t}\).  The \(d\) summands are not copies of one another — they carry
+different subsets \(S_i\) and different signs \(\varepsilon_i\) — but every unit
+of the block carries the same weight \(g_d(Z_b)\), which therefore factors out:
+\[
+\sum_{i\in V_b}\varepsilon_i\bigl\{g_d(Z_b)Z_{S_i}-\mathbf 1(S_i\ne\varnothing)\bigr\}
+=
+g_d(Z_b)\Phi(Z_b)-\Lambda,
+\]
+\[
+\Phi(Z_b):=\sum_{i\in V_b}\varepsilon_iZ_{S_i},
+\qquad
+\Lambda:=\sum_{i\in V_b}\varepsilon_i\mathbf 1(S_i\ne\varnothing).
+\]
+The representer identities of \cref{obj:lem:block-energy-representer} give
+\(\mathbb E_Z[g_d(Z_b)Z_S]=1\) for every nonempty \(S\subseteq V_b\) with
+\(|S|\le\bar\beta_d\) and \(\mathbb E_Z[g_d(Z_b)]=0\), so
+\(\mathbb E_Z[g_d(Z_b)\Phi(Z_b)]=\Lambda\) and expanding the square removes the
+centering term,
+\[
+\mathbb E_Z\!\left[\bigl(g_d(Z_b)\Phi(Z_b)-\Lambda\bigr)^2\right]
+=
+\mathbb E_Z\!\left[\bigl(g_d(Z_b)\Phi(Z_b)\bigr)^2\right]-\Lambda^2
+\le
+\mathbb E_Z\!\left[\bigl(g_d(Z_b)\Phi(Z_b)\bigr)^2\right].
+\]
+Each of the \(d\) terms of \(\Phi\) has modulus at most one, since
+\(0\le Z_{S_i}\le1\) and \(|\varepsilon_i|=1\), so \(|\Phi(Z_b)|\le d\)
+pointwise and therefore
+\[
+\mathbb E_Z\!\left[\bigl(g_d(Z_b)\Phi(Z_b)\bigr)^2\right]
+\le
+d^2\,\mathbb E_Z\!\left[g_d(Z_b)^2\right]
+=
+d^2A_d ,
+\]
+the last equality being the exact block-score energy
+\(\mathbb E_Z[g_d(Z)^2]=A_d\) of \cref{obj:lem:block-energy-representer}.
+Maximizing over admissible choices gives the displayed upper bound.
+% lean: blockScore_mean_zero, blockScore_raw_moment, blockScore_sq_expectation, canonicalLocLinWeights_energy
+Hence \(\Psi_{b,t}(w)=d^2A_d\) on every block, and
+\[
+\sup_{c\in\mathcal M_t(G)}
+\mathbb E_Z\!\left[
+\bigl(\widehat\tau_n^{\mathrm{SNIPE}}-\tau_n\bigr)^2
+\right]
+=
+\frac{B^2}{n^2}\sum_{b=1}^{m}\Psi_{b,t}(w)
+=
+\frac{B^2md^2A_d}{n^2}
+=
+\frac{B^2A_d}{m}.
+\]
+% lean: canonicalLocLinWeights, canonical_completeBlock_blockExtremal_upper, completeBlock_blockExtremal_lower, locLinWorstRisk_exact_blockExtremal, completeBlock_benchmark_algebra
+
+If instead \(B=0\), the only admissible schedule on any graph has zero
+coefficient mass, so \(\tau_n=0\), while item 6 bounds every modelwise SNIPE risk
+by \(B^2dA_d/n=0\); as design mean squared errors are nonnegative, the
+fixed-graph coefficient-class risk again equals \(0=B^2A_d/m\).
+
+For all \(B\ge0\) the four risks now coincide.  Restricting the supremum to a
+single graph can only decrease it, so the fixed-graph coefficient-class risk is
+at most the global coefficient-class risk, and the fixed-graph bounded-outcome
+risk is at most the global bounded-outcome risk; by item 3 each coefficient-mass
+model on \(G\) embeds in the bounded-outcome class without changing the graph,
+the schedule or the risk, so the fixed-graph coefficient-class risk is at most
+the fixed-graph bounded-outcome risk.  Item 6 bounds both global risks by
+\(B^2dA_d/n=B^2A_d/m\), which is the value just computed for the fixed-graph
+coefficient-class risk.  The chain of inequalities therefore closes, and
+\[
+\sup_{c\in\mathcal M_t(G)}
+\mathbb E_Z\!\left[\bigl(\widehat\tau_n^{\mathrm{SNIPE}}-\tau_n\bigr)^2\right]
+=
+\sup_{\substack{(G_n,c)\in\mathcal M_{n,d,\beta}^{\infty}(B)\\ G_n=G}}
+\mathbb E_Z\!\left[\bigl(\widehat\tau_n^{\mathrm{SNIPE}}-\tau_n\bigr)^2\right]
+=
+\sup_{\mathcal M_{n,d,\beta}(B)}
+\mathbb E_Z\!\left[\bigl(\widehat\tau_n^{\mathrm{SNIPE}}-\tau_n\bigr)^2\right]
+\]
+\[
+=
+\sup_{\mathcal M_{n,d,\beta}^{\infty}(B)}
+\mathbb E_Z\!\left[\bigl(\widehat\tau_n^{\mathrm{SNIPE}}-\tau_n\bigr)^2\right]
+=
+\frac{B^2A_d}{m}
+=
+B^2\frac{dA_d}{n}.
+\]
+% lean: completeBlock_all_risks_exact
 \end{enumerate}
+Item 3 is the model comparison; items 5 and 6 are the unbiasedness and the
+worst-case bound \(B^2dA_d/n\) for unclipped SNIPE; items 7, 8 and 10 are the
+frontier bounds; items 4 and 11 are the local energy and the binomial scale;
+item 12 is the exact block risk; and item 9 is the least-favourable block
+family.  Together these are the six assertions of the theorem, with the
+constants \(c_{\beta,p}\) and \(C_{\beta,p}\) fixed in item 1 independently of
+\(n\), \(D\), \(d\) and \(B\).
+% lean: bounded_outcome_degree_frontier
 \end{proof}

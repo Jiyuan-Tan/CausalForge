@@ -96,7 +96,7 @@ private lemma armTangentStrength_eq_l2ResidualQuadratic_of_variance_pos
     intro b
     change Causalean.Stat.MomentProblems.ResidualQuadratic.MeasureBridge.l2ResidualQuadratic μ ≤
       ∫ y, (y ^ 2 - b.1 - b.2 * y) ^ 2 ∂armMarginal nu a
-    simpa [μ] using Causalean.Stat.MomentProblems.ResidualQuadratic.MeasureBridge.l2ResidualQuadratic_le
+    exact Causalean.Stat.MomentProblems.ResidualQuadratic.MeasureBridge.l2ResidualQuadratic_le
       μ hfin hnd b.1 b.2
 
 private lemma linearTiltPath_score_mul_integrable_pow
@@ -300,7 +300,8 @@ private lemma linearTiltPath_rootSecondMoment_continuousAt
         (fun h : ℝ =>
           Causalean.Stat.MomentProblems.ResidualQuadratic.MeasureBridge.moment (armMarginal (p h) a) 2) 0 :=
     linearTiltPath_arm_moment_continuousAt nu hnu u p hlin a 2
-  simpa [rootSecondMoment, Causalean.Stat.MomentProblems.ResidualQuadratic.MeasureBridge.moment] using
+  simpa [rootSecondMoment, Function.comp_def,
+    Causalean.Stat.MomentProblems.ResidualQuadratic.MeasureBridge.moment] using
     Real.continuous_sqrt.continuousAt.comp hm2
 
 private lemma linearTiltPath_armTangentStrength_continuousAt

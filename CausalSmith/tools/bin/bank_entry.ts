@@ -443,7 +443,9 @@ function renderReadme(args: {
     ? `**Supersedes.** ${upgradeFrom.parent_qid}_${upgradeFrom.parent_spec} ` +
       `(tier=${upgradeFrom.parent_tier}, upgrade_axis=${upgradeFrom.upgrade_axis}). ` +
       `The parent remains in _bank/${upgradeFrom.parent_tier}/ as an independent reference; ` +
-      `this entry is the strictly-higher-tier upgrade.\n\n`
+      `this entry is its \`${upgradeFrom.upgrade_axis}\`-axis upgrade, banked at ` +
+      `${bankedNoveltyTier ?? "unknown"}. An upgrade target may equal the parent's novelty ` +
+      `tier — the delta is the declared axis, not a tier bump.\n\n`
     : "";
 
   const frontmatter =

@@ -309,13 +309,13 @@ theorem att_dml_isAsymLinear
         (fun n ω =>
           (eLpNorm (fun x => (η_hat n ω).μ₀_fn x - S.μ₀_val x) 2 S.P_X).toReal)
         (fun _ => (1 : ℝ)) P.μ := by
-    simpa [attGeneralMoment, η₀] using h_indiv_rate_ρ₁
+    exact h_indiv_rate_ρ₁
   have h_e_rate :
       IsLittleOp
         (fun n ω =>
           (eLpNorm (fun x => (η_hat n ω).e_fn x - S.e_val x) 2 S.P_X).toReal)
         (fun _ => (1 : ℝ)) P.μ := by
-    simpa [attGeneralMoment, η₀] using h_indiv_rate_ρ₂
+    exact h_indiv_rate_ρ₂
   have h_score_diff_rate :
       IsLittleOp
         (fun n ω =>

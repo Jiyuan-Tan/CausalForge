@@ -1,88 +1,161 @@
 \begin{proof}[Proof of \cref{obj:thm:sharp-minimax-fixed-interior}]
+Fix \(0<\epsilon<1/2\).  Throughout, \(n\log n\ge0\) for every sample size, so an inequality of the form \(d\le\rho\,n\log n\) is preserved when \(\rho\) is replaced by any larger constant.
 \begin{enumerate}
-\item First record the upper estimate for the hybrid estimator.  \Cref{obj:lem:light-cell-polynomial} gives constants \(C_L,c_L>0\) for the light-cell error, and \cref{obj:lem:universal-heavy-cell-rate} gives constants \(C_H,c_H>0\) and a cutoff \(N_U\) for the heavy-cell error.  Set
-\[
-C_U=2(C_L+C_H),\qquad \rho_U=\min\{c_L,c_H\}.
-\]
-For any admissible product law satisfying \(n\ge N_U\) and
+\item \textbf{The upper half.}  We first prove the following claim.  There are constants \(C_U,\rho_U>0\) and an integer \(N_U<\infty\), depending only on \(\epsilon\), such that for every \(n,d\), every single-observation law \(P\) with \(P^{\otimes n}\in\mathcal E_{n,d,\epsilon}\), every \(n\ge N_U\) and every
 \[
 d\le \rho_U n\log n,
 \]
-the light and heavy bounds apply simultaneously.  Pointwise, the truncation in \(\widehat\tau_n^{\mathrm{hyb}}\) can only reduce squared error because \(\tau(P)\in[-1,1]\).  Also
+one has
+\[
+\mathsf R_{n,d,\epsilon}
+\le
+\sup_{Q^{\otimes n}\in\mathcal E_{n,d,\epsilon}}
+E_Q\!\left[\left(\widehat\tau_n^{\mathrm{hyb}}-\tau(Q)\right)^2\right]
+\le
+C_U\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\}.
+\]
+% lean: hybrid_upper_fixed_interior
+
+\emph{Constants.}  Since \(0<\epsilon\le1/2\), \cref{obj:lem:light-cell-polynomial} applies; write \(C_L,c_L>0\) for the two constants it supplies.  Since \(0<\epsilon<1/2\), \cref{obj:lem:universal-heavy-cell-rate} applies; write \(C_H,\rho_H>0\) and \(N_H<\infty\) for the constants and cutoff it supplies.  Set
+\[
+C_U=2(C_L+C_H),
+\qquad
+\rho_U=\min\{c_L,\rho_H\},
+\qquad
+N_U=N_H .
+\]
+Then \(C_U>0\) and \(\rho_U>0\), and the hypothesis \(d\le\rho_U n\log n\) yields both growth gates,
+\[
+d\le \rho_U n\log n\le c_L n\log n,
+\qquad
+d\le \rho_U n\log n\le \rho_H n\log n .
+\]
+% lean: hybrid_upper_fixed_interior
+
+\emph{The truncation cannot increase squared error.}  For every real \(x\) and every \(t\in[-1,1]\),
+\[
+\left(\max\{-1,\min(1,x)\}-t\right)^2\le (x-t)^2 .
+\]
+Indeed, if \(x\le-1\) the left-hand entry is \(-1\), which lies between \(x\) and \(t\); if \(x>1\) it is \(1\), which again lies between \(x\) and \(t\); otherwise it is \(x\) and the two sides agree.
+% lean: clamp_sq_error_le
+Moreover, by \cref{obj:def:ate-functional} the estimand is \(\tau(P)=\sum_{k=1}^dp_k(\mu_{1k}-\mu_{0k})\) with \(\sum_{k=1}^dp_k=1\) and \(\mu_{0k},\mu_{1k}\in[0,1]\), whence
+\[
+\tau(P)\in[-1,1].
+\]
+% lean: ateFunctional_eq_weighted_regression, ateFunctional_mem_interval
+Applying the previous display with \(x=\widehat T_{\mathcal H}+\widehat T_{\mathcal L}\) and \(t=\tau(P)\), and using the definition of \(\widehat\tau_n^{\mathrm{hyb}}\) in \cref{obj:def:hybrid-estimator-handle}, gives the sample-by-sample bound
+\[
+\left(\widehat\tau_n^{\mathrm{hyb}}-\tau(P)\right)^2
+\le
+\left(\widehat T_{\mathcal H}+\widehat T_{\mathcal L}-\tau(P)\right)^2 .
+\]
+% lean: hybrid_mse_le_component_errors
+
+\emph{Splitting the target.}  The pilot-light set is the complement of the pilot-heavy set, \(\widehat{\mathcal L}_n=\widehat{\mathcal H}_n^c\), so the two index sets are disjoint with union \(\{1,\ldots,d\}\) and \cref{obj:def:ate-functional} gives, sample by sample,
 \[
 \sum_{k\in\widehat{\mathcal H}_n}\phi(q_k)
 +
 \sum_{k\in\widehat{\mathcal L}_n}\phi(q_k)
 =
-\tau(P),
+\sum_{k=1}^d\phi(q_k)
+=
+\tau(P).
 \]
-and hence
-\[
-(\widehat\tau_n^{\mathrm{hyb}}-\tau(P))^2
-\le
+% lean: targetHeavy_add_targetLight, lightCells_eq_compl
+Substituting this identity and using \((u+v)^2\le2u^2+2v^2\), which is \(0\le(u-v)^2\), we obtain sample by sample
+\begin{align*}
+\left(\widehat T_{\mathcal H}+\widehat T_{\mathcal L}-\tau(P)\right)^2
+&=
+\left\{
+\left(\widehat T_{\mathcal H}-\sum_{k\in\widehat{\mathcal H}_n}\phi(q_k)\right)
++
+\left(\widehat T_{\mathcal L}-\sum_{k\in\widehat{\mathcal L}_n}\phi(q_k)\right)
+\right\}^2\\
+&\le
 2\left(\widehat T_{\mathcal H}-\sum_{k\in\widehat{\mathcal H}_n}\phi(q_k)\right)^2
 +
 2\left(\widehat T_{\mathcal L}-\sum_{k\in\widehat{\mathcal L}_n}\phi(q_k)\right)^2 .
-\]
-After integration and applying the two component bounds,
-\[
-E_P\!\left[(\widehat\tau_n^{\mathrm{hyb}}-\tau(P))^2\right]
-\le
-C_U\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\}.
-\]
-Taking the supremum over the experiment class gives the same bound for the worst-case risk of \(\widehat\tau_n^{\mathrm{hyb}}\), and the minimax risk is no larger because the hybrid estimator is one admissible estimator.
+\end{align*}
+% lean: hybrid_mse_le_component_errors
 
-\item The lower-bound input is \cref{obj:lem:ate-lower-bound-transfer}, obtained by transferring the fixed-sample one-arm lower bound of \citep[Theorem 2; Appendix C.5; Lemma 4; Appendix D.2]{ZengBalakrishnanHanKennedy2024}.  It gives constants \(a>0\), \(\rho_L>0\), and \(N_L<\infty\) such that, whenever \(d>0\), \(n\ge N_L\), and
+\emph{Integration and the two component bounds.}  The observation alphabet is finite, so every function of the sample appearing above is bounded and integrable, and integrating the previous two displays against \(P^{\otimes n}\) preserves the inequality and splits the right-hand side by linearity:
 \[
-d\le \rho_L n\log n,
+E_P\!\left[\left(\widehat\tau_n^{\mathrm{hyb}}-\tau(P)\right)^2\right]
+\le
+2E_P\!\left[\left(\widehat T_{\mathcal H}-\sum_{k\in\widehat{\mathcal H}_n}\phi(q_k)\right)^2\right]
++
+2E_P\!\left[\left(\widehat T_{\mathcal L}-\sum_{k\in\widehat{\mathcal L}_n}\phi(q_k)\right)^2\right].
 \]
-one has
+% lean: hybrid_mse_le_component_errors
+Nothing in this derivation, nor in the two growth gates displayed above, refers to the particular law: the gates constrain only \(n\) and \(d\), and the constants \(C_L,c_L,C_H,\rho_H,N_H\) depend only on \(\epsilon\).  Hence for \emph{every} \(Q^{\otimes n}\in\mathcal E_{n,d,\epsilon}\) the heavy bound of \cref{obj:lem:universal-heavy-cell-rate} (available because \(n\ge N_U=N_H\) and \(d\le\rho_H n\log n\)) and the light bound of \cref{obj:lem:light-cell-polynomial} (available because \(d\le c_L n\log n\)) may be inserted, giving
+\begin{align*}
+E_Q\!\left[\left(\widehat\tau_n^{\mathrm{hyb}}-\tau(Q)\right)^2\right]
+&\le
+2C_H\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\}
++
+2C_L\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\}\\
+&=
+C_U\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\}.
+\end{align*}
+The experiment class is nonempty, since \(P^{\otimes n}\) belongs to it, so taking the supremum over \(Q^{\otimes n}\in\mathcal E_{n,d,\epsilon}\) gives the second inequality of the claim.
+% lean: hybrid_upper_fixed_interior
+
+\emph{The minimax risk does not exceed the hybrid worst case.}  The sample space \((\{1,\ldots,d\}\times\{0,1\}^2)^n\) is finite, so \(\widehat\tau_n^{\mathrm{hyb}}\) is a measurable estimator and is therefore one of the competitors in \cref{obj:def:minimax-risk}.  For any measurable \(\widehat\tau\) and any \(Q^{\otimes n}\in\mathcal E_{n,d,\epsilon}\), the bound \(\tau(Q)\in[-1,1]\) obtained above gives \(|\widehat\tau(x)-\tau(Q)|\le\sum_{x'}|\widehat\tau(x')|+1\) at every sample point \(x\), where \(x'\) ranges over the finite sample space, and hence
 \[
-\mathsf R_{n,d,\epsilon}
-\ge
- a\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\}.
+E_Q\!\left[\left(\widehat\tau-\tau(Q)\right)^2\right]
+\le
+\left(\sum_{x'}|\widehat\tau(x')|+1\right)^2 ,
 \]
-Now define
+so each estimator's worst-case risk is a finite nonnegative number and the infimum in \cref{obj:def:minimax-risk} is taken over a nonempty set of reals bounded below by \(0\).  Evaluating that infimum at \(\widehat\tau_n^{\mathrm{hyb}}\) gives the first inequality of the claim, and the claim is proved.
+% lean: mse_le_estimator_abs_sum_bound, hybrid_upper_fixed_interior
+
+\item \textbf{The lower half and the constants of the theorem.}  \Cref{obj:lem:ate-lower-bound-transfer}, which transfers the fixed-sample one-arm lower bound of \citep[Theorem 2; Appendix C.5; Lemma 4; Appendix D.2]{ZengBalakrishnanHanKennedy2024}, supplies constants \(a>0\) and \(\rho_L>0\) and an integer cutoff \(N_L<\infty\) such that its displayed lower bound for \(\mathsf R_{n,d,\epsilon}\) holds whenever \(d>0\), \(n\ge N_L\) and \(d\le\rho_L n\log n\).  Now define
 \[
 a_\epsilon=a,\qquad
 \rho_\epsilon=\min\{\rho_U,\rho_L\},\qquad
 C_\epsilon=C_U,\qquad
 N_\epsilon=\max\{N_U,N_L\}.
 \]
-These constants are positive, with \(N_\epsilon<\infty\).
+These constants are positive, and \(N_\epsilon<\infty\).
+% lean: ate_lower_bound_transfer, sharp_minimax_fixed_interior
 
-\item Under the hypotheses of the sharp sandwich, \(n\ge N_\epsilon\) implies both \(n\ge N_U\) and \(n\ge N_L\), while
+\item \textbf{Sharp sandwich.}  Assume \(d>0\), \(n\ge N_\epsilon\) and \(d\le\rho_\epsilon n\log n\).  Then \(n\ge N_U\) and \(n\ge N_L\), while
 \[
-d\le \rho_\epsilon n\log n
+d\le \rho_\epsilon n\log n\le \rho_U n\log n,
+\qquad
+d\le \rho_\epsilon n\log n\le \rho_L n\log n,
 \]
-implies both required growth bounds, with \(\rho_U\) and with \(\rho_L\).  The lower estimate from Step 2 and the upper estimate from Step 1 therefore give
+so both growth gates are in force.  Step 2 and Step 1 therefore give
 \[
 a_\epsilon\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\}
 \le
 \mathsf R_{n,d,\epsilon}
 \le
 \sup_{Q^{\otimes n}\in\mathcal E_{n,d,\epsilon}}
-E_Q\!\left[(\widehat\tau_n^{\mathrm{hyb}}-\tau(Q))^2\right]
+E_Q\!\left[\left(\widehat\tau_n^{\mathrm{hyb}}-\tau(Q)\right)^2\right]
 \le
-C_\epsilon\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\}.
+C_\epsilon\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\},
 \]
-This proves the sharp sandwich.
+which is the sharp sandwich.
+% lean: sharp_minimax_fixed_interior
 
-\item Fix \(K>0\) and put
+\item \textbf{Parametric window.}  Fix \(K>0\) and put
 \[
-C_K=C_U(1+K^2).
+C_K=C_U(1+K^2)>0 .
 \]
-For the parametric window, keep the interior growth gate as part of the hypotheses: assume \(d>0\), \(n\ge N_\epsilon\),
+Assume \(d>0\), \(n\ge N_\epsilon\), \(d\le K\sqrt n\,\log n\) and \(d\le\rho_\epsilon n\log n\).
+
+Because \(K\sqrt n\ge0\) and \(d>0\), the inequality \(d\le K\sqrt n\,\log n\) forces \(\log n>0\); in particular \(n\ge2\), so \(n\) and \(n^2(\log n)^2\) are strictly positive.  Both sides of \(d\le K\sqrt n\,\log n\) are nonnegative, so squaring is legitimate and \((\sqrt n)^2=n\) gives
 \[
-d\le K\sqrt n\,\log n,
-\qquad
- d\le \rho_\epsilon n\log n.
+d^2\le K^2n(\log n)^2 .
 \]
-The first of these inequalities, together with \(d>0\) and \(K>0\), forces \(n>0\) and \(\log n>0\).  Squaring the \(K\sqrt n\log n\) bound and dividing by the positive denominator gives
+Dividing by \(n^2(\log n)^2>0\),
 \[
-\frac{d^2}{n^2(\log n)^2}\le \frac{K^2}{n}.
+\frac{d^2}{n^2(\log n)^2}\le\frac{K^2}{n}.
 \]
-The lower bound uses the retained \(\rho_\epsilon n\log n\) gate to invoke the lower estimate:
+% lean: sharp_minimax_fixed_interior
+
+For the lower bound, \(d^2/\{n^2(\log n)^2\}\ge0\) and the retained gate \(d\le\rho_\epsilon n\log n\le\rho_L n\log n\) with \(d>0\) and \(n\ge N_L\) let us invoke Step 2:
 \[
 \frac{a_\epsilon}{n}
 \le
@@ -90,51 +163,64 @@ a_\epsilon\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\}
 \le
 \mathsf R_{n,d,\epsilon}.
 \]
-The upper bound uses the same gate to invoke the hybrid upper estimate, and then the displayed ratio bound:
+For the upper bound, the same gate gives \(d\le\rho_U n\log n\) and \(n\ge N_U\), so Step 1 applies; combining it with the displayed ratio bound,
 \[
 \mathsf R_{n,d,\epsilon}
 \le
 C_U\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\}
 \le
+C_U\left(\frac1n+\frac{K^2}{n}\right)
+=
 \frac{C_U(1+K^2)}{n}
 =
 \frac{C_K}{n}.
 \]
-This proves the parametric window under the stated interior growth condition.
+This proves the parametric window.
+% lean: sharp_minimax_fixed_interior
 
-\item Finally consider sequences \(n_j,d_j\) with \(n_j\to\infty\), eventually \(d_j>0\), and eventually
-\[
-d_j\le \rho_\epsilon n_j\log n_j.
-\]
-Set
+\item \textbf{Consistency threshold.}  Let \(n_j,d_j\) satisfy \(n_j\to\infty\), \(d_j>0\) eventually, and \(d_j\le\rho_\epsilon n_j\log n_j\) eventually.  Set
 \[
 q_j=\frac{d_j}{n_j\log n_j}.
 \]
-Since \(n_j\to\infty\), we have \(1/n_j\to0\), and eventually \(n_j\ge2\), so \(q_j\ge0\).  Algebraically, for all sufficiently large \(j\),
+For every \(j\), squaring the definition of \(q_j\) gives the identity
 \[
 \frac1{n_j}+\frac{d_j^2}{n_j^2(\log n_j)^2}
 =
 \frac1{n_j}+q_j^2 .
 \]
-For those same indices, using a canonical exact-randomization law in the class to instantiate the upper estimate, Steps 1 and 2 give the two-sided bound
+% lean: hrate_eq
+Since \(n_j\to\infty\) we have \(1/n_j\to0\); and eventually \(n_j\ge2\), so eventually \(\log n_j>0\) and therefore \(q_j\ge0\).
+% lean: hinv, hq_nonneg
+
+Consider those indices \(j\) — all sufficiently large ones — for which simultaneously \(d_j>0\), \(d_j\le\rho_\epsilon n_j\log n_j\) and \(n_j\ge N_\epsilon\).  Step 1 requires a member of the experiment class to be exhibited, and \(d_j>0\) permits one: let \(P^\star_{d}\) be the law on \(\{1,\ldots,d\}\times\{0,1\}\times\{0,1\}\) with
+\[
+P^\star_{d}(X=k,A=a,Y=y)=\frac1{4d}
+\qquad\text{for all }k\in\{1,\ldots,d\},\ a,y\in\{0,1\},
+\]
+that is, \(p_k=1/d\), \(\pi_k=1/2\) and \(\mu_{0k}=\mu_{1k}=1/2\) in every category.  Because \(0<\epsilon<1/2\) we have \(\epsilon\le1/2\le1-\epsilon\), so \(\pi_k\in[\epsilon,1-\epsilon]\) for every category, \cref{obj:ass:overlap} holds with overlap constant \(\epsilon\), and \((P^\star_{d_j})^{\otimes n_j}\in\mathcal E_{n_j,d_j,\epsilon}\).
+% lean: canonicalClassLaw, endpointParametricLaw_overlap
+Applying Step 2 and then Step 1 with this law, and rewriting by the identity above, gives for those same indices
 \[
 a_\epsilon\left(\frac1{n_j}+q_j^2\right)
 \le
 \mathsf R_{n_j,d_j,\epsilon}
 \le
-C_U\left(\frac1{n_j}+q_j^2\right).
+C_\epsilon\left(\frac1{n_j}+q_j^2\right).
 \]
+% lean: sharp_minimax_fixed_interior
 
-If \(\mathsf R_{n_j,d_j,\epsilon}\to0\), the lower bound and \(a_\epsilon>0\) imply
+Suppose first that \(\mathsf R_{n_j,d_j,\epsilon}\to0\).  Since \(a_\epsilon>0\), the left inequality above reads
 \[
-\frac1{n_j}+q_j^2\to0.
+0\le \frac1{n_j}+q_j^2\le \frac{1}{a_\epsilon}\,\mathsf R_{n_j,d_j,\epsilon}
 \]
-Then \(0\le q_j^2\le n_j^{-1}+q_j^2\) eventually, so \(q_j^2\to0\).  Because \(q_j\ge0\) eventually, continuity of the square-root map gives \(q_j\to0\).
+eventually, and the right side tends to \(0\), so \(1/n_j+q_j^2\to0\).  Then \(0\le q_j^2\le n_j^{-1}+q_j^2\) gives \(q_j^2\to0\), and since \(\sqrt{q_j^2}=|q_j|=q_j\) eventually, continuity of the square-root map at \(0\) gives \(q_j\to0\).
 
-Conversely, if \(q_j\to0\), then \(q_j^2\to0\), and together with \(1/n_j\to0\) this yields
+Conversely, suppose \(q_j\to0\).  Then \(q_j^2\to0\), and together with \(1/n_j\to0\) this yields
 \[
-\frac1{n_j}+q_j^2\to0.
+\frac1{n_j}+q_j^2\to0 .
 \]
-The minimax risk is nonnegative, and the upper bound above squeezes \(\mathsf R_{n_j,d_j,\epsilon}\) to \(0\).  This proves the consistency threshold and completes the proof.
+The minimax risk is nonnegative, because in \cref{obj:def:minimax-risk} it is an infimum of worst-case mean squared errors, each of which is nonnegative; combined with the right inequality of the two-sided bound above this squeezes \(\mathsf R_{n_j,d_j,\epsilon}\to0\).
+% lean: minimaxRisk_mem_unitInterval, sharp_minimax_fixed_interior
+This proves the consistency threshold and completes the proof.
 \end{enumerate}
 \end{proof}

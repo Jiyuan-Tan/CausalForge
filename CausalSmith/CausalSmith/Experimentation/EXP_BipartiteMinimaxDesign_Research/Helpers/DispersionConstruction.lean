@@ -38,16 +38,21 @@ def dispersionCore (n : ℕ) : Finset (DispersionIntervention n) :=
   Finset.univ.map ⟨Sum.inl, Sum.inl_injective⟩
 
 -- @node: mem_dispersionCore_inl
+/-- Every clique intervention belongs to the clique block of the dispersion
+construction's intervention set. -/
 @[simp] lemma mem_dispersionCore_inl (n : ℕ) (a : Fin (dispersionD n)) :
     Sum.inl a ∈ dispersionCore n := by
   simp [dispersionCore]
 
 -- @node: mem_dispersionCore_inr
+/-- No filler intervention belongs to the clique block of the dispersion construction's
+intervention set. -/
 @[simp] lemma mem_dispersionCore_inr (n : ℕ) (f : Fin (2 * dispersionD n)) :
     Sum.inr f ∉ dispersionCore n := by
   simp [dispersionCore]
 
 -- @node: dispersionCore_card
+/-- The clique block contains exactly as many interventions as the clique size. -/
 @[simp] lemma dispersionCore_card (n : ℕ) :
     (dispersionCore n).card = dispersionD n := by
   simp [dispersionCore]
@@ -66,6 +71,8 @@ noncomputable def dispersionExperiment (n : ℕ) :
   }
 
 -- @node: dispersionExperiment_N_core
+/-- Every clique outcome is connected to the whole clique intervention block, so all
+clique outcomes share the same intervention neighborhood. -/
 lemma dispersionExperiment_N_core (n : ℕ) (i : Fin (dispersionD n)) :
     (dispersionExperiment n).N (Sum.inl i) =
       dispersionCore n := by

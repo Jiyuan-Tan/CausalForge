@@ -227,6 +227,8 @@ theorem first_stage_identity (hA : S.Assumptions)
     let h_proj : (∀ i : Fin S.cfBundle.n, S.cfBundle.type i) → ℝ :=
       fun f => ((cond z ((f (0 : Fin 4)) : Bool) ((f (1 : Fin 4)) : Bool)).toNat : ℝ)
     have hh_meas : Measurable h_proj := by
+      let instCf : ∀ a : Fin 4, MeasurableSpace (S.cfBundle.type a) :=
+        fun a => S.cfBundle.inst a
       change Measurable fun f : ∀ i : Fin S.cfBundle.n, S.cfBundle.type i =>
         ((cond z ((f (0 : Fin 4)) : Bool) ((f (1 : Fin 4)) : Bool)).toNat : ℝ)
       cases z
@@ -327,6 +329,8 @@ theorem reduced_form_identity (hA : S.Assumptions)
       fun f => if ((cond z ((f (0 : Fin 4)) : Bool) ((f (1 : Fin 4)) : Bool)) : Bool)
                then ((f (2 : Fin 4)) : ℝ) else ((f (3 : Fin 4)) : ℝ)
     have hh_meas : Measurable h_proj := by
+      let instCf : ∀ a : Fin 4, MeasurableSpace (S.cfBundle.type a) :=
+        fun a => S.cfBundle.inst a
       change Measurable fun f : ∀ i : Fin S.cfBundle.n, S.cfBundle.type i =>
         if ((cond z ((f (0 : Fin 4)) : Bool) ((f (1 : Fin 4)) : Bool)) : Bool)
         then ((f (2 : Fin 4)) : ℝ) else ((f (3 : Fin 4)) : ℝ)

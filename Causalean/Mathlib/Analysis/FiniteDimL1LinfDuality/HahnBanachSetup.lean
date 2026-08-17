@@ -200,7 +200,8 @@ theorem ninf_nonneg (x : Fin (k + 1) → ℝ) : 0 ≤ ninf x := by
 /-- Positive homogeneity (with absolute value) of the sup norm. -/
 theorem ninf_smul (c : ℝ) (x : Fin (k + 1) → ℝ) : ninf (c • x) = |c| * ninf x := by
   apply le_antisymm
-  · rw [ninf, Finset.sup'_le_iff]
+  · rw [ninf]
+    apply Finset.sup'_le
     intro j hj
     calc
       |c • x j| = |c| * |x j| := by
@@ -220,7 +221,8 @@ theorem ninf_smul (c : ℝ) (x : Fin (k + 1) → ℝ) : ninf (c • x) = |c| * n
 
 /-- Subadditivity (triangle inequality) of the sup norm. -/
 theorem ninf_add_le (x y : Fin (k + 1) → ℝ) : ninf (x + y) ≤ ninf x + ninf y := by
-  rw [ninf, Finset.sup'_le_iff]
+  rw [ninf]
+  apply Finset.sup'_le
   intro j hj
   calc
     |(x + y) j| = |x j + y j| := by rfl

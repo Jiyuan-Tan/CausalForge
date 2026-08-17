@@ -24,7 +24,7 @@ return those receipts as `pipeline-bug` and do not kill the process.
 Never use a qid-only `pgrep`
 (the watcher self-matches), `tail -F | grep` (it misses sparse/new files), or routine messages to main.
 Attach to main's already-running cold-start PID; D does not cold-launch. Only when D resumes, launch the long
-TS node with `setsid`, Node 20.20.2 verified inside the detached shell, stdout/stderr redirected under the
+TS node with `setsid`, `source tools/scripts/node_env.sh` inside the detached shell, stdout/stderr redirected under the
 run's `logs/`, and `causalsmith research --resume <qid> <spec> [--auto iff dispatch auto_mode=true]` (add `--from-stage` only when the
 cursor rules below explicitly authorize replay). Never pipe the command. The managed D agent stays in its
 turn and polls the watcher. D0 routinely takes many rounds; that is why the lease exists.
@@ -38,7 +38,7 @@ For D, this skill's watcher, cursor, and process-ownership rules override generi
 examples in that reference, including its 15-second/per-event recipes.
 
 **Re-ground first (every dispatch):**
-Run every CLI below from `<AUTOID>/CausalSmith` under Node 20.20.2. Read
+Run every CLI below from `<AUTOID>/CausalSmith` after `source tools/scripts/node_env.sh`. Read
 `npx --prefix tools tsx tools/bin/decision_log.ts read <qid> <spec> --phase D`, `state.json`, the last
 `pipeline.jsonl` event, and the heartbeat/PID once. Do not duplicate a live resume or re-suggest a failed
 construction. At each halt/action, append one combined `judgment` entry
@@ -95,6 +95,14 @@ returns `cap-block` to main. Never use plain `--resume` while `angle_checkpoint`
 separate `gpt-5.6-sol` **high** consult for every required mathematical judgment; do not inflate the
 orchestrator's effort/context to perform it inline.
 
+**When this skill is running under Codex, every such consult MUST use the managed collaboration channel**
+(`spawn_agent`, with explicit model/effort; reuse via `followup_task`). This applies to proposed-change
+adjudicators, maximality checks, D0.5 boundary auditors, literature/source auditors, and all other fresh
+consults, including read-only ones. Never invoke `codex exec` through Bash from the D orchestrator, and
+never fall back to it because managed slots are occupied—wait for a slot or return the appropriate
+skill-defined escalation. Only the TypeScript pipeline may launch its configured `codex exec` workers and
+reviewers internally.
+
 For a proposed-change checkpoint, hand codex the canonical
 `proposal_review_packet.json` in full (it contains the whole current paper/core, every same-round delta,
 and `provisional_proofs`; obey its `contract` field so those payloads replace stale `core.json` proof text
@@ -141,7 +149,10 @@ same-topic result remains:
 3. **`D0 MAXIMALITY CHECKPOINT`** (clean discharge, run halted) — proved ≠ best paper. **CONSULT CODEX
    FIRST — this judgment is a mandatory codex call, not an eyeball.** Hand codex the full discharged
    `.tex`/note and ask the WHOLE-paper maximization question: is there a sharper bound, better
-   construction, stronger reframing, a tier-relevant rate/constant, or an elbow the current statement misses? If codex
+   construction, stronger reframing, a tier-relevant rate/constant, or an elbow the current statement misses? **Ask the
+   class question explicitly:** read the anchor paper's own hypotheses (not the note's description of them) and decide
+   whether the note's class IS the published one; if not, whether the claim restates over it, or an inclusion transfers
+   it. A converse proved on a subclass transfers up for free and is usually the cheapest tier gain available. If codex
    surfaces a concrete improvement that passes the materiality filter below, apply it only if it already exists as a solver-authored proposal;
    otherwise inject it through `d0_directive`. Then `{resume}` to
    re-solve; only once codex confirms no material room `{resume}` into D0.5. **Default to IMPROVING**; pull to
@@ -238,6 +249,12 @@ directive; never require a byte-identical replacement merely to acknowledge the 
 patches with one whole-core audit: minimal hypotheses, domains, dependencies, normalization, and the
 complete close-comparator set. If a wholesale root repair still rotates, return `cap-block` with receipts;
 main decides whether any terminal classification is justified.
+
+**Vet the D0.5.G directive before acting on it.** `improvement_directive` / `ceiling_directive` are
+math claims from a taste-first referee that is weaker at math than at judgment — put each through the
+consult below for soundness before routing it into a D0 re-solve or an `--upgrade`, and repair it if it
+fails. Never let one alone justify abandoning a lane: a wrong "already settled" kills work that a wrong
+"try X" would only cost a re-solve.
 
 **D0.5 review:** delegate every boundary judgment to a fresh `gpt-5.6-sol` high consult, then classify the persisted
 checkpoint precisely:

@@ -173,13 +173,12 @@ lemma observedPredecessors_observedAt (M : Causalean.SCM N Ω) {n : ℕ}
     have hw_lt :
         (⟨w, hwobs⟩ : {v // v ∈ M.observed}) < M.observedAt ⟨n, hn⟩ := by
       change w < (M.observedAt ⟨n, hn⟩).val
-      simpa [SCM.topoLinearOrder] using htopo
+      exact htopo
     have hidx :
-        (M.observed.orderIsoOfFin rfl).symm ⟨w, hwobs⟩ <
-          (M.observed.orderIsoOfFin rfl).symm (M.observedAt ⟨n, hn⟩) :=
+        M.observedIndex ⟨w, hwobs⟩ < M.observedIndex (M.observedAt ⟨n, hn⟩) :=
       (M.observed.orderIsoOfFin rfl).symm.strictMono hw_lt
-    exact (M.mem_prefixNodes_iff n w).mpr
-      ⟨hwobs, by simpa [SCM.observedIndex, SCM.observedAt] using hidx⟩
+    rw [M.observedIndex_observedAt] at hidx
+    exact (M.mem_prefixNodes_iff n w).mpr ⟨hwobs, hidx⟩
   · intro hw
     rcases (M.mem_prefixNodes_iff n w).mp hw with ⟨hwobs, hidx_lt⟩
     refine Finset.mem_filter.mpr ⟨hwobs, ?_⟩
@@ -190,10 +189,12 @@ lemma observedPredecessors_observedAt (M : Causalean.SCM N Ω) {n : ℕ}
         (⟨w, hwobs⟩ : {v // v ∈ M.observed}) < M.observedAt ⟨n, hn⟩ := by
       have hmono :=
         (M.observed.orderIsoOfFin rfl).strictMono
-          (by simpa [SCM.observedIndex, SCM.observedAt] using hfin)
-      simpa [SCM.observedAt_observedIndex] using hmono
+          (show (M.observed.orderIsoOfFin rfl).symm ⟨w, hwobs⟩ <
+              (⟨n, hn⟩ : Fin M.observed.card) from hfin)
+      rw [OrderIso.apply_symm_apply] at hmono
+      exact hmono
     change w < (M.observedAt ⟨n, hn⟩).val at hw_lt
-    simpa [SCM.topoLinearOrder] using hw_lt
+    exact hw_lt
 
 -- ============================================================
 -- § 2. Single-node conditional step kernels

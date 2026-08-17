@@ -409,7 +409,8 @@ private theorem armProb_aemeasurable_active {d : ℕ} {P : CateLaw d} {alpha L :
   have hcontPi : ContinuousOn P.pi (cube d) := hpi.1.continuousOn
   have hcont : ContinuousOn (armProb P a) (cube d) := by
     by_cases ha : a = 1
-    · simpa [armProb, ha] using hcontPi
+    · rw [show armProb P a = P.pi by funext x; simp [armProb, ha]]
+      exact hcontPi
     · rw [show armProb P a = fun x ↦ 1 - P.pi x by funext x; simp [armProb, ha]]
       exact continuousOn_const.sub hcontPi
   have hcubemeas : MeasurableSet (cube d) := by
@@ -483,14 +484,13 @@ private theorem popGram_quadForm_lower {d p : ℕ}
     measurable_CateObs_X.aemeasurable
   have harmX : AEStronglyMeasurable (fun O : CateObs d ↦ armProb P a O.X)
       P.dataMeasure := by
-    simpa only [Function.comp_apply] using harmX0.mono measurable_CateObs_X.comap_le
+    simpa only [Function.comp_def] using harmX0.mono measurable_CateObs_X.comap_le
   have hbounds := armProb_ae_bounds P e0 he0 hiid hP.overlap a
   have harmgint : Integrable (fun O : CateObs d ↦ armProb P a O.X * g O.X)
       P.dataMeasure := by
     refine Integrable.of_bound (C := h ^ (-(d : ℝ)) * Kmax *
       ((p : ℝ) * ∑ k, (z k)^2)) ?_ ?_
-    · simpa only [Pi.mul_apply, Function.comp_apply] using
-        harmX.mul (hgmeas.comp measurable_CateObs_X).aestronglyMeasurable
+    · exact harmX.fun_mul (hgmeas.fun_comp measurable_CateObs_X).aestronglyMeasurable
     · filter_upwards [hbounds] with O hO
       change |armProb P a O.X * g O.X| ≤ _
       rw [abs_mul, abs_of_nonneg (he0.le.trans hO.1),
@@ -684,13 +684,12 @@ private theorem popGram_quadForm_upper {d p : ℕ}
     measurable_CateObs_X.aemeasurable
   have harmX : AEStronglyMeasurable (fun O : CateObs d ↦ armProb P a O.X)
       P.dataMeasure := by
-    simpa only [Function.comp_apply] using harmX0.mono measurable_CateObs_X.comap_le
+    simpa only [Function.comp_def] using harmX0.mono measurable_CateObs_X.comap_le
   have hbounds := armProb_ae_bounds P e0 he0 hiid hP.overlap a
   have harmgint : Integrable (fun O : CateObs d ↦ armProb P a O.X * g O.X)
       P.dataMeasure := by
     refine Integrable.of_bound (C := B) ?_ ?_
-    · simpa only [Pi.mul_apply, Function.comp_apply] using
-        harmX.mul (hgmeas.comp measurable_CateObs_X).aestronglyMeasurable
+    · exact harmX.fun_mul (hgmeas.fun_comp measurable_CateObs_X).aestronglyMeasurable
     · filter_upwards [hbounds] with O hO
       change |armProb P a O.X * g O.X| ≤ B
       have hg0 : 0 ≤ g O.X := by

@@ -201,7 +201,7 @@ theorem cdtr_strong [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
             exact hprod_int)
           hYindLast_int
       filter_upwards [hpull'] with ω hω
-      simpa [Pi.mul_apply] using hω
+      exact hω
     -- Denominator pull-out: μ[indD n | σ_m] =ᵐ indD m · μ[ind_last | σ_m].
     have hD_pull :
         (S.historyBundle m hm_lt).condExpGiven (S.indD dbar n) P.μ
@@ -228,7 +228,7 @@ theorem cdtr_strong [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
         rw [hFactor]
       rw [heqfun]
       filter_upwards [hpull] with ω hω
-      simpa [Pi.mul_apply] using hω
+      exact hω
     -- The strong identity at j = 0 (independent of cdtr_base).
     have hStrong0 :
         (S.innerReg dbar 0) =ᵐ[P.μ]
@@ -420,7 +420,7 @@ theorem cdtr_strong [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
           hindDk_sm hindD_indkY_int h_indk_CE_int
       filter_upwards [hCongr, hpull] with ω hCω hPω
       rw [hCω]
-      simpa [Pi.mul_apply] using hPω
+      exact hPω
     -- Strong identity at j+1.
     have hover_k := hA.overlap dbar kFin
     -- Bridge the (n - j - 2) index in hWeak to k.

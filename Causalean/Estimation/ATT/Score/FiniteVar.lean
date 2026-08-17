@@ -90,12 +90,12 @@ theorem aipw_finite_var_ATT
     have hcond_L2 :
         MemLp (P.μ[S.toPOBackdoorSystem.YofD false |
           S.toPOBackdoorSystem.sigmaX]) 2 P.μ :=
-      hY0_L2.condExp
+      hY0_L2.condExp one_le_two
     exact hcond_L2.ae_eq (S.μ₀_compat hA)
   have hindA_meas : Measurable (fun ω => indA (S.factualZ ω)) := by
-    simpa [indA, ATE.BackdoorEstimationSystem.projA,
-      TreatedEstimationSystem.factualZ] using
-      (Measurable.of_discrete
+    simp only [indA, ATE.BackdoorEstimationSystem.projA,
+      TreatedEstimationSystem.factualZ]
+    exact (Measurable.of_discrete
         (f := fun b : Bool => if b = true then (1 : ℝ) else 0)).comp
           S.toPOBackdoorSystem.measurable_factualD
   have hA_bound :
@@ -189,7 +189,7 @@ theorem aipw_finite_var_ATT
           indA (S.factualZ ω) *
             (S.toPOBackdoorSystem.factualY ω -
               S.μ₀_val (S.toPOBackdoorSystem.factualX ω))) 2 P.μ := by
-    simpa [mul_comm] using (hY_L2.sub hμ₀_L2).mul hA_Linf
+    exact MemLp.mul' (p := ⊤) (q := 2) (r := 2) (hY_L2.sub hμ₀_L2) hA_Linf
   have hterm_false_L2 :
       MemLp
         (fun ω =>
@@ -208,9 +208,9 @@ theorem aipw_finite_var_ATT
       MemLp
         (fun ω => aipwMomentATT (S.factualZ ω) S.μ₀_val S.e_val S.θ₀) 2 P.μ := by
     have hsum_L2 := (hterm_true_L2.sub hterm_false_L2).sub htheta_L2
-    simpa [aipwMomentATT, TreatedEstimationSystem.factualZ,
+    simp only [aipwMomentATT, TreatedEstimationSystem.factualZ,
       ATE.BackdoorEstimationSystem.projX, ATE.BackdoorEstimationSystem.projY]
-      using hsum_L2
+    exact hsum_L2
   have hmoment_L2 :
       MemLp (fun z => aipwMomentATT z S.μ₀_val S.e_val S.θ₀) 2 S.P_Z := by
     rw [TreatedEstimationSystem.P_Z]
@@ -333,7 +333,7 @@ theorem ipw_truth_integrable
         (S.toPOBackdoorSystem.measurable_YofD false).aestronglyMeasurable).2 h_y0_2
     have hcomp_L2 :
         MemLp (fun ω => S.μ₀_val (S.toPOBackdoorSystem.factualX ω)) 2 P.μ :=
-      hY0_L2.condExp.ae_eq (S.μ₀_compat hA)
+      (hY0_L2.condExp one_le_two).ae_eq (S.μ₀_compat hA)
     rw [TreatedEstimationSystem.P_X]
     exact (memLp_map_measure_iff S.μ₀_meas.aestronglyMeasurable
       S.toPOBackdoorSystem.measurable_factualX.aemeasurable).2 hcomp_L2

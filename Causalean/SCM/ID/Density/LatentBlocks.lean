@@ -524,7 +524,7 @@ lemma localConsistent_fixSet_iff
   have hsf :
       M.structFun ⟨v, hv⟩
         (fixMonoParentMap M.toSWIGGraph W hObs hFix v
-          (fun w : {w // w ∈ (M.fixSet W hObs hFix).dag.parents v} =>
+          (fun w : {w // w ∈ (M.splitMono W hObs hFix).dag.parents v} =>
             if huo : w.val ∈ (M.fixSet W hObs hFix).unobserved then ℓ ⟨w.val, huo⟩
             else if hfix : w.val ∈ (M.fixSet W hObs hFix).fixed then sW ⟨w.val, hfix⟩
             else
@@ -626,7 +626,7 @@ lemma localConsistent_fixSet_iff
   change
     (M.structFun ⟨v, hv⟩
         (fixMonoParentMap M.toSWIGGraph W hObs hFix v
-          (fun w : {w // w ∈ (M.fixSet W hObs hFix).dag.parents v} =>
+          (fun w : {w // w ∈ (M.splitMono W hObs hFix).dag.parents v} =>
             if huo : w.val ∈ (M.fixSet W hObs hFix).unobserved then ℓ ⟨w.val, huo⟩
             else if hfix : w.val ∈ (M.fixSet W hObs hFix).fixed then sW ⟨w.val, hfix⟩
             else

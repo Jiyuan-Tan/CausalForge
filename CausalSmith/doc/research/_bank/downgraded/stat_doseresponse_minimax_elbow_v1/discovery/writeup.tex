@@ -1,0 +1,1519 @@
+\documentclass{article}
+\usepackage[margin=0.8in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{mathrsfs,bm,bbm}
+\usepackage{graphicx,booktabs,array,multirow,tabularx,longtable}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{algorithm,algpseudocode}
+\usepackage{subcaption,tikz}
+\usepackage{siunitx,cancel,accents}
+\usepackage{microtype}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{cleveref}
+\setlength{\emergencystretch}{2em}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{openendedquestion}{Open-ended Question}
+\newtheorem{conjecture}{Conjecture}
+\newcommand{\coreref}[1]{\ref{#1}}
+
+\begin{document}
+
+\sloppy
+
+\section*{stat\_\allowbreak{}doseresponse\_\allowbreak{}minimax\_\allowbreak{}elbow}
+
+\noindent\textit{Specialization:} v1\par
+
+\paragraph{TL;DR.} On the explicit separated-pilot oracle region \(\Omega\), the four-fold marginal local-polynomial estimator attains the pointwise minimax mean-squared-error rate \(n^{-2\alpha/(2\alpha+1)}\), matching a one-dimensional Le Cam lower submodel whose treatment density is uniform. When \(\beta<\alpha\), this exponent is numerically larger than the exponent \(2\beta/(2\beta+1)\) obtained from Bonvini and Kennedy's treatment-smoothing bias--variance balance: their \(h^\beta\) term is an absolute bias, so the MSE balance is \(h^{2\beta}\asymp(nh)^{-1}\). The comparison is between unlike guarantees and is not an estimator-domination claim.
+
+\section{Project justification}
+
+\paragraph{Gap.} Existing continuous-dose results can display treatment-density smoothness in estimator-specific conditional risk bounds, while the fixed-dose partial-mean minimax frontier over nested anisotropic H\"older classes is not thereby determined. In particular, an absolute treatment-smoothing bias \(h^{\alpha\wedge\beta}\) contributes its square to mean-squared error. Outside the explicit region \(\Omega\), the exact frontier remains unresolved for \(0<c<1\), although the core records an optimized achievable bracket, an all-\(\beta\) oracle lower floor, and a stronger fuzzy lower bound in an extreme low-\(s\) region.
+
+\paragraph{Niche.} The note studies the interior fixed-dose partial mean \(\theta_P(t_0)\) under strict positivity, separating the causal identifying functional from the statistical minimax problem. Its main closed regime is \(\Omega\), determined by the exact feasibility threshold for two independent slice pilots and marginal local-polynomial smoothing; it also isolates the boundary \(c=1\), where the oracle rate holds without an \(x\)-smoothness requirement.
+
+\paragraph{Fill.} The explicit Borel estimator has uniform risk at most a constant times \(n^{-2\alpha/(2\alpha+1)}\) on \(\Omega\), and a uniform-treatment two-point submodel gives the matching lower bound for every finite \(\beta\). Nested-class monotonicity then yields one-sided \(\beta\)-invariance comparisons whenever the rougher tuple lies in \(\Omega\). The paper reports the deficient-region upper and lower brackets honestly rather than promoting them to an exact rate.
+
+\section{Related work}
+
+Three sources are closest to the theorem-level rate claim, but none proves the present result. First, Bonvini and Kennedy analyze a specified higher-order continuous-dose estimator conditionally on nuisance training. Their Theorem 3.1 contains absolute treatment-smoothing bias \(h^{\alpha\wedge\beta}\) and leading variance order \((nh)^{-1}\). When \(\beta<\alpha\), squaring that bias and balancing \(h^{2\beta}\) with \((nh)^{-1}\) gives the numerical exponent \(2\beta/(2\beta+1)\), whereas Theorem~\texttt{thm:oracle-high-s} proves the uniform same-class minimax exponent \(2\alpha/(2\alpha+1)\) on \(\Omega\). The assumptions and guarantees are different, so this is not a tightening of their theorem or domination of their estimator. Second, Kennedy, Balakrishnan, Robins, and Wasserman give matching H\"older-model minimax rates and an elbow for binary-treatment CATE. That is the closest sharp causal minimax analogue, but binary treatment has no continuous conditional-density smoothness index \(\beta\), and CATE at a covariate point is not the interior fixed-dose partial mean. Third, Kim and Wang give upper theory requiring no conditional-treatment-density estimation and a matching Sobolev lower bound for two-stage kernel ridge regression. Their loss is integrated MISE for an entire continuous-treatment curve over RKHS or Sobolev source classes under relative overlap; it is not pointwise MSE at \(t_0\) over the present anisotropic H\"older class. Their result therefore neither proves nor rules out nested-class \(\beta\)-invariance here.
+
+The remaining continuous-treatment papers are closer in estimand or estimator architecture than in minimax conclusion. Kennedy, Ma, McHugh, and Small develop kernel-smoothed doubly robust estimation of the continuous-treatment curve, with pointwise error and Gaussian limits under nuisance-rate and empirical-process conditions; they do not give a uniform minimax MSE theorem over the present class. Colangelo and Lee use kernel localization, orthogonal moments, and cross-fitting for double-debiased inference on dose-response functions and partial effects; their conclusion is asymptotic inference under high-level nuisance product rates, not an explicit-pilot minimax bound. Takatsu and Westling study the same fixed-dose partial mean and establish a pointwise asymptotically linear expansion and Gaussian limit under local smoothness and high-level nuisance conditions; that is the nearest target-level inference comparator, but it does not compare minimax risks across \(\beta\)-indexed classes. Schindl, Shen, and Kennedy study incremental continuous-exposure effects designed for settings in which ordinary fixed-dose targets encounter positivity difficulties; their tilted intervention functional is not \(\theta_P(t_0)\), so their efficiency and rate results do not answer the present fixed-dose question. Lim and Luedtke develop a Neyman-orthogonal loss for dose-response learning with partially aligned multi-source data; their data-fusion experiment and curve-learning objective differ from the ordinary iid pointwise minimax experiment here.
+
+Two further lines supply methodology or a different notion of difficulty rather than a direct comparator. Robins, Li, Tchetgen Tchetgen, and van der Vaart develop higher-order influence functions and higher-order \(U\)-statistics for nonlinear functional estimation; this is methodological substrate for higher-order correction, not a continuous-dose theorem with the present target, class, and loss. Liu, Mukherjee, Robins, and Tchetgen Tchetgen study adaptive nonparametric functional estimation through second-order \(U\)-statistics and finite-dimensional approximation; they do not establish the oracle-region pointwise dose-response rate or a treatment-density-smoothness comparison. Balakrishnan, Kennedy, and Wasserman characterize limits of structure-agnostic black-box functional estimation; those bounds intentionally omit the H\"older structure exploited here and therefore do not determine this structured minimax frontier. Finally, Tsybakov supplies the standard H\"older, concentration, and minimax lower-bound toolkit used as mathematical substrate, rather than a causal-dose-response comparator.
+
+The accepted-bank fixed-dose result \texttt{stat\_dose\_response\_minimax\_holder\_anisotropic\_converse/thm:sharp-pointwise-lower-bound} is the closest internal theorem-level prior. Among the six auditable comparator rows, it and Bonvini--Kennedy are the two closest to the precise field-level increment supplied by Theorem~\texttt{thm:oracle-high-s}; the three published sources identified at the start remain the closest published rate comparators as a group. The banked theorem proves the all-\(\beta\) pointwise lower floor \(n^{-2\alpha/(2\alpha+1)}\) on its own class, with smooth-covariate benchmark \(s\ge d/4\). Its companion results \texttt{stat\_dose\_response\_minimax\_holder\_anisotropic\_converse/thm:sharp-minimax-smooth-covariate} and \texttt{stat\_dose\_response\_minimax\_holder\_anisotropic\_converse/thm:frontier-bracket-deficient} expressly leave, respectively, the matching same-class upper bound and the deficient-regime same-class upper endpoint undischarged. The banked core's only upper-side object is a cited conditional Bonvini--Kennedy comparator rather than a same-class upper theorem, so the prior is lower-bound-only. The class difference and the theorem-level assumption difference are separate: the banked class imposes a H\"older-\(s\) bounded-above covariate density and local positivity, its theorems additionally assume baseline-submodel slack, and the present class instead allows an arbitrary Borel covariate density while imposing global two-sided treatment-density bounds. Neither class contains the other. Consequently, Theorem~\texttt{thm:oracle-high-s} does not discharge the banked prior's same-class upper endpoint. It supplies the analogous constructive matching upper bound on the present incomparable class over the explicitly computable region \(\Omega\), and hence exact two-sided order there; this advances the same question without completing the banked theorem. The remaining increments are, in order, that Lemma~\texttt{lem:all-beta-oracle-lower-floor} independently reproduces the floor's rate shape for the present incomparable class, Theorem~\texttt{thm:beta-invariance} adds the nested-class \(\beta\) comparison on \(\Omega\), and Lemma~\texttt{lem:extreme-low-s-fuzzy-lower} contributes the converse exponent \(8/\{4+2/(\alpha\vee\beta)+d/s\}\), which is strictly stronger than the oracle floor exactly when \(d/s>4+4/\alpha-2/(\alpha\vee\beta)\). What is not delivered is equally explicit: for \(0<c<1\) outside \(\Omega\), the exact exponent remains undetermined and is the note's declared open question. Bank-side coverage is complete: no other accepted-bank entry targets the continuous fixed-dose partial mean; the remaining statistical entries concern a discrete-ATE logarithmic-gap match, a differentially private CATE result, or a policy-regret margin-and-overlap result.
+
+\section{Setup}
+
+Target (estimand / structural parameter): \(\theta_P(t_0)=\int\mu_P(t_0,x)p_X(x)\,dx\), the observed-data fixed-dose partial mean; under Proposition~\texttt{prop:causal-identification-at-t0}, \(\theta_P(t_0)=\mathbb E[Y(t_0)]\)..
+Primary functional / estimator / diagnostic: \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathcal M_n(\alpha,\beta,s,d,M_Y,L,c,t_0)=\inf_{\widehat\theta\in\mathfrak T_n}\sup_{P\in\mathcal P(\alpha,\beta,s,d,M_Y,L,c,t_0)}\mathbb E_P[(\widehat\theta-\theta_P(t_0))^2]\)}}\par\noindent.
+\begin{itemize}
+  \item \texttt{n} --- \texttt{sample\_\allowbreak{}size}; \(\mathbb N\); \texttt{index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Sample size.}
+  \item \texttt{d} --- \texttt{covariate\_\allowbreak{}dimension}; \(\{1,2,\ldots\}\); \texttt{regime\_\allowbreak{}parameter}
+  \par\smallskip\noindent\emph{Definition.} Dimension of \(X\).
+  \item \texttt{M\_\allowbreak{}Y} --- \texttt{outcome\_\allowbreak{}envelope}; \((0,\infty)\); \texttt{regularity\_\allowbreak{}constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Uniform outcome envelope.}
+  \item \texttt{L} --- \texttt{holder\_\allowbreak{}radius}; \((0,\infty)\); \texttt{regularity\_\allowbreak{}constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Common Hölder radius.}
+  \item \texttt{c} --- \texttt{positivity\_\allowbreak{}constant}; \((0,1]\); \texttt{regularity\_\allowbreak{}constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Uniform treatment-\allowbreak{}density lower-\allowbreak{}bound constant.}
+  \item \texttt{t\_\allowbreak{}0} --- \texttt{evaluation\_\allowbreak{}point}; \((0,1)\); \texttt{target\_\allowbreak{}index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Fixed interior treatment point.}
+  \item \texttt{alpha} --- \texttt{smoothness\_\allowbreak{}index}; \((0,\infty)\); \texttt{regime\_\allowbreak{}parameter}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Treatment-\allowbreak{}direction regression smoothness.}
+  \item \texttt{beta} --- \texttt{smoothness\_\allowbreak{}index}; \((0,\infty)\); \texttt{regime\_\allowbreak{}parameter}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Treatment-\allowbreak{}direction conditional-\allowbreak{}density smoothness.}
+  \item \texttt{beta\_\allowbreak{}prime} --- \texttt{smoothness\_\allowbreak{}index}; \((0,\infty)\); \texttt{regime\_\allowbreak{}parameter}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Comparator conditional-\allowbreak{}density smoothness.}
+  \item \texttt{s} --- \texttt{smoothness\_\allowbreak{}index}; \((0,\infty)\); \texttt{regime\_\allowbreak{}parameter}
+  \par\smallskip\noindent\emph{Definition.} Covariate-direction smoothness at \(t_0\).
+  \item \texttt{Y} --- \texttt{outcome}; \([-M_Y,M_Y]\); \texttt{data\_\allowbreak{}component}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Observed outcome.}
+  \item \texttt{A} --- \texttt{continuous\_\allowbreak{}treatment}; \([0,1]\); \texttt{data\_\allowbreak{}component}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Observed continuous treatment.}
+  \item \texttt{X} --- \texttt{covariate}; \([0,1]^d\); \texttt{data\_\allowbreak{}component}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Observed covariate vector.}
+  \item \texttt{Z} --- \texttt{observed\_\allowbreak{}unit}; \([-M_Y,M_Y]\times[0,1]\times[0,1]^d\); \texttt{data\_\allowbreak{}unit}
+  \par\smallskip\noindent\emph{Definition.} Observed unit \(Z=(Y,A,X)\).
+  \item \texttt{Z\_\allowbreak{}i} --- \texttt{sample}; \(Z^n\); \texttt{data}
+  \par\smallskip\noindent\emph{Definition.} The \(i\)-th observation in an iid sample.
+  \item \texttt{P} --- \texttt{observed\_\allowbreak{}data\_\allowbreak{}law}; \(\mathcal P(Z)\); \texttt{model}
+  \par\smallskip\noindent\emph{Definition.} Law of \(Z\).
+  \item \texttt{P\_\allowbreak{}0} --- \texttt{witness\_\allowbreak{}law}; \(\mathcal P(Z)\); \texttt{construction\_\allowbreak{}witness}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Constant-\allowbreak{}law witness for class nonemptiness.}
+  \item \texttt{P\_\allowbreak{}X} --- \texttt{marginal\_\allowbreak{}law}; \(\mathcal P([0,1]^d)\); \texttt{nuisance\_\allowbreak{}law}
+  \par\smallskip\noindent\emph{Definition.} The \(X\)-marginal of \(P\).
+  \item \texttt{p\_\allowbreak{}X} --- \texttt{marginal\_\allowbreak{}density}; \([0,1]^d\to[0,\infty)\); \texttt{nuisance}
+  \par\smallskip\noindent\emph{Definition.} Designated Borel Lebesgue density of \(P_X\).
+  \item \texttt{Y(a)} --- \texttt{potential\_\allowbreak{}outcome}; \([-M_Y,M_Y]\); \texttt{causal\_\allowbreak{}primitive}
+  \par\smallskip\noindent\emph{Definition.} Potential outcome at \(a\in[0,1]\).
+  \item \texttt{mu\_\allowbreak{}P} --- \texttt{outcome\_\allowbreak{}regression\_\allowbreak{}version}; \([0,1]\times[0,1]^d\to[-M_Y,M_Y]\); \texttt{nuisance}
+  \par\smallskip\noindent\emph{Definition.} Designated jointly Borel version of \(\mathbb E_P[Y\mid A=a,X=x]\).
+  \item \texttt{pi\_\allowbreak{}P} --- \texttt{conditional\_\allowbreak{}density\_\allowbreak{}version}; \([0,1]\times[0,1]^d\to[0,\infty)\); \texttt{nuisance}
+  \par\smallskip\noindent\emph{Definition.} Designated jointly Borel conditional Lebesgue-density version of \(A\) given \(X\).
+  \item \texttt{theta\_\allowbreak{}P} --- \texttt{dose\_\allowbreak{}response}; \([0,1]\to\mathbb R\); \texttt{target\_\allowbreak{}estimand}
+  \par\smallskip\noindent\emph{Definition.} \texttt{The fixed-\allowbreak{}dose partial mean induced by the designated versions.}
+  \item \texttt{Pclass} --- \texttt{law\_\allowbreak{}class}; \(\mathcal P(\alpha,\beta,s,d,M_Y,L,c,t_0)\); \texttt{model\_\allowbreak{}class}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Version-\allowbreak{}defined anisotropic Hölder class.}
+  \item \texttt{T\_\allowbreak{}n} --- \texttt{estimator\_\allowbreak{}class}; \(\mathfrak T_n\); \texttt{decision\_\allowbreak{}class}
+  \par\smallskip\noindent\emph{Definition.} \texttt{All Borel measurable real-\allowbreak{}valued estimators based on the sample.}
+  \item \texttt{M\_\allowbreak{}n} --- \texttt{minimax\_\allowbreak{}mse}; \((\alpha,\beta,s,d,M_Y,L,c,t_0)\mapsto[0,\infty)\); \texttt{frontier\_\allowbreak{}object}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Pointwise minimax mean-\allowbreak{}squared error.}
+  \item \texttt{r\_\allowbreak{}n} --- \texttt{oracle\_\allowbreak{}rate}; \(\alpha\mapsto(0,1]\); \texttt{benchmark}
+  \par\smallskip\noindent\emph{Definition.} \texttt{One-\allowbreak{}dimensional pointwise Hölder-\allowbreak{}regression MSE benchmark.}
+  \item \texttt{H\_\allowbreak{}beta\_\allowbreak{}free} --- \texttt{explicit\_\allowbreak{}estimator\_\allowbreak{}family}; \(\mathcal H_{\mathrm{bf}}\); \texttt{achieving\_\allowbreak{}estimator}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Four-\allowbreak{}fold first-\allowbreak{}order marginal local-\allowbreak{}polynomial estimator with independent slice-\allowbreak{}regression and slice-\allowbreak{}density pilots.}
+  \item \texttt{g} --- \texttt{pilot\_\allowbreak{}smoothness\_\allowbreak{}threshold}; \((\alpha,\beta,d)\mapsto(0,\infty)\) on \(\{(\alpha,\beta,d):(\alpha\wedge1)+(\beta\wedge1)\ge\alpha\}\); \texttt{regime\_\allowbreak{}boundary}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Exact covariate-\allowbreak{}smoothness threshold delivered by the slice-\allowbreak{}pilot and marginal local-\allowbreak{}polynomial risk balance.}
+  \item \texttt{gOracle} --- \texttt{pilot\_\allowbreak{}smoothness\_\allowbreak{}threshold}; \((\alpha,\beta,d)\mapsto(0,\infty)\) on \(\{(\alpha,\beta,d):(\alpha\wedge1)+(\beta\wedge1)\ge\alpha\}\); \texttt{regime\_\allowbreak{}boundary}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Exact covariate-\allowbreak{}smoothness threshold delivered by the slice-\allowbreak{}pilot and marginal local-\allowbreak{}polynomial risk balance.}
+  \item \texttt{Omega} --- \texttt{oracle\_\allowbreak{}rate\_\allowbreak{}region}; \((0,\infty)^3\times\{1,2,\ldots\}\); \texttt{regime}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Parameter region on which the explicit beta-\allowbreak{}free estimator attains the one-\allowbreak{}dimensional oracle floor.}
+  \item \texttt{rho} --- \texttt{unresolved\_\allowbreak{}rate\_\allowbreak{}exponent}; \((\alpha,\beta,s,d)\mapsto(0,\infty)\); \texttt{frontier\_\allowbreak{}object}
+  \par\smallskip\noindent\emph{Definition.} Potential exact polynomial-rate exponent in a region outside \(\Omega\); its existence and any independence from \(\beta\) are not presupposed.
+\end{itemize}
+
+\section{Assumptions}
+
+\begin{assumption}[ass:iid]\label{ass:iid}
+\(Z_1,\ldots,Z_n\) are iid with common law \(P\).
+\par\smallskip\noindent\emph{Standard} (iid sampling, \cite{Tsybakov2009}).
+\end{assumption}
+
+\begin{assumption}[ass:consistency]\label{ass:consistency}
+\(Y=Y(A)\) almost surely.
+\par\smallskip\noindent\emph{Standard} (consistency, \cite{KennedyMaMcHughSmall2017}).
+\end{assumption}
+
+\begin{assumption}[ass:exchangeability]\label{ass:exchangeability}
+For the measurably typed potential-outcome random element \(\mathbf Y\), \(\mathbf Y\perp A\mid X\); equivalently, \(\mathcal L(\mathbf Y\mid A,X)=\mathcal L(\mathbf Y\mid X)\) almost surely.
+\par\smallskip\noindent\emph{Novel.} novel: process-level conditional independence of the measurably typed potential-outcome random element is a recognized strengthening, but it is not the pointwise weak unconfoundedness standard in continuous-dose work and must not be attributed to a source that states only the pointwise form.
+\end{assumption}
+
+\begin{assumption}[ass:mu-version]\label{ass:mu-version}
+\(\mu_P:[0,1]\times[0,1]^d\to[-M_Y,M_Y]\) is a jointly Borel-measurable version of \(\mathbb E_P[Y\mid A=a,X=x]\).
+\par\smallskip\noindent\emph{Standard} (measurable regression version, \cite{Tsybakov2009}).
+\end{assumption}
+
+\begin{assumption}[ass:pi-version]\label{ass:pi-version}
+\(\pi_P:[0,1]\times[0,1]^d\to\mathbb R_{\ge0}\) is a jointly Borel-measurable conditional Lebesgue-density version of \(A\) given \(X\).
+\par\smallskip\noindent\emph{Standard} (regular conditional density version, \cite{Tsybakov2009}).
+\end{assumption}
+
+\begin{assumption}[ass:px-version]\label{ass:px-version}
+\(p_X:[0,1]^d\to[0,\infty)\) is a designated Borel Lebesgue density of \(P_X\).
+\par\smallskip\noindent\emph{Standard} (Lebesgue density, \cite{Tsybakov2009}).
+\end{assumption}
+
+\begin{assumption}[ass:bounded-outcome]\label{ass:bounded-outcome}
+\(\lvert Y\rvert\le M_Y\) almost surely.
+\par\smallskip\noindent\emph{Standard} (bounded outcome envelope, \cite{BonviniKennedy2022FastDRF}).
+\end{assumption}
+
+\begin{assumption}[ass:positivity-lower]\label{ass:positivity-lower}
+\(\pi_P(a\mid x)\ge c\) for every \((a,x)\in[0,1]\times[0,1]^d\).
+\par\smallskip\noindent\emph{Standard} (uniform positivity, \cite{BonviniKennedy2022FastDRF}).
+\end{assumption}
+
+\begin{assumption}[ass:positivity-upper]\label{ass:positivity-upper}
+\(\pi_P(a\mid x)\le1/c\) for every \((a,x)\in[0,1]\times[0,1]^d\).
+\par\smallskip\noindent\emph{Standard} (bounded treatment density, \cite{BonviniKennedy2022FastDRF}).
+\end{assumption}
+
+\begin{assumption}[ass:mu-a-holder]\label{ass:mu-a-holder}
+For every \(x\), \(a\mapsto\mu_P(a,x)\) belongs to the univariate Hölder ball of order \(\alpha\) and radius \(L\).
+\par\smallskip\noindent\emph{Standard} (Hölder smoothness, \cite{Tsybakov2009}).
+\end{assumption}
+
+\begin{assumption}[ass:pi-a-holder]\label{ass:pi-a-holder}
+For every \(x\), \(a\mapsto\pi_P(a\mid x)\) belongs to the univariate Hölder ball of order \(\beta\) and radius \(L\).
+\par\smallskip\noindent\emph{Standard} (Hölder smoothness, \cite{Tsybakov2009}).
+\end{assumption}
+
+\begin{assumption}[ass:mu-x-holder]\label{ass:mu-x-holder}
+\(x\mapsto\mu_P(t_0,x)\) belongs to the coordinatewise \(d\)-variate Hölder ball of order \(s\) and radius \(L\).
+\par\smallskip\noindent\emph{Standard} (anisotropic Hölder smoothness, \cite{Tsybakov2009}).
+\end{assumption}
+
+\begin{assumption}[ass:pi-x-holder]\label{ass:pi-x-holder}
+\(x\mapsto\pi_P(t_0\mid x)\) belongs to the coordinatewise \(d\)-variate Hölder ball of order \(s\) and radius \(L\).
+\par\smallskip\noindent\emph{Standard} (anisotropic Hölder smoothness, \cite{Tsybakov2009}).
+\end{assumption}
+
+\begin{assumption}[ass:potential-outcome-path-typing]\label{ass:potential-outcome-path-typing}
+There exist a standard Borel space \((\mathsf Y,\mathcal Y)\), a \(\mathcal Y\otimes\mathcal B([0,1])/\mathcal B([-M_Y,M_Y])\)-measurable evaluation map \(e:\mathsf Y\times[0,1]\to[-M_Y,M_Y]\), and an \(\mathcal F/\mathcal Y\)-measurable random element \(\mathbf Y\) on the underlying probability space such that \(Y(a)=e(\mathbf Y,a)\) holds for every \(a\in[0,1]\) and at every sample point; that is, the potential-outcome family is the evaluation of \(\mathbf Y\).
+\par\smallskip\noindent\emph{Novel.} novel: the standard-Borel random-element formulation uses standard disintegration machinery, but its explicit use as the causal completion for this singleton-dose proposition is a substantive typing condition rather than routine continuous-dose boilerplate.
+\end{assumption}
+
+\section{Definitions}
+
+\begin{definition}[def:holder-class]\label{def:holder-class}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Pclass}
+\par\smallskip\noindent\emph{Construction.} \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathcal P(\alpha,\beta,s,d,M_Y,L,c,t_0)=\{P\in\mathcal P(Z):\text{ there exist designated versions }(\mu_P,\pi_P,p_X)\text{ satisfying }\mathrm{ass:mu-version},\mathrm{ass:pi-version},\mathrm{ass:px-version},\mathrm{ass:bounded-outcome},\mathrm{ass:positivity-lower},\mathrm{ass:positivity-upper},\mathrm{ass:mu-a-holder},\mathrm{ass:pi-a-holder},\mathrm{ass:mu-x-holder},\mathrm{ass:pi-x-holder}\}\)}}\par\noindent. Throughout, a H\"older ball of order \(q>0\) and radius \(L\) means the corresponding H\"older seminorm ball: \(L\) bounds all required positive-order coordinate derivatives and the terminal H\"older modulus or Taylor remainder, but it does not bound the zeroth-order supremum norm. For \(0<q<1\), this is the \(q\)-H\"older modulus of the function itself; for \(q\in\mathbb N\), the usual bounded \(q\)-th-derivative convention applies; the \(x\)-conditions are coordinatewise. Function values are controlled separately by the outcome-envelope and positivity assumptions. The parameter domain is \(M_Y,L>0\), \(0<c\le1\), \(t_0\in(0,1)\), \(\alpha,\beta,s>0\), and \(d\ge1\); thus \(t_0\) has a two-sided neighbourhood inside \([0,1]\).
+\par\smallskip\noindent\emph{Member properties.} \texttt{ass:\allowbreak{}mu-\allowbreak{}version}; \texttt{ass:\allowbreak{}pi-\allowbreak{}version}; \texttt{ass:\allowbreak{}px-\allowbreak{}version}; \texttt{ass:\allowbreak{}bounded-\allowbreak{}outcome}; \texttt{ass:\allowbreak{}positivity-\allowbreak{}lower}; \texttt{ass:\allowbreak{}positivity-\allowbreak{}upper}; \texttt{ass:\allowbreak{}mu-\allowbreak{}a-\allowbreak{}holder}; \texttt{ass:\allowbreak{}pi-\allowbreak{}a-\allowbreak{}holder}; \texttt{ass:\allowbreak{}mu-\allowbreak{}x-\allowbreak{}holder}; \texttt{ass:\allowbreak{}pi-\allowbreak{}x-\allowbreak{}holder}.
+\end{definition}
+
+\begin{definition}[def:nonempty-witness]\label{def:nonempty-witness}
+\par\smallskip\noindent\emph{Defined object.} \texttt{P\_\allowbreak{}0}
+\par\smallskip\noindent\emph{Construction.} \(X\sim\mathrm{Unif}([0,1]^d),\ A\mid X\sim\mathrm{Unif}([0,1]),\ Y=0,\ Y(a)=0\) for every \(a\in[0,1]\), with designated versions \(p_X(x)=1\), \(\pi_{P_0}(a\mid x)=1\), and \(\mu_{P_0}(a,x)=0\).
+\par\smallskip\noindent\emph{Inputs.} \texttt{d}.
+\end{definition}
+
+\begin{definition}[def:estimator-class]\label{def:estimator-class}
+\par\smallskip\noindent\emph{Defined object.} \texttt{T\_\allowbreak{}n}
+\par\smallskip\noindent\emph{Construction.} \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathfrak T_n=\{\widehat\theta:([-M_Y,M_Y]\times[0,1]\times[0,1]^d)^n\to\mathbb R:\widehat\theta\text{ is Borel measurable}\}\)}}\par\noindent.
+\par\smallskip\noindent\emph{Inputs.} \texttt{Z\_\allowbreak{}i}.
+\end{definition}
+
+\begin{definition}[def:minimax-mse]\label{def:minimax-mse}
+\par\smallskip\noindent\emph{Defined object.} \texttt{M\_\allowbreak{}n}
+\par\smallskip\noindent\emph{Construction.} \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathcal M_n(\alpha,\beta,s,d,M_Y,L,c,t_0)=\inf_{\widehat\theta\in\mathfrak T_n}\sup_{P\in\mathcal P(\alpha,\beta,s,d,M_Y,L,c,t_0)}\mathbb E_P[(\widehat\theta-\theta_P(t_0))^2]\)}}\par\noindent, where the supremum is over the nonempty class certified by \(\mathrm{prop:class-nonempty}\).
+\par\smallskip\noindent\emph{Inputs.} \texttt{T\_\allowbreak{}n}; \texttt{Pclass}.
+\end{definition}
+
+\begin{definition}[def:oracle-rate]\label{def:oracle-rate}
+\par\smallskip\noindent\emph{Defined object.} \texttt{r\_\allowbreak{}n}
+\par\smallskip\noindent\emph{Construction.} \(r_n(\alpha)=n^{-2\alpha/(2\alpha+1)}\).
+\end{definition}
+
+\begin{definition}[def:beta-free-handle]\label{def:beta-free-handle}
+\par\smallskip\noindent\emph{Defined object.} \texttt{H\_\allowbreak{}beta\_\allowbreak{}free}
+\par\smallskip\noindent\emph{Construction.} Fix a bounded nonnegative kernel \(K\), supported on \([-1,1]\) and bounded below on a neighbourhood of zero. Put \(p=\lfloor\alpha\rfloor\), \(S(u)=(1,u,\ldots,u^p)^\top\), \(K_h(a)=h^{-1}K((a-t_0)/h)\), and \(S_h(a)=S((a-t_0)/h)\). Deterministically split the sample into four disjoint folds \(I_\mu,I_{\mathrm{aux}},I_X,I_{\mathrm{lp}}\), each of size proportional to \(n\). Partition \([0,1]^d\) by a deterministic regular grid into Borel cells \(B_{\mu j}\) of diameter at most \(C_d\delta_\mu\), with the number of cells \(J_\mu\le C_d'\delta_\mu^{-d}\). On \(I_\mu\), for \(x\in B_{\mu j}\), define
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \widehat\mu_0(x)=
+\frac{\sum_{i\in I_\mu}Y_i\mathbf 1\{X_i\in B_{\mu j},\ |A_i-t_0|\le b_\mu\}}
+{\sum_{i\in I_\mu}\mathbf 1\{X_i\in B_{\mu j},\ |A_i-t_0|\le b_\mu\}}\)}}
+\]
+when the denominator is positive and set it to zero otherwise. Independently partition \([0,1]^d\) by a deterministic regular grid into Borel cells \(B_{\pi j}\) of diameter at most \(C_d\delta_\pi\), with the number of cells \(J_\pi\le C_d'\delta_\pi^{-d}\). On \(I_{\mathrm{aux}}\), let \(N_{\pi j}=\sum_{i\in I_{\mathrm{aux}}}\mathbf 1\{X_i\in B_{\pi j}\}\), \(R_{\pi j}=\sum_{i\in I_{\mathrm{aux}}}\mathbf 1\{X_i\in B_{\pi j},\ |A_i-t_0|\le b_\pi\}\), and, for \(x\in B_{\pi j}\), define
+\[
+\widehat\pi_0(x)=\operatorname{clip}_{[c/2,2/c]}\left\{\frac{R_{\pi j}}{2b_\pi(N_{\pi j}\vee1)}\right\}.
+\]
+Extend both pilots constantly in dose: \(\widehat\mu(a,x)=\widehat\mu_0(x)\) and \(\widehat\pi(a\mid x)=\widehat\pi_0(x)\). On the independent fold \(I_X\), define \(\widehat m(a)=|I_X|^{-1}\sum_{\ell\in I_X}\widehat\mu(a,X_\ell)\) and \(\widehat f(a)=|I_X|^{-1}\sum_{\ell\in I_X}\widehat\pi(a\mid X_\ell)\). For \(i\in I_{\mathrm{lp}}\), put
+\[
+\widehat\xi_i=\frac{\widehat f(A_i)}{\widehat\pi(A_i\mid X_i)}\{Y_i-\widehat\mu(A_i,X_i)\}+\widehat m(A_i).
+\]
+With \(N_{\mathrm{lp}}=|I_{\mathrm{lp}}|\), define
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \widehat D_h=N_{\mathrm{lp}}^{-1}\sum_{i\in I_{\mathrm{lp}}}K_h(A_i)S_h(A_i)S_h(A_i)^\top,
+\qquad
+\widehat R_h=N_{\mathrm{lp}}^{-1}\sum_{i\in I_{\mathrm{lp}}}K_h(A_i)S_h(A_i)\widehat\xi_i.\)}}
+\]
+Set
+\[
+\lambda_*=\frac c2\lambda_{\min}\left\{\int_{-1}^1K(u)S(u)S(u)^\top\,du\right\}>0.
+\]
+The estimator family is
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \widehat\theta_{h,b_\mu,\delta_\mu,b_\pi,\delta_\pi}
+=\operatorname{clip}_{[-M_Y,M_Y]}\left[e_0^\top\widehat D_h^{-1}\widehat R_h\,\mathbf 1\{\lambda_{\min}(\widehat D_h)\ge\lambda_*\}\right],\)}}
+\]
+where the bracketed value is defined as zero on the bad-Gram event. Require \(b_\mu,b_\pi\le\min(t_0,1-t_0)\). Counts, clipping, eigenvalues, inversion on the good-Gram set, and the assigned bad-event value make the map Borel measurable.
+\par\smallskip\noindent\emph{Inputs.} \texttt{Z\_\allowbreak{}i}; \texttt{t\_\allowbreak{}0}; \texttt{alpha}; \texttt{M\_\allowbreak{}Y}; \texttt{c}.
+\end{definition}
+
+\begin{definition}[def:oracle-threshold]\label{def:oracle-threshold}
+\par\smallskip\noindent\emph{Defined object.} \texttt{gOracle}
+\par\smallskip\noindent\emph{Construction.} Put \(A_0=\alpha\wedge1\), \(B_0=\beta\wedge1\), \(C_0=2\alpha+1\), \(\ell=(\alpha-B_0)_+\), and \(I=[\ell,A_0]\). For \(z\in I\), define
+\[
+D_\mu(z)=C_0-\frac{z}{A_0}-2z,
+\qquad
+D_\pi(z)=C_0-\frac{\alpha-z}{B_0}-2(\alpha-z).
+\]
+On the structural domain \(A_0+B_0\ge\alpha\), the separated-pilot threshold is
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle g(\alpha,\beta,d)
+=
+\min_{\substack{z\in I:\ D_\mu(z)>0,\ D_\pi(z)>0}}
+\max\left\{
+\frac{dz}{D_\mu(z)},
+\frac{d(\alpha-z)}{D_\pi(z)}
+\right\}.\)}}
+\]
+This one-dimensional optimization has the following closed form. Let
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \Delta=\frac1{A_0}-\frac1{B_0},
+\qquad
+z_c=
+\begin{cases}
+\alpha/2,&\Delta=0,\\[2mm]
+\displaystyle
+\frac{2\alpha C_0}{2C_0+\alpha\Delta+\sqrt{4C_0^2+\alpha^2\Delta^2}},&\Delta\ne0,
+\end{cases}\)}}
+\]
+and put \(z_*=\min\{A_0,\max\{\ell,z_c\}\}\). The denominators \(D_\mu(z_*)\) and \(D_\pi(z_*)\) are positive, and
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle g(\alpha,\beta,d)=
+\begin{cases}
+\displaystyle \frac{d\ell}{D_\mu(\ell)},&z_c<\ell,\\[3mm]
+\displaystyle \frac{dz_c}{D_\mu(z_c)}
+=\frac{d(\alpha-z_c)}{D_\pi(z_c)},&\ell\le z_c\le A_0,\\[3mm]
+\displaystyle \frac{d(\alpha-A_0)}{D_\pi(A_0)},&z_c>A_0.
+\end{cases}\)}}
+\]
+The adjacent expressions agree when \(z_c=\ell\) or \(z_c=A_0\).
+\par\smallskip\noindent\emph{Inputs.} \texttt{alpha}; \texttt{beta}; \texttt{d}.
+\end{definition}
+
+\begin{definition}[def:oracle-region]\label{def:oracle-region}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Omega}
+\par\smallskip\noindent\emph{Construction.} The first-order separated-pilot oracle region is
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \Omega
+=
+\left\{(\alpha,\beta,s,d):
+(\alpha\wedge1)+(\beta\wedge1)\ge\alpha,
+\quad s\wedge1\ge g(\alpha,\beta,d)
+\right\}.\)}}
+\]
+\par\smallskip\noindent\emph{Inputs.} \texttt{alpha}; \texttt{beta}; \texttt{s}; \texttt{d}; \texttt{gOracle}.
+\end{definition}
+
+\section{Main results}
+
+\begin{proposition}[prop:class-nonempty]\label{prop:class-nonempty}
+For every admissible \(M_Y,L,c,t_0,\alpha,\beta,s,d\), the witness \(P_0\) belongs to \(\mathcal P(\alpha,\beta,s,d,M_Y,L,c,t_0)\). Its displayed designated versions satisfy the version convention, including the Hölder convention, and hence the minimax supremum is over a nonempty set.
+\end{proposition}
+\begin{proof}
+Fix an admissible parameter tuple and consider \(P_0\) from Definition~\texttt{def:nonempty-witness}. The uniform law of \(X\) has designated Borel density \(p_X(x)=1\), and the conditional uniform law of \(A\) given \(X\) has jointly Borel density \(\pi_{P_0}(a\mid x)=1\). Since \(0<c\le1\), one has \(c\le1\le1/c\). Because \(Y=0\), the function \(\mu_{P_0}(a,x)=0\) is a jointly Borel version of \(\mathbb E_{P_0}[Y\mid A=a,X=x]\), takes values in \([-M_Y,M_Y]\), and satisfies \(\lvert Y\rvert\le M_Y\) almost surely. Every positive-order derivative and every H\"older remainder of the constant functions zero and one vanishes. Thus all treatment-direction and fixed-slice covariate-direction H\"older seminorm conditions hold for every positive radius \(L\) under Definition~\texttt{def:holder-class}; the zeroth-order values are controlled separately by the outcome-envelope and positivity conditions just verified. Consequently,
+\[
+P_0\in\mathcal P(\alpha,\beta,s,d,M_Y,L,c,t_0).
+\]
+The class is nonempty, so every supremum indexed by this class, including the minimax supremum named in the proposition, is over a nonempty set.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The uniform \(X\), uniform \(A\), zero-outcome law satisfies every version, positivity, envelope, and smoothness condition under the frozen Hölder convention. \textit{Gap.} This is a model-coherence certificate, not a rate result. \textit{Consumer.} It makes the minimax supremum nonempty for every declared tuple.
+
+\begin{proposition}[prop:estimand-version-invariant]\label{prop:estimand-version-invariant}
+For every \(P\in\mathcal P(\alpha,\beta,s,d,M_Y,L,c,t_0)\), \(\theta_P(t_0)=\int\mu_P(t_0,x)p_X(x)dx\) is well defined and independent of the admissible designated versions: any two such regression versions agree \(P_X\)-almost everywhere at \(t_0\), because positivity upgrades conditional almost-everywhere agreement and the designated treatment-direction versions are continuous.
+\end{proposition}
+\begin{proof}
+Fix \(P\in\mathcal P(\alpha,\beta,s,d,M_Y,L,c,t_0)\). Let \(\mu_1\) and \(\mu_2\) be two admissible designated regression versions, let \(\pi_1\) be the treatment-density version accompanying the first designation, and put \(D(a,x)=\mu_1(a,x)-\mu_2(a,x)\). Equality of conditional-expectation versions gives \(D(A,X)=0\) almost surely. The law of \((A,X)\) has density \(\pi_1(a\mid x)\) relative to \(da\,dP_X(x)\), so the positivity condition gives
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle 0=\int_{[0,1]^d}\int_0^1 \lvert D(a,x)\rvert\pi_1(a\mid x)\,da\,dP_X(x)
+\ge c\int_{[0,1]^d}\int_0^1 \lvert D(a,x)\rvert\,da\,dP_X(x).\)}}
+\]
+By Fubini's theorem, for \(P_X\)-almost every \(x\), the function \(a\mapsto D(a,x)\) vanishes for Lebesgue-almost every \(a\). Both treatment sections are H\"older of positive order and hence continuous. Their continuous difference therefore vanishes everywhere on \([0,1]\), in particular at \(t_0\). Thus \(\mu_1(t_0,x)=\mu_2(t_0,x)\) for \(P_X\)-almost every \(x\).
+
+Let \(p_{X,1}\) and \(p_{X,2}\) be any two admissible designated Lebesgue densities of \(P_X\). They agree Lebesgue-almost everywhere. Moreover, each admissible regression slice is bounded in absolute value by \(M_Y\), so all the following integrals are absolutely integrable. Therefore
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \int\mu_1(t_0,x)p_{X,1}(x)\,dx
+=
+\int\mu_1(t_0,x)\,dP_X(x)
+=
+\int\mu_2(t_0,x)\,dP_X(x)
+=
+\int\mu_2(t_0,x)p_{X,2}(x)\,dx.\)}}
+\]
+This proves that \(\theta_P(t_0)\) is finite, well defined, and independent of every admissible choice of designated versions.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The pointwise target must not depend on the representative selected to define smoothness. \textit{Gap.} Pointwise dose-response work usually states regularity for a chosen regression version without proving target invariance across admissible versions. \textit{Consumer.} It licenses the loss in the minimax functional.
+
+\begin{theorem}[thm:beta-invariance]\label{thm:beta-invariance}
+For every \(0<\beta<\beta^{\prime}<\infty\) and every admissible \(\alpha,s,d,M_Y,L,c,t_0\) such that the rough tuple satisfies \((\alpha,\beta,s,d)\in\Omega\), there are \(0<C_{\mathrm{low}}\le C_{\mathrm{up}}<\infty\) and \(n_0\in\mathbb N\), none depending on \(n\), such that for every \(n\ge n_0\),
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle C_{\mathrm{low}}n^{-2\alpha/(2\alpha+1)}
+\le \mathcal M_n(\alpha,\beta^{\prime},s,d,M_Y,L,c,t_0)
+\le \mathcal M_n(\alpha,\beta,s,d,M_Y,L,c,t_0)
+\le C_{\mathrm{up}}n^{-2\alpha/(2\alpha+1)}.\)}}
+\]
+Consequently,
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle 1\le
+\frac{\mathcal M_n(\alpha,\beta,s,d,M_Y,L,c,t_0)}{\mathcal M_n(\alpha,\beta^{\prime},s,d,M_Y,L,c,t_0)}
+\le \frac{C_{\mathrm{up}}}{C_{\mathrm{low}}}.\)}}
+\]
+No oracle-region condition on \(\beta^{\prime}\) is required.
+\end{theorem}
+\begin{proof}
+By Lemma~\texttt{lem:beta-class-one-sided-monotonicity},
+\[
+\mathcal P(\alpha,\beta',s,d,M_Y,L,c,t_0)\subseteq\mathcal P(\alpha,\beta,s,d,M_Y,L,c,t_0),
+\]
+and therefore minimax monotonicity gives
+\[
+\mathcal M_n(\alpha,\beta',s,d,M_Y,L,c,t_0)\le\mathcal M_n(\alpha,\beta,s,d,M_Y,L,c,t_0).
+\]
+Because the rough tuple is in \(\Omega\), Theorem~\texttt{thm:oracle-high-s} supplies \(C_{\mathrm{up}}<\infty\) and \(n_0\) such that the rightmost risk is at most \(C_{\mathrm{up}}r_n(\alpha)\) for \(n\ge n_0\). Independently of whether the smoother tuple lies in \(\Omega\), Lemma~\texttt{lem:all-beta-oracle-lower-floor}, applied with \(\beta'\), supplies \(C_{\mathrm{low}}>0\) such that its minimax risk is at least \(C_{\mathrm{low}}r_n(\alpha)\). Substitution of \(r_n(\alpha)=n^{-2\alpha/(2\alpha+1)}\) gives the displayed three-term chain. The denominator in the ratio is strictly positive by the lower bound, so division gives
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle 1\le\frac{\mathcal M_n(\alpha,\beta,s,d,M_Y,L,c,t_0)}{\mathcal M_n(\alpha,\beta',s,d,M_Y,L,c,t_0)}\le\frac{C_{\mathrm{up}}}{C_{\mathrm{low}}}.\)}}\par\noindent}}
+\]
+The proof used no oracle-region assertion for \(\beta'\).
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} Class nesting, the rough-class oracle upper bound, and the all-\(\beta\) lower floor give constant-factor equivalence. \textit{Gap.} No corresponding exact equivalence is proved for fixed \(0<c<1\) when the rough tuple lies outside \(\Omega\). \textit{Consumer.} It states precisely where treatment-density smoothness may be omitted from first-order minimax exponent calculations.
+
+\begin{theorem}[thm:oracle-high-s]\label{thm:oracle-high-s}
+Suppose \((\alpha,\beta,s,d)\in\Omega\). Then for every admissible \(M_Y,L,c,t_0\), there are \(0<C_-\le C_+<\infty\), independent of \(n\), such that \[C_-r_n(\alpha)\le\mathcal M_n(\alpha,\beta,s,d,M_Y,L,c,t_0)\le C_+r_n(\alpha).\] On this oracle region, if \(\beta<\alpha\), the same-class minimax exponent \(2\alpha/(2\alpha+1)\) is numerically larger than the exponent \(2\beta/(2\beta+1)\) obtained by balancing the treatment-smoothing component of Bonvini and Kennedy's conditional estimator-risk bound with its leading variance order. The models and guarantees differ: the present result is a uniform minimax statement over the displayed class, whereas theirs is a conditional bound for a specified estimator. This is a contrast between unlike guarantees, not a strict tightening or estimator-domination claim.
+\end{theorem}
+\begin{proof}
+Assume \((\alpha,\beta,s,d)\in\Omega\). By Lemma~\texttt{lem:oracle-region-tuning}, there are deterministic choices of \(h,b_\mu,\delta_\mu,b_\pi,\delta_\pi\) in Definition~\texttt{def:beta-free-handle} for which the right-hand side of Lemma~\texttt{lem:localized-polynomial-master-risk} is at most \(C_+^0 r_n(\alpha)\) for every sufficiently large \(n\), uniformly over \(P\in\mathcal P(\alpha,\beta,s,d,M_Y,L,c,t_0)\). Hence the resulting estimator satisfies
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \sup_{P\in\mathcal P(\alpha,\beta,s,d,M_Y,L,c,t_0)}
+\mathbb E_P\!\left[\{\widehat\theta-\theta_P(t_0)\}^2\right]
+\le C_+^0 r_n(\alpha).\)}}
+\]
+The deterministic folds, cell counts, clipping maps, eigenvalue test, inverse on the good-Gram event, and assigned value on the bad-Gram event in Definition~\texttt{def:beta-free-handle} are Borel operations. Thus \(\widehat\theta\in\mathfrak T_n\) by Definition~\texttt{def:estimator-class}. Taking the infimum over \(\mathfrak T_n\) in Definition~\texttt{def:minimax-mse} gives
+\[
+\mathcal M_n(\alpha,\beta,s,d,M_Y,L,c,t_0)
+\le C_+^0r_n(\alpha)
+\]
+for all sufficiently large \(n\).
+
+We extend the upper inequality to every positive sample size without changing its rate. By the outcome envelope and the definition of the partial mean,
+\[
+\lvert\theta_P(t_0)\rvert
+=\left\lvert\int\mu_P(t_0,x)p_X(x)\,dx\right\rvert
+\le M_Y.
+\]
+Consequently, the identically zero estimator has squared risk at most \(M_Y^2\). Only finitely many positive values of \(n\) precede the large-sample threshold, and \(r_n(\alpha)>0\) for each of them. Increasing \(C_+^0\) to a finite constant \(C_+\), independent of \(n\), therefore yields
+\[
+\mathcal M_n(\alpha,\beta,s,d,M_Y,L,c,t_0)
+\le C_+r_n(\alpha)
+\qquad(n\ge1).
+\]
+
+For the converse, Lemma~\texttt{lem:all-beta-oracle-lower-floor} gives a constant \(C_->0\), independent of \(n\), such that
+\[
+\mathcal M_n(\alpha,\beta,s,d,M_Y,L,c,t_0)
+\ge C_-r_n(\alpha)
+\qquad(n\ge1).
+\]
+That lemma uses a submodel with \(p_X(x)=1\) and \(\pi_P(a\mid x)=1\), so its membership is valid for every finite \(\beta\). Enlarging \(C_+\), if necessary, ensures \(0<C_-\le C_+<\infty\), proving the asserted exact order.
+
+It remains to establish the numerical comparison. Suppose \(\beta<\alpha\). Lemma~\texttt{lem:bonvini-kennedy-treatment-smoothing-bound} records that, under Bonvini and Kennedy's conditions, the treatment-smoothing component of the conditional absolute-bias bound is
+\[
+h^{\alpha\wedge\beta}=h^\beta,
+\]
+whereas the leading conditional variance order is \((nh)^{-1}\). Because mean-squared error contains the square of absolute bias, the componentwise MSE balance is
+\[
+h^{2\beta}\asymp(nh)^{-1}.
+\]
+It gives \(h\asymp n^{-1/(2\beta+1)}\) and the common order
+\[
+n^{-2\beta/(2\beta+1)}.
+\]
+The function \(x\mapsto 2x/(2x+1)\) is strictly increasing on \((0,\infty)\), since
+\[
+\frac{d}{dx}\frac{2x}{2x+1}=\frac{2}{(2x+1)^2}>0.
+\]
+Thus \(\beta<\alpha\) implies
+\[
+\frac{2\beta}{2\beta+1}<\frac{2\alpha}{2\alpha+1}.
+\]
+The exponent on the right is the uniform minimax exponent just proved for the displayed class on \(\Omega\); the exponent on the left is obtained only by balancing two components of the cited conditional risk bound for Bonvini and Kennedy's specified estimator under their conditions. Hence this strict numerical inequality neither orders the two full guarantees nor establishes estimator domination.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The explicit four-fold estimator and its deterministic tuning attain the one-dimensional pointwise H\"older rate on \(\Omega\), while the uniform-treatment Le Cam submodel supplies the matching lower bound. The closest internal comparator, \texttt{stat\_dose\_response\_minimax\_holder\_anisotropic\_converse/thm:sharp-pointwise-lower-bound}, proves the all-\(\beta\) lower floor on its own class but is lower-bound-only; its companion results leave the corresponding same-class upper questions undischarged. The banked class requires a H\"older-\(s\) bounded-above covariate density and local positivity, and its theorems additionally assume baseline-submodel slack, whereas the present class permits an arbitrary Borel covariate density and imposes global two-sided treatment-density bounds. Since neither class contains the other, this theorem supplies an analogous constructive matching upper bound and exact two-sided order on the present class over the computable region \(\Omega\), not a completion of the banked result. Bonvini--Kennedy is the closest published continuous-dose estimator-risk comparator; squaring its absolute treatment-smoothing bias \(h^\beta\) before balancing with \((nh)^{-1}\) gives the numerical exponent \(2\beta/(2\beta+1)\). \textit{Gap.} For fixed \(0<c<1\), the theorem does not characterize the complement of \(\Omega\), where the exact exponent remains the declared open question. Class incomparability means it also does not discharge the accepted-bank prior's same-class upper endpoint. It neither orders estimator risks under identical assumptions nor provides the pointwise inference conclusions of Kennedy--Ma--McHugh--Small, Colangelo--Lee, or Takatsu--Westling; the integrated-risk RKHS or Sobolev theory of Kim--Wang; the binary-treatment CATE frontier of Kennedy--Balakrishnan--Robins--Wasserman; or the distinct incremental-effect and data-fusion targets of Schindl--Shen--Kennedy and Lim--Luedtke. \textit{Consumer.} Continuous-exposure software receives an explicit estimator, tuning certificate, and computable regime for attaining the oracle pointwise MSE rate. The surrounding results identify the remaining field-level increments: Lemma~\texttt{lem:all-beta-oracle-lower-floor} independently supplies the present-class floor, Theorem~\texttt{thm:beta-invariance} gives the nested-class \(\beta\) comparison on \(\Omega\), and Lemma~\texttt{lem:extreme-low-s-fuzzy-lower} gives the low-smoothness converse exponent \(8/\{4+2/(\alpha\vee\beta)+d/s\}\). Bank-side coverage is complete because no other accepted-bank entry studies the continuous fixed-dose partial mean.
+
+\begin{openendedquestion}[oeq:deficient-frontier]\label{oeq:deficient-frontier}
+Fix \(0<c<1\). For parameter tuples in either residual region
+\[
+(\alpha\wedge1)+(\beta\wedge1)<\alpha
+\]
+or
+\[
+(\alpha\wedge1)+(\beta\wedge1)\ge\alpha,
+\qquad s\wedge1<g(\alpha,\beta,d),
+\]
+does there exist an exact polynomial-rate exponent \(\rho(\alpha,\beta,s,d)\) such that
+\[
+\mathcal M_n(\alpha,\beta,s,d,M_Y,L,c,t_0)
+\asymp n^{-\rho(\alpha,\beta,s,d)}?
+\]
+If so, what is that exponent and in which subregions, if any, is it independent of \(\beta\)?
+\end{openendedquestion}
+For every fixed residual tuple and \(0<c<1\), there are constants \(0<C_{\mathrm{low}}\le C_{\mathrm{up}}<\infty\) and \(n_0\in\mathbb N\), independent of \(n\), such that
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle C_{\mathrm{low}}n^{-r_{\mathrm{low}}}
+\le
+\mathcal M_n(\alpha,\beta,s,d,M_Y,L,c,t_0)
+\le
+C_{\mathrm{up}}n^{-R_{\mathrm{ach}}}
+\qquad(n\ge n_0),\)}}
+\]
+where
+\[
+r_{\mathrm{low}}
+=
+\min\left\{
+\frac{2\alpha}{2\alpha+1},
+\frac{8}{4+2/(\alpha\vee\beta)+d/s}
+\right\}
+\]
+and \(R_{\mathrm{ach}}\) is the explicit exponent in Lemma~\texttt{lem:optimized-deficient-rate-bracket}. Hence \(R_{\mathrm{ach}}\le r_{\mathrm{low}}\), and any exact polynomial exponent must obey \(R_{\mathrm{ach}}\le\rho(\alpha,\beta,s,d)\le r_{\mathrm{low}}\). Whenever the two displayed exponents coincide, the exact exponent exists and equals their common value; it is \(\beta\)-invariant on any subregion where that equality and common value persist as \(\beta\) varies. At the excluded boundary \(c=1\), Lemma~\texttt{lem:unit-positivity-oracle-rate} gives the exact \(\beta\)-invariant exponent \(2\alpha/(2\alpha+1)\) for every \(s,d\).
+
+\begin{lemma}[lem:bonvini-kennedy-treatment-smoothing-bound]\label{lem:bonvini-kennedy-treatment-smoothing-bound}
+Under the conditions stated in Bonvini and Kennedy's Theorem 3.1, the conditional bias bound for their higher-order estimator contains a treatment-smoothing term \(h^{\alpha\wedge\beta}\), and the conditional variance bound contains the leading order \((nh)^{-1}\).
+\end{lemma}
+
+\begin{lemma}[lem:bounded-sum-concentration]\label{lem:bounded-sum-concentration}
+If \(W_1,\ldots,W_N\) are independent, centered real random variables satisfying \(|W_i|\le R\) almost surely and \(\sum_{i=1}^N\mathbb E[W_i^2]\le V\), then, for every \(t>0\),
+\[
+\mathbb P\left(\left|\sum_{i=1}^NW_i\right|\ge t\right)\le2\exp\left\{-\frac{t^2}{2(V+Rt/3)}\right\}.
+\]
+\end{lemma}
+\begin{proof}
+For \(0<\lambda<3/R\), the elementary power-series inequality
+\[
+e^x\le1+x+\frac{x^2}{2(1-|x|/3)}\qquad(|x|<3)
+\]
+and \(\mathbb E W_i=0\) give
+\[
+\mathbb E e^{\lambda W_i}\le\exp\left\{\frac{\lambda^2\mathbb E[W_i^2]}{2(1-\lambda R/3)}\right\}.
+\]
+Independence and Markov's inequality therefore imply
+\[
+\mathbb P\left(\sum_iW_i\ge t\right)\le\exp\left\{-\lambda t+\frac{\lambda^2V}{2(1-\lambda R/3)}\right\}.
+\]
+Taking \(\lambda=t/(V+Rt/3)\) yields \(\exp\{-t^2/[2(V+Rt/3)]\}\). Applying the same calculation to \(-W_i\) and adding the two tail probabilities proves the claim.
+\end{proof}
+
+\begin{lemma}[lem:separated-threshold-optimization]\label{lem:separated-threshold-optimization}
+Let \(A_0=\alpha\wedge1\), \(B_0=\beta\wedge1\), suppose \(A_0+B_0\ge\alpha\), and put \(C_0=2\alpha+1\). On \(I=[(\alpha-B_0)_+,A_0]\), define
+\[
+F_\mu(z)=\frac{dz}{C_0-z/A_0-2z},
+\qquad
+F_\pi(z)=\frac{d(\alpha-z)}{C_0-(\alpha-z)/B_0-2(\alpha-z)},
+\]
+where both denominators are required to be positive. Then
+\[
+\min_{z\in I}\max\{F_\mu(z),F_\pi(z)\}=g(\alpha,\beta,d),
+\]
+with \(g\) given by the closed form in \(\mathrm{def:oracle\text{-}threshold}\). The unconstrained crossing \(z_c\) is unique, and the constrained minimizer is \(z_* = \min\{A_0,\max\{(\alpha-B_0)_+,z_c\}\}\). The crossing lies below \(\alpha/2\) when \(A_0<B_0\), equals \(\alpha/2\) when \(A_0=B_0\), and lies above \(\alpha/2\) when \(A_0>B_0\). The crossing formula is continuous at \(A_0=B_0\), and the adjacent endpoint and crossing formulas for \(g\) agree when \(z_c=(\alpha-B_0)_+\) or \(z_c=A_0\).
+\end{lemma}
+\begin{proof}
+Put \(A=\alpha\wedge1\), \(B=\beta\wedge1\), \(C=2\alpha+1\), \(a=2+A^{-1}\), \(b=2+B^{-1}\), and \(\ell=(\alpha-B)_+\).  Wherever the denominators are positive,
+\[
+F_\mu'(z)=\frac{dC}{(C-az)^2}>0,
+\qquad
+F_\pi'(z)=-\frac{dC}{\{C-b(\alpha-z)\}^2}<0.
+\]
+Thus there is at most one unconstrained crossing.  Cross-multiplication shows that it solves
+\[
+-\Delta z^2+(2C+\alpha\Delta)z-\alpha C=0,
+\qquad \Delta=A^{-1}-B^{-1}.
+\]
+For \(\Delta=0\), the relevant root is \(z_c=\alpha/2\).  For \(\Delta\ne0\), rationalizing the root in \((0,\alpha)\) gives
+\[
+z_c=\frac{2\alpha C}{2C+\alpha\Delta+\sqrt{4C^2+\alpha^2\Delta^2}},
+\]
+which is the formula in \(\mathrm{def:oracle-threshold}\).  Since \(F_\mu\) increases and \(F_\pi\) decreases, their maximum decreases up to the crossing and increases after it.  On \(I=[\ell,A]\), whose nonemptiness follows from \(A+B\ge\alpha\), the constrained minimizer is therefore
+\[
+z_* = \min\{A,\max\{\ell,z_c\}\}.
+\]
+The relevant denominators are positive at \(z_*\).  Indeed, on \(I\), \(\alpha-z\le B\).  If \(\alpha>B\), then \(D_\pi(z)\ge2(\alpha-B)>0\); if \(\alpha\le B\), its only possible zero is the singular endpoint \(z=0,\alpha=B\), which is not the minimizer.  Similarly, if \(\alpha>1\), then \(D_\mu(z)\ge2(\alpha-1)>0\); if \(\alpha\le1\), its only possible zero is the singular endpoint \(z=A=\alpha\), which is not the minimizer.  Evaluating at the clamped minimizer yields \(F_\mu(\ell)\) when \(z_c<\ell\), the common value at \(z_c\) when \(z_c\in I\), and \(F_\pi(A)\) when \(z_c>A\).  These are exactly the three displayed formulas for \(g\), and adjacent expressions agree when the crossing meets an endpoint.  Finally, evaluating the crossing equation at \(\alpha/2\) shows that \(z_c<\alpha/2\), \(z_c=\alpha/2\), or \(z_c>\alpha/2\) according as \(A<B\), \(A=B\), or \(A>B\).  The rationalized formula is continuous at \(A=B\).
+\end{proof}
+
+\begin{lemma}[lem:partial-mean-holder-transfer]\label{lem:partial-mean-holder-transfer}
+For every \(P\in\mathcal P(\alpha,\beta,s,d,M_Y,L,c,t_0)\), the partial-mean curve \(a\mapsto\theta_P(a)=\int\mu_P(a,x)p_X(x)\,dx\) belongs to the univariate Hölder seminorm ball of order \(\alpha\), with seminorm radius bounded by a constant depending only on the convention and \(L\). More explicitly, every required positive-order derivative \(\theta_P^{(j)}\), \(1\le j\le\lfloor\alpha\rfloor\), and the terminal Hölder modulus or Taylor remainder obey the corresponding bound; separately, \(\sup_{a\in[0,1]}\lvert\theta_P(a)\rvert\le M_Y\).
+\end{lemma}
+\begin{proof}
+Let \(P\in\mathcal P(\alpha,\beta,s,d,M_Y,L,c,t_0)\), and let \(m=\lfloor\alpha\rfloor\). By Definition~\texttt{def:holder-class}, uniformly in \(x\), the section \(a\mapsto\mu_P(a,x)\) has Hölder seminorm of order \(\alpha\) at most \(L\), up to the fixed constants in the stated convention. In particular, every required positive-order derivative \(\partial_a^j\mu_P(a,x)\), \(1\le j\le m\), is bounded in absolute value by \(C_{\mathrm H}L\). No bound on \(\mu_P\) by \(L\) is asserted or needed. Separately, the regression-version assumption gives \(\lvert\mu_P(a,x)\rvert\le M_Y\).
+
+The required derivatives are measurable: each \(\partial_a^j\mu_P\) is a pointwise limit of measurable difference quotients of the jointly Borel function \(\partial_a^{j-1}\mu_P\), starting from the jointly Borel function \(\mu_P\). We next show that differentiation commutes with integration. For \(1\le j\le m\), suppose inductively that
+\[
+\theta_P^{(j-1)}(a)=\int\partial_a^{j-1}\mu_P(a,x)p_X(x)\,dx.
+\]
+For every sufficiently small nonzero \(r\) such that \(a+r\in[0,1]\), the mean-value theorem and the positive-order derivative bound yield
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \left\lvert
+\frac{\partial_a^{j-1}\mu_P(a+r,x)-\partial_a^{j-1}\mu_P(a,x)}{r}
+\right\rvert
+\le C_{\mathrm H}L.\)}}
+\]
+The quotient converges pointwise in \(x\) to \(\partial_a^j\mu_P(a,x)\). Because \(p_X(x)\,dx=P_X(dx)\) is a probability measure, dominated convergence gives
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \theta_P^{(j)}(a)=\int\partial_a^j\mu_P(a,x)p_X(x)\,dx,
+\qquad
+\sup_{a\in[0,1]}\lvert\theta_P^{(j)}(a)\rvert\le C_{\mathrm H}L.\)}}
+\]
+At \(a=0\) or \(a=1\), the same argument uses the appropriate one-sided quotient. The induction begins with the defining identity for \(\theta_P\). Dominated convergence also transfers continuity of each required derivative.
+
+It remains to transfer the terminal Hölder condition. If \(\alpha\notin\mathbb N\), write \(\gamma=\alpha-m\in(0,1)\). The sectionwise terminal modulus and the derivative identity just proved imply, for all \(a,a'\in[0,1]\),
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \begin{aligned}
+\left\lvert\theta_P^{(m)}(a)-\theta_P^{(m)}(a')\right\rvert
+&\le \int\left\lvert\partial_a^m\mu_P(a,x)-\partial_a^m\mu_P(a',x)\right\rvert p_X(x)\,dx\\
+&\le C_{\mathrm H}L\lvert a-a'\rvert^{\gamma}.
+\end{aligned}\)}}
+\]
+This display also covers \(0<\alpha<1\), when \(m=0\) and \(\theta_P^{(0)}=\theta_P\). Equivalently, under a convention phrased through Taylor remainders, integration of the sectionwise remainder gives the same remainder inequality for \(\theta_P\), since integration is linear and \(P_X\) has total mass one. If \(\alpha\in\mathbb N\), the convention's terminal bounded-derivative requirement is exactly the positive-order bound already transferred above.
+
+Thus every positive-order derivative seminorm and the terminal Hölder modulus or Taylor-remainder seminorm required at order \(\alpha\) is bounded by \(C_{\mathrm H}L\). Hence \(a\mapsto\theta_P(a)\) lies in the univariate Hölder seminorm ball of order \(\alpha\) with radius depending only on \(L\) and the fixed convention. Finally,
+\[
+\lvert\theta_P(a)\rvert
+\le\int\lvert\mu_P(a,x)\rvert p_X(x)\,dx
+\le M_Y,
+\]
+so function values are controlled separately by the outcome envelope, exactly as required by Definition~\texttt{def:holder-class}.
+\end{proof}
+
+\begin{lemma}[lem:prescribed-low-s-projection-rank-obstruction]\label{lem:prescribed-low-s-projection-rank-obstruction}
+Under the proposed low-covariate-smoothness tuning
+\[
+h\asymp n^{-4s/\{\alpha(4s+d)+4s\}},
+\qquad
+k\asymp(nh)^{2d/(4s+d)},
+\]
+one has
+\[
+k\asymp n^{2\alpha d/\{\alpha(4s+d)+4s\}},
+\]
+so \(k/n\to\infty\) exactly when \(s<\alpha d/\{4(\alpha+1)\}\). In particular, at \((\alpha,d,s)=(1,1,1/10)\),
+\[
+h\asymp n^{-2/9},\qquad nh\asymp n^{7/9},\qquad k\asymp n^{10/9}>n.
+\]
+Consequently, on the strict subregion \(s<\alpha d/\{4(\alpha+1)\}\), every full-rank empirical Gram-inverse construction using \(n\) covariate observations is singular for all sufficiently large \(n\). This counting argument does not exclude pseudoinverse, ridge, rare-cell, or otherwise stabilized projections. On the surviving band \(\alpha d/\{4(\alpha+1)\}\le s<d/4\), exponent counting does not force singularity; throughout its strict interior one has \(k=o(n)\), and at \((\alpha,d,s)=(1,1,1/5)\), \(k\asymp n^{10/13}=o(n)\).
+\end{lemma}
+\begin{proof}
+Put
+\[
+D=\alpha(4s+d)+4s>0.
+\]
+The prescribed bandwidth obeys \(h\asymp n^{-4s/D}\). Therefore
+\[
+nh\asymp n^{1-4s/D}
+=n^{\{D-4s\}/D}
+=n^{\alpha(4s+d)/D}.
+\]
+Substitution into the prescribed formula for \(k\) gives
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \begin{aligned}
+k
+&\asymp(nh)^{2d/(4s+d)}\\
+&\asymp
+\left(n^{\alpha(4s+d)/D}\right)^{2d/(4s+d)}
+=n^{2\alpha d/D}
+=n^{2\alpha d/\{\alpha(4s+d)+4s\}}.
+\end{aligned}\)}}
+\]
+It follows that
+\[
+\frac{k}{n}\asymp n^{\,2\alpha d/D-1}.
+\]
+Because \(D>0\), the exponent is positive exactly when
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \begin{aligned}
+2\alpha d>D
+&\quad\Longleftrightarrow\quad
+2\alpha d>\alpha(4s+d)+4s\\
+&\quad\Longleftrightarrow\quad
+\alpha d>4s(\alpha+1)\\
+&\quad\Longleftrightarrow\quad
+s<\frac{\alpha d}{4(\alpha+1)}.
+\end{aligned}\)}}
+\]
+Thus \(k/n\to\infty\) exactly in this strict subregion. At equality, \(k/n\asymp1\), so the exponent count alone does not force \(k>n\); when \(s>\alpha d/\{4(\alpha+1)\}\), one has \(k/n\to0\).
+
+For \((\alpha,d,s)=(1,1,1/10)\),
+\[
+D=1\left(\frac4{10}+1\right)+\frac4{10}=\frac95.
+\]
+Hence
+\[
+\frac{4s}{D}=\frac29,
+\qquad
+1-\frac{4s}{D}=\frac79,
+\qquad
+\frac{2\alpha d}{D}=\frac{10}{9},
+\]
+and therefore
+\[
+h\asymp n^{-2/9},
+\qquad
+nh\asymp n^{7/9},
+\qquad
+k\asymp n^{10/9}.
+\]
+In particular, \(k/n\asymp n^{1/9}\to\infty\), so \(k>n\) for all sufficiently large \(n\).
+
+An empirical Gram matrix for a \(k\)-dimensional feature vector \(\Phi(X_i)\), formed from \(N\le n\) observations, has the form
+\[
+\widehat G=\frac1N\sum_{i=1}^N\Phi(X_i)\Phi(X_i)^\top.
+\]
+Each summand has rank at most one. Rank subadditivity gives
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \operatorname{rank}(\widehat G)
+\le\sum_{i=1}^N
+\operatorname{rank}\!\left(\Phi(X_i)\Phi(X_i)^\top\right)
+\le N\le n.\)}}
+\]
+Whenever \(k>n\), the \(k\times k\) matrix \(\widehat G\) has nullity at least \(k-n>0\) and is singular. This proves impossibility of the prescribed full-rank empirical Gram inverse on the strict subregion \(s<\alpha d/\{4(\alpha+1)\}\); it says nothing against pseudoinverse, ridge, rare-cell, or other stabilized constructions.
+
+The complementary rank arithmetic is nonvacuous. At \((\alpha,d,s)=(1,1,1/5)\),
+\[
+D=1\left(\frac45+1\right)+\frac45=\frac{13}{5},
+\qquad
+k\asymp n^{2/(13/5)}=n^{10/13}=o(n).
+\]
+Since \(1/8<1/5<1/4\), this point lies strictly inside the surviving band between the counting threshold and \(d/4\). More generally, throughout \(\alpha d/\{4(\alpha+1)\}<s<d/4\), one has \(k=o(n)\), while at the left endpoint exponent counting alone is inconclusive. Thus the rank calculation supplies no general obstruction on that band.
+\end{proof}
+
+\begin{lemma}[lem:takatsu-westling-pointwise-comparator]\label{lem:takatsu-westling-pointwise-comparator}
+Takatsu and Westling's pointwise theorem concerns the fixed-dose partial mean \(\theta_0(a_0)=\int\mathbb E(Y\mid A=a_0,W=w)\,dQ_0(w)\). Under their Conditions A1--A5 it gives the expansion
+\[
+\theta_n^{\mathrm{DB}}(a_0)-\theta_0(a_0)=\mathbb P_n\phi^*_{\infty,a_0}+o_P\!\left((nh)^{-1/2}+h^2\right),
+\]
+together with
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle (nh)^{1/2}\mathbb P_n\phi^*_{\infty,a_0}\ \rightsquigarrow\ N\!\left(0,V_{K,\tau}f_0(a_0)^{-1}\sigma_0^2(a_0)\right).\)}}\par\noindent}}
+\]
+When \(nh^5=O(1)\), their debiased local-linear estimator itself has the corresponding centered \(\sqrt{nh}\)-Gaussian limit. Their Condition A5 assumes that \(\theta_0\) is twice continuously differentiable and that the marginal treatment density is positive and Lipschitz near \(a_0\), while Condition A4 imposes high-level nuisance convergence rates. This is a pointwise limit-law result, not a minimax lower bound over nested conditional-treatment-density Hölder classes.
+\end{lemma}
+
+\begin{proposition}[prop:causal-identification-at-t0]\label{prop:causal-identification-at-t0}
+Let \(P\in\mathcal P(\alpha,\beta,s,d,M_Y,L,c,t_0)\), and impose consistency, Assumption~\texttt{ass:potential-outcome-path-typing}, and process-level conditional exchangeability. Suppose additionally that there is a jointly Borel function \(m_P:[0,1]\times[0,1]^d\to[-M_Y,M_Y]\) such that \(m_P(a,\cdot)\) is a version of \(\mathbb E[Y(a)\mid X=\cdot]\) for every \(a\), and \(a\mapsto m_P(a,x)\) is continuous at \(t_0\) for \(P_X\)-almost every \(x\). Then the causal assumptions imply
+\[
+\mu_P(a,x)=m_P(a,x)
+\]
+for \(da\,dP_X(x)\)-almost every \((a,x)\), and the observed-data partial mean is causally identified at the fixed dose:
+\[
+\theta_P(t_0)=\int\mu_P(t_0,x)p_X(x)\,dx=\mathbb E[Y(t_0)].
+\]
+Without the continuity-at-\(t_0\) condition, consistency, measurable path typing, and process-level conditional exchangeability alone do not identify the causal mean at the null event \(A=t_0\).
+\end{proposition}
+\begin{proof}
+Let \((\mathsf Y,\mathcal Y)\), \(e\), and \(\mathbf Y\) be the objects furnished by Assumption~\texttt{ass:potential-outcome-path-typing}. Because \(\mathsf Y\) is standard Borel, fix a regular conditional-law kernel \(K_x=\mathcal L(\mathbf Y\mid X=x)\), and define
+\[
+\overline m_P(a,x)=\int_{\mathsf Y}e(y,a)K_x(dy).
+\]
+This function is jointly Borel measurable. Indeed, the collection of bounded jointly Borel functions \(f(y,a)\) for which \((a,x)\mapsto\int f(y,a)K_x(dy)\) is Borel contains the indicators of measurable rectangles, because their integrals have the form \(\mathbf 1_C(a)K_x(B)\), and is closed under bounded monotone limits; the monotone-class argument therefore applies to \(e\). Moreover, for every fixed \(a\), the function \(\overline m_P(a,\cdot)\) is a version of \(\mathbb E[Y(a)\mid X=\cdot]\), since \(Y(a)=e(\mathbf Y,a)\) pointwise.
+
+Process-level conditional exchangeability says that the conditional law of \(\mathbf Y\) given \((A,X)\) is \(K_X\). Applying this equality of conditional laws to the bounded jointly measurable evaluation map, first to measurable simple functions and then by bounded convergence, gives
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathbb E[e(\mathbf Y,A)\mid A,X]
+=
+\int_{\mathsf Y}e(y,A)K_X(dy)
+=
+\overline m_P(A,X)
+\quad\text{almost surely}.\)}}
+\]
+The path-typing identity gives \(Y(A)=e(\mathbf Y,A)\) pointwise, and consistency gives \(Y=Y(A)\) almost surely. Hence
+\[
+\mathbb E[Y\mid A,X]=\overline m_P(A,X)
+\quad\text{almost surely}.
+\]
+Since \(\mu_P(A,X)\) is another version of the same conditional mean,
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle 0
+=
+\mathbb E_P\!\left[\left|\mu_P(A,X)-\overline m_P(A,X)\right|\right]
+=
+\int_{[0,1]^d}\int_0^1
+\left|\mu_P(a,x)-\overline m_P(a,x)\right|\pi_P(a\mid x)\,da\,dP_X(x).\)}}
+\]
+Uniform positivity yields
+\[
+0
+\ge
+c\int_{[0,1]^d}\int_0^1
+\left|\mu_P(a,x)-\overline m_P(a,x)\right|\,da\,dP_X(x),
+\]
+so
+\[
+\mu_P(a,x)=\overline m_P(a,x)
+\quad\text{for }da\,dP_X(x)\text{-almost every }(a,x). \tag{1}
+\]
+
+For each fixed \(a\), both \(m_P(a,\cdot)\) and \(\overline m_P(a,\cdot)\) are versions of \(\mathbb E[Y(a)\mid X=\cdot]\). Thus
+\[
+\int_{[0,1]^d}\left|m_P(a,x)-\overline m_P(a,x)\right|\,dP_X(x)=0
+\]
+for every \(a\). Joint measurability and Tonelli's theorem then imply
+\[
+m_P(a,x)=\overline m_P(a,x)
+\quad\text{for }da\,dP_X(x)\text{-almost every }(a,x). \tag{2}
+\]
+Combining \((1)\) and \((2)\) proves
+\[
+\mu_P(a,x)=m_P(a,x)
+\quad\text{for }da\,dP_X(x)\text{-almost every }(a,x).
+\]
+
+By Fubini's theorem, there is a set \(E\subseteq[0,1]^d\) with \(P_X(E)=1\) such that, for every \(x\in E\), the last equality holds for Lebesgue-almost every \(a\), the section \(a\mapsto m_P(a,x)\) is continuous at \(t_0\), and the section \(a\mapsto\mu_P(a,x)\) is continuous at \(t_0\) by the treatment-direction H\"older condition. Fix \(x\in E\). Because \(t_0\in(0,1)\) and a full-Lebesgue-measure subset of \([0,1]\) meets every neighbourhood of \(t_0\), there is a sequence \(a_k\to t_0\) along which \(\mu_P(a_k,x)=m_P(a_k,x)\). Continuity of both sections at \(t_0\) gives
+\[
+\mu_P(t_0,x)=m_P(t_0,x).
+\]
+This equality holds for \(P_X\)-almost every \(x\). Since \(p_X\) is a density of \(P_X\), and since \(m_P(t_0,\cdot)\) is a version of \(\mathbb E[Y(t_0)\mid X=\cdot]\), boundedness and the tower property give
+\[
+\theta_P(t_0)
+=
+\int_{[0,1]^d}\mu_P(t_0,x)p_X(x)\,dx
+=
+\int_{[0,1]^d}m_P(t_0,x)\,dP_X(x)
+=
+\mathbb E[Y(t_0)].
+\]
+Proposition~\texttt{prop:estimand-version-invariant} ensures that the observed-data expression is independent of the admissible designated versions.
+
+It remains to prove the negative assertion. Take the observed law from Definition~\texttt{def:nonempty-witness}: \(X\) is uniform on \([0,1]^d\), \(A\mid X\) is uniform on \([0,1]\), and \(Y=0\), with \(p_X=1\), \(\pi_P=1\), and \(\mu_P=0\). Proposition~\texttt{prop:class-nonempty} places this observed law in every admissible class. Fix \(0<\eta\le M_Y\), let \(\mathsf Y=\{y_0,y_1\}\) with its discrete sigma-field, and define the jointly Borel evaluation map
+\[
+e(y_0,a)=0,
+\qquad
+e(y_1,a)=\eta\mathbf 1\{a=t_0\}.
+\]
+In the first causal completion let \(\mathbf Y=y_0\) surely, and in the second let \(\mathbf Y=y_1\) surely. Both completions satisfy measurable path typing. In each completion \(\mathbf Y\) is deterministic and therefore conditionally independent of \(A\) given \(X\). In the second completion, \(P(A=t_0)=0\), so \(Y(A)=0=Y\) almost surely; consistency also holds in the first completion. Consequently the two completions induce exactly the same observed law and satisfy consistency, path typing, and process-level conditional exchangeability, but
+\[
+\mathbb E[Y^{(0)}(t_0)]=0,
+\qquad
+\mathbb E[Y^{(1)}(t_0)]=\eta.
+\]
+The conditional-mean version in the second completion is \(m_P(a,x)=\eta\mathbf 1\{a=t_0\}\), which is discontinuous at \(t_0\). Thus, when continuity at the singleton dose is omitted, the remaining three causal conditions do not identify \(\mathbb E[Y(t_0)]\).
+\end{proof}
+
+\begin{lemma}[lem:beta-class-one-sided-monotonicity]\label{lem:beta-class-one-sided-monotonicity}
+For \(0<\beta<\beta'<\infty\),
+\[
+\mathcal P(\alpha,\beta',s,d,M_Y,L,c,t_0)\subseteq\mathcal P(\alpha,\beta,s,d,M_Y,L,c,t_0),
+\]
+and consequently
+\[
+\mathcal M_n(\alpha,\beta',s,d,M_Y,L,c,t_0)\le\mathcal M_n(\alpha,\beta,s,d,M_Y,L,c,t_0).
+\]
+\end{lemma}
+\begin{proof}
+All defining requirements of the two classes agree except for treatment-direction smoothness of \(\pi_P\). Under the seminorm convention in Definition~\texttt{def:holder-class}, a univariate section with H\"older order \(\beta'>\beta\) and radius \(L\) also has order \(\beta\) and radius \(L\) on an interval of diameter one. Indeed, if the terminal orders lie between the same consecutive integers, this follows from \(\lvert a-a'\rvert^{\beta'-k}\le\lvert a-a'\rvert^{\beta-k}\). If an integer is crossed, the bounded next derivative and the fundamental theorem of calculus give the required lower-order modulus; iteration handles multiple crossed integers. The required lower positive derivatives already have supremum at most \(L\). Hence every member of the \(\beta'\)-class is a member of the \(\beta\)-class with the same constants. Taking the supremum of the risk over a subset cannot increase it, and taking the common infimum over \(\mathfrak T_n\) proves the minimax inequality.
+\end{proof}
+
+\begin{lemma}[lem:all-beta-oracle-lower-floor]\label{lem:all-beta-oracle-lower-floor}
+For every admissible \(\alpha,\beta,s,d,M_Y,L,c,t_0\), there is a constant \(C_{\mathrm{low}}>0\), independent of \(n\), such that for every \(n\ge1\),
+\[
+\mathcal M_n(\alpha,\beta,s,d,M_Y,L,c,t_0)\ge C_{\mathrm{low}}r_n(\alpha).
+\]
+The two least-favorable laws have \(p_X(x)=1\) and \(\pi_P(a\mid x)=1\), so the lower floor holds for every finite treatment-density smoothness order.
+\end{lemma}
+\begin{proof}
+Choose a nonzero function \(\psi\in C_c^\infty((-1,1))\) with \(\psi(0)=1\), and choose \(\kappa>0\) so small that \([t_0-\kappa,t_0+\kappa]\subset(0,1)\). Put \(h_n=\kappa n^{-1/(2\alpha+1)}\). Let \(X\) be uniform on \([0,1]^d\), let \(A\) be uniform on \([0,1]\) independently of \(X\), and, conditionally on \((A=a,X=x)\), let \(Y\in\{-M_Y,M_Y\}\) have mean
+\[
+\mu_\omega(a,x)=\omega\,q h_n^\alpha\psi\!\left(\frac{a-t_0}{h_n}\right),\qquad \omega\in\{-1,1\},
+\]
+where \(q>0\) is a fixed sufficiently small constant. The designated densities are \(p_X=1\) and \(\pi_\omega=1\). Scaled-bump calculus shows that the treatment-direction H\"older seminorm of \(\mu_\omega\) is at most \(C_\psi q\), while its \(t_0\)-slice is constant in \(x\). Taking \(q\le L/C_\psi\) and \(q\kappa^\alpha\le M_Y/2\) therefore puts both laws in \(\mathcal P(\alpha,\beta,s,d,M_Y,L,c,t_0)\) for every finite \(\beta,s>0\) and every \(0<c\le1\). Their targets satisfy
+\[
+\theta_+(t_0)-\theta_-(t_0)=2q h_n^\alpha.
+\]
+Writing \(u_\omega(a)=\mu_\omega(a,x)/M_Y\), the conditional law of \(Y/M_Y\) is Rademacher with mean \(u_\omega(a)\). Because \(\lvert u_\omega\rvert\le1/2\), the elementary Bernoulli divergence inequality gives
+\[
+\operatorname{KL}(P_+,P_-)
+\le C\int_0^1\{u_+(a)-u_-(a)\}^2\,da
+\le C' q^2 h_n^{2\alpha+1}.
+\]
+Assumption~\texttt{ass:iid} and additivity of relative entropy yield
+\[
+\operatorname{KL}(P_+^n,P_-^n)\le C'q^2\kappa^{2\alpha+1}.
+\]
+Decrease \(q\) if necessary so that the last display is at most \(1/8\). For densities \(p,q\), the log-sum inequality on a measurable set and its complement, followed by the elementary binary bound \(u\log(u/v)+(1-u)\log\{(1-u)/(1-v)\}\ge2(u-v)^2\), gives \(\operatorname{KL}(p,q)\ge2\operatorname{TV}(p,q)^2\); hence \(\operatorname{TV}(P_+^n,P_-^n)\le1/4\). For any estimator \(T\), the usual two-point testing reduction, obtained by testing according to which of the two target values is closer to \(T\), gives
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \max_{\omega\in\{-1,1\}}\mathbb E_\omega[(T-\theta_\omega(t_0))^2]
+\ge \frac{\{2q h_n^\alpha\}^2}{8}\{1-\operatorname{TV}(P_+^n,P_-^n)\}
+\ge C_{\mathrm{low}}n^{-2\alpha/(2\alpha+1)}.\)}}
+\]
+Taking the infimum over \(T\in\mathfrak T_n\) proves the claim. The construction has \(p_X=\pi_\omega=1\), so its membership and the constant do not use the numerical value of \(\beta\).
+\end{proof}
+
+\begin{lemma}[lem:extreme-low-s-fuzzy-lower]\label{lem:extreme-low-s-fuzzy-lower}
+Fix \(0<c<1\), and put \(B_*=\alpha\vee\beta\) and
+\[
+r_{\mathrm f}(\alpha,\beta,s,d)
+=
+\frac{8}{4+2/B_*+d/s}.
+\]
+For every admissible finite \(\alpha,\beta,s,d,M_Y,L,t_0\), there are constants \(C_{\mathrm f}>0\) and \(n_0\in\mathbb N\), independent of \(n\), such that, for every \(n\ge n_0\),
+\[
+\mathcal M_n(\alpha,\beta,s,d,M_Y,L,c,t_0)
+\ge C_{\mathrm f}n^{-r_{\mathrm f}(\alpha,\beta,s,d)}.
+\]
+Together with Lemma~\texttt{lem:all-beta-oracle-lower-floor}, this gives
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathcal M_n(\alpha,\beta,s,d,M_Y,L,c,t_0)
+\ge
+C n^{-\min\{2\alpha/(2\alpha+1),r_{\mathrm f}(\alpha,\beta,s,d)\}}.\)}}
+\]
+The new fuzzy lower bound is strictly stronger than the oracle floor exactly when
+\[
+\frac ds>4+\frac4\alpha-\frac{2}{\alpha\vee\beta}.
+\]
+\end{lemma}
+\begin{proof}
+We construct two fuzzy hypotheses inside the class with the H\"older-seminorm convention of Definition~\texttt{def:holder-class}. Choose a nonzero function \(\varphi\in C_c^\infty((0,1)^d)\), with \(\lVert\varphi\rVert_\infty\le1\), that is antisymmetric under reflection of its first coordinate about \(1/2\). Then
+\[
+\int\varphi(u)\,du=0,\qquad \int\varphi(u)^{2r+1}\,du=0\quad(r\ge0),\qquad c_\varphi:=\int\varphi(u)^2\,du>0.
+\]
+Choose \(\eta,\zeta\in C_c^\infty((-1,1))\) such that \(\eta(0)=\zeta(0)=1\), \(\operatorname{supp}(\eta)\subset(-1/4,1/4)\), \(\zeta=1\) on \([-1/2,1/2]\), and \(\int\zeta(u)\,du=0\).
+
+Put \(B_*=\alpha\vee\beta\),
+\[
+D_*=4B_*+2+\frac{B_*d}{s},\qquad w=\kappa n^{-2/D_*},\qquad \epsilon=w^{B_*},
+\]
+where the fixed constant \(\kappa>0\) will be chosen below. Let \(m\asymp\epsilon^{-1/s}\) be an integer, put \(k=m^d\), and partition \([0,1]^d\) into \(k\) regular cubes \(C_1,\ldots,C_k\) of side \(m^{-1}\). If \(r_j\) is the lower grid corner of \(C_j\), define \(\varphi_j(x)=\varphi(m(x-r_j))\) on \(C_j\) and zero elsewhere. After a fixed contraction of the support of \(\varphi\), these functions have disjoint supports separated from the cell boundaries. They satisfy
+\[
+\int\varphi_j(x)\,dx=0,\qquad \int\varphi_j(x)^2\,dx=\frac{c_\varphi}{k},
+\]
+and scaled-bump calculus gives, uniformly over signs \(\sigma_j\in\{-1,1\}\),
+\[
+\left[\sum_{j=1}^k\sigma_j\varphi_j\right]_{C^s}\le C m^s,
+\]
+where \([\cdot]_{C^s}\) denotes the H\"older seminorm fixed in Definition~\texttt{def:holder-class}. Set \(\eta_w(a)=\eta((a-t_0)/w)\) and \(\zeta_w(a)=\zeta((a-t_0)/w)\). For all sufficiently large \(n\), their supports lie inside \((0,1)\), \(\int\zeta_w(a)\,da=0\), and \(\zeta_w=1\) on the support of \(\eta_w\).
+
+For sign vectors \(\lambda,\nu\in\{-1,1\}^k\), write \(S_\lambda=\sum_j\lambda_j\varphi_j\) and \(S_\nu=\sum_j\nu_j\varphi_j\). Choose fixed positive constants \(a_\mu,a_\pi\), sufficiently small as specified below, and define
+\[
+p_X(x)=1,\qquad \pi_\nu(a\mid x)=1+a_\pi\epsilon S_\nu(x)\zeta_w(a),
+\]
+\[
+\mu_{\lambda,\nu}(a,x)=\frac{M_Ya_\mu\epsilon S_\lambda(x)\eta_w(a)}{\pi_\nu(a\mid x)}.
+\]
+Conditionally on \((A=a,X=x)\), let \(Y\in\{-M_Y,M_Y\}\) have mean \(\mu_{\lambda,\nu}(a,x)\). Since \(\int\zeta_w=0\), \(\pi_\nu(\cdot\mid x)\) integrates to one. Its treatment-direction H\"older seminorm satisfies
+\[
+[\pi_\nu(\cdot\mid x)-1]_{C^\beta}\le Ca_\pi\epsilon w^{-\beta}=Ca_\pi w^{B_*-\beta}\le Ca_\pi.
+\]
+On the support of \(\eta_w\), one has \(\zeta_w=1\), and the denominator is bounded away from zero under the positivity choice below. The product and quotient rules for scaled smooth bumps give
+\[
+[\mu_{\lambda,\nu}(\cdot,x)]_{C^\alpha}\le Ca_\mu\epsilon w^{-\alpha}=Ca_\mu w^{B_*-\alpha}\le Ca_\mu.
+\]
+At \(a=t_0\), the same calculus and \(\epsilon m^s\asymp1\) give
+\[
+[\pi_\nu(t_0\mid\cdot)-1]_{C^s}\le Ca_\pi,\qquad [\mu_{\lambda,\nu}(t_0,\cdot)]_{C^s}\le CM_Ya_\mu.
+\]
+Choose \(a_\pi>0\) so that all H\"older seminorm bounds involving \(\pi_\nu\) are at most \(L\) and, separately, so that
+\[
+a_\pi\epsilon\lVert S_\nu\zeta_w\rVert_\infty\le\min\{1-c,1/c-1\},
+\]
+which ensures \(c\le\pi_\nu\le1/c\). Choose \(a_\mu>0\) so that all H\"older seminorm bounds involving \(\mu_{\lambda,\nu}\) are at most \(L\) and, separately, so that \(\lvert\mu_{\lambda,\nu}\rvert\le M_Y\). These simultaneous smallness conditions are compatible because \(0<c<1\), \(L>0\), and \(M_Y>0\); no lower bound such as \(L\ge1\) is needed. All designated functions are Borel. Thus every fixed-sign law belongs to \(\mathcal P(\alpha,\beta,s,d,M_Y,L,c,t_0)\).
+
+At \(t_0\), reflection symmetry gives, cell by cell,
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \int_{C_j}\frac{\lambda_j\varphi_j(x)}{1+a_\pi\epsilon\nu_j\varphi_j(x)}\,dx=-\frac{a_\pi\epsilon\lambda_j\nu_j}{k}C_\varphi(\epsilon),\)}}\par\noindent}}
+\]
+where
+\[
+C_\varphi(\epsilon)=\int\frac{\varphi(u)^2}{1-a_\pi^2\epsilon^2\varphi(u)^2}\,du
+\]
+is bounded above and away from zero. Consequently
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \theta_{\lambda,\nu}(t_0)=-D_n\frac1k\sum_{j=1}^k\lambda_j\nu_j,\qquad D_n=M_Ya_\mu a_\pi\epsilon^2C_\varphi(\epsilon)\asymp\epsilon^2.\)}}\par\noindent}}
+\]
+Let \(\Pi_1\) choose \(\lambda\) uniformly and set \(\nu=\lambda\). Under \(\Pi_1\), the target equals \(-D_n\) deterministically. Let \(\Pi_0\) choose \(\lambda\) and \(\nu\) independently and uniformly. Lemma~\texttt{lem:bounded-sum-concentration}, with \(R=1\), \(V=k\), and \(t=k/4\), gives
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \Pi_0\{\lvert\theta_{\lambda,\nu}(t_0)\rvert>D_n/4\}\le2\exp\left\{-\frac{(k/4)^2}{2(k+k/12)}\right\}=2e^{-3k/104}.\)}}\par\noindent}}
+\]
+
+Let \(R\) be the law under which \(X\) and \(A\) are independent uniforms and \(Y\) is an independent symmetric random variable on \(\{-M_Y,M_Y\}\). The one-observation density of the fixed-sign law relative to \(R\) is exactly
+\[
+f_{\lambda,\nu}(y,a,x)=1+a_\pi\epsilon S_\nu(x)\zeta_w(a)+a_\mu\epsilon\frac{y}{M_Y}S_\lambda(x)\eta_w(a).
+\]
+Define \(u_j(z)=a_\pi\epsilon\varphi_j(x)\zeta_w(a)\) and \(v_j(z)=a_\mu\epsilon(y/M_Y)\varphi_j(x)\eta_w(a)\). Orthogonality across cells and \(\mathbb E_RY=0\) give
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle U:=\lVert u_j\rVert_{L_2(R)}^2=C_u\frac{\epsilon^2w}{k},\qquad V:=\lVert v_j\rVert_{L_2(R)}^2=C_v\frac{\epsilon^2w}{k},\)}}\par\noindent}}
+\]
+and
+\[
+\int f_{\lambda,\nu}f_{\lambda',\nu'}\,dR=1+U\sum_j\nu_j\nu_j'+V\sum_j\lambda_j\lambda_j'.
+\]
+Let \(L_1,L_0\) be the \(n\)-sample mixture likelihoods under \(\Pi_1,\Pi_0\), relative to \(R^n\). Averaging over the signs yields
+\[
+\mathbb E_RL_1^2=\mathbb E\left[1+(U+V)\sum_{j=1}^k\xi_j\right]^n,
+\]
+whereas the two sign-product arrays for \(L_0^2\) are independent. The same independence in the cross moment gives \(\mathbb E_RL_1L_0=\mathbb E_RL_0^2\), and hence
+\[
+\mathbb E_R(L_1-L_0)^2\le\mathbb E_RL_1^2-1.
+\]
+Using \(1+x\le e^x\) and \(\cosh(t)\le e^{t^2/2}\),
+\[
+\mathbb E_RL_1^2\le\cosh\{n(U+V)\}^k\le\exp\left\{C\frac{n^2\epsilon^4w^2}{k}\right\}.
+\]
+Since \(k\asymp\epsilon^{-d/s}=w^{-B_*d/s}\), the exponent is of order
+\[
+n^2w^{4B_*+2+B_*d/s}=\kappa^{D_*}.
+\]
+Choose \(\kappa\) so small that the preceding exponential is at most \(5/4\). Then
+\[
+\operatorname{TV}(\overline P_1^n,\overline P_0^n)\le\frac12\{\mathbb E_R(L_1-L_0)^2\}^{1/2}\le\frac14.
+\]
+For an arbitrary estimator \(T\), use the test \(\psi_T=\mathbf1\{T<-D_n/2\}\). Under \(\Pi_1\), \(\psi_T=0\) implies squared error at least \(D_n^2/4\). Under \(\Pi_0\), on \(\lvert\theta_{\lambda,\nu}(t_0)\rvert\le D_n/4\), \(\psi_T=1\) implies squared error at least \(D_n^2/16\). Therefore the larger prior-averaged risk is at least
+\[
+\frac{D_n^2}{32}\left[1-\operatorname{TV}(\overline P_1^n,\overline P_0^n)-2e^{-3k/104}\right].
+\]
+Because \(k\to\infty\), the bracket is bounded below by a positive constant for all large \(n\). Taking the infimum over \(T\in\mathfrak T_n\) proves a lower bound of order \(\epsilon^4\). Finally,
+\[
+\epsilon^4=w^{4B_*}\asymp n^{-8B_*/(4B_*+2+B_*d/s)}=n^{-8/(4+2/B_*+d/s)}.
+\]
+Combining with Lemma~\texttt{lem:all-beta-oracle-lower-floor} gives the minimum of the two exponents. Direct cross-multiplication shows that \(r_{\mathrm f}<2\alpha/(2\alpha+1)\) exactly when
+\[
+\frac ds>4+\frac4\alpha-\frac2{B_*}=4+\frac4\alpha-\frac2{\alpha\vee\beta}.
+\]
+This proves every assertion.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} A two-prior sign-mixture construction, with regression and treatment-density seminorm bounds verified separately from the outcome and positivity envelopes, yields the exponent \(8/\{4+2/(\alpha\vee\beta)+d/s\}\). \textit{Gap.} The fuzzy converse does not generally match the best achievable residual exponent. \textit{Consumer.} It strengthens the converse in the extreme-low-covariate-smoothness regime without imposing slack such as \(L>1\).
+
+\begin{lemma}[lem:oracle-region-tuning]\label{lem:oracle-region-tuning}
+If \((\alpha,\beta,s,d)\in\Omega\), then the bandwidths in Definition~\texttt{def:beta-free-handle} can be chosen deterministically so that the right side of Lemma~\texttt{lem:localized-polynomial-master-risk} is at most \(C r_n(\alpha)\).
+\end{lemma}
+\begin{proof}
+Put \(C_0=2\alpha+1\), \(A_0=\alpha\wedge1\), \(B_0=\beta\wedge1\), \(S_0=s\wedge1\), and take \(h\asymp n^{-1/C_0}\). Membership in \(\Omega\) implies \(A_0+B_0\ge\alpha\) and \(S_0\ge g(\alpha,\beta,d)\). By Lemma~\texttt{lem:separated-threshold-optimization}, there is \(z\in[(\alpha-B_0)_+,A_0]\) such that
+\[
+S_0\ge\frac{dz}{C_0-z/A_0-2z},\qquad S_0\ge\frac{d(\alpha-z)}{C_0-(\alpha-z)/B_0-2(\alpha-z)},
+\]
+with positive denominators. Choose
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle b_\mu\asymp h^{z/A_0},\quad \delta_\mu\asymp h^{z/S_0},\quad b_\pi\asymp h^{(\alpha-z)/B_0},\quad \delta_\pi\asymp h^{(\alpha-z)/S_0},\)}}\par\noindent}}
+\]
+using fixed sufficiently small constants when an exponent is zero. The first displayed threshold inequality is equivalent, after using \(n=h^{-C_0}\), to
+\[
+(nb_\mu\delta_\mu^d)^{-1/2}\lesssim h^z;
+\]
+the second is equivalently \((nb_\pi\delta_\pi^d)^{-1/2}\lesssim h^{\alpha-z}\). The structural interval for \(z\) also gives \(h^{A_0}\lesssim h^z\) and \(h^{B_0}\lesssim h^{\alpha-z}\). Therefore \(e_\mu\lesssim h^z\), \(e_\pi\lesssim h^{\alpha-z}\), and \((e_\mu e_\pi)^2\lesssim h^{2\alpha}\). Finally,
+\[
+h^{2\alpha}\asymp (nh)^{-1}\asymp n^{-2\alpha/(2\alpha+1)},
+\]
+and the bad-Gram exponential is smaller. Substitution into the master risk proves the claim.
+\end{proof}
+
+\begin{lemma}[lem:localized-polynomial-master-risk]\label{lem:localized-polynomial-master-risk}
+Put \(A_0=\alpha\wedge1\), \(B_0=\beta\wedge1\), and \(S_0=s\wedge1\). For the estimator in Definition~\texttt{def:beta-free-handle}, define
+\[
+e_\mu=h^{A_0}+b_\mu^{A_0}+\delta_\mu^{S_0}+(nb_\mu\delta_\mu^d)^{-1/2},
+\]
+\[
+e_\pi=h^{B_0}+b_\pi^{B_0}+\delta_\pi^{S_0}+(nb_\pi\delta_\pi^d)^{-1/2}.
+\]
+Whenever all bandwidths tend to zero, \(nh\to\infty\), and the slice bandwidths remain in the two-sided neighbourhood of \(t_0\), there is a constant \(C<\infty\), independent of \(n\) and \(P\), such that
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \sup_{P\in\mathcal P(\alpha,\beta,s,d,M_Y,L,c,t_0)}
+\mathbb E_P[(\widehat\theta_{h,b_\mu,\delta_\mu,b_\pi,\delta_\pi}-\theta_P(t_0))^2]
+\le C\left\{h^{2\alpha}+\frac1{nh}+(e_\mu e_\pi)^2+e^{-c_1nh}\right\}.\)}}
+\]
+\end{lemma}
+\begin{proof}
+Put \(A_0=\alpha\wedge1\), \(B_0=\beta\wedge1\), and \(S_0=s\wedge1\). We first establish the two pilot bounds. Write \(\mu_0(x)=\mu_P(t_0,x)\) and \(\pi_0(x)=\pi_P(t_0\mid x)\). For a regular grid cell \(B_j\), let \(p_j=P_X(B_j)\). Positivity implies that the probability of \(\{X\in B_j,\lvert A-t_0\rvert\le b\}\) is between constant multiples of \(bp_j\). Conditional on the cell count, the variance of a bounded cell average is at most a constant divided by that count. The elementary binomial inequalities
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathbb P\{N_j=0\}\le e^{-Cnbp_j},
+\qquad
+\mathbb E\left[\frac{\mathbf 1\{N_j>0\}}{N_j}\right]
+\le \frac{C}{nbp_j}\wedge1\)}}
+\]
+therefore imply
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \sum_jp_j\left\{\mathbb P(N_j=0)+\mathbb E\left[\frac{\mathbf 1\{N_j>0\}}{N_j}\right]\right\}
+\le \frac{C\delta^{-d}}{nb}.\)}}
+\]
+The treatment- and covariate-direction H\"older conditions bound the cell-averaging bias by \(C(b^{A_0}+\delta^{S_0})\) for the regression pilot and by \(C(b^{B_0}+\delta^{S_0})\) for the density pilot. Applying the preceding count calculation on the two independent folds, and using contraction of clipping because \(\pi_P\in[c,1/c]\subset[c/2,2/c]\), gives
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathbb E\lVert\widehat\mu_0-\mu_0\rVert_{L_2(P_X)}^2
+\le C\left\{b_\mu^{2A_0}+\delta_\mu^{2S_0}+(nb_\mu\delta_\mu^d)^{-1}\right\},\)}}
+\]
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathbb E\lVert\widehat\pi_0-\pi_0\rVert_{L_2(P_X)}^2
+\le C\left\{b_\pi^{2B_0}+\delta_\pi^{2S_0}+(nb_\pi\delta_\pi^d)^{-1}\right\}.\)}}
+\]
+No lower bound on any individual \(p_j\) was used. For \(\lvert a-t_0\rvert\le h\), the constant-in-dose extensions and the treatment-direction H\"older assumptions add at most \(Ch^{A_0}\) and \(Ch^{B_0}\), respectively. Thus, uniformly over this dose window,
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathbb E\lVert\widehat\mu(a,\cdot)-\mu_P(a,\cdot)\rVert_{L_2(P_X)}^2\le Ce_\mu^2,
+\qquad
+\mathbb E\lVert\widehat\pi(a\mid\cdot)-\pi_P(a\mid\cdot)\rVert_{L_2(P_X)}^2\le Ce_\pi^2.\)}}
+\]
+
+We next derive the exact pseudo-outcome bias, including its centering term. Fix the two pilot folds and abbreviate, at a dose \(a\),
+\[
+\Delta_\mu(x)=\widehat\mu(a,x)-\mu_P(a,x),
+\qquad
+\Delta_\pi(x)=\widehat\pi(a\mid x)-\pi_P(a\mid x),
+\]
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle f(a)=\int\pi_P(a\mid x)\,P_X(dx),
+\qquad
+\overline f(a)=\int\widehat\pi(a\mid x)\,P_X(dx),
+\qquad
+\overline m(a)=\int\widehat\mu(a,x)\,P_X(dx).\)}}
+\]
+Positivity gives \(c\le f(a)\le1/c\), while clipping gives \(c/2\le\widehat\pi(a\mid x)\le2/c\). If the empirical averages over \(I_X\) are first replaced by \(\overline f\) and \(\overline m\), conditioning on \(A=a\) and using \(dP_{X\mid A=a}/dP_X=\pi_P(a\mid\cdot)/f(a)\) yields
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathbb E[\overline\xi\mid A=a]
+=\overline m(a)-\frac{\overline f(a)}{f(a)}
+\int\frac{\pi_P(a\mid x)}{\widehat\pi(a\mid x)}\Delta_\mu(x)\,P_X(dx).\)}}
+\]
+Since \(\theta_P(a)=\overline m(a)-\int\Delta_\mu\,dP_X\) and \(\overline f(a)-f(a)=\int\Delta_\pi\,dP_X\), subtraction and addition of the term with coefficient one give the identity
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \begin{aligned}
+B(a)&:=\mathbb E[\overline\xi\mid A=a]-\theta_P(a)\\
+&=\int\frac{\Delta_\pi(x)}{\widehat\pi(a\mid x)}\Delta_\mu(x)\,P_X(dx)
+-\frac{\overline f(a)-f(a)}{f(a)}
+\int\frac{\pi_P(a\mid x)}{\widehat\pi(a\mid x)}\Delta_\mu(x)\,P_X(dx).
+\end{aligned}\)}}
+\]
+For the first term, the clipping lower bound and Cauchy--Schwarz give
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \left\lvert\int\frac{\Delta_\pi}{\widehat\pi}\Delta_\mu\,dP_X\right\rvert
+\le \frac2c\lVert\Delta_\pi\rVert_2\lVert\Delta_\mu\rVert_2.\)}}
+\]
+For the second term, positivity gives \(f(a)^{-1}\le c^{-1}\), Cauchy--Schwarz gives
+\(\lvert\overline f(a)-f(a)\rvert\le\lVert\Delta_\pi\rVert_2\), and positivity together with clipping gives \(\pi_P/\widehat\pi\le2/c^2\). Hence
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \left\lvert
+\frac{\overline f-f}{f}\int\frac{\pi_P}{\widehat\pi}\Delta_\mu\,dP_X
+\right\rvert
+\le \frac{2}{c^3}\lVert\Delta_\pi\rVert_2\lVert\Delta_\mu\rVert_2.\)}}
+\]
+Thus both, rather than only the first, are bounded by \(C\lVert\Delta_\pi\rVert_2\lVert\Delta_\mu\rVert_2\). Independence of \(I_\mu\) and \(I_{\mathrm{aux}}\), followed by the two pilot bounds, implies
+\[
+\sup_{\lvert a-t_0\rvert\le h}\mathbb E[B(a)^2]\le C(e_\mu e_\pi)^2.
+\]
+
+It remains to account for the independent empirical marginalization fold. Let \(m_X=\lvert I_X\rvert\), \(\mathbb P_X^{m_X}\) be its empirical measure, and put
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \varepsilon_\mu=(\mathbb P_X^{m_X}-P_X)\widehat\mu(a,\cdot),
+\qquad
+\varepsilon_\pi=(\mathbb P_X^{m_X}-P_X)\widehat\pi(a\mid\cdot).\)}}
+\]
+Repeating the preceding conditional-mean calculation with \(\widehat m=\overline m+\varepsilon_\mu\) and \(\widehat f=\overline f+\varepsilon_\pi\) shows that the additional centered term is exactly
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle T_X(a)=\varepsilon_\mu-\frac{\varepsilon_\pi}{f(a)}
+\int\frac{\pi_P(a\mid x)}{\widehat\pi(a\mid x)}\Delta_\mu(x)\,P_X(dx).\)}}
+\]
+Conditional on the pilots, boundedness gives \(\mathbb E_X[\varepsilon_\mu^2]\le C/m_X\) and \(\mathbb E_X[\varepsilon_\pi^2]\le C/m_X\). The multiplier of \(\varepsilon_\pi\) is at most \(C\lVert\Delta_\mu\rVert_2\) by positivity, clipping, and Cauchy--Schwarz. Consequently
+\[
+\mathbb E[T_X(a)^2\mid I_\mu,I_{\mathrm{aux}}]
+\le \frac{C}{m_X}\left\{1+\lVert\Delta_\mu\rVert_2^2\right\}.
+\]
+After averaging over the pilots, the first empirical term is \(O(n^{-1})\) and the term multiplied by the pilot error is \(O(n^{-1}e_\mu^2)\), hence no larger. Since \(h\to0\), both are absorbed by \((nh)^{-1}\).
+
+Finally, Lemma~\texttt{lem:partial-mean-holder-transfer} and degree-\(\lfloor\alpha\rfloor\) polynomial reproduction give approximation bias \(Ch^\alpha\) for \(\theta_P\). The pseudo-outcome is uniformly bounded: \(Y\) and \(\widehat\mu\) lie in \([-M_Y,M_Y]\), \(\widehat\pi\ge c/2\), and \(\widehat f\le2/c\). Therefore its localized conditional variance is at most \(C/(nh)\). Every entry of \(\widehat D_h-\mathbb E\widehat D_h\) is an average of independent variables bounded by \(C/h\), with total variance bounded by \(C/(nh)\). Lemma~\texttt{lem:bounded-sum-concentration}, a finite union bound, Weyl's inequality, and the population eigenvalue lower bound supplied by \(f(a)\ge c\) yield
+\[
+\mathbb P\{\lambda_{\min}(\widehat D_h)<\lambda_*\}\le Ce^{-c_1nh}.
+\]
+On the complementary event, the inverse Gram matrix has uniformly bounded operator norm; on the bad event, clipping bounds squared loss by \(4M_Y^2\). The stable local-polynomial normal equations therefore turn the approximation term, the two-term bias \(B(a)\), and \(T_X(a)\) into squared-risk contributions bounded by \(Ch^{2\alpha}\), \(C(e_\mu e_\pi)^2\), and \(C/n\), respectively. Adding the conditional variance and bad-Gram contribution, and using \(n^{-1}\le(nh)^{-1}\), proves
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \sup_{P\in\mathcal P(\alpha,\beta,s,d,M_Y,L,c,t_0)}
+\mathbb E_P[(\widehat\theta-\theta_P(t_0))^2]
+\le C\left\{h^{2\alpha}+\frac1{nh}+(e_\mu e_\pi)^2+e^{-c_1nh}\right\}.\)}}
+\]
+\end{proof}
+
+\begin{lemma}[lem:optimized-deficient-rate-bracket]\label{lem:optimized-deficient-rate-bracket}
+Put \(A_0=\alpha\wedge1\), \(B_0=\beta\wedge1\), \(S_0=s\wedge1\),
+\[
+E_\mu=(2+A_0^{-1}+dS_0^{-1})^{-1},\qquad E_\pi=(2+B_0^{-1}+dS_0^{-1})^{-1},
+\]
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle R_{\mathrm{sep}}=\max_{0\le\gamma\le1}\min\left\{2\alpha\gamma,1-\gamma,2\left[\min\{A_0\gamma,E_\mu\}+\min\{B_0\gamma,E_\pi\}\right]\right\},\)}}\par\noindent}}
+\]
+and
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle R_{\mathrm{hist}}=\left[1+\frac1{2A_0}+\frac d{4S_0}+\left(\frac12-\frac{B_0}{A_0}\right)_+\min\left\{\frac1{2B_0},\frac d{2S_0}\right\}\right]^{-1}.\)}}\par\noindent}}
+\]
+For every admissible tuple with \(0<c<1\), a single data-driven estimator can be selected from two explicit sample-split histogram/local-polynomial estimators so that
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \sup_{P\in\mathcal P(\alpha,\beta,s,d,M_Y,L,c,t_0)}\mathbb E_P[(\widehat\theta-\theta_P(t_0))^2]\le Cn^{-R_{\mathrm{ach}}},\qquad R_{\mathrm{ach}}=\max\{R_{\mathrm{sep}},R_{\mathrm{hist}}\}.\)}}\par\noindent}}
+\]
+\end{lemma}
+\begin{proof}
+We first optimize the estimator in Definition~\texttt{def:beta-free-handle}. Take \(h=n^{-\gamma}\). For \(0<\gamma<1\), choose
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle b_\mu\asymp n^{-E_\mu/A_0},\qquad \delta_\mu\asymp n^{-E_\mu/S_0},
+\qquad
+b_\pi\asymp n^{-E_\pi/B_0},\qquad \delta_\pi\asymp n^{-E_\pi/S_0}.\)}}
+\]
+The identities
+\[
+E_\mu(2+A_0^{-1}+dS_0^{-1})=1,
+\qquad
+E_\pi(2+B_0^{-1}+dS_0^{-1})=1
+\]
+show that, for each pilot, its two approximation terms and its count standard deviation have the common optimized order \(n^{-E_\mu}\) or \(n^{-E_\pi}\). In particular,
+\[
+e_\mu\le Cn^{-\min\{A_0\gamma,E_\mu\}},
+\qquad
+e_\pi\le Cn^{-\min\{B_0\gamma,E_\pi\}}.
+\]
+The relevant expected counts diverge because, for example,
+\[
+nb_\mu\delta_\mu^d
+\asymp n^{1-E_\mu(A_0^{-1}+dS_0^{-1})}=n^{2E_\mu}\to\infty,
+\]
+and similarly for the density pilot. Lemma~\texttt{lem:localized-polynomial-master-risk} now gives the three polynomial exponents
+\[
+2\alpha\gamma,\qquad 1-\gamma,\qquad
+2\left\{\min(A_0\gamma,E_\mu)+\min(B_0\gamma,E_\pi)\right\}.
+\]
+Their minimum is continuous on \([0,1]\), equals zero at both endpoints, and is positive in the interior. It therefore has an interior maximizer, and substitution of that maximizer proves the risk exponent \(R_{\mathrm{sep}}\).
+
+We next give the cell-count derivation for the histogram estimator. Use four independent folds. On one fold form a bounded cellwise regression estimate from observations in a symmetric dose window; on a second form a clipped cellwise conditional-density estimate; on a third average the regression pilot over the empirical covariate distribution; and on the fourth evaluate the box-kernel one-step score
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \widehat\theta_{\mathrm{hist}}
+=\operatorname{clip}_{[-M_Y,M_Y]}\left[
+\frac1{|I_X|}\sum_{\ell\in I_X}\widehat\mu_0(X_\ell)
++\frac1{|I_{\mathrm{ev}}|}\sum_{i\in I_{\mathrm{ev}}}
+\frac{\mathbf 1\{\lvert A_i-t_0\rvert\le h\}}{2h\widehat\pi_0(X_i)}
+\{Y_i-\widehat\mu_0(X_i)\}
+\right].\)}}
+\]
+Empty cells are assigned zero and \(\widehat\pi_0\) is clipped to \([c/2,2/c]\). Thus counts, finite sums, clipping, and the fixed partitions make this a Borel function of the sample.
+
+Fix \(q\in(0,1)\) and take a principal dose width and covariate side length
+\[
+h=n^{-q/(2A_0)},
+\qquad
+\delta=n^{-q/(4S_0)}.
+\]
+The ordinary treatment approximation has root order \(h^{A_0}=n^{-q/2}\). Orthogonality makes the product of the two covariate approximation errors have root order \(\delta^{2S_0}=n^{-q/2}\). The only potentially larger deterministic product is
+\[
+h^{B_0}\delta^{S_0}=n^{-q\{B_0/(2A_0)+1/4\}}.
+\]
+Put
+\[
+\kappa=\left(\frac12-\frac{B_0}{A_0}\right)_+.
+\]
+If \(\kappa=0\), this mixed product is already at most \(n^{-q/2}\). If \(\kappa>0\), there are two explicit repairs. The dose-refined version estimates the density with
+\[
+b_\pi=h n^{-q\kappa/(2B_0)},
+\]
+so \(b_\pi^{B_0}\delta^{S_0}=n^{-q/2}\), and its density count is inflated relative to the principal count by
+\[
+\frac h{b_\pi}=n^{q\kappa/(2B_0)}.
+\]
+Alternatively, the covariate-refined version estimates the regression on cells of side
+\[
+\delta_\mu=\delta n^{-q\kappa/(2S_0)},
+\]
+so \(h^{B_0}\delta_\mu^{S_0}=n^{-q/2}\), and its number of covariate cells is inflated by
+\[
+\left(\frac\delta{\delta_\mu}\right)^d=n^{q\kappa d/(2S_0)}.
+\]
+Select deterministically the cheaper repair. Its count-inflation factor is
+\[
+L_q=n^{qK},
+\qquad
+K=\kappa\min\left\{\frac1{2B_0},\frac d{2S_0}\right\}.
+\]
+
+We now derive, rather than assert, the three additive risk contributions. For a principal covariate cell of probability \(p_j\), positivity makes its dose-slice probability comparable to \(hp_j\). If \(N_j\) is its fold count, conditioning on \(N_j\) gives a variance contribution bounded by \(Cp_j\mathbb E[\mathbf 1\{N_j>0\}/N_j]\), while its empty-cell contribution is bounded by \(Cp_j\mathbb P(N_j=0)\). The binomial bounds
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle p_j\mathbb E\left[\frac{\mathbf 1\{N_j>0\}}{N_j}\right]
++p_j\mathbb P(N_j=0)
+\le C\min\left\{p_j,\frac1{nh}\right\}\)}}
+\]
+and the fact that there are at most \(C\delta^{-d}\) cells yield
+\[
+\sum_j C\min\left\{p_j,\frac1{nh}\right\}
+\le \frac{C}{nh\delta^d}.
+\]
+The same calculation for the selected refined pilot has either slice width \(b_\pi\) or cell side \(\delta_\mu\), and hence contributes at most
+\[
+\frac{CL_q}{nh\delta^d}.
+\]
+All main-fold score variance and empirical-marginalization terms are no larger than these bounds because the score is clipped, positivity bounds its denominator, and \(\delta\le1\). Cauchy--Schwarz applied to the cross-fitted orthogonal remainder, together with the H\"older bounds just calculated, makes the squared deterministic contribution at most \(Cn^{-q}\). Thus the cell-count decomposition is the additive inequality
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \sup_{P\in\mathcal P(\alpha,\beta,s,d,M_Y,L,c,t_0)}
+\mathbb E_P[(\widehat\theta_{\mathrm{hist}}-\theta_P(t_0))^2]
+\le C\left\{n^{-q}+\frac1{nh\delta^d}+\frac{L_q}{nh\delta^d}\right\}.\)}}
+\]
+Define
+\[
+D_0=\frac1{2A_0}+\frac d{4S_0}.
+\]
+Direct substitution, with no multiplication of the separate variance contributions, gives
+\[
+\frac1{nh\delta^d}=n^{-1+qD_0},
+\qquad
+\frac{L_q}{nh\delta^d}=n^{-1+q(D_0+K)}.
+\]
+This calculation also explains why there is no additional \(1\) inside either coefficient of \(q\): the sole factor \(n^{-1}\) is the sample-size denominator, while \(h^{-1}\delta^{-d}=n^{qD_0}\) and \(L_q=n^{qK}\). The approximation contribution \(n^{-q}\) is a separate summand. We have therefore proved the required bound
+\[
+C\left\{n^{-q}+n^{-1+qD_0}+n^{-1+q(D_0+K)}\right\}.
+\]
+Take
+\[
+q=\frac1{1+D_0+K}=R_{\mathrm{hist}}.
+\]
+Then \(-1+q(D_0+K)=-q\), and, since \(K\ge0\), \(-1+qD_0\le-q\). Moreover the refined expected count diverges because \(1-q(D_0+K)=q>0\). Hence the histogram risk is \(O(n^{-R_{\mathrm{hist}}})\). The class indices are fixed and known in the minimax experiment, so one may select before seeing the data whichever of the separated-pilot and histogram estimators has the larger declared exponent. This is one Borel, data-driven estimator and has risk \(O(n^{-\max\{R_{\mathrm{sep}},R_{\mathrm{hist}}\}})\), as claimed.
+\end{proof}
+
+\begin{lemma}[lem:unit-positivity-minimal-class-oracle-rate]\label{lem:unit-positivity-minimal-class-oracle-rate}
+Let \(\mathcal Q_1(\alpha,d,M_Y,L)\) be the class of Borel probability laws \(P\) of \(Z=(Y,A,X)\), with \(X\in[0,1]^d\), such that \(\lvert Y\rvert\le M_Y\) almost surely, \(A\) is uniform on \([0,1]\) and independent of \(X\), and there is a jointly Borel version \(\mu_P(a,x)=\mathbb E_P[Y\mid A=a,X=x]\) for which every section \(a\mapsto\mu_P(a,x)\) lies, uniformly in \(x\), in the univariate H\"older seminorm ball of order \(\alpha\) and radius \(L\) under the same convention as Definition~\texttt{def:holder-class}: \(L\) bounds the required positive-order derivatives and the terminal H\"older modulus or Taylor remainder, but does not bound the zeroth-order supremum norm; function values are controlled separately by \(\lvert Y\rvert\le M_Y\). The marginal law \(P_X\) is an arbitrary Borel probability law; no Lebesgue-density requirement, no smoothness of \(x\mapsto\mu_P(t_0,x)\), and no treatment-density smoothness are imposed. Define
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathcal N_n(\alpha,d,M_Y,L,t_0)
+=
+\inf_{\widehat\theta\in\mathfrak T_n}
+\sup_{P\in\mathcal Q_1(\alpha,d,M_Y,L)}
+\mathbb E_P\left[\left\{\widehat\theta-\int_{[0,1]^d}\mu_P(t_0,x)\,P_X(dx)\right\}^2\right].\)}}
+\]
+For every admissible \(\alpha,d,M_Y,L,t_0\), there are constants \(0<C_-\le C_+<\infty\) and \(n_0\in\mathbb N\), independent of \(n\), such that
+\[
+C_-r_n(\alpha)
+\le
+\mathcal N_n(\alpha,d,M_Y,L,t_0)
+\le
+C_+r_n(\alpha)
+\qquad(n\ge n_0).
+\]
+For every \(\beta,s>0\), \(\mathcal P(\alpha,\beta,s,d,M_Y,L,1,t_0)\) is a proper subset of \(\mathcal Q_1(\alpha,d,M_Y,L)\).
+\end{lemma}
+\begin{proof}
+Throughout this proof, the H\"older condition defining \(\mathcal Q_1(\alpha,d,M_Y,L)\) uses the same seminorm convention as Definition~\texttt{def:holder-class}; in particular, \(L\) controls only the required positive-order derivatives and terminal H\"older modulus or Taylor remainder. Function values are controlled separately by \(\lvert Y\rvert\le M_Y\).
+
+Fix \(P\in\mathcal Q_1(\alpha,d,M_Y,L)\), and define \(\vartheta_P(a)=\int\mu_P(a,x)\,P_X(dx)\). This quantity is independent of the admissible jointly Borel regression version. Indeed, two such versions agree for \(da\,P_X(dx)\)-almost every \((a,x)\). Fubini's theorem implies agreement for Lebesgue-almost every \(a\), for \(P_X\)-almost every \(x\). Each treatment section is continuous because \(\alpha>0\), so the sections agree at every \(a\), in particular at \(t_0\), for almost every \(x\).
+
+Integration against \(P_X\) preserves the H\"older seminorm. For \(0<\alpha<1\),
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \lvert\vartheta_P(a)-\vartheta_P(a')\rvert\le\int\lvert\mu_P(a,x)-\mu_P(a',x)\rvert\,P_X(dx)\le L\lvert a-a'\rvert^\alpha.\)}}\par\noindent}}
+\]
+For \(\alpha>1\), uniform derivative bounds permit differentiation under the integral, giving
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \partial_a^j\vartheta_P(a)=\int\partial_a^j\mu_P(a,x)\,P_X(dx),\qquad \sup_a\lvert\partial_a^j\vartheta_P(a)\rvert\le L,\)}}\par\noindent}}
+\]
+for every required positive derivative. The terminal H\"older modulus or integer-order Taylor remainder transfers by the same integration inequality. Also \(\lvert\vartheta_P(a)\rvert\le M_Y\). Since \(A\) is uniform and independent of \(X\), \(\mathbb E[Y\mid A=a]=\vartheta_P(a)\) almost everywhere, and continuity supplies the relevant version at \(t_0\).
+
+Put \(p=\lfloor\alpha\rfloor\), \(S(u)=(1,u,\ldots,u^p)^\top\), and choose a bounded nonnegative kernel \(K\), supported on \([-1,1]\) and bounded below near zero. Define
+\[
+K_h(a)=h^{-1}K((a-t_0)/h),\quad S_h(a)=S((a-t_0)/h),
+\]
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \widehat D_h=\frac1n\sum_{i=1}^nK_h(A_i)S_h(A_i)S_h(A_i)^\top,\qquad \widehat R_h=\frac1n\sum_{i=1}^nK_h(A_i)S_h(A_i)Y_i.\)}}\par\noindent}}
+\]
+The matrix \(D=\int_{-1}^1K(u)S(u)S(u)^\top du\) is positive definite, because a polynomial whose squared integral against a weight positive on an interval is zero must vanish identically. With \(\lambda_0=\lambda_{\min}(D)>0\), set
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \widehat\vartheta_h=\operatorname{clip}_{[-M_Y,M_Y]}\left[e_0^\top\widehat D_h^{-1}\widehat R_h\,\mathbf1\{\lambda_{\min}(\widehat D_h)\ge\lambda_0/2\}\right],\)}}\par\noindent}}
+\]
+using zero on the bad-Gram event. This is a single Borel estimator depending only on \((Y_i,A_i)\).
+
+Uniformity of \(A\) gives \(\mathbb E\widehat D_h=D\). Define \(b_h=D^{-1}\mathbb E[K_h(A)S_h(A)Y]\) and \(\vartheta_h=e_0^\top b_h\). Polynomial reproduction and the H\"older Taylor remainder give
+\[
+\lvert\vartheta_h-\vartheta_P(t_0)\rvert\le Ch^\alpha,
+\]
+where for integer \(\alpha\) one expands through order \(\alpha-1\) and uses the bounded \(\alpha\)-th derivative in the integral remainder. Also \(\lVert b_h\rVert\le C\). Put
+\[
+W_i=K_h(A_i)S_h(A_i)\{Y_i-S_h(A_i)^\top b_h\}.
+\]
+Then \(\mathbb EW_i=0\), \(\lVert W_i\rVert\le Ch^{-1}\), and \(\mathbb E\lVert W_i\rVert^2\le Ch^{-1}\). On \(G_h=\{\lambda_{\min}(\widehat D_h)\ge\lambda_0/2\}\), exact algebra and independence imply
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \mathbb E\left[\left(e_0^\top\widehat D_h^{-1}\widehat R_h-\vartheta_h\right)^2\mathbf1_{G_h}\right]\le\frac{C}{nh}.\)}}\par\noindent}}
+\]
+Each centered entry of \(K_h(A_i)S_h(A_i)S_h(A_i)^\top-D\) is bounded by \(C/h\), and the sum of its variances is at most \(Cn/h\). Lemma~\texttt{lem:bounded-sum-concentration}, a finite-dimensional union bound, and Weyl's inequality therefore yield
+\[
+\sup_{P\in\mathcal Q_1}P(G_h^c)\le C_0e^{-c_0nh}.
+\]
+Clipping cannot increase loss because the target belongs to \([-M_Y,M_Y]\). Thus
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \sup_{P\in\mathcal Q_1}\mathbb E_P[(\widehat\vartheta_h-\vartheta_P(t_0))^2]\le C\left(h^{2\alpha}+\frac1{nh}+e^{-c_0nh}\right).\)}}\par\noindent}}
+\]
+Taking \(h\asymp n^{-1/(2\alpha+1)}\) proves the upper bound.
+
+For the lower bound, fix arbitrary \(\beta_0,s_0>0\). If \(P\in\mathcal P(\alpha,\beta_0,s_0,d,M_Y,L,1,t_0)\), the two positivity inequalities force \(\pi_P=1\), hence \(A\) is uniform and independent of \(X\), and the remaining conditions imply \(P\in\mathcal Q_1\). The targets coincide. Minimax monotonicity and Lemma~\texttt{lem:all-beta-oracle-lower-floor} give
+\[
+\mathcal N_n\ge\mathcal M_n(\alpha,\beta_0,s_0,d,M_Y,L,1,t_0)\ge C_-r_n(\alpha).
+\]
+
+Finally, properness has two witnesses. First take \(X\) uniform, \(A\) independent uniform, and let the conditional mean of \(Y\in\{-M_Y,M_Y\}\) be \(q(x)=\delta\mathbf1\{x_1\le1/2\}\), with \(0<\delta<M_Y\). The treatment sections are constant and have seminorm zero, so the law is in \(\mathcal Q_1\), but no continuous H\"older \(t_0\)-slice can equal \(q\) almost everywhere; hence it is outside the frozen class. Second, take \(P_X\) to be a point mass, take \(A\) independent uniform, and set \(Y=0\). This law belongs to \(\mathcal Q_1\) but violates the frozen Lebesgue-density requirement. Thus the inclusion is proper.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} Uniform treatment independent of \(X\) reduces the target to a one-dimensional H\"older regression curve and gives matching local-polynomial and Le Cam rates without covariate-slice smoothness. \textit{Gap.} This boundary theorem does not transfer to fixed \(0<c<1\), where the treatment mechanism may depend on \(X\). \textit{Consumer.} It isolates exactly which regularity is unnecessary at the unit-positivity boundary.
+
+\begin{lemma}[lem:population-piecewise-polynomial-projection]\label{lem:population-piecewise-polynomial-projection}
+Let \(P\in\mathcal P(\alpha,\beta,s,d,M_Y,L,c,t_0)\), let \(V_k\) be the regular-grid space of coordinatewise piecewise polynomials of degree \(\lfloor s\rfloor\), with dimension at most \(C_{d,s}k\), and let \(\Pi_{k,P_X}\) be the orthogonal projection onto its image in \(L_2(P_X)\). For \(f=\mu_P(t_0,\cdot)\), \(q=\pi_P(t_0\mid\cdot)\), and arbitrary \(\widetilde f,\widetilde q\in V_k\),
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \lVert(I-\Pi_{k,P_X})(f-\widetilde f)\rVert_{L_2(P_X)}
++\lVert(I-\Pi_{k,P_X})(q-\widetilde q)\rVert_{L_2(P_X)}
+\le Ck^{-s/d},\)}}
+\]
+and consequently
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \left\lvert\left\langle(I-\Pi_{k,P_X})(f-\widetilde f),(I-\Pi_{k,P_X})(q-\widetilde q)\right\rangle_{P_X}\right\rvert
+\le Ck^{-2s/d}.\)}}
+\]
+If \(\Pi_{k,P_X}(x,x')\) is any orthonormal-basis kernel for this finite-rank projection and \(X_1,X_2\) are independent with law \(P_X\), then
+\[
+\mathbb E[\Pi_{k,P_X}(X_1,X_2)^2]=\operatorname{rank}(\Pi_{k,P_X})\le C_{d,s}k.
+\]
+The constants do not require a density bound, density lower bound, or smoothness condition on \(p_X\).
+\end{lemma}
+\begin{proof}
+Fix \(P\in\mathcal P(\alpha,\beta,s,d,M_Y,L,c,t_0)\), and abbreviate \(\Pi=\Pi_{k,P_X}\). By Assumptions~\texttt{ass:mu-x-holder} and~\texttt{ass:pi-x-holder}, the functions
+\[
+f(x)=\mu_P(t_0,x),\qquad q(x)=\pi_P(t_0\mid x)
+\]
+belong to the coordinatewise \(d\)-variate H\"older ball of order \(s\) and radius \(L\). Partition \([0,1]^d\) into the regular grid underlying \(V_k\), using half-open cells and the usual closed convention at the upper boundary. The number of polynomial coefficients per cell depends on \(d\) and \(\lfloor s\rfloor\); consequently the construction has dimension at most \(C_{d,s}k\), and the cells may be chosen with side length at most \(C_{d,s}'k^{-1/d}\).
+
+On each cell, expand a H\"older function about a fixed point of the cell using its coordinatewise Taylor polynomial of degree \(\lfloor s\rfloor\). The H\"older remainder bound, uniformly over the cells, gives elements \(f_k,q_k\in V_k\) such that
+\[
+\lVert f-f_k\rVert_\infty\le C L k^{-s/d},
+\qquad
+\lVert q-q_k\rVert_\infty\le C L k^{-s/d}.
+\]
+The same conclusion holds when \(s\) is an integer under the bounded-derivative convention in Definition~\texttt{def:holder-class}. Since \(P_X\) is a probability measure,
+\[
+\lVert f-f_k\rVert_{L_2(P_X)}+
+\lVert q-q_k\rVert_{L_2(P_X)}
+\le C k^{-s/d}.
+\]
+No property of a Lebesgue-density representative of \(P_X\) is used here.
+
+The operator \(\Pi\) is the orthogonal projection onto the image of \(V_k\) in \(L_2(P_X)\). Hence \(I-\Pi\) is an \(L_2(P_X)\)-contraction, and \((I-\Pi)v=0\) for every \(v\in V_k\). Because \(f_k,\widetilde f\in V_k\),
+\[
+(I-\Pi)(f-\widetilde f)=(I-\Pi)(f-f_k),
+\]
+and therefore
+\[
+\lVert(I-\Pi)(f-\widetilde f)\rVert_{L_2(P_X)}
+\le \lVert f-f_k\rVert_{L_2(P_X)}
+\le Ck^{-s/d}.
+\]
+The identical argument using \(q_k,\widetilde q\in V_k\) gives
+\[
+\lVert(I-\Pi)(q-\widetilde q)\rVert_{L_2(P_X)}
+\le Ck^{-s/d}.
+\]
+Adding these inequalities proves the first assertion. The Cauchy--Schwarz inequality then yields
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \begin{aligned}
+&\left\lvert
+\left\langle(I-\Pi)(f-\widetilde f),
+(I-\Pi)(q-\widetilde q)\right\rangle_{P_X}
+\right\rvert\\
+&\qquad\le
+\lVert(I-\Pi)(f-\widetilde f)\rVert_{L_2(P_X)}
+\lVert(I-\Pi)(q-\widetilde q)\rVert_{L_2(P_X)}
+\le Ck^{-2s/d}.
+\end{aligned}\)}}
+\]
+
+It remains to establish the kernel identity. Let \(r=\operatorname{rank}(\Pi)\), and choose an orthonormal basis \(\phi_1,\ldots,\phi_r\) for the image of \(V_k\) in \(L_2(P_X)\). The associated orthonormal-basis kernel is
+\[
+\Pi_{k,P_X}(x,x')=\sum_{j=1}^r\phi_j(x)\phi_j(x').
+\]
+For independent \(X_1,X_2\sim P_X\), the sum is finite, so independence and orthonormality give
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \begin{aligned}
+\mathbb E\!\left[\Pi_{k,P_X}(X_1,X_2)^2\right]
+&=\sum_{j=1}^r\sum_{\ell=1}^r
+\mathbb E[\phi_j(X_1)\phi_\ell(X_1)]
+\mathbb E[\phi_j(X_2)\phi_\ell(X_2)]\\
+&=\sum_{j=1}^r\sum_{\ell=1}^r\delta_{j\ell}^2
+=r.
+\end{aligned}\)}}
+\]
+Finally,
+\[
+r\le\dim(V_k)\le C_{d,s}k.
+\]
+Every step used only approximation from the two slice H\"older assumptions and Hilbert-space geometry under the probability law \(P_X\); no upper bound, lower bound, or smoothness property of \(p_X\) was invoked.
+\end{proof}
+
+\begin{lemma}[lem:unit-positivity-oracle-rate]\label{lem:unit-positivity-oracle-rate}
+If \(c=1\), then for every admissible \(\alpha,\beta,s,d,M_Y,L,t_0\) there are constants \(0<C_-\le C_+<\infty\) and \(n_0\in\mathbb N\), independent of \(n\), such that, for every \(n\ge n_0\),
+\[
+C_-r_n(\alpha)
+\le
+\mathcal M_n(\alpha,\beta,s,d,M_Y,L,1,t_0)
+\le
+C_+r_n(\alpha).
+\]
+Thus the exact exponent is \(2\alpha/(2\alpha+1)\) at the boundary \(c=1\), for every \(\beta,s,d\), including tuples outside \(\Omega\).
+\end{lemma}
+\begin{proof}
+At \(c=1\), Assumptions~\texttt{ass:positivity-lower} and~\texttt{ass:positivity-upper} force \(\pi_P(a\mid x)=1\) for every \((a,x)\). Consequently \(A\) is uniform on \([0,1]\) and independent of \(X\), so every frozen-class member lies in the enlarged class \(\mathcal Q_1(\alpha,d,M_Y,L)\) of Lemma~\texttt{lem:unit-positivity-minimal-class-oracle-rate}. On each frozen-class member, \(p_X\) is the designated density of \(P_X\), and the same designated jointly Borel regression version \(\mu_P\) is used on both sides; therefore
+\[
+\int_{[0,1]^d}\mu_P(t_0,x)\,P_X(dx)
+=
+\int_{[0,1]^d}\mu_P(t_0,x)p_X(x)\,dx
+=
+\theta_P(t_0).
+\]
+Thus restricting the enlarged lemma's loss functional to the frozen class moves no estimand. Definition~\texttt{def:minimax-mse} and the upper half of that lemma give constants \(C_+<\infty\) and \(n_0\in\mathbb N\), independent of \(n\), such that
+\[
+\mathcal M_n(\alpha,\beta,s,d,M_Y,L,1,t_0)
+\le C_+r_n(\alpha)
+\qquad(n\ge n_0).
+\]
+Lemma~\texttt{lem:all-beta-oracle-lower-floor}, applied at \(c=1\), gives a constant \(C_->0\), independent of \(n\), such that
+\[
+\mathcal M_n(\alpha,\beta,s,d,M_Y,L,1,t_0)
+\ge C_-r_n(\alpha)
+\qquad(n\ge1).
+\]
+Enlarging \(C_+\) if necessary ensures \(C_-\le C_+\). Definition~\texttt{def:oracle-rate} gives \(r_n(\alpha)=n^{-2\alpha/(2\alpha+1)}\), proving the displayed exact rate for every \(\beta,s,d\), without any membership condition involving \(\Omega\). This remains an explicitly degenerate boundary corner: the equality \(\pi_P=1\) collapses the problem to ordinary one-dimensional pointwise regression and does not resolve the frontier for fixed \(0<c<1\).
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The frozen-class conclusion is an immediate corollary of the stronger minimal-class boundary theorem and the all-order lower floor. \textit{Gap.} It is a degenerate-boundary result, not an interior minimax theorem. \textit{Consumer.} It supplies the boundary check used in the residual-frontier discussion.
+
+\section{Interpretation}
+
+Within \(\Omega\), treatment-density smoothness does not determine the minimax exponent: the lower submodel already has a uniform treatment density, and the explicit estimator reaches the one-dimensional treatment-smoothing floor. The condition \((\alpha,\beta,s,d)\in\Omega\) is an achievability regime for the present separated-pilot construction, not a claim that estimation outside it must depend on \(\beta\). At \(c=1\), normalization and the two-sided positivity bounds force the treatment density to equal one, and the oracle exponent holds for every \(s\) and \(\beta\).
+
+\section*{Technical internal limitation (diagnostic only)}
+
+For \(0<c<1\), the exact polynomial exponent is not characterized on the complement of \(\Omega\). The available first-order construction yields an explicit parameterized upper exponent, while the all-\(\beta\) oracle floor and the extreme-low-\(s\) fuzzy construction yield lower bounds that need not match it. The prescribed full-rank projection route also encounters a dimension obstruction in part of the low-\(s\) region, although that counting obstruction does not rule out ridge, pseudoinverse, rare-cell, or other stabilized procedures.
+
+\section{Honest scope}
+
+The proved exact-order claim is \(\mathcal M_n\asymp n^{-2\alpha/(2\alpha+1)}\) on \(\Omega\), together with the special boundary result at \(c=1\). The nested-class theorem compares finite \(\beta<\beta'\) when the rougher tuple lies in \(\Omega\); it does not establish global \(\beta\)-invariance for all \(s\), does not resolve the deficient frontier, and does not supply a limit law or Wald inference. The Bonvini--Kennedy comparison is numerical and componentwise, with the bias squared before MSE balancing; it is not a strict improvement theorem for their estimator.
+
+\begin{thebibliography}{99}
+
+  \bibitem{BonviniKennedy2022FastDRF} M. Bonvini and E. H. Kennedy (2022, revised 2026), Fast convergence rates for dose-response estimation, arXiv:2207.11825v2. Locator: Theorem 3.1 and Section 3.4.
+
+  \bibitem{KennedyMaMcHughSmall2017} E. H. Kennedy, Z. Ma, M. D. McHugh, and D. S. Small (2017), Non-parametric methods for doubly robust estimation of continuous treatment effects, Journal of the Royal Statistical Society: Series B (Statistical Methodology) 79(4), 1229--1245. Locator: publisher abstract and Sections 2--3.
+
+  \bibitem{ColangeloLee2025ContinuousDML} K. Colangelo and Y.-Y. Lee (2025), Double debiased machine learning nonparametric inference with continuous treatments, Journal of Business \& Economic Statistics, DOI 10.1080/07350015.2025.2505487; arXiv:2004.03036. Locator: abstract and Sections 2--3.
+
+  \bibitem{RobinsLiTchetgenVanderVaart2008HOIF} J. M. Robins, L. Li, E. Tchetgen Tchetgen, and A. W. van der Vaart (2008), Higher order influence functions and minimax estimation of nonlinear functionals, IMS Collections 2, 335--421. Locator: abstract and Sections 2--4.
+
+  \bibitem{LiuMukherjeeRobins2021AdaptiveFunctionals} L. Liu, R. Mukherjee, J. M. Robins, and E. Tchetgen Tchetgen (2021), Adaptive estimation of nonparametric functionals, Journal of Machine Learning Research 22(99), 1--66. Locator: abstract and Sections 2--3.
+
+  \bibitem{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE} E. H. Kennedy, S. Balakrishnan, J. M. Robins, and L. Wasserman (2024), Minimax rates for heterogeneous causal effect estimation, Annals of Statistics 52(2), 793--816. Locator: abstract and Section 3.
+
+  \bibitem{BalakrishnanKennedyWasserman2023} S. Balakrishnan, E. H. Kennedy, and L. Wasserman (2023), The Fundamental Limits of Structure-Agnostic Functional Estimation, arXiv:2305.04116; forthcoming in Statistical Science. Locator: abstract and Sections 1--2.
+
+  \bibitem{SchindlShenKennedy2024Incremental} K. Schindl, S. Shen, and E. H. Kennedy (2024), Incremental effects for continuous exposures, arXiv:2409.11967. Locator: abstract and the incremental-effect construction in Section 2.
+
+  \bibitem{LimLuedtke2025DataFusion} J. Lim and A. Luedtke (2025), Estimation of causal dose-response functions under data fusion, arXiv:2510.19094v1. Locator: abstract and Theorems 3--4.
+
+  \bibitem{KimWang2026TwoStageKRR} S.-J. Kim and K. Wang (2026), Estimating Continuous Treatment Effects with Two-Stage Kernel Ridge Regression, arXiv:2604.13410v2. Locator: Objective (2.1), Theorems 4.1 and 4.3, and the \(L_\infty\) source-condition discussion.
+
+  \bibitem{Tsybakov2009} A. B. Tsybakov (2009), Introduction to Nonparametric Estimation, Springer Series in Statistics, Springer. Locator: Chapters 1--2.
+
+  \bibitem{TakatsuWestling2025DebiasedRegression} K. Takatsu and T. Westling (2025), Debiased inference for a covariate-adjusted regression function, Journal of the Royal Statistical Society Series B 87(1), 33--55, DOI 10.1093/jrsssb/qkae041; arXiv:2210.06448v3. Locator: Conditions A1--A5 and Theorem 1.
+
+\end{thebibliography}
+
+\end{document}

@@ -1,5 +1,5 @@
 {
-  "commit": "6e3ba5a09e998cb7c7b15f45d6a11634157a62aa",
+  "commit": "a90838033b0efece90be38573811c11b651f0e5c",
   "snippets": {
     "ass:iid-sampling": {
       "decl": "(composite)",
@@ -131,6 +131,14 @@
         }
       ]
     },
+    "def:falling-factorial": {
+      "decl": "fallingFactorial",
+      "file": "Helpers/Estimator.lean",
+      "line": 45,
+      "statement": "/-- Falling factorial, reusing Mathlib's `Nat.descFactorial`. -/\ndef fallingFactorial (z r : ℕ) : ℕ := z.descFactorial r",
+      "sorry_free": true,
+      "axioms": null
+    },
     "def:hybrid-estimator-handle": {
       "decl": "(composite)",
       "file": "Helpers/Estimator.lean",
@@ -148,6 +156,22 @@
           "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
         }
       ]
+    },
+    "def:centered-estimator": {
+      "decl": "centeredEstimator",
+      "file": "Helpers/Estimator.lean",
+      "line": 388,
+      "statement": "/-- The sample average of a bounded one-observation score obtained by centering the\nbinary outcome at one half, doubling it, and attaching the sign of the treatment\nindicator -- positive for treated units and negative for controls. -/\nnoncomputable def centeredEstimator {n d : ℕ} (sample : Fin n → Obs d) : ℝ :=\n  (n : ℝ)⁻¹ * ∑ i : Fin n,\n    2 * (if (sample i).2.1 then 1 else -1) *\n      ((if (sample i).2.2 then 1 else 0) - 1 / 2)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:selected-estimator": {
+      "decl": "selectedEstimator",
+      "file": "Helpers/CombinedEnvelope.lean",
+      "line": 8,
+      "statement": "/-- Deterministic choice between the hybrid and centered estimators. -/\nnoncomputable def selectedEstimator (C epsilon : ℝ) {n d : ℕ} :\n    (Fin n → Obs d) → ℝ :=\n  if C * minimaxRate n d ≤ 1 / (n : ℝ) + 4 * (1 / 2 - epsilon) ^ 2 then\n    hybridEstimator\n  else centeredEstimator",
+      "sorry_free": true,
+      "axioms": null
     },
     "def:minimax-risk": {
       "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.minimaxRisk",
@@ -270,7 +294,7 @@
     "sym:q_{aky}": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 47,
+      "line": 49,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -281,14 +305,14 @@
         },
         {
           "label": "jointMass_mem_unitInterval — joint atom mass lies in [0,1]",
-          "statement": "  -- @realizes q_{aky}(P(X=k,A=a,Y=y); range [0,1])\n\nlemma jointMass_mem_unitInterval {d : ℕ} (P : DiscreteLaw d)\n    (k : Fin d) (a y : Bool) : jointMass P k a y ∈ Set.Icc (0 : ℝ) 1"
+          "statement": "  -- @realizes q_{aky}(P(X=k,A=a,Y=y); range [0,1])\n\n/-- Every atom probability of the observation law -- the chance of seeing a given\ncategory, treatment value and outcome value together -- lies between zero and one. -/\nlemma jointMass_mem_unitInterval {d : ℕ} (P : DiscreteLaw d)\n    (k : Fin d) (a y : Bool) : jointMass P k a y ∈ Set.Icc (0 : ℝ) 1"
         }
       ]
     },
     "sym:q_k": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 59,
+      "line": 63,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -299,14 +323,14 @@
         },
         {
           "label": "cellVector_mem_unitCube — four-vector lies in [0,1]^4",
-          "statement": "  -- @realizes q_k(four-vector ordered by (A,Y))\n\nlemma cellVector_mem_unitCube {d : ℕ} (P : DiscreteLaw d) (k : Fin d) :\n    ∀ ay, cellVector P k ay ∈ Set.Icc (0 : ℝ) 1"
+          "statement": "  -- @realizes q_k(four-vector ordered by (A,Y))\n\n/-- Each of the four coordinates of a category's mass vector, indexed by the treatment\nand outcome values, lies between zero and one, so the vector lies in the unit cube. -/\nlemma cellVector_mem_unitCube {d : ℕ} (P : DiscreteLaw d) (k : Fin d) :\n    ∀ ay, cellVector P k ay ∈ Set.Icc (0 : ℝ) 1"
         }
       ]
     },
     "sym:p_k": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 70,
+      "line": 76,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -317,7 +341,7 @@
         },
         {
           "label": "cellMass_mem_unitInterval — category mass lies in [0,1]",
-          "statement": "  -- @realizes p_k(P(X=k); range [0,1])\n\nlemma cellMass_mem_unitInterval {d : ℕ} (P : DiscreteLaw d) (k : Fin d) :\n    cellMass P k ∈ Set.Icc (0 : ℝ) 1"
+          "statement": "  -- @realizes p_k(P(X=k); range [0,1])\n\n/-- The marginal probability that the confounder takes a given category value lies\nbetween zero and one. -/\nlemma cellMass_mem_unitInterval {d : ℕ} (P : DiscreteLaw d) (k : Fin d) :\n    cellMass P k ∈ Set.Icc (0 : ℝ) 1"
         },
         {
           "label": "Overlap — constraint applies when p_k>0",
@@ -332,7 +356,7 @@
     "sym:pi_k": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 102,
+      "line": 110,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -343,7 +367,7 @@
         },
         {
           "label": "propensity_mem_unitInterval — propensity lies in [0,1]",
-          "statement": "  -- @realizes pi_k(P(A=1|X=k); constrained on positive cells by Overlap)\n\nlemma propensity_mem_unitInterval {d : ℕ} (P : DiscreteLaw d) (k : Fin d) :\n    propensity P k ∈ Set.Icc (0 : ℝ) 1"
+          "statement": "  -- @realizes pi_k(P(A=1|X=k); constrained on positive cells by Overlap)\n\n/-- The propensity of any category lies between zero and one.  This holds\nunconditionally: on a category of zero mass the totalizing division convention\nreturns zero, which is still in range. -/\nlemma propensity_mem_unitInterval {d : ℕ} (P : DiscreteLaw d) (k : Fin d) :\n    propensity P k ∈ Set.Icc (0 : ℝ) 1"
         },
         {
           "label": "Overlap — propensity constrained to [epsilon,1-epsilon]",
@@ -358,7 +382,7 @@
     "sym:mu_{ak}": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 124,
+      "line": 135,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -369,7 +393,7 @@
         },
         {
           "label": "outcomeMean_mem_unitInterval — binary conditional mean lies in [0,1]",
-          "statement": "  -- @realizes mu_{ak}(E[Y|A=a,X=k]; range [0,1] on positive arm-cells)\n\nlemma outcomeMean_mem_unitInterval {d : ℕ} (P : DiscreteLaw d)\n    (a : Bool) (k : Fin d) : outcomeMean P a k ∈ Set.Icc (0 : ℝ) 1"
+          "statement": "  -- @realizes mu_{ak}(E[Y|A=a,X=k]; range [0,1] on positive arm-cells)\n\n/-- The conditional mean of the binary outcome given a treatment arm and a category\nlies between zero and one.  This holds unconditionally: on an empty arm-cell the\ntotalizing division convention returns zero, which is still in range. -/\nlemma outcomeMean_mem_unitInterval {d : ℕ} (P : DiscreteLaw d)\n    (a : Bool) (k : Fin d) : outcomeMean P a k ∈ Set.Icc (0 : ℝ) 1"
         },
         {
           "label": "twoCategoryWitness — mu_0k=0, mu_11=1, mu_12=0",
@@ -380,14 +404,14 @@
     "sym:O_i": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 145,
+      "line": 159,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
         {
           "label": "productLaw — i in Fin n; O_i=(X_i,A_i,Y_i)",
-          "statement": "  -- @realizes mu_{ak}(binary conditional mean lies in [0,1])\n\n/-- Canonical finite i.i.d. product law. -/\nnoncomputable def productLaw {d : ℕ} (P : DiscreteLaw d) (n : ℕ) :\n    Measure (Fin n → Obs d) :=\n  Measure.pi (fun _ : Fin n => obsLaw P)\n  -- @realizes O_i(i in Fin n; O_i=(X_i,A_i,Y_i))\n\ninstance {d n : ℕ} (P : DiscreteLaw d) : IsProbabilityMeasure (productLaw P n) := by\n  unfold productLaw\n  infer_instance\n\n-- @env: S1\nvariable (n d : ℕ) -- @realizes n(sample size in Nat) @realizes d(alphabet size in Nat)\nvariable (epsilon c : ℝ)\n  -- @realizes epsilon(overlap constant; range imposed by theorem hypotheses)\n  -- @realizes c(positive range constant)\nvariable (k : Fin d) -- @realizes k(category index in Fin d)\nvariable (P : DiscreteLaw d)\nvariable (sample : Fin n → Obs d)"
+          "statement": "  -- @realizes mu_{ak}(binary conditional mean lies in [0,1])\n\n/-- Canonical finite i.i.d. product law. -/\nnoncomputable def productLaw {d : ℕ} (P : DiscreteLaw d) (n : ℕ) :\n    Measure (Fin n → Obs d) :=\n  Measure.pi (fun _ : Fin n => obsLaw P)\n  -- @realizes O_i(i in Fin n; O_i=(X_i,A_i,Y_i))\n\n/-- The n-fold independent product of a finite observation law is again a probability\nmeasure. -/\ninstance {d n : ℕ} (P : DiscreteLaw d) : IsProbabilityMeasure (productLaw P n) := by\n  unfold productLaw\n  infer_instance\n\n-- @env: S1\nvariable (n d : ℕ) -- @realizes n(sample size in Nat) @realizes d(alphabet size in Nat)\nvariable (epsilon c : ℝ)\n  -- @realizes epsilon(overlap constant; range imposed by theorem hypotheses)\n  -- @realizes c(positive range constant)\nvariable (k : Fin d) -- @realizes k(category index in Fin d)\nvariable (P : DiscreteLaw d)\nvariable (sample : Fin n → Obs d)"
         },
         {
           "label": "ExperimentClass — i.i.d. observations governed by the product law",
@@ -398,7 +422,7 @@
     "sym:n": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 152,
+      "line": 168,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -407,7 +431,7 @@
     "sym:d": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 152,
+      "line": 168,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -425,7 +449,7 @@
     "sym:epsilon": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 154,
+      "line": 170,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -443,7 +467,7 @@
     "sym:c": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 155,
+      "line": 171,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -457,7 +481,7 @@
     "sym:k": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 156,
+      "line": 172,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -466,7 +490,7 @@
     "sym:X": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 159,
+      "line": 175,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -484,7 +508,7 @@
     "sym:A": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 160,
+      "line": 176,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -506,7 +530,7 @@
     "sym:Y": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 161,
+      "line": 177,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -520,7 +544,7 @@
     "sym:Y(a)": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 193,
+      "line": 209,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -546,7 +570,7 @@
     "sym:\\mathcal E_{n,d,\\epsilon}": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 232,
+      "line": 251,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -560,7 +584,7 @@
     "sym:\\mathcal C_\\epsilon": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 251,
+      "line": 270,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -574,7 +598,7 @@
     "sym:\\phi": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 264,
+      "line": 283,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -588,7 +612,7 @@
     "sym:\\tau(P)": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 273,
+      "line": 295,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -606,7 +630,7 @@
     "sym:\\(\\mathsf R_{n,d,\\epsilon}\\)": {
       "decl": "(symbol)",
       "file": "Basic.lean",
-      "line": 332,
+      "line": 354,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -625,7 +649,7 @@
         },
         {
           "label": "minimaxRisk_mem_unitInterval — minimax risk intrinsically lies in [0,1]",
-          "statement": "-- @realizes \\(\\mathsf R_{n,d,\\epsilon}\\)(minimax risk intrinsically lies in [0,1])\nlemma minimaxRisk_mem_unitInterval (n d : ℕ) (epsilon : ℝ) :\n    minimaxRisk n d epsilon ∈ Set.Icc (0 : ℝ) 1"
+          "statement": "-- @realizes \\(\\mathsf R_{n,d,\\epsilon}\\)(minimax risk intrinsically lies in [0,1])\n/-- The minimax mean-squared-error risk over the overlap experiment class lies between\nzero and one.  It is nonnegative because every worst-case risk is an integral of a\nsquare, and it is at most one because the estimator that always reports zero\nalready incurs squared error at most one against an average treatment effect that\nis confined to the interval from minus one to one. -/\nlemma minimaxRisk_mem_unitInterval (n d : ℕ) (epsilon : ℝ) :\n    minimaxRisk n d epsilon ∈ Set.Icc (0 : ℝ) 1"
         }
       ]
     },
@@ -660,7 +684,7 @@
     "sym:N^{(j)}_{aky}": {
       "decl": "(symbol)",
       "file": "Helpers/Estimator.lean",
-      "line": 26,
+      "line": 28,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -674,7 +698,7 @@
     "sym:r=(r_{ay})_{a,y\\in\\{0,1\\}}": {
       "decl": "(symbol)",
       "file": "Helpers/Estimator.lean",
-      "line": 34,
+      "line": 38,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -688,7 +712,7 @@
     "sym:z_r": {
       "decl": "(symbol)",
       "file": "Helpers/Estimator.lean",
-      "line": 40,
+      "line": 46,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -702,7 +726,7 @@
     "sym:\\(\\widehat{\\mathcal H}_n,\\widehat{\\mathcal L}_n\\)": {
       "decl": "(symbol)",
       "file": "Helpers/Estimator.lean",
-      "line": 215,
+      "line": 249,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -717,11 +741,11 @@
         },
         {
           "label": "heavyCells_eq_filter_of_cutoff_le — above the cutoff, heavy means pilot count exceeds lambda0 log(en)",
-          "statement": "-- @realizes \\(\\widehat{\\mathcal H}_n,\\widehat{\\mathcal L}_n\\)(above the cutoff, heavy means pilot count exceeds lambda0 log(en))\nlemma heavyCells_eq_filter_of_cutoff_le {n d : ℕ} (sample : Fin n → Obs d)\n    (h : calibrationCutoff ≤ n) :\n    heavyCells sample = Finset.univ.filter\n      (fun k => (lambda0 : ℝ) * logScale n < splitCategoryCount sample 0 k)"
+          "statement": "-- @realizes \\(\\widehat{\\mathcal H}_n,\\widehat{\\mathcal L}_n\\)(above the cutoff, heavy means pilot count exceeds lambda0 log(en))\n/-- At or above the calibration cutoff, the heavy set is exactly the set of categories\nwhose pilot-half count exceeds lambda_0 times log(e n). -/\nlemma heavyCells_eq_filter_of_cutoff_le {n d : ℕ} (sample : Fin n → Obs d)\n    (h : calibrationCutoff ≤ n) :\n    heavyCells sample = Finset.univ.filter\n      (fun k => (lambda0 : ℝ) * logScale n < splitCategoryCount sample 0 k)"
         },
         {
           "label": "heavyCells_eq_univ_of_lt_cutoff — below the cutoff, every cell uses the heavy ratio branch",
-          "statement": "-- @realizes \\(\\widehat{\\mathcal H}_n,\\widehat{\\mathcal L}_n\\)(below the cutoff, every cell uses the heavy ratio branch)\nlemma heavyCells_eq_univ_of_lt_cutoff {n d : ℕ} (sample : Fin n → Obs d)\n    (h : n < calibrationCutoff) : heavyCells sample = Finset.univ"
+          "statement": "-- @realizes \\(\\widehat{\\mathcal H}_n,\\widehat{\\mathcal L}_n\\)(below the cutoff, every cell uses the heavy ratio branch)\n/-- Below the calibration cutoff every category is declared heavy, so the estimator\nreduces to the plug-in ratio branch on all of them. -/\nlemma heavyCells_eq_univ_of_lt_cutoff {n d : ℕ} (sample : Fin n → Obs d)\n    (h : n < calibrationCutoff) : heavyCells sample = Finset.univ"
         },
         {
           "label": "lightCells_eq_empty_of_lt_cutoff — below the cutoff, the light set is empty",
@@ -736,7 +760,7 @@
     "sym:\\widehat T_{\\mathcal L}": {
       "decl": "(symbol)",
       "file": "Helpers/Estimator.lean",
-      "line": 269,
+      "line": 307,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -750,7 +774,7 @@
     "sym:\\widehat\\tau_n^{\\mathrm{hyb}}": {
       "decl": "(symbol)",
       "file": "Helpers/Estimator.lean",
-      "line": 276,
+      "line": 314,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -810,7 +834,7 @@
     "aux_mse": {
       "decl": "mse",
       "file": "Basic.lean",
-      "line": 333,
+      "line": 355,
       "statement": "  -- @realizes \\tau(P)(ATE functional lies in [-1,1])\n\n/-- Mean squared error under a supplied sample law. -/\n-- @realizes \\(\\mathsf R_{n,d,\\epsilon}\\)(expected squared loss under the product law)\nnoncomputable def mse {d n : ℕ} (mu_n : Measure (Fin n → Obs d))\n    (est : (Fin n → Obs d) → ℝ) (target : ℝ) : ℝ :=\n  ∫ x, (est x - target) ^ 2 ∂mu_n\n\n-- @env: S3\nvariable (n d : ℕ) (epsilon : ℝ)",
       "sorry_free": true,
       "axioms": null
@@ -826,7 +850,7 @@
     "aux_worstCaseMSE": {
       "decl": "worstCaseMSE",
       "file": "Basic.lean",
-      "line": 345,
+      "line": 367,
       "statement": "/-- Worst-case MSE of one measurable estimator over the experiment class. -/\n-- @realizes \\(\\mathsf R_{n,d,\\epsilon}\\)(supremum over the overlap experiment class)\nnoncomputable def worstCaseMSE (n d : ℕ) (epsilon : ℝ)\n    (est : (Fin n → Obs d) → ℝ) : ℝ :=\n  ⨆ P : ClassLaw n d epsilon, mse (productLaw P.1 n) est (ateFunctional P.1)",
       "sorry_free": true,
       "axioms": null
@@ -834,19 +858,23 @@
     "aux_HybridEstimatorComputable": {
       "decl": "HybridEstimatorComputable",
       "file": "Helpers/Estimator.lean",
-      "line": 337,
+      "line": 378,
       "statement": "/-- Clause (i)'s computability assertion, in the real-arithmetic model used in\nthe note.  A universal operation-count constant works for every `n,d`; the\nprogram reads only split counts, returns the stated hybrid exactly, and has\n`O(d M(n)^4)` arithmetic/comparison operations. -/\ndef HybridEstimatorComputable : Prop :=\n  ∃ K : ℕ, 0 < K ∧\n    ∀ n d : ℕ, ∃ program : RealArithmeticProgram (HybridCountInput d),\n      program.operationCount ≤ K * d * polynomialDegree n ^ 4 ∧\n      ∀ sample : Fin n → Obs d,\n        program.eval (hybridCountVector sample) = hybridEstimator sample",
       "sorry_free": true,
       "axioms": null
     },
     "centeredUnitScore": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 29,
+      "file": "Helpers/Endpoint.lean",
+      "line": 18,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredUnitScore",
+          "statement": "noncomputable def centeredUnitScore {d : ℕ} (z : Obs d) : ℝ :=\n  2 * (if z.2.1 then 1 else -1) * ((if z.2.2 then 1 else 0) - 1 / 2)"
+        },
         {
           "label": "Obs",
           "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
@@ -855,58 +883,86 @@
     },
     "centeredUnitScore_sq": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 29,
+      "file": "Helpers/Endpoint.lean",
+      "line": 24,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
         {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredUnitScore_sq",
+          "statement": "/-- The bounded one-observation score used by the centering estimator always squares to\none: it takes only the two values plus one and minus one. -/\nlemma centeredUnitScore_sq {d : ℕ} (z : Obs d) : centeredUnitScore z ^ 2 = 1"
+        },
+        {
           "label": "Obs",
           "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredUnitScore",
+          "statement": "noncomputable def centeredUnitScore {d : ℕ} (z : Obs d) : ℝ :=\n  2 * (if z.2.1 then 1 else -1) * ((if z.2.2 then 1 else 0) - 1 / 2)"
         }
       ]
     },
     "centeredEstimator_eq_scoreMean": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 29,
+      "file": "Helpers/Endpoint.lean",
+      "line": 32,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredEstimator_eq_scoreMean",
+          "statement": "/-- The centering estimator is exactly the sample average of the bounded\none-observation score. -/\nlemma centeredEstimator_eq_scoreMean {n d : ℕ} (sample : Fin n → Obs d) :\n    centeredEstimator sample = (n : ℝ)⁻¹ * ∑ i : Fin n, centeredUnitScore (sample i)"
+        },
         {
           "label": "Obs",
           "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
         },
         {
           "label": "centeredEstimator",
-          "statement": "noncomputable def centeredEstimator {n d : ℕ} (sample : Fin n → Obs d) : ℝ :=\n  (n : ℝ)⁻¹ * ∑ i : Fin n,\n    2 * (if (sample i).2.1 then 1 else -1) *\n      ((if (sample i).2.2 then 1 else 0) - 1 / 2)"
+          "statement": "/-- The sample average of a bounded one-observation score obtained by centering the\nbinary outcome at one half, doubling it, and attaching the sign of the treatment\nindicator -- positive for treated units and negative for controls. -/\nnoncomputable def centeredEstimator {n d : ℕ} (sample : Fin n → Obs d) : ℝ :=\n  (n : ℝ)⁻¹ * ∑ i : Fin n,\n    2 * (if (sample i).2.1 then 1 else -1) *\n      ((if (sample i).2.2 then 1 else 0) - 1 / 2)"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredUnitScore",
+          "statement": "noncomputable def centeredUnitScore {d : ℕ} (z : Obs d) : ℝ :=\n  2 * (if z.2.1 then 1 else -1) * ((if z.2.2 then 1 else 0) - 1 / 2)"
         }
       ]
     },
     "centeredUnitScore_mean": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/Endpoint.lean",
+      "line": 38,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
         {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredUnitScore_mean",
+          "statement": "/-- Establishes the stated property of centered Unit Score mean in the discrete average-treatment-effect construction. -/\nlemma centeredUnitScore_mean {d : ℕ} (P : DiscreteLaw d) :\n    ∫ z, centeredUnitScore z ∂obsLaw P =\n      ∑ k : Fin d,\n        (jointMass P k true true - jointMass P k true false +\n          jointMass P k false false - jointMass P k false true)"
+        },
+        {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredUnitScore",
+          "statement": "noncomputable def centeredUnitScore {d : ℕ} (z : Obs d) : ℝ :=\n  2 * (if z.2.1 then 1 else -1) * ((if z.2.2 then 1 else 0) - 1 / 2)"
         }
       ]
     },
     "centeredScore_category_identity": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/Endpoint.lean",
+      "line": 53,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredScore_category_identity",
+          "statement": "lemma centeredScore_category_identity {d : ℕ} {epsilon : ℝ}\n    (P : DiscreteLaw d) (hOverlap : Overlap epsilon P) (hepsilon : 0 < epsilon)\n    (k : Fin d) (hk : 0 < cellMass P k) :\n    jointMass P k true true - jointMass P k true false +\n          jointMass P k false false - jointMass P k false true =\n      cellMass P k * (outcomeMean P true k - outcomeMean P false k) +\n        2 * (propensity P k - 1 / 2) * cellMass P k *\n          (outcomeMean P true k + outcomeMean P false k - 1)"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -919,12 +975,16 @@
     },
     "jointMass_eq_zero_of_cellMass_eq_zero": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/Endpoint.lean",
+      "line": 100,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.jointMass_eq_zero_of_cellMass_eq_zero",
+          "statement": "/-- Establishes the stated equality relating joint Mass eq zero of cell Mass eq zero. -/\nlemma jointMass_eq_zero_of_cellMass_eq_zero {d : ℕ} (P : DiscreteLaw d)\n    (k : Fin d) (hk : cellMass P k = 0) (a y : Bool) : jointMass P k a y = 0"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -933,12 +993,16 @@
     },
     "cellMass_sum": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/Endpoint.lean",
+      "line": 111,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.cellMass_sum",
+          "statement": "/-- Establishes the stated summation identity or bound for cell Mass sum. -/\nlemma cellMass_sum {d : ℕ} (P : DiscreteLaw d) : ∑ k : Fin d, cellMass P k = 1"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -947,12 +1011,16 @@
     },
     "centeredUnitScore_bias_identity": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/Endpoint.lean",
+      "line": 122,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredUnitScore_bias_identity",
+          "statement": "/-- Establishes the stated property of centered Unit Score bias identity in the discrete average-treatment-effect construction. -/\nlemma centeredUnitScore_bias_identity {d : ℕ} {epsilon : ℝ}\n    (P : DiscreteLaw d) (hOverlap : Overlap epsilon P) (hepsilon : 0 < epsilon) :\n    (∫ z, centeredUnitScore z ∂obsLaw P) - ateFunctional P =\n      ∑ k : Fin d, 2 * (propensity P k - 1 / 2) * cellMass P k *\n        (outcomeMean P true k + outcomeMean P false k - 1)"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -960,6 +1028,10 @@
         {
           "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.Overlap",
           "statement": "/-- Positive-mass categories have propensity in `[epsilon,1-epsilon]`. -/\ndef Overlap {d : ℕ} (epsilon : ℝ) (P : DiscreteLaw d) : Prop :=\n  ∀ k, 0 < cellMass P k →\n    epsilon ≤ propensity P k ∧ propensity P k ≤ 1 - epsilon"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredUnitScore",
+          "statement": "noncomputable def centeredUnitScore {d : ℕ} (z : Obs d) : ℝ :=\n  2 * (if z.2.1 then 1 else -1) * ((if z.2.2 then 1 else 0) - 1 / 2)"
         },
         {
           "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.ateFunctional",
@@ -969,12 +1041,16 @@
     },
     "centeredUnitScore_bias_bound": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/Endpoint.lean",
+      "line": 145,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredUnitScore_bias_bound",
+          "statement": "/-- Establishes the stated upper bound for centered Unit Score bias bound. -/\nlemma centeredUnitScore_bias_bound {d : ℕ} {epsilon : ℝ}\n    (P : DiscreteLaw d) (hOverlap : Overlap epsilon P)\n    (hepsilon : 0 < epsilon) (hepsilon_half : epsilon ≤ 1 / 2) :\n    |(∫ z, centeredUnitScore z ∂obsLaw P) - ateFunctional P| ≤\n      2 * (1 / 2 - epsilon)"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -984,6 +1060,10 @@
           "statement": "/-- Positive-mass categories have propensity in `[epsilon,1-epsilon]`. -/\ndef Overlap {d : ℕ} (epsilon : ℝ) (P : DiscreteLaw d) : Prop :=\n  ∀ k, 0 < cellMass P k →\n    epsilon ≤ propensity P k ∧ propensity P k ≤ 1 - epsilon"
         },
         {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredUnitScore",
+          "statement": "noncomputable def centeredUnitScore {d : ℕ} (z : Obs d) : ℝ :=\n  2 * (if z.2.1 then 1 else -1) * ((if z.2.2 then 1 else 0) - 1 / 2)"
+        },
+        {
           "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.ateFunctional",
           "statement": "noncomputable def ateFunctional {d : ℕ} (P : DiscreteLaw d) : ℝ :=\n  ∑ k : Fin d, cellPhi (cellVector P k)"
         }
@@ -991,62 +1071,86 @@
     },
     "centeredEstimator_mean": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/Endpoint.lean",
+      "line": 195,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredEstimator_mean",
+          "statement": "/-- Establishes the stated property of centered Estimator mean in the discrete average-treatment-effect construction. -/\nlemma centeredEstimator_mean {n d : ℕ} (P : DiscreteLaw d) (hn : 0 < n) :\n    ∫ sample, centeredEstimator sample ∂productLaw P n =\n      ∫ z, centeredUnitScore z ∂obsLaw P"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
         },
         {
           "label": "centeredEstimator",
-          "statement": "noncomputable def centeredEstimator {n d : ℕ} (sample : Fin n → Obs d) : ℝ :=\n  (n : ℝ)⁻¹ * ∑ i : Fin n,\n    2 * (if (sample i).2.1 then 1 else -1) *\n      ((if (sample i).2.2 then 1 else 0) - 1 / 2)"
+          "statement": "/-- The sample average of a bounded one-observation score obtained by centering the\nbinary outcome at one half, doubling it, and attaching the sign of the treatment\nindicator -- positive for treated units and negative for controls. -/\nnoncomputable def centeredEstimator {n d : ℕ} (sample : Fin n → Obs d) : ℝ :=\n  (n : ℝ)⁻¹ * ∑ i : Fin n,\n    2 * (if (sample i).2.1 then 1 else -1) *\n      ((if (sample i).2.2 then 1 else 0) - 1 / 2)"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredUnitScore",
+          "statement": "noncomputable def centeredUnitScore {d : ℕ} (z : Obs d) : ℝ :=\n  2 * (if z.2.1 then 1 else -1) * ((if z.2.2 then 1 else 0) - 1 / 2)"
         }
       ]
     },
     "centeredUnitScore_variance_le_one": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/Endpoint.lean",
+      "line": 205,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
         {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredUnitScore_variance_le_one",
+          "statement": "/-- Establishes the stated upper bound for centered Unit Score variance le one. -/\nlemma centeredUnitScore_variance_le_one {d : ℕ} (P : DiscreteLaw d) :\n    variance (fun z => centeredUnitScore z) (obsLaw P) ≤ 1"
+        },
+        {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredUnitScore",
+          "statement": "noncomputable def centeredUnitScore {d : ℕ} (z : Obs d) : ℝ :=\n  2 * (if z.2.1 then 1 else -1) * ((if z.2.2 then 1 else 0) - 1 / 2)"
         }
       ]
     },
     "centeredEstimator_variance_le": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/Endpoint.lean",
+      "line": 217,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredEstimator_variance_le",
+          "statement": "/-- Establishes the stated upper bound for centered Estimator variance le. -/\nlemma centeredEstimator_variance_le {n d : ℕ} (P : DiscreteLaw d) (hn : 0 < n) :\n    variance (fun sample => centeredEstimator sample) (productLaw P n) ≤ 1 / (n : ℝ)"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
         },
         {
           "label": "centeredEstimator",
-          "statement": "noncomputable def centeredEstimator {n d : ℕ} (sample : Fin n → Obs d) : ℝ :=\n  (n : ℝ)⁻¹ * ∑ i : Fin n,\n    2 * (if (sample i).2.1 then 1 else -1) *\n      ((if (sample i).2.2 then 1 else 0) - 1 / 2)"
+          "statement": "/-- The sample average of a bounded one-observation score obtained by centering the\nbinary outcome at one half, doubling it, and attaching the sign of the treatment\nindicator -- positive for treated units and negative for controls. -/\nnoncomputable def centeredEstimator {n d : ℕ} (sample : Fin n → Obs d) : ℝ :=\n  (n : ℝ)⁻¹ * ∑ i : Fin n,\n    2 * (if (sample i).2.1 then 1 else -1) *\n      ((if (sample i).2.2 then 1 else 0) - 1 / 2)"
         }
       ]
     },
     "mse_eq_variance_add_sq_bias": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 29,
+      "file": "Helpers/Endpoint.lean",
+      "line": 232,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.mse_eq_variance_add_sq_bias",
+          "statement": "/-- Establishes the stated equality relating mse eq variance add sq bias. -/\nlemma mse_eq_variance_add_sq_bias {n d : ℕ}\n    (mu : Measure (Fin n → Obs d)) [IsProbabilityMeasure mu]\n    (est : (Fin n → Obs d) → ℝ) (target : ℝ) :\n    mse mu est target = variance est mu + ((∫ x, est x ∂mu) - target) ^ 2"
+        },
         {
           "label": "Obs",
           "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
@@ -1059,12 +1163,16 @@
     },
     "mse_le_estimator_abs_sum_bound": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/LowerBound.lean",
+      "line": 40,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.mse_le_estimator_abs_sum_bound",
+          "statement": "/-- A uniform finite-alphabet bound used to justify the two class suprema. -/\nlemma mse_le_estimator_abs_sum_bound {n d : ℕ} {epsilon : ℝ} (P : DiscreteLaw d)\n    (hOverlap : Overlap epsilon P)\n    (est : (Fin n → Obs d) → ℝ) :\n    mse (productLaw P n) est (ateFunctional P) ≤\n      ((∑ sample : Fin n → Obs d, |est sample|) + 1) ^ 2"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1089,12 +1197,16 @@
     },
     "oneArmMinimaxRisk_le_minimaxRisk": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 0,
+      "file": "Helpers/LowerBound.lean",
+      "line": 96,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.oneArmMinimaxRisk_le_minimaxRisk",
+          "statement": "lemma oneArmMinimaxRisk_le_minimaxRisk (n d : ℕ) (epsilon : ℝ) :\n    oneArmMinimaxRisk n d epsilon ≤ minimaxRisk n d epsilon"
+        },
         {
           "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.minimaxRisk",
           "statement": "noncomputable def minimaxRisk (n d : ℕ) (epsilon : ℝ) : ℝ :=\n  ⨅ est : {f : (Fin n → Obs d) → ℝ // Measurable f},\n    worstCaseMSE n d epsilon est.1"
@@ -1103,12 +1215,16 @@
     },
     "endpointParametricLaw": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/Endpoint.lean",
+      "line": 293,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.endpointParametricLaw",
+          "statement": "/-- Defines endpoint Parametric Law, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\nnoncomputable def endpointParametricLaw {d : ℕ} [Nonempty (Fin d)]\n    {m g : ℝ} (hv : Causalean.Estimation.MinimaxATE.ValidDGP\n      (Causalean.Estimation.MinimaxATE.Parametric.mC (C := Fin d) m)\n      (Causalean.Estimation.MinimaxATE.Parametric.gNull (C := Fin d) g g)) : DiscreteLaw d :=\n  ⟨Causalean.Estimation.MinimaxATE.obsPMF hv⟩"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1117,82 +1233,158 @@
     },
     "endpointParametricPertLaw": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/Endpoint.lean",
+      "line": 301,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.endpointParametricPertLaw",
+          "statement": "/-- Defines endpoint Parametric Pert Law, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\nnoncomputable def endpointParametricPertLaw {d : ℕ} [Nonempty (Fin d)]\n    {m g delta : ℝ} (hv : Causalean.Estimation.MinimaxATE.ValidDGP\n      (Causalean.Estimation.MinimaxATE.Parametric.mC (C := Fin d) m)\n      (Causalean.Estimation.MinimaxATE.Parametric.gPert (C := Fin d) g g delta)) : DiscreteLaw d :=\n  ⟨Causalean.Estimation.MinimaxATE.obsPMF hv⟩"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
         }
       ]
     },
-    "endpointParametricLaw_overlap": {
+    "endpointParametricLaw_jointMass": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 0,
+      "file": "Helpers/Endpoint.lean",
+      "line": 309,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
         {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.endpointParametricLaw_jointMass",
+          "statement": "/-- Establishes the stated property of endpoint Parametric Law joint Mass in the discrete average-treatment-effect construction. -/\nlemma endpointParametricLaw_jointMass {d : ℕ} [Nonempty (Fin d)]\n    {m g : ℝ} (hv : Causalean.Estimation.MinimaxATE.ValidDGP\n      (Causalean.Estimation.MinimaxATE.Parametric.mC (C := Fin d) m)\n      (Causalean.Estimation.MinimaxATE.Parametric.gNull (C := Fin d) g g))\n    (k : Fin d) (a y : Bool) :\n    jointMass (endpointParametricLaw hv) k a y =\n      Causalean.Estimation.MinimaxATE.obsReal\n        (Causalean.Estimation.MinimaxATE.Parametric.mC (C := Fin d) m)\n        (Causalean.Estimation.MinimaxATE.Parametric.gNull (C := Fin d) g g) (k, a, y)"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.endpointParametricLaw",
+          "statement": "/-- Defines endpoint Parametric Law, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\nnoncomputable def endpointParametricLaw {d : ℕ} [Nonempty (Fin d)]\n    {m g : ℝ} (hv : Causalean.Estimation.MinimaxATE.ValidDGP\n      (Causalean.Estimation.MinimaxATE.Parametric.mC (C := Fin d) m)\n      (Causalean.Estimation.MinimaxATE.Parametric.gNull (C := Fin d) g g)) : DiscreteLaw d :=\n  ⟨Causalean.Estimation.MinimaxATE.obsPMF hv⟩"
+        }
+      ]
+    },
+    "endpointParametricPertLaw_jointMass": {
+      "decl": "(composite)",
+      "file": "Helpers/Endpoint.lean",
+      "line": 325,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.endpointParametricPertLaw_jointMass",
+          "statement": "/-- Establishes the stated property of endpoint Parametric Pert Law joint Mass in the discrete average-treatment-effect construction. -/\nlemma endpointParametricPertLaw_jointMass {d : ℕ} [Nonempty (Fin d)]\n    {m g delta : ℝ} (hv : Causalean.Estimation.MinimaxATE.ValidDGP\n      (Causalean.Estimation.MinimaxATE.Parametric.mC (C := Fin d) m)\n      (Causalean.Estimation.MinimaxATE.Parametric.gPert (C := Fin d) g g delta))\n    (k : Fin d) (a y : Bool) :\n    jointMass (endpointParametricPertLaw hv) k a y =\n      Causalean.Estimation.MinimaxATE.obsReal\n        (Causalean.Estimation.MinimaxATE.Parametric.mC (C := Fin d) m)\n        (Causalean.Estimation.MinimaxATE.Parametric.gPert (C := Fin d) g g delta) (k, a, y)"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.endpointParametricPertLaw",
+          "statement": "/-- Defines endpoint Parametric Pert Law, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\nnoncomputable def endpointParametricPertLaw {d : ℕ} [Nonempty (Fin d)]\n    {m g delta : ℝ} (hv : Causalean.Estimation.MinimaxATE.ValidDGP\n      (Causalean.Estimation.MinimaxATE.Parametric.mC (C := Fin d) m)\n      (Causalean.Estimation.MinimaxATE.Parametric.gPert (C := Fin d) g g delta)) : DiscreteLaw d :=\n  ⟨Causalean.Estimation.MinimaxATE.obsPMF hv⟩"
+        }
+      ]
+    },
+    "endpointParametricLaw_overlap": {
+      "decl": "(composite)",
+      "file": "Helpers/Endpoint.lean",
+      "line": 341,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.endpointParametricLaw_overlap",
+          "statement": "/-- Establishes the stated property of endpoint Parametric Law overlap in the discrete average-treatment-effect construction. -/\nlemma endpointParametricLaw_overlap {d : ℕ} [Nonempty (Fin d)]\n    {g : ℝ} (hv : Causalean.Estimation.MinimaxATE.ValidDGP\n      (Causalean.Estimation.MinimaxATE.Parametric.mC (C := Fin d) (1 / 2))\n      (Causalean.Estimation.MinimaxATE.Parametric.gNull (C := Fin d) g g)) :\n    Overlap (1 / 2) (endpointParametricLaw (d := d) hv)"
+        },
+        {
           "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.Overlap",
           "statement": "/-- Positive-mass categories have propensity in `[epsilon,1-epsilon]`. -/\ndef Overlap {d : ℕ} (epsilon : ℝ) (P : DiscreteLaw d) : Prop :=\n  ∀ k, 0 < cellMass P k →\n    epsilon ≤ propensity P k ∧ propensity P k ≤ 1 - epsilon"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.endpointParametricLaw",
+          "statement": "/-- Defines endpoint Parametric Law, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\nnoncomputable def endpointParametricLaw {d : ℕ} [Nonempty (Fin d)]\n    {m g : ℝ} (hv : Causalean.Estimation.MinimaxATE.ValidDGP\n      (Causalean.Estimation.MinimaxATE.Parametric.mC (C := Fin d) m)\n      (Causalean.Estimation.MinimaxATE.Parametric.gNull (C := Fin d) g g)) : DiscreteLaw d :=\n  ⟨Causalean.Estimation.MinimaxATE.obsPMF hv⟩"
         }
       ]
     },
     "endpointParametricPertLaw_overlap": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 0,
+      "file": "Helpers/Endpoint.lean",
+      "line": 370,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
         {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.endpointParametricPertLaw_overlap",
+          "statement": "/-- Establishes the stated property of endpoint Parametric Pert Law overlap in the discrete average-treatment-effect construction. -/\nlemma endpointParametricPertLaw_overlap {d : ℕ} [Nonempty (Fin d)]\n    {g delta : ℝ} (hv : Causalean.Estimation.MinimaxATE.ValidDGP\n      (Causalean.Estimation.MinimaxATE.Parametric.mC (C := Fin d) (1 / 2))\n      (Causalean.Estimation.MinimaxATE.Parametric.gPert (C := Fin d) g g delta)) :\n    Overlap (1 / 2) (endpointParametricPertLaw (d := d) hv)"
+        },
+        {
           "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.Overlap",
           "statement": "/-- Positive-mass categories have propensity in `[epsilon,1-epsilon]`. -/\ndef Overlap {d : ℕ} (epsilon : ℝ) (P : DiscreteLaw d) : Prop :=\n  ∀ k, 0 < cellMass P k →\n    epsilon ≤ propensity P k ∧ propensity P k ≤ 1 - epsilon"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.endpointParametricPertLaw",
+          "statement": "/-- Defines endpoint Parametric Pert Law, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\nnoncomputable def endpointParametricPertLaw {d : ℕ} [Nonempty (Fin d)]\n    {m g delta : ℝ} (hv : Causalean.Estimation.MinimaxATE.ValidDGP\n      (Causalean.Estimation.MinimaxATE.Parametric.mC (C := Fin d) m)\n      (Causalean.Estimation.MinimaxATE.Parametric.gPert (C := Fin d) g g delta)) : DiscreteLaw d :=\n  ⟨Causalean.Estimation.MinimaxATE.obsPMF hv⟩"
         }
       ]
     },
     "endpointParametricLaw_ate": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 0,
+      "file": "Helpers/Endpoint.lean",
+      "line": 398,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
         {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.endpointParametricLaw_ate",
+          "statement": "/-- Establishes the stated property of endpoint Parametric Law ate in the discrete average-treatment-effect construction. -/\nlemma endpointParametricLaw_ate {d : ℕ} [Nonempty (Fin d)]\n    {g : ℝ} (hv : Causalean.Estimation.MinimaxATE.ValidDGP\n      (Causalean.Estimation.MinimaxATE.Parametric.mC (C := Fin d) (1 / 2))\n      (Causalean.Estimation.MinimaxATE.Parametric.gNull (C := Fin d) g g)) :\n    ateFunctional (endpointParametricLaw (d := d) hv) = 0"
+        },
+        {
           "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.ateFunctional",
           "statement": "noncomputable def ateFunctional {d : ℕ} (P : DiscreteLaw d) : ℝ :=\n  ∑ k : Fin d, cellPhi (cellVector P k)"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.endpointParametricLaw",
+          "statement": "/-- Defines endpoint Parametric Law, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\nnoncomputable def endpointParametricLaw {d : ℕ} [Nonempty (Fin d)]\n    {m g : ℝ} (hv : Causalean.Estimation.MinimaxATE.ValidDGP\n      (Causalean.Estimation.MinimaxATE.Parametric.mC (C := Fin d) m)\n      (Causalean.Estimation.MinimaxATE.Parametric.gNull (C := Fin d) g g)) : DiscreteLaw d :=\n  ⟨Causalean.Estimation.MinimaxATE.obsPMF hv⟩"
         }
       ]
     },
     "endpointParametricPertLaw_ate": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 0,
+      "file": "Helpers/Endpoint.lean",
+      "line": 420,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
         {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.endpointParametricPertLaw_ate",
+          "statement": "/-- Establishes the stated property of endpoint Parametric Pert Law ate in the discrete average-treatment-effect construction. -/\nlemma endpointParametricPertLaw_ate {d : ℕ} [Nonempty (Fin d)]\n    {g delta : ℝ} (hv : Causalean.Estimation.MinimaxATE.ValidDGP\n      (Causalean.Estimation.MinimaxATE.Parametric.mC (C := Fin d) (1 / 2))\n      (Causalean.Estimation.MinimaxATE.Parametric.gPert (C := Fin d) g g delta)) :\n    ateFunctional (endpointParametricPertLaw (d := d) hv) = delta"
+        },
+        {
           "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.ateFunctional",
           "statement": "noncomputable def ateFunctional {d : ℕ} (P : DiscreteLaw d) : ℝ :=\n  ∑ k : Fin d, cellPhi (cellVector P k)"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.endpointParametricPertLaw",
+          "statement": "/-- Defines endpoint Parametric Pert Law, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\nnoncomputable def endpointParametricPertLaw {d : ℕ} [Nonempty (Fin d)]\n    {m g delta : ℝ} (hv : Causalean.Estimation.MinimaxATE.ValidDGP\n      (Causalean.Estimation.MinimaxATE.Parametric.mC (C := Fin d) m)\n      (Causalean.Estimation.MinimaxATE.Parametric.gPert (C := Fin d) g g delta)) : DiscreteLaw d :=\n  ⟨Causalean.Estimation.MinimaxATE.obsPMF hv⟩"
         }
       ]
     },
     "categoryIndicator": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 29,
+      "file": "Helpers/PilotSandwich.lean",
+      "line": 16,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.categoryIndicator",
+          "statement": "/-- Defines category Indicator, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\nnoncomputable def categoryIndicator {d : ℕ} (k : Fin d) (z : Obs d) : ℝ :=\n  if z.1 = k then 1 else 0"
+        },
         {
           "label": "Obs",
           "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
@@ -1201,26 +1393,38 @@
     },
     "categoryIndicator_mean": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/PilotSandwich.lean",
+      "line": 21,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
         {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.categoryIndicator_mean",
+          "statement": "/-- Establishes the stated property of category Indicator mean in the discrete average-treatment-effect construction. -/\nlemma categoryIndicator_mean {d : ℕ} (P : DiscreteLaw d) (k : Fin d) :\n    ∫ z, categoryIndicator k z ∂obsLaw P = cellMass P k"
+        },
+        {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.categoryIndicator",
+          "statement": "/-- Defines category Indicator, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\nnoncomputable def categoryIndicator {d : ℕ} (k : Fin d) (z : Obs d) : ℝ :=\n  if z.1 = k then 1 else 0"
         }
       ]
     },
     "pilot_count_eq_bernoulliCount": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/PilotSandwich.lean",
+      "line": 34,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.pilot_count_eq_bernoulliCount",
+          "statement": "/-- Establishes the stated equality relating pilot count eq bernoulli Count. -/\nlemma pilot_count_eq_bernoulliCount {n d : ℕ} (P : DiscreteLaw d)\n    (k : Fin d) (ω : ℕ → Obs d) :\n    (splitCategoryCount (fun i : Fin n => ω i) 0 k : ℝ) =\n      Causalean.Stat.Concentration.bernoulliCount\n        (Causalean.Stat.iidSample_infinitePi (obsLaw P))\n        (categoryIndicator k) (n / 2) ω"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1228,17 +1432,25 @@
         {
           "label": "Obs",
           "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.categoryIndicator",
+          "statement": "/-- Defines category Indicator, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\nnoncomputable def categoryIndicator {d : ℕ} (k : Fin d) (z : Obs d) : ℝ :=\n  if z.1 = k then 1 else 0"
         }
       ]
     },
     "pilotCategory_upper_tail": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/PilotSandwich.lean",
+      "line": 70,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.pilotCategory_upper_tail",
+          "statement": "/-- Establishes the stated property of pilot Category upper tail in the discrete average-treatment-effect construction. -/\nlemma pilotCategory_upper_tail {n d : ℕ} (P : DiscreteLaw d) (k : Fin d)\n    {a : ℝ} (hmean_lt : (n / 2 : ℕ) * cellMass P k < a / 2) :\n    (productLaw P n).real\n      {sample | a < (splitCategoryCount sample 0 k : ℝ)} ≤\n        Real.exp (-a * (Real.log 2 - 1 / 2))"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1247,12 +1459,16 @@
     },
     "pilotCategory_lower_tail": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/PilotSandwich.lean",
+      "line": 98,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.pilotCategory_lower_tail",
+          "statement": "/-- Establishes the stated property of pilot Category lower tail in the discrete average-treatment-effect construction. -/\nlemma pilotCategory_lower_tail {n d : ℕ} (P : DiscreteLaw d) (k : Fin d)\n    {a : ℝ} (hmean_gt : 2 * a < (n / 2 : ℕ) * cellMass P k) :\n    (productLaw P n).real\n      {sample | (splitCategoryCount sample 0 k : ℝ) ≤ a} ≤\n        Real.exp (-((n / 2 : ℕ) * cellMass P k) / 8)"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1261,12 +1477,16 @@
     },
     "pilotBadEvent_subset_cellwise": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/PilotSandwich.lean",
+      "line": 141,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.pilotBadEvent_subset_cellwise",
+          "statement": "/-- Establishes the stated property of pilot Bad Event subset cellwise in the discrete average-treatment-effect construction. -/\nlemma pilotBadEvent_subset_cellwise {n d : ℕ} (P : DiscreteLaw d) (t : ℝ) :\n    pilotBadEvent P t ⊆\n      (⋃ k : Fin d, {sample : Fin n → Obs d |\n        cellMass P k < t * logScale n / (2 * splitSize n 0) ∧\n        t * logScale n < (splitCategoryCount sample 0 k : ℝ)}) ∪\n      (⋃ k : Fin d, {sample : Fin n → Obs d |\n        2 * t * logScale n / splitSize n 0 < cellMass P k ∧\n        (splitCategoryCount sample 0 k : ℝ) ≤ t * logScale n})"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1279,26 +1499,58 @@
     },
     "pilotBadEvent_probability": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/PilotSandwich.lean",
+      "line": 175,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.pilotBadEvent_probability",
+          "statement": "/-- Establishes the stated property of pilot Bad Event probability in the discrete average-treatment-effect construction. -/\nlemma pilotBadEvent_probability {n d : ℕ} (P : DiscreteLaw d) (t : ℝ)\n    (ht : 0 ≤ t) (hn : 2 ≤ n) :\n    (productLaw P n).real (pilotBadEvent P t) ≤\n      d * (Real.exp (-(t * logScale n) * (Real.log 2 - 1 / 2)) +\n        Real.exp (-(t * logScale n) / 4))"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
         }
       ]
     },
+    "exp_neg_mul_logScale": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.exp_neg_mul_logScale",
+      "file": "Helpers/PilotSandwich.lean",
+      "line": 243,
+      "statement": "/-- Establishes the stated upper bound for exp neg mul log Scale. -/\nlemma exp_neg_mul_logScale (n : ℕ) (hn : 0 < n) (q : ℝ) :\n    Real.exp (-q * logScale n) = Real.exp (-q) * Real.rpow n (-q)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "pilot_decay_bound": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.pilot_decay_bound",
+      "file": "Helpers/PilotSandwich.lean",
+      "line": 256,
+      "statement": "/-- Establishes the stated upper bound for pilot decay bound. -/\nlemma pilot_decay_bound (K c t : ℝ) (hK : 0 < K) (hc : 0 < c)\n    (ht : 0 ≤ t)\n    (htUpper : K + 4 ≤ t * (Real.log 2 - 1 / 2))\n    (htLower : K + 4 ≤ t / 4) :\n    ∀ n d : ℕ, 1 ≤ n →\n      (d : ℝ) ≤ c * n * logScale n →\n      d * (Real.exp (-(t * logScale n) * (Real.log 2 - 1 / 2)) +\n        Real.exp (-(t * logScale n) / 4)) ≤ (2 * c) * Real.rpow n (-K)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "clamp_sq_error_le": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.clamp_sq_error_le",
+      "file": "T_SharpMinimaxFixedInterior.lean",
+      "line": 12,
+      "statement": "/-- Establishes the stated upper bound for clamp sq error le. -/\nlemma clamp_sq_error_le (x t : ℝ) (ht : t ∈ Set.Icc (-1 : ℝ) 1) :\n    (max (-1) (min 1 x) - t) ^ 2 ≤ (x - t) ^ 2",
+      "sorry_free": true,
+      "axioms": null
+    },
     "targetHeavy_add_targetLight": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "T_SharpMinimaxFixedInterior.lean",
+      "line": 28,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.targetHeavy_add_targetLight",
+          "statement": "/-- Establishes the stated property of target Heavy add target Light in the discrete average-treatment-effect construction. -/\nlemma targetHeavy_add_targetLight {n d : ℕ} (P : DiscreteLaw d)\n    (sample : Fin n → Obs d) :\n    targetHeavy P sample + targetLight P sample = ateFunctional P"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1315,12 +1567,16 @@
     },
     "hybrid_mse_le_component_errors": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "T_SharpMinimaxFixedInterior.lean",
+      "line": 43,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.hybrid_mse_le_component_errors",
+          "statement": "/-- Establishes the stated upper bound for hybrid mse le component errors. -/\nlemma hybrid_mse_le_component_errors {n d : ℕ} {epsilon : ℝ} (P : DiscreteLaw d)\n    (mu_n : Measure (Fin n → Obs d)) (hclass : ExperimentClass n epsilon P mu_n) :\n    mse mu_n hybridEstimator (ateFunctional P) ≤\n      2 * componentErrorMSE mu_n heavyContribution (targetHeavy P) +\n        2 * componentErrorMSE mu_n lightContribution (targetLight P)"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1347,14 +1603,26 @@
         }
       ]
     },
+    "canonicalClassLaw": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.canonicalClassLaw",
+      "file": "T_SharpMinimaxFixedInterior.lean",
+      "line": 82,
+      "statement": "/-- Defines canonical Class Law, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\nnoncomputable def canonicalClassLaw (n d : ℕ) (hd : 0 < d) (epsilon : ℝ)\n    (he0 : 0 < epsilon) (he1 : epsilon < 1 / 2) : ClassLaw n d epsilon := by\n  letI : Nonempty (Fin d) := Fin.pos_iff_nonempty.mp hd\n  let hv := Causalean.Estimation.MinimaxATE.Parametric.validDGP_null\n    (C := Fin d) (m₀ := (1 / 2 : ℝ)) (g₀ := (1 / 2 : ℝ)) (g₁ := (1 / 2 : ℝ))\n    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)\n  let P := endpointParametricLaw hv\n  refine ⟨P, ⟨he0, le_of_lt he1, rfl, ?_⟩⟩\n  have hhalf := endpointParametricLaw_overlap (d := d) hv\n  intro k hk\n  rcases hhalf k hk with ⟨hl, hu⟩\n  constructor <;> linarith",
+      "sorry_free": true,
+      "axioms": null
+    },
     "hybrid_upper_fixed_interior": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "T_SharpMinimaxFixedInterior.lean",
+      "line": 97,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.hybrid_upper_fixed_interior",
+          "statement": "lemma hybrid_upper_fixed_interior (epsilon : ℝ) (he0 : 0 < epsilon)\n    (he1 : epsilon < 1 / 2) :\n    ∃ C_epsilon rho_epsilon : ℝ, ∃ N_epsilon : ℕ,\n      0 < C_epsilon ∧ 0 < rho_epsilon ∧\n      ∀ (n d : ℕ) (P : DiscreteLaw d)\n        (mu_n : Measure (Fin n → Obs d)),\n        ExperimentClass n epsilon P mu_n →\n        N_epsilon ≤ n →\n        (d : ℝ) ≤ rho_epsilon * n * Real.log n →\n        minimaxRisk n d epsilon ≤ worstCaseMSE n d epsilon hybridEstimator ∧\n        worstCaseMSE n d epsilon hybridEstimator ≤\n          C_epsilon * minimaxRate n d"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1385,14 +1653,26 @@
         }
       ]
     },
+    "factorial_normalization": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.factorial_normalization",
+      "file": "Helpers/FactorialMoments.lean",
+      "line": 122,
+      "statement": "lemma factorial_normalization (m r : ℕ) :\n    Causalean.Stat.injectiveTupleCount r m = m.descFactorial r",
+      "sorry_free": true,
+      "axioms": null
+    },
     "overlap_adaptive_universal_hybrid_statistical": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 345,
+      "file": "T_OverlapAdaptiveUniversalHybrid.lean",
+      "line": 19,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.overlap_adaptive_universal_hybrid_statistical",
+          "statement": "/-- The statistical clauses of the universal-hybrid theorem, assembled from\nthe fixed-interior upper bound, centered-estimator bound, endpoint bracket, and\ndeterministic selector. -/\nlemma overlap_adaptive_universal_hybrid_statistical :\n    (∀ epsilon : ℝ, 0 < epsilon → epsilon < 1 / 2 →\n      ∃ C_epsilon rho_epsilon : ℝ, ∃ N_epsilon : ℕ,\n        0 < C_epsilon ∧ 0 < rho_epsilon ∧\n        ∀ n d : ℕ, 0 < n → 0 < d → N_epsilon ≤ n →\n          (d : ℝ) ≤ rho_epsilon * n * Real.log n →\n          worstCaseMSE n d epsilon hybridEstimator ≤\n              C_epsilon * minimaxRate n d ∧\n          minimaxRisk n d epsilon ≤\n              worstCaseMSE n d epsilon\n                (selectedEstimator C_epsilon epsilon) ∧\n          worstCaseMSE n d epsilon\n              (selectedEstimator C_epsilon epsilon) ≤\n            max C_epsilon 4 *\n              (1 / (n : ℝ) +\n                min (d ^ 2 / ((n : ℝ) ^ 2 * (Real.log n) ^ 2))\n                  ((1 / 2 - epsilon) ^ 2))) ∧\n    (∀ epsilon : ℝ, 0 < epsilon → epsilon ≤ 1 / 2 →\n      ∀ n d : ℕ, 0 < n → 0 < d →\n        worstCaseMSE n d epsilon centeredEstimator ≤\n          1 / (n : ℝ) + 4 * (1 / 2 - epsilon) ^ 2) ∧\n    (∀ n d : ℕ, 0 < n → 0 < d →\n      1 / (100 * (n : ℝ)) ≤ minimaxRisk n d (1 / 2) ∧\n        minimaxRisk n d (1 / 2) ≤ 1 / (n : ℝ))"
+        },
         {
           "label": "worstCaseMSE",
           "statement": "/-- Worst-case MSE of one measurable estimator over the experiment class. -/\n-- @realizes \\(\\mathsf R_{n,d,\\epsilon}\\)(supremum over the overlap experiment class)\nnoncomputable def worstCaseMSE (n d : ℕ) (epsilon : ℝ)\n    (est : (Fin n → Obs d) → ℝ) : ℝ :=\n  ⨆ P : ClassLaw n d epsilon, mse (productLaw P.1 n) est (ateFunctional P.1)"
@@ -1415,18 +1695,22 @@
         },
         {
           "label": "centeredEstimator",
-          "statement": "noncomputable def centeredEstimator {n d : ℕ} (sample : Fin n → Obs d) : ℝ :=\n  (n : ℝ)⁻¹ * ∑ i : Fin n,\n    2 * (if (sample i).2.1 then 1 else -1) *\n      ((if (sample i).2.2 then 1 else 0) - 1 / 2)"
+          "statement": "/-- The sample average of a bounded one-observation score obtained by centering the\nbinary outcome at one half, doubling it, and attaching the sign of the treatment\nindicator -- positive for treated units and negative for controls. -/\nnoncomputable def centeredEstimator {n d : ℕ} (sample : Fin n → Obs d) : ℝ :=\n  (n : ℝ)⁻¹ * ∑ i : Fin n,\n    2 * (if (sample i).2.1 then 1 else -1) *\n      ((if (sample i).2.2 then 1 else 0) - 1 / 2)"
         }
       ]
     },
     "lightCells_eq_pilotHeavyAt_compl_of_cutoff_le": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 29,
+      "file": "Helpers/LightCell.lean",
+      "line": 26,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.lightCells_eq_pilotHeavyAt_compl_of_cutoff_le",
+          "statement": "/-- Establishes the stated equality relating light Cells eq pilot Heavy At compl of cutoff le. -/\nlemma lightCells_eq_pilotHeavyAt_compl_of_cutoff_le {n d : ℕ}\n    (sample : Fin n → Obs d) (hcut : calibrationCutoff ≤ n) :\n    lightCells sample = (pilotHeavyAt sample 256)ᶜ"
+        },
         {
           "label": "Obs",
           "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
@@ -1435,12 +1719,16 @@
     },
     "selected_light_mass_le_bandwidth_quarter": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/LightCell.lean",
+      "line": 39,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.selected_light_mass_le_bandwidth_quarter",
+          "statement": "/-- Establishes the stated upper bound for selected light mass le bandwidth quarter. -/\nlemma selected_light_mass_le_bandwidth_quarter {n d : ℕ}\n    (P : DiscreteLaw d) (sample : Fin n → Obs d)\n    (hcut : calibrationCutoff ≤ n) (hgood : sample ∉ pilotBadEvent P 256)\n    (k : Fin d) (hk : k ∈ lightCells sample) :\n    cellMass P k ≤ bandwidth n / 4"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1453,12 +1741,16 @@
     },
     "selected_light_approximation_bias": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/LightCell.lean",
+      "line": 94,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.selected_light_approximation_bias",
+          "statement": "/-- Establishes the stated upper bound for selected light approximation bias. -/\nlemma selected_light_approximation_bias {n d : ℕ} {epsilon : ℝ}\n    (P : DiscreteLaw d) (hOverlap : Overlap epsilon P)\n    (sample : Fin n → Obs d) (hcut : calibrationCutoff ≤ n)\n    (hgood : sample ∉ pilotBadEvent P 256) (he0 : 0 < epsilon) :\n    |Finset.sum (lightCells sample) (fun k : Fin d =>\n        (cellApproxPolynomial (polynomialDegree n) (bandwidth n)).eval\n            (cellVector P k) - cellPhi (cellVector P k))| ≤\n      d * (2 * bandwidth n / (epsilon * polynomialDegree n ^ 2))"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1475,12 +1767,16 @@
     },
     "integrable_factorialPolynomialContribution_trunc": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/LightCell.lean",
+      "line": 167,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.integrable_factorialPolynomialContribution_trunc",
+          "statement": "/-- Shows that integrable factorial Polynomial Contribution trunc is integrable under the stated sampling distribution. -/\nlemma integrable_factorialPolynomialContribution_trunc {n d : ℕ}\n    (P : DiscreteLaw d) (k : Fin d) :\n    Integrable (fun ω : ℕ → Obs d =>\n      factorialPolynomialContribution (fun i : Fin n => ω i) k)\n      (Measure.infinitePi (fun _ : ℕ => obsLaw P))"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1493,12 +1789,16 @@
     },
     "integral_factorialPolynomialContribution_trunc": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/LightCell.lean",
+      "line": 194,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_factorialPolynomialContribution_trunc",
+          "statement": "/-- Evaluates or bounds the stated integral involving integral factorial Polynomial Contribution trunc. -/\nlemma integral_factorialPolynomialContribution_trunc {n d : ℕ}\n    (P : DiscreteLaw d) (k : Fin d)\n    (hcut : calibrationCutoff ≤ n) :\n    ∫ ω : ℕ → Obs d,\n        factorialPolynomialContribution (fun i : Fin n => ω i) k\n        ∂(Measure.infinitePi (fun _ : ℕ => obsLaw P)) =\n      (cellApproxPolynomial (polynomialDegree n) (bandwidth n)).eval\n        (cellVector P k)"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1509,70 +1809,190 @@
         }
       ]
     },
+    "iidSample_shift": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.iidSampleShift",
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 16,
+      "statement": "/-- Defines iid Sample Shift, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\nnoncomputable def iidSampleShift {Ω X : Type*} [MeasurableSpace Ω]\n    [MeasurableSpace X] {μ : Measure Ω} {Q : Measure X}\n    (S : Causalean.Stat.IIDSample Ω X μ Q) (offset : ℕ) :\n    Causalean.Stat.IIDSample Ω X μ Q where\n  Z i := S.Z (offset + i)\n  meas i := S.meas (offset + i)\n  indep := S.indep.precomp (fun _ _ h ↦ Nat.add_left_cancel h)\n  identDist i := by\n    simpa using (S.identDist offset).symm.trans (S.identDist (offset + i))\n  law := by simpa using S.map_eq offset",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "iidSample_map": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.iidSampleMap",
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 29,
+      "statement": "/-- Defines iid Sample Map, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\nnoncomputable def iidSampleMap {Ω X Y : Type*} [MeasurableSpace Ω]\n    [MeasurableSpace X] [MeasurableSpace Y] {μ : Measure Ω} {Q : Measure X}\n    (S : Causalean.Stat.IIDSample Ω X μ Q) (f : X → Y) (hf : Measurable f) :\n    Causalean.Stat.IIDSample Ω Y μ (Q.map f) where\n  Z i := f ∘ S.Z i\n  meas i := hf.comp (S.meas i)\n  indep := S.indep.comp (fun _ => f) (fun _ => hf)\n  identDist i := (S.identDist i).comp hf\n  law := by\n    rw [← Measure.map_map hf (S.meas 0), S.law]",
+      "sorry_free": true,
+      "axioms": null
+    },
     "categoryCellLabel": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 29,
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 42,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
         {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.categoryCellLabel",
+          "statement": "/-- Defines category Cell Label, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef categoryCellLabel {d : ℕ} (k : Fin d) (z : Obs d) : Option Cell :=\n  if z.1 = k then\n    some (finTwoEquiv.symm z.2.1, finTwoEquiv.symm z.2.2)\n  else none"
+        },
+        {
           "label": "Obs",
           "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
+        }
+      ]
+    },
+    "categoryCellLabel_measurable": {
+      "decl": "(composite)",
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 49,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.categoryCellLabel_measurable",
+          "statement": "/-- Establishes the stated upper bound for category Cell Label measurable. -/\nlemma categoryCellLabel_measurable {d : ℕ} (k : Fin d) :\n    Measurable (categoryCellLabel k)"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.categoryCellLabel",
+          "statement": "/-- Defines category Cell Label, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef categoryCellLabel {d : ℕ} (k : Fin d) (z : Obs d) : Option Cell :=\n  if z.1 = k then\n    some (finTwoEquiv.symm z.2.1, finTwoEquiv.symm z.2.2)\n  else none"
+        }
+      ]
+    },
+    "optionCellExponent": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.optionCellExponent",
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 54,
+      "statement": "/-- Defines option Cell Exponent, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef optionCellExponent (r : MultiIndex) : Option Cell → ℕ\n  | none => 0\n  | some ay => r ay",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "exponentDegree_optionCellExponent": {
+      "decl": "(composite)",
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 60,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.exponentDegree_optionCellExponent",
+          "statement": "/-- Establishes the stated property of exponent Degree option Cell Exponent in the discrete average-treatment-effect construction. -/\nlemma exponentDegree_optionCellExponent (r : MultiIndex) :\n    exponentDegree (optionCellExponent r) = multiDegree r"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.optionCellExponent",
+          "statement": "/-- Defines option Cell Exponent, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef optionCellExponent (r : MultiIndex) : Option Cell → ℕ\n  | none => 0\n  | some ay => r ay"
         }
       ]
     },
     "categoryCellLabel_atom_mass": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 67,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.categoryCellLabel_atom_mass",
+          "statement": "/-- Establishes the stated property of category Cell Label atom mass in the discrete average-treatment-effect construction. -/\nlemma categoryCellLabel_atom_mass {d : ℕ} (P : DiscreteLaw d) (k : Fin d)\n    (ay : Cell) :\n    ((obsLaw P).map (categoryCellLabel k)).real {some ay} =\n      cellVector P k ay"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.categoryCellLabel",
+          "statement": "/-- Defines category Cell Label, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef categoryCellLabel {d : ℕ} (k : Fin d) (z : Obs d) : Option Cell :=\n  if z.1 = k then\n    some (finTwoEquiv.symm z.2.1, finTwoEquiv.symm z.2.2)\n  else none"
         }
       ]
     },
+    "splitSize_zero_eq": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.splitSize_zero_eq",
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 91,
+      "statement": "/-- Establishes the stated equality relating split Size zero eq. -/\nlemma splitSize_zero_eq (n : ℕ) : splitSize n 0 = n / 2",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "splitSize_one_eq": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.splitSize_one_eq",
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 97,
+      "statement": "/-- Establishes the stated equality relating split Size one eq. -/\nlemma splitSize_one_eq (n : ℕ) : splitSize n 1 = n - n / 2",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "estimationTailIndex": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.estimationTailIndex",
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 112,
+      "statement": "/-- Defines estimation Tail Index, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef estimationTailIndex (n : ℕ) (j : Fin (splitSize n 1)) : Fin n :=\n  ⟨n / 2 + j, by\n    have hhalf : n / 2 ≤ n := Nat.div_le_self n 2\n    have hdecomp : n / 2 + (n - n / 2) = n := Nat.add_sub_of_le hhalf\n    have hj : j.1 < n - n / 2 := by\n      simpa [splitSize_one_eq] using j.2\n    omega⟩",
+      "sorry_free": true,
+      "axioms": null
+    },
     "splitCellCount_eq_tail_count": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 29,
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 122,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
         {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.splitCellCount_eq_tail_count",
+          "statement": "/-- Establishes the stated equality relating split Cell Count eq tail count. -/\nlemma splitCellCount_eq_tail_count {n d : ℕ} (sample : Fin n → Obs d)\n    (k : Fin d) (a y : Fin 2) :\n    splitCellCount sample 1 k a y =\n      ((Finset.univ : Finset (Fin (splitSize n 1))).filter\n        (fun j => sample (estimationTailIndex n j) =\n          (k, finTwoEquiv a, finTwoEquiv y))).card"
+        },
+        {
           "label": "Obs",
           "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.estimationTailIndex",
+          "statement": "/-- Defines estimation Tail Index, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef estimationTailIndex (n : ℕ) (j : Fin (splitSize n 1)) : Fin n :=\n  ⟨n / 2 + j, by\n    have hhalf : n / 2 ≤ n := Nat.div_le_self n 2\n    have hdecomp : n / 2 + (n - n / 2) = n := Nat.add_sub_of_le hhalf\n    have hj : j.1 < n - n / 2 := by\n      simpa [splitSize_one_eq] using j.2\n    omega⟩"
         }
       ]
     },
     "categoryCellLabel_fiber_card": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 29,
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 177,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
         {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.categoryCellLabel_fiber_card",
+          "statement": "/-- Establishes the stated property of category Cell Label fiber card in the discrete average-treatment-effect construction. -/\nlemma categoryCellLabel_fiber_card {n d : ℕ} (sample : Fin n → Obs d)\n    (k : Fin d) (ay : Cell) :\n    Fintype.card (PatternFiber\n      (fun j : Fin (splitSize n 1) =>\n        categoryCellLabel k (sample (estimationTailIndex n j))) (some ay)) =\n      splitCellCount sample 1 k ay.1 ay.2"
+        },
+        {
           "label": "Obs",
           "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.categoryCellLabel",
+          "statement": "/-- Defines category Cell Label, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef categoryCellLabel {d : ℕ} (k : Fin d) (z : Obs d) : Option Cell :=\n  if z.1 = k then\n    some (finTwoEquiv.symm z.2.1, finTwoEquiv.symm z.2.2)\n  else none"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.estimationTailIndex",
+          "statement": "/-- Defines estimation Tail Index, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef estimationTailIndex (n : ℕ) (j : Fin (splitSize n 1)) : Fin n :=\n  ⟨n / 2 + j, by\n    have hhalf : n / 2 ≤ n := Nat.div_le_self n 2\n    have hdecomp : n / 2 + (n - n / 2) = n := Nat.add_sub_of_le hhalf\n    have hj : j.1 < n - n / 2 := by\n      simpa [splitSize_one_eq] using j.2\n    omega⟩"
         }
       ]
     },
     "estimationLabelSample": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 29,
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 202,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.estimationLabelSample",
+          "statement": "/-- Defines estimation Label Sample, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef estimationLabelSample {n d : ℕ} (sample : Fin n → Obs d) (k : Fin d) :\n    Fin (splitSize n 1) → Option Cell :=\n  fun j => categoryCellLabel k (sample (estimationTailIndex n j))"
+        },
         {
           "label": "Obs",
           "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
@@ -1581,40 +2001,68 @@
     },
     "multinomialFactorialCount_estimationLabelSample": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 29,
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 208,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
         {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.multinomialFactorialCount_estimationLabelSample",
+          "statement": "/-- Establishes the stated upper bound for multinomial Factorial Count estimation Label Sample. -/\nlemma multinomialFactorialCount_estimationLabelSample {n d : ℕ}\n    (sample : Fin n → Obs d) (k : Fin d) (r : MultiIndex) :\n    multinomialFactorialCount (optionCellExponent r)\n        (estimationLabelSample sample k) =\n      ∏ ay : Cell,\n        ((splitCellCount sample 1 k ay.1 ay.2).descFactorial (r ay) : ℝ)"
+        },
+        {
           "label": "Obs",
           "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.optionCellExponent",
+          "statement": "/-- Defines option Cell Exponent, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef optionCellExponent (r : MultiIndex) : Option Cell → ℕ\n  | none => 0\n  | some ay => r ay"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.estimationLabelSample",
+          "statement": "/-- Defines estimation Label Sample, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef estimationLabelSample {n d : ℕ} (sample : Fin n → Obs d) (k : Fin d) :\n    Fin (splitSize n 1) → Option Cell :=\n  fun j => categoryCellLabel k (sample (estimationTailIndex n j))"
         }
       ]
     },
     "factorialMonomial_eq_normalized_multinomialCount": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 29,
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 227,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
         {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.factorialMonomial_eq_normalized_multinomialCount",
+          "statement": "/-- Establishes the stated equality relating factorial Monomial eq normalized multinomial Count. -/\nlemma factorialMonomial_eq_normalized_multinomialCount {n d : ℕ}\n    (sample : Fin n → Obs d) (k : Fin d) (r : MultiIndex) :\n    factorialMonomial sample k r =\n      multinomialFactorialCount (optionCellExponent r)\n          (estimationLabelSample sample k) /\n        ((splitSize n 1).descFactorial\n          (exponentDegree (optionCellExponent r)) : ℝ)"
+        },
+        {
           "label": "Obs",
           "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.optionCellExponent",
+          "statement": "/-- Defines option Cell Exponent, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef optionCellExponent (r : MultiIndex) : Option Cell → ℕ\n  | none => 0\n  | some ay => r ay"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.estimationLabelSample",
+          "statement": "/-- Defines estimation Label Sample, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef estimationLabelSample {n d : ℕ} (sample : Fin n → Obs d) (k : Fin d) :\n    Fin (splitSize n 1) → Option Cell :=\n  fun j => categoryCellLabel k (sample (estimationTailIndex n j))"
         }
       ]
     },
     "lightCellEstimationIID": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 240,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.lightCellEstimationIID",
+          "statement": "/-- Defines light Cell Estimation IID, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\nnoncomputable def lightCellEstimationIID {d : ℕ} (P : DiscreteLaw d)\n    (k : Fin d) (offset : ℕ) :\n    Causalean.Stat.IIDSample (ℕ → Obs d) (Option Cell)\n      (Measure.infinitePi (fun _ : ℕ => obsLaw P))\n      ((obsLaw P).map (categoryCellLabel k)) :=\n  iidSampleMap\n    (iidSampleShift (Causalean.Stat.iidSample_infinitePi (obsLaw P)) offset)\n    (categoryCellLabel k) (categoryCellLabel_measurable k)"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1622,17 +2070,25 @@
         {
           "label": "Obs",
           "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.categoryCellLabel",
+          "statement": "/-- Defines category Cell Label, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef categoryCellLabel {d : ℕ} (k : Fin d) (z : Obs d) : Option Cell :=\n  if z.1 = k then\n    some (finTwoEquiv.symm z.2.1, finTwoEquiv.symm z.2.2)\n  else none"
         }
       ]
     },
     "factorialMonomial_trunc_eq_iidCount": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 251,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.factorialMonomial_trunc_eq_iidCount",
+          "statement": "/-- Establishes the stated equality relating factorial Monomial trunc eq iid Count. -/\nlemma factorialMonomial_trunc_eq_iidCount {n d : ℕ} (P : DiscreteLaw d)\n    (k : Fin d) (r : MultiIndex) (ω : ℕ → Obs d) :\n    factorialMonomial (fun i : Fin n => ω i) k r =\n      multinomialFactorialCount (optionCellExponent r)\n          (fun j : Fin (splitSize n 1) =>\n            (lightCellEstimationIID P k (n / 2)).Z j ω) /\n        ((splitSize n 1).descFactorial\n          (exponentDegree (optionCellExponent r)) : ℝ)"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1640,17 +2096,29 @@
         {
           "label": "Obs",
           "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.optionCellExponent",
+          "statement": "/-- Defines option Cell Exponent, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef optionCellExponent (r : MultiIndex) : Option Cell → ℕ\n  | none => 0\n  | some ay => r ay"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.lightCellEstimationIID",
+          "statement": "/-- Defines light Cell Estimation IID, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\nnoncomputable def lightCellEstimationIID {d : ℕ} (P : DiscreteLaw d)\n    (k : Fin d) (offset : ℕ) :\n    Causalean.Stat.IIDSample (ℕ → Obs d) (Option Cell)\n      (Measure.infinitePi (fun _ : ℕ => obsLaw P))\n      ((obsLaw P).map (categoryCellLabel k)) :=\n  iidSampleMap\n    (iidSampleShift (Causalean.Stat.iidSample_infinitePi (obsLaw P)) offset)\n    (categoryCellLabel k) (categoryCellLabel_measurable k)"
         }
       ]
     },
     "integrable_factorialMonomial_trunc": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 264,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.integrable_factorialMonomial_trunc",
+          "statement": "/-- Shows that integrable factorial Monomial trunc is integrable under the stated sampling distribution. -/\nlemma integrable_factorialMonomial_trunc {n d : ℕ} (P : DiscreteLaw d)\n    (k : Fin d) (r : MultiIndex) :\n    Integrable (fun ω : ℕ → Obs d =>\n      factorialMonomial (fun i : Fin n => ω i) k r)\n      (Measure.infinitePi (fun _ : ℕ => obsLaw P))"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1663,12 +2131,16 @@
     },
     "integral_factorialMonomial_trunc": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 278,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_factorialMonomial_trunc",
+          "statement": "/-- Evaluates or bounds the stated integral involving integral factorial Monomial trunc. -/\nlemma integral_factorialMonomial_trunc {n d : ℕ} (P : DiscreteLaw d)\n    (k : Fin d) (r : MultiIndex) (hdeg : multiDegree r ≤ splitSize n 1) :\n    ∫ ω : ℕ → Obs d, factorialMonomial (fun i : Fin n => ω i) k r\n        ∂(Measure.infinitePi (fun _ : ℕ => obsLaw P)) =\n      r.prod fun ay e => (cellVector P k ay) ^ e"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1681,12 +2153,16 @@
     },
     "integral_factorialMonomial_mul_trunc_le": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 300,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_factorialMonomial_mul_trunc_le",
+          "statement": "/-- Evaluates or bounds the stated integral involving integral factorial Monomial mul trunc le. -/\nlemma integral_factorialMonomial_mul_trunc_le {n d : ℕ} (P : DiscreteLaw d)\n    (k : Fin d) (r s : MultiIndex)\n    (hn : 0 < splitSize n 1) (hdeg : multiDegree r ≤ multiDegree s)\n    (hsize : 4 * (multiDegree s) ^ 2 ≤ splitSize n 1) :\n    ∫ ω : ℕ → Obs d,\n        factorialMonomial (fun i : Fin n => ω i) k r *\n          factorialMonomial (fun i : Fin n => ω i) k s\n        ∂(Measure.infinitePi (fun _ : ℕ => obsLaw P)) ≤\n      Real.exp 1 *\n        (∏ ay : Cell, (cellVector P k ay) ^ (r ay)) *\n        ∏ ay : Cell,\n          (cellVector P k ay + (multiDegree s : ℝ) / splitSize n 1) ^ (s ay)"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1699,12 +2175,16 @@
     },
     "integrable_factorialMonomial_mul_trunc": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 325,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.integrable_factorialMonomial_mul_trunc",
+          "statement": "/-- Shows that integrable factorial Monomial mul trunc is integrable under the stated sampling distribution. -/\nlemma integrable_factorialMonomial_mul_trunc {n d : ℕ} (P : DiscreteLaw d)\n    (k : Fin d) (r s : MultiIndex) :\n    Integrable (fun ω : ℕ → Obs d =>\n      factorialMonomial (fun i : Fin n => ω i) k r *\n        factorialMonomial (fun i : Fin n => ω i) k s)\n      (Measure.infinitePi (fun _ : ℕ => obsLaw P))"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1717,85 +2197,15 @@
     },
     "observationExponent": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 29,
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 360,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
         {
-          "label": "Obs",
-          "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
-        }
-      ]
-    },
-    "estimationTail_fiber_card": {
-      "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 29,
-      "statement": "",
-      "sorry_free": true,
-      "axioms": null,
-      "components": [
-        {
-          "label": "Obs",
-          "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
-        }
-      ]
-    },
-    "observationExponent_fiber_count": {
-      "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 29,
-      "statement": "",
-      "sorry_free": true,
-      "axioms": null,
-      "components": [
-        {
-          "label": "Obs",
-          "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
-        }
-      ]
-    },
-    "multinomialFactorialCount_observationExponent": {
-      "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 29,
-      "statement": "",
-      "sorry_free": true,
-      "axioms": null,
-      "components": [
-        {
-          "label": "Obs",
-          "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
-        }
-      ]
-    },
-    "factorialMonomial_eq_normalized_observationCount": {
-      "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 29,
-      "statement": "",
-      "sorry_free": true,
-      "axioms": null,
-      "components": [
-        {
-          "label": "Obs",
-          "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
-        }
-      ]
-    },
-    "factorialMonomial_trunc_eq_observationCount": {
-      "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
-      "statement": "",
-      "sorry_free": true,
-      "axioms": null,
-      "components": [
-        {
-          "label": "DiscreteLaw",
-          "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.observationExponent",
+          "statement": "/-- Defines observation Exponent, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef observationExponent {d : ℕ} (k : Fin d) (r : MultiIndex) : Obs d → ℕ :=\n  fun z => if z.1 = k then\n    r (finTwoEquiv.symm z.2.1, finTwoEquiv.symm z.2.2) else 0"
         },
         {
           "label": "Obs",
@@ -1803,14 +2213,166 @@
         }
       ]
     },
-    "obsLaw_real_cellAtom": {
+    "exponentDegree_observationExponent": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 366,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.exponentDegree_observationExponent",
+          "statement": "/-- Establishes the stated property of exponent Degree observation Exponent in the discrete average-treatment-effect construction. -/\nlemma exponentDegree_observationExponent {d : ℕ} (k : Fin d) (r : MultiIndex) :\n    exponentDegree (observationExponent k r) = multiDegree r"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.observationExponent",
+          "statement": "/-- Defines observation Exponent, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef observationExponent {d : ℕ} (k : Fin d) (r : MultiIndex) : Obs d → ℕ :=\n  fun z => if z.1 = k then\n    r (finTwoEquiv.symm z.2.1, finTwoEquiv.symm z.2.2) else 0"
+        }
+      ]
+    },
+    "estimationTail_fiber_card": {
+      "decl": "(composite)",
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 380,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.estimationTail_fiber_card",
+          "statement": "/-- Establishes the stated property of estimation Tail fiber card in the discrete average-treatment-effect construction. -/\nlemma estimationTail_fiber_card {n d : ℕ} (sample : Fin n → Obs d) (z : Obs d) :\n    Fintype.card (PatternFiber\n      (fun j : Fin (splitSize n 1) => sample (estimationTailIndex n j)) z) =\n      ((Finset.univ : Finset (Fin (splitSize n 1))).filter\n        (fun j => sample (estimationTailIndex n j) = z)).card"
+        },
+        {
+          "label": "Obs",
+          "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.estimationTailIndex",
+          "statement": "/-- Defines estimation Tail Index, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef estimationTailIndex (n : ℕ) (j : Fin (splitSize n 1)) : Fin n :=\n  ⟨n / 2 + j, by\n    have hhalf : n / 2 ≤ n := Nat.div_le_self n 2\n    have hdecomp : n / 2 + (n - n / 2) = n := Nat.add_sub_of_le hhalf\n    have hj : j.1 < n - n / 2 := by\n      simpa [splitSize_one_eq] using j.2\n    omega⟩"
+        }
+      ]
+    },
+    "observationExponent_fiber_count": {
+      "decl": "(composite)",
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 392,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.observationExponent_fiber_count",
+          "statement": "/-- Establishes the stated property of observation Exponent fiber count in the discrete average-treatment-effect construction. -/\nlemma observationExponent_fiber_count {n d : ℕ} (sample : Fin n → Obs d)\n    (k : Fin d) (r : MultiIndex) (z : Obs d) :\n    ((Fintype.card (PatternFiber\n        (fun j : Fin (splitSize n 1) => sample (estimationTailIndex n j)) z)).descFactorial\n      (observationExponent k r z) : ℝ) =\n      if z.1 = k then\n        ((splitCellCount sample 1 k (finTwoEquiv.symm z.2.1)\n          (finTwoEquiv.symm z.2.2)).descFactorial\n            (r (finTwoEquiv.symm z.2.1, finTwoEquiv.symm z.2.2)) : ℝ)\n      else 1"
+        },
+        {
+          "label": "Obs",
+          "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.estimationTailIndex",
+          "statement": "/-- Defines estimation Tail Index, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef estimationTailIndex (n : ℕ) (j : Fin (splitSize n 1)) : Fin n :=\n  ⟨n / 2 + j, by\n    have hhalf : n / 2 ≤ n := Nat.div_le_self n 2\n    have hdecomp : n / 2 + (n - n / 2) = n := Nat.add_sub_of_le hhalf\n    have hj : j.1 < n - n / 2 := by\n      simpa [splitSize_one_eq] using j.2\n    omega⟩"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.observationExponent",
+          "statement": "/-- Defines observation Exponent, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef observationExponent {d : ℕ} (k : Fin d) (r : MultiIndex) : Obs d → ℕ :=\n  fun z => if z.1 = k then\n    r (finTwoEquiv.symm z.2.1, finTwoEquiv.symm z.2.2) else 0"
+        }
+      ]
+    },
+    "multinomialFactorialCount_observationExponent": {
+      "decl": "(composite)",
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 415,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.multinomialFactorialCount_observationExponent",
+          "statement": "/-- Establishes the stated property of multinomial Factorial Count observation Exponent in the discrete average-treatment-effect construction. -/\nlemma multinomialFactorialCount_observationExponent {n d : ℕ}\n    (sample : Fin n → Obs d) (k : Fin d) (r : MultiIndex) :\n    multinomialFactorialCount (observationExponent k r)\n        (fun j : Fin (splitSize n 1) => sample (estimationTailIndex n j)) =\n      ∏ ay : Cell,\n        ((splitCellCount sample 1 k ay.1 ay.2).descFactorial (r ay) : ℝ)"
+        },
+        {
+          "label": "Obs",
+          "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.observationExponent",
+          "statement": "/-- Defines observation Exponent, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef observationExponent {d : ℕ} (k : Fin d) (r : MultiIndex) : Obs d → ℕ :=\n  fun z => if z.1 = k then\n    r (finTwoEquiv.symm z.2.1, finTwoEquiv.symm z.2.2) else 0"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.estimationTailIndex",
+          "statement": "/-- Defines estimation Tail Index, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef estimationTailIndex (n : ℕ) (j : Fin (splitSize n 1)) : Fin n :=\n  ⟨n / 2 + j, by\n    have hhalf : n / 2 ≤ n := Nat.div_le_self n 2\n    have hdecomp : n / 2 + (n - n / 2) = n := Nat.add_sub_of_le hhalf\n    have hj : j.1 < n - n / 2 := by\n      simpa [splitSize_one_eq] using j.2\n    omega⟩"
+        }
+      ]
+    },
+    "factorialMonomial_eq_normalized_observationCount": {
+      "decl": "(composite)",
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 434,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.factorialMonomial_eq_normalized_observationCount",
+          "statement": "/-- Establishes the stated equality relating factorial Monomial eq normalized observation Count. -/\nlemma factorialMonomial_eq_normalized_observationCount {n d : ℕ}\n    (sample : Fin n → Obs d) (k : Fin d) (r : MultiIndex) :\n    factorialMonomial sample k r =\n      multinomialFactorialCount (observationExponent k r)\n          (fun j : Fin (splitSize n 1) => sample (estimationTailIndex n j)) /\n        ((splitSize n 1).descFactorial\n          (exponentDegree (observationExponent k r)) : ℝ)"
+        },
+        {
+          "label": "Obs",
+          "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.observationExponent",
+          "statement": "/-- Defines observation Exponent, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef observationExponent {d : ℕ} (k : Fin d) (r : MultiIndex) : Obs d → ℕ :=\n  fun z => if z.1 = k then\n    r (finTwoEquiv.symm z.2.1, finTwoEquiv.symm z.2.2) else 0"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.estimationTailIndex",
+          "statement": "/-- Defines estimation Tail Index, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef estimationTailIndex (n : ℕ) (j : Fin (splitSize n 1)) : Fin n :=\n  ⟨n / 2 + j, by\n    have hhalf : n / 2 ≤ n := Nat.div_le_self n 2\n    have hdecomp : n / 2 + (n - n / 2) = n := Nat.add_sub_of_le hhalf\n    have hj : j.1 < n - n / 2 := by\n      simpa [splitSize_one_eq] using j.2\n    omega⟩"
+        }
+      ]
+    },
+    "factorialMonomial_trunc_eq_observationCount": {
+      "decl": "(composite)",
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 447,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.factorialMonomial_trunc_eq_observationCount",
+          "statement": "/-- Establishes the stated equality relating factorial Monomial trunc eq observation Count. -/\nlemma factorialMonomial_trunc_eq_observationCount {n d : ℕ}\n    (P : DiscreteLaw d) (k : Fin d) (r : MultiIndex) (ω : ℕ → Obs d) :\n    factorialMonomial (fun i : Fin n => ω i) k r =\n      multinomialFactorialCount (observationExponent k r)\n          (fun j : Fin (splitSize n 1) =>\n            (iidSampleShift\n              (Causalean.Stat.iidSample_infinitePi (obsLaw P)) (n / 2)).Z j ω) /\n        ((splitSize n 1).descFactorial\n          (exponentDegree (observationExponent k r)) : ℝ)"
+        },
+        {
+          "label": "DiscreteLaw",
+          "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
+        },
+        {
+          "label": "Obs",
+          "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.observationExponent",
+          "statement": "/-- Defines observation Exponent, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef observationExponent {d : ℕ} (k : Fin d) (r : MultiIndex) : Obs d → ℕ :=\n  fun z => if z.1 = k then\n    r (finTwoEquiv.symm z.2.1, finTwoEquiv.symm z.2.2) else 0"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.iidSampleShift",
+          "statement": "/-- Defines iid Sample Shift, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\nnoncomputable def iidSampleShift {Ω X : Type*} [MeasurableSpace Ω]\n    [MeasurableSpace X] {μ : Measure Ω} {Q : Measure X}\n    (S : Causalean.Stat.IIDSample Ω X μ Q) (offset : ℕ) :\n    Causalean.Stat.IIDSample Ω X μ Q where\n  Z i := S.Z (offset + i)\n  meas i := S.meas (offset + i)\n  indep := S.indep.precomp (fun _ _ h ↦ Nat.add_left_cancel h)\n  identDist i := by\n    simpa using (S.identDist offset).symm.trans (S.identDist (offset + i))\n  law := by simpa using S.map_eq offset"
+        }
+      ]
+    },
+    "obsLaw_real_cellAtom": {
+      "decl": "(composite)",
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 461,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.obsLaw_real_cellAtom",
+          "statement": "/-- Establishes the stated property of obs Law real cell Atom in the discrete average-treatment-effect construction. -/\nlemma obsLaw_real_cellAtom {d : ℕ} (P : DiscreteLaw d) (k : Fin d)\n    (ay : Cell) :\n    (obsLaw P).real {(k, finTwoEquiv ay.1, finTwoEquiv ay.2)} =\n      cellVector P k ay"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1819,12 +2381,16 @@
     },
     "observationExponent_mass_prod": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 476,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.observationExponent_mass_prod",
+          "statement": "/-- Establishes the stated property of observation Exponent mass prod in the discrete average-treatment-effect construction. -/\nlemma observationExponent_mass_prod {d : ℕ} (P : DiscreteLaw d)\n    (k : Fin d) (r : MultiIndex) :\n    ∏ z : Obs d, ((obsLaw P).real {z}) ^ (observationExponent k r z) =\n      ∏ ay : Cell, (cellVector P k ay) ^ (r ay)"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1832,17 +2398,25 @@
         {
           "label": "Obs",
           "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.observationExponent",
+          "statement": "/-- Defines observation Exponent, the stated quantity or construction used in the discrete average-treatment-effect estimator. -/\ndef observationExponent {d : ℕ} (k : Fin d) (r : MultiIndex) : Obs d → ℕ :=\n  fun z => if z.1 = k then\n    r (finTwoEquiv.symm z.2.1, finTwoEquiv.symm z.2.2) else 0"
         }
       ]
     },
     "integral_factorialMonomial_cross_trunc": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 498,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_factorialMonomial_cross_trunc",
+          "statement": "/-- Evaluates or bounds the stated integral involving integral factorial Monomial cross trunc. -/\nlemma integral_factorialMonomial_cross_trunc {n d : ℕ} (P : DiscreteLaw d)\n    (k l : Fin d) (hkl : k ≠ l) (r s : MultiIndex) :\n    ∫ ω : ℕ → Obs d,\n        factorialMonomial (fun i : Fin n => ω i) k r *\n          factorialMonomial (fun i : Fin n => ω i) l s\n        ∂(Measure.infinitePi (fun _ : ℕ => obsLaw P)) =\n      ((splitSize n 1).descFactorial (multiDegree r + multiDegree s) : ℝ) /\n          (((splitSize n 1).descFactorial (multiDegree r) : ℝ) *\n            (splitSize n 1).descFactorial (multiDegree s)) *\n        (∏ ay : Cell, (cellVector P k ay) ^ (r ay)) *\n        ∏ ay : Cell, (cellVector P l ay) ^ (s ay)"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1855,12 +2429,16 @@
     },
     "vectorMass_cellVector": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 541,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.vectorMass_cellVector",
+          "statement": "/-- Establishes the stated property of vector Mass cell Vector in the discrete average-treatment-effect construction. -/\nlemma vectorMass_cellVector {d : ℕ} (P : DiscreteLaw d) (k : Fin d) :\n    vectorMass (cellVector P k) = cellMass P k"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1869,12 +2447,16 @@
     },
     "vectorArmMass_cellVector": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 548,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.vectorArmMass_cellVector",
+          "statement": "/-- Establishes the stated property of vector Arm Mass cell Vector in the discrete average-treatment-effect construction. -/\nlemma vectorArmMass_cellVector {d : ℕ} (P : DiscreteLaw d) (k : Fin d)\n    (a : Fin 2) :\n    vectorArmMass (cellVector P k) a = armMass P k (finTwoEquiv a)"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1883,12 +2465,16 @@
     },
     "obsLaw_real_singleton": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 557,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.obsLaw_real_singleton",
+          "statement": "/-- Establishes the stated upper bound for obs Law real singleton. -/\nlemma obsLaw_real_singleton {d : ℕ} (P : DiscreteLaw d) (z : Obs d) :\n    (obsLaw P).real {z} = (P.pmf z).toReal"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1901,12 +2487,16 @@
     },
     "obsLaw_real_atom": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 565,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.obsLaw_real_atom",
+          "statement": "/-- Establishes the stated property of obs Law real atom in the discrete average-treatment-effect construction. -/\nlemma obsLaw_real_atom {d : ℕ} (P : DiscreteLaw d) (k : Fin d)\n    (a y : Fin 2) :\n    (obsLaw P).real {(k, finTwoEquiv a, finTwoEquiv y)} = cellVector P k (a, y)"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1915,12 +2505,16 @@
     },
     "cellVector_mem_overlapCone": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 572,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.cellVector_mem_overlapCone",
+          "statement": "/-- Shows that cell Vector mem overlap Cone lies in the stated set or interval. -/\nlemma cellVector_mem_overlapCone {d : ℕ} {epsilon : ℝ} (P : DiscreteLaw d)\n    (hOverlap : Overlap epsilon P) (k : Fin d) :\n    cellVector P k ∈ overlapCone epsilon"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1937,12 +2531,16 @@
     },
     "abs_cellPhi_cellVector_le_mass": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 620,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.abs_cellPhi_cellVector_le_mass",
+          "statement": "/-- Establishes the stated upper bound for abs cell Phi cell Vector le mass. -/\nlemma abs_cellPhi_cellVector_le_mass {d : ℕ} {epsilon : ℝ}\n    (P : DiscreteLaw d) (hOverlap : Overlap epsilon P) (k : Fin d) :\n    |cellPhi (cellVector P k)| ≤ cellMass P k"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1953,14 +2551,66 @@
         }
       ]
     },
+    "multiDegree_factorialExpansionIndex": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.multiDegree_factorialExpansionIndex",
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 643,
+      "statement": "/-- Establishes the stated property of multi Degree factorial Expansion Index in the discrete average-treatment-effect construction. -/\nlemma multiDegree_factorialExpansionIndex (a : Fin 2) (ay : Cell) (j t : ℕ)\n    (ht : t ≤ j) : multiDegree (factorialExpansionIndex a ay j t) = j + 2",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "factorialExpansionIndex_prod": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.factorialExpansionIndex_prod",
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 653,
+      "statement": "/-- Establishes the stated property of factorial Expansion Index prod in the discrete average-treatment-effect construction. -/\nlemma factorialExpansionIndex_prod (v : Cell → ℝ) (a : Fin 2)\n    (ay : Cell) (j t : ℕ) :\n    (factorialExpansionIndex a ay j t).prod (fun ay' e => v ay' ^ e) =\n      v ay * v (a, 1) * v (a, 0) ^ t * v (a, 1) ^ (j - t)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "factorialExpansionIndex_binomial_sum": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.factorialExpansionIndex_binomial_sum",
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 665,
+      "statement": "/-- Establishes the stated summation identity or bound for factorial Expansion Index binomial sum. -/\nlemma factorialExpansionIndex_binomial_sum (v : Cell → ℝ)\n    (a : Fin 2) (j : ℕ) :\n    ∑ t ∈ Finset.range (j + 1), ∑ ay : Cell,\n        (Nat.choose j t : ℝ) *\n          (factorialExpansionIndex a ay j t).prod\n            (fun ay' e => v ay' ^ e) =\n      (∑ ay : Cell, v ay) * v (a, 1) * (v (a, 0) + v (a, 1)) ^ j",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "sparseArmEnvelope_eq": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.sparseArmEnvelope_eq",
+      "file": "Helpers/LightCellVariance.lean",
+      "line": 21,
+      "statement": "/-- For a positive bandwidth and nonnegative cell values, the absolute-coefficient\nenvelope of one treatment arm collapses to a closed form: the reciprocal bandwidth,\ntimes the total four-cell mass, times that arm's outcome-one coordinate, times the\nabsolute-coefficient series of the polynomial continuation evaluated at the arm's own\nmass divided by the bandwidth. -/\nlemma sparseArmEnvelope_eq {M : ℕ} {B : ℝ} (hB : 0 < B)\n    (v : Cell → ℝ) (hv : ∀ ay, 0 ≤ v ay) (a : Fin 2) :\n    sparseArmEnvelope M B v a =\n      B⁻¹ * (∑ ay : Cell, v ay) * v (a, 1) *\n        gpos M ((v (a, 0) + v (a, 1)) / B)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "sparseArmEnvelope_le": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.sparseArmEnvelope_le",
+      "file": "Helpers/LightCellVariance.lean",
+      "line": 73,
+      "statement": "/-- Establishes the stated upper bound for sparse Arm Envelope le. -/\nlemma sparseArmEnvelope_le {M : ℕ} (hM : 0 < M) {B : ℝ}\n    (hB : 0 < B) (v : Cell → ℝ) (hv : ∀ ay, 0 ≤ v ay)\n    (hR : (∑ ay : Cell, v ay) ≤ B) (a : Fin 2) :\n    sparseArmEnvelope M B v a ≤ B * 6 ^ M",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "multiMonomial_mono": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.multiMonomial_mono",
+      "file": "Helpers/LightCellVariance.lean",
+      "line": 111,
+      "statement": "/-- Establishes the stated property of multi Monomial mono in the discrete average-treatment-effect construction. -/\nlemma multiMonomial_mono (r : MultiIndex) (v w : Cell → ℝ)\n    (hv : ∀ ay, 0 ≤ v ay) (hle : ∀ ay, v ay ≤ w ay) :\n    r.prod (fun ay e => v ay ^ e) ≤ r.prod (fun ay e => w ay ^ e)",
+      "sorry_free": true,
+      "axioms": null
+    },
     "integral_factorialMonomial_mul_shift_le": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/LightCellVariance.lean",
+      "line": 133,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_factorialMonomial_mul_shift_le",
+          "statement": "/-- Evaluates or bounds the stated integral involving integral factorial Monomial mul shift le. -/\nlemma integral_factorialMonomial_mul_shift_le {n d M : ℕ}\n    (P : DiscreteLaw d) (k : Fin d) (r s : MultiIndex)\n    (hn : 0 < splitSize n 1) (hr : multiDegree r ≤ M)\n    (hs : multiDegree s ≤ M) (hsize : 4 * M ^ 2 ≤ splitSize n 1) :\n    ∫ ω : ℕ → Obs d,\n        factorialMonomial (fun i : Fin n => ω i) k r *\n          factorialMonomial (fun i : Fin n => ω i) k s\n        ∂(Measure.infinitePi (fun _ : ℕ => obsLaw P)) ≤\n      Real.exp 1 *\n        (r.prod fun ay e =>\n          (cellVector P k ay + (M : ℝ) / splitSize n 1) ^ e) *\n        (s.prod fun ay e =>\n          (cellVector P k ay + (M : ℝ) / splitSize n 1) ^ e)"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1973,12 +2623,16 @@
     },
     "integral_sparse_terms_mul_shift_le": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/LightCellVariance.lean",
+      "line": 290,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_sparse_terms_mul_shift_le",
+          "statement": "/-- Evaluates or bounds the stated integral involving integral sparse terms mul shift le. -/\nlemma integral_sparse_terms_mul_shift_le {n d M : ℕ} {B : ℝ}\n    (P : DiscreteLaw d) (k : Fin d) (a b : Fin 2)\n    (j t j' t' : ℕ) (ay ay' : Cell)\n    (ht : t ≤ j) (ht' : t' ≤ j')\n    (hj : j + 2 ≤ M) (hj' : j' + 2 ≤ M)\n    (hn : 0 < splitSize n 1) (hsize : 4 * M ^ 2 ≤ splitSize n 1) :\n    ∫ ω : ℕ → Obs d,\n        (sparseCoefficient M B j t *\n          factorialMonomial (fun i : Fin n => ω i) k\n            (factorialExpansionIndex a ay j t)) *\n        (sparseCoefficient M B j' t' *\n          factorialMonomial (fun i : Fin n => ω i) k\n            (factorialExpansionIndex b ay' j' t'))\n        ∂(Measure.infinitePi (fun _ : ℕ => obsLaw P)) ≤\n      Real.exp 1 *\n        (|sparseCoefficient M B j t| *\n          (factorialExpansionIndex a ay j t).prod (fun cy e =>\n            (cellVector P k cy + (M : ℝ) / splitSize n 1) ^ e)) *\n        (|sparseCoefficient M B j' t'| *\n          (factorialExpansionIndex b ay' j' t').prod (fun cy e =>\n            (cellVector P k cy + (M : ℝ) / splitSize n 1) ^ e))"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -1991,12 +2645,16 @@
     },
     "factorialMonomial_cross_covariance_le": {
       "decl": "(composite)",
-      "file": "Basic.lean",
-      "line": 32,
+      "file": "Helpers/LightCellVariance.lean",
+      "line": 374,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.factorialMonomial_cross_covariance_le",
+          "statement": "/-- Establishes the stated upper bound for factorial Monomial cross covariance le. -/\nlemma factorialMonomial_cross_covariance_le {n d M : ℕ}\n    (P : DiscreteLaw d) (k l : Fin d) (hkl : k ≠ l)\n    (r s : MultiIndex) (hr : multiDegree r ≤ M)\n    (hs : multiDegree s ≤ M) (hsize : 4 * M ^ 2 ≤ splitSize n 1) :\n    |∫ ω : ℕ → Obs d,\n        factorialMonomial (fun i : Fin n => ω i) k r *\n          factorialMonomial (fun i : Fin n => ω i) l s\n        ∂(Measure.infinitePi (fun _ : ℕ => obsLaw P)) -\n      (r.prod fun ay e => (cellVector P k ay) ^ e) *\n        (s.prod fun ay e => (cellVector P l ay) ^ e)| ≤\n      (2 * (M : ℝ) ^ 2 / splitSize n 1) *\n        (r.prod fun ay e => (cellVector P k ay) ^ e) *\n        (s.prod fun ay e => (cellVector P l ay) ^ e)"
+        },
         {
           "label": "DiscreteLaw",
           "statement": "/-- A probability law with arbitrary masses on the finite observation alphabet. -/\nstructure DiscreteLaw (d : ℕ) where\n  pmf : PMF (Obs d) -- @realizes P(probability law on Fin d × Bool × Bool)"
@@ -2006,30 +2664,6 @@
           "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
         }
       ]
-    },
-    "def:falling-factorial": {
-      "decl": "fallingFactorial",
-      "file": "Helpers/Estimator.lean",
-      "line": 39,
-      "statement": "/-- Falling factorial, reusing Mathlib's `Nat.descFactorial`. -/\ndef fallingFactorial (z r : ℕ) : ℕ := z.descFactorial r",
-      "sorry_free": true,
-      "axioms": null
-    },
-    "def:centered-estimator": {
-      "decl": "centeredEstimator",
-      "file": "Helpers/Estimator.lean",
-      "line": 344,
-      "statement": "noncomputable def centeredEstimator {n d : ℕ} (sample : Fin n → Obs d) : ℝ :=\n  (n : ℝ)⁻¹ * ∑ i : Fin n,\n    2 * (if (sample i).2.1 then 1 else -1) *\n      ((if (sample i).2.2 then 1 else 0) - 1 / 2)",
-      "sorry_free": true,
-      "axioms": null
-    },
-    "def:selected-estimator": {
-      "decl": "selectedEstimator",
-      "file": "Helpers/CombinedEnvelope.lean",
-      "line": 8,
-      "statement": "/-- Deterministic choice between the hybrid and centered estimators. -/\nnoncomputable def selectedEstimator (C epsilon : ℝ) {n d : ℕ} :\n    (Fin n → Obs d) → ℝ :=\n  if C * minimaxRate n d ≤ 1 / (n : ℝ) + 4 * (1 / 2 - epsilon) ^ 2 then\n    hybridEstimator\n  else centeredEstimator",
-      "sorry_free": true,
-      "axioms": null
     }
   }
 }

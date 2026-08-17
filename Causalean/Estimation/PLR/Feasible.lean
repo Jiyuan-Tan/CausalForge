@@ -403,7 +403,7 @@ theorem plr_dml_feasible_tendstoNormal
     rw [tendstoInMeasure_iff_norm] at hconsist_norm
     have htail := hconsist_norm |J₀| hJabs_pos
     refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds htail
-      (fun _ => zero_le _) ?_
+      (fun _ => zero_le) ?_
     intro n
     refine measure_mono ?_
     intro ω hω

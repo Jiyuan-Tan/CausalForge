@@ -181,12 +181,12 @@ theorem seqDR_remainder_bound
     unfold DTREstimationSystem.P_H₁
     infer_instance
   have hprod0_int : Integrable (fun s₀ => dμ0 s₀ * de0 s₀) S.P_H₀ := by
-    have hmul : MemLp (fun s₀ => dμ0 s₀ * de0 s₀) 1 S.P_H₀ := by
-      simpa [dμ0, de0, mul_comm] using hΔμ₀_memLp.mul hΔe₀_memLp
+    have hmul : MemLp (fun s₀ => dμ0 s₀ * de0 s₀) 1 S.P_H₀ :=
+      hΔe₀_memLp.mul hΔμ₀_memLp
     exact hmul.integrable (by norm_num)
   have hprod1_int : Integrable (fun h => dμ1 h * de1 h) S.P_H₁ := by
-    have hmul : MemLp (fun h => dμ1 h * de1 h) 1 S.P_H₁ := by
-      simpa [dμ1, de1, mul_comm] using hΔμ₁_memLp.mul hΔe₁_memLp
+    have hmul : MemLp (fun h => dμ1 h * de1 h) 1 S.P_H₁ :=
+      hΔe₁_memLp.mul hΔμ₁_memLp
     exact hmul.integrable (by norm_num)
   have hbound0_int :
       Integrable (fun s₀ => seqDR_rem_const ε * |dμ0 s₀ * de0 s₀|) S.P_H₀ :=

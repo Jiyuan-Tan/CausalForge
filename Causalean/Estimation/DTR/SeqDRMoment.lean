@@ -399,17 +399,27 @@ lemma measurable_seqDRMomentFunctional (S : DTREstimationSystem P δ γ)
     have hset : MeasurableSet
         {z : γ 0 × δ × γ 1 × δ × ℝ | projD₀ z = S.dbar 0} :=
       (MeasurableSet.singleton (S.dbar 0)).preimage hd0
-    convert (measurable_const.indicator hset : Measurable
-      (Set.indicator {z : γ 0 × δ × γ 1 × δ × ℝ | projD₀ z = S.dbar 0}
-        (fun _ => (1 : ℝ)))) using 1
+    have hfun : (fun z : γ 0 × δ × γ 1 × δ × ℝ => indEq (projD₀ z) (S.dbar 0))
+        = Set.indicator {z : γ 0 × δ × γ 1 × δ × ℝ | projD₀ z = S.dbar 0}
+            (fun _ => (1 : ℝ)) := by
+      funext z
+      by_cases hz : projD₀ z = S.dbar 0 <;>
+        simp [indEq, hz]
+    rw [hfun]
+    exact measurable_const.indicator hset
   have hind1 : Measurable (fun z : γ 0 × δ × γ 1 × δ × ℝ =>
       indEq (projD₁ z) (S.dbar 1)) := by
     have hset : MeasurableSet
         {z : γ 0 × δ × γ 1 × δ × ℝ | projD₁ z = S.dbar 1} :=
       (MeasurableSet.singleton (S.dbar 1)).preimage hd1
-    convert (measurable_const.indicator hset : Measurable
-      (Set.indicator {z : γ 0 × δ × γ 1 × δ × ℝ | projD₁ z = S.dbar 1}
-        (fun _ => (1 : ℝ)))) using 1
+    have hfun : (fun z : γ 0 × δ × γ 1 × δ × ℝ => indEq (projD₁ z) (S.dbar 1))
+        = Set.indicator {z : γ 0 × δ × γ 1 × δ × ℝ | projD₁ z = S.dbar 1}
+            (fun _ => (1 : ℝ)) := by
+      funext z
+      by_cases hz : projD₁ z = S.dbar 1 <;>
+        simp [indEq, hz]
+    rw [hfun]
+    exact measurable_const.indicator hset
   exact ((hμ0.add ((hind0.div he0).mul (hμ1.sub hμ0))).add
     (((hind0.mul hind1).div (he0.mul he1)).mul (hy.sub hμ1))).sub measurable_const
 

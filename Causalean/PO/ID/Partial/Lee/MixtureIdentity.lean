@@ -78,12 +78,14 @@ lemma selectedTreated_integral_split
       have hsel_cf : S.SelOfA true ω = S.factualSel ω :=
         POVar.cf_eq_factual_on_event hA.consistency
           S.selVar S.aVar true S.hASel.symm hω.1
-      exact ⟨hω.1, by simpa [selOfATrueSet, hsel_cf] using hω.2⟩
+      exact ⟨hω.1, by
+        simpa [selOfATrueSet, selEvent, POVar.event, factualSel, hsel_cf] using hω.2⟩
     · intro hω
       have hsel_cf : S.SelOfA true ω = S.factualSel ω :=
         POVar.cf_eq_factual_on_event hA.consistency
           S.selVar S.aVar true S.hASel.symm hω.1
-      exact ⟨hω.1, by simpa [selOfATrueSet, hsel_cf] using hω.2⟩
+      exact ⟨hω.1, by
+        simpa [selOfATrueSet, selEvent, POVar.event, factualSel, hsel_cf] using hω.2⟩
   have hfac : ∀ ω ∈ S.selectedTreated, S.factualY ω = S.YofA true ω := by
     intro ω hω
     have hcf : S.YofA true ω = S.factualY ω :=
@@ -168,12 +170,14 @@ lemma selectedTreated_measure_split
       have hsel_cf : S.SelOfA true ω = S.factualSel ω :=
         POVar.cf_eq_factual_on_event hA.consistency
           S.selVar S.aVar true S.hASel.symm hω.1
-      exact ⟨hω.1, by simpa [selOfATrueSet, hsel_cf] using hω.2⟩
+      exact ⟨hω.1, by
+        simpa [selOfATrueSet, selEvent, POVar.event, factualSel, hsel_cf] using hω.2⟩
     · intro hω
       have hsel_cf : S.SelOfA true ω = S.factualSel ω :=
         POVar.cf_eq_factual_on_event hA.consistency
           S.selVar S.aVar true S.hASel.symm hω.1
-      exact ⟨hω.1, by simpa [selOfATrueSet, hsel_cf] using hω.2⟩
+      exact ⟨hω.1, by
+        simpa [selOfATrueSet, selEvent, POVar.event, factualSel, hsel_cf] using hω.2⟩
   have hpair_meas :
       Measurable (fun ω => (S.YofA true ω, S.SelOfA true ω)) :=
     Measurable.prodMk (S.measurable_YofA true) (S.measurable_SelOfA true)
@@ -228,12 +232,14 @@ lemma selectedTreated_integral_split_indicator
       have hsel_cf : S.SelOfA true ω = S.factualSel ω :=
         POVar.cf_eq_factual_on_event hA.consistency
           S.selVar S.aVar true S.hASel.symm hω.1
-      exact ⟨hω.1, by simpa [selOfATrueSet, hsel_cf] using hω.2⟩
+      exact ⟨hω.1, by
+        simpa [selOfATrueSet, selEvent, POVar.event, factualSel, hsel_cf] using hω.2⟩
     · intro hω
       have hsel_cf : S.SelOfA true ω = S.factualSel ω :=
         POVar.cf_eq_factual_on_event hA.consistency
           S.selVar S.aVar true S.hASel.symm hω.1
-      exact ⟨hω.1, by simpa [selOfATrueSet, hsel_cf] using hω.2⟩
+      exact ⟨hω.1, by
+        simpa [selOfATrueSet, selEvent, POVar.event, factualSel, hsel_cf] using hω.2⟩
   have hfac : ∀ ω ∈ S.selectedTreated, S.factualY ω = S.YofA true ω := by
     intro ω hω
     have hcf : S.YofA true ω = S.factualY ω :=

@@ -39,11 +39,26 @@ private noncomputable def clipReal (B z : ℝ) : ℝ :=
   max (-B) (min B z)
 
 -- @node: clippedScoreTrunc
+/-- The clipped-AIPW score truncated to the symmetric window `[-B, B]`: the score is
+returned unchanged where it already lies in the window, and replaced by the nearer
+endpoint elsewhere.
+
+Truncation gives the score a HARD envelope `B`, which is what the localized
+empirical-process assumptions require of an increment class; on the event where the
+untruncated score is already bounded by `B` the two coincide. -/
 noncomputable def clippedScoreTrunc (q B : ℝ)
     (muHat0 muHat1 eHat : 𝒳 → ℝ) (O : Observation 𝒳) : ℝ :=
   clipReal B (clippedAIPWScore q muHat0 muHat1 eHat O)
 
 -- @node: clippedPolicyIncrementTrunc
+/-- The truncated cross-fit policy increment for fold `k`: the difference between the
+treatment indicator of the candidate policy and that of the law-optimal policy at the
+observation's covariate, multiplied by the `B`-truncated clipped-AIPW score built from
+fold `k`'s cross-fitted nuisances.
+
+It vanishes wherever the two policies agree and is bounded by `B` everywhere — the two
+properties the localized and offset empirical-process envelopes demand of the
+increment class. -/
 noncomputable def clippedPolicyIncrementTrunc {K : ℕ}
     (P : ObservedLaw 𝒳) (q B : ℝ)
     (muHat0 muHat1 eHat : Fin K → 𝒳 → ℝ)
@@ -55,6 +70,8 @@ private lemma measurable_observation_tuple :
     Measurable (fun O : Observation 𝒳 => (O.X, O.A, O.Y)) := by
   exact Measurable.of_comap_le le_rfl
 
+/-- The covariate coordinate of an observation is a measurable function of the
+observation. -/
 lemma measurable_observation_X :
     Measurable (fun O : Observation 𝒳 => O.X) := by
   exact measurable_fst.comp measurable_observation_tuple
@@ -63,19 +80,24 @@ private lemma measurable_observation_A :
     Measurable (fun O : Observation 𝒳 => O.A) := by
   exact measurable_fst.comp (measurable_snd.comp measurable_observation_tuple)
 
+/-- The outcome coordinate of an observation is a measurable function of the
+observation. -/
 lemma measurable_observation_Y :
     Measurable (fun O : Observation 𝒳 => O.Y) := by
   exact measurable_snd.comp (measurable_snd.comp measurable_observation_tuple)
 
+/-- The real treatment indicator of an observation — one when treated, zero when
+untreated — is a measurable function of the observation. -/
 lemma measurable_boolIndicator_observation_A :
     Measurable (fun O : Observation 𝒳 => boolIndicator O.A) := by
   exact (measurable_of_finite (fun b : Bool => boolIndicator b)).comp
     measurable_observation_A
 
+/-- Clipping a measurable propensity function into the band `[q, 1-q]` leaves it
+measurable. -/
 lemma measurable_clippedPropensity (q : ℝ) {e : 𝒳 → ℝ}
     (he : Measurable e) : Measurable (clippedPropensity q e) := by
-  simpa [clippedPropensity] using
-    (Measurable.min measurable_const (Measurable.max measurable_const he))
+  exact Measurable.min measurable_const (Measurable.max measurable_const he)
 
 omit [MeasurableSpace 𝒳] in
 private lemma clipReal_abs_le {B z : ℝ} (hB : 0 ≤ B) :
@@ -87,6 +109,8 @@ private lemma clipReal_abs_le {B z : ℝ} (hB : 0 ≤ B) :
   exact abs_le.mpr ⟨hlow, hhigh⟩
 
 omit [MeasurableSpace 𝒳] in
+/-- Truncation to the symmetric window `[-B, B]` acts as the identity on any real number
+already bounded in absolute value by `B`. -/
 lemma clipReal_eq_self_of_abs_le {B z : ℝ} (hz : |z| ≤ B) :
     clipReal B z = z := by
   have hz' := abs_le.mp hz
@@ -122,6 +146,13 @@ private lemma measurable_clipReal {α : Type*} [MeasurableSpace α] {B : ℝ}
   simpa [clipReal] using
     (Measurable.max measurable_const (Measurable.min measurable_const hf))
 
+/-- The truncated cross-fit policy increment is policy-compatible: it depends on the
+candidate policy only through the single binary treatment decision that policy makes at
+the observation's covariate.
+
+This is the well-posedness condition under which the increment class inherits the
+finite-VC structure of the policy class, hence the condition under which the localized
+empirical-process envelopes apply to it. -/
 lemma clippedPolicyIncrementTrunc_compatible {K : ℕ}
     (P : ObservedLaw 𝒳) (q B : ℝ)
     (muHat0 muHat1 eHat : Fin K → 𝒳 → ℝ) (k : Fin K) :
@@ -132,6 +163,9 @@ lemma clippedPolicyIncrementTrunc_compatible {K : ℕ}
   intro π O
   rfl
 
+/-- For a well-formed law, a measurable candidate policy, and measurable fold-`k`
+cross-fitted nuisances, the truncated cross-fit policy increment is a measurable
+function of the observation. -/
 lemma clippedPolicyIncrementTrunc_measurable {K : ℕ}
     (P : ObservedLaw 𝒳) (q B : ℝ)
     (muHat0 muHat1 eHat : Fin K → 𝒳 → ℝ) (k : Fin K)
@@ -151,9 +185,11 @@ lemma clippedPolicyIncrementTrunc_measurable {K : ℕ}
     measurable_clipReal
       (measurable_clippedAIPWScore_observation q (muHat0 k) (muHat1 k) (eHat k)
         hμ0meas hμ1meas hemeas)
-  simpa [clippedPolicyIncrementTrunc, clippedScoreTrunc] using
-    ((hπind.sub hstar).mul hscore)
+  exact (hπind.sub hstar).mul hscore
 
+/-- The truncated cross-fit policy increment is bounded in absolute value by the
+truncation level `B`, uniformly over candidate policies and observations, for any
+nonnegative `B`. So `B` is a genuine envelope for the whole increment class. -/
 lemma clippedPolicyIncrementTrunc_bound {K : ℕ}
     (P : ObservedLaw 𝒳) (q B : ℝ)
     (muHat0 muHat1 eHat : Fin K → 𝒳 → ℝ) (k : Fin K)
@@ -178,6 +214,8 @@ lemma clippedPolicyIncrementTrunc_bound {K : ℕ}
     _ = B := by ring
 
 omit [MeasurableSpace 𝒳] in
+/-- A pointwise product of two uniformly bounded real functions on the covariate space is
+again uniformly bounded. -/
 lemma bounded_mul {f g : 𝒳 → ℝ}
     (hf : ∃ M : ℝ, ∀ x, |f x| ≤ M)
     (hg : ∃ M : ℝ, ∀ x, |g x| ≤ M) :
@@ -332,6 +370,8 @@ private lemma integrable_control_outcome_test (P : ObservedLaw 𝒳)
     _ = max M 0 := by ring
 
 omit [MeasurableSpace 𝒳] in
+/-- The clipped propensity is at least `min(q, 1-q)`, whatever value the underlying
+propensity takes. No constraint on the clipping level `q` is needed. -/
 lemma clippedPropensity_lower_min (q : ℝ) (e : 𝒳 → ℝ) (x : 𝒳) :
     min q (1 - q) ≤ clippedPropensity q e x := by
   unfold clippedPropensity
@@ -339,12 +379,17 @@ lemma clippedPropensity_lower_min (q : ℝ) (e : 𝒳 → ℝ) (x : 𝒳) :
     (le_trans (min_le_left q (1 - q)) (le_max_left q (e x)))
 
 omit [MeasurableSpace 𝒳] in
+/-- The clipped propensity never exceeds the upper clipping level `1 - q`, whatever value
+the underlying propensity takes. -/
 lemma clippedPropensity_le_one_sub (q : ℝ) (e : 𝒳 → ℝ) (x : 𝒳) :
     clippedPropensity q e x ≤ 1 - q := by
   unfold clippedPropensity
   exact min_le_left (1 - q) (max q (e x))
 
 omit [MeasurableSpace 𝒳] in
+/-- When the clipping level lies strictly between zero and one, the clipped propensity is
+strictly positive — this is what keeps the treated arm's inverse-propensity weight
+finite. -/
 lemma clippedPropensity_pos (q : ℝ) (e : 𝒳 → ℝ) (x : 𝒳)
     (hq : 0 < q) (hq1 : q < 1) :
     0 < clippedPropensity q e x := by
@@ -352,6 +397,8 @@ lemma clippedPropensity_pos (q : ℝ) (e : 𝒳 → ℝ) (x : 𝒳)
   exact lt_of_lt_of_le hr (clippedPropensity_lower_min q e x)
 
 omit [MeasurableSpace 𝒳] in
+/-- For a strictly positive clipping level, one minus the clipped propensity is strictly
+positive — this is what keeps the control arm's inverse-propensity weight finite. -/
 lemma one_sub_clippedPropensity_pos (q : ℝ) (e : 𝒳 → ℝ) (x : 𝒳)
     (hq : 0 < q) :
     0 < 1 - clippedPropensity q e x := by
@@ -481,6 +528,14 @@ private lemma covariate_integral_eq_px (P : ObservedLaw 𝒳)
   exact hmap_int.symm
 
 -- @node: clippedPolicyIncrementTrunc_second_moment
+/-- The second moment of the truncated cross-fit policy increment under the data law is at
+most the squared truncation level times the covariate probability of the set where the
+candidate policy and the law-optimal policy disagree.
+
+This is exactly the LOCALIZED variance coupling the empirical-process envelopes assume:
+the increment vanishes where the two policies agree, so its second moment is governed by
+disagreement mass rather than by the envelope alone, which is what turns a fixed-radius
+supremum bound into a rate that improves with regret. -/
 lemma clippedPolicyIncrementTrunc_second_moment {K : ℕ}
     (P : ObservedLaw 𝒳) (q B : ℝ)
     (muHat0 muHat1 eHat : Fin K → 𝒳 → ℝ) (k : Fin K)
@@ -547,7 +602,7 @@ lemma clippedPolicyIncrementTrunc_second_moment {K : ℕ}
             rw [integral_const_mul]
       _ = B ^ 2 * P.PX.real D := by
             congr 1
-            simpa [ind] using integral_indicator_one (μ := P.PX) hDmeas
+            exact integral_indicator_one (μ := P.PX) hDmeas
   simpa [D, hrhs] using hle
 
 private lemma control_test_integral_eq (P : ObservedLaw 𝒳)
@@ -608,6 +663,10 @@ private lemma bounded_law_mu1 (P : ObservedLaw 𝒳) (hbdd : BoundedOutcome P) :
     ∃ M : ℝ, ∀ x, |P.mu1 x| ≤ M := by
   exact ⟨1, fun x => abs_le.mpr ⟨(hbdd.2 x).2.1, (hbdd.2 x).2.2⟩⟩
 
+/-- Under a well-formed law with bounded outcomes, the conditional treatment-effect
+contrast is uniformly bounded over the covariate space — the witnessing constant is `2`,
+since the contrast is the difference of two outcome regressions each valued in
+`[-1,1]`. -/
 lemma bounded_law_contrast (P : ObservedLaw 𝒳)
     (hwf : WellFormedLaw P) (hbdd : BoundedOutcome P) :
     ∃ M : ℝ, ∀ x, |P.contrast x| ≤ M := by

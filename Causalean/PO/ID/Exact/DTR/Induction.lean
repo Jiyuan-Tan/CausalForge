@@ -184,7 +184,7 @@ theorem cdtr_base [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
         hindD_m_sm hprod_int hYof_indLast_int
     -- `hpull` has shape `condExp (indD m * _) =ᵐ indD m * condExp _`.
     filter_upwards [hpull] with ω hω
-    simpa [Pi.mul_apply] using hω
+    exact hω
   -- (e) Stage-`(n-1)` exchangeability + condExp_mul_of_condIndep.
   -- Project `hA.exch dbar kLast` onto `Y_of dbar` coordinate of `cfYBundle`.
   -- Index 0 in cfYBundle = singleton of `Y(dbar)`.
@@ -315,7 +315,7 @@ theorem cdtr_base [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
       rw [hFactor]
     rw [this]
     filter_upwards [hpull] with ω hω
-    simpa [Pi.mul_apply] using hω
+    exact hω
   -- (h) Pointwise cancellation using overlap.
   have hover_last := hA.overlap dbar kLast
   filter_upwards [hNum_eq, hD_pullout, hover_last] with ω hN hD hov
@@ -563,7 +563,7 @@ theorem cdtr_step [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
           (S.historyBundle (k+1) hk1).condExpGiven (S.Y_of dbar) P.μ ω)
         hindDk_sm hindDk_indk_CE_int hindk_CE_int
     filter_upwards [hpull] with ω hω
-    simpa [Pi.mul_apply] using hω
+    exact hω
   -- (d) Reverse pullout of ind_k on σ_{k+1}.
   have hRevPull :
       (fun ω => ind_k ω *
@@ -576,7 +576,7 @@ theorem cdtr_step [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
         (f := ind_k) (g := S.Y_of dbar)
         hindk_sm_k1 hindk_Yof_int hYof_int
     filter_upwards [hfwd] with ω hω
-    simpa [Pi.mul_apply] using hω.symm
+    exact hω.symm
   -- (e) Tower σ_k ≤ σ_{k+1}.
   haveI : IsFiniteMeasure (P.μ.trim (S.historyBundle (k+1) hk1).sigma_le) :=
     isFiniteMeasure_trim _
@@ -716,7 +716,7 @@ theorem cdtr_step [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
         (g := fun ω => S.innerReg dbar j ω * ind_k ω)
         hindDk_sm hindDk_inner_int hinnerReg_indk_int
     filter_upwards [hpull] with ω hω
-    simpa [Pi.mul_apply] using hω
+    exact hω
   -- Combine: indD k · μ[innerReg j · ind_k | σ_k] =ᵐ indD k · (μ[ind_k|σ_k] · μ[Y_of|σ_k]).
   have hKey :
       (fun ω => S.indD dbar k ω *

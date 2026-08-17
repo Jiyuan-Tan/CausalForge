@@ -88,7 +88,14 @@ describe("proof-review loop — Phase A statement/scaffold gate", () => {
     }
   });
 
-  it.each(["missing-review-evidence", "missing-review-target", "unparsable-output", "missing-peer-reviewer"])(
+  it.each([
+    "missing-review-evidence",
+    "missing-review-target",
+    "ambiguous-review-target-alias",
+    "review-target-resolution-error",
+    "unparsable-output",
+    "missing-peer-reviewer",
+  ])(
     "routes reviewer/infrastructure failure '%s' to the orchestrator without editing Lean",
     async (kind) => {
       const scaffoldCalls: unknown[] = [];

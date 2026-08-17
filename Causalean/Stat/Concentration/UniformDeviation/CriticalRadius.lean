@@ -233,7 +233,7 @@ lemma subRoot_continuousOn_Ioi {ψ : ℝ → ℝ} (h : SubRoot ψ) :
   · refine Filter.Tendsto.squeeze' (f := ψ)
       (g := fun r : ℝ => r * (ψ r₀ / r₀)) (h := fun _ : ℝ => ψ r₀) ?_ ?_ ?_ ?_
     · simpa [ContinuousWithinAt, Pi.mul_apply, mul_div_cancel₀ _ (ne_of_gt hr₀pos)] using
-        ((continuous_id.mul continuous_const).continuousWithinAt :
+        ((continuous_id.fun_mul continuous_const).continuousWithinAt :
           ContinuousWithinAt (fun r : ℝ => r * (ψ r₀ / r₀)) (Set.Iic r₀) r₀)
     · exact
         (tendsto_const_nhds :
@@ -257,7 +257,7 @@ lemma subRoot_continuousOn_Ioi {ψ : ℝ → ℝ} (h : SubRoot ψ) :
         (tendsto_const_nhds :
           Filter.Tendsto (fun _ : ℝ => ψ r₀) (nhdsWithin r₀ (Set.Ici r₀)) (nhds (ψ r₀)))
     · simpa [ContinuousWithinAt, Pi.mul_apply, mul_div_cancel₀ _ (ne_of_gt hr₀pos)] using
-        ((continuous_id.mul continuous_const).continuousWithinAt :
+        ((continuous_id.fun_mul continuous_const).continuousWithinAt :
           ContinuousWithinAt (fun r : ℝ => r * (ψ r₀ / r₀)) (Set.Ici r₀) r₀)
     · filter_upwards [self_mem_nhdsWithin] with r hle
       exact hMono r₀ r (le_of_lt hr₀pos) hle
@@ -305,7 +305,7 @@ lemma criticalRadius_fp_of_subRoot {ψ : ℝ → ℝ} (h : SubRoot ψ)
   have hsq_tendsto :
       Filter.Tendsto (fun δ : ℝ => δ ^ 2) (nhdsWithin c S) (nhds (c ^ 2)) := by
     simpa [ContinuousWithinAt] using
-      ((continuous_id.pow 2).continuousWithinAt :
+      ((continuous_id.fun_pow 2).continuousWithinAt :
         ContinuousWithinAt (fun δ : ℝ => δ ^ 2) S c)
   have hev : ∀ᶠ δ in nhdsWithin c S, ψ δ ≤ δ ^ 2 := by
     filter_upwards [self_mem_nhdsWithin] with δ hδ

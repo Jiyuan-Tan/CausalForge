@@ -42,6 +42,9 @@ lemma integral_productLaw_eq_infinite_trunc {n d : ℕ} (P : DiscreteLaw d)
   rw [productLaw, ← finProductLaw_eq_map (obsLaw P) n,
     integral_map htrunc.aemeasurable (measurable_of_finite f).aestronglyMeasurable]
 
+/-- The mean squared deviation of an estimator component from its target, computed
+under the n-fold product law, equals the same expectation taken over the canonical
+infinite independent sample restricted to its first n coordinates. -/
 lemma componentErrorMSE_productLaw_eq_infinite_trunc {n d : ℕ}
     (P : DiscreteLaw d) (component target : (Fin n → Obs d) → ℝ) :
     componentErrorMSE (productLaw P n) component target =
@@ -92,6 +95,9 @@ noncomputable def fixedMassScore {d : ℕ} (P : DiscreteLaw d)
     (H : Finset (Fin d)) (a : Fin 2) (z : Obs d) : ℝ :=
   ∑ k ∈ H, if z.1 = k then outcomeMean P (finTwoEquiv a) k else 0
 
+/-- The fixed-mass score of an observation reduces to a single lookup: it returns the
+outcome regression of the given treatment arm at the observation's own category when
+that category belongs to the selected set, and zero otherwise. -/
 lemma fixedMassScore_eq {d : ℕ} (P : DiscreteLaw d)
     (H : Finset (Fin d)) (a : Fin 2) (z : Obs d) :
     fixedMassScore P H a z =
@@ -134,7 +140,7 @@ lemma integral_fixedMassScore_eq {d : ℕ} (P : DiscreteLaw d)
       (categorySet k).indicator
         (fun _ => outcomeMean P (finTwoEquiv a) k) by
           funext z
-          simp [categorySet, Set.indicator]]
+          simp only [categorySet, Set.indicator, Set.mem_setOf_eq]]
   rw [integral_indicator MeasurableSet.of_discrete]
   simp [obsLaw_categorySet_mass]
 
@@ -175,8 +181,8 @@ lemma heavyCells_eq_pilotHeavyAt_of_cutoff_le {n d : ℕ}
   classical
   rw [heavyCells_eq_filter_of_cutoff_le sample hcut]
   ext k
-  simp only [pilotHeavyAt, Finset.mem_filter, Finset.mem_univ, true_and,
-    lambda0]
+  simp only [pilotHeavyAt, Finset.mem_filter, Finset.mem_univ, true_and]
+  simp only [lambda0]
   exact (Int.floor_lt).symm
 
 /-- On the pilot-sandwich event, every selected heavy category has the
@@ -195,6 +201,9 @@ lemma heavy_cell_mass_lower_of_good_pilot {n d : ℕ} (P : DiscreteLaw d)
   rw [heavyCells_eq_pilotHeavyAt_of_cutoff_le sample hcut]
   exact hsand.1
 
+/-- Within one half of the split, the number of observations falling in a single
+treatment-outcome cell of a category never exceeds the number of observations
+falling in that category. -/
 lemma splitCellCount_le_splitCategoryCount {n d : ℕ}
     (sample : Fin n → Obs d) (j : Fin 2) (k : Fin d) (a y : Fin 2) :
     splitCellCount sample j k a y ≤ splitCategoryCount sample j k := by
@@ -341,6 +350,9 @@ lemma integral_comp_splitTuple {n d : ℕ} (P : DiscreteLaw d)
         (fun _ : {i : Fin n // i ∈ splitIndices n j} => obsLaw P) :=
   Causalean.Stat.integral_comp_pi_restrict_finset (obsLaw P) (splitIndices n j) g
 
+/-- Summing the fixed-mass score over the observations of one half of the split gives
+the sum, over the selected categories, of each category's count in that half times
+its outcome regression for the given treatment arm. -/
 lemma sum_fixedMassScore_splitTuple {n d : ℕ} (P : DiscreteLaw d)
     (sample : Fin n → Obs d) (j : Fin 2) (H : Finset (Fin d)) (a : Fin 2) :
     ∑ i, fixedMassScore P H a (splitTuple sample j i) =
@@ -1031,7 +1043,7 @@ lemma heavy_good_arm_setIntegral_le {n d : ℕ} {epsilon B V : ℝ}
         rw [← integral_indicator]
         · apply integral_mono
             (by
-              simpa only [Function.comp_apply] using hintegrable_comp
+              exact hintegrable_comp
                 (fun sample => ((pilotBadEvent P 256)ᶜ).indicator
                   (fun sample => (fixedHeavyArmContribution sample
                     (heavyCells sample) a -
@@ -1232,7 +1244,7 @@ lemma heavy_fixed_envelope_rate {n d : ℕ} (P : DiscreteLaw d)
         (1 / epsilon ^ 4) *
           ((d : ℝ) ^ 2 / ((n : ℝ) ^ 2 * (Real.log n) ^ 2)) := by
       have hadd := add_le_add (add_le_add hparam hmass) hmiss
-      convert hadd using 1 <;> ring
+      exact hadd.trans (le_of_eq (by ring))
     _ ≤ (16 / epsilon + 12 + 1 / epsilon ^ 4) * minimaxRate n d := by
       unfold minimaxRate
       have hr0 : 0 ≤ 1 / (n : ℝ) := by positivity

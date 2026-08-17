@@ -211,12 +211,12 @@ lemma gaussianForm_of_funeq {f g : ℝ → ℂ}
       simpa using (hgD (u - v)).hasDerivAt.comp_sub_const u v
     have hleft : HasDerivAt (fun x : ℝ => f (x + v) * g (x - v))
         (deriv f (u + v) * g (u - v) + f (u + v) * deriv g (u - v)) u := by
-      convert hfp.mul hgm using 1
+      exact hfp.fun_mul hgm
     have hfu : HasDerivAt (fun x : ℝ => f x) (deriv f u) u := (hfD u).hasDerivAt
     have hgu : HasDerivAt (fun x : ℝ => g x) (deriv g u) u := (hgD u).hasDerivAt
     have hright : HasDerivAt (fun x : ℝ => f x * g x * (f v * g (-v)))
         ((deriv f u * g u + f u * deriv g u) * (f v * g (-v))) u := by
-      convert (hfu.mul hgu).mul_const (f v * g (-v)) using 1
+      exact (hfu.fun_mul hgu).mul_const (f v * g (-v))
     have hright' : HasDerivAt (fun x : ℝ => f (x + v) * g (x - v))
         ((deriv f u * g u + f u * deriv g u) * (f v * g (-v))) u := by
       simpa [hleftF] using hright
@@ -252,12 +252,14 @@ lemma gaussianForm_of_funeq {f g : ℝ → ℂ}
         f p.1 ≠ 0 ∧ g p.1 ≠ 0 ∧ f p.2 ≠ 0 ∧ g (-p.2) ≠ 0 := by
       have h_add : Filter.Tendsto (fun p : ℝ × ℝ => p.1 + p.2)
           (nhds ((0, 0) : ℝ × ℝ)) (nhds (0 : ℝ)) := by
-        simpa [ContinuousAt] using ((continuous_fst.add continuous_snd).continuousAt
-          (x := ((0, 0) : ℝ × ℝ)))
+        have hc : Continuous (fun p : ℝ × ℝ => p.1 + p.2) :=
+          continuous_fst.add continuous_snd
+        simpa using hc.tendsto ((0, 0) : ℝ × ℝ)
       have h_sub : Filter.Tendsto (fun p : ℝ × ℝ => p.1 - p.2)
           (nhds ((0, 0) : ℝ × ℝ)) (nhds (0 : ℝ)) := by
-        simpa [ContinuousAt] using ((continuous_fst.sub continuous_snd).continuousAt
-          (x := ((0, 0) : ℝ × ℝ)))
+        have hc : Continuous (fun p : ℝ × ℝ => p.1 - p.2) :=
+          continuous_fst.sub continuous_snd
+        simpa using hc.tendsto ((0, 0) : ℝ × ℝ)
       have h_fst : Filter.Tendsto (fun p : ℝ × ℝ => p.1)
           (nhds ((0, 0) : ℝ × ℝ)) (nhds (0 : ℝ)) := by
         simpa [ContinuousAt] using (continuous_fst.continuousAt (x := ((0, 0) : ℝ × ℝ)))
@@ -266,7 +268,8 @@ lemma gaussianForm_of_funeq {f g : ℝ → ℂ}
         simpa [ContinuousAt] using (continuous_snd.continuousAt (x := ((0, 0) : ℝ × ℝ)))
       have h_neg_snd : Filter.Tendsto (fun p : ℝ × ℝ => -p.2)
           (nhds ((0, 0) : ℝ × ℝ)) (nhds (0 : ℝ)) := by
-        simpa [ContinuousAt] using (continuous_snd.neg.continuousAt (x := ((0, 0) : ℝ × ℝ)))
+        have hc : Continuous (fun p : ℝ × ℝ => -p.2) := continuous_snd.neg
+        simpa using hc.tendsto ((0, 0) : ℝ × ℝ)
       filter_upwards [h_add.eventually hf_ne, h_sub.eventually hg_ne,
         h_fst.eventually hf_ne, h_fst.eventually hg_ne,
         h_snd.eventually hf_ne, h_neg_snd.eventually hg_ne] with p h1 h2 h3 h4 h5 h6
@@ -302,7 +305,7 @@ lemma gaussianForm_of_funeq {f g : ℝ → ℂ}
         simpa using (hlgDiffAt (by simpa [u, v] using hgm)).hasDerivAt.comp_const_sub u v
       have hleft : HasDerivAt (fun w : ℝ => lf (u + w) + lg (u - w))
           (deriv lf (u + v) - deriv lg (u - v)) v := by
-        simpa [sub_eq_add_neg] using hlfp.add hlgm
+        exact (hlfp.fun_add hlgm).congr_deriv (by ring)
       have hconst : HasDerivAt (fun _ : ℝ => lf u + lg u)
           (deriv lf (u + v) - deriv lg (u - v)) v :=
         hleft.congr_of_eventuallyEq hEq.symm
@@ -340,8 +343,9 @@ lemma gaussianForm_of_funeq {f g : ℝ → ℂ}
     have hAffDeriv : ∀ a x : ℂ, ∀ t : ℝ,
         HasDerivAt (fun s : ℝ => a + x * s) x t := by
       intro a x t
-      convert (hasDerivAt_const t a).add ((hasDerivAt_id t).ofReal_comp.const_mul x) using 1
-      simp
+      have hcoe : HasDerivAt (fun s : ℝ => (s : ℂ)) 1 t :=
+        HasDerivAt.ofReal_comp (hasDerivAt_id t)
+      exact ((hcoe.const_mul x).const_add a).congr_deriv (by ring)
     constructor
     · rcases Metric.eventually_nhds_iff_ball.mp (hlfDeriv.and hf_ne) with ⟨r, hr, hball⟩
       have hlfOn : DifferentiableOn ℝ lf (Metric.ball (0 : ℝ) r) := by
@@ -390,19 +394,11 @@ lemma gaussianForm_of_funeq {f g : ℝ → ℂ}
         HasDerivAt (fun s : ℝ => Complex.exp (a * s + c * s ^ 2 / 2))
           ((a + c * t) * Complex.exp (a * t + c * t ^ 2 / 2)) t := by
       intro a t
-      have hinner : HasDerivAt (fun s : ℝ => a * s + c * s ^ 2 / 2) (a + c * t) t := by
-        have hlin : HasDerivAt (fun s : ℝ => a * s) a t := by
-          convert (hasDerivAt_id t).ofReal_comp.const_mul a using 1
-          simp
-        have hsqrR : HasDerivAt (fun s : ℝ => s ^ 2) (2 * t) t := by
-          simpa using (hasDerivAt_id t).pow 2
-        have hquad : HasDerivAt (fun s : ℝ => c * s ^ 2 / 2) (c * (2 * t) / 2) t := by
-          convert (hsqrR.ofReal_comp.const_mul c).div_const (2 : ℂ) using 1
-          · funext s
-            norm_num
-          · norm_num
-        convert hlin.add hquad using 1
-        ring
+      have hcoe : HasDerivAt (fun s : ℝ => (s : ℂ)) 1 t :=
+        HasDerivAt.ofReal_comp (hasDerivAt_id t)
+      have hinner : HasDerivAt (fun s : ℝ => a * s + c * s ^ 2 / 2) (a + c * t) t :=
+        ((hcoe.const_mul a).fun_add
+            (((hcoe.fun_pow 2).const_mul c).div_const 2)).congr_deriv (by norm_num; ring)
       simpa [mul_comm, mul_left_comm, mul_assoc] using hinner.cexp
     constructor
     · let Ef : ℝ → ℂ := fun t => Complex.exp (deriv f 0 * t + c * t ^ 2 / 2)
@@ -422,7 +418,7 @@ lemma gaussianForm_of_funeq {f g : ℝ → ℂ}
           simpa [Ef] using hExpDeriv (deriv f 0) x
         have hquot : HasDerivAt φ
             ((deriv f x * Ef x - f x * ((deriv f 0 + c * x) * Ef x)) / Ef x ^ 2) x := by
-          simpa [φ] using (hfD x).hasDerivAt.div hEfDeriv (Complex.exp_ne_zero _)
+          simpa [φ] using (hfD x).hasDerivAt.fun_div hEfDeriv (Complex.exp_ne_zero _)
         convert hquot using 1
         rw [hdfx]
         ring
@@ -461,7 +457,7 @@ lemma gaussianForm_of_funeq {f g : ℝ → ℂ}
           simpa [Eg] using hExpDeriv (deriv g 0) x
         have hquot : HasDerivAt φ
             ((deriv g x * Eg x - g x * ((deriv g 0 + c * x) * Eg x)) / Eg x ^ 2) x := by
-          simpa [φ] using (hgD x).hasDerivAt.div hEgDeriv (Complex.exp_ne_zero _)
+          simpa [φ] using (hgD x).hasDerivAt.fun_div hEgDeriv (Complex.exp_ne_zero _)
         convert hquot using 1
         rw [hdgx]
         ring
@@ -562,19 +558,23 @@ lemma bernstein_charFun_gaussian_nhds_zero
         HasDerivAt.ofReal_comp (hasDerivAt_id t)
       have hp : HasDerivAt (fun t : ℝ => a * (t : ℂ) + b * (t : ℂ) ^ 2 / 2)
           (a + b * (t : ℂ)) t := by
-        convert ((hcoe.const_mul a).add (((hcoe.pow 2).const_mul b).div_const 2)) using 1 ; ring
+        exact ((hcoe.const_mul a).fun_add
+          (((hcoe.fun_pow 2).const_mul b).div_const 2)).congr_deriv (by norm_num; ring)
       convert hp.cexp.deriv using 1 ; ring
     rw [hderivModel]
     have hcoe0 : HasDerivAt (fun y : ℝ => (y : ℂ)) 1 0 :=
       HasDerivAt.ofReal_comp (hasDerivAt_id 0)
     have hp0 : HasDerivAt (fun t : ℝ => a * (t : ℂ) + b * (t : ℂ) ^ 2 / 2) a 0 := by
-      convert ((hcoe0.const_mul a).add (((hcoe0.pow 2).const_mul b).div_const 2)) using 1
-      norm_num
+      exact ((hcoe0.const_mul a).fun_add
+        (((hcoe0.fun_pow 2).const_mul b).div_const 2)).congr_deriv (by norm_num)
     have hlin0 : HasDerivAt (fun t : ℝ => a + b * (t : ℂ)) b 0 := by
-      convert (hcoe0.const_mul b).const_add a using 1 ; ring
+      exact ((hcoe0.const_mul b).const_add a).congr_deriv (by ring)
     have hexp0 : HasDerivAt (fun t : ℝ => Complex.exp (a * t + b * t ^ 2 / 2)) a 0 := by
-      convert hp0.cexp using 1 ; simp
-    convert (hlin0.mul hexp0).deriv using 1 ; simp ; ring
+      exact hp0.cexp.congr_deriv (by norm_num)
+    have hmul := (hlin0.fun_mul hexp0).deriv
+    rw [hmul]
+    norm_num
+    ring
   have hmodelSecondX : iteratedDeriv 2 f 0 = c + (deriv f 0) ^ 2 := by
     calc
       iteratedDeriv 2 f 0

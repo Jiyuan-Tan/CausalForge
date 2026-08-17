@@ -91,8 +91,6 @@ lemma dispersionComparison_envelope (n : ℕ) (ε : ℝ) :
     norm_num
     rw [pow_succ]
     ring_nf
-    rw [mul_comm ((2 : ℝ) ^ dispersionD n) 2, two_mul]
-    rfl
   have hcross (i : Fin (dispersionD n))
       (f : Fin (2 * dispersionD n)) (r : Fin (dispersionT n)) :
       (dispersionExperiment n).r1 (dispersionComparisonDesign n ε) (Sum.inl i) (Sum.inr (f, r)) +

@@ -72,11 +72,18 @@ theorem doObsKernelYMarginal_eq_ancestralMarginal_map
     doObsKernelYMarginal M X hObs hFix Y hY
       = (doObsKernelAncestralMarginal M X hObs hFix Y).map
           (valuesProjection (subset_fixObservedAncestralSet M X hObs hFix Y hY)) := by
-  unfold doObsKernelYMarginal doObsKernelAncestralMarginal
-  rw [← ProbabilityTheory.Kernel.map_comp_right _ (measurable_valuesProjection _)
-      (measurable_valuesProjection _),
-    valuesProjection_comp (subset_fixObservedAncestralSet M X hObs hFix Y hY)
-      Finset.inter_subset_right]
+  -- Name both inclusions with their *folded* types: the auto-generated proof
+  -- inside `doObsKernelAncestralMarginal` records the unfolded intersection type,
+  -- which blocks `rw` after `unfold` (defeq only at default transparency).
+  have hJI : fixObservedAncestralSet M X hObs hFix Y ⊆ (M.fixSet X hObs hFix).observed :=
+    Finset.inter_subset_right
+  have hKJ : Y ⊆ fixObservedAncestralSet M X hObs hFix Y :=
+    subset_fixObservedAncestralSet M X hObs hFix Y hY
+  show (M.fixSet X hObs hFix).obsKernel.map (valuesProjection (hKJ.trans hJI))
+      = ((M.fixSet X hObs hFix).obsKernel.map (valuesProjection hJI)).map
+          (valuesProjection hKJ)
+  rw [← ProbabilityTheory.Kernel.map_comp_right _ (measurable_valuesProjection hJI)
+      (measurable_valuesProjection hKJ), valuesProjection_comp hKJ hJI]
 
 /-- If two models with the same SWIG graph have equal observed-ancestral do-law marginals, then their outcome marginals agree.
 
@@ -240,6 +247,13 @@ theorem doObsKernelAncestralMarginal_heq_of_obsDensity_heq
   subst aco₂
   apply heq_of_eq
   refine ProbabilityTheory.Kernel.ext (fun s => ?_)
+  -- `s` is typed against the *first* model's fixed-value space, so the `∀ s`
+  -- instances above are only usable after one application at default
+  -- transparency; instance synthesis alone cannot bridge the two (definitionally
+  -- equal) fixed-value types.  Specialize them here so the shapes match
+  -- syntactically at every later call site.
+  haveI hfin1s := hfin1 s
+  haveI hfin2s := hfin2 s
   -- The two ancestral marginals share the coordinate reference `jointRef ref D`
   -- (`D = fixObservedAncestralSet` reads only the shared SWIG graph, so the two
   -- syntactic copies are definitionally equal), and both are dominated by it
@@ -316,7 +330,7 @@ theorem doObsKernelAncestralMarginal_heq_of_obsDensity_heq
     rcases hIDM with ⟨hX, hIDrest⟩
     have hSreach : S ∈ ((M₁'.toSWIGGraph.splitMono X hX.1 hX.2).induce
         ((M₁'.toSWIGGraph.splitMono X hX.1 hX.2).dag.ancestralSet Y)).cComponentSet := by
-      simpa [H, fixAncestralSet, fixTruncCComponentSet] using hS
+      exact hS
     let C := containingCComponent M₁'.toSWIGGraph S
     have hReach : cFactorReachable M₁'.toSWIGGraph C S := by
       simpa [C] using hIDrest.2.2 S hSreach
@@ -357,10 +371,10 @@ theorem doObsKernelAncestralMarginal_heq_of_obsDensity_heq
       hExtendX
     have t2 := doAncestralDistrictDensity_recovered_from_obs M₂' X hvalid₂.2.2.2
       hvalid₂.1 hvalid₂.2.1
-      Y ref href s S C (by simpa [H, fixTruncCComponentSet] using hS)
+      Y ref href s S C (by exact hS)
       (by simpa [M₁', M₂'] using hReach) (by simpa [M₁', M₂'] using hCmem)
-      hpos₂' hYX extend (by simpa [M₁', M₂'] using hExtend)
-      (by simpa [M₁', M₂'] using hExtendX)
+      hpos₂' hYX extend (by exact hExtend)
+      (by exact hExtendX)
     have hrec := cComponentDensityFactor_heq_of_obsKernel_heq M₁' M₂' ref C rfl hobs
     have hrec_fun : (fun s' => M₁'.cComponentDensityFactor ref s' C) =
         (fun s' => M₂'.cComponentDensityFactor ref s' C) :=

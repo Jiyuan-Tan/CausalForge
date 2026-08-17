@@ -114,6 +114,10 @@ noncomputable def unitTimeLevel (T N : ℕ) (theta : UnitParameter N T) (t : Fin
   if ht : t.val ≠ 0 then theta.1 (Sum.inr (Sum.inr ⟨t, ht⟩)) else 0
 
 -- @node: unitIndex_eq_levels
+/-- At any unit-period observation, the linear index of a unit-and-time fixed-effect
+parameter splits into three pieces: that unit's level (intercept plus its unit effect),
+that period's time effect, and the treatment coefficient times the unit's treatment
+indicator. -/
 lemma unitIndex_eq_levels (T N : ℕ) (G : Fin N → Cohort T)
     (theta : UnitParameter N T) (i : Fin N) (t : Fin T) :
     unitIndex T N (unitRegressor T N G i t) theta =
@@ -169,11 +173,16 @@ noncomputable def collapsedCohortLevel (T : ℕ) (C : Finset (Cohort T))
     if hmem : g ∈ C then theta.1 (Sum.inr (Sum.inl ⟨⟨g, hmem⟩, hg⟩)) else 0 else 0
 
 -- @node: collapsedTimeLevel
+/-- The time effect that a collapsed cohort-time parameter assigns to a calendar period:
+the period's own time-dummy coordinate, and zero in the omitted base period. -/
 noncomputable def collapsedTimeLevel (T : ℕ) (C : Finset (Cohort T))
     (theta : CollapsedParameter T C) (t : Fin T) : ℝ :=
   if ht : t.val ≠ 0 then theta.1 (Sum.inr (Sum.inr ⟨t, ht⟩)) else 0
 
 -- @node: collapsedIndex_eq_levels
+/-- At any supported cohort-time cell, the linear index of a collapsed parameter splits
+into three pieces: that cohort's level (intercept plus its cohort effect), that period's
+time effect, and the treatment coefficient times the cohort's treatment indicator. -/
 lemma collapsedIndex_eq_levels (T : ℕ) (C : Finset (Cohort T))
     (theta : CollapsedParameter T C) (g : Cohort T) (hg : g ∈ C) (t : Fin T) :
     collapsedIndex T C (collapsedRegressor T C g t) theta =
@@ -380,6 +389,10 @@ panel, support, unit assignment, baselines, and collapsed parameter are replaced
 add_decl_doc liftCollapsedParameter.congr_simp
 
 -- @node: unitIndex_liftCollapsedParameter
+/-- Lifting a collapsed cohort-time parameter into unit-and-time fixed effects reproduces
+the collapsed linear index at every unit-period observation, shifted by the log ratio of
+that unit's baseline to the average baseline of its cohort. Every unit is assumed to
+belong to a supported cohort. -/
 lemma unitIndex_liftCollapsedParameter (T : ℕ) (C : Finset (Cohort T)) {N : ℕ}
     (G : Fin N → Cohort T) (b : Fin N → PosReal) (hN : 0 < N)
     (hG : ∀ i, G i ∈ C) (theta : CollapsedParameter T C) (i : Fin N) (t : Fin T) :
@@ -494,6 +507,10 @@ unchanged when the panel, support, unit data, and original direction are replace
 add_decl_doc aggregateUnitDirection.congr_simp
 
 -- @node: collapsedIndex_aggregateUnitDirection
+/-- Aggregating a unit-and-time direction into collapsed coordinates gives, at every
+supported cohort-time cell, the baseline-ratio-weighted within-cohort average of the
+unit levels, plus the direction's time effect for that period, plus its treatment
+coefficient times the cohort's treatment indicator. -/
 lemma collapsedIndex_aggregateUnitDirection (T : ℕ) (C : Finset (Cohort T))
     {N : ℕ} (G : Fin N → Cohort T) (b : Fin N → PosReal)
     (hTop : (⊤ : Cohort T) ∈ C) (d : UnitParameter N T)

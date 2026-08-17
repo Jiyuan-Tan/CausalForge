@@ -511,7 +511,7 @@ private lemma evalSum_isLittleOp_one
         Measurable (fun p : Ω × X => (eLpNorm (f n p.1) 2 P).toReal) :=
       (Causalean.Mathlib.measurable_eLpNorm_two_toReal_of_uncurry
           (P := P) (by norm_num) (by norm_num) (hf_meas n)).comp measurable_fst
-    simpa using Measurable.ite (measurableSet_le hnorm measurable_const)
+    exact Measurable.ite (measurableSet_le hnorm measurable_const)
       (hf_meas n) measurable_const
   have hftil_uncurry_train : ∀ n,
       Measurable[(m_train n).prod (inferInstance : MeasurableSpace X)]
@@ -523,7 +523,7 @@ private lemma evalSum_isLittleOp_one
           (fun p : Ω × X => (eLpNorm (f n p.1) 2 P).toReal) := by
       exact (Causalean.Mathlib.measurable_eLpNorm_two_toReal_of_uncurry_of_factor
         (P := P) (by norm_num) (by norm_num) (hf_uncurry_train n)).comp measurable_fst
-    simpa using Measurable.ite (measurableSet_le hnorm measurable_const)
+    exact Measurable.ite (measurableSet_le hnorm measurable_const)
       (hf_uncurry_train n) measurable_const
   have hftil_memLp : ∀ n ω, MemLp (ftil n ω) 2 P := by
     intro n ω

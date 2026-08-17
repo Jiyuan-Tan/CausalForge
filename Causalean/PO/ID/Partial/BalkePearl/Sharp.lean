@@ -252,7 +252,7 @@ lemma piMeasure_univ_of_feasible {π : Bool → Bool → Bool → Bool → ℝ}
   simp
 
 /-- A nonnegative latent table that sums to one induces a probability measure. -/
-instance instIsProbPiMeasure {π : Bool → Bool → Bool → Bool → ℝ}
+lemma instIsProbPiMeasure {π : Bool → Bool → Bool → Bool → ℝ}
     (hπ_nn : ∀ d0 d1 y0 y1, 0 ≤ π d0 d1 y0 y1)
     (hπ_sum : ∑ d0 : Bool, ∑ d1 : Bool, ∑ y0 : Bool, ∑ y1 : Bool,
         π d0 d1 y0 y1 = 1) :
@@ -353,13 +353,11 @@ lemma canonical_consistency : (P' S π hπ_nn hπ_sum).Consistency := by
       rw [Regime.empty_target]; exact Finset.notMem_empty _
     fin_cases v
     · -- v = ⟨0, _⟩
-      have hv0_notr : (⟨0, by decide⟩ : SV) ∉ r.target := by
-        simpa using hv_notr
+      have hv0_notr : (⟨0, by decide⟩ : SV) ∉ r.target := hv_notr
       rw [eval_zero_of_not_mem r ω hv0_notr,
         eval_zero_of_not_mem (Regime.empty : Regime SV SX) ω hne_empty0]
     · -- v = ⟨1, _⟩
-      have hv1_notr : (⟨1, by decide⟩ : SV) ∉ r.target := by
-        simpa using hv_notr
+      have hv1_notr : (⟨1, by decide⟩ : SV) ∉ r.target := hv_notr
       rw [eval_one_of_not_mem r ω hv1_notr,
         eval_one_of_not_mem (Regime.empty : Regime SV SX) ω hne_empty1]
       have hzEq : eval r ω ⟨0, by decide⟩ = eval Regime.empty ω ⟨0, by decide⟩ := by
@@ -369,8 +367,7 @@ lemma canonical_consistency : (P' S π hπ_nn hπ_sum).Consistency := by
             eval_zero_of_not_mem (Regime.empty : Regime SV SX) ω hne_empty0]
       exact congrArg (fun z => dArmω z ω) hzEq
     · -- v = ⟨2, _⟩
-      have hv2_notr : (⟨2, by decide⟩ : SV) ∉ r.target := by
-        simpa using hv_notr
+      have hv2_notr : (⟨2, by decide⟩ : SV) ∉ r.target := hv_notr
       rw [eval_two_of_not_mem r ω hv2_notr,
         eval_two_of_not_mem (Regime.empty : Regime SV SX) ω hne_empty2]
       have hzEq : eval r ω ⟨0, by decide⟩ = eval Regime.empty ω ⟨0, by decide⟩ := by
@@ -440,17 +437,15 @@ lemma canonical_consistency : (P' S π hπ_nn hπ_sum).Consistency := by
     change eval (r₁.sqcup r₂ hd) ω v = eval r₁ ω v
     fin_cases v
     · exact hzEq
-    · have hv1_not_sqcup : (⟨1, by decide⟩ : SV) ∉ (r₁.sqcup r₂ hd).target := by
-        simpa only using hv_not_sqcup
-      have hv1_notr1 : (⟨1, by decide⟩ : SV) ∉ r₁.target := by
-        simpa only using hv_notr1
+    · have hv1_not_sqcup : (⟨1, by decide⟩ : SV) ∉ (r₁.sqcup r₂ hd).target :=
+        hv_not_sqcup
+      have hv1_notr1 : (⟨1, by decide⟩ : SV) ∉ r₁.target := hv_notr1
       rw [eval_one_of_not_mem (r₁.sqcup r₂ hd) ω hv1_not_sqcup,
         eval_one_of_not_mem r₁ ω hv1_notr1]
       exact congrArg (fun z => dArmω z ω) hzEq
-    · have hv2_not_sqcup : (⟨2, by decide⟩ : SV) ∉ (r₁.sqcup r₂ hd).target := by
-        simpa only using hv_not_sqcup
-      have hv2_notr1 : (⟨2, by decide⟩ : SV) ∉ r₁.target := by
-        simpa only using hv_notr1
+    · have hv2_not_sqcup : (⟨2, by decide⟩ : SV) ∉ (r₁.sqcup r₂ hd).target :=
+        hv_not_sqcup
+      have hv2_notr1 : (⟨2, by decide⟩ : SV) ∉ r₁.target := hv_notr1
       rw [eval_two_of_not_mem (r₁.sqcup r₂ hd) ω hv2_not_sqcup,
         eval_two_of_not_mem r₁ ω hv2_notr1]
       exact congrArg (fun d => yArmω d ω) hdEq
@@ -570,14 +565,16 @@ lemma canonical_exclusion (z d : Bool) :
     (S' S π hπ_nn hπ_sum).YofZD z d =
       (S' S π hπ_nn hπ_sum).YofD d := by
   funext ω
-  rw [canonical_YofZD, canonical_YofD]
+  exact (canonical_YofZD S π hπ_nn hπ_sum z d ω).trans
+    (canonical_YofD S π hπ_nn hπ_sum d ω).symm
 
 /-- The Z-event in the canonical model is `{ω | ω.1 = z}`. -/
 lemma canonical_zEvent (z : Bool) :
     (S' S π hπ_nn hπ_sum).zEvent z = {ω : SOmega | ω.1 = z} := by
   ext ω
   change (S' S π hπ_nn hπ_sum).factualZ ω = z ↔ ω.1 = z
-  rw [canonical_factualZ]
+  exact Iff.of_eq (congrArg (fun t => t = z)
+    (canonical_factualZ S π hπ_nn hπ_sum ω))
 
 /-- `μ' (S'.zEvent z) = P.μ (S.zEvent z)`. -/
 lemma canonical_zEvent_measure (z : Bool) :
@@ -657,17 +654,13 @@ lemma canonical_cfBundle_factors_through_snd :
     -- Case split on i : Fin 4.
     fin_cases i
     · -- D(false) ω = dArm false ω.2.1 ω.2.2.1
-      change (S' S π hπ_nn hπ_sum).DofZ false ω = _
-      rw [canonical_DofZ]; rfl
+      exact (canonical_DofZ S π hπ_nn hπ_sum false ω).trans rfl
     · -- D(true) ω = dArm true ω.2.1 ω.2.2.1
-      change (S' S π hπ_nn hπ_sum).DofZ true ω = _
-      rw [canonical_DofZ]; rfl
+      exact (canonical_DofZ S π hπ_nn hπ_sum true ω).trans rfl
     · -- Y(false) ω = yArm false ω.2.2.2.1 ω.2.2.2.2
-      change (S' S π hπ_nn hπ_sum).YofD false ω = _
-      rw [canonical_YofD]; rfl
+      exact (canonical_YofD S π hπ_nn hπ_sum false ω).trans rfl
     · -- Y(true) ω = yArm true ω.2.2.2.1 ω.2.2.2.2
-      change (S' S π hπ_nn hπ_sum).YofD true ω = _
-      rw [canonical_YofD]; rfl
+      exact (canonical_YofD S π hπ_nn hπ_sum true ω).trans rfl
 
 /-- Exogeneity: Z ⊥ cfBundle under the canonical product measure. -/
 lemma canonical_exogeneity :
@@ -698,7 +691,7 @@ lemma canonical_baseAssumptions (hA : S.BaseAssumptions) :
     (S' S π hπ_nn hπ_sum).BaseAssumptions where
   consistency_D := by
     intro z ω hω
-    rw [canonical_DofZ, canonical_factualD]
+    rw [canonical_DofZ S π hπ_nn hπ_sum z ω, canonical_factualD S π hπ_nn hπ_sum ω]
     have hz : ω.1 = z := by
       have hset := canonical_zEvent S π hπ_nn hπ_sum z
       change ω ∈ (S' S π hπ_nn hπ_sum).zEvent z at hω
@@ -709,10 +702,10 @@ lemma canonical_baseAssumptions (hA : S.BaseAssumptions) :
     rfl
   consistency_Y := by
     intro d ω hω
-    rw [canonical_YofD, canonical_factualY]
+    rw [canonical_YofD S π hπ_nn hπ_sum d ω, canonical_factualY S π hπ_nn hπ_sum ω]
     have hd : dArmω ω.1 ω = d := by
       change (S' S π hπ_nn hπ_sum).factualD ω = d at hω
-      rw [canonical_factualD] at hω
+      rw [canonical_factualD S π hπ_nn hπ_sum ω] at hω
       exact hω
     rw [hd]
     unfold yArmω POBalkePearlSystem.yArm

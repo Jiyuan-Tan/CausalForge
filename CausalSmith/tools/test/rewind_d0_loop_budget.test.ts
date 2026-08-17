@@ -52,6 +52,7 @@ describe("the rewind routes hand the re-entered D phase a fresh budget", () => {
     const state = stateWithSpend({ solve_rounds: 9, revise_rounds: 1, consistency_heals: 0 });
     expect(applyInterventionRoute(state, {
       route: "stage_0", action_kind: "statement_correction", reason: "the headline overclaims",
+      d0_rewind_intent: "replacement",
     } as never)).toBe(true);
     expect(state.stage_completed, "the route must actually rewind for the reset to matter").toBe("-1.2");
     expect(state.flags.d0_loop_counters).toEqual({ solve_rounds: 0, revise_rounds: 0, consistency_heals: 0 });

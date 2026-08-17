@@ -381,7 +381,8 @@ lemma prefixDensityProduct_card_eq_qFactorDensityProduct
       valuesProjection (M.prefixNodes_mono (Nat.le_of_lt i.isLt)) y := by
     funext a
     rfl
-  simp [i.isLt, hproj, valuesProjection]
+  simp only [i.isLt]
+  rfl
 
 /-- **Conditional factor of the composition-product Radon–Nikodym derivative.**
 
@@ -692,7 +693,7 @@ lemma obsChainKernel_rnDeriv_eq_prefixDensityProduct
               (M.extendObsPrefix hkc p) = p.1 := by
         funext i
         have hi := congrArg (fun q => q.1 i) hpair
-        simpa [valuesUnionEquiv, valuesProjection] using hi
+        exact hi
       have hcoord_ext :
           M.extendObsPrefix hkc p ⟨(M.observedAt ⟨k, hkc⟩).val, by
             rw [M.prefixNodes_succ hkc]
@@ -701,7 +702,7 @@ lemma obsChainKernel_rnDeriv_eq_prefixDensityProduct
           congrArg
             (fun q => singletonValue (α := swigΩ Ω)
               (v := (M.observedAt ⟨k, hkc⟩).val) q.2) hpair
-        simpa using hnext
+        exact hnext
       rw [prefixDensityProduct]
       simp [hkc, hproj_ext, hcoord_ext, refnode]
       rfl

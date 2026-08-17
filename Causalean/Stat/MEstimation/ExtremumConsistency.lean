@@ -76,7 +76,7 @@ theorem consistent_lt_norm_of_le_dist {E : Type*} [NormedAddCommGroup E]
     ∀ ε > 0, Tendsto (fun n => μ {ω | ε < ‖θn n ω - θ₀‖}) atTop (𝓝 0) := by
   intro ε hε
   refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds (h ε hε)
-    (Eventually.of_forall fun n => zero_le _)
+    (Eventually.of_forall fun n => zero_le)
     (Eventually.of_forall fun n => measure_mono ?_)
   intro ω hω
   simp only [Set.mem_setOf_eq, dist_eq_norm] at hω ⊢

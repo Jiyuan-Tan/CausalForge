@@ -230,7 +230,7 @@ lemma IIDSample.empProcess_increment_tendsto_zero (S : IIDSample Ω ℝ μ P)
       simp only [Nat.cast_zero, Real.sqrt_zero, inv_zero, zero_mul, ne_eq,
         OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, ENNReal.ofReal_zero,
         lintegral_const, measure_univ, mul_one]
-      exact zero_le _
+      exact zero_le
     · have hbound := Causalean.Mathlib.iid_centered_sum_sq_lintegral_le
         (μ := μ) (P := P) (s := Finset.range n)
         (by simpa [Finset.card_range] using hn) (W := S.Z) (fun i _ => S.meas i)
@@ -310,7 +310,7 @@ lemma IIDSample.empProcess_increment_tendsto_zero (S : IIDSample Ω ℝ μ P)
     simp only [zero_mul] at this
     simpa [ENNReal.div_eq_inv_mul, mul_comm] using this
   exact tendsto_of_tendsto_of_tendsto_of_le_of_le
-    tendsto_const_nhds hrhs_tendsto (fun n => zero_le _) (fun n => hmarkov n)
+    tendsto_const_nhds hrhs_tendsto (fun n => zero_le) (fun n => hmarkov n)
 
 
 /-! ## Monotone-grid oscillation -/
@@ -456,7 +456,7 @@ lemma IIDSample.empProcess_node_max_tendsto_zero (S : IIDSample Ω ℝ μ P)
     exact ⟨i, hi, by rw [← hival]; exact hω⟩
   -- Squeeze.
   refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hsum
-    (fun n => zero_le _) (fun n => hbound n)
+    (fun n => zero_le) (fun n => hbound n)
 
 /-- **Uniform grid bracketing.**  For the uniform mesh `u_k = −M + 2M·k/K`
 on `[−M, M]` (`K ≥ 1`, `M > 0`), any `x ∈ [−M, M]` lies in some cell

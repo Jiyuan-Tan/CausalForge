@@ -15,6 +15,10 @@ open scoped BigOperators
 namespace CausalSmith.Experimentation.RolloutChebyshev
 
 -- @node: equalSchedule_injective
+/-- The equal-spacing benchmark schedule `p^eq(β,q) = (0, q/β, 2q/β, ..., q)` has distinct nodes:
+whenever the order satisfies `β ≥ 1` and the budget `q` is positive, distinct round indices give
+distinct treated fractions. Node distinctness is the premise under which Lagrange interpolation
+on this grid — and hence the dual description of the amplification — is available. -/
 lemma equalSchedule_injective (beta : ℕ) (q : ℝ) (hbeta : 1 ≤ beta) (hq : 0 < q) :
     Function.Injective (equalSchedule beta q) := by
   intro a b hab
@@ -28,6 +32,12 @@ lemma equalSchedule_injective (beta : ℕ) (q : ℝ) (hbeta : 1 ≤ beta) (hq : 
   exact Fin.ext (by exact_mod_cast hreal)
 
 -- @node: equalSchedule_lagrange_basis_eval_one_le
+/-- Size of the Lagrange basis at full treatment on the equal grid: for order `β ≥ 1` and budget
+`q ∈ (0,1]`, the `j`-th Lagrange basis polynomial for the equal-spacing schedule `p^eq(β,q)`
+obeys `|ℓ_j(1)| ≤ (β/q)^β / (j! (β - j)!)` at the extrapolation point `1`.
+
+The binomial shape of the right-hand side is what makes the sum over `j` bounded by a constant
+multiple of `(β/q)^β`, giving the equal-spacing benchmark's total-variation bound. -/
 lemma equalSchedule_lagrange_basis_eval_one_le (beta : ℕ) (q : ℝ)
     (hbeta : 1 ≤ beta) (hq : 0 < q ∧ q ≤ 1) (j : Fin (beta + 1)) :
     |(Lagrange.basis (Finset.univ : Finset (Fin (beta + 1))) (equalSchedule beta q) j).eval 1|
@@ -208,7 +218,7 @@ lemma equal_spacing_benchmark (beta : ℕ) (q : ℝ) (hbeta : 1 ≤ beta)
       (∑ j : Fin (beta + 1),
         |(Lagrange.basis (Finset.univ : Finset (Fin (beta + 1))) p j).eval 0|) = 1 := by
     let z : Fin (beta + 1) := 0
-    have hpz : p z = 0 := by simp [p, equalSchedule]
+    have hpz : p z = 0 := by simp [p, equalSchedule, z]
     calc
       (∑ j : Fin (beta + 1),
         |(Lagrange.basis (Finset.univ : Finset (Fin (beta + 1))) p j).eval 0|)

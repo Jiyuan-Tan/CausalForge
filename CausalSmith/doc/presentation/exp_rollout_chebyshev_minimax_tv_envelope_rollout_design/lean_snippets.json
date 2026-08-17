@@ -1,8 +1,8 @@
 {
-  "commit": "6e3ba5a09e998cb7c7b15f45d6a11634157a62aa",
+  "commit": "a90838033b0efece90be38573811c11b651f0e5c",
   "snippets": {
     "ass:static-rollout-consistency": {
-      "decl": "StaticRolloutConsistency",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.StaticRolloutConsistency",
       "file": "Basic.lean",
       "line": 0,
       "statement": "/-- Static rollout potential outcomes with no carryover (CortezRodriguezEichhornYu2024):\nthe observed round mean equals `bar_Y_j = n⁻¹ ∑_{i∈U_n} Y_i(Z_j)`, with the potential\noutcomes depending on the contemporaneous assignment vector `Z_j` (the argument of `Y`)\nbut not on earlier rollout steps. Inherited setup; threaded Prop, never discharged.\n@realizes bar_Y_j(barY j z = n⁻¹ ∑ Y_i(Z_j))\n@realizes Y_i(z)(Y : units → assignment → ℝ)\n@realizes Z_j(Z j z : assignment vector at round j)\n@realizes U_n(unit index Fin n) -/\ndef StaticRolloutConsistency (n k : ℕ) {Ω : Type*} [Fintype Ω]\n    (Y : Fin n → (Fin n → Bool) → ℝ) (Z : Fin (k + 1) → Ω → (Fin n → Bool))\n    (barY : Fin (k + 1) → Ω → ℝ) : Prop :=\n  ∀ (j : Fin (k + 1)) (z : Ω), barY j z = (n : ℝ)⁻¹ * ∑ i, Y i (Z j z)",
@@ -10,7 +10,7 @@
       "axioms": null
     },
     "def:budgeted-schedule-class": {
-      "decl": "BudgetedSchedule",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.BudgetedSchedule",
       "file": "Basic.lean",
       "line": 0,
       "statement": "/-- Budgeted rollout schedules\n`S_{k,q} = { p ∈ [0,1]^(k+1) : p₀ = 0, 0 < p₁ < ... < p_k = q }`. The paper's ambient schedule\nrange `p ∈ [0,1]^(k+1)` is carried by the first conjunct (each coordinate lies in `[0,1]`).\nThe budget `q` is the treated endpoint `p (last k) = q`; combined with `p 0 = 0`, `StrictMono p`\nand `p j ∈ [0,1]` this pins the core space `q ∈ (0,1]` (`0 = p 0 < p (last k) = q ≤ 1`).\n@realizes p(schedule Fin (k+1) → [0,1]: carrier ℝ + Icc range clause)\n@realizes q(carrier ℝ; range (0,1] via p (last k) = q with p 0 = 0, StrictMono p, Icc clause)\n@realizes S_{k,q}(p j ∈ Icc 0 1, p 0 = 0, StrictMono p, p (last k) = q) -/\ndef BudgetedSchedule (k : ℕ) (q : ℝ) (p : Fin (k + 1) → ℝ) : Prop :=\n  (∀ j, p j ∈ Set.Icc (0 : ℝ) 1) ∧ p 0 = 0 ∧ StrictMono p ∧ p (Fin.last k) = q",
@@ -18,7 +18,7 @@
       "axioms": null
     },
     "ass:beta-order-polynomial": {
-      "decl": "BetaOrderPolynomial",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.BetaOrderPolynomial",
       "file": "Basic.lean",
       "line": 0,
       "statement": "/-- β-order rollout polynomial identity (CortezEichhornYu2022): the rollout mean curve is a\ndegree-β polynomial `m_P(u) = ∑_{ℓ=0}^β a_{P,ℓ} uˡ` on `[0,1]`. Inherited setup; threaded Prop.\n@realizes m_P(m u = ∑ a_ℓ uˡ on [0,1])\n@realizes a_{P,0}, ..., a_{P,beta}(coefficient vector a : ℕ → ℝ, indices 0..β) -/\ndef BetaOrderPolynomial (beta : ℕ) (m : ℝ → ℝ) (a : ℕ → ℝ) : Prop :=\n  ∀ u : ℝ, u ∈ Set.Icc (0 : ℝ) 1 → m u = ∑ ell ∈ Finset.range (beta + 1), a ell * u ^ ell",
@@ -26,7 +26,7 @@
       "axioms": null
     },
     "ass:round-mean-variance-envelope": {
-      "decl": "RoundMeanVarianceEnvelope",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.RoundMeanVarianceEnvelope",
       "file": "Basic.lean",
       "line": 0,
       "statement": "/-- NOVEL total-variation design envelope: for every round `j`, the design variance of the\nround mean is bounded by `σ₀²/n`. The paper's declared TV envelope INPUT, not a proof\nobligation; threaded Prop, never discharged.\n@realizes sigma_0^2(envelope constant σ₀² with Var_pi(barY j) ≤ σ₀²/n) -/\ndef RoundMeanVarianceEnvelope (n k : ℕ) {Ω : Type*} [Fintype Ω] (D : FiniteDesign Ω)\n    (barY : Fin (k + 1) → Ω → ℝ) (sigma0sq : ℝ) : Prop :=\n  ∀ j : Fin (k + 1), D.Var (barY j) ≤ sigma0sq / (n : ℝ)",
@@ -34,7 +34,7 @@
       "axioms": null
     },
     "ass:low-budget-cap": {
-      "decl": "LowBudgetCap",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.LowBudgetCap",
       "file": "Basic.lean",
       "line": 0,
       "statement": "/-- Low-budget regime cap: `q ≤ q_max < 1`, with the ambient budget-cap range `q_max ∈ (0,1)`.\nThe leading conjunct `0 < q_max` realizes the core space of `q_max` (which is `(0,1)`, not just\n`(-∞,1)`); every consumer taking `LowBudgetCap q qmax` inherits `0 < q_max` by name. Threaded\nmodeling Prop.\n@realizes q_max(low-budget cap 0 < q_max < 1) -/\ndef LowBudgetCap (q qmax : ℝ) : Prop := 0 < qmax ∧ q ≤ qmax ∧ qmax < 1",
@@ -50,25 +50,25 @@
       "axioms": null,
       "components": [
         {
-          "label": "RolloutLawClass",
+          "label": "CausalSmith.Experimentation.RolloutChebyshev.RolloutLawClass",
           "statement": "/-- The static β-order rollout TV-envelope law class `P_β`, bundling the three member\nassumptions plus the defining pinning of the mean curve `m_P` to the law\n(`E_pi[bar_Y_j] = m_P(p_j)`, the schedule-point restriction of `m_P(u) = E_pi(bar_Y_j∣p_j=u)`;\nrequired so `m` is not a free auxiliary widening the class).\n@realizes P_beta(bundle of static-rollout, β-polynomial, variance-envelope + mean-curve pinning)\n@realizes m_P(mean_curve : E_pi[barY j] = m (p j)) -/\nstructure RolloutLawClass (n k beta : ℕ) {Ω : Type*} [Fintype Ω] (D : FiniteDesign Ω)\n    (Y : Fin n → (Fin n → Bool) → ℝ) (Z : Fin (k + 1) → Ω → (Fin n → Bool))\n    (barY : Fin (k + 1) → Ω → ℝ) (m : ℝ → ℝ) (a : ℕ → ℝ) (sigma0sq : ℝ)\n    (p : Fin (k + 1) → ℝ) : Prop where\n  /-- Member: static rollout consistency (`ass:static-rollout-consistency`). -/\n  static_rollout : StaticRolloutConsistency n k Y Z barY\n  /-- Member: β-order rollout polynomial (`ass:beta-order-polynomial`). -/\n  beta_polynomial : BetaOrderPolynomial beta m a\n  /-- Member: round-mean TV variance envelope (`ass:round-mean-variance-envelope`). -/\n  variance_envelope : RoundMeanVarianceEnvelope n k D barY sigma0sq\n  /-- Defining pinning of the law functional `m_P` to the design: the round mean at round `j`\n  has design expectation `m_P(p_j)`. -/\n  mean_curve : ∀ j : Fin (k + 1), D.E (barY j) = m (p j)"
         },
         {
-          "label": "StaticRolloutConsistency",
+          "label": "CausalSmith.Experimentation.RolloutChebyshev.StaticRolloutConsistency",
           "statement": "/-- Static rollout potential outcomes with no carryover (CortezRodriguezEichhornYu2024):\nthe observed round mean equals `bar_Y_j = n⁻¹ ∑_{i∈U_n} Y_i(Z_j)`, with the potential\noutcomes depending on the contemporaneous assignment vector `Z_j` (the argument of `Y`)\nbut not on earlier rollout steps. Inherited setup; threaded Prop, never discharged.\n@realizes bar_Y_j(barY j z = n⁻¹ ∑ Y_i(Z_j))\n@realizes Y_i(z)(Y : units → assignment → ℝ)\n@realizes Z_j(Z j z : assignment vector at round j)\n@realizes U_n(unit index Fin n) -/\ndef StaticRolloutConsistency (n k : ℕ) {Ω : Type*} [Fintype Ω]\n    (Y : Fin n → (Fin n → Bool) → ℝ) (Z : Fin (k + 1) → Ω → (Fin n → Bool))\n    (barY : Fin (k + 1) → Ω → ℝ) : Prop :=\n  ∀ (j : Fin (k + 1)) (z : Ω), barY j z = (n : ℝ)⁻¹ * ∑ i, Y i (Z j z)"
         },
         {
-          "label": "BetaOrderPolynomial",
+          "label": "CausalSmith.Experimentation.RolloutChebyshev.BetaOrderPolynomial",
           "statement": "/-- β-order rollout polynomial identity (CortezEichhornYu2022): the rollout mean curve is a\ndegree-β polynomial `m_P(u) = ∑_{ℓ=0}^β a_{P,ℓ} uˡ` on `[0,1]`. Inherited setup; threaded Prop.\n@realizes m_P(m u = ∑ a_ℓ uˡ on [0,1])\n@realizes a_{P,0}, ..., a_{P,beta}(coefficient vector a : ℕ → ℝ, indices 0..β) -/\ndef BetaOrderPolynomial (beta : ℕ) (m : ℝ → ℝ) (a : ℕ → ℝ) : Prop :=\n  ∀ u : ℝ, u ∈ Set.Icc (0 : ℝ) 1 → m u = ∑ ell ∈ Finset.range (beta + 1), a ell * u ^ ell"
         },
         {
-          "label": "RoundMeanVarianceEnvelope",
+          "label": "CausalSmith.Experimentation.RolloutChebyshev.RoundMeanVarianceEnvelope",
           "statement": "/-- NOVEL total-variation design envelope: for every round `j`, the design variance of the\nround mean is bounded by `σ₀²/n`. The paper's declared TV envelope INPUT, not a proof\nobligation; threaded Prop, never discharged.\n@realizes sigma_0^2(envelope constant σ₀² with Var_pi(barY j) ≤ σ₀²/n) -/\ndef RoundMeanVarianceEnvelope (n k : ℕ) {Ω : Type*} [Fintype Ω] (D : FiniteDesign Ω)\n    (barY : Fin (k + 1) → Ω → ℝ) (sigma0sq : ℝ) : Prop :=\n  ∀ j : Fin (k + 1), D.Var (barY j) ≤ sigma0sq / (n : ℝ)"
         }
       ]
     },
     "def:unbiased-weight-set": {
-      "decl": "UnbiasedWeights",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.UnbiasedWeights",
       "file": "Basic.lean",
       "line": 0,
       "statement": "/-- Linear-unbiased rollout weights `W_β(p) = { w : ∑ⱼ wⱼ pⱼ⁰ = 0, ∑ⱼ wⱼ pⱼˡ = 1, ℓ=1..β }`.\n@realizes W_beta(p)(∑ wⱼ pⱼ⁰ = 0 and ∑ wⱼ pⱼˡ = 1 for 1≤ℓ≤β)\n@realizes w(weight vector Fin (k+1) → ℝ) -/\ndef UnbiasedWeights (beta k : ℕ) (p w : Fin (k + 1) → ℝ) : Prop :=\n  (∑ j : Fin (k + 1), w j * (p j) ^ (0 : ℕ) = 0) ∧\n    (∀ ell : ℕ, 1 ≤ ell → ell ≤ beta → ∑ j : Fin (k + 1), w j * (p j) ^ ell = 1)",
@@ -76,7 +76,7 @@
       "axioms": null
     },
     "def:chebyshev-schedule": {
-      "decl": "chebyshevSchedule",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.chebyshevSchedule",
       "file": "Basic.lean",
       "line": 0,
       "statement": "/-- Shifted Chebyshev-Lobatto rollout schedule `pⱼ^Ch(k,q) = q(1 - cos(π j / k))/2`.\nCarrier `Fin (k+1) → ℝ` (the closed-form grid). Its core space `p^Ch(k,q) ∈ [0,1]^(k+1)` is\nNOT free from the formula alone: since `1 - cos ∈ [0,2]`, each coordinate lands in `[0,q] ⊆ [0,1]`\nprecisely when `k ≥ 1` and `q ∈ (0,1]`. This range clause is realized by\n`chebyshev_schedule_admissible`, whose conclusion `BudgetedSchedule k q (p^Ch(k,q))` carries the\n`[0,1]^(k+1)` membership `∀ j, p^Ch(k,q) j ∈ Set.Icc 0 1` (its first conjunct) together with\n`p 0 = 0`, `StrictMono`, `p (last k) = q` — so the carrier `def` here plus that admissibility\nlemma together pin `p^Ch(k,q)` to its declared space. The budget parameter `q` (carrier `q : ℝ`)\nhas space `(0,1]`, pinned by the same admissibility range predicate `hq : 0 < q ∧ q ≤ 1`.\n@realizes p^Ch(k,q)(carrier q(1 - cos(π j/k))/2;\n  range [0,1]^(k+1) via chebyshev_schedule_admissible → BudgetedSchedule Icc clause, k≥1, q∈(0,1])\n@realizes q(carrier ℝ; range 0 < q ≤ 1 pinned by chebyshev_schedule_admissible.hq) -/\nnoncomputable def chebyshevSchedule (k : ℕ) (q : ℝ) : Fin (k + 1) → ℝ :=\n  fun j => q * (1 - Real.cos (Real.pi * (j : ℝ) / (k : ℝ))) / 2",
@@ -84,7 +84,7 @@
       "axioms": null
     },
     "def:amplification-criterion": {
-      "decl": "minimaxAmplification",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.minimaxAmplification",
       "file": "Basic.lean",
       "line": 0,
       "statement": "/-- Minimax amplification over budgeted schedules `M_{β,k,q} = inf_{p∈S_{k,q}} A_β(p)`.\n@realizes M_{beta,k,q}(inf over S_{k,q} of A_β(p)) -/\nnoncomputable def minimaxAmplification (beta k : ℕ) (q : ℝ) : ℝ :=\n  sInf { v : ℝ | ∃ p : Fin (k + 1) → ℝ, BudgetedSchedule k q p ∧ v = amplification beta k p }",
@@ -92,7 +92,7 @@
       "axioms": null
     },
     "def:exact-nested-risk": {
-      "decl": "exactNestedRisk",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.exactNestedRisk",
       "file": "Basic.lean",
       "line": 0,
       "statement": "/-- Exact finite-population nested-rollout minimax risk handle\n`R_exact(β,k,q) = inf_{p∈S_{k,q}} inf_{w∈W_β(p)} sup_{P∈P_β} w'Γ_P(p)w`, where\n`w'Γ_P(p)w = Var_pi(∑ⱼ wⱼ bar_Y_j)` is the exact design variance under the monotone-Bernoulli\nrollout `π = D`. The supremum ranges over laws `P` (fixed potential outcomes / round means on\nthe common randomization `D`) in the class `RolloutLawClass`.\n@realizes R_exact(beta,k,q)(inf_p inf_w sup_P w'Γ_P(p)w)\n@realizes Gamma_P(p)(w'Γ_P(p)w = D.Var (∑ wⱼ barYⱼ)) -/\nnoncomputable def exactNestedRisk (n k beta : ℕ) {Ω : Type*} [Fintype Ω] (D : FiniteDesign Ω)\n    (q sigma0sq : ℝ) : ℝ :=\n  sInf { rp : ℝ | ∃ p : Fin (k + 1) → ℝ, BudgetedSchedule k q p ∧\n    rp = sInf { rw : ℝ | ∃ w : Fin (k + 1) → ℝ, UnbiasedWeights beta k p w ∧\n      rw = sSup { rP : ℝ | ∃ (Y : Fin n → (Fin n → Bool) → ℝ)\n          (Z : Fin (k + 1) → Ω → (Fin n → Bool)) (barY : Fin (k + 1) → Ω → ℝ)\n          (m : ℝ → ℝ) (a : ℕ → ℝ),\n        RolloutLawClass n k beta D Y Z barY m a sigma0sq p ∧\n          rP = D.Var (fun z => ∑ j, w j * barY j z) } } }",
@@ -100,7 +100,7 @@
       "axioms": null
     },
     "prop:rollout-polynomial-identity": {
-      "decl": "rollout_polynomial_identity",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.rollout_polynomial_identity",
       "file": "Basic.lean",
       "line": 0,
       "statement": "/-- Under static rollout consistency and the β-order polynomial identity,\n`τ_P = m_P(1) - m_P(0) = ∑_{ℓ=1}^β a_{P,ℓ}` (polynomial endpoint evaluation). Inherited setup\nfrom CortezEichhornYu2022; recalled only to reduce `τ_P` to a degree-β endpoint functional. -/\nlemma rollout_polynomial_identity (n k beta : ℕ) {Ω : Type*} [Fintype Ω]\n    (Y : Fin n → (Fin n → Bool) → ℝ) (Z : Fin (k + 1) → Ω → (Fin n → Bool))\n    (barY : Fin (k + 1) → Ω → ℝ) (m : ℝ → ℝ) (a : ℕ → ℝ)\n    (hcons : StaticRolloutConsistency n k Y Z barY)\n    (hpoly : BetaOrderPolynomial beta m a) :\n    m 1 - m 0 = ∑ ell ∈ Finset.Icc 1 beta, a ell",
@@ -108,7 +108,7 @@
       "axioms": null
     },
     "thm:tv-envelope-design": {
-      "decl": "tv_envelope_design",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.tv_envelope_design",
       "file": "T_tv_envelope_design.lean",
       "line": 0,
       "statement": "theorem tv_envelope_design (n k beta : ℕ) (q sigma0sq : ℝ) {Ω : Type*} [Fintype Ω]\n    (D : FiniteDesign Ω) (Y : Fin n → (Fin n → Bool) → ℝ)\n    (Z : Fin (k + 1) → Ω → (Fin n → Bool)) (barY : Fin (k + 1) → Ω → ℝ)\n    (m : ℝ → ℝ) (a : ℕ → ℝ) (hbeta : 1 ≤ beta) (hk : beta ≤ k) (hsig : 0 ≤ sigma0sq)\n    (p : Fin (k + 1) → ℝ) (hp : BudgetedSchedule k q p)\n    (hP : RolloutLawClass n k beta D Y Z barY m a sigma0sq p) :\n    (∃ w : Fin (k + 1) → ℝ, UnbiasedWeights beta k p w) ∧\n      (∀ w : Fin (k + 1) → ℝ, UnbiasedWeights beta k p w →\n        D.E (fun z => ∑ j, w j * barY j z) = m 1 - m 0 ∧\n          D.Var (fun z => ∑ j, w j * barY j z)\n            ≤ sigma0sq / (n : ℝ) * (∑ j, |w j|) ^ 2 ∧\n          ∃ Γ : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ, Γ.PosSemidef ∧\n            (∀ j, Γ j j ≤ sigma0sq / (n : ℝ)) ∧\n            (∑ i, ∑ j, w i * Γ i j * w j) = sigma0sq / (n : ℝ) * (∑ j, |w j|) ^ 2) ∧\n      (sInf { v : ℝ | ∃ w : Fin (k + 1) → ℝ, UnbiasedWeights beta k p w ∧\n          v = sigma0sq / (n : ℝ) * (∑ j, |w j|) ^ 2 }\n        = sigma0sq / (n : ℝ) * amplification beta k p) ∧\n      (sInf { v : ℝ | ∃ p' : Fin (k + 1) → ℝ, BudgetedSchedule k q p' ∧\n          v = sigma0sq / (n : ℝ) * amplification beta k p' }\n        = sigma0sq / (n : ℝ) * minimaxAmplification beta k q) ∧\n      (∀ pstar : Fin (k + 1) → ℝ, BudgetedSchedule k q pstar →\n          amplification beta k pstar = minimaxAmplification beta k q →\n        ∀ p' : Fin (k + 1) → ℝ, BudgetedSchedule k q p' →\n          sigma0sq / (n : ℝ) * amplification beta k pstar\n            ≤ sigma0sq / (n : ℝ) * amplification beta k p')",
@@ -116,7 +116,7 @@
       "axioms": null
     },
     "prop:equal-spacing-benchmark": {
-      "decl": "equal_spacing_benchmark",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.equal_spacing_benchmark",
       "file": "Helpers/EqualSpacing.lean",
       "line": 0,
       "statement": "/-- Equal-spacing benchmark: `A_β(p^eq(β,q)) ≤ 9 (β/q)^{2β}` for every integer `β ≥ 1` and every\n`q ∈ (0,1]` (the universal constant `C_eq = 9`). Constructed via Lagrange-basis weights on the\nequal grid with the ℓ¹ bound `∑|w_j| ≤ 3 (β/q)^β`, plus the endpoint case at `q = 1`.\nThe leading conjunct `∀ j, p^eq(β,q) j ∈ [0,1]` realizes the schedule's core space\n`p^eq(β,q) ∈ [0,1]^(β+1)` (the range clause the note states for the benchmark grid); the second\nconjunct is the amplification bound proper. The range predicate `hq : 0 < q ∧ q ≤ 1` realizes the\ncore space `q ∈ (0,1]`.\n@realizes p^eq(beta,q)(range [0,1]^(β+1): Icc conjunct on conclusion; β≥1, q∈(0,1])\n@realizes q(carrier ℝ; range 0 < q ≤ 1 via hq) -/\nlemma equal_spacing_benchmark (beta : ℕ) (q : ℝ) (hbeta : 1 ≤ beta)\n    (hq : 0 < q ∧ q ≤ 1) :  -- @realizes q(0 < q ∧ q ≤ 1)\n    (∀ j, equalSchedule beta q j ∈ Set.Icc (0 : ℝ) 1) ∧  -- @realizes p^eq(beta,q)(∈[0,1]^(β+1))\n      amplification beta beta (equalSchedule beta q) ≤ 9 * ((beta : ℝ) / q) ^ (2 * beta)",
@@ -124,7 +124,7 @@
       "axioms": null
     },
     "prop:no-extrapolation-boundary": {
-      "decl": "no_extrapolation_boundary",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.no_extrapolation_boundary",
       "file": "Helpers/NoExtrapolation.lean",
       "line": 0,
       "statement": "/-- No-extrapolation boundary at the full-budget point `q = 1`: the endpoint rule\n`w₀ = -1, w_β = 1, wⱼ = 0` for `1 ≤ j ≤ β-1` lies in `W_β(p^eq(β,1))`, hence `A_β(p^eq(β,1)) ≤ 4`.\nMarks the limit where node optimization becomes trivial (a β-uniform lower bound cannot extend to\n`q = 1`). -/\nlemma no_extrapolation_boundary (beta : ℕ) (hbeta : 1 ≤ beta) :\n    UnbiasedWeights beta beta (equalSchedule beta 1)\n        (fun j => if j = (0 : Fin (beta + 1)) then -1\n          else if j = Fin.last beta then 1 else 0) ∧\n      amplification beta beta (equalSchedule beta 1) ≤ 4",
@@ -132,7 +132,7 @@
       "axioms": null
     },
     "thm:chebyshev-minimax": {
-      "decl": "chebyshev_minimax",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.chebyshev_minimax",
       "file": "T_chebyshev_minimax.lean",
       "line": 0,
       "statement": "theorem chebyshev_minimax (qmax : ℝ) (hqmax : 0 < qmax ∧ qmax < 1) :\n    ∃ Cminus : ℝ, 0 < Cminus ∧\n      ∀ (c : ℝ), 1 < c → ∃ Cplus : ℝ, 0 < Cplus ∧\n        ∀ (beta k : ℕ) (q : ℝ), 1 ≤ beta → (k : ℝ) ≥ c * beta → LowBudgetCap q qmax → 0 < q →\n          (∀ p : Fin (k + 1) → ℝ, BudgetedSchedule k q p →\n              amplification beta k p\n                ≥ Cminus * ((1 + Real.sqrt (1 - q)) ^ 2 / q) ^ (2 * beta)) ∧\n            amplification beta k (chebyshevSchedule k q)\n              ≤ Cplus * ((1 + Real.sqrt (1 - q)) ^ 2 / q) ^ (2 * beta) ∧\n            minimaxAmplification beta k q\n                ≥ Cminus * ((1 + Real.sqrt (1 - q)) ^ 2 / q) ^ (2 * beta) ∧\n              minimaxAmplification beta k q\n                ≤ Cplus * ((1 + Real.sqrt (1 - q)) ^ 2 / q) ^ (2 * beta)",
@@ -140,7 +140,7 @@
       "axioms": null
     },
     "oeq:exact-nested-minimax": {
-      "decl": "exactNestedMinimaxQuestion",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.exactNestedMinimaxQuestion",
       "file": "Helpers/ExactRisk.lean",
       "line": 0,
       "statement": "/-- **OPEN QUESTION (D0 residual `oeq:exact-nested-minimax`, status to-prove).** Stated as a\nnamed `Prop`, NOT a theorem and NOT a proof obligation: it asks whether, in the low-budget\nregime with `k = ⌈c·β⌉`, the shifted Chebyshev-Lobatto schedule `p^Ch(k,q)` also *solves* the\nexact finite-population nested-rollout minimax problem `R_exact(β,k,q)` for the true\nmonotone-Bernoulli covariance `Γ_P(p)` — i.e. its fixed-schedule exact risk attains\n`exactNestedRisk`, the infimum over `S_{k,q}`. Rate-feasibility (the provable half) is\n`exact_chebyshev_rate_feasible`; exact optimality is left open (no theorem depends on this).\n\nThe oversampling ratio is admissible (`1 < c`, the note's `c ∈ (1,∞)`); together with `1 ≤ β`\nthis forces `k = ⌈c·β⌉₊ ≥ 2 ≥ 1` and, with `q ∈ (0,1]`, makes `p^Ch(k,q)` a genuine member of\n`S_{k,q}` (`chebyshev_schedule_admissible`) so the question ranges over the admissible schedule\nthe note states, not over a possibly-inadmissible grid. The antecedents `1 < c` and\n`0 < q → LowBudgetCap q qmax` realize the core spaces `c ∈ (1,∞)` and `q ∈ (0, q_max] ⊆ (0,1]`.\n@realizes c(carrier ℝ; range 1 < c via the `1 < c →` antecedent)\n@realizes q(carrier ℝ; range 0 < q ≤ q_max < 1 via `0 < q → LowBudgetCap q qmax`) -/\ndef exactNestedMinimaxQuestion (c : ℝ) (n beta k : ℕ) {Ω : Type*} [Fintype Ω]\n    (D : FiniteDesign Ω) (q qmax sigma0sq : ℝ) : Prop :=\n  1 < c → 0 < q → LowBudgetCap q qmax → 1 ≤ beta → k = ⌈c * (beta : ℝ)⌉₊ →\n    sInf { rw : ℝ | ∃ w : Fin (k + 1) → ℝ, UnbiasedWeights beta k (chebyshevSchedule k q) w ∧\n        rw = sSup { rP : ℝ | ∃ (Y : Fin n → (Fin n → Bool) → ℝ)\n            (Z : Fin (k + 1) → Ω → (Fin n → Bool)) (barY : Fin (k + 1) → Ω → ℝ)\n            (m : ℝ → ℝ) (a : ℕ → ℝ),\n          RolloutLawClass n k beta D Y Z barY m a sigma0sq (chebyshevSchedule k q) ∧\n            rP = D.Var (fun z => ∑ j, w j * barY j z) } }\n      = exactNestedRisk n k beta D q sigma0sq",
@@ -148,7 +148,7 @@
       "axioms": null
     },
     "lem:exact-risk-envelope-upper": {
-      "decl": "exact_risk_envelope_upper",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.exact_risk_envelope_upper",
       "file": "Helpers/Variance.lean",
       "line": 0,
       "statement": "/-- Envelope-to-exact-risk bridge: for `β ≥ 1`, `k ≥ β`, `q ∈ (0,1]`, and every budgeted\nschedule `p ∈ S_{k,q}`, the fixed-schedule exact risk is dominated by the amplification envelope,\n`inf_{w∈W_β(p)} sup_{P∈P_β} w'Γ_P(p)w ≤ (σ₀²/n) A_β(p)` (the same `L²` triangle argument as\n`variance_envelope_sharpness` applied to the exact covariance `Γ_P(p)`); consequently\n`R_exact(β,k,q) ≤ (σ₀²/n) M_{β,k,q}`. -/\nlemma exact_risk_envelope_upper (n k beta : ℕ) {Ω : Type*} [Fintype Ω] (D : FiniteDesign Ω)\n    (q sigma0sq : ℝ) (hbeta : 1 ≤ beta) (hk : beta ≤ k) (_hq : 0 < q ∧ q ≤ 1)\n    (hsig : 0 ≤ sigma0sq)\n    (p : Fin (k + 1) → ℝ) (hp : BudgetedSchedule k q p) :\n    (sInf { rw : ℝ | ∃ w : Fin (k + 1) → ℝ, UnbiasedWeights beta k p w ∧\n        rw = sSup { rP : ℝ | ∃ (Y : Fin n → (Fin n → Bool) → ℝ)\n            (Z : Fin (k + 1) → Ω → (Fin n → Bool)) (barY : Fin (k + 1) → Ω → ℝ)\n            (m : ℝ → ℝ) (a : ℕ → ℝ),\n          RolloutLawClass n k beta D Y Z barY m a sigma0sq p ∧\n            rP = D.Var (fun z => ∑ j, w j * barY j z) } }\n        ≤ sigma0sq / (n : ℝ) * amplification beta k p) ∧\n      exactNestedRisk n k beta D q sigma0sq\n        ≤ sigma0sq / (n : ℝ) * minimaxAmplification beta k q",
@@ -156,7 +156,7 @@
       "axioms": null
     },
     "lem:exact-chebyshev-rate-feasible": {
-      "decl": "exact_chebyshev_rate_feasible",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.exact_chebyshev_rate_feasible",
       "file": "Helpers/ExactRisk.lean",
       "line": 0,
       "statement": "/-- Rate-feasibility of the Chebyshev-Lobatto schedule for the exact risk: for `c > 1`,\n`β ≥ 1`, `k = ⌈c·β⌉`, and `q ∈ (0, q_max]`, the fixed-Chebyshev exact risk obeys\n`inf_{w∈W_β(p^Ch)} sup_{P∈P_β} w'Γ_P(p^Ch)w ≤ (σ₀²/n) C₊(c,q_max) (ρ(q)/q)^{2β}`, hence\n`R_exact(β,k,q) ≤ (σ₀²/n) C₊(c,q_max) (ρ(q)/q)^{2β}`. Pure composition of\n`exact_risk_envelope_upper` (applied to the admissible `p^Ch` via `chebyshev_schedule_admissible`)\nwith the Chebyshev upper half of `chebyshev_minimax`. The range predicate `hc : 1 < c` realizes\nthe core space `c ∈ (1,∞)`; `hq : 0 < q` with `hcap : LowBudgetCap q qmax` realizes `q ∈ (0,1]`.\n@realizes c(carrier ℝ; range 1 < c via hc)\n@realizes q(carrier ℝ; range 0 < q ≤ q_max < 1 via hq + hcap) -/\nlemma exact_chebyshev_rate_feasible (c qmax : ℝ) (hc : 1 < c) (hqmax : 0 < qmax ∧ qmax < 1)\n    : ∃ Cplus : ℝ, 0 < Cplus ∧\n      ∀ (n beta k : ℕ) {Ω : Type*} [Fintype Ω] (D : FiniteDesign Ω) (q sigma0sq : ℝ),\n        1 ≤ beta → 0 < q → LowBudgetCap q qmax → 0 ≤ sigma0sq →\n        k = ⌈c * (beta : ℝ)⌉₊ →\n          sInf { rw : ℝ | ∃ w : Fin (k + 1) → ℝ, UnbiasedWeights beta k (chebyshevSchedule k q) w ∧\n              rw = sSup { rP : ℝ | ∃ (Y : Fin n → (Fin n → Bool) → ℝ)\n                  (Z : Fin (k + 1) → Ω → (Fin n → Bool)) (barY : Fin (k + 1) → Ω → ℝ)\n                (m : ℝ → ℝ) (a : ℕ → ℝ),\n                RolloutLawClass n k beta D Y Z barY m a sigma0sq (chebyshevSchedule k q) ∧\n                  rP = D.Var (fun z => ∑ j, w j * barY j z) } }\n            ≤ sigma0sq / (n : ℝ) * Cplus * ((1 + Real.sqrt (1 - q)) ^ 2 / q) ^ (2 * beta)",
@@ -164,7 +164,7 @@
       "axioms": null
     },
     "lem:amplification-dual-norm": {
-      "decl": "amplification_dual_norm",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.amplification_dual_norm",
       "file": "Helpers/Amplification.lean",
       "line": 0,
       "statement": "/-- ℓ¹/ℓ∞ duality: for a schedule `p` with distinct nodes and nonempty `W_β(p)`, the minimal\ntotal-variation norm of a representing weight vector equals the dual (Chebyshev) norm\n`sup{ |r(1)-r(0)| : deg r ≤ β, max_j |r(p_j)| ≤ 1 }`, and `A_β(p)` is its square.\nMatching the note, the only premises are that the nodes are distinct and that `W_β(p)` is\nnonempty (feasibility of the primal); there is no `β ≤ k` side-condition on the statement. -/\nlemma amplification_dual_norm (beta k : ℕ) (p : Fin (k + 1) → ℝ)\n    (hp : Function.Injective p)\n    (hne : ∃ w : Fin (k + 1) → ℝ, UnbiasedWeights beta k p w) :\n    sInf { s : ℝ | ∃ w : Fin (k + 1) → ℝ, UnbiasedWeights beta k p w ∧ s = ∑ j, |w j| }\n        = sSup { t : ℝ | ∃ r : Polynomial ℝ, r.natDegree ≤ beta ∧\n            (∀ j, |r.eval (p j)| ≤ 1) ∧ t = |r.eval 1 - r.eval 0| } ∧\n      amplification beta k p\n        = (sSup { t : ℝ | ∃ r : Polynomial ℝ, r.natDegree ≤ beta ∧\n            (∀ j, |r.eval (p j)| ≤ 1) ∧ t = |r.eval 1 - r.eval 0| }) ^ 2",
@@ -172,7 +172,7 @@
       "axioms": null
     },
     "lem:chebyshev-exterior-extremal": {
-      "decl": "chebyshev_exterior_extremal",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.chebyshev_exterior_extremal",
       "file": "Helpers/ChebyshevExtremal.lean",
       "line": 0,
       "statement": "/-- Classical exterior-point Chebyshev extremal inequality (Rivlin1974): every real polynomial\n`P` of degree ≤ β with `sup_{[-1,1]} |P| ≤ 1` satisfies `|P(x₀)| ≤ T_β(x₀)` for every `x₀ > 1`.\nThe formal proof uses the equivalent Lagrange-interpolation form of the alternation argument:\nthe exterior evaluation functional has the Chebyshev alternating signs on the extremal nodes. -/\nlemma chebyshev_exterior_extremal (beta : ℕ) (_hbeta : 1 ≤ beta) (P : Polynomial ℝ)\n    (hdeg : P.natDegree ≤ beta) (hbound : ∀ x : ℝ, x ∈ Set.Icc (-1 : ℝ) 1 → |P.eval x| ≤ 1)\n    (x0 : ℝ) (hx0 : 1 < x0) :\n    |P.eval x0| ≤ (Polynomial.Chebyshev.T ℝ (beta : ℤ)).eval x0",
@@ -180,7 +180,7 @@
       "axioms": null
     },
     "lem:oversampled-chebyshev-lobatto-norming": {
-      "decl": "oversampled_chebyshev_lobatto_norming",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.oversampled_chebyshev_lobatto_norming",
       "file": "Helpers/EhlichZeller.lean",
       "line": 0,
       "statement": "/-- Gate consumer: for `c > 1`, there is a finite constant `K(c)` (namely `sec(π/(2c))`) such\nthat for every `β ≥ 1`, every integer `k ≥ c·β`, and every degree-≤β polynomial `R`,\n`sup_{[-1,1]} |R| ≤ K(c) · max_{0≤j≤k} |R(-cos(π j / k))|`. Its only hard step is the gated\nEhlich–Zeller mesh inequality (threaded as `hmesh`); the rest is `sec` monotonicity from\n`β/k ≤ 1/c`. Proved conditional on the gate. -/\nlemma oversampled_chebyshev_lobatto_norming (hmesh : EhlichZellerMesh) (c : ℝ) (hc : 1 < c) :\n    ∃ K : ℝ, 0 < K ∧ ∀ (beta k : ℕ) (R : Polynomial ℝ), 1 ≤ beta → (k : ℝ) ≥ c * beta →\n      R.natDegree ≤ beta →\n      ∀ x : ℝ, x ∈ Set.Icc (-1 : ℝ) 1 →\n        |R.eval x| ≤ K * Finset.univ.sup' Finset.univ_nonempty\n          (fun j : Fin (k + 1) => |R.eval (-Real.cos (Real.pi * (j : ℝ) / (k : ℝ)))|)",
@@ -188,7 +188,7 @@
       "axioms": null
     },
     "lem:continuous-chebyshev-endpoint-bound": {
-      "decl": "continuous_chebyshev_endpoint_bound",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.continuous_chebyshev_endpoint_bound",
       "file": "Helpers/ChebyshevEndpoint.lean",
       "line": 0,
       "statement": "/-- Endpoint growth: writing `x_q = 2/q - 1`, `λ(q) = x_q + √(x_q² - 1)`, for every degree-β\npolynomial `R` with `sup_{[-1,1]} |R| ≤ 1` the endpoint contrast obeys the uniform upper bound\n`|R(x_q) - R(-1)| ≤ C(q_max) λ(q)^β`, and the Chebyshev polynomial `T_β` supplies the matching\nlower order `T_β(x_q) - 1 ≥ c(q_max) λ(q)^β`, both uniform over `q ∈ (0, q_max]`\n(via `x_q = cosh a`, `T_β(x_q) = cosh(β a)`, `λ(q) = eᵃ`). Uses `chebyshev_exterior_extremal`. -/\nlemma continuous_chebyshev_endpoint_bound (qmax : ℝ) (hqmax : 0 < qmax ∧ qmax < 1) :\n    ∃ Cupper clower : ℝ, 0 < Cupper ∧ 0 < clower ∧\n      ∀ (beta : ℕ) (q : ℝ), 1 ≤ beta → 0 < q → q ≤ qmax →\n        (∀ R : Polynomial ℝ, R.natDegree ≤ beta →\n            (∀ x : ℝ, x ∈ Set.Icc (-1 : ℝ) 1 → |R.eval x| ≤ 1) →\n            |R.eval (2 / q - 1) - R.eval (-1)| ≤\n              Cupper * ((2 / q - 1) + Real.sqrt ((2 / q - 1) ^ 2 - 1)) ^ beta) ∧\n          (Polynomial.Chebyshev.T ℝ (beta : ℤ)).eval (2 / q - 1) - 1 ≥\n            clower * ((2 / q - 1) + Real.sqrt ((2 / q - 1) ^ 2 - 1)) ^ beta",
@@ -196,7 +196,7 @@
       "axioms": null
     },
     "lem:chebyshev-schedule-admissible": {
-      "decl": "chebyshev_schedule_admissible",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.chebyshev_schedule_admissible",
       "file": "Helpers/ChebyshevSchedule.lean",
       "line": 0,
       "statement": "/-- For every integer `k ≥ 1` and `q ∈ (0,1]`, the shifted Chebyshev-Lobatto schedule\n`p^Ch(k,q)` belongs to `S_{k,q}`: endpoints `0` and `q`, with strict monotonicity from the\nstrict decrease of cosine on `[0,π]`. This lemma is the load-bearing member that pins the\nChebyshev schedule's core space `p^Ch(k,q) ∈ [0,1]^(k+1)`: its conclusion `BudgetedSchedule`\nhas as first conjunct `∀ j, p^Ch(k,q) j ∈ Set.Icc 0 1`, i.e. the `[0,1]^(k+1)` range, holding\nexactly under the admissibility hypotheses `k ≥ 1` and `q ∈ (0,1]`. The range predicate\n`hq : 0 < q ∧ q ≤ 1` realizes the core space `q ∈ (0,1]`.\n@realizes p^Ch(k,q)(range [0,1]^(k+1): BudgetedSchedule Icc conjunct; k≥1, q∈(0,1])\n@realizes q(carrier ℝ; range 0 < q ≤ 1 via hq — the `p^Ch` admissibility range) -/\nlemma chebyshev_schedule_admissible (k : ℕ) (q : ℝ) (hk : 1 ≤ k)\n    (hq : 0 < q ∧ q ≤ 1) :  -- @realizes q(0 < q ∧ q ≤ 1)\n    BudgetedSchedule k q (chebyshevSchedule k q)",
@@ -204,7 +204,7 @@
       "axioms": null
     },
     "lem:unbiased-weight-set-nonempty": {
-      "decl": "unbiased_weight_set_nonempty",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.unbiased_weight_set_nonempty",
       "file": "Helpers/Amplification.lean",
       "line": 0,
       "statement": "/-- For `β ≥ 1` and `k ≥ β`, the linear-unbiased weight set `W_β(p)` is nonempty for every\nbudgeted schedule `p ∈ S_{k,q}`: distinct nodes make the `(β+1)×(k+1)` moment matrix\nfull row rank (a nonzero degree-≤β polynomial cannot vanish at `k+1 ≥ β+1` distinct points),\nso `w ↦ Bw` is surjective onto the target moment vector. -/\nlemma unbiased_weight_set_nonempty (beta k : ℕ) (q : ℝ) (p : Fin (k + 1) → ℝ)\n    (_hbeta : 1 ≤ beta) (hk : beta ≤ k) (hp : BudgetedSchedule k q p) :\n    ∃ w : Fin (k + 1) → ℝ, UnbiasedWeights beta k p w",
@@ -212,7 +212,7 @@
       "axioms": null
     },
     "lem:variance-envelope-sharpness": {
-      "decl": "variance_envelope_sharpness",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.variance_envelope_sharpness",
       "file": "Helpers/Variance.lean",
       "line": 0,
       "statement": "/-- Total-variation variance envelope **and its sharpness**: if the round statistics\n`X₀,...,X_k` satisfy the per-round envelope `Var_pi(X_j) ≤ σ₀²/n` (the threaded assumption\n`RoundMeanVarianceEnvelope`), then `Var_pi(∑ⱼ wⱼ Xⱼ) ≤ (σ₀²/n)(∑ⱼ|wⱼ|)²` for every real `w`,\nvia the `L²(π)` triangle inequality.\n\nMoreover the bound is **sharp** over the diagonal variance envelope: there is a positive\nsemidefinite (rank-one) covariance matrix `Γ` with every diagonal entry bounded by `σ₀²/n`\nwhose quadratic form `w'Γw = ∑ᵢ∑ⱼ wᵢ Γᵢⱼ wⱼ` equals `(σ₀²/n)(∑ⱼ|wⱼ|)²`, so no smaller\nenvelope constant is possible. (Witness `Γ = (σ₀²/n)·ssᵀ` with `sⱼ = sign wⱼ`; the sign\nconstraint `0 ≤ σ₀²` is the round-mean variance constant's range `σ₀² ∈ ℝ₊`.) -/\nlemma variance_envelope_sharpness (n k : ℕ) {Ω : Type*} [Fintype Ω] (D : FiniteDesign Ω)\n    (X : Fin (k + 1) → Ω → ℝ) (sigma0sq : ℝ) (w : Fin (k + 1) → ℝ)\n    (hsig : 0 ≤ sigma0sq)\n    (hvar : RoundMeanVarianceEnvelope n k D X sigma0sq) :\n    D.Var (fun z => ∑ j, w j * X j z) ≤ sigma0sq / (n : ℝ) * (∑ j, |w j|) ^ 2 ∧\n      ∃ Γ : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ, Γ.PosSemidef ∧\n        (∀ j, Γ j j ≤ sigma0sq / (n : ℝ)) ∧\n        (∑ i, ∑ j, w i * Γ i j * w j) = sigma0sq / (n : ℝ) * (∑ j, |w j|) ^ 2",
@@ -584,7 +584,7 @@
     "sym:p^eq(beta,q)": {
       "decl": "(symbol)",
       "file": "Helpers/EqualSpacing.lean",
-      "line": 136,
+      "line": 146,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -630,17 +630,17 @@
       "axioms": null,
       "components": [
         {
-          "label": "lagrange_endpoint_weights_unbiased",
+          "label": "CausalSmith.Experimentation.RolloutChebyshev.lagrange_endpoint_weights_unbiased",
           "statement": "/-- Lagrange endpoint weights on any `k+1` distinct nodes reproduce the endpoint contrast for\nall polynomials of degree at most `β` when `β ≤ k`, hence satisfy the moment equations for\n`W_β(p)`. -/\nlemma lagrange_endpoint_weights_unbiased (beta k : ℕ) (p : Fin (k + 1) → ℝ)\n    (hk : beta ≤ k) (hp : Function.Injective p) :\n    UnbiasedWeights beta k p\n      (fun j => (Lagrange.basis (Finset.univ : Finset (Fin (k + 1))) p j).eval 1 -\n        (Lagrange.basis (Finset.univ : Finset (Fin (k + 1))) p j).eval 0)"
         },
         {
-          "label": "UnbiasedWeights",
+          "label": "CausalSmith.Experimentation.RolloutChebyshev.UnbiasedWeights",
           "statement": "/-- Linear-unbiased rollout weights `W_β(p) = { w : ∑ⱼ wⱼ pⱼ⁰ = 0, ∑ⱼ wⱼ pⱼˡ = 1, ℓ=1..β }`.\n@realizes W_beta(p)(∑ wⱼ pⱼ⁰ = 0 and ∑ wⱼ pⱼˡ = 1 for 1≤ℓ≤β)\n@realizes w(weight vector Fin (k+1) → ℝ) -/\ndef UnbiasedWeights (beta k : ℕ) (p w : Fin (k + 1) → ℝ) : Prop :=\n  (∑ j : Fin (k + 1), w j * (p j) ^ (0 : ℕ) = 0) ∧\n    (∀ ell : ℕ, 1 ≤ ell → ell ≤ beta → ∑ j : Fin (k + 1), w j * (p j) ^ ell = 1)"
         }
       ]
     },
     "sInf_le_mul_sInf_of_forall_exists_le": {
-      "decl": "sInf_le_mul_sInf_of_forall_exists_le",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.sInf_le_mul_sInf_of_forall_exists_le",
       "file": "Helpers/Variance.lean",
       "line": 170,
       "statement": "/-- Order bookkeeping for taking an infimum after a uniform multiplicative comparison. -/\nlemma sInf_le_mul_sInf_of_forall_exists_le (F G : Set ℝ) (c : ℝ) (hc : 0 ≤ c)\n    (hFne : F.Nonempty) (hFbdd : BddBelow F) (hGne : G.Nonempty)\n    (hlink : ∀ g ∈ G, ∃ f ∈ F, f ≤ c * g) :\n    sInf F ≤ c * sInf G",
@@ -648,90 +648,90 @@
       "axioms": null
     },
     "neg_one_pow_mul_le_of_abs_le_one": {
-      "decl": "neg_one_pow_mul_le_of_abs_le_one",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.neg_one_pow_mul_le_of_abs_le_one",
       "file": "Helpers/ChebyshevExtremal.lean",
-      "line": 23,
-      "statement": "lemma neg_one_pow_mul_le_of_abs_le_one {a : ℝ} {i : ℕ} (ha : |a| ≤ 1) :\n    (-1 : ℝ) ^ i * a ≤ 1",
+      "line": 26,
+      "statement": "/-- A real number of absolute value at most one remains at most one after multiplication by a\nsign `(-1)ⁱ`. Arithmetic step in the alternation argument, where polynomial values at the\nChebyshev extremal nodes are compared against the alternating signs carried by those nodes. -/\nlemma neg_one_pow_mul_le_of_abs_le_one {a : ℝ} {i : ℕ} (ha : |a| ≤ 1) :\n    (-1 : ℝ) ^ i * a ≤ 1",
       "sorry_free": true,
       "axioms": null
     },
     "chebyshev_exterior_lagrange_coeff_nonneg": {
-      "decl": "chebyshev_exterior_lagrange_coeff_nonneg",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.chebyshev_exterior_lagrange_coeff_nonneg",
       "file": "Helpers/ChebyshevExtremal.lean",
-      "line": 29,
-      "statement": "lemma chebyshev_exterior_lagrange_coeff_nonneg {n i : ℕ} (hi : i ∈ Finset.Iic n)\n    {x0 : ℝ} (hx0 : 1 < x0) :\n    0 ≤ (-1 : ℝ) ^ i *\n      (Lagrange.basis (Finset.Iic n) (Polynomial.Chebyshev.node n) i).eval x0",
+      "line": 41,
+      "statement": "/-- Sign pattern of Lagrange interpolation coefficients at an exterior point: interpolating on\nthe `n + 1` Chebyshev extremal nodes of `[-1, 1]`, the `i`-th Lagrange basis polynomial evaluated\nat any point `x₀ > 1` agrees in sign with `(-1)ⁱ`, i.e. `(-1)ⁱ ℓ_i(x₀) ≥ 0` for every index\n`i ≤ n`.\n\nSince the degree-`n` Chebyshev polynomial itself takes the value `(-1)ⁱ` at the `i`-th node, this\nsays that evaluation at an exterior point is a nonnegative combination of the node values once\nthe alternating signs are stripped — the form of the alternation argument used to prove the\nexterior extremal inequality. -/\nlemma chebyshev_exterior_lagrange_coeff_nonneg {n i : ℕ} (hi : i ∈ Finset.Iic n)\n    {x0 : ℝ} (hx0 : 1 < x0) :\n    0 ≤ (-1 : ℝ) ^ i *\n      (Lagrange.basis (Finset.Iic n) (Polynomial.Chebyshev.node n) i).eval x0",
       "sorry_free": true,
       "axioms": null
     },
     "chebyshev_eval_eq_lambda_average": {
-      "decl": "chebyshev_eval_eq_lambda_average",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.chebyshev_eval_eq_lambda_average",
       "file": "Helpers/ChebyshevEndpoint.lean",
-      "line": 19,
-      "statement": "lemma chebyshev_eval_eq_lambda_average (n : ℕ) (x : ℝ) (hx : 1 ≤ x) :\n    (Polynomial.Chebyshev.T ℝ (n : ℤ)).eval x =\n      ((x + Real.sqrt (x ^ 2 - 1)) ^ n + ((x + Real.sqrt (x ^ 2 - 1)) ^ n)⁻¹) / 2",
+      "line": 26,
+      "statement": "/-- Closed form for the Chebyshev polynomial outside its oscillation interval: at any point\n`x ≥ 1`, writing `λ = x + √(x² - 1)` for the associated growth factor, the degree-`n` Chebyshev\npolynomial satisfies `T_n(x) = (λⁿ + λ⁻ⁿ)/2`. Equivalently, setting `x = cosh a` gives\n`T_n(x) = cosh(n a)` and `λ = eᵃ`.\n\nThis is the identity that turns the endpoint evaluation `T_β(2/q - 1)` appearing in the rollout\nminimax argument into an explicit exponential in the polynomial order `β`. -/\nlemma chebyshev_eval_eq_lambda_average (n : ℕ) (x : ℝ) (hx : 1 ≤ x) :\n    (Polynomial.Chebyshev.T ℝ (n : ℤ)).eval x =\n      ((x + Real.sqrt (x ^ 2 - 1)) ^ n + ((x + Real.sqrt (x ^ 2 - 1)) ^ n)⁻¹) / 2",
       "sorry_free": true,
       "axioms": null
     },
     "endpoint_lambda_mono": {
-      "decl": "endpoint_lambda_mono",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.endpoint_lambda_mono",
       "file": "Helpers/ChebyshevEndpoint.lean",
-      "line": 39,
-      "statement": "lemma endpoint_lambda_mono {q qmax : ℝ} (hq : 0 < q) (hqq : q ≤ qmax)\n    (hqmax_lt : qmax < 1) :\n    (2 / qmax - 1) + Real.sqrt ((2 / qmax - 1) ^ 2 - 1) ≤\n      (2 / q - 1) + Real.sqrt ((2 / q - 1) ^ 2 - 1)",
+      "line": 52,
+      "statement": "/-- The endpoint growth factor is larger for tighter budgets: writing `λ(q) = x_q + √(x_q² - 1)`\nwith `x_q = 2/q - 1`, one has `λ(q_max) ≤ λ(q)` whenever `0 < q ≤ q_max < 1`.\n\nConsequently the smallest growth factor over the low-budget range `q ∈ (0, q_max]` is the one at\nthe cap `q_max`, which is what allows a single constant depending only on `q_max` to serve\nuniformly for every budget in that range. -/\nlemma endpoint_lambda_mono {q qmax : ℝ} (hq : 0 < q) (hqq : q ≤ qmax)\n    (hqmax_lt : qmax < 1) :\n    (2 / qmax - 1) + Real.sqrt ((2 / qmax - 1) ^ 2 - 1) ≤\n      (2 / q - 1) + Real.sqrt ((2 / q - 1) ^ 2 - 1)",
       "sorry_free": true,
       "axioms": null
     },
     "chebyshev_lambda_average_add_one_le": {
-      "decl": "chebyshev_lambda_average_add_one_le",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.chebyshev_lambda_average_add_one_le",
       "file": "Helpers/ChebyshevEndpoint.lean",
-      "line": 71,
-      "statement": "lemma chebyshev_lambda_average_add_one_le {lam : ℝ} (hlam : 1 ≤ lam) {n : ℕ}\n    (_hn : 1 ≤ n) :\n    (lam ^ n + (lam ^ n)⁻¹) / 2 + 1 ≤ 2 * lam ^ n",
+      "line": 89,
+      "statement": "/-- Upper envelope for the endpoint value: for a growth factor `λ ≥ 1` and an order `n ≥ 1`,\n`(λⁿ + λ⁻ⁿ)/2 + 1 ≤ 2 λⁿ`.\n\nCombined with the closed form `T_n = (λⁿ + λ⁻ⁿ)/2` outside `[-1,1]`, this replaces the endpoint\nquantity `T_β(x_q) + 1` by the clean upper order `2 λ^β` used in the amplification upper bound. -/\nlemma chebyshev_lambda_average_add_one_le {lam : ℝ} (hlam : 1 ≤ lam) {n : ℕ}\n    (_hn : 1 ≤ n) :\n    (lam ^ n + (lam ^ n)⁻¹) / 2 + 1 ≤ 2 * lam ^ n",
       "sorry_free": true,
       "axioms": null
     },
     "chebyshev_lambda_average_sub_one_ge": {
-      "decl": "chebyshev_lambda_average_sub_one_ge",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.chebyshev_lambda_average_sub_one_ge",
       "file": "Helpers/ChebyshevEndpoint.lean",
-      "line": 82,
-      "statement": "lemma chebyshev_lambda_average_sub_one_ge {lam lam0 : ℝ} (h0 : 1 < lam0)\n    (hge : lam0 ≤ lam) {n : ℕ} (hn : 1 ≤ n) :\n    (lam ^ n + (lam ^ n)⁻¹) / 2 - 1 ≥\n      (1 / 2) * (1 - lam0⁻¹) ^ 2 * lam ^ n",
+      "line": 106,
+      "statement": "/-- Matching lower envelope for the endpoint value, with a constant that depends only on a floor\nfor the growth factor: if `λ ≥ λ₀ > 1` and the order satisfies `n ≥ 1`, then\n`(λⁿ + λ⁻ⁿ)/2 - 1 ≥ ½ (1 - λ₀⁻¹)² λⁿ`.\n\nBecause the constant `½ (1 - λ₀⁻¹)²` involves only the floor `λ₀`, taking `λ₀ = λ(q_max)`\nsupplies a single positive constant valid for every budget `q ∈ (0, q_max]`. -/\nlemma chebyshev_lambda_average_sub_one_ge {lam lam0 : ℝ} (h0 : 1 < lam0)\n    (hge : lam0 ≤ lam) {n : ℕ} (hn : 1 ≤ n) :\n    (lam ^ n + (lam ^ n)⁻¹) / 2 - 1 ≥\n      (1 / 2) * (1 - lam0⁻¹) ^ 2 * lam ^ n",
       "sorry_free": true,
       "axioms": null
     },
     "equalSchedule_injective": {
-      "decl": "equalSchedule_injective",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.equalSchedule_injective",
       "file": "Helpers/EqualSpacing.lean",
-      "line": 18,
-      "statement": "lemma equalSchedule_injective (beta : ℕ) (q : ℝ) (hbeta : 1 ≤ beta) (hq : 0 < q) :\n    Function.Injective (equalSchedule beta q)",
+      "line": 22,
+      "statement": "/-- The equal-spacing benchmark schedule `p^eq(β,q) = (0, q/β, 2q/β, ..., q)` has distinct nodes:\nwhenever the order satisfies `β ≥ 1` and the budget `q` is positive, distinct round indices give\ndistinct treated fractions. Node distinctness is the premise under which Lagrange interpolation\non this grid — and hence the dual description of the amplification — is available. -/\nlemma equalSchedule_injective (beta : ℕ) (q : ℝ) (hbeta : 1 ≤ beta) (hq : 0 < q) :\n    Function.Injective (equalSchedule beta q)",
       "sorry_free": true,
       "axioms": null
     },
     "equalSchedule_lagrange_basis_eval_one_le": {
-      "decl": "equalSchedule_lagrange_basis_eval_one_le",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.equalSchedule_lagrange_basis_eval_one_le",
       "file": "Helpers/EqualSpacing.lean",
-      "line": 31,
-      "statement": "lemma equalSchedule_lagrange_basis_eval_one_le (beta : ℕ) (q : ℝ)\n    (hbeta : 1 ≤ beta) (hq : 0 < q ∧ q ≤ 1) (j : Fin (beta + 1)) :\n    |(Lagrange.basis (Finset.univ : Finset (Fin (beta + 1))) (equalSchedule beta q) j).eval 1|\n      ≤ ((beta : ℝ) / q) ^ beta /\n        ((j.val.factorial : ℝ) * ((beta - j.val).factorial : ℝ))",
+      "line": 41,
+      "statement": "/-- Size of the Lagrange basis at full treatment on the equal grid: for order `β ≥ 1` and budget\n`q ∈ (0,1]`, the `j`-th Lagrange basis polynomial for the equal-spacing schedule `p^eq(β,q)`\nobeys `|ℓ_j(1)| ≤ (β/q)^β / (j! (β - j)!)` at the extrapolation point `1`.\n\nThe binomial shape of the right-hand side is what makes the sum over `j` bounded by a constant\nmultiple of `(β/q)^β`, giving the equal-spacing benchmark's total-variation bound. -/\nlemma equalSchedule_lagrange_basis_eval_one_le (beta : ℕ) (q : ℝ)\n    (hbeta : 1 ≤ beta) (hq : 0 < q ∧ q ≤ 1) (j : Fin (beta + 1)) :\n    |(Lagrange.basis (Finset.univ : Finset (Fin (beta + 1))) (equalSchedule beta q) j).eval 1|\n      ≤ ((beta : ℝ) / q) ^ beta /\n        ((j.val.factorial : ℝ) * ((beta - j.val).factorial : ℝ))",
       "sorry_free": true,
       "axioms": null
     },
     "prod_Iic_erase_abs_sub_eq_factorial": {
-      "decl": "prod_Iic_erase_abs_sub_eq_factorial",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.prod_Iic_erase_abs_sub_eq_factorial",
       "file": "Helpers/EqualSpacingArithmetic.lean",
-      "line": 18,
-      "statement": "lemma prod_Iic_erase_abs_sub_eq_factorial (beta i : ℕ) (hi : i ≤ beta) :\n    (∏ m ∈ (Finset.Iic beta).erase i, |(i : ℝ) - (m : ℝ)|) =\n      (i.factorial : ℝ) * ((beta - i).factorial : ℝ)",
+      "line": 23,
+      "statement": "/-- On the integer grid `{0, 1, ..., β}`, the product of the distances from a fixed index `i` to\nall the other indices equals `i! (β - i)!`.\n\nThis product is exactly the denominator of the `i`-th Lagrange basis polynomial for an equally\nspaced grid, which is what gives the equal-spacing weight bounds their binomial shape. -/\nlemma prod_Iic_erase_abs_sub_eq_factorial (beta i : ℕ) (hi : i ≤ beta) :\n    (∏ m ∈ (Finset.Iic beta).erase i, |(i : ℝ) - (m : ℝ)|) =\n      (i.factorial : ℝ) * ((beta - i).factorial : ℝ)",
       "sorry_free": true,
       "axioms": null
     },
     "two_pow_le_two_mul_factorial": {
-      "decl": "two_pow_le_two_mul_factorial",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.two_pow_le_two_mul_factorial",
       "file": "Helpers/EqualSpacingArithmetic.lean",
-      "line": 88,
-      "statement": "lemma two_pow_le_two_mul_factorial (n : ℕ) (hn : 1 ≤ n) : 2 ^ n ≤ 2 * n.factorial",
+      "line": 95,
+      "statement": "/-- For every natural number `n ≥ 1`, `2ⁿ ≤ 2 · n!`. Arithmetic step that converts the binomial\ntotal `2^β` arising in the equal-spacing weight bound into a factorial denominator. -/\nlemma two_pow_le_two_mul_factorial (n : ℕ) (hn : 1 ≤ n) : 2 ^ n ≤ 2 * n.factorial",
       "sorry_free": true,
       "axioms": null
     },
     "factorial_reciprocal_sum_le_two": {
-      "decl": "factorial_reciprocal_sum_le_two",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.factorial_reciprocal_sum_le_two",
       "file": "Helpers/EqualSpacingArithmetic.lean",
-      "line": 108,
-      "statement": "lemma factorial_reciprocal_sum_le_two (beta : ℕ) (hbeta : 1 ≤ beta) :\n    (∑ j : Fin (beta + 1),\n      (1 : ℝ) / ((j.val.factorial : ℝ) * ((beta - j.val).factorial : ℝ))) ≤ 2",
+      "line": 120,
+      "statement": "/-- For every order `β ≥ 1`, the reciprocal-factorial sum `∑_{j=0}^{β} 1 / (j! (β - j)!)` is at\nmost `2`; the sum in fact equals `2^β / β!`, and the bound follows from `2^β ≤ 2 · β!`.\n\nThis is the step that collapses the per-node Lagrange bounds on the equal grid into a bound with\na universal constant, producing the equal-spacing benchmark. -/\nlemma factorial_reciprocal_sum_le_two (beta : ℕ) (hbeta : 1 ≤ beta) :\n    (∑ j : Fin (beta + 1),\n      (1 : ℝ) / ((j.val.factorial : ℝ) * ((beta - j.val).factorial : ℝ))) ≤ 2",
       "sorry_free": true,
       "axioms": null
     },
@@ -744,42 +744,24 @@
       "axioms": null,
       "components": [
         {
-          "label": "ehlichZellerMesh",
+          "label": "CausalSmith.Experimentation.RolloutChebyshev.ehlichZellerMesh",
           "statement": "/-- The local gate proposition is discharged by the reusable substrate implementation. -/\nlemma ehlichZellerMesh : EhlichZellerMesh"
         },
         {
-          "label": "EhlichZellerMesh",
+          "label": "CausalSmith.Experimentation.RolloutChebyshev.EhlichZellerMesh",
           "statement": "/-- **SUBSTRATE-GATE (gate_class: gated).** The Ehlich–Zeller Chebyshev-Lobatto mesh/norming\ninequality (Ehlich, H. and Zeller, K. (1964). *Schwankung von Polynomen zwischen Gitterpunkten*.\nMathematische Zeitschrift 86, 41–44): for a real polynomial `R` of degree ≤ β with `β < k`,\n`sup_{[-1,1]} |R| ≤ sec(π β / (2k)) · max_{0≤j≤k} |R(-cos(π j / k))|`.\n\nThis is a classical external approximation-theory norming (Marcinkiewicz–Zygmund-type) result,\nabsent from Mathlib and genuinely hard to formalize. It is NOT original to this paper (the paper\nclaims no new polynomial extremal theorem — honest scope) and its source proof is a bare\ncitation. It is stated as a named `Prop` and threaded as visible substrate debt into its single\ndirect consumer `oversampled_chebyshev_lobatto_norming`; to be discharged 0-sorry before banking. -/\ndef EhlichZellerMesh : Prop :=\n  ∀ (beta k : ℕ) (R : Polynomial ℝ), R.natDegree ≤ beta → beta < k →\n    ∀ x : ℝ, x ∈ Set.Icc (-1 : ℝ) 1 →\n      |R.eval x| ≤ (1 / Real.cos (Real.pi * (beta : ℝ) / (2 * (k : ℝ)))) *\n        Finset.univ.sup' Finset.univ_nonempty\n          (fun j : Fin (k + 1) => |R.eval (-Real.cos (Real.pi * (j : ℝ) / (k : ℝ)))|)"
         }
       ]
     },
     "chebyshev_lambda_eq_rho_div_q": {
-      "decl": "chebyshev_lambda_eq_rho_div_q",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.chebyshev_lambda_eq_rho_div_q",
       "file": "Helpers/MinimaxAssembly.lean",
-      "line": 19,
-      "statement": "lemma chebyshev_lambda_eq_rho_div_q {q : ℝ} (hq : 0 < q) (hq_lt_one : q < 1) :\n    (2 / q - 1) + Real.sqrt ((2 / q - 1) ^ 2 - 1) =\n      (1 + Real.sqrt (1 - q)) ^ 2 / q",
+      "line": 24,
+      "statement": "/-- The endpoint growth factor written directly in terms of the budget: for `0 < q < 1`,\n`(2/q - 1) + √((2/q - 1)² - 1) = (1 + √(1 - q))² / q`.\n\nThe right-hand side is the exponential base `ρ(q)` in which the rollout minimax rate is stated,\nso this identity is what lets the Chebyshev endpoint bounds be restated as bounds in `ρ(q)^β`. -/\nlemma chebyshev_lambda_eq_rho_div_q {q : ℝ} (hq : 0 < q) (hq_lt_one : q < 1) :\n    (2 / q - 1) + Real.sqrt ((2 / q - 1) ^ 2 - 1) =\n      (1 + Real.sqrt (1 - q)) ^ 2 / q",
       "sorry_free": true,
       "axioms": null
     },
     "amplification_nonneg": {
-      "decl": "(composite)",
-      "file": "Helpers/MinimaxAssembly.lean",
-      "line": 40,
-      "statement": "",
-      "sorry_free": true,
-      "axioms": null,
-      "components": [
-        {
-          "label": "amplification_nonneg",
-          "statement": "lemma amplification_nonneg (beta k : ℕ) (p : Fin (k + 1) → ℝ) :\n    0 ≤ amplification beta k p"
-        },
-        {
-          "label": "minimaxAmplification",
-          "statement": "/-- Minimax amplification over budgeted schedules `M_{β,k,q} = inf_{p∈S_{k,q}} A_β(p)`.\n@realizes M_{beta,k,q}(inf over S_{k,q} of A_β(p)) -/\nnoncomputable def minimaxAmplification (beta k : ℕ) (q : ℝ) : ℝ :=\n  sInf { v : ℝ | ∃ p : Fin (k + 1) → ℝ, BudgetedSchedule k q p ∧ v = amplification beta k p }"
-        }
-      ]
-    },
-    "minimaxAmplification_le_of_budgeted": {
       "decl": "(composite)",
       "file": "Helpers/MinimaxAssembly.lean",
       "line": 48,
@@ -788,15 +770,33 @@
       "axioms": null,
       "components": [
         {
-          "label": "minimaxAmplification_le_of_budgeted",
-          "statement": "lemma minimaxAmplification_le_of_budgeted (beta k : ℕ) (q : ℝ)\n    (p : Fin (k + 1) → ℝ) (hp : BudgetedSchedule k q p) :\n    minimaxAmplification beta k q ≤ amplification beta k p"
+          "label": "CausalSmith.Experimentation.RolloutChebyshev.amplification_nonneg",
+          "statement": "/-- The total-variation amplification of a rollout schedule is never negative, being an infimum\nof squared total-variation norms of unbiased weight vectors. The bound also holds vacuously when\nno unbiased weights exist for the schedule, since an infimum over an empty set of reals is `0`. -/\nlemma amplification_nonneg (beta k : ℕ) (p : Fin (k + 1) → ℝ) :\n    0 ≤ amplification beta k p"
         },
         {
-          "label": "BudgetedSchedule",
+          "label": "CausalSmith.Experimentation.RolloutChebyshev.minimaxAmplification",
+          "statement": "/-- Minimax amplification over budgeted schedules `M_{β,k,q} = inf_{p∈S_{k,q}} A_β(p)`.\n@realizes M_{beta,k,q}(inf over S_{k,q} of A_β(p)) -/\nnoncomputable def minimaxAmplification (beta k : ℕ) (q : ℝ) : ℝ :=\n  sInf { v : ℝ | ∃ p : Fin (k + 1) → ℝ, BudgetedSchedule k q p ∧ v = amplification beta k p }"
+        }
+      ]
+    },
+    "minimaxAmplification_le_of_budgeted": {
+      "decl": "(composite)",
+      "file": "Helpers/MinimaxAssembly.lean",
+      "line": 60,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Experimentation.RolloutChebyshev.minimaxAmplification_le_of_budgeted",
+          "statement": "/-- Exhibiting one admissible design bounds the minimax value: if `p` is a budgeted rollout\nschedule with budget `q` on `k + 1` rounds, then the minimax amplification `M_{β,k,q}` is at most\nthat schedule's own amplification `A_β(p)`. This is the direction used to convert an explicit\ndesign, such as the shifted Chebyshev–Lobatto grid, into an upper bound on the minimax value. -/\nlemma minimaxAmplification_le_of_budgeted (beta k : ℕ) (q : ℝ)\n    (p : Fin (k + 1) → ℝ) (hp : BudgetedSchedule k q p) :\n    minimaxAmplification beta k q ≤ amplification beta k p"
+        },
+        {
+          "label": "CausalSmith.Experimentation.RolloutChebyshev.BudgetedSchedule",
           "statement": "/-- Budgeted rollout schedules\n`S_{k,q} = { p ∈ [0,1]^(k+1) : p₀ = 0, 0 < p₁ < ... < p_k = q }`. The paper's ambient schedule\nrange `p ∈ [0,1]^(k+1)` is carried by the first conjunct (each coordinate lies in `[0,1]`).\nThe budget `q` is the treated endpoint `p (last k) = q`; combined with `p 0 = 0`, `StrictMono p`\nand `p j ∈ [0,1]` this pins the core space `q ∈ (0,1]` (`0 = p 0 < p (last k) = q ≤ 1`).\n@realizes p(schedule Fin (k+1) → [0,1]: carrier ℝ + Icc range clause)\n@realizes q(carrier ℝ; range (0,1] via p (last k) = q with p 0 = 0, StrictMono p, Icc clause)\n@realizes S_{k,q}(p j ∈ Icc 0 1, p 0 = 0, StrictMono p, p (last k) = q) -/\ndef BudgetedSchedule (k : ℕ) (q : ℝ) (p : Fin (k + 1) → ℝ) : Prop :=\n  (∀ j, p j ∈ Set.Icc (0 : ℝ) 1) ∧ p 0 = 0 ∧ StrictMono p ∧ p (Fin.last k) = q"
         },
         {
-          "label": "minimaxAmplification",
+          "label": "CausalSmith.Experimentation.RolloutChebyshev.minimaxAmplification",
           "statement": "/-- Minimax amplification over budgeted schedules `M_{β,k,q} = inf_{p∈S_{k,q}} A_β(p)`.\n@realizes M_{beta,k,q}(inf over S_{k,q} of A_β(p)) -/\nnoncomputable def minimaxAmplification (beta k : ℕ) (q : ℝ) : ℝ :=\n  sInf { v : ℝ | ∃ p : Fin (k + 1) → ℝ, BudgetedSchedule k q p ∧ v = amplification beta k p }"
         }
       ]
@@ -804,21 +804,21 @@
     "minimaxAmplification_lower_of_forall": {
       "decl": "(composite)",
       "file": "Helpers/MinimaxAssembly.lean",
-      "line": 59,
+      "line": 77,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
         {
-          "label": "minimaxAmplification_lower_of_forall",
-          "statement": "lemma minimaxAmplification_lower_of_forall (beta k : ℕ) (q B : ℝ)\n    (hne : ∃ p : Fin (k + 1) → ℝ, BudgetedSchedule k q p)\n    (hlower : ∀ p : Fin (k + 1) → ℝ, BudgetedSchedule k q p →\n      B ≤ amplification beta k p) :\n    B ≤ minimaxAmplification beta k q"
+          "label": "CausalSmith.Experimentation.RolloutChebyshev.minimaxAmplification_lower_of_forall",
+          "statement": "/-- A lower bound holding for every admissible design is a lower bound on the minimax value: if\nat least one budgeted schedule with budget `q` on `k + 1` rounds exists, and every such schedule\n`p` satisfies `B ≤ A_β(p)`, then `B ≤ M_{β,k,q}`.\n\nThe nonemptiness premise cannot be dropped: an infimum over an empty set of reals is `0` by\nconvention, so without a feasible schedule the conclusion would fail for positive `B`. -/\nlemma minimaxAmplification_lower_of_forall (beta k : ℕ) (q B : ℝ)\n    (hne : ∃ p : Fin (k + 1) → ℝ, BudgetedSchedule k q p)\n    (hlower : ∀ p : Fin (k + 1) → ℝ, BudgetedSchedule k q p →\n      B ≤ amplification beta k p) :\n    B ≤ minimaxAmplification beta k q"
         },
         {
-          "label": "BudgetedSchedule",
+          "label": "CausalSmith.Experimentation.RolloutChebyshev.BudgetedSchedule",
           "statement": "/-- Budgeted rollout schedules\n`S_{k,q} = { p ∈ [0,1]^(k+1) : p₀ = 0, 0 < p₁ < ... < p_k = q }`. The paper's ambient schedule\nrange `p ∈ [0,1]^(k+1)` is carried by the first conjunct (each coordinate lies in `[0,1]`).\nThe budget `q` is the treated endpoint `p (last k) = q`; combined with `p 0 = 0`, `StrictMono p`\nand `p j ∈ [0,1]` this pins the core space `q ∈ (0,1]` (`0 = p 0 < p (last k) = q ≤ 1`).\n@realizes p(schedule Fin (k+1) → [0,1]: carrier ℝ + Icc range clause)\n@realizes q(carrier ℝ; range (0,1] via p (last k) = q with p 0 = 0, StrictMono p, Icc clause)\n@realizes S_{k,q}(p j ∈ Icc 0 1, p 0 = 0, StrictMono p, p (last k) = q) -/\ndef BudgetedSchedule (k : ℕ) (q : ℝ) (p : Fin (k + 1) → ℝ) : Prop :=\n  (∀ j, p j ∈ Set.Icc (0 : ℝ) 1) ∧ p 0 = 0 ∧ StrictMono p ∧ p (Fin.last k) = q"
         },
         {
-          "label": "minimaxAmplification",
+          "label": "CausalSmith.Experimentation.RolloutChebyshev.minimaxAmplification",
           "statement": "/-- Minimax amplification over budgeted schedules `M_{β,k,q} = inf_{p∈S_{k,q}} A_β(p)`.\n@realizes M_{beta,k,q}(inf over S_{k,q} of A_β(p)) -/\nnoncomputable def minimaxAmplification (beta k : ℕ) (q : ℝ) : ℝ :=\n  sInf { v : ℝ | ∃ p : Fin (k + 1) → ℝ, BudgetedSchedule k q p ∧ v = amplification beta k p }"
         }
       ]
@@ -826,91 +826,91 @@
     "budgetedSchedule_le_endpoint": {
       "decl": "(composite)",
       "file": "Helpers/MinimaxAssembly.lean",
-      "line": 72,
+      "line": 93,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
         {
-          "label": "budgetedSchedule_le_endpoint",
-          "statement": "lemma budgetedSchedule_le_endpoint {k : ℕ} {q : ℝ} {p : Fin (k + 1) → ℝ}\n    (hp : BudgetedSchedule k q p) (j : Fin (k + 1)) :\n    p j ≤ q"
+          "label": "CausalSmith.Experimentation.RolloutChebyshev.budgetedSchedule_le_endpoint",
+          "statement": "/-- The budget is respected at every round: in a budgeted rollout schedule the treated fraction\nincreases across rounds and equals `q` at the final round, so every round `j` has `p_j ≤ q`.\nThis is what confines all schedule nodes to the budget window `[0, q]`. -/\nlemma budgetedSchedule_le_endpoint {k : ℕ} {q : ℝ} {p : Fin (k + 1) → ℝ}\n    (hp : BudgetedSchedule k q p) (j : Fin (k + 1)) :\n    p j ≤ q"
         },
         {
-          "label": "BudgetedSchedule",
+          "label": "CausalSmith.Experimentation.RolloutChebyshev.BudgetedSchedule",
           "statement": "/-- Budgeted rollout schedules\n`S_{k,q} = { p ∈ [0,1]^(k+1) : p₀ = 0, 0 < p₁ < ... < p_k = q }`. The paper's ambient schedule\nrange `p ∈ [0,1]^(k+1)` is carried by the first conjunct (each coordinate lies in `[0,1]`).\nThe budget `q` is the treated endpoint `p (last k) = q`; combined with `p 0 = 0`, `StrictMono p`\nand `p j ∈ [0,1]` this pins the core space `q ∈ (0,1]` (`0 = p 0 < p (last k) = q ≤ 1`).\n@realizes p(schedule Fin (k+1) → [0,1]: carrier ℝ + Icc range clause)\n@realizes q(carrier ℝ; range (0,1] via p (last k) = q with p 0 = 0, StrictMono p, Icc clause)\n@realizes S_{k,q}(p j ∈ Icc 0 1, p 0 = 0, StrictMono p, p (last k) = q) -/\ndef BudgetedSchedule (k : ℕ) (q : ℝ) (p : Fin (k + 1) → ℝ) : Prop :=\n  (∀ j, p j ∈ Set.Icc (0 : ℝ) 1) ∧ p 0 = 0 ∧ StrictMono p ∧ p (Fin.last k) = q"
         }
       ]
     },
     "affine_mem_Icc_neg_one_one": {
-      "decl": "affine_mem_Icc_neg_one_one",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.affine_mem_Icc_neg_one_one",
       "file": "Helpers/MinimaxAssembly.lean",
-      "line": 82,
-      "statement": "lemma affine_mem_Icc_neg_one_one {q u : ℝ} (hq : 0 < q) (hu0 : 0 ≤ u) (huq : u ≤ q) :\n    2 * u / q - 1 ∈ Set.Icc (-1 : ℝ) 1",
+      "line": 107,
+      "statement": "/-- The change of variables carrying the budget window onto the Chebyshev interval is\nwell-defined: with a positive budget `q`, any treated fraction `u` with `0 ≤ u ≤ q` is mapped by\n`u ↦ 2u/q - 1` into `[-1, 1]`. Under this reparametrisation the rollout schedule's nodes become\npoints of the standard interval on which Chebyshev polynomials are bounded by one. -/\nlemma affine_mem_Icc_neg_one_one {q u : ℝ} (hq : 0 < q) (hu0 : 0 ≤ u) (huq : u ≤ q) :\n    2 * u / q - 1 ∈ Set.Icc (-1 : ℝ) 1",
       "sorry_free": true,
       "axioms": null
     },
     "chebyshev_affine_natDegree_le": {
-      "decl": "chebyshev_affine_natDegree_le",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.chebyshev_affine_natDegree_le",
       "file": "Helpers/MinimaxAssembly.lean",
-      "line": 92,
-      "statement": "lemma chebyshev_affine_natDegree_le (beta : ℕ) (q : ℝ) :\n    ((Polynomial.Chebyshev.T ℝ (beta : ℤ)).comp\n        (Polynomial.C (2 / q) * Polynomial.X - Polynomial.C 1)).natDegree ≤ beta",
+      "line": 121,
+      "statement": "/-- Composing the degree-`β` Chebyshev polynomial with the affine rescaling `u ↦ (2/q) u - 1`\nagain yields a polynomial of degree at most `β`. Degree bookkeeping for the test polynomial used\nin the minimax lower bound, which must remain admissible for the degree-`β` dual problem after\nbeing transported from the standard interval to the budget window. -/\nlemma chebyshev_affine_natDegree_le (beta : ℕ) (q : ℝ) :\n    ((Polynomial.Chebyshev.T ℝ (beta : ℤ)).comp\n        (Polynomial.C (2 / q) * Polynomial.X - Polynomial.C 1)).natDegree ≤ beta",
       "sorry_free": true,
       "axioms": null
     },
     "chebyshev_amplification_lower": {
       "decl": "(composite)",
       "file": "Helpers/MinimaxAssembly.lean",
-      "line": 111,
+      "line": 149,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
         {
-          "label": "chebyshev_amplification_lower",
-          "statement": "lemma chebyshev_amplification_lower (qmax clower : ℝ) (hclower_pos : 0 < clower)\n    (hendpoint_lower :\n      ∀ (beta : ℕ) (q : ℝ), 1 ≤ beta → 0 < q → q ≤ qmax →\n        (Polynomial.Chebyshev.T ℝ (beta : ℤ)).eval (2 / q - 1) - 1 ≥\n          clower * ((2 / q - 1) + Real.sqrt ((2 / q - 1) ^ 2 - 1)) ^ beta)\n    {beta k : ℕ} {q : ℝ} (hbeta : 1 ≤ beta) (hkβ : beta ≤ k)\n    (hq : 0 < q) (hqle : q ≤ qmax) (hqmax_lt : qmax < 1)\n    (p : Fin (k + 1) → ℝ) (hp : BudgetedSchedule k q p) :\n    amplification beta k p\n      ≥ clower ^ 2 * ((1 + Real.sqrt (1 - q)) ^ 2 / q) ^ (2 * beta)"
+          "label": "CausalSmith.Experimentation.RolloutChebyshev.chebyshev_amplification_lower",
+          "statement": "/-- No rollout design can beat the Chebyshev exponential base. Granted an endpoint growth bound\nfor the Chebyshev polynomial with a positive constant `c` — that `T_β(2/q - 1) - 1 ≥ c λ(q)^β`\nuniformly over orders `β ≥ 1` and budgets `q ∈ (0, q_max]` — EVERY budgeted rollout schedule `p`\nwith budget `q ≤ q_max < 1` on `k + 1` rounds, where the number of rounds satisfies `k ≥ β`, has\ntotal-variation amplification at least `c² · ((1 + √(1 - q))² / q)^{2β}`.\n\nThe bound is obtained by feeding the Chebyshev polynomial, rescaled from `[-1, 1]` to the budget\nwindow `[0, q]`, into the dual description of the amplification: it is a degree-`β` polynomial\nbounded by one at every schedule node whose endpoint contrast is already of order `ρ(q)^β`. -/\nlemma chebyshev_amplification_lower (qmax clower : ℝ) (hclower_pos : 0 < clower)\n    (hendpoint_lower :\n      ∀ (beta : ℕ) (q : ℝ), 1 ≤ beta → 0 < q → q ≤ qmax →\n        (Polynomial.Chebyshev.T ℝ (beta : ℤ)).eval (2 / q - 1) - 1 ≥\n          clower * ((2 / q - 1) + Real.sqrt ((2 / q - 1) ^ 2 - 1)) ^ beta)\n    {beta k : ℕ} {q : ℝ} (hbeta : 1 ≤ beta) (hkβ : beta ≤ k)\n    (hq : 0 < q) (hqle : q ≤ qmax) (hqmax_lt : qmax < 1)\n    (p : Fin (k + 1) → ℝ) (hp : BudgetedSchedule k q p) :\n    amplification beta k p\n      ≥ clower ^ 2 * ((1 + Real.sqrt (1 - q)) ^ 2 / q) ^ (2 * beta)"
         },
         {
-          "label": "BudgetedSchedule",
+          "label": "CausalSmith.Experimentation.RolloutChebyshev.BudgetedSchedule",
           "statement": "/-- Budgeted rollout schedules\n`S_{k,q} = { p ∈ [0,1]^(k+1) : p₀ = 0, 0 < p₁ < ... < p_k = q }`. The paper's ambient schedule\nrange `p ∈ [0,1]^(k+1)` is carried by the first conjunct (each coordinate lies in `[0,1]`).\nThe budget `q` is the treated endpoint `p (last k) = q`; combined with `p 0 = 0`, `StrictMono p`\nand `p j ∈ [0,1]` this pins the core space `q ∈ (0,1]` (`0 = p 0 < p (last k) = q ≤ 1`).\n@realizes p(schedule Fin (k+1) → [0,1]: carrier ℝ + Icc range clause)\n@realizes q(carrier ℝ; range (0,1] via p (last k) = q with p 0 = 0, StrictMono p, Icc clause)\n@realizes S_{k,q}(p j ∈ Icc 0 1, p 0 = 0, StrictMono p, p (last k) = q) -/\ndef BudgetedSchedule (k : ℕ) (q : ℝ) (p : Fin (k + 1) → ℝ) : Prop :=\n  (∀ j, p j ∈ Set.Icc (0 : ℝ) 1) ∧ p 0 = 0 ∧ StrictMono p ∧ p (Fin.last k) = q"
         },
         {
-          "label": "minimaxAmplification",
+          "label": "CausalSmith.Experimentation.RolloutChebyshev.minimaxAmplification",
           "statement": "/-- Minimax amplification over budgeted schedules `M_{β,k,q} = inf_{p∈S_{k,q}} A_β(p)`.\n@realizes M_{beta,k,q}(inf over S_{k,q} of A_β(p)) -/\nnoncomputable def minimaxAmplification (beta k : ℕ) (q : ℝ) : ℝ :=\n  sInf { v : ℝ | ∃ p : Fin (k + 1) → ℝ, BudgetedSchedule k q p ∧ v = amplification beta k p }"
         }
       ]
     },
     "lobatto_affine_comp_natDegree_le": {
-      "decl": "lobatto_affine_comp_natDegree_le",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.lobatto_affine_comp_natDegree_le",
       "file": "Helpers/MinimaxUpper.lean",
-      "line": 16,
-      "statement": "lemma lobatto_affine_comp_natDegree_le {beta : ℕ} {q : ℝ} {r : Polynomial ℝ}\n    (hrdeg : r.natDegree ≤ beta) :\n    (r.comp (Polynomial.C (q / 2) * (Polynomial.X + Polynomial.C 1))).natDegree ≤ beta",
+      "line": 20,
+      "statement": "/-- Composing a polynomial of degree at most `β` with the affine map `x ↦ (q/2)(x + 1)`, which\ncarries the standard interval `[-1, 1]` onto the budget window `[0, q]`, leaves the degree at\nmost `β`. Degree bookkeeping for moving a dual test polynomial between the two parametrisations\nin the amplification upper bound. -/\nlemma lobatto_affine_comp_natDegree_le {beta : ℕ} {q : ℝ} {r : Polynomial ℝ}\n    (hrdeg : r.natDegree ≤ beta) :\n    (r.comp (Polynomial.C (q / 2) * (Polynomial.X + Polynomial.C 1))).natDegree ≤ beta",
       "sorry_free": true,
       "axioms": null
     },
     "chebyshev_amplification_upper": {
       "decl": "(composite)",
       "file": "Helpers/MinimaxUpper.lean",
-      "line": 33,
+      "line": 49,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
         {
-          "label": "chebyshev_amplification_upper",
-          "statement": "lemma chebyshev_amplification_upper (c qmax Cupper K : ℝ) (hCupper_pos : 0 < Cupper)\n    (hKpos : 0 < K)\n    (hendpoint_upper :\n      ∀ (beta : ℕ) (q : ℝ), 1 ≤ beta → 0 < q → q ≤ qmax →\n        ∀ R : Polynomial ℝ, R.natDegree ≤ beta →\n          (∀ x : ℝ, x ∈ Set.Icc (-1 : ℝ) 1 → |R.eval x| ≤ 1) →\n          |R.eval (2 / q - 1) - R.eval (-1)| ≤\n            Cupper * ((2 / q - 1) + Real.sqrt ((2 / q - 1) ^ 2 - 1)) ^ beta)\n    (hnorming :\n      ∀ (beta k : ℕ) (R : Polynomial ℝ), 1 ≤ beta → (k : ℝ) ≥ c * beta →\n        R.natDegree ≤ beta →\n        ∀ x : ℝ, x ∈ Set.Icc (-1 : ℝ) 1 →\n          |R.eval x| ≤ K * Finset.univ.sup' Finset.univ_nonempty\n            (fun j : Fin (k + 1) => |R.eval (-Real.cos (Real.pi * (j : ℝ) / (k : ℝ)))|))\n    {beta k : ℕ} {q : ℝ} (hbeta : 1 ≤ beta) (hkβ : beta ≤ k)\n    (hk : (k : ℝ) ≥ c * beta) (hq : 0 < q) (hqle : q ≤ qmax) (hqmax_lt : qmax < 1) :\n    amplification beta k (chebyshevSchedule k q)\n      ≤ (K * Cupper) ^ 2 * ((1 + Real.sqrt (1 - q)) ^ 2 / q) ^ (2 * beta)"
+          "label": "CausalSmith.Experimentation.RolloutChebyshev.chebyshev_amplification_upper",
+          "statement": "/-- The shifted Chebyshev–Lobatto rollout design attains the exponential base, matching the lower\nbound. Granted two inputs — an endpoint upper bound with constant `C`, namely\n`|R(2/q - 1) - R(-1)| ≤ C λ(q)^β` for every polynomial `R` of degree at most `β` bounded by one\non `[-1, 1]`; and a norming-set inequality with constant `K`, valid once the number of rounds\nsatisfies `k ≥ c β`, controlling the largest value of such an `R` on all of `[-1, 1]` by `K`\ntimes its largest value on the `k + 1` Chebyshev–Lobatto nodes — the Chebyshev–Lobatto schedule\n`p^Ch(k,q)` has total-variation amplification at most `(K C)² · ((1 + √(1 - q))² / q)^{2β}` for\nevery order `β ≥ 1` with `β ≤ k` and every budget `q ≤ q_max < 1`.\n\nCombined with the matching lower bound over all budgeted schedules, this pins the exponential\nbase of the minimax amplification at `ρ(q) = (1 + √(1 - q))² / q`, so that placing rollout nodes\non the Chebyshev grid is rate-optimal in the low-budget regime. -/\nlemma chebyshev_amplification_upper (c qmax Cupper K : ℝ) (hCupper_pos : 0 < Cupper)\n    (hKpos : 0 < K)\n    (hendpoint_upper :\n      ∀ (beta : ℕ) (q : ℝ), 1 ≤ beta → 0 < q → q ≤ qmax →\n        ∀ R : Polynomial ℝ, R.natDegree ≤ beta →\n          (∀ x : ℝ, x ∈ Set.Icc (-1 : ℝ) 1 → |R.eval x| ≤ 1) →\n          |R.eval (2 / q - 1) - R.eval (-1)| ≤\n            Cupper * ((2 / q - 1) + Real.sqrt ((2 / q - 1) ^ 2 - 1)) ^ beta)\n    (hnorming :\n      ∀ (beta k : ℕ) (R : Polynomial ℝ), 1 ≤ beta → (k : ℝ) ≥ c * beta →\n        R.natDegree ≤ beta →\n        ∀ x : ℝ, x ∈ Set.Icc (-1 : ℝ) 1 →\n          |R.eval x| ≤ K * Finset.univ.sup' Finset.univ_nonempty\n            (fun j : Fin (k + 1) => |R.eval (-Real.cos (Real.pi * (j : ℝ) / (k : ℝ)))|))\n    {beta k : ℕ} {q : ℝ} (hbeta : 1 ≤ beta) (hkβ : beta ≤ k)\n    (hk : (k : ℝ) ≥ c * beta) (hq : 0 < q) (hqle : q ≤ qmax) (hqmax_lt : qmax < 1) :\n    amplification beta k (chebyshevSchedule k q)\n      ≤ (K * Cupper) ^ 2 * ((1 + Real.sqrt (1 - q)) ^ 2 / q) ^ (2 * beta)"
         },
         {
-          "label": "minimaxAmplification",
+          "label": "CausalSmith.Experimentation.RolloutChebyshev.minimaxAmplification",
           "statement": "/-- Minimax amplification over budgeted schedules `M_{β,k,q} = inf_{p∈S_{k,q}} A_β(p)`.\n@realizes M_{beta,k,q}(inf over S_{k,q} of A_β(p)) -/\nnoncomputable def minimaxAmplification (beta k : ℕ) (q : ℝ) : ℝ :=\n  sInf { v : ℝ | ∃ p : Fin (k + 1) → ℝ, BudgetedSchedule k q p ∧ v = amplification beta k p }"
         },
         {
-          "label": "chebyshevSchedule",
+          "label": "CausalSmith.Experimentation.RolloutChebyshev.chebyshevSchedule",
           "statement": "/-- Shifted Chebyshev-Lobatto rollout schedule `pⱼ^Ch(k,q) = q(1 - cos(π j / k))/2`.\nCarrier `Fin (k+1) → ℝ` (the closed-form grid). Its core space `p^Ch(k,q) ∈ [0,1]^(k+1)` is\nNOT free from the formula alone: since `1 - cos ∈ [0,2]`, each coordinate lands in `[0,q] ⊆ [0,1]`\nprecisely when `k ≥ 1` and `q ∈ (0,1]`. This range clause is realized by\n`chebyshev_schedule_admissible`, whose conclusion `BudgetedSchedule k q (p^Ch(k,q))` carries the\n`[0,1]^(k+1)` membership `∀ j, p^Ch(k,q) j ∈ Set.Icc 0 1` (its first conjunct) together with\n`p 0 = 0`, `StrictMono`, `p (last k) = q` — so the carrier `def` here plus that admissibility\nlemma together pin `p^Ch(k,q)` to its declared space. The budget parameter `q` (carrier `q : ℝ`)\nhas space `(0,1]`, pinned by the same admissibility range predicate `hq : 0 < q ∧ q ≤ 1`.\n@realizes p^Ch(k,q)(carrier q(1 - cos(π j/k))/2;\n  range [0,1]^(k+1) via chebyshev_schedule_admissible → BudgetedSchedule Icc clause, k≥1, q∈(0,1])\n@realizes q(carrier ℝ; range 0 < q ≤ 1 pinned by chebyshev_schedule_admissible.hq) -/\nnoncomputable def chebyshevSchedule (k : ℕ) (q : ℝ) : Fin (k + 1) → ℝ :=\n  fun j => q * (1 - Real.cos (Real.pi * (j : ℝ) / (k : ℝ))) / 2"
         }
       ]
     },
     "one_le_rhoCh": {
-      "decl": "one_le_rhoCh",
+      "decl": "CausalSmith.Experimentation.RolloutChebyshev.one_le_rhoCh",
       "file": "T_chebyshev_minimax.lean",
       "line": 122,
       "statement": "/-- Range realization for `ρ_Ch(c,q_max) ∈ [1,∞)`: the minimal-base infimum is `≥ 1`, pinning\nthe symbol's declared space `[1,∞)` VALUE-wise (not merely element-wise). The defining set\n`{ρ | 1 ≤ ρ ∧ ∃ M, …}` has `1` as a lower bound (every member satisfies the `1 ≤ ρ` conjunct)\nand is nonempty: the Chebyshev upper half gives\n`A_β(p^Ch) ≤ C₊·(((1+√(1-q))²)/q)^{2β}`, so after multiplying by `q^β` the base is bounded by\n`4^β`. Thus `ρ = 4` is a finite witness, and `le_csInf` gives `1 ≤ sInf`.\n@realizes rho_Ch(c,q_max)(range [1,∞): 1 ≤ rhoCh established value-wise via nonempty witness) -/\nlemma one_le_rhoCh (c qmax : ℝ) (hc : 1 < c) (hqmax : 0 < qmax ∧ qmax < 1) :\n    1 ≤ rhoCh c qmax",

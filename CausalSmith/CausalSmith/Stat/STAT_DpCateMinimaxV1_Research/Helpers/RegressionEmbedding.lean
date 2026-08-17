@@ -71,9 +71,9 @@ private lemma measurable_regression_indicator {d : ℕ} (y : ℝ)
     (S : Set ((Fin d → ℝ) × ℝ)) (hS : MeasurableSet S) :
     Measurable (fun x : Fin d → ℝ =>
       ((fun z : ℝ => (x, z)) ⁻¹' S).indicator (fun _ => (1 : ℝ≥0∞)) y) := by
-  convert measurable_const.indicator
+  exact measurable_const.indicator
     (hS.preimage (measurable_id.prodMk (measurable_const :
-      Measurable (fun _ : Fin d → ℝ => y)))) using 1
+      Measurable (fun _ : Fin d → ℝ => y))))
 
 private lemma measurable_regressionKernel {d : ℕ} {b : (Fin d → ℝ) → ℝ}
     (hb : Measurable b) : Measurable (fun x : Fin d → ℝ =>
@@ -85,19 +85,20 @@ private lemma measurable_regressionKernel {d : ℕ} {b : (Fin d → ℝ) → ℝ
   simp_rw [Measure.map_apply (hp _) hS]
   unfold twoPointMean
   simp only [Measure.add_apply, Measure.smul_apply, Measure.dirac_apply, smul_eq_mul]
-  simpa only [div_one] using
+  simp only [div_one]
+  exact
     ((by fun_prop (disch := assumption) : Measurable fun x : Fin d → ℝ =>
-      ENNReal.ofReal ((1 + b x) / 2)).mul
-        (measurable_regression_indicator (d := d) 1 S hS)).add
+      ENNReal.ofReal ((1 + b x) / 2)).fun_mul
+        (measurable_regression_indicator (d := d) 1 S hS)).fun_add
     ((by fun_prop (disch := assumption) : Measurable fun x : Fin d → ℝ =>
-      ENNReal.ofReal ((1 - b x) / 2)).mul
+      ENNReal.ofReal ((1 - b x) / 2)).fun_mul
         (measurable_regression_indicator (d := d) (-1) S hS))
 
 private lemma measurable_controlKernel {d : ℕ} : Measurable (fun x : Fin d → ℝ =>
     (twoPointMean 1 0).map (cateWitnessPack x false)) := by
   have h := measurable_cateWitnessOutcomeKernel (d := d)
     (b := fun _ : Fin d → ℝ => 0) measurable_const
-  simpa using h.comp (measurable_id.prodMk (measurable_const :
+  simpa using h.fun_comp (measurable_id.prodMk (measurable_const :
     Measurable (fun _ : Fin d → ℝ => false)))
 
 -- @node: cateWitnessRegressionLaw_isProbabilityMeasure
@@ -378,7 +379,7 @@ lemma cateWitnessLaw_dataMeasure_mixture {d : ℕ} (Q : CateLaw d) (e0 : ℝ)
   ext S hS
   have ht : Measurable (fun x : Fin d → ℝ =>
       (twoPointMean 1 (b x)).map (cateWitnessPack x true)) := by
-    simpa using (measurable_cateWitnessOutcomeKernel hbmeas).comp
+    exact (measurable_cateWitnessOutcomeKernel hbmeas).fun_comp
       (measurable_id.prodMk measurable_const)
   have hc : Measurable (fun x : Fin d → ℝ =>
       (twoPointMean 1 0).map (cateWitnessPack x false)) := measurable_controlKernel

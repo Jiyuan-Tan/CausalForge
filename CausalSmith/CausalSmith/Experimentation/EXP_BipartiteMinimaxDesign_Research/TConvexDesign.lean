@@ -120,12 +120,12 @@ private lemma feasibleSet_isClosed (ε B : ℝ) :
     IsClosed (feasibleSet (I := I) ε B) := by
   classical
   have hprob : IsClosed {p : I → ℝ | ProbVector p} := by
-    simpa [ProbVector, Set.setOf_forall] using
+    simpa [ProbVector, Set.setOf_forall, Set.setOf_and] using
       (isClosed_iInter (fun k : I =>
         (isClosed_le continuous_const (continuous_apply k)).inter
           (isClosed_le (continuous_apply k) continuous_const)))
   have hfloor : IsClosed {p : I → ℝ | PositivityFloor ε p} := by
-    simpa [PositivityFloor, Set.setOf_forall] using
+    simpa [PositivityFloor, Set.setOf_forall, Set.setOf_and] using
       (isClosed_iInter (fun k : I =>
         (isClosed_le continuous_const (continuous_apply k)).inter
           (isClosed_le (continuous_apply k) continuous_const)))
@@ -239,7 +239,12 @@ private lemma convexOn_finset_sum'
     have ha : ConvexOn ℝ s (f a) := hf a (Finset.mem_insert_self a t)
     have ht' : ConvexOn ℝ s (fun p => ∑ b ∈ t, f b p) := by
       exact ht (by intro b hb; exact hf b (Finset.mem_insert_of_mem hb))
-    simpa [Finset.sum_insert, hat] using ha.add ht'
+    have hfun : (fun p => ∑ b ∈ insert a t, f b p)
+        = (f a + fun p => ∑ b ∈ t, f b p) := by
+      funext p
+      simp [Finset.sum_insert hat]
+    rw [hfun]
+    exact ha.add ht'
 
 /-! ### Smooth envelope extension
 
@@ -427,7 +432,7 @@ private lemma deriv_prod_inv_coord_line
     have hderiv_inv : deriv (fun t : ℝ => (p k + t)⁻¹) 0 = -1 / (p k) ^ 2 := by
       have hlin : HasDerivAt (fun t : ℝ => p k + t) 1 0 := by
         simpa using (hasDerivAt_id (0 : ℝ)).const_add (p k)
-      have h := hlin.inv (by simpa using hpk)
+      have h := hlin.fun_inv (by simpa using hpk)
       simpa using h.deriv
     rw [deriv_mul_const hdiff, hderiv_inv, if_pos hk]
     rw [Finset.prod_eq_mul_prod_diff_singleton_of_mem hk]
@@ -513,8 +518,8 @@ private lemma deriv_prod_one_sub_inv_coord_line
     have hderiv_inv :
         deriv (fun t : ℝ => (1 - p k - t)⁻¹) 0 = 1 / (1 - p k) ^ 2 := by
       have hlin : HasDerivAt (fun t : ℝ => 1 - p k - t) (-1) 0 := by
-        simpa using (hasDerivAt_const (0 : ℝ) (1 - p k)).sub (hasDerivAt_id (0 : ℝ))
-      have h := hlin.inv (by simpa using hpk)
+        simpa using (hasDerivAt_const (0 : ℝ) (1 - p k)).fun_sub (hasDerivAt_id (0 : ℝ))
+      have h := hlin.fun_inv (by simpa using hpk)
       simpa [div_eq_mul_inv] using h.deriv
     rw [deriv_mul_const hdiff, hderiv_inv, if_pos hk]
     rw [Finset.prod_eq_mul_prod_diff_singleton_of_mem hk]
@@ -1307,7 +1312,10 @@ theorem convex_design
         unfold BipartiteExperiment.r1
         by_cases hij : 0 < (E.shared i j).card
         · have hraw := prod_inv_convexOn_feasible (I := I) ε B hε (E.shared i j)
-          simpa [P, hij, sub_eq_add_neg] using hraw.add_const (-1)
+          have h2 : ConvexOn ℝ (feasibleSet (I := I) ε B)
+              (fun p : I → ℝ => (∏ k ∈ E.shared i j, p k)⁻¹ + (-1 : ℝ)) :=
+            hraw.add_const (-1)
+          simpa [P, hij, sub_eq_add_neg] using h2
         · simpa [P, hij] using
             (convexOn_const (0 : ℝ) hconv :
               ConvexOn ℝ (feasibleSet (I := I) ε B) (fun _ : I → ℝ => (0 : ℝ)))
@@ -1315,7 +1323,10 @@ theorem convex_design
         unfold BipartiteExperiment.r0
         by_cases hij : 0 < (E.shared i j).card
         · have hraw := prod_one_sub_inv_convexOn_feasible (I := I) ε B hε (E.shared i j)
-          simpa [P, hij, sub_eq_add_neg] using hraw.add_const (-1)
+          have h2 : ConvexOn ℝ (feasibleSet (I := I) ε B)
+              (fun p : I → ℝ => (∏ k ∈ E.shared i j, (1 - p k))⁻¹ + (-1 : ℝ)) :=
+            hraw.add_const (-1)
+          simpa [P, hij, sub_eq_add_neg] using h2
         · simpa [P, hij] using
             (convexOn_const (0 : ℝ) hconv :
               ConvexOn ℝ (feasibleSet (I := I) ε B) (fun _ : I → ℝ => (0 : ℝ)))
@@ -1335,7 +1346,13 @@ theorem convex_design
         (by intro i _; exact hsum_j i)
     have hscale_nonneg : 0 ≤ 4 * (Fintype.card O : ℝ)⁻¹ := by positivity
     have hscaled := hsum.smul hscale_nonneg
-    convert hscaled using 2
+    have hfun : E.varEnvelope = fun p : I → ℝ =>
+        (4 * (Fintype.card O : ℝ)⁻¹) • ∑ i ∈ (Finset.univ : Finset O),
+          ∑ j ∈ (Finset.univ : Finset O), (E.r1 p i j + E.r0 p i j + 2 * E.r10 i j) := by
+      funext p
+      simp [BipartiteExperiment.varEnvelope, smul_eq_mul]
+    rw [hfun]
+    exact hscaled
   have hmin :
       ∃ pstar ∈ feasibleSet (I := I) ε B,
         ∀ q ∈ feasibleSet (I := I) ε B, E.varEnvelope pstar ≤ E.varEnvelope q :=
@@ -1404,7 +1421,7 @@ theorem convex_design
         optBoxConstraint_contDiffAt (n := Fintype.card I) ε j loc
     have hLinearCQ : P.LinearCQ loc := by
       simpa [P] using optDesignProblem_LinearCQ (I := I) (O := O) E ε B loc
-    have hdomain : P.domain = univ := by
+    have hdomain : P.domain = Set.univ := by
       rfl
     obtain ⟨_hkfeas, lambda1, lambda2, hstat, hnonneg, hcomp⟩ :=
       first_order_neccessary_LinearCQ P loc hloc hobjdiff hconte hconti hLinearCQ hdomain

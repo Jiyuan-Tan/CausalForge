@@ -77,7 +77,7 @@ lemma measurable_signedTail_uncurry :
   have h0 : Measurable (fun z : ℝ × ℝ =>
       ({z : ℝ × ℝ | z.2 < (0 : ℝ)}.indicator (fun _ => (1 : ℝ)) z)) :=
     measurable_const.indicator hx0
-  simpa [signedTail, tailInd, Set.indicator_apply, Set.mem_Iio] using h1.sub h0
+  simpa [signedTail, tailInd, Set.indicator_apply, Set.mem_Iio] using h1.fun_sub h0
 
 /-- The signed tail indicator is bounded by `1` in absolute value. -/
 lemma abs_signedTail_le_one (a s : ℝ) : |signedTail a s| ≤ 1 := by
@@ -123,8 +123,7 @@ lemma integral_signedTail (a : ℝ) : (∫ s : ℝ, signedTail a s ∂volume) = 
     have hint :
         (∫ s : ℝ, (Ico (0 : ℝ) a).indicator (fun _ : ℝ => (1 : ℝ)) s ∂volume)
           = volume.real (Ico (0 : ℝ) a) := by
-      simpa only using
-        (integral_indicator_one (μ := volume) (s := Ico (0 : ℝ) a) measurableSet_Ico)
+      exact integral_indicator_one (μ := volume) (s := Ico (0 : ℝ) a) measurableSet_Ico
     rw [hint, measureReal_def, Real.volume_Ico, ENNReal.toReal_ofReal]
     · ring
     · exact sub_nonneg.mpr ha

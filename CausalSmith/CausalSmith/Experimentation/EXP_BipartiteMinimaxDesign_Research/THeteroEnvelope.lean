@@ -117,7 +117,7 @@ lemma r1_nonneg (E : BipartiteExperiment I O) (p : I → ℝ)
   · rw [if_pos hcard]
     have hprod : (1 : ℝ) ≤ ∏ k ∈ E.shared i j, (p k)⁻¹ := by
       refine Finset.one_le_prod ?_
-      intro k
+      intro k _
       exact (one_le_inv₀ (hpos k)).mpr (hp1 k)
     exact sub_nonneg.mpr hprod
   · rw [if_neg hcard]
@@ -133,7 +133,7 @@ lemma r0_nonneg (E : BipartiteExperiment I O) (p : I → ℝ)
   · rw [if_pos hcard]
     have hprod : (1 : ℝ) ≤ ∏ k ∈ E.shared i j, (1 - p k)⁻¹ := by
       refine Finset.one_le_prod ?_
-      intro k
+      intro k _
       have hpos1 : 0 < 1 - p k := sub_pos.mpr (hlt k)
       have hle1 : 1 - p k ≤ 1 := by
         simpa using sub_le_self (1 : ℝ) (hp0 k)

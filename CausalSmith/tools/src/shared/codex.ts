@@ -1,6 +1,7 @@
 import { open, readdir, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { spawnWithInactivityTimeout } from "../workers/spawn.js";
 import {
   localConfig,
@@ -15,6 +16,14 @@ import { MODELS } from "../models.js";
  * prior `workers/codex.ts`; that path is now a re-export shim so existing
  * imports continue to work.
  */
+/**
+ * Absolute path to the shared Node resolver sourced by every codex shell.
+ * Forward slashes so the string survives bash on Windows too.
+ */
+const NODE_ENV_SCRIPT = path
+  .resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "scripts", "node_env.sh")
+  .replace(/\\/g, "/");
+
 export interface CodexRunInput {
   prompt: string;
   model?: string;
@@ -78,6 +87,13 @@ export interface CodexRunInput {
    * if the extra tool surface is unwanted.
    */
   webSearch?: boolean;
+  /** Per-call sandbox narrowing. Cold referees use `read-only` even when the
+   *  host configuration permits workspace writes. A call may never broaden
+   *  the configured sandbox through this field. */
+  sandboxMode?: "read-only";
+  /** Ignore inherited user config while retaining CODEX_HOME authentication.
+   * Cold referees use this so user MCP/tool settings cannot widen the call. */
+  ignoreUserConfig?: boolean;
 }
 
 export type CodexSandboxMode = LocalConfig["codexSandbox"];
@@ -182,22 +198,24 @@ export class CodexRunError extends Error {
 }
 
 export async function runCodex(input: CodexRunInput): Promise<{ stdout: string; stderr: string }> {
-  // The nvm prelude is cluster-specific (default shell node is too old there).
-  // Guard it so a machine without nvm — e.g. local Windows git-bash, where
-  // codex + a recent node are already on PATH — skips the nvm steps instead of
-  // aborting the `&&` chain before `codex exec` ever runs. On the cluster
-  // `~/.nvm/nvm.sh` exists, so the strict `source && nvm use` semantics are
-  // preserved exactly (a failed `nvm use` still aborts via the `if` body).
-  const setup = [
-    "unset npm_config_prefix",
-    "if [ -s ~/.nvm/nvm.sh ]; then . ~/.nvm/nvm.sh && nvm use 20.20.2 >/dev/null 2>&1; fi",
-  ].join(" && ");
-  const sandboxMode = codexSandboxMode();
+  // Put a Node satisfying `engines.node` on PATH for the shell codex spawns
+  // (it runs `npx`/`lake`). Delegated to scripts/node_env.sh — the single
+  // resolver shared with the skills and docs — which accepts any Node at or
+  // above the floor and finds nvm via $NVM_DIR rather than assuming $HOME.
+  // The previous inline `~/.nvm` prelude silently no-opped wherever $NVM_DIR
+  // pointed outside $HOME, leaving whatever node was on PATH.
+  //
+  // Kept non-fatal: `codex` is a standalone binary that need not have node at
+  // all, so a machine without one should still reach `codex exec` rather than
+  // abort the `&&` chain. node_env.sh prints its own diagnostic to stderr.
+  const setup = `. ${shellQuote(NODE_ENV_SCRIPT)} || true`;
+  const sandboxMode = input.sandboxMode ?? codexSandboxMode();
   const cmd = [
     // `codex exec` is non-interactive, so approval remains `never`; this selects
     // only the explicitly configured local-tool sandbox. Never use the blanket
     // --dangerously-bypass-approvals-and-sandbox flag.
     `codex exec --sandbox ${sandboxMode}`,
+    ...(input.ignoreUserConfig === true ? ["--ignore-user-config"] : []),
     `-C ${shellQuote(input.cwd)}`,
     "--skip-git-repo-check",
     // Windows: the default `elevated` sandbox setup helper fails to spawn on
@@ -220,7 +238,7 @@ export async function runCodex(input: CodexRunInput): Promise<{ stdout: string; 
     // DEFAULT-ON; opt out with `webSearch: false`. Inert unless the prompt calls
     // it. NB: the interactive `--search` flag does NOT exist on `codex exec`;
     // the equivalent is the `tools.web_search` config override.
-    ...(input.webSearch === false ? [] : ["-c tools.web_search=true"]),
+    `-c tools.web_search=${input.webSearch === false ? "false" : "true"}`,
     // codex's native sub-agent fan-out (`spawn_agent`, a SERVER-SIDE thread inside ONE
     // `codex exec` session — distinct from the pipeline's OWN fan-out of N independent
     // `codex exec` processes via mapLimit, which is where the per-object accuracy comes
@@ -238,7 +256,12 @@ export async function runCodex(input: CodexRunInput): Promise<{ stdout: string; 
     // CAUSALSMITH_CODEX_MULTI_AGENT=1 (escape hatch). NOTE: the v2 concurrency knob is
     // `multi_agent.max_concurrent_threads_per_session` — the legacy `agents.max_threads`
     // ERRORS when `multi_agent_v2` is enabled.
-    ...(input.multiAgent === true || process.env.CAUSALSMITH_CODEX_MULTI_AGENT === "1"
+    ...(input.multiAgent === false
+      ? [
+          "-c features.multi_agent_v2=false",
+          "-c multi_agent.non_code_mode_only=true",
+        ]
+      : input.multiAgent === true || process.env.CAUSALSMITH_CODEX_MULTI_AGENT === "1"
       ? [
           "-c features.multi_agent_v2=true",
           "-c multi_agent.non_code_mode_only=false",

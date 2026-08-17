@@ -87,12 +87,14 @@ by
       have hsel_cf : S.SelOfA false ω = S.factualSel ω :=
         POVar.cf_eq_factual_on_event hA.consistency
           S.selVar S.aVar false S.hASel.symm hω.1
-      exact ⟨hω.1, by simpa [selOfAFalseSet, hsel_cf] using hω.2⟩
+      exact ⟨hω.1, by
+        simpa [selOfAFalseSet, selEvent, POVar.event, factualSel, hsel_cf] using hω.2⟩
     · intro hω
       have hsel_cf : S.SelOfA false ω = S.factualSel ω :=
         POVar.cf_eq_factual_on_event hA.consistency
           S.selVar S.aVar false S.hASel.symm hω.1
-      exact ⟨hω.1, by simpa [selOfAFalseSet, hsel_cf] using hω.2⟩
+      exact ⟨hω.1, by
+        simpa [selOfAFalseSet, selEvent, POVar.event, factualSel, hsel_cf] using hω.2⟩
   have hSelFalseMass :
       (P.μ S.selectedControl).toReal
         = (P.μ (S.aEvent false)).toReal * (P.μ S.alwaysSelected).toReal := by

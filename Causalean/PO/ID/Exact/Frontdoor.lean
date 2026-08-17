@@ -294,11 +294,13 @@ lemma integrable_factualY_of_consistency_integrable_YofAM
         refine Finset.induction_on s ?base ?step
         · simp
         · intro m s hms hs
-          simpa [Finset.sum_insert hms] using (hcell_int a m).add hs
+          simp only [Finset.sum_insert hms]
+          exact (hcell_int a m).add hs
       simpa using hsum_finset Finset.univ
     have htrue : Integrable (fun ω => ∑ m : β, cell true m ω) P.μ := hsum_beta true
     have hfalse : Integrable (fun ω => ∑ m : β, cell false m ω) P.μ := hsum_beta false
-    simpa [Fintype.sum_bool] using htrue.add hfalse
+    simp only [Fintype.sum_bool]
+    exact htrue.add hfalse
   refine hsum_int.congr (Filter.Eventually.of_forall ?_)
   intro ω
   have hA_indicator : ∀ a, S.aVar.indicator a ω = if S.factualA ω = a then 1 else 0 := by
@@ -365,12 +367,10 @@ lemma YofAM_eq_YofA_on_MofA_event (hC : P.Consistency) (a : Bool) (m : β)
     have hvM : v = S.M := Finset.mem_singleton.mp hv
     subst hvM
     -- `MofA a ω = m` ⇒ `hMequiv (P.eval r₁ ω M) = m` ⇒ `P.eval r₁ ω M = hMequiv.symm m`.
-    have : S.mVar.equiv (P.eval (Regime.single S.A (S.hAbool.symm a)) ω S.M) = m := by
-      simpa [MofA, POVar.cfUnder, POVar.cf, mVar, aVar] using hω
-    have := congrArg S.mVar.equiv.symm this
+    have hM : S.hMequiv (P.eval (Regime.single S.A (S.hAbool.symm a)) ω S.M) = m := hω
     change P.eval (Regime.single S.A (S.hAbool.symm a)) ω S.M =
       S.hMequiv.symm m
-    simpa using this
+    exact S.hMequiv.eq_symm_apply.mpr hM
   -- Apply `hC.composition`.
   have hComp :=
     hC.composition (Regime.single S.A (S.hAbool.symm a))
@@ -648,7 +648,9 @@ theorem EofY_eq_frontdoorTerm (hA : S.Assumptions) (a : Bool) :
         (S.measurable_MofA a).aemeasurable (S.measurable_YofAM true m).aemeasurable
         (measurableSet_singleton m) ((S.measurable_MofA a) (measurableSet_singleton m))
         measurable_id.aestronglyMeasurable
-    simpa [mSet, id] using hdrop
+    have hpre : mSet m = (S.MofA a) ⁻¹' {m} := rfl
+    rw [hpre]
+    exact hdrop
   -- ───────────────────────────────────────────────────────────────────────────
   -- Main chain: combine (i) partition, (B,C) drop + marginal, (D) inner.
   -- ───────────────────────────────────────────────────────────────────────────

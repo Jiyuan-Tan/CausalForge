@@ -1647,7 +1647,7 @@ lemma qLocalMass_pos_of_positiveObs
       M.qLocalMass s M.observed hobs x ≤ M.qLocalMass s T hT x :=
     M.qLocalMass_anti s (T := T) (T' := M.observed) hT hT hobs x
   intro hzero
-  exact hfull (le_antisymm (by simpa [hzero] using hle) (zero_le _))
+  exact hfull (le_antisymm (by simpa [hzero] using hle) zero_le)
 
 end Causalean.SCM
 
@@ -1693,7 +1693,7 @@ lemma doObsKernelAncestralMarginal_positiveMass
       | SWIGNode.fixed d =>
           Classical.choice (inferInstance : Nonempty (swigΩ Ω (SWIGNode.fixed d)))
   let xDo : ValuesOn MX.observed (swigΩ Ω) := fun v =>
-    xFull ⟨v.val, by simp [MX, SCM.fixSet_observed]⟩
+    xFull ⟨v.val, v.property⟩
   have hprojD :
       valuesProjection hDclosed.1 xDo = xD := by
     ext v
@@ -1759,12 +1759,12 @@ lemma doObsKernelAncestralMarginal_positiveMass
     exact M.qLocalMass_pos_of_positiveObs (M.fixSetProj X hObs hFix sDo)
       (hpos (M.fixSetProj X hObs hFix sDo)) (C ∩ D) hsubsetM xFull
   have hmass := MX.obsKernel_marginal_singleton_eq_prod_qLocalMass sDo D hDclosed xDo
-  unfold doObsKernelAncestralMarginal DiscreteID.singletonMass
-  rw [ProbabilityTheory.Kernel.map_apply _ (measurable_valuesProjection _)]
-  rw [← hprojD]
-  change ((MX.obsKernel sDo).map (valuesProjection hDclosed.1))
-      ({valuesProjection hDclosed.1 xDo} : Set (ValuesOn D (swigΩ Ω))) ≠ 0
-  rw [hmass]
+  have hkey : doObsKernelAncestralMarginal M X hObs hFix Y
+      = MX.obsKernel.map (valuesProjection hDclosed.1) := rfl
+  unfold DiscreteID.singletonMass
+  rw [hkey,
+    ProbabilityTheory.Kernel.map_apply _ (measurable_valuesProjection hDclosed.1),
+    ← hprojD, hmass]
   exact Finset.prod_ne_zero_iff.mpr hq_ne
 
 /-- Pure ENNReal telescope for products of selected adjacent ratios. -/

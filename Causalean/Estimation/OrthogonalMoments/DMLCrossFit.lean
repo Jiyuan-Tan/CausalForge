@@ -602,7 +602,8 @@ theorem dml_crossFit_asymptoticLinear
           (memLp_two_iff_integrable_sq
             (M.m_meas (η_hat n k ω) M.θ₀).aestronglyMeasurable).2
               (_h_m_sq_int n k ω)
-        simpa [f] using hrand_L2.sub htruth_L2
+        simp only [f]
+        exact hrand_L2.sub htruth_L2
       have hf_rate_one :
           IsLittleOp (fun n ω => (eLpNorm (f n ω) 2 P_Z).toReal)
             (fun _ => (1 : ℝ)) μ := by
@@ -626,7 +627,8 @@ theorem dml_crossFit_asymptoticLinear
           (memLp_two_iff_integrable_sq
             (M.m_meas (η_hat n k ω) M.θ₀).aestronglyMeasurable).2
               (_h_m_sq_int n k ω)
-        simpa [f] using hrand_L2.sub htruth_L2
+        simp only [f]
+        exact hrand_L2.sub htruth_L2
       have h_int_eq : ∀ n ω,
           ∫ z, f n ω z ∂P_Z =
             ∫ z, M.m (η_hat n k ω) z M.θ₀ ∂P_Z := by

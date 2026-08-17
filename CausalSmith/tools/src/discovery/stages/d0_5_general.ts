@@ -24,13 +24,13 @@
 // to a D0 re-solve, the priciest step in the pipeline, and used to do so blind to
 // whether the note could ever clear the floor. `decideTriageKill` below is the ONLY
 // authority a triage read has to end a run early, and it is deliberately narrow.
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 import { D0_5_TRIAGE_MARKER, MODEL_PLAN } from "../../constants.js";
 import { runReferee } from "../framework/referee.js";
 import type { ReviewResult } from "../../judgment.js";
-import { formalizationDir, resolveInDir } from "../../paths.js";
+import { formalizationDir, researchBankRoot, resolveInDir } from "../../paths.js";
 import {
   discoveryBrief,
   readIfExists,
@@ -92,6 +92,13 @@ export interface GeneralReviewResult {
   flagship_potential?: boolean;
   /** When `flagship_potential`, the one bounded step to attempt for flagship. */
   flagship_directive?: string;
+  /**
+   * Highest score the RESULT could reach with perfect formalization and writing. Caps
+   * `tier` via `ceilingTierCap`; `undefined` when the referee omitted it (no cap applied).
+   */
+  paper_score_ceiling?: number;
+  /** When the ceiling caps the tier, the one move that would RAISE the ceiling. */
+  ceiling_directive?: string;
   /** Raw codex stdout, for logging. */
   raw: string;
 }
@@ -111,6 +118,179 @@ export const TARGET_FLOOR_LABEL: Record<string, GeneralTier> = {
 };
 
 const VALID_TIERS = new Set<GeneralTier>(["flagship", "field", "subfield", "incremental"]);
+
+/**
+ * Cap on D0.5.G directed reroutes — how many times a BELOW-FLOOR note may be sent back to
+ * D0 carrying a salvageable improvement directive before the boundary stops offering the
+ * reroute and halts on the cap instead.
+ *
+ * Unlike `D0_REVISE_CAP` (an in-process loop bound), this one counts across `--resume`
+ * boundaries, so it must live in persisted state: every reroute ENDS the process at an
+ * operator checkpoint, so an in-process bound would reset on each resume and never bind.
+ * Without it, a topic whose referee keeps emitting plausible-but-ineffective directives
+ * re-solves indefinitely, paying for a full D0 each round. `flags.general_reroute_count`
+ * is that counter.
+ *
+ * Override via `CAUSALSMITH_GENERAL_REROUTE_CAP`; clamped to [1, 6].
+ */
+export const GENERAL_REROUTE_CAP = (() => {
+  const v = Number.parseInt(process.env.CAUSALSMITH_GENERAL_REROUTE_CAP ?? "", 10);
+  return Number.isFinite(v) ? Math.min(6, Math.max(1, v)) : 2;
+})();
+
+/**
+ * Reroute-vs-halt for a below-floor D0.5.G verdict. Pure, so the budget rule is testable
+ * apart from the D0.5 boundary that spends it.
+ *
+ * `capExhausted` is deliberately NOT just `!canReroute`: it distinguishes "the referee
+ * found no bounded fix" (the object may be dead) from "there is a fix but the budget is
+ * spent" (the object is fine, the automation is out of road). Collapsing the two would let
+ * a budget exhaustion be banked as a refuted topic.
+ */
+export function decideGeneralReroute(args: {
+  gen: Pick<GeneralReviewResult, "salvageable" | "improvement_directive">;
+  reroutesUsed: number;
+  cap?: number;
+}): { canReroute: boolean; capExhausted: boolean } {
+  const cap = args.cap ?? GENERAL_REROUTE_CAP;
+  const hasBoundedFix = args.gen.salvageable && !!args.gen.improvement_directive?.trim();
+  const capExhausted = hasBoundedFix && args.reroutesUsed >= cap;
+  return { canReroute: hasBoundedFix && !capExhausted, capExhausted };
+}
+
+/**
+ * Paper-score ceiling thresholds — the highest tier a note may be graded at given the
+ * score its RESULT could reach if formalization and writing went perfectly.
+ *
+ * Why a second gate at all: the tier ladder does not predict paper quality. Every entry
+ * in `_bank/accepted/` ran at `novelty_target: field`, and the scores P5 assigned them
+ * span 4.0–8.2 — so `tier=field` carries no information about whether the paper is worth
+ * publishing. The ceiling does.
+ *
+ * Why the CEILING and not a predicted delivered score: D0.5.G sees a discovery note, no
+ * manuscript, and nearly every P5 rationale in the bank docks for delivery (exposition,
+ * positioning, empirical bridge). Delivery only ever subtracts, so a ceiling below the bar
+ * cannot be recovered downstream — while a delivered-score prediction would be asking the
+ * referee to forecast something it cannot see.
+ *
+ * Why hardcoded rather than derived from the bank: a threshold computed from the surviving
+ * population RATCHETS (cull below the mean → the mean rises → cull more, converging on
+ * nothing passing) and measures how lenient the pipeline used to be rather than the bar we
+ * want. The bank is used for CALIBRATION ANCHORS instead — see `loadPaperScoreAnchors`.
+ */
+export const CEILING_FOR_FLAGSHIP = 9.0;
+export const CEILING_FOR_FIELD = 7.5;
+export const CEILING_FOR_SUBFIELD = 6.5;
+
+/**
+ * Highest tier permitted by a paper-score ceiling. The cap only ever LOWERS the referee's
+ * own tier, never promotes.
+ *
+ * Fails OPEN (no cap) on an absent/unusable ceiling: the field is optional in the payload
+ * schema for the reason documented there — a validation throw discards a completed, paid
+ * referee call — so a referee that omits it must degrade to the pre-existing tier-only
+ * routing, not kill a run that may be excellent. `paper_score_ceiling: null` in the
+ * persisted review is the greppable signal that this happened.
+ */
+export function ceilingTierCap(ceiling: number | undefined): GeneralTier {
+  if (ceiling === undefined || !Number.isFinite(ceiling)) return "flagship";
+  if (ceiling >= CEILING_FOR_FLAGSHIP) return "flagship";
+  if (ceiling >= CEILING_FOR_FIELD) return "field";
+  if (ceiling >= CEILING_FOR_SUBFIELD) return "subfield";
+  return "incremental";
+}
+
+/** Collapse whitespace and clip on a word boundary. Keeps anchor rows prompt-sized. */
+function clipLine(s: string, max: number): string {
+  const flat = s.replace(/\s+/g, " ").trim();
+  if (flat.length <= max) return flat;
+  const cut = flat.lastIndexOf(" ", max);
+  return `${flat.slice(0, cut > max / 2 ? cut : max).trim()}…`;
+}
+
+/**
+ * What a banked entry actually DELIVERED, in its own words.
+ *
+ * Prefers the abstract of the presentation bundle's `paper.tex` — that is the exact
+ * document P5 scored (`p5_review.ts` feeds it as `paper_tex`), so the abstract and the
+ * score describe one artifact. Falls back to the archived discovery TL;DR, which is
+ * pre-formalization and can have drifted, and finally to "" so the anchor degrades to
+ * score + verdict rather than dropping out.
+ *
+ * The bank and presentation directories share the `<qid>_<spec>` slug (see
+ * `bankAcceptedDir` / `presentationDir`), so the entry name maps across directly — joined
+ * here rather than imported to keep the discovery stage off the presentation module.
+ */
+async function bankedDelivered(repoRoot: string, acceptedDir: string, entry: string): Promise<string> {
+  try {
+    const tex = await readFile(
+      path.join(repoRoot, "doc", "presentation", entry, "paper.tex"), "utf8",
+    );
+    const m = /\\begin\{abstract\}(.*?)\\end\{abstract\}/s.exec(tex);
+    if (m) return clipLine(m[1] ?? "", 2000);
+  } catch { /* fall through to the discovery TL;DR */ }
+  try {
+    const tex = await readFile(path.join(acceptedDir, entry, "discovery", "writeup.tex"), "utf8");
+    const m = /\\paragraph\{TL;DR\.?\}(.*?)(?=\\(?:section|paragraph|begin))/s.exec(tex);
+    return m ? clipLine(m[1] ?? "", 2000) : "";
+  } catch { return ""; }
+}
+
+/**
+ * Few-shot calibration anchors: real `_bank/accepted/` entries spread across the observed
+ * score range, each shown as what the paper DELIVERED (its abstract) beside the score P5
+ * gave it and why.
+ *
+ * Without anchors the referee's "8/10" and the P5 reviewer's "8/10" are different scales
+ * and the ceiling gate is meaningless; anchoring is also what makes an LLM's numeric
+ * judgment reproducible across runs.
+ *
+ * The abstract is here because P5's rationale is a VERDICT, not a description: it names no
+ * estimand, class, rate or comparator, so on its own it teaches "papers with these
+ * presentation problems score X" and nothing about what a given score BUYS. The proposal's
+ * `topic` is deliberately NOT used — a run can deviate from what it set out to do, and a
+ * stale promise shown beside a score misdescribes what earned it. The score attaches to the
+ * delivered paper, so the delivered paper is what the anchor shows.
+ *
+ * Generated at run time rather than hardcoded so the anchor set tracks the bank as entries
+ * are added — only the THRESHOLDS are frozen. Best-effort: an unreadable bank yields an
+ * empty block and the numeric thresholds still apply.
+ */
+export async function loadPaperScoreAnchors(repoRoot: string): Promise<string> {
+  const dir = path.join(researchBankRoot(repoRoot), "accepted");
+  let entries: string[];
+  try { entries = await readdir(dir); } catch { return ""; }
+  const rows: Array<{ score: number; qid: string; why: string }> = [];
+  for (const entry of entries) {
+    let md: string;
+    try { md = await readFile(path.join(dir, entry, "README.md"), "utf8"); } catch { continue; }
+    const score = Number(/^paper_score:\s*(\S+)\s*$/m.exec(md)?.[1]);
+    if (!Number.isFinite(score)) continue;
+    const why = (/^paper_score_rationale:\s*"?(.*?)"?\s*$/m.exec(md)?.[1] ?? "").trim();
+    rows.push({ score, qid: entry, why });
+  }
+  if (rows.length === 0) return "";
+  rows.sort((a, b) => b.score - a.score);
+  // Span the range rather than showing the top slice: the referee needs to see what a 4
+  // looks like as much as what an 8 does. Endpoints included, four interior picks evenly
+  // spaced over the sorted array; the rounding cannot collide once n >= 6.
+  const n = rows.length;
+  const picked = n <= 6 ? rows : [0, 1, 2, 3, 4, 5].map((k) => rows[Math.round((k * (n - 1)) / 5)]);
+  // Abstracts are read only for the picked rows — the bank grows, the prompt does not.
+  const delivered = await Promise.all(picked.map((r) => bankedDelivered(repoRoot, dir, r!.qid)));
+  return [
+    "=== CALIBRATION ANCHORS — banked papers and the score they actually received ===",
+    "(DELIVERED is the finished paper's own abstract; the score and verdict are P5's, assigned",
+    "against that same paper after delivery. These are what real results at each score look",
+    "like — calibrate against them, not against an abstract sense of what 8/10 means.)",
+    ...picked.map((r, i) => {
+      const lines = [`- ${r!.score.toFixed(1)}  ${r!.qid}`];
+      if (delivered[i]) lines.push(`    DELIVERED:  ${delivered[i]}`);
+      if (r!.why) lines.push(`    P5 VERDICT: ${clipLine(r!.why, 300)}`);
+      return lines.join("\n");
+    }),
+  ].join("\n");
+}
 
 /** Stdout contract for the D0.5.G cold referee.  Raw-byte LaTeX repair is performed by
  * the shared referee harness first; every field that DETERMINES ROUTING (`tier`,
@@ -141,6 +321,11 @@ export const generalReviewPayloadSchema = z.object({
   critique: z.string().min(1),
   flagship_potential: z.boolean(),
   flagship_directive: z.string().optional(),
+  // Optional for the same reason as the two directives above: a throw here discards a paid
+  // call. `ceilingTierCap` fails OPEN on absence, degrading to the pre-existing tier-only
+  // routing rather than killing the run.
+  paper_score_ceiling: z.number().optional(),
+  ceiling_directive: z.string().optional(),
 });
 
 export function generalReviewPayloadValidationError(obj: Record<string, unknown>): string | null {
@@ -185,6 +370,8 @@ export async function runGeneralReview(args: {
   const prompt = [
     await readPrompt(args.ctx, "stage0_5_general_review.txt"),
     "",
+    await loadPaperScoreAnchors(args.ctx.repoRoot),
+    "",
     discoveryBrief(args.ctx, args.state),
     "",
     `novelty_target: ${target}  (floor tier you must clear: ${floor})`,
@@ -204,6 +391,14 @@ export async function runGeneralReview(args: {
     label: "D0.5.G general referee",
     prompt,
     promptSources: ["prompts/D0.5/stage0_5_general_review.txt", "stitched note (inline)"],
+    runner: plan.runner,
+    // The one tool this referee gets. It grades the note against PUBLISHED work, and what
+    // a named comparator actually states is not in the note; without the source it can
+    // only mark such claims unverified and guess at the rest. Set explicitly rather than
+    // left to the runner default, so the grant survives a change of runner or of codex's
+    // own default. Filesystem access stays denied either way — this reaches the
+    // literature, not the run.
+    webSearch: true,
     model: plan.model,
     reasoningEffort: plan.effort,
     leanLsp: false,
@@ -217,7 +412,7 @@ export async function runGeneralReview(args: {
   // D0.5 boundary attempts are saved. Unlike the boundary verdict (only emitted
   // when the tier falls below the floor), this captures the D0.5.G review on
   // EVERY run — including a pass — so the tier/critique is greppable history.
-  await persistGeneralReviewJson(args.ctx, args.attempt ?? 1, gen, floor);
+  await persistGeneralReviewJson(args.ctx, args.attempt ?? 1, gen, floor, result.provenance);
   return gen;
 }
 
@@ -236,6 +431,13 @@ async function persistGeneralReviewJson(
   attempt: number,
   gen: GeneralReviewResult,
   floor: GeneralTier,
+  provenance: {
+    requested_runner: "codex" | "claude";
+    actual_runner: "codex" | "claude";
+    model: string;
+    fallback_kind: string | null;
+    quorum: number;
+  },
 ): Promise<void> {
   try {
     const dir = resolveInDir(formalizationDir(ctx.repoRoot, ctx.qid), "reviews", [
@@ -250,6 +452,10 @@ async function persistGeneralReviewJson(
       floor,
       meets_floor: tierRank(gen.tier) >= tierRank(floor),
       tier: gen.tier,
+      // null = the referee omitted a ceiling and the cap failed OPEN (tier-only routing).
+      paper_score_ceiling: gen.paper_score_ceiling ?? null,
+      ceiling_for_field: CEILING_FOR_FIELD,
+      ceiling_directive: gen.ceiling_directive ?? null,
       salvageable: gen.salvageable,
       improvement_directive: gen.improvement_directive ?? null,
       flagship_potential: gen.flagship_potential ?? false,
@@ -257,6 +463,7 @@ async function persistGeneralReviewJson(
       flagged_conjecture_labels: gen.flagged_conjecture_labels,
       critique: gen.critique,
       raw: gen.raw,
+      provenance,
     };
     await writeFile(file, `${JSON.stringify(record, null, 2)}\n`, "utf8");
   } catch (err) {
@@ -331,13 +538,29 @@ export function formatTriageTier(gen: GeneralReviewResult, target: NoveltyTarget
 /** Normalize the harness-parsed referee JSON into the typed review result. The
  *  parse itself now lives in `runReferee`; every fail-safe below (unknown tier →
  *  incremental, prefix-stripped labels, critique default) is stage semantics. */
-function normalizeGeneralReview(obj: Record<string, unknown>, raw: string): GeneralReviewResult {
+export function normalizeGeneralReview(
+  obj: Record<string, unknown>,
+  raw: string,
+): GeneralReviewResult {
   const tierRaw = typeof obj.tier === "string" ? obj.tier.trim().toLowerCase() : "";
   // Fail SAFE: an unparseable / unknown tier is treated as below any non-trivial
   // floor (incremental) rather than silently passing the gate.
-  const tier: GeneralTier = VALID_TIERS.has(tierRaw as GeneralTier)
+  const gradedTier: GeneralTier = VALID_TIERS.has(tierRaw as GeneralTier)
     ? (tierRaw as GeneralTier)
     : "incremental";
+  // Paper-score ceiling cap. The referee grades the delivered math; the ceiling bounds what
+  // that math could ever be WORTH. Applied here rather than in the routing so the whole
+  // existing D0.5 boundary is reused unchanged: capped-below-floor + salvageable → REVISE
+  // carrying the ceiling directive, capped-below-floor + not salvageable → REJECT.
+  const ceilingRaw = Number(obj.paper_score_ceiling);
+  const paper_score_ceiling = Number.isFinite(ceilingRaw) ? ceilingRaw : undefined;
+  const cap = ceilingTierCap(paper_score_ceiling);
+  const capped = tierRank(gradedTier) > tierRank(cap);
+  const tier: GeneralTier = capped ? cap : gradedTier;
+  const ceiling_directive =
+    typeof obj.ceiling_directive === "string" && obj.ceiling_directive.trim().length > 0
+      ? obj.ceiling_directive.trim()
+      : undefined;
   // Normalize to the BARE SLUG the prompt contract specifies
   // (stage0_5_general_review.txt: "bare slugs (strip the `conj:`/`thm:` prefix)"), so a
   // referee that emits the prefixed form anyway still yields the contract shape — these
@@ -367,12 +590,28 @@ function normalizeGeneralReview(obj: Record<string, unknown>, raw: string): Gene
       : undefined;
   return {
     tier,
-    salvageable: obj.salvageable === true,
-    improvement_directive,
+    // When the ceiling caps the tier it also decides the route, overriding the referee's
+    // own `salvageable`: in [6.5, 7.5) the result can still be lifted, so REVISE on the
+    // ceiling directive; below 6.5 the topic cannot reach the bar however it is rewritten,
+    // so REJECT. Uncapped notes keep the pre-existing behaviour exactly.
+    salvageable: capped
+      ? (paper_score_ceiling ?? 0) >= CEILING_FOR_SUBFIELD && !!(ceiling_directive ?? improvement_directive)
+      : obj.salvageable === true,
+    // The ceiling directive IS the fix a capped re-solve must attack, so it stands in when
+    // the referee named no other upgrade.
+    improvement_directive: improvement_directive ?? (capped ? ceiling_directive : undefined),
     flagged_conjecture_labels: labels,
-    critique,
-    flagship_potential: obj.flagship_potential === true && !!flagship_directive,
+    critique: capped
+      ? `${critique} [D0.5.G ceiling gate: paper_score_ceiling ${paper_score_ceiling} < ` +
+        `${CEILING_FOR_FIELD}, so the graded tier '${gradedTier}' is capped at '${cap}'. ` +
+        `The shortfall is what the result SETTLES, not how it is written.]`
+      : critique,
+    // A ceiling below 9.0 forecloses flagship whatever the note claims.
+    flagship_potential:
+      obj.flagship_potential === true && !!flagship_directive && cap === "flagship",
     flagship_directive,
+    paper_score_ceiling,
+    ceiling_directive,
     raw,
   };
 }

@@ -334,11 +334,11 @@ theorem backdoor_completeness_ae_compProd
   have hL : ∀ t,
       M.doKernelY X hObs hFix Y hY s0 t = (fL.sectR t) ∘ₘ μZ := by
     intro t
-    simpa [hfL_def, hliftTZ_def] using hLHS t
+    exact hLHS t
   have hR : ∀ t,
       M.adjustmentKernelY X hObs hFix Y Z hY hZ s0 t = (fR.sectR t) ∘ₘ μZ := by
     intro t
-    simpa [hfR_def, hliftTZ_def] using hRHS t
+    exact hRHS t
   have hae : ∀ᵐ p ∂(νX ⊗ₘ ProbabilityTheory.Kernel.const
         (ValuesOn (X.image SWIGNode.random) (swigΩ Ω)) μZ), fL p = fR p := by
     rw [hνX_eq, hμZ]

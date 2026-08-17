@@ -286,17 +286,19 @@ lemma seqDR_remainder_identity
       indicator_weighted_delta_mu1_stage1_integrable S h_overlap.1 η hη hΔμ₁_memLp
   have hdμ0_L2 : MemLp dμ0 2 P.μ := by
     have hd := MemLp.comp_of_map (f := S0) hΔμ₀_memLp hS0_meas.aemeasurable
-    simpa [dμ0, S0, DTREstimationSystem.P_H₀] using hd
+    simpa [dμ0, S0, DTREstimationSystem.P_H₀, Function.comp_def] using hd
   have hdμ1_L2 : MemLp dμ1 2 P.μ := by
     have hd := MemLp.comp_of_map (f := H1) hΔμ₁_memLp hH1_meas.aemeasurable
-    simpa [dμ1, H1, DTREstimationSystem.P_H₁] using hd
+    simpa [dμ1, H1, DTREstimationSystem.P_H₁, Function.comp_def] using hd
   have hdμ0_int : Integrable dμ0 P.μ := hdμ0_L2.integrable (by norm_num)
   have hdμ1_int : Integrable dμ1 P.μ := hdμ1_L2.integrable (by norm_num)
   have hbase_int : Integrable base P.μ := by
-    simpa [base] using hM0_int.sub (integrable_const S.θ₀)
+    have h : Integrable (fun ω => M0 ω - S.θ₀) P.μ := hM0_int.sub (integrable_const S.θ₀)
+    simpa [base] using h
   have hcrossInd_int : Integrable crossInd P.μ := by
-    simpa [crossInd, sub_eq_add_neg, add_assoc] using
+    have h : Integrable (fun ω => dμ0 ω + i10 ω - i0 ω - i11 ω) P.μ :=
       ((hdμ0_int.add hi10_int).sub hi0_int).sub hi11_int
+    simpa [crossInd, sub_eq_add_neg, add_assoc] using h
   have hbase_zero : ∫ ω, base ω ∂P.μ = 0 := by
     have hθ : S.θ₀ = ∫ ω, M0 ω ∂P.μ := by
       simpa [M0, S0] using theta_zero_factualS₀_integral S hA
@@ -486,8 +488,30 @@ lemma seqDR_remainder_identity
     have hInd_meas : Measurable
         (fun ω => indEq (S.toPODTRSystem.factualD ⟨0, by decide⟩ ω)
           (S.dbar ⟨0, by decide⟩)) := by
-      simpa [I0] using ((S.toPODTRSystem.dVar ⟨0, by decide⟩).measurable_indicator
-        (S.dbar ⟨0, by decide⟩))
+      have hindEq_pos : ∀ d d' : δ, d = d' → indEq d d' = 1 := by
+        intro d d' hd
+        simp [indEq, hd]
+      have hindEq_neg : ∀ d d' : δ, d ≠ d' → indEq d d' = 0 := by
+        intro d d' hd
+        simp [indEq, hd]
+      have hm := (S.toPODTRSystem.dVar ⟨0, by decide⟩).measurable_indicator
+        (S.dbar ⟨0, by decide⟩) (measurableSet_singleton _)
+      have hfun : (S.toPODTRSystem.dVar ⟨0, by decide⟩).indicator
+            (S.dbar ⟨0, by decide⟩)
+          = fun ω => indEq (S.toPODTRSystem.factualD ⟨0, by decide⟩ ω)
+              (S.dbar ⟨0, by decide⟩) := by
+        funext ω
+        by_cases h : S.toPODTRSystem.factualD ⟨0, by decide⟩ ω
+            = S.dbar ⟨0, by decide⟩
+        · have h' : (S.toPODTRSystem.dVar ⟨0, by decide⟩).factual ω
+              = S.dbar ⟨0, by decide⟩ := h
+          rw [POVar.indicator_apply_eq_one _ h']
+          exact (hindEq_pos _ _ h).symm
+        · have h' : (S.toPODTRSystem.dVar ⟨0, by decide⟩).factual ω
+              ≠ S.dbar ⟨0, by decide⟩ := h
+          rw [POVar.indicator_apply_eq_zero _ h']
+          exact (hindEq_neg _ _ h).symm
+      exact hfun ▸ hm
     have hV1_meas : Measurable V1 := by
       dsimp [V1]
       exact hInd_meas.mul
@@ -544,8 +568,9 @@ lemma seqDR_remainder_identity
       simp [p1, V1, dμ1, S0, H1]
       ring))
   have hcrossProp_int : Integrable crossProp P.μ := by
-    simpa [crossProp, sub_eq_add_neg, add_assoc] using
+    have h : Integrable (fun ω => dμ0 ω + i10 ω - p0 ω - p1 ω) P.μ :=
       ((hdμ0_int.add hi10_int).sub hp0_int).sub hp1_int
+    simpa [crossProp, sub_eq_add_neg, add_assoc] using h
   have hcross_to_prop :
       ∫ ω, crossInd ω ∂P.μ = ∫ ω, crossProp ω ∂P.μ := by
     have hi0_prop : ∫ ω, i0 ω ∂P.μ = ∫ ω, p0 ω ∂P.μ := by

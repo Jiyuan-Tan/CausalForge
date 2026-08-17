@@ -74,13 +74,11 @@ lemma integral_Ioi_id_mul_stdNormalPDF (c : ℝ) :
     intro x
     dsimp [phi]
     have hpow : HasDerivAt (fun y : ℝ => -y ^ 2 / 2) (-x) x := by
-      have := ((hasDerivAt_pow 2 x).div_const 2).neg
+      have := ((hasDerivAt_pow 2 x).div_const 2).fun_neg
       simpa [neg_div, pow_one] using this.congr_deriv (by ring)
     have hcomp : HasDerivAt (fun y => Real.exp (-y ^ 2 / 2))
         (Real.exp (-x ^ 2 / 2) * (-x)) x := (Real.hasDerivAt_exp _).comp x hpow
-    have := hcomp.neg
-    convert this using 1
-    ring
+    exact hcomp.fun_neg.congr_deriv (by ring)
   have abs_le_exp_sq_div_four : ∀ x : ℝ, |x| ≤ Real.exp (x ^ 2 / 4) := by
     intro x
     have h1 : |x| ≤ 1 + x ^ 2 / 4 := by

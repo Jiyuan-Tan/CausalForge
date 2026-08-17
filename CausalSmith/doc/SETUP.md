@@ -14,7 +14,7 @@ environment variables — never hardcoded.
 | Tool | Purpose | Notes |
 |---|---|---|
 | [`elan`](https://github.com/leanprover/elan) + `lake` | Lean toolchain / build | Toolchain pinned by `lean-toolchain` (`leanprover/lean4:v4.29.0-rc3`). |
-| Node.js **≥ 20.20.2** | TypeScript pipeline runtime | Enforced by `tools/package.json` `engines`. Older node (e.g. system node 12) silently fails. |
+| Node.js **≥ 20.20.2** | TypeScript pipeline runtime | Floor from `tools/package.json` `engines`; 22.x verified. `source tools/scripts/node_env.sh` puts a satisfying install on PATH, locating nvm via `$NVM_DIR` rather than assuming `$HOME`. Older node (e.g. system node 12) silently fails. |
 | [`lean-lsp-mcp`](https://github.com/) on `PATH` | Lean type-checking for agents | Or point `leanLspMcpBinary` / `CAUSALSMITH_LEAN_LSP_MCP` at an absolute path. |
 | `codex` CLI (OpenAI) | Discovery + proof agents | Default models `gpt-5.x` (see "Models" below). |
 | `claude` CLI (Anthropic) | Reviewer / judge agents | Needs `ANTHROPIC_API_KEY`. |

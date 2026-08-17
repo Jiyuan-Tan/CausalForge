@@ -16,6 +16,13 @@ open scoped BigOperators
 namespace CausalSmith.Experimentation.RolloutChebyshev
 
 -- @node: chebyshev_eval_eq_lambda_average
+/-- Closed form for the Chebyshev polynomial outside its oscillation interval: at any point
+`x ≥ 1`, writing `λ = x + √(x² - 1)` for the associated growth factor, the degree-`n` Chebyshev
+polynomial satisfies `T_n(x) = (λⁿ + λ⁻ⁿ)/2`. Equivalently, setting `x = cosh a` gives
+`T_n(x) = cosh(n a)` and `λ = eᵃ`.
+
+This is the identity that turns the endpoint evaluation `T_β(2/q - 1)` appearing in the rollout
+minimax argument into an explicit exponential in the polynomial order `β`. -/
 lemma chebyshev_eval_eq_lambda_average (n : ℕ) (x : ℝ) (hx : 1 ≤ x) :
     (Polynomial.Chebyshev.T ℝ (n : ℤ)).eval x =
       ((x + Real.sqrt (x ^ 2 - 1)) ^ n + ((x + Real.sqrt (x ^ 2 - 1)) ^ n)⁻¹) / 2 := by
@@ -36,6 +43,12 @@ lemma chebyshev_eval_eq_lambda_average (n : ℕ) (x : ℝ) (hx : 1 ≤ x) :
           rw [hcast, Real.exp_nat_mul, hexp]
 
 -- @node: endpoint_lambda_mono
+/-- The endpoint growth factor is larger for tighter budgets: writing `λ(q) = x_q + √(x_q² - 1)`
+with `x_q = 2/q - 1`, one has `λ(q_max) ≤ λ(q)` whenever `0 < q ≤ q_max < 1`.
+
+Consequently the smallest growth factor over the low-budget range `q ∈ (0, q_max]` is the one at
+the cap `q_max`, which is what allows a single constant depending only on `q_max` to serve
+uniformly for every budget in that range. -/
 lemma endpoint_lambda_mono {q qmax : ℝ} (hq : 0 < q) (hqq : q ≤ qmax)
     (hqmax_lt : qmax < 1) :
     (2 / qmax - 1) + Real.sqrt ((2 / qmax - 1) ^ 2 - 1) ≤
@@ -68,6 +81,11 @@ lemma endpoint_lambda_mono {q qmax : ℝ} (hq : 0 < q) (hqq : q ≤ qmax)
   simpa [xq, xm, Real.exp_arcosh hxm_one, Real.exp_arcosh hxq_one] using hexp_le
 
 -- @node: chebyshev_lambda_average_add_one_le
+/-- Upper envelope for the endpoint value: for a growth factor `λ ≥ 1` and an order `n ≥ 1`,
+`(λⁿ + λ⁻ⁿ)/2 + 1 ≤ 2 λⁿ`.
+
+Combined with the closed form `T_n = (λⁿ + λ⁻ⁿ)/2` outside `[-1,1]`, this replaces the endpoint
+quantity `T_β(x_q) + 1` by the clean upper order `2 λ^β` used in the amplification upper bound. -/
 lemma chebyshev_lambda_average_add_one_le {lam : ℝ} (hlam : 1 ≤ lam) {n : ℕ}
     (_hn : 1 ≤ n) :
     (lam ^ n + (lam ^ n)⁻¹) / 2 + 1 ≤ 2 * lam ^ n := by
@@ -79,6 +97,12 @@ lemma chebyshev_lambda_average_add_one_le {lam : ℝ} (hlam : 1 ≤ lam) {n : �
   nlinarith
 
 -- @node: chebyshev_lambda_average_sub_one_ge
+/-- Matching lower envelope for the endpoint value, with a constant that depends only on a floor
+for the growth factor: if `λ ≥ λ₀ > 1` and the order satisfies `n ≥ 1`, then
+`(λⁿ + λ⁻ⁿ)/2 - 1 ≥ ½ (1 - λ₀⁻¹)² λⁿ`.
+
+Because the constant `½ (1 - λ₀⁻¹)²` involves only the floor `λ₀`, taking `λ₀ = λ(q_max)`
+supplies a single positive constant valid for every budget `q ∈ (0, q_max]`. -/
 lemma chebyshev_lambda_average_sub_one_ge {lam lam0 : ℝ} (h0 : 1 < lam0)
     (hge : lam0 ≤ lam) {n : ℕ} (hn : 1 ≤ n) :
     (lam ^ n + (lam ^ n)⁻¹) / 2 - 1 ≥

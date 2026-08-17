@@ -73,7 +73,7 @@ lemma collisionScale_memLp_for_witness
     · have hp : Measurable (fun target : TargetSample 𝒳 (N n) =>
           (target j, target l)) :=
         (measurable_pi_apply j).prodMk (measurable_pi_apply l)
-      simpa [Function.uncurry] using hkernel.comp hp
+      simpa [Function.uncurry] using hkernel.fun_comp hp
     · exact measurable_const
   have hmreal : 0 < (m : ℝ) := by exact_mod_cast hm
   have hcmreal : 0 < cminus / (m : ℝ) := div_pos hcminus hmreal

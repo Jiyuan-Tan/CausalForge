@@ -129,7 +129,7 @@ private lemma dgp_regimeTargetN_single_A (d : Bool) :
           (Regime.single (AIdx m g) (show obsValue (dgpSCM m g) (AIdx m g) from d)).target :=
         (Finset.mem_filter.mp hv).1
       have hv_single : v ∈ ({AIdx m g} : Finset (ObsIdx (dgpSCM m g))) := by
-        simpa [Regime.single] using hv_target
+        exact hv_target
       exact Finset.mem_singleton.mp hv_single
     subst v
     rw [dgp_AIdx_name (m := m) (g := g)] at hname
@@ -139,7 +139,7 @@ private lemma dgp_regimeTargetN_single_A (d : Bool) :
     subst D
     simp only [regimeTargetN, Finset.mem_image]
     refine ⟨AIdx m g, ?_, dgp_AIdx_name (m := m) (g := g)⟩
-    exact Finset.mem_filter.mpr ⟨by simp [Regime.single],
+    exact Finset.mem_filter.mpr ⟨Finset.mem_singleton_self (AIdx m g),
       by simpa [dgp_AIdx_name (m := m) (g := g), dgpSCM, wSWIGGraph]⟩
 
 private lemma dgp_factualX_eq_latentUn :
@@ -150,7 +150,7 @@ private lemma dgp_factualX_eq_latentUn :
   change (dgpBackdoor m g).xVar.equiv
       (inducedEval (dgpSCM m g) (dgpFixed m g) Regime.empty ℓ (XIdx m g)) =
     ℓ (iUn (C := C) m g)
-  rw [inducedEval_empty_eq_evalMap]
+  rw [inducedEval_empty_eq_evalMap (dgpSCM m g) (dgpFixed m g) ℓ (XIdx m g)]
   change (XEquiv m g)
       ((dgpSCM m g).evalMap (dgpFixed m g) ℓ
         ⟨SWIGNode.random WNode.Xc, by
@@ -181,7 +181,7 @@ private lemma dgp_factualD_eq_treatFun :
   change (dgpBackdoor m g).dVar.equiv
       (inducedEval (dgpSCM m g) (dgpFixed m g) Regime.empty ℓ (AIdx m g)) =
     treatFun (m (ℓ (iUn (C := C) m g))) (ℓ (iEa (C := C) m g))
-  rw [inducedEval_empty_eq_evalMap]
+  rw [inducedEval_empty_eq_evalMap (dgpSCM m g) (dgpFixed m g) ℓ (AIdx m g)]
   change (AEquiv m g)
       ((dgpSCM m g).evalMap (dgpFixed m g) ℓ
         ⟨SWIGNode.random WNode.A, by
@@ -215,7 +215,7 @@ private lemma dgp_factualY_eq_outFun :
       (treatFun (m (ℓ (iUn (C := C) m g))) (ℓ (iEa (C := C) m g)))
       (ℓ (iUn (C := C) m g))
       (ℓ (iEy (C := C) m g))
-  rw [inducedEval_empty_eq_evalMap]
+  rw [inducedEval_empty_eq_evalMap (dgpSCM m g) (dgpFixed m g) ℓ (YIdx m g)]
   change (YEquiv m g)
       ((dgpSCM m g).evalMap (dgpFixed m g) ℓ
         ⟨SWIGNode.random WNode.Y, by
@@ -343,19 +343,22 @@ private lemma dgp_YofD_eq_outFun (d : Bool) :
         (regimeTargetN_obs (dgpSCM m g) r) (regimeTargetN_notFixed (dgpSCM m g) r)
         (SWIGNode.random WNode.Y) ξ
         ⟨SWIGNode.random WNode.A, wParent_mem (show wEdge WNode.A WNode.Y from trivial)⟩ = d
-    rw [SCM.fixMonoParentMap_apply_random (Ω := WΩ C) (dgpSCM m g).toSWIGGraph
+    refine (SCM.fixMonoParentMap_apply_random (Ω := WΩ C) (dgpSCM m g).toSWIGGraph
       (regimeTargetN (dgpSCM m g) r) (regimeTargetN_obs (dgpSCM m g) r)
-      (regimeTargetN_notFixed (dgpSCM m g) r) (SWIGNode.random WNode.Y) WNode.A hDmem]
+      (regimeTargetN_notFixed (dgpSCM m g) r) (SWIGNode.random WNode.Y) WNode.A hDmem
+      ξ _).trans ?_
     dsimp [ξ]
-    rw [dif_neg]
-    · rw [dif_pos]
-      · change (combinedFixed (dgpSCM m g) (dgpFixed m g) r
-          ⟨SWIGNode.fixed WNode.A,
-            Finset.mem_union_right _ (Finset.mem_image.mpr ⟨WNode.A, hDmem, rfl⟩)⟩ : Bool) = d
-        rw [combinedFixed_new (dgpSCM m g) (dgpFixed m g) r
-          (AIdx m g) hAtgt WNode.A hDmem hAval]
-        simpa [r, Regime.single, AIdx]
-    · simp [M', SCM.fixSet, SCM.fixMono, dgpSCM, wSWIGGraph]
+    have hAf_unobs : SWIGNode.fixed WNode.A ∉ M'.unobserved := by
+      show SWIGNode.fixed WNode.A ∉ (dgpSCM m g).unobserved
+      simp [dgpSCM, wSWIGGraph]
+    have hAf_fixed : SWIGNode.fixed WNode.A ∈ M'.fixed :=
+      Finset.mem_union_right _ (Finset.mem_image.mpr ⟨WNode.A, hDmem, rfl⟩)
+    rw [dif_neg hAf_unobs, dif_pos hAf_fixed]
+    change (combinedFixed (dgpSCM m g) (dgpFixed m g) r
+      ⟨SWIGNode.fixed WNode.A, hAf_fixed⟩ : Bool) = d
+    rw [combinedFixed_new (dgpSCM m g) (dgpFixed m g) r
+      (AIdx m g) hAtgt WNode.A hDmem hAval]
+    rfl
   rw [hA]
   have hXeval : M'.evalMap (combinedFixed (dgpSCM m g) (dgpFixed m g) r) ℓ
       ⟨SWIGNode.random WNode.Xc, Finset.mem_union_left _ (by simp [M', dgpSCM, wSWIGGraph])⟩ =
@@ -370,15 +373,11 @@ private lemma dgp_YofD_eq_outFun (d : Bool) :
         (SWIGNode.random WNode.Xc) _
         ⟨SWIGNode.random WNode.Un, wParent_mem (show wEdge WNode.Un WNode.Xc from trivial)⟩ =
       ℓ (iUn (C := C) m g)
-    rw [SCM.fixMonoParentMap_apply_random_notMem (Ω := WΩ C) (dgpSCM m g).toSWIGGraph
+    refine (SCM.fixMonoParentMap_apply_random_notMem (Ω := WΩ C) (dgpSCM m g).toSWIGGraph
       (regimeTargetN (dgpSCM m g) r) (regimeTargetN_obs (dgpSCM m g) r)
       (regimeTargetN_notFixed (dgpSCM m g) r) (SWIGNode.random WNode.Xc)
-      _ WNode.Un]
-    · rw [dif_pos]
-      · rfl
-      · change SWIGNode.random WNode.Un ∈ M'.unobserved
-        simp [M', dgpSCM, wSWIGGraph]
-    · simpa [hTargetA]
+      _ WNode.Un (by simpa [hTargetA]) _).trans ?_
+    exact dif_pos (iUn (C := C) m g).property
   have hXnot : WNode.Xc ∉ regimeTargetN (dgpSCM m g) r := by
     simpa [hTargetA]
   have hX : parentVal (C := C)
@@ -391,16 +390,26 @@ private lemma dgp_YofD_eq_outFun (d : Bool) :
         (SWIGNode.random WNode.Y) ξ
         ⟨SWIGNode.random WNode.Xc, wParent_mem (show wEdge WNode.Xc WNode.Y from trivial)⟩ =
       ℓ (iUn (C := C) m g)
-    rw [SCM.fixMonoParentMap_apply_random_notMem (Ω := WΩ C) (dgpSCM m g).toSWIGGraph
+    refine (SCM.fixMonoParentMap_apply_random_notMem (Ω := WΩ C) (dgpSCM m g).toSWIGGraph
       (regimeTargetN (dgpSCM m g) r) (regimeTargetN_obs (dgpSCM m g) r)
       (regimeTargetN_notFixed (dgpSCM m g) r) (SWIGNode.random WNode.Y)
-      ξ WNode.Xc hXnot]
+      ξ WNode.Xc hXnot _).trans ?_
     dsimp [ξ]
-    rw [dif_neg]
-    · rw [dif_neg]
-      · simpa using hXeval
-      · simp [M', SCM.fixSet, SCM.fixMono, dgpSCM, wSWIGGraph]
-    · simp [M', SCM.fixSet, SCM.fixMono, dgpSCM, wSWIGGraph]
+    have hXc_unobs : SWIGNode.random WNode.Xc ∉ M'.unobserved := by
+      show SWIGNode.random WNode.Xc ∉ (dgpSCM m g).unobserved
+      simp [dgpSCM, wSWIGGraph]
+    have hXc_fixed : SWIGNode.random WNode.Xc ∉ M'.fixed := by
+      show SWIGNode.random WNode.Xc ∉
+        (dgpSCM m g).fixed ∪ (regimeTargetN (dgpSCM m g) r).image SWIGNode.fixed
+      intro hmem
+      rcases Finset.mem_union.mp hmem with h | h
+      · exact absurd h (by
+          show SWIGNode.random WNode.Xc ∉ (∅ : Finset (SWIGNode WNode))
+          simp)
+      · obtain ⟨D, -, hD⟩ := Finset.mem_image.mp h
+        simp at hD
+    rw [dif_neg hXc_unobs, dif_neg hXc_fixed]
+    exact hXeval
   rw [hX]
   have hEynot : WNode.Ey ∉ regimeTargetN (dgpSCM m g) r := by
     simpa [hTargetA]
@@ -414,12 +423,12 @@ private lemma dgp_YofD_eq_outFun (d : Bool) :
         (SWIGNode.random WNode.Y) ξ
         ⟨SWIGNode.random WNode.Ey, wParent_mem (show wEdge WNode.Ey WNode.Y from trivial)⟩ =
       ℓ (iEy (C := C) m g)
-    rw [SCM.fixMonoParentMap_apply_random_notMem (Ω := WΩ C) (dgpSCM m g).toSWIGGraph
+    refine (SCM.fixMonoParentMap_apply_random_notMem (Ω := WΩ C) (dgpSCM m g).toSWIGGraph
       (regimeTargetN (dgpSCM m g) r) (regimeTargetN_obs (dgpSCM m g) r)
       (regimeTargetN_notFixed (dgpSCM m g) r) (SWIGNode.random WNode.Y)
-      ξ WNode.Ey hEynot]
+      ξ WNode.Ey hEynot _).trans ?_
     dsimp [ξ]
-    rw [dif_pos]
+    exact dif_pos (iEy (C := C) m g).property
   rw [hEy]
 
 private lemma dgp_dIndicator_true_eq_threshold :
@@ -432,12 +441,29 @@ private lemma dgp_dIndicator_true_eq_threshold :
   change (((dgpBackdoor m g).factualD ⁻¹' {true}).indicator (fun _ => (1 : ℝ))) ℓ =
     (if (show ℝ from ℓ (iEa (C := C) m g)) ≤
         m (show C from ℓ (iUn (C := C) m g)) then (1 : ℝ) else 0)
-  rw [dgp_factualD_eq_treatFun (m := m) (g := g)]
-  unfold treatFun
+  have hval : (dgpBackdoor m g).factualD ℓ =
+      treatFun (m (ℓ (iUn (C := C) m g))) (ℓ (iEa (C := C) m g)) := by
+    rw [dgp_factualD_eq_treatFun (m := m) (g := g)]
   by_cases h : (show ℝ from ℓ (iEa (C := C) m g)) ≤
       m (show C from ℓ (iUn (C := C) m g))
-  · simp [h]
-  · simp [h]
+  · have hb : (dgpBackdoor m g).factualD ℓ = true := by
+      rw [hval]
+      unfold treatFun
+      simp only [decide_eq_true_eq]
+      exact h
+    rw [Set.indicator_of_mem
+      (show ℓ ∈ (dgpBackdoor m g).factualD ⁻¹' ({true} : Set Bool) from hb), if_pos h]
+  · have hb : (dgpBackdoor m g).factualD ℓ = false := by
+      rw [hval]
+      unfold treatFun
+      simp only [decide_eq_false_iff_not]
+      exact h
+    have hnot : ℓ ∉ (dgpBackdoor m g).factualD ⁻¹' ({true} : Set Bool) := by
+      intro hmem
+      have hmem' : (dgpBackdoor m g).factualD ℓ = true := hmem
+      rw [hb] at hmem'
+      exact Bool.noConfusion hmem'
+    rw [Set.indicator_of_notMem hnot, if_neg h]
 
 private lemma unifLaw_integral_Iic_indicator (t : ℝ) (ht : t ∈ Set.Icc (0 : ℝ) 1) :
     ∫ e, (if e ≤ t then (1 : ℝ) else 0) ∂unifLaw = t := by
@@ -451,7 +477,7 @@ private lemma unifLaw_integral_Iic_indicator (t : ℝ) (ht : t ∈ Set.Icc (0 : 
   rw [hfun]
   have hint : ∫ e, (Set.Iic t).indicator (fun _ : ℝ => (1 : ℝ)) e ∂unifLaw =
       unifLaw.real (Set.Iic t) := by
-    simpa only using (MeasureTheory.integral_indicator_one (μ := unifLaw) hs)
+    exact MeasureTheory.integral_indicator_one (μ := unifLaw) hs
   rw [hint]
   rw [MeasureTheory.measureReal_def]
   unfold unifLaw
@@ -516,7 +542,7 @@ private lemma dgp_indep_ea_un :
       Finset.Subtype.fintype (dgpSCM m g).unobserved :=
     Subsingleton.elim _ _
   rw [h_fintype] at hcomp
-  simpa using hcomp
+  exact hcomp
 
 private lemma dgp_integral_ea_threshold (x : C) (ht : m x ∈ Set.Icc (0 : ℝ) 1) :
     ∫ ℓ : SCM.LatentValues (dgpSCM m g),
@@ -591,7 +617,7 @@ private lemma dgp_condExp_ea_threshold_const (x : C) (ht : m x ∈ Set.Icc (0 : 
         =ᵐ[(dgpPO m g).μ]
           fun _ => ∫ ℓ : SCM.LatentValues (dgpSCM m g),
             (if (show ℝ from ℓ (iEa (C := C) m g)) ≤ m x then (1 : ℝ) else 0) ∂(dgpPO m g).μ := by
-    simpa [eInd, uFun, eFun] using hmain
+    exact hmain
   refine hmain'.trans ?_
   exact Filter.Eventually.of_forall fun ℓ => by
     dsimp [eInd, eFun, uFun]
@@ -645,7 +671,8 @@ private lemma dgp_condExp_ea_threshold_var (hv : ValidDGP m g) :
     exact Measurable.ite
       (measurableSet_le
         (show Measurable (fun ℓ : SCM.LatentValues (dgpSCM m g) =>
-          ℓ (iEa (C := C) m g)) from measurable_pi_apply (iEa (C := C) m g))
+          (show ℝ from ℓ (iEa (C := C) m g))) from
+            measurable_pi_apply (iEa (C := C) m g))
         measurable_const)
       measurable_const measurable_const
   have heth_int : ∀ x, Integrable (eth x) (dgpPO m g).μ := by
@@ -678,8 +705,7 @@ private lemma dgp_condExp_ea_threshold_var (hv : ValidDGP m g) :
     have hconst :
         (dgpPO m g).μ[eth x | MeasurableSpace.comap uFun inferInstance]
           =ᵐ[(dgpPO m g).μ] fun _ => m x := by
-      simpa [eth, eFun, uFun] using
-        dgp_condExp_ea_threshold_const (m := m) (g := g) x (hv.m_mem x)
+      exact dgp_condExp_ea_threshold_const (m := m) (g := g) x (hv.m_mem x)
     filter_upwards [hconst] with ℓ hℓ
     change cell x ℓ *
         (dgpPO m g).μ[eth x | MeasurableSpace.comap uFun inferInstance] ℓ =
@@ -784,17 +810,18 @@ private lemma dgp_indep_ey_dx :
     have htreat : Measurable
         (fun vals : (∀ u : {u // u ∈ T}, swigΩ (WΩ C) u.val) =>
           treatFun (m (show C from vals pUn)) (show ℝ from vals pEa)) := by
-      unfold treatFun
-      apply measurable_to_bool
-      simpa [Set.preimage, decide_eq_true_eq] using
-        measurableSet_le hEa ((measurable_of_finite m).comp hUn)
+      show Measurable
+        (fun vals : (∀ u : {u // u ∈ T}, swigΩ (WΩ C) u.val) =>
+          if (show ℝ from vals pEa) ≤ m (show C from vals pUn) then true else false)
+      refine Measurable.ite ?_ measurable_const measurable_const
+      exact measurableSet_le hEa ((measurable_of_finite m).comp hUn)
     exact htreat.prodMk hUn
   have hcomp := hbase.comp (measurable_pi_apply pEy) hright
   have h_fintype : Fintype.ofFinite {u // u ∈ (dgpSCM m g).unobserved} =
       Finset.Subtype.fintype (dgpSCM m g).unobserved :=
     Subsingleton.elim _ _
   rw [h_fintype] at hcomp
-  simpa [S, T, pEy, pUn, pEa, right] using hcomp
+  exact hcomp
 
 private lemma dgp_integral_ey_threshold (d : Bool) (x : C)
     (ht : g d x ∈ Set.Icc (0 : ℝ) 1) :
@@ -861,10 +888,12 @@ private lemma dgp_condExp_ey_threshold_const (d : Bool) (x : C)
     have htreat : Measurable
         (fun ℓ : SCM.LatentValues (dgpSCM m g) =>
           treatFun (m (ℓ (iUn (C := C) m g))) (ℓ (iEa (C := C) m g))) := by
-      unfold treatFun
-      apply measurable_to_bool
-      simpa [Set.preimage, decide_eq_true_eq] using
-        measurableSet_le hEa ((measurable_of_finite m).comp hUn)
+      show Measurable
+        (fun ℓ : SCM.LatentValues (dgpSCM m g) =>
+          if (show ℝ from ℓ (iEa (C := C) m g)) ≤
+            m (show C from ℓ (iUn (C := C) m g)) then true else false)
+      refine Measurable.ite ?_ measurable_const measurable_const
+      exact measurableSet_le hEa ((measurable_of_finite m).comp hUn)
     exact htreat.prodMk hUn
   have hle_dx : MeasurableSpace.comap dxFun inferInstance ≤
       (inferInstance : MeasurableSpace (SCM.LatentValues (dgpSCM m g))) :=
@@ -892,7 +921,7 @@ private lemma dgp_condExp_ey_threshold_const (d : Bool) (x : C)
         =ᵐ[(dgpPO m g).μ]
           fun _ => ∫ ℓ : SCM.LatentValues (dgpSCM m g),
             (if (show ℝ from ℓ (iEy (C := C) m g)) ≤ g d x then (1 : ℝ) else 0) ∂(dgpPO m g).μ := by
-    simpa [eInd, dxFun, eFun] using hmain
+    exact hmain
   refine hmain'.trans ?_
   exact Filter.Eventually.of_forall fun ℓ => by
     change (∫ ℓ : SCM.LatentValues (dgpSCM m g),
@@ -936,10 +965,12 @@ private lemma dgp_condExp_outcome_threshold_var (hv : ValidDGP m g) :
     have htreat : Measurable
         (fun ℓ : SCM.LatentValues (dgpSCM m g) =>
           treatFun (m (ℓ (iUn (C := C) m g))) (ℓ (iEa (C := C) m g))) := by
-      unfold treatFun
-      apply measurable_to_bool
-      simpa [Set.preimage, decide_eq_true_eq] using
-        measurableSet_le hEa ((measurable_of_finite m).comp hUn)
+      show Measurable
+        (fun ℓ : SCM.LatentValues (dgpSCM m g) =>
+          if (show ℝ from ℓ (iEa (C := C) m g)) ≤
+            m (show C from ℓ (iUn (C := C) m g)) then true else false)
+      refine Measurable.ite ?_ measurable_const measurable_const
+      exact measurableSet_le hEa ((measurable_of_finite m).comp hUn)
     exact htreat.prodMk hUn
   have hle_σDX :
       MeasurableSpace.comap dxFun inferInstance ≤
@@ -968,7 +999,8 @@ private lemma dgp_condExp_outcome_threshold_var (hv : ValidDGP m g) :
     exact Measurable.ite
       (measurableSet_le
         (show Measurable (fun ℓ : SCM.LatentValues (dgpSCM m g) =>
-          ℓ (iEy (C := C) m g)) from measurable_pi_apply (iEy (C := C) m g))
+          (show ℝ from ℓ (iEy (C := C) m g))) from
+            measurable_pi_apply (iEy (C := C) m g))
         measurable_const)
       measurable_const measurable_const
   have heth_int : ∀ p, Integrable (eth p) (dgpPO m g).μ := by
@@ -1001,8 +1033,7 @@ private lemma dgp_condExp_outcome_threshold_var (hv : ValidDGP m g) :
     have hconst :
         (dgpPO m g).μ[eth p | MeasurableSpace.comap dxFun inferInstance]
           =ᵐ[(dgpPO m g).μ] fun _ => g p.1 p.2 := by
-      simpa [eth, eFun, dxFun] using
-        dgp_condExp_ey_threshold_const (m := m) (g := g) p.1 p.2 (hv.g_mem p.1 p.2)
+      exact dgp_condExp_ey_threshold_const (m := m) (g := g) p.1 p.2 (hv.g_mem p.1 p.2)
     filter_upwards [hconst] with ℓ hℓ
     change cell p ℓ *
         (dgpPO m g).μ[eth p | MeasurableSpace.comap dxFun inferInstance] ℓ =
@@ -1072,7 +1103,7 @@ theorem dgp_unconfoundedness :
   let Z : Finset (SWIGNode WNode) := {SWIGNode.random WNode.Xc}
   let cVar : POVar (dgpPO m g) (ValuesOn Z (swigΩ (WΩ C))) :=
     ⟨XIdx m g, by
-      simpa [Z] using (dgpXSingletonEquiv (C := C))⟩
+      exact dgpXSingletonEquiv (C := C)⟩
   let c : RegimedVar (dgpPO m g) (ValuesOn Z (swigΩ (WΩ C))) :=
     RegimedVar.ofFactual cVar
   let aMap : ValuesOn X (swigΩ (WΩ C)) → Bool :=
@@ -1264,9 +1295,8 @@ theorem dgp_unconfoundedness :
               (RegimedVar.ofFactual (dgpBackdoor m g).xVar).value) inferInstance)
           inferInstance
           (RegimedVar.ofFactual (dgpBackdoor m g).xVar).value := by
-      simpa [Function.comp_assoc] using
-        ((SCM.measurable_singletonValue (α := swigΩ (WΩ C))
-          (v := SWIGNode.random WNode.Xc)).comp hsingleton_meas)
+      exact (SCM.measurable_singletonValue (α := swigΩ (WΩ C))
+        (v := SWIGNode.random WNode.Xc)).comp hsingleton_meas
     exact hx_meas.comap_le
 
 /-- The constructed treatment propensity equals the supplied propensity function
@@ -1487,7 +1517,7 @@ theorem dgp_P_X_eq_covLaw :
     change (dgpBackdoor m g).xVar.equiv
         (inducedEval (dgpSCM m g) (dgpFixed m g) Regime.empty ℓ (XIdx m g)) =
       ℓ iUn
-    rw [inducedEval_empty_eq_evalMap]
+    rw [inducedEval_empty_eq_evalMap (dgpSCM m g) (dgpFixed m g) ℓ (XIdx m g)]
     change (XEquiv m g)
         ((dgpSCM m g).evalMap (dgpFixed m g) ℓ
           ⟨SWIGNode.random WNode.Xc, by

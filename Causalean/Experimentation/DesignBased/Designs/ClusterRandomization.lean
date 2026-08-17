@@ -49,8 +49,9 @@ lemma clusterDesign_E_unitTreatInd (p : C → ℝ) (hp0 : ∀ c, 0 ≤ p c) (hp1
     (clus : U → C) (i : U) :
     (clusterDesign p hp0 hp1).E (unitTreatInd clus i) = p (clus i) := by
   simp only [clusterDesign]
-  simpa [unitTreatInd, treatInd] using
-    (bernoulliDesign_E_treatInd p hp0 hp1 (clus i) (fun b => if b then (1 : ℝ) else 0))
+  have h := bernoulliDesign_E_treatInd p hp0 hp1 (clus i) (fun b => if b then (1 : ℝ) else 0)
+  simp only [if_true, mul_one, Bool.false_eq_true, if_false, mul_zero, add_zero] at h
+  exact h
 
 /-- **Same-cluster joint treatment.** Two units in the same cluster are jointly treated with their
 shared cluster's probability — their treatments coincide. -/

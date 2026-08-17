@@ -17,11 +17,17 @@ noncomputable section
 def reverseCumCoordinates (t : CumVec ℂ) : CumVec ℂ :=
   fun r a => if a ≤ r then t r (r - a) else t r a
 
+/-- At a coordinate whose number of Y-copies does not exceed the cumulant order,
+the coordinate-reversed cumulant vector reproduces the original vector at the same
+order with the roles of the two observables interchanged: the entry of order r
+carrying a copies of Y is the original entry of order r carrying r − a copies. -/
 @[simp] lemma reverseCumCoordinates_apply_of_le (t : CumVec ℂ)
     {r a : ℕ} (ha : a ≤ r) :
     reverseCumCoordinates t r a = t r (r - a) := by
   simp [reverseCumCoordinates, ha]
 
+/-- Exchanging the two observable coordinates twice restores the original cumulant
+vector, so coordinate reversal is an involution of the cumulant space. -/
 @[simp] lemma reverseCumCoordinates_involutive (t : CumVec ℂ) :
     reverseCumCoordinates (reverseCumCoordinates t) = t := by
   funext r a
@@ -39,10 +45,15 @@ reverse parameter. -/
 def axisReverseParameter (m : ℕ) (theta : ParamSpace ℂ m) : ParamSpace ℂ m :=
   (theta.1, theta.2.1, fun j r => theta.2.2 (axisSourceReversal m j) r)
 
+/-- Exchanging the two fixed-axis source labels twice returns the original source
+label, so the axis reversal is an involution of the source index set. -/
 @[simp] lemma axisSourceReversal_involutive (m : ℕ) (j : Fin (m + 2)) :
     axisSourceReversal m (axisSourceReversal m j) = j := by
   exact Equiv.apply_symm_apply (axisSourceReversal m) j
 
+/-- Applying the axis reversal twice returns the original parameter point: the direct
+and latent slopes are never touched, and the source-weight families attached to the two
+fixed axes are exchanged back into place. -/
 @[simp] lemma axisReverseParameter_involutive (m : ℕ)
     (theta : ParamSpace ℂ m) :
     axisReverseParameter m (axisReverseParameter m theta) = theta := by
@@ -156,6 +167,9 @@ def reverseRetainedCumCoord {L : ℕ} (p : RetainedCumCoord L) :
     RetainedCumCoord L :=
   ⟨(p.1.1, ⟨p.1.1 - p.1.2.1, by omega⟩), p.2.1, Nat.sub_le _ _⟩
 
+/-- Reversing a retained cumulant coordinate twice gives back the original coordinate:
+at a fixed order r the position carrying a copies of Y is sent to the one carrying
+r − a copies, and back again. -/
 @[simp] lemma reverseRetainedCumCoord_involutive {L : ℕ}
     (p : RetainedCumCoord L) :
     reverseRetainedCumCoord (reverseRetainedCumCoord p) = p := by
@@ -171,6 +185,10 @@ def verticalContractionMinorPolynomial (m : ℕ) :
   MvPolynomial.rename reverseRetainedCumCoord
     (horizontalContractionMinorPolynomial m)
 
+/-- Evaluating the vertical contraction minor on the retained band of a cumulant vector
+gives the same number as evaluating the horizontal contraction minor on the retained band
+of the coordinate-reversed vector: the vertical minor is exactly the horizontal one read in
+the exchanged observable coordinates. -/
 lemma eval_verticalContractionMinorPolynomial (m : ℕ) (t : CumVec ℂ) :
     MvPolynomial.eval (restrictCumBand (2 * m + 2) t)
         (verticalContractionMinorPolynomial m) =
@@ -231,6 +249,9 @@ lemma verticalContractionMinorPolynomial_reverseWitness_ne_zero
     reverseCumulantMap_axisReverseParameter, reverseCumCoordinates_involutive]
   exact horizontalContractionMinorPolynomial_forwardWitness_ne_zero m hm
 
+/-- With at least one latent confounder the vertical contraction-minor polynomial is not the
+zero polynomial: the mirrored block-Vandermonde reverse parameter produces an observable
+vector at which it does not vanish. -/
 lemma verticalContractionMinorPolynomial_ne_zero (m : ℕ) (hm : 1 ≤ m) :
     verticalContractionMinorPolynomial m ≠ 0 := by
   intro hzero

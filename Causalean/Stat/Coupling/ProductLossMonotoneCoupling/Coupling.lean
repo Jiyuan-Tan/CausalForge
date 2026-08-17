@@ -102,7 +102,7 @@ theorem isCoupling_comonotoneCoupling (μ ν : Measure ℝ)
             rw [AEMeasurable.map_map_of_aemeasurable measurable_fst.aemeasurable
               (hμ.prodMk hν)]
       _ = μ := by
-            simpa using (quantile_map_uniform μ)
+            simpa [Function.comp_def] using (quantile_map_uniform μ)
   · unfold comonotoneCoupling
     calc
       (unifOI.map (fun u => (quantile μ u, quantile ν u))).map Prod.snd
@@ -110,7 +110,7 @@ theorem isCoupling_comonotoneCoupling (μ ν : Measure ℝ)
             rw [AEMeasurable.map_map_of_aemeasurable measurable_snd.aemeasurable
               (hμ.prodMk hν)]
       _ = ν := by
-            simpa using (quantile_map_uniform ν)
+            simpa [Function.comp_def] using (quantile_map_uniform ν)
 
 /-- The countermonotone coupling **is** a coupling of `(μ, ν)`. The first
 marginal is `μ` by the PIT; the second marginal is `unifOI.map (quantile ν ∘
@@ -136,7 +136,7 @@ theorem isCoupling_countermonotoneCoupling (μ ν : Measure ℝ)
             rw [AEMeasurable.map_map_of_aemeasurable measurable_fst.aemeasurable
               (hμ.prodMk hνr)]
       _ = μ := by
-            simpa using (quantile_map_uniform μ)
+            simpa [Function.comp_def] using (quantile_map_uniform μ)
   · unfold countermonotoneCoupling
     calc
       (unifOI.map (fun u => (quantile μ u, quantile ν (1 - u)))).map Prod.snd

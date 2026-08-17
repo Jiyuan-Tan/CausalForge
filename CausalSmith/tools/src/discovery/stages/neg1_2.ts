@@ -16,6 +16,7 @@ import { buildStage0_5RejectionContext } from "./neg0_5.js";
 import { runStageNeg1_2ProtoCore, protoCoreJsonPath } from "./neg1_2_author.js";
 import { formatNeg1EscalationContext, readNeg1EscalationLog } from "../stageNeg1_directive.js";
 import { laterStageEverRan } from "../../shared/resume_mode.js";
+import { legacyCrossBoundaryRewindGuard } from "./d0_cross_boundary_rewind.js";
 
 export const NEG1_PIVOT_BUDGET = (() => {
   const v = parseInt(process.env.CAUSALSMITH_NEG1_PIVOT_BUDGET ?? "", 10);
@@ -104,6 +105,15 @@ export async function runStageNeg1_2(args: {
   state: StateJson;
   deps: StageDeps;
 }): Promise<StageResult> {
+  const legacyRewindBlock = legacyCrossBoundaryRewindGuard(args.state);
+  if (legacyRewindBlock) {
+    return {
+      stage: "-1.2",
+      status: "checkpoint",
+      advance: false,
+      message: legacyRewindBlock,
+    };
+  }
   // Cold-start requires --propose. Resumes after a programmatic rewind
   // (e.g. Stage 0.5 boundary routing back to "-1.2") use the topic stored on
   // state.proposed_from. Without this fallback, --resume short-circuits the

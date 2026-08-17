@@ -459,4 +459,14 @@ such `L` exists.
 noncomputable def informationOrder (m : ℕ) : ℕ∞ :=
   sInf { L : ℕ∞ | ∃ L₀ : ℕ, L = (L₀ : ℕ∞) ∧ 2 ≤ L₀ ∧ separatesAtOrder m L₀ }
 
+/-- Provides a procedure that decides whether two causal directions are equal. -/
+add_decl_doc instDecidableEqDirection
+
+/-- Provides a procedure that decides whether two polynomial signs are equal. -/
+add_decl_doc instDecidableEqPolynomialSign
+
+/-- Provides a procedure that decides whether two variable blocks of the fiber decision
+problem are equal. -/
+add_decl_doc instDecidableEqFiberDecisionVariableBlock
+
 end CausalSmith.ExactID.EID_LingamDirectionMinOrderV1

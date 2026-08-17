@@ -1,0 +1,14 @@
+import Causalean.Stat.Minimax.CoordinatewiseOverlap
+
+/-!
+# Re-exported coordinatewise-overlap substrate
+
+The reusable result now lives in Causalean; this module keeps the accepted run’s
+original unqualified names as aliases.
+-/
+
+namespace CausalSmith.Stat.BddUniformLogPenalty
+
+export Causalean.Stat (compressedCoordinateLaw compressedCoordinateLaw_klDiv_le coordinatewiseSuccessProbability coordinateOverlap selectCoupledRaw coupledDecoderGood coupledGoodIndicator coupledDecoderGood_flip_exclusive coupledDecoderGood_count_le_half half_integral_abs_rnDeriv_sub_le_tvDist overlap_ge_exp_neg_klBudget prod_one_sub_le_exp_neg_sum prod_one_sub_le_exp_neg_card_mul tvDist_eq_zero_of_klBudget_nonpos card_mul_exp_neg_log_eq_rpow coordinateOverlap_product_le_of_nonnegative_kl ennreal_error_lower_bound_of_success_upper_bound coordinatewise_overlap_direct_product coordinatewise_overlap_direct_product_asymptotic)
+
+end CausalSmith.Stat.BddUniformLogPenalty

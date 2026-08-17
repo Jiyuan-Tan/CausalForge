@@ -52,7 +52,7 @@ noncomputable def depGraph_div_const
     exact measurable_pi_lambda ψ fun k => by
       have hk : Measurable (fun v : B → ℝ => v k) := measurable_pi_apply k
       simpa [ψ] using hk.div_const s
-  simpa only [φ, ψ, Function.comp] using h.comp hφ hψ
+  exact h.comp hφ hψ
 
 /-- Dependency-graph CLT wrapper when the linear variance floor holds at every index.
 The public theorem below removes this all-index convenience by shifting to a tail. -/
@@ -92,7 +92,7 @@ theorem bounded_degree_dependency_clt_of_variance_floor_all
   have hmeas : ∀ n i, Measurable (Xs n i) := fun n i => (Ds n).meas i
   have hdeg' : ∀ n i, ((Ds n).nbhd i).card ≤ Dmax := by
     intro n i
-    simpa [Ds, depGraph_div_const, DepGraph.nbhd] using hdeg n i
+    exact hdeg n i
   have hB_nonneg : ∀ n, 0 ≤ B n := by
     intro n
     have hc_sqrt : 0 < Real.sqrt c := Real.sqrt_pos.mpr hc
@@ -140,7 +140,7 @@ theorem bounded_degree_dependency_clt_of_variance_floor_all
     rw [hfun, integral_const_mul, hv n, Real.sq_sqrt hvn_pos.le]
     field_simp [hvn_pos.ne']
   have hcardR_tendsto : Tendsto cardR atTop atTop := by
-    simpa [cardR] using tendsto_natCast_atTop_atTop.comp hcard
+    exact tendsto_natCast_atTop_atTop.comp hcard
   have hsqrtcard : Tendsto (fun n => Real.sqrt (cardR n)) atTop atTop :=
     Real.tendsto_sqrt_atTop.comp hcardR_tendsto
   have hB0 : Tendsto B atTop (𝓝 0) := by

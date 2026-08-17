@@ -61,6 +61,10 @@ structure Observation (𝒳 : Type*) where
   A : Bool -- @realizes A(A:Bool ↔ {0,1} at type level)
   Y : ℝ -- @realizes Y(carrier ℝ; range [-1,1] via BoundedOutcome)
 
+/-- The σ-algebra on observations: a set of observations is measurable exactly when it
+is the preimage of a measurable set of covariate-treatment-outcome triples under the
+coordinate map. So a function of an observation is measurable precisely when it is
+measurable as a function of the triple. -/
 instance instMeasurableSpaceObservation : MeasurableSpace (Observation 𝒳) :=
   MeasurableSpace.comap (fun O : Observation 𝒳 => (O.X, O.A, O.Y)) inferInstance
 
@@ -489,8 +493,11 @@ noncomputable def rFeas (α γ a c : ℝ) : ℝ :=
   if γ = 0 then min (Aalpha α) c else min (rStar α γ) (gJoint α γ a c)
 
 -- @node: lem:feasible-set-compact
-/-- Compactness of the positive-`γ` feasible exponent set. -/
-private lemma feasibleSet_compact (γ : ℝ) (hγ : 0 < γ) :
+/-- The feasible box of schedule exponents is compact when the overlap exponent is positive.
+The set of pairs consisting of a clip exponent between zero and one half and a margin-window
+exponent between zero and the clip exponent divided by the overlap exponent is closed and
+bounded, hence compact. This is what allows the balance objective to attain its supremum. -/
+lemma feasibleSet_compact (γ : ℝ) (hγ : 0 < γ) :
     IsCompact
       ({st : ℝ × ℝ |
         0 ≤ st.1 ∧ st.1 ≤ 1 / 2 ∧ 0 ≤ st.2 ∧ st.2 ≤ st.1 / γ}) := by
@@ -521,8 +528,11 @@ private lemma feasibleSet_compact (γ : ℝ) (hγ : 0 < γ) :
   simpa [K] using hrect.of_isClosed_subset hclosed hsub
 
 -- @node: lem:feasible-maximizer-exists
-/-- The positive-`γ` feasible objective attains its `gJoint` supremum. -/
-private lemma feasibleMaximizer_exists (α γ a c : ℝ) (hγ : 0 < γ) :
+/-- The balance objective attains its supremum on the feasible box when the overlap exponent
+is positive: there is a pair of schedule exponents inside the box at which the objective
+equals the joint feasible exponent. Continuity of the objective on a nonempty compact set
+supplies the maximizer. -/
+lemma feasibleMaximizer_exists (α γ a c : ℝ) (hγ : 0 < γ) :
     ∃ st : ℝ × ℝ,
       0 ≤ st.1 ∧ st.1 ≤ 1 / 2 ∧ 0 ≤ st.2 ∧ st.2 ≤ st.1 / γ ∧
         feasiblePhi α γ a c st.1 st.2 = gJoint α γ a c := by
@@ -543,8 +553,12 @@ private lemma feasibleMaximizer_exists (α γ a c : ℝ) (hγ : 0 < γ) :
   simpa [gJoint, K, f] using hstmax.symm
 
 -- @node: lem:feasible-maximizer-spec
-/-- Specification of the epsilon-selected feasible maximizer. -/
-private lemma feasibleMaximizer_spec (α γ a c : ℝ) (hγ : 0 < γ) :
+/-- Defining property of the selected feasible maximizer. When the overlap exponent is
+positive, the chosen pair of schedule exponents lies in the feasible box — clip exponent
+between zero and one half, margin-window exponent between zero and the clip exponent divided
+by the overlap exponent — and the balance objective evaluated there equals the joint feasible
+exponent. This is the specification satisfied by the arbitrary choice of maximizer. -/
+lemma feasibleMaximizer_spec (α γ a c : ℝ) (hγ : 0 < γ) :
     0 ≤ (feasibleMaximizer α γ a c).1 ∧
       (feasibleMaximizer α γ a c).1 ≤ 1 / 2 ∧
       0 ≤ (feasibleMaximizer α γ a c).2 ∧
@@ -1360,6 +1374,8 @@ A measurable, uniformly bounded real function is integrable against any finite m
 This is the single copy used by the whole run (previously duplicated in `Helpers/ClipBias`
 and `T_minimax_lower`); it is a candidate for promotion to Causalean. -/
 
+/-- A measurable real function that is bounded in absolute value by a single constant is
+integrable against any finite measure. -/
 lemma integrable_of_measurable_bounded {α : Type*} [MeasurableSpace α]
     {μ : Measure α} [IsFiniteMeasure μ] {f : α → ℝ}
     (hfmeas : Measurable f) (hfbdd : ∃ M : ℝ, ∀ x, |f x| ≤ M) :

@@ -2,13 +2,28 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { initializeOrLoadState, nextStage, reconcilePaperStatus, runPipeline } from "../src/pipeline.js";
+import {
+  assertFStageDStoreCoherence,
+  initializeOrLoadState,
+  nextStage,
+  reconcilePaperStatus,
+  runPipeline,
+} from "../src/pipeline.js";
 import type { PipelineContext, StateJson } from "../src/types.js";
-import { canonicalLeanSubdir, pipelineLogPath } from "../src/paths.js";
+import { canonicalLeanSubdir, pipelineLogPath, statePath } from "../src/paths.js";
 import { createInitialState, loadState, saveState } from "../src/state.js";
+import { CoreSchema } from "../src/discovery/core/schema.js";
+import {
+  d05AcceptanceReceiptPath,
+  hasValidD05AcceptanceReceipt,
+  writeD05AcceptanceReceipt,
+} from "../src/discovery/stages/d0_acceptance.js";
+import { coreJsonPath } from "../src/discovery/stages/d0_core.js";
+import { protoCoreJsonPath } from "../src/discovery/stages/neg1_2_author.js";
 import {
   appendEscalationLog,
   saveWorkingState,
+  WORKING_STORE_FORMAT,
   workingPath,
 } from "../src/discovery/stages/d0_working.js";
 
@@ -194,6 +209,215 @@ describe("pipeline", () => {
     await expect(runPipeline(ctx, undefined, { startStage: "0.5" })).rejects.toThrow(
       /refusing --from-stage D0\.5: unconsumed D0 escalation entries/i,
     );
+  });
+
+  it("refuses forced F1 on the Aug-10 split store (state/proto v8, working/core v7) without dispatch or state mutation", async () => {
+    const repoRoot = await mkdtemp(path.join(os.tmpdir(), "causalsmith-f-boundary-split-"));
+    const qid = "stat_bdd_uniform_log_penalty";
+    const spec = "v1";
+    const ctx: PipelineContext = { repoRoot, qid, specialization: spec, resume: true, dryRun: true };
+    const makeCore = (claimVersion: number) => CoreSchema.parse({
+      qid,
+      specialization: spec,
+      cluster: "stat",
+      symbols: [],
+      assumptions: [],
+      definitions: [],
+      statements: [{
+        id: `thm:claim-v${claimVersion}`,
+        kind: "theorem",
+        statement: `claim authored in proposal v${claimVersion}`,
+        depends_on: [],
+        status: "to-prove",
+      }],
+      target_estimand: "boundary regression",
+      bibliography: [],
+    });
+    const state = createInitialState(qid);
+    state.stage_completed = "0.5";
+    state.proposed_from = {
+      topic: "uniform boundary log penalty",
+      novelty_target: "flagship",
+      pivot_budget_used: 0,
+      final_verdict: "ACCEPT",
+      proposal_path: protoCoreJsonPath(ctx),
+      novelty_justification: "fixture",
+      chosen_qid: qid,
+      chosen_specialization: spec,
+      current_angle_index: 0,
+      current_version: 8,
+      last_draft_version: 8,
+      last_draft_status: "completed",
+      iterations: [{ angle: 0, version: 8, mode: "revise", verdict: "ACCEPT" }],
+    };
+    await saveState(repoRoot, qid, spec, state);
+    await mkdir(path.dirname(protoCoreJsonPath(ctx)), { recursive: true });
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(makeCore(8)), "utf8");
+    await writeFile(coreJsonPath(ctx), JSON.stringify(makeCore(7)), "utf8");
+    await saveWorkingState(ctx, {
+      round: 39,
+      proposal_revision: "angle:0/version:7",
+      solved: {},
+      proposals: { statements: [], definitions: [], assumptions: [], coreEdits: [], proofs: [] },
+      required_core_edit_mandates: [],
+      store_format: WORKING_STORE_FORMAT,
+    });
+    const before = await readFile(statePath(repoRoot, qid, spec), "utf8");
+    let dispatches = 0;
+
+    await expect(runPipeline(ctx, async ({ stage }) => {
+      dispatches += 1;
+      return { stage, status: "checkpoint", message: "must not run" };
+    }, { startStage: "1" })).rejects.toThrow(
+      /split D revision \(state\/proto=angle:0\/version:8, d0_working=angle:0\/version:7\)/,
+    );
+
+    expect(dispatches).toBe(0);
+    expect(await readFile(statePath(repoRoot, qid, spec), "utf8")).toBe(before);
+
+    await expect(runPipeline(ctx, async ({ stage }) => {
+      dispatches += 1;
+      return { stage, status: "checkpoint", message: "must not run" };
+    })).rejects.toThrow(/split D revision/);
+    expect(dispatches).toBe(0);
+    expect(await readFile(statePath(repoRoot, qid, spec), "utf8")).toBe(before);
+  });
+
+  it("refuses F entry when neither proposal review nor typed-D0.5 receipt accepts the current revision", async () => {
+    const qid = "stat_unreviewed_f_boundary";
+    const ctx: PipelineContext = {
+      repoRoot: await mkdtemp(path.join(os.tmpdir(), "causalsmith-f-boundary-unreviewed-")),
+      qid,
+      specialization: "v1",
+      resume: true,
+      dryRun: true,
+    };
+    const state = createInitialState(qid);
+    state.stage_completed = "0.5";
+    state.proposed_from = {
+      topic: "fixture",
+      novelty_target: "field",
+      pivot_budget_used: 0,
+      final_verdict: null,
+      proposal_path: protoCoreJsonPath(ctx),
+      novelty_justification: "fixture",
+      chosen_qid: qid,
+      chosen_specialization: "v1",
+      current_angle_index: 0,
+      current_version: 8,
+      last_draft_version: 8,
+      last_draft_status: "completed",
+      iterations: [],
+    };
+
+    await expect(assertFStageDStoreCoherence(ctx, state, "1")).rejects.toThrow(
+      /no accepted d0_working store exists/,
+    );
+  });
+
+  it("lets a sanctioned rebase enter F after typed D0.5 passes without manufacturing a D-0.5 iteration", async () => {
+    const qid = "stat_rebased_d05_acceptance_receipt";
+    const ctx: PipelineContext = {
+      repoRoot: await mkdtemp(path.join(os.tmpdir(), "causalsmith-rebased-d05-receipt-")),
+      qid,
+      specialization: "v1",
+      resume: true,
+      dryRun: true,
+    };
+    const core = CoreSchema.parse({
+      qid,
+      specialization: "v1",
+      cluster: "stat",
+      symbols: [],
+      assumptions: [],
+      definitions: [],
+      statements: [],
+      target_estimand: "fixture",
+      bibliography: [],
+    });
+    const state = createInitialState(qid);
+    state.stage_completed = "0.5";
+    state.proposed_from = {
+      topic: "fixture",
+      novelty_target: "field",
+      pivot_budget_used: 0,
+      final_verdict: null,
+      proposal_path: protoCoreJsonPath(ctx),
+      novelty_justification: "fixture",
+      chosen_qid: qid,
+      chosen_specialization: "v1",
+      current_angle_index: 0,
+      current_version: 8,
+      last_draft_version: 8,
+      last_draft_status: "completed",
+      iterations: [],
+    };
+    await mkdir(path.dirname(protoCoreJsonPath(ctx)), { recursive: true });
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(core), "utf8");
+    await saveWorkingState(ctx, {
+      round: 40,
+      proposal_revision: "angle:0/version:8",
+      solved: {},
+      proposals: { statements: [], definitions: [], assumptions: [], coreEdits: [], proofs: [] },
+      required_core_edit_mandates: [],
+      store_format: WORKING_STORE_FORMAT,
+    });
+    await writeFile(coreJsonPath(ctx), JSON.stringify(core), "utf8");
+
+    await writeD05AcceptanceReceipt(ctx, state);
+    expect(await hasValidD05AcceptanceReceipt(ctx, state)).toBe(true);
+    await expect(assertFStageDStoreCoherence(ctx, state, "1")).resolves.toBeUndefined();
+  });
+
+  it("rejects stale, tampered, and forged typed-D0.5 receipts", async () => {
+    const qid = "stat_d05_acceptance_receipt_tamper";
+    const ctx: PipelineContext = {
+      repoRoot: await mkdtemp(path.join(os.tmpdir(), "causalsmith-d05-receipt-tamper-")),
+      qid,
+      specialization: "v1",
+      resume: true,
+      dryRun: true,
+    };
+    const state = createInitialState(qid);
+    state.stage_completed = "0.5";
+    state.proposed_from = {
+      topic: "fixture",
+      novelty_target: "field",
+      pivot_budget_used: 0,
+      final_verdict: null,
+      proposal_path: protoCoreJsonPath(ctx),
+      novelty_justification: "fixture",
+      chosen_qid: qid,
+      chosen_specialization: "v1",
+      current_angle_index: 0,
+      current_version: 8,
+    };
+    await mkdir(path.dirname(protoCoreJsonPath(ctx)), { recursive: true });
+    await writeFile(protoCoreJsonPath(ctx), "proto-v8", "utf8");
+    await saveWorkingState(ctx, {
+      round: 40,
+      proposal_revision: "angle:0/version:8",
+      solved: {},
+    });
+    await writeFile(coreJsonPath(ctx), "accepted-core", "utf8");
+
+    await writeD05AcceptanceReceipt(ctx, state);
+    expect(await hasValidD05AcceptanceReceipt(ctx, state)).toBe(true);
+
+    await writeFile(coreJsonPath(ctx), "tampered-after-acceptance", "utf8");
+    expect(await hasValidD05AcceptanceReceipt(ctx, state)).toBe(false);
+
+    await writeD05AcceptanceReceipt(ctx, state);
+    const staleState = structuredClone(state);
+    staleState.proposed_from!.current_version = 9;
+    expect(await hasValidD05AcceptanceReceipt(ctx, staleState)).toBe(false);
+    await expect(assertFStageDStoreCoherence(ctx, staleState, "1")).rejects.toThrow(/split D revision/);
+
+    const forged = JSON.parse(await readFile(d05AcceptanceReceiptPath(ctx), "utf8"));
+    forged.core_sha256 = "0".repeat(64);
+    await writeFile(d05AcceptanceReceiptPath(ctx), JSON.stringify(forged), "utf8");
+    expect(await hasValidD05AcceptanceReceipt(ctx, state)).toBe(false);
+    await expect(assertFStageDStoreCoherence(ctx, state, "1")).rejects.toThrow(/neither a current accepted/);
   });
 
   it("rechecks the directive cursor before an in-process D0-to-D0.5 transition", async () => {
@@ -398,6 +622,71 @@ describe("pipeline", () => {
       async ({ stage }) => ({ stage, status: "checkpoint", message: "must not run" }),
       { startStage: "-1.2" },
     )).rejects.toThrow(/authored but unreviewed/);
+  });
+
+  it("blocks a legacy untyped rewind before draftIncomplete can dispatch D-1.2", async () => {
+    const repoRoot = await mkdtemp(path.join(os.tmpdir(), "causalsmith-legacy-draft-incomplete-"));
+    const qid = "stat_legacy_draft_incomplete";
+    const spec = "v1";
+    const state = createInitialState(qid);
+    // Empty is a real legacy marker value, not absence. Truthiness-based guards
+    // used to let this exact state dispatch the stale proto.
+    state.flags.rewound_from_stage0 = "";
+    state.proposed_from = {
+      topic: "extension topic",
+      novelty_target: "field",
+      pivot_budget_used: 0,
+      final_verdict: "pending",
+      proposal_path: path.join(repoRoot, "missing-proto-core.json"),
+      novelty_justification: "test",
+      chosen_qid: qid,
+      chosen_specialization: spec,
+      current_angle_index: 0,
+      current_version: 2,
+      current_mode: "revise",
+    };
+    await saveState(repoRoot, qid, spec, state);
+    let dispatched = false;
+    await expect(runPipeline(
+      { repoRoot, qid, specialization: spec, resume: true, dryRun: true },
+      async ({ stage }) => {
+        dispatched = true;
+        return { stage, status: "checkpoint", message: "must not dispatch" };
+      },
+    )).rejects.toThrow(/legacy cross-boundary stage_0 rewind has no typed intent/);
+    expect(dispatched).toBe(false);
+  });
+
+  it("blocks a legacy untyped rewind before forced --from-stage D-1.2 dispatch", async () => {
+    const repoRoot = await mkdtemp(path.join(os.tmpdir(), "causalsmith-legacy-forced-draft-"));
+    const qid = "stat_legacy_forced_draft";
+    const spec = "v1";
+    const state = createInitialState(qid);
+    state.flags.rewound_from_stage0 = "pre-fix cross-boundary rewind";
+    state.proposed_from = {
+      topic: "replacement-or-extension unknown",
+      novelty_target: "field",
+      pivot_budget_used: 0,
+      final_verdict: "pending",
+      proposal_path: path.join(repoRoot, "proto-core.json"),
+      novelty_justification: "test",
+      chosen_qid: qid,
+      chosen_specialization: spec,
+      current_angle_index: 0,
+      current_version: 0,
+      current_mode: "revise",
+    };
+    await saveState(repoRoot, qid, spec, state);
+    let dispatched = false;
+    await expect(runPipeline(
+      { repoRoot, qid, specialization: spec, resume: true, dryRun: true },
+      async ({ stage }) => {
+        dispatched = true;
+        return { stage, status: "checkpoint", message: "must not dispatch" };
+      },
+      { startStage: "-1.2" },
+    )).rejects.toThrow(/legacy cross-boundary stage_0 rewind has no typed intent/);
+    expect(dispatched).toBe(false);
   });
 
   it("rejects cold start when the same state is already active", async () => {

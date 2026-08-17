@@ -117,7 +117,7 @@ theorem orderDegenerateNegligible_of_firstDegen [IsFiniteMeasure P]
       _ = ENNReal.ofReal ((C / ε ^ 2) / (n : ℝ)) := by
           exact congrArg ENNReal.ofReal (by ring)
   refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds hb_tendsto
-    (Eventually.of_forall (fun n => zero_le _)) hbound
+    (Eventually.of_forall (fun n => zero_le)) hbound
 
 end IIDSample
 

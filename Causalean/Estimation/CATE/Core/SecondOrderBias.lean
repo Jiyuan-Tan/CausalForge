@@ -243,7 +243,7 @@ theorem abs_integral_phiDiff_mul_le_product
     intro a
     have hmul : MemLp
         (fun x => (η.μ_fn a x - S.μ_val a x) * (η.e_fn x - S.e_val x)) 1 PX := by
-      simpa [mul_comm] using (hΔμ_memLp a).mul hΔe_memLp
+      exact hΔe_memLp.mul' (hΔμ_memLp a)
     exact hmul.integrable le_rfl
   have hbnd_int : Integrable bnd PX := by
     simp only [hbnd]

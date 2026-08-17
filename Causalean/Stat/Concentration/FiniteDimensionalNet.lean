@@ -44,7 +44,7 @@ lemma exists_internal_net_card_le (E : Type*)
   classical
   let ε : ℝ≥0 := ⟨v, hv.le⟩
   have hε : (ε : ℝ≥0∞) = ENNReal.ofReal v := by
-    simpa [ε] using ENNReal.coe_nnreal_eq ε
+    exact ENNReal.coe_nnreal_eq ε
   have hAball : A ⊆ closedBall (0 : E) 1 := fun x hx ↦ by
     simpa [mem_closedBall, dist_zero_right] using hA x hx
   obtain ⟨M, hM⟩ :

@@ -275,7 +275,9 @@ theorem Ybar_eq_Ybar0_late_on_S0_EL
   refine Finset.sum_congr rfl ?_
   intro t ht
   have htlt : (t : WithTop (Fin T)) < P.A e := by
-    simpa [S0_EL, Finset.mem_filter, AdoptionDate.lt] using ht
+    have h0 : AdoptionDate.lt (P.A e) t := by
+      simpa [S0_EL, Finset.mem_filter] using ht
+    exact h0
   exact hConsistency ℓ t (by
     simpa [AdoptionDate.lt] using lt_trans htlt h_lt)
 

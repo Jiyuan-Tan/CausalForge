@@ -143,11 +143,11 @@ lemma parentMap_observed (M : Causalean.SCM N Ω)
 noncomputable def evalObservedAux (M : Causalean.SCM N Ω)
     (s : FixedValues M) (ℓ : LatentValues M) (n : ℕ) :
     ∀ hn : n < M.observed.card, swigΩ Ω (M.observedAt ⟨n, hn⟩).val :=
-  Nat.strongRecOn'
-    (P := fun k => ∀ hk : k < M.observed.card, swigΩ Ω (M.observedAt ⟨k, hk⟩).val)
-    n
+  Nat.strongRec
+    (motive := fun k => ∀ hk : k < M.observed.card, swigΩ Ω (M.observedAt ⟨k, hk⟩).val)
     (fun k ih hk =>
       M.structFun (M.observedAt ⟨k, hk⟩) (fun w => parentMap M s ℓ hk ih w))
+    n
 
 /-- The auxiliary evaluator unfolds to its structural function applied to the parent tuple.
 
@@ -161,7 +161,7 @@ lemma evalObservedAux_eq (M : Causalean.SCM N Ω)
         (fun w => parentMap M s ℓ hn
           (fun m _ hm_card => evalObservedAux M s ℓ m hm_card) w) := by
   unfold evalObservedAux
-  rw [Nat.strongRecOn'_beta]
+  rw [Nat.strongRec_eq]
 
 -- ============================================================
 -- § 3. The evaluation map
@@ -267,8 +267,12 @@ private lemma evalObservedAux_eq_structFunAt
           · exact absurd hfx hfix
           · exact hob
         · exact absurd h2 huo
-      rw [parentMap_observed M s ℓ j.isLt _ w hobs,
-          evalMap_observed M s ℓ ⟨w.val, _⟩ hobs]
+      rw [parentMap_observed M s ℓ j.isLt _ w hobs]
+      -- `M.randomVars` is semireducible, so the `⟨w.val, _⟩` membership witness in the
+      -- goal (typed at `M.observed ∪ M.unobserved`) is not seen as well-typed by `rw`'s
+      -- keyed matching.  Closing at term level keeps the unfolding at default
+      -- transparency, where the two forms are definitionally equal.
+      exact (evalMap_observed M s ℓ ⟨w.val, Finset.mem_union_left _ hobs⟩ hobs).symm
 
 /-- Cast-navigation helper: given Fin indices `j`, `k` with `k = j` and the derived
     `.val`-level cast proof, the transported `evalObservedAux` at `k` equals the
@@ -329,7 +333,12 @@ lemma evalMap_observed_unfold (M : Causalean.SCM N Ω) (s : FixedValues M) (ℓ 
   intro j w hw
   subst hw
   -- `w` eliminated.  Goal mentions `M.observedAt j` only.
-  rw [evalMap_observed M s ℓ ⟨(M.observedAt j).val, _⟩ (M.observedAt j).property]
+  -- `rw` cannot key on `M.evalMap s ℓ ⟨_, _⟩` here: `M.randomVars` is semireducible, so
+  -- the membership witness (typed at `M.observed ∪ M.unobserved`) is not accepted at
+  -- `implicit` transparency.  Chain the rewrite at term level instead.
+  refine (evalMap_observed M s ℓ
+      ⟨(M.observedAt j).val, Finset.mem_union_left _ (M.observedAt j).property⟩
+      (M.observedAt j).property).trans ?_
   -- Apply the cast helper: the Fin index `M.observedIndex ⟨(M.observedAt j).val, _⟩`
   -- reduces to `j` via `observedIndex_observedAt` (after Subtype eta), and the cast
   -- proof is discharged via proof irrelevance inside the helper.

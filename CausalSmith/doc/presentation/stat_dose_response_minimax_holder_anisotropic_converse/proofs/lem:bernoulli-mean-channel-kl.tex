@@ -1,28 +1,95 @@
 \begin{proof}[Proof of \cref{obj:lem:bernoulli-mean-channel-kl}]
+Throughout, \(\mathrm{Bern}(r)\) denotes the two-point law on \(\{0,1\}\) with
+\[
+\mathrm{Bern}(r)(\{1\})=r,
+\qquad
+\mathrm{Bern}(r)(\{0\})=1-r .
+\]
 Set
 \[
-p=\frac{1+u/B}{2},\qquad q=\frac{1+v/B}{2}.
+p=\frac{1+u/B}{2},
+\qquad
+q=\frac{1+v/B}{2},
 \]
-Since \(B>0\), the assumptions \(|u|\le B/2\) and \(|v|\le B/2\) imply
+so that, by the definition of the channels in the statement,
 \[
-\frac14\le p\le \frac34,\qquad \frac14\le q\le \frac34 .
+Q_u(\{B\})=p,\quad Q_u(\{-B\})=1-p,
+\qquad
+Q_v(\{B\})=q,\quad Q_v(\{-B\})=1-q .
+\]
+
+\emph{Step 1 (the two success probabilities lie in the central band).} Since \(B>0\),
+\[
+p-\frac12=\frac{u}{2B},
+\qquad
+q-\frac12=\frac{v}{2B},
+\]
+and the hypotheses \(|u|\le B/2\) and \(|v|\le B/2\) give \(|u/(2B)|\le 1/4\) and \(|v/(2B)|\le 1/4\). Hence
+\[
+\frac14\le p\le \frac34,
+\qquad
+\frac14\le q\le \frac34 .
 \]
 % lean: bernoulli_mean_channel_kl
-The two-point law on \(\{-B,B\}\) with mean \(u\) is the image of the Bernoulli law with success probability \(p\) under the affine map \(x\mapsto 2Bx-B\), and similarly the law with mean \(v\) is the corresponding image of the Bernoulli law with success probability \(q\). Kullback--Leibler divergence is unchanged by applying this same measurable bijection to both laws. % lean: twoPointMean_eq_map_bernoulli
-% lean: klDiv_map_measurableEquiv
-Thus
+
+\emph{Step 2 (transport to the \(\{0,1\}\) parametrization).} Let
+\[
+T(x)=2Bx-B .
+\]
+Because \(B>0\), the map \(T\) is an affine bijection of the real line whose inverse is again
+affine, hence measurable, and \(T(0)=-B\), \(T(1)=B\). Consequently the image of
+\(\mathrm{Bern}(p)\) under \(T\) puts mass \(p\) at \(B\) and mass \(1-p\) at \(-B\), which is exactly
+\(Q_u\); the same computation with \(q\) in place of \(p\) gives \(Q_v\) as the image of
+\(\mathrm{Bern}(q)\):
+\[
+Q_u=\mathrm{Bern}(p)\circ T^{-1},
+\qquad
+Q_v=\mathrm{Bern}(q)\circ T^{-1}.
+\]
+% lean: twoPointMean_eq_map_bernoulli
+Applying one and the same measurable bijection to both arguments leaves the
+Kullback--Leibler divergence unchanged, since the Radon--Nikodym derivative of the two image
+laws is the transport of the original one along \(T\). Therefore
 \[
 \mathrm{KL}(Q_u,Q_v)
 =
-\mathrm{KL}(\mathrm{Bern}(p),\mathrm{Bern}(q)).
+\mathrm{KL}\bigl(\mathrm{Bern}(p),\mathrm{Bern}(q)\bigr).
 \]
-On the middle half of the unit interval, the Bernoulli KL bound gives
+% lean: klDiv_map_measurableEquiv
+
+\emph{Step 3 (quadratic band bound for the Bernoulli divergence).} For \(p,q\in(0,1)\) the
+divergence of two-point laws is the explicit sum
 \[
-\mathrm{KL}(\mathrm{Bern}(p),\mathrm{Bern}(q))
-\le 4(p-q)^2 .
+\mathrm{KL}\bigl(\mathrm{Bern}(p),\mathrm{Bern}(q)\bigr)
+=
+p\log\frac pq+(1-p)\log\frac{1-p}{1-q},
 \]
+and on the central band this is dominated by a quadratic:
+\[
+p\log\frac pq+(1-p)\log\frac{1-p}{1-q}
+\le
+4(p-q)^2
+\qquad\text{whenever }p,q\in\left[\tfrac14,\tfrac34\right].
+\]
+Indeed, writing \(D(t)=t\log t+(1-t)\log(1-t)\) for the negative Bernoulli entropy, the left-hand
+side is the Bregman remainder \(D(p)-D(q)-D'(q)(p-q)\), so the assertion is that the function
+\[
+H_q(t)=4(t-q)^2+D'(q)(t-q)+D(q)-D(t)
+\]
+is nonnegative at \(t=p\); and it is, because \(H_q(q)=0\), \(H_q'(q)=0\), and \(H_q\) is convex on
+\([1/4,3/4]\), its second derivative there being
+\[
+H_q''(t)=8-\frac1t-\frac1{1-t}\ \ge\ 8-4-4=0 ,
+\]
+so that \(q\) minimizes \(H_q\) over that interval.
 % lean: bernoulliLaw_klDiv_le_four_sq_sub
-Finally,
+
+\emph{Step 4 (back to the mean parametrization).} Step 1 supplies the band hypothesis needed in
+Step 3, and
+\[
+p-q=\frac{u-v}{2B},
+\]
+so
 \[
 4(p-q)^2
 =
@@ -32,5 +99,11 @@ Finally,
 \le
 \frac{2(u-v)^2}{B^2},
 \]
-which proves the claim. % lean: bernoulli_mean_channel_kl
+the last inequality because \((u-v)^2/B^2\ge 0\). Chaining Steps 2--4,
+\[
+\mathrm{KL}(Q_u,Q_v)
+\le
+\frac{2(u-v)^2}{B^2},
+\]
+which is the claim. % lean: bernoulli_mean_channel_kl_source
 \end{proof}

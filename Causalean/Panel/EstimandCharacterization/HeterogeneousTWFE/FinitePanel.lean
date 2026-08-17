@@ -279,7 +279,7 @@ interpretation, but the equivalence only needs `π_gt > 0` and `S_D > 0`. -/
 theorem treated_omega_neg_iff_Dtilde_neg
   (P : DCDHPanel G T) {g : G} {t : T} :
   P.omega g t < 0 ↔ P.Dtilde g t < 0 := by
-  simpa [omega] using normalized_weight_neg_iff_residual_neg
+  simpa [omega, SD] using normalized_weight_neg_iff_residual_neg
     (P.pi_pos g t) P.SD_pos
 
 /-- Dividing a positive cell mass times a residual by a positive normalizer
@@ -304,7 +304,7 @@ sign(ω_gt) = sign(D̃_gt) (.tex Theorem 2 / .md prop:po-estimand-dcdh-weights-s
 theorem treated_omega_pos_iff_Dtilde_pos
   (P : DCDHPanel G T) {g : G} {t : T} :
   0 < P.omega g t ↔ 0 < P.Dtilde g t := by
-  simpa [omega] using normalized_weight_pos_iff_residual_pos
+  simpa [omega, SD] using normalized_weight_pos_iff_residual_pos
     (P.pi_pos g t) P.SD_pos
 
 /-- A positive cell mass and positive normalizer make the normalized weight
@@ -330,7 +330,7 @@ for all three cases. -/
 theorem treated_omega_zero_iff_Dtilde_zero
   (P : DCDHPanel G T) {g : G} {t : T} :
   P.omega g t = 0 ↔ P.Dtilde g t = 0 := by
-  simpa [omega] using normalized_weight_zero_iff_residual_zero
+  simpa [omega, SD] using normalized_weight_zero_iff_residual_zero
     (P.pi_pos g t) P.SD_pos
 
 end DCDHPanel

@@ -64,4 +64,31 @@ describe("substrate state", () => {
     expect(loaded.layeringReviewStatus).toBe("legacy-unreviewed");
     expect(loaded.terminalMessage).toMatch(/audit the promoted modules separately/);
   });
+
+  it.each([
+    { phase: "halted", message: "Reached REVIEW_CAP (3)", kind: null },
+    { phase: "escalated", message: "Coordinate verify chain timed out", kind: "coordinate-timeout" },
+  ] as const)("never reopens terminal legacy phase $phase even when staging exists", async ({ phase, message, kind }) => {
+    const s = createInitialSubstrateState("x") as any;
+    s.phase = phase;
+    s.terminalMessage = message;
+    s.terminalRequirementHash = "deadbeef";
+    s.terminalEscalationKind = kind;
+    s.lastReview = {
+      pass: true, findings: "old pass",
+      checks: { generic: true, reusable: true, standard: true, not_vacuous: true, fulfills_goal: true, sorry_free: true },
+    };
+    delete s.layeringReviewStatus;
+    await mkdir(path.dirname(substrateStatePath(root, "x")), { recursive: true });
+    await mkdir(substrateLeanDir(root, "x"), { recursive: true });
+    await writeFile(substrateStatePath(root, "x"), JSON.stringify(s), "utf8");
+
+    const loaded = await loadSubstrateState(root, "x");
+    expect(loaded.phase).toBe(phase);
+    expect(loaded.terminalMessage).toContain(message);
+    expect(loaded.terminalRequirementHash).toBe("deadbeef");
+    expect(loaded.terminalEscalationKind).toBe(kind);
+    expect(loaded.layeringReviewStatus).toBe("legacy-unreviewed");
+    expect(loaded.lastReview?.pass).toBe(false);
+  });
 });

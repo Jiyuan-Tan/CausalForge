@@ -199,13 +199,13 @@ theorem plugIn_isAsymLinear
       have hcond_L2 :
           MemLp (P.μ[S.toPOBackdoorSystem.YofD d |
             S.toPOBackdoorSystem.sigmaX]) 2 P.μ :=
-        hYd_L2.condExp
+        hYd_L2.condExp one_le_two
       exact hcond_L2.ae_eq (S.μ_compat hA d)
     have hψ_comp_L2 : MemLp (fun ω => ψ_plugin S (S.factualZ ω)) 2 P.μ := by
       have hbase_L2 := (hμ_L2 true).sub (hμ_L2 false)
       have hconst_L2 : MemLp (fun _ : P.Ω => S.θ₀) 2 P.μ := memLp_const _
-      simpa [ψ_plugin, BackdoorEstimationSystem.factualZ, projX]
-        using hbase_L2.sub hconst_L2
+      simp only [ψ_plugin, BackdoorEstimationSystem.factualZ, projX]
+      exact hbase_L2.sub hconst_L2
     have hψ_L2 : MemLp (ψ_plugin S) 2 S.P_Z := by
       rw [BackdoorEstimationSystem.P_Z]
       exact (memLp_map_measure_iff hψ_meas.aestronglyMeasurable
@@ -282,7 +282,7 @@ theorem plugIn_isAsymLinear
               (mA.prod (inferInstance : MeasurableSpace γ))
               (fun p => (p.1, p.2.1)) :=
           Measurable.prodMk measurable_fst hx
-        simpa using (((h_mu_uncurry_foldA n true).comp hproj).sub
+        exact (((h_mu_uncurry_foldA n true).comp hproj).sub
           ((S.μ_meas true).comp hx)).sub
           (((h_mu_uncurry_foldA n false).comp hproj).sub
             ((S.μ_meas false).comp hx))
@@ -295,7 +295,7 @@ theorem plugIn_isAsymLinear
           have hcond_L2 :
               MemLp (P.μ[S.toPOBackdoorSystem.YofD a |
                 S.toPOBackdoorSystem.sigmaX]) 2 P.μ :=
-            hY_L2.condExp
+            hY_L2.condExp one_le_two
           have hcomp_L2 :
               MemLp (fun ω => S.μ_val a (S.toPOBackdoorSystem.factualX ω)) 2 P.μ :=
             hcond_L2.ae_eq (S.μ_compat hA a)
@@ -304,9 +304,8 @@ theorem plugIn_isAsymLinear
             S.toPOBackdoorSystem.measurable_factualX.aemeasurable).2 hcomp_L2
         intro n ω
         have hδ_memLp : MemLp (δ n ω) 2 S.P_X := by
-          simpa [δ] using
-            ((h_mu_memLp n ω true).sub (hμ_val_memLp true)).sub
-              ((h_mu_memLp n ω false).sub (hμ_val_memLp false))
+          exact ((h_mu_memLp n ω true).sub (hμ_val_memLp true)).sub
+            ((h_mu_memLp n ω false).sub (hμ_val_memLp false))
         have hmap : MemLp (δ n ω) 2 (S.P_Z.map (fun z : γ × Bool × ℝ => z.1)) := by
           simpa [BackdoorEstimationSystem.P_Z_map_projX_eq_P_X S] using hδ_memLp
         have hδ_aestrong :
@@ -315,8 +314,7 @@ theorem plugIn_isAsymLinear
         have hproj_ae :
             AEMeasurable (fun z : γ × Bool × ℝ => z.1) S.P_Z :=
           measurable_fst.aemeasurable
-        simpa [fZ, projX] using
-          (memLp_map_measure_iff hδ_aestrong hproj_ae).1 hmap
+        exact (memLp_map_measure_iff hδ_aestrong hproj_ae).1 hmap
       have hf_rate_one :
           IsLittleOp (fun n ω => (eLpNorm (fZ n ω) 2 S.P_Z).toReal)
             (fun _ => (1 : ℝ)) P.μ := by
@@ -328,7 +326,7 @@ theorem plugIn_isAsymLinear
           have hcond_L2 :
               MemLp (P.μ[S.toPOBackdoorSystem.YofD a |
                 S.toPOBackdoorSystem.sigmaX]) 2 P.μ :=
-            hY_L2.condExp
+            hY_L2.condExp one_le_two
           have hcomp_L2 :
               MemLp (fun ω => S.μ_val a (S.toPOBackdoorSystem.factualX ω)) 2 P.μ :=
             hcond_L2.ae_eq (S.μ_compat hA a)
@@ -343,9 +341,9 @@ theorem plugIn_isAsymLinear
           intro n ω
           let dμ : Bool → γ → ℝ := fun a x => μ_hat n ω a x - S.μ_val a x
           have hdμ_memLp : ∀ a, MemLp (dμ a) 2 S.P_X := fun a => by
-            simpa [dμ] using (h_mu_memLp n ω a).sub (hμ_val_memLp a)
+            exact (h_mu_memLp n ω a).sub (hμ_val_memLp a)
           have hδ_memLp : MemLp (δ n ω) 2 S.P_X := by
-            simpa [δ, dμ] using (hdμ_memLp true).sub (hdμ_memLp false)
+            exact (hdμ_memLp true).sub (hdμ_memLp false)
           have hδ_aestrong : AEStronglyMeasurable (δ n ω)
               (S.P_Z.map (fun z : γ × Bool × ℝ => z.1)) := by
             have hmap : MemLp (δ n ω) 2 (S.P_Z.map (fun z : γ × Bool × ℝ => z.1)) := by
@@ -362,8 +360,7 @@ theorem plugIn_isAsymLinear
             rw [toReal_eLpNorm hδ_memLp.aestronglyMeasurable,
               toReal_eLpNorm (hdμ_memLp true).aestronglyMeasurable,
               toReal_eLpNorm (hdμ_memLp false).aestronglyMeasurable]
-            simpa [δ, dμ] using
-              lpNorm_sub_le (hdμ_memLp true) (by norm_num : (1 : ENNReal) ≤ 2)
+            exact lpNorm_sub_le (hdμ_memLp true) (by norm_num : (1 : ENNReal) ≤ 2)
           have htrue_le : (eLpNorm (dμ true) 2 S.P_X).toReal ≤ Real.sqrt
               (∑ a : Bool, (eLpNorm (dμ a) 2 S.P_X).toReal ^ 2) := by
             apply Real.le_sqrt_of_sq_le
@@ -446,7 +443,7 @@ theorem plugIn_isAsymLinear
         have hcond_L2 :
             MemLp (P.μ[S.toPOBackdoorSystem.YofD a |
               S.toPOBackdoorSystem.sigmaX]) 2 P.μ :=
-          hY_L2.condExp
+          hY_L2.condExp one_le_two
         have hcomp_L2 :
             MemLp (fun ω => S.μ_val a (S.toPOBackdoorSystem.factualX ω)) 2 P.μ :=
           hcond_L2.ae_eq (S.μ_compat hA a)
@@ -457,9 +454,8 @@ theorem plugIn_isAsymLinear
           ∫ z, fZ n ω z ∂S.P_Z = ∫ x, δ n ω x ∂S.P_X := by
         intro n ω
         have hδ_memLp : MemLp (δ n ω) 2 S.P_X := by
-          simpa [δ] using
-            ((h_mu_memLp n ω true).sub (hμ_val_memLp true)).sub
-              ((h_mu_memLp n ω false).sub (hμ_val_memLp false))
+          exact ((h_mu_memLp n ω true).sub (hμ_val_memLp true)).sub
+            ((h_mu_memLp n ω false).sub (hμ_val_memLp false))
         have hδ_aestrong :
             AEStronglyMeasurable (δ n ω) (S.P_Z.map (fun z : γ × Bool × ℝ => z.1)) := by
           simpa [BackdoorEstimationSystem.P_Z_map_projX_eq_P_X S] using
@@ -509,7 +505,7 @@ theorem plugIn_isAsymLinear
           have hcond_L2 :
               MemLp (P.μ[S.toPOBackdoorSystem.YofD a |
                 S.toPOBackdoorSystem.sigmaX]) 2 P.μ :=
-            hY_L2.condExp
+            hY_L2.condExp one_le_two
           have hcomp_L2 :
               MemLp (fun ω => S.μ_val a (S.toPOBackdoorSystem.factualX ω)) 2 P.μ :=
             hcond_L2.ae_eq (S.μ_compat hA a)
@@ -518,9 +514,8 @@ theorem plugIn_isAsymLinear
             S.toPOBackdoorSystem.measurable_factualX.aemeasurable).2 hcomp_L2
         intro n ω
         have hδ_memLp : MemLp (δ n ω) 2 S.P_X := by
-          simpa [δ] using
-            ((h_mu_memLp n ω true).sub (hμ_val_memLp true)).sub
-              ((h_mu_memLp n ω false).sub (hμ_val_memLp false))
+          exact ((h_mu_memLp n ω true).sub (hμ_val_memLp true)).sub
+            ((h_mu_memLp n ω false).sub (hμ_val_memLp false))
         have hmap : MemLp (δ n ω) 2 (S.P_Z.map (fun z : γ × Bool × ℝ => z.1)) := by
           simpa [BackdoorEstimationSystem.P_Z_map_projX_eq_P_X S] using hδ_memLp
         have hδ_aestrong :
@@ -529,8 +524,7 @@ theorem plugIn_isAsymLinear
         have hproj_ae :
             AEMeasurable (fun z : γ × Bool × ℝ => z.1) S.P_Z :=
           measurable_fst.aemeasurable
-        simpa [fZ, projX] using
-          (memLp_map_measure_iff hδ_aestrong hproj_ae).1 hmap
+        exact (memLp_map_measure_iff hδ_aestrong hproj_ae).1 hmap
       have hf_rate :
           IsLittleOp (fun n ω => (eLpNorm (fZ n ω) 2 S.P_Z).toReal)
             (fun n => (n : ℝ) ^ (-(1 / 2 : ℝ))) P.μ := by
@@ -542,7 +536,7 @@ theorem plugIn_isAsymLinear
           have hcond_L2 :
               MemLp (P.μ[S.toPOBackdoorSystem.YofD a |
                 S.toPOBackdoorSystem.sigmaX]) 2 P.μ :=
-            hY_L2.condExp
+            hY_L2.condExp one_le_two
           have hcomp_L2 :
               MemLp (fun ω => S.μ_val a (S.toPOBackdoorSystem.factualX ω)) 2 P.μ :=
             hcond_L2.ae_eq (S.μ_compat hA a)
@@ -557,9 +551,9 @@ theorem plugIn_isAsymLinear
           intro n ω
           let dμ : Bool → γ → ℝ := fun a x => μ_hat n ω a x - S.μ_val a x
           have hdμ_memLp : ∀ a, MemLp (dμ a) 2 S.P_X := fun a => by
-            simpa [dμ] using (h_mu_memLp n ω a).sub (hμ_val_memLp a)
+            exact (h_mu_memLp n ω a).sub (hμ_val_memLp a)
           have hδ_memLp : MemLp (δ n ω) 2 S.P_X := by
-            simpa [δ, dμ] using (hdμ_memLp true).sub (hdμ_memLp false)
+            exact (hdμ_memLp true).sub (hdμ_memLp false)
           have hδ_aestrong : AEStronglyMeasurable (δ n ω)
               (S.P_Z.map (fun z : γ × Bool × ℝ => z.1)) := by
             have hmap : MemLp (δ n ω) 2 (S.P_Z.map (fun z : γ × Bool × ℝ => z.1)) := by
@@ -576,8 +570,7 @@ theorem plugIn_isAsymLinear
             rw [toReal_eLpNorm hδ_memLp.aestronglyMeasurable,
               toReal_eLpNorm (hdμ_memLp true).aestronglyMeasurable,
               toReal_eLpNorm (hdμ_memLp false).aestronglyMeasurable]
-            simpa [δ, dμ] using
-              lpNorm_sub_le (hdμ_memLp true) (by norm_num : (1 : ENNReal) ≤ 2)
+            exact lpNorm_sub_le (hdμ_memLp true) (by norm_num : (1 : ENNReal) ≤ 2)
           have htrue_le : (eLpNorm (dμ true) 2 S.P_X).toReal ≤ Real.sqrt
               (∑ a : Bool, (eLpNorm (dμ a) 2 S.P_X).toReal ^ 2) := by
             apply Real.le_sqrt_of_sq_le
@@ -649,7 +642,7 @@ theorem plugIn_isAsymLinear
         have hcond_L2 :
             MemLp (P.μ[S.toPOBackdoorSystem.YofD a |
               S.toPOBackdoorSystem.sigmaX]) 2 P.μ :=
-          hY_L2.condExp
+          hY_L2.condExp one_le_two
         have hcomp_L2 :
             MemLp (fun ω => S.μ_val a (S.toPOBackdoorSystem.factualX ω)) 2 P.μ :=
           hcond_L2.ae_eq (S.μ_compat hA a)
@@ -660,9 +653,8 @@ theorem plugIn_isAsymLinear
           ∫ z, fZ n ω z ∂S.P_Z = ∫ x, δ n ω x ∂S.P_X := by
         intro n ω
         have hδ_memLp : MemLp (δ n ω) 2 S.P_X := by
-          simpa [δ] using
-            ((h_mu_memLp n ω true).sub (hμ_val_memLp true)).sub
-              ((h_mu_memLp n ω false).sub (hμ_val_memLp false))
+          exact ((h_mu_memLp n ω true).sub (hμ_val_memLp true)).sub
+            ((h_mu_memLp n ω false).sub (hμ_val_memLp false))
         have hδ_aestrong :
             AEStronglyMeasurable (δ n ω) (S.P_Z.map (fun z : γ × Bool × ℝ => z.1)) := by
           simpa [BackdoorEstimationSystem.P_Z_map_projX_eq_P_X S] using

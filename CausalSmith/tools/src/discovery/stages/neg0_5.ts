@@ -35,6 +35,7 @@ import {
 } from "./neg0_5_decision.js";
 import { renderRefereeTemplate, runReferee } from "../framework/referee.js";
 import { parseRepairedModelJson } from "../core/core_io.js";
+import { legacyCrossBoundaryRewindGuard } from "./d0_cross_boundary_rewind.js";
 
 /**
  * Single-artifact review block for the D-0.5 reviewer (D0_CORE_REDESIGN.md §12.5).
@@ -135,6 +136,15 @@ export async function runStageNeg0_5(args: {
   state: StateJson;
   deps: StageDeps;
 }): Promise<StageResult> {
+  const legacyRewindBlock = legacyCrossBoundaryRewindGuard(args.state);
+  if (legacyRewindBlock) {
+    return {
+      stage: "-0.5",
+      status: "checkpoint",
+      advance: false,
+      message: legacyRewindBlock,
+    };
+  }
   // Stage -0.5 runs whenever the state carries a `proposed_from` record,
   // regardless of whether --propose was passed on this invocation. This makes
   // resumes after a programmatic rewind (e.g. Stage 0.5 boundary routing back

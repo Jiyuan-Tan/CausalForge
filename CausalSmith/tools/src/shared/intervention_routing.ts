@@ -18,6 +18,8 @@ import type { PipelineContext, Stage, StageResult, StateJson } from "../types.js
 // but the constants still live with Stage -1.2 until a neutral caps module exists.
 import { NEG1_PIVOT_BUDGET, NEG1_REVISE_CAP } from "../discovery/stages/neg1_2.js";
 import { STAGE2_REDIRECT_MAX } from "../formalization/loop_limits.js";
+import { STAGE_ORDER } from "../constants.js";
+import { proposalRevision } from "../discovery/stages/d0_working.js";
 
 export async function runReviewBoundary(args: {
   ctx: PipelineContext;
@@ -129,6 +131,7 @@ export async function runReviewBoundary(args: {
           proposed_action: reason,
           cite: undefined,
           action_kind: "re_derive",
+          d0_rewind_intent: er.escalate_route === "stage_0" ? "incremental_repair" : undefined,
         } as Intervention;
       })()
     : escalateReview
@@ -269,6 +272,12 @@ export function applyInterventionRoute(state: StateJson, intervention: Intervent
     delete pf.last_draft_status;
     state.stage_completed = "-1.2";
     state.flags.rewound_from_stage0_5_pivot = intervention.reason;
+    // A genuine angle pivot supersedes every earlier same-paper F→D rewind.
+    // Leaving either marker behind can make the new angle look like an
+    // ambiguous legacy rewind (or, conversely, let a retired typed receipt mask
+    // one) when it next visits D-1.2.
+    state.flags.rewound_from_stage0 = null;
+    delete state.flags.d0_cross_boundary_rewind;
     state.pending_sorries = [];
     resetFormalizationLoopCounters(state);
     // The new angle re-enters D0 and must not inherit the abandoned angle's spend.
@@ -310,6 +319,68 @@ export function applyInterventionRoute(state: StateJson, intervention: Intervent
         state.flags.stage0_budget_exhausted = `stage_0 route requested but -0.5 budget exhausted: ${intervention.reason}`;
         return false;
       }
+    }
+    const crossesAcceptedD0 = STAGE_ORDER.indexOf(state.stage_completed) >= STAGE_ORDER.indexOf("1");
+    if (crossesAcceptedD0) {
+      const intent = intervention.d0_rewind_intent;
+      const revision = proposalRevision(state);
+      if (!intent || !revision) {
+        state.flags.stage0_rewind_intent_required =
+          `ambiguous cross-boundary stage_0 rewind refused at ${state.stage_completed}: ` +
+          `declare d0_rewind_intent and preserve a typed proposal revision`;
+        return false;
+      }
+      delete state.flags.stage0_rewind_intent_required;
+      state.flags.d0_cross_boundary_rewind = {
+        intent,
+        status: intent === "replacement" ? "retired" : "pending",
+        source_stage: state.stage_completed,
+        source_revision: revision,
+        reason: intervention.proposed_restatement
+          ? [
+              intervention.proposed_action ?? intervention.reason,
+              `Required corrected statement: ${intervention.proposed_restatement.statement}`,
+              intervention.proposed_restatement.rationale
+                ? `Correction rationale: ${intervention.proposed_restatement.rationale}`
+                : "",
+            ].filter(Boolean).join("\n")
+          : intervention.proposed_action ?? intervention.reason,
+      };
+      state.pending_sorries = [];
+      resetFormalizationLoopCounters(state);
+      resetD0LoopCountersForRewind(state);
+      recordAutoBucketAAssumption(state, intervention);
+      if (intent === "incremental_repair") {
+        // D0 consumes the typed receipt into the escalation journal. Proto,
+        // working cursor, proposal version, and accepted D0-added nodes stay put.
+        state.stage_completed = "-0.5";
+        state.flags.rewound_from_stage0 = intervention.reason;
+        state.flags.statement_correction_directive = null;
+        if (intervention.action_kind === "theorem_split") {
+          state.flags.theorem_splits = (state.flags.theorem_splits ?? 0) + 1;
+        }
+        return true;
+      }
+      if (intent === "extension") {
+        // D-1.2 gets one additive authoring pass, but its first edit base is the
+        // accepted core (sealed by neg1_2_author), never the pre-D0 proto.
+        state.stage_completed = "-1.2";
+        state.flags.rewound_from_stage0 = intervention.reason;
+        const pf = state.proposed_from!;
+        delete pf.last_draft_version;
+        delete pf.last_draft_handoff;
+        delete pf.last_draft_status;
+        pf.current_mode = "revise";
+        if (intervention.action_kind === "theorem_split") {
+          state.flags.theorem_splits = (state.flags.theorem_splits ?? 0) + 1;
+        }
+        return true;
+      }
+      // Explicit replacement is the only cross-boundary route permitted to use
+      // the historical D-1.2 replacement behavior. Retire both F artifacts so
+      // the new paper cannot patch the old plan/scaffold on replay.
+      state.flags.f1_plan_retired = true;
+      state.flags.f2_scaffold_retired = true;
     }
     // stage_completed = "-1.2" so nextStage = "-0.5" (proposal re-review). Then
     // Stage -0.5's resume-aware producer-first guard fires only when the last
@@ -407,6 +478,54 @@ export function applyInterventionRoute(state: StateJson, intervention: Intervent
   return false;
 }
 
+export const INTERVENTION_JSON_SCHEMA = {
+  type: "object",
+  properties: {
+    route: {
+      enum: ["user", "stage_0", "stage_1", "stage_2", "stage_3_local", "stage_4d", "stage_neg1"],
+    },
+    reason: { type: "string", minLength: 1 },
+    proposed_action: { type: "string" },
+    cite: { type: "string" },
+    action_kind: {
+      enum: [
+        "theorem_split", "statement_correction", "re_derive", "patch", "local_patch",
+        "split_collapsed", "loop_guard", "user_required", "redraft_proposal",
+      ],
+    },
+    d0_rewind_intent: { enum: ["incremental_repair", "extension", "replacement"] },
+    proposed_restatement: {
+      type: "object",
+      properties: { statement: { type: "string" }, rationale: { type: "string" } },
+      required: ["statement"],
+      additionalProperties: false,
+    },
+    assumption_classifications: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          label: { type: "string" },
+          classification: { enum: ["latent", "caveat", "regime_defining"] },
+          one_line: { type: "string" },
+        },
+        required: ["label", "classification", "one_line"],
+        additionalProperties: false,
+      },
+    },
+    proposed_assumption: {
+      type: "object",
+      properties: {
+        label: { type: "string" }, statement: { type: "string" }, source: { type: "string" },
+      },
+      required: ["label", "statement"],
+      additionalProperties: false,
+    },
+  },
+  required: ["route", "reason"],
+  additionalProperties: false,
+} as const;
+
 export async function runIntervention(args: {
   ctx: PipelineContext;
   deps: StageDeps;
@@ -442,69 +561,7 @@ export async function runIntervention(args: {
     "",
     "RETURN ONLY THE JSON OBJECT MATCHING THE SCHEMA.",
   ].join("\n");
-  const jsonSchema = {
-    type: "object",
-    properties: {
-      // Keep these enums in sync with `interventionSchema` (judgment.ts) —
-      // this schema is enforced via constrained generation, so a route/kind
-      // missing here is one the judge physically cannot emit even when the
-      // prompt and the downstream handlers support it (stage_3_local was
-      // silently unreachable for that reason).
-      route: {
-        enum: ["user", "stage_0", "stage_1", "stage_2", "stage_3_local", "stage_4d", "stage_neg1"],
-      },
-      reason: { type: "string" },
-      proposed_action: { type: "string" },
-      cite: { type: "string" },
-      action_kind: {
-        enum: [
-          "theorem_split",
-          "statement_correction",
-          "re_derive",
-          "patch",
-          "local_patch",
-          "split_collapsed",
-          "loop_guard",
-          "user_required",
-          "redraft_proposal",
-        ],
-      },
-      proposed_restatement: {
-        type: "object",
-        properties: {
-          statement: { type: "string" },
-          rationale: { type: "string" },
-        },
-        required: ["statement"],
-        additionalProperties: false,
-      },
-      assumption_classifications: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            label: { type: "string" },
-            classification: { enum: ["latent", "caveat", "regime_defining"] },
-            one_line: { type: "string" },
-          },
-          required: ["label", "classification", "one_line"],
-          additionalProperties: false,
-        },
-      },
-      proposed_assumption: {
-        type: "object",
-        properties: {
-          label: { type: "string" },
-          statement: { type: "string" },
-          source: { type: "string" },
-        },
-        required: ["label", "statement"],
-        additionalProperties: false,
-      },
-    },
-    required: ["route", "reason"],
-    additionalProperties: false,
-  };
+  const jsonSchema = INTERVENTION_JSON_SCHEMA;
 
   // Try the judge up to 3 times. Empty stdout from the judge (observed
   // intermittently — see PIPELINE_NOTES) and other transient parse failures

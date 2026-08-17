@@ -128,12 +128,14 @@ lemma holder_taylor_remainder_of_lt {f : ℝ → ℝ} {M β lo hi t a : ℝ} {p 
   set n : ℕ := p - 1 with hn
   have hn_succ : n + 1 = p := by
     simpa [hn] using Nat.succ_pred_eq_of_pos hp_pos
-  have hcont : ContDiffOn ℝ (n + 1) f (Set.Icc t a) := by
-    change ContDiffOn ℝ (((n + 1 : ℕ) : WithTop ℕ∞)) f (Set.Icc t a)
+  have hcont : ContDiffOn ℝ (n + 1) f (Set.uIcc t a) := by
+    change ContDiffOn ℝ (((n + 1 : ℕ) : WithTop ℕ∞)) f (Set.uIcc t a)
     rw [hn_succ]
     exact hf.contDiffOn
   rcases taylor_mean_remainder_lagrange_iteratedDeriv (f := f) (x := a) (x₀ := t)
-      (n := n) hlt hcont with ⟨ξ, hξ, hrem⟩
+      (n := n) hlt.ne hcont with ⟨ξ, hξ, hrem⟩
+  rw [Set.uIcc_of_le hlt.le] at hrem
+  rw [Set.uIoo_of_le hlt.le] at hξ
   have hwithin_eq :
       taylorWithinEval f n (Set.Icc t a) t a = taylorPoly n f t a :=
     taylorWithinEval_eq_taylorPoly hf (by
@@ -244,12 +246,14 @@ theorem holder_taylor_remainder {f : ℝ → ℝ} {M β lo hi t a : ℝ}
       set n : ℕ := p - 1 with hn
       have hn_succ : n + 1 = p := by
         simpa [hn] using Nat.succ_pred_eq_of_pos hp_pos
-      have hcont : ContDiffOn ℝ (n + 1) f (Set.Icc t a) := by
-        change ContDiffOn ℝ (((n + 1 : ℕ) : WithTop ℕ∞)) f (Set.Icc t a)
+      have hcont : ContDiffOn ℝ (n + 1) f (Set.uIcc t a) := by
+        change ContDiffOn ℝ (((n + 1 : ℕ) : WithTop ℕ∞)) f (Set.uIcc t a)
         rw [hn_succ]
         exact hf.contDiffOn
       rcases taylor_mean_remainder_lagrange_iteratedDeriv (f := f) (x := a) (x₀ := t)
-          (n := n) hlt hcont with ⟨ξ, hξ, hrem⟩
+          (n := n) hlt.ne hcont with ⟨ξ, hξ, hrem⟩
+      rw [Set.uIcc_of_le hlt.le] at hrem
+      rw [Set.uIoo_of_le hlt.le] at hξ
       have hwithin_eq :
           taylorWithinEval f n (Set.Icc t a) t a = taylorPoly n f t a :=
         taylorWithinEval_eq_taylorPoly hf (by

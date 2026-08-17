@@ -61,8 +61,8 @@ private lemma event_mul_measureReal_le_integral
     filter_upwards [hf0] with x hx
     by_cases h : s ≤ f x <;> simp [Set.indicator, h, hx]
   have := integral_mono_ae hi hf hm
-  rw [integral_indicator hs, setIntegral_const, smul_eq_mul, measureReal_def] at this
-  simpa [mul_comm] using this
+  rw [integral_indicator hs, setIntegral_const, smul_eq_mul, mul_comm] at this
+  exact this
 
 /-- Honest randomized Le Cam reduction on the two output laws. -/
 lemma output_two_point_L1_lower (μ ν : Measure ℝ)

@@ -56,8 +56,6 @@ def retainedCumCoordEquivSigma (L : ℕ) :
   right_inv p := by
     rcases p with ⟨⟨k, hk⟩, ⟨a, ha⟩⟩
     simp
-    rw [Fin.heq_ext_iff]
-    omega
 
 /-- The finite retained band has the observable dimension `q_L`. -/
 theorem card_retainedCumCoord (L : ℕ) :
@@ -99,17 +97,25 @@ def extendCumBand (L : ℕ) (x : RetainedCumCoord L → ℂ) : CumVec ℂ :=
   fun r a => if h : 2 ≤ r ∧ r ≤ L ∧ a ≤ r then
     x ⟨(⟨r, by omega⟩, ⟨a, by omega⟩), h.1, h.2.2⟩ else 0
 
+/-- Padding a finite list of retained cumulant coordinates with zeros produces a full
+cumulant vector that is supported on the band: every cumulant of order below two or
+above the truncation order is zero. -/
 lemma extendCumBand_mem_band (L : ℕ) (x : RetainedCumCoord L → ℂ) :
     extendCumBand L x ∈ bandSupportedCumulants L := by
   intro r a h
   simp [extendCumBand, h]
 
+/-- Reading the retained coordinates back off a zero-padded cumulant vector returns the
+original finite list of coordinates: padding then restricting changes nothing. -/
 @[simp] lemma restrict_extendCumBand (L : ℕ) (x : RetainedCumCoord L → ℂ) :
     restrictCumBand L (extendCumBand L x) = x := by
   funext p
   have hrL : p.1.1 ≤ L := by omega
   simp [restrictCumBand, extendCumBand, p.2.1, hrL, p.2.2]
 
+/-- A cumulant vector that already vanishes outside the band loses nothing when it is cut
+down to its retained coordinates and padded back with zeros: the two operations recover the
+original vector exactly. -/
 lemma extend_restrictCumBand {L : ℕ} {t : CumVec ℂ}
     (ht : t ∈ bandSupportedCumulants L) :
     extendCumBand L (restrictCumBand L t) = t := by
@@ -141,6 +147,9 @@ private lemma retainedIndex_some (L : ℕ) (p : RetainedCumCoord L) :
   have hrL : p.1.1 ≤ L := by omega
   rw [retainedIndex?, dif_pos ⟨p.2.1, hrL, p.2.2⟩]
 
+/-- Restricting a polynomial in all cumulant variables to the band does not change the value
+it takes at any cumulant vector supported on the band: substituting zero for the off-band
+variables and then evaluating on the retained coordinates gives the original value. -/
 lemma eval_restrictCumPolynomial_of_band {L : ℕ} {t : CumVec ℂ}
     (ht : t ∈ bandSupportedCumulants L) (P : MvPolynomial (ℕ × ℕ) ℂ) :
     MvPolynomial.eval (restrictCumBand L t) (restrictCumPolynomial L P) =

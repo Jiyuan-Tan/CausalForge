@@ -72,7 +72,41 @@ export const MODEL_PLAN = {
   // it is given only the paper + plain tier definitions, NOT the flagship rubric
   // the producer optimizes against, so it reproduces the "paste into a fresh
   // model, does it actually clear the bar?" check. Emits an independent tier +
-  // salvageability; below-floor → re-derive (salvageable) or halt (not). `high`.
+  // salvageability; below-floor → re-derive (salvageable) or halt (not).
+  //
+  // On CODEX (gpt-5.6-sol/high), with hosted web search granted at the call site.
+  //
+  // This reverses a 2026-08-08 move to opus, and BOTH replays are real evidence pointing
+  // opposite ways — keep both when reading this. On
+  // exp_exposure_ambiguity_design_frontier the identical prompt graded `field` on 5/5
+  // codex runs and `subfield` on 3/3 opus runs with no within-model variance; the codex
+  // critiques NAMED every real defect (exponential saddle, surrogate-not-exact
+  // compression, dense-only separation) and then tiered as if none counted. On
+  // stat_bdd_uniform_log_penalty (2026-08-09) the same head-to-head ran the other way:
+  // opus returned `subfield`/7.0 on three grounds that are each checkably false against
+  // the comparator's own text — the estimator class it called "possibly narrower" is
+  // CTY's Theorem 6 class verbatim, the "missing" scope qualifier is in the same sentence
+  // as the claim, and the framing it called an over-claim says "lower-bound conjecture"
+  // and disclaims the matched frontier. Codex returned `field`/7.8, which survives the
+  // same check.
+  //
+  // What distinguishes the two cases is WHERE the verdict rests. Grading a note against
+  // PUBLISHED work turns on what a named source actually states, and a referee that
+  // cannot open it substitutes plausible guesses that then read as findings. That is an
+  // input problem, not a judgment one — so the fix is the web grant (`webSearch: true`,
+  // set in runGeneralReview), and the runner follows the model that reasons better once
+  // the source is reachable. Revisit on evidence, not on preference; the earlier
+  // over-crediting failure is not disproved, only outweighed here.
+  //
+  // NOTE the known bias direction of this referee class
+  // (internal/memory/feedback_topics_gate_over_rejects.md): it over-rejects complete
+  // work, and `decideTriageKill` is deliberately narrow because of it — keep it narrow.
+  //
+  // To revert to opus: set runner "claude" + MODELS.claudeMain, and restore an
+  // `unavailableFallback: { runner: "codex", model: MODELS.codexKernel, reasoningEffort:
+  // "high" }` plus its `claudeUnavailableFallback` pass-through in runGeneralReview. Both
+  // were dropped here rather than left inert, since a claude-only fallback under a codex
+  // primary is config that reads live and never fires.
   stage0_5_general: { runner: "codex", model: MODELS.codexKernel, effort: "high" },
   stage1: { runner: "claude", model: MODELS.claudeMain },
   // F1.5 review (via REVIEW_MODEL_PLAN["1.5"]): plan DEPTH + REUSE + statement-vs-math

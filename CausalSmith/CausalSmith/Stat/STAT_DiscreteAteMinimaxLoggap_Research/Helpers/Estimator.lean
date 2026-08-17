@@ -16,6 +16,8 @@ def splitIndices (n : ℕ) (j : Fin 2) : Finset (Fin n) :=
   else Finset.univ.filter (fun i => n / 2 ≤ i.1)
   -- @realizes I_0,I_1(first floor(n/2) indices and their complement)
 
+/-- The number of observations in one half of the deterministic sample split: the first
+half holds the floor of n over two indices, the second half the rest. -/
 def splitSize (n : ℕ) (j : Fin 2) : ℕ := (splitIndices n j).card
 
 /-- Count of one `(k,a,y)` atom in a split. -/
@@ -25,6 +27,8 @@ def splitCellCount {n d : ℕ} (sample : Fin n → Obs d) (j : Fin 2)
     (fun i => sample i = (k, finTwoEquiv a, finTwoEquiv y))).card
   -- @realizes N^{(j)}_{aky}(split cell count in Nat)
 
+/-- The number of observations in one half of the split whose category coordinate
+equals a given value. -/
 def splitCategoryCount {n d : ℕ} (sample : Fin n → Obs d) (j : Fin 2)
     (k : Fin d) : ℕ :=
   ((splitIndices n j).filter (fun i => (sample i).1 = k)).card
@@ -33,23 +37,44 @@ def splitCategoryCount {n d : ℕ} (sample : Fin n → Obs d) (j : Fin 2)
 abbrev MultiIndex := Cell →₀ ℕ
   -- @realizes r=(r_{ay})_{a,y\in\{0,1\}}(four-coordinate Nat multi-index)
 
+/-- The total degree of a four-cell exponent vector, that is, the sum of its four
+exponents. -/
 def multiDegree (r : MultiIndex) : ℕ := r.sum fun _ e => e
 
 /-- Falling factorial, reusing Mathlib's `Nat.descFactorial`. -/
 def fallingFactorial (z r : ℕ) : ℕ := z.descFactorial r
   -- @realizes z_r(z descending factorial r; z_0=1)
 
+/-- The logarithmic scale log(e n), equivalently one plus the natural logarithm of the
+sample size.  Every calibration in the estimator -- polynomial degree, bandwidth and
+heavy-cell threshold -- is measured against this scale. -/
 noncomputable def logScale (n : ℕ) : ℝ := Real.log (Real.exp 1 * n)
 
+/-- The numerical calibration constant A = 6, the base of the coefficient-envelope
+growth factor A raised to the polynomial degree that bounds the light-cell
+approximation. -/
 def calibrationA : ℕ := 6
+/-- The numerical calibration constant lambda_0 = 256 fixing the pilot heavy/light
+threshold: a category is declared heavy when its pilot-half count exceeds
+lambda_0 times log(e n). -/
 def lambda0 : ℕ := 256
+/-- The numerical calibration constant b_0 = 4096 fixing the light-cell bandwidth,
+which is b_0 times log(e n) divided by the size of the estimation half-sample. -/
 def b0 : ℕ := 4096
 
+/-- The numerical calibration constant eight times the natural logarithm of 27/4, one of
+the two reciprocal caps that define the degree-calibration constant alpha_0. -/
 noncomputable def dA : ℝ := 8 * Real.log (27 / 4)
 
+/-- The degree-calibration constant alpha_0: the smallest of one, the reciprocal of
+32 log 6, and the reciprocal of 256 times the constant d_A = 8 log(27/4).  It
+fixes the proportion of the logarithmic scale used as the approximation degree. -/
 noncomputable def alpha0 : ℝ :=
   min 1 (min (1 / (32 * Real.log 6)) (1 / (256 * dA)))
 
+/-- The calibrated approximation degree M(n): the larger of two and the integer part of
+alpha_0 times log(e n).  This is the degree of the polynomial that replaces the
+plug-in ratio on light cells. -/
 noncomputable def polynomialDegree (n : ℕ) : ℕ :=
   max 2 (Int.toNat ⌊alpha0 * logScale n⌋)
 
@@ -173,9 +198,14 @@ noncomputable def gCoefficient (M j : ℕ) : ℝ :=
 noncomputable def gPolynomial (M : ℕ) (x : ℝ) : ℝ :=
   ∑ j ∈ Finset.range (M - 1), gCoefficient M j * x ^ j
 
+/-- The formal linear polynomial in the four cell masses that returns the total mass of
+one treatment arm, namely the sum of that arm's outcome-zero and outcome-one
+coordinates. -/
 noncomputable def mvArmMass (a : Fin 2) : MvPolynomial Cell ℝ :=
   MvPolynomial.X (a, 0) + MvPolynomial.X (a, 1)
 
+/-- The formal linear polynomial in the four cell masses that returns the total mass of
+a category, namely the sum of the two arm masses. -/
 noncomputable def mvMass : MvPolynomial Cell ℝ := mvArmMass 0 + mvArmMass 1
 
 /-- The multivariate polynomial `P_{M,B}` whose coefficients are factorial-lifted. -/
@@ -186,6 +216,10 @@ noncomputable def cellApproxPolynomial (M : ℕ) (B : ℝ) : MvPolynomial Cell �
   MvPolynomial.C B⁻¹ * mvMass * MvPolynomial.X (1, 1) * evalG (mvArmMass 1) -
     MvPolynomial.C B⁻¹ * mvMass * MvPolynomial.X (0, 1) * evalG (mvArmMass 0)
 
+/-- The unbiased factorial-moment estimate of one monomial in the four cell masses of a
+category: the product over the four cells of the falling factorial of that cell's
+estimation-half count at the corresponding exponent, divided by the falling
+factorial of the estimation-half sample size at the total degree. -/
 noncomputable def factorialMonomial {n d : ℕ} (sample : Fin n → Obs d)
     (k : Fin d) (r : MultiIndex) : ℝ :=
   (∏ ay : Cell,
@@ -224,6 +258,8 @@ noncomputable def lightCells {n d : ℕ} (sample : Fin n → Obs d) : Finset (Fi
   if n < calibrationCutoff then ∅ else (heavyCells sample)ᶜ
 
 -- @realizes \(\widehat{\mathcal H}_n,\widehat{\mathcal L}_n\)(above the cutoff, heavy means pilot count exceeds lambda0 log(en))
+/-- At or above the calibration cutoff, the heavy set is exactly the set of categories
+whose pilot-half count exceeds lambda_0 times log(e n). -/
 lemma heavyCells_eq_filter_of_cutoff_le {n d : ℕ} (sample : Fin n → Obs d)
     (h : calibrationCutoff ≤ n) :
     heavyCells sample = Finset.univ.filter
@@ -231,6 +267,8 @@ lemma heavyCells_eq_filter_of_cutoff_le {n d : ℕ} (sample : Fin n → Obs d)
   simp [heavyCells, Nat.not_lt.mpr h]
 
 -- @realizes \(\widehat{\mathcal H}_n,\widehat{\mathcal L}_n\)(below the cutoff, every cell uses the heavy ratio branch)
+/-- Below the calibration cutoff every category is declared heavy, so the estimator
+reduces to the plug-in ratio branch on all of them. -/
 lemma heavyCells_eq_univ_of_lt_cutoff {n d : ℕ} (sample : Fin n → Obs d)
     (h : n < calibrationCutoff) : heavyCells sample = Finset.univ := by
   simp [heavyCells, h]
@@ -280,6 +318,9 @@ each category.  All dependence of the hybrid on the observed sample factors
 through this finite vector. -/
 abbrev HybridCountInput (d : ℕ) := Fin 2 × Fin d × Fin 2 × Fin 2
 
+/-- The finite vector of counts through which the hybrid estimator sees the sample: for
+each half of the split, each category, each treatment value and each outcome value,
+the number of matching observations, recorded as a real number. -/
 def hybridCountVector {n d : ℕ} (sample : Fin n → Obs d) :
     HybridCountInput d → ℝ :=
   fun i => (splitCellCount sample i.1 i.2.1 i.2.2.1 i.2.2.2 : ℝ)
@@ -341,6 +382,9 @@ def HybridEstimatorComputable : Prop :=
       ∀ sample : Fin n → Obs d,
         program.eval (hybridCountVector sample) = hybridEstimator sample
 
+/-- The sample average of a bounded one-observation score obtained by centering the
+binary outcome at one half, doubling it, and attaching the sign of the treatment
+indicator -- positive for treated units and negative for controls. -/
 noncomputable def centeredEstimator {n d : ℕ} (sample : Fin n → Obs d) : ℝ :=
   (n : ℝ)⁻¹ * ∑ i : Fin n,
     2 * (if (sample i).2.1 then 1 else -1) *

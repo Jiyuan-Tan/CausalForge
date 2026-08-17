@@ -107,7 +107,7 @@ lemma integral_log_div_eq {δ ε : ℝ} (hε : 0 < ε) (hεδ : ε ≤ δ) :
           · rw [intervalIntegral.integral_const]
             rw [integral_log]
             simp [smul_eq_mul]
-          · exact intervalIntegral.intervalIntegrable_const
+          · exact intervalIntegrable_const
           · exact intervalIntegral.intervalIntegrable_log'
     _ = δ - ε - ε * Real.log (δ / ε) := by
           rw [Real.log_div (ne_of_gt hδ) (ne_of_gt hε)]
@@ -150,7 +150,7 @@ lemma sqrtLog_integral_le {δ ε : ℝ} (hε : 0 < ε) (hεδ : ε ≤ δ) :
       · rw [intervalIntegral.integral_const]
         simp [smul_eq_mul]
       · exact intervalIntegrable_log_div hε hεδ
-      · exact intervalIntegral.intervalIntegrable_const
+      · exact intervalIntegrable_const
     rw [hint]
     linarith
   calc

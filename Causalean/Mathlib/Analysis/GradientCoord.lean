@@ -37,7 +37,7 @@ lemma gradient_coord_eq_deriv {ι : Type*} [Fintype ι] [DecidableEq ι]
       fderiv ℝ f x (EuclideanSpace.single a (1 : ℝ)) := by
     rw [real_inner_comm]
     exact inner_gradient_left (𝕜 := ℝ) (f := f) (x := x)
-      (y := EuclideanSpace.single a (1 : ℝ)) hf
+      (y := EuclideanSpace.single a (1 : ℝ))
   have hline :
       HasDerivAt
         (fun t : ℝ => x + t • EuclideanSpace.single a (1 : ℝ))

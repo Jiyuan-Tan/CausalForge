@@ -69,7 +69,8 @@ lemma eligibleOrder_le_kStar
       (fun q => bernoulliContrast p q ≠ 0)
   have heff : 1 ≤ effBeta β d := by simp [effBeta, hβ, hd]
   have hone : 1 ∈ exposed := by
-    simp [exposed, heff, bernoulliContrast]
+    simp only [exposed, Finset.mem_filter, Finset.mem_Icc]
+    exact ⟨⟨le_rfl, heff⟩, by norm_num [bernoulliContrast]⟩
   have hne : exposed.Nonempty := ⟨1, hone⟩
   have hrmem : r ∈ exposed := Finset.mem_filter.mpr ⟨hr, hrnz⟩
   rw [show kStar d β p = exposed.max' hne by
@@ -85,7 +86,8 @@ lemma blockLowerConst_spec
       ∀ r ∈ fixedExposed β p,
         blockLowerConst β p ≤ energyCoeff p r := by
   have hone : 1 ∈ fixedExposed β p := by
-    simp [fixedExposed, hβ, bernoulliContrast]
+    simp only [fixedExposed, Finset.mem_filter, Finset.mem_Icc]
+    exact ⟨⟨le_rfl, hβ⟩, by norm_num [bernoulliContrast]⟩
   have hne : (fixedExposed β p).Nonempty := ⟨1, hone⟩
   rw [blockLowerConst, dif_pos hne]
   constructor

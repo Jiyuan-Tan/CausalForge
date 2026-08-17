@@ -105,18 +105,21 @@ theorem secondMoment_zero (w h : ι → ℝ) (hmass : ∑ i, w i = 1) :
     secondMoment w h 0 = ∑ i, w i * (h i) ^ 2 := by
   simp [secondMoment, partition_zero w h hmass]
 
+/-- Each summand `s ↦ w i * exp (s * h i)` of the partition function is differentiable
+with derivative `w i * exp (t * h i) * h i`. -/
+private theorem hasDerivAt_expTerm {ι : Type*} (w h : ι → ℝ) (t : ℝ) (i : ι) :
+    HasDerivAt (fun s : ℝ => w i * Real.exp (s * h i))
+      (w i * Real.exp (t * h i) * h i) t := by
+  have hin : HasDerivAt (fun s : ℝ => s * h i) (h i) t := hasDerivAt_mul_const (h i)
+  have hexp : HasDerivAt (Real.exp ∘ fun s : ℝ => s * h i)
+      (Real.exp (t * h i) * h i) t := (Real.hasDerivAt_exp (t * h i)).comp t hin
+  exact (hexp.const_mul (w i)).congr_deriv (by ring)
+
 theorem hasDerivAt_partition (w h : ι → ℝ) (t : ℝ) :
     HasDerivAt (partition w h)
       (∑ i, w i * Real.exp (t * h i) * h i) t := by
   unfold partition
-  convert HasDerivAt.fun_sum (u := Finset.univ) (fun i _ => by
-    have hin : HasDerivAt (fun s : ℝ => s * h i) (h i) t := by
-      convert (hasDerivAt_id t).mul (hasDerivAt_const t (h i)) using 1 <;> ring
-    convert (((Real.hasDerivAt_exp (t * h i)).comp t hin).const_mul
-      (w i)) using 1 <;> ring) using 1
-  · apply Finset.sum_congr rfl
-    intro i _
-    ring
+  exact HasDerivAt.fun_sum (u := Finset.univ) fun i _ => hasDerivAt_expTerm w h t i
 
 theorem hasDerivAt_logPartition (w h : ι → ℝ) (t : ℝ)
     (hw : ∀ i, 0 ≤ w i) (hmass : ∑ i, w i = 1) :
@@ -127,27 +130,15 @@ theorem hasDerivAt_logPartition (w h : ι → ℝ) (t : ℝ)
 
 private theorem hasDerivAt_firstNumerator (w h : ι → ℝ) (t : ℝ) :
     HasDerivAt (fun s => ∑ i, w i * Real.exp (s * h i) * h i)
-      (∑ i, w i * Real.exp (t * h i) * (h i) ^ 2) t := by
-  convert HasDerivAt.fun_sum (u := Finset.univ) (fun i _ => by
-    have hin : HasDerivAt (fun s : ℝ => s * h i) (h i) t := by
-      convert (hasDerivAt_id t).mul (hasDerivAt_const t (h i)) using 1 <;> ring
-    convert ((((Real.hasDerivAt_exp (t * h i)).comp t hin).const_mul
-      (w i)).mul_const (h i)) using 1 <;> ring) using 1
-  · apply Finset.sum_congr rfl
-    intro i _
-    ring
+      (∑ i, w i * Real.exp (t * h i) * (h i) ^ 2) t :=
+  HasDerivAt.fun_sum (u := Finset.univ) fun i _ =>
+    ((hasDerivAt_expTerm w h t i).mul_const (h i)).congr_deriv (by ring)
 
 private theorem hasDerivAt_secondNumerator (w h : ι → ℝ) (t : ℝ) :
     HasDerivAt (fun s => ∑ i, w i * Real.exp (s * h i) * (h i) ^ 2)
-      (∑ i, w i * Real.exp (t * h i) * (h i) ^ 3) t := by
-  convert HasDerivAt.fun_sum (u := Finset.univ) (fun i _ => by
-    have hin : HasDerivAt (fun s : ℝ => s * h i) (h i) t := by
-      convert (hasDerivAt_id t).mul (hasDerivAt_const t (h i)) using 1 <;> ring
-    convert ((((Real.hasDerivAt_exp (t * h i)).comp t hin).const_mul
-      (w i)).mul_const ((h i) ^ 2)) using 1 <;> ring) using 1
-  · apply Finset.sum_congr rfl
-    intro i _
-    ring
+      (∑ i, w i * Real.exp (t * h i) * (h i) ^ 3) t :=
+  HasDerivAt.fun_sum (u := Finset.univ) fun i _ =>
+    ((hasDerivAt_expTerm w h t i).mul_const ((h i) ^ 2)).congr_deriv (by ring)
 
 theorem hasDerivAt_mean (w h : ι → ℝ) (t : ℝ)
     (hw : ∀ i, 0 ≤ w i) (hmass : ∑ i, w i = 1) :

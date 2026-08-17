@@ -240,15 +240,20 @@ private noncomputable def cfTuple : P.Ω → Bool × Bool × Bool × Bool :=
 
 private lemma indepFun_factualZ_cfTuple (hA : S.BaseAssumptions) :
     ProbabilityTheory.IndepFun S.factualZ S.cfTuple P.μ := by
-  let ψ : (∀ i : Fin 4, S.cfBundle.type i) → Bool × Bool × Bool × Bool :=
-    fun f => (f 0, f 1, f 2, f 3)
+  -- Instance search no longer unfolds `cfBundle` to see `n = 4`, so index the
+  -- bundle by its own `Fin cfBundle.n` and supply the coordinate
+  -- measurable-space family at index type `Fin 4` for the projections.
+  let _ : ∀ i : Fin 4, MeasurableSpace (S.cfBundle.type i) :=
+    fun i => S.cfBundle.inst i
+  let ψ : (∀ i : Fin S.cfBundle.n, S.cfBundle.type i) → Bool × Bool × Bool × Bool :=
+    fun f => (f (0 : Fin 4), f (1 : Fin 4), f (2 : Fin 4), f (3 : Fin 4))
   have hψmeas : Measurable ψ := by
-    refine Measurable.prodMk (measurable_pi_apply _) ?_
-    refine Measurable.prodMk (measurable_pi_apply _) ?_
-    exact Measurable.prodMk (measurable_pi_apply _) (measurable_pi_apply _)
-  have hcomp : ψ ∘ S.cfBundle.jointValue = S.cfTuple := rfl
+    refine Measurable.prodMk (measurable_pi_apply (0 : Fin 4)) ?_
+    refine Measurable.prodMk (measurable_pi_apply (1 : Fin 4)) ?_
+    exact Measurable.prodMk (measurable_pi_apply (2 : Fin 4))
+      (measurable_pi_apply (3 : Fin 4))
   have h := hA.exogeneity.project (ψ := ψ) hψmeas
-  simpa [hcomp] using h
+  exact h
 
 /-- The cf-cell as a preimage of `cfTuple`. -/
 private lemma cfCellEvent_eq_preimage (z d y : Bool) :

@@ -76,7 +76,7 @@ theorem probDofZ_eq_zero_of_not_preceq (As : S.Assumptions)
     simpa [DofZ] using this
   have hD2 : S.D2ofZ z ω = d 1 := by
     have := congrFun hω 1
-    simpa [DofZ] using this
+    exact this
   exact ⟨by simpa [hD1] using hgood.1, by simpa [hD2] using hgood.2⟩
 
 /-! ### Stage-2 inner ratio bridges
@@ -158,7 +158,10 @@ theorem innerCondY_mul_z1_indicator (As : S.Assumptions) (z : Fin 2 → Bool) :
       (S.z1Var.event (z 0))
     refine ⟨A, ?_, ?_⟩
     · dsimp [A]
-      measurability
+      have hsing : MeasurableSingletonClass (S.historyBundle2.type iZ1) :=
+        inferInstanceAs (MeasurableSingletonClass Bool)
+      exact measurable_pi_apply iZ1
+        (measurableSet_singleton (α := S.historyBundle2.type iZ1) (z 0))
     · ext ω
       rfl
   have hz2_int : Integrable (S.z2Var.indicator (z 1)) P.μ :=
@@ -236,7 +239,8 @@ theorem innerCondD_mul_z1_indicator (As : S.Assumptions) (z d : Fin 2 → Bool) 
   have hψ_meas : Measurable ψ := by
     change Measurable (fun f : (∀ i, (S.cfBundle2 (z 1)).type i) =>
       ({d 1} : Set Bool).indicator (fun _ => (1 : ℝ)) (f i1))
-    measurability
+    exact (measurable_const.indicator (measurableSet_singleton (d 1))).comp
+      (measurable_pi_apply i1)
   have hψ_eq :
       (fun ω => ψ ((S.cfBundle2 (z 1)).jointValue ω)) =
         S.d2ofZ2EqIndicator (z 1) (d 1) := by
@@ -303,7 +307,10 @@ theorem innerCondD_mul_z1_indicator (As : S.Assumptions) (z d : Fin 2 → Bool) 
       (S.z1Var.event (z 0))
     refine ⟨A, ?_, ?_⟩
     · dsimp [A]
-      measurability
+      have hsing : MeasurableSingletonClass (S.historyBundle2.type iZ1) :=
+        inferInstanceAs (MeasurableSingletonClass Bool)
+      exact measurable_pi_apply iZ1
+        (measurableSet_singleton (α := S.historyBundle2.type iZ1) (z 0))
     · ext ω
       rfl
   have hd1_sm : StronglyMeasurable[S.historyBundle2.sigma] (S.d1Var.indicator (d 0)) := by
@@ -317,7 +324,10 @@ theorem innerCondD_mul_z1_indicator (As : S.Assumptions) (z d : Fin 2 → Bool) 
       (S.d1Var.event (d 0))
     refine ⟨A, ?_, ?_⟩
     · dsimp [A]
-      measurability
+      have hsing : MeasurableSingletonClass (S.historyBundle2.type iD1) :=
+        inferInstanceAs (MeasurableSingletonClass Bool)
+      exact measurable_pi_apply iD1
+        (measurableSet_singleton (α := S.historyBundle2.type iD1) (d 0))
     · ext ω
       rfl
   let q : P.Ω → ℝ := fun ω => S.z1Var.indicator (z 0) ω * S.d1Var.indicator (d 0) ω
@@ -465,7 +475,10 @@ theorem cOutcome_bridge (As : S.Assumptions) (z d : Fin 2 → Bool)
       (S.z1Var.event (z 0))
     refine ⟨A, ?_, ?_⟩
     · dsimp [A]
-      measurability
+      have hsing : MeasurableSingletonClass (S.historyBundle2.type iZ1) :=
+        inferInstanceAs (MeasurableSingletonClass Bool)
+      exact measurable_pi_apply iZ1
+        (measurableSet_singleton (α := S.historyBundle2.type iZ1) (z 0))
     · ext ω
       rfl
   have hz1_YofZ2_int : Integrable (S.z1Var.indicator (z 0) * S.YofZ2 (z 1)) P.μ := by
@@ -614,7 +627,10 @@ theorem cCompliance_bridge (As : S.Assumptions) (z d : Fin 2 → Bool)
       (S.z1Var.event (z 0))
     refine ⟨A, ?_, ?_⟩
     · dsimp [A]
-      measurability
+      have hsing : MeasurableSingletonClass (S.historyBundle2.type iZ1) :=
+        inferInstanceAs (MeasurableSingletonClass Bool)
+      exact measurable_pi_apply iZ1
+        (measurableSet_singleton (α := S.historyBundle2.type iZ1) (z 0))
     · ext ω
       rfl
   have hd1_sm : StronglyMeasurable[S.historyBundle2.sigma] (S.d1Var.indicator (d 0)) := by
@@ -628,7 +644,10 @@ theorem cCompliance_bridge (As : S.Assumptions) (z d : Fin 2 → Bool)
       (S.d1Var.event (d 0))
     refine ⟨A, ?_, ?_⟩
     · dsimp [A]
-      measurability
+      have hsing : MeasurableSingletonClass (S.historyBundle2.type iD1h) :=
+        inferInstanceAs (MeasurableSingletonClass Bool)
+      exact measurable_pi_apply iD1h
+        (measurableSet_singleton (α := S.historyBundle2.type iD1h) (d 0))
     · ext ω
       rfl
   let q : P.Ω → ℝ := fun ω => S.z1Var.indicator (z 0) ω * S.d1Var.indicator (d 0) ω
@@ -693,7 +712,7 @@ theorem cCompliance_bridge (As : S.Assumptions) (z d : Fin 2 → Bool)
           simpa [hcD1] using hD1
         have hD2 : S.D2ofZ z ω = d 1 := by
           have := congrFun hD 1
-          simpa [DofZ] using this
+          exact this
         have hcfD2 : S.D2ofZ2 (z 1) ω = d 1 := by
           simpa [hcD2] using hD2
         have hiD1 : S.d1Var.indicator (d 0) ω = 1 :=

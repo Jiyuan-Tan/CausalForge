@@ -224,7 +224,7 @@ theorem IsBigOp.zero : IsBigOp (fun (_ : ℕ) (_ : Ω) => (0 : ℝ)) rn μ := by
   have hset : (fun n => μ {ω | (0 : ℝ) * rn n < |(0 : ℝ)|}) = fun _ => (0 : ENNReal) := by
     ext n; simp
   rw [hset, Filter.limsup_const]
-  exact zero_le _
+  exact zero_le
 
 /-- A finite sum of `O_p(rₙ)` sequences is `O_p(rₙ)` (same rate; constants absorb). -/
 theorem IsBigOp.finset_sum {ι : Type*} (s : Finset ι) {X : ι → ℕ → Ω → ℝ}
@@ -490,7 +490,7 @@ theorem isBigOp_centered_crossFit_sum
           (fun ω => (ω, W i ω)) :=
         hfirst.prodMk (hW_meas i)
       have hgi : Measurable (fun ω => g n ω (W i ω)) := by
-        simpa [Function.uncurry] using (hg_meas n).comp hpair
+        simpa [Function.uncurry, Function.comp_def] using (hg_meas n).comp hpair
       have hint_A : Measurable[m_A n] (fun ω => ∫ x, g n ω x ∂P) := by
         letI : MeasurableSpace Ω := m_A n
         have hsm : StronglyMeasurable (Function.uncurry (g n)) :=
@@ -583,7 +583,6 @@ theorem sampleMean_sub_sq_lintegral_le
         norm_num [Real.rpow_two]]
       rw [← Real.rpow_mul]
       · norm_num
-        exact Real.rpow_one (∫ x, f x ^ 2 ∂P)
       · exact integral_nonneg fun x => sq_nonneg _
     rw [hsq]
   have hscaled_bound :

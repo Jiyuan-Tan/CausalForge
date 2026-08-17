@@ -188,8 +188,9 @@ theorem relVar_of_NsqVar_tendsto
     with hVhdef
   -- `(N·Vr)² → c² ≠ 0`, and `N²·Vh → 0`, so the quotient tends to `0/c² = 0`.
   have hf : Tendsto (fun n => card n ^ 2 * Vh n / (card n * Vr n) ^ 2) atTop (𝓝 0) := by
-    have := hVN.div (hCond4.pow 2) (pow_ne_zero 2 hc.ne')
-    simpa using this
+    have h := hVN.div (hCond4.pow 2) (pow_ne_zero 2 hc.ne')
+    rw [zero_div] at h
+    exact h
   -- Eventually `N·Vr > 0`, hence `N ≠ 0` and `Vr ≠ 0`, giving the algebraic identity.
   have hpos : ∀ᶠ n in atTop, 0 < card n * Vr n :=
     hCond4.eventually (eventually_gt_nhds hc)

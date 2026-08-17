@@ -104,7 +104,9 @@ theorem supportMass_sum_eq_one {Ω : Type*} [MeasurableSpace Ω] {K : ℕ}
           intro k _hk
           exact ne_of_lt <| lt_of_le_of_lt (measure_mono (Set.subset_univ _))
             (by simp [IsProbabilityMeasure.measure_univ])))
-  simpa [supportMass, Set.preimage_univ] using hsum
+  have hpre : ∀ k : Fin K, ({ω | Z ω = k} : Set Ω) = Z ⁻¹' ({k} : Set (Fin K)) :=
+    fun _ => rfl
+  simpa [supportMass, hpre, Set.preimage_univ] using hsum
 
 /-- Construct the ordered finite first-stage index from a probability-space
 instrument `Z : Ω → Fin K` and a finite support score `dhat`.  The support
@@ -416,7 +418,8 @@ noncomputable def toFiniteIndex : FiniteIndex K where
   rho_sum_one := S.rho_sum_one
   dhat_mono := by
     intro k l hkl
-    simpa [fittedValue, projectionCoeff, gram] using S.fitted_mono hkl
+    simp only [fittedValue, projectionCoeff, gram]
+    exact S.fitted_mono hkl
 
 end MatrixFirstStage
 

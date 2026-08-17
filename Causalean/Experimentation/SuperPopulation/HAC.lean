@@ -48,7 +48,7 @@ theorem NetworkDependence.netHACVarEst_integral_eq_variance
     ∫ ω, F.netHACVarEst ω ∂μ = variance (depSum F.X) μ := by
   classical
   have hvar : variance (depSum F.X) μ = ∑ i, ∑ j, covariance (F.X i) (F.X j) μ := by
-    simpa [depSum] using variance_fun_sum hL2
+    exact variance_fun_sum hL2
   have hprod : ∀ i j, ∫ ω, F.X i ω * F.X j ω ∂μ = covariance (F.X i) (F.X j) μ := by
     intro i j
     rw [covariance_eq_sub (hL2 i) (hL2 j)]

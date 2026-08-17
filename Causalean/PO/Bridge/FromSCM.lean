@@ -137,6 +137,16 @@ lemma regimeTargetN_notFixed
   rcases hD with ⟨v, hv, rfl⟩
   exact (Finset.mem_filter.mp hv).2
 
+/-- The target-name translation of a disjoint union of regimes is the union of
+    the translations. Stated at the `ObsIdx M` index type so that the filter and
+    image steps stay type-correct. -/
+private lemma regimeTargetN_sqcup
+    (M : Causalean.SCM N Ω) (r₁ r₂ : Regime (ObsIdx M) (obsValue M))
+    (h : r₁.Disjoint r₂) :
+    regimeTargetN M (r₁.sqcup r₂ h) = regimeTargetN M r₁ ∪ regimeTargetN M r₂ := by
+  classical
+  simp only [regimeTargetN, Regime.sqcup_target, Finset.filter_union, Finset.image_union]
+
 -- ============================================================
 -- § 3. Combined background + regime assignment on the intervened fixed set
 -- ============================================================
@@ -437,14 +447,8 @@ theorem POSystem.ofSCM_consistency
     set X₁ := regimeTargetN M r₁ with hX₁_def
     set X₂ := regimeTargetN M r₂ with hX₂_def
     have hUnion : regimeTargetN M (r₁.sqcup r₂ h) = X₁ ∪ X₂ := by
-      simp only [hX₁_def, hX₂_def, regimeTargetN, Regime.sqcup_target]
-      simpa [Finset.image_union] using
-        congrArg (Finset.image (fun v : ObsIdx M =>
-          Classical.choose (M.observed_is_random v.val v.property)))
-          (Finset.filter_union (s₁ := r₁.target) (s₂ := r₂.target)
-            (p := fun v : ObsIdx M =>
-              SWIGNode.fixed (Classical.choose (M.observed_is_random v.val v.property)) ∉
-                M.fixed))
+      simp only [hX₁_def, hX₂_def]
+      exact regimeTargetN_sqcup M r₁ r₂ h
     have hObsU : ∀ D ∈ X₁ ∪ X₂, SWIGNode.random D ∈ M.observed :=
       fun D hD => regimeTargetN_obs M (r₁.sqcup r₂ h) D (hUnion ▸ hD)
     have hFixU : ∀ D ∈ X₁ ∪ X₂, SWIGNode.fixed D ∉ M.fixed :=
@@ -459,10 +463,11 @@ theorem POSystem.ofSCM_consistency
     change (M.fixSet (regimeTargetN M (r₁.sqcup r₂ h)) _ _).evalMap
         (combinedFixed M s (r₁.sqcup r₂ h)) ℓ ⟨v.val.val, _⟩ =
       (M.fixSet X₁ _ _).evalMap (combinedFixed M s r₁) ℓ ⟨v.val.val, _⟩
-    rw [evalMap_fixSet_transport M hUnion _ _ hObsU hFixU
+    refine Eq.trans (evalMap_fixSet_transport M hUnion _ _ hObsU hFixU
         (combinedFixed M s (r₁.sqcup r₂ h)) sxU
-        (fun _ _ _ => rfl)]
-    rotate_left
+        (fun _ _ _ => rfl) ℓ v.val.val ?_ ?_) ?_
+    · change v.val.val ∈ M.observed ∪ M.unobserved
+      exact Finset.mem_union_left _ v.val.property
     · change v.val.val ∈ M.observed ∪ M.unobserved
       exact Finset.mem_union_left _ v.val.property
     -- Disjointness of X₁ and X₂ in N
@@ -520,7 +525,7 @@ theorem POSystem.ofSCM_consistency
       -- transport via hDval : v'.val = .random D
       obtain ⟨v'val, v'prop⟩ := v'
       cases hDval
-      simpa using hThis
+      exact hThis
 
 end PO
 end Causalean

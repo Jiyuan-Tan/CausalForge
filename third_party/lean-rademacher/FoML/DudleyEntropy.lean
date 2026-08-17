@@ -409,7 +409,8 @@ private lemma empiricalDist_to_chainApprox_le_ej (c_pos : 0 < c) (h : TotallyBou
   empiricalDist S (F fh) (chainApprox c_pos h fh n) ≤ c / 2 ^ n := by
   by_cases h' : n = 0
   · simpa [chainApprox_def c_pos h, h'] using cs fh
-  · simpa [chainApprox_def c_pos h, h'] using (Classical.choose_spec (exists_cover_approximation c_pos h fh n)).2
+  · rw [chainApprox_def c_pos h, if_neg h']
+    exact empiricalDist_coverApprox_le_radius c_pos h fh n
 
 private lemma signed_sum_le_empiricalDist (f g : Z → ℝ) (σ : Signs m) :
   ∑ i : Fin m, (σ i : ℝ) * (f (S i) - g (S i)) ≤ m * empiricalDist S f g := by
@@ -734,8 +735,7 @@ private lemma massart_bound_for_increment_term (c_pos : 0 < c) (h' : TotallyBoun
       intro fh
       let hfh : {x // x ∈ incrementFinset c_pos h' n j} := by
         use chainApprox c_pos h' fh (j + 1) - chainApprox c_pos h' fh j
-        dsimp [incrementFinset, incrementSet]
-        simp
+        exact (finite_incrementSet c_pos h' n j).mem_toFinset.mpr ⟨fh, rfl⟩
       convert le_ciSup _ hfh
       · congr
       · use m * (c / 2 ^ (j.1 + 1) + c / 2 ^ j.1)
@@ -750,8 +750,7 @@ private lemma massart_bound_for_increment_term (c_pos : 0 < c) (h' : TotallyBoun
     · have : Nonempty {x // x ∈ incrementFinset c_pos h' n j} := by
         obtain ⟨fh⟩ := (by assumption : Nonempty ι)
         use chainApprox c_pos h' fh (j + 1) - chainApprox c_pos h' fh j
-        dsimp [incrementFinset, finite_incrementSet, incrementSet]
-        simp
+        exact (finite_incrementSet c_pos h' n j).mem_toFinset.mpr ⟨fh, rfl⟩
       apply ciSup_le
       rintro ⟨g, hg⟩
       dsimp [incrementFinset] at hg
@@ -877,8 +876,8 @@ private lemma partB_sum_bound_via_massart (c_pos : 0 < c) (h' : TotallyBounded (
         · simp; exact (Set.Finite.toFinset_nonempty (finite_incrementSet c_pos h' n j)).mp (incrementFinset_nonempty c_pos h' n j)
         · norm_cast
           apply (incrementFinset_card_le_incrementPairFinset_card c_pos h' n j).trans
-          convert (incrementPairFinset_card_le_cover_product_card c_pos h' n j n_pos)
-          <;> rw [coveringFinset_card]
+          refine (incrementPairFinset_card_le_cover_product_card c_pos h' n j n_pos).trans_eq ?_
+          simp only [coveringFinset_card]
       · obtain ⟨fh⟩ := (by assumption : Nonempty ι)
         have hem : ⟨chainApprox c_pos h' fh (j + 1), chainApprox c_pos h' fh j⟩ ∈ incrementPairFinset c_pos h' n j := by
           simp only [Set.Finite.mem_toFinset, incrementPairFinset, incrementPairSet]
@@ -1139,7 +1138,10 @@ private lemma combine_partA_partB (c_pos : 0 < c) (h' : TotallyBounded (Set.univ
           simp only [exists_const]
           refine mul_nonneg (by simp) (by apply ej_nonneg c_pos)
         · rw [<- mul_assoc]
-          rw [(by refine mul_inv_cancel₀ (by dsimp[Signs]; simp) : (Fintype.card (Signs m) : ℝ) * signs_card_inv m = 1)]
+          rw [(by
+            have : Nonempty (Signs m) := ⟨fun _ => ⟨1, by decide⟩⟩
+            exact mul_inv_cancel₀ (Nat.cast_ne_zero.mpr Fintype.card_ne_zero) :
+              (Fintype.card (Signs m) : ℝ) * signs_card_inv m = 1)]
           simp only [one_mul]
           refine Finset.sum_le_sum ?_
           intro i hi
@@ -1168,8 +1170,8 @@ private lemma combine_partA_partB (c_pos : 0 < c) (h' : TotallyBounded (Set.univ
         rw [<- mul_assoc]
         have t : signs_card_inv m * (Fintype.card (Signs m) : ℝ) = 1 := by
           refine inv_mul_cancel₀ ?_
-          dsimp [Signs]
-          simp
+          have : Nonempty (Signs m) := ⟨fun _ => ⟨1, by decide⟩⟩
+          exact Nat.cast_ne_zero.mpr Fintype.card_ne_zero
         rw [t]
         simp
   · apply le_of_le_of_eq
@@ -1422,18 +1424,10 @@ private lemma choose_dyadic_scale_for_epsilon (ε : ℝ) (ε_pos : 0 < ε) (c_ε
         norm_cast at hm2
         apply lt_of_lt_of_le r0
         norm_cast
-      simp at r1
-      have r2 : (2 ^ 1 : ℝ) < 2 ^ (m0 + 1) := by
-        norm_num
-        exact r1
-      have r3 : (1 : ℝ) < (m0 + 1) := by
-        norm_cast
-        norm_cast at r2
-        rw [<- Nat.pow_lt_pow_iff_right]
-        exact r2
-        norm_cast
-      norm_cast at r3
-      linarith
+      rcases Nat.eq_zero_or_pos m0 with h0 | h0
+      · rw [h0] at r1
+        norm_num at r1
+      · exact h0
     have p0 : ε < c / 2 ^ (↑m0) := by
       have htmp := mul_lt_mul_of_pos_right hm1 ε_pos
       have htmp_mul : ε * 2 ^ (↑m0) < c := by

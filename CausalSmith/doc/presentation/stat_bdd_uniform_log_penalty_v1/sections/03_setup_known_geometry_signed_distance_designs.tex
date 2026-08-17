@@ -1,0 +1,304 @@
+\section{Setup: Known-Geometry Signed-Distance Designs}
+
+The second experiment keeps the boundary geometry available to the rule and records which side of the interface each nearby observation occupies. This is the setting in which local-polynomial methods use distance as a one-dimensional coordinate while preserving the sign induced by treatment assignment, as in boundary regression designs developed by \citet{CattaneoTitiunikYu2026Distance}. We first fix the assignment, interface, basis, and coordinate conventions that underlie the signed-distance reduction.
+
+\begin{definitionv}{synth_4}[Assignment regions $\mathcal A_{t,P}$]
+We say $\mathcal A_{t,P}$ is the arm-$t$ assignment region of $P$, for $t\in\{0,1\}$, when $\mathcal A_{0,P}$ and $\mathcal A_{1,P}$ are Borel subsets of $\mathcal X_P$ satisfying $\mathcal A_{0,P}\cup\mathcal A_{1,P}=\mathcal X_P$ and $\mathcal A_{0,P}\cap\mathcal A_{1,P}=\varnothing$, with deterministic treatment assignment $T=\mathbf 1\{X\in\mathcal A_{1,P}\}$.
+\end{definitionv}
+
+\begin{definitionv}{synth_35}[Known treatment interface \(\mathcal B\)]
+We say \(\mathcal B\) is the known treatment interface for the fixed hypercube geometry when it is the boundary of the treated rectangle,\[\mathcal B=\partial([-1,1]\times[0,2]).\]
+\end{definitionv}
+
+\begin{definitionv}{synth_71}[Degree-$p$ Polynomial Basis $r_p$]
+For an integer $p\geq0$ and $u\in\mathbb R$, define $r_p(u)=(1,u,\ldots,u^p)^\top\in\mathbb R^{p+1}$.
+\end{definitionv}
+
+\begin{definitionv}{synth_24}[Score-coordinate projection $\operatorname{score}$]
+We say $\operatorname{score}$ is the score-coordinate projection when, for every potential-outcome observation $w=(y_0,y_1,x)\in\mathbb R\times\mathbb R\times\mathbb R^2$, $\operatorname{score}(w)=x$.
+\end{definitionv}
+
+The partition in \cref{obj:synth_4} makes treatment deterministic given location, so the side of the boundary is a feature of the design rather than an additional random assignment variable. The fixed interface in \cref{obj:synth_35} is the rectangular geometry used in the lower-bound construction, while \cref{obj:synth_71} supplies the signed-distance polynomial basis used by the local fits. The projection in \cref{obj:synth_24} records that the score coordinate is the Euclidean covariate.
+
+The known-geometry object packages the support, assignment regions, interface, Euclidean metric, and smoothing weight. The canonical smoothing weight is the one-dimensional uniform kernel \leanref{sym:K_\square}{$K_\square$}, which selects observations whose signed distance lies within the bandwidth window.
+
+\begin{definitionv}{def:cty-uniform-kernel}[Uniform kernel \(K_\square\)]
+The fixed uniform kernel is
+\[
+K_\square(u)=\mathbf 1\{|u|\leq1\},
+\qquad u\in\mathbb R.
+\]
+\end{definitionv}
+
+\begin{definitionv}{def:cty-known-geometry}[Known geometry \(G_P\)]
+Define \(\mathcal A\) to be the class of admissible known geometries \(G=(\mathcal X,\mathcal A_0,\mathcal A_1,\mathcal B,d,K_\square)\), where \(\mathcal A_0,\mathcal A_1\) are a Borel partition of \(\mathcal X\),
+\[
+\mathcal B=\operatorname{bd}(\mathcal A_0)\cap\operatorname{bd}(\mathcal A_1)\subset\operatorname{int}(\mathcal X),
+\qquad d(x,z)=\lVert x-z\rVert_2.
+\]
+For a member law \(P\), write \(\mathcal A_{0,P},\mathcal A_{1,P}\) for its assignment regions and write \(\mathcal B_P=\operatorname{bd}(\mathcal A_{0,P})\cap\operatorname{bd}(\mathcal A_{1,P})\). Define its known design object by
+\[
+G_P=(\mathcal X_P,\mathcal A_{0,P},\mathcal A_{1,P},\mathcal B_P,d_P,K_\square)\in\mathcal A.
+\]
+\end{definitionv}
+
+\begin{definitionv}{def:cty-known-geometry-signed-distance-data}[Signed-distance data \(U^{\pm}_{n,P}(x)\)]
+For \(x\in\mathcal B_P\), define the signed distance
+\[
+D^{\pm}_{P,x}
+=
+\{\mathbf 1(X\in\mathcal A_{1,P})-\mathbf 1(X\in\mathcal A_{0,P})\}
+\lVert X-x\rVert_2
+\]
+and the signed-distance sample
+\[
+U^{\pm}_{n,P}(x)=((Y_i,D^{\pm}_{P,x,i}):1\leq i\leq n).
+\]
+\end{definitionv}
+
+The known design object \leanref{sym:G_P}{$G_P$} in \cref{obj:def:cty-known-geometry} gives the rule the relevant boundary and side labels. For an interface point \(x\), the signed distance \leanref{sym:D^{\pm}_{P,x}}{$D^{\pm}_{P,x}$} in \cref{obj:def:cty-known-geometry-signed-distance-data} retains the Euclidean distance magnitude and assigns its sign according to the treatment region. Thus the signed-distance sample \leanref{sym:U^{\pm}_{n,P}(x)}{$U^{\pm}_{n,P}(x)$} provides the one-dimensional running coordinate used by local-polynomial RD estimators \citep{Fan1996,Ruppert1994,Calonico2014,Calonico2020,Imbens2019}.
+
+The law class below is the displayed Euclidean, uniform-kernel specialization of the CTY Assumptions 1--2 boundary design. Its clauses play three roles. The sampling, support, density, smoothness, variance, and moment-envelope clauses impose the standard random-design and local-polynomial regularity used to control bias and stochastic variation. The metric, kernel, and VC clause supplies a uniform set-indexed complexity bound of the kind used in empirical-process arguments \citep{Vapnik1971,Pollard1984,VanderVaart1996}. The interface, Gram, arm-mass, and distance-slice clauses encode the substantive geometric restrictions that make signed-distance local fitting well conditioned along the whole boundary.
+
+\begin{definitionv}{def:cty-a1-a2-class}[A1/A2 law class \(\mathcal P_{12}(p,\nu,L)\)]
+For integers \(p\geq0\), real numbers \(\nu\geq2\), and \(L\geq4\), let \(\mathcal P_{12}(p,\nu,L)\) be the set of laws \(P\) satisfying the following conditions.
+
+Write \(Y_i(0),Y_i(1)\) for the sampled potential outcomes of observation \(i\), and write \(\mathcal H^1(\mathcal B_P)\) for the one-dimensional Hausdorff measure of the common interface.
+
+\begin{itemize}
+\item \textbf{(Sampling and consistency.)} For every \(n\), the vectors \((Y_i(0),Y_i(1),X_i)\), \(1\leq i\leq n\), are independently and identically distributed,
+\[
+T=\mathbf 1\{X\in\mathcal A_{1,P}\},
+\qquad
+Y=TY(1)+(1-T)Y(0).
+\]
+
+\item \textbf{(Rectangular support and density.)} The support has the form
+\[
+\mathcal X_P=[\underline x_P,\overline x_P]^2\subseteq[-L,L]^2.
+\]
+The variable \(X\) has a Lebesgue density \(f_P\), continuous on \(\mathcal X_P\), such that
+\[
+L^{-1}\leq f_P(x)\leq L,
+\qquad x\in\mathcal X_P.
+\]
+
+\item \textbf{(Smooth potential-outcome regressions.)} For each \(t\in\{0,1\}\), the regression
+\[
+\mu_{t,P}(x)=\mathbb E_P[Y(t)\mid X=x]
+\]
+has a \(C^{p+1}\) extension to an open neighborhood of \(\mathcal X_P\), and
+\[
+\max_{0\leq|\alpha|\leq p}\sup_{x\in\mathcal X_P}|\partial^\alpha\mu_{t,P}(x)|
++
+\max_{0\leq|\alpha|\leq p}\sup_{x\neq z\in\mathcal X_P}
+{|\partial^\alpha\mu_{t,P}(x)-\partial^\alpha\mu_{t,P}(z)|
+\over
+\lVert x-z\rVert_2}
+\leq L.
+\]
+
+\item \textbf{(Conditional variances.)} For each \(t\in\{0,1\}\), the conditional variance
+\[
+\sigma^2_{t,P}(x)=\operatorname{Var}_P(Y(t)\mid X=x)
+\]
+is continuous and satisfies
+\[
+L^{-1}\leq\sigma^2_{t,P}(x)\leq L,
+\qquad x\in\mathcal X_P.
+\]
+
+\item \textbf{(Moment envelope.)} For each \(t\in\{0,1\}\) and every \(x\in\mathcal X_P\),
+\[
+\mathbb E_P[|Y(t)|^{2+\nu}\mid X=x]\leq L.
+\]
+
+\item \textbf{(Assignment geometry.)} The sets \(\mathcal A_{0,P}\) and \(\mathcal A_{1,P}\) form a Borel partition of \(\mathcal X_P\), and their known common interface \(\mathcal B_P\subset\operatorname{int}(\mathcal X_P)\) is a compact rectifiable curve satisfying
+\[
+L^{-1}\leq\mathcal H^1(\mathcal B_P)\leq L.
+\]
+
+\item \textbf{(Metric, kernel, and VC bound.)} The known metric and kernel are
+\[
+d_P(x,z)=\lVert x-z\rVert_2,
+\qquad
+K_\square.
+\]
+The collection
+\[
+\{\{z\in\mathcal X_P:\lVert z-x\rVert_2\leq r\}:x\in\mathcal X_P,\ r\geq0\}
+\]
+is a VC class with VC index at most four.
+
+\item \textbf{(Population Gram lower bound.)} Put
+\[
+r_p(u)=(1,u,\ldots,u^p)^\top,
+\qquad
+I_1=[0,\infty),
+\qquad
+I_0=(-\infty,0),
+\]
+and
+\[
+\Psi_{t,P,x}(h)
+=
+\mathbb E_P\!\left[
+{1\over h^2}\mathbf 1\{D^{\pm}_{P,x}\in I_t\}
+K_\square(D^{\pm}_{P,x}/h)
+r_p(D^{\pm}_{P,x}/h)r_p(D^{\pm}_{P,x}/h)^\top
+\right].
+\]
+For every \(0<h\leq L^{-1}\), every \(x\in\mathcal B_P\), and both \(t\in\{0,1\}\),
+\[
+\lambda_{\min}(\Psi_{t,P,x}(h))\geq L^{-1}.
+\]
+
+\item \textbf{(Small-bandwidth arm mass.)} For every \(0<h\leq L^{-1}\), every \(x\in\mathcal B_P\), and both \(t\in\{0,1\}\),
+\[
+{1\over h^2}\int_{\mathcal A_{t,P}}
+K_\square(\{(2t-1)\lVert z-x\rVert_2\}/h)\,dz
+\geq L^{-1}.
+\]
+
+\item \textbf{(Distance-slice density.)} For every \(x\in\mathcal B_P\), both \(t\in\{0,1\}\), and every \(0<s\leq L^{-1}\), the one-dimensional Hausdorff integral of \(f_P\) over
+\[
+\{z\in\mathcal A_{t,P}:\lVert z-x\rVert_2=s\}
+\]
+is finite and strictly positive.
+\end{itemize}
+
+This class is the displayed \(L\)-uniformized Euclidean-distance, uniform-kernel specialization of the two baseline smoothness and design conditions, augmented by the displayed envelope restrictions and quantitative small-bandwidth thresholds.
+\end{definitionv}
+
+The potential outcomes \leanref{sym:Y(t)}{$Y(t)$} and deterministic treatment \leanref{sym:T}{$T$} in \cref{obj:def:cty-a1-a2-class} give the boundary target its causal RD interpretation. The arm-specific regressions \leanref{sym:\mu_{t,P}}{$\mu_{t,P}$} are smooth enough for a degree-\(p\) signed-distance approximation, and the arm-specific variances \leanref{sym:\sigma^2_{t,P}}{$\sigma^2_{t,P}$} and \(2+\nu\) moment envelope keep the outcome scale uniform. Geometrically, the class admits compact rectifiable interfaces of controlled length inside rectangular supports and requires sufficient local mass from both arms at every interface point. These restrictions accommodate straight and curved interfaces with enough two-sided local design support, while excluding cusps that collapse one side of the local window, tangential contacts that make the signed-distance Gram nearly singular, and boundary pieces lying on the edge of the covariate support. The fixed rectangular hard family used later has corners on its treated rectangle; the certificate in \cref{obj:lem:cty-a1-a2-rectangle-angular-hypercube-all-orders} verifies that those corner points still satisfy the Gram and arm-mass thresholds in this law class.
+
+The treatment-effect target is the jump between the two smooth potential-outcome regression surfaces at the interface. The population local-polynomial coefficient records the signed-distance normal equations that the estimator approximates.
+
+\begin{definitionv}{synth_46}[Interface treatment-effect curve $\tau_P(x)$]
+For a law $P\in\mathcal P_{12}(p,\nu,L)$ and an interface point $x\in\mathcal B_P$, define the treatment-effect curve by $\tau_P(x)=\mu_{1,P}(x)-\mu_{0,P}(x)$, where $\mu_{t,P}(x)=\mathbb E_P[Y(t)\mid X=x]$ is the continuous conditional-mean version for arm $t\in\{0,1\}$.
+\end{definitionv}
+
+\begin{definitionv}{synth_128}[Population local-polynomial coefficient $\beta^*_{t,P,x}(h)$]
+We say $\beta^*_{t,P,x}(h)$ is the unwinsorized population degree-$p$ signed-distance local-polynomial coefficient when $\beta^*_{t,P,x}(h)\in\mathbb R^{p+1}$ satisfies the normal equations \[\Psi_{t,P,x}(h)\,\beta^*_{t,P,x}(h)=\mathbb E_P\!\left[{1\over h^2}\mathbf 1\{D^{\pm}_{P,x}\in I_t\}K_\square(D^{\pm}_{P,x}/h)r_p(D^{\pm}_{P,x}/h)Y\right].\]
+\end{definitionv}
+
+The curve \leanref{sym:\tau_P}{$\tau_P$} in \cref{obj:synth_46} is evaluated uniformly over \(\mathcal B_P\). The coefficient in \cref{obj:synth_128} is a population projection onto the signed-distance polynomial basis; its intercept difference is the population analogue of the treatment-effect estimator, and its approximation error is the first-order bias component isolated later.
+
+Rules in the signed-distance experiment may depend on the known geometry and the query point through law-independent Borel sections. The risk then uses the outer expectation already introduced for point-indexed suprema in \cref{obj:def:point-indexed-distance-risk}.
+
+\begin{definitionv}{def:cty-a1-a2-point-indexed-decision-class}[Known-geometry rules \(\mathcal T^{12,\pm}_n\)]
+Let \(\mathcal T^{12,\pm}_n\) be the class of rules for which there is one collection
+\[
+\{T_{n,G,x}:G\text{ is an admissible known geometry},\ x\in\mathbb R^2\}
+\]
+selected independently of the unknown member law, such that every fixed \((G,x)\) section is a Borel map from \((\mathbb R\times\mathbb R)^n\) to \(\mathbb R\) and, for every \(P\in\mathcal P_{12}(p,\nu,L)\), every \(p\geq0\), and every \(x\in\mathcal B_P\),
+\[
+\widehat\tau_{n,P}(x)
+=
+T_{n,G_P,x}(U^{\pm}_{n,P}(x)).
+\]
+The imposed regularity is fixed-\((G,x)\) Borel measurability of each section.
+\end{definitionv}
+
+\begin{definitionv}{def:cty-a1-a2-outer-risk}[Signed-distance minimax risk \(R^{12,\pm}_n(p,\nu,L)\)]
+Using the outer expectation \(\mathbb E_P^*\) defined in \cref{obj:def:point-indexed-distance-risk}, for \(p\geq0\) the signed-distance minimax risk is
+\[
+ R^{12,\pm}_n(p,\nu,L)
+ =
+ \inf_{\widehat\tau_n\in\mathcal T^{12,\pm}_n}
+ \sup_{P\in\mathcal P_{12}(p,\nu,L)}
+ \mathbb E_P^*\!\left[
+ \sup_{x\in\mathcal B_P}|\widehat\tau_{n,P}(x)-\tau_P(x)|
+ \right].
+\]
+\end{definitionv}
+
+\begin{definitionv}{synth_126}[Fixed-geometry signed-distance outer risk \(R^{12,\pm,\mathrm{fix}}_n(p,\nu,L)\)]
+We define \(R^{12,\pm,\mathrm{fix}}_n(p,\nu,L)\) as the signed-distance outer minimax risk with the law supremum restricted to the fixed hard geometry:\[ R^{12,\pm,\mathrm{fix}}_n(p,\nu,L)= \inf_{\widehat\tau_n\in\mathcal T^{12,\pm}_n}\ \sup_{\substack{P\in\mathcal P_{12}(p,\nu,L):\ \mathcal X_P=[-3,3]^2,\ \mathcal A_{1,P}=[-1,1]\times[0,2],\ \mathcal A_{0,P}=\mathcal X_P\setminus\mathcal A_{1,P},\ \mathcal B_P=\partial\mathcal A_{1,P},\ d_P(x,z)=\lVert x-z\rVert_2,\ \text{and the known kernel is }K_\square}} \mathbb E_P^*\!\left[\sup_{x\in\mathcal B_P}|\widehat\tau_{n,P}(x)-\tau_P(x)|\right]. \]
+\end{definitionv}
+
+The decision class \leanref{sym:\mathcal{T}^{12,\pm}_n}{$\mathcal T^{12,\pm}_n$} in \cref{obj:def:cty-a1-a2-point-indexed-decision-class} gives procedures access to the known geometry while keeping the section family fixed before the member law is chosen. The signed-distance risk \leanref{sym:R_n^{12,\pm}}{$R_n^{12,\pm}$} in \cref{obj:def:cty-a1-a2-outer-risk} measures the expected worst interface error for treatment-effect estimation. The fixed-geometry risk in \cref{obj:synth_126} is the same criterion restricted to the rectangular hard family, which is the family used for the signed-distance converse in \cref{obj:thm:cty-a1-a2-point-indexed-log-converse-all-orders}.
+
+It remains to name the estimator used for the upper bound. The construction follows the standard local-polynomial template, with three stabilizing features: outcomes are winsorized at a bandwidth-dependent level, the empirical Gram matrix is inverted only when it has a uniform quadratic-form lower bound, and the final treatment-effect estimate is clipped to the natural envelope scale.
+
+\begin{definitionv}{def:cty-stabilized-local-polynomial-estimator}[Stabilized local-polynomial estimator \(\widehat\tau^{12,\mathrm{LP}}_{n,h}\)]
+For \(B\in\mathbb R\), define the winsorization map by
+\[
+\psi_B(y)=\operatorname{sign}(y)\min\{|y|,B\}.
+\]
+For each \(t\in\{0,1\}\), query point \(x\), and bandwidth \(h\), define
+\[
+\widehat\Psi_{t,x}(h)
+ =
+ {1\over nh^2}\sum_{i=1}^n
+ \mathbf 1\{D^{\pm}_{P,x,i}\in I_t\}K_\square(D^{\pm}_{P,x,i}/h)
+ r_p(D^{\pm}_{P,x,i}/h)r_p(D^{\pm}_{P,x,i}/h)^\top .
+\]
+With \(B(h)=h^{-1/3}\), define
+\[
+\widehat m^B_{t,x}(h)
+ =
+ {1\over nh^2}\sum_{i=1}^n
+ \mathbf 1\{D^{\pm}_{P,x,i}\in I_t\}K_\square(D^{\pm}_{P,x,i}/h)
+ r_p(D^{\pm}_{P,x,i}/h)\psi_{B(h)}(Y_i).
+\]
+The stabilized coefficient is
+\[
+\widehat\beta^B_{t,x}(h)
+ =
+ \begin{cases}
+ \widehat\Psi_{t,x}(h)^{-1}\widehat m^B_{t,x}(h),
+ & \text{if }\forall v\in\mathbb R^{p+1},\ (2L)^{-1}\sum_{j=0}^p v_j^2\leq v^\top\widehat\Psi_{t,x}(h)v,\\
+ 0,
+ & \text{otherwise.}
+ \end{cases}
+\]
+With \(e_1=(1,0,\ldots,0)^\top\), the clipped signed-distance local-polynomial treatment-effect estimator is
+\[
+\widehat\tau^{12,\mathrm{LP}}_{n,h}(x)
+ =
+ \max\!\left\{-2L,\min\!\left\{2L,
+ e_1^\top(\widehat\beta^B_{1,x}(h)-\widehat\beta^B_{0,x}(h))
+ \right\}\right\}.
+\]
+\end{definitionv}
+
+The winsorization map \leanref{sym:\psi_B}{$\psi_B$} in \cref{obj:def:cty-stabilized-local-polynomial-estimator} converts the moment envelope into a bounded-score component at bandwidth \(h\). The empirical Gram matrix estimates the population Gram \leanref{sym:\Psi_{t,P,x}(h)}{$\Psi_{t,P,x}(h)$}, and the fallback rule keeps the coefficient map stable on samples where the empirical design is ill conditioned. The resulting estimator \leanref{sym:\widehat{\tau}^{12,\mathrm{LP}}_{n,h}}{$\widehat\tau^{12,\mathrm{LP}}_{n,h}$} is the concrete rule used in the signed-distance upper result.
+
+The following three deviation objects separate approximation, design, and score variation. They are stated here because the main theorem collects analytic inputs in terms of these quantities before applying the estimator in \cref{obj:def:cty-stabilized-local-polynomial-estimator}.
+
+\begin{definitionv}{synth_39}[Uniform first-order bias ratio $\mathrm{BiasRatio}_{p,\nu',L}(h_n)$]
+For $h_n>0$, define the uniform first-order bias ratio by \[ \mathrm{BiasRatio}_{p,\nu',L}(h_n)=\sup_{P\in\mathcal P_{12}(p,\nu',L)}\sup_{x\in\mathcal B_P}{\left|e_1^\top\{\beta^*_{1,P,x}(h_n)-\beta^*_{0,P,x}(h_n)\}-\tau_P(x)\right|\over h_n}. \]
+\end{definitionv}
+
+\begin{definitionv}{synth_62}[Uniform empirical Gram deviation \(\mathrm{GramDev}_{n,p,P}(h_n)\)]
+For a law \(P\in\mathcal P_{12}(p,\nu,L)\) and bandwidth \(h_n>0\), we write \(\mathrm{GramDev}_{n,p,P}(h_n)\) for the extended nonnegative sample-space random variable\[\mathrm{GramDev}_{n,p,P}(h_n)=\sup_{t\in\{0,1\}}\sup_{x\in\mathcal B_P}\max_{0\leq j,k\leq p}\left|\widehat\Psi_{t,x}(h_n)_{jk}-\Psi_{t,P,x}(h_n)_{jk}\right|.\]
+\end{definitionv}
+
+\begin{definitionv}{synth_63}[Uniform raw-score deviation $\mathrm{ScoreDev}_{n,p,P}(h_n)$]
+Define $\mathrm{ScoreDev}_{n,p,P}(h_n)$ as the sample-dependent uniform centered local-polynomial score deviation
+\[
+\mathrm{ScoreDev}_{n,p,P}(h_n)
+=
+\sup_{t\in\{0,1\}}\sup_{x\in\mathcal B_P}
+\left\|
+{1\over n h_n^2}\sum_{i=1}^n
+\mathbf 1\{D^{\pm}_{P,x,i}\in I_t\}K_\square(D^{\pm}_{P,x,i}/h_n)r_p(D^{\pm}_{P,x,i}/h_n)Y_i
+-
+\mathbb E_P\!\left[
+{1\over h_n^2}\mathbf 1\{D^{\pm}_{P,x}\in I_t\}K_\square(D^{\pm}_{P,x}/h_n)r_p(D^{\pm}_{P,x}/h_n)Y
+\right]
+\right\|,
+\]
+with the norm taken in $\mathbb R^{p+1}$.
+\end{definitionv}
+
+\begin{definitionv}{synth_131}[Winsorized score \(\operatorname{score}^{B}_{t,x,h,j}\)]
+We say \(\operatorname{score}^{B}_{t,x,h,j}\) is the winsorized local-polynomial residual score when, for \(P\in\mathcal P_{12}(p,\nu,L)\), sample size \(n\), arm \(t\in\{0,1\}\), interface point \(x\in\mathcal B_P\), bandwidth \(h>0\), winsorization level \(B>0\), and coordinate \(j\in\{0,\ldots,p\}\), it is the \(P^n\)-random variable\[\operatorname{score}^{B}_{t,x,h,j}=\frac{1}{n h^2}\sum_{i=1}^n\mathbf 1\{D^{\pm}_{P,x,i}\in I_t\}K_\square\!\left(\frac{D^{\pm}_{P,x,i}}{h}\right)r_p\!\left(\frac{D^{\pm}_{P,x,i}}{h}\right)_j\left[\psi_B(Y_i)-r_p\!\left(\frac{D^{\pm}_{P,x,i}}{h}\right)^\top\beta^*_{t,P,x}(h)\right],\]with \(\beta^*_{t,P,x}(h)\) the unwinsorized population local-polynomial coefficient at \((t,x,h)\).
+\end{definitionv}
+
+The bias ratio in \cref{obj:synth_39} measures the uniform first-order approximation error of the population signed-distance fit. The Gram deviation in \cref{obj:synth_62} tracks the uniform empirical conditioning of the local design, and the raw-score deviation in \cref{obj:synth_63} records the centered stochastic part before winsorization. The winsorized score in \cref{obj:synth_131} is the bounded-envelope score component used by the maximal inequality in the upper-bound appendix. These objects place the later risk result in the usual bias, design-stability, and empirical-process decomposition for local-polynomial RD estimators \citep{Fan1996,Ruppert1994,Calonico2014,Calonico2020,VanderVaart1996}.
+
+
+
+

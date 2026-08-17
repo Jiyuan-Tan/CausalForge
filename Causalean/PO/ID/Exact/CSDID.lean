@@ -305,9 +305,9 @@ private lemma factualY_eq_YofCohort_on_cohortEvent
   refine hStep_ae.mono (fun ω hStep hω => ?_)
   rcases hω with ⟨hPredFalse, hGTrue⟩
   have hPredFalse' : S.factualD (S.predFin g hg) ω = false := by
-    simpa [cohortEvent, dEvent, factualD] using hPredFalse
+    simpa [cohortEvent, dEvent, POVar.event, factualD] using hPredFalse
   have hGTrue' : S.factualD g ω = true := by
-    simpa [cohortEvent, dEvent, factualD] using hGTrue
+    simpa [cohortEvent, dEvent, POVar.event, factualD] using hGTrue
   have hForwardTrue :
       ∀ (a b : ℕ) (haT : a < S.T) (hbT : b < S.T), a ≤ b →
         S.factualD ⟨a, haT⟩ ω = true →
@@ -404,7 +404,7 @@ private lemma factualY_eq_YofNT_on_NT
           have hf : S.factualD ⟨k, hk⟩ ω = false := by
             have hmem : ω ∈ S.dEvent ⟨k, hk⟩ false :=
               Set.mem_iInter.mp hω ⟨k, hk⟩
-            simpa [dEvent, factualD] using hmem
+            simpa [dEvent, POVar.event, factualD] using hmem
           have hrec := ih (Nat.le_of_lt hk)
           change P.FactualAgrees (S.regUpToAux b (k + 1) h).1 ω
           unfold regUpToAux

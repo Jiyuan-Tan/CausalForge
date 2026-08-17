@@ -11,7 +11,7 @@ import { statementHash } from "./hash.js";
  * `passed_hash:null` since lemmas aren't review targets), defeating the short-circuit.
  * Proof-completeness is tracked separately (proof.state), not via the review dirty frontier.
  *
- * Freshness fallback: a node with no Lean-extracted hash (a hypothesis-backed node whose
+ * Freshness fallback: a reviewable node with no Lean-extracted hash (a hypothesis-backed node whose
  * Lean realization lives INSIDE a host theorem's signature, not a standalone `@node:`-tagged
  * decl) falls back to the hash of its NL statement — the SAME convention `applyVerdictsToGraph`
  * uses when recording its `passed_hash`. This keeps the comparison symmetric: such a node is
@@ -22,8 +22,22 @@ export function dirtyFrontier(graph: FormalizationGraph, freshHashes: Record<str
   const dirty = new Set<string>();
   for (const n of graph.nodes) {
     const fresh = freshHashes[n.id] ?? statementHash(n.nl.statement);
-    // Genuine statement change (a previously-recorded hash no longer matches) → always re-review.
-    const genuineChange = n.review.passed_hash !== null && fresh !== n.review.passed_hash;
+    // Only nodes for which the delta reviewer has a target tier may seed the frontier. Annotated
+    // proof helpers are minted with an initial statement hash, but F3 may later remove/move their
+    // `@node` tag. Extraction then has no fresh Lean hash and falls back to the helper's synthetic
+    // NL label, which can never equal that old Lean hash. Such agent-introduced lemmas/definitions
+    // are deliberately not reviewer targets; letting them seed dirtiness creates an uncleareable
+    // source that repeatedly re-dirties every from-note statement above it. Assumptions are the
+    // exception: agent-introduced assumptions in a frozen theorem's uses-closure are reviewer
+    // targets (review_scope applies the closure filter), so they must retain hash invalidation.
+    const reviewable =
+      n.kind === "assumption" ||
+      (n.provenance === "from-note" &&
+        (n.kind === "theorem" ||
+          n.kind === "definition" ||
+          n.kind === "lemma" ||
+          (n.kind === "gate" && n.gate?.gate_class === "cited")));
+    const genuineChange = reviewable && n.review.passed_hash !== null && fresh !== n.review.passed_hash;
     // Never reviewed → a dirty source ONLY if it is a paper-originated node we actually review.
     // Agent-introduced / library defs are never review targets, so their `passed_hash` stays `null`
     // forever; treating that as "dirty" would perpetually re-dirty every statement that references
@@ -33,14 +47,7 @@ export function dirtyFrontier(graph: FormalizationGraph, freshHashes: Record<str
     // surface is the per-symbol cluster ledger. Seeding them here reports a
     // broad dirty frontier that no node reviewer can clear. The remaining
     // kinds mirror reviewTargets/convergenceTargets.
-    const reviewableFromNote =
-      n.provenance === "from-note" &&
-      (n.kind === "theorem" ||
-        n.kind === "assumption" ||
-        n.kind === "definition" ||
-        n.kind === "lemma" ||
-        (n.kind === "gate" && n.gate?.gate_class === "cited"));
-    const firstReviewNeeded = n.review.passed_hash === null && reviewableFromNote;
+    const firstReviewNeeded = n.review.passed_hash === null && reviewable && n.provenance === "from-note";
     if ((genuineChange && n.kind !== "setup") || firstReviewNeeded) dirty.add(n.id);
   }
   // reverse adjacency: X statement-uses Y ⇒ edge X->Y; if Y dirty, X dirty.

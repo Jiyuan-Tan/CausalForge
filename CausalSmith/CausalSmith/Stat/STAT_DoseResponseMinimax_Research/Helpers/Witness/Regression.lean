@@ -141,11 +141,11 @@ private lemma doseDataMeasure_integral_AX {p0 : (Fin d → ℝ) → ℝ} {q0 : �
   have hg : ∀ p, Measurable (g p) := by
     intro p
     exact measurable_doseObs_mk p.1 p.2
-  have hgm : Measurable fun p => (κ p).map (g p) := by
-    simpa [κ, g, mu] using
-      (doseChannelAX (d := d) p0 q0 B alpha t0 lambda h zeta).measurable
+  have hgm : Measurable fun p => (κ p).map (g p) :=
+    (doseChannelAX (d := d) p0 q0 B alpha t0 lambda h zeta).measurable
   have hFbind : Integrable F (mAX.bind fun p => (κ p).map (g p)) := by
-    simpa [mAX, κ, g, mu, doseDataMeasure_eq_AXbind] using hF
+    rw [doseDataMeasure_eq_AXbind] at hF
+    exact hF
   rw [doseDataMeasure_eq_AXbind]
   change ∫ O, F O ∂mAX.bind (fun p => (κ p).map (g p)) =
     ∫ p, ∫ y, F (g p y) ∂κ p ∂mAX

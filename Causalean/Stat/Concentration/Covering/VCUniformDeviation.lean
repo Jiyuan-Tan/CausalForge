@@ -173,7 +173,7 @@ localized star hull.
                   (fun a : Set.Icc (0 : ℝ) 1 => fun i : ι =>
                     |(n : ℝ)⁻¹ * ∑ k : Fin n, (σ k : ℝ) *
                       starHullZeroOut F norm r (a, i) (ω k)|)
-                  (by simpa [Function.comp_def] using hbdd)
+                  hbdd
         _ = ⨆ i : ι,
               starHullZeroOutScaleCoeff F norm r i *
                 |(n : ℝ)⁻¹ * ∑ k : Fin n, (σ k : ℝ) * F i (ω k)| := by
@@ -377,7 +377,7 @@ theorem vc_localized_deviation_event
       F norm μ id measurable_id hF_meas R hδ hδ' n hn
       (ρ := ρ) (Rmax := b)
       hcrit_le_ρ hρ_pos hcrit_pos hcrit_fp hrad_bdd hrad_int
-      (by simpa [R, ρ] using hδ_dom) with
+      hδ_dom with
     ⟨E, hE_meas, hE_prob, hE_bound⟩
   refine ⟨E, hE_meas, hE_prob, ?_⟩
   intro ω hω i hi_nonneg hi_b
@@ -457,7 +457,7 @@ theorem vc_localized_deviation_event_of_card
       F norm μ id measurable_id hF_meas R hδ hδ' n hn
       (ρ := ρ) (Rmax := b)
       hcrit_le_ρ hρ_pos hcrit_pos hcrit_fp hrad_bdd hrad_int
-      (by simpa [R, ρ] using hδ_dom) with
+      hδ_dom with
     ⟨E, hE_meas, hE_prob, hE_bound⟩
   refine ⟨E, hE_meas, hE_prob, ?_⟩
   intro ω hω i hi_nonneg hi_b

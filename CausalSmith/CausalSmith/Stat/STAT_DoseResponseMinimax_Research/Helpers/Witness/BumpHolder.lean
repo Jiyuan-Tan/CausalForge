@@ -27,7 +27,7 @@ open scoped Topology
 
 private lemma doseBump_contDiff_top :
     ContDiff ℝ (↑(⊤ : ℕ∞) : WithTop ℕ∞) doseBump := by
-  simpa [doseBump] using doseContDiffBump.contDiff (n := ⊤)
+  exact doseContDiffBump.contDiff (n := ⊤)
 
 private lemma doseBump_contDiff_nat (j : ℕ) :
     ContDiff ℝ (j : WithTop ℕ∞) doseBump :=
@@ -37,7 +37,8 @@ private lemma doseBump_iteratedDeriv_hasCompactSupport (j : ℕ) :
     HasCompactSupport (iteratedDeriv j doseBump) := by
   induction j with
   | zero =>
-      simpa [iteratedDeriv_zero, doseBump] using doseContDiffBump.hasCompactSupport
+      rw [iteratedDeriv_zero]
+      exact doseContDiffBump.hasCompactSupport
   | succ j ih =>
       simpa [Nat.succ_eq_add_one, iteratedDeriv_succ] using ih.deriv
 

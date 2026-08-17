@@ -52,7 +52,7 @@ theorem lee_bounds_ATT_AS [IsFiniteMeasure P.μ]
           (fun ω => S.YofA true ω - S.YofA false ω)
         = eventCondExp P.μ S.alwaysSelected (S.YofA true)
           - eventCondExp P.μ S.alwaysSelected (S.YofA false) := by
-    simpa only [Pi.sub_apply] using
+    exact
       (eventCondExp_sub P.μ S.alwaysSelected
         (g₁ := S.YofA true) (g₂ := S.YofA false)
         hA.integrableY1.integrableOn hA.integrableY0.integrableOn)

@@ -172,7 +172,8 @@ lemma finitePoissonObjective_eventually_common_compact {E I : Type*}
         rw [Pi.norm_def]
         have hnn : (Finset.univ.sup fun i => ‖B x i‖₊) ≤ ∑ i, ‖B x i‖₊ :=
           Finset.sup_le fun i _ =>
-            Finset.single_le_sum (fun j _ => zero_le ‖B x j‖₊) (Finset.mem_univ i)
+            Finset.single_le_sum (f := fun j => ‖B x j‖₊)
+              (fun j _ => zero_le) (Finset.mem_univ i)
         calc
           ((Finset.univ.sup fun i => ‖B x i‖₊ : NNReal) : ℝ) ≤
               ((∑ i, ‖B x i‖₊ : NNReal) : ℝ) := NNReal.coe_le_coe.mpr hnn

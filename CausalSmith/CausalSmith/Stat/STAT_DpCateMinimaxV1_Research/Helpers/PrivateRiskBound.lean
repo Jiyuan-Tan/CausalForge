@@ -40,12 +40,13 @@ private lemma measurable_gramSummand' {d m : ℕ} (h : ℝ) (x0 : Fin d → ℝ)
       if O.A = ((a : ℕ) : ℝ) then (1 : ℝ) else 0) := Measurable.ite
     (measurableSet_eq_fun measurable_CateObs_A measurable_const)
     measurable_const measurable_const
-  have hK := (measurable_unifKernel d).comp (measurable_uCoord_obs h x0)
-  have hk := ((measurable_pi_iff.mp (measurable_featOf d m)) k).comp
+  have hK := (measurable_unifKernel d).fun_comp (measurable_uCoord_obs h x0)
+  have hk := ((measurable_pi_iff.mp (measurable_featOf d m)) k).fun_comp
     (measurable_uCoord_obs h x0)
-  have hl := ((measurable_pi_iff.mp (measurable_featOf d m)) l).comp
+  have hl := ((measurable_pi_iff.mp (measurable_featOf d m)) l).fun_comp
     (measurable_uCoord_obs h x0)
-  simpa [featOf] using ((((hi.mul measurable_const).mul hK).mul hk).mul hl)
+  simpa [featOf] using
+    ((((hi.fun_mul measurable_const).fun_mul hK).fun_mul hk).fun_mul hl)
 
 private lemma measurable_momSummand' {d m : ℕ} (h : ℝ) (x0 : Fin d → ℝ)
     (a : Fin 2) (k : Fin (pDim d m)) :
@@ -56,11 +57,11 @@ private lemma measurable_momSummand' {d m : ℕ} (h : ℝ) (x0 : Fin d → ℝ)
       if O.A = ((a : ℕ) : ℝ) then (1 : ℝ) else 0) := Measurable.ite
     (measurableSet_eq_fun measurable_CateObs_A measurable_const)
     measurable_const measurable_const
-  have hK := (measurable_unifKernel d).comp (measurable_uCoord_obs h x0)
-  have hk := ((measurable_pi_iff.mp (measurable_featOf d m)) k).comp
+  have hK := (measurable_unifKernel d).fun_comp (measurable_uCoord_obs h x0)
+  have hk := ((measurable_pi_iff.mp (measurable_featOf d m)) k).fun_comp
     (measurable_uCoord_obs h x0)
-  simpa [featOf] using ((((hi.mul measurable_const).mul hK).mul
-    (measurable_const.max (measurable_const.min measurable_CateObs_Y))).mul hk)
+  simpa [featOf] using ((((hi.fun_mul measurable_const).fun_mul hK).fun_mul
+    (measurable_const.max (measurable_const.min measurable_CateObs_Y))).fun_mul hk)
 
 private lemma integral_sq_le_ball_mass' {d : ℕ} (P : CateLaw d) (hiid : IidSampling P)
     {h B : ℝ} {x0 : Fin d → ℝ} {q : CateObs d → ℝ}
@@ -78,8 +79,12 @@ private lemma integral_sq_le_ball_mass' {d : ℕ} (P : CateLaw d) (hiid : IidSam
     intro i
     change MeasurableSet ((fun x : Fin d → ℝ ↦ |x i - x0 i|) ⁻¹' Set.Iic h)
     apply measurableSet_Iic.preimage
-    simpa only [Real.norm_eq_abs] using
-      (((measurable_pi_apply i).sub measurable_const).norm)
+    rw [show (fun x : Fin d → ℝ ↦ |x i - x0 i|)
+        = fun x : Fin d → ℝ ↦ ‖x i - x0 i‖ by
+      funext x
+      exact (Real.norm_eq_abs _).symm]
+    exact ((measurable_pi_apply i).fun_sub
+      (measurable_const : Measurable fun _ : Fin d → ℝ ↦ x0 i)).norm
   have hS : MeasurableSet S := hball.preimage measurable_CateObs_X
   have hpoint : ∀ O, (q O) ^ 2 ≤ (S.indicator fun _ ↦ B ^ 2) O := by
     intro O
@@ -392,7 +397,7 @@ theorem mechOf_risk_bound (d : ℕ) (beta f1 : ℝ) :
           simpa using abs_momSummand_le hh (unifKernel_nonneg d) (unifKernel_le_one d)
             (unifKernel_eq_zero d) a O k)
     have hi := integrable_iid_mean_euclidean P.dataMeasure (n := n) ξ hξInt
-    convert hi using 1
+    exact hi
   have hGramInt (a : Fin 2) : Integrable (fun s ↦ Gram s a)
       (Measure.pi fun _ : Fin n ↦ P.dataMeasure) := by
     let ξ : (Fin (pDim d m) × Fin (pDim d m)) → CateObs d → ℝ := fun q O ↦

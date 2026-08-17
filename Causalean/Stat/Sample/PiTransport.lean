@@ -141,7 +141,7 @@ theorem measurePreserving_pi_restrict_dep {X : ι → Type*} [∀ i, MeasurableS
       ((Measure.pi fun i : Subtype p => μ i.1).prod
         (Measure.pi fun i : Subtype (fun i => ¬ p i) => μ i.1))
       (Measure.pi fun i : Subtype p => μ i.1) := measurePreserving_fst
-  simpa [MeasurableEquiv.piEquivPiSubtypeProd] using hfst.comp hsplit
+  simpa [MeasurableEquiv.piEquivPiSubtypeProd, Function.comp_def] using hfst.comp hsplit
 
 /-- Dropping the coordinates outside a decidable sub-index of an i.i.d. product sample leaves the
 i.i.d. product sample over that sub-index. -/

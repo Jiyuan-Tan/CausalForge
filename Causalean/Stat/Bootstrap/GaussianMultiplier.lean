@@ -87,7 +87,7 @@ theorem map_weighted_sum_gaussian {n : ℕ} (ξ : Fin n → Ω → ℝ)
     rw [hmap, gaussianReal_map_const_mul (a i)]
     congr 1
     · ring
-    · ext; simp
+    · ext; simp; rfl
   -- General `Finset`-indexed statement, then specialise to `Finset.univ`.
   have key : ∀ s : Finset (Fin n),
       μ.map (fun ω => ∑ i ∈ s, g i ω)
@@ -119,7 +119,7 @@ theorem map_weighted_sum_gaussian {n : ℕ} (ξ : Fin n → Ω → ℝ)
         congr 1
         · simp
         · ext
-          simp only [NNReal.coe_add, NNReal.coe_mk]
+          show (∑ i ∈ s, a i ^ 2) + a j ^ 2 = ∑ i ∈ insert j s, a i ^ 2
           rw [Finset.sum_insert hj]
           ring
   have := key Finset.univ
@@ -156,7 +156,8 @@ theorem multiplierBootstrap_law {n : ℕ} (ξ : Fin n → Ω → ℝ)
   -- Match the variance: `∑ aᵢ² = n⁻¹ ∑ (xᵢ − x̄)²`.
   congr 1
   ext
-  simp only [ha]
+  show (∑ i, ((Real.sqrt n)⁻¹ * (x i - xbar)) ^ 2)
+      = (n : ℝ)⁻¹ * ∑ i, (x i - xbar) ^ 2
   rcases Nat.eq_zero_or_pos n with hn | hn
   · subst hn; simp
   · have hnpos : (0 : ℝ) < n := by exact_mod_cast hn
@@ -165,7 +166,6 @@ theorem multiplierBootstrap_law {n : ℕ} (ξ : Fin n → Ω → ℝ)
     have hpt : ∀ i, ((Real.sqrt n)⁻¹ * (x i - xbar)) ^ 2
         = (n : ℝ)⁻¹ * (x i - xbar) ^ 2 := by
       intro i; rw [mul_pow, hsq]
-    push_cast
     rw [Finset.sum_congr rfl (fun i _ => hpt i), ← Finset.mul_sum]
 
 end Causalean.Stat

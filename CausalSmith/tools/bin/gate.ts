@@ -176,6 +176,21 @@ async function main() {
   }
 
   const gnode = graph.nodes.find((n) => n.id === nodeId)!;
+  // A node created by gate.ts solely to make prose-only debt durable has no independent role
+  // after discharge: remove it entirely rather than leave a non-core definition that F2's
+  // one-to-one gate rejects. Provenance alone cannot identify such a node (other
+  // agent-introduced nodes can carry real plan roles); the discriminator is the plan residual —
+  // gate.ts's own MINT+register writes exactly {lean_kind:"assumption", lean_name,
+  // disposition:"define-local", source?} on a fresh entry, so a residual within that shape
+  // (or an absent plan entry) marks a gate-only node. Any other residual is an independent
+  // role: the plan entry survives stripped and the graph node reverts to a definition.
+  const planResidual = withoutGateKeys((plan?.nodes?.[nodeId] ?? {}) as Record<string, unknown>);
+  const registrationOnlyResidual =
+    Object.keys(planResidual).every((k) => ["lean_kind", "lean_name", "disposition", "source"].includes(k)) &&
+    (planResidual.lean_kind === undefined || planResidual.lean_kind === "assumption") &&
+    (planResidual.disposition === undefined || planResidual.disposition === "define-local");
+  const mintedGateOnly = ungate && gnode.provenance === "agent-introduced" && registrationOnlyResidual;
+  const registeredLeanName = plan?.nodes?.[nodeId]?.lean_name as string | undefined;
 
   // Discharge: auto-detect the consumers threading this gate (graph `proof-uses` ∪ plan `hyps`),
   // so the caller need not re-supply the exact `--consumers` used at registration.
@@ -198,7 +213,7 @@ async function main() {
       // `{}` — an empty entry has no `lean_kind`/`lean_name`/`disposition` and trips the F2
       // post-sync `plan_gate` schema check on every subsequent run. Only a node that carried a
       // real non-gate role keeps its residual.
-      if (Object.keys(stripped).length === 0) delete plan.nodes[nodeId];
+      if (mintedGateOnly || Object.keys(stripped).length === 0) delete plan.nodes[nodeId];
       else plan.nodes[nodeId] = stripped;
     } else {
       plan.nodes[nodeId] = {
@@ -218,6 +233,29 @@ async function main() {
       if (ungate) cn.hyps = cn.hyps.filter((h: string) => h !== nodeId);
       else if (!cn.hyps.includes(nodeId)) cn.hyps.push(nodeId);
     }
+    if (ungate) {
+      // F1 may have disclosed the same prose-only debt through the older
+      // external_substrate_assumptions/external_hyps fields before gate.ts
+      // registered it.  A full discharge must retire that duplicate channel
+      // too, otherwise the scaffolder can recreate the already-proved premise.
+      const external = Array.isArray(plan.external_substrate_assumptions)
+        ? plan.external_substrate_assumptions as Array<Record<string, unknown>>
+        : [];
+      const removedExternalIds = new Set<string>();
+      plan.external_substrate_assumptions = external.filter((a) => {
+        const matches = a.id === nodeId || a.lean_name === registeredLeanName || a.lean_name === leanName;
+        if (matches && typeof a.id === "string") removedExternalIds.add(a.id);
+        return !matches;
+      });
+      if (removedExternalIds.size > 0) {
+        for (const n of Object.values(plan.nodes) as Array<Record<string, unknown>>) {
+          if (Array.isArray(n.external_hyps)) {
+            n.external_hyps = n.external_hyps.filter((h: unknown) =>
+              typeof h !== "string" || !removedExternalIds.has(h));
+          }
+        }
+      }
+    }
     writeFileSync(ppath, JSON.stringify(plan, null, 2));
   }
 
@@ -225,26 +263,29 @@ async function main() {
   let g = graph;
   g = {
     ...g,
-    nodes: g.nodes.map((n) => {
+    nodes: g.nodes.flatMap((n) => {
       if (n.id === nodeId) {
-        return ungate
+        if (mintedGateOnly) return [];
+        return [ungate
           ? { ...n, kind: "definition" as const, gate: undefined }
-          : { ...n, kind: "gate" as const, gate: { gate_class: gateClass, ...(source ? { source } : {}) } };
+          : { ...n, kind: "gate" as const, gate: { gate_class: gateClass, ...(source ? { source } : {}) } }];
       }
       // Reopen every consumer for re-review in BOTH directions: registering makes its
       // statement conditional; discharging makes it unconditional — either way F2.5/F4 must
       // re-verify it rather than trust the stale verdict.
       if (consumers.includes(n.id)) {
-        return { ...n, review: { ...n.review, status: "unreviewed" as const } };
+        return [{ ...n, review: { ...n.review, status: "unreviewed" as const } }];
       }
-      return n;
+      return [n];
     }),
   };
   const edgeExists = (from: string, to: string) =>
     g.edges.some((e) => e.kind === "proof-uses" && e.from === from && e.to === to);
   for (const c of consumers) {
     if (ungate) {
-      g = { ...g, edges: g.edges.filter((e) => !(e.kind === "proof-uses" && e.from === c && e.to === nodeId)) };
+      g = { ...g, edges: g.edges.filter((e) =>
+        mintedGateOnly ? e.from !== nodeId && e.to !== nodeId
+          : !(e.kind === "proof-uses" && e.from === c && e.to === nodeId)) };
     } else if (g.nodes.some((n) => n.id === c) && !edgeExists(c, nodeId)) {
       g = { ...g, edges: [...g.edges, { kind: "proof-uses" as const, from: c, to: nodeId, source: "declared" as const }] };
     }

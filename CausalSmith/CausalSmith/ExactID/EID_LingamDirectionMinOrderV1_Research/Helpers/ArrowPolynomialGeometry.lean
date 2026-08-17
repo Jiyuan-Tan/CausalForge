@@ -269,6 +269,10 @@ private def horizontalContractionMinorMatrix (m : ℕ) (t : CumVec ℂ) :
   fun i b => Fin.cases (t (m + 2) (b.1 + 1))
     (fun a => (m.choose a.1 : ℂ) * t (2 * m + 2) (a.1 + b.1 + 1)) i
 
+/-- Evaluating the horizontal contraction-minor polynomial at the retained cumulants of a
+cumulant vector returns the determinant of the explicit numerical contraction matrix built
+from those same cumulants. The polynomial is therefore just a symbolic name for that
+determinant. -/
 lemma eval_horizontalContractionMinorPolynomial (m : ℕ) (t : CumVec ℂ) :
     MvPolynomial.eval (restrictCumBand (2 * m + 2) t)
         (horizontalContractionMinorPolynomial m) =

@@ -21,6 +21,7 @@ interchangeably on a finite probability space.
 
 import Causalean.Panel.Weighted.InnerProduct
 import Mathlib.MeasureTheory.Integral.Bochner.Basic
+import Mathlib.MeasureTheory.Integral.Bochner.SumMeasure
 import Mathlib.MeasureTheory.Measure.Typeclasses.Probability
 
 /-! # Weighted supports from probability measures
@@ -113,7 +114,7 @@ theorem ip_eq_integral (μ : Measure R) [IsProbabilityMeasure μ] (A B : R → �
     (ofProbabilityMeasure μ).ip A B = ∫ r, A r * B r ∂μ := by
   classical
   -- The integral over a finite measurable space is the atom-weighted sum.
-  rw [MeasureTheory.integral_fintype _ (Integrable.of_finite)]
+  rw [MeasureTheory.integral_fintype (Integrable.of_finite)]
   -- `ip` sums over `observed`; extend to all of `R` since off-support weights
   -- are zero.
   unfold ip

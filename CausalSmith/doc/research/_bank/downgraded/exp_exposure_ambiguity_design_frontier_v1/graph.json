@@ -1,0 +1,5240 @@
+{
+  "qid": "exp_exposure_ambiguity_design_frontier",
+  "specialization": "v1",
+  "nodes": [
+    {
+      "id": "S1",
+      "obj_id": "S-1",
+      "kind": "setup",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Design-based finite-population randomization experiment: a Causalean `FiniteDesign` on the assignment cube `A = V -> Bool`, with the design class cut down to laws supported on the exact-budget slice, the fixed potential-outcome table, the observed experiment, the unrestricted decision rule, the total-treatment-effect estimand, and design MSE/RMSE as the loss. — Highest-leverage reuse in the run. `FiniteDesign` (DesignCore.lean:45, fields `p`,`p_nonneg`,`p_sum`) IS the design object: `pi = D.p`, `pi_z = D.p z`, `E_{Z~Theta}[.] = D.E`, `Pr = D.Pr`, and the whole `E`/`Var`/`Cov` finite-sum algebra (`E_sum`, `E_congr`, `Var_eq`, `Var_linear_comb`, `Cov_linear_comb`, `E_nonneg`) comes free. The loss layer is `FiniteDesign.mse` / `bias` / `Unbiased` / `mse_eq_var_add_bias_sq` / `mse_eq_var_of_unbiased` / `Var_nonneg` (Risk.lean:42-88), so `RMSE_n = sqrt (D.mse est theta)`. `DesignFamily Omega := Set (FiniteDesign Omega)` (Optimality.lean:43) types the design class, and `FiniteDesign.map`/`E_map`/`Pr_map` (DesignCore.lean:296-330) is the pushforward used by every selector/signature quotient step. Fixed-table, no-superpopulation semantics matches the DesignBased flavour exactly (probability is randomization only), so no measure-theoretic `PO/` world is needed.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "Causalean.Experimentation.DesignBased.FiniteDesign",
+        "file": null
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      },
+      "setup": {
+        "required_modules": [
+          "Causalean.Experimentation.DesignBased.DesignCore",
+          "Causalean.Experimentation.DesignBased.Risk",
+          "Causalean.Experimentation.DesignBased.Optimality",
+          "Causalean.Experimentation.DesignBased.Designs.CompleteRandomization",
+          "Causalean.Experimentation.TwoStageInterference.CompleteRandomization",
+          "Mathlib.Data.Finset.Powerset",
+          "Mathlib.Data.Nat.Choose.Basic"
+        ]
+      }
+    },
+    {
+      "id": "S2",
+      "obj_id": "S-2",
+      "kind": "setup",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Finite exposure-mapping menu and its induced sign-schedule decision experiment: a finite nonempty menu of exposure mappings on the assignment cube, the induced bounded-table class, the sign schedules with their targets and observations, the observation-fiber collision geometry, and the sign/multilinear decision rules. — Search trace: grep '^## ' ../doc/API.md then read section 18 `Experimentation/` (DesignBased, ExposureMappingInterference, TwoStageInterference, UnknownInterference); grep -i 'exposure|menu|misspecif|ambiguity|sign schedule' over ../Causalean/Experimentation; read ../Causalean/Experimentation/DesignBased/{Exposure,PotentialOutcome}.lean in full. Result: Causalean has the SINGLE-known-mapping exposure world only. PARTIAL, and genuinely useful, fit: with `Theta := V`, `theta := id`, `Delta := X`, Causalean's `expo f theta i z = f z (theta i)` (Exposure.lean:46) is literally our `e_{i,n}(z)`, and `ProperlySpecified y yr f theta : forall i z, yr i z = y i (expo f theta i z)` (PotentialOutcome.lean:45) is literally the inner clause of ass:menu-measurability for one candidate; `Yobs` (PotentialOutcome.lean:49) is `Y^obs`. So S2 is built ON those decls rather than beside them. What is absent and must be new: the LATENT FINITE MENU (a `Finset` of candidates with a cross-candidate union class), per-unit exposure ranges as Finsets, the sign-schedule experiment (`t_alpha`, `s_{alpha z}`), observation fibers and the two collision moduli, and the multilinear extension. Causalean's exposure layer exists only to feed Horvitz-Thompson propensity weighting (`prop`, `propPairSame`, `htTotal`), which this paper deliberately does not use (its estimator class is unrestricted), so the HT half of that module is bypass-justified: wrong abstraction (inverse-propensity linear estimators vs arbitrary measurable rules). `H_n(e)` is a `SimpleGraph (V x Bool)` built by the explicit non-joint-realizability rule; `G_n` is a `SimpleGraph V` carried as ancillary data (the invariance clauses of thm:finite-saddle are exactly the statement that it does not occur in any other object).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": null,
+        "file": null
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      },
+      "setup": {
+        "required_modules": [
+          "Causalean.Experimentation.DesignBased.Exposure",
+          "Causalean.Experimentation.DesignBased.PotentialOutcome",
+          "Causalean.Experimentation.DesignBased.DesignCore",
+          "Mathlib.Combinatorics.SimpleGraph.Basic"
+        ]
+      }
+    },
+    {
+      "id": "S3",
+      "obj_id": "S-3",
+      "kind": "setup",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Finite-dimensional real convex-program world: `Finset`-indexed real vectors, the probability simplex, compact convex hulls, and Hahn-Banach separation - the ambient for the primal/dual perspective (second-order-cone) programs and their common value. — Search trace: lean_local_search 'minimax' / 'bayesRisk' / 'Sion' / 'farkas' / 'geometric_hahn_banach' / 'isCompact_stdSimplex' / 'isCompact_convexHull' / 'ConvexOn.map_sum_le'; lean_leansearch 'minimax theorem: inf sup equals sup inf for convex compact sets (Sion / von Neumann)'. Result: Mathlib has NO Sion/von Neumann minimax theorem, NO LP duality and NO Farkas lemma ('Sion' and 'farkas' both return zero hits; the only minimax-shaped hits are `Mathlib.Order.SaddlePoint`'s order-theoretic `IsSaddlePointOn`/`isSaddlePointOn_value` and the trivial `iSup_iInf_le_iInf_iSup`, plus `ProbabilityTheory.{minimaxRisk,bayesRisk,bayesRisk_le_minimaxRisk}` in `Mathlib/Probability/Decision/Risk/`, which are ENNReal kernel-decision objects with no equality theorem). Causalean has no convex-program layer either; the nearest CausalSmith item, `CausalSmith.Experimentation.SaturationSkew.fin_dim_supporting_hyperplane` (EXP_SaturationSkewThreshold_Research/Helpers/Convex.lean:17), is an unproved `sorry` in an in-flight run and is therefore deliberately NOT reused. The engines that DO exist and are reused directly: `geometric_hahn_banach_compact_closed`, `isCompact_stdSimplex`, `Set.Finite.isCompact_convexHull`, `ConvexOn.map_sum_le`. Bypass-justified over the Causalean cluster: the programs are pure finite real vector algebra over `Omega_n x S_n` and `B_n(E)` with no design-based content of their own; the bridge back to S1 is the recovery map.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": null,
+        "file": null
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      },
+      "setup": {
+        "required_modules": [
+          "Mathlib.Analysis.LocallyConvex.Separation",
+          "Mathlib.Analysis.Convex.StdSimplex",
+          "Mathlib.Analysis.Convex.Topology",
+          "Mathlib.Analysis.Convex.Combination",
+          "Mathlib.Analysis.Convex.Jensen",
+          "Mathlib.Analysis.SpecialFunctions.Sqrt"
+        ]
+      }
+    },
+    {
+      "id": "ass:fixed-schedule",
+      "obj_id": "A-1",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "The table \\(y\\) is fixed before \\(Z\\sim\\Theta\\) is drawn.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.FixedSchedule",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "4b3296457f9f505afa2e52999ab124fdeae67b8e",
+        "note": "The table y is a deterministic parameter outside the assignment draw, and the pointwise equality Yreal z i = y i z conservatively identifies its realized-outcome representation without restricting y."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "standard": {
+        "name": "Neyman finite-population design-based framework",
+        "cite": "basseairoldi2018limitations",
+        "citation": "Guillaume W. Basse and Edoardo M. Airoldi. 2018. \"Limitations of Design-Based Causal Inference and A/B Testing under Arbitrary and Network Interference.\" Sociological Methodology 48(1):136--151."
+      }
+    },
+    {
+      "id": "ass:bounded-table",
+      "obj_id": "A-2",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For every \\(i\\in V_n\\) and \\(z\\in\\mathcal A_n\\), \\(y_i(z)\\in[-1,1]\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.BoundedTable",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "54e619650f92d4b235fbb2e357bd84735f42417e",
+        "note": "Set.Icc (-1) 1 unfolds exactly to the paper's uniform requirement y_i(z) ∈ [-1,1] for every assignment z and unit i."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "standard": {
+        "name": "uniformly bounded potential outcomes",
+        "cite": "gaoharshawsavjewang2026impossibility",
+        "citation": "Chao Gao, Christopher Harshaw, Fredrik Sävje, and Yitan Wang. 2026. \"On the Impossibility of Specification Testing of Interference Models Based on Exposure Mappings.\" arXiv:2605.09726."
+      }
+    },
+    {
+      "id": "ass:menu-measurability",
+      "obj_id": "A-3",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "There exist \\(e\\in\\mathcal E\\) and functions \\(h_{i,e,n}:\\mathcal X_{i,e,n}\\to\\mathbb R\\) such that \\(y_i(z)=h_{i,e,n}(e_{i,n}(z))\\) for every \\(i\\in V_n\\) and \\(z\\in\\mathcal A_n\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.MenuMeasurable",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "10250cc065dd4e50507a1a2a28fad0713425087b",
+        "note": "Unfolding ProperlySpecified and expo gives ∃ e∈Emenu, ∃ h, ∀ i z, y i z = h i (e z i); functions on each exposure range extend to all X (arbitrarily off-range), and every all-X function restricts back, so this is equivalent both ways."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:ambiguity-class",
+      "obj_id": "P-1",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For fixed \\(\\bar p\\in(0,1)\\) and \\(n\\in\\mathcal N_{\\bar p}\\), \\(\\mathcal Y_n(\\mathcal E)=\\{y=(y_i)_{i\\in V_n}:y_i:\\mathcal A_n\\to[-1,1],\\ y\\text{ satisfies }\\mathrm{ass{:}fixed\\text{-}schedule},\\mathrm{ass{:}bounded\\text{-}table},\\mathrm{ass{:}menu\\text{-}measurability}\\}\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.AmbiguityClass",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "ad35d9724a2ea95955fd2d385ec3f9e49d699373",
+        "note": "After unfolding its three fields, the structure selects exactly the bounded, fixed-schedule, menu-measurable tables; Yreal is a conservative auxiliary representation uniquely pinned by FixedSchedule and instantiated canonically by all class-valued consumers."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:design-class",
+      "obj_id": "P-2",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For fixed \\(\\bar p\\in(0,1)\\) and \\(n\\in\\mathcal N_{\\bar p}\\), \\(\\mathcal D_n(\\bar p)=\\{\\Theta:\\Theta(\\Omega_n)=1\\}\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.budgetDesigns",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "f08c38a24972680cb606bb2cb0d9a29c18e5ba01",
+        "note": "For a finite nonnegative probability mass function, requiring every nonzero-mass assignment to satisfy ExactBudget m is equivalent in both directions to assigning total probability one to the exact-budget slice Ω_n."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:observed-experiment",
+      "obj_id": "P-3",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For fixed \\(\\bar p\\in(0,1)\\) and \\(n\\in\\mathcal N_{\\bar p}\\), draw \\(Z\\sim\\Theta\\), then reveal \\(\\mathsf O_n=(Z,(y_i(Z))_{i\\in V_n})\\) once.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.observedExperiment",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "fcbd74a00732c07fbca72369a5494d3613bba327",
+        "note": "The supported finite design together with z ↦ (z,(y_i(z))_i) is an equivalent law-plus-observation-map representation of the one-shot experiment, and the bounded subtype exactly records observations in [-1,1]^n."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:minimax-risk",
+      "obj_id": "P-4",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For fixed \\(\\bar p\\in(0,1)\\), \\(n\\in\\mathcal N_{\\bar p}\\), and finite nonempty \\(\\mathcal E\\),\n\\[\nV_n^\\star(\\mathcal E,\\bar p)\n=\\inf_{\\Theta\\in\\mathcal D_n(\\bar p)}\n \\inf_{\\widehat\\theta:\\Omega_n\\times[-1,1]^n\\to\\mathbb R}\n \\sup_{y\\in\\mathcal Y_n(\\mathcal E)}\n \\left\\{\\mathbb E_{Z\\sim\\Theta}\n \\left[(\\widehat\\theta(\\mathsf O_n)-\\theta_n(y))^2\\right]\\right\\}^{1/2}.\n\\]\nHolding \\((n,\\mathcal E,\\bar p)\\) fixed, this functional is invariant to the choice of the ambient known graph \\(G_n\\): the graph does not enter the outcome class, exact-budget design class, observation, loss, or unrestricted decision-rule domain.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.minimaxRMSE",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "b625801cb1077ef3ec0f2e4b9feac997543dabf0",
+        "note": "After unfolding AmbiguityClass, budgetDesigns, designRMSE, and PaperDomain, this is the infimum over exact-budget designs and decision rules of worst-case RMSE; clipping to [-2,2] is lossless because every target lies in [-2,2], and omission of an ambient-graph argument makes the stated invariance definitional."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:sign-schedules",
+      "obj_id": "P-5",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For fixed \\(\\bar p\\in(0,1)\\) and \\(n\\in\\mathcal N_{\\bar p}\\), \\(\\mathcal B_n(\\mathcal E)=\\{\\alpha=(e,b):e\\in\\mathcal E,\\ b=(b_{i,x})_{i\\in V_n,x\\in\\mathcal X_{i,e,n}}\\in\\{-1,1\\}^{d_{e,n}}\\}\\); for \\(\\alpha=(e,b)\\), set \\(t_\\alpha=n^{-1}\\sum_{i\\in V_n}[b_{i,e_{i,n}(\\mathbf 1_n)}-b_{i,e_{i,n}(\\mathbf 0_n)}]\\) and \\(s_{\\alpha z}=(b_{i,e_{i,n}(z)})_{i\\in V_n}\\in\\mathcal S_n\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.signExperiment",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "43e21289ff8e0a90005b7b9b52510e3239d2978f",
+        "note": "PaperSignSchedule unfolds to a menu exposure paired with one Boolean-encoded ±1 sign per coordinate in each exposure range, while paperSignTarget and paperSignObs reproduce exactly t_α and s_{αz} under the Bool↔{-1,1} encoding."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:collision-moduli",
+      "obj_id": "P-6",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For fixed \\(\\bar p\\in(0,1)\\) and \\(n\\in\\mathcal N_{\\bar p}\\), and for every design vector \\(\\pi\\) on \\(\\Omega_n\\), define \\(C_n(\\pi)=\\max_{\\alpha,\\beta\\in\\mathcal B_n(\\mathcal E)}|t_\\alpha-t_\\beta|\\{\\sum_{z\\in\\Omega_n:s_{\\alpha z}=s_{\\beta z}}\\pi_z\\}^{1/2}\\). For every observation cell set \\(d_n(z,s)=\\max_{\\alpha:s_{\\alpha z}=s}t_\\alpha-\\min_{\\alpha:s_{\\alpha z}=s}t_\\alpha\\), with diameter zero for a singleton fiber, and define \\(U_n(\\pi)=\\{\\max_{\\alpha\\in\\mathcal B_n(\\mathcal E)}\\sum_{z\\in\\Omega_n}\\pi_z d_n(z,s_{\\alpha z})^2\\}^{1/2}\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.collisionModuli",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "3ee886120d62d397e47f828cd275b345b29887e8",
+        "note": "The two unfolded components are respectively the finite maximum of target separation times the square root of collision probability and the square root of the maximum design-weighted squared fiber diameter; sSup/sInf agree with max/min on the nonempty finite fibers actually queried."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:finite-primal",
+      "obj_id": "P-7",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For fixed \\(\\bar p\\in(0,1)\\) and \\(n\\in\\mathcal N_{\\bar p}\\), \\(\\mathsf P_n\\) has complete primitive data \\((n,\\mathcal E,\\bar p)\\) through \\(\\Omega_n\\), \\(\\mathcal B_n(\\mathcal E)\\), \\(s_{\\alpha z}\\), and \\(t_\\alpha\\). It minimizes \\(r\\) over \\(\\pi_z\\ge0\\), \\(w_{zs}\\in\\mathbb R\\), and \\(q_{\\alpha z}\\ge0\\), subject to \\(\\sum_{z\\in\\Omega_n}\\pi_z=1\\), \\(-2\\pi_z\\le w_{zs}\\le2\\pi_z\\), \\(\\sum_{z\\in\\Omega_n}q_{\\alpha z}\\le r\\) for every \\(\\alpha\\in\\mathcal B_n(\\mathcal E)\\), and the rotated-cone inequalities \\(\\pi_zq_{\\alpha z}\\ge(w_{z,s_{\\alpha z}}-\\pi_zt_\\alpha)^2\\) for every \\((\\alpha,z)\\). The closed perspective convention forces \\(w_{zs}=0\\) when \\(\\pi_z=0\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.primalProgram",
+        "file": "Programs.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "175c73f6fc79a02580d674dd11df657fcf6dfa82",
+        "note": "Unfolding primalFeasible gives the simplex, exact-budget support, perspective bounds, nonnegative epigraph variables, worst-case constraint, and rotated-cone inequalities verbatim; full-cube coordinates conservatively pad Ω_n by zeros, and 0≤r≤4 is value-preserving because nonnegativity is implied and a feasible r≤4 always exists."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:finite-dual",
+      "obj_id": "P-8",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For fixed \\(\\bar p\\in(0,1)\\) and \\(n\\in\\mathcal N_{\\bar p}\\), \\(\\mathsf Q_n\\) has complete primitive data \\((n,\\mathcal E,\\bar p)\\) through \\(\\Omega_n\\), \\(\\mathcal B_n(\\mathcal E)\\), \\(\\mathcal S_n\\), \\(s_{\\alpha z}\\), and \\(t_\\alpha\\). It maximizes \\(v\\) over \\(\\mu_\\alpha\\ge0\\), \\(a_{zs}\\ge0\\), \\(b_{zs}\\in\\mathbb R\\), \\(c_{zs}\\ge0\\), and \\(u_{zs}\\ge0\\), subject to \\(\\sum_\\alpha\\mu_\\alpha=1\\), \\(a_{zs}=\\sum_{\\alpha:s_{\\alpha z}=s}\\mu_\\alpha\\), \\(b_{zs}=\\sum_{\\alpha:s_{\\alpha z}=s}\\mu_\\alpha t_\\alpha\\), \\(c_{zs}=\\sum_{\\alpha:s_{\\alpha z}=s}\\mu_\\alpha t_\\alpha^2\\), \\(a_{zs}u_{zs}\\ge b_{zs}^2\\), and \\(v\\le\\sum_{s\\in\\mathcal S_n}(c_{zs}-u_{zs})\\) for every \\(z\\in\\Omega_n\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.dualProgram",
+        "file": "Programs.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "38675f9d4a8384e333f70d420928bf9bf9968184",
+        "note": "After unfolding dualFeasible, the simplex gives mu≥0 and sum mu=1, the moment equalities imply a,c≥0, and |signTarget|≤2 makes the added bounds 0≤v≤4 and u≤4 optimization-value preserving, so the sSup equals the paper dual optimum."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:multilinear-extension",
+      "obj_id": "P-9",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For fixed \\(\\bar p\\in(0,1)\\) and \\(n\\in\\mathcal N_{\\bar p}\\), for \\(z\\in\\Omega_n\\) and \\(x\\in[-1,1]^n\\), define \\(\\delta^{\\mathrm{ml}}(z,x)=\\sum_{s\\in\\mathcal S_n}\\delta^{\\mathrm{bin}}(z,s)\\prod_{i\\in V_n}(1+s_ix_i)/2\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.multilinearExtension",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "89f3c3df03393fe0174666a25d568412bfc8286a",
+        "note": "On the stated exact-budget and cube domain, Bool schedules with pm1 are exactly the sign cube and the finite sum/product is the paper's multilinear formula; its total definition outside that domain is a conservative extension."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:primal-recovery",
+      "obj_id": "P-10",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For fixed \\(\\bar p\\in(0,1)\\) and \\(n\\in\\mathcal N_{\\bar p}\\), from an optimal primal solution set \\(\\Theta_n^\\star(z)=\\pi_z\\), set \\(\\delta^{\\mathrm{bin}}(z,s)=w_{zs}/\\pi_z\\) when \\(\\pi_z>0\\) and zero when \\(\\pi_z=0\\), and set \\(\\widehat\\theta_n^\\star=\\delta^{\\mathrm{ml}}\\) using \\(\\mathrm{def{:}multilinear\\text{-}extension}\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.primalRecovery",
+        "file": "Programs.lean"
+      },
+      "review": {
+        "status": "drift",
+        "passed_hash": "e2686a6ce40cd00957b9fc2be8722b7775c8f5e5",
+        "note": "Paper ⇒ Lean on the stated domain, but Lean ⇒ paper fails because the Lean definition omits pbar and PaperDomain, admitting recovery for endpoint budgets and other nonadmissible or empty-menu instances; add pbar and a PaperDomain pbar m Emenu binder."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:minimal-witness-mappings",
+      "obj_id": "P-11",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "On the unconditional two-unit assignment cube \\(\\{00,10,01,11\\}\\), define three binary exposure mappings independently of the treatment-budget fraction.  Every exposure range below is exactly \\(\\{0,1\\}\\), and every unit's endpoint exposures are distinct.  In row order \\(00,10,01,11\\), set\n\\[\n (e^{(0)}_{1,2},e^{(0)}_{2,2})=((0,0),(0,0),(0,1),(1,1)),\n\\]\n\\[\n (e^{(-)}_{1,2},e^{(-)}_{2,2})=((0,0),(0,0),(1,0),(1,1)),\n\\]\nand\n\\[\n (e^{(+)}_{1,2},e^{(+)}_{2,2})=((0,0),(1,0),(0,0),(1,1)).\n\\]\nSet \\(\\mathcal E_-=\\{e^{(0)},e^{(-)}\\}\\) and \\(\\mathcal E_+=\\{e^{(0)},e^{(+)}\\}\\).  Separately, for the minimal admissible exact-budget experiment, fix \\(\\bar p\\in[1/2,1)\\) and take \\(n=2\\).  Then \\(m_2=\\lfloor2\\bar p\\rfloor=1\\), \\(2\\in\\mathcal N_{\\bar p}\\), the graph \\(G_2\\) is empty, \\(\\mathcal A_2=\\{00,10,01,11\\}\\), and \\(\\Omega_2=\\{10,01\\}\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.minimalWitnessMappings",
+        "file": "Witnesses.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "cf1c13c04bd50bd30bac12ff354d9f51f536ce66",
+        "note": "The three unfolded Boolean functions give exactly the four stated rows, their Finsets are the two stated menus, and V2, bottom graph, and budget 1 determine the stated two-unit cube and exact-budget slice for the given fraction range."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:minimal-witness-graphs",
+      "obj_id": "P-12",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Write \\(a=(1,0)\\), \\(b=(1,1)\\), \\(c=(2,0)\\), and \\(d=(2,1)\\). Then \\(H_2(e^{(0)})\\) has vertex set \\(\\{a,b,c,d\\}\\) and edge set \\(\\{ab,bc,bd,cd\\}\\), while both \\(H_2(e^{(-)})\\) and \\(H_2(e^{(+)})\\) have edge set \\(\\{ab,ad,bd,cd\\}\\). The menu isomorphisms are the identity on \\(a,b,c,d\\) from the shared \\(H_2(e^{(0)})\\) to itself and the identity from \\(H_2(e^{(-)})\\) to \\(H_2(e^{(+)})\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.minimalWitnessGraphs",
+        "file": "Witnesses.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "121daf06dad6d7bd0c250c09930354f2ec156d4f",
+        "note": "SimpleGraph.fromRel symmetrizes the four listed nonloop pairs, yielding exactly ab,bc,bd,cd and ab,ad,bd,cd; witnessGraphPlus is definitionally witnessGraphMinus, so the stated identity isomorphisms follow."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:minimal-witness-arrays",
+      "obj_id": "P-13",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For \\(\\mathcal E_-\\), schedule \\(A\\) under \\(e^{(0)}\\) has response coordinates \\((h_{1}(0),h_{1}(1),h_{2}(0),h_{2}(1))=(-1,1,1,1)\\), induced outcomes \\((-1,1),(-1,1),(-1,1),(1,1)\\) at \\(00,10,01,11\\), and target \\(1\\). Schedule \\(B\\) under \\(e^{(-)}\\) has coordinates \\((-1,-1,1,-1)\\), induced outcomes \\((-1,1),(-1,1),(-1,1),(-1,-1)\\), and target \\(-1\\). Thus the two schedules agree on every feasible assignment. For \\(\\mathcal E_+\\), an explicit least-favourable sign prior places mass \\(15/112\\) on each \\(e^{(0)}\\) coordinate vector \\((-1,-1,1,-1)\\) and \\((1,1,-1,1)\\), mass \\(5/32\\) on each \\(e^{(0)}\\) vector \\((-1,1,1,1)\\) and \\((1,-1,-1,-1)\\), mass \\(5/224\\) on each \\(e^{(+)}\\) vector \\((-1,-1,1,-1)\\) and \\((1,1,-1,1)\\), and mass \\(3/16\\) on each \\(e^{(+)}\\) vector \\((-1,1,-1,1)\\) and \\((1,-1,1,-1)\\). The eight masses sum to one; their targets are respectively \\((-1,1,1,-1,-1,1,2,-2)\\). Conditional target means equal \\(-3s_2/4\\) at \\(z=10\\) and \\(-3s_1/4\\) at \\(z=01\\), and the conditional target variance averaged over either assignment is \\(25/16\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.minimalWitnessArrays",
+        "file": "Witnesses.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "8e5a22cbd11f13d577e9987d6fa901e92b17204c",
+        "note": "Unfolding the component definitions gives exactly the two lower schedules, eight coordinate vectors, masses, targets, and 25/16 value stated in the note; the masses sum to one and the induced conditional means and averaged variances compute to the advertised values."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:minimal-witness-estimators",
+      "obj_id": "P-14",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For \\(\\mathcal E_-\\), put all design mass on \\(z=10\\) and set \\(\\delta_-(10,x)=-(x_1+x_2)/2\\). For \\(\\mathcal E_+\\), use the uniform design on \\(\\{10,01\\}\\) and set \\(\\delta_+(10,x)=-3x_2/4\\) and \\(\\delta_+(01,x)=-3x_1/4\\). The latter rule has worst-case mean squared error \\(25/16\\) on each mapping, as certified by checking the sixteen sign vertices for each candidate and then applying \\(\\mathrm{lem{:}sign\\text{-}reduction}\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.minimalWitnessEstimators",
+        "file": "Witnesses.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "aed737d27f08f05960abb3f7ab21aaeb7f289ead",
+        "note": "The first design is concentrated at 10, crdOn 1 on Fin 2 is uniform on {10,01}, and the estimators have the stated values on their respective supports; their arbitrary totalization off support is conservative because those assignments have zero design mass."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:persistent-witness",
+      "obj_id": "P-15",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Fix \\(\\bar p\\in(0,1)\\).  For \\(B\\ge1\\) such that \\(n=2B\\in\\mathcal N_{\\bar p}\\), label the units \\((j,a)\\) with \\(j\\in\\{1,\\ldots,B\\}\\) and \\(a\\in\\{1,2\\}\\), take the empty graph, and set \\(m_{2B}=\\lfloor2B\\bar p\\rfloor\\).  Define \\(\\rho_B:\\mathcal A_{2B}\\to\\{00,10,01,11\\}\\) by\n\\[\n \\rho_B(z)=\n \\begin{cases}\n 00,&z=\\mathbf 0_{2B},\\\\\n 11,&z=\\mathbf 1_{2B},\\\\\n 10,&z\\notin\\{\\mathbf 0_{2B},\\mathbf 1_{2B}\\}\\text{ and }z_{(1,1)}=1,\\\\\n 01,&z\\notin\\{\\mathbf 0_{2B},\\mathbf 1_{2B}\\}\\text{ and }z_{(1,1)}=0.\n \\end{cases}\n\\]\nFor \\(\\kappa\\in\\{0,-,+\\}\\), set\n\\[\n \\widetilde e^{\\kappa}_{(j,a),2B}(z)\n =e^{(\\kappa)}_{a,2}(\\rho_B(z)),\n\\]\nand define \\(\\widetilde{\\mathcal E}_{B,-}=\\{\\widetilde e^0,\\widetilde e^-\\}\\) and \\(\\widetilde{\\mathcal E}_{B,+}=\\{\\widetilde e^0,\\widetilde e^+\\}\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.persistentWitness",
+        "file": "Witnesses.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "4bbbd33dd3c40ae094dfe92b3dcbc0a0e7f86581",
+        "note": "Unfolding persistentSelector, blownUpExposure, the three witness mappings, and both menus gives exactly the four-case rho_B construction, empty graph, floor budget, replicated unit-coordinate mappings, and the two stated menus."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:local-solved-menu",
+      "obj_id": "P-16",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For fixed \\(\\bar p\\in(0,1)\\) and \\(n\\in\\mathcal N_{\\bar p}\\), on the empty graph define \\(e^{\\mathrm{loc}}_{1,n}(z)=z_1\\), \\(e^{\\mathrm{loc}}_{i,n}(z)=0\\) for \\(i\\ge2\\), and \\(e^{\\mathrm c}_{i,n}(z)=0\\) for every \\(i\\). Set \\(\\mathcal E^{\\mathrm{loc}}=\\{e^{\\mathrm{loc}},e^{\\mathrm c}\\}\\), use any design in \\(\\mathcal D_n(\\bar p)\\), and define \\(\\widehat\\theta^{\\mathrm{loc}}(Z,Y^{\\mathrm{obs}})=(2Z_1-1)Y_1^{\\mathrm{obs}}/n\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.localSolvedMenu",
+        "file": "Calibrations.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "7ba68020c6355a17868025eacf5e13981e611e8c",
+        "note": "PaperDomain pins n=card V and m=floor(pbar*n), budgetDesigns is the exact-budget design class, and unfolding the menu and estimator gives the empty graph, distinguished-unit exposure, constant-zero exposure, and (2Z_i0-1)Y_i0/n."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:nonlocal-solved-menu",
+      "obj_id": "P-17",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For fixed \\(\\bar p\\in(0,1)\\) and \\(n\\in\\mathcal N_{\\bar p}\\), define \\(e^{\\mathrm{all}}_{i,n}(z)=\\mathbf 1\\{z=\\mathbf 1_n\\}\\) and \\(\\mathcal E^{\\mathrm{nl}}=\\{e^{\\mathrm{all}},e^{\\mathrm c}\\}\\). Use any design in \\(\\mathcal D_n(\\bar p)\\) and define \\(\\widehat\\theta^{\\mathrm{nl}}(Z,Y^{\\mathrm{obs}})=-n^{-1}\\sum_{i\\in V_n}Y_i^{\\mathrm{obs}}\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.nonlocalSolvedMenu",
+        "file": "Calibrations.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "f05ce6ef1eb3300ff9673abc9acdf2e9a21dfec3",
+        "note": "PaperDomain and budgetDesigns impose the stated admissible exact-budget setting, while the unfolded menu and estimator are exactly the all-treated indicator with constant-zero exposure and -n⁻¹ times the observed-outcome sum."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:complete-randomization",
+      "obj_id": "P-18",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For fixed \\(\\bar p\\in(0,1)\\) and \\(n\\in\\mathcal N_{\\bar p}\\), \\(\\Theta_n^{\\mathrm{CR}}(z)=|\\Omega_n|^{-1}\\) for every \\(z\\in\\Omega_n\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.crDesign",
+        "file": "Calibrations.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "c6842d90fc87c52ac27f4a8fa9eaf3a4bc39bc73",
+        "note": "Unfolding crdOn gives the pushforward of the uniform law on size-m_n treated subsets through their injective Boolean-indicator representation, hence every z in Omega_n has mass 1/|Omega_n|."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:difference-in-means",
+      "obj_id": "P-19",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For fixed \\(\\bar p\\in(0,1)\\) and \\(n\\in\\mathcal N_{\\bar p}\\), \\(\\widehat\\theta_n^{\\mathrm{DM}}=m_n^{-1}\\sum_{i\\in V_n}Z_iY_i^{\\mathrm{obs}}-(n-m_n)^{-1}\\sum_{i\\in V_n}(1-Z_i)Y_i^{\\mathrm{obs}}\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.dmEstimator",
+        "file": "Calibrations.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "592fe5dccca28521005290ca0a1165e7a1a11339",
+        "note": "Bool true and false encode Z_i=1 and Z_i=0 respectively, and the two finite sums and admissibly nonzero denominators are exactly the treated and control means in the paper formula."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:structural-handle",
+      "obj_id": "P-20",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Start from the explicit pairwise collision modulus \\(C_n(\\pi)\\) and fiber-diameter modulus \\(U_n(\\pi)\\), quotient their sign schedules and observation cells by automorphisms of the menu-induced sign experiment, and compare the optimized moduli with posterior-variance certificates from \\(\\mathsf Q_n\\) to seek exposure-incidence summaries controlling \\(L_n(\\mathcal E,\\bar p)\\) without enumerating all sign schedules. The ambient graph \\(G_n\\) is not an argument of the unrestricted frontier. In graph-local subclasses it may constrain or organize an analyst-specified menu \\(\\mathcal E(G_n)\\), or certify actions, orbits, and incidence bounds; every resulting effect on the frontier is mediated through that menu-induced finite experiment.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.structuralHandle",
+        "file": "Programs.lean"
+      },
+      "review": {
+        "status": "drift",
+        "passed_hash": "7780e092327bfc546e213efb339f3d19545cba67",
+        "note": "Neither direction is established: Lean omits the paper's automorphism quotients, orbit/incidence data, and posterior-variance comparison mechanism, while adding a specific existential kappa sandwich and exact sqrt(Q_n)=L_n equality not stated as the definition; replace it with a representation of the menu-induced actions, quotient certificates, and their stated comparisons, leaving G_n only as menu-mediated auxiliary data."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:oracle-menu-benchmark",
+      "obj_id": "P-21",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For fixed \\(\\bar p\\in(0,1)\\), \\(n\\in\\mathcal N_{\\bar p}\\), and a finite nonempty menu \\(\\mathcal E\\), the mapping-known oracle benchmark is\n\\[\n \\max_{e\\in\\mathcal E}V_n^\\star(\\{e\\},\\bar p),\n\\]\nwhere \\(V_n^\\star(\\{e\\},\\bar p)\\) is the design-inclusive minimax root mean squared error in \\(\\mathrm{def{:}minimax\\text{-}risk}\\) with the adversarial menu restricted to the singleton \\(\\{e\\}\\). The design still ranges over all of \\(\\mathcal D_n(\\bar p)\\), and the estimator may depend on the known singleton mapping. Finiteness and nonemptiness of \\(\\mathcal E\\) make the displayed maximum well defined.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.oracleMenuBenchmark",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "436672266d3d1416b645b4bd3e6de9514a4e03de",
+        "note": "Finset.image followed by max' computes exactly max over the nonempty menu of minimaxRMSE for each singleton {e}; unfolding minimaxRMSE retains optimization over every exact-budget design and permits an estimator chosen separately for the known singleton."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:sign-reduction",
+      "obj_id": "L-1",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Fix \\(\\bar p\\in(0,1)\\) and \\(n\\in\\mathcal N_{\\bar p}\\). The minimax mean squared error over \\(\\mathcal Y_n(\\mathcal E)\\) equals the minimax mean squared error over the finite sign schedules \\(\\mathcal B_n(\\mathcal E)\\). More precisely, every rule \\(\\delta^{\\mathrm{bin}}\\) on \\(\\Omega_n\\times\\mathcal S_n\\) has the multilinear extension in \\(\\mathrm{def{:}multilinear\\text{-}extension}\\), and for every \\(e\\in\\mathcal E\\) and every bounded response array \\(h\\), its risk is at most the largest risk of \\(\\delta^{\\mathrm{bin}}\\) over sign arrays for that same \\(e\\). Conversely, sign schedules form a subclass of \\(\\mathcal Y_n(\\mathcal E)\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.sign_reduction",
+        "file": "T_sign_reduction.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "5327ddbc6e4ee05e84e7122abd2db6accbddff09",
+        "note": "After unfolding AmbiguityClass, BoundedTable, designRMSE, SignSchedule, signTable, and multilinearExtension, the fixed-design minimax equality, same-e multilinear risk bound, and sign-schedule subclass assertion are equivalent to the paper; the additional all-menu bound and duplicated boundedness premise follow from those clauses."
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 1
+      }
+    },
+    {
+      "id": "thm:finite-saddle",
+      "obj_id": "T-1",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Fix \\(\\bar p\\in(0,1)\\) and \\(n\\in\\mathcal N_{\\bar p}\\). The complete primitive data of \\(\\mathsf P_n\\) and \\(\\mathsf Q_n\\) are \\((n,\\mathcal E,\\bar p)\\), and the two programs attain equal optimal objectives. With \\(L_n(\\mathcal E,\\bar p)\\) equal to the square root of this common objective, one has\n\\[\n V_n^\\star(\\mathcal E,\\bar p)=L_n(\\mathcal E,\\bar p)\n =\\sqrt{\\operatorname{val}(\\mathsf P_n)}\n =\\sqrt{\\operatorname{val}(\\mathsf Q_n)}.\n\\]\nThe recovery in \\(\\mathrm{def{:}primal\\text{-}recovery}\\) yields \\(\\Theta_n^\\star\\in\\mathcal D_n(\\bar p)\\) and an arbitrary-outcome estimator \\(\\widehat\\theta_n^\\star\\) satisfying\n\\[\n \\sup_{y\\in\\mathcal Y_n(\\mathcal E)}\n \\operatorname{RMSE}_n(\\Theta_n^\\star,\\widehat\\theta_n^\\star;y)\n =L_n(\\mathcal E,\\bar p).\n\\]\nEvery \\(\\Theta\\in\\mathcal D_n(\\bar p)\\) and every measurable \\(\\widehat\\theta\\) have worst-case root mean squared error at least \\(L_n(\\mathcal E,\\bar p)\\). Holding \\((n,\\mathcal E,\\bar p)\\) fixed, the outcome model, exact-budget design class, finite decision experiment, programs, set of recovered optimal design--rule pairs, and exact minimax value are unchanged when the ambient known graph \\(G_n\\) changes. In particular, the same optimal primal solution recovers the same pair. Allowing a rule to read a fixed known \\(G_n\\) does not change the unrestricted decision-rule class, because that fixed constant can be compiled into the rule.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.finite_saddle",
+        "file": "T_finite_saddle.lean"
+      },
+      "review": {
+        "status": "drift",
+        "passed_hash": "6781027273820e8dd8c4a3a63ffeead161da6507",
+        "note": "Paper ⇒ Lean fails: the universal converse quantifies unrestricted estimators but represents their worst-case risk by real `sSup`; for an estimator unbounded on the bounded outcome cube this range is unbounded and `Real.sSup_of_not_bddAbove` makes the Lean right-hand side 0, whereas the paper’s supremum is +∞. Use an extended-real supremum or explicitly separate the unbounded case while retaining the arbitrary-estimator claim."
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 1
+      }
+    },
+    {
+      "id": "thm:minimal-nonrepresentability",
+      "obj_id": "T-2",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Fix \\(\\bar p\\in[1/2,1)\\), so \\(m_2=\\lfloor2\\bar p\\rfloor=1\\). The construction in \\(\\mathrm{def{:}minimal\\text{-}witness\\text{-}mappings}\\) is minimal: \\(n=2\\) and \\(m_2=1\\) are the smallest admissible population and budget because no integer satisfies \\(1\\le m\\le n-1\\) when \\(n=1\\). Both menus have cardinality two, every unit has distinct endpoint exposures under every mapping, and \\(\\{H_2(e):e\\in\\mathcal E_-\\}\\) and \\(\\{H_2(e):e\\in\\mathcal E_+\\}\\) are identical as multisets of labeled graphs under the explicit identity isomorphisms in \\(\\mathrm{def{:}minimal\\text{-}witness\\text{-}graphs}\\). Nevertheless, the exact ambiguity minimax risks are \\(V_2^\\star(\\mathcal E_-,\\bar p)=1\\) and \\(V_2^\\star(\\mathcal E_+,\\bar p)=5/4\\). The two fully tabulated colliding arrays give the first matching lower certificate, the eight-point least-favourable prior gives the second, and the explicit designs and estimators in \\(\\mathrm{def{:}minimal\\text{-}witness\\text{-}estimators}\\) give the matching upper certificates. Hence derived mapping-wise conflict graphs alone do not represent latent-menu risk on the exact-budget slice; this is not a claim of primitive dependence on the ambient graph.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.minimal_nonrepresentability",
+        "file": "T_minimal_nonrepresentability.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "f1f44d2aab8144b5627221805de7d0127ce3c1db",
+        "note": "Unfolding the referenced definitions gives the exact two-unit budget/admissibility claim, the three tabulated mappings and two-element menus with distinct endpoint exposures, the stated labeled conflict graphs (the identity correspondences are graph equality), and the two design-inclusive minimax RMSE values 1 and 5/4."
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 1
+      }
+    },
+    {
+      "id": "thm:persistent-nonrepresentability",
+      "obj_id": "T-3",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Fix \\(\\bar p\\in(0,1)\\). For every \\(B\\ge1\\) such that \\(n=2B\\in\\mathcal N_{\\bar p}\\), put \\(m_{2B}=\\lfloor2B\\bar p\\rfloor\\), so \\(1\\le m_{2B}\\le2B-1\\). The two menus in \\(\\mathrm{def{:}persistent\\text{-}witness}\\) have cardinality two, every unit retains distinct endpoint exposures, and \\(\\rho_B(\\Omega_{2B})=\\{10,01\\}\\). For each \\(\\kappa\\in\\{0,-,+\\}\\), \\(H_{2B}(\\widetilde e^\\kappa)\\) is the labeled type blow-up of \\(H_2(e^{(\\kappa)})\\): vertices are \\(((j,a),k)\\), and two such vertices are adjacent exactly when no \\(q\\in\\{10,01\\}\\) simultaneously realizes their two base endpoint exposures under \\(e^{(\\kappa)}\\). In particular, the feasible endpoint-exposure vector sets of \\(\\widetilde e^-\\) and \\(\\widetilde e^+\\) coincide, and the identity map \\(((j,a),k)\\mapsto((j,a),k)\\) is an explicit labeled graph isomorphism; the same identity matches the shared \\(\\widetilde e^0\\) graphs. Thus the two mapping-wise labeled graph multisets agree. Their mapping-known oracle benchmarks coincide:\n\\[\n \\max_{\\kappa\\in\\{0,-\\}}V_{2B}^\\star(\\{\\widetilde e^\\kappa\\},\\bar p)\n =\\max_{\\kappa\\in\\{0,+\\}}V_{2B}^\\star(\\{\\widetilde e^\\kappa\\},\\bar p)\n =\\frac56.\n\\]\nNevertheless,\n\\[\n V_{2B}^\\star(\\widetilde{\\mathcal E}_{B,-},\\bar p)=1,\n \\qquad\n V_{2B}^\\star(\\widetilde{\\mathcal E}_{B,+},\\bar p)=\\frac54.\n\\]\nThe corresponding additive adaptation prices are \\(1/6\\) and \\(5/12\\), and the robust-to-oracle risk ratios are \\(6/5\\) and \\(3/2\\). The lower certificates are uniform over every design in \\(\\mathcal D_{2B}(\\bar p)\\) and every measurable estimator, while explicit budget-feasible designs and block-averaged estimators attain all singleton and robust values for arbitrary block-specific bounded response coordinates. Consequently, for every fixed \\(\\bar p\\in(0,1)\\), every sufficiently large even population size belongs to \\(\\mathcal N_{\\bar p}\\); identical derived mapping-wise labeled conflict-graph multisets then conceal both a persistent robust-risk gap \\(1/4\\) and a persistent additive-adaptation-price gap \\(1/4\\). The separation concerns those menu-derived graphs, not primitive ambient-graph dependence.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.persistent_nonrepresentability",
+        "file": "T_persistent_nonrepresentability.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "f4c6872c9106ce5635d2a0ca0071b88a6319d883",
+        "note": "After unfolding all referenced predicates, the Lean statement equivalently captures the admissible-budget selector image, endpoint separation, labeled graph blow-ups and identity matching, feasible-vector equality, exact robust and singleton risks, uniform lower certificates, block-averaged attainment, adaptation prices, ratios, both quarter-gaps, and eventual admissibility."
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 1
+      }
+    },
+    {
+      "id": "prop:local-program-solution",
+      "obj_id": "T-4",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Fix \\(\\bar p\\in(0,1)\\) and \\(n\\in\\mathcal N_{\\bar p}\\). For the graph-local two-mapping menu \\(\\mathcal E^{\\mathrm{loc}}\\), the finite primal and dual solve to \\(L_n(\\mathcal E^{\\mathrm{loc}},\\bar p)=1/n\\). The estimator in \\(\\mathrm{def{:}local\\text{-}solved\\text{-}menu}\\) is optimal under every exact-budget design. A dual certificate places independent symmetric sign mass on the two response coordinates of unit \\(1\\), so whichever value is observed, the other contributes posterior target variance \\(1/n^2\\). The adjective graph-local describes how this menu was selected; the exact value is a functional of the resulting menu and budget.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.local_program_solution",
+        "file": "T_local_program_solution.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "88385921c669ac564c21e43e503f4e2d9d500c0f",
+        "note": "Unfolding localMenu, localEstimator, AmbiguityClass, designRMSE, and finiteFrontier gives the stated two-mapping bounded-table experiment and estimator; finite_saddle converts the frontier equality to the primal, dual, and minimax equalities, while the universal worst-case RMSE equality expresses optimality under every exact-budget design."
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 1
+      }
+    },
+    {
+      "id": "prop:nonlocal-program-solution",
+      "obj_id": "T-5",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Fix \\(\\bar p\\in(0,1)\\) and \\(n\\in\\mathcal N_{\\bar p}\\). For the genuinely nonlocal two-mapping menu \\(\\mathcal E^{\\mathrm{nl}}\\), the finite primal and dual solve to \\(L_n(\\mathcal E^{\\mathrm{nl}},\\bar p)=1\\) for every \\(n\\in\\mathcal N_{\\bar p}\\). The estimator in \\(\\mathrm{def{:}nonlocal\\text{-}solved\\text{-}menu}\\) is optimal under every exact-budget design. Two schedules with identical zero outcomes on \\(\\Omega_n\\) and all-treated response vectors \\(\\mathbf 1_n\\) and \\(-\\mathbf 1_n\\) give the dual lower certificate.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.nonlocal_program_solution",
+        "file": "T_nonlocal_program_solution.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "1f2f2f456d936282428d85bf1200290bac7fe36f",
+        "note": "Unfolding ValidFraction, Admissible, nonlocalMenu, budgetDesigns, AmbiguityClass, designRMSE, nonlocalEstimator, and finiteFrontier, the first conjunct states L_n=1; finite_saddle then yields the equal primal, dual, and minimax values, while the second conjunct gives exact worst-case RMSE 1 for that estimator under every exact-budget design, and the stated zero-observation ±1-target schedules are constructible in the ambiguity class; conversely the paper's value, optimality, and lower certificate yield both Lean conjuncts."
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 1
+      }
+    },
+    {
+      "id": "thm:collision-geometry-sandwich",
+      "obj_id": "T-6",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Fix \\(\\bar p\\in(0,1)\\) and \\(n\\in\\mathcal N_{\\bar p}\\). The primitive collision moduli satisfy\n\\[\n \\frac12\\inf_{\\pi}C_n(\\pi)\n \\le V_n^\\star(\\mathcal E,\\bar p)\n \\le\\frac12\\inf_{\\pi}U_n(\\pi),\n\\]\nwhere both infima range over the probability simplex on \\(\\Omega_n\\). For the lower bound, on every assignment where schedules \\(\\alpha\\) and \\(\\beta\\) collide, \\((a-t_\\alpha)^2+(a-t_\\beta)^2\\ge(t_\\alpha-t_\\beta)^2/2\\), and the worse schedule has mean squared error at least one quarter of the squared collision modulus. For the upper bound, assign every sign observation cell the midpoint of its target interval, then apply the sign reduction and multilinear extension. Along \\(n\\in\\mathcal N_{\\bar p}\\) with \\(n\\to\\infty\\), \\(\\inf_\\pi U_n(\\pi)\\to0\\) is sufficient for \\(V_n^\\star(\\mathcal E,\\bar p)\\to0\\), while \\(V_n^\\star(\\mathcal E,\\bar p)\\to0\\) implies \\(\\inf_\\pi C_n(\\pi)\\to0\\). A positive lower limit of \\(\\inf_\\pi C_n(\\pi)\\) is sufficient for a positive lower limit of \\(V_n^\\star(\\mathcal E,\\bar p)\\), while a positive lower limit of \\(V_n^\\star(\\mathcal E,\\bar p)\\) implies a positive lower limit of \\(\\inf_\\pi U_n(\\pi)\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.collision_geometry_sandwich",
+        "file": "T_collision_geometry_sandwich.lean"
+      },
+      "review": {
+        "status": "drift",
+        "passed_hash": "b56562597be4163f8d42dbf2fdce215fe292c457",
+        "note": "Paper implies Lean, but Lean does not imply paper: `hmenus` requires the same positive menu cardinality for every `k : ℕ`; since `Exposure (Fin 0) X` is a singleton, this forces `menuCard = 1`, making every asymptotic implication vacuous for multi-mapping menus, whereas the paper ranges only along admissible `n ∈ 𝒩_pbar` (hence `n ≥ 2`) and covers fixed menus of any positive cardinality."
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 1
+      }
+    },
+    {
+      "id": "prop:no-interference-calibration",
+      "obj_id": "T-7",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Fix \\(\\bar p\\in(0,1)\\) and \\(n\\in\\mathcal N_{\\bar p}\\). For the singleton menu \\(\\mathcal E^{\\mathrm{NI}}\\), complete randomization and difference in means satisfy \\(\\sup_{y\\in\\mathcal Y_n(\\mathcal E^{\\mathrm{NI}})}\\operatorname{RMSE}_n(\\Theta_n^{\\mathrm{CR}},\\widehat\\theta_n^{\\mathrm{DM}};y)\\le\\{n(n-1)^{-1}[m_n^{-1}+(n-m_n)^{-1}]\\}^{1/2}\\). Along \\(n\\in\\mathcal N_{\\bar p}\\) with \\(n\\to\\infty\\), the finite-program value obeys \\(L_n(\\mathcal E^{\\mathrm{NI}},\\bar p)\\asymp n^{-1/2}\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.no_interference_calibration",
+        "file": "T_no_interference_calibration.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "2d5bb6d075aa7913f07ec5236ff4baf824f9dd11",
+        "note": "The supremum bound unfolds exactly to complete randomization and difference in means over the bounded no-interference class, while SameOrderOn is eventual two-sided comparison along admissible sizes; the extra y/hy binders are redundant because the zero outcome table always inhabits this ambiguity class."
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 1
+      }
+    },
+    {
+      "id": "prop:singleton-witness-oracle-values",
+      "obj_id": "T-8",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Fix \\(\\bar p\\in[1/2,1)\\), so \\(2\\in\\mathcal N_{\\bar p}\\). For every \\(\\kappa\\in\\{0,-,+\\}\\),\n\\[\n V_2^\\star(\\{e^{(\\kappa)}\\},\\bar p)=\\frac56.\n\\]\nConsequently,\n\\[\n \\max_{\\kappa\\in\\{0,-\\}}V_2^\\star(\\{e^{(\\kappa)}\\},\\bar p)\n =\\max_{\\kappa\\in\\{0,+\\}}V_2^\\star(\\{e^{(\\kappa)}\\},\\bar p)\n =\\frac56.\n\\]\nMore generally, fix \\(\\bar p\\in(0,1)\\). For every \\(B\\ge1\\) such that \\(n=2B\\in\\mathcal N_{\\bar p}\\), and every \\(\\kappa\\in\\{0,-,+\\}\\),\n\\[\n V_{2B}^\\star(\\{\\widetilde e^\\kappa\\},\\bar p)=\\frac56.\n\\]\nHence\n\\[\n \\max_{\\kappa\\in\\{0,-\\}}V_{2B}^\\star(\\{\\widetilde e^\\kappa\\},\\bar p)\n =\\max_{\\kappa\\in\\{0,+\\}}V_{2B}^\\star(\\{\\widetilde e^\\kappa\\},\\bar p)\n =\\frac56.\n\\]\nThese identities hold for the full class of block-specific bounded response coordinates and arbitrary measurable estimators.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.singleton_witness_oracle_values",
+        "file": "T_singleton_witness_oracle_values.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "ebe6f36ec59c78c784c93339f13c70ff211ccc1f",
+        "note": "The finite-set quantifiers are exactly the three base and blown-up witness mappings; hp2 entails treatmentBudget pbar2 2 = 1 and Admissible pbar2 2, 0 < B is B ≥ 1, and the omitted maximum identities follow in both cases from the asserted 5/6 value for every listed singleton."
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 1
+      }
+    },
+    {
+      "id": "prop:nonlocal-collision-sharpness",
+      "obj_id": "T-9",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Fix \\(\\bar p\\in(0,1)\\) and \\(n\\in\\mathcal N_{\\bar p}\\). For the menu \\(\\mathcal E^{\\mathrm{nl}}\\), every probability vector \\(\\pi\\) on \\(\\Omega_n\\) satisfies \\(C_n(\\pi)=U_n(\\pi)=2\\), and \\(V_n^\\star(\\mathcal E^{\\mathrm{nl}},\\bar p)=1\\). Consequently equality holds in both sides of \\(\\mathrm{thm{:}collision\\text{-}geometry\\text{-}sandwich}\\), so the universal factor \\(1/2\\) is sharp in both the lower and upper bounds.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.nonlocal_collision_sharpness",
+        "file": "T_nonlocal_collision_sharpness.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "6990487096a29dab330d0d67ec4053887cc18d36",
+        "note": "After unfolding the referenced definitions, `FiniteDesign` plus `budgetDesigns` is exactly a probability vector supported on Ω_n, the two moduli are C_n and U_n for the nonlocal menu, and Lean states their universal value 2, minimax RMSE 1, and equality in both optimized sandwich bounds; the final optimized equalities are redundant consequences because admissibility makes Ω_n and the design family nonempty."
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 1
+      }
+    },
+    {
+      "id": "thm:orbit-fractional-cover-compression",
+      "obj_id": "T-10",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Fix \\(\\bar p\\in(0,1)\\) and \\(n\\in\\mathcal N_{\\bar p}\\), and write \\(\\mathfrak A_n=\\mathcal B_n(\\mathcal E)\\). Suppose a finite group \\(\\Gamma_n\\) acts on \\(\\Omega_n\\) and on \\(\\mathfrak A_n\\) such that, for every \\(g\\in\\Gamma_n\\) and \\(z\\in\\Omega_n\\), there is a bijection \\(\\phi_{g,z}:\\mathcal S_n\\to\\mathcal S_n\\) satisfying\n\\[\n t_{g\\alpha}=t_\\alpha,\n \\qquad\n s_{g\\alpha,gz}=\\phi_{g,z}(s_{\\alpha z})\n \\quad\\text{for every }\\alpha\\in\\mathfrak A_n.\n\\]\nLet \\(O_1,\\ldots,O_K\\) be the assignment orbits and \\(P_1,\\ldots,P_R\\) the orbits of unordered pairs of sign schedules. Choose \\(p_r=\\{\\alpha_r,\\beta_r\\}\\in P_r\\), put \\(\\Delta_r=|t_{\\alpha_r}-t_{\\beta_r}|\\), and define\n\\[\n a_{rj}=\\frac{1}{|O_j|}\\sum_{z\\in O_j}\n \\mathbf 1\\{s_{\\alpha_r z}=s_{\\beta_r z}\\}.\n\\]\nAssume that there is a fractional diameter cover of congestion \\(\\kappa_n\\ge1\\): for one representative \\(\\alpha_h\\) of every \\(\\Gamma_n\\)-orbit in \\(\\mathfrak A_n\\), there are unordered pairs \\(p_{h\\ell}=\\{\\beta_{h\\ell},\\gamma_{h\\ell}\\}\\) and weights \\(q_{h\\ell}\\ge0\\) such that \\(\\sum_\\ell q_{h\\ell}\\le\\kappa_n\\) and, for every \\(z\\in\\Omega_n\\),\n\\[\n d_n(z,s_{\\alpha_h z})^2\n \\le\n \\sum_\\ell q_{h\\ell}\n |t_{\\beta_{h\\ell}}-t_{\\gamma_{h\\ell}}|^2\n \\mathbf 1\\{s_{\\beta_{h\\ell}z}=s_{\\gamma_{h\\ell}z}\\}.\n\\]\nFor other schedules use the cover obtained by applying the same group element to every pair in the representative cover. Define\n\\[\n \\lambda_n=\\min_{x_1,\\ldots,x_K,\\lambda}\n \\left\\{\\lambda:\n x_j\\ge0,\\ \\sum_{j=1}^Kx_j=1,\n \\Delta_r^2\\sum_{j=1}^K a_{rj}x_j\\le\\lambda\n \\text{ for }r=1,\\ldots,R\\right\\}.\n\\]\nThen\n\\[\n \\inf_\\pi C_n(\\pi)=\\sqrt{\\lambda_n},\n \\qquad\n \\inf_\\pi C_n(\\pi)\n \\le \\inf_\\pi U_n(\\pi)\n \\le \\sqrt{\\kappa_n}\\inf_\\pi C_n(\\pi),\n\\]\nand\n\\[\n \\frac12\\sqrt{\\lambda_n}\n \\le L_n(\\mathcal E,\\bar p)\n \\le \\frac12\\sqrt{\\kappa_n\\lambda_n}.\n\\]\nAn optimizer \\(x^\\star\\) lifts to the explicit invariant design assigning mass \\(x_j^\\star/|O_j|\\) to every \\(z\\in O_j\\); the observation-fiber midpoint rule and its multilinear extension have worst-case root mean squared error at most \\(\\sqrt{\\kappa_n\\lambda_n}/2\\). Thus, if \\(\\sup_n\\kappa_n<\\infty\\), the optimized collision moduli match in order. If the orbit tables and fractional cover have polynomial encoding length, the displayed certificate has \\(K+1\\) variables, \\(R\\) loss inequalities, \\(K\\) nonnegativity inequalities, and one simplex equality, and is polynomial-size whenever \\(K\\) and \\(R\\) are polynomial in \\(n\\). The actions here are automorphisms of the menu-induced sign experiment, not necessarily automorphisms of the ambient graph \\(G_n\\). In graph-local subclasses, \\(G_n\\) may constrain or organize a menu \\(\\mathcal E(G_n)\\) and certify such actions or incidence bounds, but its effect on the frontier is mediated through the resulting menu. This criterion is sufficient, not exhaustive: mapping-wise conflict-graph multisets fail on the unrestricted class, while the analogous natural graph-local separation remains undecided.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.orbit_fractional_cover_compression",
+        "file": "T_orbit_fractional_cover_compression.lean"
+      },
+      "review": {
+        "status": "drift",
+        "passed_hash": "af19039481db1bf1c4ee4830d11e3c5d8e03eff3",
+        "note": "Lean ⇏ paper's polynomial-size clause: after unfolding orbitLPValue, its only complexity conjuncts are the unconditional cardinality identities card(Option K)=card K+1 and card(R ⊕ K)=card R+card K; it has no polynomial table/cover encoding hypothesis or polynomial certificate-size conclusion, and PolynomialOrbitCertificate is unused. The paper implies these counts, but not conversely; add a sequence-level encoding-size-to-certificate-size implication."
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 1
+      }
+    },
+    {
+      "id": "lem:joint-signature-fractional-compression",
+      "obj_id": "L-2",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Fix \\(\\bar p\\in(0,1)\\) and \\(n\\in\\mathcal N_{\\bar p}\\). For \\(z\\in\\Omega_n\\), define its joint exposure signature and the number of realized signatures by\n\\[\n \\xi_n(z)=\\bigl(e_{i,n}(z)\\bigr)_{(e,i)\\in\\mathcal E\\times V_n},\n \\qquad\n R_n=\\bigl|\\{\\xi_n(z):z\\in\\Omega_n\\}\\bigr|.\n\\]\nChoose one representative \\(z_q\\) of each signature, where \\(q\\in[R_n]=\\{1,\\ldots,R_n\\}\\). For an unordered pair of sign schedules put\n\\[\n A(\\alpha,\\beta)=\\{q\\in[R_n]:s_{\\alpha z_q}=s_{\\beta z_q}\\},\n\\]\nand, for \\(A\\subseteq[R_n]\\), let\n\\[\n D_A=\\max\\{|t_\\alpha-t_\\beta|:A(\\alpha,\\beta)=A\\},\n\\]\nwith \\(D_A=0\\) if the displayed set is empty. Then the optimized squared collision modulus is the value of the explicit linear program\n\\[\n \\inf_\\pi C_n(\\pi)^2\n =\\min_{x\\in\\mathbb R^{R_n},\\lambda\\in\\mathbb R}\n \\left\\{\\lambda:\n x_q\\ge0,\\ \\sum_{q=1}^{R_n}x_q=1,\\\n D_A^2\\sum_{q\\in A}x_q\\le\\lambda\n \\text{ for every }A\\subseteq[R_n]\\right\\}. \\tag{1}\n\\]\nEvery optimizer in \\((1)\\) lifts to a design by assigning mass \\(x_q\\) to an arbitrary assignment with signature \\(q\\). The trivial action on the menu-induced sign experiment has an explicit fractional diameter cover of congestion at most \\(R_n\\). Consequently,\n\\[\n \\inf_\\pi C_n(\\pi)\n \\le \\inf_\\pi U_n(\\pi)\n \\le \\sqrt{R_n}\\inf_\\pi C_n(\\pi), \\tag{2}\n\\]\nand\n\\[\n \\frac12\\inf_\\pi C_n(\\pi)\n \\le L_n(\\mathcal E,\\bar p)\n \\le\\frac12\\sqrt{R_n}\\inf_\\pi C_n(\\pi). \\tag{3}\n\\]\nThus \\(\\sup_nR_n<\\infty\\) is a primitive exposure-incidence condition for a size-uniform reverse comparison. More generally, given the table of the exposures at \\(z_1,\\ldots,z_{R_n},\\mathbf 0_n,\\mathbf 1_n\\), all coefficients \\(D_A\\) can be computed in \\(O(|\\mathcal E|^2n8^{R_n})\\) arithmetic operations by a unitwise dynamic program. Hence \\(R_n=O(\\log n)\\), fixed \\(|\\mathcal E|\\), and polynomial encoding of that incidence table give a polynomial-size and polynomial-time certificate.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.joint_signature_fractional_compression",
+        "file": "T_joint_signature_fractional_compression.lean"
+      },
+      "review": {
+        "status": "drift",
+        "passed_hash": "a007c6da23dec3a0389442b73ec1e66a7809de10",
+        "note": "Paper⇒Lean fails because SignatureDPCorrect pools local choices across different ordered mapping pairs before intersecting them, whereas the paper fixes one pair (e,f) throughout the unitwise DP; Lean⇒paper also fails because signatureDPOutput is defined by an oracle sSup over schedules and the statement supplies neither an executable extrema recurrence nor the claimed optimizer-lifting and polynomial-size/time certificate."
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 1
+      }
+    },
+    {
+      "id": "lem:split-graph-local-witness",
+      "obj_id": "L-3",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Fix \\(\\bar p\\in(0,1)\\) and an even admissible size \\(n=2B\\in\\mathcal N_{\\bar p}\\). Label units as \\((j,a)\\) with \\(j\\in\\{1,\\ldots,B\\}\\) and \\(a\\in\\{1,2\\}\\), put\n\\[\n \\sigma_n=\\max\\{m_n,n-m_n\\}+1,\n\\]\nchoose \\(S_n\\subseteq V_n\\) with \\(|S_n|=\\sigma_n\\), and fix \\(c_n\\in S_n\\). Let \\(G_n\\) be the complete split graph whose clique is \\(S_n\\), whose complement \\(V_n\\setminus S_n\\) is independent, and which has every edge between the two parts. Define\n\\[\n \\rho_n^{\\mathrm{sp}}(z)=\n \\begin{cases}\n 00,&z_i=0\\text{ for every }i\\in S_n,\\\\\n 11,&z_i=1\\text{ for every }i\\in S_n,\\\\\n 10,&z|_{S_n}\\text{ is mixed and }z_{c_n}=1,\\\\\n 01,&z|_{S_n}\\text{ is mixed and }z_{c_n}=0,\n \\end{cases} \\tag{1}\n\\]\nand, for \\(\\kappa\\in\\{0,-,+\\}\\),\n\\[\n f^\\kappa_{(j,a),n}(z)\n =e^{(\\kappa)}_{a,2}\\bigl(\\rho_n^{\\mathrm{sp}}(z)\\bigr). \\tag{2}\n\\]\nSet \\(\\mathcal F_{B,-}=\\{f^0,f^-\\}\\) and \\(\\mathcal F_{B,+}=\\{f^0,f^+\\}\\). Then every coordinate in both menus is radius-one graph-local relative to \\(G_n\\), and the joint exposure-signature count on \\(\\Omega_n\\) equals two. Each menu has a polynomially encoded symmetry quotient: the action preserving \\(c_n\\), membership in \\(S_n\\), and the type \\(a\\) has at most \\(2(n+1)^4\\) assignment orbits and at most \\(48(n+1)^{60}\\) unordered sign-schedule-pair orbits. The signature program has three variables and at most four loss inequalities, and the menus admit fractional diameter covers of congestion at most two. Hence\n\\[\n \\inf_\\pi U_n(\\pi)\\le\\sqrt2\\inf_\\pi C_n(\\pi). \\tag{3}\n\\]\nNevertheless, the mapping-wise labeled conflict-graph multisets of \\(\\mathcal F_{B,-}\\) and \\(\\mathcal F_{B,+}\\) agree under the identity matching of replicated endpoint types, while\n\\[\n V_n^\\star(\\mathcal F_{B,-},\\bar p)=1,\n \\qquad\n V_n^\\star(\\mathcal F_{B,+},\\bar p)=\\frac54. \\tag{4}\n\\]\nThus their graph-local ambiguity frontiers are separated by \\(1/4\\) at every such even size. This construction is dense: it does not assert the same separation for bounded-degree or otherwise sparse-local graph families.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.split_graph_local_witness",
+        "file": "T_split_graph_local_witness.lean"
+      },
+      "review": {
+        "status": "drift",
+        "passed_hash": "b767266376eef862b1e5a5d20ec3d8117f31e8a5",
+        "note": "The paper implies the Lean construction, orbit-count bounds, covers, comparison, graph equality, and exact risks, but Lean⇒paper fails for the claimed polynomially encoded symmetry quotient: existential code/action functions into polynomial-cardinality Fin types bound only the number of orbits and certify no polynomial representation of orbit sizes or collision counts."
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 1
+      }
+    },
+    {
+      "id": "lem:no-interference-collision-scale",
+      "obj_id": "L-4",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Fix \\(\\bar p\\in(0,1)\\). For every \\(n\\in\\mathcal N_{\\bar p}\\), the singleton no-interference menu \\(\\mathcal E^{\\mathrm{NI}}=\\{e^{\\mathrm{NI}}\\}\\) is radius-zero graph-local relative to every ambient graph \\(G_n\\), complete randomization minimizes the pairwise collision modulus, and\n\\[\n \\inf_\\pi C_n(\\pi)\n =\n \\max_{\\substack{0\\le a\\le m_n,\\ 0\\le b\\le n-m_n\\\\a+b\\ge1}}\n \\frac{2(a+b)}{n}\n \\left\\{\n \\frac{\\binom{n-a-b}{m_n-a}}{\\binom n{m_n}}\n \\right\\}^{1/2}. \\tag{1}\n\\]\nEvery observation fiber has target diameter two, so\n\\[\n U_n(\\pi)=2\\quad\\text{for every probability vector \\(\\pi\\) on \\(\\Omega_n\\)}. \\tag{2}\n\\]\nAlong \\(n\\in\\mathcal N_{\\bar p}\\) with \\(n\\to\\infty\\),\n\\[\n \\inf_\\pi C_n(\\pi)=\\Theta(n^{-1}),\n \\qquad\n \\inf_\\pi U_n(\\pi)=2. \\tag{3}\n\\]\nHence no finite constant \\(K\\), independent of \\(n\\), satisfies \\(\\inf_\\pi U_n(\\pi)\\le K\\inf_\\pi C_n(\\pi)\\) on all graph-local menu sequences. Moreover, the natural permutation action has one assignment orbit and at most \\(\\binom{n+15}{15}\\) unordered-pair orbits, with polynomially encoded coefficients, but every equivariant fractional diameter cover applicable to that experiment has congestion \\(\\kappa_n=\\Omega(n^2)\\). Thus polynomial orbit compression alone does not imply bounded cover congestion.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.no_interference_collision_scale",
+        "file": "T_no_interference_collision_scale.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "ef3137aeca87b19bc17483e4127bee59585150fd",
+        "note": "After unfolding the referenced definitions, the statement gives the exact hypergeometric optimum under complete randomization, radius-zero locality, diameter-two fibers and hence optimized U=2, Θ(n⁻¹) collision scale and failure of any uniform reverse constant; its natural permutation predicates establish one assignment orbit, the stated pair-orbit bound and polynomial coefficient encoding, while the final uniform κ implication is equivalent to the claimed Ω(n²) congestion for every applicable equivariant cover via orbit_fractional_cover_compression."
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 1
+      }
+    },
+    {
+      "id": "thm:exposure-signature-compression-and-local-boundaries",
+      "obj_id": "T-11",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Fix \\(\\bar p\\in(0,1)\\) and let \\(n\\in\\mathcal N_{\\bar p}\\) diverge. The structural-compression question has the following constructive and negative resolution.\n\nFirst, write\n\\[\n R_n=\\left|\\left\\{\\bigl(e_{i,n}(z)\\bigr)_{(e,i)\\in\\mathcal E\\times V_n}:z\\in\\Omega_n\\right\\}\\right|\n\\]\nfor the number of joint exposure signatures on the exact-budget slice. This is a primitive exposure-incidence certificate. The exact program, algorithm, and cover in \\(\\mathrm{lem{:}joint\\text{-}signature\\text{-}fractional\\text{-}compression}\\) imply that \\(\\sup_nR_n<\\infty\\) yields a size-uniform reverse comparison with \\(K=\\sqrt{\\sup_nR_n}\\); more generally \\(R_n=O(\\log n)\\), fixed menu cardinality, and a polynomially encoded exposure-incidence table yield a polynomial-size exact program for \\(\\inf_\\pi C_n(\\pi)^2\\) and a polynomial-time coefficient algorithm.\n\nSecond, neither graph locality nor polynomial orbit tables alone imply a size-uniform reverse comparison. For the canonical radius-zero graph-local singleton menu \\(\\mathcal E^{\\mathrm{NI}}\\),\n\\[\n \\inf_\\pi C_n(\\pi)=\\Theta(n^{-1}),\n \\qquad\n L_n(\\mathcal E^{\\mathrm{NI}},\\bar p)=\\Theta(n^{-1/2}),\n \\qquad\n \\inf_\\pi U_n(\\pi)=2, \\tag{1}\n\\]\nalthough the permutation quotient has one assignment orbit and polynomially many pair orbits. Every equivariant fractional diameter cover has congestion \\(\\Omega(n^2)\\). Thus no finite \\(K\\) works uniformly over graph-local menus.\n\nThird, a positive graph-local conflict-graph separation exists on the explicit dense split-graph sequence in \\(\\mathrm{lem{:}split\\text{-}graph\\text{-}local\\text{-}witness}\\). Each of its two menus has exactly two joint exposure signatures, a polynomially encoded quotient, and a congestion-two cover, yet their mapping-wise labeled conflict-graph multisets agree and their exact ambiguity frontiers are \\(1\\) and \\(5/4\\). Hence those frontiers remain separated by \\(1/4\\) along every admissible even population size. The result is not exhaustive: it does not establish the same separation for bounded-degree or otherwise sparse-local graph sequences.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.exposure_signature_compression_and_local_boundaries",
+        "file": "T_exposure_signature_compression_and_local_boundaries.lean"
+      },
+      "review": {
+        "status": "drift",
+        "passed_hash": "0711999e10ea201d9400906cb19955975d8db7f1",
+        "note": "Paper ⇒ Lean but not conversely: Lean restricts compression to Bool-valued exposures although the paper permits arbitrary finite coordinate ranges; unfolded SignatureDPCorrect defines coefficients noncomputably by sSup over schedule pairs and leaves incidenceEncoding unrelated to the actual exposure table, so it does not certify the claimed polynomial-time coefficient algorithm; the split witness also omits the explicit dense split-graph adjacency/construction."
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 1
+      }
+    },
+    {
+      "id": "aux_Admissible",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def Admissible, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "Admissible",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_admissibleAtTop",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def admissibleAtTop, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "admissibleAtTop",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_allControl",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def allControl, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "allControl",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_allTreated",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def allTreated, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "allTreated",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_Assignment",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def Assignment, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "Assignment",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_assignment01",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def assignment01, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "assignment01",
+        "file": "Witnesses.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_assignment10",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def assignment10, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "assignment10",
+        "file": "Witnesses.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_blownUpExposure",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def blownUpExposure, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "blownUpExposure",
+        "file": "Witnesses.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_c",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def c, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "c",
+        "file": "Witnesses.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_designRMSE",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def designRMSE, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "designRMSE",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_dualFeasible",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def dualFeasible, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "dualFeasible",
+        "file": "Programs.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_endpointConflictGraph",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def endpointConflictGraph, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "endpointConflictGraph",
+        "file": "Witnesses.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_Estimator",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def Estimator, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "Estimator",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_ExactBudget",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def ExactBudget, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "ExactBudget",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_Exposure",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def Exposure, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "Exposure",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_fiberMidpoint",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def fiberMidpoint, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "fiberMidpoint",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_finiteFrontier",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def finiteFrontier, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "finiteFrontier",
+        "file": "Programs.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_graphIndexedFrontier",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def graphIndexedFrontier, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "graphIndexedFrontier",
+        "file": "T_finite_saddle.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_graphIndexedRecoveredPairs",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def graphIndexedRecoveredPairs, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "graphIndexedRecoveredPairs",
+        "file": "T_finite_saddle.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_LogarithmicGrowthNat",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def LogarithmicGrowthNat, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "LogarithmicGrowthNat",
+        "file": "Helpers/SignatureDP.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_noInterferenceMenu",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def noInterferenceMenu, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "noInterferenceMenu",
+        "file": "Calibrations.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_NoInterferencePairOrbitCoding",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def NoInterferencePairOrbitCoding, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "NoInterferencePairOrbitCoding",
+        "file": "T_no_interference_collision_scale.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_optimizedFiberModulus",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def optimizedFiberModulus, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "optimizedFiberModulus",
+        "file": "T_collision_geometry_sandwich.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_optimizedPairCollision",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def optimizedPairCollision, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "optimizedPairCollision",
+        "file": "T_collision_geometry_sandwich.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_orbitLPValue",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def orbitLPValue, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "orbitLPValue",
+        "file": "Programs.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_OutcomeTable",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def OutcomeTable, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "OutcomeTable",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_persistentMenuMinus",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def persistentMenuMinus, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "persistentMenuMinus",
+        "file": "Witnesses.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_persistentMenuPlus",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def persistentMenuPlus, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "persistentMenuPlus",
+        "file": "Witnesses.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_persistentSelector",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def persistentSelector, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "persistentSelector",
+        "file": "Witnesses.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_pm1",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def pm1, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "pm1",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_PolynomialGrowthNat",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def PolynomialGrowthNat, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "PolynomialGrowthNat",
+        "file": "Helpers/SignatureDP.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_primalFeasible",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def primalFeasible, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "primalFeasible",
+        "file": "Programs.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_RadiusOneLocal",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def RadiusOneLocal, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "RadiusOneLocal",
+        "file": "T_split_graph_local_witness.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_SameOrderOn",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def SameOrderOn, flavor const-exist)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "SameOrderOn",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_signatureCount",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def signatureCount, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "signatureCount",
+        "file": "Helpers/SignatureDP.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_signatureOperationBound",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def signatureOperationBound, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "signatureOperationBound",
+        "file": "Helpers/SignatureDP.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_signatureProgramRowBound",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def signatureProgramRowBound, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "signatureProgramRowBound",
+        "file": "Helpers/SignatureDP.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_signatureProgramVariableCount",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def signatureProgramVariableCount, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "signatureProgramVariableCount",
+        "file": "Helpers/SignatureDP.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_signObs",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def signObs, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "signObs",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_SignSchedule",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def SignSchedule, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "SignSchedule",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_signTarget",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def signTarget, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "signTarget",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_treatmentBudget",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def treatmentBudget, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "treatmentBudget",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_UniformlyBoundedNat",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def UniformlyBoundedNat, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "UniformlyBoundedNat",
+        "file": "Helpers/SignatureDP.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_V2",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def V2, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "V2",
+        "file": "Witnesses.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_witnessEMinus",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def witnessEMinus, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "witnessEMinus",
+        "file": "Witnesses.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_witnessEPlus",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def witnessEPlus, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "witnessEPlus",
+        "file": "Witnesses.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_witnessGraph0",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def witnessGraph0, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "witnessGraph0",
+        "file": "Witnesses.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_witnessGraphMinus",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def witnessGraphMinus, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "witnessGraphMinus",
+        "file": "Witnesses.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_witnessGraphPlus",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def witnessGraphPlus, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "witnessGraphPlus",
+        "file": "Witnesses.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_witnessMenuMinus",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def witnessMenuMinus, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "witnessMenuMinus",
+        "file": "Witnesses.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_witnessMenuPlus",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def witnessMenuPlus, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "witnessMenuPlus",
+        "file": "Witnesses.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "a2",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced abbrev CausalSmith.Experimentation.ExposureAmbiguityFrontier.A2)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.ExposureAmbiguityFrontier.A2",
+        "file": "Witnesses.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": "128ed18948d94408bfa8bb4b1530bda36a4c9ce2"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_a",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def a, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "a",
+        "file": "Witnesses.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_b",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def b, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "b",
+        "file": "Witnesses.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_BoundedOutcomeVector",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def BoundedOutcomeVector, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "BoundedOutcomeVector",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_ConflictGraphNonrepresentability",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def ConflictGraphNonrepresentability, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "ConflictGraphNonrepresentability",
+        "file": "T_orbit_fractional_cover_compression.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_FractionalDiameterCover",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def FractionalDiameterCover, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "FractionalDiameterCover",
+        "file": "Programs.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_IsBlockAveragedRule",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def IsBlockAveragedRule, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "IsBlockAveragedRule",
+        "file": "T_persistent_nonrepresentability.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_jointSignature",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def jointSignature, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "jointSignature",
+        "file": "Helpers/SignatureDP.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_NoInterferenceAssignmentOrbitTransitive",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def NoInterferenceAssignmentOrbitTransitive, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "NoInterferenceAssignmentOrbitTransitive",
+        "file": "T_no_interference_collision_scale.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_NoInterferencePolynomialCoefficientEncoding",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def NoInterferencePolynomialCoefficientEncoding, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "NoInterferencePolynomialCoefficientEncoding",
+        "file": "T_no_interference_collision_scale.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_PaperDomain",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def PaperDomain, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "PaperDomain",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_paperMinimaxSequence",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def paperMinimaxSequence, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "paperMinimaxSequence",
+        "file": "T_collision_geometry_sandwich.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_PersistentBlockAttainment",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def PersistentBlockAttainment, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "PersistentBlockAttainment",
+        "file": "T_persistent_nonrepresentability.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_PersistentFeasibleVectors",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def PersistentFeasibleVectors, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "PersistentFeasibleVectors",
+        "file": "T_persistent_nonrepresentability.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_PersistentLabeledBlowUp",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def PersistentLabeledBlowUp, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "PersistentLabeledBlowUp",
+        "file": "T_persistent_nonrepresentability.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_PreservesSplit",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def PreservesSplit, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "PreservesSplit",
+        "file": "T_split_graph_local_witness.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_realizedSignatures",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def realizedSignatures, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "realizedSignatures",
+        "file": "Helpers/SignatureDP.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_SignatureDPCorrect",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def SignatureDPCorrect, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "SignatureDPCorrect",
+        "file": "T_joint_signature_fractional_compression.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_signatureLPValue",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def signatureLPValue, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "signatureLPValue",
+        "file": "T_joint_signature_fractional_compression.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_SplitAssignmentOrbitCoding",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def SplitAssignmentOrbitCoding, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "SplitAssignmentOrbitCoding",
+        "file": "T_split_graph_local_witness.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_SplitPairOrbitCoding",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def SplitPairOrbitCoding, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "SplitPairOrbitCoding",
+        "file": "T_split_graph_local_witness.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_SplitPolynomialQuotient",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def SplitPolynomialQuotient, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "SplitPolynomialQuotient",
+        "file": "T_split_graph_local_witness.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_UniformPersistentLower",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def UniformPersistentLower, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "UniformPersistentLower",
+        "file": "T_persistent_nonrepresentability.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_ValidFraction",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def ValidFraction, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "ValidFraction",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_witnessE0",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def witnessE0, flavor quantity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "witnessE0",
+        "file": "Witnesses.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "kind": "proof-uses",
+      "from": "lem:sign-reduction",
+      "to": "ass:fixed-schedule",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:sign-reduction",
+      "to": "ass:bounded-table",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:sign-reduction",
+      "to": "ass:menu-measurability",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:sign-reduction",
+      "to": "def:ambiguity-class",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:sign-reduction",
+      "to": "def:sign-schedules",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:sign-reduction",
+      "to": "def:multilinear-extension",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:finite-saddle",
+      "to": "def:minimax-risk",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:finite-saddle",
+      "to": "def:finite-primal",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:finite-saddle",
+      "to": "def:finite-dual",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:finite-saddle",
+      "to": "def:primal-recovery",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:finite-saddle",
+      "to": "lem:sign-reduction",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:minimal-nonrepresentability",
+      "to": "def:minimax-risk",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:minimal-nonrepresentability",
+      "to": "def:minimal-witness-mappings",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:minimal-nonrepresentability",
+      "to": "def:minimal-witness-graphs",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:minimal-nonrepresentability",
+      "to": "def:minimal-witness-arrays",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:minimal-nonrepresentability",
+      "to": "def:minimal-witness-estimators",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:minimal-nonrepresentability",
+      "to": "thm:finite-saddle",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "def:minimax-risk",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "def:minimal-witness-mappings",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "def:minimal-witness-arrays",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "def:minimal-witness-estimators",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "def:persistent-witness",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "def:oracle-menu-benchmark",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "thm:minimal-nonrepresentability",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "thm:finite-saddle",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "prop:singleton-witness-oracle-values",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:local-program-solution",
+      "to": "def:local-solved-menu",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:local-program-solution",
+      "to": "thm:finite-saddle",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:nonlocal-program-solution",
+      "to": "def:nonlocal-solved-menu",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:nonlocal-program-solution",
+      "to": "thm:finite-saddle",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:collision-geometry-sandwich",
+      "to": "def:minimax-risk",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:collision-geometry-sandwich",
+      "to": "def:collision-moduli",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:collision-geometry-sandwich",
+      "to": "def:multilinear-extension",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:collision-geometry-sandwich",
+      "to": "lem:sign-reduction",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:no-interference-calibration",
+      "to": "def:ambiguity-class",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:no-interference-calibration",
+      "to": "def:complete-randomization",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:no-interference-calibration",
+      "to": "def:difference-in-means",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:no-interference-calibration",
+      "to": "thm:finite-saddle",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:singleton-witness-oracle-values",
+      "to": "def:minimax-risk",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:singleton-witness-oracle-values",
+      "to": "def:minimal-witness-mappings",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:singleton-witness-oracle-values",
+      "to": "def:persistent-witness",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:singleton-witness-oracle-values",
+      "to": "lem:sign-reduction",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:nonlocal-collision-sharpness",
+      "to": "def:nonlocal-solved-menu",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:nonlocal-collision-sharpness",
+      "to": "def:collision-moduli",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:nonlocal-collision-sharpness",
+      "to": "thm:collision-geometry-sandwich",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:nonlocal-collision-sharpness",
+      "to": "prop:nonlocal-program-solution",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "def:sign-schedules",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "def:collision-moduli",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "def:multilinear-extension",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "def:structural-handle",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "thm:finite-saddle",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "thm:collision-geometry-sandwich",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "thm:persistent-nonrepresentability",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "prop:nonlocal-collision-sharpness",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:joint-signature-fractional-compression",
+      "to": "def:sign-schedules",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:joint-signature-fractional-compression",
+      "to": "def:collision-moduli",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:joint-signature-fractional-compression",
+      "to": "thm:orbit-fractional-cover-compression",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:split-graph-local-witness",
+      "to": "def:minimal-witness-mappings",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:split-graph-local-witness",
+      "to": "def:persistent-witness",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:split-graph-local-witness",
+      "to": "lem:sign-reduction",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:split-graph-local-witness",
+      "to": "thm:persistent-nonrepresentability",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:split-graph-local-witness",
+      "to": "lem:joint-signature-fractional-compression",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:no-interference-collision-scale",
+      "to": "def:sign-schedules",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:no-interference-collision-scale",
+      "to": "def:collision-moduli",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:no-interference-collision-scale",
+      "to": "thm:orbit-fractional-cover-compression",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "lem:joint-signature-fractional-compression",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "lem:no-interference-collision-scale",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "lem:split-graph-local-witness",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "prop:no-interference-calibration",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "thm:finite-saddle",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "thm:finite-saddle",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S3",
+      "to": "thm:finite-saddle",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "thm:minimal-nonrepresentability",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "thm:minimal-nonrepresentability",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S3",
+      "to": "thm:minimal-nonrepresentability",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "thm:persistent-nonrepresentability",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "thm:persistent-nonrepresentability",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S3",
+      "to": "thm:persistent-nonrepresentability",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "prop:local-program-solution",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "prop:local-program-solution",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S3",
+      "to": "prop:local-program-solution",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "prop:nonlocal-program-solution",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "prop:nonlocal-program-solution",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S3",
+      "to": "prop:nonlocal-program-solution",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "thm:collision-geometry-sandwich",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "thm:collision-geometry-sandwich",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S3",
+      "to": "thm:collision-geometry-sandwich",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "prop:no-interference-calibration",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "prop:no-interference-calibration",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S3",
+      "to": "prop:no-interference-calibration",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "prop:singleton-witness-oracle-values",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "prop:singleton-witness-oracle-values",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S3",
+      "to": "prop:singleton-witness-oracle-values",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "prop:nonlocal-collision-sharpness",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "prop:nonlocal-collision-sharpness",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S3",
+      "to": "prop:nonlocal-collision-sharpness",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "thm:orbit-fractional-cover-compression",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "thm:orbit-fractional-cover-compression",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S3",
+      "to": "thm:orbit-fractional-cover-compression",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "thm:exposure-signature-compression-and-local-boundaries",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "thm:exposure-signature-compression-and-local-boundaries",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S3",
+      "to": "thm:exposure-signature-compression-and-local-boundaries",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "ass:fixed-schedule",
+      "to": "aux_OutcomeTable",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "ass:fixed-schedule",
+      "to": "aux_Assignment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "ass:bounded-table",
+      "to": "aux_OutcomeTable",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "ass:menu-measurability",
+      "to": "aux_Exposure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "ass:menu-measurability",
+      "to": "aux_OutcomeTable",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:ambiguity-class",
+      "to": "aux_Exposure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:ambiguity-class",
+      "to": "aux_OutcomeTable",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:ambiguity-class",
+      "to": "aux_Assignment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:ambiguity-class",
+      "to": "ass:fixed-schedule",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:ambiguity-class",
+      "to": "ass:bounded-table",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:ambiguity-class",
+      "to": "ass:menu-measurability",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:design-class",
+      "to": "aux_Assignment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:observed-experiment",
+      "to": "aux_ValidFraction",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:observed-experiment",
+      "to": "aux_Admissible",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:observed-experiment",
+      "to": "aux_treatmentBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:observed-experiment",
+      "to": "S1",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:observed-experiment",
+      "to": "aux_Assignment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:observed-experiment",
+      "to": "def:design-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:observed-experiment",
+      "to": "aux_OutcomeTable",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:observed-experiment",
+      "to": "ass:bounded-table",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:observed-experiment",
+      "to": "aux_BoundedOutcomeVector",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:minimax-risk",
+      "to": "aux_Exposure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:minimax-risk",
+      "to": "aux_PaperDomain",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:sign-schedules",
+      "to": "aux_Exposure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:sign-schedules",
+      "to": "aux_PaperDomain",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:collision-moduli",
+      "to": "aux_Exposure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:collision-moduli",
+      "to": "aux_PaperDomain",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:collision-moduli",
+      "to": "S1",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:collision-moduli",
+      "to": "aux_Assignment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:collision-moduli",
+      "to": "def:design-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:multilinear-extension",
+      "to": "aux_Assignment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:oracle-menu-benchmark",
+      "to": "aux_Exposure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:oracle-menu-benchmark",
+      "to": "aux_PaperDomain",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:local-solved-menu",
+      "to": "aux_PaperDomain",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:local-solved-menu",
+      "to": "S1",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:local-solved-menu",
+      "to": "aux_Assignment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:local-solved-menu",
+      "to": "def:design-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:local-solved-menu",
+      "to": "aux_Exposure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:local-solved-menu",
+      "to": "aux_Estimator",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:nonlocal-solved-menu",
+      "to": "aux_PaperDomain",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:nonlocal-solved-menu",
+      "to": "S1",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:nonlocal-solved-menu",
+      "to": "aux_Assignment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:nonlocal-solved-menu",
+      "to": "def:design-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:nonlocal-solved-menu",
+      "to": "aux_Exposure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:nonlocal-solved-menu",
+      "to": "aux_Estimator",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:complete-randomization",
+      "to": "aux_ValidFraction",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:complete-randomization",
+      "to": "aux_Admissible",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:complete-randomization",
+      "to": "S1",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:complete-randomization",
+      "to": "aux_Assignment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:difference-in-means",
+      "to": "aux_ValidFraction",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:difference-in-means",
+      "to": "aux_Admissible",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:difference-in-means",
+      "to": "aux_Estimator",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:finite-primal",
+      "to": "aux_Exposure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:finite-primal",
+      "to": "aux_PaperDomain",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:finite-dual",
+      "to": "aux_Exposure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:finite-dual",
+      "to": "aux_PaperDomain",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:primal-recovery",
+      "to": "aux_Exposure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:primal-recovery",
+      "to": "aux_Assignment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:primal-recovery",
+      "to": "aux_SignSchedule",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:primal-recovery",
+      "to": "aux_primalFeasible",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:primal-recovery",
+      "to": "S1",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:primal-recovery",
+      "to": "aux_Estimator",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:structural-handle",
+      "to": "aux_Exposure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:structural-handle",
+      "to": "aux_PaperDomain",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:collision-geometry-sandwich",
+      "to": "aux_ValidFraction",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:collision-geometry-sandwich",
+      "to": "aux_Admissible",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:collision-geometry-sandwich",
+      "to": "aux_Exposure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:collision-geometry-sandwich",
+      "to": "aux_treatmentBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:collision-geometry-sandwich",
+      "to": "aux_optimizedPairCollision",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:collision-geometry-sandwich",
+      "to": "def:minimax-risk",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:collision-geometry-sandwich",
+      "to": "aux_optimizedFiberModulus",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:collision-geometry-sandwich",
+      "to": "aux_admissibleAtTop",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:collision-geometry-sandwich",
+      "to": "aux_paperMinimaxSequence",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_ValidFraction",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_Exposure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_Admissible",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_signatureCount",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_treatmentBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_optimizedFiberModulus",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_optimizedPairCollision",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_realizedSignatures",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_Assignment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_ExactBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_jointSignature",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_signatureLPValue",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_SignatureDPCorrect",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_SignSchedule",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_FractionalDiameterCover",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_LogarithmicGrowthNat",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_UniformlyBoundedNat",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_PolynomialGrowthNat",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_signatureProgramVariableCount",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_signatureProgramRowBound",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_signatureOperationBound",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_SameOrderOn",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_noInterferenceMenu",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_finiteFrontier",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_NoInterferencePairOrbitCoding",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_NoInterferenceAssignmentOrbitTransitive",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_NoInterferencePolynomialCoefficientEncoding",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_c",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_admissibleAtTop",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_RadiusOneLocal",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_endpointConflictGraph",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "def:minimax-risk",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exposure-signature-compression-and-local-boundaries",
+      "to": "aux_SplitPolynomialQuotient",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:finite-saddle",
+      "to": "aux_ValidFraction",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:finite-saddle",
+      "to": "aux_Admissible",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:finite-saddle",
+      "to": "aux_Exposure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:finite-saddle",
+      "to": "aux_treatmentBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:finite-saddle",
+      "to": "def:minimax-risk",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:finite-saddle",
+      "to": "aux_finiteFrontier",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:finite-saddle",
+      "to": "def:finite-primal",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:finite-saddle",
+      "to": "def:finite-dual",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:finite-saddle",
+      "to": "aux_primalFeasible",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:finite-saddle",
+      "to": "def:primal-recovery",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:finite-saddle",
+      "to": "def:design-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:finite-saddle",
+      "to": "aux_OutcomeTable",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:finite-saddle",
+      "to": "def:ambiguity-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:finite-saddle",
+      "to": "aux_designRMSE",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:finite-saddle",
+      "to": "aux_a",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:finite-saddle",
+      "to": "aux_b",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:finite-saddle",
+      "to": "aux_c",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:finite-saddle",
+      "to": "aux_dualFeasible",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:finite-saddle",
+      "to": "aux_Estimator",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:finite-saddle",
+      "to": "aux_graphIndexedFrontier",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:finite-saddle",
+      "to": "aux_graphIndexedRecoveredPairs",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:joint-signature-fractional-compression",
+      "to": "aux_ValidFraction",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:joint-signature-fractional-compression",
+      "to": "aux_Admissible",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:joint-signature-fractional-compression",
+      "to": "aux_Exposure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:joint-signature-fractional-compression",
+      "to": "aux_realizedSignatures",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:joint-signature-fractional-compression",
+      "to": "aux_treatmentBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:joint-signature-fractional-compression",
+      "to": "aux_Assignment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:joint-signature-fractional-compression",
+      "to": "aux_ExactBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:joint-signature-fractional-compression",
+      "to": "aux_jointSignature",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:joint-signature-fractional-compression",
+      "to": "aux_optimizedPairCollision",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:joint-signature-fractional-compression",
+      "to": "aux_signatureLPValue",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:joint-signature-fractional-compression",
+      "to": "aux_optimizedFiberModulus",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:joint-signature-fractional-compression",
+      "to": "aux_signatureCount",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:joint-signature-fractional-compression",
+      "to": "aux_finiteFrontier",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:joint-signature-fractional-compression",
+      "to": "aux_SignSchedule",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:joint-signature-fractional-compression",
+      "to": "aux_FractionalDiameterCover",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:joint-signature-fractional-compression",
+      "to": "aux_SignatureDPCorrect",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:local-program-solution",
+      "to": "aux_ValidFraction",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:local-program-solution",
+      "to": "aux_Admissible",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:local-program-solution",
+      "to": "aux_finiteFrontier",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:local-program-solution",
+      "to": "aux_treatmentBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:local-program-solution",
+      "to": "def:design-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:local-program-solution",
+      "to": "aux_OutcomeTable",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:local-program-solution",
+      "to": "def:ambiguity-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:local-program-solution",
+      "to": "aux_designRMSE",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:minimal-nonrepresentability",
+      "to": "aux_treatmentBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:minimal-nonrepresentability",
+      "to": "aux_Admissible",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:minimal-nonrepresentability",
+      "to": "aux_witnessMenuMinus",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:minimal-nonrepresentability",
+      "to": "aux_allControl",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:minimal-nonrepresentability",
+      "to": "aux_allTreated",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:minimal-nonrepresentability",
+      "to": "aux_witnessMenuPlus",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:minimal-nonrepresentability",
+      "to": "aux_witnessGraph0",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:minimal-nonrepresentability",
+      "to": "aux_witnessGraphMinus",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:minimal-nonrepresentability",
+      "to": "aux_witnessGraphPlus",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:minimal-nonrepresentability",
+      "to": "def:minimax-risk",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:minimal-nonrepresentability",
+      "to": "aux_V2",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:no-interference-calibration",
+      "to": "aux_ValidFraction",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:no-interference-calibration",
+      "to": "aux_Admissible",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:no-interference-calibration",
+      "to": "aux_OutcomeTable",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:no-interference-calibration",
+      "to": "def:ambiguity-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:no-interference-calibration",
+      "to": "aux_noInterferenceMenu",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:no-interference-calibration",
+      "to": "aux_designRMSE",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:no-interference-calibration",
+      "to": "def:complete-randomization",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:no-interference-calibration",
+      "to": "def:difference-in-means",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:no-interference-calibration",
+      "to": "aux_treatmentBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:no-interference-calibration",
+      "to": "aux_SameOrderOn",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:no-interference-calibration",
+      "to": "aux_finiteFrontier",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:no-interference-collision-scale",
+      "to": "aux_ValidFraction",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:no-interference-collision-scale",
+      "to": "aux_Admissible",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:no-interference-collision-scale",
+      "to": "aux_NoInterferenceAssignmentOrbitTransitive",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:no-interference-collision-scale",
+      "to": "aux_treatmentBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:no-interference-collision-scale",
+      "to": "aux_NoInterferencePolynomialCoefficientEncoding",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:no-interference-collision-scale",
+      "to": "aux_noInterferenceMenu",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:no-interference-collision-scale",
+      "to": "def:complete-randomization",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:no-interference-collision-scale",
+      "to": "aux_optimizedPairCollision",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:no-interference-collision-scale",
+      "to": "def:design-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:no-interference-collision-scale",
+      "to": "aux_SameOrderOn",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:no-interference-collision-scale",
+      "to": "aux_optimizedFiberModulus",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:no-interference-collision-scale",
+      "to": "aux_NoInterferencePairOrbitCoding",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:no-interference-collision-scale",
+      "to": "aux_c",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:no-interference-collision-scale",
+      "to": "aux_admissibleAtTop",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:nonlocal-collision-sharpness",
+      "to": "aux_ValidFraction",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:nonlocal-collision-sharpness",
+      "to": "aux_Admissible",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:nonlocal-collision-sharpness",
+      "to": "aux_treatmentBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:nonlocal-collision-sharpness",
+      "to": "def:design-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:nonlocal-collision-sharpness",
+      "to": "def:minimax-risk",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:nonlocal-collision-sharpness",
+      "to": "aux_optimizedPairCollision",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:nonlocal-collision-sharpness",
+      "to": "aux_optimizedFiberModulus",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:nonlocal-program-solution",
+      "to": "aux_ValidFraction",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:nonlocal-program-solution",
+      "to": "aux_Admissible",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:nonlocal-program-solution",
+      "to": "aux_finiteFrontier",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:nonlocal-program-solution",
+      "to": "aux_treatmentBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:nonlocal-program-solution",
+      "to": "def:design-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:nonlocal-program-solution",
+      "to": "aux_OutcomeTable",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:nonlocal-program-solution",
+      "to": "def:ambiguity-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:nonlocal-program-solution",
+      "to": "aux_designRMSE",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "aux_ValidFraction",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "aux_Admissible",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "aux_Exposure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "aux_Assignment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "aux_SignSchedule",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "aux_treatmentBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "aux_optimizedPairCollision",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "aux_orbitLPValue",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "aux_optimizedFiberModulus",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "aux_finiteFrontier",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "def:design-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "aux_ExactBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "def:multilinear-extension",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "aux_fiberMidpoint",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "aux_pm1",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "aux_signObs",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "aux_signTarget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "def:structural-handle",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:orbit-fractional-cover-compression",
+      "to": "aux_ConflictGraphNonrepresentability",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "aux_ValidFraction",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "aux_Admissible",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "aux_treatmentBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "a2",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "aux_Assignment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "aux_ExactBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "aux_persistentSelector",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "aux_assignment10",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "aux_assignment01",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "aux_persistentMenuMinus",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "aux_allControl",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "aux_allTreated",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "aux_persistentMenuPlus",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "aux_endpointConflictGraph",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "aux_blownUpExposure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "aux_witnessEMinus",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "aux_witnessEPlus",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "aux_PersistentLabeledBlowUp",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "aux_witnessE0",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "aux_PersistentFeasibleVectors",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "def:minimax-risk",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "def:oracle-menu-benchmark",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "aux_UniformPersistentLower",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "aux_PersistentBlockAttainment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:persistent-nonrepresentability",
+      "to": "aux_Exposure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:sign-reduction",
+      "to": "aux_ValidFraction",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:sign-reduction",
+      "to": "aux_Admissible",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:sign-reduction",
+      "to": "aux_Exposure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:sign-reduction",
+      "to": "aux_OutcomeTable",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:sign-reduction",
+      "to": "aux_Assignment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:sign-reduction",
+      "to": "def:ambiguity-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:sign-reduction",
+      "to": "ass:bounded-table",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:sign-reduction",
+      "to": "S1",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:sign-reduction",
+      "to": "def:design-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:sign-reduction",
+      "to": "aux_treatmentBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:sign-reduction",
+      "to": "aux_designRMSE",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:sign-reduction",
+      "to": "def:multilinear-extension",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:sign-reduction",
+      "to": "aux_SignSchedule",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:sign-reduction",
+      "to": "aux_signObs",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:sign-reduction",
+      "to": "aux_signTarget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:singleton-witness-oracle-values",
+      "to": "aux_ValidFraction",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:singleton-witness-oracle-values",
+      "to": "aux_treatmentBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:singleton-witness-oracle-values",
+      "to": "aux_Admissible",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:singleton-witness-oracle-values",
+      "to": "aux_witnessE0",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:singleton-witness-oracle-values",
+      "to": "aux_witnessEMinus",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:singleton-witness-oracle-values",
+      "to": "aux_witnessEPlus",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:singleton-witness-oracle-values",
+      "to": "aux_Exposure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:singleton-witness-oracle-values",
+      "to": "aux_V2",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:singleton-witness-oracle-values",
+      "to": "def:minimax-risk",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:singleton-witness-oracle-values",
+      "to": "aux_blownUpExposure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:split-graph-local-witness",
+      "to": "aux_ValidFraction",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:split-graph-local-witness",
+      "to": "aux_Admissible",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:split-graph-local-witness",
+      "to": "aux_Exposure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:split-graph-local-witness",
+      "to": "aux_RadiusOneLocal",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:split-graph-local-witness",
+      "to": "aux_signatureCount",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:split-graph-local-witness",
+      "to": "aux_treatmentBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:split-graph-local-witness",
+      "to": "aux_SignSchedule",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:split-graph-local-witness",
+      "to": "aux_FractionalDiameterCover",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:split-graph-local-witness",
+      "to": "aux_optimizedFiberModulus",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:split-graph-local-witness",
+      "to": "aux_optimizedPairCollision",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:split-graph-local-witness",
+      "to": "aux_endpointConflictGraph",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:split-graph-local-witness",
+      "to": "def:minimax-risk",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:split-graph-local-witness",
+      "to": "aux_c",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:split-graph-local-witness",
+      "to": "aux_Assignment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:split-graph-local-witness",
+      "to": "aux_witnessE0",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:split-graph-local-witness",
+      "to": "aux_witnessEMinus",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:split-graph-local-witness",
+      "to": "aux_witnessEPlus",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:split-graph-local-witness",
+      "to": "aux_SplitAssignmentOrbitCoding",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:split-graph-local-witness",
+      "to": "aux_SplitPairOrbitCoding",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:minimal-witness-mappings",
+      "to": "aux_V2",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:minimal-witness-mappings",
+      "to": "aux_Exposure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:minimal-witness-estimators",
+      "to": "S1",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:minimal-witness-estimators",
+      "to": "a2",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:minimal-witness-estimators",
+      "to": "aux_Estimator",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:minimal-witness-estimators",
+      "to": "aux_V2",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:persistent-witness",
+      "to": "aux_ValidFraction",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:persistent-witness",
+      "to": "aux_Admissible",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:persistent-witness",
+      "to": "aux_Exposure",
+      "source": "extracted"
+    }
+  ],
+  "symbolReview": {
+    "sym:\\bar p": {
+      "verdict": "matched",
+      "hash": "a904a0bc60aebb5bf4d39c001d98193828495711"
+    },
+    "sym:V_n": {
+      "verdict": "matched",
+      "hash": "495446b80ce3389d63deb868c44cc6b9d1380245"
+    },
+    "sym:m_n": {
+      "verdict": "matched",
+      "hash": "2d5d7ab98c8a363268b3badc71ee239990a45062"
+    },
+    "sym:\\mathcal A_n": {
+      "verdict": "matched",
+      "hash": "d0600424db4c316e3c59cda94a049e40381d06ca"
+    },
+    "sym:Y^{\\mathrm{obs}}": {
+      "verdict": "matched",
+      "hash": "ca1cc48c38108d7d2c0ca9117f3ff3a1b541a6de"
+    },
+    "sym:\\theta_n(y)": {
+      "verdict": "matched",
+      "hash": "61793158fa8dea8532092ec0930a7eeec7bbf6e8"
+    },
+    "sym:\\operatorname{RMSE}_n(\\Theta,\\widehat\\theta;y)": {
+      "verdict": "matched",
+      "hash": "b210a88fbd7c9b2e02c4bfeba2db086c6d902d72"
+    },
+    "sym:\\mathcal S_n": {
+      "verdict": "matched",
+      "hash": "86772efcd1aeb8f1797c5f322c04e41a5f07c493"
+    },
+    "sym:t_\\alpha": {
+      "verdict": "matched",
+      "hash": "9e254f32d052deefa7560443267b725ed229bac7"
+    },
+    "sym:\\pi_z": {
+      "verdict": "matched",
+      "hash": "8026dd738726acfe2e9d12b900e0f0e3f5088af3"
+    },
+    "sym:C_n(\\pi)": {
+      "verdict": "matched",
+      "hash": "b0ec4348109eaacdc8f858480e96b84de9c539b0"
+    },
+    "sym:d_n(z,s)": {
+      "verdict": "matched",
+      "hash": "3d860a0a039c869750e36c6d42e53a57c4e21bbf"
+    },
+    "sym:U_n(\\pi)": {
+      "verdict": "matched",
+      "hash": "4494740bfda0f870e5caaa8d46d59dd91b912d46"
+    },
+    "sym:q_{\\alpha z}": {
+      "verdict": "matched",
+      "hash": "10f0338aa159ee602c07ab98acf3abf3d161a5da"
+    },
+    "sym:r": {
+      "verdict": "matched",
+      "hash": "ddd0d6fc90e4689bf350ac89746bc306602d6ecd"
+    },
+    "sym:\\mu_\\alpha": {
+      "verdict": "matched",
+      "hash": "eb62e3e9b767e82a0657af3f59a9551822a9730b"
+    },
+    "sym:a_{zs}": {
+      "verdict": "matched",
+      "hash": "d166ec6e51dae1288fb86364677bf9b9839b588d"
+    },
+    "sym:b_{zs}": {
+      "verdict": "matched",
+      "hash": "b6f133114a2349a86790f3f5360f2f145beb6c2e"
+    },
+    "sym:c_{zs}": {
+      "verdict": "matched",
+      "hash": "4bf2ede66a612d3c03e6e3ceaf1b3f122ccf0805"
+    },
+    "sym:u_{zs}": {
+      "verdict": "matched",
+      "hash": "ab4f7e44873358b820a1877cdc7d4fa33a72fc9b"
+    },
+    "sym:v": {
+      "verdict": "matched",
+      "hash": "7ba0afc8c496bfea4fd476f2bf3de93f4b9b50c6"
+    },
+    "sym:B": {
+      "verdict": "matched",
+      "hash": "ba9ca0b43430b4276b3f008ec8bc25be1d99c756"
+    },
+    "sym:\\widetilde e^{\\kappa}": {
+      "verdict": "matched",
+      "hash": "6c1722fd93930b9c8e385f31a8786ae9bc02a1d9"
+    },
+    "sym:\\widetilde{\\mathcal E}_{B,-}": {
+      "verdict": "matched",
+      "hash": "d25360057ff1ae9037b371fa90562e47c2062307"
+    },
+    "sym:\\widetilde{\\mathcal E}_{B,+}": {
+      "verdict": "matched",
+      "hash": "fba94510bb3178b24dfdefc837e1c179c40593ef"
+    },
+    "sym:V_n^\\star(\\mathcal E,\\bar p)": {
+      "verdict": "matched",
+      "hash": "d69e356510a72d55b229f03a24dd82563fcd8ad0"
+    },
+    "sym:L_n(\\mathcal E,\\bar p)": {
+      "verdict": "matched",
+      "hash": "9789c8bfc8d57375ceb441aeb84006181e642d8d"
+    }
+  }
+}

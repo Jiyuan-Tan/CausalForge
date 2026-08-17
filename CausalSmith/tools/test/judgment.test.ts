@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { extractJsonObject, interventionSchema, reviewResultSchema } from "../src/judgment.js";
+import { INTERVENTION_JSON_SCHEMA } from "../src/shared/intervention_routing.js";
 
 describe("reviewResultSchema", () => {
   it("accepts Stage 0.5 journal-review accept results", () => {
@@ -61,6 +62,7 @@ describe("interventionSchema (auto-Bucket-A)", () => {
       proposed_action:
         "integrate `A-rank-Z` verbatim under §7 of the .tex; do not introduce any OTHER unstated premise",
       cite: "§7 Assumptions",
+      d0_rewind_intent: "incremental_repair",
       proposed_assumption: {
         label: "A-rank-Z",
         statement: "E[Z Z^\\top] is positive definite.",
@@ -95,6 +97,22 @@ describe("interventionSchema (auto-Bucket-A)", () => {
         },
       }),
     ).toThrow();
+  });
+
+  it("rejects stage_0 without a typed rewind intent", () => {
+    expect(() => interventionSchema.parse({
+      route: "stage_0",
+      reason: "ambiguous rewind",
+      proposed_action: "change the paper",
+      action_kind: "re_derive",
+    })).toThrow(/d0_rewind_intent/);
+  });
+
+  it("keeps the constrained-generation schema in sync with the typed rewind field", () => {
+    expect(INTERVENTION_JSON_SCHEMA.additionalProperties).toBe(false);
+    expect(INTERVENTION_JSON_SCHEMA.properties.d0_rewind_intent).toEqual({
+      enum: ["incremental_repair", "extension", "replacement"],
+    });
   });
 });
 

@@ -169,7 +169,12 @@ theorem hasDerivAt_tiltExp
   have hc0_ne : tiltNorm P s 0 ≠ 0 := by rw [tiltNorm_zero]; norm_num
   have hquot := hN.div hc hc0_ne
   rw [tiltNorm_zero, hs_mean] at hquot
-  simpa [tiltExp, mul_zero, sub_zero, one_pow, div_one, mul_one] using hquot
+  have hfun :
+      ((fun t => ∫ z, φ z * Real.exp (t * s z) ∂P) / fun t => tiltNorm P s t)
+        = tiltExp P s φ := by
+    funext t; rfl
+  rw [hfun] at hquot
+  simpa [mul_zero, sub_zero, one_pow, div_one, mul_one] using hquot
 
 end Derivative
 

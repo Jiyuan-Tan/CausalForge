@@ -70,12 +70,14 @@ lemma m0_eq_eventCondExp_Y0_alwaysSelected
       have hsel_cf : S.SelOfA false ω = S.factualSel ω :=
         POVar.cf_eq_factual_on_event hA.consistency
           S.selVar S.aVar false S.hASel.symm hω.1
-      exact ⟨hω.1, by simpa [selOfAFalseSet, hsel_cf] using hω.2⟩
+      exact ⟨hω.1, by
+        simpa [selOfAFalseSet, selEvent, POVar.event, factualSel, hsel_cf] using hω.2⟩
     · intro hω
       have hsel_cf : S.SelOfA false ω = S.factualSel ω :=
         POVar.cf_eq_factual_on_event hA.consistency
           S.selVar S.aVar false S.hASel.symm hω.1
-      exact ⟨hω.1, by simpa [selOfAFalseSet, hsel_cf] using hω.2⟩
+      exact ⟨hω.1, by
+        simpa [selOfAFalseSet, selEvent, POVar.event, factualSel, hsel_cf] using hω.2⟩
   have hdrop :
       eventCondExp P.μ (S.aEvent false ∩ S.selOfAFalseSet) (S.YofA false)
         = eventCondExp P.μ S.selOfAFalseSet (S.YofA false) := by

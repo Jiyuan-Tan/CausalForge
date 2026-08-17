@@ -162,7 +162,6 @@ private lemma trigPolyComplexPoly_term_eval (n k : ℕ) (a b t : ℝ) (hk : k �
     rw [mul_comm]]
   ring_nf
   norm_num [Complex.I_sq]
-  exact Mathlib.Tactic.Ring.mul_one _
 
 private lemma trigPolyComplexPoly_eval (n : ℕ) (a b : ℕ → ℝ) (f : ℝ → ℝ)
     (hf : ∀ t, f t = ∑ k ∈ Finset.range (n + 1),
@@ -344,7 +343,9 @@ theorem IsTrigPolyLE.card_simple_add_double_le {n : ℕ} {f : ℝ → ℝ}
     simpa [P, e, hf0C] using heval
   have hder0 : P.derivative.IsRoot (e t₀) := by
     have hcoerce : HasDerivAt (fun t : ℝ => ((t : ℝ) : ℂ)) (1 : ℂ) t₀ := by
-      simpa using Complex.ofRealCLM.hasDerivAt (x := t₀)
+      have h0 := (hasDerivAt_id' (x := t₀)).ofReal_comp
+      have h1 : HasDerivAt (fun t : ℝ => ((t : ℝ) : ℂ)) _ t₀ := h0
+      simpa using h1
     have hinner : HasDerivAt (fun t : ℝ => (t : ℂ) * Complex.I) Complex.I t₀ := by
       simpa using hcoerce.mul_const Complex.I
     have he : HasDerivAt e (e t₀ * Complex.I) t₀ := by
@@ -352,12 +353,15 @@ theorem IsTrigPolyLE.card_simple_add_double_le {n : ℕ} {f : ℝ → ℝ}
     have hpoly :
         HasDerivAt (fun t : ℝ => P.eval (e t))
           (P.derivative.eval (e t₀) * (e t₀ * Complex.I)) t₀ := by
-      simpa using (P.hasDerivAt (e t₀)).comp t₀ he
+      have h0 := (P.hasDerivAt (e t₀)).comp t₀ he
+      have h1 : HasDerivAt (fun t : ℝ => P.eval (e t)) _ t₀ := h0
+      simpa using h1
     have hfC : HasDerivAt (fun t : ℝ => ((f t : ℝ) : ℂ)) (0 : ℂ) t₀ := by
       simpa using hderiv.ofReal_comp
     have hprod :
         HasDerivAt (fun t : ℝ => (e t) ^ n * ((f t : ℝ) : ℂ)) 0 t₀ := by
-      have hraw := (he.pow n).mul hfC
+      have hraw : HasDerivAt (fun t : ℝ => (e t) ^ n * ((f t : ℝ) : ℂ)) _ t₀ :=
+        (he.fun_pow n).fun_mul hfC
       simpa [hf0] using hraw
     have hsame :
         HasDerivAt (fun t : ℝ => P.eval (e t)) 0 t₀ := by

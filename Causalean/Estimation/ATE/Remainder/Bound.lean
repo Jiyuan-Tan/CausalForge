@@ -138,16 +138,15 @@ theorem aipw_remainder_bound
     infer_instance
   have hprodT_int : Integrable (fun x => dμT x * de x) S.P_X := by
     have hmul : MemLp (fun x => dμT x * de x) 1 S.P_X := by
-      simpa [dμT, de, mul_comm] using (hΔμ_memLp true).mul hΔe_memLp
+      exact hΔe_memLp.mul' (hΔμ_memLp true)
     exact hmul.integrable (by norm_num)
   have hprodF_int : Integrable (fun x => dμF x * de x) S.P_X := by
     have hmul : MemLp (fun x => dμF x * de x) 1 S.P_X := by
-      simpa [dμF, de, mul_comm] using (hΔμ_memLp false).mul hΔe_memLp
+      exact hΔe_memLp.mul' (hΔμ_memLp false)
     exact hmul.integrable (by norm_num)
   have hbound_int : Integrable bound S.P_X := by
-    simpa [bound] using
-      ((hprodT_int.norm.const_mul (aipw_rem_const ε)).add
-        (hprodF_int.norm.const_mul (aipw_rem_const ε)))
+    exact ((hprodT_int.norm.const_mul (aipw_rem_const ε)).add
+      (hprodF_int.norm.const_mul (aipw_rem_const ε)))
   have hrem_meas : Measurable rem := by
     dsimp [rem, dμT, dμF, de]
     exact ((η.e_meas.sub S.e_meas).mul

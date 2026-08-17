@@ -95,9 +95,11 @@ lemma rGapFrontiers_nonneg (m : ℕ) (a b kappa : ℝ)
       kappa / Real.sqrt (qParam m)
         < (2 * (m : ℝ) - a - 3 * b) * (a - b) / (a + b) := by
     unfold kappaGap at hkGap
-    rw [div_lt_iff₀ hsqrtq]
-    convert hkGap using 1
-    field_simp [ne_of_gt hA]
+    have hrw : (2 * (m : ℝ) - a - 3 * b) * (a - b) / (a + b) * Real.sqrt (qParam m)
+        = (2 * (m : ℝ) - a - 3 * b) * (a - b) * Real.sqrt (qParam m) / (a + b) := by
+      field_simp
+    rw [div_lt_iff₀ hsqrtq, hrw]
+    exact hkGap
   have hD_bound :
       (2 * (m : ℝ) - a - 3 * b) * (a - b) / (a + b)
         < 2 * (m : ℝ) - a - b := by

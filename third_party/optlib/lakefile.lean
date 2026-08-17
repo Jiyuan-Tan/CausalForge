@@ -16,7 +16,7 @@ package «optlib» where
   leanOptions := #[⟨`autoImplicit, false⟩]
 
 require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git" @ "bf8875c7dc7162b23cdb881f33cc97caab1c688a"
+  "https://github.com/leanprover-community/mathlib4.git" @ "db584cd6d46c92f209a44c0f1c829460d327499d"
 
 @[default_target]
 lean_lib «Optlib» where

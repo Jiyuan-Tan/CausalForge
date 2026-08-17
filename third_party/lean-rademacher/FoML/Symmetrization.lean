@@ -27,7 +27,12 @@ variable {n : ℕ}
 
 @[simp]
 theorem Signs.card (n : ℕ) : Fintype.card (Signs n) = 2^n := by
-  simp [Signs]
+  have h2 : Fintype.card (({-1,1} : Finset ℤ) : Type) = 2 := by
+    rw [Fintype.card_coe]
+    decide
+  calc Fintype.card (Signs n)
+      = Fintype.card (({-1,1} : Finset ℤ) : Type) ^ n := Fintype.card_pi_const _ _
+    _ = 2 ^ n := by rw [h2]
 
 @[simp]
 theorem Signs.apply_abs (σ : Signs n) (k : Fin n) : (|σ k| : ℤ) = 1 := by
@@ -118,12 +123,9 @@ lemma sigma_eq (f : ℤ → (Signs n) → ℝ) :
       exact Eq.symm (Fintype.sum_prod_type _)
     _ = ∑ σ : Signs (n + 1), (fun σ' ↦ f σ'.1 σ'.2) ((Fin.snocEquiv (fun _ ↦ ({-1,1} : Finset ℤ))).symm σ) := by
       dsimp only [Signs]
-      exact Eq.symm
-        (Fintype.sum_equiv (Fin.snocEquiv fun x ↦ { x // x ∈ {-1, 1} }).symm
-          (fun x ↦
-            (fun σ' ↦ f (↑σ'.1) σ'.2) ((Fin.snocEquiv fun x ↦ { x // x ∈ {-1, 1} }).symm x))
-          (fun x ↦ f (↑x.1) x.2) (congrFun rfl))
-    _ = _ := by simp
+      exact (Equiv.sum_comp (Fin.snocEquiv fun _ ↦ ({-1,1} : Finset ℤ)).symm
+        (fun σ' ↦ f (↑σ'.1) σ'.2)).symm
+    _ = _ := rfl
 
 omit [MeasurableSpace Ω] in
 lemma bound_sub {b : ℝ} (h𝓕' : ∀ (I : ι) (z : Z), |f I z| ≤ b) {ω : Ω × Ω} {I : ι}:
@@ -612,7 +614,7 @@ lemma aux₃ [Countable ι] [Nonempty ι] (h𝓕 : ∀ I : ι, Measurable (f I �
         ∘ (Fin.snocEquiv fun _ ↦ (Ω × Ω))] := by
         apply congr_arg
         ext ω
-        dsimp
+        dsimp [Fin.snocEquiv]
         congr
         ext σ
         apply iSup_congr
@@ -749,7 +751,6 @@ theorem abs_symmetrization_equation [Countable ι] [Nonempty ι] (h𝓕 : ∀ I 
       dsimp
       congr
       ext σ
-      dsimp
       let V : (Z → ℝ ) → ℝ := fun f ↦ ∑ i, (σ i) * (f (X (ω i).1) - f (X (ω i).2))
       have hV₀: ∀ f, V (-f) = - (V f) := by
         intro f

@@ -162,13 +162,13 @@ lemma IIDSample.sampleQuantile_rate (S : IIDSample Ω ℝ μ P)
   have hΔp_tail : Tendsto (fun n => μ {ω | R < |Δp n ω|}) atTop (𝓝 0) := by
     have h := (tendstoInMeasure_iff_norm.mp hL2p) R hRpos
     refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds h
-      (fun n => zero_le _) (fun n => measure_mono fun ω hω => ?_)
+      (fun n => zero_le) (fun n => measure_mono fun ω hω => ?_)
     simp only [Set.mem_setOf_eq, sub_zero, Real.norm_eq_abs] at hω ⊢
     exact le_of_lt hω
   have hΔm_tail : Tendsto (fun n => μ {ω | R < |Δm n ω|}) atTop (𝓝 0) := by
     have h := (tendstoInMeasure_iff_norm.mp hL2m) R hRpos
     refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds h
-      (fun n => zero_le _) (fun n => measure_mono fun ω hω => ?_)
+      (fun n => zero_le) (fun n => measure_mono fun ω hω => ?_)
     simp only [Set.mem_setOf_eq, sub_zero, Real.norm_eq_abs] at hω ⊢
     exact le_of_lt hω
   -- Taylor: `√n(F(q₀)−F(y₊)) → −f₀M` and `√n(F(q₀)−F(y₋)) → f₀M`.

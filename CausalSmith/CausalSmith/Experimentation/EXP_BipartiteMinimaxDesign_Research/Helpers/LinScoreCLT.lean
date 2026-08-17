@@ -35,6 +35,9 @@ noncomputable def linScoreOutcomeBlock (E : BipartiteExperiment I O) (A : Finset
   A.biUnion E.N
 
 -- @node: linScore-expT-depends-on-neighborhood
+/-- An outcome's all-treated exposure indicator depends on the assignment vector only
+through the outcome's own intervention neighborhood: two assignments that agree there give
+the same indicator. -/
 lemma expT_depends_on_neighborhood (E : BipartiteExperiment I O) (i : O)
     {z z' : I → Bool} (h : ∀ k ∈ E.N i, z k = z' k) :
     E.expT z i = E.expT z' i := by
@@ -43,6 +46,9 @@ lemma expT_depends_on_neighborhood (E : BipartiteExperiment I O) (i : O)
   exact Finset.prod_congr rfl (fun k hk => by rw [h k hk])
 
 -- @node: linScore-expC-depends-on-neighborhood
+/-- An outcome's all-control exposure indicator depends on the assignment vector only
+through the outcome's own intervention neighborhood: two assignments that agree there give
+the same indicator. -/
 lemma expC_depends_on_neighborhood (E : BipartiteExperiment I O) (i : O)
     {z z' : I → Bool} (h : ∀ k ∈ E.N i, z k = z' k) :
     E.expC z i = E.expC z' i := by

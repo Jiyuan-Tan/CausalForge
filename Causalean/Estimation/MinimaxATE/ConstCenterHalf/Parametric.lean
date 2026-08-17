@@ -157,7 +157,7 @@ theorem absolutelyContinuous_of_singleton_pos {Ω : Type*} [MeasurableSpace Ω]
   have hempty : s = ∅ := by
     by_contra hne
     obtain ⟨x, hx⟩ := Set.nonempty_iff_ne_empty.mpr hne
-    exact hν x (le_antisymm (hs ▸ measure_mono (Set.singleton_subset_iff.mpr hx)) (zero_le _))
+    exact hν x (le_antisymm (hs ▸ measure_mono (Set.singleton_subset_iff.mpr hx)) zero_le)
   rw [hempty]; exact measure_empty
 
 /-- The null single-observation law charges every point (its mass is positive). -/

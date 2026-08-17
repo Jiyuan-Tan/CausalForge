@@ -253,9 +253,11 @@ theorem zEstimator_clt
               _ = ‖reg.J₀_inv (A n ω)‖ := by
                 rw [norm_neg]
           have hω' : ε < ‖B n ω‖ := by
-            simpa [abs_of_nonneg (norm_nonneg _)] using hω
+            have hω₀ : ε * (1 : ℝ) < |‖B n ω‖| := hω
+            simpa [abs_of_nonneg (norm_nonneg _)] using hω₀
           have hω'' : ε < ‖reg.J₀_inv (A n ω)‖ := by
             rwa [hnormeq] at hω'
+          change ε * (1 : ℝ) < |‖reg.J₀_inv (A n ω)‖|
           simpa [abs_of_nonneg (norm_nonneg _)] using hω''
       exact by simpa using hmeasure.trans hn
     simpa [B, Finset.card_range] using hB

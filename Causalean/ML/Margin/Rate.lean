@@ -143,7 +143,7 @@ theorem margin_erm_surrogate_excess_rate {d n : ℕ} {Ω : Type*} [MeasurableSpa
         have h := linear_predictor_l2_bound' (d := d) (n := n) (ι := KWeight d W)
           (W := W) (X := Yb * Xb) (by positivity) hW
           (fun k => ⟨featM (S k), hmem (S k)⟩) (fun w => w)
-        simpa [Function.comp_def, mul_assoc] using h
+        exact h
       have hcontr := empiricalRademacherComplexity_contraction_abs_of_bddAbove
         (ι := KWeight d W) (fun s => φ s - φ 0) (L := L) hφtilde p
         (M := Yb * Xb * W) hYbXbW hpbound n S
@@ -184,7 +184,7 @@ theorem margin_erm_surrogate_excess_rate {d n : ℕ} {Ω : Type*} [MeasurableSpa
   have key := erm_oracle_inequality_separable (μ := μ) (n := n) (f := f)
     hfmeas X hX (b := L * (Yb * Xb * W)) hb0 hfbound hfcont_w ht' hε ŵ wstar hERMf
   refine le_trans ?_ key
-  rw [ENNReal.toReal_le_toReal (measure_ne_top _ _) (measure_ne_top _ _)]
+  refine ENNReal.toReal_mono (measure_ne_top _ _) ?_
   apply measure_mono
   intro ω hω
   -- population split: `∫ f w = ∫ surr w − φ 0`

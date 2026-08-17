@@ -19,6 +19,14 @@ open Causalean.Mathlib.AlgebraicGeometry.PolynomialImageDimension
 
 noncomputable section
 
+/-- The polynomial Jacobian minor, restated with its entry family presented
+through `Matrix.of` so that the `Matrix.det` API lemmas apply. -/
+private lemma polynomialJacobianMinor_eq_det {R ι κ : Type*} [CommRing R] {d : ℕ}
+    (f : κ → MvPolynomial ι R) (rows : Fin d → κ) (cols : Fin d → ι) :
+    polynomialJacobianMinor f rows cols =
+      Matrix.det (Matrix.of fun a b => MvPolynomial.pderiv (cols b) (f (rows a))) :=
+  rfl
+
 private lemma eval_forward_weight_otherOrder
     (m : ℕ) (q : RetainedCumCoord (2 * m + 2))
     (j : Fin (m + 2)) (k : Fin (2 * m + 1))
@@ -239,7 +247,7 @@ theorem forwardFullPolynomialJacobianMinor_ne_zero
       (forwardFullJacobianFinColumn m hm) ≠ 0 := by
   intro hz
   have hzEval := congrArg (MvPolynomial.eval (forwardJacobianWitnessCoord m)) hz
-  rw [map_zero, polynomialJacobianMinor, RingHom.map_det] at hzEval
+  rw [map_zero, polynomialJacobianMinor_eq_det, RingHom.map_det] at hzEval
   change ((canonicalForwardFullJacobianAtWitness m hm).submatrix
       (forwardFullJacobianEquivFin m hm).symm
       (forwardFullJacobianEquivFin m hm).symm).det = 0 at hzEval
@@ -503,7 +511,7 @@ theorem forwardCommonAxisPolynomialJacobianMinor_ne_zero
   intro hz
   have hzEval := congrArg
     (MvPolynomial.eval (commonAxisJacobianWitnessCoord m hm)) hz
-  rw [map_zero, polynomialJacobianMinor, RingHom.map_det] at hzEval
+  rw [map_zero, polynomialJacobianMinor_eq_det, RingHom.map_det] at hzEval
   change ((canonicalCommonAxisFullJacobianAtWitness m hm).submatrix
       (commonAxisFullJacobianEquivFin m hm).symm
       (commonAxisFullJacobianEquivFin m hm).symm).det = 0 at hzEval

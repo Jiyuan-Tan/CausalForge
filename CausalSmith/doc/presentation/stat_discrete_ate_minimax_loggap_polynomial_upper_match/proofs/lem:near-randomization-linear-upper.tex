@@ -1,41 +1,116 @@
 \begin{proof}[Proof of \cref{obj:lem:near-randomization-linear-upper}]
-Let
-\[
-S(O)=2(2A-1)\left(Y-\frac12\right).
-\]
-The estimator is the sample average \(n^{-1}\sum_{i=1}^n S(O_i)\), and \(S(O)^2=1\) for every binary observation; hence \(\operatorname{Var}_P(S)\le1\).  Under the product law in \cref{obj:def:experiment-class}, independence gives
-\[
-\operatorname{Var}_{\mu_n}(\widehat\tau_{\mathrm{ctr}})\le \frac1n .
-\]
+Membership of \(\mu_n\) in \(\mathcal E_{n,d,\epsilon}\) supplies \(\mu_n=P^{\otimes n}\), the range restriction \(0<\epsilon\le 1/2\), and the overlap bounds of \cref{obj:ass:overlap} for \(P\); these are used throughout.
+% lean: ExperimentClass
 
-It remains to bound the bias.  For every positive-mass category,
+Write
 \[
-E[S(O)\mid X=k]p_k
+S(O)=2(2A-1)\left(Y-\frac12\right),
+\qquad
+\widehat\tau_{\mathrm{ctr}}=\frac1n\sum_{i=1}^nS(O_i).
+\]
+% lean: centeredUnitScore, centeredEstimator_eq_scoreMean
+Since \(A\) and \(Y\) are binary, \(S(O)=1\) when \(A=Y\) and \(S(O)=-1\) when \(A\neq Y\); in particular \(S(O)^2=1\) pointwise, so
+\[
+\operatorname{Var}_P(S)
+=
+E_P\!\left[S(O)^2\right]-\left\{E_PS(O)\right\}^2
+=
+1-\left\{E_PS(O)\right\}^2
+\le
+1 .
+\]
+% lean: centeredUnitScore_sq, centeredUnitScore_variance_le_one
+Under \(\mu_n=P^{\otimes n}\) the observations \(O_1,\ldots,O_n\) are iid, so the variance of their average is the one-observation variance divided by \(n\):
+\[
+\operatorname{Var}_{\mu_n}(\widehat\tau_{\mathrm{ctr}})
+=
+\frac{\operatorname{Var}_P(S)}{n}
+\le
+\frac1n .
+\]
+% lean: centeredEstimator_variance_le
+
+It remains to bound the bias.  Evaluating \(S\) on the four atoms of a category, its value is \(+1\) at \((a,y)\in\{(1,1),(0,0)\}\) and \(-1\) at \((a,y)\in\{(1,0),(0,1)\}\), so summing the atom masses against these values,
+\[
+E_PS(O)
+=
+\sum_{k=1}^d\left(q_{1k1}-q_{1k0}+q_{0k0}-q_{0k1}\right).
+\]
+% lean: centeredUnitScore_mean
+
+Fix \(k\) with \(p_k>0\).  Overlap together with \(\epsilon>0\) gives \(0<\epsilon\le\pi_k\le1-\epsilon<1\), so both arm masses \(q_{1k0}+q_{1k1}=\pi_kp_k\) and \(q_{0k0}+q_{0k1}=(1-\pi_k)p_k\) are strictly positive and \(\mu_{1k},\mu_{0k}\) are the genuine conditional means of \(Y\) in the two arms.  Consequently
+\[
+q_{1k1}=\mu_{1k}\pi_kp_k,
+\quad
+q_{1k0}=(1-\mu_{1k})\pi_kp_k,
+\quad
+q_{0k1}=\mu_{0k}(1-\pi_k)p_k,
+\quad
+q_{0k0}=(1-\mu_{0k})(1-\pi_k)p_k,
+\]
+and substituting these four expressions and rearranging yields the exact conditional-bias identity
+\[
+q_{1k1}-q_{1k0}+q_{0k0}-q_{0k1}
 =
 p_k(\mu_{1k}-\mu_{0k})
-+2(\pi_k-\tfrac12)p_k(\mu_{1k}+\mu_{0k}-1),
++2\left(\pi_k-\tfrac12\right)p_k(\mu_{1k}+\mu_{0k}-1).
 \]
-and zero-mass categories contribute zero.  Summing over \(k\) gives
+% lean: centeredScore_category_identity
+If instead \(p_k=0\), then the four nonnegative masses \(q_{0k0},q_{0k1},q_{1k0},q_{1k1}\) sum to \(0\) and therefore all vanish, so the left-hand side above is \(0\); the right-hand side is \(0\) as well, both of its terms carrying the factor \(p_k=0\).  The displayed identity therefore holds for every \(k\).
+% lean: jointMass_eq_zero_of_cellMass_eq_zero
+
+Summing the identity over \(k\) and subtracting \(\tau(P)=\sum_{k=1}^dp_k(\mu_{1k}-\mu_{0k})\) from \cref{obj:def:ate-functional}, which is the form the ATE functional takes under \cref{obj:ass:overlap}, gives
 \[
-E_P S(O)-\tau(P)
+E_PS(O)-\tau(P)
 =
-\sum_k2(\pi_k-\tfrac12)p_k(\mu_{1k}+\mu_{0k}-1).
+\sum_{k=1}^d2\left(\pi_k-\tfrac12\right)p_k(\mu_{1k}+\mu_{0k}-1).
 \]
-By overlap, \(|\pi_k-\tfrac12|\le\tfrac12-\epsilon\), while \(\mu_{1k},\mu_{0k}\in[0,1]\) implies \(|\mu_{1k}+\mu_{0k}-1|\le1\), and \(\sum_kp_k=1\).  Therefore
+% lean: centeredUnitScore_bias_identity, ateFunctional_eq_weighted_regression
+
+For a category with \(p_k>0\), the overlap bounds \(\epsilon\le\pi_k\le1-\epsilon\) give \(|\pi_k-\tfrac12|\le\tfrac12-\epsilon\), while \(\mu_{1k},\mu_{0k}\in[0,1]\) gives \(|\mu_{1k}+\mu_{0k}-1|\le1\); since \(\tfrac12-\epsilon\ge0\) and \(p_k\ge0\), multiplying these bounds yields
 \[
-|E_P S(O)-\tau(P)|\le 2\left(\frac12-\epsilon\right).
+\left|2\left(\pi_k-\tfrac12\right)p_k(\mu_{1k}+\mu_{0k}-1)\right|
+\le
+2\left(\frac12-\epsilon\right)p_k ,
 \]
-The mean of \(\widehat\tau_{\mathrm{ctr}}\) is \(E_P S(O)\), and the usual identity
+and for \(p_k=0\) both sides vanish, so the bound holds for every \(k\).  The triangle inequality applied to the previous display, followed by \(\sum_{k=1}^dp_k=1\) (the categories partition the sample space), gives
 \[
-E[(\widehat\tau_{\mathrm{ctr}}-\tau(P))^2]
+\left|E_PS(O)-\tau(P)\right|
+\le
+\sum_{k=1}^d2\left(\frac12-\epsilon\right)p_k
 =
-\operatorname{Var}(\widehat\tau_{\mathrm{ctr}})
-+\{E\widehat\tau_{\mathrm{ctr}}-\tau(P)\}^2
+2\left(\frac12-\epsilon\right).
 \]
-then yields
+% lean: centeredUnitScore_bias_bound, cellMass_sum
+
+Finally, \(n>0\) and \(\mu_n=P^{\otimes n}\) give
+\[
+E_{\mu_n}\widehat\tau_{\mathrm{ctr}}
+=
+\frac1n\sum_{i=1}^nE_PS(O_i)
+=
+E_PS(O),
+\]
+% lean: centeredEstimator_mean
+so the bias of \(\widehat\tau_{\mathrm{ctr}}\) is exactly the quantity just bounded, and since \(2(\tfrac12-\epsilon)\ge0\) the bound squares to
+\[
+\left\{E_{\mu_n}\widehat\tau_{\mathrm{ctr}}-\tau(P)\right\}^2
+\le
+4\left(\frac12-\epsilon\right)^2 .
+\]
+The mean-squared error splits as
+\[
+E_{\mu_n}\!\left[(\widehat\tau_{\mathrm{ctr}}-\tau(P))^2\right]
+=
+\operatorname{Var}_{\mu_n}(\widehat\tau_{\mathrm{ctr}})
++\left\{E_{\mu_n}\widehat\tau_{\mathrm{ctr}}-\tau(P)\right\}^2 ,
+\]
+% lean: mse_eq_variance_add_sq_bias
+and adding the variance bound to the squared-bias bound gives
 \[
 E_{\mu_n}\!\left[(\widehat\tau_{\mathrm{ctr}}-\tau(P))^2\right]
 \le
 \frac1n+4\left(\frac12-\epsilon\right)^2 .
 \]
+% lean: near_randomization_linear_upper
 \end{proof}

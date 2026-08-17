@@ -56,6 +56,7 @@ theorem eps_integral_zero (M : ObsSEM p) (j : Fin (p + 1)) :
   have hmeas : AEMeasurable (fun ω => M.ε ω j) M.P := eps_aemeasurable M j
   have hg : AEStronglyMeasurable (fun x : ℝ => x) (M.P.map (fun ω => M.ε ω j)) := by
     rw [M.hGauss j]; exact (memLp_id_gaussianReal 1).aestronglyMeasurable
-  rw [← integral_map hmeas hg, M.hGauss j, integral_id_gaussianReal]
+  rw [← integral_map hmeas hg, M.hGauss j]
+  exact integral_id_gaussianReal
 
 end Causalean.Discovery.InvariantPrediction.LinearGaussian

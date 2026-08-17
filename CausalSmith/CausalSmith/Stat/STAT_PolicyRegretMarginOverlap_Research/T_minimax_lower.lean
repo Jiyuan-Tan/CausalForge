@@ -43,26 +43,40 @@ This is the symmetric signed two-point channel of scale `1`,
 noncomputable abbrev bernoulliPM (m : ℝ) : Measure ℝ :=
   Causalean.Mathlib.Probability.twoPointMean 1 m
 
+/-- The Bernoulli treatment law depends measurably on its success probability. This is what
+makes the witness's covariate-dependent treatment kernel a genuine measurable kernel. -/
 @[fun_prop] lemma measurable_bernoulliBool : Measurable bernoulliBool :=
   Causalean.Mathlib.Probability.measurable_bernoulliBool
 
+/-- The two-point outcome law on `{-1, +1}` depends measurably on its mean parameter — what
+makes the witness's covariate-dependent outcome kernel a genuine measurable kernel. -/
 @[fun_prop] lemma measurable_bernoulliPM : Measurable bernoulliPM :=
   Causalean.Mathlib.Probability.measurable_twoPointMean 1
 
+/-- The Bernoulli treatment law with success probability `p` is a probability measure
+whenever `p` lies in `[0,1]`. -/
 lemma bernoulliBool_isProbabilityMeasure {p : ℝ} (hp0 : 0 ≤ p) (hp1 : p ≤ 1) :
     IsProbabilityMeasure (bernoulliBool p) :=
   Causalean.Mathlib.Probability.bernoulliBool_isProbabilityMeasure hp0 hp1
 
+/-- The two-point outcome law on `{-1, +1}` with mean `m` is a probability measure whenever
+`m` lies in `[-1,1]`. -/
 lemma bernoulliPM_isProbabilityMeasure {m : ℝ} (hm_lo : -1 ≤ m) (hm_hi : m ≤ 1) :
     IsProbabilityMeasure (bernoulliPM m) :=
   Causalean.Mathlib.Probability.twoPointMean_isProbabilityMeasure one_pos
     (abs_le.mpr ⟨hm_lo, hm_hi⟩)
 
+/-- Integrating a function of the treatment arm against the Bernoulli treatment law with
+success probability `p` in `[0,1]` gives the weighted average of its treated and untreated
+values, with weights `p` and `1-p`. -/
 lemma bernoulliBool_integral {p : ℝ} (hp0 : 0 ≤ p) (hp1 : p ≤ 1)
     (f : Bool → ℝ) :
     ∫ a, f a ∂bernoulliBool p = p * f true + (1 - p) * f false :=
   Causalean.Mathlib.Probability.bernoulliBool_integral hp0 hp1 f
 
+/-- Integrating a function of the outcome against the two-point law with mean `m` in
+`[-1,1]` gives the weighted average of its values at `+1` and `-1`, with weights
+`(1+m)/2` and `(1-m)/2`. -/
 lemma bernoulliPM_integral {m : ℝ} (hm_lo : -1 ≤ m) (hm_hi : m ≤ 1)
     (f : ℝ → ℝ) :
     ∫ y, f y ∂bernoulliPM m =
@@ -70,15 +84,24 @@ lemma bernoulliPM_integral {m : ℝ} (hm_lo : -1 ≤ m) (hm_hi : m ≤ 1)
   simpa using Causalean.Mathlib.Probability.twoPointMean_integral one_pos
     (abs_le.mpr ⟨hm_lo, hm_hi⟩) f
 
+/-- The two-point outcome law with parameter `m` in `[-1,1]` has mean exactly `m`. This is
+what makes it the outcome channel realizing a prescribed conditional-mean value while
+keeping outcomes in `[-1,1]`. -/
 lemma bernoulliPM_mean {m : ℝ} (hm_lo : -1 ≤ m) (hm_hi : m ≤ 1) :
     ∫ y, y ∂bernoulliPM m = m :=
   Causalean.Mathlib.Probability.twoPointMean_mean one_pos (abs_le.mpr ⟨hm_lo, hm_hi⟩)
 
+/-- The two-point outcome law puts no mass outside `[-1,1]`, for any parameter `m`: it is
+carried by the two points `-1` and `+1`. This delivers the bounded-outcome requirement for
+the witness laws. -/
 lemma bernoulliPM_bad_support_zero (m : ℝ) :
     (bernoulliPM m) {y | y ∉ Set.Icc (-1 : ℝ) 1} = 0 :=
   Causalean.Mathlib.Probability.twoPointMean_bad_support_zero
     (ENNReal.ofReal ((1 + m / 1) / 2)) (ENNReal.ofReal ((1 - m / 1) / 2)) (by norm_num)
 
+/-- Mixing a family of measures indexed by the treatment arm over the Bernoulli treatment
+law with success probability `p` yields the convex combination of the treated and
+untreated members with weights `p` and `1-p`. -/
 lemma bernoulliBool_bind {β : Type*} [MeasurableSpace β] (p : ℝ)
     (K : Bool → Measure β) :
     (bernoulliBool p).bind K =
@@ -106,10 +129,15 @@ private lemma measurable_observation_Y : Measurable (fun O : Observation ℝ => 
     (fun O : Observation ℝ => (O.X, O.A, O.Y)))
   exact (measurable_snd.comp measurable_snd).comp htuple
 
+/-- Sending a real-covariate observation to its coordinate triple (covariate, treatment
+arm, outcome) is measurable. -/
 lemma measurable_observation_tuple_real :
     Measurable (fun O : Observation ℝ => (O.X, O.A, O.Y)) :=
   Measurable.of_comap_le le_rfl
 
+/-- Every single real-covariate observation forms a measurable set, so the observation space
+has measurable points. This is needed for the cell-by-cell likelihood-ratio computation
+behind the two-point chi-squared bound. -/
 instance instMeasurableSingletonClassObservationReal :
     MeasurableSingletonClass (Observation ℝ) := by
   refine ⟨?_⟩
@@ -123,16 +151,22 @@ instance instMeasurableSingletonClassObservationReal :
   cases O'
   simp
 
+/-- Assembling an observation from a FIXED covariate value and treatment arm is a measurable
+function of the outcome value. -/
 @[fun_prop] lemma measurable_observation_mk (x : ℝ) (a : Bool) :
     Measurable (fun y : ℝ => Observation.mk x a y) := by
   rw [measurable_comap_iff]
   fun_prop
 
+/-- Assembling an observation from a FIXED treatment arm and outcome value is a measurable
+function of the covariate. -/
 @[fun_prop] lemma measurable_observation_mk_X (a : Bool) (y : ℝ) :
     Measurable (fun x : ℝ => Observation.mk x a y) := by
   rw [measurable_comap_iff]
   fun_prop
 
+/-- Scaling a measurably varying family of measures by a measurably varying nonnegative
+extended-real coefficient again gives a measurably varying family of measures. -/
 lemma measurable_smul_measure_variable {ι β : Type*} [MeasurableSpace ι] [MeasurableSpace β]
     {c : ι → ENNReal} {μ : ι → Measure β} (hc : Measurable c) (hμ : Measurable μ) :
     Measurable fun x => c x • μ x := by
@@ -140,6 +174,10 @@ lemma measurable_smul_measure_variable {ι β : Type*} [MeasurableSpace ι] [Mea
   simp only [Measure.smul_apply, smul_eq_mul]
   exact hc.mul ((Measure.measurable_coe hs).comp hμ)
 
+/-- Fix a treatment arm and a deterministic outcome value. The observation law obtained by
+pushing the point mass at that outcome through 'assemble the observation at covariate `x`'
+varies measurably in the covariate `x`. This covers the witness's control cell inside the
+active block, where the outcome is deterministically zero. -/
 lemma measurable_map_observation_dirac (a : Bool) (y0 : ℝ) :
     Measurable fun x : ℝ =>
       Measure.map (Observation.mk x a) (Measure.dirac y0 : Measure ℝ) := by
@@ -150,6 +188,9 @@ lemma measurable_map_observation_dirac (a : Bool) (y0 : ℝ) :
     rw [Measure.map_dirac]]
   exact Measure.measurable_dirac.comp (measurable_observation_mk_X a y0)
 
+/-- Fix a treatment arm and a mean `m`. The observation law obtained by drawing the outcome
+from the two-point `{-1,+1}` law with mean `m` and pushing it through 'assemble the
+observation at covariate `x`' varies measurably in the covariate `x`. -/
 lemma measurable_map_observation_bernoulliPM (a : Bool) (m : ℝ) :
     Measurable fun x : ℝ => Measure.map (Observation.mk x a) (bernoulliPM m) := by
   rw [show (fun x : ℝ => Measure.map (Observation.mk x a) (bernoulliPM m)) =
@@ -169,6 +210,13 @@ lemma measurable_map_observation_bernoulliPM (a : Bool) (m : ℝ) :
   exact (measurable_smul_measure_variable measurable_const hdir1).add
     (measurable_smul_measure_variable measurable_const hdirNeg)
 
+/-- The two-point witness's per-covariate observation law, written out explicitly as the
+treated cell weighted by the covariate-dependent propensity plus the untreated cell
+weighted by its complement — each cell carrying the inside-block or outside-block outcome
+law — varies measurably in the covariate.
+
+This is what makes the mixture of these cells over the uniform covariate law a genuine
+measure, hence the witness a genuine observed law. -/
 lemma twoPointWitness_expanded_kernel_measurable
     (α cB σ h q τ0 : ℝ) :
     Measurable fun x : ℝ =>
@@ -234,12 +282,17 @@ lemma twoPointWitness_expanded_kernel_measurable
   exact (measurable_smul_measure_variable hcoefT hmapT).add
     (measurable_smul_measure_variable hcoefF hmapF)
 
+/-- Lebesgue measure restricted to the unit interval is a probability measure — the
+covariate marginal used by the two-point witness. -/
 lemma restricted_volume_Icc01_isProbabilityMeasure :
     IsProbabilityMeasure (volume.restrict (Set.Icc (0 : ℝ) 1)) := by
   rw [isProbabilityMeasure_iff]
   rw [Measure.restrict_apply MeasurableSet.univ]
   simp
 
+/-- Under the uniform covariate law on the unit interval, the interval from zero to any
+nonnegative `a` carries probability at most `a`. This is the bound used for the covariate
+mass of the witness's active block. -/
 lemma restricted_volume_real_Icc_zero_le {a : ℝ} (ha0 : 0 ≤ a) :
     (volume.restrict (Set.Icc (0 : ℝ) 1)).real (Set.Icc (0 : ℝ) a) ≤ a := by
   by_cases ha1 : a ≤ 1
@@ -268,6 +321,8 @@ lemma restricted_volume_real_Icc_zero_le {a : ℝ} (ha0 : 0 ≤ a) :
     have hone_le : (1 : ℝ) ≤ a := le_of_not_ge ha1
     exact hle_one.trans hone_le
 
+/-- The admissible weak-arm exponent `β_{α,γ}` is nonnegative whenever the margin exponent
+`α` and the overlap-decay exponent `γ` are. -/
 lemma betaAG_nonneg_of_nonneg (α γ : ℝ) (hα : 0 ≤ α) (hγ : 0 ≤ γ) :
     0 ≤ betaAG α γ := by
   unfold betaAG
@@ -277,17 +332,24 @@ lemma betaAG_nonneg_of_nonneg (α γ : ℝ) (hα : 0 ≤ α) (hγ : 0 ≤ γ) :
     have hdenpos : 0 < α + 1 := by linarith
     simp [hγ0, div_nonneg (mul_nonneg hα hγpos.le) hdenpos.le]
 
+/-- The converse denominator `D_{α,γ} = 2 + α + β_{α,γ}` is strictly positive whenever the
+margin and overlap-decay exponents are nonnegative. So the information exponent
+`r_⋆ = (1+α)/D_{α,γ}` and the contrast height `h_n = n^{-1/D_{α,γ}}` are well defined. -/
 lemma Dag_pos_of_nonneg (α γ : ℝ) (hα : 0 ≤ α) (hγ : 0 ≤ γ) :
     0 < Dag α γ := by
   have hb : 0 ≤ betaAG α γ := betaAG_nonneg_of_nonneg α γ hα hγ
   unfold Dag
   linarith
 
+/-- The lower-bound contrast height `h_n = n^{-1/D_{α,γ}}` is strictly positive at every
+positive sample size. -/
 lemma hLower_pos_of_pos_nat (α γ : ℝ) {n : ℕ} (hn : 0 < n) :
     0 < hLower α γ n := by
   unfold hLower
   exact Real.rpow_pos_of_pos (by exact_mod_cast hn) _
 
+/-- The lower-bound contrast height is at most one at every sample size of at least one,
+when the margin and overlap-decay exponents are nonnegative. -/
 lemma hLower_le_one_of_one_le_nat (α γ : ℝ) (hα : 0 ≤ α) (hγ : 0 ≤ γ)
     {n : ℕ} (hn : 1 ≤ n) :
     hLower α γ n ≤ 1 := by
@@ -296,6 +358,9 @@ lemma hLower_le_one_of_one_le_nat (α γ : ℝ) (hα : 0 ≤ α) (hγ : 0 ≤ γ
   have hdiv_nonneg : 0 ≤ 1 / Dag α γ := by positivity
   exact Real.rpow_le_one_of_one_le_of_nonpos (by exact_mod_cast hn) (by linarith)
 
+/-- The lower-bound contrast height drops below one half for all large enough sample sizes,
+since it decays to zero as the sample size grows. This is the smallness the witness
+construction needs to keep its outcome regressions inside `[-1,1]`. -/
 lemma eventually_hLower_le_half (α γ : ℝ) (hα : 0 ≤ α) (hγ : 0 ≤ γ) :
     ∀ᶠ n : ℕ in Filter.atTop, hLower α γ n ≤ (1 / 2 : ℝ) := by
   have hD : 0 < Dag α γ := Dag_pos_of_nonneg α γ hα hγ
@@ -306,6 +371,9 @@ lemma eventually_hLower_le_half (α γ : ℝ) (hα : 0 ≤ α) (hγ : 0 ≤ γ) 
       tendsto_natCast_atTop_atTop
   exact htend.eventually (Iic_mem_nhds (by norm_num : (0 : ℝ) < 1 / 2))
 
+/-- The lower-bound weak-arm scale `q_n` lies in the interval from zero (exclusive) to one
+half for all large enough sample sizes — the range that makes it a valid treatment
+probability for the witness's active block. -/
 lemma eventually_qLower_pos_le_half (α γ : ℝ) (hα : 0 ≤ α) (hγ : 0 ≤ γ) :
     ∀ᶠ n : ℕ in Filter.atTop,
       0 < qLower α γ n ∧ qLower α γ n ≤ (1 / 2 : ℝ) := by
@@ -346,6 +414,14 @@ lemma eventually_qLower_pos_le_half (α γ : ℝ) (hα : 0 ≤ α) (hγ : 0 ≤ 
       rw [if_neg hb0, hpoweq]
       exact hsmalln
 
+/-- Active-block admissibility check for the overlap-decay envelope in the decaying-overlap
+regime (positive `γ`).
+
+The witness puts covariate mass `c_B h^α` on its active block, where the overlap is the
+weak-arm scale `h^{β_{α,γ}}`. If the block-width constant obeys `c_B ≤ C_o c_o^{-α/γ}`,
+then for every overlap level `v` between that weak-arm scale and the admissible ceiling
+`c_o u^γ`, the block mass is at most the envelope value `C_o u^α v^{1/γ}`. This is
+precisely the inequality that places the witness inside the assumed law class. -/
 lemma activeBlock_overlap_bound_gpos {α γ cB Co co h u v : ℝ}
     (hαpos : 0 < α) (hγpos : 0 < γ) (hCo : 0 < Co) (hco : 0 < co)
     (hcB : cB ≤ Co * co ^ (-(α / γ)))
@@ -420,6 +496,16 @@ lemma activeBlock_overlap_bound_gpos {α γ cB Co co h u v : ℝ}
       rw [hcancel]
       ring
 
+/-- Active-block admissibility check for the overlap-decay envelope in the degenerate
+branch where the weak-arm exponent `β_{α,γ}` vanishes, so the witness's active block
+carries the FIXED treatment probability one quarter rather than a decaying power of the
+contrast height.
+
+If the block-width constant obeys `c_B ≤ C_o 4^{-1/γ}`, then it is at most `C_o v^{1/γ}`
+at every overlap level `v` of at least one quarter. In this branch the block's covariate
+mass and the envelope's margin factor both degenerate to constants, so no `u^α` factor is
+available to absorb the block width — which is why the constraint on `c_B` is the
+stronger one. -/
 lemma activeBlock_overlap_bound_gzero {γ cB Co v : ℝ}
     (hγpos : 0 < γ) (hCo : 0 < Co)
     (hcB : cB ≤ Co * (4 : ℝ) ^ (-(1 / γ)))
@@ -468,6 +554,9 @@ noncomputable def twoPointWitness (α γ u0 cB : ℝ) (n : ℕ) (σ : ℝ) :
     mu0 := mu0
     mu1 := mu1 }
 
+/-- For the `σ = +1` member of the two-point pair, the law-optimal policy treats every
+covariate value: the contrast is `+h_n` on the active block and the strictly positive
+off-block value `τ₀` elsewhere, hence nonnegative throughout. -/
 lemma twoPointWitness_optimal_plus (α γ u0 cB : ℝ) {n : ℕ}
     (hn1 : 1 ≤ n) (hwin : MarginWindow u0) :
     ∀ x : ℝ, lawOptimalPolicy (twoPointWitness α γ u0 cB n 1) x = true := by
@@ -481,6 +570,13 @@ lemma twoPointWitness_optimal_plus (α γ u0 cB : ℝ) {n : ℕ}
   · simp [twoPointWitness, hxB, hh_nonneg]
   · simp [twoPointWitness, hxB, hτ0_nonneg]
 
+/-- For the `σ = -1` member of the two-point pair, the law-optimal policy treats exactly the
+covariate values OUTSIDE the active block: the contrast is `-h_n` on the block, so treating
+there is harmful, and `+τ₀` off it.
+
+Together with the `σ = +1` member's all-treat optimum, this says the two witnesses'
+optimal policies disagree precisely on the active block — the separation that drives the
+Le Cam two-point argument. -/
 lemma twoPointWitness_optimal_minus (α γ u0 cB : ℝ) {n : ℕ}
     (hn1 : 1 ≤ n) (hwin : MarginWindow u0) :
     ∀ x : ℝ, lawOptimalPolicy (twoPointWitness α γ u0 cB n (-1)) x = true ↔
@@ -495,6 +591,9 @@ lemma twoPointWitness_optimal_minus (α γ u0 cB : ℝ) {n : ℕ}
   · simp [twoPointWitness, hxB, not_le.mpr (neg_neg_of_pos hh_pos)]
   · simp [twoPointWitness, hxB, hτ0_nonneg]
 
+/-- Each two-point witness satisfies positivity — its propensity is strictly between zero
+and one at every covariate value — as soon as the weak-arm scale `q_n` lies in the interval
+from zero (exclusive) to one half. -/
 lemma twoPointWitness_positivity (α γ u0 cB σ : ℝ) (n : ℕ)
     (hq : 0 < qLower α γ n ∧ qLower α γ n ≤ 1 / 2) :
     Positivity (twoPointWitness α γ u0 cB n σ) := by
@@ -507,6 +606,12 @@ lemma twoPointWitness_positivity (α γ u0 cB σ : ℝ) (n : ℕ)
     · simp [twoPointWitness, hxB]
       norm_num
 
+/-- Each two-point witness satisfies the strict-overlap endpoint condition at any floor
+`underline_p` in the interval from zero (exclusive) to one quarter.
+
+The condition only bites when `γ = 0`, and there the weak-arm scale is the fixed value one
+quarter, so the witness's overlap is bounded below by one quarter everywhere — comfortably
+above the floor. -/
 lemma twoPointWitness_strictOverlapEndpoint (α γ u0 cB underlineP σ : ℝ) (n : ℕ)
     (hq : 0 < qLower α γ n ∧ qLower α γ n ≤ 1 / 2)
     (hup : 0 < underlineP) (huple : underlineP ≤ 1 / 4) :
@@ -527,6 +632,10 @@ lemma twoPointWitness_strictOverlapEndpoint (α γ u0 cB underlineP σ : ℝ) (n
       norm_num
       linarith
 
+/-- Each two-point witness satisfies the canonical zero-effect regularity condition, for
+either sign `σ = ±1`: its contrast never vanishes — it is `±h_n` on the active block and
+the strictly positive `τ₀` off it — so the zero-contrast set is empty and in particular
+null. -/
 lemma twoPointWitness_zeroEffect (α γ u0 cB : ℝ) (policySet : Set (Policy ℝ))
     {n : ℕ} (σ : ℝ) (hn1 : 1 ≤ n) (hwin : MarginWindow u0)
     (hσ : σ = 1 ∨ σ = -1) :
@@ -558,6 +667,13 @@ lemma twoPointWitness_zeroEffect (α γ u0 cB : ℝ) (policySet : Set (Policy �
       cases hx
   rw [hzero_empty, measureReal_empty]
 
+/-- Each two-point witness obeys the Tsybakov margin condition with exponent `α` and
+constant `C_m`, provided the block-width constant `c_B` is positive and at most `C_m`.
+
+The only covariates carrying a small nonzero contrast are those in the active block, whose
+covariate mass is at most `c_B h_n^α`; comparing the contrast height `h_n` with the window
+`u` gives the bound `C_m u^α`, and when `u` falls below `h_n` the small-contrast set is
+empty outright. -/
 lemma twoPointWitness_marginTail (α γ u0 cB Cm : ℝ) {n : ℕ} (σ : ℝ)
     (hα : 0 ≤ α) (hwin : MarginWindow u0) (hCm : 0 < Cm) (hcB : 0 < cB)
     (hcBm : cB ≤ Cm) (hn1 : 1 ≤ n) (hσ : σ = 1 ∨ σ = -1) :
@@ -622,6 +738,12 @@ lemma twoPointWitness_marginTail (α γ u0 cB Cm : ℝ) {n : ℕ} (σ : ℝ)
     rw [hEempty, measureReal_empty]
     exact mul_nonneg hCm.le (Real.rpow_nonneg hu.le _)
 
+/-- Each two-point witness has outcomes in `[-1,1]`, for either sign `σ = ±1`.
+
+Every covariate-arm cell draws its outcome either from the two-point `{-1,+1}` law or from
+a point mass at zero, so the realized outcome is in range almost surely; and both outcome
+regressions stay in `[-1,1]` given the margin-window normalization `u₀ < 2` and a contrast
+height of at most one half. -/
 lemma twoPointWitness_boundedOutcome (α γ u0 cB σ : ℝ) {n : ℕ}
     (hwin : MarginWindow u0) (hn1 : 1 ≤ n)
     (hh_le_half : hLower α γ n ≤ 1 / 2) (hσ : σ = 1 ∨ σ = -1) :
@@ -704,6 +826,13 @@ lemma twoPointWitness_boundedOutcome (α γ u0 cB σ : ℝ) {n : ℕ}
         simpa [twoPointWitness, hxB] using
           (show (((u0 + 2) / 2) / 2) ∈ Set.Icc (-1 : ℝ) 1 from ⟨hτlo, hτhi⟩)
 
+/-- Each two-point witness is a well-formed observed law, for either sign `σ = ±1`.
+
+Its data law is a probability measure whose covariate marginal is exactly the uniform law
+on the unit interval; its contrast, propensity, and outcome regressions are measurable; the
+contrast equals the difference of the two regressions; the propensity takes values in
+`[0,1]`; and the tested conditional-mean identities that pin the propensity and the two
+regressions to the data law hold. -/
 lemma twoPointWitness_wellFormed (α γ u0 cB σ : ℝ) {n : ℕ}
     (hwin : MarginWindow u0) (hn1 : 1 ≤ n)
     (hh_le_half : hLower α γ n ≤ 1 / 2) (hσ : σ = 1 ∨ σ = -1)
@@ -1480,6 +1609,17 @@ lemma chiSqDiv_three_cell_bound_of_restrict
     _ ≤ 8 * (m * q * h ^ (2 : ℕ)) := hsum
     _ = 8 * m * q * h ^ (2 : ℕ) := by ring
 
+/-- For all large enough sample sizes, the two members of the two-point pair are both
+probability laws, the `σ = +1` law is absolutely continuous with respect to the `σ = -1`
+law with square-integrable likelihood-ratio deviation, and their ONE-DRAW chi-squared
+divergence is at most `8 c_B h_n^{2+α+β_{α,γ}}`.
+
+The two laws differ only on the treated cell inside the active block, which carries
+covariate mass `c_B h_n^α` and treatment probability `q_n`; the outcome laws there have
+means `±h_n`, contributing a factor of order `h_n²`. Since the contrast height is calibrated
+as `h_n = n^{-1/D_{α,γ}}` with `D_{α,γ} = 2+α+β_{α,γ}`, this per-draw divergence is of order
+`1/n`, so the divergence of the `n`-fold product experiment stays bounded — which is what
+keeps the two laws statistically indistinguishable and yields the Le Cam testing floor. -/
 lemma twoPointWitness_one_draw_chiSq_bound (α γ u0 cB : ℝ)
     (hwin : MarginWindow u0) (hcB : 0 < cB) (hα : 0 ≤ α) (hγ : 0 ≤ γ) :
     ∀ᶠ n : ℕ in Filter.atTop,

@@ -13,6 +13,11 @@ noncomputable def sparseArmEnvelope (M : ℕ) (B : ℝ)
       (factorialExpansionIndex a ay j t).prod (fun ay' e => v ay' ^ e)
 
 -- @node: sparseArmEnvelope_eq
+/-- For a positive bandwidth and nonnegative cell values, the absolute-coefficient
+envelope of one treatment arm collapses to a closed form: the reciprocal bandwidth,
+times the total four-cell mass, times that arm's outcome-one coordinate, times the
+absolute-coefficient series of the polynomial continuation evaluated at the arm's own
+mass divided by the bandwidth. -/
 lemma sparseArmEnvelope_eq {M : ℕ} {B : ℝ} (hB : 0 < B)
     (v : Cell → ℝ) (hv : ∀ ay, 0 ≤ v ay) (a : Fin 2) :
     sparseArmEnvelope M B v a =

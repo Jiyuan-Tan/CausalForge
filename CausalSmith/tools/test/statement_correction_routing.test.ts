@@ -27,6 +27,7 @@ describe("statement_correction schema contract", () => {
       reason: "case 2a' over-precision — restate to closure-sharp",
       proposed_action: "replace thm:k-sharp-dual-confirmed statement with the closure/inf-sup form",
       action_kind: "statement_correction",
+      d0_rewind_intent: "incremental_repair",
       proposed_restatement: { statement: CORRECTED, rationale: "attainment is regularity, not the contribution" },
     };
     expect(() => interventionSchema.parse(ok)).not.toThrow();
@@ -188,6 +189,14 @@ describe("applyInterventionRoute — stale correction directive is cleared at th
 describe("applyInterventionRoute — stage_neg1 pivot retires the F-era artifacts", () => {
   it("sets both retirement markers so F1/F2 cold-start instead of patching the dead angle", () => {
     const state = freshState();
+    state.flags.rewound_from_stage0 = "completed replacement provenance";
+    state.flags.d0_cross_boundary_rewind = {
+      intent: "replacement",
+      status: "retired",
+      source_stage: "4",
+      source_revision: "angle:0/version:1",
+      reason: "replace the old paper",
+    };
     (state as unknown as { proposed_from: object }).proposed_from = {
       topic: "t", novelty_target: "field", cluster: "stat", current_angle_index: 0, current_version: 1,
     };
@@ -197,6 +206,8 @@ describe("applyInterventionRoute — stage_neg1 pivot retires the F-era artifact
     expect(rewound).toBe(true);
     expect(state.flags.f1_plan_retired).toBe(true);
     expect(state.flags.f2_scaffold_retired).toBe(true);
+    expect(state.flags.rewound_from_stage0).toBeNull();
+    expect(state.flags.d0_cross_boundary_rewind).toBeUndefined();
   });
 
   it("a same-angle stage_0 re-derive does NOT retire the F-era", () => {

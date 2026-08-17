@@ -116,8 +116,10 @@ theorem POVar.cf_eq_factual_on_event
     -- `w.equiv (P.eval ∅ ω w.v) = y`.
     have hωeq : w.equiv (P.eval Regime.empty ω w.v) = y := hω
     -- Apply `w.equiv.symm` and use `symm_apply_apply`.
-    have := congrArg w.equiv.symm hωeq
-    simpa [POVar.factual, POVar.cf, Regime.single] using this
+    have hsym := congrArg w.equiv.symm hωeq
+    rw [MeasurableEquiv.symm_apply_apply] at hsym
+    show P.eval Regime.empty ω w.v = w.equiv.symm y
+    exact hsym
   -- Disjointness: `{a.v}` is disjoint from `r.target = {w.v}`.
   have hdisj : _root_.Disjoint ({a.v} : Finset P.V) r.target := by
     simp [hr, Regime.single, hvw]

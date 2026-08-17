@@ -17,6 +17,18 @@ describe("causalsmith study parsing", () => {
     expect(a.resume).toBe(true);
     expect(a.slug).toBe("bh_affinity");
   });
+  it("parses a main-authority coordinate-cap reset on resume", () => {
+    const a = parseStudyArgsForTest(["bh_affinity", "--resume", "--clear-coordinate-cap"]);
+    expect(a.resume).toBe(true);
+    expect(a.clearCoordinateCap).toBe(true);
+  });
+  it("rejects a coordinate-cap reset without resume", () => {
+    expect(() => parseStudyArgsForTest(["bh_affinity", "--clear-coordinate-cap"])).toThrow(/requires --resume/);
+  });
+  it("parses explicit legacy requirement-change recovery only on resume", () => {
+    expect(parseStudyArgsForTest(["x", "--resume", "--accept-requirement-change"]).acceptRequirementChange).toBe(true);
+    expect(() => parseStudyArgsForTest(["x", "--accept-requirement-change"])).toThrow(/requires --resume/);
+  });
   it("rejects extra positionals", () => {
     expect(() => parseStudyArgsForTest(["a", "b"])).toThrow();
   });

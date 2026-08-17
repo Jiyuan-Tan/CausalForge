@@ -64,8 +64,17 @@ private lemma measurable_indEq_left (d : δ) :
     Measurable (fun x : δ => indEq x d) := by
   have hset : MeasurableSet {x : δ | x = d} :=
     MeasurableSet.singleton d
-  convert (measurable_const.indicator hset :
-    Measurable (Set.indicator {x : δ | x = d} (fun _ => (1 : ℝ)))) using 1
+  have hfun : (fun x : δ => indEq x d)
+      = Set.indicator {x : δ | x = d} (fun _ => (1 : ℝ)) := by
+    funext x
+    by_cases hx : x = d
+    · rw [Set.indicator_of_mem (by simpa using hx)]
+      simp [indEq, hx]
+    · rw [Set.indicator_of_notMem (by simpa using hx)]
+      simp [indEq, hx]
+  rw [hfun]
+  exact (measurable_const.indicator hset :
+    Measurable (Set.indicator {x : δ | x = d} (fun _ => (1 : ℝ))))
 
 private lemma measurable_seqDRMomentFunctional_uncurry
     {Ω' : Type*} [MeasurableSpace Ω']
@@ -312,8 +321,8 @@ private lemma seqDRMomentFunctional_memLp_two
             (S.toPODTRSystem.factualS ⟨1, by decide⟩ ω,
              S.toPODTRSystem.factualD ⟨0, by decide⟩ ω,
              S.toPODTRSystem.factualS ⟨0, by decide⟩ ω) -
-            η.μ₀_fn (S.toPODTRSystem.factualS ⟨0, by decide⟩ ω))) 2 P.μ := by
-    simpa using (hμ1_comp_L2.sub hμ0_comp_L2).mul hw0_Linf
+            η.μ₀_fn (S.toPODTRSystem.factualS ⟨0, by decide⟩ ω))) 2 P.μ :=
+    (hμ1_comp_L2.sub hμ0_comp_L2).mul hw0_Linf
   have hterm1_L2 :
       MemLp
         (fun ω =>
@@ -330,16 +339,14 @@ private lemma seqDRMomentFunctional_memLp_two
             η.μ₁_fn
               (S.toPODTRSystem.factualS ⟨1, by decide⟩ ω,
                S.toPODTRSystem.factualD ⟨0, by decide⟩ ω,
-               S.toPODTRSystem.factualS ⟨0, by decide⟩ ω))) 2 P.μ := by
-    simpa using (hY_L2.sub hμ1_comp_L2).mul hw1_Linf
+               S.toPODTRSystem.factualS ⟨0, by decide⟩ ω))) 2 P.μ :=
+    (hY_L2.sub hμ1_comp_L2).mul hw1_Linf
   have hscore_comp_L2 :
       MemLp (fun ω => S.seqDRMomentFunctional η (S.factualZ ω) S.θ₀) 2 P.μ := by
     have hconst_L2 : MemLp (fun _ : P.Ω => S.θ₀) 2 P.μ := memLp_const _
     have hsum_L2 :=
       ((hμ0_comp_L2.add hterm0_L2).add hterm1_L2).sub hconst_L2
-    simpa [DTREstimationSystem.seqDRMomentFunctional,
-      Causalean.Estimation.DTR.seqDRMoment, DTREstimationSystem.factualZ,
-      projS₀, projD₀, projS₁, projD₁, projY, histH₁] using hsum_L2
+    exact hsum_L2
   have hscore_meas :
       Measurable (fun z : γ 0 × δ × γ 1 × δ × ℝ =>
         S.seqDRMomentFunctional η z S.θ₀) :=
@@ -668,9 +675,8 @@ theorem dml_DTR_isAsymLinear
     have hone_nonneg : ∀ᶠ _n : ℕ in atTop, 0 ≤ (1 : ℝ) := by
       filter_upwards with n
       norm_num
-    simpa [seqDRGeneralMoment, DTREstimationSystem.η₀, η_hat] using
-      IsLittleOp.add_eventually_nonneg_rate (μ := P.μ) hone_nonneg
-        h_mu0_rate h_mu1_rate
+    exact IsLittleOp.add_eventually_nonneg_rate (μ := P.μ) hone_nonneg
+      h_mu0_rate h_mu1_rate
   have h_indiv_rate_ρ₂ :
       IsLittleOp
         (fun n ω =>
@@ -680,9 +686,8 @@ theorem dml_DTR_isAsymLinear
     have hone_nonneg : ∀ᶠ _n : ℕ in atTop, 0 ≤ (1 : ℝ) := by
       filter_upwards with n
       norm_num
-    simpa [seqDRGeneralMoment, DTREstimationSystem.η₀, η_hat] using
-      IsLittleOp.add_eventually_nonneg_rate (μ := P.μ) hone_nonneg
-        h_e0_rate h_e1_rate
+    exact IsLittleOp.add_eventually_nonneg_rate (μ := P.μ) hone_nonneg
+      h_e0_rate h_e1_rate
   have h_product_rate_abs :
       IsLittleOp
         (fun n ω =>
@@ -732,8 +737,37 @@ theorem dml_DTR_isAsymLinear
           rn P.μ := by
       simpa [add_assoc] using
         IsLittleOp.add_eventually_nonneg_rate (μ := P.μ) hrn_nonneg h00_10 h01_11
-    simpa [seqDRGeneralMoment, DTREstimationSystem.η₀, η_hat, rn, add_mul, mul_add,
-      add_assoc] using hsum
+    -- The goal states the product through the `ρ₁`/`ρ₂` `NNReal` projections;
+    -- unfolding them would expose a structure literal, so instead build the
+    -- bare-real product statement and let `exact` bridge the two definitionally.
+    have hprod :
+        IsLittleOp
+          (fun n ω =>
+            ((eLpNorm (fun s₀ => μ₀_hat n ω s₀ - S.μ₀_val s₀) 2 S.P_H₀).toReal +
+              (eLpNorm (fun h => μ₁_hat n ω h - S.μ₁_val h) 2 S.P_H₁).toReal) *
+            ((eLpNorm (fun s₀ => e₀_hat n ω s₀ - S.e₀_val s₀) 2 S.P_H₀).toReal +
+              (eLpNorm (fun h => e₁_hat n ω h - S.e₁_val h) 2 S.P_H₁).toReal))
+          rn P.μ := by
+      have hfun :
+          (fun (n : ℕ) (ω : P.Ω) =>
+            ((eLpNorm (fun s₀ => μ₀_hat n ω s₀ - S.μ₀_val s₀) 2 S.P_H₀).toReal +
+              (eLpNorm (fun h => μ₁_hat n ω h - S.μ₁_val h) 2 S.P_H₁).toReal) *
+            ((eLpNorm (fun s₀ => e₀_hat n ω s₀ - S.e₀_val s₀) 2 S.P_H₀).toReal +
+              (eLpNorm (fun h => e₁_hat n ω h - S.e₁_val h) 2 S.P_H₁).toReal))
+          = fun (n : ℕ) (ω : P.Ω) =>
+            (eLpNorm (fun s₀ => μ₀_hat n ω s₀ - S.μ₀_val s₀) 2 S.P_H₀).toReal *
+                (eLpNorm (fun s₀ => e₀_hat n ω s₀ - S.e₀_val s₀) 2 S.P_H₀).toReal +
+            ((eLpNorm (fun h => μ₁_hat n ω h - S.μ₁_val h) 2 S.P_H₁).toReal *
+                (eLpNorm (fun s₀ => e₀_hat n ω s₀ - S.e₀_val s₀) 2 S.P_H₀).toReal +
+              ((eLpNorm (fun s₀ => μ₀_hat n ω s₀ - S.μ₀_val s₀) 2 S.P_H₀).toReal *
+                (eLpNorm (fun h => e₁_hat n ω h - S.e₁_val h) 2 S.P_H₁).toReal +
+              (eLpNorm (fun h => μ₁_hat n ω h - S.μ₁_val h) 2 S.P_H₁).toReal *
+                (eLpNorm (fun h => e₁_hat n ω h - S.e₁_val h) 2 S.P_H₁).toReal)) := by
+        funext n ω
+        ring
+      rw [hfun]
+      exact hsum
+    exact hprod
   have h_m_meas :
       ∀ n, Measurable (fun (p : P.Ω × (γ 0 × δ × γ 1 × δ × ℝ)) =>
         S.seqDRMomentFunctional (η_hat n p.1) p.2 S.θ₀) := by

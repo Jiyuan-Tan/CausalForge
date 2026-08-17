@@ -82,8 +82,7 @@ lemma coupling_integrable_mul (h : IsCoupling π μ ν)
     (hμ : MemLp (fun x : ℝ => x) 2 μ) (hν : MemLp (fun y : ℝ => y) 2 ν) :
     Integrable (fun p : ℝ × ℝ => p.1 * p.2) π := by
   letI : IsProbabilityMeasure π := h.isProbabilityMeasure
-  simpa [Pi.mul_apply] using
-    (coupling_fst_memLp h hμ).integrable_mul (coupling_snd_memLp h hν)
+  exact (coupling_fst_memLp h hμ).integrable_mul (coupling_snd_memLp h hν)
 
 /-! ### The fibre integrals -/
 
@@ -107,7 +106,7 @@ lemma integral_signedTail_fst (h : IsCoupling π μ ν) (s : ℝ) :
     integrable_const _
   have hIntA :
       (∫ p : ℝ × ℝ, A.indicator (fun _ => (1 : ℝ)) p ∂π) = π.real A := by
-    simpa only using (integral_indicator_one (μ := π) (s := A) hA)
+    exact (integral_indicator_one (μ := π) (s := A) hA)
   rw [hfun, integral_sub hInd hConst, hIntA, integral_const]
   simp [survFst, A, Measure.real, smul_eq_mul]
 
@@ -128,7 +127,7 @@ lemma integral_signedTail_snd (h : IsCoupling π μ ν) (t : ℝ) :
     integrable_const _
   have hIntB :
       (∫ p : ℝ × ℝ, B.indicator (fun _ => (1 : ℝ)) p ∂π) = π.real B := by
-    simpa only using (integral_indicator_one (μ := π) (s := B) hB)
+    exact (integral_indicator_one (μ := π) (s := B) hB)
   rw [hfun, integral_sub hInd hConst, hIntB, integral_const]
   simp [survSnd, B, Measure.real, smul_eq_mul]
 
@@ -190,13 +189,13 @@ lemma fiber_integral_pi (h : IsCoupling π μ ν) (s t : ℝ) :
   have hK : Integrable (fun _ : ℝ × ℝ => a * b) π := integrable_const _
   have hIntA :
       (∫ p : ℝ × ℝ, A.indicator (fun _ => (1 : ℝ)) p ∂π) = π.real A := by
-    simpa only using (integral_indicator_one (μ := π) (s := A) hA)
+    exact (integral_indicator_one (μ := π) (s := A) hA)
   have hIntB :
       (∫ p : ℝ × ℝ, B.indicator (fun _ => (1 : ℝ)) p ∂π) = π.real B := by
-    simpa only using (integral_indicator_one (μ := π) (s := B) hB)
+    exact (integral_indicator_one (μ := π) (s := B) hB)
   have hIntC :
       (∫ p : ℝ × ℝ, C.indicator (fun _ => (1 : ℝ)) p ∂π) = π.real C := by
-    simpa only using (integral_indicator_one (μ := π) (s := C) hC)
+    exact (integral_indicator_one (μ := π) (s := C) hC)
   rw [hfun]
   change
     (∫ p : ℝ × ℝ,

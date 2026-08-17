@@ -220,7 +220,7 @@ theorem dml_ATE_isAsymLinear
     have hcond_L2 :
         MemLp (P.μ[S.toPOBackdoorSystem.YofD a |
           S.toPOBackdoorSystem.sigmaX]) 2 P.μ :=
-      hY_L2.condExp
+      hY_L2.condExp (by norm_num)
     have hcomp_L2 :
         MemLp (fun ω => S.μ_val a (S.toPOBackdoorSystem.factualX ω)) 2 P.μ :=
       hcond_L2.ae_eq (S.μ_compat hA a)
@@ -340,15 +340,14 @@ theorem dml_ATE_isAsymLinear
           · linarith
           · linarith
         _ < δ := htwo_alpha_lt_delta
-    simpa [aipwGeneralMoment, BackdoorEstimationSystem.η₀, η_hat] using
-      h_add_one (h_mu_rate true) (h_mu_rate false)
+    exact h_add_one (h_mu_rate true) (h_mu_rate false)
   have h_indiv_rate_ρ₂ :
       IsLittleOp
         (fun n ω =>
           (((aipwGeneralMoment S hη₀_mem).ρ₂
               (η_hat n ω) S.η₀ : NNReal) : ℝ))
         (fun _ => (1 : ℝ)) P.μ := by
-    simpa [aipwGeneralMoment, BackdoorEstimationSystem.η₀] using h_e_rate
+    exact h_e_rate
   have h_product_rate_abs :
       IsLittleOp
         (fun n ω =>
@@ -419,9 +418,23 @@ theorem dml_ATE_isAsymLinear
     have hrn_nonneg : ∀ᶠ n : ℕ in atTop, 0 ≤ (n : ℝ) ^ (-(1 / 2 : ℝ)) := by
       filter_upwards with n
       positivity
-    simpa [aipwGeneralMoment, BackdoorEstimationSystem.η₀, η_hat, add_mul] using
+    have hcomb :=
       h_add_rate (rn := fun n => (n : ℝ) ^ (-(1 / 2 : ℝ))) hrn_nonneg
         (h_product_rate true) (h_product_rate false)
+    have hfun :
+        (fun n (ω : P.Ω) =>
+            (eLpNorm (fun x => μ_hat n ω true x - S.μ_val true x) 2 S.P_X).toReal *
+                (eLpNorm (fun x => e_hat n ω x - S.e_val x) 2 S.P_X).toReal +
+              (eLpNorm (fun x => μ_hat n ω false x - S.μ_val false x) 2 S.P_X).toReal *
+                (eLpNorm (fun x => e_hat n ω x - S.e_val x) 2 S.P_X).toReal)
+          = fun n ω =>
+            ((eLpNorm (fun x => μ_hat n ω true x - S.μ_val true x) 2 S.P_X).toReal +
+                (eLpNorm (fun x => μ_hat n ω false x - S.μ_val false x) 2 S.P_X).toReal) *
+              (eLpNorm (fun x => e_hat n ω x - S.e_val x) 2 S.P_X).toReal := by
+      funext n ω
+      ring
+    rw [hfun] at hcomb
+    exact hcomb
   -- 6. Translate score measurability / integrability to the abstract form.
   have h_m_meas :
       ∀ n, Measurable (fun (p : P.Ω × (γ × Bool × ℝ)) =>
@@ -566,9 +579,8 @@ theorem dml_ATE_isAsymLinear
       refine MemLp.of_bound ?_ ε⁻¹ hw_true_bound
       apply Measurable.aestronglyMeasurable
       have hind : Measurable (fun ω' => indA (S.factualZ ω')) := by
-        simpa [indA, projA, BackdoorEstimationSystem.factualZ] using
-          (Measurable.of_discrete
-            (f := fun b : Bool => if b = true then (1 : ℝ) else 0)).comp
+        exact (Measurable.of_discrete
+            (f := fun b : Bool => if b = true then (1 : ℝ) else 0)).fun_comp
               S.toPOBackdoorSystem.measurable_factualD
       exact hind.div ((h_e_meas n).comp
         (Measurable.prodMk measurable_const S.toPOBackdoorSystem.measurable_factualX))
@@ -579,9 +591,8 @@ theorem dml_ATE_isAsymLinear
       refine MemLp.of_bound ?_ ε⁻¹ hw_false_bound
       apply Measurable.aestronglyMeasurable
       have hind : Measurable (fun ω' => indA (S.factualZ ω')) := by
-        simpa [indA, projA, BackdoorEstimationSystem.factualZ] using
-          (Measurable.of_discrete
-            (f := fun b : Bool => if b = true then (1 : ℝ) else 0)).comp
+        exact (Measurable.of_discrete
+            (f := fun b : Bool => if b = true then (1 : ℝ) else 0)).fun_comp
               S.toPOBackdoorSystem.measurable_factualD
       exact (measurable_const.sub hind).div
         (measurable_const.sub ((h_e_meas n).comp
@@ -593,7 +604,7 @@ theorem dml_ATE_isAsymLinear
               e_hat n ω (S.toPOBackdoorSystem.factualX ω')) *
             (S.toPOBackdoorSystem.factualY ω' -
               μ_hat n ω true (S.toPOBackdoorSystem.factualX ω'))) 2 P.μ := by
-      simpa using (hY_L2.sub (hμ_hat_comp_L2 true)).mul hw_true_Linf
+      exact (hY_L2.sub (hμ_hat_comp_L2 true)).mul hw_true_Linf
     have hterm_false_L2 :
         MemLp
           (fun ω' =>
@@ -601,7 +612,7 @@ theorem dml_ATE_isAsymLinear
               (1 - e_hat n ω (S.toPOBackdoorSystem.factualX ω'))) *
             (S.toPOBackdoorSystem.factualY ω' -
               μ_hat n ω false (S.toPOBackdoorSystem.factualX ω'))) 2 P.μ := by
-      simpa using (hY_L2.sub (hμ_hat_comp_L2 false)).mul hw_false_Linf
+      exact (hY_L2.sub (hμ_hat_comp_L2 false)).mul hw_false_Linf
     have hrand_comp_L2 :
         MemLp (fun ω' => aipwMomentFunctional (η_hat n ω) (S.factualZ ω') S.θ₀)
           2 P.μ := by
@@ -615,8 +626,9 @@ theorem dml_ATE_isAsymLinear
         memLp_const _
       have hsum_L2 :=
         ((hbase_L2.add hterm_true_L2).sub hterm_false_L2).sub hconst_L2
-      simpa [aipwMomentFunctional, aipwMoment, BackdoorEstimationSystem.factualZ,
-        projX, projY] using hsum_L2
+      simp only [aipwMomentFunctional, aipwMoment, BackdoorEstimationSystem.factualZ,
+        projX, projY]
+      exact hsum_L2
     have hrand_meas :
         Measurable (fun z : γ × Bool × ℝ => aipwMomentFunctional (η_hat n ω) z S.θ₀) := by
       unfold aipwMomentFunctional aipwMoment indA projX projA projY η_hat
@@ -697,9 +709,8 @@ theorem dml_ATE_isAsymLinear
       refine MemLp.of_bound ?_ ε⁻¹ hw_true_bound
       apply Measurable.aestronglyMeasurable
       have hind : Measurable (fun ω' => indA (S.factualZ ω')) := by
-        simpa [indA, projA, BackdoorEstimationSystem.factualZ] using
-          (Measurable.of_discrete
-            (f := fun b : Bool => if b = true then (1 : ℝ) else 0)).comp
+        exact (Measurable.of_discrete
+            (f := fun b : Bool => if b = true then (1 : ℝ) else 0)).fun_comp
               S.toPOBackdoorSystem.measurable_factualD
       exact hind.div ((h_e_meas n).comp
         (Measurable.prodMk measurable_const S.toPOBackdoorSystem.measurable_factualX))
@@ -710,9 +721,8 @@ theorem dml_ATE_isAsymLinear
       refine MemLp.of_bound ?_ ε⁻¹ hw_false_bound
       apply Measurable.aestronglyMeasurable
       have hind : Measurable (fun ω' => indA (S.factualZ ω')) := by
-        simpa [indA, projA, BackdoorEstimationSystem.factualZ] using
-          (Measurable.of_discrete
-            (f := fun b : Bool => if b = true then (1 : ℝ) else 0)).comp
+        exact (Measurable.of_discrete
+            (f := fun b : Bool => if b = true then (1 : ℝ) else 0)).fun_comp
               S.toPOBackdoorSystem.measurable_factualD
       exact (measurable_const.sub hind).div
         (measurable_const.sub ((h_e_meas n).comp
@@ -724,7 +734,7 @@ theorem dml_ATE_isAsymLinear
               e_hat n ω (S.toPOBackdoorSystem.factualX ω')) *
             (S.toPOBackdoorSystem.factualY ω' -
               μ_hat n ω true (S.toPOBackdoorSystem.factualX ω'))) 2 P.μ := by
-      simpa using (hY_L2.sub (hμ_hat_comp_L2 true)).mul hw_true_Linf
+      exact (hY_L2.sub (hμ_hat_comp_L2 true)).mul hw_true_Linf
     have hterm_false_L2 :
         MemLp
           (fun ω' =>
@@ -732,7 +742,7 @@ theorem dml_ATE_isAsymLinear
               (1 - e_hat n ω (S.toPOBackdoorSystem.factualX ω'))) *
             (S.toPOBackdoorSystem.factualY ω' -
               μ_hat n ω false (S.toPOBackdoorSystem.factualX ω'))) 2 P.μ := by
-      simpa using (hY_L2.sub (hμ_hat_comp_L2 false)).mul hw_false_Linf
+      exact (hY_L2.sub (hμ_hat_comp_L2 false)).mul hw_false_Linf
     have hrand_comp_L2 :
         MemLp (fun ω' => aipwMomentFunctional (η_hat n ω) (S.factualZ ω') S.θ₀)
           2 P.μ := by
@@ -746,8 +756,9 @@ theorem dml_ATE_isAsymLinear
         memLp_const _
       have hsum_L2 :=
         ((hbase_L2.add hterm_true_L2).sub hterm_false_L2).sub hconst_L2
-      simpa [aipwMomentFunctional, aipwMoment, BackdoorEstimationSystem.factualZ,
-        projX, projY] using hsum_L2
+      simp only [aipwMomentFunctional, aipwMoment, BackdoorEstimationSystem.factualZ,
+        projX, projY]
+      exact hsum_L2
     have hrand_meas :
         Measurable (fun z : γ × Bool × ℝ => aipwMomentFunctional (η_hat n ω) z S.θ₀) := by
       unfold aipwMomentFunctional aipwMoment indA projX projA projY η_hat

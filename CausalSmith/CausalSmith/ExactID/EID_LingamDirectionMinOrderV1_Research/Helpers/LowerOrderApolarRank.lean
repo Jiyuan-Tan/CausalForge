@@ -75,6 +75,10 @@ def lowerReverseContractionMinorPolynomial (R : Type*) [CommRing R] (m : ℕ) :
       lowerReverseSecondPolynomial m j ^ (m - 1 - (i.1 - 2))
 
 -- @node: lowerForwardRealRankPolynomial
+/-- Real rank witness for the forward arrow on the shorter apolar stack: the determinant of
+the selected forward contraction minor, read as a polynomial in the real structural
+parameters. Where this polynomial does not vanish, the selected rows of the forward
+contraction have full rank. -/
 def lowerForwardRealRankPolynomial (m : ℕ) : MvPolynomial (RealParamCoord m) ℝ :=
   (lowerForwardContractionMinorPolynomial ℝ m).det
 

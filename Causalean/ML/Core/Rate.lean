@@ -32,7 +32,7 @@ theorem isLittleOp_one_of_le_one {rn : ℕ → ℝ} (hr : ∀ n, rn n ≤ 1)
   intro ε hε
   have hlim : Tendsto (fun n => μ {ω | ε * rn n < |Xn n ω|}) atTop (𝓝 0) := h ε hε
   refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hlim
-    (fun n => zero_le _) ?_
+    (fun n => zero_le) ?_
   intro n
   apply measure_mono
   intro ω hω
@@ -63,7 +63,7 @@ theorem isLittleOp_mul_quarter
   have hsum : Tendsto (fun n => μ (A n) + μ (B n)) atTop (𝓝 0) := by
     simpa using hAt.add hBt
   refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds hsum
-    (Eventually.of_forall fun n => zero_le _) ?_
+    (Eventually.of_forall fun n => zero_le) ?_
   filter_upwards [eventually_ge_atTop 1] with n hn
   have hnpos : 0 < (n : ℝ) := by exact_mod_cast hn
   have hrate_nonneg : 0 ≤ (n : ℝ) ^ (-(1 / 4 : ℝ)) :=

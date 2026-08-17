@@ -45,7 +45,7 @@ theorem integral_sub_le_of_pointwise
   have hhint := integrable_of_mem_Icc (P := P) hh h01
   have hkint := integrable_of_mem_Icc (P := P) hk k01
   rw [← integral_sub hhint hkint, ← Real.norm_eq_abs]
-  simpa [measureReal_univ_eq_one] using
+  simpa [probReal_univ] using
     (norm_integral_le_of_norm_le_const
       (μ := P) (f := fun x => h x - k x)
       (ae_of_all _ fun x => by simpa [Real.norm_eq_abs] using hpoint x))

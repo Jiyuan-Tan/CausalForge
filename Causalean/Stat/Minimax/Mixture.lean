@@ -36,7 +36,7 @@ noncomputable def mixture (w : ι → ℝ≥0∞) (P : ι → Measure Ω) : Meas
 /-- Evaluation: the mixture's mass on a set is the weighted sum of the parts' masses. -/
 theorem mixture_apply (w : ι → ℝ≥0∞) (P : ι → Measure Ω) (A : Set Ω) :
     mixture w P A = ∑ i, w i * P i A := by
-  simp only [mixture, Measure.coe_finset_sum, Finset.sum_apply, Measure.smul_apply,
+  simp only [mixture, Measure.coe_finsetSum, Finset.sum_apply, Measure.smul_apply,
     smul_eq_mul]
 
 /-- If the weights sum to 1 and each part is a probability measure, the mixture is one. -/
@@ -57,7 +57,7 @@ theorem mixtureReal_le (w : ι → ℝ≥0∞) (hw : ∑ i, w i = 1)
   have hwfin : ∀ i, w i ≠ ⊤ := by
     intro i
     have hle : w i ≤ 1 := le_of_le_of_eq (Finset.single_le_sum
-      (f := w) (fun j _ => zero_le _) (Finset.mem_univ i)) hw
+      (f := w) (fun j _ => zero_le) (Finset.mem_univ i)) hw
     exact ne_top_of_le_ne_top ENNReal.one_ne_top hle
   have hterm : ∀ i, w i * P i A ≠ ⊤ := by
     intro i

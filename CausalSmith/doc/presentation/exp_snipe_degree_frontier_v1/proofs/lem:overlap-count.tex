@@ -1,39 +1,74 @@
 \begin{proof}[Proof of \cref{obj:lem:overlap-count}]
 Let
 \[
-\mathcal F:=\{S\subseteq N_i: |S|=r\}.
+\mathcal F:=\{S\subseteq N_i:|S|=r\}
 \]
-For each \(l\in V_n\), the binomial coefficient \(\binom{|N_i\cap N_l|}{r}\) counts the \(r\)-subsets of \(N_i\cap N_l\), equivalently
+be the family of \(r\)-element subsets of the neighborhood \(N_i\), so that the middle expression in the statement is \(\sum_{S\in\mathcal F}\#\{l\in V_n:S\subseteq N_l\}\).
+
+\emph{Step 1: a pointwise counting identity.}  Fix \(l\in V_n\).  A finite set \(S\) satisfies \(S\subseteq N_i\cap N_l\) if and only if \(S\subseteq N_i\) and \(S\subseteq N_l\), so the \(r\)-element subsets of \(N_i\cap N_l\) are exactly the members of \(\mathcal F\) that are contained in \(N_l\):
+\[
+\{S\subseteq N_i\cap N_l:|S|=r\}
+=
+\{S\in\mathcal F:S\subseteq N_l\}.
+\]
+The number of \(r\)-element subsets of a finite set \(A\) is \(\binom{|A|}{r}\).  Taking cardinalities of the two sides and writing the cardinality of the right-hand side as a sum of indicators gives
 \[
 \binom{|N_i\cap N_l|}{r}
 =
+\#\{S\in\mathcal F:S\subseteq N_l\}
+=
 \sum_{S\in\mathcal F}\mathbf 1\{S\subseteq N_l\}.
 \]
-% lean: hchoose, Finset.card_powersetCard
-Summing over \(l\) and commuting the two finite sums gives
+% lean: hchoose, Finset.card_powersetCard, Finset.card_filter
+
+\emph{Step 2: the double-count identity.}  Summing the display of Step 1 over \(l\in V_n\) and exchanging the two finite sums,
 \[
 \sum_{l\in V_n}\binom{|N_i\cap N_l|}{r}
 =
-\sum_{S\in\mathcal F}\#\{l\in V_n:S\subseteq N_l\}.
+\sum_{l\in V_n}\sum_{S\in\mathcal F}\mathbf 1\{S\subseteq N_l\}
+=
+\sum_{S\in\mathcal F}\sum_{l\in V_n}\mathbf 1\{S\subseteq N_l\}
+=
+\sum_{S\in\mathcal F}\#\{l\in V_n:S\subseteq N_l\},
 \]
-% lean: Finset.sum_comm, containingNeighborhoods
+the last equality because an indicator sum over \(l\in V_n\) counts the \(l\) satisfying the condition.  This is the equality asserted in the statement.
+% lean: Finset.sum_comm, containingNeighborhoods, Finset.card_filter
 
-Fix \(S\in\mathcal F\).  Since \(|S|=r\) and \(1\le r\), choose \(j\in S\).  Whenever \(S\subseteq N_l\), this \(j\) belongs to \(N_l\), so the set of \(l\)'s with \(S\subseteq N_l\) is contained in the out-neighborhood of \(j\).  The out-degree part of \cref{obj:ass:bounded-degree} therefore gives
+\emph{Step 3: each subset is reused at most \(d\) times.}  Fix \(S\in\mathcal F\).  Since \(|S|=r\) and \(1\le r\), the set \(S\) is nonempty; fix any \(j\in S\).  If \(S\subseteq N_l\) then in particular \(j\in N_l\), so
 \[
-\#\{l\in V_n:S\subseteq N_l\}\le d .
+\{l\in V_n:S\subseteq N_l\}\subseteq\{l\in V_n:j\in N_l\}.
 \]
-% lean: hcontain
-Summing this bound over \(S\in\mathcal F\) and using \(|\mathcal F|=\binom{|N_i|}{r}\) yields
+The out-degree half of \cref{obj:ass:bounded-degree}, applied at the coordinate \(j\), states that \(\#\{l\in V_n:j\in N_l\}\le d\).  Combining this with monotonicity of cardinality under inclusion,
+\[
+\#\{l\in V_n:S\subseteq N_l\}
+\le
+\#\{l\in V_n:j\in N_l\}
+\le
+d .
+\]
+% lean: hcontain, Finset.card_le_card
+
+\emph{Step 4: the first inequality.}  The family \(\mathcal F\) is precisely the family of \(r\)-element subsets of \(N_i\), hence
+\[
+|\mathcal F|=\binom{|N_i|}{r}.
+\]
+Summing the bound of Step 3 over \(S\in\mathcal F\) therefore gives
 \[
 \sum_{S\in\mathcal F}\#\{l\in V_n:S\subseteq N_l\}
 \le
+\sum_{S\in\mathcal F}d
+=
+d\,|\mathcal F|
+=
 d\binom{|N_i|}{r}.
 \]
 % lean: hcardF, Finset.sum_le_sum
-Finally, the in-degree part of \cref{obj:ass:bounded-degree} gives \(|N_i|\le d\), and monotonicity of binomial coefficients in the upper argument gives
+
+\emph{Step 5: the second inequality.}  The in-degree half of \cref{obj:ass:bounded-degree}, applied at the unit \(i\), gives \(|N_i|\le d\).  Since \(m\mapsto\binom{m}{r}\) is nondecreasing in \(m\), we get \(\binom{|N_i|}{r}\le\binom{d}{r}\), and multiplying this inequality by the nonnegative integer \(d\) yields
 \[
 d\binom{|N_i|}{r}\le d\binom{d}{r}.
 \]
 % lean: Nat.choose_le_choose, Nat.mul_le_mul_left
-Combining the displayed identities and inequalities proves the claim. % lean: overlap_count_le
+
+Chaining the identity of Step 2 with the inequalities of Steps 4 and 5 proves the claim. % lean: overlap_count_le
 \end{proof}

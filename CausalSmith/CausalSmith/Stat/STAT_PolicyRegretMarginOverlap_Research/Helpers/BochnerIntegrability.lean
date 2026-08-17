@@ -332,7 +332,7 @@ private lemma abs_lawWelfare_le_two' (P : ObservedLaw 𝒳) (π : Policy 𝒳)
     have hb : |boolIndicator (π x)| ≤ (1 : ℝ) := by cases π x <;> simp [boolIndicator]
     nlinarith [mul_le_mul hb (hτbound x) (abs_nonneg (P.contrast x))
       (by norm_num : (0 : ℝ) ≤ 1)]
-  simpa [lawWelfare, Real.norm_eq_abs] using hnorm
+  simpa [lawWelfare, welfare, Real.norm_eq_abs] using hnorm
 
 private lemma lawRegret_le_four (P : ObservedLaw 𝒳) (π : Policy 𝒳)
     (hwf : WellFormedLaw P) (hbdd : BoundedOutcome P) (hπ : Measurable π) :
@@ -468,7 +468,7 @@ private lemma measurable_feasible_regret {n K : ℕ} (P : ObservedLaw 𝒳) (q :
     exact (hnear j).inter hlower
   have hsel : Measurable sel := measurable_to_countable' hsel_fiber
   have hreg : Measurable (fun j : ℕ => lawRegret P (enum j)) := measurable_of_countable _
-  simpa [feasibleERM, sel, near, score] using hreg.comp hsel
+  exact hreg.comp hsel
 
 private lemma clipped_score_abs_le_six (q : ℝ) (muHat0 muHat1 eHat : 𝒳 → ℝ)
     (O : Observation 𝒳)

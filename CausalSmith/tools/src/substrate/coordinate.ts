@@ -121,7 +121,11 @@ const realApplyDeps: CoordinateApplyDeps = {
       // promotion lock indefinitely. Generous (> inactivity); `CAUSALSMITH_VERIFY_MAX_MS=0`
       // disables it. Both kinds surface as `timedOut` → escalate (preserve).
       const maxTotalMs = Number(process.env.CAUSALSMITH_VERIFY_MAX_MS ?? 60 * 60 * 1000);
-      const r = await spawnWithInactivityTimeout("bash", ["-lc", cmd], {
+      // Preserve the parent process's verified Node/npm PATH. A login shell can
+      // re-run nvm initialization while npm_config_prefix is set by `npx
+      // --prefix tools`, leaving npm unavailable for the post-build embedding
+      // steps even though it launched this pipeline successfully.
+      const r = await spawnWithInactivityTimeout("bash", ["-c", cmd], {
         cwd, env, inactivityTimeoutMs: 30 * 60 * 1000, maxTotalMs,
       });
       const log = [r.stdout, r.stderr].filter(Boolean).join("\n");
@@ -363,9 +367,19 @@ export async function applyManifest(
         const content = await d.readFile(resolveInside(stagingDir, op.from));
         await assertCreatePlacement(cRoot, op.target, op.newModule, d);
         if (isLeanWriteTarget(op.target)) assertLibraryOnlyLeanContent(content, op.target);
-        if (await d.exists(abs)) throw new Error(`create_file target already exists (use merge_lean): ${op.target}`);
-        await snap(abs);
-        await d.writeFile(abs, content);
+        if (await d.exists(abs)) {
+          // Recovery after an interrupted verification pass: the promotion may
+          // already have written this new file even though study state did not
+          // reach `done`. Accept only an exact byte match; any differing file
+          // remains a hard placement conflict.
+          const existing = await d.readFile(abs);
+          if (existing !== content) {
+            throw new Error(`create_file target already exists with different content (use merge_lean): ${op.target}`);
+          }
+        } else {
+          await snap(abs);
+          await d.writeFile(abs, content);
+        }
         if (op.newModule) newModules.push(op.newModule);
       } else if (op.kind === "merge_lean") {
         const content = await d.readFile(resolveInside(stagingDir, op.from));

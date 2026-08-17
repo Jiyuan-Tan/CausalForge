@@ -1,0 +1,33 @@
+# Referee review
+
+**Recommendation:** major_revision
+**Overall score:** 6.4/10 — The verified mathematical core is potentially publishable, but the manuscript still needs stronger econometric positioning and cleaner separation between formal-verification scaffolding, CTY-dependent inputs, and the paper's delivered statistical contribution.
+
+The paper studies distance-compressed boundary regression and establishes unconditional logarithmic lower bounds for unsigned distance experiments, plus a conditional signed-distance two-sided expected-risk rate using explicit analytic inputs and a stabilized local-polynomial estimator. The verified statements support the main mathematical claims, and the distinction between unsigned lower bounds and signed conditional frontier is now mostly accurate. As written, however, the contribution boundary relative to Cattaneo, Titiunik, and Yu remains too internal, and several reader-facing passages still sound like verification metadata rather than an econometrics article.
+
+## Strengths
+- The unsigned point-indexed lower bound is a meaningful strengthening of the distance-compression converse and is stated over a precise law class and risk.
+- The signed-distance lower bound is usefully anchored in a fixed rectangular known-geometry subexperiment.
+- The conditional upper result is presented with explicit analytic inputs, which improves claim fidelity.
+- The paper is careful about information sets, decision classes, outer expectation, and the distinction between common-map and point-indexed procedures.
+
+## Findings
+- **[major·citation] Related Literature** — The novelty boundary relative to Cattaneo, Titiunik, and Yu (2026) remains under-adjudicated. The manuscript now has a comparison table, but it still leans on internal labels such as "same-class," "point-indexed," and "fixed-geometry hypercube" without explaining, in econometric terms, which CTY claims are being sharpened, which CTY inputs are being assumed, and which parts are new mathematical work.
+  - *Fix:* Rewrite the CTY comparison around three explicit deliverables: the unsigned uniform expected sup-risk lower bound at a_n over the same CTY unsigned experiment, the extension to point-indexed Borel sections, and the fixed-known-geometry signed lower experiment plus conditional expected-risk upper assembly. For each, state the nearest CTY result and the exact increment in target, risk, information set, or conditioning status.
+- **[major·prose] Main Results** — The analytic-input bundle is still presented partly as a formal artifact rather than as a statistical assumption set. The sentence "These are exactly the three explicit antecedents represented in Lean by \texttt{CtyDistanceIdentification}, \texttt{CtyUniformFirstOrderBias}, and \texttt{CtyExpectedLocalPolynomialMaximalBounds} and consumed by the Lean-backed upper and matched-frontier theorems" is not useful for a journal reader and makes the upper theorem look like a proof-engine interface.
+  - *Fix:* Move Lean-specific names out of the main theorem discussion and into the reproducibility note. In the main text, describe \(\mathsf{AI}_{p,\nu,L}\) as the three statistical inputs used by the expected-risk upper bound, with citations and the exact rate consequences of each input.
+- **[minor·prose] Main Results** — The prose contract is violated by the sentence in \cref{obj:synth_139}: "Define \(\mathsf{AI}_{p,\nu,L}\) to mean that the following three signed-distance analytic inputs hold; none is proved in this paper." This is non-coverage language outside the titled Open Questions section.
+  - *Fix:* Replace it with affirmative scope language, for example: "Define \(\mathsf{AI}_{p,\nu,L}\) as the following three signed-distance analytic inputs used by the expected-risk upper bound." Discuss the self-contained derivation of these inputs only in Open Questions.
+- **[minor·structure] Setup: Known-Geometry Signed-Distance Designs** — The A1/A2 class is still conceptually diffuse. The text lists many restrictions and later says the assumptions fall into groups, but readers may not be able to tell which clauses define the signed-distance experiment, which clauses enforce local-polynomial conditioning, and which inputs are only invoked for the conditional upper bound.
+  - *Fix:* Add a short paragraph before the definition or a compact table after it with three columns: experiment-defining geometry/information, regularity and envelope conditions inside \(\mathcal P_{12}(p,\nu,L)\), and external analytic inputs \(\mathsf{AI}_{p,\nu,L}\).
+- **[minor·prose] abstract** — The unsigned econometric interpretation remains too compressed. The sentence "Economically, this experiment isolates the risk cost of summarizing proximity by scalar distance after angular location and treatment-side information have been removed" is helpful but still abstract; it does not tell a boundary RD reader how this relates to common distance-to-boundary reductions.
+  - *Fix:* Add one affirmative sentence explaining that the unsigned lower bound formalizes the statistical cost of treating distance from each boundary point as the available running coordinate when angular position and side labels are excluded from the estimator's information set.
+- **[minor·statement] global** — Several theorem titles remain hard to distinguish: "Same-Class Log Converse," "Logarithmic Distance Converse," and "Point-Indexed Log Converse" do not encode unsigned versus signed or common-map versus known-geometry strongly enough.
+  - *Fix:* Rename the displayed result titles to reader-facing names such as "Unsigned Common-Map Lower Bound," "Unsigned Point-Indexed Lower Bound," and "Signed Known-Geometry Lower Bound." Keep the labels unchanged.
+- **[minor·prose] Reproducibility Note** — The reproducibility note is concise, but it still mixes checked theorem scope with methodological interpretation: "The surrounding econometric interpretation and the methodological lineage of those inputs are supported by the cited boundary RD and empirical-process literature." This risks overstating what formal verification contributes to interpretation.
+  - *Fix:* Limit the note to checked formal implications and the conditional status of the signed upper/frontier results. Leave literature support and econometric interpretation to the related-work and discussion sections.
+
+## Questions for authors
+- Which exact CTY theorem or conjecture corresponds to the claimed unsigned logarithmic gap, and can the comparison be stated with theorem numbers and matching notation?
+- Are the expected maximal bounds in \(\mathsf{AI}_{p,\nu,L}\) intended as assumptions for this paper or as consequences of a cited CTY result plus additional arguments?
+

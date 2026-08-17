@@ -95,7 +95,7 @@ lemma finitePoissonObjective_snd_sign_of_nuisance_score
   have hstrict (hv : v ≠ 0) : 0 < xstar.2 * scalarScore := by
     have hAv : A v ≠ 0 := fun hav => hv (hA (by simpa using hav))
     obtain ⟨i, hi⟩ : ∃ i, A v i ≠ 0 := by
-      simpa only [Function.ne_iff] using hAv
+      simpa only [Function.ne_iff, Pi.zero_apply] using hAv
     have harg (j : I) : A xstar j = A xzero j + A v j := by
       rw [hxstar_add, map_add]
       rfl

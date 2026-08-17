@@ -203,8 +203,10 @@ lemma tvDist_le_sqrt_two_mul_one_sub_affinity
     · exact Real.HolderConjugate.two_two
     · exact Filter.Eventually.of_forall fun x => abs_nonneg _
     · exact Filter.Eventually.of_forall fun x => abs_nonneg _
-    · simpa using hu.abs
-    · simpa using hv.abs
+    · rw [show (ENNReal.ofReal 2 : ℝ≥0∞) = 2 from by norm_num]
+      exact hu.abs
+    · rw [show (ENNReal.ofReal 2 : ℝ≥0∞) = 2 from by norm_num]
+      exact hv.abs
   have hsfg : Integrable
       (fun x => Real.sqrt (f x) * Real.sqrt (g x)) μ :=
     hsf.integrable_mul hsg

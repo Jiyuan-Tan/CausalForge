@@ -445,7 +445,8 @@ theorem not_four_distinct_in_support {a b s : ℝ} {μ : Measure ℝ}
       integral_finset_sum_measure (fun i _ => hf.restrict)]
   have hmass1 : (μ Wᶜ).toReal + ∑ i, (μ (U i)).toReal = 1 := by
     have hsplit1 := hsplit (fun _ => (1 : ℝ)) (integrable_const 1)
-    simpa [setIntegral_const, integral_const, hprob.measure_univ] using hsplit1
+    simpa [setIntegral_const, integral_const, hprob.measure_univ, measureReal_def]
+      using hsplit1
   have hpert_mem : ∀ (σ : ℝ), |σ| ≤ 1 → pert σ ∈ MomentSlice a b s := by
     intro σ hσ
     have hmean' : ∫ t, t ∂(pert σ) = 0 := by
@@ -475,12 +476,12 @@ theorem not_four_distinct_in_support {a b s : ℝ} {μ : Measure ℝ}
       have hWc : μ.restrict Wᶜ (Set.Icc a b)ᶜ = 0 := by
         rw [Measure.restrict_apply measurableSet_Icc.compl]
         exact le_antisymm (le_trans (measure_mono Set.inter_subset_left) (le_of_eq hcompl))
-          (zero_le _)
+          zero_le
       have hUc : ∀ i, μ.restrict (U i) (Set.Icc a b)ᶜ = 0 := by
         intro i
         rw [Measure.restrict_apply measurableSet_Icc.compl]
         exact le_antisymm (le_trans (measure_mono Set.inter_subset_left) (le_of_eq hcompl))
-          (zero_le _)
+          zero_le
       rw [hWc, zero_add]
       apply Finset.sum_eq_zero
       intro i _
@@ -677,7 +678,7 @@ theorem isAtomic_le_three_of_isExtremePoint {a b s : ℝ} {μ : Measure ℝ}
     have hsub : ({x} : Set ℝ) ⊆ (Set.Icc a b)ᶜ := by simpa [Set.subset_def] using hxnot
     have hle : μ {x} ≤ μ (Set.Icc a b)ᶜ := measure_mono hsub
     rw [hcompl] at hle
-    exact (ne_of_gt hxpos) (le_antisymm hle (zero_le _))
+    exact (ne_of_gt hxpos) (le_antisymm hle zero_le)
   refine ⟨T, w, hpos, hTab, hTcard, ?_⟩
   refine Measure.ext fun A hA => ?_
   have hconull : μ μ.supportᶜ = 0 := Measure.measure_compl_support

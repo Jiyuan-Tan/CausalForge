@@ -47,8 +47,8 @@ noncomputable def e_val_label (S : BackdoorEstimationSystem P γ)
 lemma measurable_e_val_label (S : BackdoorEstimationSystem P γ) (d : Bool) :
     Measurable (S.e_val_label d) := by
   cases d
-  · simpa [e_val_label] using measurable_const.sub S.e_meas
-  · simpa [e_val_label] using S.e_meas
+  · exact measurable_const.sub S.e_meas
+  · exact S.e_meas
 
 /-- `propScore false =ᵐ 1 - propScore true` under back-door assumptions.
 The indicator-pair sums to one pointwise, conditional expectation is linear,

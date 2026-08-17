@@ -60,7 +60,8 @@ private lemma armMu_holder {d : ℕ} {P : CateLaw d} {beta L : ℝ}
     (hmu : MuHolder P beta L) (a : Fin 2) :
     HolderBallStd (armMu P a) beta L (cube d) := by
   by_cases ha : a = 1
-  · simpa [armMu, ha] using hmu.2
+  · rw [show armMu P a = P.mu1 by funext x; simp [armMu, ha]]
+    exact hmu.2
   · rw [show armMu P a = P.mu0 by
       funext x
       simp [armMu, ha]]
@@ -144,7 +145,8 @@ private lemma armProb_aemeasurable {d : ℕ} {P : CateLaw d} {alpha L : ℝ}
   have hcontPi : ContinuousOn P.pi (cube d) := hpi.1.continuousOn
   have hcont : ContinuousOn (armProb P a) (cube d) := by
     by_cases ha : a = 1
-    · simpa [armProb, ha] using hcontPi
+    · rw [show armProb P a = P.pi by funext x; simp [armProb, ha]]
+      exact hcontPi
     · have heq : armProb P a = fun x ↦ 1 - P.pi x := by
         funext x
         simp [armProb, ha]
@@ -346,9 +348,16 @@ theorem popGram_inv_popMom_bias {d p : ℕ}
             monomial (expo l) (uCoord h x0 O.X)))) P.dataMeasure := by
         have hs := integrable_finset_sum (Finset.univ : Finset (Fin p))
           (fun l _ ↦ (hGramInt k l).const_mul (theta l))
-        convert hs using 1
-        funext O
-        simp only [Finset.sum_apply]
+        have heq : (∑ l, fun O : CateObs d ↦ theta l *
+            (armProb P a O.X * (feat k O.X *
+              monomial (expo l) (uCoord h x0 O.X))))
+            = fun O : CateObs d ↦ ∑ l, theta l *
+              (armProb P a O.X * (feat k O.X *
+                monomial (expo l) (uCoord h x0 O.X))) := by
+          funext O
+          simp only [Finset.sum_apply]
+        rw [heq]
+        exact hs
       rw [show (fun O : CateObs d ↦ armProb P a O.X * feat k O.X * poly O.X) =
           ∑ l, fun O : CateObs d ↦ theta l * (armProb P a O.X *
             (feat k O.X * monomial (expo l) (uCoord h x0 O.X))) by

@@ -159,7 +159,8 @@ theorem panel_cell_integral_div_mul_cellMass
       (by simp)
   by_cases hmass : cellMass μ G T_rv g t = 0
   · have hs_zero : μ s = 0 := by
-      have hzero : (μ s).toReal = 0 := by simpa [cellMass, s] using hmass
+      have hzero : (μ s).toReal = 0 := by
+        simpa [cellMass, CellBridge.jointCellMass, s] using hmass
       rcases (ENNReal.toReal_eq_zero_iff (μ s)).1 hzero with h0 | htop
       · exact h0
       · exact False.elim (hs_top htop)
@@ -396,7 +397,7 @@ theorem integral_eq_sum_panel_cell
     _ = ((Finset.univ : Finset 𝒢).product (Finset.univ : Finset (Fin T))).sum
           (fun gt => ∫ ω, term gt ω ∂μ) := by
       simpa using
-        (MeasureTheory.integral_finset_sum
+        (MeasureTheory.integral_finsetSum
           ((Finset.univ : Finset 𝒢).product (Finset.univ : Finset (Fin T)))
           (f := term) hterm_int)
     _ = ∑ g, ∑ t, ∫ ω, F ω

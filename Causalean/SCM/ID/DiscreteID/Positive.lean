@@ -67,7 +67,7 @@ theorem PositiveMass.map_of_surjective
     MeasureTheory.measure_mono hsubset
   have hxzero : singletonMass μ x = 0 := by
     rw [singletonMass_apply]
-    exact le_antisymm (by simpa [hzero] using hle) (zero_le _)
+    exact le_antisymm (by simpa [hzero] using hle) zero_le
   exact hμ x hxzero
 
 /-- Positive point mass is preserved by coordinate projection. -/

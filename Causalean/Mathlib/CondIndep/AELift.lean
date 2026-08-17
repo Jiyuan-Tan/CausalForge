@@ -172,7 +172,7 @@ theorem ae_le_YofA_of_ae_le_Y
       (ProbabilityTheory.condIndepFun_iff_condExp_inter_preimage_eq_mul _hYa _hA).mp
         _latent_exch (Set.Ioi M) ({a} : Set α) measurableSet_Ioi
         (measurableSet_singleton a)
-    simpa [B, E] using hraw
+    simpa [B, E, Set.preimage, Set.mem_Ioi, Set.mem_singleton_iff] using hraw
   have hBE_indicator_zero :
       Set.indicator (B ∩ E) (fun _ : Ω => (1 : ℝ)) =ᵐ[μ] 0 := by
     have hnot : ∀ᵐ ω ∂μ, ω ∉ B ∩ E := by

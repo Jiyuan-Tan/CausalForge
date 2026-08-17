@@ -68,15 +68,18 @@ theorem second_order_upper_bound {f : ℝ → ℝ} {M T : ℝ}
   rcases ht0.eq_or_lt with rfl | htpos
   · simp
   · have hf' : ContDiffOn ℝ 2 f (Icc 0 t) := hf.mono (Icc_subset_Icc le_rfl htT)
+    have huIcc : uIcc (0 : ℝ) t = Icc 0 t := uIcc_of_le htpos.le
+    have huIoo : uIoo (0 : ℝ) t = Ioo 0 t := uIoo_of_le htpos.le
     have htay :
         ∃ x' ∈ Ioo (0 : ℝ) t,
           f t - taylorWithinEval f 1 (Icc 0 t) 0 t =
             iteratedDeriv 2 f x' * (t - 0) ^ 2 / (Nat.factorial 2) := by
-      have := taylor_mean_remainder_lagrange_iteratedDeriv (f := f) (x := t) (x₀ := 0)
-        (n := 1) htpos (by
-          norm_num
-          exact hf')
-      simpa using this
+      have h0 := taylor_mean_remainder_lagrange_iteratedDeriv (f := f) (x := t) (x₀ := 0)
+        (n := 1) htpos.ne (by
+          rw [huIcc]
+          exact_mod_cast hf')
+      rw [huIcc, huIoo] at h0
+      simpa using h0
     have hpoly : taylorWithinEval f 1 (Icc 0 t) 0 t = f 0 + deriv f 0 * t := by
       rw [taylorWithinEval_succ, taylor_within_zero_eval, iteratedDerivWithin_one]
       · rw [hf0.derivWithin ((uniqueDiffOn_Icc htpos) 0 ⟨le_rfl, htpos.le⟩)]

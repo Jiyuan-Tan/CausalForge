@@ -38,6 +38,9 @@ lemma blockSumA_neg (m : ℕ) (z : Fin (2 * m) → Bool) :
   intro i _
   by_cases h : z i <;> simp [h]
 
+/-- Negating an assignment negates the community-`B` sign sum, the mirror of
+`blockSumA_neg`. Together the two make every sign-symmetric support closed under
+global negation, which is what the balanced-design membership proofs need. -/
 lemma blockSumB_neg (m : ℕ) (z : Fin (2 * m) → Bool) :
     blockSumB m (fun i => ! z i) = - blockSumB m z := by
   unfold blockSumB
@@ -65,7 +68,8 @@ private lemma blockSumA_reindex_pres (m : ℕ) (σ : Equiv.Perm (Fin (2 * m)))
   have hsum := σ.sum_comp Finset.univ
     (fun i : Fin (2 * m) => if i.val < m then (if z i then (1 : ℤ) else -1) else 0)
     (by intro x hx; simp)
-  simpa [reindexBy, hpres] using hsum
+  refine Eq.trans (Finset.sum_congr rfl fun i _ => ?_) hsum
+  exact if_congr (by simp [hpres i]) rfl rfl
 
 private lemma blockSumB_reindex_pres (m : ℕ) (σ : Equiv.Perm (Fin (2 * m)))
     (hpres : ∀ i, ((σ i).val < m ↔ i.val < m)) (z : Fin (2 * m) → Bool) :
@@ -74,7 +78,8 @@ private lemma blockSumB_reindex_pres (m : ℕ) (σ : Equiv.Perm (Fin (2 * m)))
   have hsum := σ.sum_comp Finset.univ
     (fun i : Fin (2 * m) => if ¬ i.val < m then (if z i then (1 : ℤ) else -1) else 0)
     (by intro x hx; simp)
-  simpa [reindexBy, hpres] using hsum
+  refine Eq.trans (Finset.sum_congr rfl fun i _ => ?_) hsum
+  exact if_congr (by simp [hpres i]) rfl rfl
 
 private lemma blockSumA_reindex_swap (m : ℕ) (σ : Equiv.Perm (Fin (2 * m)))
     (hswap : ∀ i, ((σ i).val < m ↔ ¬ i.val < m)) (z : Fin (2 * m) → Bool) :
@@ -83,7 +88,8 @@ private lemma blockSumA_reindex_swap (m : ℕ) (σ : Equiv.Perm (Fin (2 * m)))
   have hsum := σ.sum_comp Finset.univ
     (fun i : Fin (2 * m) => if ¬ i.val < m then (if z i then (1 : ℤ) else -1) else 0)
     (by intro x hx; simp)
-  simpa [reindexBy, hswap] using hsum
+  refine Eq.trans (Finset.sum_congr rfl fun i _ => ?_) hsum
+  exact if_congr (by simp [hswap i]) rfl rfl
 
 private lemma blockSumB_reindex_swap (m : ℕ) (σ : Equiv.Perm (Fin (2 * m)))
     (hswap : ∀ i, ((σ i).val < m ↔ ¬ i.val < m)) (z : Fin (2 * m) → Bool) :
@@ -92,7 +98,8 @@ private lemma blockSumB_reindex_swap (m : ℕ) (σ : Equiv.Perm (Fin (2 * m)))
   have hsum := σ.sum_comp Finset.univ
     (fun i : Fin (2 * m) => if i.val < m then (if z i then (1 : ℤ) else -1) else 0)
     (by intro x hx; simp)
-  simpa [reindexBy, hswap] using hsum
+  refine Eq.trans (Finset.sum_congr rfl fun i _ => ?_) hsum
+  exact if_congr (by simp [hswap i]) rfl rfl
 
 /-- Under a block-automorphism `σ`, the pair of community sums of `reindexBy σ z`
 is either `(S_A, S_B)` (block-preserving) or `(S_B, S_A)` (block-swapping). -/
@@ -197,6 +204,11 @@ private lemma reindex_const_false (m : ℕ) (σ : Equiv.Perm (Fin (2 * m))) :
   funext i
   rfl
 
+/-- The cut vertex design — a fair coin between "treat community `A`, control community
+`B`" and its reverse — belongs to the block-exchangeable design class: its two-point
+support is closed under global sign flip and under every two-block automorphism
+(relabelling units inside a community fixes each of the two assignments, swapping the
+communities exchanges them). -/
 lemma cutVDesign_mem (m : ℕ) : cutVDesign m ∈ blockExchangeableDesignClass m := by
   unfold cutVDesign
   apply uniformOnDesign_mem
@@ -257,6 +269,10 @@ lemma cutVDesign_mem (m : ℕ) : cutVDesign m ∈ blockExchangeableDesignClass m
         · left
           exact reindex_cutMinus_swap m σ hswap
 
+/-- The all-ones vertex design — a fair coin between "treat everyone" and "control
+everyone" — belongs to the block-exchangeable design class: its two-point support is
+closed under global sign flip, and both constant assignments are fixed by every
+permutation of the units, hence by every two-block automorphism. -/
 lemma allVDesign_mem (m : ℕ) : allVDesign m ∈ blockExchangeableDesignClass m := by
   unfold allVDesign
   apply uniformOnDesign_mem
@@ -293,6 +309,10 @@ lemma allVDesign_mem (m : ℕ) : allVDesign m ∈ blockExchangeableDesignClass m
       · right
         exact reindex_const_false m σ
 
+/-- The cut vertex design has assignment second moment `X(1,−1)`: two units in the same
+community always receive the same sign, and two units in opposite communities always
+receive opposite signs. In the reduced spectral coordinates this is the triangle vertex
+`(0, 2m, 0)`. -/
 lemma cutVDesign_secondMoment (m : ℕ) :
     assignmentSecondMoment m (cutVDesign m) = blockSymMatrix m 1 (-1) := by
   by_cases hm0 : m = 0
@@ -326,6 +346,9 @@ lemma cutVDesign_secondMoment (m : ℕ) :
         have hji : m ≤ j.val := by omega
         simp [signOf, cutPlus, cutMinus, blockSymMatrix, hij, hi, hj, hii, hji]
 
+/-- The all-ones vertex design has assignment second moment `X(1,1)`: every pair of units
+always receives the same sign, whether or not they share a community. In the reduced
+spectral coordinates this is the triangle vertex `(0, 0, 2m)`. -/
 lemma allVDesign_secondMoment (m : ℕ) :
     assignmentSecondMoment m (allVDesign m) = blockSymMatrix m 1 1 := by
   by_cases hm0 : m = 0
@@ -390,40 +413,17 @@ private lemma spreadA_true_filter (m : ℕ) :
     (blockAFin m).filter (fun i => spreadWitness m i) =
       Finset.univ.filter (fun i : Fin (2 * m) => i.val < m / 2) := by
   ext i
-  simp only [Finset.mem_filter, blockAFin, Finset.mem_univ, true_and, spreadWitness]
-  constructor
-  · intro h
-    rcases h with ⟨hA, hs⟩
-    have hs' : i.val < m / 2 ∨ (m ≤ i.val ∧ i.val < m + m / 2) :=
-      of_decide_eq_true hs
-    rcases hs' with hs' | hs'
-    · exact hs'
-    · omega
-  · intro h
-    have hhalf : m / 2 ≤ m := Nat.div_le_self m 2
-    constructor
-    · omega
-    · exact decide_eq_true (Or.inl h)
+  simp only [Finset.mem_filter, blockAFin, Finset.mem_univ, true_and, spreadWitness,
+    decide_eq_true_eq]
+  omega
 
 private lemma spreadB_true_filter (m : ℕ) :
     (blockBFin m).filter (fun i => spreadWitness m i) =
       Finset.univ.filter (fun i : Fin (2 * m) => m ≤ i.val ∧ i.val < m + m / 2) := by
   ext i
-  simp only [Finset.mem_filter, blockBFin, Finset.mem_univ, true_and, spreadWitness]
-  constructor
-  · intro h
-    rcases h with ⟨hB, hs⟩
-    have hs' : i.val < m / 2 ∨ (m ≤ i.val ∧ i.val < m + m / 2) :=
-      of_decide_eq_true hs
-    rcases hs' with hs' | hs'
-    · have hhalf : m / 2 ≤ m := Nat.div_le_self m 2
-      omega
-    · exact hs'
-  · intro h
-    rcases h with ⟨hmle, hlt⟩
-    constructor
-    · omega
-    · exact decide_eq_true (Or.inr ⟨hmle, hlt⟩)
+  simp only [Finset.mem_filter, blockBFin, Finset.mem_univ, true_and, spreadWitness,
+    decide_eq_true_eq]
+  omega
 
 private lemma blockSumA_spreadWitness (m : ℕ) (hEven : Even m) :
     blockSumA m (spreadWitness m) = 0 := by
@@ -525,10 +525,17 @@ private lemma blockSumB_spreadWitness (m : ℕ) (hEven : Even m) :
   rw [hT, hF]
   ring
 
+/-- For even `m`, the explicit half-and-half assignment (treat the first half of each
+community, control the second half) really is balanced in each block: both community sign
+sums are zero. -/
 lemma spreadWitness_mem (m : ℕ) (hEven : Even m) :
     spreadWitness m ∈ spreadSupport m := by
   simp [spreadSupport, blockSumA_spreadWitness m hEven, blockSumB_spreadWitness m hEven]
 
+/-- For even `m` at least one assignment has both community sign sums equal to zero, so
+the balanced-in-each-block support is nonempty and the uniform law on it is well defined.
+Evenness is essential: for odd `m` each community sum is an odd integer and this support
+is empty. -/
 lemma spreadSupport_nonempty (m : ℕ) (hEven : Even m) : (spreadSupport m).Nonempty :=
   ⟨spreadWitness m, spreadWitness_mem m hEven⟩
 
@@ -537,6 +544,10 @@ noncomputable def spreadVDesign (m : ℕ) (hEven : Even m) :
     FiniteDesign (Fin (2 * m) → Bool) :=
   uniformOnDesign m (spreadSupport m) (spreadSupport_nonempty m hEven)
 
+/-- For even `m`, the spread vertex design — uniform over the assignments that are exactly
+balanced inside each community — belongs to the block-exchangeable design class. Negating
+an assignment and relabelling units by a two-block automorphism both leave the pair of
+community sign sums at `(0,0)`, so the support is invariant. -/
 lemma spreadVDesign_mem (m : ℕ) (hEven : Even m) :
     spreadVDesign m hEven ∈ blockExchangeableDesignClass m := by
   unfold spreadVDesign
@@ -572,6 +583,9 @@ lemma spreadVDesign_sumAr_zero (m : ℕ) (hEven : Even m) :
     simp [uniformOnDesign, hz, hsum]
   · simp [uniformOnDesign, hz]
 
+/-- Under the spread vertex design the two community sign sums have zero cross moment,
+since every assignment in its support has both sums equal to zero pointwise. With the
+companion `spreadVDesign_sumAr_zero` this pins the design's reduced coordinates. -/
 lemma spreadVDesign_sumAr_sumBr_zero (m : ℕ) (hEven : Even m) :
     (spreadVDesign m hEven).E (fun z => sumAr m z * sumBr m z) = 0 := by
   unfold spreadVDesign
@@ -587,6 +601,11 @@ lemma spreadVDesign_sumAr_sumBr_zero (m : ℕ) (hEven : Even m) :
     simp [uniformOnDesign, hz, hsum]
   · simp [uniformOnDesign, hz]
 
+/-- For even `m ≥ 2` the spread vertex design has assignment second moment
+`X(−1/(m−1), 0)`: units in different communities are uncorrelated, and units in the same
+community carry the small negative correlation `−1/(m−1)` forced by the community sign sum
+being identically zero. These are the reduced coordinates `(2m/q, 0, 0)` — the spread
+vertex of the triangle — so for even `m` the spread covariance is implementable. -/
 lemma spreadVDesign_secondMoment (m : ℕ) (hm : 2 ≤ m) (hEven : Even m) :
     assignmentSecondMoment m (spreadVDesign m hEven)
       = blockSymMatrix m (-1 / ((m : ℝ) - 1)) 0 := by

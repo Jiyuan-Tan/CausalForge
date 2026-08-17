@@ -114,7 +114,8 @@ lemma betaStar_update_hasDerivAt (T : ℕ) (C : Finset (Cohort T))
       henergy
     intro d
     have hs := hv d
-    simpa [q, A, j, B, betaDot, fittedMean, hprojection0] using hs
+    rw [hprojection0] at hs
+    exact hs
   have hg := finitePoissonObjective_expCell_argmax_snd_hasDerivAt
     q m A j B (delta (k, s)) betaDot hq hm hB hA hbeta
   have hfun (x : ℝ) :

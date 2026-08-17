@@ -472,13 +472,6 @@ theorem condDistrib_target_eq_mechanismKernel
         (F.M i).RandomValues → ValuesOn (F.paObs i₀) (swigΩ Ω)) := by
     funext ξ x
     rfl
-  have hLcomp :
-      (valuesProjection hLatExo :
-        (F.M i).RandomValues → ValuesOn (F.paLat i) (swigΩ Ω)) =
-      (valuesProjection hLrv :
-        (F.M i).RandomValues → ValuesOn (F.paLat i) (swigΩ Ω)) := by
-    funext ξ x
-    rfl
   have hind :
       IndepFun (valuesProjection hLrv) (valuesProjection hPrv)
         ((F.M i).jointKernel (F.s i)) := by
@@ -486,7 +479,7 @@ theorem condDistrib_target_eq_mechanismKernel
     change IndepFun (id ∘ valuesProjection hLatExo)
       (e ∘ valuesProjection hObsExo) ((F.M i).jointKernel (F.s i)) at h0
     rw [hOcomp] at h0
-    simpa [Function.comp_def, hLcomp] using h0
+    exact h0
   have hEvalMeas :
       Measurable (fun ℓ : (F.M i).LatentValues => (F.M i).evalMap (F.s i) ℓ) := by
     have : (fun ℓ : (F.M i).LatentValues => (F.M i).evalMap (F.s i) ℓ) =

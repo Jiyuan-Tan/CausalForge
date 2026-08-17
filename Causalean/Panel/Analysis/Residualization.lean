@@ -113,9 +113,15 @@ theorem residualizedCoefficient_eq_of_normalEqs {Ω : Type*} [MeasurableSpace Ω
   have Hβ_mem' : MemLp Hβ 2 μ := H.memLp Hβ_mem
   have h_star_mem : H.mem h_star := by
     have h_neg_Hβ : H.mem (fun ω => -Hβ ω) := by
-      simpa [smul_eq_mul] using (H.smul_mem (-1 : ℝ) Hβ_mem)
+      have h := H.smul_mem (-1 : ℝ) Hβ_mem
+      have hfun : ((-1 : ℝ) • Hβ) = fun ω => -Hβ ω := by
+        funext ω; simp
+      rwa [hfun] at h
     have h_beta : H.mem (fun ω => (-β) * wD.VH ω) := by
-      simpa [smul_eq_mul] using (H.smul_mem (-β) wD.VH_mem)
+      have h := H.smul_mem (-β) wD.VH_mem
+      have hfun : ((-β : ℝ) • wD.VH) = fun ω => (-β) * wD.VH ω := by
+        funext ω; simp
+      rwa [hfun] at h
     have h_inner : H.mem (fun ω ↦ wY.VH ω + (-β) * wD.VH ω) := H.add_mem wY.VH_mem h_beta
     exact H.add_mem h_neg_Hβ h_inner
   have h_orth : ∫ ω, wD.Vtilde ω * h_star ω ∂μ = 0 := wD.orthogonal h_star_mem

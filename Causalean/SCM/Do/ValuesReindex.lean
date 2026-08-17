@@ -38,13 +38,13 @@ lemma valuesUnionMk_comm {M : Type*} [DecidableEq M] {Ω : M → Type*}
     valuesEquivOfEq (Finset.union_comm A B) (valuesUnionMk a b)
       = valuesUnionMk b a := by
   funext ⟨v, hv⟩
+  have hvAB : v ∈ A ∪ B := by rwa [Finset.union_comm]
+  show valuesUnionMk a b ⟨v, hvAB⟩ = valuesUnionMk b a ⟨v, hv⟩
   by_cases hA : v ∈ A
   · have hB : v ∉ B := fun h => Finset.disjoint_left.mp hAB hA h
-    simp only [valuesEquivOfEq, MeasurableEquiv.coe_mk, Equiv.coe_fn_mk,
-      valuesProjection, valuesUnionMk, hA, hB, dif_pos, dif_neg, not_false_iff]
+    simp only [valuesUnionMk, dif_pos hA, dif_neg hB]
   · have hB : v ∈ B := (Finset.mem_union.mp hv).resolve_right hA
-    simp only [valuesEquivOfEq, MeasurableEquiv.coe_mk, Equiv.coe_fn_mk,
-      valuesProjection, valuesUnionMk, hA, hB, dif_pos, dif_neg, not_false_iff]
+    simp only [valuesUnionMk, dif_pos hB, dif_neg hA]
 
 /-- **Right `∅` collapse.**  Reindexing `valuesUnionMk a e` (with `e` the trivial
     block on `∅`) along `A ∪ ∅ = A` recovers `a`. -/
@@ -53,8 +53,9 @@ lemma valuesUnionMk_empty_right {M : Type*} [DecidableEq M] {Ω : M → Type*}
     (a : ValuesOn A Ω) (e : ValuesOn (∅ : Finset M) Ω) :
     valuesEquivOfEq (Finset.union_empty A) (valuesUnionMk a e) = a := by
   funext ⟨v, hv⟩
-  simp only [valuesEquivOfEq, MeasurableEquiv.coe_mk, Equiv.coe_fn_mk,
-    valuesProjection, valuesUnionMk, hv, dif_pos]
+  have hvA : v ∈ A ∪ (∅ : Finset M) := by rwa [Finset.union_empty]
+  show valuesUnionMk a e ⟨v, hvA⟩ = a ⟨v, hv⟩
+  simp only [valuesUnionMk, dif_pos hv]
 
 /-- A value block is `HEq` to its reindexing along a `Finset` equality.  The
     bridge that lets the equiv-mediated `Eq` laws above discharge legacy `HEq`

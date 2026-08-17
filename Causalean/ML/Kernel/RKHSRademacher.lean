@@ -488,6 +488,13 @@ theorem rkhs_ball_empiricalRademacher_le
           (fun (f : ball) (a : H) => inner ℝ (w f) a) Y
         ≤ κ * r / Real.sqrt n := by
     exact empiricalRademacherComplexity_innerBall_le κ r hκ hr Y hbound w hw
-  simpa [ball, Y, w, hK.reproducing] using hlinear
+  -- Rewrite evaluation into the inner product with the representer; the two
+  -- complexity terms then agree by beta reduction, so close by `exact`.
+  have heval : (fun (f : ball) (x : X) => feval (f : H) x)
+      = fun (f : ball) (x : X) => inner ℝ (w f) (representer x) := by
+    funext f x
+    exact hK.reproducing (f : H) x
+  rw [heval]
+  exact hlinear
 
 end Causalean.ML

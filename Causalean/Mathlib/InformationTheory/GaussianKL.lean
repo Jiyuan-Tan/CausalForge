@@ -126,7 +126,7 @@ to `gaussianReal m₀ v`, because the Gaussian has a finite first moment. -/
 lemma integrable_llr_gaussianReal (m₀ m₁ : ℝ) (hv : v ≠ 0) :
     Integrable (llr (gaussianReal m₀ v) (gaussianReal m₁ v)) (gaussianReal m₀ v) := by
   have hid : Integrable (fun x : ℝ ↦ x) (gaussianReal m₀ v) := by
-    simpa [id] using (memLp_id_gaussianReal (μ := m₀) (v := v) (p := 1)).integrable
+    simpa [Function.id_def] using (memLp_id_gaussianReal (μ := m₀) (v := v) (p := 1)).integrable
       (by norm_num)
   have haffine : Integrable
       (fun x : ℝ ↦ ((m₀ - m₁) / (2 * (v : ℝ))) * (2 * x - (m₀ + m₁)))
@@ -148,7 +148,7 @@ lemma integral_llr_gaussianReal (m₀ m₁ : ℝ) (hv : v ≠ 0) :
     ∫ x, llr (gaussianReal m₀ v) (gaussianReal m₁ v) x ∂(gaussianReal m₀ v)
       = (m₀ - m₁) ^ 2 / (2 * (v : ℝ)) := by
   have hid : Integrable (fun x : ℝ ↦ x) (gaussianReal m₀ v) := by
-    simpa [id] using (memLp_id_gaussianReal (μ := m₀) (v := v) (p := 1)).integrable
+    simpa [Function.id_def] using (memLp_id_gaussianReal (μ := m₀) (v := v) (p := 1)).integrable
       (by norm_num)
   have hden : (2 : ℝ) * (v : ℝ) ≠ 0 := by
     have hvposNN : 0 < v := by exact zero_lt_iff.mpr hv

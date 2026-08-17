@@ -194,10 +194,10 @@ theorem crossterm_zero_of_shared_one [IsFiniteMeasure P]
     exact hg.meas.comp (measurable_pi_lambda _ (fun j : Fin m => by
       by_cases hj : j = p
       · subst j
-        simpa [Φ, insertCoord]
+        simpa [Φ, insertCoord, Function.comp_def]
           using (measurable_pi_apply (⟨a, ha_q⟩ : B)).comp
             measurable_snd
-      · simpa [Φ, insertCoord, hj]
+      · simpa [Φ, insertCoord, hj, Function.comp_def]
           using (measurable_pi_apply (⟨j, hj⟩ : Tail)).comp
             measurable_fst))
   have hΨ : Measurable Ψ := by

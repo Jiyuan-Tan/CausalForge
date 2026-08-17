@@ -55,7 +55,7 @@ theorem eigVals_nonneg (i : Fin (finrank ℝ E)) : 0 ≤ hT.eigVals i := by
   have hpos := hT.2 (hT.eigBasis i)
   rw [hT.apply_eigBasis i, inner_smul_left] at hpos
   -- `hpos : 0 ≤ ⟪T (b i), b i⟫` becomes `0 ≤ μ i`
-  simpa only [conj_trivial, hb, mul_one] using hpos
+  simpa only [conj_trivial, hb, mul_one, RCLike.re_to_real] using hpos
 
 /-- The positive square root of `T`: the linear operator that acts as
 `√(eigenvalue)` on each vector of the chosen orthonormal eigenbasis. -/

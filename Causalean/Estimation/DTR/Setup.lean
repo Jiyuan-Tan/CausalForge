@@ -261,7 +261,7 @@ lemma stageOneReg_indD_eq (S : DTREstimationSystem P δ γ)
       ring
     rw [harg]
     filter_upwards [hpull] with ω hω
-    simpa [Pi.mul_apply] using hω
+    exact hω
   have hDen_pull :
       B.condExpGiven (T.indD S.dbar 2) P.μ
         =ᵐ[P.μ]

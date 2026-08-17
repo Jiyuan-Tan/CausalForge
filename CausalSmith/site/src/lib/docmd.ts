@@ -37,7 +37,7 @@ function emph(escaped: string): string {
 const TOK_OPEN = String.fromCharCode(0xe000);
 const TOK_CLOSE = String.fromCharCode(0xe001);
 
-function inline(s: string): string {
+function inline(s: string, compact = false): string {
   // Render code/math spans into placeholders FIRST, then apply emphasis across the
   // whole (placeholder-bearing) string, then restore. This lets emphasis span a
   // code/math span — e.g. `**General-`n` identification.**` — which a
@@ -45,14 +45,20 @@ function inline(s: string): string {
   // Placeholders use private-use chars (absent from docstrings, untouched by esc()
   // and the emph() regexes).
   const tokens: string[] = [];
+  // Strip any pre-existing placeholder char from the input, or it would be read back as a
+  // token index and silently swap in the wrong span (or `undefined`). Docstrings never
+  // contain these; pipeline-authored JSON now flows through here too, so do not assume it.
+  s = s.replace(new RegExp(`[${TOK_OPEN}${TOK_CLOSE}]`, "g"), "");
   // Math delimiters: `$$…$$` / `\[…\]` (display) and `$…$` / `\(…\)` (inline).
   // `.tex`-sourced prose (paper abstracts/titles) uses `\(…\)`/`\[…\]`, while
   // codex-authored tldrs use `$…$` — accept both, plus backtick code spans.
   const re = /(\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\$[^$\n]+\$|\\\([\s\S]+?\\\)|`[^`\n]+`)/g;
   const withPlaceholders = s.replace(re, (tok) => {
+    // `compact` demotes display math to inline: in a one-line index row a centred
+    // block would break the row, and the surrounding layout supplies the emphasis.
     let html: string;
-    if (tok.startsWith("$$")) html = tex(tok.slice(2, -2), true);
-    else if (tok.startsWith("\\[")) html = tex(tok.slice(2, -2), true);
+    if (tok.startsWith("$$")) html = tex(tok.slice(2, -2), !compact);
+    else if (tok.startsWith("\\[")) html = tex(tok.slice(2, -2), !compact);
     else if (tok.startsWith("\\(")) html = tex(tok.slice(2, -2), false);
     else if (tok.startsWith("$")) html = tex(tok.slice(1, -1), false);
     else html = `<code>${esc(tok.slice(1, -1))}</code>`;
@@ -70,6 +76,32 @@ function inline(s: string): string {
  *  page has no label targets), everything else escaped. */
 export function renderTexLine(s: string): string {
   return inline(s.replace(/~?\\ref\{obj:([\w-]+)\}/g, "$1"));
+}
+
+/** Renders a TeX-bearing string for a compact index row (the Formal-layer panel's
+ *  NL column): same tokenizer as `renderTexLine`, but display math is demoted to
+ *  inline so a row stays a row, and EVERY cross-reference form is flattened, not just
+ *  `\ref{obj:…}` — the panel has no label targets, so a surviving `\cref{…}` or
+ *  `Theorem~\ref{thm:…}` would print as raw source. The `~` becomes a space. */
+export function renderTexCompact(s: string): string {
+  const flat = s
+    .replace(/~(?=\\(?:[cC]|eq)?ref\{)/g, " ")
+    .replace(/\\(?:[cC]|eq)?ref\{(?:obj:)?([\w:.-]+)\}/g, "$1");
+  return inline(flat, true);
+}
+
+/** Renders a Formal-layer row's LABEL. A `symbol` row's label IS a formula and is written
+ *  bare, without delimiters (`\Delta_r(p)`); every other label is plain text ("Setup S-1").
+ *  A label carrying a macro is therefore rendered as one whole formula — no guessing where
+ *  the math starts. Anything KaTeX rejects falls back to escaped text. */
+export function renderLabel(s: string): string {
+  if (!/\\[a-zA-Z]/.test(s)) return esc(s);
+  const tex = s.replace(/^\s*\\\(|\\\)\s*$/g, "").trim();
+  try {
+    return katex.renderToString(tex, { throwOnError: true });
+  } catch {
+    return esc(s);
+  }
 }
 
 export function renderDoc(doc: string): string {

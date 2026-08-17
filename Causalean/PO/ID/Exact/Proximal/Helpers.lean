@@ -119,7 +119,7 @@ lemma condExp_h_drop_Z' {h_fun : Bool × γ_W × γ_X → ℝ}
     have h := proxy_WAZ.comp (φ := id)
       (ψ := fun (p : Bool × γ_Z) => (p.2, p.1))
       measurable_id (by fun_prop)
-    simpa [Function.comp] using h
+    simpa [Function.comp_def] using h
   have hWZ_AUX : CondIndepFun
       (S.σ_UX ⊔ MeasurableSpace.comap S.A inferInstance)
       (sup_le S.σ_UX_le S.measurable_A.comap_le)
@@ -210,7 +210,7 @@ lemma condExp_h_drop_A (HA : Assumptions S μ) (a : Bool) :
   -- Project proxy_WAZ to W ⟂ A | σ_UX via .comp with Prod.fst.
   have hWA : CondIndepFun S.σ_UX S.σ_UX_le S.W S.A μ := by
     have h := HA.proxy_WAZ.comp (φ := id) (ψ := Prod.fst) measurable_id measurable_fst
-    simpa [Function.comp] using h
+    simpa [Function.comp_def] using h
   have h_int : Integrable (fun ω => HA.h (a, S.W ω, S.X ω)) μ := by
     cases a
     · exact HA.integrable_h0WX
@@ -332,14 +332,15 @@ lemma eq_zero_globally_of_eq_zero_on_arm
   have hB_meas' : MeasurableSet B := S.σ_UX_le _ hB_meas
   have hBs_zero : μ (B ∩ s) = 0 := by
     have h1 : (μ.restrict s) B = 0 := by
-      have := hf_zero_on_arm
-      rw [Filter.EventuallyEq, MeasureTheory.ae_iff] at this
-      convert this using 2
+      have h := hf_zero_on_arm
+      rw [Filter.EventuallyEq, MeasureTheory.ae_iff] at h
+      rw [hB_def]
+      simpa using h
     rwa [MeasureTheory.Measure.restrict_apply hB_meas'] at h1
   -- positivity_arm gives μ B = 0, i.e. f =ᵐ[μ] 0.
   have hB_zero : μ B = 0 := HA.positivity_arm a B hB_meas hBs_zero
   rw [Filter.EventuallyEq, MeasureTheory.ae_iff]
-  convert hB_zero using 2
+  simpa [hB_def] using hB_zero
 
 end POProximalSystem
 

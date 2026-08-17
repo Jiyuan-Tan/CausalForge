@@ -28,6 +28,7 @@ import {
   repairCoreLatexSerialization,
 } from "../core/latex_serialization.js";
 import { loadPaperView, logPaperView } from "../core/paper_view.js";
+import { diffCoreProse, type ProseUpdates } from "../core/assemble.js";
 import { runGates } from "../framework/gates.js";
 import { structuralGate } from "../framework/gate_registrations.js";
 import { normalizeTexWhitespace } from "../../shared/tex_text.js";
@@ -36,6 +37,9 @@ import type { Stage0_5CoreResult } from "./d0_5_core.js";
 export interface Stage0RCoreResult {
   message: string;
   coreJsonPath: string;
+  /** Prose-only delta produced by this provisional edit. The caller promotes it
+   *  only after the next panel clears every finding this edit was asked to fix. */
+  proseUpdates?: ProseUpdates;
   /** Set when D0.R determines a finding cannot be fixed by an in-place edit (it needs
    *  real math / a re-derivation / new substrate, or would force weakening the result).
    *  The typed D0.5 loop turns this into an immediate checkpoint — escalate BEFORE the
@@ -380,8 +384,10 @@ export async function runStage0RCore(args: {
     console.warn(`[D0.R] ${args.state.design_decisions["d0r_pending_approval"]}`);
   }
 
+  const proseUpdates = diffCoreProse(core, edited);
   return {
     message: parsedOut.message ?? "Stage 0.R revised core.json provisionally",
     coreJsonPath: corePath,
+    ...(proseUpdates ? { proseUpdates } : {}),
   };
 }

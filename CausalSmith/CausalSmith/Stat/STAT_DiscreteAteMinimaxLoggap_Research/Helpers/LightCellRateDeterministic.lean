@@ -12,11 +12,16 @@ def sparseIndexSet (M : ℕ) : Finset (ℕ × ℕ × Cell) :=
     ((Finset.range M).product (Finset.univ : Finset Cell))).filter
       fun u => u.2.1 ≤ u.1
 
+/-- A triple made of an outer index, an inner index and a cell belongs to the flattened
+sparse index set exactly when the outer index is strictly below the degree minus one
+and the inner index does not exceed the outer one. -/
 lemma mem_sparseIndexSet {M j t : ℕ} {ay : Cell} :
     (j, t, ay) ∈ sparseIndexSet M ↔ j < M - 1 ∧ t < j + 1 := by
   simp [sparseIndexSet]
   omega
 
+/-- Selecting, from the first M whole numbers, those that do not exceed a given number
+below M leaves exactly the first j+1 whole numbers. -/
 lemma filter_range_le_eq_range_succ {M j : ℕ} (hj : j < M) :
     (Finset.range M).filter (fun t => t ≤ j) = Finset.range (j + 1) := by
   ext t
@@ -175,7 +180,7 @@ lemma integral_sparseArm_sq_le {n d : ℕ} (P : DiscreteLaw d) (k : Fin d)
       (sparseIndex_inner_le hu) (sparseIndex_inner_le hv)
       (sparseIndex_degree hu) (sparseIndex_degree hv) hn hsize
     dsimp only [T, E, sparseTerm, sparseTermEnvelope]
-    convert hterm using 1 <;> ring
+    exact hterm.trans (le_of_eq (by ring))
   refine hsum.trans ?_
   change (∑ u ∈ S, ∑ v ∈ S, Real.exp 1 * (E u * E v)) ≤ _
   rw [show (∑ u ∈ S, ∑ v ∈ S, Real.exp 1 * (E u * E v)) =
@@ -200,6 +205,9 @@ lemma sparseArmEnvelope_shifted_le {n d : ℕ} (P : DiscreteLaw d) (k : Fin d)
   rw [shiftedCellVector_sum]
   exact hmass
 
+/-- The absolute-coefficient envelope of one treatment arm in the sparse factorial
+expansion is nonnegative whenever the four cell values it is evaluated at are
+nonnegative. -/
 lemma sparseArmEnvelope_nonneg {M : ℕ} {B : ℝ} (v : Cell → ℝ)
     (hv : ∀ ay, 0 ≤ v ay) (a : Fin 2) : 0 ≤ sparseArmEnvelope M B v a := by
   unfold sparseArmEnvelope
@@ -966,7 +974,7 @@ lemma integral_factorialPolynomial_centered_cross_le {n d : ℕ}
           simpa only [Pi.sub_apply] using integral_sub hfg (hf.const_mul ml)]
       _ = (∫ ω, f ω * g ω ∂μ) - mk * ml := by
         rw [integral_const_mul, integral_const_mul]
-        simp only [integral_const, measureReal_univ_eq_one, one_smul]
+        simp only [integral_const, probReal_univ, one_smul]
         rw [show (∫ ω, f ω ∂μ) = mk by
           simpa only [f, μ, mk] using
             integral_factorialPolynomialContribution_eq_sparsePolynomialMean P k hMle,
@@ -1057,7 +1065,7 @@ lemma integral_factorialPolynomial_centered_sq_le {n d : ℕ}
     · exact hpoint
   refine hint.trans ?_
   rw [integral_add, integral_const_mul, integral_const]
-  simp only [measureReal_univ_eq_one, one_smul]
+  simp only [probReal_univ, one_smul]
   · have hX := integral_factorialPolynomialContribution_sq_le
       P k hn hsize hM hB hmassShift
     change 2 * (∫ ω, X ω ^ 2 ∂_) + 2 * m ^ 2 ≤ _

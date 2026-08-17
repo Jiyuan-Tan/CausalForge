@@ -32,6 +32,9 @@ def decodeBandParam {m L : ℕ} (x : BandParamCoord m L → ℂ) : ParamSpace �
     fun j r => if h : 2 ≤ r ∧ r ≤ L then
       x (Sum.inr (Sum.inr (j, ⟨r - 2, by omega⟩))) else 0)
 
+/-- A parameter point read off from a finite vector of retained coordinates is
+always band supported: every source weight of an order below two or above `L`
+vanishes. -/
 lemma decodeBandParam_supported {m L : ℕ} (x : BandParamCoord m L → ℂ) :
     decodeBandParam x ∈ bandSupportedParams m L := by
   intro j r hr
@@ -94,6 +97,9 @@ def bandCoordEmbedding {m L : ℕ} : BandParamCoord m L → ParamCoord m
   | Sum.inr (Sum.inl i) => Sum.inr (Sum.inl i)
   | Sum.inr (Sum.inr jk) => Sum.inr (Sum.inr (jk.1, jk.2.val + 2))
 
+/-- Distinct retained coordinates name distinct parameter variables: for a
+truncation order of at least two, the embedding of the finite band coordinates
+into the original parameter coordinates is injective. -/
 lemma bandCoordEmbedding_injective {m L : ℕ} (hL : 2 ≤ L) :
     Function.Injective (bandCoordEmbedding : BandParamCoord m L → ParamCoord m) := by
   intro a b hab
@@ -115,6 +121,11 @@ def restrictParamPolynomial {m L : ℕ}
           MvPolynomial.X (Sum.inr (Sum.inr
             (jr.1, ⟨jr.2 - 2, by omega⟩))) else 0) P
 
+/-- Restricting a parameter polynomial to the retained band and evaluating it
+at a finite coordinate vector gives the same number as evaluating the original
+polynomial at the parameter point those coordinates decode to.  Killing the
+off-band weight variables therefore loses no information, provided the
+truncation order is at least two. -/
 lemma eval_restrictParamPolynomial {m L : ℕ} (hL : 2 ≤ L)
     (x : BandParamCoord m L → ℂ) (P : MvPolynomial (ParamCoord m) ℂ) :
     MvPolynomial.eval x (restrictParamPolynomial P) =

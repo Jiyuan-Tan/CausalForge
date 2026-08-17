@@ -410,7 +410,7 @@ lemma condExp_q_eq_stratumOddsRatio_arm_AX
         exact Filter.Eventually.of_forall hgX_le
       exact setIntegral_mul_condExp_of_stronglyMeasurableLeft S.σ_AUX_le
         hgX_meas_AUX.stronglyMeasurable hq'_int
-        (by simpa [Pi.mul_apply] using hgXq'_int) hs_in_AUX
+        (by exact hgXq'_int) hs_in_AUX
     -- Step 2: bridge_q — μ[q' | σ_AUX] =ᵐ[restrict {A=a}] L_a.
     have hStep2 : ∫ ω in {ω | S.A ω = a}, g_X ω * (μ[q' | S.σ_AUX]) ω ∂μ
         = ∫ ω in {ω | S.A ω = a}, g_X ω * L_a ω ∂μ := by

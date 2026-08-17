@@ -267,7 +267,7 @@ theorem partialEvalMap_observedPrefixValue (M : Causalean.SCM N Ω)
               M.dag.mem_parents.mp w.property
             have hlt : M.observedIndex ⟨w.val, hobs⟩ < (⟨k, hn⟩ : Fin M.observed.card) :=
               M.observed_parent_index_lt hn hedge hobs
-            have hlt' : (M.observedIndex ⟨w.val, hobs⟩).val < k := by simpa using hlt
+            have hlt' : (M.observedIndex ⟨w.val, hobs⟩).val < k := hlt
             have ih := partialEvalMap_observedPrefixValue M s ℓ k
               (Nat.le_of_succ_le hn) ⟨(M.observedIndex ⟨w.val, hobs⟩).val, hlt'⟩
             -- Rewrite `observedPrefixValue` via IH, so both sides become

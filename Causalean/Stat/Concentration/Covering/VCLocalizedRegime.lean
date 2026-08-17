@@ -1035,10 +1035,12 @@ private lemma starHullPatternClass_radius_le
         =
       starHullPatternCoeff F norm π S r A *
         empiricalNorm S (F (growthFamilyRep π S A)) := by
-    simpa [abs_of_nonneg (starHullPatternCoeff_nonneg F norm π S r A)] using
+    have h :=
       empiricalNorm_const_mul S
         (starHullPatternCoeff F norm π S r A)
         (F (growthFamilyRep π S A))
+    simp only [abs_of_nonneg (starHullPatternCoeff_nonneg F norm π S r A)] at h
+    exact h
   rw [hnorm]
   exact div_le_div_of_nonneg_right
     (starHullPatternCoeff_mul_empiricalNorm_rep_le F norm π hfactor Hloc S hr A)

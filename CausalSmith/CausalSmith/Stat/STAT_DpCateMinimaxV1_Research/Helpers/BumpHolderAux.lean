@@ -26,8 +26,7 @@ lemma causalCubeBump_contDiff {d : ℕ} :
   intro i _
   have hb : ContDiff ℝ (↑(⊤ : ℕ∞) : WithTop ℕ∞)
       CausalSmith.Stat.DoseResponseMinimax.doseBump := by
-    simpa [CausalSmith.Stat.DoseResponseMinimax.doseBump] using
-      CausalSmith.Stat.DoseResponseMinimax.doseContDiffBump.contDiff (n := ⊤)
+    exact CausalSmith.Stat.DoseResponseMinimax.doseContDiffBump.contDiff (n := ⊤)
   exact hb.comp (by fun_prop)
 
 lemma causalCubeBump_zero {d : ℕ} : causalCubeBump (d := d) 0 = 1 := by

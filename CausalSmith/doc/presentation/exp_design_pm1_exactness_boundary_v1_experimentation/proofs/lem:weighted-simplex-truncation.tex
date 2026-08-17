@@ -1,27 +1,122 @@
 \begin{proof}[Proof of \cref{obj:lem:weighted-simplex-truncation}]
-We first record the truncation dichotomy used in both robustness regimes.  Let \(t^{\mathrm{rel}}\in\Delta_M\) minimize \(\Phi\) over the full simplex.  If \(t^{\mathrm{rel}}\in K_d\), then every \(s\in K_d\) is also in \(\Delta_M\), so the full-simplex minimality immediately gives \(\Phi(t^{\mathrm{rel}})\le\Phi(s)\). % lean: trunc_from_minimizer
-If instead \(t^{\mathrm{rel}}_y+t^{\mathrm{rel}}_z<d\), then \(d>0\).  The selector \(s^\star=\operatorname{truncSelector}(M,d,\alpha,\beta,\kappa)\) lies in \([0,d]\), so
+Write \(\delta=\alpha_y-\alpha_z\), \(A=\beta_x(M-d)^2\ge0\), and for \(\sigma\in\mathbb R\) let
 \[
-(M-d,s^\star,d-s^\star)\in K_d .
-\] % lean: truncSelector_mem
-For any \(s\in K_d\), convexity of the objective along the segment from \(s\) to \(t^{\mathrm{rel}}\) shows that \(s\) is dominated by some point on the boundary segment
-\[
-H_d=\{(M-d,\sigma,d-\sigma):0\le\sigma\le d\}.
-\] % lean: truncSeg_reduction
-On this segment the objective reduces to the one-dimensional convex function
-\[
-\alpha_x(M-d)+\alpha_y\sigma+\alpha_z(d-\sigma)
-+\kappa\sqrt{\beta_x(M-d)^2+\sigma^2+(d-\sigma)^2},
+h(\sigma)=(M-d,\sigma,d-\sigma)
 \]
-and the displayed selector is chosen exactly so that its tangent inequality holds on \([0,d]\).  Therefore the selected boundary point minimizes the objective over \(H_d\), and hence over all of \(K_d\). % lean: truncSeg_selector_le
-
-When \(\kappa>0\), the assumed admissibility of \((S,\lambda)\) gives that the displayed active-set point \(t^{\mathrm{rel}}\) lies in \(\Delta_M\) and minimizes \(\Phi\) over the full simplex. % lean: activeSetPoint_isMinimizer
-Applying the dichotomy just proved gives the two asserted alternatives: if \(t^{\mathrm{rel}}\in K_d\), it is already optimal on \(K_d\); if \(t^{\mathrm{rel}}_y+t^{\mathrm{rel}}_z<d\), the selected point \((M-d,s^\star,d-s^\star)\) is feasible and optimal on \(K_d\). % lean: weighted_simplex_truncation
-
-When \(\kappa=0\), a point \(t^{\mathrm{rel}}\) of the exposed \(\alpha\)-minimizing face minimizes the linear objective over \(\Delta_M\). % lean: exposedMinFace_isMinimizer
-The same dichotomy applies verbatim.  Thus, if the selected relaxed point lies in \(K_d\), it is optimal over \(K_d\); if its \(y+z\) mass is below \(d\), the constrained optimum lies on \(H_d\) at
+be the point of the boundary segment \(H_d\) with second coordinate \(\sigma\).  Since \(\beta_y=\beta_z=1\), evaluating the objective there gives the one-dimensional slice
 \[
-s^\star=\operatorname{truncSelector}(M,d,\alpha,\beta,0).
+g_d(\sigma):=\Phi\bigl(h(\sigma)\bigr)
+=\alpha_x(M-d)+\alpha_y\sigma+\alpha_z(d-\sigma)
++\kappa\,r(\sigma),
+\qquad
+r(\sigma)=\sqrt{A+\sigma^2+(d-\sigma)^2}.
 \]
-For \(\kappa=0\), the selector guards reduce to the ordered endpoint rule: \(s^\star=0\) when \(\alpha_y-\alpha_z\ge0\), and \(s^\star=d\) when \(\alpha_y-\alpha_z<0\). % lean: truncSelector
+% lean: wsObj_truncSeg_eq
+
+\emph{Step 1 (two-point convexity of \(\Phi\)).}  For \(u,w\in\mathbb R^{\mathcal I}\) and \(\theta\in[0,1]\),
+\[
+\Phi\bigl((1-\theta)u+\theta w\bigr)\le(1-\theta)\Phi(u)+\theta\Phi(w).
+\]
+Indeed the linear part is exactly additive, and \(t\mapsto\sqrt{\sum_i\beta_it_i^2}\) is the Euclidean norm of the vector with coordinates \(\sqrt{\beta_i}\,t_i\), so it obeys the triangle inequality and positive homogeneity; multiplying by \(\kappa\ge0\) preserves the inequality. % lean: weighted_sqrt_segment_le % lean: wsObj_segment_le
+
+\emph{Step 2 (the dichotomy from a relaxed minimizer).}  Let \(t^{\mathrm{rel}}\in\Delta_M\) satisfy \(\Phi(t^{\mathrm{rel}})\le\Phi(s)\) for every \(s\in\Delta_M\).
+
+If \(t^{\mathrm{rel}}\in K_d\), then since \(K_d\subseteq\Delta_M\) the same inequality holds for every \(s\in K_d\); this is the first alternative in both robustness regimes. % lean: trunc_from_minimizer
+
+Assume from now on \(t^{\mathrm{rel}}_y+t^{\mathrm{rel}}_z<d\).  Because \(t^{\mathrm{rel}}_y,t^{\mathrm{rel}}_z\ge0\), this forces \(d>0\).
+
+\emph{Step 3 (every feasible point is dominated on the face \(H_d\)).}  Let \(s\in K_d\) and put \(\Sigma=s_y+s_z\ge d\) and \(\Sigma^{\mathrm{rel}}=t^{\mathrm{rel}}_y+t^{\mathrm{rel}}_z<d\).  If \(\Sigma=d\) then \(s\) already lies on \(H_d\): its first coordinate is \(M-d\) by the mass constraint, so \(s=h(s_y)\) with \(0\le s_y\le d\), and we may take \(\sigma=s_y\).  If \(\Sigma>d\), set
+\[
+\theta=\frac{\Sigma-d}{\Sigma-\Sigma^{\mathrm{rel}}}\in[0,1],
+\qquad
+t^{\mathrm b}=(1-\theta)s+\theta\,t^{\mathrm{rel}} ,
+\]
+which is well defined since \(\Sigma-\Sigma^{\mathrm{rel}}>0\).  Then \(t^{\mathrm b}\in\Delta_M\) (a convex combination of simplex points) and
+\[
+t^{\mathrm b}_y+t^{\mathrm b}_z=(1-\theta)\Sigma+\theta\Sigma^{\mathrm{rel}}=\Sigma-\theta(\Sigma-\Sigma^{\mathrm{rel}})=d,
+\]
+so \(t^{\mathrm b}=h(\sigma)\) with \(\sigma=t^{\mathrm b}_y\in[0,d]\).  By Step 1 and \(\Phi(t^{\mathrm{rel}})\le\Phi(s)\),
+\[
+\Phi\bigl(h(\sigma)\bigr)=\Phi(t^{\mathrm b})
+\le(1-\theta)\Phi(s)+\theta\Phi(t^{\mathrm{rel}})
+\le\Phi(s).
+\]
+In either case there is \(\sigma\in[0,d]\) with \(\Phi(h(\sigma))\le\Phi(s)\). % lean: truncSeg_reduction
+
+\emph{Step 4 (the selector lies in \([0,d]\)).}  In the two endpoint branches \(s^\star\in\{0,d\}\subseteq[0,d]\) because \(d>0\).  In the interior branch both guards fail,
+\[
+|\delta|<\frac{\kappa d}{\sqrt{A+d^2}},
+\qquad\text{equivalently}\qquad
+\delta^2(A+d^2)<\kappa^2d^2 ,
+\]
+which forces \(\kappa>0\) and, since \(\delta^2d^2\le\delta^2(A+d^2)\), also \(\delta^2<\kappa^2\), so \(\kappa^2-\delta^2/2>0\) and
+\[
+W:=\sqrt{\frac{A+d^2/2}{\kappa^2-\delta^2/2}}
+\]
+is well defined with \(s^\star=(d-\delta W)/2\).  Moreover
+\[
+\delta^2W^2=\frac{2\delta^2A+\delta^2d^2}{2\kappa^2-\delta^2}<d^2
+\iff
+\delta^2(A+d^2)<\kappa^2d^2 ,
+\]
+so \(|\delta W|<d\) and hence \(0<s^\star<d\).  In all branches \(h(s^\star)=(M-d,s^\star,d-s^\star)\) has nonnegative coordinates (using \(d\le M\)), total mass \(M\), and \(s^\star+(d-s^\star)=d\); therefore
+\[
+t^\star=h(s^\star)\in K_d .
+\]
+% lean: truncSelector_mem
+
+\emph{Step 5 (the selector's sign condition).}  We claim that for every \(\sigma\in[0,d]\),
+\[
+0\le(\sigma-s^\star)\Bigl(r(s^\star)\,\delta+\kappa\,(2s^\star-d)\Bigr).
+\]
+If \(s^\star=0\), the branch guard reads \(\delta\sqrt{A+d^2}\ge\kappa d\), and \(r(0)=\sqrt{A+d^2}\), so the bracket \(\delta\sqrt{A+d^2}-\kappa d\) is nonnegative while \(\sigma-0\ge0\).  If \(s^\star=d\), the guard reads \(\delta\sqrt{A+d^2}\le-\kappa d\), and \(r(d)=\sqrt{A+d^2}\), so the bracket \(\delta\sqrt{A+d^2}+\kappa d\) is nonpositive while \(\sigma-d\le0\).  In the interior branch the bracket vanishes: with \(W\) as in Step 4 we have \(2s^\star-d=-\delta W\) and
+\[
+r(s^\star)^2=A+(s^\star)^2+(d-s^\star)^2
+=A+\frac{d^2}{2}+\frac{\delta^2W^2}{2}
+=\Bigl(\kappa^2-\frac{\delta^2}{2}\Bigr)W^2+\frac{\delta^2W^2}{2}
+=(\kappa W)^2 ,
+\]
+using \(W^2(\kappa^2-\delta^2/2)=A+d^2/2\); both \(r(s^\star)\) and \(\kappa W\) are nonnegative, so \(r(s^\star)=\kappa W\) and
+\[
+r(s^\star)\,\delta+\kappa(2s^\star-d)=\kappa W\delta-\kappa\delta W=0 .
+\]
+% lean: truncSelector_interior_stationary % lean: truncSelector_sign_core
+
+\emph{Step 6 (the selector minimizes the slice).}  Fix \(\sigma\in[0,d]\).  By Cauchy--Schwarz applied to the vectors \((\sqrt A,s^\star,d-s^\star)\) and \((\sqrt A,\sigma,d-\sigma)\),
+\[
+A+s^\star\sigma+(d-s^\star)(d-\sigma)\le r(s^\star)\,r(\sigma).
+\]
+% lean: truncSeg_cs_sqrt
+Subtracting \(r(s^\star)^2=A+(s^\star)^2+(d-s^\star)^2\) from both sides and using the algebraic identity
+\[
+A+s^\star\sigma+(d-s^\star)(d-\sigma)-r(s^\star)^2=(\sigma-s^\star)(2s^\star-d),
+\]
+we obtain \((\sigma-s^\star)(2s^\star-d)\le r(s^\star)\bigl(r(\sigma)-r(s^\star)\bigr)\); multiplying by \(\kappa\ge0\) and adding \(r(s^\star)\delta(\sigma-s^\star)\) to both sides gives, together with Step 5,
+\[
+0\le(\sigma-s^\star)\Bigl(r(s^\star)\delta+\kappa(2s^\star-d)\Bigr)
+\le r(s^\star)\Bigl(\delta(\sigma-s^\star)+\kappa\bigl(r(\sigma)-r(s^\star)\bigr)\Bigr).
+\]
+Since \(r(s^\star)>0\) (because \(d>0\) makes \((s^\star)^2+(d-s^\star)^2>0\)),
+\[
+\delta(\sigma-s^\star)+\kappa\bigl(r(\sigma)-r(s^\star)\bigr)\ge0,
+\qquad\text{i.e.}\qquad
+g_d(s^\star)\le g_d(\sigma),
+\]
+because \(g_d(\sigma)-g_d(s^\star)=\delta(\sigma-s^\star)+\kappa(r(\sigma)-r(s^\star))\). % lean: truncSeg_selector_le
+
+Combining Steps 3 and 6: for every \(s\in K_d\) there is \(\sigma\in[0,d]\) with \(\Phi(t^\star)=g_d(s^\star)\le g_d(\sigma)=\Phi(h(\sigma))\le\Phi(s)\), so
+\[
+t^\star=(M-d,s^\star,d-s^\star)\in K_d
+\qquad\text{and}\qquad
+\Phi(t^\star)\le\Phi(s)\ \text{ for every }s\in K_d .
+\]
+% lean: trunc_from_minimizer
+
+\emph{Step 7 (the two robustness regimes).}  For \(\kappa>0\), an admissible pair \((S,\lambda)\) has active-set point \(t^{\mathrm{rel}}\) lying in \(\Delta_M\) and minimizing \(\Phi\) over \(\Delta_M\) by \cref{obj:lem:weighted-simplex-active-set}; Steps 2--6 then give exactly the two stated alternatives. % lean: activeSetPoint_isMinimizer % lean: weighted_simplex_truncation
+
+For \(\kappa=0\), a point \(t^{\mathrm{rel}}\) of the exposed \(\alpha\)-minimizing face minimizes the linear objective \(\Phi\) over \(\Delta_M\), again by \cref{obj:lem:weighted-simplex-active-set}, so Steps 2--6 apply verbatim.  Under the stated tie convention the first alternative is selected whenever the face meets \(K_d\).  Finally, at \(\kappa=0\) the two selector guards read \(0\le\delta\) and \(\delta\le0\), so the interior branch is never taken and
+\[
+s^\star=\begin{cases}0,&\alpha_y-\alpha_z\ge0,\\ d,&\alpha_y-\alpha_z<0,\end{cases}
+\]
+which is the ordered endpoint rule. % lean: exposedMinFace_isMinimizer % lean: truncSelector
 \end{proof}

@@ -3,6 +3,7 @@ Copyright (c) 2026 Jiyuan Tan. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jiyuan Tan
 -/
+import Mathlib.Analysis.Calculus.Deriv.Add
 import Mathlib.Analysis.Calculus.Deriv.Inv
 import Mathlib.Analysis.Calculus.Deriv.Pow
 import Mathlib.Analysis.Calculus.Deriv.Mul
@@ -160,34 +161,33 @@ theorem momentEnvelope_hasDerivAt (t q : ℝ) (ht0 : t ≠ 0) (ht1 : t ≠ 1) :
       (1 * (q - t ^ 2) + (t - q) * (-(2 * t))) t := by
     have h1 : HasDerivAt (fun s : ℝ => s - q) 1 t := (hasDerivAt_id t).sub_const q
     have h2 : HasDerivAt (fun s : ℝ => q - s ^ 2) (-(2 * t)) t := by
-      have hc : HasDerivAt (fun _ : ℝ => q) 0 t := hasDerivAt_const t q
       have hp : HasDerivAt (fun s : ℝ => s ^ 2) (2 * t) t := by
         simpa using (hasDerivAt_pow 2 t)
-      change HasDerivAtFilter (fun s : ℝ => q - s ^ 2) (-(2 * t)) (nhds t ×ˢ pure t)
-      convert (hc.sub hp).hasDerivAtFilter using 1
-      · norm_num
-    simpa using h1.mul h2
+      exact HasDerivAt.const_sub q hp
+    exact h1.fun_mul h2
   have hD : HasDerivAt (fun s : ℝ => 4 * s * (1 - s)) (4 * (1 - t) + 4 * t * (-1)) t := by
     have h3 : HasDerivAt (fun s : ℝ => 4 * s) 4 t := by
       simpa using (hasDerivAt_id t).const_mul (4 : ℝ)
-    have h4 : HasDerivAt (fun s : ℝ => 1 - s) (-1) t := by
-      have hc : HasDerivAt (fun _ : ℝ => (1 : ℝ)) 0 t := hasDerivAt_const t (1 : ℝ)
-      change HasDerivAtFilter (fun s : ℝ => 1 - s) (-1) (nhds t ×ˢ pure t)
-      convert (hc.sub (hasDerivAt_id t)).hasDerivAtFilter using 1
-      · norm_num
-    simpa using h3.mul h4
+    have h4 : HasDerivAt (fun s : ℝ => 1 - s) (-1) t :=
+      HasDerivAt.const_sub (1 : ℝ) (hasDerivAt_id t)
+    exact h3.fun_mul h4
   have hDne : 4 * t * (1 - t) ≠ 0 := by
     have ht1' : (1 : ℝ) - t ≠ 0 := by
       intro h
       apply ht1
       linarith
     exact mul_ne_zero (mul_ne_zero (by norm_num) ht0) ht1'
-  have hderiv := hN.div hD hDne
-  unfold momentEnvelope
-  convert hderiv using 1
-  · unfold envelopeQuartic
+  have hderiv := hN.fun_div hD hDne
+  have hval : envelopeQuartic t q / (4 * t ^ 2 * (t - 1) ^ 2)
+      = ((1 * (q - t ^ 2) + (t - q) * (-(2 * t))) * (4 * t * (1 - t))
+            - (t - q) * (q - t ^ 2) * (4 * (1 - t) + 4 * t * (-1)))
+          / (4 * t * (1 - t)) ^ 2 := by
+    unfold envelopeQuartic
     field_simp [ht0, ht1]
     ring
+  unfold momentEnvelope
+  rw [hval]
+  exact hderiv
 
 /-- At a root `t` of the quartic, the family residual `momentEnvelope · q` is stationary. The
 maximizing root `t = μᵥ ∈ (q, √q)` therefore realizes the envelope value `ρ(v)`. -/

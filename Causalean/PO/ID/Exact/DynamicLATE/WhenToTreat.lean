@@ -93,7 +93,7 @@ theorem YofDofZ_eq_YofD_on_DofZEq (As : S.Assumptions) (z d : Fin 2 → Bool) :
     simpa [DofZ] using this
   have hd2 : S.D2ofZ z ω = d 1 := by
     have := congrFun hd 1
-    simpa [DofZ] using this
+    exact this
   -- Y disjoint from regime targets (uses distinctness Z_i ≠ Y, D_i ≠ Y).
   have hYdisj :
       _root_.Disjoint ({S.Y} : Finset P.V)
@@ -121,14 +121,12 @@ theorem YofDofZ_eq_YofD_on_DofZEq (As : S.Assumptions) (z d : Fin 2 → Bool) :
     rcases hv' with rfl | rfl
     · -- v = S.D1
       rw [treatmentRegime_assign_D1]
-      have : S.hD1bool (P.eval (S.encouragementRegime z) ω S.D1) = d 0 := by
-        simpa [D1ofZ, POVar.cf, d1Var] using hd1
+      have : S.hD1bool (P.eval (S.encouragementRegime z) ω S.D1) = d 0 := hd1
       have := congrArg S.hD1bool.symm this
       simpa using this
     · -- v = S.D2
       rw [treatmentRegime_assign_D2]
-      have : S.hD2bool (P.eval (S.encouragementRegime z) ω S.D2) = d 1 := by
-        simpa [D2ofZ, POVar.cf, d2Var] using hd2
+      have : S.hD2bool (P.eval (S.encouragementRegime z) ω S.D2) = d 1 := hd2
       have := congrArg S.hD2bool.symm this
       simpa using this
   -- Apply composition consistency: poVariable (r_z ⊔ r_d) {Y} = poVariable r_z {Y}.
@@ -421,7 +419,7 @@ theorem mixtureLATE_wald (As : S.Assumptions) (z : Fin 2 → Bool) :
           = (P.μ (S.DofZEq z z0)ᶜ).toReal := by
             rw [hset]
       _ = 1 - (P.μ (S.DofZEq z z0)).toReal := by
-            simpa using
+            simpa [MeasureTheory.measureReal_def] using
               (MeasureTheory.probReal_compl_eq_one_sub
                 (μ := P.μ) (s := S.DofZEq z z0) (S.measurableSet_DofZEq z z0))
       _ = 1 - S.obsProb z z0 := by
@@ -494,7 +492,7 @@ theorem cWhenToTreat_wald (As : S.Assumptions) (d : Fin 2 → Bool)
       fun ω => S.historyBundle1.condExpGiven (S.YofDofZ d) P.μ ω -
         S.historyBundle1.condExpGiven (S.YofDofZ z0) P.μ ω := by
     unfold POCFBundle.condExpGiven
-    simpa using
+    exact
       (MeasureTheory.condExp_sub (μ := P.μ)
         (f := S.YofDofZ d) (g := S.YofDofZ z0)
         (As.integrable_YofDofZ d) (As.integrable_YofDofZ z0)
@@ -558,7 +556,7 @@ theorem cMixtureLATE_wald (As : S.Assumptions) (z : Fin 2 → Bool) :
       fun ω => S.historyBundle1.condExpGiven (S.YofDofZ z) P.μ ω -
         S.historyBundle1.condExpGiven (S.YofDofZ z0) P.μ ω := by
     unfold POCFBundle.condExpGiven
-    simpa using
+    exact
       (MeasureTheory.condExp_sub (μ := P.μ)
         (f := S.YofDofZ z) (g := S.YofDofZ z0)
         (As.integrable_YofDofZ z) (As.integrable_YofDofZ z0)
@@ -613,7 +611,7 @@ theorem cMixtureLATE_wald (As : S.Assumptions) (z : Fin 2 → Bool) :
           S.historyBundle1.condExpGiven
             ((S.DofZEq z z0).indicator (fun _ => (1 : ℝ))) P.μ ω := by
       unfold POCFBundle.condExpGiven
-      simpa using
+      exact
         (MeasureTheory.condExp_sub (μ := P.μ)
           (f := fun _ : P.Ω => (1 : ℝ))
           (g := (S.DofZEq z z0).indicator (fun _ => (1 : ℝ)))

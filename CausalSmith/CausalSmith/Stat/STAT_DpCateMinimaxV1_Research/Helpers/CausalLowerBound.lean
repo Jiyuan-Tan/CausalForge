@@ -121,8 +121,8 @@ lemma causal_oracle_private_lower_bound_witness {d : ℕ}
   have hP0 : HolderCateClass d alpha beta gamma L e0 f0 f1 r0 x0 P0 := by
     apply cateWitnessLaw_mem_class alpha beta gamma L e0 f0 f1 r0 x0 Q 0 hQ hiidQ
       measurable_const (by simp) he0.le hehalf.le he0L
-    · simpa using hzeroBeta
-    · simpa using hzeroGamma
+    · exact hzeroBeta
+    · exact hzeroGamma
   have hiid0 : IidSampling P0 := cateWitnessLaw_iidSampling Q e0 hiidQ hQ.pxMarginal
     measurable_const (by simp) he0.le (by linarith)
   have hmu00 : ∀ x, P0.mu0 x = 0 := by intro x; simp [P0]
@@ -165,8 +165,8 @@ lemma causal_oracle_private_lower_bound_witness {d : ℕ}
     exact Measure.isProbabilityMeasure_map measurable_CateObs_X.aemeasurable
   refine ⟨c, cB, B, Q, hc, hcB, inferInstance, ?_, ?_, hBsmooth, hB0,
     hBbounds, hBsupp, ?_⟩
-  · simpa [P0] using hP0
-  · simpa [P0] using hiid0
+  · exact hP0
+  · exact hiid0
   intro eps del hbudget
   filter_upwards [Filter.eventually_atTop.2 ⟨1, fun n hn => hn⟩] with n hn
   have hnpos : 0 < n := lt_of_lt_of_le Nat.zero_lt_one hn

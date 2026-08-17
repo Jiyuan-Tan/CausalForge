@@ -58,7 +58,7 @@ lemma stdNormalCDF_nonneg (x : ℝ) : 0 ≤ stdNormalCDF x := cdf_nonneg _ x
 lemma stdNormalCDF_le_one (x : ℝ) : stdNormalCDF x ≤ 1 := cdf_le_one _ x
 
 /-- The CDF of an atomless probability measure invariant under reflection is symmetric. -/
-lemma cdf_neg_of_map_neg {μ : Measure ℝ} [IsProbabilityMeasure μ] [NoAtoms μ]
+lemma cdf_neg_of_map_neg {μ : Measure ℝ} [IsProbabilityMeasure μ] [NullSingletonClass μ]
     (hmap : μ.map (fun x : ℝ => -x) = μ) (t : ℝ) : cdf μ (-t) = 1 - cdf μ t := by
   have hreal : ∀ s : ℝ, cdf μ s = μ.real (Set.Iic s) := by
     intro s; exact cdf_eq_real _ s
@@ -77,7 +77,8 @@ of the Gaussian law and its atomlessness. -/
 lemma stdNormalCDF_neg (t : ℝ) : stdNormalCDF (-t) = 1 - stdNormalCDF t := by
   have hmap : (gaussianReal 0 1).map (fun x : ℝ => -x) = gaussianReal 0 1 := by
     rw [gaussianReal_map_neg, neg_zero]
-  haveI : NoAtoms (gaussianReal 0 1) := noAtoms_gaussianReal (v := 1) one_ne_zero
+  haveI : NullSingletonClass (gaussianReal 0 1) :=
+    nullSingletonClass_gaussianReal (v := 1) one_ne_zero
   exact cdf_neg_of_map_neg hmap t
 
 /-- `Φ → 0` at `-∞`. -/
@@ -87,7 +88,7 @@ lemma stdNormalCDF_tendsto_atBot : Tendsto stdNormalCDF atBot (𝓝 0) := tendst
 lemma stdNormalCDF_tendsto_atTop : Tendsto stdNormalCDF atTop (𝓝 1) := tendsto_cdf_atTop _
 
 /-- The CDF of an atomless real probability measure is continuous. -/
-lemma cdf_continuous_of_noAtoms (μ : Measure ℝ) [IsProbabilityMeasure μ] [NoAtoms μ] :
+lemma cdf_continuous_of_noAtoms (μ : Measure ℝ) [IsProbabilityMeasure μ] [NullSingletonClass μ] :
     Continuous (cdf μ) := by
   set f := cdf μ with hf
   refine continuous_iff_continuousAt.2 fun x => ?_
@@ -105,8 +106,9 @@ lemma cdf_continuous_of_noAtoms (μ : Measure ℝ) [IsProbabilityMeasure μ] [No
 
 /-- `Φ` is continuous: the standard normal has no atoms. -/
 lemma stdNormalCDF_continuous : Continuous stdNormalCDF := by
-  haveI : NoAtoms (gaussianReal 0 1) := noAtoms_gaussianReal (v := 1) one_ne_zero
-  simpa only [stdNormalCDF_def] using cdf_continuous_of_noAtoms (gaussianReal 0 1)
+  haveI : NullSingletonClass (gaussianReal 0 1) :=
+    nullSingletonClass_gaussianReal (v := 1) one_ne_zero
+  exact cdf_continuous_of_noAtoms (gaussianReal 0 1)
 
 /-- `Φ` is strictly monotone: the standard normal has full support. -/
 lemma stdNormalCDF_strictMono : StrictMono stdNormalCDF := by

@@ -363,7 +363,8 @@ private lemma integrable_YofDofZ {z0 z1 : 𝒵}
     | empty =>
         simp
     | insert a s has ih =>
-        simpa [Finset.sum_insert, has] using (hValid.hIntegrableY a).norm.add ih
+        simp only [Finset.sum_insert has]
+        exact (hValid.hIntegrableY a).norm.add ih
   exact hsum_int.mono' (S.measurable_YofDofZ z).aestronglyMeasurable hbound
 
 /-! ### Consistency bridges
@@ -513,7 +514,7 @@ lemma condExpYZ_left_eq_integral {z0 z1 : 𝒵}
           (S.cfContrastBundle z0 z1).jointValue ω (idxY i) else 0
     rw [hJV0]
     rw [Finset.sum_eq_single (S.DofZ z0 ω)]
-    · simp [hJVY]
+    · exact (hJVY _).symm.trans (if_pos rfl).symm
     · intro i _hi hi
       by_cases hEq : S.DofZ z0 ω = i
       · exact False.elim (hi hEq.symm)
@@ -542,7 +543,7 @@ lemma condExpYZ_left_eq_integral {z0 z1 : 𝒵}
   unfold YofDofZ
   rw [hJV0]
   rw [Finset.sum_eq_single (S.DofZ z0 ω)]
-  · simp [hJVY]
+  · exact (if_pos rfl).trans (hJVY _)
   · intro i _hi hi
     by_cases hEq : S.DofZ z0 ω = i
     · exact False.elim (hi hEq.symm)
@@ -591,7 +592,7 @@ lemma condExpYZ_right_eq_integral {z0 z1 : 𝒵}
           (S.cfContrastBundle z0 z1).jointValue ω (idxY i) else 0
     rw [hJV1]
     rw [Finset.sum_eq_single (S.DofZ z1 ω)]
-    · simp [hJVY]
+    · exact (hJVY _).symm.trans (if_pos rfl).symm
     · intro i _hi hi
       by_cases hEq : S.DofZ z1 ω = i
       · exact False.elim (hi hEq.symm)
@@ -620,7 +621,7 @@ lemma condExpYZ_right_eq_integral {z0 z1 : 𝒵}
   unfold YofDofZ
   rw [hJV1]
   rw [Finset.sum_eq_single (S.DofZ z1 ω)]
-  · simp [hJVY]
+  · exact (if_pos rfl).trans (hJVY _)
   · intro i _hi hi
     by_cases hEq : S.DofZ z1 ω = i
     · exact False.elim (hi hEq.symm)

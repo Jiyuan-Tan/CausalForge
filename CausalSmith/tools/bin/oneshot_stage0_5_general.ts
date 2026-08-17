@@ -33,24 +33,30 @@ import {
   buildGeneralTierVerdict,
   runGeneralReview,
 } from "../src/discovery/stages/d0_5_general.js";
+import { GENERAL_REROUTE_CAP } from "../src/discovery/stages/d0.js";
 import { loadState } from "../src/state.js";
 import type { PipelineContext } from "../src/types.js";
 import { NOVELTY_TARGETS, normalizeNoveltyTarget } from "../src/novelty.js";
 import { findCausalSmithRoot } from "../src/shared/repo_root.js";
 
 const DEBUG_ATTEMPT = 99;
-// Mirror stage0_5.ts: env-overridable directed-reroute cap (default 2).
-const REROUTE_CAP = (() => {
-  const n = Number.parseInt(process.env.CAUSALSMITH_GENERAL_REROUTE_CAP ?? "", 10);
-  return Number.isFinite(n) ? Math.min(6, Math.max(1, n)) : 2;
-})();
+// The LIVE cap, imported — not a local copy. This tool advertises itself as replicating
+// the boundary's routing, so a second definition here could drift from the one that
+// actually gates and print a decision the pipeline would not take.
+const REROUTE_CAP = GENERAL_REROUTE_CAP;
 
 
 async function main() {
   const rawArgs = process.argv.slice(2);
   const noteIdx = rawArgs.indexOf("--note");
   const notePath = noteIdx >= 0 ? rawArgs[noteIdx + 1] : undefined;
-  const positional = rawArgs.filter((a, i) => i !== noteIdx && i !== noteIdx + 1 && !a.startsWith("--"));
+  // Guard on `noteIdx >= 0`: with `--note` absent, indexOf returns -1 and the
+  // `i !== noteIdx + 1` test drops index 0 — i.e. the qid — silently shifting
+  // spec into qid and running the referee against the wrong (usually nonexistent)
+  // run instead of erroring.
+  const positional = rawArgs.filter(
+    (a, i) => !a.startsWith("--") && (noteIdx < 0 || (i !== noteIdx && i !== noteIdx + 1)),
+  );
   const [qid, spec, targetArg] = positional;
   if (!qid || !spec) {
     console.error(

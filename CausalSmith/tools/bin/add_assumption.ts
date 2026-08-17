@@ -17,6 +17,7 @@
  *     [--classification faithful-refinement|regularity-bookkeeping] \
  *     [--source "<where it comes from>"] [--decision "<key>=<design decision note>"]
  *   npx tsx tools/bin/add_assumption.ts <qid> <spec> --label L --statement -   # stdin
+ *   npx tsx tools/bin/add_assumption.ts <qid> <spec> --remove L                # remove by label
  *   npx tsx tools/bin/add_assumption.ts <qid> <spec> --show                    # list current
  */
 import { existsSync, readFileSync } from "node:fs";
@@ -39,6 +40,7 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const cli = readArgs(args);
   const show = args.includes("--show");
+  const remove = cli.value("--remove");
   const label = cli.value("--label");
   let statement = cli.value("--statement");
   const classification = cli.value("--classification");
@@ -47,10 +49,10 @@ async function main(): Promise<void> {
   const positional = args.filter((a, i) => !a.startsWith("--") && !args[i - 1]?.startsWith("--"));
   const [qid, spec] = positional;
 
-  if (!qid || !spec || (!show && (!label || statement === undefined))) {
+  if (!qid || !spec || (!show && !remove && (!label || statement === undefined))) {
     console.error(
       'Usage: add_assumption.ts <qid> <spec> --label "<id>" --statement "<stmt>" ' +
-        `[--classification ${ACCEPTED_CLASSIFICATIONS.join("|")}] [--source "<x>"] [--decision "<key>=<note>"] | --show`,
+        `[--classification ${ACCEPTED_CLASSIFICATIONS.join("|")}] [--source "<x>"] [--decision "<key>=<note>"] | --remove "<id>" | --show`,
     );
     process.exitCode = 1;
     return;
@@ -85,6 +87,20 @@ async function main(): Promise<void> {
 
   if (show) {
     console.log(JSON.stringify(state.added_assumptions ?? [], null, 2));
+    return;
+  }
+
+  if (remove) {
+    const existing = state.added_assumptions ?? [];
+    const kept = existing.filter((a) => a.label !== remove);
+    if (kept.length === existing.length) {
+      console.error(`No assumption labelled '${remove}' exists for ${qid} / ${spec}.`);
+      process.exitCode = 1;
+      return;
+    }
+    state.added_assumptions = kept;
+    await saveState(repoRoot, qid, spec, state);
+    console.log(`Removed assumption '${remove}' for ${qid} / ${spec} (${kept.length} total).`);
     return;
   }
 

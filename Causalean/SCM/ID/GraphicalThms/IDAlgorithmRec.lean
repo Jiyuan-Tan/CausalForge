@@ -401,7 +401,10 @@ theorem doAncestralDistrictDensity_recovered_from_obs_rec
           (fixAncestralSet M X hObs hFix Y)).cComponentSet
       simpa [fixTruncCComponentSet] using hS
     have hSHobs : S ⊆ H.observed := H.cComponentSet_subset_observed S hScomp
-    simpa [H, D, fixObservedAncestralSet] using hSHobs
+    -- `H.observed` is `fixAncestralSet … ∩ MX.observed` only after delta-unfolding
+    -- `SWIGGraph.induce`, whose body is `let`-structured: simp will not do it, and
+    -- the folded/unfolded pair is defeq only at default transparency.
+    exact hSHobs
   have hSX : ∀ n ∈ X, SWIGNode.random n ∉ S := by
     intro n hn hnS
     have hnD : SWIGNode.random n ∈ D := hSD hnS
@@ -584,6 +587,13 @@ theorem doObsKernelAncestralMarginal_heq_of_obsDensity_heq_rec
   subst aco₂
   apply heq_of_eq
   refine ProbabilityTheory.Kernel.ext (fun s => ?_)
+  -- `s` is typed against the *first* model's fixed-value space, so the `∀ s`
+  -- instances above are only usable after one application at default
+  -- transparency; instance synthesis alone cannot bridge the two (definitionally
+  -- equal) fixed-value types.  Specialize them here so the shapes match
+  -- syntactically at every later call site.
+  haveI hfin1s := hfin1 s
+  haveI hfin2s := hfin2 s
   refine MeasureTheory.Measure.eq_of_rnDeriv_eq
     (doObsKernelAncestralMarginal_dominated _ X hvalid₁.1 hvalid₁.2.1 Y ref href s)
     (doObsKernelAncestralMarginal_dominated _ X hvalid₂.1 hvalid₂.2.1 Y ref href s) ?_
@@ -645,7 +655,7 @@ theorem doObsKernelAncestralMarginal_heq_of_obsDensity_heq_rec
     rcases hIDM with ⟨hX, hIDrest⟩
     have hSreach : S ∈ ((M₁'.toSWIGGraph.splitMono X hX.1 hX.2).induce
         ((M₁'.toSWIGGraph.splitMono X hX.1 hX.2).dag.ancestralSet Y)).cComponentSet := by
-      simpa [H, fixAncestralSet, fixTruncCComponentSet] using hS
+      exact hS
     let C := containingCComponent M₁'.toSWIGGraph S
     have hReach : CFactorReachableRec M₁'.toSWIGGraph C S := by
       simpa [C] using hIDrest.2.2 S hSreach
@@ -695,10 +705,10 @@ theorem doObsKernelAncestralMarginal_heq_of_obsDensity_heq_rec
       hExtendX
     have t2 := doAncestralDistrictDensity_recovered_from_obs_rec M₂'
       X hvalid₂.2.2.2 hvalid₂.1 hvalid₂.2.1 Y ref href s S C
-      (by simpa [H, fixTruncCComponentSet] using hS)
+      (by exact hS)
       (by simpa [M₁', M₂'] using hReach) (by simpa [M₁', M₂'] using hCmem)
-      hpos₂' hYX extend (by simpa [M₁', M₂'] using hExtend)
-      (by simpa [M₁', M₂'] using hExtendX)
+      hpos₂' hYX extend (by exact hExtend)
+      (by exact hExtendX)
     have hrec := recoveredFactorRec_heq_of_obsKernel_heq M₁' M₂' ref C S rfl hobs
     have hrec_fun : (fun s' => recoveredFactorRec M₁' ref s' C S) =
         (fun s' => recoveredFactorRec M₂' ref s' C S) :=

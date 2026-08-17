@@ -66,4 +66,8 @@ def arrowTaggedOrbit {R : Type*} (m : ℕ) (b : Arrow) (θ : ParamSpace R m) :
     Set (Arrow × ParamSpace R m) :=
   { p | ∃ π : Equiv.Perm (Fin m), p = admissibleSourceSwapTagged m π (b, θ) }
 
+/-- Provides a procedure that decides whether two arrow indices are equal, that is, whether
+two tags both name the forward orientation, both name the reverse one, or differ. -/
+add_decl_doc instDecidableEqArrow
+
 end CausalSmith.ExactID.EID_LingamDirectionMinOrderV1

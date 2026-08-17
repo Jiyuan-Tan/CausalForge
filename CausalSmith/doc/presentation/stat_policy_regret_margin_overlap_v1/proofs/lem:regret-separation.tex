@@ -1,58 +1,83 @@
 \begin{proof}[Proof of \cref{obj:lem:regret-separation}]
-The proof takes
+Take the separation constant
 \[
-c_{\mathrm{sep}}=\frac{\min\{c_B,1\}}{4}>0
+c_{\mathrm{sep}}=\frac{\min\{c_B,1\}}{4}>0,
 \]
-and works for all sufficiently large \(n\) for which the witness-membership result above is available for both signs. % lean: csep; witness_membership
-Let \(h=h_n\), and shrink the active interval to
+and work at all sufficiently large \(n\) for which \cref{obj:lem:witness-membership} applies to both signs, so that \(P_{n,+},P_{n,-}\in\mathcal P_{\alpha,\gamma}\) and their oracle rules are
+\[
+\pi^\star_{P_{n,+}}(x)=1
+\qquad\text{and}\qquad
+\pi^\star_{P_{n,-}}(x)=\mathbf 1\{x\notin B_n\}.
+\]
+% lean: witness_membership
+Write \(h=h_n\), \(\tau_\pm=\tau_{P_{n,\pm}}\), and shrink the active block to
 \[
 E=[0,\ell],
 \qquad
-\ell=\min\{c_B,1\}h^\alpha .
+\ell=\min\{c_B,1\}\,h^\alpha .
 \]
-Since \(h\le1\), this interval lies in \([0,1]\), and its covariate mass is exactly \(\ell\). % lean: hEreal; restricted_volume_real_Icc_zero
-Moreover \(E\subseteq B_n\). % lean: hxblock
+Since \(0<h\le1\) and \(\alpha\ge0\), we have \(0\le h^\alpha\le1\) and hence \(0\le\ell\le1\); as \(P_X\) is Lebesgue measure restricted to \([0,1]\), the covariate mass of \(E\) is exactly
+\[
+P_X(E)=\ell .
+\]
+% lean: restricted_volume_real_Icc_zero
+Moreover \(\ell=\min\{c_B,1\}h^\alpha\le c_Bh^\alpha\), so
+\[
+E\subseteq B_n=\{x:0\le x\le c_Bh^\alpha\}.
+\]
 
-Fix any policy \(\pi\in\Pi\). Let \(D_+\) and \(D_-\) be its disagreement sets under \(P_{n,+}\) and \(P_{n,-}\), and set
+Fix any policy \(\pi\in\Pi\).  Let \(D_+\) and \(D_-\) be its disagreement sets under \(P_{n,+}\) and \(P_{n,-}\), and set
 \[
-B_+=D_+\cap\{h/2<|\tau_+(X)|\},
+B_+=D_+\cap\{x:h/2<|\tau_+(x)|\},
 \qquad
-B_-=D_-\cap\{h/2<|\tau_-(X)|\}.
+B_-=D_-\cap\{x:h/2<|\tau_-(x)|\}.
 \]
-The large-contrast regret bound, applied separately under the two well-formed bounded witness laws, yields
+Under each of the two witness laws, which are well formed with bounded outcomes, the welfare identity of \cref{obj:thm:welfare-identity} writes the regret as \(\int|\tau|\mathbf 1_D\,dP_X\) with a nonnegative integrand exceeding \(h/2\) on the respective set \(B_\pm\); restricting the integral to that set therefore gives
 \[
-\frac h2 P_X(B_+)\le R_{P_{n,+}}(\pi),
+\frac h2\,P_X(B_+)\le R_{P_{n,+}}(\pi),
 \qquad
-\frac h2 P_X(B_-)\le R_{P_{n,-}}(\pi).
-\] % lean: regret_disagreement_large_contrast_le; hRplus; hRminus
-On \(E\), the plus oracle is identically \(1\), the minus oracle is identically \(0\), and both contrasts have magnitude \(h>h/2\). % lean: hoptp_true; hoptm_false; hbigp; hbigm
-Thus any binary policy must disagree with at least one of the two oracles on each point of \(E\), so
+\frac h2\,P_X(B_-)\le R_{P_{n,-}}(\pi).
+\]
+% lean: regret_disagreement_large_contrast_le
+
+On \(E\subseteq B_n\), the contrasts are \(\tau_+(x)=h\) and \(\tau_-(x)=-h\), so both have magnitude \(h>h/2\); and the two oracle rules take opposite values there,
+\[
+\pi^\star_{P_{n,+}}(x)=1,
+\qquad
+\pi^\star_{P_{n,-}}(x)=0
+\qquad (x\in E).
+\]
+Since \(\pi(x)\in\{0,1\}\), it differs from at least one of these two values at every \(x\in E\): if \(\pi(x)=1\) then \(x\in D_-\), and if \(\pi(x)=0\) then \(x\in D_+\).  Combined with the contrast bound this gives
 \[
 E\subseteq B_+\cup B_- .
-\] % lean: hEsubset
-The two witness laws have the same covariate marginal, hence
+\]
+The two witness laws share the covariate marginal \(P_X\), so by monotonicity and subadditivity,
 \[
-\ell\le P_X(B_+)+P_X(B_-).
-\] % lean: hmeasure
-Multiplying by \(h/2\) and using the preceding regret bounds gives
+\ell=P_X(E)\le P_X(B_+)+P_X(B_-).
+\]
+Multiplying by \(h/2>0\) and inserting the two regret bounds gives
 \[
 \frac h2\,\ell
+\le \frac h2 P_X(B_+)+\frac h2 P_X(B_-)
 \le R_{P_{n,+}}(\pi)+R_{P_{n,-}}(\pi).
-\] % lean: hsumR
-Since \(h^{1+\alpha}=h\,h^\alpha\), this is
+\]
+Since \(h^{1+\alpha}=h\cdot h^\alpha\) and \(\ell=\min\{c_B,1\}h^\alpha\), the left-hand side is
 \[
+\frac h2\,\ell=\frac{\min\{c_B,1\}}{2}\,h^{1+\alpha},
+\qquad\text{so}\qquad
 \frac{\min\{c_B,1\}}{2}h^{1+\alpha}
 \le R_{P_{n,+}}(\pi)+R_{P_{n,-}}(\pi).
-\] % lean: hpow_add; hsumR'
-Finally,
+\]
+Finally, a sum of two reals is at most twice their maximum,
 \[
 R_{P_{n,+}}(\pi)+R_{P_{n,-}}(\pi)
 \le 2\max\{R_{P_{n,+}}(\pi),R_{P_{n,-}}(\pi)\},
 \]
-so
+so dividing by \(2\),
 \[
 \max_{\sigma\in\{+,-\}}R_{P_{n,\sigma}}(\pi)
-\ge c_{\mathrm{sep}}h_n^{1+\alpha}.
-\] % lean: hmaxsum; htarget
-Since \(\pi\in\Pi\) was arbitrary, this pointwise bound holds for every policy in \(\Pi\) for all such sufficiently large \(n\).
+\ge \frac{\min\{c_B,1\}}{4}\,h_n^{1+\alpha}
+= c_{\mathrm{sep}}\,h_n^{1+\alpha}.
+\]
+Since \(\pi\in\Pi\) was arbitrary, this holds for every policy in \(\Pi\), for all such sufficiently large \(n\). % lean: regret_separation
 \end{proof}

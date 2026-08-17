@@ -263,7 +263,8 @@ lemma induce_latentProduct_eq_map (M : Causalean.SCM N Ω) (R : Finset (SWIGNode
   rw [SCM.latentProduct, SCM.latentProduct]
   rw [measure_pi_map_valuesProjection (hJI := induce_unobserved_subset M R hR)
     (μ := fun u : {u // u ∈ M.unobserved} => M.latentDist u)]
-  simp [SCM.induce]
+  simp only [SCM.induce]
+  rfl
 
 -- ============================================================
 -- § 2b. Evaluation-map bridge for the induced sub-SCM

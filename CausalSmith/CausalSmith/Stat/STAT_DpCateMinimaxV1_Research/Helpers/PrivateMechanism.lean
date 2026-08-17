@@ -481,9 +481,9 @@ local instance matrixBorelSpace (p : ℕ) :
 private theorem measurable_matrix_iff {α : Type*} [MeasurableSpace α] {p : ℕ}
     (f : α → Matrix (Fin p) (Fin p) ℝ) :
     Measurable f ↔ ∀ i j, Measurable (fun x => f x i j) := by
-  change (@Measurable α (Fin p → Fin p → ℝ) _ (matrixMeasurableSpace p) f) ↔
+  change (@Measurable α (Fin p → Fin p → ℝ) _ MeasurableSpace.pi
+      (fun x i j => f x i j)) ↔
     ∀ i j, Measurable (fun x => f x i j)
-  unfold matrixMeasurableSpace
   simp only [measurable_pi_iff]
 
 /-- Matrix inversion is measurable on finite real matrices, with singular matrices

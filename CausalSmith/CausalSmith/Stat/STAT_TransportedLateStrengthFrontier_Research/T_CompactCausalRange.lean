@@ -82,7 +82,7 @@ lemma ivRandomization_slice_eq_withDensity
         P.propensity n (fullX o) :=
       (P.propensity_measurable n).comp hFullX
     cases z
-    · simpa [w] using measurable_const.sub hecomp
+    · simpa [w] using measurable_const.fun_sub hecomp
     · simpa [w] using hecomp
   have hsourceX := sourceXLaw_eq_populationXLaw_source P n hSourceFacts
   have hoverlapPop : ∀ᵐ o ∂μ,
@@ -678,6 +678,7 @@ theorem compact_causal_range
         exact integral_congr_ae hOutcome.2.symm
       _ = ∫ o, (P.assignmentOutcome n true o -
             P.assignmentOutcome n false o) ∂populationLaw P n false := by
+        unfold targetXLaw
         simpa using (hOutcome.1 false Set.univ MeasurableSet.univ).symm
       _ = ∫ o, (derivedAssignmentOutcome o true -
             derivedAssignmentOutcome o false) ∂populationLaw P n false := by
@@ -777,6 +778,7 @@ theorem compact_causal_range
         hReceipt.2.symm
       _ = ∫ o, (boolReal (fullD1 o) - boolReal (fullD0 o))
             ∂populationLaw P n false := by
+        unfold targetXLaw
         simpa using (hReceipt.1 false Set.univ MeasurableSet.univ).symm
       _ = ∫ o, (if fullD1 o = true ∧ fullD0 o = false
             then (1 : ℝ) else 0) ∂populationLaw P n false := by

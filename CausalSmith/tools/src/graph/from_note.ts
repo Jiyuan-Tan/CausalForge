@@ -20,10 +20,11 @@ export function objIdToNodeId(objId: string): string {
 }
 
 /** Inverse of objIdToNodeId: "t1"→"T-1", "p1b"→"P-1b", "a2"→"A-2", "s1"→"S-1".
- *  Ids without a single [plats]-letter + digit prefix (e.g. "setup", "aux_foo")
- *  pass through unchanged. */
+ *  The legacy graph form is deliberately lowercase. Case-sensitive exact ids such as `T1`
+ *  are agent/core ids and pass through unchanged, so they cannot collapse onto legacy `t1`.
+ *  Other ids (e.g. "setup", "aux_foo") also pass through unchanged. */
 export function nodeIdToObjId(nodeId: string): string {
-  const m = nodeId.match(/^([plats])(\d[\w]*)$/i);
+  const m = nodeId.match(/^([plats])(\d[\w]*)$/);
   return m ? `${m[1].toUpperCase()}-${m[2]}` : nodeId;
 }
 

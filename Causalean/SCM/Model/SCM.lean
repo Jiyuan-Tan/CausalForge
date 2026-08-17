@@ -234,7 +234,7 @@ theorem observed_parent_index_lt (M : Causalean.SCM N Ω) {n : ℕ}
   letI := M.topoLinearOrder
   have hp_lt : (⟨p, hobs⟩ : {v // v ∈ M.observed}) < M.observedAt ⟨n, hn⟩ := by
     change p < (M.observedAt ⟨n, hn⟩).val
-    simpa [SCM.topoLinearOrder] using M.dag.topoOrder_lt p _ hparent
+    exact M.dag.topoOrder_lt p _ hparent
   have hidx :
       (M.observed.orderIsoOfFin rfl).symm ⟨p, hobs⟩ <
         (M.observed.orderIsoOfFin rfl).symm (M.observedAt ⟨n, hn⟩) :=

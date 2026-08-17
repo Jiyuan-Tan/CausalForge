@@ -69,15 +69,15 @@ theorem Tendsto_dist.tendsto_measure_of_null_frontier
   have hpm := MeasureTheory.ProbabilityMeasure.tendsto_measure_of_null_frontier_of_tendsto
       (μs := μs) (μ := ν) hX (E := E) hE'
   have hreal := NNReal.continuous_coe.tendsto _ |>.comp hpm
-  simpa [μs, ν, ENNReal.coe_toNNReal_eq_toReal] using hreal
+  simpa [μs, ν, ENNReal.coe_toNNReal_eq_toReal, Function.comp_def] using hreal
 
 /-- The standard normal has no atom at any real point. -/
 theorem gaussianMeasure_zero_one_singleton (x : ℝ) :
     gaussianMeasure 0 1 ({x} : Set ℝ) = 0 := by
-  haveI : NoAtoms (gaussianMeasure 0 1) := by
+  haveI : NullSingletonClass (gaussianMeasure 0 1) := by
     unfold gaussianMeasure
-    exact ProbabilityTheory.noAtoms_gaussianReal (by norm_num)
-  exact MeasureTheory.NoAtoms.measure_singleton x
+    exact ProbabilityTheory.nullSingletonClass_gaussianReal (by norm_num)
+  exact MeasureTheory.NullSingletonClass.measure_singleton x
 
 /-- The standard normal gives zero mass to the boundary of a symmetric
 closed interval. -/
@@ -94,7 +94,7 @@ theorem gaussianMeasure_zero_one_frontier_Icc
             ≤ gaussianMeasure 0 1 ({-z} : Set ℝ) + gaussianMeasure 0 1 ({z} : Set ℝ) :=
               measure_union_le _ _
         _ = 0 := by simp [gaussianMeasure_zero_one_singleton])
-    (zero_le _)
+    zero_le
 
 /-! ## Generic studentized CLT -/
 

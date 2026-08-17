@@ -1,0 +1,830 @@
+{
+  "qid": "stat_reversekl_two_coverage",
+  "specialization": "linear_exact_shell",
+  "cluster": "stat",
+  "target_subdirectory": "CausalSmith/Stat/STAT_ReverseklTwoCoverage_Research",
+  "feasibility": "formalizable-now",
+  "namespace": "ReverseKLTwoCoverage",
+  "design_decisions": {
+    "f2.5-discrete-support": "The paper treats its finite supports as finite-dimensional Euclidean coordinates and asserts Borel-measurable selectors; measurable-singleton instances expose exactly that standing structure in Lean."
+  },
+  "added_assumptions": [
+    {
+      "label": "finite-support-discrete-measurability",
+      "statement": "The finite context and action supports carry measurable singleton structures (equivalently, the intended discrete/Borel measurable structures).",
+      "source": "writeup.tex:74-77,134,380,779-795",
+      "classification": "regularity-bookkeeping",
+      "lean_realization": "[MeasurableSpace X] [MeasurableSingletonClass X] [MeasurableSpace A] [MeasurableSingletonClass A] standing instances on the finite supports, carried by the S1 world and re-stated in the setup of every declaration that asserts measurability of a selector, of the support-repair operator, or of decision-class membership.",
+      "not_a_core_node": "This is ambient regularity bookkeeping introduced by design decision f2.5-discrete-support, NOT a core assumption node. It is deliberately NOT minted as a new `ass:` node (P1 forbids inventing nodes); it lives in the S1/S2 world layer and in the notes of the nodes it scopes."
+    }
+  ],
+  "citations": [
+    {
+      "id": "cite:zhao-2026-uniform-square-comparison",
+      "title": "Towards a Sharp Analysis of Offline Policy Learning for f-Divergence-Regularized Contextual Bandits",
+      "authors": "Q. Zhao, K. Ji, H. Zhao, T. Zhang, and Q. Gu",
+      "year": 2026,
+      "cite": "ZhaoJiZhaoZhangGu2026SharpFDivergence",
+      "locator": "Appendix D.1, Lemma D.1, arXiv:2502.06051v3",
+      "url": "https://arxiv.org/abs/2502.06051",
+      "statement": "Uniform empirical-vs-population squared-difference comparison over a bounded function class controlled by its sup-norm covering number.",
+      "used_by_node": "lem:zhao-uniform-square-comparison",
+      "verbatim_statement": "For any policy π and state-action pairs {(s_i,a_i)} generated i.i.d. from ρ × π, and ε_c < 1, with probability at least 1−δ, for any g_1 and g_2 we have E_{ρ×π}[(g_1(s,a)−g_2(s,a))²] ≤ (2/n)∑_{i=1}^n(g_1(s_i,a_i)−g_2(s_i,a_i))² + (32/(3n))log(2N_F(ε_c)/δ) + 10ε_c, where N_F(ε_c) is the ε_c-covering number of F.",
+      "attestation": {
+        "by": "main",
+        "note": "Retrieved by main on 2026-07-25 from the lawful arXiv v3 source package at https://arxiv.org/e-print/2502.06051v3; checked main.tex Appendix D.1 local Lemma D.1.",
+        "at": "2026-07-25T03:13:05.613Z"
+      }
+    },
+    {
+      "id": "cite:weigand-2026-measurable-maximum",
+      "title": "Adversarial Flows: A Gradient Flow Characterization of Adversarial Attacks",
+      "authors": "L. Weigand, T. Roith, and M. Burger",
+      "year": 2026,
+      "cite": "WeigandRoithBurger2026MeasurableMaximum",
+      "locator": "Appendix F, Theorem F.3",
+      "doi": "10.1017/S0956792525100120",
+      "url": "https://doi.org/10.1017/S0956792525100120",
+      "statement": "Measurable maximum theorem: measurability of the value function and existence of a measurable maximizing selector for a Caratheodory objective over a weakly measurable compact-valued correspondence.",
+      "used_by_node": "lem:measurable-maximum-theorem",
+      "verbatim_statement": "Let X be a separable metrizable space and (S,Σ) a measurable space. Let φ:S⇒X be a weakly measurable correspondence with nonempty compact values, and suppose f:S×X→R is a Carathéodory function. Define m(s)=max_{x∈φ(s)}f(s,x) and μ(s)={x∈φ(s):f(s,x)=m(s)}. Then m is measurable; μ has nonempty compact values; and μ is measurable and admits a measurable selector.",
+      "attestation": {
+        "by": "main",
+        "note": "Retrieved by main on 2026-07-25 from the open-access Cambridge University Press source PDF for DOI 10.1017/S0956792525100120, Appendix F, Theorem F.3.",
+        "at": "2026-07-25T03:13:07.387Z"
+      }
+    }
+  ],
+  "env": [
+    {
+      "id": "S1",
+      "world": "Fixed public contextual-bandit experiment E=(X,A,phi,pi_ref,eta) over finite supports carrying their standing discrete/Borel measurable structures, with a bounded linear-reward one-observation law P over S x [0,1], i.i.d. sampling, and the extended reverse-KL objective J_{eta,P} valued in R u {-infinity}",
+      "binds_symbols": [
+        "d",
+        "n",
+        "\\epsilon",
+        "\\eta",
+        "C",
+        "D",
+        "\\delta_n",
+        "\\mathcal X",
+        "\\mathcal A",
+        "S",
+        "X",
+        "A",
+        "Y",
+        "\\rho",
+        "\\phi",
+        "\\theta",
+        "r_\\theta",
+        "\\pi_{\\mathrm{ref}}",
+        "\\mathfrak E",
+        "P",
+        "P^{\\otimes n}",
+        "Z_i",
+        "\\mathcal D_n",
+        "J_{\\eta,P}",
+        "\\pi_P^\\star",
+        "\\Lambda_{\\mathrm{ref}}",
+        "\\Lambda_P^\\star",
+        "C_P",
+        "D_P",
+        "D_{2,P}",
+        "e_{(x,a)}",
+        "h",
+        "T"
+      ],
+      "binds_sampling_model": true,
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Sample.PiTransport"
+      ],
+      "bypass": "bypass-justified",
+      "notes": "DISCRETE-SUPPORT SYNC (this round, design decision f2.5-discrete-support + added assumption finite-support-discrete-measurability): this S-block is the CARRIER of the standing measurable structure on the finite supports. The world now fixes [MeasurableSpace X] [MeasurableSingletonClass X] [MeasurableSpace A] [MeasurableSingletonClass A] as ambient instances, matching the core's def:common-experiment ('Fix the finite supports X, A, carrying their intended discrete/Borel measurable structures') and sampling_model.design ('The finite supports carry their intended discrete/Borel measurable structures'). These are instance arguments of the world, NOT a new core assumption node: P1 forbids inventing nodes, and the added assumption is classified regularity-bookkeeping. Every downstream measurability claim in this plan (the finite-dimensional selector helper at def:prediction-polytope-learner, the support-repair operator at def:minimax-risk, and the cited separable-metrizable interface at lem:measurable-maximum-theorem) is discharged against THESE instances rather than re-deriving a measurable structure per node. EXTENDED-KL SYNC (this round): J_{eta,P} is bound here and its core type is now an EXTENDED-real functional into R u {-infinity}, under the standard convention p log(p/0)=+infinity for p>0 and 0 log(0/q)=0; a policy putting positive mass off supp pi_ref at a positive-rho-mass context has objective -infinity and regret +infinity. Its restriction to reference-supported policies is finite and real valued, which is the restriction every Gibbs learner in this plan lands in. MODULE-RESOLUTION FIX (round 3): dropped the non-resolving module path `Causalean.Stat.Concentration.Hoeffding` from this S-block. Verified on disk that no `Causalean/Stat/Concentration/Hoeffding.lean` exists — the Hoeffding tail lives one level deeper at `Causalean/Stat/Concentration/TailBounds/Hoeffding.lean` (module `Causalean.Stat.Concentration.TailBounds.Hoeffding`), alongside Bernstein.lean and BinomialCount.lean. It is also unused by this S-block: the emitted S1 carrier file Basic.lean imports exactly Causalean.Stat.Sample.PiTransport and Causalean.Stat.Minimax.MinimaxRisk (S2), and every tail-bound reuse this plan actually needs is already declared at node level under the resolving `Causalean.Stat.Concentration.TailBounds.*` paths (lem:multinomial-max-count -> TailBounds.BinomialCount, lem:uniform-gibbs-radius-comparison -> TailBounds.Bernstein). Removing the stale entry restores P6 (every module path resolves) and keeps the S-block faithful to the emitted Lean. SYNC-BACK (F2): the planned module Causalean.Stat.IIDSample does not exist at the current substrate path; the IIDSample structure is exported by Causalean.Stat.Sample and the finite product-law transport is Causalean.Stat.Sample.PiTransport. Trace: surveyed Causalean.PO (POManskiIVSystem/Backdoor/ATE/ATT), SCM.Model, and Stat for a contextual-bandit reverse-KL DGP world -> not found; the PO/SCM worlds are causal-identification abstractions at a different level than a finite decision-theoretic offline bandit. Reuse the finite i.i.d. sampling scaffold but build the Gibbs policy pi_P^star, KL-regularized welfare J_{eta,P}, and feature covariances Lambda over Mathlib. STANDARD-BOREL SYNC (round 5, required by the GENERAL-CONDITIONAL re-plan of lem:bounded-projection-concentration): this world also records that the sample space Omega = (S x [0,1])^n is NONEMPTY and STANDARD BOREL — a finite product of a finite discrete space with the unit interval — which is exactly the ambient hypothesis Mathlib's regular conditional distribution `ProbabilityTheory.condExpKernel mu m` and the conditional sub-Gaussian layer `ProbabilityTheory.HasCondSubgaussianMGF` require. This is a property of the world already fixed by the sampling model (it is derived, not assumed: it needs no new core node and no new added assumption), and it is what lets the conditional concentration lemma be proved for an ARBITRARY conditioning sub-sigma-field rather than only for the finite-cell partition."
+    },
+    {
+      "id": "S2",
+      "world": "Minimax decision-theoretic frontier: prediction polytope, confidence set, deployed Gibbs learners, minimax regularized regret and sample complexity over the exact (C,D) shell",
+      "binds_symbols": [
+        "\\mathcal F",
+        "L_n",
+        "\\widehat f",
+        "\\|\\cdot\\|_n",
+        "\\mathcal Q_n",
+        "\\underline J_n",
+        "\\widehat\\pi",
+        "\\mathcal L_n(\\mathfrak E)",
+        "\\mathcal M_{\\mathfrak E}(d,C,D,\\eta)",
+        "\\mathcal M(d,C,D,\\eta)",
+        "\\mathfrak R_{n,\\mathfrak E}",
+        "\\mathfrak R_n",
+        "N^\\star_{\\mathfrak E}",
+        "N^\\star",
+        "\\widehat\\pi_{\\mathrm{ERM}}",
+        "\\kappa_\\eta",
+        "c_0"
+      ],
+      "binds_sampling_model": false,
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Minimax.MinimaxRisk",
+        "Causalean.Stat.Concentration.Covering.CoveringNumber"
+      ],
+      "bypass": "bypass-justified",
+      "notes": "DECISION-CLASS SYNC (this round — SUPERSEDES the prior 'full simplex, no PolicySupportedOn conjunct' encoding, which now contradicts the core). The core's symbol L_n(E) declares its codomain as {pi in Delta(A)^X : supp pi(.|x) subseteq supp pi_ref(.|x) for every x}, and def:common-experiment states a learner 'is supported on pi_ref at every context'. So L_n(E) IS the reference-SUPPORTED finite-objective class: encode it with the PolicySupportedOn conjunct. This is law-independent (the condition depends only on the PUBLIC pi_ref), and it is WITHOUT LOSS, not a narrowing: def:minimax-risk supplies the public contextwise support repair S_ref, which is Borel measurable BECAUSE the supports carry the standing discrete/Borel structures of design decision f2.5-discrete-support, maps every measurable full-simplex learner into L_n(E), and never increases regret (off-support regret is +infinity under the extended convention, repaired regret is finite). Supported learners are themselves full-simplex learners, so the two infima are EQUAL and the common value is a nonnegative real. The plan therefore encodes the supported class as the definition and the full-simplex equality as a proved companion, exactly as the core states. J_underscore_n is likewise DIAGNOSTIC ONLY and its domain is exactly the reference-supported policies (core: 'no real-valued off-support evaluation is intended'); it does not define pi-hat. REDIRECT SYNC (F2 attempt 7): current covering-number module path is Causalean.Stat.Concentration.Covering.CoveringNumber. Trace: surveyed Causalean.Stat.Minimax.MinimaxRisk (real_two_point_lower_bound, iid_two_point_lower_bound, minimaxMiss packaging) and Estimation.MinimaxATE.Model (minimaxMiss/nMiss) -> those package a minimax MISS PROBABILITY of a scalar functional, not an infimum-over-learners of expected reverse-KL regularized REGRET; abstraction mismatch, so the decision class L_n(E), risk R_{n,E}, and sample complexity N* are define-local over Mathlib."
+    },
+    {
+      "id": "S3",
+      "world": "Paired-Bernoulli exact-shell hard-family lower-bound construction (orthonormal hard coordinates, Gibbs calibration, sign-cube packing)",
+      "binds_symbols": [
+        "\\mathfrak F_{\\mathrm{hard}}^\\circ(d,\\eta)",
+        "k",
+        "e_0,u_j,w_j,z",
+        "x_C,x_A,x_j,x_z",
+        "q",
+        "p",
+        "T_\\gamma",
+        "g_0(D,\\eta)",
+        "\\beta",
+        "\\gamma(\\epsilon,d,C,D,\\eta)",
+        "\\epsilon_0(C,D,\\eta)",
+        "Z",
+        "v",
+        "\\mathcal H_{d,C,D,\\eta,\\epsilon}"
+      ],
+      "binds_sampling_model": false,
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Minimax.Assouad",
+        "Causalean.Stat.Minimax.Pinsker",
+        "Causalean.Stat.Minimax.Mixture"
+      ],
+      "bypass": "bypass-justified",
+      "notes": "Trace: the sign-cube packing / pairwise-neighbour testing argument reuses Causalean.Stat.Minimax.Assouad (hammingRisk_pair_ge, sum_decode_ge, assouad_average), Pinsker (pinskerBound_of_ac_of_ne_top, klForm_two_point_lower_bound), TotalVariation (one_sub_tvDist_le_test), and Mixture. The explicit hard-family construction (orthonormal e_0,u_j,w_j basis, Gibbs calibration T_gamma/beta, Bhattacharyya-affinity two-point bound) is novel and define-local over these reusable testing primitives."
+    }
+  ],
+  "nodes": {
+    "ass:finite-contexts": {
+      "lean_kind": "assumption",
+      "lean_name": "FiniteContexts",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Data.Fintype.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "Modeling/support assumption. Threaded Prop def stating Fintype/finiteness of the context support X. Used inline and bundled in ExactShell. DISCRETE-SUPPORT SYNC (this round): the standing [MeasurableSpace X] [MeasurableSingletonClass X] instances of added assumption finite-support-discrete-measurability attach to THIS support and are supplied ambiently by the S1 world; they are instance arguments, NOT extra conjuncts of this Prop. Keeping them out of the Prop preserves this node as the paper's plain finiteness atom (P3/P2 unchanged) while making every downstream measurability obligation dischargeable."
+    },
+    "ass:finite-actions": {
+      "lean_kind": "assumption",
+      "lean_name": "FiniteActions",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Data.Fintype.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "Modeling/support assumption. Threaded Prop def stating finiteness of the action support A. DISCRETE-SUPPORT SYNC (this round): the standing [MeasurableSpace A] [MeasurableSingletonClass A] instances of added assumption finite-support-discrete-measurability attach to THIS support and are supplied ambiently by the S1 world, as instance arguments rather than conjuncts of this Prop. Finiteness of A is additionally what makes every Gibbs normalizer a finite positive sum, so the Gibbs map is continuous with strictly positive denominator — the fact the selector-measurability helper composes with."
+    },
+    "ass:bounded-features": {
+      "lean_kind": "assumption",
+      "lean_name": "BoundedFeatures",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "Regularity assumption: sup_{(x,a) in S} ||phi(x,a)||_2 <= 1. Threaded Prop, bundled in ExactShell."
+    },
+    "ass:linear-realizability": {
+      "lean_kind": "assumption",
+      "lean_name": "LinearRealizability",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "PERSISTENT REDIRECT SYNC: faithfully encode both the global reward range `forall x a, linearReward P x a in Icc 0 1` and the conditional-mean identity on positive-mass cells. The first conjunct realizes the paper's global function r_theta:S->[0,1]; the second avoids Mathlib's zero-denominator convention on null cells. Threaded Prop, consumed by lem:bounded-linear-localization and bundled in ExactShell."
+    },
+    "ass:reference-logging": {
+      "lean_kind": "assumption",
+      "lean_name": "ReferenceLogging",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "REDIRECT SYNC: logging factorization cellMass=contextMass*pi_ref on active contexts, with arbitrary context support and zero mass permitted off support. Threaded Prop, bundled in ExactShell."
+    },
+    "ass:nonsingular-logging-geometry": {
+      "lean_kind": "assumption",
+      "lean_name": "NonsingularLoggingGeometry",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.LinearAlgebra.Matrix.PosDef"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "Regularity assumption: Lambda_ref positive-definite. Reuse Matrix.PosDef predicate inside the named Prop; bundled in ExactShell."
+    },
+    "ass:pointwise-exact-shell": {
+      "lean_kind": "assumption",
+      "lean_name": "PointwiseExactShell",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "Shell (novel) assumption: C_P = C (exact pointwise coverage). Threaded Prop, bundled in ExactShell; a modeling boundary of the paper, kept as hypothesis (not discharged)."
+    },
+    "ass:feature-exact-shell": {
+      "lean_kind": "assumption",
+      "lean_name": "FeatureExactShell",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "Shell (novel) assumption: D_P = D (exact lambda-max feature coverage). Threaded Prop, bundled in ExactShell; kept as hypothesis."
+    },
+    "def:common-experiment": {
+      "lean_kind": "def",
+      "lean_name": "CommonExperiment",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Sample.PiTransport"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "DISCRETE-SUPPORT SYNC (this round): the core construction now reads 'Fix the finite supports X, A, carrying their intended discrete/Borel measurable structures, ... as E=(X,A,phi,pi_ref,eta)'. The bundled experiment therefore carries the standing MeasurableSingletonClass instances from the S1 world (design decision f2.5-discrete-support); rho is explicitly NOT a component of E and remains law-specific. DECISION-CLASS SYNC (this round): the core also states here that a learner is an element of L_n(E), receives (D_n,E), returns a policy, and IS SUPPORTED ON pi_ref at every context, that this requirement is law-independent because pi_ref is public, and that it is without loss relative to all measurable full-simplex learners by def:minimax-risk. Encode that supportedness in the learner-class field rather than the prior full-simplex-only reading. Also record the notation contract: E-indexed M_E/R_{n,E}/N*_E whenever experiments are compared, unindexed M/R_n/N* only as an abbreviation after one E is fixed. SYNC-BACK (F2): reuse Causalean.Stat.Sample.PiTransport, the current module exposing the finite Measure.pi IID transport; the planned Causalean.Stat.IIDSample module path does not exist. D_n uses Measure.pi."
+    },
+    "def:exact-shell": {
+      "lean_kind": "structure",
+      "lean_name": "ExactShell",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "members": [
+        "ass:finite-contexts",
+        "ass:finite-actions",
+        "ass:bounded-features",
+        "ass:linear-realizability",
+        "ass:reference-logging",
+        "ass:nonsingular-logging-geometry",
+        "ass:pointwise-exact-shell",
+        "ass:feature-exact-shell"
+      ],
+      "notes": "CLASS: membership structure for M_E(d,C,D,eta), one field per member assumption (== by_member_properties). Theorems take an (ExactShell ... P) hypothesis to cover all bundled assumption dependencies."
+    },
+    "def:prediction-polytope-learner": {
+      "lean_kind": "def",
+      "lean_name": "predictionPolytopeLearner",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Concentration.Covering.CoveringNumber"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Learner/PredictionPolytope.lean",
+      "notes": "Construction: prediction polytope F, empirical loss L_n, sequential-lexicographic ERM f-hat, empirical seminorm ||.||_n, confidence polytope Q_n, coordinatewise lower envelope r_underscore_n, deployed lower-envelope Gibbs policy pi-hat, and diagnostic criterion J_n. Substantial but explicit finite-dimensional construction over Mathlib. ROOT RE-ENCODING SYNC: the fixed sequential coordinate order is defined explicitly by (x',a') earlier than (x,a) iff x'<x or (x'=x and a'<a); PredictionLexLT requires equality at every such earlier coordinate and strict prediction inequality at the first differing coordinate, and this same predicate is used unchanged by both ERM and stabilized selectors. SELECTION-GATE FIX (round 2): the measurability obligation for the SELECTED learner (that f-hat, the coordinatewise lower-envelope minima r_underscore_n(x,a)=min_{f in Q_n} f(x,a), and the resulting Gibbs normalization are measurable in (D_n,E), i.e. pi-hat in L_n(E)) is discharged HERE by an explicit FINITE-DIMENSIONAL measurable-selector lemma (planned as a co-located helper `predictionPolytopeLearner_measurable` in this file), NOT by the cited lem:measurable-maximum-theorem. DISCRETE-SUPPORT SYNC (this round): this helper is scoped to the paper's discrete finite supports via the standing MeasurableSingletonClass instances on X and A now carried by the S1 world (design decision f2.5-discrete-support, added assumption finite-support-discrete-measurability); they are ambient instance arguments of the declaration, and they are what let the finite-dimensional selector argument go through without invoking any cited measurable-selection interface. DECISION-CLASS SYNC (this round — SUPERSEDES the prior claim that L_n(E) does not require reference-supportedness): L_n(E) IS the reference-supported class, so membership of pi-hat now has TWO obligations, both discharged here: (a) measurability in (D_n,E), as above; and (b) SUPPORTEDNESS — the core records that the deployed Gibbs policy satisfies supp pi-hat(.|x) = supp pi_ref(.|x) at every context, which is immediate from the Gibbs formula (the numerator pi_ref(a|x)e^{eta r} vanishes exactly when pi_ref(a|x) does, and the normalizer is a finite strictly positive sum), 'and therefore belongs to the finite-objective decision class'. Plan a co-located `predictionPolytopeLearner_supported` alongside `predictionPolytopeLearner_measurable`; the pair is what downstream theorems cite for `pi-hat in L_n(E)`. Note also that J_underscore_n is retained as a DIAGNOSTIC criterion on reference-supported policies only and does NOT define pi-hat. This is tractable build-inline because every selection is over a compact polytope Q_n subset of finite-dim prediction space R^S with a continuous (linear for the lower envelope, quadratic for the ERM step) objective and the FIXED lexicographic tie-break over the ordered finite set S: measurability follows from continuity/compactness + the explicit deterministic lexicographic construction over Mathlib (Continuous, IsCompact, MeasurableSet, argmin of a continuous function on a compact set). This self-contained learner-measurability lemma is what every downstream consumer (thm:localized-upper and thm:erm-plugin-upper via def:erm-gibbs-plugin-learner, as well as thm:clean-temperature-feature-upper) cites for its `learner in L_n(E)` claim, closing the previously-silent selection gate for ALL three theorems. (thm:clean-temperature-feature-upper additionally invokes the cited lem:measurable-maximum-theorem for its idealized global-optimization stabilized selector, whose inner sup-over-correspondence objective is not covered by this finite-dim lemma; the basic f-hat/lower-envelope measurability above is self-contained.) Build-inline. SEARCH TRACE for the MEASURABLE LEXICOGRAPHIC SELECTOR (re-runnable; the substantive absent object of this node): (1) Causalean, concept words `selector`, `measurable_selection`, `MeasurableSelect`, `argmin`, `lex` — `grep -rniE 'measurable_selection|MeasurableSelect|exists_measurable_selection|selector' ../Causalean` returns 7 files, of which the only statistical hit is Causalean/Stat/MEstimation/FinitePoisson.lean:316 `uniqueGlobalMax_maximizerOrZero` (a `maximizerOrZero` TOTAL selector on a bare type under a UNIQUE-global-max hypothesis: no measurability conclusion, no tie-break, and our ERM/lower-envelope argmins are NOT unique, so it does not fit); the remaining hits (Mathlib/Optimization/SimplexTruncation*, PO/ID/Partial/BalkePearl/LatentTable, SCM/ID/Density/{IdentifyMass,FiniteReference}) are simplex-truncation and identification-density constructions with no selector-measurability statement. `grep -rnE '^(theorem|lemma|def|noncomputable def) \\S*([Aa]rgmin|[Ll]ex)' ../Causalean` returns only Panel/Weighted/WLS.lean `proj_eq_argmin` / `residualize_orth_iff_argmin` (a projection CHARACTERIZATION, not a selector). (2) The nearest ERM module, Causalean/Stat/Concentration/UniformDeviation/ERMOracle.lean, was read: `erm_excess_le_two_uniformDeviation` (line 41) TAKES `(ihat istar : ι)` with an ERM inequality `hERM` as a HYPOTHESIS — it never constructs the minimizer and never asserts its measurability, so it cannot discharge this obligation; same for `erm_oracle_inequality` / `erm_oracle_inequality_separable`. (3) Mathlib, `grep -rnE 'Measurable.*argmin|measurable.*[Ss]elect|Measurable.*lex' .lake/packages/mathlib/Mathlib` -> 3 files, all unrelated (Probability/Moments/ComplexMGF, MeasureTheory/MeasurableSpace/Instances, MeasureTheory/Function/SpecialFunctions/Basic); `lean_local_search 'measurableSelection'` -> [] and `lean_local_search 'measurable_of_isCompact'` -> []. RESULT: NOT FOUND — no Causalean or Mathlib declaration produces a measurable minimizer selector for a continuous objective over a compact set. What Mathlib DOES supply, and what this node's helper is built from: `IsCompact.exists_isMinOn` / `ContinuousOn.exists_isMinOn'` (Mathlib/Topology/Order/Compact.lean, verified present) for existence of the coordinatewise minima on the compact polytope Q_n, plus the FIXED lexicographic tie-break over the ordered finite set S, which turns existence into a deterministic finite-stage construction whose measurability is proved by the explicit recursion (each stage cuts by an equality on a previously-fixed coordinate, a measurable condition) rather than by any selection theorem. This is why the node is build-inline (small, explicit, finite-dimensional) rather than routed to the cited lem:measurable-maximum-theorem, which is reserved for the sup-over-correspondence objective at thm:clean-temperature-feature-upper."
+    },
+    "def:minimax-risk": {
+      "lean_kind": "def",
+      "lean_name": "minimaxRisk",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Minimax.MinimaxRisk"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "MINIMAX-RISK RE-ENCODING (this round — SUPERSEDES the prior 'no PolicySupportedOn conjunct' note, which now contradicts the core). R_{n,E}(M) = inf over pi-tilde in L_n(E) (the REFERENCE-SUPPORTED class) of sup over P in M of E_{P^otimes n}[J_{eta,P}(pi_P^star) - J_{eta,P}(pi-tilde(D_n;E))]. Three obligations this node now owns, all build-inline: (1) the public contextwise support repair S_ref, defined by the core's two-case formula (keep pi(.|x) when pi is already reference-supported at x, else fall back to pi_ref(.|x)); (2) S_ref is BOREL MEASURABLE and maps every measurable full-simplex learner into L_n(E) — this is exactly where added assumption finite-support-discrete-measurability (design decision f2.5-discrete-support) is load-bearing, since on finite supports with MeasurableSingletonClass the case split is a finite measurable partition, so no separate measurable-selection machinery is needed and the CITED lem:measurable-maximum-theorem is NOT required here; (3) repair never increases regret (off-support at a positive-rho-mass context gives objective -infinity hence regret +infinity, while the repaired regret is finite; when every offending context is rho-null the objective is unchanged), so the supported infimum EQUALS the full-simplex infimum taken in [0,+infinity]. Since pi_P^star has exactly the support of pi_ref and the public reference learner has finite regret, the common minimax value is a NONNEGATIVE REAL — encode the codomain as a real, not an extended real. The scalar minimaxMiss substrate remains an abstraction mismatch (define-local over Mathlib)."
+    },
+    "def:sample-complexity": {
+      "lean_kind": "def",
+      "lean_name": "sampleComplexity",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "SCAFFOLD REDIRECT SYNC (round 11): the tagged sampleComplexity declaration now has proof-bearing arguments for both 0<eps and eps<1, faithfully realizing the declared core space epsilon in (0,1). The untagged companion sampleComplexityPositive uses the identical infimum formula on the all-positive extension needed by the paper's boundary-shell, zero-risk E0, and experiment-uniform lower-bound-ceiling clauses, which explicitly quantify over every eps>0. The separate clean inversion theorems use sampleComplexity and retain their stated 0<eps<1 hypotheses. N*_E(eps;d,C,D,eta)=inf{n in N : R_{n,E}(M_E(d,C,D,eta))<=eps}, with the convention inf(emptyset)=infinity, so the codomain is N u {infinity}. Defined only for M_E(d,C,D,eta) nonempty. It inherits R_{n,E} from def:minimax-risk, hence the REFERENCE-SUPPORTED finite-objective decision class; by the support-repair equality proved there this is the same value as the full-simplex formulation. The sample-size index begins at one, which makes the zero-risk conclusions N*=1 rather than N*=0."
+    },
+    "def:hard-region": {
+      "lean_kind": "def",
+      "lean_name": "hardRegion",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Lower/HardFamily.lean",
+      "notes": "Construction: interior hard-shell region { (C,D) : 1<D<=C<e^eta, 2D-1<e^eta, d>=4 }. Simple set definition."
+    },
+    "def:hard-accuracy-range": {
+      "lean_kind": "def",
+      "lean_name": "hardAccuracyRange",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Lower/HardFamily.lean",
+      "notes": "Construction: eps_0(C,D,eta) = [64 eta]^{-1} log cosh(eta min{g_0,1/4}); admissible accuracy endpoint. Elementary real definition."
+    },
+    "def:feasible-frontier-handle": {
+      "lean_kind": "def",
+      "lean_name": "feasibleFrontierHandle",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Feasibility/IndexRegion.lean",
+      "notes": "SCAFFOLD REDIRECT SYNC (round 9): the core gives only a programmatic handle, not a theorem asserting one chosen conjunction of exact-shell membership, positive definiteness, quadratic domination, attainment, or identification. The tagged definition is therefore the set of candidate covariance-preserving lower families. Subsequent work may construct an element or prove this search space empty; the definition itself asserts neither outcome and adds no identification predicate."
+    },
+    "def:explicit-hard-family": {
+      "lean_kind": "def",
+      "lean_name": "explicitHardFamily",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Lower/HardFamily.lean",
+      "notes": "REDIRECT SYNC: the action labels, contexts, hard-context map, and orthonormal geometric witnesses e0,z,u,w are quantified once outside the sign-indexed family, so all 2^k laws share the paper's one fixed construction. Each sign-indexed law still satisfies ReferenceLogging, Gibbs calibration, context masses, and Bernoulli cells. The extra all-actions-positive reference constraint at x_A was removed because the paper states only that every action feature there equals e0. No analogous family exists in Causalean; its testing consumers reuse Causalean.Stat.Minimax.*."
+    },
+    "def:erm-gibbs-plugin-learner": {
+      "lean_kind": "def",
+      "lean_name": "ermGibbsPluginLearner",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Learner/PredictionPolytope.lean",
+      "notes": "Construction: Gibbs policy generated by the ERM f-hat from def:prediction-polytope-learner. Build-inline; a thin wrapper over the shared learner. It receives only (D_n,E) and does NOT receive the shell indices C or D. DECISION-CLASS SYNC (this round): membership in L_n(E) now needs BOTH conjuncts, and both are inherited from the co-located helpers planned at def:prediction-polytope-learner — measurability from `predictionPolytopeLearner_measurable` (the Gibbs formula is a continuous, strictly-positive-denominator map of the measurable f-hat, under the standing MeasurableSingletonClass instances of design decision f2.5-discrete-support), and reference-supportedness from `predictionPolytopeLearner_supported` (the same Gibbs-numerator argument applies verbatim to the ERM potential f-hat in place of the lower envelope). So thm:erm-plugin-upper's decision-class obligation is closed here, not silently assumed."
+    },
+    "thm:zero-risk-boundary": {
+      "lean_kind": "theorem",
+      "lean_name": "zero_risk_boundary",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Feasibility/IndexRegion.lean",
+      "hyps": [
+        "def:exact-shell"
+      ],
+      "notes": "Boundary C=D=1 forces pi_P^star = pi_ref a.s., D_P=1, zero regret, N*=1. Mean-one bounded likelihood-ratio argument + Gibbs regret identity; elementary. Build-inline. ExactShell hyp covers ass:pointwise-exact-shell. DECISION-CLASS SYNC (this round): the witness step 'the constant learner returning the publicly known pi_ref belongs to L_n(E)' now carries the reference-supportedness conjunct as well as measurability; both are immediate (a constant map is measurable, and pi_ref is trivially supported on its own support), so this remains elementary build-inline. R_n=0 for every n, and since the sample-size index begins at one, def:sample-complexity gives N*=1 (not 0)."
+    },
+    "lem:learner-invariance": {
+      "lean_kind": "lemma",
+      "lean_name": "learner_invariance",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Learner/PredictionPolytope.lean",
+      "hyps": [],
+      "notes": "Coordinate-free invariance of F, f-hat, Q_n, J_n, pi-hat under phi->T phi, theta->T^{-T}theta. Prediction-space bookkeeping; build-inline."
+    },
+    "thm:localized-upper": {
+      "lean_kind": "theorem",
+      "lean_name": "localized_upper",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Upper/Localized.lean",
+      "hyps": [
+        "def:exact-shell",
+        "lem:zhao-uniform-square-comparison"
+      ],
+      "notes": "REDIRECT SYNC (F2 attempt 7): in addition to the measurable reference-supported learner, uniform risk, and sample-complexity claims, the conclusion explicitly contains the empirical-ball dimension witness at n=d^2, with nonvanishing lower-envelope risk while dD/n and sqrt(dD/n) vanish. The sample-complexity conclusion is quantified only over 0 < eps < 1, matching the paper's setup. The cited Zhao gate remains explicitly threaded. DISCRETE-SUPPORT + DECISION-CLASS SYNC (this round): the setup carries the standing MeasurableSingletonClass instances on X and A (design decision f2.5-discrete-support), and the assertion 'pi-hat in L_n(E)' now means membership in the REFERENCE-SUPPORTED class, discharged by BOTH co-located helpers from def:prediction-polytope-learner (`predictionPolytopeLearner_measurable` and `predictionPolytopeLearner_supported`) — not by the cited lem:measurable-maximum-theorem, which this theorem does not consume. hyps unchanged (def:exact-shell covers ass:nonsingular-logging-geometry + ass:feature-exact-shell; the cited Zhao gate is threaded directly): the added measurability assumption is ambient instance bookkeeping and correctly does NOT appear in hyps, since it is not a core node."
+    },
+    "thm:same-shell-lower": {
+      "lean_kind": "theorem",
+      "lean_name": "same_shell_lower",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Minimax.Assouad",
+        "Causalean.Stat.Minimax.Pinsker",
+        "Causalean.Stat.Minimax.TotalVariation"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Lower/HardFamily.lean",
+      "hyps": [],
+      "notes": "REDIRECT SYNC: the hard-family blueprint used by the inclusion now requires ReferenceLogging, so every paired-Bernoulli member has cellMass=contextMass*pi_ref. The theorem retains uniform-in-d eps1 and c quantification on the stated hard region. DECISION-CLASS SYNC (this round): its Bayes-risk step likewise ranges over arbitrary measurable REFERENCE-SUPPORTED learners, consistent with the now-supported L_n(E); the transfer to the full-simplex formulation is by the support-repair equality proved at def:minimax-risk. No hyps change."
+    },
+    "prop:canonical-tabular-reduction": {
+      "lean_kind": "theorem",
+      "lean_name": "canonical_tabular_reduction",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Feasibility/IndexRegion.lean",
+      "hyps": [
+        "def:exact-shell"
+      ],
+      "notes": "Under canonical tabular features Lambda_ref^{-1/2}Lambda_P^star Lambda_ref^{-1/2} is diagonal with entries pi_P^star/pi_ref, giving D_P=C_P. Diagonal-matrix lambda_max = max entry; elementary. ExactShell hyp covers ass:nonsingular-logging-geometry."
+    },
+    "prop:shared-feature-witness": {
+      "lean_kind": "theorem",
+      "lean_name": "shared_feature_witness",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Lower/HardFamily.lean",
+      "hyps": [],
+      "notes": "For d=5, each hard-context feature pair (u_j +/- w_j)/sqrt2 shares both latent directions and is non-tabular. Finite orthonormality computation; build-inline over def:explicit-hard-family."
+    },
+    "lem:zhao-uniform-square-comparison": {
+      "lean_kind": "assumption",
+      "lean_name": "ZhaoUniformSquareComparison",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Concentration.Covering.CoveringNumber"
+      ],
+      "defer_tier": false,
+      "gate": true,
+      "gate_class": "cited",
+      "target_file": "Localization/Concentration.lean",
+      "source": "cite:zhao-2026-uniform-square-comparison",
+      "infrastructure_id": "I-1",
+      "notes": "GATE-LEDGER FIX (round 3): this substrate-gate is now carried as `infrastructure_needed[]` item I-1 (id == this core node id), as the substrate-gate contract requires; it was previously gate:true with an empty infrastructure_needed ledger, so the assumed cited interface was invisible to the orchestrator's SUBSTRATE_DEBT accounting. defer_tier stays false and gate_class stays `cited` (fixed by D0 provenance, not re-judged): a cited leaf is assumed visibly, never built and never deferred, so the derived verdict remains formalizable-now. CITED leaf (status:cited, gate_class fixed by D0 provenance). Encoded as a named Prop stating the uniform empirical-vs-population squared-difference comparison with the 32/(3n) log(2N/delta) + 10u remainder, and threaded into lem:bounded-linear-localization. NOT reconstructed as sub-lemmas; the delivered localization lemma is honestly conditional on this cited interface. (A near-match empirical-process layer exists in Causalean.Stat.Concentration/EmpiricalProcess, but provenance is cited, so it is assumed, not discharged.)"
+    },
+    "lem:bounded-projection-concentration": {
+      "lean_kind": "lemma",
+      "lean_name": "bounded_projection_concentration",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Probability.Moments.SubGaussian",
+        "Mathlib.Probability.Kernel.Condexp",
+        "Mathlib.Probability.Independence.Conditional"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Localization/Concentration.lean",
+      "hyps": [],
+      "notes": "GENERAL-CONDITIONAL FIX (round 5 — SUPERSEDES the round-4 ATOM-BRIDGE plan, which realized only the finite-cell partition instance and left the non-atomic case as an F3 contingency; that is now explicitly NOT the plan). The core statement is CONDITIONAL ON AN ARBITRARY SIGMA-FIELD G, and the plan proves it in that generality. Headline Lean declaration `bounded_projection_concentration` takes (m : MeasurableSpace Omega) (hm : m <= mOmega) as an ARBITRARY conditioning sub-sigma-field (no atomicity, no finite-partition hypothesis), an m-measurable projector-valued map Pi with rank at most d, conditional centering E[eps_i | m] = 0, |eps_i| <= 1, conditional independence of (eps_i) given m, and concludes the a.e. conditional tail bound mu[indicator {||Pi eps||_2^2 > 8(d log5 + log(2/zeta))} | m] <= zeta. GENERAL ROUTE (conditional sub-Gaussian + net, done entirely with Mathlib's regular-conditional-distribution layer — this is the delivery, not a fallback): work under the conditional expectation kernel kappa = `ProbabilityTheory.condExpKernel mu m` against `mu.trim hm` (available because the sample space Omega = (S x [0,1])^n is standard Borel and nonempty; recorded in the S1 world notes). Then (G1) CONDITIONAL SUB-GAUSSIAN MGF for a fixed direction: Mathlib defines `ProbabilityTheory.HasCondSubgaussianMGF m hm X c mu` as `Kernel.HasSubgaussianMGF X c (condExpKernel mu m) (mu.trim hm)` (Mathlib/Probability/Moments/SubGaussian.lean:549, verified), i.e. an a.e.-fiber MGF bound; for a.e. fiber the summand v_i eps_i is centered (`condExp_ae_eq_integral_condExpKernel`, Kernel/Condexp.lean:256) and lies in [-|v_i|,|v_i|], so Hoeffding's lemma `ProbabilityTheory.hasSubgaussianMGF_of_mem_Icc_of_integral_eq_zero` (SubGaussian.lean:843, verified) applies FIBERWISE and gives the exp(t^2 v_i^2/2) factor with NO atomicity used. (G2) SUMMATION: Mathlib's conditional independence `ProbabilityTheory.iCondIndepFun` (Probability/Independence/Conditional.lean, verified) is BY DEFINITION kernel independence, and `Kernel.iIndepSets` is literally the a.e.-fiber product identity (Probability/Independence/Kernel/Indep.lean:70-71, verified), so for a.e. fiber the eps_i are independent under kappa omega' and `HasSubgaussianMGF.sum_of_iIndepFun` (SubGaussian.lean:768) yields E[exp(t v^T eps) | m] <= exp(t^2/2) a.e. using sum_i v_i^2 = 1; equivalently `Kernel.HasSubgaussianMGF.add_comp` / `.add_compProd` (SubGaussian.lean:491,521) assemble the summands at kernel level. Where the direction v is itself m-measurable (it is: v ranges over a net of the range of the m-measurable Pi), the m-measurable factor is pulled out of the conditional expectation by the standard pull-out-what-is-known lemmas, or equivalently v is kappa omega'-a.e. constant on each fiber (an m-measurable function equals its own conditional expectation, so its fiber variance vanishes) — either way this is a general measure-theoretic step, not a partition argument. (G3) CONDITIONAL CHERNOFF: `Kernel.HasSubgaussianMGF.measure_ge_le` (SubGaussian.lean:334, verified) is already stated as `forall-ae omega' d(nu), (kappa omega').real {eps <= X} <= exp(-eps^2/(2c))` — precisely a CONDITIONAL probability bound — giving Pr{|v^T eps| >= u | m} <= 2 e^{-u^2/2} a.e. (G4) NET + UNION BOUND, conditionally: the unit sphere of the (at most d)-dimensional range of Pi(omega') has a one-half net N(omega') of cardinality <= 5^d by the disjoint-ball volume argument, and ||Pi eps||_2 <= 2 max_{v in N} |v^T eps|; the union bound over a FINITE net is taken inside the a.e. fiber statement (`Finset` union bound on kappa omega'), then transported back to conditional probabilities via `condExpKernel_ae_eq_condExp` (Kernel/Condexp.lean:220). Taking u^2 = 2{d log5 + log(2/zeta)} gives ||Pi eps||_2^2 <= 4u^2, the claimed inequality. Nothing in (G1)-(G4) uses finiteness of the cells, a finite partition, or MeasurableSingletonClass: the conditioning field is arbitrary and the conclusion is the core's general conditional statement. OPTIONAL CONSUMER COROLLARY (demoted from the round-4 headline): `bounded_projection_concentration_fixed`, the deterministic-Pi unconditional specialization, and the finite-cell instance at G = sigma(W_1,...,W_n) may be emitted as convenience corollaries of the general theorem for the localization call site, but they are DOWNSTREAM of it and may NOT be delivered in its place — a deterministic-Pi or finite-atom-only statement does not discharge this node. SEARCH TRACE (re-runnable): grepped Causalean/Stat/Concentration/{TailBounds,Rademacher,Covering,UniformDeviation,Matrix} for a projected-residual / net / rank-d-projector norm tail with the concept words `projection`, `projector`, `net`, `sphere`, `rank` -> the TailBounds layer exposes only scalar-mean tails (`bernstein_ge`, `bernstein_abs_ge`, Hoeffding, `bernoulliCount_upper_tail`), and Concentration/Matrix/IidSums.lean is an operator-norm design-matrix bound, not an ||Pi eps||_2 quadratic-form tail -> not found as a single decl in either the conditional or the deterministic form; `lean_local_search 'HasCondSubgaussianMGF'` -> the single Mathlib hit above (conditional sub-Gaussian MGF layer present, no projector tail). Build-inline over Mathlib's conditional sub-Gaussian + condExpKernel + conditional-independence machinery, all four ingredients verified present; the only new content is the net/volume step and the assembly, so defer_tier stays false."
+    },
+    "lem:multinomial-max-count": {
+      "lean_kind": "lemma",
+      "lean_name": "multinomial_max_count",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Concentration.TailBounds.BinomialCount",
+        "Mathlib.Probability.Moments.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Localization/Concentration.lean",
+      "hyps": [],
+      "notes": "P{ max_j N_j > 3d } <= d exp(-d(3log3-2)) for d^2 uniform draws into d cells; each per-cell count N_j is Binomial(d^2,1/d), i.e. the bernoulliCount of the indicator f_j=1{draw=j}. REUSE-MISFIT FIX (round 2): the public tail Causalean.Stat.Concentration.bernoulliCount_upper_tail hard-codes the log2 tilt and yields exponent -a(log2-1/2); at threshold a=3d that gives -3d(log2-1/2), NOT the required -d(3log3-2), so it cannot be reused here. The arbitrary-tilt primitive `bernoulliCount_mgf_le` (which the required exponent needs, evaluated at t=log3) is `private` in BinomialCount.lean and hence not importable. Therefore build-inline the per-cell tail at tilt t=log3: reuse the PUBLIC noncomputable def `bernoulliCount` (and `bernoulliCount_measurable`) as the count representation, re-derive the sum-of-iid-Bernoulli MGF bound mgf(N_j)(s) <= exp(d^2 * (1/d) * (e^s-1)) = exp(d(e^s-1)) via Mathlib `ProbabilityTheory.mgf` + `iIndepFun.mgf_sum` (over S.indep) + `Real.add_one_le_exp`, then Markov `measure_ge_le_exp_mul_mgf` at s=log3 to get Pr{N_j>3d} <= exp(-3d*log3 + d(e^{log3}-1)) = exp(-3d log3 + 2d) = exp(-d(3log3-2)); finish with a union bound over the d cells. Build-inline. Trace: grepped Causalean.Stat.Concentration.TailBounds.BinomialCount for an arbitrary-tilt count tail -> only bernoulliCount_upper_tail/bernoulliCount_lower_tail are public (both fix t=+-log2); bernoulliCount_mgf_le and bernoulli_mgf are `private` -> arbitrary-tilt reuse unavailable, inline over Mathlib mgf machinery."
+    },
+    "lem:gibbs-regret-identity": {
+      "lean_kind": "lemma",
+      "lean_name": "gibbs_regret_identity",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Gibbs/RegretIdentity.lean",
+      "hyps": [
+        "def:exact-shell"
+      ],
+      "notes": "J(pi_P^star)-J(pi) = eta^{-1} E_rho KL(pi || pi_P^star). Gibbs normalizer log-linear identity over finite actions; elementary. Reuse Mathlib finite-KL algebra. ExactShell hyp present (no assumption deps). SEARCH TRACE for a REUSABLE GIBBS / KL IDENTITY (re-runnable; this is the trace the prior round omitted): the object sought is the exponential-tilt regret identity `KL(pi || Gibbs tilt of pi_ref by eta r) = KL(pi || pi_ref) - eta E_pi r + log Z`, equivalently the Donsker-Varadhan / Gibbs variational formula, for an ARBITRARY reference-supported pi. (1) Mathlib information theory: `lean_local_search 'klDiv'` -> the full Mathlib/InformationTheory/KullbackLeibler/Basic.lean API (`klDiv_self`, `klDiv_eq_integral_klFun`, `klDiv_eq_zero_iff`, `klDiv_of_ac_of_integrable`, `klDiv_smul_*`, `klDiv_eq_top_iff`, ...) — all structural/monotonicity facts about klDiv, NO tilt or variational identity. `grep -rn 'tilted' .lake/packages/mathlib/Mathlib/InformationTheory` -> NO MATCHES, i.e. Mathlib's exponential tilt (`MeasureTheory.Measure.tilted`, Mathlib/MeasureTheory/Measure/Tilted.lean, and `ProbabilityTheory.tilted_mul_apply_cgf`/`tilted_mul_apply_mgf` in Probability/Moments/Tilted.lean, both confirmed present via `lean_local_search 'tilt'`) is NEVER connected to klDiv anywhere in Mathlib. `lean_local_search 'variational'` -> []. So Mathlib supplies the tilt and supplies klDiv but not the bridge this identity IS. (2) Causalean information theory: directory listing `../Causalean/Mathlib/InformationTheory/` = {Fano, ProductKLLeCam, Entropy, ConditionalEntropy, GaussianKL, KLBind, KlDensityTiltExpansion/{Basic,CubicRemainder,KLExpansion}}. The most promising, KlDensityTiltExpansion, was READ: `tiltMeasure` (Basic.lean:44) is the LINEAR density tilt `d(tilt)/dmu = 1 + h*s` for a bounded mean-zero score s, and `klDiv_tiltMeasure_toReal_eq` (KLExpansion.lean:65) states `(klDiv (tiltMeasure mu s h) mu).toReal = int (1 + h s) log(1 + h s) dmu`, with `klDiv_tilt_expansion` (KLExpansion.lean:210) and `abs_klRemainder_le` giving its quadratic-plus-cubic-remainder expansion. NON-FIT on three counts: the tilt is LINEAR (`1 + h s`) not EXPONENTIAL (`e^{eta r}/Z`); the KL is taken in the direction `KL(tilt || base)` whereas this note needs `KL(pi || tilt)` with pi ARBITRARY and only the second argument tilted; and the conclusion is an asymptotic expansion in the tilt scale h, not an exact identity. `KLBind.lean` was checked (`rnDeriv_compProd_right_of_forall_ac`, `klDiv_compProd_right_of_forall_ac`, `klDiv_map_measurableEmbedding`, `klDiv_bind_eq_of_base_recording`): these are chain-rule/transport facts for compositions and bind, orthogonal to a tilt identity. `Entropy.lean` (`entropy`, `entropy_nonneg`, `entropy_le_log_card`, `entropy_const_eq_log_card`) and `ConditionalEntropy.lean` are cardinality/nonnegativity bounds, not identities. `GaussianKL.lean` is the Gaussian closed form, wrong family. (3) Causalean minimax KL layer: `grep -rnE '^(theorem|lemma|noncomputable def|def) \\S+' ../Causalean/Stat/Minimax/Pinsker.lean` -> `klFun_lower_bound`, `PinskerBound`, `pinskerBound_of_ac_of_ne_top`, `pinskerBound_pi_iid`, `klForm_two_point_lower_bound(_of_pinsker)`; these are KL LOWER BOUNDS used by the S3 testing argument (and are correctly reused there), never an equality. Fano.lean likewise (`fano_average_error`, `fano_exists_error`). `grep -rniE '(donsker|variational|logSumExp|freeEnergy|logPartition|softmax|gibbs)' ../Causalean` -> 18 files, all false positives (Donsker CLASSES in Stat/EmpiricalProcess, `variational` in NPIV/Tikhonov and ConvexProjection, none an information-theoretic Gibbs identity); `lean_local_search 'Gibbs'` -> [] and `lean_local_search 'klForm'` -> [] (note: lean_local_search does NOT index the sibling Causalean package from this project root — the Causalean facts above were established by direct grep/Read under ../Causalean, which is why the empty search results are not evidence of absence and were not treated as such). RESULT: NOT FOUND — neither Mathlib nor Causalean has the exponential-tilt Gibbs regret/variational identity in any direction or generality. Build-inline and small: over the FINITE action set the identity is pure algebra — take logs in the Gibbs formula to get log(pi/pi_P^star) = log(pi/pi_ref) - eta r_theta + log Z_P, integrate against pi(.|x) then rho, and evaluate J at the Gibbs policy to see J(pi_P^star) = eta^{-1} E_rho log Z_P; finiteness of A makes every normalizer a finite strictly positive sum so `Finset.sum` algebra plus `Real.log_div`/`Real.exp_log` suffices, with no measure-theoretic klDiv API required. defer_tier stays false."
+    },
+    "lem:gibbs-pessimism-conversion": {
+      "lean_kind": "lemma",
+      "lean_name": "gibbs_pessimism_conversion",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Gibbs/RegretIdentity.lean",
+      "hyps": [
+        "def:exact-shell"
+      ],
+      "notes": "min{ E[-Delta], (eta/2)E[Delta^2] } pessimism (slow+fast) conversion for a nonpositive contrast. Log-MGF path H_x' /H_x'' with Taylor remainder + covariance monotonicity; build-inline. SEARCH TRACE (round 4): this lemma consumes lem:gibbs-regret-identity and rests on the same absent substrate; the full re-runnable Mathlib/Causalean Gibbs-and-KL survey (Mathlib klDiv API with no tilt bridge, `grep -rn 'tilted' .lake/packages/mathlib/Mathlib/InformationTheory` -> no matches, Causalean KlDensityTiltExpansion's LINEAR-tilt `klDiv_tiltMeasure_toReal_eq` in the wrong KL direction, Pinsker/Fano supplying only KL lower bounds) is recorded once at lem:gibbs-regret-identity and is not repeated here. Nothing additional was found for the conditional-path log-MGF derivative identity `H_x'(gamma) = eta E_{pi_gamma} Delta`, `H_x''(gamma) = eta^2 Var_{pi_gamma}(Delta)`: `lean_local_search 'variational'` -> [], and Mathlib's `ProbabilityTheory.cgf` derivative API is stated for measure-theoretic cgf rather than for the finite-action Gibbs family used here, so the two derivative identities are proved directly by `Finset.sum` differentiation over the finite action set."
+    },
+    "prop:empirical-ball-dimension-witness": {
+      "lean_kind": "theorem",
+      "lean_name": "empirical_ball_dimension_witness",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Concentration.TailBounds.BinomialCount"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Lower/DimensionWitness.lean",
+      "hyps": [],
+      "notes": "Deterministic-reward exact-shell sequence P_d with constant regret at n=d^2 for the empirical-ball lower envelope, falsifying dD/n. Uses lem:multinomial-max-count and lem:gibbs-regret-identity; constructs explicit P_d (exhibits membership, no shell hyp). Build-inline."
+    },
+    "thm:feasible-index-region": {
+      "lean_kind": "theorem",
+      "lean_name": "feasible_index_region",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.LinearAlgebra.Matrix.PosDef"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Feasibility/IndexRegion.lean",
+      "hyps": [
+        "def:exact-shell"
+      ],
+      "notes": "REDIRECT SYNC: the off-diagonal sufficiency witness explicitly supplies distinct contexts x_C and x_A with an identical nonzero feature direction, in addition to proving non-tabularity."
+    },
+    "lem:fixed-experiment-shell-certificate": {
+      "lean_kind": "lemma",
+      "lean_name": "fixed_experiment_shell_certificate",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.LinearAlgebra.Matrix.PosDef"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Feasibility/IndexRegion.lean",
+      "hyps": [],
+      "notes": "REDIRECT SYNC: branches range over every nonempty active support I, use rho:I->R and zero context mass off I, and retain active-support logging. The lemma also states the at-most (2^|X|-1)|S| branch bound and the 2d+|I| real-variable encoding."
+    },
+    "prop:informative-fast-shell-all-indices": {
+      "lean_kind": "theorem",
+      "lean_name": "informative_fast_shell_all_indices",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Minimax.Assouad",
+        "Causalean.Stat.Minimax.Pinsker",
+        "Causalean.Stat.Minimax.Mixture"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Lower/InformativeShell.lean",
+      "hyps": [],
+      "notes": "Fixed experiment E_1 with N*_{E_1} >= c dD eta/eps for small eps, without the 2D-1<e^eta restriction. Reuse Causalean.Stat.Minimax.Assouad sign-cube averaging + Pinsker/TotalVariation testing; Bhattacharyya affinity two-point + Gibbs regret identity (lem:gibbs-regret-identity) supply the separation. Constructs experiment (no shell hyp). DECISION-CLASS SYNC (this round): the Bayes-risk argument quantifies over 'an arbitrary measurable REFERENCE-SUPPORTED learner', matching the now-supported L_n(E) of def:minimax-risk — this is the favorable direction for a lower bound only because def:minimax-risk proves the supported and full-simplex infima EQUAL, so the conclusion transfers to both representations; F3 must cite that equality rather than assume it. The coordinatewise regret decomposition (pairing per coordinate j, then summing) is load-bearing and must not be replaced by pairing the full regret k times."
+    },
+    "lem:feature-coverage-domination": {
+      "lean_kind": "lemma",
+      "lean_name": "feature_coverage_domination",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.LinearAlgebra.Matrix.PosDef"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Coverage/FeatureDomination.lean",
+      "hyps": [
+        "def:exact-shell"
+      ],
+      "notes": "E_{rho,pi*} h^2 <= D_P E_{rho,pi_ref} h^2 for h in span(phi). Rayleigh-quotient bound via Lambda_ref^{1/2} whitening; reuse Matrix.PosDef square root and lambda_max. Build-inline."
+    },
+    "lem:quadratic-majorant-transfer": {
+      "lean_kind": "lemma",
+      "lean_name": "quadratic_majorant_transfer",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.LinearAlgebra.Matrix.PosDef"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Coverage/FeatureDomination.lean",
+      "hyps": [
+        "def:exact-shell"
+      ],
+      "notes": "For M>=0 and q^2 <= phi^T M phi: E_{rho,pi*} q^2 <= tr(M Lambda_P^star) <= D_P tr(M Lambda_ref). Trace + PSD congruence Lambda_P^star <= D_P Lambda_ref; uses lem:feature-coverage-domination. ExactShell hyp covers ass:nonsingular-logging-geometry + ass:feature-exact-shell. Build-inline."
+    },
+    "lem:bounded-linear-localization": {
+      "lean_kind": "lemma",
+      "lean_name": "bounded_linear_localization",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Concentration.Covering.CoveringNumber"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Localization/Concentration.lean",
+      "hyps": [
+        "def:exact-shell",
+        "lem:zhao-uniform-square-comparison"
+      ],
+      "notes": "With prob >= 1-delta_n/2: r_theta in Q_n and sup_{Q_n} E_{rho,pi_ref}(f-r_theta)^2 <= 600 a_n/n. Combines lem:bounded-projection-concentration (ERM basic inequality via projection net) and the CITED lem:zhao-uniform-square-comparison (empirical->population transfer via covering number N_F(u) <= (1+2/u)^d). Cited gate threaded into hyps; delivered conditional on it. ExactShell hyp covers ass:linear-realizability + ass:reference-logging. CONDITIONAL-INTERFACE SYNC (round 5, closure of the GENERAL-CONDITIONAL re-plan at lem:bounded-projection-concentration): this node is that lemma's ONLY consumer and it consumes the CONDITIONAL headline, so the call site must be written against the general conditional theorem — not against a deterministic-Pi specialization and not against a finite-atom instance. Concretely: the conditioning field is G = sigma(W_1,...,W_n) with W_i=(X_i,A_i); V_n = { (f(W_1),...,f(W_n)) : f in span(phi) } has dim <= d and its orthogonal projector Pi_n is G-MEASURABLE but genuinely RANDOM (it depends on the realized cells), which is exactly why the deterministic-Pi reading was infidelity. Apply `bounded_projection_concentration` conditionally with zeta = delta_n/4 to get an a.e. conditional bound, then INTEGRATE the conditional probability over G (tower property / `condExp` integral) to obtain the unconditional event E_{1,n} with P^{otimes n}(E_{1,n}) >= 1 - delta_n/4 on which ||Pi_n eps||_2^2 <= 8{d log5 + log(8n^2)}. The core's own proof does exactly this ('Apply lem:bounded-projection-concentration conditionally with zeta=delta_n/4. After integrating the conditional probability, there is an event E_{1,n} ...'), so F3 must not silently substitute a fixed-Pi lemma here. NOTE ON WHAT IS AND IS NOT LOAD-BEARING HERE: the finite cell structure of S (ass:finite-contexts + ass:finite-actions) is convenient at this call site but is NOT what validates the concentration lemma — the upstream theorem is proved for an ARBITRARY conditioning sigma-field via the conditional sub-Gaussian/net route, so this consumer may use the general statement directly (or, purely for convenience, the optional finite-cell corollary derived FROM it) without either one depending on atomicity. The residuals eps_i = Y_i - r_theta(W_i) are conditionally centered by ass:linear-realizability and conditionally independent given the cells by the i.i.d. product structure of S1; |eps_i| <= 1 from the [0,1] reward range. Everything downstream (E_n = E_{1,n} cap E_{2,n}, union bound to 1-delta_n/2) is unchanged."
+    },
+    "lem:gibbs-plugin-conversion": {
+      "lean_kind": "lemma",
+      "lean_name": "gibbs_plugin_conversion",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Gibbs/RegretIdentity.lean",
+      "hyps": [],
+      "notes": "min{ kappa_eta E[Delta^2], (1+e^{2eta}) sqrt(E[Delta^2]) } plug-in conversion, kappa_eta = eta int_0^1 t e^{2eta t} dt. Log-MGF path identity + likelihood-ratio bound e^{2eta t}; build-inline."
+    },
+    "thm:erm-plugin-upper": {
+      "lean_kind": "theorem",
+      "lean_name": "erm_plugin_upper",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Upper/ERMPlugin.lean",
+      "hyps": [
+        "def:exact-shell",
+        "lem:zhao-uniform-square-comparison"
+      ],
+      "notes": "SCAFFOLD REDIRECT SYNC (round 9): both sample-complexity bounds are explicitly quantified only over 0<eps<1, matching the paper's accuracy-index domain. ERM Gibbs plug-in achieves dD dimension dependence with explicit temperature factors; N*_E <= tildeO(dD min{kappa_eta/eps,(1+e^{2eta})^2/eps^2}). Assembles lem:bounded-linear-localization, lem:feature-coverage-domination, lem:gibbs-plugin-conversion, thm:feasible-index-region (D>=1), thm:localized-upper. The theorem's assertion `pi-hat_ERM in L_n(E)` is discharged by the finite-dimensional measurable-selector lemma inherited through def:erm-gibbs-plugin-learner. The setup carries the standing MeasurableSingletonClass instances, and L_n(E) is the reference-supported finite-objective class, so measurability and supportedness are both explicit. This theorem does not consume the cited measurable-maximum interface."
+    },
+    "thm:no-shared-feature-slow-branch": {
+      "lean_kind": "theorem",
+      "lean_name": "no_shared_feature_slow_branch",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "NoSlowBranch.lean",
+      "hyps": [
+        "def:exact-shell",
+        "lem:zhao-uniform-square-comparison"
+      ],
+      "notes": "No fixed experiment admits a positive d/eps^2 lower branch for all small eps. Direct corollary of lem:fixed-experiment-fast-branch-inversion via the explicit fast inversion. Build-inline."
+    },
+    "lem:fixed-experiment-fast-branch-inversion": {
+      "lean_kind": "lemma",
+      "lean_name": "fixed_experiment_fast_branch_inversion",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "NoSlowBranch.lean",
+      "hyps": [
+        "def:exact-shell",
+        "lem:zhao-uniform-square-comparison"
+      ],
+      "notes": "Explicit inversion of the plug-in fast branch: N*_E <= ceil(8Q/eps log(8eQ/eps)); (eps^2/d) N*_E -> 0. Real-analysis inversion of thm:erm-plugin-upper. Build-inline."
+    },
+    "lem:two-endpoint-gibbs-conversion": {
+      "lean_kind": "lemma",
+      "lean_name": "two_endpoint_gibbs_conversion",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Gibbs/RegretIdentity.lean",
+      "hyps": [],
+      "notes": "min{ eta(A+B), sqrt A + sqrt B } two-endpoint conversion with A=E_{pi_r}Delta^2, B=E_{pi_g}Delta^2. Jeffreys-divergence / secant-slope convexity argument; build-inline."
+    },
+    "lem:uniform-gibbs-radius-comparison": {
+      "lean_kind": "lemma",
+      "lean_name": "uniform_gibbs_radius_comparison",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Concentration.Covering.CoveringNumber",
+        "Causalean.Stat.Concentration.TailBounds.Bernstein"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Localization/Concentration.lean",
+      "hyps": [],
+      "notes": "SYNC-BACK (F2): current module paths are Causalean.Stat.Concentration.Covering.CoveringNumber and Causalean.Stat.Concentration.TailBounds.Bernstein. Two-sided empirical<->population comparison of the Gibbs-weighted squared radius H_{g,f}, uniform over F^2, with covering-number remainder b_n. Build-inline; drives thm:clean-temperature-feature-upper. SEARCH TRACE for a REUSABLE UNIFORM BOUNDED-CLASS COMPARISON (re-runnable; this is the trace the prior round omitted): the object sought is the MULTIPLICATIVE two-sided form `P h <= 2 P_n h + b` AND `P_n h <= 2 P h + b` holding SIMULTANEOUSLY over a bounded nonnegative class — a Bernstein/self-bounding comparison, not an additive sup-deviation. (1) `grep -rnE '^(theorem|lemma|noncomputable def|def|structure) \\S+' ../Causalean/Stat/Concentration/UniformDeviation` (whole directory scanned) -> `localized_uniform_deviation` and `localized_uniform_deviation_sharp` (UniformDeviationLocalized.lean:116,353), `erm_excess_le_two_uniformDeviation` / `erm_oracle_inequality` / `erm_oracle_inequality_separable` (ERMOracle.lean), `localized_uniform_deviation_expectation` / `localized_offset_expectation` (LocalizedEnvelopeExpectation.lean), `hoeffding_ci_*` / `bernstein_ci_*` (ConfidenceInterval.lean), and the CriticalRadius/SubRoot apparatus. `localized_uniform_deviation` was READ (lines 60-134): it bundles a `LocalizedRegime` (uniform bound b + a SUB-ROOT Rademacher envelope psi) and concludes the ADDITIVE localized rate `4 r delta_n + b sqrt(2 log(1/delta)/n)` for functions of `norm`-radius at most r. NON-FIT on three counts: (a) additive one-sided deviation, not the multiplicative two-sided `<= 2 P_n + b` / `<= 2 P + b` pair the stabilization argument needs (the whole point of the multiplicative form is that it survives being applied to the DATA-DEPENDENT set Q_n and selector g-tilde_n via a class-level simultaneity over the deterministic F^2); (b) it requires a sub-root Rademacher envelope psi with a critical-radius fixed point (`hcrit_fp`, `hrad_bdd`, `criticalRadius`), machinery this note never builds and whose hypotheses would themselves be new obligations; (c) its index class is a single-indexed F, not the PRODUCT class {H_{g,f} : (g,f) in F^2} whose members carry a Gibbs weight pi_g depending on the first index. (2) `grep -rniE '(comparison|multiplicative|ratio_type|two_sided|sq_comparison)' ../Causalean/Stat` -> 18 files, all Hoeffding/Bernstein/coupling/moment-tail or Rademacher contraction/symmetrisation files; none declares a uniform multiplicative empirical-vs-population comparison. (3) `grep -rnE '^(theorem|lemma|noncomputable def|def) \\S+' ../Causalean/Stat/Concentration/TailBounds/EmpiricalBernstein.lean` -> `empirical_variance_concentration`, `empirical_bernstein_ci_miss`: a SINGLE-function empirical-Bernstein CI, not a class-uniform comparison. (4) Causalean/Stat/EmpiricalProcess/GlivenkoCantelli.lean was checked for a uniform comparison -> Glivenko-Cantelli is an a.s. sup-convergence statement, wrong shape and no finite-sample remainder. RESULT: NOT FOUND — no total-fit reusable declaration exists for the multiplicative uniform comparison. REUSED PARTS (confirmed present, so this stays a small assembly rather than new machinery): the per-function two-sided Bernstein tail `bernstein_ge` / `bernstein_abs_ge` (Causalean/Stat/Concentration/TailBounds/Bernstein.lean:158,217 — read and verified: it is an `IIDSample` sample-mean tail `mu.real {eps <= sampleMean f n - int f} <= exp(-n eps^2/(2(2 sigma^2 + c eps)))` for a bounded measurable f, which is exactly the fixed-net-function ingredient), and the net apparatus `coveringNumber` / `coveringFinset` / `coveringFinset_cover` / `coveringFinset_card` (Covering/CoveringNumber.lean:42,96,103,112). The build-inline work is therefore: the sup-norm Lipschitz estimate ||H_{g,f} - H_{g',f'}||_inf <= (2 eta + 4) v for the Gibbs-weighted squared contrast (novel to this note — the 2 eta v factor comes from differentiating the finite Gibbs formula and is not in any surveyed module), the volume bound N_F(v) <= (1+2/v)^d on the finite-dim prediction class, the union bound over the product net of cardinality <= (1+4n(eta+2))^{2d}, and the elementary `sqrt(2 mu t/n) <= mu/2 + t/n` step that converts the Bernstein tail into the multiplicative pair. defer_tier stays false: every piece is small and the only genuinely new content is the finite Gibbs Lipschitz estimate."
+    },
+    "lem:measurable-maximum-theorem": {
+      "lean_kind": "assumption",
+      "lean_name": "MeasurableMaximumTheorem",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Topology.Metrizable.Basic"
+      ],
+      "defer_tier": false,
+      "gate": true,
+      "gate_class": "cited",
+      "target_file": "Localization/Concentration.lean",
+      "source": "cite:weigand-2026-measurable-maximum",
+      "infrastructure_id": "I-2",
+      "notes": "REDIRECT SYNC: cited interface matches Appendix F, Theorem F.3 over a separable metrizable (T2, metrizable, second-countable) space, a weakly measurable nonempty compact-valued correspondence, and a Caratheodory objective; it concludes measurable value and argmax correspondences plus a measurable selector. It remains a visible cited gate (gate_class fixed by D0 provenance = cited; assumed, never built, never deferred), carried as infrastructure_needed item I-2. DISCRETE-SUPPORT SYNC (this round): its instantiation is scoped by design decision f2.5-discrete-support — F sits inside the finite-dimensional Euclidean prediction space R^S (separable metrizable is then automatic), and the standing MeasurableSingletonClass instances on the finite supports supply the base measurable space. SCOPE CLARIFICATION (this round): this cited gate is consumed ONLY by thm:clean-temperature-feature-upper, whose idealized stabilized selector minimizes an inner SUP-over-correspondence objective U-hat_n(g)=sup_{f in Q_n} P_n H_{g,f} over the data-dependent correspondence Q_n. It is NOT needed for (i) the plain f-hat / coordinatewise-lower-envelope selectors of def:prediction-polytope-learner, which have a self-contained finite-dimensional measurability proof, nor (ii) the support-repair operator S_ref of def:minimax-risk, which on discrete finite supports is a finite measurable case split. Do not thread it into consumers beyond thm:clean-temperature-feature-upper (and the two capstones that inherit that theorem)."
+    },
+    "prop:zero-risk-nontrivial-shell": {
+      "lean_kind": "theorem",
+      "lean_name": "zero_risk_nontrivial_shell",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Lower/InformativeShell.lean",
+      "hyps": [],
+      "notes": "Explicit shared-feature design E_0 on which every shell member has the same publicly computable Gibbs optimum, so R_n=0 and N*=1. Constructs the design; uses lem:gibbs-regret-identity. Build-inline. DECISION-CLASS SYNC (this round): the witness step 'the constant learner returning pi-dagger belongs to L_n(E_0)' now also requires reference-supportedness; pi-dagger is a Gibbs tilt of pi_ref (at x_C the tilt generated by the public reward pair (1,0), elsewhere pi_ref itself), so its support equals supp pi_ref by the same Gibbs-numerator argument as `predictionPolytopeLearner_supported`. Elementary, stays build-inline."
+    },
+    "thm:fixed-design-feasibility-and-frontier-nonuniqueness": {
+      "lean_kind": "theorem",
+      "lean_name": "fixed_design_feasibility_and_frontier_nonuniqueness",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "FrontierNonuniqueness.lean",
+      "hyps": [],
+      "notes": "REDIRECT SYNC (F2 attempt 11): the fixed-experiment certificate conjunct is unconditional in C,D. The region assumptions 1<D<=C<exp eta scope only the frontier/nonuniqueness clauses, and the active-support certificate permits every nonempty I. Because this theorem explicitly states zero minimax risk for every n on E0, its frontier clause uses the separate untagged ZeroRiskFrontierNonuniqueAt companion rather than the sample-complexity-only FrontierNonuniqueAt used by the capstone. Its final uniform-lower-bound ceiling now quantifies both the uniform-bound premise and the <=1 conclusion over every eps>0, with no eps<1 restriction, using the all-positive companion of the same sample-complexity infimum."
+    },
+    "thm:clean-temperature-feature-upper": {
+      "lean_kind": "theorem",
+      "lean_name": "clean_temperature_feature_upper",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Upper/CleanTemperature.lean",
+      "hyps": [
+        "def:exact-shell",
+        "lem:zhao-uniform-square-comparison",
+        "lem:measurable-maximum-theorem"
+      ],
+      "notes": "Idealized stabilized global-optimization learner attains the clean dD upper order at every temperature, N*_E <= tildeO(dD min{eta/eps,eps^-2}), without using C. Assembles lem:bounded-linear-localization, lem:feature-coverage-domination, lem:two-endpoint-gibbs-conversion, lem:uniform-gibbs-radius-comparison, thm:feasible-index-region; measurability of the selector discharged by the CITED lem:measurable-maximum-theorem (threaded into hyps). DISCRETE-SUPPORT + DECISION-CLASS SYNC (this round — SUPERSEDES the prior 'full measurable simplex-valued decision class' note): the theorem setup carries the standing MeasurableSingletonClass instances on X and A, which realize the discrete/Borel measurable structures of design decision f2.5-discrete-support and are precisely what makes the prediction space F a separable metrizable subset of R^S so the CITED lem:measurable-maximum-theorem is applicable to the stabilized selector. Its learner pi-hat_stab = pi_{g-tilde_n} belongs to the REFERENCE-SUPPORTED class L_n(E): measurability of the lexicographic selector comes from the cited gate (weakly measurable compact-valued Q_n + Caratheodory objective P_n H_{g,f}), and supportedness is the same Gibbs-numerator argument as `predictionPolytopeLearner_supported`. The learner uses only (D_n,E) and neither rho, C, nor D. Build-inline; conditional on the cited measurable-maximum and (via localization) cited zhao interfaces."
+    },
+    "thm:fixed-design-index-insufficiency": {
+      "lean_kind": "theorem",
+      "lean_name": "fixed_design_index_insufficiency",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "FrontierNonuniqueness.lean",
+      "hyps": [
+        "def:exact-shell",
+        "lem:zhao-uniform-square-comparison",
+        "lem:measurable-maximum-theorem"
+      ],
+      "notes": "SCAFFOLD REDIRECT SYNC (round 10): sampleComplexity is defined for every positive eps; the boundary-shell and FrontierNonuniqueAt E0 clauses quantify over all eps>0, while the clean inversion alone retains 0<eps<1. Explicitly thread ExactShell and both cited gates consumed by the clean upper inversion. The fixed-experiment shell-certificate equivalence in this theorem is guarded by exactly 1 < D, D <= C, and C < exp(eta), matching the paper's stated scope. Its FrontierNonuniqueAt consumer carries only the stated all-positive-accuracy equality for E0, with no extra all-n zero-risk conjunct."
+    },
+    "thm:full-feasible-frontier-answer": {
+      "lean_kind": "theorem",
+      "lean_name": "full_feasible_frontier_answer",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "FrontierNonuniqueness.lean",
+      "hyps": [
+        "def:exact-shell",
+        "lem:zhao-uniform-square-comparison",
+        "lem:measurable-maximum-theorem"
+      ],
+      "notes": "SCAFFOLD REDIRECT SYNC (round 10): sampleComplexity is defined for every positive eps; the boundary-shell and FrontierNonuniqueAt E0 clauses quantify over all eps>0, while the clean inversion alone retains 0<eps<1. FrontierNonuniqueAt chooses c(C,D,eta) and eps0(C,D,eta) before quantifying d>=4, so the informative Omega(d/eps) constants are uniform in dimension, and its E0 branch states only sampleComplexity E0 eps C D = 1 for every eps>0. The stronger all-n zero-minimax-risk conjunct was removed from this capstone helper. A separate untagged ZeroRiskFrontierNonuniqueAt companion is used only by thm:fixed-design-feasibility-and-frontier-nonuniqueness, whose paper statement explicitly asserts zero risk."
+    }
+  }
+}

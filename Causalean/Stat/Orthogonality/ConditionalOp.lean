@@ -84,6 +84,7 @@ theorem IsBigOp.of_sqEnvelope
     intro n
     apply MeasureTheory.measure_mono_ae
     filter_upwards [hbound n] with ω hb hω
+    replace hω : M * rn n < |Xn n ω| := hω
     have hMr_pos : 0 < M * rn n := mul_pos hMpos (hrn n)
     have hsqX : (M * rn n) ^ 2 < (Xn n ω) ^ 2 := by
       rw [← sq_abs (Xn n ω), sq_lt_sq]
@@ -118,6 +119,7 @@ theorem IsLittleOp.of_sqEnvelope
     intro n
     apply MeasureTheory.measure_mono_ae
     filter_upwards [hbound n] with ω hb hω
+    replace hω : ε * rn n < |Xn n ω| := hω
     have hεr_pos : 0 < ε * rn n := mul_pos hε (hrn n)
     have hsqX : (ε * rn n) ^ 2 < (Xn n ω) ^ 2 := by
       rw [← sq_abs (Xn n ω), sq_lt_sq]

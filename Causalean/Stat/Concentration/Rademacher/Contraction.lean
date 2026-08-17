@@ -204,7 +204,7 @@ private lemma hybridInner_eq_base_add_phi
     hybridBase φ L F n S m (⟨m, hm⟩ : Fin n) σ i
       + (n : ℝ)⁻¹ * (σ (⟨m, hm⟩ : Fin n) : ℝ) * φ (F i (S ⟨m, hm⟩)) := by
   unfold hybridInner hybridBase
-  rw [Finset.sum_eq_sum_diff_singleton_add (Finset.mem_univ (⟨m, hm⟩ : Fin n))]
+  rw [Finset.sum_eq_sum_sdiff_singleton_add (Finset.mem_univ (⟨m, hm⟩ : Fin n))]
   simp
   ring
 
@@ -216,7 +216,7 @@ private lemma hybridInner_flip_eq_base_sub_phi
     hybridBase φ L F n S m (⟨m, hm⟩ : Fin n) σ i
       - (n : ℝ)⁻¹ * (σ (⟨m, hm⟩ : Fin n) : ℝ) * φ (F i (S ⟨m, hm⟩)) := by
   unfold hybridInner hybridBase
-  rw [Finset.sum_eq_sum_diff_singleton_add (Finset.mem_univ (⟨m, hm⟩ : Fin n))]
+  rw [Finset.sum_eq_sum_sdiff_singleton_add (Finset.mem_univ (⟨m, hm⟩ : Fin n))]
   have hsum :
       ∑ j ∈ Finset.univ.erase (⟨m, hm⟩ : Fin n),
           ((flipSign n (⟨m, hm⟩ : Fin n) σ j : ℝ) *
@@ -231,7 +231,6 @@ private lemma hybridInner_flip_eq_base_sub_phi
   rw [Finset.sdiff_singleton_eq_erase]
   rw [hsum]
   have hflip := flipSign_apply_same n (⟨m, hm⟩ : Fin n) σ
-  simp only [Int.reduceNeg] at hflip
   simp only [Int.reduceNeg, mul_ite, Finset.mem_univ, Finset.sum_erase_eq_sub,
     lt_self_iff_false, ↓reduceIte]
   rw [hflip]
@@ -245,7 +244,7 @@ private lemma hybridInner_succ_eq_base_add_linear
     hybridBase φ L F n S m (⟨m, hm⟩ : Fin n) σ i
       + (n : ℝ)⁻¹ * (σ (⟨m, hm⟩ : Fin n) : ℝ) * (L * F i (S ⟨m, hm⟩)) := by
   unfold hybridInner hybridBase
-  rw [Finset.sum_eq_sum_diff_singleton_add (Finset.mem_univ (⟨m, hm⟩ : Fin n))]
+  rw [Finset.sum_eq_sum_sdiff_singleton_add (Finset.mem_univ (⟨m, hm⟩ : Fin n))]
   have hsum :
       ∑ j ∈ Finset.univ.erase (⟨m, hm⟩ : Fin n),
           ((σ j : ℝ) *
@@ -270,7 +269,7 @@ private lemma hybridInner_flip_succ_eq_base_sub_linear
     hybridBase φ L F n S m (⟨m, hm⟩ : Fin n) σ i
       - (n : ℝ)⁻¹ * (σ (⟨m, hm⟩ : Fin n) : ℝ) * (L * F i (S ⟨m, hm⟩)) := by
   unfold hybridInner hybridBase
-  rw [Finset.sum_eq_sum_diff_singleton_add (Finset.mem_univ (⟨m, hm⟩ : Fin n))]
+  rw [Finset.sum_eq_sum_sdiff_singleton_add (Finset.mem_univ (⟨m, hm⟩ : Fin n))]
   have hsum :
       ∑ j ∈ Finset.univ.erase (⟨m, hm⟩ : Fin n),
           ((flipSign n (⟨m, hm⟩ : Fin n) σ j : ℝ) *
@@ -286,7 +285,6 @@ private lemma hybridInner_flip_succ_eq_base_sub_linear
   rw [Finset.sdiff_singleton_eq_erase]
   rw [hsum]
   have hflip := flipSign_apply_same n (⟨m, hm⟩ : Fin n) σ
-  simp only [Int.reduceNeg] at hflip
   simp only [Int.reduceNeg, mul_ite, Finset.mem_univ, Finset.sum_erase_eq_sub,
     lt_self_iff_false, ↓reduceIte, lt_add_iff_pos_right, zero_lt_one]
   rw [hflip]
@@ -356,7 +354,7 @@ private lemma hybrid_pair_le
 
 private lemma sum_flipSign (n : ℕ) (k : Fin n) (A : Signs n → ℝ) :
     ∑ σ : Signs n, A (flipSign n k σ) = ∑ σ : Signs n, A σ := by
-  simpa using (flipSignEquiv n k).sum_comp A
+  exact Fintype.sum_bijective (flipSign n k) (flipSignEquiv n k).bijective _ _ fun _ => rfl
 
 private lemma hybridAverage_mono_step
     [Nonempty ι] [Finite ι]

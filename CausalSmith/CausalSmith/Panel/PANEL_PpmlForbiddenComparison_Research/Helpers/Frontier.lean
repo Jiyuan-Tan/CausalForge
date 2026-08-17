@@ -114,6 +114,10 @@ noncomputable def fourCohortShare (_g : Cohort 4) : OpenUnit :=
 def fourCohortLimitBaseline (_g : Cohort 4) : PosReal := ⟨1, zero_lt_one⟩
   -- @realizes bar_b_g(limiting cohort baseline equal to one in W4)
 
+/-- The data specifying a four-period triangular-array configuration: a cohort support,
+the cohort counts along the array, the unit baselines at each array size, the untreated
+time effects, and the cohort-time log proportional effects. The paper's explicit
+counterexample world is a single element of this type. -/
 abbrev FourCohortConfiguration :=
   Finset (Cohort 4) ×
     ((ℕ → Cohort 4 → ℕ) ×

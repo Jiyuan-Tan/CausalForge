@@ -276,9 +276,10 @@ theorem iotaMap_fixed (n : N) : iotaMap (.fixed n : SWIGNode N) = .random n := r
 /-- Fixed nodes in the SWIG are roots (no parents). -/
 theorem swig_fixed_are_roots (G : DAG N) (targets : Finset N) (n : N) :
     (swigDAG G targets).parents (.fixed n) = ∅ := by
-  simp only [DAG.parents, swigDAG, Finset.filter_eq_empty_iff]
-  intro x _
-  cases x <;> simp [swigEdge]
+  rw [Finset.eq_empty_iff_forall_notMem]
+  intro x hx
+  simp only [DAG.parents, swigDAG] at hx
+  cases x <;> simp [swigEdge] at hx
 
 /-- In the SWIG, every random node has the same incoming edges as in the original
     DAG, with each parent represented by its random or fixed version according to
@@ -288,7 +289,8 @@ theorem swig_target_parents (G : DAG N) (targets : Finset N) (d : N) :
       ∃ p, G.edge p d ∧ x = .random p ∧ p ∉ targets ∨
            G.edge p d ∧ x = .fixed p ∧ p ∈ targets := by
   intro x
-  simp only [DAG.parents, swigDAG, Finset.mem_filter, Finset.mem_univ, true_and]
+  rw [DAG.mem_parents]
+  show swigEdge G targets x (.random d) ↔ _
   constructor
   · intro hedge
     cases x with
@@ -307,17 +309,17 @@ theorem swig_target_parents (G : DAG N) (targets : Finset N) (d : N) :
 theorem swig_random_root_of_root (G : DAG N) (targets : Finset N) (n : N)
     (hroot : G.parents n = ∅) :
     (swigDAG G targets).parents (.random n) = ∅ := by
-  simp only [DAG.parents, swigDAG, Finset.filter_eq_empty_iff]
-  intro x _
+  rw [Finset.eq_empty_iff_forall_notMem]
+  intro x hx
+  rw [DAG.mem_parents] at hx
+  replace hx : swigEdge G targets x (.random n) := hx
   cases x with
   | random u =>
-    simp only [swigEdge]
-    intro ⟨hedge, _⟩
+    obtain ⟨hedge, _⟩ := hx
     have : u ∈ G.parents n := G.mem_parents.mpr hedge
     simp [hroot] at this
   | fixed d =>
-    simp only [swigEdge]
-    intro ⟨_, hedge⟩
+    obtain ⟨_, hedge⟩ := hx
     have : d ∈ G.parents n := G.mem_parents.mpr hedge
     simp [hroot] at this
 

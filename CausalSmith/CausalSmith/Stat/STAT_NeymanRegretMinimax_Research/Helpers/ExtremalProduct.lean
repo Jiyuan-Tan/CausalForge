@@ -59,7 +59,7 @@ lemma armTangentStrength_eq_l2ResidualQuadratic_of_finite_nonconstant
     intro b
     change Causalean.Stat.MomentProblems.ResidualQuadratic.MeasureBridge.l2ResidualQuadratic μ ≤
       ∫ y, (y ^ 2 - b.1 - b.2 * y) ^ 2 ∂armMarginal nu a
-    simpa [μ] using Causalean.Stat.MomentProblems.ResidualQuadratic.MeasureBridge.l2ResidualQuadratic_le
+    exact Causalean.Stat.MomentProblems.ResidualQuadratic.MeasureBridge.l2ResidualQuadratic_le
       μ hfin hnd b.1 b.2
 
 -- @node: extremalProduct_balanced_mtan_positive_complexity

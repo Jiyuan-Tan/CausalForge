@@ -52,8 +52,7 @@ projections, the indicator functions `indEq`, and the value-space
 nuisance functions stored in `S.η₀`. -/
 lemma measurable_ψ_seqDR (S : DTREstimationSystem P δ γ) :
     Measurable S.ψ_seqDR := by
-  simpa [DTREstimationSystem.ψ_seqDR] using
-    S.measurable_seqDRMomentFunctional S.η₀ S.θ₀
+  exact S.measurable_seqDRMomentFunctional S.η₀ S.θ₀
 
 /-! ## Helpers: stagewise propensity nondegeneracy -/
 
@@ -171,8 +170,8 @@ lemma cond_exp_residual_zero_stage0
         =ᵐ[P.μ]
           B0.condExpGiven (fun ω => I0 ω * M1 ω) P.μ
             - B0.condExpGiven (fun ω => I0 ω * M0 ω) P.μ := by
-    simpa [POCFBundle.condExpGiven] using
-      MeasureTheory.condExp_sub hI0M1_int hI0M0_int B0.sigma
+    simp only [POCFBundle.condExpGiven]
+    exact MeasureTheory.condExp_sub hI0M1_int hI0M0_int B0.sigma
   have hI0_sm_B1 :
       StronglyMeasurable[B1.sigma] I0 := by
     simpa [B1, I0] using
@@ -190,13 +189,16 @@ lemma cond_exp_residual_zero_stage0
       B1.condExpGiven_mul_of_stronglyMeasurable_left
         (f := I0) (g := Y) hI0_sm_B1 hI0Y_int hY_int
     filter_upwards [hpull,
-      (by simpa [I0, B1, M1, Y] using S.indD_mul_μ₁_val_comp_eq hA)] with ω hp hμ1
+      S.indD_mul_μ₁_val_comp_eq hA] with ω hp hμ1
     have hp' :
         B1.condExpGiven (fun ω => I0 ω * Y ω) P.μ ω =
           I0 ω * B1.condExpGiven Y P.μ ω := by
-      simpa [Pi.mul_apply] using hp
+      exact hp
     have hμ1_local : I0 ω * M1 ω = I0 ω * B1.condExpGiven Y P.μ ω := by
-      simpa [I0, B1, M1, Y, hI0_eq_indD] using hμ1
+      have hμ1' : S.toPODTRSystem.indD S.dbar 1 ω * M1 ω
+          = S.toPODTRSystem.indD S.dbar 1 ω * B1.condExpGiven Y P.μ ω := hμ1
+      rw [hI0_eq_indD]
+      exact hμ1'
     rw [hp']
     exact hμ1_local
   haveI : IsFiniteMeasure (P.μ.trim B1.sigma_le) := isFiniteMeasure_trim _
@@ -236,7 +238,7 @@ lemma cond_exp_residual_zero_stage0
       (S.toPODTRSystem.factualD ⟨0, by decide⟩)
       (S.toPODTRSystem.Y_of S.dbar) P.μ
     rw [hYof_eq_proj]
-    simpa [B0] using hproj
+    exact hproj
   let u : δ → ℝ := ({S.dbar ⟨0, by decide⟩} : Set δ).indicator (fun _ => (1 : ℝ))
   have hu_meas : Measurable u :=
     measurable_const.indicator (MeasurableSet.singleton _)
@@ -322,7 +324,7 @@ lemma cond_exp_residual_zero_stage0
     have hp' :
         B0.condExpGiven (fun ω => I0 ω * M0 ω) P.μ ω =
           B0.condExpGiven I0 P.μ ω * M0 ω := by
-      simpa [Pi.mul_apply] using hp
+      exact hp
     rw [hp', he]
   rw [show (fun ω => (S.toPODTRSystem.dVar ⟨0, by decide⟩).indicator
             (S.dbar ⟨0, by decide⟩) ω *
@@ -451,8 +453,8 @@ lemma cond_exp_residual_zero_stage1
         =ᵐ[P.μ]
           B1.condExpGiven (fun ω => I0 ω * (I1 ω * Yf ω)) P.μ
             - B1.condExpGiven (fun ω => I0 ω * (I1 ω * M1 ω)) P.μ := by
-    simpa [POCFBundle.condExpGiven] using
-      MeasureTheory.condExp_sub hI0I1Yf_int hI0I1M1_int B1.sigma
+    simp only [POCFBundle.condExpGiven]
+    exact MeasureTheory.condExp_sub hI0I1Yf_int hI0I1M1_int B1.sigma
   have hConsistency :
       (fun ω => Yf ω * S.toPODTRSystem.indD S.dbar 2 ω)
         = (fun ω => Y ω * S.toPODTRSystem.indD S.dbar 2 ω) := by
@@ -542,7 +544,7 @@ lemma cond_exp_residual_zero_stage1
       (S.toPODTRSystem.factualD ⟨1, by decide⟩)
       (S.toPODTRSystem.Y_of S.dbar) P.μ
     rw [hYof_eq_proj]
-    simpa [B1] using hproj
+    exact hproj
   let u : δ → ℝ := ({S.dbar ⟨1, by decide⟩} : Set δ).indicator (fun _ => (1 : ℝ))
   have hu_meas : Measurable u :=
     measurable_const.indicator (MeasurableSet.singleton _)
@@ -623,14 +625,17 @@ lemma cond_exp_residual_zero_stage1
         (S.toPODTRSystem.indD_factor_split S.dbar 0 (by decide)) ω
       simp [I0, PODTRSystem.indD] at hsplit ⊢
     filter_upwards [hpull_I0Y, hExch, S.e₁_compat,
-      (by simpa [I0, B1, M1, Y] using S.indD_mul_μ₁_val_comp_eq hA)] with
+      S.indD_mul_μ₁_val_comp_eq hA] with
       ω hp hE he hμ
     have hp' :
         B1.condExpGiven (fun ω => I0 ω * (I1 ω * Y ω)) P.μ ω =
           I0 ω * B1.condExpGiven (fun ω => I1 ω * Y ω) P.μ ω := by
-      simpa [Pi.mul_apply, mul_assoc] using hp
+      exact hp
     have hμ_local : I0 ω * M1 ω = I0 ω * B1.condExpGiven Y P.μ ω := by
-      simpa [I0, B1, M1, Y, hI0_eq_indD] using hμ
+      have hμ' : S.toPODTRSystem.indD S.dbar 1 ω * M1 ω
+          = S.toPODTRSystem.indD S.dbar 1 ω * B1.condExpGiven Y P.μ ω := hμ
+      rw [hI0_eq_indD]
+      exact hμ'
     rw [hp', hE, he]
     calc
       I0 ω * (S.e₁_val

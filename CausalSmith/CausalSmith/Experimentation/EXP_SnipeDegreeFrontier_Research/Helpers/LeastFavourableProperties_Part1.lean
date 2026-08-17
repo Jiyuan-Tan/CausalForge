@@ -110,8 +110,8 @@ lemma blockGraph_outNbhd_eq_nbhd
     outNbhd (blockGraph n d) j = nbhd (blockGraph n d) j := by
   classical
   ext i
-  simp only [outNbhd, nbhd, Finset.mem_filter, Finset.mem_univ, true_and,
-    blockGraph]
+  simp only [outNbhd, nbhd, Finset.mem_filter, Finset.mem_univ, true_and]
+  simp only [blockGraph]
   aesop
 
 /-- The truncated complete-block relation belongs to the degree-`d` graph
@@ -184,8 +184,8 @@ lemma blockSchedule_supported
     · exfalso
       apply hnsub
       intro j hj
-      simp only [nbhd, Finset.mem_filter, Finset.mem_univ, true_and,
-        blockGraph]
+      simp only [nbhd, Finset.mem_filter, Finset.mem_univ, true_and]
+      simp only [blockGraph]
       exact ⟨(hT j hj).1, hi, (hT j hj).2⟩
     · simp [hT]
   · simp [hi]
@@ -384,8 +384,8 @@ lemma sum_block_powerset_localSubset
         _ ≤ n := activeCount_le n d⟩
   have he_mem (k : Fin d) :
       e k ∈ nbhd (blockGraph n d) i := by
-    simp only [nbhd, Finset.mem_filter, Finset.mem_univ, true_and,
-      blockGraph]
+    simp only [nbhd, Finset.mem_filter, Finset.mem_univ, true_and]
+    simp only [blockGraph]
     have hval :
         (e k).val < activeCount n d := by
       dsimp [e]

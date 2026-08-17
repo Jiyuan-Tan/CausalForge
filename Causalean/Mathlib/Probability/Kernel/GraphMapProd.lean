@@ -53,8 +53,13 @@ theorem mechanismKernel_apply (νₗ : Measure γ) [SFinite νₗ]
   rfl
 
 /-- The mechanism kernel is Markov when the exogenous-noise law is a probability measure and
-the mechanism is measurable. -/
-instance instIsMarkovKernelMechanismKernel (νₗ : Measure γ)
+the mechanism is measurable.
+
+Declared as a `theorem`, not an `instance`: the measurability hypothesis `hΦ` is an ordinary
+explicit argument that typeclass synthesis can never produce, so Lean rejects it as an instance
+from v4.33.0 on. Every use site already applies it by name, so this is a registration change
+only — the statement is unchanged. -/
+theorem instIsMarkovKernelMechanismKernel (νₗ : Measure γ)
     [IsProbabilityMeasure νₗ] {Φ : β × γ → δ} (hΦ : Measurable Φ) :
     IsMarkovKernel (mechanismKernel νₗ Φ) := by
   unfold mechanismKernel

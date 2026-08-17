@@ -51,6 +51,7 @@ theorem ProbabilityTheory.Kernel.iIndepFun.ae_iIndepFun_real
   have hπ_pi : ∀ i, IsPiSystem (π i) := by
     intro i
     convert Real.isPiSystem_Iic_rat.comap (X i) using 1
+    rfl
   have hπ_gen : ∀ i, MeasurableSpace.comap (X i) (borel ℝ) =
       MeasurableSpace.generateFrom (π i) := by
     intro i
@@ -138,7 +139,8 @@ theorem hasSubgaussianMGF_linearCombination_of_iIndep
   have hc_sum : (∑ i, c i) =
       ⟨∑ i, (v i) ^ 2, by positivity⟩ := by
     apply NNReal.eq
-    simp only [NNReal.coe_sum, c, NNReal.coe_mk]
+    rw [NNReal.coe_sum]
+    rfl
   rw [hc_sum] at hsum
   simpa only [Y] using hsum
 

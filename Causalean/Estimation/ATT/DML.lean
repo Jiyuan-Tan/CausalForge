@@ -379,7 +379,7 @@ theorem dml_ATT_isAsymLinear
     have hcond_L2 :
         MemLp (P.μ[S.toPOBackdoorSystem.YofD false |
           S.toPOBackdoorSystem.sigmaX]) 2 P.μ :=
-      hY0_L2.condExp
+      hY0_L2.condExp (by norm_num)
     have hcomp_L2 :
         MemLp (fun ω => S.μ₀_val (S.toPOBackdoorSystem.factualX ω)) 2 P.μ :=
       hcond_L2.ae_eq (S.μ₀_compat hA)
@@ -452,10 +452,10 @@ theorem dml_ATT_isAsymLinear
     have hθ : Measurable (fun _ : P.Ω × (γ × Bool × ℝ) => S.θ₀) :=
       measurable_const
     simpa [mul_assoc] using
-      (((hindA.mul (hY.sub hμ)).sub
-        ((hOne.sub hindA).mul
-          ((he.div (hOne.sub he)).mul (hY.sub hμ)))).sub
-        (hindA.mul hθ))
+      (((hindA.fun_mul (hY.fun_sub hμ)).fun_sub
+        ((hOne.fun_sub hindA).fun_mul
+          ((he.fun_div (hOne.fun_sub he)).fun_mul (hY.fun_sub hμ)))).fun_sub
+        (hindA.fun_mul hθ))
   have h_m_foldA :
       ∀ n,
         Measurable[MeasurableSpace.comap
@@ -540,10 +540,10 @@ theorem dml_ATT_isAsymLinear
           (fun _ => S.θ₀) :=
       measurable_const
     simpa [mul_assoc] using
-      (((hindA.mul (hY.sub hμ)).sub
-        ((hOne.sub hindA).mul
-          ((he.div (hOne.sub he)).mul (hY.sub hμ)))).sub
-        (hindA.mul hθ))
+      (((hindA.fun_mul (hY.fun_sub hμ)).fun_sub
+        ((hOne.fun_sub hindA).fun_mul
+          ((he.fun_div (hOne.fun_sub he)).fun_mul (hY.fun_sub hμ)))).fun_sub
+        (hindA.fun_mul hθ))
   have h_m_int_abs : ∀ n ω,
       Integrable (fun z => aipwMomentATTFunctional (η_hat n ω) z S.θ₀) S.P_Z := by
     intro n ω
@@ -576,14 +576,16 @@ theorem dml_ATT_isAsymLinear
           (((attGeneralMoment S hη₀_mem hπ_pos).ρ₁
               (η_hat n ω) S.η₀ : NNReal) : ℝ))
         (fun _ => (1 : ℝ)) P.μ := by
-    simpa [attGeneralMoment, η₀, η_hat] using h_mu_rate
+    simp only [attGeneralMoment, η₀, η_hat]
+    exact h_mu_rate
   have h_indiv_rate_ρ₂ :
       IsLittleOp
         (fun n ω =>
           (((attGeneralMoment S hη₀_mem hπ_pos).ρ₂
               (η_hat n ω) S.η₀ : NNReal) : ℝ))
         (fun _ => (1 : ℝ)) P.μ := by
-    simpa [attGeneralMoment, η₀, η_hat] using h_e_rate
+    simp only [attGeneralMoment, η₀, η_hat]
+    exact h_e_rate
   have h_product_rate_abs :
       IsLittleOp
         (fun n ω =>
@@ -592,7 +594,8 @@ theorem dml_ATT_isAsymLinear
             (((attGeneralMoment S hη₀_mem hπ_pos).ρ₂
                 (η_hat n ω) S.η₀ : NNReal) : ℝ))
         (fun n => (n : ℝ) ^ (-(1 / 2 : ℝ))) P.μ := by
-    simpa [attGeneralMoment, η₀, η_hat] using h_product_rate
+    simp only [attGeneralMoment, η₀, η_hat]
+    exact h_product_rate
   -- 5. Apply the abstract theorem.
   have hAL :=
     att_dml_isAsymLinear S hη₀_mem h_e_lb h_overlap hA hπ_pos h_y2 h_y0_2 hIPW
@@ -692,15 +695,6 @@ theorem dml_ATT_isAsymLinear
         rw [Finset.mul_sum]
         exact Finset.sum_congr rfl (fun _ _ => by field_simp [hπ_pos.ne'])
       rw [hsum_cancel]
-      have hAraw :
-          (∑ i ∈ split.foldB n,
-            aipwMomentATT (sample.Z i ω) (μ₀_hat n ω) (e_hat n ω) S.θ₀) *
-              Nat.rawCast 1 =
-            ∑ i ∈ split.foldB n,
-              aipwMomentATT (sample.Z i ω) (μ₀_hat n ω) (e_hat n ω) S.θ₀ := by
-        norm_num
-      exact congrArg (fun a => a - (∑ x ∈ split.foldB n,
-        aipwMomentATT (sample.Z x ω) S.η₀.μ₀_fn S.η₀.e_fn S.θ₀)) hAraw.symm
   rw [hfun_eq]
   exact h
 

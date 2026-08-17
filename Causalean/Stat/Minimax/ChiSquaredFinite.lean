@@ -58,7 +58,7 @@ theorem finite_one_add_chiSqDiv {Ω : Type*} [MeasurableSpace Ω] [Fintype Ω]
     1 + chiSqDiv μ ν = ∑ x, (μ.real {x}) ^ 2 / (ν.real {x}) := by
   have hexp : 1 + chiSqDiv μ ν = ∫ x, ((μ.rnDeriv ν x).toReal) ^ 2 ∂ν := by
     rw [chiSqDiv_eq hac (Integrable.of_finite)]; ring
-  rw [hexp, integral_fintype _ (Integrable.of_finite)]
+  rw [hexp, integral_fintype (Integrable.of_finite)]
   apply Finset.sum_congr rfl
   intro x _
   by_cases h : ν {x} = 0

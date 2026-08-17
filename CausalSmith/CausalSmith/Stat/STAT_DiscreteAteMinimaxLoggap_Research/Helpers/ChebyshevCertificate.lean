@@ -17,6 +17,12 @@ lemma shifted_chebyshev_expansion (M : ℕ) (x : ℝ) :
           Nat.choose (M + j) (2 * j) * 4 ^ j * x ^ j :=
   shiftedChebyshevExpansion M x
 
+/-- For a positive degree, the Chebyshev polynomial of the first kind evaluated at the
+shifted argument one minus twice the variable splits into three pieces: the constant
+one, a linear term with coefficient minus twice the squared degree, and a remainder
+equal to twice the squared degree times the variable squared times the explicit
+polynomial continuation.  This isolates the quadratic-and-higher part of the shifted
+Chebyshev expansion that the light-cell approximation actually uses. -/
 lemma chebyshev_gPolynomial_identity {M : ℕ} (hM : 0 < M) (x : ℝ) :
     (Polynomial.Chebyshev.T ℝ M).eval (1 - 2 * x) =
       1 - 2 * (M : ℝ)^2 * x + 2 * (M : ℝ)^2 * x^2 * gPolynomial M x := by
@@ -374,8 +380,7 @@ lemma gpos_bound {M : ℕ} (hM : 0 < M) {z : ℝ} (hz : 0 ≤ z) :
     have hgterm : gpos M 1 ≤ 2 * (M:ℝ)^2 * gpos M 1 := by
       nlinarith [mul_nonneg (sq_nonneg (M:ℝ)) hg1n]
     calc
-      gpos M 1 ≤ 1 + 2 * (M:ℝ)^2 + 2 * (M:ℝ)^2 * 1 * gpos M 1 := by
-        simp only [mul_one]
+      gpos M 1 ≤ 1 + 2 * (M:ℝ)^2 + 2 * (M:ℝ)^2 * gpos M 1 := by
         linarith [sq_nonneg (M:ℝ)]
       _ = (Polynomial.Chebyshev.T ℝ M).eval 3 := hid.symm
   have hg1 : gpos M 1 ≤ (6:ℝ)^M := hg1T.trans (chebyshev_three_le M)

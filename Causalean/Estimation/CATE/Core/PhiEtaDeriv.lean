@@ -157,14 +157,11 @@ private lemma phi_eta_real_line_hasDerivAt
         + ((1 - a) / (1 - e)) * dm0
         - ((1 - a) / (1 - e) ^ 2) * (y - m0) * de) 0 := by
   have h_m1 : HasDerivAt (fun t : ℝ => m1 + t * dm1) dm1 0 := by
-    simpa only [Pi.add_apply, zero_add, one_mul] using
-      (hasDerivAt_const (0 : ℝ) m1).add ((hasDerivAt_id (0 : ℝ)).mul_const dm1)
+    exact (((hasDerivAt_id (0 : ℝ)).mul_const dm1).const_add m1).congr_deriv (one_mul dm1)
   have h_m0 : HasDerivAt (fun t : ℝ => m0 + t * dm0) dm0 0 := by
-    simpa only [Pi.add_apply, zero_add, one_mul] using
-      (hasDerivAt_const (0 : ℝ) m0).add ((hasDerivAt_id (0 : ℝ)).mul_const dm0)
+    exact (((hasDerivAt_id (0 : ℝ)).mul_const dm0).const_add m0).congr_deriv (one_mul dm0)
   have h_e : HasDerivAt (fun t : ℝ => e + t * de) de 0 := by
-    simpa only [Pi.add_apply, zero_add, one_mul] using
-      (hasDerivAt_const (0 : ℝ) e).add ((hasDerivAt_id (0 : ℝ)).mul_const de)
+    exact (((hasDerivAt_id (0 : ℝ)).mul_const de).const_add e).congr_deriv (one_mul de)
   have h_one_sub_e : HasDerivAt (fun t : ℝ => 1 - (e + t * de)) (-de) 0 := by
     change HasDerivAt ((fun _ : ℝ => (1 : ℝ)) - fun t : ℝ => e + t * de) (-de) 0
     simpa only [Pi.sub_apply, zero_sub] using
@@ -182,6 +179,9 @@ private lemma phi_eta_real_line_hasDerivAt
     convert ((hasDerivAt_const (0 : ℝ) a).div h_e
         (by simpa only [zero_mul, add_zero] using he)).mul
         ((hasDerivAt_const (0 : ℝ) y).sub h_m1) using 1
+    -- `convert` now also emits typeclass-instance equality side goals.
+    case e'_4 => rfl
+    case e'_5 => rfl
     simp only [Pi.div_apply, Pi.sub_apply, zero_mul, add_zero]
     field_simp [he]
     ring
@@ -197,10 +197,17 @@ private lemma phi_eta_real_line_hasDerivAt
     convert ((hasDerivAt_const (0 : ℝ) (1 - a)).div h_one_sub_e
         (by simpa only [zero_mul, add_zero] using h1e)).mul
         ((hasDerivAt_const (0 : ℝ) y).sub h_m0) using 1
+    -- `convert` now also emits typeclass-instance equality side goals.
+    case e'_4 => rfl
+    case e'_5 => rfl
     simp only [Pi.div_apply, Pi.sub_apply, zero_mul, add_zero]
     field_simp [h1e]
     ring
   convert ((h_term1.add h_term2).sub h_term3).sub (hasDerivAt_const (0 : ℝ) (0 : ℝ)) using 1
+  -- `convert` now also emits typeclass-instance and point-free/lambda side goals.
+  case e'_4 => rfl
+  case e'_5 => rfl
+  case e'_8 => rfl
   ring
 
 /-- Pointwise convergence of the difference quotient of `phi_eta` in the

@@ -59,6 +59,20 @@ export interface ProseOverlay {
   statement_notes?: Record<string, { justification?: string; gap?: string; consumer?: string }>;
 }
 
+/** One prose-only update bundle, shared by D0-SOLVE and the D0.R transaction
+ * boundary. Keeping this shape named lets a panel-cleared D0.R metadata repair
+ * move into the durable working overlay without copying formal/proof edits. */
+export interface ProseUpdates {
+  tldr?: string;
+  project_justification?: Record<string, unknown>;
+  sampling_model?: Record<string, string>;
+  related_work?: string;
+  interpretation?: string;
+  technical_internal_limitation?: string;
+  honest_scope?: string;
+  statement_notes?: Array<{ id: string; justification?: string; gap?: string; consumer?: string }>;
+}
+
 const OVERLAY_SCALAR_FIELDS = [
   "tldr",
   "related_work",
@@ -71,16 +85,7 @@ const OVERLAY_SCALAR_FIELDS = [
  *  per field; `sampling_model` and `statement_notes` merge per key). */
 export function mergeProseOverlay(
   overlay: ProseOverlay | undefined,
-  updates: {
-    tldr?: string;
-    project_justification?: Record<string, unknown>;
-    sampling_model?: Record<string, string>;
-    related_work?: string;
-    interpretation?: string;
-    technical_internal_limitation?: string;
-    honest_scope?: string;
-    statement_notes?: Array<{ id: string; justification?: string; gap?: string; consumer?: string }>;
-  },
+  updates: ProseUpdates,
 ): ProseOverlay {
   const next: ProseOverlay = { ...(overlay ?? {}) };
   for (const field of OVERLAY_SCALAR_FIELDS) {
@@ -105,6 +110,37 @@ export function mergeProseOverlay(
     };
   }
   return next;
+}
+
+/** Extract only prose/positioning replacements from an edited core. Formal
+ * claims, proofs, dependencies, definitions and assumptions are deliberately
+ * absent: those remain provisional until the complete D0.5 gate passes. */
+export function diffCoreProse(before: Core, after: Core): ProseUpdates | null {
+  const updates: ProseUpdates = {};
+  for (const field of OVERLAY_SCALAR_FIELDS) {
+    if (after[field] !== undefined && after[field] !== before[field]) updates[field] = after[field];
+  }
+  for (const [field, value] of Object.entries(after.project_justification ?? {})) {
+    if (value !== undefined && value !== before.project_justification?.[field as keyof NonNullable<Core["project_justification"]>]) {
+      updates.project_justification = { ...(updates.project_justification ?? {}), [field]: value };
+    }
+  }
+  for (const [field, value] of Object.entries(after.sampling_model ?? {})) {
+    if (value !== undefined && value !== before.sampling_model?.[field]) {
+      updates.sampling_model = { ...(updates.sampling_model ?? {}), [field]: value };
+    }
+  }
+  const beforeStatements = new Map(before.statements.map((statement) => [statement.id, statement]));
+  for (const statement of after.statements) {
+    const prior = beforeStatements.get(statement.id);
+    if (!prior) continue;
+    const note: { id: string; justification?: string; gap?: string; consumer?: string } = { id: statement.id };
+    for (const field of ["justification", "gap", "consumer"] as const) {
+      if (statement[field] !== undefined && statement[field] !== prior[field]) note[field] = statement[field];
+    }
+    if (Object.keys(note).length > 1) (updates.statement_notes ??= []).push(note);
+  }
+  return Object.keys(updates).length > 0 ? updates : null;
 }
 
 function applyProseOverlay(core: Core, overlay: ProseOverlay | undefined): void {

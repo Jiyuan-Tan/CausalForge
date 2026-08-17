@@ -1,27 +1,30 @@
 \begin{proof}[Proof of \cref{obj:thm:postdesign-wald}]
-The eventual identity \(|O_n|=n\) implies that \(|O_n|\to\infty\).
+The eventual identity \(|O_n|=n\) implies that \(|O_n|\to\infty\); in particular \(n>0\) eventually.
 
 \begin{enumerate}
 \item Fix \(n\).  Feasibility and \(\epsilon_n\in(0,1/2)\) give
 \[
 0<\epsilon_n\le p_{n,k}\le 1-\epsilon_n<1
-\qquad(k\in I_n).
+\qquad(k\in I_n),
 \]
-Thus the heterogeneous envelope bound applies.  Its variance conclusion, together with the defining identity between the conservative estimator and the graph envelope, yields
+so \cref{obj:thm:hetero-envelope} applies at \(p_n\): its assignment-probability requirement is exactly the display above, its design requirement is \cref{obj:ass:independent-heterogeneous-bernoulli}, and its outcome requirement is \cref{obj:ass:bounded-outcomes}.  Its second conclusion is
+\[
+\sigma^2_{G_n,p_n}(Y)\le V_{\mathrm{env}}(G_n,p_n),
+\]
+and \cref{obj:def:conservative-variance-estimator} states \(\widehat V_{\mathrm{cons}}(G_n,p_n)=V_{\mathrm{env}}(G_n,p_n)\), so
 \[
 \sigma^2_{G_n,p_n}(Y)\le \widehat V_{\mathrm{cons}}(G_n,p_n).
 \]
 Since \(n\) was arbitrary, this proves the first assertion.
-
 % lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.hetero_envelope
 
-\item By nondegeneracy, there are \(c>0\) and an eventual tail on which
+\item By \cref{obj:ass:variance-nondegenerate} there are \(c>0\) and an eventual tail on which
 \[
 c\le \sigma^2_{G_n,p_n}(Y).
 \]
 Hence \(\sigma^2_{G_n,p_n}(Y)>0\) eventually.  The eventual identity
 \(|O_n|=n\), together with \(n\to\infty\), also gives \(|O_n|>0\) eventually.
-Under the remaining assumptions, \cref{obj:thm:hetero-clt} gives, for every \(s\in\mathbb R\),
+Under the remaining assumptions — which are precisely those of \cref{obj:thm:hetero-clt}, including outcome indexing, feasibility with \(p_n=p_n^*(G_n)\), uniform positivity, and the bounded-degree and bounded-overlap conditions — \cref{obj:thm:hetero-clt} gives, for every \(s\in\mathbb R\),
 \[
 \Pr_{p_n}\!\left(
 \frac{\sqrt n\,[\widehat\tau_H(p_n)-\tau_n]}
@@ -29,40 +32,65 @@ Under the remaining assumptions, \cref{obj:thm:hetero-clt} gives, for every \(s\
 \right)
 \longrightarrow \Phi(s).
 \]
-
 % lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.hetero_clt
 
 \item Write
 \[
 W_n=
 \frac{\sqrt n\,[\widehat\tau_H(p_n)-\tau_n]}
-{\sqrt{\sigma^2_{G_n,p_n}(Y)}}.
+{\sqrt{\sigma^2_{G_n,p_n}(Y)}},
+\qquad
+z=z_{1-\alpha_{\mathrm{cov}}/2}.
 \]
-The preceding convergence at \(z_{1-\alpha_{\mathrm{cov}}/2}\) and at its negative, the symmetry
-\(\Phi(-z)=1-\Phi(z)\), and
-\(\Phi(z_{1-\alpha_{\mathrm{cov}}/2})=1-\alpha_{\mathrm{cov}}/2\)
-show that
+Splitting the event \(\{W_n\le z\}\) at \(-z\) (legitimate because \(z\ge0\), so \(\{W_n\le-z\}\subseteq\{W_n\le z\}\)) gives
 \[
-\Pr_{p_n}\!\left(
--z_{1-\alpha_{\mathrm{cov}}/2}<W_n
-\le z_{1-\alpha_{\mathrm{cov}}/2}
-\right)
-\longrightarrow 1-\alpha_{\mathrm{cov}}.
+\Pr_{p_n}\!\left(-z<W_n\le z\right)
+=\Pr_{p_n}\!\left(W_n\le z\right)-\Pr_{p_n}\!\left(W_n\le -z\right).
+\]
+Applying step 2 at \(s=z\) and at \(s=-z\), and using \(\Phi(-z)=1-\Phi(z)\) together with the calibration \(\Phi(z)=1-\alpha_{\mathrm{cov}}/2\), the right-hand side converges to
+\[
+\Phi(z)-\Phi(-z)
+=\left(1-\frac{\alpha_{\mathrm{cov}}}{2}\right)
+-\frac{\alpha_{\mathrm{cov}}}{2}
+=1-\alpha_{\mathrm{cov}} .
 \]
 On the eventual tail where both \(n\) and
-\(\sigma^2_{G_n,p_n}(Y)\) are positive, this event implies
+\(\sigma^2_{G_n,p_n}(Y)\) are positive, the event \(\{-z<W_n\le z\}\) is contained in the coverage event.  Indeed \(-z<W_n\le z\) means \(|W_n|\le z\), that is
+\(\sqrt n\,|\widehat\tau_H(p_n)-\tau_n|\le z\sqrt{\sigma^2_{G_n,p_n}(Y)}\), and dividing by \(\sqrt n>0\),
 \[
 \left|\tau_n-\widehat\tau_H(p_n)\right|
 \le
-z_{1-\alpha_{\mathrm{cov}}/2}
+z
 \sqrt{\frac{\sigma^2_{G_n,p_n}(Y)}{n}}
 \le
-z_{1-\alpha_{\mathrm{cov}}/2}
+z
 \sqrt{\frac{\widehat V_{\mathrm{cons}}(G_n,p_n)}{n}},
 \]
-where the last inequality uses the first assertion and
-\(z_{1-\alpha_{\mathrm{cov}}/2}\ge0\).  Taking lower limits of the corresponding probabilities gives the claimed coverage bound.
-
+where the last inequality uses the first assertion, monotonicity of the square root, and
+\(z\ge0\).  Consequently, on that tail,
+\[
+\Pr_{p_n}\!\left(
+\left|\tau_n-\widehat\tau_H(p_n)\right|
+\le
+z\sqrt{\frac{\widehat V_{\mathrm{cons}}(G_n,p_n)}{n}}
+\right)
+\ge
+\Pr_{p_n}\!\left(W_n\le z\right)-\Pr_{p_n}\!\left(W_n\le -z\right),
+\]
+and taking lower limits, the left-hand liminf is at least the limit of the right-hand side, namely
+\[
+1-\alpha_{\mathrm{cov}}
+\le
+\liminf_{n\to\infty}
+\Pr_{p_n}\!\left(
+\left|\tau_n-\widehat\tau_H(p_n)\right|
+\le
+z_{1-\alpha_{\mathrm{cov}}/2}
+\sqrt{\frac{\widehat V_{\mathrm{cons}}(G_n,p_n)}{n}}
+\right),
+\]
+which is the claimed coverage bound.
 % lean: Causalean.Experimentation.DesignBased.conservative_wald_liminf_of_studentized_cdf
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.postdesign_wald
 \end{enumerate}
 \end{proof}

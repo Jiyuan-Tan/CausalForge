@@ -167,11 +167,12 @@ lemma finitePoissonObjective_exists_unique_max {E I : Type*}
         rw [Pi.norm_def]
         have hnn : (Finset.univ.sup fun b => ‖B x b‖₊) ≤ ∑ i, ‖B x i‖₊ :=
           Finset.sup_le (fun i _ =>
-            Finset.single_le_sum (fun j _ => zero_le ‖B x j‖₊) (Finset.mem_univ i))
+            Finset.single_le_sum (f := fun k => ‖B x k‖₊) (fun _ _ => zero_le)
+              (Finset.mem_univ i))
         have hr := NNReal.coe_le_coe.mpr hnn
         simpa only [NNReal.coe_sum, coe_nnnorm, Real.norm_eq_abs] using hr
   let ball : Set E := Metric.closedBall 0 R
-  letI : ProperSpace E := FiniteDimensional.proper_real E
+  have : ProperSpace E := FiniteDimensional.proper_real E
   obtain ⟨xstar, hxball, hxmax⟩ :=
     (ProperSpace.isCompact_closedBall (0 : E) R).exists_isMaxOn
       ⟨0, by simp [Metric.mem_closedBall, hR0]⟩
@@ -259,22 +260,30 @@ lemma finitePoissonObjective_score {E I : Type*}
     ∑ i, q i * A d i * (m i - Real.exp (A x i)) = 0 := by
   let path : ℝ → E := fun s => x + s • d
   have heta (i : I) : HasDerivAt (fun s => A (path s) i) (A d i) 0 := by
-    have h := (hasDerivAt_const (𝕜 := ℝ) 0 (A x i)).add
-      ((hasDerivAt_id (𝕜 := ℝ) 0).mul_const (A d i))
-    convert h using 1
-    · funext s
+    have hfun : (fun s : ℝ => A (path s) i) = fun s : ℝ => A x i + s * A d i := by
+      funext s
       simp [path, map_add, map_smul, smul_eq_mul]
-    · ring
+    rw [hfun]
+    have h : HasDerivAt (fun s : ℝ => A x i + s * A d i) (0 + 1 * A d i) 0 :=
+      (hasDerivAt_const (𝕜 := ℝ) 0 (A x i)).fun_add
+        ((hasDerivAt_id (𝕜 := ℝ) 0).mul_const (A d i))
+    simpa using h
   have hderiv : HasDerivAt (fun s => finitePoissonObjective q m A (path s))
       (∑ i, q i * A d i * (m i - Real.exp (A x i))) 0 := by
-    unfold finitePoissonObjective
-    have hraw := HasDerivAt.fun_sum (u := Finset.univ) (fun i _ =>
-      (((heta i).const_mul (m i)).sub (heta i).exp).const_mul (q i))
-    convert hraw using 1
-    simp only [path, zero_smul, add_zero]
-    apply Finset.sum_congr rfl
-    intro i hi
-    ring
+    have hraw : HasDerivAt
+        (fun s : ℝ => ∑ i, q i * (m i * A (path s) i - Real.exp (A (path s) i)))
+        (∑ i, q i * (m i * A d i - Real.exp (A (path 0) i) * A d i)) 0 :=
+      HasDerivAt.fun_sum (u := Finset.univ) (fun i _ =>
+        (((heta i).const_mul (m i)).sub (heta i).exp).const_mul (q i))
+    have hpath0 : path 0 = x := by simp [path]
+    have hval : (∑ i, q i * (m i * A d i - Real.exp (A (path 0) i) * A d i))
+        = ∑ i, q i * A d i * (m i - Real.exp (A x i)) := by
+      rw [hpath0]
+      exact Finset.sum_congr rfl fun i _ => by ring
+    have hfe : (fun s : ℝ => finitePoissonObjective q m A (path s))
+        = fun s : ℝ => ∑ i, q i * (m i * A (path s) i - Real.exp (A (path s) i)) := rfl
+    rw [hfe, ← hval]
+    exact hraw
   have hlocal : IsLocalMax (fun s => finitePoissonObjective q m A (path s)) 0 :=
     Filter.Eventually.of_forall fun s => by simpa [path] using hx (path s)
   exact hlocal.hasDerivAt_eq_zero hderiv

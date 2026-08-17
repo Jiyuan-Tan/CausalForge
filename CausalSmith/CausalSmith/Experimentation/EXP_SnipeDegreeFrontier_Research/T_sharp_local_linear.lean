@@ -70,6 +70,15 @@ noncomputable def normalizedWeightDistanceRelabeled
           (w.weight i z -
             canonicalBlockScore n d β p (π i) (fun j => z (π.symm j))) ^ 2)
 
+/-- When the population splits exactly into complete blocks of size `d` (so `d` divides
+`n`), a local-linear weighting's worst-case risk relative to the exact block benchmark
+equals one plus the normalized total of the per-block extremal excesses. In other words,
+the risk ratio exceeds one by exactly the amount — measured in units of the benchmark —
+by which the blocks' worst-case contributions overshoot the benchmark value they would
+attain under the canonical block weights.
+
+This turns the finite minimax constant into a per-block accounting identity: bounding the
+block excesses bounds the ratio, and the ratio is one exactly when the excesses cancel. -/
 lemma locLinRiskRatio_eq_one_add_normalizedBlockExcess
     (n d β : ℕ) (B p : ℝ)
     (hβ : 1 ≤ β) (hp0 : 0 < p) (hp1 : p < 1) (hB : 0 < B)
@@ -308,7 +317,8 @@ lemma normalizedWeightDistance_tendsto_implies_riskRatio
         rfl
   have hsqrt :
       Tendsto (fun t => Real.sqrt (x t)) atTop (𝓝 0) := by
-    convert (Real.continuous_sqrt.tendsto 0).comp hx using 1 <;> simp
+    simpa [Function.comp_def] using
+      (Real.continuous_sqrt.tendsto 0).comp hx
   have hu :
       Tendsto (fun t => 2 * Real.sqrt (x t) + x t) atTop (𝓝 0) := by
     convert (hsqrt.const_mul 2).add hx using 1 <;> ring
@@ -430,7 +440,8 @@ lemma orthogonalWitness_riskRatio_tendsto_one
     convert hx.const_mul 2 using 1 <;> ring
   have hsqrt :
       Tendsto (fun t => Real.sqrt (2 * x t)) atTop (𝓝 0) := by
-    convert (Real.continuous_sqrt.tendsto 0).comp hx2 using 1 <;> simp
+    simpa [Function.comp_def] using
+      (Real.continuous_sqrt.tendsto 0).comp hx2
   have hu :
       Tendsto (fun t => 1 + 2 * Real.sqrt (2 * x t) + 2 * x t)
         atTop (𝓝 1) := by

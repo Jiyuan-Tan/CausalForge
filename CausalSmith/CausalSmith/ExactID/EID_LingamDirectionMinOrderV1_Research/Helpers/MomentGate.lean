@@ -45,8 +45,7 @@ lemma isOpen_realNonvanishingLocus {m : ℕ}
   have heval : Continuous (fun θ : ParamSpace ℝ m =>
       MvPolynomial.eval (paramEval (complexifyParam θ)) P) :=
     P.continuous_eval.comp hcoord
-  simpa only [Set.preimage_setOf_eq] using
-    (isOpen_compl_singleton.preimage heval)
+  exact isOpen_compl_singleton.preimage heval
 
 /-- The generic-parameter polynomial stays nonzero after pinning: it is witnessed at the
 pinned parameter point whose direct slope is one, whose latent slopes are `2, 3, …, m+1`,

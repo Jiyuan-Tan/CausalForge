@@ -19,6 +19,9 @@ export function createInitialSubstrateState(slug: string): SubstrateState {
     lastReview: null,
     layeringReviewStatus: "current",
     terminalMessage: null,
+    terminalRequirementHash: null,
+    terminalEscalationKind: null,
+    requirementVersion: 0,
   };
 }
 
@@ -40,7 +43,16 @@ export async function loadSubstrateState(repoRoot: string, slug: string): Promis
       "Legacy review predates the dependency-layering check; a fresh review is required before coordination.",
     ].filter(Boolean).join("\n");
     raw.layeringReviewStatus = "legacy-unreviewed";
-    if (raw.phase !== "done") {
+    const terminal = raw.phase === "done" || raw.phase === "halted" || raw.phase === "escalated";
+    const resumablePostReview = raw.phase === "review" || raw.phase === "coordinate" || raw.phase === "promote";
+    if (terminal) {
+      // Terminal authority belongs to the pipeline/orchestrator that set it. Migration may mark
+      // legacy evidence stale, but must never reopen the phase or clear its terminal receipt/hash.
+      const audit = raw.phase === "done"
+        ? "Legacy completed output predates the dependency-layering check; audit the promoted modules separately."
+        : "Legacy terminal output predates the dependency-layering check; audit it separately before any authorized recovery.";
+      raw.terminalMessage = [raw.terminalMessage, audit].filter(Boolean).join("\n");
+    } else if (resumablePostReview) {
       if (existsSync(substrateLeanDir(repoRoot, slug))) {
         raw.phase = "review";
         raw.terminalMessage = null;
@@ -51,11 +63,6 @@ export async function loadSubstrateState(repoRoot: string, slug: string): Promis
           "Legacy layering review is missing and staging sources are unavailable; audit the prior output separately.",
         ].filter(Boolean).join("\n");
       }
-    } else {
-      raw.terminalMessage = [
-        raw.terminalMessage,
-        "Legacy completed output predates the dependency-layering check; audit the promoted modules separately.",
-      ].filter(Boolean).join("\n");
     }
   }
   return substrateStateSchema.parse(raw);

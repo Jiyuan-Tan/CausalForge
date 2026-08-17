@@ -89,80 +89,36 @@ private lemma pcutA_true_filter (m : ℕ) (hOdd : Odd m) :
     (blockAFin m).filter (fun i => pcutWitness m i) =
       Finset.univ.filter (fun i : Fin (2 * m) => i.val < (m + 1) / 2) := by
   ext i
-  simp only [Finset.mem_filter, blockAFin, Finset.mem_univ, true_and, pcutWitness]
-  constructor
-  · intro h
-    rcases h with ⟨hA, hs⟩
-    have hs' :
-        i.val < (m + 1) / 2 ∨ (m ≤ i.val ∧ i.val < m + (m - 1) / 2) :=
-      of_decide_eq_true hs
-    rcases hs' with hs' | hs'
-    · exact hs'
-    · omega
-  · intro h
-    constructor
-    · have hle := half_up_le_of_odd m hOdd
-      omega
-    · exact decide_eq_true (Or.inl h)
+  have hle := half_up_le_of_odd m hOdd
+  simp only [Finset.mem_filter, blockAFin, Finset.mem_univ, true_and, pcutWitness,
+    decide_eq_true_eq]
+  omega
 
 private lemma pcutB_true_filter (m : ℕ) (hOdd : Odd m) :
     (blockBFin m).filter (fun i => pcutWitness m i) =
       Finset.univ.filter (fun i : Fin (2 * m) => m ≤ i.val ∧ i.val < m + (m - 1) / 2) := by
   ext i
-  simp only [Finset.mem_filter, blockBFin, Finset.mem_univ, true_and, pcutWitness]
-  constructor
-  · intro h
-    rcases h with ⟨hB, hs⟩
-    have hs' :
-        i.val < (m + 1) / 2 ∨ (m ≤ i.val ∧ i.val < m + (m - 1) / 2) :=
-      of_decide_eq_true hs
-    rcases hs' with hs' | hs'
-    · have hle := half_up_le_of_odd m hOdd
-      omega
-    · exact hs'
-  · intro h
-    constructor
-    · omega
-    · exact decide_eq_true (Or.inr h)
+  have hle := half_up_le_of_odd m hOdd
+  simp only [Finset.mem_filter, blockBFin, Finset.mem_univ, true_and, pcutWitness,
+    decide_eq_true_eq]
+  omega
 
 private lemma pallA_true_filter (m : ℕ) (hOdd : Odd m) :
     (blockAFin m).filter (fun i => pallWitness m i) =
       Finset.univ.filter (fun i : Fin (2 * m) => i.val < (m + 1) / 2) := by
   ext i
-  simp only [Finset.mem_filter, blockAFin, Finset.mem_univ, true_and, pallWitness]
-  constructor
-  · intro h
-    rcases h with ⟨hA, hs⟩
-    have hs' :
-        i.val < (m + 1) / 2 ∨ (m ≤ i.val ∧ i.val < m + (m + 1) / 2) :=
-      of_decide_eq_true hs
-    rcases hs' with hs' | hs'
-    · exact hs'
-    · omega
-  · intro h
-    constructor
-    · have hle := half_up_le_of_odd m hOdd
-      omega
-    · exact decide_eq_true (Or.inl h)
+  have hle := half_up_le_of_odd m hOdd
+  simp only [Finset.mem_filter, blockAFin, Finset.mem_univ, true_and, pallWitness,
+    decide_eq_true_eq]
+  omega
 
 private lemma pallB_true_filter (m : ℕ) :
     (blockBFin m).filter (fun i => pallWitness m i) =
       Finset.univ.filter (fun i : Fin (2 * m) => m ≤ i.val ∧ i.val < m + (m + 1) / 2) := by
   ext i
-  simp only [Finset.mem_filter, blockBFin, Finset.mem_univ, true_and, pallWitness]
-  constructor
-  · intro h
-    rcases h with ⟨hB, hs⟩
-    have hs' :
-        i.val < (m + 1) / 2 ∨ (m ≤ i.val ∧ i.val < m + (m + 1) / 2) :=
-      of_decide_eq_true hs
-    rcases hs' with hs' | hs'
-    · omega
-    · exact hs'
-  · intro h
-    constructor
-    · omega
-    · exact decide_eq_true (Or.inr h)
+  simp only [Finset.mem_filter, blockBFin, Finset.mem_univ, true_and, pallWitness,
+    decide_eq_true_eq]
+  omega
 
 private lemma blockSumA_pcutWitness (m : ℕ) (hOdd : Odd m) :
     blockSumA m (pcutWitness m) = 1 := by
@@ -380,10 +336,17 @@ private lemma blockSumB_pallWitness (m : ℕ) (hOdd : Odd m) :
   rcases hOdd with ⟨k, rfl⟩
   omega
 
+/-- For odd `m` some assignment has community sign sums `(1, −1)`, so the `pcut` parity
+support is nonempty and the uniform law on it is well defined. When `m` is odd each
+community sum is an odd integer, so `(±1, ∓1)` is the closest an oppositely-signed pair of
+communities can come to being balanced. -/
 lemma pcutSupport_nonempty (m : ℕ) (hOdd : Odd m) : (pcutSupport m).Nonempty := by
   refine ⟨pcutWitness m, ?_⟩
   simp [pcutSupport, blockSumA_pcutWitness m hOdd, blockSumB_pcutWitness m hOdd]
 
+/-- For odd `m` some assignment has community sign sums `(1, 1)`, so the `pall` parity
+support is nonempty and the uniform law on it is well defined. This is the companion of
+`pcutSupport_nonempty` for the equally-signed parity vertex. -/
 lemma pallSupport_nonempty (m : ℕ) (hOdd : Odd m) : (pallSupport m).Nonempty := by
   refine ⟨pallWitness m, ?_⟩
   simp [pallSupport, blockSumA_pallWitness m hOdd, blockSumB_pallWitness m hOdd]
@@ -396,6 +359,10 @@ noncomputable def pcutVDesign (m : ℕ) (hOdd : Odd m) : FiniteDesign (Fin (2 * 
 noncomputable def pallVDesign (m : ℕ) (hOdd : Odd m) : FiniteDesign (Fin (2 * m) → Bool) :=
   uniformOnDesign m (pallSupport m) (pallSupport_nonempty m hOdd)
 
+/-- For odd `m`, the `pcut` parity design — uniform over the assignments whose community
+sign sums are `(1, −1)` or `(−1, 1)` — belongs to the block-exchangeable design class.
+Negating an assignment swaps the two cases, and a two-block automorphism either fixes the
+pair of community sums or transposes it, so the support is invariant either way. -/
 lemma pcutVDesign_mem (m : ℕ) (hOdd : Odd m) :
     pcutVDesign m hOdd ∈ blockExchangeableDesignClass m := by
   unfold pcutVDesign
@@ -434,6 +401,9 @@ lemma pcutVDesign_mem (m : ℕ) (hOdd : Odd m) :
         · left
           exact ⟨hB, hA⟩
 
+/-- For odd `m`, the `pall` parity design — uniform over the assignments whose community
+sign sums are `(1, 1)` or `(−1, −1)` — belongs to the block-exchangeable design class, by
+the same negation and two-block-automorphism invariance of its support. -/
 lemma pallVDesign_mem (m : ℕ) (hOdd : Odd m) :
     pallVDesign m hOdd ∈ blockExchangeableDesignClass m := by
   unfold pallVDesign
@@ -508,6 +478,8 @@ lemma pcutVDesign_sumAr_sumBr (m : ℕ) (hOdd : Odd m) :
   rw [sumAr_eq_blockSumA_cast_parity, sumBr_eq_blockSumB_cast_parity]
   rcases hzmem with h | h <;> rw [h.1, h.2] <;> norm_num
 
+/-- Under the `pall` parity design the community-`A` sign sum has mean square `1`, because
+every assignment in its support has that sum equal to `+1` or `−1`. -/
 lemma pallVDesign_sumAr_sq (m : ℕ) (hOdd : Odd m) :
     (pallVDesign m hOdd).E (fun z => sumAr m z * sumAr m z) = 1 := by
   unfold pallVDesign
@@ -520,6 +492,9 @@ lemma pallVDesign_sumAr_sq (m : ℕ) (hOdd : Odd m) :
   rw [sumAr_eq_blockSumA_cast_parity]
   rcases hzmem with h | h <;> rw [h.1] <;> norm_num
 
+/-- Under the `pall` parity design the two community sign sums have cross moment `+1`:
+they always carry the same sign, both `+1` or both `−1`. This is the sign flip of the
+corresponding `pcut` value and is what separates the two parity vertices. -/
 lemma pallVDesign_sumAr_sumBr (m : ℕ) (hOdd : Odd m) :
     (pallVDesign m hOdd).E (fun z => sumAr m z * sumBr m z) = 1 := by
   unfold pallVDesign
@@ -532,6 +507,11 @@ lemma pallVDesign_sumAr_sumBr (m : ℕ) (hOdd : Odd m) :
   rw [sumAr_eq_blockSumA_cast_parity, sumBr_eq_blockSumB_cast_parity]
   rcases hzmem with h | h <;> rw [h.1, h.2] <;> norm_num
 
+/-- For odd `m ≥ 2` the `pcut` parity design has assignment second moment
+`X(−1/m, −1/m²)`: units in the same community carry correlation `−1/m`, units in opposite
+communities `−1/m²`. Its reduced spectral coordinates are `y = 2/m`, `z = 0`, so it sits
+exactly on the parity threshold `y + z = 2/m` — one of the two extra vertices that odd
+community size creates. -/
 lemma pcutVDesign_secondMoment (m : ℕ) (hm : 2 ≤ m) (hOdd : Odd m) :
     assignmentSecondMoment m (pcutVDesign m hOdd)
       = blockSymMatrix m (-1 / (m : ℝ)) (-1 / (m : ℝ) ^ 2) := by
@@ -560,6 +540,10 @@ lemma pcutVDesign_secondMoment (m : ℕ) (hm : 2 ≤ m) (hOdd : Odd m) :
     nlinarith
   rw [hUV, hu, hv]
 
+/-- For odd `m ≥ 2` the `pall` parity design has assignment second moment
+`X(−1/m, 1/m²)`: units in the same community carry correlation `−1/m`, units in opposite
+communities `+1/m²`. Its reduced spectral coordinates are `y = 0`, `z = 2/m`, the second
+parity vertex, again sitting exactly on the threshold `y + z = 2/m`. -/
 lemma pallVDesign_secondMoment (m : ℕ) (hm : 2 ≤ m) (hOdd : Odd m) :
     assignmentSecondMoment m (pallVDesign m hOdd)
       = blockSymMatrix m (-1 / (m : ℝ)) (1 / (m : ℝ) ^ 2) := by

@@ -227,7 +227,7 @@ lemma feasible_erm_basic_inequality {n K : ℕ} (P : ObservedLaw 𝒳) (q : ℝ)
   have hreg_index : Measurable (fun j : ℕ => lawRegret P (enum j)) :=
     measurable_of_countable (fun j : ℕ => lawRegret P (enum j))
   constructor
-  · simpa [feasibleERM, sel, near, score] using hreg_index.comp hsel_meas
+  · exact hreg_index.comp hsel_meas
   · intro sample
     let nearSample : ℕ → Prop := fun j =>
       ∀ j' : ℕ,
@@ -604,6 +604,14 @@ private lemma crude_clipped_score_abs_ae_36 (P : ObservedLaw 𝒳)
           gcongr
           norm_num
 
+/-- Truncating the clipped-AIPW score at level `36/q` leaves the offset supremum of the
+pooled cross-fit process unchanged, almost surely under the sample's product law.
+
+Under bounded outcomes and cross-fitted regressions valued in `[-1,1]`, the untruncated
+score already obeys `|Γ_q| ≤ 6/q ≤ 36/q` almost everywhere, so on that full-measure event
+truncation is the identity. This is what lets the envelope-`B` empirical-process
+assumptions, which are stated for a hard-bounded increment class, be transferred to the
+genuine untruncated estimator. -/
 lemma pooledOffsetSup_trunc_eq_original_ae_36 {n K : ℕ}
     (P : ObservedLaw 𝒳) (q : ℝ)
     (muHat0 muHat1 eHat : Fin K → 𝒳 → ℝ) (assign : Fin n → Fin K)
@@ -736,6 +744,10 @@ lemma pooledOffsetSup_trunc_eq_original_ae_36 {n K : ℕ}
   rw [hset]
 
 -- @node: expectedPooledOffsetSup_trunc_eq_original_ae_36
+/-- The EXPECTED pooled cross-fit offset supremum is the same for the score truncated at
+level `36/q` and for the untruncated score, under bounded outcomes and cross-fitted
+regressions valued in `[-1,1]` — the integrated form of the almost-sure agreement of the
+two suprema. -/
 lemma expectedPooledOffsetSup_trunc_eq_original_ae_36 {n K : ℕ}
     (P : ObservedLaw 𝒳) (q : ℝ)
     (muHat0 muHat1 eHat : Fin K → 𝒳 → ℝ) (assign : Fin n → Fin K)
@@ -756,6 +768,9 @@ lemma expectedPooledOffsetSup_trunc_eq_original_ae_36 {n K : ℕ}
   exact pooledOffsetSup_trunc_eq_original_ae_36 P q muHat0 muHat1 eHat assign
     policySet hwf hbdd hbn hq hq1
 
+/-- The same agreement holds fold by fold: on the product law over fold `k`'s own
+observations, the offset supremum built from the score truncated at level `36/q` equals
+almost surely the one built from the untruncated score. -/
 lemma foldOffsetSubSup_trunc_eq_original_ae_36 {n K : ℕ}
     (P : ObservedLaw 𝒳) (q : ℝ)
     (muHat0 muHat1 eHat : Fin K → 𝒳 → ℝ) (assign : Fin n → Fin K)

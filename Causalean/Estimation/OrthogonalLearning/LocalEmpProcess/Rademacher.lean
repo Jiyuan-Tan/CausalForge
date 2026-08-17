@@ -619,7 +619,7 @@ theorem localEmpProcessModulus_of_bounded_rademacher
           rademacherComplexity m fθ P_Z id
               = rademacherComplexity m (fθ ∘ idx) P_Z id := hfull_dense
           _ = rademacherComplexity m (fθ ∘ idx) μ (S_iid.Z 0) := hmap
-          _ ≤ R n := by simpa [m, fθ] using (hR n).2
+          _ ≤ R n := (hR n).2
       let badZ : Set (Fin m → Z) :=
         {s | 2 • rademacherComplexity m fθ P_Z id + ε ≤
           uniformDeviation m fθ P_Z id (id ∘ s)}
@@ -1015,14 +1015,16 @@ theorem localEmpProcessModulus_of_bounded_rademacher_ae
             fun ω => Sc.ℓ (S_iid.Z 0 ω) (idx k).val g := by
           have hmap : ∀ᵐ z ∂μ.map (S_iid.Z 0),
               S.ℓ z (idx k).val g = Sc.ℓ z (idx k).val g := by
-            simpa [S_iid.law] using hidx_base
+            rw [S_iid.law]
+            exact hidx_base
           exact ae_of_ae_map (S_iid.meas 0).aemeasurable hmap
         have hzero' : (fun ω => S.ℓ (S_iid.Z 0 ω) S.θ₀ g) =ᵐ[μ]
             fun ω => Sc.ℓ (S_iid.Z 0 ω) Sc.θ₀ g := by
           have hmap : ∀ᵐ z ∂μ.map (S_iid.Z 0),
               S.ℓ z S.θ₀ g = Sc.ℓ z S.θ₀ g := by
-            simpa [S_iid.law] using hzero_base
-          simpa [Sc] using ae_of_ae_map (S_iid.meas 0).aemeasurable hmap
+            rw [S_iid.law]
+            exact hzero_base
+          exact ae_of_ae_map (S_iid.meas 0).aemeasurable hmap
         exact hidx'.sub hzero'
       have hcongr :
           rademacherComplexity (split.foldB m).card

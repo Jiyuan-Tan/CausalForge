@@ -418,9 +418,12 @@ lemma envelopeLineC2Data_holds
           rw [hline s]
           exact hseg s hs) (convex_Icc _ _)
       convert hrestr.smul (show 0 ≤ (4 : ℝ)⁻¹ by norm_num) using 1
-      funext s
-      rw [← hline s]
-      simp [Function.comp_apply, div_eq_inv_mul]
+      case e'_4 => rfl
+      case e'_10 => rfl
+      case e'_12 =>
+        funext s
+        rw [← hline s]
+        simp [Function.comp_apply, div_eq_inv_mul]
     · intro y hy
       exact E.differentiableAt_envelope_line ε B hε.1 hd y (hseg y hy)
     · rw [interior_Icc]

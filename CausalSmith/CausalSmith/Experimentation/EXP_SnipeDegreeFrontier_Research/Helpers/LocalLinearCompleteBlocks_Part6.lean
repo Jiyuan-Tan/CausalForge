@@ -307,6 +307,8 @@ lemma blockExtremal_le_of_weight_distance
                 (if choice.1 i then (1 : ℝ) else -1) *
                   locLinUnitError w0 i (choice.2 i) z) ^ 2))
           hchoiceMem using 1
+        case e'_2 => rfl
+        case e'_4 => rfl
       _ ≤ (d : ℝ) ^ 2 * blockEnergy β p d :=
         canonical_completeBlock_blockExtremal_upper
           n d β p hp0 hp1 hn hd hdiv b
@@ -329,6 +331,7 @@ lemma blockExtremal_le_of_weight_distance
     ((d : ℝ) ^ 2 * blockEnergy β p d) ((d : ℝ) * Eδ)
     hf hg hA0 hDE0
   convert hadd using 1
+  case e'_2 => rfl
   · apply FiniteDesign.E_congr
     intro z
     congr 1

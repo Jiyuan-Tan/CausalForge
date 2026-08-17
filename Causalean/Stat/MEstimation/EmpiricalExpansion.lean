@@ -255,6 +255,9 @@ theorem score_diff_L2_isLittleOp_sqrt
               intro i _hi
               exact hFbound_i i
             filter_upwards [hFbound_all] with ω hFboundω hω
+            replace hω : ε * (fun _ => (1 : ℝ)) n <
+                |(n : ℝ)⁻¹ * ∑ i ∈ Finset.range n,
+                  ‖ψ (θn n ω) (S.Z i ω) - ψ θ₀ (S.Z i ω)‖ ^ 2| := hω
             by_cases hn0 : n = 0
             · subst n
               have hω0 : ε < 0 := by

@@ -70,6 +70,24 @@ describe("renderFillerContext", () => {
 });
 
 describe("runFiller", () => {
+  it("makes Lean LSP the default proof-edit loop", async () => {
+    let prompt = "";
+    await runFiller({
+      ctx,
+      promptPath: realPromptPath,
+      leanDir: "/repo/lean",
+      graph: fixture(),
+      deps: {
+        runCodex: async (input) => {
+          prompt = input.prompt;
+          return { stdout: JSON.stringify({ summary: "no change" }), stderr: "" };
+        },
+      },
+    });
+    expect(prompt).toContain("use `lean_goal` and `lean_diagnostic_messages` as the default");
+    expect(prompt).toContain("Do not replace it with repeated `lake env lean`/`lake build` probes");
+  });
+
   it("uses medium reasoning effort for F3 proof filling", async () => {
     let received: { reasoningEffort?: string } | undefined;
     await runFiller({

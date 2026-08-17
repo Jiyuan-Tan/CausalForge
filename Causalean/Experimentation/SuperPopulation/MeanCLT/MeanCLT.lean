@@ -138,7 +138,7 @@ theorem networkMean_clt
       exact le_mul_of_one_le_left (pow_nonneg (hB n) 3) hcardR
     have hroot : Tendsto (fun n => ((B n) ^ 3) ^ ((3 : ℕ)⁻¹ : ℝ)) atTop
         (𝓝 0) := by
-      simpa using (Real.continuousAt_rpow_const 0 ((3 : ℕ)⁻¹ : ℝ)
+      simpa [Function.comp_def] using (Real.continuousAt_rpow_const 0 ((3 : ℕ)⁻¹ : ℝ)
         (Or.inr (by positivity))).tendsto.comp hB3_0
     exact hroot.congr
       (fun n => Real.pow_rpow_inv_natCast (hB n) (by norm_num : (3 : ℕ) ≠ 0))

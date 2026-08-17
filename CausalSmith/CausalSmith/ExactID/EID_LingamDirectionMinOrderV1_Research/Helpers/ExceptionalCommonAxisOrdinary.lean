@@ -118,7 +118,7 @@ theorem canonicalCommonAxisLowWeightJacobianAtWitness_eq
     · intro heq
       apply h
       apply Fin.ext
-      simpa using heq.symm
+      simpa [forwardLowWeightRow] using heq.symm
 
 /-- Proves that the quantity called the det canonical Common Axis Low Weight Jacobian At Witness is nonzero. -/
 theorem det_canonicalCommonAxisLowWeightJacobianAtWitness_ne_zero
@@ -158,10 +158,21 @@ private def commonAxisHighWeightBlock (m : ℕ) (k : Fin (m + 1)) :
     (fun _ j => (j.val : ℂ) ^ (m + 1 + k.val))
     1
 
+/-- The high-weight block, restated with its lower-left entry presented through
+`Matrix.of` so that the `Matrix.fromBlocks` API lemmas apply. -/
+private theorem commonAxisHighWeightBlock_eq (m : ℕ) (k : Fin (m + 1)) :
+    commonAxisHighWeightBlock m k =
+      Matrix.fromBlocks
+        (Matrix.vandermonde (fun j : Fin (m + 1) => (j.val : ℂ))).transpose
+        0
+        (Matrix.of fun _ j => (j.val : ℂ) ^ (m + 1 + k.val))
+        1 :=
+  rfl
+
 private theorem det_commonAxisHighWeightBlock_ne_zero
     (m : ℕ) (k : Fin (m + 1)) :
     (commonAxisHighWeightBlock m k).det ≠ 0 := by
-  rw [commonAxisHighWeightBlock, Matrix.det_fromBlocks_zero₁₂,
+  rw [commonAxisHighWeightBlock_eq, Matrix.det_fromBlocks_zero₁₂,
     Matrix.det_transpose, Matrix.det_one, mul_one]
   exact Matrix.det_vandermonde_ne_zero_iff.mpr (by
     intro i j hij
@@ -187,7 +198,7 @@ theorem canonicalCommonAxisHighWeightJacobianAtWitness_eq
     rcases a with a | u <;> rcases b with b | v
     · simp only [canonicalCommonAxisHighWeightJacobianAtWitness,
         commonAxisHighWeightColumn, forwardHighWeightRow,
-        commonAxisHighWeightBlock, Matrix.fromBlocks_apply₁₁]
+        commonAxisHighWeightBlock_eq, Matrix.fromBlocks_apply₁₁]
       rw [eval_pderiv_forwardCommonAxisCoordinatePolynomial,
         pderiv_forwardBandCoordinatePolynomial_eq_explicit,
         eval_pderiv_explicitForwardBandCoordinatePolynomial_weight_general,
@@ -212,7 +223,7 @@ theorem canonicalCommonAxisHighWeightJacobianAtWitness_eq
       simp [commonAxisNodeValue, Matrix.vandermonde]
     · simp only [canonicalCommonAxisHighWeightJacobianAtWitness,
         commonAxisHighWeightColumn, forwardHighWeightRow,
-        commonAxisHighWeightBlock, Matrix.fromBlocks_apply₁₂, Pi.zero_apply]
+        commonAxisHighWeightBlock_eq, Matrix.fromBlocks_apply₁₂, Pi.zero_apply]
       rw [eval_pderiv_forwardCommonAxisCoordinatePolynomial,
         pderiv_forwardBandCoordinatePolynomial_eq_explicit,
         eval_pderiv_explicitForwardBandCoordinatePolynomial_weight_general,
@@ -239,7 +250,7 @@ theorem canonicalCommonAxisHighWeightJacobianAtWitness_eq
     · obtain rfl : u = () := Subsingleton.elim _ _
       simp only [canonicalCommonAxisHighWeightJacobianAtWitness,
         commonAxisHighWeightColumn, forwardHighWeightRow,
-        commonAxisHighWeightBlock, Matrix.fromBlocks_apply₂₁]
+        commonAxisHighWeightBlock_eq, Matrix.fromBlocks_apply₂₁]
       rw [eval_pderiv_forwardCommonAxisCoordinatePolynomial,
         pderiv_forwardBandCoordinatePolynomial_eq_explicit,
         eval_pderiv_explicitForwardBandCoordinatePolynomial_weight_general,
@@ -267,7 +278,7 @@ theorem canonicalCommonAxisHighWeightJacobianAtWitness_eq
       rfl
     · simp only [canonicalCommonAxisHighWeightJacobianAtWitness,
         commonAxisHighWeightColumn, forwardHighWeightRow,
-        commonAxisHighWeightBlock, Matrix.fromBlocks_apply₂₂, Matrix.one_apply]
+        commonAxisHighWeightBlock_eq, Matrix.fromBlocks_apply₂₂, Matrix.one_apply]
       rw [eval_pderiv_forwardCommonAxisCoordinatePolynomial,
         pderiv_forwardBandCoordinatePolynomial_eq_explicit,
         eval_pderiv_explicitForwardBandCoordinatePolynomial_weight_general,

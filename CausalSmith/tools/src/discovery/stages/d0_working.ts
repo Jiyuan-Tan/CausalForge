@@ -177,6 +177,10 @@ export interface WorkingState {
    */
   /** String values from the first implementation are recognized and safely re-solved. */
   resolved_oeqs?: Record<string, ResolvedOeq | string>;
+  /** OEQs deliberately retained as residual questions. Values fingerprint the
+   * exact mathematical question; a claim/dependency edit or exact-target directive
+   * unlocks it, while ordinary D replay does not pay a solver to answer it again. */
+  sealed_open_oeqs?: Record<string, string>;
   /**
    * Cumulative directive-authorized prose overlay (Phase 1 of the 2026-07-30
    * store consolidation). `prose_updates` used to be applied to BOTH core.json

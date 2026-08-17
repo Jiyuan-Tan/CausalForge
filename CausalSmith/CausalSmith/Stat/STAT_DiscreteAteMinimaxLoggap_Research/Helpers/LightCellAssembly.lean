@@ -577,7 +577,9 @@ lemma cellVector_mem_overlapCone {d : ℕ} {epsilon : ℝ} (P : DiscreteLaw d)
   rw [vectorMass_cellVector, vectorArmMass_cellVector]
   by_cases hp : 0 < cellMass P k
   · have hk := hOverlap k hp
-    exact (le_div_iff₀ hp).mp (by simpa [propensity] using hk.1)
+    have hk1 : epsilon ≤ armMass P k (finTwoEquiv 1) / cellMass P k := by
+      simpa [propensity, finTwoEquiv] using hk.1
+    exact (le_div_iff₀ hp).mp hk1
   · have hp0 : cellMass P k = 0 := le_antisymm (le_of_not_gt hp)
       (cellMass_mem_unitInterval P k).1
     have ha0 : armMass P k true = 0 := by
@@ -595,7 +597,9 @@ lemma cellVector_mem_overlapCone {d : ℕ} {epsilon : ℝ} (P : DiscreteLaw d)
   · rw [vectorMass_cellVector, vectorArmMass_cellVector]
     by_cases hp : 0 < cellMass P k
     · have hk := hOverlap k hp
-      exact (div_le_iff₀ hp).mp (by simpa [propensity] using hk.2)
+      have hk2 : armMass P k (finTwoEquiv 1) / cellMass P k ≤ 1 - epsilon := by
+        simpa [propensity, finTwoEquiv] using hk.2
+      exact (div_le_iff₀ hp).mp hk2
     · have hp0 : cellMass P k = 0 := le_antisymm (le_of_not_gt hp)
         (cellMass_mem_unitInterval P k).1
       have ha0 : armMass P k true = 0 := by

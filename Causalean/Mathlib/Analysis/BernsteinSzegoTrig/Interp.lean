@@ -69,15 +69,22 @@ theorem szegoInterp_hasDerivAt (β : ℕ) (hβ : 1 ≤ β) (Q₀ Q₁ t₀ : ℝ
   have hu : HasDerivAt (fun t : ℝ => c * (t - t₀)) c t₀ := by
     simpa [c] using (((hasDerivAt_id t₀).sub_const t₀).const_mul c)
   have hcos : HasDerivAt (fun t : ℝ => Real.cos (c * (t - t₀))) 0 t₀ := by
-    have h := (Real.hasDerivAt_cos (c * (t₀ - t₀))).comp t₀ hu
+    have h0 := (Real.hasDerivAt_cos (c * (t₀ - t₀))).comp t₀ hu
+    have h : HasDerivAt (fun t : ℝ => Real.cos (c * (t - t₀)))
+        (-Real.sin (c * (t₀ - t₀)) * c) t₀ := h0
     simpa using h
   have hsin : HasDerivAt (fun t : ℝ => Real.sin (c * (t - t₀))) c t₀ := by
-    have h := (Real.hasDerivAt_sin (c * (t₀ - t₀))).comp t₀ hu
+    have h0 := (Real.hasDerivAt_sin (c * (t₀ - t₀))).comp t₀ hu
+    have h : HasDerivAt (fun t : ℝ => Real.sin (c * (t - t₀)))
+        (Real.cos (c * (t₀ - t₀)) * c) t₀ := h0
     simpa using h
   have hsum : HasDerivAt
       (fun t : ℝ =>
         Q₀ * Real.cos (c * (t - t₀)) + (Q₁ / c) * Real.sin (c * (t - t₀))) Q₁ t₀ := by
-    have h := (hcos.const_mul Q₀).add (hsin.const_mul (Q₁ / c))
+    have h : HasDerivAt
+        (fun t : ℝ =>
+          Q₀ * Real.cos (c * (t - t₀)) + (Q₁ / c) * Real.sin (c * (t - t₀))) _ t₀ :=
+      (hcos.const_mul Q₀).fun_add (hsin.const_mul (Q₁ / c))
     simpa [hc] using h
   simpa [szegoInterp, c] using hsum
 

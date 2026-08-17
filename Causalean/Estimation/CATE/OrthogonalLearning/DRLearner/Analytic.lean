@@ -346,7 +346,7 @@ private lemma integrable_phi_eta_dir_deriv_factualZ
     · intro ω
       simpa [X, Real.norm_eq_abs] using le_trans (hCμ d (X ω)) (le_abs_self Cμ)
   have hT1_int : Integrable T1 P.μ := by
-    simpa [T1] using (hvμ_int true).sub (hvμ_int false)
+    exact (hvμ_int true).sub' (hvμ_int false)
   have h₀e_lower : ∀ ω, ε ≤ S.e_val (X ω) := by
     intro ω
     exact (h_overlap_η₀ (X ω)).1
@@ -710,7 +710,8 @@ theorem dr_scoreFlat
             rw [MeasureTheory.integral_const_mul]
             ring
       _ = 0 := by simp [hScoreZero]
-  simpa [hzero] using hlim
+  rw [hzero] at hlim
+  exact hlim
 
 /-! ## Orthogonality of the DR-Learner squared loss under a DCT bridge -/
 

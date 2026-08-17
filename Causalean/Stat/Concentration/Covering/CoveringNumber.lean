@@ -34,7 +34,6 @@ lemma coveringNumber_exists {X : Type*} {A : Set X} [PseudoMetricSpace X]
   constructor
   · exact Set.toFinset_card t
   · convert tball
-    ext _
     simp only [Set.mem_toFinset]
 
 /-- The covering number is the smallest size of a finite positive-radius net

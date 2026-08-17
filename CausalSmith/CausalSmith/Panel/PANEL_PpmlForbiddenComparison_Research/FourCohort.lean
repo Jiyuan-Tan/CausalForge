@@ -34,18 +34,33 @@ noncomputable def fourResidualTable (g : Cohort 4) (t : Fin 4) : ℝ :=
 /-- The homogeneous no-effect vector used only for the derivative diagnostic. -/
 def zeroEffects4 (_z : Cell 4) : ℝ := 0
 
+/-- The counterexample's four-period horizon is positive. It is supplied as the
+positivity side condition wherever the fixture instantiates a result stated for a
+general panel horizon. -/
 def fourHorizonPositive : 0 < 4 := by decide
 
+/-- The counterexample's cohort support is nonempty: it contains the never-treated
+cohort. -/
 def fourSupportNonempty : fourCohortSupport.Nonempty :=
   ⟨⊤, by simp [fourCohortSupport]⟩
 
+/-- The cohort that carries the exceptional effect in the counterexample: the units
+adopting at Lean date one, which is the paper's adoption date two. -/
 def fourLateCohort : Cohort 4 := ((⟨1, by decide⟩ : Fin 4) : Cohort 4)
 
+/-- The period in which the counterexample's exceptional effect occurs: Lean period
+three, which is the paper's period four and the last period of the panel. -/
 def fourLatePeriod : Fin 4 := ⟨3, by decide⟩
 
+/-- The supported cohort-time cell at which the counterexample places its exceptionally
+large treatment effect: the paper's adoption cohort two, observed in the paper's period
+four. -/
 noncomputable def fourLateSupportedCell : SupportedCell 4 fourCohortSupport :=
   (⟨fourLateCohort, by simp [fourLateCohort, fourCohortSupport]⟩, fourLatePeriod)
 
+/-- The counterexample's collapsed design has full rank: no nonzero coefficient direction
+produces a zero linear index at every supported cohort-time cell, so the cell-mass-weighted
+sum of squared indices is strictly positive away from the origin. -/
 lemma fourCohortCollapsedDesignRank :
     CollapsedDesignRank 4 fourCohortSupport fourCohortShare := by
   intro a ha
@@ -318,8 +333,7 @@ lemma fourResidualProjection_mem :
       omega
     fin_cases t <;> simp [cohortPart, timePart, fourLateCohort, h10,
       fourResidualTable, fourResidualNumerator, treatmentIndicator,
-      Causalean.Panel.AdoptionPath.absorbingTreatment_eq] <;> norm_num <;>
-        exact WithTop.coe_lt_coe.mpr (by decide)
+      Causalean.Panel.AdoptionPath.absorbingTreatment_eq] <;> norm_num <;> decide
   · subst g
     fin_cases t <;> simp [cohortPart, timePart, fourLateCohort,
       fourResidualTable, fourResidualNumerator, treatmentIndicator,
@@ -349,8 +363,6 @@ lemma fourMeanWeightedSupport_weight (z : SupportedCell 4 fourCohortSupport) :
   simp_rw [hfit]
   norm_num [meanFWLWeight, limitingCellMass, fourCohortShare,
     Fintype.sum_prod_type, fourCohortSupport]
-  norm_num [div_eq_mul_inv]
-  rfl
 
 /-- The explicit residual table has zero unweighted inner product with every nuisance regressor. -/
 lemma fourResidualTable_nuisance_normal
@@ -378,7 +390,7 @@ lemma fourResidualTable_nuisance_normal
       by_cases htj : t = j.1
       · subst t
         simp only [collapsedNuisanceRegressor, ↓reduceIte, mul_one]
-        simpa using fourResidualTable_column_sum j.1
+        exact (Finset.sum_attach _ _).trans (fourResidualTable_column_sum j.1)
       · simp [collapsedNuisanceRegressor, htj]
 
 /-- The explicit residual table is orthogonal, under the mean weights, to the entire
@@ -625,6 +637,7 @@ lemma fourLateDerivative_exact :
       simpa [fourLateSupportedCell] using hW]
     norm_num [limitingCellMass, fourCohortShare, untreatedMean,
       fourCohortLimitBaseline, fourCohortGamma, zeroEffects4]
+  case e'_10 => rfl
 
 /-- Changing treatment effects outside the supported cohorts leaves the limiting PPML criterion
 unchanged. -/

@@ -93,7 +93,7 @@ makes a banked entry inert.
     spec: <specialization id>            # e.g. f1, p1_bernoulli
     topic: <one-line topic phrase>       # carried from state.json proposed_from.topic
     novelty_target: incremental | subfield | field | flagship
-    banked_novelty_tier: incremental | subfield | field | flagship  # achieved tier; upgrade target must be strictly higher
+    banked_novelty_tier: incremental | subfield | field | flagship  # achieved tier; upgrade target must be >= this
     tier_at_proposal: ACCEPT | REVISE | REJECT   # Stage -0.5 final verdict
     tier_at_derivation: ACCEPT | REVISE | REJECT | NA  # Stage 0.5 final verdict; NA for legacy
     gap_reasons:                         # only meaningful for downgraded/failed

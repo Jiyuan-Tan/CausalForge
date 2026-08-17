@@ -143,9 +143,9 @@ theorem not_isGaussianLaw_atomicLaw {n : ℕ} {x : Fin n → ℝ} {p : Fin n →
         simp [Measure.dirac_apply' mean (MeasurableSet.singleton (x i₁)), hne]
       exact ENNReal.ofReal_ne_zero_iff.mpr (hp i₁) (hmass₁.symm.trans hzero)
     exact hx₀₁ (hmean₀.symm.trans hmean₁)
-  · have hnoatoms : NoAtoms (atomicLaw n x p) := by
+  · have hnoatoms : NullSingletonClass (atomicLaw n x p) := by
       rw [hv]
-      exact noAtoms_gaussianReal hvzero
+      exact nullSingletonClass_gaussianReal hvzero
     have hzero : atomicLaw n x p {x i₀} = 0 := hnoatoms.measure_singleton (x i₀)
     rw [atomicLaw_singleton hx hpnonneg i₀] at hzero
     exact ENNReal.ofReal_ne_zero_iff.mpr (hp i₀) hzero

@@ -211,7 +211,7 @@ theorem dml_chernozhukov_asymptoticLinear
       have hrand_L2 : MemLp (fun z => M.m (η_hat n ω) z M.θ₀) 2 P_Z :=
         (memLp_two_iff_integrable_sq
           (M.m_meas (η_hat n ω) M.θ₀).aestronglyMeasurable).2 (_h_m_sq_int n ω)
-      simpa [f] using hrand_L2.sub htruth_L2
+      exact hrand_L2.sub htruth_L2
     have hf_rate_one :
         IsLittleOp (fun n ω => (eLpNorm (f n ω) 2 P_Z).toReal)
           (fun _ => (1 : ℝ)) μ := by

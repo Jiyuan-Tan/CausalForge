@@ -12,7 +12,6 @@ import {
   foldCrosswalkIntoReview,
   persistCrosswalk,
   renderCrosswalkMd,
-  splitCrosswalkByCache,
   type ReviewerCrosswalkVerdict,
 } from "../../src/formalization/crosswalk.js";
 import type { CrosswalkEntry } from "../../src/types.js";
@@ -432,65 +431,6 @@ describe("hidden-statement-def augmentation (laundering surface)", () => {
       expect(f).toBeDefined();
       expect(f!.fix_locus).toBe("lean-scaffold");
     }
-  });
-});
-
-describe("splitCrosswalkByCache (incremental K-verdict reuse)", () => {
-  const row = (
-    obj_id: string,
-    decl: string,
-    decl_kind: string,
-    verdict: CrosswalkEntry["verdict"],
-  ): CrosswalkEntry => ({
-    obj_id,
-    kind: decl_kind === "theorem" ? "theorem" : "definition",
-    title: "",
-    tex: { label: `${obj_id}-anchor`, line_range: "" },
-    lean: { file: "Basic.lean", decl, decl_kind, line: 1 },
-    verdict,
-  });
-  const skeleton: CrosswalkEntry[] = [
-    row("T-1", "t1_thm", "theorem", "unmatched"),
-    row("P-2", "fooDef", "def", "unmatched"),
-  ];
-  const prior: CrosswalkEntry[] = [
-    row("T-1", "t1_thm", "theorem", "exact"),
-    row("P-2", "fooDef", "def", "weaker-in-Lean"),
-  ];
-
-  it("no prior snapshot → everything stale", () => {
-    const { stale, cached } = splitCrosswalkByCache(skeleton, undefined, true, () => true);
-    expect(stale.length).toBe(2);
-    expect(cached.length).toBe(0);
-  });
-
-  it("a def change (defsUnchanged=false) → everything stale", () => {
-    const { stale, cached } = splitCrosswalkByCache(skeleton, prior, false, () => true);
-    expect(stale.length).toBe(2);
-    expect(cached.length).toBe(0);
-  });
-
-  it("defs unchanged + theorem unchanged → both rows cached with prior verdicts", () => {
-    const { stale, cached } = splitCrosswalkByCache(skeleton, prior, true, () => true);
-    expect(stale.length).toBe(0);
-    expect(cached.find((e) => e.obj_id === "T-1")!.verdict).toBe("exact");
-    expect(cached.find((e) => e.obj_id === "P-2")!.verdict).toBe("weaker-in-Lean");
-  });
-
-  it("a changed theorem is stale; the unchanged def stays cached", () => {
-    // thmHashUnchanged returns false only for t1_thm
-    const { stale, cached } = splitCrosswalkByCache(skeleton, prior, true, (n) => n !== "t1_thm");
-    expect(stale.map((e) => e.obj_id)).toEqual(["T-1"]);
-    expect(cached.map((e) => e.obj_id)).toEqual(["P-2"]);
-  });
-
-  it("an anchor change makes a row stale even if the decl is unchanged", () => {
-    const moved = skeleton.map((e) =>
-      e.obj_id === "P-2" ? { ...e, tex: { label: "moved", line_range: "" } } : e,
-    );
-    const { stale, cached } = splitCrosswalkByCache(moved, prior, true, () => true);
-    expect(stale.map((e) => e.obj_id)).toEqual(["P-2"]);
-    expect(cached.map((e) => e.obj_id)).toEqual(["T-1"]);
   });
 });
 

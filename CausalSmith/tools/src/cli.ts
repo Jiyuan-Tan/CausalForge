@@ -261,7 +261,7 @@ export function parseArgs(argv: string[]): CliArgs {
   if (upgradeParent && !noveltyTarget) {
     throw new Error(
       "--upgrade requires --novelty <incremental|subfield|field|flagship>; " +
-        "the selected tier must be strictly above the parent's achieved banked tier",
+        "the selected tier must be at or above the parent's achieved banked tier",
     );
   }
 
@@ -801,6 +801,8 @@ interface StudyArgs {
   slug: string;
   resume: boolean;
   dryRun: boolean;
+  clearCoordinateCap: boolean;
+  acceptRequirementChange: boolean;
 }
 
 function parseStudyArgs(argv: string[]): StudyArgs {
@@ -811,11 +813,23 @@ function parseStudyArgs(argv: string[]): StudyArgs {
   const dryRunIndex = args.indexOf("--dry-run");
   const dryRun = dryRunIndex !== -1;
   if (dryRun) args.splice(dryRunIndex, 1);
+  const clearCoordinateCapIndex = args.indexOf("--clear-coordinate-cap");
+  const clearCoordinateCap = clearCoordinateCapIndex !== -1;
+  if (clearCoordinateCap) args.splice(clearCoordinateCapIndex, 1);
+  const acceptRequirementChangeIndex = args.indexOf("--accept-requirement-change");
+  const acceptRequirementChange = acceptRequirementChangeIndex !== -1;
+  if (acceptRequirementChange) args.splice(acceptRequirementChangeIndex, 1);
   const [slug, extra] = args;
   if (!slug || extra || slug.startsWith("-")) {
-    throw new Error("Usage: causalsmith study <slug> [--resume] [--dry-run]");
+    throw new Error("Usage: causalsmith study <slug> [--resume] [--clear-coordinate-cap] [--accept-requirement-change] [--dry-run]");
   }
-  return { slug, resume, dryRun };
+  if (clearCoordinateCap && !resume) {
+    throw new Error("--clear-coordinate-cap requires --resume");
+  }
+  if (acceptRequirementChange && !resume) {
+    throw new Error("--accept-requirement-change requires --resume");
+  }
+  return { slug, resume, dryRun, clearCoordinateCap, acceptRequirementChange };
 }
 
 /** Test-only access to the `causalsmith study` parser. */
@@ -849,6 +863,8 @@ export async function runStudyCli(argv: string[]): Promise<void> {
   try {
     const finalState = await runSubstratePipeline({
       repoRoot, slug: parsed.slug, resume: parsed.resume, dryRun: parsed.dryRun,
+      clearCoordinateCap: parsed.clearCoordinateCap,
+      acceptRequirementChange: parsed.acceptRequirementChange,
     });
     console.log(`CausalSmith study ${parsed.slug} finished in phase ${finalState.phase}.`);
   } finally {

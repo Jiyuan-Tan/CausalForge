@@ -375,7 +375,9 @@ noncomputable def ivSCM : Causalean.SCM IVNode ivΩ where
   isProbability_latent := by
     intro u
     rcases u with ⟨n, _⟩
-    cases n <;> exact inferInstance
+    cases n <;>
+      exact inferInstanceAs
+        (MeasureTheory.IsProbabilityMeasure (MeasureTheory.Measure.dirac (α := Unit) ()))
 
 -- The model has no fixed nodes (standard model).
 example : ivSCM.isStandard := by
