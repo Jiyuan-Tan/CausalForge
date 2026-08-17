@@ -98,11 +98,13 @@ lemma condQuantile_le_iff {ρ : Measure (α × ℝ)} {τ : α → ℝ} {a : α}
   ⟨le_condCDF_of_condQuantile_le (ρ := ρ) (τ := τ) (a := a) hτ1,
     condQuantile_le_of_le_condCDF (ρ := ρ) (τ := τ) (a := a) hτ0⟩
 
-/-- **Measurable conditional quantile (selection).** For a measure `ρ` on `α × ℝ`
-and a measurable target level `τ : α → ℝ` with `τ ∈ (0,1)`, if every conditional CDF
-is continuous at its selected quantile, the conditional quantile `condQuantile ρ τ` is
-measurable and attains the level:
-`condCDF ρ a (condQuantile ρ τ a) = τ a` for all `a`.
+/-- **Measurable conditional quantile (selection).** For a measure `ρ` on the product of a
+parameter space and the reals, and [a measurable target level function `τ`](hyp:hτ) that is
+[everywhere strictly positive](hyp:hτ0) and [everywhere strictly below one](hyp:hτ1), if
+[the conditional cumulative distribution function of `ρ` is continuous at the selected
+conditional quantile, for every parameter value](hyp:hcont), then [the conditional quantile map
+`condQuantile ρ τ` is measurable and attains the target level — the conditional CDF at the
+selected quantile equals `τ a` for every `a`](goal).
 
 This is the conditional analogue of an unconditional generalized inverse, with measurability
 of the selection in the conditioning variable. -/

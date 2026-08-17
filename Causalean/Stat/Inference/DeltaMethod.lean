@@ -47,10 +47,13 @@ variable {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω} [IsProbabilityMeasu
 
 /-! ## Scalar delta method -/
 
-/-- **Scalar delta method.** If the scaled estimator converges to the project's Gaussian measure
-with mean zero and variance parameter `σ²`, and `g` is differentiable at the target value with
-derivative `g'`, then the scaled transformed estimator converges to the same Gaussian wrapper with
-variance parameter `g'² σ²`.
+/-- **Scalar delta method.** For a real-valued estimator sequence `Tn` of a target `t₀`, suppose
+[the rescaled deviation `√n(Tn − t₀)` is measurable at every sample size](hyp:hTn) and [the
+rescaled image `√n(g(Tn) − g(t₀))` is measurable at every sample size](hyp:hgTn), where `g`
+is [differentiable at `t₀` with derivative `g'`](hyp:_hg). If [the rescaled deviation converges
+in distribution to the project's Gaussian law with mean zero and variance `σ²`](hyp:_hCLT), then
+[the rescaled image converges in distribution to the same Gaussian wrapper with variance
+`g'² · σ²`](goal).
 
 The theorem does not require `σ²` to be nonnegative: `gaussianMeasure` clips negative variance
 parameters to zero, so that project-specific convention is part of both the premise and the
@@ -257,11 +260,13 @@ section
 
 omit [FiniteDimensional ℝ E] [FiniteDimensional ℝ F]
 
-/-- **Multivariate delta method.**  If the rescaled deviation
-`√n • (T_n − t₀)` converges in distribution to a probability measure `Q`
-on `E`, and `g : E → F` is Fréchet-differentiable at `t₀` with derivative
-`Dg`, then `√n • (g (T_n) − g t₀)` converges in distribution to the
-pushforward of `Q` along the linear map `Dg`.
+/-- **Multivariate delta method.** Let `Tn` be a sequence of `E`-valued estimators of a target
+`t₀`, and let `g : E → F` be [Fréchet-differentiable at `t₀` with derivative `Dg`](hyp:_hg). Given
+[that the rescaled deviations `√n • (Tn − t₀)` are measurable at every sample size](hyp:hTn) and
+[that their images `√n • (g(Tn) − g(t₀))` are measurable at every sample size](hyp:hgTn), if
+[the laws of `√n • (Tn − t₀)` converge weakly to a probability measure `Q` on `E`](hyp:_hCLT),
+then [the laws of `√n • (g(Tn) − g(t₀))` converge weakly to the pushforward of `Q` along the
+linear map `Dg`](goal).
 
 Phrased at the measure level: the laws of `√n • (T_n − t₀)` under `μ`
 converge weakly to `Q`, and the laws of `√n • (g (T_n) − g t₀)` converge

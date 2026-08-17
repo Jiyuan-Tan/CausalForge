@@ -74,16 +74,22 @@ lemma abs_min_max_sub_min_max_le (a b x y : ℝ) :
     (LipschitzWith.id.const_max a).const_min b
   simpa [Real.dist_eq] using h.dist_le_mul x y
 
-/-- Clipping a number into an interval never increases its distance to a target that already lies
-inside that interval. This is the form used when the target is a true parameter known to obey the
-same bounds that the estimator is clipped to. -/
+/-- **Clipping toward an in-interval target does not increase distance.** If [a real number lies
+in the closed interval from `a` to `b`](hyp:ht), then for any real `x`, [clipping `x` into that
+interval moves it no farther from the target than `x` itself was](goal).
+
+This is the form used when the target is a true parameter known to obey the same bounds that the
+estimator is clipped to. -/
 lemma abs_clipIcc_sub_le (ht : t ∈ Set.Icc a b) (x : ℝ) :
     |clipIcc a b x - t| ≤ |x - t| := by
   simpa [clipIcc_eq_self ht] using abs_clipIcc_sub_clipIcc_le a b x t
 
-/-- Clipping a number into an interval never increases its *squared* distance to a target that
-already lies inside that interval — so clipping an estimator to a range known to contain the
-truth can only reduce squared error. -/
+/-- **Squared version: clipping toward an in-interval target does not increase squared distance.**
+If [a real number lies in the closed interval from `a` to `b`](hyp:ht), then for any real `x`,
+[the squared distance from the clipped value of `x` to the target is at most the squared distance
+from `x` itself to the target](goal).
+
+So clipping an estimator to a range known to contain the truth can only reduce squared error. -/
 lemma clipIcc_sub_sq_le (ht : t ∈ Set.Icc a b) (x : ℝ) :
     (clipIcc a b x - t) ^ 2 ≤ (x - t) ^ 2 := by
   have h := abs_clipIcc_sub_le ht x

@@ -33,10 +33,16 @@ namespace Causalean.Experimentation.SuperPopulation.MeanCLT
 
 open Causalean.Experimentation.SuperPopulation Causalean.SteinMethod
 
-/-- **Asymptotic normality of a centered super-population network sum.** A network sum, centered by
-subtracting the sum of the individual outcome means and divided by its positive standard deviation,
-has the standard normal limiting distribution when dependence is local, centered outcomes are
-uniformly bounded, and the bound is negligible relative to the aggregate variance.
+/-- **Asymptotic normality of a centered super-population network sum.** Fix [a family of outcomes
+`Y n` over probability spaces with measures `μ n`](hyp:μ,Y) and [a reflexive, symmetric adjacency
+relation `adj n`](hyp:adj,hrefl,hsymm) recording which units interfere, with [every outcome
+measurable](hyp:hmeasY), [outcome tuples on non-adjacent unit sets independent](hyp:hindepY) —
+i.e. m-dependence — and [adjacency degree bounded by `m`](hyp:hdeg). Assume [every outcome is
+square-integrable](hyp:hL2), [a positive normalizing constant `s n` with
+`(s n)² = Var(∑ᵢ Yₙᵢ)`](hyp:hs_pos,hs2), [outcomes uniformly bounded around their means by a
+sequence `c n`](hyp:hc), and [the negligibility rate `card(Vₙ)·(cₙ/sₙ)³ → 0`](hyp:hsmall). Then
+[the network sum, centered by subtracting the sum of the individual outcome means and divided by
+`s n`, converges in distribution to the standard normal](goal).
 
 The hypotheses are:
 

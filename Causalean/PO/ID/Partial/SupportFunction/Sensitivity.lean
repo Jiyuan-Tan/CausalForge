@@ -152,9 +152,10 @@ returns the identified value `⟪c, w₀⟫`. -/
     robustLower ({w₀} : Set E) c = ⟪c, w₀⟫ := by
   simp only [robustLower, supportFn_singleton, inner_neg_left, neg_neg]
 
-/-- **The robust interval is the identified set.** For a nonempty compact convex
-ambiguity set, the range of the reweighted mean is exactly
-`[robustLower W c, robustUpper W c]` — the robust bounds are sharp. -/
+/-- **The robust interval is the identified set.** When [the ambiguity set W is
+compact](hyp:hcomp), [convex](hyp:hW), and [nonempty](hyp:hne), [the set of reweighted
+means ⟪c, w⟫ attained as w ranges over W is exactly the closed interval
+`[robustLower W c, robustUpper W c]` — the robust bounds are sharp](goal). -/
 theorem robustInterval_eq_image {W : Set E} {c : E}
     (hcomp : IsCompact W) (hW : Convex ℝ W) (hne : W.Nonempty) :
     (fun x => ⟪c, x⟫) '' W = Set.Icc (robustLower W c) (robustUpper W c) :=
@@ -187,9 +188,11 @@ theorem opKer_innerSL_eq (e : H) : opKer (innerSL ℝ e) = (ℝ ∙ e)ᗮ := by
     ContinuousLinearMap.coe_coe, innerSL_apply_apply]
 
 omit [CompleteSpace H] in
-/-- **Reduction to the affine-ball engine.** Under `⟪e, e⟫ = 1`, the χ²-ball is
-the affine-ball fiber `{A v = 0, ‖v‖ ≤ ρ}` of `A = innerSL ℝ e` translated by `e`
-(the substitution `v = w - e`). -/
+/-- **Reduction to the affine-ball engine.** When [the base direction has unit inner
+product with itself, ⟪e, e⟫ = 1](hyp:he), [the χ²/L² ambiguity set `l2Ball e ρ` equals the
+translate by `e` of the affine ball of radius `ρ` for the linear functional ⟪e, ·⟫ centered
+at the origin — the substitution `v = w - e` turns the normalization constraint ⟪e, w⟫ = 1
+into the linear constraint ⟪e, v⟫ = 0](goal). -/
 theorem l2Ball_eq_translate {e : H} (he : ⟪e, e⟫ = 1) (ρ : ℝ) :
     l2Ball e ρ = (fun v => e + v) '' affineBall (innerSL ℝ e) 0 ρ := by
   ext w
@@ -231,8 +234,10 @@ theorem norm_orthogonalProjection_opKer_innerSL {e : H} (he : ‖e‖ = 1) (c : 
     linarith
   rw [← Real.sqrt_sq (norm_nonneg _), hperp_sq]
 
-/-- **Closed-form worst case (mean plus `ρ·SD`).** The largest reweighted value of
-`⟪c, ·⟫` over the χ²-ball is `⟪e, c⟫ + ρ · √(‖c‖² − ⟪e,c⟫²)`. -/
+/-- **Closed-form worst case (mean plus `ρ·SD`).** For [a unit-norm base direction
+e](hyp:he) and [a nonnegative radius ρ](hyp:hρ), [the largest reweighted value ⟪c, w⟫
+attains over the χ²/L² ambiguity set `l2Ball e ρ` equals ⟪e, c⟫ + ρ · √(‖c‖² − ⟪e, c⟫²)
+— the base-direction mean plus ρ standard deviations of c](goal). -/
 theorem supportFn_l2Ball_eq {e : H} (he : ‖e‖ = 1) (c : H) {ρ : ℝ} (hρ : 0 ≤ ρ) :
     supportFn (l2Ball e ρ) c = ⟪e, c⟫ + ρ * Real.sqrt (‖c‖ ^ 2 - ⟪e, c⟫ ^ 2) := by
   have hee : ⟪e, e⟫ = 1 := by rw [real_inner_self_eq_norm_mul_norm, he, mul_one]
@@ -251,8 +256,9 @@ theorem supportFn_l2Ball_eq {e : H} (he : ‖e‖ = 1) (c : H) {ρ : ℝ} (hρ :
   rw [inner_zero_right, norm_zero, zero_add]
   rw [show (ρ : ℝ) ^ 2 - (0 : ℝ) ^ 2 = ρ ^ 2 by ring, Real.sqrt_sq hρ, real_inner_comm c e]
 
-/-- **Closed-form width** of the χ²-ball identified interval: twice the radius times the standard
-deviation. -/
+/-- **Closed-form width.** For [a unit-norm base direction e](hyp:he) and [a nonnegative
+radius ρ](hyp:hρ), [the width of the χ²/L² robust interval for the target c equals
+2ρ · √(‖c‖² − ⟪e, c⟫²), twice the radius times the standard deviation of c](goal). -/
 theorem width_l2Ball_eq {e : H} (he : ‖e‖ = 1) (c : H) {ρ : ℝ} (hρ : 0 ≤ ρ) :
     width (l2Ball e ρ) c = 2 * ρ * Real.sqrt (‖c‖ ^ 2 - ⟪e, c⟫ ^ 2) := by
   unfold width
@@ -261,10 +267,11 @@ theorem width_l2Ball_eq {e : H} (he : ‖e‖ = 1) (c : H) {ρ : ℝ} (hρ : 0 �
   rw [show (-⟪e, c⟫) ^ 2 = ⟪e, c⟫ ^ 2 by ring]
   ring
 
-/-- **Point identification.** With a positive budget `ρ > 0`, the χ²-ball
-identified interval collapses to a point iff `‖c‖² = ⟪e, c⟫²`, i.e. the target `c`
-is collinear with the base direction `e` (equality in Cauchy–Schwarz: the outcome
-is constant). -/
+/-- **Point identification.** For [a unit-norm base direction e](hyp:he) and [a strictly
+positive radius ρ](hyp:hρ), [the χ²/L² robust interval for the target c collapses to a single
+point exactly when ‖c‖² equals ⟪e, c⟫², i.e. when c is collinear with e — equivalently,
+equality holds in the Cauchy–Schwarz inequality, meaning the represented outcome is
+almost-surely constant](goal). -/
 theorem l2Ball_point_identified_iff {e : H} (he : ‖e‖ = 1) (c : H) {ρ : ℝ}
     (hρ : 0 < ρ) :
     width (l2Ball e ρ) c = 0 ↔ ‖c‖ ^ 2 = ⟪e, c⟫ ^ 2 := by

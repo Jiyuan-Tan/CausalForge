@@ -319,7 +319,20 @@ lemma recoveredFactorRec_heq_of_obsKernel_heq
     · rw [dif_pos hC, dif_neg hSobs, dif_pos hC, dif_neg hSobs]
   · rw [dif_neg hC, dif_neg hC]
 
-/-- Recursive district-density recovery from the observational kernel.
+/-- **Recursive district-density recovery from the observational kernel.** Fix [a standard
+structural causal model `M`](hyp:hStd) and an intervention target set `X` for which [every
+targeted node is currently a random observed node](hyp:hObs) and [none of its fixed copies is
+already fixed](hyp:hFix), an output set `Y`, and [a reference-measure family faithful to the
+graph](hyp:href). For [a district `S` of the truncated c-component set of the post-intervention
+ancestral graph](hyp:hS) and [a c-component `C` of the base graph that is recursively
+factor-reachable from `S`](hyp:hReach,hCmem), assume [every fixed-value assignment gives an
+observational kernel with everywhere-positive point masses](hyp:hpos), [no intervention
+target's random form lies in `Y`](hyp:hYX), and that [an extension map from ancestral
+assignments to full observed assignments restricts back to the identity](hyp:hExtend) and
+[agrees with the intervention values `sDo` on the targeted coordinates](hyp:hExtendX). Then
+[the district factor of `S` computed from the density of the do-law's ancestral marginal
+equals, almost everywhere, the full-graph c-component density factor of `C` evaluated at the
+extension of the ancestral assignment](goal).
 
 This is the density-level IDENTIFY step needed to replace the no-fixing
 `doAncestralDistrictDensity_recovered_from_obs` recovery. -/
@@ -805,8 +818,15 @@ theorem doObsKernelYMarginal_heq_of_obsKernel_heq_rec
     (obsDensity_heq_of_obsKernel_heq M₁ M₂ ref (hsg₁.trans hsg₂.symm) hobs)
     hvalid₁ hvalid₂
 
-/-- Recursive valid-branch kernel equality.  This is the same transport as
-`doKernelY_eq_cfactor_decomposition`, with the recursive `Y`-marginal wrapper in
+/-- **Recursive valid-branch kernel equality.** For two finite structural causal models `M₁`,
+`M₂` that share [the same SWIG graph `G`](hyp:_hsg₁,_hsg₂), are each [dominated by a
+reference-measure family `ref` that is faithful to the graph](hyp:href,_hdom₁,_hdom₂), [satisfy
+discrete positivity of their observational kernels](hyp:hpos₁,hpos₂), and [have
+heterogeneously equal observational kernels](hyp:_hobs), if [the total interventional query on
+outcome set `Y` under intervention `X` is well formed in both models](hyp:hvalid₁,hvalid₂) and
+`X`, `Y` admit a successful full recursive ID certificate on `G`, then [the two models'
+post-intervention outcome kernels for `Y` are heterogeneously equal](goal). This is the same
+transport as `doKernelY_eq_cfactor_decomposition`, with the recursive `Y`-marginal wrapper in
 place of the no-fixing one. -/
 theorem doKernelY_eq_cfactor_decomposition_rec
     [∀ n, StandardBorelSpace (Ω n)] [∀ n, Nonempty (Ω n)]
@@ -835,10 +855,13 @@ theorem doKernelY_eq_cfactor_decomposition_rec
     (doObsKernelYMarginal_heq_of_obsKernel_heq_rec X Y G ref href _hID M₁ M₂ _hsg₁ _hsg₂
       _hdom₁ _hdom₂ hpos₁ hpos₂ _hobs hvalid₁ hvalid₂)
 
-/-- **Soundness of the full recursive ID algorithm for finite discrete-positive models.**
-A successful recursive certificate identifies the interventional query among
-finite node-space models whose observational laws are dominated by the chosen
-faithful reference family and whose point masses satisfy discrete positivity.
+/-- **Soundness of the full recursive ID algorithm for finite discrete-positive models.** Fix
+an intervention target set `X`, an outcome node set `Y`, a SWIG graph `G`, and [a
+reference-measure family `ref` that is faithful to the graph](hyp:href). Then [whenever the
+full recursive Tian–Shpitser IDENTIFY certificate succeeds for `X`, `Y` on `G`, the
+interventional query mapping `X` to `Y` is identifiable within the class of models dominated by
+`ref` with discretely positive observational kernels: any two such models that share graph `G`
+and observational kernel agree on the query](goal).
 This generalizes `id_sound` from the no-fixing fragment to the full
 Tian-Shpitser IDENTIFY recursion; see the module docstring for the proof
 architecture. -/

@@ -454,11 +454,12 @@ private lemma resolvent_left_inverse
   intro v
   rw [Complexification.realCFC_id A hA v]
 
-/-- **Resolvent identification of the Lax–Milgram minimiser.**
-
-When `Hbar_L2 = ⊤`, the Tikhonov minimiser produced by Lax–Milgram on
-`Hbar_L2` is the resolvent expression
-`(T†T + λI)⁻¹ T†T h₀ = realCFC (T†T) (x ↦ x/(λ+x)) h₀`.
+/-- **Resolvent identification of the Lax–Milgram minimiser.** Given a spectral β-source
+condition `sc` whose primal candidate set coincides with the whole ambient L² space, for [any
+strictly positive Tikhonov regularization level λ](hyp:lambda_pos), [the population Tikhonov
+minimiser at level λ equals the resolvent expression obtained by applying the real functional
+calculus of `T†T` to the symbol `x ↦ x/(λ+x)`, evaluated at the L² class of the structural
+function `h₀`](goal).
 
 Proof strategy:
 * Set `Aλ := realCFC S.Tstar_T (fun x => x / (lambda + x))` and apply
@@ -801,7 +802,12 @@ private lemma weak_residual_bound
               exact hxpow
         _ ≤ B ^ β * lambda ^ (2 : ℝ) := hmain
 
-/-- **Strong-metric Tikhonov bias bound.**
+/-- **Strong-metric Tikhonov bias bound.** Given a spectral β-source condition `sc` linking the
+structural function `h₀` to a coefficient `w₀` through the spectral power operator `(T†T)^{β/2}`,
+for [any strictly positive Tikhonov regularization level λ](hyp:lambda_pos), [the squared
+strong-metric ($L^2(P_X)$) distance between the Tikhonov minimiser `h*_λ` at level λ and `h₀` is
+bounded by `biasConst · ‖w₀‖² · λ^{min(β,2)}`, where `biasConst` is a constant determined by
+`T†T` and β](goal).
 
 Spectral derivation: by `tikhonovMinimiserL2_eq_resolvent` and the
 spectral identity `h₀ = realCFC (T†T) (·^{β/2}) w₀` from
@@ -973,7 +979,10 @@ theorem strong_bias (sc : SpectralSourceCondition S β)
     _ = sc.biasConst * ‖S.hL2 sc.w₀_mem‖ ^ 2 * lambda ^ (min β 2) := by
           rw [hcoef, hw_def]
 
-/-- **Weak-metric Tikhonov bias bound.**
+/-- **Weak-metric Tikhonov bias bound.** Given the same spectral β-source condition `sc` linking
+`h₀` to `w₀` through `(T†T)^{β/2}`, for [any strictly positive Tikhonov regularization level
+λ](hyp:lambda_pos), [the squared weak-metric ($L^2(P_Z)$) norm of the operator `T` applied to the
+Tikhonov-minimiser bias `h*_λ − h₀` is bounded by `biasConst · ‖w₀‖² · λ^{min(β+1,2)}`](goal).
 
 Spectral derivation: from the same resolvent identity for `h*_λ − h₀`,
     ‖T(h*_λ − h₀)‖² = ⟨T†T (h*_λ − h₀), h*_λ − h₀⟩

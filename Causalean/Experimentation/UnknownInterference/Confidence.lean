@@ -105,9 +105,12 @@ private lemma Var_htEst_eq (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i
   refine Finset.sum_congr rfl (fun i _ => Finset.sum_congr rfl (fun j _ => ?_))
   rw [one_mul, one_mul]
 
-/-- **The anti-conservativeness mechanism (Sävje–Aronow–Hudgens 2021).** For the Bernoulli design,
-the conventional variance estimator's expectation equals the true variance plus the average of the
-squared per-unit means minus the off-diagonal covariances. -/
+/-- **The anti-conservativeness mechanism (Sävje–Aronow–Hudgens 2021).** Under the Bernoulli
+design with per-unit treatment probabilities `p` [taking values in `[0, 1]`](hyp:hp0,hp1),
+[the conventional variance estimator's expected value equals `Var(ĤT) + n⁻²·(∑ᵢ(E ĤTᵢ)² −
+∑ᵢ∑_{j≠i} Cov(ĤTᵢ,ĤTⱼ))`: the true sampling variance of the Horvitz–Thompson estimator, plus
+the average squared per-unit mean, minus the off-diagonal covariances between units'
+Horvitz–Thompson summands](goal). -/
 theorem E_VhatBer_bias (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, p i ≤ 1)
     (y : U → (U → Bool) → ℝ) :
     (bernoulliDesign p hp0 hp1).E (VhatBer p y)
@@ -142,9 +145,14 @@ theorem E_VhatBer_bias (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, p 
   · field_simp
     ring
 
-/-- **Conservative inflation (Sävje–Aronow–Hudgens 2021).** Inflating the conventional estimator by
-`(1 + D)`, where `D` bounds every unit's interference degree, makes it conservative in expectation:
-`Var(ĤT) ≤ (1 + D)·E[V̂_Ber]`.  The off-diagonal covariances are bounded by the per-unit variances
+/-- **Conservative inflation (Sävje–Aronow–Hudgens 2021).** Under the Bernoulli design with
+per-unit treatment probabilities `p` [taking values in `[0, 1]`](hyp:hp0,hp1), if [every unit's
+interference degree — the number of units it is interference-dependent with — is at most a
+bound `D`](hyp:hD), then [inflating the conventional variance estimator's expectation by a
+factor `1 + D` gives a conservative bound on the Horvitz–Thompson estimator's true variance:
+`Var(ĤT) ≤ (1 + D)·E[V̂_Ber]`](goal).
+
+The off-diagonal covariances are bounded by the per-unit variances
 (`|Cov(ĤTᵢ,ĤTⱼ)| ≤ (Var ĤTᵢ + Var ĤTⱼ)/2 ≤ (E[ĤTᵢ²]+E[ĤTⱼ²])/2`), and each unit appears in at most
 `D` interference-dependent pairs. -/
 theorem var_htEst_le_inflated (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, p i ≤ 1)
@@ -251,9 +259,12 @@ theorem var_htEst_le_inflated (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : �
   rw [Var_htEst_eq p hp0 hp1 y, E_VhatBer_eq p hp0 hp1 y, ← hEc, ← hn, ← mul_div_assoc]
   gcongr
 
-/-- **Chebyshev confidence interval for EATE.** For a positive conservative variance bound
-`V ≥ Var(ĤT)`, positive `α`, and nonzero treatment and control propensities, the interval
-`ĤT ± √(V/α)` covers the EATE estimand with probability at least `1 − α`. -/
+/-- **Chebyshev confidence interval for EATE.** For the Bernoulli design with per-unit treatment
+probabilities `p` that [take values in `[0, 1]`](hyp:hp0,hp1) and are [never exactly zero or
+one](hyp:hp0',hp1'), for any [value `V` that is positive and bounds the Horvitz–Thompson
+estimator's true sampling variance from above](hyp:hV0,hV), and for any [positive significance
+level `α`](hyp:hα), [the interval `ĤT ± √(V/α)` covers the EATE estimand with probability at
+least `1 − α`](goal). -/
 theorem chebyshev_ci_eate (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, p i ≤ 1)
     (hp0' : ∀ i, p i ≠ 0) (hp1' : ∀ i, (1 : ℝ) - p i ≠ 0) (y : U → (U → Bool) → ℝ)
     {V α : ℝ} (hV0 : 0 < V) (hV : (bernoulliDesign p hp0 hp1).Var (htEst p y) ≤ V) (hα : 0 < α) :
@@ -325,10 +336,16 @@ private lemma one_le_dbar (y : U → (U → Bool) → ℝ) (hcard : 1 ≤ Fintyp
   rw [dbar, le_div_iff₀ hn0, one_mul]
   exact hcount
 
-/-- **A concrete finite-sample confidence interval for EATE (Sävje–Aronow–Hudgens 2021).** Under the
-regularity conditions, the Chebyshev interval `ĤT ± √(k⁴·d̄/(n·α))` covers EATE with probability at
-least `1 − α` — a valid (conservative) interval under unknown interference, needing only the
-regularity constant `k` and the interference measure `d̄`. -/
+/-- **A concrete finite-sample confidence interval for EATE (Sävje–Aronow–Hudgens 2021).** Suppose
+the Bernoulli design has treatment probabilities `p` that [lie in `[0, 1]`](hyp:hp0,hp1), are
+[never exactly zero or one](hyp:hp0',hp1'), and in fact [stay within `[1/k, 1 - 1/k]` for some
+regularity constant `k ≥ 1`](hyp:hk,hplo,hphi); suppose also that [the population is
+nonempty](hyp:hcard), [every unit's outcome has second moment at most `k²`](hyp:hmom), and
+[the significance level `α` is positive](hyp:hα). Then [the Chebyshev interval
+`ĤT ± √(k⁴·d̄/(n·α))`, where `d̄` is the average interference degree and `n` the population
+size, covers the EATE estimand with probability at least `1 − α`](goal) — a valid
+(conservative) interval that needs only the regularity constant `k` and the interference
+measure `d̄`. -/
 theorem eate_ci_kbound (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, p i ≤ 1)
     (hp0' : ∀ i, p i ≠ 0) (hp1' : ∀ i, (1 : ℝ) - p i ≠ 0) (y : U → (U → Bool) → ℝ)
     (k : ℝ) (hk : 1 ≤ k) (hcard : 1 ≤ Fintype.card U)

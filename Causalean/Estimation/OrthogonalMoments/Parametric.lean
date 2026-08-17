@@ -55,7 +55,12 @@ noncomputable def parametricMoment
   J₀           := J₀
   J₀_ne_zero   := hJ
 
-/-- **Asymptotic linearity of the parametric one-step estimator.**
+/-- **Asymptotic linearity of the parametric one-step estimator.** Fix [a score `m_par` with a
+nonzero scalar Jacobian J₀ at the true parameter θ₀](hyp:J₀,hJ), where [`m_par θ` is measurable
+for every θ](hyp:m_par,m_meas). If [the score `m_par θ₀` has population mean zero](hyp:h_mean_zero)
+and [it has finite second moment](hyp:h_finite_var), then for [an i.i.d. sample](hyp:sample) and
+[a one-shot fold split of it](hyp:split), [the parametric one-step estimator built from `m_par`
+and J₀ is asymptotically linear at θ₀ with influence function ψ(z) := −J₀⁻¹·m_par(θ₀, z)](goal).
 
 With `H = Unit`, the abstract `dmlChernozhukovEstimator` collapses to the
 classical parametric one-step:

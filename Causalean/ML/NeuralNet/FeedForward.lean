@@ -37,8 +37,10 @@ theorem evalLayers_append {n : ℕ} (σ : Activation) (Ls Ms : List (DenseLayer 
   | nil => rfl
   | cons L Ls ih => simp [evalLayers, ih]
 
-/-- **Structure — Lipschitz.** If each layer map is `k L`-Lipschitz, the network
-is Lipschitz with constant the product of the per-layer constants. -/
+/-- **Structure — Lipschitz.** For a uniform-width feedforward network with activation `σ` and
+layer list `Ls`, if [each layer's affine-then-activation map is Lipschitz with the constant
+assigned to it by `k`](hyp:hk), then [the whole network evaluation is Lipschitz with constant
+equal to the product of the per-layer constants](goal). -/
 theorem evalLayers_lipschitz {n : ℕ} (σ : Activation) (Ls : List (DenseLayer n n))
     (k : DenseLayer n n → NNReal)
     (hk : ∀ L ∈ Ls, LipschitzWith (k L) (layerMap σ L)) :

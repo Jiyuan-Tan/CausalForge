@@ -42,7 +42,9 @@ theorem zero_notMem_uIcc {a b : ℝ} (ha : 0 < a) (hab : a ≤ b) :
   rw [Set.uIcc_of_le hab, Set.mem_Icc]
   exact fun h => absurd h.1 (not_le.mpr ha)
 
-/-- **Power integral, `κ ≠ 1`.**  `∫ t in (a,b], t^{-κ} = (b^{1-κ} − a^{1-κ})/(1−κ)`. -/
+/-- **Power integral, `κ ≠ 1`.** If [the exponent `κ` is not equal to `1`](hyp:hκ), [`a` is
+positive](hyp:ha), and [`a` is at most `b`](hyp:hab), then [the interval integral of `t ↦ t^{-κ}`
+over `(a, b]` equals `(b^{1-κ} − a^{1-κ})/(1−κ)`](goal). -/
 theorem integral_rpow_neg_Ioc (hκ : κ ≠ 1) {a b : ℝ} (ha : 0 < a) (hab : a ≤ b) :
     ∫ t in Ioc a b, t ^ (-κ) = (b ^ (1 - κ) - a ^ (1 - κ)) / (1 - κ) := by
   rw [← intervalIntegral.integral_of_le hab,

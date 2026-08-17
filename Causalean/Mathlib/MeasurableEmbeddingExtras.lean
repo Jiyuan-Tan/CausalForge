@@ -21,9 +21,10 @@ open scoped MeasureTheory
 
 variable {α β : Type*} {_ : MeasurableSpace α} {_ : MeasurableSpace β} {F : α → β}
 
-/-- If a measurable embedding `F : α → β` satisfies
-    `μ (F '' A) = ν (F '' A)` for every measurable `A ⊆ α`, then
-    `μ.restrict (Set.range F) = ν.restrict (Set.range F)`.
+/-- If `F` is [a measurable embedding of one measurable space into another](hyp:hF) and
+    [two measures `μ` and `ν` on the codomain assign the same mass to the image `F '' A` of
+    every measurable set `A` in the domain](hyp:h), then [restricting `μ` and `ν` to the range
+    of `F` yields identical measures](goal).
 
     Proof: by `MeasurableEmbedding.comap_apply`, the assumption shows
     `μ.comap F = ν.comap F` as measures on `α`; pushing forward through

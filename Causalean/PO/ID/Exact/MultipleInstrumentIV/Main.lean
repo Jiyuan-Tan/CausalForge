@@ -45,9 +45,14 @@ algebra: `Σ_g λ_g`, corresponding to
 noncomputable def signedAdjacentDenominator : ℝ :=
   R.typeWeightDenom I
 
-/-- The finite response-type ratio is the signed adjacent numerator divided by
-the signed adjacent denominator.  The `PopulationBridge` facade below upgrades
-this finite ratio to the saturated finite-support population 2SLS ratio. -/
+/-- **Finite response-type ratio as signed adjacent ratio.** Provided [the
+signed adjacent first-stage denominator is nonzero](hyp:_hden), [the
+finite-algebra MTW estimand `beta2SLSFiniteAlgebra` equals the signed
+adjacent numerator `Σ_g λ_g Δ_g` divided by the signed adjacent denominator
+`Σ_g λ_g`](goal).
+
+The `PopulationBridge` facade below upgrades this finite ratio to the
+saturated finite-support population 2SLS ratio. -/
 theorem beta2SLSFiniteAlgebra_eq_signedAdjacentRatio
     (_hden : R.signedAdjacentDenominator I ≠ 0) :
     R.beta2SLSFiniteAlgebra I =
@@ -78,7 +83,10 @@ namespace ResponseTypeStats.PopulationBridge
 
 variable {K : ℕ} (I : FiniteIndex K) (P : ResponseTypeStats.PopulationBridge K)
 
-/-- Population bridge version of the signed adjacent ratio theorem. -/
+/-- **Signed adjacent ratio form (population bridge).** Provided [the signed
+adjacent first-stage denominator is nonzero](hyp:hden), [the population-
+bridge 2SLS estimand equals the signed adjacent numerator divided by the
+signed adjacent denominator](goal). -/
 theorem beta2SLSPopulationBridge_eq_signedAdjacentRatio
     (hden : P.stats.signedAdjacentDenominator I ≠ 0) :
     P.beta2SLSPopulationBridge I =
@@ -86,14 +94,22 @@ theorem beta2SLSPopulationBridge_eq_signedAdjacentRatio
   rw [P.beta2SLSPopulationBridge_eq_beta2SLSFiniteAlgebra I]
   exact P.stats.beta2SLSFiniteAlgebra_eq_signedAdjacentRatio I hden
 
-/-- Population bridge version of the response-type weighted-sum theorem. -/
+/-- **Response-type weighted-sum form (population bridge).** Provided [the
+first-stage type-weight denominator is nonzero](hyp:hden), [the population-
+bridge 2SLS estimand equals the response-type-weighted sum `Σ_g ω_g Δ_g` of
+within-type causal effects](goal). -/
 theorem beta2SLSPopulationBridge_eq_responseTypeWeightedSum
     (hden : P.stats.typeWeightDenom I ≠ 0) :
     P.beta2SLSPopulationBridge I = P.stats.responseTypeEstimand I := by
   rw [P.beta2SLSPopulationBridge_eq_beta2SLSFiniteAlgebra I]
   exact P.stats.beta2SLSFiniteAlgebra_eq_responseTypeWeightedSum I hden
 
-/-- Population bridge version of the positive response-type average theorem. -/
+/-- **Positive response-type average (population bridge).** When [the response
+types are sign-aligned with the instrument order](hyp:hAlign) and [the
+first-stage type-weight denominator is strictly positive](hyp:hden), [the
+population-bridge 2SLS estimand `beta2SLSPopulationBridge` equals the
+response-type estimand, its normalized response-type weights are all
+nonnegative, and those weights sum to one](goal). -/
 theorem beta2SLSPopulationBridge_eq_positiveResponseTypeAverage
     (hAlign : P.stats.SignAligned I)
     (hden : 0 < P.stats.typeWeightDenom I) :
@@ -114,10 +130,15 @@ variable {μ : MeasureTheory.Measure Ω} {Z : Ω → Fin K}
 variable {D : Ω → Bool} {Y : Ω → ℝ}
 variable {I : FiniteIndex K} {P : ResponseTypeStats.PopulationBridge K}
 
-/-- End-to-end corollary (`prop:po-estimand-mtw-response-type-form`, observed
-level): the observed population 2SLS ratio equals the response-type weighted
-sum, stated directly at the observed-moment level with a single denominator
-hypothesis `observedFirstStageMoment μ Z D I ≠ 0`.
+/-- **End-to-end corollary** (`prop:po-estimand-mtw-response-type-form`,
+observed level). Given a bridge `B` linking the data-generating instrument,
+treatment, and outcome to the response-type population, provided [the
+instrument is measurable](hyp:hZ), [the centered-instrument-weighted outcome
+is integrable](hyp:hYInt), [the centered-instrument-weighted treatment is
+integrable](hyp:hDInt), and [the observed first-stage moment
+`observedFirstStageMoment μ Z D I` is nonzero](hyp:hden), [the observed
+population 2SLS ratio equals the response-type weighted sum of within-type
+causal effects](goal).
 
 This packages the full bridge chain:
 

@@ -134,9 +134,10 @@ theorem strictAntiOn_envelopeQuartic (v : ℝ) (hv0 : 0 < v) (hv1 : v < 1) :
   rw [(hasDerivAt_envelopeQuartic t (v ^ 2)).deriv]
   exact envelopeQuartic_deriv_neg v t hv0 hv1 ht.1 ht.2
 
-/-- **Unique interior root of the FOC quartic.** For `v ∈ (0,1)` (write `q = v²`) there is a unique
-`μᵥ ∈ (v², v)` with `envelopeQuartic μᵥ (v²) = 0`.  This `μᵥ` is the envelope maximizer selecting
-`ρ(v)`. Existence is `interior_quartic_exists`; uniqueness follows from strict antitonicity
+/-- **Unique interior root of the FOC quartic.** For [`v` strictly between `0` and
+`1`](hyp:hv0,hv1) (write `q = v²`), [there is a unique `μᵥ ∈ (v², v)` with
+`envelopeQuartic μᵥ (v²) = 0`](goal).  This `μᵥ` is the envelope maximizer selecting `ρ(v)`.
+Existence is `interior_quartic_exists`; uniqueness follows from strict antitonicity
 (`strictAntiOn_envelopeQuartic`), whose `InjOn` forces two roots to coincide. -/
 theorem interior_quartic_unique_root (v : ℝ) (hv0 : 0 < v) (hv1 : v < 1) :
     ∃! u, u ∈ Ioo (v ^ 2) v ∧ envelopeQuartic u (v ^ 2) = 0 := by

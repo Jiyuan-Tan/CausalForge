@@ -141,7 +141,11 @@ theorem integral_id_mul_projResidual (μ : Measure ℝ) [IsProbabilityMeasure μ
   field_simp [hd]
   ring
 
-/-- **Self L²-norm.** `∫ q² dμ = r`, the closed-form residual `l2ResidualQuadratic μ`.
+/-- **Self L²-norm of the projection residual.** For [a probability measure `μ` on `ℝ` with a
+finite fourth moment](hyp:h) and [first moment squared strictly below the second moment (positive
+variance)](hyp:hnd), [the squared L² norm of the projection residual `q(y) = y² −
+(optIntercept μ + optSlope μ · y)` equals the closed-form residual `l2ResidualQuadratic
+μ`](goal): `∫ q² dμ = l2ResidualQuadratic μ`.
 
 `q(y)² = (y² − optIntercept μ − optSlope μ · y)²` is exactly the integrand of
 `MeasureBridge.residualQuad μ (optIntercept μ) (optSlope μ)`, whose value at the optimal

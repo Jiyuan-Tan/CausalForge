@@ -385,7 +385,18 @@ theorem cumulative_risk_engine
   exact (lt_irrefl _ (hstrong.trans_lt (hBTlt.trans hcontr))).elim
 
 /-- **Radius-monotone cumulative Neyman-regret lower bound**
-(`lem:local-neighborhood-cumulative-risk`).
+(`lem:local-neighborhood-cumulative-risk`). Fix [a per-round Fisher information scale
+`J > 0`](hyp:hJ), [an oracle-sensitivity `d ≠ 0`](hyp:hd), [a nonnegative feedback constant
+`L`](hyp:hL), and [a nonnegative prior information `Iq`](hyp:hIq). Let `b` be a per-round
+mean-squared-error sequence with [running totals `B` defined by `B n = ∑_{t≤n} b t`](hyp:hB),
+satisfying [the predictable van Trees / Bayes–Cramér–Rao recursion
+`b t ≥ (d²/4) / (Iq + (5J/4)·t + L·√(t·B(t-1)))` for every round `t ≥ 1`](hyp:hrec). Suppose
+further [the Neyman-gap quadratic conversion `2S²·B T ≤ RB T` for every `T`](hyp:hconv) (the
+Bayes-average cumulative regret `RB` dominates twice the scaled cumulative Bayes MSE) and
+[the worst-case cumulative regret `Rsup` dominates the Bayes average, `RB T ≤ Rsup T` for every
+`T`](hyp:hsup). Then [there is a threshold `T₀` beyond which the worst-case cumulative regret
+grows at least logarithmically: `Rsup T ≥ (S² d² / (16J)) · log T` for all `T ≥ T₀`](goal), with
+universal constant `1/16`.
 
 Assembly of `cumulative_risk_engine` with the two measure-theoretic inputs of the
 writeup taken as hypotheses: the Neyman-gap quadratic conversion

@@ -50,8 +50,15 @@ def DiffQuotientEnvelope (M : GeneralMoment Ω μ Z P_Z H) : Prop :=
     ∀ᵐ z ∂P_Z, ∀ t : ℝ, t ∈ Set.Ioo (-δ) δ → t ≠ 0 →
       ‖(M.m (M.η₀ + t • (η - M.η₀)) z M.θ₀ - M.m M.η₀ z M.θ₀) / t‖ ≤ g z
 
-/-- Abstract DCT bridge: given Neyman orthogonality and an L¹ envelope,
-    the integrated difference quotient tends to zero along `𝓝[≠] 0`. -/
+/-- **Abstract DCT bridge.** Given a general moment M with directional-derivative
+structure D, assume [Neyman orthogonality — the population directional derivative
+vanishes at every admissible nuisance perturbation](hyp:hNO), and [an L¹(P_Z) envelope
+dominating the difference quotient of the moment near `t = 0`](hyp:hEnv). Suppose
+[η lies in the admissible nuisance neighborhood `M.H_ε`](hyp:hη), that [the moment along
+the segment from η₀ to η is integrable at every nonzero t](hyp:hMt_int), and that [the
+moment at η₀ is integrable](hyp:hM0_int). Then [the integrated difference quotient
+`(∫ m(η₀ + t · (η − η₀)) dP_Z − ∫ m(η₀) dP_Z) / t` tends to zero as t → 0 along the
+punctured neighborhood](goal). -/
 theorem integratedMoment_diffQuotient_tendsto_zero
     (M : GeneralMoment Ω μ Z P_Z H) (D : HasDirDeriv M)
     (hNO : NeymanOrthogonal M D)

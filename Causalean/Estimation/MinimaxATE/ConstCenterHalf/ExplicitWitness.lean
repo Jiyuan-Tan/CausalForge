@@ -170,8 +170,13 @@ noncomputable def explicitWitness [NeZero K]
       rw [ate_gPerturbed hα hβ hαβ lam] at hb
       exact hb
 
-/-- Every measurable estimator misses the true ATE by the explicit product-rate scale somewhere
-in the class.
+/-- Fix [nonnegative bump magnitudes α and β with `α + 2β ≤ 1/2`](hyp:hα,hβ,hαβ) meeting [the
+Rademacher perturbation budgets `β² ≤ εm` and `(α+β)²/(1−2β)² ≤ εg`](hyp:hm,hg) for
+[nonnegative error tolerances εg, εm](hyp:hεg,hεm), and suppose [the centered null law and the
+uniform mixture of perturbed laws are statistically close, at total-variation distance at most
+`1/2`](hyp:htv). Then for [any measurable estimator of the average treatment
+effect](hyp:hest), [the worst-case-over-class probability that it misses the true ATE by
+`s = β(α+β)/(1−4β²)` is at least `1/4`](goal).
 
 This conditional lower bound assumes the centered budgets, the Rademacher perturbation budgets,
 and the total-variation indistinguishability of the null and mixed alternative laws. -/

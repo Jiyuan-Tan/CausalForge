@@ -58,9 +58,10 @@ noncomputable def chiSqDiv (μ ν : Measure Ω) : ℝ :=
 theorem chiSqDiv_nonneg : 0 ≤ chiSqDiv μ ν :=
   integral_nonneg fun _ => sq_nonneg _
 
-/-- **Cauchy–Schwarz on Scheffé.** For probability measures `μ ≪ ν` whose squared
-density deviation is integrable, the total variation distance is bounded by half
-the square root of the χ²-divergence. -/
+/-- **Cauchy–Schwarz on Scheffé.** For probability measures `μ`, `ν` with [`μ` absolutely
+continuous with respect to `ν`](hyp:hac) and whose [squared Radon–Nikodym density deviation
+`(dμ/dν − 1)²` is `ν`-integrable](hyp:hint), [the total variation distance `tvDist μ ν` is
+bounded by half the square root of the χ²-divergence `chiSqDiv μ ν`](goal). -/
 theorem tvDist_le_half_sqrt_chiSqDiv (μ ν : Measure Ω)
     [IsProbabilityMeasure μ] [IsProbabilityMeasure ν] (hac : μ ≪ ν)
     (hint : Integrable (fun x => ((μ.rnDeriv ν x).toReal - 1) ^ 2) ν) :
@@ -287,8 +288,9 @@ theorem pi_iid_absolutelyContinuous {Ω : Type*} [MeasurableSpace Ω]
 
 set_option linter.unusedFintypeInType false in
 /-- **`n`-fold i.i.d. tensorization of the χ²-divergence** on a finite sample space.
-For probability measures `μ ≪ ν` on a finite `Ω`, the χ²-divergence of the `n`-fold
-product satisfies `1 + χ²(μ^⊗n ‖ ν^⊗n) = (1 + χ²(μ‖ν))^n`.
+For probability measures `μ`, `ν` on a finite space `Ω` with [`μ` absolutely continuous with
+respect to `ν`](hyp:hac), [the χ²-divergence of the `n`-fold i.i.d. product laws satisfies
+`1 + χ²(μ^⊗n ‖ ν^⊗n) = (1 + χ²(μ‖ν))^n`](goal).
 
 The `[Fintype Ω]` hypothesis is kept deliberately: together with
 `[MeasurableSingletonClass Ω]` it makes every integrability side-condition free
@@ -403,10 +405,11 @@ theorem pi_iid_integrable_sq_dev {S : Type*} [MeasurableSpace S] (μ ν : Measur
     simp only [hx]
 
 /-- **`n`-fold i.i.d. tensorization of the χ²-divergence on a GENERAL measurable space.**
-For probability measures `μ ≪ ν` on any measurable space `S` whose single-sample squared
-density deviation `(dμ/dν − 1)²` is `ν`-integrable, the χ²-divergence of the `n`-fold
-i.i.d. product tensorizes multiplicatively:
-`1 + χ²(μ^⊗n ‖ ν^⊗n) = (1 + χ²(μ‖ν))^n`.
+For probability measures `μ`, `ν` on any measurable space `S` such that [`μ` is absolutely
+continuous with respect to `ν`](hyp:hac) and [the single-sample squared density deviation
+`(dμ/dν − 1)²` is `ν`-integrable](hyp:hint), [the χ²-divergence of the `n`-fold i.i.d. product
+tensorizes multiplicatively: `1 + χ²(μ^⊗n ‖ ν^⊗n) = (1 + χ²(μ‖ν))^n`](goal).
+
 This is the general-space analogue of `one_add_chiSqDiv_pi_iid` (whose `[Fintype S]`
 hypothesis only serves to discharge integrability for free); the proof is the same
 `chiSqDiv_prod` induction with the integrability side-conditions supplied by `hint` and
@@ -551,10 +554,12 @@ lemma rnDeriv_setIntegral_le_sqrt_chi {Ω : Type*} [MeasurableSpace Ω]
       rw [Real.sqrt_mul hnonK]
       ring
 
-/-- **Two-point testing-error floor from a finite χ²-budget.**  For probability measures
-`P ≪ Q` with `Q`-integrable squared density deviation and χ²-divergence at most `C ≥ 0`, every
-measurable test region `A` incurs a combined error at least `1/(4(C + 1))`:
-`P(Aᶜ) + Q(A) ≥ 1/(4(C + 1))`.  This is the positive two-point testing floor that powers
+/-- **Two-point testing-error floor from a finite χ²-budget.**  For probability measures `P`,
+`Q` such that [`P` is absolutely continuous with respect to `Q`](hyp:hac) and [the squared
+density deviation `(dP/dQ − 1)²` is `Q`-integrable](hyp:hint), if [`C` is nonnegative](hyp:hC)
+and [the χ²-divergence `chiSqDiv P Q` is at most `C`](hyp:hchi), then for every [measurable test
+region `A`](hyp:hA), [the combined testing error is at least `1/(4(C + 1))`:
+`P(Aᶜ) + Q(A) ≥ 1/(4(C + 1))`](goal).  This is the positive two-point testing floor that powers
 χ²-budget minimax lower bounds — no test can separate `P` from `Q` better than this when their
 χ²-divergence is bounded. -/
 lemma testing_error_lower_of_chi {Ω : Type*} [MeasurableSpace Ω]

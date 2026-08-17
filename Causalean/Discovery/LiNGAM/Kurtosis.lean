@@ -39,10 +39,13 @@ excess kurtosis of one common sign. -/
 noncomputable def kurt (X : Ω → ℝ) (P : Measure Ω) : ℝ :=
   (∫ ω, (X ω) ^ 4 ∂P) - 3 * (∫ ω, (X ω) ^ 2 ∂P) ^ 2
 
-/-- **Fourth cross-cumulant identity (Isserlis / cumulant multilinearity).**  For
-independent, centered, finite-fourth-moment sources `eⱼ` and linear forms
-`yₐ = Σⱼ aⱼ eⱼ`, `y_b = Σⱼ bⱼ eⱼ`, the joint fourth cumulant `cum(yₐ,yₐ,y_b,y_b)`
-equals `Σⱼ aⱼ² bⱼ² κ₄(eⱼ)`. -/
+/-- **Fourth cross-cumulant identity (Isserlis / cumulant multilinearity).**  Let
+`e` be a family of real sources on a probability space such that [each coordinate
+`eⱼ` is measurable](hyp:hmeas), [the coordinates are mutually independent](hyp:hindep),
+[each has finite fourth moment](hyp:hL4), and [each is centered](hyp:hcent). Then for
+any coefficient vectors `a`, `b` and the linear forms `yₐ = Σⱼ aⱼ eⱼ`,
+`y_b = Σⱼ bⱼ eⱼ`, [the joint fourth cumulant `cum(yₐ,yₐ,y_b,y_b)` equals
+`Σⱼ aⱼ² bⱼ² κ₄(eⱼ)`](goal). -/
 theorem cross_fourth_cumulant_eq_sum {n : ℕ} {e : Ω → Fin n → ℝ} (a b : Fin n → ℝ)
     (hmeas : ∀ j, Measurable (fun ω => e ω j))
     (hindep : iIndepFun (fun j ω => e ω j) P)
@@ -605,11 +608,15 @@ theorem cross_fourth_cumulant_eq_sum {n : ℕ} {e : Ω → Fin n → ℝ} (a b :
   ring_nf
   rw [Finset.sum_mul, ← Finset.sum_sub_distrib]
 
-/-- **Kurtosis-based column support.**  If the sources `eⱼ` are independent, centered,
-with finite fourth moment and non-zero fourth cumulant of one common sign, and the
-two linear forms `Σⱼ Wᵢⱼ eⱼ` and `Σⱼ Wₖⱼ eⱼ` are independent (for `i ≠ k`), then for
-every `j`, `Wᵢⱼ · Wₖⱼ = 0`.  This is the input required by
-`genPerm_of_det_ne_zero_of_colSupport`. -/
+/-- **Kurtosis-based column support.**  Let `e` be a family of real sources on a
+probability space such that [each coordinate `eⱼ` is measurable](hyp:hmeas),
+[the coordinates are mutually independent](hyp:hindep), [each has finite fourth
+moment](hyp:hL4), [each is centered](hyp:hcent), and [the fourth cumulant (excess
+kurtosis) of every coordinate is nonzero and of one common sign, all positive or all
+negative](hyp:hsign). For [two distinct row indices `i ≠ k`](hyp:hik) of a mixing
+matrix `W`, if [the linear forms `Σⱼ Wᵢⱼ eⱼ` and `Σⱼ Wₖⱼ eⱼ` are
+independent](hyp:hyindep), then [every column `j` satisfies `Wᵢⱼ · Wₖⱼ =
+0`](goal).  This is the input required by `genPerm_of_det_ne_zero_of_colSupport`. -/
 theorem colSupport_of_kurtosis {n : ℕ} {e : Ω → Fin n → ℝ} {W : Matrix (Fin n) (Fin n) ℝ}
     (hmeas : ∀ j, Measurable (fun ω => e ω j))
     (hindep : iIndepFun (fun j ω => e ω j) P)

@@ -61,8 +61,14 @@ Proof structure (mirrors `DTR.lean` step_1):
 5. On `{indD (n-1) = 1}`, use overlap_{n-1} to establish the cancellation.
    On `{indD (n-1) = 0}`, both sides collapse to `0`. -/
 
-/-- The innermost cancellation identity starts the backward induction for a
-dynamic treatment regime. -/
+/-- **Base case of the backward induction for a dynamic treatment regime.**
+Under [the dynamic-treatment-regime identification assumptions — consistency
+and stage-wise sequential exchangeability/overlap](hyp:hA), provided [the
+horizon `n` is positive](hyp:hn), [the depth-zero adjusted-regression
+functional, multiplied by the indicator that the observed treatment matches
+the target regime `dbar` through stage `n-1`, agrees almost everywhere with
+that same indicator multiplied by the conditional mean of the regime outcome
+given the treatment-and-covariate history through stage `n-1`](goal). -/
 theorem cdtr_base [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
     (S : PODTRSystem P n δ γ) (hA : S.Assumptions) (dbar : Fin n → δ)
     (hn : 0 < n) :

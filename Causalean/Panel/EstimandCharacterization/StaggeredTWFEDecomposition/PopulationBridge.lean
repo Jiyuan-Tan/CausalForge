@@ -56,8 +56,16 @@ open scoped BigOperators
 variable {Ω 𝒢 : Type*} [MeasurableSpace Ω] [Fintype 𝒢] [DecidableEq 𝒢]
   [MeasurableSpace 𝒢] [MeasurableSingletonClass 𝒢] {T : ℕ}
 
-/-- The population FWL denominator equals the finite-cell Goodman-Bacon
-denominator `VD`. -/
+/-- On a probability space carrying cohort label `G`, period label `T_rv`, treatment `D`, and
+outcome `Y`, assume [`D` is binary almost everywhere](hyp:D_binary), [there is at least one time
+period](hyp:hT_pos), [every cohort has strictly positive population mass](hyp:hp_pos), [the
+cohort masses sum to one](hyp:hp_sum), [each cohort's mass is split evenly across periods (a
+balanced panel law)](hyp:hLaw), [on each cohort-period cell `D` is almost-everywhere equal to its
+own cell mean (cell-measurability of `D`)](hyp:hD_cell), and [the population per-cell
+residualized treatment `panelDtilde` agrees with the finite-panel residualized treatment
+`Dtilde`](hyp:hDtilde_eq). Then [the population second moment of the residualized-treatment
+witness — the FWL denominator `∫ Vtilde² dμ` — equals the finite-cell Goodman-Bacon denominator
+`VD` of the induced finite panel](goal). -/
 theorem bridge_Dtilde_sq_eq_VD
     (μ : Measure Ω) [IsProbabilityMeasure μ]
     (D Y : Ω → ℝ) (G : Ω → 𝒢) (T_rv : Ω → Fin T)
@@ -115,8 +123,16 @@ theorem bridge_Dtilde_sq_eq_VD
     _ = VD P := by
       simp [P, panelOf, VD, hLaw, hDtilde_eq]
 
-/-- The finite-cell denominator is positive if and only if the population FWL
-denominator `∫ Vtilde² dμ` is positive.
+/-- On a probability space carrying cohort label `G`, period label `T_rv`, treatment `D`, and
+outcome `Y`, assume [`D` is binary almost everywhere](hyp:D_binary), [there is at least one time
+period](hyp:hT_pos), [every cohort has strictly positive population mass](hyp:hp_pos), [the
+cohort masses sum to one](hyp:hp_sum), [each cohort's mass is split evenly across periods (a
+balanced panel law)](hyp:hLaw), [on each cohort-period cell `D` is almost-everywhere equal to its
+own cell mean (cell-measurability of `D`)](hyp:hD_cell), and [the population per-cell
+residualized treatment `panelDtilde` agrees with the finite-panel residualized treatment
+`Dtilde`](hyp:hDtilde_eq). Then [the finite-cell Goodman-Bacon denominator `VD` is strictly
+positive if and only if the population FWL denominator `∫ Vtilde² dμ` is strictly
+positive](goal).
 
 Callers who already hold `hVD_pos : 0 < VD P` (from the Layer A side) can
 derive `hDtilde_pos` automatically:
@@ -154,8 +170,16 @@ theorem bridge_VD_pos_iff_Dtilde_sq_pos
   rw [bridge_Dtilde_sq_eq_VD μ D Y G T_rv A G_meas T_meas D_meas D_binary
         B_balanced hT_pos hp_pos hp_sum hLaw hD_cell hDtilde_eq]
 
-/-- The population FWL coefficient on the panel class equals the finite-cell
-Goodman-Bacon `betaTWFE`.
+/-- On a probability space carrying cohort label `G`, period label `T_rv`, treatment `D`, and
+outcome `Y`, assume [`D` is binary almost everywhere](hyp:D_binary), [there is at least one time
+period](hyp:hT_pos), [every cohort has strictly positive population mass](hyp:hp_pos), [the
+cohort masses sum to one](hyp:hp_sum), [each cohort's mass is split evenly across periods (a
+balanced panel law)](hyp:hLaw), [on each cohort-period cell `D` is almost-everywhere equal to its
+own cell mean (cell-measurability of `D`)](hyp:hD_cell), and [the population per-cell
+residualized treatment `panelDtilde` agrees with the finite-panel residualized treatment
+`Dtilde`](hyp:hDtilde_eq). Then [the population residualized regression coefficient of `D` on
+`Y`, controlling for the cohort/period additive class `panelClass`, equals the finite-cell
+Goodman-Bacon two-way-fixed-effects coefficient `betaTWFE` of the induced finite panel](goal).
 
 **Note on `hDtilde_eq`.**
 The hypothesis

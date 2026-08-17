@@ -104,9 +104,13 @@ small criterion value pins `θ` near the identified set. -/
 def LinearMinorant (Q : Θ → ℝ) (δ : ℝ) : Prop :=
   ∀ θ, δ * Metric.infDist θ (identifiedSet Q) ≤ Q θ
 
-/-- **Deterministic CHT rate bound.**  Under a linear minorant of modulus `δ > 0`,
-a sup-norm error `|Qn − Q| ≤ ε`, and a cutoff `c ≥ ε`, the level-set estimator is
-within Hausdorff distance `(c + ε)/δ` of the identified set:
+/-- **Deterministic CHT rate bound.** Fix [a positive linear-minorant modulus
+`δ`](hyp:hδ), [a nonnegative sup-norm error bound `ε`](hyp:hε), and [a cutoff `c` at least
+`ε`](hyp:hc). If [the population criterion `Q` satisfies a linear minorant of modulus
+`δ` relative to its identified set — `δ` times the distance to the identified set never
+exceeds `Q`](hyp:hmin), and [the sample criterion `Qn` is within `ε` of `Q` in sup norm at
+every point](hyp:hunif), then [the level-set estimator `{Qn ≤ c}` is within Hausdorff
+distance `(c + ε) / δ` of the population identified set `{Q = 0}`](goal):
 
     H(levelSet Qn c, identifiedSet Q) ≤ (c + ε) / δ. -/
 theorem hausdorffDist_levelSet_le
@@ -136,11 +140,15 @@ theorem hausdorffDist_levelSet_le
     rw [directedHausdorff_eq_zero_of_subset hsub]
     exact hbound
 
-/-- **Hausdorff consistency of the criterion-set estimator.**  If the sample
-criterion converges uniformly to the population criterion (`|Qnₙ − Q| ≤ εₙ` with
-`εₙ → 0`) and the cutoff sequence satisfies `εₙ ≤ cₙ → 0`, then the level-set
-estimator is Hausdorff-consistent for the identified set:
-`H(levelSet Qnₙ cₙ, identifiedSet Q) → 0`. -/
+/-- **Hausdorff consistency of the criterion-set estimator.** Fix [a positive
+linear-minorant modulus `δ`](hyp:hδ) such that [the population criterion `Q` satisfies a
+linear minorant of modulus `δ`](hyp:hmin). Suppose [each sup-norm error tolerance is
+nonnegative](hyp:hε), [each cutoff is at least the corresponding error
+tolerance](hyp:hc), [the sample criterion `Qn n` is within tolerance `ε n` of `Q` in sup
+norm at every sample size `n`](hyp:hunif), [the cutoffs tend to zero](hyp:hc0), and [the
+error tolerances tend to zero](hyp:hε0). Then [the Hausdorff distance between the
+level-set estimator `{Qn n ≤ c n}` and the population identified set `{Q = 0}` tends to
+zero as the sample size grows](goal): `H(levelSet Qnₙ cₙ, identifiedSet Q) → 0`. -/
 theorem tendsto_hausdorffDist_levelSet
     {Q : Θ → ℝ} {Qn : ℕ → Θ → ℝ} {δ : ℝ} {c ε : ℕ → ℝ}
     (hδ : 0 < δ) (hmin : LinearMinorant Q δ)

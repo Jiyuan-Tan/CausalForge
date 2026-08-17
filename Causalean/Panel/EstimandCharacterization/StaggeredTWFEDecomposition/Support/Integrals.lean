@@ -269,9 +269,11 @@ theorem panelMeanReg_eq_hat_of_mem
 /-! #### Per-axis to whole-class orthogonality -/
 
 omit [DecidableEq 𝒢] in
-/-- If a square-integrable residual `V` is orthogonal to every cohort
-indicator and to every period indicator, then it is orthogonal to every
-member of `panelClass`. -/
+/-- If [a square-integrable random variable `V` has zero mean product against every cohort
+indicator `𝟙{G = g}`](hyp:hCohort) and [zero mean product against every period indicator
+`𝟙{T_rv = t}`](hyp:hPeriod), then [`V` is orthogonal, in the `L²(μ)` sense, to every
+unit/period-additive combination `∑_g cG(g)·𝟙{G = g} + ∑_t cT(t)·𝟙{T_rv = t}`, i.e. to every
+member of the additive nuisance class `panelClass`](goal). -/
 theorem integral_mul_panelClass_eq_zero_of_axes
     (μ : Measure Ω) [IsFiniteMeasure μ]
     (V : Ω → ℝ) (G : Ω → 𝒢) (T_rv : Ω → Fin T)

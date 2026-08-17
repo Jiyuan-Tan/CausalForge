@@ -232,8 +232,13 @@ lemma map_retainedObservations_restrict_count_ge
     (μ := poissonMeasure lam) (s := Ici n) (f := id) (Set.to_countable (Ici n))
     (fun m _ => measurableSet_singleton m))
 
-/-- If the event of at least `n` points has positive probability, normalising
-the restricted retained-prefix law gives exactly `P^n`. -/
+/-- **Conditioning on enough points gives i.i.d. draws.** Fix [a nonnegative intensity
+`lam`](hyp:lam) and suppose [the Poisson(`lam`) probability of observing at least `n` points is
+nonzero](hyp:hpos). Under the marked Poisson sample law with base probability measure `P`, mark
+distribution `R`, and intensity `lam`, condition on the event that the sample count is at least
+`n`, retain the `n` mark-smallest points and forget their marks (`x₀` is an irrelevant filler value
+used only outside this event); [the resulting normalised law equals the product of `n` independent
+copies of `P`](goal). -/
 lemma normalized_map_retainedObservations_restrict_count_ge
     (P : Measure X) [IsProbabilityMeasure P]
     (R : Measure ℝ) [IsProbabilityMeasure R] [NullSingletonClass R]

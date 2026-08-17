@@ -54,8 +54,9 @@ def TendstoInProb (D : ∀ m, FiniteDesign (Ω m)) (X : ∀ m, Ω m → ℝ) (c 
   ∀ ε : ℝ, 0 < ε →
     Tendsto (fun m => (D m).Pr (fun z => ε ≤ |X m z - c m|)) atTop (𝓝 0)
 
-/-- **Chebyshev consistency engine.** If the design variance of `X m` tends to zero, then `X m`
-converges in probability to its design mean `E[X m]`. -/
+/-- **Chebyshev consistency engine.** Along [a sequence of finite designs `D`](hyp:D), for
+[statistics `X`](hyp:X), if [the design variance of `X m` tends to zero as `m → ∞`](hyp:hvar), then
+[`X m` converges in probability to its design mean `E[X m]`](goal). -/
 theorem tendstoInProb_of_var (D : ∀ m, FiniteDesign (Ω m)) (X : ∀ m, Ω m → ℝ)
     (hvar : Tendsto (fun m => (D m).Var (X m)) atTop (𝓝 0)) :
     TendstoInProb D X (fun m => (D m).E (X m)) := by
@@ -79,7 +80,10 @@ lemma Pr_or_le {Ω' : Type*} [Fintype Ω'] (D : FiniteDesign Ω') (P Q : Ω' →
   apply mul_le_mul_of_nonneg_left _ (D.p_nonneg z)
   by_cases hP : P z <;> by_cases hQ : Q z <;> simp [hP, hQ]
 
-/-- Convergence in probability is closed under differences. -/
+/-- Along a sequence of finite designs, if [the statistics `X m` converge in probability to
+`a m`](hyp:hX) and [the statistics `Y m` converge in probability to `b m`](hyp:hY), then [the
+difference `X m − Y m` converges in probability to `a m − b m`](goal): convergence in probability
+is closed under differences. -/
 theorem TendstoInProb.sub {D : ∀ m, FiniteDesign (Ω m)} {X Y : ∀ m, Ω m → ℝ} {a b : ℕ → ℝ}
     (hX : TendstoInProb D X a) (hY : TendstoInProb D Y b) :
     TendstoInProb D (fun m z => X m z - Y m z) (fun m => a m - b m) := by
@@ -149,10 +153,11 @@ theorem TendstoInProb.abs {D : ∀ m, FiniteDesign (Ω m)} {X : ∀ m, Ω m → 
   intro ε hε
   simpa only [sub_zero, abs_abs] using h ε hε
 
-/-- **Slutsky ratio step.** If `X m → a m` in probability, the denominator `Y m → 1` in
-probability, and the limit sequence `a m` is uniformly bounded (`|a m| ≤ M`), then the ratio
-`X m / Y m → a m` in probability.  (The realized normalizer tends to one, so dividing by it does not
-change the probability limit.) -/
+/-- **Slutsky ratio step.** Along [a sequence of finite designs `D`](hyp:D), fix [statistics `X`
+and `Y`](hyp:X,Y). If [`X m` converges in probability to `a m`](hyp:hX), [the denominator `Y m`
+converges in probability to `1`](hyp:hY), and [the limit sequence `a m` is uniformly bounded by a
+constant `M`](hyp:ha), then [the ratio `X m / Y m` converges in probability to `a m`](goal). (The
+realized normalizer tends to one, so dividing by it does not change the probability limit.) -/
 theorem tendstoInProb_div_one (D : ∀ m, FiniteDesign (Ω m)) (X Y : ∀ m, Ω m → ℝ) (a : ℕ → ℝ)
     (M : ℝ) (ha : ∀ m, |a m| ≤ M) (hX : TendstoInProb D X a)
     (hY : TendstoInProb D Y (fun _ => 1)) :

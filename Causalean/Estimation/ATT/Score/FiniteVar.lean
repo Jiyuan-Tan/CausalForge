@@ -46,7 +46,13 @@ namespace TreatedEstimationSystem
 variable {P : POSystem} {γ : Type*} [MeasurableSpace γ]
   [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
 
-/-- **Finite variance of the ATT AIPW moment** — `lem:est-aipw-finite-var-att`.
+/-- **Finite variance of the ATT AIPW moment.** Under [one-sided overlap: the true
+treatment propensity is bounded above by `1 − ε` for some `ε ∈ (0, 1/2]` almost
+surely](hyp:h_overlap), [the one-sided back-door ATT assumptions](hyp:hA), and
+[square-integrability of the factual outcome](hyp:h_y2) together with
+[square-integrability of the untreated potential outcome `Y(0)`](hyp:h_y0_2), [the ATT
+AIPW moment evaluated at the truth nuisance is square-integrable under the joint law of
+the covariates, treatment, and outcome](goal).
 
 Under the one-sided ATT back-door assumption bundle, one-sided upper overlap
 (`ε ∈ (0, 1/2]`), `E[Y²] < ∞`, and square-integrability of the

@@ -1463,11 +1463,18 @@ theorem exists_orderPerm (S S' : Solution d p K)
 
 /-! ### (L5) Deriving the conclusion from (L4) -/
 
-/-- **Uniqueness (⊆ direction of Theorem 2).**  If every latent node is intervened on
-(`hcov`), every intervention is non-degenerate (`hNondeg`, the paper's genericity /
-Assumption 1(b): `Θ_k ≠ Θ_0`, so each context is observably distinct), and two
-solutions produce the same precision matrices in every context, then they are related
-by a single order-preserving relabeling `σ ∈ S(𝒢)` and nonzero signed diagonal scaling.
+/-- **Uniqueness (⊆ direction of Theorem 2).**  Let `S` and `S'` be two solutions of the
+linear causal disentanglement model such that [each solution's intervention-target map
+is a bijection onto the latent coordinates, i.e. one intervention per latent
+node](hyp:hcov,hcov') and [`S`'s interventions are non-degenerate (the paper's
+genericity / Assumption 1(b)): every intervened precision matrix `Θ_k` differs from
+the observational precision matrix `Θ_0`](hyp:hNondeg). If [`S` and `S'` share the
+same observational precision matrix](hyp:hΘ0) and [agree, context by context, on
+every interventional precision matrix](hyp:hΘ), then [`S` and `S'` are related by a
+single order-preserving relabeling `σ` of the latent coordinates, a nonzero scaling
+vector `μ`, and a `±1` sign vector `ν`, transporting `S`'s latent-direction and
+structural coefficient matrices onto `S'`'s, with `σ` carrying `S`'s intervention
+targets onto `S'`'s](goal).
 
 The proof is the clean orthogonal-matrix route:
 (L1) `H' = M H` for an invertible `M` (`exists_change_of_basis`, from rowspace equality

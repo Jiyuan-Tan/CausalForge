@@ -115,14 +115,13 @@ theorem bootstrapVar_nonneg (S : IIDSample Ω X μ P) (ψ : X → ℝ) (n : ℕ)
   · positivity
   · exact Finset.sum_nonneg (fun i _ => sq_nonneg _)
 
-/-- **Consistency of the bootstrap variance.**  Along an i.i.d. sample with a
-measurable, integrable, square-integrable, mean-zero influence function `ψ`
-(`∫ ψ dP = 0`), the bootstrap variance converges in probability to the
-population second moment:
+/-- **Consistency of the bootstrap variance.** Along the i.i.d. sample `S`, if the influence
+function `ψ` is [measurable](hyp:hψ_meas), [integrable](hyp:hψ_int),
+[square-integrable](hyp:hψ_sq_int), and [has population mean zero](hyp:hmean), then [the
+bootstrap variance converges in probability to the population second moment $\int
+\psi^2\,dP$](goal).
 
-    bootstrapVar S ψ n  →ₚ  ∫ x, (ψ x)² ∂P.
-
-Proof: `S.sampleMean (ψ²) →ₚ ∫ ψ² dP` (second-moment WLLN) and
+    Proof: `S.sampleMean (ψ²) →ₚ ∫ ψ² dP` (second-moment WLLN) and
 `(S.sampleMean ψ)² →ₚ (∫ ψ dP)² = 0` (WLLN + continuous mapping); subtract via
 `Tendsto_inProb.sub` and use `∫ ψ dP = 0`. -/
 theorem bootstrapVar_tendsto_inProb (S : IIDSample Ω X μ P)

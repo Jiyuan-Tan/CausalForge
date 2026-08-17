@@ -84,8 +84,11 @@ theorem measure_norm_gt_le_of_half_net {Ω E : Type*} [MeasurableSpace Ω]
     _ = (N.card : ℝ) * Real.exp (-t ^ 2 / 2) := by
       rw [Finset.sum_const, nsmul_eq_mul]
 
-/-- A random vector supported almost everywhere on a finite-dimensional subspace has a
-dimension-only Gaussian norm tail when all unit projections in that subspace are sub-Gaussian. -/
+/-- **Dimension-only sub-Gaussian norm tail.** Let `V` be a finite-dimensional subspace of `E`.
+If [`Z` lies in `V` almost surely under `P`](hyp:hZV) and [every unit vector `v` in `V` has the
+scalar projection `⟪v, Z⟫` sub-Gaussian with parameter `1` under `P`](hyp:hsubg), then for
+[any nonnegative `t`](hyp:ht), [the probability that `‖Z‖` exceeds `2 * t` is at most `5`
+raised to the dimension of `V`, times `exp (-t ^ 2 / 2)`](goal). -/
 theorem measure_norm_gt_le_five_pow_finrank {Ω E : Type*} [MeasurableSpace Ω]
     [NormedAddCommGroup E] [InnerProductSpace ℝ E]
     (P : Measure Ω) [IsFiniteMeasure P] (Z : Ω → E) (V : Submodule ℝ E)

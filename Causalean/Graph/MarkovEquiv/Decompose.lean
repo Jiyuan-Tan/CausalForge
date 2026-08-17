@@ -76,11 +76,14 @@ theorem same_edge_of_edgeDiff_empty {G₁ G₂ : DAG V}
   · exact h1
   · exact absurd (hsub w u h1) (G₂.asymm he2)
 
-/-- **AMP Lemma 3.2 (existence).** Same skeleton + same immoralities, with at least one
-oppositely oriented edge, yields a *covered* such edge. The proof chooses a head of a
-reversed edge that is minimal in the first graph's topological order, then a tail into that
-head that is maximal among reversed tails; the skeleton and immorality hypotheses force this
-edge to have the same non-tail parents at both endpoints. -/
+/-- **AMP Lemma 3.2 (existence).** For DAGs `G₁` and `G₂` on the same vertex set, suppose
+[`G₁` and `G₂` have the same skeleton (the same underlying undirected adjacency)](hyp:hskel),
+[the same immoralities (unshielded colliders)](hyp:himm), and [there is a pair `a₀, b₀` with an
+edge `a₀ → b₀` in `G₁` that appears reversed as `b₀ → a₀` in `G₂`](hyp:h₀,h₀'). Then [there is
+a *covered* edge `a → b` in `G₁` that is likewise reversed to `b → a` in `G₂`](goal). The proof
+chooses a head of a reversed edge that is minimal in the first graph's topological order, then
+a tail into that head that is maximal among reversed tails; the skeleton and immorality
+hypotheses force this edge to have the same non-tail parents at both endpoints. -/
 theorem exists_covered_reversed_edge {G₁ G₂ : DAG V} (hskel : SameSkeleton G₁ G₂)
     (himm : SameImmoralities G₁ G₂) {a₀ b₀ : V} (h₀ : G₁.edge a₀ b₀) (h₀' : G₂.edge b₀ a₀) :
     ∃ a b, G₁.edge a b ∧ G₂.edge b a ∧ G₁.IsCoveredEdge a b := by
@@ -222,8 +225,10 @@ private theorem markovEquiv_covered_aux (G₂ : DAG V) :
       exact hflip.trans
         (ih (edgeDiffCount (DAG.flipEdge hcov) G₂) (hn ▸ hlt) (DAG.flipEdge hcov) hskel' himm' rfl)
 
-/-- **Verma–Pearl hard direction (covered-edge route).** DAGs with the same skeleton and the
-same immoralities are Markov equivalent — proven via AMP Lemma 3.2 (covered-edge reversals),
+/-- **Verma–Pearl hard direction (covered-edge route).** For DAGs `G₁` and `G₂` on the same
+vertex set, if [`G₁` and `G₂` have the same skeleton](hyp:hskel) and [the same
+immoralities](hyp:himm), then [`G₁` and `G₂` are Markov equivalent: they license exactly the
+same d-separation statements](goal) — proven via AMP Lemma 3.2 (covered-edge reversals),
 independent of the moralization/ancestral kernel. -/
 theorem markovEquiv_of_sameSkeleton_sameImmoralities {G₁ G₂ : DAG V}
     (hskel : SameSkeleton G₁ G₂) (himm : SameImmoralities G₁ G₂) : MarkovEquiv G₁ G₂ :=

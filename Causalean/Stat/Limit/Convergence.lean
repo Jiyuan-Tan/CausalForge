@@ -147,10 +147,10 @@ is bounded in probability (Prokhorov tightness for a single tight limit).
 the Δ-method linearization step: `a n · X n` is `o_p(1)` whenever
 `a n → 0` and `X n` is `O_p(1)`. -/
 
-/-- **Tightness from convergence in distribution.**  If `Xn ⇒ Q` in
-distribution under `μ` (with `Q` a probability measure on ℝ), then `Xn`
-is `O_p(1)`.  Standard fact: any single tight limit gives a tight
-sequence (Prokhorov). -/
+/-- **Tightness from convergence in distribution.**  Suppose [a real-valued sequence `Xn` is
+measurable at every sample size](hyp:hXn) and [it converges in distribution under `μ` to a
+probability measure `Q` on ℝ](hyp:hX). Then [`Xn` is bounded in probability, `O_p(1)`](goal).
+Standard fact: any single tight limit gives a tight sequence (Prokhorov). -/
 theorem Tendsto_dist.tightness
     {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω} [IsProbabilityMeasure μ]
     {Xn : ℕ → Ω → ℝ} {Q : Measure ℝ} [IsProbabilityMeasure Q]
@@ -217,8 +217,9 @@ theorem Tendsto_dist.tightness
       simpa [F] using hN
     _ ≤ ENNReal.ofReal ε := hhalf_le
 
-/-- **Degenerate Slutsky.**  If `a n → 0` deterministically and `Xn` is
-`O_p(1)` under `μ`, then `a n · Xn` is `o_p(1)`.  Concretely: the product
+/-- **Degenerate Slutsky.**  If [a real-valued sequence `Xn` is bounded in probability,
+`O_p(1)`, under `μ`](hyp:hX), and [a deterministic scalar sequence `a` converges to
+`0`](hyp:ha), then [the product sequence `a n · Xn` is `o_p(1)`](goal).  Concretely: the product
 of a sequence converging to `0` with a tight sequence is `o_p(1)`.
 
 In particular, when `Xn ⇒ Q` for some probability measure `Q` and

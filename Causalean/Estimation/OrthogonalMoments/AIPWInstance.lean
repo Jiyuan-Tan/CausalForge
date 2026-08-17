@@ -129,9 +129,29 @@ theorem aipw_bilinearRem
       (eLpNorm (fun x => η.e_fn x - S.e_val x) 2 S.P_X).toReal
   linarith [h]
 
-/-- **Headline AIPW DML asymptotic-linearity theorem**, derived from the
-abstract `dml_chernozhukov_asymptoticLinear` in
-`Estimation/OrthogonalMoments/DMLChernozhukov.lean`.
+/-- **Headline AIPW DML asymptotic-linearity theorem**, derived from the abstract
+`dml_chernozhukov_asymptoticLinear` in `Estimation/OrthogonalMoments/DMLChernozhukov.lean`.
+For the back-door AIPW estimator with true nuisance η₀ known to
+[lie in the ε-ball `H_ε_aeL2 S ε`](hyp:hη₀_mem), assume [the propensity score has
+ε-strict overlap](hyp:h_overlap), that [the identification assumptions of the back-door
+system hold](hyp:hA), and that [the factual and potential outcomes are
+square-integrable](hyp:h_y2,h_yd2). Given an i.i.d. sample with a one-shot fold split
+whose fold-B fraction converges to a strictly positive limit [`c > 0`](hyp:hc_pos)
+[along `card (foldB n) / n → c`](hyp:h_split_rate), and a sequence of cross-fitted
+nuisance estimators η̂ that [stay in the ε-ball at every fold and sample
+point](hyp:h_in_Hε) with [outcome-regression](hyp:h_mu_diff_memLp) and
+[propensity-score](hyp:h_e_diff_memLp) differences from the truth square-integrable in
+`S.P_X`. Assume the technical regularity package that [the AIPW moment functional at η̂
+is jointly measurable](hyp:h_m_meas), [fold-A-measurable in
+ω](hyp:h_m_foldA,h_m_foldA_uncurry), and, at every fold and sample point,
+[integrable](hyp:h_m_int) and [square-integrable](hyp:h_m_sq_int) under `S.P_Z`. Finally
+suppose the two nuisance-error rates are individually negligible
+[`ρ₁(η̂, η₀) = o_P(1)`](hyp:h_indiv_rate_ρ₁),
+[`ρ₂(η̂, η₀) = o_P(1)`](hyp:h_indiv_rate_ρ₂), and their product decays at the parametric
+rate [`ρ₁(η̂, η₀) · ρ₂(η̂, η₀) = o_P(n^{-1/2})`](hyp:h_product_rate). Then [the
+Chernozhukov one-step AIPW-DML estimator is asymptotically linear at the true parameter
+`S.θ₀` with the standard AIPW influence function `ψ(z) = −J₀⁻¹ · ψ_AIPW(η₀, z)`, indexed
+over the fold-B subsample](goal).
 
 **Conclusion (Chernozhukov form):**  the Chernozhukov one-step estimator
 `θ̂_n = θ₀ − J₀⁻¹ · Pₙ m(η̂, ·, θ₀) = (1/|B|) Σ ψ_AIPW(η̂, Z_i)` (the last

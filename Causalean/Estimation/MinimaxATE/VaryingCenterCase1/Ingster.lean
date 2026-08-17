@@ -39,10 +39,10 @@ namespace Causalean.Estimation.MinimaxATE
 
 open scoped BigOperators
 
-/-- The generalized Ingster χ² average bound: with per-coordinate weights
-`d j ≥ 0` summing to at most `1`, the doubly-averaged
-`(1 + ∑ j, d j · signOf (λ j) · signOf (λ' j))^n` over Rademacher pairs is at most
-`2` under the regularity budget `(n²/2) ∑ j, (d j)² ≤ log 2`. -/
+/-- For [nonnegative per-coordinate weights `d j` summing to at most `1`](hyp:hd0,hdsum)
+satisfying [the regularity budget `(n²/2)·Σⱼ (d j)² ≤ log 2`](hyp:hreg), [the uniform double
+average, over pairs of Rademacher sign vectors `lam, lam' : Fin K → Bool`, of
+`(1 + Σⱼ d j·signOf(lam j)·signOf(lam' j))^n` is at most `2`](goal). -/
 theorem ingster_bound_general (K n : ℕ) [NeZero K] {d : Fin K → ℝ}
     (hd0 : ∀ j, 0 ≤ d j) (hdsum : ∑ j, d j ≤ 1)
     (hreg : (n : ℝ) ^ 2 / 2 * ∑ j, (d j) ^ 2 ≤ Real.log 2) :

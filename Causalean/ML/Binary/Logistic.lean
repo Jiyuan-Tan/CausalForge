@@ -120,7 +120,9 @@ theorem continuous_logisticEmpRisk (Z : ι → E × Bool) :
     exact continuous_finset_sum Finset.univ fun i _ => hterm i
   exact continuous_const.mul hsum
 
-/-- A logistic-risk minimizer exists on any nonempty compact parameter set. -/
+/-- For any labeled sample `Z` and a parameter set `Θset` that is [nonempty](hyp:hne) and
+[compact](hyp:hcompact), [the empirical logistic risk attains its minimum over `Θset` at some
+parameter `βhat` in `Θset`](goal). -/
 theorem logistic_exists_minimizer_on_compact (Z : ι → E × Bool)
     {Θset : Set E} (hne : Θset.Nonempty) (hcompact : IsCompact Θset) :
     ∃ βhat ∈ Θset, IsMinOn (logisticEmpRisk Z) Θset βhat :=

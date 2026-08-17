@@ -170,11 +170,14 @@ lemma hoeffdingCIHalfWidth_half (a b : ℝ) (n : ℕ) {δ : ℝ} :
   rw [div_div_eq_mul_div]
   ring_nf
 
-/-- **Data-driven population-variance bound.**  For an `[a, b]`-valued statistic
-`f` (`a < b`) and any confidence level `δ ∈ (0, 1]`, with probability `≥ 1 − δ`
-the population variance `σ² = ∫ (f − ∫f)² ∂P` is bounded by the *observed* sample
-variance plus the deterministic slack `empiricalVarianceSlack a b n δ`.  Stated in
-miss form: the event `V̂ₙ + τ < σ²` has probability at most `δ`. -/
+/-- **Data-driven population-variance bound.** Let `S` be an i.i.d. sample and let `f` be [a
+measurable statistic](hyp:hf) taking values in [an interval `[a, b]` with `a <
+b`](hyp:hab,hbound) `P`-almost everywhere. For [any confidence level `δ` in `(0,
+1]`](hyp:hδ0,hδ1) and [any positive sample size `n`](hyp:hn), [the event that the observed
+sample variance plus the deterministic slack `empiricalVarianceSlack a b n δ` falls short of the
+population variance `σ² = ∫ (f − ∫ f)² ∂P` has probability at most `δ`](goal); equivalently,
+with probability at least `1 − δ` the population variance is bounded by the observed sample
+variance plus that slack. -/
 theorem empirical_variance_concentration (S : IIDSample Ω X μ P) {f : X → ℝ}
     (hf : Measurable f) {a b : ℝ} (hab : a < b)
     (hbound : ∀ᵐ x ∂P, f x ∈ Set.Icc a b)
@@ -368,13 +371,16 @@ lemma bernsteinCIHalfWidth_mono_sigma {c : ℝ} {n : ℕ} {δ σ σ' : ℝ}
   unfold bernsteinCIHalfWidth
   gcongr
 
-/-- **Data-driven (empirical) Bernstein confidence interval, miss-probability
-form.**  For an `[a,b]`-valued statistic `f` (`a < b`) with population mean
-`m = ∫ f ∂P`, range bound `|f − m| ≤ c`, and *positive* population variance
-`σ² := ∫ (f − m)² ∂P` (`0 < σ²`), the population mean `m` lies outside the random,
-**data-driven** interval `[X̄ₙ − ŵ(ω), X̄ₙ + ŵ(ω)]` — whose half-width
-`ŵ(ω) = empiricalBernsteinCIHalfWidth S f a b c n δ ω` is computed from the
-*observed* sample variance via `√(V̂ₙ(ω) + τ)` — with probability at most `2δ`.
+/-- **Data-driven (empirical) Bernstein confidence interval, miss-probability form.** Let `S` be an
+i.i.d. sample and let `f` be [a measurable statistic](hyp:hf) taking values in [an interval
+`[a,b]` with `a < b`](hyp:hab,hbound_ab), with population mean `m = ∫ f ∂P`. Suppose [`c` is a
+nonnegative bound with `f` deviating from `m` by at most `c`, `P`-almost
+everywhere](hyp:hc,hbound), [the population variance `σ² = ∫ (f − m)² ∂P` is strictly
+positive](hyp:hposvar), [the sample size `n` is positive](hyp:hn), and [the confidence level `δ`
+lies in `(0, 1]`](hyp:hδ0,hδ1). Then [the population mean `m` falls outside the random,
+data-driven interval `[X̄ₙ − ŵ(ω), X̄ₙ + ŵ(ω)]` — whose half-width `ŵ(ω) =
+empiricalBernsteinCIHalfWidth S f a b c n δ ω` is computed from the observed sample variance via
+`√(V̂ₙ(ω) + τ)` — with probability at most `2δ`](goal).
 
 The proof unions two level-`δ` failure events: the oracle Bernstein miss (with the
 true `σ = √σ²`) and the variance-bound failure `σ² > V̂ₙ + τ`.  On the good

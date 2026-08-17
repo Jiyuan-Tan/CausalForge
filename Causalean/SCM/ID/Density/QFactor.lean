@@ -1675,9 +1675,17 @@ private lemma doObsKernelAncestralMarginal_prefix_singleton_eq_prod_H_qLocalMass
                   intro C hC
                   simp [hC]
 
-/-- **(B) Tian Lemma 1 for the do-model ancestral marginal.**  The district
-density extracted from the do-law ancestral marginal equals the corresponding
-mechanism c-factor in the do-model. -/
+/-- **(B) Tian Lemma 1 for the do-model ancestral marginal.** Consider a structural causal
+model `M` with [an intervention set `X` whose random copies are observed and whose fixed
+copies are not already frozen](hyp:hObs,hFix), [an outcome set `Y` disjoint from the random
+copies of `X`](hyp:hYX), under [a faithful reference-measure family](hyp:href), [a positive
+observational kernel at every fixed-value assignment](hyp:hpos), and [the standing assumption
+that `M` is a standard model](hyp:hStd). For [a set `S` that is simultaneously a district of
+the post-intervention ancestral graph and a full c-component of `M`](hyp:hS,hSfull), and [an
+extension map that inverts the projection onto the ancestral observed
+coordinates](hyp:hExtend), [the Tian district density read off the do(X)-law ancestral
+marginal at `S` agrees with the mechanism c-factor of the post-intervention model at the
+extended point](goal). -/
 theorem tianDistrictDensity_eq_mechCFactor_doModel
     [∀ n, Nonempty (Ω n)]
     [∀ n, Fintype (Ω n)] [∀ n, MeasurableSingletonClass (Ω n)]
@@ -1938,10 +1946,16 @@ theorem tianDistrictDensity_eq_mechCFactor_doModel
         tianDistrictDensity H D μ ref S xD by rfl]
   rw [htian, hmech, hpointS]
 
-/-- The Tian district density for any district of the post-intervention
-ancestral graph collapses to the matching do-model local q-mass divided by the
-district reference atom.  Unlike
-`tianDistrictDensity_eq_mechCFactor_doModel`, this statement does not require
+/-- Consider [an intervention set `X` whose random copies are observed and whose fixed copies
+are not already frozen](hyp:hObs,hFix) together with [an outcome set `Y` disjoint from the
+random copies of `X`](hyp:hYX), under [a faithful reference-measure family](hyp:href) and [a
+positive observational kernel at every fixed-value assignment](hyp:hpos). For [any district `S`
+of the post-intervention ancestral graph](hyp:hS) and [an extension map inverting the
+projection onto the ancestral observed coordinates](hyp:hExtend), [the Tian district density
+read off the do(X)-law ancestral marginal at `S` equals the do-model local q-mass on `S`
+divided by the reference atom mass of `S`](goal).
+
+Unlike `tianDistrictDensity_eq_mechCFactor_doModel`, this statement does not require
 the district to be a full c-component of the original graph. -/
 theorem tianDistrictDensity_eq_qLocalMass_div_jointRef_district
     [∀ n, Nonempty (Ω n)]
@@ -2205,7 +2219,18 @@ theorem tianDistrictDensity_eq_qLocalMass_div_jointRef_district
             rw [hqprod, hdenprod]
   simpa [MX, D, H, μ] using htian
 
-/-- **District recovery (Tian Lemma 4 projection consistency).**
+/-- **District recovery (Tian Lemma 4 projection consistency).** Consider [a standard
+structural causal model `M`](hyp:hStd) with [an intervention set `X` whose random copies are
+observed and whose fixed copies are not already frozen](hyp:hObs,hFix), under [a faithful
+reference-measure family](hyp:href) and [a positive observational kernel at every fixed-value
+assignment](hyp:hpos), for [an outcome set `Y` disjoint from the random copies of
+`X`](hyp:hYX). For [a set `S` that is simultaneously a district of the post-intervention
+ancestral graph and a full c-component of `M`](hyp:hS,hSfull), and [an extension map that
+inverts the projection onto the ancestral observed coordinates and reproduces the intervention
+values `sDo` on the intervened coordinates](hyp:hExtend,hExtendX), [the Tian district density
+read off the do(X)-law ancestral marginal at `S` agrees, almost everywhere with respect to the
+product reference measure on the ancestral observed coordinates, with the observational
+c-component density factor at `S` pulled back through the extension](goal).
 
 For a district `S` of the post-intervention ancestral graph `H = G_X[D]`
 (`D := fixObservedAncestralSet`) that is also a full c-component of `M`, the

@@ -144,13 +144,20 @@ theorem integral_phiDiff_mul_eq_condBias
           refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall fun ω => ?_)
           simp only [hX]; ring
 
-/-- **Second-order product bias bound for the DR-Learner.**
-
-The population integral of the pseudo-outcome bias weighted by any test function
-`w` with `|w| ≤ B` is bounded by the *product* of the two nuisance L²-errors:
-
-    |∫ z, (phi_eta z η − phi₀ S z) · w z.1 ∂P_Z|
-        ≤ (B / ε) · Σ_a ‖η.μ_fn a − μ_val a‖_{L²(P_X)} · ‖η.e_fn − e_val‖_{L²(P_X)}.
+/-- **Second-order product bias bound for the DR-Learner.** Fix a candidate nuisance pair
+`η` and a test function `w`. Under [`ε` strictly positive](hyp:hε_pos), [the back-door
+identification assumptions](hyp:hA), if [`η`'s propensity is uniformly bounded in
+`[ε, 1 − ε]` for every covariate value](hyp:h_overlap_η), [the truth nuisance likewise has
+propensity uniformly bounded in `[ε, 1 − ε]`](hyp:h_overlap_η₀), [each candidate
+outcome-regression arm, composed with the covariate, is integrable](hyp:h_μ_η_int),
+[`w` is measurable](hyp:hw_meas), [`w` is dominated by a nonnegative bound
+`B`](hyp:hB_nonneg,hw_bound), [the `w`-weighted pseudo-outcome bias is
+integrable](hyp:h_phi_int,h_phiw_int), [each candidate outcome-regression error is
+square-integrable against the covariate law](hyp:hΔμ_memLp), and [the propensity error is
+square-integrable against the covariate law](hyp:hΔe_memLp), then [the absolute value of
+the population integral of the `w`-weighted pseudo-outcome bias `(phi_eta η − φ₀) · w` is
+bounded by `B/ε` times the sum, over the two treatment arms, of `‖η.μ_fn a − μ_val
+a‖_{L²(P_X)} · ‖η.e_fn − e_val‖_{L²(P_X)}`](goal).
 
 This is the genuine *second-order* (double-robustness) content: the bias vanishes
 to first order in each nuisance separately and is controlled by their product.

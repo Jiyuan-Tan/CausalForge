@@ -32,12 +32,19 @@ open scoped Matrix
 
 variable {d p K : ℕ}
 
-/-- **Linear causal disentanglement identifiability (Theorem 2).**  With one
-intervention per latent node (`hcov`) and non-degenerate interventions (`hNondeg`, the
-paper's genericity/Assumption 1(b): each `Θ_k ≠ Θ_0`), two solutions producing the
-same precision matrices in every context are related by a single order-preserving
-relabeling `σ ∈ S(𝒢)` and nonzero signed diagonal scaling of latent directions; the
-per-context structural relations carry a common row-sign diagonal `ν`. -/
+/-- **Linear causal disentanglement identifiability (Theorem 2).**  Let `S` and `S'`
+be two solutions of the linear causal disentanglement model such that [each solution's
+intervention-target map is a bijection onto the latent coordinates, i.e. one
+intervention per latent node](hyp:hcov,hcov') and [`S`'s interventions are
+non-degenerate (the paper's genericity / Assumption 1(b)): every intervened
+precision matrix `Θ_k` differs from the observational precision matrix
+`Θ_0`](hyp:hNondeg). If [`S` and `S'` share the same observational precision
+matrix](hyp:hΘ0) and [agree, context by context, on every interventional precision
+matrix](hyp:hΘ), then [`S` and `S'` are related by a single order-preserving
+relabeling `σ` of the latent coordinates, a nonzero scaling vector `μ`, and a `±1`
+sign vector `ν`: `σ`, `μ`, `ν` transport `S`'s latent-direction matrix and structural
+coefficient matrices onto `S'`'s, and `σ` carries `S`'s intervention targets onto
+`S'`'s](goal). -/
 theorem disentanglement_identifiability (S S' : Solution d p K)
     (hcov : Function.Bijective S.target) (hcov' : Function.Bijective S'.target)
     (hNondeg : ∀ k, S.Theta k ≠ S.Theta0)

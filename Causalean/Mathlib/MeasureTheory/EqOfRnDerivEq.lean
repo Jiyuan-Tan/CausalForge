@@ -23,10 +23,11 @@ namespace MeasureTheory.Measure
 
 variable {α : Type*} {m : MeasurableSpace α}
 
-/-- **A measure is determined by its Radon–Nikodym derivative against a fixed
-reference.**  If `μ` and `ν` are both absolutely continuous with respect to `ρ`
-and their densities `dμ/dρ` and `dν/dρ` agree `ρ`-almost everywhere, then
-`μ = ν`.
+/-- **A measure is determined by its Radon–Nikodym derivative against a fixed reference.**
+If [the measure `μ` is absolutely continuous with respect to a σ-finite reference
+measure `ρ`](hyp:hμ), [the measure `ν` is likewise absolutely continuous with respect to
+`ρ`](hyp:hν), and [their Radon–Nikodym densities `dμ/dρ` and `dν/dρ` agree `ρ`-almost
+everywhere](hyp:h), then [`μ` and `ν` are equal as measures](goal).
 
 Stated for application by unification (`exact`/`apply`) instead of rewriting, so
 the reference `ρ` is inferred from the supplied absolute-continuity proofs and the

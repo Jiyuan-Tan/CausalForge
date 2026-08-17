@@ -103,8 +103,9 @@ theorem ldl_lower_diag_one (hM : M.PosDef) (i : Fin d) : LDL.lower hM i i = 1 :=
     · rw [hlow (by simpa using hk), zero_mul]
   · intro h; exact absurd (Finset.mem_univ i) h
 
-/-- Every real positive-definite matrix has an upper-triangular Cholesky factor with strictly
-positive diagonal. -/
+/-- For [a real positive-definite `d × d` matrix `M`](hyp:hM), [there exists an upper-triangular
+matrix `U` (zero below the diagonal) with strictly positive diagonal entries such that `M`
+factors as `Uᵀ · U`](goal). -/
 theorem cholesky_exists (hM : M.PosDef) :
     ∃ U : Matrix (Fin d) (Fin d) ℝ,
       (∀ i j, j < i → U i j = 0) ∧ (∀ i, 0 < U i i) ∧ M = U.transpose * U := by
@@ -193,8 +194,12 @@ theorem orthogonal_upperTri_pos_diag_eq_one {ι K : Type*} [Fintype ι] [LinearO
     · -- `j < i`: upper-triangularity kills it
       rw [hupp i j h, Matrix.one_apply_ne (Ne.symm (by simpa using h.ne))]
 
-/-- Two upper-triangular positive-diagonal factors with the same Gram matrix over an ordered
-field are equal. -/
+/-- For a linearly ordered finite index type `ι` and a linearly ordered field `K`, and two
+matrices `U`, `V` indexed by `ι × ι` and valued in `K`, if [`U` is upper-triangular, i.e. zero
+below the diagonal](hyp:hUu), with [strictly positive diagonal entries](hyp:hUp), [`V` is
+likewise upper-triangular](hyp:hVu) with [strictly positive diagonal entries](hyp:hVp), and
+[`U` and `V` have the same Gram matrix, `Uᵀ · U = Vᵀ · V`](hyp:hGram), then [`U` equals
+`V`](goal). -/
 theorem cholesky_unique {ι K : Type*} [Fintype ι] [LinearOrder ι]
     [Field K] [LinearOrder K] [IsStrictOrderedRing K] {U V : Matrix ι ι K}
     (hUu : ∀ i j, j < i → U i j = 0) (hUp : ∀ i, 0 < U i i)

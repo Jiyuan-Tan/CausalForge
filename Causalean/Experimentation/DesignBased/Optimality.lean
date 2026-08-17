@@ -69,8 +69,9 @@ lemma IsOptimalOn.dominates {α : Type*} [Preorder α] {𝒟 : DesignFamily Ω}
     (h : IsOptimalOn 𝒟 R D₀) {D : FiniteDesign Ω} (hD : D ∈ 𝒟) : Dominates R D₀ D :=
   h.2 D hD
 
-/-- **Existence of an optimal design.** Over a nonempty finite design family, some design
-minimizes the risk. -/
+/-- **Existence of an optimal design.** For a design family `𝒟` and a risk criterion `R` valued in
+a linear order, if [`𝒟` is finite](hyp:hfin) and [`𝒟` is nonempty](hyp:hne), then [there exists a
+design in `𝒟` that is optimal — it dominates every other member of the family under `R`](goal). -/
 theorem exists_isOptimalOn {α : Type*} [LinearOrder α] (𝒟 : DesignFamily Ω) (R : FiniteDesign Ω → α)
     (hfin : 𝒟.Finite) (hne : 𝒟.Nonempty) : ∃ D₀, IsOptimalOn 𝒟 R D₀ := by
   let s := hfin.toFinset

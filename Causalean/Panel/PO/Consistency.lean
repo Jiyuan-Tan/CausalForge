@@ -42,8 +42,9 @@ def PanelConsistency (P : PanelPOSystem) : Prop :=
   ∀ (r : P.I × P.T) (hr : r ∈ P.cells.observed) (ω : P.Ω),
     P.observedY_eq_potentialOutcome r hr ω
 
-/-- If panel consistency is assumed, then the factual observed outcome equals the
-potential outcome at the realized exposure for every observed cell and sample point. -/
+/-- If [panel consistency holds for the panel potential-outcome system `P`](hyp:hP), then [the
+factual observed outcome equals the potential outcome evaluated at the realized exposure, for
+every observed unit-period cell and every sample point](goal). -/
 lemma panelConsistency_holds (P : PanelPOSystem) (hP : PanelConsistency P) :
     ∀ (r : P.I × P.T) (hr : r ∈ P.cells.observed) (ω : P.Ω),
       P.observedY r hr ω = P.Y r hr (P.observedExposure r hr ω) ω :=

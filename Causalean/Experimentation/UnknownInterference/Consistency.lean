@@ -118,7 +118,10 @@ theorem D_Var_htEst_le :
   unfold SAHExperiment.D
   exact var_htEst_le E.p E.hp0 E.hp1 E.y E.k E.hk E.hcard E.hplo E.hphi E.hmom
 
-/-- **Chebyshev tail bound.** `Pr(|ĤT − EATE| ≥ ε) ≤ (k⁴·d̄/n)/ε²`. -/
+/-- **Chebyshev tail bound.** For [any deviation threshold ε > 0](hyp:hε), [the probability that
+the Horvitz–Thompson estimator deviates from the EATE by at least ε is at most `(k⁴·d̄/n)/ε²`,
+where k is the experiment's regularity constant, d̄ is the average interference degree, and n is
+the population size](goal). -/
 theorem chebyshev_eate {ε : ℝ} (hε : 0 < ε) :
     E.D.Pr (fun z => ε ≤ |htEst E.p E.y z - E.eate|)
       ≤ (E.k ^ 4 * dbar E.y / (Fintype.card E.U : ℝ)) / ε ^ 2 := by
@@ -131,9 +134,11 @@ theorem chebyshev_eate {ε : ℝ} (hε : 0 < ε) :
 end SAHExperiment
 
 /-- **Consistency of Horvitz–Thompson for EATE under unknown interference (Sävje–Aronow–Hudgens
-2021).** Along a sequence of Bernoulli experiments with `k⁴·d̄/n → 0` (restricted interference with
-controlled regularity), the HT estimator converges in probability to EATE: for every `ε > 0` the
-tail probabilities vanish. -/
+2021).** Along [a sequence of Bernoulli experiments along which `k⁴·d̄/n → 0` — restricted
+interference with a controlled regularity constant](hyp:hrate), [for every fixed deviation
+threshold ε > 0](hyp:hε), [the probability that the Horvitz–Thompson estimator deviates from the
+EATE by at least ε tends to zero along the sequence, i.e. the HT estimator converges in
+probability to the EATE](goal). -/
 theorem htEst_consistent_eate (Exp : ℕ → SAHExperiment)
     (hrate : Tendsto (fun m => (Exp m).k ^ 4 * dbar (Exp m).y / (Fintype.card (Exp m).U : ℝ))
       atTop (𝓝 0)) {ε : ℝ} (hε : 0 < ε) :
@@ -148,9 +153,11 @@ theorem htEst_consistent_eate (Exp : ℕ → SAHExperiment)
   · exact (Exp m).D.Pr_nonneg _
   · exact (Exp m).chebyshev_eate hε
 
-/-- **Root-n variance scaling under bounded interference (Sävje–Aronow–Hudgens 2021).** If
-`d̄ ≤ C` in one bundled experiment, then `n·Var(ĤT) ≤ k⁴·C`, the finite-sample variance inequality
-that supports a root-n rate in bounded-interference sequences. -/
+/-- **Root-n variance scaling under bounded interference (Sävje–Aronow–Hudgens 2021).** In one
+bundled experiment, if [the average interference degree d̄ is bounded above by a constant
+C](hyp:hC), then [the sample size n times the variance of the Horvitz–Thompson estimator is at
+most `k⁴·C`, where k is the experiment's regularity constant](goal) — the finite-sample variance
+inequality that supports a root-n rate in bounded-interference sequences. -/
 theorem root_n_var (E : SAHExperiment) (C : ℝ) (hC : dbar E.y ≤ C) :
     (Fintype.card E.U : ℝ) * E.D.Var (htEst E.p E.y) ≤ E.k ^ 4 * C := by
   have hn : (0 : ℝ) < (Fintype.card E.U : ℝ) := by

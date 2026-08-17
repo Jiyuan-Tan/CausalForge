@@ -152,10 +152,13 @@ lemma bounded_hasSubexponentialMGF [IsProbabilityMeasure μ] {c σ : ℝ}
       _ = Real.exp (2 * σ ^ 2 * t ^ 2 / 2) := by
           rw [show 2 * σ ^ 2 * t ^ 2 / 2 = σ ^ 2 * t ^ 2 from by ring]
 
-/-- **One-sided Bernstein inequality** for the sample mean of a bounded
-statistic.  If `f` has population mean `m = E[f]`, satisfies `|f − m| ≤ c`
-`P`-a.e., and has variance `∫ (f − m)² ≤ σ²`, then for `ε ≥ 0`,
-`P(X̄ₙ − m ≥ ε) ≤ exp(−n ε² / (2 (2σ² + c ε)))`. -/
+/-- **One-sided Bernstein inequality** for the sample mean of a bounded statistic. Given [an i.i.d.
+sample `S`](hyp:S) and a statistic `f` that is [measurable](hyp:hf) and [integrable under the
+population law `P`](hyp:hfint), suppose [`c` is nonnegative](hyp:hc), [`f` stays within `c` of
+its population mean `m = ∫ f ∂P`, `P`-almost everywhere](hyp:hbound), and [the population
+variance of `f` is at most `σ²`](hyp:hvar). Then for [any sample size `n ≥ 1`](hyp:hn) and [any
+threshold `ε ≥ 0`](hyp:hε), [the probability that the sample mean of `f` over `n` draws exceeds
+`m` by at least `ε` is at most $\exp(-n\varepsilon^2/(2(2\sigma^2+c\varepsilon)))$](goal). -/
 theorem bernstein_ge (S : IIDSample Ω X' μ P) {f : X' → ℝ} (hf : Measurable f)
     (hfint : Integrable f P) {c σ : ℝ} (hc : 0 ≤ c)
     (hbound : ∀ᵐ x ∂P, |f x - ∫ y, f y ∂P| ≤ c)
@@ -218,8 +221,14 @@ theorem bernstein_ge (S : IIDSample Ω X' μ P) {f : X' → ℝ} (hf : Measurabl
       = (n : ℝ) * (2 * (2 * σ ^ 2 + c * ε)) from by ring,
     mul_div_mul_left _ _ hn']
 
-/-- **Two-sided Bernstein inequality** for the sample mean of a bounded
-statistic: `P(|X̄ₙ − m| ≥ ε) ≤ 2 exp(−n ε² / (2 (2σ² + c ε)))`. -/
+/-- **Two-sided Bernstein inequality** for the sample mean of a bounded statistic. Given [an i.i.d.
+sample `S`](hyp:S) and a statistic `f` that is [measurable](hyp:hf) and [integrable under the
+population law `P`](hyp:hfint), suppose [`c` is nonnegative](hyp:hc), [`f` stays within `c` of
+its population mean `m = ∫ f ∂P`, `P`-almost everywhere](hyp:hbound), and [the population
+variance of `f` is at most `σ²`](hyp:hvar). Then for [any sample size `n ≥ 1`](hyp:hn) and [any
+threshold `ε ≥ 0`](hyp:hε), [the probability that the sample mean of `f` over `n` draws deviates
+from `m` by at least `ε` in absolute value is at most
+$2\exp(-n\varepsilon^2/(2(2\sigma^2+c\varepsilon)))$](goal). -/
 theorem bernstein_abs_ge (S : IIDSample Ω X' μ P) {f : X' → ℝ} (hf : Measurable f)
     (hfint : Integrable f P) {c σ : ℝ} (hc : 0 ≤ c)
     (hbound : ∀ᵐ x ∂P, |f x - ∫ y, f y ∂P| ≤ c)

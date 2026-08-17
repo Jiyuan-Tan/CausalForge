@@ -270,7 +270,10 @@ noncomputable def fixMono (M : Causalean.SCM N Ω) (X : Finset N)
 -- Interface lemmas
 -- ============================================================
 
-/-- The monolithic intervention preserves the observed node set. -/
+/-- **Observed-node invariance of the monolithic intervention.** For a SWIG graph `G` and an
+    intervention target set `X` such that [every targeted node is currently a random observed
+    node](hyp:hObs) and [none of its fixed copies is already fixed](hyp:hFix), [the monolithic
+    intervention graph obtained by fixing `X` has the same observed node set as `G`](goal). -/
 @[simp] lemma fixMono_observed (G : SWIGGraph N) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ G.observed)
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ G.fixed) :
@@ -282,14 +285,22 @@ noncomputable def fixMono (M : Causalean.SCM N Ω) (X : Finset N)
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ G.fixed) :
     (G.splitMono X hObs hFix).unobserved = G.unobserved := rfl
 
-/-- The monolithic intervention's fixed node set is the old fixed set plus the fixed copies of
-the targets. -/
+/-- **Fixed-node set of the monolithic intervention.** For a SWIG graph `G` and an intervention
+    target set `X` such that [every targeted node is currently a random observed
+    node](hyp:hObs) and [none of its fixed copies is already fixed](hyp:hFix), [the monolithic
+    intervention graph's fixed node set equals `G`'s fixed node set together with the fixed
+    copies of the targeted nodes in `X`](goal). -/
 @[simp] lemma fixMono_fixed (G : SWIGGraph N) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ G.observed)
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ G.fixed) :
     (G.splitMono X hObs hFix).fixed = G.fixed ∪ X.image SWIGNode.fixed := rfl
 
-/-- The monolithic intervention leaves every latent-root distribution unchanged. -/
+/-- **Latent-distribution invariance of the monolithic intervention.** For a structural causal
+    model `M` and an intervention target set `X` such that [every targeted node is currently a
+    random observed node](hyp:hObs) and [none of its fixed copies is already fixed](hyp:hFix),
+    and [any latent-root node `u` of the monolithically intervened model](hyp:u), [the
+    intervened model's latent distribution at `u` equals `M`'s original latent distribution at
+    `u`](goal). -/
 @[simp] lemma fixMono_latentDist (M : Causalean.SCM N Ω) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ M.observed)
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ M.fixed)

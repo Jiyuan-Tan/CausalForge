@@ -140,8 +140,9 @@ lemma integral_Ioi_affine_gaussianReal_eq_density (s m t : ℝ) :
     · exact measurableSet_Ioi
   · norm_num
 
-/-- **Gaussian survival.** For `N(m, v)` with `v > 0`, the right-tail mass is
-`P(Y > c) = 1 − Φ((c − m)/√v)`. -/
+/-- **Gaussian survival.** For a normal law with mean `m` and [a nonnegative variance
+parameter `v` that is nonzero](hyp:v,hv), [the probability mass above a threshold `c` equals
+one minus the standard-normal CDF evaluated at the standardized threshold `(c − m)/√v`](goal). -/
 lemma gaussianReal_Ioi_eq (m : ℝ) (v : ℝ≥0) (hv : v ≠ 0) (c : ℝ) :
     ((gaussianReal m v) (Set.Ioi c)).toReal
       = 1 - stdNormalCDF ((c - m) / Real.sqrt (v : ℝ)) := by
@@ -169,10 +170,10 @@ lemma gaussianReal_Ioi_eq (m : ℝ) (v : ℝ≥0) (hv : v ≠ 0) (c : ℝ) :
     _ = 1 - stdNormalCDF t := integral_Ioi_stdNormalPDF t
     _ = 1 - stdNormalCDF ((c - m) / Real.sqrt (v : ℝ)) := by rfl
 
-/-- **Gaussian truncated first moment.** For `N(m, v)` with `v > 0`,
-`∫_{c}^∞ y dN(m,v) = m·(1 − Φ((c − m)/√v)) + √v · φ((c − m)/√v)`.
-The affine image of the standard-normal
-truncated moment `∫_{t}^∞ z φ(z) dz = φ(t)`. -/
+/-- **Gaussian truncated first moment.** For a normal law with mean `m` and [a nonnegative
+variance parameter `v` that is nonzero](hyp:v,hv), [the first moment integrated over the tail
+above a threshold `c` equals `m·(1 − Φ(t)) + √v·φ(t)`, where `t = (c − m)/√v`](goal) — the
+affine image of the standard-normal truncated moment `∫_{t}^∞ z φ(z) dz = φ(t)`. -/
 lemma integral_Ioi_id_gaussianReal (m : ℝ) (v : ℝ≥0) (hv : v ≠ 0) (c : ℝ) :
     ∫ y in Set.Ioi c, y ∂(gaussianReal m v)
       = m * (1 - stdNormalCDF ((c - m) / Real.sqrt (v : ℝ)))

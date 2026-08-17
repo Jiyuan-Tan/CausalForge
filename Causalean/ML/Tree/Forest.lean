@@ -31,8 +31,9 @@ structure RandomForest (X : Type*) (T : ℕ) where
 noncomputable def RandomForest.eval {X : Type*} {T : ℕ} (F : RandomForest X T) (x : X) : ℝ :=
   (T : ℝ)⁻¹ * ∑ t : Fin T, (F.tree t).eval x
 
-/-- If every tree in a nonempty forest predicts within `[a, b]`, then the forest
-average also predicts within `[a, b]`. -/
+/-- For a random forest `F` of `T` finite-partition regression trees, if [the forest is
+nonempty (`T > 0`)](hyp:hT) and [every tree predicts within `[a, b]` at every input](hyp:hb),
+then [the forest's averaged prediction also lies in `[a, b]` at every input `x`](goal). -/
 theorem RandomForest.eval_mem_Icc {X : Type*} {T : ℕ} (F : RandomForest X T) (hT : 0 < T)
     {a b : ℝ} (hb : ∀ (t : Fin T) (x : X), (F.tree t).eval x ∈ Set.Icc a b) (x : X) :
     F.eval x ∈ Set.Icc a b := by

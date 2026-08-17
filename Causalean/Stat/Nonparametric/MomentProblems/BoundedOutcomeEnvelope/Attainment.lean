@@ -342,8 +342,9 @@ theorem extremalMeasure_residual (v : ℝ) (hv0 : 0 < v) (hv1 : v < 1) :
   -- is exactly the LHS of `hkey`.
   simpa [extremalM1, rhoEnvelope, hu] using hkey
 
-/-- **Envelope attainment.** For `v ∈ (0,1)` there is an admissible law whose residual is exactly
-`ρ(v)`.  Together with the upper bound this makes `ρ(v)` the supremum. -/
+/-- **Envelope attainment.** For [`v` strictly between `0` and `1`](hyp:hv0,hv1), [there is an
+admissible law whose residual is exactly `ρ(v)`](goal).  Together with the upper bound this makes
+`ρ(v)` the supremum. -/
 theorem rho_envelope_attained (v : ℝ) (hv0 : 0 < v) (hv1 : v < 1) :
     ∃ μ : Measure ℝ, Admissible v μ ∧ l2ResidualQuadratic μ = rhoEnvelope v :=
   ⟨extremalMeasure v, extremalMeasure_admissible v hv0 hv1, extremalMeasure_residual v hv0 hv1⟩

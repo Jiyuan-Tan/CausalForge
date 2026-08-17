@@ -182,9 +182,11 @@ noncomputable def nMSE [Nonempty C] {m : C → ℝ} {g : Bool → C → ℝ}
     (hv : ValidDGP m g) (n : ℕ) (est : (Fin n → Obs C) → ℝ) : ℝ :=
   ∫ x, (est x - ate g) ^ 2 ∂(productLaw hv n)
 
-/-- **Chebyshev/Markov bridge.**  The probability of missing the ATE by `s` controls
-the mean-squared error: `s² · nMiss ≤ nMSE`.  This is the quantitative form of the
-paper's observation that the quantile risk lower bound implies the expected-risk one
+/-- **Chebyshev/Markov bridge.** For [a valid data-generating process `(m, g)`](hyp:hv) and
+[a nonnegative separation threshold s](hyp:hs), [the squared threshold times the probability
+that an estimator misses the true average treatment effect by at least `s`, on `n` i.i.d.
+draws, is at most the estimator's mean-squared error](goal). This is the quantitative form of
+the paper's observation that the quantile risk lower bound implies the expected-risk one
 (`𝔐ₙ,γ ≥ ρ ⟹ minimax `𝔼`-risk `≥ (1−γ)ρ`). -/
 theorem nMiss_sq_le_nMSE [Nonempty C] [MeasurableSingletonClass C]
     {m : C → ℝ} {g : Bool → C → ℝ} (hv : ValidDGP m g) (n : ℕ)

@@ -83,9 +83,11 @@ lemma stratifiedDesign_incl_pair_within (n₁ : K → ℕ) (hn : ∀ k, n₁ k �
         ((Fintype.card (V k) : ℝ) * ((Fintype.card (V k) : ℝ) - 1))
   exact completeRandomization_incl_pair (n₁ k) (hn k) hij
 
-/-- **Second-order inclusion probability across strata.** Two units in distinct strata `k ≠ k'` are
-jointly treated with probability the product of their stratum treatment rates — the strata are
-randomized independently. -/
+/-- **Second-order inclusion probability across strata.** For a stratified design in which [each
+stratum `k` treats exactly `n₁ k` of its `N k` units, with `n₁ k` never exceeding `N k`](hyp:hn),
+if [`k` and `k'` are distinct strata](hyp:hk), then [a unit `i` in stratum `k` and a unit `i'` in
+stratum `k'` are jointly treated with probability the product of their two strata's treatment
+rates, `(n₁ k / N k) · (n₁ k' / N k')`](goal) — the strata are randomized independently. -/
 lemma stratifiedDesign_incl_pair_across (n₁ : K → ℕ) (hn : ∀ k, n₁ k ≤ Fintype.card (V k))
     {k k' : K} (hk : k ≠ k') (i : V k) (i' : V k') :
     (stratifiedDesign n₁ hn).Pr (fun z => i ∈ (z k).val ∧ i' ∈ (z k').val)

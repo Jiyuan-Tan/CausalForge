@@ -217,9 +217,12 @@ theorem zeroMultiplicityCount_eq_of_straightLineHomotopy {f g : ℂ → ℂ}
       argumentPrinciple_circle hR hg hg_boundary]
   exact_mod_cast hcast
 
-/-- **Rouché's theorem for a circle.** If the boundary discrepancy between two analytic complex
-functions is strictly smaller than the boundary magnitude of the first, they have the same
-multiplicity-weighted number of zeros inside the disk. -/
+/-- **Rouché's theorem for a circle.** For [a positive radius `R`](hyp:hR), if
+[both `f` and `g` are complex-analytic on a neighborhood of the closed disk of
+radius `R` centered at `c`](hyp:hf,hg) and [on the boundary circle the
+discrepancy `‖g z - f z‖` is everywhere strictly smaller than
+`‖f z‖`](hyp:hrouche), then [`f` and `g` have the same multiplicity-weighted number of
+zeros strictly inside the disk](goal). -/
 theorem rouche_circle {f g : ℂ → ℂ} {c : ℂ} {R : ℝ}
     (hR : 0 < R)
     (hf : AnalyticOnNhd ℂ f (closedBall c R))

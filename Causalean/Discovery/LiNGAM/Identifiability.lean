@@ -33,11 +33,14 @@ namespace Causalean.Discovery.LiNGAM
 open Causalean.Mathlib.LinearAlgebra
 open scoped BigOperators
 
-/-- **LiNGAM coefficient identifiability (modulo ICA).**  Two LiNGAM coefficient
-matrices `B, B'` with zero diagonal (`Bᵢᵢ = 0`) and `B` acyclic in causal order `σ`
-(`B i j = 0` whenever `σ i < σ j`) that are related, via ICA identifiability, by a
-generalized permutation of their `I − B` matrices (`(1 − B') i j = d i · (1 − B) (τ i) j`)
-must be equal.  This packages `eq_of_genPerm_triangular_unitDiag` for `C = I − B`. -/
+/-- **LiNGAM coefficient identifiability (modulo ICA).**  Let `B` and `B'` be two
+`n × n` real coefficient matrices such that [`B` has zero diagonal](hyp:hBdiag),
+[`B'` has zero diagonal](hyp:hB'diag), [`B` is acyclic with respect to a causal
+order `σ`: `B i j = 0` whenever `σ i < σ j`](hyp:hBacyc), and [the matrices
+`I − B` and `I − B'` are related by a generalized permutation — a permutation `τ`
+composed with a nonzero diagonal scale `d`, so `(I − B') i j = d i · (I − B)
+(τ i) j`](hyp:hICA) (as delivered by ICA identifiability). Then [`B` equals
+`B'`](goal).  This packages `eq_of_genPerm_triangular_unitDiag` for `C = I − B`. -/
 theorem lingam_identifiable {n : ℕ} {B B' : Matrix (Fin n) (Fin n) ℝ}
     (hBdiag : ∀ i, B i i = 0) (hB'diag : ∀ i, B' i i = 0)
     {σ : Equiv.Perm (Fin n)} (hBacyc : ∀ i j, σ i < σ j → B i j = 0)

@@ -25,8 +25,10 @@ noncomputable def ridgeObjective
     (X : Matrix Obs Param ℝ) (y : Obs → ℝ) (lam : ℝ) (β : Param → ℝ) : ℝ :=
   olsObjective X y β + lam * (β ⬝ᵥ β)
 
-/-- With `λ ≥ 0`, any solution of the ridge normal equations
-`(XᵀX + λI) β̂ = Xᵀy` minimizes the ridge objective. -/
+/-- With [a nonnegative ridge penalty `λ`](hyp:hlam), for [any coefficient vector `β̂` satisfying
+the ridge normal equations `(XᵀX + λI)β̂ = Xᵀy`](hyp:hNE) built from a finite design matrix `X`
+and outcome vector `y`, [that vector minimizes the ridge objective — the sum of squared
+residuals plus `λ‖β‖²` — over every coefficient vector `β`](goal). -/
 theorem ridge_is_regularized_squaredLoss_ERM_of_normalEq
     (X : Matrix Obs Param ℝ) (y : Obs → ℝ) {lam : ℝ} (hlam : 0 ≤ lam)
     (βhat : Param → ℝ)

@@ -180,8 +180,10 @@ theorem monomialGram_posSemidef {d p : ℕ} (expo : Fin p → (Fin d → ℕ)) {
   exact MeasureTheory.integral_nonneg_of_ae
     (Filter.Eventually.of_forall fun _ => sq_nonneg _)
 
-/-- Distinct multivariate monomials have a positive-definite Gram matrix on every cube with
-positive radius. -/
+/-- **Positive-definiteness of the monomial Gram matrix.** For a finite family of multivariate
+monomials indexed by their exponent vectors, if [the cube radius `r` is strictly positive](hyp:hr)
+and [the exponent vectors are pairwise distinct](hyp:hexpo), then [the Gram matrix of pairwise
+integrals of the monomials over the cube of radius `r` is positive-definite](goal). -/
 theorem monomialGram_posDef {d p : ℕ} (expo : Fin p → (Fin d → ℕ)) {r : ℝ}
     (hr : 0 < r) (hexpo : Function.Injective expo) :
     (monomialGram expo r).PosDef := by

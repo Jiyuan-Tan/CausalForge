@@ -24,8 +24,10 @@ open scoped ENNReal
 
 namespace Causalean.Mathlib.MeasureTheory
 
-/-- A finite measure is the distribution obtained by weighting a reference measure when its
-mass on every measurable event equals the integral of the weight over that event. -/
+/-- If [a weight function `w` is integrable with respect to a reference measure `μ`](hyp:hwint)
+and [a finite measure `ν`'s mass on every measurable event `A` equals, as a real number, the
+integral of `w` over `A` against `μ`](hyp:hν), then [`ν` is obtained from `μ` by weighting with
+the nonnegative part of `w`: `ν = μ.withDensity (fun x => ENNReal.ofReal (w x))`](goal). -/
 lemma measure_eq_withDensity_of_toReal_setIntegral
     {α : Type*} [MeasurableSpace α] {μ ν : Measure α} [IsFiniteMeasure ν]
     {w : α → ℝ} (hwint : Integrable w μ)

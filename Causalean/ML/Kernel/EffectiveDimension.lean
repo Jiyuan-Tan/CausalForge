@@ -75,8 +75,12 @@ lemma effectiveDimension_nonneg {μ : ι → ℝ} {lam : ℝ}
     (hμ : ∀ i, 0 ≤ μ i) (hlam : 0 < lam) : 0 ≤ effectiveDimension μ lam :=
   tsum_nonneg (fun i => effectiveDimension_term_nonneg hμ hlam i)
 
-/-- **Dimension-free bound.**  `N(λ) ≤ (tr T)/λ`, where `tr T = ∑ᵢ μᵢ`.  This is the bound
-that, with eigenvalue decay `μᵢ ≍ i^{-b}`, yields `N(λ) = O(λ^{-1/b})`. -/
+/-- **Dimension-free bound.** For an eigenvalue family `μ` and regularization level `lam`,
+if [every eigenvalue is nonnegative](hyp:hμ), [the regularization level is strictly
+positive](hyp:hlam), and [the eigenvalues are summable, i.e. the operator is
+trace-class](hyp:hsum), then [the effective dimension `N(lam) = ∑ᵢ μᵢ/(μᵢ+lam)` is at
+most the trace `∑ᵢ μᵢ` divided by `lam`](goal). This is the bound that, with eigenvalue
+decay `μᵢ ≍ i^{-b}`, yields `N(λ) = O(λ^{-1/b})`. -/
 lemma effectiveDimension_le_trace_div {μ : ι → ℝ} {lam : ℝ}
     (hμ : ∀ i, 0 ≤ μ i) (hlam : 0 < lam) (hsum : Summable μ) :
     effectiveDimension μ lam ≤ (∑' i, μ i) / lam := by

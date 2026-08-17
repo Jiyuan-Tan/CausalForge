@@ -774,10 +774,13 @@ theorem rnDeriv_eq_tianDensityProduct
   rw [hleft, hy]
   simpa using tianPrefixDensityProductInPrefix_card_eq_tianDensityProduct H D μ ref y
 
-/-- Density form of the Markov-to-c-factorization theorem.  If a finite measure on `D` is globally Markov with
-respect to the pure graph `H` whose observed nodes are exactly `D`, and is
-dominated by the product reference on `D`, its density is the product of Tian
-district factors over the c-components of `H`.
+/-- **Density form of the Markov-to-c-factorization theorem.** Let `H` be a pure SWIG graph, `D`
+a finite set of SWIG nodes, `μ` a finite (probability) measure on the assignments to `D`, and
+`ref` a family of reference measures. If [`D` is exactly the observed-node set of `H`](hyp:hD)
+and [`μ` is absolutely continuous with respect to the product reference measure on
+`D`](hyp:hdom), then [the Radon–Nikodym density of `μ` against that product reference equals,
+almost everywhere, the product over the c-components of `H` of their Tian district-density
+factors](goal).
 
 The statement is intentionally measure-native rather than an `SCM.induce`
 specialization, so it can be applied directly to ancestral do-law marginals. -/
@@ -1131,11 +1134,19 @@ lemma doAncestralDistrictDensity_recovered_from_obs_core
   exact doAncestralDistrictDensity_recovered_from_obs_core_self
     M X hStd hObs hFix Y ref href sDo S hS hSmem hpos hYX extend hExtend hExtendX
 
-/-- T2, abstract density recovery statement.  For a district `S` of the
-post-intervention ancestral graph, the district factor computed from the
-do-law marginal is the corresponding recovered full-graph district factor,
-pulled back along an extension from ancestral assignments to full observed
-assignments.
+/-- **T2, abstract density recovery statement.** Fix [a standard structural causal model
+`M`](hyp:hStd) and an intervention target set `X` for which [every targeted node is currently a
+random observed node](hyp:hObs) and [none of its fixed copies is already fixed](hyp:hFix), an
+output set `Y`, and [a reference-measure family faithful to the graph](hyp:href). For [a district
+`S` of the truncated c-component set of the post-intervention ancestral graph](hyp:hS) and [a
+c-component `C` of the base graph that is factor-reachable from `S`](hyp:hReach,hCmem), assume
+[every fixed-value assignment gives an observational kernel with everywhere-positive point
+masses](hyp:hpos), [no intervention target's random form lies in `Y`](hyp:hYX), and that [an
+extension map from ancestral assignments to full observed assignments restricts back to the
+identity](hyp:hExtend) and [agrees with the intervention values `sDo` on the targeted
+coordinates](hyp:hExtendX). Then [the district factor of `S` computed from the density of the
+do-law's ancestral marginal equals, almost everywhere, the full-graph c-component density
+factor of `C` evaluated at the extension of the ancestral assignment](goal).
 
 The extension parameter makes the statement honest about the type mismatch:
 the left side lives on `D = An_{G_X}(Y) ∩ observed`, while the already-proven
@@ -1209,8 +1220,13 @@ theorem doAncestralDistrictDensity_recovered_from_obs
     M X hStd hObs hFix Y ref href sDo S C hS hReach hCmem hpos hYX extend hExtend
       hExtendX
 
-/-- ID-specific T1 wrapper: the density of `ν_M =
-(M.fixSet X).obsKernel.map π_D` factors over the districts of `G_X[D]`. -/
+/-- **ID-specific T1 wrapper.** For an intervention target set `X` where [every targeted node is
+currently a random observed node with no fixed copy already fixed](hyp:hObs,hFix), if [the
+ancestral marginal of the do-law `ν_M = (M.fixSet X).obsKernel.map π_D` is absolutely continuous
+with respect to the product reference measure on the ancestral observed set](hyp:hdomD), then
+[its Radon–Nikodym density equals, almost everywhere, the product over the c-components of the
+induced post-intervention ancestral graph `G_X[D]` of their Tian district-density
+factors](goal). -/
 theorem doObsKernelAncestralMarginal_tian_cfactorization_density
     [∀ n, StandardBorelSpace (swigΩ Ω n)] [∀ n, Nonempty (swigΩ Ω n)]
     [∀ n, Fintype (Ω n)] [∀ n, MeasurableSingletonClass (Ω n)]

@@ -82,11 +82,14 @@ lemma exp_neg_log_two_div {δ : ℝ} (hδ0 : 0 < δ) :
   rw [Real.exp_neg, Real.exp_log (by positivity)]
   field_simp
 
-/-- **Finite-sample Hoeffding confidence interval (miss-probability form).**
-For an `[a, b]`-valued statistic `f` (`a < b`) and any confidence level
-`δ ∈ (0, 1]`, the population mean `m = ∫ f ∂P` lies outside the random interval
-`[X̄ₙ − w, X̄ₙ + w]` with probability at most `δ`, where
-`w = hoeffdingCIHalfWidth a b n δ`. -/
+/-- **Finite-sample Hoeffding confidence interval (miss-probability form).** Let `S`
+be an i.i.d. sample drawn from `P`, and write `m = ∫ f dP` for the population mean.
+If [`f` is measurable](hyp:hf), if [`f` is almost-everywhere valued in the interval
+`[a, b]` with `a < b`](hyp:hab,hbound), if [the sample size `n` is
+positive](hyp:hn), and if [the confidence level `δ` lies in `(0, 1]`](hyp:hδ0,hδ1),
+then [with probability at most `δ` the sample mean `X̄ₙ` of `f` over `S`'s first
+`n` draws satisfies `w ≤ |X̄ₙ − m|`, where `w = hoeffdingCIHalfWidth a b n
+δ`](goal). -/
 theorem hoeffding_ci_miss (S : IIDSample Ω X' μ P) {f : X' → ℝ} (hf : Measurable f)
     {a b : ℝ} (hab : a < b) (hbound : ∀ᵐ x ∂P, f x ∈ Set.Icc a b)
     (n : ℕ) (hn : 0 < n) {δ : ℝ} (hδ0 : 0 < δ) (hδ1 : δ ≤ 1) :
@@ -111,11 +114,15 @@ theorem hoeffding_ci_miss (S : IIDSample Ω X' μ P) {f : X' → ℝ} (hf : Meas
     rw [hw2]; field_simp
   rw [hexp, hLdef, exp_neg_log_two_div hδ0]; ring
 
-/-- **Finite-sample Bernstein confidence interval (miss-probability form).**
-For a statistic `f` with population mean `m = ∫ f ∂P`, range bound `|f − m| ≤ c`
-and variance `∫ (f − m)² ≤ σ²` (with `0 < σ`), and any confidence level
-`δ ∈ (0, 1]`, the mean `m` lies outside `[X̄ₙ − w, X̄ₙ + w]` with probability at
-most `δ`, where `w = bernsteinCIHalfWidth c σ n δ`.
+/-- **Finite-sample Bernstein confidence interval (miss-probability form).** Let `S`
+be an i.i.d. sample drawn from `P`, and write `m = ∫ f dP` for the population mean.
+If [`f` is measurable](hyp:hf) and [`P`-integrable](hyp:hfint), if [`f` is
+almost-everywhere within `c` of `m`, for some nonnegative `c`](hyp:hc,hbound), if
+[the variance of `f` is bounded by `σ²`, for some positive `σ`](hyp:hσ,hvar), if
+[the sample size `n` is positive](hyp:hn), and if [the confidence level `δ` lies
+in `(0, 1]`](hyp:hδ0,hδ1), then [with probability at most `δ` the sample mean
+`X̄ₙ` of `f` over `S`'s first `n` draws satisfies `w ≤ |X̄ₙ − m|`, where
+`w = bernsteinCIHalfWidth c σ n δ`](goal).
 
 Variance-adaptive: the half-width's leading term is `2σ√(log(2/δ)/n)`, so for
 low-variance statistics it is far tighter than the Hoeffding interval. -/
@@ -168,10 +175,16 @@ theorem bernstein_ci_miss (S : IIDSample Ω X' μ P) {f : X' → ℝ} (hf : Meas
     _ = 2 * (δ / 2) := by rw [exp_neg_log_two_div hδ0]
     _ = δ := by ring
 
-/-- **Finite-sample Hoeffding confidence interval (coverage form).**
-The complement of `hoeffding_ci_miss`: the population mean `m = ∫ f ∂P` lies
-strictly inside the random interval `(X̄ₙ − w, X̄ₙ + w)` with probability at least
-`1 − δ`, where `w = hoeffdingCIHalfWidth a b n δ`. -/
+/-- **Finite-sample Hoeffding confidence interval (coverage form).** Let `S` be an
+i.i.d. sample drawn from `P`, and write `m = ∫ f dP` for the population mean. If
+[`f` is measurable](hyp:hf), if [`f` is almost-everywhere valued in the interval
+`[a, b]` with `a < b`](hyp:hab,hbound), if [the sample size `n` is
+positive](hyp:hn), and if [the confidence level `δ` lies in `(0, 1]`](hyp:hδ0,hδ1),
+then [with probability at least `1 − δ` the sample mean `X̄ₙ` of `f` over `S`'s
+first `n` draws satisfies `|X̄ₙ − m| < w`, where `w = hoeffdingCIHalfWidth a b n
+δ`](goal).
+
+This is the complement of `hoeffding_ci_miss`. -/
 theorem hoeffding_ci_cover (S : IIDSample Ω X' μ P) {f : X' → ℝ} (hf : Measurable f)
     {a b : ℝ} (hab : a < b) (hbound : ∀ᵐ x ∂P, f x ∈ Set.Icc a b)
     (n : ℕ) (hn : 0 < n) {δ : ℝ} (hδ0 : 0 < δ) (hδ1 : δ ≤ 1) :
@@ -190,10 +203,17 @@ theorem hoeffding_ci_cover (S : IIDSample Ω X' μ P) {f : X' → ℝ} (hf : Mea
   rw [hcompl, measureReal_compl hMmeas, probReal_univ]
   linarith [hmiss]
 
-/-- **Finite-sample Bernstein confidence interval (coverage form).**
-The complement of `bernstein_ci_miss`: the population mean `m = ∫ f ∂P` lies
-strictly inside the random interval `(X̄ₙ − w, X̄ₙ + w)` with probability at least
-`1 − δ`, where `w = bernsteinCIHalfWidth c σ n δ`. -/
+/-- **Finite-sample Bernstein confidence interval (coverage form).** Let `S` be an
+i.i.d. sample drawn from `P`, and write `m = ∫ f dP` for the population mean. If
+[`f` is measurable](hyp:hf) and [`P`-integrable](hyp:hfint), if [`f` is
+almost-everywhere within `c` of `m`, for some nonnegative `c`](hyp:hc,hbound), if
+[the variance of `f` is bounded by `σ²`, for some positive `σ`](hyp:hσ,hvar), if
+[the sample size `n` is positive](hyp:hn), and if [the confidence level `δ` lies
+in `(0, 1]`](hyp:hδ0,hδ1), then [with probability at least `1 − δ` the sample mean
+`X̄ₙ` of `f` over `S`'s first `n` draws satisfies `|X̄ₙ − m| < w`, where
+`w = bernsteinCIHalfWidth c σ n δ`](goal).
+
+This is the complement of `bernstein_ci_miss`. -/
 theorem bernstein_ci_cover (S : IIDSample Ω X' μ P) {f : X' → ℝ} (hf : Measurable f)
     (hfint : Integrable f P) {c σ : ℝ} (hc : 0 ≤ c) (hσ : 0 < σ)
     (hbound : ∀ᵐ x ∂P, |f x - ∫ y, f y ∂P| ≤ c)

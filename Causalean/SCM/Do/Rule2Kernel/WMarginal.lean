@@ -220,7 +220,16 @@ lemma measurableEmbedding_fillZrW
     measurableSet_image' := fun _ hA =>
       measurableSet_fillZrW_image M' Z hZ_obs hZ_fixed W hDisj_ZrW s' hA }
 
-/-- **W-marginal pushforward identity.**
+/-- **W-marginal pushforward identity.** Fix [a do-set `Z` of nodes whose random copies
+    are observed in the base model and whose fixed nodes have not already been
+    intervened on](hyp:hZ_obs,hZ_fixed) and an observation block `W` such that [the union
+    of `Z`'s random copies and `W` is observed](hyp:hZrW) and [disjoint from `Z`'s random
+    copies](hyp:hDisj_ZrW). If, [under the intervened model's law of the observed
+    variables given the fixed values `s'`, the post-intervention random copies of `Z`
+    almost surely equal their assigned intervention values](hyp:hPinned), then for [every
+    measurable `W`-event `A`](hyp:hA), [the intervened model's marginal probability of
+    `A` on `W` equals the base model's probability of the pullback of `A` through the
+    map that fills in the pinned `Z`-random-copy coordinates alongside `W`](goal).
 
     When the post-intervention random treatment copies are pinned almost surely
     to their assigned do-values, the do-model marginal law on W equals the
@@ -372,7 +381,20 @@ lemma obsKernel_fixSet_W_marginal_pushforward_eq
     rw [valuesUnionMk_apply_right _ _ hv_in hvNotZr] at hcoord
     exact hcoord.symm
 
-/-- Cross-SCM rectangle bridge for the W-marginal.
+/-- **Cross-SCM rectangle bridge for the W-marginal.** Fix [a do-set `Z` of nodes
+    whose random copies are observed in the base model and whose fixed nodes have
+    not already been intervened on](hyp:hZ_obs,hZ_fixed), together with [an outcome
+    block `Y`](hyp:hY) and [a conditioning block `W`](hyp:hW) of observed variables
+    such that [the union of `Z`'s random copies and `W` is observed](hyp:hZrW) and
+    [disjoint from `Z`'s random copies](hyp:hDisj_ZrW). Assume that, [under the
+    intervened model's law given the fixed values `s`, the post-intervention random
+    copies of `Z` almost surely equal their assigned intervention values](hyp:hPinned).
+    Then for [every measurable `W`-event `A`](hyp:hA) and [every measurable `Y`-event
+    `B`](hyp:hB), [integrating, over `A` and with respect to the intervened model's
+    `W`-marginal, the base model's conditional probability of `B` given the outcome
+    of filling in `Z`'s pinned random-copy values alongside each `w` reconstructs the
+    intervened model's probability that both the `W`-event `A` and the `Y`-event `B`
+    occur](goal).
 
     Under d-separation, joint overlap, and the additional assumption that the
     post-intervention random treatment copies are pinned almost surely to their

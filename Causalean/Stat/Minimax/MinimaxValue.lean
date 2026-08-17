@@ -147,12 +147,14 @@ theorem le_minimaxValue [Nonempty E] {risk : E → Θ → ℝ} {c : ℝ}
     c ≤ minimaxValue risk :=
   le_ciInf h
 
-/-- **Two-point reduction to the minimax value.** Fix two models in the class. If for every
-admissible estimator the larger of its two risks at those models is at least `c`, then the
-minimax value is at least `c`. This is the step that turns a Le Cam or divergence-based
-testing bound, which produces exactly such a two-model statement, into a statement about the
-minimax value. Each estimator's risk must be bounded over the class for its supremum to be
-meaningful. -/
+/-- **Two-point reduction to the minimax value.** Fix two models `θ₀` and `θ₁` from the
+parameter class. If [every estimator's risk is bounded above across the parameter
+class](hyp:hbdd) and [for each estimator, the larger of its risks at the two fixed models
+is at least `c`](hyp:htwo), then [the minimax value of the problem is at least `c`](goal).
+
+This is the step that turns a Le Cam or divergence-based testing bound, which produces
+exactly such a two-model statement, into a statement about the minimax value. Each
+estimator's risk must be bounded over the class for its supremum to be meaningful. -/
 theorem le_minimaxValue_of_two_point [Nonempty E] {risk : E → Θ → ℝ} {c : ℝ} (θ₀ θ₁ : Θ)
     (hbdd : ∀ e, BddAbove (Set.range (risk e)))
     (htwo : ∀ e, c ≤ max (risk e θ₀) (risk e θ₁)) :
@@ -215,7 +217,14 @@ theorem minimaxValue_mono_class [Nonempty E] [Nonempty Θ] {risk : E → Θ → 
   minimaxValue_le_minimaxValue hbddBelow
     fun e => ⟨e, worstCaseRisk_mono_class φ (hbdd e) (hle e)⟩
 
-/-- Version of `minimaxValue_mono_class` for nonnegative risks. Nonnegativity supplies both
+/-- For a map `φ` embedding the parameter class of the first problem into that of the
+second, if [the first problem's risk is nonnegative](hyp:hr), [the second problem's risk is
+nonnegative](hyp:hr'), [each estimator's risk is bounded above across the second parameter
+class](hyp:hbdd), and [the first risk at any model is dominated by the second risk at that
+model's image under `φ`](hyp:hle), then [the minimax value of the first problem is at most
+that of the second](goal).
+
+Version of `minimaxValue_mono_class` for nonnegative risks. Nonnegativity supplies both
 the lower bound on the smaller problem's worst-case risks and the empty-class case, so the
 only remaining side condition is that each estimator's risk be bounded over the larger
 class. Squared-error and absolute-error losses meet the nonnegativity hypotheses by

@@ -40,8 +40,11 @@ lemma one_le_secondMoment_of_mean_one
   norm_num at hv ⊢
   linarith
 
-/-- The expected empirical Kish dispersion equals the population second moment of the
-observation-level weight statistic. -/
+/-- **Expected empirical Kish dispersion.** Given [a positive sample size $n$](hyp:hn) and [an
+integrable squared weight statistic $g^2$ under the population measure](hyp:hF), [the expectation
+of the empirical Kish dispersion — the sample average of the squared observation-level weights —
+under the $n$-fold product sampling measure equals the population second moment $\int
+g^2\,d\mu$](goal). -/
 lemma empiricalKishDispersion_mean
     {Ω : Type*} [MeasurableSpace Ω]
     (μ : Measure Ω) [IsProbabilityMeasure μ]
@@ -102,8 +105,12 @@ lemma empiricalKishDispersion_variance_le
       gcongr
     _ = 4 * k ^ 2 * kappa / n := by ring
 
-/-- A positive population Kish dispersion falls below half its mean with probability at most
-sixteen times the squared weight envelope divided by sample size and population dispersion. -/
+/-- **Lower-tail bound for empirical Kish dispersion.** Given [a positive sample size
+$n$](hyp:hn), [a positive population Kish dispersion $\kappa$](hyp:hkappa), [the empirical Kish
+dispersion is square-integrable under the sampling measure `Q`](hyp:hF), [its expectation under `Q`
+equals $\kappa$](hyp:hmean), and [its variance under `Q` is at most $4k^2\kappa/n$ for a weight
+envelope $k$](hyp:hvar), then [the probability that the empirical Kish dispersion falls below half
+its mean $\kappa/2$ is at most $16k^2/(n\kappa)$](goal). -/
 lemma empiricalKishDispersion_lower_tail_le
     {Ω : Type*} [MeasurableSpace Ω]
     (n : ℕ) (Q : Measure (Fin n → Ω)) [IsProbabilityMeasure Q]

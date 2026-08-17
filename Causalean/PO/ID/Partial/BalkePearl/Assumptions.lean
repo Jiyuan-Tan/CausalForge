@@ -83,7 +83,10 @@ lemma posZ_ne_top (_ : S.BaseAssumptions) (z : Bool) :
     P.μ (S.zVar.event z) ≠ ⊤ :=
   ne_of_lt (lt_of_le_of_lt prob_le_one (by norm_num))
 
-/-- Positive instrument probabilities remain positive after conversion to real numbers. -/
+/-- Under [the Balke-Pearl IV base assumptions — IV-specific consistency of treatment and
+outcome on their respective cells, the exclusion restriction, instrument exogeneity, and
+positive instrument probability](hyp:hA), [the real-valued probability of each instrument
+cell `z` is strictly positive](goal). -/
 lemma posZ_toReal_pos (hA : S.BaseAssumptions) (z : Bool) :
     0 < (P.μ (S.zVar.event z)).toReal :=
   ENNReal.toReal_pos (hA.posZ_ne_zero z) (hA.posZ_ne_top z)

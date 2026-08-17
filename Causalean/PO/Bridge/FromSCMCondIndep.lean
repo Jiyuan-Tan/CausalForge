@@ -88,9 +88,22 @@ private theorem condIndepFun_comp_of_map
   filter_upwards [htr_pair.symm, h_joint, htr_Z_fst] with p hp_pair hp_joint hp_Z
   rw [hp_pair, hp_joint, Kernel.prodMkRight_apply, hp_Z, Kernel.prodMkRight_apply]
 
-/-- If the SWIG node sets `X` and `Y` are d-separated by `Z`, then the matching
-regimed variable and counterfactual bundle in the PO system induced by `M` are
-conditionally independent given the matching `Z`-projection.
+/-- **SCM-to-PO conditional-independence bridge under d-separation.** Fix a
+structural causal model `M` with a fixed-value assignment `s`, and SWIG node
+sets that are [each contained in the model's random variables](hyp:hX,hY,hZ)
+and [pairwise disjoint from one another](hyp:hDisj_XY,hDisj_XZ,hDisj_YZ).
+Suppose [the first node set is d-separated from the second by the
+third in the model's DAG](hyp:hdSep). Suppose further that there is
+[a measurable value-space map `aMap` for the first node set](hyp:haMap) and
+[a measurable value-space map `BMap` for the second node set](hyp:BMap,hBMap)
+such that, under the latent draw, [the potential-outcome value of a regimed
+variable `a` equals `aMap` applied to the projection of the evaluated model
+state onto the first node set](hyp:ha_value), [the joint value of a
+counterfactual bundle `B` equals `BMap` applied to the projection onto the
+second node set](hyp:hB_value), and [the conditioning value of a regimed
+variable `c` equals the projection onto the third node set](hyp:hc_value).
+Then, in the potential-outcome system induced by `M` at `s`, [`a` and `B` are
+conditionally independent given `c`](goal).
 
 The hypotheses `ha_value`, `hB_value`, and `hc_value` are the explicit
 PO-to-SCM value correspondence: under latent draw `ℓ`, the PO value of `a`, the

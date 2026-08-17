@@ -43,19 +43,19 @@ variable {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
   {μ : Measure Ω} {P : Measure X} [IsProbabilityMeasure μ] [IsProbabilityMeasure P]
   {g : X → X → ℝ}
 
-/-- **Order-`m` HOIF projection-risk bound.**
-Given the bias-variance decomposition of the HOIF estimator's risk into a first-order variance
-`V₁`, a projection bias² `Bsq`, the degenerate order-2 U-statistic variance `Var[Uₙ]`, and the
-squared order-`m` estimation remainder `R²`, together with
-* the localized first-order variance rate `V₁ ≤ Cv1/(nh)`,
-* the projection bias² rate `Bsq ≤ Cb·J^{-4s/d}`,
-* the projected-kernel L²-energy bound `ζ ≤ C·J/h²`,
-* the order-`m` product-remainder structure (`R` dominated by a sum over `T` of products of `m+1`
-  nuisance-error factors, each in `[0, δ]`),
-
-the risk is bounded by the explicit sum of the four rate terms
-
-  `risk ≤ Cv1/(nh) + Cb·J^{-4s/d} + 4C·J/(nh)² + |T|²·δ^{2(m+1)}`.
+/-- **Order-`m` HOIF projection-risk bound.** For an i.i.d. sample `S` and a projection
+kernel `g`, suppose [`g` is symmetric, square-integrable, and doubly degenerate](hyp:hg),
+[the sample size `n` is at least `2`](hyp:hn), and [the bandwidth `h` is positive, the
+projection dimension `J` and trace constant `C` are nonnegative, and the kernel's
+L²-energy `ζ` obeys the trace bound `ζ ≤ C·J/h²`](hyp:hh,hJ,hC,hzeta). Suppose further
+that [the first-order variance `V1` obeys the rate `V1 ≤ Cv1/(nh)`](hyp:hV1) and [the
+projection bias² `Bsq` obeys the rate `Bsq ≤ Cb·J^{-4s/d}`](hyp:hB), and that the
+order-`m` estimation remainder `R` is controlled, over a finite index set `T`, by a sum of
+products of `m+1` nuisance-error factors: [every such factor is nonnegative](hyp:hnn),
+[every factor is at most the largest nuisance error `δ`](hyp:hle), and [the absolute value
+of `R` is bounded by that sum of products](hyp:hRbd). If, finally, [the estimator's risk
+decomposes as `risk ≤ V1 + Bsq + Var[Uₙ] + R²`](hyp:hdecomp), then [the risk is bounded by
+the explicit sum `Cv1/(nh) + Cb·J^{-4s/d} + 4C·J/(nh)² + |T|²·δ^{2(m+1)}`](goal).
 
 The degenerate U-statistic variance term and the product-remainder term are discharged from the
 Causalean theorems `degenerate_uStatistic_variance_le` and `hoif_remainder_sq_le`; the remaining two

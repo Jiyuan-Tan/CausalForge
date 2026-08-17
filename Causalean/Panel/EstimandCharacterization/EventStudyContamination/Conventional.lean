@@ -175,7 +175,16 @@ theorem other_included_event_weights_sum_zero (P : EventStudySystem T)
       rw [hOtherZero]
     _ = 0 := zero_div _
 
-/-- Conventional Sun-Abraham contamination representation.
+/-- **Conventional Sun-Abraham contamination representation.** For an event-study system `P`
+and conventional design `D`, if [observed outcomes equal the potential outcome under the
+realized treatment path (consistency)](hyp:hConsistency), [the never-treated potential outcome
+follows an additive parallel-trends restriction](hyp:hMeanParallelUntreated), [the residualized
+displayed-event indicator `Rdot` is orthogonal in expectation to every function in the
+event-study nuisance class](hyp:hNuisanceOrthogonal), [the residualized denominator is
+strictly positive](hyp:hDenomPos), [the coefficient `D.mu` equals its FWL residualized-ratio
+form](hyp:hMuRatio), and [the included, displayed, and admissible event times all lie within
+the declared finite support](hyp:hSupport), then [`D.mu` equals the Sun-Abraham
+contamination-weighted sum of cohort-relative-time CATTs over every admissible cell](goal).
 
 Takes the FWL ratio identity `D.mu = conventionalMuRatio D` and the finite-cell
 orthogonality conditions `ConventionalResidualization` as hypotheses. See
@@ -292,8 +301,16 @@ theorem contamination_representation (P : EventStudySystem T)
       ring
 
 set_option linter.flexible false in
-/-- Equivalent split of the contamination formula into the displayed
-event-time component and all other admissible event times. -/
+/-- For an event-study system `P` and conventional design `D`, if [observed outcomes equal the
+potential outcome under the realized treatment path (consistency)](hyp:hConsistency),
+[the never-treated outcome satisfies additive parallel trends](hyp:hMeanParallelUntreated),
+[the design satisfies the finite-cell orthogonality conditions
+`ConventionalResidualization`](hyp:hResidualization), [the residualized denominator is strictly
+positive](hyp:hDenomPos), [the coefficient `D.mu` equals its FWL residualized-ratio
+form](hyp:hMuRatio), and [the included, displayed, and admissible event times all lie within
+the declared finite support](hyp:hSupport), then [`D.mu` splits as the displayed-event-time
+contamination term plus the contamination-weighted sum over every other admissible
+cohort-relative-time cell](goal). -/
 theorem contamination_representation_split (P : EventStudySystem T)
     (D : P.ConventionalDesign)
     (hConsistency : P.Consistency)
@@ -357,8 +374,16 @@ theorem contamination_representation_split (P : EventStudySystem T)
       rw [hDisplayedCells, Finset.sum_map]
       rfl
 
-/-- Apparent pretrends: a displayed lead can equal a weighted sum of
-post-treatment effects once all negative-event-time CATTs vanish. -/
+/-- For an event-study system `P` and conventional design `D`, if [the consistency,
+mean-parallel-trends, and no-anticipation causal restrictions hold](hyp:hCausal), [the
+residualized displayed-event indicator `Rdot` is orthogonal in expectation to every function in
+the event-study nuisance class](hyp:hNuisanceOrthogonal), [the residualized denominator is
+strictly positive](hyp:hDenomPos), [the coefficient `D.mu` equals its FWL residualized-ratio
+form](hyp:hMuRatio), and [the included, displayed, and admissible event times all lie within
+the declared finite support](hyp:hSupport), then [`D.mu` equals the contamination-weighted sum
+of cohort-relative-time CATTs restricted to nonnegative relative times, i.e. once every
+negative-relative-time CATT vanishes under no-anticipation, the displayed lead's coefficient is
+a weighted sum of post-treatment effects](goal). -/
 theorem apparent_pretrends_from_post_treatment (P : EventStudySystem T)
     (D : P.ConventionalDesign)
     (hCausal : P.EventStudyCausalRestrictions)

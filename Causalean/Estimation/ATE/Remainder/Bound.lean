@@ -41,8 +41,16 @@ namespace BackdoorEstimationSystem
 variable {P : POSystem} {γ : Type*} [MeasurableSpace γ]
   [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
 
-/-- The integrated AIPW remainder is bounded by a strict-overlap constant
-times the product of outcome-regression and propensity-score L² errors.
+/-- Fix [strict overlap for the true propensity at level `ε`](hyp:h_overlap),
+[the back-door identification assumptions](hyp:hA), and [finite second moments
+of the observed and potential outcomes](hyp:h_y2,h_yd2). For a candidate
+nuisance vector `η` such that [`η` lies in the `ε`-overlap `L²` nuisance class
+`H_ε_aeL2`](hyp:hη), with [each treatment-arm outcome-regression error in
+`L²(P_X)`](hyp:hΔμ_memLp) and [the propensity error in
+`L²(P_X)`](hyp:hΔe_memLp), [the population AIPW moment functional at `η` and
+the true ATE `θ₀` is bounded in absolute value by an overlap-dependent constant
+times the sum, over treatment arms, of the product of the outcome-regression
+and propensity `L²` errors](goal).
 
 This is the quantitative Cauchy-Schwarz step applied after the exact remainder identity. -/
 theorem aipw_remainder_bound
@@ -220,13 +228,19 @@ hypothesis at `n^{-1/2}`, then the population AIPW moment at the random
 nuisance is `o_p(n^{-1/2})`.  This is the form consumed at
 `DML.lean:152` (the `R₁` cross-term). -/
 
-/-- **AIPW remainder is `o_p(n^{-1/2})` under the product rate.**
-
-If `(μ̂(n), ê(n)) ∈ H_ε_aeL2` for all `n, ω` and the L²-product rate
-`‖μ̂(n)(a,·) − μ_val(a,·)‖₂ · ‖ê(n) − e_val‖₂ = o_p(n^{-1/2})` holds for each
-`a ∈ {0, 1}`, then the population AIPW moment at the random nuisance is
-`o_p(n^{-1/2})` under `μ`.  Direct consequence of `aipw_remainder_bound`
-plus closure of `IsLittleOp` under finite sums and constant scaling. -/
+/-- **AIPW remainder is `o_p(n^{-1/2})` under the product rate.**  Fix [strict
+overlap at level `ε`](hyp:h_overlap), [the back-door identification
+assumptions](hyp:hA), and [finite second moments of the observed and potential
+outcomes](hyp:h_y2,h_yd2). For a sequence of nuisance estimators `η̂` such that
+[every realization `η̂(n,ω)` lies in the `ε`-overlap `L²` nuisance
+class](hyp:h_in_H), with [outcome-regression errors in `L²(P_X)` at every
+horizon and realization](hyp:hΔμ_memLp) and [propensity errors in `L²(P_X)` at
+every horizon and realization](hyp:hΔe_memLp), and whose [`L²`
+outcome-regression and propensity errors have product rate `o_p(n^{-1/2})` for
+each treatment arm](hyp:h_product_rate), [the population AIPW moment
+functional at the random nuisance `η̂(n)` and `θ₀` is `o_p(n^{-1/2})` under
+`μ`](goal).  Direct consequence of `aipw_remainder_bound` plus closure of
+`IsLittleOp` under finite sums and constant scaling. -/
 theorem aipw_remainder_op
     (S : BackdoorEstimationSystem P γ) {ε : ℝ}
     (h_overlap : S.StrictOverlap ε)

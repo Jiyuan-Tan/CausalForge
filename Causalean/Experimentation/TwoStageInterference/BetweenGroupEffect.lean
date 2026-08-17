@@ -47,17 +47,24 @@ variable {ι : Type*} [Fintype ι] [DecidableEq ι] {n : ι → ℕ}
 
 set_option linter.unusedDecidableInType false in
 /-- **Hudgens–Halloran (2008), Theorem 6 (two-stage variance of the direct-effect contrast
-estimator).**
-For a two-stage design `jointDesign D₁ ψ φ` whose stage-1 selection has the SRS inclusion moments
-`C/N` and `C(C−1)/(N(N−1))` (`hstage1`/`hstage1pair`) and whose within-group designs have control /
-treatment propensities `m0 i / n i` and `m1 i / n i` (`hprop0`/`hprop1`) — the moments of the mixed
-strategy of Assumption 1, a simple random sample of `C` of the `N := card ι` groups flagged ψ, each
-selected group randomized by its within-group mixed design (`Var_estDirect_CRD` specializes to that
-design, discharging all the moment hypotheses) — the randomization variance of the
-treatment-minus-control estimator splits into a between-group SRS term with finite-population
-correction `(1 − C/N)/C` applied to the population sample variance of the group-level
-treatment-minus-control contrasts, plus a within-group term `(1/(C·N))` times the sum of the
-per-group conditional variances of the within-group contrast estimator. -/
+estimator).** Consider the two-stage design that first allocates each group to
+[strategy ψ or strategy φ](hyp:ψ,φ) and then randomizes the group's units accordingly, with
+outcomes recorded by [the potential-outcome function Y](hyp:Y). Assume [the target sample size C
+of selected groups is nonzero](hyp:hC), [the number N of groups is nonzero](hyp:hN), [N minus one
+is nonzero](hyp:hN1), [every group's control-arm unit count m0 is nonzero](hyp:hm0), [every
+group's treatment-arm unit count m1 is nonzero](hyp:hm1), and [every group's size n is
+nonzero](hyp:hn). Suppose the stage-1 design draws a simple random sample of C of the N groups, so
+that [each group is selected with probability C/N](hyp:hstage1) and [each pair of distinct groups
+is jointly selected with probability C(C−1)/(N(N−1))](hyp:hstage1pair), and that within a selected
+ψ-group [each unit's control propensity is m0/n](hyp:hprop0) and [each unit's treatment propensity
+is m1/n](hyp:hprop1). Then [the randomization variance of the treatment-minus-control estimator
+decomposes into a between-group term — the finite-population-corrected sample variance of the
+group-level treatment-minus-control contrasts, scaled by (1 − C/N)/C — plus a within-group term
+averaging, over the N groups and scaled by 1/(C·N), the conditional variance of each group's
+within-group contrast estimator](goal).
+
+`Var_estDirect_CRD` specializes this identity to the actual mixed (completely randomized) design
+of Assumption 1, discharging all the moment hypotheses above as proven facts. -/
 theorem Var_estDirect (D₁ : FiniteDesign (StratAssign ι)) (ψ φ : ∀ i, FiniteDesign (WAssign n i))
     (Y : ∀ i, Fin (n i) → WAssign n i → ℝ) (m0 m1 : ι → ℝ) (C : ℝ)
     (hC : C ≠ 0) (hN : (Fintype.card ι : ℝ) ≠ 0) (hN1 : (Fintype.card ι : ℝ) - 1 ≠ 0)
@@ -102,14 +109,20 @@ theorem Var_estDirect (D₁ : FiniteDesign (StratAssign ι)) (ψ φ : ∀ i, Fin
   rw [hmean]
 
 set_option linter.unusedDecidableInType false in
-/-- **Hudgens–Halloran (2008), Theorem 6, for the mixed two-stage design.**  `Var_estDirect`
-specialized to the actual mixed (completely randomized) two-stage design of Assumption 1: stage-1 is
-a simple random sample of `C` of the `N = card ι` groups (`crdOn C`), and each ψ-group `i` is
-completely randomized treating `K i` of its `n i` units (`crd (K i)`), so its control count is
-`n i − K i` and treatment count `K i`.  The stage-1 SRS inclusion moments and the within-group
-control/treatment propensities are the derived facts `crdOn_mean`/`crdOn_pair`/`crd_prop_*`, so —
-unlike `Var_estDirect` — no design-moment hypotheses are assumed, only the mixed-strategy validity
-conditions `0 < C < N` and `0 < K i < n i`.  The estimator uses the Hudgens-Halloran
+/-- **Hudgens–Halloran (2008), Theorem 6, for the mixed two-stage design.** Consider the
+completely randomized two-stage design in which stage 1 draws a simple random sample of C groups
+out of the population of N groups, and each drawn group is completely randomized by treating K of
+its n units, with outcomes recorded by [the potential-outcome function Y](hyp:Y). Assume [the
+sample size C is strictly positive](hyp:hC0), [C is strictly less than the number N of
+groups](hyp:hCN), [every group's treated-unit count K is strictly positive](hyp:hK0), and [every
+group's treated count K is strictly less than its size n](hyp:hKn). Then [the randomization
+variance of the treatment-minus-control estimator on this design equals the same
+between-group/within-group decomposition as `Var_estDirect`, with control count n−K and treatment
+count K in each group](goal).
+
+This specializes `Var_estDirect`, discharging its stage-1 and within-group moment hypotheses via
+the derived facts `crdOn_mean`, `crdOn_pair`, and `crd_prop_true`/`crd_prop_false`, so only the
+mixed-strategy validity conditions above are assumed. The estimator uses the Hudgens-Halloran
 treatment-minus-control orientation. -/
 theorem Var_estDirect_CRD (Y : ∀ i, Fin (n i) → WAssign n i → ℝ) (K : ι → ℕ) (C : ℕ)
     (hC0 : 0 < C) (hCN : C < Fintype.card ι)

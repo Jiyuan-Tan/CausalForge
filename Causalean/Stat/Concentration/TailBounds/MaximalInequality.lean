@@ -41,8 +41,10 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {X : Ω → �
 
 namespace HasSubexponentialMGF
 
-/-- **Two-sided Chernoff bound** for a sub-exponential random variable:
-`P(|X| ≥ ε) ≤ 2 exp(−ε² / (2 (v + b ε)))`. -/
+/-- **Two-sided Chernoff bound.** If [the random variable `X` has a sub-exponential
+moment-generating function with parameters `(v, b)` with respect to `μ`](hyp:hX) and
+[`ε` is nonnegative](hyp:hε), then [the probability that `|X|` is at least `ε` is at
+most $2\exp(-ε^2/(2(v+bε)))$](goal). -/
 theorem measure_abs_ge_le (hX : HasSubexponentialMGF X v b μ) {ε : ℝ} (hε : 0 ≤ ε) :
     μ.real {ω | ε ≤ |X ω|} ≤ 2 * Real.exp (-ε ^ 2 / (2 * ((v : ℝ) + b * ε))) := by
   haveI := hX.isFiniteMeasure
@@ -64,10 +66,11 @@ theorem measure_abs_ge_le (hX : HasSubexponentialMGF X v b μ) {ε : ℝ} (hε :
 
 end HasSubexponentialMGF
 
-/-- **Maximal inequality (existential form).** For a finite family `Y i`,
-`i ∈ t`, of sub-exponential random variables sharing common parameters `(v, b)`,
-the probability that some `|Y i|` exceeds `ε` is bounded by the union bound
-`card t · 2 exp(−ε² / (2 (v + b ε)))`. -/
+/-- **Maximal inequality (existential form).** If [every member `Y i`, `i ∈ t`, of a
+finite family indexed by `t` has a sub-exponential moment-generating function with
+common parameters `(v, b)` with respect to `μ`](hyp:hY) and [`ε` is
+nonnegative](hyp:hε), then [the probability that `|Y i| ≥ ε` for at least one `i ∈ t`
+is at most the union bound `card t · 2 exp(−ε² / (2 (v + b ε)))`](goal). -/
 theorem measure_exists_abs_ge_le {ι : Type*} (t : Finset ι) (Y : ι → Ω → ℝ) {v b : ℝ≥0}
     (hY : ∀ i ∈ t, HasSubexponentialMGF (Y i) v b μ) {ε : ℝ} (hε : 0 ≤ ε) :
     μ.real {ω | ∃ i ∈ t, ε ≤ |Y i ω|} ≤
@@ -85,8 +88,12 @@ theorem measure_exists_abs_ge_le {ι : Type*} (t : Finset ι) (Y : ι → Ω →
     _ = (t.card : ℝ) * (2 * Real.exp (-ε ^ 2 / (2 * ((v : ℝ) + b * ε)))) := by
         rw [Finset.sum_const, nsmul_eq_mul]
 
-/-- **Maximal inequality (`sup'` form).** The same bound stated for the pointwise
-maximum of the `|Y i|`. -/
+/-- **Maximal inequality (`sup'` form).** If [`t` is a nonempty finite index
+set](hyp:ht), [every member `Y i`, `i ∈ t`, has a sub-exponential moment-generating
+function with common parameters `(v, b)` with respect to `μ`](hyp:hY), and [`ε` is
+nonnegative](hyp:hε), then [the probability that the pointwise maximum of `|Y i|`
+over `i ∈ t` is at least `ε` is at most the union bound
+`card t · 2 exp(−ε² / (2 (v + b ε)))`](goal). -/
 theorem measure_sup'_ge_le {ι : Type*} (t : Finset ι) (ht : t.Nonempty) (Y : ι → Ω → ℝ)
     {v b : ℝ≥0} (hY : ∀ i ∈ t, HasSubexponentialMGF (Y i) v b μ) {ε : ℝ} (hε : 0 ≤ ε) :
     μ.real {ω | ε ≤ t.sup' ht (fun i => |Y i ω|)} ≤

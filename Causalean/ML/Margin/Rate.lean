@@ -25,10 +25,15 @@ namespace Causalean.ML
 
 open MeasureTheory ProbabilityTheory Real Causalean.Stat.Concentration
 
-/-- **Margin surrogate ERM excess-risk rate.**  For an `L`-Lipschitz surrogate `φ`, features in
-the `Xb`-ball, labels in `[-Yb, Yb]`, and linear classifiers in the `W`-ball, any empirical
-surrogate-risk minimizer `ŵ` against a comparator `wstar` has excess population surrogate risk
-exceeding `8·L·Yb·Xb·W/√n + 2ε` with probability at most `exp(-ε²tn)`. -/
+/-- **Margin surrogate ERM excess-risk rate.** Fix [nonnegative feature-, label-, and
+weight-ball radii `Xb`, `Yb`, `W`](hyp:hXb,hYb,hW) and [a nonnegative Lipschitz constant
+`L`](hyp:hL) for [a surrogate loss `φ` satisfying `|φ(s) − φ(t)| ≤ L·|s − t|`](hyp:hLip). For
+[a measurable feature-label map `X` valued in the `Xb`-by-`Yb` ball](hyp:hX), [a concentration
+parameter `t` satisfying `t·(L·Yb·Xb·W)² ≤ 1/2`](hyp:ht'), and [a nonnegative slack
+`ε`](hyp:hε), if [`ŵ` empirically minimizes the average surrogate loss over an i.i.d. sample of
+size `n` against any comparator `wstar` in the `W`-ball](hyp:hERM), then [the probability that
+the excess population surrogate risk of `ŵ` over `wstar` exceeds `8·L·Yb·Xb·W/√n + 2ε` is at
+most `exp(-ε²·t·n)`](goal). -/
 theorem margin_erm_surrogate_excess_rate {d n : ℕ} {Ω : Type*} [MeasurableSpace Ω]
     {μ : Measure Ω} [IsProbabilityMeasure μ] {Xb Yb W L : ℝ}
     (hXb : 0 ≤ Xb) (hYb : 0 ≤ Yb) (hW : 0 ≤ W) (hL : 0 ≤ L)

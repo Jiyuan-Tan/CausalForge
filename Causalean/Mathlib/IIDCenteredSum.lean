@@ -464,25 +464,15 @@ lemma iid_centered_sum_sq_lintegral_unscaled_le
     (s := s) (W := W) hW_meas m_A hm_A_le hW_join
     g hg_uncurry_meas hg_memLp
 
-/-- **Conditional second-moment bound for a centered i.i.d. sum.**
-
-Setup:
-* `m_A` a sub-σ-algebra of the ambient `MeasurableSpace Ω`.
-* `(W i)_{i ∈ s}` a finite family of `Ω → X` random variables that are
-  - jointly distributed as the i.i.d. product `P^|s|` (`hW_iid_pi`), and
-  - jointly independent of `m_A` (`hW_indep_A`).
-* `g : Ω → X → ℝ` jointly measurable for `m_A ⊗ σ_X` and `g ω ∈ L²(P)` for
-  every `ω`.
-
-Then the centered scaled fold sum
-
-    G(ω) := (1/√|s|) Σ_{i ∈ s} (g ω (W i ω) − ∫ g ω dP)
-
-satisfies the second-moment bound
-
-    ∫_Ω G(ω)² dμ ≤ ∫_Ω ‖g ω‖²_{L²(P)} dμ,
-
-stated in `lintegral` form via `ENNReal.ofReal`.
+/-- **Conditional second-moment bound for a centered i.i.d. sum.** For [a nonempty finite index set
+`s`](hyp:hs_pos), a sub-σ-algebra `m_A` with [`m_A` coarser than the ambient
+σ-algebra](hyp:hm_A_le), and [a finite family of measurable sample coordinates `W i`](hyp:hW_meas)
+that is [jointly independent of `m_A`](hyp:hW_indep_A) and [jointly distributed as the i.i.d.
+product law `P^s`](hyp:hW_iid_pi), if [the parametric integrand `g` is jointly measurable with
+respect to `m_A` and the σ-algebra on the sample space](hyp:hg_uncurry_meas) and [`g ω` lies in
+`L²(P)` for every `ω`](hyp:hg_memLp), then [the second moment of the normalized centered sum
+`(1/√|s|)·Σᵢ(g ω (W i ω) − ∫ g ω dP)` is at most the integrated squared `L²(P)`-norm of `g
+ω`](goal), stated in `lintegral` form via `ENNReal.ofReal`.
 
 **Proof outline.**
 

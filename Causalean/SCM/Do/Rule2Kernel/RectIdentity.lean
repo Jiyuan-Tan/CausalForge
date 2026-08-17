@@ -44,7 +44,17 @@ open scoped MeasureTheory ProbabilityTheory
 -- § Helpers (hPinned-free) for the rectangle identity
 -- ============================================================
 
-/-- **D-separation collapse for the post-intervention conditional kernel.**
+/-- **D-separation collapse for the post-intervention conditional kernel.** For the intervention
+    on names [`Z`, whose random copies are observed in the base model](hyp:hZ_obs) and [whose
+    fixed copies are not yet part of the base model's fixed coordinates](hyp:hZ_fixed), with
+    outcome set [`Y`](hyp:hY) and conditioning set [`W`](hyp:hW) contained in the observed
+    variables, suppose [in the post-intervention SWIG DAG, `Y` is d-separated from the random
+    copies of `Z` given `W` together with the post-intervention fixed set](hyp:hdSep). Then,
+    fixing an intervened fixed assignment `s` and [a measurable outcome set `B`](hyp:hB), [for
+    almost every conditioning value on `Z.random ∪ W`, the intervened model's conditional
+    distribution of `Y` given `Z.random ∪ W` assigns `B` the same probability as its conditional
+    distribution of `Y` given `W` alone, evaluated at the `W`-projection of that conditioning
+    value](goal).
 
     Under d-separation `Y ⊥ (Z.image .random) | (W ∪ M2.fixed)` in the
     post-intervention SWIG DAG (`hdSep`), the M2 conditional kernel of `Y`
@@ -306,7 +316,18 @@ lemma obsCondKernel_dSep_collapse_ae
     rw [hπW_C_def]
   rw [h_e_fst]
   rw [← hbW]
-/-- **Cross-SCM conditional kernels agree along the `fillZrW` filled assignment.**
+/-- **Cross-SCM conditional kernels agree along the `fillZrW` filled assignment.** For the
+    intervention on names [`Z`, whose random copies are observed in the base model](hyp:hZ_obs)
+    and [whose fixed copies are not yet part of the base model's fixed coordinates](hyp:hZ_fixed),
+    with outcome set [`Y`](hyp:hY) and conditioning set [`W`](hyp:hW) contained in the observed
+    variables, [the union of the random copies of `Z` and `W` contained in the observed
+    variables](hyp:hZrW) with [the random copies of `Z` disjoint from `W`](hyp:hDisj_ZrW), fix an
+    intervened fixed assignment `s`; then for [a measurable outcome set `B`](hyp:hB) and almost
+    every conditioning value `w`, taken with respect to the pullback of the base model's law on
+    `Z.random ∪ W` under the filled-assignment map, [the base model's conditional distribution of
+    `Y` given `Z.random ∪ W`, evaluated at the filled point built from `w`, and the intervened
+    model's corresponding conditional distribution, evaluated at the same filled point, assign
+    `B` the same probability](goal).
 
     The base-model conditional kernel evaluated along
     `F w := fillZrW W s w` agrees almost everywhere with the do-model

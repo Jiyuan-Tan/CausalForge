@@ -634,8 +634,10 @@ private lemma sum_lambdaWeight_mul_contrast_eq (P : CohortPanel 𝒢 T) :
   rw [← hELLE]
   rw [add_assoc]
 
-/-- **Prop A5.4 (`weights_sum_one`).** Under positivity of the residualized
-treatment variance, the normalized comparison weights sum to one. -/
+/-- **Prop A5.4 (`weights_sum_one`).** For a finite Goodman–Bacon cohort panel
+`P`, if [the residualized-treatment variance `VD P` is strictly
+positive](hyp:hVD_pos), then [the normalized comparison weights sum to one
+over all admissible 2×2 comparisons: `Σ_{k ∈ 𝒦 P} weight P k = 1`](goal). -/
 theorem weights_sum_one (P : CohortPanel 𝒢 T) (hVD_pos : 0 < VD P) :
     ∑ k ∈ 𝒦 P, weight P k = 1 := by
   classical

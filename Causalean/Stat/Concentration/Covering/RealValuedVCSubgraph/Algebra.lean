@@ -219,8 +219,10 @@ private theorem HasPolynomialL2Cover.reindex
     refine ⟨e.symm i, Finset.mem_map.mpr ⟨i, hiC, rfl⟩, ?_⟩
     simpa using hi
 
-/-- A bounded measurable pseudo-dimension class carries a uniform polynomial
-`L²` covering certificate. -/
+/-- **Bounded finite-pseudo-dimension classes admit a polynomial `L²` cover.** If [a real-valued
+function class has pseudo-dimension at most d](hyp:hpdim), [every member is measurable](hyp:hmeas),
+and [the class is uniformly bounded by a positive envelope U](hyp:hU,henvelope), then [the class
+carries a uniform polynomial `L²` covering certificate at envelope U](goal). -/
 theorem HasPseudoDimAtMost.hasPolynomialL2Cover
     {ι : Type v} [Nonempty ι] {F : ι → 𝒳 → ℝ} {d : ℕ} {U : ℝ}
     (hpdim : HasPseudoDimAtMost F d)

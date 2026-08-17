@@ -298,16 +298,28 @@ theorem cb_disj_XrZ : Disjoint (({Xidx} : Finset CBNode).image SWIGNode.random)
     ({SWIGNode.random Zidx} : Finset (SWIGNode CBNode)) := by
   rw [Finset.image_singleton]; decide
 
-/-- Sanity check: identification on the concrete graph via the toolkit.
+/-- **Backdoor adjustment identity on the continuous-backdoor example.** Fix
+    [an assignment `s0` of values to the model's fixed background
+    variables](hyp:s0). If [for every post-intervention background
+    assignment, the do(X)-intervened marginal law of `Z` is absolutely
+    continuous with respect to its purely observational marginal law — the
+    Rule-2 joint overlap condition](hyp:hOverlap), and [the product of the
+    observational marginal laws of the treatment's random image and of `Z`
+    is absolutely continuous with respect to their joint observational
+    law — the joint positivity condition](hyp:hPositivity_ae), then
+    [almost everywhere under that product measure, the conditional law of
+    the outcome `Y` given `Z` under the intervention that fixes the
+    treatment equals the purely observational conditional law of `Y` given
+    both the treatment and `Z` — the backdoor Rule-2 adjustment
+    identity](goal).
 
-    On this real-valued, degenerate backdoor SCM, if the analytic overlap
-    (`Rule2JointOverlap`) and product-level positivity conditions are assumed,
-    the a.e. Rule-2 identity follows from a single application of
-    `SCM.backdoor_rule2_ae` to the graphical criterion
-    `cb_backdoor_criterion`. The theorem checks that the toolkit handles the
-    graph, non-descendance, kernel disintegration, and typeclass bookkeeping for
-    this concrete example; it does not prove the overlap or positivity
-    hypotheses from the constant structural equations. -/
+    This is a sanity check confirming that the general toolkit lemma
+    `SCM.backdoor_rule2_ae` applies to the graphical criterion
+    `cb_backdoor_criterion` on this concrete real-valued, degenerate example
+    SCM: it verifies that the toolkit correctly handles the graph,
+    non-descendance, kernel disintegration, and typeclass bookkeeping for
+    this instance. It does not prove the overlap or positivity hypotheses
+    themselves from the model's constant structural equations. -/
 theorem cb_backdoor_identified
     (s0 : continuousBackdoorSCM.FixedValues)
     (hOverlap : ∀ s : (continuousBackdoorSCM.fixSet ({Xidx} : Finset CBNode)

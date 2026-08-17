@@ -161,10 +161,12 @@ ESCALATES has NOT reached that gate — so F4 did NOT run.** Therefore:
 **F5 bank/API** (`stage_5`, CKPT 2). Escalate `f5-clean` to main with the F4 both-reviewer verdicts +
 recommended tier. **No F4 verdicts ⇒ no `f5-clean`** (above). Bank + promote are user-approved — never yours.
 F5 also owns DOCSTRING COVERAGE: every declaration in the run's Lean modules (umbrella root included)
-gets a docstring (first paragraph = the NL translation) via one codex pass, build-validated with
-byte-for-byte rollback — run before the bank-soundness token scan (the scan must cover the pass's
-edits) and before the crosswalk emit (insertions shift line numbers). A residual undocumented decl
-blocks F5; the presentation pipeline's P4 only VERIFIES coverage and refuses an undocumented bundle.
+gets a docstring (first paragraph = the NL translation, with `[phrase](hyp:name)`/`[phrase](goal)`
+crosslinks covering every theorem hypothesis and its conclusion — `crosslinkDefect` hard-fails
+defective ones) via one codex pass, build-validated with byte-for-byte rollback — run before the
+bank-soundness token scan (the scan must cover the pass's edits) and before the crosswalk emit
+(insertions shift line numbers). A residual undocumented or crosslink-defective decl blocks F5;
+the presentation pipeline's P4 only VERIFIES coverage and refuses an undocumented bundle.
 
 ## Faithfulness — enforce in-phase; escalate only two outcomes
 

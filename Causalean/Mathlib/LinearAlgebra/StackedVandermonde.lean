@@ -53,8 +53,10 @@ def blockVandermondeWitnessWeights {K : Type*} [Zero K] [One K] (N : ℕ) (hN : 
       if k = zeroBlock then 1 else 0
     else if k = topBlock then 1 else 0
 
-/-- At least three distinct domain-valued nodes admit weights for which the stacked
-contraction is injective. The first block detects coordinate `0`, while the
+/-- For a commutative integral domain `K`, [at least three indices `N + 1`](hyp:hN) (`2 ≤ N`),
+and [pairwise distinct slope values `slopes : Fin (N + 1) → K`](hyp:hslopes),
+[there exist weights `Fin (N + 1) → Fin N → K` for which the stacked contraction is
+injective](goal). The first block detects coordinate `0`, while the
 last block is a square Vandermonde system on coordinates `1,…,N`. -/
 theorem stacked_contraction_injective_of_generic_weights {K : Type*} [CommRing K] [IsDomain K]
   {N : ℕ} (hN : 2 ≤ N) (slopes : Fin (N + 1) → K)

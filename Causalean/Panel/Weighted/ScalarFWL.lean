@@ -66,11 +66,12 @@ lemma ip_tildeX_self (c : WeightedSupport R) (H : Submodule ℝ (R → ℝ))
     _ = c.ip (c.tildeX H X) (c.tildeX H X) := by
           rw [c.residualize_in_orthogonal H X (c.proj_mem H X), add_zero]
 
-/-- **Scalar FWL from the normal equations.**
-
-If `α ∈ H` and `(β, α)` solves the two weighted normal equations, and the
-residualized regressor `X̃ = c.tildeX H X` has positive weighted energy, then
-`β` equals the residualized coefficient `⟨X̃, Y⟩_ω / ⟨X̃, X̃⟩_ω`. -/
+/-- **Scalar FWL from the normal equations.** Suppose [the nuisance term `α` lies in
+`H`](hyp:hα), [the `H`-residualized regressor `X̃` has nonzero weighted
+self-inner-product](hyp:hden), and the coefficient `β` with nuisance term `α` satisfies
+[the weighted normal equation against the raw regressor `X`](hyp:h_normal_X) and [the
+weighted normal equation against every element of the nuisance space `H`](hyp:h_normal_H).
+Then [`β` equals the residualized coefficient ratio `⟨X̃, Y⟩_ω / ⟨X̃, X̃⟩_ω`](goal). -/
 theorem scalar_fwl_of_normalEqs (c : WeightedSupport R)
     (H : Submodule ℝ (R → ℝ)) (X Y : R → ℝ) (β : ℝ) (α : R → ℝ)
     (hα : α ∈ H)

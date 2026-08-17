@@ -43,12 +43,16 @@ open scoped ENNReal BigOperators
 
 variable {K n : ℕ} {α β εg εm : ℝ}
 
-/-- **Structure-agnostic minimax lower bound, expected-risk (MSE) form.**  Under the
-same hypotheses as `minimax_lower_bound`, every measurable estimator has
-mean-squared error at least `s²/4` (with `s = β(α+β)/(1−4β²) ≍ √(εg·εm)`) on **some**
-DGP in the class — the doubly-robust product rate `εg·εm` is an unbeatable
-expected-squared-error floor.  This is the weaker, `(1−γ)`-factored consequence
-(`γ = 3/4`) of the quantile bound, in the form used by Balakrishnan et al. -/
+/-- **Structure-agnostic minimax lower bound, expected-risk (MSE) form.** Fix [nonnegative bump
+magnitudes α and β with `α + 2β ≤ 1/2`](hyp:hα,hβ,hαβ) meeting [the Rademacher perturbation
+budgets `β² ≤ εm` and `(α+β)²/(1−2β)² ≤ εg`](hyp:hm,hg) for [nonnegative error tolerances
+εg, εm](hyp:hεg,hεm), in [the sample-size regime `2n²γ² ≤ K·log 2` with `γ = α²+2αβ+3β²` and
+`2γ ≤ 1`](hyp:hγ,hreg). Then for [any measurable estimator of the average treatment
+effect](hyp:hest), [there is a data-generating process in the structure-agnostic nuisance class
+on which its mean-squared error is at least `s²/4`, with `s = β(α+β)/(1−4β²) ≍
+√(εg·εm)`](goal) — the doubly-robust product rate is an unbeatable expected-squared-error
+floor. This is the weaker, `(1−γ)`-factored consequence (`γ = 3/4`) of the quantile bound, in
+the form used by Balakrishnan et al. -/
 theorem minimax_lower_bound_mse [NeZero K]
     (hα : 0 ≤ α) (hβ : 0 ≤ β) (hαβ : α + 2 * β ≤ 1 / 2)
     (hm : β ^ 2 ≤ εm) (hg : (α + β) ^ 2 / (1 - 2 * β) ^ 2 ≤ εg)

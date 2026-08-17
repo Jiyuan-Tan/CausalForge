@@ -115,8 +115,10 @@ lemma jointRef_singleton_ne_zero [∀ n, MeasurableSingletonClass (Ω n)]
     exact href i.val (x i))
 
 omit [DecidableEq N] [Fintype N] in
-/-- Every measure on a finite coordinate product is dominated by a faithful
-product reference measure. -/
+/-- **Faithful references dominate.** On a finite coordinate product indexed by a node
+set `I`, if [the reference family `ref` is faithful — every single coordinate value
+carries nonzero reference mass](hyp:href), then [every measure `μ` on that product is
+absolutely continuous with respect to the joint reference measure](goal). -/
 lemma absolutelyContinuous_jointRef_of_faithful [∀ n, MeasurableSingletonClass (Ω n)]
     (ref : ReferenceMeasures Ω) (href : ReferenceFaithful ref)
     (I : Finset (SWIGNode N)) (μ : MeasureTheory.Measure (ValuesOn I (swigΩ Ω))) :

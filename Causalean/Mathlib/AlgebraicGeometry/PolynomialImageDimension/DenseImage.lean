@@ -106,8 +106,9 @@ theorem irreducible_affineClosure_polynomial_image_of_dense
       rw [hBC]
       exact Or.inr hy
 
-/-- The closure of the full range of a polynomial map between finite complex
-affine spaces is irreducible. -/
+/-- For a map `f` from the affine space `ℂ^ι` (with `ι` finite) to `ℂ^κ` that
+[is coordinatewise polynomial](hyp:hf), the Zariski closure of the range of
+`f` [is irreducible as a polynomially closed set](goal). -/
 theorem polynomialImageClosure_isIrreducible
     {ι κ : Type*} [Finite ι]
     {f : (ι → ℂ) → (κ → ℂ)} (hf : IsPolynomialMap f) :

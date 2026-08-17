@@ -54,12 +54,12 @@ open scoped MeasureTheory ProbabilityTheory
 -- § 1. do-Calculus (Pearl, 1995) — single-intervention SCM form
 -- ============================================================
 
-/-- **Rule 1: Insertion/deletion of observations (single-SCM form).**
-
-    On any SCM `M'`, a d-separation premise
-    `(Y ⊥ Z | W ∪ M'.fixed)` in the split graph `M'.dag` implies
-    the conditional independence `ObsCondIndep M' Y Z W` against
-    `M'.obsKernel s`.
+/-- **Rule 1: Insertion/deletion of observations (single-SCM form).** On any structural causal
+    model `M'`, suppose [`Y`, `Z`, and `W` are all observed nodes of `M'`](hyp:hY,hZ,hW), and
+    that [`Y` is d-separated from `Z` given `W` together with the fixed nodes `M'.fixed`, in the
+    split graph `M'.dag`](hyp:hdSep). Then, at any fixed-value point [`s`](hyp:s), [`Y` and `Z`
+    are conditionally independent given `W` under the observational kernel
+    `M'.obsKernel s`](goal).
 
     The d-sep conditioning set is `W ∪ M'.fixed` — the split's fixed
     nodes are constants (kernel parameters) under `obsKernel s`, so
@@ -92,16 +92,24 @@ theorem do_rule1 (M' : Causalean.SCM N Ω)
   exact M'.globalMarkov_with_fixed Y Z W M'.fixed hY hZ hW (Finset.Subset.refl _)
     hdSep s
 
-/-- **Rule 2: Action/observation exchange (single-SCM form, kernel-native).**
-
-    Kernel-native Rule 2 stated against the jointly-measurable
-    `obsCondKernel`, in the **honest a.e.-over-the-product** form.  For
-    `(νZ ⊗ₘ μW)`-a.e. treatment/conditioning pair `(t, w)` — where
-    `νZ := (M'.obsKernel s0).map π_{Z.rand}` is the observational treatment
-    marginal and `μW := (M'.obsKernel s0).map π_W` the conditioning
-    marginal — the `Y | W`-conditional kernel of the model intervened at
-    `t` equals the `Y | (Z.rand ∪ W)`-conditional kernel of `M'` at the
-    filled point `valuesUnionMk t w`.
+/-- **Rule 2: Action/observation exchange (single-SCM form, kernel-native).** Fix a structural
+    causal model `M'` and a treatment set `Z` for which [each member's random copy is already
+    observed in `M'`](hyp:hZ_obs) and [each member's fixed copy is not yet among `M'`'s fixed
+    nodes](hyp:hZ_fixed), with outcome and conditioning sets [`Y`](hyp:hY) and [`W`](hyp:hW),
+    and with [the random copies of `Z`](hyp:hZr) and [their union with `W`](hyp:hZrW) all
+    observed in `M'`. Suppose that, in the model intervened on `Z`, [`Y` is d-separated from the
+    random copies of `Z` given `W` together with the post-intervention fixed nodes](hyp:hdSep),
+    that [no fixed copy of a `Z`-variable is a post-intervention ancestor of any node in
+    `W`](hyp:hWNonDesc), and that [no random copy of a `Z`-variable is an `M'`-ancestor of any
+    node in `W`](hyp:hWNonDescM1), so `W` is not downstream of the intervention in either graph.
+    At a fixed-value point `s0`, assume [the law obtained by independently pairing a treatment
+    value drawn from the observational marginal of `Z`'s random copies with a conditioning
+    value drawn from the observational marginal of `W` is absolutely continuous with respect to
+    the actual observational joint law of `Z`'s random copies and `W`](hyp:hPositivity_ae). Then
+    [for almost every such independently-paired pair `(t, w)`, the `Y`-given-`W` conditional
+    kernel of the model intervened at `t`, evaluated at the fixed value extended by `t` and at
+    `w`, equals the `Y`-given-`(Z ∪ W)` conditional kernel of `M'` evaluated at `s0` and the
+    point filled by combining `t` and `w`](goal).
 
     **Why a.e. over the product (not pointwise at one `ζ_s`).**  For
     continuous treatment the slice `{Z.rand = ζ_s}` is `μ_C`-null, so an
@@ -170,7 +178,15 @@ theorem do_rule2_kernel (M' : Causalean.SCM N Ω) (Z : Finset N)
   SCM.obsCondKernel_fixSet_eq_ae_witness M' Z hZ_obs hZ_fixed Y W hY hW hZr hZrW
     hdSep hWNonDesc hWNonDescM1 s0 hPositivity_ae
 
-/-- Rule 3: insertion/deletion of actions in the simplified joint-marginal form.
+/-- **Rule 3: insertion/deletion of actions (simplified joint-marginal form).** Fix a structural
+    causal model `M'` and a treatment set `Z` for which [each member's random copy is already
+    observed in `M'`](hyp:hZ_obs) and [each member's fixed copy is not yet among `M'`'s fixed
+    nodes](hyp:hZ_fixed), together with outcome and conditioning sets [`Y`](hyp:hY) and
+    [`W`](hyp:hW), both observed in `M'`. Suppose [no node of `Y ∪ W` is, in the model
+    intervened on `Z`, a descendant of the fixed copy of any variable in `Z`](hyp:hNoDesc). Then
+    [the joint law of `(Y, W)` under the intervened model, at any post-intervention fixed value,
+    equals the joint law of `(Y, W)` under the base model `M'` at the corresponding
+    pre-intervention fixed value](goal).
 
     This is the node-splitting version of Pearl's Rule 3\* from
     Malinsky–Shpitser–Tchetgen Tchetgen (2019), in single-SCM form:

@@ -20,8 +20,11 @@ namespace Causalean.Mathlib.MeasureTheory
 
 variable {𝒳 : Type*} [MeasurableSpace 𝒳]
 
-/-- A finite measure concentrated on finitely many distinct measurable points is the sum of
-the point masses at those points, weighted by their masses. -/
+/-- Let `μ` be a finite measure and `cell` an injective family of finitely many points of the
+sample space, indexed by a finite type `ι`. If [every singleton `{cell i}` is
+measurable](hyp:hcell) and [`μ` assigns its full mass to the range of `cell`, i.e. `μ` puts no
+mass outside these finitely many points](hyp:hrange), then [`μ` equals the sum, over the index
+`i`, of the point mass `μ {cell i}` scaling the Dirac measure at `cell i`](goal). -/
 lemma measure_eq_fin_sum_smul_dirac_of_range
     (μ : Measure 𝒳) [IsFiniteMeasure μ] {ι : Type*} [Fintype ι]
     (cell : ι ↪ 𝒳) (hcell : ∀ i, MeasurableSet {cell i})

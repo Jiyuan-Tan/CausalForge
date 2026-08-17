@@ -46,8 +46,9 @@ def rejectionRegion (M : ℕ → Ω → ℝ) (α : ℝ) : Set Ω := {ω | ∃ n,
 `α`. -/
 def IsAnytimeValid (R : Set Ω) (μ : Measure Ω) (α : ℝ) : Prop := μ R ≤ ENNReal.ofReal α
 
-/-- **Anytime-valid type-I error control.** The event that a test supermartingale's wealth ever
-reaches `1/α` has probability at most `α`. -/
+/-- **Anytime-valid type-I error control.** If [the wealth process `M` is a test supermartingale
+for the filtration `ℱ` under `μ`](hyp:hM) and [the level `α` is positive](hyp:hα), then [the event
+that `M` ever reaches `1/α` has probability at most `α`](goal). -/
 theorem isAnytimeValid_rejectionRegion [IsFiniteMeasure μ] {M : ℕ → Ω → ℝ}
     (hM : IsTestSupermartingale M ℱ μ) {α : ℝ} (hα : 0 < α) :
     IsAnytimeValid (rejectionRegion M α) μ α :=
@@ -65,8 +66,9 @@ def IsConfidenceSequence (cover : ℕ → Ω → Prop) (μ : Measure Ω) (α : �
 when the wealth `M n` has not yet reached `1/α`. -/
 def confSeqOfWealth (M : ℕ → Ω → ℝ) (α : ℝ) : ℕ → Ω → Prop := fun n ω => M n ω < 1 / α
 
-/-- **Confidence-sequence coverage.** The cover obtained by requiring a test supermartingale's
-wealth to stay below `1/α` fails at some time with probability at most `α`. -/
+/-- **Confidence-sequence coverage.** If [`M` is a test supermartingale for the filtration `ℱ`
+under `μ`](hyp:hM) and [the level `α` is positive](hyp:hα), then [the cover obtained by requiring
+`M`'s wealth to stay below `1/α` fails at some time with probability at most `α`](goal). -/
 theorem isConfidenceSequence_confSeqOfWealth [IsFiniteMeasure μ] {M : ℕ → Ω → ℝ}
     (hM : IsTestSupermartingale M ℱ μ) {α : ℝ} (hα : 0 < α) :
     IsConfidenceSequence (confSeqOfWealth M α) μ α := by

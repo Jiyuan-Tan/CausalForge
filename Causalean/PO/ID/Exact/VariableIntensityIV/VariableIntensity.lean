@@ -682,8 +682,15 @@ lemma sum_crossingWeight_eq_one {z0 z1 : 𝒵}
     exact hValid.hRelevance
   exact OrderedTreatment.sum_normalizedWeight_eq_one (S.crossingProb z0 z1) hSum
 
-/-- Reduced form equals the sum of indicator-weighted causal responses across
-crossed margins. -/
+/-- **Reduced-form decomposition across crossed margins.** Fix a directed instrument
+contrast `(z0, z1)`. Under [the variable-intensity IV validity assumptions — SUTVA
+consistency of treatment and outcome, instrument independence from the potential
+treatments and treatment-indexed potential outcomes, almost-sure directed monotonicity of
+the potential treatment intensity in the instrument, a positive first stage, and
+integrability of every treatment-indexed potential outcome](hyp:hValid), [the potential
+reduced-form contrast `E[Y(D(z1)) − Y(D(z0))]` equals the sum, over treatment-intensity
+margins, of the expected unit causal response on each margin restricted to the event that
+the instrument move from `z0` to `z1` crosses that margin](goal). -/
 theorem reducedForm_eq_sum_crossingEffects {z0 z1 : 𝒵}
     (hValid : S.ValidContrastAssumptions z0 z1) :
     S.reducedFormContrast z0 z1 =
@@ -734,8 +741,14 @@ theorem indicatorWeightedACR_eq_averageCausalResponse {z0 z1 : 𝒵} :
     (measure_ne_top _ _) (S.marginResponse j)]
   ring_nf
 
-/-- Angrist-Imbens ACR characterization: the directed Wald estimand equals the
-average causal response over crossed treatment-intensity margins. -/
+/-- **Angrist-Imbens average-causal-response characterization.** Under [the
+variable-intensity IV validity assumptions](hyp:hValid), with [the instrument cell
+`Z = z0` having positive probability](hyp:hCell0) and [the instrument cell `Z = z1`
+having positive probability](hyp:hCell1), [the directed Wald estimand — the ratio of the
+reduced-form to first-stage conditional-mean contrasts across the two instrument cells —
+equals the Angrist-Imbens average causal response: the crossing-probability-weighted
+average, over treatment-intensity margins, of the conditional mean causal response given
+that the instrument move from `z0` to `z1` crosses that margin](goal). -/
 theorem wald_eq_averageCausalResponse {z0 z1 : 𝒵}
     (hValid : S.ValidContrastAssumptions z0 z1)
     (hCell0 : 0 < (P.μ (S.zEvent z0)).toReal)
@@ -765,8 +778,12 @@ namespace SpecialCases
 def binaryMargin (hBinaryIntensity : J = 1) : Fin J :=
   hBinaryIntensity.symm ▸ (0 : Fin 1)
 
-/-- Binary-intensity specialization: with a single margin, Wald is the
-conditional mean response on the unique crossing event. -/
+/-- **Binary-intensity specialization: Wald recovers LATE.** Under [the
+variable-intensity IV validity assumptions](hyp:hValid), with [positive probability of the
+instrument cell `Z = z0`](hyp:hCell0), [positive probability of the instrument cell
+`Z = z1`](hyp:hCell1), and [a single treatment margin, `J = 1`](hyp:hBinaryIntensity), [the
+directed Wald estimand equals the conditional mean unit causal response given the unique
+crossing event — the classical binary-treatment local average treatment effect](goal). -/
 theorem wald_eq_late_of_binaryIntensity {z0 z1 : 𝒵}
     (hValid : S.ValidContrastAssumptions z0 z1)
     (hCell0 : 0 < (P.μ (S.zEvent z0)).toReal)
@@ -839,7 +856,13 @@ theorem wald_eq_constantResponse {z0 z1 : 𝒵} {τ : ℝ}
       exact hValid.hRelevance : 0 < ∑ j : Fin J, S.crossingProb z0 z1 j)
   field_simp [ne_of_gt hpos]
 
-/-- Margin-specific response average specialization. -/
+/-- **Margin-specific response average specialization.** Under [the variable-intensity
+IV validity assumptions](hyp:hValid), with [positive probability of the instrument cell
+`Z = z0`](hyp:hCell0), [positive probability of the instrument cell `Z = z1`](hyp:hCell1),
+and [a candidate margin-response function `m` that agrees, on each treatment-intensity
+margin, with the conditional mean causal response given that margin's crossing
+event](hyp:hMarginResponse), [the directed Wald estimand equals the
+crossing-probability-weighted average of `m` across margins](goal). -/
 theorem wald_eq_marginResponseAverage {z0 z1 : 𝒵} (m : Fin J → ℝ)
     (hValid : S.ValidContrastAssumptions z0 z1)
     (hCell0 : 0 < (P.μ (S.zEvent z0)).toReal)

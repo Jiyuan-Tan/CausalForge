@@ -103,16 +103,18 @@ private theorem adjoint_gmmBread {G : E →L[ℝ] F} {W : F →L[ℝ] F}
   unfold gmmBread
   simp only [adjoint_comp, adjoint_adjoint, hW, comp_assoc]
 
-/-- **GMM optimal-weighting theorem (Hansen 1982, Thm 3.2).**
+/-- **GMM optimal-weighting theorem (Hansen 1982, Theorem 3.2).** For a Jacobian `G`, a
+[self-adjoint weighting operator `W`](hyp:hWsa), and a
+[positive-semidefinite covariance operator `Cov`](hyp:hCovpos) admitting
+[a two-sided inverse `CovInv`](hyp:hCovinvL,hCovinvR), suppose further that
+[the "bread" `GᵀWG` has a two-sided inverse `breadInv`](hyp:hbL,hbR) and that
+[the efficient bread `Gᵀ CovInv G` has a two-sided inverse `effInv`](hyp:_heL,heR).
+Then [the sandwich asymptotic variance of the GMM estimator with weighting `W` dominates the
+efficient (optimally-weighted) asymptotic variance in the Löwner order, i.e. their difference is a
+positive-semidefinite operator](goal).
 
-For a Jacobian `G`, symmetric weighting `W`, and positive symmetric covariance
-`Cov` (with `Cov⁻¹ = CovInv` and the two breads `GᵀWG`, `GᵀΣ⁻¹G` invertible via
-the supplied two-sided inverses), the sandwich variance dominates the efficient
-variance in the Löwner order:
-
-    gmmSandwich G W Cov breadInv  −  effInv   is positive,
-
-i.e. `V(W) ⪰ V★ = (GᵀΣ⁻¹G)⁻¹`. -/
+Concretely: `gmmSandwich G W Cov breadInv − effInv` is positive,
+i.e. `V(W) ⪰ V★ = (GᵀCovInvG)⁻¹`. -/
 theorem gmm_efficiency
     (G : E →L[ℝ] F) (W Cov CovInv : F →L[ℝ] F)
     (hWsa : adjoint W = W) (hCovpos : Cov.IsPositive)

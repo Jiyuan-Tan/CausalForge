@@ -327,10 +327,12 @@ theorem int_outcome_difference_identity (As : S.Assumptions) (d : Fin 2 → Bool
 
 /-! ### Main when-to-treat identification (prop:po-dynamic-late-when-to-treat) -/
 
-/-- **When-to-treat dynamic LATE Wald identity** (unconditional).
-
-For `d ∈ {(1,0), (0,1)}`,
-`τ_d = (obsMean(d) - obsMean(0)) / obsProb(d, d)`. -/
+/-- **When-to-treat dynamic LATE Wald identity** (unconditional). For
+[a treatment path `d` equal to `(1,0)` or `(0,1)` — treatment started in
+period 1 and stopped, or delayed to period 2](hyp:hd), [the when-to-treat
+local average treatment effect `τ_d` equals the Wald ratio of the observable
+mean contrast `obsMean(d) − obsMean(0,0)` to the observable compliance
+probability `obsProb(d,d)`](goal). -/
 theorem whenToTreat_wald (As : S.Assumptions) (d : Fin 2 → Bool)
     (hd : d = ![true, false] ∨ d = ![false, true]) :
     S.whenToTreatLATE d
@@ -433,9 +435,12 @@ Both ratio identifications carry over to the bundle conditional form via
 `historyBundle1.condExpRatio`, using `cOutcome_bridge` / `cCompliance_bridge`
 in place of the unconditional bridges. -/
 
-/-- **When-to-treat dynamic LATE Wald identity** (heterogeneous in `S₀`).
-
-`τ_d(S₀) =ᵐ (cObsMean(d; S₀) - cObsMean(0; S₀)) / cObsProb(d, d; S₀)`. -/
+/-- **When-to-treat dynamic LATE Wald identity** (heterogeneous in `S₀`). For
+[a treatment path `d` equal to `(1,0)` or `(0,1)`](hyp:hd), [the
+baseline-covariate-conditional when-to-treat effect `τ_d(S₀)` agrees almost
+surely with the ratio of the conditional observable-mean contrast
+`cObsMean(d;S₀) − cObsMean(0;S₀)` to the conditional observable compliance
+probability `cObsProb(d,d;S₀)`](goal). -/
 theorem cWhenToTreat_wald (As : S.Assumptions) (d : Fin 2 → Bool)
     (hd : d = ![true, false] ∨ d = ![false, true]) :
     S.cWhenToTreatLATE d =ᵐ[P.μ]

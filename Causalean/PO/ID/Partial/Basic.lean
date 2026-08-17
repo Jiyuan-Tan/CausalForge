@@ -60,11 +60,17 @@ theorem identifiedInterval_subset_Icc {L U : ℝ}
   rintro _ ⟨x, rfl⟩
   exact ⟨hL x.1 x.2, hU x.1 x.2⟩
 
-/-- **Sharp interval (order-connected form).**  Combining the outer bound with
-the two endpoints being attained and the identified set being order-connected,
-the identified set is exactly `[L, U]`.  Order-connectedness is the abstract
-substitute for "no gaps", supplied concretely by `identifiedInterval_param_Icc`
-through continuity + connectedness of a parameterization. -/
+/-- **Sharp interval (order-connected form).** For an abstract objective function over a
+feasible parameter set, suppose [the objective is bounded below by `L` on every feasible
+parameter](hyp:hL), [bounded above by `U` on every feasible parameter](hyp:hU), [the value
+`L` itself is attained by some feasible parameter](hyp:hLmem), [the value `U` itself is
+attained by some feasible parameter](hyp:hUmem), and [the set of attainable objective
+values is order-connected — it contains every real number between any two of its
+members](hyp:hconn). Then [the identified interval — the set of all objective values
+attainable over the feasible parameter set — equals the closed interval `[L, U]`
+exactly](goal). Order-connectedness is the abstract substitute for "no gaps", supplied
+concretely by `identifiedInterval_param_Icc` through continuity + connectedness of a
+parameterization. -/
 theorem identifiedInterval_eq_Icc {L U : ℝ}
     (hL : ∀ x, feasible x → L ≤ obj x) (hU : ∀ x, feasible x → obj x ≤ U)
     (hLmem : L ∈ IdentifiedInterval obj feasible)
@@ -73,13 +79,15 @@ theorem identifiedInterval_eq_Icc {L U : ℝ}
     IdentifiedInterval obj feasible = Set.Icc L U :=
   Set.Subset.antisymm (identifiedInterval_subset_Icc hL hU) (hconn.out hLmem hUmem)
 
-/-- **Mixing-pattern constructor.**  Suppose the feasible set is exactly the
-image of `[0, 1]` under a map `γ`, the objective composed with `γ` is continuous
-on `[0, 1]`, the endpoint values are `obj (γ 0) = L` and `obj (γ 1) = U`, and the
-objective stays in `[L, U]` along the path.  Then the sharp identified interval
-is exactly `[L, U]`.  This is the canonical partial-identification "mixing" shape:
-an unidentified nuisance ranging over a connected parameter set sweeps the
-objective continuously across the whole interval between its extreme values. -/
+/-- **Mixing-pattern constructor.** Suppose [the feasible parameter set is exactly the
+image of the unit interval `[0, 1]` under a path `γ`](hyp:hfeas), [the objective composed
+with `γ` is continuous on `[0, 1]`](hyp:hcont), [the objective value at the path's start
+equals `L`](hyp:hL), [the objective value at the path's end equals `U`](hyp:hU), and [the
+objective stays between `L` and `U` at every point along the path](hyp:hbound). Then [the
+sharp identified interval is exactly `[L, U]`](goal). This is the canonical
+partial-identification "mixing" shape: an unidentified nuisance ranging over a connected
+parameter set sweeps the objective continuously across the whole interval between its
+extreme values. -/
 theorem identifiedInterval_param_Icc {γ : ℝ → α} {L U : ℝ}
     (hfeas : ∀ x, feasible x ↔ ∃ t ∈ Set.Icc (0 : ℝ) 1, γ t = x)
     (hcont : ContinuousOn (fun t => obj (γ t)) (Set.Icc 0 1))

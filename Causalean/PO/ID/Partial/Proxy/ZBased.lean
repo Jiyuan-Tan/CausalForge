@@ -66,12 +66,20 @@ variable {P : POSystem}
 
 /-! ### Theorem 2: conditional-target envelope sandwich -/
 
-/-- **Theorem 2** (Ghassami-Shpitser-Tchetgen Tchetgen, arXiv 2304.04374).
-Under the Z-based assumption bundle, for `a ∈ {0, 1}`,
-  `E[Lenv(a, X) | A = ¬a] ≤ E[Y(a) | A = ¬a] ≤ E[Uenv(a, X) | A = ¬a]`,
-where the conditional expectation `E[· | A = ¬a]` is encoded as a normalised
-integral over `{A ≠ a}`. The sharp instance is
-`Lenv(a,x) = min_z E[Y|z,x,A=a]`, `Uenv(a,x) = max_z E[Y|z,x,A=a]`. -/
+/-- **Theorem 2** (Ghassami-Shpitser-Tchetgen Tchetgen, arXiv 2304.04374). Fix a
+treatment arm `a` and assume [the Z-based assumption bundle](hyp:HA) — consistency,
+latent exchangeability, the outcome-proxy independence condition `Y ⟂ Z ∣ (A, U, X)`,
+and the treatment-side bridge `q` — together with [the treatment and outcome variables
+being distinct](hyp:hAY); let `Lenv`, `Uenv` be [lower and upper envelope functions
+bounding the σ(A,Z,X)-conditional mean of the outcome on the on-arm
+stratum](hyp:hL,hU), assumed [integrable](hyp:hLInt,hUInt), with [the envelope weighted
+by the treatment-proxy bridge](hyp:hL_q,hU_q) and [the envelope weighted by the
+likelihood-ratio arm-swap factor](hyp:hL_L,hU_L) both integrable, and [the off-arm
+stratum of positive mass](hyp:hμpos). Then [the conditional target `E[Y(a) ∣ A ≠ a]` is
+sandwiched between the normalised `{A ≠ a}`-integrals of `Lenv(a,X)` and
+`Uenv(a,X)`](goal).
+
+The sharp instance is `Lenv(a,x) = min_z E[Y|z,x,A=a]`, `Uenv(a,x) = max_z E[Y|z,x,A=a]`. -/
 theorem condMeanYofA_Z_bounds
     (HA : POProximalSystem.ZBasedAssumptions S μ) (a : Bool)
     (hAY : S.Avar.v ≠ S.Yvar.v)
@@ -107,9 +115,15 @@ theorem condMeanYofA_Z_bounds
 
 /-! ### Corollary 2: marginal-target envelope sandwich -/
 
-/-- **Corollary 2** (Ghassami-Shpitser-Tchetgen Tchetgen, arXiv 2304.04374).
-Marginal version of Theorem 2:
-  `∫_{A=¬a} Lenv(a,X) dμ + ∫_{A=a} Y dμ ≤ E[Y(a)] ≤ ∫_{A=¬a} Uenv(a,X) dμ + ∫_{A=a} Y dμ`.
+/-- **Corollary 2** (Ghassami-Shpitser-Tchetgen Tchetgen, arXiv 2304.04374). Fix a
+treatment arm `a` and assume [the Z-based assumption bundle](hyp:HA), with [the
+treatment and outcome variables distinct](hyp:hAY); let `Lenv`, `Uenv` be [lower and
+upper envelope functions bounding the σ(A,Z,X)-conditional mean of the outcome on the
+on-arm stratum](hyp:hL,hU), assumed [integrable](hyp:hLInt,hUInt), with [the envelope
+weighted by the treatment-proxy bridge](hyp:hL_q,hU_q) and [the envelope weighted by the
+likelihood-ratio arm-swap factor](hyp:hL_L,hU_L) both integrable. Then [the marginal
+target `E[Y(a)]` is sandwiched between the `{A ≠ a}`-integral of `Lenv(a,X)` and of
+`Uenv(a,X)`, each plus the point-identified `{A = a}`-integral of `Y`](goal).
 
 Obtained from `condMeanYofA_Z_bounds` by `meanYofA_eq_strata`: the
 `{A = a}`-stratum integral is point-identified via consistency, so only the

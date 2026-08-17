@@ -187,8 +187,8 @@ theorem momFromCum_succ (c : ℕ → ℝ) (r : ℕ) (hr : 2 ≤ r) :
       intro k _ hk
       simp [hk]
 
-/-- **Correctness of the inversion.** Reading the cumulants back off the reconstructed moment
-sequence returns the prescribed cumulants, at every order at least two. -/
+/-- **Correctness of the inversion.** [Reading the cumulants back off the reconstructed moment
+sequence returns the prescribed cumulants](goal), at [every order `r` at least two](hyp:hr). -/
 theorem cumFromMom_momFromCum (c : ℕ → ℝ) (r : ℕ) (hr : 2 ≤ r) :
     cumFromMom r (momFromCum c) = c r := by
   rw [cumFromMom_eq r (by omega), momFromCum_succ c r hr]

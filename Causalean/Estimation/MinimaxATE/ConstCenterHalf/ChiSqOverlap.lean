@@ -75,7 +75,11 @@ theorem obsReal_perturbed_eq (hα : 0 ≤ α) (hβ : 0 ≤ β) (hαβ : α + 2 *
       field_simp
       try ring
 
-/-- The one-observation χ² second-moment overlap has the closed form used in the Ingster bound. -/
+/-- **Closed form of the one-observation χ² overlap.** For [nonnegative bump magnitudes α and β
+with `α + 2β ≤ 1/2`, the regime keeping every perturbed nuisance in `[0,1]`](hyp:hα,hβ,hαβ), and
+any two Rademacher sign vectors `lam`, `lam'` indexing perturbed laws, [the one-observation χ²
+second-moment overlap of the two perturbed laws relative to the null equals
+`1 + (2(α²+2αβ+3β²)/K)·Σⱼ signOf(lam j)·signOf(lam' j)`](goal). -/
 theorem chiSqOverlap_eq [NeZero K] (hα : 0 ≤ α) (hβ : 0 ≤ β) (hαβ : α + 2 * β ≤ 1 / 2)
     (lam lam' : Fin K → Bool) :
     chiSqOverlap α β lam lam'

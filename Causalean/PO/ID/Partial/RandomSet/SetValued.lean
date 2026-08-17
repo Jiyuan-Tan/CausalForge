@@ -121,10 +121,11 @@ theorem supportFn_finsetSum {ι : Type*} (s : Finset ι) (F : ι → Set E) (d :
 noncomputable def minkowskiMean {ι : Type*} (s : Finset ι) (F : ι → Set E) : Set E :=
   (s.card : ℝ)⁻¹ • (∑ i ∈ s, F i)
 
-/-- **Keystone — Minkowski-mean support bridge.**  The support function of an
-empirical Minkowski average is the arithmetic average of the support functions:
-`s(p, F̄ₙ) = (1/n) · ∑ᵢ s(p, Fᵢ)`.  This is the identity that turns the support
-process into an ordinary sample mean, so the multivariate CLT applies. -/
+/-- **Keystone — Minkowski-mean support bridge.** Given [a finite index set `s` all of whose
+values `F i` are bodies — nonempty, compact, convex subsets](hyp:h), [the support function of the
+empirical Minkowski average `(1/|s|) · ∑ᵢ Fᵢ` in a direction `d` equals the arithmetic average of
+the individual support functions: `s(d, F̄ₙ) = (1/|s|) · ∑ᵢ s(d, Fᵢ)`](goal). This is the identity
+that turns the support process into an ordinary sample mean, so the multivariate CLT applies. -/
 theorem supportFn_minkowskiMean {ι : Type*} (s : Finset ι) (F : ι → Set E) (d : E)
     (h : ∀ i ∈ s, IsBody (F i)) :
     supportFn (minkowskiMean s F) d

@@ -529,9 +529,11 @@ private theorem finite_l2_packing_card_le
     (64 / ε ^ 2) ^ (2 * (d + 1)) = (64 / ε ^ 2) ^ k := rfl
     _ ≤ ((16 / ε) ^ 4) ^ k := pow_le_pow_left₀ (by positivity) hbase k
     _ = (16 / ε) ^ (8 * (d + 1)) := by rw [← pow_mul]; congr 1; dsimp [k]; omega
-/-- Every uniformly bounded measurable class of pseudo-dimension at most `d`
-has a polynomial `L²(Q)` cover at envelope-relative radius `ε U`, uniformly
-over every probability measure `Q`. -/
+/-- **Polynomial `L²(Q)` covering number from a pseudo-dimension bound.** For [a family of
+measurable real-valued functions](hyp:hmeas) of [pseudo-dimension at most d](hyp:hpdim), [uniformly
+bounded by a positive envelope U](hyp:hU,henvelope), and [a relative radius ε strictly between 0
+and 1](hyp:hε,hε1), [the `L²(Q)` covering number at radius ε·U is at most `vcSubgraphCoverBound d
+ε`, uniformly over every probability measure Q on the domain](goal). -/
 theorem real_vcSubgraph_l2_covering
     [MeasurableSpace 𝒳] [Nonempty ι] (F : ι → 𝒳 → ℝ) (d : ℕ)
     (hmeas : ∀ i, Measurable (F i)) (hpdim : HasPseudoDimAtMost F d)

@@ -55,9 +55,12 @@ lemma integrable_tail_snd_prod (h : IsCoupling π μ ν) (hν : MemLp (fun y : �
       (coupling_snd_memLp h hν).integrable h12
     simpa [Real.norm_eq_abs, integral_abs_signedTail] using hInt.norm
 
-/-- **The key integrability.** The product tail kernel
-`Φ q p = signedTail p.1 q.1 * signedTail p.2 q.2` is integrable on
-`(volume ⊗ volume) ⊗ π`. Domination: for fixed `p`,
+/-- **The key integrability.** Let [`π` be a coupling of `μ` and `ν`](hyp:h), where
+[both marginals have finite second moment](hyp:hμ,hν). Then [the product tail kernel
+`Φ q p = signedTail p.1 q.1 * signedTail p.2 q.2` is integrable for the product of
+Lebesgue measure on the plane with `π`, i.e. on `(volume ⊗ volume) ⊗ π`](goal).
+
+Domination: for fixed `p`,
 `∫ q, ‖Φ q p‖ dq = |p.1| * |p.2|` (`integral_norm_signedTail_prod`), and
 `p ↦ |p.1| * |p.2|` is `π`-integrable by Cauchy–Schwarz on the `L²` marginals.
 Formally: apply `MeasureTheory.integrable_prod_iff'` with the joint measurability
@@ -85,9 +88,12 @@ lemma integrable_bigPhi (h : IsCoupling π μ ν)
       symm
       simpa [Real.norm_eq_abs, abs_mul] using integral_norm_signedTail_prod y.1 y.2)
 
-/-- **First swap.** `E_π[XY]` is the Lebesgue double integral of the fibre
-integrals: `∫ p, p.1 * p.2 ∂π = ∫ q, (∫ p, Φ q p ∂π) dq`. Immediate from
-`integral_signedTail_prod` (pointwise in `p`) followed by
+/-- **First swap.** For [a coupling `π` of `μ` and `ν`](hyp:h), where [both marginals have
+finite second moment](hyp:hμ,hν), [the expectation `E_π[XY]` equals the Lebesgue double
+integral, over the plane, of the fibre integrals `∫ p, Φ q p ∂π`](goal), i.e.
+`∫ p, p.1 * p.2 ∂π = ∫ q, (∫ p, Φ q p ∂π) dq`.
+
+Immediate from `integral_signedTail_prod` (pointwise in `p`) followed by
 `MeasureTheory.integral_integral_swap` applied to `integrable_bigPhi`. -/
 lemma integral_prod_eq_integral_fiber (h : IsCoupling π μ ν)
     (hμ : MemLp (fun x : ℝ => x) 2 μ) (hν : MemLp (fun y : ℝ => y) 2 ν) :

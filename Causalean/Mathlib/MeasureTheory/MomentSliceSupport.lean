@@ -174,9 +174,12 @@ theorem discreteMeasure_midpoint {α : Type*} [MeasurableSpace α]
 
 /-! ### Headline -/
 
-/-- **Richter–Rogosinski support bound (finite-atom case).** If a probability measure
-`μ = ∑_{x∈T} w x · δ_x` with strictly positive weights lies in the moment slice and is an
-extreme point of it, then it has at most three atoms. -/
+/-- **Richter–Rogosinski support bound (finite-atom case).** Consider the discrete probability
+measure `μ = ∑_{x∈T} w x · δ_x` carried by a finite set `T ⊆ ℝ`. If [every atom weight `w x`
+is strictly positive for `x ∈ T`](hyp:hpos), [every atom lies in the interval `[a, b]`](hyp:hTab),
+and [`μ` is an extreme point of the moment slice — the probability measures on `[a, b]` with
+mean `0` and second moment `s`](hyp:hext), then [`T` has at most three elements: `μ` is
+supported on at most three atoms](goal). -/
 theorem card_le_three_of_isExtremePoint {a b s : ℝ} {T : Finset ℝ} {w : ℝ → ℝ}
     (hpos : ∀ x ∈ T, 0 < w x) (hTab : ∀ x ∈ T, x ∈ Set.Icc a b)
     (hext : IsExtremePoint (MomentSlice a b s) (discreteMeasure T w)) :

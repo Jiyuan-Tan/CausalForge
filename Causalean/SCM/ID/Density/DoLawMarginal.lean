@@ -25,12 +25,12 @@ open scoped MeasureTheory ProbabilityTheory
 variable {N : Type*} [DecidableEq N] [Fintype N]
 variable {Ω : N → Type*} [∀ n, MeasurableSpace (Ω n)]
 
-/-- **Cross-model density transport.** If two structural causal models `M₁` and
-`M₂` share the same SWIG graph and have heterogeneously-equal observational
-kernels, then their observational densities are heterogeneously equal.  After
-unifying the SWIG-graph data the observed-value types coincide, the observational
-kernels become literally equal, and the density is the Radon–Nikodym derivative of
-that kernel against a fixed reference measure. -/
+/-- **Cross-model density transport.** If [two structural causal models `M₁` and
+`M₂` share the same SWIG graph](hyp:hsg) and [have heterogeneously-equal observational
+kernels](hyp:hobs), then [their observational densities are heterogeneously
+equal](goal).  After unifying the SWIG-graph data the observed-value types coincide, the
+observational kernels become literally equal, and the density is the Radon–Nikodym
+derivative of that kernel against a fixed reference measure. -/
 lemma obsDensity_heq_of_obsKernel_heq
     (M₁ M₂ : Causalean.SCM N Ω) (ref : ReferenceMeasures Ω)
     (hsg : M₁.toSWIGGraph = M₂.toSWIGGraph)
@@ -50,15 +50,16 @@ lemma obsDensity_heq_of_obsKernel_heq
   unfold obsDensity
   rw [hk]
 
-/-- **Cross-model law transport (converse).** If two dominated structural causal
-models `M₁` and `M₂` share the same SWIG graph and have heterogeneously-equal
-observational densities, then their observational kernels are heterogeneously
-equal.  After unifying the SWIG-graph data the observed-value types coincide and
-the densities become literally equal; weighting the common joint reference by that
-density recovers each observational law (`withDensity_obsDensity_eq`), so the two
-laws agree.  This is the converse of `obsDensity_heq_of_obsKernel_heq`: under
-dominance, equal density and equal law are interchangeable, letting the
-kernel-level identification tools be driven from a density hypothesis. -/
+/-- **Cross-model law transport (converse).** If [two structural causal models `M₁` and
+`M₂` are each dominated by the same reference measure](hyp:hdom₁,hdom₂), [share the same
+SWIG graph](hyp:hsg), and have [heterogeneously-equal observational densities](hyp:hden),
+then [their observational kernels are heterogeneously equal](goal).  After unifying the
+SWIG-graph data the observed-value types coincide and the densities become literally
+equal; weighting the common joint reference by that density recovers each observational
+law (`withDensity_obsDensity_eq`), so the two laws agree.  This is the converse of
+`obsDensity_heq_of_obsKernel_heq`: under dominance, equal density and equal law are
+interchangeable, letting the kernel-level identification tools be driven from a density
+hypothesis. -/
 lemma obsKernel_heq_of_obsDensity_heq
     (M₁ M₂ : Causalean.SCM N Ω) (ref : ReferenceMeasures Ω)
     (hsg : M₁.toSWIGGraph = M₂.toSWIGGraph)

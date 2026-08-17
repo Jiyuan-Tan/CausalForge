@@ -34,7 +34,9 @@ def coinDesign (p : ℝ) (hp0 : 0 ≤ p) (hp1 : p ≤ 1) : FiniteDesign Bool whe
     change p + (1 - p) = 1
     ring
 
-/-- The expectation of a function of a single coin is its probability-weighted two-point sum. -/
+/-- For [a probability `p` lying in `[0,1]`](hyp:hp0,hp1), [the expectation of a real-valued
+function `g` of a single coin flip that lands heads with probability `p` equals the
+probability-weighted two-point sum `p · g(true) + (1 − p) · g(false)`](goal). -/
 lemma coinDesign_E (p : ℝ) (hp0 : 0 ≤ p) (hp1 : p ≤ 1) (g : Bool → ℝ) :
     (coinDesign p hp0 hp1).E g = p * g true + (1 - p) * g false := by
   simp only [FiniteDesign.E, coinDesign, Fintype.sum_bool, cond_true, cond_false]

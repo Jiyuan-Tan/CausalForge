@@ -316,11 +316,11 @@ private theorem walk_forward_witness
           exact G.walk_right_witness hZsub hyS hp hlast i hi_succ
             (by simpa [hm_def, hr_def] using hmr)
 
-/-- **Active-path nodes lie in the ancestral set.**
-
-    For any active path `p` from `x ∈ X` to `y ∈ Y` given `Z`, every node on
-    `p` is in `ancestralSet (X ∪ Y ∪ Z)`. This is the main classical lemma
-    used to justify ancestral reduction of d-separation.
+/-- **Active-path nodes lie in the ancestral set.** For finite vertex sets `X`, `Y`, `Z`, consider
+[a path `p` that is active given `Z`](hyp:hp) [running from a node `x` in `X`](hyp:hxX,hhead) to
+[a node `y` in `Y`](hyp:hyY,hlast). Then [every vertex on `p` lies in the ancestral set of
+`X ∪ Y ∪ Z`](goal). This is the main classical lemma used to justify ancestral reduction of
+d-separation.
 
     The per-index witness is supplied by `walk_forward_witness`. -/
 theorem activePath_nodes_are_ancestors
@@ -727,10 +727,10 @@ theorem fork_isActivePath
           apply hyp_Z
           exact List.get_mem _ _
 
-/-- **Ancestral intersection from reachability separation.** If `X` and `Y` are
-    disjoint and no vertex in `Y` is Bayes-Ball-reachable from `X` given `Z`, then any common
-    member of the ancestral closures of `X` and `Y` lies in the ancestral
-    closure of `Z`. -/
+/-- **Ancestral intersection from reachability separation.** If [`X` and `Y` are
+    disjoint](hyp:hXY) and [no vertex of `Y` is Bayes-Ball-reachable from `X` given
+    `Z`](hyp:hReach), then [any vertex lying in both the ancestral closure of `X` and the
+    ancestral closure of `Y` also lies in the ancestral closure of `Z`](goal). -/
 theorem ancestralSet_inter_subset_ancestralSet_of_dSep
     {X Y Z : Finset V} (hXY : Disjoint X Y)
     (hReach : Disjoint (G.bbReachableVertices Z X) Y) :

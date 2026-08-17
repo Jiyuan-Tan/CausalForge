@@ -63,11 +63,14 @@ theorem integral_uStatistic_eq_zero (S : IIDSample Ω X μ P) (hg : DegenKernel 
   rw [integral_const_mul] at h
   exact (mul_eq_zero.mp h).resolve_left hsqrt
 
-/-- **Exact variance of the degenerate order-2 U-statistic.**
-For a symmetric, square-integrable, doubly-degenerate kernel `g` and `n ≥ 2`, the order-2
-U-statistic has variance `Var[Uₙ] = 2ζ / (n(n−1))`, where `ζ = ∬ g² dP dP`.  This is the
-Hoeffding rank-2 variance: the off-diagonal sum contributes `2·|offDiag|·ζ`, rescaled by
-`(n(n−1))⁻²`. -/
+/-- **Exact variance of the degenerate order-2 U-statistic.** For an i.i.d. sample `S`, if
+[the kernel `g` is symmetric, square-integrable, and doubly degenerate — its conditional
+expectation given either argument vanishes](hyp:hg) — and [the sample size `n` is at least
+`2`](hyp:hn), then [the order-2 U-statistic built from `g` on `n` observations has
+variance `Var[Uₙ] = 2ζ / (n(n−1))`, where `ζ = ∬ g² dP dP`](goal).
+
+This is the Hoeffding rank-2 variance: the off-diagonal sum contributes `2·|offDiag|·ζ`,
+rescaled by `(n(n−1))⁻²`. -/
 theorem degenerate_uStatistic_variance (S : IIDSample Ω X μ P) (hg : DegenKernel P g)
     {n : ℕ} (hn : 2 ≤ n) :
     variance (uStatistic S g n) μ
@@ -93,11 +96,13 @@ theorem degenerate_uStatistic_variance (S : IIDSample Ω X μ P) (hg : DegenKern
   simp only [ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, sub_zero]
   exact hsq
 
-/-- **HOIF degenerate U-statistic variance bound `O(J/(nh)²)`.**
-If the localized, `J`-dimensional projection kernel `g` has L²-energy bounded by `ζ ≤ C·J/h²`
-(the trace bound), then the degenerate order-2 U-statistic's variance satisfies
-
-  `Var[Uₙ] ≤ 4C·J / (nh)²`.
+/-- **HOIF degenerate U-statistic variance bound `O(J/(nh)²)`.** For an i.i.d. sample `S`,
+if [the kernel `g` is symmetric, square-integrable, and doubly degenerate](hyp:hg), [the
+sample size `n` is at least `2`](hyp:hn), [the bandwidth `h` is positive](hyp:hh), [the
+projection dimension `J` is nonnegative](hyp:hJ), [the trace constant `C` is
+nonnegative](hyp:hC), and [the localized, `J`-dimensional projection kernel `g` has
+L²-energy `ζ = ∬ g² dP dP` bounded by `C·J/h²`](hyp:hzeta), then [the degenerate order-2
+U-statistic's variance satisfies `Var[Uₙ] ≤ 4C·J / (nh)²`](goal).
 
 This is the `O(J/(nh)²)` stochastic term of the HOIF projection-risk decomposition. -/
 theorem degenerate_uStatistic_variance_le (S : IIDSample Ω X μ P) (hg : DegenKernel P g)

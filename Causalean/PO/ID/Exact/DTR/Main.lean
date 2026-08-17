@@ -93,9 +93,10 @@ theorem cdtr_iter [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
     simp only [heq2]
     convert hStep using 2
 
-/-- **General-`n` CDTR backdoor identification.**  The σ(historyBundle 0)-
-conditional mean of `Y(dbar)` equals the outermost iterated-CE functional
-`innerReg dbar (n - 1)`. -/
+/-- **General-`n` CDTR backdoor identification.** Under [the
+dynamic-treatment-regime identification assumptions](hyp:hA), for [a positive
+horizon `n`](hyp:hn), [the σ(historyBundle 0)-conditional mean of `Y(dbar)`
+equals the outermost iterated-CE functional `innerReg dbar (n - 1)`](goal). -/
 theorem cdtr_backdoor [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
     (S : PODTRSystem P n δ γ) (hA : S.Assumptions) (dbar : Fin n → δ)
     (hn : 0 < n) :
@@ -116,9 +117,10 @@ theorem cdtr_backdoor [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
   simp only [mul_one, one_mul] at hω
   exact hω.symm
 
-/-- **General-`n` integrated DTR backdoor identification.**  The mean
-potential outcome `E[Y(dbar)]` equals the integral of the outermost adjusted
-functional `innerReg dbar (n - 1)`. -/
+/-- **General-`n` integrated DTR backdoor identification.** Under [the
+dynamic-treatment-regime identification assumptions](hyp:hA), for [a positive
+horizon `n`](hyp:hn), [the mean potential outcome `E[Y(dbar)]` equals the
+integral of the outermost adjusted functional `innerReg dbar (n - 1)`](goal). -/
 theorem dtr_backdoor [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
     (S : PODTRSystem P n δ γ) (hA : S.Assumptions) (dbar : Fin n → δ)
     (hn : 0 < n) :

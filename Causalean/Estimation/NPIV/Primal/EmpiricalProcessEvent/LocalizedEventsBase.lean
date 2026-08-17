@@ -58,8 +58,17 @@ lemma integral_comp_law_W
   rw [← hlaw]
   exact MeasureTheory.integral_map S.meas_W.aemeasurable hg.aestronglyMeasurable
 
-/-- Ω-side Foster--Syrgkanis sharp localized event for a single NPIV
-`LocalizedRegimeBundle`.
+/-- **Ω-side Foster–Syrgkanis sharp localized event for a single NPIV
+`LocalizedRegimeBundle`.** Consider an IID sample drawn from a probability space, where
+[the pushforward of the ambient measure under the observed-variable map equals the stated
+observation law $P_W$](hyp:h_law_W) and [the sample size n is positive](hyp:hn). Fix a
+confidence parameter ζ with [$0 < ζ ≤ 1$](hyp:hζ_pos,hζ_le), a localized rate $δ_n$ with
+[$δ_n > 0$](hyp:hδn_pos), and a radius `Rmax` with [`δ_n ≤ Rmax`](hyp:hRmax_lb). If
+[for every dyadic level K with `Rmax ≤ δ_n · 2 ^ K`, the corresponding complexity term stays
+below `δ_n ^ 2`](hyp:hslack), then [there is an event of probability at least `1 - ζ` on
+which, for every index in the regime bundle whose function norm is at most `Rmax`, the
+empirical average of that function over the first n sample draws deviates from its
+population mean by at most `8 * δ_n * norm + 5 * δ_n ^ 2`](goal).
 
 This is the NPIV-facing wrapper around
 `localized_uniform_deviation_sharp`: it transports the product-space event

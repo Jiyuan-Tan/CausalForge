@@ -119,8 +119,12 @@ theorem oneSidedLimit_eq_right
         (𝓝 L) := h_f.congr' h_eq
   exact tendsto_nhds_unique h_f' h_g
 
-/-- **Left-side limit identification.**  Symmetric form of
-`oneSidedLimit_eq_right`. -/
+/-- **Left-side limit identification.** Symmetric form of `oneSidedLimit_eq_right`. If
+[a real-valued function `f` agrees with a reference function `g` almost everywhere, with
+respect to a measure `π`, on the half-line to the left of the cutoff `c`](hyp:h_aeEq),
+[`g` is continuous at `c`](hyp:hg_cont), and [every open interval immediately to the left
+of `c` has positive `π`-measure](hyp:h_support), then [any left-hand limit `L` of `f`
+at `c`](hyp:hL) [must equal `g` evaluated at `c`](goal). -/
 theorem oneSidedLimit_eq_left
     (h_aeEq : f =ᵐ[π.restrict (Set.Iio c)] g)
     (hg_cont : ContinuousAt g c)

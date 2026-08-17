@@ -36,12 +36,13 @@ open MeasureTheory ProbabilityTheory
 open scoped BigOperators ENNReal
 
 /-- **Matrix-inverse concentration of the random design moment matrix.** Let `g j k : Ω → ℝ` be
-the per-entry design statistics, so the empirical moment matrix is
-`M(ω) = fun j k => ∑ᵢ g j k (ωᵢ)` and its expectation is the population matrix
-`S = fun j k => N·𝔼[g j k]`. If `S` is invertible with inverse row sums bounded by `c ≥ 0` and the
-scale satisfies `c·(p+1)·η ≤ 1/2`, then the event on which `M` fails to be invertible *or* its
-leverage `(M⁻¹)₀₀` is farther than `2 c² (p+1) η` from `(S⁻¹)₀₀` has probability at most the
-union-bound tail `∑_{j,k} N·Var[g j k]/η²`. This is the high-probability statement that the
+[the per-entry design statistics, each square-integrable under μ](hyp:hg), so the empirical moment
+matrix is `M(ω) = fun j k => ∑ᵢ g j k (ωᵢ)` and, given that [the population matrix S equals N times
+its entrywise expectation, `S j k = N·𝔼[g j k]`](hyp:hSpop), suppose [S is invertible](hyp:hS) [with
+inverse row sums bounded by `c ≥ 0`](hyp:hSrow), [η is positive](hyp:hη), and [the scale satisfies
+`c·(p+1)·η ≤ 1/2`](hyp:hsmall). Then [the event on which M fails to be invertible *or* its leverage
+`(M⁻¹)₀₀` is farther than `2 c² (p+1) η` from `(S⁻¹)₀₀` has probability at most the union-bound
+tail `∑_{j,k} N·Var[g j k]/η²`](goal). This is the high-probability statement that the
 random design is non-degenerate with `O(1/(Nh))` leverage on the good event. -/
 theorem designMatrix_inv_concentration {N p : ℕ} {Ω : Type*} [MeasurableSpace Ω]
     (μ : Measure Ω) [IsProbabilityMeasure μ]

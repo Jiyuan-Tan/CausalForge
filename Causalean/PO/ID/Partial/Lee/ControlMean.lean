@@ -47,7 +47,12 @@ variable {P : POSystem} (S : POLeeSystem P)
 
 /-! ### Step A. Selected-control identification of `m₀`. -/
 
-/-- `m₀ = E[Y(0) | alwaysSelected]`. -/
+/-- Under [the baseline Lee assumptions (consistency and pair-level random assignment of the
+factual treatment to each `(Y(a), Sel(a))`)](hyp:hA) together with [monotone sample selection,
+`Sel(0) ≤ Sel(1)` almost surely](hyp:hMono), [the observable selected-control mean
+`m₀ = E[Y | A = false, Sel = true]` equals the latent conditional mean `E[Y(0) | alwaysSelected]`
+of the control potential outcome among units who would be selected under either treatment
+arm](goal). -/
 lemma m0_eq_eventCondExp_Y0_alwaysSelected
     (hA : S.BaseAssumptions) (hMono : S.MonotoneSelection) :
     S.m0 = eventCondExp P.μ S.alwaysSelected (S.YofA false) := by

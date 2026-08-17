@@ -191,8 +191,12 @@ noncomputable def π_val (S : TreatedEstimationSystem P γ) : ℝ :=
 noncomputable def θ₀ (S : TreatedEstimationSystem P γ) : ℝ :=
   S.toPOBackdoorSystem.adjustedATT
 
-/-- The value-space estimand agrees with the PO-level ATT under the back-door
-ATT assumptions.  Direct restatement of `POBackdoorSystem.ATT_eq_adjustedATT`. -/
+/-- **Value-space estimand equals the potential-outcome ATT.** Under [the one-sided
+back-door ATT assumptions](hyp:hA), [the value-space ATT estimand `θ₀` (the adjusted
+control-regression functional) coincides with the average treatment effect on the
+treated defined on potential outcomes](goal).
+
+Direct restatement of `POBackdoorSystem.ATT_eq_adjustedATT`. -/
 theorem θ₀_eq_ATT (S : TreatedEstimationSystem P γ)
     (hA : S.toPOBackdoorSystem.ATTAssumptions) :
     S.θ₀ = S.toPOBackdoorSystem.ATT := by

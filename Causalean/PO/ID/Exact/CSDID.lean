@@ -420,7 +420,14 @@ private lemma factualY_eq_YofNT_on_NT
 
 /-! ### Main identification theorem -- prop:po-cs-did-att -/
 
-/-- Callaway--Sant'Anna group-time DID identification of `ATT(g, t)`.
+/-- Callaway--Sant'Anna group-time DID identification of `ATT(g, t)`. Under
+[the group-time assumptions — consistency, no-anticipation, and group-time
+parallel trends](hyp:hA), for [a treatment cohort `g` that starts treatment
+no earlier than period 1](hyp:hg) and [a calendar period `t` no earlier than
+`g`](hyp:hgt), [the group-time average treatment effect on the treated equals
+the difference between the cohort-`g` mean outcome change from the period
+before `g` to period `t` and the corresponding mean outcome change for the
+never-treated group](goal):
 
     ATT(g, t) = E[Y_t − Y_{g−1} | G_g] − E[Y_t − Y_{g−1} | C].
 

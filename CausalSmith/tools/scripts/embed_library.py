@@ -39,8 +39,42 @@ def humanize(name: str) -> str:
     return parts.strip()
 
 
+def strip_nl_crosslinks(s):
+    # NL↔Lean crosslink markup — `[phrase](hyp:name[,name…])` / `[phrase](goal)`
+    # — is a site-only rendering concern; embed the phrase text alone so
+    # annotating a docstring does not perturb its embedding. Walks BACK from
+    # each closer to the matching `[` counting nesting, so a phrase may itself
+    # contain balanced brackets. Mirrors src/shared/nl_crosslinks.ts.
+    # Brackets inside code/math spans are content, not structure — neutralize
+    # them in a same-length masked copy, scan that, slice the original.
+    masked = re.sub(
+        r"`[^`\n]+`|\$[^$\n]+\$",
+        lambda m: m.group(0).replace("[", "•").replace("]", "•"),
+        s,
+    )
+    out, plain_start = [], 0
+    for m in re.finditer(r"\]\((?:hyp:[^()\s]+|goal)\)", masked):
+        depth, opener = 0, -1
+        for i in range(m.start() - 1, plain_start - 1, -1):
+            c = masked[i]
+            if c == "]":
+                depth += 1
+            elif c == "[":
+                if depth == 0:
+                    opener = i
+                    break
+                depth -= 1
+        if opener < 0:
+            continue
+        out.append(s[plain_start:opener])
+        out.append(s[opener + 1:m.start()])
+        plain_start = m.end()
+    out.append(s[plain_start:])
+    return "".join(out)
+
+
 def first_para(doc):
-    return (doc or "").split("\n\n")[0].strip()
+    return strip_nl_crosslinks((doc or "").split("\n\n")[0]).strip()
 
 
 def nl_text(e, _ctx):

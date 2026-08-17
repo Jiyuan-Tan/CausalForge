@@ -43,8 +43,15 @@ theorem isERMP_to_extensional {ι Θ X Y : Type*} [Fintype ι] [Nonempty ι]
     rintro g ⟨θ, hθ, rfl⟩
     simpa [empiricalRiskP] using (isMinOn_iff.mp h.isMin) θ hθ
 
-/-- A parametric population-risk minimizer pushes forward to an extensional
-population-risk minimizer over the realized hypothesis class. -/
+/-- **Population-target pushforward.** For a predictor `M` with loss `loss` and
+population law `P`, suppose [every admissible parameter's prediction function is
+measurable](hyp:hmeas), [the parameter `θhat` is itself admissible](hyp:hmem),
+[every admissible parameter attains finite population risk](hyp:hfinite), and
+[`θhat` minimizes the population risk over the admissible parameter set](hyp:h).
+Then [the predictor `M.predict θhat` is a population-risk minimizer over the
+hypothesis class realized by `M`'s image](goal): a parametric population-risk
+minimizer pushes forward to an extensional minimizer over the realized function
+class. -/
 theorem populationTarget_pushforward {Θ X Y : Type*}
     [MeasurableSpace X] [MeasurableSpace Y]
     (M : Predictor Θ X Y) (loss : Loss Y) (P : Measure (X × Y))

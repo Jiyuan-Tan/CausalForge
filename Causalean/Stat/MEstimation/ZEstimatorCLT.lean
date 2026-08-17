@@ -60,11 +60,13 @@ variable {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
   {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
     [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
 
-/-- **Z-estimator asymptotic linearity.**  An estimator that solves the
-empirical estimating equation, is consistent at the target parameter, has
-root-sample-size stochastic order, and satisfies the stated local
-empirical-process condition admits the influence-function representation
-obtained by applying the negative inverse Jacobian to the target score.
+/-- **Z-estimator asymptotic linearity.**  An estimator sequence that
+[solves the empirical estimating equation eventually, almost surely](hyp:hMoment),
+[is consistent at the target parameter](hyp:hConsistent), [converges to the target at the
+parametric $\sqrt n$-rate](hyp:hRate), and whose score process
+[is stochastically equicontinuous at the target parameter along the estimator
+sequence](hyp:hStochEquicont), admits [the influence-function representation obtained by applying
+the negative inverse Jacobian to the target score](goal).
 
 More concretely, this applies to a sequence of estimators that
 

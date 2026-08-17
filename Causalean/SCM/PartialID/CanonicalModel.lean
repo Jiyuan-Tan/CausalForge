@@ -48,15 +48,18 @@ def CompatibleSCM (G : SWIGGraph N) (As : Causalean.SCM N Ω → Prop)
     (M₀ : Causalean.SCM N Ω) : Causalean.SCM N Ω → Prop :=
   fun M => M.toSWIGGraph = G ∧ As M ∧ Causalean.SCM.ID.obsEquiv M M₀
 
-/-- The reference model itself belongs to its compatible class, provided it has the declared
-graph and satisfies the structural assumptions. -/
+/-- For any graph `G`, structural-assumption predicate `As`, and reference model `M₀`, if [`M₀`'s
+own SWIG graph is `G`](hyp:hG) and [`M₀` satisfies the structural assumptions `As`](hyp:hAs),
+then [`M₀` belongs to its own compatible class `CompatibleSCM G As M₀`](goal). -/
 theorem compatibleSCM_self (G : SWIGGraph N) (As : Causalean.SCM N Ω → Prop)
     (M₀ : Causalean.SCM N Ω) (hG : M₀.toSWIGGraph = G) (hAs : As M₀) :
     CompatibleSCM G As M₀ M₀ :=
   ⟨hG, hAs, HEq.rfl⟩
 
-/-- Strengthening the structural assumptions can only shrink the compatible class:
-if `As'` implies `As`, every `As'`-compatible model is `As`-compatible. -/
+/-- If [the structural-assumption predicate `As'` is stronger than `As`, i.e. every model
+satisfying `As'` also satisfies `As`](hyp:h), then [every model compatible with the reference
+model `M₀` under the stricter assumptions `As'` is also compatible under the weaker assumptions
+`As`](goal) — strengthening the structural assumptions can only shrink the compatible class. -/
 theorem compatibleSCM_mono {G : SWIGGraph N} {As As' : Causalean.SCM N Ω → Prop}
     {M₀ : Causalean.SCM N Ω} (h : ∀ M, As' M → As M) :
     ∀ M, CompatibleSCM G As' M₀ M → CompatibleSCM G As M₀ M :=

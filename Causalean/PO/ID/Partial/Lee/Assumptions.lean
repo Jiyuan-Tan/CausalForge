@@ -89,9 +89,11 @@ lemma integrable_YofA (hA : S.BaseAssumptions) (a : Bool) :
   · exact hA.integrableY0
   · exact hA.integrableY1
 
-/-- The factual outcome `Y` is integrable.  Derived from arm integrability via
-consistency (`factualY = Σ_a Y(a)·1{A=a}` a.e.), so it need not be assumed
-separately. -/
+/-- Under [the baseline Lee sample-selection assumptions — consistency, pair-level random
+assignment, positive and finite selected cells, and integrability of both potential outcomes
+`Y(0)`, `Y(1)`](hyp:hA), [the factual outcome `Y` is integrable](goal), obtained from the arm
+integrability of `Y(0)`, `Y(1)` via consistency (`factualY = Σ_a Y(a)·1{A=a}` a.e.), so it need
+not be assumed separately. -/
 lemma integrableY (hA : S.BaseAssumptions) :
     Integrable S.factualY P.μ := by
   have hY1_ind :

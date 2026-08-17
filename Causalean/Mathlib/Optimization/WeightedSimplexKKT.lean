@@ -91,7 +91,14 @@ lemma activeSetPoint_normSq (hβ : ∀ i ∈ S, 0 < β i) (hS : S.Nonempty)
           rw [hsq]
           ring
 
-/-- Objective value of the active-set point is the closed form `M·λ`. Multiplying
+/-- **Objective value of the active-set point.** For [a nonnegative total mass
+M](hyp:hM), [positive weights on the support S](hyp:hβ), [a positive SOCP scale
+κ](hyp:hk), [a nonempty support S](hyp:hS), [strict activity $\lambda > \alpha_i$ on
+S](hyp:hactive), and [the admissibility identity
+$\sum_{i\in S}(\lambda-\alpha_i)^2/\beta_i=\kappa^2$](hyp:hsq), [the objective `wsObj`
+evaluated at the induced active-set point equals the closed form $M\lambda$](goal).
+
+Multiplying
 active stationarity `(λ−αᵢ) = κ βᵢ tᵢ / N` by `tᵢ` and summing gives
 `Σ αᵢ tᵢ + κ N = λ Σ tᵢ = M λ`. -/
 lemma activeSetPoint_value (hM : 0 ≤ M) (hβ : ∀ i ∈ S, 0 < β i) (hk : 0 < kappa)
@@ -146,8 +153,12 @@ lemma activeSetPoint_value (hM : 0 ≤ M) (hβ : ∀ i ∈ S, 0 < β i) (hk : 0 
           field_simp [hD]
           ring
 
-/-- **Strict minimality of the active-set point (κ > 0).** For every other simplex
-point `s` the objective is strictly larger.
+/-- **Strict minimality of the active-set point (κ > 0).** For [a positive total mass
+M](hyp:hM), [positive coordinate weights β](hyp:hβ), [a positive SOCP scale κ](hyp:hk),
+and [a KKT-admissible support/multiplier pair (S, λ)](hyp:hadm), [every other point of
+the simplex $\{t \ge 0 : \sum t_i = M\}$ has strictly larger objective value than the
+induced active-set point](goal).
+
 Proof plan (writing `t⋆ = activeSetPoint M α β S lam`, `N = √(Σ βᵢ t⋆ᵢ²) = Mκ/D > 0`):
 * `wsObj s − wsObj t⋆ = Σ αᵢ(sᵢ − t⋆ᵢ) + κ(N(s) − N)`.
 * Strict Cauchy–Schwarz (`weighted_cs_simplex_strict`, using `s ≠ t⋆`, `Σsᵢ = Σt⋆ᵢ = M`):

@@ -128,9 +128,12 @@ theorem valuesUnionMk_projection_comp
   · simp [valuesUnionMk, valuesProjection, hiA]
   · simp [valuesUnionMk, valuesProjection, hiA]
 
-/-- Weak union for `CondIndepFun` specialized to finite-product coordinate projections.
-
-Given `X ⊥ (Y ∪ W) | Z`, infer `X ⊥ Y | (Z ∪ W)`. -/
+/-- **Weak union for coordinate projections.** Let `X`, `Y`, `W`, `Z` be subsets of a finite
+    index set `I`, with [X](hyp:hX), [the union of Y and W](hyp:hYW), and [the union of Z and
+    W](hyp:hZW) all contained in `I`, and let μ be a finite measure on the finite-product value
+    space indexed by `I`. If [X is conditionally independent of the union of Y and W given
+    Z](hyp:h), then [X is conditionally independent of Y given the union of Z and W](goal),
+    where independence is always of the corresponding coordinate projections under μ. -/
 theorem condIndep_valuesProjection_weak_union
     {M : Type uM} [DecidableEq M]
     {I X Y W Z : Finset M}
@@ -200,9 +203,13 @@ theorem condIndep_valuesProjection_weak_union
     comap_valuesProjection_union_eq_sup (Ω' := Ω) hZ hW
   simpa [hσ] using hweak
 
-/-- Contraction for `CondIndepFun` specialized to finite-product coordinate projections.
-
-If `X ⊥ Y | (Z ∪ W)` and `X ⊥ W | Z`, then `X ⊥ (Y ∪ W) | Z`. -/
+/-- **Contraction for coordinate projections.** Let `X`, `Y`, `W`, `Z` be subsets of a common
+    finite index set `I`, with [X](hyp:hX), [Y](hyp:hY), [W](hyp:hW), and [Z](hyp:hZ) all
+    contained in `I`, and let μ be a finite measure on the resulting finite-product value space
+    indexed by `I`. If [X is conditionally independent of Y given the union of Z and
+    W](hyp:h1) and [X is conditionally independent of W given Z](hyp:h2), then [X is
+    conditionally independent of the union of Y and W given Z](goal), where independence is
+    always of the corresponding coordinate projections under μ. -/
 theorem condIndep_valuesProjection_contraction
     {M : Type uM} [DecidableEq M]
     {I X Y W Z : Finset M}

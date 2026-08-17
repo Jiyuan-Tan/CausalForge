@@ -105,7 +105,10 @@ lemma ordered_telescope_indicator {J : ℕ} (f : Fin (J + 1) → ℝ)
       simp [F, marginIncrement, lowerLevel, upperLevel, crossingIndicator_eq_ite_val,
         hxJ, hxleJ]
 
-/-- Ordered telescoping for the identity intensity map. -/
+/-- **Ordered telescoping for the identity intensity map.** For [an ordered treatment
+level `a` no larger than `b`](hyp:hab) among `J + 1` ordered intensity levels, [the numeric
+gap `b − a` equals the number of unit margins `j → j+1` that the movement from `a` to `b`
+crosses](goal). -/
 lemma ordered_telescope_identity {J : ℕ} {a b : Fin (J + 1)} (hab : a ≤ b) :
     intensityValue b - intensityValue a = ∑ j : Fin J, crossingIndicator a b j := by
   simpa [intensityValue, marginIncrement, lowerLevel, upperLevel] using

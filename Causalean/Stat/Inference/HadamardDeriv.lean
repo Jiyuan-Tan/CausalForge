@@ -80,9 +80,10 @@ def HasHadamardDirDerivAt (φ : E → F) (φ' : E → F) (θ : E) : Prop :=
 
 /-! ## Fréchet differentiability is stronger -/
 
-/-- **Fréchet ⇒ Hadamard.**  If `φ` is Fréchet-differentiable at `θ` with
-(continuous, linear) derivative `L`, then `φ` is Hadamard directionally
-differentiable at `θ` and the Hadamard derivative is `L` itself. -/
+/-- **Fréchet implies Hadamard.** If [the map `φ` is Fréchet-differentiable at the point `θ`,
+with continuous linear derivative `L`](hyp:hL), then [`φ` is Hadamard directionally
+differentiable at `θ`, with the same map `L` serving as its Hadamard directional
+derivative](goal). -/
 theorem HasFDerivAt.hasHadamardDirDerivAt {φ : E → F} {L : E →L[ℝ] F} {θ : E}
     (hL : HasFDerivAt φ L θ) :
     HasHadamardDirDerivAt φ (fun x => L x) θ := by

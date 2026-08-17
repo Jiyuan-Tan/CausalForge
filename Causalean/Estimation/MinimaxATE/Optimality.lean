@@ -105,8 +105,12 @@ theorem aipw_nMiss_le {m : C → ℝ} {g : Bool → C → ℝ} (hv : ValidDGP m 
     _ ≤ V / (s - b) ^ 2 := by gcongr
 
 omit [MeasurableSpace C] [MeasurableSingletonClass C] in
-/-- **In-class bias bound.**  For any DGP in the structure-agnostic class around `(mhat, ghat)`,
-the plug-in bias of the fixed-center AIPW estimator is `≤ ε⁻¹·2·√εg·√εm` (`ε` = center overlap). -/
+/-- **In-class bias bound.** For [a positive overlap threshold ε](hyp:hε) such that [the fixed
+propensity estimate `mhat` stays at least ε away from both `0` and `1` at every covariate
+value](hyp:hco), and for [any data-generating process `(m, g)` lying in the structure-agnostic
+nuisance class around the fixed estimates `(mhat, ghat)` with error budgets `εg`,
+`εm`](hyp:hin), [the plug-in bias of the fixed-center AIPW estimator's population score is at
+most `ε⁻¹·2·√εg·√εm`](goal). -/
 theorem aipw_inclass_bias_bound {mhat : C → ℝ} {ghat : Bool → C → ℝ} {εg εm : ℝ}
     {ε : ℝ} (hε : 0 < ε)
     (hco : ∀ x, ε ≤ mhat x ∧ ε ≤ 1 - mhat x)
@@ -126,9 +130,13 @@ theorem aipw_inclass_bias_bound {mhat : C → ℝ} {ghat : Bool → C → ℝ} {
         mul_le_mul (by linarith) hmm (Real.sqrt_nonneg _) (by positivity)
     _ = 2 * Real.sqrt εg * Real.sqrt εm := by ring
 
-/-- **Worst-case (minimax) miss bound for AIPW.**  Uniformly over the structure-agnostic class,
-at any separation `s` exceeding the uniform bias bound `b = ε⁻¹·2·√εg·√εm`, the fixed-center AIPW
-estimator's worst-case miss is `≤ ((1+2/ε)²/n) / (s − b)²`. -/
+/-- **Worst-case (minimax) miss bound for AIPW.** Suppose [the fixed nuisance estimates
+`(mhat, ghat)` are themselves valid](hyp:hghat), for [a positive overlap threshold ε](hyp:hε)
+such that [`mhat` stays at least ε away from `0` and `1` everywhere](hyp:hco), [nonnegative
+error budgets εg, εm](hyp:hεg,hεm), [a positive sample size n](hyp:hn), and [a separation s
+exceeding the uniform bias bound `b = ε⁻¹·2·√εg·√εm`](hyp:hsb). Then [the worst-case-over-class
+miss probability of the fixed-center AIPW estimator at separation s is at most
+`((1+2/ε)²/n)/(s−b)²`](goal). -/
 theorem aipw_minimaxMiss_le {mhat : C → ℝ} {ghat : Bool → C → ℝ} {εg εm : ℝ}
     (hghat : ValidDGP mhat ghat) {ε : ℝ} (hε : 0 < ε)
     (hco : ∀ x, ε ≤ mhat x ∧ ε ≤ 1 - mhat x) (hεg : 0 ≤ εg) (hεm : 0 ≤ εm)

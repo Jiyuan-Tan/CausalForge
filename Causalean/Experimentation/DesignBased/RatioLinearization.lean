@@ -104,11 +104,12 @@ lemma E_centered_ratio_mul (X Y : Ω → ℝ) (a b c : ℝ)
   field_simp [ha, hb]
   ring
 
-/-- **Bilinear expansion of a design mean.** In a finite design, the mean of a product of two
-two-term linear forms `(A·ai − B·bi)(C·aj − F·bj)` expands, via the four pairwise cross-moments
-`E[AC], E[AF], E[BC], E[BF]`, to `AA·ai·aj − AB·ai·bj − BA·bi·aj + BB·bi·bj`. This is the generic
-bookkeeping step assembling a two-arm (e.g. treated/control) linearized variance from its
-component moments. -/
+/-- **Bilinear expansion of a design mean.** In a finite design, suppose [the mean of `A·C` equals
+`AA`, the mean of `A·F` equals `AB`, the mean of `B·C` equals `BA`, and the mean of `B·F` equals
+`BB`](hyp:hAA,hAB,hBA,hBB) — the four pairwise cross-moments of the two-term linear forms
+`(A·ai − B·bi)` and `(C·aj − F·bj)`. Then [the mean of the product `(A·ai − B·bi)(C·aj − F·bj)`
+equals `AA·ai·aj − AB·ai·bj − BA·bi·aj + BB·bi·bj`](goal). This is the generic bookkeeping step
+assembling a two-arm (e.g. treated/control) linearized variance from its component moments. -/
 lemma E_lin_expand (A B C F : Ω → ℝ) (ai bi aj bj AA AB BA BB : ℝ)
     (hAA : D.E (fun z => A z * C z) = AA)
     (hAB : D.E (fun z => A z * F z) = AB)

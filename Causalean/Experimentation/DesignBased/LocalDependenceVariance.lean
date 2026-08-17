@@ -49,12 +49,15 @@ this is the bound on out-degree. -/
 def BlockDegreeLE (N : U → Finset U) (d : ℕ) : Prop :=
   ∀ j : U, (Finset.univ.filter fun i => j ∈ N i).card ≤ d
 
-/-- **Local-dependence variance bound.** Suppose each unit contributes a term that has mean zero
-under the Bernoulli design and depends only on the treatments of its own block of units, and
-suppose no unit's treatment is read by more than `d` blocks.  Then the second moment of the total
-is at most `d` times the total of the individual second moments.  The bound is scale free: it needs
-no uniform bound on the terms, no explicit decorrelation assumption, and no dependence on the
-population size. -/
+/-- **Local-dependence variance bound.** Under a Bernoulli design in which [every unit's treatment
+probability lies strictly between `0` and `1`](hyp:hp0,hp1), suppose each unit `i` contributes a
+term `F i` — attached to a dependence block `N i` — such that [no unit's treatment is read by more
+than `d` of these blocks](hyp:hdeg), [every term has mean zero under the Bernoulli
+design](hyp:hmean), and [each term `F i` depends only on the treatments of its own block `N
+i`](hyp:hdep). Then [the second moment of the total `∑ᵢ F i` is at most `d` times the total of the
+individual second moments, `d · ∑ᵢ E[(F i)²]`](goal). The bound is scale free: it needs no uniform
+bound on the terms, no explicit decorrelation assumption, and no dependence on the population
+size. -/
 theorem bernoulliDesign_E_sum_sq_le_blockDegree_mul_sum_sq (p : U → ℝ) (hp0 : ∀ i, 0 < p i)
     (hp1 : ∀ i, p i < 1) (N : U → Finset U) (d : ℕ) (hdeg : BlockDegreeLE N d)
     (F : U → (U → Bool) → ℝ)

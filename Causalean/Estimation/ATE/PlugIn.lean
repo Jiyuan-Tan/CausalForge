@@ -91,7 +91,18 @@ noncomputable def ψ_plugin (S : BackdoorEstimationSystem P γ)
     (z : γ × Bool × ℝ) : ℝ :=
   S.μ_val true (projX z) - S.μ_val false (projX z) - S.θ₀
 
-/-- **Asymptotic linearity of the plug-in ATE** — `thm:est-plug-in-ate-al`.
+/-- **Asymptotic linearity of the plug-in ATE** — `thm:est-plug-in-ate-al`.  Fix
+[the back-door identification assumptions](hyp:hA) for `S`,
+[square-integrability of both potential outcomes](hyp:h_yd2), and a one-shot
+sample split whose training-fold fraction [converges to some `c` with `0 < c <
+1`](hyp:hc_pos,hc_lt,h_split_rate). Suppose the outcome-regression learner `μ̂`
+is [measurable](hyp:h_mu_meas), [lies in `L²(P_X)` at every
+realization](hyp:h_mu_memLp), and [depends only on the nuisance-training fold,
+marginally and jointly with the covariate](hyp:h_mu_foldA,h_mu_uncurry_foldA),
+with [joint `L²(P_X)` estimation error at rate `o_p(n^{-1/2})`](hyp:h_rate).
+Then [the sample-split plug-in estimator of the back-door ATE is asymptotically
+linear at the true ATE `θ₀` with influence function `ψ_plugin` along the
+training folds](goal).
 
 Hypotheses (mirroring the NL doc verbatim, including the split-rate
 hypothesis `|B(n)|/n → c`):
@@ -752,9 +763,20 @@ theorem plugIn_isAsymLinear
     exact hsum
 
 /-- **Asymptotic normality of the plug-in ATE** (`thm:est-plug-in-ate-al`,
-"In particular ..." clause).  Given the same hypotheses as
-`plugIn_isAsymLinear`, the rescaled estimator `√|B(n)| (θ̂ⁿ − θ₀)` converges
-in distribution to `N(0, ∫ ψ_plugin² dP_Z)`.
+"In particular ..." clause).  Under [the back-door identification
+assumptions](hyp:hA) for `S`, [square-integrability of both potential
+outcomes](hyp:h_yd2), and a one-shot sample split whose training-fold fraction
+[converges to some `c` with `0 < c < 1`](hyp:hc_pos,hc_lt,h_split_rate): suppose
+the learner `μ̂` is [measurable](hyp:h_mu_meas), [in `L²(P_X)` at every
+realization](hyp:h_mu_memLp), [depends only on the nuisance-training fold,
+marginally and jointly with the
+covariate](hyp:h_mu_foldA,h_mu_uncurry_foldA), with [joint `L²(P_X)` estimation
+error at rate `o_p(n^{-1/2})`](hyp:h_rate) — the same hypotheses as
+`plugIn_isAsymLinear`.  Given in addition [a.e. measurability of the rescaled
+estimator at every horizon](hyp:hθn_meas) and [a.e. measurability of the
+normalized influence-sum at every horizon](hyp:hSum_meas), then [the rescaled
+estimator `√|B(n)| (θ̂ⁿ − θ₀)` converges in distribution to
+`N(0, ∫ ψ_plugin² dP_Z)`](goal).
 
 Together with `|B(n)|/n → c ∈ (0,1)`, Slutsky scaling gives the
 `√n`-rate form `√n (θ̂ⁿ − θ₀) ⇒ N(0, σ²/c)` (variance inflated by the

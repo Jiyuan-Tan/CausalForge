@@ -41,12 +41,12 @@ namespace SCM
 
 open scoped MeasureTheory ProbabilityTheory
 
-/-- **Concatenation d-separation for the latent cutset.**
-
-    Suppose the target set `Y` is d-separated from the randomised do-block `Zr`
-    given the adjustment block `W` together with a fixed block `F ⊆ M.fixed`.
-    Then the latent cutset `cutsetLatent Y (Zr ∪ W)` is d-separated from `Zr`
-    given the same `W ∪ F`.
+/-- **Concatenation d-separation for the latent cutset.** Suppose [`W` consists of observed
+    nodes](hyp:hW) and [`F` consists of fixed nodes](hyp:hF), and that [the target set `Y`
+    is d-separated from the randomised do-block `Zr` given `W` together with `F`](hyp:hdSep).
+    Then [the latent cutset `cutsetLatent Y (Zr ∪ W)` — the latent roots reaching `Y` along a
+    directed path whose interior avoids `Zr ∪ W` — is likewise d-separated from `Zr` given the
+    same `W ∪ F`](goal).
 
     The latent cutset records the latent roots reaching `Y` along a directed path
     whose interior avoids `Zr ∪ W`.  An active `Zr → c` path for a cutset node `c`
@@ -765,15 +765,14 @@ private lemma exists_inEdge_activePath_to_Y
               = ⟨(pa ++ q.tail).length - 1, by omega⟩ := Fin.ext hi1_eq
           rw [e0, e1]; exact hP_lastEdge
 
-/-- **Cross-model concatenation d-separation for the latent cutset.**
-
-    Suppose, in the intervened model `M.fixSet Z _ _`, the target set `Y` is
-    d-separated from the randomised do-block `Zr = Z.image .random` given the
-    adjustment block `W` together with the post-intervention fixed block.  Assume
-    backdoor criterion (i) for `W`: no `w ∈ W` is a descendant of any treatment
-    node `.random D` (`D ∈ Z`) in the **base** graph `M.dag`.  Then, in the base
-    model `M`, the latent cutset `cutsetLatent Y (Zr ∪ W)` is d-separated from `Zr`
-    given `W ∪ M.fixed`.
+/-- **Cross-model concatenation d-separation for the latent cutset.** Suppose that, in the
+    intervened model `M.fixSet Z _ _`, [the target set `Y` is d-separated from the randomised
+    do-block `Zr = Z.image .random` given the adjustment set `W` together with the
+    post-intervention fixed block](hyp:hdSep2), where [`W` consists of observed
+    nodes](hyp:hW) and [no `w ∈ W` is, in the **base** graph `M.dag`, a descendant of any
+    treatment's random copy `.random D` (`D ∈ Z`) — backdoor criterion (i)](hyp:hWNonDescM1).
+    Then, in the base model `M`, [the latent cutset `cutsetLatent Y (Zr ∪ W)` is d-separated
+    from `Zr` given `W ∪ M.fixed`](goal).
 
     The base-model active path `Zr ⤳ Y` produced by a reachable cutset node is
     transported edge-by-edge into `M.fixSet Z _ _` (`path_fixSet_active`); criterion

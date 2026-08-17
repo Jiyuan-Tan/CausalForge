@@ -68,8 +68,12 @@ theorem bernstein_ge (X : Ω → ℝ) {c v ε : ℝ} (hc : 0 ≤ c)
   -- at default transparency (`simpa`'s final check no longer unfolds it).
   exact h
 
-/-- **Bernstein tail for a bounded design statistic (two-sided).** Under the same hypotheses, the
-absolute deviation exceeds `ε` with probability at most twice the one-sided bound. -/
+/-- **Bernstein tail for a bounded design statistic (two-sided).** For a statistic `X` on a
+finite design, suppose [the bound `c` is nonnegative](hyp:hc), [`X` has design mean `0`
+](hyp:hmean), [`X` is bounded in absolute value by `c` everywhere](hyp:hbound), [the design
+variance of `X` is at most `v`](hyp:hvar), and [the threshold `ε` is nonnegative](hyp:hε). Then
+[the design probability that `X` deviates from `0` by at least `ε` in absolute value is at most
+`2·exp(−ε²/(2(2v + cε)))`, twice the corresponding one-sided Bernstein bound](goal). -/
 theorem bernstein_abs_ge (X : Ω → ℝ) {c v ε : ℝ} (hc : 0 ≤ c)
     (hmean : D.E X = 0) (hbound : ∀ z, |X z| ≤ c) (hvar : D.Var X ≤ v) (hε : 0 ≤ ε) :
     D.Pr (fun z => ε ≤ |X z|) ≤ 2 * Real.exp (-ε ^ 2 / (2 * (2 * v + c * ε))) := by

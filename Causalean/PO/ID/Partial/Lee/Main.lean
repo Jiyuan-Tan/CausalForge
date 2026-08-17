@@ -30,11 +30,12 @@ namespace POLeeSystem
 
 variable {P : POSystem} (S : POLeeSystem P)
 
-/-- **Finite-support Lee bounds** -- prop:po-lee-bounds.
-
-Sandwich bound for the always-selected ATT in the discrete/finite-support Lee
-setup, expressed in terms of the observable trimmed treated mean and the
-observable selected-control mean. -/
+/-- **Finite-support Lee bounds** -- prop:po-lee-bounds. Under [the baseline Lee sample-selection
+assumptions](hyp:hA), [monotone sample selection](hyp:hMono), and [almost-sure finite support
+`𝒴` for the factual outcome on the selected-treated cell](hyp:hSupp), [the average treatment
+effect among always-selected units — those who would be selected for observation whether treated
+or not — is sandwiched between the lower Lee trimmed mean minus the observable selected-control
+mean `m₀`, and the upper Lee trimmed mean minus `m₀`](goal). -/
 theorem lee_bounds_ATT_AS [IsFiniteMeasure P.μ]
     (hA : S.BaseAssumptions) (hMono : S.MonotoneSelection)
     (𝒴 : Finset ℝ)

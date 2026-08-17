@@ -101,8 +101,11 @@ lemma measurable_empProcVec [MeasurableSpace E] [BorelSpace E]
 
 end IIDSample
 
-/-- **Second-moment bound for the vector empirical process** (variance identity at
-the empirical scale).  For `f ∈ L²(P)`,
+/-- **Second-moment bound for the vector empirical process** (variance identity at the
+empirical scale). For an i.i.d. sample `S` and [a function `f` that is measurable and
+square-integrable under `P`](hyp:hf_meas,hf_L2), [the second moment of the centered empirical
+process `Gₙ(f)` at sample size `n` is bounded by the population second moment of
+`f`](goal):
 
     ∫⁻ ‖Gₙ(f)‖² dμ ≤ ENNReal.ofReal (∫ ‖f‖² dP),
 
@@ -209,8 +212,10 @@ theorem empProcVec_sq_lintegral_le [IsProbabilityMeasure μ] [IsProbabilityMeasu
           exact (hg_L2 j).integrable_norm_rpow (by norm_num) (by norm_num) |>.congr
             (Filter.Eventually.of_forall fun x => by simp)
 
-/-- **Chebyshev bound for the vector empirical process.**  Combining the
-second-moment bound with Markov's inequality:
+/-- **Chebyshev bound for the vector empirical process.** For an i.i.d. sample `S` and
+[a function `f` that is measurable and square-integrable under `P`](hyp:hf_meas,hf_L2), and for
+[any tolerance `ε > 0`](hyp:hε), [the probability that the centered empirical process `Gₙ(f)`
+exceeds `ε` in norm at sample size `n` is at most $(\int\|f\|^2\,dP)/\varepsilon^2$](goal):
 
     μ {‖Gₙ(f)‖ > ε} ≤ (∫ ‖f‖² dP) / ε²,
 

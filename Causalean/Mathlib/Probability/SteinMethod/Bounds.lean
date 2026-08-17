@@ -481,8 +481,10 @@ private theorem weighted_moment_cancel (w : ℝ) :
             = Real.sqrt (2 * π) * (E * phi w) := by ring
         _ = Real.sqrt (2 * π) := by rw [hEφ, mul_one]
 
-/-- The standard-normal Stein solution is uniformly bounded by the derivative bound of its test
-function. -/
+/-- For a real-valued test function `h` that is [bounded in absolute value by a constant
+`C`](hyp:hb), [has derivative bounded in absolute value by a constant `L`](hyp:hd), and
+[is differentiable everywhere](hyp:hdiff), [the Stein equation's solution `steinSol h`, evaluated
+at any point `w`, is bounded in absolute value by the derivative bound `L`](goal). -/
 theorem steinSol_abs_le (h : ℝ → ℝ) {C L : ℝ}
     (hb : ∀ x, |h x| ≤ C) (hd : ∀ x, |deriv h x| ≤ L) (hdiff : Differentiable ℝ h) (w : ℝ) :
     |steinSol h w| ≤ L := by

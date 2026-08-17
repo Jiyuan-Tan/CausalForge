@@ -28,12 +28,12 @@ namespace POLeeSystem
 variable {P : POSystem} (S : POLeeSystem P)
 
 
-/-- The Lee trimmed-mean sandwich for the always-selected treated mean.
-
-Given base Lee assumptions, monotone sample selection, and finite support for
-the selected-treated outcome, the conditional mean `E[Y(1) | alwaysSelected]`
-lies between the lower and upper trimmed means over all feasible Lee trim
-weights on that support. -/
+/-- **The Lee trimmed-mean sandwich for the always-selected treated mean.** Given [the baseline
+Lee assumptions](hyp:hA), [monotone sample selection](hyp:hMono), and [almost-sure finite
+support `𝒴` for the factual outcome on the selected-treated cell](hyp:hSupp),
+[the conditional mean `E[Y(1) | alwaysSelected]` of the treated potential outcome among
+always-selected units lies between the lower and upper Lee trimmed means computed over all
+feasible Lee trim weights on that support](goal). -/
 lemma trimmed_bounds_condExp_Y1_AS
     (hA : S.BaseAssumptions) (hMono : S.MonotoneSelection)
     (𝒴 : Finset ℝ)

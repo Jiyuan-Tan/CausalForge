@@ -154,9 +154,11 @@ theorem idAlgorithm_success_toRec
     exact hcontain ▸ hrec
   · simp [hX] at h
 
-/-- **Soundness of the executable ID algorithm.**  When the
-runnable checker `idAlgorithm` reports success, the interventional query
-`P(Y ∣ do(X))` is identified within the standard discrete positive model class.
+/-- **Soundness of the executable ID algorithm.**  When [the runnable checker `idAlgorithm`
+returns `true` on the graph `G`, intervention set `X`, query `Y`, and the given fuel
+bound](hyp:h), [the interventional query `P(Y ∣ do(X))` is identified within the standard
+discrete positive model class](goal).
+
 This packages the full recursive Tian–Shpitser identification-soundness result
 (`id_sound_rec_discrete`) behind a computable decision procedure. -/
 theorem idAlgorithm_sound

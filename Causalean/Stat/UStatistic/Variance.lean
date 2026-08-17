@@ -121,9 +121,13 @@ theorem deg' (hg : DegenKernel P g) (y : X) : ∫ x, g x y ∂P = 0 := by
   simp_rw [hg.symm _ y]; exact hg.deg y
 
 omit [IsProbabilityMeasure P] in
-/-- **Bridge to the order-`m` theory (`m = 2`).**  A degenerate order-2 kernel `g`
-gives a completely-degenerate order-`2` kernel `pairKernel g` (`z ↦ g (z 0) (z 1)`):
-symmetry of `pairKernel g` under `Equiv.Perm (Fin 2)` is `hg.symm`; the
+/-- **Bridge to the order-`m` theory (`m = 2`).** If the two-argument kernel
+`g : X → X → ℝ` is [degenerate: measurable, symmetric, square-integrable under
+`P × P`, and with zero conditional mean in each coordinate](hyp:hg), then [the paired
+order-2 kernel `pairKernel g`, defined by `z ↦ g(z 0, z 1)`, is completely degenerate
+in the order-`m` sense](goal).
+
+Symmetry of `pairKernel g` under `Equiv.Perm (Fin 2)` is `hg.symm`; the
 single-coordinate integrals are `hg.deg` / `hg.deg'`; square-integrability
 transports across the `Fin 2 → X` ≃ `X × X` product-law equivalence. -/
 theorem toOrderDegenKernel [SigmaFinite P] (hg : DegenKernel P g) :
@@ -226,9 +230,11 @@ theorem zeta_nonneg : 0 ≤ zeta P g :=
   integral_nonneg (fun _ => sq_nonneg _)
 
 omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
-/-- **Second moment of the off-diagonal sum.**
-`E[(Σ_{p ∈ offDiag} g(Z_{p.1},Z_{p.2}))²] = 2 · |offDiag| · ζ`.  The `m = 2` case of
-`integral_injectiveTuples_sum_sq_degen`, using
+/-- **Second moment of the off-diagonal sum.** For an i.i.d. sample `S` and sample size
+`n`, if the two-argument kernel `g` is [degenerate](hyp:hg), then [the second moment of
+the sum of `g(Z_i, Z_j)` over all ordered off-diagonal index pairs `i ≠ j` below `n`
+equals `2 · |offDiag| · ζ`, where `ζ` is the kernel's second moment under
+`P × P`](goal). The `m = 2` case of `integral_injectiveTuples_sum_sq_degen`, using
 `sum_injectiveTuples_two_eq_offDiag`, `toOrderDegenKernel`, and `zeta_eq_zetaOrder`
 (`2! = 2`, `injectiveTupleCount 2 n = |offDiag| = n(n−1)`). -/
 theorem integral_offDiag_sum_sq (hg : DegenKernel P g) (n : ℕ) :
@@ -252,10 +258,13 @@ theorem integral_offDiag_sum_sq (hg : DegenKernel P g) (n : ℕ) :
   norm_num
 
 omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
-/-- **L² bound on the rescaled degenerate U-statistic.** For `n ≥ 2`,
-`E[(√n · Gₙ)²] = 2ζ / (n−1)`.  The `m = 2` case of
-`integral_rescaled_order_sq_degen` (`n · 2! · ζ / n^{(2)} = 2ζ/(n−1)`), via
-`uStatisticOrder_two_eq_uStatistic` and `zeta_eq_zetaOrder`. -/
+/-- **L² bound on the rescaled degenerate U-statistic.** For an i.i.d. sample `S`, if
+the two-argument kernel `g` is [degenerate](hyp:hg) and the sample size [is at least
+two](hyp:hn), then [the second moment of the `√n`-rescaled degenerate U-statistic of
+`g` equals `2ζ/(n−1)`, where `ζ` is the kernel's second moment under `P × P`](goal). The
+`m = 2` case of `integral_rescaled_order_sq_degen`
+(`n · 2! · ζ / n^{(2)} = 2ζ/(n−1)`), via `uStatisticOrder_two_eq_uStatistic` and
+`zeta_eq_zetaOrder`. -/
 theorem integral_rescaled_sq (hg : DegenKernel P g) {n : ℕ} (hn : 2 ≤ n) :
     ∫ ω, (Real.sqrt (n : ℝ) * uStatistic S g n ω) ^ 2 ∂μ
       = 2 * zeta P g / ((n : ℝ) - 1) := by

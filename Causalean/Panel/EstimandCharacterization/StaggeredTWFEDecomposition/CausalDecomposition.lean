@@ -79,11 +79,14 @@ theorem contrast_eq_contrastCausal (P : CohortPanel 𝒢 T)
   · obtain ⟨hlt, hfin, _, _⟩ := hk
     simpa using Δ_LE_eq_bad_comparison P Y0 Y1 hA g u hlt hfin
 
-/-- **Fused causal Goodman-Bacon decomposition.** Under the two-state
-potential-outcome assumptions and strictly positive residualized-treatment
-variance, the TWFE coefficient equals the Goodman-Bacon weighted average of
-potential-outcome window contrasts `ATT_window Y0 Y1`, with the late-versus-early
-bad-comparison adjustment.
+/-- **Fused causal Goodman-Bacon decomposition.** Fix a cohort panel `P` and potential-outcome
+maps `Y0` (never-treated path) and `Y1` (own-adoption-date path). Assume [consistency on treated
+and untreated cells, no anticipation, and pairwise untreated parallel trends across the
+treated-versus-never, early-versus-late, and late-versus-early comparison types](hyp:hA); then
+[the two-way fixed-effects coefficient `betaTWFE P` equals the sum, over admissible pairwise
+comparisons, of each comparison's Goodman-Bacon weight times its potential-outcome window
+contrast — the treated-versus-never and early-versus-late window-specific ATTs, or the
+late-versus-early bad-comparison adjustment](goal).
 
 The positive-variance hypothesis is the nondegenerate condition needed for the
 normalized comparison weights to have their coefficient interpretation and sum

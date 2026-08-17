@@ -572,9 +572,11 @@ theorem nuY_left_limit_eq (hA : S.Assumptions) {L : ℝ}
 
 /-! ### Fuzzy RDD identification — prop:po-fuzzy-rdd -/
 
-/-- **Fuzzy RDD identification at the cutoff** in regression-representative
-form.  The Wald ratio of latent right/left representative jumps equals the
-Wald ratio of one-sided observable regression limits:
+/-- **Fuzzy RDD identification at the cutoff**, in regression-representative
+form. Under [the fuzzy-RDD identifying assumption bundle](hyp:hA), [the Wald
+ratio of the latent right- and left-hand representative jumps at the cutoff
+equals the Wald ratio of the one-sided observable outcome- and
+treatment-regression limits at the cutoff](goal):
 
     τ_FRD(c) =
       (lim_{x↓c} ν_Y(x) - lim_{x↑c} ν_Y(x)) /
@@ -627,12 +629,17 @@ private lemma muY_diff_eq_mu_Ydiff_complier_at_cutoff (hA : S.Assumptions)
     hA.support_right
 
 /-- **Fuzzy RDD identifies a cutoff representative complier ratio under an
-extra global monotonicity bridge**.
-When consistency, deterministic cutoff eligibility, local exclusion through
-potential outcomes, the local fuzzy-RDD assumptions, and global a.s. monotonicity
-all hold,
-the observable Wald ratio at the cutoff equals the complier-weighted
-outcome-difference representative divided by the first-stage jump.
+extra global monotonicity bridge.** Under [the local fuzzy-RDD identifying
+assumption bundle — consistency, deterministic cutoff eligibility, and local
+exclusion through potential outcomes](hyp:hA), and additionally assuming
+[treatment is almost-surely monotone in the instrument, i.e. whenever the
+potential treatment under the untreated instrument value is realized as
+true, the potential treatment under the treated instrument value is true as
+well (no defiers)](hyp:hmono), [the complier-weighted local average treatment
+effect at the cutoff `tau_LATE` equals the fuzzy-RDD Wald-ratio functional
+`tau_FRD`, i.e. the observable Wald ratio at the cutoff equals the
+complier-weighted outcome-difference representative divided by the
+first-stage jump](goal).
 
 -- TODO(faithfulness): fuzzy RDD source statement — to reach the local
 -- cutoff-complier claim from the standard local monotonicity assumption, the

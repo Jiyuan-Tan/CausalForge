@@ -49,10 +49,11 @@ lemma not_isAncestor_of_root' {r : V}
 -- ============================================================
 
 /-- **Adding root nodes (no incoming edges) to the conditioning set preserves
-    d-separation.**
-
-    If every `r ∈ R` has no incoming edges in `G` and `R` is disjoint from
-    `X, Y`, then `G.dSep X Y Z → G.dSep X Y (Z ∪ R)`.
+    d-separation.** In a DAG `G`, suppose [`X` and `Y` are d-separated by `Z`](hyp:hXY_sep),
+    [every vertex of `R` has no incoming edge in `G`, i.e. `R` consists of root
+    vertices](hyp:hRoots), and [`R` is disjoint from `X` and from `Y`](hyp:hRX,hRY). Then
+    [`X` and `Y` remain d-separated once the root vertices `R` are added to the conditioning
+    set: `G.dSep X Y (Z ∪ R)`](goal).
 
     **Proof idea.** On any undirected path from `X` to `Y`, an interior vertex
     `r ∈ R` can only participate as a "fork" `· ← r → ·` (both incident edges

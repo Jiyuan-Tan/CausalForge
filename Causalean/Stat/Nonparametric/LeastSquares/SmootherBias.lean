@@ -102,11 +102,18 @@ theorem linearSmoother_bias_of_reproduces {f : ℝ → ℝ} {β M lo hi t : ℝ}
         refine Finset.sum_congr rfl (fun i _ => ?_)
         ring
 
-/-- **Interior `O(h^β)` bias of a polynomial-reproducing linear smoother.** If, in addition
-to the hypotheses of `linearSmoother_bias_of_reproduces`, every design point lies within the
-bandwidth `h` of `t` (`|aᵢ − t| ≤ h`), the bias collapses to the standard rate
-`|∑ᵢ Sᵢ f(aᵢ) − f t| ≤ (M/p!) · (∑ᵢ |Sᵢ|) · h^β`. Bounding the leverage `∑ᵢ |Sᵢ|` by a
-constant (from the design density) then yields the textbook `O(h^β)` local-polynomial bias. -/
+/-- **Interior `O(h^β)` bias of a polynomial-reproducing linear smoother.** Let `p` denote
+the largest natural number strictly below the smoothness index `β`. If [`β` is
+positive](hyp:hβ), [the Hölder constant `M` is nonnegative](hyp:hM), [the target point `t`
+lies in a window `[lo,hi]`](hyp:ht), [every design point `aᵢ` lies in the same
+window](hyp:ha), [every design point is within bandwidth `h` of `t`](hyp:hwin), [`f` is
+`p` times continuously differentiable](hyp:hf), [its `p`-th derivative is `(β−p)`-Hölder
+with constant `M` on the window](hyp:hb), and [the smoother weights `S` reproduce
+polynomials of degree up to `p` at `t`](hyp:hrep), then [the smoother's bias collapses to
+the standard rate `|∑ᵢ Sᵢ f(aᵢ) − f t| ≤ (M/p!) · (∑ᵢ |Sᵢ|) · h^β`](goal).
+
+Bounding the leverage `∑ᵢ |Sᵢ|` by a constant (from the design density) then yields the
+textbook `O(h^β)` local-polynomial bias. -/
 theorem linearSmoother_bias_window {f : ℝ → ℝ} {β M lo hi t h : ℝ} {N : ℕ}
     {a S : Fin N → ℝ}
     (hβ : 0 < β) (hM : 0 ≤ M)

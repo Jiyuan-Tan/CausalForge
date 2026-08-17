@@ -153,13 +153,14 @@ theorem mean_smul (P : CellPartition μ ι) (c : ℝ) (f : Ω → ℝ) (i : ι) 
     P.mean (fun ω => c * f ω) i = c * P.mean f i :=
   eventCondExp_smul μ (P.cell i) c f
 
-/-- **Cell-mean consistency descent.** On a cell where treatment is constant
-`d ∈ {0,1}` and pointwise potential-outcome consistency `Y = Y0 + d·(Y1 − Y0)`
-holds, the cell-conditional means satisfy the same identity:
-`E[Y ∣ cell] = E[Y0 ∣ cell] + d·(E[Y1 ∣ cell] − E[Y0 ∣ cell])`. This is the
-shared "observed-mean = untreated-mean + effect" step every binary-treatment
-population bridge uses; the cell effect `E[Y1 ∣ cell] − E[Y0 ∣ cell]` is a
-genuine potential-outcome contrast. -/
+/-- **Cell-mean consistency descent.** On a cell where [the treatment value `d` is binary,
+`d ∈ {0,1}`](hyp:hd), and [pointwise potential-outcome consistency `Y = Y0 + d·(Y1 − Y0)` holds
+throughout the cell](hyp:hcons), [the cell-conditional means satisfy the same identity:
+`E[Y ∣ cell] = E[Y0 ∣ cell] + d·(E[Y1 ∣ cell] − E[Y0 ∣ cell])`](goal).
+
+This is the shared "observed-mean = untreated-mean + effect" step every binary-treatment
+population bridge uses; the cell effect `E[Y1 ∣ cell] − E[Y0 ∣ cell]` is a genuine
+potential-outcome contrast. -/
 theorem mean_consistency (P : CellPartition μ ι) (i : ι) (Y Y0 Y1 : Ω → ℝ)
     {d : ℝ} (hd : d = 0 ∨ d = 1)
     (hcons : ∀ ω ∈ P.cell i, Y ω = Y0 ω + d * (Y1 ω - Y0 ω)) :

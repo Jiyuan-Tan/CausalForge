@@ -39,10 +39,15 @@ open scoped ENNReal BigOperators
 namespace GenConstr
 
 /-- **Structure-agnostic minimax lower bound, expected-risk (MSE) form (general center).**
-Under the hypotheses of `minimax_lower_bound_gen`, every measurable estimator
-has mean-squared error at least `s²/4` (with `s = g₁β(α+β)/(2(g₁²−β²)) ≍ √(εg·εm)`) on
-**some** DGP in the class — the weaker `(1−γ)`-factored (`γ = 3/4`) consequence of the
-quantile bound, around any constant bounded-away center. -/
+Under the same budget and regularity hypotheses as `minimax_lower_bound_gen` — [the squared
+propensity-perturbation size within the budget `εm`](hyp:hm), [the squared
+outcome-regression perturbation size within the budget `εg`](hyp:hg), [both budgets
+nonnegative](hyp:hεg,hεm), [the per-cell overlap coefficient `Γ` at most `1`](hyp:hΓ), and
+[the sample size in the regime `2n²(Γ/2)² ≤ K·log 2`](hyp:hreg) — [every measurable
+estimator](hyp:hest) has [the weaker expected-risk consequence: there is a data-generating
+process in the class on which the estimator's mean-squared error is at least `s²/4`, where
+`s = g₁β(α+β)/(2(g₁²−β²)) ≍ √(εg·εm)`, obtained from the quantile bound by a Chebyshev
+`(1−γ)`-factor conversion at `γ = 3/4`](goal). -/
 theorem minimax_lower_bound_mse_gen (P : GenConstr) {K n : ℕ} [NeZero K]
     {εg εm : ℝ}
     (hm : (P.m₀ * (P.β / P.g₁)) ^ 2 ≤ εm)

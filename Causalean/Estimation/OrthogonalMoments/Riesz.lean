@@ -78,14 +78,15 @@ noncomputable def rieszScore
     (γ : H_γ) (α : X → ℝ) (θ : ℝ) (z : Z) : ℝ :=
   L γ + α (proj_X z) * (Y_obs z - γ_target γ (proj_X z)) - θ
 
-/-- **Mean-zero of the Riesz score at the truth.**
-
-With `θ₀ := L γ₀` and the population regression-orthogonality assumption
-`∫ z, α₀(proj_X z) · (Y_obs z − γ_target γ₀ (proj_X z)) ∂P_Z = 0` (which
-holds when `γ_target γ₀` is the conditional expectation of `Y_obs` given
-`proj_X`, since residuals are orthogonal to all square-integrable
-functions of `proj_X`), the population orthogonal score evaluated at the
-truth `(γ₀, α₀, L γ₀)` integrates to zero:
+/-- **Mean-zero of the Riesz score at the truth.** Given [a Riesz representation `rep` of a
+linear functional L on the regression class H_γ under P_X](hyp:H_γ,P_X,rep), with true
+regression function [γ₀](hyp:γ₀), and observed data given by [the covariate projection
+`proj_X` and the outcome `Y_obs`](hyp:proj_X,Y_obs), suppose [the representer residual
+α₀(proj_X z)·(Y_obs z − γ_target γ₀ (proj_X z)) has population mean zero under
+P_Z](hyp:h_orthog) — which holds when `γ_target γ₀` is the conditional expectation of `Y_obs`
+given `proj_X`, since residuals are orthogonal to all square-integrable functions of `proj_X`.
+Then [the orthogonal score `rieszScore` evaluated at the truth (γ₀, α₀, L γ₀) integrates to
+zero under P_Z](goal):
 
     ∫ z, rieszScore γ_target L proj_X Y_obs γ₀ rep.α₀ (L γ₀) z ∂P_Z = 0. -/
 theorem rieszScore_meanZero

@@ -183,9 +183,16 @@ the map which identifies the two temporary centers and fixes the response;
 this retains internal score-class cover centers and the displayed envelope.
 -/
 
-/-- Bounded finite-arm residual scores with a moving Euclidean center and
-boxed polynomial coefficients carry a positive-envelope polynomial `L²(Q)`
-cover uniformly over every probability measure, including atomic measures. -/
+/-- **Covering certificate for a bounded finite-arm residual score.** Given [a measurable Euclidean
+location map](hyp:hloc), [a finite family of arms, each measurable](hyp:harmMeas) and [bounded in
+absolute value by 1](hyp:harmBound), [a measurable response variable](hyp:hresponseMeas) that is
+[bounded in absolute value by R](hyp:hresponseBound), together with [a positive bandwidth
+q](hyp:hq), [a nonnegative annulus inner radius a](hyp:ha), [inner radius at most outer radius
+b](hyp:hab), [a positive polynomial-coefficient bound B](hyp:hB), and [a positive response bound
+R](hyp:hR), then [the score formed by multiplying an arm indicator, a radial monomial, and the
+residual of the response against a boxed radial-polynomial fit carries a positive-envelope uniform
+polynomial `L²(Q)` covering certificate — with envelope `radialResidualScoreEnvelope b p B R` —
+over every probability measure Q, including atomic ones](goal). -/
 theorem radialResidualScore_hasPolynomialL2Cover
     {Ω : Type u} [MeasurableSpace Ω]
     {A : Type v} [Fintype A]

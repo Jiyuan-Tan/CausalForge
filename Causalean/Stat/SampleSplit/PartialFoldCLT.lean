@@ -146,10 +146,12 @@ lemma charFun_normalizedSum_finset_eq_range_card
         hindep_Y (fun i => hY_ident i) (n := s.card) (t := t))
   simpa [Y, c] using hleft_scaled.trans hright_scaled.symm
 
-/-- **Fold-B CLT.**  Along an i.i.d. sample `S` with mean-zero,
-square-integrable transform `ψ`, the fold-B normalized partial sum
-`(1/√|B(n)|) Σ_{i ∈ B(n)} ψ(Z_i)` converges in distribution to
-`N(0, ∫ψ²dP)` under `μ`.
+/-- **Fold-B CLT.** Along an i.i.d. sample `S` under a one-shot sample split `split`, fix a
+transform `ψ : X → ℝ` that is [measurable](hyp:hψ_meas), has [population mean
+zero](hyp:hψ_mean) under `P`, and is [square-integrable](hyp:hψ_sq_int); provided
+[the fold-B normalized partial sum is almost-everywhere measurable at every sample
+size](hyp:hSum_meas), [the fold-B normalized partial sum `(1/√|B(n)|) Σ_{i∈B(n)} ψ(Z_i)`
+converges in distribution to the centered Gaussian law with variance `∫ψ²dP`](goal).
 
 The hypothesis `OneShotSplit.cogrow` (`|B(n)| → ∞`) is built into `split`. -/
 theorem clt_normalizedFoldB
@@ -205,10 +207,13 @@ end IIDSample
 
 variable {θn : ℕ → Ω → ℝ} {θ₀ : ℝ} {ψ : X → ℝ} {S : IIDSample Ω X μ P}
 
-/-- **Fold-B asymptotic linearity ⇒ asymptotic normality at rate `√|B(n)|`.**
-
-If `IsAsymLinear θn θ₀ ψ S split.foldB`, then
-`√|B(n)| · (θn n − θ₀) ⇒ N(0, ∫ ψ² dP)` under `μ`.
+/-- **Fold-B asymptotic linearity ⇒ asymptotic normality at rate `√|B(n)|`.** Along an
+i.i.d. sample `S` under a one-shot sample split `split`, if the estimator sequence `θn`
+is [fold-B asymptotically linear](hyp:h) toward `θ₀` with influence function `ψ` that is
+[measurable](hyp:hψ_meas), and if [the rescaled estimator](hyp:hθn_meas) and [the fold-B
+normalized influence-function sum](hyp:hSum_meas) are almost-everywhere measurable at
+every sample size, then [`√|B(n)| · (θn n − θ₀)` converges in distribution to the
+centered Gaussian law with variance `∫ψ²dP`](goal).
 
 Direct combination of `clt_normalizedFoldB` (the fold-B CLT) with
 `Tendsto_dist.add_isLittleOp_one` (Slutsky absorption). -/
@@ -230,11 +235,13 @@ theorem IsAsymLinear.tendsto_normal_foldB
   refine Tendsto_dist.add_isLittleOp_one hSum_meas hθn_meas hCLT ?_
   simpa [IsAsymLinear.normalizedSum, IsAsymLinear.rescaledEstimator] using h.remainder
 
-/-- **Conversion to √n-rate under a fixed split ratio.**
-
-If `|B(n)|/n → c ∈ (0, 1)` and the estimator is fold-B asymptotically
-linear, then the √n-rescaled estimator converges in distribution to
-`N(0, σ²/c)` with inflation factor `1/c`. -/
+/-- **Conversion to √n-rate under a fixed split ratio.** Along an i.i.d. sample `S` under
+a one-shot sample split `split` with a fold-B asymptotically linear estimator sequence
+`θn` (`h`), suppose the split ratio `c` is [strictly positive](hyp:hc_pos), the
+estimation-fold share [`|B(n)|/n` converges to `c`](hyp:h_split_rate), the influence
+function `ψ` is [measurable](hyp:hψ_meas), and [the √n-rescaled estimator is
+almost-everywhere measurable at every sample size](hyp:hθn_meas); then [`√n · (θn n − θ₀)`
+converges in distribution to the centered Gaussian law with variance `(∫ψ²dP)/c`](goal). -/
 theorem IsAsymLinear.tendsto_normal_foldB_sqrt_n
     (split : OneShotSplit S) {c : ℝ} (hc_pos : 0 < c)
     (h_split_rate :

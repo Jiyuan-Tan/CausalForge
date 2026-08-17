@@ -310,9 +310,11 @@ theorem iid_mean_abs_le {Ω : Type*} [MeasurableSpace Ω]
   haveI : Nonempty (Fin n) := Fin.pos_iff_nonempty.mp hn
   simpa using iid_mean_abs_le_fintype (ι := Fin n) μ ξ hξ
 
-/-- The expected Euclidean error of finitely many square-integrable sample averages from the same
-`n`-point independent, identically distributed sample is controlled by their summed population
-second moments and `n`. -/
+/-- For [a strictly positive sample size `n`](hyp:hn) and [finitely many square-integrable
+real-valued statistics indexed by `k`](hyp:hξ), each observed on the same `n`-point independent,
+identically distributed sample, [the expected Euclidean norm of the vector of centered sample
+averages — one coordinate per statistic — is at most the square root of the sum of the population
+second moments divided by `n`](goal). -/
 theorem iid_mean_euclidean_abs_le {Ω ι : Type*} [MeasurableSpace Ω] [Fintype ι]
     (μ : Measure Ω) [IsProbabilityMeasure μ] {n : ℕ} (hn : 0 < n)
     (ξ : ι → Ω → ℝ) (hξ : ∀ k, MemLp (ξ k) 2 μ) :

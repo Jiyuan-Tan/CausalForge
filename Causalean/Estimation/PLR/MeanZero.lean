@@ -35,7 +35,12 @@ namespace PLRSystem
 variable {P : POSystem} {γ : Type*} [MeasurableSpace γ] [IsFiniteMeasure P.μ]
 variable (S : PLRSystem P γ)
 
-/-- Mean-zero at the truth: `E[ψ(η₀, ·, θ₀)] = 0`. -/
+/-- If [the structural error is integrable](hyp:hU), [the product of the structural
+error and the true treatment residual is integrable](hyp:hUV), [the baseline
+covariate function is integrable](hyp:hbX), and [the treatment is
+integrable](hyp:hD), then [the Robinson partialling-out score, evaluated at the
+true outcome and treatment regressions and the true structural slope, has zero
+mean under the observed-data law](goal). -/
 lemma plr_meanZero
     (hU : Integrable S.U P.μ)
     (hUV : Integrable (fun ω => S.U ω * S.toPOPartialLinearModel.resid ω) P.μ)
@@ -55,7 +60,11 @@ lemma plr_meanZero
     ring
   rw [integral_congr_ae hae, S.integral_U_resid hU hUV]
 
-/-- Finite variance of the influence function at the truth. -/
+/-- If [the squared Robinson partialling-out score — evaluated at the true outcome
+and treatment regressions and the true structural slope, pulled back to the
+population space — is integrable](hyp:hsq), then [the squared score is integrable
+under the observed-data law $P_Z$, i.e. the score has finite variance at the
+truth](goal). -/
 lemma plr_finite_var
     (hsq : Integrable
       (fun ω => (plrMomentFunctional S.η₀ (S.factualZ ω) S.θ₀) ^ 2) P.μ) :

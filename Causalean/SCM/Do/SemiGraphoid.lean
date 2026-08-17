@@ -215,7 +215,11 @@ theorem obsCondIndep_subset_right (M : Causalean.SCM N Ω)
   unfold ObsCondIndep at h ⊢
   exact condIndep_valuesProjection_subset_right (μ := μ) hX hY hY' hZ hY'Y h
 
-/-- **Decomposition.** X ⊥ (Y ∪ W) | Z → X ⊥ Y | Z. -/
+/-- **Decomposition.** Let `X`, `Y`, `W`, `Z` be finite node sets of the structural causal model
+    `M`, with [X](hyp:hX) and [the union of Y and W](hyp:hYW) contained in the observed nodes,
+    and [Z](hyp:hZ) contained in the observed nodes, under a finite measure μ on the observed
+    values. If [X is conditionally independent of the union of Y and W given Z](hyp:h), then
+    [X is conditionally independent of Y given Z](goal). -/
 theorem obsCondIndep_decomposition (M : Causalean.SCM N Ω)
     [StandardBorelSpace M.ObservedValues]
     {X Y W Z : Finset (SWIGNode N)}
@@ -228,7 +232,11 @@ theorem obsCondIndep_decomposition (M : Causalean.SCM N Ω)
   exact condIndep_valuesProjection_decomposition (μ := μ) hX hYW
     hZ h
 
-/-- **Weak union.** X ⊥ (Y ∪ W) | Z → X ⊥ Y | (Z ∪ W). -/
+/-- **Weak union.** Let `X`, `Y`, `W`, `Z` be finite node sets of the structural causal model
+    `M`, with [X](hyp:hX) and [the union of Y and W](hyp:hYW) contained in the observed nodes,
+    and [Z](hyp:hZ) contained in the observed nodes, under a finite measure μ on the observed
+    values. If [X is conditionally independent of the union of Y and W given Z](hyp:h), then
+    [X is conditionally independent of Y given the union of Z and W](goal). -/
 theorem obsCondIndep_weak_union (M : Causalean.SCM N Ω)
     [StandardBorelSpace M.ObservedValues]
     {X Y W Z : Finset (SWIGNode N)}
@@ -241,7 +249,12 @@ theorem obsCondIndep_weak_union (M : Causalean.SCM N Ω)
   unfold ObsCondIndep at h ⊢
   exact condIndep_valuesProjection_weak_union_axiom hX hYW hZ h
 
-/-- **Contraction.** X ⊥ Y | (Z ∪ W) ∧ X ⊥ W | Z → X ⊥ (Y ∪ W) | Z. -/
+/-- **Contraction.** Fix subsets `X`, `Y`, `W`, `Z` of the node set of the structural causal
+    model `M`, with [X](hyp:hX), [Y](hyp:hY), [W](hyp:hW), and [Z](hyp:hZ) each contained in
+    the observed nodes, and let μ be a finite measure on the observed values. If [X is
+    conditionally independent of Y given the union of Z and W](hyp:h1) and [X is conditionally
+    independent of W given Z](hyp:h2), then [X is conditionally independent of the union of Y
+    and W given Z](goal). -/
 theorem obsCondIndep_contraction (M : Causalean.SCM N Ω)
     [StandardBorelSpace M.ObservedValues]
     {X Y W Z : Finset (SWIGNode N)}

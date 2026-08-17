@@ -91,12 +91,12 @@ def AsymptoticEquicont (ψ : E → X → E) (θ₀ : E) (P : Measure X)
         ≤ ENNReal.ofReal η
 
 omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
-/-- **Empirical process at the estimator vanishes.**
-
-If the score family is asymptotically equicontinuous (`AsymptoticEquicont`) and
-`θn →_p θ₀` (consistency), then the centered empirical process evaluated at the
-estimator, `Gₙ(ψ(θn,·) − ψ(θ₀,·))`, converges to `0` in probability —
-*unconditionally* (no `{‖θn − θ₀‖ < δ}` conditioning).
+/-- **Empirical process at the estimator vanishes.** If [the score family `ψ` is asymptotically
+equicontinuous at `θ₀` along the i.i.d. sample `S`](hyp:hAEC) and [`θn` is a sequence of
+estimators consistent for `θ₀`](hyp:hConsistent), then for [any fixed tolerance `ε > 0`](hyp:hε),
+[the centered empirical process of the score gap `ψ(θn,·) − ψ(θ₀,·)`, evaluated at the random
+estimator `θn`, namely `Gₙ(ψ(θn,·) − ψ(θ₀,·))`, converges to `0` in probability —
+unconditionally, with no restriction to a shrinking neighborhood of `θ₀`](goal).
 
 This is the substantive conclusion; `StochEquicontAt` is an immediate corollary.
 The proof is the textbook union bound: split on `{‖θn − θ₀‖ ≥ δ}` (small by
@@ -147,7 +147,11 @@ theorem empProcVec_atEstimator_tendsto_zero
   exact le_trans (add_le_add hCons_n hAEC_n) hsum_le
 
 omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
-/-- **Reduction: `StochEquicontAt` from class-level equicontinuity + consistency.**
+/-- **Reduction: `StochEquicontAt` from class-level equicontinuity + consistency.** If [the
+score family `ψ` is asymptotically equicontinuous at `θ₀` along the i.i.d. sample
+`S`](hyp:hAEC) and [`θn` is a sequence of estimators consistent for `θ₀`](hyp:hConsistent),
+then [the pair `(ψ, θ₀)` satisfies the stochastic-equicontinuity-at-the-estimator condition
+`StochEquicontAt` along `S` and `θn`](goal).
 
 The `Z`-estimator / GMM CLTs (`zEstimator_clt`, `gmm_asymptotically_linear`)
 take `StochEquicontAt` as a hypothesis.  This theorem discharges it from the
@@ -173,13 +177,13 @@ theorem stochEquicontAt_of_asymptoticEquicont
   intro ω hω
   exact hω.2
 
-/-- **Deterministic-curve equicontinuity (non-vacuousness witness).**
-
-Along a *deterministic* parameter sequence `θn : ℕ → E` whose score
-perturbation shrinks in `L²(P)` — `∫ ‖ψ(θn,·) − ψ(θ₀,·)‖² dP → 0` — the centered
-empirical-process gap is `o_p(1)`, with **no chaining and no consistency
-hypothesis**: it is a direct consequence of the uniform-in-`n` Chebyshev bound
-`empProcVec_chebyshev`.
+/-- **Deterministic-curve equicontinuity (non-vacuousness witness).** Suppose that for every
+parameter value `θ`, [the score gap `ψ(θ,·) − ψ(θ₀,·)` is measurable and square-integrable
+under `P`](hyp:hψ_meas,hψ_L2). Along a deterministic parameter sequence `θn` whose score
+perturbation [shrinks in `L²(P)`: $\int\|\psi(\theta_n,\cdot)-\psi(\theta_0,\cdot)\|^2\,dP \to
+0$](hyp:hmod), [the centered empirical-process gap `Gₙ(ψ(θn,·) − ψ(θ₀,·))` is $o_p(1)$](goal),
+with no chaining and no consistency hypothesis: it is a direct consequence of the
+uniform-in-`n` Chebyshev bound `empProcVec_chebyshev`.
 
 This is the base case of asymptotic equicontinuity (the parameter is moved along
 a fixed curve rather than over a whole ball) and certifies that the

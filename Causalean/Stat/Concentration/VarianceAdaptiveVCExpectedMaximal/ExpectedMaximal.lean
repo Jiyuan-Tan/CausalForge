@@ -18,10 +18,17 @@ universe u v
 
 variable {𝒳 : Type u} [MeasurableSpace 𝒳] {ι : Type v}
 
-/-- A countable measurable class bounded by `U`, with population `L²` radius
-at most `σ` and empirical covering numbers at most `(A/ε)^v`, has expected
-empirical supremum at most a universal constant times
-`σ √(v log(AU/σ)/n) + v U log(AU/σ)/n`. -/
+/-- **Variance-adaptive expected maximal inequality.** Let `P` be a probability measure on the
+sample space and `F` a countable family of real-valued functions on it. Suppose [the population
+$L^2$ radius `σ` is strictly positive and strictly less than the envelope `U`](hyp:hσ,hσU), [the
+covering-entropy base `A` is at least Euler's number and the exponent `v` is at least
+one](hyp:hA,hv), [every function in `F` is measurable](hyp:hmeas) and [bounded in absolute value
+by `U`](hyp:henvelope), [each function's population $L^2$ distance from the zero function is at
+most `σ`](hyp:hL2), [`F` has polynomial empirical $L^2$ covering numbers with envelope `U`, base
+`A`, and exponent `v`](hyp:hcover), and [the sample size `n` is positive](hyp:hn). Then [the
+expected empirical supremum of `F` over an `n`-point i.i.d. sample drawn from `P` is at most the
+universal constant `varianceAdaptiveVCConstant` times the variance-adaptive rate
+`σ √(v log(AU/σ)/n) + v U log(AU/σ)/n`](goal). -/
 theorem varianceAdaptiveExpectedMaximal_le
     [Nonempty ι] [Countable ι]
     (P : Measure 𝒳) [IsProbabilityMeasure P]

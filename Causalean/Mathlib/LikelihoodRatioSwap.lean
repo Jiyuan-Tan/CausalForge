@@ -19,18 +19,16 @@ namespace Causalean
 
 open MeasureTheory ProbabilityTheory
 
-/-- **Arm-swap via likelihood ratio.**
-
-If the weighted integrand `f · L` is almost-everywhere strongly measurable relative to `m` and the
-likelihood ratio `L` satisfies the change-of-measure relation
-
-    (μ[𝟙s | m]) · L  =ᵐ[μ]  (μ[𝟙t | m]),
-
-then for any real-valued integrand `f` that is almost-everywhere strongly measurable
-relative to `m`, whose restriction to the source set `t` is integrable, and whose product
-`f · L` restricted to the target set `s` is integrable,
-
-    ∫ₜ f dμ  =  ∫ₛ f · L dμ.
+/-- **Arm-swap via likelihood ratio.** For [a sub-σ-algebra `m` of the ambient σ-algebra on
+`Ω`](hyp:hm), a finite measure `μ`, and [measurable sets `s` and `t`](hyp:hs_meas,ht_meas),
+suppose [the product `f · L` is almost-everywhere strongly measurable relative to
+`m`](hyp:hprod_m), [the integrand `f` itself is almost-everywhere strongly measurable relative
+to `m`](hyp:hf_m), [`f` restricted to the source set `t` is integrable](hyp:hint), [the product
+`f · L` restricted to the target set `s` is integrable](hyp:hint'), and [the likelihood ratio
+`L` satisfies the change-of-measure relation: the conditional probability of `s` given `m`,
+times `L`, agrees `μ`-almost everywhere with the conditional probability of `t` given
+`m`](hyp:hSpec). Then [the integral of `f` over `t` equals the integral of `f · L` over
+`s`](goal): `∫ₜ f dμ = ∫ₛ f · L dμ`.
 
 Proof outline:
 1. `integral_indicator` rewrites both set-integrals as

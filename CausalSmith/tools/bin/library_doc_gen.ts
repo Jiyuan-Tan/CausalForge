@@ -7,6 +7,7 @@ import {
   tier1DeclarationsWithoutNaturalLanguage,
   theoremFilesWithoutCuratedAnchor,
 } from "../src/library/schema.js";
+import { stripNlCrosslinks } from "../src/shared/nl_crosslinks.js";
 
 /**
  * Regenerate the per-declaration tables in doc/API.md from the docstring-canonical
@@ -110,7 +111,8 @@ function displaySig(statement: string, name: string): string {
   }
   return ws(s);
 }
-const firstPara = (doc?: string): string => (doc && doc.trim() ? ws(doc.split(/\n\s*\n/)[0]).replace(/\*\*/g, "") : "");
+const firstPara = (doc?: string): string =>
+  doc && doc.trim() ? ws(stripNlCrosslinks(doc.split(/\n\s*\n/)[0])).replace(/\*\*/g, "") : "";
 
 function genTable(moduleName: string): string {
   const rows = idx.entries

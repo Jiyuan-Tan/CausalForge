@@ -173,10 +173,12 @@ omit [Fintype U] [DecidableEq U] in
 @[simp] lemma centeredMonomial_empty (p : U → ℝ) : centeredMonomial p (∅ : Finset U) = fun _ => 1 :=
   rfl
 
-/-- **Orthogonality of the centered monomials.** Two centered monomials attached to different sets
-of units are uncorrelated under a Bernoulli randomization, and the monomial attached to `S` has
-second moment `∏_{j ∈ S} p j (1 − p j)` — the product of the per-unit assignment variances.  This
-is the design-based analogue of the orthonormality of a Fourier basis. -/
+/-- **Orthogonality of the centered monomials.** Under a Bernoulli randomization in which [every
+unit's treatment probability `p i` lies in `[0,1]`](hyp:hp0,hp1), [the centered monomials attached
+to two finite sets of units `S` and `T` are uncorrelated whenever `S ≠ T`, while the monomial
+attached to `S` itself has second moment `∏_{j ∈ S} p j · (1 − p j)` — the product of the per-unit
+assignment variances — when `S = T`](goal). This is the design-based analogue of the orthonormality
+of a Fourier basis. -/
 theorem bernoulliDesign_E_centeredMonomial_mul (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i)
     (hp1 : ∀ i, p i ≤ 1) (S T : Finset U) :
     (bernoulliDesign p hp0 hp1).E (fun z => centeredMonomial p S z * centeredMonomial p T z) =

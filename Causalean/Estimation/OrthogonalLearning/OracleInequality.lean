@@ -66,7 +66,17 @@ variable {Ω : Type*} [MeasurableSpace Ω] {μ : MeasureTheory.Measure Ω}
          {Θ : Type*} [NormedAddCommGroup Θ] [InnerProductSpace ℝ Θ]
          {G : Type*} [AddCommGroup G] [Module ℝ G]
 
-/-- **Conservative oracle inequality for the orthogonal sample-split plug-in ERM.**
+/-- **Conservative oracle inequality for the orthogonal sample-split plug-in ERM.** Assume
+[the realised nuisance at every sample point admits the directional-derivative structure
+needed for the first-order expansion of the loss](hyp:Dθ_hat), that [the estimator is a
+sample-split plug-in ERM with optimization slack `r_opt`](hyp:hPluginERM), and that [the
+strong-convexity modulus σ is strictly positive](hyp:hσ). Suppose [the population risk at
+the realised nuisance is σ-strongly convex around θ₀ in the chosen norm](hyp:hSC), and
+that [the first-order inequality holds at the truth `(θ₀, g₀)`](hyp:hFOI). If, at the
+specific sample point `(n, ω)`, [the local empirical-process modulus inequality is
+realised for the estimator's target value against the realised nuisance](hyp:hRho_holds),
+then [the squared target-space estimation error is bounded by
+`4(1+σ)/σ² · (ρ n)² + (4/σ) · Bias_n + (4/σ) · r_opt n`](goal).
 
 Under strong convexity of the population risk in `θ` at the realised
 nuisance, a first-order inequality at the truth, plug-in ERM optimality,
@@ -168,7 +178,16 @@ theorem oracle_inequality_plugin_ERM
       ring
 
 /-- **High-probability conservative oracle inequality for the orthogonal
-sample-split plug-in ERM.**
+sample-split plug-in ERM.** Fix a single nuisance value g. Assume [the estimator is a
+sample-split plug-in ERM at this fixed nuisance, with optimization slack
+`r_opt`](hyp:hPluginERM), and that [the strong-convexity modulus σ is strictly
+positive](hyp:hσ). Suppose [the population risk at g is σ-strongly convex around θ₀ in
+the chosen norm](hyp:hSC), and that [the first-order inequality holds at the truth
+`(θ₀, g₀)`](hyp:hFOI). If [the local empirical-process modulus condition holds at rate ρ
+and confidence level δ for the fixed nuisance g](hyp:hMod), then [for every sample size n
+there is an event of probability at least `1 - δ` on which the squared target-space
+estimation error is bounded by `4(1+σ)/σ² · (ρ n)² + (4/σ) · Bias_n +
+(4/σ) · r_opt n`](goal).
 
 This consumes a `LocalEmpProcessModulus` hypothesis at a fixed nuisance value
 `g`, and concludes — with probability at least `1 − δ` over the ambient

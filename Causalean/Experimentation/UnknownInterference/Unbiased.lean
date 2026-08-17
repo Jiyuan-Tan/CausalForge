@@ -46,9 +46,11 @@ open DesignBased
 
 variable {U : Type*} [Fintype U] [DecidableEq U]
 
-/-- **Per-unit unbiasedness.** Under the Bernoulli design with nonzero treatment and control
-propensities, the `i`ᵗʰ HT summand has the same expectation as the assignment-conditional unit-level
-effect: `E[htSummand i] = E[τ_i]`. -/
+/-- **Per-unit unbiasedness.** Under a Bernoulli design in which [every unit's treatment
+probability lies in `[0,1]`](hyp:hp0,hp1) and [is neither exactly zero nor exactly one, so both
+the treatment and control propensities are nonzero](hyp:hp0',hp1'), [the i-th
+Horvitz–Thompson summand has the same expectation as unit i's assignment-conditional
+treatment effect τ_i](goal). -/
 theorem E_htSummand (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, p i ≤ 1)
     (hp0' : ∀ i, p i ≠ 0) (hp1' : ∀ i, (1 : ℝ) - p i ≠ 0)
     (y : U → (U → Bool) → ℝ) (i : U) :
@@ -146,8 +148,10 @@ theorem E_htSummand (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, p i �
   rfl
 
 /-- **Horvitz–Thompson unbiasedness for EATE (Sävje–Aronow–Hudgens 2021).** Under a Bernoulli
-design with nonzero treatment and control propensities, the HT estimator is exactly unbiased for the
-expected average treatment effect: `E[ĤT] = EATE`. -/
+design in which [every unit's treatment probability lies in `[0,1]`](hyp:hp0,hp1) and [is
+neither exactly zero nor exactly one, so both the treatment and control propensities are
+nonzero](hyp:hp0',hp1'), [the Horvitz–Thompson estimator is exactly unbiased for the expected
+average treatment effect](goal). -/
 theorem htEst_unbiased (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, p i ≤ 1)
     (hp0' : ∀ i, p i ≠ 0) (hp1' : ∀ i, (1 : ℝ) - p i ≠ 0)
     (y : U → (U → Bool) → ℝ) :

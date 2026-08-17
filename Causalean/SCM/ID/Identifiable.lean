@@ -168,9 +168,13 @@ theorem identifiable_eq_identifiableUnder_true {Ω : N → Type*}
     Identifiable G Φ ↔ IdentifiableUnder G (fun _ => True) (fun _ => True) Φ := by
   simp [Identifiable, IdentifiableUnder]
 
-/-- Stronger assumptions make identification easier:
-    if Φ is identifiable under (Af₁, As₁), and (Af₂, As₂) implies (Af₁, As₁),
-    then Φ is identifiable under (Af₂, As₂). -/
+/-- **Monotonicity of identifiability under assumptions.** Fix functional-assumption predicates
+    `Af₁`, `Af₂` and structural-assumption predicates `As₁`, `As₂` on causal models sharing a graph
+    `G`, together with a causal query `Φ`. If [every model satisfying `Af₂` also satisfies
+    `Af₁`](hyp:hf), [every model satisfying `As₂` also satisfies `As₁`](hyp:hs), and [`Φ` is
+    identifiable under the assumption pair `(Af₁, As₁)`](hyp:h_id), then [`Φ` is identifiable under
+    `(Af₂, As₂)`](goal): passing to the more restrictive assumption predicates `Af₂`, `As₂` cannot
+    destroy identifiability. -/
 theorem identifiableUnder_mono {Ω : N → Type*} [∀ n, MeasurableSpace (Ω n)]
     {α : Type*}
     (G : SWIGGraph N)

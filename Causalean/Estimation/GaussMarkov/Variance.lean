@@ -38,9 +38,11 @@ variable {Ω Obs : Type*} [Fintype Obs] {mΩ : MeasurableSpace Ω} {μ : Measure
 noncomputable def covMatrix (Y : Obs → Ω → ℝ) (μ : Measure Ω) : Matrix Obs Obs ℝ :=
   fun i j => cov[Y i, Y j; μ]
 
-/-- **Variance of a linear combination = covariance quadratic form.**
-The variance of the random linear estimator `∑ i, w i * Y i` equals `wᵀ Σ w`
-where `Σ = covMatrix Y μ`. -/
+/-- **Variance of a linear combination = covariance quadratic form.** For a
+finite family of random variables `Y i`, each [square-integrable](hyp:hY), and
+any weight vector `w`, [the variance of the random linear combination
+`∑ i, w i * Y i` equals the quadratic form `wᵀ Σ w`, where `Σ` is the family's
+covariance matrix](goal). -/
 theorem variance_linearCombination [IsProbabilityMeasure μ]
     (Y : Obs → Ω → ℝ) (hY : ∀ i, MemLp (Y i) 2 μ) (w : Obs → ℝ) :
     Var[fun ω => ∑ i, w i * Y i ω; μ] = quadVar (covMatrix Y μ) w := by

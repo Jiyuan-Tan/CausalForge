@@ -694,10 +694,17 @@ private lemma empiricalL2Radius_sq_le_uniformDeviation
   nlinarith [Real.sq_sqrt hB0, hrad.1]
 
 set_option maxHeartbeats 800000 in
-/-- The expected absolute signed Rademacher supremum of a countable bounded
-class with population `L²` radius `σ` and polynomial empirical `L²` entropy
-is bounded by half the universal maximal-inequality constant times the
-variance-adaptive two-term rate. -/
+/-- **Variance-adaptive Rademacher complexity bound.** Let `P` be a probability measure on the
+sample space and `F` a countable family of real-valued functions on it. Suppose [the population
+$L^2$ radius `σ` is strictly positive and strictly less than the envelope `U`](hyp:hσ,hσU), [the
+covering-entropy base `A` is at least Euler's number and the exponent `v` is at least
+one](hyp:hA,hv), [every function in `F` is measurable](hyp:hmeas) and [bounded in absolute value
+by `U`](hyp:henvelope), [each function's population $L^2$ distance from the zero function is at
+most `σ`](hyp:hL2), [`F` has polynomial empirical $L^2$ covering numbers with envelope `U`, base
+`A`, and exponent `v`](hyp:hcover), and [the sample size `n` is positive](hyp:hn). Then [the
+Rademacher complexity of `F` under `P` with `n` i.i.d. observations is at most half the universal
+constant `varianceAdaptiveVCConstant` times the variance-adaptive rate
+`σ √(v log(AU/σ)/n) + v U log(AU/σ)/n`](goal). -/
 theorem varianceAdaptiveRademacherComplexity_le
     [Nonempty ι] [Countable ι]
     (P : Measure 𝒳) [IsProbabilityMeasure P]

@@ -19,8 +19,9 @@ open MeasureTheory
 
 namespace Causalean.Mathlib.MeasureTheory
 
-/-- Almost-everywhere strong measurability together with integrability of the squared norm puts a
-normed-vector-valued function in L².
+/-- If [a normed-vector-space-valued function `f` is almost-everywhere strongly measurable with
+respect to `Q`](hyp:hf_meas) and [the squared norm `‖f x‖^2` is integrable against
+`Q`](hyp:h_sq_int), then [`f` belongs to $L^2(Q)$](goal).
 
 The explicit integrability hypothesis is essential:
 Mathlib's Bochner integral convention makes a bare upper bound on

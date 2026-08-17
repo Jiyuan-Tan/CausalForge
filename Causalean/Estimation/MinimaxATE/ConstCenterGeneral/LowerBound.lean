@@ -228,11 +228,16 @@ theorem tvDist_QfalseG_QtrueG_le_half (P : GenConstr) {K n : ℕ} [NeZero K]
         apply mul_le_mul_of_nonneg_left _ (by norm_num); exact Real.sqrt_le_sqrt hchi
     _ = 1 / 2 := by rw [Real.sqrt_one]; ring
 
-/-- **Structure-agnostic minimax lower bound (general constant center).**  Around any
-constant nuisance center `(m₀, g₀, g₁) ∈ (0,1)³`, with the Rademacher-bump budgets met
-(`(m₀β/g₁)² ≤ εm`, `g₁²(α+β)²/(g₁−β)² ≤ εg`), `Γ ≤ 1`, and the sample-size regime
-`2n²(Γ/2)² ≤ K·log 2`, **every** measurable estimator misses the true ATE by
-`s = g₁β(α+β)/(2(g₁²−β²))` with probability at least `1/4` somewhere in the class. -/
+/-- **Structure-agnostic minimax lower bound (general constant center).** Fix a constant
+nuisance center `(m₀, g₀, g₁) ∈ (0,1)³` and Rademacher bump magnitudes `(α, β)`. Suppose
+[the squared propensity-perturbation size `(m₀·β/g₁)²` is within the budget
+`εm`](hyp:hm) and [the squared outcome-regression perturbation size
+`g₁²(α+β)²/(g₁−β)²` is within the budget `εg`](hyp:hg), with [both budgets
+nonnegative](hyp:hεg,hεm). If further [the per-cell overlap coefficient `Γ` is at most
+`1`](hyp:hΓ) and [the sample size obeys the regime `2n²(Γ/2)² ≤ K·log 2`](hyp:hreg),
+then for [every measurable estimator](hyp:hest), [there is a data-generating process in
+the structure-agnostic class around this center on which the estimator misses the true
+ATE by `s = g₁β(α+β)/(2(g₁²−β²))` with probability at least `1/4`](goal). -/
 theorem minimax_lower_bound_gen (P : GenConstr) {K n : ℕ} [NeZero K] {εg εm : ℝ}
     (hm : (P.m₀ * (P.β / P.g₁)) ^ 2 ≤ εm)
     (hg : P.g₁ ^ 2 * (P.α + P.β) ^ 2 / (P.g₁ - P.β) ^ 2 ≤ εg)

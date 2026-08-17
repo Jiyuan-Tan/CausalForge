@@ -106,9 +106,10 @@ lemma quantileIF_sq_integrable [IsProbabilityMeasure P] {τ q₀ f₀ : ℝ} :
   calc (quantileIF τ q₀ f₀ z) ^ 2 = |quantileIF τ q₀ f₀ z| ^ 2 := (sq_abs _).symm
     _ ≤ ((|τ| + 1) / |f₀|) ^ 2 := by gcongr
 
-/-- **Variance of the quantile influence function.**
-`∫ ψ_τ² dP = τ(1 − τ) / f₀²`, the classical sample-quantile asymptotic
-variance. -/
+/-- **Variance of the quantile influence function.** Provided [`q₀` is the population
+`τ`-quantile, i.e. the population cdf satisfies $F(q_0)=\tau$](hyp:hcdf), [the second moment of the
+influence function $\psi_\tau$ under the population measure equals $\tau(1-\tau)/f_0^2$, the
+classical sample-quantile asymptotic variance](goal). -/
 lemma quantileIF_variance [IsProbabilityMeasure P] {τ q₀ f₀ : ℝ}
     (hcdf : cdf P q₀ = τ) :
     ∫ z, (quantileIF τ q₀ f₀ z) ^ 2 ∂P = τ * (1 - τ) / f₀ ^ 2 := by
@@ -176,8 +177,13 @@ lemma QuantileRegularity.isAsymLinear {S : IIDSample Ω ℝ μ P} {qn : ℕ → 
   finite_var := quantileIF_sq_integrable
   remainder := h.bahadur
 
-/-- **Sample-quantile asymptotic normality.**  Under `QuantileRegularity`,
-`√n (q̂ₙ − q₀) ⇒ N(0, τ(1 − τ) / f₀²)`.
+/-- **Sample-quantile asymptotic normality.** Given [a `QuantileRegularity` witness `h` for the
+estimator sequence `qn`](hyp:h) — interior level $\tau\in(0,1)$, positive density $f_0$ at the
+population quantile $q_0$, cdf identification, and the exposed Bahadur/Donsker remainder — provided
+[the rescaled estimator is almost-everywhere measurable at each sample size](hyp:hθn_meas) and [the
+normalized influence-function sum is almost-everywhere measurable at each sample
+size](hyp:_hSum_meas), then [$\sqrt n\,(\hat q_n-q_0)$ converges in distribution to the centered
+Gaussian law with variance $\tau(1-\tau)/f_0^2$](goal).
 
 Measurability obligations on the rescaled estimator and the normalized sum are
 imposed at the call site, matching `IsAsymLinear.tendsto_normal`. -/

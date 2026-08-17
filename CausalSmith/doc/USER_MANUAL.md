@@ -277,7 +277,13 @@ Invariants: every formal environment carries a bank-crosswalk obj_id (no anchor 
 The site's `/library` section renders every Causalean declaration as an NL-first card:
 the **first paragraph of the docstring is, by convention, the natural-language
 translation** of the formal statement; the formal statement (identifier-linkified) sits
-beneath it, with sorry/axiom badges and a `file:line` source link. Tier-1 (definitions,
+beneath it, with sorry/axiom badges and a `file:line` source link. The first paragraph
+may carry **NL↔Lean crosslinks** — `[phrase](hyp:binderName)` around the phrase
+translating a hypothesis and `[phrase](goal)` around the conclusion phrase — rendered as
+dash-underlined spans that cross-highlight with the structured statement's hypothesis
+rows on hover (StatLean-style, but with mandatory full coverage for annotated theorems;
+`npm run lint:nl-links` in `CausalSmith/tools` validates, and the site test suite
+hard-fails defective annotations). Tier-1 (definitions,
 structures, classes, inductives, axioms, plus sidecar-listed headline theorems) is the
 curated trust layer; lemmas/instances collapse into per-module helper lists. Design doc:
 `doc/presentation/2026-06-10-library-explorer-design.md`.

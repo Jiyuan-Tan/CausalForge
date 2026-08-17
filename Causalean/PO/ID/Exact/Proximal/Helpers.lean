@@ -295,10 +295,13 @@ lemma consistency_event' (HC : POSystem.Consistency P) (a : Bool)
     simpa [Pi.sub_apply, Pi.zero_apply] using hω
   linarith
 
-/-- From `consistency`, on the event `{A=a}`, `Y = Y(a)` pointwise.
-Hence `E[Y | σ(A,U,X)] =ᵐ[μ.restrict {A=a}] E[Y(a) | σ(A,U,X)]`.
-
-Requires `hAY : S.Avar.v ≠ S.Yvar.v` (treatment and outcome are distinct nodes). -/
+/-- **Factual-outcome bridge on the treatment-arm event.** From the
+consistency assumption in [the proximal identifying assumption
+bundle](hyp:HA), and given [the treatment and outcome are distinct
+nodes](hyp:hAY), on the event where the treatment equals arm `a`, [the
+conditional expectation of the factual outcome given σ(A,U,X) agrees almost
+surely with the conditional expectation of the potential outcome `Y(a)` given
+the same σ-algebra](goal), since `Y = Y(a)` pointwise there. -/
 lemma consistency_event (HA : Assumptions S μ) (a : Bool) (hAY : S.Avar.v ≠ S.Yvar.v) :
     μ[S.Y | S.σ_AUX] =ᵐ[μ.restrict {ω | S.A ω = a}] μ[S.YofA a | S.σ_AUX] := by
   have hYaInt : Integrable (S.YofA a) μ := by

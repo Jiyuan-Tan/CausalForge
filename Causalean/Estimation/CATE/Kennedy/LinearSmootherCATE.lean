@@ -43,22 +43,19 @@ open MeasureTheory ProbabilityTheory Filter Topology
 variable {P : POSystem} {γ : Type*} [MeasurableSpace γ]
   [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
 
-/-- **Linear-smoother bias bound for the DR-Learner CATE estimator.**
-
-For a CATE estimation system `S` with strict overlap `ε`, a
-`LinearSmootherOp` `op` witnessed by `IsLinearSmoother` at `(n, ω, x)` with
-weights `w` over data tuples `xs : ι → γ × Bool × ℝ` enumerating `B`, and
-an estimated nuisance vector `η_hat n ω` whose realisation lives in the
-overlap-bounded set `H_ε ε`, the smoothed DR-bias term obeys the
-Hölder-type product bound
-
-    |op.evalAt n ω (condBias η_hat η₀ ∘ z.1) x|
-      ≤ aipw_rem_const ε * c_n
-          * WeightedNorm B w (Δπ ∘ xs.1) p
-          * Σ_a WeightedNorm B w (Δμ_a ∘ xs.1) q,
-
-with `Δπ := η_hat.e_fn − S.e_val`, `Δμ_a := η_hat.μ_fn a − S.μ_val a`, and
-conjugate exponents `Real.HolderConjugate p q`.
+/-- **Linear-smoother bias bound for the DR-Learner CATE estimator.** Fix a candidate
+nuisance sequence `η_hat`, a linear-smoother operator `op`, a sample index `n`, a
+realization `ω`, an evaluation point `x`, a data enumeration `xs` over an index set `B`
+with weights `w`, and constants `c_n, p, q`. Under [two-sided strict overlap for the
+truth](hyp:h_overlap), if [the estimated nuisance `η_hat n ω` has propensity uniformly
+bounded in `[ε, 1 − ε]`](hyp:h_overlap_η_hat), [`op` realizes the linear smoother
+`Σ_i w_i · f(xs i)` at `(n, ω, x)` over `B`](hyp:hLin), [the weights satisfy the
+absolute-value envelope `Σ |w_i| ≤ c_n`](hyp:hWeights), and [`p` and `q` are
+Hölder-conjugate exponents](hyp:hConj), then [the smoothed conditional-bias evaluation
+`op.evalAt n ω (condBias η_hat η₀ ∘ proj₁) x` is bounded in absolute value by
+`aipw_rem_const ε · c_n` times the weighted-`p`-norm of the propensity error `Δπ` times the
+sum over treatment arms of the weighted-`q`-norm of the outcome-regression error
+`Δμ_a`](goal).
 
 Proof outline: expand `condBias` as a sum over `a : Bool` of
 `((η_hat.e_fn − S.e_val) (η_hat.μ_fn a − S.μ_val a))/(if a then η_hat.e_fn else 1 − η_hat.e_fn)`.
@@ -227,9 +224,18 @@ theorem cate_linear_smoother_bias_bound
             ring
   simpa [hEval, C, de, dμ, η] using hMain
 
-/-- **Oracle efficiency for the DR-Learner with a linear-smoother
-second stage** — corollary of `dr_oracle_efficient` specialised to a
-`LinearSmootherOp` operator.
+/-- **Oracle efficiency for the DR-Learner with a linear-smoother second stage.** Fix a
+CATE estimation system, a linear-smoother second-stage operator `op`, an estimated
+nuisance sequence `η_hat`, an evaluation point `x`, a centering-rate sequence `d_n`, and a
+bias-identity relation `BiasIdent`. Under [the back-door identification
+assumptions](hyp:hA) and two-sided strict overlap for the truth, if [the smoothed oracle
+estimator is stable at `(τ_val, d_n, x)` relative to `BiasIdent`](hyp:hStab), [the
+centering sequence `d_n` converges to `0` in probability](hyp:hCons), [the pseudo-outcome
+bias, the true pseudo-outcome, and the smoothed conditional bias jointly satisfy the
+identity relation `BiasIdent`](hyp:hBias), and [the smoothed conditional-bias evaluation
+is `o_p` of the oracle risk scale](hyp:hSmoothedBias), then [the DR-Learner CATE estimator
+and the oracle estimator, both built from the linear-smoother second-stage operator,
+differ by `o_p` of the oracle risk scale](goal).
 
 This is just the projection of the linear-smoother operator onto its
 `SecondStageOperator` ancestor (named `toSecondStageOperator` by the

@@ -69,8 +69,20 @@ variable {P : POSystem} {δ : Type} {γ : Fin 2 → Type}
 
 /-! ## Headline L²(P_Z) `o_p(1)` -/
 
-/-- **Sequential DR score L²(P_Z) continuity** — the L²(P_Z) norm of
-`m_seqDR(η̂(n), ·, θ₀) − m_seqDR(η₀, ·, θ₀)` is `o_p(1)` under `μ`.
+/-- **Sequential DR score L²(P_Z) continuity.** Consider a two-stage dynamic-treatment-regime
+estimation system in which [the estimated propensity scores stay strictly between `ε` and
+`1-ε`](hyp:h_overlap), [the system's identification assumptions (consistency, sequential
+exchangeability, positivity) hold](hyp:hA), [the observed outcome has finite second
+moment](hyp:h_y2), and [every potential outcome under a fixed two-stage treatment regime has
+finite second moment](hyp:h_yd2). Given a sequence of nuisance-estimator draws η̂(n) that
+[always land inside the ε-overlap-bounded nuisance set](hyp:h_in_H), whose [stage-0
+outcome-regression, stage-1 outcome-regression, stage-0 propensity-score, and stage-1
+propensity-score estimation errors are each square-integrable against the corresponding history
+law, for every draw and every sample point](hyp:h_mu0_memLp,h_mu1_memLp,h_e0_memLp,h_e1_memLp),
+and whose [four stagewise L² estimation-error rates each vanish in probability
+(are $o_p(1)$)](hyp:h_mu0_rate,h_mu1_rate,h_e0_rate,h_e1_rate), then [the L²(P_Z) distance
+between the sequential doubly-robust score evaluated at η̂(n) and at the true nuisance η₀ is
+itself $o_p(1)$](goal).
 
 Stagewise version of
 `BackdoorEstimationSystem.aipw_score_diff_isLittleOp_one`

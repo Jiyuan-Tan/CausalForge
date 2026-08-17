@@ -197,7 +197,12 @@ structure EventStudyCausalRestrictions (P : EventStudySystem T) : Prop where
   hNoAnticipation : P.NoAnticipation
   hMeanParallelUntreated : P.MeanParallelUntreated
 
-/-- No anticipation implies zero CATT on pre-treatment relative-time cells. -/
+/-- **No anticipation implies zero pre-treatment CATT.** If [the mean treated and
+never-treated potential outcomes for every adopting cohort coincide in every period
+strictly preceding that cohort's own adoption period (no anticipation)](hyp:hNoAnticipation),
+then for [a cohort `g` in the finite adoption-cohort support](hyp:hg) and [a relative
+event time `e` strictly before adoption ($e < 0$)](hyp:he), [the cohort-average
+treatment effect on the treated at cell `(g, e)` is zero](goal). -/
 theorem CATT_eq_zero_of_noAnticipation (P : EventStudySystem T)
     (hNoAnticipation : P.NoAnticipation) {g : Fin T} {e : ℤ}
     (hg : g ∈ P.cohorts) (he : e < 0) :
@@ -215,7 +220,15 @@ theorem CATT_eq_zero_of_noAnticipation (P : EventStudySystem T)
     have hmean := hNoAnticipation g hg t hpre
     simp [hmean]
 
-/-- Cell-mean decomposition into additive untreated fixed effects and CATT. -/
+/-- **Cell-mean decomposition into additive untreated fixed effects and CATT.** If [the
+factual observed outcome mean on a cohort's own periods equals its mean treated
+potential outcome (consistency)](hyp:hConsistency) and [the mean never-treated potential
+outcome admits an additive cohort/period fixed-effects representation (mean-parallel
+untreated paths)](hyp:hMeanParallelUntreated), then for [any cohort `g` in the finite
+adoption-cohort support](hyp:hg), [the average observed outcome mean over the target
+periods of cell `(g, e)` decomposes as the average, over those periods, of the additive
+fixed effects `alpha g + lambda t` plus the cohort-average treatment effect on the
+treated `CATT g e`](goal). -/
 theorem observedCellMean_eq_fixedEffects_add_CATT (P : EventStudySystem T)
     (hConsistency : P.Consistency) (hMeanParallelUntreated : P.MeanParallelUntreated)
     {g : Fin T} {e : ℤ}

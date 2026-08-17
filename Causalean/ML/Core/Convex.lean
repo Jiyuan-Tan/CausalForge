@@ -88,8 +88,11 @@ end Existence
 section CoerciveExistence
 variable {E : Type*} [NormedAddCommGroup E] [ProperSpace E]
 
-/-- Existence of a global minimizer of a continuous coercive objective: if
-`objective → ∞` along the cocompact filter, a global minimizer exists. -/
+/-- **Existence via coercivity.** On a proper normed real vector space, if [the objective
+function is continuous](hyp:hcont) and [it tends to infinity along the cocompact filter,
+i.e. it is coercive — it grows without bound as the argument leaves every compact
+set](hyp:hcoer), then [a global minimizer of the objective over the whole space
+exists](goal). -/
 theorem exists_isMinOn_univ_of_coercive
     {objective : E → ℝ} (hcont : Continuous objective)
     (hcoer : Tendsto objective (cocompact E) atTop) :

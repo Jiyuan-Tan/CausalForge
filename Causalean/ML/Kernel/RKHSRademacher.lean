@@ -462,9 +462,11 @@ theorem empiricalRademacherComplexity_innerBall_le
       Nat.abs_cast, iSup_of_isEmpty, Finset.sum_const_zero, mul_zero, ge_iff_le]
     exact div_nonneg (mul_nonneg hκ hr) (Real.sqrt_nonneg _)
 
-/-- In an RKHS whose sampled kernel representers are bounded by κ, the closed ball of
-radius r has empirical Rademacher complexity at most κ times r divided by the square root
-of the sample size.
+/-- In a reproducing-kernel Hilbert space `H`, if [`(feval, representer)` realizes `H` as
+an RKHS on `X`](hyp:hK), [`κ` is a nonnegative bound](hyp:hκ), [`r` is a nonnegative
+radius](hyp:hr), and [every sampled kernel representer `representer (xs k)` has norm at
+most `κ`](hyp:hbound), then [the empirical Rademacher complexity, on the sample `xs`, of
+the closed ball of radius `r` in `H` is at most `κ·r/√n`](goal).
 
 This is the canonical bounded-kernel RKHS-ball rate, using the reproducing identity to
 reduce function evaluation to the abstract Hilbert-space linear bound. -/

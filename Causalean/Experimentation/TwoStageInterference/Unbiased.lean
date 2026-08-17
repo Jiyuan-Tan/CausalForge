@@ -42,9 +42,14 @@ variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 variable {n : ι → ℕ}
 
 omit [Fintype ι] [DecidableEq ι] in
-/-- **Within-group unbiasedness.** Conditional on group `i` being assigned strategy `ρ`, the
-empirical mean among `z`-treated units is unbiased for the group average potential outcome
-`ȳ_i(z;ρ)`.  Uses the design's constant `z`-treatment propensity `m / nᵢ`. -/
+/-- **Within-group unbiasedness.** Fix [a per-group design `ρ` governing the within-group
+treatment randomization](hyp:ρ) and [an outcome recorded for every group, unit, and realized
+within-group assignment](hyp:Y), together with a group `i`, a treatment state `z`, and [a nonzero
+real number `m`](hyp:hm) used as the treated-count denominator. Assume [group `i` has a nonzero
+number of units](hyp:hn) and that [every unit of group `i` receives treatment state `z` with the
+same probability `m` divided by the group's size](hyp:hprop). Then [the expected value, under
+`ρ`, of the empirical mean outcome among the `z`-treated units of group `i` equals the group's
+average potential outcome under `z`](goal). -/
 theorem E_groupEst (ρ : ∀ i, FiniteDesign (WAssign n i))
     (Y : ∀ i, Fin (n i) → WAssign n i → ℝ) (i : ι) (z : Bool) (m : ℝ)
     (hm : m ≠ 0) (hn : (n i : ℝ) ≠ 0)
@@ -75,9 +80,18 @@ private lemma popEst_summand (Y : ∀ i, Fin (n i) → WAssign n i → ℝ)
   unfold FiniteDesign.ind
   by_cases h : sw.1 i = true <;> simp [h]
 
-/-- **Population unbiasedness (Theorem 1).** The population estimator on the ψ-groups is
-unbiased for the population average potential outcome `ȳ(z;ψ)`.  The within-group propensities
-are `m i / n i` and the stage-1 ψ-propensity of every group is `C/N`. -/
+/-- **Population unbiasedness (Theorem 1).** Consider [the two per-group designs ψ and φ
+governing the within-group randomization when a group is respectively assigned the ψ-strategy or
+the φ-strategy at stage 1](hyp:ψ,φ) and [an outcome recorded for every group, unit, and realized
+within-group assignment](hyp:Y). Fix a treatment state `z`, [a nonzero real number `C`](hyp:hC)
+used as the population-estimator denominator, and a family `m` with [every group's value `m i`
+nonzero](hyp:hm); suppose [every group has a nonzero number of units](hyp:hn), [within every
+ψ-assigned group every unit receives treatment state `z` with the same probability `m i` divided
+by the group's size](hyp:hprop), and [the marginal probability of each group being assigned the
+ψ-strategy at stage 1 equals `C` divided by the number of groups](hyp:hstage1). Then [the expected
+value, under the compound two-stage design, of the population estimator restricted to the
+ψ-assigned groups equals the population average potential outcome under `z` computed from the
+ψ-design](goal). -/
 theorem E_popEst (D₁ : FiniteDesign (StratAssign ι))
     (ψ φ : ∀ i, FiniteDesign (WAssign n i))
     (Y : ∀ i, Fin (n i) → WAssign n i → ℝ) (z : Bool) (m : ι → ℝ) (C : ℝ)
@@ -119,9 +133,13 @@ theorem E_popEst (D₁ : FiniteDesign (StratAssign ι))
   rw [hEsum, ← Finset.sum_mul, mul_div_assoc, hcN, mul_one_div]
 
 omit [DecidableEq ι] in
-/-- **Mixed-orientation decomposition identity.** With direct effect measured as treatment minus
-control under ψ, and indirect/total effects measured from φ-control to ψ, the total contrast equals
-the indirect contrast minus the direct contrast. -/
+/-- **Mixed-orientation decomposition identity.** For [per-group two-stage designs ψ (treatment
+strategy) and φ (control strategy) governing each group's within-group assignment](hyp:ψ,φ) and
+[an outcome recorded for every group, unit, and realized within-group assignment](hyp:Y), [the
+total contrast — the population control-state mean under φ minus the population treated-state
+mean under ψ — equals the indirect contrast — the population control-state mean under φ minus the
+population control-state mean under ψ — minus the direct contrast — the population treated-state
+mean under ψ minus the population control-state mean under ψ](goal). -/
 theorem CE_total_decomp (ψ φ : ∀ i, FiniteDesign (WAssign n i))
     (Y : ∀ i, Fin (n i) → WAssign n i → ℝ) :
     CE_total ψ φ Y = CE_indirect ψ φ Y - CE_direct ψ Y := by

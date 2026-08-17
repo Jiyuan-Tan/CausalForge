@@ -130,7 +130,10 @@ Note: `MonotoneSelection` lives in `Assumptions.lean`; we take the raw a.s.
 predicate `(∀ᵐ ω, S.SelOfA false ω ≤ S.SelOfA true ω)` as a hypothesis here
 to keep this file dependency-free of `Assumptions.lean`. -/
 
-/-- Under monotone sample selection, the harmed stratum has measure zero. -/
+/-- If [sample selection is monotone, i.e. selection under control implies selection under
+treatment almost surely (`Sel(0) ≤ Sel(1)`)](hyp:hMono), then [the harmed-selected stratum —
+units who would be selected under control but not under treatment — has probability
+zero](goal). -/
 lemma harmedSelected_ae_empty
     (hMono : ∀ᵐ ω ∂P.μ, S.SelOfA false ω ≤ S.SelOfA true ω) :
     P.μ S.harmedSelected = 0 := by

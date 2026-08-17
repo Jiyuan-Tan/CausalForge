@@ -305,13 +305,20 @@ section Main
 variable {ι : Type u} {𝒳 : Type v} [MeasurableSpace 𝒳]
 variable [Nonempty 𝒳] [Nonempty ι] [Countable ι]
 
-/-- Finite-VC localized uniform deviation event.
-
-For `ρ = vcLocalizedSlope K d n` and `Rmax = R.b = b`, where `R` is the
-finite-VC localized regime built by `vcLocalizedRegime`, there is an event of
-probability at least `1 - δ` on which every function in the class with
-`0 ≤ norm (F i) ≤ b` satisfies the sharp localized deviation bound
-`8 * ρ * norm (F i) + 5 * ρ ^ 2`.
+/-- **Finite-VC localized uniform deviation event.** For [a class of
+measurable real-valued functions](hyp:hF_meas) [uniformly bounded in
+absolute value by a nonnegative constant b](hyp:hb,hbound), with [a
+localization constant K at least 1](hyp:hK) and [a positive sample size
+n](hyp:hn), suppose [the class factors through a binary Boolean family of
+VC dimension at most d](hyp:Hvc) and [satisfies the localized Dudley
+hypotheses relative to the given seminorm](hyp:Hloc). For [a failure
+probability δ in `(0,1]`](hyp:hδ,hδ'), writing ρ for the localized slope
+`vcLocalizedSlope K d n`, if [ρ is at most b](hyp:hρ_le_b) and [the
+peeling/log-domination side condition holds at every dyadic scale](hyp:hδ_dom),
+then [there is a measurable event of probability at least `1 - δ` on which
+every class member i with `0 ≤ norm (F i) ≤ b` satisfies the sharp
+localized deviation bound `|n⁻¹ ∑ₖ F i(ωₖ) − 𝔼[F i]| ≤ 8ρ·norm(F i) +
+5ρ²`](goal).
 
 The arithmetic side condition `hδ_dom` is the peeling/log domination condition
 from `localized_uniform_deviation_sharp`. -/
@@ -383,7 +390,19 @@ theorem vc_localized_deviation_event
   intro ω hω i hi_nonneg hi_b
   simpa [R, ρ] using hE_bound ω hω i hi_nonneg hi_b
 
-/-- Growth-cardinality localized uniform deviation event.
+/-- **Growth-cardinality localized uniform deviation event.** For [a class of measurable
+real-valued functions](hyp:hF_meas) [uniformly bounded in absolute value by a nonnegative constant
+b](hyp:hb,hbound) that [factors through a Boolean classifier π at every finite sample, for a
+coordinate transform φ with `F i (S j) = φ j (π i (S j))`](hyp:hfactor), with [a localization
+constant K at least 1](hyp:hK) and [a positive sample size n](hyp:hn), suppose [the induced Boolean
+growth family satisfies the direct cardinality bound `#growthFamily π S ≤ (m+1)^dPi` on every
+finite sample of size m](hyp:hcard) and [the class satisfies the localized Dudley hypotheses
+relative to the given seminorm](hyp:Hloc). For [a failure probability δ in `(0,1]`](hyp:hδ,hδ'),
+writing ρ for the localized slope `vcLocalizedSlope K dPi n`, if [ρ is at most b](hyp:hρ_le_b) and
+[the peeling/log-domination side condition holds at every dyadic scale](hyp:hδ_dom), then [there is
+a measurable event of probability at least `1 - δ` on which every class member i with `0 ≤ norm (F
+i) ≤ b` satisfies the sharp localized deviation bound `|n⁻¹ ∑ₖ F i(ωₖ) − 𝔼[F i]| ≤ 8ρ·norm(F i) +
+5ρ²`](goal).
 
 This variant takes a direct cardinality bound on the binary trace family,
 `#growthFamily π S ≤ (m + 1)^dPi`, matching finite policy trace bounds that

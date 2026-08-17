@@ -32,9 +32,12 @@ open scoped Matrix
 
 variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
 
-/-- The linear-algebra core of ICA identifiability: if the generalized matrix
-`W = A'⁻¹ A` has at most one non-zero entry per column (the column-support fact),
-then `A⁻¹` and `A'⁻¹` agree up to a generalized permutation. -/
+/-- Let `A`, `A'` be `n × n` real matrices such that [`A` is invertible](hyp:hAu)
+and [`A'` is invertible](hyp:hA'u). If [the matrix `A'⁻¹ A` has at most one
+non-zero entry per column](hyp:hcol) — the column-support fact — then [there exist
+a permutation `τ` and a nowhere-zero scale vector `d` such that `A'⁻¹` and `A⁻¹`
+agree up to that generalized permutation: `A'⁻¹ i j = d i · A⁻¹ (τ i) j` for every
+`i, j`](goal). -/
 theorem ica_genPerm_relation {n : ℕ} {A A' : Matrix (Fin n) (Fin n) ℝ}
     (hAu : IsUnit A.det) (hA'u : IsUnit A'.det)
     (hcol : ∀ j i k, i ≠ k → (A'⁻¹ * A) i j = 0 ∨ (A'⁻¹ * A) k j = 0) :
@@ -67,12 +70,19 @@ theorem ica_genPerm_relation {n : ℕ} {A A' : Matrix (Fin n) (Fin n) ℝ}
         simp [hWform, hc]
       · simp
 
-/-- **LiNGAM identification theorem (kurtosis route, Marcinkiewicz-free).**  Two
-LiNGAM models with mixing matrices `A, A'` (coefficient matrices `A⁻¹ = I − B`,
-`A'⁻¹ = I − B'`): both invertible, both with unit diagonal (`Bᵢᵢ = 0`), the first
-acyclic in a causal order `σ`, driven by independent centered finite-fourth-moment
-disturbances with non-zero fourth cumulant of one common sign, and producing the same
-observed law.  Then the coefficient matrices coincide, `A⁻¹ = A'⁻¹` (i.e. `B = B'`).
+/-- **LiNGAM identification theorem (kurtosis route, Marcinkiewicz-free).**  Let
+`A`, `A'` be `n × n` real mixing matrices, [both invertible](hyp:hAu,hA'u), with
+coefficient matrices `A⁻¹ = I − B`, `A'⁻¹ = I − B'` [both having unit
+diagonal](hyp:hCdiag,hC'diag), and with [`A⁻¹` acyclic with respect to a causal
+order `σ`: `(A⁻¹) i j = 0` whenever `σ i < σ j`](hyp:hacyc). Let `e`, `e'` be
+families of real disturbances on a probability space, [each coordinate
+measurable](hyp:hem,he'm), [each family's coordinates mutually
+independent](hyp:heI,he'I), [each coordinate of `e` with finite fourth
+moment](hyp:heL4), [each coordinate of `e` centered](hyp:hcent), and [the fourth
+cumulant of every coordinate of `e` nonzero and of one common sign](hyp:hkurt). If
+[the structural equations `A·e` and `A'·e'` produce the same observed
+law](hyp:hobs), then [the coefficient matrices coincide, `A⁻¹ = A'⁻¹` (i.e. `B =
+B'`)](goal).
 
 Proof: push `hobs` through `A'⁻¹` so `W·e =ᵈ e'` has independent components, hence the
 two output coordinates are independent; `colSupport_of_kurtosis` gives the column

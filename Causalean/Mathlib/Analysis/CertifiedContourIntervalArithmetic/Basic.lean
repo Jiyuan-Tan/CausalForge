@@ -159,7 +159,10 @@ theorem sub_sound {I J : RatInterval} {x y : ℝ}
     (hx : I.Contains x) (hy : J.Contains y) : (sub I J).Contains (x - y) := by
   simpa [sub_eq_add_neg, sub] using add_sound hx (neg_sound hy)
 
-/-- Rational interval multiplication encloses the product of any enclosed real operands. -/
+/-- For rational intervals `I` and `J`, if [`x` is a real number contained in
+`I`](hyp:hx) and [`y` is a real number contained in `J`](hyp:hy), then [the
+interval-multiplication enclosure `mul I J` contains the real product
+`x * y`](goal). -/
 theorem mul_sound {I J : RatInterval} {x y : ℝ}
     (hx : I.Contains x) (hy : J.Contains y) : (mul I J).Contains (x * y) := by
   rcases hx with ⟨hxl, hxu⟩

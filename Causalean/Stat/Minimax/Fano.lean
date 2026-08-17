@@ -153,9 +153,10 @@ theorem sum_correct_le {est : Ω → Θ} (hest : Measurable est) {θ : ι → Θ
         have := sum_refReal_acceptance_le P hest hsep i₀
         linarith
 
-/-- **Fano average-error lower bound.** For a family whose parameter values are
-pairwise `2s`-separated, the average probability of error over the `N = card ι`
-hypotheses is at least `1 − (1 + ∑ᵢ tvDist (P i₀) (P i)) / N`. -/
+/-- **Fano average-error lower bound.** For [a measurable estimator `est`](hyp:hest) and a
+family of parameter values that are [pairwise `2s`-separated](hyp:hsep), [the average probability
+of error over the `N = card ι` hypotheses is at least
+`1 − (1 + ∑ᵢ tvDist (P i₀) (P i)) / N`](goal). -/
 theorem fano_average_error {est : Ω → Θ} (hest : Measurable est) {θ : ι → Θ} {s : ℝ}
     (hsep : ∀ i k, i ≠ k → 2 * s ≤ dist (θ i) (θ k)) (i₀ : ι) :
     1 - (1 + ∑ i, tvDist (P i₀) (P i)) / (Fintype.card ι)
@@ -181,9 +182,11 @@ theorem fano_average_error {est : Ω → Θ} (hest : Measurable est) {θ : ι �
   rw [hsumerr, le_div_iff₀ hNpos, sub_mul, div_mul_cancel₀ _ hNne, one_mul]
   linarith [hcorrect]
 
-/-- **Fano existence-of-bad-hypothesis bound (uniform `β`).** If every hypothesis is
-within total variation `β` of the reference `P i₀`, then some hypothesis has error
-probability at least `1 − 1/N − β`.  This is the directly usable minimax statement:
+/-- **Fano existence-of-bad-hypothesis bound (uniform `β`).** For [a measurable estimator
+`est`](hyp:hest) and a family of parameter values that are [pairwise
+`2s`-separated](hyp:hsep), if [every hypothesis's law is within total variation `β` of the
+reference `P i₀`](hyp:hβ), then [some hypothesis has error probability at least
+`1 − 1/N − β`](goal).  This is the directly usable minimax statement:
 choosing the number of hypotheses `N` large and the divergence `β` small forces
 error. -/
 theorem fano_exists_error {est : Ω → Θ} (hest : Measurable est) {θ : ι → Θ} {s : ℝ}

@@ -168,11 +168,17 @@ theorem farEnd_vanishes_of_tendsto_atBot
   rw [abs_of_nonneg hnn]
   linarith [hmono, hprob]
 
-/-- **Lower-protected Imbens-Manski pointwise coverage.** If the normalized lower
-endpoint has a standard-normal limit, the lower offset is nonnegative, and the
-upper endpoint is the far endpoint whose lower-tail miss probability vanishes,
-then the eventual coverage of that point is at least the normal one-sided
-probability, up to any positive tolerance.
+/-- **Lower-protected Imbens-Manski pointwise coverage.** Let `Sl`, `Su` be the normalized
+lower- and upper-endpoint statistics for an interval-identified scalar parameter, with
+[`Sl n` measurable for every sample size `n`](hyp:hSl), [`Su n` measurable for every sample
+size `n`](hyp:hSu), and [`Sl` converging in distribution to the standard normal
+law](hyp:hSld). Fix a one-sided critical value `c`. Suppose [the normalized lower offset
+`aL n`, of the target point inside the identified interval, is nonnegative for every
+`n`](hyp:haL), and [the far-endpoint failure probability — that `Su n` falls below
+`-(c + bU n)` — tends to zero as `n → ∞`](hyp:hfar). Then for [any positive
+tolerance `ε`](hyp:hε), [eventually, as `n → ∞`, the probability that the Imbens-Manski
+interval covers the target point is at least `Φ(c) − ε`, where `Φ` is the standard-normal
+distribution function](goal).
 
 Here `Sl` is the normalized lower-endpoint statistic, `Su` is the normalized
 upper-endpoint statistic, `c` is the one-sided critical value, `aL` is the

@@ -180,10 +180,13 @@ lemma sampleMean_le (S : IIDSample Ω X μ P) (yL yU : X → ℝ)
   exact hLU _
 
 omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
-/-- **The Hausdorff bridge (Beresteanu–Molinari Theorem 3.2, statistic form).**
-`maxAbs` of the centered endpoint normalised sum is exactly
-`√n · H(Ȳₙ, E[Y])`, the scaled Hausdorff distance between the sample-mean interval
-`Ȳₙ = [ȳ_{nL}, ȳ_{nU}]` and the population identified interval `E[Y] = [E y_L, E y_U]`. -/
+/-- **The Hausdorff bridge (Beresteanu–Molinari Theorem 3.2, statistic form).** For an
+i.i.d. sample with interval endpoints `yL`, `yU` satisfying [the lower endpoint
+pointwise at most the upper endpoint](hyp:hLU) and [both integrable](hyp:hLint,hUint),
+[the max-abs functional applied to the centered endpoint normalised sum equals the
+scaled Hausdorff distance `√n · H(Ȳₙ, E[Y])` between the sample-mean interval
+`Ȳₙ = [ȳ_{nL}, ȳ_{nU}]` and the population identified interval
+`E[Y] = [E y_L, E y_U]`](goal). -/
 theorem maxAbs_normalizedSum_eq (S : IIDSample Ω X μ P) (yL yU : X → ℝ)
     (hLU : ∀ z, yL z ≤ yU z) (hLint : Integrable yL P) (hUint : Integrable yU P)
     (n : ℕ) (ω : Ω) :
@@ -325,12 +328,16 @@ lemma intervalIFVec_hHmeas (S : IIDSample Ω X μ P) (yL yU : X → ℝ)
     maxAbs_normalizedSum_eq S yL yU hLU hLint hUint n ω
 
 omit [IsProbabilityMeasure P] in
-/-- **Beresteanu–Molinari Theorem 3.2 (scalar interval data).**  For an i.i.d.
-sample of interval data `Yᵢ = [y_{iL}, y_{iU}]` with `y_L ≤ y_U` and the centered
-endpoint influence function satisfying the multivariate-CLT hypotheses, the scaled
-Hausdorff distance between the sample-mean interval `Ȳₙ` and the population
-identified interval `E[Y] = [E y_L, E y_U]` converges in distribution to the
-max-abs of the bivariate Gaussian limit:
+/-- **Beresteanu–Molinari Theorem 3.2 (scalar interval data).** For an i.i.d. sample of
+interval data `Yᵢ = [y_{iL}, y_{iU}]` with [the lower endpoint pointwise at most the
+upper endpoint](hyp:hLU) and [both endpoints integrable](hyp:hLint,hUint), assume the
+centered endpoint influence function is [measurable](hyp:hψ), has [finite second
+moment](hyp:hvar) and is [integrable](hyp:hψ_int), is [centered](hyp:hmean), and its
+normalized partial sums and the resulting scaled Hausdorff statistic are
+[almost-everywhere measurable at every sample size](hyp:hSum_meas,hHmeas). Then [the
+scaled Hausdorff distance between the sample-mean interval `Ȳₙ` and the population
+identified interval `E[Y] = [E y_L, E y_U]` converges in distribution to the max-abs of
+the bivariate Gaussian limit of the influence function](goal):
 
     √n · H(Ȳₙ, E[Y])  ⇒  max(|z_L|, |z_U|).
 
@@ -361,13 +368,15 @@ theorem interval_data_clt (S : IIDSample Ω X μ P) (yL yU : X → ℝ)
     (Filter.Eventually.of_forall fun n => Filter.Eventually.of_forall fun ω =>
       maxAbs_normalizedSum_eq S yL yU hLU hLint hUint n ω)
 
-/-- **Beresteanu–Molinari Theorem 3.2, self-contained `MemLp 2` form.**  For an
-i.i.d. sample of interval data `Yᵢ = [y_{iL}, y_{iU}]` with `y_L ≤ y_U`, measurable
-endpoints, and finite second moments (`MemLp 2`), the scaled Hausdorff distance
-between the sample-mean interval and the population identified interval
-`E[Y] = [E y_L, E y_U]` converges in distribution to the max-abs of the bivariate
-Gaussian limit.  All four multivariate-CLT hypotheses of `interval_data_clt` are
-discharged from the clean moment conditions on `yL, yU`. -/
+/-- **Beresteanu–Molinari Theorem 3.2, self-contained `MemLp 2` form.** For an i.i.d.
+sample of interval data `Yᵢ = [y_{iL}, y_{iU}]` with [the lower endpoint pointwise at
+most the upper endpoint](hyp:hLU), [measurable endpoints](hyp:hLmeas,hUmeas), and
+[finite second moments (`MemLp 2`) for both endpoints](hyp:hLsq,hUsq), [the scaled
+Hausdorff distance between the sample-mean interval and the population identified
+interval `E[Y] = [E y_L, E y_U]` converges in distribution to the max-abs of the
+bivariate Gaussian limit of the endpoint influence function](goal). All four
+multivariate-CLT hypotheses of `interval_data_clt` are discharged from these clean
+moment conditions on `yL`, `yU`. -/
 theorem interval_data_clt_of_memLp (S : IIDSample Ω X μ P) (yL yU : X → ℝ)
     (hLU : ∀ z, yL z ≤ yU z) (hLmeas : Measurable yL) (hUmeas : Measurable yU)
     (hLsq : MemLp yL 2 P) (hUsq : MemLp yU 2 P) :

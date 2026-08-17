@@ -942,14 +942,14 @@ theorem qFactorProduct_rnDeriv_eq_qFactorDensityProduct
     (qFactorProduct_rnDeriv_eq_obsChainKernel_card_pullback M ref s).trans
       (obsChainKernel_card_rnDeriv_pullback_eq_qFactorDensityProduct M ref hdom s hstep)
 
-/-- **Observational density chain rule.**
+/-- **Observational density chain rule.** In a [structural causal model whose observational
+law is absolutely continuous with respect to the joint reference measure on the observed
+nodes](hyp:hdom), if in addition [the stepwise fibre Radon--Nikodym condition holds along
+the observed topological order](hyp:hstep), then [the joint observational density agrees,
+almost everywhere with respect to that joint reference measure, with the product of the
+one-node conditional density factors taken in observed topological order](goal).
 
-The joint observational density equals, almost everywhere with respect to the
-joint reference measure, the product of the one-node conditional densities along
-the observed topological order, provided the model is dominated, every node
-reference measure is σ-finite, and the stepwise fibre Radon--Nikodym condition
-holds.  Unlike a finite/discrete statement this covers continuous reference
-measures. -/
+Unlike a finite/discrete statement this covers continuous reference measures. -/
 theorem obsDensity_eq_qFactorDensityProduct
     (M : Causalean.SCM N Ω) (ref : ReferenceMeasures Ω)
     (hdom : DominatedObs M ref) (s : M.FixedValues)

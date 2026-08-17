@@ -116,7 +116,11 @@ noncomputable def linRieszScore (S : LinRegFnSys)
     (γ : S.H_γ) (α : S.X → ℝ) (θ : ℝ) (z : S.Z) : ℝ :=
   Causalean.Estimation.OrthogonalMoments.rieszScore S.γ_target (L_of_m S) S.proj_X S.Y_obs γ α θ z
 
-/-- **Mean-zero of the debiased linear score at the truth.** -/
+/-- **Mean-zero of the debiased linear score at the truth.** Given the linear
+regression-functional system with Riesz representer `rep`, assume [the α₀-weighted
+regression-residual product at the truth is integrable](hyp:h_α₀_resid_int). Then [the
+population mean of the linear Riesz score, evaluated at the true regression function and
+the representer's α₀, equals zero](goal). -/
 theorem linRieszScore_meanZero (S : LinRegFnSys)
     (rep : Causalean.Estimation.OrthogonalMoments.RieszRepresentation
             S.H_γ S.γ_target (L_of_m S) S.P_X)
@@ -142,11 +146,10 @@ theorem linRieszScore_directional_g_zero (S : LinRegFnSys)
         - ∫ x, rep.α₀ x * S.γ_target ν_g x ∂S.P_X = 0 := by
   have hrep := rep.representation ν_g; unfold L_of_m at hrep; linarith
 
-/-- **Directional zero in the representer direction.**
-
-For any measurable perturbation `ν_α : X → ℝ` with integrable residual
-product, the directional derivative of the population debiased moment in
-the `α`-direction at the truth vanishes. -/
+/-- **Directional zero in the representer direction.** For any perturbation `ν_α` of the
+representer, assume [ν_α is measurable](hyp:hν_α_meas) and [the ν_α-weighted
+regression-residual product at the truth is integrable](hyp:h_int). Then [the population
+mean of the ν_α-weighted regression residual at the truth is zero](goal). -/
 theorem linRieszScore_directional_α_zero (S : LinRegFnSys)
     (ν_α : S.X → ℝ) (hν_α_meas : Measurable ν_α)
     (h_int :
@@ -165,8 +168,14 @@ matches the textbook form `E[α(X)² − 2 m(Z;α)]`. -/
 noncomputable def linRieszLoss (S : LinRegFnSys) (α : S.H_γ) : ℝ :=
   ∫ x, (S.γ_target α x) ^ 2 ∂S.P_X - 2 * L_of_m S α
 
-/-- **Excess Riesz loss equals the squared L²(P_X) distance to the
-representer.** -/
+/-- **Excess Riesz loss equals the squared L²(P_X) distance to the representer.** Let
+`α₀_idx` index the Riesz representer via [`rep.α₀ = γ_target α₀_idx`
+pointwise](hyp:hRep_eq_idx). Assume [`(γ_target α) ^ 2` is integrable](hyp:h_int_α2),
+[`(γ_target α₀_idx) ^ 2` is integrable](hyp:h_int_α₀2), [the product
+`γ_target α · γ_target α₀_idx` is integrable](hyp:h_int_αα₀), and [the squared difference
+`(γ_target α − γ_target α₀_idx) ^ 2` is integrable](hyp:h_int_diff_sq). Then [the excess
+linear Riesz loss of α over α₀_idx equals the squared L²(P_X) distance between
+`γ_target α` and `γ_target α₀_idx`](goal). -/
 theorem linRieszLoss_excess_eq_l2dist (S : LinRegFnSys)
     (α α₀_idx : S.H_γ)
     (rep : Causalean.Estimation.OrthogonalMoments.RieszRepresentation
@@ -222,11 +231,14 @@ private lemma linear_coeff_eq_zero_of_quad_nonneg {a b : ℝ} (ha : 0 ≤ a)
   · have hapos : 0 < a := lt_of_le_of_ne ha (Ne.symm hz); have key := h (-b / a)
     have hane : a ≠ 0 := ne_of_gt hapos; field_simp [hane] at key; nlinarith [sq_nonneg b]
 
-/-- **First-order condition for Riesz loss minimizers** (Prop 4, first half).
-
-`α₀_idx` is a (directional) minimizer of the Riesz loss along every line
-`α₀_idx + t • ν` if and only if it indexes a Riesz representer in the sense
-that `L(ν) = ∫ γ_target α₀_idx · γ_target ν dP_X` for every `ν ∈ H_γ`. -/
+/-- **First-order condition for Riesz loss minimizers** (Prop 4, first half). Assume [the
+squared regression functional along every perturbed line `α₀_idx + t • ν` is
+integrable](hyp:h_int_quad), that [the linear moment integrand `m_lin(·, ν)` is
+integrable for every direction ν](hyp:h_int_L), and that [the product
+`γ_target α₀_idx · γ_target ν` is integrable for every direction ν](hyp:h_int_α₀ν_X).
+Then [α₀_idx is a directional minimizer of the Riesz loss along every line through it if
+and only if it indexes a Riesz representer, i.e. `L_of_m S ν = ∫ γ_target α₀_idx ·
+γ_target ν dP_X` for every ν](goal). -/
 theorem linRieszLoss_FOC_iff_representer (S : LinRegFnSys)
     (α₀_idx : S.H_γ)
     (h_int_quad :

@@ -167,10 +167,11 @@ lemma twoPointMean_eq_map_bernoulli (B u : ℝ) (hB : B ≠ 0) :
   rw [show 2 * B + -B = B by ring]
   rw [show 1 - (1 + u / B) / 2 = (1 - u / B) / 2 by ring]
 
-/-- **KL band for the signed two-point mean channel.**  For `B > 0` and means `u, v` with
-`|u| ≤ B/2` and `|v| ≤ B/2`, the Kullback–Leibler divergence between the two channels is bounded by
-the quadratic `KL(Q_u, Q_v) ≤ (u − v)²/B²`.  This is the affine transport of the `{0,1}` Bernoulli
-KL band onto the `{−B, B}` mean parametrization. -/
+/-- **KL band for the signed two-point mean channel.** For [a strictly positive spread
+parameter `B`](hyp:hB) and two channel means `u` and `v` each [confined to the interval
+`[-B/2, B/2]`](hyp:hu,hv), [the Kullback–Leibler divergence between the two-point channels with
+means `u` and `v` is bounded by the quadratic `(u − v)²/B²`](goal). This is the affine transport
+of the `{0,1}` Bernoulli KL band onto the `{−B, B}` mean parametrization. -/
 lemma bernoulli_mean_channel_kl (B u v : ℝ) (hB : 0 < B)
     (hu : |u| ≤ B / 2) (hv : |v| ≤ B / 2) :
     InformationTheory.klDiv (twoPointMean B u) (twoPointMean B v)

@@ -56,10 +56,12 @@ theorem nonempty_of_design (D : ∀ i, FiniteDesign (α i)) : ∀ i, Nonempty (�
   rw [Finset.univ_eq_empty, Finset.sum_empty] at this
   exact one_ne_zero this.symm
 
-/-- **Disjoint-block factorization of expectation.** If `f` depends only on the coordinates in the
-block `A` (it is invariant under changes to coordinates outside `A`) and `g` depends only on the
-coordinates outside `A`, then under the product design their product's expectation factors:
-`E[f·g] = E[f]·E[g]`.  The general (block-level) form of `E_prod_apply₂`. -/
+/-- **Disjoint-block factorization of expectation.** For [a family of independent coordinate
+designs `D`](hyp:D) and [real-valued functions `f` and `g`](hyp:f,g) on the joint assignment
+space, suppose [`f` is invariant under any change to the coordinates outside a block `A` — it
+depends only on the coordinates in `A`](hyp:hf), and [`g` depends only on the coordinates outside
+`A`](hyp:hg). Then [under the product design, the expectation of the product `f·g` factors as
+`E[f·g] = E[f]·E[g]`](goal). The general (block-level) form of `E_prod_apply₂`. -/
 theorem E_prod_block_mul (D : ∀ i, FiniteDesign (α i)) (A : Finset ι)
     (f g : (∀ i, α i) → ℝ)
     (hf : ∀ w w' : ∀ i, α i, (∀ i ∈ A, w i = w' i) → f w = f w')
@@ -101,9 +103,10 @@ theorem E_prod_block_mul (D : ∀ i, FiniteDesign (α i)) (A : Finset ι)
     (measurable_of_finite f).aestronglyMeasurable
     (measurable_of_finite g).aestronglyMeasurable
 
-/-- **Disjoint-block covariance vanishing (complement form).** If `f` depends only on the
-coordinates in `A` and `g` only on the coordinates outside `A`, their covariance under the product
-design is zero. -/
+/-- **Disjoint-block covariance vanishing (complement form).** For [a family of independent
+coordinate designs `D`](hyp:D) and [real-valued functions `f` and `g`](hyp:f,g), suppose [`f`
+depends only on the coordinates in a block `A`](hyp:hf) and [`g` depends only on the coordinates
+outside `A`](hyp:hg). Then [their covariance under the product design is zero](goal). -/
 theorem Cov_prod_block_zero (D : ∀ i, FiniteDesign (α i)) (A : Finset ι)
     (f g : (∀ i, α i) → ℝ)
     (hf : ∀ w w' : ∀ i, α i, (∀ i ∈ A, w i = w' i) → f w = f w')
@@ -111,9 +114,11 @@ theorem Cov_prod_block_zero (D : ∀ i, FiniteDesign (α i)) (A : Finset ι)
     (prodDesign D).Cov f g = 0 := by
   rw [Cov_eq, E_prod_block_mul D A f g hf hg, sub_self]
 
-/-- **Disjoint-block covariance vanishing (two-block form).** If `f` depends only on the
-coordinates in `S` and `g` only on the coordinates in `T`, and `S` and `T` are disjoint, then their
-covariance under the product design is zero. -/
+/-- **Disjoint-block covariance vanishing (two-block form).** For [a family of independent
+coordinate designs `D`](hyp:D) and [real-valued functions `f` and `g`](hyp:f,g), suppose [the
+index sets `S` and `T` are disjoint](hyp:hST), [`f` depends only on the coordinates in
+`S`](hyp:hf), and [`g` depends only on the coordinates in `T`](hyp:hg). Then [their covariance
+under the product design is zero](goal). -/
 theorem Cov_prod_disjoint_zero (D : ∀ i, FiniteDesign (α i)) (S T : Finset ι)
     (hST : Disjoint S T) (f g : (∀ i, α i) → ℝ)
     (hf : ∀ w w' : ∀ i, α i, (∀ i ∈ S, w i = w' i) → f w = f w')

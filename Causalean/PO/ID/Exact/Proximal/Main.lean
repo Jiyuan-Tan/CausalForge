@@ -49,10 +49,13 @@ namespace Assumptions
 
 /-! ### Main theorem 1: E[Y(a)] = E[h(a,W,X)] -/
 
-/-- **Proximal ATE identification** (prop:po-proximal-ate step 1).
-
-For each treatment level `a`, the counterfactual mean equals the bridge mean:
-  ∫ ω, S.YofA a ω ∂μ = ∫ ω, HA.h (a, S.W ω, S.X ω) ∂μ.
+/-- **Proximal ATE identification** (`prop:po-proximal-ate` step 1). Under
+[the proximal identifying assumption bundle, including completeness within
+treatment level and integrability of the potential outcomes and
+bridge-function values](hyp:HA), provided [the treatment and outcome are
+distinct nodes](hyp:hAY), [for each treatment level `a` the counterfactual
+mean outcome equals the mean of the proximal bridge function evaluated at
+that level: `E[Y(a)] = E[h(a,W,X)]`](goal).
 
 **Proof sketch** (see `doc/Basic Concepts.tex` §2555–2622):
 1. Define auxiliary function g_a via σ-algebra factorisation.
@@ -508,11 +511,10 @@ theorem Eofyofa_eq_Eh (HA : Assumptions S μ) (a : Bool)
 
 /-! ### Main theorem 2: proximal ATE formula -/
 
-/-- **Proximal ATE** (prop:po-proximal-ate).
-
-  ATE  =  E[Y(1)] − E[Y(0)]
-       =  E[h(1,W,X)] − E[h(0,W,X)].
--/
+/-- **Proximal ATE identification.** Under [the proximal identifying
+assumption bundle](hyp:HA) and given [the treatment and outcome are distinct
+nodes](hyp:hAY), [the average treatment effect `E[Y(1)] − E[Y(0)]` equals the
+bridge-function contrast `E[h(1,W,X)] − E[h(0,W,X)]`](goal). -/
 theorem ate_proximal (HA : Assumptions S μ) (hAY : S.Avar.v ≠ S.Yvar.v) :
     ∫ ω, S.YofA true ω ∂μ - ∫ ω, S.YofA false ω ∂μ
       = ∫ ω, HA.h (true, S.W ω, S.X ω) ∂μ

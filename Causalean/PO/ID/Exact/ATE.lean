@@ -410,9 +410,12 @@ theorem cate_backdoor_of_propScore_ne [StandardBorelSpace P.Ω] [IsFiniteMeasure
     rw [hEq]
     exact h_ne
 
-/-- **CATE-level backdoor identification.**  Under consistency, unconfoundedness,
-and (two-sided) overlap, the conditional ATE equals the adjusted-outcome
-functional:
+/-- **CATE-level backdoor identification.** Under [the backdoor identification
+assumptions — consistency, unconfoundedness, and two-sided overlap of the
+propensity score, together with integrability of the potential
+outcomes](hyp:hA), for a treatment arm `d`, [the conditional average
+treatment effect given the covariates equals the adjusted-outcome
+functional](goal):
 
     μ[Y(d) | σ(X)] =ᵐ[μ] μ[Y · 1_{D=d} | σ(X)] / P[D=d | σ(X)].
 
@@ -425,7 +428,11 @@ theorem cate_backdoor [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
   S.cate_backdoor_of_propScore_ne hA.consistency hA.unconfoundedness
     hA.integrable_Y1 hA.integrable_Y0 d (S.propScore_ne_of_overlap hA.overlap d)
 
-/-- **Integrated backdoor ATE identification.** -/
+/-- **Integrated backdoor ATE identification.** Under [the backdoor
+identification assumptions — consistency, unconfoundedness, two-sided
+overlap, and integrable potential outcomes](hyp:hA), [the average treatment
+effect equals the adjusted-outcome functional obtained by averaging the
+CATE-level backdoor identity over the covariate distribution](goal). -/
 theorem ate_backdoor [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
     (hA : S.Assumptions) : S.ATE = S.adjustedATE := by
   unfold POBackdoorSystem.ATE POBackdoorSystem.adjustedATE
@@ -535,8 +542,11 @@ lemma propScore_true_eq_eLift :
     S.propScore true = fun ω => S.eLift (S.factualX ω) :=
   S.exists_propScoreLift.choose_spec.2
 
-/-- **Regression-adjustment identification (observable).** The adjustment
-functional equals the value-space outcome regression evaluated at the arm `d`:
+/-- **Regression-adjustment identification (observable).** For a treatment arm
+`d`, if [the observed outcome is integrable](hyp:hY) and [the covariate-
+conditional probability of receiving arm `d` is almost surely nonzero](hyp:h_ne),
+then [the backdoor adjustment functional for arm `d` equals the value-space
+outcome regression evaluated at the arm `d`](goal):
 
     adjustedCE d  =ᵐ  fun ω => regFn (d, factualX ω)  = E[Y | D=d, X].
 

@@ -26,14 +26,17 @@ namespace Causalean.Mathlib.Optimization
 open scoped BigOperators
 
 -- @node: lem:weighted-simplex-active-set
-/-- **Weighted-simplex active-set solution.** For any positive simplex mass `M`,
-positive coordinate weights `β`, and `κ ≥ 0`, if `κ > 0` there is a *unique*
-admissible support/multiplier
-pair `(S, λ)`, the active-set point it induces lies in `Δ_M`, is the *unique*
-minimizer of the SOCP, and its optimal value is the closed form `M · λ`; if
-`κ = 0` the minimizer set is exactly the exposed `α`-minimizing face. This encodes
-the displayed KKT coordinate formula, the uniqueness of the admissible support,
-the value formula, and the `κ = 0` face clause. -/
+/-- **Weighted-simplex active-set solution.** Fix [a positive total simplex mass `M`](hyp:hM),
+linear weights `α`, [coordinate weights `β` that are all strictly positive](hyp:hβ), and
+[a nonnegative regularization parameter `κ`](hyp:hk0), and consider minimizing the
+second-order-cone objective `Σ αᵢtᵢ + κ·√(Σβᵢtᵢ²)` over the three-point simplex `Δ_M` of total
+mass `M`. Then [the following two facts hold: whenever `κ` is strictly positive, there is a
+*unique* admissible support/multiplier pair `(S, λ)`, its induced active-set point lies in
+`Δ_M` and is the *unique* global minimizer of the objective, with optimal value the closed
+form `M · λ`; and whenever `κ` equals zero, a point of `Δ_M` minimizes the objective exactly
+when it lies on the exposed `α`-minimizing face](goal). This encodes the displayed KKT
+coordinate formula, the uniqueness of the admissible support, the value formula, and the
+`κ = 0` face clause. -/
 lemma weighted_simplex_active_set (M : ℝ) (hM : 0 < M)
     (α β : Fin 3 → ℝ) (kappa : ℝ)
     (hβ : ∀ i, 0 < β i) (hk0 : 0 ≤ kappa) :

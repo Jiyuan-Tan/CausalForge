@@ -143,14 +143,13 @@ theorem upperUndershoot_subset_absMiss {hi : Ω → ℝ} {U wU : ℝ} :
   rw [abs_sub_comm]
   exact le_abs_self _
 
-/-- **Abstract honest confidence interval (set coverage).**  Let `lo`, `hi` be the
-(random) lower/upper endpoint estimators of the population bounds `L`, `U`.
-Suppose the two one-sided endpoint-failure events have controlled probability:
-
-    μ{ L < lo − w_L } ≤ δ_L,    μ{ hi + w_U < U } ≤ δ_U.
-
-Then the widened random interval `[lo − w_L, hi + w_U]` covers the entire
-identified set `[L, U]` with probability at least `1 − δ_L − δ_U`.
+/-- **Abstract honest confidence interval (set coverage).** Let `lo`, `hi` be the
+(random) lower/upper endpoint estimators of the population bounds `L`, `U`, with [`lo`
+measurable](hyp:hlo) and [`hi` measurable](hyp:hhi). Suppose [the probability that the
+widened lower endpoint `lo − wL` overshoots `L` is at most `δL`](hyp:hML), and [the
+probability that the widened upper endpoint `hi + wU` undershoots `U` is at most
+`δU`](hyp:hMU). Then [the widened random interval `[lo − wL, hi + wU]` covers the entire
+identified set `[L, U]` with probability at least `1 − δL − δU`](goal).
 
 This is a conservative partial-ID analogue of the Horowitz–Manski (2000)
 confidence region, proved by a single union bound over the two
@@ -187,10 +186,13 @@ theorem honest_ci_set_cover {lo hi : Ω → ℝ} (hlo : Measurable lo) (hhi : Me
     rw [measureReal_compl hCmeas, probReal_univ]
   linarith [hcompleq, hcompl_le]
 
-/-- **Abstract honest confidence interval (parameter coverage).**  Under the same
-endpoint-miss hypotheses as `honest_ci_set_cover`, if the true value `θ₀` lies in
-the identified set `[L, U]`, then the widened random interval `[lo − w_L, hi + w_U]`
-covers `θ₀` with probability at least `1 − δ_L − δ_U`.
+/-- **Abstract honest confidence interval (parameter coverage).** Let `lo`, `hi` be random
+lower/upper endpoint estimators of a population interval `[L, U]`, with [`lo`
+measurable](hyp:hlo) and [`hi` measurable](hyp:hhi). Suppose [the true value `θ` lies in
+`[L, U]`](hyp:hθ), [the probability that the widened lower endpoint `lo − wL` overshoots
+`L` is at most `δL`](hyp:hML), and [the probability that the widened upper endpoint
+`hi + wU` undershoots `U` is at most `δU`](hyp:hMU). Then [the widened random interval
+`[lo − wL, hi + wU]` covers `θ` with probability at least `1 − δL − δU`](goal).
 
 Obtained by composing `honest_ci_set_cover` with
 `randomCoversIcc_subset_randomCoversPoint`: covering the set is sufficient for

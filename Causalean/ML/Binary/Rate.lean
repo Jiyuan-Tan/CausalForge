@@ -422,11 +422,17 @@ theorem regLogisticCoef_isBigOp (φ : FeatureMap γ K) (P : Measure (γ × ℝ))
           ring
 
 omit [DecidableEq K] in
-/-- **Regularized-logistic root-n estimation rate.** Under the penalized population FOC,
-`λ > 0`, the L⁴ feature moment, and a square-integrable score, the fitted logistic
-probability `σ(⟨β̂ₙ, φ⟩)` attains the root-n L²-rate toward the population target
-`σ(⟨β⋆, φ⟩)`.  Assembled from the coefficient rate, the `1/4`-Lipschitz `σ`, and the
-shared linear-predictor L² bound. -/
+/-- **Regularized-logistic root-n estimation rate.** For [a strictly positive regularization
+weight `lam`](hyp:hlam), suppose [`βstar` solves the penalized population first-order condition
+for the logistic quasi-score under the feature map `φ` and law `P`](hyp:hpop), and that for every
+sample size `n` and outcome `ω`, [the fitted coefficients `βhat n ω` solve the corresponding
+empirical penalized first-order condition on the i.i.d. sample `S`](hyp:hFOC). Suppose further
+that [every feature coordinate is measurable](hyp:hφ), that [the fourth moment of the squared
+feature norm is integrable under `P`](hyp:h4), and that [each coordinate of the population
+logistic score at `βstar` is square-integrable under `P`](hyp:hscore). Then [the fitted logistic
+predictor `σ(⟨βhat n ω, φ⟩)` achieves the L²-rate `n^{-1/2}` toward the population target
+predictor `σ(⟨βstar, φ⟩)`, under `P` and the sampling law `μ`](goal). Assembled from the
+coefficient rate, the `1/4`-Lipschitz `σ`, and the shared linear-predictor L² bound. -/
 theorem regLogistic_achievesL2Rate (φ : FeatureMap γ K) (P : Measure (γ × ℝ))
     [IsProbabilityMeasure P] (S : IIDSample Ω (γ × ℝ) μ P) [IsProbabilityMeasure μ]
     {lam : ℝ} (hlam : 0 < lam) (βstar : K → ℝ) (βhat : ℕ → Ω → K → ℝ)

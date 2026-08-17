@@ -47,9 +47,9 @@ fitted intercept: the degree-`p` WLS intercept equals `∑ᵢ Sᵢ Yᵢ`. -/
 noncomputable def equivKernelWeight (p : ℕ) {N : ℕ} (x w : Fin N → ℝ) (i : Fin N) : ℝ :=
   ∑ k, (designMatrix p x w)⁻¹ 0 k * (w i * x i ^ (k : ℕ))
 
-/-- **Polynomial reproduction of the equivalent kernel.** If the weighted design moment
-matrix is invertible, the local-polynomial equivalent-kernel weights reproduce polynomials
-up to degree `p`: `∑ᵢ Sᵢ xᵢᵐ = [m = 0]` for every `m ≤ p`. This discharges the reproduction
+/-- **Polynomial reproduction of the equivalent kernel.** If [the weighted design moment matrix is
+invertible](hyp:hM), then [the local-polynomial equivalent-kernel weights reproduce polynomials up
+to degree `p`: `∑ᵢ Sᵢ xᵢᵐ = [m = 0]` for every `m ≤ p`](goal). This discharges the reproduction
 hypothesis of `linearSmoother_bias_of_reproduces`. -/
 theorem equivKernelWeight_reproduces {N p : ℕ} {x w : Fin N → ℝ}
     (hM : IsUnit (designMatrix p x w).det) :

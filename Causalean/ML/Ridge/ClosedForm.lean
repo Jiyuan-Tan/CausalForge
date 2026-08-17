@@ -26,7 +26,8 @@ noncomputable def ridgeCoef
   ((Xᵀ * X) + lam • (1 : Matrix Param Param ℝ))⁻¹ *ᵥ (Xᵀ *ᵥ y)
 
 set_option linter.unusedFintypeInType false in
-/-- For `λ > 0`, the ridge Gram matrix is positive definite. -/
+/-- For [a strictly positive ridge penalty `λ`](hyp:hlam), [the ridge Gram matrix `XᵀX + λI`
+built from a finite design matrix `X` is positive definite](goal). -/
 theorem ridgeGram_posDef
     (X : Matrix Obs Param ℝ) {lam : ℝ} (hlam : 0 < lam) :
     ((Xᵀ * X) + lam • (1 : Matrix Param Param ℝ)).PosDef := by
@@ -37,8 +38,9 @@ theorem ridgeGram_posDef
     exact Matrix.PosDef.smul Matrix.PosDef.one hlam
   exact Matrix.PosDef.posSemidef_add hpsd hI
 
-/-- For `λ > 0`, the closed-form ridge coefficient solves the ridge normal
-equations. -/
+/-- For [a strictly positive ridge penalty `λ`](hyp:hlam), [the closed-form ridge coefficient
+`(XᵀX + λI)⁻¹Xᵀy`, built from a finite design matrix `X` and outcome vector `y`, satisfies the
+ridge normal equations `(XᵀX + λI)β̂ = Xᵀy`](goal). -/
 theorem ridgeCoef_normalEq
     (X : Matrix Obs Param ℝ) (y : Obs → ℝ) {lam : ℝ} (hlam : 0 < lam) :
     ((Xᵀ * X) + lam • (1 : Matrix Param Param ℝ)) *ᵥ ridgeCoef X y lam = Xᵀ *ᵥ y := by

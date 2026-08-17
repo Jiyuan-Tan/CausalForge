@@ -113,8 +113,13 @@ noncomputable def parentValuesFromPrefix (M : Causalean.SCM N Ω) {n : ℕ}
 -- § 4. Measurability of the parent-lookup map
 -- ============================================================
 
-/-- The parent-lookup map `parentValuesFromPrefix` is jointly measurable in
-    `(s, ℓ, ξ)`. -/
+/-- Fix a structural causal model `M` and a step index `n` such that [there are
+    at least `n + 1` observed nodes, so `n` names a valid position in the
+    canonical topological order of observed nodes](hyp:hn). Then [the map
+    `parentValuesFromPrefix` that reads off the parent values of the `n`-th
+    observed node from a fixed-value assignment, a latent assignment, and the
+    already-generated length-`n` prefix of observed values is jointly
+    measurable in these three arguments](goal). -/
 theorem measurable_parentValuesFromPrefix (M : Causalean.SCM N Ω) {n : ℕ}
     (hn : n + 1 ≤ M.observed.card) :
     Measurable (M.parentValuesFromPrefix hn) := by

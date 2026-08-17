@@ -187,14 +187,15 @@ lemma holder_taylor_remainder_of_lt {f : ℝ → ℝ} {M β lo hi t a : ℝ} {p 
           rw [← hcombine]
           ring
 
-/-- **Hölder–Taylor remainder bound under the standard Hölder convention.**
-Let `p = holderDerivOrder β`, the largest natural number strictly below `β`, and
-let `[lo,hi]` be a window containing `t` and `a`. If `f` is
-`p`-times continuously differentiable and its `p`-th derivative is
-`(β − p)`-Hölder with constant `M` on the window, then the error of the degree-`p`
-Taylor approximation of `f` at `t` is bounded by `(M / p!) · |a − t|^β`. For
-positive integer `β = m`, this uses derivative order `m - 1` and Hölder exponent
-`1`.
+/-- **Hölder–Taylor remainder bound under the standard Hölder convention.** Let `p`
+denote the largest natural number strictly below the smoothness index `β`. If [`β` is
+positive](hyp:hβ), [the Hölder constant `M` is nonnegative](hyp:hM), [the expansion point
+`t` lies in a window `[lo,hi]`](hyp:ht), [the evaluation point `a` lies in the same
+window](hyp:ha), [`f` is `p` times continuously differentiable](hyp:hf), and [its `p`-th
+derivative is `(β − p)`-Hölder with constant `M` on the window](hyp:hb), then [the error
+of the degree-`p` Taylor approximation of `f` at `t`, evaluated at `a`, is bounded by
+`(M / p!) · |a − t|^β`](goal). For positive integer `β = m`, this uses derivative order
+`m - 1` and Hölder exponent `1`.
 
 The window form of the Hölder hypothesis is essential: the Lagrange remainder is
 evaluated at an interior point `ξ ∈ (t,a) ⊆ [lo,hi]`, so the increment bound must

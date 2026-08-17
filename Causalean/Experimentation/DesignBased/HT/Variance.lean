@@ -91,9 +91,14 @@ theorem Cov_htTotal_cov (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : Ω �
         (fun z => by rw [htTotal_eq]; exact Finset.sum_congr rfl (fun j _ => by ring))]
   rw [FiniteDesign.Cov_linear_comb]
 
-/-- **Proposition 4.4 (covariance), expanded form `eq:totals_covariance`**. When the two
-exposures are distinct and every unit has nonzero probability of both exposures, the diagonal
-cross-indicator vanishes and yields the unidentified term `−∑ᵢ y_i(dk)y_i(dl)`. -/
+/-- **Proposition 4.4 (covariance), expanded form `eq:totals_covariance`**. Given a finite design,
+an outcome function `y`, an exposure map `f`, and an assignment `θ`, suppose [the two exposures
+`dk` and `dl` are distinct](hyp:hne), [every unit has nonzero probability of realizing exposure
+`dk`](hyp:hk), and [every unit has nonzero probability of realizing exposure `dl`](hyp:hl). Then
+[the covariance of the two Horvitz–Thompson totals equals the off-diagonal double sum of
+inverse-probability-weighted joint-exposure covariance terms, minus the diagonal term
+`∑ᵢ y_i(dk)·y_i(dl)`](goal) — a unit cannot occupy two distinct exposures at once, so the diagonal
+cross-indicator vanishes and leaves this unidentified term. -/
 theorem Cov_htTotal (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : Ω → Θ → Δ) (θ : ι → Θ)
     (dk dl : Δ) (hne : dk ≠ dl)
     (hk : ∀ i, prop D f θ i dk ≠ 0) (hl : ∀ i, prop D f θ i dl ≠ 0) :

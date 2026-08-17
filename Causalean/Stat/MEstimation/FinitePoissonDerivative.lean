@@ -27,9 +27,14 @@ noncomputable def expCellUpdatedMean {I : Type*} [DecidableEq I]
   Function.update m j (B * Real.exp x)
 
 -- @node: finitePoissonObjective_expCell_argmax_snd_hasDerivAt
-/-- For a full-rank finite Poisson projection with one exponentially perturbed
-cell mean, the derivative of the selected scalar coefficient is characterized
-by the scalar coordinate of the linearized score solution. -/
+/-- **Derivative of the finite Poisson maximizer under one exponentially perturbed cell mean.**
+Suppose [every cell weight is strictly positive](hyp:hq), [every base cell mean is strictly
+positive](hyp:hm), [the perturbation scale `B` is strictly positive](hyp:hB), and [the linear
+design map is injective](hyp:hA); consider replacing cell `j`'s mean by the exponential path
+`x ↦ B · exp x`. If [`betaDot` is the unique value solving the score equation linearized at the
+maximizer for base point `x₀`, for every perturbation direction](hyp:hbeta), then [the second
+(scalar) coordinate of the maximizer, as a function of `x`, has derivative `betaDot`
+at `x₀`](goal). -/
 lemma finitePoissonObjective_expCell_argmax_snd_hasDerivAt
     {U I : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U]
     [FiniteDimensional ℝ U] [Fintype I] [DecidableEq I] [Nonempty I]

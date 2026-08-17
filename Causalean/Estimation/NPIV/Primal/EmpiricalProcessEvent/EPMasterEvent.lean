@@ -730,15 +730,17 @@ lemma empirical_critic_argmax_localized_from_components
       (R := D_closed + D_emp) hcl hopt
   linarith [hclosed_upper, hemp_upper]
 
-/-- **Master localized empirical-process event for the primal NPIV analysis.**
+/-- **Master localized empirical-process event for the primal NPIV analysis.** Given, for every
+sample size `n`, [a localized-regime bundle for the weak-norm, regularizer, and cross function
+classes at that fold-A sample size](hyp:regimes), and [a confidence level `ζ` strictly between
+`0` and `1`](hyp:hζ_pos,hζ_lt), [there is a single event of probability at least `1 − ζ` on
+which, simultaneously for every `n` with `1 ≤ split.n₁ n`, the population weak-objective excess
+plus the empirical regularizer excess is bounded by the empirical sup-objective excess plus a
+localized envelope built from the regimes' critical radii and a `√(log(1/ζ)/n)` term](goal).
 
-Produces a single Ω-event `Aζ_master` of mass `≥ 1 − ζ` on which, for
-every `n` with `1 ≤ split.n₁ n`, the population weak-objective excess
-plus the empirical regularizer excess is bounded by the empirical
-sup-objective excess plus the localized envelope. The envelope combines the
-localized regimes for the weak-norm class, the regularizer class, and their
-interaction, so downstream lemmas can consume one event rather than three
-separate concentration statements. -/
+The envelope combines the localized regimes for the weak-norm class, the regularizer class, and
+their interaction, so downstream lemmas can consume one event rather than three separate
+concentration statements. -/
 theorem ep_master_event_from_localized
     {S : OperatorSystem Ω μ} {TC : TRAEClasses S}
     {P_W : Measure S.𝒲}

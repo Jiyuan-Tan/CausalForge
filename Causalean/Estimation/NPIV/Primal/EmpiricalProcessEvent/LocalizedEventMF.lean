@@ -163,10 +163,17 @@ lemma localized_omega_event_for_mF_pair
       simpa [B, i] using regime.interp_mF_eval_pair f₁ f₂ hf₁ hf₂ (S.W ω')
     simpa [Ψ, r, hpop, heval_sample, heval_pop] using hdev
 
-/-- Ω-side peeled pair-form localized deviation event for the moment class
-`star(m ∘ F)`.  The dyadic peeling is over the bundle radius of the pair
-index for `m(W; f₁) - m(W; f₂)`, producing a Foster-style bound depending
-on the critic L² gap rather than the worst-case diameter. -/
+/-- **Peeled pair-form localized deviation event for the moment class `star(m ∘ F)`.** Given [a
+positive sample size `n`](hyp:hn) and [a confidence level `δ` in `(0, 1]`](hyp:hδ_pos,hδ_le),
+[there is a single event of probability at least `1 − δ`, valid simultaneously for every pair
+`f₁, f₂` in the critic class `TC.F`, on which the gap between the empirical and population
+means of `m(·; f₁) − m(·; f₂)` is bounded by `8 · mF_L2_const · δ_n · ‖f₁ − f₂‖_strong +
+5 · δ_n²`](goal), where the strong norm is taken in the critic's L² embedding and `mF_L2_const`
+comes from the supplied localized-regime witness.
+
+The dyadic peeling is over the bundle radius of the pair index for `m(W; f₁) - m(W; f₂)`,
+producing a Foster-style bound depending on the critic L² gap rather than the worst-case
+diameter. -/
 lemma localized_omega_event_for_mF_pair_peeled
     {S : OperatorSystem Ω μ} {TC : TRAEClasses S}
     {P_W : Measure S.𝒲}

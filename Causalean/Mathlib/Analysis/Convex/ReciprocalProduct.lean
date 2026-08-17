@@ -65,8 +65,10 @@ lemma neg_log_sum_convexOn {s : Set (ι → ℝ)} (hs : Convex ℝ s) (S : Finse
       rw [hfun]
       exact h0
 
-/-- **Convexity of a reciprocal product.** On a convex set `s` whose coordinates indexed by `S`
-stay positive, `p ↦ (∏ k ∈ S, p k)⁻¹` is convex. -/
+/-- **Convexity of a reciprocal coordinate product.** On [a convex subset of the coordinate
+space](hyp:hs), if [every coordinate indexed by a fixed finite index set stays strictly positive
+throughout the set](hyp:hS), then [the map sending a point to the reciprocal of the product of
+its coordinates over that index set is convex on the set](goal). -/
 lemma prod_inv_convexOn {s : Set (ι → ℝ)} (hs : Convex ℝ s) (S : Finset ι)
     (hS : ∀ p ∈ s, ∀ k ∈ S, 0 < p k) :
     ConvexOn ℝ s (fun p : ι → ℝ => (∏ k ∈ S, p k)⁻¹) := by

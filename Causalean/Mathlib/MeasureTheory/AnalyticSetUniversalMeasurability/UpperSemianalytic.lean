@@ -146,8 +146,11 @@ theorem measurable_completion [PolishSpace Ω] [BorelSpace Ω] {f : Ω → ℝ�
     @Measurable (NullMeasurableSpace Ω μ) ℝ≥0∞ _ _ f := by
   exact (hf.nullMeasurable μ).measurable'
 
-/-- For an upper-semi-analytic extended-nonnegative function, integration on the completed space
-agrees with the outer integral against the original measure. -/
+/-- On a Polish sample space equipped with its Borel σ-algebra and a finite measure `μ`, if
+[`f` is upper-semi-analytic — every strict superlevel set `{ω | a < f ω}` is
+analytic](hyp:hf), then [the lower Lebesgue integral of `f` against the completion of `μ`
+equals the outer integral of `f` with respect to `μ`, i.e. the infimum of the lower integrals
+of all measurable pointwise majorants of `f`](goal). -/
 theorem lintegral_completion_eq_outerLIntegral [PolishSpace Ω] [BorelSpace Ω]
     {f : Ω → ℝ≥0∞}
     (hf : UpperSemianalytic f) (μ : Measure Ω) [IsFiniteMeasure μ] :

@@ -210,9 +210,13 @@ private lemma phi_eta_real_line_hasDerivAt
   case e'_8 => rfl
   ring
 
-/-- Pointwise convergence of the difference quotient of `phi_eta` in the
-nuisance argument to the closed-form directional derivative, under strict
-overlap on the anchor `g₀`.
+/-- **Pointwise convergence of the DR pseudo-outcome difference quotient.** Fix an anchor
+nuisance pair `g₀`, a perturbation direction `v`, and a data point `z`. If [`ε` is strictly
+positive](hyp:hε_pos) and [the anchor `g₀` has propensity uniformly bounded in
+`[ε, 1 − ε]` for every covariate value](hyp:h_overlap_g₀), then [as the step size `t`
+tends to `0` along nonzero values, the difference quotient
+`(phi_eta z (g₀ + t•v) − phi_eta z g₀) / t` converges to the closed-form directional
+derivative `phi_eta_dir_deriv g₀ v z`](goal).
 
 Proof sketch: write
 `phi_eta z (g₀ + t • v) - phi_eta z g₀` as the sum of three pieces

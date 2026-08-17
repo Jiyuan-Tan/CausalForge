@@ -219,11 +219,15 @@ theorem tvDist_QfalseV_QtrueV_le_half (P : VarConstr K) {n : ℕ} [NeZero K]
         apply mul_le_mul_of_nonneg_left _ (by norm_num); exact Real.sqrt_le_sqrt hchi
     _ = 1 / 2 := by rw [Real.sqrt_one]; ring
 
-/-- **Structure-agnostic minimax lower bound (cell-varying center).**  Around a
-nuisance center that varies across pairs (constant within each pair), with the
-per-pair budgets and the regularity conditions met, **every** measurable estimator
-misses the true ATE by `s = ½(ate gλ − ate ĝ)` with probability at least `1/4`
-somewhere in the class. -/
+/-- **Structure-agnostic minimax lower bound (cell-varying center).** Around a nuisance center
+`P` that varies across pairs (constant within each pair), suppose [every pair's propensity-bump
+budget `(m₀ⱼ·(β/g₁ⱼ))² ≤ εm` holds](hyp:hm) and [every pair's treated-arm budget
+`g₁ⱼ²(α+β)²/(g₁ⱼ−β)² ≤ εg` holds](hyp:hg) for [nonnegative error tolerances
+εg, εm](hyp:hεg,hεm), and the per-pair overlap coefficients satisfy [the total-mass bound
+`Σⱼ Γⱼ/K ≤ 1`](hyp:hΓsum) and [the sample-size regularity budget
+`(n²/2)·Σⱼ (Γⱼ/K)² ≤ log 2`](hyp:hreg). Then for [any measurable estimator of the average
+treatment effect](hyp:hest), [the worst-case-over-class probability that it misses the true ATE
+by half the cell-varying gap `ate gλ − ate ĝ` is at least `1/4`](goal). -/
 theorem minimax_lower_bound_var (P : VarConstr K) {n : ℕ} [NeZero K] {εg εm : ℝ}
     (hm : ∀ j, (P.m₀ j * (P.β / P.g₁ j)) ^ 2 ≤ εm)
     (hg : ∀ j, P.g₁ j ^ 2 * (P.α + P.β) ^ 2 / (P.g₁ j - P.β) ^ 2 ≤ εg)

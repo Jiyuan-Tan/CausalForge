@@ -29,7 +29,8 @@ variable {P : POSystem} (S : POBalkePearlSystem P)
 lemma cellProb_nonneg (y d z : Bool) : 0 ≤ S.cellProb y d z :=
   div_nonneg ENNReal.toReal_nonneg ENNReal.toReal_nonneg
 
-/-- For each instrument value the four observed cells sum to one. -/
+/-- Under [the Balke-Pearl IV base assumptions](hyp:hA), [for every instrument value `z`,
+the four observed outcome-treatment cell probabilities sum to one](goal). -/
 lemma sum_cellProb_eq_one (hA : S.BaseAssumptions) (z : Bool) :
     ∑ y : Bool, ∑ d : Bool, S.cellProb y d z = 1 := by
   have h : ∀ y d, S.cellProb y d z = _ := fun y d => S.cellProb_eq_sum_latent hA y d z

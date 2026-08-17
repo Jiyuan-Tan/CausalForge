@@ -44,13 +44,21 @@ namespace POBackdoorSystem
 variable {P : POSystem} {γ : Type*} [MeasurableSpace γ]
 variable (S : POBackdoorSystem P γ)
 
-/-- **The sharp ATE interval endpoints in closed form.** Combining the four unconditional
-quantile-balancing closed forms, the sharp ATE endpoints are differences of
-conditional-quantile candidate means:
-`ateUpperCalib = candMean (cutoffProp cTU) − candMean0 (lowerCutoffProp0 cCL)`
-(treated upper minus control lower) and
-`ateLowerCalib = candMean (lowerCutoffProp cTL) − candMean0 (cutoffProp0 cCU)`
-(treated lower minus control upper), for `σ(X)`-measurable conditional-quantile cutoffs. -/
+/-- **The sharp ATE interval endpoints in closed form.** Fix [a sensitivity parameter Λ greater
+than 1](hyp:hΛ). Given, for the treated arm, [two-sided propensity overlap](hyp:hoverlapT), [an
+atomless conditional outcome distribution](hyp:hatomlessT), [that the upper and lower calibration
+levels each lie strictly between 0 and 1 almost everywhere](hyp:hlevelTU,hlevelTL), [that the
+calibrated candidate mean is bounded above over its ambiguity set](hyp:hbddT), [that every
+candidate propensity in that ambiguity set is measurable up to null sets](hyp:hmeasT), and
+[integrability regularity, for every `σ(X)`-measurable cutoff candidate, feeding both the upper
+and lower calibration constructions](hyp:hregTU,hregTL) — together with the symmetric conditions
+for the control arm ([overlap](hyp:hoverlapC), [atomlessness](hyp:hatomlessC), [calibration-level
+regularity](hyp:hlevelCU,hlevelCL), [boundedness](hyp:hbddC), [measurability](hyp:hmeasC), and
+[cutoff integrability regularity](hyp:hregCU,hregCL)) — then [there exist `σ(X)`-measurable
+conditional-quantile cutoffs `cTU, cTL, cCU, cCL` such that the sharp calibrated ATE upper
+endpoint equals the treated upper-cutoff candidate mean minus the control lower-cutoff candidate
+mean, and the sharp calibrated ATE lower endpoint equals the treated lower-cutoff candidate mean
+minus the control upper-cutoff candidate mean](goal). -/
 theorem ate_endpoints_eq_cutoff (Λ : ℝ) (hΛ : 1 < Λ)
     -- treated arm regularity
     (hoverlapT : ∀ᵐ ω ∂P.μ, 0 < S.propScore true ω ∧ S.propScore true ω < 1)
@@ -129,11 +137,22 @@ theorem ate_endpoints_eq_cutoff (Λ : ℝ) (hΛ : 1 < Λ)
   · unfold POBackdoorSystem.ateLowerCalib
     rw [hTL, hCU]
 
-/-- **The true ATE lies in the sharp closed-form interval.** Combining
-`ate_endpoints_eq_cutoff` (the closed-form endpoints) with `ate_mem_Icc_calib`
-(interval validity), the true `τ = E[Y(1)] − E[Y(0)]` lies in the quantile-balancing
-closed-form interval. The per-arm validity inputs `hT`, `hC` are the same as for
-`ate_mem_Icc_calib`. -/
+/-- **The true ATE lies in the sharp closed-form interval.** Under the same treated-arm and
+control-arm regularity conditions as `ate_endpoints_eq_cutoff` — [a sensitivity parameter Λ
+greater than 1](hyp:hΛ); for the treated arm, [propensity overlap](hyp:hoverlapT), [an atomless
+conditional outcome distribution](hyp:hatomlessT), [calibration-level
+regularity](hyp:hlevelTU,hlevelTL), [boundedness of the calibrated candidate mean](hyp:hbddT),
+[measurability of every candidate propensity](hyp:hmeasT), and [cutoff integrability
+regularity](hyp:hregTU,hregTL); and symmetrically for the control arm
+([overlap](hyp:hoverlapC), [atomlessness](hyp:hatomlessC), [calibration-level
+regularity](hyp:hlevelCU,hlevelCL), [boundedness](hyp:hbddC), [measurability](hyp:hmeasC), and
+[cutoff integrability regularity](hyp:hregCU,hregCL)) — together with [validity of the treated
+arm's calibrated sharp interval for `E[Y(1)]`](hyp:hT) and [validity of the control arm's
+calibrated sharp interval for `E[Y(0)]`](hyp:hC), [there exist `σ(X)`-measurable
+conditional-quantile cutoffs `cTU, cTL, cCU, cCL` such that the true average treatment effect
+`τ = E[Y(1)] − E[Y(0)]` lies between the closed-form lower endpoint (treated lower-cutoff
+candidate mean minus control upper-cutoff candidate mean) and the closed-form upper endpoint
+(treated upper-cutoff candidate mean minus control lower-cutoff candidate mean)](goal). -/
 theorem ate_mem_Icc_cutoff (Λ : ℝ) (hΛ : 1 < Λ)
     (hoverlapT : ∀ᵐ ω ∂P.μ, 0 < S.propScore true ω ∧ S.propScore true ω < 1)
     (hatomlessT : ∀ a : γ, Continuous (condCDF S.treatedXYLaw a))

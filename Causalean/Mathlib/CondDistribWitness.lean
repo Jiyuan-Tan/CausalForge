@@ -98,11 +98,13 @@ instance instIsMarkovKernel_witnessKernel (μ : Measure Ω) [IsFiniteMeasure μ]
   have : IsMarkovKernel (condDistrib C Z μ) := inferInstance
   exact Measure.isProbabilityMeasure_map hhp.aemeasurable
 
-/-- **Witness-kernel form of a conditional distribution under conditional independence.**
-
-If `Y = h X Z C` pointwise and `C` is conditionally independent of `X` given `Z` — expressed as the
-a.e. equality of conditional kernels `condDistrib C (X,Z) = condDistrib C Z` — then the conditional
-distribution of `Y` given `(X,Z)` is, a.e., the pushforward of `condDistrib C Z` by `h x z`. -/
+/-- **Witness-kernel form of a conditional distribution under conditional independence.** For
+[measurable maps `X`, `Z`, and `C`](hyp:hX,hZ,hC) and [a jointly measurable structural-response
+function `h`](hyp:hh), if [the conditional distribution of `C` given the pair `(X,Z)` agrees
+almost everywhere with the conditional distribution of `C` given `Z` alone — conditional
+independence of `C` from `X` given `Z`](hyp:hCI), then [the conditional distribution of the
+outcome `h(X,Z,C)` given `(X,Z)` agrees almost everywhere with the pushforward, by the map
+`h x z`, of the conditional distribution of `C` given `Z`](goal). -/
 theorem condDistrib_map_of_condDistrib_fst_eq
     (μ : Measure Ω) [IsFiniteMeasure μ]
     {X : Ω → 𝒳} {Z : Ω → 𝒵} {C : Ω → 𝒞} {h : 𝒳 → 𝒵 → 𝒞 → 𝒴}
@@ -173,13 +175,14 @@ theorem condDistrib_map_of_condDistrib_fst_eq
   -- The two preimage events `{W ∈ A ∧ Y ∈ B}` and `{(W,C) ∈ {q | q.1 ∈ A ∧ h … ∈ B}}` coincide.
   congr 1
 
-/-- **No-treatment witness-kernel form of a conditional distribution.**
+/-- **No-treatment witness-kernel form of a conditional distribution.** For [measurable maps `Z`
+and `C`](hyp:hZ,hC) and [a jointly measurable response function `H`](hyp:hH), [the conditional
+distribution of the outcome `H(Z,C)` given `Z` agrees almost everywhere with the pushforward, by
+the map `H z`, of the conditional distribution of `C` given `Z`](goal).
 
-If `Y = H Z C` pointwise (no separate conditioning-independent coordinate), then the conditional
-distribution of `Y` given `Z` is, a.e., the pushforward of `condDistrib C Z` by `H z`.  This is the
-`X`-free specialization of `condDistrib_map_of_condDistrib_fst_eq`: with the conditioning variable
-`Z` equal to the full information used to split `Y`, no conditional-independence hypothesis is
-needed (the trivial `X` carries no information). -/
+This is the `X`-free specialization of `condDistrib_map_of_condDistrib_fst_eq`: with the
+conditioning variable `Z` equal to the full information used to split `Y`, no
+conditional-independence hypothesis is needed (the trivial `X` carries no information). -/
 theorem condDistrib_map_of_funext
     (μ : Measure Ω) [IsFiniteMeasure μ]
     {Z : Ω → 𝒵} {C : Ω → 𝒞} {H : 𝒵 → 𝒞 → 𝒴}

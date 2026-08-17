@@ -69,8 +69,8 @@ lemma empiricalRademacherComplexity_congr_sample
 
 /-- The population Rademacher complexity is unchanged when each member of the
 function family is replaced by an almost-everywhere-equal version: if
-`f i ∘ sample` equals `f' i ∘ sample` almost everywhere for every index `i`, the
-two families have equal Rademacher complexity. -/
+[for every index `i`, `f i ∘ sample` equals `f' i ∘ sample` almost everywhere with respect to
+`μ`](hyp:h), then [the two families `f` and `f'` have equal Rademacher complexity](goal). -/
 lemma rademacherComplexity_congr_ae
     {Ω 𝒳 ι : Type*} [MeasurableSpace Ω]
     [Countable ι]

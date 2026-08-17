@@ -81,9 +81,11 @@ theorem supportFn_Icc_neg_one {a b : ℝ} (hab : a ≤ b) :
   rw [Set.image_neg_Icc]
   exact csSup_Icc (by linarith)
 
-/-- **The `d = 1` Hörmander identity (Beresteanu–Molinari eq. (A.1)).**  The
-Hausdorff distance between two intervals is the sup over the unit "sphere"
-`{+1, −1}` of the support-function differences. -/
+/-- **The `d = 1` Hörmander identity (Beresteanu–Molinari eq. (A.1)).** For real numbers
+`a ≤ b` and `c ≤ d` forming [two well-ordered closed intervals](hyp:hab,hcd), [the
+Hausdorff distance between the intervals `[a,b]` and `[c,d]` equals the largest, over
+the two unit directions `+1` and `−1`, of the absolute difference between their
+support functions in that direction](goal). -/
 theorem hausdorffDist_Icc_eq_supportFn {a b c d : ℝ} (hab : a ≤ b) (hcd : c ≤ d) :
     hausdorffDist (Set.Icc a b) (Set.Icc c d)
       = max |supportFn (Set.Icc a b) (-1 : ℝ) - supportFn (Set.Icc c d) (-1 : ℝ)|
@@ -92,8 +94,12 @@ theorem hausdorffDist_Icc_eq_supportFn {a b c d : ℝ} (hab : a ≤ b) (hcd : c 
     supportFn_Icc_neg_one hab, supportFn_Icc_neg_one hcd,
     show (-a) - (-c) = -(a - c) by ring, abs_neg]
 
-/-- **Artstein identity, `d = 1`, direction `+1`.**  The upper support endpoint of
-the Aumann expectation equals the expectation of the upper support endpoint:
+/-- **Artstein identity, `d = 1`, direction `+1`.** For [measurable lower and upper
+endpoint functions `L`, `U` of an interval-valued random set](hyp:hL,hU) that are
+[integrable](hyp:hLint,hUint) and satisfy [`L` pointwise at most `U`](hyp:hLU), [the
+support function of the Aumann (selection) expectation of the random interval `[L, U]`
+in the direction `+1`, namely the upper endpoint, equals the expectation of the support
+function of the random interval itself in that direction](goal):
 `s(+1, E[F]) = E[s(+1, F)]`. -/
 theorem artstein_supportFn_one (hL : Measurable L) (hU : Measurable U)
     (hLint : Integrable L μ) (hUint : Integrable U μ) (hLU : ∀ ω, L ω ≤ U ω) :
@@ -104,9 +110,13 @@ theorem artstein_supportFn_one (hL : Measurable L) (hU : Measurable U)
   rw [selectionExpectation_eq_Icc hL hU hLint hUint hLU,
     supportFn_Icc_one (integral_le_integral_of_le hLint hUint hLU), hfun]
 
-/-- **Artstein identity, `d = 1`, direction `−1`.**  The (negated) lower support
-endpoint of the Aumann expectation equals the expectation of the lower support
-endpoint: `s(−1, E[F]) = E[s(−1, F)]`. -/
+/-- **Artstein identity, `d = 1`, direction `−1`.** For [measurable lower and upper
+endpoint functions `L`, `U` of an interval-valued random set](hyp:hL,hU) that are
+[integrable](hyp:hLint,hUint) and satisfy [`L` pointwise at most `U`](hyp:hLU), [the
+support function of the Aumann (selection) expectation of the random interval `[L, U]`
+in the direction `−1`, namely the negated lower endpoint, equals the expectation of the
+support function of the random interval itself in that direction](goal):
+`s(−1, E[F]) = E[s(−1, F)]`. -/
 theorem artstein_supportFn_neg_one (hL : Measurable L) (hU : Measurable U)
     (hLint : Integrable L μ) (hUint : Integrable U μ) (hLU : ∀ ω, L ω ≤ U ω) :
     supportFn (selectionExpectation L U μ) (-1 : ℝ)

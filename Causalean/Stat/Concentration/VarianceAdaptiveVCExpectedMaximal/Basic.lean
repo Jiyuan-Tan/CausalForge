@@ -150,9 +150,11 @@ noncomputable def countableEmpiricalSup
     (P : Measure 𝒳) (F : ι → 𝒳 → ℝ) {n : ℕ} (S : Fin n → 𝒳) : ℝ :=
   uniformDeviation n F P id S
 
-/-- A uniform polynomial covering certificate over all probability measures
-supplies canonically normalized polynomial covering data for every finite
-empirical law, with base at least Euler's number and exponent at least one. -/
+/-- **Empirical covering from population covering.** If [a family `F` of real-valued functions
+with envelope `U` admits a uniform polynomial $L^2$ covering-number bound over every probability
+measure](hyp:hF), then [there exist a base `A` at least Euler's number and an exponent `v` at
+least one such that `F` has polynomial empirical $L^2$ covering numbers with envelope `U`, base
+`A`, and exponent `v`](goal). -/
 theorem HasPolynomialL2Cover.hasPolynomialEmpiricalL2Cover
     {F : ι → 𝒳 → ℝ} {U : ℝ}
     (hF : HasPolynomialL2Cover F U) :

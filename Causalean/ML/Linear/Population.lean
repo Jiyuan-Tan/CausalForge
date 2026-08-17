@@ -27,8 +27,12 @@ coefficients `βstar` is uncorrelated with every feature `φ·ₖ`. -/
 def IsPopulationOLS (P : Measure (X' × ℝ)) (φ : FeatureMap X' K) (βstar : K → ℝ) : Prop :=
   ∀ k, ∫ z, (z.2 - ∑ j, βstar j * φ.φ z.1 j) * φ.φ z.1 k ∂P = 0
 
-/-- A coefficient vector satisfying the population normal equations minimizes
-squared population risk over all linear-in-features predictors. -/
+/-- For a probability measure `P` on features and outcome and a finite feature map `φ`, if
+[the residual of the linear predictor with coefficients `βstar` is uncorrelated in expectation
+with every feature](hyp:hortho), [the population squared-loss risks of the `βstar`- and
+`β`-predictors are both finite](hyp:hint_star,hint_β), and [each feature is integrable against
+that residual](hyp:hcross), then [the population squared risk of the `βstar`-predictor is at
+most that of any other linear-in-features predictor with coefficients `β`](goal). -/
 theorem bestLinearPredictor_minimizes_populationRisk
     (P : Measure (X' × ℝ)) (φ : FeatureMap X' K) {βstar : K → ℝ}
     (hortho : IsPopulationOLS P φ βstar) (β : K → ℝ)

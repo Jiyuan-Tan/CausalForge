@@ -115,12 +115,18 @@ theorem erm_excess_le_two_uniformDeviation [IsProbabilityMeasure μ]
       linarith [hdev_le ihat, hdev_le istar]
     _ = 2 * uniformDeviation n f μ X (X ∘ ω) := by ring
 
-/-- **Generic ERM oracle inequality (Rademacher).** For the empirical-risk minimizer
-`ihat` (beating the comparator `istar` on every sample) over a countable hypothesis class
-with `|loss| ≤ b`, the excess population risk exceeds `4·𝔯ₙ + 2ε` with probability at most
-`exp(−ε² t n)`, where `𝔯ₙ = rademacherComplexity n f μ X` is the Rademacher complexity of
-the loss class.  Chains the deterministic ERM inequality with FoML's symmetrization +
-McDiarmid tail. -/
+/-- **Generic ERM oracle inequality (Rademacher).** Consider a countable hypothesis class
+indexed by `ι`, evaluated through [measurable loss functions `f i`](hyp:hf) composed with
+[a measurable data map `X`](hyp:hX), where [every loss value is bounded in absolute value by
+a nonnegative constant `b`](hyp:hb,hf'). Let `ihat` assign to each sample of size `n` an
+index that [attains empirical risk no larger than that of a fixed comparator
+`istar`](hyp:hERM). Then, provided [the McDiarmid tail parameter `t` satisfies
+`t·b² ≤ 1/2`](hyp:ht') and [`ε` is nonnegative](hyp:hε), [the probability, over the `n`-fold
+product sample, that the excess population risk of `ihat` over `istar` exceeds
+`4·𝔯ₙ + 2ε` — where `𝔯ₙ` is the Rademacher complexity of the loss class — is at most
+`exp(−ε²·t·n)`](goal).
+
+Chains the deterministic ERM inequality with FoML's symmetrization + McDiarmid tail. -/
 theorem erm_oracle_inequality [MeasurableSpace 𝒳] [Nonempty 𝒳] [Countable ι]
     [IsProbabilityMeasure μ] (hf : ∀ i, Measurable (f i))
     (X : Ω → 𝒳) (hX : Measurable X) {b : ℝ} (hb : 0 ≤ b) (hf' : ∀ i x, |f i x| ≤ b)
@@ -158,10 +164,20 @@ theorem erm_oracle_inequality [MeasurableSpace 𝒳] [Nonempty 𝒳] [Countable 
     nlinarith
   exact le_of_lt hhalf
 
-/-- **Generic ERM oracle inequality (separable class).** Same as `erm_oracle_inequality`
-but for a separable, first-countable parameter space `ι` with the loss continuous in the
-parameter — the form that applies to the (uncountable but separable) `L²`/`L¹`-ball linear
-classes.  Chains the deterministic ERM inequality with FoML's separable tail bound. -/
+/-- **Generic ERM oracle inequality (separable class).** As in `erm_oracle_inequality`, but
+the hypothesis index `ι` need only be a separable, first-countable topological space rather
+than countable — the form that covers the (uncountable but separable) `L²`/`L¹`-ball linear
+classes. Given [measurable loss functions `f i`](hyp:hf) composed with [a measurable data
+map `X`](hyp:hX), with [every loss value bounded in absolute value by a nonnegative constant
+`b`](hyp:hb,hf') and [each loss value `f i x` depending continuously on the index
+`i`](hyp:hf''), let `ihat` assign to each sample of size `n` an index that [attains
+empirical risk no larger than that of a fixed comparator `istar`](hyp:hERM). Then, provided
+[the McDiarmid tail parameter `t` satisfies `t·b² ≤ 1/2`](hyp:ht') and [`ε` is
+nonnegative](hyp:hε), [the probability, over the `n`-fold product sample, that the excess
+population risk of `ihat` over `istar` exceeds `4·𝔯ₙ + 2ε` — where `𝔯ₙ` is the Rademacher
+complexity of the loss class — is at most `exp(−ε²·t·n)`](goal).
+
+Chains the deterministic ERM inequality with FoML's separable tail bound. -/
 theorem erm_oracle_inequality_separable [MeasurableSpace 𝒳] [Nonempty 𝒳]
     [TopologicalSpace ι] [SeparableSpace ι] [FirstCountableTopology ι]
     [IsProbabilityMeasure μ] (hf : ∀ i, Measurable (f i))

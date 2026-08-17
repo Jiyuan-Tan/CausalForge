@@ -127,9 +127,12 @@ theorem l2sq_gPertG_true_le [NeZero K] (lam : Fin K → Bool) :
     _ = P.g₁ ^ 2 * (P.α + P.β) ^ 2 / (P.g₁ - P.β) ^ 2 := by
         field_simp
 
-/-- **Class membership.**  With the budgets `(m₀·(β/g₁))² ≤ εm` and
-`g₁²(α+β)²/(g₁ − β)² ≤ εg` satisfied, the perturbed DGP `(mλ, gλ)` lies in the
-structure-agnostic class `ℱ(εg, εm)` around the constant center `(m̂, ĝ)`. -/
+/-- **Class membership.** Given [the squared propensity-perturbation size
+`(m₀·(β/g₁))²` within the budget `εm`](hyp:hm) and [the squared treated-arm
+outcome-regression perturbation bound `g₁²(α+β)²/(g₁ − β)²` within the budget
+`εg`](hyp:hg), [the Rademacher-perturbed data-generating process `(mλ, gλ)` lies in the
+structure-agnostic nuisance class `ℱ(εg, εm)` around the constant center
+`(m̂, ĝ)`](goal). -/
 theorem inClassG [NeZero K] {εg εm : ℝ}
     (hm : (P.m₀ * (P.β / P.g₁)) ^ 2 ≤ εm)
     (hg : P.g₁ ^ 2 * (P.α + P.β) ^ 2 / (P.g₁ - P.β) ^ 2 ≤ εg)

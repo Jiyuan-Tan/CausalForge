@@ -136,11 +136,22 @@ theorem condDistrib_fixSet_cross_SCM_bridge
   filter_upwards [h_doSide, h_obs_prod] with p hI hII
   rw [hI, hII]
 
-/-- **Rule 2, a.e. in the treatment value (product form + positivity).**
-    For `(νZ ⊗ₘ μW)`-a.e. pair `(t, w)` (treatment `t`, conditioning value `w`), the `W`-conditional
-    of the model intervened at `t` equals the original model's `(Z.random ∪ W)`-conditional at the
-    filled point `fill(t, w)`.  Positivity (`hPositivity_ae`) places the obs-side on its pinned
-    support; the do-side is pinned by Rule 3 + Fubini. -/
+/-- **Rule 2, a.e. in the treatment value (product form + positivity).** Consider intervening on
+    the finite set of names `Z`, where [each name's random copy is already observed in the base
+    model](hyp:hZ_obs) and [its fixed copy is not yet part of the base model's fixed
+    coordinates](hyp:hZ_fixed), with outcome set [`Y`](hyp:hY) and conditioning set
+    [`W`](hyp:hW) contained in the observed variables, together with [the random copies of
+    `Z`](hyp:hZr) and [their union with `W`](hyp:hZrW). Assume [in the post-intervention SWIG
+    DAG, `Y` is d-separated from the random copies of `Z` given `W` together with the
+    post-intervention fixed set](hyp:hdSep), [no fixed copy of a name in `Z` is an ancestor of
+    any node of `W` in the post-intervention DAG](hyp:hWNonDesc), [no random copy of a name in
+    `Z` is an ancestor of any node of `W` in the original DAG](hyp:hWNonDescM1), and [positivity:
+    the pushforward of the product of the treatment and conditioning marginals under the fill
+    map is absolutely continuous with respect to the base model's law on
+    `Z.random ∪ W`](hyp:hPositivity_ae). Then [for almost every pair `(t, w)` under that product
+    measure, the `W`-conditional kernel of the model intervened at treatment value `t`, evaluated
+    together with `w`, restricted to `Y`, equals the base model's conditional distribution of `Y`
+    given `Z.random ∪ W` evaluated at the combined point `(t, w)`](goal). -/
 theorem obsCondKernel_fixSet_eq_ae_witness
     (M' : Causalean.SCM N Ω) (Z : Finset N)
     (hZ_obs : ∀ D ∈ Z, SWIGNode.random D ∈ M'.observed)

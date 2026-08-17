@@ -82,12 +82,14 @@ theorem netHACVarEst_memLp (F : NetworkDependence V Ω μ) [IsProbabilityMeasure
       rw [Real.norm_eq_abs]
       exact hpt ω))
 
-/-- **HAC consistency (convergence in probability).** Along a sequence of super-population network
-fields `F n` in the CLT regime — bounded degree `m`, summands bounded by `B n` with `B n → 0` and
-`card(V n)·(B n)³ → 0`, square-integrable mean-zero summands — the network-HAC estimator converges
-in probability to the variance of the network sum: for every `ε > 0`,
-
-  `(μ n)({ω | ε ≤ |(F n).netHACVarEst ω − variance (depSum (F n).X) (μ n)|}) → 0`.
+/-- **HAC consistency (convergence in probability).** Consider [a sequence of super-population
+network fields `F n` over probability spaces with measures `μ n`](hyp:μ,F), each in the CLT
+regime — [dependency-graph degree at most `m`](hyp:hdeg), [summands uniformly bounded by a
+sequence `B n`](hyp:hB,hbound) [tending to zero](hyp:hB0) with [`card(Vₙ)·(Bₙ)³ → 0`](hyp:hNB3),
+and [square-integrable, mean-zero summands](hyp:hL2,hmean) — and [an arbitrary error tolerance
+`ε > 0`](hyp:hε). Then [the network-HAC variance estimator converges in probability to the
+variance of the network sum: the probability that the estimator deviates from that variance by at
+least `ε` tends to zero as `n → ∞`](goal).
 
 By unbiasedness (`netHACVarEst_integral_eq_variance`) the target `variance (depSum (F n).X)` is the
 mean `E[V̂]`, so this is Chebyshev's inequality `(μ n).real {…} ≤ Var(V̂)/ε²` together with the

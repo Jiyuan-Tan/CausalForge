@@ -66,11 +66,11 @@ lemma toMeasure_singleton {β : Type*} [Fintype β] [MeasurableSpace β]
 
 end FiniteDesign
 
-/-- **The product design IS Mathlib's product measure.**  The measure induced by the product
-design `prodDesign D` coincides with the Mathlib product measure of the coordinate design
-measures: `(prodDesign D).toMeasure = Measure.pi (fun i => (D i).toMeasure)`.  Both are finite
-measures on the Fintype `∀ i, α i`, so they agree iff they agree on every singleton `{w}`; on a
-singleton both sides evaluate to `∏ i, (D i).p (w i)`. -/
+/-- **The product design IS Mathlib's product measure.** For [a family of independent coordinate
+designs `D`](hyp:D), [the probability measure induced by the product design `prodDesign D`
+coincides exactly with Mathlib's product measure of the coordinate design measures](goal). Both
+are finite measures on the Fintype `∀ i, α i`, so they agree iff they agree on every singleton
+`{w}`; on a singleton both sides evaluate to `∏ i, (D i).p (w i)`. -/
 theorem prodDesign_toMeasure_eq_pi (D : ∀ i, FiniteDesign (α i)) :
     (prodDesign D).toMeasure = Measure.pi (fun i => (D i).toMeasure) := by
   refine Measure.ext_of_singleton (fun w => ?_)
@@ -98,9 +98,11 @@ theorem indepFun_prodDesign_eval (D : ∀ i, FiniteDesign (α i)) {i j : ι} (hi
     IndepFun (fun w : ∀ k, α k => w i) (fun w => w j) (prodDesign D).toMeasure :=
   (iIndepFun_prodDesign_eval D).indepFun hij
 
-/-- **Disjoint-block independence.**  For disjoint finite index sets `A B : Finset ι`, the tuple of
-coordinates indexed by `A` is independent of the tuple indexed by `B`, under the product-design
-measure.  This is the form a diagonal dependency graph `G a b := a = b` consumes. -/
+/-- **Disjoint-block independence.** For [a family of independent coordinate designs `D`](hyp:D),
+suppose [the finite index sets `A` and `B` are disjoint](hyp:hAB). Then [the tuple of coordinates
+indexed by `A` is probabilistically independent of the tuple of coordinates indexed by `B`, under
+the measure induced by the product design](goal). This is the form a diagonal dependency graph
+`G a b := a = b` consumes. -/
 theorem indepFun_prodDesign_blocks (D : ∀ i, FiniteDesign (α i)) {A B : Finset ι}
     (hAB : Disjoint A B) :
     IndepFun (fun (w : ∀ k, α k) (k : A) => w k) (fun w (k : B) => w k)

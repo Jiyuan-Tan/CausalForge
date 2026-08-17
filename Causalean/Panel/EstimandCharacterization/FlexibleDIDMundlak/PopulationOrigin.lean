@@ -141,14 +141,25 @@ noncomputable def StaggeredATTCells.ofPopulation
     cohortShare covarWeight hmeas hcell_pos hY0_int hYg_int hYobs_int
     cohortShare_pos_on_treated covarWeight_nonneg covarWeight_sum_one hcons_tr hcons_ut
 
-/-- On a treated cell in a population-built system, the fitted untreated mean
-equals the population conditional mean of the untreated potential outcome.
-
-For `P := StaggeredATTCells.ofPopulation μ cellEvent Y0pop Ygpop Yobspop …` and
-any saturated untreated regression `S : SaturatedUntreatedRegression P`, under no
-anticipation (`hNA`) and conditional parallel trends (`hCPT`), the fitted value
-on a treated cell equals the raw event-level quotient
-`eventCondExp μ (cellEvent g t c) Y0pop`.
+/-- **On a treated cell in a population-built system, the fitted untreated mean
+equals the population conditional mean of the untreated potential outcome.**
+Fix a population model on a sample space `Ω`, with population outcomes
+`Y0pop`, `Ygpop`, `Yobspop`; suppose [every cell event `cellEvent g t c` is
+measurable](hyp:hmeas), [every cell has strictly positive probability
+mass](hyp:hcell_pos), and [the three population outcomes are each integrable on
+every cell](hyp:hY0_int,hYg_int,hYobs_int). Suppose also [the cohort share is
+strictly positive on every treated cell](hyp:cohortShare_pos_on_treated), [the
+covariate weights are nonnegative](hyp:covarWeight_nonneg) and [sum to one
+within each cohort](hyp:covarWeight_sum_one), and [the observed outcome agrees
+pointwise with the cohort-`g` outcome on treated cells and with the untreated
+outcome on untreated cells (pointwise consistency)](hyp:hcons_tr,hcons_ut). If
+[the finite cell system `P` is exactly the one built from this population data
+by `StaggeredATTCells.ofPopulation`](hyp:hP) and, for a saturated untreated
+regression `S` on `P`, [no anticipation holds](hyp:hNA) and [conditional
+parallel trends holds](hyp:hCPT), then on [any treated cell `(g,t)`](hyp:hgt),
+[the saturated regression's fitted value `S.m0 g t c` equals the population
+conditional mean `E[Y0pop | cellEvent g t c]`, for every covariate cell
+`c`](goal).
 
 Because `P.Y0Mean g t c` is defined as
 `eventCondExp μ (cellEvent g t c) Y0pop`, the population-identification
@@ -190,14 +201,25 @@ theorem m0_eq_eventCondExp_treated_ofPopulation
   have _ := hYobs_int g t c
   m0_eq_eventCondExp_treated μ S hNA hCPT hgt c cellEvent Y0pop (by subst hP; rfl)
 
-/-- On an untreated cell in a population-built system, the fitted untreated mean
-equals the population conditional mean of the untreated potential outcome.
-
-The untreated-cell analogue of `m0_eq_eventCondExp_treated_ofPopulation`: under
-no anticipation and conditional parallel trends, the fitted value on an untreated
-cell equals the raw event-level quotient
-`eventCondExp μ (cellEvent g t c) Y0pop`.  Again the identification hypothesis
-holds by `rfl` because `P.Y0Mean` is *defined* as that `eventCondExp`. -/
+/-- **On an untreated cell in a population-built system, the fitted untreated
+mean equals the population conditional mean of the untreated potential
+outcome.** Fix a population model on a sample space `Ω`, with population
+outcomes `Y0pop`, `Ygpop`, `Yobspop`; suppose [every cell event
+`cellEvent g t c` is measurable](hyp:hmeas), [every cell has strictly positive
+probability mass](hyp:hcell_pos), and [the three population outcomes are each
+integrable on every cell](hyp:hY0_int,hYg_int,hYobs_int). Suppose also [the
+cohort share is strictly positive on every treated cell](hyp:cohortShare_pos_on_treated),
+[the covariate weights are nonnegative](hyp:covarWeight_nonneg) and [sum to one
+within each cohort](hyp:covarWeight_sum_one), and [the observed outcome agrees
+pointwise with the cohort-`g` outcome on treated cells and with the untreated
+outcome on untreated cells (pointwise consistency)](hyp:hcons_tr,hcons_ut). If
+[the finite cell system `P` is exactly the one built from this population data
+by `StaggeredATTCells.ofPopulation`](hyp:hP) and, for a saturated untreated
+regression `S` on `P`, [no anticipation holds](hyp:hNA) and [conditional
+parallel trends holds](hyp:hCPT), then on [any untreated cell `(g,t)`](hyp:hut),
+[the saturated regression's fitted value `S.m0 g t c` equals the population
+conditional mean `E[Y0pop | cellEvent g t c]`, for every covariate cell
+`c`](goal). -/
 theorem m0_eq_eventCondExp_untreated_ofPopulation
     {Ω : Type*} [MeasurableSpace Ω] (μ : Measure Ω) [IsProbabilityMeasure μ]
     (cellEvent : Cohort → Time → Covar → Set Ω)

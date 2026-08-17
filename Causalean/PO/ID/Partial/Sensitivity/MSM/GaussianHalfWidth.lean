@@ -187,10 +187,19 @@ structure GaussianOutcomeModel (m σ : γ → ℝ) : Prop extends S.GaussianTrea
           + σ (S.factualX ω) *
             Causalean.Mathlib.stdNormalPDF ((c ω - m (S.factualX ω)) / σ (S.factualX ω)))
 
-/-- **The Dorn–Guo Gaussian sharp upper bound, closed form.** Under the conditional-Gaussian
-outcome model, the sharp upper bound on `E[Y(1)]` equals the point-identified mean
-`∫ m(X)` plus the half-width
-`(Λ²−1)/Λ · φ(Φ⁻¹(Λ/(Λ+1))) · ∫ (1 − e(X))·σ(X)`. -/
+/-- **The Dorn–Guo Gaussian sharp upper bound, closed form.** Fix [a sensitivity parameter Λ
+strictly greater than 1](hyp:hΛ) and assume [the propensity score for treatment given the
+covariates lies strictly between 0 and 1 almost surely (overlap)](hyp:hoverlap). Under [the
+conditional-Gaussian treated-outcome model with conditional mean `m` and conditional standard
+deviation `σ`, strengthened with the implied treated conditional mean and truncated-mean
+identities](hyp:hmodel), assuming [every candidate complete propensity in the calibrated ambiguity
+set is almost-everywhere measurable](hyp:hmeas), [the conditional mean `m(X)` is
+integrable](hyp:hint_m), [`(1 − e(X))·σ(X)` is integrable](hyp:hint_σ), [the regularity conditions
+making the Gaussian-cutoff candidate mean and survival decomposition well defined](hyp:hreg), and
+[the candidate-mean integrability at the lower weight and at the truncated
+difference](hyp:hint_candMin,hint_candTrunc), then [the sharp upper bound on `E[Y(1)]` equals the
+point-identified mean `∫ m(X)` plus the half-width `(Λ²−1)/Λ · φ(Φ⁻¹(Λ/(Λ+1))) · ∫ (1 −
+e(X))·σ(X)`](goal). -/
 theorem msmUpperCalib_gaussian_halfWidth (Λ : ℝ) (hΛ : 1 < Λ)
     (hoverlap : ∀ᵐ ω ∂P.μ, 0 < S.propScore true ω ∧ S.propScore true ω < 1)
     {m σ : γ → ℝ} (hmodel : S.GaussianOutcomeModel m σ)

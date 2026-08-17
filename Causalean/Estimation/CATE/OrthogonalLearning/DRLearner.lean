@@ -182,7 +182,24 @@ noncomputable def drLearningSystem
 
 /-! ## Headline orthogonality lemma -/
 
-/-- **DR-Learner loss orthogonality** (`prop:est-osl-dr-loss-orthogonal`).
+/-- **DR-Learner loss orthogonality** (`prop:est-osl-dr-loss-orthogonal`). For a CATE
+estimation system built on a potential-outcome model that satisfies [the back-door
+identification assumptions](hyp:_hA) with [the propensity score bounded away from 0
+and 1 by some margin (strict overlap)](hyp:_hOverlap), fix a convex candidate target
+class inside an inner-product space together with a real-valued evaluation map on
+it, and suppose [the candidate θ₀ belongs to this class](hyp:θ₀_mem), [every
+candidate's evaluation is measurable](hyp:eval_meas), [θ₀'s evaluation agrees
+pointwise with the true value-space CATE](hyp:eval_θ₀), and [θ₀ minimizes the
+population AIPW pseudo-outcome squared-loss risk against the true nuisance over the
+candidate class](hyp:θ₀_minimizes). If, for the resulting DR-Learner learning
+system, [a dominated-convergence bridge licenses passing the limit defining the
+mixed target/nuisance directional derivative through the integral](hyp:hBridge) and
+[the integrated target-directional score has vanishing derivative, at every point of
+the bounded nuisance slice and for every candidate target, along the segment toward
+that point from the true nuisance](hyp:hScoreFlat), then [the DR-Learner squared
+loss is Neyman-orthogonal: its integrated mixed directional derivative between
+target and nuisance directions vanishes at the truth `(θ₀, η₀)` for every admissible
+target and nuisance direction](goal).
 
 Under the back-door causal assumptions and strict overlap, the DR-Learner
 squared loss is Neyman-orthogonal at the truth `(τ₀, η₀)`.

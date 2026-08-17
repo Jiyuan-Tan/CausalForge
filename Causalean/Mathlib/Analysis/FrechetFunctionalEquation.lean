@@ -24,9 +24,10 @@ namespace Causalean.Mathlib.Analysis
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- **Fréchet functional equation, degree one.**  If `f : ℝ → E` is continuous and
-its second forward difference vanishes (`f (x+s+s) + f x = f (x+s) + f (x+s)` for
-all `x, s`), then `f` is affine: `f x = a + x • b` for some `a, b`. -/
+/-- **Fréchet functional equation, degree one.** If [`f` is a continuous function from the reals
+into a normed real vector space](hyp:hf) and [its second forward difference vanishes: `f(x+2s) +
+f(x) = 2·f(x+s)` for all real `x` and `s`](hyp:h2), then [`f` is affine — there exist vectors `a`
+and `b` such that `f(x) = a + x·b` for every real `x`](goal). -/
 theorem affine_of_continuous_of_second_diff_zero
     {f : ℝ → E} (hf : Continuous f)
     (h2 : ∀ x s : ℝ, f (x + s + s) + f x = f (x + s) + f (x + s)) :

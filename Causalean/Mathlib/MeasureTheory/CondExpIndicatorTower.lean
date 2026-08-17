@@ -36,8 +36,13 @@ namespace MeasureTheory
 
 variable {Ω : Type*} {m m' m0 : MeasurableSpace Ω} {μ : Measure Ω}
 
-/-- **Conditioning a masked outcome equals conditioning its inner regression.**
-For `m ≤ m' ≤ m0`, an `m'`-measurable set `s`, and integrable `f`,
+/-- **Conditioning a masked outcome equals conditioning its inner regression.** Given
+[a tower of σ-algebras `m ≤ m' ≤ m0` on the sample space, with the trim of the measure `μ` to
+`m'` σ-finite](hyp:hm,hm'), [a set `s` measurable with respect to the finer
+σ-algebra `m'`](hyp:hs), and [an integrable function `f`](hyp:hf), [the conditional
+expectation given `m` of the masked outcome `1_s · f` agrees `μ`-almost everywhere with the
+conditional expectation given `m` of `f` — first replaced by its conditional expectation given
+`m'`, then masked by `s`](goal).
 
     μ[s.indicator f | m]  =ᵐ[μ]  μ[s.indicator (μ[f | m']) | m].
 

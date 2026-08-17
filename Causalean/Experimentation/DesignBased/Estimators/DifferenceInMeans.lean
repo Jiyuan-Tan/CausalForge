@@ -176,8 +176,11 @@ theorem E_controlMean (n₁ : ℕ) (hn0 : n₁ < Fintype.card U)
           rw [Nat.cast_sub hn]
           field_simp [hNR, hdenR, hdiffR]
 
-/-- **Unbiasedness of difference in means.** Under complete randomization with `0 < n₁ < N`, the
-difference-in-means estimator is unbiased for the sample average treatment effect. -/
+/-- **Unbiasedness of difference in means.** Under complete randomization in which [at least one
+unit is treated](hyp:hn1) and [the treated count `n₁` is strictly below the population size `N`,
+so at least one unit remains a control](hyp:hn0), [the difference-in-means estimator, computed from
+the potential outcomes `Y1` and `Y0`, has expectation exactly equal to the sample average treatment
+effect](goal). -/
 theorem E_diffInMeans_eq_sate (n₁ : ℕ) (hn1 : 0 < n₁)
     (hn0 : n₁ < Fintype.card U) (Y1 Y0 : U → ℝ) :
     (completeRandomization n₁ (Nat.le_of_lt hn0)).E (diffInMeans n₁ Y1 Y0)

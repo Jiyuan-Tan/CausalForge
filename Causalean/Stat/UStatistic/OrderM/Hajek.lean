@@ -190,9 +190,11 @@ theorem sum_injectiveTuples_apply_eq_range {m n : ℕ} (hmn : m ≤ n)
   · intro t ht
     simp
 
-/-- **Hájek decomposition for a fixed-order U-statistic.**  For positive order
-`m` and sample size `n ≥ m`, the centered statistic equals its linear Hájek
-projection plus the higher-order residual U-statistic. -/
+/-- **Hájek decomposition for a fixed-order U-statistic.** For an i.i.d. sample `S`,
+order-`m` kernel `h`, and sample outcome `ω`, if the sample size [is at least
+`m`](hyp:hmn), then [the order-`m` U-statistic centered at its population mean
+decomposes exactly as the average of the first-order influence function over the first
+`n` sample points plus the higher-order Hájek remainder statistic](goal). -/
 theorem uStatisticOrder_sub_uMean_eq (S : IIDSample Ω X μ P)
     {m : ℕ} [NeZero m] (h : (Fin m → X) → ℝ)
     {n : ℕ} (hmn : m ≤ n) (ω : Ω) :
@@ -275,11 +277,13 @@ The central-limit contact point: negligibility of the higher-order remainder mak
 the U-statistic asymptotically linear.  The CLT itself (`uStatisticOrder_clt` and
 the end-to-end `uStatisticOrder_clt_of_regular`) is assembled in `OrderM.CLT`. -/
 
-/-- **Fixed-order U-statistic asymptotic linearity.**  If the summed first
-projection is centered and square-integrable, and the higher-order residual is
-negligible at the `√n` scale, then the fixed-order U-statistic is asymptotically
-linear with influence function equal to the sum of coordinatewise first
-projections. -/
+/-- **Fixed-order U-statistic asymptotic linearity.** For an i.i.d. sample `S` and an
+order-`m` kernel `h`, write `ψ` for the summed coordinatewise first Hoeffding
+projection of `h`. If `ψ` [has population mean zero](hyp:hψ_mean) and [is
+square-integrable](hyp:hψ_sq), and if [the higher-order Hájek remainder of the order-`m`
+U-statistic is negligible at the `√n` scale](hyp:hneg), then [the order-`m` U-statistic is
+asymptotically linear toward its population mean `uMeanOrder h P`, with influence
+function `ψ`](goal). -/
 theorem uStatisticOrder_isAsymLinear (S : IIDSample Ω X μ P)
     {m : ℕ} [NeZero m] (h : (Fin m → X) → ℝ)
     (hψ_mean : ∫ x, uInfluenceOrder h P x ∂P = 0)

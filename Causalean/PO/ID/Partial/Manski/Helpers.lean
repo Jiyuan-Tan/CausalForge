@@ -155,8 +155,10 @@ theorem boundArm_lo_le_cond_YofD [IsFiniteMeasure P.μ]
           unfold boundArm; rw [hcons]
     _ ≤ eventCondExp P.μ (S.zEvent z) (S.YofD d) := hmono
 
-/-- Stratum-level upper bound on `eventCondExp μ (Z=z) (Y(d))` via the
-unified arm functional `boundArm d hi`. -/
+/-- Under [the baseline Manski assumptions](hyp:hA), for any treatment arm `d` and
+[any instrument value `z` in the support of the instrument](hyp:_hz), [the conditional mean of
+the potential outcome `Y(d)` given `Z = z` is bounded above by the unified upper-envelope
+functional `boundArm d hi` evaluated at `z`](goal). -/
 theorem cond_YofD_le_boundArm_hi [IsFiniteMeasure P.μ]
     (hA : S.BaseAssumptions) (d : Bool) {z : α} (_hz : z ∈ S.support) :
     eventCondExp P.μ (S.zEvent z) (S.YofD d) ≤ S.boundArm d hA.hi z := by

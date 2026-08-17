@@ -170,9 +170,10 @@ lemma coeff_sum (A B : Finset ι) (hAB : A ⊆ B) :
       exact_mod_cast hint
     simpa [hAB'] using hreal
 
-/-- Any binary finite-memory response normalized to zero at the all-zero history can be
-recovered as the sum of its nonempty inclusion-exclusion interaction coefficients, with an
-interaction contributing only when all of its lags are active in the history.
+/-- Any [binary finite-memory response `τ` normalized to zero at the all-zero
+history](hyp:hτ0) can be [recovered as the sum of its nonempty inclusion-exclusion interaction
+coefficients, with each interaction contributing only when every one of its lags is active in
+the history](goal).
 
 For a real-valued response on binary histories indexed by a finite type, with
 value zero at the all-zero history, and any binary history `h`,

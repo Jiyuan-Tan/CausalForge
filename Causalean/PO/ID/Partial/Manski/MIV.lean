@@ -325,9 +325,12 @@ theorem miv_integral_Y0_le_integral_mUpper0 [IsFiniteMeasure P.μ] [Fintype α]
     (b := fun z => S.mUpper0 hA z)
     (fun {z} hz => S.miv_cond_Y0_le_mUpper0 hA hMIV hz) z
 
-/-- MIV ATE envelope bounds (prop:po-iv-miv, integrated form):
-
-    `∫ (mLower1(Z) - mUpper0(Z)) ≤ ATE ≤ ∫ (mUpper1(Z) - mLower0(Z))`.
+/-- **MIV ATE envelope bounds (prop:po-iv-miv, integrated form).** Under [the baseline Manski
+assumptions](hyp:hA) and [a monotone instrumental variable — the conditional mean of each
+potential outcome is nondecreasing in the instrument value across its support](hyp:hMIV),
+[the average treatment effect is sandwiched between the integrated lower-envelope contrast
+`∫ (mLower1(Z) − mUpper0(Z))` and the integrated upper-envelope contrast
+`∫ (mUpper1(Z) − mLower0(Z))`](goal).
 
 Follows from the four integrated envelope bounds above plus linearity. -/
 theorem miv_bounds_ATE [IsFiniteMeasure P.μ] [Fintype α]

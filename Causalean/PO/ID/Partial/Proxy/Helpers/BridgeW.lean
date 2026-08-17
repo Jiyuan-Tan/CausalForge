@@ -36,9 +36,16 @@ variable {P : POSystem}
 
 /-! ### Bridge-substitution identity -/
 
-/-- On the off-arm stratum `{A = ¬a}`,
-`∫_{A=¬a} Y(a) dμ = ∫_{A=¬a} h(a, W, X) dμ`,
-provided we have:
+/-- **Off-arm bridge-substitution identity (W-proxy).** Fix a treatment arm `a` and assume
+[the W-only proximal bridge assumption bundle](hyp:HA) — latent exchangeability of the
+potential outcome `Y(a)` given treatment conditional on the latent confounder and
+covariates, independence of the proxy `W` from treatment given that same conditioning,
+the outcome-bridge equation, and consistency — together with [the treatment and outcome
+variables being distinct](hyp:hAY). Then, restricted to the off-arm stratum `{A ≠ a}`,
+[the average potential outcome `Y(a)` equals the average of the bridge function `h`
+evaluated at `(a, W, X)`](goal): `∫_{A≠a} Y(a) dμ = ∫_{A≠a} h(a, W, X) dμ`.
+
+Provided we have:
 
 * `latent_exch a` : Y(a) ⟂ A | (U, X);
 * `proxy_WA`      : W ⟂ A | (U, X);

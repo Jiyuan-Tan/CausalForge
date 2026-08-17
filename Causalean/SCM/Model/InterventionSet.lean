@@ -264,11 +264,13 @@ theorem fixSet_empty_equiv
 -- § 2c. `fixSet_equiv_congr` — SCM.Equiv is preserved by fixSet
 -- ============================================================
 
-/-- **`fixSet` preserves `SCM.Equiv`.**
+/-- **`fixSet` preserves `SCM.Equiv`.** Given [a structural equivalence `h` between `M₁` and
+`M₂`](hyp:h) and a finite set of nodes `X` whose members are, in `M₁`, [observed in their
+random coordinate](hyp:hObs₁) and [not already held fixed](hyp:hFix₁), [intervening on `X` in
+both models produces two structurally equivalent post-intervention models](goal) — the analogous
+observed/not-fixed conditions transfer automatically to `M₂` via `h`.
 
-    If `M₁` and `M₂` are structurally equivalent, then so are `M₁.fixSet X`
-    and `M₂.fixSet X`.  This is the congruence lemma needed to transport
-    kernel HEq results across interventions. -/
+    This is the congruence lemma needed to transport kernel HEq results across interventions. -/
 theorem fixSet_equiv_congr
     {M₁ M₂ : Causalean.SCM N Ω} (h : SCM.Equiv M₁ M₂) (X : Finset N)
     (hObs₁ : ∀ D ∈ X, SWIGNode.random D ∈ M₁.observed)

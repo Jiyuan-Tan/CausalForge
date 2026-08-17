@@ -124,11 +124,13 @@ omit [Fintype U]
 
 variable [Finite U]
 
-/-- **A unit's outcome depends only on the units that interfere with it.** If two assignments `z`
-and `z'` agree on every unit that interferes with `i`, then `y i z = y i z'`.  This is the bridge
-from the interference structure to disjoint-block independence: when `i` and `j` are not
-interference dependent, their interferer sets are disjoint, so the two HT summands depend on
-disjoint coordinate blocks. -/
+/-- **A unit's outcome depends only on the units that interfere with it.** If [two treatment
+assignments `z` and `z'` agree on every unit that interferes with unit `i`](hyp:h), then
+[unit `i`'s outcome is the same under both assignments: `y i z = y i z'`](goal).
+
+This is the bridge from the interference structure to disjoint-block independence: when `i` and
+`j` are not interference dependent, their interferer sets are disjoint, so the two HT summands
+depend on disjoint coordinate blocks. -/
 theorem y_eq_of_agree_on_interferers (y : U → (U → Bool) → ℝ) (i : U) (z z' : U → Bool)
     (h : ∀ ℓ : U, Interferes y ℓ i → z ℓ = z' ℓ) :
     y i z = y i z' := by

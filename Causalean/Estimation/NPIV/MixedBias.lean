@@ -39,7 +39,13 @@ section MixedBias
 
 variable {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω}
 
-/-- **Mixed-bias / DR identity** — `prop:est-trae-mixed-bias`.
+/-- **Mixed-bias / DR identity** — `prop:est-trae-mixed-bias`. Fix a linear inverse-problem
+functional system, and suppose [`q₀` solves the associated dual moment equation](hyp:hq₀).
+Then for any [primal candidate function `h` in the closed candidate set `Hbar`](hyp:hh) and
+any [dual candidate function `q` in the closed candidate set `Qbar`](hyp:hq), [the bias of
+the doubly-robust functional `Θ(h, q)` relative to the true target `θ₀` equals the
+expectation of the product `(q₀(Z) − q(Z))·(h(X) − h₀(X))` of the dual and primal nuisance
+errors](goal).
 
 For every `h ∈ Hbar` and `q ∈ Qbar`, given a dual solution `q₀`,
 

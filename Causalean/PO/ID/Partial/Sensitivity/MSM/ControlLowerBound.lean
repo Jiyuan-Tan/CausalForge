@@ -46,9 +46,19 @@ noncomputable def survTargetLower0 (Λ : ℝ) (ω : P.Ω) : ℝ :=
 noncomputable def calibLevelLower0 (Λ : ℝ) (ω : P.Ω) : ℝ :=
   1 - S.survTargetLower0 Λ ω / S.propScore false ω
 
-/-- **Optimality of the lower quantile-cutoff weight.** Among all calibrated candidates the lower
-cutoff weight MINIMIZES the candidate mean: for any `ẽ ∈ MSMSetCalib0 Λ`,
-`candMean0 (lowerCutoffProp0 Λ c) ≤ candMean0 ẽ`. The `≥`-mirror of `cutoff_optimal`. -/
+/-- **Optimality of the lower quantile-cutoff weight.** Fix [a sensitivity parameter Λ at least
+one](hyp:Λ,hΛ). Assume [the control propensity score is almost surely strictly between 0 and 1
+(two-sided overlap)](hyp:hoverlap), and let [c be a σ(X)-measurable, integrable cutoff
+function](hyp:c,hc_meas,hc_int) such that [the lower quantile-cutoff propensity it induces lies in
+the calibrated control ambiguity set](hyp:hcut_mem). If [the envelope `1_{D=0}·|Y|·wMax0(Λ)` is
+integrable](hyp:henv), [the weighted control indicator `1_{D=0}·wMax0(Λ)` is
+integrable](hyp:hweight_env), and [the cutoff-weighted envelope `|c|·1_{D=0}·wMax0(Λ)` is
+integrable](hyp:hc_env), then for [any almost-everywhere measurable candidate complete control
+propensity `ẽ` in the calibrated ambiguity set](hyp:etilde,hmem,hmeas), [the candidate mean at the
+lower quantile-cutoff weight is no greater than the candidate mean at `ẽ`](goal) — the lower cutoff
+attains the minimum over all calibrated candidates.
+
+The `≥`-mirror of `cutoff_optimal`. -/
 theorem cutoff_optimal0_lower (Λ : ℝ) (hΛ : 1 ≤ Λ)
     (hoverlap : ∀ᵐ ω ∂P.μ, 0 < S.propScore false ω ∧ S.propScore false ω < 1)
     (c : P.Ω → ℝ) (hc_meas : Measurable[S.sigmaX] c) (hc_int : Integrable c P.μ)
@@ -349,8 +359,15 @@ theorem cutoff_optimal0_lower (Λ : ℝ) (hΛ : 1 ≤ Λ)
   simpa [add_comm, add_left_comm, add_assoc] using
     add_le_add_right hfirst_le (∫ ω, c ω ∂P.μ)
 
-/-- **The sharp lower bound has the quantile-balancing closed form.** Given a calibrating lower
-cutoff, `msmLowerCalib0 Λ = candMean0 (lowerCutoffProp0 Λ c)`. -/
+/-- **The sharp lower bound has the quantile-balancing closed form.** Fix [a sensitivity parameter
+Λ at least one](hyp:Λ,hΛ). Under [two-sided overlap of the control propensity score](hyp:hoverlap),
+given [a σ(X)-measurable, integrable cutoff `c`](hyp:c,hc_meas,hc_int) whose induced lower
+quantile-cutoff propensity [is itself calibrated-feasible](hyp:hcut_mem), and assuming [the
+envelope, weighted-indicator, and cutoff-weighted envelope integrability conditions bounding the
+IPW integrands](hyp:henv,hweight_env,hc_env) together with [almost-everywhere measurability of
+every calibrated candidate propensity](hyp:hmeas), [the sharp (infimum) lower bound for `E[Y(0)]`
+over the calibrated ambiguity set equals the candidate mean evaluated at the lower quantile-cutoff
+propensity](goal). -/
 theorem msmLowerCalib0_eq_cutoff (Λ : ℝ) (hΛ : 1 ≤ Λ)
     (hoverlap : ∀ᵐ ω ∂P.μ, 0 < S.propScore false ω ∧ S.propScore false ω < 1)
     (c : P.Ω → ℝ) (hc_meas : Measurable[S.sigmaX] c) (hc_int : Integrable c P.μ)
@@ -676,9 +693,19 @@ theorem exists_calibrating_cutoff0_lower (Λ : ℝ) (hΛ : 1 < Λ)
   field_simp [hpos]
   ring
 
-/-- **The sharp lower bound, unconditionally.** The `sInf`-mirror of
-`msmUpperCalib_eq_cutoff_unconditional`: the Dorn–Guo sharp lower bound has the quantile-balancing
-closed form with the calibrating-cutoff hypothesis discharged. -/
+/-- **The sharp lower bound, unconditionally.** Fix [a sensitivity parameter Λ strictly greater
+than one](hyp:Λ,hΛ). Assume [two-sided overlap of the control propensity score](hyp:hoverlap),
+that [the control-arm conditional law of the outcome given covariates is atomless, i.e. its
+conditional CDF is continuous](hyp:hatomless), and that [the lower calibration quantile level lies
+strictly between 0 and 1 almost everywhere](hyp:hlevel). If [every calibrated candidate propensity
+is almost-everywhere measurable](hyp:hmeas) and [every σ(X)-measurable cutoff satisfies the
+integrability conditions needed for the calibration and optimality arguments](hyp:hreg), then
+[there exists a σ(X)-measurable cutoff function whose induced lower quantile-cutoff propensity is
+calibrated-feasible, at which the sharp (infimum) lower bound for `E[Y(0)]` equals the candidate
+mean](goal).
+
+The `sInf`-mirror of `msmUpperCalib_eq_cutoff_unconditional`, discharging the calibrating-cutoff
+hypothesis by an explicit construction. -/
 theorem msmLowerCalib0_eq_cutoff_unconditional (Λ : ℝ) (hΛ : 1 < Λ)
     (hoverlap : ∀ᵐ ω ∂P.μ, 0 < S.propScore false ω ∧ S.propScore false ω < 1)
     (hatomless : ∀ a : γ, Continuous (condCDF S.controlXYLaw a))

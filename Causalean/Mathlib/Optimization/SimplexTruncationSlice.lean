@@ -290,8 +290,15 @@ lemma truncSelector_mem (M d : ℝ) (α β : Fin 3 → ℝ) (kappa : ℝ)
   · exact ⟨le_of_lt hd, le_rfl⟩
   · exact truncSelector_interior_mem hd hA hk hlo hhi
 
-/-- **The selector minimizes the boundary slice.** For every `σ ∈ [0,d]` the face
-objective at the selector is at most the face objective at `σ`. The slice
+/-- **The selector minimizes the boundary slice.** Suppose [the truncation width $d$
+is positive](hyp:hd), [the first-coordinate weight $\beta_0$ is nonnegative while the
+other two weights both equal 1](hyp:hβ0,hβy,hβz), and [the SOCP scale $\kappa$ is
+nonnegative](hyp:hk). Then for [every offset $\sigma$ between $0$ and $d$](hyp:hσ0,hσd),
+[the objective `wsObj` evaluated at the boundary point `truncSegPoint M d` applied to
+the selector `truncSelector M d α β κ` is at most its value at the boundary point for
+$\sigma$](goal).
+
+The slice
 `g_d(σ) = δσ + κ‖(√A, σ, d−σ)‖ + const` (with `δ = α_y − α_z`) is convex (a linear
 term plus a nonnegative multiple of the norm of an affine map), and `s⋆` is chosen so
 the tangent-slope sign condition `g_d'(s⋆)·(σ − s⋆) ≥ 0` holds on `[0,d]`; convexity's

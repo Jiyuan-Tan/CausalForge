@@ -192,8 +192,15 @@ lemma finitePoissonObjective_eventually_common_compact {E I : Type*}
   simpa [K, Metric.mem_closedBall, dist_eq_norm] using hnorm
 
 -- @node: finitePoissonObjective_argmax_tendsto
-/-- Stability of finite-dimensional Poisson maximizers under convergence of
-their finitely many positive weights and means. -/
+/-- **Stability of finite Poisson maximizers under convergence of weights and means.**  Given a
+sequence of finite Poisson criteria with weights `qN N` and means `mN N`, suppose [the limiting
+weights are strictly positive](hyp:hqpos), [the limiting means are strictly
+positive](hyp:hmpos), [the linear design map is injective](hyp:hA), [the weights `qN N` converge
+cellwise to the limiting weights `q`](hyp:hq), and [the means `mN N` converge cellwise to the
+limiting means `m`](hyp:hm). If [`argmax N` maximizes the `N`-th criterion, eventually
+in `N`](hyp:hArgmax), and [`limitArgmax` is the unique global maximizer of the limiting
+criterion](hyp:hLimit), then [the maximizer sequence `argmax` converges to
+`limitArgmax`](goal). -/
 lemma finitePoissonObjective_argmax_tendsto {E I : Type*}
     [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
     [SecondCountableTopology E] [Fintype I]
@@ -228,8 +235,11 @@ lemma finitePoissonObjective_argmax_tendsto {E I : Type*}
     exact hLimit.2 y heq
 
 -- @node: finitePoissonObjective_argmax_continuousAt_mean
-/-- At a strictly positive mean vector, the unique selected maximizer of a
-full-rank finite Poisson objective varies continuously with all cell means. -/
+/-- **Continuity of the finite Poisson maximizer in the means.**  If [every cell weight is
+strictly positive](hyp:hq) and [the base mean vector `m₀` has every entry strictly
+positive](hyp:hm₀), and [the linear design map is injective](hyp:hA), then [the selected
+maximizer of the finite Poisson criterion is continuous, as a function of the mean vector,
+at `m₀`](goal). -/
 lemma finitePoissonObjective_argmax_continuousAt_mean
     {E I : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     [FiniteDimensional ℝ E] [Fintype I] [Nonempty I]

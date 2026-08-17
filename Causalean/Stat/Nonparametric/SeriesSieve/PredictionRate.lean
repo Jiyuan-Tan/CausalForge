@@ -41,10 +41,11 @@ namespace Causalean.Stat.Nonparametric.SeriesSieve
 open Causalean.Stat.Nonparametric
 open scoped BigOperators
 
-/-- **Jackson bias rate for the series least-squares objective.** Given the squared Jackson
-best-approximation bound `A ≤ (∑ᵢ wᵢ)·(C_J·J^{−s/d})²` on the noise-free least-squares objective
-`A := lstsqObjective Φ w f c0` (the shape produced by `seriesApprox_le_of_sup` with sup-error
-`δ = C_J·J^{−s/d}`), the objective satisfies the explicit bias rate
+/-- **Jackson bias rate for the series least-squares objective.** If [the noise-free
+least-squares objective `A := lstsqObjective Φ w f c0` obeys the squared Jackson
+best-approximation bound `A ≤ (∑ᵢ wᵢ)·(C_J·J^{−s/d})²`](hyp:hJack) — the shape produced by
+`seriesApprox_le_of_sup` with sup-error `δ = C_J·J^{−s/d}` — then [the same objective satisfies
+the explicit doubled-exponent bias rate `A ≤ ((∑ᵢ wᵢ)·C_J²) · J^{−2s/d}`](goal):
 
     A ≤ ((∑ᵢ wᵢ)·C_J²) · J^{−2s/d}.
 
@@ -68,9 +69,11 @@ theorem jacksonSeriesBias_le {N : ℕ} {ι : Type*} [Fintype ι]
     rw [mul_pow, hpow]; ring
   exact hJack.trans_eq hrw
 
-/-- **Effective degrees of freedom is controlled by `J/N`.** For normalized least-squares weights
-`wᵢ = 1/N` and a Frobenius/trace hypothesis on the hat map `a`, namely `∑ᵢ ∑ₖ aᵢₖ² ≤ Cvar·J`, the
-weighted coefficient sum (the effective degrees of freedom `V` of the oracle inequality) obeys
+/-- **Effective degrees of freedom is controlled by `J/N`.** If [the sample size `N` is
+positive](hyp:hN), [the least-squares weights are normalized as `wᵢ = 1/N`](hyp:hw), and [the hat
+map `a` obeys the Frobenius/trace bound `∑ᵢ ∑ₖ aᵢₖ² ≤ Cvar·J`](hyp:htr), then [the weighted
+coefficient sum — the effective degrees of freedom `V` of the oracle inequality — obeys the bound
+`Cvar · J / N`](goal):
 
     ∑ᵢ wᵢ ∑ₖ aᵢₖ² ≤ Cvar · J / N.
 
@@ -92,11 +95,15 @@ theorem seriesEffectiveDoF_le {N : ℕ} {a : Fin N → Fin N → ℝ} {w : Fin N
           exact mul_le_mul_of_nonneg_left htr (by positivity)
     _ = Cvar * (J : ℝ) / N := by ring
 
-/-- **Series / sieve least-squares prediction rate `O(J^{−2s/d} + J/N)`.** Combining the Jackson
-bias supplier `jacksonSeriesBias_le` and the effective-degrees-of-freedom supplier
-`seriesEffectiveDoF_le` with the conditional oracle inequality `seriesLS_expected_prediction_le`,
-the expected weighted quadratic prediction error of the fitted series coefficients obeys the
-standard series/sieve rate
+/-- **Series / sieve least-squares prediction rate `O(J^{−2s/d} + J/N)`.** Assume [a positive
+sample size](hyp:hN); [the noise-free projection `c0` has residual orthogonal to every design
+column](hyp:hortho); [the data fit `chat ω` differs from `c0` by a deterministic linear image
+`a` of a noise family `ε`](hyp:hlin) that is [square-integrable](hyp:hε), [mean
+zero](hyp:hmean), and [spherical with scale `σ`](hyp:hsph); [the noise-free objective obeys the
+squared Jackson best-approximation bound at rate `s/d` with constant `C_J`](hyp:hJack); and [the
+weights are normalized `wᵢ = 1/N`](hyp:hw) with [the hat map obeying the Frobenius/trace bound
+`∑ᵢ ∑ₖ aᵢₖ² ≤ Cvar·J`](hyp:htr). Then [the expected weighted quadratic prediction error of the
+fitted series coefficients obeys the standard series/sieve rate](goal):
 
     𝔼[‖f − Φ·ĉ‖²_w] ≤ ((∑ᵢ wᵢ)·C_J²) · J^{−2s/d} + σ² · (Cvar · J / N).
 

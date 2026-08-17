@@ -52,15 +52,17 @@ def prodDesign (D : ∀ i, FiniteDesign (α i)) : FiniteDesign (∀ i, α i) whe
           rw [Finset.prod_univ_sum]; rw [Fintype.piFinset_univ]]
     simp only [FiniteDesign.p_sum, Finset.prod_const_one]
 
-/-- The assignment probability in a product design is the product of the coordinate
-probabilities. -/
+/-- For [a family of independent coordinate designs `D`](hyp:D) and [an assignment `w`](hyp:w),
+[the product-design probability of `w` equals the product of the coordinate probabilities
+`∏ᵢ (D i).p (w i)`](goal). -/
 @[simp] lemma prodDesign_p (D : ∀ i, FiniteDesign (α i)) (w : ∀ i, α i) :
     (prodDesign D).p w = ∏ i, (D i).p (w i) := rfl
 
 namespace FiniteDesign
 
-/-- The expectation under the product design of a product of single-coordinate functions
-factors into the product of the coordinate expectations. -/
+/-- For [a family of independent coordinate designs `D`](hyp:D) and [single-coordinate functions
+`g`](hyp:g), [the expectation under the product design of the product `∏ᵢ g i (w i)` factors into
+the product of the individual coordinate expectations `∏ᵢ (D i).E (g i)`](goal). -/
 lemma E_prod_prod (D : ∀ i, FiniteDesign (α i)) (g : ∀ i, α i → ℝ) :
     (prodDesign D).E (fun w => ∏ i, g i (w i)) = ∏ i, (D i).E (g i) := by
   simp only [FiniteDesign.E, prodDesign_p]
@@ -69,8 +71,9 @@ lemma E_prod_prod (D : ∀ i, FiniteDesign (α i)) (g : ∀ i, α i → ℝ) :
         Finset.sum_congr rfl (fun w _ => by rw [Finset.prod_mul_distrib])]
   rw [Finset.prod_univ_sum, Fintype.piFinset_univ]
 
-/-- A function of a single coordinate has the marginal expectation of that coordinate's
-design under the product design. -/
+/-- For [a family of independent coordinate designs `D`](hyp:D), [the expectation under the
+product design of a function of a single coordinate `j` equals the expectation of that same
+function under coordinate `j`'s own marginal design](goal). -/
 lemma E_prod_apply (D : ∀ i, FiniteDesign (α i)) (j : ι) (g : α j → ℝ) :
     (prodDesign D).E (fun w => g (w j)) = (D j).E g := by
   have hg : (fun w : ∀ i, α i => g (w j))

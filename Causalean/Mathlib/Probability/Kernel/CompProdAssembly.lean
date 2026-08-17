@@ -30,13 +30,18 @@ namespace Causalean.Mathlib.CompProdAssembly
 open MeasureTheory ProbabilityTheory
 open scoped MeasureTheory ProbabilityTheory
 
-/-- **CompProd assembly from an a.e. inner equality, indexed-integrator form.**
+/-- **CompProd assembly from an a.e. inner equality, indexed-integrator form.** Consider two
+    Markov-style kernels `KL`, `KR` from a base space to an outer space, each built by mixing the
+    section at a base point of an inner kernel — `fL`, respectively `fR`, on the product of the
+    base space and an intermediate space — against a fixed intermediate kernel `κ` evaluated at
+    that point: [`KL a` equals the section `fL(a,·)` composed with `κ a`](hyp:hL) and
+    [`KR a` equals the section `fR(a,·)` composed with `κ a`](hyp:hR). If [the inner kernels `fL`
+    and `fR` agree almost everywhere with respect to the composition product of the base measure
+    `ν` and `κ`](hyp:hae), then [the composition products `ν ⊗ₘ KL` and `ν ⊗ₘ KR` are
+    equal](goal).
 
-    If `KL`/`KR` are mixtures of the `a`-sections of `fL`/`fR` against an
-    `a`-indexed kernel `κ`, and `fL = fR` holds `(ν ⊗ₘ κ)`-a.e., then
-    `ν ⊗ₘ KL = ν ⊗ₘ KR`.  This is the indexed analogue of
-    `compProd_eq_of_inner_ae`; it is useful when the inner integration law is a
-    conditional kernel rather than a fixed marginal. -/
+    This is the indexed analogue of `compProd_eq_of_inner_ae`; it is useful when the inner
+    integration law is a conditional kernel rather than a fixed marginal. -/
 theorem compProd_eq_of_inner_ae_kernel
     {α γ β : Type*} [MeasurableSpace α] [MeasurableSpace γ] [MeasurableSpace β]
     (ν : Measure α) [IsFiniteMeasure ν] (κ : Kernel α γ) [IsSFiniteKernel κ]
@@ -69,11 +74,14 @@ theorem compProd_eq_of_inner_ae_kernel
     rw [hc]
   exact MeasureTheory.lintegral_congr_ae (MeasureTheory.ae_restrict_of_ae hInnerAE)
 
-/-- **CompProd assembly from an a.e. inner equality.**
-
-    If `KL`/`KR` are the `μ`-mixtures of the `a`-sections of `fL`/`fR`
-    (`KL a = (fL.sectR a) ∘ₘ μ`), and `fL = fR` holds `(ν ⊗ₘ const μ)`-a.e., then
-    `ν ⊗ₘ KL = ν ⊗ₘ KR`. -/
+/-- **CompProd assembly from an a.e. inner equality.** Consider two Markov-style kernels `KL`,
+    `KR` from a base space to an outer space, each built by mixing the section at a base point of
+    an inner kernel — `fL`, respectively `fR`, on the product of the base space and an
+    intermediate space — against a fixed intermediate measure `μ`: [`KL a` equals the section
+    `fL(a,·)` composed with `μ`](hyp:hL) and [`KR a` equals the section `fR(a,·)` composed with
+    `μ`](hyp:hR). If [the inner kernels `fL` and `fR` agree almost everywhere with respect to the
+    composition product of the base measure `ν` with the constant-`μ` kernel](hyp:hae), then
+    [the composition products `ν ⊗ₘ KL` and `ν ⊗ₘ KR` are equal](goal). -/
 theorem compProd_eq_of_inner_ae
     {α γ β : Type*} [MeasurableSpace α] [MeasurableSpace γ] [MeasurableSpace β]
     (ν : Measure α) [IsFiniteMeasure ν] (μ : Measure γ) [SFinite μ]

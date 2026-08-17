@@ -105,11 +105,12 @@ private lemma integrable_adjustedCE
 
 /-! ## Mean-zero theorem -/
 
-/-- **Mean zero of the ATT AIPW moment** — `lem:est-aipw-mean-zero-att`.
-
-Under the one-sided ATT back-door assumption bundle, positivity of the marginal
-treatment probability, and integrability of the IPW correction, the AIPW moment
-evaluated at the truth has zero expectation under the data law `P_Z`.
+/-- **Mean zero of the ATT AIPW moment.** Under [the one-sided back-door ATT
+assumptions](hyp:hA), [a strictly positive marginal treatment probability](hyp:hπ_pos),
+and [integrability of the control-arm inverse-propensity-weighted residual correction
+`(1 − 1{D=1}) · (e(X)/(1 − e(X))) · (Y − μ₀(X))`](hyp:hIPW), [the ATT AIPW moment
+evaluated at the truth has mean zero under the joint law of the covariates, treatment,
+and outcome](goal).
 
 Proof outline:
 

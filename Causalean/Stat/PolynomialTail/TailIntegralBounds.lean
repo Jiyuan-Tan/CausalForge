@@ -80,9 +80,11 @@ private theorem split_endpoints (h : PolyTail P U κ t₀ cm cp) (hlam_pos : 0 <
     (hlam_le : lam ≤ t₀) : (1 : ℝ) ≤ t₀⁻¹ ∧ t₀⁻¹ ≤ lam⁻¹ :=
   ⟨(one_le_inv₀ h.t0_pos).mpr h.t0_lt_one.le, (inv_le_inv₀ h.t0_pos hlam_pos).mpr hlam_le⟩
 
-/-- **Upper bound on the tail integral.**  Under the polynomial lower-tail hypothesis and
-`0 < λ ≤ t₀`, the layer-cake tail integral is bounded by a constant pre-window contribution plus
-the upper polynomial comparison:
+/-- **Upper bound on the tail integral.** Under [the polynomial lower-tail hypothesis
+`PolyTail P U κ t₀ cm cp`](hyp:h), for [any threshold `λ` that is positive](hyp:hlam_pos) and
+[at most the window endpoint `t₀`](hyp:hlam_le), [the layer-cake tail integral
+`tailIntegral P U λ` is bounded by a constant pre-window contribution `t₀⁻¹ − 1` plus `cp` times
+the power comparison integral over `(t₀⁻¹, λ⁻¹]`](goal):
 
 `tailIntegral P U λ ≤ (t₀⁻¹ - 1) + cp * ∫ t in Ioc t₀⁻¹ λ⁻¹, t ^ (-κ)`.
 
@@ -117,8 +119,10 @@ theorem tailIntegral_le [IsProbabilityMeasure P] (h : PolyTail P U κ t₀ cm cp
       (hpow_int.const_mul cp) measurableSet_Ioc
       (fun t ht => tailIntegrand_upper_window h ht)
 
-/-- **Lower bound on the tail integral.**  Under the polynomial lower-tail hypothesis and
-`0 < λ ≤ t₀`, the polynomial window alone gives
+/-- **Lower bound on the tail integral.** Under [the polynomial lower-tail hypothesis
+`PolyTail P U κ t₀ cm cp`](hyp:h), for [any threshold `λ` that is positive](hyp:hlam_pos) and
+[at most the window endpoint `t₀`](hyp:hlam_le), [`cm` times the power comparison integral over
+`(t₀⁻¹, λ⁻¹]` is a lower bound for the layer-cake tail integral `tailIntegral P U λ`](goal):
 
 `cm * ∫ t in Ioc t₀⁻¹ λ⁻¹, t ^ (-κ) ≤ tailIntegral P U λ`.
 

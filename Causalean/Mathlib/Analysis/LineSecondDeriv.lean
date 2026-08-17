@@ -89,9 +89,12 @@ lemma continuous_secondDirDeriv {f : E → ℝ} (hf : ContDiff ℝ 2 f) (d : E) 
   exact (ContinuousLinearMap.apply ℝ ℝ d).continuous.comp
     ((contDiff_one_fderiv_apply hf d).continuous_fderiv (by norm_num))
 
-/-- **A convex `C²` function of one real variable has nonnegative second derivative at interior
-points of its domain.** The converse direction (`convexOn_of_deriv2_nonneg`) is in Mathlib; this
-one is not. -/
+/-- **A convex function of one real variable has nonnegative second derivative at interior points
+of its domain.** If [`g` is convex on the set `S`](hyp:hconv), [differentiable at every point of
+`S`](hyp:hdiff), [`x` lies in the interior of `S`](hyp:hx), and [the derivative of `g` is itself
+differentiable at `x`](hyp:hdd), then [the second derivative of `g` at `x` is nonnegative](goal).
+
+The converse direction (`convexOn_of_deriv2_nonneg`) is in Mathlib; this one is not. -/
 lemma convexOn_deriv2_nonneg {S : Set ℝ} {g : ℝ → ℝ} {x : ℝ}
     (hconv : ConvexOn ℝ S g) (hdiff : ∀ y ∈ S, DifferentiableAt ℝ g y)
     (hx : x ∈ interior S) (hdd : DifferentiableAt ℝ (deriv g) x) :

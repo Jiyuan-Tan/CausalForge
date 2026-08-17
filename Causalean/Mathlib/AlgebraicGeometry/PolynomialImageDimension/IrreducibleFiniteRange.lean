@@ -38,8 +38,10 @@ lemma finiteCoordinateRange_closed {κ : Type*} (c : κ) (S : Finset ℂ) :
   rw [heq]
   exact affineZariskiClosure_zero_of_polynomial _
 
-/-- A regular coordinate taking only finitely many values on a nonempty
-irreducible affine algebraic set is constant. -/
+/-- On [an irreducible affine-closed set `Z`](hyp:hZ), if [a fixed coordinate
+`c` takes values only within a fixed finite set `S` at every point of
+`Z`](hyp:hrange), then [that coordinate is in fact constant on `Z`, equal to
+some single value in `S`](goal). -/
 theorem irreducible_coordinate_constant_of_finite_range {κ : Type*}
     {Z : Set (κ → ℂ)} (hZ : IsIrreducibleAffineClosed Z)
     (c : κ) (S : Finset ℂ) (hrange : ∀ x ∈ Z, x c ∈ S) :

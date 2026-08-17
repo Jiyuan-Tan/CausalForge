@@ -492,13 +492,13 @@ theorem populationScoreDiff_eq_jacobian_plus_remainder
 /-! ## Headline local stochastic expansion -/
 
 omit [FiniteDimensional ℝ E] [BorelSpace E] in
-/-- **Local stochastic expansion for Z-estimators.**
-
-Combining centered empirical-process control with the population Fréchet
-expansion and the rate-of-convergence input
-`‖θn − θ₀‖ = O_p(1/√n)` produces the linearisation
-`(1/√n) Σ_{i<n} (ψ(θn,Z_i) − ψ(θ₀,Z_i)) − √n · J₀ (θn − θ₀) = o_p(1)`
-in norm.
+/-- **Local stochastic expansion for Z-estimators.**  For a criterion function `ψ` with
+population Fréchet-Jacobian `reg.J₀` at `θ₀`, an i.i.d. sample `S`, and an estimator sequence
+`θn`, suppose [`θn` is consistent for `θ₀`](hyp:hConsistent), [the centered empirical process of
+`ψ` is stochastically equicontinuous at `θ₀` along `θn`](hyp:hStochEquicont), and [`θn`
+approaches `θ₀` at the parametric rate, `‖θn − θ₀‖ = O_p(1/√n)`](hyp:hRate). Then [the empirical
+average score difference `(1/√n) Σᵢ (ψ(θn,Zᵢ) − ψ(θ₀,Zᵢ))` agrees with its linearization
+`√n · reg.J₀(θn − θ₀)` up to an `o_p(1)` remainder in norm](goal).
 
 The hypothesis `hRate` (i.e. `θn − θ₀ = O_p(1/√n)`) is the rate-of-
 convergence input.  Classically (van der Vaart 1998, §5.3) this rate is

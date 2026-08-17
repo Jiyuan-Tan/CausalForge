@@ -224,8 +224,12 @@ theorem twfe_eq_untreatedBias_add_treated_weighted_tau (P : DCDHPanel G T) :
   P.betaTWFE = P.untreatedBias + P.treatedWeightedTau := by
   rw [twfe_eq_untreatedBias_add_DWeightedTau, DWeightedTau_eq_treatedWeightedTau]
 
-/-- Under the zero untreated residual contrast, TWFE equals the treated-cell
-weighted treatment-effect sum. -/
+/-- **Zero untreated bias implies TWFE equals the treated-cell weighted
+effect.** If [the untreated-outcome residual contrast vanishes — the
+residualized-treatment-weighted average of the untreated potential outcome
+`Y0` over the whole panel is zero](hyp:h0), then [the finite two-way
+fixed-effects (TWFE) coefficient equals the treated-cell weighted sum of
+treatment effects](goal). -/
 theorem twfe_eq_treated_weighted_tau_of_zeroUntreatedContrast
   (P : DCDHPanel G T) (h0 : P.zeroUntreatedResidualContrast) :
   P.betaTWFE = P.treatedWeightedTau := by
@@ -425,10 +429,14 @@ theorem neg_component_of_exists_Dtilde_neg
     Finset.sum_lt_sum hle ⟨(g₀, t₀), hmem, (Finset.mem_filter.mp hmem).2⟩
   simpa using key
 
-/-- Panel-level DCDH sign reversal: if the treated-cell weights have a strictly
-negative total component and untreated residual contrast is zero, then one can
-choose strictly positive treated effects, keeping the treatment/residualization
-geometry fixed, so that the resulting TWFE coefficient is negative. -/
+/-- **Panel-level DCDH sign reversal.** If [the untreated-outcome residual
+contrast vanishes](hyp:h0) and [the treated cells with negative normalized
+DCDH weight carry a strictly negative total weight](hyp:h_neg_component), then
+[there exists another finite DCDH panel — sharing the same cell weights,
+treatment indicator, untreated potential outcomes, and residualized
+treatment, but with strictly positive treatment effects on every cell and zero
+untreated residual contrast — whose two-way fixed-effects (TWFE) coefficient
+is strictly negative](goal). -/
 theorem exists_panel_with_positive_treated_effects_twfe_negative_of_negative_component
   {G T : Type*} [Fintype G] [Fintype T]
   (P : DCDHPanel G T)

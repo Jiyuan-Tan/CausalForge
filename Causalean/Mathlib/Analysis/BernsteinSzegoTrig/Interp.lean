@@ -53,12 +53,15 @@ theorem szegoInterp_self (β : ℕ) (Q₀ Q₁ t₀ : ℝ) :
     szegoInterp β Q₀ Q₁ t₀ t₀ = Q₀ := by
   simp [szegoInterp]
 
-/-- The Szegő interpolant reproduces its prescribed derivative at the base point:
-`S'(t₀) = Q₁` (needs `β ≥ 1` so the factor `β` produced by the chain rule cancels
-the `1/β` in the sine coefficient).
+/-- The Szegő comparison interpolant `S` built at base point `t₀` from a
+prescribed value `Q₀` and derivative `Q₁` reproduces the prescribed derivative
+there: provided [the degree parameter `β` is at least 1](hyp:hβ), [the
+derivative of `S` at `t₀` equals `Q₁`](goal).
 
-Concretely `S'(t) = -Q₀·β·sin(β(t−t₀)) + Q₁·cos(β(t−t₀))`, which at `t = t₀`
-evaluates to `Q₁`. -/
+The requirement `β ≥ 1` is needed so the factor `β` produced by the chain rule
+cancels the `1/β` in the sine coefficient. Concretely
+`S'(t) = -Q₀·β·sin(β(t−t₀)) + Q₁·cos(β(t−t₀))`, which at `t = t₀` evaluates to
+`Q₁`. -/
 theorem szegoInterp_hasDerivAt (β : ℕ) (hβ : 1 ≤ β) (Q₀ Q₁ t₀ : ℝ) :
     HasDerivAt (fun t => szegoInterp β Q₀ Q₁ t₀ t) Q₁ t₀ := by
   let c : ℝ := β

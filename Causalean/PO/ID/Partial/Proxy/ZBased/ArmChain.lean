@@ -182,7 +182,17 @@ private lemma condIntYq_factor_arm
   exact hStepA.trans (hStepB.trans (hStepC.trans hStepD))
 
 set_option maxHeartbeats 400000 in
-/-- Off-arm bridge-substitution identity, **upper** envelope side.
+/-- **Off-arm bridge-substitution identity, upper envelope side.** Fix a treatment arm `a`
+and assume [the Z-based assumption bundle](hyp:HA) — consistency, latent
+exchangeability, the outcome-proxy independence condition, and the treatment-side bridge
+`q` — together with [the treatment and outcome variables being distinct](hyp:hAY); let
+`Uenv` be [an upper envelope function bounding the σ(A,Z,X)-conditional mean of the
+outcome on the on-arm stratum](hyp:hU), assumed [integrable](hyp:hUInt), with [the
+envelope weighted by the treatment-proxy bridge](hyp:hU_int) and [the envelope weighted
+by the likelihood-ratio arm-swap factor](hyp:hU_int_L) both integrable. Then [the
+average potential outcome `Y(a)` over the off-arm stratum `{A ≠ a}` is at most the
+average of the envelope `Uenv(a, X)` over that same stratum](goal):
+`∫_{A≠a} Y(a) dμ ≤ ∫_{A≠a} Uenv(a, X) dμ`.
 
 On the off-arm stratum `{A = ¬a}`,
   `∫_{A=¬a} Y(a) dμ ≤ ∫_{A=¬a} Uenv(a, X) dμ`,

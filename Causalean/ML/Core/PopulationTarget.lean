@@ -54,8 +54,16 @@ def IsL2Projection (P : Measure (X × ℝ)) (m : X → ℝ) : Prop :=
   ∀ g : X → ℝ, Measurable g → Integrable (fun z => (z.2 - m z.1) * g z.1) P →
     ∫ z, (z.2 - m z.1) * g z.1 ∂P = 0
 
-/-- A function whose residual is orthogonal to all functions of the covariate
-minimizes squared population risk against any competitor `h`.  Proof: complete the square
+/-- For a joint covariate–response law `P` and a competitor function `h`, if [the residual
+of `m` is orthogonal to every function of the covariate, i.e. `m` is an L² projection
+onto functions of the covariate](hyp:hm), [`m` is measurable](hyp:hm_meas), [the
+competitor `h` is measurable](hyp:hh_meas), [`m` attains finite squared population
+risk](hyp:hint_m), [`h` attains finite squared population risk](hyp:hint_h), and [the
+cross term `(Y − m(X))·(m(X) − h(X))` is integrable](hyp:hcross), then [the squared
+population risk of `m` is at most that of `h`](goal): `m` minimizes squared population
+risk against any such competitor.
+
+Proof: complete the square
 `(y − h x)² = (y − m x)² + 2 (y − m x)(m x − h x) + (m x − h x)²`; the cross term
 integrates to zero by `IsL2Projection`, the quadratic term is nonnegative. -/
 theorem square_loss_population_target_of_isL2Projection

@@ -23,23 +23,19 @@ open MeasureTheory Causalean.Stat Causalean.Stat.Concentration
 
 variable {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω}
 
-/-- Ω-side fixed-diameter localized deviation event for the candidate
-class `star(H)` — produces a *single* μ-event simultaneously valid for
-**every pair** `(h₁, h₂) ∈ TC.H × TC.H`.
+/-- **Fixed-diameter localized deviation event for the candidate class `star(H)`.** Given [a
+positive sample size `n`](hyp:hn) and [a confidence level `δ` in `(0, 1]`](hyp:hδ_pos,hδ_le),
+[there is a single event of probability at least `1 − δ`, valid simultaneously for every pair
+`h₁, h₂` in the primal hypothesis class `TC.H`, on which the gap between the fold's empirical
+second-moment difference `(1/n) Σ_k h₁(X_k)² − (1/n) Σ_k h₂(X_k)²` and its population
+counterpart `E[h₁(X)²] − E[h₂(X)²]` is bounded by `4 · (H_diameter + δ_n) · criticalRadius(ψ n)`
+plus a `√(2·log(1/δ)/n)` deviation term](goal), where `H_diameter` and the critical-radius
+regime come from the supplied localized-regime witness.
 
-The radius is fixed at `H_diameter + δ_n`, using
-`regime.H_diameter_bound` and `interp_H_norm`.  This avoids the dyadic
-peeling infrastructure needed for a pair-gap rate, at the cost of a
-diameter-rate leading term.
-
-For every confidence level `δ ∈ (0,1]` there is a μ-event of mass
-`≥ 1 − δ` such that for all `ω` in the event and all
-`h₁, h₂ ∈ TC.H`,
-
-    |((1/n) Σ_k h₁(X_k)² − (1/n) Σ_k h₂(X_k)²)
-       − (E[h₁(X)²] − E[h₂(X)²])|
-      ≤ 4 · (H_diameter + δ_n) · critRad
--/
+Produces a *single* μ-event simultaneously valid for **every pair** `(h₁, h₂) ∈ TC.H × TC.H`.
+The radius is fixed at `H_diameter + δ_n`, using `regime.H_diameter_bound` and
+`interp_H_norm`.  This avoids the dyadic peeling infrastructure needed for a pair-gap rate, at
+the cost of a diameter-rate leading term. -/
 lemma localized_omega_event_for_H
     {S : OperatorSystem Ω μ} {TC : TRAEClasses S}
     {P_W : Measure S.𝒲}

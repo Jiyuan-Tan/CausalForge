@@ -117,12 +117,13 @@ open DesignBased
 open Classical in
 /-- **Proposition 5.1 (Liu–Hudgens 2014), asymptotic normality of the treatment-minus-control
 direct-effect contrast — conditional on the uniform conditional CLT.** Along a sequence of
-two-stage Hudgens–Halloran experiments `Exp : ℕ → LHExperiment`, write `stud n` for the
-studentized statistic centered at that contrast and `cond n s` for the within-selection (stage-2
-product) design when stage 1 selects the strategy assignment `s`.  Assume the *uniform conditional
-convergence* hypothesis `hcond`: the conditional studentized CDFs at the point `t` converge to the
-standard normal CDF `Φ(t)` uniformly over selections `s`, with a vanishing uniform bound `B n`.
-Then the *unconditional* (joint-design) studentized CDF converges to `Φ(t)`:
+two-stage Hudgens–Halloran experiments `Exp : ℕ → LHExperiment`, let [`stud n` be the studentized
+statistic `(D̂E − DE̅)/√directVar` for the treatment-minus-control direct-effect
+contrast](hyp:stud,_hstud) and [`cond n s` the within-selection (stage-2 product) design when
+stage 1 selects the strategy assignment `s`](hyp:cond,hcondDef). Assume [the conditional
+studentized CDFs at `t` converge to the standard normal CDF `Φ(t)` uniformly over selections `s`,
+with a vanishing uniform bound](hyp:hcond). Then [the unconditional (joint-design) studentized CDF
+at `t` converges to `Φ(t)`](goal):
 
     (Exp n).jointD.Pr (fun sw => stud n sw ≤ t) → Φ(t).
 

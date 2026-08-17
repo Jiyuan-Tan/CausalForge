@@ -76,9 +76,10 @@ private theorem iUnion_fiber {ι : Type*} (H : Ω → ι) : (⋃ h, H ⁻¹' {h}
 
 /-! ## Integral decomposition over fibers -/
 
-/-- **Fiber decomposition.**  For an integrable `f` and a finite-valued
-map `H` with measurable fibres, the integral of `f` splits as the sum of its set-integrals
-over the fibers `H⁻¹{h}`. -/
+/-- If [`H` is a finite-valued map on the sample space whose fibers `H⁻¹{h}` are all
+measurable](hyp:hfiber) and [`f` is integrable with respect to the ambient measure](hyp:hf),
+then [the integral of `f` splits as the sum, over the finitely many values `h` of `H`, of the
+set integrals of `f` restricted to the fiber `H⁻¹{h}`](goal). -/
 theorem integral_eq_sum_setIntegral_fiber {ι : Type*} [Fintype ι]
     {H : Ω → ι} (hfiber : ∀ h, MeasurableSet (H ⁻¹' {h}))
     {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
@@ -93,10 +94,12 @@ theorem integral_eq_sum_setIntegral_fiber {ι : Type*} [Fintype ι]
     _ = ∫ ω in ⋃ h, H ⁻¹' {h}, f ω ∂μ := by rw [iUnion_fiber]
     _ = ∑ h : ι, ∫ ω in H ⁻¹' {h}, f ω ∂μ := hsplit
 
-/-- **Cell-constant pull-out.**  If the integrand is a function `f` weighted by
-a value `c (H ω)` that depends on `ω` only through the cell `H ω`, the integral
-decomposes as `∑ h, c h · ∫_{H⁻¹{h}} f`.  No measurability of `c` is needed:
-on each fiber `c (H ω)` is the constant `c h`.
+/-- **Cell-constant pull-out.** If [`H` is a finite-valued map on the sample space whose
+fibers `H⁻¹{h}` are all measurable](hyp:hfiber) and [`f` is integrable with respect to the
+ambient measure](hyp:hf), then, for any weighting `c` of the fiber values, [the integral of the
+`ω`-dependent product `c (H ω) • f ω` decomposes as the sum, over the values `h` of `H`, of
+`c h` scaling the set integral of `f` over the fiber `H⁻¹{h}`](goal). No measurability of `c`
+is needed: on each fiber `c (H ω)` is the constant `c h`.
 
 This is the workhorse for panel cell-by-cell regression algebra and for
 estimands written as cell-weighted averages. -/

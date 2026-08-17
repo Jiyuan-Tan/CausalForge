@@ -150,7 +150,15 @@ set_option maxHeartbeats 1000000 in
 -- The proof assembles many `MemLp`/integrability facts, a pointwise `ψ²`
 -- expansion, two σ(X)-pull-out cross-term vanishings, and three pushforward
 -- rewrites in one term, exceeding the default heartbeat budget.
-/-- **Hahn (1998) variance decomposition** of the AIPW influence function.
+/-- **Hahn (1998) variance decomposition** of the AIPW influence function. Assume
+[the back-door identifying assumptions](hyp:hA) and [strict overlap of the true
+propensity score with margin `ε`](hyp:h_overlap), and suppose [the factual
+outcome is square-integrable](hyp:h_y2) and [every potential outcome `Y(d)` is
+square-integrable](hyp:h_yd2). Then [the variance of the augmented
+inverse-propensity-weighted (AIPW) influence function decomposes as the
+variance of the conditional treatment-effect function `μ₁ − μ₀ − θ₀` plus two
+inverse-propensity-weighted conditional-outcome-variance terms — the Hahn
+semiparametric efficiency bound `V_H`](goal).
 
 Under the back-door assumptions, strict overlap, and square-integrability of
 the factual and counterfactual outcomes, the variance of the AIPW influence
@@ -415,7 +423,26 @@ open BackdoorEstimationSystem
 variable {P : POSystem} {γ : Type*} [MeasurableSpace γ]
   [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
 
-/-- **The one-shot DML ATE attains the Hahn efficiency bound.**
+/-- **The one-shot DML ATE attains the Hahn efficiency bound.** Assume [the
+back-door identifying assumptions](hyp:hA) and [strict overlap of the true
+propensity score with margin `ε`](hyp:h_overlap), with [the factual
+outcome](hyp:h_y2) and [every potential outcome `Y(d)`](hyp:h_yd2)
+square-integrable. Let `sample` be an i.i.d. draw of the observed data and
+`split` a one-shot fold split whose [training-fold share converges to a limit
+`c` strictly between `0` and `1`](hyp:hc_pos,hc_lt,h_split_rate). For the
+nuisance estimators `μ_hat`, `e_hat` fit on the training fold, assume [each is jointly measurable
+in the training data and the evaluation point and square-integrable against
+`P_X`](hyp:h_mu_meas,h_e_meas,h_mu_memLp,h_e_memLp), and [each is a measurable function of the
+training fold alone](hyp:h_mu_foldA,h_e_foldA,h_mu_uncurry_foldA,h_e_uncurry_foldA), that [the
+estimated propensity score also satisfies overlap with margin `ε`](hyp:h_e_overlap),
+that [each nuisance estimator is `L²(P_X)`-consistent](hyp:h_mu_rate,h_e_rate),
+and that [the product of the two `L²` estimation errors is `o_P(n^{-1/2})` —
+the Neyman-orthogonality rate condition](hyp:h_product_rate). Assume finally
+[the AIPW influence function, the rescaled estimator, and the normalized
+influence-function sum are all measurable](hyp:hψ_meas,hθn_meas,hSum_meas).
+Then [the rescaled one-shot DML ATE estimator converges in distribution to
+the mean-zero Gaussian law whose variance is the Hahn semiparametric
+efficiency bound](goal).
 
 Composing `dml_ATE_tendstoNormal` with `aipw_variance_hahn_decomposition`,
 the rescaled estimator `√|B(n)| (θ̂ⁿ − θ₀)` converges in distribution to the

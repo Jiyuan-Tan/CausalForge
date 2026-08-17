@@ -37,7 +37,11 @@ variable {Ω : N → Type*} [∀ n, MeasurableSpace (Ω n)]
 
 open scoped MeasureTheory ProbabilityTheory
 
-/-- **Observational chain rule.**
+/-- **Observational chain rule.** Fix a structural causal model `M`, a target node set `Y` and
+    a conditioning node set `CC` with [`Y` contained in the observed nodes](hyp:hY) and [`CC`
+    contained in the observed nodes](hyp:hCC). Then, at a fixed parameter slice `s`, [the
+    observational distribution of `Y` equals the observational conditional law of `Y` given
+    `CC` composed with the observational marginal law of `CC`](goal).
 
     At a fixed SCM slice, the observational distribution of the target variables
     is obtained by first drawing the conditioning variables from their

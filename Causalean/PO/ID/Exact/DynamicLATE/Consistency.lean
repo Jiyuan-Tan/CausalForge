@@ -185,8 +185,13 @@ theorem YofDofZ_eq_YofZ2_on_z1Event (As : S.Assumptions)
   exact congrArg _
     (eval_encouragement_eq_eval_encZ2_on_z1Event As z hω S.Y S.Z1_ne_Y.symm S.Z2_ne_Y.symm)
 
-/-- On `{Z₁ = z 0}`, `D₂` under `encouragementRegime z` agrees with `D₂`
-under `encZ2Regime (z 1)`. -/
+/-- **Second-stage treatment does not depend on first-stage regime detail once
+the actual first-period instrument matches the counterfactual one.** At
+[any outcome at which the factual first-period instrument equals the first
+coordinate of the instrument path `z`](hyp:hω), [the potential second-period
+treatment under the encouragement regime `z` coincides pointwise with the
+potential second-period treatment under the regime that fixes only the
+second-period instrument to `z 1`](goal). -/
 theorem D2ofZ_eq_D2ofZ2_on_z1Event (As : S.Assumptions)
     (z : Fin 2 → Bool) {ω : P.Ω} (hω : S.factualZ1 ω = z 0) :
     S.D2ofZ z ω = S.D2ofZ2 (z 1) ω := by

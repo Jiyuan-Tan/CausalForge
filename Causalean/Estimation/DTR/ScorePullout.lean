@@ -59,10 +59,17 @@ Outcome residual: `μ₁_val(s₁,d₀,s₀) − μ₀_val(s₀)` (the **next-st
 regression minus the current-stage regression — not `factualY`, which is
 the residual at stage 1 only). -/
 
-/-- Stage-0 weighted-residual integral.  Whenever `g : γ 0 → ℝ` is measurable
-and the resulting product is integrable, the integral against `μ` of
-`g(S₀) · 1{D₀ = dbar 0} · (μ₁_val(S₁,D₀,S₀) − μ₀_val(S₀))` is zero.  By
-sequential exchangeability `D₀ ⟂ Y(dbar) | history₀` plus `μ₀_compat`
+/-- **Stage-0 weighted-residual integral vanishes.** Let `S` be a two-stage
+dynamic-treatment-regime estimation system with [strict overlap at level ε](hyp:h_overlap),
+satisfying [the system's core identification assumptions (consistency, sequential
+exchangeability, positivity)](hyp:hA), and in which [the observed outcome has finite second
+moment](hyp:h_y2). For any weight function `g` on the stage-0 history that is
+[measurable](hyp:hg_meas) and for which [the product `g(S₀) · 1{D₀ = dbar 0} ·
+(μ₁_val(S₁,D₀,S₀) − μ₀_val(S₀))` is integrable](hyp:h_int), then [its expectation under `P.μ` is
+zero: the stage-0-weighted, treatment-indicator-gated gap between the stage-1 and stage-0
+regression functions has zero mean](goal).
+
+By sequential exchangeability `D₀ ⟂ Y(dbar) | history₀` plus `μ₀_compat`
 (applied via the tower σ(historyBundle 0) ⊆ σ(historyBundle 1)),
 `μ[indD₀(dbar 0) · μ₁_val(history₁) | σ(historyBundle 0)] =
   e₀_val(S₀) · μ₀_val(S₀) =
@@ -179,12 +186,15 @@ theorem weighted_residual_integral_zero_stage0
         MeasureTheory.integral_congr_ae hgresid_ce_zero
     _ = 0 := MeasureTheory.integral_zero _ _
 
-/-- Stage-0 indicator-to-propensity rewrite.  For any measurable
-`f : γ 0 → ℝ`, the integral of `f(S₀) · 1{D₀ = dbar 0}` equals the integral
-of `f(S₀) · e₀_val(S₀)` against `P.μ`, by pulling `f(S₀)` out of
-`(historyBundle 0).sigma`-conditional expectation and replacing
-`μ[1{D₀ = dbar 0} | σ(historyBundle 0)]` with `e₀_val ∘ factualS 0` via
-`e₀_compat`. -/
+/-- **Stage-0 indicator-to-propensity rewrite.** Let `S` be a two-stage dynamic-treatment-regime
+estimation system and let `f` be a real-valued function of the stage-0 history that is
+[measurable](hyp:hf_meas) and for which [the product `f(S₀) · 1{D₀ = dbar 0}` is
+integrable](hyp:hf_ind_int). Then [the expectation of `f(S₀)` times the indicator of following
+the target stage-0 treatment `dbar 0` equals the expectation of `f(S₀)` times the true stage-0
+propensity score `e₀_val(S₀)`](goal).
+
+The proof pulls `f(S₀)` out of `(historyBundle 0).sigma`-conditional expectation and replaces
+`μ[1{D₀ = dbar 0} | σ(historyBundle 0)]` with `e₀_val ∘ factualS 0` via `e₀_compat`. -/
 theorem indicator_to_propScore_integral_stage0
     (S : DTREstimationSystem P δ γ)
     (f : γ 0 → ℝ) (hf_meas : Measurable f)
@@ -247,12 +257,17 @@ Each integral is additionally weighted by stage-0 indicator
 `1{D₀ = dbar 0}` so the resulting product picks out the trajectory
 following the target regime in both stages. -/
 
-/-- Stage-1 weighted-residual integral.  Whenever `g : γ 1 × δ × γ 0 → ℝ` is
-measurable and the resulting product is integrable, the integral against
-`μ` of
-`g(S₁,D₀,S₀)(ω) · 1{D₀(ω) = dbar 0} · 1{D₁(ω) = dbar 1} ·
-  (Y(ω) − μ₁_val(S₁(ω), D₀(ω), S₀(ω)))`
-is zero.  The stage-0 indicator factor is `(historyBundle 1).sigma`-measurable
+/-- **Stage-1 weighted-residual integral vanishes.** Let `S` be a two-stage
+dynamic-treatment-regime estimation system with [strict overlap at level ε](hyp:h_overlap),
+satisfying [the system's core identification assumptions (consistency, sequential
+exchangeability, positivity)](hyp:hA), and in which [the observed outcome has finite second
+moment](hyp:h_y2). For any weight function `g` on the stage-1 history `(S₁,D₀,S₀)` that is
+[measurable](hyp:hg_meas) and for which [the product `g(S₁,D₀,S₀) · 1{D₀ = dbar 0} ·
+1{D₁ = dbar 1} · (Y − μ₁_val(S₁,D₀,S₀))` is integrable](hyp:h_int), then [its expectation under
+`P.μ` is zero: the doubly indicator-gated stage-1 outcome residual, weighted by `g`, has zero
+mean](goal).
+
+The stage-0 indicator factor is `(historyBundle 1).sigma`-measurable
 (it is in particular measurable in `D₀, S₀`), so it absorbs into the
 `σ(historyBundle 1)`-pull-out, and the residual conditional expectation
 vanishes. -/
@@ -388,11 +403,15 @@ theorem weighted_residual_integral_zero_stage1
         MeasureTheory.integral_congr_ae hgresid_ce_zero
     _ = 0 := MeasureTheory.integral_zero _ _
 
-/-- Stage-1 indicator-to-propensity rewrite.  For any measurable
-`f : γ 1 × δ × γ 0 → ℝ`, the integral of `f(S₁,D₀,S₀) · 1{D₁ = dbar 1}` (with
-extra σ(historyBundle 1)-measurable weight) equals the integral of
-`f(S₁,D₀,S₀) · e₁_val(S₁,D₀,S₀)`, by pulling the σ(historyBundle 1)-measurable
-factor out and applying `e₁_compat`. -/
+/-- **Stage-1 indicator-to-propensity rewrite.** Let `S` be a two-stage dynamic-treatment-regime
+estimation system and let `f` be a real-valued function of the stage-1 history `(S₁,D₀,S₀)` that
+is [measurable](hyp:hf_meas) and for which [the product `f(S₁,D₀,S₀) · 1{D₁ = dbar 1}` is
+integrable](hyp:hf_ind_int). Then [the expectation of `f(S₁,D₀,S₀)` times the indicator of
+following the target stage-1 treatment `dbar 1` equals the expectation of `f(S₁,D₀,S₀)` times
+the true stage-1 propensity score `e₁_val(S₁,D₀,S₀)`](goal).
+
+The proof pulls the σ(historyBundle 1)-measurable factor `f(S₁,D₀,S₀)` out of the conditional
+expectation and applies `e₁_compat`. -/
 theorem indicator_to_propScore_integral_stage1
     (S : DTREstimationSystem P δ γ)
     (f : γ 1 × δ × γ 0 → ℝ) (hf_meas : Measurable f)

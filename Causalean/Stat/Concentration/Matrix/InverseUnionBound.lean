@@ -25,12 +25,15 @@ namespace Causalean.Stat.Concentration
 open MeasureTheory ProbabilityTheory
 open scoped BigOperators ENNReal
 
-/-- **Union bound for iid coordinate sums.** For a finite family `g : ι → Ω → ℝ` of `L²`
-statistics evaluated on an iid sample of size `N` (product law `Measure.pi`), the probability
-that *some* index `a` has its sum `∑ᵢ g a (ωᵢ)` deviate from its mean `N·𝔼[g a]` by at least `η`
-is bounded by the sum of the per-index Chebyshev bounds `N·Var[g a]/η²`. Specialising `ι` to the
-`(p+1)²` matrix-entry indices and `g` to the design statistics `h_{jk}` controls every entry of
-the design moment matrix simultaneously on the complementary good event. -/
+/-- **Union bound for iid coordinate sums.** For a finite family `g : ι → Ω → ℝ` such that
+[each `g a` is square-integrable under `μ`](hyp:hg), evaluated on an iid sample of size `N`
+drawn from the product law `Measure.pi`, and for [any positive deviation threshold `η`](hyp:hη),
+[the probability that *some* index `a` has its sample sum `∑ᵢ g a (ωᵢ)` deviate from its mean
+`N·𝔼[g a]` by at least `η` is bounded by the sum of the per-index Chebyshev bounds
+`N·Var[g a]/η²`](goal).
+
+Specialising `ι` to the `(p+1)²` matrix-entry indices and `g` to the design statistics `h_{jk}`
+controls every entry of the design moment matrix simultaneously on the complementary good event. -/
 theorem iid_sum_union_bound {N : ℕ} {ι : Type*} [Fintype ι] {Ω : Type*} [MeasurableSpace Ω]
     (μ : Measure Ω) [IsProbabilityMeasure μ] (g : ι → Ω → ℝ) (hg : ∀ a, MemLp (g a) 2 μ)
     {η : ℝ} (hη : 0 < η) :

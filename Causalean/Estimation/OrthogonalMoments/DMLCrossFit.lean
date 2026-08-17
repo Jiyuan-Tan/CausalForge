@@ -455,13 +455,25 @@ noncomputable def dmlCrossFitEstimator
           ((split.fold n k).card : ℝ)⁻¹ *
             ∑ i ∈ split.fold n k, M.m (η_hat n k ω) (sample.Z i ω) M.θ₀)
 
-/-- **Asymptotic linearity of the K-fold cross-fitted Chernozhukov DML
-estimator.**  Same Chernozhukov form as `dml_chernozhukov_asymptoticLinear`,
-but with K folds.  Conclusion: asymptotic linearity at `M.θ₀` with IF
-`−J₀⁻¹ · m(η₀, ·, θ₀)`, indexed over the full sample (the fold-k
-sub-aggregations sum to a full-sample average asymptotically).
-
-Hypotheses mirror the one-shot version, but with per-fold nuisance rates. -/
+/-- **Asymptotic linearity of the K-fold cross-fitted Chernozhukov DML estimator.** Same
+Chernozhukov form as `dml_chernozhukov_asymptoticLinear`, but with K folds. Given a
+general moment M with mean zero at the truth, assume [the truth-evaluated score is
+square-integrable (finite variance)](hyp:_hFV), that [there are at least two folds,
+`K > 1`](hyp:_hK_pos), and a sequence of per-fold cross-fitted nuisance estimators η̂.
+Suppose [the population moment at η̂, trained on each fold's complement, is bounded by a
+constant times the product of the two bilinear-remainder seminorms, at every fold count,
+fold index, and sample point](hyp:_hBR_at). Assume the technical regularity package that
+[the moment at η̂ is jointly measurable at every fold](hyp:_h_m_meas),
+[measurable with respect to the fold's training
+complement](hyp:_h_m_train,_h_m_train_uncurry), and, at every fold count, fold index, and
+sample point, [integrable](hyp:_h_m_int) and [square-integrable](hyp:_h_m_sq_int).
+Finally suppose that, at every fold, [the L² score difference between the fold's
+estimated and true nuisance is o_P(1)](hyp:_h_score_diff_rate), [each of the two
+nuisance-error rates is individually o_P(1)](hyp:_h_indiv_rate_ρ₁,_h_indiv_rate_ρ₂), and
+[their product decays at the parametric rate `o_P(n^{-1/2})`](hyp:_h_product_rate). Then
+[the K-fold cross-fitted estimator is asymptotically linear at the truth `M.θ₀` with
+influence function `−J₀⁻¹ · m(η₀, ·, θ₀)`, indexed over the full sample (the fold-level
+sub-aggregations sum to a full-sample average asymptotically)](goal). -/
 theorem dml_crossFit_asymptoticLinear
     [StandardBorelSpace Ω] [IsFiniteMeasure μ] [IsProbabilityMeasure μ]
     (M : GeneralMoment Ω μ Z P_Z H)

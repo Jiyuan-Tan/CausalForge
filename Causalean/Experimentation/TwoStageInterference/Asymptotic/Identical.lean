@@ -328,13 +328,15 @@ noncomputable def homogeneous_of_identical (R : ℕ → IdenticalRef) (t δ M : 
 
 open DesignBased in
 open scoped Classical in
-/-- **Proposition 5.1 under literally identical groups.** When the groups are identical across the
-sequence — common size, allocation strategies, potential outcomes, and unit counts, all sharing one
-group-level treatment-minus-control direct-effect contrast `δ` — with a uniform bound `M` on the
-centered per-group contrast estimator, the exact-`C` selection support, and the many-groups rate,
-the studentized contrast statistic is asymptotically standard normal.  No analytic homogeneity
-hypothesis is assumed: it is derived from the concrete identical-groups structure via
-`hhom_of_identical`. -/
+/-- **Proposition 5.1 under literally identical groups.** Along a sequence of identical-groups
+experiments `R` — common size, allocation strategies, potential outcomes, and unit counts —
+[sharing one group-level treatment-minus-control direct-effect contrast `δ`](hyp:hδ) with [a
+positive common within-group variance](hyp:hvpos), [a uniform bound `M` on the centered per-group
+contrast estimator](hyp:hMbound), [every supported stage-1 selection flagging exactly `C`
+groups](hyp:hcount), and [the many-groups rate `M/√(C·v) → 0`](hyp:hB0) together with [its
+Lyapunov cube `card·(M/√(C·v))³ → 0`](hyp:hNB3) — [the studentized contrast statistic is
+asymptotically standard normal](goal).  No analytic homogeneity hypothesis is assumed: it is
+derived from the concrete identical-groups structure via `hhom_of_identical`. -/
 theorem directEffect_clt_identical (R : ℕ → IdenticalRef) (t δ M : ℝ)
     (hδ : ∀ n, (R n).refDelta = δ)
     (hvpos : ∀ n, 0 < (R n).refVar)

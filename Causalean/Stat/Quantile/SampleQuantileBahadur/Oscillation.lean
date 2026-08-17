@@ -529,11 +529,11 @@ lemma cdf_increment_sqrt_tendsto {P : Measure ℝ} {τ q₀ f₀ : ℝ}
     rw [div_div_eq_mul_div]
     field_simp
 
-/-- **Local oscillation of the sample-quantile empirical process.** The empirical
-process over a window shrinking at rate `n^{-1/2}`, evaluated at a *random*
-endpoint `Uₙ = O_p(1)`:
-
-    Gₙ(q₀ + Uₙ/√n) − Gₙ(q₀)  →ₚ  0.
+/-- **Local oscillation of the sample-quantile empirical process.** Given [a `SampleQuantileReg`
+regularity bundle `hreg`](hyp:hreg) for the population $\tau$-quantile $q_0$ with density $f_0$,
+and [a sequence of random endpoints `Un` that is bounded in probability, $U_n=O_p(1)$](hyp:hUn),
+[the empirical process $G_n$, evaluated at the shrinking-window point $q_0+U_n/\sqrt n$ minus its
+value at $q_0$, converges to zero in probability as $n\to\infty$](goal).
 
 Proof sketch: fix `M` with `Uₙ ∈ [−M, M]` w.h.p.; partition `[−M, M]` into a
 mesh-`ε` grid; monotonicity of both `F̂ₙ` and `F` sandwiches the oscillation on

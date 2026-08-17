@@ -117,8 +117,11 @@ theorem denom_per_cell_panel
     _ = cellMass μ G T_rv g t * q^2 := by ring
 
 omit [DecidableEq 𝒢] in
-/-- **Per-cell numerator identity.** Under the same cell-constancy
-hypothesis on `D`, plus the cell-mean defining identity for `Y`,
+/-- **Per-cell numerator identity.** On the cohort-period cell `(g, t)`, if [the treatment `D`
+is almost-everywhere equal, on that cell, to its own cell mean (cell-measurability of
+`D`)](hyp:hD_cell), then [the integral of the propensity-residual `D - panelPropensity` times
+the outcome `Y` over the cell equals the cell mass times the cell's residualized treatment
+`panelDtilde` times the outcome's cell mean](goal):
 
     ∫ (D - panelPropensity) · Y · 𝟙{cell g t} dμ
         = cellMass g t · panelDtilde g t · cellMean g t.

@@ -111,12 +111,16 @@ lemma propScore_eq_e_val_label_ae
     filter_upwards [S.e_compat] with ω hc
     simp [e_val_label, hc]
 
-/-- AIPW weighted residual integral.
-Whenever `g : γ → ℝ` is measurable and the resulting product is integrable,
-`∫ g(X) · 1_{D=d} · (Y - μ_val(d, X)) dμ = 0`, by pulling `g(X)` out of
-conditional expectation and using `h_residual_ce_zero`.
+/-- **Weighted-residual mean-zero identity (pull-out lemma).** Fix a treatment label $d$
+and [a measurable weight function `g : γ → ℝ` on the covariates](hyp:hg_meas), under
+[the back-door identification assumptions](hyp:hA). If [the product `g(X) · 1{D=d} · (Y −
+μ(d,X))` is integrable](hyp:h_int) and [the σ(X)-conditional expectation of the
+treatment-`d` residual `1{D=d} · (Y − μ(d,X))` vanishes almost surely](hyp:h_residual_ce_zero),
+then [the integral of the weighted residual against the observed-data law vanishes:
+`∫ g(X) · 1{D=d} · (Y − μ(d,X)) dμ = 0`](goal).
 
-This is the helper used twice in `aipw_factualZ_integral_zero`.
+This is the helper used twice in `aipw_factualZ_integral_zero`, obtained by pulling
+`g(X)` out of the conditional expectation and applying `h_residual_ce_zero`.
 -/
 lemma weighted_residual_integral_zero
     (S : BackdoorEstimationSystem P γ)
@@ -218,9 +222,14 @@ lemma weighted_residual_integral_zero
           MeasureTheory.integral_congr_ae hgresid_ce_zero
     _ = 0 := MeasureTheory.integral_zero _ _
 
-/-- Companion to `weighted_residual_integral_zero`:
-replaces `1_{D=d}` by the value-space propensity `e_val_label d (X)` inside an
-integral against `P.μ`. -/
+/-- **Propensity-score pull-out for the treatment indicator.** Fix a treatment label $d$,
+under [the back-door identification assumptions](hyp:hA). If [`f : γ → ℝ` is
+measurable](hyp:hf_meas) and [the product `f(X) · 1{D=d}` is integrable](hyp:hf_ind_int),
+then [replacing the treatment indicator `1{D=d}` by the value-space propensity
+`e_val_label d` inside the integral leaves the integral unchanged: `∫ f(X) · 1{D=d} dμ =
+∫ f(X) · e_val_label d(X) dμ`](goal).
+
+Companion to `weighted_residual_integral_zero`. -/
 lemma indicator_to_propScore_integral
     (S : BackdoorEstimationSystem P γ)
     (hA : S.toPOBackdoorSystem.Assumptions) (d : Bool)

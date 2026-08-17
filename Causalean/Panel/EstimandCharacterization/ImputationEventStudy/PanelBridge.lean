@@ -367,7 +367,15 @@ theorem linear_unbiased_of_prediction_identified
           intro u; rw [hHsum u]; ring }
     exact linear_unbiased_of_imputation_representation P L hUnbiasedForAllTau hWitness
 
-/-- Combined iff characterization of the BJS linear-unbiased imputation class.
+/-- **Combined iff characterization of the BJS linear-unbiased imputation
+class.** Given [a target-relevant prediction-span witness](hyp:hPredictionSpan)
+and [at least one treated cell with nonzero target weight](hyp:hNonzeroTargetWeight),
+[a linear estimator `L` is unbiased for every value of the treatment-effect
+vector if and only if it admits a BJS imputation-weight representation:
+its treated coefficients match the target weights, its untreated coefficients
+equal the negative weighted imputation sum, its value equals the imputation
+contrast for every pair of treated/untreated observed outcomes, and its
+observed value equals the population imputation functional `psiImp`](goal).
 
 This assembles the two directions of
 `prop:po-estimand-bjs-linear-unbiased-imputation` (identification half only;

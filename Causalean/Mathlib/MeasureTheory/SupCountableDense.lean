@@ -113,11 +113,13 @@ theorem bddAbove_image_of_bound {Ω ι : Type*} (S : Set ι) (F : Ω → ι → 
     rintro _ ⟨π, hπ, rfl⟩
     exact hbound ω π hπ⟩
 
-/-- On a finite measure, the pointwise supremum `ω ↦ sSup ((F ω) '' S)` over a
-countable-dense-skeletoned index class is integrable, given per-index measurability on the
-skeleton `D`, the skeleton supremum-equality, and a uniform bound `|F ω π| ≤ C` over `S`.
-This is the entry point that discharges the Bochner side conditions of a localized
-empirical-process supremum in one call. -/
+/-- On a finite measure `μ`, if [the bound `C` is nonnegative](hyp:hC), [the skeleton index set
+`D` is countable](hyp:hD), [each coordinate map `ω ↦ F ω π` is measurable for `π` in the
+skeleton `D`](hyp:hF), [the pointwise supremum of `F ω` over the index class `S` equals its
+supremum over the countable skeleton `D`, for every `ω`](hyp:heq), and [`F ω π` is bounded in
+absolute value by `C` uniformly over `π ∈ S`](hyp:hbound), then [the pointwise supremum
+`ω ↦ sSup ((F ω) '' S)` is integrable against `μ`](goal). This is the entry point that
+discharges the Bochner side conditions of a localized empirical-process supremum in one call. -/
 theorem integrable_sSup_image_of_countable_dense {Ω ι : Type*} [MeasurableSpace Ω]
     (μ : Measure Ω) [IsFiniteMeasure μ]
     (S D : Set ι) (F : Ω → ι → ℝ) (C : ℝ) (hC : 0 ≤ C)

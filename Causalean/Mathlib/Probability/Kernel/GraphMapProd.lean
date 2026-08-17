@@ -65,11 +65,12 @@ theorem instIsMarkovKernelMechanismKernel (νₗ : Measure γ)
   unfold mechanismKernel
   exact ProbabilityTheory.Kernel.IsMarkovKernel.map _ hΦ
 
-/-- **Graph push-forward of a product measure is a composition product.**
-
-For an s-finite first marginal `α`, an s-finite measure `νₗ` on the second factor,
-and a measurable mechanism `Φ : β × γ → δ`, pushing `α.prod νₗ` forward along the
-graph map `(o, l) ↦ (o, Φ (o, l))` equals `α.compProd (mechanismKernel νₗ Φ)`. -/
+/-- **Graph push-forward of a product measure is a composition product.** For an s-finite
+measure `α` on a first factor, an s-finite measure `νₗ` on a second factor, and [a measurable
+mechanism map `Φ` combining the two factors into a third space](hyp:hΦ), pushing the product
+measure `α.prod νₗ` forward along the graph map `(o, l) ↦ (o, Φ (o, l))` [equals the composition
+product of `α` with the mechanism kernel that sends each value `o` of the first coordinate to the
+pushforward of `νₗ` through the slice `l ↦ Φ (o, l)`](goal). -/
 theorem map_graph_prod_eq_compProd
     (α : Measure β) [SFinite α] (νₗ : Measure γ) [SFinite νₗ]
     {Φ : β × γ → δ} (hΦ : Measurable Φ) :

@@ -119,8 +119,11 @@ theorem coeffPoly_contrast (b : Fin (β + 1) → ℝ) :
   · simp [h]
   · simp [h]
 
-/-- **Node evaluation is injective** for distinct nodes and `β ≤ k`.  A degree
-`≤ β ≤ k` polynomial vanishing at the `k + 1` distinct nodes has more roots than
+/-- **Node evaluation is injective.** For [`k + 1` pairwise distinct real nodes](hyp:hp) and
+[a degree bound `β` at most `k`](hyp:hβ), [the linear map sending a degree-`≤ β` coefficient
+vector to its values at the nodes is injective](goal).
+
+A degree-`≤ β ≤ k` polynomial vanishing at the `k + 1` distinct nodes has more roots than
 its degree, so it is zero; hence its coefficient vector is zero (Vandermonde).
 This makes the contrast a well-defined functional on `range (Ev p β)`. -/
 theorem Ev_injective (hp : Function.Injective p) (hβ : β ≤ k) :
@@ -247,10 +250,10 @@ theorem dual_nonneg (hbounded : BddAbove (dualValSet p β)) :
     · simp
   exact le_csSup hbounded h0
 
-/-- **Boundedness estimate (the Hahn–Banach hypothesis).**  On the node-value
-subspace the contrast functional is dominated by `M · ‖·‖_∞`, where
-`M = sSup (dualValSet p β)`:
-`contrastL β b ≤ (sSup (dualValSet p β)) * ninf (Ev p β b)`.
+/-- **Boundedness estimate (the Hahn–Banach hypothesis).** For [`k + 1` pairwise distinct real
+nodes](hyp:hp), [a degree bound `β` at most `k`](hyp:hβ), and any coefficient vector `b`, [the
+endpoint-contrast functional evaluated at `b` is bounded above by the dual supremum times the
+sup-norm of `b`'s node values](goal).
 
 Proof idea: let `r = coeffPoly b`, `s = ninf (Ev p β b)`.  If `s = 0` then `r`
 vanishes at all nodes, so `r = 0` and both sides are `0`.  If `s > 0`, scale

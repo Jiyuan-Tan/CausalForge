@@ -46,12 +46,27 @@ namespace Causalean.Stat.Limit
 open MeasureTheory intervalIntegral Set
 
 /-- **van Trees inequality (Bayesian Cramér–Rao bound), single parameter.**
-
-For a prior density `q` on `[a, b]` that is `C¹` and vanishes at the endpoints,
-a data law `P h` with mean-zero score `S h` and Fisher information `I h`, and an
-estimator `δ` of a differentiable target `ψ`, the Bayes mean-squared error
-`∫ E_h[(δ − ψ h)²] q(h) dh` is at least
-`(∫ ψ'(h) q(h) dh)² / (I_q + ∫ I(h) q(h) dh)`, where `I_q = ∫ q'(h)²/q(h) dh`.
+Let a scalar parameter `h` range over [an interval `[a, b]`](hyp:hab), drawn from a prior
+density `q` that is [continuously differentiable on `[a, b]`, nonnegative, positive on the
+open interior, and vanishing at both endpoints](hyp:hq_deriv,hq_nonneg,hq_pos,hq_a,hq_b). Given
+`h`, data are drawn from a law `P h` whose score function `S h` has
+[conditional mean zero](hyp:hscore_mean) and [second moment equal to the Fisher information
+`I h`](hyp:hfisher); let `δ` be an estimator of a target `ψ` that is
+[differentiable with derivative `dψ`](hyp:hψ_deriv), whose posterior mean is
+[differentiable with derivative equal to its covariance with the score](hyp:hDQM). Assume also
+that `δ`, `S`, and their pointwise products are [integrable](hyp:hδ_int,hS_int,hδS_int,hSS_int),
+that the three quadratic building blocks `(δ-ψ)²`, `(δ-ψ)(S+dq/q)`, `(S+dq/q)²` are
+[integrable under `P h`](hyp:hEE_inner_int,hEPsi_inner_int,hPsiPsi_inner_int), that the
+posterior-mean derivative, `dψ`, `dq`, and their combination are
+[interval-integrable](hyp:hmprime_int,hdψ_int,hdq_int,hmprod_deriv_int), that `ψ·dq`, `dq²/q`,
+and `I·q` are [interval-integrable](hyp:hψdq_int,hdq2q_int,hIq_int), and that the three
+`h`-indexed second-moment integrands are
+[interval-integrable](hyp:hEE_int,hEPsi_int,hPsiPsi_int) — the standard integrability side
+conditions for the Bochner/interval-integral manipulations. Assume finally that [the total
+information — prior information plus average experimental information — is
+positive](hyp:hJ). Then [the Bayes mean-squared error
+`∫ E_h[(δ − ψ h)²] q(h) dh` is at least `(∫ ψ'(h) q(h) dh)² / (I_q + ∫ I(h) q(h) dh)`, where
+`I_q = ∫ q'(h)²/q(h) dh`](goal).
 
 The hypotheses are the standard van Trees regularity conditions written in
 "regularity (DQM) form": `hscore_mean` (score has conditional mean zero),

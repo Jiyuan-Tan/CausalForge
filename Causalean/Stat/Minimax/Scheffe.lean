@@ -106,9 +106,10 @@ theorem measureReal_sub_eq_setIntegral_rnDeriv_sub_one (hac : μ ≪ ν)
     rw [setIntegral_const, smul_eq_mul, mul_one, measureReal_def]
   rw [integral_sub hint hc, hp, h1]
 
-/-- **Scheffé's inequality (≤ direction).**  For probability measures `μ ≪ ν`,
-the total variation distance is at most half the `L¹(ν)` distance of the
-Radon–Nikodym density to `1`. -/
+/-- **Scheffé's inequality (≤ direction).** For probability measures `μ` and `ν` on the
+same space with [`μ` absolutely continuous with respect to `ν`](hyp:hac), [the total
+variation distance between `μ` and `ν` is at most half the `L¹(ν)`-distance of the
+Radon–Nikodym density `dμ/dν` to the constant `1`](goal). -/
 theorem tvDist_le_half_integral_abs_rnDeriv (μ ν : Measure Ω)
     [IsProbabilityMeasure μ] [IsProbabilityMeasure ν] (hac : μ ≪ ν) :
     tvDist μ ν ≤ (1/2) * ∫ x, |(μ.rnDeriv ν x).toReal - 1| ∂ν := by

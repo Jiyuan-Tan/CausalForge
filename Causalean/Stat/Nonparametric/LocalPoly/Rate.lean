@@ -74,16 +74,15 @@ theorem population_scaling_of_conj {N : ℕ} {h cInv cTop : ℝ}
       _ = cTop * ((N : ℝ) * h) := by
         simp [κ, mul_comm]
 
-/-- **Explicit `Θ(1/(Nh))` rate for the local-polynomial leverage.** On the good design event —
-where every entry of the empirical moment matrix `M` is within `η` of the population matrix `S`,
-with `S` invertible, its inverse row sums bounded by `c`, the perturbation scale small
-(`c·(p+1)·η ≤ 1/2`), and the population intercept leverage at the `Θ(Nh)` scale
-(`(S⁻¹)₀₀ ≤ cInv/(Nh)` and `2c²(p+1)η ≤ cInv/(Nh)`) — the empirical moment matrix `M` is invertible
-and its intercept leverage obeys the explicit interior rate
-
-`(M⁻¹)₀₀ ≤ 2·cInv/(Nh)`.
-
-This is the variance-rate capstone for the local-polynomial upper bound: combined with
+/-- **Explicit `Θ(1/(Nh))` rate for the local-polynomial leverage.** On [a good design event with
+positive scale `Nh`](hyp:_hNh) where [the population moment matrix `S` is invertible](hyp:hS),
+[its inverse row sums are bounded by a nonnegative constant `c`](hyp:_hc,hSrow), [the empirical
+moment matrix `M` lies entrywise within a nonnegative perturbation scale `η`](hyp:_hη,hclose) of
+`S`, [the perturbation is small relative to the dimension: `c·(p+1)·η ≤ 1/2`](hyp:hsmall), and [the
+population intercept leverage sits at the `Θ(Nh)` scale: `(S⁻¹)₀₀ ≤ cInv/(Nh)` and
+`2c²(p+1)η ≤ cInv/(Nh)`](hyp:hSinv00,hpert), then [the empirical moment matrix `M` is invertible
+and its intercept leverage obeys the explicit interior rate `(M⁻¹)₀₀ ≤ 2·cInv/(Nh)`](goal). This is
+the variance-rate capstone for the local-polynomial upper bound: combined with
 `localPoly_intercept_variance_le` it yields the `O((Nh)^{-1/2})` stochastic error. -/
 theorem localPoly_inv00_rate {N : ℕ} {h c cInv η : ℝ}
     {S M : Matrix (Fin (p + 1)) (Fin (p + 1)) ℝ}
@@ -100,16 +99,21 @@ theorem localPoly_inv00_rate {N : ℕ} {h c cInv η : ℝ}
   have hub := (abs_le.mp hΔ).2
   linarith [hub, hSinv00, hpert]
 
-/-- **Bandwidth-free bound on the local-polynomial leverage product.** On the same good design
-event, the geometric mean of the total weight `M₀₀` and the inverse leverage `(M⁻¹)₀₀` is bounded
-by the bandwidth-free constant `√(2·cInv·(cTop+1))`:
-
-`√(M₀₀·(M⁻¹)₀₀) ≤ √(2·cInv·(cTop+1))`.
-
-The `Θ(Nh)` growth of `M₀₀ ≤ (cTop+1)·(Nh)` exactly cancels the `Θ(1/(Nh))` decay of
-`(M⁻¹)₀₀`. Via `equivKernelWeight_abs_sum_sq_le` (`(∑ᵢ|Sᵢ|)² ≤ M₀₀·(M⁻¹)₀₀`) this controls the
-`ℓ¹` bias leverage `∑ᵢ|Sᵢ|` by a bandwidth-free constant, the second leverage capstone used by
-the upper-bound analysis. -/
+/-- **Bandwidth-free bound on the local-polynomial leverage product.** On [the same good design
+event with positive scale `Nh`](hyp:hNh), where [the population moment matrix `S` is
+invertible](hyp:hS), [its inverse row sums are bounded by a nonnegative constant
+`c`](hyp:hc,hSrow), [the empirical moment matrix `M` lies entrywise within a nonnegative
+perturbation scale `η`](hyp:hη,hclose) that is [small relative to the dimension
+(`c·(p+1)·η ≤ 1/2`)](hyp:hsmall) and [at most `Nh`](hyp:hηle), with [nonnegative density constants
+`cInv` and `cTop`](hyp:_hcInv,_hcTop) such that [the population intercept leverage and
+perturbation obey `(S⁻¹)₀₀ ≤ cInv/(Nh)` and `2c²(p+1)η ≤ cInv/(Nh)`](hyp:hSinv00,hpert), [the
+population top weight obeys `S₀₀ ≤ cTop·(Nh)`](hyp:hS00), and [the empirical top weight `M₀₀` and
+inverse leverage `(M⁻¹)₀₀` are both nonnegative](hyp:hM00,hMinv00), [the geometric mean of the
+total weight and the inverse leverage is bounded by the bandwidth-free constant
+`√(M₀₀·(M⁻¹)₀₀) ≤ √(2·cInv·(cTop+1))`](goal). The `Θ(Nh)` growth of `M₀₀ ≤ (cTop+1)·(Nh)` exactly
+cancels the `Θ(1/(Nh))` decay of `(M⁻¹)₀₀`. Via `equivKernelWeight_abs_sum_sq_le`
+(`(∑ᵢ|Sᵢ|)² ≤ M₀₀·(M⁻¹)₀₀`) this controls the `ℓ¹` bias leverage `∑ᵢ|Sᵢ|` by a bandwidth-free
+constant, the second leverage capstone used by the upper-bound analysis. -/
 theorem localPoly_leverage_bound {N : ℕ} {h c cInv cTop η : ℝ}
     {S M : Matrix (Fin (p + 1)) (Fin (p + 1)) ℝ}
     (hNh : 0 < (N : ℝ) * h)

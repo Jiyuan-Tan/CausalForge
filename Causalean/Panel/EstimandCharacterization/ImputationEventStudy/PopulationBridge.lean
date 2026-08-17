@@ -165,10 +165,18 @@ theorem toPanel_untreatedModel
     simp [toPanel]
 
 /-- **Population BJS imputation identification (headline).** For a population
-BJS design, the observed-law imputation functional identifies the target
-`∑ a_c · E[Y(1) − Y(0) ∣ cell c]`, under the additive untreated-outcome model
-`hLinT`/`hLinU` and the (design-side) prediction-span condition. The
-treatment-effect-fixed restriction and untreated consistency are derived, and
+BJS design `E`, suppose [the conditional mean of the untreated potential
+outcome on each treated cell equals a linear function `q_T · β₀` of the
+treated-cell regressors](hyp:hLinT) and [likewise, on each untreated cell, the
+conditional mean of the untreated potential outcome equals `q_U ·
+β₀`](hyp:hLinU) — jointly the additive untreated-outcome (parallel-trends)
+model — together with [a target-relevant prediction-span witness for the
+induced panel](hyp:hPred). Then [the observed-law imputation functional
+identifies the target `∑ a_c · (E[Y(1) ∣ cell c] − E[Y(0) ∣ cell c])`: there is
+an imputation-weight witness for which the population imputation functional
+`psiImp` equals the target `theta`](goal).
+
+The treatment-effect-fixed restriction and untreated consistency are derived, and
 `tau c` is the genuine population contrast. -/
 theorem bjs_imputation_identification_population
     (hLinT : ∀ c : Treated, E.cells.mean E.Y0 (Sum.inl c) = dot (E.qT c) E.beta0)

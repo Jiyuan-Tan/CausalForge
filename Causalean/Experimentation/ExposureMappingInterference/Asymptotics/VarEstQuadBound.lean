@@ -384,12 +384,18 @@ theorem vb_eq_zero_of_indep (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : �
   rw [vb, if_neg hij, vbOff, offVar, offVar, offCov, hsame_k, hsame_l, hcross]
   ring
 
-/-- **Per-population quadruple-sum bound (Aronow–Samii appendix, Prop 6.6).** Under Condition 1
-(`hy`/`hπinv*`), Condition 1' (`hj*`: joint overlap on all ordered pairs), and Condition 3 (the
-symmetric bounded-degree dependency graph `G` with off-edge exposure independence `hGindep` and
-unlinked-edge covariance vanishing `hcov0`), the variance of the raw conservative variance
-estimator is linear in the population size:
-`Var[ŷVar(dk)+ŷVar(dl)−2Ĉov] ≤ 8·(vbBound c₁ c₂ c₃)²·m³·N`. -/
+/-- **Per-population quadruple-sum bound (Aronow–Samii appendix, Prop 6.6).** Suppose [the two
+treatment arms are distinct](hyp:hne) and [outcomes are uniformly bounded by a nonnegative
+constant `c₁`](hyp:hc₁,hy) (Condition 1). Suppose the marginal exposure propensities under each
+arm are [positive](hyp:hπk,hπl) with [inverses uniformly bounded by a nonnegative constant
+`c₂`](hyp:hc₂,hπinvk,hπinvl), and the same-arm and cross-arm pairwise joint exposure propensities
+have [inverses uniformly bounded by a nonnegative constant `c₃`](hyp:hc₃,hjk,hjl,hjc) (Condition
+1'). Suppose further a [symmetric, reflexive dependency relation `G`](hyp:hrefl,hsymm) [of degree
+at most `m`](hyp:hdeg) makes [every non-adjacent pair's joint exposure propensities factor as if
+independent](hyp:hGindep) and gives [every quadruple with no adjacent index pair zero covariance
+between the variance-estimator kernel terms](hyp:hcov0) (Condition 3). Then [the variance of the
+raw conservative variance estimator is linear in the population size:
+`Var[ŷVar(dk)+ŷVar(dl)−2Ĉov] ≤ 8·(vbBound c₁ c₂ c₃)²·m³·N`](goal). -/
 theorem var_htEdgeStat_le (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : Ω → Θ → Δ) (θ : ι → Θ)
     (dk dl : Δ) (hne : dk ≠ dl)
     {c₁ c₂ c₃ : ℝ} (hc₁ : 0 ≤ c₁) (hc₂ : 0 ≤ c₂) (hc₃ : 0 ≤ c₃)

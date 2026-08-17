@@ -175,7 +175,16 @@ set_option maxHeartbeats 1200000 in
 -- (LevelsetCompat.lean:286, also uses 800000 heartbeats) plus the two
 -- extra C-override branches at each recursion step pushes elaboration
 -- past the default heartbeats limit; raise to 1200000.
-/-- **Original and post-intervention override evaluations agree at `fillZrW`.**
+/-- **Original and post-intervention override evaluations agree at `fillZrW`.** For the
+    intervention on names [`Z`, whose random copies are observed in the base model](hyp:hZ_obs)
+    and [whose fixed copies are not yet part of the base model's fixed coordinates](hyp:hZ_fixed),
+    with [the union of the random copies of `Z` and a set `W` contained in the intervened model's
+    observed variables](hyp:hZrW_M2), fix an intervened fixed assignment `s`, a conditioning
+    value `w` on `W`, and a latent draw `ℓ`. Then at [any observed node `v` of the intervened
+    model](hyp:hv), [the base model's override-evaluation at the projected fixed assignment and
+    the filled point built from `s` and `w`, applied to the reindexed latent draw, equals the
+    intervened model's override-evaluation at `s`, the same filled point, and `ℓ`, evaluated at
+    `v`](goal).
 
     Let `M2 := M'.fixSet Z`, let `sM1 := M'.fixSetProj Z s`, let
     `F := M'.fillZrW Z _ _ W s`, and let `C := Z.image .random ∪ W`.  For

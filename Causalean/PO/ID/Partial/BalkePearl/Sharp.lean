@@ -842,8 +842,13 @@ namespace POBalkePearlSystem
 
 variable {P : POSystem} (S : POBalkePearlSystem P)
 
-/-- SHARPNESS: every feasible latent table π is realised by some PO model
-that reproduces S's observed cell probabilities.
+/-- **Sharpness.** Under [the Balke-Pearl IV base assumptions](hyp:hA), for [a latent
+treatment-response table `π`](hyp:π) that is [feasible for the linear program —
+nonnegative, summing to one, and reproducing the observed cell probabilities as its
+marginals](hyp:hπ), [there exists another potential-outcome system, satisfying the same
+base assumptions, whose observed cell probabilities agree with the original system's and
+whose average treatment effect equals the LP objective value of `π`](goal): every feasible
+latent table is realised by some potential-outcome model.
 
 The proof builds the canonical model in `POBalkePearlSharp.canonicalPOSystem`
 / `POBalkePearlSharp.canonicalBP` and verifies its `BaseAssumptions` and
@@ -862,8 +867,12 @@ theorem balkePearl_sharp (hA : S.BaseAssumptions)
     exact POBalkePearlSharp.canonical_cellProb_eq S π hπ.nonneg hπ.sum_one hA hπ y d z
   · exact POBalkePearlSharp.canonical_ATE_eq S π hπ.nonneg hπ.sum_one hA
 
-/-- Corollary: every τ in the Balke-Pearl identified interval is the ATE of
-some BP-feasible model with matching observed cell probabilities. -/
+/-- **Corollary of sharpness.** Under [the Balke-Pearl IV base assumptions](hyp:hA), for
+[a real number `τ` lying in the Balke-Pearl identified interval](hyp:hτ), [there exists
+another potential-outcome system, satisfying the same base assumptions, whose observed
+cell probabilities agree with the original system's and whose average treatment effect
+equals `τ`](goal): every value in the identified interval is the ATE of some BP-feasible
+model with matching observed cell probabilities. -/
 theorem balkePearl_sharp_of_mem (hA : S.BaseAssumptions)
     (τ : ℝ) (hτ : τ ∈ S.BPIdentifiedInterval hA) :
     ∃ (P' : POSystem.{0,0,0}) (S' : POBalkePearlSystem P')

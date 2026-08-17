@@ -792,11 +792,14 @@ private lemma holder_taylor_bias {d : ℕ} {γ M r : ℝ} {x0 : Fin d → ℝ} {
             * M * h ^ γ := by
           field_simp
 
-/-- **Hölder pointwise ⟹ local `L¹` mass interpolation.** For `γ, M, r > 0` and a
-cube neighbourhood `supBall x0 r ⊆ S`, there is a constant `c_H > 0` (depending
-only on `γ, d, M, r`, uniform over the Hölder ball) such that for every `g` in the
-standard `⌈γ⌉-1`-convention Hölder ball `HolderBallStd g γ M S`,
-`c_H · |g x0|^{1 + d/γ} ≤ ∫_{supBall x0 r} |g|`.
+/-- **Hölder pointwise ⟹ local `L¹` mass interpolation.** Fix a point `x0` in
+`d`-dimensional Euclidean space. If [the Hölder exponent `γ` is positive](hyp:hγ), [the
+Hölder constant `M` is positive](hyp:hM), [the neighbourhood radius `r` is
+positive](hyp:hr), and [the sup-norm ball of radius `r` around `x0` is contained in the
+domain `S`](hyp:hS), then [there is a constant `c_H > 0`, depending only on `γ`, `d`, `M`,
+`r` and uniform over the Hölder ball, such that every function `g` in the standard Hölder
+ball of exponent `γ`, constant `M`, and domain `S` satisfies
+`c_H · |g(x0)|^{1 + d/γ} ≤ ∫_{supBall x0 r} |g|`](goal).
 
 This is the generic Tsybakov two-point / Assouad lower-bound primitive; it is not
 tied to any estimand type and specializes (e.g. `g = τ_P - τ_Q`) across runs. -/

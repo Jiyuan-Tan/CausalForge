@@ -134,9 +134,12 @@ theorem l2sq_gPert2_true_le [NeZero K] {εg : ℝ}
         apply mul_le_mul_of_nonneg_left hsum; positivity
     _ = εg := by field_simp
 
-/-- **Class membership.**  With the (propensity-dominant) per-pair budgets satisfied,
-the perturbed DGP `(mλ, gλ)` lies in the structure-agnostic class `ℱ(εg, εm)` around
-the cell-varying center `(m̂, ĝ)`. -/
+/-- **Class membership.** Fix a sign pattern `lam` and nuisance-error budgets `εg`, `εm`.
+If [the squared quantity `(m₀ⱼ·κⱼ)²` is at most `εm` at every cell `j`](hyp:hm), [the
+worst-case squared deviation of the perturbed treated-arm outcome regression is at most
+`εg` at every cell `j`](hyp:hg), and [`εg` is nonnegative](hyp:hεg), then [the perturbed
+propensity and outcome-regression pair `(mλ, gλ)` lies in the structure-agnostic nuisance
+class `ℱ(εg, εm)` around the cell-varying center `(m̂, ĝ)`](goal). -/
 theorem inClass2 [NeZero K] {εg εm : ℝ}
     (hm : ∀ j, (P.m₀ j * P.κ j) ^ 2 ≤ εm)
     (hg : ∀ j, P.β ^ 2 * (P.α * P.g₁ j + 1) ^ 2

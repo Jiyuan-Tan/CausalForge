@@ -168,10 +168,14 @@ theorem expected_weighted_sq_image_spherical {Ω : Type*} {N : ℕ} [MeasurableS
           refine Finset.sum_congr rfl (fun i _ => ?_)
           ring
 
-/-- **Conditional oracle inequality for series least-squares prediction.** Combining a supplied
-approximation bound for the noise-free projection with the exact Pythagorean decomposition and the
-spherical stochastic-term identity, the expected weighted quadratic prediction error of the fitted
-series coefficients against the target values is
+/-- **Conditional oracle inequality for series least-squares prediction.** Suppose [the noise-free
+projection coefficients `c0` have residual orthogonal to every design column](hyp:hortho), so that
+[the noise-free least-squares objective is bounded by `A`](hyp:hApprox), and suppose [the data fit
+`chat ω` differs from `c0`, at every design row `i`, by a deterministic linear image
+`∑ₖ a i k · ε k ω` of a noise family `ε`](hyp:hlin) that is [square-integrable](hyp:hε), [mean
+zero](hyp:hmean), and [spherical with scale `σ`](hyp:hsph), with [the weighted trace sum
+`∑ᵢ wᵢ ∑ₖ aᵢₖ²` bounded by `V`](hyp:hlev). Then [the expected weighted quadratic prediction error
+of the fitted series coefficients against the target values `f` is at most `A + σ² V`](goal):
 
 `𝔼[‖f − Φ·ĉ‖²_w] ≤ A + σ² V`,
 

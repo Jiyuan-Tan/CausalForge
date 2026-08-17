@@ -400,8 +400,10 @@ theorem integral_mul_indicatorSpan_eq_zero_of_cell {Ω 𝒢 : Type*}
           integral_const_mul (c g) _
         _ = 0 := by simp [hcell g]
 
-/-- If a square-integrable residual is orthogonal to every indicator on both
-axes, it is orthogonal to every member of the two-axis indicator span. -/
+/-- If [a square-integrable residual `V` is orthogonal in expectation to the indicator of every
+level `g` of one axis `G`](hyp:hG) and [orthogonal in expectation to the indicator of every
+level `t` of the other axis `T`](hyp:hT), then [it is orthogonal in expectation to every finite
+linear combination of those axis indicators, with coefficients `cG` and `cT`](goal). -/
 theorem integral_mul_twoAxisIndicatorSpan_eq_zero_of_axes
     {Ω 𝒢 𝒯 : Type*} [MeasurableSpace Ω]
     [Fintype 𝒢] [MeasurableSpace 𝒢] [MeasurableSingletonClass 𝒢]

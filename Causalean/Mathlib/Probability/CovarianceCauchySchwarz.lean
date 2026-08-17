@@ -66,9 +66,10 @@ theorem covariance_sq_le_variance_mul [IsFiniteMeasure μ] {X Y : Ω → ℝ}
     rw [hvalue] at h
     linarith
 
-/-- **Cauchy–Schwarz for covariance.** For square-integrable statistics under a finite measure, the
-absolute covariance is at most the product of the standard deviations,
-`|Cov(X,Y)| ≤ √(Var X) · √(Var Y)`. -/
+/-- **Cauchy–Schwarz for covariance.** Under a finite measure, if [$X$ is
+square-integrable](hyp:hX) and [$Y$ is square-integrable](hyp:hY), then [the absolute value of
+their covariance is at most the product of their standard deviations,
+$|\mathrm{Cov}(X,Y)| \le \sqrt{\mathrm{Var}(X)} \cdot \sqrt{\mathrm{Var}(Y)}$](goal). -/
 theorem abs_covariance_le_sqrt_mul [IsFiniteMeasure μ] {X Y : Ω → ℝ}
     (hX : MemLp X 2 μ) (hY : MemLp Y 2 μ) :
     |covariance X Y μ| ≤ Real.sqrt (variance X μ) * Real.sqrt (variance Y μ) := by

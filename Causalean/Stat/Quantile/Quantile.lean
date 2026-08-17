@@ -103,9 +103,9 @@ lemma quantile_le_of_le_cdf {τ x : ℝ} (hτ0 : 0 < τ) (hx : τ ≤ cdf μ x) 
     quantile μ τ ≤ x :=
   csInf_le (bddBelow_quantileSet hτ0) hx
 
-/-- **Quantile / cdf Galois connection** for interior `τ ∈ (0,1)`:
-
-    quantile μ τ ≤ x  ↔  τ ≤ cdf μ x. -/
+/-- **Quantile / cdf Galois connection.** For [an interior probability level
+$\tau\in(0,1)$](hyp:hτ0,hτ1), [the quantile of a real measure at level $\tau$ is at most a point
+`x` exactly when $\tau$ is at most the cdf of that measure at `x`](goal). -/
 theorem quantile_le_iff {τ x : ℝ} (hτ0 : 0 < τ) (hτ1 : τ < 1) :
     quantile μ τ ≤ x ↔ τ ≤ cdf μ x :=
   ⟨le_cdf_of_quantile_le hτ1, quantile_le_of_le_cdf hτ0⟩

@@ -88,10 +88,12 @@ structure TwoPointWitness (C : Type*) [Fintype C] [Nonempty C] [MeasurableSpace 
 
 variable {n : ℕ} {mhat : C → ℝ} {ghat : Bool → C → ℝ} {εg εm : ℝ}
 
-/-- **Structure-agnostic two-point lower bound.**  From a `TwoPointWitness`, every
-measurable estimator's worst-case-over-class probability of missing the true ATE by
-`W.s` is at least `(1 − W.c)/2`.  The proof is `two_point_lower_bound_of_tvDist_le`
-applied to the two witness laws, followed by the realizability domination. -/
+/-- **Structure-agnostic two-point lower bound.** Given a two-point (Le Cam) witness `W`
+packaging two statistically close `n`-sample laws with separated true average-treatment-effect
+values, for [any measurable estimator](hyp:hest), [the worst-case-over-class probability that
+it misses the true ATE by `W.s` is at least `(1 − W.c)/2`](goal). The proof is
+`two_point_lower_bound_of_tvDist_le` applied to the two witness laws, followed by the
+realizability domination. -/
 theorem twoPointWitness_lower_bound
     (W : TwoPointWitness C n mhat ghat εg εm)
     {est : (Fin n → Obs C) → ℝ} (hest : Measurable est) :

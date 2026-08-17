@@ -30,7 +30,15 @@ open scoped MeasureTheory ProbabilityTheory
 -- ============================================================
 
 set_option maxHeartbeats 800000 in
-/-- **Cross-SCM `evalMap` level-set bridge for Rule 2.**
+/-- **Cross-SCM `evalMap` level-set bridge for Rule 2.** For the intervention on names [`Z`,
+    whose random copies are observed in the base model](hyp:hZ_obs) and [whose fixed copies are
+    not yet part of the base model's fixed coordinates](hyp:hZ_fixed), fix an intervened fixed
+    assignment `s'` and a latent draw `ℓ`. Suppose [on the "level set" picked out by `ℓ`, the
+    base model's evaluation map at the projected fixed assignment already reproduces, at every
+    random copy of a name in `Z`, the intervention value recorded in `s'`](hyp:hLevelSet); then
+    at [any observed node `v` in the intervened model](hyp:hv), [the intervened model's
+    evaluation map at `(s', ℓ)` agrees with the base model's evaluation map at the projected
+    fixed assignment and the correspondingly reindexed latent draw](goal).
 
     On the "Z-level set" — the set of latents `ℓ` for which
     `(M.fixSet X)`'s `evalMap` produces at every `.random D`  (D ∈ Z)
@@ -262,7 +270,15 @@ theorem fixSet_evalMap_levelset_compat
           rcases M1.observed_is_random _ hobs with ⟨_, hEq⟩; cases hEq
 
 set_option maxHeartbeats 800000 in
-/-- M2-direction level-set evalMap bridge for Rule 2.
+/-- **M2-direction level-set `evalMap` bridge for Rule 2.** For the intervention on names [`Z`,
+    whose random copies are observed in the base model](hyp:hZ_obs) and [whose fixed copies are
+    not yet part of the base model's fixed coordinates](hyp:hZ_fixed), fix an intervened fixed
+    assignment `s'` and a latent draw `ℓ`. Suppose [the intervened model's own evaluation map at
+    `(s', ℓ)` already reproduces, at every random copy of a name in `Z`, the intervention value
+    recorded in `s'`](hyp:hLS_M2); then at [any observed node `v` in the intervened
+    model](hyp:hv), [the intervened model's evaluation map at `(s', ℓ)` agrees with the base
+    model's evaluation map at the projected fixed assignment and the correspondingly reindexed
+    latent draw](goal).
 
     Variant of `fixSet_evalMap_levelset_compat` with the level-set hypothesis
     stated on `M2`'s evaluation (rather than `M1`'s): if `ℓ` satisfies

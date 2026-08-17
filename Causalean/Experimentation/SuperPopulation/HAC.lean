@@ -36,11 +36,13 @@ variance of the network sum, whose cross-terms vanish outside the network neighb
 noncomputable def NetworkDependence.netHACVarEst (F : NetworkDependence V Ω μ) (ω : Ω) : ℝ :=
   ∑ i, ∑ j ∈ F.nbhd i, F.X i ω * F.X j ω
 
-/-- **Unbiasedness of the network-HAC estimator.** Under a probability measure with mean-zero,
-square-integrable summands, the expectation of the network-HAC estimator equals the variance of
-the network sum: `E[V̂] = Var(∑ᵢ Xᵢ)`.  The off-neighborhood cross-covariances vanish by the
-m-dependence (non-adjacent summands are independent, hence uncorrelated), so summing products over
-the neighborhoods recovers the full covariance double sum. -/
+/-- **Unbiasedness of the network-HAC estimator.** Under a probability measure with [square-
+integrable summands](hyp:hL2) that are [mean zero](hyp:hmean), [the expectation of the
+network-HAC estimator equals the variance of the network sum](goal): `E[V̂] = Var(∑ᵢ Xᵢ)`.
+
+The off-neighborhood cross-covariances vanish by the m-dependence (non-adjacent summands are
+independent, hence uncorrelated), so summing products over the neighborhoods recovers the full
+covariance double sum. -/
 theorem NetworkDependence.netHACVarEst_integral_eq_variance
     (F : NetworkDependence V Ω μ) [IsProbabilityMeasure μ]
     (hL2 : ∀ i, MemLp (F.X i) 2 μ)

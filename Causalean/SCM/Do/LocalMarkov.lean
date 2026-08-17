@@ -105,9 +105,12 @@ theorem condIndepFun_of_map
 -- § 3. Full Local Markov Property
 -- ============================================================
 
-/-- **Full Local Markov Property.** Under the full joint distribution
-    `jointKernel M s`, each observed variable `v` is conditionally independent
-    of its non-descendants given ALL its parents (including latent ones).
+/-- **Full Local Markov Property.** If [v is an observed node of the
+    model](hyp:hv), then [under the joint distribution over all random
+    (observed and latent) coordinates at fixed value s, the v-coordinate is
+    conditionally independent of its non-descendants — restricted to random
+    nodes — given all of its parents, including any latent parents,
+    likewise restricted to random nodes](goal).
 
     Since `v = f_v(pa(v))` is a deterministic function of its parents,
     conditioning on the parent coordinates makes the singleton projection at
@@ -236,10 +239,11 @@ theorem full_local_markov (M : Causalean.SCM N Ω)
 -- § 4. Latent Local Markov Property
 -- ============================================================
 
-/-- **Latent Local Markov Property.** Under the full joint distribution
-    `jointKernel M s`, each *latent* (unobserved) variable `a` is
-    unconditionally independent of its non-descendants (among random nodes),
-    i.e. conditionally independent given `∅`.
+/-- **Latent Local Markov Property.** If [a is a latent (unobserved) node of
+    the model](hyp:ha), then [under the joint distribution over all random
+    coordinates at fixed value s, the a-coordinate is unconditionally
+    independent of its non-descendants — restricted to random nodes — i.e.
+    conditionally independent given the empty conditioning set](goal).
 
     This is the latent-root analogue of `full_local_markov`: since latents have
     no parents (`Pa(a) = ∅`), the conditioning set collapses to `∅` and we get

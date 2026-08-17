@@ -191,7 +191,7 @@ def lineOfDecl (n : Name) : CoreM Nat := do
 /-- Source-line cache per module file (read once, sliced per declaration). -/
 abbrev FileCache := IO.Ref (NameMap (Array String))
 
-def sourceSliceCap : Nat := 150
+def sourceSliceCap : Nat := 250
 
 /-- Verbatim source slice of a declaration, from its declaration range.
 

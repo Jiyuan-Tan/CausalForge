@@ -123,9 +123,12 @@ theorem l2sq_gPertV_true_le [NeZero K] {εg : ℝ}
         apply mul_le_mul_of_nonneg_left hsum; positivity
     _ = εg := by field_simp
 
-/-- **Class membership.**  With the per-pair budgets satisfied, the perturbed DGP
-`(mλ, gλ)` lies in the structure-agnostic class `ℱ(εg, εm)` around the cell-varying
-center `(m̂, ĝ)`. -/
+/-- **Class membership.** Suppose [every pair's propensity-bump budget `(m₀ⱼ·(β/g₁ⱼ))² ≤ εm`
+holds](hyp:hm) and [every pair's treated-arm budget `g₁ⱼ²(α+β)²/(g₁ⱼ−β)² ≤ εg`
+holds](hyp:hg) for [a nonnegative outcome-error tolerance εg](hyp:hεg). Then [the perturbed
+data-generating process `(mλ, gλ)` indexed by a Rademacher sign vector `lam` lies in the
+structure-agnostic nuisance class `ℱ(εg, εm)` around the cell-varying center
+`(m̂, ĝ)`](goal). -/
 theorem inClassV [NeZero K] {εg εm : ℝ}
     (hm : ∀ j, (P.m₀ j * (P.β / P.g₁ j)) ^ 2 ≤ εm)
     (hg : ∀ j, P.g₁ j ^ 2 * (P.α + P.β) ^ 2 / (P.g₁ j - P.β) ^ 2 ≤ εg)

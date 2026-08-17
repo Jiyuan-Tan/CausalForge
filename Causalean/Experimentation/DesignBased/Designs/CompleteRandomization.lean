@@ -280,8 +280,9 @@ lemma completeRandomization_incl (n₁ : ℕ) (hn : n₁ ≤ Fintype.card U) (i 
       rw [mul_comm]
       simpa using hchoose_real
 
-/-- **Second-order inclusion probability.** Under complete randomization, two distinct units are
-jointly treated with probability `n₁(n₁−1) / (N(N−1))`. -/
+/-- **Second-order inclusion probability.** Under complete randomization treating exactly `n₁`
+of the `N` units, where [the treated count `n₁` does not exceed the population size `N`](hyp:hn),
+[two distinct units](hyp:h) are [jointly treated with probability `n₁(n₁−1) / (N(N−1))`](goal). -/
 lemma completeRandomization_incl_pair (n₁ : ℕ) (hn : n₁ ≤ Fintype.card U) {i j : U} (h : i ≠ j) :
     (completeRandomization n₁ hn).Pr (fun S => i ∈ S.val ∧ j ∈ S.val)
       = ((n₁ : ℝ) * ((n₁ : ℝ) - 1)) / ((Fintype.card U : ℝ) * ((Fintype.card U : ℝ) - 1)) := by

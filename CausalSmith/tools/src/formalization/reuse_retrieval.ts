@@ -25,6 +25,7 @@ import { join } from "node:path";
 import { isTier1, type AreaSidecar, type LibDecl, type Library } from "../library/schema.js";
 import { CLUSTER_SUBSTRATE_ROOTS, inClusterSubstrate, type ClusterKey } from "../constants.js";
 import { expandQuery, normalizeConcept } from "./causal_aliases.js";
+import { stripNlCrosslinks } from "../shared/nl_crosslinks.js";
 import type { SemanticTier } from "./semantic_tier.js";
 
 // ─── public types ───────────────────────────────────────────────────────────
@@ -159,10 +160,11 @@ export function backtickSpans(text: string): string {
   return out.join(" ");
 }
 
-/** First paragraph of a docstring (the NL translation), whitespace-collapsed. */
+/** First paragraph of a docstring (the NL translation), whitespace-collapsed,
+ *  with NL↔Lean crosslink markup stripped (site-only rendering concern). */
 function firstPara(doc: string | null | undefined): string {
   if (!doc) return "";
-  return doc.split(/\n\s*\n/)[0].replace(/\s+/g, " ").trim();
+  return stripNlCrosslinks(doc.split(/\n\s*\n/)[0]).replace(/\s+/g, " ").trim();
 }
 
 /** Notable unicode math operators worth matching structurally in a Lean statement. */

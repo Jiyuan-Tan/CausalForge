@@ -117,10 +117,15 @@ lemma hellingerSqDensity_eq_two_mul_one_sub_affinity
     integral_add hf hg, integral_const_mul, hf1, hg1]
   ring
 
-/-- Weighting a common dominating measure by two normalized nonnegative densities produces two
-probability laws whose total variation distance is at most the square root of twice the
-affinity defect.  This is the Cauchy–Schwarz half of the standard total-variation–Hellinger
-comparison, and it is what converts an affinity computation into a Le Cam two-point bound. -/
+/-- **Cauchy–Schwarz on the Hellinger affinity.**  For a dominating measure `μ` and functions
+`f`, `g` such that [`f` is `μ`-integrable](hyp:hf), [`g` is `μ`-integrable](hyp:hg), [`f` is
+pointwise nonnegative](hyp:hf0), [`g` is pointwise nonnegative](hyp:hg0), [`f` integrates to
+`1` against `μ`](hyp:hf1), and [`g` integrates to `1` against `μ`](hyp:hg1) — so that `f dμ` and
+`g dμ` are probability densities — [the total variation distance between the two weighted laws
+is at most the square root of twice the affinity defect,
+`√(2(1 − densityAffinity μ f g))`](goal). This is the Cauchy–Schwarz half of the standard
+total-variation–Hellinger comparison, and it is what converts an affinity computation into a Le
+Cam two-point bound. -/
 lemma tvDist_le_sqrt_two_mul_one_sub_affinity
     {α : Type*} [MeasurableSpace α] (μ : Measure α)
     (f g : α → ℝ)

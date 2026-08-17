@@ -40,9 +40,13 @@ open scoped ENNReal
 variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} {U : Ω → ℝ}
   {κ t₀ cm cp lam β : ℝ}
 
-/-- **General trimming-bias bound.**  If `g` is measurable with
-`|g| ≤ Cβ · λ^β` on `{U < λ}` (the Hölder envelope, `Cβ ≥ 0`), then under `PolyTail`
-and the tail setup,
+/-- **General trimming-bias bound.** Under [the polynomial lower-tail hypothesis
+`PolyTail P U κ t₀ cm cp`](hyp:h) with [`U` measurable and almost surely in
+`(0,1]`](hyp:hsetup), fix [a threshold `λ` that is positive](hyp:hlam_pos) and [at most the
+window endpoint `t₀`](hyp:hlam_le). If [the envelope constant `Cβ` is nonnegative](hyp:hCβ),
+[`g` is measurable](hyp:hg_meas), and [`g` obeys the Hölder envelope `|g| ≤ Cβ · λ^β` on the
+event `{U < λ}`](hyp:hg_bd), then [the integrated bias `|∫ wλ · g dP|` is at most
+`Cβ · cp · λ^{κ+β}`](goal):
 
     `| ∫ wλ · g ∂P | ≤ Cβ · cp · λ^{κ+β}`.
 

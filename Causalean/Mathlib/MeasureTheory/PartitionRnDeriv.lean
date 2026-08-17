@@ -25,12 +25,14 @@ namespace Causalean.Mathlib.MeasureTheory
 
 open _root_.MeasureTheory
 
-/-- **Absolute continuity from a finite proportional partition.**  If `(s i)` is a finite
-measurable partition of the ambient space and on each cell the numerator measure `μ` is the
-constant multiple `r i` of the denominator measure `ν`
-(`μ.restrict (s i) = r i • ν.restrict (s i)`), then `μ` is absolutely continuous
-with respect to `ν`.  The global density is the simple function whose value on cell `i` is
-`r i`, so `μ = ν.withDensity d`. -/
+/-- **Absolute continuity from a finite proportional partition.** Suppose [each cell `s i` of a
+finite family is measurable](hyp:hs), [the cells are pairwise disjoint](hyp:hdisj), and
+[the cells cover the whole ambient space](hyp:hcover) — together, `(s i)` is a finite
+measurable partition — and suppose [on every cell the numerator measure `μ` restricted to that
+cell equals the denominator measure `ν` restricted to the same cell, scaled by the constant
+`r i`](hyp:hrestrict). Then [`μ` is absolutely continuous with respect to `ν`](goal). The
+global density is the simple function whose value on cell `i` is `r i`, so
+`μ = ν.withDensity d`. -/
 lemma partition_restrict_absolutelyContinuous
     {Ω : Type*} [MeasurableSpace Ω] {ι : Type*} [Finite ι]
     (μ ν : Measure Ω)
@@ -79,12 +81,14 @@ lemma partition_restrict_absolutelyContinuous
   exact withDensity_absolutelyContinuous ν d
 
 /-- **Power-deviation integrability from a finite proportional partition.** Under the same
-hypotheses — `(s i)` a finite measurable partition and
-`μ.restrict (s i) = r i • ν.restrict (s i)` with nonnegative extended-real
-constants `r i` and a finite denominator measure `ν` — the deviation of
-the Radon–Nikodym derivative from `1`, namely `((dμ/dν) − 1)^n`, is `ν`-integrable.  On each cell
-the derivative equals `r i`, so the function is a finite simple function and the
-integral is a finite sum of per-cell constants. -/
+partition hypotheses as `partition_restrict_absolutelyContinuous` — [the cells `s i` are
+measurable](hyp:hs), [pairwise disjoint](hyp:hdisj), and [cover the ambient space](hyp:hcover) —
+and again assuming [on every cell the numerator measure `μ` restricted to that cell equals the
+denominator measure `ν` restricted to the same cell, scaled by the constant `r i`](hyp:hrestrict),
+with `ν` finite, then for any natural number `n`, [the `n`-th power of the deviation of the
+Radon–Nikodym derivative `dμ/dν` from `1` is integrable against `ν`](goal). On each cell the
+derivative equals `r i`, so the function is a finite simple function and the integral is a
+finite sum of per-cell constants. -/
 lemma partition_restrict_integrable_pow_rnDeriv
     {Ω : Type*} [MeasurableSpace Ω] {ι : Type*} [Finite ι]
     (μ ν : Measure Ω) [IsFiniteMeasure ν]

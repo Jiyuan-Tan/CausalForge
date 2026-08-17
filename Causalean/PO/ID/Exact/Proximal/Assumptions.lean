@@ -129,8 +129,11 @@ private lemma integrable_mul_indicator {α : Type*} [MeasurableSpace α]
   refine Filter.Eventually.of_forall (fun ω => ?_)
   rcases a.indicator_eq_one_or_zero x ω with h | h <;> simp [h]
 
-/-- Compatibility projection: factual outcome integrability follows from
-consistency and integrability of the two potential-outcome cells. -/
+/-- **Compatibility projection.** Under [the proximal identifying assumption
+bundle](hyp:HA), and given [the treatment and outcome are distinct
+nodes](hyp:hAY), [the factual outcome `Y` is integrable, as a consequence of
+the consistency assumption together with the integrability of the two
+potential-outcome cells `Y(0)` and `Y(1)`](goal). -/
 lemma integrable_Y (HA : Assumptions S μ) (hAY : S.Avar.v ≠ S.Yvar.v) :
     Integrable S.Y μ := by
   have htrue_int : Integrable (fun ω => S.YofA true ω * S.Avar.indicator true ω) μ :=

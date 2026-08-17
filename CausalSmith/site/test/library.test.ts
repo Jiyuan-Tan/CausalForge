@@ -854,3 +854,109 @@ theorem foo (x : Nat) : x = x := rfl`,
     expect(sourceKind(decl)).toBe("theorem");
   });
 });
+
+// ── NL ↔ Lean crosslink gate ────────────────────────────────────────────────
+// Hard gate on website regeneration (npm test runs before astro build, both
+// internally and in the public mirror's site workflow): a docstring that
+// carries crosslink markup must satisfy the convention IN FULL —
+//   - every `(hyp:name)` resolves to a binder/field row of the structured
+//     statement (drift = a hypothesis renamed after annotation);
+//   - crosslinks live only in the first paragraph (the NL translation);
+//   - `(goal)` only on theorems (structures have no conclusion);
+//   - an annotated THEOREM is completely covered: every hyp-classified row
+//     linked, and the conclusion linked via `(goal)`;
+//   - annotations only on statements the structurer can parse (otherwise the
+//     underlines would render inert).
+// Unannotated docstrings pass untouched — the gate tightens per migration wave.
+describe("NL ↔ Lean crosslink gate", () => {
+  it("every annotated docstring satisfies the crosslink convention", async () => {
+    const { parseCrosslinks, nlOf } = await import("../src/lib/docmd.js");
+    const { structureDeclSource, findProofStart, isBinderRow } = await import(
+      "../src/lib/leanStatement.js"
+    );
+    const { naturalLanguageDoc, stripLeadingDoc } = await import("../src/lib/library.js");
+    const lib = loadLibrary(libraryRoot());
+    const problems: string[] = [];
+    for (const d of lib.entries) {
+      const doc = naturalLanguageDoc(d);
+      if (!doc || !/\]\((?:hyp:|goal\))/.test(doc)) continue;
+      const paras = doc.trim().split(/\n\s*\n/);
+      for (const p of paras.slice(1)) {
+        if (parseCrosslinks(p).some((s) => s.links)) {
+          problems.push(`${d.name}: crosslink markup outside the first paragraph`);
+          break;
+        }
+      }
+      const segs = parseCrosslinks(nlOf(doc) ?? "").filter((s) => s.links);
+      if (segs.length === 0) continue;
+      const names = [...new Set(segs.flatMap((s) => s.links!))].filter((n) => n !== "⊢");
+      const hasGoal = segs.some((s) => s.links!.includes("⊢"));
+      if (hasGoal && d.kind !== "theorem") {
+        problems.push(`${d.name}: (goal) crosslink on a ${d.kind}`);
+      }
+      if (!d.source) {
+        problems.push(`${d.name}: annotated but no authored source in the index`);
+        continue;
+      }
+      let sig = stripLeadingDoc(d.source);
+      if (d.kind === "theorem") {
+        const proofStart = findProofStart(sig);
+        if (proofStart >= 0) sig = sig.slice(0, proofStart);
+      }
+      const st = structureDeclSource(sig, d.kind);
+      if (!st) {
+        // A source the index truncated at sourceSliceCap cannot structure —
+        // the card falls back to plain (stripped) rendering, so annotations
+        // are harmless there. Any OTHER unstructurable annotated statement
+        // still fails: its annotations could never highlight anything.
+        if (!d.source.includes("… truncated")) {
+          problems.push(`${d.name}: annotated but the statement does not structure into rows`);
+        }
+        continue;
+      }
+      const rows = [...st.rows, ...(st.fields ?? [])].filter(isBinderRow);
+      const declared = new Set(rows.flatMap((r) => r.names.split(/\s+/).filter(Boolean)));
+      for (const n of names) {
+        if (!declared.has(n)) problems.push(`${d.name}: crosslink name '${n}' not in signature`);
+      }
+      if (d.kind === "theorem") {
+        const linked = new Set(names);
+        for (const r of rows) {
+          const rNames = r.names.split(/\s+/).filter(Boolean);
+          if (r.chip === "hyp" && !rNames.some((n) => linked.has(n))) {
+            problems.push(`${d.name}: hypothesis '${r.names}' has no linked NL phrase`);
+          }
+        }
+        if (!hasGoal) problems.push(`${d.name}: conclusion has no (goal) crosslink`);
+      }
+    }
+    expect(problems, problems.join("\n")).toEqual([]);
+  });
+});
+
+// Freshness guard for the gate above: it validates annotations THROUGH the
+// derived index, so a stale index (docstrings edited without `lake build &&
+// lake exe library_index`) would make it pass VACUOUSLY over pre-edit text
+// (adversarial-audit finding F1, 2026-08-17). Line-based counting of source
+// markers undercounts multi-marker lines, so only SOURCE ≫ INDEX fails.
+describe("NL ↔ Lean crosslink gate freshness", () => {
+  it("the index carries the crosslink markers present in the Lean sources", () => {
+    const root = libraryRoot();
+    const lib = loadLibrary(root);
+    let srcCount = 0;
+    for (const f of trackedLeanFiles(root)) {
+      const text = readFileSync(join(root, f), "utf8");
+      for (const line of text.split("\n")) if (line.includes("](hyp:")) srcCount++;
+    }
+    let idxCount = 0;
+    for (const e of lib.entries) {
+      if (e.name.startsWith("Causalean.") && e.doc) {
+        idxCount += (e.doc.match(/\]\(hyp:/g) ?? []).length;
+      }
+    }
+    expect(
+      srcCount <= idxCount * 1.1 + 50,
+      `sources carry ~${srcCount} marker lines but the index only ${idxCount} — regenerate: lake build && lake exe library_index`,
+    ).toBe(true);
+  });
+});

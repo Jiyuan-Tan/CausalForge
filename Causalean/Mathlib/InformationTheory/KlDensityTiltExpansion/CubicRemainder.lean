@@ -128,8 +128,9 @@ private lemma tiltAux_monotone_R_add_cube (a b : ℝ) (hlo : -(1 / 2 : ℝ) ≤ 
       ring
     linarith
 
-/-- **Cubic remainder bound for `(1 + x) · log (1 + x)`.**  On the band
-`|x| ≤ 1/2`,
+/-- **Cubic remainder bound for `(1 + x) · log (1 + x)`.** For [a real number `x` with
+`|x| ≤ 1/2`](hyp:hx), [the second-order Taylor remainder of `(1 + x) · log (1 + x)` at `0` is
+bounded by `|x|³`](goal):
 
     |(1 + x) · log (1 + x) - x - x² / 2|  ≤  |x|³.
 

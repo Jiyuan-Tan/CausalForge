@@ -247,13 +247,22 @@ theorem dr_loss_uniformly_bounded
   simpa [UniformlyBoundedLossAE, drLearningSystem, abs_of_nonneg hloss_nonneg]
     using hsq
 
-/-- **DR-Learner bounded-loss Rademacher modulus.**  The DR-Learner orthogonal-learning system,
-under bounded eval / outcomes / nuisance L∞ / overlap and a Rademacher
-bound on the centred loss class on fold B, satisfies the
-`LocalEmpProcessModulus` predicate with the explicit rate
-`ρ n = √(2 R n + 2b · √(2 log(1/δ) / |B(n)|))` from the generic
-Rademacher bridge.
-The empty-fold boundary branch uses `ρ n = √(2b)`. -/
+/-- **DR-Learner bounded-loss Rademacher modulus.** Consider the doubly robust
+orthogonal-learning system for conditional treatment effects, cross-fitted via a one-shot sample
+split, whose truth-identifying candidate [belongs to the target set, has a measurable evaluation
+map, and recovers the population CATE function through that evaluation
+map](hyp:θ₀_mem,eval_meas,eval_θ₀). Suppose [the candidate evaluation maps are uniformly bounded,
+the observed outcome is almost-surely bounded, the realised nuisance outcome-regression is
+uniformly bounded on both treatment arms, and the realised propensity stays away from `0` and `1`
+by a fixed margin](hyp:hM_Θ,hM_Y,hM_μ,hOverlap); suppose also that [the resulting doubly robust
+loss is continuous in the candidate over the target set at that realised
+nuisance](hyp:hLoss_cont), [a sequence `R n` bounds the Rademacher complexity of the centred loss
+class on the estimation fold](hyp:hR), [the truth-identifying candidate still minimizes the
+clamped population loss at the realised nuisance](hyp:hclamp_minimizes), and [the confidence level
+`δ` lies strictly above `0` and at most `1`](hyp:hδ,hδ'). Then [there is a nonnegative constant `b`
+for which the system obeys the local empirical-process modulus condition at the explicit rate
+`ρ n = √(2 R n + 2b · √(2 log(1/δ) / |B(n)|))` on nonempty estimation folds, with boundary value
+`ρ n = √(2b)` on empty folds](goal). -/
 theorem localEmpProcessModulus_drLearner
     [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
     [IsProbabilityMeasure P.μ]

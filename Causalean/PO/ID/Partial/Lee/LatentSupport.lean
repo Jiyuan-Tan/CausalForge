@@ -38,11 +38,11 @@ namespace POLeeSystem
 
 variable {P : POSystem} (S : POLeeSystem P)
 
-/-- **Support transfer**: if the factual outcome lies in the finite support 𝒴
-a.e. on the selected-treated cell, then
-the latent counterfactual `YofA true` lies in 𝒴 a.e. on the latent
-`alwaysSelected` and `helpedSelected` strata. Used by the `sum_eq`
-field of `alwaysSelectedTrimWeight` to derive `∑ y ∈ 𝒴, f1AS y = 1`.
+/-- **Support transfer.** Under [the baseline Lee assumptions](hyp:hA), if [the factual outcome
+lies a.e. in a finite support set `𝒴`, when restricted to the observable selected-treated
+cell](hyp:hSupp), then [the latent treated potential outcome `Y(1)` lies a.e. in the same
+support `𝒴`, both on the always-selected stratum and on the helped-selected stratum](goal). This
+feeds the `sum_eq` field of `alwaysSelectedTrimWeight`, which needs `∑ y ∈ 𝒴, f1AS y = 1`.
 
 The proof transfers `hSupp` from the observable cell to the latent
 strata via consistency on `{A=true, Sel=true}` plus pair random

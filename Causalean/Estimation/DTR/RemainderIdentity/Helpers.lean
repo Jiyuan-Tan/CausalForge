@@ -346,8 +346,15 @@ lemma indicator_weighted_delta_mu1_stage1_integrable
     (Filter.Eventually.of_forall (fun ω => by
       simp [W1, I0, I1, dμ1, H1]))
 
-/-- An integral over the full observed DTR law splits into the sum of integrals
-over the two stage-history marginals. -/
+/-- **Additivity of stage-history integrals under the joint DTR data law.** Consider [a
+real-valued function `f₀` of the stage-0 state that is measurable and integrable against the
+stage-0 history marginal law](hyp:hf₀_meas,hf₀_int) and [a real-valued function `f₁` of the
+stage-1 history (current state, previous treatment, previous state) that is measurable and
+integrable against the stage-1 history marginal law](hyp:hf₁_meas,hf₁_int). Then [the integral,
+against the joint law of the observed two-stage data tuple, of the sum of `f₀` and `f₁` each
+pulled back through its respective projection out of the data tuple equals the sum of the
+separate integrals of `f₀` against the stage-0 marginal law and `f₁` against the stage-1
+marginal law](goal). -/
 lemma split_stage_history_integral
     (S : DTREstimationSystem P δ γ)
     (f₀ : γ 0 → ℝ) (f₁ : γ 1 × δ × γ 0 → ℝ)

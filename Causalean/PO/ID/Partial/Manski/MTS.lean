@@ -308,8 +308,13 @@ theorem mts_E_Y0_le_upper (hA : S.BaseAssumptions) (_hMTS : S.MTS) :
 
 /-! ### ATE sandwich -/
 
-/-- **MTS bounds for the ATE.**  Two-sided sandwich obtained by subtracting
-the `Y(0)` upper/lower bounds from the `Y(1)` lower/upper bounds. -/
+/-- **MTS bounds for the ATE.** Under [the baseline Manski assumptions](hyp:hA) and [monotone
+treatment selection — each potential outcome's mean given control is no larger than its mean
+given treatment](hyp:hMTS), [the average treatment effect is sandwiched between a lower bound
+built from the probability-weighted observed treated mean plus the range floor `lo`, minus the
+probability-weighted mix of the range ceiling `hi` and the observed control mean, and an upper
+bound equal to the naive observed contrast `E[Y | D=1] − E[Y | D=0]`](goal) — obtained by
+subtracting the `Y(0)` upper/lower bounds from the `Y(1)` lower/upper bounds. -/
 theorem mts_bounds_ATE (hA : S.BaseAssumptions) (hMTS : S.MTS) :
     (P.μ (S.dEvent true)).toReal
         * eventCondExp P.μ (S.dEvent true) S.factualY

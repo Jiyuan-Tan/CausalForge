@@ -248,7 +248,11 @@ theorem mtr_nonneg_ATE (hA : S.BaseAssumptions) (hMTR : S.MTR) : 0 ≤ S.ATE := 
   have h := integral_mono_ae (integrable_const 0) hint hdiff
   simpa [ATE, integral_zero] using h
 
-/-- The two-sided ATE sandwich from prop:po-iv-mtr. -/
+/-- **The two-sided ATE sandwich from prop:po-iv-mtr.** Under [the baseline Manski
+assumptions](hyp:hA) and [monotone treatment response, `Y(0) ≤ Y(1)` almost surely](hyp:hMTR),
+[the average treatment effect is nonnegative and is upper-bounded by the probability-weighted
+mix of the observed treated/control means and the range endpoints `lo`, `hi` — imputing `hi`
+for `Y(1)` on the control arm and `lo` for `Y(0)` on the treated arm](goal). -/
 theorem mtr_bounds_ATE (hA : S.BaseAssumptions) (hMTR : S.MTR) :
     0 ≤ S.ATE ∧
     S.ATE ≤ ((P.μ (S.dEvent true)).toReal

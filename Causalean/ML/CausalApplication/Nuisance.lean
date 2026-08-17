@@ -23,9 +23,14 @@ open MeasureTheory
 
 variable {γ : Type*} [MeasurableSpace γ]
 
-/-- **Outcome-regression recovery.** On the covariate–outcome law of treatment arm
-`d`, the squared-loss ML population target (an `IsL2Projection`) is the outcome
-regression `μ(d, x) = E[Y ∣ X = x, D = d]`. -/
+/-- **Outcome-regression recovery.** On a finite covariate–outcome law `Pd`, if
+[the candidate regression function `m` is measurable](hyp:hm), [the outcome coordinate
+is integrable](hyp:hY), [the composed function `z ↦ m(z.1)` is integrable](hyp:hmint),
+and [`m` is the squared-loss population target — its residual `Y − m(X)` is uncorrelated
+with every measurable, integrable function of the covariate](hyp:hproj), then [`m` agrees
+`Pd`-almost everywhere with the conditional expectation of the outcome given the
+covariate σ-algebra, i.e. `m` is the outcome regression `μ(d, x) = E[Y ∣ X = x,
+D = d]`](goal). -/
 theorem mlOutcomeRegression_ae_eq
     (Pd : Measure (γ × ℝ)) [IsFiniteMeasure Pd] {m : γ → ℝ} (hm : Measurable m)
     (hY : Integrable (fun z => z.2) Pd) (hmint : Integrable (fun z => m z.1) Pd)
@@ -33,9 +38,13 @@ theorem mlOutcomeRegression_ae_eq
     (fun z => m z.1) =ᵐ[Pd] (Pd[fun z => z.2 | covarSigma (X := γ)]) :=
   condExp_of_isL2Projection Pd hm hY hmint hproj
 
-/-- **Propensity recovery.** On the covariate–treatment-indicator law, the
-squared-loss population projection of the treatment indicator is the propensity,
-the conditional expectation of treatment given covariates. -/
+/-- **Propensity recovery.** On a finite covariate–treatment-indicator law `Pe`, if
+[the candidate propensity function `e` is measurable](hyp:he), [the treatment indicator
+is integrable](hyp:hD), [the composed function `z ↦ e(z.1)` is integrable](hyp:heint),
+and [`e` is the squared-loss population target — its residual is uncorrelated with every
+measurable, integrable function of the covariate](hyp:hproj), then [`e` agrees
+`Pe`-almost everywhere with the conditional expectation of the treatment indicator given
+the covariate σ-algebra, i.e. `e` is the propensity `P(D = 1 ∣ X)`](goal). -/
 theorem mlPropensity_ae_eq
     (Pe : Measure (γ × ℝ)) [IsFiniteMeasure Pe] {e : γ → ℝ} (he : Measurable e)
     (hD : Integrable (fun z => z.2) Pe) (heint : Integrable (fun z => e z.1) Pe)

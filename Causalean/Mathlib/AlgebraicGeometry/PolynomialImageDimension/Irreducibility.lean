@@ -47,8 +47,9 @@ lemma nonempty_zeroLocus_of_prime {ι : Type*} [Finite ι]
   rw [MvPolynomial.IsPrime.vanishingIdeal_zeroLocus P] at htop
   exact Ideal.IsPrime.ne_top' htop
 
-/-- A nonempty polynomially closed complex set is irreducible exactly when the
-polynomial equations that vanish on it form a prime ideal. -/
+/-- [A nonempty](hyp:hnonempty) [polynomially closed](hyp:hclosed) complex set
+`Z` [is irreducible exactly when the polynomial equations that vanish on it
+form a prime ideal](goal). -/
 theorem irreducibleAffineClosed_iff_isPrime {ι : Type*} [Finite ι]
     {Z : Set (ι → ℂ)} (hclosed : affineZariskiClosure Z = Z)
     (hnonempty : Z.Nonempty) :

@@ -257,10 +257,16 @@ theorem Var_tauHat :
 
 end MainVariance
 
-/-- **Hudgens–Halloran (2008), Theorem 5, for the completely randomized design.**  The Neyman
-variance identity `Var(τ̂) = S₁/K + S₀/(n−K) − Sτ/n`, specialized to the actual completely
-randomized within-group design `crd` (exactly `K` of `n` units treated, every treated set equally
-likely).  Its first- and second-order treatment moments are the derived facts `crd_mean`/`crd_pair`,
+/-- **Hudgens–Halloran (2008), Theorem 5, for the completely randomized design.** For a group of
+`n` units with potential outcomes `a` (treated state) and `b` (untreated state), consider the
+completely randomized within-group design that treats exactly `K` units uniformly at random,
+where [`K` is positive](hyp:hK) and [strictly less than the group size `n`](hyp:hKn). Then [the
+randomization variance of the control-minus-treatment difference-in-means estimator under this
+design equals `S₁/K + S₀/(n−K) − Sτ/n`, where `S₁` and `S₀` are the population sample variances of
+the treated-state and untreated-state outcomes and `Sτ` is the population sample variance of the
+unit-level treatment effects](goal).
+
+Its first- and second-order treatment moments are the derived facts `crd_mean`/`crd_pair`,
 so — unlike `Var_tauHat` — no moment hypotheses are assumed; this is the identity as Hudgens &
 Halloran state it under their mixed-strategy Assumption 1. -/
 theorem Var_tauHat_CRD (hK : 0 < K) (hKn : K < n) :

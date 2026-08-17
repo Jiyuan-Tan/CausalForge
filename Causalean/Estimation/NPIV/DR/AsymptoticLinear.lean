@@ -181,7 +181,17 @@ structure TRAEDRRemainderHyps
 
 /-! ## Headline asymptotic-linearity theorem -/
 
-/-- **TRAE-DR asymptotic-linearity criterion** — `thm:est-trae-dr-al-criterion`.
+/-- **TRAE-DR asymptotic-linearity criterion** — `thm:est-trae-dr-al-criterion`. Fix a linear
+inverse-problem functional system `S`, an i.i.d. sample, and a one-shot cross-fitting split,
+and suppose [`q₀` solves the associated dual moment equation](hyp:hq₀). Given [primal nuisance
+estimators `ĥ_n`, indexed by sample size and outcome](hyp:h_hat), paired with dual nuisance
+estimators satisfying the bundled L²-consistency, candidate-membership, mixed-bias, and
+empirical-process remainder conditions, together with [the law bridge identifying the
+pushforward of `μ` along the observation map `W` with the observation law `P_W`](hyp:h_law_W)
+and [measurability of the oracle score `ρ₀`](hyp:hρ₀_meas), [the TRAE-DR estimator is
+asymptotically linear at the structural target `θ₀`, with mean-zero, finite-variance
+influence function `ρ₀ := φ_{h₀,q₀} − θ₀` and vanishing √n-rescaled remainder, indexed along
+the estimation folds](goal).
 
 Conclusion: the TRAE-DR estimator is asymptotically linear at `θ₀` with
 influence function `ρ₀`, indexed over the estimation fold `split.foldB`.

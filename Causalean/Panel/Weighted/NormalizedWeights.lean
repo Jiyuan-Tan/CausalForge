@@ -153,11 +153,10 @@ lemma pairwise_cov_right {K : Type*} [CommRing K]
           rw [hp]
           ring
 
-/-- Weighted centered covariance as half the average pairwise cross-product.
-
-This is the finite-population identity
-`Σᵢ pᵢ (xᵢ − x̄)(yᵢ − ȳ) =
-  1/2 Σᵢ Σⱼ pᵢpⱼ (xᵢ − xⱼ)(yᵢ − yⱼ)`.
+/-- For [weights `p` summing to one](hyp:hp) over a field where [2 is nonzero](hyp:h2), [the
+weighted centered covariance of `x` and `y` equals half the average, weighted by `p ⊗ p`, of the
+pairwise cross-products of their differences](goal):
+`Σᵢ pᵢ (xᵢ − x̄)(yᵢ − ȳ) = 1/2 Σᵢ Σⱼ pᵢpⱼ (xᵢ − xⱼ)(yᵢ − yⱼ)`.
 -/
 lemma weighted_center_cov {K : Type*} [Field K]
     (p x y : ι → K) (hp : ∑ i, p i = 1) (h2 : (2 : K) ≠ 0) :

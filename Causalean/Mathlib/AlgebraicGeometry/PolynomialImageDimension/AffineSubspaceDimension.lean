@@ -57,7 +57,9 @@ lemma affineLinearMap_isPolynomial {ι κ : Type*} [Finite ι]
   simp [hP x]
 
 /-- An affine translate of a `d`-dimensional linear subspace has exact
-irreducible-chain dimension `d`. -/
+irreducible-chain dimension `d`. For a complex linear subspace `V` of `κ → ℂ` and a base point
+`x₀`, if [`V` has finite rank exactly `d`](hyp:hdim), then [the affine translate
+`{x | x - x₀ ∈ V}` has irreducible-chain (Zariski) dimension exactly `d`](goal). -/
 theorem affineSubspace_hasAffineZariskiDimension {κ : Type*} [Finite κ]
     (V : Submodule ℂ (κ → ℂ)) (x₀ : κ → ℂ) (d : ℕ)
     (hdim : Module.finrank ℂ V = d) :

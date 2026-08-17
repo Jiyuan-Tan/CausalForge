@@ -19,13 +19,11 @@ namespace Causalean.Mathlib.Analysis.FiniteDimL1LinfDuality
 
 variable {k β : ℕ} {p : Fin (k + 1) → ℝ}
 
-/-- **Finite-dimensional ℓ¹/ℓ∞ duality.**  For `k + 1` distinct nodes
-`p : Fin (k+1) → ℝ` and `β ≤ k`, the smallest ℓ¹ norm of a weight vector that
-reproduces the endpoint contrast `r ↦ r.eval 1 - r.eval 0` of every degree-`≤ β`
-polynomial (via the node values) equals the largest such contrast over
-degree-`≤ β` polynomials bounded by `1` at the nodes:
-
-`sInf (primalNormSet p β) = sSup (dualValSet p β)`.
+/-- **Finite-dimensional ℓ¹/ℓ∞ duality.** For [`k + 1` pairwise distinct real interpolation
+nodes](hyp:hp) and [a degree bound `β` at most `k`](hyp:hβ), [the least ℓ¹ norm of a weight
+vector that reproduces the endpoint contrast `r ↦ r.eval 1 - r.eval 0` of every degree-`≤ β`
+polynomial through its node values equals the largest such contrast attained by a degree-`≤ β`
+polynomial bounded by `1` at every node](goal).
 
 This is the min-norm-representation `=` dual-sup identity — the ℓ¹/ℓ∞ pairing on
 `ℝ^{k+1}` specialised to node-sampling — combining weak duality (representation
@@ -35,9 +33,11 @@ theorem l1_repr_eq_sup_dual (hp : Function.Injective p) (hβ : β ≤ k) :
   le_antisymm (sInf_primal_le_sSup_dual hp hβ)
     (sSup_dual_le_sInf_primal (primalNormSet_nonempty hp hβ))
 
-/-- **Squared form.**  The square of the min-norm-representation value equals the
-square of the dual sup.  This is the shape consumed downstream (the amplification
-constant is the squared dual sup). -/
+/-- **Squared form.** Under the same hypotheses as `l1_repr_eq_sup_dual` — [`k + 1` pairwise
+distinct real interpolation nodes](hyp:hp) and [a degree bound `β` at most `k`](hyp:hβ) — [the
+square of the min-norm-representation value equals the square of the dual sup](goal).
+
+This is the shape consumed downstream (the amplification constant is the squared dual sup). -/
 theorem l1_repr_sq_eq_sup_dual_sq (hp : Function.Injective p) (hβ : β ≤ k) :
     (sInf (primalNormSet p β)) ^ 2 = (sSup (dualValSet p β)) ^ 2 := by
   rw [l1_repr_eq_sup_dual hp hβ]

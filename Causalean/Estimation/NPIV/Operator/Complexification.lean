@@ -875,7 +875,11 @@ private lemma realCFC_congr_on_spectrum
   have hzr : z.re ∈ spectrum ℝ A := spectrum_complexLift_subset_real_early hA hz
   simpa using congrArg (fun r : ℝ => (r : ℂ)) (h z.re hzr)
 
-/-- **Resolvent symbol for `realCFC`.**
+/-- **Resolvent symbol for `realCFC`.** For [a self-adjoint bounded operator `A`](hyp:hA) whose
+[real spectrum lies in the nonnegative reals](hyp:hA_spec), and for [a strictly positive
+regularization parameter λ](hyp:hlam), [composing the real-functional-calculus operator for the
+affine symbol `x ↦ λ + x` with that for the resolvent symbol `x ↦ (λ + x)⁻¹` yields the identity
+operator on the ambient L² space](goal).
 
 For self-adjoint `A` with nonnegative real spectrum and `λ > 0`,
 the symbol `fun x => (λ + x)⁻¹` is continuous and nonzero on
@@ -1022,12 +1026,10 @@ private lemma norm_reLp_le (u : Lp ℂ 2 μ) : ‖reLp u‖ ≤ ‖u‖ := by
   change ‖(((u : Lp ℂ 2 μ) : Ω → ℂ) ω).re‖ ≤ ‖(((u : Lp ℂ 2 μ) : Ω → ℂ) ω)‖
   exact RCLike.norm_re_le_norm (((u : Lp ℂ 2 μ) : Ω → ℂ) ω)
 
-/-- **Norm-via-spectrum bound for `realCFC`.**
-
-For self-adjoint `A`, continuous symbol `f : ℝ → ℝ`, and a uniform
-bound `|f x| ≤ c` for every `x` in the real spectrum of `A`, the
-operator `realCFC A f : Lp ℝ 2 μ →L[ℝ] Lp ℝ 2 μ` satisfies
-`‖realCFC A f g‖ ≤ c · ‖g‖` for every `g`.
+/-- **Norm-via-spectrum bound for `realCFC`.** For [a self-adjoint bounded operator
+`A`](hyp:hA) and [a continuous real-valued symbol `f`](hyp:hf), if [`f` is bounded in absolute
+value by a nonnegative constant `c` on the real spectrum of `A`](hyp:hc,hsup), then [the operator
+`realCFC A f` is a contraction up to `c`: for every vector `g`, `‖realCFC A f g‖ ≤ c · ‖g‖`](goal).
 
 Proof strategy:
 1. Reduce to bounding `‖cfc (fun z : ℂ => (f z.re : ℂ)) (complexLift A) (ιLp g)‖`

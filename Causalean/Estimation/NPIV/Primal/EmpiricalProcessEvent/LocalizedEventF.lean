@@ -168,8 +168,13 @@ lemma localized_omega_event_for_F_pair
 
 
 
-/-- Ω-side peeled pair-form localized deviation event for the squared
-critic class `star(F)`.
+/-- **Peeled pair-form localized deviation event for the squared critic class `star(F)`.** Given
+[a positive sample size `n`](hyp:hn) and [a confidence level `δ` in `(0, 1]`](hyp:hδ_pos,hδ_le),
+[there is a single event of probability at least `1 − δ`, valid simultaneously for every pair
+`f₁, f₂` in the critic class `TC.F`, on which the gap between the empirical and population
+second-moment differences of `f₁` and `f₂` is bounded by `8 · F_L2_const · ‖f₁ − f₂‖_strong ·
+δ_n + 5 · δ_n²`](goal), where the strong norm is taken in the critic's L² embedding and
+`F_L2_const` comes from the supplied localized-regime witness.
 
 This wrapper form uses the public upper critical radius `δ_n`, so the
 leading term is stated at the headline δ-scale rather than the exact

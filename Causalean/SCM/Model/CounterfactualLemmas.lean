@@ -107,7 +107,16 @@ lemma evalMap_fixSet_observed_apply
 -- § 1. Factual consistency (prop:scm-cf-consistency)
 -- ============================================================
 
-/-- **prop:scm-cf-consistency** (Basic Concepts.tex L475–480).
+/-- **prop:scm-cf-consistency** (Basic Concepts.tex L475–480). Fix a structural causal model
+    `M`, an intervention target set `X` such that [every targeted node is currently a random
+    observed node](hyp:hObs) and [none of its fixed copies is already fixed](hyp:hFix), a base
+    fixed-value assignment `s`, a latent assignment `ℓ`, and an intervened fixed-value
+    assignment `sx` for the model obtained by fixing `X`. If [`sx` agrees with `s` on the
+    model's original fixed coordinates](hyp:hOld) and [for every targeted node the base
+    evaluation at its random form already equals `sx`'s value at its fixed form — the factual
+    consistency condition](hyp:hNew), then [for every observed node `v`](hyp:v), [evaluating
+    the intervened model with `sx` and `ℓ` at `v` agrees with evaluating the base model with
+    `s` and `ℓ` at `v`](goal).
 
     On the event that the natural value of each `D ∈ X` already equals the
     intervention assignment `sx ⟨.fixed D, _⟩`, evaluating `M.fixSet X` with
@@ -281,9 +290,19 @@ theorem evalMap_fixSet_factual_eq
 -- § 2. Composition with an intermediate-value hypothesis
 -- ============================================================
 
-/-- A combined intervention on `X₁ ∪ X₂` agrees with the `X₁` intervention alone
-    on a non-intervened observed node when the `X₂` values are already produced
-    by the `X₁` intervention.
+/-- **Composition of a combined intervention with a single-stage intervention.** Fix a
+    structural causal model `M`, a latent assignment `ℓ`, and two intervention target sets
+    `X₁`, `X₂` such that [every node of `X₁` is currently a random observed node with no fixed
+    copy already fixed](hyp:hObs₁,hFix₁), and likewise
+    [every node of `X₁ ∪ X₂`](hyp:hObsU,hFixU), with an `X₁`-only intervened fixed-value
+    assignment `sx₁` and a combined-intervention fixed-value assignment `sxU` for `X₁ ∪ X₂`.
+    If [`sxU` agrees with
+    `sx₁` on the original fixed coordinates and on the `X₁` intervention
+    coordinates](hyp:hCompat_old,hCompat_x₁) and [the `X₁`-intervened model's value at each
+    `X₂` node already equals `sxU`'s assignment there — the intermediate
+    condition](hyp:hIntermediate), then [for every observed node `v`](hyp:v), [evaluating the
+    combined-intervention model with `sxU` and `ℓ` at `v` agrees with evaluating the `X₁`-only
+    intervened model with `sx₁` and `ℓ` at `v`](goal).
 
     The equality compares evaluation after the combined intervention assignment
     `sxU` with evaluation after the `X₁` assignment `sx₁`, provided:

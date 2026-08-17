@@ -99,8 +99,11 @@ theorem normSq_sound {I : ComplexRatInterval} {z : ℂ} (hz : I.Contains z) :
   simpa [normSq, Complex.normSq_apply, pow_two] using
     RatInterval.add_sound (RatInterval.sq_sound hz.1) (RatInterval.sq_sound hz.2)
 
-/-- Guarded complex rectangle division encloses the quotient of enclosed
-values and certifies semantically that the denominator is nonzero. -/
+/-- **Guarded division of complex rational rectangles.** For [two complex rational rectangles
+enclosing complex values `z` and `w` respectively](hyp:hz,hw), provided [the denominator
+rectangle's squared-modulus interval is bounded away from zero](hyp:hJ), [the rectangle obtained
+by dividing the first rectangle by the second under that guard contains the quotient `z / w`
+](goal). -/
 theorem div_sound {I J : ComplexRatInterval} {z w : ℂ}
     (hJ : J.normSq.AwayFromZero) (hz : I.Contains z) (hw : J.Contains w) :
     (I.div J hJ).Contains (z / w) := by

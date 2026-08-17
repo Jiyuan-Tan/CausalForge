@@ -61,13 +61,20 @@ private lemma popEst_summand_pick (Y : ∀ i, Fin (n i) → WAssign n i → ℝ)
   unfold FiniteDesign.ind
   by_cases h : sw.1 i = pick <;> simp [h]
 
-/-- **Population unbiasedness, either selection (generalizing Theorem 1).** For an arbitrary
-selection flag `pick`, the population estimator on the groups with `s i = pick` is unbiased for
-the population average potential outcome `ȳ(z;ρ)` computed under the strategy `ρ` those groups
-are actually randomized by.  The hypothesis `hcond` says exactly that: on the event
-`s i = pick`, the compound's conditional design `(if s i then ψ i else φ i)` equals `ρ i`.  The
-within-group propensities are `m i / n i` and the stage-1 selection propensity of every group
-is `denom/N`.  Recovering `E_popEst` is the case `pick = true, ρ = ψ`. -/
+/-- **Population unbiasedness, either selection (generalizing Theorem 1).** For the two-stage
+design that allocates groups to [strategy ψ or strategy φ](hyp:ψ,φ) and records outcomes via [the
+potential-outcome function Y](hyp:Y), fix an arbitrary selection flag `pick` together with
+[a within-group design ρ](hyp:ρ) meant to govern every group whose stage-1 flag equals `pick`,
+where [on the event that a group's stage-1 flag equals `pick`, its conditional within-group design
+(ψ if flagged true, φ if flagged false) actually equals ρ](hyp:hcond). Assume [the normalizing
+group count denom is nonzero](hyp:hdenom), [every group's unit count m at treatment level z is
+nonzero](hyp:hm), and [every group's size n is nonzero](hyp:hn). Suppose that within each group
+governed by ρ [each unit's propensity of being assigned treatment level z is m/n](hyp:hprop), and
+that [the stage-1 design selects each group flagged `pick` with probability denom/N](hyp:hstage1).
+Then [the population estimator on the groups selected by `pick` is unbiased for the population
+average potential outcome at level z computed under design ρ](goal).
+
+Recovering `E_popEst` is the case `pick = true, ρ = ψ`. -/
 theorem E_popEst_pick (D₁ : FiniteDesign (StratAssign ι))
     (ψ φ : ∀ i, FiniteDesign (WAssign n i))
     (Y : ∀ i, Fin (n i) → WAssign n i → ℝ) (z : Bool) (m : ι → ℝ)
@@ -127,9 +134,16 @@ noncomputable def estTotal (Y : ∀ i, Fin (n i) → WAssign n i → ℝ)
 
 /-! ### Unbiasedness of the effect estimators -/
 
-/-- **Direct-contrast unbiasedness (Theorem 1 contrast).** The estimator on the ψ-groups is
-unbiased for the Hudgens-Halloran direct-effect contrast: the population treatment mean under ψ
-minus the population control mean under ψ. -/
+/-- **Direct-contrast unbiasedness (Theorem 1 contrast).** For the two-stage design that allocates
+groups to [strategy ψ or strategy φ](hyp:ψ,φ) and records outcomes via [the potential-outcome
+function Y](hyp:Y), assume [the target sample size C of ψ-selected groups is nonzero](hyp:hC),
+[every group's control-arm unit count m0 is nonzero](hyp:hm0), [every group's treatment-arm unit
+count m1 is nonzero](hyp:hm1), and [every group's size n is nonzero](hyp:hn). Suppose that within
+each group randomized by ψ [each unit's control propensity is m0/n](hyp:hprop0) and [each unit's
+treatment propensity is m1/n](hyp:hprop1), and that [the stage-1 design selects each group into
+the ψ arm with probability C/N](hyp:hstage1ψ). Then [the Horvitz–Thompson estimator built from the
+ψ-selected groups is unbiased for the direct-effect contrast — the population average outcome
+under treatment minus under control, both evaluated under strategy ψ](goal). -/
 theorem E_estDirect (D₁ : FiniteDesign (StratAssign ι))
     (ψ φ : ∀ i, FiniteDesign (WAssign n i))
     (Y : ∀ i, Fin (n i) → WAssign n i → ℝ) (m0 m1 : ι → ℝ) (C : ℝ)
@@ -145,8 +159,18 @@ theorem E_estDirect (D₁ : FiniteDesign (StratAssign ι))
   rw [E_popEst_pick D₁ ψ φ Y false m0 true C ψ hC hm0 hn
       (fun s i hs => by simp [hs]) hprop0 hstage1ψ]
 
-/-- **Indirect-effect unbiasedness (Theorem 2 contrast).** The indirect-effect estimator is
-unbiased for `C̄E^I(φ,ψ) = ȳ(0;φ) − ȳ(0;ψ)`. -/
+/-- **Indirect-effect unbiasedness (Theorem 2 contrast).** For the two-stage design that allocates
+groups to [strategy ψ or strategy φ](hyp:ψ,φ) and records outcomes via [the potential-outcome
+function Y](hyp:Y), assume [the target sample size dφ of φ-selected groups is nonzero](hyp:hdφ),
+[the target sample size dψ of ψ-selected groups is nonzero](hyp:hdψ), [every group's φ-arm control
+unit count m0φ is nonzero](hyp:hm0φ), [every group's ψ-arm control unit count m0ψ is
+nonzero](hyp:hm0ψ), and [every group's size n is nonzero](hyp:hn). Suppose that within each group
+randomized by φ [each unit's control propensity is m0φ/n](hyp:hpropφ), that within each group
+randomized by ψ [each unit's control propensity is m0ψ/n](hyp:hpropψ), that [the stage-1 design
+selects each group into the φ arm with probability dφ/N](hyp:hstage1φ), and that [it selects each
+group into the ψ arm with probability dψ/N](hyp:hstage1ψ). Then [the indirect-effect estimator is
+unbiased for the spillover contrast: the population average control outcome under φ minus the
+population average control outcome under ψ](goal). -/
 theorem E_estIndirect (D₁ : FiniteDesign (StratAssign ι))
     (ψ φ : ∀ i, FiniteDesign (WAssign n i))
     (Y : ∀ i, Fin (n i) → WAssign n i → ℝ) (m0φ m0ψ : ι → ℝ) (dφ dψ : ℝ)
@@ -164,8 +188,18 @@ theorem E_estIndirect (D₁ : FiniteDesign (StratAssign ι))
   rw [E_popEst_pick D₁ ψ φ Y false m0ψ true dψ ψ hdψ hm0ψ hn
       (fun s i hs => by simp [hs]) hpropψ hstage1ψ]
 
-/-- **Total-effect unbiasedness (Theorem 3 contrast).** The total-effect estimator is unbiased
-for `C̄E^T(φ,ψ) = ȳ(0;φ) − ȳ(1;ψ)`. -/
+/-- **Total-effect unbiasedness (Theorem 3 contrast).** For the two-stage design that allocates
+groups to [strategy ψ or strategy φ](hyp:ψ,φ) and records outcomes via [the potential-outcome
+function Y](hyp:Y), assume [the target sample size dφ of φ-selected groups is nonzero](hyp:hdφ),
+[the target sample size dψ of ψ-selected groups is nonzero](hyp:hdψ), [every group's φ-arm control
+unit count m0φ is nonzero](hyp:hm0φ), [every group's ψ-arm treatment unit count m1ψ is
+nonzero](hyp:hm1ψ), and [every group's size n is nonzero](hyp:hn). Suppose that within each group
+randomized by φ [each unit's control propensity is m0φ/n](hyp:hpropφ), that within each group
+randomized by ψ [each unit's treatment propensity is m1ψ/n](hyp:hpropψ), that [the stage-1 design
+selects each group into the φ arm with probability dφ/N](hyp:hstage1φ), and that [it selects each
+group into the ψ arm with probability dψ/N](hyp:hstage1ψ). Then [the total-effect estimator is
+unbiased for the contrast between the population average control outcome under φ and the
+population average treatment outcome under ψ](goal). -/
 theorem E_estTotal (D₁ : FiniteDesign (StratAssign ι))
     (ψ φ : ∀ i, FiniteDesign (WAssign n i))
     (Y : ∀ i, Fin (n i) → WAssign n i → ℝ) (m0φ m1ψ : ι → ℝ) (dφ dψ : ℝ)

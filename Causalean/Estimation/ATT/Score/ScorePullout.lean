@@ -227,10 +227,14 @@ lemma residual_false_condExp_zero (S : TreatedEstimationSystem P γ)
   rw [Pi.sub_apply, hy, hmu, Pi.mul_apply, Pi.mul_apply, hcate_comp]
   ring
 
-/-- AIPW weighted residual integral (control arm).  For any measurable
-`g : γ → ℝ` whose product with the residual is integrable,
-`∫ g(X) · 1_{D=false} · (Y − μ₀(X)) dμ = 0`.  One-sided analogue of
-`weighted_residual_integral_zero` in `Estimation/ATE/Score/ScorePullout.lean`. -/
+/-- **Weighted-residual mean-zero identity, control arm (ATT).** Under [the one-sided
+back-door ATT assumptions](hyp:hA), if [`g : γ → ℝ` is measurable](hyp:hg_meas) and
+[the product `g(X) · 1{D=false} · (Y − μ₀(X))` is integrable](hyp:h_int), then [the
+integral of the weighted control-arm residual against the observed-data law vanishes:
+`∫ g(X) · 1{D=false} · (Y − μ₀(X)) dμ = 0`](goal).
+
+One-sided analogue of `weighted_residual_integral_zero` in
+`Estimation/ATE/Score/ScorePullout.lean`. -/
 -- Outline: pull `g(X)` out of `μ[·|σ(X)]` via
 -- `condExp_mul_of_stronglyMeasurable_left`, then apply
 -- `residual_false_condExp_zero` and `integral_condExp`.
@@ -333,8 +337,14 @@ lemma weighted_residual_false_integral_zero
           MeasureTheory.integral_congr_ae hgresid_ce_zero
     _ = 0 := MeasureTheory.integral_zero _ _
 
-/-- Replace `1_{D=d}` by the value-space propensity inside an integral against
-`P.μ`.  Same shape as the ATE `indicator_to_propScore_integral`. -/
+/-- **Propensity-score pull-out for the treatment indicator (ATT).** Fix a treatment
+label `d`, under [the one-sided back-door ATT assumptions](hyp:hA). If [`f : γ → ℝ` is
+measurable](hyp:hf_meas) and [the product `f(X) · 1{D=d}` is integrable](hyp:hf_ind_int),
+then [replacing the treatment indicator `1{D=d}` by the value-space propensity — `e_val`
+when `d` is true, `1 − e_val` when `d` is false — inside the integral leaves the
+integral unchanged](goal).
+
+Same shape as the ATE `indicator_to_propScore_integral`. -/
 -- Outline: same proof recipe as the ATE counterpart. Pull `f(X)` out of
 -- `μ[·|σ(X)]`, apply the appropriate `propScore_eq_e_val_ae` /
 -- `propScore_false_eq_one_minus_e_val_ae` substitution, and re-integrate.

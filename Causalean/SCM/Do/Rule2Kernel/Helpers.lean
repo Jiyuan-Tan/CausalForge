@@ -262,7 +262,11 @@ lemma measurable_fixSetExtend (M : Causalean.SCM N Ω) (X : Finset N)
     rw [this]
     exact (measurable_xRandomAsFixed).eval
 
-/-- Projecting the extended post-intervention fixed assignment back to the original fixed coordinates recovers the base assignment. -/
+/-- For the intervention names [`X`, whose random copies are observed in the base
+    model](hyp:hObs) and [whose fixed copies are not yet part of the base model's fixed
+    coordinates](hyp:hFix), [projecting the extended post-intervention fixed assignment — built
+    from the base assignment `s0` and treatment value `t` — back onto the original fixed
+    coordinates recovers `s0`](goal). -/
 lemma fixSetProj_fixSetExtend (M : Causalean.SCM N Ω) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ M.observed)
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ M.fixed)
@@ -293,7 +297,11 @@ lemma zFixedAsRandom_proj_fixSetExtend
   have hMf : SWIGNode.fixed D ∉ M.fixed := hFix D hD
   simp only [SCM.fixSetExtend, dif_neg hMf, SCM.xRandomAsFixed]
 
-/-- Filling from an extended post-intervention fixed assignment is the same as directly combining the treatment and conditioning assignments. -/
+/-- For the intervention names [`X`, whose random copies are observed in the base
+    model](hyp:hObs) and [whose fixed copies are not yet part of the base model's fixed
+    coordinates](hyp:hFix), [filling the conditioning assignment `z` against the extended
+    post-intervention fixed assignment built from the base assignment `s0` and treatment value
+    `t` equals directly combining `t` and `z` into one assignment on their union](goal). -/
 lemma fillZrW_fixSetExtend
     (M : Causalean.SCM N Ω) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ M.observed)

@@ -410,7 +410,18 @@ lemma seqDR_stage1_ratio_bound
 set_option maxHeartbeats 800000 in
 -- The expanded sequential score has three weighted pieces; `ring`/`nlinarith`
 -- need a larger budget to normalize the real-valued denominator algebra.
-/-- The full two-stage sequential doubly robust score is pointwise Lipschitz in all nuisance components under overlap. -/
+/-- **Pointwise Lipschitz bound for the two-stage sequential DR score (real-valued form).**
+Consider a stage-0 propensity `e0` and its estimate `ê0`, a stage-1 propensity `e1` and its
+estimate `ê1`, true and estimated stage-0/stage-1 outcome-regression values `μ0, μ0h, μ1, μ1h`,
+an outcome value `y`, a target parameter `θ`, and treatment indicators `I0, I1`, where [ε is
+strictly positive](hyp:hε), [both the true and estimated stage-0 propensities are at least
+ε](hyp:he0,hê0), [both the true and estimated stage-1 propensities are at least ε](hyp:he1,hê1),
+and [both treatment indicators have absolute value at most 1](hyp:hI0,hI1). Then [the absolute
+difference between the sequential doubly-robust moment built from the estimated nuisances
+(`ê0, ê1, μ0h, μ1h`) and from the true nuisances (`e0, e1, μ0, μ1`) is bounded by the Lipschitz
+constant `K_seqDR ε` times the sum of the stage-0 regression error, the stage-1 regression
+error, and cross terms in which the stage-0 and stage-1 propensity errors are weighted by
+outcome/regression residuals](goal). -/
 lemma seqDR_real_bound
     {ε e0 ê0 e1 ê1 μ0 μ0h μ1 μ1h y θ I0 I1 : ℝ}
     (hε : 0 < ε) (he0 : ε ≤ e0) (hê0 : ε ≤ ê0)
@@ -591,9 +602,18 @@ lemma μ₁_val_memLp
   exact (memLp_map_measure_iff S.μ₁_meas.aestronglyMeasurable
     hH1_meas.aemeasurable).2 hcomp_L2
 
-/-- The sequential doubly robust score difference is almost surely bounded by the Lipschitz constant times the stagewise nuisance errors.
+/-- **Pointwise Lipschitz bound for the sequential DR score difference.** Let `S` be a two-stage
+dynamic-treatment-regime estimation system with [strict overlap at level ε (the true propensity
+scores lie in `[ε, 1-ε]`)](hyp:h_overlap), and let `η` be a candidate nuisance vector whose
+[estimated propensity components are likewise confined to `[ε, 1-ε]`](hyp:hη). Then, for almost
+every observation `z` under the observed-data law `S.P_Z`, [the absolute difference between the
+sequential doubly-robust moment evaluated at `η` and at the true nuisance vector `η₀` is bounded
+by the Lipschitz constant `K_seqDR ε` times the sum of the stage-0 regression error, the stage-1
+regression error, and cross terms in which the stage-0 and stage-1 propensity-score errors are
+weighted by the corresponding outcome/regression residuals](goal).
 
-The bound transfers strict overlap from the structural law to the full observed data law before applying the pointwise algebraic estimate. -/
+The bound transfers strict overlap from the structural law to the full observed data law before
+applying the pointwise algebraic estimate. -/
 theorem seqDR_score_diff_pointwise_bound
     (S : DTREstimationSystem P δ γ) {ε : ℝ}
     (h_overlap : S.StrictOverlap ε)

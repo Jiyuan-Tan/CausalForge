@@ -83,9 +83,10 @@ lemma Cov_prod_apply_of_ne (D : ∀ i, FiniteDesign (α i)) {i j : ι} (h : i �
       E_prod_apply₂ D h g hfun, E_prod_apply D i g, E_prod_apply D j hfun]
   ring
 
-/-- **The payload.** Under the product design, the variance of a linear combination of
-single-coordinate functions is the sum of the squared coefficients times the coordinate
-variances — cross-coordinate covariances vanish. -/
+/-- **The payload.** Under the product design formed from [a family of per-coordinate finite
+designs](hyp:D), the variance of a linear combination `∑ᵢ cᵢ·gᵢ(wᵢ)` of [single-coordinate
+functions gᵢ](hyp:g), with coefficients `c`, equals [the sum over coordinates of the squared
+coefficient times the coordinate's own variance](goal) — cross-coordinate covariances vanish. -/
 lemma Var_prod_linear_comb (D : ∀ i, FiniteDesign (α i)) (c : ι → ℝ) (g : ∀ i, α i → ℝ) :
     (prodDesign D).Var (fun w => ∑ i, c i * g i (w i))
       = ∑ i, (c i) ^ 2 * (D i).Var (g i) := by

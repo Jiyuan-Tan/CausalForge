@@ -87,10 +87,10 @@ theorem abs_czTrig_le_czSup (R : Polynomial ℝ) {t : ℝ} (ht : t ∈ Set.Icc (
   refine le_csSup ?hbdd ⟨t, ht, rfl⟩
   exact isCompact_Icc.bddAbove_image ((czTrig_continuous R).abs.continuousOn)
 
-/-- **Szegő's differential inequality** (the crux; not available in Mathlib).
-For a real polynomial `R` of degree `≤ β`, writing `M = czSup R` for the sup-norm
-of the trigonometric transform on `[0, π]`,
-`|d/dt czTrig R t| ≤ β · √(M² − (czTrig R t)²)`.
+/-- **Szegő's differential inequality** (the crux; not available in Mathlib). For [a real
+polynomial of degree at most `β`](hyp:hβ) and any real point `t`, [the derivative of the
+polynomial's trigonometric transform at that point is bounded in absolute value by `β` times the
+square root of the sup-norm squared minus the transform's value at that point squared](goal).
 
 Equivalently, with `Q = czTrig R` one has `Q'(t)² + β² Q(t)² ≤ β² M²`.  This is the
 sharp Bernstein/Szegő bound for trigonometric polynomials of degree `β`; it is the
@@ -266,10 +266,11 @@ theorem czTrig_arccos_lipschitz_regularized (R : Polynomial ℝ) (β : ℕ)
       hdiff_at hderiv_bound (convex_Icc (0 : ℝ) Real.pi) hs ht
   simpa [f, d, M, Real.norm_eq_abs, abs_sub_comm] using hmv
 
-/-- **Arccos-Lipschitz reformulation of Szegő's inequality.**  For a polynomial
-`R` of degree `≤ β` with positive sup-norm `M = czSup R`, the composite
-`t ↦ arccos (czTrig R t / M)` is `β`-Lipschitz on `[0, π]`:
-`|arccos(Q(t)/M) − arccos(Q(s)/M)| ≤ β · |t − s|`.
+/-- **Arccos-Lipschitz reformulation of Szegő's inequality.** For [a real polynomial of degree at
+most `β`](hyp:hβ) with [a strictly positive trigonometric sup-norm on `[0, π]`](hyp:hM), and for
+[any two points in `[0, π]`](hyp:hs,ht), [the arccosine of the polynomial's normalized
+trigonometric transform is `β`-Lipschitz between those two points: the difference of the two
+arccosine values is bounded by `β` times the distance between the points](goal).
 
 This follows from `czTrig_szego_deriv`: on the open region where `|Q| < M` the
 derivative of `arccos (Q/M)` has magnitude `|Q'| / √(M² − Q²) ≤ β`, and the
@@ -321,10 +322,13 @@ theorem czTrig_arccos_lipschitz (R : Polynomial ℝ) (β : ℕ) (hβ : R.natDegr
   exact le_of_tendsto_of_tendsto hlhs_tendsto tendsto_const_nhds
     (Filter.Eventually.of_forall hineq)
 
-/-- **Maximizer node bound** (the packaged output consumed by the mesh file).
-Suppose `R` has degree `≤ β`, its trigonometric sup-norm `M = czSup R` is positive,
-`t₀ ∈ [0, π]` is a maximizer with `czTrig R t₀ = M`, `s ∈ [0, π]` is another point,
-and `β·|t₀ − s| ≤ π/2`.  Then `M · cos(β·|t₀ − s|) ≤ czTrig R s`.
+/-- **Maximizer node bound** (the packaged output consumed by the mesh file). For [a real
+polynomial of degree at most `β`](hyp:hβ) with [a strictly positive trigonometric
+sup-norm](hyp:hM), suppose [a point `t₀` in `[0, π]`](hyp:ht₀) is [a maximizer where the
+trigonometric transform attains the sup-norm](hyp:hmax), [another point `s` also lies in
+`[0, π]`](hyp:hs), and [the two points are close enough that `β` times their distance is at most
+`π/2`](hyp:hclose). Then [the trigonometric transform at `s` is bounded below by the sup-norm
+times the cosine of `β` times the distance between the two points](goal).
 
 Proof sketch: put `φ(u) = arccos(czTrig R u / M)`.  Then `φ(t₀) = arccos 1 = 0`,
 and by `czTrig_arccos_lipschitz`, `φ(s) = |φ(s) − φ(t₀)| ≤ β·|t₀ − s|`.  Since

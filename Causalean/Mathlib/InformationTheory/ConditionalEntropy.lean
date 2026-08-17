@@ -105,10 +105,11 @@ lemma negMulLog_add_mul_log_le {x g : ℝ} (hx : 0 ≤ x) (hg : 0 ≤ g)
       _ = g - x := by
         field_simp [hxpos.ne']
 
-/-- **Gibbs / cross-entropy inequality.** For a probability mass function `p` on a finite
-type `γ` and a nonnegative reference mass function `g` whose total mass is at most that of
-`p` (`∑ g ≤ ∑ p`) and that dominates the support of `p` (`p i ≠ 0 → 0 < g i`), the Shannon
-entropy is bounded by the cross-entropy:
+/-- **Gibbs / cross-entropy inequality.** For [a nonnegative mass function `p`](hyp:hp0) and
+[a nonnegative reference mass function `g`](hyp:hg0) on a finite type `γ`, if
+[the total mass of `g` is at most the total mass of `p`](hyp:hgsum) (`∑ g ≤ ∑ p`) and `g`
+[dominates the support of `p`](hyp:hac) (`p i ≠ 0 → 0 < g i`), then [the Shannon entropy of `p`
+is bounded by the cross-entropy of `p` relative to `g`](goal):
 `entropy p ≤ −∑ i, p i * Real.log (g i)`.
 
 This is the elementary Gibbs argument: sum `negMulLog_add_mul_log_le` over `γ`. The right

@@ -36,21 +36,23 @@ noncomputable def clampedSq (c t : ℝ) : ℝ := (clipIcc (-c) c t) ^ 2
 lemma continuous_clampedSq (c : ℝ) : Continuous (clampedSq c) :=
   (continuous_clipIcc _ _).pow 2
 
-/-- On the band `|t| ≤ c`, the clamped square is the genuine square. -/
+/-- On [the band where `t` lies within `c` in absolute value](hyp:ht), [the clamped square
+`clampedSq c t` equals the genuine square `t²`](goal). -/
 lemma clampedSq_eq_sq {c t : ℝ} (ht : |t| ≤ c) : clampedSq c t = t ^ 2 := by
   rw [clampedSq, clipIcc_neg_eq_self ht]
 
 /-- The clamped square is nonnegative. -/
 lemma clampedSq_nonneg (c t : ℝ) : 0 ≤ clampedSq c t := sq_nonneg _
 
-/-- The clamped square never exceeds `c²` (for `c ≥ 0`). -/
+/-- For [a nonnegative bound `c`](hyp:hc), [the clamped square `clampedSq c t` never exceeds
+`c²`](goal), for every real `t`. -/
 lemma clampedSq_le_sq {c : ℝ} (hc : 0 ≤ c) (t : ℝ) : clampedSq c t ≤ c ^ 2 := by
   have h := abs_clipIcc_neg_le hc t
   calc clampedSq c t = |clipIcc (-c) c t| ^ 2 := by rw [clampedSq, sq_abs]
     _ ≤ c ^ 2 := by gcongr
 
-/-- `clampedSq c` is Lipschitz at `0` with constant `2c` (for `c ≥ 0`): it fixes `0` and the
-truncated square is globally `2c`-Lipschitz. -/
+/-- For [a nonnegative bound `c`](hyp:hc), [the clamped square `clampedSq c` is Lipschitz at
+`0` with constant `2c`: it fixes `0` and is globally `2c`-Lipschitz](goal). -/
 lemma lipschitzAt0_clampedSq {c : ℝ} (hc : 0 ≤ c) :
     LipschitzAt0 (clampedSq c) (2 * c) := by
   refine ⟨?_, ?_⟩

@@ -303,9 +303,16 @@ private lemma diagonal_expansion {d j : ℕ} (f : (Fin d → ℝ) → ℝ)
     Fintype.card_fin, prod_eq_monomial]
   ring
 
-/-- A multivariate function in a Hölder ball can be approximated locally by any monomial basis
-that contains every exponent up to the required Taylor order, with error proportional to the
-smoothness radius times bandwidth raised to the Hölder exponent. -/
+/-- **Local monomial approximation in a Hölder ball.** Fix a centre `x0` in `d`-dimensional
+Euclidean space and a finite family `expo` of exponent multi-indices. If [the smoothness
+index `β` is positive](hyp:hβ), [the Hölder constant `L` is positive](hyp:hL), [the
+neighbourhood radius `r` is positive](hyp:_hr), [the closed sup-norm cube of radius `r`
+around `x0` is contained in the domain `S`](hyp:hS), and [`expo` lists every exponent
+multi-index of total degree up to the Taylor order](hyp:hcover), then [there is a constant
+`C_b ≥ 0`, depending only on `β` and `d`, such that every function `f` in the standard
+Hölder ball of exponent `β`, constant `L`, and domain `S` is approximated near `x0`, at any
+bandwidth `h ∈ (0, r)`, by a monomial combination in the `expo` basis with error at most
+`C_b · L · h^β`, uniformly over the unit cube of rescaled directions](goal). -/
 theorem holder_taylor_monomial_approx {d p : ℕ} {β L r : ℝ} {x0 : Fin d → ℝ}
     {S : Set (Fin d → ℝ)}
     (hβ : 0 < β) (hL : 0 < L) (_hr : 0 < r)

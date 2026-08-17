@@ -78,10 +78,12 @@ theorem designMatrix_posSemidef {N p : ℕ} {x w : Fin N → ℝ} (hw : ∀ i, 0
   rw [hstar, designMatrix_quadForm]
   exact Finset.sum_nonneg (fun i _ => mul_nonneg (hw i) (sq_nonneg _))
 
-/-- **The design moment matrix is positive definite** under a non-degeneracy condition on the
-design: no nonzero coefficient vector `v` yields a polynomial `∑ⱼ vⱼ xᵢʲ` that vanishes at
-every positively weighted design point. (Implied by the existence of `p+1` distinct design
-points with positive weight, via Vandermonde.) -/
+/-- **The design moment matrix is positive definite** under a non-degeneracy condition on
+the design. If [the design weights `w` are nonnegative](hyp:hw) and [no nonzero
+coefficient vector `v` yields a degree-`p` polynomial `∑ⱼ vⱼ xᵢʲ` that vanishes at every
+positively weighted design point](hyp:hnd), then [the design moment matrix is positive
+definite](goal). (Implied by the existence of `p+1` distinct design points with positive
+weight, via Vandermonde.) -/
 theorem designMatrix_posDef {N p : ℕ} {x w : Fin N → ℝ} (hw : ∀ i, 0 ≤ w i)
     (hnd : ∀ v : Fin (p + 1) → ℝ, v ≠ 0 →
         ∃ i, 0 < w i ∧ (∑ j, v j * x i ^ (j : ℕ)) ≠ 0) :
@@ -97,21 +99,28 @@ theorem designMatrix_posDef {N p : ℕ} {x w : Fin N → ℝ} (hw : ∀ i, 0 ≤
   refine ⟨i₀, Finset.mem_univ _, ?_⟩
   exact mul_pos hwi₀ (sq_pos_of_ne_zero hpoly)
 
-/-- **Invertibility of the design moment matrix** from design non-degeneracy: a positive
-definite matrix has a unit determinant, discharging the `IsUnit (designMatrix p x w).det`
-hypothesis used throughout the local-polynomial analysis. -/
+/-- **Invertibility of the design moment matrix** from design non-degeneracy. If [the
+design weights `w` are nonnegative](hyp:hw) and [the design is non-degenerate — no nonzero
+coefficient vector `v` yields a degree-`p` polynomial `∑ⱼ vⱼ xᵢʲ` vanishing at every
+positively weighted design point](hyp:hnd), then [the design moment matrix's determinant
+is a unit, i.e. the matrix is invertible](goal): a positive definite matrix has a unit
+determinant, discharging the `IsUnit (designMatrix p x w).det` hypothesis used throughout
+the local-polynomial analysis. -/
 theorem designMatrix_isUnit_det {N p : ℕ} {x w : Fin N → ℝ} (hw : ∀ i, 0 ≤ w i)
     (hnd : ∀ v : Fin (p + 1) → ℝ, v ≠ 0 →
         ∃ i, 0 < w i ∧ (∑ j, v j * x i ^ (j : ℕ)) ≠ 0) :
     IsUnit (designMatrix p x w).det :=
   (Matrix.isUnit_iff_isUnit_det _).mp (designMatrix_posDef hw hnd).isUnit
 
-/-- **Design non-degeneracy from distinct positively-weighted points (Vandermonde).** If a set
-`S` of design indices all carry positive weight and the design points `xᵢ` take at least `p+1`
-distinct values on `S`, then the non-degeneracy condition holds: no nonzero degree-`p`
-polynomial vanishes at every positively weighted point. (A nonzero polynomial of degree `≤ p`
-has at most `p` roots, but it would vanish at the `≥ p+1` distinct points of `S`.) Hence the
-design moment matrix is invertible. -/
+/-- **Design non-degeneracy from distinct positively-weighted points (Vandermonde).** For a
+set `S` of design indices, if [every index in `S` carries a positive weight](hyp:hpos) and
+[the design points `xᵢ` take at least `p+1` distinct values on `S`](hyp:hdistinct), then
+[the design non-degeneracy condition holds: no nonzero coefficient vector `v` yields a
+degree-`p` polynomial `∑ⱼ vⱼ xᵢʲ` that vanishes at every positively weighted design
+point](goal).
+
+(A nonzero polynomial of degree `≤ p` has at most `p` roots, but it would vanish at the
+`≥ p+1` distinct points of `S`.) Hence the design moment matrix is invertible. -/
 theorem nondegenerate_of_distinct_points {N p : ℕ} {x w : Fin N → ℝ}
     (S : Finset (Fin N)) (hpos : ∀ i ∈ S, 0 < w i)
     (hdistinct : p + 1 ≤ (S.image x).card) :

@@ -91,8 +91,12 @@ theorem aipw_pop_mean [Nonempty C] {m : C → ℝ} {g : Bool → C → ℝ} (hv 
   rw [PMF.ofFintype_apply, ENNReal.toReal_ofReal (obsReal_nonneg hv z)]
 
 omit [MeasurableSpace C] [MeasurableSingletonClass C] in
-/-- **Doubly-robust bias identity.**  The population AIPW mean minus the true ATE equals the
-finite doubly-robust remainder: a sum of products of nuisance errors. -/
+/-- **Doubly-robust bias identity.** Assume [the fitted propensity `mhat` takes values strictly
+between 0 and 1 at every covariate value](hyp:hmhat,hmhat1). Then [the population mean of the
+AIPW score under the true data-generating process `(m, g)`, minus the true average treatment
+effect, equals a finite doubly-robust remainder built from cell-by-cell products of the
+propensity error `m − mhat` and the outcome-regression errors `g − ghat` on each treatment
+arm](goal). -/
 theorem aipw_bias_identity [Nonempty C] {m : C → ℝ} {g : Bool → C → ℝ}
     (mhat : C → ℝ) (ghat : Bool → C → ℝ)
     (hmhat : ∀ x, 0 < mhat x) (hmhat1 : ∀ x, mhat x < 1) :
@@ -141,8 +145,11 @@ theorem exists_center_overlap [Nonempty C] (mhat : C → ℝ)
     exact ⟨le_trans h (min_le_left _ _), le_trans h (min_le_right _ _)⟩
 
 omit [MeasurableSpace C] [MeasurableSingletonClass C] in
-/-- **Doubly-robust bias bound.**  The plug-in bias is bounded by the product of the
-`L²(P_X)` nuisance errors, with constant `1/ε` set by the center overlap. -/
+/-- **Doubly-robust bias bound.** Given [a positive slack `ε`](hyp:hε) such that [the fitted
+propensity `mhat` stays at least `ε` away from both `0` and `1` at every covariate value — the
+center has uniform overlap](hyp:hco), [the absolute bias of the population AIPW mean relative to
+the true ATE is at most `ε⁻¹` times the product of the combined treated/control `L²(P_X)`
+outcome-regression error and the `L²(P_X)` propensity error](goal). -/
 theorem aipw_bias_bound [Nonempty C] {m : C → ℝ} {g : Bool → C → ℝ}
     (mhat : C → ℝ) (ghat : Bool → C → ℝ) {ε : ℝ} (hε : 0 < ε)
     (hco : ∀ x, ε ≤ mhat x ∧ ε ≤ 1 - mhat x) :
@@ -278,8 +285,13 @@ theorem aipwScore_bound [Nonempty C]
     _ ≤ 1 + 1 / ε := add_le_add hA hB
     _ ≤ 1 + 2 / ε := by gcongr; norm_num
 
-/-- **Variance bound.**  The estimator's variance is `≤ B²/n` (iid sample average of a score
-bounded by `B`). -/
+/-- **Variance bound.** Suppose [the true data-generating process `(m, g)` is
+valid](hyp:hv), [the fixed nuisance center `(mhat, ghat)` is itself a valid
+data-generating process](hyp:hghat), and [that center has uniform overlap: the fitted
+propensity `mhat` stays at least a positive constant `ε` away from both `0` and `1` at
+every covariate value](hyp:hε,hco). Then [on an `n`-observation i.i.d. sample from the
+true single-observation law, the variance of the fixed-center AIPW sample-average
+estimator is at most `(1 + 2/ε)²/n`](goal). -/
 theorem aipw_var_bound [Nonempty C] {m : C → ℝ} {g : Bool → C → ℝ} (hv : ValidDGP m g)
     (mhat : C → ℝ) (ghat : Bool → C → ℝ) (hghat : ValidDGP mhat ghat) {ε : ℝ} (hε : 0 < ε)
     (hco : ∀ x, ε ≤ mhat x ∧ ε ≤ 1 - mhat x) (n : ℕ) :

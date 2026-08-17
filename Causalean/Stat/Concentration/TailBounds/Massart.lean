@@ -198,8 +198,11 @@ theorem massart_lemma_pmf.sign_mean_zero {Z : Type v} {m : ℕ}
     apply sign_sum_eq_zero
   · exact Integrable.of_finite
 
-/-- Massart's finite-class lemma bounds the empirical Rademacher complexity of a
-finite class by its sample coordinate radii and a logarithmic class-size factor. -/
+/-- Massart's finite-class lemma. Given [a nonempty finite subset `f` of the index set selecting
+finitely many functions from the class](hyp:hs), [the empirical Rademacher complexity (without
+absolute value) of that finite subclass, evaluated at the sample `S` of size `m`, is at most the
+largest per-function coordinate $\ell^2$-radius $\sqrt{\sum_i (F_j(S_i)/m)^2}$ over `j ∈ f`,
+times $\sqrt{2\log|f|}$](goal). -/
 lemma massart_lemma_pmf
     (f : Finset ι) (hs : f.Nonempty)
     : empiricalRademacherComplexity_pmf_without_abs m (F_on (ι:=ι) (Z:=Z) F f) S

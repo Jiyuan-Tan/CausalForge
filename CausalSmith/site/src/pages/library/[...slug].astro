@@ -244,6 +244,74 @@ const displayTitle = dirPath === "" ? area : `${area}.${displayModulePath(dirPat
     </script>
 
     <script>
+      // NL ↔ Lean crosslinks: hovering a dash-underlined phrase in a card's NL
+      // statement highlights the statement row(s) it translates ("⊢" = the
+      // conclusion block), and hovering a row highlights its phrase(s).
+      // Click/tap pins the highlight (touch screens have no hover) and, when
+      // pinning from the NL side, opens the collapsed formal statement so the
+      // highlighted row is actually visible. Pin state is per-card, but only
+      // one card may hold a pin at a time — clearActivePin releases the
+      // previous card's pin before a new one is set (the in-card click's
+      // stopPropagation means the document-level clearer never sees it).
+      let clearActivePin: (() => void) | null = null;
+      for (const card of document.querySelectorAll<HTMLElement>(".decl-card")) {
+        const spans = [...card.querySelectorAll<HTMLElement>(".nl-link[data-links]")];
+        if (spans.length === 0) continue;
+        const rows = [...card.querySelectorAll<HTMLElement>("[data-binder]")];
+        const all = [...spans, ...rows];
+        const namesOf = (el: HTMLElement) =>
+          (el.dataset.links ?? el.dataset.binder ?? "").split(/\s+/).filter(Boolean);
+        const overlap = (a: string[], b: string[]) => a.some((n) => b.includes(n));
+        let pinned: HTMLElement | null = null;
+        const setHot = (names: string[], on: boolean) => {
+          for (const el of all) {
+            if (overlap(namesOf(el), names)) el.classList.toggle("xl-hot", on);
+          }
+        };
+        const clearAll = () => all.forEach((el) => el.classList.remove("xl-hot"));
+        for (const el of all) {
+          el.addEventListener("mouseenter", () => {
+            if (!pinned) setHot(namesOf(el), true);
+          });
+          el.addEventListener("mouseleave", () => {
+            if (!pinned) setHot(namesOf(el), false);
+          });
+          el.addEventListener("focus", () => {
+            if (!pinned) {
+              clearAll();
+              setHot(namesOf(el), true);
+            }
+          });
+          el.addEventListener("blur", () => {
+            if (!pinned) clearAll();
+          });
+          el.addEventListener("click", (ev) => {
+            // A row's own links (identifier → decl page) keep working normally.
+            if ((ev.target as HTMLElement).closest("a")) return;
+            ev.stopPropagation();
+            const same = pinned === el;
+            if (clearActivePin) clearActivePin();
+            pinned = same ? null : el;
+            if (!pinned) return;
+            clearActivePin = () => {
+              clearAll();
+              pinned = null;
+              clearActivePin = null;
+            };
+            setHot(namesOf(el), true);
+            if (el.classList.contains("nl-link")) {
+              const stmt = card.querySelector<HTMLDetailsElement>("details:has(.stmt-structured)");
+              if (stmt) stmt.open = true;
+            }
+          });
+        }
+        document.addEventListener("click", (ev) => {
+          if (pinned && !card.contains(ev.target as Node) && clearActivePin) clearActivePin();
+        });
+      }
+    </script>
+
+    <script>
       // Modules are collapsed by default; a #hash deep link (search hit, "uses" link,
       // statement identifier) must open every <details> ancestor of its target.
       let flashed: Element | null = null;

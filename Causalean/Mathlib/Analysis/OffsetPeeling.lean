@@ -122,7 +122,10 @@ lemma offsetPeelingConstant_nonneg
   simpa [offsetPeelingConstant, offsetPeelingConstantC, div_eq_mul_inv, mul_comm] using
     offsetPeelingConstantC_nonneg (1 / 4) θ (by norm_num) hθ_nonneg hθ_le
 
-/-- Deterministic Young/AM-GM peeling for the `c = 1/4` oracle-offset.
+/-- **Deterministic Young/AM-GM peeling for the quarter-offset.** For [an exponent strictly
+between zero and one](hyp:hθ_pos,hθ_lt) and [nonnegative coefficients `a` and `t`](hyp:ha,ht),
+[the positive part of `a·t^θ − t/4` is at most the offset-peeling constant times `a` raised to
+the power `1/(1−θ)`](goal).
 
 The constant is the actual supremum of `a·t^θ − t/4` over `t ≥ 0`:
 `(1 − θ)·(4θ)^{θ/(1−θ)}`. -/

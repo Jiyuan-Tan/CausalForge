@@ -68,8 +68,10 @@ theorem ChoquetCapacity.IsCapacitable.nullMeasurableSet [PolishSpace Ω]
   rw [← union_diff_cancel hBsub]
   exact hBmeas.nullMeasurableSet.union (NullMeasurableSet.of_null hnull)
 
-/-- An analytic subset of a Polish sample space is measurable after completing any finite Borel
-measure, so it differs from an ordinary measurable event only on a zero-probability set. -/
+/-- On a Polish sample space equipped with its Borel σ-algebra, if [a set `s` is
+analytic](hyp:hs), then [`s` is null-measurable for every finite Borel measure `μ`: it becomes
+measurable after completing `μ`, so it differs from an ordinary measurable event only on a
+`μ`-null set](goal). -/
 theorem AnalyticSet.nullMeasurableSet [PolishSpace Ω] [BorelSpace Ω]
     {s : Set Ω} (hs : AnalyticSet s) (μ : Measure Ω) [IsFiniteMeasure μ] :
     NullMeasurableSet s μ := by

@@ -38,8 +38,14 @@ def HasCountableEmpiricalSupReduction {Ω ι : Type*} [MeasurableSpace Ω]
       (⨆ i : ι, ENNReal.ofReal |centeredEmpiricalAverage μ w (g i)|) =
         ⨆ k : ℕ, ENNReal.ofReal |centeredEmpiricalAverage μ w (g (g0 k))|)
 
-/-- Approximation on one common conull set by a fixed countable family is
-enough for the almost-sure empirical-supremum reduction. -/
+/-- **Countable supremum reduction from pointwise density.** Let `μ` be a σ-finite measure on
+`Ω`, `g : ι → Ω → ℝ` a family of functions, and `g0 : ℕ → ι` a countable subfamily. Suppose
+[`S` is a `μ`-conull subset of `Ω`](hyp:hS), [on `S`, every `g i` is the pointwise limit, along
+some subsequence, of the countable subfamily `g ∘ g0`](hyp:hdense), [each `g i` is
+measurable](hyp:hmeas), and [there is a single `μ`-integrable envelope `G` dominating `|g i|`
+uniformly in `i`](hyp:hdom). Then [the countable subfamily indexed by `g0` realizes the full
+continuum empirical-process supremum of `g` almost surely under every finite product law of
+`μ`](goal). -/
 -- @node: hasCountableEmpiricalSupReduction_of_pointwise_dense
 lemma hasCountableEmpiricalSupReduction_of_pointwise_dense
     {Ω ι : Type*} [MeasurableSpace Ω] (μ : Measure Ω) [SigmaFinite μ]

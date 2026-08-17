@@ -35,10 +35,10 @@ open Matrix
 
 variable {p : ℕ}
 
-/-- **Completing-the-square inequality for a positive definite quadratic form.** For a positive
-definite matrix `A` and any vectors `e, w`, the affine functional `2 eᵀw − wᵀ A w` is bounded above
-by the inverse quadratic form `eᵀ A⁻¹ e`, with equality at `w = A⁻¹ e`. This is the elementary
-identity `eᵀ A⁻¹ e − (2 eᵀw − wᵀ A w) = (w − A⁻¹ e)ᵀ A (w − A⁻¹ e) ≥ 0`. -/
+/-- **Completing-the-square inequality for a positive definite quadratic form.** For [a positive
+definite matrix `A`](hyp:hA) and any vectors `e, w`, [the affine functional `2 eᵀw − wᵀ A w` is
+bounded above by the inverse quadratic form `eᵀ A⁻¹ e`, with equality at `w = A⁻¹ e`](goal). This
+is the elementary identity `eᵀ A⁻¹ e − (2 eᵀw − wᵀ A w) = (w − A⁻¹ e)ᵀ A (w − A⁻¹ e) ≥ 0`. -/
 theorem two_dotProduct_sub_quadForm_le_inv {A : Matrix (Fin (p + 1)) (Fin (p + 1)) ℝ}
     (hA : A.PosDef) (e w : Fin (p + 1) → ℝ) :
     2 * (e ⬝ᵥ w) - w ⬝ᵥ (A *ᵥ w) ≤ e ⬝ᵥ (A⁻¹ *ᵥ e) := by

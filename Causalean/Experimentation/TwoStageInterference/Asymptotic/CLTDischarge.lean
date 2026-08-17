@@ -232,9 +232,11 @@ noncomputable def cltSummand (n : ℕ) (δ : ℝ) (v : ℕ → ℝ) (s : StratAs
   (if s i then (1 : ℝ) else 0) * (groupDiff (Exp n) i a - δ)
     / Real.sqrt ((Exp n).C * v n)
 
-/-- **Studentized = independent sum.** For a supported stage-1 selection `s`, under homogeneity the
-conditional studentized statistic is the normalized independent sum
-`stud(s,w) = ∑ᵢ gₛ,ᵢ(wᵢ)`. -/
+/-- **Studentized = independent sum.** For [a stage-1 stratified assignment `s` that the
+design supports with positive probability](hyp:hs), then, under homogeneity, for [every
+within-group assignment pattern `w`](hyp:w), [the conditional studentized statistic
+decomposes as the normalized independent sum
+`stud(s,w) = ∑ᵢ cltSummand n δ v s i (w i)`](goal). -/
 lemma stud_eq_sum_of_homogeneous (h : Homogeneous Exp t stud δ M v) (n : ℕ)
     (s : StratAssign (Exp n).ι) (hs : (Exp n).D₁.p s ≠ 0)
     (w : ∀ i, Fin ((Exp n).gsize i) → Bool) :

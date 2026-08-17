@@ -145,10 +145,16 @@ theorem gaussianCutoff_calibrates (Λ : ℝ) (hΛ : 1 < Λ)
   field_simp [hΛp_ne]
   ring
 
-/-- **The sharp upper bound at the explicit Gaussian cutoff.** Under the conditional-Gaussian
-model, the Dorn–Guo sharp upper bound is the quantile-balancing candidate mean at the explicit
-Gaussian quantile cutoff:
-`msmUpperCalib Λ = candMean (cutoffProp Λ (m(X) + σ(X)·Φ⁻¹(Λ/(Λ+1))))`. -/
+/-- **The sharp upper bound at the explicit Gaussian cutoff.** Fix [a sensitivity parameter Λ
+strictly greater than 1](hyp:hΛ) and assume [the propensity score for treatment given the
+covariates lies strictly between 0 and 1 almost surely (overlap)](hyp:hoverlap). Under [the
+conditional-Gaussian treated-outcome model, i.e. the treated conditional law of the outcome given
+the covariates is Gaussian with mean `m` and standard deviation `σ`](hyp:hmodel), assuming [every
+candidate complete propensity in the calibrated ambiguity set is almost-everywhere
+measurable](hyp:hmeas) and [the integrability conditions needed to make the candidate means, the
+survival decomposition, and the cutoff propensity well defined](hyp:hreg), [the sharp (Dorn–Guo)
+upper bound on `E[Y(1)]` equals the candidate IPW mean evaluated at the cutoff propensity built
+from the explicit Gaussian quantile cutoff `m(X) + σ(X)·Φ⁻¹(Λ/(Λ+1))`](goal). -/
 theorem msmUpperCalib_gaussian (Λ : ℝ) (hΛ : 1 < Λ)
     (hoverlap : ∀ᵐ ω ∂P.μ, 0 < S.propScore true ω ∧ S.propScore true ω < 1)
     {m σ : γ → ℝ} (hmodel : S.GaussianTreatedModel m σ)

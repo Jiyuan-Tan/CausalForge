@@ -395,8 +395,10 @@ theorem bidirectedBFS_go_closed :
         rw [hcardU]; omega
       exact ih newNeighbors (visited ∪ newNeighbors) hvo' hexp' hbudget' a ha b hab
 
-/-- **BFS computes bidirected reachability.** A node `w` is in the BFS from an
-    observed `start` iff it is bidirected-reachable from `start`.
+/-- **BFS computes bidirected reachability.** Fix a single-world intervention graph `G` and
+[a node `start` that is observed in `G`](hyp:hstart). Then [a node `w` is found by the
+breadth-first search from `start` exactly when `w` is bidirected-reachable from `start` —
+connected to it by a chain of directly-confounded (shared-unobserved-parent) pairs](goal).
 
     The proof combines soundness of every BFS expansion step with the closure
     invariant of the saturated visited set. The reverse direction inducts on the
@@ -474,8 +476,9 @@ theorem cComponentSet_biUnion :
       exact ⟨v, hv, rfl⟩
     · exact id_eq _ ▸ G.mem_cComponentOf_self hv
 
-/-- Membership in a c-component is exactly bidirected reachability from its
-    seed. -/
+/-- Membership in a c-component is exactly bidirected reachability from its seed. For
+[a node `v` that is observed in `G`](hyp:hv), [a node `w` belongs to the c-component seeded
+at `v` exactly when `w` is bidirected-reachable from `v`](goal). -/
 theorem mem_cComponentOf_iff_reachable {v w : SWIGNode N} (hv : v ∈ G.observed) :
     w ∈ G.cComponentOf v ↔ G.bidirectedReachable v w :=
   G.mem_bidirectedBFS_iff_reachable hv

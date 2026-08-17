@@ -91,9 +91,15 @@ theorem expected_restrictedSetVolume_eq_integral_inclusion
           (hgraph.preimage (measurable_id.prodMk measurable_const))
       · simp [f, S, hu]
 
-/-- Uniform coverage on a measurable subset of a finite-volume parameter
-region, together with a total-variation comparison to a reference law, forces
-a lower bound on expected restricted volume under the reference law. -/
+/-- **Coverage-to-expected-restricted-volume bound.**  For a family of laws `Q u` indexed by
+`u : ℝ`, a random set `C`, a subset `I` of a parameter region `region`, and a reference point
+`reference`, suppose [every `Q u` is a probability measure](hyp:hQ), [`C` covers `u` with
+probability at least `coverage`, for every `u` in `I`](hyp:hcover), [`Q u` is within total
+variation `tv` of the reference law `Q reference`, for every `u` in `I`](hyp:htv), [the graph
+`{(ω, u) | u ∈ C ω}` is measurable](hyp:hgraph), [`region` is measurable](hyp:hregion), [`region`
+has finite Lebesgue volume](hyp:hregionFinite), [`I` is measurable](hyp:hI), and [`I` is
+contained in `region`](hyp:hI_sub). Then [the expected restricted volume of `C` under the
+reference law `Q reference` is at least `(volume I) · (coverage − tv)`](goal). -/
 theorem coverage_tv_expectedRestrictedVolume_lower
     {Ω : Type*} [MeasurableSpace Ω]
     (Q : ℝ → Measure Ω) (C : Ω → Set ℝ) (region I : Set ℝ)

@@ -52,9 +52,15 @@ noncomputable def doObsKernelYMarginal
   (M.fixSet X hObs hFix).obsKernel.map
     (valuesProjection ((SCM.fixSet_observed M X hObs hFix).symm ▸ hY))
 
-/-- **Structural transport.**  For two models sharing a SWIG graph, equal (heterogeneous)
-`Y`-marginals of the do-observational law give equal post-intervention `Y`-marginal
-kernels.
+/-- **Structural transport.**  Fix [two causal models that share the same underlying SWIG
+graph](hyp:hsg), together with a treatment set `X` that is [a valid intervention in the
+first model — every node of `X` is observed and not already fixed there](hyp:hObs₁,hFix₁)
+and [likewise valid in the second model](hyp:hObs₂,hFix₂), and an outcome set `Y` that is
+[observed in the first model](hyp:hY₁) and [observed in the second](hyp:hY₂). If [the two
+models' base fixed-value slices coincide](hyp:hs0) and [their `Y`-marginals of the
+do-observational law agree, up to the type-level identification the shared graph
+provides](hyp:hdoobsY), then [the resulting post-intervention `Y`-marginal kernels
+`doKernelY` agree at that shared base slice](goal).
 
 `doKernelY` is the `Y`-marginal `doObsKernelYMarginal` reindexed in the treatment
 value by the structural `comap` extension; the shared SWIG graph

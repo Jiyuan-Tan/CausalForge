@@ -618,8 +618,11 @@ theorem panelMeanReg_period_axis_orthogonal
 /-! ### Per-cohort orthogonality under the balanced-cell bridge hypotheses -/
 
 omit [DecidableEq 𝒢] in
-/-- The treatment residual is orthogonal to every cohort indicator
-`𝟙{G = g}`. Reduces to the defining identity of `cohortBarD`. -/
+/-- For [a treatment indicator `D` that is binary almost everywhere](hyp:D_binary), the residual
+between `D` and its cohort-period propensity score `panelPropensity` [is orthogonal, in the
+`L²(μ)` sense, to every cohort indicator `𝟙{G = g}`](goal).
+
+Reduces to the defining identity of `cohortBarD`. -/
 theorem residD_cohort_orthogonal
     (μ : Measure Ω) [IsProbabilityMeasure μ]
     (D : Ω → ℝ) (G : Ω → 𝒢) (T_rv : Ω → Fin T)

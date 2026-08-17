@@ -365,8 +365,13 @@ theorem card_injectiveTuples_image_eq {n : ℕ} {t : Fin m → Fin n}
 /-! ## Exact second moment and variance -/
 
 omit [IsProbabilityMeasure μ] in
-/-- **Exact second moment of the injective-tuple sum.**
-`E[(Σ_{t} g(Z_t))²] = m! · n^{(m)} · ζ_m`. -/
+/-- **Exact second moment of the injective-tuple sum.** For an i.i.d. sample `S` and
+sample size `n`, if the order-`m` kernel `g` is [completely degenerate: symmetric,
+square-integrable, and with zero conditional mean after integrating out any single
+coordinate](hyp:hg), then [the second moment of the sum of `g` over all ordered
+injective `m`-tuples drawn from the first `n` sample indices equals `m! · n^{(m)} · ζ_m`,
+where `n^{(m)}` is the number of such tuples and `ζ_m` is the kernel's second moment
+under the `m`-fold product law](goal). -/
 theorem integral_injectiveTuples_sum_sq_degen
     (hg : OrderDegenKernel P g) (n : ℕ) :
     ∫ ω, (∑ t ∈ injectiveTuples m n, g (fun j => S.Z (t j : ℕ) ω)) ^ 2 ∂μ
@@ -447,8 +452,11 @@ theorem integral_injectiveTuples_sum_sq_degen
   ring
 
 omit [IsProbabilityMeasure μ] in
-/-- **Exact variance of the rescaled degenerate fixed-order U-statistic.**
-`E[(√n · Uₙ)²] = n · m! · ζ_m / n^{(m)}`.  For `m = 2` this is `2ζ / (n−1)`. -/
+/-- **Exact variance of the rescaled degenerate fixed-order U-statistic.** For an i.i.d.
+sample `S`, if the order-`m` kernel `g` is [completely degenerate](hyp:hg) and the
+sample size [is at least `m`](hyp:hmn), then [the second moment of the `√n`-rescaled
+order-`m` U-statistic of `g` equals `n · m! · ζ_m / n^{(m)}`, which specializes to
+`2ζ/(n−1)` when `m = 2`](goal). -/
 theorem integral_rescaled_order_sq_degen (hg : OrderDegenKernel P g)
     {n : ℕ} (hmn : m ≤ n) :
     ∫ ω, (Real.sqrt (n : ℝ) * uStatisticOrder S g n ω) ^ 2 ∂μ

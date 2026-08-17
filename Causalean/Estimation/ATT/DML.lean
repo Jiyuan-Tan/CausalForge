@@ -234,28 +234,32 @@ set_option maxHeartbeats 1200000 in
 -- measurability, integrability, two transport equalities) and applies the
 -- abstract `att_dml_isAsymLinear`; the resulting elaboration exceeds the
 -- default heartbeat budget when type-checking the final `refine ⟨…⟩` block.
-/-- **Asymptotic linearity of the one-shot DML ATT** — `thm:est-dml-att-al`.
-
-Hypotheses (mirroring the NL doc verbatim, including the split-rate
-hypothesis `|B(n)|/n → c`):
-
-1. the one-sided PO back-door `ATTAssumptions` bundle;
-2. one-sided upper overlap on the truth and learners:
-   `e_val(x) ≤ 1 − ε` and `ê(n,ω,x) ≤ 1 − ε` hold `P_X`-a.e.;
-3. the truth and learner nuisance functions lie in the a.e./L² class
-   `H_ε S ε`;
-4. positivity of the marginal treatment probability `0 < π_T`;
-5. `E[Y²] < ∞` and `E[Y(0)²] < ∞`;
-6. one-shot split with `|B(n)|/n → c` for some `c ∈ (0, 1)`;
-7. `μ̂₀(n)` and `ê(n)` depend only on the nuisance fold `A(n)`;
-8. joint and fold-A measurability, per-ω L² membership, and score
-   integrability / finite-variance hypotheses for the nuisance-dependent ATT
-   score;
-9. individual rates `‖μ̂₀(n)(X) − μ₀_val(X)‖_{L²(P_X)} = o_p(1)` and
-   `‖ê(n)(X) − e_val(X)‖_{L²(P_X)} = o_p(1)`;
-10. product rate
-    `‖μ̂₀(n)(X) − μ₀_val(X)‖_{L²(P_X)} · ‖ê(n)(X) − e_val(X)‖_{L²(P_X)}
-        = o_p(n^{-1/2})`.
+/-- **Asymptotic linearity of the one-shot DML ATT** — `thm:est-dml-att-al`. Fix candidate
+control-regression and propensity estimator sequences
+[`μ₀_hat`](hyp:h_μ₀_meas,h_μ₀_memLp,h_μ₀_foldA,h_μ₀_uncurry_foldA) and
+[`e_hat`](hyp:h_e_meas,h_e_memLp,h_e_foldA,h_e_uncurry_foldA), [an i.i.d. sample of the
+data triple](hyp:sample), and [a one-shot cross-fitting split of that sample](hyp:split).
+Under [the true propensity bounded above by `1 − ε` almost everywhere](hyp:h_e_overlap),
+[nonnegativity of the true propensity](hyp:h_e_lb), [one-sided overlap `ε` on the
+treated-arm propensity](hyp:h_overlap), [the one-sided back-door ATT
+assumptions](hyp:hA), [a strictly positive marginal treatment probability](hyp:hπ_pos),
+[square-integrability of the factual outcome](hyp:h_y2) and of [the untreated potential
+outcome `Y(0)`](hyp:h_y0_2), and [a limiting fold-size fraction `c` strictly between `0`
+and `1`](hyp:hc_pos,hc_lt) with [the treated-fold cardinality fraction converging to
+`c`](hyp:h_split_rate): if [the candidate propensity is bounded above by `1 − ε` almost
+everywhere, for every `n, ω`](hyp:h_e_hat_overlap), [the candidate propensity is
+nonnegative everywhere](hyp:h_e_hat_lb), [the candidate regressions are jointly
+measurable in the probability-space and covariate arguments](hyp:h_μ₀_meas,h_e_meas),
+[each candidate regression, at every `n, ω`, is square-integrable against the covariate
+law](hyp:h_μ₀_memLp,h_e_memLp), [each candidate regression depends only on its own
+cross-fitting fold, singly and jointly with the
+covariate](hyp:h_μ₀_foldA,h_e_foldA,h_μ₀_uncurry_foldA,h_e_uncurry_foldA), [the ATT AIPW
+moment at every candidate regression pair is integrable and square-integrable against the
+observed data law](hyp:h_m_int,h_m_sq_int), [the control-regression and propensity error
+rates are individually `o_p(1)` in `L²(P_X)`](hyp:h_mu_rate,h_e_rate), and [their product
+is `o_p(n^{-1/2})`](hyp:h_product_rate), then [the population-π one-shot DML/AIPW ATT
+estimator is asymptotically linear at the true ATT `θ₀`, with influence function
+`ψ_ATT`, along the sample and the cross-fitting folds](goal).
 
 The IPW-correction integrability gates (truth and per-learner) are *derived*
 internally via `ipw_truth_integrable` / `ipw_estimated_integrable`, not taken

@@ -83,7 +83,10 @@ theorem integrableOn_tailIntegrand [IsProbabilityMeasure P] (a b : ℝ) :
   rw [Real.norm_eq_abs, abs_of_nonneg (tailIntegrand_nonneg t)]
   exact tailIntegrand_le_one t
 
-/-- **Master layer-cake reduction.**  For `0 < λ < 1`,
+/-- **Master layer-cake reduction.** For [a variable `U` that is measurable and almost surely
+strictly positive and at most `1`](hyp:hsetup), and a threshold `λ` [that is positive](hyp:hlam_pos)
+and [strictly below `1`](hyp:hlam_lt), [the truncated inverse first moment `J P U λ` equals `1`
+plus the threshold tail integral `tailIntegral P U λ`](goal):
 
     `J P U λ = 1 + tailIntegral P U λ`.
 

@@ -72,8 +72,11 @@ noncomputable def optIntercept (m1 m2 m3 : ℝ) : ℝ := (m1 * m3 - m2 ^ 2) / (m
 /-- The optimal slope `b₁*` in the regression of `y²` on `{1, y}`. -/
 noncomputable def optSlope (m1 m2 m3 : ℝ) : ℝ := (m1 * m2 - m3) / (m1 ^ 2 - m2)
 
-/-- At the optimal coefficients `(b₀*, b₁*)` the regression objective attains the closed-form
-residual `momentResidual`. -/
+/-- **Attainment at the optimal coefficients.** For raw moments `m1, m2, m3, m4` of a law with
+[first moment squared strictly below the second moment (positive variance)](hyp:h), [the
+regression objective, evaluated at the optimal intercept and slope
+`(optIntercept m1 m2 m3, optSlope m1 m2 m3)`, equals the closed-form residual
+`momentResidual m1 m2 m3 m4`](goal). -/
 theorem residualQuad_optimalCoeff (m1 m2 m3 m4 : ℝ) (h : m1 ^ 2 < m2) :
     residualQuad m1 m2 m3 m4 (optIntercept m1 m2 m3) (optSlope m1 m2 m3)
       = momentResidual m1 m2 m3 m4 := by
@@ -322,9 +325,14 @@ theorem momentEnvelope_le_root (m q u : ℝ)
     exact mul_nonneg (sq_nonneg _) (by linarith)
   linarith [key, hpos]
 
-/-- **Conditional moment-level envelope bound.** If the supplied moments have positive variance, a
-nonnegative cross moment, and a supplied quartic root `u` satisfying `q < u` and `u² < q`, then the
-moment residual for regressing `y²` on `{1, y}` is at most `momentEnvelope u q`.
+/-- **Conditional moment-level envelope bound.** Consider raw moments `m, q, m3, m4` of a law and
+a candidate root `u`. If [the second moment `q` lies strictly between `0` and `1`](hyp:hq0,hq1),
+if [the first moment `m` is at least `q` while `m²` still lies below `q`, i.e. the design has
+positive variance](hyp:hqm,hmq), if [a supplied cross-moment combination of `m, q, m3, m4` is
+nonnegative](hyp:hcross), and if [`u` satisfies `q < u`, `u² < q`, and solves the envelope's
+stationarity quartic exactly](hyp:hqu,huq,hroot), then [the moment-level residual variance of
+regressing `y²` on `{1, y}` under moments `(m, q, m3, m4)` is at most the envelope value
+`momentEnvelope u q`](goal).
 
 This theorem combines the per-instance moment bound with envelope maximality. It does not by itself
 derive the cross-moment condition from a probability law on `[0,1]`, prove existence or uniqueness

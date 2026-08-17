@@ -742,7 +742,10 @@ theorem bpLowerWitness7_objective (hA : S.BaseAssumptions) :
 
 /-! ### The lower endpoint is attained -/
 
-/-- Some feasible latent table attains the closed-form lower endpoint. -/
+/-- Under [the Balke-Pearl IV base assumptions](hyp:hA), [the closed-form Balke-Pearl
+lower bound, computed from the observed cell probabilities, is itself attained as the
+average treatment effect of some feasible latent treatment-response table — it lies in the
+Balke-Pearl identified interval](goal). -/
 theorem bpLower_mem_BPIdentifiedInterval (hA : S.BaseAssumptions) :
     S.bpLower ∈ S.BPIdentifiedInterval hA := by
   have h₀ := S.latentProb_feasible hA

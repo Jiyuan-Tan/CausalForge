@@ -123,8 +123,11 @@ theorem gridTestStat_clt :
 
 omit [IsProbabilityMeasure P] in
 include hmean hSum_meas in
-/-- The tail probability of the normalized finite-grid support-process statistic
-converges to the corresponding Gaussian-limit tail.
+/-- **Asymptotic level of the finite-grid tail test.** At [any continuity point `c` of the
+Gaussian limit law of the grid test statistic](hyp:hfront) — i.e. the limit law assigns
+zero mass to `{c}` — [the tail (rejection) probability of the normalized finite-grid
+support-process statistic converges to the corresponding tail mass of the Gaussian limit
+law](goal): `μ (gridTestReject … c) → L(c, ∞)`.
 
 Under the mean-zero hypothesis, at any continuity point `c` of the limit law
 `L = (gaussianLimit ψ).map maxAbsK` (i.e. `L{c} = 0`), the rejection probability

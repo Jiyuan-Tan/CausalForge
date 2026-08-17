@@ -746,9 +746,12 @@ private lemma poisson_multinomial_coefficient
   simp only [ENNReal.ofReal_coe_nnreal] at hof
   exact hof
 
-/-- Restricting the marked Poisson sample to all cells gives exactly the
-product of independent cell experiments, with cell intensity equal to the
-global intensity times the cell probability. -/
+/-- **Partition splitting.** Under the marked Poisson sample law with base probability measure
+`P`, mark distribution `R`, and [nonnegative intensity `lam`](hyp:lam), [restricting the sample to
+each cell of the finite measurable partition `p` yields, jointly across cells, the product of
+independent marked Poisson sample laws, one per cell `j`, each with base measure
+`p.cellObservationLaw P j`, mark distribution `R`, and intensity `lam` times the `P`-mass of cell
+`j`](goal). -/
 lemma map_restrictPartition_finiteMarkedPoissonSampleLaw
     [StandardBorelSpace X]
     (p : FiniteMeasurablePartition X ι)

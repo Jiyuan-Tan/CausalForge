@@ -67,9 +67,14 @@ open scoped MeasureTheory ProbabilityTheory
 -- § 1. Graph facts: `.random Z` is split off in `fixSet Z`
 -- ============================================================
 
-/-- In `M.fixSet Z _ _`, every `.random D` (D ∈ Z) has no outgoing edges
-    (no children).  Direct from the edge relation of `splitMonoEdgeRel`:
-    when the source is `.random D` with `D ∈ X`, the relation is `False`. -/
+/-- In the intervened model, consider [a name `D` belonging to the intervention set
+    `Z`](hyp:hD), where [random copies of names in `Z` are observed in the base
+    model](hyp:hZ_obs) and [their fixed copies are not yet part of the base model's fixed
+    coordinates](hyp:hZ_fixed). Then [the random copy of `D` has no outgoing edge, in the
+    post-intervention DAG, to any node `v`](goal).
+
+    Direct from the edge relation of `splitMonoEdgeRel`: when the source is `.random D` with
+    `D ∈ X`, the relation is `False`. -/
 lemma fixSet_random_no_children (M : Causalean.SCM N Ω) (Z : Finset N)
     (hZ_obs : ∀ D ∈ Z, SWIGNode.random D ∈ M.observed)
     (hZ_fixed : ∀ D ∈ Z, SWIGNode.fixed D ∉ M.fixed)

@@ -93,7 +93,22 @@ headline proof below rather than exported as a standalone lemma. -/
 Combines the stage-0 and stage-1 cross-product integrals into the n = 2
 sequential DR remainder identity. -/
 
-/-- **Sequential DR (DTR, n = 2) remainder identity.**
+/-- **Sequential DR (DTR, n = 2) remainder identity.** Consider a two-stage dynamic
+treatment-regime estimation system satisfying [the sequential causal
+assumptions](hyp:hA) (consistency and sequential ignorability), for which [the
+stage-0 and stage-1 propensity scores are bounded within a margin ε of 0 and 1
+(strict overlap)](hyp:h_overlap), and where [the factual outcome](hyp:h_y2) and [the
+potential outcome under every fixed treatment regime](hyp:_h_yd2) each have finite
+second moment. For any candidate nuisance vector η whose stage-0 and stage-1
+propensities likewise [lie in this strict-overlap band](hyp:hη), and whose [stage-0
+outcome-regression error](hyp:hΔμ₀_memLp), [stage-1 outcome-regression
+error](hyp:hΔμ₁_memLp), [stage-0 propensity error](hyp:hΔe₀_memLp), and [stage-1
+propensity error](hyp:hΔe₁_memLp) are each square-integrable against the
+corresponding stage's history law, [the population sequential doubly robust moment
+at η and the true target θ₀ equals the sum of two stagewise cross-product integrals
+— propensity error times inverse-propensity weight times outcome-regression error,
+at stage 0 against the stage-0 history law and at stage 1 against the stage-1
+history law](goal).
 
 Expanding the population sequential DR moment around the true nuisance
 `S.η₀` cancels the zeroth and first-order terms (Neyman orthogonality)

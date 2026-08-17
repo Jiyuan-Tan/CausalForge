@@ -51,8 +51,9 @@ theorem maximizingRoot_quartic (v : ℝ) (hv0 : 0 < v) (hv1 : v < 1) :
 maximizing support parameter `μᵥ = maximizingRoot v`. -/
 noncomputable def rhoEnvelope (v : ℝ) : ℝ := momentEnvelope (maximizingRoot v) (v ^ 2)
 
-/-- `ρ(v) > 0` for `v ∈ (0,1)`: `momentEnvelope μᵥ (v²) = (μᵥ − v²)(v² − μᵥ²) / (4 μᵥ (1 − μᵥ))`
-has all four factors positive when `μᵥ ∈ (v², v)`. -/
+/-- [The envelope value `ρ(v)` is strictly positive](goal) for [`v` strictly between `0` and
+`1`](hyp:hv0,hv1): `momentEnvelope μᵥ (v²) = (μᵥ − v²)(v² − μᵥ²) / (4 μᵥ (1 − μᵥ))` has all four
+factors positive when `μᵥ ∈ (v², v)`. -/
 theorem rhoEnvelope_pos (v : ℝ) (hv0 : 0 < v) (hv1 : v < 1) : 0 < rhoEnvelope v := by
   have hmem := maximizingRoot_mem v hv0 hv1
   set u := maximizingRoot v with hu

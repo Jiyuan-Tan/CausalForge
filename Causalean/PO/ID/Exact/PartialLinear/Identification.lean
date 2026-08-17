@@ -224,10 +224,15 @@ lemma integral_partialled
   · filter_upwards [M.factualY_sub_lReg hD hbX hU] with ω h
     rw [h]; ring
 
-/-- **The causal bridge.**  The Robinson partialling-out estimand equals the
-structural treatment effect `θ`, provided the treatment has residual variation
-(`E[(D − m₀(X))²] ≠ 0`).  This is what makes the partially linear DML estimator
-target the causal parameter. -/
+/-- **The causal bridge.** Given that [the factual treatment is
+integrable](hyp:hD), [the outcome regression on covariates is
+integrable](hyp:hbX), [the structural error `U` is integrable](hyp:hU), [the
+squared treatment residual is integrable](hyp:hVsq), and [the product of the
+structural error and the treatment residual is integrable](hyp:hUV), provided
+also that [the treatment has residual variation, i.e. `E[(D − m₀(X))²] ≠
+0`](hyp:hV), [the Robinson partialling-out estimand equals the structural
+treatment effect `θ`](goal). This is what makes the partially linear DML
+estimator target the causal parameter. -/
 theorem robinson_estimand_eq_theta
     (hD : Integrable M.factualD P.μ)
     (hbX : Integrable (fun ω => M.b (M.factualX ω)) P.μ)

@@ -46,22 +46,19 @@ open MeasureTheory ProbabilityTheory Filter Topology
 variable {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
   {μ : Measure Ω} {P : Measure X}
 
-/-- **Consistency of extremum estimators** (Newey–McFadden 1994, Thm 2.1).
-
-Let `m : Θ → X → ℝ` be a criterion indexed by a (pseudo-)metric parameter space
-`Θ`, with population objective `M θ = ∫ m θ dP` and sample objective
-`Mₙ θ = Pₙ m θ = S.sampleMean (m θ) n`.  Suppose
-
-* `hGC`     — the criterion class is **Glivenko–Cantelli** (uniform LLN);
-* `hArgmax` — the estimator `θ̂ₙ` does at least as well as `θ₀` on the sample
-              objective, `Mₙ(θ₀) ≤ Mₙ(θ̂ₙ)` (it suffices that `θ̂ₙ` be a sample
-              maximizer; only domination over `θ₀` is used);
-* `hSep`    — the population maximum is **well separated** at `θ₀`: for every
-              `ε > 0` there is a gap `η > 0` with `M θ + η ≤ M θ₀` whenever
-              `dist θ θ₀ ≥ ε`.
-
-Then `θ̂ₙ` is **consistent**: for every `ε > 0`, the probability that
-`dist (θ̂ₙ) θ₀ ≥ ε` tends to `0`. -/
+/-- **Consistency of extremum estimators** (Newey–McFadden 1994, Thm 2.1). Let `m` be a
+criterion function of a parameter ranging over a pseudo-metric space `Θ`, with population
+objective `M(θ)` equal to the expectation of `m(θ,·)` under `P` and sample objective the
+empirical mean of `m(θ,·)` along an i.i.d. sample `S`. If [the criterion class
+`{m(θ,·) : θ ∈ Θ}` obeys the Glivenko–Cantelli uniform law, so the worst-case gap between
+the sample and population objectives vanishes in probability](hyp:hGC), [the estimator
+sequence `thetaHat` attains a sample-objective value at every sample size and outcome that
+is at least as large as the sample objective at `θ₀`](hyp:hArgmax), and [the population
+objective has a well-separated maximum at `θ₀`, meaning that for every `ε>0` there is a
+gap `η>0` such that the objective at any `θ` at distance at least `ε` from `θ₀` falls short
+of the objective at `θ₀` by at least `η`](hyp:hSep), then [`thetaHat` is consistent for
+`θ₀`: for every `ε>0` the probability that `thetaHat n` lies at distance at least `ε` from
+`θ₀` tends to zero as the sample size `n` grows](goal). -/
 theorem mEstimator_consistent_of_glivenkoCantelli
     {Θ : Type*} [PseudoMetricSpace Θ]
     (S : IIDSample Ω X μ P) (m : Θ → X → ℝ) (θ₀ : Θ)
@@ -94,11 +91,22 @@ theorem mEstimator_consistent_of_glivenkoCantelli
     (hGC (η / 2) hη2) (Eventually.of_forall fun n => zero_le)
     (Eventually.of_forall fun n => measure_mono (hsub n))
 
-/-- **Bracketing corollary** (the econometrician's headline).  A criterion class
-with finite `L¹(P)` bracketing numbers and a well-separated population maximum
-yields a **consistent** extremum estimator.  Pure composition of
-`glivenkoCantelli_of_hasL1Bracketing` (which discharges the uniform-LLN
-hypothesis) with `mEstimator_consistent_of_glivenkoCantelli`. -/
+/-- **Bracketing corollary** (the econometrician's headline). Let `m` be a criterion
+function of a parameter ranging over a pseudo-metric space `Θ`, observed along an
+i.i.d. sample `S` drawn from `P`. If [each `m(θ,·)` is measurable](hyp:hmeas), [the
+criterion class admits, for every target width, a finite collection of integrable
+upper/lower bracket functions sandwiching the class members almost everywhere with
+`L¹(P)`-gap at most that width](hyp:hbr), [the estimator sequence `thetaHat` attains a
+sample-objective value at every sample size and outcome that is at least as large as the
+sample objective at `θ₀`](hyp:hArgmax), and [the population objective has a well-separated
+maximum at `θ₀`, meaning that for every `ε>0` there is a gap `η>0` such that the objective
+at any `θ` at distance at least `ε` from `θ₀` falls short of the objective at `θ₀` by at
+least `η`](hyp:hSep), then [`thetaHat` is consistent for `θ₀`: for every `ε>0` the
+probability that `thetaHat n` lies at distance at least `ε` from `θ₀` tends to zero as the
+sample size `n` grows](goal).
+
+Pure composition of `glivenkoCantelli_of_hasL1Bracketing` (which discharges the
+uniform-LLN hypothesis) with `mEstimator_consistent_of_glivenkoCantelli`. -/
 theorem mEstimator_consistent_of_bracketing
     {Θ : Type*} [PseudoMetricSpace Θ] [IsProbabilityMeasure P]
     (S : IIDSample Ω X μ P) (m : Θ → X → ℝ) (θ₀ : Θ)

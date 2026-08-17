@@ -94,9 +94,11 @@ theorem ProbabilityTheory.Kernel.iIndepFun.ae_iIndepFun_real
       (fun i ↦ Measurable.comap_le (hX i)) π hπ_pi hπ_gen hπ_ind
   exact hspaces
 
-/-- A finite linear combination of independent, centered, unit-bounded real
-random variables is sub-Gaussian with variance proxy equal to the sum of the
-squared coefficients. -/
+/-- For a finite family of real random variables `eps` and real coefficients `v`, if [each
+`eps i` is a.e. measurable](hyp:hmeas), [each `eps i` is a.s. bounded by 1 in absolute
+value](hyp:hbound), [each `eps i` has mean zero](hyp:hcenter), and [the family `eps` is
+independent](hyp:hindep), then [the linear combination $\sum_i v_i \cdot \mathrm{eps}_i$ is
+sub-Gaussian with variance proxy $\sum_i v_i^2$](goal). -/
 theorem hasSubgaussianMGF_linearCombination_of_iIndep
     {Ω ι : Type*} [MeasurableSpace Ω] [Fintype ι]
     {P : Measure Ω} [IsProbabilityMeasure P]

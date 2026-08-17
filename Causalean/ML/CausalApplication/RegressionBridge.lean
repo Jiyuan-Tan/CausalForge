@@ -37,8 +37,12 @@ observation sigma-algebra. -/
 lemma covarSigma_le : covarSigma (X := X) ≤ (inferInstance : MeasurableSpace (X × ℝ)) := by
   exact measurable_fst.comap_le
 
-/-- A conditional mean of the response given the covariate is an L² projection of
-the response onto functions of the covariate.
+/-- On a finite joint covariate–response law `P`, if [the candidate function `m` is
+measurable](hyp:hm), [the response coordinate is integrable](hyp:hY), and [`m` agrees
+`P`-almost everywhere with the conditional expectation of the response given the
+covariate σ-algebra](hyp:hcond), then [`m` is an L² projection of the response onto
+functions of the covariate: its residual is uncorrelated with every measurable,
+integrable function of the covariate](goal).
 
 Equivalently, the residual from this regression function is uncorrelated with
 every integrable covariate-only function. -/
@@ -109,8 +113,13 @@ theorem isL2Projection_of_condExp
     _ = 0 := by
       simp
 
-/-- An L² projection of the response onto functions of the covariate is a
-conditional mean of the response given the covariate.
+/-- On a finite joint covariate–response law `P`, if [the candidate function `m` is
+measurable](hyp:hm), [the response coordinate is integrable](hyp:hY), [the composed
+function `z ↦ m(z.1)` is integrable](hyp:hmint), and [`m` is an L² projection of the
+response onto functions of the covariate — its residual is uncorrelated with every
+measurable, integrable function of the covariate](hyp:hproj), then [`m` agrees
+`P`-almost everywhere with the conditional expectation of the response given the
+covariate σ-algebra](goal).
 
 Together with the forward direction, this gives the full equivalence connecting
 the squared-loss population target to the regression-function nuisance. -/

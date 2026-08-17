@@ -87,12 +87,12 @@ lemma iidSample_finN_measurable (S : IIDSample Ω X μ P) (n : ℕ) :
     Measurable (fun ω : Ω => fun k : Fin n => S.Z k ω) :=
   measurable_pi_lambda _ (fun k => S.meas k)
 
-/-- **Event transport along an IID sample (`Fin n` version).**
-
-Given a measurable event `E ⊆ (Fin n → X)` of `Measure.pi P`-mass
-`≥ 1 - ENNReal.ofReal δ`, the pullback along the joint observable
-`Ψ ω k = S.Z k ω` is a measurable Ω-event of `μ`-mass
-`≥ 1 - ENNReal.ofReal δ`. -/
+/-- **Event transport along an IID sample (`Fin n` version).** Given [a measurable event `E` in
+the space of length-`n` outcome tuples](hyp:hE_meas) whose [product-measure probability under `n`
+independent copies of the population law is at least $1-\delta$](hyp:hE_prob), the pullback of `E`
+along the joint observable built from the first `n` coordinates of the i.i.d. sample [is a
+measurable event on the underlying sample space, with probability at least
+$1-\delta$](goal). -/
 lemma event_pullback_along_iidSample
     (S : IIDSample Ω X μ P) (n : ℕ)
     {E : Set (Fin n → X)} (hE_meas : MeasurableSet E)

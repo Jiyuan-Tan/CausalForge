@@ -264,10 +264,11 @@ private theorem ehlichZeller_mesh_bound_of_pos_max (R : Polynomial ℝ) (β k : 
     (le_div_iff₀ hcospos).2 hprod
   simpa [div_eq_mul_inv, one_div, mul_comm, mul_left_comm, mul_assoc] using hdiv
 
-/-- **Ehlich–Zeller mesh (norming) inequality.**  Let `R` be a real polynomial of
-degree `≤ β` and let `k` be an integer with `β < k`.  With Chebyshev–Lobatto nodes
-`x_j = -cos(π j / k)` (`j = 0..k`),
-`sup_{x∈[-1,1]} |R x| ≤ (1 / cos(π β / (2k))) · max_{0≤j≤k} |R(x_j)|`.
+/-- **Ehlich–Zeller mesh (norming) inequality.** For [a real polynomial of degree at most
+`β`](hyp:hβ) and [a mesh order `k` strictly exceeding `β`](hyp:hk), with Chebyshev–Lobatto nodes
+`x_j = -cos(π j / k)` for `j = 0, …, k`, [the polynomial's supremum absolute value on `[-1, 1]` is
+bounded by the secant of `π β / (2k)` times the maximum of its absolute values at the mesh
+nodes](goal).
 
 The norming constant `sec(π β / (2k))` is finite because `β < k` forces
 `π β / (2k) < π / 2`.  The proof reduces (via `czMeshLHS_le_czSup`) to bounding the
@@ -300,11 +301,13 @@ theorem ehlichZeller_mesh_bound (R : Polynomial ℝ) (β k : ℕ)
         ehlichZeller_mesh_bound_of_pos_max (-R) β k hβneg hk hMneg ht₀ hmax_neg
       simpa [czSup_neg, czMeshMax_neg] using hbound
 
-/-- **Oversampled Chebyshev–Lobatto norming (constant depending only on the
-oversampling ratio).**  Let `c > 1`, let `R` have degree `≤ β` with `β ≥ 1`, and
-let `k` be a mesh order with `c·β ≤ k`.  Then
-`sup_{x∈[-1,1]} |R x| ≤ (1 / cos(π / (2c))) · max_{0≤j≤k} |R(x_j)|`,
-i.e. the norming constant `K(c) = sec(π / (2c))` works uniformly in `β`.
+/-- **Oversampled Chebyshev–Lobatto norming (constant depending only on the oversampling
+ratio).** For [an oversampling ratio strictly greater than one](hyp:hc), [a polynomial degree
+bound of at least one](hyp:hβ), [a real polynomial whose degree does not exceed that
+bound](hyp:hβR), and [a mesh order at least the oversampling ratio times the degree
+bound](hyp:hk), [the polynomial's supremum absolute value on `[-1, 1]` is bounded by the secant
+of `π / (2c)` times the maximum of its absolute values at the mesh nodes — a norming constant
+depending only on the oversampling ratio, uniformly in the degree bound](goal).
 
 This specializes `ehlichZeller_mesh_bound`: from `c·β ≤ k` and `c > 1`, `β ≥ 1`
 one gets `β < k` and `β / k ≤ 1 / c`, hence `π β / (2k) ≤ π / (2c) < π / 2`; since

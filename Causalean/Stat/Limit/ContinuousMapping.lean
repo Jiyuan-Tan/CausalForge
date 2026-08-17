@@ -38,8 +38,9 @@ namespace Causalean.Stat
 open MeasureTheory Filter Topology
 
 /-- **Continuous mapping for convergence in probability at a point.**
-If `Yn →_p c` under `μ` and `g` is continuous at `c`, then
-`g ∘ Yn →_p g c`.  Generalizes `Tendsto_inProb.inv` (the case
+If [a real-valued sequence `Yn` converges in probability to a point `c`](hyp:h) under `μ`, and
+[a function `g` is continuous at `c`](hyp:hg), then [the composed sequence `g ∘ Yn` converges in
+probability to `g c`](goal).  Generalizes `Tendsto_inProb.inv` (the case
 `g = fun x => 1/x` at a nonzero `c`). -/
 theorem Tendsto_inProb.comp_continuousAt
     {Ω : Type*} [MeasurableSpace Ω] {Yn : ℕ → Ω → ℝ} {c : ℝ} {μ : Measure Ω}

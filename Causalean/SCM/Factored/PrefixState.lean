@@ -112,7 +112,12 @@ def extendOrderedLatentPrefix (M : Causalean.SCM N Ω) {n : ℕ}
       M.OrderedLatentPrefixValues (n + 1) hn
   | ((ℓ, ξ), y) => (ℓ, (ξ, y))
 
-/-- The prefix-extension map is measurable. -/
+/-- Fix a structural causal model `M` and a step index `n` such that [there are
+    at least `n + 1` observed nodes, so `n` names the next node to be appended
+    in the canonical topological order of observed nodes](hyp:hn). Then [the
+    map that appends the freshly generated value of that node to a length-`n`
+    prefix of previously observed values, together with the latent
+    assignment, producing a length-`(n + 1)` prefix, is measurable](goal). -/
 theorem measurable_extendOrderedLatentPrefix (M : Causalean.SCM N Ω) {n : ℕ}
     (hn : n + 1 ≤ M.observed.card) :
     Measurable (M.extendOrderedLatentPrefix hn) :=

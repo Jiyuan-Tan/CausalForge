@@ -632,12 +632,19 @@ def toObservedBridge (hK : 0 < K) (hA : S.Assumptions)
     S.treatment_cell_eq hK hA k (hZpos k)
 
 /-- **Potential-outcome multiple-IV 2SLS characterization**
-(`prop:po-estimand-mtw-response-type-form`, PO level).
+(`prop:po-estimand-mtw-response-type-form`, PO level). Consider [a finite
+instrument support of positive size `K`](hyp:hK) together with weights
+`dhat` that are [weakly increasing in the support order](hyp:hmono), under
+[the potential-outcome identifying assumption bundle](hyp:hA). If [every
+instrument-support cell has positive probability](hyp:hZpos), [the potential
+outcome under treatment](hyp:hY1) and [under control](hyp:hY0) are
+integrable, [the centered-instrument-weighted outcome](hyp:hYInt) and
+[treatment](hyp:hDInt) are integrable, and [the observed first-stage moment
+is nonzero](hyp:hden), then [the observed population 2SLS ratio
+`E[h(Z)Y] / E[h(Z)D]` equals the response-type weighted sum `Σ_g ω_g Δ_g` of
+within-type conditional causal effects `Δ_g = E[Y(1) - Y(0) | G = g]`](goal).
 
-The observed 2SLS ratio `E[h(Z)Y] / E[h(Z)D]` equals the response-type weighted
-sum `Σ_g ω_g Δ_g`, where the weights `ω_g` are the normalized MTW response-type
-weights and `Δ_g = E[Y(1) - Y(0) | G = g]` is the within-type conditional causal
-effect. The conditional-mean bridges are derived from consistency and instrument
+The conditional-mean bridges are derived from consistency and instrument
 independence, so this consumes only genuine potential-outcome assumptions. -/
 theorem observedBeta2SLS_eq_responseTypeWeightedSum
     [IsFiniteMeasure P.μ] (hK : 0 < K) (hA : S.Assumptions)

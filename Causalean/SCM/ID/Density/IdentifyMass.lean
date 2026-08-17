@@ -168,8 +168,11 @@ decreasing_by
   exact Nat.lt_of_le_of_lt (Finset.card_le_card hC₁subA)
     (Finset.card_lt_card hAssubT)
 
-/-- Base equation for `identifyMassRec`: if the induced ancestral set is already
-the target, the result is the corresponding marginal. -/
+/-- For [a target set `T` contained in the observed coordinates](hyp:hT), if
+[the graph-induced ancestral set of `T` relative to `C` already equals
+`C`](hyp:hAC), then [the mass-level IDENTIFY recursion `identifyMassRec` on `T`
+stops immediately and returns the marginal of the input mass function `q`
+obtained by summing out the coordinates in `T \ C`](goal). -/
 @[simp] theorem identifyMassRec_base [∀ n, Fintype (Ω n)]
     (M : Causalean.SCM N Ω) (G : SWIGGraph N)
     (T C : Finset (SWIGNode N)) (hT : T ⊆ M.observed)
@@ -181,8 +184,11 @@ the target, the result is the corresponding marginal. -/
   rw [identifyMassRec]
   simp [hAC]
 
-/-- Hedge equation for `identifyMassRec`: if the induced ancestral set is all of
-`T` after the base branch has failed, the recursion returns the current mass. -/
+/-- For [a target set `T` contained in the observed coordinates](hyp:hT), if
+[the graph-induced ancestral set of `T` relative to `C` does not equal
+`C`](hyp:hAC) but [it equals `T` itself](hyp:hAT) — the hedge case, reached only
+after the base case has failed — then [the recursion `identifyMassRec` on `T`
+returns the input mass function `q` unchanged](goal). -/
 @[simp] theorem identifyMassRec_hedge [∀ n, Fintype (Ω n)]
     (M : Causalean.SCM N Ω) (G : SWIGGraph N)
     (T C : Finset (SWIGNode N)) (hT : T ⊆ M.observed)
@@ -196,9 +202,13 @@ the target, the result is the corresponding marginal. -/
   rw [identifyMassRec]
   simp [hAT, hTC]
 
-/-- Step equation for `identifyMassRec`: outside the base and hedge branches,
-the recursion descends to the containing c-component of `C` in the induced
-ancestral graph after extracting that district. -/
+/-- For [a target set `T` contained in the observed coordinates](hyp:hT), if
+[the graph-induced ancestral set of `T` relative to `C` does not equal
+`C`](hyp:hAC) and [does not equal `T` either](hyp:hAT) — i.e. neither the base
+nor the hedge case applies — then [the recursion `identifyMassRec` on `T`
+unfolds one step: it extracts, from the mass function `q` marginalized onto
+the induced ancestral set, the district factor of the c-component of `C`
+inside that induced ancestral graph, and recurses on that district](goal). -/
 @[simp] theorem identifyMassRec_step [∀ n, Fintype (Ω n)]
     (M : Causalean.SCM N Ω) (G : SWIGGraph N)
     (T C : Finset (SWIGNode N)) (hT : T ⊆ M.observed)

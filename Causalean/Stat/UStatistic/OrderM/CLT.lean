@@ -49,10 +49,14 @@ open MeasureTheory ProbabilityTheory Filter Topology
 variable {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
   {μ : Measure Ω} {P : Measure X} [IsProbabilityMeasure μ]
 
-/-- **Fixed-order U-statistic CLT.**  If the first-order influence function is
-measurable, centered, square-integrable, and the higher-order residual is
-negligible at the `√n` scale, then the U-statistic is asymptotically normal with
-variance `∫ ψ² dP`, where `ψ` is the sum of coordinatewise first projections. -/
+/-- **Fixed-order U-statistic CLT.** For an i.i.d. sample `S` and an order-`m` kernel `h`,
+write `ψ` for the summed coordinatewise first Hoeffding projection of `h`. If `ψ` is
+[measurable](hyp:hψ_meas), [has population mean zero](hyp:hψ_mean), and
+[is square-integrable](hyp:hψ_sq), if [the higher-order Hájek remainder of the order-`m`
+U-statistic is negligible at the `√n` scale](hyp:hneg), and if [the `√n`-rescaled
+U-statistic is almost-everywhere measurable at every sample size](hyp:hθn_meas), then
+[the `√n`-rescaled U-statistic converges in distribution to the centered Gaussian law with
+variance `∫ψ²dP`](goal). -/
 theorem uStatisticOrder_clt (S : IIDSample Ω X μ P)
     {m : ℕ} [NeZero m] (h : (Fin m → X) → ℝ)
     (hψ_meas : Measurable (uInfluenceOrder h P))
@@ -73,12 +77,20 @@ theorem uStatisticOrder_clt (S : IIDSample Ω X μ P)
     uStatisticOrder_isAsymLinear S h hψ_mean hψ_sq hneg
   exact hAL.tendsto_normal hψ_meas hθn_meas
 
-/-- **Fixed-order U-statistic CLT (end-to-end).**  For an order-`m` kernel `h`
-whose residual is regular (measurable, square-integrable, with the slice/Fubini
-side conditions) and whose summed first projection is measurable, centered, and
-square-integrable, the fixed-order U-statistic is `√n`-asymptotically normal with
-variance `∫ ψ² dP`, `ψ = Σⱼ uProjOrderAt j h P`.  This composes
-`uStatisticOrder_clt` with `orderDegenerateNegligible_of_residual`, so no
+/-- **Fixed-order U-statistic CLT (end-to-end).** For an i.i.d. sample `S` and an
+order-`m` kernel `h`, write `g` for the higher-order Hájek residual of `h` and `ψ` for
+the summed coordinatewise first Hoeffding projection of `h`. If the residual `g` is
+[measurable](hyp:hmeas) and [square-integrable under the `m`-fold product law](hyp:hL2),
+if for every coordinate [integrating `h` over the remaining `m − 1` coordinates yields an
+integrable function of that coordinate](hyp:hslice_int) [with the same population mean
+`uMeanOrder h P` in every coordinate](hyp:hmean) and [`h` remains integrable in the
+remaining coordinates for every fixed value of that coordinate](hyp:hrow), and if `ψ` is
+[measurable](hyp:hψ_meas), [mean zero](hyp:hψ_mean), [square-integrable](hyp:hψ_sq), and
+[the `√n`-rescaled U-statistic is almost-everywhere measurable at every sample
+size](hyp:hθn_meas), then [the `√n`-rescaled order-`m` U-statistic converges in
+distribution to the centered Gaussian law with variance `∫ψ²dP`](goal).
+
+This composes `uStatisticOrder_clt` with `orderDegenerateNegligible_of_residual`, so no
 negligibility hypothesis is required from the caller — the order-`m` analogue of
 `uStatistic_clt_of_symmetric`. -/
 theorem uStatisticOrder_clt_of_regular

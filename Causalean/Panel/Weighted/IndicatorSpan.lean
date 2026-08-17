@@ -192,9 +192,9 @@ noncomputable def cellMean {𝒢 : Type*} [DecidableEq 𝒢]
     (_hpos : 0 < c.cellMass G g) : ℝ :=
   (∑ r ∈ c.observed, c.weight r * F r * cellIndicator G g r) / c.cellMass G g
 
-/-- On a positive-mass classifier cell, multiplying the cell mean by the
-cell's mass recovers the weighted sum of the outcome over observed records in
-that cell. -/
+/-- On [a classifier cell `g` with strictly positive total weight](hyp:hpos), [multiplying the
+cell mean of `F` by the cell's mass recovers the weighted sum of `F` over observed records in
+that cell](goal). -/
 lemma cellMean_mul_cellMass {𝒢 : Type*} [DecidableEq 𝒢]
     (c : WeightedSupport R) (F : R → ℝ) (G : R → 𝒢) (g : 𝒢)
     (hpos : 0 < c.cellMass G g) :

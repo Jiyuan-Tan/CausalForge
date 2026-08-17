@@ -119,8 +119,8 @@ dot-notation. -/
     c.tildeXVec H X k = c.tildeX H (X k) :=
   Causalean.Panel.Weighted.WeightedSupport.tildeXVec_apply c H X k
 
-/-- Residualized arrays are orthogonal to every nuisance-space array under the
-panel weighted inner product. -/
+/-- For [an array `h` lying in the nuisance subspace `H`](hyp:hH), [the array `X` residualized
+against `H` is orthogonal to `h` under the panel weighted inner product `c.ip`](goal). -/
 lemma residualize_in_orthogonal (c : Cells I T)
     (H : Submodule ℝ (V I T)) (X : V I T) {h : V I T} (hH : h ∈ H) :
     c.ip (c.tildeX H X) h = 0 :=

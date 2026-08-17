@@ -321,7 +321,16 @@ theorem obsKernel_inter_singleton_Zrand_eq
 -- § Rule 2 — rectangle identity helpers
 -- ============================================================
 
-/-- Generalized cross-SCM cylinder agreement.
+/-- For the intervention on names [`Z`, whose random copies are observed in the base
+    model](hyp:hZ_obs) and [whose fixed copies are not yet part of the base model's fixed
+    coordinates](hyp:hZ_fixed), with [the union of the random copies of `Z` and a conditioning
+    set `W` contained in the observed variables](hyp:hZrW) and [the random copies of `Z` disjoint
+    from `W`](hyp:hDisj_ZrW), fix an intervened fixed assignment `s'`; for
+    [measurable](hyp:hS) subsets `S` of the observed-value space and [measurable](hyp:hA)
+    subsets `A` of the values on `W`, [the intervened model's observational kernel at `s'`,
+    evaluated on `S` intersected with the preimage under the `Z.random ∪ W`-projection of the
+    image of `A` under the filled-assignment map, equals the base model's observational kernel
+    at the projected fixed assignment, evaluated on the analogous set](goal).
 
     Generalization of `obsKernel_inter_singleton_Zrand_eq` from a single
     level-set point `{fillZrW w₀}` to an arbitrary measurable `W`-set

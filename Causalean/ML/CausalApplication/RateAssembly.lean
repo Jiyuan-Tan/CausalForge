@@ -33,9 +33,11 @@ theorem rpow_quarter_le_one (n : ℕ) : (n : ℝ) ^ (-(1 / 4 : ℝ)) ≤ 1 := by
   · have h1 : (1 : ℝ) ≤ (n : ℝ) := by exact_mod_cast hn
     exact Real.rpow_le_one_of_one_le_of_nonpos h1 (by norm_num)
 
-/-- **Assembly.** Per-nuisance `o_p(n^{-1/4})` L²-rates discharge DML's three
-nuisance-rate conditions: each is `o_p(1)`, and each outcome×propensity product is
-`o_p(n^{-1/2})`. -/
+/-- **Assembly.** If, for every treatment arm, [the outcome-regression estimation error
+is `o_p(n^{-1/4})`](hyp:hμ), and [the propensity estimation error is
+`o_p(n^{-1/4})`](hyp:he), then [each error is separately `o_p(1)`, and for every arm the
+pointwise product of the outcome and propensity errors is `o_p(n^{-1/2})`](goal) —
+together these are DML's three nuisance-rate conditions. -/
 theorem dml_rate_conditions_of_quarter_rates
     {μErr : Bool → ℕ → Ω → ℝ} {eErr : ℕ → Ω → ℝ}
     (hμ : ∀ a, IsLittleOp (μErr a) (fun n => (n : ℝ) ^ (-(1 / 4 : ℝ))) μ)

@@ -55,13 +55,16 @@ open scoped ENNReal BigOperators
 
 variable {C : Type*} [Fintype C] [Nonempty C] [MeasurableSpace C]
 
-/-- **Mixture two-point lower bound (one-sided separation).**  A null in-class DGP
-`(m₀, g₀)` and a finite weighted family of in-class alternatives `(mlam i, glam i)` whose
-ATEs are each `2 s`-separated from `ate g₀`, with total-variation budget `c` between
-the null `n`-fold law and the mixture of the alternatives' `n`-fold laws, force every
-measurable estimator to miss the true ATE by `s` with probability `≥ (1 − c)/2`
-somewhere in the class.  Unlike `TwoPointWitness`, the alternatives need not share a
-common ATE — only `2 s ≤ |ate g₀ − ate (glam i)|` per component. -/
+/-- **Mixture two-point lower bound (one-sided separation).** Suppose [a null data-generating
+process `(m₀, g₀)` lies in the structure-agnostic nuisance class](hyp:hnull) and [a finite
+family of alternative data-generating processes `(mlam i, glam i)` also lie in the
+class](hyp:hin), with [nonnegative mixture weights `w` summing to `1`](hyp:w,hw), where [every
+alternative's average treatment effect is at least `2s` away from the null's](hyp:hsep), and
+[the null's `n`-sample law and the weighted mixture of the alternatives' `n`-sample laws are at
+total-variation distance at most `c`](hyp:htv). Then for [any measurable estimator of the
+average treatment effect](hyp:hest), [the worst-case-over-class probability that it misses the
+true ATE by `s` is at least `(1 − c)/2`](goal). Unlike `TwoPointWitness`, the alternatives need
+not share a common ATE — only `2 s ≤ |ate g₀ − ate (glam i)|` per component. -/
 theorem mixture_two_point_lower_bound
     {n : ℕ} {mhat : C → ℝ} {ghat : Bool → C → ℝ} {εg εm : ℝ}
     {ι : Type*} [Fintype ι]

@@ -153,7 +153,15 @@ structure IWComparisonParallelTrends (P : EventStudySystem T)
             ((P.baselinePeriods g).card : ℝ)⁻¹ *
               ∑ t ∈ P.baselinePeriods g, P.untreatedPathMean h t)
 
-/-- Each IW DID contrast equals the cohort-relative-time CATT. -/
+/-- For an event-study system `P` and interaction-weighted design `I`, if [consistency,
+no-anticipation, and path-consistency hold](hyp:hConsistency,hNoAnticipation,hPathConsistency),
+[every eligible cohort's comparison-group mean change from baseline to target period matches
+its own untreated-mean change](hyp:hComparisonParallelTrends), [every eligible cohort is a
+genuine cohort of the system](hyp:hCohort), and [every comparison unit is untreated throughout
+the baseline and target
+periods](hyp:hComparisonUntreatedBaseline,hComparisonUntreatedTarget), then for
+[any eligible cohort `g`](hyp:hg), [its interaction-weighted DID contrast `Delta I g`
+equals the cohort-relative-time average treatment effect `CATT g I.eventTime`](goal). -/
 theorem IW_Delta_eq_CATT (P : EventStudySystem T) (I : P.IWDesign)
     (hConsistency : P.Consistency)
     (hNoAnticipation : P.NoAnticipation)
@@ -272,9 +280,17 @@ theorem IW_Delta_eq_CATT (P : EventStudySystem T) (I : P.IWDesign)
   rw [mul_sub]
   rw [sub_sub_sub_cancel_right]
 
-/-- Interaction-weighted event-study characterization: at a nonnegative event
-time, the IW estimand is a convex cohort-share weighted average of the desired
-event-time CATTs, with no contamination from other relative times.
+/-- For an event-study system `P` and interaction-weighted design `I`, if [consistency,
+no-anticipation, and path-consistency hold](hyp:hConsistency,hNoAnticipation,hPathConsistency),
+[every eligible cohort's comparison-group mean change from baseline to target period matches
+its own untreated-mean change](hyp:hComparisonParallelTrends), [the eligibility, baseline,
+target, and comparison-group support conditions of `IWSupport` hold](hyp:hSupport), [the
+aggregation weights `rho` are nonnegative](hyp:hRhoNonneg) and [sum to one over the eligible
+cohorts](hyp:hRhoSumOne), and [every eligible cohort's CATT at the fixed event time lies
+between bounds `lo` and `hi`](hyp:hLo,hHi), then [each cohort's DID contrast equals its CATT,
+the interaction-weighted estimand `nuIW I` equals the `rho`-weighted average of those CATTs,
+and `nuIW I` itself lies between `lo` and `hi` — a genuine convex average with no contamination
+from other relative times](goal).
 
 The third conjunct is the paper's selling point made into a *conclusion*: the
 nonnegativity (`hRhoNonneg`) and sum-to-one (`hRhoSumOne`) of the aggregation

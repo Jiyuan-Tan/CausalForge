@@ -200,9 +200,14 @@ theorem piecewiseTaylor_sup_approx {f : ℝ → ℝ} {M β lo hi : ℝ} {J : ℕ
     _ = M / (((holderDerivOrder β)).factorial : ℝ) * ((hi - lo) / (J : ℝ)) ^ β := by
           rw [cellWidth]
 
-/-- **Jackson rate, `J^{−β}` form.** The same bound rewritten with the explicit rate factor:
-`|f x − g x| ≤ C · J^{−β}` with constant
-`C = (M / (holderDerivOrder β)!)·(hi − lo)^β` independent of `J`. -/
+/-- **Jackson rate, `J^{−β}` form.** Fix [a Hölder exponent `β > 0`](hyp:hβ), [a nonnegative
+Hölder constant `M`](hyp:hM), and [a nondegenerate window `[lo, hi]` with `lo < hi`](hyp:hlohi)
+subdivided into [a positive number `J` of uniform cells](hyp:hJ). If [`f` has
+`p = holderDerivOrder β` continuous derivatives on the window](hyp:hf) and [its `p`-th derivative
+obeys the Hölder bound `|f^(p) x − f^(p) y| ≤ M · |x − y|^(β − p)` for all `x, y` in the
+window](hyp:hb), then at [any evaluation point `x` in the window](hyp:hx), [the piecewise-Taylor
+approximant on the uniform `J`-cell partition has pointwise error `|f x − g x| ≤ C · J^{−β}`,
+with constant `C = (M / p!) · (hi − lo)^β` independent of `J`](goal). -/
 theorem piecewiseTaylor_sup_approx_rate {f : ℝ → ℝ} {M β lo hi : ℝ} {J : ℕ}
     (hβ : 0 < β) (hM : 0 ≤ M) (hlohi : lo < hi) (hJ : 0 < J)
     (hf : ContDiff ℝ ((holderDerivOrder β)) f)

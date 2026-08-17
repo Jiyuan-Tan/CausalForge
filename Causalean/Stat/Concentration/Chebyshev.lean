@@ -20,9 +20,11 @@ namespace Causalean.Stat.Concentration
 open MeasureTheory ProbabilityTheory
 open scoped ENNReal
 
-/-- A square-integrable statistic with known mean and variance at most a supplied envelope exceeds
-an absolute deviation threshold with probability at most the envelope divided by the squared
-threshold. -/
+/-- For a finite measure `Q` and a statistic `F` on the underlying space, if [`F` is
+square-integrable under `Q`](hyp:hF), [the deviation threshold `a` is positive](hyp:ha), [`F`
+has mean equal to `mean` under `Q`](hyp:hmean), and [the variance of `F` under `Q` is at most
+the envelope `v`](hyp:hvar), then [the probability that `F` deviates from `mean` by more than
+`a` in absolute value is at most `v/a²`](goal). -/
 lemma probability_abs_sub_mean_gt_le
     {Ω : Type*} [MeasurableSpace Ω] (Q : Measure Ω)
     [IsFiniteMeasure Q] (F : Ω → ℝ) (mean v a : ℝ)

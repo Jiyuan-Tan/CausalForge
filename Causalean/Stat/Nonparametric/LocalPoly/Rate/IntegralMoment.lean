@@ -112,9 +112,11 @@ theorem intMomentMatrix_posSemidef {p : ℕ} {ν : Measure ℝ} {t : ℝ}
   rw [hstar, intMomentMatrix_quadForm hint]
   exact integral_nonneg (fun a => sq_nonneg _)
 
-/-- **The integral moment matrix is positive definite** under non-degeneracy of the design law:
-no nonzero coefficient vector `v` makes the centered polynomial `∑ⱼ vⱼ (a−t)^j` vanish `ν`-almost
-everywhere. -/
+/-- **The integral moment matrix is positive definite** whenever [every centered-monomial product
+`(a−t)^j·(a−t)^k` is integrable against the design measure `ν`](hyp:hint) and [the design law is
+non-degenerate: no nonzero coefficient vector `v` makes the centered polynomial `∑ⱼ vⱼ (a−t)^j`
+vanish `ν`-almost everywhere](hyp:hnd). Then [the integral moment matrix `intMomentMatrix p ν t` is
+positive definite](goal). -/
 theorem intMomentMatrix_posDef {p : ℕ} {ν : Measure ℝ} {t : ℝ}
     (hint : ∀ j k : Fin (p + 1),
       Integrable (fun a => (a - t) ^ (j : ℕ) * (a - t) ^ (k : ℕ)) ν)

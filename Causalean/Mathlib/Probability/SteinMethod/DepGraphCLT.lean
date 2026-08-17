@@ -385,9 +385,15 @@ theorem sum_E_nbhd_sq_le (N : ι → Finset ι) (hmeas : ∀ i, Measurable (X i)
 
 end DepGraph
 
-/-- **The bounded dependency-graph CLT.** From a dependency graph with bounded degree `m`,
-bounded summands `|Xₙᵢ| ≤ Bₙ` with `Bₙ → 0` and `N·Bₙ³ → 0`, mean-zero summands, and unit total
-variance, the standardized sum converges in distribution to a standard normal (CDF form). The two
+/-- **The bounded dependency-graph CLT.** Fix, for each `n`, [a probability measure
+`μ n`](hyp:μ), [triangular-array summands `X n i`](hyp:X), and [a dependency graph `D n` on the
+index set recording which pairs of summands may be dependent](hyp:D), with [every dependency
+neighborhood of size at most `m`](hyp:hdeg). Suppose the summands are [uniformly bounded in
+absolute value by a constant sequence `B n`](hyp:hB,hbound) that [tends to zero](hyp:hB0), with
+[the product of the index-set cardinality and the cube of the bound also tending to
+zero](hyp:hNB3), and suppose each summand is [mean zero](hyp:hmean) with [the standardized sum
+having unit total variance](hyp:hvar). Then [for every threshold `s`, the CDF of the dependency
+sum under `μ n` at `s` converges, as `n → ∞`, to the standard-normal CDF at `s`](goal). The two
 Stein negligibility limits are derived internally. -/
 theorem stein_cdf_clt_of_depGraph
     {Ω : ℕ → Type*} [∀ n, MeasurableSpace (Ω n)] (μ : ∀ n, Measure (Ω n))

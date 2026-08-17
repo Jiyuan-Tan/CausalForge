@@ -259,15 +259,16 @@ theorem toSystem_CATT_eq_meanDiff (E : EventStudyPopulation T)
   rw [E.cellMean_sub (EventStudySystem.finitePath g)
       (hInt t (EventStudySystem.finitePath g)).integrableOn (hInt t ⊤).integrableOn]
 
-/-- **Population contamination representation (headline).** For a population
-event-study system, the conventional TWFE event-study coefficient `D.mu` equals
-the contamination-weighted sum of genuine population cohort-relative-time
-effects `CATT g e = E[Y_{·t}(g) − Y_{·t}(∞) ∣ G = g]`. Consistency and
-no-anticipation are derived from the potential-outcome structure; only the
-additive parallel-trends restriction `hPar`, the outcome-integrability
-assumption `hIntegrable` (source H5), and the design-side projection witnesses
-are assumed. This is the Sun-Abraham contamination theorem stated over a
-genuinely potential-outcome-anchored system.
+/-- **Population contamination representation (headline).** For a staggered-adoption
+event-study population `E` and a conventional design `D` on the system it induces, if [the
+never-treated potential outcome follows the additive parallel-trends restriction](hyp:hPar),
+[the included, displayed, and admissible event times all lie within the declared finite
+support](hyp:hSupport), and [the cell-grid weighted-projection residualization input is
+supplied](hyp:hCell), then [the conventional TWFE event-study coefficient `D.mu` equals the
+contamination-weighted sum of genuine population cohort-relative-time effects
+`CATT g e = E[Y_{·t}(g) − Y_{·t}(∞) ∣ G = g]`](goal). Consistency and no-anticipation are
+derived from the potential-outcome structure rather than assumed; this is the Sun-Abraham
+contamination theorem stated over a genuinely potential-outcome-anchored system.
 
 Integrability certifies that each `CATT g e` is the genuine expected
 treatment-effect contrast `E[Y_{·t}(g) − Y_{·t}(∞) ∣ G = g]` (see
@@ -284,15 +285,19 @@ theorem contamination_representation_population (E : EventStudyPopulation T)
   exact (E.toSystem).contamination_representation_of_cellGrid
     E.toSystem_consistency hPar hSupport hCell
 
-/-- **Population interaction-weighted characterization (headline).** For a
-population event-study system, the interaction-weighted estimand `nuIW` is a
-convex cohort-share average of genuine population effects `CATT g ℓ`, with no
-contamination from other event times. Consistency, no-anticipation, and
-path-consistency are derived; only the comparison-group parallel-trends
-restriction, the outcome-integrability assumption `hIntegrable` (source H5), and
-the design-side support/weight conditions are assumed. Integrability certifies
-that each `CATT g ℓ` is a genuine expected treatment-effect contrast (see
-`toSystem_CATT_eq_meanDiff`). -/
+/-- **Population interaction-weighted characterization (headline).** For a staggered-adoption
+event-study population `E` and an interaction-weighted design `I` on the system it induces, if
+[the induced system satisfies comparison-group parallel trends](hyp:hIWParallelTrends),
+[the eligibility, baseline, target, and comparison-group support conditions of `IWSupport`
+hold](hyp:hSupport), [the aggregation weights `rho` are nonnegative](hyp:hRhoNonneg) and [sum to
+one over the eligible cohorts](hyp:hRhoSumOne), and [every eligible cohort's population CATT at
+the fixed event time lies between bounds `lo` and `hi`](hyp:hLo,hHi), then [the
+interaction-weighted estimand `nuIW` is the `rho`-weighted convex average of the genuine
+population effects `CATT g ℓ`, and in particular lies between `lo` and `hi` — with no
+contamination from other event times](goal).
+
+Consistency, no-anticipation, and path-consistency are derived from the potential-outcome
+structure rather than assumed. -/
 theorem IW_convex_characterization_population (E : EventStudyPopulation T)
     (I : (E.toSystem).IWDesign)
     (hIWParallelTrends : (E.toSystem).IWComparisonParallelTrends I)

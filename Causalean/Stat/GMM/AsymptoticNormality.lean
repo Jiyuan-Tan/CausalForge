@@ -64,10 +64,17 @@ section
 
 omit [BorelSpace F]
 
-/-- **GMM asymptotic linearity.**  A GMM estimator that solves the combined
-empirical moment equation and satisfies the Z-estimator consistency, stochastic
-equicontinuity, and root-n rate conditions has the usual GMM asymptotic-linear
-expansion around the target parameter.
+/-- **GMM asymptotic linearity.** Consider a GMM problem `prob` (moment function, weight
+matrix, and target parameter `θ₀`) together with Z-estimator regularity conditions `reg`
+for its combined score, evaluated along an i.i.d. sample `S`. If [the Jacobian inverse of
+the combined score's population expectation at `θ₀`, `reg.J₀_inv`, coincides with the GMM
+problem's "bread" inverse `prob.breadInv`](hyp:hJinv), [the estimator sequence `θn` is
+consistent for `θ₀`](hyp:hConsistent), [the combined score is stochastically
+equicontinuous at `θ₀` along `θn`](hyp:hStochEquicont), [`θn` converges to `θ₀` at the
+parametric rate, i.e. `‖θn n − θ₀‖` is `Oₚ(n^(-1/2))`](hyp:hRate), and [`θn` eventually
+and almost surely solves the sample moment equation
+`∑ᵢ score(θn n, Zᵢ) = 0`](hyp:hMoment), then [`θn` admits the usual GMM asymptotic-linear
+expansion around `θ₀`](goal).
 
 The influence function is
 

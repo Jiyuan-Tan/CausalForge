@@ -100,9 +100,11 @@ def unionSumEquiv {A B : Finset (SWIGNode N)} (hDisj : Disjoint A B) :
     · simp [h]
     · simp [h]
 
-/-- **`Measure.pi` splits over a disjoint union.**  The product reference on
-`A ∪ B` is carried by `valuesUnionEquiv` to the product of the references on `A`
-and `B`. -/
+/-- **`Measure.pi` splits over a disjoint union.** Given [a family of σ-finite reference
+measures μ, one per coordinate, together with two finite index sets `A` and `B` assumed
+disjoint](hyp:hDisj,μ), [the canonical equivalence carrying value assignments on `A ∪ B` to
+pairs of assignments on `A` and on `B` is measure-preserving from the product reference measure
+on `A ∪ B` to the product of the component reference measures on `A` and on `B`](goal). -/
 lemma measurePreserving_valuesUnionEquiv {A B : Finset (SWIGNode N)}
     (hDisj : Disjoint A B)
     (μ : ∀ v : SWIGNode N, MeasureTheory.Measure (swigΩ Ω v))

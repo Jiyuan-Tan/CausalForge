@@ -147,8 +147,11 @@ private lemma factualDiff_eq_cfDiff_on_dEvent (hC : P.Consistency) (d : Bool) :
     POVar.cf_eq_factual_on_event hC S.y0Var S.dVar d S.hDY0.symm hω
   rw [h1, h0]
 
-/-- Under the DID assumptions, the ATT equals the observed treated-control
-difference in outcome changes. -/
+/-- Under [the two-period DID assumptions — consistency, no-anticipation,
+parallel trends, and positive-probability, integrable treatment and control
+groups](hyp:hA), [the average treatment effect on the treated equals the
+difference between the treated group's mean pre-to-post outcome change and
+the control group's mean pre-to-post outcome change](goal). -/
 theorem att_did (hA : S.Assumptions) :
     S.ATT
       = eventCondExp P.μ (S.dEvent true)

@@ -76,16 +76,19 @@ noncomputable def obsDensity (M : Causalean.SCM N Ω) (ref : ReferenceMeasures �
     (s : M.FixedValues) : ValuesOn M.observed (swigΩ Ω) → ENNReal :=
   (M.obsKernel s).rnDeriv (jointRef ref M.observed)
 
-/-- In a dominated model, weighting the joint reference measure by the
-observational density recovers the observational law. -/
+/-- In a structural causal model whose observational law is [absolutely continuous with
+respect to the joint reference measure on the observed nodes](hyp:hdom), [weighting that joint
+reference measure by the observational density recovers the observational law exactly](goal). -/
 theorem withDensity_obsDensity_eq (M : Causalean.SCM N Ω) (ref : ReferenceMeasures Ω)
     (hdom : DominatedObs M ref) (s : M.FixedValues) :
     (jointRef ref M.observed).withDensity (M.obsDensity ref s) = M.obsKernel s := by
   unfold obsDensity
   exact MeasureTheory.Measure.withDensity_rnDeriv_eq _ _ (hdom s)
 
-/-- Within one model, two fixed-value slices with almost-everywhere equal joint
-densities have the same observational law.
+/-- Within a [model whose observational law is dominated by the joint reference
+measure](hyp:hdom), if [the joint observational densities at two fixed-value slices agree
+almost everywhere with respect to that reference measure](hyp:hdens), then [the two slices
+induce the same observational law](goal).
 
 The cross-model determination used for soundness is assembled downstream, where
 the shared graph equality lets the two laws be compared in one type. -/

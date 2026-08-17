@@ -87,7 +87,14 @@ already encodes vanishing of `innerReg j` on `{indD = 0}`.
 Both the identity and the integrability of `innerReg j` are proved
 together by induction on `j`. -/
 
-/-- Joint inductive invariant for the strengthened cancellation:
+/-- **Joint inductive invariant for the strengthened cancellation.** Consider a
+dynamic-treatment-regime system for which [the identifying assumption bundle
+holds](hyp:hA), fix [a positive number of decision stages](hyp:hn), and fix a
+treatment history `dbar`. Then for every stage index `j` below the horizon,
+[the partial regression term `innerReg dbar j` agrees almost surely with the
+product of the treatment-regime indicator at the mirrored stage `n - 1 - j`
+and the conditional expectation of the outcome given the history up to that
+stage, and this term is integrable](goal).
 
 * (strong identity) `innerReg dbar j =ᵐ indD (n-1-j) · μ[Y_of dbar | σ_{n-1-j}]`;
 * (integrability)  `Integrable (innerReg dbar j) P.μ`. -/

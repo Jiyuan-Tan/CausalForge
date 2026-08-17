@@ -55,9 +55,10 @@ noncomputable def polynomialImageClosure_coordinateRing {ι κ : Type*}
   rw [polynomialImageClosure_vanishingIdeal f]
   exact Ideal.quotientKerEquivRange (polynomialPullback f)
 
-/-- For a nonempty finite-dimensional complex algebraic set, its geometric
-dimension measured by irreducible chains equals the Krull dimension of its
-coordinate ring. -/
+/-- For a subset `Z` of `ι → ℂ` (with `ι` finite), if [`Z` is Zariski-closed](hyp:hclosed),
+then [`Z` has irreducible-chain (Zariski) dimension `d` exactly when the Krull dimension of its
+coordinate ring — the polynomial ring on `ι` variables modulo `Z`'s vanishing ideal — equals
+`d`](goal). -/
 theorem affineZariskiDimension_iff_coordinateRingKrullDim
     {ι : Type*} [Finite ι] {d : ℕ} {Z : Set (ι → ℂ)}
     (hclosed : affineZariskiClosure Z = Z) :

@@ -39,7 +39,10 @@ noncomputable def latentBlock
     Finset (SWIGNode N) :=
   M.unobserved.filter (fun u => ∃ v ∈ C, M.dag.edge u v)
 
-/-- Distinct full c-components have disjoint latent parent blocks. -/
+/-- If [`C` is a full c-component of the causal model's SWIG graph](hyp:hC) and
+[`C'` is likewise a full c-component](hyp:hC'), and [`C` and `C'` are
+distinct](hyp:hne), then [their latent-parent blocks — the unobserved nodes
+with an edge into the component — are disjoint](goal). -/
 lemma latentBlock_pairwise_disjoint
     (M : Causalean.SCM N Ω) {C C' : Finset (SWIGNode N)}
     (hC : C ∈ M.toSWIGGraph.cComponentSet)
@@ -491,9 +494,20 @@ lemma evalMap_eq_x_of_observedAt_eq
   clear_value vobs
   subst hsub
   exact h
-/-- Local consistency is transported across a `fixSet` intervention when the
-fixed intervention coordinates are pinned to the corresponding random
-coordinates. -/
+/-- Consider an intervention on a node set `W` [whose random copies are all
+observed](hyp:hObs) and [whose fixed copies are not already fixed in the base
+model](hyp:hFix), giving the intervened model `M.fixSet W`. Fix a node `v` that
+is [not itself one of the intervened random copies](hyp:hnot) and that is
+observed [both in the intervened model](hyp:hv') and [in the base
+model](hyp:hv). If [the intervened model's observed assignment `x'` agrees
+with the base assignment `x` on every base-observed coordinate](hyp:hobsAgree),
+[the base assignment records, at each intervened node, the same value that the
+intervened model's fixed values assign to the corresponding fixed
+coordinate](hyp:hpin), and [the intervened model's fixed values `sW` project,
+via `fixSetProj`, onto the base fixed values `s`](hyp:hproj), then [local
+consistency of the structural evaluation at `v` in the intervened model, under
+`sW`, `x'`, and a latent realization `ℓ`, is equivalent to local consistency at
+`v` in the base model, under `s`, `x`, and the same `ℓ`](goal). -/
 lemma localConsistent_fixSet_iff
     (M : Causalean.SCM N Ω) (W : Finset N)
     (hObs : ∀ D ∈ W, SWIGNode.random D ∈ M.observed)
@@ -664,8 +678,12 @@ def ObsParentClosed
     (M : Causalean.SCM N Ω) (P : Finset (SWIGNode N)) : Prop :=
   P ⊆ M.observed ∧ ∀ v ∈ P, ∀ w ∈ M.observed, M.dag.edge w v → w ∈ P
 
-/-- Agreement of evaluation on an observed-parent-closed set is equivalent to
-pointwise local consistency on that set. -/
+/-- On [a set `P` of observed nodes closed under taking observed parents (every
+observed parent of a member of `P` is itself in `P`)](hyp:hP), agreement of the
+structural evaluation `evalMap` with the recorded observed assignment `x` at
+every node of `P` [is equivalent to](goal) pointwise local consistency of `x`
+against a fixed-value slice `s` and latent realization `ℓ` at every node
+of `P`. -/
 theorem evalMap_agree_iff_localConsistent
     (M : Causalean.SCM N Ω) (s : M.FixedValues)
     (P : Finset (SWIGNode N)) (hP : M.ObsParentClosed P)

@@ -46,28 +46,26 @@ open MeasureTheory ProbabilityTheory Filter Topology TopologicalSpace
 
 variable {P : POSystem} {γ : Type*} [MeasurableSpace γ]
 
-/-- **DR-Learner end-to-end high-probability oracle inequality.**
+/-- **DR-Learner end-to-end high-probability oracle inequality.** Consider the same doubly robust
+orthogonal-learning system, one-shot sample split, and boundedness / overlap / continuity /
+Rademacher package as in `localEmpProcessModulus_drLearner` — [truth-identifying admissibility and
+evaluation correctness](hyp:θ₀_mem,eval_meas,eval_θ₀), [uniform bounds on the candidate
+evaluations, the outcome, and the realised nuisance regression together with propensity
+overlap](hyp:hM_Θ,hM_Y,hM_μ,hOverlap), and [loss continuity, a Rademacher bound `R n`, the
+clamped-loss minimizer property, and a confidence level `δ` in `(0, 1]`
+](hyp:hLoss_cont,hR,hclamp_minimizes,hδ,hδ'). Assume in addition that [a plug-in
+empirical-risk-minimisation estimator sequence `τhat`, evaluated against the same realised
+nuisance on every cross-fitting fold, attains the empirical risk up to an optimization slack
+`r_opt n`](hyp:hPluginERM), that [the population risk is strongly convex at the realised nuisance
+with modulus `σ > 0`](hyp:hσ,hSC), and that [the truth-identifying candidate satisfies the
+first-order optimality inequality for the population risk's directional derivative at the
+truth](hyp:hFOI). Then [there is a nonnegative constant `b` such that, for every sample size `n`,
+with `P.μ`-probability at least `1 − δ` the estimation error obeys
+`‖τhat n ω − θ₀‖² ≤ (4(1+σ)/σ²) · ρ_{n,δ}² + (4/σ) · Bias_n + (4/σ) · r_opt n`, where `ρ_{n,δ}` is
+the modulus rate realised by `localEmpProcessModulus_drLearner`](goal).
 
-Given the DR-Learner orthogonal-learning system from
-`OrthogonalLearning/DRLearner.lean` and the bounded-loss / Rademacher-bound
-hypotheses of `Estimation/CATE/OrthogonalLearning/LocalEmpProcess/DRLearner.lean`,
-plus the generic oracle-inequality ingredients (strong convexity at the
-realised nuisance, first-order inequality at the truth, plug-in ERM optimality
-at `g := h`),
-conclude:
-
-with `P.μ`-probability at least `1 − δ`,
-
-  `‖τhat n ω − τ₀‖² ≤ (4(1+σ)/σ²) · ρ²_{n,δ}
-                       + (4/σ) · Bias_n + (4/σ) · r_opt n`
-
-where `ρ_{n,δ} = √(2 R n + 2b · √(2 log(1/δ)/|B(n)|))` on nonempty
-estimation folds, with boundary branch `ρ_{n,δ} = √(2b)`, is the modulus
-realised by `localEmpProcessModulus_drLearner`.
-
-The proof invokes `localEmpProcessModulus_drLearner` to get the
-`LocalEmpProcessModulus` event, then applies
-`oracle_inequality_plugin_ERM_highProb` against that event. -/
+The proof invokes `localEmpProcessModulus_drLearner` to get the `LocalEmpProcessModulus` event,
+then applies `oracle_inequality_plugin_ERM_highProb` against that event. -/
 theorem oracle_inequality_drLearner_highProb
     [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
     [IsProbabilityMeasure P.μ]

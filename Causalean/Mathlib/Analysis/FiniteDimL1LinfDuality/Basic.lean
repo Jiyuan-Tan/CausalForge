@@ -92,11 +92,14 @@ theorem primalNormSet_nonneg {s : ℝ} (hs : s ∈ primalNormSet p β) : 0 ≤ s
   rcases hs with ⟨w, _hw, rfl⟩
   exact Finset.sum_nonneg (fun j _ => abs_nonneg (w j))
 
-/-- **Nonemptiness of the moment system (Vandermonde).**  For `k + 1` *distinct*
-nodes and `β ≤ k`, the moment map `w ↦ (∑ j, w j * (p j)^ℓ)_{ℓ ≤ β}` is
-surjective (equivalently, its transpose — node-evaluation of degree-`≤ β`
-polynomials — is injective, since a nonzero polynomial of degree `≤ β ≤ k` has at
-most `β < k + 1` roots).  Hence the moment system has a solution. -/
+/-- **Feasibility of the moment system (Vandermonde).** For [`k + 1` pairwise distinct real
+interpolation nodes](hyp:hp) and [a degree bound `β` at most `k`](hyp:hβ), [the moment system —
+the set of weight vectors that reproduce the endpoint contrast of every degree-`≤ β` polynomial
+through the node values — has a solution](goal).
+
+Equivalently, the moment map `w ↦ (∑ j, w j * (p j)^ℓ)_{ℓ ≤ β}` is surjective, since its
+transpose — node-evaluation of degree-`≤ β` polynomials — is injective (a nonzero polynomial of
+degree `≤ β ≤ k` has at most `β < k + 1` roots). -/
 theorem momentSol_nonempty (hp : Function.Injective p) (hβ : β ≤ k) :
     (MomentSol p β).Nonempty := by
   classical

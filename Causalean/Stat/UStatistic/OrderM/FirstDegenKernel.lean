@@ -67,9 +67,14 @@ theorem integrable [IsFiniteMeasure P] (hg : OrderFirstDegenKernel P g) :
     (by norm_num)
 
 omit [IsProbabilityMeasure P] in
-/-- The product-law mean of a first-order degenerate kernel is zero: split off the
-first coordinate with `measurePreserving_piEquivPiSubtypeProd` (as in
-`OrderDegenKernel.integral_eq_zero`) and apply the coordinate-`0` first-projection
+/-- **Population mean of a first-order degenerate kernel is zero.** If the order-`m`
+kernel `g` is [first-order degenerate: measurable, square-integrable under the `m`-fold
+product law, and with zero mean after integrating out all but any single
+coordinate](hyp:hg), then [the population mean of `g` under the `m`-fold product law is
+zero](goal).
+
+Proof: split off the first coordinate with `measurePreserving_piEquivPiSubtypeProd` (as
+in `OrderDegenKernel.integral_eq_zero`) and apply the coordinate-`0` first-projection
 identity `firstDeg`. -/
 theorem integral_eq_zero [IsFiniteMeasure P] (hg : OrderFirstDegenKernel P g) :
     uMeanOrder g P = 0 := by

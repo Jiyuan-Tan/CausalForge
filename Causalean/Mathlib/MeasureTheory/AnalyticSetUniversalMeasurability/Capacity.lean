@@ -199,8 +199,10 @@ private lemma exists_closure_image_cyl_subset
   obtain ⟨n, hn⟩ := this.exists
   exact hy_not_mem (φ n) hn
 
-/-- Choquet's capacitability theorem: every analytic subset of a Polish space is capacitable for
-every Choquet capacity. -/
+/-- **Choquet's capacitability theorem.** On a Polish sample space, if [a set `s` is
+analytic — the continuous image of a Polish space, or empty](hyp:hs), then [`s` is capacitable
+for every Choquet capacity `c`: the capacity of `s` equals the supremum, over the compact
+subsets of `s`, of their capacities](goal). -/
 theorem _root_.MeasureTheory.AnalyticSet.isCapacitable [PolishSpace Ω]
     {c : ChoquetCapacity Ω} {s : Set Ω} (hs : AnalyticSet s) : c.IsCapacitable s := by
   apply le_antisymm

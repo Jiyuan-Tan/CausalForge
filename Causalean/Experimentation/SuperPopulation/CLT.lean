@@ -26,10 +26,14 @@ namespace Causalean.Experimentation.SuperPopulation
 
 open Causalean.SteinMethod
 
-/-- **m-dependent network CLT (super-population).** For network fields `F n` with bounded degree
-`m`, uniformly bounded mean-zero summands `|F n .X i| ≤ B n` with `B n → 0` and
-`card(Vₙ)·(B n)³ → 0`, and unit total variance of the network sum, the network sum converges in
-distribution to the standard normal: `P[∑ᵢ (F n).X i ≤ s] → Φ(s)`.
+/-- **m-dependent network CLT (super-population).** Consider [a sequence of super-population
+network fields `F n`, each on a probability space with measure `μ n`](hyp:μ,F), whose [dependency
+graph has degree at most `m`](hyp:hdeg), whose [summands are uniformly bounded in absolute value
+by a sequence `B n`](hyp:hB,hbound) [tending to zero](hyp:hB0) [fast enough that
+`card(Vₙ)·(Bₙ)³ → 0`](hyp:hNB3), and whose [summands are mean zero](hyp:hmean) with [the network
+sum having unit total variance for every `n`](hyp:hvar). Then [the network sum's cumulative
+distribution function converges pointwise to the standard normal CDF:
+`P[∑ᵢ (F n).X i ≤ s] → Φ(s)`](goal).
 
 The randomness is the super-population draw `μ n`; the dependence is the network `(F n).adj`.
 The proof reads off the dependency-graph hypotheses from the field and applies

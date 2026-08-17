@@ -109,13 +109,13 @@ variable {Ω : N → Type*} [∀ n, MeasurableSpace (Ω n)]
 
 open scoped MeasureTheory ProbabilityTheory
 
-/-- **Backdoor Rule-3 leg.**
-
-    Under criterion (i) (no `z ∈ Z` is a descendant of any `random D` for
-    `D ∈ X` in `M.toSWIGGraph.dag`), the `Z`-marginal of
-    `(M.fixSet X).obsKernel` at any `s_post` equals the `Z`-marginal of
-    `M.obsKernel` at the underlying
-    `s_orig := M.fixSetProj X _ _ s_post`.
+/-- **Backdoor Rule-3 leg.** Fix a causal model `M` and a treatment set `X` [whose random copy
+    is observed and whose fixed copy is not already held fixed in `M`](hyp:hX_obs,hX_fixed),
+    and a set `Z` [that is observed in `M`](hyp:hZ) such that [no node of `Z` is a descendant
+    of any treatment random node](hyp:h_crit_i) — the non-descendant clause of the backdoor
+    criterion. Then, at any post-intervention configuration `s_post`, [the `Z`-marginal of the
+    post-intervention observational law at `s_post` equals the `Z`-marginal of the original
+    observational law at the pre-intervention configuration underlying `s_post`](goal).
 
     Proof: direct application of `SCM.do_rule3` with `Y_param := ∅`,
     `W_param := Z`.  Criterion (i) composes with

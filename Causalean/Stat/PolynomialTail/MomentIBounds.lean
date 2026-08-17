@@ -187,8 +187,11 @@ theorem invMomentI_ge_shell [IsProbabilityMeasure P] (h : PolyTail P U κ t₀ c
 
 /-! ## Two-sided bound for `I` in the regime `κ < 1` -/
 
-/-- **Regime `0 < κ < 1`.**  `∃ 0 < a ≤ A` with
-`a·λ^{κ-1} ≤ I P U λ ≤ A·λ^{κ-1}` for all `λ ∈ (0, t₀]`.  Lower: shell; upper: `I ≤ J`. -/
+/-- **Regime `0 < κ < 1`.** Under [the polynomial lower-tail hypothesis `PolyTail P U κ t₀ cm
+cp`](hyp:h) with [`U` measurable and almost surely in `(0,1]`](hyp:hsetup) and [tail exponent
+strictly between `0` and `1`](hyp:hκ1), [there exist constants `0 < a ≤ A` such that the
+truncated inverse second moment `I P U λ` is squeezed between `a·λ^{κ-1}` and `A·λ^{κ-1}`,
+uniformly for every `λ ∈ (0, t₀]`](goal). Lower: shell; upper: `I ≤ J`. -/
 theorem invMomentI_bounds_lt [IsProbabilityMeasure P] (h : PolyTail P U κ t₀ cm cp)
     (hsetup : TailSetup P U) (hκ1 : κ < 1) :
     ∃ a A : ℝ, 0 < a ∧ a ≤ A ∧ ∀ lam : ℝ, 0 < lam → lam ≤ t₀ →
@@ -208,9 +211,12 @@ theorem invMomentI_bounds_lt [IsProbabilityMeasure P] (h : PolyTail P U κ t₀ 
 
 /-! ## Two-sided bound for `I` in the regime `κ = 1` -/
 
-/-- **Regime `κ = 1`.**  `∃ 0 < a ≤ A` with
-`a·log(1/λ) ≤ I P U λ ≤ A·log(1/λ) + A` for all `λ ∈ (0, t₀]`.  Upper: `I ≤ J`;
-lower: `I = J − (J−I) ≥ J − cp`, uniformized with the constant shell floor. -/
+/-- **Regime `κ = 1`.** Under [the polynomial lower-tail hypothesis `PolyTail P U κ t₀ cm
+cp`](hyp:h) with [`U` measurable and almost surely in `(0,1]`](hyp:hsetup) and [tail exponent
+exactly `1`](hyp:hκ), [there exist constants `0 < a ≤ A` such that the truncated inverse second
+moment `I P U λ` is squeezed between `a·log(1/λ)` and `A·log(1/λ) + A`, uniformly for every
+`λ ∈ (0, t₀]`](goal). Upper: `I ≤ J`; lower: `I = J − (J−I) ≥ J − cp`, uniformized with the
+constant shell floor. -/
 theorem invMomentI_bounds_eq [IsProbabilityMeasure P] (h : PolyTail P U κ t₀ cm cp)
     (hsetup : TailSetup P U) (hκ : κ = 1) :
     ∃ a A : ℝ, 0 < a ∧ a ≤ A ∧ ∀ lam : ℝ, 0 < lam → lam ≤ t₀ →
@@ -263,9 +269,12 @@ theorem invMomentI_bounds_eq [IsProbabilityMeasure P] (h : PolyTail P U κ t₀ 
 
 /-! ## Bounded `I` in the regime `κ > 1` -/
 
-/-- **Regime `κ > 1`.**  `∃ 0 < a ≤ A` with `a ≤ I P U λ ≤ A` for all
-`λ ∈ (0, t₀]`: the inverse second moment is *bounded*.  Lower: `I` is
-antitone, so `I(λ) ≥ I(t₀) ≥` (shell at `t₀`), a positive constant; upper: `I ≤ J`. -/
+/-- **Regime `κ > 1`.** Under [the polynomial lower-tail hypothesis `PolyTail P U κ t₀ cm
+cp`](hyp:h) with [`U` measurable and almost surely in `(0,1]`](hyp:hsetup) and [tail exponent
+strictly above `1`](hyp:hκ1), [there exist constants `0 < a ≤ A` such that the truncated inverse
+second moment `I P U λ` is bounded between `a` and `A`, uniformly for every `λ ∈ (0,
+t₀]`](goal): the inverse second moment does not blow up. Lower: `I` is antitone, so
+`I(λ) ≥ I(t₀) ≥` (shell at `t₀`), a positive constant; upper: `I ≤ J`. -/
 theorem invMomentI_bounds_gt [IsProbabilityMeasure P] (h : PolyTail P U κ t₀ cm cp)
     (hsetup : TailSetup P U) (hκ1 : 1 < κ) :
     ∃ a A : ℝ, 0 < a ∧ a ≤ A ∧ ∀ lam : ℝ, 0 < lam → lam ≤ t₀ →
@@ -307,7 +316,10 @@ theorem isTheta_of_two_sided {f g : ℝ → ℝ} {t₀ a A : ℝ} (ht0 : 0 < t�
       abs_of_nonneg (hfnn lam hlp hll), one_div, inv_mul_eq_div, le_div_iff₀ ha, mul_comm]
     exact (hbd lam hlp hll).1
 
-/-- **IsTheta for `J` (κ < 1):** `J P U λ ≍ λ^{κ-1}` as `λ → 0⁺`. -/
+/-- **IsTheta for `J` (κ < 1).** Under [the polynomial lower-tail hypothesis](hyp:h) with [`U`
+measurable and almost surely in `(0,1]`](hyp:hsetup) and [tail exponent strictly between `0` and
+`1`](hyp:hκ1), [the truncated inverse first moment `J P U λ` is `Θ(λ^{κ-1})` as `λ →
+0⁺`](goal). -/
 theorem invMomentJ_isTheta_lt [IsProbabilityMeasure P] (h : PolyTail P U κ t₀ cm cp)
     (hsetup : TailSetup P U) (hκ1 : κ < 1) :
     (fun lam => invMomentJ P U lam) =Θ[𝓝[>] (0 : ℝ)] fun lam => lam ^ (κ - 1) := by
@@ -316,7 +328,10 @@ theorem invMomentJ_isTheta_lt [IsProbabilityMeasure P] (h : PolyTail P U κ t₀
     (fun lam hlp hll => le_trans (mul_nonneg ha.le (Real.rpow_nonneg hlp.le _))
       (hbd lam hlp hll).1) hbd
 
-/-- **IsTheta for `I` (κ < 1):** `I P U λ ≍ λ^{κ-1}` as `λ → 0⁺`. -/
+/-- **IsTheta for `I` (κ < 1).** Under [the polynomial lower-tail hypothesis](hyp:h) with [`U`
+measurable and almost surely in `(0,1]`](hyp:hsetup) and [tail exponent strictly between `0` and
+`1`](hyp:hκ1), [the truncated inverse second moment `I P U λ` is `Θ(λ^{κ-1})` as `λ →
+0⁺`](goal). -/
 theorem invMomentI_isTheta_lt [IsProbabilityMeasure P] (h : PolyTail P U κ t₀ cm cp)
     (hsetup : TailSetup P U) (hκ1 : κ < 1) :
     (fun lam => invMomentI P U lam) =Θ[𝓝[>] (0 : ℝ)] fun lam => lam ^ (κ - 1) := by
@@ -325,7 +340,10 @@ theorem invMomentI_isTheta_lt [IsProbabilityMeasure P] (h : PolyTail P U κ t₀
     (fun lam hlp hll => le_trans (mul_nonneg ha.le (Real.rpow_nonneg hlp.le _))
       (hbd lam hlp hll).1) hbd
 
-/-- **IsTheta for `J` (κ > 1):** `J P U λ ≍ 1` as `λ → 0⁺` (bounded). -/
+/-- **IsTheta for `J` (κ > 1).** Under [the polynomial lower-tail hypothesis](hyp:h) with [`U`
+measurable and almost surely in `(0,1]`](hyp:hsetup) and [tail exponent strictly above
+`1`](hyp:hκ1), [the truncated inverse first moment `J P U λ` is `Θ(1)` — bounded — as `λ →
+0⁺`](goal). -/
 theorem invMomentJ_isTheta_gt [IsProbabilityMeasure P] (h : PolyTail P U κ t₀ cm cp)
     (hsetup : TailSetup P U) (hκ1 : 1 < κ) :
     (fun lam => invMomentJ P U lam) =Θ[𝓝[>] (0 : ℝ)] fun _ => (1 : ℝ) := by
@@ -334,7 +352,10 @@ theorem invMomentJ_isTheta_gt [IsProbabilityMeasure P] (h : PolyTail P U κ t₀
     (fun lam hlp hll => le_trans ha.le (hbd lam hlp hll).1)
     (fun lam hlp hll => by simpa using hbd lam hlp hll)
 
-/-- **IsTheta for `I` (κ > 1):** `I P U λ ≍ 1` as `λ → 0⁺` (bounded). -/
+/-- **IsTheta for `I` (κ > 1).** Under [the polynomial lower-tail hypothesis](hyp:h) with [`U`
+measurable and almost surely in `(0,1]`](hyp:hsetup) and [tail exponent strictly above
+`1`](hyp:hκ1), [the truncated inverse second moment `I P U λ` is `Θ(1)` — bounded — as `λ →
+0⁺`](goal). -/
 theorem invMomentI_isTheta_gt [IsProbabilityMeasure P] (h : PolyTail P U κ t₀ cm cp)
     (hsetup : TailSetup P U) (hκ1 : 1 < κ) :
     (fun lam => invMomentI P U lam) =Θ[𝓝[>] (0 : ℝ)] fun _ => (1 : ℝ) := by

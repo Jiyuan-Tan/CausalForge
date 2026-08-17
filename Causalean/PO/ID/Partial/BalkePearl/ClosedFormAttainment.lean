@@ -40,7 +40,9 @@ variable {P : POSystem} (S : POBalkePearlSystem P)
 
 /-! ### The lower endpoint is attained -/
 
-/-- **The closed-form lower endpoint is exactly the LP minimum.** -/
+/-- **The closed-form lower endpoint is exactly the LP minimum.** Under [the Balke-Pearl
+IV base assumptions](hyp:hA), [the infimum of the Balke-Pearl identified interval equals
+the closed-form lower bound `bpLower`](goal). -/
 theorem csInf_BPIdentifiedInterval_eq_bpLower (hA : S.BaseAssumptions) :
     sInf (S.BPIdentifiedInterval hA) = S.bpLower := by
   refine le_antisymm ?_ ?_
@@ -51,7 +53,9 @@ theorem csInf_BPIdentifiedInterval_eq_bpLower (hA : S.BaseAssumptions) :
 
 /-! ### The upper endpoint is attained -/
 
-/-- **The closed-form upper endpoint is exactly the LP maximum.** -/
+/-- **The closed-form upper endpoint is exactly the LP maximum.** Under [the Balke-Pearl
+IV base assumptions](hyp:hA), [the supremum of the Balke-Pearl identified interval equals
+the closed-form upper bound `bpUpper`](goal). -/
 theorem csSup_BPIdentifiedInterval_eq_bpUpper (hA : S.BaseAssumptions) :
     sSup (S.BPIdentifiedInterval hA) = S.bpUpper := by
   refine le_antisymm ?_ ?_
@@ -62,11 +66,13 @@ theorem csSup_BPIdentifiedInterval_eq_bpUpper (hA : S.BaseAssumptions) :
 
 /-! ### Sharpness of the closed form -/
 
-/-- **The Balke-Pearl closed form is sharp.** The interval `[bpLower, bpUpper]`,
-computed from the observed cell probabilities alone, has both endpoints attained
-by observationally-equivalent latent tables. So no smaller interval contains
-every average treatment effect compatible with the data: the bound cannot be
-improved without further assumptions. -/
+/-- **The Balke-Pearl closed form is sharp.** Under [the Balke-Pearl IV base
+assumptions](hyp:hA), [the interval `[bpLower, bpUpper]`, computed from the observed cell
+probabilities alone, has both endpoints attained by observationally-equivalent latent
+tables — equivalently, `bpLower` is the infimum and `bpUpper` is the supremum of the
+Balke-Pearl identified interval](goal). So no smaller interval contains every average
+treatment effect compatible with the data: the bound cannot be improved without further
+assumptions. -/
 theorem bpLower_bpUpper_eq_csInf_csSup (hA : S.BaseAssumptions) :
     S.bpLower = sInf (S.BPIdentifiedInterval hA) ∧
       S.bpUpper = sSup (S.BPIdentifiedInterval hA) :=

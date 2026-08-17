@@ -128,9 +128,13 @@ theorem integral_le_integral_of_le (hLint : Integrable L μ) (hUint : Integrable
     (hLU : ∀ ω, L ω ≤ U ω) : (∫ ω, L ω ∂μ) ≤ ∫ ω, U ω ∂μ :=
   integral_mono_ae hLint hUint (ae_of_all _ hLU)
 
-/-- **Selection expectation `= [∫L, ∫U]`.**  The `⊆` direction is integral
-monotonicity; the `⊇` direction realises every intermediate value with a
-*constant* `t ∈ [0,1]`, so no atomlessness is needed. -/
+/-- **Selection expectation equals `[∫L, ∫U]`.** For [measurable lower and upper endpoint
+functions `L`, `U`](hyp:hL,hU) that are [integrable](hyp:hLint,hUint) and satisfy [`L`
+pointwise at most `U`](hyp:hLU), [the selection (Aumann) expectation of the
+interval-valued random set `[L, U]` — the set of integrals of its integrable measurable
+selections — equals the closed interval `[∫L dμ, ∫U dμ]`](goal). The forward inclusion
+is integral monotonicity; the reverse inclusion realises every intermediate value with a
+constant mixing weight `t ∈ [0,1]`, so no atomlessness is needed. -/
 theorem selectionExpectation_eq_Icc (hL : Measurable L) (hU : Measurable U)
     (hLint : Integrable L μ) (hUint : Integrable U μ) (hLU : ∀ ω, L ω ≤ U ω) :
     selectionExpectation L U μ = Set.Icc (∫ ω, L ω ∂μ) (∫ ω, U ω ∂μ) := by
@@ -168,14 +172,24 @@ theorem selectionExpectation_eq_Icc (hL : Measurable L) (hU : Measurable U)
       rw [← ha]
       linarith
 
-/-- Sharp lower endpoint as the infimum over selections: `sInf = ∫L`. -/
+/-- For [measurable lower and upper endpoint functions `L`, `U`](hyp:hL,hU) that are
+[integrable](hyp:hLint,hUint) and satisfy [`L` pointwise at most `U`](hyp:hLU), [the
+sharp lower endpoint of the identified set — the infimum of the selection (Aumann)
+expectation over all measurable selections of the interval-valued random set
+`[L, U]` — equals the expectation of the lower endpoint `L`](goal):
+`sInf (selectionExpectation L U μ) = ∫ L dμ`. -/
 theorem sInf_selectionExpectation (hL : Measurable L) (hU : Measurable U)
     (hLint : Integrable L μ) (hUint : Integrable U μ) (hLU : ∀ ω, L ω ≤ U ω) :
     sInf (selectionExpectation L U μ) = ∫ ω, L ω ∂μ := by
   rw [selectionExpectation_eq_Icc hL hU hLint hUint hLU]
   exact csInf_Icc (integral_le_integral_of_le hLint hUint hLU)
 
-/-- Sharp upper endpoint as the supremum over selections: `sSup = ∫U`. -/
+/-- For [measurable lower and upper endpoint functions `L`, `U`](hyp:hL,hU) that are
+[integrable](hyp:hLint,hUint) and satisfy [`L` pointwise at most `U`](hyp:hLU), [the
+sharp upper endpoint of the identified set — the supremum of the selection (Aumann)
+expectation over all measurable selections of the interval-valued random set
+`[L, U]` — equals the expectation of the upper endpoint `U`](goal):
+`sSup (selectionExpectation L U μ) = ∫ U dμ`. -/
 theorem sSup_selectionExpectation (hL : Measurable L) (hU : Measurable U)
     (hLint : Integrable L μ) (hUint : Integrable U μ) (hLU : ∀ ω, L ω ≤ U ω) :
     sSup (selectionExpectation L U μ) = ∫ ω, U ω ∂μ := by

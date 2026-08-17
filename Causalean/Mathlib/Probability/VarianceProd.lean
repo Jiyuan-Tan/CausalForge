@@ -20,9 +20,15 @@ open MeasureTheory ProbabilityTheory
 
 namespace Causalean.Mathlib.Probability
 
-/-- The variance of a statistic based on two independent coordinates is the average
-variance within slices of the first coordinate plus the variance, across the second
-coordinate, of the slice means. -/
+/-- For independent coordinates with laws `μ` and `ν`, and a real-valued statistic `F` on the
+product that is [square-integrable under the product law](hyp:hF), suppose that [almost every
+slice of `F` along the first coordinate, at a fixed value of the second coordinate, is
+square-integrable](hyp:hsection), that [the map `m` of slice means is square-integrable under
+`ν`](hyp:hm), and that [`m` records the correct slice means: the integral of `F` over the first
+coordinate at almost every value of the second coordinate equals `m` there](hyp:hmean). Then
+[the variance of `F` under the product measure equals the `ν`-average of the within-slice
+variances of `F` plus the variance, across the second coordinate, of the slice-mean map
+`m`](goal). -/
 lemma variance_prod_eq_integral_variance_add
     {Ω T : Type*} [MeasurableSpace Ω] [MeasurableSpace T]
     (μ : Measure Ω) (ν : Measure T)

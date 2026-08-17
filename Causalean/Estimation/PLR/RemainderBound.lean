@@ -81,9 +81,16 @@ lemma integral_condExpZero_mul_comp_factualX
     _ = ∫ _, (0 : ℝ) ∂P.μ := MeasureTheory.integral_congr_ae hce_zero
     _ = 0 := MeasureTheory.integral_zero _ _
 
-/-- **Doubly-robust bilinear remainder.**  For any nuisance `η`, the population
-moment at the true target is bounded by the product of the two L²(P_X) nuisance
-errors:
+/-- **Doubly-robust bilinear remainder.**  Fix [any candidate nuisance pair `η`](hyp:η)
+of outcome and treatment regressions. Assume [the treatment, the baseline
+covariate function, and the structural error are integrable](hyp:hD,hbX,hU); that
+[the outcome- and treatment-regression errors of `η` and the true treatment
+residual are square-integrable](hyp:hΔl,hΔm,hV); and that [the resulting orthogonal
+cross terms and the true structural-error/treatment-residual product are all
+integrable](hyp:hUΔm,hΔlV,hVΔm,hUV). Then [the population Robinson partialling-out
+score at `η` and the true structural slope is bounded in absolute value by
+$(1+|\theta_0|)$ times the product of the two L²(P_X) nuisance-error
+seminorms](goal):
 
     |E[ψ(η, ·, θ₀)]| ≤ (1 + |θ₀|)·max(‖Δℓ‖₂, ‖Δm‖₂)². -/
 lemma plr_remainder_bound (η : PLRNuisance γ)

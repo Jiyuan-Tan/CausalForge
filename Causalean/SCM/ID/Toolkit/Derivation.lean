@@ -52,7 +52,15 @@ theorem disjoint_fixed_observed (M : Causalean.SCM N Ω) :
   obtain ⟨m, hm⟩ := M.observed_is_random _ hxO
   cases hm
 
-/-- **Backdoor criterion (ii), extended to the post-intervention fixed nodes.**
+/-- **Backdoor criterion (ii), extended to the post-intervention fixed nodes.** Fix a
+    structural causal model `M` and an intervention target set `X` such that [every targeted
+    node is currently a random observed node](hyp:hObs) and [none of its fixed copies is
+    already fixed](hyp:hFix), an outcome set `Y` and a conditioning set `Z` with [`Y` contained
+    in the observed nodes](hyp:hY) and [the randomized image of `X` contained in the observed
+    nodes](hyp:hXr). If [`M`'s DAG satisfies the backdoor criterion for `X`, `Y` given
+    `Z`](hyp:h_bd), then [in the post-intervention graph obtained by fixing `X`, `Y` is
+    d-separated from the randomized image of `X` given `Z` together with the post-intervention
+    fixed node set](goal).
 
     From the splitMono d-separation in the criterion, the post-intervention graph
     `M.fixSet X` d-separates `Y` from `X.image .random` given

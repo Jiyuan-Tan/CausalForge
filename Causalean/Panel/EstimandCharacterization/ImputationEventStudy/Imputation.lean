@@ -119,9 +119,17 @@ def psiImp (h : Treated → Untreated → ℝ) : ℝ :=
   ∑ c : Treated, P.a c *
     (P.EY_T c - ∑ u : Untreated, h c u * P.EY_U u)
 
-/-- Population BJS imputation identification: under the untreated mean model,
-target-relevant prediction weights, and fixed treated effects, the imputation
-functional equals the target.
+/-- **Population BJS imputation identification.** Suppose [the untreated outcome
+mean follows a deterministic linear model in the regressors, and each
+untreated cell's observed mean equals that untreated model mean (untreated
+outcome model)](hyp:hUntreatedModel), [there exist imputation weights whose row
+identity expresses every target-relevant treated cell's regressor row as a
+weighted combination of untreated-cell rows (target-relevant prediction
+span)](hyp:hPredictionSpan), and [each treated cell's observed mean equals its
+untreated potential-outcome mean plus its treatment effect (treatment effect
+fixed)](hyp:hTreatmentEffectFixed). Then [there is an imputation-weight witness
+for which the observed-law imputation functional `psiImp` equals the target
+weighted sum of treatment effects `theta`](goal).
 
 The hypothesis `hPredictionSpan : P.PredictionIdentified` is the natural
 existence condition (Assumption 2 of BJS): some imputation weight matrix

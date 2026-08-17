@@ -78,10 +78,12 @@ private theorem perPair (hα : 0 ≤ α) (hβ : 0 ≤ β) (hαβ : α + 2 * β �
   field_simp
   linear_combination (8 * α * β + 8 * β ^ 2) * hs2
 
-/-- **Exact ATE of the perturbed construction.**  Summing the per-pair
-contributions (`perPair`, each `4β(α+β)/(1−4β²)`, independent of the signs `λ`)
-over the `K` pairs and dividing by `card (Fin K × Bool) = 2K` gives
-`ate gλ = 2β(α+β)/(1−4β²)`, independent of `λ`. -/
+/-- **Exact ATE of the perturbed construction.** For [nonnegative bump magnitudes α and β with
+`α + 2β ≤ 1/2`](hyp:hα,hβ,hαβ) and any Rademacher sign vector `lam`, [the average treatment
+effect of the perturbed construction equals `2β(α+β)/(1−4β²)`, independent of `lam`](goal).
+
+Summing the per-pair contributions (`perPair`, each `4β(α+β)/(1−4β²)`, independent of the signs
+`λ`) over the `K` pairs and dividing by `card (Fin K × Bool) = 2K` gives the closed form. -/
 theorem ate_gPerturbed [NeZero K] (hα : 0 ≤ α) (hβ : 0 ≤ β) (hαβ : α + 2 * β ≤ 1 / 2)
     (lam : Fin K → Bool) :
     ate (gPerturbed α β lam) = 2 * β * (α + β) / (1 - 4 * β ^ 2) := by
@@ -105,7 +107,10 @@ theorem ate_gPerturbed [NeZero K] (hα : 0 ≤ α) (hβ : 0 ≤ β) (hαβ : α 
   field_simp
   ring
 
-/-- The ATE gap between the construction and the null estimate `ĝ ≡ 1/2`. -/
+/-- For [nonnegative bump magnitudes α and β with `α + 2β ≤ 1/2`](hyp:hα,hβ,hαβ) and any
+Rademacher sign vector `lam`, [the gap between the perturbed construction's average treatment
+effect and the null estimate's average treatment effect (which is zero) equals
+`2β(α+β)/(1−4β²)`](goal). -/
 theorem ate_gap [NeZero K] (hα : 0 ≤ α) (hβ : 0 ≤ β) (hαβ : α + 2 * β ≤ 1 / 2)
     (lam : Fin K → Bool) :
     ate (gPerturbed α β lam) - ate (ghat : Bool → (Fin K × Bool) → ℝ)

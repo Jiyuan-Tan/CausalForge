@@ -214,11 +214,15 @@ private lemma cond_exp_residual_at_h
 
 /-! ## σ(X)-conditional bias identity -/
 
-/-- The σ(X)-conditional bias identity
-(`prop:est-cate-dr-bias-identity`, Ω-form):
-
-    μ[ φ_η(factualZ ω) − φ_0(factualZ ω) | σ(X) ]
-      =ᵐ  condBias η η₀ (factualX ·).
+/-- **σ(X)-conditional bias identity for the DR pseudo-outcome (Kennedy / DR-Learner
+Proposition 2).** Fix a candidate nuisance pair `η`. Under [the back-door identification
+assumptions](hyp:hA), if [`η`'s propensity is uniformly bounded in `[ε, 1 − ε]` for every
+covariate value](hyp:h_overlap_η), [the truth nuisance likewise has propensity uniformly
+bounded in `[ε, 1 − ε]`](hyp:h_overlap_η₀), [`ε` is strictly positive](hyp:hε_pos), and
+[each candidate outcome-regression arm, composed with the covariate, is
+integrable](hyp:h_μ_η_int), then [the σ(X)-conditional expectation of the DR pseudo-outcome
+contrast `φ_η − φ_0` equals the closed-form cross-product remainder `condBias η η₀`,
+evaluated at the covariate, almost surely](goal).
 
 Proof outline: expand `phi_eta z η - phi₀ S z` componentwise on `Ω`:
 
@@ -609,13 +613,19 @@ theorem phi_eta_minus_phi₀_cond_exp
 
 /-! ## Value-space `P_X`-a.e. form (Kennedy) -/
 
-/-- Value-space `P_X`-a.e. form of the conditional bias identity (Kennedy
-form): the σ(X)-conditional Ω-statement transported to `γ` via
-`condDistrib`.
+/-- **Value-space form of the DR pseudo-outcome bias identity.** Fix a candidate nuisance
+pair `η`. Under [the back-door identification assumptions](hyp:hA), if [`η`'s propensity is
+uniformly bounded in `[ε, 1 − ε]` for every covariate value](hyp:h_overlap_η), [the truth
+nuisance likewise has propensity uniformly bounded in `[ε, 1 − ε]`](hyp:h_overlap_η₀),
+[`ε` is strictly positive](hyp:hε_pos), [each candidate outcome-regression arm, composed
+with the covariate, is integrable](hyp:h_μ_η_int), and [the DR pseudo-outcome contrast
+`φ_η − φ_0` is integrable](hyp:h_int), then [for covariate-law-almost-every `x`, the mean
+of `φ_η − φ_0` under the regular conditional distribution of the data triple given the
+covariate value `x` equals the closed-form cross-product remainder `condBias η η₀
+x`](goal).
 
-For `P_X`-a.e. `x`, the value-space integral of `phi_eta z η - phi₀ S z`
-against the regular conditional `condDistrib factualZ factualX P.μ x`
-equals `condBias η η₀ x`.
+Value-space `P_X`-a.e. form of the conditional bias identity (Kennedy form): the
+σ(X)-conditional Ω-statement transported to `γ` via `condDistrib`.
 
 Proof outline:
 1. By `phi_eta_minus_phi₀_cond_exp`, the σ(X)-conditional on Ω of

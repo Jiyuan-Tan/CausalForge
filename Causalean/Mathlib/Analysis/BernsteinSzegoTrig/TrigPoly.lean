@@ -241,11 +241,11 @@ lemma exp_mul_I_injOn_Ico {c s t : ℝ}
   simpa using him
 
 /-- **Zero-count lemma for real trigonometric polynomials** (the load-bearing
-input to Szegő's inequality; not in Mathlib).
-
-If `f` is a real trigonometric polynomial of degree ≤ `n` that is not identically
-zero, then `f` has at most `2 n` zeros in any half-open period `[c, c + 2π)`:
-for every finite set `S ⊆ [c, c + 2π)` of zeros of `f`, `S.card ≤ 2 n`.
+input to Szegő's inequality; not in Mathlib). If [`f` is a real trigonometric
+polynomial of degree at most `n`](hyp:hf) that [is not identically
+zero](hyp:hne), then, for [a finite set `S` of zeros of `f` contained in a
+half-open period `[c, c + 2π)`](hyp:hS,hzero), [the cardinality of `S` is at
+most `2 n`](goal).
 
 Proof route: put `z = e^{i t}`.  Writing `cos (k t) = (z^k + z^{-k})/2` and
 `sin (k t) = (z^k − z^{-k})/(2 i)`, the identity `f t = z^{-n} · P(z)` holds for
@@ -292,14 +292,14 @@ theorem IsTrigPolyLE.card_zeros_le {n : ℕ} {f : ℝ → ℝ} (hf : IsTrigPolyL
     _ ≤ 2 * n := trigPolyComplexPoly_natDegree_le n a b
 
 /-- **Multiplicity-refined zero-count lemma** for real trigonometric polynomials
-(the sharp input to Szegő's inequality; not in Mathlib).
-
-If `f` is a real trigonometric polynomial of degree ≤ `n` that is not identically
-zero, `S ⊆ [c, c + 2π)` is a finite set of zeros of `f`, and
-`t₀ ∈ [c, c + 2π)` is a further zero *of order ≥ 2* — i.e. `f t₀ = 0` **and**
-`f' t₀ = 0` (`HasDerivAt f 0 t₀`) — with `t₀ ∉ S`, then
-
-`S.card + 2 ≤ 2 n`.
+(the sharp input to Szegő's inequality; not in Mathlib). Suppose [`f` is a real
+trigonometric polynomial of degree at most `n`](hyp:hf) that [is not
+identically zero](hyp:hne), [`S` is a finite set of zeros of `f` lying in the
+half-open period `[c, c + 2π)`](hyp:hS,hzero), and there is a further point
+[`t₀` in that same period and not belonging to `S`](hyp:ht₀mem,ht₀S) that is
+[itself a zero of `f`](hyp:hf0) [at which the derivative of `f` also vanishes,
+i.e. `t₀` is a zero of order at least 2](hyp:hderiv). Then [the cardinality of
+`S`, plus 2 for the double zero at `t₀`, is at most `2 n`](goal).
 
 This is strictly stronger than `card_zeros_le`: the double zero `t₀` is counted
 *twice*, while each point of `S` is counted once.  It is the form actually needed

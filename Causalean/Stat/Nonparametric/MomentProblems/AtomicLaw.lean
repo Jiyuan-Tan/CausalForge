@@ -63,8 +63,9 @@ theorem integral_atomicLaw {n : ℕ} {x : Fin n → ℝ} {p : Fin n → ℝ}
     rw [atomicWeight_apply hx]
     exact hp i
 
-/-- A finite atomic law with distinct locations, nonnegative weights, and weights summing to one
-is a probability measure. -/
+/-- A finite atomic law on the real line, built from `n` [pairwise distinct atom
+locations](hyp:hx) carrying [nonnegative weights](hyp:hp) that [sum to one](hyp:hsum), [is a
+probability measure](goal). -/
 theorem isProbabilityMeasure_atomicLaw {n : ℕ} {x : Fin n → ℝ} {p : Fin n → ℝ}
     (hx : Function.Injective x) (hp : ∀ i, 0 ≤ p i) (hsum : ∑ i, p i = 1) :
     IsProbabilityMeasure (atomicLaw n x p) := by
@@ -109,9 +110,10 @@ theorem memLp_id_atomicLaw {n : ℕ} {x : Fin n → ℝ} {p : Fin n → ℝ}
     exact (abs_le.mp hxi)
   · exact continuous_id.aestronglyMeasurable
 
-/-- A finite atomic probability law supported on at least two distinct locations, each carrying
-strictly positive mass, is **not** a Gaussian law: a normal law with positive variance has no
-point masses at all, and one with zero variance is a single point mass. -/
+/-- A finite atomic probability law with [at least two locations](hyp:hn) that are [pairwise
+distinct](hyp:hx) and [each carry strictly positive mass](hyp:hp) [is **not** a Gaussian
+law](goal): a normal law with positive variance has no point masses at all, and one with zero
+variance is a single point mass. -/
 theorem not_isGaussianLaw_atomicLaw {n : ℕ} {x : Fin n → ℝ} {p : Fin n → ℝ}
     (hx : Function.Injective x) (hp : ∀ i, 0 < p i)
     (hn : 2 ≤ n) : ¬ IsGaussianLaw (atomicLaw n x p) := by

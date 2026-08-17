@@ -102,9 +102,12 @@ private theorem logDeriv_factorizedRational_eq_sum {D : ℂ → ℤ}
     intro y hy
     exact (Set.Finite.mem_toFinset _).mpr hy
 
-/-- **Argument principle for a circle.** A complex function analytic on a neighborhood of a
-closed disk and nonzero on its boundary has normalized logarithmic-derivative integral equal to
-the number of its interior zeros, counted with analytic multiplicity. -/
+/-- **Argument principle for a circle.** For [a positive radius `R`](hyp:hR), if
+[the function `f` is complex-analytic on a neighborhood of the closed disk of
+radius `R` centered at `c`](hyp:hf) and [`f` is nonzero on the boundary
+circle](hyp:hboundary), then [the normalized logarithmic-derivative integral of
+`f` around that circle equals the number of zeros of `f` strictly inside the
+disk, counted with analytic multiplicity](goal). -/
 theorem argumentPrinciple_circle {f : ℂ → ℂ} {c : ℂ} {R : ℝ}
     (hR : 0 < R) (hf : AnalyticOnNhd ℂ f (closedBall c R))
     (hboundary : ∀ z ∈ sphere c R, f z ≠ 0) :

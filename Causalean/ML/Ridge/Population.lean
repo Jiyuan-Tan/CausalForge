@@ -36,8 +36,13 @@ def IsPopulationRidge (P : Measure (X' × ℝ)) (φ : FeatureMap X' K)
     (lam : ℝ) (βstar : K → ℝ) : Prop :=
   ∀ k, ∫ z, (z.2 - ∑ j, βstar j * φ.φ z.1 j) * φ.φ z.1 k ∂P = lam * βstar k
 
-/-- With `λ ≥ 0`, a coefficient vector satisfying the regularized population
-normal equations minimizes the population ridge objective. -/
+/-- With [a nonnegative ridge penalty `λ`](hyp:hlam), for a probability measure `P` on features
+and outcome and a finite feature map `φ`, if [the coefficient vector `βstar` satisfies the
+regularized population normal equations `E[(Y − ⟪βstar,φ⟫)φₖ] = λβstarₖ` for every feature
+`k`](hyp:hreg), [the population squared-loss risks of the `βstar`- and `β`-predictors are both
+finite](hyp:hint_star,hint_β), and [each feature is integrable against that
+residual](hyp:hcross), then [the population ridge objective at `βstar` is at most its value at
+any other coefficient vector `β`](goal). -/
 theorem populationRidge_minimizes
     (P : Measure (X' × ℝ)) (φ : FeatureMap X' K) {lam : ℝ} (hlam : 0 ≤ lam)
     {βstar : K → ℝ} (hreg : IsPopulationRidge P φ lam βstar) (β : K → ℝ)

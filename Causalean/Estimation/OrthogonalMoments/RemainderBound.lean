@@ -40,9 +40,16 @@ def BilinearRemainder (M : GeneralMoment Ω μ Z P_Z H) (C : ℝ) : Prop :=
     |∫ z, M.m η z M.θ₀ ∂P_Z|
       ≤ C * ((M.ρ₁ η M.η₀ : ℝ)) * ((M.ρ₂ η M.η₀ : ℝ))
 
-/-- Abstract smoothness bridge: Neyman orthogonality plus a uniform
-second-order envelope on the linearization residual implies a bilinear
-remainder bound. -/
+/-- **Smoothness bridge to a bilinear remainder bound.** For [a general moment `M` with
+directional derivative `D` satisfying Neyman orthogonality](hyp:M,D,hNO), given [an envelope `g`
+that is `P_Z`-integrable](hyp:g,hg_int), suppose the linearization residual obeys [a uniform
+second-order envelope with constant `K`: for every perturbation η in the nuisance neighborhood,
+`|m(η,·,θ₀) − m(η₀,·,θ₀) − dM(η,·)| ≤ K·ρ₁(η,η₀)·ρ₂(η,η₀)·g` almost everywhere](hyp:K,hSecond),
+with [the directional derivative integrable at every such η](hyp:hdM_int), [the moment integrable
+at the baseline η₀](hyp:hM0_int), [the moment integrable at every perturbed η](hyp:hMη_int), and
+[the moment having population mean zero](hyp:hMZ). Then [some constant C makes the population
+moment obey the bilinear remainder bound C·ρ₁(η,η₀)·ρ₂(η,η₀) uniformly over the nuisance
+neighborhood](goal). -/
 theorem bilinear_remainder_of_smoothness
     (M : GeneralMoment Ω μ Z P_Z H) (D : HasDirDeriv M)
     (hNO : NeymanOrthogonal M D)

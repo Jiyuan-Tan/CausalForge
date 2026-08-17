@@ -1290,10 +1290,12 @@ theorem branch_seed_eq {a b Zr c : Finset V} {n : V} (hn : n ∈ Zr) :
 -- § 4. d-separation ⟹ ordered-local derivation (the crux)
 -- ============================================================
 
-/-- **d-separation yields an ordered-local derivation.** If `X` and `Y` are
-    d-separated by `Zr ∪ Zf` in `G`, where `Zr` are random nodes and `Zf` are fixed
-    roots, then the triple "`X` ⊥ `Y` given `Zr`" is derivable from the ordered-local
-    basis via the semi-graphoid axioms — i.e. `OrderedLocalSG G R X Y Zr` holds.
+/-- **d-separation yields an ordered-local derivation.** In a DAG `G`, suppose
+    [every vertex of `Zf` has no parents, i.e. `Zf` consists of fixed roots](hyp:hFixedRoots),
+    [`Zf` is disjoint from `R`](hyp:hFR), and [`X`, `Y`, and `Zr` are each contained in
+    `R`](hyp:hX,hY,hZr). If [`X` and `Y` are d-separated by `Zr ∪ Zf`](hyp:hdSep), then
+    [the conditional-independence triple "`X` ⊥ `Y` given `Zr`" is derivable from the
+    ordered-local basis on `R` via the semi-graphoid axioms](goal).
 
     The conditioning set in the conclusion drops the fixed part `Zf`: fixed roots
     carry no randomness and are excluded from every `parents v ∩ R`, so the

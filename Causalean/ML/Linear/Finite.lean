@@ -31,8 +31,9 @@ def linearPredict (X : Matrix Obs Param ℝ) (β : Param → ℝ) : Obs → ℝ 
 noncomputable def olsObjective (X : Matrix Obs Param ℝ) (y : Obs → ℝ) (β : Param → ℝ) : ℝ :=
   ∑ i, (y i - (X *ᵥ β) i) ^ 2
 
-/-- Any solution `β̂` of the normal equations `XᵀX β̂ = Xᵀy` minimizes the
-least-squares objective. -/
+/-- For [any coefficient vector `β̂` satisfying the normal equations `XᵀX β̂ = Xᵀy`](hyp:hNE)
+built from a finite design matrix `X` and outcome vector `y`, [that vector minimizes the sum
+of squared residuals over every coefficient vector `β`](goal). -/
 theorem ols_is_squaredLoss_ERM_of_normalEq
     (X : Matrix Obs Param ℝ) (y : Obs → ℝ) (βhat : Param → ℝ)
     (hNE : (Xᵀ * X) *ᵥ βhat = Xᵀ *ᵥ y) :

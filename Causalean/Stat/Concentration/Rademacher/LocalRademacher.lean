@@ -278,9 +278,16 @@ lemma localRademacherComplexity_le_upperBound
   unfold localRademacherComplexity
   exact hub r hr
 
-/-- **Localized inequality (headline).** Past the critical radius, the
-    localized Rademacher complexity is bounded by `r · δ_n`. This is the
-    workhorse inequality consumed by `localized_uniform_deviation`.
+/-- **Localized inequality (headline).** Suppose [the envelope `ψ` is sub-root: nonnegative,
+    non-decreasing, and with the ratio `ψ r / r` non-increasing in `r`](hyp:hψ), and
+    [`ψ` upper-bounds the localized population Rademacher complexity of the class `F` (measured
+    by `norm`, under the sampling law `μ`, map `X`, and sample size `n`) at every nonnegative
+    radius](hyp:hub). Writing `δ* := criticalRadius ψ`, suppose [`δ*` is positive](hyp:hcrit_pos)
+    and [it satisfies the fixed-point bound `ψ δ* ≤ δ*²`](hyp:hcrit_fp). Then for
+    [every radius `r ≥ δ*`](hyp:hr), [the localized Rademacher complexity at radius `r` is at
+    most `r · δ*`](goal).
+
+    This is the workhorse inequality consumed by `localized_uniform_deviation`.
 
     The proof chains `localRademacherComplexity_le_upperBound` with
     `subRoot_homogeneity`. The fixed-point witness for `criticalRadius ψ`

@@ -24,11 +24,17 @@ open MeasureTheory Causalean.Estimation.ATE Causalean.PO
 variable {P : POSystem} {γ : Type*} [MeasurableSpace γ]
   [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
 
-/-- **End-to-end identification with ML nuisances.** If ML learners recover the
-true outcome regression `μ_val` and propensity `e_val` (correct specification),
-their packaged AIPW `NuisanceVec` makes the AIPW moment integrate to zero at the
-ATE `θ₀` — the doubly-robust estimating equation identifies the average treatment
-effect with machine-learned nuisances. -/
+/-- **End-to-end identification with ML nuisances.** In a backdoor estimation system `S`,
+suppose [the propensity is bounded away from 0 and 1 by `ε` (strict
+overlap)](hyp:h_overlap), [the backdoor identification assumptions hold](hyp:hA),
+[the squared factual outcome is integrable](hyp:h_y2), and [the squared potential outcome
+under each treatment arm is integrable](hyp:h_yd2). If the ML-learned outcome-regression
+functions and propensity function are [measurable](hyp:hmhat,hehat) and
+[agree pointwise with the true outcome regression and true propensity, respectively
+(correct specification)](hyp:hμ_spec,he_spec), then [the AIPW moment functional built
+from the ML-learned nuisance vector integrates to zero at the true average treatment
+effect `S.θ₀`](goal) — the doubly-robust estimating equation identifies the ATE with
+machine-learned nuisances. -/
 theorem aipw_mlNuisance_meanZero_of_wellSpecified
     (S : BackdoorEstimationSystem P γ) {ε : ℝ}
     (h_overlap : S.StrictOverlap ε) (hA : S.toPOBackdoorSystem.Assumptions)

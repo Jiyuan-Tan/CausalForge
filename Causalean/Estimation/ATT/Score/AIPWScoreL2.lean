@@ -595,24 +595,21 @@ private theorem residual_mul_e_error_isLittleOp_one_ATT
     ENNReal.toReal_nonneg
   simpa [abs_of_nonneg hde_nonneg] using hde_large_X
 
-/-- **Headline L²(P_Z) `o_p(1)` continuity bound for the ATT AIPW score.**
-
-Given:
-* one-sided overlap `ε` for `(μ₀_val, e_val)`, with the truth nuisance
-  `S.η₀` in the a.e. nuisance class `H_ε S ε`;
-* the universal probability-bound `0 ≤ e_val x` for the truth and
-  `0 ≤ (η̂ n ω).e_fn x` for every realization (these encode the standard
-  "propensity is a probability" normalization; combined with the upper bound
-  `≤ 1 − ε` they yield `|Δe(x)| ≤ 1 − ε ≤ 1`);
-* one-sided ATT back-door assumptions, used to put `Y − μ₀_val(X)` in `L²(P_Z)`;
-* `Y² ∈ L¹(P.μ)` and `Y(0)² ∈ L¹(P.μ)`;
-* a random nuisance `η̂(n, ω) ∈ H_ε S ε` for all `n, ω`;
-* per-realization `L²(P_X)` witnesses for `Δμ₀` and `Δe`;
-* individual rates `‖Δμ₀(n,ω,·)‖_{L²(P_X)} = o_p(1)` and
-  `‖Δe(n,ω,·)‖_{L²(P_X)} = o_p(1)`.
-
-Then `‖m_AIPW^ATT(η̂(n,ω), ·, θ₀) − m_AIPW^ATT(η₀, ·, θ₀)‖_{L²(P_Z)} = o_p(1)`
-under `μ`.
+/-- **Headline L²(P_Z) `o_p(1)` continuity bound for the ATT AIPW score.** Fix [a
+sequence of random candidate nuisance pairs indexed by sample size](hyp:η_hat). Under
+[one-sided overlap `ε` on the true propensity](hyp:h_overlap), [membership of the truth
+nuisance in the overlap-bounded realization set `H_ε`](hyp:hη₀_mem), [nonnegativity of the
+true propensity](hyp:h_e_lb), [the one-sided back-door ATT assumptions](hyp:hA),
+[square-integrability of the factual outcome](hyp:h_y2) and of [the untreated potential
+outcome `Y(0)`](hyp:h_y0_2): if [every draw of the candidate lies in the overlap-bounded
+realization set `H_ε`](hyp:h_in_Hε), [every candidate propensity is
+nonnegative](hyp:h_e_lb_hat), [each candidate control-regression error admits an `L²(P_X)`
+witness](hyp:h_mu_memLp), [each candidate propensity error admits an `L²(P_X)`
+witness](hyp:h_e_memLp), [the control-regression error rate is `o_p(1)` in
+`L²(P_X)`](hyp:h_mu_diff), and [the propensity error rate is `o_p(1)` in
+`L²(P_X)`](hyp:h_e_diff), then [the `L²(P_Z)` distance between the ATT AIPW score
+evaluated at the random candidate nuisance and at the truth nuisance is
+`o_p(1)`](goal).
 
 **Proof outline.**  Apply `aipw_score_lipschitz_ATT`; square and integrate
 against `P_Z`; for the cross term use `|Δe| ≤ 1` (from `0 ≤ ê, e ≤ 1 − ε`)

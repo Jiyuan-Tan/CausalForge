@@ -164,8 +164,11 @@ lemma finiteMarkedPoissonSampleLaw_map_count
       poissonMeasure lam := by
   exact finitePoissonSampleLaw_map_count (P.prod R) lam
 
-/-- Conditional on count `n` in the unnormalised-fibre sense, the marked
-points are exactly `n` independent draws from `P.prod R`. -/
+/-- Fix [a nonnegative Poisson rate `lam`](hyp:lam). For an observation law `P` and
+an independent mark law `R`, [restricting the finite marked Poisson sample law to
+the event that the observed count equals `n` yields exactly `poissonMeasure lam
+{n}` times the pushforward, under the fixed-size embedding, of `n` independent
+draws from the product measure `P.prod R`](goal). -/
 lemma finiteMarkedPoissonSampleLaw_restrict_count_eq
     (P : Measure X) [IsProbabilityMeasure P]
     (R : Measure ℝ) [IsProbabilityMeasure R] (lam : ℝ≥0) (n : ℕ) :

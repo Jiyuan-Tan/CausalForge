@@ -99,8 +99,12 @@ theorem supportFn_smul_dir {C : Set E} {d : E} {t : ℝ} (ht : 0 ≤ t)
       rw [real_inner_smul_left] at hle
       linarith [hle]
 
-/-- **Subadditivity in the direction** (sublinearity of the support function):
-`supportFn C (d₁ + d₂) ≤ supportFn C d₁ + supportFn C d₂`. -/
+/-- **Subadditivity in the direction** (sublinearity of the support function). For a feasible set
+`C` in a real inner-product space and directions `d₁, d₂`, assuming [`C` is
+nonempty](hyp:hne) and [the linear functionals `⟪d₁, ·⟫` and `⟪d₂, ·⟫` are each bounded above on
+`C`](hyp:hb₁,hb₂), then [the support value in the combined direction is at most the sum of the
+support values in each direction: `supportFn C (d₁ + d₂) ≤ supportFn C d₁ + supportFn C
+d₂`](goal). -/
 theorem supportFn_add_dir_le {C : Set E} {d₁ d₂ : E} (hne : C.Nonempty)
     (hb₁ : BddAbove ((fun x => ⟪d₁, x⟫) '' C))
     (hb₂ : BddAbove ((fun x => ⟪d₂, x⟫) '' C)) :

@@ -259,12 +259,12 @@ theorem measure_eq_bind_marginal_condDistrib
 -- `Causal/Model/Kernel.lean`, then update Rule 2's statement and proof to
 -- work at the `Kernel.condKernel` level directly.
 
-/-- **Reparameterization of `condDistrib` through a pushforward.**
-
-    For a measurable map `φ` from `Ω` to `Ω'`, the conditional distribution of `g`
-    given `f` computed under the pushforward measure `μ.map φ` agrees, almost
-    everywhere on the `f`-marginal, with the conditional distribution of the
-    pullbacks `g ∘ φ` given `f ∘ φ` computed under `μ`.
+/-- **Reparameterization of `condDistrib` through a pushforward.** For [a measurable map `φ` from
+    the sample space `Ω` to `Ω'`](hyp:hφ), [a measurable outcome map `g`](hyp:hg), and [a
+    measurable conditioning map `f`](hyp:hf), [the conditional distribution of `g` given `f`,
+    computed under the pushforward of `μ` by `φ`, agrees almost everywhere on the `f`-marginal
+    with the conditional distribution of the pullbacks `g ∘ φ` given `f ∘ φ`, computed under `μ`
+    directly](goal).
 
     This lets a conditional distribution stated on an image space (e.g. observed
     values, under an observational kernel) be transported to the source space

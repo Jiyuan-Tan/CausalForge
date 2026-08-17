@@ -518,10 +518,13 @@ lemma evalObservedAux_agree_anc (M : Causalean.SCM N Ω)
         rw [h_at]
         exact hwv
 
-/-- Evaluation on a target set depends only on fixed and latent nodes that are
-in or ancestral to that target set.
-
-    **Ancestral factorization** (Lemma `lem:scm-ancestral-factor`).
+/-- **Ancestral factorization** (Lemma `lem:scm-ancestral-factor`). Fix a structural causal
+    model `M`, a target node set `T`, two fixed-value assignments `s, s'`, two latent
+    assignments `ℓ, ℓ'`, and a node `v` with [`v` belonging to `T`](hyp:hv) and [`v` an
+    observed node](hyp:hv_obs). If [`s` and `s'` agree on every fixed node that equals or is an
+    ancestor of some node of `T`](hyp:hs) and [`ℓ` and `ℓ'` agree on every unobserved node that
+    equals or is an ancestor of some node of `T`](hyp:hℓ), then [the evaluation of `M` at `v`
+    with `(s, ℓ)` equals the evaluation with `(s', ℓ')`](goal).
 
     For any `T ⊆ V`, the value of `evalMap M s ℓ` at every `v ∈ T` depends on `(s, ℓ)`
     only through the coordinates indexed by `An_G(T) ∩ (S ∪ L)` of `(s, ℓ)` — or, in the

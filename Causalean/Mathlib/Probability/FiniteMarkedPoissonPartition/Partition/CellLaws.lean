@@ -17,8 +17,10 @@ variable {ι : Type*} [Fintype ι] [MeasurableSpace ι] [MeasurableSingletonClas
 
 namespace FiniteMeasurablePartition
 
-/-- The number of marked observations in cell `j` is Poisson with mean equal
-to the global intensity times that cell's probability. -/
+/-- **Cell counts are Poisson.** Under the marked Poisson sample law with base probability
+measure `P`, mark distribution `R`, and [nonnegative intensity `lam`](hyp:lam), [the number of
+marked observations landing in cell `j` of the finite measurable partition `p`, viewed as a random
+variable, is Poisson distributed with mean equal to `lam` times the `P`-mass of cell `j`](goal). -/
 lemma map_restrictCell_count_finiteMarkedPoissonSampleLaw
     [StandardBorelSpace X]
     (p : FiniteMeasurablePartition X ι)

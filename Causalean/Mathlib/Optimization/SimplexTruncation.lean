@@ -28,11 +28,17 @@ namespace Causalean.Mathlib.Optimization
 
 open scoped BigOperators
 
-/-- **Truncation dichotomy from a relaxed minimizer.** Given any `t_rel ∈ Δ_M` that
-globally minimizes `wsObj` over `Δ_M`, the constrained problem over `K_d` splits:
-if `t_rel ∈ K_d` it is already optimal there; otherwise (`t_rel` infeasible) the
-face selector `truncSegPoint M d sStar` is feasible and optimal over `K_d`. This is the
-κ-agnostic core shared by the `κ > 0` and `κ = 0` branches of the headline lemma. -/
+/-- **Truncation dichotomy from a relaxed minimizer.** Fix [a truncation threshold `d` at most
+the total simplex mass `M`](hyp:hdM), a linear weighting `α`, coordinate weights `β` with
+[its zeroth entry nonnegative](hyp:hβ0) and [its remaining two entries fixed equal to
+`1`](hyp:hβy,hβz), and [a nonnegative regularization parameter `κ`](hyp:hk). Given
+[a point `t_rel` of the simplex `Δ_M`](hyp:hrel) that [globally minimizes the weighted
+objective `wsObj` over `Δ_M`](hyp:hmin), then [the constrained problem over the truncated
+simplex `K_d = {t ∈ Δ_M : t₁ + t₂ ≥ d}` splits into two cases: if `t_rel` already satisfies the
+truncation constraint, it remains a global minimizer over `K_d`; otherwise, the face selector
+point `truncSegPoint M d sStar` is feasible for `K_d` and is a global minimizer over
+`K_d`](goal). This is the κ-agnostic core shared by the `κ > 0` and `κ = 0` branches of the
+headline lemma. -/
 lemma trunc_from_minimizer (M d : ℝ) (hdM : d ≤ M)
     (α β : Fin 3 → ℝ) (kappa : ℝ)
     (hβ0 : 0 ≤ β 0) (hβy : β 1 = 1) (hβz : β 2 = 1) (hk : 0 ≤ kappa)
@@ -86,9 +92,13 @@ lemma trunc_from_minimizer (M d : ℝ) (hdM : d ≤ M)
     _ ≤ wsObj α β kappa s := hred
 
 -- @node: lem:weighted-simplex-truncation
-/-- **Weighted-simplex truncation.** In the notation of `weighted_simplex_active_set`,
-for any positive simplex mass `M`, positive coordinate weights `β` with
-`β_y = β_z = 1`, and `0 ≤ κ`.
+/-- **Weighted-simplex truncation.** In the notation of `weighted_simplex_active_set`, fix
+[a positive total simplex mass `M`](hyp:hM), [a truncation threshold `d` at most
+`M`](hyp:hdM), a linear weighting `α`, coordinate weights `β` that are [everywhere strictly
+positive](hyp:hβ) with [its last two entries fixed equal to `1`](hyp:hβy,hβz), and
+[a nonnegative regularization parameter `κ`](hyp:hk). Then [the global minimizer of the
+weighted-simplex objective over the truncated simplex `K_d = {t ∈ Δ_M : t₁ + t₂ ≥ d}` is given,
+case by case on the sign of `κ`, by the active-set/face-selector construction below](goal).
 
 *`κ > 0`:* let `(S, λ)` be admissible relaxed data and `t_rel` the induced
 active-set point. If `t_rel ∈ K_d` it already minimizes over `K_d`; otherwise the

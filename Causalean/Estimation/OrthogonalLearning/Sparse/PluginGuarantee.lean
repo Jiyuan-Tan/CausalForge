@@ -46,7 +46,20 @@ namespace Sparse
 open scoped BigOperators RealInnerProductSpace
 open MeasureTheory
 
-/-- Deterministic sparse plug-in ERM guarantee.
+/-- **Deterministic sparse plug-in ERM guarantee.** Let empRiskFn be a convex empirical
+risk function on `EuclideanSpace ℝ (Fin p)`, with population gradient popGrad and
+empirical gradient map gradEmp. Assume [the support S₀ of the truth θ₀ has cardinality
+s](hyp:hs), that [θ₀ vanishes off S₀](hyp:h_supp), that [the restricted-strong-convexity
+modulus σn is strictly positive](hyp:hσn) and [empRiskFn is σn-restricted-strongly-convex
+at θ₀ over S₀](hyp:h_RSC), and that [the empirical gradient at θ₀ satisfies the
+subgradient basic inequality for empRiskFn](hyp:h_subgrad). Given a penalty level with
+[`lambda > 0`](hyp:h_lambda_pos), suppose [the index set `Fin p` is nonempty](hyp:hp) so
+that [lambda is at least twice the sup-norm deviation of the empirical gradient from the
+population gradient at θ₀](hyp:h_lambda_lb), that [the population gradient vanishes at
+the truth (the first-order condition)](hyp:h_FOC_pop), and that [θhat is a sparse plug-in
+regularised empirical-risk minimizer at penalty level lambda](hyp:h_pluginERM). Then [the
+estimation error `θhat − θ₀` lies in the restricted cone around S₀, and its Euclidean norm
+is at most `12 · lambda · √s / σn`](goal).
 
 * `empRiskFn`     — empirical risk with the plug-in nuisance absorbed.
 * `popGrad`       — population gradient at the truth, `∇L(θ₀, g₀)`.
@@ -264,7 +277,24 @@ def LinftyDevTailBound
   ∃ E : Set Ω, MeasurableSet E ∧ μ E ≥ 1 - ENNReal.ofReal δ ∧
     ∀ ω ∈ E, linftyDev hp (dev ω) ≤ ρ
 
-/-- **High-probability sparse plug-in ERM guarantee.**
+/-- **High-probability sparse plug-in ERM guarantee.** Let empRiskFn(ω) be a random
+empirical risk function on `EuclideanSpace ℝ (Fin p)` with random empirical gradient map
+gradEmp(ω), and popGrad the population gradient. Assume [the support S₀ of the truth θ₀
+has cardinality s](hyp:hs), that [θ₀ vanishes off S₀](hyp:h_supp), and that [empRiskFn(ω)
+is convex on the ambient space for every ω](hyp:h_conv). Suppose [the restricted-strong-
+convexity modulus σn is strictly positive](hyp:hσn) and [empRiskFn(ω) is
+σn-restricted-strongly-convex at θ₀ over S₀ for every ω](hyp:h_RSC), and that [the
+empirical gradient at θ₀ satisfies the subgradient basic inequality for empRiskFn(ω), for
+every ω](hyp:h_subgrad). Given a penalty level with [`lambda > 0`](hyp:h_lambda_pos), and
+assuming [the index set `Fin p` is nonempty](hyp:hp), that [the population gradient
+vanishes at the truth](hyp:h_FOC_pop), and that [θhat(ω) is a sparse plug-in regularised
+empirical-risk minimizer of empRiskFn(ω) at penalty level lambda, for every
+ω](hyp:h_pluginERM). Suppose further that [the deviation of the empirical gradient from
+popGrad at θ₀ obeys a sup-norm tail bound ρ at confidence level δ](hyp:hLambdaTail), with
+[lambda at least twice that tail level, `lambda ≥ 2ρ`](hyp:h_lambda_dom). Then [there is
+an event of probability at least `1 - δ` on which, for every ω in it, the estimation
+error `θhat ω − θ₀` lies in the restricted cone around S₀ and its Euclidean norm is at
+most `12 · lambda · √s / σn`](goal).
 
 Lift `sparse_plugin_guarantee` to a *probability-1−δ* statement once the
 empirical gradient `gradEmp ω θ₀ − popGrad` satisfies an ℓ∞ tail bound `≤ ρ`

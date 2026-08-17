@@ -48,9 +48,10 @@ theorem measurable_sampleMean (S : IIDSample Ω X μ P) {g : X → ℝ}
   unfold IIDSample.sampleMean
   exact (Finset.measurable_sum _ (fun i _hi => hg_meas.comp (S.meas i))).const_mul _
 
-/-- **Generic weak law of large numbers.**  For an integrable real-valued
-statistic `g` of an i.i.d. sample, the sample mean `S.sampleMean g N` converges
-in probability to the population integral `∫ x, g x ∂P` as `N → ∞`.
+/-- **Generic weak law of large numbers.**  For an i.i.d. sample `S`, suppose a real-valued
+statistic `g` is [measurable](hyp:hg_meas) and [integrable under the population law
+`P`](hyp:hg_int). Then [the sample mean `S.sampleMean g N` converges in probability to the
+population integral `∫ x, g x ∂P` as `N → ∞`](goal).
 
 This weakens the boundedness hypothesis of the Panel a.s. lemma
 `iidPanel_sampleMean_ae` to plain integrability (all the strong law needs) and
@@ -96,10 +97,10 @@ theorem sampleMean_tendsto_inProb
   intro N
   exact (S.measurable_sampleMean hg_meas N).aestronglyMeasurable
 
-/-- **Second-moment consistency.**  For a known influence function `ψ` with
-square-integrable values, the empirical second moment `S.sampleMean (ψ²) N`
-converges in probability to `∫ x, (ψ x)² ∂P`.  Direct application of the WLLN
-to `g := ψ²`. -/
+/-- **Second-moment consistency.**  For an i.i.d. sample `S`, suppose a known influence function
+`ψ` is [measurable](hyp:hψ_meas) and [has square-integrable values under the population law
+`P`](hyp:hψ_sq_int). Then [the empirical second moment `S.sampleMean (ψ²) N` converges in
+probability to `∫ x, (ψ x)² ∂P`](goal).  Direct application of the WLLN to `g := ψ²`. -/
 theorem sampleSecondMoment_tendsto_inProb
     (S : IIDSample Ω X μ P) {ψ : X → ℝ}
     (hψ_meas : Measurable ψ)

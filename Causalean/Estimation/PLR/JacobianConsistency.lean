@@ -217,12 +217,24 @@ private lemma integral_Δm_sq_eq_rate_sq (S : PLRSystem P γ) (η : PLRNuisance 
     ← Real.rpow_mul hI_nonneg]
   rw [show (2 : ℝ)⁻¹ * (2 : ℕ) = 1 by norm_num, Real.rpow_one]
 
-/-- **Fold-B Jacobian consistency.**  The empirical partialling-out Jacobian at the
-estimated nuisance, averaged over the estimation fold,
+/-- **Fold-B Jacobian consistency.**  Assume [the treatment is
+integrable](hyp:hD); [the true partialling-out moment at the truth is
+square-integrable under the observed-data law, and the squared true treatment
+residual is integrable](hyp:hg0_memLp,hresid_sq); that for the estimated nuisance
+sequence `η_hat`, at every fold and draw, [the treatment-regression error is
+square-integrable in the covariate law, both marginally and against the true
+treatment residual](hyp:hΔm_sq,hcross,hΔm_memLp); that [the treatment-regression
+error converges to zero in L²(P_X) at rate $o_p(1)$](hyp:h_m_rate); and that the
+partialling-out-moment increment `mₐ(η̂,·) − mₐ(η₀,·)` is [jointly measurable,
+fold-A measurable, square-integrable under the observed-data law, and converges to
+zero in L²(P_Z) at rate
+$o_p(1)$](hyp:hΔa_meas,hΔa_foldA,hΔa_uncurry_foldA,hΔa_memLp,hΔa_rate). Then [the
+empirical partialling-out Jacobian at the estimated nuisance, averaged over the
+estimation fold, converges in probability to its population value
+$J_0=-E[(D-m_{val}(X))^2]$](goal):
 
-    Pₙmₐ(η̂) = |B(n)|⁻¹ Σ_{i ∈ B(n)} mₐ(η̂(n,ω), Zᵢ),
+    Pₙmₐ(η̂) = |B(n)|⁻¹ Σ_{i ∈ B(n)} mₐ(η̂(n,ω), Zᵢ)  →ₚ  J₀.
 
-converges in probability to its population value `J₀ = −E[(D − m_val(X))²]`.
 This supplies the `hJ_consist` hypothesis of `plr_dml_feasible_tendstoNormal`
 from primitive L²-rate, integrability, and fold-B empirical-process assumptions.
 

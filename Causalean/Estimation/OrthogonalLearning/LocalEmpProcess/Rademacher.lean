@@ -386,7 +386,15 @@ private lemma populationRisk_sub_le_two_mul_bound_ae
   have hθ₀_ge : -b ≤ S.L S.θ₀ g := (abs_le.mp hθ₀_abs).1
   linarith
 
-/-- **Bounded-loss Rademacher bridge theorem.**
+/-- **Bounded-loss Rademacher bridge theorem.** Assume [`b` is nonnegative](hyp:hb), that
+[the loss magnitude is uniformly bounded by `b` over the parameter set](hyp:hg_bdd), and
+that [the loss is continuous in the parameter on the parameter set](hyp:hg_cont). Given
+[a sequence `R n` that is nonnegative and upper-bounds the population Rademacher
+complexity of the centred loss class on the fold-B sample at every sample
+size](hyp:hR), then for any confidence level [`0 < δ ≤ 1`](hyp:hδ,hδ') [the local
+empirical-process modulus condition holds, with rate `ρ n := √(2 · b)` when the fold-B
+sample is empty and `ρ n := √(2 · R n + 2 · b · √(2 · log(1/δ) / |foldB n|))`
+otherwise](goal).
 
 Under uniform boundedness of the loss and a Rademacher-complexity bound
 on the centred loss class, `LocalEmpProcessModulus` holds with
@@ -866,7 +874,17 @@ theorem localEmpProcessModulus_of_bounded_rademacher
                 Real.sqrt (2 * Real.log (1 / δ) / (split.foldB n).card))) ^ 2 := by
             nlinarith [mul_nonneg hρ_nonneg hnorm_nonneg]
 
-/-- **Almost-everywhere bounded-loss bridge.**
+/-- **Almost-everywhere bounded-loss bridge.** Assume [`b` is nonnegative](hyp:hb), that
+[the loss magnitude is bounded by `b` at `P_Z`-almost-every observation, over the
+parameter set](hyp:hg_bdd_ae), and that [the loss is continuous in the parameter on the
+parameter set](hyp:hg_cont). Given [a sequence `R n` that is nonnegative and upper-bounds
+the population Rademacher complexity of the centred loss class on the fold-B sample at
+every sample size](hyp:hR), and that [the target parameter minimizes, over the parameter
+set, the population risk of the loss — evaluated at the model's baseline nuisance and
+clamped to `[-b, b]`](hyp:hclamp_minimizes), then for any confidence level
+[`0 < δ ≤ 1`](hyp:hδ,hδ') [the local empirical-process modulus condition holds, with rate
+`ρ n := √(2 · b)` when the fold-B sample is empty and
+`ρ n := √(2 · R n + 2 · b · √(2 · log(1/δ) / |foldB n|))` otherwise](goal).
 
 The same empirical-process modulus bridge as
 `localEmpProcessModulus_of_bounded_rademacher`, but with the loss envelope

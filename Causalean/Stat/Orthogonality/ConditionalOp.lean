@@ -102,8 +102,10 @@ theorem IsBigOp.of_sqEnvelope
   refine ⟨M, ?_⟩
   exact le_trans (Filter.limsup_le_limsup (Eventually.of_forall hpoint)) hK
 
-/-- **Square-envelope `o_p` lemma.**  If `|X_n|² ≤ c_n` μ-a.s. and `c_n` is
-`o_p(rₙ²)` with `rₙ > 0`, then `X_n = o_p(rₙ)`. -/
+/-- **Square-envelope `o_p` lemma.** For sequences of random variables `X_n, c_n` and rates `r_n`,
+if [each rate `r_n` is positive](hyp:hrn), [`X_n²` is bounded above by `c_n` almost surely, for
+every `n`](hyp:hbound), and [`c_n` is `o_p(r_n²)`](hyp:hcn_LittleOp), then [`X_n` is
+`o_p(r_n)`](goal). -/
 theorem IsLittleOp.of_sqEnvelope
     {Xn : ℕ → Ω → ℝ} {cn : ℕ → Ω → ℝ} {rn : ℕ → ℝ}
     (hrn : ∀ n, 0 < rn n)
@@ -316,9 +318,10 @@ theorem abs_integral_le_eLpNorm_two
   exact h_l1.trans (ENNReal.toReal_mono hf.eLpNorm_ne_top
     (MeasureTheory.eLpNorm_le_eLpNorm_of_exponent_le (by norm_num) hf.1))
 
-/-- **Cauchy–Schwarz for products of L²-functions.**  If `f, g ∈ L²(ν)`, then
-`∫ |f · g| dν ≤ ‖f‖₂ · ‖g‖₂`.  Stated for the absolute value of the product
-because that is the form consumed by the AIPW remainder bound. -/
+/-- **Cauchy–Schwarz for products of L²-functions.** If [`f` is square-integrable against the
+measure `ν`](hyp:hf) and [`g` is square-integrable against `ν`](hyp:hg), then [the integral of
+`|f · g|` against `ν` is at most the product of the L² norms `‖f‖₂ · ‖g‖₂`](goal). Stated for the
+absolute value of the product because that is the form consumed by the AIPW remainder bound. -/
 theorem integral_abs_mul_le_eLpNorm_mul_eLpNorm
     {f g : X → ℝ} (hf : MemLp f 2 ν) (hg : MemLp g 2 ν) :
     ∫ x, |f x * g x| ∂ν ≤ (eLpNorm f 2 ν).toReal * (eLpNorm g 2 ν).toReal := by
@@ -379,9 +382,11 @@ theorem integral_op_of_eLpNorm_op
   intro δ hδ
   exact (htarget δ hδ).mono fun n hn => (hpoint n).trans hn
 
-/-- **L² product rate ⇒ integrated absolute-product rate.**
-If `eLpNorm (f n ω) 2 ν = o_p(sₙ)` and `g ∈ L²(ν)` is fixed, then
-`∫ x, |f n ω x · g x| ∂ν = o_p(sₙ · ‖g‖₂)`. -/
+/-- **L² product rate ⇒ integrated absolute-product rate.** For a random family `f_n` and a fixed
+function `g`, suppose [each `f_n(ω)` is square-integrable against `ν`, for every `n` and
+`ω`](hyp:hfn_memLp), [`g` is square-integrable against `ν`](hyp:hg_memLp), [the rates `s_n` are
+positive](hyp:hsn), and [the L² norm `‖f_n(ω)‖₂` is `o_p(s_n)`](hyp:hfn_rate). Then [the
+integrated absolute product `∫ |f_n(ω) x · g x| dν` is `o_p(s_n · ‖g‖₂)`](goal). -/
 theorem integral_abs_mul_op_of_eLpNorm_op
     {fn : ℕ → Ω → X → ℝ} {g : X → ℝ}
     (hfn_memLp : ∀ n ω, MemLp (fn n ω) 2 ν)

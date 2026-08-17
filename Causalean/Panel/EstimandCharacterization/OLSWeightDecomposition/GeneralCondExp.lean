@@ -281,17 +281,22 @@ theorem saturated_ols_overlap_weighted_ate_core (hm : m ≤ mΩ)
   rw [denom_identity μ hm D hDbin hD_int,
     numer_identity μ hm D Y Y0 Y1 hDbin hD_int hDY1_int h1DY0_int hcons hCMI1 hCMI0]
 
-/-- **Saturated-control OLS overlap-weighted ATE identity.**
-For binary treatment with consistency, integrability, factored
-conditional-mean-independence, and strictly positive integrated propensity
-overlap, the saturated-control OLS residualized treatment-outcome ratio equals
-the overlap-weighted average of conditional treatment effects:
-
-    E[p(1−p)·(μ[Y1 | m] − μ[Y0 | m])] / E[p(1−p)].
-
-Both ratios use Lean's totalized division convention, so the equality includes
-the zero-denominator case. This is the paper-facing statement corresponding to
-LaTeX `thm:po-estimand-sloczynski-ols-overlap-weighted-ate`. -/
+/-- **Saturated-control OLS overlap-weighted ATE identity.** Fix [a covariate
+σ-algebra `m` at most as fine as the ambient one](hyp:hm), and outcome,
+treatment, and potential-outcome functions `D`, `Y`, `Y0`, `Y1`. Suppose
+[treatment is binary almost everywhere](hyp:hDbin), [`D` is
+integrable](hyp:hD_int), [`D·Y1` is integrable](hyp:hDY1_int), and [`(1−D)·Y0`
+is integrable](hyp:h1DY0_int). Suppose also [consistency: the observed outcome
+equals `D·Y1 + (1−D)·Y0` almost everywhere](hyp:hcons), and the factored
+conditional-mean-independence conditions [`μ[D·Y1 ∣ m]` equals
+`μ[D∣m]·μ[Y1∣m]` almost everywhere](hyp:hCMI1) and [`μ[(1−D)·Y0 ∣ m]` equals
+`μ[1−D∣m]·μ[Y0∣m]` almost everywhere](hyp:hCMI0). Then [the saturated-control
+OLS residualized treatment-outcome ratio `E[(D−μ[D∣m])·Y] / E[(D−μ[D∣m])²]`
+equals the overlap-weighted average of conditional treatment effects
+`E[μ[D∣m]·(1−μ[D∣m])·(μ[Y1∣m]−μ[Y0∣m])] / E[μ[D∣m]·(1−μ[D∣m])]`, using Lean's
+totalized division convention so the identity also covers the zero-denominator
+case](goal). This is the paper-facing statement corresponding to LaTeX
+`thm:po-estimand-sloczynski-ols-overlap-weighted-ate`. -/
 theorem saturated_ols_overlap_weighted_ate (hm : m ≤ mΩ)
     (D Y Y0 Y1 : Ω → ℝ) (hDbin : ∀ᵐ ω ∂μ, D ω = 0 ∨ D ω = 1)
     (hD_int : Integrable D μ)

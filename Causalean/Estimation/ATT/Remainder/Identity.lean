@@ -63,16 +63,17 @@ namespace TreatedEstimationSystem
 variable {P : POSystem} {γ : Type*} [MeasurableSpace γ]
   [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
 
-/-- **AIPW remainder identity (ATT).**
-
-Under the one-sided ATT back-door assumption bundle, one-sided upper overlap,
-positive marginal treatment probability, second moments on `Y` and `Y(0)`, L²
-residual hypotheses for `μ̂₀ − μ₀_val` and `ê − e_val`, a.e. nuisance-side
-one-sided overlap, and an integrability witness on the IPW arm, the population AIPW
-moment at any
-`η ∈ H_ε` equals the single cross-product
-
-    ∫ ((ê(x) − e_val(x)) / (1 − ê(x))) · (μ̂₀(x) − μ₀_val(x)) dP_X.
+/-- **AIPW remainder identity (ATT).** Fix a candidate nuisance pair `η`.
+Under [one-sided overlap `ε` on the true propensity](hyp:h_overlap), [the one-sided
+back-door ATT assumptions](hyp:hA), [a strictly positive marginal treatment
+probability](hyp:hπ_pos), [square-integrability of the factual outcome](hyp:h_y2),
+[square-integrability of the untreated potential outcome `Y(0)`](hyp:h_y0_2): if `η` lies
+in [the overlap-bounded candidate realization set `H_ε`](hyp:hη), [its control-regression
+error `μ̂₀ − μ₀` is square-integrable against the covariate law](hyp:hΔμ₀_memLp), [its
+propensity error `ê − e` is square-integrable against the covariate law](hyp:hΔe_memLp),
+and [its IPW correction is integrable against the observed data law](hyp:hIPW), then [the
+population AIPW moment at `η` equals the single cross-product
+`∫ ((ê(x) − e(x))/(1 − ê(x))) · (μ̂₀(x) − μ₀(x)) dP_X`](goal).
 
 Unlike the ATE identity (which has a sum over arms with weights
 `1/ê + 1/(1 − ê)`), the ATT identity carries the explicit `(1 − ê)⁻¹`

@@ -143,8 +143,12 @@ theorem betaTWFE_normalEq (P : VectorTWFEProblem Unit Time K) :
   change (gram P.X).mulVec ((gram P.X)⁻¹.mulVec (numer P.X P.Y)) = numer P.X P.Y
   rw [Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv _ P.gram_unit, Matrix.one_mulVec]
 
-/-- Full-rank uniqueness: any solution of the matrix normal equation equals the
-closed-form coefficient. -/
+/-- **Full-rank uniqueness of the vector TWFE coefficient.** For a vector TWFE
+problem `P` with nonsingular residualized Gram matrix, if [a coefficient vector
+`β` satisfies the coordinate-wise TWFE normal equation — in every coordinate
+the double-demeaned regressor is orthogonal to the double-demeaned
+residual](hyp:hβ), then [`β` equals the closed-form vector TWFE coefficient
+`P.betaTWFE`](goal). -/
 theorem betaTWFE_unique (P : VectorTWFEProblem Unit Time K) {β : K → ℝ}
     (hβ : P.vecTwfeNormalEq β) :
     β = P.betaTWFE := by

@@ -313,7 +313,16 @@ theorem frontdoor_fd1_rule3_nonDesc
   have hSepSymm := (M.fixSet X hX_obs hX_fixed).dag.dSep_symm _ _ _ hFD1
   exact (Finset.disjoint_left.mp hSepSymm.2.2.2) hvReach hv
 
-/-- Rule-2 d-separation premise for the frontdoor third condition.
+/-- **Rule-2 d-separation premise for the frontdoor third condition.** Fix a structural causal
+    model `M` and two intervention target sets `X`, `Wbase` such that [every node of `X` is
+    currently a random observed node with no fixed copy already fixed](hyp:hX_obs,hX_fixed),
+    and likewise [every node of `Wbase`](hyp:hW_obs,hW_fixed), and an outcome set `Y` with
+    [`Y` contained in the observed nodes](hyp:hY), such that [the base graph satisfies the
+    backdoor criterion for `Wbase`, `Y` given the randomized image of `X`](hyp:hFD3) and
+    [the randomized images of `Wbase` and `X` are disjoint](hyp:hDisj_WX). Then [in the graph
+    obtained by first fixing `X` and then fixing `Wbase`, `Y` is d-separated from the
+    randomized image of `Wbase` given exactly that double-intervention graph's fixed node
+    set](goal).
 
     This is the exact d-separation shape consumed by `do_rule2_kernel` when
     `M' := M.fixSet X`, treatment `:= Wbase`, and adjustment set `:= ∅`. -/

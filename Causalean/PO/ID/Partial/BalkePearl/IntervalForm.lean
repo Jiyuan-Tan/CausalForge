@@ -106,9 +106,10 @@ lemma bddAbove_BPIdentifiedInterval (hA : S.BaseAssumptions) :
 
 /-! ### Necessity in closed-interval form -/
 
-/-- **Necessity, closed-interval form.** The true ATE lies between the infimum
-and supremum of the Balke-Pearl identified interval — the LP minimum and maximum.
-This is `ATE_mem_BPIdentifiedInterval` rephrased through the engine bridge
+/-- **Necessity, closed-interval form.** Under [the Balke-Pearl IV base
+assumptions](hyp:hA), [the true average treatment effect lies between the infimum and
+supremum of the Balke-Pearl identified interval — the LP minimum and maximum](goal). This
+is `ATE_mem_BPIdentifiedInterval` rephrased through the engine bridge
 `Causalean.PartialID.mem_Icc_csInf_csSup`. -/
 theorem ATE_mem_Icc_csInf_csSup (hA : S.BaseAssumptions) :
     S.ATE ∈ Set.Icc (sInf (S.BPIdentifiedInterval hA)) (sSup (S.BPIdentifiedInterval hA)) :=

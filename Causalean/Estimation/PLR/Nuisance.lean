@@ -85,9 +85,10 @@ instance : SMul ℝ (PLRNuisance γ) where
      measurable_const.mul η.lMeas,
      measurable_const.mul η.mMeas⟩
 
-/-- Two nuisance pairs are equal whenever their outcome regressions agree at
-every covariate value and their treatment regressions agree at every covariate
-value. -/
+/-- Two nuisance pairs `η` and `η'` are equal whenever [their outcome-regression
+components agree at every covariate value](hyp:hl) and [their treatment-regression
+components agree at every covariate value](hyp:hm), so [the two pairs are
+equal](goal). -/
 @[ext]
 theorem ext {η η' : PLRNuisance γ}
     (hl : ∀ x, η.lFn x = η'.lFn x)

@@ -129,8 +129,9 @@ theorem l2ResidualQuadratic_eq_zero_of_degenerate {μ : Measure ℝ}
   unfold l2ResidualQuadratic momentResidual
   rw [show (moment μ 1) ^ 2 - moment μ 2 = 0 by rw [hdeg]; ring, div_zero]
 
-/-- **Measure-level sharp upper bound.** For `v ∈ (0,1)` and every admissible `μ`, the closed-form
-residual is at most the envelope value: `l2ResidualQuadratic μ ≤ rhoEnvelope v`.
+/-- **Measure-level sharp upper bound.** For [`v` strictly between `0` and `1`](hyp:hv0,hv1) and
+every [admissible probability law `μ`](hyp:h) on `[0,1]` with second moment `v²`, [the closed-form
+residual is at most the envelope value: `l2ResidualQuadratic μ ≤ rhoEnvelope v`](goal).
 
 Nondegenerate case (`m² < q`): `l2ResidualQuadratic μ = momentResidual m q m₃ m₄` (definition), then
 apply `MomentAlgebra.momentResidual_le_envelope` at the maximizing root `u = maximizingRoot v`

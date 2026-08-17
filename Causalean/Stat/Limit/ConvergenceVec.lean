@@ -70,8 +70,10 @@ This is the vector analogue of `Tendsto_dist.add_isLittleOp_one` in
 `tendstoInMeasure_iff_norm` and the metric-space portmanteau
 characterization. -/
 
-/-- **Vector Slutsky absorption.**  If `Xn ⇒ Q` in distribution and the
-norm of the perturbation `‖Yn − Xn‖` is `o_p(1)`, then `Yn ⇒ Q`.
+/-- **Vector Slutsky absorption.** Suppose [`Xn` and `Yn` are `E`-valued sequences that are each
+measurable at every sample size](hyp:hXn,hYn), [`Xn` converges in distribution to a probability
+measure `Q` on `E`](hyp:hX), and [the norm of the perturbation `‖Yn − Xn‖` is `o_p(1)`](hyp:hRem).
+Then [`Yn` also converges in distribution to `Q`](goal).
 
 Vector analogue of `Causalean.Stat.Tendsto_dist.add_isLittleOp_one` (file
 `Causalean/Stat/AsymptoticLinearity.lean`).  Used by the multivariate Δ-method
@@ -229,8 +231,11 @@ theorem Tendsto_dist_vec.congr_ae
   apply Subtype.ext
   exact Measure.map_congr hn
 
-/-- Pushforward of `Tendsto_dist_vec` under a continuous map.  If
-`Xn ⇒ Q` and `g : E → F` is continuous, then `g ∘ Xn ⇒ Q.map g`.
+/-- Pushforward of `Tendsto_dist_vec` under a continuous map. Suppose [`Xn` is an `E`-valued
+sequence, measurable at every sample size](hyp:hXn), [converging in distribution to a
+probability measure `Q` on `E`](hyp:hX), and [`g : E → F` is continuous](hyp:hg). Then [the
+composed sequence `g ∘ Xn` converges in distribution to the pushforward measure `Q.map
+g`](goal).
 
 Vector analogue / wrapper around
 `MeasureTheory.ProbabilityMeasure.tendsto_map_of_tendsto_of_continuous`. -/

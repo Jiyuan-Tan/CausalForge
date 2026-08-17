@@ -30,9 +30,10 @@ open scoped BigOperators
 
 variable {ι : Type*}
 
-/-- Weighted Cauchy-Schwarz inequality on a finite support, squared form. Weighting a finite
-collection of index points by nonnegative weights, the square of the weighted inner product of two
-real-valued functions is at most the product of their weighted sums of squares. -/
+/-- **Weighted Cauchy-Schwarz inequality on a finite support, squared form.** Weighting a finite
+collection of index points by [nonnegative weights](hyp:hw), [the square of the weighted inner
+product of two real-valued functions is at most the product of their weighted sums of
+squares](goal). -/
 lemma weighted_inner_sq_le (s : Finset ι) (w f g : ι → ℝ) (hw : ∀ i ∈ s, 0 ≤ w i) :
     (∑ i ∈ s, w i * (f i * g i)) ^ 2 ≤
       (∑ i ∈ s, w i * f i ^ 2) * (∑ i ∈ s, w i * g i ^ 2) := by
@@ -63,9 +64,10 @@ lemma weighted_inner_sq_le (s : Finset ι) (w f g : ι → ℝ) (hw : ∀ i ∈ 
   rw [hsumprod, hsumsq f, hsumsq g] at key
   exact key
 
-/-- Weighted Cauchy-Schwarz inequality on a finite support, square-root form. With
-nonnegative weights, the absolute value of the weighted inner product of two real-valued
-functions is at most the product of the square roots of their weighted sums of squares. -/
+/-- **Weighted Cauchy-Schwarz inequality on a finite support, square-root form.** With
+[nonnegative weights](hyp:hw), [the absolute value of the weighted inner product of two
+real-valued functions is at most the product of the square roots of their weighted sums of
+squares](goal). -/
 lemma abs_weighted_inner_le (s : Finset ι) (w f g : ι → ℝ) (hw : ∀ i ∈ s, 0 ≤ w i) :
     |∑ i ∈ s, w i * (f i * g i)| ≤
       Real.sqrt (∑ i ∈ s, w i * f i ^ 2) * Real.sqrt (∑ i ∈ s, w i * g i ^ 2) := by

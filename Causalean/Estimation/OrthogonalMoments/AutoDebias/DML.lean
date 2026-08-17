@@ -237,7 +237,24 @@ noncomputable def linAutoDMLEstimator
   Causalean.Estimation.OrthogonalMoments.dmlChernozhukovEstimator
     (linAutoGeneralMoment μ S rep ε hε_nn h_score_meas) sample split η_hat
 
-/-- **Linear Auto-DML asymptotic-linearity wrapper.**
+/-- **Linear Auto-DML asymptotic-linearity wrapper.** Assume [ε is nonnegative](hyp:hε_nn)
+and that [the linear Riesz score is measurable in the observation for every nuisance and
+target value](hyp:h_score_meas). Given an i.i.d. sample with a one-shot fold split whose
+fold-B fraction converges to a strictly positive limit [`c > 0`](hyp:hc_pos) [along
+`card (foldB n) / n → c`](hyp:h_split_rate), and a sequence of cross-fitted nuisance
+estimators η̂, suppose [the Auto-DML moment has mean zero at the truth](hyp:hMZ), [the
+baseline score is square-integrable (finite variance)](hyp:hFV), and [the population
+moment at η̂ is bounded by a constant times the product of the two bilinear-remainder
+seminorms, at every fold and sample point](hyp:hBR_at). Assume the technical regularity
+package that [the moment at η̂ is jointly measurable](hyp:h_m_meas),
+[fold-A-measurable in ω](hyp:h_m_foldA,h_m_foldA_uncurry), and, at every fold and sample
+point, [integrable](hyp:h_m_int) and [square-integrable](hyp:h_m_sq_int). Finally suppose
+[the L² score difference between the estimated and true nuisance is
+o_P(1)](hyp:h_score_diff_rate), and [the product of the two nuisance-error rates decays at
+the parametric rate `o_P(n^{-1/2})`](hyp:h_product_rate). Then [the one-shot linear
+Auto-DML estimator is asymptotically linear at the target value `L_of_m S S.g₀`, with
+influence function the baseline linear Riesz score scaled by the inverse Jacobian factor,
+indexed over the fold-B subsample](goal).
 
 This theorem applies the abstract Chernozhukov DML asymptotic-linearity result
 to the linear automatic-debiasing moment after the caller supplies the

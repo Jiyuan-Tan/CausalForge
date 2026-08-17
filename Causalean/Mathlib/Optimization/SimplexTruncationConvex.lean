@@ -71,10 +71,13 @@ lemma eq_truncSegPoint_of_simplex_face (M d : ℝ) (x : Fin 3 → ℝ)
   · simp [truncSegPoint]
     linarith
 
-/-- **Two-point convexity of the weighted-simplex objective.** For nonnegative
-weights `β` and `κ ≥ 0`, the objective `wsObj` evaluated at a convex combination
-`(1−θ)·u + θ·v` (for `θ ∈ [0,1]`) is at most the same convex combination of the two
-objective values. (The linear part is exactly linear; the `κ·√(Σ βᵢ tᵢ²)` part is a
+/-- **Two-point convexity of the weighted-simplex objective.** For [nonnegative coordinate
+weights β](hyp:hβ) and [a nonnegative SOCP scale κ](hyp:hk), if [θ lies between 0 and
+1](hyp:hθ0,hθ1) then [the objective $\sum \alpha_i t_i + \kappa\sqrt{\sum \beta_i t_i^2}$
+evaluated at the convex combination $(1-\theta)u + \theta v$ of two points $u,v$ is at most
+the same convex combination of the objective values at $u$ and at $v$](goal).
+
+(The linear part is exactly linear; the `κ·√(Σ βᵢ tᵢ²)` part is a
 nonnegative multiple of the weighted ℓ² norm, hence convex by the triangle
 inequality.) -/
 lemma wsObj_segment_le (α β : Fin 3 → ℝ) (kappa : ℝ) (hβ : ∀ i, 0 ≤ β i)
@@ -103,14 +106,20 @@ lemma wsObj_segment_le (α β : Fin 3 → ℝ) (kappa : ℝ) (hβ : ∀ i, 0 ≤
             kappa * Real.sqrt (∑ i, β i * v i ^ 2)) := by
         ring
 
-/-- **Boundary reduction onto the truncation face.** Suppose `t_rel` is a point of
-the full simplex `Δ_M` that globally minimizes `wsObj` there, and is *infeasible*
-for the parity cut (`t_rel_y + t_rel_z < d`). Then every feasible point `t ∈ K_d`
-is dominated by some face point `truncSegPoint M d σ` with `σ ∈ [0,d]`:
-`wsObj (truncSegPoint M d σ) ≤ wsObj t`. (If `t` already lies on the boundary
-`t_y+t_z=d`, take `σ = t_y`; otherwise the segment `[t, t_rel]` crosses the boundary
-at a point whose objective is `≤ wsObj t` by convexity, since `wsObj t_rel ≤
-wsObj t`.) -/
+/-- **Boundary reduction onto the truncation face.** Fix [nonnegative coordinate
+weights β](hyp:hβ) and [a nonnegative SOCP scale κ](hyp:hk). If [`t_rel` lies in the
+three-coordinate simplex $\{t \ge 0 : \sum t_i = M\}$](hyp:hrel) and [globally minimizes
+the objective $\sum \alpha_i t_i + \kappa\sqrt{\sum \beta_i t_i^2}$ over that
+simplex](hyp:hmin), while [`t_rel` fails the parity cut defining the truncated
+sub-simplex, since its last two coordinates sum to strictly less than
+$d$](hyp:hinf), then for [every point `t` of the truncated sub-simplex $\{t \in
+\Delta_M : t_y + t_z \ge d\}$](hyp:ht), [there is some $\sigma$ between $0$ and $d$
+such that the boundary point $(M-d,\sigma,d-\sigma)$ of the truncation face attains
+an objective value no larger than the objective at `t`](goal).
+
+(If `t` already lies on the boundary `t_y+t_z=d`, take `σ = t_y`; otherwise the
+segment `[t, t_rel]` crosses the boundary at a point whose objective is `≤ wsObj t`
+by convexity, since `wsObj t_rel ≤ wsObj t`.) -/
 lemma truncSeg_reduction (M d kappa : ℝ) (α β : Fin 3 → ℝ)
     (hβ : ∀ i, 0 ≤ β i) (hk : 0 ≤ kappa)
     (t_rel : Fin 3 → ℝ) (hrel : InSimplex M t_rel)

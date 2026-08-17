@@ -93,7 +93,12 @@ theorem fullCondIndep_decomposition (M : Causalean.SCM N Ω)
   unfold FullCondIndep at h ⊢
   exact condIndep_valuesProjection_decomposition hX hYW hZ h
 
-/-- Weak union for FullCondIndep. -/
+/-- **Weak union for full conditional independence.** Let `M` be a structural causal model and
+    let `μ` be a finite measure on the full random state (observed together with latent
+    variables). Suppose [`X`](hyp:hX), [`Y ∪ W`](hyp:hYW), and [`Z ∪ W`](hyp:hZW) are all sets
+    of `M`'s random variables, and that, under `μ`, [`X` is conditionally independent of
+    `Y ∪ W` given `Z`](hyp:h). Then [`X` is conditionally independent of `Y` given
+    `Z ∪ W`](goal). -/
 theorem fullCondIndep_weak_union (M : Causalean.SCM N Ω)
     [StandardBorelSpace M.RandomValues]
     {X Y W Z : Finset (SWIGNode N)}
@@ -107,7 +112,12 @@ theorem fullCondIndep_weak_union (M : Causalean.SCM N Ω)
   unfold FullCondIndep at h ⊢
   exact condIndep_valuesProjection_weak_union_axiom hX hYW hZ h
 
-/-- Contraction for FullCondIndep. -/
+/-- **Contraction for full conditional independence.** Let `M` be a structural causal model and
+    let `μ` be a finite measure on the full random state. Suppose [`X`](hyp:hX), [`Y`](hyp:hY),
+    [`W`](hyp:hW), and [`Z`](hyp:hZ) are all sets of `M`'s random variables, and that, under
+    `μ`, [`X` is conditionally independent of `Y` given `Z ∪ W`](hyp:h1) and [`X` is
+    conditionally independent of `W` given `Z`](hyp:h2). Then [`X` is conditionally independent
+    of `Y ∪ W` given `Z`](goal). -/
 theorem fullCondIndep_contraction (M : Causalean.SCM N Ω)
     [StandardBorelSpace M.RandomValues]
     {X Y W Z : Finset (SWIGNode N)}

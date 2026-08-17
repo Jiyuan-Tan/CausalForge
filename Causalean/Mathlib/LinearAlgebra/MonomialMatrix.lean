@@ -29,10 +29,11 @@ namespace Causalean.Mathlib.LinearAlgebra
 
 open scoped Matrix BigOperators
 
-/-- A square matrix with nonzero determinant and at most one non-zero entry per column is a
-generalized
-permutation matrix: there are a permutation `τ` and non-zero scalings `d` with
-`W i j = if j = τ i then d i else 0`. -/
+/-- For a finite index type `ι` and a commutative ring `K`, and [a square matrix `W` over
+`ι × ι` valued in `K` with nonzero determinant](hyp:hW), if [every column of `W` has at most one
+non-zero entry](hyp:hcol) (for any two distinct rows `i ≠ k`, at least one of `W i j`, `W k j`
+vanishes at column `j`), then [`W` is a generalized permutation matrix: there are a permutation
+`τ` of `ι` and non-zero scalings `d` with `W i j = if j = τ i then d i else 0`](goal). -/
 theorem genPerm_of_det_ne_zero_of_colSupport {ι K : Type*} [Fintype ι] [DecidableEq ι]
     [CommRing K] {W : Matrix ι ι K} (hW : W.det ≠ 0)
     (hcol : ∀ j i k, i ≠ k → W i j = 0 ∨ W k j = 0) :
@@ -95,10 +96,11 @@ theorem genPerm_of_det_ne_zero_of_colSupport {ι K : Type*} [Fintype ι] [Decida
       have hzero : W i j = 0 := hρ_zero j i hiρ
       simp [hj, hzero]
 
-/-- **Permutation uniqueness for lower-triangular matrices** (LiNGAM Appendix A, Lemma 1).
-Let `M` be a lower-triangular matrix (`M i j = 0` whenever `i < j`) with non-zero diagonal.
-For permutations `σ, τ` of the index set, the row/column-permuted matrix `(i ↦ M (σ i) (τ i))`
-has a non-zero diagonal if and only if `σ = τ`. -/
+/-- **Permutation uniqueness for lower-triangular matrices** (LiNGAM Appendix A, Lemma 1). For
+a matrix `M` over `Fin n × Fin n` that is [lower-triangular](hyp:hLT) (`M i j = 0` whenever
+`i < j`) with [non-zero diagonal entries](hyp:hdiag), and permutations `σ, τ` of `Fin n`,
+[the row/column-permuted matrix `(i ↦ M (σ i) (τ i))` has a non-zero diagonal at every `i` if
+and only if `σ = τ`](goal). -/
 theorem perm_uniqueness {n : ℕ} {K : Type*} [Zero K] {M : Matrix (Fin n) (Fin n) K}
     (hLT : ∀ i j, i < j → M i j = 0) (hdiag : ∀ i, M i i ≠ 0)
     {σ τ : Equiv.Perm (Fin n)} :
@@ -120,11 +122,13 @@ theorem perm_uniqueness {n : ℕ} {K : Type*} [Zero K] {M : Matrix (Fin n) (Fin 
   · rintro rfl i
     exact hdiag (σ i)
 
-/-- **Generalized-permutation reduction.** Let `C, C'` be matrices with unit diagonal; suppose `C`
-is lower triangular in some causal order `σ` (`C i j = 0` when `σ i < σ j`), and that `C'` is
-obtained from `C` by a generalized permutation `C' i j = d i · C (τ i) j`. Then `C = C'`: the unit
-diagonal plus triangularity force the underlying permutation to be the identity and every scaling
-to be one. (Formerly `Discovery.LiNGAM.lingam_reduction`.) -/
+/-- **Generalized-permutation reduction.** For matrices `C, C'` over `Fin n × Fin n` valued in
+`K`, if [`C` has unit diagonal](hyp:hCdiag) and [`C'` has unit diagonal](hyp:hC'diag), [`C` is
+lower triangular in some causal order `σ`](hyp:hCtri) (`C i j = 0` when `σ i < σ j`), and [`C'`
+is obtained from `C` by a generalized permutation with permutation `τ` and scalings `d`, i.e.
+`C' i j = d i · C (τ i) j` for all `i`, `j`](hyp:hW), then [`C = C'`](goal): the unit diagonal
+plus triangularity force the underlying permutation to be the identity and every scaling to be
+one. (Formerly `Discovery.LiNGAM.lingam_reduction`.) -/
 theorem eq_of_genPerm_triangular_unitDiag {n : ℕ} {K : Type*}
     [MulZeroOneClass K] [Nontrivial K] {C C' : Matrix (Fin n) (Fin n) K}
     (hCdiag : ∀ i, C i i = 1) (hC'diag : ∀ i, C' i i = 1)

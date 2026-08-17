@@ -1710,9 +1710,11 @@ private theorem hasActivePath_flipEdge_of_isCoveredEdge {a b : V}
   · rw [hqh]; exact hhead
   · rw [hql]; exact hlast
 
-/-- **The analytic core (AMP, per-step invariance).** Reversing one covered edge preserves
-every d-separation, hence Markov equivalence. This is the single-edge kernel used by the
-covered-reversal proof of the Verma--Pearl hard direction.
+/-- **The analytic core (AMP, per-step invariance).** In a DAG `G`, if [the edge `a → b` is
+covered — every other parent of `b` is also a parent of `a`, and vice versa](hyp:hcov), then
+[the DAG obtained by reversing that edge to `b → a` is Markov equivalent to `G`: the two graphs
+license exactly the same d-separation statements](goal). This is the single-edge kernel used by
+the covered-reversal proof of the Verma--Pearl hard direction.
 
 By `not_dSep_iff_hasActivePath` this is equivalent to: a covered-edge reversal preserves
 active-path connectivity (`HasActivePath`). Since the reversed edge `b → a` is again covered

@@ -374,8 +374,12 @@ noncomputable def radialMonomialOn
     (θ : RadialMonomialParam d p) (ω : Ω) : ℝ :=
   radialMonomialClass d p q a b θ (loc ω)
 
-/-- Composing the radial class with any measurable Euclidean location map
-preserves its uniform polynomial `L²` covering certificate. -/
+/-- **Covering certificate transported through a location map.** For [a measurable map from the
+underlying observation space into `d`-dimensional Euclidean space](hyp:hloc), given [a positive
+bandwidth q](hyp:hq), [a nonnegative annulus inner radius a](hyp:ha), and [inner radius at most
+outer radius b](hyp:hab), [composing the moving-center radial-monomial class of degree at most p
+with the location map still carries a uniform polynomial `L²` covering certificate at envelope
+`radialMonomialEnvelope b p`](goal). -/
 theorem radialMonomialOn_hasPolynomialL2Cover
     {Ω : Type u} [MeasurableSpace Ω]
     (d p : ℕ) (loc : Ω → EuclideanPoint d) {q a b : ℝ}

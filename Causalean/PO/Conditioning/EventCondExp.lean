@@ -105,20 +105,25 @@ lemma integral_eq_sum_measure_mul_eventCondExp
   rw [mul_comm, ← eventCondExp_mul_measure_toReal μ (A i) (measure_ne_top _ _) f]
 
 /-- **Totalized finite-partition identity for event-level averages.**
-Restricting the finite-partition decomposition to an event `A`, the
-event-level average on `A` is the sum of the cell-level event averages weighted
-by totalized event-mass ratios; when the conditioning event has positive
-finite mass, these ratios are the usual conditional cell probabilities.
+Fix [a measurable event `A`](hyp:hAmeas) and [a finite family of pairwise
+disjoint](hyp:hdisj) [measurable sets `C i`](hyp:hCmeas) [covering the whole
+space](hyp:hcov), such that [each intersection `A ∩ C i` has finite
+measure](hyp:hAC_fin), and let [`f` be an integrable function](hyp:hf). Then
+[the event-level average of `f` on `A` equals the sum, over `i`, of the
+event-level average of `f` on `A ∩ C i` weighted by the ratio of the measure
+of `A ∩ C i` to the measure of `A`](goal):
 
     event average on A =
       ∑ i, ((μ(A ∩ C i)).toReal / (μ A).toReal)
         · event average on A ∩ C i.
 
-This is the measure-theoretic core of the finite→population bridge for
-cell-indexed estimands: when `A = {G = g}`, the `C i` partition the covariate
-space, and the event `A` has positive finite mass, the ratios become the
-usual conditional probabilities `P(C = c | G = g)` and the cell-level event
-averages become the corresponding within-cell conditional means. -/
+When the conditioning event has positive finite mass, these ratios are the
+usual conditional cell probabilities. This is the measure-theoretic core of
+the finite→population bridge for cell-indexed estimands: when `A = {G = g}`,
+the `C i` partition the covariate space, and the event `A` has positive finite
+mass, the ratios become the usual conditional probabilities `P(C = c | G = g)`
+and the cell-level event averages become the corresponding within-cell
+conditional means. -/
 lemma eventCondExp_eq_sum_condProb_mul_eventCondExp
     {ι : Type*} [Fintype ι] (μ : Measure Ω)
     (A : Set Ω) (C : ι → Set Ω) (hAmeas : MeasurableSet A)
@@ -282,9 +287,14 @@ theorem POSystem.integral_event_eq_mul_of_IndepCF
   simpa using
     (POSystem.integral_restrict_value_eq_mul_of_IndepCF hInd hh_meas x hx)
 
-/-- **Drop-of-conditioning (quotient form).**  Under `IndepCF`, the event-level
-conditional expectation `E[h ∘ B.jointValue | rv.value = x]` collapses to the
-unconditional integral, provided the event has finite positive measure. -/
+/-- **Drop-of-conditioning (quotient form).** Suppose [a regimed variable `rv`
+is independent of a counterfactual bundle `B`](hyp:hInd), where [`h` is a
+measurable function of the bundle's joint value](hyp:hh_meas) and [`{x}` is a
+measurable singleton in the range of `rv`](hyp:hx). If [the event `{rv = x}`
+has positive](hyp:hμA_ne_zero) and [finite](hyp:hμA_ne_top) measure, then
+[the event-level conditional expectation of `h` composed with the bundle's
+joint value, given `{rv = x}`, equals the unconditional integral of the same
+composite](goal). -/
 theorem POSystem.eventCondExp_eq_integral_of_IndepCF
     {α : Type*} [MeasurableSpace α]
     {rv : RegimedVar P α} {B : POCFBundle P}
@@ -345,11 +355,15 @@ theorem POVar.eventCondExp_cfUnder_eq_factual_on_event
   exact POVar.cf_eq_factual_on_event hC y a a₀ hvw hω
 
 /-- **Drop-of-conditioning on an event, given a bundle relabeling of the
-integrand.**  Takes as a HYPOTHESIS (`hF_eq`) that the factual integrand
-`factualF` equals `h ∘ B.jointValue` on the event `{a = x}` — a *relabeling* of
-`factualF` as a function of the bundle's joint counterfactual value — and
-combines it with the `IndepCF` drop-of-conditioning identity to evaluate
-`E[factualF | a = x] = ∫ h(B.jointValue) ∂μ`.
+integrand.** Suppose [a factual variable `a` is independent of a
+counterfactual bundle `B`](hyp:hInd), where [`h` is a measurable function of
+the bundle's joint value](hyp:hh_meas) and [`{x}` is a measurable singleton in
+the range of `a`](hyp:hx). If [the factual integrand `factualF` agrees,
+almost everywhere on the event `{a = x}`, with `h` composed with the bundle's
+joint value](hyp:hF_eq), and that event has [positive](hyp:hμA_ne_zero) and
+[finite](hyp:hμA_ne_top) measure, then [the event-level conditional
+expectation of `factualF` given `{a = x}` equals the unconditional integral of
+`h` composed with the bundle's joint value](goal).
 
 NOTE on the name: this lemma does NOT itself assume `P.Consistency`. The
 `_of_consistency_` records where `hF_eq` usually comes from at the call site —

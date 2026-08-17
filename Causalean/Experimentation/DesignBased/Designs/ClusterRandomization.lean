@@ -53,8 +53,11 @@ lemma clusterDesign_E_unitTreatInd (p : C → ℝ) (hp0 : ∀ c, 0 ≤ p c) (hp1
   simp only [if_true, mul_one, Bool.false_eq_true, if_false, mul_zero, add_zero] at h
   exact h
 
-/-- **Same-cluster joint treatment.** Two units in the same cluster are jointly treated with their
-shared cluster's probability — their treatments coincide. -/
+/-- **Same-cluster joint treatment.** For a cluster-randomization design in which [each cluster's
+treatment probability `p c` lies in `[0,1]`](hyp:hp0,hp1), if [two units `i` and `j` belong to the
+same cluster](hyp:h), then [they are jointly treated with probability exactly their shared
+cluster's rate `p (clus i)` — because being in the same cluster makes their treatment indicators
+identical](goal). -/
 lemma clusterDesign_E_unitTreatInd_pair_same (p : C → ℝ) (hp0 : ∀ c, 0 ≤ p c) (hp1 : ∀ c, p c ≤ 1)
     (clus : U → C) {i j : U} (h : clus i = clus j) :
     (clusterDesign p hp0 hp1).E (fun z => unitTreatInd clus i z * unitTreatInd clus j z)

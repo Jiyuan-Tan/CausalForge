@@ -56,16 +56,20 @@ noncomputable def popMaxSqDev [Nonempty U] (y : U → ℝ) : ℝ :=
 noncomputable def sampleMean (n : ℕ) (y : U → ℝ) (S : {S : Finset U // S.card = n}) : ℝ :=
   (∑ i, (if i ∈ S.val then y i else 0)) / (n : ℝ)
 
-/-- **Unbiasedness of the sample mean** (Li & Ding 2017, Thm 1 moments). The simple-random-sample
-mean is unbiased for the population mean: each unit is sampled with probability `n/N`, which the
+/-- **Unbiasedness of the sample mean** (Li & Ding 2017, Thm 1 moments). For [a sample size that
+is positive](hyp:hn0) and [at most the population size](hyp:hn), [the mean of a simple random
+sample of that size, drawn without replacement from the finite population of outcomes `y`, is
+unbiased for the population mean](goal): each unit is sampled with probability `n/N`, which the
 `1/n` weight averages to `1/N`. -/
 theorem E_sampleMean (n : ℕ) (hn : n ≤ Fintype.card U) (hn0 : 0 < n) (y : U → ℝ) :
     (completeRandomization n hn).E (sampleMean n y) = popMean y :=
   -- `sampleMean n y` is definitionally the treated-arm mean of `y`, already proved unbiased.
   E_treatedMean n hn hn0 y
 
-/-- **Variance of the sample mean** (Li & Ding 2017, Thm 1 / Cochran). The randomization variance of
-the simple-random-sample mean is `(1/n − 1/N)·v_N`, the sampling-without-replacement variance. -/
+/-- **Variance of the sample mean** (Li & Ding 2017, Thm 1 / Cochran). For [a sample size that is
+positive](hyp:hn0) and [at most the population size](hyp:hn), when [the population contains at
+least two units](hyp:hN), [the randomization variance of the simple-random-sample mean equals
+`(1/n − 1/N)·v_N`, the sampling-without-replacement variance](goal). -/
 theorem Var_sampleMean (n : ℕ) (hn : n ≤ Fintype.card U) (hn0 : 0 < n) (hN : 2 ≤ Fintype.card U)
     (y : U → ℝ) :
     (completeRandomization n hn).Var (sampleMean n y)

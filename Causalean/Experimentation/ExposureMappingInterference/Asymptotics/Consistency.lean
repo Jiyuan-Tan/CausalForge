@@ -176,9 +176,11 @@ theorem Var_htMean_le (d : E.Δ) {c : ℝ} (hc : 0 ≤ c)
 
 end Experiment
 
-/-- **Chebyshev consistency.** If the variance of the HT mean estimator tends to `0` along a
-sequence of experiments (with positive exposure probabilities throughout), then the estimator
-is consistent: `Pr[|μ̂ − μ| ≥ ε] → 0`. -/
+/-- **Chebyshev consistency.** Along a sequence of experiments with [a sequence of treatment
+assignments `d`](hyp:d) such that [every unit's exposure probability under `d` is
+nonzero](hyp:hpos), if [the design variance of the Horvitz–Thompson mean estimator tends to
+`0`](hyp:hvar), then for [any positive threshold `ε`](hyp:hε), [the estimator is consistent:
+`Pr[|μ̂ − μ| ≥ ε] → 0`](goal). -/
 theorem htMean_consistent_of_var (Exp : ℕ → Experiment) (d : ∀ n, (Exp n).Δ)
     (hpos : ∀ n i, prop (Exp n).D (Exp n).f (Exp n).θ i (d n) ≠ 0)
     (hvar : Tendsto (fun n => (Exp n).D.Var (htMean (Exp n).D (Exp n).y (Exp n).f (Exp n).θ (d n)))

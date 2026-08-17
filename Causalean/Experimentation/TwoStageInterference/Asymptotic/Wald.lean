@@ -52,13 +52,14 @@ namespace TwoStageInterference
 open DesignBased
 
 /-- **Asymptotic oracle Wald coverage (Liu–Hudgens 2014).** Along a sequence of two-stage
-Hudgens–Halloran experiments `Exp`, write `stud n` for the studentized statistic for the
-treatment-minus-control direct-effect contrast
-`(D̂E − DE̅)/√directVar` (pinned by `hstud`).  Assume the variance is everywhere positive (`hVar`),
-that `zq = z_{1−γ/2} ≥ 0` is the standard-normal upper quantile (`hzq : Φ(zq) = 1 − γ/2`), and the
-two direct-contrast CLT limits at `zq` and `−zq` (`hcltPos`, `hcltNeg`, exactly
-`directEffect_clt`'s conclusion).  Then the oracle Wald interval `D̂E ± zq·√directVar` attains
-asymptotic coverage of `DE̅` at least `1 − γ`. -/
+Hudgens–Halloran experiments `Exp`, let [`stud n` be the studentized statistic
+`(D̂E − DE̅)/√directVar`](hyp:stud,hstud) for the treatment-minus-control direct-effect contrast,
+and assume [the design variance is everywhere positive](hyp:hVar). Let [`zq ≥ 0` be the
+standard-normal upper quantile at level `γ`, i.e. `Φ(zq) = 1 − γ/2`](hyp:hzq0,hzq), and assume
+[the two studentized-CDF limits of `stud` at `zq` and `−zq` converge to `Φ(zq)` and
+`Φ(−zq)`](hyp:hcltPos,hcltNeg) — exactly the conclusion of the direct-contrast CLT. Then [the
+oracle Wald interval `D̂E ± zq·√directVar` attains asymptotic coverage of `DE̅` at least
+`1 − γ`](goal). -/
 theorem wald_coverage_oracle (Exp : ℕ → LHExperiment)
     (stud : ∀ n, (StratAssign (Exp n).ι × ∀ i, Fin ((Exp n).gsize i) → Bool) → ℝ)
     (hstud : ∀ n sw, stud n sw = ((Exp n).estD sw - (Exp n).DEbar) / Real.sqrt ((Exp n).directVar))

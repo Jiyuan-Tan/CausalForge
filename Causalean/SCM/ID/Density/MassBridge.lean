@@ -157,8 +157,12 @@ theorem condDistrib_singleton_mass_of_ne_zero
   rw [condDistrib_apply_of_ne_zero hY z hz ({y} : Set γ)]
   rw [hset, ENNReal.div_eq_inv_mul]
 
-/-- A conditional distribution singleton mass agrees with the discrete
-`conditionalMass` ratio of the pushed-forward joint law. -/
+/-- For [a measurable map `Y`](hyp:hY) and [a measurable map `Z`](hyp:hZ) out
+of a finite measure space, at a conditioning value `z` with [nonzero
+pushforward mass under `Z`](hyp:hz), [the singleton mass that Mathlib's
+conditional distribution `condDistrib Y Z μ` assigns to a value `y` at `z`
+equals the discrete conditional-mass ratio `conditionalMass`, computed from
+the joint pushforward law of `(Y, Z)`, evaluated at `(y, z)`](goal). -/
 theorem condDistrib_singleton_mass_eq_conditionalMass
     {α β γ : Type*} [MeasurableSpace α] [MeasurableSpace β]
     [MeasurableSpace γ] [StandardBorelSpace γ] [Nonempty γ]
@@ -184,8 +188,13 @@ theorem condDistrib_singleton_mass_eq_conditionalMass
   rw [Measure.map_map measurable_snd (hY.prod hZ)]
   rfl
 
-/-- The observational conditional kernel singleton mass is the corresponding
-observed pair singleton mass divided by the conditioning singleton mass. -/
+/-- For [a query coordinate set `Y` contained in the observed nodes](hyp:hY)
+and [a conditioning coordinate set `CC` contained in the observed
+nodes](hyp:hCC), at a conditioning value `c` with [nonzero pushforward mass of
+the observational kernel under projection onto `CC`](hyp:hc0), [the
+observational conditional kernel's singleton mass at a value `y` equals the
+observational kernel's joint singleton mass at the pair `(c, y)` divided by
+its singleton mass at `c`](goal). -/
 theorem obsCondKernel_singleton_mass_of_ne_zero
     (M : Causalean.SCM N Ω) (Y CC : Finset (SWIGNode N))
     (hY : Y ⊆ M.observed) (hCC : CC ⊆ M.observed)
@@ -239,8 +248,13 @@ theorem obsCondKernel_singleton_mass_of_ne_zero
   rw [ENNReal.eq_div_iff hc0 hctop]
   simpa [Kernel.sectR] using hmass.symm
 
-/-- A one-node observational step density is the conditional singleton mass
-divided by the one-node reference singleton mass. -/
+/-- At the `i`-th observed coordinate, if [the one-step observational
+conditional kernel is absolutely continuous with respect to the reference
+measure on that coordinate](hyp:hac), and the reference measure's singleton
+mass at the recorded value is [nonzero](hyp:href0) and [finite](hyp:hreftop),
+then [the one-node observational step density `obsStepCondDensity` equals the
+conditional kernel's singleton mass at the recorded value divided by the
+reference measure's singleton mass there](goal). -/
 theorem obsStepCondDensity_eq_mass_ratio
     (M : Causalean.SCM N Ω) (ref : ReferenceMeasures Ω) (s : M.FixedValues)
     (i : Fin M.observed.card)

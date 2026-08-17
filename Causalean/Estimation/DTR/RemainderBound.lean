@@ -75,7 +75,21 @@ noncomputable def seqDR_rem_const (ε : ℝ) : ℝ := 2 / (ε ^ 2 * (1 - ε))
 
 /-! ## Headline quantitative bound -/
 
-/-- **Sequential DR (DTR, n = 2) remainder bound.**
+/-- **Sequential DR (DTR, n = 2) remainder bound.** Consider a two-stage dynamic
+treatment-regime estimation system satisfying [the sequential causal
+assumptions](hyp:hA), for which [the stage-0 and stage-1 propensity scores are
+bounded within a margin ε of 0 and 1 (strict overlap)](hyp:h_overlap), and where
+[the factual outcome](hyp:h_y2) and [the potential outcome under every fixed
+treatment regime](hyp:h_yd2) each have finite second moment. For any candidate
+nuisance vector η whose propensities likewise [lie in this strict-overlap
+band](hyp:hη), and whose [stage-0 outcome-regression error](hyp:hΔμ₀_memLp),
+[stage-1 outcome-regression error](hyp:hΔμ₁_memLp), [stage-0 propensity
+error](hyp:hΔe₀_memLp), and [stage-1 propensity error](hyp:hΔe₁_memLp) are each
+square-integrable against the corresponding stage's history law, [the absolute value
+of the population sequential doubly robust moment at η and the true target θ₀ is at
+most an explicit `O(ε⁻²)` constant times the sum of the two stagewise
+outcome-regression L² errors, times the sum of the two stagewise propensity L²
+errors](goal).
 
 Cauchy–Schwarz on each summand of `seqDR_remainder_identity`, plus
 the slack inequality `Σ aₖ bₖ ≤ (Σ aₖ) · (Σ bₖ)` for nonneg sequences,
@@ -291,7 +305,24 @@ The product-rate hypothesis is supplied at the level of *pairs* of
 stages, mirroring `aipw_remainder_op` which sums over `a ∈ {0, 1}`. -/
 
 /-- **Sequential DR remainder is `o_p(n^{-1/2})` under the two-stage
-product rate.**
+product rate.** Consider a two-stage dynamic treatment-regime estimation system
+satisfying [the sequential causal assumptions](hyp:hA), for which [the stage-0 and
+stage-1 propensity scores are bounded within a margin ε of 0 and 1 (strict
+overlap)](hyp:h_overlap), and where [the factual outcome](hyp:h_y2) and [the
+potential outcome under every fixed treatment regime](hyp:h_yd2) each have finite
+second moment. Let `η̂ₙ` be a sequence of sample-size-indexed, possibly random,
+candidate nuisance vectors that [always land in the strict-overlap band, for every
+sample size and every outcome of the underlying randomness](hyp:h_in_H), with
+[stage-0 outcome-regression error](hyp:hΔμ₀_memLp), [stage-1 outcome-regression
+error](hyp:hΔμ₁_memLp), [stage-0 propensity error](hyp:hΔe₀_memLp), and [stage-1
+propensity error](hyp:hΔe₁_memLp) each square-integrable against the corresponding
+stage's history law at every sample size and outcome. If the four stagewise L²
+products of outcome-regression and propensity error — [own-stage at
+stage 0](hyp:h_product_rate_00), [own-stage at stage 1](hyp:h_product_rate_11),
+[stage-0 outcome-regression with stage-1 propensity](hyp:h_product_rate_01), and
+[stage-1 outcome-regression with stage-0 propensity](hyp:h_product_rate_10) — are
+each `o_p(n^{-1/2})`, then [the population sequential doubly robust moment evaluated
+at the random nuisance `η̂ₙ` is itself `o_p(n^{-1/2})`](goal).
 
 If `η̂_n ω ∈ H_ε` for all `n, ω` and for each stage `k ∈ {0, 1}` the
 L²-product `‖Δμ_k‖₂ · ‖Δe_k‖₂ = o_p(n^{-1/2})`, plus the stage-cross

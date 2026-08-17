@@ -144,9 +144,10 @@ theorem sum_decode_ge (hmeas : ∀ j (b : Bool), MeasurableSet {ω | est ω j = 
         Finset.sum_add_distrib
     _ = 2 * ∑ τ, (P τ).real {ω | est ω j ≠ τ j} := by rw [hreindex]; ring
 
-/-- **Assouad's lemma (average form).** If every vertex is within total variation `β`
-of each of its `d` neighbours, the average Hamming risk over the cube is at least
-`(d / 2)(1 − β)`.  Choosing the dimension `d` large and the per-coordinate divergence
+/-- **Assouad's lemma (average form).**  Assume [each coordinate's decoded-bit event is
+measurable](hyp:hmeas). If [every hypercube vertex's law is within total variation `β` of each of
+its `d` neighbouring vertices' laws](hyp:hβ), then [the average Hamming risk over the cube is at
+least `(d / 2)(1 − β)`](goal). Choosing the dimension `d` large and the per-coordinate divergence
 `β` small forces a large number of mis-decoded coordinates. -/
 theorem assouad_average (hmeas : ∀ j (b : Bool), MeasurableSet {ω | est ω j = b})
     {β : ℝ} (hβ : ∀ j τ, tvDist (P τ) (P (flipBit j τ)) ≤ β) :
@@ -182,9 +183,11 @@ theorem assouad_average (hmeas : ∀ j (b : Bool), MeasurableSet {ω | est ω j 
   have hrw : (d / 2 : ℝ) * (1 - β) * C = (d : ℝ) * (C * (1 - β) / 2) := by ring
   rw [hrw]; exact hfinal
 
-/-- **Assouad's lemma (existence form).** Under the same hypotheses, *some* vertex `τ`
-forces Hamming risk at least `(d / 2)(1 − β)`: no cube estimator can decode every
-vertex's coordinates reliably when neighbouring laws are statistically close. -/
+/-- **Assouad's lemma (existence form).** Under the same hypotheses — [each coordinate's
+decoded-bit event is measurable](hyp:hmeas) and [every vertex's law is within total variation
+`β` of each of its `d` neighbours](hyp:hβ) — [some vertex `τ` forces Hamming risk at least
+`(d / 2)(1 − β)`](goal): no cube estimator can decode every vertex's coordinates reliably when
+neighbouring laws are statistically close. -/
 theorem assouad_exists (hmeas : ∀ j (b : Bool), MeasurableSet {ω | est ω j = b})
     {β : ℝ} (hβ : ∀ j τ, tvDist (P τ) (P (flipBit j τ)) ≤ β) :
     ∃ τ, (d / 2 : ℝ) * (1 - β) ≤ hammingRisk P est τ := by

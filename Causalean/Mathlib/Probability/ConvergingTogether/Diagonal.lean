@@ -54,16 +54,15 @@ def lawPM (m : Measure ℝ) (h : IsProbabilityMeasure m) : ProbabilityMeasure �
     (lawPM m h : Measure ℝ) = m := rfl
 
 /-- **The converging-together theorem (Billingsley Thm 3.2).**
-Let `G` be a limit probability law on `ℝ`, let `S n : Ω n → ℝ` be a sequence of real random
-variables (on probability spaces `(Ω n, μ n)`), and for each `m` let `T m n : Ω n → ℝ` be the
-`m`-th approximating row, all square-integrable.  Assume:
-
-* `(H1)` for every `m`, the laws `(μ n).map (T m n)` converge weakly to `G` as `n → ∞`;
-* `(H2)` for every `ε > 0` there is a row `M` such that
-  `limsupₙ ENNReal.ofReal (∫ ω, (S n ω − T M n ω)² ∂(μ n)) ≤ ENNReal.ofReal ε`
-  (one row approximates `S` in `L²`, in the iterated-`limsup` sense).
-
-Then the laws `(μ n).map (S n)` converge weakly to `G` as `n → ∞`.
+Let $G$ be a limit probability law on the reals, let $(S_n)$ be a sequence of real random
+variables, one on each probability space in a sequence, and for every row index $m$ let
+$(T_{m,n})_n$ be the $m$-th approximating triangular row of real random variables on the same
+spaces, with [every $S_n$ square-integrable](hyp:hS_sq) and [every $T_{m,n}$
+square-integrable](hyp:hT_sq). Suppose [for every fixed row $m$ the law of $T_{m,n}$ converges
+weakly to $G$ as $n \to \infty$](hyp:H1), and [for every tolerance $\varepsilon > 0$ some row $M$
+makes the limit superior over $n$ of $E[(S_n - T_{M,n})^2]$ at most $\varepsilon$, i.e. row $M$
+approximates $S_n$ in $L^2$ uniformly enough in the iterated-limsup sense](hyp:H2). Then [the law
+of $S_n$ converges weakly to $G$ as $n \to \infty$](goal).
 
 This is the diagonal step of any approximation-based CLT; it is *not* assumed (it is the goal), and
 it is proved through characteristic functions, reusing the `clt` package's Lévy continuity theorem.
@@ -171,12 +170,19 @@ theorem tendsto_inDistribution_of_l2_approx
     _ < δ := by linarith
 
 /-- **Converging-together corollary for the standard normal (the CLT diagonal step).**
-The specialization of `tendsto_inDistribution_of_l2_approx` to the limit law `gaussianReal 0 1`:
-if each `L²`-approximating row `T m` satisfies a standard-normal CLT `(H1)` and, for every
-tolerance, one row approximates `S` in `L²` in the iterated-`limsup` sense `(H2)`, then the laws
-of `S n` converge weakly to the standard normal.  This is exactly the shape an
-m-dependent-approximation CLT consumes to pass from
-the per-`m` m-dependent CLT to the limit. -/
+The specialization of `tendsto_inDistribution_of_l2_approx` to the standard normal limit law:
+let $(S_n)$ be a sequence of real random variables, one on each probability space in a sequence,
+and for every row index $m$ let $(T_{m,n})_n$ be the $m$-th approximating triangular row on the
+same spaces, with [every $S_n$ square-integrable](hyp:hS_sq) and [every $T_{m,n}$
+square-integrable](hyp:hT_sq). If [for every fixed row $m$ the law of $T_{m,n}$ converges weakly
+to the standard normal as $n \to \infty$, i.e. row $m$ obeys its own standard-normal central
+limit theorem](hyp:H1), and [for every tolerance $\varepsilon > 0$ some row $M$ makes the limit
+superior over $n$ of $E[(S_n - T_{M,n})^2]$ at most $\varepsilon$, so row $M$ approximates $S_n$
+in $L^2$ in the iterated-limsup sense](hyp:H2), then [the law of $S_n$ converges weakly to the
+standard normal as $n \to \infty$](goal).
+
+This is exactly the shape an m-dependent-approximation CLT consumes to pass from the per-`m`
+m-dependent CLT to the limit. -/
 theorem clt_of_l2_approx
     {Ω : ℕ → Type*} [∀ n, MeasurableSpace (Ω n)]
     (μ : (n : ℕ) → Measure (Ω n)) [∀ n, IsProbabilityMeasure (μ n)]

@@ -154,9 +154,11 @@ lemma selectedTreated_integral_split
          + ∫ ω in S.helpedSelected, S.YofA true ω ∂P.μ) := by
           rw [hsplit]
 
-/-- Mass split: `μ(selectedTreated) = ?·μ(alwaysSelected) + ?·μ(helpedSelected)`.
-This is the analog of `selectedTreated_integral_split` for the constant
-function `1`, and it is what gives `ρ = μ(AS) / μ({Sel(1)=true})`. -/
+/-- Under [the baseline Lee sample-selection assumptions](hyp:hA), [the probability mass of the
+observable selected-treated cell equals the probability of being treated times the sum of the
+probability masses of the two latent strata always-selected and helped-selected](goal). This is
+the analog of `selectedTreated_integral_split` for the constant function `1`, and it is what
+gives `ρ = μ(AS) / μ({Sel(1)=true})`. -/
 lemma selectedTreated_measure_split
     (hA : S.BaseAssumptions) :
     (P.μ S.selectedTreated).toReal

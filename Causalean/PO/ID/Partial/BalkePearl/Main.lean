@@ -90,7 +90,8 @@ theorem ATE_eq_BPObjective (_hA : S.BaseAssumptions) :
 
 /-! ### Necessity -/
 
-/-- NECESSITY: The true ATE lies in the Balke-Pearl identified interval.
+/-- **Necessity.** Under [the Balke-Pearl IV base assumptions](hyp:hA), [the true average
+treatment effect lies in the Balke-Pearl identified interval](goal).
 
 Every observationally-consistent model produces a feasible latent table
 (latentProb) with objective equal to ATE, so ATE is attainable. -/

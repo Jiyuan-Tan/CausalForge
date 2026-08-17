@@ -59,7 +59,9 @@ theorem map_fintype_tuple_eq (S : IIDSample Ω X μ P)
         congr with i
         rw [S.map_eq (r i : ℕ)]
 
-/-- The joint law of an injectively indexed order-`m` sample tuple is `P^m`.
+/-- For an i.i.d. sample `S`, sample size `n`, and order `m`, if the index map
+`t : Fin m → Fin n` [is injective](hyp:ht), then [the joint law of the sample
+coordinates selected by `t` is the `m`-fold product measure `P^m`](goal).
 
 This is the `Fin m` specialization of `map_fintype_tuple_eq`, used throughout
 the fixed-order U-statistic variance and negligibility proofs. -/
@@ -388,7 +390,10 @@ theorem integrable_orderTerm_sq (hmeas : Measurable g)
     (measurable_pi_lambda _ (fun j : Fin m => S.meas (t j : ℕ))).aemeasurable).mp hmap
 
 omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
-/-- Diagonal second moment of a single injective order-`m` kernel term. -/
+/-- For an i.i.d. sample `S` and order-`m` kernel `g` that is [measurable](hyp:hmeas),
+if the index map `t` [is injective](hyp:ht), then [the second moment of the kernel term
+evaluated along the sample coordinates selected by `t` equals the kernel's second
+moment `ζ_m` under the `m`-fold product law](goal). -/
 theorem orderTerm_diag (hmeas : Measurable g)
     {t : Fin m → Fin n} (ht : Function.Injective t) :
     ∫ ω, (g (fun j => S.Z (t j : ℕ) ω)) ^ 2 ∂μ = zetaOrder P g := by
@@ -443,7 +448,9 @@ theorem memLp_injectiveTuples_sum (hmeas : Measurable g)
   simpa using hsum
 
 omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
-/-- The rescaled order-`m` U-statistic is in `L²`. -/
+/-- For an i.i.d. sample `S`, order-`m` kernel `g` that is [measurable](hyp:hmeas) and
+[square-integrable under the `m`-fold product law](hyp:hsq), and sample size `n`,
+[the `√n`-rescaled order-`m` U-statistic of `g` is square-integrable](goal). -/
 theorem memLp_rescaled_order (hmeas : Measurable g)
     (hsq : Integrable (fun z => (g z) ^ 2) (Measure.pi fun _ : Fin m => P)) (n : ℕ) :
     MemLp (fun ω => Real.sqrt (n : ℝ) * uStatisticOrder S g n ω) 2 μ := by

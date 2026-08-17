@@ -85,18 +85,20 @@ theorem consistent_lt_norm_of_le_dist {E : Type*} [NormedAddCommGroup E]
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
     [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
 
-/-- **Z-estimator CLT from extremum primitives.**  Identical conclusion to
-`zEstimator_clt`, but the opaque consistency hypothesis is replaced by the
-classical extremum-estimator package:
+/-- **Z-estimator CLT from extremum primitives.**  Identical conclusion to `zEstimator_clt`,
+but with consistency derived rather than assumed: given an auxiliary criterion function `m`,
+suppose [the criterion class indexed by the parameter obeys a uniform law of large numbers, i.e.
+is Glivenko–Cantelli](hyp:hGC), [the estimator sample-maximises the empirical criterion at every
+sample size](hyp:hArgmax), and [the population criterion has a well-separated maximum at the
+target parameter](hyp:hSep). Then, provided [the score process is stochastically equicontinuous
+at the target parameter along the estimator sequence](hyp:hStochEquicont), [the estimator
+converges to the target at the parametric $\sqrt n$-rate](hyp:hRate), and [the estimator solves
+the empirical estimating equation eventually, almost surely](hyp:hMoment), [the estimator is
+asymptotically linear at the target parameter, with influence function minus the inverse
+Jacobian applied to the score at the target](goal).
 
-* `hGC`     — the criterion class `{m θ : θ}` is Glivenko–Cantelli (uniform LLN);
-* `hArgmax` — `θn` is a sample maximiser of the criterion (`Mₙ θ₀ ≤ Mₙ (θn)`);
-* `hSep`    — the population maximum `M θ = ∫ m θ dP` is well separated at `θ₀`.
-
-Consistency `θn →_p θ₀` is then *derived* via
-`mEstimator_consistent_of_glivenkoCantelli` and fed to `zEstimator_clt`.  The
-remaining inputs (`hStochEquicont` Donsker modulus, `hRate`, `hMoment` score
-FOC) are unchanged. -/
+Consistency `θn →_p θ₀` is derived via `mEstimator_consistent_of_glivenkoCantelli` and fed to
+`zEstimator_clt`; the remaining inputs are otherwise unchanged from `zEstimator_clt`. -/
 theorem zEstimator_clt_of_extremum
     (ψ : E → X → E) (θ₀ : E) (P : Measure X)
     (reg : ZEstimatorRegularity ψ θ₀ P)
@@ -121,13 +123,19 @@ theorem zEstimator_clt_of_extremum
       (mEstimator_consistent_of_glivenkoCantelli S m θ₀ θn hGC hArgmax hSep))
     hStochEquicont hRate hMoment
 
-/-- **Z-estimator CLT with the equicontinuity hypothesis discharged.**
-Identical conclusion to `zEstimator_clt`, but the opaque empirical-process
-modulus `hStochEquicont : StochEquicontAt ψ θ₀ P μ S θn` is replaced by the
-*class-level* Donsker / asymptotic-equicontinuity property
-`AsymptoticEquicont ψ θ₀ P μ S` (a property of the score family, independent of
-the estimator sequence).  `StochEquicontAt` is reconstructed from `hAEC` and the
-consistency hypothesis via `stochEquicontAt_of_asymptoticEquicont`. -/
+/-- **Z-estimator CLT with the equicontinuity hypothesis discharged.**  Identical conclusion to
+`zEstimator_clt`, but the estimator-sequence-specific equicontinuity modulus is replaced by a
+class-level Donsker condition: if [the estimator converges in probability to the target
+parameter](hyp:hConsistent), [the score family is asymptotically equicontinuous at the target
+parameter — a property of the family alone, independent of the particular estimator
+sequence](hyp:hAEC), [the estimator converges to the target at the parametric
+$\sqrt n$-rate](hyp:hRate), and [the estimator solves the empirical estimating equation
+eventually, almost surely](hyp:hMoment), then [the estimator is asymptotically linear at the
+target parameter, with influence function minus the inverse Jacobian applied to the score at the
+target](goal).
+
+The estimator-specific stochastic-equicontinuity hypothesis of `zEstimator_clt` is reconstructed
+from `hAEC` and consistency via `stochEquicontAt_of_asymptoticEquicont`. -/
 theorem zEstimator_clt_of_donsker
     (ψ : E → X → E) (θ₀ : E) (P : Measure X)
     (reg : ZEstimatorRegularity ψ θ₀ P)
@@ -147,14 +155,20 @@ theorem zEstimator_clt_of_donsker
     (stochEquicontAt_of_asymptoticEquicont ψ θ₀ S θn hAEC hConsistent)
     hRate hMoment
 
-/-- **Z-estimator CLT from primitive conditions: both opaque hypotheses
-discharged.**  Fuses `zEstimator_clt_of_extremum` (consistency from a
-Glivenko–Cantelli criterion `m` with a well-separated population maximum) with
-`zEstimator_clt_of_donsker` (equicontinuity from the class-level Donsker
-property `hAEC`).  The resulting statement assumes neither `hConsistent` nor
-`hStochEquicont`: the single derived consistency conclusion is threaded into
-*both* the estimating-equation linearisation and the `StochEquicontAt`
-reduction. -/
+/-- **Z-estimator CLT from primitive conditions: both opaque hypotheses discharged.**  Combines
+`zEstimator_clt_of_extremum` and `zEstimator_clt_of_donsker`: if [the criterion class indexed by
+the parameter obeys a uniform law of large numbers](hyp:hGC), [the estimator sample-maximises the
+empirical criterion at every sample size](hyp:hArgmax), [the population criterion has a
+well-separated maximum at the target parameter](hyp:hSep), [the score family is asymptotically
+equicontinuous at the target parameter](hyp:hAEC), [the estimator converges to the target at the
+parametric $\sqrt n$-rate](hyp:hRate), and [the estimator solves the empirical estimating
+equation eventually, almost surely](hyp:hMoment), then [the estimator is asymptotically linear at
+the target parameter, with influence function minus the inverse Jacobian applied to the score at
+the target](goal).
+
+Neither `hConsistent` nor `hStochEquicont` from `zEstimator_clt` is assumed directly: the single
+consistency conclusion derived from the extremum package is threaded into both the
+estimating-equation linearisation and the `StochEquicontAt` reduction. -/
 theorem zEstimator_clt_of_extremum_donsker
     (ψ : E → X → E) (θ₀ : E) (P : Measure X)
     (reg : ZEstimatorRegularity ψ θ₀ P)

@@ -190,8 +190,10 @@ lemma bernoulliKL_eq_bregman {p q : ℝ}
   unfold bernD
   ring
 
-/-- Bernoulli KL divergence on the band `[1/4, 3/4]` is bounded by
-`4 · (p - q) ^ 2`. -/
+/-- For probabilities `p` and `q` [both restricted to the band
+`[1/4, 3/4]`](hyp:hp_lo,hp_hi,hq_lo,hq_hi), [the Bernoulli Kullback–Leibler
+divergence `p · log(p / q) + (1 - p) · log((1 - p) / (1 - q))` is bounded above
+by `4 · (p - q) ^ 2`](goal). -/
 theorem bernoulli_kl_le_four_sq_sub_of_mem_quarter_band
     {p q : ℝ} (hp_lo : (1 : ℝ) / 4 ≤ p) (hp_hi : p ≤ 3 / 4)
     (hq_lo : (1 : ℝ) / 4 ≤ q) (hq_hi : q ≤ 3 / 4) :

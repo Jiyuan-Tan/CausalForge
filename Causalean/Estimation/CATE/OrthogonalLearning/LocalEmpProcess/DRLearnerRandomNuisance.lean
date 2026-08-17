@@ -54,7 +54,26 @@ open MeasureTheory ProbabilityTheory Filter Topology TopologicalSpace Causalean.
 
 variable {P : POSystem} {γ : Type*} [MeasurableSpace γ]
 
-/-- **DR-Learner oracle inequality at a random cross-fitted nuisance.**
+/-- **DR-Learner oracle inequality at a random cross-fitted nuisance.** Consider a CATE
+estimation system satisfying [the backdoor identification assumptions](hyp:hA), with [an
+evaluation functional measurable in its parameter and recovering the true CATE at a parameter θ₀
+in the constraint set](hyp:θ₀_mem,eval_meas,eval_θ₀), and suppose [the overlap parameter is
+positive while the true nuisance and every realization of the random, fold-A-estimated nuisance
+ĥ n ω lie in the ε-overlap slice](hyp:hε_pos,h_overlap_η₀,hĥ_overlap). Assume [the estimator
+sequence stays in the constraint set as an approximate sample-split plug-in empirical-risk
+minimizer with respect to the random nuisance (slack r_opt), whose excess population risk at
+each realized ĥ n ω obeys a strong-convexity-type lower bound with constant σ>0, together with a
+first-order orthogonality inequality at the true nuisance's directional
+derivative](hyp:hτ_mem,hPluginERM,hσ,hSC,hFOI), and that [on a high-probability event the centred
+excess empirical risk at the realized estimator and nuisance is controlled by a rate
+ρ n](hyp:hMod). Finally, [a battery of boundedness and integrability conditions governs the
+directional-derivative
+envelope](hyp:hB_nonneg,hdEval_unif,h_μ_ĥ_int,h_phi_int,h_phiw_int) and [bounds the two random
+nuisance-error terms](hyp:hΔμ_memLp,hΔe_memLp,hA_int,hB_int). Then [for every n, with probability
+at least 1-δ the squared estimation error is bounded
+by the oracle/Rademacher term `(4(1+σ)/σ²)·(ρ n)²` plus a random second-order product-bias term
+`(4/σ)·(2B/ε)·Σ_a ‖(ĥ n ω).μ_fn a − μ_val a‖₂·‖(ĥ n ω).e_fn − e_val‖₂` evaluated at the realized
+nuisance, plus an optimization slack `(4/σ)·r_opt n`](goal).
 
 Given a random nuisance `ĥ : ℕ → Ω → NuisanceVec γ` (each `ĥ n ω` in the overlap
 slice `H_ε`), the plug-in ERM target estimator, and — on a high-probability set

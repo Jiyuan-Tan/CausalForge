@@ -150,11 +150,14 @@ lemma hasDerivAt_tilt_numerator
   rw [heq] at hconc
   exact hconc
 
-/-- **The tilt-derivative lemma.**  Along the exponential tilt with bounded
-mean-zero score `s`, the tilted expectation of a fixed integrable `φ` is
-differentiable at `t = 0` with derivative `∫ φ·s dP`.  (Mean-zero `s` makes the
-normalizing-constant contribution vanish, so the derivative is the raw
-covariance `∫ φ·s dP`.) -/
+/-- **The tilt-derivative lemma.** Along the exponential tilt with a
+[measurable](hyp:hs_meas) score `s` that is [bounded in absolute value by a
+constant `M`](hyp:hsM) and [has mean zero under `P`](hyp:hs_mean), the tilted
+expectation of a fixed function `φ` that is [almost-everywhere strongly
+measurable](hyp:hφ_meas) and [integrable](hyp:hφ_int) against `P` is
+[differentiable at `t = 0`, with derivative equal to `∫ φ·s dP`](goal).
+(Mean-zero `s` makes the normalizing-constant contribution vanish, so the
+derivative is the raw covariance `∫ φ·s dP`.) -/
 theorem hasDerivAt_tiltExp
     (hs_meas : Measurable s) (hsM : ∀ z, |s z| ≤ M)
     (hs_mean : ∫ z, s z ∂P = 0)

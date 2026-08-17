@@ -34,14 +34,19 @@ namespace Causalean.Panel.EstimandCharacterization.OLSWeightDecomposition
 open MeasureTheory Finset Causalean.Panel
 open scoped BigOperators
 
-/-- Finite-cell saturated-OLS bridge to the overlap-weighted average treatment
-effect.
-
-Given a probability space `(Ω, μ)` with a binary treatment `D`, an
-observed outcome `Y` consistent with potential outcomes `Y0, Y1`, and a
-finite covariate `G : Ω → 𝒢` satisfying the finite-cell bridge condition
-`B_CMI` and nondegenerate overlap (`B_overlap`), the saturated-OLS
-residualized coefficient equals the overlap-weighted ATE:
+/-- **Finite-cell saturated-OLS bridge to the overlap-weighted average
+treatment effect.** For a probability space `(Ω, μ)` with a measurable binary
+treatment `D`, an outcome `Y`, square-integrable potential outcomes `Y0`,
+`Y1`, and a measurable finite covariate `G`, suppose [treatment is binary
+almost everywhere](hyp:B_binary), [the observed outcome is consistent — `Y`
+equals `D·Y1 + (1−D)·Y0` almost everywhere](hyp:B_consis), [the
+integrated-indicator finite-cell bridge condition holds, a finite-cell
+operational substitute for full conditional-mean independence of the
+potential outcomes given treatment and the covariate](hyp:B_CMI), and [the
+covariate cells have nondegenerate treatment overlap](hyp:B_overlap). Then
+[the saturated-OLS residualized coefficient of `Y` on `D` given `G` equals the
+overlap-weighted average treatment effect `Σ_g ω_g · E[Y(1)−Y(0) ∣ G=g]` built
+from the potential outcomes `Y0`, `Y1`](goal):
 
     residualizedCoefficient μ (saturatedClass μ G B_meas_G)
         (residWitnessY μ Y G B_meas_G ...)

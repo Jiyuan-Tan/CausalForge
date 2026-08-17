@@ -74,10 +74,11 @@ private lemma linear_coeff_eq_zero_of_quadratic_nonneg {A B : ℝ} (hB : 0 ≤ B
   have hsquare : A ^ 2 = 0 := by nlinarith
   exact sq_eq_zero_iff.mp hsquare
 
-/-- **Normal equations for weighted linear least squares.** If `c` globally minimizes the
-weighted sum of squares `∑ᵢ wᵢ (Yᵢ − ∑ⱼ cⱼ Φᵢⱼ)²` over all coefficient vectors and the
-weights are nonnegative, then the weighted residual is orthogonal to every design column:
-`∑ᵢ wᵢ (Yᵢ − ∑ⱼ cⱼ Φᵢⱼ) Φᵢₖ = 0` for each basis index `k`. -/
+/-- **Normal equations for weighted linear least squares.** If [the weights `w` are
+nonnegative](hyp:hw) and [the coefficient vector `c` globally minimizes the weighted sum
+of squares `∑ᵢ wᵢ (Yᵢ − ∑ⱼ cⱼ Φᵢⱼ)²` over all coefficient vectors](hyp:hmin), then [the
+weighted residual is orthogonal to every design column: `∑ᵢ wᵢ (Yᵢ − ∑ⱼ cⱼ Φᵢⱼ) Φᵢₖ = 0`
+for each basis index `k`](goal). -/
 theorem lstsq_normal_equations {N : ℕ} {ι : Type*} [Fintype ι]
     {Φ : Fin N → ι → ℝ} {w Y : Fin N → ℝ} {c : ι → ℝ}
     (hw : ∀ i, 0 ≤ w i)

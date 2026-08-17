@@ -51,10 +51,11 @@ open MeasureTheory
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P₀ P₁ : Measure Ω}
   [IsProbabilityMeasure P₀] [IsProbabilityMeasure P₁]
 
-/-- **Le Cam two-point bound for a real-valued parameter.**  If two candidate values
-`θ₀, θ₁ : ℝ` are `2s`-separated, then for any (measurable) estimator `est : Ω → ℝ`
-the worst-case probability of missing the truth by `≥ s` is at least `½(1 − tvDist P₀ P₁)`.
-Specialization of `half_one_sub_tvDist_le_max_error` to `Θ = ℝ` with `dist a b = |a − b|`. -/
+/-- **Le Cam two-point bound for a real-valued parameter.**  If [two candidate values
+`θ₀, θ₁ : ℝ` are `2s`-separated](hyp:hsep), then for [any measurable estimator
+`est : Ω → ℝ`](hyp:hest), [the worst-case probability of missing the truth by `≥ s` is at least
+`½(1 − tvDist P₀ P₁)`](goal). Specialization of `half_one_sub_tvDist_le_max_error` to `Θ = ℝ`
+with `dist a b = |a − b|`. -/
 theorem real_two_point_lower_bound {est : Ω → ℝ} (hest : Measurable est)
     {θ₀ θ₁ s : ℝ} (hsep : 2 * s ≤ |θ₀ - θ₁|) :
     (1 - tvDist P₀ P₁) / 2
@@ -63,8 +64,11 @@ theorem real_two_point_lower_bound {est : Ω → ℝ} (hest : Measurable est)
   have h := half_one_sub_tvDist_le_max_error (P₀ := P₀) (P₁ := P₁) (Θ := ℝ) hest hsep'
   simpa only [Real.dist_eq] using h
 
-/-- Variant of `real_two_point_lower_bound` with an explicit upper bound `c` on the
-total variation distance: every estimator's worst-case miss probability is `≥ (1 − c)/2`. -/
+/-- **Le Cam two-point bound with an explicit total-variation bound.**  If [two candidate
+values `θ₀, θ₁ : ℝ` are `2s`-separated](hyp:hsep), [`est : Ω → ℝ` is a measurable
+estimator](hyp:hest), and [the total variation distance `tvDist P₀ P₁` is at most `c`](hyp:hc),
+then [the worst-case probability of missing the truth by `≥ s` is at least `(1 − c)/2`](goal).
+Variant of `real_two_point_lower_bound` with an explicit total-variation upper bound. -/
 theorem two_point_lower_bound_of_tvDist_le {est : Ω → ℝ} (hest : Measurable est)
     {θ₀ θ₁ s c : ℝ} (hsep : 2 * s ≤ |θ₀ - θ₁|) (hc : tvDist P₀ P₁ ≤ c) :
     (1 - c) / 2
@@ -73,11 +77,12 @@ theorem two_point_lower_bound_of_tvDist_le {est : Ω → ℝ} (hest : Measurable
   have : (1 - c) / 2 ≤ (1 - tvDist P₀ P₁) / 2 := by linarith
   exact this.trans h
 
-/-- **`n`-sample structure-agnostic two-point bound.**  Given two single-observation
-laws `P₀, P₁` and a real functional `τ` whose values are `2s`-separated, every
-estimator `est` built from `n` i.i.d. samples (data law `Measure.pi (fun _ ↦ Pⱼ)`)
-has worst-case miss probability at least `½(1 − tvDist)` between the two `n`-fold laws.
-The functional values `τ P₀, τ P₁` play the role of the two parameters. -/
+/-- **`n`-sample structure-agnostic two-point bound.**  Given two single-observation laws `P₀`,
+`P₁` and a real functional `τ` such that [the functional values `τ P₀, τ P₁` are
+`2s`-separated](hyp:hsep), then for [any measurable estimator `est` built from `n` i.i.d.
+samples (data law `Measure.pi (fun _ ↦ Pⱼ)`)](hyp:hest), [the worst-case miss probability,
+using `τ P₀` and `τ P₁` as the two parameters, is at least `½(1 − tvDist)` between the two
+`n`-fold product laws](goal). -/
 theorem iid_two_point_lower_bound {S : Type*} [MeasurableSpace S]
     (P₀ P₁ : Measure S) [IsProbabilityMeasure P₀] [IsProbabilityMeasure P₁]
     (τ : Measure S → ℝ) (n : ℕ) {s : ℝ} (hsep : 2 * s ≤ |τ P₀ - τ P₁|)
@@ -88,11 +93,13 @@ theorem iid_two_point_lower_bound {S : Type*} [MeasurableSpace S]
   real_two_point_lower_bound (P₀ := Measure.pi fun _ : Fin n => P₀)
     (P₁ := Measure.pi fun _ : Fin n => P₁) hest hsep
 
-/-- **χ²-form two-point lower bound.**  An upper bound `c` on the χ²-divergence
-`chiSqDiv P₀ P₁` yields, via `tvDist ≤ ½√χ²`, a lower bound `(1 − ½√c)/2` on the
-worst-case miss probability of every estimator.  Since `chiSqDiv` tensorizes over
-i.i.d. samples (`chiSqDiv_prod`) and is computable for explicit families, this is
-the form used to certify minimax rates. -/
+/-- **χ²-form two-point lower bound.**  For [a measurable estimator `est`](hyp:hest), if [two
+candidate values `θ₀, θ₁` are `2s`-separated](hyp:hsep), [`P₀` is absolutely continuous with
+respect to `P₁`](hyp:hac), [the squared density deviation `(dP₀/dP₁ − 1)²` is
+`P₁`-integrable](hyp:hint), and [the χ²-divergence `chiSqDiv P₀ P₁` is at most `c`](hyp:hc),
+then [the worst-case miss probability is at least `(1 − ½√c)/2`](goal), via `tvDist ≤ ½√χ²`.
+Since `chiSqDiv` tensorizes over i.i.d. samples (`chiSqDiv_prod`) and is computable for explicit
+families, this is the form used to certify minimax rates. -/
 theorem two_point_lower_bound_of_chiSqDiv_le {est : Ω → ℝ} (hest : Measurable est)
     {θ₀ θ₁ s : ℝ} (hsep : 2 * s ≤ |θ₀ - θ₁|) (hac : P₀ ≪ P₁)
     (hint : Integrable (fun x => ((P₀.rnDeriv P₁ x).toReal - 1) ^ 2) P₁)

@@ -142,9 +142,24 @@ set_option maxHeartbeats 1200000 in
 -- measurability, integrability, two transport equalities) and applies the
 -- abstract `dml_chernozhukov_asymptoticLinear`; the resulting elaboration
 -- exceeds the default heartbeat budget.  Mirrors ATE/DML.lean.
-/-- **Headline sequential DR (DTR) DML asymptotic-linearity theorem**,
-derived from the abstract `dml_chernozhukov_asymptoticLinear` in
-`Estimation/OrthogonalMoments/DMLChernozhukov.lean`.
+/-- **Headline sequential DR (DTR) DML asymptotic-linearity theorem**, derived from the abstract
+`dml_chernozhukov_asymptoticLinear` in `Estimation/OrthogonalMoments/DMLChernozhukov.lean`. Fix [a
+dynamic-treatment-regime estimation system with strict two-stage propensity overlap and satisfying
+the DTR identification assumptions](hyp:h_e_pointwise,h_overlap,hA), and suppose [the factual
+outcome and every counterfactual outcome under a fixed treatment history have finite second
+moment](hyp:h_y2,h_yd2). Given [an i.i.d. sample together with a one-shot cross-fitting split whose
+estimation-fold share converges to some constant strictly between $0$ and
+$1$](hyp:sample,split,c,hc_pos,_hc_lt,h_split_rate), and a sequence of nuisance estimators `η_hat`
+that [remain in the $ε$-overlap ball, with stagewise outcome-regression and propensity errors that
+are
+square-integrable](hyp:h_in_Hε,h_mu0_diff_memLp,h_mu1_diff_memLp,h_e0_diff_memLp,h_e1_diff_memLp),
+such that [the resulting moment function is measurable against the sample and each cross-fitting
+fold, and is both integrable and
+square-integrable](hyp:h_m_meas,h_m_foldA,h_m_foldA_uncurry,h_m_int,h_m_sq_int), and such that [the
+individual L² nuisance-error rates vanish while their product is
+$o_P(n^{-1/2})$](hyp:h_indiv_rate_ρ₁,h_indiv_rate_ρ₂,h_product_rate), then [the resulting
+Chernozhukov one-step DML estimator is asymptotically linear at the true sequential-DR parameter,
+with influence function the sequential doubly-robust score evaluated at the truth](goal).
 
 **Conclusion (Chernozhukov form).**  The Chernozhukov one-step estimator
 `θ̂_n = θ₀ − J₀⁻¹ · Pₙ m(η̂, ·, θ₀) = (1/|B|) Σ ψ_seqDR(η̂, Z_i)` (the

@@ -28,10 +28,11 @@ namespace Causalean.Stat.MomentProblems.BoundedOutcomeEnvelope
 open Causalean.Stat.MomentProblems.ResidualQuadratic.MeasureBridge (l2ResidualQuadratic)
 open MeasureTheory
 
-/-- **Measure-level sharp envelope (`IsLUB`).** For `v ∈ (0,1)`, `rhoEnvelope v` is the least upper
-bound of the set of residuals `l2ResidualQuadratic μ` over admissible laws `μ`.  Equivalently: the
-sup over all probability measures on `[0,1]` with `∫ y² ∂μ = v²` of the `L²` residual of `y²` on
-`span{1, y}` equals the closed form `ρ(v)`, and is attained (by the extremal three-point law). -/
+/-- **Measure-level sharp envelope (`IsLUB`).** For [`v` strictly between `0` and `1`](hyp:hv0,hv1),
+[`rhoEnvelope v` is the least upper bound of the set of residuals `l2ResidualQuadratic μ` over
+admissible laws `μ`](goal).  Equivalently: the sup over all probability measures on `[0,1]` with
+`∫ y² ∂μ = v²` of the `L²` residual of `y²` on `span{1, y}` equals the closed form `ρ(v)`, and is
+attained (by the extremal three-point law). -/
 theorem rho_envelope_isLUB (v : ℝ) (hv0 : 0 < v) (hv1 : v < 1) :
     IsLUB (residualSet v) (rhoEnvelope v) := by
   constructor

@@ -997,8 +997,11 @@ lemma TT_pair_vd_contribution_eq_gap
       rw [hvar]
       ring
 
-/-- TN numerator pair: combining the two ordered pairwise-covariance
-contributions gives `λ_TN · Δ_TN`. -/
+/-- **TN numerator pair.** For [a treated cohort `g` with finite adoption date](hyp:hg) and
+[a never-treated cohort `u` with infinite adoption date](hyp:hu), the sum of the two ordered
+pairwise-covariance contributions between `g` and `u` in the finite cohort panel `P` [equals the
+product of the TN comparison weight and the treated-versus-never contrast,
+`λ_TN P g u · Δ_TN P g u`](goal). -/
 lemma TN_pair_contribution_eq_lambda_delta
     (P : CohortPanel 𝒢 T) {g u : 𝒢}
     (hg : AdoptionDate.isFin (P.A g)) (hu : AdoptionDate.isInf (P.A u)) :

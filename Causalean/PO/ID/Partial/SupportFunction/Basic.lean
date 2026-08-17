@@ -66,8 +66,10 @@ This unfolding lemma exposes the image form used by comparison arguments. -/
 lemma supportFn_eq_iSup_image (C : Set E) (d : E) :
     supportFn C d = sSup ((fun x => ⟪d, x⟫) '' C) := rfl
 
-/-- **Lower sandwich.** If the functional `⟪d, ·⟫` is bounded above on `C`, then
-every feasible point's value is at most the support value. -/
+/-- **Lower sandwich.** For a feasible set `C` in a real inner-product space and a direction `d`,
+if [a point `x` belongs to `C`](hyp:hx) and [the linear functional `⟪d, ·⟫` is bounded above on
+`C`](hyp:hbdd), then [`x`'s functional value is at most the support value: `⟪d, x⟫ ≤ supportFn C
+d`](goal). -/
 theorem le_supportFn {C : Set E} {d : E} {x : E} (hx : x ∈ C)
     (hbdd : BddAbove ((fun x => ⟪d, x⟫) '' C)) :
     ⟪d, x⟫ ≤ supportFn C d :=

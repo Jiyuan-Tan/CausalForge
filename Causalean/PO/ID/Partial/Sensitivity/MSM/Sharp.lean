@@ -136,7 +136,11 @@ theorem completeProp_mem_MSMSetCalib (Λ : ℝ)
     S.completeProp ∈ S.MSMSetCalib Λ :=
   ⟨hmem, hcalib⟩
 
-/-- **The sharp bound is valid:** `E[Y(1)]` lies in the calibrated (sharp) interval. -/
+/-- **The sharp bound is valid.** Assuming [the true complete propensity belongs to the calibrated
+(sharp) marginal-sensitivity ambiguity set](hyp:hmem), [the IPW/tower bridge identity `candMean e₀
+= E[Y(1)]` holds](hyp:hbridge), and [the candidate mean is bounded below and above over the
+calibrated ambiguity set](hyp:hbdd,hbdd'), then [the estimand `E[Y(1)]` lies in the calibrated
+(sharp) interval `[msmLowerCalib Λ, msmUpperCalib Λ]`](goal). -/
 theorem Y1mean_mem_Icc_calib (Λ : ℝ)
     (hmem : S.completeProp ∈ S.MSMSetCalib Λ)
     (hbridge : S.candMean S.completeProp = S.Y1mean)
@@ -154,8 +158,11 @@ theorem Y1mean_mem_Icc_calib (Λ : ℝ)
 theorem MSMSetCalib_subset (Λ : ℝ) : S.MSMSetCalib Λ ⊆ S.MSMSet Λ :=
   fun _ h => h.1
 
-/-- **The sharp upper bound is tighter than the ZSB bound:** `msmUpperCalib Λ ≤ msmUpper Λ`. The
-calibrated set is smaller, so its candidate-mean supremum can only decrease. -/
+/-- **The sharp upper bound is tighter than the ZSB bound.** Assuming [the calibrated
+candidate-mean image is nonempty](hyp:hne) and [the candidate mean is bounded above over the
+uncalibrated odds-ratio-box ambiguity set](hyp:hbdd), [the sharp (calibrated) upper bound is at
+most the ZSB (uncalibrated) upper bound: `msmUpperCalib Λ ≤ msmUpper Λ`](goal). The calibrated set
+is smaller, so its candidate-mean supremum can only decrease. -/
 theorem msmUpperCalib_le_msmUpper (Λ : ℝ)
     (hne : (S.candMean '' S.MSMSetCalib Λ).Nonempty)
     (hbdd : BddAbove (S.candMean '' S.MSMSet Λ)) :

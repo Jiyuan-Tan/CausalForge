@@ -40,9 +40,10 @@ theorem isLittleOp_one_of_le_one {rn : ℕ → ℝ} (hr : ∀ n, rn n ≤ 1)
     mul_le_mul_of_nonneg_left (hr n) (le_of_lt hε)
   exact lt_of_le_of_lt hmul (by simpa using hω)
 
-/-- **The `n^{-1/4}` product rule.** The product of two `o_p(n^{-1/4})` sequences
-is `o_p(n^{-1/2})` — the DML product-rate condition from per-nuisance `n^{-1/4}`
-rates. -/
+/-- **The `n^{-1/4}` product rule.** If [the sequence `Xn` is `o_p(n^{-1/4})`](hyp:hX)
+and [the sequence `Yn` is `o_p(n^{-1/4})`](hyp:hY) under the probability law `μ`, then
+[their pointwise product `Xn·Yn` is `o_p(n^{-1/2})`](goal) — the DML product-rate
+condition from per-nuisance `n^{-1/4}` rates. -/
 theorem isLittleOp_mul_quarter
     (hX : IsLittleOp Xn (fun n => (n : ℝ) ^ (-(1 / 4 : ℝ))) μ)
     (hY : IsLittleOp Yn (fun n => (n : ℝ) ^ (-(1 / 4 : ℝ))) μ) :

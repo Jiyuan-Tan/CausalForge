@@ -71,8 +71,19 @@ variable {P : POSystem}
 
 /-! ### Two-proxy partial-identification bound (Theorem 3) -/
 
-/-- **Theorem 3** (Ghassami-Shpitser-Tchetgen Tchetgen 2024, two-proxy
-partial identification).
+/-- **Theorem 3** (Ghassami-Shpitser-Tchetgen Tchetgen 2024, two-proxy partial
+identification). Fix a treatment arm `a` and assume [the two-proxy assumption
+bundle](hyp:HA) — consistency, latent exchangeability, conditional independence of the
+proxies `W` and `Z` given treatment and covariates, the outcome and treatment-proxy
+bridges, and essential bounds on `Y` — together with [the treatment and outcome
+variables being distinct](hyp:hAY); let `Lenv`, `Uenv` be [lower and upper envelope
+functions bounding the same-arm joint-versus-product density ratio of the two
+proxies](hyp:hL,hU), with [the off-arm stratum of positive mass](hyp:hμpos) and [the
+envelope-weighted product of the outcome- and treatment-proxy conditional bridge means
+integrable](hyp:hU_envInt,hL_envInt). Then [the conditional target `E[Y(a) ∣ A ≠ a]` is
+sandwiched between the essential `Y`-bounds and the integrated envelope bound, expressed
+entirely through observable quantities — the stratum odds ratio, the envelope functions,
+and the observed conditional mean of `Y`](goal).
 
 Given:
 * `HA`     : the two-proxy assumption bundle (consistency, latent

@@ -386,10 +386,17 @@ lemma ennreal_error_lower_bound_of_success_upper_bound
     _ = 1 := ENNReal.ofReal_one
 
 -- @node: lem:coordinatewise-overlap-direct-product
-/-- In a conditionally independent hypercube experiment, decentralized
-coordinate decoders cannot all be correct more often than the common-part
-product bound. If every compressed adjacent KL divergence is at most
-`κ log M`, the displayed finite-`M` simultaneous-error certificate follows. -/
+/-- **Coordinatewise-overlap direct-product bound.**  In a conditionally independent hypercube
+experiment with [at least one coordinate](hyp:hM), [per-coordinate candidate laws `Q j`, indexed
+by a bit](hyp:Q), [a per-coordinate compression map `compress`](hyp:compress) that
+[is measurable at every coordinate](hyp:hcompress), and [per-coordinate decoders `decoder` built
+from the compressed local summary, the other coordinates' raw data, and shared
+randomness](hyp:decoder) that [are jointly measurable](hyp:hdecoder) and [depend on the raw
+sample at coordinate `j` only through its compressed summary, not directly on the raw value at
+`j`](hyp:hlocal), then [decentralized coordinate decoders cannot on average be correct more
+often than the common-part product bound built from the per-coordinate total-variation overlaps;
+and if every compressed adjacent KL divergence is at most `κ log M`, the displayed finite-`M`
+simultaneous-error certificate follows](goal). -/
 lemma coordinatewise_overlap_direct_product
     {M : ℕ} (hM : 1 ≤ M)
     {Z S : Fin M → Type*} {A : Type*}

@@ -162,11 +162,12 @@ lemma minStat_aemeasurable (an bn : ℕ → Ω → ℝ) (a : ℝ)
 
 /-! ## Directional delta method at a tie -/
 
-/-- **Directional delta method for `max` at a tie.**  Suppose the joint rescaled
-deviation `√n • ((âₙ, b̂ₙ) − (a, a))` converges in distribution to `Q` on
-`ℝ × ℝ`.  Then
-
-    √n · (max (âₙ) (b̂ₙ) − a)  ⇒  Q.map (z ↦ max z.1 z.2).
+/-- **Directional delta method for `max` at a tie.** Let `ân`, `b̂n` be two real-valued estimator
+sequences of a common value `a`. Suppose [the joint rescaled deviation
+`√n • ((ân, b̂n) − (a, a))` is measurable at every sample size](hyp:hSn_meas) and [it converges
+in distribution to a probability measure `Q` on `ℝ × ℝ`](hyp:hCLT). Then [the rescaled deviation
+of the pointwise maximum, `√n · (max(ân, b̂n) − a)`, converges in distribution to the
+pushforward of `Q` under the map `(x, y) ↦ max(x, y)`](goal).
 
 This is the directional delta method at the binding point `a = b`, where `max`
 is Hadamard directionally (but not Fréchet) differentiable
@@ -198,8 +199,14 @@ theorem deltaMethod_max_tie
     (Eventually.of_forall fun n => Eventually.of_forall fun ω =>
       (sqrt_mul_max_sub an bn a n ω).symm)
 
-/-- **Directional delta method for `min` at a tie.**  Companion to
-`deltaMethod_max_tie`: at `a = b`,
+/-- **Directional delta method for `min` at a tie.** Let `ân`, `b̂n` be two real-valued estimator
+sequences of a common value `a`. Suppose [the joint rescaled deviation
+`√n • ((ân, b̂n) − (a, a))` is measurable at every sample size](hyp:hSn_meas) and [it converges
+in distribution to a probability measure `Q` on `ℝ × ℝ`](hyp:hCLT). Then [the rescaled deviation
+of the pointwise minimum, `√n · (min(ân, b̂n) − a)`, converges in distribution to the pushforward
+of `Q` under the map `(x, y) ↦ min(x, y)`](goal).
+
+Companion to `deltaMethod_max_tie`: at `a = b`,
 
     √n · (min (âₙ) (b̂ₙ) − a)  ⇒  Q.map (z ↦ min z.1 z.2). -/
 theorem deltaMethod_min_tie

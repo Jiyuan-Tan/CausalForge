@@ -613,10 +613,13 @@ private lemma haussler_log_rhs_nonneg
     mul_nonneg hcoef_nonneg hlog_nonneg
   linarith
 
-/-- HAUSSLER ε-PACKING BOUND, logarithmic form.  A finite Boolean family with
-VC dimension at most `d`, total weight at most `r²`, and pairwise weighted
-Hamming separation at least `ε²` has log-cardinality bounded by a quantity
-depending on `d` and `r²/ε²`, with no ambient-coordinate dependence. -/
+/-- **Haussler ε-packing bound, logarithmic form.** Let [w be a nonnegative weight on the n sample
+coordinates](hyp:hw) with [total weight at most r²](hyp:hwsum), where [ε is positive](hyp:hε) and
+[at most r](hyp:hεr). If [the Boolean family P, viewed as the sets of coordinates where each member
+is true, has VC dimension at most d](hyp:hvc) and [every two distinct members of P are separated by
+weighted Hamming distance at least ε² in that weighting](hyp:hsep), then [the logarithm of the
+cardinality of P is at most `1 + 2d·log(4d·r²/ε²)`](goal) — a bound depending only on d and the
+ratio r²/ε², with no dependence on the ambient coordinate count n. -/
 theorem vc_weightedHamming_packing_card_le
     {n : ℕ} (d : ℕ) (w : Fin n → ℝ) (hw : ∀ j, 0 ≤ w j)
     (r ε : ℝ) (hε : 0 < ε) (hεr : ε ≤ r)

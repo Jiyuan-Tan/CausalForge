@@ -221,10 +221,11 @@ theorem observedIndex_observedAt (M : Causalean.SCM N Ω) (k : Fin M.observed.ca
   letI := M.topoLinearOrder
   simp [SCM.observedAt, SCM.observedIndex]
 
-/-- An observed parent of a node must appear earlier in the canonical observed topological order.
-
-    An observed parent of the `n`-th observed node must already appear in the
-    canonical observed prefix of length `n`. -/
+/-- For a structural causal model `M`, fix [a valid position `n` among the observed
+nodes](hyp:hn), and let `p` be a node such that [there is an edge from `p` to the `n`-th node in
+the canonical observed order](hyp:hparent) and [`p` itself is observed](hyp:hobs); then [the
+canonical index of `p` among the observed nodes is strictly less than `n`](goal) — an observed
+parent always precedes its child in the canonical observed topological order. -/
 theorem observed_parent_index_lt (M : Causalean.SCM N Ω) {n : ℕ}
     (hn : n < M.observed.card) {p : SWIGNode N}
     (hparent : M.dag.edge p (M.observedAt ⟨n, hn⟩).val)
@@ -277,7 +278,9 @@ lemma Equiv.symm {M₁ M₂ : Causalean.SCM N Ω} (h : Equiv M₁ M₂) :
     exact (hE u v ((hG.1 u v).2 hu)).symm
   · exact And.intro hF.symm hL.symm
 
-/-- Structural equivalence is transitive. -/
+/-- Structural equivalence is transitive: if [`M₁` and `M₂` are structurally
+equivalent](hyp:h₁) and [`M₂` and `M₃` are structurally equivalent](hyp:h₂), then [`M₁` and `M₃`
+are structurally equivalent](goal). -/
 lemma Equiv.trans {M₁ M₂ M₃ : Causalean.SCM N Ω}
     (h₁ : Equiv M₁ M₂) (h₂ : Equiv M₂ M₃) : Equiv M₁ M₃ := by
   rcases h₁ with ⟨hG₁, hE₁, hF₁, hL₁⟩

@@ -48,7 +48,16 @@ The portmanteau / Gaussian-boundary helpers and the convergence-in-probability
 primitives used below now live in `Causalean/Stat/Studentize.lean` and
 `Causalean/Stat/ContinuousMapping.lean` (public, estimator-agnostic). -/
 
-/-- **TRAE-DR asymptotic normality** — `thm:est-trae-dr-asymp-normal`.
+/-- **TRAE-DR asymptotic normality** — `thm:est-trae-dr-asymp-normal`. Under [the dual-solution
+hypothesis on `q₀`](hyp:hq₀), [primal nuisance estimators `ĥ_n`, indexed by sample size and
+outcome, satisfying — together with the paired dual estimators — the bundled TRAE-DR remainder
+conditions](hyp:h_hat), and [the law bridge identifying the pushforward of `μ` along the
+observation map `W` with the observation law `P_W`](hyp:h_law_W), suppose further that [the
+√n-rescaled estimator sequence is almost-everywhere measurable at every sample
+size](hyp:h_meas_θ) and [the normalized influence-function partial sum is almost-everywhere
+measurable at every sample size](hyp:_h_meas_sum). Then [the rescaled TRAE-DR estimator
+converges in distribution, along the estimation-fold sizes, to the centered Gaussian law with
+variance `σ₀² := ∫ ρ₀(w)² dP_W`](goal).
 
 Under the hypotheses of `trae_dr_isAsymLinear`, the rescaled estimator
 converges in distribution to `N(0, σ₀²)` along the estimation-fold
@@ -94,7 +103,17 @@ theorem trae_dr_asymp_normal
 
 /-! ## Studentized convergence -/
 
-/-- **Studentized TRAE-DR convergence.**
+/-- **Studentized TRAE-DR convergence.** Fix [a dual solution `q₀` of the inverse-problem
+system `S`](hyp:hq₀) together with [a first-stage nuisance-estimator sequence `ĥ_n`](hyp:h_hat),
+and suppose [the sample's `W`-marginal is identified as `P_W`](hyp:h_law_W). Assume [the
+efficient influence function `ρ₀` is measurable](hyp:h_ρ₀_meas) and [the rescaled estimator
+sequence, its normalized-sum representation, and the studentized statistic itself are all
+almost-everywhere measurable at every sample
+size](hyp:h_meas_θ,h_meas_sum,h_studentized_meas). If [the asymptotic standard deviation
+`σ₀` is strictly positive with `σ₀² = ∫ ρ₀(w)² dP_W`](hyp:_hσ₀_pos,_hσ_eq) and [a
+variance-estimator sequence `σ̂_n` converges to `σ₀` in probability](hyp:_hσ_consistent), then
+[the studentized statistic `√|B(n)| · (θ̂_n − θ₀) / σ̂_n` converges in distribution to the
+standard normal law `N(0, 1)`](goal).
 
 Given any variance-estimator sequence `σ_hat_n : ℕ → Ω → ℝ` satisfying
 `σ̂_n →_p σ₀` and `σ₀ > 0`,
@@ -159,11 +178,18 @@ theorem trae_dr_studentized
 
 /-! ## Wald-interval asymptotic coverage -/
 
-/-- **Wald asymptotic coverage** — `thm:est-trae-dr-asymp-normal`.
-
-If `σ̂_n →_p σ₀` and `Φ` is the standard-normal CDF, then for any
-`z > 0`, the probability that the TRAE-DR estimator is within
-`z · σ̂_n / √|B(n)|` of `θ₀` tends to `2 Φ(z) − 1`.
+/-- **Wald asymptotic coverage** — `thm:est-trae-dr-asymp-normal`. Under the same setup as
+`trae_dr_studentized` — [a dual solution `q₀` of the inverse-problem system `S`](hyp:hq₀),
+[a first-stage nuisance-estimator sequence `ĥ_n`](hyp:h_hat), [the sample's `W`-marginal
+identified as `P_W`](hyp:h_law_W), [measurability of `ρ₀`, of the rescaled estimator, of its
+normalized-sum representation, and of the studentized
+statistic](hyp:h_ρ₀_meas,h_meas_θ,h_meas_sum,h_studentized_meas), and [a variance-estimator
+sequence `σ̂_n` that is consistent in probability for a strictly positive `σ₀` satisfying
+`σ₀² = ∫ ρ₀(w)² dP_W`](hyp:_hσ₀_pos,_hσ_eq,_hσ_consistent) — fix any [strictly positive real
+number `z`](hyp:_hz_pos). Then [provided the coverage probability of the Wald interval
+`θ̂_n ± z · σ̂_n / √|B(n)|` and the probability that the studentized statistic lands in
+`[-z, z]` become asymptotically equal, the Wald-interval coverage probability converges to
+the standard-normal mass `2 Φ(z) − 1` on `[-z, z]`](goal).
 
 The hypothesis `h_wald_studentized` is the event-rewrite/exceptional-set
 bridge: it says the Wald coverage event and the studentized interval event

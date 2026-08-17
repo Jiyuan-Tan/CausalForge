@@ -62,13 +62,13 @@ noncomputable def bootstrapSE (S : IIDSample Ω X μ P) (ψ : X → ℝ) (n : �
     Ω → ℝ :=
   fun ω => Real.sqrt (bootstrapVar S ψ n ω)
 
-/-- **Consistency of the bootstrap standard error.**  Under a measurable,
-integrable, square-integrable, mean-zero influence function `ψ`, the bootstrap
-standard error converges in probability to the asymptotic standard deviation:
+/-- **Consistency of the bootstrap standard error.** Along an i.i.d. sample `S`, if the
+influence function `ψ` is [measurable](hyp:hψ_meas), [integrable](hyp:hψ_int),
+[square-integrable](hyp:hψ_sq_int), and [has population mean zero](hyp:hmean), then [the
+bootstrap standard error of `√n θ̂` converges in probability to the asymptotic standard
+deviation $\sqrt{\int \psi^2\,dP}$](goal).
 
-    bootstrapSE S ψ n  →ₚ  √(∫ x, (ψ x)² ∂P).
-
-Square root (continuous) applied to `bootstrapVar_tendsto_inProb`. -/
+    Square root (continuous) applied to `bootstrapVar_tendsto_inProb`. -/
 theorem bootstrapSE_tendsto_inProb (S : IIDSample Ω X μ P)
     [IsProbabilityMeasure P] {ψ : X → ℝ}
     (hψ_meas : Measurable ψ)
@@ -96,15 +96,17 @@ end IIDSample
 variable [IsProbabilityMeasure μ] [IsProbabilityMeasure P]
   {θn : ℕ → Ω → ℝ} {θ₀ : ℝ} {ψ : X → ℝ} {S : IIDSample Ω X μ P}
 
-/-- **Bootstrap studentized CLT.**  Let `θ̂ₙ` be asymptotically linear at `θ₀`
-with influence function `ψ` along an i.i.d. sample, and let the influence
-function be nondegenerate (`0 < ∫ ψ² dP`).  Then the bootstrap-studentized
-statistic converges in distribution to a standard normal:
+/-- **Bootstrap studentized CLT.** Let [`θ̂ₙ` be asymptotically linear at `θ₀` with influence
+function `ψ` along the i.i.d. sample `S`](hyp:h), where `ψ` is [measurable](hyp:hψ_meas),
+[integrable](hyp:hψ_int), and [square-integrable](hyp:hψ_sq_int); suppose further that [the
+influence function is nondegenerate, $\int \psi^2\,dP > 0$](hyp:hpos), [the rescaled estimator
+is a.e. measurable at every sample size](hyp:hθn_meas), and [the bootstrap studentized
+statistic is a.e. measurable at every sample size](hyp:hStud_meas). Then [the
+bootstrap-studentized statistic $\sqrt n(\hat\theta_n-\theta_0)/\hat\sigma_n$ converges in
+distribution to the standard normal law](goal), where $\hat\sigma_n$ is the bootstrap standard
+error.
 
-    √n (θ̂ₙ − θ₀) / σ̂ₙ  ⇒  N(0, 1),
-
-where `σ̂ₙ = bootstrapSE` is the bootstrap standard error.  Combines
-`IsAsymLinear.tendsto_normal` (numerator `⇒ N(0, ∫ ψ²)`),
+    Combines `IsAsymLinear.tendsto_normal` (numerator `⇒ N(0, ∫ ψ²)`),
 `bootstrapSE_tendsto_inProb` (`σ̂ₙ →ₚ √(∫ ψ²)`), and the generic studentized CLT
 `Tendsto_dist.div_tendsto_inProb_gaussian`. -/
 theorem bootstrap_studentized_tendsto
@@ -134,15 +136,18 @@ theorem bootstrap_studentized_tendsto
   -- generic studentized CLT
   exact Tendsto_dist.div_tendsto_inProb_gaussian hσ₀_pos hθn_meas hXn hSE hStud_meas
 
-/-- **Bootstrap Wald asymptotic coverage.**  Under the hypotheses of
-`bootstrap_studentized_tendsto`, the bootstrap studentized interval has
-asymptotic coverage `N(0,1)(Icc (-z) z)`: for any `z > 0` and any real sequence
-`coverProb` asymptotically equivalent to the studentized interval event
-(`h_bridge`),
+/-- **Bootstrap Wald asymptotic coverage.** Under [the asymptotic-linearity
+hypothesis](hyp:h), [measurability](hyp:hψ_meas), [integrability](hyp:hψ_int), and
+[square-integrability](hyp:hψ_sq_int) of `ψ`, [influence-function nondegeneracy](hyp:hpos), and
+[measurability of the rescaled estimator](hyp:hθn_meas) and [of the studentized
+statistic](hyp:hStud_meas) at every sample size — the hypotheses of
+`bootstrap_studentized_tendsto` — fix [a positive critical value `z`](hyp:hz) and a
+coverage-probability sequence `coverProb` that [asymptotically tracks the studentized
+interval's true coverage event](hyp:h_bridge); then [`coverProb` converges to the standard
+normal probability of the interval `[-z, z]`](goal), so the bootstrap studentized interval has
+asymptotic $N(0,1)$-coverage.
 
-    coverProb n  →  N(0,1)(Icc (-z) z).
-
-Specializing `z = z_{1-α/2}` gives the `1 − α` bootstrap confidence interval
+    Specializing `z = z_{1-α/2}` gives the `1 − α` bootstrap confidence interval
 `θ̂ₙ ± z_{1-α/2} · σ̂ₙ / √n`.  The bridge hypothesis isolates the event-rewrite /
 exceptional-set step (matching `trae_dr_wald_coverage`); it holds with `coverProb`
 the natural interval-coverage probability whenever `σ̂ₙ > 0` a.e. -/

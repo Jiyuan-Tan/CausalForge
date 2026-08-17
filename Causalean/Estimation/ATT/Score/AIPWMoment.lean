@@ -269,8 +269,12 @@ lemma H_ε_overlap_factualX
   exact (MeasureTheory.ae_map_iff
     S.toPOBackdoorSystem.measurable_factualX.aemeasurable hset).mp hx
 
-/-- Membership in the ATT `H_ε` transports the one-sided a.e. overlap bound to
-the observed-data law along the covariate projection. -/
+/-- **Overlap transports to the joint data law.** For [a candidate nuisance pair lying
+in the ATT overlap-bounded realization set `H_ε`, in particular satisfying the one-sided
+upper overlap bound `η.e_fn ≤ 1 − ε` almost everywhere on the covariates](hyp:hη), [the
+same bound holds almost everywhere under the joint law of the covariates, treatment, and
+outcome, once the candidate propensity is evaluated at the covariate projection of the
+data triple](goal). -/
 lemma H_ε_overlap_P_Z
     (S : TreatedEstimationSystem P γ) {ε : ℝ}
     {η : TreatedNuisanceVec γ} (hη : η ∈ H_ε S ε) :

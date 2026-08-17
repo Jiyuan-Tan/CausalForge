@@ -132,8 +132,11 @@ theorem linearParameterClass_hasPseudoDimAtMost
     simp only [hcoord, mul_zero, Finset.sum_const_zero]
   linarith
 
-/-- A bounded coefficient box acting on finitely many bounded measurable
-features has uniform polynomial `L²` entropy. -/
+/-- **Covering certificate for a bounded-coefficient linear class.** Given [a finite family of
+measurable real-valued features](hyp:hmeas), each [bounded in absolute value by M](hyp:hφ), where
+[B is a positive coefficient bound](hyp:hB) and [M is positive](hyp:hM), [the class of linear
+combinations of the features with each coefficient constrained to `[-B,B]` carries a uniform
+polynomial `L²` covering certificate at envelope `|K|·B·M`](goal). -/
 theorem linearParameterClass_hasPolynomialL2Cover
     {K : Type w} [Fintype K] [Nonempty K]
     (φ : K → 𝒳 → ℝ) {B M : ℝ}

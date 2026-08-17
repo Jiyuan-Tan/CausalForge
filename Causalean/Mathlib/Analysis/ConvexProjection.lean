@@ -279,8 +279,10 @@ theorem loewnerProj_mem (hcC : c ≤ C) (G : Matrix (Fin p) (Fin p) ℝ) :
   rcases hm with ⟨S, hS, heq⟩
   simpa [← heq] using hS
 
-/-- With ordered endpoints, Loewner projection cannot increase Frobenius distance from any matrix
-already in the corresponding interval. -/
+/-- **Loewner projection is a nonexpansive (nearest-point) map.** For [ordered interval endpoints
+`c ≤ C`](hyp:hcC), if [a target matrix already lies in the Loewner interval `[cI, CI]`](hyp:hS),
+then [projecting an arbitrary matrix onto that interval, in Frobenius geometry, does not increase
+its Frobenius distance to the in-interval target matrix](goal). -/
 theorem loewnerProj_frobDist_le (hcC : c ≤ C)
     (G S : Matrix (Fin p) (Fin p) ℝ) (hS : S ∈ loewnerSet p c C) :
     frobDist (loewnerProj p c C G) S ≤ frobDist G S := by

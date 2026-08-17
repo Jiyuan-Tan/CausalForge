@@ -359,8 +359,10 @@ theorem exp_neg_half_klDiv_le_bhattacharyya (hac : μ ≪ ν)
 
 end Affinity
 
-/-- **Bretagnolle–Huber inequality.**  For probability measures `μ ≪ ν` with
-finite KL divergence, the two-point testing affinity is at least `½·exp(-KL)`:
+/-- **Bretagnolle–Huber inequality.**  For probability measures `μ`, `ν` such that
+[`μ` is absolutely continuous with respect to `ν`](hyp:hac) and [their Kullback–Leibler
+divergence is finite](hyp:hfin), [the two-point testing affinity `1 − tvDist μ ν` is at least
+`½·exp(-KL(μ‖ν))`](goal):
 
   `(1/2)·exp(-(klDiv μ ν).toReal) ≤ 1 - tvDist μ ν`.
 

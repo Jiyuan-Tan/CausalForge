@@ -125,9 +125,11 @@ theorem supermartingale_maximal_ineq [IsFiniteMeasure μ] {M : ℕ → Ω → �
   rw [ENNReal.le_ofReal_iff_toReal_le (measure_ne_top _ _) hdiv_nonneg]
   exact (le_div_iff₀ hlam).2 (by simpa [mul_comm] using hmul)
 
-/-- **Ville's inequality (time-uniform maximal inequality).** For a nonnegative supermartingale `M`
-and level `λ > 0`, the probability that `M` *ever* reaches `λ` is at most `E[M₀] / λ`.  The bound is
-over the event of reaching the boundary at some finite time. -/
+/-- **Ville's inequality (time-uniform maximal inequality).** If [`M` is a supermartingale adapted
+to the filtration `ℱ` under the finite measure `μ`](hyp:hM), [`M` is everywhere
+nonnegative](hyp:hnonneg), and [the level `λ` is positive](hyp:hlam), then [the probability that
+`M` ever reaches `λ` is at most `E[M₀] / λ`](goal), the bound taken over the event of reaching the
+boundary at some finite time. -/
 theorem ville_inequality [IsFiniteMeasure μ] {M : ℕ → Ω → ℝ}
     (hM : Supermartingale M ℱ μ) (hnonneg : ∀ n, 0 ≤ M n) {lam : ℝ} (hlam : 0 < lam) :
     μ {ω | ∃ n, lam ≤ M n ω} ≤ ENNReal.ofReal (μ[M 0] / lam) := by

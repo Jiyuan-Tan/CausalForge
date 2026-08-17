@@ -22,9 +22,13 @@ namespace Causalean.ML
 
 open MeasureTheory ProbabilityTheory Real Causalean.Stat.Concentration
 
-/-- **Rademacher complexity of the L¹-ball linear class.**  Over `L∞`-bounded features
-(`|Xⱼ| ≤ X∞`), the expected Rademacher complexity of the class of linear predictors with
-`L¹` weight norm `≤ W` is at most `(X∞·W/√n)·√(2 log 2d)`. -/
+/-- **Rademacher complexity of the L¹-ball linear class.** If [the dimension `d` is
+positive](hyp:hd), [the sample size `n` is positive](hyp:hn), [the coordinatewise feature
+bound `Xinf` is nonnegative](hyp:hXinf), [the weight bound `W` is
+nonnegative](hyp:hW), and [every feature coordinate is bounded in absolute value by
+`Xinf`](hyp:hXbound), then [the expected Rademacher complexity of the class of linear
+predictors with `L¹` weight norm at most `W` is at most `(Xinf·W/√n)·√(2 log
+2d)`](goal). -/
 theorem rademacherComplexity_l1_ball_le {d n : ℕ} (hd : 0 < d) (hn : 0 < n) {Ω : Type*}
     [MeasurableSpace Ω] {μ : Measure Ω} [IsProbabilityMeasure μ] {Xinf W : ℝ}
     (hXinf : 0 ≤ Xinf) (hW : 0 ≤ W)
@@ -66,10 +70,15 @@ theorem rademacherComplexity_l1_ball_le {d n : ℕ} (hd : 0 < d) (hn : 0 < n) {�
     _ = (Xinf * W / Real.sqrt (n : ℝ)) * Real.sqrt (2 * Real.log (2 * d)) := by
       simp [C]
 
-/-- **Lasso ERM excess-risk rate over the L¹ ball.**  For `L∞`-bounded feature vectors
-and linear predictors indexed by the `L¹` ball, any empirical-risk minimizer against a
-comparator `wstar` has excess population risk larger than
-`4·(X∞·W/√n)·√(2 log 2d) + 2ε` with probability at most `exp(-ε²tn)`. -/
+/-- **Lasso ERM excess-risk rate over the L¹ ball.** For linear predictors indexed by
+the `L¹` ball, if [the dimension `d` is positive](hyp:hd), [the sample size `n` is
+positive](hyp:hn), [the coordinatewise feature bound `Xinf` is
+nonnegative](hyp:hXinf), [the weight bound `W` is nonnegative](hyp:hW), [the feature map
+`X` is measurable](hyp:hX), [the constant `t` satisfies the calibration
+`t·(Xinf·W)² ≤ 1/2`](hyp:ht'), [the tolerance `ε` is nonnegative](hyp:hε), and [the
+estimator `ŵ` attains empirical risk no larger than that of the comparator
+`wstar`](hyp:hERM), then [the probability that the excess population risk of `ŵ` over
+`wstar` exceeds `4·(Xinf·W/√n)·√(2 log 2d) + 2ε` is at most `exp(-ε²tn)`](goal). -/
 theorem lasso_erm_excess_rate {d n : ℕ} (hd : 0 < d) (hn : 0 < n) {Ω : Type*}
     [MeasurableSpace Ω] {μ : Measure Ω} [IsProbabilityMeasure μ] {Xinf W : ℝ}
     (hXinf : 0 ≤ Xinf) (hW : 0 ≤ W)

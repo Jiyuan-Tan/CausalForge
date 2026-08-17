@@ -39,7 +39,10 @@ open MeasureTheory ProbabilityTheory Filter Topology
 
 variable {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω}
 
-/-- Transfer `o_p` along an eventual pointwise equality of the sequences. -/
+/-- **Transfer of `o_p` along eventual equality.** For sequences of random variables
+`f, g : ℕ → Ω → ℝ` and a rate `r : ℕ → ℝ`, if [`g` is `o_p(r)` under `μ`](hyp:hg) and
+[`f n = g n` for all sufficiently large `n`](hyp:hfg), then [`f` is also `o_p(r)` under
+`μ`](goal). -/
 theorem isLittleOp_of_eventuallyEq {f g : ℕ → Ω → ℝ} {r : ℕ → ℝ}
     (hg : IsLittleOp g r μ) (hfg : ∀ᶠ n in atTop, f n = g n) :
     IsLittleOp f r μ := by

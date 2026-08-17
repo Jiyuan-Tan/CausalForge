@@ -62,9 +62,11 @@ private lemma apply_eq_self_of_mem_range {P : E →L[ℝ] E} (hidem : P ∘L P =
   have := congrArg (fun (f : E →L[ℝ] E) => f y) hidem
   simpa using this
 
-/-- **The law of `‖P z‖²` under the standard Gaussian, for `P` an orthogonal
-projection (self-adjoint idempotent).**  It is the chi-squared distribution with
-`finrank ℝ (range P)` degrees of freedom. -/
+/-- For a continuous linear self-map `P` of a finite-dimensional real inner-product space that
+is [self-adjoint](hyp:hsa) and [idempotent, i.e. `P` composed with itself equals `P`](hyp:hidem)
+— so that `P` is an orthogonal projection — [the law of $\|Pz\|^2$ under the standard Gaussian
+on the space equals the chi-squared distribution with degrees of freedom equal to the dimension
+of the range of `P`](goal). -/
 theorem stdGaussian_map_normSq_orthogonalProjection
     (P : E →L[ℝ] E) (hsa : IsSelfAdjoint P) (hidem : P ∘L P = P) :
     (stdGaussian E).map (fun z => ‖P z‖ ^ 2)

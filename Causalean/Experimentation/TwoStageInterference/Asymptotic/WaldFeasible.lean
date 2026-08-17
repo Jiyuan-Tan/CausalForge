@@ -121,14 +121,15 @@ private lemma clt_interval_liminf_lb (Exp : ℕ → LHExperiment)
         Filter.liminf_le_liminf (Filter.Eventually.of_forall hbound) hbdd hcobdd
 
 /-- **Asymptotic feasible Wald coverage (Liu–Hudgens 2014).** Along a sequence of two-stage
-Hudgens–Halloran experiments `Exp`, write `stud n` for the studentized statistic for the
-treatment-minus-control direct-effect contrast (pinned by `hstud`), and let `Vh n` be an arbitrary
-variance estimator. Assume the per-threshold direct-contrast CLT (`hclt`, exactly
-`directEffect_clt`'s conclusion ∀ `t`),
-an everywhere-positive true variance (`hVar`), and that `Vh` is *conservative-consistent* — for
-every slack `ε > 0` the bad event `V̂ < (1−ε)·directVar` has probability `→ 0` (`hVhat`).  With
-`zq = z_{1−γ/2} ≥ 0` the standard-normal upper quantile (`hzq`), the **feasible** Wald interval
-`D̂E ± zq·√(Vh)` attains asymptotic coverage of `DE̅` at least `1 − γ`. -/
+Hudgens–Halloran experiments `Exp`, let [`stud n` be the studentized statistic
+`(D̂E − DE̅)/√directVar`](hyp:stud,hstud) for the treatment-minus-control direct-effect contrast,
+and assume [its per-threshold CDF converges to the standard normal CDF at every
+threshold](hyp:hclt) and [the design variance is everywhere positive](hyp:hVar). Let [`Vh n` be
+an arbitrary variance estimator that is conservative-consistent — for every slack `ε > 0` the
+probability it undershoots `(1−ε)` times the true variance tends to zero](hyp:Vh,hVhat), and let
+[`zq ≥ 0` be the standard-normal upper quantile at level `γ`, `Φ(zq) = 1 − γ/2`](hyp:hzq0,hzq).
+Then [the feasible Wald interval `D̂E ± zq·√(Vh)` attains asymptotic coverage of `DE̅` at least
+`1 − γ`](goal). -/
 theorem wald_coverage_feasible (Exp : ℕ → LHExperiment)
     (stud : ∀ n, (StratAssign (Exp n).ι × ∀ i, Fin ((Exp n).gsize i) → Bool) → ℝ)
     (hstud : ∀ n sw, stud n sw = ((Exp n).estD sw - (Exp n).DEbar) / Real.sqrt ((Exp n).directVar))

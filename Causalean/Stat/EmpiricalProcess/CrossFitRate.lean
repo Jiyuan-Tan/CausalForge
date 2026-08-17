@@ -447,13 +447,18 @@ Here `∫ g n ω dP = 𝔼[g n (·, W) | m_A n](ω)` is the conditional mean (th
 fold is independent of `m_A n`), so `Xₙ` is exactly `√|s n|·(ℙₙ g − 𝔼[g|m_A n])`.
 The second-moment estimate is `Causalean.Mathlib.iid_centered_sum_sq_lintegral_le`;
 the rate then follows from `IsBigOp.of_sq_lintegral_le`. -/
-/-- **Cross-fit empirical-increment rate.** For a score that depends on the
-sample only through a training σ-algebra (the cross-fitting situation: a fixed
-function evaluated at nuisances estimated on the other folds), the centred and
-scaled evaluation-fold average is stochastically bounded at the root of any
-deterministic sequence dominating the score's mean squared norm — the
-empirical-process step that gives cross-fit estimators their rate without
-entropy conditions. -/
+/-- **Cross-fit empirical-increment rate.** Given observations [`W i`, each of which is
+measurable](hyp:hW_meas), grouped into evaluation folds [`s n`, each nonempty](hyp:hs_pos), and
+training σ-algebras [`m_A n`, each contained in the ambient σ-algebra on the sample
+space](hyp:hm_A_le) such that [the training σ-algebra `m_A n` is independent of the observations
+indexed by the fold `s n`](hyp:hindep) and [those fold observations are, conditionally, i.i.d.
+draws from `P`](hyp:hiid): for a score `g n` that [viewed jointly in the sample point and its
+argument is measurable with respect to the training σ-algebra `m_A n` (the cross-fitting case of
+a fixed integrand evaluated at a nuisance estimated on the other folds)](hyp:hg_meas) and [is
+square-integrable under `P` at every sample point](hyp:hg_memLp), and for any [deterministic,
+nonnegative sequence `Vn`](hyp:hVn) that [dominates the average, over the training draw, of the
+squared `L²(P)`-norm of `g n`](hyp:hVbound), [the centered and rescaled evaluation-fold average
+of `g n` is stochastically bounded at the rate $\sqrt{V_n}$](goal). -/
 theorem isBigOp_centered_crossFit_sum
     {Ω X : Type*} [mΩ : MeasurableSpace Ω] [mX : MeasurableSpace X]
     {μ : Measure Ω} {P : Measure X}
@@ -694,8 +699,11 @@ theorem sampleMean_sub_meas_ge_le
           congr 1
           field_simp [hnR.ne', ht.ne']
 
-/-- **Unconditional `O_p` rate (Lemma A).**  The centered sample mean is
-`O_p(n^{-1/2} · (E_P[f²])^{1/2})`:
+/-- **Unconditional `O_p` rate (Lemma A).** For an i.i.d. sample `S` and [a statistic `f` that is
+measurable and square-integrable under the sampling distribution `P`](hyp:hf_meas,hf), [the
+sample mean over the first `n` observations, centered at the population mean $\int f\,dP$, is
+stochastically bounded at the rate $\sqrt{E_P[f^2]/n}$: it is
+$O_p(n^{-1/2}(E_P[f^2])^{1/2})$](goal):
 
     (ℙₙf − ∫ f dP) = O_p( √(E_P[f²] / n) ).
 

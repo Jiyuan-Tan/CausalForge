@@ -32,8 +32,12 @@ variable {P : POSystem} {α : Type*}
   [MeasurableSpace α] [MeasurableSingletonClass α]
   (S : POManskiIVSystem P α)
 
-/-- **`Set.Icc` form of `manski_bounds_ATE`.**  The per-stratum-pair Manski
-no-assumption sandwich, restated as membership in the reported interval. -/
+/-- **`Set.Icc` form of `manski_bounds_ATE`.** Under [the baseline Manski assumptions](hyp:hA)
+and [mean independence of both potential outcomes from the instrument](hyp:hMI), for
+[any two instrument values `z₁, z₀` in the support of the instrument](hyp:hz₁,hz₀),
+[the average treatment effect lies in the closed interval from the `z₁`-lower/`z₀`-upper
+worst-case bound to the `z₁`-upper/`z₀`-lower worst-case bound](goal) — the per-stratum-pair
+Manski no-assumption sandwich restated as interval membership. -/
 theorem manski_ATE_mem_Icc [IsFiniteMeasure P.μ]
     (hA : S.BaseAssumptions) (hMI : S.MeanIndep)
     {z₁ z₀ : α} (hz₁ : z₁ ∈ S.support) (hz₀ : z₀ ∈ S.support) :
@@ -42,9 +46,13 @@ theorem manski_ATE_mem_Icc [IsFiniteMeasure P.μ]
   have h := S.manski_bounds_ATE hA hMI hz₁ hz₀
   exact Causalean.PartialID.mem_Icc_of_sandwich h.1 h.2
 
-/-- **`Set.Icc` form of `manski_bounds_ATE_ciSup`.**  The sup/inf-aggregated
-Manski no-assumption sandwich, restated as membership in the reported
-interval. -/
+/-- **`Set.Icc` form of `manski_bounds_ATE_ciSup`.** Under [the baseline Manski
+assumptions](hyp:hA), [mean independence of both potential outcomes from the
+instrument](hyp:hMI), and [a nonempty instrument support](hyp:hne), [the average treatment
+effect lies in the closed interval from the supremum-of-lowers-minus-infimum-of-uppers bound to
+the infimum-of-uppers-minus-supremum-of-lowers bound, aggregated over every instrument
+stratum](goal) — the sup/inf-aggregated Manski no-assumption sandwich restated as interval
+membership. -/
 theorem manski_ATE_mem_Icc_ciSup [IsFiniteMeasure P.μ]
     (hA : S.BaseAssumptions) (hMI : S.MeanIndep) (hne : S.support.Nonempty) :
     S.ATE ∈ Set.Icc
@@ -55,8 +63,11 @@ theorem manski_ATE_mem_Icc_ciSup [IsFiniteMeasure P.μ]
   have h := S.manski_bounds_ATE_ciSup hA hMI hne
   exact Causalean.PartialID.mem_Icc_of_sandwich h.1 h.2
 
-/-- **`Set.Icc` form of `mtr_mts_bounds_ATE`.**  The MTR + MTS sandwich,
-restated as membership in `[0, E[Y|D=1] - E[Y|D=0]]`. -/
+/-- **`Set.Icc` form of `mtr_mts_bounds_ATE`.** Under [the baseline Manski
+assumptions](hyp:hA), [monotone treatment response](hyp:hMTR), and [monotone treatment
+selection](hyp:hMTS), [the average treatment effect lies in the closed interval from `0` to the
+naive observed contrast `E[Y | D=1] − E[Y | D=0]`](goal) — the MTR + MTS sandwich restated as
+interval membership. -/
 theorem mtr_mts_ATE_mem_Icc (hA : S.BaseAssumptions)
     (hMTR : S.MTR) (hMTS : S.MTS) :
     S.ATE ∈ Set.Icc 0
@@ -65,8 +76,11 @@ theorem mtr_mts_ATE_mem_Icc (hA : S.BaseAssumptions)
   have h := S.mtr_mts_bounds_ATE hA hMTR hMTS
   exact Causalean.PartialID.mem_Icc_of_sandwich h.1 h.2
 
-/-- **`Set.Icc` form of `mtr_miv_bounds_ATE`.**  The MTR + MIV sandwich,
-restated as membership in `[0, ∫ (mUpper1(Z) - mLower0(Z))]`. -/
+/-- **`Set.Icc` form of `mtr_miv_bounds_ATE`.** Under [the baseline Manski
+assumptions](hyp:hA), [monotone treatment response](hyp:hMTR), and [a monotone instrumental
+variable](hyp:hMIV), [the average treatment effect lies in the closed interval from `0` to the
+integrated monotone-instrument envelope contrast `∫ (mUpper1(Z) − mLower0(Z))`](goal) — the
+MTR + MIV sandwich restated as interval membership. -/
 theorem mtr_miv_ATE_mem_Icc [IsFiniteMeasure P.μ] [Fintype α]
     (hA : S.BaseAssumptions) (hMTR : S.MTR) (hMIV : S.MIV) :
     letI := hMIV.inst

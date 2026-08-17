@@ -74,10 +74,24 @@ noncomputable def dmlChernozhukovEstimator
     M.θ₀ - M.J₀_inv * (((split.foldB n).card : ℝ)⁻¹ *
       ∑ i ∈ split.foldB n, M.m (η_hat n ω) (sample.Z i ω) M.θ₀)
 
-/-- **Asymptotic linearity of the Chernozhukov DML estimator.**  Drops the
-zero-centering hypothesis `hθ_zero` from `dml_asymptoticLinear`.  Conclusion
-is in **Chernozhukov form**: influence function `−J₀⁻¹ · m(η₀, ·, θ₀)` and
-asymptotic variance `J₀⁻¹ Σ J₀⁻ᵀ` where `Σ := ∫ m(η₀, z, θ₀)² dP_Z`.
+/-- **Asymptotic linearity of the Chernozhukov DML estimator.** Drops the zero-centering
+hypothesis `hθ_zero` from `dml_asymptoticLinear`. Given a general moment M with [mean
+zero at the truth](hyp:_hMZ), assume [the truth-evaluated score is square-integrable
+(finite variance)](hyp:_hFV). Given an i.i.d. sample with a one-shot fold split whose
+fold-B fraction converges to a strictly positive limit [`c > 0`](hyp:_hc_pos) [along
+`card (foldB n) / n → c`](hyp:_h_split_rate), and a sequence of cross-fitted nuisance
+estimators η̂, suppose [the population moment at η̂ is bounded by a constant times the
+product of the two bilinear-remainder seminorms, at every fold and sample
+point](hyp:_hBR_at). Assume the technical regularity package that [the moment at η̂ is
+jointly measurable](hyp:_h_m_meas), [fold-A-measurable in
+ω](hyp:_h_m_foldA,_h_m_foldA_uncurry), and, at every fold and sample point,
+[integrable](hyp:_h_m_int) and [square-integrable](hyp:_h_m_sq_int). Finally suppose [the
+L² score difference between the estimated and true nuisance is
+o_P(1)](hyp:_h_score_diff_rate), and [the product of the two nuisance-error rates decays
+at the parametric rate `o_P(n^{-1/2})`](hyp:_h_product_rate). Then [the Chernozhukov
+one-step estimator is asymptotically linear at the truth `M.θ₀`, with influence function
+`−J₀⁻¹ · m(η₀, ·, θ₀)` and asymptotic variance `J₀⁻¹ Σ J₀⁻ᵀ` where
+`Σ := ∫ m(η₀, z, θ₀)² dP_Z`, indexed over `split.foldB`](goal).
 
 Hypotheses (mirroring `dml_asymptoticLinear`):
 

@@ -45,13 +45,17 @@ namespace ExposureMappingInterference
 
 open Causalean.Experimentation.DesignBased
 
-/-- **Reduction of feasible-interval variance consistency to L²-relative consistency.**
-Given the standing overlap/no-degeneracy conditions (so the conservativeness
-`Var[τ̂] ≤ E[Vh]` holds), positive true variance, and the L²-relative-consistency limit
-`Var[Vh]/Var[τ̂]² → 0`, the conservative variance estimator undershoots the true variance
-only with vanishing probability: for every `ε > 0`,
-`Pr[ Vh < (1−ε)·Var[τ̂] ] → 0`.  This is exactly the hypothesis `hVhat` consumed by
-`wald_coverage_feasible`. -/
+/-- **Reduction of feasible-interval variance consistency to L²-relative consistency.** For [a pair
+of treatment sequences `dk`, `dl`](hyp:dk,dl) with [`dk n ≠ dl n` for every `n`](hyp:hne), suppose
+[every unit has nonzero exposure propensity under `dk`](hyp:hk) and [under `dl`](hyp:hl), and
+[every off-diagonal pair has nonzero same-arm](hyp:hjk,hjl) and [nonzero cross-arm](hyp:hjc) joint
+exposure propensities — the standing overlap conditions giving the conservativeness
+`Var[τ̂] ≤ E[V̂]`. If [the true effect-estimator variance is everywhere positive](hyp:hVarpos) and
+[the L²-relative-consistency limit `Var[V̂]/Var[τ̂]² → 0` holds](hyp:hrel), then [the conservative
+variance estimator undershoots the true variance only with vanishing probability: for every
+`ε > 0`, `Pr[Vh < (1−ε)·Var[τ̂]] → 0`](goal).
+
+This is exactly the hypothesis `hVhat` consumed by `wald_coverage_feasible`. -/
 theorem htEffectVarEst_undershoot_tendsto_zero
     (Exp : ℕ → Experiment) (dk dl : ∀ n, (Exp n).Δ)
     (hne : ∀ n, dk n ≠ dl n)
@@ -119,14 +123,19 @@ theorem htEffectVarEst_undershoot_tendsto_zero
     have h := hrel.const_mul (1 / ε ^ 2)
     simpa using h
 
-/-- **Feasible Wald coverage from L²-relative variance consistency (capstone).**
-Combining the variance-consistency reduction (`htEffectVarEst_undershoot_tendsto_zero`) with
-the feasible-interval coverage theorem (`wald_coverage_feasible`), the paper's actual interval
-`τ̂ ± z_{1−α/2}·√V̂` attains asymptotic coverage `≥ 1 − α` once the single analytic input
-`Var[V̂]/Var[τ̂]² → 0` is supplied (in addition to the local-dependence CLT, positive variance,
-and the standing overlap/no-degeneracy conditions).  This is the feasible counterpart of
-`wald_coverage_of_conditions` with the variance-estimator-consistency premise reduced to its
-quantitative core. -/
+/-- **Feasible Wald coverage from L²-relative variance consistency (capstone).** For [a pair
+of treatment sequences `dk`, `dl`](hyp:dk,dl) with [`dk n ≠ dl n` for every `n`](hyp:hne),
+suppose [the studentized effect statistic satisfies the local-dependence central limit
+theorem](hyp:hclt), [every unit has nonzero exposure propensity under `dk`](hyp:hk) and
+[under `dl`](hyp:hl), and [every off-diagonal pair has nonzero same-arm](hyp:hjk,hjl) and
+[nonzero cross-arm](hyp:hjc) joint exposure propensities. If [the true effect-estimator
+variance is everywhere positive](hyp:hVar) and [the L²-relative-consistency limit
+`Var[V̂]/Var[τ̂]² → 0` holds](hyp:hrel), with [`zq` a nonnegative quantile](hyp:hzq0)
+[satisfying `Φ(zq) = 1 − α/2`](hyp:hzq), then [the paper's actual interval `τ̂ ± zq·√V̂`
+attains asymptotic (liminf) coverage at least `1 − α`](goal).
+
+This is the feasible counterpart of `wald_coverage_of_conditions` with the
+variance-estimator-consistency premise reduced to its quantitative core. -/
 theorem wald_coverage_feasible_of_relVar
     (Exp : ℕ → Experiment) (dk dl : ∀ n, (Exp n).Δ)
     (hclt : LocalDependenceCLT Exp dk dl)

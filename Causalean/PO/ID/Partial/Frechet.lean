@@ -80,7 +80,10 @@ theorem frechet_upper (u v : ℝ) :
   · exact ENNReal.toReal_mono (measure_ne_top_of_prob P _)
       (measure_mono (fun ω hω => hω.2))
 
-/-- **Fréchet–Hoeffding lower bound.**
+/-- **Fréchet–Hoeffding lower bound.** For a fixed joint law of two real random variables
+`X, Y` under a probability measure, if [`Y` is measurable](hyp:hY), then [the joint
+probability `P(X ≤ u, Y ≤ v)` is at least the larger of zero and the sum of the two
+marginal CDF values at `u` and `v` minus one](goal):
 `max (P(X ≤ u) + P(Y ≤ v) - 1) 0 ≤ P(X ≤ u, Y ≤ v)`. -/
 theorem frechet_lower (hY : Measurable Y) (u v : ℝ) :
     max ((P {ω | X ω ≤ u}).toReal + (P {ω | Y ω ≤ v}).toReal - 1) 0
@@ -92,9 +95,11 @@ theorem frechet_lower (hY : Measurable Y) (u v : ℝ) :
   rw [hseteq]
   exact prob_inter_ge P hB
 
-/-- **Makarov lower bound (easy direction), per-threshold form.**
-For every reference point `a`,
-`max (P(X ≤ a) - P(Y < a - s)) 0 ≤ P(X - Y ≤ s)`. -/
+/-- **Makarov lower bound (easy direction), per-threshold form.** For a fixed joint law of
+two real random variables `X, Y`, if [`Y` is measurable](hyp:hY), then for every reference
+point `a` and threshold `s`, [the CDF of the difference `X - Y` at `s` is at least the
+larger of zero and the gap between the CDF of `X` at `a` and the CDF of `Y` just below
+`a - s`](goal): `max (P(X ≤ a) - P(Y < a - s)) 0 ≤ P(X - Y ≤ s)`. -/
 theorem makarov_lower_param (hY : Measurable Y) (s a : ℝ) :
     max ((P {ω | X ω ≤ a}).toReal - (P {ω | Y ω < a - s}).toReal) 0
       ≤ (P {ω | X ω - Y ω ≤ s}).toReal := by
@@ -124,8 +129,11 @@ theorem makarov_lower_param (hY : Measurable Y) (s a : ℝ) :
   rw [hBval] at hinter
   linarith
 
-/-- **Makarov lower bound (easy direction), sup-convolution envelope form.**
-Taking the supremum over the reference point `a` still lower-bounds the CDF of `X - Y`. -/
+/-- **Makarov lower bound (easy direction), sup-convolution envelope form.** For a fixed
+joint law of two real random variables `X, Y`, if [`Y` is measurable](hyp:hY), then
+[taking the supremum, over every reference point, of the per-threshold Makarov lower
+bound still lower-bounds the CDF of the difference `X - Y` at the given
+threshold](goal). -/
 theorem makarov_lower_iSup (hY : Measurable Y) (s : ℝ) :
     ⨆ a : ℝ, max ((P {ω | X ω ≤ a}).toReal - (P {ω | Y ω < a - s}).toReal) 0
       ≤ (P {ω | X ω - Y ω ≤ s}).toReal :=

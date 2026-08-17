@@ -86,18 +86,28 @@ noncomputable def plrFeasibleEstimator (S : PLRSystem P γ)
   fun ω => (∑ i ∈ split.foldB n, plrMomentB (η_hat n ω) (sample.Z i ω))
             / (∑ i ∈ split.foldB n, (plrResidual (η_hat n ω) (sample.Z i ω)) ^ 2)
 
-/-- **Feasible partially linear DML asymptotic-normality theorem.**  Under the
-same hypotheses as the one-step normality result `plr_dml_tendstoNormal` —
-the sample, sample split with a fixed limiting fold-B share, the estimated
-nuisance sequence, and the full integrability / square-integrability /
-per-observation remainder / measurability / rate bundle — together with one new
-probabilistic input, the in-probability consistency of the empirical
-partialling-out Jacobian over fold B to its population value `J₀`, the rescaled
-*feasible* estimator (the solved Robinson partialling-out estimator, recentered
-at the true slope and scaled by the square root of the fold-B sample size)
-converges in distribution to the same centered Gaussian as the one-step
-estimator: a normal law whose variance is the population second moment of the
-inverse-Jacobian-scaled partialling-out score at the true regressions.
+/-- **Feasible partially linear DML asymptotic-normality theorem.**  Fix a partially linear
+estimation system, an i.i.d. sample of covariate-treatment-outcome triples, and [a sample split
+whose evaluation-fold share converges to a fixed positive limit](hyp:hc_pos,h_split_rate).
+Suppose [the structural error, its product with the treatment residual, the baseline-covariate
+term, and the treatment are integrable, the true treatment residual is square-integrable, and the
+true score has finite second moment](hyp:hU,hUV,hbX,hD,hV,hsq); for the estimated nuisance
+sequence `η_hat`, [the outcome- and treatment-regression errors are square-integrable in the
+covariate law at every fold and draw, with the resulting cross terms against the structural error
+and the treatment residual integrable](hyp:hΔl,hΔm,hUΔm,hΔlV,hVΔm); [the estimated score is
+jointly measurable and measurable as a function of the nuisance-training fold alone and jointly
+with the observation](hyp:h_m_meas,h_m_foldA,h_m_foldA_uncurry), and [integrable and
+square-integrable at every fold and draw](hyp:h_m_int,h_m_sq_int); [the estimated score converges
+to the true score in L²(P_Z) at rate $o_p(1)$, and the product of the two nuisance-error
+seminorms is $o_p(n^{-1/2})$](hyp:h_score_diff_rate,h_product_rate); and [the influence function,
+the one-step rescaled estimator at each `n`, and the normalized influence sum at each `n` are all
+measurable](hyp:hψ_meas,hθn_meas,hSum_meas). Suppose in addition [the empirical partialling-out
+Jacobian over fold B converges in probability to its population value `J₀`](hyp:hJ_consist), and
+[the rescaled feasible estimator is measurable at each `n`](hyp:hθn_feas). Then [the rescaled
+*feasible* estimator — the solved Robinson partialling-out estimator, recentered at the true slope
+and scaled by the square root of the fold-B sample size — converges in distribution to the same
+centered Gaussian as the one-step estimator: a normal law whose variance is the population second
+moment of the inverse-Jacobian-scaled partialling-out score at the true regressions](goal).
 
 The proof is the standard one-step ≈ solved-estimator asymptotic-equivalence
 argument: the two rescaled estimators differ by the product of a factor that is

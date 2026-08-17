@@ -39,16 +39,18 @@ namespace Causalean.Stat.Nonparametric
 open MeasureTheory ProbabilityTheory
 open scoped BigOperators
 
-/-- **Interior local-polynomial estimator bias `≤ Cbias · h^β`.** Let `ĉ₀ = c 0` be the
-degree-`p = holderDerivOrder β` weighted least-squares intercept fit of a
-`β`-Hölder function `f` (Hölder constant
-`MH`) at noise-free responses, with invertible design moment matrix and all design points within
-bandwidth `h` of `t`. If the bandwidth-free leverage bound `√(M₀₀·(M⁻¹)₀₀) ≤ L` holds (`0 ≤ L`,
-supplied by `localPoly_density_leverage_bound`), then the conditional bias obeys
-
-`|ĉ₀ − f(t)| ≤ (MH/p!) · L · h^β`,
-
-the standard local-polynomial bias rate with constant `Cbias = (MH/p!) · L`. -/
+/-- **Interior local-polynomial estimator bias `≤ Cbias · h^β`.** Let `ĉ₀ = c 0` be the degree-
+`p = holderDerivOrder β` weighted least-squares intercept fit — [the coefficient vector `c`
+minimizing the weighted sum of squared residuals](hyp:hmin) — of [a `β`-Hölder function `f`
+(exponent `β > 0`)](hyp:hβ,hf) [with Hölder constant `MH ≥ 0` bounding the highest derivative's
+modulus of continuity](hyp:hMH,hb) at noise-free responses, where [the weights are
+nonnegative](hyp:hw), [the target point `t` and every design point `a i` lie in a common interval
+`[lo, hi]`](hyp:ht,ha), [every design point is within bandwidth `h ≥ 0` of `t`](hyp:hh,hwin), and
+[the design moment matrix is invertible](hyp:hMdet). If [the bandwidth-free leverage bound
+`√(M₀₀·(M⁻¹)₀₀) ≤ L` holds for some `L ≥ 0`](hyp:hlev) — supplied by
+`localPoly_density_leverage_bound` — then [the conditional bias obeys
+`|ĉ₀ − f(t)| ≤ (MH/p!) · L · h^β`, the standard local-polynomial bias rate with constant
+`Cbias = (MH/p!) · L`](goal). -/
 theorem localPoly_estimatorBias_window {N : ℕ} {β MH lo hi t h L : ℝ} {a w : Fin N → ℝ}
     {f : ℝ → ℝ} {c : Fin ((holderDerivOrder β) + 1) → ℝ}
     (hβ : 0 < β) (hMH : 0 ≤ MH) (hh : 0 ≤ h) (hw : ∀ i, 0 ≤ w i)
@@ -82,14 +84,14 @@ theorem localPoly_estimatorBias_window {N : ℕ} {β MH lo hi t h L : ℝ} {a w 
         mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left hsL hcoef_nn) hhb
 
 /-- **Interior local-polynomial estimator stochastic `L²` error `≤ Cvar · (Nh)^{-1/2}`.** The
-degree-`p` local-polynomial equivalent-kernel smoother `ĉ₀ = ∑ᵢ Sᵢ Yᵢ` applied to a spherical
-family `Y` (scale `σ`) with invertible design moment matrix and weights `0 ≤ wᵢ ≤ W`, on the good
-design event where the leverage rate `(M⁻¹)₀₀ ≤ 2·cInv/(Nh)` holds (`0 ≤ cInv`, `0 < Nh`), has
-conditional stochastic `L²` error
-
-`√Var(ĉ₀) ≤ √(2σ²·W·cInv) · (Nh)^{-1/2}`,
-
-the standard interior stochastic rate with constant `Cvar = √(2σ²·W·cInv)`. -/
+degree-`p` local-polynomial equivalent-kernel smoother `ĉ₀ = ∑ᵢ Sᵢ Yᵢ`, applied to [a family `Y` of
+square-integrable responses](hyp:hY) that is [spherical with common scale `σ`](hyp:hsph), with [an
+invertible design moment matrix](hyp:hMdet) and [nonnegative weights](hyp:hw) [bounded by a
+constant `W ≥ 0`](hyp:hwW,hW), satisfies, on the good design event where [the intercept leverage
+obeys the rate `(M⁻¹)₀₀ ≤ 2·cInv/Nh`](hyp:hrate) for [a nonnegative constant `cInv`](hyp:hcInv) and
+[a positive scale `Nh`](hyp:_hNh), [the conditional stochastic `L²` error bound
+`√Var(ĉ₀) ≤ √(2σ²·W·cInv) · (Nh)^{-1/2}`, the standard interior stochastic rate with constant
+`Cvar = √(2σ²·W·cInv)`](goal). -/
 theorem localPoly_estimatorStochL2 {Ω : Type*} {N p : ℕ} [MeasurableSpace Ω]
     {μ : Measure Ω} [IsProbabilityMeasure μ] {x w : Fin N → ℝ} {Y : Fin N → Ω → ℝ}
     {σ W cInv Nh : ℝ}

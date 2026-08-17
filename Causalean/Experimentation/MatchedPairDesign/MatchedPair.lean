@@ -95,8 +95,10 @@ lemma matchedPairDesign_E_mpTreatInd_within (p : P) :
   rw [(matchedPairDesign (P := P)).E_congr hzero]
   exact (matchedPairDesign (P := P)).E_const 0
 
-/-- **Cross-pair independence.** Units in distinct pairs `p ≠ p'` are treated independently, so the
-joint treatment probability factors as `½ · ½ = ¼`. -/
+/-- **Cross-pair independence.** For [pairs `p` and `p'` that are distinct](hyp:h), [the
+probability that position `b` of `p` and position `b'` of `p'` are treated simultaneously equals
+`¼`](goal) — units in distinct pairs are treated independently, and each position is treated with
+probability `½`, so the joint probability factors as `½ · ½`. -/
 lemma matchedPairDesign_E_mpTreatInd_cross (p p' : P) (h : p ≠ p') (b b' : Bool) :
     (matchedPairDesign (P := P)).E (fun z => mpTreatInd p b z * mpTreatInd p' b' z) = 1 / 4 := by
   change (prodDesign (fun _ : P => pairCoinDesign)).E

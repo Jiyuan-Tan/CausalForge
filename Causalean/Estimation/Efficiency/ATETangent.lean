@@ -520,7 +520,13 @@ theorem aipw_score_meanZero_projection_eq (S : ATE.BackdoorEstimationSystem P γ
   efficientIF_eq_self_of_mem S.Tfull
     (S.aipwLp_mem_tangent h_overlap hA h_y2 h_yd2)
 
-/-- The semiparametric efficiency bound equals the variance of the AIPW influence function. -/
+/-- **Semiparametric efficiency bound equals the AIPW variance.** Let `S` be a backdoor
+average-treatment-effect estimation system with [strict overlap at level ε](hyp:h_overlap),
+satisfying [the system's core identification assumptions](hyp:hA), in which [the observed
+outcome has finite second moment](hyp:h_y2) and [each potential outcome under treatment level
+`d` has finite second moment](hyp:h_yd2). Then [the semiparametric efficiency bound for the
+backdoor ATE, computed against the full mean-zero tangent space, equals the second moment of the
+AIPW influence function `ψ_AIPW` under the observed-data law `P_Z`](goal). -/
 theorem effBound_eq_variance (S : ATE.BackdoorEstimationSystem P γ) {ε : ℝ}
     (h_overlap : S.StrictOverlap ε)
     (hA : S.toPOBackdoorSystem.Assumptions)
@@ -539,7 +545,15 @@ theorem effBound_eq_variance (S : ATE.BackdoorEstimationSystem P γ) {ε : ℝ}
   filter_upwards [hae] with z hz
   rw [hz, sq]
 
-/-- The semiparametric efficiency bound equals Hahn's three-term variance formula.
+/-- **Semiparametric efficiency bound equals Hahn's three-term variance formula.** Let `S` be a
+backdoor average-treatment-effect estimation system with [strict overlap at level
+ε](hyp:h_overlap), satisfying [the system's core identification assumptions](hyp:hA), in which
+[the observed outcome has finite second moment](hyp:h_y2) and [each potential outcome under
+treatment level `d` has finite second moment](hyp:h_yd2). Then [the semiparametric efficiency
+bound for the backdoor ATE equals the sum of the between-arms regression-contrast variance
+`∫(μ(1,X)-μ(0,X)-θ₀)²dP_X`, the treated-arm weighted residual variance
+`∫(A/e(X)²)(Y-μ(1,X))²dP_Z`, and the control-arm weighted residual variance
+`∫((1-A)/(1-e(X))²)(Y-μ(0,X))²dP_Z`](goal).
 
 Chaining the variance identity with the AIPW variance decomposition gives
 
@@ -561,7 +575,14 @@ theorem effBound_eq_hahn (S : ATE.BackdoorEstimationSystem P γ) {ε : ℝ}
   rw [S.effBound_eq_variance h_overlap hA h_y2 h_yd2,
     S.aipw_variance_hahn_decomposition h_overlap hA h_y2 h_yd2]
 
-/-- Every gradient for the backdoor ATE has squared `L²` norm at least the efficiency bound.
+/-- **The efficiency bound lower-bounds every gradient's squared norm.** Let `S` be a backdoor
+average-treatment-effect estimation system with [strict overlap at level ε](hyp:h_overlap),
+satisfying [the system's core identification assumptions](hyp:hA), in which [the observed
+outcome has finite second moment](hyp:h_y2) and [each potential outcome under treatment level
+`d` has finite second moment](hyp:h_yd2). If `ψ` is a square-integrable element of `L²(P_Z)` that
+[is a gradient for the AIPW influence function relative to the full mean-zero tangent
+space](hyp:hψ), then [the semiparametric efficiency bound is at most the squared `L²` norm of
+`ψ`](goal).
 
 The formal conclusion is the abstract squared-norm inequality for any
 `IsGradient` element. It does not by itself identify gradients with mean-zero

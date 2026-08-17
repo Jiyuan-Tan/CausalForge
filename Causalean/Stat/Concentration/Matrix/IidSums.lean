@@ -75,11 +75,12 @@ theorem variance_sum_pi_eq {N : ℕ} {Ω : Type*} [MeasurableSpace Ω]
       (X := fun _ : Fin N => g)
       (fun _ : Fin N => hg))
 
-/-- **Chebyshev concentration of an iid sum.** Combining the iid expectation and variance laws
-with Chebyshev's inequality: the sum `∑ᵢ g(Xᵢ)` of a fixed `L²` statistic over an iid sample of
-size `N` deviates from its mean `N·𝔼[g]` by at least `ε` with probability at most
-`N·Var[g]/ε²`. For the design weight `g = K((·−t)/h)` this is the concentration of the total
-kernel weight `M₀₀` around `N·𝔼[K((A−t)/h)] = Θ(Nh)`. -/
+/-- **Chebyshev concentration of an iid sum.** Combining the iid expectation and variance laws with
+Chebyshev's inequality: for [a fixed square-integrable statistic g](hyp:hg) and [any positive
+threshold ε](hyp:hε), [the sum `∑ᵢ g(Xᵢ)` over an iid sample of size N deviates from its mean
+`N·𝔼[g]` by at least ε with probability at most `N·Var[g]/ε²`](goal). For the design weight
+`g = K((·−t)/h)` this is the concentration of the total kernel weight `M₀₀` around
+`N·𝔼[K((A−t)/h)] = Θ(Nh)`. -/
 theorem iid_sum_chebyshev {N : ℕ} {Ω : Type*} [MeasurableSpace Ω]
     (μ : Measure Ω) [IsProbabilityMeasure μ] (g : Ω → ℝ) (hg : MemLp g 2 μ)
     {ε : ℝ} (hε : 0 < ε) :

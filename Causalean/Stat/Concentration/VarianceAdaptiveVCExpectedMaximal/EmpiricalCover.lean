@@ -59,9 +59,13 @@ theorem HasPolynomialEmpiricalL2Cover.totallyBounded
   · exact Finset.mem_coe.mpr (Finset.mem_image.mpr ⟨j, hjC, rfl⟩)
   · exact hj'
 
-/-- At every relative scale between zero and one, a polynomial empirical
-cover bounds Dudley's empirical covering number by the same real-power
-cardinality bound. -/
+/-- **Covering-number bound from an empirical cover.** Suppose [`F` has polynomial empirical
+$L^2$ covering numbers with envelope `U`, base `A`, and exponent `v`](hyp:hcover), [every member
+of `F` is measurable](hyp:hmeas), [the envelope `U` is strictly positive](hyp:hU), [the sample `S`
+has positive size `n`](hyp:hn), and [the relative scale `ε` lies in the interval $(0,1]$
+](hyp:hε,hε1); then [Dudley's empirical covering number of the class at radius `ε * U`, taken in
+the totally bounded empirical pseudometric space this cover furnishes, is at most the real power
+`(A / ε) ^ v`](goal). -/
 theorem HasPolynomialEmpiricalL2Cover.coveringNumber_le
     {F : ι → 𝒳 → ℝ} {U A v : ℝ}
     (hcover : HasPolynomialEmpiricalL2Cover F U A v)

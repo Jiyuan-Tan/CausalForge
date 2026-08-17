@@ -36,15 +36,19 @@ namespace Causalean
 namespace Experimentation
 namespace DesignBased
 
-/-- **Design-based Wald-interval coverage from dependency-graph primitives.** Consider a sequence of
-finite designs `D n` with an estimator `est n` of a target `θ n`.  Suppose the centered, `√(m n)`-
-scaled estimator `√(m n)·(est n − θ n)` is the sum `depSum(X n)` of unit contributions `X n i` that
-are uniformly bounded, have design mean `0`, and depend only across a graph of degree at most
-`Dmax`, with standardizing variance `v n = E[depSum(X n)²]` bounded below by `c` times the number of
-units, and the number of units diverging.  If the decomposition and a deterministic conservative
-variance `vhat n ≥ v n` both hold eventually, then the two-sided Wald interval
-`|θ n − est n| ≤ z·√(vhat n / m n)` (with `z` the upper
-`1 − α/2` normal quantile) has asymptotic (liminf) coverage at least `1 − α`.
+/-- **Design-based Wald-interval coverage from dependency-graph primitives.** Consider [a sequence
+of finite designs](hyp:D) together with [per-unit contributions `X n i`](hyp:X) governed by [a
+dependency graph `Dep n` on those contributions](hyp:Dep) whose [neighbourhoods have cardinality at
+most `Dmax`](hyp:hdeg), where [the contributions are uniformly bounded by a nonnegative constant
+`M`](hyp:hM,hbound) and [have design mean zero](hyp:hmean). Suppose [the standardizing quantity
+`v n` equals the design second moment of the contributions' sum `depSum(X n)`](hyp:hv), [is
+bounded below by a positive constant `c` times the number of units eventually](hyp:hc,hvc), and
+[the number of units diverges](hyp:hcard). Suppose further that [the standardized sum eventually
+equals `√(m n)·(est n − θ n)` for an estimator `est n` of a target `θ n`](hyp:est,hlink), [the
+normalization `m n` is eventually positive](hyp:hmpos), and [a deterministic conservative variance
+`v̂ n` eventually dominates `v n`](hyp:hvar_le), with [`z` the nonnegative](hyp:hz0) quantile
+[satisfying `Φ(z) = 1 − α/2`](hyp:hz). Then [the two-sided Wald interval
+`|θ n − est n| ≤ z·√(v̂ n / m n)` has asymptotic (liminf) coverage at least `1 − α`](goal).
 
 This is the complete design-based inference pipeline: it obtains the studentized CLT from the
 dependency-graph engine and feeds it, with the conservative variance, into the Wald-coverage

@@ -69,8 +69,12 @@ lemma cellObservationLaw_eq_of_restrict_eq
   have hν : ν (p.cellSet j) ≠ 0 := by simpa [← hmass]
   rw [dif_neg hpos, dif_neg hν, ← hmass, hrest]
 
-/-- A fixed-size product KL budget transfers to the mean-`2n` marked Poisson
-experiment with only the expected factor two. -/
+/-- Consider [a sample size `n` that is at least `1`](hyp:hn) and [a nonnegative
+KL budget `B`](hyp:hB), and suppose [the KL divergence between `n` independent
+identically distributed draws from `P` and from `Q` is at most `B`](hyp:hpi).
+Then [the KL divergence between the marked Poisson experiments with mean count
+`2n`, mark law `R`, and intensity measures `P` and `Q` respectively (both built
+over the same baseline `P`) is at most `2B`](goal). -/
 -- @node: markedPoissonKL_le_two_mul_of_piKL
 lemma markedPoissonKL_le_two_mul_of_piKL
     {X : Type*} [MeasurableSpace X] [StandardBorelSpace X]

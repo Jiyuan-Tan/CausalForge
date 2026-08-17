@@ -27,9 +27,14 @@ namespace Causalean.Mathlib.Optimization
 
 open scoped BigOperators
 
-/-- **KKT admissible ⟹ global minimizer (`κ > 0`).** For positive weights and a
-KKT-admissible support/multiplier pair `(S, λ)`, the induced active-set point lies in
-`Δ_M` and globally minimizes the SOCP objective `wsObj` there. -/
+/-- **KKT admissible ⟹ global minimizer (`κ > 0`).** For [a positive total mass
+M](hyp:hM), [positive coordinate weights β](hyp:hβ), [a positive SOCP scale
+κ](hyp:hkpos), and [a KKT-admissible support/multiplier pair (S, λ): a nonempty index
+set S with $\sum_{i\in S}(\lambda-\alpha_i)^2/\beta_i = \kappa^2$, strict activity
+$\lambda>\alpha_i$ on S, and inactivity $\lambda\le\alpha_j$ off S](hyp:hadm), [the
+induced active-set point lies in the simplex $\{t\ge0:\sum t_i=M\}$ and globally
+minimizes the objective $\sum\alpha_it_i+\kappa\sqrt{\sum\beta_it_i^2}$ over that
+simplex](goal). -/
 lemma activeSetPoint_isMinimizer (M : ℝ) (hM : 0 < M) (α β : Fin 3 → ℝ) (kappa : ℝ)
     (hβ : ∀ i, 0 < β i) (hkpos : 0 < kappa)
     (S : Finset (Fin 3)) (lam : ℝ) (hadm : IsAdmissibleSupport α β kappa S lam) :
@@ -267,8 +272,11 @@ lemma activeSetPoint_isMinimizer (M : ℝ) (hM : 0 < M) (α β : Fin 3 → ℝ) 
     _ = lam * M := hvalue_t
     _ ≤ wsObj α β kappa s := hvalue_s
 
-/-- **Exposed face ⟹ global minimizer (`κ = 0`).** A point of the exposed
-`α`-minimizing face globally minimizes the linear objective `wsObj α β 0` over `Δ_M`. -/
+/-- **Exposed face ⟹ global minimizer (`κ = 0`).** If [`t_rel` lies in the simplex
+$\{t \ge 0 : \sum t_i = M\}$ and every coordinate at which it is nonzero attains the
+minimum value of α](hyp:hface), then [`t_rel` globally minimizes the purely linear
+objective $\sum \alpha_i t_i$ — `wsObj` at $\kappa = 0$ — over the whole
+simplex](goal). -/
 lemma exposedMinFace_isMinimizer (M : ℝ) (α β : Fin 3 → ℝ)
     (t_rel : Fin 3 → ℝ) (hface : t_rel ∈ exposedMinFace M α) :
     ∀ s : Fin 3 → ℝ, InSimplex M s →

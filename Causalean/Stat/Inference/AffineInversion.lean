@@ -290,9 +290,19 @@ private theorem sqrt_mul_kappa_div_n_div_mu
     field_simp [hn.ne', hmu.ne', hkappa.ne']
   nlinarith
 
-/-- The complete affine-inversion frontier chain over a finite-volume region:
-an inflated mean-radius proxy and a controlled bad-slope contribution yield a
-capped inverse-square-root expected-volume bound. -/
+/-- **Affine-inversion frontier bound over a finite-volume region.** Fix a probability space
+`(Ω, Q)`, real-valued functions `A`, `B`, `K` on it, and [a region of the line with finite
+Lebesgue measure](hyp:hregionFinite). Suppose [a nonnegative radius scale `L`](hyp:hL),
+[a positive centering level `mu`](hyp:hmu) and [a positive sample size `n`](hyp:hn); suppose
+[`K` is pointwise nonnegative and `Q`-integrable](hyp:hK,hKint) with [`Q`-mean at most
+`Kbar`](hyp:hKbar), and that [the `Q`-probability that `B` deviates from `mu` by more than
+`mu`/2 is at most `q`](hyp:hbad). Suppose further [a positive scale `kappa`](hyp:hkappa),
+[a nonnegative inflation factor `inflation`](hyp:hinflation) and [nonnegative slack
+`Y`](hyp:hY), with [`Kbar` controlled by `inflation · kappa`](hyp:hKbar_le) and [the bad-event
+contribution `(vol region) · q` controlled by `Y / t`](hyp:hbadContribution), where
+[`t` is defined as `n · mu² / kappa`](hyp:ht). Then [the `Q`-expected restricted volume of the
+affine-inversion set built from `A`, `B` and the shrinking radius `L · √(K/n)` is at most
+`max(vol region, 4·√inflation·L + Y) · min(1, t^(-1/2))`](goal). -/
 theorem expectedRestrictedVolume_affineInversion_frontier_le
     {Ω : Type*} [MeasurableSpace Ω]
     (Q : Measure Ω) [IsProbabilityMeasure Q]

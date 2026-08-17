@@ -83,10 +83,16 @@ lemma weightOf_vecMul_designFull {P : BJSPanel Treated Untreated Regressor}
       Finset.sum_congr rfl (fun c _ => by rw [L.vT_eq_a h c])]
     exact L.nuisance_coord h r
 
-/-- **BJS efficiency: OLS imputation is BLUE under spherical errors.**
-For the full-rank event-study design, the OLS estimator `olsWeight designFull cFull`
-has variance no larger than that of any linear unbiased estimator `L` of the target,
-when the cell outcomes form a spherical random family. -/
+/-- **BJS efficiency: OLS imputation is BLUE under spherical errors.** For a BJS
+event-study panel `P` and a family of cell outcomes `Y` on a probability space,
+suppose [each cell outcome is square-integrable](hyp:hY), [the cell outcomes
+form a spherical family with common variance `σ²` — equal variances and zero
+cross-covariances](hyp:hsph), and [the full event-study design matrix
+`designFull P` has full column rank](hyp:hRank). Then for [any linear
+estimator `L` unbiased for every value of the treatment-effect
+vector](hyp:hL), [the variance of the OLS imputation estimator built from
+`designFull P` and the target functional `cFull P` is no larger than the
+variance of `L`](goal). -/
 theorem bjs_ols_imputation_min_variance_spherical
     {P : BJSPanel Treated Untreated Regressor}
     {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} [IsProbabilityMeasure μ]

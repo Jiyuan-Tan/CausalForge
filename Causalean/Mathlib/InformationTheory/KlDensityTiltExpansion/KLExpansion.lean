@@ -52,8 +52,12 @@ namespace Causalean.Mathlib.InformationTheory.KlDensityTiltExpansion
 
 variable {Z : Type*} [MeasurableSpace Z]
 
-/-- **KL of the linear tilt as an `x log x` density integral.**  For a probability
-measure `μ`, bounded mean-zero score `|s| ≤ C` with `∫ s = 0`, and `|h|·C ≤ 1`,
+/-- **KL of the linear tilt as an `x log x` density integral.** For a probability measure `μ`
+and [a measurable score function `s`](hyp:hs_meas) that is [bounded by a constant
+`C`](hyp:hsC) and [has mean zero under `μ`](hyp:hs_mean), if [the tilt strength satisfies
+`|h| · C ≤ 1`](hyp:hh), then [the Kullback–Leibler divergence of the linearly tilted measure
+`tiltMeasure μ s h` from `μ`, as a real number, equals the `μ`-integral of
+`(1 + h·s)·log(1 + h·s)`](goal):
 
     (klDiv (tiltMeasure μ s h) μ).toReal = ∫ (1 + h · s y) · log (1 + h · s y) dμ.
 
@@ -98,7 +102,12 @@ lemma klDiv_tiltMeasure_toReal_eq {μ : Measure Z} [IsProbabilityMeasure μ] {s 
         filter_upwards with y
         simp [ENNReal.toReal_ofReal (tiltDensity_nonneg hsC hh y), smul_eq_mul]
 
-/-- **Dominated cubic remainder bound.**  For `|h|·C ≤ 1/2`,
+/-- **Dominated cubic remainder bound.** For a probability measure `μ` and [a measurable score
+function `s`](hyp:hs_meas) that is [bounded by a constant `C`](hyp:hsC) and [has mean zero
+under `μ`](hyp:hs_mean), if [the tilt strength satisfies `|h| · C ≤ 1`](hyp:hh), then
+[the Kullback–Leibler divergence of the linearly tilted measure `tiltMeasure μ s h` from `μ`
+deviates from its second-order Taylor approximation `(h²/2) · ∫ s² dμ` by at most
+`C³ · |h|³`](goal):
 
     |(klDiv (tiltMeasure μ s h) μ).toReal - (h²/2) · ∫ s² dμ|  ≤  C³ · |h|³.
 
@@ -199,8 +208,11 @@ lemma abs_klRemainder_le {μ : Measure Z} [IsProbabilityMeasure μ] {s : Z → �
         rw [integral_const, probReal_univ, smul_eq_mul, one_mul]
 
 /-- **Second-order KL expansion of the linear density tilt (headline result).**
-For a probability measure `μ` and a bounded mean-zero score `s` (`|s| ≤ C`,
-`∫ s = 0`),
+For a probability measure `μ` and [a measurable score function `s`](hyp:hs_meas) that is
+[bounded by a constant `C`](hyp:hsC) and [has mean zero under `μ`](hyp:hs_mean),
+[the Kullback–Leibler divergence of the linearly tilted measure `tiltMeasure μ s h` from `μ`, as
+a function of the tilt strength `h`, agrees with the quadratic approximation `(h²/2) · ∫ s² dμ`
+up to an error that is little-o of `h²` as `h → 0`](goal):
 
     (fun h => (klDiv (tiltMeasure μ s h) μ).toReal - (h²/2) · ∫ s² dμ)
       =o[𝓝 0] (fun h => h²).

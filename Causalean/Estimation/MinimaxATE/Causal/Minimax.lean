@@ -169,11 +169,19 @@ theorem realV_le_minimaxMissCausal (P : VarConstr K) {n : ℕ} [NeZero K]
 
 /-! ## Causal-centered VaryingCenterCase1 lower bound -/
 
-/-- **Causal-centered structure-agnostic minimax lower bound (Case 1).**
-For the outcome-dominant cell-varying construction, strict perturbed-propensity
-overlap lets the observed-data Case-1 lower bound be re-centered onto the genuine
-causal estimand, so every measurable estimator has causal-centered miss
-probability at least `1/4` at half of the displayed Case-1 ATE separation.
+/-- **Causal-centered structure-agnostic minimax lower bound (Case 1).** For the
+outcome-dominant cell-varying construction `P`, suppose [the squared propensity
+perturbation stays within the budget `εm`](hyp:hm), [the squared outcome-regression
+perturbation stays within the budget `εg`](hyp:hg), [the perturbed propensity remains
+strictly below `1` in every cell](hyp:hmU_strict), and [both budgets are
+nonnegative](hyp:hεg,hεm). If in addition [the aggregate separation budget across cells
+is at most `1`](hyp:hΓsum) and [the sample size satisfies the stated regularity regime
+relative to that budget](hyp:hreg), then for [every measurable estimator](hyp:hest),
+[the causal-centered miss probability — of missing the true backdoor-identified ATE
+`E[Y(1) − Y(0)]` by at least half the displayed Case-1 separation gap — is at least
+`1/4` for some data-generating process in the class](goal); the strict
+perturbed-overlap hypothesis is exactly what lets the observed-data Case-1 bound be
+re-centered onto the genuine causal estimand.
 
 The proof uses the same two-point witness as `minimax_lower_bound_var` and
 transfers the null and perturbation miss events through `causalATE_eq_ate`. -/

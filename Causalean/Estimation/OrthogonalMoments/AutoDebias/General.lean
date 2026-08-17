@@ -121,7 +121,11 @@ noncomputable def autoDebiasedMoment (S : RegNuisanceMomentSys)
     (g : S.H) (α : S.X → ℝ) (θ : ℝ) : ℝ :=
   ∫ z, autoDebiasedScore S g α θ z ∂S.P_Z
 
-/-- **Mean-zero of the debiased moment at the truth.** -/
+/-- **Mean-zero of the debiased moment at the truth.** Given a regression-nuisance moment
+system with representer `rep`, assume [the α₀-weighted regression-residual product at the
+truth is integrable](hyp:h_α₀_resid_int) and [the baseline moment integrand at the truth
+is integrable](hyp:h_int_m_truth). Then [the automatically debiased population moment,
+evaluated at the true nuisance and true parameter, equals zero](goal). -/
 theorem autoDebiasedMoment_meanZero_at_truth (S : RegNuisanceMomentSys)
     (rep : AutoDebiasRepresenter S)
     (h_α₀_resid_int :
@@ -149,11 +153,11 @@ theorem autoDebiasedMoment_directional_g_zero (S : RegNuisanceMomentSys)
   have h := rep.representation ν_g
   linarith
 
-/-- **Directional zero in the representer direction.**
-
-For any measurable perturbation `ν_α : X → ℝ` with integrable residual
-product, the directional derivative of the population debiased moment in
-the `α`-direction at the truth vanishes. -/
+/-- **Directional zero in the representer direction.** For any perturbation `ν_α` of the
+representer, assume [ν_α is measurable](hyp:hν_α_meas) and [the ν_α-weighted
+regression-residual product at the truth is integrable](hyp:h_int). Then [the directional
+derivative of the population debiased moment in the α-direction at the truth vanishes:
+the integral of the weighted regression residual is zero](goal). -/
 theorem autoDebiasedMoment_directional_α_zero (S : RegNuisanceMomentSys)
     (ν_α : S.X → ℝ) (hν_α_meas : Measurable ν_α)
     (h_int :

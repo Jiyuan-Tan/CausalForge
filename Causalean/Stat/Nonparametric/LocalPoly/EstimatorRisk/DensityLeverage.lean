@@ -41,19 +41,22 @@ open Matrix
 
 variable {p : ℕ}
 
-/-- **Explicit `Θ(1/(Nh))` leverage rate from density + kernel-moment constants.** Let the kernel
-`K ≥ 0` be supported in `[-1,1]`, with pure kernel-moment matrix `G = weightMomentMatrix p K`
-positive definite, and the kernel shape matrix `T = weightMomentMatrix p (K·p(t+h·))` positive
-definite; let the design density obey `0 < cDesign ≤ p` on the window `|a − t| ≤ h`, and
-let `M` be entrywise within `η` of the population matrix `S = popDesignMatrix p N K p t h` whose
-inverse rows are bounded by `c`. With the regime constants small (`c·(p+1)·η ≤ 1/2` and
-`2c²(p+1)η ≤ cInv/(Nh)`, `cInv = (G⁻¹)₀₀/cDesign`), the empirical moment matrix `M` is invertible
-and its intercept leverage obeys the explicit interior rate
-
-`(M⁻¹)₀₀ ≤ 2·cInv/(Nh)`,
-
-with `cInv` an explicit density + kernel-moment constant — no `S`-level invertibility or leverage
-assumption remains. -/
+/-- **Explicit `Θ(1/(Nh))` leverage rate from density + kernel-moment constants.** Fix [a bandwidth
+`h > 0`](hyp:hh), [a sample size `N` with `N > 0`](hyp:hN), and [a design-density lower bound
+`cDesign > 0`](hyp:hcD). Let the kernel `K` be [nonnegative](hyp:hKnn) and [supported in
+`[-1,1]`](hyp:hKsupp), with [both centered-monomial integrands — against the shape weight
+`K·p(t+h·)` and against the pure kernel `K`](hyp:hintT,hintG) — integrable, [the pure kernel-moment
+matrix `G` positive definite](hyp:hGpd), and [the kernel shape matrix `T` positive
+definite](hyp:hTpd); suppose [the design density obeys `cDesign ≤ p` on the window
+`|a − t| ≤ h`](hyp:hlo). On the good design event where [the population matrix's inverse row sums
+are bounded by a nonnegative constant `c`](hyp:hc,hSrow), [the empirical moment matrix `M` lies
+entrywise within a nonnegative scale `η`](hyp:hη,hclose) of the population matrix
+`S = popDesignMatrix p N K pdens t h`, and where the regime constants are small enough
+([`c·(p+1)·η ≤ 1/2`](hyp:hsmall) and [`2c²(p+1)η` is at most the explicit density + kernel-moment
+constant `cInv/(Nh)`](hyp:hpert)), then [the empirical moment matrix `M` is invertible and its
+intercept leverage obeys the explicit interior rate `(M⁻¹)₀₀ ≤ 2·cInv/(Nh)`, with
+`cInv = (G⁻¹)₀₀/cDesign` an explicit density + kernel-moment constant — no `S`-level invertibility
+or leverage assumption remains](goal). -/
 theorem localPoly_density_inv00_rate {N : ℕ} {h cDesign η c t : ℝ} {K pdens : ℝ → ℝ}
     {M : Matrix (Fin (p + 1)) (Fin (p + 1)) ℝ}
     (hh : 0 < h) (hN : 0 < (N : ℝ)) (hcD : 0 < cDesign)
@@ -105,15 +108,23 @@ theorem localPoly_density_inv00_rate {N : ℕ} {h cDesign η c t : ℝ} {K pdens
         simp [κ, div_eq_mul_inv, mul_comm]
   exact localPoly_inv00_rate (mul_pos hN hh) hSunit hc hη hSrow hclose hsmall hSinv00 hpert
 
-/-- **Bandwidth-free density bound on the local-polynomial leverage product.** Under the same
-density + kernel-moment hypotheses as `localPoly_density_inv00_rate` (with the extra regime
-condition `η ≤ Nh` and `0 ≤ M₀₀, 0 ≤ (M⁻¹)₀₀`), the geometric mean of the total weight and the
-inverse leverage is bounded by the bandwidth-free density constant
-
-`√(M₀₀·(M⁻¹)₀₀) ≤ √(2·cInv·(cTop+1))`,  `cInv = (G⁻¹)₀₀/cDesign`, `cTop = CDesign·G₀₀`.
-
-Via `equivKernelWeight_abs_sum_sq_le` this controls the `ℓ¹` bias leverage `∑ᵢ|Sᵢ|` by a
-bandwidth-free constant. -/
+/-- **Bandwidth-free density bound on the local-polynomial leverage product.** Fix [a bandwidth
+`h > 0`](hyp:hh), [a sample size `N > 0`](hyp:hN), and density-window bounds
+[`0 < cDesign`](hyp:hcD) [with `cDesign ≤ CDesign`](hyp:hcCD). Let the kernel `K` be
+[nonnegative](hyp:hKnn) and [supported in `[-1,1]`](hyp:hKsupp), with [both centered-monomial
+integrands integrable](hyp:hintT,hintG), [the pure kernel-moment matrix `G` positive
+definite](hyp:hGpd), and [the kernel shape matrix `T` positive definite](hyp:hTpd); suppose the
+design density obeys [the lower window bound `cDesign ≤ p`](hyp:hlo) and [the upper window bound
+`p ≤ CDesign`](hyp:hhi) on `|a − t| ≤ h`. On the good design event — [the population matrix's
+inverse row sums bounded by a nonnegative `c`](hyp:hc,hSrow), [the empirical moment matrix `M`
+entrywise within a nonnegative scale `η`](hyp:hη,hclose) of the population matrix, with [the regime
+constants small (`c·(p+1)·η ≤ 1/2`)](hyp:hsmall), [the perturbation bound
+`2c²(p+1)η ≤ cInv/(Nh)`](hyp:hpert), and [`η` at most `Nh`](hyp:hηle) — and given [the total weight
+`M₀₀` is nonnegative](hyp:hM00) and [the inverse leverage `(M⁻¹)₀₀` is nonnegative](hyp:hMinv00),
+then [the geometric mean of the total weight and the inverse leverage is bounded by the
+bandwidth-free density constant `√(M₀₀·(M⁻¹)₀₀) ≤ √(2·cInv·(cTop+1))`, with
+`cInv = (G⁻¹)₀₀/cDesign` and `cTop = CDesign·G₀₀`](goal). Via `equivKernelWeight_abs_sum_sq_le`
+this controls the `ℓ¹` bias leverage `∑ᵢ|Sᵢ|` by a bandwidth-free constant. -/
 theorem localPoly_density_leverage_bound {N : ℕ} {h cDesign CDesign η c t : ℝ} {K pdens : ℝ → ℝ}
     {M : Matrix (Fin (p + 1)) (Fin (p + 1)) ℝ}
     (hh : 0 < h) (hN : 0 < (N : ℝ)) (hcD : 0 < cDesign) (hcCD : cDesign ≤ CDesign)

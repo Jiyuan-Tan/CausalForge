@@ -20,10 +20,15 @@ namespace ProbabilityTheory
 
 open MeasureTheory
 
-/-- **Drop of conditioning.** If `f` and `g` are independent, then under Lean's
-    unrestricted Bochner-integral convention the integral of `h ∘ g` restricted
-    to `f ⁻¹' E` equals
-    `μ(f ⁻¹' E).toReal * ∫ h ∘ g ∂μ`.  This is the core identity behind the
+/-- **Drop of conditioning.** For [random elements `f` and `g` that are independent](hyp:hfg),
+    with [`f` almost-everywhere measurable](hyp:hf_ae) and [`g` almost-everywhere
+    measurable](hyp:hg), given [a measurable set `E`](hyp:hE) whose preimage
+    [`f ⁻¹' E` is measurable](hyp:hpre), and [a function `h` that is almost-everywhere strongly
+    measurable with respect to the pushforward measure of `g`](hyp:hh), then [restricting the
+    integral of `h ∘ g` to the event `f ⁻¹' E` equals the probability of that event times the
+    unrestricted integral of `h ∘ g`](goal).
+
+    This is the core identity behind the
     IV first-stage and reduced-form derivations: conditioning on an event in
     the `f`-fiber drops out as a scalar factor when `g` is independent of `f`.
 

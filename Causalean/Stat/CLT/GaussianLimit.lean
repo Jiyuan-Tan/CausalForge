@@ -108,11 +108,11 @@ theorem gaussianLimit_charFun (t : E) :
   rw [gaussianLimit_covarianceBilin]
   exact integral_congr_ae (ae_of_all _ fun x => (pow_two (⟪s, ψ x⟫)).symm)
 
-/-- **Multivariate CLT against the concrete Gaussian limit.**  Under integrable,
-mean-zero, square-integrable `ψ`, the vector normalised sum converges in
-distribution to `gaussianLimit ψ`, the centered Gaussian with covariance the
-second-moment operator of `ψ`.  No abstract target or charFun hypothesis
-remains. -/
+/-- **Multivariate CLT against the concrete Gaussian limit.** Along the i.i.d. sample `S`, with
+`ψ` measurable and square-integrable, if [`ψ` has population mean zero, $\int
+\psi\,dP=0$](hyp:hmean), then [the vector normalised sum converges in distribution to
+`gaussianLimit ψ`, the centered Gaussian on `E` with covariance equal to the second-moment
+operator of `ψ`](goal); no abstract target or characteristic-function hypothesis remains. -/
 theorem IIDSample.clt_normalizedSum_vec (S : IIDSample Ω X μ P)
     (hmean : ∫ x, ψ x ∂P = 0) :
     @Tendsto_dist_vec Ω E _ _ _ _

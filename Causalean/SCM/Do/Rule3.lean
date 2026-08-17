@@ -335,15 +335,15 @@ theorem fixSet_evalMap_nonAnc_compat
           rcases M'.observed_is_random _ hobs with ⟨_, hEq⟩
           cases hEq
 
-/-- **Rule 3 core — intervention on non-ancestors of `T` is irrelevant**
-    (Option B in the design; covers the simplified `Z_Y = Z` case of the
-    tex's Rule 3, sufficient for backdoor / frontdoor demos).
-
-    For `Z : Finset N` and a target set `T ⊆ M'.observed`, if
-    **no** `SWIGNode.fixed z` (for `z ∈ Z`) is an ancestor (in the
-    intervention SWIG graph `(M'.fixSet Z).dag`) of any `v ∈ T`, then the
-    `T`-marginal of `(M'.fixSet Z).obsKernel s'` equals the
-    `T`-marginal of `M'.obsKernel (fixSetProj s')`.
+/-- **Rule 3 core — intervention on non-ancestors of `T` is irrelevant** (Option B in
+    the design; covers the simplified `Z_Y = Z` case of the tex's Rule 3, sufficient
+    for backdoor / frontdoor demos). Fix [a do-set `Z` of nodes whose random copies
+    are observed in the base model and whose fixed nodes have not already been
+    intervened on](hyp:hZ_obs,hZ_fixed) and [a target block `T` of observed
+    variables](hyp:hT). If [none of the fixed copies of `Z`'s nodes is an ancestor,
+    in the intervention SWIG graph, of any node in `T`](hyp:hNoDesc), then [the
+    `T`-marginal law of the intervened model equals the `T`-marginal law of the base
+    model evaluated at the corresponding fixed values](goal).
 
     Proof mirrors `SCM.induce_marginal_compat` (`Induced.lean:335`): unfold
     `obsKernel` to `latentProduct.map (evalMap ≫ randomToObserved ≫ π)` via

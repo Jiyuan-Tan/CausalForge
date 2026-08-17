@@ -53,13 +53,15 @@ private lemma measurable_indEq_left (d : δ) :
   exact (measurable_const.indicator hset :
     Measurable (Set.indicator {x : δ | x = d} (fun _ => (1 : ℝ))))
 
-/-- **Finite variance of `ψ_seqDR`** — sequential DR (DTR) analogue of
-`aipw_finite_var`.
-
-Under DTR backdoor assumptions, two-stage strict overlap (`ε ∈ (0, 1/2]`
-on each stagewise propensity), `E[Y²] < ∞`, and square-integrability of
-every counterfactual outcome `Y(dbar)`, the sequential DR influence
-function is square-integrable against the data law `P_Z`.
+/-- **Finite variance of the sequential doubly robust score** — sequential DR (DTR) analogue of
+`aipw_finite_var`. Under [the two-stage DTR backdoor assumptions — sequential exchangeability,
+consistency, stagewise positivity, and integrability of every counterfactual
+outcome](hyp:hA), [uniform two-stage strict overlap: the target-regime propensity at each stage
+lies almost surely in `[ε, 1-ε]` for some `ε` in `(0, 1/2]`](hyp:h_overlap), [a finite second
+moment for the observed factual outcome](hyp:h_y2), and [a finite second moment for every
+counterfactual outcome under a treatment sequence](hyp:h_yd2), [the sequential doubly robust
+influence function `ψ_seqDR` is square-integrable against the joint law of the observed
+two-stage data tuple](goal).
 
 The `h_yd2` family is needed because each stagewise value-space
 regression `μ_k_val` is identified a.e. with the corresponding

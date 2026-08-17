@@ -88,9 +88,12 @@ lemma crdOn_mean_compl (i : U) :
   rw [FiniteDesign.E_sub, FiniteDesign.E_const, crdOn_mean]
   field_simp
 
-/-- **Second-order inclusion probability:** two distinct units `i ≠ j` are jointly treated with
-probability `K(K−1)/(N(N−1))`, i.e. `E[Tᵢ Tⱼ] = K(K−1)/(N(N−1))`.  Derived from
-`completeRandomization_incl_pair`. -/
+/-- **Second-order inclusion probability of the completely randomized design.** Under the
+completely randomized design that treats exactly K of the N units in the population uniformly
+over all size-K treated subsets, if [i and j are two distinct units](hyp:hij) then [the
+probability that both i and j are treated equals K(K−1)/(N(N−1))](goal).
+
+Derived from `completeRandomization_incl_pair`. -/
 lemma crdOn_pair (i j : U) (hij : i ≠ j) :
     (crdOn K hK).E (fun w => (FiniteDesign.ind fun w => w i = true) w
         * (FiniteDesign.ind fun w => w j = true) w)

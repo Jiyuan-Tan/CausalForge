@@ -193,8 +193,9 @@ projection onto the nuisance subspace. -/
     c.tildeX H X = X - c.proj H X := by
   simp [tildeX]
 
-/-- **Key orthogonality.** The residual `M_H X` is `c.ip`-orthogonal to
-every element of `H`. -/
+/-- **Key orthogonality.** For [any array `h` lying in the nuisance subspace `H`](hyp:hH), [the
+residualized array `X̃ = M_H X` is orthogonal to `h` under the weighted inner product
+`c.ip`](goal). -/
 lemma residualize_in_orthogonal (c : WeightedSupport R)
     (H : Submodule ℝ (R → ℝ)) (X : R → ℝ) {h : R → ℝ} (hH : h ∈ H) :
     c.ip (c.tildeX H X) h = 0 := by

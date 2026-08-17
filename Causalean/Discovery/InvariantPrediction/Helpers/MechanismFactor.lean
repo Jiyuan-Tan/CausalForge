@@ -305,9 +305,13 @@ theorem latentProduct_heq (F : EnvFamily N Ω ι) (i j : ι) :
   unfold SCM.latentProduct
   exact measure_pi_heq (F.hUnobs i j) (F.hLatent i j)
 
-/-- If `X` is independent of `L` and `Y = Φ(X,L)` a.e., then the conditional
-law of `Y` given `X` is the mechanism kernel obtained by pushing the marginal
-law of `L` through the graph of `Φ`.
+/-- Let $X$, $L$, and $Y$ be [measurable](hyp:hX,hL,hY) random elements of a probability
+space, with $Y$'s value space standard Borel and nonempty, and let $Φ$ be a
+[measurable](hyp:hΦ) map such that [$Y$ equals $Φ(X,L)$ almost everywhere](hyp:hYeq).
+If [$L$ is independent of $X$](hyp:hind), then [the conditional distribution of $Y$
+given $X$ agrees, for almost every pushed-forward value of $X$, with the mechanism
+kernel obtained by pushing the law of $L$ forward through $Φ$ paired with that value
+of $X$](goal).
 
 This is the measure-theoretic factorization used by `mechanism_invariant`: once
 the target is generated from predictors and latent parents, and those latent
@@ -540,8 +544,13 @@ theorem structFun_yNode_apply_eq (F : EnvFamily N Ω ι) (i j : ι)
     exact hξ di hdi hdj
   exact congr_heq (F.hStruct i j) hξHeq
 
-/-- The target-mechanism kernel is invariant across environments after the same
-fixed-parent assignment is transported through the shared fixed-parent set.
+/-- Fix an environment family, a base environment `i₀`, two environments `i` and `j`,
+and a fixed-parent value assignment `cf` for environment `i`. If [the latent parents
+of the target in environment `i` are among its random variables](hyp:hLrv) and
+[likewise for environment `j`](hyp:hLrv'), then [the target-mechanism kernel built
+from environment `i` at `cf` equals the target-mechanism kernel built from
+environment `j` at the value obtained by transporting `cf` through the shared
+fixed-parent set](goal).
 
 The kernel first integrates out the latent parents of the target and then applies
 the target structural mechanism parameterized by an explicit fixed-parent value

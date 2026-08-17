@@ -33,9 +33,11 @@ variable {P : POSystem} {α : Type*}
   [MeasurableSpace α] [MeasurableSingletonClass α]
   (S : POManskiIVSystem P α)
 
-/-- **cor:po-iv-mtr-mts.**  MTR + MTS intersected.  The ATE is nonnegative
-(from MTR) and upper-bounded by the naive contrast `E[Y|D=1] - E[Y|D=0]`
-(from `mts_E_Y1_le_condY1` combined with `mts_condY0_le_E_Y0`). -/
+/-- **cor:po-iv-mtr-mts.** Under [the baseline Manski assumptions](hyp:hA), [monotone treatment
+response, `Y(0) ≤ Y(1)` almost surely](hyp:hMTR), and [monotone treatment selection — each
+potential outcome's mean given control is no larger than its mean given
+treatment](hyp:hMTS), [the average treatment effect is nonnegative and is upper-bounded by the
+naive observed contrast `E[Y | D=1] − E[Y | D=0]`](goal). -/
 theorem mtr_mts_bounds_ATE (hA : S.BaseAssumptions)
     (hMTR : S.MTR) (hMTS : S.MTS) :
     0 ≤ S.ATE ∧
@@ -51,9 +53,12 @@ theorem mtr_mts_bounds_ATE (hA : S.BaseAssumptions)
     exact integral_sub hA.integrable_Y1 hA.integrable_Y0
   rw [hATE_eq]; linarith
 
-/-- **cor:po-iv-mtr-miv.**  MTR + MIV intersected.  The ATE is nonnegative
-(from MTR) and upper-bounded by the MIV envelope contrast
-`∫ (mUpper1(Z) - mLower0(Z))`. -/
+/-- **cor:po-iv-mtr-miv.** Under [the baseline Manski assumptions](hyp:hA),
+[monotone treatment response, `Y(0) ≤ Y(1)` almost surely](hyp:hMTR), and [a monotone
+instrumental variable — the conditional mean of each potential outcome is nondecreasing in the
+instrument value across its support](hyp:hMIV), [the average treatment effect is nonnegative and
+is upper-bounded by the integrated monotone-instrument envelope contrast
+`∫ (mUpper1(Z) − mLower0(Z))`](goal). -/
 theorem mtr_miv_bounds_ATE [IsFiniteMeasure P.μ] [Fintype α]
     (hA : S.BaseAssumptions) (hMTR : S.MTR) (hMIV : S.MIV) :
     letI := hMIV.inst

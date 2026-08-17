@@ -1,5 +1,6 @@
 import type { Library } from "../../library/schema.js";
 import { CLUSTER_SUBSTRATE_ROOTS, type ClusterKey } from "../../constants.js";
+import { stripNlCrosslinks } from "../../shared/nl_crosslinks.js";
 
 export const EVAL_KS = [1, 3, 5, 10] as const;
 export const GOLD_KINDS = new Set(["def", "structure", "inductive", "class", "abbrev", "theorem"]);
@@ -36,7 +37,7 @@ export function fileToCluster(file: string): ClusterKey | null {
 }
 
 function firstPara(doc: string | null): string {
-  return (doc ?? "").split(/\n\s*\n/)[0].trim();
+  return stripNlCrosslinks((doc ?? "").split(/\n\s*\n/)[0]).trim();
 }
 
 export function buildGoldPairs(lib: Library): GoldPair[] {

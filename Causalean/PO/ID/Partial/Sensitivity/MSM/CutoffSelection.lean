@@ -58,9 +58,16 @@ noncomputable def treatedSurv (c : P.Ω → ℝ) : P.Ω → ℝ :=
 noncomputable def survTarget (Λ : ℝ) (ω : P.Ω) : ℝ :=
   (1 - S.wMin Λ ω * S.propScore true ω) / (S.wMax Λ ω - S.wMin Λ ω)
 
-/-- **Decomposition of the cutoff calibration value.** Pulling the `σ(X)`-measurable weights out
-of the conditional expectation gives
-`E[Z/cutoffProp Λ c | σ(X)] = wMin·e + (wMax − wMin)·G(c)`. -/
+/-- **Decomposition of the cutoff calibration value.** For [a σ(X)-measurable cutoff function
+`c`](hyp:_hc_meas), assume [the treatment indicator divided by the cutoff propensity is
+integrable](hyp:_hint), [the treated-survival indicator, weighted by the treatment indicator, is
+integrable](hyp:hint1), [the product of the treatment indicator and the lower
+marginal-sensitivity-model weight `wMin` is integrable](hyp:hmin_int), and [the gap between the
+upper and lower weights, weighted by the treatment-weighted treated-survival indicator, is
+integrable](hyp:hdiff_int). Then [pulling the `σ(X)`-measurable weights `wMin`, `wMax` out of the
+conditional expectation decomposes the cutoff calibration value: `E[Z/cutoffProp Λ c | σ(X)] =
+wMin·e + (wMax − wMin)·G(c)`, where `G(c)` is the conditional treated-survival at cutoff
+`c`](goal). -/
 theorem cutoff_calibValue_eq (Λ : ℝ) (c : P.Ω → ℝ) (_hc_meas : Measurable[S.sigmaX] c)
     (_hint : Integrable (fun ω => S.dVar.indicator true ω / S.cutoffProp Λ c ω) P.μ)
     (hint1 : Integrable (fun ω =>
@@ -175,8 +182,12 @@ theorem cutoffProp_calibrated_of_survival (Λ : ℝ) (hΛ : 1 < Λ)
   field_simp [hdiff_ne]
   ring
 
-/-- **The cutoff propensity is always in the odds-ratio box.** For any cutoff `c`, the cutoff
-weight is `wMin` or `wMax` (the box endpoints), so `cutoffProp Λ c ∈ MSMSet Λ`. -/
+/-- **The cutoff propensity is always in the odds-ratio box.** Fix [a sensitivity parameter Λ at
+least 1](hyp:Λ,hΛ) and assume [the propensity score for treatment given the covariates lies
+strictly between 0 and 1 almost surely (overlap)](hyp:hoverlap). Then for any measurable cutoff
+function `c`, [the induced cutoff propensity always lies in the marginal-sensitivity-model
+odds-ratio ambiguity set, since at each point it equals either the lower or the upper
+marginal-sensitivity-model weight](goal). -/
 theorem cutoffProp_mem_MSMSet (Λ : ℝ) (hΛ : 1 ≤ Λ)
     (hoverlap : ∀ᵐ ω ∂P.μ, 0 < S.propScore true ω ∧ S.propScore true ω < 1)
     (c : P.Ω → ℝ) :

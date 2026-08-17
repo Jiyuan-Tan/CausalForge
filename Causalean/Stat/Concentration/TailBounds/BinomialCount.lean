@@ -267,9 +267,11 @@ theorem boundedCount_lower_tail_of_tilt
       mul_le_mul_of_nonneg_left hmgf (exp_pos _).le
     _ = exp (-s * a + (m : ℝ) * (p * (exp s - 1))) := (exp_add _ _).symm
 
-/-- Upper multiplicative tail for an i.i.d. Bernoulli count.  If its mean
-`m * p` is below half the threshold `a`, then the probability of exceeding
-`a` is at most `exp (-a * (log 2 - 1/2))`. -/
+/-- **Upper multiplicative tail** for the count of an i.i.d. `[0,1]`-valued statistic. Let `S` be an
+i.i.d. sample and let `f` be [a measurable statistic taking values in the unit
+interval](hyp:hf,h01). If [the population mean of `f` is at most `p`](hyp:hmean) and [`m` times
+`p` is less than half the threshold `a`](hyp:hmean_lt), then [the probability that the sum of
+`f` over the first `m` draws exceeds `a` is at most $\exp(-a(\log 2 - 1/2))$](goal). -/
 theorem bernoulliCount_upper_tail
     (S : Causalean.Stat.IIDSample Ω 𝒳 μ P) {f : 𝒳 → ℝ}
     (hf : Measurable f) (h01 : ∀ x, f x ∈ Set.Icc (0 : ℝ) 1)
@@ -290,9 +292,12 @@ theorem bernoulliCount_upper_tail
   rw [hmul, hrhs]
   linarith
 
-/-- Lower multiplicative tail for an i.i.d. Bernoulli count.  If its mean
-`m * p` is more than twice the threshold `a`, then the probability of being
-at most `a` is at most `exp (-(m*p)/8)`. -/
+/-- **Lower multiplicative tail** for the count of an i.i.d. `[0,1]`-valued statistic. Let `S` be an
+i.i.d. sample and let `f` be [a measurable statistic taking values in the unit
+interval](hyp:hf,h01). If [`p` is nonnegative](hyp:hp), [the population mean of `f` is at least
+`p`](hyp:hmean), and [twice the threshold `a` is less than `m` times `p`](hyp:hmean_gt), then
+[the probability that the sum of `f` over the first `m` draws is at most `a` is at most
+$\exp(-mp/8)$](goal). -/
 theorem bernoulliCount_lower_tail
     (S : Causalean.Stat.IIDSample Ω 𝒳 μ P) {f : 𝒳 → ℝ}
     (hf : Measurable f) (h01 : ∀ x, f x ∈ Set.Icc (0 : ℝ) 1)

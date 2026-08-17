@@ -140,10 +140,11 @@ private theorem waldForm_posSqrt
         from posSqrtEquiv_apply hψ hvar hinj _,
     (posSqrtEquiv hψ hvar hinj).apply_symm_apply, real_inner_self_eq_norm_sq]
 
-/-- **χ² identification of the Wald quadratic form.**  When the asymptotic-variance
-operator `Σ` is non-degenerate, the multivariate-CLT Gaussian limit, pushed through
-the Wald quadratic form `S ↦ ⟪S, Σ⁻¹ S⟫`, is the χ²_d distribution with
-`d = finrank E` degrees of freedom. -/
+/-- **χ² identification of the Wald quadratic form.**  When [the linear map induced by the
+asymptotic-variance operator `Σ` is injective, i.e. `Σ` is non-degenerate](hyp:hinj),
+[the multivariate-CLT Gaussian limit, pushed through the Wald quadratic form
+`S ↦ ⟪S, Σ⁻¹ S⟫`, is exactly the χ²_d distribution, with `d` the dimension of the ambient
+space](goal). -/
 theorem gaussianLimit_waldForm_map
     (hinj : Function.Injective (secondMomentLM hψ hvar)) :
     (gaussianLimit hψ hvar).map (fun S => ⟪S, secondMomentInv hψ hvar hinj S⟫)
@@ -162,11 +163,15 @@ theorem gaussianLimit_waldForm_map
 
 /-! ## Wiring into WaldVec coverage -/
 
-/-- **χ²-coverage of the Wald confidence ellipsoid.**  Instantiates
-`Tendsto_dist.wald_coverage_Iic_of_noAtoms` at the identified limit law
-`chiSqDist d`, which is atomless for `d ≥ 1`.  If the scalar Wald statistic
-`Wₙ ⇒ χ²_d` and `coverProb` is asymptotically the ellipsoid event probability, then
-`coverProb n → χ²_d(Iic c)`. -/
+/-- **χ²-coverage of the Wald confidence ellipsoid.**  Suppose [the Wald statistic sequence
+`Wₙ` is measurable at every sample size](hyp:hWn), [`d` is a positive-integer degrees-of-freedom
+parameter](hyp:hd), and [`Wₙ` converges in distribution to the χ²_d law](hyp:hW). If [a
+coverage-probability sequence `coverProb` is asymptotically equivalent to the ellipsoid event
+`{Wₙ ≤ c}`](hyp:h_bridge), then [`coverProb` converges to the χ²_d probability of
+`(-∞, c]`](goal).
+
+Instantiates `Tendsto_dist.wald_coverage_Iic_of_noAtoms` at the identified limit law
+`chiSqDist d`, which is atomless for `d ≥ 1`. -/
 theorem Tendsto_dist.wald_coverage_chiSq
     {Ω : Type*} [MeasurableSpace Ω] {ν : Measure Ω} [IsProbabilityMeasure ν]
     {Wn : ℕ → Ω → ℝ} (hWn : ∀ n, AEMeasurable (Wn n) ν)

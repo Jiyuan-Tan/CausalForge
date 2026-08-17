@@ -63,9 +63,13 @@ theorem integral_rescaled_order_eq_zero (hg : OrderFirstDegenKernel P g)
     hg.integral_eq_zero
 
 omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
-/-- **Negligibility of the higher-order remainder.**  Under first-order
-degeneracy, `√n · Uₙ → 0` in probability, i.e. it is `o_p(1)`.  Proof: `L²`
-boundedness (`memLp_rescaled_order`) with mean zero and variance `≤ C/n → 0`
+/-- **Negligibility of the higher-order remainder.** For an i.i.d. sample `S`, if the
+order-`m` kernel `g` is [first-order degenerate: measurable, square-integrable, and mean
+zero after integrating out any single coordinate](hyp:hg), then [the `√n`-rescaled
+order-`m` U-statistic of `g` converges to zero in probability, i.e. it is
+`o_p(1)`](goal).
+
+Proof: `L²` boundedness (`memLp_rescaled_order`) with mean zero and variance `≤ C/n → 0`
 (`integral_rescaled_order_sq_le`), via Chebyshev — mirror the order-2
 `degenerateNegligible_of_degenKernel`. -/
 theorem orderDegenerateNegligible_of_firstDegen [IsFiniteMeasure P]
@@ -123,12 +127,17 @@ end IIDSample
 
 /-! ## Discharging `OrderDegenerateNegligible` for the Hájek remainder -/
 
-/-- **The higher-order remainder of a fixed-order U-statistic is negligible.**
-For an order-`m` kernel `h` whose residual `uDegenOrder h P` is measurable and
-square-integrable and whose slice/Fubini integrability side conditions hold, the
-rescaled remainder `√n · Gₙ` is `o_p(1)`.  This discharges the
-`OrderDegenerateNegligible` hypothesis consumed by the order-`m` CLT
-`uStatisticOrder_clt` (`Causalean.Stat.UStatistic.OrderM.CLT`).
+/-- **The higher-order remainder of a fixed-order U-statistic is negligible.** For an
+i.i.d. sample `S` and order-`m` kernel `h`, write `g` for the higher-order Hájek
+residual of `h`. If `g` is [measurable](hyp:hmeas) and [square-integrable under the
+`m`-fold product law](hyp:hL2), and if for every coordinate [integrating `h` over the
+remaining `m − 1` coordinates yields an integrable function of that
+coordinate](hyp:hslice_int) [with the same population mean `uMeanOrder h P` in every
+coordinate](hyp:hmean) and [`h` remains integrable in the remaining coordinates for
+every fixed value of that coordinate](hyp:hrow), then [the `√n`-rescaled higher-order
+residual U-statistic `√n · Gₙ` converges to zero in probability, i.e. it is
+`o_p(1)`](goal). This discharges the `OrderDegenerateNegligible` hypothesis consumed by
+the order-`m` CLT `uStatisticOrder_clt` (`Causalean.Stat.UStatistic.OrderM.CLT`).
 
 Proof: assemble `OrderFirstDegenKernel P (uDegenOrder h P)` — `firstDeg` is
 `uDegenOrder_integral_tail_eq_zero` — and apply

@@ -916,8 +916,16 @@ lemma component_ref_atom_product_eq_jointRef
   rw [jointRef_singleton_eq_prod]
   exact hprod
 
-/-- **(A) Tian Lemma 1 (Eq. 37 = Eq. 36).**  The observational full-prefix
-c-component density equals the do-complement marginal density `Q[S]`.
+/-- **(A) Tian Lemma 1 (Eq. 37 = Eq. 36).** For [a standard causal model `M`,
+i.e. one with no fixed nodes](hyp:hStd), a reference family that is
+[faithful — every coordinate value has nonzero reference mass](hyp:href), and
+an observational kernel at a fixed-value slice `s` with [full point-mass
+support (every observed assignment has nonzero probability)](hyp:hpos), fix
+[a node set `S` contained in the observed coordinates](hyp:hS) that is [a full
+c-component of the model's SWIG graph](hyp:hScomp). Then [the observational
+full-prefix c-component density `cComponentDensityFactor` on `S` equals the
+mechanism c-factor `Q[S]` (`mechCFactor`) — the do-complement marginal density
+of `S`](goal).
 
 The prefix-conditional product `cComponentDensityFactor` telescopes to the
 do(observed∖S) marginal.  The equality is a statement about the whole
@@ -1058,8 +1066,18 @@ lemma qLocalMass_fixSet_invariant
       (M.fixSetProj X hObs hFix sDo) x x v (hSXobs hv) (hS hv)
       hnot hobsAgree hpin hproj ℓ).mpr (hLocal v hv)
 
-/-- **Do(X)-invariance of the c-factor `Q[S]`** (Tian Lemma 4), for a
-c-component `S` whose random copies avoid the intervention set `X`.
+/-- **Do(X)-invariance of the c-factor `Q[S]`** (Tian Lemma 4). Let an
+intervention set `X` have [random copies that are all observed](hyp:hObs) and
+[fixed copies that are not already fixed in the base model](hyp:hFix), giving
+the intervened model `M.fixSet X`. For [a standard base model
+`M`](hyp:hStd), a reference family that is [faithful](hyp:href), and
+[a node set `S` contained in the observed coordinates](hyp:hS) whose [random
+copies avoid every intervened node in `X`](hyp:hSX), if [the base assignment
+`x` records, at each intervened node, the same value that the intervened
+model's fixed values `sDo` assign to the corresponding fixed
+coordinate](hyp:hpin), then [the `S`-c-factor `Q[S]` of the intervened model
+`M.fixSet X` at `sDo`, `x` equals the `S`-c-factor of the base model `M` at
+the projected fixed values `M.fixSetProj X sDo`, `x`](goal).
 
 The `S`-c-factor of the do-model `M.fixSet X` equals the `S`-c-factor of the
 original model at the projected fixed-value slice.  The proof reduces both

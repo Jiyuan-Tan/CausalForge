@@ -388,7 +388,13 @@ theorem productKL_tensorization_of_finite {α : Type*} [MeasurableSpace α]
     (ProductKLPrivate.pi_absolutelyContinuous_iid μ ν hac)
     (ProductKLPrivate.pi_llr_integrable_iid μ ν hac hint)
 
-/-- Product-KL tensorisation packaged in the existing Le Cam interface. -/
+/-- For a sample size `n` and probability measures `μ`, `ν` on a measurable space `α`, if
+    [`μ` is absolutely continuous with respect to `ν`](hyp:hac) and [the log-likelihood ratio of
+    `μ` against `ν` is `μ`-integrable](hyp:hint), then [both the KL divergence between the
+    `n`-fold product of `μ` and the `n`-fold product of `ν`, and the one-observation KL
+    divergence between `μ` and `ν`, are finite, and the real-valued product KL divergence is at
+    most `n` times the real-valued one-observation KL divergence](goal): this is product-KL
+    tensorisation packaged in the Le Cam interface. -/
 theorem productKL_tensorization {α : Type*} [MeasurableSpace α]
     (n : ℕ) (μ ν : Measure α) [IsProbabilityMeasure μ] [IsProbabilityMeasure ν]
     (hac : μ ≪ ν) (hint : Integrable (llr μ ν) μ) :

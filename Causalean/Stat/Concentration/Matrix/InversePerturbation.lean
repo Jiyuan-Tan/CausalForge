@@ -230,7 +230,12 @@ theorem designInv_perturb (S M : Matrix (Fin (p + 1)) (Fin (p + 1)) ℝ)
         linftyOp_abs_entry_le ((↑Munit⁻¹ : R) - ↑Su⁻¹) i j
     _ ≤ 2 * c ^ 2 * ((p + 1 : ℕ) * η) := hdiff_norm
 
-/-- The `(0,0)` specialization of the entrywise inverse perturbation bound. -/
+/-- **The `(0,0)` specialization of the entrywise inverse perturbation bound.** If
+[`S` is invertible](hyp:hS), [every row of `S⁻¹` has its absolute entries summing to at most
+`c`](hyp:hSrow), [every entry of `M` differs from the corresponding entry of `S` by at most
+`η`](hyp:hclose), and [the product `c · ((p+1) · η)` is at most `1/2`](hyp:hsmall), then
+[`M` is also invertible and its `(0,0)` inverse entry differs from `S`'s by at most
+`2 · c² · ((p+1) · η)`](goal). -/
 theorem designInv00_perturb (S M : Matrix (Fin (p + 1)) (Fin (p + 1)) ℝ)
     (hS : IsUnit S.det) {η c : ℝ}
     (hSrow : ∀ i, (∑ j, |S⁻¹ i j|) ≤ c)

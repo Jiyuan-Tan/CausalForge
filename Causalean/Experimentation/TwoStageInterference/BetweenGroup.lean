@@ -142,15 +142,18 @@ private lemma between_cond_mean_agg (s : StratAssign ι) :
 end
 
 set_option linter.unusedDecidableInType false in
-/-- **Two-stage variance decomposition, abstract per-group statistic.**  For an arbitrary
-within-group statistic `g i` per group, and any two-stage design `jointDesign D₁ ψ φ` whose stage-1
-selection satisfies the SRS inclusion moments `C/N` (`hstage1`) and `C(C−1)/(N(N−1))`
-(`hstage1pair`) — the moments of the mixed group-assignment strategy of Assumption 1, a simple
-random sample of `C` of the `N := card ι` groups flagged ψ — the randomization variance of the
-aggregate
-`(∑ᵢ 1(Sᵢ=ψ)·g i(wᵢ))/C` splits into a between-group SRS term with finite-population correction
-`(1 − C/N)/C` applied to the population sample variance of the conditional means `(ψ i).E (g i)`,
-plus a within-group term `(1/(C·N))` times the sum of the conditional variances `(ψ i).Var (g i)`.
+/-- **Two-stage variance decomposition, abstract per-group statistic.** For [an arbitrary
+within-group allocation design `ψ` and comparison design `φ`](hyp:ψ,φ) and [an arbitrary per-group
+statistic `g`](hyp:g), assume [the selected-group count `C` is nonzero](hyp:hC), [the population
+has nonzero size](hyp:hN) and [at least two groups](hyp:hN1), and that the stage-1 selection
+satisfies [first-order inclusion probability `C/N` for every group](hyp:hstage1) and [second-order
+(pairwise) inclusion probability `C(C−1)/(N(N−1))`](hyp:hstage1pair) — the moments of a simple
+random sample of `C` of the `N` groups. Then [the randomization variance of the aggregate
+`(∑ᵢ 1(Sᵢ=ψ)·g i(wᵢ))/C` under the two-stage design `jointDesign D₁ ψ φ` splits into a
+between-group SRS term with finite-population correction `(1 − C/N)/C` applied to the population
+sample variance of the conditional means `(ψ i).E (g i)`, plus a within-group term `(1/(C·N))`
+times the sum of the conditional variances `(ψ i).Var (g i)`](goal).
+
 This is `Var_popEst` (Theorem 4) and `Var_estDirect` (Theorem 6) with `g` instantiated. -/
 theorem Var_groupAgg (D₁ : FiniteDesign (StratAssign ι)) (ψ φ : ∀ i, FiniteDesign (WAssign n i))
     (g : ∀ i, WAssign n i → ℝ) (C : ℝ)
@@ -181,17 +184,20 @@ theorem Var_groupAgg (D₁ : FiniteDesign (StratAssign ι)) (ψ φ : ∀ i, Fini
     exact within_term_agg D₁ ψ φ g C hC hN hstage1
 
 set_option linter.unusedDecidableInType false in
-/-- **Hudgens–Halloran (2008), Theorem 4 (two-stage variance decomposition of `Ŷ(z;ψ)`).**
-For a two-stage design `jointDesign D₁ ψ φ` whose stage-1 selection has the SRS inclusion moments
-`C/N` and `C(C−1)/(N(N−1))` (`hstage1`/`hstage1pair`) and whose within-group designs have
-`z`-propensity `m i / n i` (`hprop`) — the moments of the mixed strategy of Assumption 1, a simple
-random sample of `C` of the `N := card ι` groups flagged ψ, each selected group randomized by its
-within-group mixed design (`Var_popEst_CRD` specializes to that design, discharging all three moment
-hypotheses) — the randomization variance of the population estimator `Ŷ(z;ψ)`
-splits into a between-group SRS term with finite-population correction `(1 − C/N)/C` applied to the
-population sample variance of the group-level potential outcomes `ȳ_i(z;ψ)`, plus a within-group
-term `(1/(C·N))` times the sum of the per-group conditional variances of the within-group
-estimator. -/
+/-- **Hudgens–Halloran (2008), Theorem 4 (two-stage variance decomposition of `Ŷ(z;ψ)`).** For
+[arbitrary within-group allocation designs `ψ` and comparison designs `φ`](hyp:ψ,φ) and [potential
+outcomes `Y`](hyp:Y), assume [the treated/control unit counts `m i` are nonzero](hyp:hm), [the
+group sizes `n i` are nonzero](hyp:hn), [the population has nonzero size](hyp:hN) and [at least
+two groups](hyp:hN1), [the selected-group count `C` is nonzero](hyp:hC), that [the within-group
+`z`-propensity of every unit equals `m i / n i`](hyp:hprop), and that the stage-1 selection
+satisfies [first-order inclusion probability `C/N`](hyp:hstage1) and [second-order (pairwise)
+inclusion probability `C(C−1)/(N(N−1))`](hyp:hstage1pair) — the moments of a simple random sample
+of `C` of the `N` groups, each then randomized by its within-group design. Then [the randomization
+variance of the population estimator `Ŷ(z;ψ)` under the two-stage design `jointDesign D₁ ψ φ`
+splits into a between-group SRS term with finite-population correction `(1 − C/N)/C` applied to
+the population sample variance of the group-level potential outcomes `ȳ_i(z;ψ)`, plus a
+within-group term `(1/(C·N))` times the sum of the per-group conditional variances of the
+within-group estimator](goal). -/
 theorem Var_popEst (D₁ : FiniteDesign (StratAssign ι)) (ψ φ : ∀ i, FiniteDesign (WAssign n i))
     (Y : ∀ i, Fin (n i) → WAssign n i → ℝ) (z : Bool) (m : ι → ℝ) (C : ℝ)
     (hC : C ≠ 0) (hm : ∀ i, m i ≠ 0) (hn : ∀ i, (n i : ℝ) ≠ 0)
@@ -216,13 +222,15 @@ theorem Var_popEst (D₁ : FiniteDesign (StratAssign ι)) (ψ φ : ∀ i, Finite
   rw [hmean]
 
 set_option linter.unusedDecidableInType false in
-/-- **Hudgens–Halloran (2008), Theorem 4, for the mixed two-stage design.**  `Var_popEst`
-specialized to the actual mixed (completely randomized) two-stage design of Assumption 1: stage-1 is
-a simple random sample of `C` of the `N = card ι` groups (`crdOn C`), and each ψ-group `i` is
-completely randomized treating `K i` of its `n i` units (`crd (K i)`).  The stage-1 SRS inclusion
-moments and within-group `z`-propensities are the derived facts `crdOn_mean`/`crdOn_pair`/
-`crd_prop_*`, so — unlike `Var_popEst` — no design-moment hypotheses are assumed, only the
-mixed-strategy validity conditions `0 < C < N` and `0 < K i < n i`. -/
+/-- **Hudgens–Halloran (2008), Theorem 4, for the mixed two-stage design.** For [arbitrary
+potential outcomes `Y`](hyp:Y), assume [the selected-group count `C` is positive](hyp:hC0) and
+[strictly less than the number of groups](hyp:hCN), and that [every group's treated-unit count
+`K i` is positive](hyp:hK0) and [strictly less than the group's size `n i`](hyp:hKn). Then, under
+the mixed two-stage design — stage 1 a simple random sample of `C` of the groups, each selected
+group `i` completely randomized to treat `K i` of its `n i` units — [`Var_popEst`'s between/within
+variance decomposition holds for the population estimator `Ŷ(z; ·)`, with all of `Var_popEst`'s
+design-moment hypotheses discharged by the completely-randomized design's inclusion and
+propensity facts](goal). -/
 theorem Var_popEst_CRD (Y : ∀ i, Fin (n i) → WAssign n i → ℝ) (z : Bool) (K : ι → ℕ) (C : ℕ)
     (hC0 : 0 < C) (hCN : C < Fintype.card ι)
     (hK0 : ∀ i, 0 < K i) (hKn : ∀ i, K i < n i) :

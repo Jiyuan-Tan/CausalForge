@@ -151,10 +151,11 @@ theorem equal_groups_weight_eq_pi
     rw [overlapDenominator, hsum, ← Finset.sum_mul, P.π_sum_one, one_mul]
   simp [overlapWeight, hcell, hden]
 
-/-- **Equal-cell-share collapse to unweighted average**
-(finite half of `prop:po-estimand-sloczynski-ols-equal-groups`).
-If every cell has `p_g = 1/2`, then
-`β_sat = Σ π_g τ_g`. -/
+/-- **Equal-cell-share collapse to unweighted average** (finite half of
+`prop:po-estimand-sloczynski-ols-equal-groups`). If [every cell has an equal
+treated share `p_g = 1/2`](hyp:h), then [the saturated-OLS estimand `β_sat`
+equals the probability-weighted average of the cell treatment effects
+`Σ π_g τ_g`](goal). -/
 theorem equal_groups_collapses
     (h : ∀ g, P.p g = 1 / 2) :
     P.overlapWeightedATE = ∑ g, P.π g * P.τ g := by
@@ -162,9 +163,10 @@ theorem equal_groups_collapses
   refine Finset.sum_congr rfl (fun g _ => ?_)
   rw [P.equal_groups_weight_eq_pi h g]
 
-/-- **Homogeneous-effect collapse**
-(saturated half of `prop:po-estimand-sloczynski-ols-homogeneous`).
-If `τ_g = τ₀` for every cell, then `β_sat = τ₀`. -/
+/-- **Homogeneous-effect collapse** (saturated half of
+`prop:po-estimand-sloczynski-ols-homogeneous`). If [the cell-level treatment
+effect equals a common constant `τ₀` in every cell](hyp:h), then [the
+saturated-OLS estimand `β_sat` equals `τ₀`](goal). -/
 theorem homogeneous_collapses
     {τ₀ : ℝ} (h : ∀ g, P.τ g = τ₀) :
     P.overlapWeightedATE = τ₀ := by
@@ -207,13 +209,12 @@ theorem cellOverlap_eq_perWeights_mul {𝒢 : Type*} [Fintype 𝒢]
   unfold cellOverlap perUntreatedWeight perTreatedWeight
   ring
 
-/-- **Headline monotonicity — smaller treated group gets larger per-treated weight**
-(`rem:po-estimand-sloczynski-ols-group-size`).
-
-The per-treated-observation leverage factor `1 − p_g` is *antitone* in
-`p_g`: if cell `g` has a higher treated share than cell `h` (i.e. `p_g ≤ p_h`),
-then each treated unit in `g` carries a larger leverage factor than each
-treated unit in `h` (`perTreatedWeight P h ≤ perTreatedWeight P g`).
+/-- **Headline monotonicity — smaller treated group gets larger per-treated
+weight** (`rem:po-estimand-sloczynski-ols-group-size`). The per-treated-observation
+leverage factor `1 − p_g` is antitone in the treated share: if [cell `g` has a
+treated share no larger than cell `h`'s](hyp:hph), then [`g`'s per-treated-observation
+leverage factor is at least `h`'s:
+`perTreatedWeight P h ≤ perTreatedWeight P g`](goal).
 
 In words: the *minority* treatment-status group in a cell receives the
 larger per-observation weight. A cell where almost everyone is treated
@@ -231,12 +232,11 @@ theorem perTreatedWeight_antitone {𝒢 : Type*} [Fintype 𝒢]
   linarith
 
 /-- **Monotonicity — larger treated group gives larger per-untreated weight**
-(`rem:po-estimand-sloczynski-ols-group-size`, untreated side).
-
-The per-untreated-observation leverage factor `p_g` is *monotone* in `p_g`:
-if cell `g` has a lower treated share than cell `h` (i.e. `p_g ≤ p_h`),
-then each untreated unit in `h` carries a larger leverage factor than each
-untreated unit in `g` (`perUntreatedWeight P g ≤ perUntreatedWeight P h`).
+(`rem:po-estimand-sloczynski-ols-group-size`, untreated side). The
+per-untreated-observation leverage factor `p_g` is monotone in the treated
+share: if [cell `g` has a treated share no larger than cell `h`'s](hyp:hph),
+then [`h`'s per-untreated-observation leverage factor is at least `g`'s:
+`perUntreatedWeight P g ≤ perUntreatedWeight P h`](goal).
 
 Symmetrically to `perTreatedWeight_antitone`: the minority
 untreated group in a cell receives the larger per-observation weight. -/
@@ -322,16 +322,19 @@ untreated share as its weight, and vice versa. -/
 theorem represents : R.β_ols = (1 - R.ρ) * R.τ_ATT + R.ρ * R.τ_ATU := by
   rw [R.twoComponent, R.equalDispersion, R.w0_eq_rho]
 
-/-- **Equal-group-size collapse to the ATE**
-(top half of `prop:po-estimand-sloczynski-ols-equal-groups`).
-If `ρ = 1/2`, the opposite-group OLS coefficient equals the ATE. -/
+/-- **Equal-group-size collapse to the ATE** (top half of
+`prop:po-estimand-sloczynski-ols-equal-groups`). If [the treated share `ρ`
+equals one half](hyp:h), then [the opposite-group OLS coefficient `β_ols`
+equals the ATE `τ_ATE = ρ·τ_ATT + (1−ρ)·τ_ATU`](goal). -/
 theorem equal_groups_eq_ATE (h : R.ρ = 1 / 2) :
     R.β_ols = R.tau_ATE := by
   rw [R.represents, tau_ATE, h]; ring
 
 /-- **Homogeneous-effect collapse for the opposite-group representation**
-(ATT/ATU half of `prop:po-estimand-sloczynski-ols-homogeneous`).
-If `τ_ATT = τ_ATU = τ₀`, then `β_ols = τ₀` regardless of `ρ`. -/
+(ATT/ATU half of `prop:po-estimand-sloczynski-ols-homogeneous`). If [the ATT
+equals a common constant `τ₀`](hyp:hT) and [the ATU equals that same constant
+`τ₀`](hyp:hU), then [the opposite-group OLS coefficient `β_ols` equals `τ₀`,
+regardless of the treated share `ρ`](goal). -/
 theorem homogeneous_eq_constant
     {τ₀ : ℝ} (hT : R.τ_ATT = τ₀) (hU : R.τ_ATU = τ₀) :
     R.β_ols = τ₀ := by

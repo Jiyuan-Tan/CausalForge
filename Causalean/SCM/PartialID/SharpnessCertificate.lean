@@ -32,10 +32,11 @@ def IsSharp (G : SWIGGraph N) (As : Causalean.SCM N Ω → Prop) (M₀ : Causale
     (obj : Causalean.SCM N Ω → ℝ) (L U : ℝ) : Prop :=
   compatibleInterval G As M₀ obj = Set.Icc L U
 
-/-- **Sharpness certificate.** A sound, order-convex bound whose endpoints are both attained by
-compatible models is sharp: if the identified set is contained in `[L, U]` (soundness) and is
-order-connected, and some compatible model attains `L` while some compatible model attains `U`,
-then the identified set equals `[L, U]`. -/
+/-- **Sharpness certificate.** For a real-valued query `obj` over the compatible class of
+`(G, As, M₀)`, if [the identified set is contained in the interval `[L, U]`](hyp:hsub)
+(soundness), [the identified set is order-connected](hyp:hconn), [some compatible model attains
+the value `L`](hyp:hL), and [some compatible model attains the value `U`](hyp:hU), then [the
+identified set equals `[L, U]`, i.e. the bound is sharp](goal). -/
 theorem isSharp_of_attaining (G : SWIGGraph N) (As : Causalean.SCM N Ω → Prop)
     (M₀ : Causalean.SCM N Ω) (obj : Causalean.SCM N Ω → ℝ) (L U : ℝ)
     (hsub : compatibleInterval G As M₀ obj ⊆ Set.Icc L U)

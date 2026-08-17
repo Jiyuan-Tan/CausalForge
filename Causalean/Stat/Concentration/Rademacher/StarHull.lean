@@ -66,7 +66,8 @@ lemma starHull_congr {ι 𝒳 : Type*} {F G : ι → 𝒳 → ℝ}
     exact h i x
   rw [hFG]
 
-/-- An `α`-rescaling of `F i` with `α ∈ [0, 1]` lies in the star hull. -/
+/-- **Star-hull rescaling.** [For any coefficient `α` satisfying `0 ≤ α` and `α ≤ 1`](hyp:h₀,h₁),
+[the rescaled function `α • F i` lies in the star hull of the family `F`](goal). -/
 lemma starHull_smul_mem {ι 𝒳 : Type*} (F : ι → 𝒳 → ℝ) (i : ι)
     {α : ℝ} (h₀ : 0 ≤ α) (h₁ : α ≤ 1) :
     (α • F i) ∈ starHull F := by

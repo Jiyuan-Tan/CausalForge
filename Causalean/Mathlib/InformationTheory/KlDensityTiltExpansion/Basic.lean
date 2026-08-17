@@ -91,9 +91,11 @@ lemma integral_tiltDensity {μ : Measure Z} [IsProbabilityMeasure μ] {s : Z →
     _ = 1 := by
         simp [hs_mean]
 
-/-- **The linear tilt is a probability measure for small `|h|`.**  For a probability
-measure `μ`, a bounded mean-zero score `|s| ≤ C` with `∫ s = 0`, and tilt strength
-`|h| · C ≤ 1`, the measure `tiltMeasure μ s h` is a probability measure.
+/-- **The linear tilt is a probability measure for small `|h|`.** For a probability measure `μ`
+and [a measurable score function `s`](hyp:hs_meas) that is [bounded by a constant `C`](hyp:hsC)
+(`|s y| ≤ C` for every `y`) and [has mean zero under `μ`](hyp:hs_mean), if [the tilt strength
+satisfies `|h| · C ≤ 1`](hyp:hh), then [the linearly tilted measure `tiltMeasure μ s h` is again
+a probability measure](goal).
 
 Proof sketch: its total mass is `withDensity f univ = ∫⁻ f dμ`; since the density
 `f = ofReal (1 + h · s)` is nonnegative (`tiltDensity_nonneg`) and integrable, this

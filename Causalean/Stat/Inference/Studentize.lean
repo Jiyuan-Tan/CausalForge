@@ -98,12 +98,13 @@ theorem gaussianMeasure_zero_one_frontier_Icc
 
 /-! ## Generic studentized CLT -/
 
-/-- **Generic studentized convergence.**
-
-Given an abstract rescaled-estimator sequence `Xn ⇒ N(0, σ₀²)` and a
-variance-estimator sequence `σ_hat` with `σ̂ →_p σ₀` and `σ₀ > 0`,
-
-    Xn / σ̂  ⇒  N(0, 1).
+/-- **Generic studentized convergence.** Let `Xn` be a real-valued rescaled-estimator sequence
+and `σ_hat` a variance-estimator sequence, with [`σ₀` a positive scale](hyp:hσ₀_pos). Suppose
+[`Xn` is measurable at every sample size](hyp:hXn) and [it converges in distribution to the
+project's Gaussian law with mean zero and variance `σ₀²`](hyp:hX), that [`σ_hat` converges in
+probability to `σ₀`](hyp:hσ), and [the studentized ratio `Xn / σ_hat` is measurable at every
+sample size](hyp:hdiv). Then [the studentized ratio `Xn / σ_hat` converges in distribution to
+the standard Gaussian law](goal).
 
 The argument scales `Xn` by the constant `1/σ₀` (giving
 `N(0, (1/σ₀)²·σ₀²) = N(0,1)`) and absorbs the Slutsky remainder
@@ -155,13 +156,12 @@ theorem Tendsto_dist.div_tendsto_inProb_gaussian
 
 /-! ## Generic Wald-interval asymptotic coverage -/
 
-/-- **Generic Wald asymptotic coverage.**
-
-If a studentized statistic sequence `Sn ⇒ N(0, 1)`, then for any `z > 0`
-and any real sequence `coverProb` asymptotically equivalent to the
-studentized interval event (hypothesis `h_bridge`),
-
-    coverProb n  →  N(0,1)(Icc (-z) z).
+/-- **Generic Wald asymptotic coverage.** Suppose [a studentized statistic sequence `Sn` is
+measurable at every sample size](hyp:hSn) and [converges in distribution to the standard
+Gaussian law](hyp:hS), and fix [a positive half-width `z`](hyp:hz). If [a coverage-probability
+sequence `coverProb` is asymptotically equivalent to the studentized-interval event
+`{Sn ∈ [-z, z]}`](hyp:h_bridge), then [`coverProb` converges to the standard-Gaussian probability
+of `[-z, z]`](goal).
 
 The studentized-interval probability limit comes from portmanteau
 (`Tendsto_dist.tendsto_measure_of_null_frontier` with the null-boundary fact

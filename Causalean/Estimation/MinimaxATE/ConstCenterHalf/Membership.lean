@@ -125,9 +125,11 @@ theorem l2sq_gPerturbed_true_le [NeZero K] (hα : 0 ≤ α) (hβ : 0 ≤ β)
     _ = (α + β) ^ 2 / (1 - 2 * β) ^ 2 := by
         field_simp
 
-/-- **Class membership.**  With the budgets `β² ≤ εm` and `(α+β)²/(1 − 2β)² ≤ εg`
-satisfied, the perturbed DGP `(mλ, gλ)` lies in the structure-agnostic class
-`ℱ(εg, εm)` around the centered estimates `(m̂, ĝ)`. -/
+/-- **Class membership.** For [nonnegative bump magnitudes α and β with
+`α + 2β ≤ 1/2`](hyp:hα,hβ,hαβ) meeting [the Rademacher perturbation budgets `β² ≤ εm` and
+`(α+β)²/(1−2β)² ≤ εg`](hyp:hm,hg), [the perturbed data-generating process `(mλ, gλ)` indexed by
+a Rademacher sign vector `lam` lies in the structure-agnostic nuisance class `ℱ(εg, εm)` around
+the centered estimates `(m̂, ĝ) = (1/2, 1/2)`](goal). -/
 theorem inClass_perturbed [NeZero K] {εg εm : ℝ}
     (hα : 0 ≤ α) (hβ : 0 ≤ β) (hαβ : α + 2 * β ≤ 1 / 2)
     (hm : β ^ 2 ≤ εm) (hg : (α + β) ^ 2 / (1 - 2 * β) ^ 2 ≤ εg)

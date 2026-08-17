@@ -98,9 +98,12 @@ theorem tvDist_symm (μ ν : Measure Ω) : tvDist μ ν = tvDist ν μ := by
   ext A
   rw [abs_sub_comm]
 
-/-- **Le Cam testing bound.** For any measurable rejection region `A`, the total
-testing error `μ.real A + ν.real Aᶜ` is at least `1 − tvDist μ ν`.  This is the
-single inequality on which the two-point method rests. -/
+/-- **Le Cam testing bound.** For probability measures `μ` and `ν` on the same space,
+[any measurable rejection region `A`](hyp:hA) yields [a total testing error — the
+probability of `A` under `μ` plus the probability of the complement of `A` under `ν` —
+that is at least `1 − tvDist(μ,ν)`](goal).
+
+This is the single inequality on which the two-point method rests. -/
 theorem one_sub_tvDist_le_test {A : Set Ω} (hA : MeasurableSet A) :
     1 - tvDist μ ν ≤ μ.real A + ν.real Aᶜ := by
   have hcompl : ν.real Aᶜ = 1 - ν.real A := by

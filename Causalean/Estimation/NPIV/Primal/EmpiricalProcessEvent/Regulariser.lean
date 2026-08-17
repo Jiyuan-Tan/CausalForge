@@ -52,8 +52,16 @@ lemma measure_iInter_nat_ge_one_sub_tsum_of_ge
     tsub_le_iff_right.mp hbad_le
   exact tsub_le_iff_left.mpr hone_le
 
-/-- The centred empirical regularizer gap is bounded uniformly over all sample
-sizes by the localized rate from the squared candidate-difference event.
+/-- **The centred empirical regularizer gap is bounded uniformly over all sample sizes by the
+localized rate from the squared candidate-difference event.** For every sample size n,
+suppose [a localized-regimes witness at the corresponding fold size and localization rate
+`delta n` is available](hyp:regimes), the regularization weight satisfies
+[`lambda ≥ 0`](hyp:lambda_nonneg), and the confidence level satisfies
+[`0 < ζ < 1`](hyp:hζ_pos,hζ_lt). Then [there is an event of probability at least `1 - ζ` on
+which, for every split size with at least one fold-A observation, the empirical-vs-
+population regularizer discrepancy between the estimator and the population Tikhonov
+candidate is controlled by an explicit bound built from the fold's diameter, critical
+radius, and localization rate](goal).
 
 For every confidence level, there is a high-probability event on which the
 empirical-vs-population regularizer discrepancy between the estimator and the

@@ -196,10 +196,9 @@ def SubRoot (ψ : ℝ → ℝ) : Prop :=
   (∀ r₁ r₂, 0 ≤ r₁ → r₁ ≤ r₂ → ψ r₁ ≤ ψ r₂) ∧
   (∀ r₁ r₂, 0 < r₁ → r₁ ≤ r₂ → ψ r₁ / r₁ ≥ ψ r₂ / r₂)
 
-/-- **Sub-root inequality.** If `ψ` is sub-root and `δ*` satisfies
-    `ψ δ* ≤ δ*²`, then for every `r ≥ δ*`,
-
-        ψ r  ≤  r · δ*.
+/-- **Sub-root inequality.** If [`ψ` is sub-root](hyp:h) and [`δ*` is a positive
+    radius with `ψ δ* ≤ δ* ^ 2`](hyp:hδ_star,hcrit), then for [every radius `r` at
+    least `δ*`](hyp:hr), [`ψ r` is at most `r · δ*`](goal).
 
     This is the lemma local-Rademacher arguments cite: it converts the
     fixed-point bound `ψ(δ*) ≤ δ*²` into a *linear* bound on `ψ` for
@@ -267,9 +266,10 @@ lemma subRoot_continuousOn_Ioi {ψ : ℝ → ℝ} (h : SubRoot ψ) :
       rw [div_le_iff₀ hrpos] at hratio
       simpa [mul_comm] using hratio
 
-/-- **Fixed-point property at the critical radius.** If `ψ` is sub-root and
-    its critical radius is positive, then the critical radius itself satisfies
-    `ψ (criticalRadius ψ) ≤ (criticalRadius ψ)²`.
+/-- **Fixed-point property at the critical radius.** If [`ψ` is sub-root](hyp:h) and
+    [its critical radius `criticalRadius ψ` is positive](hyp:hpos), then [the
+    critical radius is itself a solution of its own defining inequality:
+    `ψ (criticalRadius ψ) ≤ (criticalRadius ψ) ^ 2`](goal).
 
     Proof sketch: by sub-root continuity (see `subRoot_continuousOn_Ioi`)
     the function `r ↦ ψ r - r²` is continuous on `(0, ∞)`, and the set
@@ -312,10 +312,11 @@ lemma criticalRadius_fp_of_subRoot {ψ : ℝ → ℝ} (h : SubRoot ψ)
     exact hδ.2
   exact le_of_tendsto_of_tendsto hψ_tendsto hsq_tendsto hev
 
-/-- **Positivity of the critical radius.** If `ψ` is sub-root, has a
-    witness `r₀ > 0` with `ψ r₀ ≤ r₀²`, and grows faster than `δ²` near
-    the origin (there exists `ε ∈ (0, r₀)` with `ε² < ψ ε`), then
-    `criticalRadius ψ > 0`.
+/-- **Positivity of the critical radius.** If [`ψ` is sub-root](hyp:h), [`r₀` is a
+    positive radius with `ψ r₀ ≤ r₀ ^ 2`](hyp:hr₀,hψ_r₀), and [`ψ` grows strictly
+    faster than the square near the origin, i.e. there is some `ε` with
+    `0 < ε < r₀` and `ε ^ 2 < ψ ε`](hyp:hgrows), then [the critical radius of `ψ`
+    is strictly positive](goal).
 
     Design note: the hypothesis `ε ^ 2 < ψ ε` (strict inequality) is
     used rather than `ε ^ 2 ≤ ψ ε` because the definition of

@@ -306,8 +306,9 @@ lemma H_ε_aeL2_overlap_P_Z
     simpa [projX] using (measurable_fst : Measurable (fun z : γ × Bool × ℝ => z.1))
   exact (MeasureTheory.ae_map_iff hproj.aemeasurable hset).mp hx
 
-/-- The outcome-regression components of an `H_ε_aeL2` nuisance are in
-`L²(P_X)`. -/
+/-- For an estimation system `S`, overlap level `ε`, and treatment arm `d`, if
+[`η` is a member of the `ε`-overlap `L²` nuisance class `H_ε_aeL2`](hyp:hη),
+then [`η`'s outcome-regression component at arm `d` lies in `L²(P_X)`](goal). -/
 lemma H_ε_aeL2_mu_memLp
     (S : BackdoorEstimationSystem P γ) {ε : ℝ}
     {η : NuisanceVec γ} (hη : η ∈ H_ε_aeL2 S ε) (d : Bool) :

@@ -235,7 +235,12 @@ private theorem width_trapezoidSum {nodes : ℕ → ComplexRatInterval} {w : ℚ
       constructor <;> push_cast <;> ring_nf at * <;>
         linarith [ih'.1, ih'.2, hn0.1, hn0.2, hn1.1, hn1.2, hw]
 
-/-- Rational complex node rectangles plus the Lipschitz mesh error enclose the interval integral. -/
+/-- **Certified trapezoidal enclosure of an integral.** Fix [a nonnegative Lipschitz
+constant](hyp:hL) and [a positive node count](hyp:hn), and suppose [the complex-valued integrand
+is Lipschitz on `[0, 1]` with that constant](hyp:hLip) and [each complex rational rectangle
+contains the integrand's value at the corresponding mesh point](hyp:hnodes). Then [the trapezoidal
+enclosure built from those rectangles contains the true integral of the integrand over
+`[0, 1]`](goal). -/
 theorem integralEnclosure_sound {g : ℝ → ℂ} {nodes : ℕ → ComplexRatInterval}
     {L : ℚ} (hL : 0 ≤ L) {n : ℕ} (hn : 0 < n)
     (hLip : ∀ s ∈ Icc (0 : ℝ) 1, ∀ t ∈ Icc (0 : ℝ) 1,

@@ -212,11 +212,15 @@ theorem sum_collapse_dim (M S : Matrix (Fin J) (Fin J) ℝ)
   simp only [Matrix.one_apply_eq]
   rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul, mul_one]
 
-/-- **Projected degenerate-kernel L²-energy equals the dimension: `ζ = J`.**
-For the HOIF projection kernel `g(x,y) = ⟨c(x), Σ⁻¹ c(y)⟩` (with `Σ = 𝔼[c cᵀ]` the second-moment
-matrix), the squared L²-norm `ζ = ∬ g² dP dP` equals the projection dimension `J`.  This is the
-trace identity `tr(Σ Σ⁻¹ Σ Σ⁻¹) = tr(1) = J`, and is the algebraic input behind the HOIF
-degenerate U-statistic variance bound after the localized L²-energy scaling is supplied. -/
+/-- **Projected degenerate-kernel L²-energy equals the dimension: `ζ = J`.** For a feature
+map `c` into `J`-dimensional space, if [every coordinate of `c` is square-integrable under
+`P`](hyp:hc), [the Gram matrix of `c` under `P` is invertible](hyp:hu), and [`M` is the
+inverse of that Gram matrix](hyp:hM), then [the squared `L²(P⊗P)`-norm of the HOIF
+projection kernel `g(x,y) = ⟨c(x), M·c(y)⟩` equals the projection dimension `J`](goal).
+
+This is the trace identity `tr(Σ Σ⁻¹ Σ Σ⁻¹) = tr(1) = J` (with `Σ = 𝔼[c cᵀ]` the
+second-moment matrix), and is the algebraic input behind the HOIF degenerate U-statistic
+variance bound after the localized L²-energy scaling is supplied. -/
 theorem projKernel_L2_eq_dim (c : X → Fin J → ℝ) (M : Matrix (Fin J) (Fin J) ℝ)
     (hc : ∀ k, MemLp (fun x => c x k) 2 P)
     (hu : IsUnit (gram c P).det) (hM : M = (gram c P)⁻¹) :

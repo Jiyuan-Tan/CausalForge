@@ -57,7 +57,13 @@ noncomputable def stepFun (M : Causalean.SCM N Ω) {n : ℕ}
       swigΩ Ω (M.observedAt ⟨n, hn⟩).val :=
   fun sℓξ => M.structFun (M.observedAt ⟨n, hn⟩) (M.parentValuesFromPrefix hn sℓξ)
 
-/-- `stepFun` is measurable. -/
+/-- Fix a structural causal model `M` and a step index `n` such that [there are
+    at least `n + 1` observed nodes, so `n` names a valid position in the
+    canonical topological order of observed nodes](hyp:hn). Then [the
+    deterministic map `stepFun`, which produces the value of the `n`-th
+    observed node by assembling its parent tuple from the fixed values,
+    latent values, and previously generated observed prefix and applying the
+    node's structural equation, is measurable](goal). -/
 theorem measurable_stepFun (M : Causalean.SCM N Ω) {n : ℕ}
     (hn : n + 1 ≤ M.observed.card) :
     Measurable (M.stepFun hn) :=

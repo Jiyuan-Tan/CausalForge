@@ -122,10 +122,13 @@ geometry (a boundary point `(b, primalValue)`) is where the dual certificate is
 read off. -/
 def augmentedImage : Set (F × ℝ) := (fun x => (P.A x, ⟪P.c, x⟫)) '' (P.K : Set E)
 
-/-- **Strong duality I — primal attainment (closedness CQ).**  If the augmented
-image cone is closed and the program is feasible and bounded below, the primal
-optimum is *attained*: some feasible point achieves `primalValue`.  This is the
-"there is an extremal data-generating distribution" half of sharpness.
+/-- **Strong duality I — primal attainment (closedness CQ).** For [a conic program that is
+primal feasible](hyp:hP) and whose [feasible objective values are bounded below](hyp:hbdd),
+if [the augmented image cone `{(Ax, ⟪c,x⟫) : x ∈ K}` is closed](hyp:hCQ) — the constraint
+qualification separating attained optima from mere infima — then [the primal optimum is
+attained: some primal-feasible point `x` achieves the objective value `⟪c,x⟫ = primalValue`
+exactly](goal). This is the "there is an extremal data-generating distribution" half of
+sharpness.
 
 Proof: the value set `{⟪c,x⟫ : x feasible}` is the slice `r ↦ (b, r)` of the
 closed `augmentedImage`, hence closed; a nonempty closed set in `ℝ` bounded below
@@ -149,9 +152,11 @@ theorem strong_duality_primal_attained
   obtain ⟨x, hx, hxval⟩ := hmem
   exact ⟨x, hx, hxval⟩
 
-/-- **Strong duality II — zero gap (closedness CQ).**  If the augmented image cone
-is closed (the *same* CQ as primal attainment) and the program is feasible and
-bounded below, there is no duality gap: `primalValue = dualValue`.
+/-- **Strong duality II — zero gap (closedness CQ).** For [a conic program that is primal
+feasible](hyp:hP) and whose [feasible objective values are bounded below](hyp:hbdd), if
+[the augmented image cone is closed](hyp:hCQ) — the same constraint qualification as primal
+attainment — then [there is no duality gap: the primal optimal value equals the dual optimal
+value, `primalValue = dualValue`](goal).
 
 Closedness alone suffices — **no Slater / interior condition is needed** (and the
 classical interior Slater is anyway vacuous for the positive cone of an

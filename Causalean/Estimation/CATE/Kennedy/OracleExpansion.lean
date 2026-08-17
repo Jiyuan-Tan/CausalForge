@@ -46,22 +46,18 @@ open MeasureTheory ProbabilityTheory Filter Topology
 variable {P : POSystem} {γ : Type*} [MeasurableSpace γ]
   [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
 
-/-- **Oracle expansion for the DR-Learner CATE estimator** at a query point
-`x`.
-
-Given:
-* a CATE estimation system `S` with back-door causal assumptions `hA`,
-* an abstract second-stage regression operator `op`,
-* a sequence of estimated nuisance vectors `η_hat n ω`,
-* a stability distance `d_n` such that `op` is `Stable` at `x` w.r.t. `d_n`
-  and `d_n →_p 0`,
-* a conditional-bias identification witness `hBias` linking the AIPW
-  pseudo-outcomes `phi_eta` / `phi₀` to the closed-form `condBias`,
-
-the operator-level oracle expansion holds modulo `o_p(R^*_n(x))`:
-
-    drLearnerEstimator − drOracleEstimator − op.evalAt(condBias)
-      = o_p(R^*_n(x)).
+/-- **Oracle expansion for the DR-Learner CATE estimator.** Fix a CATE estimation system under
+[the back-door causal assumptions](hyp:_hA), a query point `x`, and a sequence of estimated
+nuisance vectors `η_hat`. Suppose [the abstract second-stage regression operator `op` is stable
+at `x` with respect to a distance `d_n`, meaning the caller-supplied bias-identification
+predicate `BiasIdent` correctly separates the operator-level discrepancy between the
+estimated-nuisance and true pseudo-outcomes into a bias term plus a negligible
+remainder](hyp:hStab); [`d_n` converges to zero in probability](hyp:hCons); and [the contrast
+between the AIPW pseudo-outcome built from `η_hat` and the true pseudo-outcome is identified,
+through `BiasIdent`, with the closed-form conditional bias `condBias(η_hat, η₀)`](hyp:hBias).
+Then [the DR-Learner CATE estimator, minus its oracle counterpart, minus the operator applied to
+that closed-form bias, equals `o_p(R*_n(x))`, where `R*_n(x)` is the oracle risk scale at
+`x`](goal).
 
 This is the AIPW-specialised form of the abstract second-stage oracle
 expansion. The rearrangement to "DR estimate minus oracle estimate equals the
@@ -99,16 +95,16 @@ theorem dr_oracle_expansion
     (fun n ω u => condBias (η_hat n ω) S.toBackdoorEstimationSystem.η₀ u)
     BiasIdent hStab hCons hBias
 
-/-- **Oracle efficiency for the DR-Learner CATE estimator** at a query
-point `x` — corollary of `dr_oracle_expansion`.
-
-Under the hypotheses of `dr_oracle_expansion`, if the smoothed-bias term
-
-    op.evalAt n ω (fun z => condBias (η_hat n ω) η₀ z.1) x
-
-is itself `o_p(R^*_n(x))`, then the DR-Learner is oracle-efficient at `x`:
-
-    drLearnerEstimator − drOracleEstimator = o_p(R^*_n(x)). -/
+/-- **Oracle efficiency for the DR-Learner CATE estimator, at a query point `x`** — corollary of
+`dr_oracle_expansion`. Under [the back-door causal assumptions](hyp:hA) and the same
+operator-stability, consistency, and bias-identification hypotheses as `dr_oracle_expansion` —
+[`op` is stable at `x` w.r.t. a distance `d_n`, via the bias-identification predicate
+`BiasIdent`](hyp:hStab), [`d_n` converges to zero in probability](hyp:hCons), and [the AIPW
+pseudo-outcome contrast is identified with the closed-form conditional bias `condBias(η_hat,
+η₀)`](hyp:hBias) — if in addition [that smoothed conditional-bias term, the operator applied to
+`condBias(η_hat, η₀)` at `x`, is itself `o_p(R*_n(x))`](hyp:hSmoothedBias), then [the DR-Learner
+CATE estimator is oracle-efficient at `x`: it differs from its oracle counterpart by
+`o_p(R*_n(x))`](goal). -/
 theorem dr_oracle_efficient
     (S : CATEEstimationSystem P γ)
     (hA : S.toPOBackdoorSystem.Assumptions)

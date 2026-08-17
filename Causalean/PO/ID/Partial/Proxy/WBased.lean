@@ -61,8 +61,17 @@ variable {P : POSystem}
 
 /-! ### Theorem 1 — bound on `E[Y(a) | A = ¬a]` -/
 
-/-- **Theorem 1** (Ghassami-Shpitser-Tchetgen Tchetgen 2024, W-only
-partial identification).
+/-- **Theorem 1** (Ghassami-Shpitser-Tchetgen Tchetgen 2024, W-only partial
+identification). Fix a treatment arm `a` and assume [the W-only assumption
+bundle](hyp:HA) — consistency, latent exchangeability, independence of the proxy `W`
+from treatment given the latent confounder and covariates, the outcome bridge, and
+essential bounds on `Y` — together with [the treatment and outcome variables being
+distinct](hyp:hAY); let `Lenv`, `Uenv` be [lower and upper envelope functions bounding
+the W-proxy density ratio](hyp:hL,hU), with [the off-arm stratum of positive
+mass](hyp:hμpos) and [the envelope-weighted bridge moments
+integrable](hyp:hU_int_h,hL_int_h). Then [the conditional target `E[Y(a) ∣ A ≠ a]` lies
+between the trivial essential-`Y` bound and the integrated envelope bound on each
+side](goal).
 
 Given:
 * `HA`     : the W-only assumption bundle (consistency, latent
@@ -312,8 +321,14 @@ theorem condMeanYofA_W_bounds
 
 /-! ### Corollary 1 — bound on the marginal `E[Y(a)]` -/
 
-/-- **Corollary 1** (Ghassami-Shpitser-Tchetgen Tchetgen 2024, W-only
-marginal version).
+/-- **Corollary 1** (Ghassami-Shpitser-Tchetgen Tchetgen 2024, W-only marginal
+version). Fix a treatment arm `a` and assume [the W-only assumption bundle](hyp:HA),
+with [the treatment and outcome variables distinct](hyp:hAY); let `Lenv`, `Uenv` be
+[lower and upper envelope functions bounding the W-proxy density ratio](hyp:hL,hU), and
+assume [the envelope-weighted bridge moments](hyp:hU_int_h,hL_int_h) and [the
+envelope-weighted observed conditional means](hyp:hU_int_Y,hL_int_Y) are integrable.
+Then [the marginal target `E[Y(a)]` lies between a trivial clamp and an envelope clamp
+on each side, plus the point-identified on-arm contribution](goal).
 
 Marginal version of Theorem 1. The `{A = a}` stratum integral is
 point-identified via consistency, so only the `{A = ¬a}` stratum needs

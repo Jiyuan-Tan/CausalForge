@@ -62,8 +62,11 @@ theorem powInt_eq_one (h : PolyTail P U κ t₀ cm cp) (hκ : κ = 1)
 
 /-! ## Regime κ < 1 -/
 
-/-- **Regime `0 < κ < 1`.**  `∃ 0 < a ≤ A` (depending only on `κ, cm, cp, t₀`)
-with `a·λ^{κ-1} ≤ J P U λ ≤ A·λ^{κ-1}` for all `λ ∈ (0, t₀]`. -/
+/-- **Regime `0 < κ < 1`.** Under [the polynomial lower-tail hypothesis `PolyTail P U κ t₀ cm
+cp`](hyp:h) with [`U` measurable and almost surely in `(0,1]`](hyp:hsetup) and [tail exponent
+strictly between `0` and `1`](hyp:hκ1), [there exist constants `0 < a ≤ A`, depending only on
+`κ, cm, cp, t₀`, such that the truncated inverse first moment `J P U λ` is squeezed between
+`a·λ^{κ-1}` and `A·λ^{κ-1}`, uniformly for every `λ ∈ (0, t₀]`](goal). -/
 theorem invMomentJ_bounds_lt [IsProbabilityMeasure P] (h : PolyTail P U κ t₀ cm cp)
     (hsetup : TailSetup P U) (hκ1 : κ < 1) :
     ∃ a A : ℝ, 0 < a ∧ a ≤ A ∧ ∀ lam : ℝ, 0 < lam → lam ≤ t₀ →
@@ -120,8 +123,11 @@ theorem invMomentJ_bounds_lt [IsProbabilityMeasure P] (h : PolyTail P U κ t₀ 
 
 /-! ## Regime κ = 1 -/
 
-/-- **Regime `κ = 1`.**  `∃ 0 < a ≤ A` with
-`a·log(1/λ) ≤ J P U λ ≤ A·log(1/λ) + A` for all `λ ∈ (0, t₀]`. -/
+/-- **Regime `κ = 1`.** Under [the polynomial lower-tail hypothesis `PolyTail P U κ t₀ cm
+cp`](hyp:h) with [`U` measurable and almost surely in `(0,1]`](hyp:hsetup) and [tail exponent
+exactly `1`](hyp:hκ), [there exist constants `0 < a ≤ A` such that the truncated inverse first
+moment `J P U λ` is squeezed between `a·log(1/λ)` and `A·log(1/λ) + A`, uniformly for every
+`λ ∈ (0, t₀]`](goal). -/
 theorem invMomentJ_bounds_eq [IsProbabilityMeasure P] (h : PolyTail P U κ t₀ cm cp)
     (hsetup : TailSetup P U) (hκ : κ = 1) :
     ∃ a A : ℝ, 0 < a ∧ a ≤ A ∧ ∀ lam : ℝ, 0 < lam → lam ≤ t₀ →
@@ -164,8 +170,11 @@ theorem invMomentJ_bounds_eq [IsProbabilityMeasure P] (h : PolyTail P U κ t₀ 
 
 /-! ## Regime κ > 1 -/
 
-/-- **Regime `κ > 1`.**  `∃ 0 < a ≤ A` with `a ≤ J P U λ ≤ A` for all
-`λ ∈ (0, t₀]`: the inverse first moment is *bounded* (no blow-up). -/
+/-- **Regime `κ > 1`.** Under [the polynomial lower-tail hypothesis `PolyTail P U κ t₀ cm
+cp`](hyp:h) with [`U` measurable and almost surely in `(0,1]`](hyp:hsetup) and [tail exponent
+strictly above `1`](hyp:hκ1), [there exist constants `0 < a ≤ A` such that the truncated inverse
+first moment `J P U λ` is bounded between `a` and `A`, uniformly for every `λ ∈ (0,
+t₀]`](goal): the inverse first moment does not blow up. -/
 theorem invMomentJ_bounds_gt [IsProbabilityMeasure P] (h : PolyTail P U κ t₀ cm cp)
     (hsetup : TailSetup P U) (hκ1 : 1 < κ) :
     ∃ a A : ℝ, 0 < a ∧ a ≤ A ∧ ∀ lam : ℝ, 0 < lam → lam ≤ t₀ →

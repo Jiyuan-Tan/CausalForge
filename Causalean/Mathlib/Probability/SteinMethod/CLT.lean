@@ -155,7 +155,16 @@ theorem stein_expect_tendsto
   refine squeeze_zero_norm (fun n => ?_) hrhs0
   rw [Real.norm_eq_abs]; exact hbound_n n
 
-/-- **The bounded local-dependence CLT (CDF form).** -/
+/-- **The bounded local-dependence CLT (CDF form).** Fix, for each sample size `n`,
+[a probability measure `μ n`](hyp:μ), [triangular-array summands `X n i`](hyp:X), and [an
+index-dependent neighborhood set `N n i` for each `i`](hyp:N), all [jointly measurable](hyp:hmeas).
+Suppose the summands are [uniformly bounded by a nonnegative constant sequence
+`B n`](hyp:hB,hbound), [mean zero](hyp:hmean), and each summand is [independent of the sum
+of the summands outside its neighborhood](hyp:hindep); suppose the standardized sum has
+[unit variance](hyp:hvar), and that [the variance of the neighborhood-weighted cross
+term](hyp:herr1) and [the aggregate third-absolute-moment error term](hyp:herr2) both tend
+to zero as `n → ∞`. Then [for every threshold `s`, the CDF of the dependency sum under `μ n`
+at `s` converges, as `n → ∞`, to the standard-normal CDF at `s`](goal). -/
 theorem stein_cdf_clt
     {Ω : ℕ → Type*} [∀ n, MeasurableSpace (Ω n)] (μ : ∀ n, Measure (Ω n))
     [∀ n, IsProbabilityMeasure (μ n)]

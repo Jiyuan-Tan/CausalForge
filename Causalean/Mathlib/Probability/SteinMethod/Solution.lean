@@ -83,8 +83,10 @@ private theorem steinIntegrand_integrable {h : ℝ → ℝ} (hh : Continuous h) 
   calc |h x - gExpect h| ≤ |h x| + |gExpect h| := abs_sub _ _
     _ ≤ C + |gExpect h| := by gcongr; exact hb x
 
-/-- **The Stein equation.** For bounded continuous `h`, `steinSol h` is differentiable with
-`f'(w) = w·f(w) + (h(w) − E[h(Z)])`, i.e. it solves `f'(w) − w·f(w) = h(w) − E[h(Z)]`. -/
+/-- **The Stein equation.** For [a continuous test function `h`](hyp:hh) that is [bounded in
+absolute value by a constant `C`](hyp:hb), [the Stein solution `steinSol h` is differentiable at
+every point `w`, with derivative `w·steinSol h w + (h w − E[h(Z)])` for a standard normal
+`Z`](goal), i.e. it solves the Stein equation `f'(w) − w·f(w) = h(w) − E[h(Z)]`. -/
 theorem steinSol_hasDerivAt (h : ℝ → ℝ) (hh : Continuous h) {C : ℝ} (hb : ∀ x, |h x| ≤ C)
     (w : ℝ) :
     HasDerivAt (steinSol h) (w * steinSol h w + (h w - gExpect h)) w := by

@@ -489,7 +489,12 @@ theorem porq_exists (S : Solution d p K) :
     rw [porqResidual_orthogonal S hij]
     ring
 
-/-- **Uniqueness of the partial order RQ decomposition** (Appendix B Proposition). -/
+/-- **Uniqueness of the partial order RQ decomposition** (Appendix B Proposition).
+Given a solution `S`, if [both `(R,Q)` and `(R',Q')` are partial order RQ
+decompositions of `S`'s latent-direction matrix `H` — factoring `H` as a lower-
+triangular-along-the-order matrix `R` times a row-orthonormal-along-the-order matrix
+`Q`](hyp:h,h'), then [the two decompositions coincide: `R = R'` and `Q =
+Q'`](goal). -/
 theorem porq_unique (S : Solution d p K)
     {R R' : Matrix (Fin d) (Fin d) ℝ} {Q Q' : Matrix (Fin d) (Fin p) ℝ}
     (h : IsPORQ S R Q) (h' : IsPORQ S R' Q') : R = R' ∧ Q = Q' := by

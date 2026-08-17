@@ -111,8 +111,12 @@ lemma irreducible_image_polynomial_retract {ι κ : Type*}
     · intro hy
       exact (Set.ext_iff.mp hBC y).mpr (Or.inr hy)
 
-/-- A polynomial embedding with a polynomial retraction has an image of the
-same exact irreducible-chain dimension as its source affine space. -/
+/-- For maps between the affine space `ℂ^d` and `ℂ^κ`, if [`f` is
+coordinatewise polynomial](hyp:hf), [an accompanying map `g` back to `ℂ^d` is
+coordinatewise polynomial](hyp:hg), and [`g` is a left inverse of `f`, i.e.
+`g (f x) = x` for every `x`](hyp:hleft), then [the range of `f` has exact
+affine (irreducible-chain) dimension `d`, matching the dimension of its
+source space](goal). -/
 theorem polynomialRetract_range_dimension {d : ℕ} {κ : Type*}
     {f : (Fin d → ℂ) → (κ → ℂ)} {g : (κ → ℂ) → (Fin d → ℂ)}
     (hf : IsPolynomialMap f) (hg : IsPolynomialMap g)

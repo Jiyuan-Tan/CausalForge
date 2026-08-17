@@ -39,11 +39,16 @@ abbrev KFeat (d : ℕ) (Xb Yb : ℝ) : Type :=
 abbrev KWeight (d : ℕ) (W : ℝ) : Type :=
   Metric.closedBall (0 : EuclideanSpace ℝ (Fin d)) W
 
-/-- **Kernel ERM squared-loss excess-risk rate over the L² ball.**  Features lie in the closed
-`Xb`-ball, responses in `[-Yb, Yb]`, and linear predictors are indexed by the closed `W`-ball.
-For the squared (regression) loss `(⟪w, x⟩ − y)²`, any empirical-risk minimizer `ŵ` against a
-comparator `wstar` has excess population risk exceeding
-`4·(4(XbW)² + 2·Yb·Xb·W)/√n + 2ε` with probability at most `exp(-ε²tn)`. -/
+/-- **Kernel ERM squared-loss excess-risk rate over the L² ball.** For data pairing
+features in the closed `Xb`-ball with responses in `[-Yb, Yb]`, and linear predictors
+indexed by the closed `W`-ball, if [`Xb` is nonnegative](hyp:hXb), [`Yb` is
+nonnegative](hyp:hYb), [`W` is nonnegative](hyp:hW), [the data map `X` is
+measurable](hyp:hX), [the constant `t` satisfies the calibration
+`t·((Xb·W)² + 2·Yb·Xb·W)² ≤ 1/2`](hyp:ht'), [the tolerance `ε` is
+nonnegative](hyp:hε), and [the estimator `ŵ` attains empirical squared loss no larger
+than that of the comparator `wstar`](hyp:hERM), then [for the squared loss
+`(⟪w,x⟩ − y)²`, the probability that the excess population risk of `ŵ` over `wstar`
+exceeds `4·(4(XbW)² + 2·Yb·Xb·W)/√n + 2ε` is at most `exp(-ε²tn)`](goal). -/
 theorem kernel_erm_squaredLoss_excess_rate {d n : ℕ} {Ω : Type*} [MeasurableSpace Ω]
     {μ : Measure Ω} [IsProbabilityMeasure μ] {Xb Yb W : ℝ}
     (hXb : 0 ≤ Xb) (hYb : 0 ≤ Yb) (hW : 0 ≤ W)

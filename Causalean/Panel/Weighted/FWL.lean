@@ -151,12 +151,11 @@ lemma ip_tildeX_eq_ip_tildeX_residual (c : WeightedSupport R)
   conv_lhs => rw [hAsplit]
   rw [c.ip_add_right, h1, add_zero]
 
-/-- **Frisch–Waugh–Lovell at the WeightedSupport level.**
-
-The long-regression coefficient `β` minimizing the WLS objective
-`c.ip (Y - ∑ k β k • X k - α) (Y - ∑ k β k • X k - α)` jointly over
-`(β : Fin K → ℝ, α ∈ H)` equals the short-regression coefficient `θ̂`
-from the H-residualized regressors.
+/-- **Frisch–Waugh–Lovell at the WeightedSupport level.** Assume [the residualized-regressor
+Gram matrix `Q_XX` is invertible (the rank condition)](hyp:hRank). Then [whenever a coefficient
+vector `β` together with a nuisance term `α ∈ H` jointly minimizes the weighted least-squares
+objective `c.ip (Y − ∑ₖ βₖ·Xₖ − α) (Y − ∑ₖ βₖ·Xₖ − α)` over all coefficient/nuisance pairs, `β`
+must equal the short-regression residualized coefficient `thetaHat c X H Y`](goal).
 
 This is the *uniqueness* direction: if `(β, α)` is a joint minimizer, then
 `β = c.thetaHat H X Y`. -/

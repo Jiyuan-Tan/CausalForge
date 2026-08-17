@@ -165,15 +165,32 @@ theorem att_bilinearRem
         (eLpNorm (fun x => η.e_fn x - S.e_val x) 2 S.P_X).toReal
   exact h
 
-/-- **Headline ATT AIPW DML asymptotic-linearity theorem**, derived from the
-abstract `dml_chernozhukov_asymptoticLinear` in
-`Estimation/OrthogonalMoments/DMLChernozhukov.lean`.
-
-Assuming the one-sided ATT back-door assumption bundle, a.e. nuisance-class
-membership in `H_ε`, marginal treatment positivity, second
-moments, sample-split measurability, and the stated nuisance rates, the ATT
-AIPW one-step estimator is asymptotically linear in the abstract Chernozhukov
-moment framework.
+/-- **Headline ATT AIPW DML asymptotic-linearity theorem**, derived from the abstract
+`dml_chernozhukov_asymptoticLinear` in `Estimation/OrthogonalMoments/DMLChernozhukov.lean`.
+Fix an estimated-nuisance sequence `η_hat`, [an i.i.d. sample of the data
+triple](hyp:sample), and [a one-shot cross-fitting split of that sample](hyp:split).
+Under [membership of the truth nuisance in the overlap-bounded realization set
+`H_ε`](hyp:hη₀_mem), [nonnegativity of the true propensity](hyp:h_e_lb), [one-sided
+overlap `ε` on the true propensity](hyp:h_overlap), [the one-sided back-door ATT
+assumptions](hyp:hA), [a strictly positive marginal treatment probability](hyp:hπ_pos),
+[square-integrability of the factual outcome](hyp:h_y2) and of [the untreated potential
+outcome `Y(0)`](hyp:h_y0_2), [integrability of the truth-side control-arm IPW
+correction](hyp:hIPW), and [a limiting fold-size fraction `c` strictly between `0` and
+`1`](hyp:hc_pos,_hc_lt) with [the treated-fold cardinality fraction converging to
+`c`](hyp:h_split_rate): if [every candidate draw `η_hat n ω` lies in the overlap-bounded
+realization set `H_ε`](hyp:h_in_Hε), [every candidate propensity is
+nonnegative](hyp:h_e_lb_hat), [each candidate control-regression and propensity error
+admits an `L²(P_X)` witness](hyp:h_mu_diff_memLp,h_e_diff_memLp), [each candidate IPW
+correction is integrable](hyp:h_IPW_at), [the AIPW moment functional is measurable jointly
+in the probability-space and data arguments, and on each cross-fitting fold, both singly
+and jointly](hyp:h_m_meas,h_m_foldA,h_m_foldA_uncurry), [the moment at every candidate
+nuisance is integrable and square-integrable against the observed data
+law](hyp:h_m_int,h_m_sq_int), [the control-regression and propensity error rates are
+individually `o_p(1)` in `L²(P_X)`](hyp:h_indiv_rate_ρ₁,h_indiv_rate_ρ₂), and [their
+product is `o_p(n^{-1/2})`](hyp:h_product_rate), then [the Chernozhukov one-step DML
+estimator built from the ATT AIPW moment, the sample, the split, and the candidate
+nuisance sequence is asymptotically linear at the true ATT `θ₀`, with influence function
+`ψ(z) = (1/π_T) · aipwMomentATTFunctional η₀ z θ₀`](goal).
 
 **Conclusion (Chernozhukov form):** the Chernozhukov one-step estimator
 `θ̂_n = θ₀ − J₀⁻¹ · Pₙ m(η̂, ·, θ₀)` for `M = attGeneralMoment` is

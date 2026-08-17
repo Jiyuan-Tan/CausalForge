@@ -112,8 +112,13 @@ theorem first_order_upper_bound {f : ℝ → ℝ} {T : ℝ}
 
 /-! ### Optimized descent gap -/
 
-/-- A negative initial slope plus an upper curvature bound gives a guaranteed decrease at
-the clipped quadratic-model step.
+/-- **Quadratic-model descent gap.** For a real function `f` on `[0, T]` where [the interval
+length `T`](hyp:hT), [the slope margin `c`](hyp:hc), and [the curvature bound `M`](hyp:hMnn) are
+all nonnegative, [`f` is twice continuously differentiable on `[0, T]`](hyp:hf), [`f` is
+differentiable at `0`](hyp:hf0), [its second derivative is bounded above by `M` throughout the
+open interval](hyp:hM), and [its derivative at `0` is at most `−c`](hyp:hslope), then [the clipped
+quadratic-model step lies in `[0, T]`, and the resulting decrease `f(0) − f(step)` is at least
+`c·step − (M/2)·step²`](goal).
 
 The conclusion exposes both feasibility of the chosen step and the raw quadratic-model
 gap. This form is intended for callers that want to keep their own constants visible before

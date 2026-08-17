@@ -502,9 +502,10 @@ private theorem not_moralSep_of_not_dSep {X Y Z : Finset V}
     G.moralConn_of_activePath p.length le_rfl hact hlen hnodes hhead hlast hxZ hyZ
   exact fun hsep => hsep x hxX y hyY hconn
 
-/-- **The moralization criterion.** For pairwise-disjoint `X, Y, Z`, `X` and `Y` are
-d-separated by `Z` exactly when they are moral-separated: no moral path inside the ancestral
-set `An(X ∪ Y ∪ Z)` connects them while avoiding `Z`. (Lauritzen–Dawid–Larsen–Speed.) -/
+/-- **The moralization criterion.** For [pairwise-disjoint `X`, `Y`, `Z`](hyp:hXY,hXZ,hYZ),
+[`X` and `Y` are d-separated by `Z` exactly when they are moral-separated: no moral path inside
+the ancestral set `An(X ∪ Y ∪ Z)` connects them while avoiding `Z`](goal).
+(Lauritzen–Dawid–Larsen–Speed.) -/
 theorem dSep_iff_moralSep {X Y Z : Finset V}
     (hXY : Disjoint X Y) (hXZ : Disjoint X Z) (hYZ : Disjoint Y Z) :
     G.dSep X Y Z ↔ G.MoralSep X Y Z := by

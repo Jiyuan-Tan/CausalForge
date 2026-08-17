@@ -46,7 +46,12 @@ open scoped MeasureTheory ProbabilityTheory
 -- § 7. Latent-restricted factorization at non-descendants
 -- ============================================================
 
-/-- **Latent-restricted factorization away from a chosen latent root.**
+/-- **Latent-restricted factorization away from a chosen latent root.** Fix a structural
+    causal model `M`, a fixed-value assignment `s`, and [a latent root node `a`](hyp:ha). For
+    [a set `T` of random-variable nodes](hyp:hT_sub) such that [no node of `T` is a descendant
+    of `a`, and none equals `a`](hyp:h_excl), then [the projection of the evaluation
+    `evalMap s` to `T` factors through a measurable function of the latent coordinates other
+    than `a`'s — i.e. it does not depend on the latent value at `a`](goal).
 
     For a latent root `a ∈ M.unobserved` and any Finset `T ⊆ randomVars` such that
     every `v ∈ T` satisfies `¬ M.dag.isAncestor a v` and `v ≠ a` (in particular,

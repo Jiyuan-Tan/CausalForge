@@ -214,9 +214,12 @@ lemma POVar.condExpRatio_eq_of_mul (c : POVar P γ) {g h target : P.Ω → ℝ}
   rw [hω]
   field_simp
 
-/-- **CATE-to-ATE integrator.**  If `μ[f|σ(c)] =ᵐ f'` and `μ[g|σ(c)] =ᵐ g'`
-(both a.e.), and `f`, `g` are integrable, then
-    ∫ (f - g) dμ = ∫ (f' - g') dμ.
+/-- **CATE-to-ATE integrator.** Fix a conditioning variable `c` and
+[integrable functions `f` and `g`](hyp:hf,hg) on the same probability space.
+If [`f'` is an almost-everywhere representative of the conditional expectation
+of `f` given `c`](hyp:hf') and [`g'` is an almost-everywhere representative of
+the conditional expectation of `g` given `c`](hyp:hg'), then [the integral of
+`f - g` equals the integral of `f' - g'`](goal).
 
 This is the last step of any outcome-regression identification: turn a
 CATE-level identity (`μ[Y(1)|σX] =ᵐ adjusted₁`, `μ[Y(0)|σX] =ᵐ adjusted₀`)

@@ -23,10 +23,12 @@ open MeasureTheory ProbabilityTheory
 open scoped BigOperators
 
 /-- **Variance of the interior local-polynomial estimator.** The degree-`p` local-polynomial
-equivalent-kernel smoother `∑ᵢ Sᵢ Yᵢ`, applied to a spherical family `Y` (scale `σ`) with an
-invertible design moment matrix and weights `0 ≤ wᵢ ≤ W`, has variance
-`Var[∑ᵢ Sᵢ Yᵢ] ≤ σ² · W · (M⁻¹)₀₀`. This reduces the interior `O((Nh)^{−1/2})` stochastic-error
-rate to the single design-concentration bound `(M⁻¹)₀₀ = O(1/(Nh))`. -/
+equivalent-kernel smoother `∑ᵢ Sᵢ Yᵢ`, applied to [a family `Y` of square-integrable
+responses](hyp:hY) that is [spherical with common scale `σ`](hyp:hsph), with [an invertible design
+moment matrix](hyp:hM) and [nonnegative weights](hyp:hw) [bounded above by a constant
+`W`](hyp:hwW), has [variance `Var[∑ᵢ Sᵢ Yᵢ] ≤ σ² · W · (M⁻¹)₀₀`](goal). This reduces the interior
+`O((Nh)^{−1/2})` stochastic-error rate to the single design-concentration bound
+`(M⁻¹)₀₀ = O(1/(Nh))`. -/
 theorem localPoly_intercept_variance_le {Ω : Type*} {N p : ℕ} [MeasurableSpace Ω]
     {μ : Measure Ω} [IsProbabilityMeasure μ] {x w : Fin N → ℝ} {Y : Fin N → Ω → ℝ} {σ W : ℝ}
     (hY : ∀ i, MemLp (Y i) 2 μ)

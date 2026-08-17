@@ -108,11 +108,13 @@ theorem weightMomentMatrix_isHermitian {W : ℝ → ℝ} :
   simp only [Matrix.conjTranspose_apply, weightMomentMatrix, Matrix.of_apply, star_trivial]
   exact MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall (fun u => by ring))
 
-/-- **Loewner sandwich on quadratic forms from pointwise weight domination.** If the weights satisfy
-`c · W_G(u) ≤ W_T(u)` pointwise (`c ≥ 0`) and both monomial integrands are integrable, then the
-shape matrix dominates `c` times the pure matrix in the Loewner order:
-`c · (vᵀ G v) ≤ vᵀ T v` for every `v`, where `T = weightMomentMatrix p W_T`, `G = weightMomentMatrix
-p W_G`. -/
+/-- **Loewner sandwich on quadratic forms from pointwise weight domination.** Let `WT` and `WG` be
+weight functions and [`c` a nonnegative scalar](hyp:hc). If [every centered-monomial integrand
+built from `WT` is integrable](hyp:hintT) and [the same holds for `WG`](hyp:hintG), and if [the
+weights obey the pointwise domination `c · WG(u) ≤ WT(u)` for every `u`](hyp:hdom), then [for every
+coefficient vector `v` the shape-matrix quadratic form dominates `c` times the pure-matrix
+quadratic form: `c · (vᵀ G v) ≤ vᵀ T v`, where `T = weightMomentMatrix p WT` and
+`G = weightMomentMatrix p WG`](goal). -/
 theorem weightMomentMatrix_quadForm_sandwich {WT WG : ℝ → ℝ} {c : ℝ} (hc : 0 ≤ c)
     (hintT : ∀ j k : Fin (p + 1), Integrable (fun u => WT u * (u ^ (j : ℕ) * u ^ (k : ℕ))))
     (hintG : ∀ j k : Fin (p + 1), Integrable (fun u => WG u * (u ^ (j : ℕ) * u ^ (k : ℕ))))

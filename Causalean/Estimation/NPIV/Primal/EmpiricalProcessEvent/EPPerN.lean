@@ -143,21 +143,17 @@ lemma ep_pop_inner_at_closedness_witness
   rw [h_weak_eq_intf]
   linarith [h_diff_eq_int_fsq]
 
-/-- **EP per-`n` inequality from an objective-level localized modulus
-(Helper B).**
-
-Pure analytic per-`n` step, **no probability**.  Given:
-- a sample size `n` with `1 ≤ split.n₁ n`,
-- a sample point `ω : Ω`,
-- the localized objective modulus
-
-    population_excess(ĥ_n, h*_λ) ≤
-      empirical_sup_excess(ĥ_n, h*_λ) + localized_envelope,
-
-derive the per-`n` EP inequality.  This statement is intentionally not
-vacuous: the hypothesis still contains the empirical sup-objective
-excess, and the proof uses `is_estimator.opt n ω` against
-`tb.h_lambda_star_fun` to remove it. -/
+/-- **EP per-`n` inequality from an objective-level localized modulus (Helper B).** Pure
+analytic per-`n` step, with no probability statement. Given [a sample size `n` with
+`1 ≤ split.n₁ n`](hyp:_hn), [a localized-regime bundle at that fold-A sample
+size](hyp:regimes), [a confidence level `ζ` strictly between `0` and `1`](hyp:_hζ_pos,_hζ_lt), and
+[the pointwise objective-level inequality, at sample point `ω`, bounding the population
+weak-objective-plus-regularizer excess by the empirical sup-objective excess plus the localized
+envelope](hyp:objective_gap), [the weak-norm estimation excess is bounded by the empirical
+regularizer gap plus the same localized envelope](goal), the empirical sup-objective excess
+having been eliminated using the optimality of `ĥ_n` (`is_estimator.opt`) against
+`tb.h_lambda_star_fun`. This statement is intentionally not vacuous: the hypothesis still
+contains the empirical sup-objective excess, which the proof cancels rather than assumes away. -/
 lemma ep_per_n_inequality_from_deviations
     {S : OperatorSystem Ω μ} {TC : TRAEClasses S}
     {P_W : Measure S.𝒲}
@@ -228,19 +224,17 @@ lemma ep_per_n_inequality_from_deviations
     is_estimator.opt n ω tb.h_lambda_star_fun (regimes n).realizability
   linarith [objective_gap, hopt]
 
-/-- **Localized empirical-process inequality for the primal NPIV estimator.**
+/-- **Localized empirical-process inequality for the primal NPIV estimator.** Given, for every
+`n`, [a localized-regime bundle for the weak-norm, regularizer, and cross function classes at
+that fold-A sample size](hyp:regimes), and [a confidence level `ζ` strictly between `0` and
+`1`](hyp:hζ_pos,hζ_lt), [there is an event of probability at least `1 − ζ` on which,
+simultaneously for every `n` with `1 ≤ split.n₁ n`, the weak-norm estimation excess
+`‖T(ĥ_n − h_0)‖² − ‖T(h*_λ − h_0)‖²` is bounded by the empirical regularizer gap
+`λ · (‖h*‖²_{A(n)} − ‖ĥ‖²_{A(n)})` plus a localized envelope built from the per-`n` critical
+radii scaled by `δ_n` and a `√(log(1/ζ)/n)` deviation term](goal), where `‖h‖²_{A(n)} :=
+(split.n₁ n)⁻¹ ∑_{k < split.n₁ n} h(X_k)²` is the fold-A empirical second moment.
 
-For every confidence level `ζ ∈ (0,1)` there is an Ω-event of mass
-`≥ 1 − ζ` such that for all `ω` in the event and all `n` with
-`1 ≤ split.n₁ n`,
-
-    ‖T(ĥ_n − h_0)‖² − ‖T(h*_λ − h_0)‖²
-      ≤ λ · (‖h*‖²_{A(n)} − ‖ĥ‖²_{A(n)})
-        + K_ep_aux · (‖T(h*_λ − h_0)‖²
-            + δ_n · ‖T(ĥ_n − h*_λ)‖ + δ_n²),
-
-where `‖h‖²_{A(n)} := (split.n₁ n)⁻¹ ∑_{k < split.n₁ n} h(X_k)²`. This is the
-per-sample-size inequality that converts the localized concentration event into
+This is the per-sample-size inequality that converts the localized concentration event into
 the weak-norm estimation bound for the chosen estimator `ĥ_n`. -/
 theorem ep_inequality_from_localized
     {S : OperatorSystem Ω μ} {TC : TRAEClasses S}

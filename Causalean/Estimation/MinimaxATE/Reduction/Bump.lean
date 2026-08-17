@@ -48,10 +48,11 @@ theorem l2sq_nonneg (a b : C → ℝ) : 0 ≤ l2sq a b := by
   · exact inv_nonneg.mpr (Nat.cast_nonneg _)
   · exact Finset.sum_nonneg fun x _ => sq_nonneg _
 
-/-- **Constant-magnitude (Rademacher) bump.** If `a` differs from `b` by `δ` times a
-sign function `σ` with `(σ x)² = 1` everywhere, then `l2sq a b = δ²` (for nonempty `C`).
-This is exactly what makes a Rademacher-bump perturbation land on the boundary of the
-nuisance class `ℱ(ε,·)` when `δ = √ε`. -/
+/-- **Constant-magnitude (Rademacher) bump.** If [a sign function σ satisfies `(σ x)² = 1` at
+every covariate value](hyp:hσ), then on a nonempty finite covariate space, [the squared
+`L²(P_X)` distance between `b` shifted by `δ·σ` and `b` itself equals `δ²`](goal). This is
+exactly what makes a Rademacher-bump perturbation land on the boundary of the nuisance class
+`ℱ(ε,·)` when `δ = √ε`. -/
 theorem l2sq_bump [Nonempty C] (b : C → ℝ) (δ : ℝ) (σ : C → ℝ)
     (hσ : ∀ x, (σ x) ^ 2 = 1) :
     l2sq (fun x => b x + δ * σ x) b = δ ^ 2 := by

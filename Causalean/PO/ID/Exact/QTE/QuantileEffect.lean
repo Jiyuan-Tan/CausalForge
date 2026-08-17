@@ -84,12 +84,14 @@ lemma qtdQuantile_eq_quantile_cfUnderLaw (d : Bool) (μ : Measure P.Ω) (τ : �
     S.qtdQuantile d μ τ
       = Causalean.Stat.quantile (S.yVar.cfUnderLaw S.dVar d μ) τ := rfl
 
-/-- **QTE as a functional of the identified potential-outcome laws.**
-
-If the laws of `Y(1)` and `Y(0)` are identified by observable measures `ν₁`,
-`ν₀`, then the QTE is the difference of their quantiles.  This is the payoff of
-the quantile layer: identification of `QTE` reduces to *distributional*
-identification of the two potential-outcome laws.  Holds for every `τ`.
+/-- **QTE as a functional of the identified potential-outcome laws.** If [the
+law of the potential outcome `Y(1)` equals a given observable measure
+`ν₁`](hyp:h₁) and [the law of the potential outcome `Y(0)` equals a given
+observable measure `ν₀`](hyp:h₀), then for every real quantile level `τ`,
+[the totalized quantile treatment effect equals the difference of the
+`τ`-quantiles of `ν₁` and `ν₀`](goal). This is the payoff of the quantile
+layer: identification of the QTE reduces to distributional identification of
+the two potential-outcome laws.
 
 This is the purely measure-theoretic step — it carries **no causal assumptions**,
 only the hypotheses `h₁`/`h₀` that the potential-outcome laws equal given
@@ -105,9 +107,10 @@ theorem qte_eq_of_law_eq (μ : Measure P.Ω) (τ : ℝ) {ν₁ ν₀ : Measure �
   rw [S.qtdQuantile_eq_quantile_cfUnderLaw true μ τ,
       S.qtdQuantile_eq_quantile_cfUnderLaw false μ τ, h₁, h₀]
 
-/-- **Backdoor QTE identification.**  Under the ATE backdoor assumption bundle,
-the totalized generalized-quantile treatment effect at any real level `τ` equals
-the difference of the quantiles of the observable IPW laws:
+/-- **Backdoor QTE identification.** Under [the ATE backdoor identifying
+assumption bundle](hyp:hA), [the totalized generalized-quantile treatment
+effect at any real level `τ` equals the difference of the quantiles of the
+two observable inverse-probability-weighted outcome laws](goal):
 
     QTE(τ) = quantile(ipwLaw 1) τ − quantile(ipwLaw 0) τ.
 

@@ -117,12 +117,14 @@ square-integrable transform `ψ`, the normalised partial sum
 `(1/√n) Σ_{i<n} ψ(Z_i)` converges in distribution to `N(0, ∫ ψ² dP)` under the
 ambient measure `μ`.
 -/
-/-- **Central limit theorem for normalised sample sums.** Along an i.i.d.
-sample, for any measurable, mean-zero, square-integrable transform of the
-observations, the normalised partial sum (the sum of the transformed
-observations divided by the square root of the sample size) converges in
-distribution to a centred normal law whose variance is the population second
-moment of the transform. This is the single contact point through which the
+/-- **Central limit theorem for normalised sample sums.** Along the i.i.d. sample `S`, if the
+transform `ψ` of the observations is [measurable](hyp:hψ_meas), [has population mean
+zero](hyp:hψ_mean), and [is square-integrable](hyp:hψ_sq_int), then [the normalised partial sum
+— the sum of the transformed observations over the first `n` indices, divided by $\sqrt
+n$ — converges in distribution to the centred normal law with variance equal to the
+population second moment $\int \psi^2\,dP$](goal).
+
+    This is the single contact point through which the
 upstream CLT enters the estimation theory. -/
 theorem IIDSample.clt_normalized_sum
     {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
@@ -378,9 +380,13 @@ variable {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
   {μ : Measure Ω} {P : Measure X}
   {θn : ℕ → Ω → ℝ} {θ₀ : ℝ} {ψ : X → ℝ} {S : IIDSample Ω X μ P}
 
-/-- Asymptotic linearity implies `√n (θn − θ₀) ⇒ N(0, ∫ ψ² dP)`.
+/-- Given [that `θn` is asymptotically linear at `θ₀` with influence function `ψ` along the
+i.i.d. sample `S`](hyp:h), where `ψ` is [measurable](hyp:hψ_meas) and [the rescaled estimator
+$\sqrt n(\theta_n-\theta_0)$ is a.e. measurable at every sample size](hyp:hθn_meas), then [the
+rescaled estimator converges in distribution to the centred normal law with variance $\int
+\psi^2\,dP$](goal).
 
-The Gaussian target is `gaussianMeasure 0 σ²` where `σ² = ∫ ψ² dP`.  The
+    The Gaussian target is `gaussianMeasure 0 σ²` where `σ² = ∫ ψ² dP`.  The
 measurability hypothesis on the rescaled estimator is imposed at the call
 site; measurability of the partial sum follows from that of `ψ` and the sample
 coordinates. -/

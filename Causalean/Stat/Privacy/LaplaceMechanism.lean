@@ -186,8 +186,12 @@ theorem laplaceMech_isProbabilityMeasure {D : Type*} (b : ℝ) (hb : 0 < b)
   unfold laplaceMech
   exact Measure.isProbabilityMeasure_map (by fun_prop)
 
-/-- A scalar query with a positive sensitivity bound becomes purely differentially private when
-independent Laplace noise is calibrated by dividing that bound by the positive privacy level. -/
+/-- **Scalar Laplace mechanism is purely differentially private.** Given [a positive sensitivity
+bound $\Delta$](hyp:hΔ) and [a positive privacy level $\varepsilon$](hyp:hε) such that [the query
+`q` changes by at most $\Delta$ between any pair of adjacent datasets](hyp:hsens), releasing `q`
+after adding independent Laplace noise of scale $\Delta/\varepsilon$ [satisfies pure
+$\varepsilon$-differential privacy: for every adjacent pair, the probability of any measurable
+event under one release is at most $e^\varepsilon$ times its probability under the other](goal). -/
 theorem laplaceMech_pure_dp {D : Type*} (Adj : D → D → Prop) (q : D → ℝ)
     {Δ ε : ℝ} (hΔ : 0 < Δ) (hε : 0 < ε)
     (hsens : ∀ d d', Adj d d' → |q d - q d'| ≤ Δ) :
@@ -366,9 +370,13 @@ private lemma laplaceMechPi_eq_pi_shift {D ι : Type*} [Fintype ι]
   convert hmp.map_eq using 1
   rfl
 
-/-- A finite vector query with a positive ℓ¹-sensitivity bound becomes purely differentially
-private when each coordinate receives independent Laplace noise calibrated by dividing that bound
-by the positive privacy level. -/
+/-- **Vector Laplace mechanism is purely differentially private.** Given [a positive
+$\ell^1$-sensitivity bound $\Delta$](hyp:hΔ) and [a positive privacy level
+$\varepsilon$](hyp:hε) such that [the coordinatewise absolute differences of the query `q`
+sum to at most $\Delta$ between any pair of adjacent datasets](hyp:hsens), releasing `q` after
+adding independent Laplace noise of scale $\Delta/\varepsilon$ to each coordinate [satisfies pure
+$\varepsilon$-differential privacy: for every adjacent pair, the probability of any measurable
+event under one release is at most $e^\varepsilon$ times its probability under the other](goal). -/
 theorem laplaceMechPi_pure_dp {D ι : Type*} [Fintype ι]
     (Adj : D → D → Prop) (q : D → (ι → ℝ)) {Δ ε : ℝ}
     (hΔ : 0 < Δ) (hε : 0 < ε)
@@ -426,8 +434,12 @@ theorem laplaceMechPi_pure_dp {D ι : Type*} [Fintype ι]
     (ENNReal.mul_ne_top ENNReal.ofReal_ne_top
       (measure_ne_top (laplaceMechPi (Δ / ε) q d') s)) hle
 
-/-- Any pure differential-privacy guarantee also satisfies approximate differential privacy after
-adding any nonnegative failure allowance. -/
+/-- **Pure DP implies approximate DP.** Given [a mechanism `M` satisfying pure
+$\varepsilon$-differential privacy between releases `M d` and `M d'`, i.e. the probability of
+every measurable event under one release is at most $e^\varepsilon$ times its probability under
+the other](hyp:hpure), adding [any nonnegative failure allowance $\delta$](hyp:hδ) to the bound
+[still yields a valid $(\varepsilon,\delta)$-approximate differential-privacy guarantee between
+`M d` and `M d'`](goal). -/
 theorem pure_dp_implies_approx_dp {α : Type*} [MeasurableSpace α]
     (M : D → Measure α) (d d' : D) (ε δ : ℝ)
     (hpure : ∀ s, MeasurableSet s →
@@ -437,8 +449,11 @@ theorem pure_dp_implies_approx_dp {α : Type*} [MeasurableSpace α]
   intro s hs
   exact (hpure s hs).trans (le_add_of_nonneg_right hδ)
 
-/-- Applying a measurable scalar summary to a private vector release preserves the same pure
-differential-privacy guarantee. -/
+/-- **Post-processing preserves pure differential privacy.** Given [a vector-valued mechanism `M`
+satisfying pure $\varepsilon$-differential privacy between the releases `M d` and
+`M d'`](hyp:hM), post-processing the release by [any measurable scalar summary `f`](hyp:hf)
+[again satisfies pure $\varepsilon$-differential privacy, now between the `f`-summaries of
+`M d` and `M d'`](goal). -/
 theorem pure_dp_postprocess {D ι : Type*}
     (M : D → Measure (ι → ℝ)) (d d' : D) (ε : ℝ)
     (hM : ∀ s, MeasurableSet s →
@@ -451,8 +466,12 @@ theorem pure_dp_postprocess {D ι : Type*}
   rw [Measure.map_apply hf hs, Measure.map_apply hf hs]
   exact hM (f ⁻¹' s) (hs.preimage hf)
 
-/-- Applying a measurable scalar summary to a vector release preserves the same approximate
-differential-privacy guarantee. -/
+/-- **Post-processing preserves approximate differential privacy.** Given [a vector-valued
+mechanism `M` obeying an $(\varepsilon,\delta)$-approximate DP bound between the releases `M d`
+and `M d'` for every measurable event](hyp:hM), with [a nonnegative failure allowance
+$\delta$](hyp:_hδ), post-processing the release by [any measurable scalar summary `f`](hyp:hf)
+[again satisfies the same $(\varepsilon,\delta)$-approximate DP bound, now between the
+`f`-summaries of `M d` and `M d'`](goal). -/
 theorem approx_dp_postprocess {D ι : Type*}
     (M : D → Measure (ι → ℝ)) (d d' : D) (ε δ : ℝ)
     (hM : ∀ s, MeasurableSet s →

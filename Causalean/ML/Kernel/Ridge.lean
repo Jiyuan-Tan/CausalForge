@@ -26,8 +26,13 @@ noncomputable def krrRisk {X H : Type*} [NormedAddCommGroup H] [InnerProductSpac
     (feval : H → X → ℝ) {n : ℕ} (x : Fin n → X) (y : Fin n → ℝ) (lam : ℝ) (f : H) : ℝ :=
   (n : ℝ)⁻¹ * ∑ i, (feval f (x i) - y i) ^ 2 + lam * ‖f‖ ^ 2
 
-/-- With `λ > 0`, every kernel-ridge minimizer over a complete RKHS lies in the
-span of the sample representers `k(·, xᵢ)`. -/
+/-- For a complete reproducing-kernel Hilbert space `H`, if [`(feval, representer)`
+realizes `H` as an RKHS on `X`, i.e. evaluation at each point equals the inner product
+with its representer](hyp:hrkhs), [the regularization level `lam` is strictly
+positive](hyp:hlam), and [`fhat` minimizes the regularized empirical risk `krrRisk` over
+all of `H` for the sample `(x, y)`](hyp:hmin), then [`fhat` lies in the span of the
+sample representers `representer x₁, …, representer xₙ`, i.e. it is a finite linear
+combination of them](goal). -/
 theorem representer_theorem {X H : Type*}
     [NormedAddCommGroup H] [InnerProductSpace ℝ H] [CompleteSpace H]
     {feval : H → X → ℝ} {representer : X → H} (hrkhs : IsRKHS X H feval representer)

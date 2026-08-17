@@ -68,13 +68,11 @@ open MeasureTheory ProbabilityTheory Filter Topology
 /-! ## One-sided Wald / ellipsoid coverage -/
 
 /-- **Wald / confidence-ellipsoid asymptotic coverage.**
-
-If the (scalar) Wald statistic sequence `Wₙ ⇒ χ` in distribution, `χ` has zero
-mass on the boundary `frontier (Iic c) = {c}`, and a real sequence `coverProb`
-is asymptotically equivalent to the ellipsoid event `{ω | Wₙ ω ≤ c}` (the bridge
-hypothesis), then
-
-    coverProb n  →  χ(Iic c).
+Suppose [the scalar Wald statistic sequence `Wₙ` is measurable at every sample size](hyp:hWn)
+and [converges in distribution to a limit law `χ`](hyp:hW), and that [`χ` gives zero mass to the
+boundary `frontier (Iic c) = {c}`](hyp:hfront). If [a real sequence `coverProb` is asymptotically
+equivalent to the ellipsoid event `{ω | Wₙ ω ≤ c}`](hyp:h_bridge), then [`coverProb` converges
+to `χ(Iic c)`](goal).
 
 For `Wₙ = (√n(θ̂ₙ−θ₀))ᵀ Σ̂ₙ⁻¹ (√n(θ̂ₙ−θ₀)) ⇒ χ²_d` and `c = χ²_{d,1−α}` this is
 the `1 − α` asymptotic coverage of the Wald confidence ellipsoid.  Reduces the
@@ -109,11 +107,13 @@ theorem Tendsto_dist.wald_coverage_Iic
   filter_upwards with n
   ring
 
-/-- **Wald / ellipsoid coverage with an atomless limit.**  When the limit law
-`χ` of the Wald statistic has no atoms (which holds for any non-degenerate
-`χ²_d`, and more generally for any continuous limit), the boundary-null
-hypothesis of `wald_coverage_Iic` is automatic: `frontier (Iic c) = {c}` and
-`χ {c} = 0`. -/
+/-- **Wald / ellipsoid coverage with an atomless limit.** Suppose [the scalar Wald statistic
+sequence `Wₙ` is measurable at every sample size](hyp:hWn) and [converges in distribution to a
+limit law `χ` with no atoms](hyp:hW) (which holds for any non-degenerate `χ²_d`, and more
+generally for any continuous limit). If [a real sequence `coverProb` is asymptotically
+equivalent to the ellipsoid event `{ω | Wₙ ω ≤ c}`](hyp:h_bridge), then [`coverProb` converges
+to `χ(Iic c)`](goal). The boundary-null hypothesis of `wald_coverage_Iic` is automatic here:
+`frontier (Iic c) = {c}` and `χ {c} = 0`. -/
 theorem Tendsto_dist.wald_coverage_Iic_of_noAtoms
     {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω} [IsProbabilityMeasure μ]
     {Wn : ℕ → Ω → ℝ} (hWn : ∀ n, AEMeasurable (Wn n) μ)

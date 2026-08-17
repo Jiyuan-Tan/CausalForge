@@ -108,10 +108,15 @@ theorem E_htControlTotal (p y0 : C → ℝ) (hp0 : ∀ c, 0 ≤ p c) (hp1 : ∀ 
   rw [FiniteDesign.E_const_mul _ (y0 c / (1 - p c)) (fun z => 1 - treatInd c z), hone c]
   exact div_mul_cancel₀ (y0 c) (sub_ne_zero.mpr (hp1' c).ne')
 
-/-- **Unbiasedness for the finite-population average treatment effect.** Under cluster
-randomization with every cluster treatment probability strictly between zero and one and a positive
-total unit count, the Middleton-Aronow Horvitz-Thompson effect estimator is unbiased for the
-finite-population ATE. -/
+/-- **Unbiasedness for the finite-population average treatment effect.** Consider cluster
+randomization where each cluster `c` is assigned treatment with probability `p c`; suppose
+[`p c` lies between `0` and `1`](hyp:hp0,hp1) and, more sharply, [`p c` lies strictly between
+`0` and `1`](hyp:hppos,hp1'), and [the total number of units across clusters is
+positive](hyp:hNpos). Then [the Middleton–Aronow Horvitz–Thompson estimator of the effect — the
+inverse-probability-weighted treated-minus-control cluster-total contrast, normalized by the
+total unit count — is unbiased for the finite-population average treatment effect, the analogous
+unweighted contrast of the cluster-total potential outcomes normalized by the same unit
+count](goal). -/
 theorem E_htClusterEffect (p : C → ℝ) (n : C → ℕ) (y1 y0 : C → ℝ) (hp0 : ∀ c, 0 ≤ p c)
     (hp1 : ∀ c, p c ≤ 1) (hppos : ∀ c, 0 < p c) (hp1' : ∀ c, p c < 1)
     (hNpos : 0 < totalUnits n) :

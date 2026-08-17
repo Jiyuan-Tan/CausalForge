@@ -40,12 +40,16 @@ namespace Causalean
 namespace Experimentation
 namespace DesignBased
 
-/-- **Design-based dependency-graph CLT (studentized CDF form).** Consider a sequence of finite
-designs `D n` with a triangular array of unit contributions `X n i`, uniformly bounded by `M`, each
-with design mean `0`, whose statistical dependence is captured by a graph of degree at most `Dmax`.
-If the standardizing variance `v n = E[depSum(X n)²]` is bounded below by `c` times the number of
-units and the number of units diverges, then the studentized sum `depSum(X n)/√(v n)` has, under the
-design `D n`, a limiting standard-normal CDF at every point `s`.
+/-- **Design-based dependency-graph CLT (studentized CDF form).** Consider [a sequence of finite
+designs `D n`](hyp:D) together with [a triangular array of unit contributions `X n
+i`](hyp:X) and, for each `n`, [a dependency-graph structure `Dep n` on the units](hyp:Dep).
+Suppose [every neighbourhood in the dependency graph has size at most `Dmax`](hyp:hdeg), [the
+contributions are uniformly bounded by a nonnegative constant `M`](hyp:hM,hbound), [each
+contribution has design mean `0`](hyp:hmean), [the design second moment `v n` of the aggregate
+`depSum(X n)` is recorded exactly](hyp:hv), [a positive constant `c` eventually lower-bounds `v n`
+by `c` times the number of units](hyp:hc,hvc), and [the number of units diverges to
+infinity](hyp:hcard). Then, at every point `s`, [the studentized aggregate `depSum(X n)/√(v n)`
+has, under the design `D n`, a limiting CDF equal to the standard normal CDF at `s`](goal).
 
 Obtained by feeding the design measure `D n .toMeasure` to the abstract Stein dependency-graph CLT
 through the measure bridge; the conclusion is in the native `FiniteDesign.Pr` presentation so it can

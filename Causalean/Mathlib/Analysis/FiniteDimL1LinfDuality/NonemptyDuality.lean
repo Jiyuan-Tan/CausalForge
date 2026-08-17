@@ -149,8 +149,9 @@ theorem contrastL_le_dual_mul_ninf_of_momentSol_nonempty
     exact (le_abs_self (contrastL β b)).trans (by simpa [M, s] using habs_le)
 
 -- @node: exists_moment_le_dual_of_momentSol_nonempty
-/-- Strong duality from moment-system feasibility: there is a feasible weight
-whose ℓ¹ norm is bounded by the dual supremum.
+/-- **Strong duality from moment-system feasibility.** If [the moment system for the given nodes
+and degree bound is feasible, i.e. it has at least one solution](hyp:hne), then [there exists a
+feasible weight vector whose ℓ¹ norm is at most the dual supremum](goal).
 
 The proof extends the functional represented by one feasible moment vector from
 `range (Ev p β)` to the whole node-value space under the majorant
@@ -299,9 +300,10 @@ theorem sSup_dual_le_sInf_primal_of_momentSol_nonempty
       dual_le_primal hs ht
 
 -- @node: l1_repr_eq_sup_dual_of_momentSol_nonempty
-/-- Finite-dimensional ℓ¹/ℓ∞ duality assuming only that the representing moment
-system is feasible:
-`sInf (primalNormSet p β) = sSup (dualValSet p β)`.
+/-- **Finite-dimensional ℓ¹/ℓ∞ duality under feasibility alone.** If [the moment system for the
+given nodes and degree bound has at least one solution](hyp:hne), then [the least ℓ¹ norm among
+feasible weight vectors equals the largest endpoint contrast attained by a degree-bounded
+polynomial bounded by `1` at every node](goal).
 
 This version is useful when a caller has a problem-specific feasibility witness
 but not the distinct-node and `β ≤ k` hypotheses used by `l1_repr_eq_sup_dual`. -/

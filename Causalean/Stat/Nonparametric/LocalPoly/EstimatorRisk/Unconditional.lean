@@ -79,14 +79,13 @@ private lemma abs_condExp_le_of_bound {est : Ω → ℝ} {M : ℝ} (hm : m ≤ m
     rwa [condExp_const hm] at h
   filter_upwards [hub, hlb] with ω h1 h2 using abs_le.2 ⟨h2, h1⟩
 
-/-- **Unconditional bias of a truncated estimator.** Let `est` be a `[-M, M]`-bounded integrable
-estimator of a target `θ` with `|θ| ≤ M`, and let `G` (an `m`-measurable good-design event) be such
-that the conditional bias `|𝔼[est | m] − θ| ≤ B` holds a.e. on `G`. Then the full-sample-law bias
-obeys
-
-`|𝔼[est] − θ| ≤ B + 2M·μ(Gᶜ)`,
-
-the conditional bias `B` plus a truncation tail proportional to the bad-design probability. -/
+/-- **Unconditional bias of a truncated estimator.** Let `est` be [an integrable
+statistic](hyp:hest) [bounded by `M` in absolute value](hyp:hM) estimating a target `θ`
+[with `|θ| ≤ M`](hyp:hθ), relative to [a sub-σ-algebra `m` of the ambient σ-algebra](hyp:hm). If
+[`G` is an `m`-measurable good-design event](hyp:hG) on which, almost everywhere, [the conditional
+bias `|𝔼[est | m] − θ|` is at most a nonnegative constant `B`](hyp:hB,hcond), then [the
+full-sample-law bias obeys `|𝔼[est] − θ| ≤ B + 2M·μ(Gᶜ)`, the conditional bias `B` plus a
+truncation tail proportional to the bad-design probability](goal). -/
 theorem estimatorBias_unconditional {est : Ω → ℝ} {θ B M : ℝ} {G : Set Ω} (hm : m ≤ m0)
     (hest : Integrable est μ) (hM : ∀ ω, |est ω| ≤ M) (hθ : |θ| ≤ M) (hB : 0 ≤ B)
     (hG : MeasurableSet[m] G)
@@ -115,14 +114,14 @@ theorem estimatorBias_unconditional {est : Ω → ℝ} {θ B M : ℝ} {G : Set �
   have hBG : B * (μ G).toReal ≤ B := by nlinarith [hB, hμG, ENNReal.toReal_nonneg (a := μ G)]
   linarith
 
-/-- **Unconditional variance of a truncated estimator (law of total variance).** Let `est` be a
-`[-M, M]`-bounded `L²` estimator of `θ` with `|θ| ≤ M`, and `G` an `m`-measurable good-design event
-on which the conditional variance `Var[est | m] ≤ Vrate` and the squared conditional bias
-`(𝔼[est | m] − θ)² ≤ Bsq` hold a.e. Then the full-sample-law variance obeys
-
-`Var(est) ≤ Vrate + Bsq + 5M²·μ(Gᶜ)`,
-
-the within-design variance rate `Vrate` plus the squared bias `Bsq` plus a truncation tail. -/
+/-- **Unconditional variance of a truncated estimator (law of total variance).** Let `est` be [an
+`L²` statistic](hyp:hest) [bounded by `M` in absolute value](hyp:hM) estimating a target `θ` [with
+`|θ| ≤ M`](hyp:hθ), relative to [a sub-σ-algebra `m` of the ambient σ-algebra](hyp:hm). Let `G` be
+[an `m`-measurable good-design event](hyp:hG) on which, almost everywhere, [the conditional
+variance `Var[est | m]` is at most a nonnegative rate `Vrate`](hyp:hVr,hVcond) and [the squared
+conditional bias `(𝔼[est | m] − θ)²` is at most a nonnegative constant `Bsq`](hyp:hBsq,hBcond).
+Then [the full-sample-law variance obeys `Var(est) ≤ Vrate + Bsq + 5M²·μ(Gᶜ)`, the within-design
+variance rate plus the squared bias plus a truncation tail](goal). -/
 theorem estimatorVariance_unconditional {est : Ω → ℝ} {θ Bsq Vrate M : ℝ} {G : Set Ω}
     (hm : m ≤ m0) (hest : MemLp est 2 μ) (hM : ∀ ω, |est ω| ≤ M) (hθ : |θ| ≤ M)
     (hVr : 0 ≤ Vrate) (hBsq : 0 ≤ Bsq) (hG : MeasurableSet[m] G)
@@ -188,13 +187,15 @@ theorem estimatorVariance_unconditional {est : Ω → ℝ} {θ Bsq Vrate M : ℝ
   exact (add_le_add hT1 hT2).trans_eq (by ring)
 
 /-- **Unconditional stochastic `L²` error of a truncated estimator.** The `√·` form of
-`estimatorVariance_unconditional`: under the same hypotheses,
-
-`√Var(est) ≤ √(Vrate + Bsq + 5M²·μ(Gᶜ))`.
-
-With `Vrate = Cvar²·(Nh)⁻¹`, `Bsq = Cbias²·h^{2β}` and a negligible truncation tail
-(`5M²·μ(Gᶜ)` driven to `o((Nh)⁻¹)` by `designMatrix_inv_concentration`), this gives the
-full-sample stochastic `L²` rate up to the bias and the negligible tail. -/
+`estimatorVariance_unconditional`: for [an `L²` statistic `est`](hyp:hest) [bounded by `M` in
+absolute value](hyp:hM) estimating `θ` [with `|θ| ≤ M`](hyp:hθ) relative to [a sub-σ-algebra `m` of
+the ambient σ-algebra](hyp:hm), and [an `m`-measurable good-design event `G`](hyp:hG) on which,
+almost everywhere, [the conditional variance is at most a nonnegative rate `Vrate`](hyp:hVr,hVcond)
+and [the squared conditional bias is at most a nonnegative constant `Bsq`](hyp:hBsq,hBcond), [the
+full-sample-law stochastic `L²` error obeys `√Var(est) ≤ √(Vrate + Bsq + 5M²·μ(Gᶜ))`](goal). With
+`Vrate = Cvar²·(Nh)⁻¹`, `Bsq = Cbias²·h^{2β}` and a negligible truncation tail (`5M²·μ(Gᶜ)` driven
+to `o((Nh)⁻¹)` by `designMatrix_inv_concentration`), this gives the full-sample stochastic `L²` rate
+up to the bias and the negligible tail. -/
 theorem estimatorStochL2_unconditional {est : Ω → ℝ} {θ Bsq Vrate M : ℝ} {G : Set Ω}
     (hm : m ≤ m0) (hest : MemLp est 2 μ) (hM : ∀ ω, |est ω| ≤ M) (hθ : |θ| ≤ M)
     (hVr : 0 ≤ Vrate) (hBsq : 0 ≤ Bsq) (hG : MeasurableSet[m] G)

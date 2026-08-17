@@ -757,7 +757,15 @@ theorem weak_rate_from_combined
 /-! ## The headline rate theorem -/
 
 /-- **Non-iterated TRAE primal rate theorem** (`thm:est-trae-rate-theorem`,
-lines 174–248 of `trae_inverse_problems.tex`).
+lines 174–248 of `trae_inverse_problems.tex`). Assume [the abstract deterministic TRAE
+primal rate hypotheses — source condition, Tikhonov bias bound, and localized
+empirical-process event — hold](hyp:hyps), the regularization parameter satisfies
+[`0 < lambda < 2`](hyp:lambda_pos,lambda_lt), and the confidence level satisfies
+[`0 < ζ < 1`](hyp:hζ_pos,hζ_lt). Then [there exist nonnegative constants `C_strong`,
+`C_weak` and an event of probability at least `1 - ζ` on which, for every fold-A sample
+size n, both the strong-norm rate `‖ĥ_n − h₀‖²_{L²(P_X)} ≤ C_strong · (δ_n²/λ +
+‖w₀‖_{L²(P_X)} · λ^min(β,1))` and the weak-norm rate `‖T(ĥ_n − h₀)‖²_{L²(P_Z)} ≤ C_weak ·
+(δ_n² + ‖w₀‖_{L²(P_X)} · λ^min(β+1,2))` hold simultaneously](goal).
 
 For any `λ < 2`, with probability at least `1 − ζ` over the nuisance fold
 `A(n)`, the strong and weak inverse-problem rates hold simultaneously:
@@ -808,7 +816,20 @@ theorem trae_primal_rate_from_empirical_process
   intro ω hω n
   exact ⟨h_strong ω hω n, h_weak ω hω n⟩
 
-/-- **TRAE primal rate from localized regimes.**
+/-- **TRAE primal rate from localized regimes.** Assume the base deterministic TRAE primal
+rate hypotheses hold (source condition and Tikhonov bias bound), and that
+[a localized-regimes witness is available at every fold-A sample size](hyp:regimes), with
+regularization parameter [`0 < lambda < 2`](hyp:lambda_pos,lambda_lt) and confidence level
+[`0 < ζ < 1`](hyp:hζ_pos,hζ_lt). Suppose further that [the localized discharge rate is
+absorbed by a constant multiple of the population shape at every confidence level and
+every eligible fold size](hyp:absorption), and that [the same absorption inequality also
+holds, with an explicit weak/strong-norm correction term, at every fold size too small for
+the localized regime](hyp:small_n_slack). Then [there exist nonnegative constants
+`C_strong`, `C_weak` and an event of probability at least `1 - ζ` on which, for every
+fold-A sample size n, both the strong-norm rate `‖ĥ_n − h₀‖²_{L²(P_X)} ≤ C_strong ·
+(δ_n²/λ + ‖w₀‖_{L²(P_X)} · λ^min(β,1))` and the weak-norm rate
+`‖T(ĥ_n − h₀)‖²_{L²(P_Z)} ≤ C_weak · (δ_n² + ‖w₀‖_{L²(P_X)} · λ^min(β+1,2))` hold
+simultaneously](goal).
 
 This is the paper-facing rate statement: callers provide the deterministic rate
 hypotheses, the four localized regimes, and the explicit absorption/small-sample

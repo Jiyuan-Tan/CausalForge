@@ -241,8 +241,13 @@ theorem observedBeta2SLS_eq_beta2SLSPopulationBridge
   rw [B.observedReducedFormMoment_eq_reducedFormMoment hZ hYInt,
     B.observedFirstStageMoment_eq_firstStageMoment hZ hDInt]
 
-/-- End-to-end multiple-instrument IV bridge from the observed population 2SLS
-ratio to the finite response-type algebra. -/
+/-- **End-to-end bridge to the finite response-type algebra.** Given a bridge
+`B` linking the observed data to the response-type population, provided [the
+instrument is measurable](hyp:hZ), [the centered-instrument-weighted outcome
+is integrable](hyp:hYInt), and [the centered-instrument-weighted treatment is
+integrable](hyp:hDInt), [the observed population 2SLS ratio
+`E[h(Z)Y] / E[h(Z)D]` equals the finite response-type algebra estimand
+`beta2SLSFiniteAlgebra`](goal). -/
 theorem observedBeta2SLS_eq_beta2SLSFiniteAlgebra
     (B : ObservedBridge μ Z D Y I P) [IsFiniteMeasure μ] (hZ : Measurable Z)
     (hYInt : Integrable (fun ω => I.centeredIndex (Z ω) * Y ω) μ)

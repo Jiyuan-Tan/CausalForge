@@ -44,9 +44,9 @@ theorem measurableSet_error {est : Ω → Θ} (hest : Measurable est) (θ : Θ) 
     isClosed_le continuous_const (continuous_id.dist continuous_const)
   exact hest hclosed.measurableSet
 
-/-- **Le Cam two-point bound (summed form).** If the parameter values `θ₀, θ₁`
-are `2s`-separated, then for any estimator `est` the two error probabilities sum
-to at least `1 − tvDist P₀ P₁`. -/
+/-- **Le Cam two-point bound (summed form).** For [a measurable estimator `est`](hyp:hest), if
+[the parameter values `θ₀, θ₁` are `2s`-separated](hyp:hsep), then [the two error probabilities
+sum to at least `1 − tvDist P₀ P₁`](goal). -/
 theorem one_sub_tvDist_le_error_sum {est : Ω → Θ} (hest : Measurable est)
     {θ₀ θ₁ : Θ} {s : ℝ} (hsep : 2 * s ≤ dist θ₀ θ₁) :
     1 - tvDist P₀ P₁
@@ -70,8 +70,9 @@ theorem one_sub_tvDist_le_error_sum {est : Ω → Θ} (hest : Measurable est)
   have htest := one_sub_tvDist_le_test (μ := P₀) (ν := P₁) hAmeas
   linarith [htest, hmono]
 
-/-- **Le Cam two-point bound (max form).** Under `2s`-separation, every estimator
-has worst-case error probability at least `½ (1 − tvDist P₀ P₁)`. -/
+/-- **Le Cam two-point bound (max form).** For [a measurable estimator `est`](hyp:hest), under
+[`2s`-separation of `θ₀, θ₁`](hyp:hsep), [the worst-case error probability is at least
+`½ (1 − tvDist P₀ P₁)`](goal). -/
 theorem half_one_sub_tvDist_le_max_error {est : Ω → Θ} (hest : Measurable est)
     {θ₀ θ₁ : Θ} {s : ℝ} (hsep : 2 * s ≤ dist θ₀ θ₁) :
     (1 - tvDist P₀ P₁) / 2

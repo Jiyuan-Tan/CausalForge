@@ -93,10 +93,12 @@ noncomputable def msmUpper (Λ : ℝ) : ℝ := sSup (S.candMean '' S.MSMSet Λ)
 set. The smallest value of `E[Y(1)]` consistent with the sensitivity budget `Λ`. -/
 noncomputable def msmLower (Λ : ℝ) : ℝ := sInf (S.candMean '' S.MSMSet Λ)
 
-/-- **IPW / tower bridge.** Evaluated at the *true* complete propensity
-`e₀ = P[D=1 | σ(X, Y(1))]`, the candidate IPW mean recovers the estimand:
-
-    candMean e₀ = E[A · Y / e₀] = E[Y(1)].
+/-- **IPW / tower bridge.** Assuming [potential and observed outcomes agree under the realized
+treatment (consistency)](hyp:hcons), [the true complete propensity `e₀ = P[D=1 | σ(X, Y(1))]` is
+positive almost surely](hyp:hpos), [the treated potential outcome `Y(1)` is
+integrable](hyp:hint), and [the inverse-propensity-weighted candidate `A·Y/e₀` is
+integrable](hyp:hcand_int), then [evaluated at the true complete propensity, the candidate IPW
+mean recovers the estimand: `candMean e₀ = E[A · Y / e₀] = E[Y(1)]`](goal).
 
 This is the inverse-probability-weighting identity at the complete propensity, where
 the ratio `Y(1) / e₀` is measurable with respect to `σ(X, Y(1))`. The tower
@@ -198,10 +200,11 @@ theorem completeProp_mem_MSMSet (Λ : ℝ)
   simp only [MSMSet, Set.mem_setOf_eq]
   exact hMSM
 
-/-- **The MSM bound: `E[Y(1)]` lies in the MSM interval.** Combining the IPW bridge
-(`E[Y(1)] = candMean e₀`) with membership of the truth in the ambiguity set, the
-estimand is sandwiched between the infimum and supremum of the candidate mean over
-`MSMSet Λ`:
+/-- **The MSM bound: `E[Y(1)]` lies in the MSM interval.** Assuming [the true complete propensity
+belongs to the marginal-sensitivity ambiguity set](hyp:hmem), [the IPW/tower bridge identity
+`candMean e₀ = E[Y(1)]` holds](hyp:hbridge), and [the candidate mean is bounded below and above
+over the ambiguity set](hyp:hbdd,hbdd'), [the estimand `E[Y(1)]` is sandwiched between the
+infimum and supremum of the candidate mean over the ambiguity set](goal):
 
     msmLower Λ ≤ E[Y(1)] ≤ msmUpper Λ.
 
@@ -259,8 +262,13 @@ theorem msmLower_anti {Λ Λ' : ℝ} (hΛ : 1 ≤ Λ) (hΛΛ' : Λ ≤ Λ')
     Set.image_mono hsub
   exact csInf_le_csInf hbdd' hne himg
 
-/-- **Point identification at `Λ = 1` (no-unmeasured-confounding collapse).** When
-`Λ = 1` the odds-ratio window degenerates to `{1}`, forcing every member of the
+/-- **Point identification at `Λ = 1` (no-unmeasured-confounding collapse).** Assume [the
+propensity score for treatment given the covariates lies strictly between 0 and 1 almost surely
+(overlap)](hyp:hprop). If [a candidate complete propensity `ẽ` belongs to the marginal-sensitivity
+ambiguity set at `Λ = 1`](hyp:hmem), then [it equals the observed propensity score almost
+everywhere](goal).
+
+When `Λ = 1` the odds-ratio window degenerates to `{1}`, forcing every member of the
 ambiguity set to equal the observed propensity `e(X) = P[D=1 | σ(X)]` a.e. Thus the
 MSM interval collapses to the unconfounded IPW point estimate. The a.e. interiority
 of `e(X)` is required to invert the odds ratio. -/

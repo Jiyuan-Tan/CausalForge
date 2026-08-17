@@ -173,8 +173,16 @@ instance instMeasurableSingletonΩ (E : Experiment) : MeasurableSingletonClass E
 
 end Experiment
 
-/-- The studentized Horvitz-Thompson effect statistic converges in distribution to a standard normal
-under the abstract Stein local-dependence conditions.
+/-- **Local-dependence CLT from the abstract Stein conditions.** For [a pair of treatment sequences
+`dk`, `dl`](hyp:dk,dl) and [a choice of dependency neighbourhoods `N n i`](hyp:N), suppose [the
+design variance of the Horvitz–Thompson effect estimator is everywhere positive](hyp:hVar), [every
+unit has nonzero exposure probability under `dk`](hyp:hposk) and [under `dl`](hyp:hposl), and [the
+per-unit effect summands are pointwise bounded by a nonnegative sequence `B n`](hyp:hB,hbound). If
+[each summand is independent of the sum of summands outside its neighbourhood](hyp:hindep), and
+the two Stein negligibility limits hold — [the design variance of the neighbourhood cross-term sum
+tends to `0`](hyp:herr1) and [the summed third-moment-type error term tends to `0`](hyp:herr2) —
+then [the studentized Horvitz–Thompson effect statistic converges in distribution to a standard
+normal](goal).
 
 The assumptions provide bounded summands with a vanishing bound, dependency neighborhoods,
 nonzero variance, positive propensities, and the two Stein negligibility limits. -/
@@ -248,8 +256,17 @@ theorem localDependenceCLT_of_stein (Exp : ℕ → Experiment) (dk dl : ∀ n, (
   rw [← FiniteDesign.toMeasure_real_setOf, hset,
     MeasureTheory.map_measureReal_apply hWmeas measurableSet_Iic]
 
-/-- The Aronow-Samii oracle Wald interval has asymptotic coverage at least the nominal level under
-the primitive Stein-discharge conditions.
+/-- **Aronow–Samii oracle Wald coverage from primitive Stein-discharge conditions.** For [a pair of
+treatment sequences `dk`, `dl`](hyp:dk,dl) and [a choice of dependency neighbourhoods `N n
+i`](hyp:N), suppose [the design variance of the Horvitz–Thompson effect estimator is everywhere
+positive](hyp:hVar), [every unit has nonzero exposure probability under `dk`](hyp:hposk) and
+[under `dl`](hyp:hposl), and [the per-unit effect summands are pointwise bounded by a nonnegative
+sequence `B n`](hyp:hB,hbound). If [each summand is independent of the sum of summands outside its
+neighbourhood](hyp:hindep) and the two Stein negligibility limits hold — [the design variance of
+the neighbourhood cross-term sum tends to `0`](hyp:herr1) and [the summed third-moment-type error
+term tends to `0`](hyp:herr2) — and [`zq` is a nonnegative quantile](hyp:hzq0) [satisfying
+`Φ(zq) = 1 − α/2`](hyp:hzq), then [the oracle Wald interval `τ̂ ± zq·√Var[τ̂]` attains asymptotic
+(liminf) coverage at least `1 − α`](goal).
 
 This composes the discharged local-dependence central limit theorem with the existing Wald coverage
 theorem, so no separate central-limit premise remains. -/
@@ -284,8 +301,14 @@ theorem wald_coverage_of_stein (Exp : ℕ → Experiment) (dk dl : ∀ n, (Exp n
       herr1 herr2)
     hVar zq hzq0 hzq
 
-/-- The local-dependence central limit theorem follows from a bounded-degree dependency graph and
-the primitive Aronow-Samii rate conditions.
+/-- **Local-dependence CLT from a bounded-degree dependency graph.** For [a pair of treatment
+sequences `dk`, `dl`](hyp:dk,dl), suppose [the per-unit effect summands admit a dependency graph
+`Dg`](hyp:Dg) whose [neighbourhoods have cardinality at most `m`](hyp:hdeg), [the design variance
+of the Horvitz–Thompson effect estimator is everywhere positive](hyp:hVar), [every unit has
+nonzero exposure probability under `dk`](hyp:hposk) and [under `dl`](hyp:hposl), and [the summands
+are pointwise bounded by a nonnegative sequence `B n`](hyp:hB,hbound) with [`B n → 0`](hyp:hB0)
+and [population size times `B n` cubed tending to `0`](hyp:hNB3). Then [the studentized
+Horvitz–Thompson effect statistic satisfies the local-dependence central limit theorem](goal).
 
 The Stein negligibility limits are derived from the uniformly negligible bounded summands, rather
 than assumed separately. -/
@@ -339,8 +362,15 @@ theorem localDependenceCLT_of_conditions (Exp : ℕ → Experiment) (dk dl : ∀
   rw [← FiniteDesign.toMeasure_real_setOf, hset,
     MeasureTheory.map_measureReal_apply hWmeas measurableSet_Iic]
 
-/-- The Aronow-Samii oracle Wald interval has asymptotic coverage at least the nominal level under
-the bounded-degree primitive conditions.
+/-- **Aronow–Samii oracle Wald coverage from bounded-degree primitive conditions.** For [a pair of
+treatment sequences `dk`, `dl`](hyp:dk,dl), suppose [the per-unit effect summands admit a
+dependency graph `Dg`](hyp:Dg) whose [neighbourhoods have cardinality at most `m`](hyp:hdeg), [the
+design variance of the Horvitz–Thompson effect estimator is everywhere positive](hyp:hVar), and
+[every unit has nonzero exposure probability under `dk`](hyp:hposk) and [under `dl`](hyp:hposl).
+If [the summands are pointwise bounded by a nonnegative sequence `B n`](hyp:hB,hbound) with
+[`B n → 0`](hyp:hB0) and [population size times `B n` cubed tending to `0`](hyp:hNB3), and [`zq`
+is a nonnegative quantile](hyp:hzq0) [satisfying `Φ(zq) = 1 − α/2`](hyp:hzq), then [the oracle
+Wald interval `τ̂ ± zq·√Var[τ̂]` attains asymptotic (liminf) coverage at least `1 − α`](goal).
 
 This combines the primitive local-dependence central limit theorem with the existing Wald coverage
 result, without assuming a separate central-limit theorem or Stein-negligibility limits. -/
@@ -421,8 +451,15 @@ private lemma abs_effRaw_le (E : Experiment) (dk dl : E.Δ) (i : E.ι) (z : E.Ω
           (abs_effTerm_le E dl i z c1 hyl c2 hc2 hπl)
     _ = 2 * c1 * c2 := by ring
 
-/-- The local-dependence central limit theorem follows from the literal Aronow-Samii boundedness,
-dependency-graph, and variance-growth conditions.
+/-- **Local-dependence CLT from the literal Aronow–Samii conditions.** For [a pair of treatment
+sequences `dk`, `dl`](hyp:dk,dl), suppose [the per-unit effect summands admit a bounded-degree
+dependency graph `Dg`](hyp:Dg,hdeg), [potential outcomes under `dk`](hyp:hyk) and [under
+`dl`](hyp:hyl) are uniformly bounded by a constant `c1`, and [the exposure propensities under
+`dk`](hyp:hπk) and [under `dl`](hyp:hπl) are bounded away from `0` by [a positive constant
+`c2`](hyp:hc2). If [the population size diverges](hyp:hN), [the design variance of the
+Horvitz–Thompson effect estimator is everywhere positive](hyp:hVar), and [population size times
+that variance converges to a positive limit `cVar`](hyp:hcVar,hCond4), then [the studentized
+Horvitz–Thompson effect statistic satisfies the local-dependence central limit theorem](goal).
 
 The summand-bound rates are derived from bounded outcomes, bounded inverse propensities, growing
 population size, and a positive limit for population size times effect-estimator variance. -/

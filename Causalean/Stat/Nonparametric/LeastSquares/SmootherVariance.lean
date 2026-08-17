@@ -46,9 +46,13 @@ theorem linearSmoother_variance_spherical {Ω : Type*} {N : ℕ} [MeasurableSpac
   simp only [dotProduct]
   exact Finset.sum_congr rfl (fun i _ => (pow_two (S i)).symm)
 
-/-- **Stochastic-error bound for a fixed-weight linear smoother.** Under spherical errors with
-scale `σ`, if the leverage is controlled by `∑ᵢ Sᵢ² ≤ V` then the smoother variance is at most
-`σ² V`. Taking `V = O(1/(Nh))` gives the interior `O((Nh)^{−1/2})` stochastic-error rate. -/
+/-- **Stochastic-error bound for a fixed-weight linear smoother.** If [each response `Yᵢ`
+is square-integrable](hyp:hY), [the responses form a spherical family with common scale
+`σ` — each has variance `σ²`, and distinct responses are uncorrelated](hyp:hsph), and [the
+sum of squared smoother weights, `∑ᵢ Sᵢ²`, is bounded by `V`](hyp:hlev), then [the
+variance of the linear smoother `∑ᵢ Sᵢ Yᵢ` is at most `σ² V`](goal).
+
+Taking `V = O(1/(Nh))` gives the interior `O((Nh)^{−1/2})` stochastic-error rate. -/
 theorem linearSmoother_variance_le {Ω : Type*} {N : ℕ} [MeasurableSpace Ω]
     {μ : Measure Ω} [IsProbabilityMeasure μ] {Y : Fin N → Ω → ℝ} {S : Fin N → ℝ} {σ V : ℝ}
     (hY : ∀ i, MemLp (Y i) 2 μ)

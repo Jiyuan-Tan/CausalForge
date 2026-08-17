@@ -79,7 +79,26 @@ def DRCriticalRadius
         norm S.toBackdoorEstimationSystem.P_Z (id : (γ × Bool × ℝ) → γ × Bool × ℝ)
         n (ψ n)
 
-/-- **DR-Learner localized modulus, sharp Foster–Syrgkanis form.**
+/-- **DR-Learner localized modulus, sharp Foster–Syrgkanis form.** For the DR-Learner CATE
+estimation system, suppose [the evaluation functional is measurable in its parameter and recovers
+the true CATE at a parameter θ₀ in the constraint set](hyp:θ₀_mem,eval_meas,eval_θ₀), and that
+[the evaluation functional, outcome, and fixed nuisance conditional-mean are uniformly bounded
+while the nuisance's propensity score satisfies ε-overlap](hyp:hM_Θ,hM_Y,hM_μ,hOverlap). Assume
+[the centred DR-loss is continuous in θ, a clamped version of θ₀ minimizes it, its population
+Rademacher complexity along a dense index sequence is controlled by a sub-root envelope ψ with
+respect to a seminorm that is invariant under almost-everywhere modification, and the same
+Rademacher upper bound extends to loss differences across the whole constraint
+set](hyp:_hLoss_cont,hclamp_minimizes,hψ,hnorm_ae,hψ_ub), together with [Lipschitz and diameter
+control of the centred loss increments — nonnegative Lipschitz constant L, a diameter bound Rmax
+dominating every critical radius `criticalRadius (ψ m)`, and the sub-root fixed-point
+property](hyp:hL_nonneg,hF_lip,hF_diam,hRmax_lb,hcrit_pos,hcrit_fp), plus [boundedness and
+integrability of the empirical star-hull Rademacher process needed by the localization
+bridge](hyp:hrad_bdd,hrad_int) and [a confidence level in $(0,1]$ together with the
+Foster–Syrgkanis critical-radius domination inequality across dyadic shell
+counts](hyp:hδ,hδ',hδ_dom). Then [there is a nonnegative envelope b such that the DR-Learner
+system satisfies the localized empirical-process modulus predicate at rate
+`ρ n = (8L+3)·criticalRadius (ψ |B(n)|)` on nonempty validation folds, falling back to `√(2b)`
+when the fold is empty](goal).
 
 The DR-Learner orthogonal-learning system, under bounded eval / outcomes / overlap and a
 sub-root critical-radius hypothesis on the centred loss class, satisfies

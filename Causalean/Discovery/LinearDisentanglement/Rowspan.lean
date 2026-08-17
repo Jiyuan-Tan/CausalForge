@@ -202,9 +202,12 @@ private theorem coord_eq_of_rowSpan_le (S : Solution d p K) (k : Fin K) (I : Set
     (fun i => u a * S.Bint k (S.target k) i - v a * S.B0 (S.target k) i) I hmemI hjI
   linarith [hzero]
 
-/-- **Lemma 1(a).**  Under the non-degeneracy hypothesis `Θₖ ≠ Θ₀` (the paper's
-genericity / Assumption (b) — the intervention actually changes the precision matrix),
-`rowspan(Θₖ − Θ₀) ⊆ ⟨hᵢ : i ∈ 𝓘⟩` iff `Pa(iₖ) ⊆ 𝓘`.
+/-- **Lemma 1(a).**  For a solution `S`, an intervention `k`, and a set of latent
+indices `I`, provided [the intervention actually changes the observational
+precision matrix, `Θₖ ≠ Θ₀`](hyp:hk) (the paper's genericity / Assumption (b)),
+[the row span of the precision difference `Θₖ − Θ₀` is contained in the span of
+the rows of the mixing pseudoinverse `H` indexed by `I` if and only if the parent
+set of the intervened target node is contained in `I`](goal).
 
 The `←` direction is unconditional; `hk` is used only in the `→` direction (and there
 only in the case where the witnessed parent is the target itself, to rule out the
@@ -338,7 +341,11 @@ private theorem An_subset_An_of_mem_Pa (S : Solution d p K) (k : Fin K) {i : Fin
     · exact hi' ▸ Set.mem_insert_of_mem _ hx
     · exact Set.mem_insert_of_mem _ (Relation.TransGen.trans hx hi')
 
-/-- **Lemma 1(b).**  `rowspan(Θₖ − Θ₀) ⊆ ⟨qᵢ : i ∈ An(iₖ)⟩`. -/
+/-- **Lemma 1(b).**  For a solution `S`, an intervention `k`, and any [partial order
+RQ decomposition of `S`'s latent-direction matrix `H`, witnessed by `R` and
+`Q`](hyp:hRQ), [the row span of the precision difference `Θₖ − Θ₀` is contained in
+the span of the rows of `Q` indexed by the ancestor set of the intervened target
+node](goal). -/
 theorem rowspan_inclusion_b (S : Solution d p K)
     {R : Matrix (Fin d) (Fin d) ℝ} {Q : Matrix (Fin d) (Fin p) ℝ} (hRQ : IsPORQ S R Q)
     (k : Fin K) :
@@ -512,8 +519,14 @@ private theorem Q_row_dotProduct_H_row_eq_zero (S : Solution d p K)
   -- Orthogonality along the strict order.
   exact hRQ.orth i l hprecil
 
-/-- **Lemma 1(c).**  Under the non-degeneracy hypothesis `Θₖ ≠ Θ₀` (the paper's
-genericity / Assumption (b)), if `Pa(iₖ) ⊄ 𝓘` then `rowspan(Θₖ − Θ₀) ⊄ ⟨qᵢ : i ∈ 𝓘⟩`.
+/-- **Lemma 1(c).**  For a solution `S`, an intervention `k`, and a set of latent
+indices `I`, given [a partial order RQ decomposition of `S`'s latent-direction
+matrix `H`, witnessed by `R` and `Q`](hyp:hRQ), [the non-degeneracy condition
+`Θₖ ≠ Θ₀`](hyp:hk) (the paper's genericity / Assumption (b)), [that `I` is
+ancestor-closed](hyp:hIclosed), and [that the parent set of the intervened target
+node is not contained in `I`](hyp:hPa), then [the row span of the precision
+difference `Θₖ − Θ₀` is not contained in the span of the rows of `Q` indexed by
+`I`](goal).
 
 The hypothesis `hk` makes the statement correct: for a degenerate source intervention
 with `λₖ = (B₀)_{iₖ,iₖ}` one has `Θₖ = Θ₀`, hence `rowSpan = ⊥ ≤ qSpan Q I` for every

@@ -633,14 +633,12 @@ private lemma aipw_factualZ_integral_zero (S : BackdoorEstimationSystem P γ)
       rw [hθ0, hB_zero', hC_zero']
     _ = 0 := by ring
 
-/-- **Mean zero of `ψ_AIPW`** — `lem:est-aipw-mean-zero`.
-
-Under the back-door assumptions, the AIPW influence function has mean zero
-provided the two weighted observed residual corrections are integrable.  The
-integrability gates are exactly the treated and control IPW residual terms
-appearing in the score:
-`e(X)⁻¹ 1{D=1}(Y - μ(1,X))` and
-`(1 - e(X))⁻¹ 1{D=0}(Y - μ(0,X))`.
+/-- **Mean zero of the AIPW influence function.** Under [the back-door identification
+assumptions](hyp:hA), if [the inverse-propensity-weighted residual correction on the
+treated arm, `1{D=1}/e(X) · (Y − μ(1,X))`, is integrable](hyp:hB_int) and [the analogous
+correction on the control arm, `1{D=0}/(1 − e(X)) · (Y − μ(0,X))`, is
+integrable](hyp:hC_int), then [the AIPW influence function `ψ_AIPW` has mean zero under
+the joint law of the covariates, treatment indicator, and outcome](goal).
 
 This is the source-level mean-zero statement: strict overlap and second moments
 are sufficient ways to prove the gates, but they are not part of the headline

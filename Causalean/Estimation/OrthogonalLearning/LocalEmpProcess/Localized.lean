@@ -237,7 +237,12 @@ private lemma empRiskFoldB_centered_abs_le_ae
             simp
             field_simp [ne_of_gt hm_pos]
 
-/-- **Uniform-bound fallback bridge.**
+/-- **Uniform-bound fallback bridge.** Under [a localized Rademacher regime — a uniform
+bound `b` on the centred pointwise loss difference together with a sub-root Rademacher-
+complexity envelope ψ](hyp:hreg), and given that [the population excess risk at every
+admissible parameter is likewise bounded by `b`](hyp:hpop_center), then for any confidence
+level [`0 < δ ≤ 1`](hyp:_hδ,_hδ') [the local empirical-process modulus condition holds,
+with the constant envelope `ρ n := √(2 · b)`](goal).
 
 Under an `LocalizedRademacherRegime` and an explicit centred population-risk
 bound, the `LocalEmpProcessModulus` predicate holds with the
@@ -313,7 +318,13 @@ theorem localEmpProcessModulus_of_localized_bounded
       _ ≤ Real.sqrt (2 * b) * ‖θ - S.θ₀‖ + (Real.sqrt (2 * b)) ^ 2 := by
         nlinarith [mul_nonneg hρ_nonneg hnorm_nonneg]
 
-/-- **Almost-everywhere uniform-bound fallback bridge.**
+/-- **Almost-everywhere uniform-bound fallback bridge.** Under [an almost-everywhere
+localized Rademacher regime — a `P_Z`-a.e. bound `b` on the centred pointwise loss
+difference together with a sub-root Rademacher-complexity envelope ψ](hyp:hreg), and given
+that [the population excess risk at every admissible parameter is likewise bounded by
+`b`](hyp:hpop_center), then for any confidence level [`0 < δ ≤ 1`](hyp:_hδ,_hδ') [the local
+empirical-process modulus condition holds, with the constant envelope
+`ρ n := √(2 · b)`](goal).
 
 This is the a.e. analogue of
 `localEmpProcessModulus_of_localized_bounded`. The event is the conull fold-B
@@ -412,7 +423,29 @@ def CenteredClampedThetaMinimizes
     ∫ z, S.ℓ z S.θ₀ S.g₀
         + max (-b) (min b (S.ℓ z θ S.g₀ - S.ℓ z S.θ₀ S.g₀)) ∂P_Z
 
-/-- **Localized critical-radius modulus, countable-class Foster–Syrgkanis form.**
+/-- **Localized critical-radius modulus, countable-class Foster–Syrgkanis form.** Fix a
+countable, densely-indexed target class on which [the loss is continuous in the parameter
+for every observation](hyp:_hg_cont) and [a localized Rademacher regime holds — a uniform
+centred-loss bound and a sub-root Rademacher-complexity envelope ψ](hyp:hreg). Suppose
+[the Lipschitz constant `L` is nonnegative](hyp:hL_nonneg), that
+[the chosen function-space norm of the centred loss difference at each parameter is
+bounded by `L · ‖θ − θ₀‖`](hyp:hF_lip), that [the loss at each parameter is
+measurable](hyp:hℓ_meas) and [integrable under `P_Z`](hyp:hℓ_int), and that
+[the same centred loss difference has diameter at most `Rmax` in that norm](hyp:hF_diam).
+Assume the critical radius of ψ at every fold-B sample size satisfies
+[`criticalRadius (ψ m) ≤ Rmax`](hyp:hRmax_lb) and
+[`criticalRadius (ψ m) > 0`](hyp:hcrit_pos), together with
+[the sub-root fixed-point inequality `ψ m (criticalRadius (ψ m)) ≤
+criticalRadius (ψ m) ^ 2`](hyp:hcrit_fp); that [ψ upper-bounds the population Rademacher
+complexity of the star-hulled centred loss class on a fold-B-sized sample](hyp:hψ_ub); and
+the technical regularity conditions that [the empirical Rademacher supremum is bounded
+above](hyp:_hrad_bdd) and [the upper empirical Rademacher complexity process is
+integrable](hyp:hrad_int). For any confidence level [`0 < δ ≤ 1`](hyp:hδ,hδ'), assume the
+Foster–Syrgkanis peeling-absorption condition that [at every dyadic shell count covering
+`Rmax`, the McDiarmid concentration slack at the union-bound-adjusted confidence is
+dominated by the squared critical radius](hyp:hδ_dom). Then [the local empirical-process
+modulus condition holds, with envelope `ρ n := (8 · L + 3) · criticalRadius (ψ |foldB n|)`
+(falling back to `√(2 · b)` when the fold-B sample is empty)](goal).
 
 Under an `LocalizedRademacherRegime` carrying
 
@@ -934,7 +967,31 @@ theorem localEmpProcessModulus_of_localized_sharp
     have := hE_bound ω hω θ hθ
     simpa [hm0, m, δn] using this
 
-/-- **Almost-everywhere countable-class localized bridge.**
+/-- **Almost-everywhere countable-class localized bridge.** Fix a countable,
+densely-indexed target class on which [the loss is continuous in the parameter for every
+observation](hyp:_hg_cont) and [the chosen function-space norm is invariant under
+`P_Z`-a.e. equality of its argument](hyp:hnorm_ae). Assume [an almost-everywhere localized
+Rademacher regime holds — a uniform centred-loss bound and a sub-root Rademacher-complexity
+envelope ψ](hyp:hreg), that [the Lipschitz constant `L` is nonnegative](hyp:hL_nonneg), that
+[the norm of the centred loss difference at each parameter is bounded by
+`L · ‖θ − θ₀‖`](hyp:hF_lip), that [the loss at each parameter is measurable](hyp:hℓ_meas)
+and [integrable under `P_Z`](hyp:hℓ_int), and that [the same centred loss difference has
+diameter at most `Rmax` in that norm](hyp:hF_diam). Assume the critical radius of ψ at
+every fold-B sample size satisfies [`criticalRadius (ψ m) ≤ Rmax`](hyp:hRmax_lb) and
+[`criticalRadius (ψ m) > 0`](hyp:hcrit_pos), together with
+[the sub-root fixed-point inequality `ψ m (criticalRadius (ψ m)) ≤
+criticalRadius (ψ m) ^ 2`](hyp:hcrit_fp); that [ψ upper-bounds the population Rademacher
+complexity of the star-hulled centred loss class on a fold-B-sized sample](hyp:hψ_ub); the
+technical regularity conditions that [the empirical Rademacher supremum is bounded
+above](hyp:hrad_bdd) and [the upper empirical Rademacher complexity process is
+integrable](hyp:hrad_int); and that [the population-optimal parameter minimizes the
+auxiliary population risk with the centred excess loss clamped to
+`[-b, b]`](hyp:hclamp_minimizes). For any confidence level [`0 < δ ≤ 1`](hyp:hδ,hδ'), assume the
+Foster–Syrgkanis peeling-absorption condition that [at every dyadic shell count covering
+`Rmax`, the McDiarmid concentration slack at the union-bound-adjusted confidence is
+dominated by the squared critical radius](hyp:hδ_dom). Then [the local empirical-process
+modulus condition holds, with envelope `ρ n := (8 · L + 3) · criticalRadius (ψ |foldB n|)`
+(falling back to `√(2 · b)` when the fold-B sample is empty)](goal).
 
 This is the a.e. analogue of `localEmpProcessModulus_of_localized_sharp`.
 The centred envelope is assumed only under `P_Z`, the target class is still

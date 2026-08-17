@@ -61,8 +61,11 @@ lemma E_compound_tower (D₁ : FiniteDesign Ω₁) (D₂ : Ω₁ → ∀ i, Fini
   intro w _
   ring
 
-/-- **Law of total variance** for the two-stage compound design. The total variance decomposes as
-expected stage-2 conditional variance plus the stage-1 variance of the stage-2 conditional mean:
+/-- **Law of total variance** for the two-stage compound design. For [a stage-1 design `D₁`
+paired with a stage-2 design `D₂ s` at every stage-1 outcome `s`](hyp:D₂), applied to [any
+statistic `X` on the joint outcome space](hyp:X), [the total variance of `X` under the compound
+design decomposes as the stage-1 expectation of the stage-2 conditional variance of `X`, plus the
+stage-1 variance of the stage-2 conditional mean of `X`](goal):
 
     Var X = E_{s}[ Var_{D₂ s}(X(s, ·)) ] + Var_{s}( E_{D₂ s}(X(s, ·)) ). -/
 lemma Var_compound_eq_tower (D₁ : FiniteDesign Ω₁) (D₂ : Ω₁ → ∀ i, FiniteDesign (α i))

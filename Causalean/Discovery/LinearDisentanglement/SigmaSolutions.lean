@@ -140,8 +140,11 @@ def permute (S : Solution d p K) (σ : Equiv.Perm (Fin d)) (hσ : S.InSG σ) :
 
 end Solution
 
-/-- Every order-preserving relabeling of a solution is a valid transformed solution with
-the same observational and interventional precision matrices.
+/-- For a solution `S` and a permutation `σ` of the latent coordinates such that
+[`σ` is order-preserving, i.e. lies in the paper's group `S(𝒢)`](hyp:hσ), [the
+relabeled solution obtained by applying `σ` to `S` produces exactly the same
+observational precision matrix `Θ₀`, and for every intervention `k` the same
+interventional precision matrix `Θₖ`, as `S` itself](goal).
 
 This is the solution-orbit direction: for any `σ ∈ S(𝒢)`, the permuted solution
 `S.permute σ hσ` produces exactly the original precision family `{Θ₀, Θₖ}`. -/

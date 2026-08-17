@@ -58,9 +58,13 @@ noncomputable def partitionOf {Ω 𝒢 : Type*} [MeasurableSpace Ω] [Fintype �
       rcases hD with hD | hD <;> simp [hD]) g
   , overlap ⟩
 
-/-- **Population-cell certificate for `partitionOf`.** The treated share `p_g` of
-the Słoczyński partition is the shared population cell mean `E[D | G = g]` (via
-`eventCondExp`). -/
+/-- **Population-cell certificate for `partitionOf`.** For a probability space
+`(Ω, μ)` with a measurable finite covariate `G` and treatment/potential-outcome
+data `D`, `Y0`, `Y1`, suppose [treatment is binary almost
+everywhere](hyp:D_binary) and [the covariate cells have nondegenerate
+treatment overlap](hyp:overlap). Then, for any cell `g`, [the treated share
+`p_g` of the Słoczyński partition `partitionOf` equals the shared population
+cell mean `E[D ∣ G = g]`](goal) (via `eventCondExp`). -/
 theorem partitionOf_p_eq_eventCondExp {Ω 𝒢 : Type*} [MeasurableSpace Ω]
     [Fintype 𝒢] [DecidableEq 𝒢] [MeasurableSpace 𝒢] [MeasurableSingletonClass 𝒢]
     (μ : Measure Ω) [IsProbabilityMeasure μ]

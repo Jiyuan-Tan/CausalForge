@@ -87,12 +87,15 @@ theorem kernelSmoothingBias_changeOfVar (f K : ℝ → ℝ) (t h : ℝ) (hh : 0 
     _ = |h⁻¹| • ∫ u, ψ u := by rw [integral_add_left_eq_self ψ t]
     _ = h⁻¹ * ∫ u, ψ u := by rw [smul_eq_mul, abs_of_pos (inv_pos.mpr hh)]
 
-/-- **Interior kernel smoothing bias is `O(h^β)`.** With a kernel `K` of order
-`p = holderDerivOrder β`, a `p`-times continuously differentiable regression
-`f` whose `p`-th derivative is `(β−p)`-Hölder with constant `M` on the window
-`[t−h, t+h]`, the kernel smoothing bias at bandwidth `h` is bounded by
-`(M/p! · ∫|K|)·h^β`. For positive integer `β = m`, `p = m - 1` and the
-Hölder exponent is `1`. (Fan–Gijbels 1996 §3.1–3.3; Tsybakov 2009 Ch. 1.) -/
+/-- **Interior kernel smoothing bias is `O(h^β)`.** Let `p` denote the largest natural
+number strictly below the smoothness index `β`. If [`β` is positive](hyp:hβ), [the Hölder
+constant `M` is nonnegative](hyp:hM), [the bandwidth `h` is positive](hyp:hh), [the kernel
+`K` has order `p`](hyp:hK), [the regression function `f` is `p` times continuously
+differentiable](hyp:hf), and [its `p`-th derivative is `(β−p)`-Hölder with constant `M` on
+the window `[t−h, t+h]`](hyp:hb), then [the kernel smoothing bias of `f` at `t` with
+bandwidth `h` is bounded by `(M/p! · ∫|K|)·h^β`](goal). For positive integer `β = m`,
+`p = m - 1` and the Hölder exponent is `1`. (Fan–Gijbels 1996 §3.1–3.3; Tsybakov 2009 Ch.
+1.) -/
 theorem kernelSmoothingBias_bound {f K : ℝ → ℝ} {β M t h : ℝ}
     (hβ : 0 < β) (hM : 0 ≤ M) (hh : 0 < h)
     (hK : KernelOrder K (holderDerivOrder β))

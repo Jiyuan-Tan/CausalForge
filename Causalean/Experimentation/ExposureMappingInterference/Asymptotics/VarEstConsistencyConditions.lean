@@ -92,11 +92,18 @@ private lemma NsqVar_htEffectVarEst_le (D : FiniteDesign Ω) (y : ι → Δ → 
       _ = C * N⁻¹ := by field_simp
 
 /-- **Scaled variance-estimator variance vanishes (Aronow–Samii Prop 6.6 core).** Along a sequence
-of growing experiments (`hN : N → ∞`) with uniformly bounded outcomes, positive and uniformly
-bounded inverse marginal exposure propensities, positive off-diagonal joint exposure
-propensities with uniformly bounded inverses, and a bounded-degree dependency graph whose nonedges
-give the stated independence and covariance cancellations, the scaled variance of the conservative
-variance estimator vanishes: `N²·Var[V̂_n] → 0`. -/
+of experiments with [distinct treatment arms `dk ≠ dl`](hyp:dk,dl,hne) whose [outcomes are
+uniformly bounded by a nonnegative constant `c₁`](hyp:hc₁,hy) (Condition 1), suppose [the
+marginal exposure propensities under `dk` and `dl` are positive](hyp:hπk,hπl) with [inverses
+uniformly bounded by a nonnegative constant `c₂`](hyp:hc₂,hπinvk,hπinvl), and [the same-arm and
+cross-arm pairwise joint exposure propensities have inverses uniformly bounded by a nonnegative
+constant `c₃`](hyp:hc₃,hjk,hjl,hjc) (Condition 1'). Suppose further a [symmetric, reflexive
+dependency relation `G`](hyp:G,decG,hrefl,hsymm) [of degree at most `m`](hyp:hdeg) such that
+[every non-adjacent pair's joint exposure propensities factor as if independent](hyp:hGindep)
+and [every quadruple with no adjacent index pair has zero covariance between the corresponding
+variance-estimator kernel terms](hyp:hcov0) (Condition 3), and [the population size
+diverges](hyp:hN). Then [the scaled variance of the conservative variance estimator vanishes:
+`N²·Var[V̂_n] → 0`](goal). -/
 theorem var_NsqVhat_tendsto_zero_of_conditions
     (Exp : ℕ → Experiment) (dk dl : ∀ n, (Exp n).Δ) (hne : ∀ n, dk n ≠ dl n)
     {c₁ c₂ c₃ : ℝ} (hc₁ : 0 ≤ c₁) (hc₂ : 0 ≤ c₂) (hc₃ : 0 ≤ c₃)
@@ -142,12 +149,24 @@ theorem var_NsqVhat_tendsto_zero_of_conditions
     simpa using this
 
 /-- **Feasible Wald coverage from primitive boundedness, overlap, dependency-graph, and
-variance-growth conditions.** If outcomes are uniformly bounded, marginal propensities are
-positive and uniformly bounded away from zero, off-diagonal joint propensities are positive with
-bounded inverses, the exposure dependency graph supplies the required independence and covariance
-cancellations, the Stein dependency-graph conditions hold, and population size times the true
-effect-estimator variance converges to a positive constant, then the feasible Wald interval
-`τ̂ ± z_{1−α/2}·√V̂` has asymptotic coverage at least `1 − α`. -/
+variance-growth conditions.** Along a sequence of experiments with [distinct treatment arms
+`dk ≠ dl`](hyp:dk,dl,hne) whose [outcomes are uniformly bounded by a nonnegative constant
+`c₁`](hyp:hc₁,hy), suppose [the marginal exposure propensities under `dk` and `dl` are
+positive](hyp:hπk,hπl) with [inverses uniformly bounded by a nonnegative constant
+`c₂`](hyp:hc₂,hπinvk,hπinvl) — [taken strictly positive](hyp:hc₂pos) — and [the same-arm and
+cross-arm pairwise joint exposure propensities have inverses uniformly bounded by a nonnegative
+constant `c₃`](hyp:hc₃,hjk,hjl,hjc), with [all off-diagonal joint propensities strictly
+positive](hyp:hjointk,hjointl,hjointc). Suppose a [symmetric, reflexive dependency relation
+`G`](hyp:G,decG,hrefl,hsymm) [of degree at most `m`](hyp:hdeg) makes [every non-adjacent pair's
+joint exposure propensities factor as if independent](hyp:hGindep) and gives [every quadruple
+with no adjacent index pair zero covariance between the variance-estimator kernel
+terms](hyp:hcov0); suppose also [the per-unit effect summands admit a Stein dependency graph
+`Dg`](hyp:Dg) [of degree at most `m`](hyp:hSteinDeg), that [the population size
+diverges](hyp:hN) while [population size times the true effect-estimator variance converges to a
+positive constant `cVar`](hyp:hcVar,hCond4) and [that variance is everywhere
+positive](hyp:hVar), and that [`zq` is a nonnegative quantile](hyp:hzq0) [satisfying
+`Φ(zq) = 1 − α/2`](hyp:hzq). Then [the feasible Wald interval `τ̂ ± zq·√V̂` attains asymptotic
+(liminf) coverage at least `1 − α`](goal). -/
 theorem wald_coverage_feasible_of_conditions
     (Exp : ℕ → Experiment) (dk dl : ∀ n, (Exp n).Δ)
     {m : ℕ}

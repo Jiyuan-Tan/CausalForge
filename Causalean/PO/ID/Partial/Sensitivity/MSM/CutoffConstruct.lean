@@ -735,10 +735,15 @@ theorem exists_factor_through_factualX {f : P.Ω → ℝ} (hf : Measurable[S.sig
   obtain ⟨g, hg, hfg⟩ := hf.exists_eq_measurable_comp (f := S.factualX)
   exact ⟨g, hg, by simpa [Function.comp_def] using hfg⟩
 
-/-- Existence of a calibrating cutoff. Under overlap, `1 < Λ`, an atomless treated
-conditional outcome law (`condCDF` of the treated push-forward continuous), and a strictly-interior
-calibration level, there is a `σ(X)`-measurable cutoff `c` solving the survival equation
-`treatedSurv c =ᵐ survTarget Λ`. The cutoff is the conditional quantile `Q_{calibLevel}(X)`. -/
+/-- **Existence of a calibrating cutoff (treated arm).** Fix [a sensitivity parameter Λ strictly
+greater than one](hyp:Λ,hΛ). Assume [the treated propensity score is almost surely strictly
+between 0 and 1 (two-sided overlap)](hyp:hoverlap), that [the treated-arm conditional law of the
+outcome given covariates is atomless, i.e. its conditional CDF is continuous](hyp:hatomless), and
+that [the calibration quantile level lies strictly between 0 and 1 almost everywhere](hyp:hlevel).
+Then [there exists a σ(X)-measurable cutoff function `c` such that the treatment-weighted
+conditional survival function at `c` agrees almost everywhere with the target survival function
+`survTarget Λ`](goal); the cutoff is realized as the conditional quantile of the treated outcome
+law at the calibration level. -/
 theorem exists_calibrating_cutoff (Λ : ℝ) (hΛ : 1 < Λ)
     (hoverlap : ∀ᵐ ω ∂P.μ, 0 < S.propScore true ω ∧ S.propScore true ω < 1)
     (hatomless : ∀ a : γ, Continuous (condCDF S.treatedXYLaw a))
@@ -814,12 +819,20 @@ theorem exists_calibrating_cutoff (Λ : ℝ) (hΛ : 1 < Λ)
   field_simp [hpos]
   ring
 
-/-- The sharp upper bound, unconditionally. Combining the constructed calibrating
-cutoff with `msmUpperCalib_eq_cutoff`, the Dorn–Guo sharp upper bound has the
-quantile-balancing closed form `msmUpperCalib Λ = candMean (cutoffProp Λ c)` for
-the conditional-quantile cutoff `c`, with no `hcut_mem` hypothesis. Membership is
-discharged by `exists_calibrating_cutoff`; regularity assumptions cover overlap,
-`1 < Λ`, atomless treated outcome law, interior level, and envelope integrability. -/
+/-- **The sharp treated upper bound, unconditionally.** Fix [a sensitivity parameter Λ strictly
+greater than one](hyp:Λ,hΛ). Assume [two-sided overlap of the treated propensity
+score](hyp:hoverlap), that [the treated-arm conditional outcome law given covariates is atomless,
+i.e. its conditional CDF is continuous](hyp:hatomless), that [the calibration quantile level lies
+strictly between 0 and 1 almost everywhere](hyp:hlevel), and that [the candidate means over the
+calibrated ambiguity set are bounded above](hyp:hbdd). If [every calibrated candidate propensity is
+almost-everywhere measurable](hyp:hmeas) and [every σ(X)-measurable cutoff satisfies the
+integrability conditions needed for the calibration and optimality arguments](hyp:hreg), then
+[there exists a σ(X)-measurable cutoff function whose induced quantile-cutoff propensity is
+calibrated-feasible, at which the sharp (supremum) upper bound for `E[Y(1)]` equals the candidate
+mean](goal).
+
+Combines the constructed calibrating cutoff with `msmUpperCalib_eq_cutoff`, discharging the
+`hcut_mem` hypothesis via `exists_calibrating_cutoff`. -/
 theorem msmUpperCalib_eq_cutoff_unconditional (Λ : ℝ) (hΛ : 1 < Λ)
     (hoverlap : ∀ᵐ ω ∂P.μ, 0 < S.propScore true ω ∧ S.propScore true ω < 1)
     (hatomless : ∀ a : γ, Continuous (condCDF S.treatedXYLaw a))

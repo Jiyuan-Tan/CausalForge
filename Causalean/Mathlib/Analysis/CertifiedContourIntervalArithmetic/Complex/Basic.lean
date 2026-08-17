@@ -103,8 +103,10 @@ private theorem sqrtUpper_invariants (q : ℚ) (hq : 0 ≤ q) (n : ℕ) :
       · linarith
       · nlinarith [sq_nonneg (sqrtUpper q n - q / sqrtUpper q n)]
 
-/-- Newton's rational lower and upper iterates enclose the real square root of
-a nonnegative rational at every fuel. -/
+/-- For [a nonnegative rational number `q`](hyp:hq) and any fuel count `n`,
+[the Newton-iterate rational lower bound `sqrtLower q n` and upper bound
+`sqrtUpper q n` both enclose the real square root of `q`:
+`sqrtLower q n ≤ √q ≤ sqrtUpper q n`](goal). -/
 theorem sqrt_iterates_sound (q : ℚ) (hq : 0 ≤ q) (n : ℕ) :
     (sqrtLower q n : ℝ) ≤ Real.sqrt q ∧ Real.sqrt q ≤ (sqrtUpper q n : ℝ) := by
   obtain ⟨hu, hsq⟩ := sqrtUpper_invariants q hq n

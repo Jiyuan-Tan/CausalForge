@@ -86,8 +86,11 @@ theorem disjoint_interferers_of_not_interfDep (y : U → (U → Bool) → ℝ) {
   have hj : Interferes y ℓ j := (Finset.mem_filter.mp hℓj).2
   exact h ⟨ℓ, hi, hj⟩
 
-/-- **No covariance off the interference-dependence graph.** Under the Bernoulli design, two HT
-summands are uncorrelated when their units are not interference dependent. -/
+/-- **No covariance off the interference-dependence graph.** Under a Bernoulli design in which each
+unit `i` is treated independently with probability `p i`, [where every `p i` lies in the unit
+interval](hyp:hp0,hp1), if [units `i` and `j` are not interference dependent](hyp:h) — no unit's
+treatment affects both units' outcomes — then [their Horvitz–Thompson summands have zero
+covariance under this design](goal). -/
 theorem cov_htSummand_zero (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, p i ≤ 1)
     (y : U → (U → Bool) → ℝ) {i j : U} (h : ¬ InterfDep y i j) :
     (bernoulliDesign p hp0 hp1).Cov (htSummand p y i) (htSummand p y j) = 0 := by
@@ -110,7 +113,12 @@ private lemma Var_nonneg {Ω : Type*} [Fintype Ω] (D : FiniteDesign Ω) (X : Ω
     0 ≤ D.Var X :=
   D.E_nonneg (fun _ => sq_nonneg _)
 
-/-- **Per-summand variance bound.** Under the regularity conditions, `Var(HTᵢ) ≤ k⁴`. -/
+/-- **Per-summand variance bound.** Fix [a regularity constant `k` at least 1](hyp:hk) and a
+Bernoulli design with per-unit treatment probabilities [lying in the unit
+interval](hyp:hp0,hp1) and further satisfying [the overlap bounds `k⁻¹ ≤ p i ≤ 1 − k⁻¹` for every
+unit](hyp:hplo,hphi). If [the outcome function's second moment `E[(y i)²]` is at most `k²` for
+every unit under this design](hyp:hmom), then [the variance of the `i`ᵗʰ Horvitz–Thompson summand
+is at most `k⁴`](goal). -/
 theorem var_htSummand_le (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, p i ≤ 1)
     (y : U → (U → Bool) → ℝ) (k : ℝ) (hk : 1 ≤ k)
     (hplo : ∀ i, k⁻¹ ≤ p i) (hphi : ∀ i, p i ≤ 1 - k⁻¹)
@@ -167,8 +175,14 @@ theorem var_htSummand_le (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, 
         apply mul_le_mul_of_nonneg_left (hmom i) (sq_nonneg k)
     _ = k ^ 4 := by ring
 
-/-- **The Horvitz–Thompson variance bound (Sävje–Aronow–Hudgens 2021).** Under a Bernoulli design
-with regularity constant `k`, `Var(ĤT) ≤ k⁴ · d̄ / n`. -/
+/-- **The Horvitz–Thompson variance bound (Sävje–Aronow–Hudgens 2021).** Fix [a regularity
+constant `k` at least 1](hyp:hk) over [a nonempty finite unit population](hyp:hcard), with a
+Bernoulli design whose per-unit treatment probabilities [lie in the unit
+interval](hyp:hp0,hp1) and further satisfy [the overlap bounds `k⁻¹ ≤ p i ≤ 1 − k⁻¹` for every
+unit](hyp:hplo,hphi). If [the outcome function's second moment `E[(y i)²]` is at most `k²` for
+every unit under this design](hyp:hmom), then [the Horvitz–Thompson estimator's variance is at
+most `k⁴ · d̄ / n`, where `d̄` is the average interference-dependence degree and `n` the number of
+units](goal). -/
 theorem var_htEst_le (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, p i ≤ 1)
     (y : U → (U → Bool) → ℝ) (k : ℝ) (hk : 1 ≤ k) (hcard : 1 ≤ Fintype.card U)
     (hplo : ∀ i, k⁻¹ ≤ p i) (hphi : ∀ i, p i ≤ 1 - k⁻¹)

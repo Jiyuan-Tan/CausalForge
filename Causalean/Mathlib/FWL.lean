@@ -375,10 +375,13 @@ theorem originalObjective_projection_eq_residualizedObjective
   rw [originalObjective_eq_residualizedObjective_add_projectionError H X Y β hmem]
   simp
 
-/-- **Standard finite-dimensional FWL theorem.**
-The residualized FWL coefficient, paired with the nuisance projection of its
-raw residual, minimizes the original least-squares problem over coefficients
-and nuisance terms in `H`. -/
+/-- **Standard finite-dimensional Frisch–Waugh–Lovell theorem.** On a real inner-product space with
+a nuisance subspace `H` admitting an orthogonal projection, and a finite tuple of regressors `X`, if
+[the residualized Gram matrix of `X` has nonzero determinant, i.e. is invertible](hyp:hQ) and [a
+candidate nuisance vector `h` lies in `H`](hyp:hh), then [the original least-squares objective —
+evaluated at the FWL coefficient together with the orthogonal-projection nuisance term of its raw
+residual — is at most the original objective at any other coefficient vector `β` and nuisance term
+`h`](goal). -/
 theorem fwlCoef_original_minimizes
     (Y : V) (hQ : IsUnit (gramResid H X).det)
     (β : Fin K → ℝ) {h : V} (hh : h ∈ H) :
@@ -446,9 +449,11 @@ theorem fwlCoef_eq_of_original_minimizer
   dsimp [δ, b] at hj
   linarith
 
-/-- Full uniqueness characterization of the original least-squares minimizer:
-every minimizer equals the FWL coefficient paired with the nuisance projection
-of its raw residual. -/
+/-- **Uniqueness of the original least-squares minimizer.** If [the residualized Gram matrix of
+`X` is invertible](hyp:hQ), [a candidate nuisance vector `h` lies in `H`](hyp:hh), and [the pair
+`(β, h)` minimizes the original least-squares objective over all coefficient vectors and nuisance
+terms in `H`](hyp:hmin), then [`β` equals the FWL coefficient and `h` equals the
+orthogonal-projection nuisance term of the FWL coefficient's raw residual](goal). -/
 theorem original_minimizer_eq_fwlCoef_projection
     (Y : V) (hQ : IsUnit (gramResid H X).det)
     (β : Fin K → ℝ) {h : V} (hh : h ∈ H)

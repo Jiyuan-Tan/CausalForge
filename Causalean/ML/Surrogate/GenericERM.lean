@@ -58,11 +58,12 @@ theorem properLoss_population_risk_le
   exact integral_mono hint_η hint_q (fun x => by
     exact (hproper (η x) (hη x)) (hq x))
 
-/-- **Strictly proper population minimizers recover the regression function.**
-For a strictly proper binary loss, any `[0,1]`-valued prediction rule that
-minimizes the population conditional risk has to equal the true conditional
-probability almost everywhere, provided the risks of the rule and the truth are
-integrable. -/
+/-- **Strictly proper population minimizers recover the regression function.** For [a strictly
+proper binary loss `L`](hyp:hstrict) on a measure space `PX`, with [the true conditional
+probability `η` taking values in `[0,1]`](hyp:hη) and [a candidate prediction rule `q` also
+taking values in `[0,1]`](hyp:hq), if [`q` minimizes the population conditional risk over every
+`[0,1]`-valued prediction rule](hyp:hmin) and [the conditional risks of `η` and `q` are both
+integrable](hyp:hint_η,hint_q), then [`q` equals `η` almost everywhere](goal). -/
 theorem properLoss_population_minimizer_recovers_eta
     {L : ℝ → Bool → ℝ} (hstrict : StrictProperBinaryLoss L)
     {PX : Measure X} (η : X → ℝ) (hη : ∀ x, η x ∈ Set.Icc (0 : ℝ) 1)

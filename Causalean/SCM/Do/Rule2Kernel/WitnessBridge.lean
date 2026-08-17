@@ -607,14 +607,23 @@ theorem cutset_condIndep_condDistrib (M : Causalean.SCM N Ω)
 -- § Obs-side: `condDistrib π_Y (π_Zr, π_W) (latentProduct)` = witness kernel
 -- ============================================================
 
-/-- **Obs-side witness-kernel identity (pair-conditioned, on the latent space).**
+/-- **Obs-side witness-kernel identity (pair-conditioned, on the latent space).** Let `M`
+    be a structural causal model with node sets `Y`, `W` and a set of treatment names `Z`,
+    where [`Y` is observed](hyp:hY), [the pre-intervention nodes of `Z` are
+    observed](hyp:hZr), and [`W` is observed](hyp:hW). Suppose [the latent cut-set for `Y`
+    relative to `Z`'s pre-intervention nodes together with `W` is d-separated, in `M`'s
+    causal graph, from `Z`'s pre-intervention nodes given `W` and the fixed
+    nodes](hyp:hdSepCW), and let `h` be [a jointly measurable map](hyp:hh) such that, at a
+    fixed baseline assignment `s`, [the realized value of `Y` factors pointwise as `h`
+    applied to the realized pre-intervention-`Z` value, the realized `W` value, and the
+    cut-set's latent value](hyp:hfac). Then, under `M`'s latent product measure, [the
+    conditional law of `Y` given the pair of realized pre-intervention-`Z` and `W` values
+    equals, for almost every such pair, the pushforward under `h` applied to that pair of
+    the conditional law of the latent cut-set given the realized `W` value](goal).
 
-    Under `latentProduct`, the conditional law of `Y` given the pair
-    `(π_Zr ∘ E, π_W ∘ E)` is the posterior witness kernel
-    `(condDistrib C_W (π_W∘E) latentProduct).map (h x z)`.  This is a direct
-    application of the witness lemma `condDistrib_map_of_condDistrib_fst_eq` with
-    the cut-set factorization `cutset_factor_pointwise` and the conditional
-    independence `cutset_condIndep_condDistrib`. -/
+    This is a direct application of the witness lemma `condDistrib_map_of_condDistrib_fst_eq`
+    with the cut-set factorization `cutset_factor_pointwise` and the conditional independence
+    `cutset_condIndep_condDistrib`. -/
 theorem obsSide_eq_witness (M : Causalean.SCM N Ω)
     [StandardBorelSpace M.RandomValues]
     [∀ n, StandardBorelSpace (swigΩ Ω n)] [∀ n, Nonempty (swigΩ Ω n)]
@@ -1065,16 +1074,32 @@ theorem doSide_M2_pullback_eq_M1_witness
   convert hwit using 3
   congr 1
 
-/-- **Do-side analytic core: the M2 `W`-conditional equals the M1 witness kernel.**
+/-- **Do-side analytic core: the M2 `W`-conditional equals the M1 witness kernel.** Let
+    `M'` be a structural causal model and `Z` a set of treatment names with [each
+    treatment's pre-intervention node observed](hyp:hZ_obs) and [each treatment's
+    post-intervention node not already fixed in `M'`](hyp:hZ_fixed), so that intervening on
+    `Z` is well-formed; let `Y`, `W` be node sets with [`Y`, `W`, the treatments'
+    pre-intervention nodes, and their union with `W` all observed](hyp:hY,hW,hZr,hZrW) and
+    [`Y` disjoint from the treatments' pre-intervention nodes](hyp:hDisj_YZr). Suppose
+    [no node of `W` is a descendant, in the intervened model's graph, of any treatment's
+    post-intervention node](hyp:hWNonDesc), and let `h` be [a jointly measurable
+    map](hyp:hh) that, at a baseline assignment `s0` to the original model's fixed nodes,
+    [factors the realized outcome as `h` applied to the realized treatment value, the
+    realized `W` value, and the latent cut-set's value](hyp:hfac) and additionally,
+    [for every candidate treatment/`W` pair, agrees there with the outcome obtained by
+    instead overriding the baseline assignment `s0` to that pair](hyp:hoverride). Then, at
+    the intervened model's slice fixing the treatments to a value `t` and the remaining
+    fixed nodes to `s0`, [the measure-level conditional law of `Y` given `W` equals, for
+    almost every `w` under the `W`-marginal of the original model's observational kernel at
+    `s0`, the pushforward under `h t w` of the original model's posterior conditional law of
+    the latent cut-set given `W`](goal).
 
-    At the extended base slice `s' := fixSetExtend s0 t`, the measure-level
-    conditional law of `Y` given `W` under the do-model `M2 := M'.fixSet Z`'s
-    observational kernel is — `μW`-a.e. in `w`, where
-    `μW = (M'.obsKernel s0).map π_W` — the *original* model `M1`'s posterior
-    witness kernel at `(t, w)`:
+    Explicitly: at the extended base slice `s' := fixSetExtend s0 t`,
 
       `condDistrib π_Y π_W (M2.obsKernel s') w
-         = (condDistrib C_W (π_W∘E1) M1.latentProduct w).map (h t w)`.
+         = (condDistrib C_W (π_W∘E1) M1.latentProduct w).map (h t w)`,
+
+    `μW`-a.e. in `w`, where `μW = (M'.obsKernel s0).map π_W` and `M2 := M'.fixSet Z`.
 
     This is the genuinely-new analytic content of the do-side bridge.  It bundles
     the `M2`-side witness chain (transport the `M2` obs-level conditional onto
@@ -1207,12 +1232,28 @@ theorem doSide_M2_condDistrib_eq_M1_witness
     congr 1
   rw [hcongr]
 
-/-- **Do-side per-slice witness identity (M1-witness-kernel form).**
+/-- **Do-side per-slice witness identity (M1-witness-kernel form).** Let `M'` be a
+    structural causal model and `Z` a set of treatment names with [each treatment's
+    pre-intervention node observed](hyp:hZ_obs) and [each treatment's post-intervention
+    node not already fixed in `M'`](hyp:hZ_fixed); let `Y`, `W` be node sets with [`Y`,
+    `W`, the treatments' pre-intervention nodes, and their union with `W` all
+    observed](hyp:hY,hW,hZr,hZrW), [`Y` disjoint from the treatments' pre-intervention
+    nodes](hyp:hDisj_YZr), and [those pre-intervention nodes disjoint from
+    `W`](hyp:hDisj_ZrW). Suppose [no node of `W` is a descendant, in the intervened
+    model's graph, of any treatment's post-intervention node](hyp:hWNonDesc), and let `h`
+    be [a jointly measurable map](hyp:hh) that, at a baseline assignment `s0` to the
+    original model's fixed nodes, [factors the realized outcome as `h` applied to the
+    realized treatment value, the realized `W` value, and the latent cut-set's
+    value](hyp:hfac), and additionally [for every candidate treatment/`W` pair agrees there
+    with the outcome obtained by instead overriding the baseline assignment `s0` to that
+    pair](hyp:hoverride). Then, at the intervened model's slice fixing the treatments to a
+    value `t` and the remaining fixed nodes to `s0`, [for almost every `w` under the
+    `W`-marginal of the original model's observational kernel at `s0`, the intervened
+    model's conditional-probability kernel for `Y` given `W` at `(s', w)` equals the
+    pushforward under `h t w` of the original model's posterior conditional law of the
+    latent cut-set given `W`](goal).
 
-    At a fixed treatment value `t`, the do-model `M2 := M'.fixSet Z` `W`-conditional
-    intervened at `t` (i.e. at the extended base slice `fixSetExtend s0 t`)
-    equals — `μW`-a.e. in `w`, where `μW = (M'.obsKernel s0).map π_W` — the
-    *original* model `M1`'s **posterior witness kernel** at `(t, w)`:
+    Explicitly, the do-model's `W`-conditional intervened at `t` equals
 
       `(condDistrib C_W (π_W∘E1) M1.latentProduct w).map (h t w)`,
 
@@ -1345,9 +1386,32 @@ theorem doSide_eq_witness
   -- `hw2 : condDistrib π_Y π_W (M2.obsKernel s') w = witness`
   rw [hw1, hw2]
 
-/-- **Product-form cross-SCM bridge for the do-side conditional kernel.**
+/-- **Product-form cross-SCM bridge for the do-side conditional kernel.** Let `M'` be a
+    structural causal model and `Z` a set of treatment names with [each treatment's
+    pre-intervention node observed](hyp:hZ_obs) and [each treatment's post-intervention
+    node not already fixed in `M'`](hyp:hZ_fixed); let `Y`, `W` be node sets with [`Y`,
+    `W`, the treatments' pre-intervention nodes, and their union with `W` all
+    observed](hyp:hY,hW,hZr,hZrW), [`Y` disjoint from the treatments' pre-intervention
+    nodes](hyp:hDisj_YZr), and [those pre-intervention nodes disjoint from
+    `W`](hyp:hDisj_ZrW). Suppose that, in the intervened model's graph, [no node of `W`
+    is a descendant of any treatment's post-intervention node](hyp:hWNonDesc), that, in
+    the original model's graph, [no node of `W` is a descendant of any treatment's
+    pre-intervention node](hyp:hWNonDescM1), and that [in the intervened model's graph,
+    `Y` is d-separated from the treatments' pre-intervention nodes given `W` together with
+    the intervened model's fixed nodes](hyp:hdSep). Assume also, at a baseline assignment
+    `s0` to the original model's fixed nodes, [an overlap condition: the pushforward, under
+    combining a treatment value with a `W` value, of the product of the treatments'
+    pre-intervention marginal law and the `W`-marginal law (both taken from the original
+    model's observational kernel at `s0`) is absolutely continuous with respect to the
+    original model's marginal law on the treatments' pre-intervention nodes together with
+    `W`, again at `s0`](hyp:_hPositivity_ae). Then [for almost every pair `(t, w)` drawn
+    from that product law, the intervened model's conditional-probability kernel for `Y`
+    given `W`, evaluated at treatment value `t` and conditioning value `w`, equals the
+    original model's conditional-probability kernel for `Y` given the union of the
+    treatments' pre-intervention nodes and `W`, evaluated at the combined value `(t,
+    w)`](goal).
 
-    For `(νZ ⊗ₘ const μW)`-a.e. `(t, w)`, the do-model `W`-conditional intervened
+    Explicitly, for `(νZ ⊗ₘ const μW)`-a.e. `(t, w)`, the do-model `W`-conditional intervened
     at `t` equals the original model's `(Zr∪W)`-conditional at the filled point
     `valuesUnionMk t w`.  Consumed by `condDistrib_fixSet_cross_SCM_bridge`
     (`Rule2AE.lean`).

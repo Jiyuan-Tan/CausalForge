@@ -104,9 +104,12 @@ lemma ShatControl_nonneg (hKn : K + 1 ≤ n) (w : Fin n → Bool) : 0 ≤ ShatCo
   · have : (K : ℝ) + 1 ≤ n := by exact_mod_cast hKn
     linarith
 
-/-- **Pointwise nonnegativity of the conservative variance estimator.**  For any realized
-assignment, `v̂ar ≥ 0`, since it is the sum of two nonnegative sample variances each divided by a
-positive count. -/
+/-- **Pointwise nonnegativity of the conservative variance estimator.** For a group of `n` units
+with potential outcomes `a` and `b`, provided [at least one unit is treated](hyp:hK) and [at least
+one unit remains in control (`K + 1 ≤ n`)](hyp:hKn) — so both within-group sample-variance
+denominators `K` and `n − K` are positive — then for [every realized assignment `w`](hyp:w), [the
+conservative variance estimator `v̂ar` is nonnegative, being the sum of two nonnegative sample
+variances each divided by a positive count](goal). -/
 theorem varHat_nonneg (hK : 1 ≤ K) (hKn : K + 1 ≤ n) (w : Fin n → Bool) :
     0 ≤ varHat K a b w := by
   unfold varHat
@@ -259,12 +262,19 @@ theorem E_varHat_conservative : ρ.Var (tauHat K a b) ≤ ρ.E (varHat K a b) :=
 
 end Conservative
 
-/-- **Conservativeness of the within-group variance estimator, for the completely randomized design
-(Hudgens–Halloran 2008, Eq. 9).**  `Var(τ̂) ≤ E[v̂ar]`, specialized to the actual completely
-randomized within-group design `crd` (exactly `K` of `n` units treated, uniformly).  Its first- and
-second-order treatment moments and deterministic treated count are the derived facts
-`crd_mean`/`crd_pair`/`crd_supp`, so — unlike `E_varHat_conservative` — no moment hypotheses are
-assumed; this is Eq. 9 as Hudgens & Halloran state it under their mixed-strategy Assumption 1. -/
+/-- **Conservativeness of the within-group variance estimator, for the completely randomized
+design (Hudgens–Halloran 2008, Eq. 9).** For a group of `n` units with potential outcomes `a`
+(treated state) and `b` (untreated state), consider the completely randomized within-group design
+that treats exactly `K` units uniformly at random, where [at least two units are
+treated](hyp:hK2) and [at least two units remain in control (`K + 2 ≤ n`)](hyp:hKn2) — so both
+within-group sample variances are well defined. Then [the randomization variance of the
+control-minus-treatment difference-in-means estimator under this design is at most the
+expectation, under the same design, of the conservative variance estimator `v̂ar`](goal).
+
+Its first- and second-order treatment moments and deterministic treated count are the derived
+facts `crd_mean`/`crd_pair`/`crd_supp`, so — unlike `E_varHat_conservative` — no moment hypotheses
+are assumed; this is Eq. 9 as Hudgens & Halloran state it under their mixed-strategy Assumption
+1. -/
 theorem E_varHat_conservative_CRD (hK2 : 2 ≤ K) (hKn2 : K + 2 ≤ n) :
     (crd K (le_trans (Nat.le_add_right K 2) hKn2)).Var (tauHat K a b)
       ≤ (crd K (le_trans (Nat.le_add_right K 2) hKn2)).E (varHat K a b) :=

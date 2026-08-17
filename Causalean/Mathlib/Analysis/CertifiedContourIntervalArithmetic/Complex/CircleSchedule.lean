@@ -396,8 +396,10 @@ theorem circleAngle_sound (schedule : Schedule) {k : ℕ} (hk : k ≤ schedule.m
     rw [← heq]
     exact h
 
-/-- Every endpoint actually evaluated by deterministic quadrature has a
-certified circle-node rectangle. -/
+/-- For a rational radius, a quadrature schedule, and a mesh index `k`, if [`k`
+does not exceed the schedule's mesh size](hyp:hk), then [the computed rational
+circle-node rectangle at index `k` contains the exact complex circle point
+`radius · exp(2πi · k / mesh)`](goal). -/
 theorem circleNode_sound (radius : ℚ) (schedule : Schedule) {k : ℕ}
     (hk : k ≤ schedule.mesh) :
     (circleNode radius schedule k).Contains (exactCircleNode radius schedule k) := by

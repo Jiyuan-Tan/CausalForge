@@ -198,9 +198,11 @@ theorem POVar.factual_mul_indicator_eq_cfUnder_mul_indicator_fn
   rw [w.indicator_eq_event_indicator x]
   exact POVar.factual_mul_indicator_eq_cfUnder_mul_indicator hC y w x h_ne
 
-/-- Multi-target consistency: if `r` is a regime whose target does not contain
-`a.v`, and `ω` factually agrees with `r`, then the counterfactual value of `a`
-under `r` equals its factual value at `ω`. -/
+/-- **Multi-target consistency.** Under [the consistency (SUTVA) assumption on
+the potential-outcome system](hyp:hC), for [a regimed variable `a` whose index
+does not lie in the target of a regime `r`](hyp:h_notmem), if [the outcome `ω`
+factually agrees with the regime `r`](hyp:hAgrees), then [the counterfactual
+value of `a` under `r` at `ω` equals its factual value at `ω`](goal). -/
 theorem POVar.cf_eq_factual_of_factualAgrees
     {P : POSystem} {α : Type*} [MeasurableSpace α]
     (hC : P.Consistency)

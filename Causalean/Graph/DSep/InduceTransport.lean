@@ -298,7 +298,11 @@ lemma activePath_node_not_fixed
         exact hclause (Finset.mem_union_right _ hmfix)
 
 /-- D-separation in an ancestral induced SWIG lifts to the ambient SWIG once
-fixed intervention nodes are included in the conditioning set.
+fixed intervention nodes are included in the conditioning set. Fix a SWIG `G` and
+[a node set `R` that is closed under `G`'s ancestral relation](hyp:hR), with
+[`X`, `Y`, and `Z` each contained in the observed nodes of `R`](hyp:hX,hY,hZ). If [`X` and `Y`
+are d-separated by `Z` in the graph induced on `R`](hyp:h), then [`X` and `Y` are d-separated by
+`Z` together with `G`'s fixed intervention nodes, in the ambient graph](goal).
 
 The classical contrapositive proof takes an ambient active path between observed
 endpoints, uses ancestral closure to keep its non-fixed vertices inside the

@@ -117,7 +117,17 @@ lemma measurable_aipwMomentFunctional
     (((measurable_const.sub hind).div (measurable_const.sub he)).mul
       (hy.sub hμf))).sub measurable_const)
 
-/-- **Integrated AIPW remainder identity.**
+/-- **Integrated AIPW remainder identity.**  Fix [strict overlap for the true
+propensity at level `ε`](hyp:h_overlap), [the back-door identification
+assumptions](hyp:hA), and [finite second moments of the observed and potential
+outcomes](hyp:h_y2,h_yd2). For a nuisance vector `η` such that [`η` lies in the
+`ε`-overlap `L²` nuisance class `H_ε_aeL2`](hyp:hη) with [each treatment-arm
+outcome-regression error in `L²(P_X)`](hyp:hΔμ_memLp), [the population AIPW
+moment functional at `η` and the true ATE `θ₀`, integrated over the
+observed-data law `P_Z`, equals the covariate-law integral of `η`'s propensity
+error (its propensity estimate minus the truth) times the sum of each
+treatment-arm outcome-regression error divided by the corresponding true or
+complementary propensity](goal).
 
 Expanding the population AIPW moment around the true nuisance `S.η₀` cancels
 the zeroth and first-order terms, leaving the two cross-products between the

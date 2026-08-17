@@ -23,9 +23,11 @@ namespace Causalean.ML
 
 open MeasureTheory ProbabilityTheory Real Causalean.Stat.Concentration
 
-/-- **Rademacher complexity of the L²-ball linear class.**  Over features bounded by `Xb`
-in `L²` norm, the expected Rademacher complexity of the class of linear predictors with
-weight norm `≤ W` is at most `Xb·W/√n`. -/
+/-- **Rademacher complexity of the L²-ball linear class.** If [the feature bound `Xb` is
+nonnegative](hyp:hXb), [the weight bound `W` is nonnegative](hyp:hW), and [every feature
+vector has Euclidean norm at most `Xb`](hyp:hXbound), then [the expected Rademacher
+complexity of the class of linear predictors with weight norm at most `W`, on a sample of
+size `n`, is at most `Xb·W/√n`](goal). -/
 theorem rademacherComplexity_l2_ball_le {d n : ℕ} {Ω : Type*} [MeasurableSpace Ω]
     {μ : Measure Ω} [IsProbabilityMeasure μ] {Xb W : ℝ} (hXb : 0 ≤ Xb) (hW : 0 ≤ W)
     (X : Ω → EuclideanSpace ℝ (Fin d))
@@ -77,10 +79,14 @@ theorem rademacherComplexity_l2_ball_le {d n : ℕ} {Ω : Type*} [MeasurableSpac
     _ = Xb * W / Real.sqrt (n : ℝ) := by
       simp
 
-/-- **Kernel ERM excess-risk rate over the L² ball.**  For feature vectors in the closed
-`Xb`-ball and linear predictors indexed by the closed `W`-ball, any empirical-risk
-minimizer against a comparator `wstar` has excess population risk larger than
-`4·Xb·W/√n + 2ε` with probability at most `exp(-ε²tn)`. -/
+/-- **Kernel ERM excess-risk rate over the L² ball.** For features valued in the closed
+`Xb`-ball and linear predictors indexed by the closed `W`-ball, if [the feature bound
+`Xb` is nonnegative](hyp:hXb), [the weight bound `W` is nonnegative](hyp:hW), [the
+feature map `X` is measurable](hyp:hX), [the constant `t` satisfies the calibration
+`t·(Xb·W)² ≤ 1/2`](hyp:ht'), [the tolerance `ε` is nonnegative](hyp:hε), and [the
+estimator `ŵ` attains empirical risk no larger than that of the comparator
+`wstar`](hyp:hERM), then [the probability that the excess population risk of `ŵ` over
+`wstar` exceeds `4·Xb·W/√n + 2ε` is at most `exp(-ε²tn)`](goal). -/
 theorem kernel_erm_excess_rate {d n : ℕ} {Ω : Type*} [MeasurableSpace Ω]
     {μ : Measure Ω} [IsProbabilityMeasure μ] {Xb W : ℝ} (hXb : 0 ≤ Xb) (hW : 0 ≤ W)
     (X : Ω → Metric.closedBall (0 : EuclideanSpace ℝ (Fin d)) Xb) (hX : Measurable X)

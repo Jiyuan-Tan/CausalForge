@@ -302,10 +302,13 @@ end Parametric
 
 open Parametric in
 /-- **Parametric `Ω(1/n)` minimax lower bound for structure-agnostic ATE estimation.**
-Around any constant nuisance center `(m₀, g₀, g₁) ∈ (0,1)³`, with a treated-arm shift
-`δ ≥ 0` (`g₁ + δ ≤ 1`) inside the outcome-error budget (`δ² ≤ εg`) and in the
-sample-size regime `n · m₀ δ²/(g₁(1−g₁)) ≤ log 2`, **every** measurable estimator misses
-the true ATE by `s = δ/2` with probability at least `1/4` somewhere in the class.
+Around [a constant nuisance center `(m₀, g₀, g₁)` with all three coordinates strictly between
+`0` and `1`](hyp:hm0,hm1,hg0,hg0',hg1,hg1'), with [a nonnegative treated-arm shift δ satisfying
+`g₁ + δ ≤ 1`](hyp:hδ,hδU) that lies inside [the outcome-error budget
+`δ² ≤ εg`](hyp:hbudget) for [a nonnegative propensity-error tolerance εm](hyp:hεm), and in
+[the sample-size regime `n·m₀δ²/(g₁(1−g₁)) ≤ log 2`](hyp:hreg), [for any measurable estimator
+of the average treatment effect](hyp:hest) [the worst-case-over-class probability that it
+misses the true ATE by `s = δ/2` is at least `1/4`](goal).
 
 Taking `δ ≍ √(g₁(1−g₁) log 2 /(m₀ n))` (the largest admissible shift) gives `s = δ/2 ≍
 1/√n`, the irreducible parametric noise that adds to the structure-agnostic product

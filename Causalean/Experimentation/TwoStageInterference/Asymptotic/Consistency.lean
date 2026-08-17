@@ -38,12 +38,15 @@ namespace TwoStageInterference
 
 open DesignBased
 
-/-- **Consistency of the direct-effect contrast estimator (Liu–Hudgens 2014).** Along a sequence of
-two-stage experiments whose closed-form design variance `directVar` vanishes (`hVar0`), the
+/-- **Consistency of the direct-effect contrast estimator (Liu–Hudgens 2014).** Along a sequence
+of two-stage experiments, if [the closed-form design variance `directVar` tends to zero as the
+number of groups grows](hyp:hVar0), then for [every positive tolerance `ε`](hyp:hε), [the
 Horvitz-Thompson estimator is consistent for the population average treatment-minus-control
-direct-effect contrast: for every `ε > 0`, `Pr[|estimator − estimand| ≥ ε] → 0`.  Proof: rewrite
-the estimand as the estimator's expectation (unbiasedness, `E_estD`), bound the deviation
-probability by `directVar / ε²` (Chebyshev + `var_estD`), and squeeze to `0` using `hVar0`. -/
+direct-effect contrast: the probability that the deviation exceeds `ε` tends to zero](goal).
+
+Proof: rewrite the estimand as the estimator's expectation (unbiasedness, `E_estD`), bound the
+deviation probability by `directVar / ε²` (Chebyshev + `var_estD`), and squeeze to `0` using
+`hVar0`. -/
 theorem estDirect_consistent (Exp : ℕ → LHExperiment)
     (hVar0 : Tendsto (fun n => (Exp n).directVar) atTop (𝓝 0))
     {ε : ℝ} (hε : 0 < ε) :

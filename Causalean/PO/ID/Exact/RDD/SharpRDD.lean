@@ -292,9 +292,14 @@ theorem nu_left_limit_eq (hA : S.Assumptions) {L : ℝ}
 
 /-! ### Sharp RDD identification — prop:po-sharp-rdd -/
 
-/-- **Sharp RDD identification at the cutoff** (textbook form).  The
-cutoff-local effect equals the difference of the one-sided observable
-regression limits at `c`:
+/-- **Sharp RDD identification at the cutoff** (textbook form). Under [the sharp-RDD
+assumption bundle — SUTVA consistency, deterministic treatment assignment `D = 1{X ≥ c}`
+almost surely, regression-function representatives for the potential and observed outcomes,
+continuity of the potential-outcome regression functions at the cutoff, positive local mass
+of the running variable on each side of `c`, and existence of both one-sided limits of the
+observed-outcome regression function at `c`](hyp:hA), [the cutoff-local treatment effect
+equals the difference of the right- and left-hand limits of the observed-outcome regression
+function at the cutoff](goal):
 
     τ_RDD(c) = lim_{x ↓ c} ν(x) - lim_{x ↑ c} ν(x).
 

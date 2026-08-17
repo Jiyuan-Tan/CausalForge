@@ -160,8 +160,10 @@ theorem truncDen_pos (hlam : 0 < lam) (ω : Ω) : 0 < truncDen U lam ω :=
 
 variable {κ t₀ cm cp : ℝ}
 
-/-- **Mass below `λ`.**  The open lower level set `{U < λ}` has mass at most
-`cp · λᵏ`.  (Immediate from monotonicity and the upper tail at `t = λ`.) -/
+/-- **Mass below `λ`.** Under the polynomial lower-tail hypothesis packaged in `h`, for
+[a threshold `λ` that is positive](hyp:hlam_pos) and [at most the window endpoint
+`t₀`](hyp:hlam_le), [the open lower level set `{U < λ}` has `P`-mass at most `cp · λᵏ`](goal).
+Immediate from monotonicity and the upper tail bound at `t = λ`. -/
 theorem measureReal_lt_le [IsFiniteMeasure P] (h : PolyTail P U κ t₀ cm cp)
     (hlam_pos : 0 < lam) (hlam_le : lam ≤ t₀) :
     P.real {ω | U ω < lam} ≤ cp * lam ^ κ := by

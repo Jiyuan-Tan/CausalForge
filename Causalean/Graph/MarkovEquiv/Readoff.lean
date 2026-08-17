@@ -175,8 +175,9 @@ theorem dSeparable_of_not_uAdj {a b : V} (hne : a ≠ b) (h : ¬ G.UAdj a b) :
     have hba : ¬ G.UAdj b a := fun h' => h (G.UAdj_symm h')
     exact ⟨G.parents a, G.dSep_symm _ _ _ (G.dSep_parents_of_topoOrder_lt hlt hba)⟩
 
-/-- **Skeleton read-off.** Two distinct vertices are adjacent iff they cannot be d-separated
-by any conditioning set. -/
+/-- **Skeleton read-off.** For [two distinct vertices `a` and `b`](hyp:hne), [`a` and `b` are
+adjacent (in either direction) exactly when no conditioning set d-separates `a` from
+`b`](goal). -/
 theorem adjacent_iff_not_dSeparable {a b : V} (hne : a ≠ b) :
     G.UAdj a b ↔ ¬ ∃ Z : Finset V, G.dSep {a} {b} Z := by
   constructor
@@ -208,9 +209,11 @@ theorem edge_to_later_of_nonCollider {x y b : V}
     · exact hby_e
   · exact hby'
 
-/-- **Collider read-off.** For an unshielded triple `a — b — c` (with `a, c` non-adjacent
-and distinct), the middle vertex `b` is a collider `a → b ← c` — equivalently `a → b ←
-c` is a v-structure — iff `b` belongs to no set that d-separates `a` and `c`. -/
+/-- **Collider read-off.** For vertices `a`, `b`, `c` forming [an unshielded triple: `a` and
+`b` adjacent](hyp:hab), [`c` and `b` adjacent](hyp:hcb), and [`a`, `c` non-adjacent and
+distinct](hyp:hac,hne), [the middle vertex `b` is a collider `a → b ← c` — equivalently
+`a → b ← c` is a v-structure — exactly when `b` belongs to no conditioning set that
+d-separates `a` and `c`](goal). -/
 theorem immorality_iff_colliderSep {a b c : V}
     (hab : G.UAdj a b) (hcb : G.UAdj c b) (hac : ¬ G.UAdj a c) (hne : a ≠ c) :
     G.IsImmorality a b c ↔ ∀ Z : Finset V, b ∈ Z → ¬ G.dSep {a} {c} Z := by

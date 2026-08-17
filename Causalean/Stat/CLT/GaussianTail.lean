@@ -35,9 +35,10 @@ namespace Causalean.Stat
 
 open MeasureTheory ProbabilityTheory Filter Topology
 
-/-- **Finite-measure half-line tail control.** Both symmetric half-line
-tails of any finite measure on the real line can be made smaller
-than any positive tolerance by taking the cutoff large. -/
+/-- **Finite-measure half-line tail control.** For a finite measure `Q` on the real line and
+[a positive tolerance `ε`](hyp:hε), [there is a positive cutoff `R` such that both the lower
+half-line tail $Q((-\infty,-R])$ and the upper half-line tail $Q([R,\infty))$ are at most
+`ε`](goal). -/
 lemma finite_measure_halfline_tails_small (Q : Measure ℝ) [IsFiniteMeasure Q]
     {ε : ℝ} (hε : 0 < ε) :
     ∃ R : ℝ, 0 < R ∧

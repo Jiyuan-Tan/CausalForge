@@ -68,12 +68,18 @@ namespace POCFBundle
 variable {P : POSystem} (B C : POCFBundle P)
 
 /-- **Bundle product-form workhorse** (analogue of
-`POSystem.eventCondExp_of_consistency_IndepCF`).
-
-Under bundle-conditional independence `a ⟂ B | C` and a consistency-on-event
-premise expressed as the a.e. identity of products
-`factualF · 1_{a=x} =ᵐ h(B.jointValue) · 1_{a=x}`, the bundle conditional
-expectation factorises as
+`POSystem.eventCondExp_of_consistency_IndepCF`). Suppose [a factual variable
+`a` is conditionally independent, given the σ-algebra of a bundle `C`, of a
+counterfactual bundle `B`](hyp:hCI), where [`h` is a measurable
+function](hyp:hh_meas) [whose composite with `B`'s joint value is
+integrable](hyp:hh_int), and [`{x}` is a measurable singleton](hyp:hx) in the
+range of `a`. If [the factual integrand `factualF` times the indicator of
+`{a = x}` agrees almost everywhere with `h` composed with `B`'s joint value,
+times the same indicator](hyp:hF_eq), then [the bundle conditional
+expectation, given `C`, of `factualF` times the indicator of `{a = x}`
+factorises almost everywhere as the bundle conditional expectation of `h`
+composed with `B`'s joint value, times the bundle conditional expectation of
+the indicator of `{a = x}`](goal):
 
   C.condExpGiven (factualF · 1_{a=x})
     =ᵐ C.condExpGiven (h ∘ B.jointValue) · C.condExpGiven (1_{a=x}).
@@ -152,10 +158,15 @@ theorem condExpGiven_mul_of_consistency_CondIndepCFBundle
   exact (C.condExpGiven_congr_ae hF_eq).trans hfact'
 
 /-- **Bundle ratio-form workhorse**: ratio version of
-`condExpGiven_mul_of_consistency_CondIndepCFBundle`.  Under the same
-hypotheses plus an a.s.-positive denominator, the conditional ratio
-`condExpRatio (factualF · 1_{a=x}) (1_{a=x})` collapses to the conditional
-mean of `h ∘ B.jointValue`. -/
+`condExpGiven_mul_of_consistency_CondIndepCFBundle`. Under the same
+hypotheses as that theorem — [bundle-conditional independence of `a` from
+`B` given `C`](hyp:hCI), [a measurable](hyp:hh_meas) and
+[integrable](hyp:hh_int) composite `h ∘ B.jointValue`, [a measurable
+singleton `{x}`](hyp:hx), and [the consistency-on-event product
+identity](hyp:hF_eq) — plus [an almost-surely nonzero bundle-conditional
+probability of `{a = x}`](hyp:hOver), [the conditional ratio
+`condExpRatio (factualF · 1_{a=x}) (1_{a=x})` collapses almost everywhere to
+the bundle conditional mean of `h ∘ B.jointValue`](goal). -/
 theorem condExpRatio_of_consistency_CondIndepCFBundle
     [StandardBorelSpace P.Ω]
     {α : Type*} [MeasurableSpace α]

@@ -172,8 +172,10 @@ lemma integral_llr_gaussianReal (m₀ m₁ : ℝ) (hv : v ≠ 0) :
           field_simp [hden]
           ring
 
-/-- **Equal-variance Gaussian KL divergence (closed form).**  For variance `0 < v`,
-the Kullback–Leibler divergence between two real Gaussians of equal variance is
+/-- **Equal-variance Gaussian KL divergence (closed form).** For means `m₀`, `m₁` and
+[a strictly positive common variance `v`](hyp:hv), [the Kullback–Leibler divergence between two
+real Gaussians of equal variance `v` and respective means `m₀` and `m₁` equals `(m₀ - m₁)² /
+(2v)`](goal):
 
   `klDiv (gaussianReal m₀ v) (gaussianReal m₁ v) = ENNReal.ofReal ((m₀ - m₁)^2 / (2*v))`.
 

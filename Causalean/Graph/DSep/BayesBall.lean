@@ -358,9 +358,11 @@ theorem bbReachable_init_subset (Z X : Finset V) :
   unfold bbReachable
   exact visited_sub_bbReachAux G Z (G.bbInit X) (G.bbInit X) _
 
-/-- `bbReachable Z X` is the *least* superset of `bbInit X` closed under `bbStep Z`.
-    If `S` contains `bbInit X` and is closed under `bbStep Z`, then it contains
-    `bbReachable Z X`. -/
+/-- `bbReachable Z X` is the *least* superset of `bbInit X` closed under `bbStep Z`: for a
+    conditioning set `Z` and source set `X`, if [a candidate set `S` of Bayes-Ball states
+    contains the initial frontier `bbInit X`](hyp:hinit) and [`S` is closed under the
+    Bayes-Ball step relation `bbStep Z`](hyp:hstep), then [`S` contains every state reachable
+    via `bbReachable Z X`](goal). -/
 theorem bbReachable_minimal (Z X : Finset V) (S : Finset (BBState V))
     (hinit : G.bbInit X ⊆ S)
     (hstep : ∀ s ∈ S, G.bbStep Z s ⊆ S) :

@@ -88,8 +88,9 @@ lemma negMulLog_sub_mul_log_le {c : ℝ} (hc : 0 < c) {x : ℝ} (hx : 0 ≤ x) :
       _ = c⁻¹ - x := by
         field_simp [hcR.ne', hxpos.ne']
 
-/-- **Maximum-entropy (Gibbs) bound.** For a probability mass function `p` on a finite
-alphabet `α` with `n = Fintype.card α`, the Shannon entropy is at most `log n`:
+/-- **Maximum-entropy (Gibbs) bound.** For [a nonnegative function `p`](hyp:h0) on a finite
+alphabet `α` that [sums to one](hyp:hsum) (`∑ i, p i = 1`, i.e. `p` is a probability mass
+function) with `n = Fintype.card α`, [the Shannon entropy of `p` is at most `log n`](goal):
 `entropy p ≤ Real.log (Fintype.card α)`.
 
 This is Cover & Thomas Thm 2.6.4 (`H(p) ≤ log |𝒳|`). The proof is the elementary Gibbs

@@ -39,9 +39,10 @@ open LinearMap
 variable {K V : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
   [AddCommGroup V] [Module K V]
 
-/-- In a vector space over a linearly ordered field with a symmetric positive-semidefinite
-bilinear form, every finite-dimensional linear subspace admits a linear map into the
-subspace whose residual is orthogonal to all vectors in the subspace.
+/-- In a vector space over a linearly ordered field equipped with a bilinear form `B` that is
+[symmetric](hyp:hsymm) and [positive-semidefinite](hyp:hpos), every finite-dimensional linear
+subspace `H` [admits a linear self-map `P` of the ambient space, valued in `H`, whose residual
+`X - P X` is `B`-orthogonal to every vector of `H`, for every `X`](goal).
 
 The proof views `B` as a map from `H` to `H`'s dual, shows the functional
 `h ↦ B X h` lies in its range by annihilating the kernel, chooses a linear right

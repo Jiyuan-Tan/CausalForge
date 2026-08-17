@@ -64,8 +64,16 @@ open MeasureTheory ProbabilityTheory
 
 variable {Ω ι 𝒳 : Type*} [MeasurableSpace Ω]
 
-/-- The expected uniform deviation over a fixed localized radius is bounded by
-twice the radius times the critical radius.
+/-- **Localized uniform deviation, in expectation.** Fix [a localized regime `R`](hyp:R)
+built from [measurable losses `F i`](hyp:hF_meas) composed with [a measurable data map
+`X`](hyp:hX), and [a sample size `n` at least 1](hyp:hn). If [the radius `r` restricting the
+class to `{i : norm (F i) ≤ r}` is at least the population critical radius `criticalRadius
+(R.ψ n)`, itself positive](hyp:hr_lb,hcrit_pos), [the envelope `R.ψ n` satisfies the sub-root
+self-bounding condition `R.ψ n (criticalRadius (R.ψ n)) ≤ criticalRadius (R.ψ n) ^ 2`
+at that radius](hyp:hcrit_fp), and [the empirical Rademacher complexity of the radius-`r`
+star-hull is integrable](hyp:hrad_int), then [the expectation, over the `n`-fold sample, of
+the uniform deviation of the radius-`r`-restricted class is at most `2·r·criticalRadius
+(R.ψ n)`](goal).
 
     Steps 1–2 of the localized-deviation argument (symmetrization + critical radius),
     stopping before the McDiarmid tail step.  For the radius-`r`
@@ -244,8 +252,22 @@ theorem localized_uniform_deviation_expectation
             mul_le_mul_of_nonneg_left hrad (by norm_num : (0 : ℝ) ≤ 2)
     _ = 2 * r * criticalRadius (R.ψ n) := by ring
 
-/-- The expected positive part of the localized offset process is controlled by
-a critical-radius term plus a small bad-event tail.
+/-- **Localized offset expectation.** Fix [a localized regime `R`](hyp:R) built from [measurable
+losses `F i`](hyp:hF_meas) composed with [a measurable map `X`](hyp:hX), a confidence level [`δ` in
+`(0,1]`](hyp:hδ,hδ'), [a sample size `n` at least 1](hyp:hn), and [a positive upper bound `ρ` on the
+positive critical radius `criticalRadius (R.ψ n)`, satisfying the sub-root fixed-point bound `R.ψ n
+(criticalRadius (R.ψ n)) ≤ criticalRadius (R.ψ n) ^ 2`](hyp:hcrit_le_ρ,hρ_pos,hcrit_pos,hcrit_fp),
+with [the star-hull Rademacher process almost-surely bounded and integrable at every radius `r ≥
+ρ`](hyp:hrad_bdd,hrad_int) and [a slack-domination condition bounding the McDiarmid tail by `ρ²`
+across the diameter shells up to `Rmax`](hyp:hδ_dom). Suppose further that [every `norm (F i)` lies
+in `[0, Rmax]`, so the sharp deviation bound applies uniformly over the
+class](hyp:hnorm_nonneg,hnorm_le), that [the exponent `κ` lies strictly between 0 and
+1](hyp:hκ_pos,hκ_lt), that [the coupling constant `A` is nonnegative](hyp:hA_nonneg), that [the
+regret radius `Δ i` is nonnegative for every `i`](hyp:hΔ_nonneg), and that [the localization radius
+is dominated by the regret via the margin coupling `norm (F i) ≤ A · (Δ i) ^ κ`](hyp:hcoupling).
+Then [the expectation over the `n`-fold sample of the supremum over `i` of the positive part of `2 ·
+|(Pₙ−P)F i| − Δ i / 4` is at most `offsetPeelingConstantC (1/8) κ · (16·ρ·A)^{1/(1−κ)} + 10·ρ² +
+4·R.b·δ`](goal).
 
     The self-localizing offset form of the localized deviation bound,
     assembled from three existing pieces:

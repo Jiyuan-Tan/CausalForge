@@ -59,11 +59,11 @@ lemma tendstoInMeasure_const_of_tendsto {E : Type*} [SeminormedAddCommGroup E]
     TendstoInMeasure μ (fun n => fun _ : Ω => a n) l (fun _ => a₀) :=
   tendstoInMeasure_const_of_tendsto_real ha
 
-/-- Deterministic-scalar Slutsky theorem for Mathlib's random-variable
-`TendstoInDistribution`.
-
-If `X n ⇒ Z` and `a n → a₀` deterministically, then
-`a n * X n ⇒ a₀ * Z`. -/
+/-- **Deterministic-scalar Slutsky theorem for random variables.** If [a sequence of random
+variables `X n` converges in distribution to `Z`, all under the same probability measure
+`μ`](hyp:hXZ) and [a sequence of deterministic real scalars `a n` converges to a limit
+`a₀`](hyp:ha), then [the scaled sequence `a n · X n` converges in distribution to `a₀ · Z`](goal).
+-/
 theorem TendstoInDistribution.const_mul_of_tendsto_const
     [IsProbabilityMeasure μ] [l.IsCountablyGenerated]
     {X : ι → Ω → ℝ} {Z : Ω → ℝ} {a : ι → ℝ} {a₀ : ℝ}
@@ -99,11 +99,11 @@ lemma map_mul_eq_map_prod_dirac (c : ℝ) (ν : ProbabilityMeasure ℝ) :
   · fun_prop
   · fun_prop
 
-/-- Measure-level deterministic-scalar Slutsky theorem for weak convergence of
-probability measures on ℝ.
-
-If `νᵢ → ν` weakly and `aᵢ → a₀`, then the push-forwards of `νᵢ` by
-`x ↦ aᵢ * x` converge weakly to the push-forward of `ν` by `x ↦ a₀ * x`.
+/-- **Measure-level deterministic-scalar Slutsky theorem for weak convergence.** For a filter `l`
+along which [a family of probability measures on the reals converges weakly to a limit measure
+`ν`](hyp:hν) and [a family of real scalars converges to a limit `a₀`](hyp:ha), then [the
+pushforwards of the measures by scalar multiplication `x ↦ aᵢ·x` converge weakly to the
+pushforward of `ν` by `x ↦ a₀·x`](goal).
 
 This is mathematically standard: weak convergence of probability measures is
 tight, and the maps `x ↦ aᵢ * x` converge uniformly on compact sets to

@@ -107,16 +107,19 @@ theorem denom_per_cell {Ω 𝒢 : Type*} [MeasurableSpace Ω] [Fintype 𝒢]
     rw [← hshare]
     ring
 
-/-- **Per-cell numerator identity.**
-Under consistency `Y =ᵐ D · Y1 + (1−D) · Y0` and the finite-cell
-conditional-mean-independence bridge condition,
+/-- **Per-cell numerator identity.** For a probability space `(Ω, μ)` with
+measurable treatment `D`, an outcome `Y`, square-integrable potential
+outcomes `Y0`, `Y1`, and a measurable finite covariate `G`, suppose
+[treatment is binary almost everywhere](hyp:D_binary), [the observed outcome
+is consistent — `Y` equals `D·Y1 + (1−D)·Y0` almost everywhere](hyp:consis),
+and [the finite-cell conditional-mean-independence bridge condition holds, the
+integrated finite-cell substitute for `E[Y(d) ∣ D, G] = E[Y(d) ∣
+G]`](hyp:CMI). Then, for any cell `g`, [the propensity-residual-weighted,
+cell-indicator-integrated outcome `∫ (D − propensity) · Y · 𝟙{G = g} dμ`
+equals `cellMass g · cellShare g · (1 − cellShare g) · cellTau g`](goal).
 
-    ∫ (D − propensity) · Y · 𝟙{G = g} dμ
-        = cellMass g · cellShare g · (1 − cellShare g) · cellTau g.
-
-The bridge condition is the integrated finite-cell substitute for
-`E[Y(d) | D, G] = E[Y(d) | G]` and is used here to factor each
-indicator-integrated term in the expansion. -/
+The bridge condition is used here to factor each indicator-integrated term in
+the expansion. -/
 theorem num_per_cell {Ω 𝒢 : Type*} [MeasurableSpace Ω] [Fintype 𝒢]
     [DecidableEq 𝒢] [MeasurableSpace 𝒢] [MeasurableSingletonClass 𝒢]
     (μ : Measure Ω) [IsProbabilityMeasure μ]

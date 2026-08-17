@@ -201,12 +201,15 @@ theorem tvDist_Qfalse_Qtrue_le_half [NeZero K]
         exact Real.sqrt_le_sqrt hchi
     _ = 1 / 2 := by rw [Real.sqrt_one]; ring
 
-/-- **Structure-agnostic minimax lower bound (unconditional).**  For the centered
-estimates `(m̂, ĝ) = (1/2, 1/2)` on the paired-cell covariate `Fin K × Bool`, with
-the Rademacher bump budgets met (`β² ≤ εm`, `(α+β)²/(1−2β)² ≤ εg`) and the
-sample-size regime `2n²γ² ≤ K·log 2` (`γ = α²+2αβ+3β²`, `2γ ≤ 1`), **every**
-measurable estimator misses the true ATE by `s = β(α+β)/(1−4β²)` with probability at
-least `1/4` somewhere in the class.  The doubly-robust product rate is unbeatable. -/
+/-- **Structure-agnostic minimax lower bound (unconditional).** Fix [nonnegative bump magnitudes
+α and β with `α + 2β ≤ 1/2`](hyp:hα,hβ,hαβ) meeting [the Rademacher perturbation budgets
+`β² ≤ εm` and `(α+β)²/(1−2β)² ≤ εg`](hyp:hm,hg) for [nonnegative outcome- and propensity-error
+tolerances εg, εm](hyp:hεg,hεm), in [the sample-size regime `2n²γ² ≤ K·log 2` with
+`γ = α²+2αβ+3β²` and `2γ ≤ 1`](hyp:hγ,hreg). Then for [any measurable estimator of the average
+treatment effect from `n` i.i.d. paired-cell observations](hyp:hest), [the worst-case-over-class
+probability that it misses the true ATE by `s = β(α+β)/(1−4β²)`, over the structure-agnostic
+nuisance class centered at the constant estimates `(m̂, ĝ) = (1/2, 1/2)`, is at least
+`1/4`](goal) — the doubly-robust product rate is unbeatable. -/
 theorem minimax_lower_bound [NeZero K]
     (hα : 0 ≤ α) (hβ : 0 ≤ β) (hαβ : α + 2 * β ≤ 1 / 2)
     (hm : β ^ 2 ≤ εm) (hg : (α + β) ^ 2 / (1 - 2 * β) ^ 2 ≤ εg)

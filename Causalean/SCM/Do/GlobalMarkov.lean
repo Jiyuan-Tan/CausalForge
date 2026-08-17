@@ -637,10 +637,16 @@ theorem fullCondIndep_singleton_of_dSep_with_fixed
 -- § 2. Full Global Markov (Verma–Pearl induction)
 -- ============================================================
 
-/-- **Full Global Markov with fixed-node conditioning shadow.** d-separation
-    with conditioning set `Z_rand ∪ Z_fix`, where `Z_fix ⊆ M.fixed`, implies
-    conditional independence at the full distribution level (`jointKernel`)
-    conditioned only on the random part `Z_rand`.
+/-- **Full Global Markov with fixed-node conditioning shadow.** If [X, Y, and
+    Z_rand are sets of nodes drawn from the model's random (observed and
+    latent) nodes](hyp:hX,hY,hZ_rand) and [Z_fix is a set of the model's fixed
+    (intervened) nodes](hyp:hZ_fix), and [X is d-separated from Y by the
+    union `Z_rand ∪ Z_fix` in the model's causal graph](hyp:hdSep), then
+    [under the joint distribution over all random coordinates at fixed value
+    s, the X-coordinates and the Y-coordinates are conditionally independent
+    given only the Z_rand-coordinates](goal) — the fixed nodes contribute to
+    the graphical separation but, since their values are already pinned by
+    s, drop out of the probabilistic conditioning set.
 
     **Proof**: Verma–Pearl induction via `Finset.strongInductionOn` on `X`. At each
     non-empty `X` we pick `a ∈ X` with maximal `M.dag.topoOrder` (via
@@ -744,8 +750,15 @@ theorem full_globalMarkov_with_fixed (M : Causalean.SCM N Ω)
       -- h_combined : Y ⊥ ({a} ∪ A') | Z_rand. Symmetrize and transport `{a} ∪ A' = X`.
       exact fullCondIndep_congr_left M h_aA'_eq h_combined.symm
 
-/-- **Full Global Markov Property.** Backward-compatible wrapper around
-    `full_globalMarkov_with_fixed` with no fixed-node conditioning shadow. -/
+/-- **Full Global Markov Property.** If [X, Y, and Z are sets of nodes drawn
+    from the model's random (observed and latent) nodes](hyp:hX,hY,hZ) and
+    [X is d-separated from Y by Z in the model's causal graph](hyp:hdSep),
+    then [under the joint distribution over all random coordinates at fixed
+    value s, the X-coordinates and the Y-coordinates are conditionally
+    independent given the Z-coordinates](goal).
+
+    Backward-compatible wrapper around `full_globalMarkov_with_fixed` with no
+    fixed-node conditioning shadow. -/
 theorem full_globalMarkov (M : Causalean.SCM N Ω)
     [StandardBorelSpace M.RandomValues]
     [∀ n, StandardBorelSpace (swigΩ Ω n)] [∀ n, Nonempty (swigΩ Ω n)]

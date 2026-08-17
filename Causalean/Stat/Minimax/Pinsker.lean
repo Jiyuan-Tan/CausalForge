@@ -283,8 +283,11 @@ private theorem pinsker_half_sqrt_two_mul (K : ℝ) (hK : 0 ≤ K) :
   rw [mul_pow, Real.sq_sqrt h2K]
   ring
 
-/-- **Pinsker's inequality (unconditional).** For probability measures `μ ≪ ν`
-with finite KL divergence, `tvDist μ ν ≤ √((klDiv μ ν).toReal / 2)`. -/
+/-- **Pinsker's inequality (unconditional).** For probability measures `μ` and `ν` on the
+same space, if [`μ` is absolutely continuous with respect to `ν`](hyp:hac) and [their
+Kullback–Leibler divergence is finite](hyp:hfin), then [the total variation distance
+between `μ` and `ν` is at most the square root of half their Kullback–Leibler divergence:
+`tvDist μ ν ≤ √(klDiv(μ,ν)/2)`](goal). -/
 theorem pinskerBound_of_ac_of_ne_top (μ ν : Measure Ω)
     [IsProbabilityMeasure μ] [IsProbabilityMeasure ν]
     (hac : μ ≪ ν) (hfin : InformationTheory.klDiv μ ν ≠ ⊤) :
@@ -434,10 +437,14 @@ theorem pinskerBound_of_ac_of_ne_top (μ ν : Measure Ω)
     _ = Real.sqrt (K / 2) := pinsker_half_sqrt_two_mul K hK_nonneg
     _ = Real.sqrt ((InformationTheory.klDiv μ ν).toReal / 2) := by rw [hK_def]
 
-/-- **Pinsker's inequality for i.i.d. finite products (unconditional).**  From the
-one-sample hypotheses `μ ≪ ν` and `Integrable (llr μ ν) μ`, the `n`-fold product
-pair `(μ^{⊗n}, ν^{⊗n})` satisfies `PinskerBound`.  The product absolute
-continuity and `klDiv ≠ ⊤` are discharged from the marginals via
+/-- **Pinsker's inequality for i.i.d. finite products (unconditional).** For one-sample
+probability measures `μ` and `ν`, if [`μ` is absolutely continuous with respect to
+`ν`](hyp:hac) and [the log-likelihood ratio of `μ` against `ν` is integrable under
+`μ`](hyp:hint), then [the `n`-fold product measures `μ^{⊗n}` and `ν^{⊗n}` satisfy
+Pinsker's inequality: their total variation distance is at most the square root of half
+their Kullback–Leibler divergence](goal).
+
+The product absolute continuity and `klDiv ≠ ⊤` are discharged from the marginals via
 `Causalean.Mathlib.InformationTheory.pi_iid_*`. -/
 theorem pinskerBound_pi_iid {α : Type*} [MeasurableSpace α]
     (μ ν : Measure α) [IsProbabilityMeasure μ] [IsProbabilityMeasure ν]
@@ -453,9 +460,12 @@ theorem pinskerBound_pi_iid {α : Type*} [MeasurableSpace α]
 variable {P₀ P₁ : Measure Ω} [IsProbabilityMeasure P₀] [IsProbabilityMeasure P₁]
   {Θ : Type*} [PseudoMetricSpace Θ] [MeasurableSpace Θ] [OpensMeasurableSpace Θ]
 
-/-- **KL-form Le Cam two-point lower bound.**  Given Pinsker control of `tvDist P₀ P₁`
-by `klDiv P₀ P₁` and `2s`-separation of the parameter values, every estimator has
-worst-case error probability at least `(1 - √((klDiv P₀ P₁).toReal / 2)) / 2`.
+/-- **KL-form Le Cam two-point lower bound.** Given [a Pinsker-type bound `h` controlling
+the total variation distance between `P₀` and `P₁` by their Kullback–Leibler
+divergence](hyp:h), if [`est` is a measurable estimator of the parameter](hyp:hest) and
+[the parameter values `θ₀` and `θ₁` are separated by at least `2s`](hyp:hsep), then [the
+worse of the two error probabilities — that `est` misses `θ₀` by at least `s` under `P₀`,
+or misses `θ₁` by at least `s` under `P₁` — is at least `(1 - √(klDiv(P₀,P₁)/2))/2`](goal).
 
 This is the directly usable minimax lower bound: bounding the (computable) KL
 divergence above yields a lower bound on the error of *every* estimator.
@@ -476,10 +486,18 @@ theorem klForm_two_point_lower_bound_of_pinsker (h : PinskerBound P₀ P₁)
     linarith
   exact htv.trans hmax
 
-/-- **KL-form Le Cam two-point lower bound (unconditional).**  Same conclusion as
-`klForm_two_point_lower_bound_of_pinsker`, but with the Pinsker bridge discharged
-from `P₀ ≪ P₁` and finite KL (`klDiv P₀ P₁ ≠ ⊤`) via `pinskerBound_of_ac_of_ne_top`
-— no `PinskerBound` hypothesis. -/
+/-- **KL-form Le Cam two-point lower bound (unconditional).** For probability measures
+`P₀` and `P₁` and two points `θ₀`, `θ₁` in a pseudometric parameter space, if [`P₀` is
+absolutely continuous with respect to `P₁`](hyp:hac) and [their Kullback–Leibler
+divergence is finite](hyp:hfin), while [`est` is a measurable estimator of the
+parameter](hyp:hest) and [`θ₀` and `θ₁` are separated by at least `2s`](hyp:hsep), then
+[the worse of the two error probabilities — that `est` misses `θ₀` by at least `s` under
+`P₀`, or misses `θ₁` by at least `s` under `P₁` — is at least
+`(1 - √(klDiv(P₀,P₁)/2))/2`](goal).
+
+Same conclusion as `klForm_two_point_lower_bound_of_pinsker`, but with the Pinsker bridge
+discharged from `P₀ ≪ P₁` and finite KL (`klDiv P₀ P₁ ≠ ⊤`) via
+`pinskerBound_of_ac_of_ne_top` — no `PinskerBound` hypothesis. -/
 theorem klForm_two_point_lower_bound (hac : P₀ ≪ P₁)
     (hfin : InformationTheory.klDiv P₀ P₁ ≠ ⊤)
     {est : Ω → Θ} (hest : Measurable est) {θ₀ θ₁ : Θ} {s : ℝ}

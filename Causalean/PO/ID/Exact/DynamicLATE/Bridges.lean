@@ -806,9 +806,11 @@ theorem outcome_bridge (As : S.Assumptions) (z : Fin 2 → Bool) :
           exact integral_congr_ae (cOutcome_bridge (S := S) As z z hz_pre)
     _ = S.obsMean z := rfl
 
-/-- **Compliance bridge** (unconditional): the counterfactual probability of
-the dynamic complier event `{D(z) = d}` equals the observable nested
-regression `obsProb z d`.
+/-- **Compliance bridge** (unconditional). Given [a treatment path `d` that is
+coordinatewise no greater than the instrument path `z`](hyp:hd), [the
+probability of the counterfactual dynamic complier event that the treatment
+path realized under instrument assignment `z` equals `d` coincides with the
+observable nested regression `obsProb z d`](goal).
 
 `P{D(z) = d} = E[ E[ P(D = d | S, D₁, Z = z) | S₀, Z₁ = z₁ ] ]`.
 

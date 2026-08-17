@@ -153,9 +153,12 @@ lemma P_Z_map_projX_eq_P_X (S : BackdoorEstimationSystem P γ) :
 noncomputable def θ₀ (S : BackdoorEstimationSystem P γ) : ℝ :=
   ∫ x, S.μ_val true x - S.μ_val false x ∂(S.P_X)
 
-/-- The value-space estimand agrees with the PO-level ATE under the
-back-door assumptions.  Restates `def:est-ate-nuisance` (last sentence)
-combined with `prop:po-backdoor-ate`. -/
+/-- **Value-space estimand equals the potential-outcome ATE.** Under [the back-door
+identification assumptions](hyp:hA), [the value-space estimand `θ₀ = ∫ (μ(1,x) −
+μ(0,x)) dP_X`, built from the outcome-regression nuisance, coincides with the average
+treatment effect defined on potential outcomes](goal).
+
+Restates `def:est-ate-nuisance` (last sentence) combined with `prop:po-backdoor-ate`. -/
 theorem θ₀_eq_ATE (S : BackdoorEstimationSystem P γ)
     (hA : S.toPOBackdoorSystem.Assumptions) :
     S.θ₀ = S.toPOBackdoorSystem.ATE := by

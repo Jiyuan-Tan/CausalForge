@@ -57,8 +57,9 @@ noncomputable def stationaryProjection {K : Type*} [Field K]
     (a b : K) : Matrix (Fin 2) (Fin 2) K :=
   fun _ j => if j = (0 : Fin 2) then b / (a + b) else a / (a + b)
 
-/-- Spectral decomposition of the two-state transition matrix:
-`M(a,b)^k = Π(a,b) + (1 - a - b)^k • (1 - Π(a,b))` whenever `a + b ≠ 0`. -/
+/-- For parameters `a`, `b` in a field with [`a + b` nonzero](hyp:hs), [the `k`-th power of the
+two-state transition matrix `transitionMatrix a b` decomposes as the stationary projection
+`stationaryProjection a b` plus `(1 - a - b)^k` times its complement, for every `k`](goal). -/
 theorem transitionMatrix_pow_eq_spectral
     {K : Type*} [Field K] (a b : K) (hs : a + b ≠ 0) :
     ∀ k : ℕ,
@@ -157,11 +158,15 @@ theorem one_minus_a_b_uniform_gap_on_compact
     intro p hp
     exact False.elim (hne ⟨p, hp⟩)
 
-/-- Uniform geometric convergence to the stationary projection on compact subsets
-of the open transition-parameter square.  Combines the spectral decomposition
-with the uniform spectral gap: the `(1 - a - b)^k` factor decays at rate
-`ρ^k` uniformly on `K`, while the entries of `1 - Π(a,b)` are continuous on
-the open square and hence bounded on the compact `K`. -/
+/-- For a set `K` of transition-parameter pairs `(a,b)` that is [compact](hyp:hK_compact) and
+[contained in the open unit square](hyp:hK_open), [the `k`-th power of the transition matrix
+converges to the stationary projection entrywise, uniformly over `K`: for every `ε > 0` there is
+a threshold `N` such that every entry of `(transitionMatrix a b)^k - stationaryProjection a b` has
+absolute value at most `ε` once `k ≥ N`, for every `(a,b)` in `K`](goal).
+
+Combines the spectral decomposition with the uniform spectral gap: the `(1 - a - b)^k` factor
+decays at rate `ρ^k` uniformly on `K`, while the entries of `1 - Π(a,b)` are continuous on the
+open square and hence bounded on the compact `K`. -/
 theorem transitionMatrix_pow_tendsto_stationary_uniform
     (K : Set (ℝ × ℝ)) (hK_compact : IsCompact K)
     (hK_open : K ⊆ {p : ℝ × ℝ | 0 < p.1 ∧ p.1 < 1 ∧ 0 < p.2 ∧ p.2 < 1}) :

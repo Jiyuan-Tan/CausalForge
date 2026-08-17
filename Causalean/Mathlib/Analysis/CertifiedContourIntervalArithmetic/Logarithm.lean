@@ -229,7 +229,10 @@ private theorem logScalar_subinterval_raw (q : ℚ) (hq : 0 < q) (n : ℕ) :
       exact tighten_subinterval_right
         (logScalar_sound q hq n) (logRaw_sound q hq (n + 1))
 
-/-- The explicit logarithm precision returns an enclosure no wider than the requested tolerance. -/
+/-- **Precision-driven logarithm enclosure width.** For [a positive rational number](hyp:hq) and
+[a requested positive rational tolerance](hyp:ε), evaluating the scalar logarithm enclosure at
+the precision level determined from those two inputs produces [an interval no wider than the
+requested tolerance](goal). -/
 theorem logScalar_width (q : ℚ) (hq : 0 < q) (ε : PosRat) :
     (logScalar q hq (logPrecision q ε)).width ≤ ε.1 := by
   let D : ℚ := ε.1.den

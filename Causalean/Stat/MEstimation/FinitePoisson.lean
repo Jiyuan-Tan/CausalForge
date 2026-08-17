@@ -89,8 +89,10 @@ lemma finitePoissonObjective_continuous {E I : Type*} [NormedAddCommGroup E] [No
   fun_prop
 
 -- @node: finitePoissonObjective_exists_unique_max
-/-- Positive weights and means together with a full-column-rank finite design
-give existence and uniqueness of the Poisson pseudo-true parameter. -/
+/-- **Existence and uniqueness of the finite Poisson pseudo-true parameter.**  If
+[every cell weight is strictly positive](hyp:hq), [every cell mean is strictly positive](hyp:hm),
+and [the linear design map is injective](hyp:hA), then [the finite Poisson criterion attains its
+supremum over the parameter space at a unique point](goal). -/
 lemma finitePoissonObjective_exists_unique_max {E I : Type*}
     [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
     [Fintype I] [Nonempty I]

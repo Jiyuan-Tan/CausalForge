@@ -36,12 +36,36 @@ open MeasureTheory ProbabilityTheory Filter Topology TopologicalSpace
 
 variable {P : POSystem} {γ : Type*} [MeasurableSpace γ]
 
-/-- **DR-Learner localized high-probability oracle inequality.**
+/-- **DR-Learner localized high-probability oracle inequality.** For the DR-Learner CATE
+estimation system, suppose [the evaluation functional is measurable in its parameter and recovers
+the true CATE at a parameter θ₀ in the constraint set](hyp:θ₀_mem,eval_meas,eval_θ₀), and that
+[the evaluation functional, outcome, and fixed nuisance conditional-mean are uniformly bounded
+while the nuisance's propensity score satisfies ε-overlap](hyp:hM_Θ,hM_Y,hM_μ,hOverlap). Assume
+[the centred DR-loss is continuous in θ, a clamped version of θ₀ minimizes it, its population
+Rademacher complexity along a dense index sequence is controlled by a sub-root envelope ψ with
+respect to a seminorm invariant under almost-everywhere modification, and the same Rademacher
+upper bound extends to loss differences across the whole constraint
+set](hyp:hLoss_cont,hclamp_minimizes,hψ,hnorm_ae,hψ_ub), together with [Lipschitz and diameter
+control of the centred loss increments — nonnegative Lipschitz constant L, a diameter bound Rmax
+dominating every critical radius, and the sub-root fixed-point
+property](hyp:hL_nonneg,hF_lip,hF_diam,hRmax_lb,hcrit_pos,hcrit_fp), plus [boundedness and
+integrability of the empirical star-hull Rademacher process needed by the localization
+bridge](hyp:hrad_bdd,hrad_int) and [a confidence level in $(0,1]$ together with the
+Foster–Syrgkanis critical-radius domination inequality across dyadic shell
+counts](hyp:hδ,hδ',hδ_dom). Finally, suppose [the estimator sequence is an approximate
+sample-split plug-in empirical-risk minimizer at the fixed nuisance h (slack r_opt), whose excess
+population risk obeys a strong-convexity-type lower bound with constant σ>0, together with a
+first-order orthogonality inequality at the truth's directional
+derivative](hyp:hPluginERM,hσ,hSC,hFOI). Then [there is a nonnegative envelope b such that, for
+every n, with probability at least 1-δ the squared estimation error is bounded by the oracle term
+`(4(1+σ)/σ²)·(ρ n)²` at the sharp localized Foster–Syrgkanis rate
+`ρ n = (8L+3)·criticalRadius (ψ |B(n)|)` (falling back to `√(2b)` on an empty validation fold),
+plus the nuisance bias term `(4/σ)·Bias_n` and an optimization slack `(4/σ)·r_opt n`](goal).
 
 Given the DR-Learner orthogonal-learning system from
 `OrthogonalLearning/DRLearner.lean`, the localized critical-radius hypotheses from
-`Estimation/CATE/OrthogonalLearning/LocalEmpProcess/LocalizedDRLearner.lean`, and the oracle-inequality
-ingredients, conclude that with `P.μ`-probability at least `1 - δ`,
+`Estimation/CATE/OrthogonalLearning/LocalEmpProcess/LocalizedDRLearner.lean`, and the
+oracle-inequality ingredients, conclude that with `P.μ`-probability at least `1 - δ`,
 
   `‖τhat n ω − τ₀‖² ≤ (4(1+σ)/σ²) · ρ²_n
                        + (4/σ) · Bias_n + (4/σ) · r_opt n`,

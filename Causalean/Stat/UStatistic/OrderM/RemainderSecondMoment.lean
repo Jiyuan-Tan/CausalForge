@@ -275,10 +275,13 @@ private theorem crossterm_eq_zero_of_shared_le_one_product_disintegration [IsFin
     exact S.crossterm_zero_of_shared_one hg ht hq ha
 
 omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
-/-- **Cross-term vanishing.**  If two ordered injective `m`-tuples share at most
-one sample index, the expected product of the corresponding kernel terms is zero.
-Zero shared indices ⇒ independence + mean zero; one shared index ⇒ condition on
-it and use first-order degeneracy of each factor. -/
+/-- **Cross-term vanishing.** For an i.i.d. sample `S`, sample size `n`, and order-`m`
+kernel `g` that is [first-order degenerate](hyp:hg), let `t` and `q` be ordered
+`m`-tuples of sample indices that are each [injective](hyp:ht,hq), and suppose [the
+images of `t` and `q` share at most one sample index](hyp:hshare). Then [the expected
+product of the kernel evaluated along `t` and along `q` is zero](goal): zero shared
+indices give independence with mean zero on each factor, while one shared index
+reduces, after conditioning on it, to first-order degeneracy of each factor. -/
 theorem crossterm_eq_zero_of_shared_le_one
     (hg : OrderFirstDegenKernel P g)
     {n : ℕ} {t q : Fin m → Fin n}
@@ -739,9 +742,11 @@ private theorem integral_rescaled_order_sq_le_counting_normalization [IsFiniteMe
               rescaled_order_normalization_le (m := m) (n := n) hmn hzeta
 
 omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
-/-- **`L²` bound on the rescaled higher-order remainder.**  For a first-order
-degenerate order-`m` kernel there is a constant `C` (depending only on `m` and
-`ζ_m = E[g²]`) with `E[(√n · Uₙ)²] ≤ C / n` for all `n ≥ m`.  This is the
+/-- **`L²` bound on the rescaled higher-order remainder.** For an i.i.d. sample `S`, if
+the order-`m` kernel `g` is [first-order degenerate](hyp:hg), then [there is a
+nonnegative constant `C`, depending only on the order `m` and the kernel's second
+moment `ζ_m = E[g²]`, such that the second moment of the `√n`-rescaled order-`m`
+U-statistic of `g` is at most `C/n` for every sample size `n ≥ m`](goal). This is the
 keystone estimate; it packages cross-term vanishing, the Cauchy–Schwarz bound
 `|E[g_t g_q]| ≤ ζ_m`, the `O(n^{2m-2})` count of surviving tuple pairs, and the
 `n · (n^{(m)})⁻²` normalization. -/

@@ -163,14 +163,16 @@ theorem integral_abs_le_sqrt_integral_sq (μ : Measure Ω) [IsProbabilityMeasure
     _ = Real.sqrt (∫ ω, ‖f ω‖ ^ 2 ∂μ) := by
           simp
 
-/-- **Characteristic-function approximation bound (`L²` form).**
-The Cauchy–Schwarz upgrade of `norm_charFun_sub_le`: for almost-everywhere measurable `S T`
-whose difference is square-integrable, the
-characteristic functions differ at frequency `t` by at most `|t| · √(∫ (S − T)²)`:
-`‖charFun (μ.map S) t − charFun (μ.map T) t‖ ≤ |t| · √(∫ ω, (S ω − T ω)² ∂μ)`.
+/-- **Characteristic-function approximation bound (`L²` form).** Let $\mu$ be a probability
+measure and let $S, T$ be real random variables on the same space, with [$S$
+almost-everywhere measurable](hyp:hS) and [$T$ almost-everywhere measurable](hyp:hT); assume
+further that [their difference $S - T$ is square-integrable under $\mu$](hyp:hdiff). Then for
+every real frequency $t$, [the characteristic functions of the laws of $S$ and $T$ differ at
+$t$ by at most $|t|$ times the $L^2$ norm of $S - T$: $\|{\rm charFun}(\mu \circ S^{-1})(t) -
+{\rm charFun}(\mu \circ T^{-1})(t)\| \le |t| \cdot \sqrt{\int (S - T)^2 \, d\mu}$](goal).
 
 Proof: `∫ |S − T| ≤ √(∫ (S − T)²)` on a probability measure (Cauchy–Schwarz against the constant
-`1`, `integral_mul_norm_le_Lp_mul_Lq`), then chain with the `L¹` form. -/
+`1`, `integral_mul_norm_le_Lp_mul_Lq`), then chain with the `L¹` form (`norm_charFun_sub_le`). -/
 theorem norm_charFun_sub_le_L2 (μ : Measure Ω) [IsProbabilityMeasure μ]
     {S T : Ω → ℝ} (hS : AEMeasurable S μ) (hT : AEMeasurable T μ)
     (hdiff : MemLp (fun ω => S ω - T ω) 2 μ) (t : ℝ) :

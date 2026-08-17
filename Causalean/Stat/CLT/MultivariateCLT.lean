@@ -216,9 +216,12 @@ theorem IIDSample.normalizedSum_vec_charFun_tendsto
 
 /-! ## Cramér–Wold wrapper -/
 
-/-- **Cramér–Wold / Lévy continuity wrapper.**  If the characteristic functions
-of an `E`-valued sequence converge pointwise to those of a probability measure
-`Q`, the sequence converges to `Q` in distribution.  Restatement of
+/-- **Cramér–Wold / Lévy continuity wrapper.** For an `E`-valued sequence `Xn`, if [each `Xn n`
+is a.e. measurable](hyp:hXn) and [the characteristic functions of `Xn n` converge pointwise, at
+every point `t`, to the characteristic function of a probability measure `Q`](hyp:hchar), then
+[the sequence `Xn` converges in distribution to `Q`](goal).
+
+    Restatement of
 `MeasureTheory.ProbabilityMeasure.tendsto_iff_tendsto_charFun` (`Clt` package)
 for the project's `Tendsto_dist_vec` wrapper. -/
 theorem Tendsto_dist_vec.of_charFun_tendsto
@@ -233,10 +236,13 @@ theorem Tendsto_dist_vec.of_charFun_tendsto
 
 /-! ## Multivariate CLT contact for an abstract Gaussian-charFun target -/
 
-/-- **Multivariate CLT contact.**  Under integrable, mean-zero,
-square-integrable `ψ`, and a target `Q` whose characteristic function is the
-Gaussian one `charFun Q t = exp(−½ ∫⟪t,ψ⟫² dP)`, the vector normalised sum
-converges to `Q` in distribution.  This discharges the `_hCLT` hypothesis of
+/-- **Multivariate CLT contact.** Along the i.i.d. sample `S`, for an influence function `ψ`
+that is [measurable](hyp:hψ_meas), [has population mean zero](hyp:hmean), and [is
+square-integrable](hyp:hvar), and a target probability measure `Q` on `E` whose characteristic
+function is [the Gaussian one $\exp(-\tfrac12\int\langle t,\psi\rangle^2\,dP)$ at every point
+`t`](hyp:hQ), then [the vector normalised sum converges in distribution to `Q`](goal).
+
+    This discharges the `_hCLT` hypothesis of
 `IsAsymLinearVec.tendsto_normal_vec` and of `deltaMethod`. -/
 theorem IIDSample.clt_normalizedSum_vec_of_charFun
     (S : IIDSample Ω X μ P) {ψ : X → E}
@@ -273,12 +279,16 @@ theorem IIDSample.clt_normalizedSum_vec_of_charFun
 
 /-! ## End-to-end vector asymptotic normality -/
 
-/-- **Vector asymptotic normality from asymptotic linearity (no CLT
-hypothesis).**  Combines `IsAsymLinearVec.tendsto_normal_vec` with the
-multivariate CLT contact `clt_normalizedSum_vec_of_charFun`: given vector
-asymptotic linearity at `θ₀` with influence function `ψ`, and a target `Q`
-whose characteristic function is the Gaussian one, the rescaled estimator
-converges in distribution to `Q`. -/
+/-- **Vector asymptotic normality from asymptotic linearity (no CLT hypothesis).** Given [that
+`θn` is vector-asymptotically-linear at `θ₀` with influence function `ψ` along the i.i.d. sample
+`S`](hyp:h), where `ψ` is [measurable](hyp:hψ_meas), a target probability measure `Q` on `E`
+whose [characteristic function is the Gaussian one $\exp(-\tfrac12\int\langle
+t,\psi\rangle^2\,dP)$ at every point `t`](hyp:hQ), and [the rescaled estimator is a.e.
+measurable at every sample size](hyp:hθn_meas), then [the pushforward laws of the rescaled
+estimator converge to `Q`](goal).
+
+    Combines `IsAsymLinearVec.tendsto_normal_vec` with the
+multivariate CLT contact `clt_normalizedSum_vec_of_charFun`. -/
 theorem IsAsymLinearVec.tendsto_normal_vec_clt
     {θn : ℕ → Ω → E} {θ₀ : E} {ψ : X → E}
     {S : IIDSample Ω X μ P}

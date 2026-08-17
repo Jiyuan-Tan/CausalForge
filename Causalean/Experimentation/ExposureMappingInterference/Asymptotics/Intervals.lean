@@ -32,11 +32,14 @@ namespace ExposureMappingInterference
 
 open Causalean.Experimentation.DesignBased
 
-/-- **Proposition 6.5 (asymptotic coverage, true standard error).** Under the
-local-dependence CLT (`hclt`) and an everywhere-positive variance (`hVar`, the operative form
-of Condition 4 — nonzero limiting variance), with `zq = z_{1−α/2} ≥ 0` the standard-normal
-upper quantile, the Wald interval centered at `τ̂` with the true standard error attains
-asymptotic coverage at least `1 − α`. -/
+/-- **Proposition 6.5 (asymptotic coverage, true standard error).** For [a pair of treatment
+sequences `dk`, `dl`](hyp:dk,dl), suppose [the studentized Horvitz–Thompson effect statistic
+satisfies the local-dependence central limit theorem](hyp:hclt) and [the design variance of the
+effect estimator is everywhere positive](hyp:hVar) — the operative form of Condition 4 (nonzero
+limiting variance). Then with [`zq` a nonnegative quantile](hyp:hzq0) [satisfying
+`Φ(zq) = 1 − α/2`](hyp:hzq), [the Wald interval centered at the Horvitz–Thompson effect
+estimator, using its true standard error, attains asymptotic (liminf) coverage at least
+`1 − α`](goal). -/
 theorem wald_coverage (Exp : ℕ → Experiment) (dk dl : ∀ n, (Exp n).Δ)
     (hclt : LocalDependenceCLT Exp dk dl)
     (hVar : ∀ n, 0 < (Exp n).D.Var
@@ -171,11 +174,13 @@ private lemma clt_interval_liminf_lb (Exp : ℕ → Experiment) (dk dl : ∀ n, 
         Filter.liminf_le_liminf (Filter.Eventually.of_forall hbound) hbdd hcobdd
 
 /-- **Proposition 6.5 (asymptotic coverage, feasible/estimated standard error — the paper's actual
-interval).** Under the local-dependence CLT (`hclt`), positive variance (`hVar`), and
-variance-estimator consistency (`hVhat`: the conservative estimate `V̂` undershoots the true
-variance with vanishing probability), the Wald interval `τ̂ ± z_{1−α/2}·√(V̂[τ̂])` — using the
-**estimated** variance `htEffectVarEst`, exactly as in Aronow–Samii Prop 6.5 — attains asymptotic
-coverage at least `1 − α`. -/
+interval).** For [a pair of treatment sequences `dk`, `dl`](hyp:dk,dl), suppose [the studentized
+effect statistic satisfies the local-dependence central limit theorem](hyp:hclt), [the design
+variance of the effect estimator is everywhere positive](hyp:hVar), and [the conservative variance
+estimator `V̂` undershoots the true variance only with vanishing probability](hyp:hVhat). Then with
+[`zq` a nonnegative quantile](hyp:hzq0) [satisfying `Φ(zq) = 1 − α/2`](hyp:hzq), [the Wald interval
+`τ̂ ± zq·√(V̂[τ̂])`, using the estimated variance `htEffectVarEst` exactly as in Aronow–Samii Prop
+6.5, attains asymptotic (liminf) coverage at least `1 − α`](goal). -/
 theorem wald_coverage_feasible (Exp : ℕ → Experiment) (dk dl : ∀ n, (Exp n).Δ)
     (hclt : LocalDependenceCLT Exp dk dl)
     (hVar : ∀ n, 0 < (Exp n).D.Var

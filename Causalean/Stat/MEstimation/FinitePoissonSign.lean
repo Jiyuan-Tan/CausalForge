@@ -18,9 +18,13 @@ open scoped BigOperators
 namespace Causalean.Stat
 
 -- @node: finitePoissonObjective_snd_sign_of_nuisance_score
-/-- If the zero-scalar conditional nuisance fit clears every nuisance score,
-then strict full-rank Poisson geometry makes the selected scalar coefficient
-have exactly the sign of the remaining scalar score. -/
+/-- **Sign of the selected scalar coefficient from the nuisance score.**  Suppose [every cell
+weight is strictly positive](hyp:hq), [every cell mean is strictly positive](hyp:hm), [the
+linear design map is injective](hyp:hA), and [the conditional nuisance fit `u₀`, with the scalar
+coordinate held at zero, clears every nuisance-direction score](hyp:hNuisance). Then [the
+selected scalar coefficient of the finite Poisson maximizer has exactly the sign of the
+remaining scalar score](goal): it is negative, zero, or positive exactly when the scalar
+score is. -/
 lemma finitePoissonObjective_snd_sign_of_nuisance_score
     {U I : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U]
     [FiniteDimensional ℝ U] [Fintype I] [Nonempty I]

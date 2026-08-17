@@ -73,8 +73,10 @@ theorem neymanFraction_mem_Ioo {A B : ℝ} (hA : 0 < A) (hB : 0 < B) :
   · exact (div_lt_one (add_pos hs ht)).2
       (lt_add_of_pos_right (Real.sqrt A) ht)
 
-/-- **Neyman allocation optimum.** At the Neyman fraction the two-arm variance equals its lower
-bound `(√A + √B)²`; hence the Neyman fraction minimizes the variance over `(0,1)`. -/
+/-- **Neyman allocation optimum.** For [nonnegative treated-arm and control-arm outcome variances
+`A` and `B`](hyp:hA,hB), [evaluating the two-arm variance `A/x + B/(1−x)` at the Neyman fraction
+`x* = √A/(√A+√B)` yields exactly its lower bound `(√A + √B)²`](goal); hence the Neyman fraction
+minimizes the variance over `(0,1)`. -/
 theorem neyman_allocation_eq_at_fraction {A B : ℝ} (hA : 0 ≤ A) (hB : 0 ≤ B) :
     A / neymanFraction A B + B / (1 - neymanFraction A B) = neymanOptimalValue A B := by
   rcases eq_or_lt_of_le hA with rfl | hA

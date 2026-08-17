@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { declListFor, moduleNamesFor } from "../../src/formalization/stage5_docstrings.js";
+import { crosslinkDefect, declListFor, moduleNamesFor } from "../../src/formalization/stage5_docstrings.js";
 
 describe("moduleNamesFor (F5 docstring coverage module derivation)", () => {
   it("maps run-dir .lean files to dotted module names under the lean_subdir prefix", () => {
@@ -33,5 +33,30 @@ describe("declListFor (docstring prompt decl list)", () => {
     expect(list).toBe(
       "A.lean\n  L10 def muDef\n  L30 theorem t1_thm\n\nB.lean\n  L5 lemma l2_lem",
     );
+  });
+});
+
+describe("crosslinkDefect (F5 hard gate on theorem docstring crosslinks)", () => {
+  const source = `theorem t (x : ℝ) (hx : 0 ≤ x) (hb : x ≤ 1) : x ^ 2 ≤ x := proof`;
+  it("accepts a fully crosslinked docstring", () => {
+    const doc = "If [x is nonnegative](hyp:hx) and [at most one](hyp:hb), then [x² ≤ x](goal).";
+    expect(crosslinkDefect({ kind: "theorem", doc, source })).toBeNull();
+  });
+  it("flags uncovered hypotheses, a missing goal link, and unknown names", () => {
+    expect(
+      crosslinkDefect({ kind: "theorem", doc: "If [x ≥ 0](hyp:hx), then [done](goal).", source }),
+    ).toContain("hb");
+    expect(
+      crosslinkDefect({ kind: "theorem", doc: "If [a](hyp:hx) and [b](hyp:hb), done.", source }),
+    ).toContain("(goal)");
+    expect(
+      crosslinkDefect({ kind: "theorem", doc: "If [a](hyp:hOld) and [b](hyp:hb), [c](goal).", source }),
+    ).toContain("hOld");
+  });
+  it("exempts hypothesis-free theorems and non-theorems", () => {
+    expect(
+      crosslinkDefect({ kind: "theorem", doc: "Plain NL.", source: "theorem s : 1 = 1 := rfl" }),
+    ).toBeNull();
+    expect(crosslinkDefect({ kind: "def", doc: "Plain NL.", source })).toBeNull();
   });
 });

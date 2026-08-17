@@ -113,7 +113,13 @@ theorem completeProp0_mem_MSMSetCalib0 (Λ : ℝ)
     S.completeProp0 ∈ S.MSMSetCalib0 Λ :=
   ⟨hmem, hcalib⟩
 
-/-- **The sharp control bound is valid:** `E[Y(0)]` lies in the calibrated interval. -/
+/-- **The sharp control bound is valid.** For [a sensitivity parameter Λ at which the true complete
+control propensity `P[D=0∣σ(X,Y(0))]` belongs to the calibrated control ambiguity
+set](hyp:Λ,hmem), assuming [the candidate IPW mean evaluated at the true complete control
+propensity recovers `E[Y(0)]`](hyp:hbridge) and that [the candidate means over the calibrated
+ambiguity set are bounded below](hyp:hbdd) and [bounded above](hyp:hbdd'), [the mean control
+potential outcome `E[Y(0)]` lies in the closed interval between the sharp control lower and upper
+bounds](goal). -/
 theorem Y0mean_mem_Icc_calib (Λ : ℝ)
     (hmem : S.completeProp0 ∈ S.MSMSetCalib0 Λ)
     (hbridge : S.candMean0 S.completeProp0 = S.Y0mean)

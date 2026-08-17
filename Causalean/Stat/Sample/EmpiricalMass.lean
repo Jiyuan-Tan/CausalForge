@@ -55,7 +55,10 @@ lemma abs_empiricalMass_le_one
     subst N
     simp [empiricalMass]
 
-/-- The expected empirical mass of a measurable point equals that point's population probability. -/
+/-- **Expected empirical mass.** Given [a positive sample size $m$](hyp:hm) and [a measurable
+singleton `{a}`](hyp:ha), [the expectation, under the $m$-fold product sampling measure, of the
+empirical mass of the point `a` — the fraction of sample observations equal to `a` — equals the
+population probability of `{a}`](goal). -/
 lemma integral_empiricalMass
     [MeasurableSpace 𝒳] (μ : Measure 𝒳) [IsProbabilityMeasure μ]
     {m : ℕ} (hm : 0 < m)
@@ -88,8 +91,10 @@ lemma integral_empiricalMass
   rw [integral_indicator_const (μ := μ) (1 : ℝ) ha]
   simp
 
-/-- The second moment of a point's empirical mass is its squared population probability plus the
-usual binomial sampling correction. -/
+/-- **Second moment of the empirical mass.** Given [a positive sample size $m$](hyp:hm) and [a
+measurable singleton `{a}`](hyp:ha), [the second moment, under the $m$-fold product sampling
+measure, of the empirical mass of the point `a` equals the squared population probability of `{a}`
+plus the usual binomial sampling correction $(1/m)(\mu(\{a\})-\mu(\{a\})^2)$](goal). -/
 lemma integral_empiricalMass_sq
     [MeasurableSpace 𝒳] (μ : Measure 𝒳) [IsProbabilityMeasure μ]
     {m : ℕ} (hm : 0 < m)

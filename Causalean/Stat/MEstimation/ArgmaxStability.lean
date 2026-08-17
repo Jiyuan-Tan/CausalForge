@@ -20,8 +20,15 @@ open Filter Set Topology
 namespace Causalean.Stat
 
 -- @node: tendsto_argmax_of_eventually_mem_compact
-/-- Maximizers of uniformly convergent criteria converge to the unique limiting
-maximizer when they eventually lie in one compact set. -/
+/-- **Deterministic argmax stability.** Let `criterion : ℕ → E → ℝ` be a sequence of objective
+functions with pointwise limit `limitCriterion`, over [a compact set `K`](hyp:hK). Suppose
+[the limiting maximizer `limitArgmax` lies in `K`](hyp:hLimitMem), [`limitCriterion` is
+continuous on `K`](hyp:hLimitContinuous), [`limitArgmax` maximizes `limitCriterion` over
+`K`](hyp:hLimitMax), and [it is the unique maximizer over `K`, up to equal criterion
+values](hyp:hUnique). If [`criterion` converges to `limitCriterion` uniformly on
+`K`](hyp:hUniform), [each `argmax N` eventually lies in `K`](hyp:hArgmaxMem), and [`argmax N`
+eventually maximizes `criterion N` over `K`](hyp:hArgmax), then [the sequence `argmax` converges
+to `limitArgmax`](goal). -/
 lemma tendsto_argmax_of_eventually_mem_compact {E : Type*} [PseudoMetricSpace E]
     [SecondCountableTopology E]
     (criterion : ℕ → E → ℝ) (limitCriterion : E → ℝ)

@@ -32,9 +32,14 @@ open Finset
 
 variable {T : ℕ} {P : EventStudySystem T} {D : P.ConventionalDesign}
 
-/-- **Contamination representation (genuine).** From the cell-grid weighted
-projection input, the conventional event-study coefficient is the
-contamination-weighted sum of cohort-relative-time CATTs. -/
+/-- **Contamination representation (genuine).** For the conventional event-study coefficient
+`D.mu` of a design `D` on system `P`, if [observed outcomes equal the potential outcome under
+the realized treatment path (consistency)](hyp:hConsistency), [the never-treated potential
+outcome follows an additive parallel-trends restriction](hyp:hMeanParallelUntreated), [the
+included, displayed, and admissible event times all lie within the declared finite
+support](hyp:hSupport), and [the cell-grid weighted-projection residualization input is
+supplied](hyp:hCell), then [`D.mu` equals the Sun-Abraham contamination-weighted sum of
+cohort-relative-time CATTs over every admissible cell](goal). -/
 theorem contamination_representation_of_cellGrid
     (hConsistency : P.Consistency) (hMeanParallelUntreated : P.MeanParallelUntreated)
     (hSupport : P.ConventionalFiniteSupport D)
@@ -46,8 +51,13 @@ theorem contamination_representation_of_cellGrid
     (cellGrid_provides_residualization hCell.hCellMassPos hCell.hCellNonempty hCell.hRdotResidual).hResidualization
     hCell.hDenomPos (cellGrid_mu_eq_conventionalMuRatio hCell) hSupport
 
-/-- **Contamination split (genuine).** Displayed-event-time component plus
-off-diagonal contamination, from the cell-grid projection input. -/
+/-- **Contamination split (genuine).** For the conventional event-study coefficient `D.mu` of a
+design `D` on system `P`, if [the consistency, mean-parallel-trends, and no-anticipation causal
+restrictions hold](hyp:hCausal), [the included, displayed, and admissible event times all lie
+within the declared finite support](hyp:hSupport), and [the cell-grid weighted-projection
+residualization input is supplied](hyp:hCell), then [`D.mu` splits as the displayed-event-time
+contamination term plus the contamination-weighted sum over every other admissible
+cohort-relative-time cell](goal). -/
 theorem contamination_representation_split_of_cellGrid
     (hCausal : P.EventStudyCausalRestrictions)
     (hSupport : P.ConventionalFiniteSupport D)
@@ -62,8 +72,14 @@ theorem contamination_representation_split_of_cellGrid
     (cellGrid_provides_residualization hCell.hCellMassPos hCell.hCellNonempty hCell.hRdotResidual)
     hCell.hDenomPos (cellGrid_mu_eq_conventionalMuRatio hCell) hSupport
 
-/-- **Apparent pretrends (genuine).** For a displayed lead, the coefficient is a
-weighted sum of post-treatment CATTs, from the cell-grid projection input. -/
+/-- **Apparent pretrends (genuine).** For the conventional event-study coefficient `D.mu` of a
+design `D` on system `P`, if [the consistency, mean-parallel-trends, and no-anticipation causal
+restrictions hold](hyp:hCausal), [the included, displayed, and admissible event times all lie
+within the declared finite event-time support](hyp:hSupport), and [the cell-grid
+weighted-projection residualization input is supplied](hyp:hCell), then [`D.mu` equals the
+contamination-weighted sum of cohort-relative-time CATTs restricted to nonnegative relative
+times — since no-anticipation forces every negative-relative-time CATT to vanish, this exhibits
+`D.mu` as a weighted average of post-treatment effects](goal). -/
 theorem apparent_pretrends_from_post_treatment_of_cellGrid
     (hCausal : P.EventStudyCausalRestrictions)
     (hSupport : P.ConventionalFiniteSupport D)

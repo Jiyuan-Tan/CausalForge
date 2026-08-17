@@ -102,7 +102,16 @@ theorem structFun_apply_eq_of_equiv
   -- Step 3: combine hApp1 and hξHeq via `congr_heq` (common codomain `swigΩ Ω v`).
   exact heq_of_eq (congr_heq hApp1 hξHeq)
 
-/-- **Cross-SCM pointwise equality of `evalMap` under `SCM.Equiv`.**
+/-- **Cross-SCM pointwise equality of `evalMap` under `SCM.Equiv`.** For two structural causal
+    models `M₁`, `M₂` that are [structurally equivalent — the same graph up to topological
+    reordering, matching edge types](hyp:hGraph) and [have heterogeneously equal structural
+    functions](hyp:hSF), fixed-value assignments `s₁, s₂` and latent assignments `ℓ₁, ℓ₂` on
+    the two models, and a shared node `w` that is [a random-variable node of `M₁`](hyp:hw₁) and
+    [a random-variable node of `M₂`](hyp:hw₂): if [`s₁` and `s₂` agree coordinatewise on every
+    fixed node shared by both models](hyp:hs) and [`ℓ₁` and `ℓ₂` agree coordinatewise on every
+    unobserved node shared by both models](hyp:hℓ), then [the two models' evaluation maps agree
+    at `w`: `M₁`'s evaluation with `(s₁, ℓ₁)` equals `M₂`'s evaluation with `(s₂,
+    ℓ₂)`](goal).
 
     If `M₁` and `M₂` are structurally equivalent (same graph up to `topoOrder`,
     same edge types, `HEq` on `structFun`) and the inputs `(s₁, ℓ₁)` and
@@ -284,7 +293,11 @@ theorem Equiv.heq_jointKernel
   exact h_evalMap_eq s ℓ s ℓ
     (fun _ _ => rfl) (fun _ _ => rfl) hw hw
 
-/-- **HEq transport for `obsKernel`.**
+/-- **HEq transport for `obsKernel`.** For two structural causal models `M₁`, `M₂` that are
+    [structurally equivalent](hyp:hGraph), [have heterogeneously equal structural
+    functions](hyp:hSF), and [have heterogeneously equal latent-root
+    distributions](hyp:hLD), then [their observational kernels are heterogeneously
+    equal](goal).
 
     `obsKernel = jointKernel.map randomToObserved`.  Reduces to
     `heq_jointKernel` plus `randomToObserved` agreement (both are the same

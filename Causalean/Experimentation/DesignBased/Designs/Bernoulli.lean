@@ -81,8 +81,10 @@ lemma bernoulliDesign_Var_treatInd (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1
   rw [FiniteDesign.Var_prod_apply (fun k => coinDesign (p k) (hp0 k) (hp1 k)) i
         (fun b => if b then (1 : ℝ) else 0), coinDesign_Var_treat]
 
-/-- **Second-order inclusion probability.** For distinct units `i ≠ j`, the joint expectation of
-the two treatment indicators factors as `p i · p j` — the units are independently assigned. -/
+/-- **Second-order inclusion probability.** Under the Bernoulli randomization design with
+[per-unit treatment probabilities `p i` lying between `0` and `1`](hyp:hp0,hp1), for
+[two distinct units `i ≠ j`](hyp:h), [the joint expectation of their treatment indicators
+factors as `p i · p j`](goal) — the units are independently assigned. -/
 lemma bernoulliDesign_E_treatInd_pair (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, p i ≤ 1)
     {i j : U} (h : i ≠ j) :
     (bernoulliDesign p hp0 hp1).E (fun z => treatInd i z * treatInd j z) = p i * p j := by

@@ -283,8 +283,14 @@ lemma IIDSample.sampleQuantile_taylor_remainder_tendsto_zero (S : IIDSample Ω �
         rw [← ENNReal.ofReal_add (by linarith) (by linarith)]; congr 1; ring
     _ < δ := hfour_alpha_lt_delta
 
-/-- **Sample-quantile inversion identity.**  `Gₙ(q̂ₙ) = −f₀·√n(q̂ₙ − q₀) + o_p(1)`.  Uses the
-switching relation (`τ ≤ F̂ₙ(q̂ₙ)` and atom bound `|F̂ₙ(q̂ₙ) − τ| ≤ 1/n`, hence
+/-- **Sample-quantile inversion identity.** Given [a `SampleQuantileReg` regularity bundle
+`hreg`](hyp:hreg) — interior quantile level, positive density $f_0$ at the population quantile
+$q_0$, cdf identification, differentiability of the population cdf at $q_0$, and an atomless
+population — [the empirical process $G_n$ evaluated at the sample quantile $\hat q_n(\tau)$, plus
+$f_0$ times the rescaled deviation $\sqrt n(\hat q_n(\tau)-q_0)$, converges to zero in
+probability](goal); equivalently $G_n(\hat q_n(\tau)) = -f_0\sqrt n(\hat q_n(\tau)-q_0) + o_p(1)$.
+
+Uses the switching relation (`τ ≤ F̂ₙ(q̂ₙ)` and atom bound `|F̂ₙ(q̂ₙ) − τ| ≤ 1/n`, hence
 `√n(F̂ₙ(q̂ₙ) − τ) →ₚ 0`) together with the first-order Taylor expansion
 `F(q̂ₙ) = τ + f₀(q̂ₙ − q₀) + o(q̂ₙ − q₀)` from `HasDerivAt F f₀ q₀`. -/
 lemma IIDSample.sampleQuantile_inversion (S : IIDSample Ω ℝ μ P)
@@ -373,9 +379,10 @@ lemma Tendsto_inProb.const_mul_zero {Xn : ℕ → Ω → ℝ} (c : ℝ)
     calc ε ≤ |c| * |Xn n ω| := hω
       _ = |Xn n ω| * |c| := mul_comm _ _
 
-/-- **Sample-quantile asymptotic linearity (DERIVED).**  Under `SampleQuantileReg`
-the sample quantile `q̂ₙ(τ)` is asymptotically linear at `q₀` with influence
-function `ψ_τ`, with the Bahadur remainder *proved* `o_p(1)` (not assumed).
+/-- **Sample-quantile asymptotic linearity (derived).** Given [a `SampleQuantileReg` regularity
+bundle `hreg`](hyp:hreg) for the population $\tau$-quantile $q_0$ with density $f_0$, [the sample
+$\tau$-quantile $\hat q_n(\tau)$ is asymptotically linear at $q_0$ with influence function
+$\psi_\tau$, the Bahadur remainder being proved — not assumed — $o_p(1)$](goal).
 
 Combines L5 (inversion), L3 at `Uₙ = √n(q̂ₙ − q₀)` (which is `O_p(1)` by L4), and
 the normalized-sum identity. -/
@@ -426,9 +433,13 @@ theorem IIDSample.sampleQuantile_isAsymLinear (S : IIDSample Ω ℝ μ P)
   rw [heq] at hsum
   exact hsum.isLittleOp_one
 
-/-- The sample quantile satisfies the generic `QuantileRegularity` bundle of
-`Stat/SampleQuantile.lean`, with `bahadur` now a **derived** field.  Downstream
-this hands the sample quantile to `QuantileRegularity.tendsto_normal`. -/
+/-- **Sample quantile satisfies `QuantileRegularity` (derived Bahadur).** Given [a
+`SampleQuantileReg` regularity bundle `hreg`](hyp:hreg) for the population $\tau$-quantile $q_0$
+with density $f_0$, [the sample $\tau$-quantile sequence itself satisfies the generic
+`QuantileRegularity` bundle for these parameters, with the Bahadur remainder now derived rather
+than assumed](goal).
+
+Downstream this hands the sample quantile to `QuantileRegularity.tendsto_normal`. -/
 theorem IIDSample.sampleQuantile_quantileRegularity (S : IIDSample Ω ℝ μ P)
     {τ q₀ f₀ : ℝ} (hreg : SampleQuantileReg P τ q₀ f₀) :
     QuantileRegularity S (S.sampleQuantile τ) τ q₀ f₀ where

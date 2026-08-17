@@ -446,9 +446,14 @@ lemma evalObservedAuxOverride_eq_evalObservedAux_at_self
             congr 1
             exact ih _ hj _
 
-/-- If the override assignment equals the model's own evaluated values on the override block, then overriding changes nothing on the target set.
+/-- **Cornerstone: overriding by the model's own values changes nothing.** Fix a structural
+    causal model `M`, a target set `Y` and an override set `C` with [`Y` contained in the
+    observed nodes](hyp:hY) and [`C` contained in the observed nodes](hyp:hC), a fixed-value
+    assignment `s`, and a latent assignment `ℓ`. Then [overriding `C` with the values that
+    `evalMap s ℓ` would itself have produced there leaves the resulting evaluation on `Y` equal
+    to the plain evaluation `evalMap s ℓ` on `Y`](goal). No d-separation hypothesis is needed.
 
-    **Cornerstone.**  When `c` is the value that `evalMap s ℓ` would have
+    When `c` is the value that `evalMap s ℓ` would have
     produced at `C`, the override map equals `evalMap` on `Y`.
 
     The `c` argument here is spelled out directly via `evalObservedAux`

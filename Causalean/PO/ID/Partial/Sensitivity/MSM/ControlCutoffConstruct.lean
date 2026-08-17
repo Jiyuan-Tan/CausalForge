@@ -696,12 +696,22 @@ theorem exists_calibrating_cutoff0 (Λ : ℝ) (_hΛ : 1 < Λ)
   field_simp [hpos]
   ring
 
-/-- The sharp upper bound, unconditionally. Combining the constructed
-calibrating cutoff with `msmUpperCalib0_eq_cutoff`, the Dorn–Guo sharp upper bound has the
-quantile-balancing closed form `msmUpperCalib0 Λ = candMean0 (cutoffProp0 Λ c)` for the
-conditional-quantile cutoff `c` -- with no `hcut_mem` hypothesis, the membership now discharged by
-`exists_calibrating_cutoff0`. Regularity: overlap, `1 < Λ`, atomless control outcome law, interior
-level, and the envelope-integrability of the candidate means; `c` is the constructed cutoff. -/
+/-- **The sharp control upper bound has a quantile-balancing closed form, unconditionally.**
+Fix [a sensitivity parameter Λ strictly greater than 1](hyp:Λ,hΛ). If [the control propensity
+`P[D=0∣X]` lies strictly between 0 and 1 almost everywhere (overlap)](hyp:hoverlap), [the control
+outcome's conditional law given the covariates is atomless (its conditional CDF is
+continuous)](hyp:hatomless), [the calibration level lies strictly between 0 and 1 almost
+everywhere](hyp:hlevel), [every candidate propensity in the calibrated control ambiguity set is
+almost-everywhere measurable](hyp:hmeas), and [every covariate-measurable cutoff function
+satisfies the integrability conditions needed to evaluate the calibration and candidate-mean
+functionals at it](hyp:hreg), then [there exists a covariate-measurable cutoff c such that the
+cutoff-calibration propensity `cutoffProp0 Λ c` lies in the calibrated control MSM set and the
+sharp control upper bound equals the candidate mean at that cutoff, `msmUpperCalib0 Λ = candMean0
+(cutoffProp0 Λ c)`](goal).
+
+Combining the constructed calibrating cutoff with `msmUpperCalib0_eq_cutoff`, the Dorn–Guo sharp
+upper bound has the quantile-balancing closed form for the conditional-quantile cutoff `c` -- with
+no `hcut_mem` hypothesis, the membership now discharged by `exists_calibrating_cutoff0`. -/
 theorem msmUpperCalib0_eq_cutoff_unconditional (Λ : ℝ) (hΛ : 1 < Λ)
     (hoverlap : ∀ᵐ ω ∂P.μ, 0 < S.propScore false ω ∧ S.propScore false ω < 1)
     (hatomless : ∀ a : γ, Continuous (condCDF S.controlXYLaw a))

@@ -295,8 +295,12 @@ lemma ipwDensity_integrable [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
     exact ENNReal.ofReal_le_one.mpr (hf_bd n)
   exact lt_of_le_of_lt (le_of_tendsto' htends hbound) ENNReal.one_lt_top
 
-/-- **Core distributional backdoor identity.**  For every bounded measurable
-`g : ℝ → ℝ`, `∫ g(Y(d)) dμ = ∫ g(Y)·1_{D=d}/e_d dμ`. -/
+/-- **Core distributional backdoor identity.** Under [the distributional
+backdoor assumption bundle](hyp:hA), for every treatment arm `d` and every
+[measurable](hyp:hg) real function `g` that is [bounded by a constant
+`C`](hyp:hg_bdd), [the mean of `g` applied to the potential outcome `Y(d)`
+equals the mean of `g` applied to the factual outcome, weighted by the
+inverse-probability-weighting density `ipwDensity d`](goal). -/
 lemma integral_comp_YofD_eq [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
     (hA : S.DistributionalAssumptions) (d : Bool) {g : ℝ → ℝ} (hg : Measurable g)
     {C : ℝ} (hg_bdd : ∀ y, |g y| ≤ C) :
@@ -429,10 +433,11 @@ lemma integral_comp_YofD_eq [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
       (f := fun ω => k ω * (S.dVar.indicator d ω * g (S.YofD d ω)))]
   exact MeasureTheory.integral_congr_ae hfin.symm
 
-/-- **Distributional backdoor identification.**  Under consistency,
-unconfoundedness, and common support, the law of the potential outcome under
-treatment arm `d` equals the observable inverse-probability-weighted outcome law
-for that arm. -/
+/-- **Distributional backdoor identification.** Under [the distributional
+backdoor assumption bundle — consistency, unconfoundedness, and common
+support](hyp:hA), for each treatment arm `d`, [the law of the potential
+outcome `Y(d)` equals the observable inverse-probability-weighted outcome law
+`ipwLaw d`](goal). -/
 theorem cfUnderLaw_eq_ipwLaw [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
     (hA : S.DistributionalAssumptions) (d : Bool) :
     S.yVar.cfUnderLaw S.dVar d P.μ = S.ipwLaw d P.μ := by

@@ -56,13 +56,19 @@ weight is `wMax` above the cutoff and `wMin` at or below it,
 noncomputable def cutoffProp (Λ : ℝ) (c : P.Ω → ℝ) (ω : P.Ω) : ℝ :=
   1 / (if c ω < S.factualY ω then S.wMax Λ ω else S.wMin Λ ω)
 
-/-- **Optimality of the quantile-cutoff weight (Neyman–Pearson exchange).** Among all calibrated,
-data-compatible candidates, the cutoff weight maximizes the candidate mean: for any
-`ẽ ∈ MSMSetCalib Λ`, `candMean ẽ ≤ candMean (cutoffProp Λ c)`.
+/-- **Optimality of the quantile-cutoff weight (Neyman–Pearson exchange).** Fix [a sensitivity
+parameter Λ at least 1](hyp:hΛ) and assume [the propensity score for treatment given the
+covariates lies strictly between 0 and 1 almost surely (overlap)](hyp:hoverlap). For [a
+σ(X)-measurable, integrable cutoff function `c`](hyp:hc_meas,hc_int) whose induced cutoff
+candidate is [feasible and calibrated](hyp:hcut_mem), and under [envelope-integrability
+conditions bounding the treated outcome, the treatment-weighted mass, and the cutoff-weighted mass
+by the upper marginal-sensitivity-model weight](hyp:henv,hweight_env,hc_env), then for [any other
+calibrated, box-feasible candidate complete propensity `ẽ` that is almost-everywhere
+measurable](hyp:hmem,hmeas), [`ẽ`'s candidate mean is at most the cutoff candidate mean — the
+cutoff weight maximizes the candidate mean among calibrated candidates](goal).
 
-Hypotheses: `1 ≤ Λ`; overlap; `c` is `σ(X)`-measurable; the cutoff candidate is itself feasible and
-calibrated (`hcut_mem : cutoffProp Λ c ∈ MSMSetCalib Λ` — this is where the conditional-quantile
-construction enters); and the envelope-integrability that makes all candidate means finite. -/
+The candidate `cutoffProp Λ c` being itself feasible and calibrated (`hcut_mem`) is where the
+conditional-quantile construction enters. -/
 theorem cutoff_optimal (Λ : ℝ) (hΛ : 1 ≤ Λ)
     (hoverlap : ∀ᵐ ω ∂P.μ, 0 < S.propScore true ω ∧ S.propScore true ω < 1)
     (c : P.Ω → ℝ) (hc_meas : Measurable[S.sigmaX] c) (hc_int : Integrable c P.μ)
@@ -363,9 +369,19 @@ theorem cutoff_optimal (Λ : ℝ) (hΛ : 1 ≤ Λ)
   simpa [add_comm, add_left_comm, add_assoc] using
     add_le_add_right hfirst_le (∫ ω, c ω ∂P.μ)
 
-/-- **The sharp upper bound has the quantile-balancing closed form.** Given a calibrating cutoff
-`c`, `msmUpperCalib Λ = candMean (cutoffProp Λ c)`: the cutoff candidate is feasible (so its mean is
-`≤` the sup) and optimal (so the sup is `≤` its mean). -/
+/-- **The sharp upper bound has the quantile-balancing closed form.** Fix [a sensitivity
+parameter Λ at least 1](hyp:hΛ) and assume [the propensity score for treatment given the
+covariates lies strictly between 0 and 1 almost surely (overlap)](hyp:hoverlap). For [a
+σ(X)-measurable, integrable cutoff function `c`](hyp:hc_meas,hc_int) whose induced cutoff
+candidate is [feasible and calibrated](hyp:hcut_mem), under [envelope-integrability conditions
+bounding the treated outcome, the treatment-weighted mass, and the cutoff-weighted mass by the
+upper marginal-sensitivity-model weight](hyp:henv,hweight_env,hc_env), and assuming [every
+candidate complete propensity in the calibrated ambiguity set is almost-everywhere
+measurable](hyp:hmeas), then [the sharp upper bound on `E[Y(1)]` equals the candidate mean of the
+cutoff propensity built from `c`](goal).
+
+The cutoff candidate is feasible (so its mean is `≤` the sup) and optimal (so the sup is `≤` its
+mean). -/
 theorem msmUpperCalib_eq_cutoff (Λ : ℝ) (hΛ : 1 ≤ Λ)
     (hoverlap : ∀ᵐ ω ∂P.μ, 0 < S.propScore true ω ∧ S.propScore true ω < 1)
     (c : P.Ω → ℝ) (hc_meas : Measurable[S.sigmaX] c) (hc_int : Integrable c P.μ)

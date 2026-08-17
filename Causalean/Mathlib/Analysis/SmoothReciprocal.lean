@@ -72,7 +72,11 @@ lemma recipC_contDiff_of (n : ℕ∞) (ε : ℝ) (hε : 0 < ε) : ContDiff ℝ n
     have hinv : ContDiffAt ℝ n (fun y : ℝ => y⁻¹) x := contDiffAt_inv ℝ hxpos
     exact hcut.mul hinv
 
-/-- `recipC ε` is globally `C¹`. Specialization of `recipC_contDiff_of`. -/
+/-- **Global continuous differentiability of the floored reciprocal.** For [a strictly positive
+threshold `ε`](hyp:hε), [the floored reciprocal `recipC ε` is continuously differentiable on all
+of the reals](goal).
+
+Specialization of `recipC_contDiff_of`. -/
 @[fun_prop]
 lemma recipC_contDiff (ε : ℝ) (hε : 0 < ε) : ContDiff ℝ 1 (recipC ε) :=
   recipC_contDiff_of 1 ε hε

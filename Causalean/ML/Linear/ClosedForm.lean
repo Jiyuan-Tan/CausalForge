@@ -107,8 +107,9 @@ theorem ols_normalEq_of_minimizer
     simpa [Matrix.mulVec_mulVec] using hg'
   exact (sub_eq_zero.mp hz).symm
 
-/-- When `XᵀX` is invertible, the closed-form OLS coefficient solves the normal
-equations. -/
+/-- For a design matrix `X` and response vector `y`, if [`XᵀX` is invertible, i.e. its
+determinant is a unit](hyp:hX), then [the closed-form OLS coefficient `(XᵀX)⁻¹Xᵀy`
+solves the normal equations `(XᵀX)β = Xᵀy`](goal). -/
 theorem olsCoef_normalEq [DecidableEq Param]
     (X : Matrix Obs Param ℝ) (y : Obs → ℝ) (hX : IsUnit (Xᵀ * X).det) :
     (Xᵀ * X) *ᵥ olsCoef X y = Xᵀ *ᵥ y := by

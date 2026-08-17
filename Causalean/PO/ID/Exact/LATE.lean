@@ -420,8 +420,13 @@ theorem event_conditioning_identity :
     simp [hrest]
   · field_simp
 
-/-- Wald identification of LATE -- prop:po-late.
-    `(E[Y|Z=1] - E[Y|Z=0]) / (E[D|Z=1] - E[D|Z=0]) = LATE`. -/
+/-- **Wald identification of LATE** (`prop:po-late`). Under [the binary-
+instrument LATE identifying assumption bundle](hyp:hA), when [the event
+`{Z=1}` has positive probability](hyp:hZ1), [the event `{Z=0}` has positive
+probability](hyp:hZ0), and [the potential outcomes under treatment](hyp:hY1)
+and [under control](hyp:hY0) are integrable, [the Wald ratio
+`(E[Y|Z=1] − E[Y|Z=0]) / (E[D|Z=1] − E[D|Z=0])` equals the local average
+treatment effect `LATE`](goal). -/
 theorem late_wald (hA : S.Assumptions)
     (hZ1 : 0 < (P.μ (S.zEvent true)).toReal)
     (hZ0 : 0 < (P.μ (S.zEvent false)).toReal)

@@ -55,8 +55,11 @@ open scoped MeasureTheory ProbabilityTheory
 -- § 5. Parent factorization of `evalMap` at observed nodes
 -- ============================================================
 
-/-- The evaluated value of an observed node is a measurable function of its
-random parent coordinates.
+/-- **Parent factorization of `evalMap` at observed nodes.** Fix a structural causal model
+    `M`, a fixed-value assignment `s`, and a node `v` with [`v` an observed node](hyp:hv).
+    Then [there is a measurable function `g` of the assignment restricted to `v`'s random
+    parent coordinates such that, for every latent assignment `ℓ`, the evaluated value at `v`
+    equals `g` applied to that restriction of the joint evaluation](goal).
 
     **Parent factorization of `evalMap` at observed nodes.**
 
@@ -200,8 +203,11 @@ lemma latentAncestorsOfNode_subset (M : Causalean.SCM N Ω) (v : SWIGNode N) :
   intro u hu
   exact ((M.mem_latentAncestorsOfNode).mp hu).1
 
-/-- The evaluated value of an observed node is a measurable function of only
-its fixed and latent ancestor values.
+/-- **Ancestor factorization (existence form).** Fix a structural causal model `M` and a node
+    `v` with [`v` an observed node](hyp:hv). Then [there is a measurable function `g` of the
+    fixed-ancestor projection and the latent-ancestor projection of `v` such that, for every
+    fixed-value assignment `s` and latent assignment `ℓ`, the evaluated value at `v` equals `g`
+    applied to those two projections of `s` and `ℓ`](goal).
 
     **Ancestor factorization (existence form).**
 

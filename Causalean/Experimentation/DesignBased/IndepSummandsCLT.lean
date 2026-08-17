@@ -69,10 +69,15 @@ noncomputable def diagDepGraph (D : ∀ n, ∀ i, FiniteDesign (α n i)) (g : �
     exact indepFun_prodDesign_apply_blocks (D n)
       (fun i => Measurable.of_discrete) (fun i => Measurable.of_discrete) hdisj
 
-/-- **Independent-summands CLT over product designs.** A normalized sum of independent, uniformly
-bounded (`|g n i a| ≤ B n` with `B n → 0`, `card(ιₙ)·Bₙ³ → 0`), mean-zero per-coordinate summands
-over the product design `prodDesign (D n)`, with unit total design variance, converges in
-distribution to the standard normal: `P[∑ᵢ g n i (w i) ≤ s] → Φ(s)`. -/
+/-- **Independent-summands CLT over product designs.** Fix [a family of coordinate designs
+`D n i`](hyp:D) and [real-valued per-coordinate summands `g n i`](hyp:g), one pair per stage `n`
+and coordinate `i`. Suppose [there is a sequence of nonnegative bounds `B n` tending to
+zero](hyp:hB,hB0), [every summand `g n i a` is bounded in absolute value by `B n`](hyp:hbound),
+[the number of coordinates at stage `n` times `B n` cubed tends to zero](hyp:hNB3), [each summand
+has mean zero under its own coordinate design](hyp:hmean), and [the total sum `∑ᵢ g n i (w i)` has
+design variance exactly one under the product design at every stage `n`](hyp:hvar). Then [the
+design probability that the sum is at most any fixed threshold `s` converges, as `n → ∞`, to the
+standard normal cumulative distribution function `Φ(s)`](goal). -/
 theorem prodDesign_clt
     (D : ∀ n, ∀ i, FiniteDesign (α n i)) (g : ∀ n, ∀ i, α n i → ℝ)
     (B : ℕ → ℝ) (hB : ∀ n, 0 ≤ B n) (hB0 : Tendsto B atTop (𝓝 0))

@@ -329,8 +329,11 @@ def mulWithBounds (f g : CertifiedComplexMap) (Bf Bg : ℚ)
               _ = ε.1 / 4 * (4 * (Bf + 1)) := by ring
       nlinarith }
 
-/-- Fuel at least the certified error modulus makes the algorithmic error no
-larger than the requested positive rational target. -/
+/-- **Fuel sufficiency bound.** For [a certified complex-map evaluation algorithm](hyp:f) and
+[a requested positive rational error tolerance](hyp:ε), if [the number of iterations
+supplied is at least the algorithm's certified error modulus at that tolerance](hyp:fuel,h),
+then [running the algorithm for that many iterations yields an approximation whose error is at
+most the requested tolerance](goal). -/
 theorem algorithmError_le_of_modulus {f : CertifiedComplexMap} {ε : PosRat} {fuel : ℕ}
     (h : f.errorModulus ε ≤ fuel) : f.algorithmError fuel ≤ ε.1 := by
   exact (f.algorithmError_antitone h).trans (f.error_at_modulus ε)

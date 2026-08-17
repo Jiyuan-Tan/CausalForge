@@ -121,8 +121,11 @@ lemma endpointOrderSynthesis_injective {n r : ℕ} {K : Type*} [CommRing K] [IsD
     simpa [v, endpointOrderSynthesis, hzero] using hcoord
   · exact congrFun hfinite i
 
-/-- The order-`r` synthesis kernel has dimension `n-r` below the square
-threshold and is zero at and above it. -/
+/-- For natural numbers `n`, `r`, a field `K`, and [pairwise distinct nodes
+`s : Fin n → K`](hyp:hs), [the dimension of the kernel of the order-`r` endpoint synthesis map
+equals `n - r`](goal): below the square threshold (`r < n`) the kernel has dimension `n - r`,
+and at or above it (`r ≥ n`) the kernel is zero, matching `n - r = 0` under truncated
+subtraction. -/
 theorem endpointOrderSynthesis_ker_finrank {n r : ℕ} {K : Type*} [Field K]
     (s : Fin n → K) (hs : Function.Injective s) :
     Module.finrank K (LinearMap.ker (endpointOrderSynthesis s r)) = n - r := by

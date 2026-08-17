@@ -53,9 +53,10 @@ lemma isConservativeVarEst_of_unbiased {Vhat X : Ω → ℝ} (h : D.E Vhat = D.V
     D.IsConservativeVarEst Vhat X := by
   rw [IsConservativeVarEst, h]
 
-/-- **Conservative Chebyshev bound.** If the design expectation of a proposed variance estimator is
-at least the randomization variance of `X`, then the probability that `X` deviates from its mean by
-at least `ε` is bounded by that expected estimator divided by `ε²`. -/
+/-- **Conservative Chebyshev bound.** If [the design expectation of a proposed variance estimator
+`V̂` is at least the randomization variance of `X`](hyp:hcons), then for [any positive threshold
+`ε`](hyp:hε), [the probability that `X` deviates from its mean by at least `ε` is bounded by that
+expected estimator divided by `ε²`](goal). -/
 theorem chebyshev_conservative {Vhat X : Ω → ℝ} (hcons : D.IsConservativeVarEst Vhat X)
     {ε : ℝ} (hε : 0 < ε) :
     D.Pr (fun z => ε ≤ |X z - D.E X|) ≤ D.E Vhat / ε ^ 2 := by

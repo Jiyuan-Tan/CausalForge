@@ -356,8 +356,15 @@ theorem evaluate_width (program : ContourProgram)
   · linarith [hbase.1, schedule.mesh_error_le, schedule.budget_sum_le]
   · linarith [hbase.2, schedule.mesh_error_le, schedule.budget_sum_le]
 
-/-- The generic finite contour theorem simultaneously certifies semantic
-containment and the requested real-projection width. -/
+/-- **Certified finite-precision evaluation of a contour integral.** Fix [a contour-integral
+program](hyp:program), [value bounds for it](hyp:bounds), [a target separation](hyp:separation),
+[a certified mesh schedule built to meet that target](hyp:scheduled), and [a certificate that the
+denominator stays bounded away from zero, whose guaranteed separation covers the target
+one](hyp:certificate,hseparation); assume also that [the program's denominator never vanishes
+anywhere on the parametrized circle](hyp:hden) and [the normalized integrand is Lipschitz in the
+circle parameter with the schedule's constant](hyp:hLip). Then [the rational rectangle obtained by
+evaluating the program both contains the true normalized contour integral and has real-part width
+at most the schedule's requested tolerance](goal). -/
 theorem certified_contour_evaluation (program : ContourProgram)
     (bounds : ContourValueBounds program) (separation : PosRat)
     (scheduled : CertifiedProgramSchedule program bounds separation)

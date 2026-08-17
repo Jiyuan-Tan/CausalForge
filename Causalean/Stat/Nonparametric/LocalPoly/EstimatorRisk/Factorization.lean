@@ -85,13 +85,13 @@ noncomputable def popDesignMatrix (p N : ℕ) (K pdens : ℝ → ℝ) (t h : ℝ
   Matrix.of (fun j k =>
     (N : ℝ) * ∫ a, K ((a - t) / h) * (a - t) ^ ((j : ℕ) + (k : ℕ)) * pdens a)
 
-/-- **Diagonal-conjugation factorization of the population moment matrix.** With `T` the kernel
-shape matrix `weightMomentMatrix p (fun u => K u · p(t+h·u))` and `D = diagonal (fun j => h^j)`,
-
-`popDesignMatrix p N K p t h = (N·h) • (D · T · D)`.
-
-This is the literal `S = (Nh)·(D T D)` hypothesis of `population_scaling_of_conj`, proved by the
-single-entry change of variables `popMomentEntry_changeOfVar`. -/
+/-- **Diagonal-conjugation factorization of the population moment matrix.** For [a positive
+bandwidth `h > 0`](hyp:hh), writing `T` for the kernel shape matrix
+`weightMomentMatrix p (fun u => K u · p(t+h·u))` and `D` for the diagonal matrix
+`diagonal (fun j => h^j)`, [the population design moment matrix factors as
+`popDesignMatrix p N K pdens t h = (N·h) • (D · T · D)`](goal). This is the literal
+`S = (Nh)·(D T D)` hypothesis of `population_scaling_of_conj`, proved by the single-entry change of
+variables `popMomentEntry_changeOfVar`. -/
 theorem popDesignMatrix_factor (N : ℕ) (K pdens : ℝ → ℝ) (t h : ℝ) (hh : 0 < h) :
     popDesignMatrix p N K pdens t h
       = ((N : ℝ) * h) •

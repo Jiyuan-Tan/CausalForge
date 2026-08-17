@@ -513,8 +513,9 @@ private lemma erase_sdiff_eq_sdiff_erase
   ext w
   simp [Finset.mem_sdiff, Finset.mem_erase, and_assoc]
 
-/-- Marginalizing a local q-mass over `T \ W` gives the q-mass on `W` when `W`
-is parent-closed inside `T`. -/
+/-- For [a set of observed nodes `T`](hyp:hT) and [a subset `W` of `T`](hyp:hWT) such that
+[every parent, within `T`, of a node in `W` also lies in `W`](hyp:hclosed), [marginalizing the
+local q-mass on `T` over the coordinates in `T \ W` yields the local q-mass on `W`](goal). -/
 lemma qLocalMass_marginalize_ancestralClosed
     [∀ n, Fintype (Ω n)] [∀ n, MeasurableSingletonClass (Ω n)]
     (M : Causalean.SCM N Ω) (s : M.FixedValues)
@@ -1207,8 +1208,9 @@ private lemma latentProduct_localConsistent_factorization
   have hfull := hfactor M.toSWIGGraph.cComponentSet (fun _ h => h)
   simpa [E, qLocalMass] using hfull
 
-/-- Local q-mass over an abstract family factors when the ambient latent blocks
-of the family are pairwise disjoint. -/
+/-- For [a finite family `𝒞` of observed node sets](hyp:h𝒞obs) whose [latent parent blocks are
+pairwise disjoint](hyp:hblock), [the local q-mass on the union of the family equals the
+product, over the members `U` of `𝒞`, of the local q-mass on `U`](goal). -/
 lemma qLocalMass_prod_of_latentBlock_disjoint
     [∀ n, Fintype (Ω n)] [∀ n, MeasurableSingletonClass (Ω n)]
     (M : Causalean.SCM N Ω) (s : M.FixedValues)
@@ -1568,8 +1570,9 @@ lemma qLocalMass_prod_inter_of_latentBlock_disjoint
   intro U hU
   simp [E, hU]
 
-/-- The observed marginal atom mass factors as a product of local q-masses over
-full c-components. -/
+/-- For [a set of observed nodes `P` that is closed under observed parents](hyp:hP), [the
+singleton mass of the projection of the observational law onto `P` equals the product, over
+the full c-components `C` of the graph, of the local q-mass on `C ∩ P`](goal). -/
 theorem obsKernel_marginal_singleton_eq_prod_qLocalMass
     [∀ n, Fintype (Ω n)] [∀ n, MeasurableSingletonClass (Ω n)]
     (M : Causalean.SCM N Ω) (s : M.FixedValues)
@@ -1658,8 +1661,11 @@ open scoped MeasureTheory ProbabilityTheory ENNReal BigOperators
 variable {N : Type*} [DecidableEq N] [Fintype N]
 variable {Ω : N → Type*} [∀ n, MeasurableSpace (Ω n)]
 
-/-- Positivity of observational kernels gives positivity for the do-model
-ancestral marginal used by the ID density assembly. -/
+/-- For [an intervention set `X` whose random copies are observed and whose fixed copies are
+not already frozen](hyp:hObs,hFix), [a positive observational kernel at every fixed-value
+assignment](hyp:hpos), and [an outcome set `Y` disjoint from the random copies of
+`X`](hyp:hYX), [the do(X)-law ancestral marginal kernel used in the identification density
+assembly also has everywhere-positive point mass](goal). -/
 lemma doObsKernelAncestralMarginal_positiveMass
     [∀ n, Nonempty (Ω n)]
     [∀ n, Fintype (Ω n)] [∀ n, MeasurableSingletonClass (Ω n)]

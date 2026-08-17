@@ -626,7 +626,14 @@ private lemma evalSum_isLittleOp_one
       hftil_meas hftil_uncurry_train hftil_memLp h_BCT ε hε)) δ hδ
 
 
-/-- **Centered fold-B empirical sum is `o_p(1)` from L²-rate `o_p(1)`.**
+/-- **Centered fold-B empirical sum is `o_p(1)` from L²-rate `o_p(1)`.** For an i.i.d. sample and
+a one-shot split into a nuisance fold and an estimation fold, given a family of random functions
+`f n ω : X → ℝ` that is [jointly measurable in the training data and the outcome, for every
+`n`](hyp:hf_meas), [measurable with respect to the fold-A σ-algebra jointly with the outcome, for
+every `n`](hyp:hf_uncurry_foldA), [square-integrable under the population measure, for every `n`
+and `ω`](hyp:hf_memLp), and whose [$L^2(P)$ norm is $o_p(1)$ under the sampling
+measure](hyp:hf_rate), [the centered fold-B empirical sum of `f` — the estimation-fold sample
+average of `f n ω` minus its population mean, rescaled by $\sqrt{|B(n)|}$ — is $o_p(1)$](goal).
 
 Setup:
 * `S` an i.i.d. sample, `split` a one-shot split.
@@ -696,10 +703,12 @@ Direct corollary of the constant-case Cauchy–Schwarz
 `√(|B(n)|/n) → √c`. -/
 
 omit [IsProbabilityMeasure μ] in
-/-- **Bias term is `o_p(1)` under fixed-ratio split.**
-
-Given `|B(n)|/n → c` for `0 < c` and `‖f n ω‖_{L²(P)} = o_p(n^{-1/2})`, the
-bias term `√|B(n)| · ∫ f(n, ω, ·) dP` is `o_p(1)` under `μ`.
+/-- **Bias term is `o_p(1)` under fixed-ratio split.** Given [a positive limiting fold-B sampling
+ratio $c$](hyp:hc_pos) with [the fold-B fraction $|B(n)|/n$ converging to $c$](hyp:h_split_rate),
+and a family of random functions `f n ω` that is [square-integrable under the population measure,
+for every `n`, `ω`](hyp:hf_memLp) with [$L^2(P)$ norm that is $o_p(n^{-1/2})$ under the sampling
+measure](hyp:hf_rate), [the bias term $\sqrt{|B(n)|}\cdot\int f(n,\omega,\cdot)\,dP$ is
+$o_p(1)$](goal).
 
 **Proof.**  By Cauchy–Schwarz on the probability measure `P`,
 `|∫ f(n, ω, ·) dP| ≤ ‖f(n, ω, ·)‖_{L²(P)}` (`abs_integral_le_eLpNorm_two`).
@@ -730,7 +739,14 @@ Same statements as the OneShot pair, but with the OneShot evaluation fold
 the OneShot training σ-algebra by the comap σ-algebra of the training
 complement `split.trainComplement n k`. -/
 
-/-- **Per-fold centered evaluation sum is `o_p(1)` (K-fold).** -/
+/-- **Per-fold centered evaluation sum is `o_p(1)` (K-fold).** For an i.i.d. sample and a `K`-fold
+split, fixing an evaluation fold `k`, given a family of random functions `f n ω : X → ℝ` that is
+[jointly measurable in the training-complement data and the outcome, for every `n`](hyp:hf_meas),
+[measurable with respect to the training-complement σ-algebra jointly with the outcome, for every
+`n`](hyp:hf_uncurry_train), [square-integrable under the population measure, for every `n` and
+`ω`](hyp:hf_memLp), and whose [$L^2(P)$ norm is $o_p(1)$](hyp:hf_rate), [the centered per-fold
+empirical sum of `f` over the evaluation fold `k` — its fold sample average minus its population
+mean, rescaled by the square root of the fold size — is $o_p(1)$](goal). -/
 theorem KFoldSplit.fold_centered_sum_isLittleOp_one
     (S : IIDSample Ω X μ P) {K : ℕ} (split : KFoldSplit S K) (k : Fin K)
     (f : ℕ → Ω → X → ℝ)
@@ -758,7 +774,12 @@ theorem KFoldSplit.fold_centered_sum_isLittleOp_one
     f hf_meas hf_uncurry_train hf_memLp hf_rate
 
 omit [IsProbabilityMeasure μ] in
-/-- **Per-fold bias term is `o_p(1)` under a nonempty K-fold split.** -/
+/-- **Per-fold bias term is `o_p(1)` under a nonempty K-fold split.** For an i.i.d. sample and a
+`K`-fold split with [a positive number of folds $K$](hyp:hK_pos_nat), given a family of random
+functions `f n ω` that is [square-integrable under the population measure, for every `n`,
+`ω`](hyp:hf_memLp) with [$L^2(P)$ norm that is $o_p(n^{-1/2})$](hyp:hf_rate), [the per-fold bias
+term $\sqrt{|{\rm fold}(n,k)|}\cdot\int f(n,\omega,\cdot)\,dP$ at evaluation fold `k` is
+$o_p(1)$](goal). -/
 theorem KFoldSplit.sqrtFold_integral_isLittleOp_one
     (S : IIDSample Ω X μ P) {K : ℕ} (split : KFoldSplit S K) (k : Fin K)
     (hK_pos_nat : 0 < K)

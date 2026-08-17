@@ -189,12 +189,13 @@ lemma tikhonovMinimiserL2_mem
   · simp [tikhonovMinimiserL2, h]
   · simp [tikhonovMinimiserL2, h]
 
-/-- **Variational identity** for the Tikhonov minimiser at `0 < λ`:
+/-- **Variational identity for the Tikhonov minimiser.** For [a strictly positive Tikhonov
+regularization level λ](hyp:lambda_pos) and [any function `v` in the closed primal candidate
+subspace `Hbar_L2`](hyp:hv), [the population Tikhonov minimiser `h*_λ` at level λ satisfies the
+identity `⟪T h*_λ, T v⟫ + λ · ⟪h*_λ, v⟫ = ⟪T h₀, T v⟫`, where `T` is the projection-composed
+conditional-expectation operator and `h₀` is the L² class of the structural function](goal).
 
-    `⟪T h*_λ, T v⟫ + λ · ⟪h*_λ, v⟫ = ⟪T h₀, T v⟫`
-
-for every `v ∈ Hbar_L2`.  Direct restatement of the Lax–Milgram identity
-`tikhonovBilin h*_λ v = tikhonovTarget v`. -/
+Direct restatement of the Lax–Milgram identity `tikhonovBilin h*_λ v = tikhonovTarget v`. -/
 lemma tikhonovMinimiserL2_optimality
     (S : OperatorSystem Ω μ) [S.Hbar_L2.HasOrthogonalProjection]
     {lambda : ℝ} (lambda_pos : 0 < lambda)
@@ -232,14 +233,13 @@ lemma tikhonovMinimiserL2_optimality
 
 /-! ## Strong convexity at the minimiser -/
 
-/-- **Population strong convexity at the Tikhonov minimiser** (L² level).
-
-For every `ĥ ∈ Hbar_L2` and every `0 < λ`,
-
-    λ ‖ĥ − h*‖² + ‖T(ĥ − h*)‖²
-      ≤ ‖T(ĥ − h₀)‖² − ‖T(h* − h₀)‖² + λ (‖ĥ‖² − ‖h*‖²),
-
-where `h* = tikhonovMinimiserL2 S λ`.
+/-- **Population strong convexity at the Tikhonov minimiser (L² level).** For [a strictly
+positive Tikhonov regularization level λ](hyp:lambda_pos) and [any function `h` in the closed
+primal candidate subspace `Hbar_L2`](hyp:hh), [the non-negative excess
+`λ‖h − h*_λ‖² + ‖T(h − h*_λ)‖²` — the amount by which the quadratic Tikhonov objective at `h`
+exceeds its value at the population minimiser `h*_λ` — is bounded above by
+`‖T(h − h₀)‖² − ‖T(h*_λ − h₀)‖² + λ(‖h‖² − ‖h*_λ‖²)`, where `T` is the projection-composed
+conditional-expectation operator and `h₀` is the structural function's L² class](goal).
 
 Proof sketch (Taylor at the minimiser).  Expand both sides:
 

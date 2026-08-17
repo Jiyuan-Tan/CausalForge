@@ -73,7 +73,12 @@ lemma support_sum_eq_kktThreshold (α β : Fin 3 → ℝ) (lam : ℝ) :
       · have hdiff : lam - α i ≤ 0 := by linarith [not_lt.mp hi]
         simp [hi, max_eq_right hdiff]
 
-/-- **Existence of an admissible support/multiplier pair (κ > 0).**
+/-- **Existence of an admissible support/multiplier pair (κ > 0).** For [positive
+coordinate weights β](hyp:hβ) and [a positive SOCP scale κ](hyp:hk), [there exists a
+nonempty index set S and a multiplier λ such that
+$\sum_{i\in S}(\lambda-\alpha_i)^2/\beta_i=\kappa^2$, with $\lambda>\alpha_i$ on S and
+$\lambda\le\alpha_j$ off S](goal).
+
 Proof plan:
 * Choose an index attaining the minimum of `α` and set `lo` to that minimum, so every
   squared positive part is zero and the threshold value at `lo` is zero.

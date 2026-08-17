@@ -99,11 +99,14 @@ private theorem sampleMean_mono_on (S : IIDSample Ω X μ P) {g h : X → ℝ}
 
 /-! ## Finite-class Glivenko–Cantelli -/
 
-/-- **A finite class of integrable functions is Glivenko–Cantelli.**
+/-- **A finite class of integrable functions is Glivenko–Cantelli.** Consider a finite
+family of real-valued functions `f i` on the sample space, observed along an i.i.d. sample
+`S` drawn from a probability distribution `P`. If [every `f i` is measurable](hyp:hmeas)
+and [every `f i` is integrable with respect to `P`](hyp:hint), then [the worst-case gap
+between the empirical mean and the population mean of `f i`, taken over all indices `i`,
+converges to zero in probability as the sample size grows](goal).
 
-For a finite index type `ι` with each `f i` measurable and `P`-integrable, the
-worst-case empirical-mean deviation over the class converges to `0` in
-probability.  Proof: union bound over the finitely many coordinates, each
+Proof: union bound over the finitely many coordinates, each
 vanishing by the weak law of large numbers. -/
 theorem glivenkoCantelli_of_fintype [Finite ι] [IsProbabilityMeasure P]
     (S : IIDSample Ω X μ P) (f : ι → X → ℝ)
@@ -134,7 +137,14 @@ theorem glivenkoCantelli_of_fintype [Finite ι] [IsProbabilityMeasure P]
 /-! ## Bracketing Glivenko–Cantelli -/
 
 /-- **A class with finite `L¹(P)` brackets of arbitrarily small width is
-Glivenko-Cantelli.**
+Glivenko-Cantelli.** Consider a family of real-valued functions `f i` on the sample space,
+observed along an i.i.d. sample `S` drawn from a probability distribution `P`. If
+[every `f i` is measurable](hyp:hmeas) and [for every target width the family can be
+covered by finitely many upper/lower bracket pairs, each integrable and each sandwiching
+its assigned member almost everywhere with `L¹(P)`-gap between the bracket endpoints at
+most that width](hyp:hbr), then [the worst-case gap between the empirical mean and the
+population mean of `f i`, taken over all indices `i`, converges to zero in probability as
+the sample size grows](goal).
 
 Given `ε > 0`, take a finite `ε/2` bracketing in the sense of `HasL1Bracketing`.
 Each class member `f i` lies in a bracket `[lo j, hi j]` on a common full-measure

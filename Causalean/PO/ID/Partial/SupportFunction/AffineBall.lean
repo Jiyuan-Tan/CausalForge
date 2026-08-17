@@ -73,9 +73,13 @@ omit [CompleteSpace H] in
 @[simp] theorem mem_affineBall {A : H →L[ℝ] F} {b : F} {B : ℝ} {h : H} :
     h ∈ affineBall A b B ↔ A h = b ∧ ‖h‖ ≤ B := Iff.rfl
 
-/-- **Closed-form support value** over the affine-ball fiber: with `h₀` the
-minimum-norm solution (`h₀ ⊥ ker A`, fitting the ball), the best case of `⟪c,·⟫`
-is `⟪c, h₀⟫ + √(B² − ‖h₀‖²)·‖P c‖`, `P` the projection onto `ker A`. -/
+/-- **Closed-form support value** over the affine-ball fiber. Let `A` be a continuous linear map
+between real inner-product spaces, `b` a target value, `B` a radius, and `c` a direction. Suppose
+[`h₀` solves the linear constraint `A h₀ = b`](hyp:hsol), [`h₀` is orthogonal to the kernel of `A`
+(the minimum-norm solution)](hyp:hperp), and [`h₀`'s norm is at most `B` (`h₀` fits the
+ball)](hyp:hfit). Then [the support value of `⟪c, ·⟫` over the fiber `{h : A h = b, ‖h‖ ≤ B}`
+equals `⟪c, h₀⟫ + √(B² − ‖h₀‖²)·‖P c‖`, where `P` is the orthogonal projection onto the kernel of
+`A`](goal). -/
 theorem supportFn_affineBall_eq (A : H →L[ℝ] F) {b : F} {B : ℝ} {c h₀ : H}
     (hsol : A h₀ = b) (hperp : h₀ ∈ (opKer A)ᗮ) (hfit : ‖h₀‖ ≤ B) :
     supportFn (affineBall A b B) c
@@ -189,8 +193,11 @@ theorem supportFn_affineBall_eq (A : H →L[ℝ] F) {b : F} {B : ℝ} {c h₀ : 
       rw [hval] at this
       exact this
 
-/-- **Closed-form width** of the affine-ball identified set: twice the residual radius times the
-target's free-direction norm. -/
+/-- **Closed-form width** of the affine-ball identified set. Under the same hypotheses as
+`supportFn_affineBall_eq` — [`h₀` solves `A h₀ = b`](hyp:hsol), [`h₀` is orthogonal to the kernel
+of `A`](hyp:hperp), and [`h₀`'s norm is at most `B`](hyp:hfit) — [the width of the identified set
+of `⟪c, ·⟫` over the fiber `{h : A h = b, ‖h‖ ≤ B}` equals `2·√(B² − ‖h₀‖²)·‖P c‖`, twice the
+residual radius times the norm of `c`'s projection onto the kernel of `A`](goal). -/
 theorem width_affineBall_eq (A : H →L[ℝ] F) {b : F} {B : ℝ} {c h₀ : H}
     (hsol : A h₀ = b) (hperp : h₀ ∈ (opKer A)ᗮ) (hfit : ‖h₀‖ ≤ B) :
     width (affineBall A b B) c
@@ -206,9 +213,13 @@ theorem width_affineBall_eq (A : H →L[ℝ] F) {b : F} {B : ℝ} {c h₀ : H}
   rw [hneg, norm_neg, inner_neg_left]
   ring
 
-/-- **Point identification.** With strict slack in the ball (`‖h₀‖ < B`), the
-identified set collapses to a point iff `c`'s component along the free directions
-vanishes: `P c = 0`, i.e. `c ⊥ ker A`. -/
+/-- **Point identification.** Let `A` be a continuous linear map between real inner-product spaces
+with `b` in its range, `B` a radius, and `c` a target direction. Suppose [`h₀` solves the linear
+constraint `A h₀ = b`](hyp:hsol), [`h₀` is orthogonal to the kernel of `A` (the minimum-norm
+solution)](hyp:hperp), and [`h₀`'s norm is strictly less than `B` (strict slack in the norm
+bound)](hyp:hfit). Then [the identified set of `⟪c, ·⟫` over the fiber `{h : A h = b, ‖h‖ ≤ B}`
+collapses to a point if and only if the orthogonal projection of `c` onto the kernel of `A`
+vanishes](goal), i.e. `c` is orthogonal to that kernel. -/
 theorem affineBall_point_identified_iff (A : H →L[ℝ] F) {b : F} {B : ℝ} {c h₀ : H}
     (hsol : A h₀ = b) (hperp : h₀ ∈ (opKer A)ᗮ) (hfit : ‖h₀‖ < B) :
     width (affineBall A b B) c = 0

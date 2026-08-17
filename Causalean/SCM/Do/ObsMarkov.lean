@@ -93,10 +93,13 @@ theorem obs_condIndep_of_full (M : Causalean.SCM N Ω)
 -- § 2. Observational Global Markov
 -- ============================================================
 
-/-- **Global Markov Property.** If `X` and `Y` are d-separated by `Z` in the
-    full DAG of the gSCM (including latent nodes), then the X-projection and
-    Y-projection of the observational kernel are conditionally independent
-    given the Z-projection, at every fixed-value argument `s : M.FixedValues`.
+/-- **Global Markov Property.** If [X, Y, and Z are sets of observed
+    nodes](hyp:hX,hY,hZ) and [X is d-separated from Y by Z in the model's
+    full causal graph, which also includes any latent nodes](hyp:hdSep),
+    then [under the observational distribution — the law of the observed
+    coordinates alone, at fixed value s — the X-coordinates and
+    Y-coordinates are conditionally independent given the
+    Z-coordinates](goal).
 
     The proof first applies `full_globalMarkov` to obtain conditional
     independence under the full joint distribution, then projects that
@@ -119,9 +122,18 @@ theorem globalMarkov (M : Causalean.SCM N Ω)
   -- Stage 2: project to observational level
   exact obs_condIndep_of_full M hX hY hZ s hfull
 
-/-- **Global Markov with fixed-node conditioning.** Generalizes `globalMarkov`
-    to allow the d-sep conditioning set to include fixed nodes alongside
-    observed ones.
+/-- **Global Markov with fixed-node conditioning.** If [X, Y, and Z_obs are
+    sets of observed nodes](hyp:hX,hY,hZ_obs) and [Z_fix is a set of the
+    model's fixed (intervened) nodes](hyp:hZ_fix), and [X is d-separated
+    from Y by the union `Z_obs ∪ Z_fix` in the model's full causal
+    graph](hyp:hdSep), then [under the observational distribution at fixed
+    value s, the X-coordinates and Y-coordinates are conditionally
+    independent given only the Z_obs-coordinates](goal) — the fixed nodes
+    contribute to the graphical separation but, since their values are
+    already pinned by s, drop out of the probabilistic conditioning set.
+
+    This generalizes `globalMarkov` to allow the d-sep conditioning set to
+    include fixed nodes alongside observed ones.
 
     This is the form consumed by split-language do-calculus: `do_rule1` /
     `do_rule2_kernel` need the post-intervention fixed set (`M'.fixed` or

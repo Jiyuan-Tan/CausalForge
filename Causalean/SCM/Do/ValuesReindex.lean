@@ -30,8 +30,9 @@ namespace SCM
 
 variable {Ω : N → Type*} [∀ n, MeasurableSpace (Ω n)]
 
-/-- **Union commutativity.**  Reindexing `valuesUnionMk a b` (a block on `A ∪ B`)
-    along `A ∪ B = B ∪ A` yields `valuesUnionMk b a`, when `A` and `B` are disjoint. -/
+/-- **Union commutativity.** When [`A` and `B` are disjoint](hyp:hAB), [reindexing
+    `valuesUnionMk a b` (a block on `A ∪ B`) along `A ∪ B = B ∪ A` yields
+    `valuesUnionMk b a`](goal). -/
 lemma valuesUnionMk_comm {M : Type*} [DecidableEq M] {Ω : M → Type*}
     [∀ m, MeasurableSpace (Ω m)] {A B : Finset M} (hAB : Disjoint A B)
     (a : ValuesOn A Ω) (b : ValuesOn B Ω) :
@@ -89,12 +90,15 @@ lemma valuesUnionMk_empty_right_heq {M : Type*} [DecidableEq M] {Ω : M → Type
   rw [h] at hx
   exact hx
 
-/-- **HEq of value assignments from coordinatewise agreement.**  Two value assignments
-    over propositionally-equal node sets `I = J` are `HEq` as soon as they agree at every
-    node.  This packages the recurring `Function.hfunext` + `Subtype.heq_iff_coe_eq` +
-    `heq_of_eq` boilerplate that every `ValuesOn` reindexing step (e.g. splicing/dropping
-    a coordinate block when a conditioning set grows in a fixing sequence) would otherwise
-    spell out by hand. -/
+/-- **HEq of value assignments from coordinatewise agreement.** Given [two node sets `I` and
+    `J` that are equal as sets](hyp:hIJ) and value assignments `f` on `I` and `g` on `J`, if
+    [`f` and `g` agree at every node common to both index sets](hyp:h), then [`f` and `g` are
+    heterogeneously equal (`HEq`)](goal).
+
+    This packages the recurring `Function.hfunext` + `Subtype.heq_iff_coe_eq` + `heq_of_eq`
+    boilerplate that every `ValuesOn` reindexing step (e.g. splicing/dropping a coordinate
+    block when a conditioning set grows in a fixing sequence) would otherwise spell out by
+    hand. -/
 lemma valuesOn_heq_of_coord {M : Type*} {Ω : M → Type*} [∀ m, MeasurableSpace (Ω m)]
     {I J : Finset M} (hIJ : I = J) (f : ValuesOn I Ω) (g : ValuesOn J Ω)
     (h : ∀ (v : M) (hI : v ∈ I) (hJ : v ∈ J), f ⟨v, hI⟩ = g ⟨v, hJ⟩) :

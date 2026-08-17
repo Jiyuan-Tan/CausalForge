@@ -72,9 +72,12 @@ lemma measurable_τ_val (S : CATEEstimationSystem P γ) :
     Measurable S.τ_val :=
   (S.μ_meas true).sub (S.μ_meas false)
 
-/-- Under the back-door causal assumptions, the value-space CATE pulled
-back to `Ω` agrees almost surely with the σ(X)-conditional expectation of
-the contrast `Y(1) − Y(0)`.  This is the last sentence of
+/-- **Value-space CATE recovers the conditional average treatment effect.** Under [the
+back-door causal assumptions — consistency of observed and potential outcomes, treatment
+ignorability given the covariates, two-sided overlap, and integrability of both potential
+outcomes](hyp:hA), [the value-space CATE, evaluated at the observed covariate and viewed as a
+random variable on the sample space, agrees almost surely with the σ(X)-conditional expectation
+of the potential-outcome contrast `Y(1) − Y(0)`](goal). This is the last sentence of
 `def:est-cate-causal-assumptions`:
 
     τ_0(X) =ᵐ μ[Y(1) − Y(0) | σ(X)].

@@ -7,7 +7,15 @@ import katex from "katex";
  */
 
 function esc(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  // Quotes must be escaped too: esc() output is interpolated into HTML
+  // attributes (renderNl's data-links), where a bare `"` closes the attribute
+  // early and injects arbitrary attributes (audit finding, 2026-08-17).
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function tex(src: string, display: boolean): string {
@@ -104,8 +112,92 @@ export function renderLabel(s: string): string {
   }
 }
 
+// ── NL ↔ Lean crosslink markup ──────────────────────────────────────────
+// Authored in the Lean docstring's first paragraph (docstring-canonical):
+//   [phrase](hyp:name[,name…])  links the phrase to the statement row(s)
+//                               binding those names;
+//   [phrase](goal)              links the phrase to the conclusion block
+//                               (canonical link token "⊢").
+// The decl card renders these as dash-underlined spans that cross-highlight
+// with the structured statement rows; every other consumer strips them.
+// Mirrors: CausalSmith/tools/src/shared/nl_crosslinks.ts, tools/scripts/
+// embed_library.py — keep the three in sync.
+
+export interface CrosslinkSeg {
+  text: string;
+  /** Binder names this phrase links to ("⊢" = conclusion); null = plain prose. */
+  links: string[] | null;
+}
+
+/**
+ * Splits NL text into plain / linked segments. Scans for a `](hyp:…)` /
+ * `](goal)` closer and walks BACK to its matching `[` counting nesting, so a
+ * phrase may itself contain balanced brackets (`E[A·Y·(…)]`) — a single
+ * regex cannot do this. A closer with no matching opener stays plain text.
+ */
+export function parseCrosslinks(s: string): CrosslinkSeg[] {
+  // Brackets inside code/math spans are CONTENT, not structure — interval
+  // notation like `(0, 1/2]` would otherwise corrupt the balance walk. Scan a
+  // masked copy (span brackets neutralized, same length) and slice the original.
+  const masked = s.replace(/`[^`\n]+`|\$[^$\n]+\$/g, (t) => t.replace(/[[\]]/g, "•"));
+  const segs: CrosslinkSeg[] = [];
+  const closer = /\]\((?:hyp:([^()\s]+)|goal)\)/g;
+  let plainStart = 0;
+  let m: RegExpExecArray | null;
+  while ((m = closer.exec(masked))) {
+    let depth = 0;
+    let open = -1;
+    for (let i = m.index - 1; i >= plainStart; i--) {
+      const c = masked[i];
+      if (c === "]") depth++;
+      else if (c === "[") {
+        if (depth === 0) {
+          open = i;
+          break;
+        }
+        depth--;
+      }
+    }
+    if (open < 0) continue;
+    if (open > plainStart) segs.push({ text: s.slice(plainStart, open), links: null });
+    const names = m[1] ? m[1].split(",").map((t) => t.trim()).filter(Boolean) : ["⊢"];
+    segs.push({ text: s.slice(open + 1, m.index), links: names.length ? names : null });
+    plainStart = closer.lastIndex;
+  }
+  if (plainStart < s.length) segs.push({ text: s.slice(plainStart), links: null });
+  return segs;
+}
+
+/** Crosslink markup removed, phrase text kept — for every consumer that is
+ *  not the decl card (module docs, search snippets, API.md, plain text). */
+export function stripCrosslinks(s: string): string {
+  return parseCrosslinks(s)
+    .map((g) => g.text)
+    .join("");
+}
+
+/**
+ * Renders a decl's NL first paragraph with crosslink spans. Each linked
+ * phrase becomes `<span class="nl-link" data-links="…">` (space-separated
+ * binder names; "⊢" = conclusion) that the library page cross-highlights
+ * with the structured statement rows. Falls back to `renderDoc` when the
+ * paragraph carries no crosslinks.
+ */
+export function renderNl(nl: string): string {
+  const segs = parseCrosslinks(nl);
+  if (!segs.some((g) => g.links)) return renderDoc(nl);
+  const html = segs
+    .map((g) =>
+      g.links
+        ? `<span class="nl-link" data-links="${esc(g.links.join(" "))}" tabindex="0">${inline(g.text)}</span>`
+        : inline(g.text),
+    )
+    .join("");
+  return `<p>${html}</p>`;
+}
+
 export function renderDoc(doc: string): string {
-  const blocks = doc.trim().split(/\n\s*\n/);
+  const blocks = stripCrosslinks(doc).trim().split(/\n\s*\n/);
   const html: string[] = [];
   for (const b of blocks) {
     const lines = b.split("\n");
@@ -131,7 +223,10 @@ export function renderDoc(doc: string): string {
 export function nlPlain(doc: string | null): string | null {
   const nl = nlOf(doc);
   return nl
-    ? nl.replace(/\*\*([^*]+)\*\*/g, "$1").replace(/`([^`]+)`/g, "$1").replace(/^#+\s+/gm, "")
+    ? stripCrosslinks(nl)
+        .replace(/\*\*([^*]+)\*\*/g, "$1")
+        .replace(/`([^`]+)`/g, "$1")
+        .replace(/^#+\s+/gm, "")
     : null;
 }
 

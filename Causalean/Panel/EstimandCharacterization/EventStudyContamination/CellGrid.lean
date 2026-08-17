@@ -335,8 +335,13 @@ theorem cellGrid_mu_eq_conventionalMuRatio (h : P.CellGridResidualization D) :
   have hDen : P.residualDenom D ≠ 0 := h.hDenomPos.ne'
   field_simp
 
-/-- The three finite-cell orthogonality conditions are derived from the genuine
-weighted projection, not assumed. -/
+/-- For a conventional event-study design `D` over an event-study system `P`, if [every
+admissible cohort-relative-time cell has strictly positive population mass](hyp:hCellMassPos),
+[the collection of admissible cells is nonempty](hyp:hCellNonempty), and [the design's
+residualized displayed-event indicator `Rdot` agrees, cell by cell, with the weighted
+projection residual on the cell grid](hyp:hRdotResidual), then [the three finite-cell
+orthogonality conditions packaged as `ConventionalResidualization` — derived here from a
+genuine weighted projection rather than assumed — hold for `D`](goal). -/
 theorem cellGrid_provides_residualization
     (hCellMassPos : ∀ ge ∈ P.admissibleCells D.eventSupport,
       0 < P.cellMassAtEvent ge.1 ge.2)

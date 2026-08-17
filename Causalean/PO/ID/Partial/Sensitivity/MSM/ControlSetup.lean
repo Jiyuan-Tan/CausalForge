@@ -163,7 +163,12 @@ theorem completeProp0_mem_MSMSet0 (Λ : ℝ)
   simp only [MSMSet0, Set.mem_setOf_eq]
   exact hMSM
 
-/-- **The control MSM bound: `E[Y(0)]` lies in the control MSM interval.** -/
+/-- **The control MSM bound is valid.** For [a sensitivity parameter Λ at which the true complete
+control propensity `P[D=0∣σ(X,Y(0))]` belongs to the control ambiguity set](hyp:Λ,hmem), assuming
+[the candidate IPW mean evaluated at the true complete control propensity recovers
+`E[Y(0)]`](hyp:hbridge) and that [the candidate means over the ambiguity set are bounded
+below](hyp:hbdd) and [bounded above](hyp:hbdd'), [the mean control potential outcome `E[Y(0)]` lies
+in the closed interval between the control MSM lower and upper bounds](goal). -/
 theorem Y0mean_mem_Icc (Λ : ℝ)
     (hmem : S.completeProp0 ∈ S.MSMSet0 Λ)
     (hbridge : S.candMean0 S.completeProp0 = S.Y0mean)
@@ -211,7 +216,12 @@ theorem msmLower0_anti {Λ Λ' : ℝ} (hΛ : 1 ≤ Λ) (hΛΛ' : Λ ≤ Λ')
     Set.image_mono hsub
   exact csInf_le_csInf hbdd' hne himg
 
-/-- **Point identification at `Λ = 1` (control arm, NUC collapse).** -/
+/-- **Point identification at Λ = 1 (control arm, no-unmeasured-confounding collapse).** Assume
+[the observed control propensity score `P[D=0∣σ(X)]` is almost surely strictly between 0 and
+1](hyp:hprop). Then for [any candidate complete control propensity `ẽ` belonging to the
+(uncalibrated) control ambiguity set at sensitivity level Λ = 1](hyp:etilde,hmem), [`ẽ` agrees
+almost everywhere with the observed control propensity score](goal): at Λ = 1 the odds-ratio
+ambiguity set collapses to the single point given by no unmeasured confounding. -/
 theorem MSMSet0_one_eq (etilde : P.Ω → ℝ)
     (hprop : ∀ᵐ ω ∂P.μ, 0 < S.propScore false ω ∧ S.propScore false ω < 1)
     (hmem : etilde ∈ S.MSMSet0 1) :

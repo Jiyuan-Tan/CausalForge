@@ -67,15 +67,17 @@ lemma compProd_eq_prod_withDensity_fiber
     rw [← Measure.setLIntegral_rnDeriv ha (Prod.mk a ⁻¹' s)]
   · exact hmeas.indicator hs
 
-/-- **σ-finite-reference Radon–Nikodym derivative of a composition-product.**
-
-For an s-finite measure `μ`, a σ-finite base reference `ν`, a **σ-finite** fibre
-reference `ρ`, and an s-finite kernel `κ`, assume base domination `μ ≪ ν`, μ-a.e.
-fibre domination `κ_a ≪ ρ`, and product a.e.-measurability of the raw per-slice
-fibre derivative.  Then the Radon–Nikodym derivative of the composition-product
-`μ ⊗ₘ κ` with respect to the product reference `ν ×ₘ ρ` is, almost everywhere, the
-product of the base derivative and the fibre derivative:
-`d(μ ⊗ₘ κ)/d(ν ×ₘ ρ)(a, b) = f(a) · (dκ_a/dρ)(b)` for any `f =ᵐ[ν] dμ/dν`. -/
+/-- **σ-finite-reference Radon–Nikodym derivative of a composition-product.** Fix an s-finite
+measure `μ`, a σ-finite base reference `ν`, a σ-finite fibre reference `ρ`, and an s-finite
+kernel `κ` from the base space to the fibre space, together with [a candidate base density
+`f`](hyp:f). If [`μ` is absolutely continuous with respect to `ν`](hyp:hμν), [`μ`-almost every
+fibre `κ a` is absolutely continuous with respect to `ρ`](hyp:hfiber), [the raw per-slice
+fibre derivative `(a, b) ↦ (dκ_a/dρ)(b)` is almost-everywhere measurable with respect to the
+product reference `ν × ρ`](hyp:hfiber_meas), and [`f` agrees `ν`-almost everywhere with the
+Radon–Nikodym derivative `dμ/dν`](hyp:hf), then [the Radon–Nikodym derivative of the
+composition-product `μ ⊗ₘ κ` with respect to the product reference `ν × ρ` agrees, `ν × ρ`-almost
+everywhere, with the pointwise product `(a, b) ↦ f a · (dκ_a/dρ)(b)` of the base density and the
+fibre derivative](goal). -/
 lemma rnDeriv_compProd_prod_sigmaFinite
     (μ ν : Measure α) (ρ : Measure β) (κ : Kernel α β) (f : α → ℝ≥0∞)
     [SigmaFinite ν] [SigmaFinite ρ] [IsSFiniteKernel κ]

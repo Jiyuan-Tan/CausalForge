@@ -131,14 +131,12 @@ private lemma weighted_residual_cond_exp_zero
   filter_upwards [BackdoorEstimationSystem.cond_exp_residual_zero S hA d] with ω hω
   rw [Pi.mul_apply, hω, mul_zero]
 
-/-- σ(X)-conditional form of `prop:est-cate-dr-cond-mean`:
-
-    𝔼[φ₀(factualZ ·) | σ(X)] =ᵐ τ_val (factualX ·).
-
-Under the back-door causal assumptions and strict overlap, the σ(X)-
-conditional expectation of the true DR pseudo-outcome `φ₀` evaluated at the
-factual data triple `Z = (X, A, Y)` equals the value-space CATE `τ_val`
-pulled back along `factualX`.
+/-- **σ(X)-conditional mean of the true DR pseudo-outcome equals the CATE.** Under [the
+back-door identification assumptions](hyp:hA) and [two-sided strict overlap: the treatment
+propensity lies in `[ε, 1 − ε]` for some `ε ∈ (0, 1/2]` almost surely](hyp:h_overlap), [the
+σ(X)-conditional expectation of the true DR pseudo-outcome `φ₀`, evaluated at the factual
+data triple, equals the value-space CATE `τ_val` pulled back along the covariate, almost
+surely](goal).
 
 -- proof outline:
 -- Decompose `phi₀ z = (μ_val 1 (X) - μ_val 0 (X))
@@ -340,10 +338,13 @@ theorem phi₀_factualZ_cond_exp
   rw [haddω, Pi.add_apply, hbaseω, hBω, hCω]
   simp [base]
 
-/-- Value-space `P_X`-a.e. form of `prop:est-cate-dr-cond-mean`:
-
-    ∫ z, φ₀(z) ∂(condDistrib factualZ factualX P.μ x) = τ_val x
-                                                  for P_X-a.e. x.
+/-- **Value-space form of the DR pseudo-outcome mean-CATE identity.** Under [the back-door
+identification assumptions](hyp:hA), [two-sided strict overlap: the treatment propensity
+lies in `[ε, 1 − ε]` for some `ε ∈ (0, 1/2]` almost surely](hyp:h_overlap), and
+[integrability of the true DR pseudo-outcome `φ₀` evaluated at the factual data
+triple](hyp:h_int), [for covariate-law-almost-every `x`, the mean of `φ₀` under the regular
+conditional distribution of the data triple given the covariate value `x` equals the
+value-space CATE `τ_val x`](goal).
 
 The integral form of `𝔼[φ₀(Z) | X = x] = τ_val(x)` obtained by transporting
 the σ(X)-conditional Ω-form `phi₀_factualZ_cond_exp` along `factualX` via

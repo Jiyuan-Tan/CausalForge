@@ -176,8 +176,9 @@ lemma doubledCoefficientPolynomial_eq_zero_of_eval_derivative
   exact (not_lt_of_ge hdegree)
     (natDegree_doubledCoefficientPolynomial_lt hn)
 
-/-- The confluent Vandermonde determinant is nonzero at pairwise distinct
-nodes. -/
+/-- For [a positive number of nodes `n`](hyp:hn) (`1 ≤ n`), a field `K`, and [pairwise distinct
+nodes `s : Fin n → K`](hyp:hs), [the confluent Vandermonde determinant at `s` is
+nonzero](goal). -/
 theorem det_confluentVandermonde_ne_zero {n : ℕ} {K : Type*} [Field K] (hn : 1 ≤ n)
     (s : Fin n → K) (hs : Function.Injective s) :
     (confluentVandermonde s).det ≠ 0 := by
@@ -404,8 +405,9 @@ lemma pinnedCoefficientPolynomial_eq_zero_of_eval_derivative
   exact (not_lt_of_ge hdegree)
     (natDegree_pinnedCoefficientPolynomial_lt hn)
 
-/-- The pinned confluent Vandermonde determinant is nonzero at pairwise distinct
-nodes: one node contributes only value evaluation and every other node contributes
+/-- For [a positive number of nodes `n`](hyp:hn) (`1 ≤ n`), a field `K`, and [pairwise distinct
+nodes `s : Fin n → K`](hyp:hs), [the pinned confluent Vandermonde determinant at `s` is
+nonzero](goal): one node contributes only value evaluation and every other node contributes
 both value and first-derivative evaluation. -/
 theorem det_pinnedConfluentVandermonde_ne_zero {n : ℕ} {K : Type*} [Field K]
     (hn : 1 ≤ n) (s : Fin n → K) (hs : Function.Injective s) :

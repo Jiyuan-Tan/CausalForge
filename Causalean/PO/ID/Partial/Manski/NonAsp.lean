@@ -69,12 +69,12 @@ theorem integral_Y0_le_upperBound0 [IsFiniteMeasure P.μ]
 For any two strata `z₁, z₀ ∈ support(Z)`, the ATE is sandwiched between
 the `z₁`-lower / `z₀`-upper pair on one side and the `z₁`-upper / `z₀`-lower
 pair on the other. -/
-/-- **Manski bounds for the ATE under an imperfect instrument.** For any two
-instrument strata `z₁` and `z₀` in the support of the instrument, the average
-treatment effect is sandwiched between the worst-case lower bound formed from
-the `z₁`-stratum lower envelope and `z₀`-stratum upper envelope, and the
-corresponding upper bound with the roles reversed — using only bounded outcomes
-and mean independence of the instrument, with no selection assumptions. -/
+/-- **Manski bounds for the ATE under an imperfect instrument.** For [any two instrument strata
+`z₁` and `z₀` in the support of the instrument](hyp:hz₁,hz₀), [the average treatment effect is
+sandwiched between the worst-case lower bound formed from the `z₁`-stratum lower envelope and
+`z₀`-stratum upper envelope, and the corresponding upper bound with the roles reversed](goal) —
+using only [bounded outcomes](hyp:hA) and [mean independence of the instrument](hyp:hMI), with no
+selection assumptions. -/
 theorem manski_bounds_ATE [IsFiniteMeasure P.μ]
     (hA : S.BaseAssumptions) (hMI : S.MeanIndep)
     {z₁ z₀ : α} (hz₁ : z₁ ∈ S.support) (hz₀ : z₀ ∈ S.support) :
@@ -126,8 +126,12 @@ theorem integral_Y0_le_ciInf_upperBound0 [IsFiniteMeasure P.μ]
   haveI : Nonempty ↑S.support := hne.to_subtype
   exact le_ciInf (fun z => S.integral_Y0_le_upperBound0 hA hMI z.property)
 
-/-- **Manski bounds for the ATE** in sup/inf form: sup of lowers minus inf
-of uppers on one side, inf of uppers minus sup of lowers on the other. -/
+/-- **Manski bounds for the ATE** in sup/inf form. Under [the baseline Manski
+assumptions](hyp:hA), [mean independence of the instrument](hyp:hMI), and [a nonempty instrument
+support](hyp:hne), [the average treatment effect is sandwiched between the supremum of the
+lower-envelope bounds minus the infimum of the upper-envelope bounds on one side, and the
+infimum of the upper-envelope bounds minus the supremum of the lower-envelope bounds on the
+other, aggregated over the whole instrument support](goal). -/
 theorem manski_bounds_ATE_ciSup [IsFiniteMeasure P.μ]
     (hA : S.BaseAssumptions) (hMI : S.MeanIndep) (hne : S.support.Nonempty) :
     (⨆ z : ↑S.support, S.lowerBound1 hA.lo z.val)

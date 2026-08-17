@@ -101,8 +101,18 @@ theorem aipw_isPathwiseGradient_ATE (S : ATE.BackdoorEstimationSystem P γ)
   rw [S.inner_aipwLp_eq_integral h_overlap hA h_y2 h_yd2 m.score]
   exact hHahn m
 
-/-- The AIPW influence function is the efficient influence function for the
-backdoor average treatment effect in the nonparametric observed-data model.
+/-- **AIPW is the efficient influence function for the backdoor ATE.** Let `S` be a backdoor
+average-treatment-effect estimation system with [strict overlap at level ε](hyp:h_overlap),
+satisfying [the system's core identification assumptions](hyp:hA), in which [the observed
+outcome has finite second moment](hyp:h_y2) and [each potential outcome under treatment level
+`d` has finite second moment](hyp:h_yd2). Suppose a functional ψ of the observed-data law
+[satisfies Hahn's pathwise-derivative identity — along every regular submodel, ψ's derivative at
+the true law equals the covariance of the AIPW score with the submodel's score](hyp:hHahn), and
+that [the full mean-zero space is a genuine nonparametric tangent space, i.e. it is contained in
+the closed span of regular-submodel scores](hyp:hdense). Then [the AIPW influence function is a
+pathwise gradient of ψ, lies in the full mean-zero tangent space, and is the canonical efficient
+influence function: for every other pathwise gradient `g` of ψ, projecting `g` onto the tangent
+space returns the AIPW influence function](goal).
 
 Under the supplied Hahn derivative identity and nonparametric tangent-space
 hypothesis, the AIPW score is a pathwise gradient, belongs to the full mean-zero

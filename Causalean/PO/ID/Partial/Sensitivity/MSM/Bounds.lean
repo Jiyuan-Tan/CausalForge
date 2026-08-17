@@ -129,11 +129,15 @@ private lemma weight_mul_ge_lower {a y w wm wM : ℝ} (ha : 0 ≤ a)
     have hay : a * y ≤ 0 := mul_nonpos_of_nonneg_of_nonpos ha (le_of_lt hy)
     exact mul_le_mul_of_nonpos_left hhi hay
 
-/-- **Closed form of the MSM upper bound.** Over the odds-ratio ambiguity set the supremum of the
-candidate IPW mean is attained pointwise, giving `msmUpper Λ = E[A·Y·(wMax if Y≥0 else wMin)]`.
+/-- **Closed form of the MSM upper bound.** Fix [a sensitivity parameter Λ at least 1](hyp:Λ,hΛ).
+If [the propensity score lies strictly between 0 and 1 almost everywhere (two-sided
+overlap)](hyp:hoverlap), [every candidate propensity in the odds-ratio ambiguity set is
+measurable up to null sets](hyp:hmeas), and [the envelope `A·|Y|·wMax(Λ)` — which dominates
+every candidate IPW integrand — is integrable](hyp:henv), then [the supremum of the candidate
+IPW mean over the ambiguity set is attained pointwise: the MSM upper bound equals
+`E[A·Y·(wMax if Y≥0 else wMin)]`](goal).
 
-Hypotheses: `1 ≤ Λ`; two-sided overlap `0 < e(X) < 1` a.e.; and an **envelope-integrability**
-condition `Integrable (fun ω => A·|Y|·wMax)` — which dominates every candidate integrand `A·Y/ẽ`
+The envelope-integrability condition dominates every candidate integrand `A·Y/ẽ`
 (since `1/ẽ ≤ wMax`), giving both `BddAbove` of the image and integrability of the closed form. -/
 theorem msmUpper_eq (Λ : ℝ) (hΛ : 1 ≤ Λ)
     (hoverlap : ∀ᵐ ω ∂P.μ, 0 < S.propScore true ω ∧ S.propScore true ω < 1)
@@ -297,8 +301,13 @@ theorem msmUpper_eq (Λ : ℝ) (hΛ : 1 ≤ Λ)
   · rw [← hestar_candMean]
     exact le_csSup hbdd (Set.mem_image_of_mem _ hestar_mem)
 
-/-- **Closed form of the MSM lower bound.** Symmetrically,
-`msmLower Λ = E[A·Y·(wMin if Y≥0 else wMax)]`. -/
+/-- **Closed form of the MSM lower bound.** Fix [a sensitivity parameter Λ at least 1](hyp:Λ,hΛ).
+If [the propensity score lies strictly between 0 and 1 almost everywhere (two-sided
+overlap)](hyp:hoverlap), [every candidate propensity in the odds-ratio ambiguity set is
+measurable up to null sets](hyp:hmeas), and [the envelope `A·|Y|·wMax(Λ)` — which dominates
+every candidate IPW integrand — is integrable](hyp:henv), then [the infimum of the candidate
+IPW mean over the ambiguity set is attained pointwise: the MSM lower bound equals
+`E[A·Y·(wMin if Y≥0 else wMax)]`](goal). -/
 theorem msmLower_eq (Λ : ℝ) (hΛ : 1 ≤ Λ)
     (hoverlap : ∀ᵐ ω ∂P.μ, 0 < S.propScore true ω ∧ S.propScore true ω < 1)
     (hmeas : ∀ etilde ∈ S.MSMSet Λ, AEMeasurable etilde P.μ)

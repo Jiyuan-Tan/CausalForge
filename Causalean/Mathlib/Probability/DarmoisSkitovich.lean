@@ -155,11 +155,13 @@ lemma charFun_contDiff_two {Z : Ω → ℝ} [IsFiniteMeasure P] (hZ : MemLp Z 2 
     (by simpa [Function.comp_def] using hZ)
 
 /-- **Pure analytic core: the Bernstein functional equation forces a Gaussian form.**
-Let `f, g : ℝ → ℂ` be `C²` with `f 0 = g 0 = 1` and satisfying the Bernstein
-functional equation `f (u+v) · g (u−v) = f u · g u · (f v · g (−v))`.  Then there
-is a single constant `c` such that, on a neighbourhood of `0`,
-`f t = exp (f'(0)·t + c·t²/2)` and `g t = exp (g'(0)·t + c·t²/2)` — both with the
-*same* `c`.
+Let `f, g : ℝ → ℂ` be functions that are [twice continuously
+differentiable](hyp:hf,hg) and [equal to `1` at the origin](hyp:hf0,hg0), and
+suppose [they satisfy the Bernstein functional equation
+`f (u+v) · g (u−v) = f u · g u · (f v · g (−v))` for all real `u, v`](hyp:hfe).
+Then [there is a single constant `c` such that, on a neighbourhood of `0`,
+`f t = exp (f'(0)·t + c·t²/2)` and `g t = exp (g'(0)·t + c·t²/2)`, with the same
+`c` in both formulas](goal).
 
 This is the genuinely hard analytic step and is pure complex analysis (no
 probability).  Proof via logarithmic derivatives, which avoids `Complex.log` and
@@ -617,9 +619,10 @@ lemma bernstein_charFun_gaussian_nhds_zero
     ring_nf
 
 /-- **Bernstein's theorem (finite-variance Darmois–Skitovich, two variables).**
-If `X` and `Y` are independent real random variables with finite second moments,
-and their sum `X + Y` and difference `X − Y` are independent, then both `X` and
-`Y` have Gaussian laws.
+Let `X` and `Y` be real random variables that are [independent](hyp:hXY) and
+each have [finite second moment](hyp:hX2,hY2). If [their sum `X + Y` and
+difference `X − Y` are independent](hyp:hUV), then [both `X` and `Y` have
+Gaussian laws](goal).
 
 This is the smallest non-degenerate instance of Darmois–Skitovich; the general
 two-variable case (arbitrary coefficients `a₁X + a₂Y ⟂ b₁X + b₂Y` with

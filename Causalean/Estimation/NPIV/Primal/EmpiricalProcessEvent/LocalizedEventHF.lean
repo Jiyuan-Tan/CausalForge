@@ -215,8 +215,13 @@ lemma localized_omega_event_for_HF_pair
         regime.interp_HF_eval_pair h₁ h₂ hh₁ hh₂ f hf (S.W ω')
     simpa [Ψ, r, hpop, heval_sample, heval_pop] using hdev
 
-/-- Ω-side peeled pair-form localized deviation event for the cross class
-`star(H · F)`.
+/-- **Peeled pair-form localized deviation event for the cross class `star(H · F)`.** Given [a
+positive sample size `n`](hyp:hn) and [a confidence level `δ` in `(0, 1]`](hyp:hδ_pos,hδ_le),
+[there is a single event of probability at least `1 − δ`, valid simultaneously for every pair
+`h₁, h₂` in the primal class `TC.H` and every critic `f` in `TC.F`, on which the gap between the
+empirical and population means of `(h₁ − h₂) · f` is bounded by `8 · HF_pair_const · δ_n² ·
+‖h₁ − h₂‖_strong + 5 · δ_n²`](goal), where the strong norm is taken in the primal L² embedding
+and `HF_pair_const` comes from the supplied localized-regime witness.
 
 This is the Foster-style dyadic peeling upgrade of
 `localized_omega_event_for_HF_pair`: the leading term scales with the

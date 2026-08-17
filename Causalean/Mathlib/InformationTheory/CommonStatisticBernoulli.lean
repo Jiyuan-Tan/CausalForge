@@ -600,8 +600,17 @@ lemma clippedStatisticSuccessParameter_abs_sub_le_ae
   rw [hr, hr']
   exact abs_le.mpr ⟨by linarith, by linarith⟩
 
-/-- Common statistic marginals and a localized setwise success-mass bound
-give a KL bound for compressed Bernoulli outcomes. -/
+/-- For a measurable space `A`, two finite measures `nu` and `nu'` on it, and success-probability
+    functions `p`, `p'` on `A`, suppose [`p`, `p'`, and a statistic `stat` are all
+    measurable](hyp:hp,hp',hstat), [`p` takes values in `[1/4, 3/4]`](hyp:hp0,hp1) and
+    [`p'` likewise takes values in `[1/4, 3/4]`](hyp:hp0',hp1'), and [`stat` pushes `nu` and `nu'`
+    forward to the same marginal law](hyp:hmap). Given [a nonnegative discrepancy bound
+    `D`](hyp:hD) and [a measurable exceptional set `E`](hyp:hE) such that [for every measurable
+    set `B` of statistic values, the setwise success-mass discrepancy
+    `|∫_{stat∈B} p dnu − ∫_{stat∈B} p' dnu'|` is at most `D` times the `stat`-pushforward mass of
+    `nu` on `B ∩ E`](hyp:hdiff), then [the Kullback–Leibler divergence between the compressed
+    Bernoulli-outcome laws obtained by pairing the outcome with `stat` under `nu` and under `nu'`
+    is at most `4·D²` times the `stat`-pushforward mass of `E` under `nu`](goal). -/
 -- @node: statisticBernoulliOutcome_klDiv_le_of_localized_success_bound
 lemma statisticBernoulliOutcome_klDiv_le_of_localized_success_bound
     {A : Type*} [MeasurableSpace A]

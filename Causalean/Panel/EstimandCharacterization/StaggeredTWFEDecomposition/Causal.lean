@@ -299,9 +299,14 @@ theorem Ybar_eq_Ybar0_late_on_S0_LE
 end CausalAssumptions
 
 omit [DecidableEq 𝒢] in
-/-- **Layer C corollary 1 — TN identifies ATT.** Under
-`CausalAssumptions P Y0 Y1`, for every admissible treated-versus-never pair
-`(g, u)` with `A_g < ∞` and `A_u = ∞`,
+/-- **Layer C corollary 1 — TN identifies ATT.** Fix a cohort panel `P` and potential-outcome
+maps `Y0` (never-treated path) and `Y1` (own-adoption-date path), and assume [consistency on
+treated and untreated cells, no anticipation, and pairwise untreated parallel trends across the
+three comparison types](hyp:hA). For [a treated cohort `g` whose adoption date is
+finite](hyp:h_g_fin) compared against [a never-treated cohort `u` whose adoption date is
+infinite](hyp:h_u_inf), [the treated-versus-never 2x2 difference-in-differences contrast `Δ_TN`
+equals `g`'s window-specific average treatment effect on the treated over its post-adoption
+window](goal):
 
     Δ_TN P g u = ATT_window Y0 Y1 g (S1_TN P g).
 
@@ -338,9 +343,13 @@ theorem Δ_TN_eq_ATT (P : CohortPanel 𝒢 T) (Y0 Y1 : 𝒢 → Fin T → ℝ)
   linarith
 
 omit [DecidableEq 𝒢] in
-/-- **Layer C corollary 2 — EL identifies the early cohort's ATT.** Under
-`CausalAssumptions P Y0 Y1`, for every admissible early-versus-late pair
-`(e, ℓ)` with `A_e < A_ℓ < ∞`,
+/-- **Layer C corollary 2 — EL identifies the early cohort's ATT.** Fix a cohort panel `P` and
+potential-outcome maps `Y0`, `Y1`, and assume [consistency on treated and untreated cells, no
+anticipation, and pairwise untreated parallel trends across the three comparison
+types](hyp:hA). For [an early cohort `e` whose adoption date strictly precedes that of a late
+cohort `ℓ`](hyp:h_lt), with [`ℓ`'s adoption date finite](hyp:h_ℓ_fin), [the early-versus-late
+contrast `Δ_EL` equals `e`'s window-specific average treatment effect on the treated over the
+window running from `e`'s own adoption date up to `ℓ`'s adoption date](goal):
 
     Δ_EL P e ℓ = ATT_window Y0 Y1 e (S1_EL P e ℓ).
 
@@ -377,9 +386,14 @@ theorem Δ_EL_eq_ATT (P : CohortPanel 𝒢 T) (Y0 Y1 : 𝒢 → Fin T → ℝ)
   linarith
 
 omit [DecidableEq 𝒢] in
-/-- **Layer C corollary 3 — LE has a bad-comparison term.** Under
-`CausalAssumptions P Y0 Y1`, for every admissible late-versus-early pair
-`(e, ℓ)` with `A_e < A_ℓ < ∞`,
+/-- **Layer C corollary 3 — LE has a bad-comparison term.** Fix a cohort panel `P` and
+potential-outcome maps `Y0`, `Y1`, and assume [consistency on treated and untreated cells, no
+anticipation, and pairwise untreated parallel trends across the three comparison
+types](hyp:hA). For [an early cohort `e` whose adoption date strictly precedes that of a late
+cohort `ℓ`](hyp:h_lt), with [`ℓ`'s adoption date finite](hyp:h_ℓ_fin), [the late-versus-early
+contrast `Δ_LE` equals `ℓ`'s window-specific average treatment effect on the treated over its
+post-adoption window, minus the "bad-comparison" gap between `e`'s own treatment effects on the
+two comparison windows](goal):
 
     Δ_LE P e ℓ
       = ATT_window Y0 Y1 ℓ (S1_LE P ℓ)

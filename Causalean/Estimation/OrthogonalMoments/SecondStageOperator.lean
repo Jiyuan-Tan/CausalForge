@@ -138,13 +138,17 @@ def Stable
           - op.evalAt n ω (fun z => bHat_n n ω z.1) x)
       (fun n => SecondStageOperator.oracleRiskScale op f target x n) μ
 
-/-- **Oracle expansion for the DR-Learner** (Thm `thm:est-cate-dr-oracle`,
-abstract operator-level form).
-
-Given a stable operator at `x`, a consistent first-stage in the stability
-distance `d_n`, and a conditional-bias identification witness for the
-caller-supplied `BiasIdent`, the operator-level oracle expansion holds modulo
-`o_p(R^*_n(x))`.
+/-- **Oracle expansion for the DR-Learner** (Thm `thm:est-cate-dr-oracle`, abstract
+operator-level form). Given [a second-stage regression operator `op` that is stable at the
+query point `x` for target function `target`, with respect to a distance `d_n` between
+pseudo-outcomes and a caller-supplied conditional-bias identification predicate
+`BiasIdent`](hyp:op,target,x,d_n,BiasIdent,hStab), suppose [`d_n` converges to zero in
+probability under μ, i.e. the first-stage pseudo-outcome estimate is
+consistent](hyp:hCons), and suppose [the estimated pseudo-outcome `fHat_n`, the true
+pseudo-outcome `f`, and the claimed conditional bias `bHat_n` satisfy
+`BiasIdent`](hyp:fHat_n,f,bHat_n,hBias). Then [the discrepancy between the operator applied to
+`fHat_n` and to `f`, minus the operator applied to `bHat_n`, is `o_p` of the oracle risk scale
+under μ](goal): the operator-level oracle expansion holds modulo `o_p(R^*_n(x))`.
 
 The model-specific input — Prop `prop:est-cate-dr-bias-identity` — enters
 through `hBias : BiasIdent …`, which the caller supplies.

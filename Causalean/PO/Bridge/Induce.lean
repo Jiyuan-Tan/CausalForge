@@ -200,7 +200,11 @@ lemma liftRegime_sqcup
 
 /-! ### Consistency propagates to the sub-system -/
 
-/-- If `P` is consistent, so is `P|_R`. -- rem:po-restrict pragmatic use. -/
+/-- **Restriction preserves consistency.** If [the ambient potential-outcome
+system `P` is consistent (SUTVA holds)](hyp:hP), then [the system `P`
+restricted to `R` is consistent as well](goal).
+
+rem:po-restrict pragmatic use. -/
 theorem restrict_consistency (hP : P.Consistency) :
     (P.restrict R).Consistency where
   factual := by

@@ -716,7 +716,24 @@ theorem dr_scoreFlat
 /-! ## Orthogonality of the DR-Learner squared loss under a DCT bridge -/
 
 /-- **DR-Learner loss orthogonality under a DCT bridge**
-(`prop:est-osl-dr-loss-orthogonal`).
+(`prop:est-osl-dr-loss-orthogonal`). For a CATE estimation system built on a
+potential-outcome model that satisfies [the back-door identification
+assumptions](hyp:hA), fix [a margin ε > 0](hyp:hε_pos) such that [the true nuisance
+η₀ lies in the strict-overlap slice at that margin, i.e. the propensity score is
+bounded away from 0 and 1](hyp:h_overlap_η₀). Fix a convex candidate target class
+inside an inner-product space together with a real-valued evaluation map on it, and
+suppose [θ₀ belongs to this class](hyp:θ₀_mem), [every candidate's evaluation is
+measurable](hyp:eval_meas), [θ₀'s evaluation agrees pointwise with the true
+value-space CATE](hyp:eval_θ₀), and [θ₀ minimizes the population AIPW
+pseudo-outcome squared-loss risk against the true nuisance over the candidate
+class](hyp:θ₀_minimizes). Given directional-derivative data for the evaluation map
+and for the doubly robust pseudo-outcome that together assemble a closed-form mixed
+directional derivative for the loss, if [a dominated-convergence bridge licenses
+passing the limit defining the integrated mixed target/nuisance score through the
+integral](hyp:hBridge), then [this closed-form derivative witnesses that the
+DR-Learner squared loss is Neyman-orthogonal: its integrated mixed directional
+derivative vanishes at the truth `(θ₀, η₀)` for every admissible target and bounded
+nuisance direction](goal).
 
 Combines the closed-form mixed directional derivative `drMixedDirDeriv`,
 the DCT-swap hypothesis `hBridge`, and the score-flatness lemma

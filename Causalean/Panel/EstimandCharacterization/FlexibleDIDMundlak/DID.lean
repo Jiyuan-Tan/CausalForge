@@ -275,9 +275,15 @@ theorem untreatedFit
     have hh := hd0; simp only [hd] at hh; linarith
   rw [hm0]; exact (hNA hgt c).symm
 
-/-- Under no anticipation and conditional parallel trends, the saturated
-untreated regression recovers the untreated
-potential-outcome mean on every treated cell.
+/-- **Saturated untreated regression recovers the untreated potential outcome on
+treated cells.** If [no anticipation holds: the treated and untreated
+potential-outcome means agree on every cell in the untreated-outcome regression's
+design](hyp:hNA) and [conditional parallel trends holds — the mean untreated
+potential outcome admits an additive cohort/time fixed-effects representation
+given covariates](hyp:hCPT), then on [any treated cohort-time cell `(g,t)`
+covered by the saturated untreated regression `S`](hyp:hgt), [the fitted value
+`S.m0 g t c` equals the mean untreated potential outcome `Y0Mean g t c`, for
+every covariate cell `c`](goal).
 
 Proof: on the untreated design, `m0` reproduces the factual cohort-`g` mean
 (`untreatedFit`), which no anticipation turns into the untreated-outcome mean
@@ -448,8 +454,12 @@ structure FlexibleDIDEstimands (P : StaggeredATTCells Cohort Time Covar)
 
 namespace FlexibleDIDEstimands
 
-/-- POLS cell coefficients equal imputation because their finite-cell residual
-normal equation identifies the same weighted residual mean. -/
+/-- **POLS cell coefficients equal imputation.** On [any treated cohort-time cell
+`(g,t)`](hyp:hgt), [the flexible POLS cell coefficient equals the imputation
+residual mean at that cell](goal).
+
+Proof idea: both coefficients solve the same finite-cell residual normal
+equation, so they identify the same covariate-weighted residual mean. -/
 theorem thetaPOLS_eq_imputationTheta
     (P : StaggeredATTCells Cohort Time Covar)
     (S : SaturatedUntreatedRegression P)
@@ -459,8 +469,13 @@ theorem thetaPOLS_eq_imputationTheta
   cellResidualNormalEq_eq_imputationTheta P.observedMean S.m0 P.covarWeight
     P.covarWeight_sum_one (E.pols_cell_normalEq hgt)
 
-/-- ETWFE cell coefficients equal imputation because the FWL/TWFE-Mundlak
-bridge supplies the same finite-cell residualized normal equation. -/
+/-- **ETWFE cell coefficients equal imputation.** On [any treated cohort-time cell
+`(g,t)`](hyp:hgt), [the extended two-way-fixed-effects (ETWFE) cell coefficient
+equals the imputation residual mean at that cell](goal).
+
+Proof idea: the FWL/TWFE-Mundlak bridge supplies the same finite-cell
+residualized normal equation as imputation, so the two coefficients solve the
+identical equation. -/
 theorem thetaETWFE_eq_imputationTheta
     (P : StaggeredATTCells Cohort Time Covar)
     (S : SaturatedUntreatedRegression P)
@@ -526,9 +541,13 @@ theorem imputationTheta_eq_tauCell
   intro c _hc
   rw [P.consistency_treated hgt c, S.recovers_target_Y0 hNA hCPT hgt c]
 
-/-- Cell-level characterization: once the untreated-regression witness recovers
-target untreated means and the POLS/ETWFE cell coefficients satisfy their
-finite-cell residual normal equations, all three equal the ATT cell. -/
+/-- **Cell-level characterization: imputation, POLS, and ETWFE agree with the ATT
+cell.** If [no anticipation holds](hyp:hNA), [conditional parallel trends holds
+— the mean untreated potential outcome admits an additive cohort/time
+fixed-effects representation given covariates](hyp:hCPT), and [`(g,t)` is a
+treated cohort-time cell covered by the untreated-regression witness `S` and the
+imputation/POLS/ETWFE estimands `E`](hyp:hgt), then [the imputation, POLS, and
+ETWFE cell coefficients at `(g,t)` all equal the ATT cell `τ_gt`](goal). -/
 theorem flexible_did_cell_characterization
     (P : StaggeredATTCells Cohort Time Covar)
     (S : SaturatedUntreatedRegression P)
@@ -546,8 +565,13 @@ theorem flexible_did_cell_characterization
     rw [E.etwfe_cell_eq_pols P S hgt, hpols]
   exact ⟨himp, hpols, hetwfe⟩
 
-/-- Aggregate characterization: every requested treated-cell weighting of the
-three bundled estimands equals the weighted ATT aggregate. -/
+/-- **Aggregate characterization: every weighting of imputation, POLS, and ETWFE
+equals the weighted ATT aggregate.** If [no anticipation holds](hyp:hNA) and
+[conditional parallel trends holds — the mean untreated potential outcome
+admits an additive cohort/time fixed-effects representation given
+covariates](hyp:hCPT), then for any treated-cell weighting function `a`, [the
+`a`-weighted aggregates of the imputation, POLS, and ETWFE cell estimands all
+equal the `a`-weighted ATT aggregate](goal). -/
 theorem flexible_did_aggregate_characterization
     (P : StaggeredATTCells Cohort Time Covar)
     (S : SaturatedUntreatedRegression P)
@@ -582,14 +606,17 @@ theorem flexible_did_aggregate_characterization
     intro gt hgt
     rw [(hcell gt hgt).2.2]
 
-/-- **Headline finite-cell characterization** (Wooldridge, Theorem B).
-
-Under **no anticipation** (`hNA`) and **conditional parallel trends**
-(`hCPT`) — the two causal assumptions the source proof invokes — together with
-the saturated untreated regression `S` and the POLS/ETWFE finite-cell residual
-normal equations carried by `E`, the flexible imputation, POLS, and ETWFE cell
-estimands all equal the ATT cell `τ_gt`, and hence every weighted aggregate
-equals `τ_agg(a)`.
+/-- **Headline finite-cell characterization (Wooldridge, Theorem B).** If [no
+anticipation holds: the treated and untreated potential-outcome means agree on
+every cell in the untreated-outcome regression's design](hyp:hNA) and
+[conditional parallel trends holds — the mean untreated potential outcome
+admits an additive cohort/time fixed-effects representation given
+covariates](hyp:hCPT), then, given the saturated untreated regression `S` and
+the POLS/ETWFE finite-cell residual normal equations carried by `E`, [on every
+treated cohort-time cell the flexible imputation, POLS, and ETWFE estimands all
+equal the ATT cell, and consequently every treated-cell weighted aggregate of
+the three estimands equals the correspondingly weighted ATT
+aggregate](goal).
 
 The assumptions `hNA` and `hCPT` drive
 `SaturatedUntreatedRegression.recovers_target_Y0`, which feeds

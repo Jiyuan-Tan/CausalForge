@@ -181,15 +181,20 @@ noncomputable def finiteResidualizedCoefficient
     (Dtilde Ytilde : Unit → Time → ℝ) : ℝ :=
   inner Dtilde Ytilde / inner Dtilde Dtilde
 
-/-- Finite scalar Frisch-Waugh-Lovell handoff.
+/-- **Finite scalar Frisch–Waugh–Lovell handoff.** Suppose the outcome and regressor decompose
+as [`Y = Yproj + Ytilde`](hyp:hY_decomp) and [`D = Dproj + Dtilde`](hyp:hD_decomp), where
+[`Dproj`](hyp:hDproj_mem) and [the fitted nuisance term `Hβ`](hyp:hHβ_mem) both satisfy the
+nuisance predicate `H`, [`Dtilde` is orthogonal to every array satisfying
+`H`](hyp:hDtilde_orth_H), [`Dtilde` is orthogonal to `Yproj`](hyp:hYproj_orth), and [`Dtilde` has
+strictly positive self-inner-product (a nondegenerate residualized regressor)](hyp:hDtilde_pos).
+If the coefficient `β` and nuisance fit `Hβ` satisfy [the normal equation against the raw
+regressor `D`](hyp:h_normal_D) and [the normal equation against its nuisance component
+`Dproj`](hyp:h_normal_Dproj), then [`β` equals the finite residualized coefficient
+`inner Dtilde Ytilde / inner Dtilde Dtilde`](goal).
 
-If a proposed coefficient `β` and nuisance term `Hβ` satisfy the finite normal
-equation against the raw regressor `D` and the equation for the nuisance
-component `Dproj`, while
-`Dtilde` is the residualized regressor orthogonal to `H`, then `β` equals the
-finite residualized ratio. The outcome residual only needs the explicit bridge
-`inner Dtilde Yproj = 0`; this covers the common TWFE case where `Yproj` is
-unit/time additive but not necessarily in the paper-specific nuisance class. -/
+The outcome residual only needs the explicit bridge `inner Dtilde Yproj = 0`; this covers the
+common TWFE case where `Yproj` is unit/time additive but not necessarily in the paper-specific
+nuisance class. -/
 theorem finite_residualized_coefficient_eq_of_normalEqs
     (H : (Unit → Time → ℝ) → Prop)
     {Y D Yproj Ytilde Dproj Dtilde Hβ : Unit → Time → ℝ} {β : ℝ}
@@ -359,8 +364,9 @@ theorem ddot_orthogonal_time (hU : 0 < Fintype.card Unit)
     _ = 0 := by
       rw [hweighted, mul_zero]
 
-/-- Double-demeaned arrays are orthogonal to every unit/time additive
-nuisance function. -/
+/-- Assume [at least one unit](hyp:hU) and [at least one period](hyp:hT). Then for [any array
+`h` of unit/time additive form `h_it = a_i + b_t`](hyp:hh), [the double-demeaned array `ddot V`
+is orthogonal to `h` under the unnormalized uniform panel inner product](goal). -/
 theorem ddot_orthogonal_unit_time (hU : 0 < Fintype.card Unit)
     (hT : 0 < Fintype.card Time)
     (V h : Unit → Time → ℝ) (hh : IsUnitTimeAdditive h) :

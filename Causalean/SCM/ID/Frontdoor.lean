@@ -1082,7 +1082,19 @@ private theorem frontdoor_fd1_interception_compProd
     _ = M.frontdoorKernelY X hObs hFix Y (Wbase.image SWIGNode.random) hY hWr s0 a :=
       (hP2 a).symm
 
-/-- **Frontdoor completeness — joint (compProd), version-safe primary form.**
+/-- **Frontdoor completeness — joint (compProd), version-safe primary form.**  Let
+[`X` be a valid intervention set — observed and not already fixed](hyp:hObs,hFix), and
+[`Wbase` likewise a valid intervention set of mediators](hyp:hWobs,hWfix), with
+[the outcome set `Y` observed](hyp:hY), [the random copies of `Wbase` observed](hyp:hWr),
+and [the random copies of `X` observed](hyp:hXr). Suppose the frontdoor criterion holds for
+`(X, Wbase, Y)`, that [`Y` is disjoint from the random copies of `Wbase`](hyp:hDisj_YWr) and
+[the random copies of `Wbase` are disjoint from those of `X`](hyp:hDisj_WrXr), and that each
+of the three legs of the frontdoor decomposition — [the `do(X)` leg](hyp:hOverlapA,hPositivityA),
+[the `do(Wbase)` leg adjusting for `X`](hyp:hOverlapB,hPositivityB), and [the nested
+`do(X)`-then-`do(Wbase)` leg](hyp:hOverlapFD1,hPositivityFD1) — satisfies the matching
+backdoor overlap and positivity conditions. Then [the joint law of the treatment marginal
+with the post-intervention `Y`-marginal equals the joint law of the treatment marginal with
+the frontdoor-adjustment functional](goal).
 
     `νX ⊗ₘ doKernelY = νX ⊗ₘ frontdoorKernelY` at base `s₀`, under the frontdoor
     criterion and the back-door positivity / overlap conditions inherited from the
@@ -1148,10 +1160,20 @@ theorem frontdoor_completeness_ae_compProd
     _hFD hDisj_YWr hDisj_WrXr s0 hOverlapA hPositivityA hOverlapB hPositivityB
     hOverlapFD1 hPositivityFD1
 
-/-- **Frontdoor identification, a.e. in the treatment value.**
+/-- **Frontdoor identification, a.e. in the treatment value.**  Let
+[`X` be a valid intervention set — observed and not already fixed](hyp:hObs,hFix), and
+[`Wbase` likewise a valid intervention set of mediators](hyp:hWobs,hWfix), with
+[the outcome set `Y` observed](hyp:hY), [the random copies of `Wbase` observed](hyp:hWr),
+and [the random copies of `X` observed](hyp:hXr). Suppose the frontdoor criterion holds for
+`(X, Wbase, Y)`, that [`Y` is disjoint from the random copies of `Wbase`](hyp:hDisj_YWr) and
+[the random copies of `Wbase` are disjoint from those of `X`](hyp:hDisj_WrXr), and that each
+of the three legs of the frontdoor decomposition — [the `do(X)` leg](hyp:hOverlapA,hPositivityA),
+[the `do(Wbase)` leg adjusting for `X`](hyp:hOverlapB,hPositivityB), and [the nested
+`do(X)`-then-`do(Wbase)` leg](hyp:hOverlapFD1,hPositivityFD1) — satisfies the matching
+backdoor overlap and positivity conditions. Then for [`treatmentMarginal`-almost-every
+treatment value `t`, the post-intervention `Y`-marginal `doKernelY` at `t` equals the
+frontdoor-adjustment functional `frontdoorKernelY` at `t`](goal).
 
-    For `νX`-almost-every treatment value `t`, the post-intervention `Y`-marginal
-    `doKernelY t` equals the frontdoor-adjustment functional `frontdoorKernelY t`.
     The frontdoor analogue of `backdoor_identifiable_ae`; follows from
     `frontdoor_completeness_ae_compProd` by `ae_eq_of_compProd_eq`. -/
 theorem frontdoor_identifiable_ae

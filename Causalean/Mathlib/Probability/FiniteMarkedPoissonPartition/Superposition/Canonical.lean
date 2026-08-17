@@ -831,8 +831,13 @@ lemma map_superposeByMarks_map_restrictPartition
   exact Filter.Eventually.mono hae fun s hs =>
     superposeByMarks_restrictPartition_orderByMarks p s hs
 
-/-- Superposing independent canonical cell configurations recovers the
-canonical global configuration law exactly. -/
+/-- **Superposition recovers the canonical global law.** Under [nonnegative intensity
+`lam`](hyp:lam), and independently for each cell `j` of the finite measurable partition `p`, draw a
+canonical marked Poisson configuration with base measure `p.cellObservationLaw P j`, mark
+distribution `R`, and intensity `lam` times the `P`-mass of cell `j`; [merging these per-cell
+configurations by increasing mark (mark-ordered superposition) has exactly the law of the canonical
+marked Poisson configuration with base measure `P`, mark distribution `R`, and intensity
+`lam`](goal). -/
 lemma map_superposeByMarks_canonicalCellLaws
     [StandardBorelSpace X]
     (p : FiniteMeasurablePartition X ι)

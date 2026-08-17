@@ -91,8 +91,10 @@ lemma IIDSample.empiricalMeasure_real_Iic (S : IIDSample Ω ℝ μ P)
   · rw [Set.indicator_of_mem h, Set.indicator_of_mem h, Pi.one_apply, ENNReal.toReal_one]
   · rw [Set.indicator_of_notMem h, Set.indicator_of_notMem h, ENNReal.toReal_zero]
 
-/-- **cdf bridge.**  The cdf of the empirical measure is the empirical cdf:
-`cdf νₙ = F̂ₙ`. -/
+/-- **cdf bridge.** For [a positive sample size $n$](hyp:hn), the cumulative distribution function
+of the empirical measure `S.empiricalMeasure n ω` built from an i.i.d. sample at outcome `ω`
+[coincides pointwise, at every threshold `y`, with the empirical cdf `S.empiricalCDF y n
+ω`](goal). -/
 lemma IIDSample.empiricalMeasure_cdf (S : IIDSample Ω ℝ μ P)
     {n : ℕ} (hn : 0 < n) (ω : Ω) (y : ℝ) :
     cdf (S.empiricalMeasure n ω) y = S.empiricalCDF y n ω := by
@@ -107,8 +109,9 @@ noncomputable def IIDSample.sampleQuantile (S : IIDSample Ω ℝ μ P) (τ : ℝ
     ℕ → Ω → ℝ :=
   fun n ω => quantile (S.empiricalMeasure n ω) τ
 
-/-- **Switching relation.**  For interior `τ ∈ (0,1)` and `0 < n`,
-`q̂ₙ(τ) ≤ x ↔ τ ≤ F̂ₙ(x)`. -/
+/-- **Switching relation.** For [a positive sample size $n$](hyp:hn) and [an interior quantile
+level $\tau\in(0,1)$](hyp:hτ0,hτ1), [the sample $\tau$-quantile $\hat q_n(\tau)$ is at most a given
+point `x` exactly when $\tau$ is at most the empirical cdf at `x`](goal). -/
 lemma IIDSample.sampleQuantile_le_iff (S : IIDSample Ω ℝ μ P)
     {n : ℕ} (hn : 0 < n) (ω : Ω) {τ : ℝ} (hτ0 : 0 < τ) (hτ1 : τ < 1) (x : ℝ) :
     S.sampleQuantile τ n ω ≤ x ↔ τ ≤ S.empiricalCDF x n ω := by
@@ -135,14 +138,14 @@ lemma IIDSample.empiricalCDF_monotone (S : IIDSample Ω ℝ μ P) (n : ℕ) (ω 
 
 /-! ## Atom bound (tie-free under an atomless population) -/
 
-/-- **Atom bound.**  Under an atomless population (`Continuous (cdf P)`, i.e. `P`
-has no atoms), the sample is a.s. tie-free, so the empirical cdf jumps by exactly
-`1/n` at the sample quantile and `τ ≤ F̂ₙ(q̂ₙ) ≤ τ + 1/n`.  Consequently
+/-- **Atom bound.** If [the population cdf $F$ is continuous, i.e. the population is
+atomless](hyp:hcont), [the sample size $n$ is positive](hyp:hn), and [the quantile level $\tau$ is
+interior, $0<\tau<1$](hyp:hτ0,hτ1), then [almost surely the empirical cdf evaluated at the sample
+$\tau$-quantile $\hat q_n(\tau)$ deviates from $\tau$ by at most $1/n$](goal).
 
-    |F̂ₙ(q̂ₙ(τ)) − τ| ≤ 1/n        a.s.
-
-This is the only place an atomless-population hypothesis enters the
-sample-quantile asymptotics. -/
+Under an atomless population, the sample is a.s. tie-free, so the empirical cdf jumps by exactly
+`1/n` at the sample quantile and `τ ≤ F̂ₙ(q̂ₙ) ≤ τ + 1/n`. This is the only place an
+atomless-population hypothesis enters the sample-quantile asymptotics. -/
 lemma IIDSample.sampleQuantile_atom_bound [IsProbabilityMeasure μ] (S : IIDSample Ω ℝ μ P)
     (hcont : Continuous (fun y => cdf P y))
     {n : ℕ} (hn : 0 < n) {τ : ℝ} (hτ0 : 0 < τ) (hτ1 : τ < 1) :

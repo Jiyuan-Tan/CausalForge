@@ -1837,8 +1837,15 @@ private lemma choose_dyadic_scale_for_epsilon (ε : ℝ) (ε_pos : 0 < ε) (c_ε
     rw [<- h2]
     exact Int.le_ceil (Real.logb 2 (c / ε))
 
-/-- Dudley's entropy-integral bound controls the signed empirical Rademacher
-average without the outer absolute value. -/
+/-- **Dudley entropy-integral bound, without the outer absolute value.** Fix
+[a positive scale ε](hyp:ε_pos) that is [strictly less than half the common
+empirical-norm envelope c](hyp:ε_le_c_div_2), where [the sample size m is
+positive](hyp:m_pos), [every member of the class has empirical norm on the
+sample at most c](hyp:cs), and [the sample-restricted function class is
+totally bounded in the empirical pseudometric](hyp:h'). Then [the empirical
+Rademacher complexity computed without the outer absolute value is at most
+`4ε + (12/√m) ∫_ε^(c/2) √(log(coveringNumber x)) dx`, the usual Dudley
+chaining bound in terms of the covering-number entropy integral](goal). -/
 theorem dudley_entropy_integral_bound {ε : ℝ} (ε_pos : 0 < ε) (h' : TotallyBounded (Set.univ : Set (EmpiricalFunctionSpace F S)))
   (m_pos : 0 < m) (cs : ∀ f : ι, empiricalNorm S (F f) ≤ c)
   (ε_le_c_div_2 : ε < c/2) :

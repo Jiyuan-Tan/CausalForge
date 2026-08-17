@@ -196,10 +196,10 @@ theorem BPIdentifiedInterval_subset_Icc (hA : S.BaseAssumptions) :
     (fun _ h => S.bpLower_le_BPObjective hA h)
     (fun _ h => S.BPObjective_le_bpUpper hA h)
 
-/-- **The Balke-Pearl bound in closed form.** The true average treatment effect
-lies between the largest of the eight lower expressions and the smallest of the
-eight upper expressions, both computable directly from the observed cell
-probabilities. -/
+/-- **The Balke-Pearl bound in closed form.** Under [the Balke-Pearl IV base
+assumptions](hyp:hA), [the true average treatment effect lies between the largest of eight
+closed-form lower expressions and the smallest of eight closed-form upper expressions, both
+computable directly from the observed cell probabilities](goal). -/
 theorem ATE_mem_Icc_bpLower_bpUpper (hA : S.BaseAssumptions) :
     S.ATE ∈ Set.Icc S.bpLower S.bpUpper :=
   S.BPIdentifiedInterval_subset_Icc hA (S.ATE_mem_BPIdentifiedInterval hA)

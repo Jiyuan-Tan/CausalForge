@@ -127,9 +127,18 @@ treatment `D̈`. -/
     (ofTwoWayPanel balanced D Y Y0 tau hD_binary hconsistency hSD).Dtilde = ddot D :=
   rfl
 
-/-- The DCDH TWFE coefficient of the FWL-derived panel equals the uniform-panel
-Frisch–Waugh–Lovell residualized coefficient of `Y` on the double-demeaned
-treatment. -/
+/-- **The DCDH TWFE coefficient of the FWL-derived panel equals the
+uniform-panel Frisch–Waugh–Lovell residualized coefficient of `Y` on the
+double-demeaned treatment.** For a uniform balanced panel and outcome,
+treatment, untreated-outcome, and effect arrays `Y`, `D`, `Y0`, `tau`, suppose
+[the treatment is binary](hyp:hD_binary), [the observed outcome equals the
+untreated outcome plus the treatment times the effect
+(consistency)](hyp:hconsistency), and [the double-demeaned treatment has
+strictly positive uniformly-weighted variation](hyp:hSD). Then [the two-way
+fixed-effects (TWFE)
+coefficient of the DCDH panel built from this data by `ofTwoWayPanel` equals
+the Frisch–Waugh–Lovell residualized coefficient of `Y` regressed on the
+double-demeaned treatment `ddot D`](goal). -/
 theorem ofTwoWayPanel_betaTWFE
     (balanced : UniformTwoWayPanel.BalancedPanel G T)
     (D Y Y0 tau : G → T → ℝ)

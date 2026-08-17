@@ -42,9 +42,13 @@ theorem matrix_rank_le_of_gram_factor {R ι : Type*} [Nontrivial R] [CommRing R]
   exact (Matrix.rank_mul_le_left B B.transpose).trans <| by
     simpa using Matrix.rank_le_card_width B
 
-/-- The squared Euclidean energy of independent centered unit-bounded noise,
-after applying a symmetric idempotent matrix of rank at most `r`, exceeds
-`4 * t ^ 2` with probability at most `5 ^ r * exp (-t ^ 2 / 2)`.
+/-- **Projected bounded-noise tail bound.** Let `eps : Fin n → Ω → ℝ` be coordinate noise terms
+such that [each `eps i` is measurable](hyp:hmeas), [each is bounded by `1` in absolute value
+almost surely](hyp:hbound), [each has mean zero](hyp:hcenter), and [the coordinates are mutually
+independent](hyp:hindep). If the `n × n` matrix `Pi` is [symmetric](hyp:hsymm) and
+[idempotent](hyp:hidem) — so it is an orthogonal projection — and [has rank at most `r`](hyp:hrank),
+then for [any nonnegative `t`](hyp:ht), [the squared Euclidean norm of the projected vector
+`Pi · eps` exceeds `4 * t ^ 2` with probability at most `5 ^ r * exp (-t ^ 2 / 2)`](goal).
 
 The hypotheses say that the matrix is an orthogonal projection and that the
 coordinates of the noise are measurable, mutually independent, centered, and

@@ -447,12 +447,14 @@ def roots : Finset V :=
 -- ============================================================
 
 omit [DecidableEq V] [Fintype V] in
-/-- **Acyclicity from a topological ranking.** If a function `τ : V → W` into
-a set equipped with a transitive, irreflexive ranking relation `r`
-strictly increases along every edge (`hτ`), then the edge relation has no directed
-cycle: a cycle `v ⇝ v` would force the strictly increasing `τ` to satisfy
-`τ v < τ v`. This is the standard way to discharge the `acyclic` field when
-building a `DAG` from a construction that already carries a topological numbering
+/-- **Acyclicity from a topological ranking.** Given an edge relation `e` on `V` and a ranking
+function `τ` into a type equipped with a transitive, irreflexive relation `r`, if [`τ` strictly
+increases (with respect to `r`) along every edge of `e`](hyp:hτ), then [`e` has no directed
+cycle: no vertex is reachable from itself via the transitive closure of `e`](goal).
+
+A cycle `v ⇝ v` would force the strictly increasing `τ` to satisfy `r (τ v) (τ v)`,
+contradicting irreflexivity of `r`. This is the standard way to discharge the `acyclic` field
+when building a `DAG` from a construction that already carries a topological numbering
 in hand (concrete examples, SWIG parity orders, a parent graph's order).
 
 The numbering appears only inside this (proof-level) lemma, so a `DAG` whose

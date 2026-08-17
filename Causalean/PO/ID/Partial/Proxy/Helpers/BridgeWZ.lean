@@ -36,9 +36,17 @@ variable {P : POSystem}
   {S : POProximalSystem P γ_X γ_Z γ_W γ_U}
   {μ : Measure P.Ω} [IsFiniteMeasure μ] [StandardBorelSpace P.Ω]
 
-/-- **Two-proxy bridge-substitution identity, same-arm form**
-(Ghassami-Shpitser-Tchetgen Tchetgen 2024, Theorem 3, equation (★) at the
-end of the proof, in the codebase's probability-ratio q convention).
+/-- **Two-proxy bridge-substitution identity, same-arm form** (Ghassami-Shpitser-Tchetgen
+Tchetgen 2024, Theorem 3, equation (★), in the codebase's probability-ratio `q`
+convention). Fix a treatment arm `a` and assume [the two-proxy bridge assumption
+bundle](hyp:HA) — consistency, latent exchangeability of `Y(a)`, the likelihood-ratio
+arm-swap relation linking the off-arm and on-arm measures, the outcome bridge `h`, the
+treatment-proxy bridge `q`, and conditional independence of the two proxies `W` and `Z`
+given treatment and covariates — together with [the treatment and outcome variables
+being distinct](hyp:hAY). Then [the average potential outcome `Y(a)` over the off-arm
+stratum `{A ≠ a}` equals the on-arm average of the product of the outcome bridge
+`h(a, W, X)` and the treatment-proxy bridge `q(Z, a, X)`](goal):
+`∫_{A≠a} Y(a) dμ = ∫_{A=a} h(a, W, X) · q(Z, a, X) dμ`.
 
 Conclusion (same-arm form):
 

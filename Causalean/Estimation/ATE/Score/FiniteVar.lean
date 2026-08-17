@@ -36,11 +36,13 @@ namespace BackdoorEstimationSystem
 variable {P : POSystem} {γ : Type*} [MeasurableSpace γ]
   [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
 
-/-- **Finite variance of `ψ_AIPW`** — `lem:est-aipw-finite-var`.
-
-Under strict overlap (`ε ∈ (0, 1/2]`), `E[Y²] < ∞`, and direct `L²(P)` gates
-for `μ(d, X)` for both treatment arms, the AIPW influence function is
-square-integrable against the observed data law `P_Z`.
+/-- **Finite variance of `ψ_AIPW`** — `lem:est-aipw-finite-var`.  For an
+estimation system `S`, if [the true propensity satisfies strict overlap at
+some level in `(0, 1/2]`](hyp:h_overlap), [the observed outcome has finite
+second moment](hyp:h_y2), and [each treatment arm's outcome regression,
+evaluated at the covariate, is square-integrable](hyp:hμ_L2), then [the AIPW
+influence function is square-integrable against the observed-data law
+`P_Z`](goal).
 
 The theorem states the variance result at the level used by the score proof:
 the regression terms must be square-integrable on the realized covariates.

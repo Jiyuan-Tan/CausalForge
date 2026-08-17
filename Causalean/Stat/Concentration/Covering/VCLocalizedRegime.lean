@@ -355,8 +355,10 @@ lemma criticalRadius_vcLocalizedPsi_sq_le {K : ℝ} {d n : ℕ}
   unfold vcLocalizedPsi
   exact criticalRadius_linear_sq_le (vcLocalizedSlope_pos hK hn)
 
-/-- The finite-VC squared critical radius has the advertised
-`(d * log n) / n`-order upper bound. -/
+/-- **Rate bound for the finite-VC critical radius.** For [a nonnegative localization constant
+K](hyp:hK) and [a positive sample size n](hyp:hn), [the squared critical radius of the finite-VC
+localized envelope `vcLocalizedPsi K d n` is at most `36·(K·d·log(n+1)+1)/n` — the advertised
+`(d·log n)/n`-order bound](goal). -/
 lemma criticalRadius_vcLocalizedPsi_sq_le_rate {K : ℝ} {d n : ℕ}
     (hK : 0 ≤ K) (hn : 0 < n) :
     (criticalRadius (vcLocalizedPsi K d n)) ^ 2 ≤

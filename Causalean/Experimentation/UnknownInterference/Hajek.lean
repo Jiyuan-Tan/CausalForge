@@ -704,9 +704,11 @@ private lemma one_le_dbar (y : U → (U → Bool) → ℝ) (hcard : 1 ≤ Fintyp
 /-! ### Consistency -/
 
 /-- **Consistency of the Hájek estimator for EATE (Sävje–Aronow–Hudgens 2021).** Along a sequence
-of Bernoulli experiments with restricted interference (`k⁴·d̄/n → 0`), uniformly bounded regularity
-constant (`(Exp m).k ≤ M`), and bounded potential-outcome moments (`hpo1`/`hpo0`, the paper's
-Assumption C), the Hájek estimator converges in probability to EATE. -/
+of Bernoulli experiments for which [the regularity constants are uniformly bounded above by a
+constant M](hyp:hM), [`k⁴·d̄/n → 0` along the sequence — restricted interference](hyp:hrate), and
+[the mean absolute treated and control potential outcomes are each bounded by that experiment's
+own regularity constant k (the paper's Assumption C)](hyp:hpo1,hpo0), [the Hájek estimator
+converges in probability to the EATE](goal). -/
 theorem hajek_consistent_eate (Exp : ℕ → SAHExperiment) (M : ℝ)
     (hM : ∀ m, (Exp m).k ≤ M)
     (hrate : Tendsto (fun m => (Exp m).k ^ 4 * dbar (Exp m).y / (Fintype.card (Exp m).U : ℝ))

@@ -13,6 +13,7 @@ import type { PipelineContext, StateJson } from "../types.js";
 import { artifactPaths, readPrompt, type StageDeps } from "../pipeline_support.js";
 import { isPaperTmpPath } from "../paths.js";
 import { dispatchAgent } from "../framework/agent_dispatch.js";
+import { crosslinkNames, linksGoal, sourceBinders } from "../shared/nl_crosslinks.js";
 
 const execFileP = promisify(execFile);
 const LAKE_TIMEOUT_MS = 1800_000;
@@ -22,6 +23,41 @@ export interface UndocumentedDecl {
   file: string;
   line: number;
   kind: string;
+  /** Set when the decl IS documented but its NL↔Lean crosslink annotations are
+   * missing or defective (see crosslinkDefect) — the docstring pass must fix
+   * the annotation, not write a docstring from scratch. */
+  problem?: string;
+}
+
+/**
+ * NL↔Lean crosslink requirement for a theorem docstring (hard F5 gate): the
+ * first paragraph must link every hypothesis-classified binder via
+ * `[phrase](hyp:name)` and the conclusion via `[phrase](goal)`, and every
+ * referenced name must exist in the signature. Hypothesis-free theorems are
+ * exempt unless partially annotated. Returns a short problem description, or
+ * null when the docstring satisfies the requirement.
+ */
+export function crosslinkDefect(e: { kind?: unknown; doc?: unknown; source?: unknown }): string | null {
+  if (e.kind !== "theorem" || typeof e.doc !== "string" || !e.doc.trim()) return null;
+  // Whitespace-collapsed, matching the site's nlOf: a crosslink marker wrapped
+  // across a source line must parse the same here as on the rendered page.
+  const firstPara = e.doc.trim().split(/\n\s*\n/)[0].replace(/\s+/g, " ");
+  const names = crosslinkNames(firstPara);
+  const hasGoal = linksGoal(firstPara);
+  const binders = typeof e.source === "string" ? sourceBinders(e.source) : null;
+  if (!binders) return null; // unstructurable signature: the site renders flat, nothing to link
+  const hyps = binders.filter((b) => b.isHyp);
+  if (hyps.length === 0 && names.length === 0 && !hasGoal) return null;
+  const declared = new Set(binders.flatMap((b) => b.names));
+  const unknown = names.filter((n) => !declared.has(n));
+  if (unknown.length > 0) return `crosslink names not in signature: ${unknown.join(", ")}`;
+  const linked = new Set(names);
+  const uncovered = hyps.filter((b) => !b.names.some((n) => linked.has(n)));
+  if (uncovered.length > 0) {
+    return `hypotheses with no [phrase](hyp:…) crosslink: ${uncovered.map((b) => b.names.join(" ")).join(", ")}`;
+  }
+  if (!hasGoal) return "conclusion has no [phrase](goal) crosslink";
+  return null;
 }
 
 /** Dotted module names for every .lean source in the run dir (find-derived, sorted; the
@@ -40,7 +76,8 @@ export function declListFor(undoc: UndocumentedDecl[]): string {
   for (const e of undoc) byFile.set(e.file, [...(byFile.get(e.file) ?? []), e]);
   return [...byFile.entries()]
     .map(([f, es]) =>
-      [f, ...es.slice().sort((a, b) => a.line - b.line).map((e) => `  L${e.line} ${e.kind} ${e.name}`)].join("\n"),
+      [f, ...es.slice().sort((a, b) => a.line - b.line).map((e) =>
+        `  L${e.line} ${e.kind} ${e.name}${e.problem ? ` — FIX CROSSLINKS: ${e.problem}` : ""}`)].join("\n"),
     )
     .join("\n\n");
 }
@@ -83,15 +120,19 @@ export async function ensureDocstringCoverage(args: {
     await lake(["exe", "paper_index", "--",
       "--prefix", prefix, "--src-root", args.ctx.repoRoot, "--modules", modules.join(","), "--out", indexOut]);
     const idx = JSON.parse(await readFile(indexOut, "utf8")) as {
-      entries?: { name?: unknown; file?: unknown; line?: unknown; kind?: unknown; doc?: unknown }[];
+      entries?: { name?: unknown; file?: unknown; line?: unknown; kind?: unknown; doc?: unknown; source?: unknown }[];
     };
     if (!Array.isArray(idx.entries)) throw new Error(`docstring extraction produced no entries array (${indexOut})`);
-    return idx.entries.flatMap((e) =>
-      !e.doc && typeof e.name === "string" && typeof e.file === "string"
-        ? [{ name: e.name, file: e.file, line: typeof e.line === "number" ? e.line : 0,
-            kind: typeof e.kind === "string" ? e.kind : "decl" }]
-        : [],
-    );
+    return idx.entries.flatMap((e) => {
+      if (typeof e.name !== "string" || typeof e.file !== "string") return [];
+      const base = { name: e.name, file: e.file, line: typeof e.line === "number" ? e.line : 0,
+        kind: typeof e.kind === "string" ? e.kind : "decl" };
+      if (!e.doc) return [base];
+      // Documented, but a theorem's NL↔Lean crosslink annotations are missing
+      // or defective — same hard gate, fixed by the same docstring pass.
+      const problem = crosslinkDefect(e);
+      return problem ? [{ ...base, problem }] : [];
+    });
   };
 
   let undoc: UndocumentedDecl[];
@@ -141,10 +182,11 @@ export async function ensureDocstringCoverage(args: {
   }
   if (residual.length > 0) {
     return (
-      `F5 docstring coverage: ${residual.length} declaration(s) still undocumented after the docstring pass — ` +
-      residual.slice(0, 12).map((e) => `${e.file}:${e.line} ${e.name}`).join(", ") +
+      `F5 docstring coverage: ${residual.length} declaration(s) still undocumented or crosslink-defective after the docstring pass — ` +
+      residual.slice(0, 12).map((e) => `${e.file}:${e.line} ${e.name}${e.problem ? ` (${e.problem})` : ""}`).join(", ") +
       (residual.length > 12 ? ` (+${residual.length - 12} more)` : "") +
-      `. Document them (docstring-canonical workflow: first paragraph = the NL translation) then resume.`
+      `. Fix them (docstring-canonical workflow: first paragraph = the NL translation, with ` +
+      `[phrase](hyp:name)/[phrase](goal) crosslinks covering every hypothesis and the conclusion) then resume.`
     );
   }
   return null;

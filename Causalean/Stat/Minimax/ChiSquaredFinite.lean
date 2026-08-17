@@ -49,8 +49,9 @@ theorem rnDeriv_mul_measure_singleton {Ω : Type*} [MeasurableSpace Ω]
   rw [h1, h2]
 
 /-- **Finite χ²-divergence formula.** On a finite sample space, for probability
-measures `μ ≪ ν`, the (shifted) χ²-divergence is the explicit sum of squared point-mass
-ratios `1 + χ²(μ‖ν) = ∑ₓ (μ{x})² / (ν{x})`. Combines `chiSqDiv_eq`, the finite
+measures `μ`, `ν` with [`μ` absolutely continuous with respect to `ν`](hyp:hac), [the (shifted)
+χ²-divergence is the explicit sum of squared point-mass ratios:
+`1 + χ²(μ‖ν) = ∑ₓ (μ{x})² / (ν{x})`](goal). Combines `chiSqDiv_eq`, the finite
 integral formula `integral_fintype`, and the discrete RN bridge above. -/
 theorem finite_one_add_chiSqDiv {Ω : Type*} [MeasurableSpace Ω] [Fintype Ω]
     [MeasurableSingletonClass Ω] (μ ν : Measure Ω)

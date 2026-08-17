@@ -416,9 +416,10 @@ instance instIsMarkovKernel_doObsKernelAncestralMarginal
   exact ProbabilityTheory.Kernel.IsMarkovKernel.map _
     (measurable_valuesProjection Finset.inter_subset_right)
 
-/-- The query is contained in the observed ancestral support: it lies in the
-post-intervention ancestral set (`subset_fixAncestralSet`) and in the observed
-nodes. -/
+/-- For [a valid intervention set `X` (observed, not already fixed)](hyp:hObs,hFix) and
+[an outcome set `Y` contained in the observed nodes](hyp:hY), [`Y` is contained in its own
+post-intervention observed-ancestral closure](goal): it lies in the post-intervention
+ancestral set (`subset_fixAncestralSet`) and in the observed nodes. -/
 theorem subset_fixObservedAncestralSet
     (M : Causalean.SCM N Ω) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ M.observed)

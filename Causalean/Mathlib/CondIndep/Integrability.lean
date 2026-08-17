@@ -33,12 +33,10 @@ namespace Causalean
 
 open scoped MeasureTheory ProbabilityTheory
 
-/-- **σ-projection of indicator-conditional positivity.**
-
-If the indicator-conditional `μ⟦𝟙_E | m₂⟧` is strictly positive μ-a.e. on
-some larger σ-algebra `m₂`, then the same holds when conditioning on a
-sub-σ-algebra `m₁ ≤ m₂`. Concretely: from
-`∀ᵐ ω ∂μ, μ⟦𝟙_{A=a} | m₂⟧ ω > 0` infer `∀ᵐ ω ∂μ, μ⟦𝟙_{A=a} | m₁⟧ ω > 0`.
+/-- **σ-projection of indicator-conditional positivity.** For [a sub-σ-algebra `m₁` coarser than
+the ambient σ-algebra](hyp:_h₁), [a measurable event `E`](hyp:hE), and [an overlap condition —
+every `m₁`-measurable set that meets `E` only on a null set is itself null](hyp:_h_overlap), then
+[the conditional probability of `E` given `m₁` is strictly positive almost everywhere](goal).
 
 Standard measure-theoretic argument:
 - Let `S = {ω | μ⟦𝟙_E|m₁⟧ ω = 0}` (m₁-measurable).
@@ -104,15 +102,13 @@ theorem ae_pos_condExp_indicator_of_le
   change 0 < p ω
   exact lt_of_le_of_ne hp_nonnegω (Ne.symm hω_notS)
 
-/-- **Integrability on `B` of an `m`-measurable nonneg function whose product
-with `μ⟦𝟙_B | m⟧` equals `μ⟦𝟙_C | m⟧`.**
-
-If `g` is `m`-measurable and `μ`-a.e. nonneg, and satisfies the conditional
-identity
-
-    μ⟦𝟙_B | m⟧ · g  =ᵐ[μ]  μ⟦𝟙_C | m⟧,
-
-then `g` is integrable on `B` (with `∫_B g dμ ≤ μ C`).
+/-- **Integrability on a stratum from a conditional-expectation indicator identity.** For [a
+sub-σ-algebra `m` coarser than the ambient σ-algebra](hyp:_hm), [measurable events `B` and
+`C`](hyp:_hB,_hC), and [an `m`-measurable real-valued function `g`](hyp:_hg_meas) that is [almost
+everywhere nonnegative](hyp:_hg_nn), if [the conditional expectation of the indicator of `B` given
+`m`, multiplied pointwise by `g`, equals almost everywhere the conditional expectation of the
+indicator of `C` given `m`](hyp:_h_eq), then [`g` is integrable on `B`](goal) (moreover
+`∫_B g dμ ≤ μ C`).
 
 Proof: truncate `g_n := min (max g 0) n` (bounded, `m`-measurable); by the
 bounded `m`-pull-out lemma,

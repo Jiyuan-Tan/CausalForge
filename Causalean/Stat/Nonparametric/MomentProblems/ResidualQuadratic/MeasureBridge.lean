@@ -168,9 +168,12 @@ theorem l2ResidualQuadratic_nonneg (μ : Measure ℝ) [IsProbabilityMeasure μ] 
   rw [← residualQuad_opt_eq μ h hnd]
   exact integral_nonneg (fun y => sq_nonneg _)
 
-/-- **Headline infimum identity.** For a probability measure with finite fourth moment and positive
-variance (`m₁² < m₂`), the conditional infimum of the regression objective over all coefficients is
-the closed-form Hankel residual, attained at `(optIntercept μ, optSlope μ)`:
+/-- **Headline infimum identity.** For [a probability measure `μ` on `ℝ` with a finite fourth
+moment](hyp:h) and [first moment squared strictly below the second moment (positive
+variance)](hyp:hnd), [the infimum, over every intercept and slope, of the mean squared residual
+of fitting `b₀ + b₁y` to `y²` equals the closed-form Hankel-determinant residual
+`l2ResidualQuadratic μ`, attained at the least-squares-optimal coefficients `(optIntercept μ,
+optSlope μ)`](goal):
 
     ⨅ b₀ b₁, ∫ (y² − b₀ − b₁ y)² ∂μ = l2ResidualQuadratic μ.
 

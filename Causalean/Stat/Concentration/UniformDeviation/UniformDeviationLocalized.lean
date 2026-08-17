@@ -93,9 +93,17 @@ section LocalizedUniformDeviation
 
 variable {Ω ι 𝒳 : Type*} [MeasurableSpace Ω]
 
-/-- With high probability over the sample, every function whose `norm` is at
-most `r` has empirical mean within a critical-radius bound of its population
-mean.
+/-- **Localized uniform deviation.** Fix [a localized regime `R`](hyp:R) built from [measurable
+losses `F i`](hyp:hF_meas) composed with [a measurable map `X`](hyp:hX), a confidence level [`δ` in
+`(0,1]`](hyp:hδ,hδ'), and [a sample size `n` at least 1](hyp:hn). If [the radius `r` restricting the
+class to `{i : norm (F i) ≤ r}` is at least the population critical radius `criticalRadius (R.ψ n)`,
+itself positive](hyp:hr_lb,hcrit_pos), [the envelope satisfies the sub-root fixed-point bound `R.ψ n
+(criticalRadius (R.ψ n)) ≤ criticalRadius (R.ψ n) ^ 2`](hyp:hcrit_fp), and [the star-hull Rademacher
+process at radius `r` is almost-surely bounded and its empirical complexity
+integrable](hyp:hrad_bdd,hrad_int), then [there is a measurable event of probability at least `1 −
+δ` on which, simultaneously for every `i` with `norm (F i) ≤ r`, the empirical mean of `F i`
+deviates from its population mean by at most `4 · r · criticalRadius (R.ψ n) + R.b · √(2 · log(1/δ)
+/ n)`](goal).
 
     Under the `LocalizedRegime` bundle, with probability at least `1 - δ`
     over the sample, the empirical-vs-population deviation of `F i`
@@ -332,7 +340,18 @@ theorem localized_uniform_deviation
       nlinarith
     simpa [fΩ, hi, ε] using hmain
 
-/-- **Sharp localized uniform deviation.**
+/-- **Sharp localized uniform deviation.** Fix [a localized regime `R`](hyp:R) built from
+[measurable losses `F i`](hyp:hF_meas) composed with [a measurable map `X`](hyp:hX), a confidence
+level [`δ` in `(0,1]`](hyp:hδ,hδ'), and [a sample size `n` at least 1](hyp:hn). Let `ρ` be [a
+positive upper bound on the positive population critical radius `criticalRadius (R.ψ n)`, satisfying
+the sub-root fixed-point bound `R.ψ n (criticalRadius (R.ψ n)) ≤ criticalRadius (R.ψ n) ^
+2`](hyp:hcrit_le_ρ,hρ_pos,hcrit_pos,hcrit_fp), and suppose [the star-hull Rademacher process is
+almost-surely bounded and its empirical complexity integrable at every radius `r ≥
+ρ`](hyp:hrad_bdd,hrad_int). If, further, [for every peeling level `K` covering the diameter cap
+`Rmax ≤ ρ · 2^K`, the McDiarmid slack `R.b · √(2 · log(2(K+1)/δ) / n)` at confidence `1 − δ` is
+itself dominated by `ρ²`](hyp:hδ_dom), then [there is a measurable event of probability at least `1
+− δ` on which, simultaneously for every `i` with `0 ≤ norm (F i) ≤ Rmax`, the empirical mean of `F
+i` deviates from its population mean by at most `8 · ρ · norm (F i) + 5 · ρ²`](goal).
 
     This is the reusable Foster--Syrgkanis Lemma 29 peeling layer over
     `localized_uniform_deviation`.  It takes a fixed sample size `n`, a

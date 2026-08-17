@@ -230,15 +230,16 @@ noncomputable def obsCondKernel
     infer_instance
   (M.obsCondPairKernel Y CC hY hCC).condKernel
 
-/-- The observational conditional kernel agrees almost everywhere with the
-measure-level conditional distribution.
+/-- At a fixed value `s` of the intervention-free (fixed) coordinates, provided [the target
+coordinates `Y` are observed](hyp:hY) and [the conditioning coordinates `CC` are
+observed](hyp:hCC), [the jointly-measurable conditional kernel `obsCondKernel` built from `Y`
+and `CC`, evaluated at `s`, agrees almost everywhere — under the pushforward of the
+observational kernel onto `CC` — with the measure-theoretic conditional distribution of `Y`
+given `CC` under the observational kernel at `s`](goal).
 
     **Bridge: `obsCondKernel` agrees with `condDistrib` a.e.**
 
-    At a fixed `s : M.FixedValues`, the jointly measurable conditional kernel
-    `M.obsCondKernel Y CC` evaluated at `(s, ·)` coincides
-    `(M.obsKernel s).map π_CC`-a.e. with the measure-level `condDistrib π_Y π_CC
-    (M.obsKernel s)`.  This is just the kernel-vs-measure disintegration
+    This is just the kernel-vs-measure disintegration
     uniqueness specialized to `M.obsCondPairKernel = M.obsKernel.map (π_CC, π_Y)`,
     whose `condKernel` is by definition `M.obsCondKernel`. -/
 theorem obsCondKernel_ae_eq_condDistrib

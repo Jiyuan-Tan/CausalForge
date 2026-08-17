@@ -98,9 +98,10 @@ theorem hoeffding_cov_identity_prod (h : IsCoupling π μ ν)
       ((integrable_survFst_sub h hμ).mul_prod (integrable_survSnd_sub h hν))]
   exact integral_congr_ae (Filter.Eventually.of_forall (fiber_sub_mean_prod h))
 
-/-- **Hoeffding's covariance identity.** For a coupling `π` of two `L²`
-probability measures `μ, ν`, the covariance equals the double integral of the
-Fréchet gap `H_π - F·G`:
+/-- **Hoeffding's covariance identity.** For [a coupling `π` of `μ` and `ν`](hyp:h), where
+[both `μ` and `ν` have finite second moment (are `L²`)](hyp:hμ,hν), [the covariance of the
+coordinates under `π` equals the double integral, over the plane, of the Fréchet gap between
+the joint and product cumulative distribution functions, `H_π - F·G`](goal):
 
     `(∫ p, p.1 * p.2 ∂π) - (∫ x, x ∂μ)(∫ y, y ∂ν)
        = ∫ x, ∫ y, (jointCdf π x y - cdf μ x * cdf ν y) dy dx`.

@@ -498,9 +498,11 @@ private theorem rademacher_contraction_core
     _ = L * empiricalRademacherComplexity_without_abs n F S :=
           empiricalRademacherComplexity_without_abs_smul_class F L hL n S
 
-/-- **Ledoux–Talagrand contraction principle (signed form).**
-    For any `L`-Lipschitz `φ : ℝ → ℝ` and nonnegative `L`,
-    `R̂_n(φ ∘ F) ≤ L · R̂_n(F)`. -/
+/-- **Ledoux–Talagrand contraction principle (signed form).** If [`L` is nonnegative](hyp:hL) and
+    [`φ : ℝ → ℝ` is `L`-Lipschitz, i.e. `|φ x - φ y| ≤ L * |x - y|` for all `x, y`](hyp:hLip),
+    then [composing each function of the family `F` with `φ` does not increase the signed
+    (without-abs) empirical Rademacher complexity on the sample `S` by more than the factor
+    `L`](goal). -/
 theorem rademacher_contraction
     [Nonempty ι] [Finite ι]
     (φ : ℝ → ℝ) {L : ℝ} (hL : 0 ≤ L)
@@ -659,9 +661,12 @@ lemma empirical_abs_withZero_le_no_abs_plus_neg
           refine Finset.sum_congr rfl fun k _ => by ring
   simpa [hneg] using hpoint
 
-/-- **Contraction principle, absolute-value form.** The with-abs form of
-    the empirical Rademacher complexity satisfies the `2L` bound; the proof
-    reduces to `rademacher_contraction` applied to `φ` and `-φ`. -/
+/-- **Contraction principle, absolute-value form.** If [`φ` fixes `0` and is `L`-Lipschitz, i.e.
+    `φ 0 = 0` and `|φ x - φ y| ≤ L * |x - y|` for all `x, y`](hyp:hφ), then [composing each
+    function of the family `F` with `φ` multiplies the (absolute-value) empirical Rademacher
+    complexity on the sample `S` by at most `2 * L`](goal).
+
+    The proof reduces to `rademacher_contraction` applied to `φ` and `-φ`. -/
 theorem rademacher_contraction_abs
     [Nonempty ι] [Finite ι]
     (φ : ℝ → ℝ) {L : ℝ} (hφ : LipschitzAt0 φ L)

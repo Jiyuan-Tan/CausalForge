@@ -70,7 +70,10 @@ theorem PositiveMass.map_of_surjective
     exact le_antisymm (by simpa [hzero] using hle) zero_le
   exact hμ x hxzero
 
-/-- Positive point mass is preserved by coordinate projection. -/
+/-- If [a measure assigns nonzero point mass to every value assignment on the full index
+set](hyp:hμ), then restricting to the values on [a subset of coordinates reached by
+projection](hyp:hJI) preserves this: [the pushed-forward measure still assigns nonzero
+point mass to every value assignment on that subset](goal). -/
 theorem PositiveMass.map_valuesProjection
     {M : Type*}
     {I J : Finset M} {Ω' : M → Type*}

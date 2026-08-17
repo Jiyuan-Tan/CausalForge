@@ -83,16 +83,16 @@ noncomputable def residualizedCoefficient {Ω : Type*} [MeasurableSpace Ω]
     (wD : ResidualizationWitness μ H D) : ℝ :=
   (∫ ω, wD.Vtilde ω * wY.Vtilde ω ∂μ) / (∫ ω, wD.Vtilde ω * wD.Vtilde ω ∂μ)
 
-/-- Population Frisch-Waugh-Lovell theorem (`prop:po-estimand-fwl`).
-
-If `(Y_H, Ỹ)` and `(D_H, D̃)` are residualization witnesses for `Y` and `D`
-against a linear nuisance class `H`, `E[D̃²] > 0`, and `(β, H_β)` with
-`H_β ∈ H` satisfy the population normal equations
-
-    ∫ (Y - β·D - H_β) · D dμ = 0,
-    ∫ (Y - β·D - H_β) · h dμ = 0   for every h ∈ H,
-
-then `β = E[D̃ · Ỹ] / E[D̃²] = residualizedCoefficient μ H wY wD`.
+/-- **Population Frisch-Waugh-Lovell theorem** (`prop:po-estimand-fwl`). Let `wY` and `wD` be
+residualization witnesses decomposing outcome `Y` and treatment `D` each into a component of a
+common linear square-integrable nuisance class `H` plus an orthogonal residual. If [the second
+moment of the treatment residual is strictly positive](hyp:hDtilde_pos), and [a nuisance-class
+element `Hβ`](hyp:Hβ,Hβ_mem) together with a coefficient `β` are such that [the combined
+residual `Y − β·D − Hβ` is square-integrable](hyp:e_mem), [orthogonal in expectation to
+`D`](hyp:h_normal_D), and [orthogonal in expectation to every member of `H`](hyp:h_normal_H),
+then [`β` equals the ratio of the covariance-like integral of the outcome and treatment
+residuals `Ỹ` and `D̃` to the second moment of `D̃`, i.e. the residualized coefficient
+`residualizedCoefficient μ H wY wD`](goal).
 
 The residual from the normal equations is square-integrable, so its products
 with the L² witness decompositions are integrable by Cauchy-Schwarz. -/

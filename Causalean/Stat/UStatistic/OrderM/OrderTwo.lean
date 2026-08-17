@@ -170,10 +170,17 @@ end Bridge
 
 /-! ## The order-2 CLT via the order-`m` result -/
 
-/-- **Order-2 U-statistic CLT, derived from the fixed-order-`m` CLT.**  For a
-symmetric, square-integrable kernel `h` with finite first-projection variance
-`ζ₁ = ∫ h₁² dP`, the order-2 U-statistic is `√n`-asymptotically normal,
-`√n (Uₙ − θ) ⇒ N(0, ∫ (2 h₁)² dP) = N(0, 4 ζ₁)`.
+/-- **Order-2 U-statistic CLT, derived from the fixed-order-`m` CLT.** For an i.i.d.
+sample `S` and a two-argument kernel `h : X → X → ℝ` that is [symmetric](hyp:hsymm) and
+[jointly measurable](hyp:hmeas), suppose the order-2 Hájek residual of `h` is
+[square-integrable under the product law `P × P`](hyp:hL2), the row integral
+`x ↦ ∫h(x,y)dP(y)` [is integrable](hyp:hint) and [each row `y ↦ h(x,y)` is itself
+integrable for every `x`](hyp:hrow), the first Hoeffding projection of `h` is
+[square-integrable](hyp:hproj_sq), and [the `√n`-rescaled U-statistic is
+almost-everywhere measurable at every sample size](hyp:hθn_meas). Then [the
+`√n`-rescaled order-2 U-statistic converges in distribution to the centered Gaussian law
+with variance `4ζ₁`, where `ζ₁` is the variance of the first Hoeffding
+projection](goal).
 
 This has the same statement as `uStatistic_clt_of_symmetric`, but its proof runs
 through `uStatisticOrder_clt_of_regular` (order `m = 2`, kernel `pairKernel h`)

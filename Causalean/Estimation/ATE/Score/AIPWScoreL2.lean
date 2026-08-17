@@ -937,8 +937,18 @@ private theorem aipw_score_diff_isLittleOp_one_truncation_core
           rw [abs_of_nonneg]
           positivity
 
-/-- The AIPW score difference has L² norm converging to zero in probability
-when the nuisance errors converge in L².
+/-- Fix [strict overlap at level `ε`](hyp:h_overlap), [the back-door
+identification assumptions](hyp:hA), and [finite second moments of the
+observed and potential outcomes](hyp:h_y2,h_yd2). For a sequence of nuisance
+estimators `η̂` such that [every realization lies in the `ε`-overlap `L²`
+nuisance class](hyp:h_in_H), with [outcome-regression errors in `L²(P_X)` at
+every horizon and realization](hyp:h_mu_memLp) and [propensity errors in
+`L²(P_X)` at every horizon and realization](hyp:h_e_memLp), if [the
+outcome-regression error converges to zero in `L²(P_X)` in
+probability](hyp:h_mu_rate) and [the propensity error converges to zero in
+`L²(P_X)` in probability](hyp:h_e_rate), then [the `L²(P_Z)` norm of the AIPW
+score difference between the estimated and true nuisance converges to zero in
+probability](goal).
 
 This headline continuity result uses the almost-sure Lipschitz bound, the
 covariate pushforward identity, and a truncation argument for the

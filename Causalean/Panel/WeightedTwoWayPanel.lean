@@ -227,8 +227,12 @@ theorem ddot_orthogonal_time (w : UnitWeights Unit)
     _ = 0 := by
       simp [hcol]
 
-/-- Double-demeaned arrays are orthogonal to every unit/time additive nuisance
-function in the `p`-weighted inner product. -/
+/-- **Double-demeaned arrays are orthogonal to every unit/time additive
+nuisance function.** For a probability-weighted panel of units and periods,
+[any array that decomposes as the sum of a unit-specific term and a
+time-specific term](hyp:hh) is orthogonal, under the `p`-weighted inner
+product, to the double-demeaned residual of any panel array `V`: [their
+weighted inner product is zero](goal). -/
 theorem ddot_orthogonal_unit_time (w : UnitWeights Unit)
     (V h : Unit → Time → ℝ) (hh : IsUnitTimeAdditive h) :
     inner w (ddot w V) h = 0 := by

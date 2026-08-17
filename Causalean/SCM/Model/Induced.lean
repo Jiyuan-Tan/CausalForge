@@ -270,10 +270,11 @@ lemma induce_latentProduct_eq_map (M : Causalean.SCM N Ω) (R : Finset (SWIGNode
 -- § 2b. Evaluation-map bridge for the induced sub-SCM
 -- ============================================================
 
-/-- **Evaluation-map bridge** for the induced sub-SCM.  At every random node `v`
-    retained by `M.induce R hR`, the induced `evalMap` at the restricted fixing
-    `sTilde|_R` and the projected latent assignment computes the same value as
-    the original `evalMap` at `sTilde`.
+/-- **Evaluation-map bridge** for the induced sub-SCM. Fix a structural causal model `M` and a
+    node set `R` that is [ancestrally closed in the SCM sense](hyp:hR). Then at every random
+    node `v` retained by the induced model `M.induce R hR`, [the induced evaluation map at the
+    restriction of `sTilde` to `R` and the projected latent assignment computes the same value
+    as the original evaluation map at `sTilde`](goal).
 
     Proof by strong recursion on the induced `observedIndex` of `v` (for the observed
     branch; the unobserved branch is the coordinate projection from original
@@ -446,8 +447,11 @@ lemma induce_evalMap_compat (M : Causalean.SCM N Ω) (R : Finset (SWIGNode N))
 -- § 3. Marginal compatibility
 -- ============================================================
 
-/-- **Marginal compatibility of the induced sub-SCM**
-    (`prop:scm-induced-marginal`).
+/-- **Marginal compatibility of the induced sub-SCM** (`prop:scm-induced-marginal`). Fix a
+    structural causal model `M`, [an ancestrally closed node set `R`](hyp:hR), and a
+    fixed-value assignment `sTilde` on `M`. Then [the observational kernel of the induced
+    sub-SCM at the restriction of `sTilde` to `R` equals the pushforward of `M`'s observational
+    kernel at `sTilde` onto the induced observed coordinates `R ∩ M.observed`](goal).
 
     For any ancestrally closed `R ⊆ V ∪ S ∪ L` and any extension
     `s̃ : FixedValues M` of the restricted fixing on `S|_R`, the observational

@@ -96,12 +96,13 @@ theorem hasFDerivAt_ratio {t₀ : EuclideanSpace ℝ (Fin 2)} (hb : t₀ 1 ≠ 0
 
 /-! ## Ratio delta method -/
 
-/-- **Ratio / quotient delta method.**  Let `t₀ = (a, b)` with `b ≠ 0` and let
-`Tn n ω = (N̂ₙ, D̂ₙ)` be the bivariate estimator.  If the rescaled deviation
-`√n • (Tn − t₀)` converges in distribution to a probability measure `Q` on
-`EuclideanSpace ℝ (Fin 2)`, then the rescaled ratio
-`√n • (Tn 0 / Tn 1 − a / b)` converges in distribution to the pushforward of `Q`
-along the ratio derivative `ratioDeriv t₀`.
+/-- **Ratio / quotient delta method.**  Let `t₀ = (a, b)` with [`b` nonzero](hyp:hb) and let
+`Tn n ω = (N̂ₙ, D̂ₙ)` be a bivariate estimator sequence of `t₀`. Given [that the rescaled
+deviation `√n • (Tn − t₀)` is measurable at every sample size](hyp:hTn) and [that the rescaled
+ratio `√n • (Tn 0 / Tn 1 − a/b)` is measurable at every sample size](hyp:hgTn), if [the laws of
+the rescaled deviation converge weakly to a probability measure `Q` on `EuclideanSpace ℝ (Fin
+2)`](hyp:_hCLT), then [the laws of the rescaled ratio `√n • (Tn 0 / Tn 1 − a/b)` converge weakly
+to the pushforward of `Q` along the ratio derivative `ratioDeriv t₀`](goal).
 
 This is `deltaMethod` instantiated at `g v = v 0 / v 1`, `Dg = ratioDeriv t₀`,
 with the differentiability contact supplied by `hasFDerivAt_ratio`.  The limit

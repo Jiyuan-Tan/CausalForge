@@ -88,7 +88,11 @@ lemma ip_self_sub_le_of_orth (c : WeightedSupport R) (H : Submodule ℝ (R → �
   have hpos : 0 ≤ c.ip (p - h) (p - h) := c.ip_self_nonneg (p - h)
   linarith
 
-/-- **The weighted orthogonal projection minimizes the WLS objective over `H`.** -/
+/-- **The weighted orthogonal projection minimizes the WLS objective over `H`.**
+Given a weighted support on a finite index set and a submodule `H` of candidate
+real-valued functions, [for any competitor `h` lying in `H`](hyp:hH), [the weighted
+sum of squared residuals of the projection of a target function onto `H` is at
+most the weighted sum of squared residuals of `h`](goal). -/
 theorem proj_eq_argmin (c : WeightedSupport R) (H : Submodule ℝ (R → ℝ))
     (X h : R → ℝ) (hH : h ∈ H) :
     c.ip (X - c.proj H X) (X - c.proj H X) ≤ c.ip (X - h) (X - h) := by
@@ -139,8 +143,11 @@ lemma ip_sub_smul_expand (c : WeightedSupport R) (X p h : R → ℝ) (t : ℝ) :
     rw [hneg, c.ip_smul_left, c.ip_smul_right]; ring
   rw [h1, h2, h3]; ring
 
-/-- **First-order WLS optimality:** at any candidate `p ∈ H`, residual
-orthogonality to every direction in `H` is equivalent to WLS-optimality. -/
+/-- **First-order WLS optimality.** For a weighted support and a submodule `H`
+of candidate functions, fix [a candidate function `p` belonging to `H`](hyp:hp);
+then [the residual `X - p` being weighted-orthogonal to every element of `H` is
+equivalent to `p` attaining the minimal weighted sum of squared residuals over
+`H`](goal). -/
 theorem residualize_orth_iff_argmin
     (c : WeightedSupport R) (H : Submodule ℝ (R → ℝ))
     (X p : R → ℝ) (hp : p ∈ H) :

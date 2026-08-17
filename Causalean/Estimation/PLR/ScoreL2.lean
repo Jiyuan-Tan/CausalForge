@@ -331,15 +331,19 @@ private theorem plr_score_diff_abs_le
   exact hfinal
 
 open Filter in
-/-- **Score-difference L²(P_Z) `o_p(1)` for the partially linear model.**
-
-Under boundedness of the truth residual `A = Y − ℓ_val(X) − θ₀·(D − m_val(X))`
-and the treatment residual `v₀ = D − m_val(X)`, a uniform sup-norm bound on the
-treatment-regression error `Δm = m_val − m̂`, square-integrability of both
-regression errors on the covariate marginal `P_X`, and the two individual
-L²(P_X) `o_p(1)` rates for the regression errors, the L²(P_Z)-seminorm of the
-Robinson partialling-out score difference between the estimated and the true
-nuisance is itself `o_p(1)`.
+/-- **Score-difference L²(P_Z) `o_p(1)` for the partially linear model.**  Suppose
+[three nonnegative bounding constants `Ca`, `Cv`, `Cm`](hyp:hCa,hCv,hCm) satisfy:
+[the residualized outcome $A = Y-\ell_{val}(X)-\theta_0(D-m_{val}(X))$ is almost
+surely bounded by `Ca` under the observed-data law](hyp:hA_bdd); [the true treatment
+residual $D-m_{val}(X)$ is almost surely bounded by `Cv`](hyp:hv_bdd); and [the
+treatment-regression estimation error of `η_hat` is uniformly bounded by `Cm` at
+every fold, draw, and covariate value](hyp:hΔm_bdd). Suppose further that for the
+estimated nuisance sequence `η_hat` on the system `S`, [the outcome- and
+treatment-regression estimation errors are square-integrable over the covariate
+law at every fold and draw](hyp:hΔl_memLp,hΔm_memLp), and that [both regression
+errors converge to zero in L²(P_X) at rate $o_p(1)$](hyp:h_l_rate,h_m_rate). Then
+[the L²(P_Z)-seminorm of the Robinson partialling-out score difference between the
+estimated and the true nuisance is itself $o_p(1)$](goal).
 
 This is exactly the `h_score_diff_rate` hypothesis consumed by
 `plr_dml_isAsymLinear`: the five-term doubly-robust expansion bounds the score

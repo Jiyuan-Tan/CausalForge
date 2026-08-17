@@ -77,9 +77,10 @@ lemma measurable_quantileIFVec (τ q f : Fin k → ℝ) : Measurable (quantileIF
 
 /-! ## Limiting covariance: indicator cross-moment -/
 
-/-- **Covariance entry.**  The cross-moment of two quantile influence functions:
-
-    ∫ ψ_{τⱼ} ψ_{τₗ} dP  =  (min(τⱼ, τₗ) − τⱼ τₗ) / (fⱼ fₗ).
+/-- **Covariance entry.** Given [`qⱼ` is the population `τⱼ`-quantile: $F(q_j)=\tau_j$](hyp:hj)
+and [`qₗ` is the population `τₗ`-quantile: $F(q_l)=\tau_l$](hyp:hl), [the cross-moment of the two
+quantile influence functions $\psi_{\tau_j}$ and $\psi_{\tau_l}$ under the population measure
+equals $(\min(\tau_j,\tau_l)-\tau_j\tau_l)/(f_jf_l)$](goal).
 
 Uses `∫ 1{z ≤ qⱼ} 1{z ≤ qₗ} dP = F(min(qⱼ,qₗ)) = min(τⱼ,τₗ)` (the last equality
 by monotonicity of the cdf together with `F(qᵢ) = τᵢ`). -/
@@ -204,8 +205,14 @@ lemma isLittleOp_abs {R : ℕ → Ω → ℝ} (hR : IsLittleOp R (fun _ => (1 : 
   intro n ω
   simp
 
-/-- The sample-quantile vector is asymptotically linear with the joint influence
-function `ψ`.  `mean_zero` and `finite_var` are coordinatewise reductions of the
+/-- The sample-quantile vector is asymptotically linear with the joint influence function `ψ`.
+Given [a `SampleQuantileReg` regularity bundle at every coordinate `j`: interior level
+$\tau_j$, positive density $f_j$ at the population quantile $q_j$, cdf identification,
+differentiability of the population cdf, and an atomless population](hyp:hreg), [the vector of
+sample $\tau$-quantiles is jointly asymptotically linear at the vector of population quantiles,
+with influence function the joint quantile influence function $\psi$](goal).
+
+`mean_zero` and `finite_var` are coordinatewise reductions of the
 scalar facts; the vector `remainder` is `o_p(1)` because each coordinate is the
 scalar Bahadur remainder (`o_p(1)` by `sampleQuantile_isAsymLinear`) and the
 Euclidean norm of a finite vector of `o_p(1)` coordinates is `o_p(1)`. -/
@@ -297,18 +304,17 @@ theorem IIDSample.sampleQuantileVec_isAsymLinearVec (S : IIDSample Ω ℝ μ P)
 
 /-! ## Headline: joint asymptotic normality -/
 
-/-- **Joint asymptotic normality of the sample-quantile vector.**
-
-    √n ( q̂ₙ(τⱼ) − qⱼ )_{j}  ⇒  Q,
-
-where the target `Q` is the centered Gaussian with `charFun Q t = exp(−½ ∫⟪t,ψ⟫² dP)`
-— i.e. `N(0, Σ)` with `Σ_{jl} = (min(τⱼ,τₗ) − τⱼτₗ)/(fⱼfₗ)` (see `quantileIF_cross`).
+/-- **Joint asymptotic normality of the sample-quantile vector.** Given [a `SampleQuantileReg`
+bundle at every coordinate `j`](hyp:hreg), a candidate limit measure `Q` on the joint quantile
+space whose [characteristic function at every direction `t` matches
+$\exp(-\tfrac12\int\langle t,\psi\rangle^2\,dP)$, the Gaussian shape determined by the joint
+influence function $\psi$](hyp:hQ), and [almost-everywhere measurability of the rescaled estimator
+sequence at every sample size](hyp:hθn_meas), then [the law of the rescaled sample-quantile vector
+$\sqrt n(\hat q_n(\tau_\bullet)-q_\bullet)$ converges weakly to `Q` as $n\to\infty$](goal).
 
 Bahadur remainders are **derived** per coordinate (no empirical-process
-hypothesis); the only inputs are the per-coordinate `SampleQuantileReg`
-(interior level, positive density, cdf identification, differentiability,
-atomless population) and the abstract Gaussian-charFun target, matching the rest
-of the multivariate-CLT stack. -/
+hypothesis); by `quantileIF_cross`, `Q` is `N(0, Σ)` with
+`Σ_{jl} = (min(τⱼ,τₗ) − τⱼτₗ)/(fⱼfₗ)`, matching the rest of the multivariate-CLT stack. -/
 theorem IIDSample.sampleQuantileVec_tendsto_normal (S : IIDSample Ω ℝ μ P)
     {τ q f : Fin k → ℝ} (hreg : ∀ j, SampleQuantileReg P (τ j) (q j) (f j))
     (Q : Measure (EuclideanSpace ℝ (Fin k))) [IsProbabilityMeasure Q]

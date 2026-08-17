@@ -364,8 +364,11 @@ theorem normalizedTypeWeight_sum_eq_one_of_pos
   exact Causalean.Panel.Weighted.NormalizedWeights.sum_normalizedWeight_eq_one
     (R.unnormTypeWeight I) hden.ne'
 
-/-- Response-type form of the finite MTW ratio
-(`prop:po-estimand-mtw-response-type-form`). -/
+/-- **Response-type form of the finite MTW ratio**
+(`prop:po-estimand-mtw-response-type-form`). Provided [the first-stage
+type-weight denominator is nonzero](hyp:hden), [the finite-algebra 2SLS
+estimand equals the response-type-weighted sum of within-type causal
+effects](goal). -/
 theorem beta2SLSFiniteAlgebra_eq_responseTypeWeightedSum
     (hden : R.typeWeightDenom I ≠ 0) :
     R.beta2SLSFiniteAlgebra I = R.responseTypeEstimand I := by
@@ -380,8 +383,12 @@ theorem beta2SLSFiniteAlgebra_eq_responseTypeWeightedSum
       intro g _hg
       rw [div_mul_eq_mul_div]
 
-/-- Positive-weight response-type characterization under sign alignment and a
-positive first-stage denominator. -/
+/-- **Positive-weight response-type characterization.** When [the response
+types are sign-aligned with the instrument order](hyp:hAlign) and [the
+first-stage type-weight denominator is strictly positive](hyp:hden), [the
+finite-algebra 2SLS estimand equals the response-type estimand, every
+normalized response-type weight is nonnegative, and the weights sum to
+one](goal). -/
 theorem beta2SLSFiniteAlgebra_eq_positiveResponseTypeAverage
     (hAlign : R.SignAligned I) (hden : 0 < R.typeWeightDenom I) :
     R.beta2SLSFiniteAlgebra I = R.responseTypeEstimand I ∧

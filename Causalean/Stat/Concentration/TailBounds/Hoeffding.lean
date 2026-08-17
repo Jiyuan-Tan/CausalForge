@@ -86,10 +86,12 @@ lemma sampleMean_sub_ge_setEq (S : IIDSample Ω X μ P) (f : X → ℝ) (m : ℝ
       one_mul] at this
     exact this
 
-/-- **One-sided Hoeffding inequality** for the sample mean of a bounded
-statistic.  If `f` takes values in `[a, b]` (`a < b`) `P`-almost everywhere,
-then for `ε ≥ 0`,
-`P(X̄ₙ − E[f] ≥ ε) ≤ exp(−2 n ε² / (b − a)²)`. -/
+/-- **One-sided Hoeffding inequality** for the sample mean of a bounded statistic. Let `S` be an
+i.i.d. sample and let `f` be [a measurable statistic](hyp:hf) taking values in [an interval `[a,
+b]` with `a < b`](hyp:hab,hbound) `P`-almost everywhere. Then for [any sample size `n ≥
+1`](hyp:hn) and [any threshold `ε ≥ 0`](hyp:hε), [the probability that the sample mean of `f`
+over `n` draws exceeds its population mean $E[f]$ by at least `ε` is at most
+$\exp(-2n\varepsilon^2/(b-a)^2)$](goal). -/
 theorem hoeffding_ge (S : IIDSample Ω X μ P) {f : X → ℝ} (hf : Measurable f)
     {a b : ℝ} (hab : a < b) (hbound : ∀ᵐ x ∂P, f x ∈ Set.Icc a b)
     (n : ℕ) (hn : 0 < n) {ε : ℝ} (hε : 0 ≤ ε) :
@@ -156,10 +158,12 @@ lemma measureReal_abs_dev_le_two_sided {Ω : Type*} [MeasurableSpace Ω]
     _ ≤ μ.real {ω | ε ≤ T ω - m} + μ.real {ω | ε ≤ -T ω + m} := measureReal_union_le _ _
     _ ≤ Bup + Blow := add_le_add hup hlow
 
-/-- **Two-sided Hoeffding inequality** for the sample mean of a bounded
-statistic.  If `f` takes values in `[a, b]` (`a < b`) `P`-almost everywhere,
-then for `ε ≥ 0`,
-`P(|X̄ₙ − E[f]| ≥ ε) ≤ 2 exp(−2 n ε² / (b − a)²)`. -/
+/-- **Two-sided Hoeffding inequality** for the sample mean of a bounded statistic. Let `S` be an
+i.i.d. sample and let `f` be [a measurable statistic](hyp:hf) taking values in [an interval `[a,
+b]` with `a < b`](hyp:hab,hbound) `P`-almost everywhere. Then for [any sample size `n ≥
+1`](hyp:hn) and [any threshold `ε ≥ 0`](hyp:hε), [the probability that the sample mean of `f`
+over `n` draws deviates from its population mean $E[f]$ by at least `ε` in absolute value is at
+most $2\exp(-2n\varepsilon^2/(b-a)^2)$](goal). -/
 theorem hoeffding_abs_ge (S : IIDSample Ω X μ P) {f : X → ℝ} (hf : Measurable f)
     {a b : ℝ} (hab : a < b) (hbound : ∀ᵐ x ∂P, f x ∈ Set.Icc a b)
     (n : ℕ) (hn : 0 < n) {ε : ℝ} (hε : 0 ≤ ε) :

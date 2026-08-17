@@ -40,13 +40,19 @@ abbrev LassoFeat (d : ℕ) (Xinf Yb : ℝ) : Type :=
 abbrev LassoWeight (d : ℕ) (W : ℝ) : Type :=
   L1Ball (d := d) W
 
-/-- **Lasso ERM squared-loss excess-risk rate over the L¹ ball.**  Features are
-coordinatewise `L∞`-bounded by `Xinf`, responses lie in `[-Yb,Yb]`, and predictors are
-indexed by the coordinate `L¹` ball of radius `W`.  For the squared regression loss
-`(∑ⱼ wⱼxⱼ - y)²`, any empirical-risk minimizer `ŵ` against a comparator `wstar` has
-excess population risk exceeding
-`4·((4(XinfW)² + 2·Yb·Xinf·W)/√n)·√(2 log 2d) + 2ε` with probability at most
-`exp(-ε²tn)`. -/
+/-- **Lasso ERM squared-loss excess-risk rate over the L¹ ball.** For data pairing
+coordinatewise-bounded features with bounded responses, and predictors indexed by the
+coordinate `L¹` ball of radius `W`, if [the dimension `d` is positive](hyp:hd), [the
+sample size `n` is positive](hyp:hn), [the coordinatewise feature bound `Xinf` is
+nonnegative](hyp:hXinf), [the response bound `Yb` is nonnegative](hyp:hYb), [the weight
+bound `W` is nonnegative](hyp:hW), [the feature coordinate map is
+measurable](hyp:hXfeat), [the response coordinate map is measurable](hyp:hXresp), [the
+constant `t` satisfies the calibration `t·((Xinf·W)² + 2·Yb·Xinf·W)² ≤ 1/2`](hyp:ht'),
+[the tolerance `ε` is nonnegative](hyp:hε), and [the estimator `ŵ` attains empirical
+squared loss no larger than that of the comparator `wstar`](hyp:hERM), then [for the
+squared regression loss `(∑ⱼ wⱼxⱼ - y)²`, the probability that the excess population
+risk of `ŵ` over `wstar` exceeds `4·((4(XinfW)² + 2·Yb·Xinf·W)/√n)·√(2 log 2d) + 2ε` is
+at most `exp(-ε²tn)`](goal). -/
 theorem lasso_erm_squaredLoss_excess_rate {d n : ℕ} (hd : 0 < d) (hn : 0 < n)
     {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω} [IsProbabilityMeasure μ]
     {Xinf Yb W : ℝ} (hXinf : 0 ≤ Xinf) (hYb : 0 ≤ Yb) (hW : 0 ≤ W)

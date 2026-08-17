@@ -32,8 +32,13 @@ variable {Ω : N → Type*} [∀ n, MeasurableSpace (Ω n)]
 
 namespace ID
 
-/-- A Tian prefix-step density is the prefix conditional singleton mass divided
-by the corresponding singleton mass of the product reference. -/
+/-- Fix [a step index `i` earlier than the prefix length `k`](hyp:hi) that also lies
+[within the node domain `D`](hyp:hcard). Provided [the conditional distribution of the
+`i`-th coordinate given the shorter prefix is absolutely continuous with respect to the
+reference measure on that coordinate](hyp:hac), and the reference-measure mass of the
+singleton value at that coordinate is [nonzero](hyp:href0) and [finite](hyp:hreftop), then
+[the Tian prefix-step density at index `i` equals the prefix conditional singleton mass
+divided by the corresponding singleton mass of the product reference measure](goal). -/
 theorem tianPrefixStepDensityInPrefix_eq_mass_ratio
     (H : SWIGGraph N) (D : Finset (SWIGNode N))
     (μ : Measure (ValuesOn D (swigΩ Ω))) (ref : ReferenceMeasures Ω)

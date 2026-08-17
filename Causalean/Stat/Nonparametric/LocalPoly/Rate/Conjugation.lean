@@ -77,10 +77,11 @@ theorem inv_diag_conj {κ : ℝ} (hκ : κ ≠ 0)
         simp [hcore]
   exact ⟨Matrix.isUnit_det_of_right_inverse hSX, Matrix.inv_eq_right_inv hSX⟩
 
-/-- **Leverage entry under diagonal-conjugation scaling.** If `S = κ • (D · T · D)` with `κ ≠ 0`,
-`D = diagonal d` invertible, `d 0 = 1`, and `T` invertible, then the `(0,0)` inverse entry collapses
-to `(S⁻¹)₀₀ = κ⁻¹ · (T⁻¹)₀₀`: the diagonal bandwidth powers cancel at the intercept because
-`D₀₀ = 1`. -/
+/-- **Leverage entry under diagonal-conjugation scaling.** If [`S` factors as `κ • (D · T · D)` for
+a nonzero scalar `κ`](hyp:hκ,hS) with [`D = diagonal d` an invertible diagonal matrix (every
+`d i` nonzero)](hyp:hd) [whose first entry is `1`](hyp:hd0), and [`T` invertible](hyp:hT), then
+[`S` is invertible and its `(0,0)` inverse entry collapses to `(S⁻¹)₀₀ = κ⁻¹ · (T⁻¹)₀₀`: the
+diagonal bandwidth powers cancel at the intercept because `D₀₀ = 1`](goal). -/
 theorem inv00_diag_conj {κ : ℝ} (hκ : κ ≠ 0)
     {d : Fin (p + 1) → ℝ} (hd : ∀ i, d i ≠ 0) (hd0 : d 0 = 1)
     {T S : Matrix (Fin (p + 1)) (Fin (p + 1)) ℝ} (hT : IsUnit T.det)

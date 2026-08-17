@@ -24,10 +24,18 @@ open scoped BigOperators
 
 noncomputable section
 
-/-- Conditionally independent, centered, unit-bounded noise projected by a
-conditioning-measurable orthogonal projector of rank at most `r` has squared
-energy at most the stated logarithmic threshold except with conditional
-probability `zeta`, on almost every conditioning fiber. -/
+/-- Fix [a sub-σ-algebra `m` of the ambient σ-algebra](hyp:hm) and a finite family `eps` of real
+random variables on `Ω` that is [measurable](hyp:hmeas) and [almost surely bounded by 1 in
+absolute value under `μ`](hyp:hbound); suppose further that, on almost every `m`-conditioning
+fiber, [each `eps i` has conditional mean zero under the regular conditional kernel given
+`m`](hyp:hcenter), and that [the family `eps` is conditionally independent given
+`m`](hyp:hindep). Let `Pi` be a matrix-valued map that is [`m`-measurable entrywise](hyp:hPi)
+and, on almost every `m`-conditioning fiber, [symmetric](hyp:hsymm), [idempotent
+(`Pi·Pi = Pi`)](hyp:hidem), and [of rank at most `r`](hyp:hrank), and fix [a positive tolerance
+`zeta`](hyp:hzeta). Then, on almost every `m`-conditioning fiber, [the conditional probability
+— under the regular conditional kernel given `m` — that the projected noise's squared energy
+$\sum_i(\sum_j \mathrm{Pi}_{ij}\,\mathrm{eps}_j)^2$ exceeds the threshold
+$8(r\log 5+\log(2/\zeta))$ is at most `zeta`](goal). -/
 theorem ae_condExpKernel_projection_energy_gt_le
     {Ω : Type*} [mΩ : MeasurableSpace Ω] [StandardBorelSpace Ω]
     {μ : Measure Ω} [IsProbabilityMeasure μ]

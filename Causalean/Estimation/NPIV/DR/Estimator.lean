@@ -82,7 +82,12 @@ noncomputable def trae_dr_estimator
   ((split.foldB n).card : ℝ)⁻¹ *
     ∑ i ∈ split.foldB n, S.phiVal (h_hat n ω) (q_hat n ω) (sample.Z i ω)
 
-/-- The estimator equals the average of `φ_{ĥ_n, q̂_n}` over `B(n)`. -/
+/-- **Estimator unfolding.** For [primal nuisance estimators `ĥ_n`, indexed by sample size and
+by outcome](hyp:h_hat), paired with dual nuisance estimators `q̂_n`, an inverse-problem system,
+an i.i.d. sample, and a one-shot cross-fitting split, [the one-shot TRAE doubly robust
+estimator evaluated at sample size `n` and outcome `ω` equals the average, over the evaluation
+fold `B(n)`, of the pointwise doubly-robust pseudo-outcome `φ_{ĥ_n,q̂_n}` computed at each
+fold member's observation](goal). -/
 lemma trae_dr_estimator_eq_avg_phi
     {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω}
     (S : InverseProblemSystem Ω μ)

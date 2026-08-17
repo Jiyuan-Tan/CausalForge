@@ -123,11 +123,11 @@ theorem abs_apply_mul_le_norm_sq
       _ = (‖φ‖ * ‖φ'‖) * ‖ψ x‖ ^ 2 := by ring
 
 omit [FiniteDimensional ℝ E] in
-/-- **Entrywise covariance-matrix consistency.**  For a vector influence
-function `ψ : X → E` that is measurable and has square-integrable norm along the
-sample, and two continuous linear coordinate functionals `φ φ' : E →L[ℝ] ℝ`, the
-empirical mean of the entry product `φ (ψ ·) * φ' (ψ ·)` converges in
-probability to the population integral `∫ x, φ (ψ x) * φ' (ψ x) ∂P`.
+/-- **Entrywise covariance-matrix consistency.**  For an i.i.d. sample `S` and two continuous
+linear coordinate functionals `φ φ' : E →L[ℝ] ℝ`, suppose [a vector influence function
+`ψ : X → E` is measurable](hyp:hψ_meas) and [has square-integrable norm along the
+sample](hyp:hψ_sq_int). Then [the empirical mean of the entry product `φ(ψ·) · φ'(ψ·)` converges
+in probability to the population integral `∫ x, φ(ψ x) · φ'(ψ x) ∂P`](goal).
 
 For `E = EuclideanSpace ℝ (Fin d)` and `φ = EuclideanSpace.proj j`,
 `φ' = EuclideanSpace.proj k` this is the literal `(j,k)` entry of the empirical
@@ -177,9 +177,10 @@ theorem Tendsto_inProb.sqrt
     Tendsto_inProb (fun n ω => Real.sqrt (Vn n ω)) (fun _ => Real.sqrt v₀) μ :=
   Tendsto_inProb.comp_continuousAt (Real.continuous_sqrt.continuousAt) h
 
-/-- **Standard-error consistency from variance consistency.**  If the variance
-estimator `varhat →ₚ σ₀²` under `μ` and `σ₀ > 0`, then the standard-error
-estimator `√varhat →ₚ σ₀`.  This is exactly the `σ̂ →ₚ σ₀` input required by the
+/-- **Standard-error consistency from variance consistency.**  Fix [a positive scale
+`σ₀`](hyp:hσ₀_pos). If [a variance-estimator sequence `varhat` converges in probability to
+`σ₀²`](hyp:h), then [the standard-error estimator `√varhat` converges in probability to
+`σ₀`](goal).  This is exactly the `σ̂ →ₚ σ₀` input required by the
 generic studentized CLT `Tendsto_dist.div_tendsto_inProb_gaussian`; callers feed
 `fun N ω => Real.sqrt (varhat N ω)` to it.
 

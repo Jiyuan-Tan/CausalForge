@@ -164,8 +164,11 @@ lemma IndepCF.component {α : Type*} [MeasurableSpace α]
     IndepFun a.value (fun ω => B.jointValue ω i) μ :=
   h.project (ψ := fun f => f i) (measurable_pi_apply i)
 
-/-- Projection: conditional independence of `a.value` from any measurable
-function of the bundle's joint value follows from `CondIndepCF`. -/
+/-- Fix a potential-outcome system in which [a regimed variable `a` is
+conditionally independent of a counterfactual bundle `B` given a regimed
+variable `c`](hyp:h). Then for [any measurable function `ψ` of the bundle's
+joint value](hyp:hψ), [the value of `a` remains conditionally independent,
+given `c`, of `ψ` composed with the bundle's joint value](goal). -/
 lemma CondIndepCF.project {α β γ : Type*}
     [MeasurableSpace α] [MeasurableSpace β] [MeasurableSpace γ]
     [StandardBorelSpace P.Ω]

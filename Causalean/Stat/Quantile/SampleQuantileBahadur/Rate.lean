@@ -125,8 +125,12 @@ theorem Tendsto_dist.limsup_measure_closed_le
 -- `finite_measure_halfline_tails_small` (Gaussian half-line tail control) lives in
 -- `Causalean/Stat/CLT/GaussianTail.lean`, imported above.
 
-/-- **Root-`n` consistency of the sample quantile.**
-`√n (q̂ₙ − q₀) = O_p(1)`.  From L2 + the fixed-`q₀` empirical-cdf CLT and a
+/-- **Root-`n` consistency of the sample quantile.** Given [a `SampleQuantileReg` regularity
+bundle `hreg`](hyp:hreg) for the population $\tau$-quantile $q_0$ with density $f_0$, [the rescaled
+deviation $\sqrt n(\hat q_n(\tau)-q_0)$ of the sample quantile from the population quantile is
+bounded in probability, $O_p(1)$](goal).
+
+From L2 + the fixed-`q₀` empirical-cdf CLT and a
 Slutsky tail bound on `P(q̂ₙ > q₀ + M/√n) = P(τ > F̂ₙ(q₀ + M/√n))`. -/
 lemma IIDSample.sampleQuantile_rate (S : IIDSample Ω ℝ μ P)
     {τ q₀ f₀ : ℝ} (hreg : SampleQuantileReg P τ q₀ f₀) :

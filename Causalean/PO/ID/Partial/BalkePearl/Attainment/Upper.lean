@@ -767,7 +767,10 @@ theorem bpUpperWitness7_objective (hA : S.BaseAssumptions) :
 
 /-! ### The upper endpoint is attained -/
 
-/-- Some feasible latent table attains the closed-form upper endpoint. -/
+/-- Under [the Balke-Pearl IV base assumptions](hyp:hA), [the closed-form Balke-Pearl
+upper bound, computed from the observed cell probabilities, is itself attained as the
+average treatment effect of some feasible latent treatment-response table — it lies in the
+Balke-Pearl identified interval](goal). -/
 theorem bpUpper_mem_BPIdentifiedInterval (hA : S.BaseAssumptions) :
     S.bpUpper ∈ S.BPIdentifiedInterval hA := by
   have h₀ := S.latentProb_feasible hA

@@ -82,11 +82,12 @@ lemma condExp_indicator_aeEq_zero
     rw [MeasureTheory.condExp_zero (m := m) (μ := μ) (E := E)]
   exact hCE_ind.symm.trans hLHS_zero
 
-/-- **Single-arm a.e.-equality lift for σ-measurable functions.**
-
-If `f, g : Ω → β` are both `m`-measurable and agree `μ.restrict {A=a}`-a.e., they
-agree `μ`-a.e. globally, PROVIDED the conditional probability `P(A=a | m)` is
-positive a.e. (`h_overlap`).
+/-- **Single-arm a.e.-equality lift for σ-measurable functions.** For a sub-σ-algebra `m` such that
+[`m` is coarser than the ambient σ-algebra](hyp:hm), if [`f` and `g` agree on an `m`-measurable
+set](hyp:h_eq_meas), [they agree almost everywhere on the restriction of the measure to a set
+`E`](hyp:_h), and [the conditional probability of `E` given `m` is positive almost everywhere —
+every `m`-measurable set overlapping `E` only on a null set is itself null](hyp:_h_overlap), then
+[`f` and `g` agree almost everywhere on the whole space](goal).
 
 Without overlap the statement is false: σ_m-measurable functions can agree on
 `{A=a}` while differing on `{A≠a}` if `{A=a}` is invisible to `m`. The overlap
@@ -121,10 +122,14 @@ theorem ae_eq_of_ae_eq_restrict_arm
   have hs_zero : μ s = 0 := _h_overlap s hs hs_arm_zero
   exact MeasureTheory.ae_iff.mpr hs_zero
 
-/-- **Y(a) inherits Y's a.e. upper bound under latent exchangeability + consistency.**
-
-If `Y(a) ⟂ A | σ_UX` (latent exchangeability), `Y ≤ M` a.e., `Y =ᵐ[{A=a}] Y(a)`,
-and `P(A=a | σ_UX) > 0` a.e. (overlap), then `Y(a) ≤ M` a.e. globally.
+/-- **Y(a) inherits Y's a.e. upper bound under latent exchangeability and consistency.** For [a
+sub-σ-algebra `σ_UX` coarser than the ambient σ-algebra](hyp:_hσUX), [a measurable treatment map
+`A`](hyp:_hA), [a measurable potential outcome `Ya`](hyp:_hYa), and a treatment value `a`, if [`Ya`
+is conditionally independent of `A` given `σ_UX` — latent exchangeability](hyp:_latent_exch), [the
+observed outcome `Y` agrees with `Ya` almost everywhere on the restriction of the measure to the
+event `{A = a}` — consistency](hyp:_consistency), [the conditional probability of `{A = a}` given
+`σ_UX` is positive almost everywhere — overlap](hyp:_h_overlap), and [`Y` is at most `M` almost
+everywhere](hyp:_hY_le), then [`Ya` is at most `M` almost everywhere as well](goal).
 
 Proof sketch: by `CondIndepFun`, the conditional expectation of
 `1_{Ya>M} * 1_{A=a}` factors into `E[1_{Ya>M}|σ_UX] * P(A=a|σ_UX)`.
@@ -213,7 +218,14 @@ theorem ae_le_YofA_of_ae_le_Y
   rw [MeasureTheory.ae_iff]
   simpa [B, not_le] using hB_zero
 
-/-- **Y(a) inherits Y's a.e. lower bound under latent exchangeability + consistency.**
+/-- **Y(a) inherits Y's a.e. lower bound under latent exchangeability and consistency.** For [a
+sub-σ-algebra `σ_UX` coarser than the ambient σ-algebra](hyp:_hσUX), [a measurable treatment map
+`A`](hyp:_hA), [a measurable potential outcome `Ya`](hyp:_hYa), and a treatment value `a`, if [`Ya`
+is conditionally independent of `A` given `σ_UX` — latent exchangeability](hyp:_latent_exch), [the
+observed outcome `Y` agrees with `Ya` almost everywhere on the restriction of the measure to the
+event `{A = a}` — consistency](hyp:_consistency), [the conditional probability of `{A = a}` given
+`σ_UX` is positive almost everywhere — overlap](hyp:_h_overlap), and [`Y` is at least `M` almost
+everywhere](hyp:_hY_ge), then [`Ya` is at least `M` almost everywhere as well](goal).
 
 Mirror of `ae_le_YofA_of_ae_le_Y` for the lower bound. Same overlap hypothesis required. -/
 theorem ae_le_YofA_of_ae_le_Y_below

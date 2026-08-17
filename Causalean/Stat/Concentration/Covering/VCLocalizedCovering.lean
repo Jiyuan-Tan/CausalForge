@@ -13,10 +13,11 @@ namespace Causalean.Stat.Concentration
 
 open scoped BigOperators
 
-/-- For a binary-factored real class `F i (S j) = φ j (π i (S j))`, the squared
-empirical L²(Pₙ) distance between two members equals the weighted Hamming
-distance² of their Boolean sample-patterns, with per-sample weights
-`wⱼ = (φ j true − φ j false)² / n`. -/
+/-- **Empirical L² distance as weighted Hamming distance.** For [a real-valued class that factors
+through a Boolean classifier at each sample coordinate, `F i (S j) = φ j (π i (S j))`](hyp:hfactor),
+[the squared empirical L²(Pₙ) distance between two members F i and F i' equals the weighted Hamming
+distance² of their induced Boolean sample-patterns, with per-coordinate weight `(φ j true − φ j
+false)² / n`](goal). -/
 theorem empiricalDist_sq_eq_weightedHammingSq
     {ι 𝒳 : Type*} {n : ℕ} (F : ι → 𝒳 → ℝ) (S : Fin n → 𝒳)
     (π : ι → 𝒳 → Bool) (φ : Fin n → Bool → ℝ)

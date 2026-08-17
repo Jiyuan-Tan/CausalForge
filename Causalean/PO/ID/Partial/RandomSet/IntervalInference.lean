@@ -91,11 +91,12 @@ theorem dilate_Icc {a b r : ℝ} (hab : a ≤ b) (hr : 0 ≤ r) :
         refine ⟨b, ⟨hab, le_rfl⟩, x - b, ?_, by ring⟩
         rw [abs_le]; constructor <;> linarith
 
-/-- **Coverage characterization (Beresteanu–Molinari Proposition 2.7 core).**  The
-population identified interval `[μL, μU]` lies inside the dilated estimate
-`[yl, yu] ⊕ [−r, r]` iff the *directed* Hausdorff distance `dᴴ([μL,μU], [yl,yu])`
-is at most the radius `r`.  This is the one-sided coverage event of the BM
-confidence region. -/
+/-- **Coverage characterization (Beresteanu–Molinari Proposition 2.7 core).** For real
+numbers with [μL ≤ μU](hyp:hμ) and [yl ≤ yu](hyp:hy) forming two closed intervals, and
+[a nonnegative dilation radius `r`](hyp:hr), [the population identified interval
+`[μL, μU]` lies inside the dilated estimate `[yl, yu] ⊕ [−r, r]` if and only if the
+directed Hausdorff distance from `[μL,μU]` to `[yl,yu]` is at most `r`](goal). This is
+the one-sided coverage event of the Beresteanu–Molinari confidence region. -/
 theorem subset_dilate_iff_directedHausdorff_le {μL μU yl yu r : ℝ}
     (hμ : μL ≤ μU) (hy : yl ≤ yu) (hr : 0 ≤ r) :
     Set.Icc μL μU ⊆ dilate (Set.Icc yl yu) r
@@ -109,10 +110,11 @@ theorem subset_dilate_iff_directedHausdorff_le {μL μU yl yu r : ℝ}
     exact ⟨by linarith [h1], by linarith [h2]⟩
 
 /-- **Symmetric (two-sided) coverage characterization (Beresteanu–Molinari `Uₙ` /
-Theorem 2.4).**  Each interval lies inside the other's dilation by `r` iff the
-*symmetric* Hausdorff distance `H([μL,μU], [yl,yu])` is at most `r`.  The mutual
-containment `[μL,μU] ⊆ Uᵧ ∧ [yl,yu] ⊆ Uᵤ` is exactly the two-sided event
-`H ≤ r`. -/
+Theorem 2.4).** For real numbers with [μL ≤ μU](hyp:hμ) and [yl ≤ yu](hyp:hy) forming
+two closed intervals, and [a nonnegative dilation radius `r`](hyp:hr), [each interval
+lies inside the other's dilation by `r` if and only if the symmetric Hausdorff distance
+between `[μL,μU]` and `[yl,yu]` is at most `r`](goal). The mutual containment
+`[μL,μU] ⊆ Uᵧ ∧ [yl,yu] ⊆ Uᵤ` is exactly the two-sided event `H ≤ r`. -/
 theorem subset_dilate_iff_hausdorff_le {μL μU yl yu r : ℝ}
     (hμ : μL ≤ μU) (hy : yl ≤ yu) (hr : 0 ≤ r) :
     (Set.Icc μL μU ⊆ dilate (Set.Icc yl yu) r
@@ -134,12 +136,14 @@ variable {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
   {μ : Measure Ω} {P : Measure X} [IsProbabilityMeasure μ] [IsProbabilityMeasure P]
 
 omit [MeasurableSpace Ω] in
-/-- **Coverage event identity (Beresteanu–Molinari coverage corollary).**  Fix the
-population identified interval `E[Y] = [μL, μU]`, the sample-mean interval
-`Ȳₙ(ω) = [yl(ω), yu(ω)]`, sample size `n ≥ 1`, and critical value `ĉ ≥ 0`.  With the
-BM bandwidth `r = ĉ/√n`, the (one-sided) coverage event `{E[Y] ⊆ Uₙ}` equals the
-event `{√n · dᴴ(E[Y], Ȳₙ) ≤ ĉ}` on the directed Hausdorff statistic.  Hence the
-coverage probability is `μ {ω | √n · dᴴ(E[Y], Ȳₙ(ω)) ≤ ĉ}`.
+/-- **Coverage event identity (Beresteanu–Molinari coverage corollary).** Fix the
+population identified interval `E[Y] = [μL, μU]` with [μL ≤ μU](hyp:hμ), the
+sample-mean interval `Ȳₙ(ω) = [yl(ω), yu(ω)]` with [yl(ω) ≤ yu(ω) for every
+ω](hyp:hy), [a sample size of at least one](hyp:hn), and [a nonnegative critical value
+`c`](hyp:hc). With the BM bandwidth `r = c/√n`, [the (one-sided) coverage event
+`{E[Y] ⊆ Uₙ}` equals the event `{√n · dᴴ(E[Y], Ȳₙ) ≤ c}` on the directed Hausdorff
+statistic](goal). Hence the coverage probability is
+`μ {ω | √n · dᴴ(E[Y], Ȳₙ(ω)) ≤ c}`.
 
 The asymptotic guarantee `μ {coverage} → 1 − α` is not stated here; it would use
 `interval_data_clt` (the limit law of `√n · H(Ȳₙ, E[Y])`) together with a
@@ -263,10 +267,17 @@ theorem dirStat_normalizedSum_eq (S : IIDSample Ω X μ P) (yL yU : X → ℝ)
 /-! ## Asymptotic coverage of the directed confidence region (Beresteanu–Molinari Prop 2.7) -/
 
 omit [IsProbabilityMeasure P] in
-/-- **Asymptotic coverage of the directed confidence region.**  With population
-identified interval `E[Y] = [E y_L, E y_U]`, sample-mean interval `Ȳₙ`, and the BM
-bandwidth `c/√n`, the coverage probability of the *whole* identified set converges
-to the limit-law mass of `(-∞, c]`:
+/-- **Asymptotic coverage of the directed confidence region.** For an i.i.d. sample with
+interval endpoints `yL`, `yU` satisfying [the lower endpoint pointwise at most the
+upper endpoint](hyp:hLU) and [both integrable](hyp:hLint,hUint), assume the centered
+endpoint influence function is [measurable](hyp:hψ) with [finite second
+moment](hyp:hvar) and [mean zero](hyp:hmean), its normalized partial sums are
+[almost-everywhere measurable at every sample size](hyp:hSum_meas), and fix [a
+nonnegative bandwidth constant `c`](hyp:hc) that is [a continuity point of the
+directed-Hausdorff Gaussian limit law](hyp:hfront). With population identified
+interval `E[Y] = [E y_L, E y_U]`, sample-mean interval `Ȳₙ`, and the BM bandwidth
+`c/√n`, [the coverage probability of the whole identified set converges to the
+limit-law mass of `(-∞, c]`](goal):
 
     μ { E[Y] ⊆ Ȳₙ ⊕ B(0, c/√n) }  →  L(−∞, c],
 

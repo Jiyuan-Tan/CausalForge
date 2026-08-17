@@ -44,8 +44,10 @@ noncomputable def coveringNumber {X : Type*} [PseudoMetricSpace X] {A : Set X}
     Nat.find (coveringNumber_exists ha h)
   else 0
 
-/-- At a positive radius, the covering number unfolds to the minimal finite
-cover cardinality supplied by total boundedness. -/
+/-- **Value of the covering number at a positive radius.** For [a totally bounded subset of a
+pseudometric space](hyp:ha), [at any positive covering radius ε](hyp:hε), [the covering number
+equals the least cardinality of a finite ε-net witnessing total boundedness, as selected by
+`coveringNumber_exists`](goal). -/
 theorem coveringNumber_eq {X : Type*} [PseudoMetricSpace X] {A : Set X}
     (ha : TotallyBounded A) {ε : ℝ} (hε : ε > 0) :
     coveringNumber ha ε = Nat.find (coveringNumber_exists ha hε) :=

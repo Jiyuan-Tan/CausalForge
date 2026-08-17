@@ -83,9 +83,13 @@ theorem linearImage_ordConnected {C : Set E} {d : E} (hC : Convex ℝ C) :
       map_smul := fun c x => real_inner_smul_right d x c }
   exact (hC.is_linear_image hlin).ordConnected
 
-/-- **Sharp identified interval (attainment form).**  For a convex `C` whose
-target endpoints are both attained, the identified set is *exactly* the support
-interval. -/
+/-- **Sharp identified interval (attainment form).** For [a convex feasible set `C`](hyp:hC) in a
+real inner-product space and a linear target direction `d`, assuming [the target functional is
+bounded above on `C` in the direction `d`](hyp:hbdd) and [in the opposite direction
+`-d`](hyp:hbdd'), and that [the upper support value is attained by some feasible
+point](hyp:hUmem) and [the lower support value `-supportFn C (-d)` is likewise
+attained](hyp:hLmem), then [the identified set of the target functional over `C` is exactly the
+closed interval `[-supportFn C (-d), supportFn C d]`](goal). -/
 theorem linearImage_eq_Icc {C : Set E} {d : E} (hC : Convex ℝ C)
     (hbdd : BddAbove ((fun x => ⟪d, x⟫) '' C))
     (hbdd' : BddAbove ((fun x => ⟪-d, x⟫) '' C))
@@ -95,9 +99,11 @@ theorem linearImage_eq_Icc {C : Set E} {d : E} (hC : Convex ℝ C)
   Set.Subset.antisymm (linearImage_subset_Icc hbdd hbdd')
     ((linearImage_ordConnected hC).out hLmem hUmem)
 
-/-- **Sharp identified interval (compact convex form).**  The workhorse: a
-nonempty compact convex feasible set gives the sharp interval outright, since a
-continuous functional attains its sup and inf on a compact set and is bounded. -/
+/-- **Sharp identified interval (compact convex form).** For a linear target direction `d` and a
+feasible set that is [compact](hyp:hcomp), [convex](hyp:hC), and [nonempty](hyp:hne), [the
+identified set of the target functional `⟪d, ·⟫` over `C` is exactly the closed interval
+`[-supportFn C (-d), supportFn C d]`](goal): a continuous functional attains its supremum and
+infimum on a compact set and is automatically bounded there. -/
 theorem linearImage_eq_Icc_of_isCompact {C : Set E} {d : E}
     (hcomp : IsCompact C) (hC : Convex ℝ C) (hne : C.Nonempty) :
     (fun x => ⟪d, x⟫) '' C = Set.Icc (-supportFn C (-d)) (supportFn C d) := by
@@ -131,8 +137,11 @@ theorem width_nonneg {C : Set E} {d : E} (hne : C.Nonempty)
   rw [inner_neg_left] at h2
   simp only [width]; linarith
 
-/-- **Point identification.**  The identified set collapses to a point (zero
-width) iff the target functional is constant on `C` (equal to its support value). -/
+/-- **Point identification.** For a feasible set `C` and direction `d` in a real inner-product
+space, assuming [`C` is nonempty](hyp:hne) and [the target functional `⟪d, ·⟫` is bounded above
+on `C` in the direction `d`](hyp:hbdd) and [in the opposite direction `-d`](hyp:hbdd'), then [the
+identified set collapses to a point (zero width) if and only if the target functional is constant
+on `C`, equal to its support value](goal). -/
 theorem width_eq_zero_iff {C : Set E} {d : E} (hne : C.Nonempty)
     (hbdd : BddAbove ((fun x => ⟪d, x⟫) '' C))
     (hbdd' : BddAbove ((fun x => ⟪-d, x⟫) '' C)) :

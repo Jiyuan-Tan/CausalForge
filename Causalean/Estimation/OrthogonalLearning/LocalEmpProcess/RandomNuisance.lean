@@ -547,7 +547,20 @@ theorem foldBCoord_meas
   intro j
   exact S_iid.meas _
 
-/-- **Cross-fit lift of the empirical-process modulus to a random nuisance.**
+/-- **Cross-fit lift of the empirical-process modulus to a random nuisance.** Let `ĥ` be a
+fold-A-measurable random nuisance sequence. Assume [`b` is strictly positive](hyp:hb_pos),
+that [at every sample size and sample point the loss magnitude at the realised nuisance
+`ĥ n ω` is uniformly bounded by `b`](hyp:hg_bdd), and that [the loss at that realised
+nuisance is continuous in the parameter](hyp:hg_cont). Given [a sequence `R n` that
+Rademacher-controls the centred loss class at every realisation `ĥ n ω`](hyp:hR), and a
+confidence level [`0 < δ ≤ 1`](hyp:hδ,hδ'). Suppose further that
+[the σ-algebra `m_A n` generating the fold-A information is coarser than the ambient
+σ-algebra](hyp:hm_A_le), that [fold A is independent of the fold-B coordinate block under
+this σ-algebra](hyp:hindep), and that [the nuisance-indexed bad event depends jointly
+measurably on the fold-A outcome and the fold-B sample](hyp:hbad_joint). Then [the
+random-nuisance local empirical-process modulus condition holds, at rate `ρ n := √(2·b)`
+on empty folds and `ρ n := √(2·R n + 2·b·√(2·log(1/δ)/|foldB n|))` otherwise, evaluated at
+the random nuisance `ĥ`](goal).
 
 Given a fold-A-measurable random nuisance `ĥ : ℕ → Ω → G` for which the centred
 loss is uniformly bounded (`b`), continuous in `θ`, and Rademacher-controlled

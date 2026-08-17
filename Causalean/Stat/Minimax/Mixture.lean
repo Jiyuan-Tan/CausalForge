@@ -48,8 +48,10 @@ theorem mixture_isProbabilityMeasure (w : ι → ℝ≥0∞) (hw : ∑ i, w i = 
   simp only [measure_univ, mul_one]
   exact hw
 
-/-- **Domination.** If the weights sum to 1, each part is a probability measure, and
-every part assigns `.real`-mass `≤ B` to `A`, then so does the mixture. -/
+/-- **Domination.** If [the mixture weights `w` sum to `1`](hyp:w,hw), each component
+measure `P i` is a probability measure, and [every component assigns `.real`-mass at most
+`B` to the set `A`](hyp:hB), then [the mixture measure also assigns `.real`-mass at most
+`B` to `A`](goal). -/
 theorem mixtureReal_le (w : ι → ℝ≥0∞) (hw : ∑ i, w i = 1)
     (P : ι → Measure Ω) [∀ i, IsProbabilityMeasure (P i)]
     (A : Set Ω) (B : ℝ) (hB : ∀ i, (P i).real A ≤ B) :

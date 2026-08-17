@@ -79,11 +79,12 @@ theorem hoif_remainder_sq_le {ι : Type*} (T : Finset ι) (e : ι → ℕ → �
     _ = (T.card : ℝ) ^ 2 * δ ^ (2 * (m + 1)) := by
         rw [mul_pow, ← pow_mul, Nat.mul_comm (m + 1) 2]
 
-/-- **Rate selection: a high-enough HOIF order makes the squared remainder `o(ρ_n)`.**
-If the squared product-remainder bound has the power-law form `K·n^{-a}` with
-`a = 2(m+1)λ_*` and the target risk rate is `ρ_n = n^{-κ}`, then whenever the chosen order
-makes `a > κ` the ratio `(K·n^{-a}) / n^{-κ} = K·n^{κ-a}` tends to `0`: the HOIF estimation
-bias is asymptotically negligible relative to the target rate. -/
+/-- **Rate selection: a high-enough HOIF order makes the squared remainder `o(ρ_n)`.** For
+a squared product-remainder bound of the power-law form `K·n^{-a}` and a target risk rate
+`ρ_n = n^{-κ}`, if [the remainder's decay exponent `a` exceeds the target rate's exponent
+`κ`](hyp:haκ), then [the ratio `(K·n^{-a}) / n^{-κ} = K·n^{κ-a}` tends to `0` as `n → ∞`:
+the HOIF estimation bias is asymptotically negligible relative to the target
+rate](goal). -/
 theorem hoif_order_choice_negligible {K a κ : ℝ} (haκ : κ < a) :
     Tendsto (fun n : ℕ => K * (n : ℝ) ^ (κ - a)) atTop (𝓝 0) := by
   have hpos : 0 < a - κ := by linarith

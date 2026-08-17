@@ -123,11 +123,12 @@ lemma WeightedNorm_nonneg
   refine mul_nonneg ?_ (Real.rpow_nonneg (abs_nonneg _) _)
   exact div_nonneg (abs_nonneg _) (Finset.sum_nonneg fun _ _ => abs_nonneg _)
 
-/-- **Single-function Hölder bound for a linear smoother**.
-
-If the linear-smoother weights have absolute-weight envelope `Σ |w_i| ≤ c_n`,
-then for any query point `x : γ` the smoothed bias `op.evalAt n ω (g ∘ z.1) x`
-is dominated by `c_n · ‖g ∘ xs.1‖_{w,1}`.
+/-- **Single-function Hölder bound for a linear smoother**. Assume [op realises a linear
+smoother at sample size n, randomness ω, and query point x — its evaluation of any
+function on the fold B is the weighted sum `Σ w_i · f(xs_i)`](hyp:hLin), and that [the
+absolute weights sum to at most `c_n`](hyp:hWeights). Then [the absolute smoothed bias of
+g (evaluated on the γ-component of the data) at x is bounded by `c_n` times the weighted
+L¹ norm of `g ∘ xs.1`](goal).
 
 The LaTeX statement is
 
@@ -202,13 +203,12 @@ theorem smoother_bias_holder
         mul_le_mul_of_nonneg_right (by simpa [S] using hWeights) hNorm_nonneg
 
 /-- **Product Hölder bound for a linear smoother** (Prop
-`prop:est-cate-linear-smoother-bound`).
-
-For `g(z) = g₁(z.1) · g₂(z.1)` and conjugate exponents `1/p + 1/q = 1` (in the
-form `Real.HolderConjugate p q`), the smoothed bias of the product is
-bounded by
-
-  c_n · ‖g₁‖_{w,p} · ‖g₂‖_{w,q}.
+`prop:est-cate-linear-smoother-bound`). Assume [op realises a linear smoother at sample
+size n, randomness ω, and query point x](hyp:hLin), that [the absolute weights sum to at
+most `c_n`](hyp:hWeights), and that [p and q are Hölder-conjugate exponents,
+`1/p + 1/q = 1`](hyp:hConj). Then [the absolute smoothed bias of the product `g₁ · g₂`
+(evaluated on the γ-component of the data) at x is bounded by `c_n` times the weighted
+`L^p` norm of `g₁ ∘ xs.1` times the weighted `L^q` norm of `g₂ ∘ xs.1`](goal).
 
 In the DR-Learner application, `g₁` is the propensity error
 `hat π_n - π` and `g₂` is the outcome-regression error `hat μ_{a,n} - μ_a`. -/

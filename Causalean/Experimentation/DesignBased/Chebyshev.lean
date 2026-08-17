@@ -34,9 +34,9 @@ namespace FiniteDesign
 variable {Ω : Type*} [Fintype Ω] (D : FiniteDesign Ω)
 
 open Classical in
-/-- **Finite-design Chebyshev inequality.** In a finite design, the probability that a statistic
-differs from its design mean by at least a positive threshold is at most its design variance divided
-by the threshold squared. -/
+/-- **Finite-design Chebyshev inequality.** In a finite design, for any statistic `X` and
+[a strictly positive threshold `ε`](hyp:hε), [the design probability that `X` differs from its
+design mean by at least `ε` is at most the design variance of `X` divided by `ε²`](goal). -/
 theorem chebyshev (X : Ω → ℝ) {ε : ℝ} (hε : 0 < ε) :
     D.Pr (fun z => ε ≤ |X z - D.E X|) ≤ D.Var X / ε ^ 2 := by
   have hε2 : (0 : ℝ) < ε ^ 2 := pow_pos hε 2

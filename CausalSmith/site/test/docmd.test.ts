@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { renderDoc, nlOf, renderTexCompact, renderLabel } from "../src/lib/docmd.js";
+import {
+  renderDoc,
+  renderNl,
+  nlOf,
+  nlPlain,
+  parseCrosslinks,
+  stripCrosslinks,
+  renderTexCompact,
+  renderLabel,
+} from "../src/lib/docmd.js";
 
 describe("docmd", () => {
   it("escapes HTML", () => {
@@ -44,6 +53,56 @@ describe("docmd", () => {
   it("nlOf takes the first paragraph", () => {
     expect(nlOf("The NL part.\n\nImplementation notes.")).toBe("The NL part.");
     expect(nlOf(null)).toBeNull();
+  });
+});
+
+describe("NL ↔ Lean crosslinks", () => {
+  it("parses hyp and goal links, splitting comma-separated names", () => {
+    const segs = parseCrosslinks("Fix [Λ at least 1](hyp:Λ,hΛ), then [it holds](goal).");
+    expect(segs).toEqual([
+      { text: "Fix ", links: null },
+      { text: "Λ at least 1", links: ["Λ", "hΛ"] },
+      { text: ", then ", links: null },
+      { text: "it holds", links: ["⊢"] },
+      { text: ".", links: null },
+    ]);
+  });
+  it("handles balanced brackets inside a phrase (E[A·Y·(…)])", () => {
+    const segs = parseCrosslinks("then [equals E[A·Y·(wMax if Y ≥ 0 else wMin)]](goal).");
+    expect(segs[1]).toEqual({ text: "equals E[A·Y·(wMax if Y ≥ 0 else wMin)]", links: ["⊢"] });
+  });
+  it("ignores unbalanced brackets inside code/math spans (interval notation)", () => {
+    const segs = parseCrosslinks("If [overlap holds at `ε ∈ (0, 1/2]`](hyp:hov), done.");
+    expect(segs[1]).toEqual({ text: "overlap holds at `ε ∈ (0, 1/2]`", links: ["hov"] });
+  });
+  it("leaves ordinary markdown links and stray closers untouched", () => {
+    const s = "see [the paper](https://x.y) and a stray ](hyp:h) closer";
+    expect(stripCrosslinks("see [the paper](https://x.y)")).toBe("see [the paper](https://x.y)");
+    // The stray closer has an opener candidate in the md link — but that link's
+    // own `]` was consumed; strip keeps the text lossless either way.
+    expect(stripCrosslinks(s)).toContain("the paper");
+  });
+  it("renderNl emits data-links spans; renderDoc and nlPlain strip the markup", () => {
+    const nl = "If [overlap holds](hyp:hoverlap), then [the bound is sharp](goal).";
+    const html = renderNl(nl);
+    expect(html).toContain('<span class="nl-link" data-links="hoverlap" tabindex="0">overlap holds</span>');
+    expect(html).toContain('data-links="⊢"');
+    expect(renderDoc(nl)).not.toContain("hyp:");
+    expect(renderDoc(nl)).toContain("overlap holds");
+    expect(nlPlain(nl)).toBe("If overlap holds, then the bound is sharp.");
+  });
+  it("escapes quotes in data-links so crafted names cannot inject attributes", () => {
+    // Audit repro: a `"` in a link name must not close the attribute early.
+    const html = renderNl('Fix [x](hyp:a",onfocus=alert).');
+    expect(html).not.toMatch(/data-links="[^"]*"\s+onfocus/);
+    expect(html).toContain("&quot;");
+  });
+  it("renderNl falls back to renderDoc when there are no crosslinks", () => {
+    expect(renderNl("Plain **bold** text.")).toBe(renderDoc("Plain **bold** text."));
+  });
+  it("crosslink phrases still render inline code and math", () => {
+    const html = renderNl("If [the score `e` is bounded](hyp:h1), done.");
+    expect(html).toContain("<code>e</code>");
   });
 });
 

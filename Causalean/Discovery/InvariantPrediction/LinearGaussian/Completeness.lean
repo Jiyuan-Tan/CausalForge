@@ -128,11 +128,11 @@ theorem icp_sound_linearGaussian (_hInt : F.ObsIntegrable) :
     intro i
     rw [Measure.map_congr (envResidual_eq_eps F.obs (F.env i)), F.obs.hGauss (target p)]
 
-/-- **Youngest-node selection** (the "youngest node `X_{k₀}`" step).  Given a
-nonempty set of indices `T` (the support of `α = γ* − γ`), there is an index
-`k₀ ∈ T` that is a *sink* of the induced subgraph: no directed path in the
-observational DAG goes from `k₀` to any *other* element of `T`.  This is the
-"youngest" node with non-zero `α` of the paper's proof. -/
+/-- **Youngest-node selection** (the "youngest node `X_{k₀}`" step).  Given
+[a nonempty set of coordinate indices $T$](hyp:hT), [there is an index $k_0 \in T$
+such that no other element of $T$ is a descendant of $k_0$ along the observational
+DAG's directed edges](goal) — i.e. $k_0$ is a sink of the subgraph induced by $T$.
+This is the "youngest" node with non-zero `α` of the paper's proof. -/
 theorem exists_youngest_nonzero (T : Finset (Fin (p + 1))) (hT : T.Nonempty) :
     ∃ k₀ ∈ T, ∀ k ∈ T, k ≠ k₀ → ¬ F.obs.dag.isAncestor k₀ k := by
   -- Pick the index of `T` with the largest topological order: it cannot be a
@@ -146,12 +146,16 @@ theorem exists_youngest_nonzero (T : Finset (Fin (p + 1))) (hT : T.Nonempty) :
     F.obs.dag.isAncestor_topoOrder_lt hanc
   exact absurd (hmax k hkT) (Nat.not_le.mpr hlt)
 
-/-- **Residual mean-shift** (`eq:help1`/`eq:help2`).  Fix a coefficient vector
-`γ` and let `α = γ* − γ` (`γ*` the causal coefficient `β₀,·`).  Suppose `k₀` is a
-youngest index with `α_{k₀} ≠ 0`, and `i` is an environment with a single shifted
-do-intervention on `k₀` (`A i = {k₀}`, `a i k₀ ≠ E[X¹_{k₀}]`).  Then the residual
-`R^i = Y^i − Σ γ_k X_k^i` and the observational residual `R¹` have **different
-means**, hence different laws — the two cannot be `IdentDistrib`.
+/-- **Residual mean-shift** (`eq:help1`/`eq:help2`).  Fix [an observational SEM
+with integrable regressors](hyp:hInt), a candidate coefficient vector `γ`, and an
+index `k₀` such that [the gap `α_{k₀} = β₀,k₀ − γ_{k₀}` between the causal
+coefficient and `γ` at `k₀` is nonzero](hyp:hk₀). Suppose [`k₀` is a youngest such
+index: every other index with a nonzero coefficient gap is not a descendant of `k₀`
+in the observational DAG](hyp:hyoung), and let `i` be an environment consisting of
+[a single do-intervention pinning coordinate `k₀`](hyp:hAi) [to a value different
+from its observational mean](hyp:hai). Then [the residual `R^i = Y^i − Σ γ_k X_k^i`
+computed in environment `i` and the observational residual `R¹` computed the same
+way do not have the same distribution](goal), since they have different means.
 
 The mean gap is `α_{k₀} · (a i k₀ − E[X¹_{k₀}]) ≠ 0` (the do-intervention pins
 `X_{k₀}` to the constant `a`, all other contributions matching the observational
@@ -268,12 +272,12 @@ theorem residual_mean_shift_of_doIntervention
   exact (mul_ne_zero hk₀ (sub_ne_zero.mpr hai)) hgap.symm
 
 /-- **Completeness for do-interventions — Theorem `prop:1`(i).**
-
-For a linear-Gaussian SEM with do-interventions such that every predictor `j`
-receives at least one single intervention `A^e = {j}` with shifted value
-`a^e_j ≠ E[X¹_j]`, the identified set equals the parents of the target:
-
-`S(E) = PA(Y)`.
+For [an observational linear-Gaussian SEM with integrable regressors](hyp:hInt) such
+that [every predictor $j$ receives at least one environment with a single
+do-intervention $A^e = \{j\}$ whose shifted value $a^e_j$ differs from its
+observational mean $E[X^1_j]$](hyp:hInterv), [the ICP identified set — the
+intersection of all invariant predictor sets — equals exactly the parent set of the
+target node, $S(E) = PA(Y)$](goal).
 
 This is the main result of this sub-development. -/
 theorem icp_complete_linearGaussian

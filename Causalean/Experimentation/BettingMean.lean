@@ -62,11 +62,16 @@ lemma capital_nonneg {X lam : ℕ → Ω → ℝ} {m : ℝ}
       intro ω
       exact mul_nonneg (ih ω) (hbet n ω)
 
-/-- **The capital process is a test supermartingale** (the Waudby-Smith–Ramdas construction). For an
-adapted capital process with predictable bets (`lamₙ` is `ℱ n`-measurable), admissible bet range
-(`0 ≤ 1 + lamₙ(Xₙ − m)`), integrability, and conditionally fair increments
-(`μ[Xₙ − m | ℱ n] = 0`), the betting capital process is a nonnegative supermartingale with
-`E[K₀] ≤ 1`. -/
+/-- **The capital process is a test supermartingale** (the Waudby-Smith–Ramdas construction).
+Consider a data stream `X` tested against a candidate mean `m` via betting fractions `lam`, all
+adapted to a filtration `ℱ`. If [the capital process itself is adapted to `ℱ`](hyp:hadapt),
+[each bet `lam n` is measurable with respect to the time-`n` information](hyp:hlam), [the
+capital process, the centered increment `X n − m`, and the bet-scaled increment
+`lam n · (X n − m)` are all integrable at every time `n`](hyp:hint,hintX,hintInc), [every
+per-step return factor `1 + lam n (X n − m)` stays nonnegative](hyp:hbet), and [the conditional
+mean of `X n − m` given the time-`n` information is zero, i.e. the bet is conditionally
+fair](hyp:hfair), then [the betting capital process is a nonnegative test supermartingale for
+`ℱ` under `μ`, with `E[K₀] ≤ 1`](goal). -/
 theorem isTestSupermartingale_capital [IsProbabilityMeasure μ] {X lam : ℕ → Ω → ℝ} {m : ℝ}
     (hadapt : Adapted ℱ (capital X lam m))
     (hlam : ∀ n, StronglyMeasurable[ℱ n] (lam n))
@@ -113,16 +118,21 @@ theorem isTestSupermartingale_capital [IsProbabilityMeasure μ] {X lam : ℕ →
   · rw [capital_zero]
     simp [integral_const]
 
-/-- **Betting confidence sequence (coverage).** If the betting capital process for `m` is already a
-test supermartingale, then the cover that keeps `m` while its capital has not reached `1/α` fails at
-some time with probability at most `α`. -/
+/-- **Betting confidence sequence (coverage).** If [the betting capital process built from the
+data stream `X`, betting fractions `lam`, and candidate mean `m` is a test supermartingale under
+`μ`](hyp:hM) and [the target error level `α` is strictly positive](hyp:hα), then [the sequence
+of confidence sets that retains a candidate mean `m` only while its capital has not yet reached
+`1/α` is a valid confidence sequence with time-uniform coverage `1 − α`](goal). -/
 theorem isConfidenceSequence_bettingCI [IsFiniteMeasure μ] {X lam : ℕ → Ω → ℝ} {m : ℝ}
     (hM : IsTestSupermartingale (capital X lam m) ℱ μ) {α : ℝ} (hα : 0 < α) :
     IsConfidenceSequence (confSeqOfWealth (capital X lam m) α) μ α :=
   isConfidenceSequence_confSeqOfWealth hM hα
 
-/-- **Anytime-valid test by betting.** If the betting capital process for `m` is already a test
-supermartingale, then the event that its wealth ever reaches `1/α` has probability at most `α`. -/
+/-- **Anytime-valid test by betting.** If [the betting capital process built from the data
+stream `X`, betting fractions `lam`, and candidate mean `m` is a test supermartingale under
+`μ`](hyp:hM) and [the target error level `α` is strictly positive](hyp:hα), then [the rejection
+region that declares significance once the capital ever reaches `1/α` is an anytime-valid
+level-`α` test](goal). -/
 theorem isAnytimeValid_betting [IsFiniteMeasure μ] {X lam : ℕ → Ω → ℝ} {m : ℝ}
     (hM : IsTestSupermartingale (capital X lam m) ℱ μ) {α : ℝ} (hα : 0 < α) :
     IsAnytimeValid (rejectionRegion (capital X lam m) α) μ α :=

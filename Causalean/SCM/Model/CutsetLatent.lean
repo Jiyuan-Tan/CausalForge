@@ -331,7 +331,13 @@ theorem evalMap_overrideC_agree_cutset (M : Causalean.SCM N Ω)
   refine ⟨v.val, v.property, Or.inl ?_⟩
   exact M.observedAt_observedIndex ⟨v.val, hY v.property⟩
 
-/-- The overridden target evaluation factors through a single measurable function of the latent cutset projection.
+/-- **Cutset factorization of an override evaluation.** Fix a structural causal model `M`, a
+    target node set `Y` and an override node set `C` with [`Y` contained in the observed
+    nodes](hyp:hY) and [`C` contained in the observed nodes](hyp:hC), a fixed-value assignment
+    `s`, and an override assignment `c` on `C`. Then [there is a measurable map from
+    assignments on the latent cutset of `Y` relative to `C` to assignments on `Y` such that,
+    for every latent assignment, the overridden evaluation at `Y` equals this map applied to
+    the latent assignment's projection onto the cutset](goal).
 
     **Genuine cutset factorization of the override evaluation.**
 

@@ -653,10 +653,10 @@ theorem activePath_transfer_cond_to_source
     intro i hi hC
     exact hExists i hi hC
 
-/-- **Source-to-conditioning transfer for d-separation.**
-
-    Moving vertices from the source set `X` to the conditioning set `Z`
-    preserves d-separation. Equivalently: `bbReachableVertices (Z ∪ S) X`
+/-- **Source-to-conditioning transfer for d-separation.** If [`X` and `S` are
+    disjoint](hyp:hXS) and [`X ∪ S` and `Y` are d-separated by `Z`](hyp:h), then [`X` and `Y`
+    remain d-separated once `S` is moved into the conditioning set:
+    `G.dSep X Y (Z ∪ S)`](goal). Equivalently: `bbReachableVertices (Z ∪ S) X`
     is a subset of `bbReachableVertices Z (X ∪ S)`.
 
     **Intuition.** Conditioning on `S` (LHS) opens collider paths through
@@ -766,11 +766,10 @@ theorem isActivePath_mono_edge
     simp only at hval
     rwa [if_neg hnotC'] at hval
 
-/-- **d-separation transfers from a supergraph to a subgraph.**
-
-    If `G'` is obtained from `G` by *removing* edges
-    (`∀ u v, G'.edge u v → G.edge u v`), and `G ⊨ X ⊥⊥ Y | Z`,
-    then `G' ⊨ X ⊥⊥ Y | Z`.
+/-- **d-separation transfers from a supergraph to a subgraph.** For DAGs `G` and `G'` on the
+    same vertex set, if [every edge of `G'` is also an edge of `G`](hyp:hEdge) — `G'` is
+    obtained from `G` by removing edges — and [`X` and `Y` are d-separated by `Z` in
+    `G`](hyp:h), then [`X` and `Y` are also d-separated by `Z` in `G'`](goal).
 
     **Direction.** Fewer edges can only destroy active paths, never create new
     ones, so `G'`-BFS-reachability is a subset of `G`-BFS-reachability.

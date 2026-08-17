@@ -405,9 +405,11 @@ theorem radialAnnulusMonomial_hasPseudoDimAtMost
         movingCenterNonstrictExteriorClassifier, movingCenterClosedBallClassifier,
         movingCenterBallExteriorClassifier, hann, ht, hnot]
 
-/-- For every positive bandwidth and ordered nonnegative annulus, allowing
-both the Euclidean center and any degree from zero through `p` to vary gives
-the explicit pseudo-dimension bound `radialPseudoDimBound d p`. -/
+/-- **Pseudo-dimension bound for the moving-center radial-monomial class.** For [a positive
+bandwidth q](hyp:hq), [a nonnegative annulus inner radius a](hyp:ha), and [inner radius at most
+outer radius b](hyp:hab), allowing both the Euclidean center and the monomial degree — ranging
+from zero through p — to vary gives [the radial-monomial class a pseudo-dimension of at most
+`radialPseudoDimBound d p`](goal). -/
 theorem radialMonomialClass_hasPseudoDimAtMost
     (d p : ℕ) {q a b : ℝ}
     (hq : 0 < q) (ha : 0 ≤ a) (hab : a ≤ b) :

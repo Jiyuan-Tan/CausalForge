@@ -210,15 +210,20 @@ theorem do_rule3_conditional_condDistrib
   condDistrib_eq_of_map_prod_eq
     (obsKernel_map_prodWY_eq M' Z hZ_obs hZ_fixed Y W hY hW hNoDesc s')
 
-/-- **Conditional Rule 3 (headline, a.e. `obsCondKernel` form).**
+/-- **Conditional Rule 3 (headline, a.e. `obsCondKernel` form).** Pearl's Rule 3 for
+    the deletion of actions, stated against the project's jointly-measurable
+    conditional kernel. Fix [a do-set `Z` of nodes whose random copies are observed
+    in the base model and whose fixed nodes have not already been intervened
+    on](hyp:hZ_obs,hZ_fixed), [an outcome block `Y`](hyp:hY) and [a conditioning
+    block `W`](hyp:hW) of observed variables. If [none of the fixed copies of `Z`'s
+    nodes is an ancestor, in the intervention SWIG graph, of any node in
+    `Y ∪ W`](hyp:hNoDesc), then [for almost every value `w` of `W` under the
+    intervened model's `W`-marginal, the `Y`-given-`W` conditional kernel of the
+    model intervened at `do(Z)` equals the `Y`-given-`W` conditional kernel of the
+    base model, both evaluated at the corresponding fixed values](goal).
 
-    Pearl's Rule 3 for the deletion of actions, stated against the project's
-    jointly-measurable conditional kernel: for almost every value `w` of the
-    conditioning block `W` (w.r.t. its marginal), the `Y | W`-conditional kernel
-    of the model intervened at `do(Z)` equals the `Y | W`-conditional kernel of
-    the base model.  This is the conditional analogue of the joint Rule 3\*
-    `do_rule3`, and the conditional counterpart of the kernel-native Rule 2
-    `do_rule2_kernel`.
+    This is the conditional analogue of the joint Rule 3\* `do_rule3`, and the
+    conditional counterpart of the kernel-native Rule 2 `do_rule2_kernel`.
 
     The a.e. qualifier is intrinsic to `obsCondKernel` (a disintegration
     representative), not to the intervention: the underlying conditional

@@ -30,11 +30,12 @@ namespace POLeeSystem
 
 variable {P : POSystem} (S : POLeeSystem P)
 
-/-- The constructed always-selected trim weight has the target latent mean.
-
-In the finite-support Lee setup, `Mw` evaluated at
-`alwaysSelectedTrimWeight` equals the conditional mean of `Y(1)` on the
-always-selected stratum. -/
+/-- **The constructed always-selected trim weight has the target latent mean.** Given [the
+baseline Lee assumptions](hyp:hA), [monotone sample selection](hyp:hMono), and [almost-sure
+finite support `𝒴` for the factual outcome on the selected-treated cell](hyp:hSupp),
+[evaluating the trim-weight mean functional `Mw` at the constructed always-selected trim weight
+recovers exactly the conditional mean `E[Y(1) | alwaysSelected]` of the treated potential
+outcome among always-selected units](goal). -/
 lemma Mw_alwaysSelectedTrimWeight_eq_condExp_Y1_AS
     (hA : S.BaseAssumptions) (hMono : S.MonotoneSelection)
     (𝒴 : Finset ℝ)

@@ -39,8 +39,13 @@ lemma fixSet_edge_iff
   simp only [SCM.fixSet, SCM.fixMono, SWIGGraph.splitMono,
              SWIGGraph.splitMonoDAG]
 
-/-- **Forward direction: `.fixed D`-ancestry in `fixSet X` lifts to
-    `.random D`-ancestry in the base graph.**
+/-- **Forward direction: `.fixed D`-ancestry in `fixSet X` lifts to `.random D`-ancestry in
+    the base graph.** Fix a structural causal model `M` and an intervention target set `X`
+    such that [every targeted node is currently a random observed node](hyp:hX_obs) and [none
+    of its fixed copies is already fixed](hyp:hX_fixed). For [a targeted node `D`](hyp:hD) and
+    a node `v`, if [the fixed copy of `D` is a proper ancestor of `v` in the post-intervention
+    graph obtained by fixing `X`](hyp:h), then [the random copy of `D` is a proper ancestor of
+    `v` in the original base graph](goal).
 
     In `(M.fixSet X).dag`, the split node `.fixed D` (`D ∈ X`) has no
     incoming edges and its outgoing edges are exactly `.random D`'s

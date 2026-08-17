@@ -91,9 +91,15 @@ lemma IsRegressionFunction.sub
         h₂.integrable_compose.integrableOn
     rw [h_lhs, h_rhs, h₁.integral_preimage_eq A hA, h₂.integral_preimage_eq A hA]
 
-/-- If two response variables are `μ`-a.e. equal, their regression
-representatives agree `(μ.map X)`-almost everywhere.  Useful for collapsing
-two equivalent representatives of the same conditional expectation. -/
+/-- Fix a conditioning variable `X` that is [`μ`-almost-everywhere
+measurable](hyp:hX). If [two response variables `g₁` and `g₂` are `μ`-almost-
+everywhere equal](hyp:hg), and [`f₁` is a regression-function representative of
+the conditional mean of `g₁` given `X`](hyp:h₁) while [`f₂` is a
+regression-function representative of the conditional mean of `g₂` given
+`X`](hyp:h₂), then [`f₁` and `f₂` agree `(μ.map X)`-almost everywhere](goal).
+
+Useful for collapsing two equivalent representatives of the same conditional
+expectation. -/
 lemma IsRegressionFunction.aeEq_of_aeEq_response
     {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω}
     {X : Ω → ℝ} {g₁ g₂ : Ω → ℝ} {f₁ f₂ : ℝ → ℝ}

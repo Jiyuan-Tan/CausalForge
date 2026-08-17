@@ -47,9 +47,10 @@ theorem netHACVarEst_eq_locProd (F : NetworkDependence V Ω μ) (ω : Ω) :
     F.netHACVarEst ω = ∑ i, F.X i ω * ∑ k ∈ F.toDepGraph.nbhd i, F.X k ω := by
   simp only [NetworkDependence.netHACVarEst, NetworkDependence.nbhd, Finset.mul_sum]
 
-/-- **Estimator-variance bound.** For a super-population network field `F` with summands bounded by
-`B` (`|Xᵢ| ≤ B`) and bounded degree `m` (each network neighborhood has at most `m` units), the
-variance of the network-HAC estimator `V̂ = ∑ᵢ ∑_{j∈N i} Xᵢ Xⱼ` is at most `2·m⁵·card(V)·B⁴`.
+/-- **Estimator-variance bound.** For a super-population network field `F`, given [a nonnegative
+bound `B`](hyp:hB) such that [every summand is bounded in absolute value by `B`](hyp:hbound) and
+[every network neighborhood has size at most `m`](hyp:hdeg), [the variance of the network-HAC
+estimator `V̂ = ∑ᵢ ∑_{j∈N i} Xᵢ Xⱼ` is at most `2·m⁵·card(V)·B⁴`](goal).
 
 This is the genuine content of the consistency argument: because non-adjacent summand tuples are
 independent (the m-dependence `NetworkDependence.indep`), the covariance between two localized

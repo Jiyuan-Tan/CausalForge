@@ -105,7 +105,11 @@ lemma polynomial_fixedPoints_closed {ι : Type*}
     exact sub_eq_zero.mp (by simpa [Q, hP x] using this)
   · exact affineZariskiClosure_extensive _
 
-/-- The range of a polynomial embedding with a polynomial left inverse is affine-closed. -/
+/-- For maps between the finite-dimensional complex affine spaces `ℂ^ι` and
+`ℂ^κ`, if [`f` is coordinatewise polynomial](hyp:hf), [an accompanying map `g`
+back to `ℂ^ι` is coordinatewise polynomial](hyp:hg), and [`g` is a left
+inverse of `f`, i.e. `g (f x) = x` for every `x`](hyp:hleft), then [the range
+of `f` is already Zariski-closed](goal). -/
 lemma polynomial_range_closed_of_retract {ι κ : Type*}
     {f : (ι → ℂ) → (κ → ℂ)} {g : (κ → ℂ) → (ι → ℂ)}
     (hf : IsPolynomialMap f) (hg : IsPolynomialMap g)

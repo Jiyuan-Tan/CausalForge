@@ -29,13 +29,15 @@ namespace DesignBased
 variable {Ω : ℕ → Type*} [∀ n, Fintype (Ω n)]
 
 open Classical in
-/-- **Conservative Wald-interval liminf coverage.** Consider a sequence of finite designs with an
-estimator `est n` of a target `θ n`. Suppose the studentized statistic
-`√(m n) · (est n − θ n) / √(v n)` converges in distribution to the standard normal (its lower CDF
-tends to `Φ` at every point), a deterministic conservative variance `v̂ n` eventually dominates the
-true variance scale `v n`, and the normalization size `m n` is eventually positive. Then
-the two-sided interval `|θ n − est n| ≤ z · √(v̂ n / m n)`, with `z` the upper `1 − α/2` normal
-quantile, has asymptotic (liminf) coverage at least `1 − α`.
+/-- **Conservative Wald-interval liminf coverage.** Consider [a sequence of finite
+designs](hyp:D) with [an estimator `est n` of a target `θ n`](hyp:est). Suppose [the
+normalization size `m n` is eventually positive](hyp:hmpos), [the true variance scale `v n` is
+eventually positive](hyp:hvarpos), and [a deterministic conservative variance `v̂ n` eventually
+dominates `v n`](hyp:hvar_le). Suppose further that [the studentized statistic
+`√(m n)·(est n − θ n)/√(v n)` has design-probability CDF converging to the standard-normal CDF at
+`z`](hyp:hclt) and [at `−z`](hyp:hclt_neg), where [`z` is nonnegative](hyp:hz0) and [satisfies
+`Φ(z) = 1 − α/2`](hyp:hz). Then [the two-sided interval `|θ n − est n| ≤ z·√(v̂ n / m n)` has
+asymptotic (liminf) coverage at least `1 − α`](goal).
 
 The dominating conservative variance is what makes the interval *conservative*: replacing the true
 `v n` by the larger `v̂ n` only widens it, so the standard-normal coverage limit becomes a lower

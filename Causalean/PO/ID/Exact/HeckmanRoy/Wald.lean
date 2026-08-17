@@ -465,12 +465,16 @@ theorem event_conditioning_identity (z₀ z₁ : α) :
 
 /-! ### Main theorem — pairwise Wald identification -/
 
-/-- Pairwise Wald identification of LATE -- prop:po-iv-heckman-roy-wald.
-
-For any `z₀, z₁ : α` with `μ {Z = z₀} > 0`, `μ {Z = z₁} > 0`, and
-`p z₀ < p z₁`,
-    `(E[Y | Z=z₁] - E[Y | Z=z₀]) / (E[D | Z=z₁] - E[D | Z=z₀])
-        = LATE z₀ z₁`. -/
+/-- **Pairwise Wald identification of LATE** (`prop:po-iv-heckman-roy-wald`).
+Under [the Heckman–Roy identifying assumption bundle](hyp:hA), for instrument
+values `z₀, z₁` at which [the event `{Z = z₀}` has positive
+probability](hyp:hZ0), [the event `{Z = z₁}` has positive
+probability](hyp:hZ1), and [the latent selection threshold at `z₀` is
+strictly below the threshold at `z₁`](hyp:hpz), provided [the potential
+outcome under treatment](hyp:hY1) and [the potential outcome under
+control](hyp:hY0) are integrable, [the Wald ratio of the conditional-mean
+outcome and treatment contrasts between `Z = z₁` and `Z = z₀` equals the
+pairwise local average treatment effect `LATE z₀ z₁`](goal). -/
 theorem wald_pairwise (hA : S.Assumptions) (z₀ z₁ : α)
     (hZ0 : 0 < (P.μ (S.zEvent z₀)).toReal)
     (hZ1 : 0 < (P.μ (S.zEvent z₁)).toReal)

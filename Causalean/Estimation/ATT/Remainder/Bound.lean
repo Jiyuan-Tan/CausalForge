@@ -55,17 +55,20 @@ noncomputable def aipw_rem_const_ATT (ε : ℝ) : ℝ := 1 / ε
 
 /-! ## Headline remainder bound -/
 
-/-- **AIPW remainder bound (ATT).**
+/-- **AIPW remainder bound (ATT).** Fix a candidate nuisance pair `η`. Under
+[one-sided overlap `ε` on the true propensity](hyp:h_overlap), [the one-sided back-door
+ATT assumptions](hyp:hA), [a strictly positive marginal treatment probability](hyp:hπ_pos),
+[square-integrability of the factual outcome](hyp:h_y2), and [square-integrability of the
+untreated potential outcome `Y(0)`](hyp:h_y0_2): if `η` lies in [the overlap-bounded
+candidate realization set `H_ε`](hyp:hη), [its control-regression error `μ̂₀ − μ₀` is
+square-integrable against the covariate law](hyp:hΔμ₀_memLp), [its propensity error
+`ê − e` is square-integrable against the covariate law](hyp:hΔe_memLp), and [its IPW
+correction is integrable against the observed data law](hyp:hIPW), then [the absolute
+value of the population AIPW moment at `η` is bounded by `(1/ε) · ‖μ̂₀ − μ₀‖_{L²(P_X)} ·
+‖ê − e‖_{L²(P_X)}`](goal).
 
-Under the one-sided ATT back-door assumption bundle, a.e. one-sided upper overlap,
-and integrability hypotheses, the population AIPW moment at any
-`η ∈ H_ε` is bounded by
-
-    `aipw_rem_const_ATT ε * ‖μ̂₀ − μ₀_val‖_{L²(P_X)} * ‖ê − e_val‖_{L²(P_X)}`,
-
-where `aipw_rem_const_ATT ε = 1/ε`.  Direct corollary of
-`aipw_remainder_identity_ATT` plus Cauchy–Schwarz on the single cross-product,
-using `(1 − ê)⁻¹ ≤ 1/ε`. -/
+Direct corollary of `aipw_remainder_identity_ATT` plus Cauchy–Schwarz on the single
+cross-product, using `(1 − ê)⁻¹ ≤ 1/ε`. -/
 -- Outline:
 -- 1. Apply `aipw_remainder_identity_ATT` to rewrite
 --    `|∫ m_AIPW(η, z, θ₀) dP_Z|` as `|∫ ((ê − e_val)/(1 − ê))·(μ̂₀ − μ₀_val) dP_X|`.
@@ -181,7 +184,19 @@ theorem aipw_remainder_bound_ATT
 If `η̂(n) ∈ H_ε` realize the L²-product rate at `n^{-1/2}`, the population AIPW
 moment at the random nuisance is `o_p(n^{-1/2})`. -/
 
-/-- **AIPW remainder is `o_p(n^{-1/2})` under the ATT product rate.**
+/-- **AIPW remainder is `o_p(n^{-1/2})` under the ATT product rate.** Fix [a sequence
+of random candidate nuisance pairs indexed by sample size](hyp:η_hat). Under [one-sided
+overlap `ε` on the true propensity](hyp:h_overlap), [the one-sided back-door ATT
+assumptions](hyp:hA), [a strictly positive marginal treatment probability](hyp:hπ_pos),
+[square-integrability of the factual outcome](hyp:h_y2), and [square-integrability of
+the untreated potential outcome `Y(0)`](hyp:h_y0_2): if [every draw of the candidate lies
+in the overlap-bounded realization set `H_ε`](hyp:h_in_H), [each control-regression error
+is square-integrable against the covariate law](hyp:hΔμ₀_memLp), [each propensity error
+is square-integrable against the covariate law](hyp:hΔe_memLp), [each candidate IPW
+correction is integrable against the observed data law](hyp:hIPW), and [the product of
+the two `L²(P_X)` error norms is `o_p(n^{-1/2})`](hyp:h_product_rate), then [the
+population AIPW moment evaluated at the random candidate nuisance is itself
+`o_p(n^{-1/2})`](goal).
 
 Direct consequence of `aipw_remainder_bound_ATT` plus closure of `IsLittleOp`
 under constant scaling.  The ATT version drops the sum over arms in the ATE

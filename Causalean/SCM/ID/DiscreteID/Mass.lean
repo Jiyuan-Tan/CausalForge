@@ -263,7 +263,9 @@ theorem valuesProjection_surjective
   funext j
   simp [valuesProjection]
 
-/-- Finite coordinate-product measures are determined by their point masses. -/
+/-- For two measures on a finite-coordinate product over countable value spaces, if
+[every value assignment carries the same singleton point mass under both
+measures](hyp:h), then [the two measures are equal](goal). -/
 theorem valuesOn_measure_eq_of_singletonMass_eq
     {M : Type*}
     {Ω' : M → Type*} [∀ m, MeasurableSpace (Ω' m)] [∀ m, Countable (Ω' m)]

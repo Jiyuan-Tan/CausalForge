@@ -169,8 +169,13 @@ private lemma countableEmpiricalSup_le_two_envelope {Ω ι : Type*} [MeasurableS
   change |(n : ℝ)⁻¹ * ∑ i, g (g0 k) (w i) - ∫ x, g (g0 k) x ∂μ| ≤ 2 * U
   exact (abs_sub _ _).trans (by linarith)
 
-/-- Dudley chaining plus the proved VC covering layer gives a sub-root
-Rademacher envelope from polynomial entropy. -/
+/-- **Dudley chaining bound for VC-type entropy.** Let `μ` be a probability measure on `Ω`,
+`g : ι → Ω → ℝ` a family of functions, and `g0 : ℕ → ι` a countable enumeration of the index
+set. If [`g` has uniform VC-type entropy relative to `μ`, with envelope `U`, population $L^2$
+radius `σ`, covering-entropy base `A`, and exponent `v`](hyp:hent), then [there is a universal
+constant `C > 0` such that, for every sample size `n ≥ 1`, the expectation of the countable
+empirical-process supremum along the enumeration `g0` over the `n`-fold product of `μ` is at
+most `C · (σ √(log(U/σ)/n) + U log(U/σ)/n)`](goal). -/
 lemma vcEntropy_chaining_bound
     {Ω ι : Type*} [MeasurableSpace Ω]
     (μ : Measure Ω) [IsProbabilityMeasure μ]

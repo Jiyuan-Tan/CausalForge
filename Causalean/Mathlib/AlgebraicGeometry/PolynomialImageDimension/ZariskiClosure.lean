@@ -96,7 +96,9 @@ lemma affineZariskiClosure_union {ι : Type*} {A B : Set (ι → ℂ)}
     exact mul_ne_zero hPx hQx this
   · exact affineZariskiClosure_extensive _
 
-/-- The nonvanishing locus of a nonzero polynomial is Zariski dense. -/
+/-- For a polynomial `P` in coordinates indexed by `ι`, if [`P` is not the zero
+polynomial](hyp:hP), then [the set of points where `P` does not vanish is
+Zariski-dense in the whole affine space](goal). -/
 lemma affineZariskiClosure_nonvanishing_eq_univ {ι : Type*}
     (P : MvPolynomial ι ℂ) (hP : P ≠ 0) :
     affineZariskiClosure {x : ι → ℂ | MvPolynomial.eval x P ≠ 0} = Set.univ := by

@@ -124,7 +124,9 @@ lemma integral_log_div_le {δ ε : ℝ} (hε : 0 < ε) (hεδ : ε ≤ δ) :
   rw [integral_log_div_eq hε hεδ]
   linarith
 
-/-- Dudley entropy-integral evaluation: `∫_ε^δ √(log(δ/x)) dx ≤ δ - ε`.
+/-- **Dudley entropy-integral evaluation.** For [a positive lower limit ε](hyp:hε) that is [at most
+the upper limit δ](hyp:hεδ), [the integral of `√(log(δ/x))` over `[ε,δ]` is at most `δ - ε`](goal).
+
 Elementary (AM-GM `√t ≤ (t+1)/2` + `∫ log(δ/x) ≤ δ - ε`); no special
 functions beyond `Real.log`. -/
 lemma sqrtLog_integral_le {δ ε : ℝ} (hε : 0 < ε) (hεδ : ε ≤ δ) :

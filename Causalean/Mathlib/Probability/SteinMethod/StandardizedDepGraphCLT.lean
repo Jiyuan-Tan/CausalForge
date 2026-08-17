@@ -169,12 +169,17 @@ theorem bounded_degree_dependency_clt_of_variance_floor_all
     hB0 hNB3 hmean' hvar' s
   exact hclt.congr (fun n => by rw [hdep n])
 
-/-- **Bounded-degree dependency-graph CLT (raw, variance-floor form).** A standardized
-triangular-array CLT for mean-zero, uniformly bounded summands with a bounded-degree dependency
-graph and a linearly growing variance, delivering CDF convergence of the standardized sum
-`(∑ᵢ Xᵢ)/√vₙ` to the standard normal. The index size must diverge (`card ιₙ → ∞`); together with the
-variance floor `vₙ ≥ c · card ιₙ` this forces the Lyapunov ratio `card ιₙ · (M/√vₙ)³ → 0` that
-drives the Stein bound. -/
+/-- **Bounded-degree dependency-graph CLT (raw, variance-floor form).** Fix, for each `n`,
+[a probability measure `μ n`](hyp:μ), [triangular-array summands `X n i`](hyp:X), and [a
+dependency graph `Dep n` on the index set](hyp:Dep), with [every dependency neighborhood of size
+at most a fixed bound `Dmax`](hyp:hdeg). Suppose the summands are [uniformly bounded in absolute
+value by a nonnegative constant `M`](hyp:hM,hbound) and [mean zero](hyp:hmean), with [the total
+variance `v n`](hyp:hv) satisfying, for [a strictly positive constant `c`](hyp:hc), [a floor
+`v n ≥ c · card (ι n)` eventually in `n`](hyp:hvc); suppose also [the index-set cardinality
+diverges to infinity](hyp:hcard). Then [for every threshold `s`, the CDF of the standardized sum
+`depSum (X n) / √(v n)` under `μ n` at `s` converges, as `n → ∞`, to the standard-normal CDF at
+`s`](goal). The index-size divergence together with the variance floor forces the Lyapunov ratio
+`card (ι n) · (M / √(v n))³ → 0` that drives the underlying Stein bound. -/
 theorem bounded_degree_dependency_clt
     {Ω : ℕ → Type*} [∀ n, MeasurableSpace (Ω n)] (μ : ∀ n, Measure (Ω n))
     [∀ n, IsProbabilityMeasure (μ n)]

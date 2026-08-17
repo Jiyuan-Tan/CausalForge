@@ -154,7 +154,14 @@ theorem steinSol_taylor_right (h : ℝ → ℝ) {C L : ℝ}
           (intervalIntegral.intervalIntegrable_id)]
         simp; ring
 
-/-- **The local-dependence Stein bound.** -/
+/-- **The local-dependence Stein bound.** For [jointly measurable summands `X i`](hyp:hmeas)
+[uniformly bounded in absolute value by a nonnegative constant `B`](hyp:hB,hbound), [each mean
+zero](hyp:hmean) and [independent of the sum of the summands outside its neighborhood set
+`N i`](hyp:hindep), with [the standardized sum having unit variance](hyp:hvar), and for a test
+function `h` that is [bounded in absolute value by `C`](hyp:hb), [has derivative bounded in
+absolute value by `L`](hyp:hd), and [is differentiable](hyp:hdiff), [the deviation of the expected
+test-function value of the local-dependence sum from its standard-normal expectation is at most
+`2L·√(Var(∑ᵢ Xᵢ·nbhdSumᵢ)) + L·∑ᵢ E[|Xᵢ|·nbhdSumᵢ²]`](goal). -/
 theorem stein_local_dependence_bound
     (X : ι → Ω → ℝ) (N : ι → Finset ι)
     (hmeas : ∀ i, Measurable (X i))

@@ -60,10 +60,12 @@ lemma dotProduct_self_nonneg' (v : Obs → ℝ) : 0 ≤ v ⬝ᵥ v := by
   rw [dotProduct]
   exact Finset.sum_nonneg fun i _ => mul_self_nonneg _
 
-/-- **Finite Gauss-Markov theorem, spherical case.**  Among all linear estimators
-whose weights satisfy the same unbiasedness constraint `w ᵥ* X = c`, an OLS weight
-`wStar = X *ᵥ g` (lying in the column span of `X`) has minimum variance under
-spherical errors `Σ = σ² I`. -/
+/-- **Finite Gauss-Markov theorem, spherical case.** Fix a design matrix `X`, a
+target combination `c`, and suppose [the covariance matrix `S` is spherical:
+`S = σ² I` for some scale `σ`](hyp:hS). Among all weight vectors `w` satisfying
+[the same unbiasedness constraint `w ᵥ* X = c`](hyp:hUStar,hU), if [`wStar` lies
+in the column span of `X`, `wStar = X *ᵥ g`](hyp:hStar), then [the quadratic
+form `wStarᵀ S wStar` is no larger than `wᵀ S w`](goal). -/
 theorem gauss_markov_spherical [DecidableEq Obs] {X : Matrix Obs Param ℝ} {c : Param → ℝ}
     {S : Matrix Obs Obs ℝ} {σ : ℝ} (hS : SphericalErrors S σ)
     {w wStar : Obs → ℝ} {g : Param → ℝ}
@@ -88,11 +90,13 @@ theorem gauss_markov_spherical [DecidableEq Obs] {X : Matrix Obs Param ℝ} {c :
   rw [quadVar_spherical hS, quadVar_spherical hS]
   exact mul_le_mul_of_nonneg_left hle (sq_nonneg σ)
 
-/-- **Finite Gauss-Markov theorem, general covariance (GLS).**  Among all linear
-estimators with the same unbiasedness constraint `w ᵥ* X = c`, a GLS weight `wStar`
-— one for which `Σ *ᵥ wStar` lies in the column span of `X` — has minimum variance
-for any positive-semidefinite covariance `Σ`.  Specializes to `gauss_markov_spherical`
-when `Σ = σ² I`. -/
+/-- **Finite Gauss-Markov theorem, general covariance (GLS).** Fix a design
+matrix `X`, a target combination `c`, and [a positive-semidefinite covariance
+matrix `S`](hyp:hS). Among all weight vectors `w` satisfying [the same
+unbiasedness constraint `w ᵥ* X = c`](hyp:hUStar,hU), if [`wStar` is a GLS
+weight — meaning `S *ᵥ wStar` lies in the column span of `X`](hyp:hGLS), then
+[the quadratic form `wStarᵀ S wStar` is no larger than `wᵀ S w`](goal).
+Specializes to `gauss_markov_spherical` when `S = σ² I`. -/
 theorem gauss_markov_gls {X : Matrix Obs Param ℝ} {c : Param → ℝ}
     {S : Matrix Obs Obs ℝ} (hS : S.PosSemidef)
     {w wStar : Obs → ℝ} {g : Param → ℝ}

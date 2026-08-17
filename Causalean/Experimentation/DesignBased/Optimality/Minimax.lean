@@ -54,9 +54,11 @@ def IsMinimaxOn (𝒟 : DesignFamily Ω) (s : Finset Y) (hs : s.Nonempty)
     (R : Y → FiniteDesign Ω → α) (D₀ : FiniteDesign Ω) : Prop :=
   D₀ ∈ 𝒟 ∧ ∀ D ∈ 𝒟, worstRisk s hs R D₀ ≤ worstRisk s hs R D
 
-/-- **Existence of a minimax design.** Over a nonempty finite design family, some design
-minimizes the worst-case risk. Immediate from `exists_isOptimalOn` applied to the
-worst-case-risk criterion. -/
+/-- **Existence of a minimax design.** For a design family `𝒟` and a risk criterion `R` indexed by
+states of nature, if [the state set `s` is nonempty](hyp:hs), [the design family `𝒟` is
+finite](hyp:hfin), and [`𝒟` is nonempty](hyp:hne), then [there exists a design in `𝒟` that is
+minimax — it minimizes the worst-case risk over `s` among all members of `𝒟`](goal). Immediate
+from `exists_isOptimalOn` applied to the worst-case-risk criterion. -/
 theorem exists_isMinimaxOn (𝒟 : DesignFamily Ω) (s : Finset Y) (hs : s.Nonempty)
     {α : Type*} [LinearOrder α]
     (R : Y → FiniteDesign Ω → α) (hfin : 𝒟.Finite) (hne : 𝒟.Nonempty) :

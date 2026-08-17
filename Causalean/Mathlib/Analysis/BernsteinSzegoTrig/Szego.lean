@@ -115,8 +115,9 @@ theorem cos_nat_mul_isTrigPolyLE (n : ℕ) :
   · intro hn
     exact (hn (Finset.mem_range.mpr (Nat.lt_succ_self n))).elim
 
-/-- The even trigonometric transform `t ↦ R(cos t)` of a polynomial `R` of degree
-≤ `β` is a real trigonometric polynomial of degree ≤ `β`.
+/-- For a real polynomial `R`, if [its degree is at most `β`](hyp:hβ), then
+[the even trigonometric transform `t ↦ R(cos t)` is a real trigonometric
+polynomial of degree at most `β`](goal).
 
 Proof route: expand `R` in the Chebyshev basis `{T_k}_{k ≤ β}` (any polynomial of
 degree ≤ `β` is a linear combination of `T_0, …, T_β`) and use
@@ -237,12 +238,11 @@ private lemma szegoExtrema_floor_mem {β : ℕ} (hβpos : 0 < (β : ℝ)) (t₀ 
     nlinarith [hpi]
 
 /-- **The sharp Bernstein/Szegő differential inequality** (the deliverable; not
-available in Mathlib).
-
-Let `R` be a real polynomial of degree ≤ `β`, and let `M` bound the trigonometric
-transform on the whole period: `|R(cos t)| ≤ M` for all `t`.  Then for every `t`,
-`(d/dt R(cos t))² + β² · R(cos t)² ≤ β² · M²`, i.e.
-`|d/dt R(cos t)| ≤ β · √(M² − R(cos t)²)`.
+available in Mathlib). For a real polynomial `R`, if [its degree is at most
+`β`](hyp:hβ) and [the even trigonometric transform `t ↦ R(cos t)` is bounded
+in absolute value by `M` at every `t`](hyp:hM), then [at every `t` the squared
+derivative of that transform plus `β²` times its squared value is at most
+`β² · M²`, equivalently `|d/dt R(cos t)| ≤ β · √(M² − R(cos t)²)`](goal).
 
 Proof (Szegő comparison, from `IsTrigPolyLE.card_simple_add_double_le`): the case
 `β = 0` is immediate (`R` is constant so the derivative vanishes).  For `β ≥ 1`

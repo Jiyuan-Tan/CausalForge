@@ -182,7 +182,11 @@ lemma indD_eq_indicator_event (S : PODTRSystem P n δ γ) (dbar : Fin n → δ) 
           rw [Set.indicator_of_notMem hnmem]
           ring
 
-/-- Pointwise factorisation `indD dbar (k+1) = indD dbar k · 1_{D k = dbar k}`. -/
+/-- For [any stage `k` within the horizon `n`](hyp:hk), [the indicator that a
+unit's observed treatment path matches the regime `dbar` through stage `k+1`
+factors as the indicator through stage `k` times the indicator that the
+observed treatment at stage `k` equals `dbar`'s value at stage `k`](goal):
+`indD dbar (k+1) = indD dbar k · 1_{D k = dbar k}`. -/
 lemma indD_factor_split (S : PODTRSystem P n δ γ)
     (dbar : Fin n → δ) (k : ℕ) (hk : k < n) :
     S.indD dbar (k+1) =

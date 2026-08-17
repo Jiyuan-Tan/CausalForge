@@ -26,9 +26,10 @@ namespace Causalean.Mathlib.Analysis.FiniteDimL1LinfDuality
 
 variable {k β : ℕ} {p : Fin (k + 1) → ℝ}
 
-/-- **Representation identity.**  If `w ∈ MomentSol p β` and `r.natDegree ≤ β`,
-then the endpoint contrast of `r` is reproduced by the weighted node values:
-`r.eval 1 - r.eval 0 = ∑ j, w j * r.eval (p j)`.
+/-- **Representation identity.** If [a weight vector solves the moment system for the given nodes
+and degree bound](hyp:hw) and [a real polynomial has degree at most `β`](hyp:hr), then [the
+polynomial's endpoint contrast, `r.eval 1 - r.eval 0`, is reproduced exactly by the weighted sum
+of its values at the nodes](goal).
 
 Proof: expand `r.eval x = ∑ ℓ ∈ range (r.natDegree + 1), r.coeff ℓ * x ^ ℓ`
 (`Polynomial.eval_eq_sum_range`), swap the order of summation, and apply the
@@ -93,8 +94,10 @@ theorem repr_identity {w : Fin (k + 1) → ℝ} (hw : w ∈ MomentSol p β)
         rw [h_moment ℓ hℓ]
   rw [h_lhs, h_rhs]
 
-/-- **Weak duality.**  Every dual value is bounded by every primal value:
-if `s ∈ primalNormSet p β` and `t ∈ dualValSet p β` then `t ≤ s`.
+/-- **Weak duality.** If [a real number is the ℓ¹ norm of some feasible weight vector](hyp:hs)
+and [another real number is the endpoint contrast attained by some node-bounded degree-`≤ β`
+polynomial](hyp:ht), then [the second number is no larger than the first: every dual value is
+bounded by every primal value](goal).
 
 Proof: pick `w ∈ MomentSol p β` with `s = ∑ j, |w j|` and `r` with
 `r.natDegree ≤ β`, `|r.eval (p j)| ≤ 1`, `t = |r.eval 1 - r.eval 0|`.  Then by
@@ -125,7 +128,10 @@ theorem dualValSet_bddAbove (hne : (primalNormSet p β).Nonempty) :
   rcases hne with ⟨s, hs⟩
   exact ⟨s, fun t ht => dual_le_primal hs ht⟩
 
-/-- Consequence of weak duality: `sSup (dualValSet p β) ≤ sInf (primalNormSet p β)`. -/
+/-- **Weak duality (inequality form).** If [the primal set of achievable ℓ¹ norms is
+nonempty](hyp:hne), then [the dual supremum is at most the primal infimum](goal): every dual
+value is bounded by every primal value, hence so is the supremum of dual values by the infimum
+of primal values. -/
 theorem sSup_dual_le_sInf_primal (hne : (primalNormSet p β).Nonempty) :
     sSup (dualValSet p β) ≤ sInf (primalNormSet p β) := by
   exact csSup_le dualValSet_nonempty fun t ht =>

@@ -33,8 +33,9 @@ open Causalean.Stat
 
 variable {π : Measure (ℝ × ℝ)} {μ ν : Measure ℝ}
 
-/-- **Upper optimality.** For every coupling `π` of `(μ, ν)` with `L²`
-marginals, the product expectation is at most that of the comonotone coupling:
+/-- **Upper optimality.** For [any coupling `π` of `μ` and `ν`](hyp:h), where [both marginals
+have finite second moment](hyp:hμ,hν), [the expectation of the coordinate product under `π`
+is at most its expectation under the comonotone (quantile) coupling of `μ` and `ν`](goal):
 
     `∫ p, p.1 * p.2 ∂π ≤ ∫ p, p.1 * p.2 ∂(comonotoneCoupling μ ν)`.
 
@@ -65,9 +66,9 @@ theorem product_expectation_le_comonotone (h : IsCoupling π μ ν)
     exact sub_le_sub_right (jointCdf_le_comonotone h p.1 p.2) _
   nlinarith [hπid, hcid, hgap]
 
-/-- **Lower optimality.** For every coupling `π` of `(μ, ν)` with `L²`
-marginals, the product expectation is at least that of the countermonotone
-coupling:
+/-- **Lower optimality.** For [any coupling `π` of `μ` and `ν`](hyp:h), where [both marginals
+have finite second moment](hyp:hμ,hν), [the expectation of the coordinate product under `π`
+is at least its expectation under the countermonotone coupling of `μ` and `ν`](goal):
 
     `∫ p, p.1 * p.2 ∂(countermonotoneCoupling μ ν) ≤ ∫ p, p.1 * p.2 ∂π`.
 
@@ -95,8 +96,10 @@ theorem countermonotone_le_product_expectation (h : IsCoupling π μ ν)
     exact sub_le_sub_right (countermonotone_le_jointCdf h p.1 p.2) _
   nlinarith [hcid, hπid, hgap]
 
-/-- **Closed form of the optimum.** The product expectation under the comonotone
-coupling is the integral of the product of quantile functions over `(0,1)`:
+/-- **Closed form of the optimum.** For [two probability measures `μ` and `ν`, each with
+finite second moment](hyp:_hμ,_hν), [the expectation of the coordinate product under the
+comonotone (quantile) coupling of `μ` and `ν` equals the integral, over `(0,1)`, of the
+product of their quantile functions](goal):
 
     `∫ p, p.1 * p.2 ∂(comonotoneCoupling μ ν)
        = ∫ u in Ioo 0 1, quantile μ u * quantile ν u`.

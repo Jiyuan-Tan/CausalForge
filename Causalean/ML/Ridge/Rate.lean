@@ -716,12 +716,16 @@ theorem eLpNorm_predictor_sub_le (φ : FeatureMap γ K) (P : Measure (γ × ℝ)
     _ = (∑ k, (eLpNorm (fun z : γ × ℝ => φ.φ z.1 k) 2 P).toReal) * ‖β - βstar‖ := by
           rw [hδ]; ring
 
-/-- **Ridge root-n estimation rate.** Under the population ridge normal equation,
-a positive regularization parameter, and the required feature and score moment
-conditions, the sample ridge predictor attains the root-n L²-rate toward the
-population ridge minimizer. The regularized population Gram is positive definite
-because the population feature Gram is positive semidefinite and `λI` is positive
-definite when `λ > 0`. -/
+/-- **Ridge root-n estimation rate.** For [a strictly positive ridge penalty `λ`](hyp:hlam), a
+finite feature map `φ`, and an i.i.d. sample `S` from a distribution `P` on features and
+outcome, if [the true coefficient vector `βstar` satisfies the regularized population ridge
+normal equations](hyp:hpop), [each feature coordinate is measurable](hyp:hφ), [the fourth
+moment of the squared feature norm is finite](hyp:h4), and [each per-coordinate score function
+is square-integrable](hyp:hscore), then [the sample ridge predictor converges to the population
+ridge predictor at the root-n rate in the `L²(P)` sense](goal).
+
+The regularized population Gram is positive definite because the population feature Gram is
+positive semidefinite and `λI` is positive definite when `λ > 0`. -/
 theorem ridge_achievesL2Rate (φ : FeatureMap γ K) (P : Measure (γ × ℝ))
     [IsProbabilityMeasure P] (S : IIDSample Ω (γ × ℝ) μ P) [IsProbabilityMeasure μ]
     {lam : ℝ} (hlam : 0 < lam) (βstar : K → ℝ)

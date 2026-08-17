@@ -470,8 +470,11 @@ lemma integral_eq_sum_eventCondExp_aEvent (g : P.Ω → ℝ) (hg : Integrable g 
 
 variable (S)
 
-/-- **Frontdoor identification (individual regime).**  For each `a ∈ {0,1}`,
-`E[Y(a)] = frontdoorTerm(a)`.
+/-- **Frontdoor identification (individual regime).** Under [the frontdoor
+identifying assumption bundle](hyp:hA), for each treatment arm `a`, [the mean
+potential outcome under arm `a` equals the frontdoor functional
+`frontdoorTerm(a)`, built from the mediator distribution given `a` and the
+outcome regression on mediator and treatment](goal).
 
 The proof follows the frontdoor identification sketch:
 
@@ -679,8 +682,13 @@ theorem EofY_eq_frontdoorTerm (hA : S.Assumptions) (a : Bool) :
   rw [Fintype.sum_bool]
   ring
 
-/-- **Frontdoor identification of the ATE.**  Immediate corollary of
-`EofY_eq_frontdoorTerm` at `a = true, false` by linearity. -/
+/-- **Frontdoor identification of the ATE.** Under [the frontdoor identifying
+assumption bundle](hyp:hA), [the average treatment effect equals the frontdoor
+estimand `frontdoorATE`, the difference of the frontdoor functional evaluated
+at the two treatment arms](goal).
+
+Immediate corollary of `EofY_eq_frontdoorTerm` at `a = true, false` by
+linearity. -/
 theorem ate_frontdoor (hA : S.Assumptions) : S.ATE = S.frontdoorATE := by
   unfold ATE frontdoorATE
   rw [integral_sub (hA.integrable_YofA true) (hA.integrable_YofA false)]

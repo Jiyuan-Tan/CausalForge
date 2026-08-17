@@ -390,10 +390,11 @@ private lemma weighted_false_residual_integral_zero
           MeasureTheory.integral_congr_ae hweighted_zero
     _ = 0 := MeasureTheory.integral_zero _ _
 
-/-- **ATT identification (one-sided overlap).** Under consistency,
-unconfoundedness, one-sided overlap (`e(X) < 1`, the control arm), and positivity
-of the marginal treatment probability, the PO-level `ATT` equals the observable
-`adjustedATT`:
+/-- **ATT identification (one-sided overlap).** Under [consistency,
+unconfoundedness, one-sided overlap (`e(X) < 1`, the control arm), and
+positivity of the marginal treatment probability](hyp:hA), [the
+potential-outcome-level average treatment effect on the treated equals the
+observable adjusted-ATT functional](goal):
 
     E[A · (Y(1) − Y(0))] / π_T  =  E[A · (Y − μ₀(X))] / π_T.
 
@@ -462,7 +463,12 @@ theorem ATT_eq_adjustedATT [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
           congr with ω
           ring
 
-/-- **AIPW corollary.** The `adjustedATT` equals the AIPW-form functional
+/-- **AIPW corollary.** Under [the ATT identification assumptions —
+consistency, unconfoundedness, one-sided control-arm overlap, and a positive
+marginal treatment probability](hyp:hA), provided [the observed
+inverse-propensity-weighted correction term is integrable](hyp:hIPW), [the
+`adjustedATT` functional equals its augmented inverse-propensity-weighted
+(AIPW) form](goal):
 
     ( ∫ A · (Y − μ₀(X))
         − (1 − A) · (e(X) / (1 − e(X))) · (Y − μ₀(X))  dμ ) / π_T,

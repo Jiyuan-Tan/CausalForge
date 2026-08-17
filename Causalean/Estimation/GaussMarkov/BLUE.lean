@@ -54,9 +54,15 @@ lemma covMatrix_posSemidef [IsProbabilityMeasure μ]
 
 variable {Param : Type*} [Fintype Param]
 
-/-- **BLUE under spherical errors (variance form).**  In the linear-unbiased class
-(weights `w` with `w ᵥ* X = c`), an OLS weight `wStar = X *ᵥ g` has minimum variance
-when the random family is spherical. -/
+/-- **BLUE under spherical errors (variance form).** For a finite family of random
+variables `Y i`, each [square-integrable](hyp:hY), suppose [the family is
+spherical: distinct cells are uncorrelated and every cell has the same variance
+`σ²`](hyp:hsph). Among all linear combinations `∑ i, w i * Y i` whose weights
+satisfy [the same unbiasedness constraint `w ᵥ* X = c`](hyp:hUStar,hU) relative
+to a design `X` and target combination `c`, if [`wStar` lies in the column span
+of `X`, `wStar = X *ᵥ g`](hyp:hStar), then [the linear combination built from
+`wStar` (the OLS weight) has variance no larger than that of any other unbiased
+linear combination](goal). -/
 theorem variance_blue_spherical [IsProbabilityMeasure μ]
     {X : Matrix Obs Param ℝ} {c : Param → ℝ}
     (Y : Obs → Ω → ℝ) (hY : ∀ i, MemLp (Y i) 2 μ) {σ : ℝ}
@@ -70,9 +76,15 @@ theorem variance_blue_spherical [IsProbabilityMeasure μ]
     sphericalFamily_covMatrix (fun i => (hY i).aestronglyMeasurable.aemeasurable) hsph
   exact gauss_markov_spherical hsph' hStar hUStar hU
 
-/-- **BLUE for known covariance (GLS, variance form).**  In the linear-unbiased
-class, a GLS weight `wStar` (one with `Σ *ᵥ wStar` in the column span of `X`) has
-minimum variance, where `Σ` is the family's covariance matrix. -/
+/-- **BLUE for known covariance (GLS, variance form).** For a finite family of
+random variables `Y i`, each [square-integrable](hyp:hY), consider linear
+combinations `∑ i, w i * Y i` whose weights satisfy [the same unbiasedness
+constraint `w ᵥ* X = c`](hyp:hUStar,hU) relative to a design `X` and target
+combination `c`. If [the weight `wStar` is a generalized-least-squares (GLS)
+weight — i.e. the family's covariance matrix applied to `wStar` lies in the
+column span of `X`](hyp:hGLS), then [the linear combination built from `wStar`
+has variance no larger than that of any other unbiased linear
+combination](goal). -/
 theorem variance_blue_gls [IsProbabilityMeasure μ]
     {X : Matrix Obs Param ℝ} {c : Param → ℝ}
     (Y : Obs → Ω → ℝ) (hY : ∀ i, MemLp (Y i) 2 μ)

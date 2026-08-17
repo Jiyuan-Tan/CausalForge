@@ -47,21 +47,28 @@ noncomputable def bernoulliDesign (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 
     FiniteDesign (U → Bool) :=
   prodDesign (fun i => coinDesign (p i) (hp0 i) (hp1 i))
 
-/-- A function of a single unit's treatment has the marginal coin expectation under the Bernoulli
-design — the `Z_i ⊥ Z_{-i}` marginalization. -/
+/-- **Marginalizing the Bernoulli design to a single coordinate.** Under the Bernoulli design with
+per-unit treatment probabilities `p` [taking values in `[0, 1]`](hyp:hp0,hp1), [the expected
+value of any function `g` of a single unit `i`'s treatment status coincides with its expectation
+under that unit's own coin design with success probability `p i`](goal) — the `Zᵢ ⊥ Z₋ᵢ`
+marginalization. -/
 lemma bernoulliDesign_E_eval (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, p i ≤ 1)
     (i : U) (g : Bool → ℝ) :
     (bernoulliDesign p hp0 hp1).E (fun z => g (z i))
       = (coinDesign (p i) (hp0 i) (hp1 i)).E g :=
   FiniteDesign.E_prod_apply (fun i => coinDesign (p i) (hp0 i) (hp1 i)) i g
 
-/-- The marginal treatment expectation is `E[Z_i] = p_i`. -/
+/-- **Marginal treatment-indicator expectation under the Bernoulli design.** Under the Bernoulli
+design with per-unit treatment probabilities `p` [taking values in `[0, 1]`](hyp:hp0,hp1),
+[the expected value of the indicator that unit `i` is treated equals `p i`](goal). -/
 lemma bernoulliDesign_E_treat (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, p i ≤ 1) (i : U) :
     (bernoulliDesign p hp0 hp1).E (fun z => if z i then (1 : ℝ) else 0) = p i := by
   rw [bernoulliDesign_E_eval p hp0 hp1 i (fun b => if b then (1 : ℝ) else 0), coinDesign_E]
   simp
 
-/-- The marginal control expectation is `E[1 − Z_i] = 1 − p_i`. -/
+/-- **Marginal control-indicator expectation under the Bernoulli design.** Under the Bernoulli
+design with per-unit treatment probabilities `p` [taking values in `[0, 1]`](hyp:hp0,hp1),
+[the expected value of the indicator that unit `i` is untreated equals `1 - p i`](goal). -/
 lemma bernoulliDesign_E_ctrl (p : U → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, p i ≤ 1) (i : U) :
     (bernoulliDesign p hp0 hp1).E (fun z => if z i then (0 : ℝ) else 1) = 1 - p i := by
   rw [bernoulliDesign_E_eval p hp0 hp1 i (fun b => if b then (0 : ℝ) else 1), coinDesign_E]

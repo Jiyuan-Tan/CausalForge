@@ -47,9 +47,10 @@ open MeasureTheory ENNReal
 
 variable {Ω X : Type*} [MeasurableSpace X]
 
-/-- **Lp-norm measurable from joint measurability (top σ-algebra).**
-If `(ω, x) ↦ g ω x` is jointly measurable on `Ω × X` and `P` is `SFinite`,
-then its finite nonzero Lp norm is measurable as a function of `ω`.
+/-- **Lp-norm measurable from joint measurability (top σ-algebra).** For a σ-finite base measure
+`P` and [an exponent `p` that is neither zero](hyp:hp_zero) [nor infinite](hyp:hp_top), if [the
+map `(ω, x) ↦ g ω x` is jointly measurable on the product of `Ω` and `X`](hyp:hg), then [the
+real-valued Lp norm `ω ↦ ‖g ω‖_{Lp(P)}` is measurable as a function of `ω`](goal).
 
 **Proof sketch.** `(eLpNorm (g ω) p P).toReal =
   ((∫⁻ x, ‖g ω x‖₊^p.toReal ∂P)^(1/p.toReal)).toReal`.  Use:
@@ -84,9 +85,11 @@ lemma measurable_eLpNorm_toReal_of_uncurry
     Measurable (fun ω => (eLpNorm (g ω) p P).toReal) :=
   measurable_eLpNorm_two_toReal_of_uncurry hp_zero hp_top hg
 
-/-- **Lp-norm measurable wrt a sub-σ-algebra.**
-If `(ω, x) ↦ g ω x` is jointly measurable wrt
-`mΩ × MeasurableSpace X`, then its finite nonzero Lp norm is `mΩ`-measurable.
+/-- **Lp-norm measurable with respect to a sub-σ-algebra.** For a σ-finite base measure `P` and
+[an exponent `p` that is neither zero](hyp:hp_zero) [nor infinite](hyp:hp_top), if [the map
+`(ω, x) ↦ g ω x` is jointly measurable with respect to the product of a sub-σ-algebra `mΩ` on `Ω`
+and the σ-algebra on `X`](hyp:hg_uncurry), then [the real-valued Lp norm `ω ↦ ‖g ω‖_{Lp(P)}` is
+measurable with respect to `mΩ`](goal).
 
 **Proof sketch.** Apply `Measurable.lintegral_prod_right'` at the
 sub-σ-algebra product level to `‖g ω x‖₊^p.toReal`, then post-process by

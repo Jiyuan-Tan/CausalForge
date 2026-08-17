@@ -351,11 +351,20 @@ theorem backdoor_completeness_ae_compProd
     (M.adjustmentKernelY X hObs hFix Y Z hY hZ s0)
     fL fR hL hR hae
 
-/-- **Backdoor completeness, a.e. in the treatment value.**
+/-- **Backdoor completeness, a.e. in the treatment value.** Fix a causal model `M` and a
+    treatment set `X` [whose random copy is observed and whose fixed copy is not already held
+    fixed in `M`](hyp:hObs,hFix), and let `Y`, `Z` be [observed outcome and adjustment sets,
+    neither of which overlaps the treatment's random nodes](hyp:hY,hZ,hDisj_YXr,hDisj_XrZ),
+    [satisfying the backdoor criterion relative to `(X,Y)`](hyp:h_bd). Given a base
+    configuration `s0` at which [overlap holds along every post-intervention
+    slice](hyp:hOverlap) and [the product of the observational treatment and adjustment-set
+    marginals is absolutely continuous with respect to their joint observational
+    law](hyp:hPositivity), then [for almost every treatment value `t` under the observational
+    treatment marginal, the post-intervention outcome distribution at `t` equals the
+    backdoor-adjustment functional evaluated at `t`](goal).
 
-    For `νX`-almost-every treatment value `t`, the post-intervention `Y`-marginal at `(s₀, t)`
-    equals the backdoor-adjustment functional at `(s₀, t)`.  Continuous and discrete treatment are
-    both covered: discrete is the atomic-`νX` case where "a.e. `t`" is pointwise on the support. -/
+    Continuous and discrete treatment are both covered: discrete is the atomic-treatment-marginal
+    case where "a.e. `t`" is pointwise on the support. -/
 theorem backdoor_completeness_ae
     (M : Causalean.SCM N Ω) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ M.observed)
@@ -386,11 +395,20 @@ theorem backdoor_completeness_ae
     (M.backdoor_completeness_ae_compProd X hObs hFix Y Z hY hZ h_bd
       hDisj_YXr hDisj_XrZ s0 hOverlap hPositivity)
 
-/-- **Backdoor identifiability, a.e. in the treatment value (cross-SCM corollary).**
-
-    Two SCMs `M₁`, `M₂` sharing the same SWIG graph (`h_swig`) and the same
-    observational kernel (`h_obs`) produce equal post-intervention `Y`-marginal
-    kernels, for `νX`-almost-every treatment value `t`.
+/-- **Backdoor identifiability, a.e. in the treatment value (cross-SCM corollary).** Fix two causal
+    models `M₁`, `M₂` that [share the same SWIG graph](hyp:h_swig) and [the same observational
+    kernel](hyp:h_obs), with base configurations that [agree under this shared
+    identification](hyp:h_s0). Fix a treatment set `X` [valid in both
+    models](hyp:hObs₁,hFix₁,hObs₂,hFix₂) and disjoint outcome/adjustment sets `Y`, `Z` that are
+    [observed in both models and disjoint from the treatment's random
+    nodes](hyp:hY₁,hZ₁,hY₂,hZ₂,hDisj_YXr,hDisj_XrZ), such that `Z` [satisfies the backdoor criterion
+    for `(X,Y)` in each model separately](hyp:h_bd₁,h_bd₂), with [overlap holding along every
+    post-intervention slice in each model](hyp:hOverlap₁,hOverlap₂) and [product positivity of the
+    observational treatment and adjustment-set marginals holding in each
+    model](hyp:hPositivity₁,hPositivity₂). Then [for almost every treatment value `t` under the
+    shared observational treatment marginal, the post-intervention outcome distribution computed in
+    `M₁` at `t` equals the one computed in `M₂` at `t`](goal), since each model individually
+    satisfies backdoor completeness and the two share the same graph and observational kernel.
 
     The kernel `doKernelY M X hObs hFix Y hY s0` has
     type `Kernel (ValuesOn (X.image SWIGNode.random) (swigΩ Ω)) (ValuesOn Y (swigΩ Ω))`,

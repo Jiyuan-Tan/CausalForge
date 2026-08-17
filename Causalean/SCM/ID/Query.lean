@@ -115,8 +115,10 @@ lemma interventionalQuery_eq_default_of_not_valid [∀ n, Nonempty (Ω n)]
   rw [interventionalQuery]
   exact dif_neg (by simpa [interventionalQueryValid] using h)
 
-/-- Two models with the same SWIG graph agree on whether the total query is
-well formed. -/
+/-- **Well-formedness invariance under matching SWIG graphs.** For an intervention target set
+`X` and outcome set `Y`, if [two structural causal models `M₁`, `M₂` have the same SWIG
+graph](hyp:hsg), then [they agree on whether the total interventional query for `X`, `Y` is
+well formed](goal). -/
 theorem interventionalQueryValid_iff_of_toSWIGGraph_eq
     (X : Finset N) (Y : Finset (SWIGNode N))
     (M₁ M₂ : Causalean.SCM N Ω)

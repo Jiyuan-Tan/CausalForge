@@ -17,8 +17,10 @@ namespace Causalean.ML
 
 open BigOperators
 
-/-- For `λ ≥ 0`, the soft-thresholded value `S_λ(a)` minimizes the one-dimensional
-penalized least-squares objective `u ↦ (u − a)² + 2λ|u|`. -/
+/-- For a real number `a`, if [the regularization level `lam` is
+nonnegative](hyp:hlam), then [the soft-thresholded value `softThreshold lam a` minimizes
+the one-dimensional penalized least-squares objective `u ↦ (u − a)² + 2·lam·|u|` over
+every real `u`](goal). -/
 theorem softThreshold_isMinOn {lam : ℝ} (hlam : 0 ≤ lam) (a : ℝ) :
     ∀ u : ℝ, (softThreshold lam a - a) ^ 2 + 2 * lam * |softThreshold lam a|
       ≤ (u - a) ^ 2 + 2 * lam * |u| := by

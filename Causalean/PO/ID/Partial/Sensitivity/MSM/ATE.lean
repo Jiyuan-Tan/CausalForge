@@ -71,9 +71,11 @@ theorem sub_mem_Icc_of_mem_Icc {a aₗ aᵤ b bₗ bᵤ : ℝ}
   obtain ⟨hb₁, hb₂⟩ := hb
   exact ⟨by linarith, by linarith⟩
 
-/-- **The sharp ATE interval is valid:** the true `τ = E[Y(1)] − E[Y(0)]` lies in the
-sharp interval `[ateLowerCalib Λ, ateUpperCalib Λ]`, given the two arm-wise sharp
-validity statements (treated `Y1mean_mem_Icc_calib`, control `Y0mean_mem_Icc_calib`). -/
+/-- **The sharp ATE interval is valid.** If [the treated arm's mean potential outcome `E[Y(1)]`
+lies in the calibrated sharp interval `[msmLowerCalib Λ, msmUpperCalib Λ]`](hyp:hT) and [the
+control arm's mean potential outcome `E[Y(0)]` lies in the calibrated sharp interval
+`[msmLowerCalib0 Λ, msmUpperCalib0 Λ]`](hyp:hC), then [the true average treatment effect
+`τ = E[Y(1)] − E[Y(0)]` lies in the sharp interval `[ateLowerCalib Λ, ateUpperCalib Λ]`](goal). -/
 theorem ate_mem_Icc_calib (Λ : ℝ)
     (hT : S.Y1mean ∈ Set.Icc (S.msmLowerCalib Λ) (S.msmUpperCalib Λ))
     (hC : S.Y0mean ∈ Set.Icc (S.msmLowerCalib0 Λ) (S.msmUpperCalib0 Λ)) :
@@ -81,8 +83,11 @@ theorem ate_mem_Icc_calib (Λ : ℝ)
   unfold POBackdoorSystem.ate POBackdoorSystem.ateLowerCalib POBackdoorSystem.ateUpperCalib
   exact sub_mem_Icc_of_mem_Icc hT hC
 
-/-- **The ZSB ATE interval is valid:** the true `τ` lies in `[ateLower Λ, ateUpper Λ]`,
-from the two arm-wise ZSB validity statements (`Y1mean_mem_Icc`, `Y0mean_mem_Icc`). -/
+/-- **The ZSB ATE interval is valid.** If [the treated arm's mean potential outcome `E[Y(1)]`
+lies in the uncalibrated ZSB interval `[msmLower Λ, msmUpper Λ]`](hyp:hT) and [the control arm's
+mean potential outcome `E[Y(0)]` lies in the uncalibrated ZSB interval
+`[msmLower0 Λ, msmUpper0 Λ]`](hyp:hC), then [the true average treatment effect
+`τ = E[Y(1)] − E[Y(0)]` lies in the ZSB interval `[ateLower Λ, ateUpper Λ]`](goal). -/
 theorem ate_mem_Icc (Λ : ℝ)
     (hT : S.Y1mean ∈ Set.Icc (S.msmLower Λ) (S.msmUpper Λ))
     (hC : S.Y0mean ∈ Set.Icc (S.msmLower0 Λ) (S.msmUpper0 Λ)) :
@@ -90,9 +95,14 @@ theorem ate_mem_Icc (Λ : ℝ)
   unfold POBackdoorSystem.ate POBackdoorSystem.ateLower POBackdoorSystem.ateUpper
   exact sub_mem_Icc_of_mem_Icc hT hC
 
-/-- **The sharp ATE interval is contained in the ZSB ATE interval.** Each sharp arm
-bound is tighter than its ZSB counterpart, so the opposed differences nest:
-`ateLower Λ ≤ ateLowerCalib Λ` and `ateUpperCalib Λ ≤ ateUpper Λ`. -/
+/-- **The sharp ATE interval is contained in the ZSB ATE interval.** If [the treated arm's
+calibrated sharp upper bound does not exceed its uncalibrated ZSB upper bound](hyp:hUT), [the
+treated arm's uncalibrated ZSB lower bound does not exceed its calibrated sharp lower
+bound](hyp:hLT), [the control arm's calibrated sharp upper bound does not exceed its uncalibrated
+ZSB upper bound](hyp:hU0), and [the control arm's uncalibrated ZSB lower bound does not exceed its
+calibrated sharp lower bound](hyp:hL0), then [the sharp ATE interval
+`[ateLowerCalib Λ, ateUpperCalib Λ]` is contained in the ZSB ATE interval
+`[ateLower Λ, ateUpper Λ]`](goal). -/
 theorem ateCalib_subset (Λ : ℝ)
     (hUT : S.msmUpperCalib Λ ≤ S.msmUpper Λ)
     (hLT : S.msmLower Λ ≤ S.msmLowerCalib Λ)

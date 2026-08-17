@@ -100,8 +100,11 @@ private theorem rpowRaw_sound {base exponent : RatInterval} {x y : ℝ}
   have hexp := expInterval_sound hmul n
   simpa [rpowRaw, Real.rpow_def_of_pos hxpos, mul_comm] using hexp
 
-/-- Real-power interval evaluation encloses a positive base raised to an
-enclosed real exponent whenever the base interval is strictly positive. -/
+/-- **Certified real-power interval evaluation.** For [a base rational interval whose lower
+endpoint is strictly positive](hyp:hbase) that encloses [a real base value](hyp:hx), and [an
+exponent rational interval enclosing a real exponent value](hyp:hy), [the real-power interval
+evaluation of the base and exponent, at any precision level, contains the true value of the base
+raised to that exponent](goal). -/
 theorem rpowInterval_sound {base exponent : RatInterval} {x y : ℝ}
     (hbase : 0 < base.lo) (hx : base.Contains x) (hy : exponent.Contains y) (n : ℕ) :
     (rpowInterval base exponent hbase n).Contains (x ^ y) := by

@@ -168,9 +168,10 @@ theorem directedHausdorff_Icc {a b c d : ℝ} (hab : a ≤ b) (hcd : c ≤ d) :
     · exact le_trans hdb (le_max_right _ _)
   exact le_trans hmax_gg (max_le hsa hsb)
 
-/-- **The geometric keystone (Beresteanu–Molinari eq. (A.1), `d = 1`).**  The
-symmetric Hausdorff distance between two intervals is the larger of the endpoint
-gaps: `H([a,b], [c,d]) = max(|a − c|, |b − d|)`. -/
+/-- **The geometric keystone (Beresteanu–Molinari eq. (A.1), `d = 1`).** For real numbers
+`a ≤ b` and `c ≤ d` forming [two well-ordered closed intervals](hyp:hab,hcd), [the
+symmetric Hausdorff distance between `[a,b]` and `[c,d]` equals the larger of the two
+endpoint gaps](goal): `H([a,b], [c,d]) = max(|a − c|, |b − d|)`. -/
 theorem hausdorffDist_Icc {a b c d : ℝ} (hab : a ≤ b) (hcd : c ≤ d) :
     hausdorffDist (Set.Icc a b) (Set.Icc c d) = max |a - c| |b - d| := by
   unfold hausdorffDist

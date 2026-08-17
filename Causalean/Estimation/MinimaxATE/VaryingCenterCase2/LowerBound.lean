@@ -214,10 +214,16 @@ theorem tvDist_Qfalse2_Qtrue2_le_half (P : VarConstr2 K) {n : ℕ} [NeZero K]
     _ = 1 / 2 := by rw [Real.sqrt_one]; ring
 
 /-- **Structure-agnostic minimax lower bound (second / propensity-dominant construction).**
-For a cell-varying nuisance center whose treated-arm bump is strictly positive, if
-the Case-2 propensity-dominant budgets and χ² regularity conditions hold, every
-measurable estimator has miss probability at least `1/4` at half of the displayed
-strictly positive ATE separation somewhere in the structure-agnostic class.
+Fix a cell-varying nuisance center `P`, sample size `n`, and nuisance-error budgets `εg`,
+`εm`, and suppose [the treated-arm outcome bump magnitude is strictly positive](hyp:hβpos).
+If [the perturbed propensity's squared deviation from its center is at most `εm` in every
+cell](hyp:hm), [the perturbed treated-arm outcome regression's squared deviation from its
+center is at most `εg` in every cell](hyp:hg), [`εm` is nonnegative](hyp:hεm), [`εg` is
+nonnegative](hyp:hεg), [the normalized per-pair χ² coefficients sum to at most `1`](hyp:hΓsum),
+and [`n²/2` times the sum of their squares is at most `log 2`](hyp:hreg), then for [every
+measurable estimator](hyp:hest), [the worst-case-over-class probability that the estimator's
+error exceeds half of the displayed strictly positive separation gap is at least
+`1/4`](goal).
 
 This is the `εm > εg` construction: the propensity error carries the larger budget,
 and the strict positivity guard rules out the degenerate zero-separation

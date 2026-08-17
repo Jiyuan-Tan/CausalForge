@@ -38,7 +38,9 @@ noncomputable def ofAcyclic (e : V → V → Prop)
   decEdge := Classical.decRel e
   acyclic := hac
 
-/-- The graph built from an acyclic edge relation has exactly that edge relation. -/
+/-- The directed acyclic graph `ofAcyclic e hac`, built from an edge relation `e` together with
+[a proof that `e` has no directed cycle](hyp:hac), [has exactly `e` as its edge
+relation](goal). -/
 @[simp] theorem ofAcyclic_edge (e : V → V → Prop)
     (hac : ∀ v, ¬ Relation.TransGen e v v) :
     (ofAcyclic e hac).edge = e := rfl

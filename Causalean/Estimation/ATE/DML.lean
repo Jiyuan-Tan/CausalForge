@@ -89,7 +89,24 @@ noncomputable def dmlEstimator
 -- abstract `aipw_dml_isAsymLinear`; the resulting elaboration exceeds the
 -- default heartbeat budget when type-checking the final `refine ⟨…⟩` block.
 set_option maxHeartbeats 1200000 in
-/-- **Asymptotic linearity of the one-shot DML ATE** — `thm:est-dml-ate-al`.
+/-- **Asymptotic linearity of the one-shot DML ATE** — `thm:est-dml-ate-al`.  Fix
+[the back-door identification assumptions](hyp:hA) for the estimation system `S`,
+with [strict overlap $\varepsilon \le e(X) \le 1-\varepsilon$ for the true
+propensity](hyp:h_overlap) and [a.e. overlap at the same $\varepsilon$ for every
+learner realization $\hat e(n,\omega)$](hyp:h_e_overlap), [a finite second moment
+for the observed outcome](hyp:h_y2), and [a finite second moment for each potential
+outcome](hyp:h_yd2). Take a one-shot sample split whose training-fold size fraction
+[converges to a limit $c$ with $0 < c < 1$](hyp:hc_pos,hc_lt,h_split_rate). Suppose
+the outcome-regression and propensity learners $\hat\mu, \hat e$ are
+[measurable](hyp:h_mu_meas,h_e_meas), [lie in $L^2(P_X)$ at every
+realization](hyp:h_mu_memLp,h_e_memLp), [depend only on the nuisance-training fold
+$A(n)$, both as functions of that fold alone and jointly with the
+covariate](hyp:h_mu_foldA,h_e_foldA,h_mu_uncurry_foldA,h_e_uncurry_foldA), and
+[converge individually to the truth in $L^2(P_X)$ at rate
+$o_p(1)$](hyp:h_mu_rate,h_e_rate) with a [product rate of
+$o_p(n^{-1/2})$](hyp:h_product_rate). Then [the one-shot DML/AIPW estimator of the
+back-door ATE is asymptotically linear at the true ATE $\theta_0$ with influence
+function $\psi_{AIPW}$ along the training folds](goal).
 
 Hypotheses (mirroring the NL doc verbatim, including the split-rate
 hypothesis `|B(n)|/n → c`):
@@ -908,9 +925,24 @@ theorem dml_ATE_isAsymLinear
     exact h
 
 /-- **Asymptotic normality of the one-shot DML ATE** (`thm:est-dml-ate-al`,
-"In particular ..." clause).  Given the same hypotheses as
-`dml_ATE_isAsymLinear`, the rescaled estimator `√|B(n)| (θ̂ⁿ − θ₀)` converges
-in distribution to `N(0, ∫ ψ_AIPW² dP_Z)`.
+"In particular ..." clause).  Under [the back-door identification
+assumptions](hyp:hA) for `S`, with [strict overlap for the true
+propensity](hyp:h_overlap) and [a.e. overlap for every learner
+realization](hyp:h_e_overlap), [finite second moments of the observed and
+potential outcomes](hyp:h_y2,h_yd2), and a one-shot sample split whose
+training-fold fraction [converges to some `c` with `0 < c <
+1`](hyp:hc_pos,hc_lt,h_split_rate): suppose the learners `μ̂`, `ê` are
+[measurable](hyp:h_mu_meas,h_e_meas), [in `L²(P_X)` at every
+realization](hyp:h_mu_memLp,h_e_memLp), [depend only on the nuisance-training
+fold, marginally and jointly with the
+covariate](hyp:h_mu_foldA,h_e_foldA,h_mu_uncurry_foldA,h_e_uncurry_foldA), and
+[converge individually at rate `o_p(1)`](hyp:h_mu_rate,h_e_rate) with [product
+rate `o_p(n^{-1/2})`](hyp:h_product_rate) — the same hypotheses as
+`dml_ATE_isAsymLinear`.  Given in addition [measurability of the AIPW influence
+function](hyp:hψ_meas), [a.e. measurability of the rescaled estimator at every
+horizon](hyp:hθn_meas), and [a.e. measurability of the normalized influence-sum at
+every horizon](hyp:hSum_meas), then [the rescaled estimator `√|B(n)| (θ̂ⁿ − θ₀)`
+converges in distribution to `N(0, ∫ ψ_AIPW² dP_Z)`](goal).
 
 Together with `|B(n)|/n → c ∈ (0,1)`, Slutsky scaling gives the
 `√n`-rate form `√n (θ̂ⁿ − θ₀) ⇒ N(0, σ²/c)` (variance inflated by the

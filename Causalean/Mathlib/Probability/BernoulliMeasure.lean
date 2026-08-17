@@ -141,9 +141,11 @@ lemma bernoulliLaw_llr_integrable {p q : ℝ} :
           + ENNReal.ofReal (1 - p) • Measure.dirac (0 : ℝ)) (bernoulliLaw q))
         (a := (0 : ℝ)) (by simp [enorm])) (by simp)
 
-/-- For Bernoulli laws whose first success probability lies in the unit interval
-and whose reference probability is strictly between zero and one, their KL divergence
-is the usual two-point Bernoulli expression: success contribution plus failure contribution. -/
+/-- Let $p$ be a Bernoulli success probability with [$0 \le p \le 1$](hyp:hp0,hp1), and let $q$
+be a reference success probability with [$0 < q < 1$](hyp:hq0,hq1). Then [the
+Kullback–Leibler divergence from the Bernoulli($p$) law to the Bernoulli($q$) law equals
+$p \log(p/q) + (1-p)\log((1-p)/(1-q))$](goal), the usual two-point KL formula: a success
+contribution plus a failure contribution. -/
 lemma bernoulliLaw_klDiv_toReal {p q : ℝ} (hp0 : 0 ≤ p) (hp1 : p ≤ 1)
     (hq0 : 0 < q) (hq1 : q < 1) :
     (InformationTheory.klDiv (bernoulliLaw p) (bernoulliLaw q)).toReal
@@ -221,9 +223,10 @@ lemma bernoulliLaw_klDiv_toReal {p q : ℝ} (hp0 : 0 ≤ p) (hp1 : p ≤ 1)
   rw [hA, hB]
   ring
 
-/-- When both Bernoulli success probabilities lie in the middle half of the
-unit interval, their KL divergence is at most four times the squared
-difference of the probabilities. -/
+/-- If both success probabilities $p$ and $q$ lie in the middle half of the unit interval,
+[$1/4 \le p \le 3/4$](hyp:hp_lo,hp_hi) and [$1/4 \le q \le 3/4$](hyp:hq_lo,hq_hi), then
+[the Kullback–Leibler divergence from the Bernoulli($p$) law to the Bernoulli($q$) law is
+at most four times the squared difference of the probabilities, $4(p-q)^2$](goal). -/
 lemma bernoulliLaw_klDiv_le_four_sq_sub {p q : ℝ}
     (hp_lo : (1 : ℝ) / 4 ≤ p) (hp_hi : p ≤ 3 / 4)
     (hq_lo : (1 : ℝ) / 4 ≤ q) (hq_hi : q ≤ 3 / 4) :

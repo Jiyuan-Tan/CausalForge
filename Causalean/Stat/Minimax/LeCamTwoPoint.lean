@@ -64,10 +64,17 @@ private lemma event_mul_measureReal_le_integral
     ring
   simpa [hleft] using hle
 
-/-- Le Cam two-point lower bound on finite Bochner `L¹` risk for estimating a
-real-valued functional from `n` i.i.d. observations.
+/-- **Le Cam two-point lower bound on finite Bochner `L¹` risk.**  Fix [a strictly positive KL
+budget `C`](hyp:_hC_pos) with [`C` at most `1/2`](hyp:hC_small). Then [there is a universal
+positive constant `c₀` such that, for every sample size, every pair of single-observation laws
+whose scaled KL divergence is bounded by `C` and whose `n`-fold product KL divergence is
+controlled by a supplied product-KL comparison and a supplied product-form Pinsker bound, every
+pair of separated real targets, and every measurable estimator with integrable absolute loss
+under both `n`-fold product laws, the worst-case Bochner `L¹` risk is at least `c₀` times the
+target separation](goal).
 
-The product-law Pinsker and product-KL facts are explicit hypotheses. -/
+The product-law Pinsker and product-KL facts are explicit hypotheses of the inner
+universally-quantified statement. -/
 theorem leCam_two_point_L1_lower
     {Ω : Type*} [MeasurableSpace Ω]
     (C : ℝ) (_hC_pos : 0 < C) (hC_small : C ≤ 1 / 2) :

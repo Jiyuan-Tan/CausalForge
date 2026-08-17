@@ -23,9 +23,10 @@ namespace Causalean.Mathlib.Optimization
 
 open scoped BigOperators
 
-/-- **Weighted Cauchy–Schwarz (squared form).** Weighting finitely many coordinates
-by nonnegative masses, the square of the weighted inner product of two vectors is at most
-the product of their weighted sums of squares.
+/-- **Weighted Cauchy–Schwarz (squared form).** For [finitely many coordinates weighted
+by nonnegative masses β](hyp:hβ), [the square of the weighted inner product
+$\sum \beta_i s_i t_i$ of two vectors $s$ and $t$ is at most the product of their
+weighted sums of squares $(\sum \beta_i s_i^2)(\sum \beta_i t_i^2)$](goal).
 
 This is the general finite-index form of
 `Causalean.Mathlib.Analysis.weighted_inner_sq_le`. -/
@@ -35,9 +36,12 @@ lemma weighted_cs_sq {ι : Type*} [Fintype ι] (β s t : ι → ℝ) (hβ : ∀ 
     simpa using Analysis.weighted_inner_sq_le (Finset.univ : Finset ι) β s t
       (fun i _ => hβ i)
 
-/-- **Strict weighted Cauchy–Schwarz on the simplex slice.** For positive weights,
-if `s ≠ t` but `Σ sᵢ = Σ tᵢ = M ≠ 0`, then
-`Σ βᵢ sᵢ tᵢ < √(Σ βᵢ sᵢ²) · √(Σ βᵢ tᵢ²)`.
+/-- **Strict weighted Cauchy–Schwarz on the simplex slice.** For [a nonzero total mass
+M](hyp:hM) and [positive coordinate weights β](hyp:hβ), if [the coordinates of $s$ sum to
+$M$](hyp:hs), [the coordinates of $t$ sum to $M$](hyp:ht), and [$s$ and $t$ are distinct
+vectors](hyp:hne), then [the weighted inner product $\sum \beta_i s_i t_i$ is strictly
+less than the product of the weighted Euclidean norms $\sqrt{\sum \beta_i s_i^2} \cdot
+\sqrt{\sum \beta_i t_i^2}$](goal).
 
 Proof plan:
 * Let `P = Σ βᵢ sᵢ²`, `Q = Σ βᵢ tᵢ²`, `R = Σ βᵢ sᵢ tᵢ`. Since `t ≠ 0` (its coords

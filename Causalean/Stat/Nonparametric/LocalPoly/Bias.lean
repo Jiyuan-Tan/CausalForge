@@ -35,14 +35,21 @@ namespace Causalean.Stat.Nonparametric
 
 open scoped BigOperators
 
-/-- **Interior local-polynomial bias is `O(h^β)`.** Let `c` be the degree
-`p = holderDerivOrder β` weighted
-least-squares fit (weights `wᵢ ≥ 0`) of a `β`-Hölder function `f` at noise-free responses
-`f(aᵢ)`, with an invertible weighted design moment matrix and all design points within the
-bandwidth `h` of `t` (`|aᵢ − t| ≤ h`). Then the fitted intercept `c 0` estimates `f t` with
-bias `|c 0 − f t| ≤ (M/p!)·(∑ᵢ |Sᵢ|)·h^β`, where `Sᵢ` are the local-polynomial
-equivalent-kernel weights. Bounding the leverage `∑ᵢ|Sᵢ|` by a design-density constant gives
-the textbook `O(h^β)` interior bias. -/
+/-- **Interior local-polynomial bias is `O(h^β)`.** Let `p` denote the largest natural
+number strictly below the smoothness index `β`. If [`β` is positive](hyp:hβ), [the Hölder
+constant `M` is nonnegative](hyp:hM), [the design weights `w` are nonnegative](hyp:hw),
+[the target point `t` lies in a window `[lo,hi]`](hyp:ht), [every design point `aᵢ` lies
+in the same window](hyp:ha), [every design point is within bandwidth `h` of `t`](hyp:hwin),
+[the regression function `f` is `p` times continuously differentiable](hyp:hf), [its
+`p`-th derivative is `(β−p)`-Hölder with constant `M` on the window](hyp:hb), [the
+weighted design moment matrix is invertible](hyp:hMdet), and [`c` globally minimizes the
+weighted degree-`p` least-squares objective at noise-free responses `f(aᵢ)`](hyp:hmin),
+then [the fitted intercept `c 0` estimates `f t` with bias
+`|c 0 − f t| ≤ (M/p!)·(∑ᵢ |Sᵢ|)·h^β`, where `Sᵢ` are the local-polynomial equivalent-kernel
+weights](goal).
+
+Bounding the leverage `∑ᵢ|Sᵢ|` by a design-density constant gives the textbook `O(h^β)`
+interior bias. -/
 theorem localPoly_intercept_bias {N : ℕ} {β M lo hi t h : ℝ} {a w : Fin N → ℝ}
     {f : ℝ → ℝ} {c : Fin ((holderDerivOrder β) + 1) → ℝ}
     (hβ : 0 < β) (hM : 0 ≤ M)

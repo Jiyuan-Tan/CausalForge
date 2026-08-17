@@ -47,8 +47,10 @@ namespace BaseAssumptions
 
 variable {S : POManskiIVSystem P α}
 
-/-- Binary-folded form of `bounded_one` / `bounded_zero`: `Y(d)` is a.s. in
-`[lo, hi]` uniformly in `d : Bool`. -/
+/-- Given [the baseline Manski assumptions bundle, which fixes bounds `lo ≤ hi` and asserts
+that both potential outcomes `Y(1)` and `Y(0)` lie a.s. in `[lo, hi]`](hyp:hA),
+[the potential outcome `Y(d)` lies almost surely between `lo` and `hi`, uniformly for either
+treatment arm `d`](goal) — the binary-folded form of the two separate range assumptions. -/
 lemma bounded (hA : S.BaseAssumptions) (d : Bool) :
     ∀ᵐ ω ∂P.μ, hA.lo ≤ S.YofD d ω ∧ S.YofD d ω ≤ hA.hi := by
   cases d

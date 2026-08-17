@@ -191,8 +191,13 @@ theorem tvDist_QfalseCont_QtrueCont_le_half [NeZero K] (ρ : Measure W) [IsProba
         exact Real.sqrt_le_sqrt hchi
     _ = 1 / 2 := by rw [Real.sqrt_one]; ring
 
-/-- Every measurable estimator in the continuous-covariate experiment has the
-same two-point lower bound.
+/-- Fix [nonnegative bump magnitudes α and β with `α + 2β ≤ 1/2`](hyp:hα,hβ,hαβ), in [the
+sample-size regime `2n²γ² ≤ K·log 2` with `γ = α²+2αβ+3β²` and `2γ ≤ 1`](hyp:hγ,hreg). For [any
+measurable estimator `est` of the average treatment effect that observes both the finite
+paired-cell data and `n` independent ancillary continuous within-cell positions drawn from an
+arbitrary probability space](hyp:hest), [the larger of the two miss probabilities — under the
+mixed alternative law and under the null law — that `est` misses the corresponding true ATE
+(`2β(α+β)/(1−4β²)` or `0`) by `β(α+β)/(1−4β²)` is at least `1/4`](goal).
 
 The arbitrary within-cell ancillary space cannot improve estimation because it has the same law
 under the null and alternative hypotheses. Formally this is a two-hypothesis

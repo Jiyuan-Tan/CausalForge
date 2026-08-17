@@ -53,7 +53,27 @@ open MeasureTheory ProbabilityTheory Filter Topology Causalean.PO
 variable {P : POSystem} {γ : Type*} [MeasurableSpace γ]
   [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
 
-/-- **DR-Learner second-order product bias bound.**
+/-- **DR-Learner second-order product bias bound.** For a CATE estimation system
+built on a potential-outcome model that satisfies [the back-door identification
+assumptions](hyp:hA), with [the true nuisance η₀ lying in the strict-overlap band at
+some margin ε > 0](hyp:hε_pos,h_overlap_η₀), fix a convex candidate target class in
+an inner-product space with a real-valued evaluation map, and suppose [θ₀ belongs to
+this class](hyp:θ₀_mem), [every candidate's evaluation is measurable](hyp:eval_meas),
+and [θ₀'s evaluation agrees pointwise with the true value-space CATE](hyp:eval_θ₀).
+Fix a candidate nuisance `h` that [also lies in the strict-overlap band at the same
+margin](hyp:h_overlap_h), a candidate target `θ̂`, and [a nonnegative constant `B`
+bounding the evaluation-map directional derivative at `θ̂`](hyp:hB_nonneg,hdEval_bound).
+Assume [the arm-wise outcome-regression fit of `h`](hyp:h_μ_h_int), [the AIPW
+pseudo-outcome discrepancy between `h` and the truth](hyp:h_phi_int), and [that
+discrepancy weighted by the directional derivative](hyp:h_phiw_int) are all
+integrable, [the outcome-regression error of `h`](hyp:hΔμ_memLp) and [the propensity
+error of `h`](hyp:hΔe_memLp) are square-integrable arm by arm, and [the loss-gradient
+integrand at the true nuisance](hyp:hA_int) and [the loss-gradient integrand at
+the candidate nuisance `h`](hyp:hB_int) are each integrable against the observation
+law. Then [the loss-gradient nuisance bias `Bias_n`, evaluated between the true and
+candidate nuisance directional derivatives at `θ̂`, is bounded in absolute value by
+`(2B/ε)` times the sum over treatment arms of the outcome-regression L² error times
+the propensity L² error](goal).
 
 For the DR-Learner orthogonal-learning system with the closed-form mixed-derivative bundle
 `drMixedDirDeriv`, the loss-gradient nuisance bias `Bias_n` is bounded by the

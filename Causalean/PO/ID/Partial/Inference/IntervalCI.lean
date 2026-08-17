@@ -68,12 +68,14 @@ open MeasureTheory ProbabilityTheory Real Causalean.Stat Causalean.Stat.Concentr
 variable {Ω X' : Type*} [MeasurableSpace Ω] [MeasurableSpace X']
   {μ : Measure Ω} {P : Measure X'}
 
-/-- **Finite-sample honest CI for the identified set (Hoeffding).**
-With lower/upper bounding statistics `f_L ∈ [aL, bL]`, `f_U ∈ [aU, bU]` whose
-population means are the identification bounds `L = ∫ f_L`, `U = ∫ f_U`, the
-random interval `[X̄ₙ(f_L) − w_L, X̄ₙ(f_U) + w_U]` with Hoeffding half-widths
-`w_L = hoeffdingCIHalfWidth aL bL n δ_L`, `w_U = hoeffdingCIHalfWidth aU bU n δ_U`
-covers the whole identified set `[L, U]` with probability `≥ 1 − δ_L − δ_U`. -/
+/-- **Finite-sample honest CI for the identified set (Hoeffding).** Given lower and upper
+bounding statistics `f_L`, `f_U` that are [measurable](hyp:hfL,hfU), each [confined a.s. to a
+known bounded range — `f_L ∈ [aL, bL]` with `aL < bL`, `f_U ∈ [aU, bU]` with
+`aU < bU`](hyp:habL,habU,hbL,hbU) — at [any positive sample size `n`](hyp:hn) and [any pair of
+failure probabilities `δ_L`, `δ_U` in `(0, 1]`](hyp:hδL0,hδL1,hδU0,hδU1), [widening the sample
+means `X̄ₙ(f_L)` and `X̄ₙ(f_U)` outward by the matching Hoeffding half-widths produces a random
+interval that covers the whole identified interval `[∫ f_L dP, ∫ f_U dP]` with probability at
+least `1 − δ_L − δ_U`](goal). -/
 theorem hoeffding_honest_ci_set_cover (S : IIDSample Ω X' μ P)
     {fL fU : X' → ℝ} (hfL : Measurable fL) (hfU : Measurable fU)
     {aL bL aU bU : ℝ} (habL : aL < bL) (habU : aU < bU)
@@ -99,10 +101,13 @@ theorem hoeffding_honest_ci_set_cover (S : IIDSample Ω X' μ P)
   exact honest_ci_set_cover (S.measurable_sampleMean hfL n) (S.measurable_sampleMean hfU n)
     hL_one hU_one
 
-/-- **Finite-sample honest CI for the parameter (Hoeffding).**
-The parameter-coverage corollary of `hoeffding_honest_ci_set_cover`: if the true
-value `θ₀` satisfies the population Manski sandwich `∫ f_L ≤ θ₀ ≤ ∫ f_U`, then the
-same widened random interval covers `θ₀` with probability `≥ 1 − δ_L − δ_U`. -/
+/-- **Finite-sample honest CI for the parameter (Hoeffding).** The parameter-coverage corollary
+of `hoeffding_honest_ci_set_cover`: under the same setup — [measurable](hyp:hfL,hfU) bounding
+statistics `f_L`, `f_U` [a.s. confined to `[aL, bL]` and `[aU, bU]`
+respectively](hyp:habL,habU,hbL,hbU), [a positive sample size `n`](hyp:hn), and [failure
+probabilities `δ_L`, `δ_U` in `(0, 1]`](hyp:hδL0,hδL1,hδU0,hδU1) — if [the true scalar
+parameter `θ₀` lies in the population sandwich `[∫ f_L dP, ∫ f_U dP]`](hyp:hsand), then [the same
+widened random interval covers `θ₀` with probability at least `1 − δ_L − δ_U`](goal). -/
 theorem hoeffding_honest_ci_point_cover (S : IIDSample Ω X' μ P)
     {fL fU : X' → ℝ} (hfL : Measurable fL) (hfU : Measurable fU)
     {aL bL aU bU : ℝ} (habL : aL < bL) (habU : aU < bU)
@@ -128,13 +133,18 @@ theorem hoeffding_honest_ci_point_cover (S : IIDSample Ω X' μ P)
   exact honest_ci_point_cover (S.measurable_sampleMean hfL n) (S.measurable_sampleMean hfU n)
     hsand hL_one hU_one
 
-/-- **Finite-sample honest CI for the parameter (Bernstein).**
-Variance-adaptive version: with range bounds `|f_L − L| ≤ cL`, `|f_U − U| ≤ cU`
-and variance proxies `σL²`, `σU²`, the random interval widened by the Bernstein
-half-widths `bernsteinCIHalfWidth cL σL n δL`, `bernsteinCIHalfWidth cU σU n δU`
-covers `θ₀ ∈ [∫ f_L, ∫ f_U]` with probability `≥ 1 − δ_L − δ_U`.  When the
-bounding statistics have small variance this interval is far tighter than the
-Hoeffding one (leading term `2σ√(log(2/δ)/n)` rather than `(b−a)√(log(2/δ)/2n)`). -/
+/-- **Finite-sample honest CI for the parameter (Bernstein).** Variance-adaptive version: with
+[measurable](hyp:hfL,hfU) and [integrable](hyp:hfLint,hfUint) bounding statistics `f_L`, `f_U`,
+[deviation bounds `|f_L − ∫f_L| ≤ cL` and `|f_U − ∫f_U| ≤ cU` holding a.s. for nonnegative
+constants `cL, cU`](hyp:hcL,hcU,hbL,hbU), and [variance proxies `σL, σU > 0` dominating the
+respective second central moments](hyp:hσL,hσU,hvL,hvU), for [a positive sample size
+`n`](hyp:hn) and [failure probabilities `δ_L`, `δ_U` in `(0, 1]`](hyp:hδL0,hδL1,hδU0,hδU1), if
+[the true parameter `θ₀` lies in the population sandwich `[∫ f_L dP, ∫ f_U dP]`](hyp:hsand), then
+[widening the sample means by the corresponding Bernstein half-widths yields a random interval
+covering `θ₀` with probability at least `1 − δ_L − δ_U`](goal).
+
+When the bounding statistics have small variance this interval is far tighter than the Hoeffding
+one (leading term `2σ√(log(2/δ)/n)` rather than `(b−a)√(log(2/δ)/2n)`). -/
 theorem bernstein_honest_ci_point_cover (S : IIDSample Ω X' μ P)
     {fL fU : X' → ℝ} (hfL : Measurable fL) (hfU : Measurable fU)
     (hfLint : Integrable fL P) (hfUint : Integrable fU P)

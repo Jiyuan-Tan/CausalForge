@@ -1022,10 +1022,13 @@ private lemma seqDR_factualZ_integral_zero (S : DTREstimationSystem P δ γ)
         rw [hstage0_zero, hstage1_zero, ← hθ]
         simp
 
-/-- **Mean zero of `ψ_seqDR`** — under the DTR backdoor assumptions,
-two-stage strict overlap, and a finite second moment for the observed factual
-outcome, the sequential doubly robust influence function has expectation zero
-under the observed data law.
+/-- **Mean zero of the sequential doubly robust score.** Under [the two-stage DTR backdoor
+assumptions — sequential exchangeability, consistency, stagewise positivity, and integrability
+of every counterfactual outcome](hyp:hA), [uniform two-stage strict overlap: the target-regime
+propensity at each stage lies almost surely in `[ε, 1-ε]` for some `ε` in
+`(0, 1/2]`](hyp:h_overlap), and [a finite second moment for the observed factual
+outcome](hyp:h_y2), then [the sequential doubly robust influence function `ψ_seqDR` has
+expectation zero under the observed two-stage data law](goal).
 
 Formally, the sequential DR score `ψ_seqDR` integrates to zero against the
 pushforward law `P_Z` of `(S₀, D₀, S₁, D₁, Y)`.  No square-integrability

@@ -21,11 +21,12 @@ probability is `η`. -/
 noncomputable def bernoulliCE (η q : ℝ) : ℝ :=
   -η * Real.log q - (1 - η) * Real.log (1 - q)
 
-/-- For a true probability `η ∈ (0,1)`, the Bernoulli cross-entropy
-`q ↦ bernoulliCE η q` is minimized over the interior
-`(0,1)` at the truth `q = η`.  (The interior is essential: Mathlib's junk
-convention `Real.log 0 = 0` makes the closed-interval version false at the
-boundary, where the genuine cross-entropy is `+∞`.) -/
+/-- For [a true probability `η` strictly between `0` and `1`](hyp:hη), [the Bernoulli
+cross-entropy `q ↦ bernoulliCE η q` attains its minimum over the open interval `(0,1)` exactly at
+the truth `q = η`](goal).
+
+The interior is essential: Mathlib's junk convention `Real.log 0 = 0` makes the closed-interval
+version false at the boundary, where the genuine cross-entropy is `+∞`. -/
 theorem bernoulliCE_isMinOn {η : ℝ} (hη : η ∈ Set.Ioo (0 : ℝ) 1) :
     IsMinOn (fun q : ℝ => bernoulliCE η q) (Set.Ioo (0 : ℝ) 1) η := by
   rw [isMinOn_iff]

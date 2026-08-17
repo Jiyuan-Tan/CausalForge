@@ -83,8 +83,11 @@ lemma rnDeriv_compProd_right_of_forall_ac
   filter_upwards [Measure.rnDeriv_self (μ ⊗ₘ η)] with p hp
   rw [hp, mul_one]
 
-/-- KL chain rule for a shared-base composition product, under base-almost-everywhere fibre
-absolute continuity.
+/-- For a countably-generated pair of measurable spaces, a finite base measure `μ`, and finite
+    kernels `κ`, `η` out of the base, if [`κ b` is absolutely continuous with respect to `η b`
+    for `μ`-almost every base point `b`](hyp:hκη), then [the Kullback–Leibler divergence between
+    the composition products `μ ⊗ₘ κ` and `μ ⊗ₘ η` equals the `μ`-average, over the base point,
+    of the Kullback–Leibler divergence between `κ` and `η` at that base point](goal).
 
 This is the exact identity form used by bind-chain arguments whose output still
 remembers the base coordinate. -/
@@ -197,7 +200,15 @@ lemma map_bind_eq_compProd_of_base_recording
     _ = m ⊗ₘ κ := by
       simpa using (Measure.compProd_eq_comp_prod m κ).symm
 
-/-- Shared-base bind chain rule, when the output records its base coordinate via `proj`. -/
+/-- For measurable spaces `B` and `Ω`, a finite base measure `m`, finite kernels `κ`, `η` from `B`
+    to `Ω`, and [a measurable projection `proj : Ω → B`](hyp:hproj) whose [graph
+    `{(b, ω) | b = proj ω}` is a measurable subset of `B × Ω`](hyp:hgraph), suppose
+    [`κ`-almost every output, for `m`-almost every base point `b`, lands in the fibre
+    `proj⁻¹{b}`](hyp:hκ_fib), [likewise for `η`](hyp:hη_fib), and [`κ b` is absolutely continuous
+    with respect to `η b` for `m`-almost every `b`](hyp:hκη). Then [the Kullback–Leibler
+    divergence between the bind of `m` with `κ` and the bind of `m` with `η` equals the
+    `m`-average, over the base point `b`, of the Kullback–Leibler divergence between `κ b` and
+    `η b`](goal). -/
 lemma klDiv_bind_eq_of_base_recording
     {B Ω : Type*} [MeasurableSpace B] [MeasurableSpace Ω]
     [MeasurableSpace.CountableOrCountablyGenerated B Ω]

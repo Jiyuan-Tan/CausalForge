@@ -289,8 +289,12 @@ def supEnclosure (nodes : ℕ → RatInterval) (L : ℚ) (hL : 0 ≤ L)
     have hdiv : 0 ≤ L / (n : ℚ) := div_nonneg hL (by positivity)
     linarith [maxEndpoints_le nodes n]⟩
 
-/-- Rational node enclosures and a Lipschitz bound enclose the infimum of a
-real function on the unit mesh interval. -/
+/-- **Certified infimum enclosure on the unit mesh.** Fix [a nonnegative Lipschitz
+constant](hyp:hL) and [a positive number of mesh nodes](hyp:hn), and suppose [the real function
+is Lipschitz on `[0, 1]` with that constant](hyp:hLip) and [each rational node interval contains
+the function's value at the corresponding mesh point](hyp:hnodes). Then [the infimum enclosure
+built from those node intervals contains the true infimum of the function over
+`[0, 1]`](goal). -/
 theorem infEnclosure_sound {f : ℝ → ℝ} {nodes : ℕ → RatInterval}
     {L : ℚ} (hL : 0 ≤ L) {n : ℕ} (hn : 0 < n)
     (hLip : ∀ s ∈ Icc (0 : ℝ) 1, ∀ t ∈ Icc (0 : ℝ) 1,

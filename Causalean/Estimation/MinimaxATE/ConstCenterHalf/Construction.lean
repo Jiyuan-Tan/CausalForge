@@ -133,8 +133,9 @@ theorem denom_pos (hβ : 0 ≤ β) (hαβ : α + 2 * β ≤ 1 / 2) (hα : 0 ≤ 
 theorem validDGP_hat : ValidDGP (C := Fin K × Bool) mhat ghat := by
   refine ⟨fun x => ?_, fun d x => ?_⟩ <;> · simp only [mhat, ghat]; norm_num
 
-/-- The perturbed nuisance functions define a valid finite observed-data model in the
-stated parameter regime. -/
+/-- Given [nonnegative bump magnitudes α and β with `α + 2β ≤ 1/2`](hyp:hα,hβ,hαβ), [the
+perturbed propensity and outcome-regression functions indexed by a Rademacher sign vector `lam`
+define a valid finite observed-data model, i.e. take values in `[0,1]`](goal). -/
 theorem validDGP_perturbed (hα : 0 ≤ α) (hβ : 0 ≤ β) (hαβ : α + 2 * β ≤ 1 / 2)
     (lam : Fin K → Bool) :
     ValidDGP (mPerturbed β lam) (gPerturbed α β lam) := by

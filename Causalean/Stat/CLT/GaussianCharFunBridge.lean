@@ -47,9 +47,11 @@ namespace Causalean.Stat
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
   [MeasurableSpace E] [BorelSpace E] [SecondCountableTopology E] [CompleteSpace E]
 
-/-- **Centered-Gaussian characteristic function.** For a Gaussian measure `Q` with
-mean zero, `charFun Q t = exp(−½ · covarianceBilin Q t t)`. Specialisation of
-`IsGaussian.charFun_eq'` with `Q[id] = 0`. -/
+/-- **Centered-Gaussian characteristic function.** For a Gaussian measure `Q` on `E` with
+[mean zero](hyp:hmean), [its characteristic function at any point `t` equals
+$\exp(-\tfrac12\,\mathrm{covarianceBilin}\ Q\ t\ t)$](goal).
+
+    Specialisation of `IsGaussian.charFun_eq'` with `Q[id] = 0`. -/
 theorem charFun_isGaussian_centered (Q : Measure E) [IsGaussian Q]
     (hmean : ∫ x, x ∂Q = 0) (t : E) :
     charFun Q t = Complex.exp (-(covarianceBilin Q t t : ℂ) / 2) := by
@@ -59,11 +61,12 @@ theorem charFun_isGaussian_centered (Q : Measure E) [IsGaussian Q]
   congr 1
   ring
 
-/-- **Bridge to the abstract CLT target `hQ`.** If `Q` is a centered Gaussian
-whose covariance bilinear form is identified with the influence-function second
-moment `t ↦ ∫⟪t,ψ⟫² dP`, then its characteristic function is exactly the target
-`exp(−½ ∫⟪t,ψ⟫² dP)` taken as the hypothesis `hQ` by
-`IIDSample.clt_normalizedSum_vec_of_charFun` and friends. -/
+/-- **Bridge to the abstract CLT target `hQ`.** For a centered Gaussian measure `Q` on `E` with
+[mean zero](hyp:hmean) whose [covariance bilinear form at every `t` equals the
+influence-function second moment $\int \langle t,\psi(x)\rangle^2\,dP$](hyp:hcov), [its
+characteristic function at `t` equals $\exp(-\tfrac12\int
+\langle t,\psi(x)\rangle^2\,dP)$](goal) — the exact target shape consumed as the hypothesis `hQ`
+by `IIDSample.clt_normalizedSum_vec_of_charFun` and friends. -/
 theorem charFun_isGaussian_of_cov_eq {X : Type*} [MeasurableSpace X]
     {P : Measure X} {ψ : X → E} (Q : Measure E) [IsGaussian Q]
     (hmean : ∫ x, x ∂Q = 0)

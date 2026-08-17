@@ -55,11 +55,9 @@ the unknown `w` as the cross term `δ · w` — which is exactly what gets
 absorbed downstream via AM-GM `δ · w ≤ ½ w² + ½ δ²`.
 -/
 
-/-- **Young / AM-GM cross-term envelope.**  For any nonneg
-`R, δ, w, κ`,
-
-    δ · (R + w + δ) + R · κ
-      ≤ R² + δ · w + (3/2) · δ² + (1/2) · κ².
+/-- **Young / AM-GM cross-term envelope.** For [nonnegative reals `R`, `δ`, `w`, and
+`κ`](hyp:_hR,_hδ,_hw,_hκ), [the mixed sum `δ · (R + w + δ) + R · κ` is bounded above by the
+quadratic envelope `R² + δ · w + (3/2) · δ² + (1/2) · κ²`](goal).
 
 Two applications of Young's inequality on `δ · R` and `R · κ`.  The
 remaining `δ · w` term is *not* squared here because `w` is the random

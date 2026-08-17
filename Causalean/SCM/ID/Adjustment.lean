@@ -255,13 +255,13 @@ instance instIsFiniteKernelFrontdoorAdjustment (M : Causalean.SCM N Ω) (X : Fin
     ProbabilityTheory.IsFiniteKernel (M.frontdoorAdjustment X hX_obs hX_fixed Y Z hY hZ) := by
   rw [SCM.frontdoorAdjustment]; infer_instance
 
-/-- **Cross-SCM invariance of `backdoorAdjustment`.**
-
-    Two SCMs `M₁`, `M₂` sharing the same SWIG graph and the same
-    observational kernel produce equal backdoor-adjustment kernels.  The
-    underlying construction depends only on `M.toSWIGGraph` (for the
-    type indices `M.fixed`, `M.observed`, `M.fixSet X _ _`) and on
-    `M.obsKernel` (for the integrand and integrator measures).
+/-- **Cross-SCM invariance of `backdoorAdjustment`.** Fix two causal models `M₁` and `M₂` that
+    [share the same SWIG graph](hyp:h_swig) and [the same observational kernel](hyp:_h_obs),
+    and a treatment set `X`, an outcome set `Y`, and an adjustment set `Z` that
+    [are valid intervention data and observed variables in both
+    models](hyp:hX_obs₁,hX_fixed₁,hX_obs₂,hX_fixed₂,hY₁,hZ₁,hY₂,hZ₂). Then [the
+    backdoor-adjustment kernel for `Y` given `Z` after intervening on `X`, computed within
+    `M₁`, is the same as the one computed within `M₂`](goal).
 
     The conclusion is a `HEq` because the kernel target type
     `(M.fixSet X _ _).FixedValues` reduces to `ValuesOn (M.fixSet X _ _).fixed _`
@@ -324,12 +324,13 @@ theorem backdoorAdjustment_invariant
     congr 1
     rw [h_ok]
 
-/-- **Cross-SCM invariance of `frontdoorAdjustment`.**
-
-    The frontdoor-adjustment functional depends only on the SWIG graph and the
-    observational kernel.  Consequently, two SCMs sharing those data produce
-    heterogeneously equal frontdoor-adjustment kernels, even though the fixed-
-    and observed-value types are indexed by the individual models. -/
+/-- **Cross-SCM invariance of `frontdoorAdjustment`.** Fix two causal models `M₁` and `M₂` that
+    [share the same SWIG graph](hyp:h_swig) and [the same observational kernel](hyp:_h_obs),
+    and a treatment set `X`, an outcome set `Y`, and a mediator set `Z` that
+    [are valid intervention data and observed variables in both
+    models](hyp:hX_obs₁,hX_fixed₁,hX_obs₂,hX_fixed₂,hY₁,hZ₁,hY₂,hZ₂). Then [the
+    frontdoor-adjustment kernel for `Y` through mediator `Z` after intervening on `X`, computed
+    within `M₁`, is the same as the one computed within `M₂`](goal). -/
 theorem frontdoorAdjustment_invariant
     (M₁ M₂ : Causalean.SCM N Ω)
     (h_swig : M₁.toSWIGGraph = M₂.toSWIGGraph)

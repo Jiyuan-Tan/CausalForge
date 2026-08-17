@@ -104,9 +104,13 @@ theorem fwlCoef_original_minimizes
       ≤ Causalean.Mathlib.FWL.originalObjective X Y β h :=
   Causalean.Mathlib.FWL.fwlCoef_original_minimizes H X Y hQ β hh
 
-/-- **FWL uniqueness on `L²(μ)`.** Every minimizer of the original
-least-squares problem has its coefficient block equal to the FWL coefficient.
-Specialization of `Causalean.Mathlib.FWL.fwlCoef_eq_of_original_minimizer`. -/
+/-- **FWL uniqueness on `L²(μ)`.** Fix square-integrable regressors `X` and outcome `Y`, and a
+finite-dimensional nuisance subspace `H` of `L²(μ)`, and assume [the residualized regressor Gram
+matrix is invertible](hyp:hQ). If [the nuisance term `h` lies in `H`](hyp:hh) and [the pair
+`(β, h)` minimizes the original least-squares objective jointly over all coefficient vectors and
+nuisance terms in `H`](hyp:hmin), then [`β` equals the Frisch–Waugh–Lovell coefficient computed
+by residualizing against `H`](goal). Specialization of
+`Causalean.Mathlib.FWL.fwlCoef_eq_of_original_minimizer`. -/
 theorem fwlCoef_eq_of_original_minimizer
     (hQ : IsUnit (Causalean.Mathlib.FWL.gramResid H X).det)
     (β : Fin K → ℝ) {h : Lp ℝ 2 μ} (hh : h ∈ H)

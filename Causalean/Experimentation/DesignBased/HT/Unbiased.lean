@@ -35,8 +35,10 @@ namespace DesignBased
 variable {Ω : Type*} [Fintype Ω]
 variable {ι Θ Δ : Type*} [Fintype ι] [DecidableEq Δ]
 
-/-- **Lemma 4.1 (expectation).** When every unit has nonzero probability of exposure `d`,
-the Horvitz–Thompson total estimator is unbiased for the population total `∑ᵢ y i d`. -/
+/-- **Lemma 4.1 (expectation).** Given a finite design, an outcome function `y`, an exposure map
+`f`, and an assignment `θ`, suppose [every unit has nonzero probability of realizing exposure
+`d`](hyp:hpos). Then [the Horvitz–Thompson total estimator has expectation exactly the population
+total `∑ᵢ y i d`](goal). -/
 theorem E_htTotal (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : Ω → Θ → Δ) (θ : ι → Θ)
     (d : Δ) (hpos : ∀ i, prop D f θ i d ≠ 0) :
     D.E (htTotal D y f θ d) = ∑ i, y i d := by
@@ -49,8 +51,9 @@ theorem E_htTotal (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : Ω → Θ �
   refine Finset.sum_congr rfl (fun i _ => ?_)
   rw [FiniteDesign.E_const_mul, E_expoInd, div_mul_cancel₀ _ (hpos i)]
 
-/-- When every unit has nonzero probability of exposure `d`, the Horvitz–Thompson mean
-estimator is unbiased for `μ(d)`. -/
+/-- Given a finite design, an outcome function `y`, an exposure map `f`, and an assignment `θ`,
+suppose [every unit has nonzero probability of realizing exposure `d`](hyp:hpos). Then [the
+Horvitz–Thompson mean estimator has expectation exactly the population mean `μ(d)`](goal). -/
 theorem E_htMean (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : Ω → Θ → Δ) (θ : ι → Θ)
     (d : Δ) (hpos : ∀ i, prop D f θ i d ≠ 0) :
     D.E (htMean D y f θ d) = muTrue y d := by
@@ -59,9 +62,11 @@ theorem E_htMean (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : Ω → Θ �
     funext z; rw [htMean, div_eq_inv_mul]
   rw [hmean, FiniteDesign.E_const_mul, E_htTotal D y f θ d hpos, muTrue, div_eq_inv_mul]
 
-/-- **Proposition 4.4 (expectation).** When every unit has nonzero probability of each
-contrast exposure, the Horvitz–Thompson effect estimator is unbiased for the average causal
-effect `τ(dk,dl)`. -/
+/-- **Proposition 4.4 (expectation).** Given a finite design, an outcome function `y`, an exposure
+map `f`, and an assignment `θ`, suppose [every unit has nonzero probability of realizing exposure
+`dk`](hyp:hk) and [every unit has nonzero probability of realizing exposure `dl`](hyp:hl). Then
+[the Horvitz–Thompson effect estimator contrasting `dk` against `dl` has expectation exactly the
+average causal effect `τ(dk,dl)`](goal). -/
 theorem E_htEffect (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : Ω → Θ → Δ) (θ : ι → Θ)
     (dk dl : Δ) (hk : ∀ i, prop D f θ i dk ≠ 0) (hl : ∀ i, prop D f θ i dl ≠ 0) :
     D.E (htEffect D y f θ dk dl) = tauTrue y dk dl := by

@@ -100,10 +100,12 @@ def MixedScoreDCTBridge
         - (∫ z, (M.Dθ_at S.g₀).dℓ_θ θ z ∂P_Z)) / t)
       (𝓝[≠] 0) (𝓝 (∫ z, M.dℓ_θg θ g z ∂P_Z))
 
-/-- **Score reformulation of Neyman orthogonality.** The note states (closing
-sentence of `def:est-osl-neyman-loss`) that Neyman orthogonality is
-equivalent to the score map `g' ↦ D_θ L(θ₀, g')[ν_θ]` having zero first
-derivative at `g₀` for every admissible target direction `ν_θ`.
+/-- **Score reformulation of Neyman orthogonality.** Assume [the DCT-bridge condition —
+the integrated centred target-direction difference quotient along a nuisance perturbation
+converges to the integrated mixed directional derivative as the perturbation size tends to
+zero](hyp:hBridge). Then [Neyman orthogonality of the loss is equivalent to the score map
+`g' ↦ D_θ L(θ₀, g')[ν_θ]` having zero first derivative at `g₀`, for every admissible
+target direction `ν_θ`](goal).
 
 Operationally, this is the statement that the difference quotient
 `((Dθ_at(g₀ + t • (g - g₀))).dℓ_θ θ z - (Dθ_at g₀).dℓ_θ θ z) / t`

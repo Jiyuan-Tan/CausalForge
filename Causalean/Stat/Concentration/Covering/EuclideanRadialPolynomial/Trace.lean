@@ -423,9 +423,10 @@ private lemma finiteUnion_growth_card_le
               rw [Nat.mul_add, Nat.mul_one]
               omega
 
-/-- Applying a point-dependent Boolean formula to `m` independently
-parameterized VC classes still has finite VC dimension, with the explicit
-bound `booleanCombinationVCBound m d`. -/
+/-- **VC bound for a point-dependent Boolean combination of classes.** Given [m independently
+parameterized Boolean classifier families, each of VC dimension at most d](hyp:hπ), applying to
+them any combining rule that may itself depend on the sampled point still yields [a Boolean class
+of VC dimension at most `booleanCombinationVCBound m d`](goal). -/
 theorem booleanCombination_hasVCAtMost
     {m d : ℕ} {ι : Fin m → Type v}
     (π : (j : Fin m) → ι j → 𝒳 → Bool)

@@ -499,12 +499,14 @@ def splitMono (G : SWIGGraph N) (X : Finset N)
 -- Parent set characterization
 -- ============================================================
 
-/-- **Characterization of parents in `splitMono`.**
-
-    For `v : SWIGNode N`, a node `x` is a parent of `v` in `G.splitMono X` iff
-    either `x` is a parent of `v` in `G.dag` *and* `x` is not a `.random D`
-    for some `D ∈ X`, or `x = .fixed D` for some `D ∈ X` with `.random D` a
-    parent of `v` in `G.dag`. -/
+/-- **Characterization of parents in `splitMono`.** Fix a SWIG `G` and a set `X` of variables to
+    split, where [the random copy of every variable in `X` is observed in `G`](hyp:hObs) and
+    [the fixed copy of every variable in `X` is not already among `G`'s fixed
+    nodes](hyp:hFix). Then, for any node `v`, [a node `x` is a parent of `v` in the graph
+    obtained by monolithically splitting `X` exactly when either `x` is a parent of `v` in the
+    original graph and is not the random copy of any variable in `X`, or `x` is the fixed copy
+    of some variable `D ∈ X` whose random copy is a parent of `v` in the original
+    graph](goal). -/
 theorem splitMono_parents_char (G : SWIGGraph N) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ G.observed)
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ G.fixed)

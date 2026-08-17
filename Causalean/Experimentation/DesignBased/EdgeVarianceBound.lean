@@ -92,15 +92,17 @@ lemma Cov_zero_left (Y : Ω → ℝ) : D.Cov (fun _ => 0) Y = 0 := by
 
 set_option linter.unusedDecidableInType false in
 open Classical in
-/-- **Variance of an edge-sum over a bounded-degree dependency graph.**
-The variance of a sum of bounded random variables, each attached to an ordered pair of
-units, is at most a constant times the number of units, provided each variable is
-absolutely bounded by `M`, is zero whenever its pair is not an edge of the dependency
-graph, the graph is symmetric with every degree at most `m`, and two edges' variables
-are uncorrelated whenever no edge connects them.  Formally, `Var[∑_{i,j} b i j] ≤
-8·M²·m³·N` where `N` is the number of units.  This is the design-based analogue of the
-local-dependence variance bound that underlies central-limit theorems for
-network/interference experiments. -/
+/-- **Variance of an edge-sum over a bounded-degree dependency graph.** Consider real-valued
+statistics `b i j` attached to ordered pairs of units, all defined on the same finite design.
+Suppose [every statistic attached to an edge of a graph `G` is bounded in absolute value by a
+nonnegative constant `M`](hyp:hM,hbound), [`G` is symmetric](hyp:hsymm), [every unit has at most
+`m` neighbours in `G`](hyp:hdeg), [every statistic attached to a pair that is not an edge of `G`
+is identically zero](hyp:hvanish), and [two statistics are uncorrelated whenever no edge of `G`
+connects an endpoint of one pair to an endpoint of the other](hyp:hcov0). Then [the variance of
+the double sum `∑ᵢ∑ⱼ b i j` is at most `8·M²·m³·N`, where `N` is the number of units](goal).
+
+This is the design-based analogue of the local-dependence variance bound that underlies
+central-limit theorems for network/interference experiments. -/
 theorem var_edge_sum_le {ι : Type*} [Fintype ι]
     (b : ι → ι → Ω → ℝ) (G : ι → ι → Prop) [DecidableRel G] {M : ℝ} (hM : 0 ≤ M)
     (hbound : ∀ i j, G i j → ∀ z, |b i j z| ≤ M) (hsymm : ∀ i j, G i j → G j i)

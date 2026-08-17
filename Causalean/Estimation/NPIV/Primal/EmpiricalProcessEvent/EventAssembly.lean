@@ -80,8 +80,15 @@ lemma measure_inter_ge_one_sub_add_of_ge
     tsub_le_iff_right.mp hbad_le
   exact tsub_le_iff_left.mpr hone_le
 
-/-- **Discharge of `empirical_process_event` from
-`localized_uniform_deviation` — explicit-rate form.**
+/-- **Discharge of `empirical_process_event` from `localized_uniform_deviation` —
+explicit-rate form.** Given [a localized-regime bundle for the weak-norm, regularizer, and
+cross function classes at each fold-A sample size](hyp:regimes) and [a nonnegative Tikhonov
+regularization weight `lambda`](hyp:lambda_nonneg), [for every confidence level `ζ` strictly
+between `0` and `1` there is an event of probability at least `1 − ζ` on which, simultaneously
+for every `n` with `1 ≤ split.n₁ n`, the weak-norm estimation excess plus `lambda` times the
+strong-norm estimation excess is bounded by the sum of the explicit per-`n` empirical-process
+rate and the explicit per-`n` centred-regularizer rate — each an additive combination of
+critical radii and a `√(log/n)` deviation term](goal).
 
 Combines the EP inequality and the centred-regulariser bound on a
 common high-probability event.  The RHS is the explicit per-`n` sum of
@@ -243,7 +250,19 @@ noncomputable def populationShape
             - S.hL2 tb.h_lambda_star_mem)
     + lambda * (delta n) ^ 2
 
-/-- **Empirical-process event in the `Rate.lean` shape, conditional on absorption.**
+/-- **Empirical-process event in the `Rate.lean` shape, conditional on absorption.** Given [a
+localized-regime bundle for the weak-norm, regularizer, and cross classes at each fold-A sample
+size](hyp:regimes), [a nonnegative regularization weight `lambda`](hyp:lambda_nonneg), [an
+absorption hypothesis providing, for every confidence level `ζ` in `(0, 1)`, a nonnegative
+constant `K_ep` bounding the explicit per-`n` empirical-process rate by `K_ep` times the
+population shape `R² + δ_n·y + δ_n² + λ·δ_n·x + λ·δ_n²`, for every `ω` and every `n` with
+`1 ≤ split.n₁ n`](hyp:absorption), and [a small-`n` slack hypothesis extending the same
+`K_ep`-domination, for every set `Aζ` and every nonnegative `K_ep`, to every `n` with
+`split.n₁ n = 0` and every `ω ∈ Aζ`](hyp:small_n_slack), [then for every confidence level `ζ` in
+`(0, 1)` there is an event of probability at least `1 − ζ` and a nonnegative constant `K_ep`
+such that, for every `ω` in the event and every `n`, the weak-norm estimation excess plus
+`lambda` times the strong-norm estimation excess is bounded by `K_ep` times the population
+shape](goal).
 
 This is *not* an unconditional discharge: given an *absorption* hypothesis
 bounding the explicit per-`n` rate by a constant multiple `K_ep` of the

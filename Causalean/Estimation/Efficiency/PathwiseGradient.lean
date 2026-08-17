@@ -162,9 +162,12 @@ section Projection
 
 variable {T : Submodule ℝ H} [T.HasOrthogonalProjection]
 
-/-- **The projection of a pathwise gradient is a pathwise gradient.** If `g` is a
-pathwise gradient of `ψ` and `T` is a tangent space, then `efficientIF T g`
-(the orthogonal projection of `g` onto `T`) is again a pathwise gradient.
+/-- **The projection of a pathwise gradient is a pathwise gradient.** Suppose
+[`T` is a tangent space for the regular submodels through the base law
+`P₀`](hyp:hT), and suppose [`g` reproduces the pathwise derivative of the
+functional `ψ` along every such submodel — it is a pathwise gradient of `ψ` at
+`P₀`](hyp:hg). Then [the orthogonal projection of `g` onto `T`, written
+`efficientIF T g`, is again a pathwise gradient of `ψ`](goal).
 
 Strategy: for each submodel `m`, `m.score ∈ T` (`hT.scores_mem`), so
 `⟪efficientIF T g, m.score⟫ = ⟪g, m.score⟫` by

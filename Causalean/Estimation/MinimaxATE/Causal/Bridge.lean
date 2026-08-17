@@ -1558,8 +1558,11 @@ noncomputable def dgpBES (hv : ValidDGP m g) (hso : ∀ x, m x ∈ Set.Ioo (0 : 
 
 /-! ## The bridge -/
 
-/-- The causal ATE of the constructed backdoor system equals the observed-data
-contrast used by the minimax proof.
+/-- **Causal identification bridge.** Suppose [the data-generating process `(m, g)` is
+valid](hyp:hv) and satisfies [strict overlap: the propensity `m` lies strictly between `0`
+and `1` at every covariate value](hyp:hso). Then [the causal average treatment effect
+`E[Y(1) − Y(0)]` of the backdoor potential-outcome system built from `(m, g)` equals the
+finite observed-data contrast `ate g = (1/|C|)·Σₓ(g(1,x) − g(0,x))`](goal).
 
 The bridge uses backdoor identification and the uniform covariate marginal, so lower bounds for
 the observed-data contrast transfer to the causal estimand. -/

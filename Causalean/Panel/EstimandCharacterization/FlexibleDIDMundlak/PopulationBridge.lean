@@ -79,12 +79,21 @@ theorem imputationTheta_eq_eventCondExp
   refine Finset.sum_congr rfl (fun c _ => ?_)
   rw [hweight c, hcell c]
 
-/-- The imputation estimand equals a population conditional expectation.
+/-- **The imputation estimand equals a population conditional expectation.** On
+[a treated cohort-time cell `(g,t)`](hyp:hgt), suppose [the cohort event is
+measurable](hyp:hG), [each covariate cell is measurable](hyp:hC), [the
+covariate cells are pairwise disjoint](hyp:hdisj), [the covariate cells cover
+the whole sample space](hyp:hcov), [the treatment-effect integrand `Δ` is
+integrable](hyp:hΔ), [each finite covariate weight equals the conditional
+probability of that covariate cell given the cohort event](hyp:hweight), and
+[each finite cell residual — the observed mean minus the fitted untreated
+mean — equals the within-cell conditional mean of `Δ` given the cohort event
+and that covariate cell](hyp:hcell). Then [the imputation cell estimand
+`thetaImp g t` equals the population conditional expectation
+`E[Δ | cohortEvent]`](goal).
 
-The imputation cell estimand `thetaImp` of a `FlexibleDIDEstimands` equals the
-population conditional expectation `E[Δ | G = g]` on each treated cell, under the
-same identification hypotheses.  Combines `FlexibleDIDEstimands.thetaImp_eq_imputation`
-with `imputationTheta_eq_eventCondExp`. -/
+Combines `FlexibleDIDEstimands.thetaImp_eq_imputation` with
+`imputationTheta_eq_eventCondExp`. -/
 theorem thetaImp_eq_eventCondExp
     {Ω : Type*} [MeasurableSpace Ω] (μ : Measure Ω) [IsFiniteMeasure μ]
     (P : StaggeredATTCells Cohort Time Covar) (S : SaturatedUntreatedRegression P)

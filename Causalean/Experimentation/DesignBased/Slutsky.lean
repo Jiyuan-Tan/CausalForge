@@ -26,10 +26,12 @@ namespace DesignBased
 
 variable {Ω : ℕ → Type*} [∀ n, Fintype (Ω n)]
 
-/-- **Finite-design CDF converging-together.** If `Sₙ` is asymptotically indistinguishable from
-`Tₙ` in probability (for every `η > 0`, `Pr(η ≤ |Sₙ − Tₙ|) → 0`) and the CDFs of `Tₙ` converge to a
-continuous limit `Φ` at every point, then the CDFs of `Sₙ` converge to the same `Φ` at every
-point. -/
+/-- **Finite-design CDF converging-together.** Along [a sequence of finite designs](hyp:D) on
+[two sequences of real-valued statistics `Sₙ` and `Tₙ`](hyp:S,T), suppose [`Sₙ` is
+asymptotically indistinguishable from `Tₙ` in probability: for every `η > 0`,
+`Pr(η ≤ |Sₙ − Tₙ|) → 0`](hyp:hApprox), [the CDFs of `Tₙ` converge pointwise to a limit
+function `Φ`](hyp:hT), and [`Φ` is continuous](hyp:hΦ). Then [the CDFs of `Sₙ` converge
+pointwise to the same `Φ`](goal). -/
 lemma finiteDesign_cdf_converging_together
     (D : ∀ n, FiniteDesign (Ω n)) (S T : ∀ n, Ω n → ℝ) (Φ : ℝ → ℝ)
     (hApprox : ∀ η : ℝ, 0 < η →

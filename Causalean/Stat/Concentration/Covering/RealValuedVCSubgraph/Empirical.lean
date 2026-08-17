@@ -160,9 +160,16 @@ theorem real_vcSubgraph_empirical_coveringNumber_le
     _ ≤ C.card := Finset.card_image_le
     _ ≤ vcSubgraphCoverBound d ε := hCcard
 
-/-- A bounded measurable VC-subgraph class can be passed directly to the
-fixed-sample Dudley theorem, while retaining its polynomial cover at every
-relative scale. -/
+/-- **Direct application to the fixed-sample Dudley bound.** For
+[a measurable](hyp:hmeas) class of [pseudo-dimension at most d](hyp:hpdim),
+[uniformly bounded by a positive envelope U](hyp:hU,henvelope), and
+[a positive scale δ strictly less than U/2](hyp:hδ,hδU), evaluated on
+[a sample S of positive size n](hyp:hn), [the class's empirical restriction
+is totally bounded, its covering number at every relative radius ε in
+`(0,1]` obeys the same polynomial bound `vcSubgraphCoverBound d ε`, and
+consequently its empirical Rademacher complexity without the outer absolute
+value is at most the Dudley entropy-integral bound `4δ + (12/√n) ∫_δ^(U/2)
+√(log(coveringNumber x)) dx`](goal). -/
 theorem real_vcSubgraph_dudley_example
     [Nonempty ι] {F : ι → 𝒳 → ℝ} {d n : ℕ}
     (hmeas : ∀ i, Measurable (F i))

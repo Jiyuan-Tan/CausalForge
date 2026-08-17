@@ -202,9 +202,11 @@ theorem feasibleScore_cost_lower_bound (μ : Measure ℝ) [IsProbabilityMeasure 
     ring
   linarith
 
-/-- **The score-program duality (headline).** For a probability measure with finite fourth moment,
-positive variance (`m₁² < m₂`) and positive residual (`r = l2ResidualQuadratic μ > 0`), the
-constrained minimum-norm score program equals `x² / r`:
+/-- **The score-program duality (headline).** For [a probability measure `μ` on `ℝ` with a finite
+fourth moment](hyp:h) and [first moment squared strictly below the second moment (positive
+variance)](hyp:hnd), if moreover [the closed-form residual `l2ResidualQuadratic μ` is
+positive](hyp:hr), then for every target `y²`-moment `x`, [the value of the constrained
+minimum-norm score program equals `x² / l2ResidualQuadratic μ`](goal):
 
     scoreCost μ x = x² / l2ResidualQuadratic μ.
 

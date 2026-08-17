@@ -150,8 +150,10 @@ lemma zero [IsProbabilityMeasure μ] : HasSubexponentialMGF (fun _ : Ω => (0 : 
   · simp
   · simp [mgf, mul_zero, Real.exp_zero]
 
-/-- **Chernoff bound** for the right tail of a sub-exponential random variable:
-`P(X ≥ ε) ≤ exp(−ε² / (2 (v + b ε)))`. -/
+/-- **Chernoff bound** for the right tail of a sub-exponential random variable. If
+[`X` has a sub-exponential moment-generating function with parameters `(v, b)`
+with respect to `μ`](hyp:hX) and [`ε` is nonnegative](hyp:hε), then [the probability
+that `X` is at least `ε` is at most $\exp(-ε^2/(2(v+bε)))$](goal). -/
 theorem measure_ge_le (hX : HasSubexponentialMGF X v b μ) {ε : ℝ} (hε : 0 ≤ ε) :
     μ.real {ω | ε ≤ X ω} ≤ Real.exp (-ε ^ 2 / (2 * ((v : ℝ) + b * ε))) := by
   haveI := hX.isFiniteMeasure

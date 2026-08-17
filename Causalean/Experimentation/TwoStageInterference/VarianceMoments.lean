@@ -61,12 +61,16 @@ lemma E_congr_supp (ρ : FiniteDesign (Fin n → Bool)) {f g : (Fin n → Bool) 
   · rw [hw]; ring
   · rw [h w hw]
 
-/-- **Expectation of an observed sample variance.**  Let `U : Fin n → (Fin n → Bool) → ℝ` be a
-`{0,1}`-valued selection family with the completely-randomized moments: each `Uⱼ` is idempotent,
-has first moment `m/n` and pairwise (`j ≠ k`) second moment `m(m−1)/(n(n−1))`, and on the
-design's support exactly `m` units are selected (`∑ⱼ Uⱼ = m`).  Then the expectation of the
-realized sample variance of `x` over the selected units, `(1/(m−1))∑ⱼ Uⱼ(xⱼ − x̄_U)²` with
-`x̄_U = (∑ Uⱼxⱼ)/m`, equals the population sample variance `(1/(n−1))∑ⱼ(xⱼ − x̄)²`. -/
+/-- **Expectation of an observed sample variance.** Let `U` be a `{0,1}`-valued selection family
+over [a design ρ on length-`n` binary assignments](hyp:ρ), so that [every `Uⱼ` is idempotent,
+taking only the values 0 and 1](hyp:hidem), and suppose [the group size `n`](hyp:hnr) and
+[`n − 1`](hyp:hn1r) are both nonzero, as are [the real-valued selection count `M`](hyp:hmr) and
+[`M − 1`](hyp:hm1r). If [each `Uⱼ` has first moment `M/n`](hyp:hmean), [every two distinct units
+`j` and `k` have second moment `M(M−1)/(n(n−1))` for the product `Uⱼ·Uₖ`](hyp:hpair), and [exactly
+`M` units are selected on every assignment the design gives positive weight](hyp:hsupp), then [the
+expectation of the realized sample variance of `x` over the selected units —
+`(1/(M−1))∑ⱼ Uⱼ(xⱼ − x̄_U)²` with `x̄_U = (∑ Uⱼxⱼ)/M` — equals the population sample variance
+`(1/(n−1))∑ⱼ(xⱼ − x̄)²`](goal). -/
 lemma E_Shat (ρ : FiniteDesign (Fin n → Bool)) (M : ℝ) (x : Fin n → ℝ)
     (U : Fin n → (Fin n → Bool) → ℝ)
     (hnr : (n : ℝ) ≠ 0) (hn1r : (n - 1 : ℝ) ≠ 0)

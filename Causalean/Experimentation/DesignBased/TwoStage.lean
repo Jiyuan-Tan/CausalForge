@@ -66,7 +66,11 @@ def compound (D₁ : FiniteDesign Ω₁) (D₂ : Ω₁ → ∀ i, FiniteDesign (
 
 namespace FiniteDesign
 
-/-- Expand the compound expectation as the iterated stage-1/stage-2 sum. -/
+/-- For [the stage-2 design map assigning each stage-1 outcome `s` a per-coordinate design
+`D₂ s`](hyp:D₂) and [any real-valued function `X` of the joint outcome](hyp:X), built on top of a
+stage-1 design `D₁`, [the expectation of `X` under the compound (two-stage) design equals the
+double sum over stage-1 outcomes `s` and stage-2 profiles `w` of the compound probability
+`D₁.p(s)·∏ᵢ(D₂ s i).p(wᵢ)` times `X(s,w)`](goal). -/
 lemma E_compound (D₁ : FiniteDesign Ω₁) (D₂ : Ω₁ → ∀ i, FiniteDesign (α i))
     (X : (Ω₁ × ∀ i, α i) → ℝ) :
     (compound D₁ D₂).E X
@@ -74,9 +78,11 @@ lemma E_compound (D₁ : FiniteDesign Ω₁) (D₂ : Ω₁ → ∀ i, FiniteDesi
   simp only [FiniteDesign.E, compound, compoundCore, prodDesign_p]
   rw [Fintype.sum_prod_type]
 
-/-- **Stage-2 collapse.** The expectation of a stage-1 quantity `h(s)` times a function `g`
-of a single group's within-assignment `wⱼ` factors through the marginal expectation of group
-`j`'s conditional design: `E[h(s)·g(wⱼ)] = E_s[h(s)·E_{D₂ s j}[g]]`. -/
+/-- **Stage-2 collapse.** For [the stage-2 design map assigning each stage-1 outcome `s` a
+per-coordinate design `D₂ s`](hyp:D₂), the compound-design expectation of the product of a stage-1
+quantity `h(s)` and a function `g` of a single group `j`'s within-assignment `wⱼ` factors through
+the marginal expectation of group `j`'s conditional design: [`E[h(s)·g(wⱼ)] =
+E_s[h(s)·E_{D₂ s j}[g]]`](goal). -/
 lemma E_compound_factor (D₁ : FiniteDesign Ω₁) (D₂ : Ω₁ → ∀ i, FiniteDesign (α i))
     (h : Ω₁ → ℝ) (j : ι) (g : α j → ℝ) :
     (compound D₁ D₂).E (fun sw => h sw.1 * g (sw.2 j))

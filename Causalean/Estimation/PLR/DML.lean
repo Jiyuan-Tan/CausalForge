@@ -50,13 +50,26 @@ namespace PLRSystem
 variable {P : POSystem} {γ : Type*} [MeasurableSpace γ]
   [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ] [IsProbabilityMeasure P.μ]
 
-/-- **Headline partially linear DML asymptotic-linearity theorem.**  The
-one-step double-machine-learning estimator of the structural slope, which
-recenters the empirical Robinson partialling-out score by the inverse
-partialling-out Jacobian, is asymptotically linear at the true slope.  Its
-influence function is the inverse-Jacobian-scaled partialling-out score
-evaluated at the true regressions, the standard partially linear influence
-function, which is mean-zero at the truth.
+/-- **Headline partially linear DML asymptotic-linearity theorem.**  Fix a
+partially linear estimation system, an i.i.d. sample of covariate-treatment-outcome
+triples, and a sample split whose evaluation-fold share [converges to a fixed
+positive limit](hyp:hc_pos,h_split_rate). If [the model's integrability and
+square-integrability conditions hold — the structural error, its product with the
+treatment residual, the baseline-covariate term, and the treatment are integrable,
+the true treatment residual is square-integrable, and the true score has finite
+second moment](hyp:hU,hUV,hbX,hD,hV,hsq); [for the estimated nuisance sequence
+`η_hat`, at every fold and draw the outcome- and treatment-regression errors are
+square-integrable in the covariate law, with the resulting cross terms against the
+structural error and the treatment residual integrable](hyp:hΔl,hΔm,hUΔm,hΔlV,hVΔm);
+[the estimated score is jointly measurable, fold-A measurable, and
+integrable/square-integrable at every
+fold](hyp:h_m_meas,h_m_foldA,h_m_foldA_uncurry,h_m_int,h_m_sq_int); [the L²(P_Z)
+distance between the estimated and true score is $o_p(1)$](hyp:h_score_diff_rate);
+and [the product of the two nuisance-error seminorms is
+$o_p(n^{-1/2})$](hyp:h_product_rate); then [the one-step double-machine-learning
+estimator of the structural slope is asymptotically linear at the true slope, with
+influence function $-J_0^{-1}\psi(\eta_0,\cdot,\theta_0)$ — the
+inverse-Jacobian-scaled Robinson partialling-out score at the truth](goal).
 
 The result is obtained by feeding the abstract Chernozhukov double-machine-learning
 engine the three partially linear analytic facts — the score is mean-zero at the
@@ -155,12 +168,25 @@ theorem plr_dml_isAsymLinear
       (Crem := Crem) hBR_at h_m_meas h_m_foldA h_m_foldA_uncurry h_m_int
       h_m_sq_int h_score_diff_rate h_product_rate)
 
-/-- **Headline partially linear DML asymptotic-normality theorem.**  Under the
-same hypotheses as the asymptotic-linearity result, the rescaled
-double-machine-learning estimator of the structural slope, recentered at the
-true slope and scaled by the square root of the fold-B sample size, converges in
-distribution to a centered Gaussian whose variance is the second moment of the
-inverse-Jacobian-scaled partialling-out score at the true regressions.
+/-- **Headline partially linear DML asymptotic-normality theorem.**  Fix a partially linear
+estimation system, an i.i.d. sample of covariate-treatment-outcome triples, and [a sample split
+whose evaluation-fold share converges to a fixed positive limit](hyp:hc_pos,h_split_rate).
+Suppose [the structural error, its product with the treatment residual, the baseline-covariate
+term, and the treatment are integrable, the true treatment residual is square-integrable, and the
+true score has finite second moment](hyp:hU,hUV,hbX,hD,hV,hsq); for the estimated nuisance
+sequence `η_hat`, [the outcome- and treatment-regression errors are square-integrable in the
+covariate law at every fold and draw, with the resulting cross terms against the structural error
+and the treatment residual integrable](hyp:hΔl,hΔm,hUΔm,hΔlV,hVΔm); [the estimated score is
+jointly measurable and measurable as a function of the nuisance-training fold alone and jointly
+with the observation](hyp:h_m_meas,h_m_foldA,h_m_foldA_uncurry), and [integrable and
+square-integrable at every fold and draw](hyp:h_m_int,h_m_sq_int); [the estimated score converges
+to the true score in L²(P_Z) at rate $o_p(1)$, and the product of the two nuisance-error
+seminorms is $o_p(n^{-1/2})$](hyp:h_score_diff_rate,h_product_rate); and [the influence function,
+the rescaled estimator at each `n`, and the normalized influence sum at each `n` are all
+measurable](hyp:hψ_meas,hθn_meas,hSum_meas). Then [the rescaled double-machine-learning estimator
+of the structural slope, recentered at the true slope and scaled by the square root of the fold-B
+sample size, converges in distribution to a centered Gaussian whose variance is the second moment
+of the inverse-Jacobian-scaled partialling-out score at the true regressions](goal).
 
 Combined with a fixed split ratio this yields the usual √n-rate normal limit
 with the sample-splitting variance inflation; that final Slutsky rescaling is

@@ -68,7 +68,13 @@ open scoped MeasureTheory ProbabilityTheory
 -- § Rule 3 W-marginal equality
 -- ============================================================
 
-/-- **Rule 3 W-marginal equality for Rule 2.**
+/-- **Rule 3 `W`-marginal equality for Rule 2.** For the intervention on names [`Z`, whose random
+    copies are observed in the base model](hyp:hZ_obs) and [whose fixed copies are not yet part
+    of the base model's fixed coordinates](hyp:hZ_fixed), and a conditioning set [`W` contained
+    in the observed variables](hyp:hW), if [no fixed copy of a name in `Z` is an ancestor, in the
+    post-intervention DAG, of any node in `W`](hyp:hWNonDesc), then [the `W`-marginal of the
+    intervened model's observational kernel at a fixed assignment `s` equals the `W`-marginal of
+    the base model's observational kernel at the corresponding projected assignment](goal).
 
     Under `hWNonDesc` — no `SWIGNode.fixed z` (`z ∈ Z`) is an ancestor in
     `(M'.fixSet Z _ _).dag` of any `v ∈ W` (i.e. Pearl/SWIG backdoor criterion

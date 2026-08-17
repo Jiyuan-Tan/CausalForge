@@ -74,8 +74,10 @@ theorem eventuallyEq_logDeriv_add_order_div_sub {f : ℂ → ℂ} {a : ℂ}
     logDeriv_fun_pow (by fun_prop)]
   simp [logDeriv_apply, div_eq_mul_inv]
 
-/-- A centered complex monomial has normalized logarithmic-derivative integral equal to its
-exponent whenever the circle encloses its root. -/
+/-- For [a positive radius `R`](hyp:hR) such that [the point `a` lies strictly
+inside the open disk of radius `R` centered at `c`](hyp:ha), [the normalized
+logarithmic-derivative integral around that circle of the monomial
+`z ↦ (z - a)^n` equals `n`](goal). -/
 theorem normalizedLogDerivCircleIntegral_centeredMonomial {c a : ℂ} {R : ℝ} {n : ℕ}
     (hR : 0 < R) (ha : a ∈ ball c R) :
     normalizedLogDerivCircleIntegral (fun z ↦ (z - a) ^ n) c R = (n : ℂ) := by

@@ -147,12 +147,16 @@ pushforward to the target law `Q : ProbabilityMeasure E`. -/
 
 variable [MeasurableSpace E] [OpensMeasurableSpace E]
 
-/-- **Vector asymptotic normality.** Given a vector remainder condition and a
-vector CLT contact (the partial-sum pushforwards converge to a target law
-`Q : ProbabilityMeasure E`), the rescaled estimator converges in distribution
-to `Q`.
+/-- **Vector asymptotic normality.** For a vector-valued estimator sequence `θn` targeting `θ₀`
+with influence function `ψ` along the i.i.d. sample `S`, suppose [the remainder between the
+rescaled estimator and the normalised partial sum is asymptotically negligible (little-o of 1
+in norm)](hyp:hRem), [the rescaled estimator is a.e. measurable at every sample
+size](hyp:_hθn_meas), [the normalised partial sum is a.e. measurable at every sample
+size](hyp:_hSum_meas), and [the pushforward laws of the normalised partial sum converge to a
+target probability measure `Q` on `E`](hyp:_hCLT). Then [the pushforward laws of the rescaled
+estimator likewise converge to `Q`](goal).
 
-For the canonical case `Q = N(0, ∫ ψ ψᵀ dP)` the conclusion specialises to
+    For the canonical case `Q = N(0, ∫ ψ ψᵀ dP)` the conclusion specialises to
 the multivariate CLT. -/
 theorem IsAsymLinearVec.tendsto_normal_vec
     {θn : ℕ → Ω → E} {θ₀ : E} {ψ : X → E} {S : IIDSample Ω X μ P}

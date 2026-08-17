@@ -58,9 +58,12 @@ lemma olsWeight_unbiased {X : Matrix Obs Param ℝ} (c : Param → ℝ)
     _ = (1 : Matrix Param Param ℝ) *ᵥ c := by rw [mul_nonsing_inv (Xᵀ * X) h]
     _ = c := one_mulVec c
 
-/-- **OLS is BLUE under spherical errors.**  For an invertible `XᵀX`, the OLS weight
-has minimum variance among all linear estimators satisfying the same unbiasedness
-constraint `w ᵥ* X = c`, under spherical errors. -/
+/-- **OLS is BLUE under spherical errors.** For [an invertible normal-equations
+matrix `Xᵀ X`](hyp:h) — full column rank — the ordinary-least-squares weight
+`olsWeight X c` estimating the target combination `c` is well defined. Under
+[spherical errors `S = σ² I`](hyp:hS), among all weight vectors `w` satisfying
+[the same unbiasedness constraint `w ᵥ* X = c`](hyp:hU), [the quadratic form at
+the OLS weight is no larger than at any other unbiased weight `w`](goal). -/
 theorem olsWeight_blue_spherical [DecidableEq Obs] {X : Matrix Obs Param ℝ} (c : Param → ℝ)
     (h : IsUnit (Xᵀ * X).det) {S : Matrix Obs Obs ℝ} {σ : ℝ}
     (hS : SphericalErrors S σ) {w : Obs → ℝ} (hU : w ᵥ* X = c) :

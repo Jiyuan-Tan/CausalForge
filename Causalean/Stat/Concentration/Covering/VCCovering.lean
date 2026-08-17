@@ -170,8 +170,12 @@ theorem vc_coveringNumber_le_growth {F : ι → 𝒳 → ℝ} {S : Fin n → �
       ⟨t, rfl, patternCover_covers hfactor hε⟩
   exact le_trans hfind (patternCover_card_le (F := F) π S)
 
-/-- The empirical covering number of a binary-factored class is bounded by the
-Sauer-Shelah binomial sum under a samplewise VC-dimension bound. -/
+/-- **Sauer-Shelah covering-number bound for a binary-factored class.** Suppose [the real-valued
+class factors through a Boolean classifier at each sample coordinate: `F i (S j) = φ j (π i (S
+j))`](hyp:hfactor), so that [the sample-restricted class is totally bounded in the empirical
+pseudometric](hyp:h'), [the covering radius ε is positive](hyp:hε), and [the induced Boolean growth
+family on the sample has VC dimension at most d](hyp:hvd). Then [the empirical covering number at
+radius ε is at most the Sauer-Shelah binomial sum `∑_{k≤d} C(n,k)`](goal). -/
 theorem vc_coveringNumber_le_sum_choose {F : ι → 𝒳 → ℝ} {S : Fin n → 𝒳}
     {π : ι → 𝒳 → Bool} {φ : Fin n → Bool → ℝ}
     (hfactor : ∀ i j, F i (S j) = φ j (π i (S j)))
@@ -221,8 +225,12 @@ lemma sum_choose_le_succ_mul_pow (hn_pos : 0 < n) :
         simp [Nat.card_Iic, Finset.sum_const]
   exact_mod_cast hsum_nat
 
-/-- VC control gives the usual logarithmic empirical covering-number bound for
-a binary-factored class. -/
+/-- **Logarithmic Sauer-Shelah covering-number bound.** Under [the binary-factoring hypothesis
+`F i (S j) = φ j (π i (S j))`](hyp:hfactor), with [the sample-restricted class totally bounded in
+the empirical pseudometric](hyp:h'), [a positive covering radius ε](hyp:hε), [a positive sample
+size n](hyp:hn_pos), and [VC dimension at most d for the induced Boolean growth family on the
+sample](hyp:hvd), [the logarithm of the empirical covering number at radius ε is at most
+`log(d+1) + d·log n`](goal). -/
 theorem log_coveringNumber_le [Nonempty ι]
     {F : ι → 𝒳 → ℝ} {S : Fin n → 𝒳}
     {π : ι → 𝒳 → Bool} {φ : Fin n → Bool → ℝ}

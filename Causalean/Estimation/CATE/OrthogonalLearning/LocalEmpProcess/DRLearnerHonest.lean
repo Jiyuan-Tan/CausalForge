@@ -50,7 +50,28 @@ open MeasureTheory ProbabilityTheory Filter Topology TopologicalSpace Causalean.
 
 variable {P : POSystem} {γ : Type*} [MeasurableSpace γ]
 
-/-- **Product-bias DR-Learner oracle inequality.**
+/-- **Product-bias DR-Learner oracle inequality.** Consider a CATE estimation system satisfying
+[the underlying backdoor identification assumptions](hyp:hA), with [an evaluation functional that
+is measurable in its parameter and recovers the true CATE at a parameter θ₀ belonging to the
+constraint set](hyp:θ₀_mem,eval_meas,eval_θ₀), and suppose [the evaluation functional, the
+outcome, and a fixed plug-in nuisance's conditional-mean function are uniformly bounded while
+that nuisance's propensity score satisfies ε-overlap](hyp:hM_Θ,hM_Y,hM_μ,hOverlap). Assume
+further [the DR-loss is continuous in the parameter, its localized empirical process admits a
+Rademacher complexity bound, and a clamped version of θ₀ still minimizes the
+loss](hyp:hLoss_cont,hR,hclamp_minimizes), [the confidence level lies in $(0,1]$, the overlap
+parameter is positive, and both the true and the plug-in nuisance lie in the ε-overlap
+slice](hyp:hδ,hδ',hε_pos,h_overlap_η₀,h_overlap_h), and that [the estimator sequence stays within
+the constraint set as an approximate sample-split plug-in empirical-risk minimizer (slack r_opt)
+whose excess population risk satisfies a strong-convexity-type lower bound with constant σ>0 and
+a first-order orthogonality inequality at the true nuisance's directional
+derivative](hyp:hτ_mem,hPluginERM,hσ,hSC,hFOI). Finally, [a battery of boundedness and
+integrability conditions bounds the directional-derivative
+envelope](hyp:hB_nonneg,hdEval_unif,h_μ_h_int,h_phi_int,h_phiw_int) and [controls the two
+nuisance-error terms entering the second-order bias
+decomposition](hyp:hΔμ_memLp,hΔe_memLp,hA_int,hB_int). Then [for every sample fold n, with
+probability at least 1-δ the squared estimation error of the DR-Learner is bounded by an
+oracle/Rademacher term plus an explicit second-order product-bias term
+`(2B/ε)·Σ_a ‖Δμ_a‖₂·‖Δe‖₂` in the two nuisance L²-errors, plus an optimization slack](goal).
 
 Same setup as `oracle_inequality_drLearner_highProb`, but with the
 directional-derivative bundles fixed to the closed-form `drMixedDirDeriv` family

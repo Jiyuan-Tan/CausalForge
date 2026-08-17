@@ -77,8 +77,9 @@ lemma E_pairContribution (y1 y0 : P → Bool → ℝ) (p : P) :
   norm_num
   ring
 
-/-- **Unbiasedness of the matched-pair estimator.** Under the matched-pair design the
-difference-in-means estimator is unbiased for the sample average treatment effect. -/
+/-- **Unbiasedness of the matched-pair estimator.** Provided [there is at least one pair](hyp:hP),
+[under the matched-pair design the difference-in-means estimator is unbiased for the sample
+average treatment effect](goal). -/
 theorem E_matchedPairEstimator (y1 y0 : P → Bool → ℝ) (hP : 0 < Fintype.card P) :
     (matchedPairDesign (P := P)).E (matchedPairEstimator y1 y0) = sate y1 y0 := by
   unfold matchedPairEstimator sate

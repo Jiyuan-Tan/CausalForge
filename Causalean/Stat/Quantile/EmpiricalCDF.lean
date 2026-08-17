@@ -215,7 +215,11 @@ lemma empiricalCDF_isAsymLinear (S : IIDSample Ω ℝ μ P) (y : ℝ) :
     simpa only [hzero] using
       (isLittleOp_zero : IsLittleOp (fun _ (_ : Ω) => (0 : ℝ)) (fun _ => (1 : ℝ)) μ)
 
-/-- **Empirical-cdf CLT.**  `√n (F̂ₙ(y) − F(y)) ⇒ N(0, F(y)(1 − F(y)))`.
+/-- **Empirical-cdf central limit theorem.** For an i.i.d. real sample and a threshold `y`, provided
+[the rescaled empirical-cdf estimator $\sqrt n\,(\hat F_n(y)-F(y))$ is almost-everywhere measurable
+at every sample size](hyp:hθn_meas), [the rescaled deviation converges in distribution, as $n\to
+\infty$, to the centered Gaussian law with variance $F(y)(1-F(y))$](goal), where $F$ is the
+population cdf and $\hat F_n$ the empirical cdf.
 
 The measurability obligation on the rescaled estimator is imposed at the call
 site (matching `IsAsymLinear.tendsto_normal`). -/

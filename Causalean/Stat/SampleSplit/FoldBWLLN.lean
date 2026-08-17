@@ -82,10 +82,11 @@ variable {S : IIDSample Ω X μ P} (split : OneShotSplit S)
 private lemma map_Z_eq (S : IIDSample Ω X μ P) (i : ℕ) : μ.map (S.Z i) = P := by
   rw [← (S.identDist i).map_eq, S.law]
 
-/-- **Fold-B weak law of large numbers.**  For an i.i.d. sample, a one-shot split
-into a nuisance fold and an estimation fold, and a fixed square-integrable
-statistic `g`, the estimation-fold sample average converges in probability to the
-population integral `∫ g dP` as the sample size grows.
+/-- **Fold-B weak law of large numbers.** For an i.i.d. sample and a one-shot split into a
+nuisance fold and an estimation fold, given [a measurable statistic `g`](hyp:hg_meas) that is
+[square-integrable under the population measure](hyp:hg_memLp), [the estimation-fold sample
+average of `g` converges in probability to the population integral $\int g\,dP$ as the sample size
+grows](goal).
 
 This restricts the weak law of large numbers to the estimation fold of the split:
 the fold-B index set grows without bound, so the standard Chebyshev argument

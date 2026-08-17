@@ -33,9 +33,10 @@ open scoped BigOperators
 
 variable {p : ℕ}
 
-/-- **Non-descendant invariance.**  For the single do-intervention environment
-`e` with `A = {k₀}`, every coordinate `k` that is *neither* `k₀` *nor* a (strict)
-descendant of `k₀` keeps its observational value a.e.: `Xₖᵉ = Xₖ¹`.  (The node
+/-- **Non-descendant invariance.**  Let `e` be an environment of the observational
+SEM `M` in which [the single intervened coordinate is `k₀`](hyp:hA). Then [every
+coordinate `k` that is neither `k₀` nor a descendant of `k₀` in the observational
+DAG keeps its observational value almost surely: `Xₖᵉ = Xₖ¹`](goal). (The node
 `k₀` itself is pinned to the assigned constant, hence excluded.) -/
 theorem nonDescendant_invariance (M : ObsSEM p) (e : Env M) (k₀ : Fin (p + 1))
     (hA : e.A = {k₀}) :

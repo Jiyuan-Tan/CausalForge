@@ -281,10 +281,12 @@ lemma neg_crossEntropy_fanoRef {p : α × β → ℝ} (hp0 : ∀ xy, 0 ≤ p xy)
           + errorProb p decode * Real.log ((Fintype.card α : ℝ) - 1) := by
           simp [Pe, M]
 
-/-- **Fano's inequality** (Cover & Thomas, Thm 2.10.1). For a joint probability mass
-function `p` on `α × β` with `2 ≤ Fintype.card α`, a decoder `decode : β → α`, and error
-probability `Pe = errorProb p decode`, the conditional entropy is bounded:
-`condEntropy p ≤ Real.binEntropy Pe + Pe * Real.log (Fintype.card α − 1)`.
+/-- **Fano's inequality** (Cover & Thomas, Thm 2.10.1). For [a nonnegative function `p` on
+`α × β`](hyp:hp0) that [sums to one](hyp:hsum), i.e. a joint probability mass function, with
+[at least two symbols in the alphabet `α`](hyp:hcard) (`2 ≤ Fintype.card α`), and a decoder
+`decode : β → α`, [the conditional entropy of `p` is bounded by the binary entropy of the error
+probability `Pe = errorProb p decode` plus `Pe` times the log of one less than the alphabet
+size](goal): `condEntropy p ≤ Real.binEntropy Pe + Pe * Real.log (Fintype.card α − 1)`.
 
 The proof feeds the Fano reference distribution `fanoRef` to the Gibbs inequality
 `entropy_le_crossEntropy`, giving `entropy p ≤ −∑ p log (fanoRef)`; the right side is
@@ -303,8 +305,10 @@ theorem fano_inequality {p : α × β → ℝ} (hp0 : ∀ xy, 0 ≤ p xy)
   rw [condEntropy_def]
   linarith
 
-/-- **Fano error lower bound** (the standard weakened corollary). Under the hypotheses of
-`fano_inequality`, the error probability is bounded below by
+/-- **Fano error lower bound** (the standard weakened corollary). For [a nonnegative function
+`p` on `α × β`](hyp:hp0) that [sums to one](hyp:hsum), with [at least two symbols in the
+alphabet `α`](hyp:hcard) (`2 ≤ Fintype.card α`) and a decoder `decode : β → α`, [the error
+probability `Pe = errorProb p decode` is bounded below](goal):
 `Pe ≥ (condEntropy p − Real.log 2) / Real.log (Fintype.card α)`.
 
 It follows from `fano_inequality` using `Real.binEntropy_le_log_two`

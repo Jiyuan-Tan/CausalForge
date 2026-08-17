@@ -501,9 +501,15 @@ theorem doObsKernelYMarginal_heq_of_obsKernel_heq
     (obsDensity_heq_of_obsKernel_heq M₁ M₂ ref (hsg₁.trans hsg₂.symm) hobs)
     hvalid₁ hvalid₂
 
-/-- The valid branch of a successful no-fixing ID certificate gives equal
-interventional outcome kernels for observationally equivalent finite
-discrete-positive models.
+/-- **Valid-branch kernel equality under a successful no-fixing ID certificate.** For two
+finite structural causal models `M₁`, `M₂` that share [the same SWIG graph
+`G`](hyp:_hsg₁,_hsg₂), are each [dominated by a reference-measure family `ref` that is
+faithful to the graph](hyp:href,_hdom₁,_hdom₂), [satisfy discrete positivity of their
+observational kernels](hyp:hpos₁,hpos₂), and [have heterogeneously equal observational
+kernels](hyp:_hobs), if [the total interventional query on outcome set `Y` under intervention
+`X` is well formed in both models](hyp:hvalid₁,hvalid₂) and `X`, `Y` admit a successful
+no-fixing ID certificate on `G`, then [the two models' post-intervention outcome kernels for
+`Y` are heterogeneously equal](goal).
 
 Deep analytic core isolated from `id_sound`: for two finite node-space gSCMs
 sharing the SWIG graph `G`, dominated by the same faithful reference and
@@ -545,9 +551,12 @@ theorem doKernelY_eq_cfactor_decomposition
     (doObsKernelYMarginal_heq_of_obsKernel_heq X Y G ref href _hID M₁ M₂ _hsg₁ _hsg₂
       _hdom₁ _hdom₂ hpos₁ hpos₂ _hobs hvalid₁ hvalid₂)
 
-/-- A successful structural ID certificate makes the interventional outcome
-kernel identifiable from the observational law within the dominated positive
-finite-reference model class.
+/-- **Soundness of the no-fixing ID algorithm.** Fix an intervention target set `X`, an outcome
+node set `Y`, a SWIG graph `G`, and [a reference-measure family `ref` that is faithful to the
+graph](hyp:href). Then [whenever the no-fixing ID certificate succeeds for `X`, `Y` on `G`, the
+interventional query mapping `X` to `Y` is identifiable within the class of models dominated by
+`ref` with discretely positive observational kernels: any two such models that share graph `G`
+and observational kernel agree on the query](goal).
 
 Dominance and discrete positivity are carried as the structural assumption `As`
 of `IdentifiableUnder`; domination makes the density-assisted Tian assembly

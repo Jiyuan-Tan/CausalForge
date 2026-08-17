@@ -125,15 +125,14 @@ theorem map_weighted_sum_gaussian {n : ℕ} (ξ : Fin n → Ω → ℝ)
   have := key Finset.univ
   simpa using this
 
-/-- **Exact law of the √n-scaled multiplier-bootstrap mean.** Fix data
-`x : Fin n → ℝ` with sample mean `x̄ = n⁻¹ ∑ i, x i`, and let `ξ` be an i.i.d.
-standard-Gaussian multiplier family. The scaled bootstrap statistic
+/-- **Exact law of the √n-scaled multiplier-bootstrap mean.** Fix a sample size `n`, data
+`x : Fin n → ℝ`, and a multiplier family `ξ`. If [`ξ` is independent across
+coordinates](hyp:hindep), [each `ξ i` is measurable](hyp:hmeas), and [each `ξ i` has the
+standard Gaussian law](hyp:hlaw), then [the scaled multiplier-bootstrap statistic
+$n^{-1/2}\sum_i (x_i-\bar x)\,\xi_i$ has exactly the centered Gaussian law with variance equal
+to the sample variance $n^{-1}\sum_i(x_i-\bar x)^2$](goal).
 
-    Tₙ*(ω) = n^{-1/2} ∑ i, (x i − x̄) · ξ i ω
-
-has law exactly `gaussianReal 0 sₙ²`, where the variance argument is the fixed
-sample variance `sₙ² = (1/n) ∑ i, (x i − x̄)²` (packaged as a nonnegative real).
-Immediate from `map_weighted_sum_gaussian` with weights
+    Immediate from `map_weighted_sum_gaussian` with weights
 `aᵢ = n^{-1/2} (xᵢ − x̄)`, using `∑ aᵢ² = n⁻¹ ∑ (xᵢ − x̄)² = sₙ²`. -/
 theorem multiplierBootstrap_law {n : ℕ} (ξ : Fin n → Ω → ℝ)
     (hindep : iIndepFun ξ μ) (hmeas : ∀ i, Measurable (ξ i))
