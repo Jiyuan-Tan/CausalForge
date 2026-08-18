@@ -127,11 +127,10 @@ noncomputable def qFactor
       (fun c => (s, c))
       (Measurable.prodMk measurable_const measurable_id)
 
-/-- **Theorem (Tian 2002, per-node chain-rule factorization).**
-
-    The observational kernel of a gSCM is the full chain-rule product of
-    one-node conditional kernels along the topological order of observed nodes.
-    Tian's `Pa⁺(V)` is interpreted as the full observed history before `V`,
+/-- **Theorem (Tian 2002, per-node chain-rule factorization).** [For a structural causal model
+    `M`](hyp:M), [at a fixed assignment `s`](hyp:s), [its observational kernel equals the full
+    chain-rule product of one-node conditional kernels along the topological order of observed
+    nodes](goal). Tian's `Pa⁺(V)` is interpreted as the full observed history before `V`,
     so this statement is the ordinary iterated-disintegration factorization and
     does not use graphical Markov or do-calculus reasoning.
 

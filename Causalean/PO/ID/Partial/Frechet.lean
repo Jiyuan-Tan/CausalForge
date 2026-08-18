@@ -68,9 +68,13 @@ private lemma prob_inter_ge {A B : Set Ω} (hB : MeasurableSet B) :
       _ = 1 := by simp
   linarith
 
-/-- **Fréchet–Hoeffding upper bound.**
-`P(X ≤ u, Y ≤ v) ≤ min (P(X ≤ u)) (P(Y ≤ v))`.  Needs no measurability: it is
-pure monotonicity of the measure under set inclusion. -/
+/-- **Fréchet–Hoeffding upper bound.** For [any threshold `u` for `X`](hyp:u) and
+[any threshold `v` for `Y`](hyp:v), [the joint probability `P(X ≤ u, Y ≤ v)` is
+at most the smaller of the two marginal probabilities `P(X ≤ u)` and
+`P(Y ≤ v)`](goal).
+
+Needs no measurability: it is pure monotonicity of the measure under set
+inclusion. -/
 theorem frechet_upper (u v : ℝ) :
     (P {ω | X ω ≤ u ∧ Y ω ≤ v}).toReal
       ≤ min (P {ω | X ω ≤ u}).toReal (P {ω | Y ω ≤ v}).toReal := by

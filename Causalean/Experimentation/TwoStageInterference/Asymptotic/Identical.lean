@@ -104,11 +104,16 @@ lemma exists_equiv_selection {ι : Type*} [Fintype ι] (s s' : ι → Bool)
 
 /-! ### Identical-groups reference data and the constant experiment -/
 
-/-- **Reference data for one identical-groups experiment.** All groups share a common size `K`,
-a common pair of allocation strategies `ψ₀`/`φ₀` over the within-group space `Fin K → Bool`,
-common potential outcomes `Y₀`, and common control/treatment unit counts `m0₀`/`m1₀`. The stage-1
-design `D₁` over the population of groups `ι`, the ψ-selection count `C`, and the regularity
-hypotheses complete the data needed to assemble the constant `LHExperiment` `toExp`. -/
+/-- **Reference data for one identical-groups experiment.** All [groups in the
+population](hyp:ι) share [a common size K](hyp:K), a common pair of within-group allocation
+strategies [ψ₀](hyp:ψ₀) and [φ₀](hyp:φ₀), common [potential outcomes Y₀](hyp:Y₀), and common
+[control](hyp:m0₀) and [treatment](hyp:m1₀) unit counts, each [assumed nonzero](hyp:hm0,hm1), as
+is [the group size K](hyp:hn). [A stage-1 design D₁ assigns each group a strategy](hyp:D₁),
+[selecting a nonzero number C of groups for ψ](hyp:C,hC), out of [a population of at least two
+groups](hyp:hN,hN1); [every unit's within-group control propensity equals m0₀/K](hyp:hprop0) and
+[its treatment propensity equals m1₀/K](hyp:hprop1), [every group's stage-1 selection propensity
+equals C/N](hyp:hstage1), and [every pair's joint selection propensity equals
+C(C−1)/(N(N−1))](hyp:hstage1pair). Together these assemble the constant `LHExperiment` `toExp`. -/
 structure IdenticalRef where
   /-- Finite population of groups. -/
   ι : Type

@@ -116,7 +116,8 @@ def selectedControl : Set P.Ω := S.aEvent false ∩ S.selEvent true
 lemma measurable_SelOfA (a : Bool) : Measurable (S.SelOfA a) :=
   S.selVar.measurable_cfUnder S.aVar a
 
-/-- Counterfactual outcome under any fixed arm is measurable. -/
+/-- For [a fixed treatment arm `a`](hyp:a), [the counterfactual outcome `Y(a)` is
+measurable](goal). -/
 lemma measurable_YofA (a : Bool) : Measurable (S.YofA a) :=
   S.yVar.measurable_cfUnder S.aVar a
 

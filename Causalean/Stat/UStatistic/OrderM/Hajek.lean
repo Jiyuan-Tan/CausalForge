@@ -59,7 +59,11 @@ noncomputable def uRemainderOrder (S : IIDSample Ω X μ P) {m : ℕ} [NeZero m]
     (h : (Fin m → X) → ℝ) (n : ℕ) : Ω → ℝ :=
   uStatisticOrder S (uDegenOrder h P) n
 
-/-- A fully degenerate order-`m` kernel under product measure `P^m`.
+/-- **Fully degenerate order-`m` kernel.** A kernel `g` on `m`-tuples over `X` is completely
+degenerate under the product measure $P^{\otimes m}$ when [`g` is measurable](hyp:meas),
+[`g` is invariant under permuting its `m` coordinates](hyp:symm), [integrating `g` over any
+one coordinate against `P` gives zero, whichever coordinate and values are held fixed for the
+rest](hyp:deg), and [`g` is square-integrable under $P^{\otimes m}$](hyp:sq).
 
 The kernel is measurable, invariant under coordinate permutations,
 square-integrable, and has zero integral in every coordinate after the remaining

@@ -159,7 +159,9 @@ private theorem piInterval_subinterval_raw (fuel : ℕ) :
       exact Causalean.Mathlib.Analysis.CertifiedContourIntervalArithmetic.Transcendental.tighten_subinterval_right
         (piInterval_sound fuel) (piRaw_sound (fuel + 1))
 
-/-- The explicit π precision returns an enclosure within the requested rational width. -/
+/-- For [a requested positive rational tolerance `ε`](hyp:ε), [evaluating the certified
+π-enclosure at the precision level selected for that tolerance yields an enclosure whose
+width is no larger than `ε`](goal). -/
 theorem piInterval_width (ε : PosRat) :
     (piInterval (piPrecision ε)).width ≤ ε.1 := by
   let N := piPrecision ε

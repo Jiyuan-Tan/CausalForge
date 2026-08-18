@@ -60,11 +60,11 @@ variable (hm : m ≠ 0) (hN1 : ((Fintype.card ι : ℝ) - 1) ≠ 0) (hN : (Finty
 include hmean hpair hvar hm hN1 hN in
 set_option linter.unusedDecidableInType false in
 /-- **Stage-1 / between-group SRS variance term** (Hudgens–Halloran 2008, the between-group term of
-Theorems 4 and 6).  Under simple
-random sampling of `m` of the `N := card ι` groups, with `{0,1}` selection indicators `U`
-satisfying the SRS first- and second-order selection moments (`hmean`, `hpair`) and the Bernoulli
-diagonal variance (`hvar`), the sampling variance of the sample mean `(∑ᵢ Uᵢ·μᵢ)/m` of the
-group-level quantities `μ` equals `(1 − m/N)/m` times the population sample variance `SmuVar μ`. -/
+Theorems 4 and 6).  Under simple random sampling of `m` of the `N := card ι` groups, with `{0,1}`
+selection indicators `U` satisfying the SRS first- and second-order selection moments (`hmean`,
+`hpair`) and the Bernoulli diagonal variance (`hvar`), [the sampling variance of the sample mean
+`(∑ᵢ Uᵢ·μᵢ)/m` of the group-level quantities `μ` equals `(1 − m/N)/m` times the population sample
+variance `SmuVar μ`](goal). -/
 theorem Var_srs_mean :
     D₁.Var (fun s => (∑ i, U i s * μ i) / m)
       = (1 - m / (Fintype.card ι : ℝ)) / m * SmuVar μ := by

@@ -32,8 +32,8 @@ open scoped MeasureTheory ProbabilityTheory
 variable {N : Type*} [DecidableEq N] [Fintype N]
 variable {Ω : N → Type*} [∀ n, MeasurableSpace (Ω n)]
 
-/-- A reference measure family assigns a sigma-finite reference measure to every
-random or fixed node value space.
+/-- A reference measure family assigns [a measure on every random or fixed node's value
+space](hyp:μ), required to be [σ-finite](hyp:sigmaFinite).
 
 Take the counting measure on discrete nodes and Lebesgue measure on continuous
 nodes; any sigma-finite choice is allowed. This is the dominating measure

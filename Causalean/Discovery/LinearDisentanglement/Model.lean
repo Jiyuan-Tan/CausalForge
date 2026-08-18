@@ -60,8 +60,16 @@ otherwise — the convention `(P_σ)_{ij} = ⟦i = σ(j)⟧` of the paper. -/
 def permMat {d : ℕ} (σ : Equiv.Perm (Fin d)) : Matrix (Fin d) (Fin d) ℝ :=
   Matrix.of fun i j => if i = σ j then (1 : ℝ) else 0
 
-/-- A linear causal disentanglement model with `d` latent variables, `p` observed
-variables, and `K` interventional contexts (plus one observational context). -/
+/-- **A linear causal disentanglement model** with `d` latent variables, `p` observed
+variables, and `K` interventional contexts (Squires, Seigal, Bhate & Uhler 2023) bundles
+[a full-row-rank mixing pseudoinverse from the observed to the latent space](hyp:H,hH), [a
+latent edge relation](hyp:Edge) that [respects the node order](hyp:hAcyc), and [an
+observational structural matrix](hyp:B0) that is [upper triangular](hyp:hB0up), has [a
+positive diagonal](hyp:hB0pos), and [has off-diagonal support exactly equal to the edge
+set](hyp:hB0supp). For each interventional context it further carries [a structural
+matrix](hyp:Bint), [an intervention target node](hyp:target), and [a positive
+perfect-intervention scaling](hyp:lam,hlam), tied to the observational matrix by [the
+perfect-single-node-intervention formula](hyp:hInt). -/
 structure Solution (d p K : ℕ) where
   /-- The (transpose of the) mixing pseudoinverse: a `d × p` matrix. -/
   H : Matrix (Fin d) (Fin p) ℝ
@@ -114,7 +122,9 @@ end Solution
 
 /-! ### Basic facts about permutation matrices -/
 
-/-- `permMat σ` is orthogonal: `permMat σ * (permMat σ)ᵀ = 1`. -/
+/-- For [a dimension d](hyp:d) and [a permutation σ of `Fin d`](hyp:σ), [the permutation
+matrix `permMat σ` is orthogonal: its product with its own transpose is the identity
+matrix](goal). -/
 theorem permMat_mul_transpose {d : ℕ} (σ : Equiv.Perm (Fin d)) :
     permMat σ * (permMat σ).transpose = 1 := by
   ext i k

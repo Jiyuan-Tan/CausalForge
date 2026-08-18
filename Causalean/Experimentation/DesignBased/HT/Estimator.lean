@@ -65,8 +65,10 @@ noncomputable def htEffect (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : Ω
     (dk dl : Δ) (z : Ω) : ℝ :=
   htMean D y f θ dk z - htMean D y f θ dl z
 
-/-- The HT total written with the potential outcome `y i d` in place of the observed
-outcome, valid termwise because the exposure indicator forces `Yobs i = y i d`. -/
+/-- For a finite design `D`, potential outcomes `y`, exposure map `f`, assignment `θ`, exposure
+level `d`, and realized assignment `z`, [the Horvitz–Thompson total equals the same sum with the
+observed outcome replaced termwise by the potential outcome `y i d`](goal), because on each unit's
+exposure-indicator term the observed outcome coincides with `y i d`. -/
 lemma htTotal_eq (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : Ω → Θ → Δ) (θ : ι → Θ)
     (d : Δ) (z : Ω) :
     htTotal D y f θ d z = ∑ i, expoInd f θ i d z * y i d / prop D f θ i d := by

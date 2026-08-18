@@ -157,8 +157,10 @@ lemma exists_unit_ball_net_card_le (E : Type*)
     exists_internal_net_card_le E {x : E | ‖x‖ ≤ 1} (by simp) hv
   exact ⟨N, by simpa using hNcover, hNcard⟩
 
-/-- A finite-dimensional real normed space has a half-net of its unit sphere consisting of at
-most `5 ^ finrank ℝ E` unit vectors. -/
+/-- For [a finite-dimensional real normed space `E`](hyp:E), [there exists a finite
+set of unit vectors, of size at most `5` raised to the dimension of `E`, that
+forms a half-net of the unit sphere: every unit vector lies within distance
+`1/2` of some point in the set](goal). -/
 lemma exists_half_net_card_le_five_pow_finrank (E : Type*)
     [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] :
     ∃ N : Finset E,

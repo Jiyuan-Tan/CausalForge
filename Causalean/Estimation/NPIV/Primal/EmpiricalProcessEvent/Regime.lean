@@ -29,9 +29,16 @@ open MeasureTheory Causalean.Stat Causalean.Stat.Concentration
 
 variable {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω}
 
-/-- A localized regime bundle packages an empirical-process regime with the
-critical-radius, boundedness, and integrability hypotheses needed for localized
-uniform deviation bounds.
+/-- A localized regime bundle packages [a countable index set and a measurable family of loss
+functions on a nonempty covariate space](hyp:ι,𝒳,F,countable_ι,meas_𝒳,nonempty_𝒳,nonempty_ι,F_meas),
+together with a [localization norm, nonnegative on every class member](hyp:norm,norm_nonneg) and
+a [measurable sample embedding into that covariate space](hyp:X,X_meas). It further records a
+[localized empirical-process regime](hyp:regime) whose critical radius [is at most the target
+localization scale `δ_n`](hyp:crit_le), [is strictly positive](hyp:crit_pos), and [is a fixed
+point of the process's expected-supremum function at that scale](hyp:crit_fp). Finally, uniformly
+over every radius at least `δ_n`, it requires that [the empirical Rademacher process on the
+star-hull is almost-surely bounded](hyp:rad_bdd) and that [the corresponding empirical Rademacher
+complexity is integrable](hyp:rad_int).
 
 `LocalizedRegimeBundle` bundles one `LocalizedRegime` together with the
 critical-radius and integrability hypotheses required by
@@ -93,12 +100,29 @@ attribute [instance] LocalizedRegimeBundle.meas_𝒳
   LocalizedRegimeBundle.nonempty_ι
   LocalizedRegimeBundle.countable_ι
 
-/-- Bundle of four `LocalizedRegimeBundle` instances, one for each of
-the function classes appearing in the EP / centred-regulariser
-arguments of `thm:est-trae-rate-theorem`, plus the deterministic
-hypotheses (`law_W`, `realizability`, `bounded`, `closedness`) and
-per-bundle interpretation fields needed to discharge the EP and
-centred-regulariser bounds.
+/-- This structure bundles [four localized regime witnesses, one for each function class entering
+the empirical-process and centred-regulariser arguments — the product, moment, critic, and candidate
+classes](hyp:bundle_HF,bundle_mF,bundle_F,bundle_H), with the deterministic hypotheses that [the
+observation variable has the stated law](hyp:law_W), that [the population Tikhonov solution is
+realizable in the statistical candidate class](hyp:realizability), that [the moment, candidate, and
+critic maps are almost-surely uniformly bounded](hyp:bounded), and that [every candidate admits a
+critic whose `L²` lift realizes the projected residual](hyp:closedness). It also records that [the
+empirical sup-min objective is bounded above by, and attained at, the population sup
+objective](hyp:inner_le_supObjective,supObjective_attained); diameter caps on the [candidate
+class](hyp:H_diameter,H_diameter_lb,H_diameter_bound) and the [critic
+class](hyp:F_diameter,F_diameter_lb,F_diameter_bound); and [nonnegative proportionality constants
+together with a matching radius lower bound for the moment-class pair
+differences](hyp:mF_L2_const,mF_L2_const_nonneg,mF_pair_radius_lb) and [for the product-class cross
+terms](hyp:HF_pair_const,HF_pair_const_nonneg). For the candidate class it further supplies an
+interpretation triple: [an index into the H-bundle whose norm controls the pairwise loss gap, and
+whose composed evaluation equals the difference of squared candidate
+losses](hyp:interp_H_idx,interp_H_norm,interp_H_eval). For the product class it supplies both [a
+single-candidate interpretation triple bounded by the localization
+scale](hyp:interp_HF_idx,interp_HF_norm,interp_HF_eval) and [a pair-difference interpretation triple
+scaling with the candidate gap](hyp:interp_HF_idx_pair,interp_HF_norm_pair,interp_HF_eval_pair). For
+the moment class it likewise supplies [a single-critic interpretation
+triple](hyp:interp_mF_idx,interp_mF_norm,interp_mF_eval) and [a pair-difference interpretation
+triple](hyp:interp_mF_idx_pair,interp_mF_norm_pair,interp_mF_eval_pair).
 
 **Observation-space convention.**  Each bundle lives over `(S.𝒲, P_W)`
 — the per-observation outcome space and its law — so that the deviation

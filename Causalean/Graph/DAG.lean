@@ -45,9 +45,9 @@ namespace Causalean
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- A Directed Acyclic Graph on a finite vertex type `V`: a decidable edge
-relation together with the condition that no vertex is connected to itself by a
-directed path (the transitive closure of the edge relation is irreflexive).
+/-- A Directed Acyclic Graph on a finite vertex type: [a decidable edge
+relation](hyp:edge,decEdge) together with the condition that [no vertex is connected to itself by
+a directed path](hyp:acyclic) — the transitive closure of the edge relation is irreflexive.
 Irreflexivity of the transitive closure is exactly the statement that the graph
 has no directed cycle.
 

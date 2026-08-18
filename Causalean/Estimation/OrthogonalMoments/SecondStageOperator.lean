@@ -44,8 +44,13 @@ namespace OrthogonalMoments
 
 open MeasureTheory Filter Topology Causalean.Stat
 
-/-- Abstract bundle for a second-stage regression operator (Def
-`def:est-cate-second-stage`).
+/-- Abstract bundle for a second-stage regression operator (Def `def:est-cate-second-stage`):
+[an operator](hyp:evalAt) mapping a sample size, a randomness scope, a real-valued pseudo-outcome
+function of a data tuple, and a query point to a real-valued estimate, together with the minimal
+requirement that [for every sample size and constant pseudo-outcome, the map from randomness
+scope and query point to the operator's value is jointly measurable](hyp:meas_evalAt_const);
+stronger measurability, and any linearity of the operator in its function input, are deferred to
+concrete instances or the separate `IsLinearInInput` predicate.
 
 * `evalAt n ω f x` is the operator at sample size `n`, randomness scope `ω : Ω`,
   applied to the pseudo-outcome `f : γ × Bool × ℝ → ℝ` and evaluated at the

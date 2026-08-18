@@ -39,10 +39,11 @@ theorem fact_transpose_mul (B : Matrix (Fin d) (Fin d) ℝ) :
   simp only [Matrix.mul_apply, Matrix.transpose_apply, Matrix.sum_apply,
     Matrix.vecMulVec_apply, stdVec, Matrix.mulVec_single_one, Matrix.col_apply]
 
-/-- **Key identity (Proposition).**  For an interventional context `k` with target
-`iₖ`, the difference of precision matrices is exactly the difference between two
-outer products: one built from the target row of the interventional structural matrix
-and one built from the target row of the observational structural matrix. -/
+/-- **Key identity (Proposition).** For [a linear causal disentanglement solution](hyp:S) and
+[an interventional context k with target iₖ](hyp:k), [the difference of precision matrices
+`Θ_k − Θ₀` equals exactly the difference between two outer products: one built from the
+target row of the interventional structural matrix, and one built from the target row of the
+observational structural matrix](goal). -/
 theorem key_identity (S : Solution d p K) (k : Fin K) :
     S.Theta k - S.Theta0
       = Matrix.vecMulVec

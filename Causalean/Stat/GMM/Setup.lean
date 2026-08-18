@@ -69,9 +69,16 @@ noncomputable def gmmIF (G : E →L[ℝ] F) (W : F →L[ℝ] F) (breadInv : E �
     (g : E → X → F) (θ₀ : E) : X → E :=
   fun x => -(breadInv (adjoint G (W (g θ₀ x))))
 
-/-- **GMM problem.**  Moment model `g` with parameter truth `θ₀`, weighting `W`,
-Jacobian `G`, covariance `Cov`, and the inverse witnesses for `Cov`, `GᵀWG`,
-`GᵀCov⁻¹G`. -/
+/-- **GMM problem.** Bundles, over a probability measure on the data space, [a moment
+function](hyp:g) evaluated at [the parameter truth θ₀](hyp:θ₀), with [a self-adjoint weighting
+operator](hyp:W,hWsa) and [a Jacobian of the population moment at θ₀, verified to be its Fréchet
+derivative](hyp:G,jac_spec). It asserts [the population moment vanishes at the
+truth](hyp:identification) and that [the moment function at the truth is measurable and
+square-integrable](hyp:g_meas,finite_var), and packages [a moment covariance
+operator](hyp:Cov) [defined as the second moment of the moment vector](hyp:hCov) together with
+two-sided inverse witnesses for [the covariance operator](hyp:CovInv,CovInv_left,CovInv_right),
+for [the GMM bread `GᵀWG`](hyp:breadInv,breadInv_left,breadInv_right), and for [the efficient
+bread `GᵀCov⁻¹G`](hyp:effInv,effInv_left,effInv_right). -/
 structure GMMProblem (P : Measure X) where
   /-- Moment function: `g θ x ∈ F`, with `θ` the parameter and `x` the datum. -/
   g : E → X → F
@@ -143,9 +150,10 @@ theorem cov_isPositive : prob.Cov.IsPositive := by
     exact integral_nonneg fun x => mul_self_nonneg _
 
 omit [BorelSpace F] in
-/-- **GMM optimal-weighting theorem (Hansen 1982), statistical form.** The
-sandwich asymptotic variance dominates the efficient variance `(GᵀCov⁻¹G)⁻¹` in
-the Löwner order: `asympVar − effVar` is a positive operator. -/
+/-- **GMM optimal-weighting theorem (Hansen 1982), statistical form.** [The sandwich
+asymptotic variance of a GMM problem with an arbitrary symmetric weighting dominates the
+efficient variance `(GᵀCov⁻¹G)⁻¹` in the Löwner order: `asympVar − effVar` is a positive
+operator](goal). -/
 theorem efficiency : (prob.asympVar - prob.effVar).IsPositive :=
   gmm_efficiency prob.G prob.W prob.Cov prob.CovInv prob.hWsa prob.cov_isPositive
     prob.CovInv_left prob.CovInv_right prob.breadInv prob.breadInv_left

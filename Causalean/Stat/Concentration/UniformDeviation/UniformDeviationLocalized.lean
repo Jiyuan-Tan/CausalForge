@@ -57,8 +57,11 @@ open MeasureTheory ProbabilityTheory
 section LocalizedRegime
 
 /-- The localized regime packages the assumptions needed for a critical-radius
-uniform-deviation bound: a bounded function class and a sub-root upper envelope
-on the localized Rademacher complexity.
+uniform-deviation bound over a bounded loss class: [a non-negative uniform
+bound `b`](hyp:b,b_nonneg) such that [every loss in the class is bounded in absolute
+value by `b` on the sample](hyp:bound), together with [a sub-root function
+`ψ`](hyp:ψ,ψ_subRoot) that [upper-bounds the localized Rademacher complexity of the
+class at every sample size](hyp:ψ_ub).
 
     * `|F i (X ω)| ≤ b` is the boundedness needed by McDiarmid on the
       centred loss class itself.

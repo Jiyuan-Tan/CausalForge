@@ -380,7 +380,9 @@ lemma Dtilde_eq_centeredD_sub_weighted_mean
   unfold centeredD
   ring
 
-/-- Pairwise representation of the residualized-treatment variance.
+/-- For [a cohort panel](hyp:P), [the residualized-treatment variance `VD P` equals the sum,
+over all ordered pairs of cohorts, of their pairwise centered-treatment contribution
+`vdPairContribution P g u`](goal).
 
 Proof route: rewrite `Dtilde` using
 `Dtilde_eq_centeredD_sub_weighted_mean`, swap the `g`/`t` finite sums, and

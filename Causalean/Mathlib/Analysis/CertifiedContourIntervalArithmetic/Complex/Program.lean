@@ -13,9 +13,18 @@ namespace Causalean.Mathlib.Analysis.CertifiedContourIntervalArithmetic.Complex
 
 open Causalean.Mathlib.Analysis.CertifiedContourIntervalArithmetic
 
-/-- A certified complex map is an executable interval program whose operation
-count, semantic value, convergence error, and input-width amplification are
-proved together. -/
+/-- A certified complex map packages [an exact complex function](hyp:value) with [an executable
+interval-evaluation program over rational input rectangles and a fuel level](hyp:eval) whose
+[primitive-operation count is recorded](hyp:operationCount), proved [sound — every executable
+result contains the exact value at every enclosed input](hyp:sound). Increasing fuel [refines the
+enclosure to a subrectangle of the previous one](hyp:fuel_nested), and refining the input
+rectangle [cannot enlarge the output enclosure](hyp:input_mono). The map carries [a nonnegative
+Lipschitz bound on how input width amplifies into output width](hyp:amplification,
+amplification_nonneg) and [a nonincreasing sequence of algorithmic-error bounds in the
+fuel](hyp:algorithmError,algorithmError_nonneg,algorithmError_antitone), such that [the evaluated
+width never exceeds the algorithmic error plus the amplified input width](hyp:width_le), together
+with [a computable fuel rule](hyp:errorModulus) [meeting any requested positive algorithmic-error
+target](hyp:error_at_modulus). -/
 structure CertifiedComplexMap where
   /-- The exact function described by the interval program. -/
   value : ℂ → ℂ

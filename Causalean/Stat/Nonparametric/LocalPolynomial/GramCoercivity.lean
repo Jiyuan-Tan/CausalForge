@@ -148,9 +148,11 @@ lemma radialPolynomialEnergy_smul (p : ℕ) (a : ℝ)
   simp only [Pi.smul_apply, smul_eq_mul]
   ring
 
-/-- On the Euclidean unit sphere, radial polynomial energy has a positive
-minimum.  Homogeneity packages this as a coercive lower bound for all
-coefficient vectors. -/
+/-- [For a polynomial degree bound `p`](hyp:p), [there is a positive constant such that the
+radial polynomial energy of any coefficient vector is bounded below by that constant times
+the sum of the squared coefficients](goal): on the Euclidean unit sphere, radial polynomial
+energy has a positive minimum, and homogeneity packages this as a coercive lower bound for
+all coefficient vectors. -/
 -- @node: radialPolynomialEnergy_coercive
 lemma radialPolynomialEnergy_coercive (p : ℕ) :
     ∃ c : ℝ, 0 < c ∧ ∀ v : Fin (p + 1) → ℝ,

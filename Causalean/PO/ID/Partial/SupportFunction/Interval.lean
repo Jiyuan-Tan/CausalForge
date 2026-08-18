@@ -165,10 +165,11 @@ theorem width_eq_zero_iff {C : Set E} {d : E} (hne : C.Nonempty)
         linarith
     simp only [width, hneg]; ring
 
-/-- **Bridge to the scalar engine.**  The scalar `IdentifiedInterval` of an
-objective over the membership predicate `(· ∈ C)` is exactly the set-image of the
-objective.  Specialised to `obj = ⟪d, ·⟫`, this identifies the scalar engine's
-output with the linear image studied here. -/
+/-- **Bridge to the scalar engine.** For [an objective functional `obj`](hyp:obj)
+and [a feasible set `C`](hyp:C), [the scalar identified interval of `obj` relative
+to membership in `C` equals exactly the image of `obj` on `C`](goal). Specialised
+to `obj = ⟪d, ·⟫`, this identifies the scalar engine's output with the linear
+image studied here. -/
 theorem identifiedInterval_eq_image {α : Type*} (obj : α → ℝ) (C : Set α) :
     IdentifiedInterval obj (· ∈ C) = obj '' C := by
   ext y

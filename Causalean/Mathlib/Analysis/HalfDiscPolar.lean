@@ -49,8 +49,10 @@ lemma integral_cos_sq_zero_to_pi :
   rw [← intervalIntegral.integral_of_le Real.pi_pos.le]
   simp
 
-/-- Weighted polar integration on an upper half-disc factors into a radial
-integral and an angular integral. -/
+/-- For [radial and angular weight functions `g` and `h`](hyp:g,h) and [a radius `r`](hyp:r),
+[the integral of the product `g(radius)·h(angle)` over the open upper half-disc of radius `r`
+factors as the product of the radial integral `∫ s·g(s) ds` over `(0, r]` and the angular
+integral `∫ h(θ) dθ` over `(0, π)`](goal). -/
 -- @node: halfDisc_weighted_polar_integral
 lemma halfDisc_weighted_polar_integral
     (g h : ℝ → ℝ) (r : ℝ) :

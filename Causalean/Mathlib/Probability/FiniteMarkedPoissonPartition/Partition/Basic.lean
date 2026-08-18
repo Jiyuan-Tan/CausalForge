@@ -19,8 +19,9 @@ namespace Causalean.Mathlib.Probability.FiniteMarkedPoissonPartition
 variable {X : Type*} [MeasurableSpace X]
 variable {ι : Type*} [Fintype ι] [MeasurableSpace ι] [MeasurableSingletonClass ι]
 
-/-- A finite measurable partition is represented by a measurable classifier;
-its cells are the fibres of that classifier. -/
+/-- A finite measurable partition of the sample space `X` into cells indexed by `ι`, represented
+by [a classifier assigning each observation to its cell](hyp:cell) — the cells are the fibres of
+this map — where [that classifier is measurable](hyp:measurable_cell). -/
 structure FiniteMeasurablePartition (X : Type*) (ι : Type*)
     [MeasurableSpace X] [MeasurableSpace ι] where
   /-- The cell containing an observation. -/
@@ -250,7 +251,9 @@ lemma measurable_restrictCell (p : FiniteMeasurablePartition X ι) (j : ι) :
   · have hst : MeasurableSet (fixedSizeEmbed t.card ⁻¹' s) := hs t.card
     exact hst.preimage (by fun_prop)
 
-/-- Simultaneous restriction to all cells is measurable. -/
+/-- [For a finite measurable partition `p` of the sample space into cells indexed by
+`ι`](hyp:p), [the map sending a finite marked sequence to its family of restrictions to
+every cell simultaneously is measurable](goal). -/
 lemma measurable_restrictPartition (p : FiniteMeasurablePartition X ι) :
     Measurable p.restrictPartition := by
   unfold restrictPartition

@@ -126,7 +126,9 @@ lemma properDescIn_disjoint_nonDescIn (G : SWIGGraph N)
   rw [Finset.mem_sdiff] at hx'
   exact hx'.2 hx
 
-/-- Proper and non-descendants cover selected nodes except for the target.
+/-- Within [a selected node set `R`](hyp:R) of [a SWIG graph `G`](hyp:G), [the proper
+descendants of a node `v₀` together with its non-descendants exhaust the selected
+nodes other than `v₀` itself](goal).
 
 This is the coverage identity used in the graph split for Tian's Lemma 1. -/
 lemma properDescIn_union_nonDescIn_eq_erase

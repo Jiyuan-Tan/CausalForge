@@ -723,8 +723,12 @@ theorem reducedForm_eq_sum_crossingEffects {z0 z1 : 𝒵}
           rw [S.marginResponse_mul_crossingIndicator_eq_indicator z0 z1 j]
           rw [MeasureTheory.integral_indicator (S.measurableSet_crossingEvent z0 z1 j)]
 
-/-- Indicator-weighted and conditional-mean ACR forms agree: the ratio
-`(Σ_j E[Δ_jY · 1_{C_j}]) / (Σ_j ℙ(C_j))` equals `Σ_j ω_j E[Δ_jY | C_j]`.
+/-- **Indicator-weighted and conditional-mean ACR forms agree.** For [any pair of
+instrument values `z0` and `z1`](hyp:z0,z1), [the indicator-weighted average
+causal response — the ratio of the summed crossing-indicator-weighted outcome
+contrasts to the summed crossing probabilities — equals the crossing-probability-
+weighted average of the conditional-mean margin responses](goal).
+
 This is a pure algebraic identity that holds for any values of
 `indicatorWeightedEffect`, `crossingProb`, and `conditionalMarginResponse`
 and does not require the contrast-validity assumptions. -/

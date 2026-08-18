@@ -335,8 +335,9 @@ theorem inv_den_le_of_pos (u : ℚ) (hu : 0 < u) :
       div_le_div_of_nonneg_right hnum1 (by positivity)
     _ = u := Rat.num_div_den u
 
-/-- The explicit exponential precision returns an enclosure no wider than the
-requested tolerance. -/
+/-- For [a rational input `q`](hyp:q) and [a requested positive rational tolerance
+`ε`](hyp:ε), [evaluating the certified scalar exponential at the precision level selected for
+that tolerance yields an enclosure whose width is no larger than `ε`](goal). -/
 theorem expScalar_width (q : ℚ) (ε : PosRat) :
     (expScalar q (expPrecision q ε)).width ≤ ε.1 := by
   let D : ℕ := ε.1.den

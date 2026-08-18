@@ -59,9 +59,12 @@ instance (qs : List (Regime P.V P.X × Finset P.V)) :
   exact MeasureTheory.Measure.isProbabilityMeasure_map
     (P.measurable_crossWorldEval qs).aemeasurable
 
-/-- Single-coordinate marginal of the counterfactual distribution is `poOperator`:
-    pushing the joint counterfactual law through the `i`-th coordinate projection
-    recovers the potential-outcome law for query `i`. Matches rem:po-reading. -/
+/-- For [a finite list of counterfactual queries `qs`](hyp:qs) and [an index `i`
+into that list](hyp:i), [the `i`-th coordinate marginal of the joint counterfactual
+distribution over all queries equals the potential-outcome law for query `i`
+alone](goal).
+
+Matches rem:po-reading. -/
 theorem counterfactualDist_marginal
     (qs : List (Regime P.V P.X × Finset P.V)) (i : Fin qs.length) :
     (P.counterfactualDist qs).map (fun f => f i) =

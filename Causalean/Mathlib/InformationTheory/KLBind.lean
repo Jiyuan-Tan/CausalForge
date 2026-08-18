@@ -459,9 +459,10 @@ theorem klDiv_compProd_left (μ ν : Measure α) [IsFiniteMeasure μ] [IsFiniteM
     rw [_root_.InformationTheory.klDiv_of_not_ac hcomp,
       _root_.InformationTheory.klDiv_of_not_ac hμν]
 
-/-- Passing two finite input laws through the same randomized observation channel
-cannot increase their Kullback--Leibler divergence, including when the channel is
-non-injective or the original divergence is infinite. -/
+/-- Passing [two finite input laws `μ` and `ν`](hyp:μ,ν) through [the same randomized
+observation channel `κ`](hyp:κ), [the Kullback–Leibler divergence between the channel's
+output laws is no larger than the divergence between the original input laws, including when
+the channel is non-injective or the original divergence is infinite](goal). -/
 theorem klDiv_bind_le (μ ν : Measure α) [IsFiniteMeasure μ] [IsFiniteMeasure ν]
     (κ : Kernel α β) [IsMarkovKernel κ] :
     _root_.InformationTheory.klDiv (μ.bind κ) (ν.bind κ)

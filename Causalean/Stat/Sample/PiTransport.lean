@@ -63,8 +63,8 @@ noncomputable def iidSample_infinitePi (P : Measure X) [IsProbabilityMeasure P] 
     rw [Measure.infinitePi_map_eval, Measure.infinitePi_map_eval]
   law := Measure.infinitePi_map_eval _ _
 
-/-- The joint observable of the first `n` IID sample points pushes
-`μ` forward to the product measure on `Fin n → X`. -/
+/-- For [an i.i.d. sample `S`](hyp:S) [and a fixed horizon `n`](hyp:n), [the joint map of the first
+`n` sample points pushes `μ` forward to the product measure on `Fin n → X`](goal). -/
 lemma iidSample_finN_pushforward
     (S : IIDSample Ω X μ P) (n : ℕ) :
     μ.map (fun ω : Ω => fun k : Fin n => S.Z k ω) =

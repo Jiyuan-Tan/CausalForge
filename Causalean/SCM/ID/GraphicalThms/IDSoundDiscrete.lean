@@ -28,9 +28,12 @@ variable {N : Type*} [DecidableEq N] [Fintype N]
 variable {Ω : N → Type*} [∀ n, MeasurableSpace (Ω n)]
 
 /-- **Discrete soundness of the ID assembly for the no-additional-fixing
-(full-district) fragment (on-contract).**  A successful `idSucceeds` certificate
-identifies the interventional query within the standard discrete positive model
-class.  This is a *sound sufficient fragment* of Tian–Shpitser ID soundness, not
+(full-district) fragment (on-contract).** For treatment nodes `X`, outcome nodes
+`Y`, and a SWIG graph `G`, [a successful `idSucceeds` certificate](hyp:h) implies
+that [the interventional query is identified from the observational distribution
+within the standard discrete positive model class](goal).
+
+This is a *sound sufficient fragment* of Tian–Shpitser ID soundness, not
 the full recursive ID algorithm: `idSucceeds` only certifies the case where every
 post-intervention ancestral district is already a full c-component of the original
 graph (no fixing sequence needed); the recursive case is `id_sound_rec`.  Because

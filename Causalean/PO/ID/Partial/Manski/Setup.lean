@@ -80,7 +80,8 @@ def dEvent (d : Bool) : Set P.Ω := S.dVar.event d
 
 /-! ### Measurability -/
 
-/-- Counterfactual outcomes under each treatment arm are measurable. -/
+/-- For [a fixed treatment arm `d`](hyp:d), [the counterfactual outcome `Y(d)` is
+measurable](goal). -/
 lemma measurable_YofD (d : Bool) : Measurable (S.YofD d) :=
   S.yVar.measurable_cfUnder S.dVar d
 

@@ -45,11 +45,12 @@ namespace PO
 
 open MeasureTheory ProbabilityTheory
 
-/-- A continuous-treatment backdoor subsystem: a real-valued treatment node `D`, a
-real outcome node `Y`, and a covariate variable `X` taking values in an
-arbitrary measurable space.  This mirrors the binary backdoor subsystem but the
-treatment now ranges over the real line, as required by the partially linear
-model `Y = g(X) + θ·D + noise`. -/
+/-- **Continuous-treatment backdoor subsystem.** Inside a potential-outcome system, this bundles
+[a real-valued treatment node `D`](hyp:D,hDreal), [a real-valued outcome node `Y`](hyp:Y,hYreal),
+and [a covariate variable `X` taking values in an arbitrary measurable space](hyp:Xvar), subject
+to [the treatment, outcome, and covariate being pairwise distinct](hyp:hDY,hDX,hYX). This mirrors
+the binary backdoor subsystem but the treatment now ranges over the real line, as required by the
+partially linear model `Y = g(X) + θ·D + noise`. -/
 structure POPartialLinearSystem (P : POSystem) (γ : Type*) [MeasurableSpace γ] where
   /-- The treatment node. -/
   D : P.V
@@ -135,14 +136,14 @@ lemma sigmaX_le_sigmaXD : S.sigmaX ≤ S.sigmaXD := by
 
 end POPartialLinearSystem
 
-/-- The partially linear model under the backdoor PO framework.  On top of the
-PO substrate it records the structural decomposition of the potential outcome
-into a covariate function, a constant per-unit treatment effect, and a unit
-error; the standard backdoor (unconfoundedness) assumption in conditional-mean
-form; and consistency.  Concretely: every unit's dose-response is the straight
-line `Y(d) = b(X) + θ·d + U` with the same slope `θ` for everyone, the error has
-zero conditional mean given the observed covariate and treatment, and the
-observed outcome is the potential outcome at the realized treatment. -/
+/-- **Partially linear model under the backdoor PO framework.** On top of the PO substrate, this
+bundles [a measurable covariate function `b` giving the nonparametric baseline](hyp:b,b_meas), [a
+homogeneous per-unit treatment effect `θ`](hyp:θ), [a measurable structural error term
+`U`](hyp:U,U_meas), the structural restriction that [every unit's dose-response is the straight
+line `Y(d) = b(X) + θ·d + U` with the same slope for everyone](hyp:structural), [the standard
+backdoor (unconfoundedness) assumption that the structural error has zero mean conditional on the
+observed covariate and treatment](hyp:backdoor), and [consistency: the observed outcome is the
+potential outcome at the realized treatment](hyp:consistency). -/
 structure POPartialLinearModel (P : POSystem) (γ : Type*) [MeasurableSpace γ]
     extends POPartialLinearSystem P γ where
   /-- Consistency (SUTVA): the observed outcome equals the potential outcome of
@@ -194,9 +195,10 @@ lemma factualY_eq :
     POPartialLinearSystem.factualD, POPartialLinearSystem.factualX] using
     hcons.trans hstr
 
-/-- The causal reading of `θ`: almost surely, the difference of two potential
-outcomes is the slope `θ` times the difference of the doses.  In particular `θ`
-is the constant per-unit causal effect of the treatment. -/
+/-- **Causal reading of `θ`.** [Almost surely, for every pair of dose levels, the
+difference of the corresponding potential outcomes equals the slope `θ` times the
+difference of the doses](goal), so `θ` is the constant per-unit causal effect of
+the treatment. -/
 lemma causal_homogeneity :
     ∀ᵐ ω ∂P.μ, ∀ d d' : ℝ,
       M.YofD d ω - M.YofD d' ω = M.θ * (d - d') := by

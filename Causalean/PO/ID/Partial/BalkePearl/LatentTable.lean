@@ -141,8 +141,8 @@ private lemma integrable_YofD_real_sub :
     cases S.YofD _ ω <;> norm_num
   }
 
-/-- The average treatment effect is the weighted sum of treatment effects over
-the 16 latent types.
+/-- [The average treatment effect equals the probability-weighted sum, over the
+sixteen latent response types, of each type's treatment effect](goal).
 
 ATE = ∑_{d0,d1,y0,y1} (boolToReal y1 - boolToReal y0) * latentProb d0 d1 y0 y1 -/
 theorem ATE_eq_sum_latent :

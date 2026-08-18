@@ -60,7 +60,9 @@ The `τ`-quantile of the potential outcome `a(r)`: `F_{a(r)}^{-1}(τ)`. -/
 noncomputable def cfQuantile (r : Regime P.V P.X) (μ : Measure P.Ω) (τ : ℝ) : ℝ :=
   Causalean.Stat.quantile (a.cfLaw r μ) τ
 
-/-- The cdf of `a(r)` evaluated at `y` is `μ`-probability that `a(r) ≤ y`. -/
+/-- For [an intervention regime `r`](hyp:r) and [a measure `μ` on the sample
+space](hyp:μ), [the cdf of the potential outcome `a(r)` evaluated at `y` equals the
+`μ`-probability of the event `a(r) ≤ y`](goal). -/
 lemma cfCDF_eq_measureReal (r : Regime P.V P.X) (μ : Measure P.Ω)
     [IsProbabilityMeasure μ] (y : ℝ) :
     a.cfCDF r μ y = (a.cfLaw r μ).real (Set.Iic y) :=

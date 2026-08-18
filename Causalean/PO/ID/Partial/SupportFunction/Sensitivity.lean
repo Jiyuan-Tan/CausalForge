@@ -139,15 +139,16 @@ theorem robustLower_antitone {W W' : Set E} {c : E} (hWW' : W ⊆ W') (hne : W.N
   simp only [robustLower]
   linarith
 
-/-- **No ambiguity implies point identification (upper).** A singleton ambiguity set
-returns the identified value `⟪c, w₀⟫`. -/
+/-- **No ambiguity implies point identification (upper).** [When the ambiguity set collapses to
+the singleton `{w₀}`, the upper robust bound for the linear functional `c` equals the identified
+value `⟪c, w₀⟫`](goal). -/
 @[simp] theorem robustUpper_singleton (c w₀ : E) :
     robustUpper ({w₀} : Set E) c = ⟪c, w₀⟫ := by
   simp only [robustUpper, supportFn_singleton]
 
-/-- With no ambiguity, the lower robust bound equals the single admissible reweighted mean.
-
-**No ambiguity ⇒ point identification (lower).** -/
+/-- **No ambiguity implies point identification (lower).** [When the ambiguity set collapses to
+the singleton `{w₀}`, the lower robust bound for the linear functional `c` equals the identified
+value `⟪c, w₀⟫`](goal). -/
 @[simp] theorem robustLower_singleton (c w₀ : E) :
     robustLower ({w₀} : Set E) c = ⟪c, w₀⟫ := by
   simp only [robustLower, supportFn_singleton, inner_neg_left, neg_neg]

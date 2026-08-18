@@ -741,8 +741,9 @@ theorem obsKernel_map_prefixNodes (M : Causalean.SCM N Ω) (s : M.FixedValues)
       rw [ProbabilityTheory.Kernel.map_apply _ ((measurable_valuesProjection hCC).prodMk
         (measurable_valuesProjection hY))]
 
-/-- The observational kernel is the full chain-rule product of one-node
-conditionals along the observed topological order. -/
+/-- [For a structural causal model `M`](hyp:M), [at a fixed assignment `s`](hyp:s), [its
+observational kernel equals the full chain-rule product of one-node conditional kernels along the
+observed topological order](goal). -/
 theorem obsKernel_eq_qFactorProduct (M : Causalean.SCM N Ω) (s : M.FixedValues)
     [∀ (k : ℕ) (hk : k < M.observed.card),
       StandardBorelSpace

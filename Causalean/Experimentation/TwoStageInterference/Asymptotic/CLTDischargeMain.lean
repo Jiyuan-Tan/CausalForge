@@ -143,10 +143,11 @@ lemma condCLT_ref (h : Homogeneous Exp t stud δ M v) :
   rw [stud_eq_sum_of_homogeneous h n (s₀ n) (refSel_mem Exp n) w]
 
 open Classical in
-/-- **Proposition 5.1 (Liu–Hudgens 2014), fully primitive.** Under the homogeneity + regularity
-bundle `Homogeneous`, the studentized treatment-minus-control direct-effect contrast is
-asymptotically standard normal: its joint-design CDF at `t` converges to `Φ(t)`.  No CLT is
-assumed: the conditional CLT for the reference selection is `condCLT_ref` (from the
+/-- **Proposition 5.1 (Liu–Hudgens 2014), fully primitive.** Under [the homogeneity and regularity
+bundle](hyp:h), [the studentized treatment-minus-control direct-effect contrast is asymptotically
+standard normal: its joint-design CDF at `t` converges to `Φ(t)`](goal).
+
+No CLT is assumed: the conditional CLT for the reference selection is `condCLT_ref` (from the
 independent-summands CLT `prodDesign_clt`), the homogeneity hypothesis `hhom` lifts the uniform
 bound across the stage-1 support, and the support-restricted mixture-lifting lemma
 `tendsto_E_of_uniformBound_ae` averages it. -/

@@ -68,7 +68,7 @@ theorem posSqrt_apply_eigBasis (i : Fin (finrank ℝ E)) :
     hT.posSqrt (hT.eigBasis i) = Real.sqrt (hT.eigVals i) • hT.eigBasis i := by
   rw [posSqrt, ← OrthonormalBasis.coe_toBasis, Basis.constr_basis]
 
-/-- The square law: `posSqrt ∘ₗ posSqrt = T`. -/
+/-- [Composing the positive square root of `T` with itself recovers `T`](goal). -/
 theorem posSqrt_mul_self : hT.posSqrt ∘ₗ hT.posSqrt = T := by
   refine (hT.eigBasis).toBasis.ext fun i => ?_
   simp only [OrthonormalBasis.coe_toBasis, coe_comp, Function.comp_apply,
@@ -125,7 +125,8 @@ theorem posSqrtCLM_adjoint :
     ContinuousLinearMap.adjoint hT.posSqrtCLM = hT.posSqrtCLM := by
   rw [← ContinuousLinearMap.star_eq_adjoint]; exact hT.posSqrtCLM_isSelfAdjoint
 
-/-- The continuous square law: `posSqrtCLM ∘L posSqrtCLM = T`. -/
+/-- [Composing the continuous positive square root of `T` with itself recovers `T`, packaged
+as a continuous linear map](goal). -/
 theorem posSqrtCLM_comp_self :
     hT.posSqrtCLM ∘L hT.posSqrtCLM = T.toContinuousLinearMap := by
   ext x

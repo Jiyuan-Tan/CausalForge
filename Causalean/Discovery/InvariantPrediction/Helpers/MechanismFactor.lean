@@ -407,8 +407,12 @@ theorem condDistrib_eq_mechanismKernel_of_indep_of_pair_map
         (Causalean.Mathlib.GraphMapProd.mechanismKernel (μ.map L) Φ) :=
       Causalean.Mathlib.GraphMapProd.map_graph_prod_eq_compProd (μ.map X) (μ.map L) hΦ
 
-/-- Per-environment mechanism factorization of the target conditional law under
-the joint kernel. -/
+/-- For [an invariant-prediction environment family](hyp:F) and [a reference index i₀
+together with an environment i](hyp:i₀,i), [in environment i the conditional law of the
+target given its observed parents, under the joint kernel restricted to that environment,
+agrees with the mechanism kernel formed by pushing the latent-parent law of environment i
+forward through the target's structural mechanism function, paired with the parent
+value](goal). -/
 theorem condDistrib_target_eq_mechanismKernel
     (F : EnvFamily N Ω ι) (i₀ i : ι) :
     (by

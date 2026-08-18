@@ -460,8 +460,8 @@ theorem cComponentSet_subset_observed :
   obtain ⟨v, _, rfl⟩ := hC
   exact G.cComponentOf_subset_observed v
 
-/-- The c-components cover exactly the observed nodes: their union is
-    `observed`. -/
+/-- [The c-components cover exactly the observed nodes: their union recovers the set of
+observed nodes exactly](goal). -/
 theorem cComponentSet_biUnion :
     G.cComponentSet.biUnion id = G.observed := by
   apply Finset.Subset.antisymm
@@ -587,7 +587,8 @@ theorem induce_cComponentOf_eq_of_shared_unobserved_parent
     (SWIGGraph.bidirectedReachable.step
       (SWIGGraph.bidirectedReachable.refl hvInd) hconf)
 
-/-- The c-components form a pairwise-disjoint family. -/
+/-- [Distinct c-components are pairwise disjoint: no observed node belongs to two different
+c-components](goal). -/
 theorem cComponentSet_pairwise_disjoint :
     (G.cComponentSet : Set (Finset (SWIGNode N))).PairwiseDisjoint id := by
   intro C hC D hD hCD

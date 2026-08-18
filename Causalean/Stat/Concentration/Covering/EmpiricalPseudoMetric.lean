@@ -39,8 +39,9 @@ difference on the fixed sample. -/
 noncomputable def empiricalDist (S : Fin n → 𝒳) (f g : 𝒳 → ℝ) : ℝ :=
   empiricalNorm S (f - g)
 
-/-- The empirical distance unfolds to the empirical norm of the pointwise
-difference. -/
+/-- For [a fixed sample `S`](hyp:S) and [functions `f` and `g`](hyp:f,g), [the
+empirical distance between `f` and `g` equals the empirical norm of their
+pointwise difference](goal). -/
 @[simp]
 lemma empiricalDist_def (S : Fin n → 𝒳) (f g : 𝒳 → ℝ) :
     empiricalDist S f g = empiricalNorm S (f - g) :=
@@ -131,8 +132,9 @@ universe u
 variable {ι : Type u} {F : ι → 𝒳 → ℝ}
 variable {S : Fin n → 𝒳}
 
-/-- The empirical function space is the indexed class of functions equipped
-with the empirical pseudometric induced by a fixed sample. -/
+/-- An element of the empirical function space is [an index picking out one function of the
+class](hyp:index); the structure packages the indexed class of functions equipped with the
+empirical pseudometric induced by a fixed sample. -/
 structure EmpiricalFunctionSpace (F : ι → 𝒳 → ℝ) (S : Fin n → 𝒳) where
   /-- The index selecting a function from the class. -/
   index : ι

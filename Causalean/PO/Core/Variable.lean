@@ -25,8 +25,9 @@ namespace PO
 
 open MeasureTheory
 
-/-- A potential-outcome variable records a system variable together with a
-measurable relabeling of its native values into a chosen analysis scale.
+/-- A potential-outcome variable records [a system variable](hyp:v) together with
+[a measurable relabeling of its native value space into a chosen analysis scale
+`α`](hyp:equiv).
 
 A PO system variable whose value space is identified with a fixed measurable
 type `α` via a measurable equivalence.  Bundles the underlying node `v : P.V`
@@ -108,7 +109,9 @@ noncomputable def indicator (a : POVar P α) (x : α) :
     P.Ω → ℝ :=
   (a.event x).indicator (fun _ => (1 : ℝ))
 
-/-- `a.indicator x` equals the set-indicator of the event `{a = x}`. -/
+/-- For [a potential-outcome variable `a`](hyp:a) and [a value `x` in its
+range](hyp:x), [the real-valued factual indicator `a.indicator x` equals the
+set-indicator of the factual event `{a = x}`](goal). -/
 lemma indicator_eq_event_indicator (a : POVar P α) (x : α) :
     a.indicator x = (a.event x).indicator (fun _ => (1 : ℝ)) := rfl
 
@@ -185,8 +188,8 @@ lemma indicator_add_indicator_not (a : POVar P Bool) (ω : P.Ω) :
 
 end POVar
 
-/-- A regimed variable pairs a potential-outcome variable with the intervention
-regime under which it should be evaluated.
+/-- A regimed variable pairs [a potential-outcome variable](hyp:var) with [the intervention
+regime under which it should be evaluated](hyp:regime).
 
 A PO variable equipped with an intervention regime.  Used to state
 independence hypotheses uniformly via `jointValue` / `IndepCF` (see

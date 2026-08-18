@@ -29,8 +29,10 @@ namespace Causalean.Stat
 
 open MeasureTheory ProbabilityTheory
 
-/-- An i.i.d. sample with marginal `P` on the value space `X`, realized as a
-sequence of measurable maps on a single ambient probability space `(Ω, μ)`.
+/-- An independent and identically distributed sample with marginal law `P`, realized as
+[a sequence of sample points](hyp:Z) given by [measurable maps](hyp:meas) on a single
+ambient probability space: [the family is mutually independent](hyp:indep), [identically
+distributed](hyp:identDist), and [the law of each point is the population law `P`](hyp:law).
 
 * `Z i : Ω → X`             — the `i`-th sample point.
 * `meas`                    — measurability of each `Z i`.
@@ -58,7 +60,8 @@ noncomputable def sampleMean (S : IIDSample Ω X μ P) (f : X → ℝ) (n : ℕ)
     Ω → ℝ :=
   fun ω => (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, f (S.Z i ω)
 
-/-- Every sample point has law `P`. -/
+/-- For [an i.i.d. sample `S`](hyp:S) [and any sample index `i`](hyp:i), [the pushforward law of
+the `i`-th sample point equals the population law `P`](goal). -/
 theorem map_eq (S : IIDSample Ω X μ P) (i : ℕ) : μ.map (S.Z i) = P := by
   rw [← (S.identDist i).map_eq, S.law]
 

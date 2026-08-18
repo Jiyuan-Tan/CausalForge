@@ -53,8 +53,9 @@ lemma supBall_eq_pi {d : ℕ} (x0 : Fin d → ℝ) (r : ℝ) :
   · have := (abs_le).mp (h i); constructor <;> linarith [this.1, this.2]
   · rw [abs_le]; have := h i; constructor <;> linarith [this.1, this.2]
 
-/-- A closed sup-norm ball (an axis-aligned cube, or box, of half-width `r`) is compact, being
-a finite product of closed bounded intervals. -/
+/-- [A closed sup-norm ball — the axis-aligned cube, or box, of half-width `r` centred at a
+point `x0` in `d`-dimensional space](hyp:d,x0,r) — [is compact](goal), being a finite
+product of closed bounded intervals. -/
 lemma isCompact_supBall {d : ℕ} (x0 : Fin d → ℝ) (r : ℝ) :
     IsCompact (supBall x0 r) := by
   rw [supBall_eq_pi]; exact isCompact_univ_pi (fun _ => isCompact_Icc)
@@ -70,9 +71,10 @@ lemma mem_supBall_self {d : ℕ} (x0 : Fin d → ℝ) {r : ℝ} (hr : 0 ≤ r) :
     x0 ∈ supBall x0 r := by
   intro i; simp only [sub_self, abs_zero]; exact hr
 
-/-- The Lebesgue volume of a closed sup-norm ball (an axis-aligned cube of side `2r`) in `d`
-dimensions is the `d`-th power of the side length.  No sign restriction on `r` is needed: a
-negative half-width gives an empty cube and a zero right-hand side. -/
+/-- [The Lebesgue volume of a closed sup-norm ball — the axis-aligned cube of side `2r`
+centred at `x0` in `d` dimensions](hyp:d,x0,r) — [equals the `d`-th power of the side
+length, `(2r)^d`](goal). No sign restriction on `r` is needed: a negative half-width
+gives an empty cube and a zero right-hand side. -/
 lemma volume_supBall {d : ℕ} (x0 : Fin d → ℝ) (r : ℝ) :
     volume (supBall x0 r) = ENNReal.ofReal (2 * r) ^ d := by
   rw [supBall_eq_pi, Set.pi_univ_Icc, Real.volume_Icc_pi]

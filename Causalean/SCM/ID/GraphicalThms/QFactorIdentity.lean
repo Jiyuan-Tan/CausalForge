@@ -271,11 +271,12 @@ theorem obsCondKernel_slice_ae_eq_of_pairMeasure_eq
     simpa [hμ] using hComp
   exact ProbabilityTheory.Kernel.ae_eq_of_compProd_eq hComp'
 
-/-- **Proposition 2.19 (Q-factor identity / Tian's lemma).**
-
-    For ancestrally-closed `R` and c-component `T ∈ C(G_R)`, the
-    structurally-defined c-factor on `T` equals a.e. the `T | qFactorParents T`
-    conditional extracted from the intervention fixing `Wn`.  See
+/-- **Proposition 2.19 (Q-factor identity / Tian's lemma).** For [an
+    ancestrally-closed node set `R`](hyp:R) and [a c-component `T` of the
+    induced subgraph on `R`](hyp:T) in [a structural causal model `M`](hyp:M),
+    after [intervening on a node set `Wn`](hyp:Wn), [the structurally-defined
+    c-factor on `T` equals, almost everywhere, the conditional of `T` given
+    its q-factor parents extracted from that intervention](goal).  See
     `QFactorIdentityConclusion` for the precise hypothesis frame.
 
     Proof sketch (Tian 2002, Lemma 1):
@@ -627,10 +628,12 @@ def DistrictIdConclusion
     (Wn : Finset N) : Prop :=
   QFactorIdentityConclusion M M.observed T Wn
 
-/-- **Corollary (District identification).**
+/-- **Corollary (District identification).** For [a structural causal model
+    `M`](hyp:M), [a c-component `T` of `M`'s full graph](hyp:T), and [an
+    intervention set `Wn`](hyp:Wn), [the c-factor of `T` equals, almost
+    everywhere, the observational conditional obtained by intervening on
+    `Wn`](goal).
 
-    The c-factor of every C-component `T` of the full SCM is equal a.e. to the
-    matching do-side conditional obtained by intervening on `Wn`.
     Specialized from `q_factor_identity` at `R := M.observed`. -/
 theorem district_id
     (M : Causalean.SCM N Ω)

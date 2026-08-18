@@ -50,8 +50,15 @@ namespace PLR
 open MeasureTheory ProbabilityTheory Causalean.PO
 open Causalean.Estimation.OrthogonalMoments
 
-/-- A partially linear estimation system adds value-space regression
-representatives to the causal model and requires residual treatment variation.
+/-- A partially linear estimation system extends a partially linear causal model with
+value-space regression representatives — [an outcome-regression representative](hyp:lVal)
+and [a treatment-regression representative](hyp:mVal) on the covariates — subject to:
+each representative is [measurable](hyp:lVal_meas,mVal_meas); [the outcome representative
+agrees almost surely with the conditional mean of the outcome given the covariates](hyp:lVal_compat)
+and [the treatment representative agrees almost surely with the conditional mean of the
+treatment given the covariates](hyp:mVal_compat); and [the treatment retains nonzero
+variation after partialling out the covariate](hyp:nondegenerate), which is what makes the
+partialling-out Jacobian invertible.
 
 The representatives are the nuisance functions estimated by machine learning;
 their compatibility fields tie them to the conditional expectations of outcome
@@ -155,8 +162,10 @@ lemma integral_P_Z {f : γ × ℝ × ℝ → ℝ} (hf : Measurable f) :
   rw [P_Z, MeasureTheory.integral_map S.measurable_factualZ.aemeasurable
     hf.aestronglyMeasurable]
 
-/-- Pulling the true Robinson score back to the population space expands it into
-the observed residualized outcome times the treatment residual.
+/-- **Robinson score at the true nuisance, pulled back to the population space.** For
+[the observed data generated from a population outcome `ω`](hyp:ω), [the Robinson
+partialling-out score evaluated at the true nuisance pair, true data, and true parameter
+equals the true residualized outcome times the true treatment residual](goal).
 
 This helper connects observed-data moment expressions to the potential-outcome
 quantities used by the partialling-out identities. -/

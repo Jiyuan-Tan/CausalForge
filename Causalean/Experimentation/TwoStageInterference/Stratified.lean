@@ -82,10 +82,12 @@ lemma stratExpo_exists (i : ι) (j : Fin (n i)) (w : WAssign n i) :
   ⟨w, rfl⟩
 
 omit [Fintype ι] [DecidableEq ι] in
-/-- **Factorization through the exposure.**  Under stratified interference there is a family
-`g i j : Bool × ℕ → ℝ` of exposure-indexed potential outcomes such that every outcome factors
-as `Y i j w = g i j (stratExpo i j w)`.  This realizes the Aronow–Samii "properly specified
-exposure mapping" form for grouped interference with exposure map `stratExpo`. -/
+/-- **Factorization through the exposure.**  Under [stratified interference of the potential
+outcomes `Y`](hyp:h), [there is a family `g i j : Bool × ℕ → ℝ` of exposure-indexed potential
+outcomes such that every outcome factors as `Y i j w = g i j (stratExpo i j w)`](goal).
+
+This realizes the Aronow–Samii "properly specified exposure mapping" form for grouped interference
+with exposure map `stratExpo`. -/
 theorem exists_strat_factor {Y : ∀ i, Fin (n i) → WAssign n i → ℝ}
     (h : StratifiedInterference Y) :
     ∃ g : ∀ i, Fin (n i) → (Bool × ℕ) → ℝ,

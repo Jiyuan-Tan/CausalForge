@@ -76,8 +76,9 @@ abbrev Obs (C : Type*) := C × Bool × Bool
 
 variable {C : Type*} [Fintype C]
 
-/-- A DGP is **valid** when the propensity `m` and both outcome-regression arms
-`g d` take values in `[0,1]`. -/
+/-- A data-generating process `(m, g)` is **valid** when [the propensity `m` takes values in the
+unit interval `[0,1]`](hyp:m_mem) and [each outcome-regression arm `g d` also takes values in
+`[0,1]`](hyp:g_mem). -/
 structure ValidDGP (m : C → ℝ) (g : Bool → C → ℝ) : Prop where
   m_mem : ∀ x, m x ∈ Set.Icc (0 : ℝ) 1
   g_mem : ∀ d x, g d x ∈ Set.Icc (0 : ℝ) 1
@@ -142,10 +143,12 @@ the covariate. -/
 noncomputable def l2sq (a b : C → ℝ) : ℝ :=
   (Fintype.card C : ℝ)⁻¹ * ∑ x, (a x - b x) ^ 2
 
-/-- **Structure-agnostic nuisance class.**  A DGP `(m, g)` is in the class
-`ℱ(εg, εm)` around fixed nuisance estimates `(mhat, ghat)` when it is valid and
-its squared `L²(P_X)` nuisance errors are within the budgets: each outcome arm
-within `εg`, the propensity within `εm`. -/
+/-- **Structure-agnostic nuisance class.** A candidate data-generating process `(m, g)` belongs
+to the class `ℱ(εg, εm)` around fixed nuisance estimates `(mhat, ghat)` when [it is a valid DGP,
+with propensity and both outcome-regression arms taking values in `[0,1]`](hyp:valid), [each
+outcome-regression arm lies within squared `L²(P_X)` distance `εg` of the corresponding
+estimated arm](hyp:err_g), and [the propensity lies within squared `L²(P_X)` distance `εm` of
+the estimated propensity](hyp:err_m). -/
 structure InClass (mhat : C → ℝ) (ghat : Bool → C → ℝ) (εg εm : ℝ)
     (m : C → ℝ) (g : Bool → C → ℝ) : Prop where
   valid : ValidDGP m g

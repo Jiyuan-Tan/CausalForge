@@ -38,8 +38,12 @@ open scoped MeasureTheory ProbabilityTheory
 -- § 1. SCM structure
 -- ============================================================
 
-/-- A generalized structural causal model consists of a SWIG graph, deterministic measurable
-structural functions, and independent latent-root laws.
+/-- A generalized structural causal model bundles a SWIG graph together with [an edge-type
+assignment recording functional restrictions on each edge](hyp:edgeTypes), [the requirement that
+each fixed parameter and its corresponding random node share the same value
+space](hyp:iota_valueSpace), [a deterministic structural function for each observed node mapping
+its parents' values to its own](hyp:structFun,structFun_measurable), and [an independent
+probability law on each latent root node](hyp:latentDist,isProbability_latent).
 
     Extends `SWIGGraph N` with deterministic measurable structural functions for each
     observed node and one probability measure per latent root.  Randomness lives only

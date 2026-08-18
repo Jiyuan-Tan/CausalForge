@@ -44,7 +44,11 @@ namespace PO
 
 open MeasureTheory
 
-/-- A staggered-adoption DID system has binary treatment and real outcome variables at each period.
+/-- A staggered-adoption DID system has [a binary treatment variable at each of `T`
+periods](hyp:T,D,hDbool), where [at least two periods are observed](hyp:hT), together with
+[a real outcome variable at each period](hyp:Y,hYreal), such that [the treatment nodes are
+pairwise distinct across periods and likewise for the outcome nodes](hyp:hDinj,hYinj), and
+[no treatment node coincides with any outcome node](hyp:hDY).
 
 The treatment and outcome node families are injective and disjoint. -/
 structure POCSDIDSystem (P : POSystem) where
@@ -249,9 +253,15 @@ noncomputable def ATT (g t : Fin S.T) (hg : 1 ≤ g.val) : ℝ :=
 
 /-! ### Assumptions -- def:po-cs-did-assumptions -/
 
-/-- The Callaway-Sant'Anna assumptions combine consistency, irreversible
-adoption, no anticipation, never-treated parallel trends, positivity, and
-integrability. -/
+/-- The Callaway-Sant'Anna assumptions combine [consistency of the underlying
+potential-outcome system](hyp:consistency): [no unit is treated at period
+zero](hyp:irreversibilityBase)
+and [once treated, a unit remains treated in every later period](hyp:irreversibilityStep)
+(irreversible adoption); [pre-treatment outcomes do not anticipate future
+treatment](hyp:noAnticipation); [each cohort's mean untreated trend matches the never-treated
+group's mean untreated trend](hyp:parallelTrends); [each cohort and the never-treated group
+occur with positive, finite probability](hyp:posCohort,posNT); and [the cohort and
+never-treated potential outcomes are integrable](hyp:intYofCohort,intYofNT). -/
 structure Assumptions (S : POCSDIDSystem P) : Prop where
   /-- Consistency of the underlying PO system. -/
   consistency : P.Consistency

@@ -31,9 +31,12 @@ namespace PO
 
 open MeasureTheory
 
-/-- A two-period DID system consists of a binary treatment and real pre- and post-period outcomes.
-
-The treatment node is required to be distinct from both outcome nodes. -/
+/-- A two-period DID system packages [a treatment node](hyp:D) whose value space is
+[identified with the booleans](hyp:hDbool), together with [a pre-period outcome
+node](hyp:Y₀) and [a post-period outcome node](hyp:Y₁) each of whose value spaces is
+[identified with the real line](hyp:hY0real,hY1real); the treatment node is required
+to be [distinct from the pre-period outcome node](hyp:hDY0) and [distinct from the
+post-period outcome node](hyp:hDY1). -/
 structure PODIDSystem (P : POSystem) where
   D : P.V
   Y₀ : P.V
@@ -102,13 +105,16 @@ noncomputable def ATT : ℝ :=
   eventCondExp P.μ (S.dEvent true) (fun ω => S.Y1ofD true ω - S.Y1ofD false ω)
 
 /-- Assumptions for two-period difference-in-differences identification of the
-ATT (`def:po-did-assumptions`). In words: the observed outcomes coincide with the
-realized-arm potential outcomes (consistency); in the pre-period the treated and
-control groups have the same potential outcome regardless of treatment
-(no-anticipation); and absent treatment the two groups would have changed in
-parallel between the two periods (parallel trends). Each group occurs with
-positive probability and the outcomes are integrable, so the group-conditional
-means are well-defined and finite. -/
+ATT (`def:po-did-assumptions`). In words: [the observed outcomes coincide with the
+realized-arm potential outcomes](hyp:consistency); [in the pre-period the treated and
+control groups have the same potential outcome regardless of treatment](hyp:noAnticipation);
+and [absent treatment the two groups would have changed in parallel between the two
+periods](hyp:parallelTrends). [The treated group](hyp:posTrue_ne_zero) and [the control
+group](hyp:posFalse_ne_zero) each occur with positive probability, and [the control
+pre-period outcome](hyp:intY0ofD_false), [the control post-period
+outcome](hyp:intY1ofD_false), and [the treated post-period
+outcome](hyp:intY1ofD_true) are integrable, so the group-conditional means are
+well-defined and finite. -/
 structure Assumptions (S : PODIDSystem P) : Prop where
   /-- Consistency (SUTVA): the observed outcome equals the potential outcome of
   the realized treatment arm. -/

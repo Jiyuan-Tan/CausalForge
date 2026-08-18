@@ -40,8 +40,9 @@ theorem idSet_subset_of_mem (F : EnvFamily N Ω ι) {T : Set (SWIGNode N)}
     (hT : T ∈ F.invariantSets) : F.idSet ⊆ T :=
   Set.sInter_subset_of_mem hT
 
-/-- The target's observed parents form an invariant set — the membership form of
-`mechanism_invariant`. -/
+/-- For [an invariant-prediction environment family](hyp:F) and [an index i₀ selecting the
+target's observed-parent set](hyp:i₀), [the target's observed parents form an invariant
+predictor set](goal) — the membership form of `mechanism_invariant`. -/
 theorem paObs_mem_invariantSets (F : EnvFamily N Ω ι) (i₀ : ι) :
     (↑(F.paObs i₀) : Set (SWIGNode N)) ∈ F.invariantSets :=
   ⟨F.paObs i₀, (fun j => F.paObs_subset_observed i₀ j), rfl, F.mechanism_invariant i₀⟩

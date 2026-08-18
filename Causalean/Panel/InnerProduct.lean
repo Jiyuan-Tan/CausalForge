@@ -123,8 +123,8 @@ lemma ip_self_nonneg (c : Cells I T) (A : (I × T) → ℝ) :
     0 ≤ c.ip A A :=
   Causalean.Panel.Weighted.WeightedSupport.ip_self_nonneg c A
 
-/-- A panel array has zero self inner product exactly when it vanishes on all
-observed cells. -/
+/-- For [a panel cell structure](hyp:c) and [a panel array `A`](hyp:A), [the self inner product
+`c.ip A A` is zero exactly when `A` vanishes on every observed cell of `c`](goal). -/
 lemma ip_self_eq_zero_iff (c : Cells I T) (A : (I × T) → ℝ) :
     c.ip A A = 0 ↔ ∀ r ∈ c.observed, A r = 0 :=
   Causalean.Panel.Weighted.WeightedSupport.ip_self_eq_zero_iff c A

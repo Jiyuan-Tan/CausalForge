@@ -41,11 +41,13 @@ noncomputable def studentizedEffect (dk dl : E.Δ) (z : E.Ω) : ℝ :=
 
 end Experiment
 
-/-- **Chen-Shao local-dependence CLT interface, bounded-neighborhood case.**
+/-- **Chen-Shao local-dependence CLT interface, bounded-neighborhood case.** Along a sequence of
+experiments `Exp` with a chosen pair of exposure levels `dk`, `dl` at each sample size, this
+records that [the design probability that the studentized Horvitz–Thompson effect statistic
+falls below any fixed threshold converges, as the sample size grows, to the standard normal CDF
+at that threshold](hyp:tendsto_cdf).
 
-This interface premise records convergence in distribution of the studentized HT effect
-statistic to a standard normal along a sequence of experiments: for every threshold `t`,
-the lower-tail design probability converges to `Φ(t)`. The bounded-summand and bounded-degree
+The bounded-summand and bounded-degree
 conditions that imply this interface are connected to the dependency-graph Stein CLT in
 `SteinInstance.lean`. -/
 structure LocalDependenceCLT (Exp : ℕ → Experiment) (dk dl : ∀ n, (Exp n).Δ) : Prop where

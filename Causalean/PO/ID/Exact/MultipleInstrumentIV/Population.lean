@@ -131,8 +131,17 @@ theorem observedFirstStageMoment_eq_sum_eventCondExp
   exact observedReducedFormMoment_eq_sum_eventCondExp
     (μ := μ) (Z := Z) hZ (Y := fun ω => boolToReal (D ω)) I hInt
 
-/-- Assumptions connecting observed probability objects to the finite
-response-type bridge.  The two conditional-expectation fields are the precise
+/-- **Bridge from an observed finite-instrument population to the response-type algebra.** Given
+an instrument, a binary treatment, an outcome, a finite index, and a saturated response-type
+population `P`, this bundles [the underlying law being a probability measure](hyp:isProbability),
+[the finite-index masses reproducing the probabilities of the observed instrument
+cells](hyp:rho_eq_zMass), [the observed conditional mean of the outcome on each instrument cell
+equaling the response-type expansion `P.outcomeAtSupport`](hyp:outcome_cell), a baseline
+treatment mean common across cells after exogeneity, and [the observed conditional mean of the
+treatment on each instrument cell equaling that common baseline plus the response-type expansion
+`P.treatmentAtSupport`](hyp:baseTreatment,treatment_cell).
+
+The two conditional-expectation fields are the precise
 place where consistency, exogeneity, and exclusion are used: for each
 instrument cell, they replace the observed conditional mean by the
 response-type expansion already consumed by the finite MTW algebra. -/

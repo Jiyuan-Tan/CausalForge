@@ -39,7 +39,7 @@ noncomputable def softThreshold (lam z : ℝ) : ℝ := max (z - lam) 0 - max (-z
 theorem l1penalty_nonneg (β : Param → ℝ) : 0 ≤ l1penalty β :=
   Finset.sum_nonneg fun _ _ => abs_nonneg _
 
-/-- The L1 penalty is convex. -/
+/-- [The L1 penalty is convex as a function of the coefficient vector](goal). -/
 theorem convexOn_l1penalty : ConvexOn ℝ Set.univ (l1penalty (Param := Param)) := by
   classical
   unfold l1penalty

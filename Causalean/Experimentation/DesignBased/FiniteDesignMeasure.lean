@@ -67,7 +67,9 @@ instance : IsProbabilityMeasure D.toMeasure := by
   rw [Finset.sum_congr rfl h, ← ENNReal.ofReal_sum_of_nonneg (fun z _ => D.p_nonneg z),
     D.p_sum, ENNReal.ofReal_one]
 
-/-- The measure-theoretic integral against `toMeasure` is the design expectation. -/
+/-- **Integral against the induced measure is the design expectation.** For [any
+statistic `g`](hyp:g), [the measure-theoretic integral of `g` against the design's induced
+probability measure equals its design expectation](goal). -/
 theorem integral_toMeasure (g : Ω → ℝ) : ∫ x, g x ∂D.toMeasure = D.E g := by
   rw [toMeasure, integral_finset_sum_measure]
   · have h : ∀ z ∈ (Finset.univ : Finset Ω),
@@ -80,7 +82,8 @@ theorem integral_toMeasure (g : Ω → ℝ) : ∫ x, g x ∂D.toMeasure = D.E g 
   · intro z _
     exact (integrable_dirac (by simp)).smul_measure (by simp)
 
-/-- The measure of an event matches the design probability. -/
+/-- **Induced measure matches the design probability.** For [any event `A`](hyp:A), [the
+induced measure's probability of `A` equals the design probability of `A`](goal). -/
 theorem toMeasure_real_setOf (A : Ω → Prop) [DecidablePred A] :
     D.toMeasure.real {z | A z} = D.Pr A := by
   rw [← integral_indicator_one (Set.toFinite {z | A z}).measurableSet,
@@ -89,7 +92,9 @@ theorem toMeasure_real_setOf (A : Ω → Prop) [DecidablePred A] :
   unfold ind
   by_cases h : A z <;> simp [Set.indicator, h]
 
-/-- The measure-theoretic variance against `toMeasure` is the design variance. -/
+/-- **Measure-theoretic variance equals the design variance.** For [any statistic `g`](hyp:g),
+[the measure-theoretic variance of `g` under the design's induced measure equals its design
+variance](goal). -/
 theorem variance_toMeasure (g : Ω → ℝ) : variance g D.toMeasure = D.Var g := by
   rw [variance_eq_integral (measurable_of_finite g).aemeasurable, integral_toMeasure,
     integral_toMeasure]

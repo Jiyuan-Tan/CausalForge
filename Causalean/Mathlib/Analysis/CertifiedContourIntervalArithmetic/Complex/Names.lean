@@ -10,8 +10,12 @@ namespace Causalean.Mathlib.Analysis.CertifiedContourIntervalArithmetic.Complex
 
 open Causalean.Mathlib.Analysis.CertifiedContourIntervalArithmetic
 
-/-- A certified complex name is an executable nested sequence of rational
-rectangles containing one complex value, with an effective width modulus. -/
+/-- A certified complex name represents [a complex number](hyp:value) by [a sequence of rational
+rectangle enclosures indexed by fuel](hyp:approx) that is [nested — each successive enclosure a
+subrectangle of the one before](hyp:nested) — and [always contains the represented
+value](hyp:contains), together with [a computable rule selecting, for any requested positive
+rational error, a fuel level](hyp:modulus) [whose enclosure meets that coordinate-width
+tolerance](hyp:width_modulus). -/
 structure CertifiedComplex where
   /-- The unique complex value denoted by the nested name. -/
   value : ℂ
@@ -157,7 +161,9 @@ private theorem normApprox_subinterval_current (z : CertifiedComplex) (fuel : �
       exact tighten_subinterval_right (normApprox_spec z fuel).1
         (ComplexRatInterval.normInterval_sound (z.contains (fuel + 1)) (fuel + 1))
 
-/-- Refining the complex input together with Newton fuel makes modulus output width effective. -/
+/-- For [a certified complex input](hyp:z) and [a requested positive rational tolerance
+`ε`](hyp:ε), [evaluating the certified-modulus approximation at the precision level selected
+for that tolerance yields an output enclosure whose width is no larger than `ε`](goal). -/
 theorem norm_width_at_precision (z : CertifiedComplex) (ε : PosRat) :
     (normApprox z (normPrecision z ε)).width ≤ ε.1 := by
   let M := (z.approx 0).maxAbs

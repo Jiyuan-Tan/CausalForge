@@ -155,8 +155,9 @@ private theorem hpkInjective (m : ℕ) (c : Fin (m + 1) → ℝ)
   rw [← hcoeff, hPzero]
   simp
 
-/-- A compactly supported one-dimensional kernel can be chosen to have unit total
-mass while cancelling every polynomial moment through any prescribed finite order.
+/-- [For any prescribed finite order `m`](hyp:m), [a compactly supported one-dimensional
+kernel can be chosen to have unit total mass while cancelling every polynomial moment
+through that order](goal).
 
 Construction: fix a continuous weight `w ≥ 0` on `[-1,1]` with `w(±1) = 0` and
 full support (e.g. `w(u) = (1 - u²)`), and set `k = w · p` for a degree-`m`

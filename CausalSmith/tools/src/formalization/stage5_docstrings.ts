@@ -33,9 +33,10 @@ export interface UndocumentedDecl {
  * NL↔Lean crosslink requirement for a theorem docstring (hard F5 gate): the
  * first paragraph must link every hypothesis-classified binder via
  * `[phrase](hyp:name)` and the conclusion via `[phrase](goal)`, and every
- * referenced name must exist in the signature. Hypothesis-free theorems are
- * exempt unless partially annotated. Returns a short problem description, or
- * null when the docstring satisfies the requirement.
+ * referenced name must exist in the signature. Hypothesis-free theorems still
+ * carry the `(goal)` link (wave-2 policy: at minimum the conclusion is
+ * annotated). Returns a short problem description, or null when the docstring
+ * satisfies the requirement.
  */
 export function crosslinkDefect(e: { kind?: unknown; doc?: unknown; source?: unknown }): string | null {
   if (e.kind !== "theorem" || typeof e.doc !== "string" || !e.doc.trim()) return null;
@@ -47,7 +48,6 @@ export function crosslinkDefect(e: { kind?: unknown; doc?: unknown; source?: unk
   const binders = typeof e.source === "string" ? sourceBinders(e.source) : null;
   if (!binders) return null; // unstructurable signature: the site renders flat, nothing to link
   const hyps = binders.filter((b) => b.isHyp);
-  if (hyps.length === 0 && names.length === 0 && !hasGoal) return null;
   const declared = new Set(binders.flatMap((b) => b.names));
   const unknown = names.filter((n) => !declared.has(n));
   if (unknown.length > 0) return `crosslink names not in signature: ${unknown.join(", ")}`;

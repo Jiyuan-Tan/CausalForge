@@ -32,9 +32,13 @@ variable {Ω : Type*} [MeasurableSpace Ω] {μ : MeasureTheory.Measure Ω}
          {Z : Type*} [MeasurableSpace Z] {P_Z : MeasureTheory.Measure Z}
          {H : Type*} [AddCommGroup H] [Module ℝ H]
 
-/-- Pointwise directional derivative of `m(·, z, θ₀)` along the segment from
-`η₀` to `η`, packaged with the pointwise tendsto witness and the
-measurability of `dM η`. -/
+/-- For a general moment, a candidate pointwise directional-derivative function
+[dM](hyp:dM) of the score along the line segment from the truth to a perturbed nuisance,
+evaluated at each observation, together with the witnesses that
+[for every perturbation in the admissible set and every observation, the score's
+difference quotient along that segment tends to `dM`'s value there as the step size
+shrinks to zero](hyp:pointwise_tendsto), and that [`dM` at each perturbation is measurable
+in the observation](hyp:dM_meas). -/
 structure HasDirDeriv (M : GeneralMoment Ω μ Z P_Z H) where
   dM : H → Z → ℝ
   pointwise_tendsto  : ∀ η ∈ M.H_ε, ∀ z,

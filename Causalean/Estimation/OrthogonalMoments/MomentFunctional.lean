@@ -33,9 +33,13 @@ namespace OrthogonalMoments
 
 open MeasureTheory
 
-/-- A general moment records the score, truth, target, perturbation set,
-bilinear seminorms, measurability, and nonzero population Jacobian needed by the
-abstract double-machine-learning framework.
+/-- A general moment bundles a score function of a nuisance, an observation, and a scalar
+parameter, a truth nuisance [η₀](hyp:η₀) and truth parameter `θ₀`, a set of admissible
+nuisance perturbations, and a pair of bilinear seminorms used to bound product-rate
+remainders, subject to: [the score is jointly measurable in the observation for every
+nuisance and parameter value](hyp:m_meas), [the truth nuisance belongs to the perturbation
+set](hyp:η₀_mem), and [the population moment's parameter-derivative at the truth (its
+Jacobian) is nonzero, so that its inverse is well-defined](hyp:J₀_ne_zero).
 
 This is the Chernozhukov-form interface for scalar targets: the Jacobian is the
 parameter derivative of the population moment at the truth, and its
@@ -82,7 +86,8 @@ For the AIPW linear score, the Jacobian is minus one, so the inverse Jacobian is
 also minus one. -/
 noncomputable def J₀_inv (M : GeneralMoment Ω μ Z P_Z H) : ℝ := M.J₀⁻¹
 
-/-- Multiplying the population Jacobian by its inverse gives one. -/
+/-- **Jacobian times its inverse is one.** For [a general orthogonal-moment
+system](hyp:M), [the population Jacobian times its inverse equals one](goal). -/
 @[simp] lemma J₀_mul_J₀_inv (M : GeneralMoment Ω μ Z P_Z H) :
     M.J₀ * M.J₀_inv = 1 := by
   unfold J₀_inv

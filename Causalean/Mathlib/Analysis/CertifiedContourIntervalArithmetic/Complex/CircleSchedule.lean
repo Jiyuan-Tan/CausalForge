@@ -13,8 +13,15 @@ namespace Causalean.Mathlib.Analysis.CertifiedContourIntervalArithmetic.Complex
 
 open Causalean.Mathlib.Analysis.CertifiedContourIntervalArithmetic
 
-/-- A contour schedule connects operation count, input precision, mesh size,
-transcendental fuel, magnitude amplification, and three explicit error budgets. -/
+/-- A contour schedule packages [a requested rational error tolerance](hyp:tolerance), [an
+operation count](hyp:operationCount), [an input precision](hyp:inputPrecision), [a mesh
+size](hyp:mesh) that is [nonempty](hyp:mesh_pos), [a fuel budget](hyp:fuel) for transcendental
+evaluation, and [a nonnegative magnitude-amplification bound](hyp:magnitude,magnitude_nonneg),
+together with three nonnegative error budgets — [for node evaluation](hyp:nodeBudget,
+nodeBudget_nonneg), [for the uniform mesh](hyp:meshBudget,meshBudget_nonneg), and [for the final
+quadrature widening](hyp:quadratureBudget,quadratureBudget_nonneg) — such that [the three budgets
+together fit within the tolerance](hyp:budget_sum_le) and [the mesh budget absorbs the
+magnitude-amplified discretization error](hyp:mesh_error_le). -/
 structure Schedule where
   /-- The requested final rational tolerance. -/
   tolerance : PosRat

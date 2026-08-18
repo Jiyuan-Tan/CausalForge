@@ -57,11 +57,13 @@ lemma monotone_stdNormalCdf : Monotone stdNormalCdf := by
   rw [show stdNormalCdf = Causalean.Mathlib.stdNormalCDF from funext stdNormalCdf_eq]
   exact Causalean.Mathlib.stdNormalCDF_monotone
 
-/-- **Symmetry of the standard normal CDF:** `Φ(−t) = 1 − Φ(t)`. -/
+/-- **Symmetry of the standard normal CDF.** For [any threshold `t`](hyp:t), [the standard
+normal CDF satisfies `Φ(−t) = 1 − Φ(t)`](goal). -/
 lemma stdNormalCdf_neg (t : ℝ) : stdNormalCdf (-t) = 1 - stdNormalCdf t := by
   rw [stdNormalCdf_eq, stdNormalCdf_eq]; exact Causalean.Mathlib.stdNormalCDF_neg t
 
-/-- **Continuity of the standard normal CDF.** -/
+/-- **Continuity of the standard normal CDF.** [The standard normal cumulative distribution
+function `Φ` is continuous](goal). -/
 lemma continuous_stdNormalCdf : Continuous stdNormalCdf := by
   rw [show stdNormalCdf = Causalean.Mathlib.stdNormalCDF from funext stdNormalCdf_eq]
   exact Causalean.Mathlib.stdNormalCDF_continuous

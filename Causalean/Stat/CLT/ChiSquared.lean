@@ -89,8 +89,9 @@ theorem stdGaussian_map_linearIsometryEquiv
   rw [hmapL, charFun_isGaussian_centered _ hmean_map t,
     charFun_isGaussian_centered _ stdGaussian_mean t, hcoveq]
 
-/-- The law of `‖·‖²` under the standard Gaussian on `E` depends only on the
-dimension `finrank ℝ E`: it equals `chiSqDist (finrank ℝ E)`. -/
+/-- [The law of the squared norm under the standard Gaussian distribution on a
+finite-dimensional real inner product space equals the chi-squared distribution
+whose degrees of freedom is the space's dimension](goal). -/
 theorem stdGaussian_map_normSq :
     (stdGaussian E).map (fun x => ‖x‖ ^ 2) = chiSqDist (Module.finrank ℝ E) := by
   classical

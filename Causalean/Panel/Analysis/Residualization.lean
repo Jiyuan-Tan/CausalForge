@@ -30,9 +30,10 @@ namespace Panel
 
 open MeasureTheory
 
-/-- A linear square-integrable class is a nuisance space of real-valued
-functions closed under zero, addition, and real scalar multiplication, with
-every member square-integrable.
+/-- A linear square-integrable class is [a nuisance space of real-valued functions, cut out by
+a membership predicate `mem`](hyp:mem), that is [closed under the zero function](hyp:zero_mem),
+[closed under addition](hyp:add_mem), and [closed under real scalar
+multiplication](hyp:smul_mem), with [every member square-integrable](hyp:memLp).
 
 The class is represented predicate-style: `mem` carves out the underlying set
 of functions. Membership entails `MemLp 2`, so integrability is bundled. -/
@@ -48,9 +49,11 @@ structure LinearL2Class {Ω : Type*} [MeasurableSpace Ω] (μ : Measure Ω) wher
   /-- The class is closed under scalar multiplication. -/
   smul_mem : ∀ (c : ℝ) ⦃f : Ω → ℝ⦄, mem f → mem (c • f)
 
-/-- A residualization witness decomposes a real-valued function into a
-nuisance-class component and a square-integrable residual that is orthogonal in
-expectation to every nuisance function.
+/-- A residualization witness decomposes a real-valued function `V` into [an in-class
+projection `VH`](hyp:VH,VH_mem) and [a square-integrable residual
+`Vtilde`](hyp:Vtilde,Vtilde_memLp) such that [`V` equals their sum almost
+everywhere](hyp:decomp) and [the residual is orthogonal in expectation to every member of the
+nuisance class](hyp:orthogonal).
 
 Bundles the in-class projection `VH`, the residual `Vtilde`, and the three
 witness conditions: `VH ∈ H`, `V = VH + Vtilde` a.e., orthogonality of

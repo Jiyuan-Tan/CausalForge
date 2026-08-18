@@ -106,8 +106,17 @@ noncomputable def ATT_window (Y0 Y1 : 𝒢 → Fin T → ℝ) (g : 𝒢)
     (S : Finset (Fin T)) : ℝ :=
   (S.card : ℝ)⁻¹ * ∑ t ∈ S, (Y1 g t - Y0 g t)
 
-/-- Causal-side assumptions for the Goodman-Bacon decomposition
-(LaTeX `ass:po-estimand-goodman-bacon-causal`).
+/-- Causal-side assumptions for the Goodman-Bacon decomposition (LaTeX
+`ass:po-estimand-goodman-bacon-causal`), given a cohort panel `P` and potential-outcome maps
+`Y0` (the never-treated path) and `Y1` (each cohort's own adoption-date path). It packages
+[consistency on treated cells — the factual outcome equals the post-adoption potential outcome
+once the cohort has adopted](hyp:consistencyTreated), [consistency on untreated cells — the
+factual outcome equals the never-treated potential outcome before
+adoption](hyp:consistencyUntreated), [no anticipation — the pre-adoption potential outcomes
+under the two paths coincide](hyp:noAnticipation), and pairwise untreated parallel trends for
+[the treated-versus-never comparison](hyp:parallelTrends_TN), [the
+early-versus-late-before-late comparison](hyp:parallelTrends_EL), and [the
+late-versus-early-after-early comparison](hyp:parallelTrends_LE).
 
 **Two-state simplification (gap G2).** The paper uses a full adoption-date-indexed
 family `Y_{gt}(a)`.  Here we use only two maps `Y0 = Y(∞)` and `Y1 = Y(A_g)`,
@@ -119,18 +128,7 @@ with `noAnticipation` are slightly over-strong relative to the paper's single
 consistency axiom `Y_{gt} = Y_{gt}(A_g)`: on pre-adoption cells, `consistencyUntreated`
 gives `Y_{gt} = Y0 g t`, while `noAnticipation` gives `Y1 g t = Y0 g t`, so
 together they imply `Y_{gt} = Y1 g t` on pre-adoption cells too.  The split is
-kept because each field is used directly in downstream proofs.
-
-* `consistencyTreated` — on treated cells (`A_g ≤ t`), the factual outcome
-  equals the post-adoption potential outcome `Y1`.
-* `consistencyUntreated` — on untreated cells (`t < A_g`), the factual
-  outcome equals the never-treated potential outcome `Y0`. (When combined
-  with `noAnticipation`, this is equivalent to consistency.)
-* `noAnticipation` — `t < A_g → Y_{gt}(A_g) = Y_{gt}(∞)` (i.e. `Y1 g t = Y0 g t`).
-* `parallelTrends_TN`/`parallelTrends_EL`/`parallelTrends_LE` — equal
-  untreated trends across the three comparison types; the three-way split
-  matches the LaTeX statement, which quantifies over admissible comparisons
-  by comparison type. -/
+kept because each field is used directly in downstream proofs. -/
 structure CausalAssumptions (P : CohortPanel 𝒢 T) (Y0 Y1 : 𝒢 → Fin T → ℝ) :
     Prop where
   /-- Consistency on treated cells: when `A_g ≤ t`, the factual outcome

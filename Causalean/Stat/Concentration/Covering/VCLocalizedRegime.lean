@@ -37,8 +37,11 @@ section Definitions
 
 variable {ι : Type u} {𝒳 : Type v}
 
-/-- A binary factorization of a real-valued class whose realized Boolean
-patterns have VC dimension at most `d` on every finite sample. -/
+/-- A binary factorization of a real-valued function class through
+[a Boolean labeling `π`](hyp:π), such that
+[on every finite sample each function's values factor through the Boolean labels](hyp:factor),
+and whose realized Boolean patterns have
+[VC dimension at most `d` on every finite sample](hyp:vcDim_le). -/
 structure BinaryFactoredVCClass (F : ι → 𝒳 → ℝ) (d : ℕ) where
   /-- The Boolean class through which `F` factors on samples. -/
   π : ι → 𝒳 → Bool
@@ -48,7 +51,11 @@ structure BinaryFactoredVCClass (F : ι → 𝒳 → ℝ) (d : ℕ) where
   /-- Uniform VC dimension bound for the realized growth family. -/
   vcDim_le : ∀ {n : ℕ} (S : Fin n → 𝒳), (growthFamily π S).vcDim ≤ d
 
-/-- Deterministic prerequisites used by the Dudley step after localization.
+/-- The deterministic prerequisites used to run the Dudley entropy-integral step after
+localization: [a samplewise $L^2$ radius bound on the localized star-hull-zeroed class,
+needed to run Dudley with $c = r$](hyp:empirical_radius), and
+[a total-boundedness (covering-number) precondition on that same localized
+class](hyp:totallyBounded).
 
 The `empirical_radius` field is the samplewise `L2` radius bound needed to run
 Dudley with `c = r`; the `totallyBounded` field is the covering-number

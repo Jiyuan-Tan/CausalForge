@@ -41,9 +41,12 @@ open Real Polynomial
 
 namespace Causalean.Mathlib.Analysis.BernsteinSzegoTrig
 
-/-- The Szegő interpolant is a real trigonometric polynomial of degree ≤ `β`
-(expand `cos(β(t − t₀))` and `sin(β(t − t₀))` into `cos(βt)`, `sin(βt)` via the
-angle-subtraction formulae; only the `k = β` coefficient is nonzero). -/
+/-- For [a degree parameter `β`](hyp:β) and [values `Q₀`, `Q₁` and base point `t₀`]
+(hyp:Q₀,Q₁,t₀), [the Szegő interpolant is a real trigonometric polynomial of degree at most
+`β`](goal).
+
+(Expand `cos(β(t − t₀))` and `sin(β(t − t₀))` into `cos(βt)`, `sin(βt)` via the
+angle-subtraction formulae; only the `k = β` coefficient is nonzero.) -/
 theorem szegoInterp_isTrigPolyLE (β : ℕ) (Q₀ Q₁ t₀ : ℝ) :
     IsTrigPolyLE β (szegoInterp β Q₀ Q₁ t₀) := by
   let A : ℝ :=

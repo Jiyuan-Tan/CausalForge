@@ -182,9 +182,9 @@ lemma integrable_signedTail_prod (x y : ℝ) :
       (volume.prod volume) :=
   (integrable_signedTail x).mul_prod (integrable_signedTail y)
 
-/-- **Product tail representation.** `x * y` is the two-dimensional integral of
-the product of the two signed tail indicators:
-`∫∫ (𝟙{s<x} - 𝟙{s<0})(𝟙{t<y} - 𝟙{t<0}) ds dt = x * y`. -/
+/-- **Product tail representation.** [For any two reals `x` and `y`](hyp:x,y), [their
+product `x * y` equals the two-dimensional Lebesgue integral of the product of their
+signed tail indicators, `∫∫ (𝟙{s<x} - 𝟙{s<0})(𝟙{t<y} - 𝟙{t<0}) ds dt`](goal). -/
 lemma integral_signedTail_prod (x y : ℝ) :
     (∫ q : ℝ × ℝ, signedTail x q.1 * signedTail y q.2 ∂(volume.prod volume)) = x * y := by
   rw [integral_prod_mul (fun s => signedTail x s) (fun t => signedTail y t),

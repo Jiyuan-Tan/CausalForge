@@ -40,7 +40,11 @@ namespace OrthogonalLearning
 
 open MeasureTheory
 
-/-- Orthogonal statistical-learning system.
+/-- **Orthogonal statistical-learning system.** Bundles [a convex target class `Θ_set` containing
+a distinguished target `θ₀`](hyp:Θ_set,Θ_convex,θ₀,θ₀_mem), [a nuisance class `G_set` containing
+a distinguished nuisance `g₀`](hyp:G_set,g₀,g₀_mem), [a jointly measurable loss
+`ℓ`](hyp:ℓ,ℓ_meas), and the condition that [`θ₀` minimizes the population risk over the target
+class at the true nuisance `g₀`](hyp:θ₀_minimizes).
 
 This structure bundles the population law, a convex target class, a nuisance
 class, distinguished target and nuisance elements, a measurable loss, and the

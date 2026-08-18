@@ -13,25 +13,28 @@ import {
  * `[phrase](goal)` in docstring first paragraphs — see
  * src/shared/nl_crosslinks.ts for the convention).
  *
- * Usage: npx tsx bin/check_nl_crosslinks.ts [--root <causaleanRoot>] [--strict] [--verbose]
+ * Usage: npx tsx bin/check_nl_crosslinks.ts [--root <causaleanRoot>] [--verbose]
  *
  * Always an ERROR (exit 1):
  *   - a crosslink references a binder name absent from the decl's signature
  *     (drift: hypothesis renamed after the docstring was annotated);
  *   - crosslink markup outside the first paragraph (the NL translation is the
- *     only sanctioned home).
+ *     only sanctioned home);
+ *   - an annotated theorem with incomplete coverage (a hyp-classified binder
+ *     or the conclusion left unlinked);
+ *   - a HEADLINE theorem with no annotation at all (wave-2 policy: every
+ *     headline theorem carries at minimum a `(goal)` link), unless its
+ *     signature is unparseable (the site renders flat there).
  *
- * Coverage (every hyp-classified binder + the goal linked) is reported as a
- * table; with --strict, HEADLINE theorems with annotations that are
- * incomplete, or headline theorems with no annotations at all, also exit 1 —
- * the gate for post-migration CI and for future Causalean promotions.
+ * (--strict is retained as a no-op for old callers; the gate is always on.)
  */
 
 const args = process.argv.slice(2);
 const rootIdx = args.indexOf("--root");
 const root =
   rootIdx >= 0 ? resolve(args[rootIdx + 1]) : resolve(import.meta.dirname, "..", "..", "..");
-const strict = args.includes("--strict");
+// --strict retained as a no-op: the coverage gate is always on since wave 2.
+args.includes("--strict");
 const verbose = args.includes("--verbose");
 
 interface Entry {
@@ -126,7 +129,12 @@ for (const e of decls) {
   const names = crosslinkNames(firstPara);
   const hasGoal = linksGoal(firstPara);
   if (names.length === 0 && !hasGoal) {
-    if (e.kind === "theorem" && headline.has(e.name)) unannotatedHeadline.push(e.name);
+    // An unannotated HEADLINE theorem is a hard defect (every headline theorem
+    // carries at least a `(goal)` link since wave 2) — unless its signature is
+    // unparseable, where the site renders flat and annotations would be inert.
+    if (e.kind === "theorem" && headline.has(e.name) && e.source && sourceBinders(e.source)) {
+      unannotatedHeadline.push(`${e.name} (${e.file}:${e.line})`);
+    }
     continue;
   }
   annotated++;
@@ -145,7 +153,10 @@ for (const e of decls) {
     for (const f of sourceFieldNames(e.source ?? "")) declared.add(f);
   }
   const unknown = names.filter((n) => !declared.has(n));
-  if (unknown.length > 0) {
+  // A source the index truncated at sourceSliceCap hides late binders/fields —
+  // names past the cut cannot be validated (they render as inert spans on the
+  // site, which is harmless), so skip the unknown-name check there.
+  if (unknown.length > 0 && !(e.source ?? "").includes("… truncated")) {
     errors.push(
       `${e.name} (${e.file}:${e.line}): crosslink names not in signature: ${unknown.join(", ")}`,
     );
@@ -173,17 +184,16 @@ console.log(
 if (verbose && incomplete.length > 0) {
   console.log(`\nIncomplete coverage:\n  ${incomplete.join("\n  ")}`);
 }
-if (verbose && unannotatedHeadline.length > 0) {
-  console.log(`\nUnannotated headline theorems:\n  ${unannotatedHeadline.join("\n  ")}`);
+// Since wave 2 (2026-08-17) both are hard defects by default, not just under
+// --strict: an annotated theorem must be FULLY covered, and every headline
+// theorem must be annotated (at minimum a `(goal)` link on the conclusion).
+if (incomplete.length > 0) {
+  errors.push(...incomplete.map((s) => `incomplete coverage: ${s}`));
+}
+if (unannotatedHeadline.length > 0) {
+  errors.push(...unannotatedHeadline.map((s) => `headline theorem unannotated: ${s}`));
 }
 if (errors.length > 0) {
   console.error(`\nERRORS (${errors.length}):\n  ${errors.join("\n  ")}`);
-  process.exit(1);
-}
-if (strict && (incomplete.length > 0 || unannotatedHeadline.length > 0)) {
-  console.error(
-    `\n--strict: ${incomplete.length} theorems with incomplete coverage, ` +
-      `${unannotatedHeadline.length} headline theorems unannotated`,
-  );
   process.exit(1);
 }

@@ -95,7 +95,10 @@ noncomputable local instance (priority := 2000) instAlgebraRealLpCLM :
     Algebra ℝ (Lp ℂ 2 μ →L[ℂ] Lp ℂ 2 μ) :=
   Algebra.complexToReal
 
-/-- **Spectral β-source condition** at the primal nuisance `h₀`.
+/-- **Spectral β-source condition** at the primal nuisance `h₀`: strengthens `SourceCondition`
+by additionally requiring that [the primal candidate subspace coincides with the full ambient
+`L²` space](hyp:Hbar_L2_eq_top), which is what lets the Lax–Milgram Tikhonov minimiser on the
+candidate class agree with the resolvent expression needed to run the spectral argument.
 
 Strengthens `SourceCondition` with the structural assumption needed by
 the spectral discharge of the Tikhonov bias bound:

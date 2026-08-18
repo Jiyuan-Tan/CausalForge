@@ -43,7 +43,13 @@ variable {Treated Untreated Regressor : Type*}
 def dot (x beta : Regressor → ℝ) : ℝ :=
   ∑ r : Regressor, x r * beta r
 
-/-- Finite treated/untreated cell design for the BJS imputation decomposition.
+/-- A finite treated/untreated cell design for the BJS imputation decomposition, storing
+[treated cells' regressor rows](hyp:qT) and [untreated cells' regressor rows](hyp:qU), [an
+arbitrary — possibly signed and non-normalized — target weight on treated cells](hyp:a), the
+observed-law means [on treated](hyp:EY_T) and [untreated](hyp:EY_U) cells, the
+untreated-potential-outcome means [on treated](hyp:EY0_T) and [untreated](hyp:EY0_U) cells, [a
+nuisance vector for the untreated-outcome model](hyp:beta0), and [treated-cell causal
+effects](hyp:tau).
 
 The observed treated and untreated cell means, the untreated-potential-outcome
 cell means, and the target weights are stored as primitive finite arrays. Target

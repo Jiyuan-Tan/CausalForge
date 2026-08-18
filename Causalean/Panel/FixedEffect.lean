@@ -57,11 +57,15 @@ Definitionally equal to `Causalean.Panel.Weighted.twoAxisAdditiveSpan I T`. -/
 def H_twfe : Submodule ℝ (V I T) :=
   Causalean.Panel.Weighted.twoAxisAdditiveSpan I T
 
-/-- `H_twfe` unfolds to the generic two-axis additive span. -/
+/-- [The two-way fixed-effect subspace `H_twfe` equals the generic two-axis additive span over
+units and periods](goal). -/
 lemma H_twfe_eq :
     H_twfe = Causalean.Panel.Weighted.twoAxisAdditiveSpan I T := rfl
 
-/-- Constants belong to `H_twfe`: delegates to `AdditiveSpan.const_mem`. -/
+/-- For [any constant `c₀`](hyp:c₀), [the constant array `c₀` belongs to the two-way
+fixed-effect subspace `H_twfe`](goal).
+
+Delegates to `AdditiveSpan.const_mem`. -/
 lemma const_mem_H_twfe (c₀ : ℝ) :
     (fun _ : I × T => c₀) ∈ H_twfe :=
   Causalean.Panel.Weighted.AdditiveSpan.const_mem (Prod.fst : I × T → I) Prod.snd c₀

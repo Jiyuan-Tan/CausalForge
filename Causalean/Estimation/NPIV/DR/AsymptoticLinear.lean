@@ -114,10 +114,16 @@ theorem mean_zero_of_DualSolution
 
 /-! ## Bundled sufficient remainder hypotheses -/
 
-/-- The TRAE-DR remainder hypotheses require the fitted primal and dual
-nuisances to be L²-consistent in probability, to stay in the candidate classes
-needed by the mixed-bias identity, and to satisfy the mixed-bias,
-empirical-process, and finite-variance conditions for asymptotic linearity. -/
+/-- The **TRAE-DR remainder hypotheses** bundle the sufficient conditions under which the
+doubly-robust TRAE estimator, built from primal nuisance estimators `ĥ_n` and dual nuisance
+estimators `q̂_n` over a cross-fitting split, is asymptotically linear: [the fitted primal
+nuisance is L²-consistent for the truth in probability](hyp:primal_l2_consistency), [likewise
+for the fitted dual nuisance](hyp:dual_l2_consistency), [both fitted nuisances stay in their
+respective candidate classes at every sample size and outcome](hyp:candidate_mem), [the
+√-scaled mixed-bias integral between the two nuisance errors is asymptotically
+negligible](hyp:mixed_bias), [the centered empirical-process remainder from plugging the
+fitted nuisances into the oracle score vanishes at the √-rate](hyp:ep_remainder), and [the
+oracle score has finite variance under the observation law](hyp:finite_var). -/
 structure TRAEDRRemainderHyps
     {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω}
     [IsProbabilityMeasure μ]

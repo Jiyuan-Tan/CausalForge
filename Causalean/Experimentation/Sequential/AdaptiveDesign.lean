@@ -38,12 +38,13 @@ namespace Causalean
 namespace Experimentation
 namespace Sequential
 
-/-- An adaptive sequential experiment consists of a measurable outcome space, a time-indexed
-information flow, and treatment probabilities that are predictable from the pre-assignment history:
-the initial propensity is initial-information measurable, and the propensity at time `t + 1` is
-measurable using only the information available at time `t`.
-
-Each recorded propensity is also bounded between zero and one. -/
+/-- An adaptive sequential experiment: [a time-indexed information flow `ℱ` on the outcome
+space](hyp:ℱ) together with [a propensity process `propensity`](hyp:propensity) recording the
+treatment probability of the unit arriving at each time, subject to three conditions —
+[the process is predictable: the time-`0` propensity is measurable with respect to the initial
+information, and the time-`(t+1)` propensity depends only on the information available at time
+`t`](hyp:propensity_predictable), [every propensity is nonnegative](hyp:propensity_nonneg), and
+[every propensity is at most one](hyp:propensity_le_one). -/
 structure AdaptiveExperiment (Ω : Type*) (m0 : MeasurableSpace Ω) where
   /-- The data-collection filtration: time `t` represents the information available after observing
   the time-`t` history and before the next assignment is made. -/
@@ -70,8 +71,8 @@ well-behaved. -/
 def HasOverlap (E : AdaptiveExperiment Ω m0) (δ : ℝ) : Prop :=
   0 < δ ∧ ∀ t ω, δ ≤ E.propensity t ω ∧ E.propensity t ω ≤ 1 - δ
 
-/-- Under overlap with margin `δ`, every propensity is at least `δ`, hence strictly positive — so
-inverse-propensity weights are finite. -/
+/-- Under [overlap with margin `δ`](hyp:h), [every propensity is at least `δ`, hence strictly
+positive — so inverse-propensity weights are finite](goal). -/
 lemma propensity_pos_of_overlap {E : AdaptiveExperiment Ω m0} {δ : ℝ} (h : E.HasOverlap δ)
     (t : ℕ) (ω : Ω) : 0 < E.propensity t ω :=
   lt_of_lt_of_le h.1 (h.2 t ω).1

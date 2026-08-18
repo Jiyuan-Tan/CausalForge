@@ -15,8 +15,9 @@ of scope; this is the structural target a tree compiles to.)
 
 namespace Causalean.ML
 
-/-- A piecewise-constant predictor on a finite partition: a finite `cell` type, a
-cell-assignment map, and a value per cell. -/
+/-- A piecewise-constant predictor on a finite partition: [a finite index type `cell` of
+partition cells](hyp:cell,fintypeCell), [a map `chooseCell` assigning each input to its
+cell](hyp:chooseCell), and [a constant predicted value `value` on each cell](hyp:value). -/
 structure FinitePartitionPredictor (X : Type*) where
   /-- The (finite) index type of partition cells. -/
   cell : Type
@@ -33,7 +34,9 @@ attribute [instance] FinitePartitionPredictor.fintypeCell
 def FinitePartitionPredictor.eval {X : Type*} (T : FinitePartitionPredictor X) (x : X) : ℝ :=
   T.value (T.chooseCell x)
 
-/-- The tree is constant — equal to `value c` — on the cell `c`. -/
+/-- [For a finite-partition predictor `T`](hyp:T), [on the set of inputs mapped to a given
+cell `c`](hyp:c), [the predictor's output equals the constant value assigned to that
+cell](goal). -/
 theorem FinitePartitionPredictor.eval_eqOn_cell {X : Type*}
     (T : FinitePartitionPredictor X) (c : T.cell) :
     Set.EqOn T.eval (fun _ => T.value c) {x | T.chooseCell x = c} := by

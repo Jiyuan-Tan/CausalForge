@@ -33,8 +33,11 @@ noncomputable def coordinateDirections (alpha : Fin 2 → ℕ)
 noncomputable def coordinatePartial (f : EuclideanSpace ℝ (Fin 2) → ℝ) (alpha : Fin 2 → ℕ)
     (x : EuclideanSpace ℝ (Fin 2)) : ℝ :=
   iteratedFDeriv ℝ (coordinateMultiOrder alpha) f x (coordinateDirections alpha)
-/-- Evaluating an iterated Fréchet derivative along the standard coordinate
-directions cannot increase its operator norm. -/
+/-- [Evaluating the iterated Fréchet derivative of a function `f`](hyp:f) [of a bivariate
+multi-index `alpha`](hyp:alpha) [at a point `x`, along the standard coordinate
+directions](hyp:x), [cannot increase its operator norm — the resulting scalar coordinate
+partial is bounded in absolute value by the operator norm of the full iterated
+derivative](goal). -/
 -- @node: coordinatePartial_abs_le_iteratedFDeriv_norm
 lemma coordinatePartial_abs_le_iteratedFDeriv_norm
     (f : EuclideanSpace ℝ (Fin 2) → ℝ) (alpha : Fin 2 → ℕ) (x : EuclideanSpace ℝ (Fin 2)) :

@@ -40,8 +40,8 @@ namespace Causalean
 namespace Experimentation
 namespace DesignBased
 
-/-- A randomization design: a probability mass function `p` on a finite assignment
-space `Ω`. `p_sum` records that the design probabilities sum to one. -/
+/-- A randomization design: [a probability mass function `p` on a finite assignment
+space `Ω`](hyp:p) whose values are [nonnegative](hyp:p_nonneg) and [sum to one](hyp:p_sum). -/
 structure FiniteDesign (Ω : Type*) [Fintype Ω] where
   /-- Design probability of assignment `z`. -/
   p : Ω → ℝ
@@ -97,8 +97,10 @@ lemma E_mul_const (X : Ω → ℝ) (c : ℝ) : D.E (fun z => X z * c) = D.E X * 
 lemma E_neg (X : Ω → ℝ) : D.E (fun z => -X z) = -D.E X := by
   simp only [E, mul_neg, Finset.sum_neg_distrib]
 
-/-- The expectation of a finite sum of random variables is the corresponding finite sum of
-expectations. -/
+/-- **Linearity of expectation over a finite sum.** For [a finite index set `s`](hyp:s) over
+[an index type `ι`](hyp:ι) and [a family of random variables `f`](hyp:f), [the design
+expectation of the finite sum `∑ᵢ∈s fᵢ` equals the finite sum of the design expectations
+`∑ᵢ∈s E[fᵢ]`](goal). -/
 lemma E_sum {ι : Type*} (s : Finset ι) (f : ι → Ω → ℝ) :
     D.E (fun z => ∑ i ∈ s, f i z) = ∑ i ∈ s, D.E (f i) := by
   simp only [E, Finset.mul_sum]
@@ -122,14 +124,17 @@ lemma Cov_congr {X Y X' Y' : Ω → ℝ} (hX : ∀ z, X z = X' z) (hY : ∀ z, Y
 
 /-! ### Variance and covariance identities -/
 
-/-- Variance equals the second moment minus the square of the mean. -/
+/-- **Variance identity.** For [any statistic `X`](hyp:X), [its design variance equals the
+design expectation of `X²` minus the square of its design expectation](goal). -/
 lemma Var_eq (X : Ω → ℝ) : D.Var X = D.E (fun z => (X z) ^ 2) - (D.E X) ^ 2 := by
   have h : (fun z => (X z - D.E X) ^ 2)
       = (fun z => (X z) ^ 2 + ((-(2 * D.E X)) * X z + (D.E X) ^ 2)) := by
     funext z; ring
   rw [Var, h, E_add, E_add, E_const_mul, E_const]; ring
 
-/-- Covariance equals the mixed second moment minus the product of the two means. -/
+/-- **Covariance identity.** For [any two statistics `X` and `Y`](hyp:X,Y) under the design,
+[their design covariance equals the design expectation of `X·Y` minus the product of their
+design expectations](goal). -/
 lemma Cov_eq (X Y : Ω → ℝ) :
     D.Cov X Y = D.E (fun z => X z * Y z) - D.E X * D.E Y := by
   have h : (fun z => (X z - D.E X) * (Y z - D.E Y))
@@ -199,7 +204,10 @@ lemma Var_const_mul (c : ℝ) (X : Ω → ℝ) :
     D.Var (fun z => c * X z) = c ^ 2 * D.Var X := by
   rw [← Cov_self, Cov_const_mul_left, Cov_const_mul_right, Cov_self]; ring
 
-/-- Covariance of two finite linear combinations as a double sum of covariances. -/
+/-- **Bilinear expansion of covariance for linear combinations.** For [finite weighted sums
+`∑ᵢ∈s cᵢXᵢ` and `∑ⱼ∈t eⱼYⱼ`, built from index sets `s ⊆ ι`, `t ⊆ κ`, weights `c`, `e`, and
+random-variable families `X`, `Y`](hyp:ι,κ,s,t,c,e,X,Y), [their design covariance equals
+the double sum over `s×t` of the weighted covariances `cᵢeⱼ·Cov(Xᵢ,Yⱼ)`](goal). -/
 lemma Cov_linear_comb {ι κ : Type*} (s : Finset ι) (t : Finset κ)
     (c : ι → ℝ) (e : κ → ℝ) (X : ι → Ω → ℝ) (Y : κ → Ω → ℝ) :
     D.Cov (fun z => ∑ i ∈ s, c i * X i z) (fun z => ∑ j ∈ t, e j * Y j z)
@@ -210,7 +218,10 @@ lemma Cov_linear_comb {ι κ : Type*} (s : Finset ι) (t : Finset κ)
   apply Finset.sum_congr rfl; intro j _
   rw [Cov_const_mul_right]; ring
 
-/-- Variance of a finite linear combination `∑ cᵢ Xᵢ` as a double sum of covariances. -/
+/-- **Variance of a finite linear combination.** For [a finite weighted sum `∑ᵢ∈s cᵢXᵢ`, built
+from an index set `s ⊆ ι`, weights `c`, and a random-variable family `X`](hyp:ι,s,c,X), [its
+design variance equals the double sum of weighted covariances
+`∑ᵢ∈s∑ⱼ∈s cᵢcⱼ·Cov(Xᵢ,Xⱼ)`](goal). -/
 lemma Var_linear_comb {ι : Type*} (s : Finset ι) (c : ι → ℝ) (X : ι → Ω → ℝ) :
     D.Var (fun z => ∑ i ∈ s, c i * X i z)
       = ∑ i ∈ s, ∑ j ∈ s, c i * c j * D.Cov (X i) (X j) := by
@@ -218,7 +229,8 @@ lemma Var_linear_comb {ι : Type*} (s : Finset ι) (c : ι → ℝ) (X : ι → 
 
 /-! ### Indicator facts -/
 
-/-- The expectation of an event indicator is the design probability of that event. -/
+/-- **Expectation of an indicator.** For [any event `A`](hyp:A), [the design expectation of
+its indicator equals the design probability of `A`](goal). -/
 @[simp] lemma E_ind (A : Ω → Prop) [DecidablePred A] : D.E (ind A) = D.Pr A := rfl
 
 omit [Fintype Ω] in
@@ -227,7 +239,8 @@ lemma ind_sq (A : Ω → Prop) [DecidablePred A] :
     (fun z => (ind A z) ^ 2) = ind A := by
   funext z; unfold ind; by_cases h : A z <;> simp [h]
 
-/-- The variance of an event indicator is its probability times one minus its probability. -/
+/-- **Variance of an indicator.** For [any event `A`](hyp:A), [the design variance of its
+indicator equals the design probability of `A` times one minus that probability](goal). -/
 lemma Var_ind (A : Ω → Prop) [DecidablePred A] :
     D.Var (ind A) = D.Pr A * (1 - D.Pr A) := by
   rw [Var_eq, ind_sq, E_ind]; ring

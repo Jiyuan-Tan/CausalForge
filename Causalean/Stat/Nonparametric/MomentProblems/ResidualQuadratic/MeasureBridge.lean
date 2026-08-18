@@ -54,9 +54,9 @@ open scoped Real
 /-- The raw `k`-th moment `mₖ = ∫ yᵏ ∂μ` of a measure `μ` on `ℝ`. -/
 noncomputable def moment (μ : Measure ℝ) (k : ℕ) : ℝ := ∫ y, y ^ k ∂μ
 
-/-- Finite-fourth-moment hypothesis bundle: integrability of the powers `y, y², y³, y⁴` against `μ`.
-For a probability measure with `∫ y⁴ ∂μ < ∞` all four hold, so this is exactly "μ has a finite
-fourth moment". -/
+/-- Finite-fourth-moment hypothesis bundle: [integrability of `y`](hyp:int1), [of
+`y²`](hyp:int2), [of `y³`](hyp:int3), and [of `y⁴`](hyp:int4) against `μ`. For a probability
+measure with `∫ y⁴ ∂μ < ∞` all four hold, so this is exactly "μ has a finite fourth moment". -/
 structure FiniteMoment4 (μ : Measure ℝ) : Prop where
   /-- `y ↦ y` is integrable (finite first moment). -/
   int1 : Integrable (fun y : ℝ => y) μ

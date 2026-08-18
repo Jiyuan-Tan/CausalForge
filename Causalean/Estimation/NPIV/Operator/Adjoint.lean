@@ -97,10 +97,12 @@ noncomputable def Tstar_T (S : OperatorSystem Ω μ) :
     Lp ℝ 2 μ →L[ℝ] Lp ℝ 2 μ :=
   S.Tadjoint.comp S.Tlin
 
-/-- `T† T` is self-adjoint.  Follows from `IsSelfAdjoint.star_mul_self`
-in the C⋆-algebra `Lp ℝ 2 μ →L[ℝ] Lp ℝ 2 μ`, after identifying
-`Tadjoint` with `star Tlin` and `comp` with `*`
-(`ContinuousLinearMap.mul_def`). -/
+/-- [For any NPIV operator system](hyp:S), [the composite operator `T† T`, obtained by
+composing the second-stage conditional-expectation operator with its adjoint, is
+self-adjoint](goal).
+
+Follows from `IsSelfAdjoint.star_mul_self` in the C⋆-algebra `Lp ℝ 2 μ →L[ℝ] Lp ℝ 2 μ`, after
+identifying `Tadjoint` with `star Tlin` and `comp` with `*` (`ContinuousLinearMap.mul_def`). -/
 lemma Tstar_T_isSelfAdjoint (S : OperatorSystem Ω μ) :
     IsSelfAdjoint S.Tstar_T := by
   unfold Tstar_T Tadjoint

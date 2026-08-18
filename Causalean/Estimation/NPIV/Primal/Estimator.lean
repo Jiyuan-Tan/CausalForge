@@ -79,8 +79,11 @@ variable {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω}
 
 /-! ## Candidate / critic classes -/
 
-/-- Candidate class `H ⊆ Hbar` and critic class `F ⊆ Qbar` for the primal
-TRAE optimization (`def:est-trae-population-criterion`, line 139). -/
+/-- This structure packages [a nonempty statistical candidate class for the primal
+nuisance](hyp:H,H_nonempty) that [sits inside the ambient closed candidate set](hyp:H_subset),
+together with [a nonempty statistical critic class](hyp:F,F_nonempty) that [sits inside the
+ambient closed critic set](hyp:F_subset), for the primal Tikhonov-regularized adversarial
+optimization (`def:est-trae-population-criterion`, line 139). -/
 structure TRAEClasses (S : OperatorSystem Ω μ) where
   /-- Statistical candidate class for the primal nuisance. -/
   H : Set (S.𝒳 → ℝ)
@@ -140,9 +143,11 @@ the empirical optimum `ĥ_n`, the sup-objective is no worse than at any
 realized comparison point `h*_λ ∈ H`.  Plus a measurability-in-`ω`
 condition for downstream probability arguments. -/
 
-/-- `IsTRAEPrimalEstimator S TC sample split lambda h_hat` says that
-`h_hat n ω` is, with respect to fold `A(n)`, an empirical sup-min
-optimizer over `TC.H` for the TRAE primal objective at level `λ`.
+/-- An estimator, indexed by sample size and randomness, **is a TRAE primal estimator**
+relative to a nuisance fold when, at every sample size and realization, it [belongs to the
+statistical candidate class](hyp:mem_H), [attains an empirical sup-min objective on that fold no
+worse than at any other candidate in the class](hyp:opt), and [is jointly measurable in the
+randomness and the covariate argument](hyp:measurable).
 
 Concretely:
 

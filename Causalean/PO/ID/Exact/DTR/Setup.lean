@@ -51,9 +51,14 @@ namespace PO
 open MeasureTheory ProbabilityTheory
 
 /-- A finite-horizon dynamic treatment-regime system packages the variables for
-sequential potential-outcome identification: a state history observed before each
-treatment, the treatment chosen at that stage, and the terminal real-valued
-outcome whose regime effect is later identified by dynamic backdoor adjustment.
+sequential potential-outcome identification: [a stage-indexed state history observed
+before each treatment](hyp:S), [the treatment chosen at each stage](hyp:D) whose value
+space is [identified with a common treatment alphabet across stages](hyp:hDmeas), and
+[a terminal outcome](hyp:Y) whose value space is [identified with the real
+line](hyp:hYreal), subject to [the state nodes being pairwise distinct across
+stages](hyp:distinctSS), [the treatment nodes being pairwise distinct across
+stages](hyp:distinctDD), and [no state, treatment, or outcome node coinciding with
+another](hyp:distinctSD,distinctSY,distinctDY).
 
 Field guide:
 * `S k` is the stage-`k` state or history-dependent covariate variable.
@@ -121,7 +126,9 @@ def regimeTarget (S : PODTRSystem P n δ γ) : ℕ → Finset P.V
       if h : k < n then insert (S.D ⟨k, h⟩) (S.regimeTarget k)
       else S.regimeTarget k
 
-/-- Membership in the regime target is exactly being a treatment node before the cutoff. -/
+/-- For [a dynamic-treatment-regime system `S`](hyp:S), [a variable belongs to the
+regime target built up to stage `k` if and only if it is the treatment node of some
+earlier stage `i < k`](goal). -/
 lemma regimeTarget_mem_iff (S : PODTRSystem P n δ γ) :
     ∀ (k : ℕ) (_ : k ≤ n) (v : P.V),
       v ∈ S.regimeTarget k ↔ ∃ i : Fin n, i.val < k ∧ v = S.D i
@@ -299,7 +306,15 @@ noncomputable def cfYBundle (S : PODTRSystem P n δ γ) (dbar : Fin n → δ) :
 
 /-! ### Sequential backdoor assumptions -/
 
-/-- Sequential backdoor assumptions (PO level), general `n`.
+/-- Sequential backdoor assumptions for dynamic-treatment-regime identification at a
+general horizon `n`: [potential-outcome consistency for the ambient
+system](hyp:consistency); [per-sequence sequential exchangeability, i.e. at each stage
+the treatment is conditionally independent of the counterfactual terminal outcome
+under the treatment sequence given the history observed up to that
+stage](hyp:exch); [pointwise positivity of the stagewise propensity given the same
+history, almost surely](hyp:overlap); and [integrability of the counterfactual
+terminal outcome under every treatment sequence](hyp:integrable_Y) together with
+[integrability of the factual terminal outcome](hyp:integrable_factualY).
 
 Per-sequence exchangeability: for each `dbar : Fin n → δ` and each stage
 `k : Fin n`, `D k ⟂ Y(dbar) | σ(historyBundle k)`.  Conditions on the full

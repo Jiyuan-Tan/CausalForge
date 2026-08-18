@@ -138,9 +138,10 @@ theorem inducedAncestral_self_of_mem_cComponentSet
   · intro x hx
     exact Finset.mem_inter.mpr ⟨(G.induce S).dag.subset_ancestralSet S hx, hx⟩
 
-/-- **The no-fixing certificate is the base case of the recursive one.**  A district
-that is already a full c-component of `G` is recursively reachable from its
-containing district (which is itself). -/
+/-- **The no-fixing certificate is the base case of the recursive one.** [For a SWIG graph
+`G`](hyp:G) and [a district `S`](hyp:S), [if `S` is already reachable from its containing district
+under the plain no-fixing certificate](hyp:h), [then `S` is recursively reachable from its
+containing district — which, since `S` is a full c-component, is `S` itself](goal). -/
 theorem cFactorReachable_base_toRec
     (G : SWIGGraph N) (S : Finset (SWIGNode N))
     (h : cFactorReachable G (containingCComponent G S) S) :
@@ -150,8 +151,10 @@ theorem cFactorReachable_base_toRec
   exact CFactorReachableRec.base hne (Finset.Subset.refl _)
     (inducedAncestral_self_of_mem_cComponentSet G S hmem)
 
-/-- **`idSucceedsRec` generalizes `idSucceeds`.**  Every no-fixing certificate is a
-recursive certificate, so soundness proved for `idSucceedsRec` subsumes the
+/-- **`idSucceedsRec` generalizes `idSucceeds`.** [For an intervention target set `X`](hyp:X),
+[an outcome node set `Y`](hyp:Y), and [a SWIG graph `G`](hyp:G), [if the plain no-fixing ID
+certificate succeeds for `X`, `Y` on `G`](hyp:h), [then the full recursive ID certificate also
+succeeds for `X`, `Y` on `G`](goal), so soundness proved for `idSucceedsRec` subsumes the
 no-fixing headline. -/
 theorem idSucceeds_toRec
     (X : Finset N) (Y : Finset (SWIGNode N)) (G : SWIGGraph N)

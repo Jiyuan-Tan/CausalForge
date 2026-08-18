@@ -15,8 +15,12 @@ namespace Causalean.Mathlib.Analysis.CertifiedContourIntervalArithmetic
 /-- A positive rational is a rational number bundled with a proof that it is strictly positive. -/
 abbrev PosRat := {q : ℚ // 0 < q}
 
-/-- A certified real name is a nested rational enclosure sequence containing a
-specified real value, together with an effective modulus for its widths. -/
+/-- A certified real name represents [a real number](hyp:value) by [a sequence of rational
+interval enclosures indexed by precision](hyp:approx) that is [nested — each successive enclosure
+a subinterval of the one before](hyp:nested) — and [always contains the represented
+value](hyp:contains), together with [a computable rule selecting, for any requested positive
+rational error, a precision level](hyp:modulus) [whose enclosure is no wider than that
+error](hyp:width_modulus). -/
 structure CertifiedReal where
   /-- The real number denoted by the certified name. -/
   value : ℝ
@@ -50,8 +54,9 @@ theorem refine_contains (x : CertifiedReal) (ε : PosRat) :
     (x.refine ε).Contains x.value := by
   exact x.contains (x.modulus ε)
 
-/-- Refinement terminates at an enclosure whose width is no larger than the
-requested positive rational tolerance. -/
+/-- For [a certified real number `x`](hyp:x) and [a requested positive rational tolerance
+`ε`](hyp:ε), [refining `x` to the precision selected by `ε`'s modulus yields an enclosure
+whose width is at most `ε`](goal). -/
 theorem refine_width (x : CertifiedReal) (ε : PosRat) :
     (x.refine ε).width ≤ ε.1 := by
   exact x.width_modulus ε

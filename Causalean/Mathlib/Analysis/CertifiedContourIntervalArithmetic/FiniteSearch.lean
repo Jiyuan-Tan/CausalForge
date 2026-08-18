@@ -170,7 +170,10 @@ theorem leastScoreIndex_tie {n : ℕ} (score : Fin (n + 1) → ℝ)
       exact Prod.Lex.right _ hgt
     exact (not_lt_of_ge hle) hlex
 
-/-- Least-index real-score selection is Borel measurable on a finite real sample vector. -/
+/-- For [a sample-size index `n`](hyp:n), [the function that selects, from a vector of `n+1`
+real scores, the smallest index attaining the least score is measurable with respect to the
+Borel σ-algebra on the score vector space and the discrete σ-algebra on the finite index
+set](goal). -/
 theorem measurable_leastScoreIndex {n : ℕ} :
     Measurable (leastScoreIndex : (Fin (n + 1) → ℝ) → Fin (n + 1)) := by
   apply measurable_to_countable'

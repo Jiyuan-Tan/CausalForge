@@ -407,9 +407,10 @@ theorem innerCondD_mul_z1_indicator (As : S.Assumptions) (z d : Fin 2 → Bool) 
 
 /-! ### `S₀`-conditional bridges (the workhorses) -/
 
-/-- **Outcome bridge** (`S₀`-conditional): the bundle conditional expectation
-of `Y(D(z))` given `historyBundle1 = (S₀,)` agrees a.s. with the inner-outer
-observable regression `cObsMean z`.
+/-- **Outcome bridge** (`S₀`-conditional). Under [the dynamic LATE identifying
+assumptions](hyp:As), [the baseline-conditional expectation of the counterfactual
+outcome `Y(D(z))` for an encouragement vector `z`](hyp:z) [agrees almost surely with
+the inner-outer observable regression `cObsMean z`](goal).
 
 `E[Y(D(z)) | S₀] =ᵐ cObsMean(z; S₀)`. -/
 theorem cOutcome_bridge (As : S.Assumptions) (z d : Fin 2 → Bool)
@@ -543,9 +544,11 @@ theorem cOutcome_bridge (As : S.Assumptions) (z d : Fin 2 → Bool)
   unfold cObsMean
   exact hratio.symm
 
-/-- **Compliance bridge** (`S₀`-conditional): the bundle conditional
-probability of the dynamic complier event given `historyBundle1` agrees
-a.s. with the inner-outer observable regression `cObsProb z d`.
+/-- **Compliance bridge** (`S₀`-conditional). Under [the dynamic LATE identifying
+assumptions](hyp:As), for [an encouragement vector `z` and a treatment path
+`d`](hyp:z,d) with [`d` weakly dominated coordinatewise by `z`](hyp:_hd), [the
+baseline-conditional probability of the dynamic complier event `D(z) = d` agrees
+almost surely with the inner-outer observable regression `cObsProb z d`](goal).
 
 `P{D(z) = d | S₀} =ᵐ cObsProb(z, d; S₀)`. -/
 theorem cCompliance_bridge (As : S.Assumptions) (z d : Fin 2 → Bool)
@@ -787,8 +790,10 @@ theorem cCompliance_bridge (As : S.Assumptions) (z d : Fin 2 → Bool)
 
 /-! ### Unconditional bridges (corollaries via integration) -/
 
-/-- **Outcome bridge** (unconditional): the counterfactual mean of `Y(D(z))`
-equals the observable nested regression `obsMean z`.
+/-- **Outcome bridge** (unconditional). Under [the dynamic LATE identifying
+assumptions](hyp:As), [the counterfactual mean outcome `E[Y(D(z))]` for an
+encouragement vector `z`](hyp:z) [equals the observable nested regression
+`obsMean z`](goal).
 
 `E[Y(D(z))] = E[ E[ E[Y | S, D₁, Z = z] | S₀, Z₁ = z₁ ] ]`.
 

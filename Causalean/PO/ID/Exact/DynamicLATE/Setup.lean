@@ -44,13 +44,17 @@ namespace PO
 
 open MeasureTheory ProbabilityTheory
 
-/-- A two-period dynamic instrumental-variable (LATE) model in the
-potential-outcome framework. A unit is observed over two periods: baseline
-covariates `S₀`, then in period 1 a binary encouragement / instrument `Z₁` and
-the treatment `D₁` it shifts; an intermediate state `S₁`; then in period 2 a
-second encouragement `Z₂` and treatment `D₂`; and finally a real outcome `Y`.
-Sequential instrument variation identifies dynamic complier treatment effects
-(`def:po-dynamic-late-system`).
+/-- A two-period dynamic instrumental-variable (LATE) model in the potential-outcome
+framework. A unit is observed over two periods: [baseline covariates `S₀`](hyp:S0),
+then in period 1 [a binary encouragement / instrument `Z₁`](hyp:Z1) whose [value
+space is identified with the booleans](hyp:hZ1bool) and [the treatment `D₁` it
+shifts](hyp:D1), likewise [identified with the booleans](hyp:hD1bool); [an
+intermediate state `S₁`](hyp:S1); then in period 2 [a second
+encouragement `Z₂`](hyp:Z2) and [treatment `D₂`](hyp:D2), each [identified with the
+booleans](hyp:hZ2bool,hD2bool); and finally [a real-valued outcome `Y`](hyp:Y),
+[identified with the real line](hyp:hYreal). Sequential instrument variation
+identifies dynamic complier treatment effects (`def:po-dynamic-late-system`), and
+[all seven nodes are required to be pairwise distinct](hyp:vars_inj).
 
 `γ₀, γ₁` are the value spaces of the baseline and intermediate state covariates
 `S₀, S₁`.  Encouragements `Z₁, Z₂` and treatments `D₁, D₂` are binary; the
@@ -196,8 +200,9 @@ stage-2 ignorability condition where `Z₁` remains factual. -/
 noncomputable def encZ2Regime (z₂ : Bool) : Regime P.V P.X :=
   Regime.single S.Z2 (S.hZ2bool.symm z₂)
 
-/-- The encouragement and treatment regimes are disjoint (their targets
-`{Z₁, Z₂}` and `{D₁, D₂}` share no node). -/
+/-- For [an encouragement vector `z` and a treatment path `d`](hyp:z,d), [the
+encouragement regime fixing `Z₁, Z₂` to `z` and the treatment regime fixing
+`D₁, D₂` to `d` target disjoint sets of variables](goal). -/
 lemma encouragementRegime_disjoint_treatmentRegime (z d : Fin 2 → Bool) :
     (S.encouragementRegime z).Disjoint (S.treatmentRegime d) := by
   unfold encouragementRegime treatmentRegime Regime.Disjoint
@@ -501,7 +506,25 @@ def Preceq (d z : Fin 2 → Bool) : Prop := d 0 ≤ z 0 ∧ d 1 ≤ z 1
 
 /-! ### Assumption bundle (def:po-dynamic-late-assumptions) -/
 
-/-- The dynamic IV / LATE assumptions of def:po-dynamic-late-assumptions.
+/-- The dynamic instrumental-variable / LATE assumptions for the two-period system
+(`def:po-dynamic-late-assumptions`): [potential-outcome consistency for the ambient
+system](hyp:consistency); [conditional independence of the stage-1 encouragement from
+the counterfactual outcome and treatment path given the baseline state](hyp:ignorability1),
+and [conditional independence of the stage-2 encouragement from its counterfactual
+outcome and treatment given the full stage-2 history](hyp:ignorability2); [positive
+stage-1](hyp:overlap1) and [positive stage-2](hyp:overlap2) propensities almost
+surely; [a positive stage-1](hyp:relevance1) and [a positive stage-2](hyp:relevance2)
+first-stage effect of encouragement on treatment, almost surely; [one-sided
+noncompliance, whereby each stage's counterfactual treatment never exceeds its
+encouragement](hyp:oneSidedNoncompliance); an exclusion restriction under which [the
+outcome depends on the encouragements only through the resulting
+treatments](hyp:exclusion), [the first-stage treatment does not depend on the
+second-period encouragement](hyp:exclusion_D1), and [the first-period encouragement
+does not depend on the second-period encouragement](hyp:exclusion_Z1); and
+integrability of [the counterfactual outcome under every fixed treatment
+vector](hyp:integrable_YofD), [under every fixed encouragement
+vector](hyp:integrable_YofDofZ), and [under every fixed second-period
+encouragement](hyp:integrable_YofZ2).
 
 * **consistency**: PO consistency for the underlying system.
 * **ignorability1**: `{Y(D(z)), D₁(z), D₂(z)} ⟂ Z₁ | S₀` for every `z`.

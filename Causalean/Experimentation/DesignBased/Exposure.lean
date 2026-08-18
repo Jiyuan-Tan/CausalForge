@@ -63,18 +63,29 @@ def propPairSame (D : FiniteDesign Ω) (f : Ω → Θ → Δ) (θ : ι → Θ) (
 def propPairCross (D : FiniteDesign Ω) (f : Ω → Θ → Δ) (θ : ι → Θ) (i j : ι) (d d' : Δ) : ℝ :=
   D.E (fun z => expoInd f θ i d z * expoInd f θ j d' z)
 
-/-- The generalized probability of exposure is the expectation of the exposure indicator. -/
+/-- **Exposure probability as an expectation.** For [a design](hyp:D), [an exposure
+mapping](hyp:f), [unit traits](hyp:θ), [a unit `i`](hyp:i), and [an exposure level
+`d`](hyp:d), [the design expectation of the exposure indicator equals the generalized
+probability of exposure `π_i(d)`](goal). -/
 @[simp] lemma E_expoInd (D : FiniteDesign Ω) (f : Ω → Θ → Δ) (θ : ι → Θ) (i : ι) (d : Δ) :
     D.E (expoInd f θ i d) = prop D f θ i d := rfl
 
-/-- Covariance of two same-exposure indicators: `π_{ij}(d) − π_i(d)π_j(d)`. -/
+/-- **Covariance of same-exposure indicators.** For [a design](hyp:D), [an exposure
+mapping](hyp:f), [unit traits](hyp:θ), [units `i` and `j`](hyp:i,j), and [an exposure level
+`d`](hyp:d), [the design covariance of the two units' `d`-exposure indicators equals the
+joint exposure probability `π_ij(d)` minus the product of their marginal exposure
+probabilities](goal). -/
 lemma Cov_expoInd_same (D : FiniteDesign Ω) (f : Ω → Θ → Δ) (θ : ι → Θ) (i j : ι) (d : Δ) :
     D.Cov (expoInd f θ i d) (expoInd f θ j d)
       = propPairSame D f θ i j d - prop D f θ i d * prop D f θ j d := by
   unfold propPairSame
   rw [FiniteDesign.Cov_eq, E_expoInd, E_expoInd]
 
-/-- Covariance of two cross-exposure indicators: `π_{ij}(d,d') − π_i(d)π_j(d')`. -/
+/-- **Covariance of cross-exposure indicators.** For [a design](hyp:D), [an exposure
+mapping](hyp:f), [unit traits](hyp:θ), [units `i` and `j`](hyp:i,j), and [exposure levels
+`d` and `d'`](hyp:d,d'), [the design covariance of unit `i`'s `d`-exposure indicator and
+unit `j`'s `d'`-exposure indicator equals the cross joint exposure probability `π_ij(d,d')`
+minus the product of their marginal exposure probabilities](goal). -/
 lemma Cov_expoInd_cross (D : FiniteDesign Ω) (f : Ω → Θ → Δ) (θ : ι → Θ) (i j : ι) (d d' : Δ) :
     D.Cov (expoInd f θ i d) (expoInd f θ j d')
       = propPairCross D f θ i j d d' - prop D f θ i d * prop D f θ j d' := by
@@ -101,7 +112,9 @@ lemma propPairCross_self_of_ne (D : FiniteDesign Ω) (f : Ω → Θ → Δ) (θ 
 
 variable [Fintype Δ]
 
-/-- For each unit, the generalized probabilities of exposure sum to one across exposures. -/
+/-- **Exposure probabilities sum to one.** For [a design](hyp:D), [an exposure
+mapping](hyp:f), [unit traits](hyp:θ), and [a unit `i`](hyp:i), [the generalized exposure
+probabilities of unit `i`, summed over all exposure levels, equal one](goal). -/
 lemma sum_prop_eq_one (D : FiniteDesign Ω) (f : Ω → Θ → Δ) (θ : ι → Θ) (i : ι) :
     ∑ d, prop D f θ i d = 1 := by
   simp only [prop, FiniteDesign.Pr, FiniteDesign.E, FiniteDesign.ind]

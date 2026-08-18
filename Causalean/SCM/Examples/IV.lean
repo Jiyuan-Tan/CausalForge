@@ -113,8 +113,9 @@ def ivTopo : IVNode → ℕ
   | D => 2
   | Y => 3
 
-/-- Every instrumental-variable edge points from an earlier to a later node in
-the chosen topological order. -/
+/-- [Every edge of the instrumental-variable example graph connects a node with a smaller assigned
+order label to one with a larger label, so the chosen ordering is a valid topological
+order](goal). -/
 theorem ivTopo_lt : ∀ u v, ivEdge u v → ivTopo u < ivTopo v := by
   intro u v h; cases u <;> cases v <;> simp_all [ivEdge, ivTopo]
 

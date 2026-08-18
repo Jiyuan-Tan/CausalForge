@@ -59,9 +59,12 @@ noncomputable def empProcVec (S : IIDSample Ω X μ P) (f : X → E) (n : ℕ) :
   fun ω => (Real.sqrt (n : ℝ))⁻¹ • (∑ i ∈ Finset.range n, f (S.Z i ω))
     - Real.sqrt (n : ℝ) • ∫ z, f z ∂P
 
-/-- The centered empirical-process gap `R_n` of `StochEquicontAt`, evaluated at a
-parameter `θ`, is `empProcVec` of the score difference `ψ(θ,·) − ψ(θ₀,·)`.  This
-is a definitional unfolding; it is the bridge between the estimator-indexed
+/-- [For an i.i.d. sample `S`, a score function `ψ`, candidate and true parameter values `θ`
+and `θ₀`, sample size `n`, and outcome `ω`](hyp:S,ψ,θ,θ₀,n,ω), [the centered
+empirical-process gap `R_n` of `StochEquicontAt`, evaluated at `θ`, equals `empProcVec` of
+the score difference `ψ(θ,·) − ψ(θ₀,·)`](goal).
+
+This is a definitional unfolding; it is the bridge between the estimator-indexed
 `StochEquicontAt` and the class-level `AsymptoticEquicont`. -/
 theorem empProcVec_eq_stochEquicont_gap (S : IIDSample Ω X μ P)
     (ψ : E → X → E) (θ θ₀ : E) (n : ℕ) (ω : Ω) :

@@ -72,11 +72,13 @@ noncomputable def bootstrapVar (S : IIDSample Ω X μ P) (ψ : X → ℝ) (n : �
     Ω → ℝ :=
   fun ω => S.sampleMean (fun x => (ψ x) ^ 2) n ω - (S.sampleMean ψ n ω) ^ 2
 
-/-- **Exact bootstrap-variance identity** (`E*[ψ²] − (E*ψ)² = E*[(ψ − E*ψ)²]`).
-The plug-in variance equals the centered empirical second moment: the
-conditional variance of a single uniform draw from the observed sample.  This is
-the standard `mean-of-squares minus square-of-mean` identity for the empirical
-expectation, valid for every `n` (the `n = 0` case is `0 = 0`). -/
+/-- **Exact bootstrap-variance identity.** For [an iid sample `S`](hyp:S), [a
+statistic `ψ`](hyp:ψ), [a sample size `n`](hyp:n), and [a sample-path outcome
+`ω`](hyp:ω), [the plug-in bootstrap variance of `ψ` equals the centered
+empirical second moment of `ψ` over the first `n` observations](goal).
+
+This is the standard `mean-of-squares minus square-of-mean` identity for the
+empirical expectation, valid for every `n` (the `n = 0` case is `0 = 0`). -/
 theorem bootstrapVar_eq_centered (S : IIDSample Ω X μ P) (ψ : X → ℝ) (n : ℕ)
     (ω : Ω) :
     bootstrapVar S ψ n ω

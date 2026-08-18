@@ -28,8 +28,9 @@ instance iidStreamLaw_isProbabilityMeasure (P : Measure X) [IsProbabilityMeasure
   unfold iidStreamLaw
   infer_instance
 
-/-- Every finite prefix of an infinite i.i.d. stream has the corresponding
-finite product law. -/
+/-- [Every finite prefix of length `n`](hyp:n) of [an infinite stream whose coordinates
+are i.i.d. with common law `P`](hyp:P) [has exactly the corresponding `n`-fold product
+law](goal). -/
 lemma iidStreamLaw_map_finPrefix (P : Measure X) [IsProbabilityMeasure P] (n : ℕ) :
     Measure.map (fun z : ℕ → X => fun i : Fin n => z i) (iidStreamLaw P) =
       Measure.pi (fun _ : Fin n => P) := by

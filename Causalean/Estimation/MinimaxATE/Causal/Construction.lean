@@ -104,7 +104,8 @@ def wTopo : WNode → ℕ
   | A  => 4
   | Y  => 5
 
-/-- Every witness-graph edge points forward in the chosen topological order. -/
+/-- [Every edge of the finite backdoor witness graph points strictly forward in the chosen
+topological order on its nodes](goal). -/
 theorem wTopo_lt : ∀ u v, wEdge u v → wTopo u < wTopo v := by
   intro u v h; cases u <;> cases v <;> simp_all [wEdge, wTopo]
 
@@ -193,7 +194,9 @@ Bernoulli outcome. -/
 noncomputable def outFun (g : Bool → C → ℝ) (a : Bool) (x : C) (ey : ℝ) : ℝ :=
   if ey ≤ g a x then 1 else 0
 
-/-- Every graph edge gives membership of the parent node in the corresponding SWIG parent set. -/
+/-- [For any edge from node `p` to node `c` in the finite backdoor witness graph](hyp:h),
+[the SWIG node for `p` is a parent of the SWIG node for `c` in the initial SWIG built from
+that graph](goal). -/
 theorem wParent_mem {p c : WNode} (h : wEdge p c) :
     (SWIGNode.random p) ∈ (initialSWIG wDAG).parents (SWIGNode.random c) := by
   rw [DAG.mem_parents, initialSWIG_random_edge]; exact h

@@ -49,7 +49,9 @@ namespace PO
 
 open MeasureTheory ProbabilityTheory
 
-/-- A backdoor system consists of a binary treatment, a real outcome, and an adjustment covariate.
+/-- A backdoor system consists of [a binary treatment variable](hyp:D,hDbool), [a real-valued
+outcome variable](hyp:Y,hYreal), and [an adjustment covariate](hyp:Xvar) with an arbitrary
+measurable value space, where [the three variables are pairwise distinct](hyp:hDY,hDX,hYX).
 
 The covariate may be discrete, continuous, or vector-valued through its arbitrary
 measurable value space. -/
@@ -135,10 +137,13 @@ outcome functionals. -/
 noncomputable def adjustedATE : ℝ :=
   ∫ ω, S.adjustedCE true ω - S.adjustedCE false ω ∂P.μ
 
-/-- The backdoor (Rosenbaum–Rubin / Firpo) identifying assumptions for the ATE,
-at the potential-outcome level: for binary treatment `D` and real outcome `Y`,
-adjusting for covariates `X` identifies `E[Y(1) − Y(0)]`. Bundles the four
-standard conditions below. -/
+/-- The backdoor (Rosenbaum–Rubin / Firpo) identifying assumptions for the ATE, at the
+potential-outcome level, for binary treatment `D` and real outcome `Y` adjusted for covariates
+`X`: [the observed outcome equals the potential outcome of the realized treatment
+arm](hyp:consistency), [treatment is conditionally independent of the treated and untreated
+potential outcomes given the covariates](hyp:unconfoundedness), [every covariate stratum has
+a positive chance of either treatment arm](hyp:overlap), and [the treated and untreated
+potential outcomes are integrable](hyp:integrable_Y1,integrable_Y0). -/
 structure Assumptions (S : POBackdoorSystem P γ)
     [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ] : Prop where
   /-- Consistency (SUTVA): the observed outcome equals the potential outcome of

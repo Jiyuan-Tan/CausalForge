@@ -73,7 +73,8 @@ lemma mpTreatInd_within (p : P) (z : P → Bool) :
   unfold mpTreatInd
   cases z p <;> simp
 
-/-- **First-order inclusion probability.** Every unit is treated with probability `½`. -/
+/-- **First-order inclusion probability.** [Under the matched-pair design, the unit occupying
+position `b` of pair `p` is treated with probability `1/2`](goal). -/
 lemma matchedPairDesign_E_mpTreatInd (p : P) (b : Bool) :
     (matchedPairDesign (P := P)).E (mpTreatInd p b) = 1 / 2 := by
   change (prodDesign (fun _ : P => pairCoinDesign)).E
@@ -84,8 +85,9 @@ lemma matchedPairDesign_E_mpTreatInd (p : P) (b : Bool) :
   rw [coinDesign_E]
   cases b <;> norm_num
 
-/-- **Within-pair negative dependence.** The two units of a pair are never treated together, so the
-product of their indicators has expectation zero — perfect negative dependence. -/
+/-- **Within-pair negative dependence.** [Under the matched-pair design, the two units of pair `p`
+are never treated together, so the expectation of the product of their treatment indicators is
+zero](goal) — perfect negative dependence. -/
 lemma matchedPairDesign_E_mpTreatInd_within (p : P) :
     (matchedPairDesign (P := P)).E (fun z => mpTreatInd p true z * mpTreatInd p false z) = 0 := by
   have hzero : ∀ z : P → Bool, mpTreatInd p true z * mpTreatInd p false z = 0 := by

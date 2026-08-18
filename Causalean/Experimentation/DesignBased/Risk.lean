@@ -47,8 +47,8 @@ def mse (est : Ω → ℝ) (μ : ℝ) : ℝ := D.E (fun z => (est z - μ) ^ 2)
 /-- An estimator is **unbiased** for `μ` under the design when its expectation equals `μ`. -/
 def Unbiased (est : Ω → ℝ) (μ : ℝ) : Prop := D.E est = μ
 
-/-- **Bias–variance decomposition.** The mean squared error is the variance plus the
-squared bias: `mse = Var + bias²`. -/
+/-- **Bias–variance decomposition.** [The mean squared error `mse` of estimator `est` for target
+`μ` equals its randomization variance plus the square of its bias](goal): `mse = Var + bias²`. -/
 lemma mse_eq_var_add_bias_sq (est : Ω → ℝ) (μ : ℝ) :
     D.mse est μ = D.Var est + (D.bias est μ) ^ 2 := by
   unfold mse bias

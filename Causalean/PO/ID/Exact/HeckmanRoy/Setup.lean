@@ -39,12 +39,13 @@ namespace PO
 
 open MeasureTheory ProbabilityTheory
 
-/-- The Heckman–Vytlacil / generalized Roy instrumental-variable model in the
-potential-outcome framework. A unit has an instrument `Z`, a binary treatment `D`
-taken when a latent selection rank `U` falls below a propensity threshold `p(Z)`,
-and a real outcome `Y` with potential outcomes `Y(0)` and `Y(1)`. This is the
-setup behind pairwise-Wald / LATE-type identification of treatment effects from
-instrument-induced variation in participation (`def:po-iv-heckman-roy-system`).
+/-- The Heckman–Vytlacil / generalized Roy instrumental-variable model in the potential-outcome
+framework, packaging [an instrument](hyp:Z), [a binary treatment](hyp:D) taken when a latent
+selection rank [U](hyp:U) falls below [a propensity threshold `p(Z)` valued in
+`[0,1]`](hyp:p,hp_mem), and [a real outcome](hyp:Y) with potential outcomes `Y(0)` and `Y(1)`,
+where [the four nodes are pairwise distinct](hyp:hZD,hZY,hZU,hDY,hDU,hYU). This is the setup
+behind pairwise-Wald / LATE-type identification of treatment effects from instrument-induced
+variation in participation (`def:po-iv-heckman-roy-system`).
 
 `α` is the value space of the instrument; `MeasurableSingletonClass α` makes the
 events `{Z = z}` measurable, which the event-conditional pairwise Wald identity
@@ -127,7 +128,8 @@ def intervalComplierEvent (z₀ z₁ : α) : Set P.Ω :=
 
 /-! ### Measurability -/
 
-/-- The potential treatment under a fixed instrument value is measurable. -/
+/-- For [a fixed instrument value `z`](hyp:z), [the potential treatment `D(z)` is
+measurable](goal). -/
 lemma measurable_DofZ (z : α) : Measurable (S.DofZ z) :=
   S.dVar.measurable_cfUnder S.zVar z
 
@@ -197,7 +199,13 @@ noncomputable def cfBundle : POCFBundle P :=
 
 /-! ### Assumptions -- def:po-iv-heckman-roy-assumptions -/
 
-/-- Heckman–Roy IV assumptions -- def:po-iv-heckman-roy-assumptions.
+/-- **Heckman–Roy IV identifying assumptions** (`def:po-iv-heckman-roy-assumptions`). Bundles
+[consistency of the underlying potential-outcome system](hyp:consistency), [exogeneity of the
+instrument, independent of the latent selection rank and the two potential
+outcomes](hyp:instrumentIndep), [threshold-crossing selection: the potential treatment under
+instrument value `z` equals `true` exactly when the latent rank falls at or below the propensity
+`p(z)`](hyp:thresholdCrossing), and [the latent rank being uniformly distributed on
+`[0,1]`](hyp:uniformU).
 
 Exclusion is encoded by the `Y(d)` potential-outcome interface (no `z`
 argument).  The classical `Y(z, d) = Y(d)` exclusion is implicit in the

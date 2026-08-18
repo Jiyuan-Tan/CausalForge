@@ -171,9 +171,13 @@ noncomputable def panelMeanReg
 
 /-! ### B3. Membership lemmas -/
 
-/-- The pointwise representative `panelPropensity μ D G T_rv` lies in
-`panelClass μ G T_rv G_meas T_meas`. Coefficient maps:
-`cG g := cohortBarD μ D G g`, `cT t := (∫ D · 𝟙{T=t} dμ) / periodMass t - ∫ D dμ`. -/
+/-- For [a finite measure `μ`](hyp:μ), [a treatment variable `D`](hyp:D), [a measurable cohort
+map `G`](hyp:G,G_meas), and [a measurable period map `T_rv`](hyp:T_rv,T_meas), [the pointwise
+saturated cohort-and-period propensity regression of `D` belongs to the two-axis additive
+(cohort-plus-period) function class](goal).
+
+Coefficient maps: `cG g := cohortBarD μ D G g`,
+`cT t := (∫ D · 𝟙{T=t} dμ) / periodMass t - ∫ D dμ`. -/
 theorem panelPropensity_mem_panelClass
     (μ : Measure Ω) [IsFiniteMeasure μ]
     (D : Ω → ℝ) (G : Ω → 𝒢) (T_rv : Ω → Fin T)
@@ -188,8 +192,10 @@ theorem panelPropensity_mem_panelClass
   filter_upwards [] with ω
   rfl
 
-/-- The pointwise representative `panelMeanReg μ Y G T_rv` lies in
-`panelClass μ G T_rv G_meas T_meas`. -/
+/-- For [a finite measure `μ`](hyp:μ), [an outcome variable `Y`](hyp:Y), [a measurable cohort
+map `G`](hyp:G,G_meas), and [a measurable period map `T_rv`](hyp:T_rv,T_meas), [the pointwise
+saturated cohort-and-period mean regression of `Y` belongs to the two-axis additive
+(cohort-plus-period) function class](goal). -/
 theorem panelMeanReg_mem_panelClass
     (μ : Measure Ω) [IsFiniteMeasure μ]
     (Y : Ω → ℝ) (G : Ω → 𝒢) (T_rv : Ω → Fin T)

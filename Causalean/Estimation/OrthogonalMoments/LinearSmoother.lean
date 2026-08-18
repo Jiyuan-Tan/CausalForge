@@ -40,7 +40,11 @@ namespace OrthogonalMoments
 
 open MeasureTheory Filter Topology Causalean.Stat
 
-/-- Linear-smoother operator (Def `def:est-cate-second-stage`, smoother form).
+/-- **Linear-smoother operator (Def `def:est-cate-second-stage`, smoother form).** A second-stage
+regression operator extended with an abstract array of [smoothing weights](hyp:weights) indexed by
+sample size, randomness scope, query point, and data tuple, from which the weighted-sum
+representation of the operator's output can be built; the linear-combination identity itself is
+not required here but recorded separately as a predicate below.
 
 Extends `SecondStageOperator` with an abstract weight function
 

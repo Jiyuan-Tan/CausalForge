@@ -125,9 +125,11 @@ To certify that an array `g : V I T` is `c.ip`-orthogonal to every member of
 helper is used throughout the indicator closed-form proofs and exported for
 downstream residual arguments that need the same row/column reduction. -/
 
-/-- An array is orthogonal to the full two-way fixed-effect subspace exactly
-when it is orthogonal to every unit indicator and every period indicator. This
-reduces `H_twfe` residual proofs to row and column normal equations. -/
+/-- For [a panel weighting scheme](hyp:c) and [any panel array `g`](hyp:g), [`g` is orthogonal,
+under the weighted inner product, to every member of the two-way fixed-effect subspace `H_twfe`
+exactly when it is orthogonal to every unit indicator and every period indicator](goal).
+
+This reduces `H_twfe` residual proofs to row and column normal equations. -/
 lemma H_twfe_orthogonal_iff (c : Cells I T) (g : V I T) :
     (∀ h ∈ Cells.H_twfe, c.ip g h = 0) ↔
       ((∀ i₀ : I,
@@ -382,8 +384,10 @@ private lemma balanced_centered_product_orth_period (S_I : Finset I) (S_T : Fins
     ring]
   rw [sum_centered_indicator_mem_real (S := S_I), mul_zero]
 
-/-- Product indicator under balanced weights: the residual factorizes into a
-product of centered indicators. -/
+/-- For [a subset of units `S_I`](hyp:S_I), [a subset of periods `S_T`](hyp:S_T), and [an
+evaluation cell `r`](hyp:r), [under balanced (equal) weights, the two-way-fixed-effect residual
+of the product indicator `1{i ∈ S_I}·1{t ∈ S_T}`, evaluated at `r`, factorizes into the product
+of the centered unit indicator and the centered period indicator](goal). -/
 theorem tildeX_product_indicator_balanced (S_I : Finset I) (S_T : Finset T)
     (r : I × T) :
     (balanced (I := I) (T := T)).tildeX
@@ -607,9 +611,11 @@ private lemma cohort_cell_centered_orth_period (law : CohortLaw C)
     ring]
   rw [cohort_sum_pi_centered_eq_zero (fun g => (law.pi g : ℝ)) law.sumOne g₀, mul_zero]
 
-/-- Cell indicator under cohort-period weights: the residual factorizes
-into the product of centered cohort and period indicators (with cross terms
-following the gauge fix `∑_t β(t) = π(g₀)`). -/
+/-- For [a target cohort `g₀`](hyp:g₀), [a target period `t₀`](hyp:t₀), and [an evaluation
+cell `r`](hyp:r), [the cohort-period-weighted two-way-fixed-effect residual of the cell
+indicator `1{g = g₀, t = t₀}`, evaluated at `r`, equals the product of centered cohort and
+period indicators minus the corresponding cross terms fixed by the gauge normalization
+`∑_t β(t) = π(g₀)`](goal). -/
 theorem tildeX_cell_indicator_cohortPeriod (g₀ : Fin C) (t₀ : Fin S)
     (r : Fin C × Fin S) :
     (cohortPeriodCells law hpi).tildeX
@@ -1067,9 +1073,12 @@ private lemma tri_centered_orth_period (law : CohortLaw C)
   rw [tri_weighted_sum_Y_over_cohorts_eq_zero (S := S) (law := law) (t₁ := t₁)]
   ring
 
-/-- Diagonal (switch-on) indicator `ind(g.val = t.val)` under cohort-period
-weights: the residual subtracts the cohort and period marginals plus a
-grand-mean correction term.  In closed form
+/-- For [an evaluation cell `r`](hyp:r), [the cohort-period-weighted two-way-fixed-effect
+residual of the diagonal (switch-on) indicator `1{g.val = t.val}`, evaluated at `r`, equals the
+indicator minus the cohort-conditional mean, minus the period-conditional mean net of the grand
+mean](goal).
+
+In closed form
 
     tildeX R = ind(g.val = t.val)
               − E[R | g] − (E[R | t] − E[R])
@@ -1125,9 +1134,12 @@ theorem tildeX_diagonal_indicator_cohortPeriod
         + (1 / (Fintype.card (Fin S) : ℝ)) *
             ∑ g : Fin C, (if g.val < S then (law.pi g : ℝ) else 0) := rfl
 
-/-- Triangular (continued-treatment) indicator `ind(g.val < t.val)` under
-cohort-period weights: residual subtracts cohort and period marginals plus
-the grand-mean correction.  In closed form
+/-- For [an evaluation cell `r`](hyp:r), [the cohort-period-weighted two-way-fixed-effect
+residual of the triangular (continued-treatment) indicator `1{g.val < t.val}`, evaluated at
+`r`, equals the indicator minus the cohort-conditional mean, minus the period-conditional mean
+net of the grand mean](goal).
+
+In closed form
 
     tildeX J = ind(g.val < t.val)
               − E[J | g] − (E[J | t] − E[J])

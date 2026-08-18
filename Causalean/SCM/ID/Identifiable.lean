@@ -121,7 +121,10 @@ def NonIdentifiable {Ω : N → Type*} [∀ n, MeasurableSpace (Ω n)] {α : Typ
     (G : SWIGGraph N) (Φ : CausalQuery N Ω α) : Prop :=
   ¬Identifiable G Φ
 
-/-- Non-identifiability can be witnessed by a pair of models. -/
+/-- For [a SWIG graph `G`](hyp:G) and [a causal query `Φ`](hyp:Φ), [the causal
+query is non-identifiable from the observational distribution if and only if
+there exist two causal models with SWIG graph `G` and the same observational
+law that disagree on the value of `Φ`](goal). -/
 theorem nonIdentifiable_iff {Ω : N → Type*} [∀ n, MeasurableSpace (Ω n)]
     {α : Type*} (G : SWIGGraph N) (Φ : CausalQuery N Ω α) :
     NonIdentifiable G Φ ↔

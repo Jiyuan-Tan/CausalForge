@@ -63,12 +63,11 @@ inductive CompTag | TN | EL | LE deriving DecidableEq
 instance : Fintype CompTag :=
   ⟨{CompTag.TN, CompTag.EL, CompTag.LE}, by intro c; cases c <;> decide⟩
 
-/-- Staggered-adoption cohort panel (cell-statistics record).
-
-Carries cohort population shares `p`, adoption dates `A : 𝒢 → WithTop (Fin T)`
-(with `⊤` encoding the never-treated case `A_g = ∞`), and cohort-period
-factual outcome means `Y`. Side conditions: shares are positive, sum to one,
-and the period count is positive. -/
+/-- A staggered-adoption cohort panel: a cell-statistics record carrying, per cohort, [a
+population share](hyp:p), [an adoption date — a finite period, or `⊤` for the never-treated
+case](hyp:A), and [the cohort-period factual outcome mean](hyp:Y), subject to [a positive number
+of periods](hyp:T_pos), [strictly positive cohort shares](hyp:p_pos), and [cohort shares summing
+to one](hyp:p_sum_one). -/
 structure CohortPanel (𝒢 : Type*) (T : ℕ) [Fintype 𝒢] where
   /-- Cohort population share `p_g`. -/
   p : 𝒢 → ℝ
@@ -142,8 +141,9 @@ noncomputable def Dtilde (P : CohortPanel 𝒢 T) (g : 𝒢) (t : Fin T) : ℝ :
   WeightedTwoWayPanel.ddot (cohortWeights P) (D P) g t
 
 omit [DecidableEq 𝒢] in
-/-- Compatibility with the original Goodman-Bacon closed form for residualized
-treatment. -/
+/-- For [a cohort panel](hyp:P) and [a cohort-period cell](hyp:g,t), [the double-demeaned
+residualized treatment `Dtilde P g t` equals the original Goodman-Bacon closed form: the raw
+treatment minus the cohort mean, minus the period cross-cohort mean, plus the grand mean](goal). -/
 theorem Dtilde_eq (P : CohortPanel 𝒢 T) (g : 𝒢) (t : Fin T) :
     Dtilde P g t =
       D P g t - barD P g - (∑ g', P.p g' * D P g' t) + pCohort P := by

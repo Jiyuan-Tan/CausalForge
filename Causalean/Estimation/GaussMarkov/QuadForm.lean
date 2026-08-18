@@ -67,8 +67,9 @@ variable [DecidableEq Obs]
 def SphericalErrors (S : Matrix Obs Obs ℝ) (σ : ℝ) : Prop :=
   S = σ ^ 2 • (1 : Matrix Obs Obs ℝ)
 
-/-- Under spherical errors, the linear-estimator variance reduces to the common
-variance times the squared weight length. -/
+/-- [Under spherical errors, i.e. when the error covariance matrix `S` equals `σ²` times
+the identity](hyp:h), [the linear-estimator variance functional at weight vector `w` reduces
+to the common variance `σ²` times the squared Euclidean length of `w`](goal). -/
 lemma quadVar_spherical {S : Matrix Obs Obs ℝ} {σ : ℝ} (h : SphericalErrors S σ)
     (w : Obs → ℝ) : quadVar S w = σ ^ 2 * (w ⬝ᵥ w) := by
   subst h

@@ -209,9 +209,13 @@ theorem sum_ite_one_mul (k : K) (f : K → ℝ) :
   · intro k' _ hne; simp [hne]
   · intro h; exact absurd (Finset.mem_univ k) h
 
-/-- A coding-free K-vector two-way Mundlak fit: a coefficient vector, a nuisance
-function in the Mundlak span, and the pooled normal equations against each
-regressor coordinate and against the nuisance span. -/
+/-- A coding-free K-vector two-way Mundlak fit of the vector TWFE problem `P` against optional
+time-constant controls `Zvar` and time-only controls `Mvar`, stated by normal equations rather
+than by a particular coding of the nuisance regressors. It bundles [a coefficient
+vector](hyp:beta) and [a nuisance function lying in the vector two-way Mundlak
+span](hyp:nuisance,nuisance_mem), subject to [the pooled normal equation against every regressor
+coordinate](hyp:normal_X) and [the pooled normal equation against every nuisance function in
+that span](hyp:normal_H). -/
 structure VectorTWMFit (P : VectorTWFEProblem Unit Time K)
     (Zvar : Z → Unit → ℝ) (Mvar : M → Time → ℝ) where
   beta : K → ℝ
@@ -225,10 +229,14 @@ structure VectorTWMFit (P : VectorTWFEProblem Unit Time K)
       (∑ i, ∑ t, h i t *
         (P.Y i t - (∑ j, P.X i t j * beta j) - nuisance i t)) = 0
 
-/-- Wooldridge finite-panel **K-vector** TWFE--two-way Mundlak equivalence. Under
-the residualized-Gram nonsingularity `P.gram_unit`, the pooled two-way Mundlak
-coefficient on `X` equals the K-vector TWFE coefficient (Theorem A, full vector
-form). -/
+/-- **Wooldridge finite-panel K-vector TWFE-two-way-Mundlak equivalence (Theorem A).**
+[For a K-vector two-way-fixed-effects panel regression problem `P` with optional
+time-constant controls `Zvar` and time-only controls `Mvar`](hyp:P,Zvar,Mvar), [given any
+pooled two-way Mundlak regression fit stated by its normal equations](hyp:fit), [that fit's
+coefficient vector on the regressors equals the K-vector two-way-fixed-effects coefficient
+vector](goal).
+
+This holds under the residualized-Gram nonsingularity `P.gram_unit`. -/
 theorem vec_twfe_twm_equivalence (P : VectorTWFEProblem Unit Time K)
     (Zvar : Z → Unit → ℝ) (Mvar : M → Time → ℝ)
     (fit : VectorTWMFit P Zvar Mvar) :

@@ -54,10 +54,18 @@ open scoped BigOperators
 
 variable {K : ℕ}
 
-/-- **Second (propensity-dominant) cell-varying construction data.**  The two
-Rademacher-bump scalars `α, β` together with a nuisance center `(m₀ j, g₀ j, g₁ j)`
-that varies with the pair index `j : Fin K` (bounded away from `{0,1}`), and the
-per-pair inequalities guaranteeing the perturbed nuisances stay in `[0,1]`. -/
+/-- **Second (propensity-dominant) cell-varying construction data** for the same style of
+Rademacher perturbation as `VarConstr` but with the roles of the two nuisances swapped, so
+the propensity carries the larger deviation. It packages [two bump-magnitude scalars, the
+larger on the propensity and the smaller on the treated outcome arm](hyp:α,β), together with
+[a nuisance center given by the pair-indexed functions m₀, g₀ and g₁ for the propensity and
+the two potential-outcome regressions](hyp:m₀,g₀,g₁), plus the inequalities certifying that
+[both bump magnitudes are nonnegative](hyp:hα,hβ), [the center is pointwise strictly inside
+`(0,1)` for m₀, g₀ and g₁](hyp:hm₀0,hm₀1,hg₀0,hg₀1,hg₁0,hg₁1), a worst-case bound forcing
+[the perturbed treated outcome regression to stay at most one, which also keeps the
+perturbation denominator positive](hyp:hgU), [the propensity bump coefficient not to exceed
+one, keeping the perturbed propensity nonnegative](hyp:hκ), and [the perturbed propensity to
+stay at most one](hyp:hmU). -/
 structure VarConstr2 (K : ℕ) where
   /-- Bump magnitude on the propensity (the *large* deviation here). -/
   α : ℝ
@@ -144,8 +152,11 @@ noncomputable def mPert2 (lam : Fin K → Bool) : (Fin K × Bool) → ℝ :=
 noncomputable def gPert2 (lam : Fin K → Bool) : Bool → (Fin K × Bool) → ℝ :=
   fun d x => if d then P.g₁ x.1 / P.D2 lam x else P.g₀ x.1
 
-/-- **Affine collapse of the propensity.**  Using `Δ² = 1`, the perturbed propensity
-is exactly `mλ = m₀·(1 + κ·Δ)`. -/
+/-- **Affine collapse of the propensity.** [For any Rademacher sign vector `lam` and cell
+`x`](hyp:lam,x), [the perturbed propensity at `x` equals `m₀(x.1)·(1 + κ(x.1)·Δ(lam,x))`, an
+exactly affine function of the perturbation](goal).
+
+Uses `Δ² = 1`. -/
 theorem mPert2_eq (lam : Fin K → Bool) (x : Fin K × Bool) :
     P.mPert2 lam x = P.m₀ x.1 * (1 + P.κ x.1 * Δ lam x) := by
   have hg₁ne : P.g₁ x.1 ≠ 0 := ne_of_gt (P.hg₁0 x.1)
@@ -163,7 +174,9 @@ theorem validDGP_hat2 : ValidDGP (C := Fin K × Bool) P.mhat2 P.ghat2 := by
     · exact ⟨(P.hg₀0 x.1).le, (P.hg₀1 x.1).le⟩
     · exact ⟨(P.hg₁0 x.1).le, (P.hg₁1 x.1).le⟩
 
-/-- The perturbed DGP `(mλ, gλ)` is valid. -/
+/-- [For any Rademacher sign vector `lam` indexing the perturbation](hyp:lam), [the perturbed
+propensity and outcome-regression functions define a valid finite observed-data model, i.e.
+take values in `[0,1]`](goal). -/
 theorem validDGP_pert2 (lam : Fin K → Bool) :
     ValidDGP (P.mPert2 lam) (P.gPert2 lam) := by
   refine ⟨fun x => ?_, fun d x => ?_⟩

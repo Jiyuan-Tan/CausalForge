@@ -107,8 +107,8 @@ variable (S : IIDSample Ω X μ P) (F : X → Set V) (EF : Set V) (p : Fin k →
 
 omit hint [IsProbabilityMeasure P] in
 include hmean in
-/-- The normalized finite-grid support-process statistic converges to the grid
-supremum of its Gaussian limit.
+/-- [The normalized finite-grid support-process statistic converges in
+distribution to the grid supremum of its Gaussian limit](goal).
 
 Under the mean-zero / Artstein hypothesis `∫ ψ = 0`, the finite-grid statistic
 `gridTestStat` converges in distribution to the law

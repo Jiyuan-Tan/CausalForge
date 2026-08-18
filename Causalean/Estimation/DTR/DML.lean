@@ -389,7 +389,33 @@ set_option maxHeartbeats 1200000 in
 -- the abstract `seqDR_dml_isAsymLinear`; the resulting elaboration
 -- exceeds the default heartbeat budget.  Mirrors ATE/DML.lean.
 /-- **Asymptotic linearity of the one-shot DML DTR (`n = 2`) estimator** —
-`thm:est-dml-dtr-al`.
+`thm:est-dml-dtr-al`. Assuming [the DTR backdoor identification conditions hold](hyp:hA), the
+theorem shows that [the one-shot double/debiased-machine-learning estimator of the two-period
+dynamic-treatment-regime effect is asymptotically linear, with influence function `ψ_seqDR`,
+around the true effect `θ₀`](goal). The population-truth propensities obey
+[strict overlap — some `ε ∈ (0, 1/2]` sandwiches them a.s. at both stages](hyp:h_overlap),
+restated [pointwise on the value-space propensity functions `e₀_val`,
+`e₁_val`](hyp:h_e_val_pointwise); [the factual outcome and every counterfactual outcome under a
+fixed regime are square-integrable](hyp:h_y2,h_yd2); and [the one-shot sample split's
+auxiliary-fold fraction `|B(n)|/n` converges to some `c ∈ (0, 1)`](hyp:hc_pos,hc_lt,h_split_rate).
+For every horizon `n`, the stage-0 nuisance learners `μ̂₀`, `ê₀` and the stage-1 learners `μ̂₁`,
+`ê₁` are each [jointly measurable in the sample outcome and the covariate
+history](hyp:h_mu0_meas,h_e0_meas) at stage 0 and
+[likewise at stage 1](hyp:h_mu1_meas,h_e1_meas); [the fitted propensities satisfy the same
+strict-overlap bound `ε` pointwise at both stages](hyp:h_e_overlap_hat); each learner
+[lies in L² of the covariate-history distribution](hyp:h_mu0_memLp,h_e0_memLp) at stage 0
+and [likewise at stage 1](hyp:h_mu1_memLp,h_e1_memLp); and, viewed as a function of the sample
+outcome alone, each learner
+[is measurable with respect to the auxiliary training fold's σ-algebra](hyp:h_mu0_foldA,h_e0_foldA)
+at stage 0 and [likewise at stage 1](hyp:h_mu1_foldA,h_e1_foldA), and jointly with the covariate
+in uncurried form
+[at stage 0](hyp:h_mu0_uncurry_foldA,h_e0_uncurry_foldA) and
+[at stage 1](hyp:h_mu1_uncurry_foldA,h_e1_uncurry_foldA). Finally,
+[each stagewise estimation error converges to zero in L² at rate
+`o_p(1)`](hyp:h_mu0_rate,h_mu1_rate,h_e0_rate,h_e1_rate), and every cross-stage product of an
+outcome-regression error with a propensity error
+[vanishes at the doubly-robust rate
+`o_p(n^{-1/2})`](hyp:h_product_rate_00,h_product_rate_11,h_product_rate_01,h_product_rate_10).
 
 Hypotheses (mirroring the NL doc and `dml_ATE_isAsymLinear`):
 

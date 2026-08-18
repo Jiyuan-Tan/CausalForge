@@ -33,8 +33,8 @@ noncomputable def countingRef
     infer_instance
 
 omit [DecidableEq N] [Fintype N] in
-/-- The counting reference family is faithful: every singleton coordinate value
-has counting mass one, in particular nonzero. -/
+/-- [The counting reference family is faithful: every singleton coordinate value has counting mass
+one, in particular nonzero](goal). -/
 lemma referenceFaithful_countingRef
     [∀ sn, Countable (swigΩ Ω sn)] [∀ n, MeasurableSingletonClass (Ω n)] :
     ReferenceFaithful (countingRef (Ω := Ω)) := by
@@ -43,10 +43,10 @@ lemma referenceFaithful_countingRef
   rw [MeasureTheory.Measure.count_singleton]
   exact one_ne_zero
 
-/-- Every structural causal model is dominated by the counting reference family:
-each observational law is absolutely continuous with respect to the counting
-product, because a faithful reference dominates every measure on a countable
-coordinate product.  Note this holds for *all* `M`, with no positivity or graph hypothesis. -/
+/-- [For every structural causal model `M`](hyp:M), [each of its observational laws is absolutely
+continuous with respect to the counting reference family's product measure](goal), because a
+faithful reference dominates every measure on a countable coordinate product.  Note this holds for
+*all* `M`, with no positivity or graph hypothesis. -/
 lemma dominatedObs_countingRef
     [∀ sn, Countable (swigΩ Ω sn)] [∀ n, MeasurableSingletonClass (Ω n)]
     (M : Causalean.SCM N Ω) :

@@ -52,7 +52,12 @@ noncomputable def empRiskFoldB
   ((split.foldB n).card : ℝ)⁻¹
     * ∑ i ∈ split.foldB n, S.ℓ (S_iid.Z i ω) θ g
 
-/-- Sample-split plug-in ERM predicate.
+/-- This predicate says that a sample-size-indexed target estimator, evaluated against a
+plug-in nuisance estimate on the estimation fold, is an **approximate empirical-risk
+minimizer**: [the optimization slack is nonnegative at every sample size](hyp:r_opt_nonneg),
+[the estimator's value always lies in the target parameter set](hyp:mem_Θ_set), and [its fold-B
+empirical risk at the plug-in nuisance is within that slack of the risk at every other point in
+the target set](hyp:approx_min).
 
 Given:
 * `θ̂ : ℕ → Ω → Θ` — estimator (sample-size indexed, depending on

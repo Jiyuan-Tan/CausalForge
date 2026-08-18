@@ -39,13 +39,12 @@ open MeasureTheory ProbabilityTheory Filter Topology
 variable {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
   {μ : Measure Ω} {P : Measure X}
 
-/-- A K-fold split of an i.i.d. sample `S` is a per-(n, k) finite-set
-schedule `fold n k : Finset ℕ` satisfying:
-
-* `partition` : different folds are disjoint at every `n`.
-* `cover`     : the union over `k` of `fold n k` covers `Finset.range n`.
-* `grow`      : each fold grows to infinity in `n`.
-* `ratio`     : the fraction `fold(n,k).card / n` converges to `1/K`. -/
+/-- **K-fold sample split.** For an i.i.d. sample `S`, [a schedule assigning each sample size `n`
+and fold index `k` a finite index set `fold n k`](hyp:fold), forming a K-fold cross-fitting
+scheme in which [distinct folds are pairwise disjoint at every sample size](hyp:partition),
+[the K folds together cover the full index set $\{0,\dots,n-1\}$](hyp:cover), [every fold
+grows without bound as $n \to \infty$](hyp:grow), and [each fold's share of the sample
+converges to $1/K$](hyp:ratio). -/
 structure KFoldSplit {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
     {μ : Measure Ω} {P : Measure X}
     (_S : IIDSample Ω X μ P) (K : ℕ) where
@@ -74,9 +73,9 @@ lemma fold_disjoint_trainComplement (n : ℕ) (k : Fin K) :
   intro i hi hi'
   exact (Finset.mem_sdiff.mp hi').2 hi
 
-/-- **Independence of evaluation fold and training complement.**  The tuple
-`(Z i)_{i ∈ fold(n, k)}` is independent of the tuple
-`(Z i)_{i ∈ trainComplement(n, k)}` under `μ`. -/
+/-- **Independence of evaluation fold and training complement.** For [a fixed sample size
+`n`](hyp:n) and [fold index `k`](hyp:k), [the sample sub-tuple indexed by the evaluation fold is
+independent, under `μ`, of the sub-tuple indexed by the training complement](goal). -/
 theorem folds_indep (n : ℕ) (k : Fin K) :
     IndepFun
       (fun ω (i : split.fold n k) => S.Z i ω)

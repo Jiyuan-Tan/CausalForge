@@ -143,13 +143,15 @@ private lemma denom_facts :
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩ <;> intro h <;> nlinarith
 
 include hK2 hKn2 hmean hpair hsupp in
-/-- **Expected observed treated sample variance:** `E[Ŝ₁] = S₁`.  For any within-group design whose
-treatment indicators satisfy the completely-randomized moment hypotheses — first moment `K/n`
-(`hmean`), pairwise second moment `K(K−1)/(n(n−1))` (`hpair`), and a deterministic treated count `K`
-on the support (`hsupp`) — the expectation of the realized treated-state sample variance equals the
-population treated-state sample variance `S₁`.  These moments hold for the completely randomized
-design of Assumption 1 (`crd_mean`/`crd_pair`/`crd_supp`).  Instantiates the generic `E_Shat` moment
-lemma with the treatment-indicator family `T` and count `K`. -/
+/-- **Expected observed treated sample variance.**  For any within-group design whose treatment
+indicators satisfy the completely-randomized moment hypotheses — first moment `K/n` (`hmean`),
+pairwise second moment `K(K−1)/(n(n−1))` (`hpair`), and a deterministic treated count `K` on the
+support (`hsupp`) — [the expectation of the realized treated-state sample variance equals the
+population treated-state sample variance `S₁`](goal): `E[Ŝ₁] = S₁`.
+
+These moments hold for the completely randomized design of Assumption 1
+(`crd_mean`/`crd_pair`/`crd_supp`).  Instantiates the generic `E_Shat` moment lemma with the
+treatment-indicator family `T` and count `K`. -/
 lemma E_ShatTreated : ρ.E (ShatTreated K a) = S1 a := by
   obtain ⟨hnr, hn1r, hKr, hK1r, _, _⟩ := denom_facts K hK2 hKn2
   have hidem : ∀ (j : Fin n) (w : Fin n → Bool), T j w * T j w = T j w := by
@@ -163,13 +165,14 @@ lemma E_ShatTreated : ρ.E (ShatTreated K a) = S1 a := by
   exact hval
 
 include hK2 hKn2 hmean hpair hsupp in
-/-- **Expected observed control sample variance:** `E[Ŝ₀] = S₀`.  The control analogue: for any
-design satisfying the same completely-randomized moment hypotheses, the realized untreated-state
-sample variance among the `n−K` control units has expectation the population untreated-state sample
-variance `S₀`.  Instantiates `E_Shat`
-with the control-indicator family `1 − T` and count `n − K`, deriving the control moments
-(`E[1−Tⱼ] = (n−K)/n`, `E[(1−Tⱼ)(1−Tₖ)] = (n−K)(n−K−1)/(n(n−1))`, idempotence, and the support
-total `n−K`) from `hmean`/`hpair`/`hsupp`. -/
+/-- **Expected observed control sample variance.**  The control analogue: for any design
+satisfying the same completely-randomized moment hypotheses, [the expectation of the realized
+untreated-state sample variance among the `n−K` control units equals the population
+untreated-state sample variance `S₀`](goal): `E[Ŝ₀] = S₀`.
+
+Instantiates `E_Shat` with the control-indicator family `1 − T` and count `n − K`, deriving the
+control moments (`E[1−Tⱼ] = (n−K)/n`, `E[(1−Tⱼ)(1−Tₖ)] = (n−K)(n−K−1)/(n(n−1))`, idempotence, and
+the support total `n−K`) from `hmean`/`hpair`/`hsupp`. -/
 lemma E_ShatControl : ρ.E (ShatControl K b) = S0 b := by
   obtain ⟨hnr, hn1r, _, _, hnKr, hnK1r⟩ := denom_facts K hK2 hKn2
   set U : Fin n → (Fin n → Bool) → ℝ := fun j w => 1 - T j w with hU
@@ -225,11 +228,14 @@ include hK2 hKn2 hmean hpair hsupp in
 /-- **Conservativeness of the within-group variance estimator (Hudgens–Halloran 2008, Eq. 9).**
 For any design satisfying the completely-randomized moment hypotheses (`hmean`/`hpair`/`hsupp`) and
 treating exactly `K` of `n` units (with `2 ≤ K` and `K + 2 ≤ n`, so both sample variances are well
-defined), the conservative estimator overstates the randomization variance: `Var(τ̂) ≤ E[v̂ar]`.  In
-expectation `E[v̂ar] = S₁/K + S₀/(n−K)`, which exceeds the Neyman variance `S₁/K + S₀/(n−K) − Sτ/n`
-by exactly the nonnegative unit-effect term `Sτ/n`.  The added hypotheses over `Var_tauHat`
-are the deterministic treated-count on the support (`hsupp`) and non-degeneracy (`hK2`, `hKn2`).
-(`E_varHat_conservative_CRD` specializes this to the completely randomized design.) -/
+defined), [the conservative estimator overstates the randomization variance,
+`Var(τ̂) ≤ E[v̂ar]`](goal).
+
+In expectation `E[v̂ar] = S₁/K + S₀/(n−K)`, which exceeds the Neyman variance
+`S₁/K + S₀/(n−K) − Sτ/n` by exactly the nonnegative unit-effect term `Sτ/n`.  The added hypotheses
+over `Var_tauHat` are the deterministic treated-count on the support (`hsupp`) and non-degeneracy
+(`hK2`, `hKn2`).  (`E_varHat_conservative_CRD` specializes this to the completely randomized
+design.) -/
 theorem E_varHat_conservative : ρ.Var (tauHat K a b) ≤ ρ.E (varHat K a b) := by
   obtain ⟨hnr, hn1r, _, _, hnKr, _⟩ := denom_facts K hK2 hKn2
   have hK : 0 < K := by omega

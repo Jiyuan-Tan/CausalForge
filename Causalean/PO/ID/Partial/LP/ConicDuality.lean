@@ -104,11 +104,14 @@ theorem dualValue_le_primalValue
   rintro _ ⟨x, hx, rfl⟩
   exact P.weak_duality hx hy
 
-/-- **Farkas alternative / feasibility engine.**  The point `b` lies in the closed
-image cone `A(K)` iff every direction `y` whose pullback `Aᵀ y` lies in the dual
-cone has nonnegative pairing `0 ≤ ⟪b, y⟫`.  This is the strong-duality engine: a
-restatement of `ProperCone.relative_hyperplane_separation` in conic-program
-notation.  `ProperCone.map` bakes in the closure of `A(K)`, which is exactly the
+/-- **Farkas alternative / feasibility engine.** For [a target point `b`](hyp:b),
+[`b` lies in the closed image cone `A(K)` if and only if every dual direction `y`
+whose pullback `Aᵀ y` lies in the dual cone of `K` pairs nonnegatively with
+`b`](goal).
+
+This is the strong-duality engine: a restatement of
+`ProperCone.relative_hyperplane_separation` in conic-program notation.
+`ProperCone.map` bakes in the closure of `A(K)`, which is exactly the
 constraint-qualification gap between this and literal primal feasibility. -/
 theorem farkas {b : F} :
     b ∈ ProperCone.map P.A P.K ↔

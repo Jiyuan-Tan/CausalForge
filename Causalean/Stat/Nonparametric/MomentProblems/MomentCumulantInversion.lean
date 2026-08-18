@@ -76,8 +76,10 @@ private lemma block_card_lt_of_card_ne_one {r : ℕ}
     exact π.ne_bot hC this
   exact hπ (by simp [hparts])
 
-/-- The cumulant of a real random variable is the abstract cumulant formula evaluated at that
-variable's own raw-moment sequence: the measure-theoretic and combinatorial definitions agree. -/
+/-- [For a real random variable with law `ν`](hyp:ν) [and any order `r`](hyp:r), [the
+order-`r` cumulant of `ν` equals the abstract combinatorial cumulant formula evaluated at
+`ν`'s own raw-moment sequence](goal): the measure-theoretic and combinatorial definitions
+agree. -/
 theorem sourceCumulant_eq_cumFromMom (ν : Measure ℝ) (r : ℕ) :
     sourceCumulant ν (id : ℝ → ℝ) r = cumFromMom r (fun k => ∫ t, t ^ k ∂ν) := by
   unfold sourceCumulant jointCumulant cumFromMom
@@ -210,8 +212,9 @@ theorem momFromCum_congr {c c' : ℕ → ℝ} (r : ℕ)
       exact ih k hkr (fun j hj hjk => h j hj (hjk.trans (Nat.le_of_lt hkr)))
     · interval_cases r <;> simp
 
-/-- **Continuity of the inversion.** Each reconstructed moment is a continuous function of the
-prescribed cumulant sequence, so small perturbations of the target cumulants move the moments only
+/-- **Continuity of the inversion.** [At any fixed order `r`](hyp:r), [the reconstructed
+moment of that order is a continuous function of the prescribed cumulant
+sequence](goal), so small perturbations of the target cumulants move the moments only
 slightly — the key to the openness arguments that use this inversion. -/
 theorem continuous_momFromCum (r : ℕ) :
     Continuous (fun c : ℕ → ℝ => momFromCum c r) := by

@@ -32,9 +32,10 @@ namespace Causalean.Stat.Nonparametric
 open MeasureTheory
 open scoped BigOperators
 
-/-- A kernel `K` of order `≥ p`: supported in `[-1,1]`, integrable, with unit mass
-`∫ K = 1` and vanishing moments `∫ uʲ K(u) du = 0` for `1 ≤ j ≤ p`. These are the
-inputs of the classical interior local-polynomial / kernel bias theorem. -/
+/-- A kernel of order at least `p`: [supported in `[-1,1]`](hyp:supp),
+[integrable](hyp:integrable), with [unit mass `∫ K = 1`](hyp:mass) and [vanishing moments
+`∫ uʲ K(u) du = 0` for `1 ≤ j ≤ p`](hyp:moments). These are the inputs of the classical interior
+local-polynomial / kernel bias theorem. -/
 structure KernelOrder (K : ℝ → ℝ) (p : ℕ) : Prop where
   /-- `K` is supported in `[-1,1]`. -/
   supp : ∀ u : ℝ, 1 < |u| → K u = 0

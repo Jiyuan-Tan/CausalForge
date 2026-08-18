@@ -43,10 +43,11 @@ open Causalean.PO
 
 variable {Ω : Type*} [MeasurableSpace Ω]
 
-/-- A finite measurable partition of a probability space `(Ω, μ)` into
-positive-mass cells indexed by a finite type `ι`. Bundles the measurability,
-pairwise disjointness, covering, and positive-mass side conditions that every
-population bridge otherwise carries loose. -/
+/-- A finite measurable partition of a probability space `(Ω, μ)` into positive-mass
+cells indexed by a finite type `ι`: [an assignment of a cell to each index](hyp:cell)
+such that [every cell is measurable](hyp:cell_meas), [distinct cells are pairwise
+disjoint](hyp:cell_disj), [the cells cover the whole space](hyp:cell_cov), and [every
+cell has strictly positive probability mass](hyp:cell_pos). -/
 structure CellPartition (μ : Measure Ω) (ι : Type*) [Fintype ι] where
   /-- The cell assigned to index `i` (e.g. `{ω | G ω = i}`). -/
   cell : ι → Set Ω

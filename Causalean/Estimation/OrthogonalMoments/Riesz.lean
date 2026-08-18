@@ -45,10 +45,11 @@ variable {Ω : Type*} [MeasurableSpace Ω] {μ : MeasureTheory.Measure Ω}
          {Z : Type*} [MeasurableSpace Z] {P_Z : MeasureTheory.Measure Z}
          {X : Type*} [MeasurableSpace X]
 
-/-- A **Riesz representation** for a linear functional `L` on a regression
-class `H_γ ⊆ (X → ℝ)` under `P_X : Measure X`:
-
-  `α₀ : X → ℝ`  and  `∀ γ ∈ H_γ_class, L γ = ∫ x, α₀ x · γ x ∂P_X`.
+/-- A **Riesz representation** for a continuous linear functional on a regression class
+under a covariate measure: a function [α₀](hyp:α₀) on the covariate space that is
+[measurable](hyp:α₀_meas), [integrable against the covariate measure](hyp:α₀_integrable), and
+that [represents the functional's value at every element of the regression class as the
+covariate-measure integral of α₀ against that element's evaluation](hyp:representation).
 
 Concrete causal targets such as ATE and policy value construct an instance of
 this structure from their identification proof. -/

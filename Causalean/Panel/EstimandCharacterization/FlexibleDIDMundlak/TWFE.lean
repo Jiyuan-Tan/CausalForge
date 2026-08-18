@@ -30,9 +30,10 @@ open UniformTwoWayPanel
 
 variable {Unit Time : Type*} [Fintype Unit] [Fintype Time]
 
-/-- Scalar TWFE problem on a finite balanced panel. The positivity field is
-the scalar full-rank condition corresponding to nonsingularity of
-`Q_{\ddot X}` in the source. -/
+/-- A scalar two-way-fixed-effects regression problem on [a finite balanced panel of units and
+time periods](hyp:panel), given [a scalar outcome](hyp:Y) and [a scalar regressor](hyp:X), where
+[the sum of squared double-demeaned regressor values is strictly positive — the scalar full-rank
+condition ensuring the two-way within estimator is well defined](hyp:ddotX_ss_pos). -/
 structure ScalarTWFEProblem (Unit Time : Type*) [Fintype Unit] [Fintype Time] where
   panel : BalancedPanel Unit Time
   Y : Unit → Time → ℝ
@@ -159,8 +160,12 @@ theorem mundlak_nuisance_unit_time
   rw [hrep i t]
   ring
 
-/-- A scalar two-way Mundlak fit, stated by normal equations rather than by a
-particular coding of the nuisance regressors. -/
+/-- A scalar two-way Mundlak fit of the TWFE problem `P` against optional time-constant controls
+`Zvar` and time-only controls `Mvar`, stated by normal equations rather than by a particular
+coding of the nuisance regressors. It bundles [a scalar coefficient on the regressor](hyp:beta)
+and [a nuisance function lying in the two-way Mundlak span](hyp:nuisance,nuisance_mem), subject
+to [the pooled normal equation against the regressor](hyp:normal_X) and [the pooled normal
+equation against every nuisance function in that span](hyp:normal_H). -/
 structure ScalarTWMFit (P : ScalarTWFEProblem Unit Time)
     (Zvar : Z → Unit → ℝ) (Mvar : M → Time → ℝ) where
   beta : ℝ
@@ -190,9 +195,13 @@ theorem twfe_twm_residual_common (P : ScalarTWFEProblem Unit Time)
       (lt_of_lt_of_le (by decide) P.panel.time_card_ge_two) P.X h
       (mundlak_nuisance_unit_time P.X Zvar Mvar hh)
 
-/-- Wooldridge finite-panel scalar TWFE--two-way Mundlak equivalence. The
-full-rank side condition is `P.ddotX_ss_pos`; the fit carries the population
-normal equations for the pooled Mundlak regression. -/
+/-- **Wooldridge finite-panel scalar TWFE-two-way-Mundlak equivalence.** [For a scalar
+two-way-fixed-effects panel regression problem `P` with optional time-constant controls
+`Zvar` and time-only controls `Mvar`](hyp:P,Zvar,Mvar), [given any pooled two-way Mundlak
+regression fit stated by its normal equations](hyp:fit), [that fit's coefficient on the
+regressor equals the two-way-fixed-effects coefficient](goal).
+
+The full-rank side condition is `P.ddotX_ss_pos`. -/
 theorem twfe_twm_equivalence (P : ScalarTWFEProblem Unit Time)
     (Zvar : Z → Unit → ℝ) (Mvar : M → Time → ℝ)
     (fit : ScalarTWMFit P Zvar Mvar) :

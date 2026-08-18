@@ -52,8 +52,9 @@ def Yobs (y : ι → Δ → ℝ) (f : Ω → Θ → Δ) (θ : ι → Θ) (i : ι
 variable [Fintype Δ]
 
 omit [Fintype Ω] in
-/-- **Condition 2 (consistency).** The observed outcome equals the sum over exposures of
-the exposure indicator times the exposure-indexed potential outcome. -/
+/-- **Condition 2 (consistency).** [The observed outcome of unit `i` under assignment `z` equals
+the sum, over every exposure level, of the exposure indicator times the exposure-indexed
+potential outcome](goal). -/
 lemma Yobs_eq_sum (y : ι → Δ → ℝ) (f : Ω → Θ → Δ) (θ : ι → Θ) (i : ι) (z : Ω) :
     Yobs y f θ i z = ∑ d, expoInd f θ i d z * y i d := by
   unfold Yobs expoInd FiniteDesign.ind

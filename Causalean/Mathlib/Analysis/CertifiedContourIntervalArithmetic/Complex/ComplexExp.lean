@@ -547,8 +547,10 @@ theorem complexExpStage_width (z : CertifiedComplex) (n : ℕ) :
 canonical reciprocal target is no larger than that tolerance. -/
 def complexExpPrecision (_z : CertifiedComplex) (ε : PosRat) : ℕ := ε.1.den
 
-/-- Complex exponential on a refining certified input has effective output
-convergence with magnitude-amplified input refinement included explicitly. -/
+/-- For [a certified complex input](hyp:z) and [a requested positive rational tolerance
+`ε`](hyp:ε), [evaluating the certified complex-exponential approximation at the precision
+level selected for that tolerance yields an output enclosure whose width is no larger than
+`ε`](goal). -/
 theorem complexExp_width_at_precision (z : CertifiedComplex) (ε : PosRat) :
     (complexExpNameApprox z (complexExpPrecision z ε)).width ≤ ε.1 := by
   -- The recursive name approximation is a subrectangle of its current stage.

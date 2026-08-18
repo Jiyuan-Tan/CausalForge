@@ -48,10 +48,10 @@ namespace Causalean
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- **Verma–Pearl (1990).** Two DAGs on the same vertex set are Markov equivalent — they
-declare exactly the same d-separations, hence impose the same conditional-independence
-constraints — if and only if they have the same skeleton and the same v-structures
-(immoralities).
+/-- **Verma–Pearl (1990).** For [two DAGs `G₁`, `G₂` on the same vertex set](hyp:G₁,G₂),
+[they are Markov equivalent — they declare exactly the same d-separations, hence impose the
+same conditional-independence constraints — if and only if they have the same skeleton and
+the same v-structures (immoralities)](goal).
 
 The easy direction reads the skeleton and v-structures from d-separation. The hard
 direction is supplied by the covered-edge reversal route: same-skeleton/same-immorality

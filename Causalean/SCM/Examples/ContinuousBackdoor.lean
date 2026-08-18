@@ -221,7 +221,8 @@ theorem cb_Xfixed :
   intro D _ hmem
   simp [cbSWIGGraph] at hmem
 
-/-- The confounder satisfies the graphical backdoor criterion for the continuous treatment-outcome effect.
+/-- [The observed confounder satisfies the graphical backdoor criterion relative to the treatment
+and outcome nodes in the continuous-backdoor example graph](goal).
 
 The statement is on the computable SWIG graph; the full structural model has the
 same graph by definition. -/

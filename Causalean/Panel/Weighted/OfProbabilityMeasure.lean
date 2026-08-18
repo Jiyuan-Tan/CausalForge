@@ -108,8 +108,9 @@ record under the probability measure. -/
 @[simp] lemma ofProbabilityMeasure_weight (μ : Measure R) [IsProbabilityMeasure μ]
     (r : R) : (ofProbabilityMeasure μ).weight r = (μ {r}).toReal := rfl
 
-/-- The weighted inner product induced by a finite probability measure is the
-`L²(μ)` integral pairing `∫ A·B dμ`. -/
+/-- For [a finite probability measure `μ`](hyp:μ), [the weighted inner product
+induced by `μ` on any two functions `A` and `B` equals the `L²(μ)` integral pairing
+`∫ A·B dμ`](goal). -/
 theorem ip_eq_integral (μ : Measure R) [IsProbabilityMeasure μ] (A B : R → ℝ) :
     (ofProbabilityMeasure μ).ip A B = ∫ r, A r * B r ∂μ := by
   classical

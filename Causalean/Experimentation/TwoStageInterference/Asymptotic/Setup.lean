@@ -50,11 +50,18 @@ namespace TwoStageInterference
 open DesignBased
 
 /-- A single Liu–Hudgens (2014) two-stage experiment, packaged so that a sequence of them can be
-studied for large-sample inference.  Carries the two-stage design (`D₁`, `ψ`, `φ`), the
-partial-interference potential outcomes `Y`, the control/treatment unit counts `m0`/`m1`, the
-number `C` of ψ-selected groups, and the *known* design propensities (`hprop0`, `hprop1`,
-`hstage1`, `hstage1pair`) together with the nondegeneracy side conditions — exactly the hypothesis
-lists of `E_estDirect` and `Var_estDirect`. -/
+studied for large-sample inference. Carries [a finite population of groups](hyp:ι) with
+[per-group sizes](hyp:gsize), [a stage-1 design assigning each group a strategy](hyp:D₁), the
+per-group allocation strategies [ψ](hyp:ψ) and [φ](hyp:φ), [partial-interference potential
+outcomes](hyp:Y), and design-fixed [control](hyp:m0) and [treatment](hyp:m1) unit counts per
+group, together with the regularity conditions that [the number C of ψ-selected groups is
+nonzero](hyp:C,hC), [every group has nonzero control and treatment counts](hyp:hm0,hm1) and
+[nonzero size](hyp:hn), [the population has at least one group](hyp:hN) and [at least two
+groups](hyp:hN1), [every unit's within-group control propensity equals m0 i / nᵢ](hyp:hprop0)
+and [its treatment propensity equals m1 i / nᵢ](hyp:hprop1), [every group's stage-1 selection
+propensity equals C/N](hyp:hstage1), and [every pair's joint selection propensity equals
+C(C−1)/(N(N−1))](hyp:hstage1pair) — exactly the hypothesis lists of `E_estDirect` and
+`Var_estDirect`. -/
 structure LHExperiment where
   /-- Finite population of groups. -/
   ι : Type
@@ -131,16 +138,18 @@ noncomputable def directVar : ℝ :=
       * ∑ i, (E.ψ i).Var
           (fun w => groupEst E.Y i true (E.m1 i) w - groupEst E.Y i false (E.m0 i) w)
 
-/-- **Unbiasedness bridge.** The estimator is unbiased for the population average
-treatment-minus-control direct-effect contrast.  Immediate from `E_estDirect` and the carried
-propensity hypotheses. -/
+/-- **Unbiasedness bridge.** [The Horvitz–Thompson estimator is unbiased for the population average
+treatment-minus-control direct-effect contrast](goal).
+
+Immediate from `E_estDirect` and the carried propensity hypotheses. -/
 theorem E_estD : E.jointD.E E.estD = E.DEbar :=
   E_estDirect E.D₁ E.ψ E.φ E.Y E.m0 E.m1 E.C
     E.hC E.hm0 E.hm1 E.hn E.hprop0 E.hprop1 E.hstage1
 
-/-- **Variance bridge.** The design variance of the treatment-minus-control direct-effect contrast
-estimator equals the closed-form two-stage variance `directVar`.  Immediate from `Var_estDirect`
-and the carried hypotheses. -/
+/-- **Variance bridge.** [The design variance of the treatment-minus-control direct-effect contrast
+estimator equals the closed-form two-stage variance `directVar`](goal).
+
+Immediate from `Var_estDirect` and the carried hypotheses. -/
 theorem var_estD : E.jointD.Var E.estD = E.directVar :=
   Var_estDirect E.D₁ E.ψ E.φ E.Y E.m0 E.m1 E.C
     E.hC E.hN E.hN1 E.hm0 E.hm1 E.hn E.hprop0 E.hprop1 E.hstage1 E.hstage1pair

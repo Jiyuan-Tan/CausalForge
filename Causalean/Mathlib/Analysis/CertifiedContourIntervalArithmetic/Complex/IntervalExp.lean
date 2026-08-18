@@ -104,8 +104,10 @@ theorem expInterval_nested (I : RatInterval) (fuel : ℕ) :
   exact RatInterval.tighten_subinterval_left
     (expInterval_sound hmid fuel) (expIntervalRaw_sound hmid (fuel + 1))
 
-/-- Exponential width propagation includes both scalar Taylor error and the
-input radius amplified by a certified exponential magnitude bound. -/
+/-- For [a rational interval `I`](hyp:I) and [a Taylor fuel/iteration count](hyp:fuel), [the
+width of the certified interval exponential is bounded by the scalar Taylor truncation error
+at the interval's midpoint plus twice the interval's radius amplified by a certified bound on
+the exponential's magnitude over the interval](goal). -/
 theorem expInterval_width (I : RatInterval) (fuel : ℕ) :
     (expInterval I fuel).width ≤
       (Causalean.Mathlib.Analysis.CertifiedContourIntervalArithmetic.Transcendental.expScalar

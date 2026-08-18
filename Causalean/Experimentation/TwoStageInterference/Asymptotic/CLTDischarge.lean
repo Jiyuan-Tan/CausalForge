@@ -144,14 +144,17 @@ lemma estD_eq_agg (E : LHExperiment)
   · simp only [h, if_pos, one_mul]
   · simp [h]
 
-/-- **Homogeneity + regularity bundle for a sequence of Liu–Hudgens experiments.** Faithfully
-encodes the hypotheses of Proposition 5.1 for the Hudgens-Halloran orientation: all
-group-level direct-effect contrasts equal a common `δ` (homogeneity); all within-group contrast
-estimator variances equal a common positive `v n`; the centered per-group contrast estimator is
-bounded by `M`; every supported stage-1 selection flags exactly `C` groups; the bound sequence
-`B n := M / √(C n · v n)` and `card · B³` vanish (the many-groups rate); and the conditional
-studentized CDF is selection-independent over the stage-1 support (`hhom`, the analytic form of
-homogeneity that lifts the conditional CLT to the average). -/
+/-- **Homogeneity and regularity bundle for a sequence of Liu–Hudgens experiments.** Faithfully
+encodes the hypotheses of Proposition 5.1 for the Hudgens-Halloran orientation: [the studentized
+statistic is the standardized contrast estimator](hyp:hstud); [every group-level direct-effect
+contrast equals a common value δ](hyp:hδ) (homogeneity); [every within-group contrast-estimator
+variance equals a common value v(n)](hyp:hv) that [is positive](hyp:hvpos); [the centered per-group
+contrast estimator is uniformly bounded](hyp:hMbound); [every stage-1 selection supported by the
+design flags exactly C groups](hyp:hcount); [the resulting rate sequence tends to
+zero](hyp:hB0) together with [its cubed Lyapunov rate](hyp:hNB3) (the many-groups asymptotic
+regime); and [the conditional distribution of the studentized statistic does not depend on which
+stage-1 selection occurred](hyp:hhom), the analytic form of homogeneity that lifts the conditional
+CLT to the average. -/
 structure Homogeneous (Exp : ℕ → LHExperiment) (t : ℝ)
     (stud : ∀ n, (StratAssign (Exp n).ι × ∀ i, Fin ((Exp n).gsize i) → Bool) → ℝ)
     (δ M : ℝ) (v : ℕ → ℝ) where
@@ -184,8 +187,9 @@ structure Homogeneous (Exp : ℕ → LHExperiment) (t : ℝ)
 variable {Exp : ℕ → LHExperiment} {t δ M : ℝ} {v : ℕ → ℝ}
   {stud : ∀ n, (StratAssign (Exp n).ι × ∀ i, Fin ((Exp n).gsize i) → Bool) → ℝ}
 
-/-- **Estimand reduction.** Under homogeneity the population average treatment-minus-control
-direct-effect contrast collapses to the common group-level contrast: `DEbar = δ`. -/
+/-- **Estimand reduction.** Under [the homogeneity and regularity bundle](hyp:h), [the population
+average treatment-minus-control direct-effect contrast collapses to the common group-level
+contrast `δ`](goal). -/
 lemma DEbar_eq_of_homogeneous (h : Homogeneous Exp t stud δ M v) (n : ℕ) :
     (Exp n).DEbar = δ := by
   simp only [LHExperiment.DEbar, CE_direct, popMean, ← sub_div, ← Finset.sum_sub_distrib]
@@ -193,9 +197,10 @@ lemma DEbar_eq_of_homogeneous (h : Homogeneous Exp t stud δ M v) (n : ℕ) :
     nsmul_eq_mul]
   rw [mul_comm, mul_div_assoc, div_self (Exp n).hN, mul_one]
 
-/-- **Variance reduction.** Under homogeneity the between-group term of `directVar` vanishes (the
-population variance of a constant is zero) and the within-group term averages to `v n / C`, so
-`directVar = v n / C`. -/
+/-- **Variance reduction.** Under [the homogeneity and regularity bundle](hyp:h), [the two-stage
+design variance of the direct-effect contrast collapses to `v n / C`](goal): the between-group
+term vanishes since the population variance of a constant is zero, and the within-group term
+averages to `v n / C`. -/
 lemma directVar_eq_of_homogeneous (h : Homogeneous Exp t stud δ M v) (n : ℕ) :
     (Exp n).directVar = v n / (Exp n).C := by
   have hSmu : SmuVar (fun i => groupMean (Exp n).ψ (Exp n).Y i true

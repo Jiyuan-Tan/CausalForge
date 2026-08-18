@@ -123,8 +123,10 @@ lemma ip_self_nonneg (c : WeightedSupport R) (A : R → ℝ) :
   unfold ip
   exact Finset.sum_nonneg (c.ip_self_summand_nonneg A)
 
-/-- Definiteness on the support: `⟨A, A⟩_ω = 0` iff `A` vanishes on every
-observed index.  Arrays that differ only off `c.observed` are identified. -/
+/-- For [a weighted-support system `c`](hyp:c), [the weighted self inner product
+`⟨A, A⟩_ω` of an array `A` vanishes if and only if `A` is zero at every index in the
+observed set](goal). Arrays that differ only off `c.observed` are thus identified by
+this inner product. -/
 lemma ip_self_eq_zero_iff (c : WeightedSupport R) (A : R → ℝ) :
     c.ip A A = 0 ↔ ∀ r ∈ c.observed, A r = 0 := by
   unfold ip

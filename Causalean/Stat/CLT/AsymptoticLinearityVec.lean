@@ -56,9 +56,12 @@ variable {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
 
 /-! ## Vector-valued asymptotic linearity -/
 
-/-- `IsAsymLinearVec θn θ₀ ψ S I` says the (vector-valued) estimator sequence
-`θn : ℕ → Ω → E` is asymptotically linear at `θ₀ : E` with influence function
-`ψ : X → E`, indexed by the family of finite index sets `I : ℕ → Finset ℕ`.
+/-- A vector-valued estimator sequence is asymptotically linear at a target value when its
+scaled estimation error equals the normalized empirical average of an influence function
+that has [Bochner mean zero](hyp:mean_zero) and [finite second moment](hyp:finite_var)
+under the population law, up to
+[a remainder that is negligible in probability](hyp:remainder), along a chosen family of
+finite index sets selecting which observations enter each empirical average.
 
 Fields:
 

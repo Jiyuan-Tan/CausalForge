@@ -50,7 +50,11 @@ open scoped BigOperators
 namespace Causalean
 namespace Panel.Weighted
 
-/-- A finite weighted index together with positive normalized weights.
+/-- A finite weighted index together with positive normalized weights:
+[a nonempty observed subset of indices](hyp:observed,observed_nonempty) together with
+[a weight function](hyp:weight) that is [strictly positive on every observed
+index](hyp:weight_pos), [vanishes off the observed set](hyp:weight_zero_off), and
+[sums to one over the observed indices](hyp:weight_sum_one).
 
 The pair `(observed, weight)` records:
 
@@ -95,7 +99,9 @@ lemma sum_weight_univ (c : WeightedSupport R) :
   intro r _ hr
   exact c.weight_zero_off r hr
 
-/-- Summing the weights over `observed` gives `1` (restated for convenience). -/
+/-- For [a weighted-support system `c`](hyp:c), [the weights sum to one over the
+observed index set](goal) (restated from the structure's normalization field for
+convenient reuse). -/
 lemma sum_weight (c : WeightedSupport R) :
     ∑ r ∈ c.observed, c.weight r = 1 := c.weight_sum_one
 

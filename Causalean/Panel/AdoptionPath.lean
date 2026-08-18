@@ -99,8 +99,9 @@ the never-treated path is untreated in every finite period. -/
 noncomputable def absorbingTreatment {T : ℕ} (h : WithTop (Fin T)) (t : Fin T) : ℝ :=
   if le h t then 1 else 0
 
-/-- The absorbing treatment path is one exactly when the adoption date is no
-later than the finite period. -/
+/-- [For an adoption date `h` and period `t` within a horizon of `T` periods](hyp:h,t,T),
+[the absorbing treatment indicator equals one exactly when adoption has occurred by that
+period, and zero otherwise](goal). -/
 @[simp] theorem absorbingTreatment_eq {T : ℕ} (h : WithTop (Fin T)) (t : Fin T) :
     absorbingTreatment h t = if h ≤ (t : WithTop (Fin T)) then 1 else 0 := by
   unfold absorbingTreatment le

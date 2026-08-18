@@ -29,9 +29,9 @@ namespace Causalean.Stat
 open MeasureTheory ProbabilityTheory Set
 open Causalean.Stat
 
-/-- `IsCoupling π μ ν` states that `π` is a coupling of `μ` and `ν`: it is a
-probability measure on `ℝ × ℝ` whose first marginal is `μ` and whose second
-marginal is `ν`. This is membership in the Fréchet class `Π(μ, ν)`. -/
+/-- `π` is a coupling of `μ` and `ν`, i.e. a member of the Fréchet class `Π(μ, ν)`, when
+it is [a probability measure](hyp:isProbabilityMeasure) on `ℝ × ℝ` whose
+[first marginal is `μ`](hyp:map_fst) and whose [second marginal is `ν`](hyp:map_snd). -/
 structure IsCoupling (π : Measure (ℝ × ℝ)) (μ ν : Measure ℝ) : Prop where
   /-- A coupling is a probability measure. -/
   isProbabilityMeasure : IsProbabilityMeasure π
@@ -83,10 +83,14 @@ lemma map_one_sub_unifOI : unifOI.map (fun u : ℝ => 1 - u) = unifOI := by
       (s := Ioo (0 : ℝ) 1) measurableSet_Ioo
   simpa [unifOI, hvol, hpre] using hrestrict.symm
 
-/-- The comonotone coupling **is** a coupling of `(μ, ν)`. Its marginals are
-computed by `Measure.map_map` composing with `Prod.fst`/`Prod.snd`, which
-reduces each to `unifOI.map (quantile ·)`, equal to the corresponding measure by
-the probability integral transform `quantile_map_uniform`. -/
+/-- For [probability measures `μ` and `ν` on the reals](hyp:μ,ν), [the comonotone
+coupling of `μ` and `ν` is indeed a coupling of the pair, i.e. its two marginals
+recover `μ` and `ν`](goal).
+
+Its marginals are computed by `Measure.map_map` composing with `Prod.fst`/
+`Prod.snd`, which reduces each to `unifOI.map (quantile ·)`, equal to the
+corresponding measure by the probability integral transform
+`quantile_map_uniform`. -/
 theorem isCoupling_comonotoneCoupling (μ ν : Measure ℝ)
     [IsProbabilityMeasure μ] [IsProbabilityMeasure ν] :
     IsCoupling (comonotoneCoupling μ ν) μ ν := by
@@ -112,10 +116,13 @@ theorem isCoupling_comonotoneCoupling (μ ν : Measure ℝ)
       _ = ν := by
             simpa [Function.comp_def] using (quantile_map_uniform ν)
 
-/-- The countermonotone coupling **is** a coupling of `(μ, ν)`. The first
-marginal is `μ` by the PIT; the second marginal is `unifOI.map (quantile ν ∘
-(1 - ·))`, which equals `ν` because `u ↦ 1 - u` preserves `unifOI`
-(`map_one_sub_unifOI`) followed by the PIT for `ν`. -/
+/-- For [probability measures `μ` and `ν` on the reals](hyp:μ,ν), [the
+countermonotone coupling of `μ` and `ν` is indeed a coupling of the pair, i.e.
+its two marginals recover `μ` and `ν`](goal).
+
+The first marginal is `μ` by the PIT; the second marginal is `unifOI.map
+(quantile ν ∘ (1 - ·))`, which equals `ν` because `u ↦ 1 - u` preserves
+`unifOI` (`map_one_sub_unifOI`) followed by the PIT for `ν`. -/
 theorem isCoupling_countermonotoneCoupling (μ ν : Measure ℝ)
     [IsProbabilityMeasure μ] [IsProbabilityMeasure ν] :
     IsCoupling (countermonotoneCoupling μ ν) μ ν := by

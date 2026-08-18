@@ -23,10 +23,13 @@ open Causalean.Stat
 
 variable {π : Measure (ℝ × ℝ)} {μ ν : Measure ℝ}
 
-/-- The comonotone coupling **attains** the Fréchet–Hoeffding upper bound:
-`H = min (cdf μ x) (cdf ν y)`. For `U ~ Unif(0,1)`,
-`{u | quantile μ u ≤ x ∧ quantile ν u ≤ y} = {u | u ≤ cdf μ x} ∩ {u | u ≤ cdf ν y}
- = {u | u ≤ min (cdf μ x) (cdf ν y)}`, of uniform mass `min (cdf μ x) (cdf ν y)`. -/
+/-- **Comonotone attainment.** [The joint cdf of the comonotone coupling of two probability
+measures `μ` and `ν`](hyp:μ,ν), [evaluated at a point `(x, y)`](hyp:x,y), [equals the
+Fréchet–Hoeffding upper bound `min (cdf μ x) (cdf ν y)`](goal).
+
+For `U ~ Unif(0,1)`, `{u | quantile μ u ≤ x ∧ quantile ν u ≤ y} = {u | u ≤ cdf μ x} ∩
+{u | u ≤ cdf ν y} = {u | u ≤ min (cdf μ x) (cdf ν y)}`, of uniform mass
+`min (cdf μ x) (cdf ν y)`. -/
 theorem jointCdf_comonotoneCoupling (μ ν : Measure ℝ)
     [IsProbabilityMeasure μ] [IsProbabilityMeasure ν] (x y : ℝ) :
     jointCdf (comonotoneCoupling μ ν) x y = min (cdf μ x) (cdf ν y) := by
@@ -92,9 +95,11 @@ theorem jointCdf_comonotoneCoupling (μ ν : Measure ℝ)
     rw [ENNReal.toReal_ofReal hm0]
   · simpa [unifOI] using hpre_null
 
-/-- The countermonotone coupling **attains** the Fréchet–Hoeffding lower bound:
-`H = max (cdf μ x + cdf ν y - 1) 0`. For `U ~ Unif(0,1)`,
-`{u | quantile μ u ≤ x ∧ quantile ν (1-u) ≤ y}
+/-- **Countermonotone attainment.** [The joint cdf of the countermonotone coupling of two
+probability measures `μ` and `ν`](hyp:μ,ν), [evaluated at a point `(x, y)`](hyp:x,y),
+[equals the Fréchet–Hoeffding lower bound `max (cdf μ x + cdf ν y - 1) 0`](goal).
+
+For `U ~ Unif(0,1)`, `{u | quantile μ u ≤ x ∧ quantile ν (1-u) ≤ y}
  = {u | u ≤ cdf μ x} ∩ {u | 1 - cdf ν y ≤ u}`, of uniform mass
 `max (cdf μ x - (1 - cdf ν y)) 0 = max (cdf μ x + cdf ν y - 1) 0`. -/
 theorem jointCdf_countermonotoneCoupling (μ ν : Measure ℝ)

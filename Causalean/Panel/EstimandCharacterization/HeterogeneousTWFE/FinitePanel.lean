@@ -88,7 +88,17 @@ Compatibility alias for the shared additive-span predicate. -/
 abbrev IsGTFE {G T : Type*} (h : G → T → ℝ) : Prop :=
   Causalean.Panel.Weighted.IsUnitTimeAdditive h
 
-/-- Finite DCDH group-time panel with a residualized-treatment witness. -/
+/-- A finite de Chaisemartin-D'Haultfoeuille group-time panel: it bundles [group-time cell
+weights](hyp:pi), [a binary treatment indicator](hyp:D), [the observed outcome](hyp:Y), [the
+untreated potential outcome](hyp:Y0), [cell-level treatment effects](hyp:tau), and [a
+residualized-treatment witness](hyp:Dtilde), subject to [strict positivity](hyp:pi_pos) and
+[unit sum](hyp:pi_sum_one) of the weights, [the treatment indicator taking only the values zero
+and one](hyp:D_binary), [potential-outcome consistency — the observed outcome equals the
+untreated outcome plus the treatment indicator times the treatment
+effect](hyp:consistency), [the residualized witness differing from the treatment indicator by a
+group-plus-time additive function](hyp:D_minus_resid_mem), [its orthogonality, in the weighted
+inner product, to every group-plus-time additive function](hyp:Dtilde_orthogonal), and [a
+strictly positive weighted sum of its squares](hyp:SD_pos). -/
 structure DCDHPanel (G T : Type*) [Fintype G] [Fintype T] where
   pi : G → T → ℝ
   D : G → T → ℝ
@@ -188,8 +198,9 @@ theorem zeroUntreatedResidualContrast_of_Y0_mem_gtfe
     weighted_residual_contrast_eq_zero_of_isGTFE P.pi P.Dtilde P.Y0
       P.Dtilde_orthogonal hY0
 
-/-- DCDH finite TWFE decomposition into untreated bias and the all-cell
-`D`-weighted treatment-effect component. -/
+/-- **DCDH finite TWFE decomposition (all-cell weighting).** For [a DCDH panel](hyp:P), [the
+finite two-way fixed-effects (TWFE) coefficient decomposes as the sum of the untreated bias and
+the all-cell `D`-weighted treatment-effect component](goal). -/
 theorem twfe_eq_untreatedBias_add_DWeightedTau (P : DCDHPanel G T) :
   P.betaTWFE = P.untreatedBias + P.DWeightedTau := by
   rw [betaTWFE, untreatedBias, DWeightedTau]
@@ -219,7 +230,9 @@ theorem DWeightedTau_eq_treatedWeightedTau (P : DCDHPanel G T) :
     · simp [hD]
     · simp [hD])
 
-/-- DCDH finite TWFE decomposition with normalized treated-cell weights. -/
+/-- **DCDH finite TWFE decomposition (treated-cell weighting).** For [a DCDH panel](hyp:P), [the
+finite TWFE coefficient decomposes as the sum of the untreated bias and the normalized
+treated-cell weighted sum of treatment effects](goal). -/
 theorem twfe_eq_untreatedBias_add_treated_weighted_tau (P : DCDHPanel G T) :
   P.betaTWFE = P.untreatedBias + P.treatedWeightedTau := by
   rw [twfe_eq_untreatedBias_add_DWeightedTau, DWeightedTau_eq_treatedWeightedTau]
@@ -237,7 +250,8 @@ theorem twfe_eq_treated_weighted_tau_of_zeroUntreatedContrast
   rw [untreatedBias, h0]
   simp
 
-/-- The treated-cell DCDH weights sum to one. -/
+/-- **DCDH weights sum to one.** For [a DCDH panel](hyp:P), [the normalized DCDH weights sum to
+one over all treated cells](goal). -/
 theorem treated_omega_sum_eq_one (P : DCDHPanel G T) :
   ∑ gt ∈ P.treatedCells, P.omega gt.1 gt.2 = 1 := by
   have hnum :
@@ -277,9 +291,12 @@ theorem normalized_weight_neg_iff_residual_neg
   · intro h
     exact div_neg_of_neg_of_pos (mul_neg_of_pos_of_neg hpi h) hSD
 
-/-- The sign of the normalized DCDH weight is the sign of the residualized
-treatment. The lemma is named for its treated-cell use in the DCDH weight
-interpretation, but the equivalence only needs `π_gt > 0` and `S_D > 0`. -/
+/-- **Sign equivalence for the DCDH weight (negative direction).** For [a DCDH panel](hyp:P) and
+[any cohort-period cell](hyp:g,t), [the normalized weight `ω_gt` is negative exactly when the
+residualized treatment `D̃_gt` is negative](goal).
+
+The lemma is named for its treated-cell role in the DCDH weight interpretation, but the
+equivalence holds for any cell with positive cell mass and positive `S_D`. -/
 theorem treated_omega_neg_iff_Dtilde_neg
   (P : DCDHPanel G T) {g : G} {t : T} :
   P.omega g t < 0 ↔ P.Dtilde g t < 0 := by
@@ -301,10 +318,13 @@ theorem normalized_weight_pos_iff_residual_pos
   · intro h
     exact mul_pos hpi h
 
-/-- Positive-weight direction of the sign characterization: ω_gt > 0 iff
-D̃_gt > 0.  Together with `treated_omega_neg_iff_Dtilde_neg` and
-`treated_omega_zero_iff_Dtilde_zero` this completes the paper's claim
-sign(ω_gt) = sign(D̃_gt) (.tex Theorem 2 / .md prop:po-estimand-dcdh-weights-sum-one). -/
+/-- **Positive-weight direction of the DCDH sign characterization.** For [a DCDH panel](hyp:P)
+and [any cohort-period cell](hyp:g,t), [the normalized weight `ω_gt` is positive exactly when
+the residualized treatment `D̃_gt` is positive](goal).
+
+Together with `treated_omega_neg_iff_Dtilde_neg` and `treated_omega_zero_iff_Dtilde_zero` this
+completes the paper's claim `sign(ω_gt) = sign(D̃_gt)` (.tex Theorem 2 / .md
+prop:po-estimand-dcdh-weights-sum-one). -/
 theorem treated_omega_pos_iff_Dtilde_pos
   (P : DCDHPanel G T) {g : G} {t : T} :
   0 < P.omega g t ↔ 0 < P.Dtilde g t := by
@@ -328,9 +348,12 @@ theorem normalized_weight_zero_iff_residual_zero
     left
     rw [h, mul_zero]
 
-/-- Zero-weight direction of the sign characterization: ω_gt = 0 iff D̃_gt = 0.
-Together with the pos/neg sibling lemmas, this completes sign(ω_gt) = sign(D̃_gt)
-for all three cases. -/
+/-- **Zero-weight direction of the DCDH sign characterization.** For [a DCDH panel](hyp:P) and
+[any cohort-period cell](hyp:g,t), [the normalized weight `ω_gt` is zero exactly when the
+residualized treatment `D̃_gt` is zero](goal).
+
+Together with the pos/neg sibling lemmas, this completes `sign(ω_gt) = sign(D̃_gt)` for all
+three cases. -/
 theorem treated_omega_zero_iff_Dtilde_zero
   (P : DCDHPanel G T) {g : G} {t : T} :
   P.omega g t = 0 ↔ P.Dtilde g t = 0 := by

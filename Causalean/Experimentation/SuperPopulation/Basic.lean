@@ -36,12 +36,13 @@ namespace Causalean.Experimentation.SuperPopulation
 variable {V Ω : Type*} [Fintype V] [DecidableEq V] [MeasurableSpace Ω] {μ : Measure Ω}
   [IsProbabilityMeasure μ]
 
-/-- A **super-population locally-dependent network field**: node-level random summands
-`X i : Ω → ℝ` on a common ambient measure space `(Ω, μ)`, with a reflexive, symmetric network
-relation `adj` such that any two index sets with no edge between them carry independent summand
-tuples (exact `m`-dependence beyond the network).  This is the model-based counterpart of the
-finite design — the randomness is the population draw, not the assignment — and the m-dependence
-sibling of an i.i.d. sample. -/
+/-- A **super-population locally-dependent network field**: bundles [node-level random
+summands](hyp:X) on a common ambient probability space together with [a network relation between
+units](hyp:adj) that is [reflexive](hyp:refl) and [symmetric](hyp:symm), requires [every summand
+to be measurable](hyp:meas), and requires [any two collections of units joined by no edge to carry
+independent summand tuples](hyp:indep) (exact `m`-dependence beyond the network). This is the
+model-based counterpart of the finite design — the randomness is the population draw, not the
+assignment — and the m-dependence sibling of an i.i.d. sample. -/
 structure NetworkDependence (V Ω : Type*) [Fintype V] [DecidableEq V]
     [MeasurableSpace Ω] (μ : Measure Ω) where
   /-- The node-level random summand (one real-valued contribution per unit). -/
@@ -78,11 +79,12 @@ def toDepGraph : Causalean.SteinMethod.DepGraph F.X μ where
 noncomputable def nbhd (i : V) : Finset V := F.toDepGraph.nbhd i
 
 omit [IsProbabilityMeasure μ] in
-/-- Membership in the neighborhood is exactly adjacency. -/
+/-- [Unit `j` lies in unit `i`'s network neighborhood if and only if `i` and `j` are adjacent in
+the underlying interference network](goal). -/
 theorem mem_nbhd_iff {i j : V} : j ∈ F.nbhd i ↔ F.adj i j := F.toDepGraph.mem_nbhd_iff
 
 omit [IsProbabilityMeasure μ] in
-/-- Each unit lies in its own neighborhood. -/
+/-- [Every unit lies in its own network neighborhood](goal). -/
 theorem self_mem_nbhd (i : V) : i ∈ F.nbhd i := F.toDepGraph.self_mem_nbhd i
 
 end NetworkDependence

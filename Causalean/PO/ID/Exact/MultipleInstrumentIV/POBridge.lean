@@ -56,9 +56,12 @@ open Finset MeasureTheory ProbabilityTheory Causalean.PO
 
 noncomputable section
 
-/-- A multiple-instrument IV subsystem records a finite `Fin K`-valued
-instrument, a binary treatment, and a real outcome inside a potential-outcome
-system. This is the `Fin K` generalization of `PO.POIVSystem`. -/
+/-- **Multiple-instrument IV potential-outcome subsystem.** Inside a potential-outcome system,
+this bundles [a node serving as the instrument, taking values in a finite support of size
+`K`](hyp:Z,hZfin), [a node serving as the binary treatment](hyp:D,hDbool), and [a node serving
+as the real-valued outcome](hyp:Y,hYreal), subject to [the instrument, treatment, and outcome
+being pairwise distinct nodes](hyp:hZD,hDY,hZY). This is the `Fin K` generalization of
+`PO.POIVSystem`. -/
 structure POMultipleIVSystem (P : Causalean.PO.POSystem) (K : ℕ) where
   /-- Instrument node. -/
   Z : P.V
@@ -179,7 +182,13 @@ lemma measurable_YofDofZ (k : Fin K) : Measurable (S.YofDofZ k) := by
 
 /-! ### Assumptions -/
 
-/-- Classical multiple-instrument IV assumptions -- `ass:po-estimand-mtw-iv-validity`.
+/-- **Classical multi-instrument IV assumption bundle** (`ass:po-estimand-mtw-iv-validity`). For
+a multiple-instrument potential-outcome subsystem, this packages [the observed treatment and
+outcome equaling the potential treatment and outcome realized under the actual instrument value
+(SUTVA)](hyp:consistency), and [at each instrument support point, the instrument being
+independent of the counterfactual triple consisting of the potential treatment under that
+instrument value together with the two treatment-arm potential outcomes (IV
+exogeneity)](hyp:instrumentIndep).
 
 Exclusion is encoded by the `Y(d)` interface (outcomes carry no `z` argument, so
 the instrument cannot affect `Y` except through `D`), exactly as in

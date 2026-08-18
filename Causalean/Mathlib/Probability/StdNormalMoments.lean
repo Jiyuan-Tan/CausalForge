@@ -50,7 +50,10 @@ lemma integral_Ioi_stdNormalPDF (c : ℝ) :
     rw [stdNormalCDF, ProbabilityTheory.cdf_eq_real]
   rw [hset, hcompl, hcdf]
 
-/-- **The standard-normal truncated first moment:** `∫_{c}^∞ t·φ(t) dt = φ(c)`.
+/-- **The standard-normal truncated first moment.** [For any real cutoff `c`](hyp:c), [the
+tail integral of `t` times the standard normal density over `(c, ∞)` equals the density
+value at `c`](goal).
+
 Because `d/dt[−φ(t)] = t·φ(t)` for the standard normal, the truncated mean integrates to
 the density value at the cutoff. This is the identity behind the closed-form Gaussian MSM
 half-width. -/

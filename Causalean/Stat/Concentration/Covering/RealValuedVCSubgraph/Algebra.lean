@@ -189,9 +189,13 @@ private lemma ceil_mul_le_ceil_poly {A B ε : ℝ} {p q : ℕ}
   have hfinal := hreal.trans (Nat.le_ceil (((8 * A * B) / ε) ^ (p + q + 2)))
   exact_mod_cast hfinal
 
-/-- A class has uniform polynomial `L²` entropy with envelope `U` when it is
-measurable, pointwise bounded by `U`, and admits one polynomial cover bound for
-every probability measure and every relative radius in `(0,1]`. -/
+/-- A class of functions has uniform polynomial `L²` entropy with envelope `U` when
+[`U` is positive](hyp:envelope_pos), every function in the class is
+[measurable](hyp:measurable) and [pointwise bounded in absolute value by `U`](hyp:envelope),
+and the class
+[admits one polynomial covering-number bound, in the relative radius, holding
+simultaneously for every probability measure and every relative radius in `(0,1]`
+](hyp:entropy). -/
 structure HasPolynomialL2Cover {ι : Type v} (F : ι → 𝒳 → ℝ) (U : ℝ) : Prop where
   envelope_pos : 0 < U
   measurable : ∀ i, Measurable (F i)

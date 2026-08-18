@@ -55,12 +55,13 @@ namespace Causalean
 
 open scoped MeasureTheory ProbabilityTheory
 
-/-- **Pushforward of `compProd` through a measurable equivalence on the
-    first coordinate.**
-
-    If `e : β ≃ᵐ β'` is a measurable equivalence and `κ` is an s-finite
-    kernel `β → γ`, then pushing `ν.compProd κ` forward through
-    `Prod.map e id` produces `(ν.map e).compProd (κ.comap e.symm _)`.
+/-- **Pushforward of `compProd` through a measurable equivalence on the first coordinate.**
+For [a measurable equivalence `e` between the first-coordinate spaces](hyp:e), [an s-finite
+measure `ν`](hyp:ν) on the source first coordinate, and [an s-finite kernel `κ`](hyp:κ) from
+that coordinate to a second space, [pushing the composed-product measure of `ν` and `κ`
+forward through `e` on the first coordinate (identity on the second) equals the
+composed-product measure of the pushed-forward `ν` and `κ` transported back along `e`'s
+inverse](goal).
 
     Proved by computing both sides on measurable rectangles via
     `Measure.compProd_apply` and the change-of-variables formula
@@ -166,10 +167,9 @@ theorem condDistrib_comp_right_measurableEquiv
   rw [hx, hκ'_def, ProbabilityTheory.Kernel.comap_apply, e.symm_apply_apply]
 
 /-- **Measure-theoretic chain rule / disintegration (Mathlib gap).**
-
-    A finite measure on a product space `β × γ` equals the `bind` of its
-    `γ`-marginal against the regular conditional distribution of the
-    `β`-coordinate given the `γ`-coordinate.
+For [a finite measure `μ` on a product space](hyp:μ), [`μ` equals the composition obtained by
+first drawing the second coordinate from its marginal distribution and then drawing the first
+coordinate from its regular conditional distribution given that second coordinate](goal).
 
     This is a classical disintegration identity; upstream Mathlib has
     `ProbabilityTheory.condDistrib` and `Measure.compProd_of_condDistrib`

@@ -38,10 +38,12 @@ namespace DesignBased
 namespace FiniteDesign
 
 /-- **Relabeling a product design by a coordinate permutation.** For a family of designs `D` over a
-common coordinate space `W`, indexed by `ι`, and a permutation `σ : ι ≃ ι`, the probability under
+common coordinate space `W`, indexed by `ι`, and a permutation `σ : ι ≃ ι`, [the probability under
 `prodDesign D` of the predicate `w ↦ P (w ∘ σ)` equals the probability under the permuted product
-`prodDesign (D ∘ σ)` of `P`.  Pure finite-sum reindexing: precomposition by `σ` is a bijection of
-the assignment space `ι → W`, and the product pmf reindexes term-by-term. -/
+`prodDesign (D ∘ σ)` of `P`](goal).
+
+Pure finite-sum reindexing: precomposition by `σ` is a bijection of the assignment space `ι → W`,
+and the product pmf reindexes term-by-term. -/
 theorem prodDesign_Pr_reindex {ι : Type*} [Fintype ι] [DecidableEq ι] {W : Type*} [Fintype W]
     (σ : ι ≃ ι) (D : ι → FiniteDesign W) (P : (ι → W) → Prop) [DecidablePred P] :
     (prodDesign D).Pr (fun w => P (fun i => w (σ i)))

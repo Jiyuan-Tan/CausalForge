@@ -37,7 +37,10 @@ abbrev polynomialImageClosure {ι κ : Type*} (f : κ → MvPolynomial ι ℂ) :
     Set (κ → ℂ) :=
   affineZariskiClosure (Set.range (polynomialCoordinateMap f))
 
-/-- Substitution by `f` agrees pointwise with evaluation after the coordinate map. -/
+/-- For [index types `ι`, `κ`](hyp:ι,κ), [a polynomial parameterization `f`](hyp:f), [a point
+`x`](hyp:x), and [a polynomial `P`](hyp:P), [substituting the coordinate polynomials `f` into
+`P` and evaluating at `x` agrees with evaluating `P` directly at the point obtained by
+evaluating `f`'s coordinates at `x`](goal). -/
 lemma eval_polynomialPullback {ι κ : Type*} (f : κ → MvPolynomial ι ℂ)
     (x : ι → ℂ) (P : MvPolynomial κ ℂ) :
     MvPolynomial.eval x (polynomialPullback f P) =

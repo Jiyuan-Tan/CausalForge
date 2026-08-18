@@ -83,9 +83,9 @@ function-valued operations from `Pi.instAddCommGroup` / `Pi.module`. -/
 
 end BackdoorEstimationSystem
 
-/-- Pair of value-space nuisance functions `(μ_fn, e_fn)` together with
-measurability witnesses.  Used as the abstract nuisance space `H` for the
-AIPW moment functional. -/
+/-- **A pair of value-space AIPW nuisance functions**, used as the abstract nuisance space
+for the AIPW moment functional: [a treatment-arm-indexed outcome regression](hyp:μ_fn) and
+[a propensity score](hyp:e_fn), together with [their measurability](hyp:μ_meas,e_meas). -/
 structure NuisanceVec (γ : Type*) [MeasurableSpace γ] where
   μ_fn : Bool → γ → ℝ
   e_fn : γ → ℝ

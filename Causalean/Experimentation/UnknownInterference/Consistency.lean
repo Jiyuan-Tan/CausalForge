@@ -50,9 +50,13 @@ namespace UnknownInterference
 open DesignBased
 
 /-- A single Sävje–Aronow–Hudgens Bernoulli experiment, packaged so that a sequence of them models
-the growing-sample regime.  Carries the units `U`, treatment probabilities `p`, potential outcomes
-`y`, and the regularity constant `k` together with the moment/overlap hypotheses of the variance
-bound. -/
+the growing-sample regime. Carries [a finite population of units](hyp:U), [marginal treatment
+probabilities](hyp:p), and [potential outcomes indexed by the full assignment vector](hyp:y),
+together with an overlap regularity constant [k](hyp:k) [at least one](hyp:hk); the conditions
+that [there is at least one unit](hyp:hcard), [every treatment probability lies between 0 and
+1](hyp:hp0,hp1), [is bounded below by 1/k](hyp:hplo) and [above by 1 − 1/k](hyp:hphi) (overlap);
+and [every unit's potential outcome has second moment at most k²](hyp:hmom) under the resulting
+Bernoulli design. -/
 structure SAHExperiment where
   /-- Finite population of units. -/
   U : Type
@@ -106,13 +110,16 @@ lemma one_sub_p_ne_zero (i : E.U) : (1 : ℝ) - E.p i ≠ 0 := by
     linarith
   exact ne_of_gt this
 
-/-- **Unbiasedness (bundle form).** `E[ĤT] = EATE`. -/
+/-- **Unbiasedness (bundle form).** [The Horvitz–Thompson estimator's expectation under the
+experiment's Bernoulli design equals the experiment's EATE estimand](goal). -/
 theorem D_E_htEst : E.D.E (htEst E.p E.y) = E.eate := by
   change E.D.E (htEst E.p E.y) = EATE E.D E.y
   unfold SAHExperiment.D
   rw [htEst_unbiased E.p E.hp0 E.hp1 E.p_ne_zero E.one_sub_p_ne_zero E.y]
 
-/-- **Variance bound (bundle form).** `Var(ĤT) ≤ k⁴·d̄/n`. -/
+/-- **Variance bound (bundle form).** [The Horvitz–Thompson estimator's variance is at most the
+fourth power of the regularity constant times the average interference degree, divided by the
+population size](goal). -/
 theorem D_Var_htEst_le :
     E.D.Var (htEst E.p E.y) ≤ E.k ^ 4 * dbar E.y / (Fintype.card E.U : ℝ) := by
   unfold SAHExperiment.D

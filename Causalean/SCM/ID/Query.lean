@@ -92,8 +92,10 @@ noncomputable def interventionalQuery [∀ n, Nonempty (Ω n)]
     else
       defaultInterventionalKernel X Y
 
-/-- On the well-formed branch, the total interventional query is the
-post-intervention outcome-marginal kernel. -/
+/-- For [treatment nodes `X` and outcome nodes `Y` satisfying the well-formedness
+conditions for a valid interventional query in a model `M`](hyp:h), [the total
+interventional query evaluated at `M` equals the post-intervention
+outcome-marginal kernel `doKernelY`](goal). -/
 lemma interventionalQuery_eq_doKernelY_of_valid [∀ n, Nonempty (Ω n)]
     (X : Finset N) (Y : Finset (SWIGNode N)) (M : Causalean.SCM N Ω)
     (h : interventionalQueryValid X Y M) :

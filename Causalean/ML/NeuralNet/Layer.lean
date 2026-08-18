@@ -18,7 +18,8 @@ namespace Causalean.ML
 
 open Matrix
 
-/-- A dense affine layer `x ↦ W x + b` from `Fin m` inputs to `Fin n` outputs. -/
+/-- A dense affine layer bundles [a weight matrix](hyp:W) and [a bias vector](hyp:b) determining
+the map $x \mapsto Wx + b$ from `Fin m` inputs to `Fin n` outputs. -/
 structure DenseLayer (m n : ℕ) where
   /-- The weight matrix. -/
   W : Matrix (Fin n) (Fin m) ℝ
@@ -29,8 +30,9 @@ structure DenseLayer (m n : ℕ) where
 def DenseLayer.eval {m n : ℕ} (L : DenseLayer m n) (x : Fin m → ℝ) : Fin n → ℝ :=
   fun j => (L.W *ᵥ x) j + L.b j
 
-/-- An activation function together with a Lipschitz constant and a proof it is
-Lipschitz (e.g. ReLU, sigmoid, tanh are `1`-Lipschitz). -/
+/-- An activation function bundles [a scalar map](hyp:act) together with [a Lipschitz
+constant](hyp:lip) and the certificate that [the map is Lipschitz with that
+constant](hyp:isLipschitz) (e.g. ReLU, sigmoid, and tanh are all `1`-Lipschitz). -/
 structure Activation where
   /-- The scalar activation. -/
   act : ℝ → ℝ

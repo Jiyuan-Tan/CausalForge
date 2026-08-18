@@ -108,8 +108,10 @@ section
 
 omit [Fintype U]
 
-/-- Flipping the treatment of a unit `ℓ` that does **not** interfere with `i` (and `ℓ ≠ i`) never
-changes `i`'s outcome: the negation of `Interferes` unfolds to this pointwise invariance. -/
+/-- When [unit `ℓ` does not interfere with unit `i`](hyp:h), [flipping `ℓ`'s treatment while
+holding every other unit's assignment fixed never changes `i`'s realized outcome](goal).
+
+The negation of `Interferes` unfolds to this pointwise invariance. -/
 lemma y_update_eq_of_not_interferes {y : U → (U → Bool) → ℝ} {ℓ i : U}
     (h : ¬ Interferes y ℓ i) (z : U → Bool) :
     y i z = y i (Function.update z ℓ (! z ℓ)) := by

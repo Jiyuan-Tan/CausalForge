@@ -313,9 +313,9 @@ theorem partialEvalMap_observedPrefixValue (M : Causalean.SCM N Ω)
 -- § 5. Main correspondence
 -- ============================================================
 
-/-- **Main correspondence.** The prefix kernel evaluated at `s`
-    equals the pushforward of `latentProduct` through the deterministic
-    `partialEvalMap n hn s ·`.
+/-- **Main correspondence.** [For a structural causal model `M`](hyp:M), [its length-`n` prefix
+    kernel evaluated at a fixed assignment `s`](hyp:s) [equals the pushforward of the latent-value
+    product measure through the deterministic partial evaluation map at `s`](goal).
 
     Induction strategy: induct on `n`.
     * Base (`n = 0`): both sides reduce to `latentProduct.map (fun ℓ => (ℓ, PUnit.unit))`

@@ -79,10 +79,10 @@ private theorem truncatedMomentInterior_zero : TruncatedMomentInterior 0 := by
   · intro r hr hr0
     omega
 
-/-- **The truncated cumulant range has nonempty interior.** At every truncation order there is a
-cumulant vector, of orders two through `L`, together with a strictly positive radius, such that
-every cumulant vector within that radius is the truncated cumulant vector of some centered,
-non-Gaussian probability law on the real line with finite `L`-th moment.
+/-- **The truncated cumulant range has nonempty interior.** For [every truncation order `L`](hyp:L),
+[there is a cumulant vector, of orders two through `L`, together with a strictly positive radius,
+such that every cumulant vector within that radius is the truncated cumulant vector of some
+centered, non-Gaussian probability law on the real line with finite `L`-th moment](goal).
 
 The witness is an explicit finite atomic law on `L + 1` equally spaced symmetric atoms whose weights
 are recovered from the target moments by inverting a Vandermonde system, the target moments in turn

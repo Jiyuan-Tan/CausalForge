@@ -49,8 +49,13 @@ variable {Ω : Type*} [MeasurableSpace Ω] {μ : MeasureTheory.Measure Ω}
          {Θ : Type*} [NormedAddCommGroup Θ] [InnerProductSpace ℝ Θ]
          {G : Type*} [AddCommGroup G] [Module ℝ G]
 
-/-- Pointwise directional derivative of `θ ↦ ℓ z θ g` along the segment from
-`θ₀` to `θ`, packaged with the pointwise tendsto witness and measurability.
+/-- **Directional derivative of the learning-system loss in the target coordinate, at a fixed
+nuisance `g`.** Bundles [a candidate directional-derivative function `dℓ_θ`, giving a real number
+for each target `θ` and observation `z`](hyp:dℓ_θ), the witness that [for every target `θ` in the
+system's target class and every observation `z`, the loss's difference quotient along the segment
+from `θ₀` to `θ` at nuisance `g` converges to `dℓ_θ θ z` as the step size shrinks to
+zero](hyp:pointwise_tendsto), and [measurability of `dℓ_θ θ` in the observation for every target
+`θ`](hyp:dℓ_θ_meas).
 
 `dℓ_θ θ z` is the directional derivative *value* at `(θ₀, g)` in the
 direction `θ - θ₀`.  In the integrated form
@@ -79,7 +84,14 @@ structure HasDirDerivG
       (𝓝[≠] 0) (𝓝 (dℓ_g g z))
   dℓ_g_meas         : ∀ g, Measurable (dℓ_g g)
 
-/-- Mixed directional derivative `D_g D_θ ℓ` at `(θ₀, g₀)`.
+/-- **Mixed target-nuisance directional derivative of the learning-system loss, at the truth
+`(θ₀, g₀)`.** Bundles [a target-direction directional-derivative bundle `Dθ_at g` anchored at
+every accessible nuisance value `g`](hyp:Dθ_at), [a real-valued mixed directional-derivative
+function `dℓ_θg` of the target, the nuisance, and the observation](hyp:dℓ_θg), the witness that
+[for every target `θ` and nuisance `g` in the system's classes and every observation `z`, the
+target-direction derivative anchored at the perturbed nuisance `g₀ + t(g - g₀)` converges, as
+`t → 0`, to `dℓ_θg θ g z`](hyp:pointwise_tendsto), and [measurability of `dℓ_θg θ g` in the
+observation for every target `θ` and nuisance `g`](hyp:dℓ_θg_meas).
 
 We package this as a *family* of target-direction directional-derivative
 data — one bundle `Dθ_at g` for each accessible nuisance `g ∈ G_set ∪ {g₀}`

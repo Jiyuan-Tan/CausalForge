@@ -797,7 +797,9 @@ theorem dSep_mono_conditioningSet {X Y Z : Finset V}
   obtain ⟨x, hxX, p, hlen, hact, hhead, hlast⟩ := hv
   exact ⟨x, hxX, p, hlen, G.isActivePath_mono_edge G' hEdge hact, hhead, hlast⟩
 
-/-- d-separation is symmetric: if `X ⊥⊥ Y | Z` then `Y ⊥⊥ X | Z`.
+/-- **d-separation is symmetric.** For [three finite vertex sets `X`, `Y`, `Z`](hyp:X,Y,Z), if
+[`X` is d-separated from `Y` given `Z`](hyp:h) then [`Y` is d-separated from `X` given
+`Z`](goal).
 
     Proof strategy: by contrapositive, using the equivalence between the BFS
     computation and the existence of active paths. If `Y` is not d-separated

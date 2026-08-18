@@ -113,8 +113,8 @@ noncomputable def balanced : Cells I T where
 @[simp] lemma balanced_observed :
     (balanced (I := I) (T := T)).observed = Finset.univ := rfl
 
-/-- The balanced panel assigns the same normalized weight to every
-unit-period cell. -/
+/-- [For any unit-period cell `r`](hyp:r), [the balanced panel design assigns it weight
+equal to one divided by the total number of unit-period cells](goal). -/
 @[simp] lemma balanced_weight (r : I × T) :
     (balanced (I := I) (T := T)).weight r =
       (1 : ℝ) / (Fintype.card I * Fintype.card T) := rfl

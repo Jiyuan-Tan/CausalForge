@@ -92,7 +92,11 @@ private theorem rescaled_order_two_arith {n : ℕ} (hn : 2 ≤ n) (ζ : ℝ) :
 
 /-! ## The degenerate order-2 kernel hypothesis -/
 
-/-- Bundled hypotheses on a degenerate order-2 kernel `g`.
+/-- **Degenerate order-2 kernel.** A kernel `g : X → X → ℝ` is doubly degenerate under the
+measure `P` when [`g` is measurable as a function on $X \times X$](hyp:meas), [`g` is
+symmetric, $g(x,y) = g(y,x)$](hyp:symm), [integrating `g` over its second argument against
+`P` gives zero for every fixed first argument](hyp:deg), and [`g` is square-integrable under
+the product measure $P \times P$](hyp:sq).
 
 The kernel is measurable on `X × X`, symmetric, square-integrable under
 `P × P`, and has zero conditional mean in each coordinate.  The field `deg`

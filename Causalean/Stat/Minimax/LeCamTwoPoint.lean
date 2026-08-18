@@ -210,15 +210,15 @@ theorem leCam_two_point_L1_lower
     mul_le_mul_of_nonneg_left hprobLower (by linarith)
   exact hleft.trans (hmid.trans hmax_event)
 
-/-- **Le Cam two-point reduction in mean-squared-error form, uniform over a finite KL budget.**
-For every Kullback–Leibler budget `K` there is a single positive constant `c_K` (here
-`exp(−K)/32`), chosen before the laws, such that the following holds for EVERY pair of probability
-laws `Q₀, Q₁` on any measurable space whose divergence obeys `KL(Q₀, Q₁) ≤ K`: any measurable
-estimator `T` with integrable squared loss under both laws has worst-case mean-squared error at
-least `c_K · (θ₁ − θ₀)²`, where `θ₀, θ₁` are the two candidate parameter values.  The finite-budget
-hypothesis is encoded as the `ℝ≥0∞` inequality `klDiv Q₀ Q₁ ≤ ENNReal.ofReal K`, which forces a
-finite divergence (so it cannot be met vacuously by an infinite divergence collapsing under
-`.toReal`) and pins `c_K` to `K` alone.
+/-- **Le Cam two-point reduction in mean-squared-error form, uniform over a finite KL
+budget.** [For every Kullback–Leibler budget `K`](hyp:K), [there is a single positive
+constant `c_K` (here `exp(−K)/32`), chosen before the laws, such that for every pair of
+probability laws `Q₀, Q₁` whose divergence obeys `KL(Q₀, Q₁) ≤ K`, any measurable
+estimator with integrable squared loss under both laws has worst-case mean-squared error
+at least `c_K` times the squared separation of the two candidate parameter values](goal).
+The finite-budget hypothesis is encoded as the `ℝ≥0∞` inequality `klDiv Q₀ Q₁ ≤
+ENNReal.ofReal K`, which forces a finite divergence (so it cannot be met vacuously by an
+infinite divergence collapsing under `.toReal`) and pins `c_K` to `K` alone.
 
 Unlike Pinsker's inequality — whose testing floor is positive only for `K < 2` — the constant here
 is positive for every finite KL budget, because the testing floor is supplied by the

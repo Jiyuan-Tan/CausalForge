@@ -67,10 +67,15 @@ variable {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω} {P : Measure ℝ}
 
 /-! ## Regularity bundle for the sample quantile -/
 
-/-- Regularity for sample-quantile asymptotics.  Same content as the
-`hasDeriv`/identification fields of `QuantileRegularity`, **plus** the atomless
-hypothesis `cont` (`P` has no atoms), which lets the Bahadur remainder be
-*derived* rather than assumed. -/
+/-- **Regularity for sample-quantile asymptotics.** Bundles the hypotheses on the population
+cdf $F$ of $P$ under which the empirical sample quantile admits a Bahadur representation at
+level $\tau$: [the level lies in the open unit interval $\tau \in (0,1)$](hyp:tau_pos,tau_lt_one),
+[the density $f_0$ at the quantile is positive](hyp:density_pos), [$q_0$ is the population
+$\tau$-quantile, i.e. $F(q_0) = \tau$](hyp:cdf_eq), [$F$ is differentiable at $q_0$ with
+derivative $f_0$](hyp:hasDeriv), and [$F$ is continuous, so the population has no atoms](hyp:cont).
+
+Same content as the `hasDeriv`/identification fields of `QuantileRegularity`, **plus** the
+atomless hypothesis `cont`, which lets the Bahadur remainder be *derived* rather than assumed. -/
 structure SampleQuantileReg (P : Measure ℝ) (τ q₀ f₀ : ℝ) : Prop where
   /-- Interior level. -/
   tau_pos : 0 < τ

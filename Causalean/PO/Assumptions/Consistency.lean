@@ -40,15 +40,14 @@ Pathwise predicate: post-`r₁` value of `r₂.target` equals `r₂.assign` at `
 def IntermediateAgrees (r₁ r₂ : Regime P.V P.X) (ω : P.Ω) : Prop :=
   ∀ v (hv : v ∈ r₂.target), P.eval r₁ ω v = r₂.assign v hv
 
-/-- A potential-outcome system is consistent when two conditions hold.  First,
-for every intervention regime and every finite set of variables disjoint from
-the regime target, if a unit factually agrees with the regime, then the
-potential outcomes for that finite set under the regime equal the factual
-potential outcomes for that unit.  Second, for every pair of disjoint regimes
-and every finite set of variables disjoint from the union of their targets, if a
-unit agrees with the second regime after the first regime has been applied, then
-the potential outcomes for that finite set under the combined regime equal the
-potential outcomes under the first regime alone.
+/-- A potential-outcome system is consistent when two conditions hold. First,
+[for every intervention regime and every finite set of variables disjoint from the
+regime's target, a unit's potential outcomes for that set under the regime equal its
+factual potential outcomes whenever it factually agrees with the regime](hyp:factual).
+Second, [for every pair of disjoint regimes and every finite set of variables disjoint
+from the union of their targets, a unit's potential outcomes for that set under the
+composed regime equal its potential outcomes under the first regime alone, whenever it
+agrees with the second regime after the first has been applied](hyp:composition).
 
 Consistency assumption -- def:po-consistency. -/
 structure Consistency (P : POSystem) : Prop where

@@ -88,7 +88,11 @@ namespace Causalean
 namespace Estimation
 namespace DTR
 
-/-- Stagewise nuisance vector for two-period dynamic-treatment-regime estimation.
+/-- **A stagewise nuisance vector** for two-period dynamic-treatment-regime estimation:
+[the baseline outcome regression](hyp:μ₀_fn) and [treatment propensity](hyp:e₀_fn) at the
+first stage, [the second-stage outcome regression](hyp:μ₁_fn) and [treatment
+propensity](hyp:e₁_fn) given the second-period history, together with [the measurability
+of all four nuisance functions](hyp:μ₀_meas,e₀_meas,μ₁_meas,e₁_meas).
 
 The fields are the value-space nuisance functions used by the sequential
 doubly-robust moment. `μ₀_fn` and `e₀_fn` are the baseline outcome regression
@@ -435,13 +439,17 @@ lemma measurable_histH₁ :
     Measurable (fun z : γ 0 × δ × γ 1 × δ × ℝ => histH₁ z) := by
   unfold histH₁ projS₁ projD₀ projS₀; measurability
 
-/-- Pushing the full observed data law through the initial-state projection gives the stage-0 history marginal. -/
+/-- For [a dynamic-treatment-regime estimation system](hyp:S), [pushing the full observed-data
+law forward through the initial-state projection yields exactly the stage-0 history marginal
+law](goal). -/
 lemma P_Z_map_projS₀_eq_P_H₀ (S : DTREstimationSystem P δ γ) :
     S.P_Z.map (fun z : γ 0 × δ × γ 1 × δ × ℝ => projS₀ z) = S.P_H₀ := by
   unfold DTREstimationSystem.P_Z DTREstimationSystem.P_H₀
   rw [Measure.map_map measurable_projS₀ S.measurable_factualZ]; rfl
 
-/-- Pushing the full observed data law through the stage-1 history projection gives the stage-1 history marginal. -/
+/-- For [a dynamic-treatment-regime estimation system](hyp:S), [pushing the full observed-data
+law forward through the stage-1 history projection yields exactly the stage-1 history marginal
+law](goal). -/
 lemma P_Z_map_histH₁_eq_P_H₁ (S : DTREstimationSystem P δ γ) :
     S.P_Z.map (fun z : γ 0 × δ × γ 1 × δ × ℝ => histH₁ z) = S.P_H₁ := by
   unfold DTREstimationSystem.P_Z DTREstimationSystem.P_H₁

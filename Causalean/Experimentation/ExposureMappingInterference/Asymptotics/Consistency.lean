@@ -34,7 +34,12 @@ namespace ExposureMappingInterference
 
 open Causalean.Experimentation.DesignBased
 
-/-- A design-based experiment on a finite population. -/
+/-- A design-based experiment on a finite population: [a finite assignment space
+`Ω`](hyp:Ω) equipped with [a randomization design `D`](hyp:D) over it, [a finite population of
+units `ι`](hyp:ι) each assigned [a trait](hyp:θ) in [a trait space `Θ`](hyp:Θ),
+[exposure-indexed potential outcomes `y`, one real value per unit and exposure in an exposure
+space `Δ`](hyp:y,Δ), and [an exposure mapping `f` sending each assignment and unit trait to a
+realized exposure](hyp:f). -/
 structure Experiment where
   /-- Finite assignment space. -/
   Ω : Type

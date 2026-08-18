@@ -47,9 +47,14 @@ open MeasureTheory
 open Causalean.PO
 open Causalean.Panel.PO
 
-/-- A staggered-adoption event-study **population**: a probability space with a
-realized adoption cohort `G`, a calendar-time map, and adoption-path–indexed
-potential outcomes `Ypath t h ω = Y_{ωt}(h)`.
+/-- A staggered-adoption event-study **population**: [a probability space](hyp:Ω,measΩ,μ,probμ)
+carrying [a realized adoption cohort `G`](hyp:G) — with [every cohort cell
+measurable](hyp:Gcell_meas) — [a calendar-time map `time`](hyp:time) that is [strictly
+increasing in the period index](hyp:time_strictMono), [a finite set `cohorts` of adoption
+cohorts in the event-study support](hyp:cohorts), and [adoption-path–indexed potential outcomes
+`Ypath t h ω = Y_{ωt}(h)`](hyp:Ypath) satisfying [structural no-anticipation: in any period
+where a path is untreated, its outcome equals the never-treated outcome, for every
+unit](hyp:hNoAnt).
 
 The cohort cells `{ω | G ω = h}` (over all paths `h : WithTop (Fin T)`,
 including `⊤` = never-treated) are measurable events on which the event-study
@@ -224,10 +229,12 @@ theorem toSystem_causalRestrictions (E : EventStudyPopulation T)
   hNoAnticipation := E.toSystem_noAnticipation
   hMeanParallelUntreated := hPar
 
-/-- **Causal-meaning certificate.** In the induced system, `CATT g e` is
-literally the cohort-cell average of the population potential-outcome contrast
-`E[Y_{·t}(g) ∣ G = g] − E[Y_{·t}(∞) ∣ G = g]`, so the estimand carries genuine
-causal content rather than a docstring assertion on free reals. -/
+/-- **Causal-meaning certificate.** [For a population satisfying the event-study
+setup](hyp:E), [in the system it induces, the treatment-effect estimand at cohort `g` and
+relative time `e`](hyp:g,e) [equals the cohort-cell average of the population
+potential-outcome contrast `E[Y_{·t}(g) ∣ G = g] − E[Y_{·t}(∞) ∣ G = g]` over the relevant
+periods](goal), so the estimand carries genuine causal content rather than a free-standing
+definition on reals. -/
 theorem toSystem_CATT_eq_po_contrast (E : EventStudyPopulation T)
     (g : Fin T) (e : ℤ) :
     (E.toSystem).CATT g e =

@@ -72,7 +72,9 @@ def inducedDag (active : Finset (SWIGNode N)) : DAG (SWIGNode N) where
   acyclic := DAG.acyclic_of_topoOrder (τ := G.dag.topoOrder)
     (fun u v h => G.dag.topoOrder_lt u v h.1)
 
-/-- An edge in the restricted DAG is exactly an original edge whose endpoints are active. -/
+/-- For [a set of active nodes](hyp:active) and [vertices `u`, `v`](hyp:u,v), [`u` and `v` are
+joined by an edge of the DAG restricted to the active nodes exactly when they are joined by
+an edge of the original DAG and both are active](goal). -/
 lemma inducedDag_edge_iff (active : Finset (SWIGNode N)) (u v : SWIGNode N) :
     (G.inducedDag active).edge u v ↔
       G.dag.edge u v ∧ u ∈ active ∧ v ∈ active := Iff.rfl

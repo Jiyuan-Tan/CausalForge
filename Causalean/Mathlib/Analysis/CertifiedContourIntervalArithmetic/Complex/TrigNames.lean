@@ -139,7 +139,10 @@ private theorem cosNameApprox_subinterval_current (x : CertifiedReal) (fuel : �
       exact Causalean.Mathlib.Analysis.CertifiedContourIntervalArithmetic.Transcendental.tighten_subinterval_right
         (cosNameApprox_spec x fuel).1 (cosInterval_sound (x.contains (fuel + 1)) (fuel + 1))
 
-/-- Refinement of the input name plus Taylor fuel makes sine output width effective. -/
+/-- For [a certified real input](hyp:x) and [a requested positive rational tolerance
+`ε`](hyp:ε), [evaluating the certified sine name-approximation at the precision level
+selected for that tolerance yields an output enclosure whose width is no larger than
+`ε`](goal). -/
 theorem sinName_width_at_precision (x : CertifiedReal) (ε : PosRat) :
     (sinNameApprox x (trigNamePrecision x ε)).width ≤ ε.1 := by
   let δ : PosRat := ⟨ε.1 / 2, div_pos ε.2 (by norm_num)⟩

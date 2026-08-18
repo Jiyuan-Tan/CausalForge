@@ -43,8 +43,9 @@ lemma polynomialRing_dimension (d : ℕ) :
   rw [MvPolynomial.ringKrullDim_of_isNoetherianRing]
   simp
 
-/-- Complex affine `d`-space has dimension exactly `d` in the explicit
-irreducible-chain sense. -/
+/-- For [any natural number `d`](hyp:d), [complex affine `d`-space has affine Zariski
+dimension exactly `d`, in the sense of maximal chains of irreducible affine closed
+subsets](goal). -/
 theorem affineSpace_hasAffineZariskiDimension (d : ℕ) :
     HasAffineZariskiDimension d (Set.univ : Set (Fin d → ℂ)) := by
   have hdim : ringKrullDim (MvPolynomial (Fin d) ℂ) = d :=

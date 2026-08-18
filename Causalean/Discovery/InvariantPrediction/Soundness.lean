@@ -31,8 +31,9 @@ namespace EnvFamily
 
 variable {ι : Type*} [Fintype ι]
 
-/-- **Theorem 1 (soundness).**  The identified set is contained in the target's
-observed parents: every node selected by ICP is a genuine direct cause. -/
+/-- **Theorem 1 (soundness).** For [an environment family](hyp:F) and [an index i₀ selecting
+the target's observed-parent set](hyp:i₀), [the identified set is contained in the target's
+observed parents: every node selected by ICP is a genuine direct cause](goal). -/
 theorem icp_sound (F : EnvFamily N Ω ι) (i₀ : ι) :
     F.idSet ⊆ (↑(F.paObs i₀) : Set (SWIGNode N)) :=
   F.idSet_subset_of_mem (F.paObs_mem_invariantSets i₀)

@@ -25,8 +25,9 @@ namespace PO
 variable {V : Type*} [DecidableEq V]
 variable {X : V → Type*}
 
-/-- An intervention regime specifies a finite set of targeted variables and an
-assigned value in the corresponding value space for each targeted variable.
+/-- An intervention regime specifies [a finite set of targeted variables](hyp:target)
+together with [an assigned value in the corresponding value space for each targeted
+variable](hyp:assign).
 
 Implementation note: this is the code object `Regime`, corresponding to
 `r = (target, assign)` in def:po-system. -/
@@ -177,8 +178,9 @@ def ofList (l : List ((v : V) × X v)) (_h : (l.map Sigma.fst).Nodup) :
     Regime V X :=
   ofListLeftBiased l
 
-/-- The target of a regime built from a duplicate-free list is the finite set
-of listed variables. -/
+/-- For [a duplicate-free list of variable-value assignments `l`](hyp:l,h),
+[the target of the regime it determines is exactly the finite set of variables
+listed in `l`](goal). -/
 @[simp] theorem ofList_target (l : List ((v : V) × X v))
     (h : (l.map Sigma.fst).Nodup) :
     (ofList l h).target = (l.map Sigma.fst).toFinset := rfl

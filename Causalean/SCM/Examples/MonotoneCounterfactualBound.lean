@@ -105,7 +105,9 @@ private theorem responseContrast_eq_of_present
           (boolParentAssignmentIn M false)) := by
   simp [monotoneResponseContrast, hchild, hparent]
 
-/-- Structural monotonicity gives a valid `[0, 1]` partial-identification bound.
+/-- [Structural monotonicity of the outcome mechanism in the treatment parent forces every
+response contrast in the compatible class to lie in the valid `[0, 1]` partial-identification
+interval](goal).
 
 Every SCM that is compatible with the Boolean-chain graph, observationally
 equivalent to the reference model, and monotone in the outcome's treatment
@@ -148,7 +150,9 @@ theorem monotoneCounterfactualBound :
   rw [responseContrast_eq_of_present M hchild hparent]
   exact boolScore_sub_mem_Icc hresp
 
-/-- The monotone-compatible class is nonempty for the monotone-bound example.
+/-- [The class of structural causal models compatible with the Boolean-chain graph and monotone
+in the outcome's treatment parent, evaluated against the copying model as reference, is
+nonempty](goal).
 
 The copying Boolean SCM has the declared graph, satisfies the monotone
 structural assumption, and is observationally equivalent to itself. -/
@@ -182,7 +186,8 @@ theorem monotoneResponseContrast_antitoneBoolSCM :
       boolScore (Bool.not (boolParentAssignmentIn antitoneBoolSCM false boolChainDParent)) = -1
   simp [boolScore]
 
-/-- The `[0, 1]` bound fails without the monotonicity assumption.
+/-- [Without the monotonicity restriction, the unconstrained compatible class's response contrast
+need not lie in `[0, 1]`](goal).
 
 Using the reversing Boolean SCM as the reference model, the unconstrained
 compatible class contains that same model and its response contrast is `-1`,

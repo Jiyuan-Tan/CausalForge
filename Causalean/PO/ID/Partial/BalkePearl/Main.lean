@@ -44,8 +44,13 @@ variable {P : POSystem} (S : POBalkePearlSystem P)
 
 /-! ### Feasibility predicate -/
 
-/-- A latent type table π is feasible for system S under assumptions hA if it is
-nonneg, sums to 1, and reproduces the observed cell probabilities. -/
+/-- **Balke–Pearl latent-table feasibility.** A latent response-type table π — the joint
+distribution over the instrument's and treatment's potential values together with the outcome's
+potential values — is feasible for a Balke–Pearl IV system under a given assumption bundle when
+[every table entry is nonnegative](hyp:nonneg), [the entries sum to one](hyp:sum_one), and
+[aggregating the table over the response types compatible with each observed
+instrument-treatment-outcome cell reproduces the observed conditional cell
+probability](hyp:marginal). -/
 structure BPFeasible (S : POBalkePearlSystem P) (hA : S.BaseAssumptions)
     (π : Bool → Bool → Bool → Bool → ℝ) : Prop where
   nonneg   : ∀ d0 d1 y0 y1, 0 ≤ π d0 d1 y0 y1

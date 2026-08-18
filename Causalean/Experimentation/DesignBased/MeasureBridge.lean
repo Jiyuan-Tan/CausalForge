@@ -87,10 +87,12 @@ lemma Cov_eq_covariance (X Y : Ω → ℝ) : D.Cov X Y = covariance X Y D.toMeas
     D.integral_toMeasure (fun z => (X z - D.E X) * (Y z - D.E Y))]
   rfl
 
-/-- **Cauchy–Schwarz for the design covariance.** In any finite design, the absolute covariance of
-two statistics is at most the product of their design standard deviations,
-`|Cov(X,Y)| ≤ √(Var X) · √(Var Y)`.  Obtained from the general covariance Cauchy–Schwarz inequality
-via the measure bridge; the design side has no self-contained proof of it. -/
+/-- **Cauchy–Schwarz for the design covariance.** In any finite design, [the absolute covariance of
+two statistics `X` and `Y` is at most the product of their design standard deviations,
+`|Cov(X,Y)| ≤ √(Var X) · √(Var Y)`](goal).
+
+Obtained from the general covariance Cauchy–Schwarz inequality via the measure bridge; the design
+side has no self-contained proof of it. -/
 lemma abs_Cov_le (X Y : Ω → ℝ) :
     |D.Cov X Y| ≤ Real.sqrt (D.Var X) * Real.sqrt (D.Var Y) := by
   rw [D.Cov_eq_covariance X Y, D.Var_eq_variance X, D.Var_eq_variance Y]

@@ -202,12 +202,11 @@ theorem gmmResidualMaker_finrank_range :
 
 omit [MeasurableSpace E] [BorelSpace E] in
 include heL heR in
-/-- **Headline: the whitened GMM J-statistic limit law is `χ²_{m−k}`.**
-
-Under a standard Gaussian `w` on the moment space `F`, the J-statistic
-`‖M w‖²` (with `M` the residual maker) is distributed as the chi-squared law
-with `finrank F − finrank E = m − k` degrees of freedom — the Hansen–Sargan
-over-identification test statistic. -/
+/-- **Headline: the whitened GMM J-statistic limit law is `χ²_{m−k}`.** [Under a standard
+Gaussian random vector on the moment space, the distribution of the whitened GMM
+J-statistic — the squared norm of the residual-maker projection of that Gaussian vector —
+is the chi-squared law with `finrank F − finrank E = m − k` degrees of freedom, the
+Hansen–Sargan over-identification test statistic](goal). -/
 theorem jStatistic_chiSq :
     (stdGaussian F).map (fun w => ‖gmmResidualMaker G effInv w‖ ^ 2)
       = chiSqDist (Module.finrank ℝ F - Module.finrank ℝ E) := by

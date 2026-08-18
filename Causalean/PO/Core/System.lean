@@ -24,11 +24,11 @@ namespace PO
 
 open MeasureTheory
 
-/-- A potential-outcome system consists of a finite set of variables with
-decidable equality, a measurable value space for each variable, a measurable
-sample space with a probability measure, and, for every intervention regime
-and sample point, a measurable joint assignment of potential outcomes to all
-variables.
+/-- A potential-outcome system consists of [a finite set of variables](hyp:V,decEqV,fintypeV),
+[a measurable value space for each variable](hyp:X,measX), [a measurable sample space](hyp:Ω,measΩ)
+carrying [a probability measure](hyp:μ,isProb), and, for every intervention regime and sample
+point, [a jointly measurable assignment of potential-outcome values to all
+variables](hyp:eval,measurable_eval).
 
 Implements def:po-system. -/
 structure POSystem where
@@ -59,7 +59,9 @@ Implements the per-coordinate part of def:po-operator. -/
 def component (r : Regime P.V P.X) (v : P.V) : P.Ω → P.X v :=
   fun ω => P.eval r ω v
 
-/-- The coordinate potential outcome of any variable under any intervention regime is measurable. -/
+/-- For [an intervention regime `r`](hyp:r) and [a variable `v`](hyp:v), [the
+coordinate potential outcome of `v` under `r` is a measurable function of the
+unit](goal). -/
 lemma measurable_component (r : Regime P.V P.X) (v : P.V) :
     Measurable (P.component r v) :=
   (measurable_pi_apply v).comp (P.measurable_eval r)

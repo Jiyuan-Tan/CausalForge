@@ -46,10 +46,10 @@ namespace PO
 
 open MeasureTheory ProbabilityTheory
 
-/-- A frontdoor system consists of a binary treatment, a finite discrete
-mediator, and a real outcome.
-
-The treatment, mediator, and outcome nodes are pairwise distinct. -/
+/-- A frontdoor system packages, within an ambient potential-outcome system, a binary treatment
+[A](hyp:A), a finite discrete mediator [M](hyp:M) valued in a finite type, and a real-valued
+outcome [Y](hyp:Y), where [the treatment, mediator, and outcome are pairwise distinct
+variables](hyp:hAM,hAY,hMY). -/
 structure POFrontdoorSystem (P : POSystem) (β : Type*)
     [MeasurableSpace β] [MeasurableSingletonClass β] [Fintype β]
     [DecidableEq β] where
@@ -184,7 +184,15 @@ noncomputable def frontdoorATE : ℝ := S.frontdoorTerm true - S.frontdoorTerm f
 
 /-! ### Assumptions (def:po-frontdoor-ate-assumptions) -/
 
-/-- Frontdoor assumptions at the PO level. -/
+/-- **Frontdoor identifying assumptions.** Bundles, for a frontdoor system, [consistency of the
+underlying potential-outcome system](hyp:consistency), [the full-mediation exclusion restriction
+that the two-treatment-and-mediator outcome does not depend on the treatment
+arm](hyp:fullMediation), [treatment–mediator exchangeability](hyp:exch_AM), [mediator–outcome
+exchangeability within treatment arms](hyp:exch_MY), [positivity of each treatment
+arm](hyp:posA), [positivity of the mediator within the support of its counterfactual under a
+treatment arm](hyp:posAM), [cross-world independence of the counterfactual mediator from the
+full-mediation outcome](hyp:indep_Y_M), and [integrability of the treatment-arm and joint
+treatment–mediator potential outcomes](hyp:integrable_YofA,integrable_YofAM). -/
 structure Assumptions (S : POFrontdoorSystem P β) : Prop where
   /-- Consistency axiom for the ambient PO system. -/
   consistency : P.Consistency

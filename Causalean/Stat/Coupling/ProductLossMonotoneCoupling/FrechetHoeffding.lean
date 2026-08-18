@@ -37,11 +37,13 @@ quadrant `Iic x ×ˢ Iic y`, as a real number. -/
 noncomputable def jointCdf (π : Measure (ℝ × ℝ)) (x y : ℝ) : ℝ :=
   (π (Iic x ×ˢ Iic y)).toReal
 
-/-- **Fréchet–Hoeffding upper bound.** For any coupling `π` of `(μ, ν)`, the
-joint cdf is bounded above by the smaller marginal cdf:
-`H_π x y ≤ min (cdf μ x) (cdf ν y)`. Proof: `Iic x ×ˢ Iic y ⊆ Iic x ×ˢ univ` and
-`⊆ univ ×ˢ Iic y`, whose masses are `μ (Iic x)` and `ν (Iic y)` via the
-marginals. -/
+/-- **Fréchet–Hoeffding upper bound.** For [a coupling `π` of the probability
+measures `μ` and `ν`](hyp:h) and [reals `x` and `y`](hyp:x,y), [the joint cdf of
+`π` at `(x, y)` is bounded above by the smaller of the marginal cdfs of `μ` at
+`x` and `ν` at `y`](goal).
+
+Proof: `Iic x ×ˢ Iic y ⊆ Iic x ×ˢ univ` and `⊆ univ ×ˢ Iic y`, whose masses are
+`μ (Iic x)` and `ν (Iic y)` via the marginals. -/
 theorem frechet_hoeffding_upper (h : IsCoupling π μ ν) (x y : ℝ) :
     jointCdf π x y ≤ min (cdf μ x) (cdf ν y) := by
   letI : IsProbabilityMeasure π := h.isProbabilityMeasure
@@ -93,10 +95,13 @@ theorem frechet_hoeffding_upper (h : IsCoupling π μ ν) (x y : ℝ) :
           · exact measurableSet_Iic
         _ = ν (Iic y) := by rw [h.map_snd]
 
-/-- **Fréchet–Hoeffding lower bound.** For any coupling `π` of `(μ, ν)`,
-`max (cdf μ x + cdf ν y - 1) 0 ≤ H_π x y`. Proof: inclusion–exclusion on the
-complement of `Iic x ×ˢ Iic y`, using `π` a probability measure and the two
-marginals. -/
+/-- **Fréchet–Hoeffding lower bound.** For [a coupling `π` of the probability
+measures `μ` and `ν`](hyp:h) and [reals `x` and `y`](hyp:x,y), [the joint cdf of
+`π` at `(x, y)` is bounded below by the maximum of `0` and the sum of the
+marginal cdfs of `μ` at `x` and `ν` at `y`, minus `1`](goal).
+
+Proof: inclusion–exclusion on the complement of `Iic x ×ˢ Iic y`, using `π` a
+probability measure and the two marginals. -/
 theorem frechet_hoeffding_lower (h : IsCoupling π μ ν) (x y : ℝ) :
     max (cdf μ x + cdf ν y - 1) 0 ≤ jointCdf π x y := by
   letI : IsProbabilityMeasure π := h.isProbabilityMeasure

@@ -88,7 +88,13 @@ variable {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω}
 
 /-! ## Hypothesis bundle for `thm:est-trae-rate-theorem` -/
 
-/-- Deterministic, paper-facing hypotheses for `thm:est-trae-rate-theorem`.
+/-- This structure bundles the deterministic hypotheses of the primal TRAE rate theorem: [a
+β-source condition for the target nuisance](hyp:source_condition), [a Tikhonov bias certificate
+at the chosen regularization level](hyp:tikhonov_bias), [realizability of the resulting
+population Tikhonov solution in the statistical candidate class](hyp:realizability), [closedness
+of the critic class for primal residuals](hyp:closedness), [mean-square continuity of the moment
+map on critics](hyp:msc), and [almost-sure uniform boundedness of the moment map and the
+candidate and critic functions](hyp:bounded).
 
 This bundle deliberately excludes the empirical-process event.  It is the
 shared deterministic input used both by the abstract rate theorem below and by
@@ -149,9 +155,11 @@ structure TRAERatePrimalHyps
         (∀ f ∈ TC.F, |S.m (S.W ω) f| ≤ B) ∧
         (∀ h ∈ TC.H, |h (S.xOf (S.W ω))| ≤ B) ∧
         (∀ f ∈ TC.F, |f (S.zOf (S.W ω))| ≤ B))
-/-- `TRAERatePrimalAbstractHyps` packages the deterministic paper hypotheses
-together with the already-discharged empirical-process / centred-regulariser
-event.
+/-- This structure augments the deterministic TRAE primal rate hypotheses with [a discharged
+high-probability empirical-process / centred-regulariser event, bounding the right-hand side of
+the population strong-convexity inequality by an explicit deterministic-looking
+expression](hyp:empirical_process_event), abstracting away the localized empirical-process and
+centred-regulariser arguments that the underlying localized wrapper supplies.
 
 The key probabilistic hypothesis is `empirical_process_event`, which
 bounds the right-hand side of the strong-convexity inequality by a

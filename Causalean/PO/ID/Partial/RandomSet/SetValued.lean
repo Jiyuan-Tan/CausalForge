@@ -60,10 +60,10 @@ namespace Causalean.PartialID.RandomSet
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- A **body**: a nonempty, compact, convex subset of `E` — the value type
-`𝒦ₖ(E)` of a Beresteanu–Molinari set-valued random variable.  Compactness makes
-`supportFn C d` well-defined (the linear functional attains its sup); convexity is
-what lets the support function characterise the set. -/
+/-- A **body**: [a nonempty](hyp:nonempty), [compact](hyp:isCompact), [convex](hyp:convex) subset
+of `E` — the value type `𝒦ₖ(E)` of a Beresteanu–Molinari set-valued random variable.  Compactness
+makes `supportFn C d` well-defined (the linear functional attains its sup); convexity is what
+lets the support function characterise the set. -/
 structure IsBody (C : Set E) : Prop where
   nonempty : C.Nonempty
   isCompact : IsCompact C

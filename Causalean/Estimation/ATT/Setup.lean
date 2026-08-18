@@ -53,10 +53,14 @@ factorization of the σ(X)-measurable representatives needed for ATT.  The
 compatibility fields encode the Doob–Dynkin lift; existence of such fields is
 the estimation-layer assumption added on top of identification. -/
 
-/-- Wrapper around `POBackdoorSystem` carrying value-space representatives of
-the control-arm outcome regression and propensity score, plus their
-compatibility with the σ(X)-measurable representatives `S.adjustedCE false` /
-`S.propScore true` on `Ω`.
+/-- **A treated estimation system** extends a potential-outcome back-door system with the
+value-space nuisance representatives needed for ATT AIPW estimation: [the control-arm
+outcome regression `μ₀(x)`](hyp:μ₀_val,μ₀_meas) and [a propensity score
+`e(x)`](hyp:e_val,e_meas) that is [bounded away from `1`](hyp:e_lt_one), together with [the
+control regression's agreement, almost everywhere, with the σ(X)-measurable observable
+control regression `adjustedCE false`, composed with the factual
+covariate](hyp:μ₀_reg_compat) and [the analogous agreement of the propensity score with the
+observable propensity `propScore`](hyp:e_compat).
 
 Field summary:
 * `μ₀_val x`     — value-space control-arm outcome regression `μ₀(x)`.

@@ -53,10 +53,19 @@ describe("crosslinkDefect (F5 hard gate on theorem docstring crosslinks)", () =>
       crosslinkDefect({ kind: "theorem", doc: "If [a](hyp:hOld) and [b](hyp:hb), [c](goal).", source }),
     ).toContain("hOld");
   });
-  it("exempts hypothesis-free theorems and non-theorems", () => {
+  it("requires the (goal) link even on hypothesis-free theorems (wave-2 policy)", () => {
     expect(
       crosslinkDefect({ kind: "theorem", doc: "Plain NL.", source: "theorem s : 1 = 1 := rfl" }),
+    ).toContain("(goal)");
+    expect(
+      crosslinkDefect({
+        kind: "theorem",
+        doc: "[One equals one](goal).",
+        source: "theorem s : 1 = 1 := rfl",
+      }),
     ).toBeNull();
+  });
+  it("exempts non-theorems", () => {
     expect(crosslinkDefect({ kind: "def", doc: "Plain NL.", source })).toBeNull();
   });
 });

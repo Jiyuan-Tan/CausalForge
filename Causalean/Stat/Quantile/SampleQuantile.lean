@@ -134,19 +134,15 @@ lemma quantileIF_variance [IsProbabilityMeasure P] {τ q₀ f₀ : ℝ}
 
 /-! ## Regularity bundle and asymptotic normality -/
 
-/-- **Quantile-estimator regularity.**  Bundles the analytic facts plus the one
-exposed empirical-process hypothesis (the Bahadur remainder) needed to conclude
-`√n`-asymptotic normality of a quantile-estimator sequence `q̂ₙ` for the
-`τ`-quantile of `P`:
-
-* `tau_pos`, `tau_lt_one` — interior level `τ ∈ (0, 1)`.
-* `density_pos` — positive density `f₀ > 0` at the quantile.
-* `cdf_eq` — `q₀` is the population `τ`-quantile: `F(q₀) = τ`.
-* `hasDeriv` — `f₀` is the density at `q₀`: `HasDerivAt F f₀ q₀` (records that the
-  variance `τ(1−τ)/f₀²` is the genuine asymptotic variance).
-* `bahadur` — the exposed Donsker/equicontinuity content: the rescaled estimator
-  matches the normalized influence-function sum up to `o_p(1)`.  This is exactly
-  the `IsAsymLinear.remainder` for `(q̂ₙ, q₀, ψ_τ)`.
+/-- **Quantile-estimator regularity.** Bundles the analytic and empirical-process hypotheses
+under which a quantile-estimator sequence $q̂_n$ is $\sqrt n$-asymptotically linear for the
+$\tau$-quantile $q_0$ of $P$ with density $f_0$: [the level lies in the open unit interval
+$\tau \in (0,1)$](hyp:tau_pos,tau_lt_one), [the density at the quantile is
+positive](hyp:density_pos), [$q_0$ is indeed the population $\tau$-quantile, i.e. the cdf
+satisfies $F(q_0) = \tau$](hyp:cdf_eq), [the cdf is differentiable at $q_0$ with derivative
+$f_0$, so that $\tau(1-\tau)/f_0^2$ is the genuine asymptotic variance](hyp:hasDeriv), and
+[the rescaled estimator matches the normalized influence-function sum up to a term vanishing
+in probability — the Bahadur remainder](hyp:bahadur).
 
 For the ordinary empirical sample quantile this field is supplied by
 `sampleQuantile_quantileRegularity` in the companion `SampleQuantileBahadur`
@@ -168,8 +164,9 @@ structure QuantileRegularity (S : IIDSample Ω ℝ μ P) (qn : ℕ → Ω → �
 variable [IsProbabilityMeasure μ] [IsProbabilityMeasure P]
 
 omit [IsProbabilityMeasure μ] in
-/-- A `QuantileRegularity` bundle is an `IsAsymLinear` witness for `q̂ₙ` at `q₀`
-with influence function `ψ_τ`. -/
+/-- **Regularity implies asymptotic linearity.** Given [a `QuantileRegularity` witness `h` for the
+estimator sequence `qn`](hyp:h,qn), [the estimator is asymptotically linear at the quantile `q₀`
+with influence function `ψ_τ`](goal). -/
 lemma QuantileRegularity.isAsymLinear {S : IIDSample Ω ℝ μ P} {qn : ℕ → Ω → ℝ}
     {τ q₀ f₀ : ℝ} (h : QuantileRegularity S qn τ q₀ f₀) :
     IsAsymLinear qn q₀ (quantileIF τ q₀ f₀) S (fun m => Finset.range m) where

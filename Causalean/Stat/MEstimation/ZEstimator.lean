@@ -42,7 +42,15 @@ variable {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
   {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
     [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
 
-/-- **Regularity conditions** for the Z-estimator CLT.
+/-- **Regularity conditions** for the Z-estimator central limit theorem. Bundles, for a score
+function and target parameter θ₀ under a sampling law, [the population identification condition
+that the score vanishes in mean at the truth](hyp:identification), [a Jacobian of the population
+score at θ₀ together with a witnessed inverse](hyp:J₀,J₀_inv,J₀_inverse,J₀_spec), [finite
+variance of the score at the truth](hyp:finite_var), [measurability of the score at every
+parameter value](hyp:psi_meas), [continuity of the population score map at
+θ₀](hyp:jacobian_continuity), [local integrability of the score on a neighborhood of
+θ₀](hyp:psi_int_neighborhood), and [an integrable `L²` envelope bounding local score
+differences](hyp:score_envelope).
 
 Existing fields (population identification + smoothness + measurability):
 

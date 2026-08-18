@@ -21,7 +21,8 @@ and an `n` part (`div_rpow_of_nonneg_of_pos`), bound nonpositive powers of natur
 
 namespace Causalean.Mathlib.RpowArith
 
-/-- The reciprocal of any real number is its real power with exponent negative one. -/
+/-- For [any real number `x`](hyp:x), [its reciprocal equals its real power raised to the
+exponent `−1`](goal). -/
 lemma inv_eq_rpow_neg_one (x : ℝ) : x⁻¹ = x ^ (-1 : ℝ) := by
   rw [Real.rpow_neg_one]
 

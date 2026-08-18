@@ -695,8 +695,10 @@ private theorem bbReachableVertices_of_activePath_cons
       G.bbReachable_init_subset Z X (G.bbInit_of_stateMatchesEdge hxX hwx)
     exact G.bbReachableVertices_of_activePath_walk hs0 hwx hact (by simpa using hlast)
 
-/-- The BFS computation is correct: a vertex is in `bbReachableVertices Z X`
-    if and only if there is an active path from some `x ∈ X` to `v` given `Z`.
+/-- **Bayes Ball correctness.** For [a source vertex set `X` and a conditioning vertex set
+`Z`](hyp:X,Z) and [a vertex `v`](hyp:v), [`v` lies in the breadth-first-search reachable set
+`bbReachableVertices Z X` if and only if there is an active path, given `Z`, from some vertex
+of `X` to `v`](goal).
 
     This is the Bayes Ball correctness theorem. The proof requires showing that
     the BFS fixed point captures exactly the vertices reachable via active trails.

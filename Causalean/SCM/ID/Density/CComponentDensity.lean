@@ -51,11 +51,13 @@ noncomputable def cComponentDensityFactor
           M.toSWIGGraph.cComponentOf (M.observedAt i).val = C),
       M.obsStepCondDensity ref s i x
 
-/-- **c-component regrouping of the chain-rule density product.**
+/-- **c-component regrouping of the chain-rule density product.** [For a structural causal model
+`M`](hyp:M), [a reference measure family `ref`](hyp:ref), [a fixed assignment `s`](hyp:s), and
+[a value assignment `x` to the observed coordinates](hyp:x), [the product of all one-node
+conditional density factors equals the product, over the c-components of the graph, of the
+per-component density factors](goal).
 
-The product of all one-node conditional density factors equals the product, over
-the c-components of the graph, of the per-component factors.  Pure commutative
-`Finset` regrouping: each observed index is sent to the (unique) c-component
+Pure commutative `Finset` regrouping: each observed index is sent to the (unique) c-component
 containing its node, and the fibers of that map partition the index set. -/
 theorem qFactorDensityProduct_eq_prod_cComponentFactor
     (M : Causalean.SCM N Ω) (ref : ReferenceMeasures Ω) (s : M.FixedValues)

@@ -20,9 +20,11 @@ open scoped BigOperators
     wsObj α β 0 t = ∑ i, α i * t i := by
   simp [wsObj]
 
-/-- **The `κ = 0` minimizer set is the exposed `α`-minimizing face.** A point of
-`Δ_M` minimizes the linear objective `Σ αᵢ tᵢ` over `Δ_M` iff it is supported only on
-the `α`-minimizing coordinates.
+/-- **The `κ = 0` minimizer set is the exposed `α`-minimizing face.** For [a simplex budget
+`M`](hyp:M), [a linear weight vector `α`](hyp:α), and [a candidate point `t`](hyp:t), [`t` lies
+in the simplex of budget `M` and minimizes the linear objective `Σᵢ αᵢtᵢ` over that simplex if
+and only if `t` belongs to the exposed `α`-minimizing face of the simplex](goal).
+
 Proof plan: pick `k` with `α k = min_j α j` (`Finite.exists_min`). Write
 `m₀ = α k`.
 * (→) If `t` minimizes, testing against the vertex `M • eₖ ∈ Δ_M` (value `M·m₀`) gives

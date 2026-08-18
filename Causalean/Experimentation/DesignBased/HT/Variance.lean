@@ -39,8 +39,10 @@ variable {Ω : Type*} [Fintype Ω]
 variable {ι Θ Δ : Type*} [Fintype ι] [DecidableEq ι] [DecidableEq Δ]
 
 omit [DecidableEq ι] in
-/-- **Lemma 4.1 (variance), covariance form.** The variance of the HT total is the double
-sum of inverse-probability-weighted indicator covariances. -/
+/-- **Lemma 4.1 (variance), covariance form.** For a finite design, outcome function `y`, exposure
+map `f`, and assignment `θ`, [the randomization variance of the Horvitz–Thompson total under
+exposure `d` equals the double sum, over unit pairs, of inverse-probability-weighted indicator
+covariances](goal). -/
 theorem Var_htTotal_cov (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : Ω → Θ → Δ) (θ : ι → Θ)
     (d : Δ) :
     D.Var (htTotal D y f θ d)
@@ -52,8 +54,13 @@ theorem Var_htTotal_cov (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : Ω �
         rw [htTotal_eq]; exact Finset.sum_congr rfl (fun i _ => by ring))]
   rw [FiniteDesign.Var_linear_comb]
 
-/-- **Lemma 4.1 (variance), expanded form `eq:total_variance`.** Diagonal terms use
-`Var[1(expo i = d)] = π_i(1−π_i)`, off-diagonal terms use
+/-- **Lemma 4.1 (variance), expanded form `eq:total_variance`.** For a finite design, outcome
+function `y`, exposure map `f`, and assignment `θ`, [the randomization variance of the
+Horvitz–Thompson total under exposure `d` equals the diagonal sum of inverse-probability-weighted
+indicator variances plus the off-diagonal sum of inverse-probability-weighted indicator
+covariances](goal).
+
+Diagonal terms use `Var[1(expo i = d)] = π_i(1−π_i)`, off-diagonal terms use
 `Cov[1(expo i = d),1(expo j = d)] = π_{ij}(d) − π_i(d)π_j(d)`. -/
 theorem Var_htTotal (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : Ω → Θ → Δ) (θ : ι → Θ)
     (d : Δ) :
@@ -76,9 +83,10 @@ theorem Var_htTotal (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : Ω → Θ
     rw [Cov_expoInd_same]; ring
 
 omit [DecidableEq ι] in
-/-- The covariance between two Horvitz-Thompson exposure totals is the double sum, over ordered
-unit pairs, of the two inverse-probability outcome weights times the covariance of the
-corresponding exposure indicators. -/
+/-- For a finite design, outcome function `y`, exposure map `f`, and assignment `θ`, [the covariance
+between two Horvitz-Thompson exposure totals equals the double sum, over ordered unit pairs, of the
+two inverse-probability outcome weights times the covariance of the corresponding exposure
+indicators](goal). -/
 theorem Cov_htTotal_cov (D : FiniteDesign Ω) (y : ι → Δ → ℝ) (f : Ω → Θ → Δ) (θ : ι → Θ)
     (dk dl : Δ) :
     D.Cov (htTotal D y f θ dk) (htTotal D y f θ dl)

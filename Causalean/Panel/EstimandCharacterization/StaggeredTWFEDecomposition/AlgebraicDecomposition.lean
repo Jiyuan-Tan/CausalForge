@@ -54,9 +54,10 @@ open Finset
 variable {𝒢 : Type*} [Fintype 𝒢] [DecidableEq 𝒢] {T : ℕ}
 
 omit [DecidableEq 𝒢] in
-/-- **Prop A5.1 (`weights_nonneg`).** Every admissible raw weight is
-nonnegative. Pure algebra: uses `0 ≤ p_g`, `0 ≤ \overline{D}_g ≤ 1`, and
-`0 ≤ q_{eℓ} ≤ 1`. -/
+/-- **Prop A5.1 (`weights_nonneg`).** For [a cohort panel](hyp:P) and [any comparison-type
+index](hyp:k), [the raw Goodman-Bacon comparison weight is nonnegative](goal).
+
+Pure algebra: uses `0 ≤ p_g`, `0 ≤ D̄_g ≤ 1`, and `0 ≤ q_{eℓ} ≤ 1`. -/
 theorem weights_nonneg (P : CohortPanel 𝒢 T) (k : CompTag × 𝒢 × 𝒢) :
     0 ≤ lambdaWeight P k := by
   classical
@@ -697,10 +698,10 @@ theorem twfe_eq_weighted_avg_core (P : CohortPanel 𝒢 T) :
     _ = ∑ k ∈ 𝒦 P, weight P k * contrast P k := by
           rw [hweighted]
 
-/-- **Theorem A5.5 (`twfe_eq_weighted_avg`,
-`thm:po-estimand-goodman-bacon-decomposition`).** Under the totalized
-zero-variance convention, the TWFE coefficient equals the weighted sum of
-admissible two-by-two DID contrasts. -/
+/-- **Theorem A5.5 (`twfe_eq_weighted_avg`, `thm:po-estimand-goodman-bacon-decomposition`).**
+For [a cohort panel](hyp:P), [the two-way fixed-effects (TWFE) coefficient, under the totalized
+zero-variance convention, equals the weighted sum of admissible two-by-two DID contrasts across
+comparison groups](goal). -/
 theorem twfe_eq_weighted_avg (P : CohortPanel 𝒢 T) :
     betaTWFE P = ∑ k ∈ 𝒦 P, weight P k * contrast P k :=
   twfe_eq_weighted_avg_core P

@@ -15,7 +15,9 @@ records safe refinement of an enclosure.
 
 namespace Causalean.Mathlib.Analysis.CertifiedContourIntervalArithmetic
 
-/-- A rational closed interval is a pair of rational endpoints in increasing order. -/
+/-- A rational closed interval consists of [a rational lower endpoint](hyp:lo) and [a rational
+upper endpoint](hyp:hi), with [the lower endpoint no greater than the upper
+endpoint](hyp:lo_le_hi). -/
 @[ext]
 structure RatInterval where
   /-- The rational lower endpoint of the enclosure. -/

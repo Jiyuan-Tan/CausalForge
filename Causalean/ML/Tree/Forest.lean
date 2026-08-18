@@ -22,7 +22,8 @@ namespace Causalean.ML
 
 open BigOperators
 
-/-- A random forest with one finite-partition regression tree for each index in `Fin T`. -/
+/-- A random forest: [one finite-partition regression tree `tree` for each index in
+`Fin T`](hyp:tree). -/
 structure RandomForest (X : Type*) (T : ℕ) where
   /-- The ensemble of trees. -/
   tree : Fin T → FinitePartitionPredictor X

@@ -37,10 +37,20 @@ open Causalean MeasureTheory ProbabilityTheory
 variable {N : Type*} [DecidableEq N] [Fintype N]
 variable {Ω : N → Type*} [∀ n, MeasurableSpace (Ω n)]
 
-/-- An **ICP environment family**: a `Fintype`-indexed family of structural
-causal models over common observed/latent variable sets, sharing the target's
-mechanism, parents and noise law (so no environment intervenes on the target),
-together with the fixed values assigned by each environment's intervention. -/
+/-- **An environment family** for Invariant Causal Prediction (Peters, Bühlmann &
+Meinshausen 2016) bundles [a finite, `Fintype`-indexed collection of structural causal
+models](hyp:M) sharing [a common target variable](hyp:Y) that [every environment
+observes](hyp:hYobs), [a common observed-variable set](hyp:hObs), and [a common
+latent-variable set](hyp:hUnobs). The environments never intervene on the target: they
+share [the target's parent set](hyp:hParents), [the target's structural
+mechanism](hyp:hStruct), and [the latent-noise law](hyp:hLatent), while each environment
+carries [the values assigned to its own intervened coordinates](hyp:s). It further
+packages [the regularity needed to disintegrate the joint law into the target's
+conditional law given any predictor set — a standard Borel and nonempty target value
+space, and countable generation of the relevant kernels](hyp:borelTarget,neTarget,cg), and
+states [the exogeneity assumption that in every environment the target's exogenous
+(latent) parents are independent of its observed parents under the joint
+law](hyp:hExo). -/
 structure EnvFamily (N : Type*) [DecidableEq N] [Fintype N]
     (Ω : N → Type*) [∀ n, MeasurableSpace (Ω n)]
     (ι : Type*) [Fintype ι] where
@@ -151,9 +161,11 @@ theorem fixed_parent_mem_fixed_of_mem {i j : ι} {d : SWIGNode N}
   · rcases (F.M j).unobserved_is_random (SWIGNode.fixed n) hunobs with ⟨m, hm⟩
     cases hm
 
-/-- `paFix` does not depend on the chosen environment.  Unlike `paObs`/`paLat`,
-this is *not* immediate from a shared-set field — `EnvFamily` does not share the
-`fixed` set — but follows from `fixed_parent_mem_fixed_of_mem` together with the
+/-- For [any two environments i and j](hyp:i,j), [the fixed parents of the target coincide
+between environment i and environment j](goal).
+
+Unlike `paObs`/`paLat`, this is *not* immediate from a shared-set field — `EnvFamily` does not
+share the `fixed` set — but follows from `fixed_parent_mem_fixed_of_mem` together with the
 shared parent set (E4). -/
 theorem paFix_eq (i j : ι) : F.paFix i = F.paFix j := by
   classical

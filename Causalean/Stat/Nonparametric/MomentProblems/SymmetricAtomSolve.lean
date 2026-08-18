@@ -197,8 +197,9 @@ noncomputable def cumulantToWeights (L : ℕ) (y : Fin (L + 1) → ℝ) :
     Fin (L + 1) → ℝ :=
   atomSolve L (fun k => momFromCum (padCumulants L y) k.val)
 
-/-- The cumulant-to-weights map is continuous: both the moment↔cumulant inversion and the
-Vandermonde solve are. -/
+/-- **The cumulant-to-weights map is continuous.** For [any truncation order `L`](hyp:L), [the map
+sending a truncated cumulant target to the recovered symmetric-atom weights is continuous](goal),
+since both the moment↔cumulant inversion and the Vandermonde solve it composes are continuous. -/
 theorem continuous_cumulantToWeights (L : ℕ) : Continuous (cumulantToWeights L) := by
   apply (continuous_atomSolve L).comp
   apply continuous_pi
@@ -219,9 +220,10 @@ theorem momFromCum_padCumulants_uniform (L : ℕ) (k : Fin (L + 1)) :
   intro j hj hjk
   simp [padCumulants, uniformCumulantPoint, show j < L + 1 by omega]
 
-/-- **The base point maps to the uniform weights.** Feeding the cumulants of the uniform-weight law
-into the cumulant-to-weights map returns the uniform weights — all strictly positive, hence
-strictly inside the positivity constraints. -/
+/-- **The base point maps to the uniform weights.** For [any truncation order `L`](hyp:L), [feeding
+the cumulants of the uniform-weight law on the symmetric atoms into the cumulant-to-weights map
+returns exactly the uniform weights](goal) — all strictly positive, hence strictly inside the
+positivity constraints. -/
 theorem cumulantToWeights_uniformCumulantPoint (L : ℕ) :
     cumulantToWeights L (uniformCumulantPoint L) = uniformWeights L := by
   calc

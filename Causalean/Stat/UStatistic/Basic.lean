@@ -71,8 +71,12 @@ noncomputable def uDegen (h : X → X → ℝ) (P : Measure X) : X → X → ℝ
 
 /-! ## Hoeffding decomposition -/
 
-/-- **Hoeffding decomposition (pointwise identity).**
-`h(x, y) = θ + h₁(x) + h₁(y) + g(x, y)`.  Purely algebraic. -/
+/-- **Hoeffding decomposition (pointwise identity).** For [a kernel `h`](hyp:h), [population law
+`P`](hyp:P), and [points `x` and `y`](hyp:x,y), [the kernel value decomposes as
+`h(x, y) = θ + h₁(x) + h₁(y) + g(x, y)`](goal), the population mean plus the two first-order
+Hoeffding projections plus the degenerate second-order residual.
+
+Purely algebraic. -/
 theorem hoeffding_decomp (h : X → X → ℝ) (P : Measure X) (x y : X) :
     h x y = uMean h P + uProj h P x + uProj h P y + uDegen h P x y := by
   simp only [uDegen]; ring

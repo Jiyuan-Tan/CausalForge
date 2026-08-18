@@ -67,9 +67,9 @@ theorem rhoEnvelope_pos (v : ℝ) (hv0 : 0 < v) (hv1 : v < 1) : 0 < rhoEnvelope 
   rw [rhoEnvelope, momentEnvelope]
   positivity
 
-/-- `μ` is **admissible** for the envelope at level `v`: a probability measure a.e. supported in
-`[0,1]` with second moment `∫ y² ∂μ = v²`. These are exactly the laws over which the residual
-`l2ResidualQuadratic` is maximized to give `ρ(v)`. -/
+/-- `μ` is **admissible** for the envelope at level `v`: [a probability measure](hyp:isProb)
+[a.e. supported in `[0,1]`](hyp:supp) with [second moment `∫ y² ∂μ = v²`](hyp:moment2). These
+are exactly the laws over which the residual `l2ResidualQuadratic` is maximized to give `ρ(v)`. -/
 structure Admissible (v : ℝ) (μ : Measure ℝ) : Prop where
   /-- `μ` is a probability measure. -/
   isProb : IsProbabilityMeasure μ

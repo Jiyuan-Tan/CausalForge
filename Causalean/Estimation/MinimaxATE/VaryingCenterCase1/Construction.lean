@@ -51,10 +51,18 @@ open scoped BigOperators
 
 variable {K : ℕ}
 
-/-- **Cell-varying-center construction data.**  The two Rademacher-bump scalars
-`α, β` together with a nuisance center `(m₀ j, g₀ j, g₁ j)` that varies with the pair
-index `j : Fin K` (bounded away from `{0,1}`), and the per-pair inequalities
-guaranteeing the perturbed nuisances stay in `[0,1]`. -/
+/-- **Cell-varying-center construction data** for a Rademacher perturbation whose nuisance
+center may vary by paired cell (Jin–Syrgkanis 2024, Assumption 2, restricted to centers
+constant within a pair). It packages [two bump-magnitude scalars, one on the treated outcome
+arm and one on the propensity](hyp:α,β), together with [a nuisance center given by the
+pair-indexed functions m₀, g₀ and g₁ for the propensity and the two potential-outcome
+regressions](hyp:m₀,g₀,g₁), plus the inequalities certifying that [both bump magnitudes are
+nonnegative](hyp:hα,hβ), [the center is pointwise strictly inside `(0,1)` for m₀, g₀ and
+g₁](hyp:hm₀0,hm₀1,hg₀0,hg₀1,hg₁0,hg₁1), [the propensity bump is smaller than the treated-arm
+center, keeping the perturbation denominator positive](hyp:hβg₁), [the treated-arm bump does
+not exceed the treated center, keeping the perturbed outcome regression
+nonnegative](hyp:hαg₁), and worst-case bounds forcing [the perturbed outcome regression to
+stay at most one](hyp:hgU) and [the perturbed propensity to stay at most one](hyp:hmU). -/
 structure VarConstr (K : ℕ) where
   /-- Bump magnitude on the treated outcome arm. -/
   α : ℝ
@@ -120,7 +128,9 @@ theorem denomV_pos (lam : Fin K → Bool) (x : Fin K × Bool) :
   · rw [h]; nlinarith
   · rw [h]; nlinarith
 
-/-- The null DGP `(m̂, ĝ)` is valid. -/
+/-- [The null cell-varying-center data-generating process, with propensity `mhatV` and outcome
+regressions `ghatV`, is a valid finite observed-data model, i.e. all its component
+probabilities lie in `[0,1]`](goal). -/
 theorem validDGP_hatV : ValidDGP (C := Fin K × Bool) P.mhatV P.ghatV := by
   refine ⟨fun x => ?_, fun d x => ?_⟩
   · simp only [mhatV]; exact ⟨(P.hm₀0 x.1).le, (P.hm₀1 x.1).le⟩
@@ -128,7 +138,9 @@ theorem validDGP_hatV : ValidDGP (C := Fin K × Bool) P.mhatV P.ghatV := by
     · exact ⟨(P.hg₀0 x.1).le, (P.hg₀1 x.1).le⟩
     · exact ⟨(P.hg₁0 x.1).le, (P.hg₁1 x.1).le⟩
 
-/-- The perturbed DGP `(mλ, gλ)` is valid. -/
+/-- [For any Rademacher sign vector `lam` indexing the perturbation](hyp:lam), [the perturbed
+propensity and outcome-regression functions define a valid finite observed-data model, i.e.
+take values in `[0,1]`](goal). -/
 theorem validDGP_pertV (lam : Fin K → Bool) :
     ValidDGP (P.mPertV lam) (P.gPertV lam) := by
   refine ⟨fun x => ?_, fun d x => ?_⟩

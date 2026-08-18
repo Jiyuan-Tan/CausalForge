@@ -16,8 +16,8 @@ open MeasureTheory Set intervalIntegral
 
 namespace Causalean.Mathlib.Analysis.CertifiedContourIntervalArithmetic
 
-/-- A rational rectangle in the complex plane consists of rational intervals
-for real and imaginary parts. -/
+/-- A rational rectangle in the complex plane consists of [a rational interval enclosing the real
+coordinate](hyp:re) and [a rational interval enclosing the imaginary coordinate](hyp:im). -/
 @[ext]
 structure ComplexRatInterval where
   /-- The rational interval enclosing the real coordinate. -/

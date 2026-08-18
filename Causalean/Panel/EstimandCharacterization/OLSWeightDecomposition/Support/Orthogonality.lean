@@ -84,7 +84,10 @@ theorem residD_cell_orthogonal {Ω 𝒢 : Type*} [MeasurableSpace Ω]
   rw [hInt, hpInt, hshare]
   ring
 
-/-- The outcome residual is orthogonal to each cell indicator. -/
+/-- For [an ambient probability space and finite covariate space](hyp:Ω,𝒢), [a
+square-integrable outcome `Y`](hyp:Y,Y_memLp), [a measurable covariate map `G`](hyp:G,G_meas),
+and [a covariate cell `g`](hyp:g), [the regression residual of `Y` on the saturated cell-mean
+model is orthogonal to the indicator of cell `{G = g}`](goal). -/
 theorem residY_cell_orthogonal {Ω 𝒢 : Type*} [MeasurableSpace Ω]
     [Fintype 𝒢] [MeasurableSpace 𝒢]
     [MeasurableSingletonClass 𝒢]

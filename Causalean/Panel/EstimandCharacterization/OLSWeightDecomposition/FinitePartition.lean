@@ -62,11 +62,12 @@ namespace OLSWeightDecomposition
 
 open Finset
 
-/-- Słoczyński finite covariate partition. Carries cell probabilities
-`π_g`, treatment shares `p_g`, and conditional treatment effects `τ_g`,
-together with the side conditions used by the saturated-OLS algebra:
-`π` is a probability vector, `p_g ∈ [0,1]`, and the overlap denominator
-`Σ π_g p_g (1−p_g)` is positive. -/
+/-- A finite covariate partition for Słoczyński's saturated-OLS weight decomposition, carrying
+[cell probabilities](hyp:π), [within-cell treated shares](hyp:p), and [within-cell conditional
+treatment effects](hyp:τ), together with the side conditions used by the saturated-OLS algebra:
+[the cell probabilities are nonnegative](hyp:π_nonneg) and [sum to one](hyp:π_sum_one), [the
+treated shares lie in the unit interval](hyp:p_nonneg,p_le_one), and [the overlap denominator
+`Σ π_g p_g (1−p_g)` is strictly positive](hyp:overlap_pos). -/
 structure FinitePartition (𝒢 : Type*) [Fintype 𝒢] where
   /-- Cell probability `π_g = ℙ(G=g)`. -/
   π : 𝒢 → ℝ
@@ -126,9 +127,9 @@ theorem omega_sum_eq_one : ∑ g, P.overlapWeight g = 1 := by
     simp [overlapWeight, overlapDenominator, Finset.sum_div]
   rw [hsum, div_self hD]
 
-/-- **Finite-partition OLS weights**
-(`prop:po-estimand-sloczynski-ols-finite-weights`). The saturated-OLS
-estimand equals `Σ ω_g τ_g` with the normalized overlap weights. -/
+/-- **Finite-partition OLS weights** (`prop:po-estimand-sloczynski-ols-finite-weights`). [The
+saturated-OLS estimand equals the sum of normalized overlap weights times cell effects,
+`Σ_g ω_g τ_g`](goal). -/
 theorem finite_weights_eq_sum :
     P.overlapWeightedATE = ∑ g, P.overlapWeight g * P.τ g := by
   simp only [overlapWeightedATE, overlapNumerator, overlapWeight, Finset.sum_div]
@@ -313,12 +314,10 @@ theorem w0_eq_rho : R.w₀ = R.ρ := by
   have h := R.weights_sum_one
   rw [R.equalDispersion] at h; linarith
 
-/-- **Słoczyński opposite-group identity**
-(`prop:po-estimand-sloczynski-ols-opposite-group`) — derived rather than
-assumed. Substituting the equal-dispersion weights `w₁ = 1−ρ`, `w₀ = ρ`
-into the two-component representation gives
-`β_ols = (1−ρ)·τ_ATT + ρ·τ_ATU`: the treated-group effect receives the
-untreated share as its weight, and vice versa. -/
+/-- **Słoczyński opposite-group identity** (`prop:po-estimand-sloczynski-ols-opposite-group`) —
+derived rather than assumed. [Substituting the equal-dispersion weights into the two-component
+representation shows that the OLS coefficient equals `(1−ρ)·τ_ATT + ρ·τ_ATU`: the treated-group
+effect receives the untreated share as its weight, and vice versa](goal). -/
 theorem represents : R.β_ols = (1 - R.ρ) * R.τ_ATT + R.ρ * R.τ_ATU := by
   rw [R.twoComponent, R.equalDispersion, R.w0_eq_rho]
 

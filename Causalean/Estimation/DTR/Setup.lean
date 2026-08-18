@@ -58,7 +58,13 @@ representatives of the stagewise outcome regressions and propensities at the
 target regime `dbar`.  The σ-compat fields encode the Doob–Dynkin lift
 through the factual history coordinates. -/
 
-/-- This structure adds fixed-regime nuisance representatives to a two-stage potential-outcome DTR system.
+/-- This structure extends a two-stage potential-outcome dynamic-treatment-regime system with, at a
+fixed [target regime](hyp:dbar), [measurable value-space representatives of the stage-0 and stage-1
+outcome regressions](hyp:μ₀_val,μ₀_meas,μ₁_val,μ₁_meas) and of the [propensities at both stages,
+bounded away from zero and
+one](hyp:e₀_val,e₀_meas,e₀_pos,e₀_lt_one,e₁_val,e₁_meas,e₁_pos,e₁_lt_one), each required to [agree
+almost surely with the corresponding observable conditional regression or propensity built from the
+factual treatment and covariate history](hyp:μ₀_reg_compat,e₀_compat,μ₁_reg_compat,e₁_compat).
 
 It stores the target regime, value-space representatives for the stage-0 and stage-1 outcome
 regressions and propensities, pointwise propensity bounds in the open unit interval, and
@@ -455,7 +461,9 @@ noncomputable def P_Z (S : DTREstimationSystem P δ γ) :
 noncomputable def θ₀ (S : DTREstimationSystem P δ γ) : ℝ :=
   S.toPODTRSystem.dtrEffect S.dbar
 
-/-- The value-space DTR estimand is definitionally the potential-outcome DTR effect at the chosen regime. -/
+/-- For [a two-stage dynamic treatment regime estimation system](hyp:S), [its value-space DTR
+estimand `θ₀` equals the potential-outcome DTR effect evaluated at the chosen
+regime `dbar`](goal). -/
 theorem θ₀_eq_dtrEffect (S : DTREstimationSystem P δ γ) :
     S.θ₀ = S.toPODTRSystem.dtrEffect S.dbar := rfl
 

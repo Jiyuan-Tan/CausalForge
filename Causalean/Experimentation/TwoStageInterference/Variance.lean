@@ -175,9 +175,11 @@ include hK hKn hmean hpair in
 design whose treatment indicators have first moment `K/n` (`hmean`) and pairwise second moment
 `K(K−1)/(n(n−1))` (`hpair`) — the moments of the completely randomized (mixed) design of
 Assumption 1, which treats exactly `K` of `n` units — with the two-valued potential outcomes `a`
-(treated state) and `b` (control state), the randomization variance of the difference-in-means
-estimator is `S₁/K + S₀/(n−K) − Sτ/n`.  (`Var_tauHat_CRD` specializes this to the completely
-randomized design, discharging the two moment hypotheses.) -/
+(treated state) and `b` (control state), [the randomization variance of the difference-in-means
+estimator is `S₁/K + S₀/(n−K) − Sτ/n`](goal).
+
+(`Var_tauHat_CRD` specializes this to the completely randomized design, discharging the two moment
+hypotheses.) -/
 theorem Var_tauHat :
     ρ.Var (tauHat K a b) = S1 a / K + S0 b / (n - K) - Stau a b / n := by
   -- Write the estimator as a linear combination of the indicators plus a constant.

@@ -66,12 +66,13 @@ namespace PO
 open Filter MeasureTheory
 open scoped Topology
 
-/-- A fuzzy regression-discontinuity model in the potential-outcome framework.
-A unit has a continuous running variable `X`, an above-cutoff indicator `Z`
-(whether `X` exceeds the cutoff `c`), a binary treatment `D` whose take-up
-probability jumps — but does not jump all the way from 0 to 1 — at the cutoff,
-and a real outcome `Y`. The cutoff effect on the outcome divided by the cutoff
-jump in treatment identifies the cutoff-local LATE (`def:po-fuzzy-rdd-system`). -/
+/-- **Fuzzy regression-discontinuity model in the potential-outcome framework.** A unit has [a
+continuous running variable `X`](hyp:Xvar), [an above-cutoff indicator `Z` recording whether `X`
+exceeds the cutoff `c`](hyp:Zvar), [a binary treatment `D` whose take-up probability jumps — but
+does not jump all the way from 0 to 1 — at the cutoff](hyp:Dvar), and [a real outcome
+`Y`](hyp:Yvar), with [the outcome, cutoff indicator, and treatment nodes pairwise
+distinct](hyp:hYD,hZD,hDY). The cutoff effect on the outcome divided by the cutoff jump in
+treatment identifies the cutoff-local LATE (`def:po-fuzzy-rdd-system`). -/
 structure POFuzzyRDDSystem (P : POSystem) where
   /-- Running (forcing) variable `X`. -/
   Xvar : POVar P ℝ
@@ -161,10 +162,24 @@ def zEvent (z : Bool) : Set P.Ω := S.Zvar.event z
 lemma measurableSet_zEvent (z : Bool) : MeasurableSet (S.zEvent z) :=
   by simpa [zEvent] using S.Zvar.measurableSet_event z
 
-/-- The fuzzy RDD assumption bundle records consistency, deterministic
-cutoff eligibility, cutoff-neighborhood monotonicity of treatment take-up, regression
-representatives for latent and observable treatment and outcome variables,
-one-sided support near the cutoff, and a nonzero first-stage jump.
+/-- **Fuzzy RDD assumption bundle.** For a fuzzy regression-discontinuity system, this packages
+[consistency (SUTVA)](hyp:consistency), [deterministic cutoff eligibility: the above-cutoff
+indicator agrees almost surely with whether the running variable has crossed the
+cutoff](hyp:cutoffEligibility), and [cutoff-neighborhood monotonicity: near the cutoff, a unit who
+would take treatment under the untreated instrument value would also take it under the treated
+instrument value](hyp:monotonicity). It supplies latent treatment and outcome regression
+representatives `muD`/`muY` and observable regression representatives `nuD`/`nuY`, each
+[certified as a genuine regression function of the corresponding response on the running
+variable](hyp:muD_isReg,muY_isReg,nuD_isReg,nuY_isReg), with the latent representatives
+[continuous at the cutoff](hyp:muD_continuousAt,muY_continuousAt); it also assumes [the running
+variable has positive local probability mass on both sides of the
+cutoff](hyp:support_right,support_left), and that [the observable treatment
+regression](hyp:nuD_right_limit_exists,nuD_left_limit_exists) and [outcome regression have
+well-defined one-sided limits at the cutoff](hyp:nuY_right_limit_exists,nuY_left_limit_exists).
+Finally, a complier outcome-difference representative `mu_Ydiff_complier` is [likewise a
+regression function](hyp:mu_Ydiff_complier_isReg) that is [continuous at the
+cutoff](hyp:mu_Ydiff_complier_continuousAt), and [the first-stage treatment-take-up jump at the
+cutoff is nonzero](hyp:firstStageJump).
 
 The classical local-exclusion clause is represented by using only `Y(d)`
 potential outcomes, rather than separate direct responses `Y(z,d)`.  The

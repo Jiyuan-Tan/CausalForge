@@ -82,9 +82,9 @@ private lemma volume_Ioo_zero_one_inter_Iic {c : ℝ} (hc0 : 0 ≤ c) (hc1 : c �
     rw [hset, Real.volume_Ioo]
     norm_num
 
-/-- **Probability integral transform.** For a Borel probability measure `μ` on
-`ℝ`, the pushforward of `Unif(0,1)` under the quantile function `quantile μ`
-equals `μ`.
+/-- **Probability integral transform.** [For a Borel probability measure `μ` on `ℝ`](hyp:μ),
+[the pushforward of the uniform distribution on `(0,1)` under `μ`'s quantile function
+equals `μ` itself](goal).
 
 The proof compares the two measures on the rays `Iic x`. For a uniform variable
 `U`, `{u ∈ (0,1) | quantile μ u ≤ x} = {u ∈ (0,1) | u ≤ cdf μ x}` by

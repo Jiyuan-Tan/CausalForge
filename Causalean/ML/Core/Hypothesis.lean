@@ -24,25 +24,28 @@ regression (and hence series/sieve regression) is a single object.
 
 namespace Causalean.ML
 
-/-- A parametrized family of predictors: an admissible parameter set `paramSet`
-together with a prediction map sending a parameter to a function `X → Y`. -/
+/-- A parametrized family of predictors bundles [an admissible set of parameter
+values](hyp:paramSet) together with [a map sending each parameter to a prediction function from
+the covariates to the outcome](hyp:predict). -/
 structure Predictor (Θ X Y : Type*) where
   /-- The admissible parameter set (e.g. a norm ball, or all of `Θ`). -/
   paramSet : Set Θ
   /-- The prediction map: a parameter yields a function `X → Y`. -/
   predict : Θ → X → Y
 
-/-- A hypothesis class as an extensional set of measurable functions `X → Y`. -/
+/-- A hypothesis class packaged extensionally as [a set of admissible prediction functions from
+the covariates to the outcome](hyp:carrier), subject to the requirement that [every function
+admitted to the class is measurable](hyp:measurable). -/
 structure HypothesisClass (X Y : Type*) [MeasurableSpace X] [MeasurableSpace Y] where
   /-- The set of admissible prediction functions. -/
   carrier : Set (X → Y)
   /-- Every admissible function is measurable. -/
   measurable : ∀ ⦃h : X → Y⦄, h ∈ carrier → Measurable h
 
-/-- A finite feature map `φ : X → (K → ℝ)`, where `K` indexes the (finitely many)
-features.  Linear-in-features predictors use `x ↦ ⟪β, φ x⟫`; the identity feature
-map recovers ordinary linear regression and other choices of `φ` recover
-polynomial / spline / Fourier (sieve) regression. -/
+/-- A finite feature map bundles [a transform sending each input to its vector of `K`
+feature values](hyp:φ). Linear-in-features predictors use `x ↦ ⟪β, φ x⟫`; the identity feature map
+recovers ordinary linear regression, and other choices of the transform recover polynomial,
+spline, or Fourier (sieve) regression. -/
 structure FeatureMap (X : Type*) (K : Type*) [Fintype K] where
   /-- The feature transform sending an input to its vector of feature values. -/
   φ : X → (K → ℝ)

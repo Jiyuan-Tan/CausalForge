@@ -35,6 +35,10 @@ export function isChain(body: StmtBody): body is ChainBlock {
 export interface BinderRow {
   kind: "binder";
   names: string;
+  /** Hover-target names for the row: `names` plus the names of any NAMED
+   * instance rows merged into it (`[decEqV : DecidableEq V]` absorbed into
+   * `V : Type*` keeps `decEqV` targetable). Display keeps `names`. */
+  dataNames?: string;
   chip: "hyp" | "decl";
   body: StmtBody;
   /** `(...)` vs `{...}`/`[...]` — used to decide whether a trailing anonymous
@@ -551,6 +555,9 @@ function mergeAttachedInstances(rows: StatementItem[]): StatementItem[] {
       ) {
         const extra = (r.body as StmtLine[]).map((l) => ({ ...l, indent: Math.max(1, l.indent) }));
         prev.body = [...(prev.body as StmtLine[]), ...extra];
+        // The absorbed row's text now renders inside `prev` — keep its names
+        // as hover targets so `(hyp:decEqV)`-style crosslinks still highlight.
+        if (r.names) prev.dataNames = `${prev.dataNames ?? prev.names} ${r.names}`;
         continue;
       }
     }

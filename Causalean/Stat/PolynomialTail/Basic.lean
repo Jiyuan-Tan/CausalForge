@@ -55,10 +55,11 @@ variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω}
 
 /-! ## The polynomial-tail hypothesis -/
 
-/-- **Polynomial lower tail.**  For a measurable `[0,1]`-valued function `U`, says
-that the lower CDF `t ↦ P{U ≤ t}` is squeezed between `cm tᵏ` and `cp tᵏ` on the
-window `(0, t₀]`, with exponent `κ > 0`, a window `t₀ ∈ (0,1)`, and constants
-`0 < cm < cp`.  This is the sole distributional input to the inverse-moment
+/-- **Polynomial lower tail.** For a measurable `[0,1]`-valued function `U`, says that [the lower
+CDF `t ↦ P{U ≤ t}` is squeezed between `cm·tᵏ` and `cp·tᵏ`](hyp:tail_lower,tail_upper) on the
+window `(0, t₀]`, with [a positive exponent `κ`](hyp:kappa_pos), [a window endpoint `t₀` strictly
+between `0` and `1`](hyp:t0_pos,t0_lt_one), and [constants with `0 < cm <
+cp`](hyp:cm_pos,cm_lt_cp). This is the sole distributional input to the inverse-moment
 asymptotics. -/
 structure PolyTail (P : Measure Ω) (U : Ω → ℝ) (κ t₀ cm cp : ℝ) : Prop where
   /-- The tail exponent is positive. -/
@@ -91,9 +92,9 @@ end PolyTail
 
 /-! ## The tail setup -/
 
-/-- **Tail setup.**  Bundles the structural hypotheses on `U`: measurability and
-`0 < U ≤ 1` almost surely.  `IsProbabilityMeasure P` is required separately as a
-typeclass on the theorems that need it. -/
+/-- **Tail setup.** Bundles the structural hypotheses on `U`: [measurability](hyp:measurable)
+and [`0 < U ≤ 1` almost surely](hyp:pos,le_one). `IsProbabilityMeasure P` is required separately
+as a typeclass on the theorems that need it. -/
 structure TailSetup (P : Measure Ω) (U : Ω → ℝ) : Prop where
   /-- `U` is measurable. -/
   measurable : Measurable U

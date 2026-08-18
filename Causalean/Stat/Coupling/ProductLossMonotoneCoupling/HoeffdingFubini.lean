@@ -131,8 +131,11 @@ lemma integral_signedTail_snd (h : IsCoupling π μ ν) (t : ℝ) :
   rw [hfun, integral_sub hInd hConst, hIntB, integral_const]
   simp [survSnd, B, Measure.real, smul_eq_mul]
 
-/-- **Fibre integral.** Expanding the product of two signed tail indicators into
-four indicator products and integrating each against `π`:
+/-- **Fibre integral.** [For a coupling `π` of two probability measures](hyp:h), [the
+`π`-integral of the product of the two signed tail indicators at thresholds `s` and
+`t`](hyp:s,t) [equals the joint survival function of `π` at `(s, t)`, adjusted by cross
+terms built from the two marginal survival functions and the sign indicators of `s` and
+`t`](goal).
 
     `∫ p, signedTail p.1 s * signedTail p.2 t ∂π
        = S s t - 𝟙{t<0}·SX s - 𝟙{s<0}·SY t + 𝟙{s<0}·𝟙{t<0}`,

@@ -40,7 +40,16 @@ open MeasureTheory
 
 /-! ## Linear inverse-problem functional system -/
 
-/-- A **linear inverse-problem functional system** (`def:est-trae-system`).
+/-- A **linear inverse-problem functional system** packages [an observation space together with
+measurable treatment-side and instrument-side covariate projections of the observed
+data](hyp:𝒲,𝒳,𝒵,W,meas_W,xOf,zOf,meas_xOf,meas_zOf), [measurable closed candidate sets for the
+primal and dual nuisances, each closed under
+subtraction](hyp:Hbar,Qbar,meas_of_Hbar,meas_of_Qbar,Hbar_sub,Qbar_sub), [observation-level moment
+maps that are linear in their nuisance argument, jointly measurable and integrable against every
+candidate](hyp:m,m_e,m_sub,m_e_sub,measurable_m,measurable_m_e,integrable_m,integrable_m_e), whose
+[cross product `q(Z)h(X)` is integrable as well](hyp:integrable_qh), and [a primal nuisance in the
+candidate set satisfying the inverse-problem moment equation against every dual
+candidate](hyp:h₀,h₀_mem,primal_moment) (`def:est-trae-system`).
 
 The structure carries:
 

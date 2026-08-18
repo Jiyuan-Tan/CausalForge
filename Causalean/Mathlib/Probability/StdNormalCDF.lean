@@ -104,7 +104,7 @@ lemma cdf_continuous_of_noAtoms (μ : Measure ℝ) [IsProbabilityMeasure μ] [Nu
     f.mono.leftLim_le (le_refl x)
   linarith [hjump, hle]
 
-/-- `Φ` is continuous: the standard normal has no atoms. -/
+/-- [The standard normal CDF `Φ` is continuous](goal): the standard normal has no atoms. -/
 lemma stdNormalCDF_continuous : Continuous stdNormalCDF := by
   haveI : NullSingletonClass (gaussianReal 0 1) :=
     nullSingletonClass_gaussianReal (v := 1) one_ne_zero
@@ -176,7 +176,8 @@ lemma stdNormalCDF_probit {p : ℝ} (h0 : 0 < p) (h1 : p < 1) :
     rw [probit, hset, csInf_Ici]
   rw [hprobit, hxeq]
 
-/-- `Φ⁻¹` inverts `Φ`: `Φ⁻¹(Φ(x)) = x`. -/
+/-- [For any real score `x`](hyp:x), [applying the probit transform to `Φ(x)` recovers
+`x`](goal): the probit function `Φ⁻¹` is a left inverse of the standard normal CDF `Φ`. -/
 lemma probit_stdNormalCDF (x : ℝ) : probit (stdNormalCDF x) = x := by
   rw [probit]
   have hset : {y : ℝ | stdNormalCDF x ≤ stdNormalCDF y} = Set.Ici x := by

@@ -17,8 +17,9 @@ namespace Causalean.Mathlib.Analysis.CertifiedContourIntervalArithmetic.Complex
 
 open Causalean.Mathlib.Analysis.CertifiedContourIntervalArithmetic
 
-/-- A finite rational contour program consists of certified numerator and
-denominator maps and a positive rational circle radius. -/
+/-- A finite rational contour program consists of [a certified interval extension of the
+numerator function](hyp:numerator) and [of the denominator function](hyp:denominator), together
+with [a rational circle radius](hyp:radius) that [is strictly positive](hyp:radius_pos). -/
 structure ContourProgram where
   /-- Certified numerator interval extension. -/
   numerator : CertifiedComplexMap
@@ -48,8 +49,11 @@ def ContourProgram.nodeBox (program : ContourProgram) (schedule : Schedule)
     (k : ℕ) : ComplexRatInterval :=
   circleNode program.radius schedule k
 
-/-- Uniform semantic magnitude data bound the real and imaginary coordinates
-of numerator and denominator values everywhere on the exact circle. -/
+/-- Uniform semantic magnitude data for one contour program: [a nonnegative
+bound](hyp:numerator,numerator_nonneg) that [covers every real and imaginary coordinate of the
+exact numerator function everywhere on the circle](hyp:numerator_bound), and [a nonnegative
+bound](hyp:denominator,denominator_nonneg) that [covers the denominator function
+likewise](hyp:denominator_bound). -/
 structure ContourValueBounds (program : ContourProgram) where
   /-- Uniform coordinate magnitude bound for the exact numerator. -/
   numerator : ℚ
@@ -324,8 +328,11 @@ def ContourProgram.constantUnitBounds (numeratorRe numeratorIm radius : ℚ)
     simp only [ContourProgram.constantUnit, CertifiedComplexMap.constant]
     norm_num
 
-/-- A denominator certificate checks every endpoint actually evaluated and
-stores a common positive rational lower bound on squared modulus. -/
+/-- A denominator certificate for a contour program under a fixed schedule provides [a common
+squared-modulus separation bound](hyp:separation) that [is strictly positive](hyp:separation_pos),
+together with the guarantees that [every mesh endpoint's denominator interval evaluation is
+executable and bounded away from zero](hyp:away) and that [the same separation bound lies below
+every such endpoint's lower squared-modulus bound](hyp:lower). -/
 structure DenominatorCertificate (program : ContourProgram) (schedule : Schedule) where
   /-- Common positive squared-modulus separation. -/
   separation : ℚ
@@ -338,9 +345,16 @@ structure DenominatorCertificate (program : ContourProgram) (schedule : Schedule
   lower : ∀ k, k ≤ schedule.mesh → separation ≤
     (program.denominator.eval (program.nodeBox schedule k) schedule.fuel).normSq.lo
 
-/-- A certified program schedule records primitive precision obligations, all
-chosen from one shared schedule, from which node width is derived rather than
-assumed. -/
+/-- A certified program schedule packages [an exact schedule](hyp:schedule) for evaluating a given
+contour program to a stated separation bound, together with the guarantees that [its operation
+count matches the program's structural operation count](hyp:operationCount_eq), [a common
+positive error target](hyp:target) [selected canonically from the tolerance, value bounds, and
+separation](hyp:target_eq), [an input precision equal to the uniform circle precision for that
+target](hyp:inputPrecision_eq), and that [its fuel dominates the circle-exponential fuel
+requirement](hyp:circleFuel_le), [the numerator's algorithmic-error modulus](hyp:numeratorFuel_le),
+and [the denominator's algorithmic-error modulus](hyp:denominatorFuel_le), while [the
+compositional arithmetic propagation bound fits within the schedule's node
+budget](hyp:propagation_le). -/
 structure CertifiedProgramSchedule (program : ContourProgram)
     (bounds : ContourValueBounds program) (separation : PosRat) where
   /-- The exact schedule consumed by execution, tracing, and specifications. -/
@@ -372,8 +386,11 @@ def ContourProgram.nodeTrace (program : ContourProgram)
   List.ofFn fun operation : Fin program.operationCount =>
     circleNodeEvent scheduled.schedule k operation
 
-/-- The executable node trace length is definitionally the program's derived
-operation count, and its retained schedule reports that same count. -/
+/-- For [a contour program](hyp:program), [a target error separation](hyp:separation), [a
+certified schedule for that program](hyp:scheduled), and [a stage index `k`](hyp:k), [the
+executable node trace at stage `k` has exactly one event per structural operation of the
+program, and every event in it records the full schedule together with that schedule's
+operation count](goal). -/
 theorem ContourProgram.nodeTrace_spec (program : ContourProgram)
     {bounds : ContourValueBounds program} {separation : PosRat}
     (scheduled : CertifiedProgramSchedule program bounds separation) (k : ℕ) :

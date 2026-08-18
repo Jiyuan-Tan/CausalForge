@@ -64,11 +64,14 @@ structure IsERM {ι X Y : Type*} [Fintype ι] [Nonempty ι]
   /-- It minimizes empirical risk over the class. -/
   isMin : IsMinOn (fun h => empiricalRisk loss S h) H.carrier hhat
 
-/-- A population-risk minimizer is an admissible prediction rule whose
-finite expected loss is no larger than the finite expected loss of any other
-admissible rule.  The predicate carries integrability for the minimizer and for
-every admissible competitor, so comparisons of Bochner integrals have the usual
-population-risk interpretation. -/
+/-- A population-risk minimizer bundles the claim that a prediction rule [belongs to the
+hypothesis class](hyp:mem), that [it has finite expected loss under the population
+measure](hyp:finite_self), that [every other rule admissible in the class also has finite expected
+loss](hyp:finite_competitor), and that [its population risk is no larger than that of any other
+rule in the class](hyp:isMin).
+
+The integrability fields for the minimizer and every competitor ensure that comparisons of
+population risk correspond to comparisons of genuine (finite) Bochner integrals. -/
 structure IsPopulationRiskMinimizer {X Y : Type*}
     [MeasurableSpace X] [MeasurableSpace Y]
     (H : HypothesisClass X Y) (loss : Loss Y) (P : Measure (X × Y))

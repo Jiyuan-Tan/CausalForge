@@ -36,8 +36,10 @@ namespace PO
 
 open MeasureTheory ProbabilityTheory
 
-/-- A finite heterogeneous bundle of regimed potential-outcome variables, with
-each coordinate carrying its own measurable value space.
+/-- A finite heterogeneous bundle of [n](hyp:n) regimed potential-outcome variables indexed
+by `Fin n`: [each coordinate carries its own value type equipped with a measurable-space
+structure](hyp:type,inst), and [each coordinate is itself a potential-outcome variable
+paired with the intervention regime under which it is evaluated](hyp:vars).
 
 Used to express joint-independence hypotheses uniformly. -/
 structure POCFBundle (P : POSystem) where

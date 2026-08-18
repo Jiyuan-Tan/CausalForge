@@ -164,9 +164,10 @@ theorem partialEvalMap_full_eq (M : Causalean.SCM N Ω)
 -- § 4. Main factorization theorem (pointwise)
 -- ============================================================
 
-/-- **Main factorization theorem (pointwise).**  At each fixed assignment `s`,
-    the joint kernel equals the pushforward of the full-length prefix kernel
-    through the reindex `orderedLatentPrefixFullToRandom`.
+/-- **Main factorization theorem (pointwise).**  [For a structural causal model `M`](hyp:M),
+    [at each fixed assignment `s`](hyp:s), [the joint kernel equals the pushforward of the
+    full-length prefix kernel through the reindexing map identifying the full prefix state with
+    the random coordinates](goal).
 
     Proof chain:
     1. `jointKernel s = latentProduct.map (evalMap s)` by `jointKernel_apply_eq`.
@@ -205,8 +206,9 @@ theorem jointKernel_factored (M : Causalean.SCM N Ω) (s : FixedValues M) :
 -- § 5. Kernel-level restatement
 -- ============================================================
 
-/-- **Kernel-level factorization.**  The joint kernel equals the prefix kernel at
-    full length, pushed through `orderedLatentPrefixFullToRandom`.  Follows from
+/-- **Kernel-level factorization.**  [For a structural causal model `M`](hyp:M), [its joint kernel
+    equals the prefix kernel at full length, pushed through the reindexing map identifying the
+    full prefix state with the random coordinates](goal).  Follows from
     the pointwise form via kernel extensionality. -/
 theorem jointKernel_eq_factored_kernel (M : Causalean.SCM N Ω) :
     M.jointKernel =

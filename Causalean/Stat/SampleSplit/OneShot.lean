@@ -34,14 +34,12 @@ open MeasureTheory ProbabilityTheory Filter
 variable {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
   {μ : Measure Ω} {P : Measure X}
 
-/-- A one-shot split of an i.i.d. sample `S` is a fold-size schedule
-`n₁ : ℕ → ℕ` with:
-
-* `bound`  : `n₁ n ≤ n` (folds partition `{0, …, n−1}`).
-* `grow`   : `n₁ n → ∞`  — the nuisance fold `A(n) := {0, …, n₁(n)−1}` is
-  asymptotically large.
-* `cogrow` : `n − n₁ n → ∞` — the estimation fold `B(n) := {n₁(n), …, n−1}`
-  is asymptotically large. -/
+/-- **One-shot sample split.** For an i.i.d. sample `S`, [a fold-size schedule
+`n₁ : ℕ → ℕ` splitting the sample of size `n` into a nuisance fold
+$A(n) = \{0,\dots,n_1(n)-1\}$ and an estimation fold $B(n) = \{n_1(n),\dots,n-1\}$](hyp:n₁),
+where [the nuisance fold never exceeds the full sample, $n_1(n) \le n$](hyp:bound), [the
+nuisance fold grows without bound](hyp:grow), and [the estimation fold also grows without
+bound, $n - n_1(n) \to \infty$](hyp:cogrow). -/
 structure OneShotSplit {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
     {μ : Measure Ω} {P : Measure X}
     (_S : IIDSample Ω X μ P) where
@@ -84,10 +82,11 @@ lemma foldA_disjoint_foldB (n : ℕ) :
   have hnot : ¬ split.n₁ n ≤ i := Nat.not_le_of_gt hiA
   exact hnot hiB.2
 
-/-- **Independence of folds.** The tuple `(Z i)_{i ∈ A(n)}` is independent of
-the tuple `(Z i)_{i ∈ B(n)}` under `μ`.  Direct corollary of
-`iIndepFun.indepFun_finset` applied to the disjoint index sets `A(n), B(n)`.
--/
+/-- **Independence of folds.** For [a fixed sample size `n`](hyp:n), [the sample sub-tuple indexed
+by the nuisance fold `A(n)` is independent, under `μ`, of the sub-tuple indexed by the estimation
+fold `B(n)`](goal).
+
+Direct corollary of `iIndepFun.indepFun_finset` applied to the disjoint index sets `A(n), B(n)`. -/
 theorem folds_indep (n : ℕ) :
     IndepFun
       (fun ω (i : split.foldA n) => S.Z i ω)

@@ -82,7 +82,9 @@ noncomputable def secondMomentLM : E →ₗ[ℝ] E where
 
 variable [CompleteSpace E]
 
-/-- Quadratic-form identity: `⟪Σ t, s⟫ = ∫ ⟪t, ψ⟫ ⟪s, ψ⟫ ∂P`. -/
+/-- For [vectors `t` and `s`](hyp:t,s), [the inner product of the second-moment
+operator applied to `t` with `s` equals the expectation under `P` of the product
+of the inner products `⟪t, ψ⟩` and `⟪s, ψ⟩`](goal). -/
 theorem secondMomentLM_inner (t s : E) :
     ⟪secondMomentLM hψ hvar t, s⟫ = ∫ x, ⟪t, ψ x⟫ * ⟪s, ψ x⟫ ∂P := by
   rw [show ⟪secondMomentLM hψ hvar t, s⟫ = ⟪s, secondMomentLM hψ hvar t⟫ from real_inner_comm _ _]
@@ -91,7 +93,8 @@ theorem secondMomentLM_inner (t s : E) :
   refine integral_congr_ae (ae_of_all _ fun x => ?_)
   simp only [inner_smul_right]
 
-/-- The second-moment operator is positive (hence symmetric/self-adjoint). -/
+/-- [The second-moment operator is a positive linear operator, hence symmetric
+and self-adjoint](goal). -/
 theorem secondMomentLM_isPositive : (secondMomentLM hψ hvar).IsPositive := by
   refine (LinearMap.isPositive_iff _).mpr ⟨fun t s => ?_, fun t => ?_⟩
   · rw [secondMomentLM_inner hψ hvar t s,

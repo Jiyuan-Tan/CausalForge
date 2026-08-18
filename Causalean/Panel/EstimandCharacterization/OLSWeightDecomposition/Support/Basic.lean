@@ -80,8 +80,10 @@ the Słoczyński estimand tolerates zero-mass cells, whereas `CellPartition`
 requires strictly positive cells; the identity is therefore stated at the
 operator level, which needs no positivity. -/
 
-/-- The `CellBridge` indicator-weighted cell mean equals the shared event-level
-conditional expectation on the cohort cell `{G = g}`. -/
+/-- For [an ambient probability space and covariate space](hyp:Ω,𝒢), [a probability measure
+`μ` on `Ω`](hyp:μ), [an integrand `F`](hyp:F), [a measurable covariate map `G`](hyp:G,G_meas),
+and [a covariate cell `g`](hyp:g), [the `CellBridge` indicator-weighted cell mean of `F` on
+`{G = g}` equals the shared event-level conditional expectation of `F` given `{G = g}`](goal). -/
 theorem cellMean_eq_eventCondExp {Ω 𝒢 : Type*} [MeasurableSpace Ω]
     [MeasurableSpace 𝒢] [MeasurableSingletonClass 𝒢]
     (μ : Measure Ω) (F : Ω → ℝ) (G : Ω → 𝒢) (G_meas : Measurable G) (g : 𝒢) :

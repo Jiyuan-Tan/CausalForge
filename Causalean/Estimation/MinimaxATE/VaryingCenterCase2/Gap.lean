@@ -143,7 +143,9 @@ private theorem perPair2 (lam : Fin K → Bool) (j : Fin K) :
           = 2 * P.g₁ j ^ 3 * (1 - P.α * P.β) from by ring]
   linarith [key]
 
-/-- **Exact ATE of the perturbed construction** (independent of `λ`). -/
+/-- **Exact ATE of the perturbed construction.** [For any Rademacher sign vector `lam`](hyp:lam),
+[the average treatment effect of the perturbed outcome regression equals the average over
+pairs `j` of `2g₁ⱼ³(1−αβ)/(g₁ⱼ²(1−αβ)²−β²) − 2g₀ⱼ`, independent of `lam`](goal). -/
 theorem ate_gPert2 [NeZero K] (lam : Fin K → Bool) :
     ate (P.gPert2 lam)
       = (Fintype.card (Fin K × Bool) : ℝ)⁻¹
@@ -156,7 +158,9 @@ theorem ate_gPert2 [NeZero K] (lam : Fin K → Bool) :
   have := P.perPair2 lam j
   linarith [this]
 
-/-- The ATE gap, written as `(1/2K)·2β·Σⱼ g₁ⱼ(α g₁ⱼ²(1−αβ) + β)/Eⱼ`. -/
+/-- [For any Rademacher sign vector `lam`](hyp:lam), [the gap between the perturbed
+construction's ATE and the null estimate's ATE equals `2β/(2K)` times the sum over pairs
+`j` of `g₁ⱼ(αg₁ⱼ²(1−αβ) + β)/(g₁ⱼ²(1−αβ)² − β²)`](goal). -/
 theorem ate_gap2 [NeZero K] (lam : Fin K → Bool) :
     ate (P.gPert2 lam) - ate (P.ghat2 (K := K))
       = (Fintype.card (Fin K × Bool) : ℝ)⁻¹ * (2 * P.β)

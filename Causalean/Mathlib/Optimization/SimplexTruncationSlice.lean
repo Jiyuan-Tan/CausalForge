@@ -258,9 +258,11 @@ private lemma truncSelector_sign_core {A d kappa δ σ : ℝ}
     rw [hterm]
     simp
 
-/-- **Objective on the truncation face.** Evaluating `wsObj` at the face point
-`truncSegPoint M d σ = (M−d, σ, d−σ)` gives the explicit 1-D form
-`α_x(M−d) + α_y σ + α_z(d−σ) + κ √(β_x(M−d)² + β_yσ² + β_z(d−σ)²)`. -/
+/-- **Objective on the truncation face.** For [a total budget `M` and a truncation level
+`d`](hyp:M,d), [a linear weight vector `α` and a quadratic weight vector `β`](hyp:α,β), and
+[a curvature coefficient `kappa` and a face coordinate `σ`](hyp:kappa,σ), [evaluating the
+weighted-simplex objective at the truncation-face point `(M−d, σ, d−σ)` gives the explicit
+one-dimensional form `α₀(M−d) + α₁σ + α₂(d−σ) + κ√(β₀(M−d)² + β₁σ² + β₂(d−σ)²)`](goal). -/
 lemma wsObj_truncSeg_eq (M d : ℝ) (α β : Fin 3 → ℝ) (kappa σ : ℝ)
     :
     wsObj α β kappa (truncSegPoint M d σ)

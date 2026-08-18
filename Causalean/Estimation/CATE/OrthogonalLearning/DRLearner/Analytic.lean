@@ -56,8 +56,12 @@ open MeasureTheory ProbabilityTheory Filter Topology
 
 /-! ## Directional-derivative bundle for the candidate-evaluation map -/
 
-/-- Pointwise directional-derivative bundle for the candidate evaluation
-map `eval : Θ → γ → ℝ` along the segment `θ₀ → θ`.
+/-- **A pointwise directional-derivative bundle** for a candidate evaluation map along the
+segment from a base point to a candidate parameter: it packages [the derivative's value at
+each covariate](hyp:dEval) together with [the fact that the map's difference quotient along
+the segment converges to that value as the perturbation parameter vanishes](hyp:pointwise),
+[the derivative's measurability in the covariate](hyp:meas), and [a uniform bound on the
+derivative over the parameter set](hyp:bound).
 
 The orthogonal statistical-learning note treats `Θ` as a class of CATE
 *functions*, in which case the directional derivative of `eval θ x = θ x` along
@@ -83,9 +87,10 @@ structure EvalDirDeriv {Θ : Type*} [NormedAddCommGroup Θ]
   meas : ∀ θ, Measurable (dEval θ)
   bound : ∀ θ ∈ Θ_set, ∃ M_dEval : ℝ, ∀ x : γ, |dEval θ x| ≤ M_dEval
 
-/-- A nuisance derivative bundle records the pointwise directional derivative of
-the doubly robust pseudo-outcome in each nuisance direction, together with
-measurability of the derivative.
+/-- **A nuisance derivative bundle** records, for the doubly robust pseudo-outcome, [its
+directional derivative in each nuisance direction](hyp:dPhi) as [the limit of the
+corresponding difference quotient](hyp:pointwise), together with [that derivative's
+measurability](hyp:meas).
 
 `phi_eta` is *not* linear in `η` (it depends reciprocally on `η.e_fn`), so
 the value-difference `phi_eta z η - phi_eta z η₀` is *not* the directional

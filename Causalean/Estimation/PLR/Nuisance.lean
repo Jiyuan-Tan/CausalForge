@@ -32,8 +32,9 @@ namespace Causalean
 namespace Estimation
 namespace PLR
 
-/-- A partially linear nuisance bundles the outcome regression and treatment
-regression as measurable functions of the covariates.
+/-- A partially linear nuisance bundles [an outcome regression](hyp:lFn) and a
+[treatment regression](hyp:mFn) on the covariates, requiring each to be
+[measurable](hyp:lMeas,mMeas).
 
 This type is used as the abstract nuisance space for the partially linear
 double-machine-learning moment functional. -/

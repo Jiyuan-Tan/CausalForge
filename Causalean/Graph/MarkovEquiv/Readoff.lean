@@ -381,8 +381,9 @@ theorem sameImmoralities_of_markovEquiv {G₁ G₂ : DAG V} (h : MarkovEquiv G�
         exact iff_of_false (fun him => hab (Or.inl him.1))
           (fun him => hab₂ (Or.inl him.1))
 
-/-- **Easy direction of Verma–Pearl.** Markov-equivalent DAGs share a skeleton and the same
-v-structures. -/
+/-- **Easy direction of Verma–Pearl.** For [two DAGs `G₁`, `G₂`](hyp:G₁,G₂), if
+[they are Markov equivalent](hyp:h) then [they share the same skeleton and the same
+v-structures (immoralities)](goal). -/
 theorem sameSkeleton_sameImmoralities_of_markovEquiv {G₁ G₂ : DAG V}
     (h : MarkovEquiv G₁ G₂) : SameSkeleton G₁ G₂ ∧ SameImmoralities G₁ G₂ :=
   ⟨sameSkeleton_of_markovEquiv h, sameImmoralities_of_markovEquiv h⟩

@@ -34,12 +34,14 @@ namespace EventStudyContamination
 
 open Finset
 
-/-- Finite staggered-adoption event-study system.
-
-Periods are `Fin T`, adoption paths are `WithTop (Fin T)`, and `⊤` is the
-never-treated path. The finite-cohort set `cohorts` records the adopted cohorts
-used in event-study sums; potential-outcome and observed mean fields are finite
-cell-level primitives. -/
+/-- A finite-cell record of a staggered-adoption event-study design over `T` periods, where
+adoption paths are finite periods or the never-treated path. It bundles [a numeric encoding of
+each period used to form relative event time](hyp:time), [the finite set of adoption cohorts in
+the event-study support](hyp:cohorts), [each adoption path's population share](hyp:cohortShare),
+and [the cohort-period cell mass](hyp:cellMass), together with, by cohort or by comparison
+adoption path, [the factual observed outcome mean](hyp:observedPathMean,observedMean), [the mean
+potential outcome under the cohort's own treatment path](hyp:treatedMean), and [the mean
+never-treated potential outcome](hyp:untreatedMean,untreatedPathMean). -/
 structure EventStudySystem (T : ℕ) where
   /-- Integer-valued period map used to form relative event times. -/
   time : Fin T → ℤ

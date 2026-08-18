@@ -136,8 +136,9 @@ lemma cdfIF_sq_integrable [IsProbabilityMeasure P] (y : ℝ) :
   rw [Real.norm_eq_abs, abs_of_nonneg (sq_nonneg _), sq_le_one_iff_abs_le_one]
   exact abs_cdfIF_le_one y z
 
-/-- **Variance of the empirical-cdf influence function.**
-`∫ cdfIF² dP = F(y)(1 − F(y))`, the Bernoulli variance of `{Z ≤ y}`. -/
+/-- **Variance of the empirical-cdf influence function.** [At a fixed threshold `y`](hyp:y), [the
+population second moment of the cdf influence function equals `F(y)(1 − F(y))`](goal), the
+Bernoulli variance of the indicator event `{Z ≤ y}`. -/
 lemma cdfIF_variance [IsProbabilityMeasure P] (y : ℝ) :
     ∫ z, (cdfIF P y z) ^ 2 ∂P = cdf P y * (1 - cdf P y) := by
   have hstat_int : Integrable (cdfStat y) P := integrable_cdfStat y
@@ -198,9 +199,9 @@ lemma rescaledEmpiricalCDF_eq_normalizedSum (S : IIDSample Ω ℝ μ P) (y : ℝ
 variable [IsProbabilityMeasure μ] [IsProbabilityMeasure P]
 
 omit [IsProbabilityMeasure μ] in
-/-- **Asymptotic linearity of the empirical cdf.**  At a fixed point `y`, the
-empirical cdf `F̂ₙ(y)` is asymptotically linear at `F(y)` with influence
-function `cdfIF P y`; the remainder vanishes identically. -/
+/-- **Asymptotic linearity of the empirical cdf.** For [an i.i.d. real sample `S`](hyp:S) [at a
+fixed point `y`](hyp:y), [the empirical cdf `F̂ₙ(y)` is asymptotically linear at `F(y)` with
+influence function `cdfIF P y` and an identically-zero remainder](goal). -/
 lemma empiricalCDF_isAsymLinear (S : IIDSample Ω ℝ μ P) (y : ℝ) :
     IsAsymLinear (S.empiricalCDF y) (cdf P y) (cdfIF P y) S (fun m => Finset.range m) where
   mean_zero := cdfIF_mean_zero y
@@ -236,7 +237,8 @@ theorem empiricalCDF_tendsto_normal (S : IIDSample Ω ℝ μ P) (y : ℝ)
   rwa [cdfIF_variance] at h
 
 omit [IsProbabilityMeasure μ] in
-/-- **Empirical-cdf consistency** (WLLN): `F̂ₙ(y) →ₚ F(y)`. -/
+/-- **Empirical-cdf consistency (WLLN).** For [an i.i.d. real sample `S`](hyp:S) [at a fixed point
+`y`](hyp:y), [the empirical cdf `F̂ₙ(y)` converges to `F(y)` in probability](goal). -/
 theorem empiricalCDF_tendsto_inProb (S : IIDSample Ω ℝ μ P) (y : ℝ) :
     Tendsto_inProb (S.empiricalCDF y) (fun _ => cdf P y) μ := by
   have h := S.sampleMean_tendsto_inProb (measurable_cdfStat y) (integrable_cdfStat y)

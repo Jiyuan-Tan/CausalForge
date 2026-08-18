@@ -251,10 +251,11 @@ theorem covarianceBilin_stdGaussian (u v : E) :
   rw [hadj, covarianceBilin_euclideanStdGaussian]
   exact (onb E).repr.inner_map_map u v
 
-/-- **Product-of-1-D-Gaussians model for the squared norm.**  The law of `‖·‖²`
-under `stdGaussian E` is the law of the sum of squared coordinates under a
-product of `finrank ℝ E` independent standard real Gaussians.  This exposes the
-explicit product structure (otherwise hidden behind the orthonormal-basis
+/-- **Product-of-1-D-Gaussians model for the squared norm.** [The law of the squared norm
+under the standard Gaussian measure on `E` equals the law of the sum of squared
+coordinates under a product of `finrank ℝ E` independent standard real Gaussians](goal).
+
+This exposes the explicit product structure (otherwise hidden behind the orthonormal-basis
 construction) needed to prove atomlessness of the χ² law. -/
 theorem stdGaussian_map_normSq_eq_pi :
     (stdGaussian E).map (fun x => ‖x‖ ^ 2)

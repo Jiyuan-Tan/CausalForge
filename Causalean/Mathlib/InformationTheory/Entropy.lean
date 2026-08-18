@@ -141,9 +141,10 @@ theorem entropy_le_log_card {p : α → ℝ} (h0 : ∀ i, 0 ≤ p i)
     linarith
   simpa [n] using this
 
-/-- **Sharpness of the maximum-entropy bound.** The uniform pmf `p i = (card α)⁻¹` on a
-nonempty finite alphabet attains the bound:
-`entropy (fun _ => (Fintype.card α : ℝ)⁻¹) = Real.log (Fintype.card α)`.
+/-- **Sharpness of the maximum-entropy bound.** [The uniform probability mass function on a
+nonempty finite alphabet — assigning every outcome probability equal to the reciprocal of the
+alphabet's cardinality — attains entropy exactly equal to the natural logarithm of that
+cardinality](goal).
 
 Each of the `n = card α` summands equals `negMulLog (1/n) = (1/n) · log n`, so the sum is
 `n · (1/n) · log n = log n`. This certifies that `entropy_le_log_card` is tight, hence

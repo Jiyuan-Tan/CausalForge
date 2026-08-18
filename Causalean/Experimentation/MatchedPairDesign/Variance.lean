@@ -70,10 +70,12 @@ lemma Var_pairContribution (y1 y0 : P → Bool → ℝ) (p : P) :
   norm_num
   ring
 
-/-- **Variance of the matched-pair estimator.** Under the matched-pair design the
-difference-in-means estimator has randomization variance equal to `1/(4N²)` times the sum of squared
-within-pair imbalances.  The formula exposes within-pair similarity in `y1 + y0` as the driver of
-the estimator's randomization variance. -/
+/-- **Variance of the matched-pair estimator.** [Under the matched-pair design, the
+difference-in-means estimator built from potential outcomes `y1` and `y0` has randomization
+variance equal to `1/(4N²)` times the sum of squared within-pair imbalances](goal).
+
+The formula exposes within-pair similarity in `y1 + y0` as the driver of the estimator's
+randomization variance. -/
 theorem Var_matchedPairEstimator (y1 y0 : P → Bool → ℝ) :
     (matchedPairDesign (P := P)).Var (matchedPairEstimator y1 y0)
       = (∑ p, (pairImbalance y1 y0 p) ^ 2) / (4 * (Fintype.card P : ℝ) ^ 2) := by

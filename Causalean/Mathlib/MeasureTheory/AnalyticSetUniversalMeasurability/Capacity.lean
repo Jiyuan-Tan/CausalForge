@@ -33,8 +33,12 @@ namespace MeasureTheory
 
 variable {Ω : Type*} [TopologicalSpace Ω]
 
-/-- A Choquet capacity is a monotone set function continuous from below, finite on compact sets,
-and approximable from above by open neighborhoods of each compact set. -/
+/-- A Choquet capacity on a topological sample space bundles [an extended-real-valued set
+function](hyp:toFun) that is [monotone under set inclusion](hyp:mono'), [continuous from below
+along increasing sequences of sets](hyp:iUnion_of_monotone'), [finite on every compact
+set](hyp:isCompact_lt_top'), and [right-continuous at compact sets: any strict upper bound on a
+compact set's value is already an upper bound on some open neighborhood of that compact
+set](hyp:exists_isOpen_superset_lt'). -/
 structure ChoquetCapacity (Ω : Type*) [TopologicalSpace Ω] where
   /-- The value of the capacity on an arbitrary set. -/
   toFun : Set Ω → ℝ≥0∞

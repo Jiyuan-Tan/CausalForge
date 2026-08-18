@@ -395,7 +395,9 @@ private lemma evalMap_fixSet_transport
   exact SCM.evalMap_eq_of_equiv (SCM.Equiv.refl _).1 (SCM.Equiv.refl _).2.2.1 s₁ ℓ s₂ ℓ
     (fun {d} hd₁ hd₂ => hs d hd₁ hd₂) (fun {_} _ _ => rfl) hv₁ hv₂
 
-/-- The potential-outcome system induced by an SCM satisfies consistency.
+/-- For [a structural causal model `M`](hyp:M) and [an assignment of values to its
+fixed background variables `s`](hyp:s), [the potential-outcome system induced by `M`
+and `s` satisfies the consistency assumption](goal).
 
 The proof reduces factual consistency to the SCM factual-counterfactual
 consistency lemma and composition consistency to the SCM commuting-intervention

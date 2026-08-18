@@ -48,9 +48,14 @@ open scoped BigOperators
 
 variable {K : ℕ}
 
-/-- **General-constant-center construction data.**  The two Rademacher-bump scalars
-`α, β` together with a constant nuisance center `(m₀, g₀, g₁)` bounded away from
-`{0,1}`, and the inequalities guaranteeing the perturbed nuisances stay in `[0,1]`. -/
+/-- **General-constant-center construction data.** This record packages [two nonnegative
+Rademacher-bump magnitudes](hyp:α,β,hα,hβ) together with a [constant nuisance center
+`(m₀, g₀, g₁)` with each coordinate strictly between zero and
+one](hyp:m₀,g₀,g₁,hm₀0,hm₀1,hg₀0,hg₀1,hg₁0,hg₁1), and four further inequalities — [the
+propensity bump smaller than the treated center](hyp:hβg₁), [the outcome bump at most the
+treated center](hyp:hαg₁), and [two worst-case upper bounds keeping the perturbed propensity
+and treated-arm regression at most one](hyp:hgU,hmU) — that together certify the perturbed
+propensity and outcome-regression functions built from this data stay in the unit interval. -/
 structure GenConstr where
   /-- Bump magnitude on the treated outcome arm. -/
   α : ℝ
@@ -115,7 +120,9 @@ theorem denomG_pos (lam : Fin K → Bool) (x : Fin K × Bool) :
   · rw [h]; nlinarith
   · rw [h]; nlinarith
 
-/-- The null DGP `(m̂, ĝ) = (m₀, (g₀,g₁))` is valid. -/
+/-- [The null constant-center data-generating process, with propensity `m₀` and outcome
+regressions `(g₀, g₁)`, is a valid finite observed-data model, i.e. all its component
+probabilities lie in `[0,1]`](goal). -/
 theorem validDGP_hatG : ValidDGP (C := Fin K × Bool) P.mhatG P.ghatG := by
   refine ⟨fun x => ?_, fun d x => ?_⟩
   · simp only [mhatG]; exact ⟨P.hm₀0.le, P.hm₀1.le⟩
@@ -123,7 +130,9 @@ theorem validDGP_hatG : ValidDGP (C := Fin K × Bool) P.mhatG P.ghatG := by
     · exact ⟨P.hg₀0.le, P.hg₀1.le⟩
     · exact ⟨P.hg₁0.le, P.hg₁1.le⟩
 
-/-- The perturbed DGP `(mλ, gλ)` is valid. -/
+/-- [For any Rademacher sign vector `lam` indexing the perturbation](hyp:lam), [the perturbed
+propensity and outcome-regression functions define a valid finite observed-data model, i.e.
+take values in `[0,1]`](goal). -/
 theorem validDGP_pertG (lam : Fin K → Bool) :
     ValidDGP (P.mPertG lam) (P.gPertG lam) := by
   have hr := P.ratio_nonneg

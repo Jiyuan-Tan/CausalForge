@@ -96,7 +96,9 @@ private theorem perPairV (lam : Fin K → Bool) (j : Fin K) :
     · field_simp
       ring
 
-/-- **Exact ATE of the perturbed construction** (independent of `λ`). -/
+/-- **Exact ATE of the perturbed construction.** [For any Rademacher sign vector `lam`](hyp:lam),
+[the average treatment effect of the perturbed outcome regression equals the average over
+pairs `j` of `2g₁ⱼ(g₁ⱼ²+αβ)/(g₁ⱼ²−β²) − 2g₀ⱼ`, independent of `lam`](goal). -/
 theorem ate_gPertV [NeZero K] (lam : Fin K → Bool) :
     ate (P.gPertV lam)
       = (Fintype.card (Fin K × Bool) : ℝ)⁻¹
@@ -109,7 +111,9 @@ theorem ate_gPertV [NeZero K] (lam : Fin K → Bool) :
   have := P.perPairV lam j
   linarith [this]
 
-/-- The (nonnegative) per-pair gap summand `g₁ⱼ/(g₁ⱼ²−β²)`. -/
+/-- [For any Rademacher sign vector `lam`](hyp:lam), [the gap between the perturbed
+construction's ATE and the null estimate's ATE equals `2β(α+β)/(2K)` times the sum over
+pairs `j` of `g₁ⱼ/(g₁ⱼ² − β²)`](goal). -/
 theorem ate_gapV [NeZero K] (lam : Fin K → Bool) :
     ate (P.gPertV lam) - ate (P.ghatV (K := K))
       = (Fintype.card (Fin K × Bool) : ℝ)⁻¹

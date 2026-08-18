@@ -66,8 +66,11 @@ def boolToReal (b : Bool) : ℝ :=
 def typeStep {K : ℕ} (g : ResponseType K) (j : Adj K) : ℝ :=
   boolToReal (g (Adj.upper j)) - boolToReal (g (Adj.lower j))
 
-/-- Finite response-type statistics: type masses and type-specific treatment
-effects `Δ_g`, with masses forming a probability vector. -/
+/-- **Finite response-type statistics.** For a finite family of latent response types, this
+records [the probability mass of each type](hyp:mass) and [the type-specific average causal
+effect `Δ_g`](hyp:effect), subject to [every mass being nonnegative](hyp:mass_nonneg) and [the
+masses summing to one](hyp:mass_sum_one), so together they form a probability vector over
+response types. -/
 structure ResponseTypeStats (K : ℕ) where
   /-- Response-type mass `π_g = P(G = g)`. -/
   mass : ResponseType K → ℝ
@@ -109,11 +112,11 @@ noncomputable def beta2SLSFiniteAlgebra : ℝ :=
   (∑ g : ResponseType K, R.unnormTypeWeight I g * R.effect g) /
     R.typeWeightDenom I
 
-/-- Saturated finite-support population bridge for the MTW identification
-step.  The response-type masses and effects carry the finite partition of the
-population, while `baseOutcome g` records the response-type-specific baseline
-mean.  The centered first-stage index makes this baseline term cancel, leaving
-the telescoped adjacent treatment increments used by the finite algebra. -/
+/-- **Saturated finite-support population bridge for the MTW identification step.** Bundles [a
+finite response-type statistics record supplying the type masses and type-specific
+effects](hyp:stats) together with [a response-type-specific baseline outcome
+mean](hyp:baseOutcome), the term the centered first-stage index cancels, leaving the telescoped
+adjacent treatment increments used by the finite algebra. -/
 structure PopulationBridge (K : ℕ) where
   /-- Response-type masses and type-specific treatment effects. -/
   stats : ResponseTypeStats K
@@ -282,9 +285,9 @@ theorem reducedFormMoment_eq_typeWeightNumerator :
       intro g _hg
       rw [I.tail_sum_interchange (fun j => typeStep g j)]
 
-/-- Saturated finite-support MTW identification: the population 2SLS ratio
-`E[h(Z)Y] / E[h(Z)D]`, after consistency/exogeneity/exclusion and telescoping,
-is exactly the finite response-type ratio. -/
+/-- **Saturated finite-support MTW identification.** [The population 2SLS ratio
+`E[h(Z)Y] / E[h(Z)D]`, after consistency, exogeneity, exclusion, and telescoping,
+is exactly the finite response-type ratio](goal). -/
 theorem beta2SLSPopulationBridge_eq_beta2SLSFiniteAlgebra :
     P.beta2SLSPopulationBridge I = P.stats.beta2SLSFiniteAlgebra I := by
   unfold beta2SLSPopulationBridge ResponseTypeStats.beta2SLSFiniteAlgebra
@@ -588,8 +591,10 @@ private lemma exStats_denom : exStats.typeWeightDenom exIndex = -3/32 := by
       exStats_unnorm_defier, exStats_unnorm_always]
   norm_num
 
-/-- **Negative-weights theorem**: with 2 support points and a 3/4-defier
-population, the complier's normalized response-type weight equals −1/2 < 0.
+/-- **Negative-weights theorem.** [There exists a finite-support instrument
+index, a response-type population, and a response type such that, with two
+support points and a 3/4-defier population, that type has positive mass yet a
+negative normalized response-type weight (equal to −1/2)](goal).
 
 This formalizes the paper's central message (MTW §3): without sign alignment,
 2SLS is NOT a convex average of causal effects. -/

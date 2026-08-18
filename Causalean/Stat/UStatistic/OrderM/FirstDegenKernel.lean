@@ -41,9 +41,12 @@ open MeasureTheory ProbabilityTheory Filter Topology
 variable {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
   {μ : Measure Ω} {P : Measure X}
 
-/-- A first-order degenerate order-`m` kernel: measurable, square-integrable, and
-mean-zero in each coordinate after integrating out the other `m − 1`
-coordinates. -/
+/-- **First-order degenerate order-`m` kernel.** A kernel `g` on `m`-tuples over `X`, together
+with the population measure `P`, is first-order degenerate when [`g` is
+measurable](hyp:meas), [its first Hoeffding projection vanishes in every coordinate —
+integrating `g` over the other $m-1$ coordinates against the product measure leaves zero,
+whichever coordinate and value are held fixed](hyp:firstDeg), and [`g` is square-integrable
+under the product measure $P^{\otimes m}$](hyp:sq). -/
 structure OrderFirstDegenKernel (P : Measure X) {m : ℕ} [NeZero m]
     (g : (Fin m → X) → ℝ) : Prop where
   meas : Measurable g

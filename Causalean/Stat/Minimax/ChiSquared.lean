@@ -612,17 +612,15 @@ lemma testing_error_lower_of_chi {Ω : Type*} [MeasurableSpace Ω]
   have hleft_lt : 1 - e < 1 / 2 := lt_of_le_of_lt hgap hsqrt_lt
   linarith
 
-/-- **Le Cam two-point testing floor under a χ²-budget (uniform-constant form).**  Two
-statements with the same structure.  (1) For every χ²-budget `C ≥ 0` there is a single floor
-constant `c > 0` such that EVERY pair of probability laws `Pp ≪ Pm` (on any measurable space)
-with `Q`-integrable squared density deviation and `χ²(Pp‖Pm) ≤ C` satisfies
-`Pp(Aᶜ) + Pm(A) ≥ c` for every measurable test region `A`; the floor constant is quantified
-above the laws, so it does not degrade as the least-favorable pair changes.  (2) The
-per-observation route: for every per-observation budget `c0 ≥ 0` there is a single floor
-`c' > 0` such that whenever the single-observation divergence obeys `χ²(Pp‖Pm) ≤ c0/m`, the
-`m`-fold i.i.d. product experiment retains the SAME constant testing floor
-`(Pp^{⊗m})(Aᶜ) + (Pm^{⊗m})(A) ≥ c'`, via the product χ²-identity
-`1 + χ²(Pp^{⊗m}‖Pm^{⊗m}) = (1 + χ²)^m ≤ exp(c0)`.
+/-- **Le Cam two-point testing floor under a χ²-budget (uniform-constant form).** [Two
+statements share this structure: for every χ²-budget `C ≥ 0` there is a single floor
+constant `c > 0`, fixed before the laws are chosen, such that every pair of probability
+laws with `Q`-integrable squared density deviation and χ²-divergence at most `C` has
+combined testing error `P(Aᶜ) + Q(A)` at least `c` on every measurable test region `A`;
+and for every per-observation χ²-budget `c0 ≥ 0` there is a single floor `c' > 0` such
+that whenever the single-observation χ²-divergence is at most `c0/m`, the `m`-fold i.i.d.
+product experiment retains that same constant testing floor `c'`, by the product
+χ²-identity `1 + χ²(P^{⊗m}‖Q^{⊗m}) = (1 + χ²)^m ≤ exp(c0)`](goal).
 
 This is exactly the form consumed by minimax two-point lower bounds whose least-favorable laws
 change with the sample size: the uniform `c = c(C)` (resp. `c' = c'(c0)`) cannot degrade. -/

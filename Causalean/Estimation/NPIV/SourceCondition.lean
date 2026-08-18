@@ -48,9 +48,11 @@ open MeasureTheory
 
 variable {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω}
 
-/-- The β-source condition represents the true primal nuisance as a
-nonnegative spectral power of the normal NPIV operator applied to an
-admissible witness in the primal candidate class.
+/-- The **β-source condition** represents the true primal nuisance as the image, under a
+[nonnegative](hyp:beta_nonneg) spectral power of the normal NPIV operator, of [an admissible
+witness function in the primal candidate class](hyp:w₀_fun,w₀_mem), via [the spectral identity
+expressing the nuisance as that power of the operator applied to the witness, inside the
+`L²` space](hyp:spectral_identity).
 
 This is the formal interface for the source condition at `h₀`
 (`def:est-trae-source-condition`, line 47).
@@ -79,9 +81,14 @@ structure SourceCondition (S : OperatorSystem Ω μ) (β : ℝ) where
           (fun x : ℝ => Real.rpow (max x 0) (β/2))
           (S.hL2 w₀_mem)
 
-/-- The Tikhonov bias-bound bundle records the population approximation
-bounds at a positive regularization level and the strong-convexity inequality
-for the corresponding population Tikhonov solution.
+/-- The **Tikhonov bias-bound** bundle records, at a [positive regularization
+level](hyp:lambda_pos), the properties of [the corresponding population Tikhonov
+solution](hyp:h_lambda_star_fun,h_lambda_star_mem): a [nonnegative constant](hyp:C,C_nonneg) for
+which [its squared distance to the true nuisance in the strong candidate-space
+norm](hyp:strong_bias) and [its squared distance to the true nuisance in the weak
+operator-image norm](hyp:weak_bias) are each bounded by that constant times a power of the
+regularization level, together with [the population strong-convexity inequality it satisfies
+relative to every other candidate](hyp:strong_convexity).
 
 This is the Tikhonov bias bound at level `λ` (proof sketch lines 276–285 of
 `doc/basic_concepts/po/estimation/trae_inverse_problems.tex`).

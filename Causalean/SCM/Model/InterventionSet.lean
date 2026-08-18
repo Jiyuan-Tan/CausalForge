@@ -171,7 +171,8 @@ lemma fixSet_empty_edge
     simp [SWIGGraph.splitMono, SWIGGraph.splitMonoDAG,
           SWIGGraph.splitMonoEdgeRel]
 
-/-- **`fixSet ∅` is structurally equivalent to `M`.**
+/-- For [a structural causal model `M`](hyp:M), [intervening on the empty set of
+    nodes yields a structural causal model that is equivalent to `M`](goal).
 
     Since intervening on the empty set performs no rerouting, the
     resulting SCM agrees with `M` on all primitive structural data:

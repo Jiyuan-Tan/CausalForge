@@ -273,7 +273,9 @@ theorem iotaMap_fixed (n : N) : iotaMap (.fixed n : SWIGNode N) = .random n := r
 -- Properties of the SWIG construction
 -- ============================================================
 
-/-- Fixed nodes in the SWIG are roots (no parents). -/
+/-- For [any base DAG `G`](hyp:G), [any set of intervention targets](hyp:targets), and [any
+node `n`](hyp:n), [the fixed copy of `n` has no parents in the single-world intervention
+graph built from `G` and `targets`](goal). -/
 theorem swig_fixed_are_roots (G : DAG N) (targets : Finset N) (n : N) :
     (swigDAG G targets).parents (.fixed n) = ∅ := by
   rw [Finset.eq_empty_iff_forall_notMem]
@@ -281,9 +283,10 @@ theorem swig_fixed_are_roots (G : DAG N) (targets : Finset N) (n : N) :
   simp only [DAG.parents, swigDAG] at hx
   cases x <;> simp [swigEdge] at hx
 
-/-- In the SWIG, every random node has the same incoming edges as in the original
-    DAG, with each parent represented by its random or fixed version according to
-    whether that parent is an intervention target. -/
+/-- For [any base DAG `G`](hyp:G), [any set of intervention targets](hyp:targets), and [any
+node `d`](hyp:d), [the parents of the random copy of `d` in the single-world intervention
+graph are exactly the copies of `d`'s original parents in `G`, each represented by its random
+version if it is not a target and by its fixed version if it is](goal). -/
 theorem swig_target_parents (G : DAG N) (targets : Finset N) (d : N) :
     ∀ x : SWIGNode N, x ∈ (swigDAG G targets).parents (.random d) ↔
       ∃ p, G.edge p d ∧ x = .random p ∧ p ∉ targets ∨
@@ -332,13 +335,15 @@ theorem swig_random_root_of_root (G : DAG N) (targets : Finset N) (n : N)
     This is the DAG used by a standard causal model. -/
 def initialSWIG (G : DAG N) : DAG (SWIGNode N) := swigDAG G ∅
 
-/-- In the initial SWIG (no targets), edges between random nodes match
-    the original edges exactly. -/
+/-- For [any base DAG `G`](hyp:G) and [any nodes `u`, `v`](hyp:u,v), [in the initial SWIG of
+`G` (the SWIG with no intervention targets), the random copies of `u` and `v` are joined by
+an edge exactly when `u` and `v` are joined by an edge in `G`](goal). -/
 theorem initialSWIG_random_edge (G : DAG N) (u v : N) :
     (initialSWIG G).edge (.random u) (.random v) ↔ G.edge u v := by
   simp [initialSWIG, swigDAG, swigEdge]
 
-/-- All fixed nodes are isolated in the initial SWIG. -/
+/-- For [any base DAG `G`](hyp:G) and [any node `n`](hyp:n), [the fixed copy of `n` has no
+parents in the initial SWIG of `G` (the SWIG with no intervention targets)](goal). -/
 theorem initialSWIG_fixed_isolated (G : DAG N) (n : N) :
     (initialSWIG G).parents (.fixed n) = ∅ :=
   swig_fixed_are_roots G ∅ n
@@ -347,7 +352,19 @@ theorem initialSWIG_fixed_isolated (G : DAG N) (n : N) :
 -- SWIGGraph structure
 -- ============================================================
 
-/-- A SWIG Graph `G = (S, V, U, E, ι)` (Definition 4 from Basic Concepts.tex).
+/-- A Single-World Intervention Graph (SWIG), `G = (S, V, U, E, ι)` (Definition 4 from Basic
+    Concepts.tex): [a directed acyclic graph on the SWIG nodes](hyp:dag) whose vertices are
+    partitioned into [fixed intervention nodes](hyp:fixed), [observed random nodes](hyp:observed),
+    and [unobserved random nodes](hyp:unobserved), where [every fixed node is genuinely of fixed
+    form](hyp:fixed_is_fixed), [every observed node is of random form](hyp:observed_is_random),
+    [every unobserved node is of random form](hyp:unobserved_is_random), and [the observed and
+    unobserved sets are disjoint](hyp:obs_unobs_disjoint). [Every edge of the graph has both
+    endpoints classified as fixed, observed, or unobserved](hyp:dag_edges_classified); [the map
+    sending each fixed intervention node to its random counterpart lands inside the observed
+    nodes](hyp:fixed_image_in_observed); [fixed nodes](hyp:fixed_are_roots) and [unobserved
+    nodes](hyp:unobs_are_roots) have no parents; [a fixed-form node absent from the fixed set is
+    isolated, with neither parents nor children](hyp:fixed_outside_fixed_isolated); and [every
+    child of a classified node is observed](hyp:all_children_in_observed).
 
     Consists of a DAG on `SWIGNode N` together with a three-way partition
     `(fixed S, observed V, unobserved U)`, an injective mapping `ι : S → V`,

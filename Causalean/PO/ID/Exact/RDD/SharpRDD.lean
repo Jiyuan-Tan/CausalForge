@@ -26,11 +26,11 @@ namespace PO
 open Filter MeasureTheory
 open scoped Topology
 
-/-- A sharp regression-discontinuity model in the potential-outcome framework.
-A unit has a continuous running variable `X`, a deterministic treatment `D` that
-switches on exactly when `X` crosses the cutoff `c` (take-up jumps from 0 to 1 at
-the cutoff), and a real outcome `Y`. The jump in the outcome regression at the
-cutoff identifies the cutoff-local average treatment effect
+/-- **Sharp regression-discontinuity model in the potential-outcome framework.** A unit has [a
+continuous running variable `X`](hyp:Xvar), [a deterministic treatment `D` that switches on
+exactly when `X` crosses the cutoff `c`, jumping from 0 to 1 at the cutoff](hyp:Dvar), and [a real
+outcome `Y`](hyp:Yvar), with [the outcome and treatment nodes distinct](hyp:hYD). The jump in the
+outcome regression at the cutoff identifies the cutoff-local average treatment effect
 (`def:po-sharp-rdd-system`). -/
 structure POSharpRDDSystem (P : POSystem) where
   /-- Running (forcing) variable `X`. -/
@@ -76,7 +76,17 @@ def dEvent (d : Bool) : Set P.Ω := S.Dvar.event d
 lemma measurableSet_dEvent (d : Bool) : MeasurableSet (S.dEvent d) :=
   by simpa [dEvent] using S.Dvar.measurableSet_event d
 
-/-- Sharp RDD assumptions — def:po-sharp-rdd-assumptions.
+/-- **Sharp RDD assumption bundle** (`def:po-sharp-rdd-assumptions`). For a sharp
+regression-discontinuity system, this packages [consistency (SUTVA)](hyp:consistency) and [the
+deterministic cutoff rule: the treatment indicator agrees almost surely with whether the running
+variable has reached the cutoff](hyp:sharpCutoff). It supplies treatment-specific latent
+regression representatives `mu` and an observable outcome regression representative `nu`, each
+[certified as a genuine regression function of the corresponding response on the running
+variable](hyp:mu_isReg,nu_isReg), with the latent representatives [continuous at the
+cutoff](hyp:mu_continuousAt); it also assumes [the running variable has positive local
+probability mass on both sides of the cutoff](hyp:support_right,support_left) and [the observable
+outcome regression has well-defined one-sided limits at the
+cutoff](hyp:nu_right_limit_exists,nu_left_limit_exists).
 
 The continuity clause is asserted on the treatment-specific regression
 representatives `μ_d` at the cutoff, matching the textbook statement.  Two-sided

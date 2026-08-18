@@ -290,9 +290,11 @@ lemma tildeX_eq_Rdot (h : P.CellGridResidualization D) :
       = fun cell => D.Rdot cell.val.1 cell.val.2 := by
   funext cell; exact (h.hRdotResidual cell).symm
 
-/-- The conventional event-study coefficient `D.mu` equals the FWL
-residualized ratio `conventionalMuRatio`, derived from the weighted normal
-equations via `scalar_fwl_of_normalEqs`. -/
+/-- **Cell-grid FWL bridge.** [Under cell-grid residualization of the event-study
+design](hyp:h), [the conventional event-study coefficient equals the Frisch–Waugh–Lovell
+residualized ratio computed directly on the cohort × relative-time cell grid](goal).
+
+This is derived from the weighted normal equations via `scalar_fwl_of_normalEqs`. -/
 theorem cellGrid_mu_eq_conventionalMuRatio (h : P.CellGridResidualization D) :
     D.mu = P.conventionalMuRatio D := by
   classical

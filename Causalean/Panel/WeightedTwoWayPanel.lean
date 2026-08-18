@@ -49,7 +49,10 @@ open Finset
 
 variable {Unit Time : Type*} [Fintype Unit] [Fintype Time]
 
-/-- Unit weights forming a probability vector: strictly positive, summing to one.
+/-- **Unit weights.** [A weight function `p` assigning each unit a share](hyp:p) that
+forms a probability vector: [every unit's weight is strictly positive](hyp:pos) and
+[the weights sum to one across units](hyp:sum_one).
+
 Mirrors Goodman-Bacon cohort shares; `p ≡ 1/|Unit|` recovers the uniform panel. -/
 structure UnitWeights (Unit : Type*) [Fintype Unit] where
   p : Unit → ℝ
@@ -343,9 +346,11 @@ theorem inner_eq_card_smul_ip (w : UnitWeights Unit) (V W : Unit → Time → �
   -- `(p_i/|T|) · V_it · W_it`; pull `|T|` out via `Finset.mul_sum` and use
   -- `w.p i * (V_it * W_it) = |T| * ((p_i/|T|) * V_it * W_it)` (needs `|T| ≠ 0`).
 
-/-- **Concrete ↔ abstract bridge.** The closed-form two-way double demeaning
-`ddot` is the generic `WeightedSupport` residual maker against the two-axis
-additive span.  Every cell is observed, so the identity holds pointwise. -/
+/-- **Concrete ↔ abstract bridge.** For [unit weights `w`](hyp:w) and [an outcome
+array `V`](hyp:V), [the closed-form two-way double-demeaned residual `ddot w V i t`
+equals the generic weighted-support residual against the two-axis additive span,
+evaluated at cell `(i, t)`](goal). Every cell is observed, so the identity holds
+pointwise. -/
 theorem ddot_eq_residualize (w : UnitWeights Unit) (V : Unit → Time → ℝ)
     (i : Unit) (t : Time) :
     (cellSupport w).residualize (twoAxisAdditiveSpan Unit Time)

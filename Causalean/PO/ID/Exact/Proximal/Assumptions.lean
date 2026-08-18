@@ -32,25 +32,25 @@ variable {P : POSystem}
   [MeasurableSpace γ_X] [MeasurableSpace γ_Z]
   [MeasurableSpace γ_W] [MeasurableSpace γ_U]
 
-/-- Proximal ATE assumption bundle (def:po-proximal-assumptions).
-
-Fields:
-- `consistency`     : the ambient PO system satisfies POSystem.Consistency.
-- `latent_exch`     : Y(a) ⟂ A | (U,X) for each a ∈ {0,1}.
-- `proxy_YZ`        : Y ⟂ Z | (A,U,X).
-- `proxy_WAZ`       : W ⟂ (A,Z) | (U,X).
-- `h`               : bridge function h : Bool × γ_W × γ_X → ℝ.
-- `measurable_h`    : h is measurable.
-- `integrable_hAWX` : h(A,W,X) is integrable.
-- `bridge`          : E[Y - h(A,W,X) | σ(A,Z,X)] = 0 a.s.
-- `positivity_arm`  : every σ_UX-measurable positive-μ set has positive
-                      intersection with each arm `{A=a}` (Miao 2018 Asm. 7).
-- `completeness`    : for each a, Z|{A=a} is complete for (U,X)-functionals,
-                      with stratum-wise conclusion (Miao 2018 Asm. 8).
-- `integrable_YofA0`: Y(0) is integrable.
-- `integrable_YofA1`: Y(1) is integrable.
-- `integrable_h0WX` : h(0,W,X) is integrable.
-- `integrable_h1WX` : h(1,W,X) is integrable.
+/-- **Proximal ATE assumption bundle** (Miao–Geng–Tchetgen Tchetgen proximal identification,
+`def:po-proximal-assumptions`). For a proximal system with covariate, binary treatment,
+treatment-side and outcome-side proxies, outcome, and latent confounder, this packages
+[consistency (SUTVA)](hyp:consistency), [latent exchangeability: each potential outcome is
+independent of treatment given the latent confounder and covariate](hyp:latent_exch), the two
+proxy restrictions that [the outcome-side proxy carries no information about the outcome beyond
+treatment, latent confounder, and covariate](hyp:proxy_YZ) and [the treatment-side proxy is
+independent of treatment and the outcome-side proxy given the latent confounder and
+covariate](hyp:proxy_WAZ), [a measurable outcome bridge function `h`](hyp:h,measurable_h)
+satisfying [the bridge equation that the outcome minus `h` evaluated at treatment, outcome-side
+proxy, and covariate has zero mean conditional on treatment, treatment-side proxy, and
+covariate](hyp:bridge), a positivity condition that [every latent-confounder-and-covariate-
+measurable event of positive probability meets each treatment arm with positive
+probability](hyp:positivity_arm), a completeness condition that [within each treatment arm,
+functions of the latent confounder and covariate with zero bridge-conditional mean vanish almost
+surely](hyp:completeness), and integrability of [the two potential
+outcomes](hyp:integrable_YofA0,integrable_YofA1), [the composite `h(A,W,X)`](hyp:integrable_hAWX),
+and [the bridge function evaluated at each fixed treatment
+arm](hyp:integrable_h0WX,integrable_h1WX).
 -/
 structure Assumptions
     (S : POProximalSystem P γ_X γ_Z γ_W γ_U)

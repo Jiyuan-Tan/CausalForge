@@ -50,7 +50,9 @@ theorem eps_integrable (M : ObsSEM p) (j : Fin (p + 1)) :
   · simpa using this
   · rw [M.hGauss j]; exact (memLp_id_gaussianReal 1).aestronglyMeasurable
 
-/-- The noise `εⱼ` is centered: `E[εⱼ] = 0`. -/
+/-- For [a linear-Gaussian observational SEM](hyp:M) and [coordinate index j](hyp:j), [the
+structural noise `εⱼ` is centered: its expectation under `M`'s probability measure is
+zero](goal). -/
 theorem eps_integral_zero (M : ObsSEM p) (j : Fin (p + 1)) :
     ∫ ω, M.ε ω j ∂M.P = 0 := by
   have hmeas : AEMeasurable (fun ω => M.ε ω j) M.P := eps_aemeasurable M j

@@ -104,8 +104,9 @@ theorem orthogonalProjection_eq_of_isGradient {g ψ : H} (h : IsGradient T g ψ)
   rw [hz, sub_eq_zero] at hlin
   rw [efficientIF, hlin]
 
-/-- **Pythagoras for gradients.** For any gradient `ψ`, the squared norm splits
-into the efficiency bound plus the squared norm of the orthogonal remainder. -/
+/-- **Pythagoras for gradients.** [For any function `ψ` that is a gradient at `g`](hyp:h),
+[the squared norm of `ψ` splits into the efficiency bound plus the squared norm of the
+remainder orthogonal to the efficient influence function](goal). -/
 theorem normSq_gradient_decomp {g ψ : H} (h : IsGradient T g ψ) :
     ‖ψ‖ ^ 2 = ‖efficientIF T g‖ ^ 2 + ‖ψ - efficientIF T g‖ ^ 2 := by
   have hproj : (T.orthogonalProjection ψ : H) = efficientIF T g :=
@@ -121,16 +122,16 @@ theorem normSq_gradient_decomp {g ψ : H} (h : IsGradient T g ψ) :
     _ = ‖efficientIF T g‖ ^ 2 + ‖ψ - efficientIF T g‖ ^ 2 := by
         rw [norm_add_sq_real, hzero]; ring
 
-/-- **Efficiency lower bound.** The efficiency bound is at most the squared norm
-of any gradient. -/
+/-- **Efficiency lower bound.** [For any function `ψ` that is a gradient at `g`](hyp:h),
+[the efficiency bound is at most the squared norm of `ψ`](goal). -/
 theorem effBound_le_normSq {g ψ : H} (h : IsGradient T g ψ) :
     effBound T g ≤ ‖ψ‖ ^ 2 := by
   rw [effBound, normSq_gradient_decomp h]
   have : (0 : ℝ) ≤ ‖ψ - efficientIF T g‖ ^ 2 := sq_nonneg _
   linarith
 
-/-- **Sharpness.** A gradient attains the efficiency bound iff it equals the
-efficient influence function. -/
+/-- **Sharpness.** [For any function `ψ` that is a gradient at `g`](hyp:h), [`ψ` attains the
+efficiency bound if and only if it equals the efficient influence function](goal). -/
 theorem norm_eq_iff_eq_efficientIF {g ψ : H} (h : IsGradient T g ψ) :
     ‖ψ‖ ^ 2 = effBound T g ↔ ψ = efficientIF T g := by
   rw [effBound, normSq_gradient_decomp h]

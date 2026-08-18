@@ -261,8 +261,8 @@ the assigned value. -/
     boolParentAssignment b boolChainDParent = b := by
   cases b <;> rfl
 
-/-- The copying Boolean SCM satisfies monotonicity of the outcome mechanism in
-the parent coordinate.
+/-- [The copying Boolean structural causal model satisfies monotonicity of the outcome mechanism
+in the designated parent coordinate](goal).
 
 The witness is substantive: the proof applies the actual structural equation
 for the outcome node. -/
@@ -273,8 +273,8 @@ theorem monotoneBoolSCM_satisfies :
   intro x y hxy _
   exact hxy
 
-/-- The reversing Boolean SCM violates monotonicity of the outcome mechanism in
-the parent coordinate.
+/-- [The reversing Boolean structural causal model violates monotonicity of the outcome mechanism
+in the designated parent coordinate](goal).
 
 The low parent value maps to `true` and the high parent value maps to `false`,
 so the required nondecreasing inequality fails. -/

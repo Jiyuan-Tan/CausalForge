@@ -134,10 +134,11 @@ theorem row_indep_of_mul_row_indep (R : Matrix (Fin d) (Fin d) ℝ)
     exact Submodule.smul_mem _ _ (Submodule.subset_span ⟨j, rfl⟩)
   exact Submodule.finrank_mono hsub
 
-/-- **Definition 1 (partial order RQ decomposition).**  `H = R Q` with `R` having
-non-negative diagonal and support along `⪯` (`Rᵢⱼ = 0` unless `i ⪯ j`), and the rows
-`qᵢ` of `Q` of unit Euclidean norm and pairwise orthogonal along the strict order
-(`qᵢ ⟂ qⱼ` whenever `i ≺ j`). -/
+/-- **Definition 1 (partial order RQ decomposition).** A witness that a full-row-rank
+matrix `H` factors as [`H = R Q`](hyp:factor) with `R` having [a non-negative
+diagonal](hyp:diag_nonneg) and [support confined to the reflexive partial order — `Rᵢⱼ = 0`
+unless `i ⪯ j`](hyp:supp), and the rows of `Q` [each of unit Euclidean norm](hyp:unit) and
+[pairwise orthogonal along the strict order](hyp:orth). -/
 structure IsPORQ (S : Solution d p K)
     (R : Matrix (Fin d) (Fin d) ℝ) (Q : Matrix (Fin d) (Fin p) ℝ) : Prop where
   /-- `H` factors as `R Q`. -/
@@ -424,7 +425,11 @@ theorem porq_rowCoeffs (S : Solution d p K) (i : Fin d) :
     refine Finset.sum_congr rfl fun k _ => ?_
     simp only [hf, dif_pos k.2]
 
-/-- **Existence of the partial order RQ decomposition** (Appendix B Proposition).
+/-- **Existence of the partial order RQ decomposition** (Appendix B Proposition). For [a
+linear causal disentanglement solution](hyp:S), [there exist matrices R and Q realizing a
+partial order RQ decomposition of S's factor loading matrix H — that is, `H = R·Q` with R's
+diagonal entries nonnegative and R's support confined to the partial order on nodes, and
+with Q's rows unit-norm and mutually orthogonal along that order](goal).
 
 Proved by the paper's Algorithm "Partial Order RQ Decomposition": process the rows
 in a topological order of `𝒢` — here *decreasing* `Fin d` order, since

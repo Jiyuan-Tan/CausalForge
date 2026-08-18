@@ -39,7 +39,19 @@ namespace Causalean.Estimation.OrthogonalMoments.AutoDebias
 
 open MeasureTheory
 
-/-- **Regression-nuisance moment system.**
+/-- **Regression-nuisance moment system.** Bundles an observation space with an induced
+covariate space, an outcome variable, a regression target functional on a normed nuisance
+class, the true nuisance and true scalar parameter, a population moment functional of the
+parameter and nuisance, and an observation-level moment kernel that averages to it; the
+regression target is required [additive](hyp:γ_target_add) and [homogeneous](hyp:γ_target_smul)
+in its nuisance argument, [the population moment vanishes at the truth](hyp:M_truth), the
+supplied Gateaux derivative of the moment at the truth is itself
+[additive](hyp:D_g_M_add) and [homogeneous](hyp:D_g_M_smul), the kernel is
+[measurable](hyp:m_meas) and [integrates against the observation measure to the population
+moment](hyp:m_population), [the covariate measure is the pushforward of the observation
+measure under the projection](hyp:pushforward), and [the regression residual at the truth,
+weighted by any measurable integrable function of the covariates, integrates to
+zero](hyp:regression_resid_orthog).
 
 A bundle packaging the data + regression infrastructure of `LinRegFnSys`
 together with:
@@ -94,7 +106,12 @@ attribute [instance] RegNuisanceMomentSys.Z_meas RegNuisanceMomentSys.P_Z_prob
   RegNuisanceMomentSys.X_meas RegNuisanceMomentSys.H_addCommGroup
   RegNuisanceMomentSys.H_module
 
-/-- **Automatic debiasing representer.**
+/-- **Automatic debiasing representer.** For a regression-nuisance moment system, a
+function [α₀](hyp:α₀) on the covariate space that is [measurable](hyp:α₀_meas) and
+[integrable against the covariate measure](hyp:α₀_integrable), and that
+[represents the Gateaux derivative of the population moment at the truth, in every
+direction, as the L²-inner product of α₀ against the regression target evaluated in that
+direction](hyp:representation).
 
 A measurable, integrable `α₀ : X → ℝ` representing the Gateaux derivative
 `D_g M(θ₀, g₀)[ν]` as the `L²(P_X)` inner product
@@ -142,11 +159,11 @@ theorem autoDebiasedMoment_meanZero_at_truth (S : RegNuisanceMomentSys)
   rw [S.regression_resid_orthog rep.α₀ rep.α₀_meas h_α₀_resid_int]
   ring
 
-/-- **Directional zero in the regression direction.**
-
-The Gateaux derivative of the population debiased moment in the
-`g`-direction at the truth equals zero — equivalently, the representer
-identity for the perturbation `ν_g`. -/
+/-- **Directional zero in the regression direction.** For [a regression-nuisance moment
+system](hyp:S) with [Riesz representer](hyp:rep) and [any perturbation `ν_g` of the
+regression nuisance](hyp:ν_g), [the Gateaux derivative of the population debiased moment
+in the `g`-direction at the truth vanishes — equivalently, this is the representer identity
+for the perturbation `ν_g`](goal). -/
 theorem autoDebiasedMoment_directional_g_zero (S : RegNuisanceMomentSys)
     (rep : AutoDebiasRepresenter S) (ν_g : S.H) :
     S.D_g_M ν_g - ∫ x, rep.α₀ x * S.γ_target ν_g x ∂S.P_X = 0 := by

@@ -81,8 +81,10 @@ theorem obsReal_pertG_eq (lam : Fin K → Bool) (x : Fin K × Bool) (d y : Bool)
     simp only [Bool.false_eq_true, if_false, if_true] <;>
     rw [mul_assoc] <;> refine congrArg _ ?_ <;> field_simp <;> ring
 
-/-- The single-observation overlap equals one plus the per-cell coefficient times the
-average sign agreement across pairs. -/
+/-- [For any two Rademacher sign vectors `lam` and `lam'` indexing perturbed
+data-generating processes](hyp:lam,lam'), [the single-observation χ² overlap between them
+equals one plus the per-cell coefficient `Γ/K` times the sum of pairwise sign agreements
+between `lam` and `lam'`](goal). -/
 theorem chiSqOverlap_eqG [NeZero K] (lam lam' : Fin K → Bool) :
     P.chiSqOverlapG lam lam'
       = 1 + (P.Γ / (K : ℝ)) * ∑ j, signOf (lam j) * signOf (lam' j) := by

@@ -47,8 +47,9 @@ in `Szego`. -/
 noncomputable def szegoInterp (β : ℕ) (Q₀ Q₁ t₀ : ℝ) (t : ℝ) : ℝ :=
   Q₀ * Real.cos ((β : ℝ) * (t - t₀)) + (Q₁ / (β : ℝ)) * Real.sin ((β : ℝ) * (t - t₀))
 
-/-- The Szegő interpolant reproduces its prescribed value at the base point:
-`S(t₀) = Q₀`. -/
+/-- For [a degree parameter `β`](hyp:β) and [values `Q₀`, `Q₁` and base point `t₀`]
+(hyp:Q₀,Q₁,t₀), [the Szegő interpolant reproduces its prescribed value at the base point:
+`S(t₀) = Q₀`](goal). -/
 theorem szegoInterp_self (β : ℕ) (Q₀ Q₁ t₀ : ℝ) :
     szegoInterp β Q₀ Q₁ t₀ t₀ = Q₀ := by
   simp [szegoInterp]
@@ -125,8 +126,10 @@ theorem szegoInterp_amplitude_core (ω : ℝ) (Q₀ q t₀ : ℝ) :
         * Real.cos (ω * (t - t₀) - Complex.arg z) := by
       rw [hnorm]
 
-/-- The Szegő interpolant is an elementary wave of amplitude
-`A = √(Q₀² + (Q₁/β)²)`. -/
+/-- For [a degree parameter `β`](hyp:β) and [values `Q₀`, `Q₁` and base point `t₀`]
+(hyp:Q₀,Q₁,t₀), [the Szegő interpolant is an elementary cosine wave of amplitude
+`A = √(Q₀² + (Q₁/β)²)`: there is a phase `φ` with `S(t) = A · cos(β(t − t₀) − φ)` for every
+`t`](goal). -/
 theorem szegoInterp_amplitude (β : ℕ) (Q₀ Q₁ t₀ : ℝ) :
     ∃ φ : ℝ, ∀ t, szegoInterp β Q₀ Q₁ t₀ t
       = Real.sqrt (Q₀ ^ 2 + (Q₁ / (β : ℝ)) ^ 2)
@@ -134,8 +137,9 @@ theorem szegoInterp_amplitude (β : ℕ) (Q₀ Q₁ t₀ : ℝ) :
   simpa [szegoInterp] using
     szegoInterp_amplitude_core (β : ℝ) Q₀ (Q₁ / (β : ℝ)) t₀
 
-/-- The Szegő interpolant is bounded in absolute value by its amplitude
-`A = √(Q₀² + (Q₁/β)²)`. -/
+/-- For [a degree parameter `β`](hyp:β) and [values `Q₀`, `Q₁`, base point `t₀`, and
+evaluation point `t`](hyp:Q₀,Q₁,t₀,t), [the Szegő interpolant's value is bounded in absolute
+value by its amplitude `A = √(Q₀² + (Q₁/β)²)`](goal). -/
 theorem szegoInterp_abs_le (β : ℕ) (Q₀ Q₁ t₀ t : ℝ) :
     |szegoInterp β Q₀ Q₁ t₀ t| ≤ Real.sqrt (Q₀ ^ 2 + (Q₁ / (β : ℝ)) ^ 2) := by
   obtain ⟨φ, hφ⟩ := szegoInterp_amplitude β Q₀ Q₁ t₀

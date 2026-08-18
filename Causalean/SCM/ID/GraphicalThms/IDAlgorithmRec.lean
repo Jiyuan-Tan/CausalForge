@@ -892,10 +892,11 @@ theorem id_sound_rec [∀ n, StandardBorelSpace (Ω n)] [∀ n, Nonempty (Ω n)]
     rw [interventionalQuery_eq_default_of_not_valid (Ω := Ω) X Y M₁ hvalid₁,
       interventionalQuery_eq_default_of_not_valid (Ω := Ω) X Y M₂ hvalid₂]
 
-/-- **Discrete soundness of the full recursive ID algorithm (on-contract).**  The
-full Tian–Shpitser identification-soundness headline over the standard discrete
-positive class: a successful recursive certificate `idSucceedsRec` identifies the
-interventional query.  Obtained from `id_sound_rec` at the counting reference by
+/-- **Discrete soundness of the full recursive ID algorithm (on-contract).** [For an intervention
+target set `X`](hyp:X), [an outcome node set `Y`](hyp:Y), and [a SWIG graph `G`](hyp:G), [if the
+full recursive Tian–Shpitser IDENTIFY certificate succeeds for `X`, `Y` on `G`](hyp:h), [then the
+interventional query mapping `X` to `Y` is identifiable within the standard discrete positive
+model class](goal). Obtained from `id_sound_rec` at the counting reference by
 collapsing `DominatedObs · countingRef` to `StandardDiscretePositive`, exactly as
 `id_sound_discrete` is obtained from `id_sound`.  This subsumes
 `id_sound_discrete` (via `idSucceeds_toRec`). -/

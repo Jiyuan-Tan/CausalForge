@@ -34,10 +34,9 @@ namespace PO
 
 open MeasureTheory ProbabilityTheory
 
-/-- A binary instrumental-variables subsystem records an instrument, treatment,
-and outcome inside a potential-outcome system.
-
-IV subsystem over a PO system -- def:po-iv-system. -/
+/-- A binary instrumental-variables subsystem (`def:po-iv-system`) records, within an ambient
+potential-outcome system, [an instrument](hyp:Z), [a treatment](hyp:D), and [an
+outcome](hyp:Y), where [the three nodes are required to be pairwise distinct](hyp:hZD,hDY,hZY). -/
 structure POIVSystem (P : POSystem) where
   Z : P.V
   D : P.V
@@ -157,7 +156,13 @@ noncomputable def cfBundle : POCFBundle P :=
   POCFBundle.cons (S.yUnderD false) <|
   POCFBundle.nil P
 
-/-- Classical IV assumptions -- def:po-iv-assumptions.
+/-- **Classical binary-instrument IV assumptions** (`def:po-iv-assumptions`). Bundles
+[consistency (SUTVA): the observed treatment and outcome equal the realized potential treatment
+and outcome](hyp:consistency), [instrument exogeneity: the instrument is independent of the full
+counterfactual bundle of potential treatments and outcomes](hyp:instrumentIndep),
+[monotonicity (no defiers): turning the instrument on never moves a unit out of
+treatment](hyp:monotonicity), and [relevance: the complier event has positive
+probability](hyp:relevance).
 
 Exclusion is encoded by the `Y(d)` potential-outcome interface: outcomes
 have no `z` argument, so the instrument cannot affect `Y` except through `D`.

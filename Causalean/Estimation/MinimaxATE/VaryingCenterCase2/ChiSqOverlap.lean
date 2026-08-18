@@ -99,8 +99,10 @@ theorem obsReal_pert2_eq (lam : Fin K → Bool) (x : Fin K × Bool) (d y : Bool)
     simp only [mPert2, gPert2, if_true]
     rw [mul_assoc]; refine congrArg _ ?_; field_simp
 
-/-- The single-observation overlap equals one plus the sum of propensity-dominant per-pair
-coefficients times the paired sign agreements. -/
+/-- [For any two Rademacher sign vectors `lam` and `lam'` indexing perturbed
+data-generating processes](hyp:lam,lam'), [the single-observation χ² overlap between them
+equals one plus the sum over pairs `j` of the propensity-dominant coefficient `ΓV2 j / K`
+times the sign agreement between `lam` and `lam'` at pair `j`](goal). -/
 theorem chiSqOverlap_eq2 [NeZero K] (lam lam' : Fin K → Bool) :
     P.chiSqOverlapV2 lam lam'
       = 1 + ∑ j, (P.ΓV2 j / (K : ℝ)) * (signOf (lam j) * signOf (lam' j)) := by

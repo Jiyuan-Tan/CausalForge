@@ -74,7 +74,7 @@ instance (G₁ G₂ : DAG V) : Decidable (SameSkeleton G₁ G₂) := by
 instance (G₁ G₂ : DAG V) : Decidable (SameImmoralities G₁ G₂) := by
   unfold SameImmoralities; infer_instance
 
-/-- Markov equivalence is reflexive. -/
+/-- For [any DAG `G`](hyp:G), [`G` is Markov equivalent to itself](goal). -/
 @[refl] theorem MarkovEquiv.refl (G : DAG V) : MarkovEquiv G G :=
   fun _ _ _ => Iff.rfl
 

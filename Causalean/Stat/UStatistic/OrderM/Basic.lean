@@ -119,7 +119,10 @@ noncomputable def uDegenOrder {m : ℕ} [NeZero m] (h : (Fin m → X) → ℝ)
     (P : Measure X) : (Fin m → X) → ℝ :=
   fun z => h z - uMeanOrder h P - ∑ j : Fin m, uProjOrderAt j h P (z j)
 
-/-- Pointwise first-order Hoeffding decomposition for the residual kernel. -/
+/-- For [an order-`m` kernel `h`](hyp:m,h), [population law `P`](hyp:P), and [an `m`-tuple of
+points `z`](hyp:z), [the kernel value decomposes as the population mean plus the sum of the `m`
+coordinatewise first Hoeffding projections plus the degenerate higher-order residual kernel
+evaluated at `z`](goal). -/
 theorem hoeffding_decomp_order {m : ℕ} [NeZero m] (h : (Fin m → X) → ℝ)
     (P : Measure X) (z : Fin m → X) :
     h z = uMeanOrder h P + (∑ j : Fin m, uProjOrderAt j h P (z j)) +

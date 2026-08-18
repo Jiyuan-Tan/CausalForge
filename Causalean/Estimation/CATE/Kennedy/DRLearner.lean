@@ -90,8 +90,9 @@ noncomputable def drOracleRiskScale
     (x : γ) (n : ℕ) : ℝ :=
   op.oracleRiskScale (fun z => phi₀ S z) S.τ_val x n
 
-/-- Sanity unfolding: `drOracleEstimator` is the abstract `oracleEstimator`
-of `op` applied to the true DR pseudo-outcome `φ_0`. -/
+/-- For [a CATE estimation system](hyp:S) and [a second-stage operator](hyp:op), [the oracle
+DR-learner estimator built from S and op equals the abstract oracle estimator of op applied
+to the true pseudo-outcome `φ_0`](goal). -/
 lemma drOracleEstimator_eq_oracleEstimator
     (S : CATEEstimationSystem P γ)
     (op : SecondStageOperator P.Ω P.μ γ) :

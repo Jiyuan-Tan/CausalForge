@@ -75,13 +75,14 @@ noncomputable def centeredNormalizedField (s : ℝ) : NetworkDependence V Ω μ 
           ((measurable_pi_apply k).sub hc).div_const s
     exact h.comp hφ hψ
 
-/-- Defining unfolding of the standardized summand: the `X` field of `centeredNormalizedField`
-evaluated at unit `i` and sample `ω` is `(Yᵢ ω − E[Yᵢ]) / s`. -/
+/-- [The standardized summand for unit `i` at sample point `ω` is the centered outcome
+`Yᵢ ω − E[Yᵢ]` divided by the normalizing constant `s`](goal). -/
 @[simp] theorem centeredNormalizedField_X (s : ℝ) (i : V) (ω : Ω) :
     (centeredNormalizedField Y adj hrefl hsymm hmeasY hindepY s).X i ω
       = (Y i ω - ∫ x, Y i x ∂μ) / s := rfl
 
-/-- The network relation of `centeredNormalizedField` is the supplied outcome network `adj`. -/
+/-- [The interference network underlying the standardized field is exactly the supplied network
+`adj`](goal). -/
 @[simp] theorem centeredNormalizedField_adj (s : ℝ) :
     (centeredNormalizedField Y adj hrefl hsymm hmeasY hindepY s).adj = adj := rfl
 

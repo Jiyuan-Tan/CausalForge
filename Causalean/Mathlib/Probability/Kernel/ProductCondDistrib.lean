@@ -28,9 +28,10 @@ open scoped ProbabilityTheory
 
 variable {α β γ : Type*} [MeasurableSpace α] [MeasurableSpace β] [MeasurableSpace γ]
 
-/-- For `Measure.compProd ρ (ProbabilityTheory.Kernel.prod κ η)`, the conditional
-distribution of the first product-kernel coordinate, given the base coordinate, is `κ`
-for `ρ`-almost every base point. -/
+/-- [For the joint law formed by combining a finite base measure `ρ` with the product of
+two Markov kernels `κ` and `η`](hyp:ρ,κ,η), [the conditional distribution of the first
+product-kernel coordinate given the base coordinate equals `κ`, for `ρ`-almost every base
+point](goal). -/
 theorem condDistrib_fst_of_compProd_prod
     [StandardBorelSpace β] [Nonempty β]
     {ρ : Measure α} [IsFiniteMeasure ρ]
@@ -70,9 +71,10 @@ theorem condDistrib_fst_of_compProd_prod
         simpa [hbase] using hjoint)
   rwa [hbase] at h
 
-/-- For `Measure.compProd ρ (ProbabilityTheory.Kernel.prod κ η)`, the conditional
-distribution of the second product-kernel coordinate, given the base coordinate, is `η`
-for `ρ`-almost every base point. -/
+/-- [For the joint law formed by combining a finite base measure `ρ` with the product of
+two Markov kernels `κ` and `η`](hyp:ρ,κ,η), [the conditional distribution of the second
+product-kernel coordinate given the base coordinate equals `η`, for `ρ`-almost every base
+point](goal). -/
 theorem condDistrib_snd_of_compProd_prod
     [StandardBorelSpace γ] [Nonempty γ]
     {ρ : Measure α} [IsFiniteMeasure ρ]

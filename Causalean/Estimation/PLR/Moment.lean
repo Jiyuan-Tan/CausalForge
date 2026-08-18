@@ -60,8 +60,8 @@ treatment residual. -/
 def plrMomentB (η : PLRNuisance γ) (z : γ × ℝ × ℝ) : ℝ :=
   (z.2.2 - η.lFn z.1) * plrResidual η z
 
-/-- The Robinson score decomposes into a coefficient times the target parameter
-plus a constant term. -/
+/-- **Robinson score decomposition.** [The partialling-out score decomposes into its
+linear coefficient in `θ` times the target parameter `θ` plus a constant term](goal). -/
 lemma plrMoment_decomp (η : PLRNuisance γ) (z : γ × ℝ × ℝ) (θ : ℝ) :
     plrMomentFunctional η z θ = plrMomentA η z * θ + plrMomentB η z := by
   simp only [plrMomentFunctional, plrMomentA, plrMomentB]

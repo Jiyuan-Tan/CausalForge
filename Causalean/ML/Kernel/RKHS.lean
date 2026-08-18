@@ -15,8 +15,10 @@ the interface consumed by the representer theorem and RKHS Rademacher bounds.
 
 namespace Causalean.ML
 
-/-- The reproducing property bundling a candidate RKHS structure: evaluation of
-`f` at `x` equals the inner product of `f` with the representer `kₓ`. -/
+/-- The candidate reproducing-kernel Hilbert space structure on a real inner-product space `H` of
+functions on `X`, given an evaluation map and a representer map, satisfies the reproducing
+property: [evaluating any function of `H` at a point equals its inner product with the
+representer of that point](hyp:reproducing). -/
 structure IsRKHS (X H : Type*) [NormedAddCommGroup H] [InnerProductSpace ℝ H]
     (feval : H → X → ℝ) (representer : X → H) : Prop where
   /-- The reproducing identity `f x = ⟪f, kₓ⟫`. -/

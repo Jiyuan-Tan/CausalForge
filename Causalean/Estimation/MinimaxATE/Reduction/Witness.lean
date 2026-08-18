@@ -57,12 +57,15 @@ open scoped ENNReal BigOperators
 
 variable {C : Type*} [Fintype C] [Nonempty C] [MeasurableSpace C]
 
-/-- **Two-point (Le Cam) witness** for the structure-agnostic ATE lower bound.
-
-`s` is the separation half-scale, `c` the total-variation budget, `Q j` the
-`n`-sample data law of hypothesis `j : Bool`, and `θ j` its true ATE.  The
-`dominated` field is the realizability obligation linking the two laws back to the
-class: it is discharged by a mixture-of-in-class-DGPs construction. -/
+/-- **Two-point (Le Cam) witness** for the structure-agnostic ATE lower bound: it bundles two
+`n`-sample data laws, indexed by a hypothesis label `j : Bool`, together with the data needed
+to run Le Cam's two-point method. For each hypothesis, [`Q j` is a probability
+measure](hyp:Q,prob) with [true average treatment effect `θ j`](hyp:θ); the two hypotheses'
+ATE values are [separated by at least twice the half-scale `s`](hyp:sep), while
+[the total-variation distance between the two laws is bounded by `c`](hyp:tvBound), and
+[for every estimator the probability under `Q j` of missing `θ j` by `s` is dominated by the
+in-class minimax miss probability](hyp:dominated) — the realizability condition that a
+mixture-of-in-class-DGPs construction discharges. -/
 structure TwoPointWitness (C : Type*) [Fintype C] [Nonempty C] [MeasurableSpace C]
     (n : ℕ) (mhat : C → ℝ) (ghat : Bool → C → ℝ) (εg εm : ℝ) where
   /-- Separation half-scale (a concrete witness achieves `s ≍ √εg · √εm`). -/

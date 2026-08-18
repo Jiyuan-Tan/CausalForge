@@ -138,7 +138,9 @@ def bdTopo : BDNode → ℕ
   | bdD  => 4
   | bdY  => 5
 
-/-- Every edge in the backdoor graph points from an earlier to a later node in the chosen topological order. -/
+/-- [Every edge of the backdoor-example graph connects a node with a strictly smaller assigned
+order label to one with a strictly larger label — the chosen ordering is a valid topological order
+for the graph](goal). -/
 theorem bdTopo_lt : ∀ u v, bdEdge u v → bdTopo u < bdTopo v := by
   intro u v h; cases u <;> cases v <;> simp_all [bdEdge, bdTopo]
 

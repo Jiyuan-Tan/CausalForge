@@ -36,7 +36,7 @@ the raw prediction score. -/
 noncomputable def logisticScoreLoss (y : Bool) (t : ℝ) : ℝ :=
   softplus t - bool01 y * t
 
-/-- A true Boolean label is encoded as one. -/
+/-- [A true Boolean label is encoded as the real number one](goal). -/
 @[simp] lemma bool01_true : bool01 true = 1 := rfl
 
 /-- A false Boolean label is encoded as zero. -/

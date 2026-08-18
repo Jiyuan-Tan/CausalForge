@@ -57,7 +57,8 @@ def BinaryHistory (p : ℕ)
     Fin (p + 1) → Fin 2 :=
   History 0 p D i t
 
-/-- Lag `0` of the history is the contemporaneous treatment. -/
+/-- [Lag `0` of the finite-memory treatment history equals the unit's
+contemporaneous treatment value](goal). -/
 @[simp] lemma History_zero (a0 : A) (p : ℕ)
     (D : TreatmentPath I (Fin T₀) A) (i : I) (t : Fin T₀) :
     History a0 p D i t 0 = D i t := by

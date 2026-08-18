@@ -83,9 +83,9 @@ end TreatedEstimationSystem
 We package nuisance pairs `(μ₀_fn, e_fn)` together with their measurability as
 `TreatedNuisanceVec`, with vector-space operations defined componentwise. -/
 
-/-- Pair of value-space nuisance functions `(μ₀_fn, e_fn)` together with
-measurability witnesses.  Used as the abstract nuisance space `H` for the
-ATT AIPW moment functional. -/
+/-- **A pair of value-space ATT nuisance functions**, used as the abstract nuisance space
+for the ATT AIPW moment functional: [the control-arm outcome regression](hyp:μ₀_fn) and [a
+propensity score](hyp:e_fn), together with [their measurability](hyp:μ₀_meas,e_meas). -/
 structure TreatedNuisanceVec (γ : Type*) [MeasurableSpace γ] where
   μ₀_fn : γ → ℝ
   e_fn  : γ → ℝ

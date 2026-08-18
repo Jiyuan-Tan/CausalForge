@@ -93,13 +93,13 @@ section FoldBJointLaw
 variable {Ω : Type*} [MeasurableSpace Ω] {μ : MeasureTheory.Measure Ω}
          {X : Type*} [MeasurableSpace X] {P : MeasureTheory.Measure X}
 
-/-- **Fold-B joint-law identification (public alias).**
+/-- **Fold-B joint-law identification (public alias).** [For an IID sample `S` split via
+`split`, at any fold size `n`](hyp:S,split,n), [the joint distribution of the fold-B
+subsample, mapped from `μ` via `ω ↦ (i ↦ S.Z i ω)` indexed by `i ∈ split.foldB n`, equals
+the product measure `Measure.pi (fun _ ↦ P)`](goal).
 
-The joint distribution of the fold-B subsample
-`ω ↦ (i ↦ S.Z i ω)` (indexed by `i ∈ split.foldB n`) under `μ` equals the
-product `Measure.pi (fun _ ↦ P)`.  This is the bridge consumed by the
-McDiarmid + symmetrization chain to transport its `μⁿ`-on-`Fin n`
-conclusions to the actual fold-B sample. -/
+This is the bridge consumed by the McDiarmid + symmetrization chain to transport its
+`μⁿ`-on-`Fin n` conclusions to the actual fold-B sample. -/
 lemma foldB_pi_law [IsProbabilityMeasure μ] [IsProbabilityMeasure P]
     (S : IIDSample Ω X μ P) (split : OneShotSplit S) (n : ℕ) :
     μ.map (fun ω (i : split.foldB n) => S.Z i ω) =

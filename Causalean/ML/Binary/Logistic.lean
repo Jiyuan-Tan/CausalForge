@@ -75,7 +75,8 @@ theorem convexOn_logisticScoreLoss (y : Bool) :
   simp only [logisticScoreLoss, sub_eq_add_neg, ← neg_mul]
   exact convexOn_softplus.add hlin
 
-/-- The empirical logistic risk is convex in the coefficient. -/
+/-- [For any finite sample of feature–label pairs `Z`](hyp:Z), [the empirical logistic
+risk, as a function of the coefficient, is convex](goal). -/
 theorem convexOn_logisticEmpRisk (Z : ι → E × Bool) :
     ConvexOn ℝ Set.univ (logisticEmpRisk Z) := by
   classical

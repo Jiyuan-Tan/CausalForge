@@ -58,8 +58,10 @@ def upper {K : ℕ} (j : Adj K) : Fin K :=
 
 end Adj
 
-/-- Finite ordered first-stage index.  The support masses `rho` sum to one,
-and `dhat` is ordered weakly increasingly in the displayed support order. -/
+/-- A finite ordered first-stage index for the saturated multiple-instrument characterization:
+[instrument support masses](hyp:rho) that [are nonnegative and sum to
+one](hyp:rho_nonneg,rho_sum_one), together with [a first-stage index](hyp:dhat) that [is weakly
+increasing in the displayed support order](hyp:dhat_mono). -/
 structure FiniteIndex (K : ℕ) where
   /-- Instrument support mass `ρ_k`. -/
   rho : Fin K → ℝ
@@ -161,8 +163,9 @@ theorem centered_weight_sum_zero :
     _ = 0 := by
       simp [I.rho_sum_one]
 
-/-- MTW tail coefficients are nonnegative when the support is ordered by the
-first-stage index (`def:po-estimand-mtw-tail-coefficients`). -/
+/-- For [an adjacent threshold `j`](hyp:j) with the support ordered by the
+first-stage index, [the MTW tail coefficient `B_j` is nonnegative](goal)
+(`def:po-estimand-mtw-tail-coefficients`). -/
 theorem tailCoeff_nonneg (j : Adj K) :
     0 ≤ I.tailCoeff j := by
   classical
@@ -263,9 +266,10 @@ theorem tail_sum_interchange (x : Adj K → ℝ) :
           I.rho k * I.centeredIndex k) * x j := by
       simp [Finset.sum_filter, mul_comm]
 
-/-- Covariance identity: the MTW tail coefficient `B_j` equals the
-finite-support covariance between the first-stage index `dhat(Z)` and the
-upper-tail indicator `1_{Z ∈ T_j}` under the instrument distribution `ρ`.
+/-- **Covariance identity.** For [an adjacent threshold `j`](hyp:j), [the MTW tail
+coefficient `B_j` equals the finite-support covariance between the first-stage
+index `dhat(Z)` and the upper-tail indicator `1_{Z ∈ T_j}` under the instrument
+distribution `ρ`](goal).
 
 Formally, with `ind_k := if k ∈ upperTail j then (1 : ℝ) else 0` and
 `mean_ind := Σ_l ρ_l * ind_l`,

@@ -362,7 +362,11 @@ theorem whenToTreat_wald (As : S.Assumptions) (d : Fin 2 → Bool)
   unfold whenToTreatLATE LATE
   rw [hNum, hDen]
 
-/-- **Mixture dynamic LATE Wald identity** (unconditional).
+/-- **Mixture dynamic LATE Wald identity** (unconditional). Under [the dynamic
+LATE identifying assumptions](hyp:As), for [an encouragement vector `z`](hyp:z),
+[the mixture dynamic local average treatment effect `mixtureLATE z` equals the
+Wald ratio of the observable mean contrast `obsMean z − obsMean(0,0)` to the
+observable noncompliance probability `1 − obsProb(z, 0,0)`](goal).
 
 For every `z` (totalized at `z = 0`),
 `β_z = (obsMean(z) - obsMean(0)) / (1 - obsProb(z, 0))`.
@@ -517,7 +521,12 @@ theorem cWhenToTreat_wald (As : S.Assumptions) (d : Fin 2 → Bool)
   filter_upwards [hNum, hDen] with ω hN hD
   rw [hN, hD]
 
-/-- **Mixture dynamic LATE Wald identity** (heterogeneous in `S₀`). -/
+/-- **Mixture dynamic LATE Wald identity** (heterogeneous in `S₀`). Under [the
+dynamic LATE identifying assumptions](hyp:As), for [an encouragement vector
+`z`](hyp:z), [the baseline-conditional mixture dynamic LATE `cMixtureLATE z` agrees
+almost surely with the ratio of the baseline-conditional mean contrast
+`cObsMean z − cObsMean(0,0)` to the baseline-conditional noncompliance probability
+`1 − cObsProb(z, 0,0)`](goal). -/
 theorem cMixtureLATE_wald (As : S.Assumptions) (z : Fin 2 → Bool) :
     (S.cMixtureLATE z =ᵐ[P.μ]
       fun ω => (S.cObsMean z ω - S.cObsMean ![false, false] ω) /

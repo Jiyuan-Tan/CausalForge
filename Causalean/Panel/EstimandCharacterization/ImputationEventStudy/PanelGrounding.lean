@@ -118,9 +118,11 @@ def ofStaggeredTWFE (α : I → ℝ) (lam : Fin T → ℝ)
   beta0 := Sum.elim α lam
   tau := tau
 
-/-- The grounded panel satisfies the BJS untreated-outcome model: both treated
-and untreated cell means equal the two-way FE model `α_i + λ_t`, and untreated
-cells have no anticipation. -/
+/-- **Untreated-outcome model holds by construction.** For [unit fixed effects `α`](hyp:α),
+[period fixed effects `lam`](hyp:lam), and [target weights and treated-cell effects `a`,
+`tau`](hyp:a,tau), [the staggered-adoption grounded panel `ofStaggeredTWFE g α lam a tau`
+satisfies the BJS untreated-outcome model: treated and untreated cell means both equal the
+two-way fixed-effect model `α_i + λ_t`, and untreated cells exhibit no anticipation](goal). -/
 theorem ofStaggeredTWFE_untreatedModel (α : I → ℝ) (lam : Fin T → ℝ)
     (a tau : TreatedCell g → ℝ) :
     (ofStaggeredTWFE g α lam a tau).UntreatedOutcomeModel := by

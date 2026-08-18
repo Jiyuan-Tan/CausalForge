@@ -36,7 +36,17 @@ namespace Causalean.Estimation.OrthogonalMoments.AutoDebias
 
 open MeasureTheory
 
-/-- **Linear regression-functional system.**
+/-- **Linear regression-functional system.** Bundles an observation space with an induced
+regression-argument space, a regression class (a real vector space of nuisance parameters)
+paired with an evaluation map into the argument space, an observation-level functional linear
+in the nuisance argument, and a regression truth; the evaluation map is required
+[additive](hyp:γ_target_add) and [homogeneous](hyp:γ_target_smul) in the nuisance argument, the
+observation-level functional is likewise [additive](hyp:m_lin_addLeft) and
+[homogeneous](hyp:m_lin_smulLeft) in that argument and [measurable in the observation for every
+fixed nuisance value](hyp:m_lin_meas), [the regression-argument law is the pushforward of the
+observation law under the projection](hyp:pushforward), and [the regression residual at the
+truth, weighted by any measurable integrable function of the regression argument, integrates
+to zero](hyp:regression_resid_orthog).
 
 A bundle packaging:
 
@@ -133,11 +143,11 @@ theorem linRieszScore_meanZero (S : LinRegFnSys)
   exact Causalean.Estimation.OrthogonalMoments.rieszScore_meanZero rep S.g₀ S.proj_X S.Y_obs
     (S.regression_resid_orthog rep.α₀ rep.α₀_meas h_α₀_resid_int)
 
-/-- **Directional zero in the regression direction.**
-
-The Gateaux derivative of the population debiased moment in the
-`g`-direction at the truth equals zero — equivalently, the representer
-identity for the perturbation `ν_g`. -/
+/-- **Directional zero in the regression direction.** For [a linear regression-functional
+system](hyp:S) with [Riesz representer](hyp:rep) and [any perturbation `ν_g` of the
+regression nuisance](hyp:ν_g), [the Gateaux derivative of the population debiased moment
+in the `g`-direction at the truth vanishes — equivalently, this is the representer identity
+for the perturbation `ν_g`](goal). -/
 theorem linRieszScore_directional_g_zero (S : LinRegFnSys)
     (rep : Causalean.Estimation.OrthogonalMoments.RieszRepresentation
             S.H_γ S.γ_target (L_of_m S) S.P_X)

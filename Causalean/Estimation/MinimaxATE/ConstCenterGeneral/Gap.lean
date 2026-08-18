@@ -96,9 +96,12 @@ private theorem perPairG (lam : Fin K → Bool) (j : Fin K) :
     · field_simp
       ring
 
-/-- **Exact ATE of the perturbed construction.**  Summing the per-pair contributions
-(each `2g₁(g₁²+αβ)/(g₁²−β²) − 2g₀`, independent of `λ`) over the `K` pairs and dividing
-by `card (Fin K × Bool) = 2K` gives `ate gλ = (g₁ − g₀) + g₁β(α+β)/(g₁²−β²)`. -/
+/-- **Exact ATE of the perturbed construction.** [For any Rademacher sign vector `lam`](hyp:lam),
+[the average treatment effect of the perturbed outcome regression equals
+`(g₁ − g₀) + g₁β(α+β)/(g₁² − β²)`, independent of `lam`](goal).
+
+Summing the per-pair contributions (each `2g₁(g₁²+αβ)/(g₁²−β²) − 2g₀`, independent of `λ`)
+over the `K` pairs and dividing by `card (Fin K × Bool) = 2K` gives this value. -/
 theorem ate_gPertG [NeZero K] (lam : Fin K → Bool) :
     ate (P.gPertG lam) = (P.g₁ - P.g₀) + P.g₁ * P.β * (P.α + P.β) / (P.g₁ ^ 2 - P.β ^ 2) := by
   have hK : (K : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr (NeZero.ne K)
@@ -118,7 +121,8 @@ theorem ate_gPertG [NeZero K] (lam : Fin K → Bool) :
   field_simp
   ring
 
-/-- The ATE gap between the construction and the null estimate. -/
+/-- [For any Rademacher sign vector `lam`](hyp:lam), [the gap between the perturbed
+construction's ATE and the null estimate's ATE equals `g₁β(α+β)/(g₁² − β²)`](goal). -/
 theorem ate_gapG [NeZero K] (lam : Fin K → Bool) :
     ate (P.gPertG lam) - ate (P.ghatG (K := K))
       = P.g₁ * P.β * (P.α + P.β) / (P.g₁ ^ 2 - P.β ^ 2) := by

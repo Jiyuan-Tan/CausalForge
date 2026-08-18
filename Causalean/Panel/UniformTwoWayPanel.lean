@@ -44,9 +44,12 @@ open Finset
 
 variable {Unit Time : Type*} [Fintype Unit] [Fintype Time]
 
-/-- Balanced-panel side conditions from the source definition: at least two
-units and at least two periods. The current scalar algebra only needs
-nonzero cardinals, but the stronger source condition is kept explicit. -/
+/-- **Balanced panel.** The side conditions from the source definition that a panel
+counts as balanced: [the unit index type has at least two elements](hyp:unit_card_ge_two)
+and [the time index type has at least two elements](hyp:time_card_ge_two).
+
+The current scalar algebra only needs nonzero cardinals, but the stronger source
+condition is kept explicit. -/
 structure BalancedPanel (Unit Time : Type*) [Fintype Unit] [Fintype Time] where
   unit_card_ge_two : 2 ≤ Fintype.card Unit
   time_card_ge_two : 2 ≤ Fintype.card Time

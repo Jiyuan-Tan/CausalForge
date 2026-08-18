@@ -98,7 +98,9 @@ theorem refines_refl : (e : EdgeType) → e.refines e
   | .linear => rfl
   | .parametric => rfl
 
-/-- Nonparametric is the top of the refinement order: everything refines it. -/
+/-- [Every edge-type functional-form assumption `e`](hyp:e) [refines the
+nonparametric assumption](goal): nonparametric is the weakest assumption in the
+refinement order, so every other assumption is at least as specific as it. -/
 theorem refines_nonparametric (e : EdgeType) : e.refines .nonparametric := by
   cases e <;> simp [refines, refinesBool]
 
@@ -106,7 +108,8 @@ end EdgeType
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- An edge type assignment attaches a functional-assumption label to each directed edge of a graph.
+/-- An edge type assignment attaches [a functional-assumption label to each directed edge of a
+graph](hyp:edgeType).
 
     An edge type assignment for a DAG: a function that assigns an `EdgeType`
     to each directed edge.

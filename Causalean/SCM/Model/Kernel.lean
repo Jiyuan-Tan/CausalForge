@@ -98,8 +98,9 @@ theorem measurable_randomToObserved (M : Causalean.SCM N Ω) :
   exact measurable_pi_apply
     (a := (⟨v.val, Finset.mem_union_left _ v.property⟩ : {i // i ∈ M.randomVars}))
 
-/-- At each fixed assignment, the joint kernel is the pushforward of the latent
-product through the evaluation map.
+/-- For [a structural causal model `M`](hyp:M) and [a fixed-node assignment
+`s`](hyp:s), [the joint kernel evaluated at `s` equals the pushforward of the
+latent-variable product measure through the evaluation map at `s`](goal).
 
     Pointwise form of the joint kernel: at each fixed assignment `s`, the joint kernel
     is the pushforward of `M.latentProduct` along `fun ℓ => M.evalMap s ℓ`.

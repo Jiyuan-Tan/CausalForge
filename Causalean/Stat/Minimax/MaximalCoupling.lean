@@ -355,8 +355,9 @@ noncomputable instance maximalCoupling.instIsProbabilityMeasure
   simpa using h
 
 -- @node: maximalCoupling_eq_mass_ge
-/-- The two coordinates of the maximal coupling agree with probability at
-least one minus total variation. -/
+/-- [For two probability measures `mu` and `nu`](hyp:mu,nu) [on a standard Borel space
+`X`](hyp:X), [the two coordinates of their maximal coupling agree with probability at
+least one minus their total variation distance](goal). -/
 lemma maximalCoupling_eq_mass_ge
     {X : Type*} [MeasurableSpace X] [MeasurableEq X]
     (mu nu : Measure X) [IsProbabilityMeasure mu] [IsProbabilityMeasure nu] :

@@ -34,7 +34,9 @@ It is the set `{θ | Qn θ ≤ c}`, the sample analogue of the identified set re
 by a cutoff `c ≥ 0`. -/
 def levelSet (Qn : Θ → ℝ) (c : ℝ) : Set Θ := {θ | Qn θ ≤ c}
 
-/-- Membership in the identified set is the same as having zero criterion value. -/
+/-- For [a criterion function `Q`](hyp:Q) and [a candidate parameter `θ`](hyp:θ),
+[`θ` belongs to the identified set of `Q` if and only if `Q` vanishes at
+`θ`](goal). -/
 @[simp] theorem mem_identifiedSet {Q : Θ → ℝ} {θ : Θ} :
     θ ∈ identifiedSet Q ↔ Q θ = 0 := Iff.rfl
 

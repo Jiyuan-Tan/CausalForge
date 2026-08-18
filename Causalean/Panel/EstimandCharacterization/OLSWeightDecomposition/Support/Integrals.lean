@@ -159,8 +159,10 @@ theorem integral_mul_saturated_eq_zero_of_cell {Ω 𝒢 : Type*}
   exact CellBridge.integral_mul_indicatorSpan_eq_zero_of_cell μ V G G_meas
     V_memLp c hcell
 
-/-- Integrate an integrable function by summing over the finite cells
-`{G = g}`. -/
+/-- For [an ambient probability space and finite covariate space](hyp:Ω,𝒢), [a measure
+`μ`](hyp:μ), [a measurable covariate map `G`](hyp:G,G_meas), and [an integrable function
+`F`](hyp:F,F_int), [the integral of `F` against `μ` equals the sum, over covariate cells `g`, of
+the integral of `F` restricted to the cell `{G = g}`](goal). -/
 theorem integral_eq_sum_cell {Ω 𝒢 : Type*} [MeasurableSpace Ω]
     [Fintype 𝒢] [MeasurableSpace 𝒢]
     [MeasurableSingletonClass 𝒢]

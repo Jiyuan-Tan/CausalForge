@@ -126,7 +126,10 @@ lemma absolutelyContinuous_jointRef_of_faithful [∀ n, MeasurableSingletonClass
   exact absolutelyContinuous_of_singleton_ne_zero μ (jointRef ref I)
     (jointRef_singleton_ne_zero ref href I)
 
-/-- Every fibre Radon-Nikodym derivative selector is almost-everywhere measurable on a finite measurable-singleton product. -/
+/-- [For finite index types `α` and `β`](hyp:α,β), [a joint measure `μ` on `α × β`](hyp:μ), [a
+measure `ρ` on `β`](hyp:ρ), and [a Markov kernel `κ` from `α` to `β`](hyp:κ), [the fibre
+Radon-Nikodym derivative selector `(κ p.1).rnDeriv ρ p.2` is almost-everywhere measurable with
+respect to `μ`](goal). -/
 lemma aemeasurable_fiber_rnDeriv_of_finite
     {α β : Type*} [MeasurableSpace α] [MeasurableSpace β]
     [Finite α] [Finite β] [MeasurableSingletonClass α] [MeasurableSingletonClass β]

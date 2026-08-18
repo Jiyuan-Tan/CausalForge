@@ -60,9 +60,10 @@ instance instIsProbabilityMeasureGaussianMeasure (m v : ℝ) :
 
 /-! ## Asymptotic linearity -/
 
-/-- An estimator is asymptotically linear when its scaled estimation error
-equals the normalized empirical average of a mean-zero, square-integrable
-influence function plus a term that is negligible in probability.
+/-- An estimator is asymptotically linear when its scaled estimation error equals the
+normalized empirical average of an influence function that is [mean zero](hyp:mean_zero)
+and [square-integrable](hyp:finite_var) under the population law, up to
+[a term that is negligible in probability](hyp:remainder).
 
 The finite index set attached to each sample size chooses which observations
 enter the empirical average:

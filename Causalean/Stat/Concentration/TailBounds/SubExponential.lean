@@ -45,7 +45,8 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {X : Ω → �
 
 /-- A random variable `X` has a sub-exponential moment-generating function with
 parameters `(v, b)` with respect to `μ` if, for every `t` with `b · |t| < 1`,
-`exp (t * X)` is `μ`-integrable and `mgf X μ t ≤ exp (v t² / 2)`.
+[`exp (t * X)` is `μ`-integrable](hyp:integrable_exp_mul) and
+[the moment-generating function obeys `mgf X μ t ≤ exp (v t² / 2)`](hyp:mgf_le).
 
 The condition `b · |t| < 1` encodes the validity interval `|t| < 1/b`, with
 `b = 0` (no scale restriction, i.e. sub-Gaussian) imposing the bound for all

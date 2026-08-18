@@ -53,9 +53,11 @@ noncomputable def gram (X : Unit → Time → K → ℝ) : Matrix K K ℝ :=
 noncomputable def numer (X : Unit → Time → K → ℝ) (Y : Unit → Time → ℝ) : K → ℝ :=
   fun k => ∑ i, ∑ t, ddotVec X i t k * ddot Y i t
 
-/-- Vector TWFE problem on a finite balanced panel. The full-rank condition is
-the nonsingularity of the residualized Gram matrix, matching `Q_{\ddot X}`
-invertible in the source. -/
+/-- A K-vector two-way-fixed-effects regression problem on [a finite balanced panel of units and
+time periods](hyp:panel), given [a scalar outcome](hyp:Y) and [a K-vector of
+regressors](hyp:X), where [the residualized Gram matrix of the double-demeaned regressors is
+nonsingular — the vector full-rank condition ensuring the two-way within estimator is well
+defined](hyp:gram_unit). -/
 structure VectorTWFEProblem (Unit Time : Type*) [Fintype Unit] [Fintype Time]
     (K : Type*) [Fintype K] [DecidableEq K] where
   panel : BalancedPanel Unit Time
@@ -135,8 +137,9 @@ theorem vecNormalEq_iff_mulVec (X : Unit → Time → K → ℝ) (Y : Unit → T
 
 namespace VectorTWFEProblem
 
-/-- The closed-form coefficient solves the matrix normal equation: existence of a
-TWFE solution under residualized-Gram nonsingularity. -/
+/-- **Existence of a TWFE solution.** For [a vector two-way-fixed-effects problem, whose
+residualized Gram matrix is nonsingular by assumption](hyp:P), [the closed-form coefficient
+`P.betaTWFE` solves the matrix normal equation defining the TWFE coefficient](goal). -/
 theorem betaTWFE_normalEq (P : VectorTWFEProblem Unit Time K) :
     P.vecTwfeNormalEq P.betaTWFE := by
   rw [vecTwfeNormalEq, vecNormalEq_iff_mulVec]

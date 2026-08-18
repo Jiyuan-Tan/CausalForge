@@ -34,10 +34,19 @@ open Finset
 variable {Cohort Time Covar : Type*}
   [Fintype Cohort] [Fintype Time] [Fintype Covar]
 
-/-- Finite staggered-adoption cell system. `treatedCell g t` is the target
-cohort-time set `q ≤ g ≤ t ≤ T`; `untreatedCell g t` marks observations used
-to fit the untreated-outcome regression. Conditional expectations are encoded
-as primitive finite-cell means. -/
+/-- Finite staggered-adoption cell system: [cohort shares](hyp:cohortShare) and
+[within-cohort covariate weights](hyp:covarWeight) over [treated](hyp:treatedCell) and
+[untreated](hyp:untreatedCell) cohort-time cells, with cell-level means of the
+[untreated](hyp:Y0Mean) and [cohort-specific treated](hyp:YgMean) potential outcomes. It
+requires that [every treated cell's cohort has positive share](hyp:cohortShare_pos_on_treated),
+that [the covariate weights are nonnegative](hyp:covarWeight_nonneg) and [sum to one within
+each cohort](hyp:covarWeight_sum_one), and that [the observed cell mean coincides with the
+treated mean on treated cells](hyp:consistency_treated) and [with the untreated mean on
+untreated cells](hyp:consistency_untreated).
+
+Conditional expectations are encoded as primitive finite-cell means; `treatedCell g t` is
+the target cohort-time set `q ≤ g ≤ t ≤ T`, and `untreatedCell g t` marks observations
+used to fit the untreated-outcome regression. -/
 structure StaggeredATTCells (Cohort Time Covar : Type*)
     [Fintype Cohort] [Fintype Time] [Fintype Covar] where
   cohortShare : Cohort → ℝ
@@ -125,8 +134,15 @@ def UntreatedDesignIdentifies (P : StaggeredATTCells Cohort Time Covar) : Prop :
     (∀ ⦃g : Cohort⦄ ⦃t : Time⦄, P.untreatedCell g t → ∀ c, d g t c = 0) →
     ∀ ⦃g : Cohort⦄ ⦃t : Time⦄, P.treatedCell g t → ∀ c, d g t c = 0
 
-/-- Saturated untreated-outcome regression and its support/identification
-conditions.
+/-- A finite-cell weighted least-squares fit of the untreated-outcome mean for a staggered cell
+design `P`, restricted to the untreated observations. It bundles [a fitted untreated-outcome
+mean](hyp:m0) that [is additive in cohort and time given the covariate cell](hyp:additive),
+[projection weights that are strictly positive on the untreated
+design](hyp:untreatedWeight,untreatedWeight_pos), the requirement that [the fit solves the
+covariate/cell-weighted normal equations against every additive test function, summed over the
+untreated design](hyp:untreatedNormalEq), [full-rank identification of the additive class from
+vanishing on the untreated design alone](hyp:design_identifies), and [a positive cohort share on
+every treated cell](hyp:target_cell_support).
 
 The fitted untreated mean `m0(g,t,c)` is additive in cohort/time conditional on
 covariates. The field `untreatedNormalEq` states the weighted least-squares
@@ -424,10 +440,14 @@ theorem cellIndicator_normalEq_eq_cellResidual
     · intro hg; simp at hg
   rw [hcollapse]
 
-/-- Flexible imputation, POLS, and ETWFE cell estimands. POLS and ETWFE are
-kept as coding-free cell coefficients. Their equality to imputation is derived
-from finite-cell residual normal equations, not stored as direct equality
-fields.
+/-- On top of a staggered-cell design `P` and its saturated untreated-outcome regression `S`,
+this structure packages three families of treated-cell coefficients — [an imputation
+coefficient](hyp:thetaImp), [a pooled-least-squares (POLS) coefficient](hyp:thetaPOLS), and [an
+extended two-way-fixed-effects (ETWFE) coefficient](hyp:thetaETWFE) — together with the
+conditions pinning them down: [on every treated cell the imputation coefficient equals the
+covariate-weighted imputation residual mean](hyp:thetaImp_eq_imputation), and [the POLS and
+ETWFE coefficients each solve the finite-cell covariate-weighted residual normal
+equation](hyp:pols_cell_normalEq,etwfe_cell_normalEq).
 
 `pols_cell_normalEq` and `etwfe_cell_normalEq` carry the per-cell FWL output of
 the saturated regression: the covariate-weighted residual normal equation for

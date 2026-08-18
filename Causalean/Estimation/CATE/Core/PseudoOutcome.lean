@@ -89,7 +89,8 @@ lemma measurable_phi_eta (η : NuisanceVec γ) :
     (((measurable_const.sub hind).div (measurable_const.sub he)).mul
       (hy.sub hμf))).sub measurable_const)
 
-/-- The true DR pseudo-outcome `φ_0` is measurable.
+/-- For [a CATE estimation system](hyp:S), [the true doubly-robust pseudo-outcome `φ_0` is
+measurable as a function of the observed data](goal).
 
 Proof outline: apply `measurable_phi_eta` at `η := S.toBackdoorEstimationSystem.η₀`. -/
 lemma measurable_phi₀ (S : CATEEstimationSystem P γ) :

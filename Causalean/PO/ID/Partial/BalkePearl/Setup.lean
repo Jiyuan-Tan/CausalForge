@@ -33,12 +33,11 @@ namespace PO
 
 open MeasureTheory
 
-/-- Binary-IV system for Balke-Pearl ATE bounds — def:po-iv-balke-pearl-system.
-
-The system consists of a binary instrument `Z`, binary treatment `D`, and binary
-outcome `Y`, each represented as a variable of the ambient potential-outcome
-system. The fields `hZD`, `hZY`, and `hDY` state that these are distinct system
-variables. -/
+/-- **Binary-IV system for Balke–Pearl ATE bounds** (`def:po-iv-balke-pearl-system`). Inside a
+potential-outcome system, this bundles [a binary instrument node `Z`](hyp:Z,hZbool), [a binary
+treatment node `D`](hyp:D,hDbool), and [a binary outcome node `Y`](hyp:Y,hYbool), subject to
+[the instrument, treatment, and outcome being pairwise distinct system
+variables](hyp:hZD,hZY,hDY). -/
 structure POBalkePearlSystem (P : POSystem) where
   Z : P.V
   D : P.V
@@ -121,7 +120,8 @@ def yEvent (y : Bool) : Set P.Ω := S.yVar.event y
 
 /-! ### Measurability -/
 
-/-- The treatment under a fixed instrument value is measurable. -/
+/-- For [a fixed instrument value `z`](hyp:z), [the potential treatment `D(z)` is
+measurable](goal). -/
 lemma measurable_DofZ (z : Bool) : Measurable (S.DofZ z) :=
   S.dVar.measurable_cfUnder S.zVar z
 

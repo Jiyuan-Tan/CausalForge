@@ -73,8 +73,10 @@ def DistMarkovEquiv (Ω : N → Type uΩ) [∀ n, MeasurableSpace (Ω n)]
     (μ : MeasureTheory.Measure M.RandomValues) [MeasureTheory.IsFiniteMeasure μ],
     IsGlobalIMap G₁ M μ ↔ IsGlobalIMap G₂ M μ
 
-/-- **The bridge, restated.** Every structural causal model is a global I-map of its own
-DAG: this is exactly the global Markov property `full_globalMarkov`. -/
+/-- **The bridge, restated.** For [any structural causal model `M`](hyp:M) and [any point `s`
+of its fixed values](hyp:s), [the joint distribution of `M`'s random values under `s` is a
+global I-map of `M`'s own DAG](goal) — this is exactly the global Markov property
+`full_globalMarkov`. -/
 theorem isGlobalIMap_dag_self (M : Causalean.SCM N Ω)
     [StandardBorelSpace M.RandomValues]
     [∀ n, StandardBorelSpace (swigΩ Ω n)] [∀ n, Nonempty (swigΩ Ω n)]
@@ -84,8 +86,10 @@ theorem isGlobalIMap_dag_self (M : Causalean.SCM N Ω)
   intro X Y Z hX hY hZ hdsep
   exact full_globalMarkov M X Y Z hX hY hZ hdsep s
 
-/-- **Easy half.** Graph-level Markov equivalence implies distributional Markov equivalence:
-when two DAGs declare the same d-separations they are I-maps of the same distributions. -/
+/-- **Easy half.** For [two DAGs `G₁`, `G₂` on the same node set](hyp:G₁,G₂), if
+[they are Markov equivalent — they declare exactly the same d-separations](hyp:h), then
+[they are distributionally Markov equivalent: a distribution is a global I-map of one exactly
+when it is a global I-map of the other](goal). -/
 theorem distMarkovEquiv_of_markovEquiv {G₁ G₂ : DAG (SWIGNode N)}
     (h : MarkovEquiv G₁ G₂) : DistMarkovEquiv Ω G₁ G₂ := by
   intro M _ μ _

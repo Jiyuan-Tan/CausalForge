@@ -175,10 +175,10 @@ private theorem obsCondKernel_ae_eq_joint_condDistrib
   rw [hcompY, hcompP] at hmap
   exact hbase.trans hmap
 
-/-- **Mechanism invariance (the heart of soundness).**  The target's observed
-parents `paObs` form an invariant set: in every environment the conditional law
-of the target given its observed parents equals one fixed structural factor, so
-ICP never rejects the parents.
+/-- **Mechanism invariance (the heart of soundness).** For [an environment family](hyp:F)
+and [a target index i₀](hyp:i₀), [the target's observed parents `paObs` form an invariant
+set: in every environment the conditional law of the target given its observed parents
+equals one fixed structural factor, so ICP never rejects the parents](goal).
 
 The proof reads off that factor as the law of the target's mechanism
 `structFun Y` driven by the latent-parent noise: in each environment, by the

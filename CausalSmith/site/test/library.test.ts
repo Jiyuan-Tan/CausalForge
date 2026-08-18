@@ -915,9 +915,15 @@ describe("NL ↔ Lean crosslink gate", () => {
         continue;
       }
       const rows = [...st.rows, ...(st.fields ?? [])].filter(isBinderRow);
-      const declared = new Set(rows.flatMap((r) => r.names.split(/\s+/).filter(Boolean)));
-      for (const n of names) {
-        if (!declared.has(n)) problems.push(`${d.name}: crosslink name '${n}' not in signature`);
+      const declared = new Set(
+        rows.flatMap((r) => (r.dataNames ?? r.names).split(/\s+/).filter(Boolean)),
+      );
+      // Names past a sourceSliceCap truncation cannot be validated — they
+      // render as inert spans, which is harmless (mirrors the lint).
+      if (!d.source.includes("… truncated")) {
+        for (const n of names) {
+          if (!declared.has(n)) problems.push(`${d.name}: crosslink name '${n}' not in signature`);
+        }
       }
       if (d.kind === "theorem") {
         const linked = new Set(names);
@@ -929,6 +935,34 @@ describe("NL ↔ Lean crosslink gate", () => {
         }
         if (!hasGoal) problems.push(`${d.name}: conclusion has no (goal) crosslink`);
       }
+    }
+    expect(problems, problems.join("\n")).toEqual([]);
+  });
+
+  // Wave-2 policy (2026-08-17): every HEADLINE theorem is annotated — at
+  // minimum its conclusion carries a `(goal)` link (full coverage of the
+  // annotation is enforced by the gate above). Exempt only statements the
+  // structurer cannot parse (the card renders flat there, links would be
+  // inert) and index-truncated sources.
+  it("every headline theorem carries crosslink annotations", async () => {
+    const { parseCrosslinks, nlOf } = await import("../src/lib/docmd.js");
+    const { structureDeclSource, findProofStart } = await import("../src/lib/leanStatement.js");
+    const { naturalLanguageDoc, stripLeadingDoc } = await import("../src/lib/library.js");
+    const lib = loadLibrary(libraryRoot());
+    const headline = new Set(
+      Object.values(lib.sidecars).flatMap((s) => s.headline_theorems ?? []),
+    );
+    const problems: string[] = [];
+    for (const d of lib.entries) {
+      if (d.kind !== "theorem" || !headline.has(d.name)) continue;
+      const doc = naturalLanguageDoc(d);
+      if (doc && parseCrosslinks(nlOf(doc) ?? "").some((s) => s.links)) continue;
+      if (!d.source || d.source.includes("… truncated")) continue;
+      let sig = stripLeadingDoc(d.source);
+      const proofStart = findProofStart(sig);
+      if (proofStart >= 0) sig = sig.slice(0, proofStart);
+      if (!structureDeclSource(sig, d.kind)) continue;
+      problems.push(`${d.name} (${d.file}:${d.line}): headline theorem with no crosslinks`);
     }
     expect(problems, problems.join("\n")).toEqual([]);
   });

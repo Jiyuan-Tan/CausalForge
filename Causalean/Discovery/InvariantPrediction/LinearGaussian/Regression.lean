@@ -122,8 +122,8 @@ because under the theorem's hypotheses `PA(Y)` itself always satisfies the null
 noncomputable def identifiedSet : Finset (Fin (p + 1)) :=
   (F.invariantSets).inf id
 
-/-- Membership in the identified set: `k ∈ S(E)` iff `k` lies in *every* `S`
-whose invariance null holds. -/
+/-- For [a predictor index k](hyp:k), [k lies in the identified set `S(E)` exactly when k
+belongs to every predictor subset whose invariance null holds](goal). -/
 theorem mem_identifiedSet {k : Fin (p + 1)} :
     k ∈ F.identifiedSet ↔ ∀ S ∈ F.invariantSets, k ∈ S := by
   classical

@@ -169,7 +169,10 @@ lemma jointSurv_eq (h : IsCoupling π μ ν) (s t : ℝ) :
   rw [hsurv]
   linarith
 
-/-- **Survival gap = cdf gap.** For any coupling `π` of `(μ, ν)`,
+/-- **Survival gap = cdf gap.** [For a coupling `π` of two probability measures `μ` and
+`ν`](hyp:h), [the gap between the joint and product-of-marginals survival functions of `π`
+at `(s, t)`](hyp:s,t) [equals the corresponding gap between the joint and
+product-of-marginals cumulative distribution functions](goal).
 
     `S s t - SX s * SY t = H_π s t - F s * G t`.
 

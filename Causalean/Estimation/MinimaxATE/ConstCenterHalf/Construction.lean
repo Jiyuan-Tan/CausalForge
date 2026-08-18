@@ -129,7 +129,9 @@ theorem denom_pos (hβ : 0 ≤ β) (hαβ : α + 2 * β ≤ 1 / 2) (hα : 0 ≤ 
   · rw [h]; nlinarith
   · rw [h]; nlinarith
 
-/-- The centered null nuisance functions define a valid finite observed-data model. -/
+/-- [The null construction's centered propensity and outcome-regression functions, both
+fixed at one half, define a valid finite observed-data model, i.e. take values in
+`[0,1]`](goal). -/
 theorem validDGP_hat : ValidDGP (C := Fin K × Bool) mhat ghat := by
   refine ⟨fun x => ?_, fun d x => ?_⟩ <;> · simp only [mhat, ghat]; norm_num
 

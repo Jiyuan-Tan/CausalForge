@@ -73,7 +73,8 @@ def fdTopo : FDNode → ℕ
   | fdM => 2
   | fdY => 3
 
-/-- Every frontdoor edge points from an earlier to a later node in the chosen order. -/
+/-- [Every edge of the frontdoor-example graph connects a node with a smaller assigned order label
+to one with a larger label, so the chosen ordering is a valid topological order](goal). -/
 theorem fdTopo_lt : ∀ u v, fdEdge u v → fdTopo u < fdTopo v := by
   intro u v h; cases u <;> cases v <;> simp_all [fdEdge, fdTopo]
 

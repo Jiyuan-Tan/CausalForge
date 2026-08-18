@@ -42,9 +42,12 @@ namespace SteinMethod
 variable {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω} [IsProbabilityMeasure μ]
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 
-/-- A **dependency graph** for the family `X`: `G` is a reflexive symmetric relation, the closed
-neighborhood is `N i = {j | G i j}`, and any two index sets with no edges between them carry
-independent variable tuples. -/
+/-- A **dependency graph** for a family of real-valued random variables `X` on a probability
+space with law `μ`: bundles [an adjacency relation on the index set](hyp:G) that is
+[reflexive](hyp:refl) and [symmetric](hyp:symm), together with [measurability of each variable in
+the family](hyp:meas) and the defining property that [any two index sets joined by no edge carry
+independent variable tuples](hyp:indep). The closed neighborhood of an index is the set of indices
+adjacent to it. -/
 structure DepGraph (X : ι → Ω → ℝ) (μ : Measure Ω) where
   /-- The dependency relation. -/
   G : ι → ι → Prop

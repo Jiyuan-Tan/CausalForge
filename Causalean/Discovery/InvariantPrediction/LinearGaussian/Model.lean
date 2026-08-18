@@ -72,7 +72,16 @@ def predictors (p : ℕ) : Finset (Fin (p + 1)) := Finset.univ.erase 0
 @[simp] theorem mem_predictors {k : Fin (p + 1)} : k ∈ predictors p ↔ k ≠ 0 := by
   simp [predictors]
 
-/-- The **observational linear-Gaussian SEM** (`eq:semmmmm`), the `e = 1` block.
+/-- **The observational linear-Gaussian structural equation model** (`eq:semmmmm`, the
+`e = 1` block): it bundles [a sample space with its σ-algebra](hyp:Ω,mΩ) carrying [a
+probability measure](hyp:P) that [is a genuine probability measure](hyp:hP), together with
+[structural coefficients `β`](hyp:β) obeying `Xⱼ = Σ_{k≠j} βⱼₖ Xₖ + εⱼ` for [measurable
+observed coordinates `X`](hyp:X,hXmeas), an [acyclic graph whose edge `k → j` holds exactly
+when `βⱼₖ ≠ 0`](hyp:dag,hEdge), and [the absence of self-loops in `β`](hyp:hNoSelf). The
+noises `ε` are declared to be [the structural residuals `εⱼ = Xⱼ − Σ_{k≠j} βⱼₖ Xₖ`](hyp:ε,hε),
+[jointly independent](hyp:hindep), and [each centered Gaussian with a positive variance
+`σⱼ²`](hyp:σ,hσpos,hGauss), and [the target's noise is independent of every parent
+coordinate of the target](hyp:hYexo).
 
 It fixes the structural coefficients `β` (with `Xⱼ = Σ_{k≠j} βⱼₖ Xₖ + εⱼ`), the
 acyclic graph whose edge `k → j` is `βⱼₖ ≠ 0`, the noise variances `σ²`, and the
@@ -142,14 +151,21 @@ theorem paY_subset_predictors : M.paY ⊆ predictors p := by
   rintro rfl
   exact M.dag.irrefl (target p) (M.dag.mem_parents.mp hk)
 
-/-- Membership in `PA(Y)` is exactly a nonzero target coefficient. -/
+/-- For [a predictor index k](hyp:k), [k belongs to the target's parent set `PA(Y)` exactly
+when the target's structural coefficient on k is nonzero](goal). -/
 theorem mem_paY {k : Fin (p + 1)} : k ∈ M.paY ↔ M.β (target p) k ≠ 0 := by
   rw [paY, M.dag.mem_parents, M.hEdge]
 
 end ObsSEM
 
-/-- A single **do-intervention environment** for the observational SEM `M`
-(`sec:idfirst`).
+/-- **A single do-intervention environment** for the observational SEM `M` (`sec:idfirst`)
+bundles [an intervention set that never includes the target node](hyp:A,hAtarget), [the
+constant values assigned to each intervened coordinate](hyp:a), and [measurable
+post-intervention coordinates](hyp:X,hXmeas) that [equal their assigned constant, almost
+surely, on the intervened set](hyp:hDoPin), [satisfy the same structural equation as `M` —
+with `M`'s coefficients and noises — on every coordinate left un-intervened](hyp:hDoStruct),
+and for which [the target's noise remains independent of each parent coordinate of the
+target](hyp:hExo).
 
 Faithful do-semantics (modularity / autonomy): the environment is the
 observational SEM with the structural equations of the intervened nodes `A`
@@ -189,8 +205,9 @@ structure Env (M : ObsSEM p) where
   so it is carried as a field; stated **only for parents** of the target. -/
   hExo : ∀ k, M.dag.edge k (target p) → IndepFun (fun ω => M.ε ω (target p)) (fun ω => X ω k) M.P
 
-/-- An **environment family** for the linear-Gaussian ICP problem is an
-observational SEM together with finitely many do-intervention environments.
+/-- **An environment family** for the linear-Gaussian ICP problem bundles [an observational
+linear-Gaussian structural equation model](hyp:obs) together with [a finite index
+set](hyp:ι,hι) of [interventional environments over that model](hyp:env).
 
 By convention one environment (index irrelevant here) is the observational SEM
 itself; the indexed `env i` are the interventional blocks.  The do-intervention
