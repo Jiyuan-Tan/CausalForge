@@ -1,0 +1,42 @@
+# Referee review
+
+**Recommendation:** major_revision
+**Overall score:** 6.6/10 — The verified core is mathematically ambitious and internally supported, but the manuscript needs substantial revision to make its contribution legible, correctly scoped, and consistently aligned with the formal contract.
+
+The paper develops a contour-instrument construction for partially linear models with cumulant-separated treatment noise, giving fixed-code root-n estimation and minimax MSE statements under direct L1 treatment-code stability, plus an upper-bound comparison with finite-order ACE. The verified statements support a real contribution at the intersection of higher-order orthogonality, transform methods, and non-Gaussian identification. As written, however, the exposition is too formal-artifact-driven for an econometrics journal and several prose passages overstate or blur the scope of the statistical comparison, represented-data claim, and local-to-Gaussian material.
+
+## Strengths
+- The main fixed-code contour construction is novel and mathematically specific: transform zeros are converted into observable contour ratios for supplied-code PLM residuals.
+- The paper gives a clear verified fixed-separation result with matching c/n and C/n MSE bounds under stated nonemptiness and treatment-code radius gates.
+- The ACE comparison is mostly honest as an upper-guarantee comparison and cites the imported Jin--Mackey--Syrgkanis result with a theorem-local formalization-scope footnote.
+- The mixture benchmarks help readers see the contour mechanism in explicit one-dimensional cases.
+
+## Findings
+- **[major·prose] abstract** — The sentence "The same fixed-separation rate holds on the aligned Jin--Mackey--Syrgkanis ACE comparison class" is too compressed and reads like a performance comparison with ACE itself. The verified result gives the contour statistic's fixed-code MSE and quantile bounds on the fixed-code JMS ACE class, while the ACE estimator comparison is an upper-guarantee comparison under JMS eligibility.
+  - *Fix:* Rewrite the abstract sentence to state affirmatively that the contour statistic attains the fixed-separation fixed-code MSE and generalized-quantile bounds on the aligned JMS ACE law class, and reserve the ACE-estimator comparison for the next sentence as a comparison of displayed upper guarantees.
+- **[major·prose] Introduction** — The sentence "Fourth, the bounded-outcome Gaussian diagnostic characterizes the comparison class by its implied target and fixed-code risks" is accurate only after a reader knows this is the simultaneous bounded-outcome and nondegenerate Gaussian treatment-noise intersection. Earlier prose risks making this diagnostic sound like a broad Gaussian impossibility or a general Gaussian benchmark result.
+  - *Fix:* Revise the first mention to say that the diagnostic concerns the bounded-outcome Gaussian JMS intersection and records the implied target value and fixed-code risks for that simultaneous set of assumptions.
+- **[major·structure] Main fixed-separation result** — The estimator description and theorem prose place substantial weight on represented-data execution, but the manuscript gives no concrete compiled implementation. The verified statement is conditional on a compiled bounded spectral adapter satisfying the full canonical build-and-compilation specification.
+  - *Fix:* Move implementation-facing claims into a clearly delimited reproducibility subsection and state each one conditionally: a compiled adapter satisfying the displayed build contract realizes the same ordinary Borel statistic on identical canonical full inputs. Avoid language that suggests an available implementation unless one is supplied.
+- **[major·structure] Related work** — The paper positions the contour guarantee against ACE but provides no table or paragraph that cleanly separates three distinct quantities: the contour estimator's upper bound, the published ACE estimator's upper guarantee, and the class-level minimax lower bound over all estimators on the fixed-code ACE class.
+  - *Fix:* Add a short comparison paragraph or revise the existing table to explicitly distinguish estimator-specific upper bounds from class-level minimax lower bounds, and state that the lower bound is not a lower bound on the ACE estimator.
+- **[major·structure] Limitations and future work** — The sentence "The target is a data-driven selector among ordinary DML, finite-order ACE, and global-contour procedures that attains the sharp minimax mean-squared-error rate..." appears inside a remark, but its title and phrasing make the open agenda look close to an asserted object. The verification contract explicitly treats this as descriptive payload with no selector, rate functional, confidence procedure, or matching lower-bound witness.
+  - *Fix:* Retitle or rephrase the remark to make it unmistakably an open question, for example by leading with "An open problem is to characterize whether..." and keeping all sharp-rate, inference, and lower-bound language in question form.
+- **[minor·prose] Setup and assumptions** — The code-radius assumptions `ass:treatment-code-radius`, `ass:outcome-code-radius`, `ass:jms-treatment-code-radius`, and `ass:jms-outcome-code-radius` are stated "for every n", while the class definitions and verified one-index objects use current-index restrictions. This creates unnecessary ambiguity between sequence-wide and fixed-index membership.
+  - *Fix:* State these assumptions as sequence-level conventions only when intended, and add a sentence before the class definitions that the law classes impose the displayed one-index radius at the current class index.
+- **[minor·structure] Introduction** — The sentence "the appendix records proof and deferred-detail information" understates that the appendices contain large parts of the statistical proof, empirical-process bounds, lower-bound path, and certified-construction contract. This makes the main-paper logic harder to follow.
+  - *Fix:* Add a proof-roadmap paragraph before the appendices or at the end of the introduction that identifies which ingredients establish population identification, contour availability, empirical stability, and minimax lower bounds.
+- **[minor·citation] Related work** — The related-work brief mentions Shimizu et al. on non-Gaussian linear causal structure, but the manuscript's related-work section omits it while citing adjacent ICA and structural-econometric sources.
+  - *Fix:* Add a sentence situating Shimizu, Hoyer, Hyvarinen, and Kerminen in the non-Gaussian causal-identification lineage, or explain why the PLM focus makes that reference peripheral.
+- **[minor·prose] global** — Several prose passages use pipeline or formal-artifact vocabulary such as "compiled bounded spectral adapter", "transported fixed records", "canonical build-and-compilation specification", and "represented-output correspondence field" before giving econometric intuition. This will obscure the statistical contribution for the journal audience.
+  - *Fix:* Introduce a short plain-language paragraph explaining that these clauses certify reproducibility of the same Borel statistic under a specified interval-arithmetic implementation, then move low-level naming to the certified-construction appendix.
+- **[nit·prose] appendix** — In the finite contour bank statement, the displayed bookkeeping line uses both `\nu_{\star}` and `u_{\star}` for the same exponent: `\nu_{\star}=...` followed by `a_{\star,\mathbb Q}=...^{u_{\star}}`.
+  - *Fix:* Use `u_{\star}` consistently in the finite contour bank statement.
+- **[nit·structure] Setup and assumptions** — `def:gaussian-class` lacks a descriptive optional title, unlike most surrounding formal environments. This weakens navigation in a long manuscript.
+  - *Fix:* Give the environment a title such as `[Bounded-outcome Gaussian JMS class \(\mathcal P_{\mathrm G,n}^{\mathrm{JMS}}\)]`.
+
+## Questions for authors
+- Do you intend to provide a concrete compiled interval-arithmetic implementation, or should all represented-data material be presented strictly as a conditional reproducibility specification?
+- Can you give a concise econometric example where the direct L1 treatment-code gate is plausibly easier to verify than the ACE Lr treatment and outcome gates?
+- Should the paper target a theorem-heavy econometrics audience, or should some certified-computation material be separated into an online appendix to improve readability?
+
