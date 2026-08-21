@@ -1,0 +1,212 @@
+Put
+\[
+h_P(x):=\sum_{a\in\mathcal A}\omega_a(x)\mu_a(x),
+\qquad
+z_a(x):=|\omega_a(x)|\sigma_a(x),
+\]
+and define
+\[
+\mathcal E_{\varepsilon}:=
+\left\{u\in[\varepsilon,1]^K:\sum_{a\in\mathcal A}u_a=1\right\},
+\qquad
+F_z(u):=\sum_{a\in\mathcal A}\frac{z_a^2}{u_a}.
+\tag{1}
+\]
+The boundary condition \(0<\varepsilon<1/K\) makes \(\mathcal E_{\varepsilon}\) nonempty and compact.  The variance range and bounded weights give
+\(0\leq z_a(x)\leq W\sqrt{v_{\max}}\), and every division below is valid because \(u_a\geq\varepsilon\).
+
+Let \(u^*(z)\) be the lexicographically selected minimizer of \(F_z\) on \(\mathcal E_{\varepsilon}\), and write
+\[
+\Phi(z):=F_z\{u^*(z)\}.
+\]
+If \(z\neq0\), the multiplier equations for the finite-dimensional constrained problem give
+\[
+u_a^*(z)=\max\{\varepsilon,z_a/\lambda\},
+\qquad
+\sum_{a\in\mathcal A}u_a^*(z)=1,
+\tag{2}
+\]
+for a unique normalizing \(\lambda>0\).  Coordinates with \(z_a=0\) equal \(\varepsilon\) whenever another coordinate is positive; if \(z=0\), the stated deterministic tie-break is used.  Formula (2), together with the tie-break at zero, shows directly that \(u^*\) is Borel measurable.  Consequently the pointwise rule \(x\mapsto u^*\{z(x)\}\) is an admissible measurable allocation.  Since every admissible allocation has pointwise objective at least \(\Phi\{z(x)\}\), \(\mathrm{def{:}oracle\text{-}benchmark}\) yields the exact identity
+\[
+V^*(P)=\operatorname{Var}_P\{h_P(X)\}
++E_P\Phi\{z(X)\}.
+\tag{3}
+\]
+
+We next record the deterministic allocation inequality.  The map
+\((z,u)\mapsto\sum_a z_a^2/u_a\) is jointly convex, because each summand is the perspective of the square function.  Partial minimization over the convex set \(\mathcal E_{\varepsilon}\) makes \(\Phi\) convex.  On each active-set piece, direct differentiation of (2) gives
+\[
+\nabla_a\Phi(z)=\frac{2z_a}{u_a^*(z)}.
+\]
+The derivatives agree when an active set changes; at a zero coordinate both one-sided derivatives are zero.  Thus this is also a subgradient at every boundary point.  For \(z,\widetilde z\in\mathbb R_+^K\), put \(\delta=z-\widetilde z\) and \(\widetilde u=u^*(\widetilde z)\).  Expanding the square at the fixed allocation \(\widetilde u\), and then applying the subgradient inequality for \(\Phi\), gives
+\[
+\begin{aligned}
+F_z(\widetilde u)
+&=\Phi(\widetilde z)+\nabla\Phi(\widetilde z)^{\mathsf T}\delta
++\sum_{a\in\mathcal A}\frac{\delta_a^2}{\widetilde u_a},\\
+\Phi(z)&\geq
+\Phi(\widetilde z)+\nabla\Phi(\widetilde z)^{\mathsf T}\delta.
+\end{aligned}
+\]
+It follows that
+\[
+0\leq F_z\{u^*(\widetilde z)\}-F_z\{u^*(z)\}
+\leq\varepsilon^{-1}\|z-\widetilde z\|_2^2.
+\tag{4}
+\]
+This controls changes of the positivity-constrained active set without requiring the optimizer itself to be Lipschitz.
+
+We now construct the predictable learners.  Let
+\[
+\mathcal G_{t-1}:=\sigma(O_1,\ldots,O_{t-1})
+\]
+augmented only by randomization already used before time \(t\), and put
+\(\mathcal G_{t-1}^{+}:=\sigma(\mathcal G_{t-1},X_t)\).  The constructed kernels ignore any additional future baseline covariates that the ambient history convention may place in \(H_0\).  By latent i.i.d. sampling, \(X_t\) is independent of \(\mathcal G_{t-1}\), and conditional on \(\mathcal G_{t-1}^{+}\) the current potential outcomes have their superpopulation conditional law given \(X_t\).
+
+Partition time into geometric blocks
+\[
+I_j:=\{2^j,\ldots,(2^{j+1}-1)\wedge n\},
+\qquad N_j:=2^j.
+\tag{5}
+\]
+Use \(I_0\cup I_1\) as a fixed initialization prefix.  For an evaluation block \(I_j\), \(j\geq2\), use \(I_{j-2}\) to fit the means and the later disjoint block \(I_{j-1}\) to fit the variances.  The completed training-block sizes are within fixed factors of \(N_j\); a truncated final evaluation block causes no change.
+
+For clarity, we give the expected local-polynomial calculation used twice below.  On each boundary-corrected cube of side \(b\), take the rescaled tensor-polynomial basis of degree at least \(\lfloor u\rfloor\).  For arm \(a\), weight its empirical Gram and response contributions by
+\(\mathbf 1\{A_i=a\}/e_{i,a}\), using the recorded predictable propensity.  Conditional randomization makes the conditional expectation of each Gram contribution equal to its full-data counterpart.  Its centered entries are bounded by a constant depending on \(\varepsilon\), while the density lower bound makes every population Gram matrix uniformly nonsingular.
+
+Here is a self-contained concentration step.  If \((\xi_i)\) is a bounded martingale-difference sequence with \(|\xi_i|\leq B\), then expansion of the exponential and the elementary inequality
+\[
+E[e^{\lambda\xi_i}\mid\mathcal G_{i-1}]
+\leq
+\exp\!\left\{
+\frac{\lambda^2E[\xi_i^2\mid\mathcal G_{i-1}]}
+{2(1-|\lambda|B/3)}
+\right\},
+\qquad |\lambda|B<3,
+\]
+follow by using \(q!\geq2\,3^{q-2}\) for \(q\geq2\).  Iterating conditional expectations, applying exponential Markov, and optimizing \(\lambda\) gives
+\[
+\Pr\!\left(\left|\sum_{i=1}^m\xi_i\right|\geq x\right)
+\leq2\exp\!\left\{-\frac{x^2}{2(v+Bx/3)}\right\}
+\tag{6}
+\]
+when the sum of conditional variances is at most \(v\).  Applying (6) to a fixed net of the fixed-dimensional polynomial basis shows that the empirical Gram matrix is singular or has eigenvalue below half its population bound with probability at most \(C\exp(-cmb^d)\).  This concentration is applied only to bounded Gram increments, not to the unbounded Gaussian responses.  On the exceptional event use a fixed bounded fit.  On its complement, Taylor expansion gives integrated squared bias \(Cb^{2u}\), while martingale orthogonality and the conditional second-moment bound of the response give variance \(C/(mb^d)\).  Hence
+\[
+E\|\widehat f-f\|_{L_2(P_X)}^2
+\leq C\{b^{2u}+(mb^d)^{-1}\}.
+\tag{7}
+\]
+
+Apply (7) on \(I_{j-2}\) with \(u=s\) and
+\(b_{\mu,j}\asymp N_j^{-1/(2s+d)}\), and project the fitted regression onto \([-M,M]\).  Projection cannot increase pointwise error because \(|\mu_a|\leq M\).  Thus
+\[
+\sup_{P\in\mathcal P(s,r)}
+E_P\|\widehat\mu_{j,a}-\mu_a\|_{L_2(P_X)}^2
+\leq C N_j^{-2\alpha_d}.
+\tag{8}
+\]
+The fit is frozen before \(I_{j-1}\).
+
+For \(i\in I_{j-1}\) assigned to arm \(a\), form the raw response
+\[
+R_i:=\{Y_i-\widehat\mu_{j,a}(X_i)\}^2.
+\tag{9}
+\]
+Conditional on the mean-training block and on \(X_i=x,A_i=a\),
+\[
+E_P[R_i\mid X_i=x,A_i=a]
+=\sigma_a^2(x)+\{\widehat\mu_{j,a}(x)-\mu_a(x)\}^2.
+\tag{10}
+\]
+No response clipping is used, so (10) is exact.  Gaussianity, the variance range, and the clipping of \(\widehat\mu_{j,a}\) give a uniform conditional second moment for \(R_i\).  Apply the degree-\(\lfloor r\rfloor\) local-polynomial smoother with
+\(b_{\sigma,j}\asymp N_j^{-1/(2r+d)}\), and then project the fitted function onto \([v_{\min},v_{\max}]\); call the result \(\widehat v_{j,a}\).  On the good-Gram event, weighted least squares and Cauchy--Schwarz give the expected conditional stability bound
+\[
+E\|S_{j,a}g\|_{L_2(P_X)}^2
+\leq C\|g\|_{L_2(P_X)}^2
+\]
+for the frozen function used here, with an exponentially small clipped contribution on the bad event.  With
+\(g=(\widehat\mu_{j,a}-\mu_a)^2\), boundedness gives
+\[
+\begin{aligned}
+E_P\|g\|_{L_2(P_X)}^2
+&=E_P|\widehat\mu_{j,a}(X)-\mu_a(X)|^4\\
+&\leq4M^2E_P|\widehat\mu_{j,a}(X)-\mu_a(X)|^2.
+\end{aligned}
+\tag{11}
+\]
+Equations (7)--(11), with projection at the end, imply
+\[
+\sup_{P\in\mathcal P(s,r)}
+E_P\|\widehat v_{j,a}-\sigma_a^2\|_{L_2(P_X)}^2
+\leq C\left(N_j^{-2\beta_d}\vee N_j^{-2\alpha_d}\right).
+\tag{12}
+\]
+
+At the start of \(I_j\), set
+\[
+\widehat z_{j,a}(x):=|\omega_a(x)|\sqrt{\widehat v_{j,a}(x)},
+\qquad
+e_{t,a}(x):=u_a^*(\widehat z_j(x)),
+\quad t\in I_j.
+\tag{13}
+\]
+This is a law-independent measurable function of the current covariate and revealed past observations.  Equations (1)--(2) give normalization and \(e_{t,a}\geq\varepsilon\), so the resulting design \(D_n^{\circ}\) belongs to \(\mathfrak D_{n,\varepsilon}\).  Since fitted and true variances are at least \(v_{\min}>0\),
+\[
+|\widehat z_{j,a}(x)-z_a(x)|^2
+\leq\frac{W^2}{4v_{\min}}
+|\widehat v_{j,a}(x)-\sigma_a^2(x)|^2.
+\tag{14}
+\]
+Using (3)--(4) and then (12)--(14) gives, uniformly for \(t\in I_j\),
+\[
+E_P\{V(e_t;P)-V^*(P)\}
+\leq C\left(N_j^{-2\beta_d}\vee N_j^{-2\alpha_d}\right).
+\tag{15}
+\]
+
+For \(t\in I_j\), define the recorded-propensity score
+\[
+\Psi_t:=
+\sum_{a\in\mathcal A}\omega_a(X_t)\widehat\mu_{j,a}(X_t)
++\sum_{a\in\mathcal A}
+\frac{\mathbf 1\{A_t=a\}}{e_{t,a}(X_t)}
+\omega_a(X_t)\{Y_t-\widehat\mu_{j,a}(X_t)\},
+\qquad
+T_n^{\circ}:=\frac1n\sum_{t=1}^n\Psi_t.
+\tag{16}
+\]
+Use any fixed bounded predictable fits and a fixed positive allocation on the initialization prefix.  Every learned quantity in (16) is \(\mathcal G_{t-1}\)-measurable.  Conditional randomization, consistency, and positivity give
+\[
+E[\Psi_t\mid\mathcal G_{t-1}^{+}]=h_P(X_t).
+\]
+Latent i.i.d. sampling and the deliberate exclusion of future covariates from the constructed kernel then imply
+\[
+E[\Psi_t\mid\mathcal G_{t-1}]=E_Ph_P(X)=\theta(P).
+\tag{17}
+\]
+Thus \(\Psi_t-\theta(P)\) is a square-integrable martingale difference.
+
+Put \(\delta_{j,a}:=\omega_a(\widehat\mu_{j,a}-\mu_a)\).  Conditional on \(\mathcal G_{t-1}^{+}\), the outcome residual in arm \(a\) has mean zero and variance \(\sigma_a^2(X_t)\).  Direct expansion of (16), followed by integration over the fresh \(X_t\), gives the exact identity
+\[
+\begin{aligned}
+E[(\Psi_t-\theta(P))^2\mid\mathcal G_{t-1}]
+&=V(e_t;P)\\
+&\quad+E_P\!\left[
+\sum_{a\in\mathcal A}\frac{\delta_{j,a}(X)^2}{e_{t,a}(X)}
+-\left\{\sum_{a\in\mathcal A}\delta_{j,a}(X)\right\}^2
+\,\middle|\,\mathcal G_{t-1}\right].
+\end{aligned}
+\tag{18}
+\]
+The final square is nonnegative.  Positivity, bounded weights, and (8) bound the remaining term above by \(CN_j^{-2\alpha_d}\).  Martingale orthogonality, (15), and (18) therefore yield
+\[
+E[(T_n^{\circ}-\theta(P))^2]-\frac{V^*(P)}n
+\leq\frac{C}{n^2}\sum_{j\geq2}|I_j|
+\left(N_j^{-2\alpha_d}\vee N_j^{-2\beta_d}\right)
++\frac{C}{n^2}.
+\]
+Because \(|I_j|\leq N_j\), \(N_j=2^j\), and \(0<\alpha_d,\beta_d<1/2\), the geometric sum is at most
+\[
+C\left(n^{1-2\alpha_d}\vee n^{1-2\beta_d}\right).
+\]
+This proves the asserted uniform bound after multiplication by \(n^{-2}\).  Equations (13) and (16) define one common law-independent, data-driven pair, and the argument used expected epoch risks rather than a maximum over epochs, so no logarithmic factor occurs.

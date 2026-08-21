@@ -1,0 +1,6 @@
+/- Unknown-quality regret representation helper namespace for Stage 3. -/
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.Helpers.Compactness
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.Helpers.Spectral
+
+namespace CausalSmith.Experimentation.PrognosticDesignAdmissibility
+end CausalSmith.Experimentation.PrognosticDesignAdmissibility

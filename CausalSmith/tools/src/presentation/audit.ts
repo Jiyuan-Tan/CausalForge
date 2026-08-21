@@ -1,11 +1,12 @@
 import { readFile, writeFile, appendFile, mkdir } from "node:fs/promises";
+
 import { join } from "node:path";
 import type { StageIO } from "./pipeline.js";
-import { presentationPrompt } from "./prompt_io.js";
-import { parseOutline } from "./stage_util.js";
-import { hashEnvBody, type AnchoredEnv, type LintProblem } from "./tex_anchors.js";
+import { PRESENTATION_PROSE_POLICY_VERSION, presentationPrompt, promptContractFiles } from "./prompt_io.js";
+import { notationForArtifact, parseOutline } from "./stage_util.js";
+import { canonicalizeProofTitle, hashEnvBody, normalizeCrefs, type AnchoredEnv, type LintProblem } from "./tex_anchors.js";
 import { fixOverEscapedTex } from "./emit.js";
-import { FormalLayerSource, blocksToTex, hashBody } from "./formal_layer.js";
+import { FormalLayerSource, blocksToTex } from "./formal_layer.js";
 import { bankAcceptedDir } from "./paths.js";
 import { saveGraph, graphPath } from "../graph/store.js";
 import { extractDeclSnippet, extractFullDeclSource } from "./lean_extract.js";
@@ -13,7 +14,10 @@ import { parseLeanDecls } from "../formalization/crosswalk.js";
 import { ensureComponentsForEnvs, assembleComponentText, componentSignature } from "./components.js";
 import { parseNoteBlocks } from "./note_parser.js";
 import { writeJsonAtomic } from "./json_io.js";
-import { repairLatexStringsDeep } from "../discovery/core/latex_serialization.js";
+import { loadJsonCache } from "./cache.js";
+import { loadInformalDerivations } from "./bank.js";
+import { resolveLeanDeclaration, resolvedLeanAbsolutePath } from "./declaration_resolver.js";
+export { resolveLeanDeclaration } from "./declaration_resolver.js";
 import {
   refineStatement,
   parseJsonLoose,
@@ -47,12 +51,66 @@ export function requiresIndividualStatementAudit(body: string): boolean {
   return /\b(?:comput(?:able|ability|ation)|algorithm(?:ic)?|complexity|operation(?:-count|s)?|running\s+time|runtime)\b|O\s*\(/i.test(body);
 }
 
-function notationForArtifact(notation: string, artifact: string): string {
-  const tokens = new Set(artifact.match(/\\[A-Za-z]+|[A-Za-z][A-Za-z0-9_']{1,}/g) ?? []);
-  const rows = notation.split("\n").filter((row) =>
-    (row.match(/\\[A-Za-z]+|[A-Za-z][A-Za-z0-9_']{1,}/g) ?? []).some((token) => tokens.has(token)),
+/** Content key for one statement's equivalence verdict. One definition for BOTH the pre-audit
+ *  lookup and the post-refinement stamp — the two used to be hand-written 137 lines apart.
+ *  why: Lean edits, trust-boundary edits, or a verdict-POLICY change (v2 = over-assumption is
+ *  drift) must invalidate verdicts; citation-erasure-v1 covers the cited-dependency prompt. */
+export function equivalenceAuditKey(parts: {
+  envBody: string; mapping: string; leanStatement: string; refDefs: string; citedDependencies: string;
+}): string {
+  // (2026-08-21, no bump) IMPLEMENTATION PACKAGING clause added to both equivalence prompts:
+  // it only widens FAITHFUL, and the cache short-circuits faithful verdicts only, so replay
+  // of cached verdicts is sound — a bump would just re-buy ~all faithful verdicts.
+  // equivalence-v3: the statement auditor now receives the contract DIGEST instead of
+  // the full authoring contracts (with a small added flag-in-schema remit) — a
+  // deliberate one-time re-audit sweep per bundle at its next P1 entry. This key has
+  // NO prompt fingerprint: future contract_digest.txt edits self-invalidate only
+  // proof_audit and the P1 notation cache; statement-equivalence (and the P3 gate
+  // caches, which deliberately did not sweep for this change) need a hand bump here.
+  return hashEnvBody(`${parts.envBody}|${parts.mapping}|${parts.leanStatement}|${parts.refDefs}|citation-erasure-v1|equivalence-v3|${parts.citedDependencies}`);
+}
+
+/** Keyed on the audit PROMPT (and prose policy version): the verdict depends on what the auditor
+ *  is asked to check, so widening the gate — by prompt edit or policy bump — must not read a
+ *  verdict cached under the narrower standard; an unchanged proof would silently keep its stale
+ *  `faithful`. The prompt fingerprint makes prompt-only widenings self-invalidating (same pattern
+ *  as P1's promptFp), removing the "did any run execute since the bump?" timing dependence. */
+export function proofAuditCacheKey(parts: {
+  proofTex: string; leanPointer: string; leanProofCacheSource: string; notationTable: string; auditPromptFp: string;
+  /** The canonical statement env the proof is judged against (formal-layer body; "" when
+   *  unavailable). Without it, fixing a statement never invalidated a cached proof verdict
+   *  that had failed AGAINST the broken statement (observed: \ne-typo verdict replay). */
+  targetStatement: string;
+}): string {
+  return hashEnvBody(`${PRESENTATION_PROSE_POLICY_VERSION}|${parts.auditPromptFp}|${parts.targetStatement}|${parts.proofTex}|${parts.leanPointer}|${parts.leanProofCacheSource}|${proofAuditSemanticNotation(parts.notationTable)}`);
+}
+
+/** Fingerprint of the proof-audit prompt as dispatched (template + whatever contract
+ *  header presentationPrompt actually prepends — the contract digest, for this
+ *  verdict-only prompt) — the "what is the auditor asked to check" input to the key. */
+export async function proofAuditPromptFp(): Promise<string> {
+  const dir = join(import.meta.dirname, "prompts");
+  const files = await Promise.all(
+    ["proof_audit", ...promptContractFiles("proof_audit")].map((n) => readFile(join(dir, `${n}.txt`), "utf8")),
   );
-  return rows.length > 0 ? rows.join("\n") : "(no artifact-specific notation rows)";
+  return hashEnvBody(files.join("§"));
+}
+
+/** Proof validity depends on symbol spelling and reader-facing meaning, not on
+ * notation-table row placement or the outline section that owns the symbol. */
+export function proofAuditSemanticNotation(notationTable: string): string {
+  const semanticRows: string[] = [];
+  for (const raw of notationTable.split("\n")) {
+    const line = raw.trim();
+    if (!line) continue;
+    if (line.startsWith("|") && line.endsWith("|")) {
+      const cells = line.slice(1, -1).split("|").map((cell) => cell.replace(/\s+/g, " ").trim());
+      if (cells.length >= 4 && !/^[-: ]+$/.test(cells.join("")) &&
+          cells[1].toLowerCase() !== "paper notation")
+        semanticRows.push(`${cells[1]}|${cells[0]}|${cells[2]}`);
+    }
+  }
+  return semanticRows.sort((a, b) => a.localeCompare(b)).join("\n");
 }
 
 const ask = async (out: Promise<{ stdout: string; stderr: string }>) =>
@@ -90,6 +148,15 @@ function decodeLooseJsonString(s: string): string {
   return out;
 }
 
+/** A cached Lean-source reader (one read per file across an audit run). */
+function leanSourceReader(repoRoot: string, leanSubdir: string) {
+  const cache = new Map<string, string>();
+  return async (file: string) => {
+    if (!cache.has(file)) cache.set(file, await readFile(join(repoRoot, leanSubdir, file), "utf8"));
+    return cache.get(file)!;
+  };
+}
+
 /** Parse a model-authored LaTeX refinement. The normal JSON path stays authoritative; the
  * fallback recovers only the common invalid-JSON shape where LaTeX commands use raw backslashes. */
 export function parseLatexRefinement(
@@ -117,18 +184,6 @@ export function parseLatexRefinement(
     body: decodeLooseJsonString(tail.slice(0, boundary.index)),
     changed: boundary[1] === "true",
     note: note ? decodeLooseJsonString(note[1]) : undefined,
-  };
-}
-
-const pointerFor = (repoRoot: string, leanSubdir: string, cw: { file: string; decl: string; line: number }) =>
-  `file: ${join(repoRoot, leanSubdir, cw.file)}\ndeclaration: ${cw.decl} (around line ${cw.line})\nRead the file with your tools; do not guess its contents.`;
-
-/** A cached Lean-source reader (one read per file across an audit run). */
-function leanSourceReader(repoRoot: string, leanSubdir: string) {
-  const cache = new Map<string, string>();
-  return async (file: string) => {
-    if (!cache.has(file)) cache.set(file, await readFile(join(repoRoot, leanSubdir, file), "utf8"));
-    return cache.get(file)!;
   };
 }
 
@@ -194,7 +249,7 @@ async function appendDriftReport(
  * P1 STATEMENT EQUIVALENCE AUDIT. Compares each frozen env body (from formal_layer.json) against its
  * Lean declaration; refines drift toward Lean (≤MAX_ROUNDS, fresh audits), and persists every faithful
  * body durably onto the graph (`nl.frozen_body`/`frozen_title`) and the formal layer (block body +
- * body_hash, re-derived `.tex`). Returns the obj_ids still drifting after refinement — the P1 caller
+ * re-derived `.tex`). Returns the obj_ids still drifting after refinement — the P1 caller
  * halts on a non-empty result (the frozen layer disagrees with Lean beyond what auto-refinement could
  * tighten — adjudicate or fix the graph). Lean is trusted; the graph NL was only the draft.
  */
@@ -202,8 +257,10 @@ export async function runStatementAudit(io: StageIO): Promise<LintProblem[]> {
   const { deps } = io.ctx;
   const { repoRoot } = io.ctx;
   const leanSubdir = io.bank.leanSubdir;
+  const leanSource = leanSourceReader(repoRoot, leanSubdir);
   const notation = parseOutline(await readFile(join(io.outDir, "outline.md"), "utf8")).notation;
-  const reviewsPath = join(io.outDir, "reviews.jsonl");
+  const reviewsPath = join(io.outDir, "logs", "reviews.jsonl");
+  await mkdir(join(io.outDir, "logs"), { recursive: true });
   const layerPath = join(io.outDir, "formal_layer.json");
   const layerSrc0 = FormalLayerSource.parse(JSON.parse(await readFile(layerPath, "utf8")));
   const citedTextByObjId = new Map(layerSrc0.blocks.map((b) => [
@@ -221,21 +278,17 @@ export async function runStatementAudit(io: StageIO): Promise<LintProblem[]> {
     .map((b, i) => ({ env: b.env!, obj_id: b.obj_id, title: b.title, body: b.body, order: i }));
   if (envs.length === 0) return [];
 
-  const leanSource = leanSourceReader(repoRoot, leanSubdir);
 
   // Verdict cache keyed by (env body, decl pointer): a statement already judged faithful is skipped on
   // rerun unless its frozen body or its crosswalk mapping changed.
   const cachePath = join(io.outDir, "equivalence_cache.json");
-  const cache: Record<string, { key: string; verdict: string; detail?: string }> = JSON.parse(
-    await readFile(cachePath, "utf8").catch(() => "{}"),
-  );
-  repairLatexStringsDeep(cache);
+  const cache = await loadJsonCache<Record<string, { key: string; verdict: string; detail?: string }>>(cachePath);
 
   // Component sets (shared cache with P4): a bundled / hypothesis-only assumption is verified against
   // ALL its Lean pieces, not the single first-wins crosswalk anchor. Graph-first discovery (matches P4).
   const aliasToNodeId = new Map<string, string>();
   for (const n of io.bank.graph.nodes) if (n.obj_id) aliasToNodeId.set(n.obj_id, n.id);
-  const { components: componentsMap, moduleDecls } = await ensureComponentsForEnvs({
+  const { components: componentsMap, complete: componentReceipts, moduleDecls } = await ensureComponentsForEnvs({
     envs,
     crosswalk: io.bank.crosswalk,
     repoRoot,
@@ -252,7 +305,7 @@ export async function runStatementAudit(io: StageIO): Promise<LintProblem[]> {
   const equivalence = async (s: StatementCheck): Promise<{ verdict: string; detail?: string }> => {
     const v = (await ask(
       deps.runCodex({
-        prompt: await presentationPrompt("p3_equivalence", {
+        prompt: await presentationPrompt("statement_equivalence", {
           obj_id: s.obj_id,
           env_body: s.envBody,
           lean_statement: s.leanStatement,
@@ -271,10 +324,26 @@ export async function runStatementAudit(io: StageIO): Promise<LintProblem[]> {
   };
 
   const refDefsByObjId = new Map<string, string>();
-  const statements: (StatementCheck & { cacheKey: string; mapping: string; env: string })[] = [];
+  // LOCK RESPECT: an env whose current layer body is exactly its node's persisted
+  // nl.frozen_body (modulo the mechanical cref normalization render0 applies) was
+  // ALREADY validated when it froze — by a prior audit pass or by operator
+  // adjudication. Re-auditing it every run defeats the lock's purpose ("a re-run
+  // stays tight"): a stale or stricter verdict rewrites the frozen body and
+  // oscillates against the notation reviewer (observed: repeated stripping of
+  // reviewer-required notation displays). Audit only bodies that CHANGED.
+  const canonBody = (t: string) => normalizeCrefs(t).replace(/\s+/g, " ").trim();
+  const frozenBodyById = new Map(
+    io.bank.graph.nodes.filter((n) => n.nl.frozen_body).map((n) => [n.id, canonBody(n.nl.frozen_body!)] as const),
+  );
+  const lockedVerbatim = (e: AnchoredEnv) => frozenBodyById.get(e.obj_id) === canonBody(e.body);
+  const statements: (StatementCheck & { cacheKey: string; mapping: string; env: string; locked: boolean })[] = [];
   for (const e of envs) {
     const cw = io.bank.crosswalk.find((c) => c.obj_id === e.obj_id);
     const comps = componentsMap[e.obj_id] ?? [];
+    const componentReceipt = componentReceipts[e.obj_id] === true;
+    if (comps.length > 0 && !componentReceipt) {
+      throw new Error(`P1 component mapping for ${e.obj_id} is missing its completeness receipt`);
+    }
     let leanStatement: string | null = null;
     let leanPointer = "";
     let mapping = "";
@@ -286,9 +355,10 @@ export async function runStatementAudit(io: StageIO): Promise<LintProblem[]> {
         repoRoot,
         leanSubdir,
       });
-      if (assembled) {
-        leanStatement = assembled;
-        mapping = `components:${componentSignature(comps)}`;
+      if (assembled.text) {
+        leanStatement = assembled.text;
+        mapping = `components:${componentSignature(comps)}:` + assembled.resolved
+          .map((r) => `${r.file}:${r.decl}:${r.line}:${hashEnvBody(r.snippet)}`).sort().join("|");
         leanPointer =
           `Formalized by ${comps.length} Lean piece(s) — ` +
           comps
@@ -298,21 +368,33 @@ export async function runStatementAudit(io: StageIO): Promise<LintProblem[]> {
       }
     }
     if (leanStatement === null && cw?.lean) {
-      try {
-        leanStatement = extractDeclSnippet(await leanSource(cw.lean.file), cw.lean.decl, cw.lean.line);
-        mapping = `${cw.lean.file}:${cw.lean.decl}:${cw.lean.line}`;
-        leanPointer = pointerFor(repoRoot, leanSubdir, cw.lean);
-      } catch {
+      const resolved = await resolveLeanDeclaration(repoRoot, leanSubdir, cw.lean);
+      leanStatement = resolved.snippet;
+      mapping = `${resolved.file}:${resolved.decl}:${resolved.line}`;
+      const abs = await resolvedLeanAbsolutePath(repoRoot, resolved.file);
+      leanPointer = `file: ${abs}\ndeclaration: ${resolved.decl} (around line ${resolved.line})\nRead the file with your tools; do not guess its contents.`;
+      if (resolved.relocated) {
         io.state.notes.push(
-          `P1: skipped equivalence for ${e.obj_id} — Lean decl ${cw.lean.decl} (${cw.lean.file}) not locatable`,
+          `P1: resolved re-exported Lean declaration for ${e.obj_id}: ${cw.lean.file}:${cw.lean.decl} -> ` +
+          `${resolved.file}:${resolved.decl}:${resolved.line} (${resolved.resolution})`,
         );
       }
     }
-    if (leanStatement === null) continue; // no components, no single decl → note-only
+    if (leanStatement === null) {
+      const graphNode = io.bank.graph.nodes.find((n) => n.id === e.obj_id || n.obj_id === e.obj_id);
+      // Presentation-synthesized definitions have no bank crosswalk/graph identity and
+      // are legitimately prose-only. A bank-backed formal object is never silently
+      // downgraded to note-only because discovery returned [] or a stale partial cache.
+      if (cw || graphNode) {
+        const receipt = componentReceipt ? "complete component discovery returned no pieces" : "no complete component discovery receipt";
+        throw new Error(`P1 formal object ${e.obj_id} has neither a resolved Lean declaration nor nonempty resolved components (${receipt})`);
+      }
+      continue;
+    }
     const refDefs = await unfoldReferencedDefs(leanStatement);
     refDefsByObjId.set(e.obj_id, refDefs);
     const citedDependencies = citedTextByObjId.get(e.obj_id) ?? "(none — no Lean premise may be erased)";
-    const key = hashEnvBody(`${e.body}|${mapping}|${leanStatement}|${refDefs}|citation-erasure-v1|equivalence-v2|${citedDependencies}`); // why: Lean edits, trust-boundary edits, or a verdict-POLICY change (v2 = over-assumption is drift) must invalidate verdicts.
+    const key = equivalenceAuditKey({ envBody: e.body, mapping, leanStatement, refDefs, citedDependencies });
     if (cache[e.obj_id]?.key === key && cache[e.obj_id].verdict === "faithful") continue;
     statements.push({
       obj_id: e.obj_id,
@@ -324,6 +406,11 @@ export async function runStatementAudit(io: StageIO): Promise<LintProblem[]> {
       mapping,
       env: e.env,
       citedDependencies,
+      // LOCK SEMANTICS: a locked env is audited like any other (a Lean edit after the
+      // freeze changes the cache key above, forcing a fresh verdict), but on genuine
+      // drift it is NEVER auto-refined — the frozen body is P3-validated or operator-
+      // adjudicated, so the disagreement halts for adjudication instead (Phase 2).
+      locked: lockedVerbatim(e),
     });
   }
 
@@ -359,7 +446,7 @@ export async function runStatementAudit(io: StageIO): Promise<LintProblem[]> {
     try {
       const parsed = (await ask(
         deps.runCodex({
-          prompt: await presentationPrompt("p3_equivalence_batch", { statements_block: block, notation_table: notation }),
+          prompt: await presentationPrompt("statement_equivalence_batch", { statements_block: block, notation_table: notation }),
           cwd: repoRoot,
           reasoningEffort: effort,
           leanLsp: true,
@@ -368,8 +455,14 @@ export async function runStatementAudit(io: StageIO): Promise<LintProblem[]> {
       for (const r of parsed?.results ?? []) {
         if (r.obj_id && (r.verdict === "faithful" || r.verdict === "drift")) {
           batchVerdicts.set(r.obj_id, { verdict: r.verdict, detail: r.detail });
+          const st = statements.find((x) => x.obj_id === r.obj_id);
+          if (st) cache[r.obj_id] = { key: st.cacheKey, verdict: r.verdict, detail: r.detail };
         }
       }
+      // Persist each batch's verdicts as they land (atomic write; concurrent workers are
+      // safe, same pattern as the proof audit): the sweep used to write the cache ONCE at
+      // the end, so an interruption (Slurm expiry, 2026-08-20) lost hours of paid audits.
+      await writeJsonAtomic(cachePath, cache);
     } catch {
       /* group falls through to individual calls */
     }
@@ -377,7 +470,7 @@ export async function runStatementAudit(io: StageIO): Promise<LintProblem[]> {
 
   const refineRunner: RefineRunner = async (c) => {
     const raw = (await deps.runCodex({
-        prompt: await presentationPrompt("p3_refine_statement", {
+        prompt: await presentationPrompt("refine_statement", {
           obj_id: c.obj_id,
           env_body: c.envBody,
           lean_statement: c.leanStatement,
@@ -402,14 +495,27 @@ export async function runStatementAudit(io: StageIO): Promise<LintProblem[]> {
 
   // Phase 1 — initial audits in PARALLEL (each statement vs its own Lean is independent).
   const eqProblems: LintProblem[] = [];
-  const audited = await mapLimit(statements, AUDIT_CONCURRENCY, async (s) => ({
-    s,
-    v0: batchVerdicts.get(s.obj_id) ?? (await equivalence(s)),
-  }));
-  for (const { s, v0 } of audited) cache[s.obj_id] = { key: s.cacheKey, verdict: v0.verdict, detail: v0.detail };
+  const audited = await mapLimit(statements, AUDIT_CONCURRENCY, async (s) => {
+    const v0 = batchVerdicts.get(s.obj_id) ?? (await equivalence(s));
+    cache[s.obj_id] = { key: s.cacheKey, verdict: v0.verdict, detail: v0.detail };
+    await writeJsonAtomic(cachePath, cache); // incremental persistence — see the batch loop note
+    return { s, v0 };
+  });
   // Phase 2 — refine the drifting statements in PARALLEL (refineStatement is PURE; writes are serialized).
+  // A LOCKED drifting statement is not refined: rewriting a validated frozen body caused the
+  // audit↔reviewer display-stripping oscillation, and silently accepting it would ship a stale
+  // claim over changed Lean. Halt loudly with the drift detail for operator adjudication.
+  for (const { s: ls, v0 } of audited) {
+    if (ls.locked && v0.verdict !== "faithful") {
+      eqProblems.push({
+        gate: "locked-env-drift",
+        objId: ls.obj_id,
+        detail: `${ls.obj_id}: locked (frozen) body disagrees with the current Lean statement — ${v0.detail ?? v0.verdict}. Adjudicate: update nl.frozen_body to match the Lean, or fix the Lean/crosswalk; the audit never auto-rewrites a locked body.`,
+      });
+    }
+  }
   const refinedResults = await mapLimit(
-    audited.filter(({ v0 }) => v0.verdict !== "faithful"),
+    audited.filter(({ s: fs, v0 }) => v0.verdict !== "faithful" && !fs.locked),
     AUDIT_CONCURRENCY,
     async ({ s }) => ({
       s,
@@ -430,11 +536,10 @@ export async function runStatementAudit(io: StageIO): Promise<LintProblem[]> {
     if (refined.body.trim() !== s.envBody.trim()) {
       // Persist the refiner's BEST attempt (faithful or not) into the source of truth — a
       // tightened-but-still-drifting body is a better starting point for the next re-audit than the
-      // stale original. Update block.body + body_hash; re-derive the read-only .tex below.
+      // stale original. Update block.body; re-derive the read-only .tex below.
       const blk = layerSrc.blocks.find((b) => b.obj_id === s.obj_id);
       if (blk) {
         blk.body = refined.body.trim();
-        blk.body_hash = hashBody(blk.body);
         layerDirty = true;
       }
       // DURABLE persistence: once FAITHFUL, write the validated body back onto the graph node so a P1
@@ -448,7 +553,7 @@ export async function runStatementAudit(io: StageIO): Promise<LintProblem[]> {
         }
       }
       cache[s.obj_id] = {
-        key: hashEnvBody(`${refined.body}|${s.mapping}|${s.leanStatement}|${refDefsByObjId.get(s.obj_id) ?? ""}|citation-erasure-v1|equivalence-v2|${s.citedDependencies ?? ""}`), // why: refined faithful verdict is tied to the exact Lean source, trust boundary, and verdict policy audited.
+        key: equivalenceAuditKey({ envBody: refined.body, mapping: s.mapping, leanStatement: s.leanStatement, refDefs: refDefsByObjId.get(s.obj_id) ?? "", citedDependencies: s.citedDependencies ?? "" }), // why: the refined faithful verdict is tied to the exact Lean source, trust boundary, and verdict policy audited.
         verdict: refined.faithful ? "faithful" : "drift",
         detail: refined.detail,
       };
@@ -503,31 +608,85 @@ export async function runProofAudit(
 ): Promise<{ refined: Map<string, string>; problems: LintProblem[] }> {
   const { deps, repoRoot } = io.ctx;
   const leanSubdir = io.bank.leanSubdir;
-  const notation = parseOutline(await readFile(join(io.outDir, "outline.md"), "utf8")).notation;
-  const reviewsPath = join(io.outDir, "reviews.jsonl");
   const leanSource = leanSourceReader(repoRoot, leanSubdir);
+  const notation = parseOutline(await readFile(join(io.outDir, "outline.md"), "utf8")).notation;
+  // The refiner re-authors (and expands) proof prose, so it gets the same subordinated
+  // D-stage derivation the P2 renderer gets. The AUDITOR does not — its Lean-vs-prose
+  // verdict must stay independent of the untrusted derivation.
+  const informalDerivations = await loadInformalDerivations(repoRoot, io.ctx.qid, io.ctx.spec);
+  // Citable paper environments, each annotated with the Lean declaration it realizes,
+  // so the refiner can map a proof step's `% lean:` route onto a paper label and CITE
+  // the lemma instead of re-deriving content the paper already states. Without this
+  // the refiner cannot cite promoted helper lemmas at all (inventing crefs is banned).
+  const declByNode = new Map((io.bank.graph?.nodes ?? [])
+    .filter((n) => n.lean?.decl_name)
+    .map((n) => [n.id, n.lean!.decl_name] as const));
+  const allLayerBlocks = await readFile(join(io.outDir, "formal_layer.json"), "utf8")
+    .then((raw) => (JSON.parse(raw).blocks ?? []) as { obj_id: string; env: string; title?: string | null; body: string }[])
+    .catch(() => null);
+  const citableBlocks = allLayerBlocks === null
+    ? null
+    : allLayerBlocks.filter((b) => b.env === "lemmav" || b.env === "definitionv" || b.env === "algorithmv" || b.env === "theoremv");
+  // Per-proof view: exclude the result under proof itself — otherwise the refiner could
+  // "repair" a flagged step by citing the very theorem being proved (circular).
+  // Full bodies only for envs the proof/findings actually engage (a {obj:…} mention,
+  // or the proof's `% lean:` routes naming the env's realized declaration); the rest
+  // appear as an id/title/decl index — sending every body was measured at 59% of each
+  // refine input (2026-08-20 token audit), and the index plus the formal_layer.tex
+  // inventory (openable via tools) preserves discoverability of citable helpers.
+  const citableHelperEnvsFor = (objId: string, referenceText: string): string => {
+    if (citableBlocks === null) return "(no formal layer available)";
+    const full: string[] = [];
+    const index: string[] = [];
+    for (const b of citableBlocks) {
+      if (b.obj_id === objId) continue;
+      const decl = declByNode.get(b.obj_id);
+      // Bare-id disjunct: audit issues name envs without braces ("should cite
+      // lem:aux-bound"); obj ids are kind-namespaced, so collisions are negligible.
+      const engaged = referenceText.includes(b.obj_id) ||
+        (decl != null && referenceText.includes(decl));
+      if (engaged) {
+        const head = decl ? `% realizes Lean declaration: ${decl}\n` : "";
+        full.push(`${head}\\begin{${b.env}}{${b.obj_id}}${b.title ? `[${b.title}]` : ""}\n${b.body}\n\\end{${b.env}}`);
+      } else {
+        index.push(`- ${b.obj_id} [${b.env}]${b.title ? ` ${b.title}` : ""}${decl ? ` (realizes ${decl})` : ""}`);
+      }
+    }
+    const indexBlock = index.length > 0
+      ? `INDEX of further citable environments — bodies are in ${join(io.outDir, "formal_layer.tex")}; open it with your tools before citing any of them:\n${index.join("\n")}`
+      : "";
+    return [full.join("\n\n"), indexBlock].filter(Boolean).join("\n\n") || "(no citable helper environments)";
+  };
+  const reviewsPath = join(io.outDir, "logs", "reviews.jsonl");
+  await mkdir(join(io.outDir, "logs"), { recursive: true });
   const unfoldReferencedDefs = await buildRefDefUnfolder(repoRoot, leanSubdir, leanSource);
 
   // Verdict cache keyed by (proof body, decl pointer): a proof already judged faithful is skipped.
   const cachePath = join(io.outDir, "proof_audit_cache.json");
-  const cache: Record<string, { key: string; verdict: string; issues?: string[] }> = JSON.parse(
-    await readFile(cachePath, "utf8").catch(() => "{}"),
-  );
-  repairLatexStringsDeep(cache);
+  const cache = await loadJsonCache<Record<string, { key: string; verdict: string; issues?: string[] }>>(cachePath);
   const saveCache = () => writeJsonAtomic(cachePath, cache); // why: proofAudit workers save concurrently under mapLimit — interleaved plain writes can corrupt the cache.
 
+  const auditPromptFp = await proofAuditPromptFp();
+  // UNFILTERED lookup: propositionv proofs are audited too (isMainProofEnv), and the
+  // citable list excludes them — a filtered lookup would leave their targetStatement
+  // permanently "", replaying stale verdicts across statement fixes.
+  const targetStatementFor = (objId: string): string =>
+    allLayerBlocks?.find((b) => b.obj_id === objId)?.body ?? "";
   const proofAudit = async (p: { obj_id: string; proofTex: string; leanPointer: string; leanProofSource: string; leanProofCacheSource: string; notationTable: string; tier: "main" | "auxiliary" }) => {
-    const key = hashEnvBody(`${p.proofTex}|${p.leanPointer}|${p.leanProofCacheSource}|${p.notationTable}`);
+    const key = proofAuditCacheKey({ ...p, auditPromptFp, targetStatement: targetStatementFor(p.obj_id) });
     const hit = cache[p.obj_id];
     const cacheable = p.leanProofCacheSource.length > 0;
     if (cacheable && hit?.key === key) return { verdict: hit.verdict, issues: hit.issues };
     const v = (await ask(
       deps.runCodex({
-        prompt: await presentationPrompt("p3_proof_audit", {
+        prompt: await presentationPrompt("proof_audit", {
           obj_id: p.obj_id,
           proof_tex: p.proofTex,
           lean_proof_source: `${p.leanPointer}\n\nLean excerpt:\n${p.leanProofSource || "(snippet unavailable — read the file via tools)"}`,
           notation_table: p.notationTable,
+          // Check 6 audits claims the proof makes ABOUT other objects ("recall from <env> that …"),
+          // which can only be judged by opening those environments.
+          paper_path: join(io.outDir, "formal_layer.tex"), // canonical env inventory NOW; paper.tex lags for newly promoted envs
         }),
         cwd: repoRoot,
         reasoningEffort: p.tier === "main" ? "high" : "medium",
@@ -543,14 +702,22 @@ export async function runProofAudit(
   };
 
   const proofRefine: RefineRunner = async (c) => {
+    // Scope both context blocks to this proof: helpers it engages (plus an index of
+    // the rest), and only the notation rows appearing in the artifact the refiner
+    // actually sees — the same filter the statement-equivalence path already trusts.
+    const helperEnvs = citableHelperEnvsFor(c.obj_id, `${c.envBody}\n${c.driftDetail}`);
+    const refineArtifact = [c.envBody, c.driftDetail, refDefsByObjId.get(c.obj_id) ?? "",
+      targetStatementFor(c.obj_id), helperEnvs].join("\n");
     const raw = (await deps.runCodex({
-        prompt: await presentationPrompt("p3_refine_proof", {
+        prompt: await presentationPrompt("refine_proof", {
           obj_id: c.obj_id,
           proof_tex: c.envBody,
           lean_proof_source: c.leanPointer,
           referenced_defs: refDefsByObjId.get(c.obj_id) || "(none indexed — read the Lean via your tools)",
           audit_issues: c.driftDetail,
-          notation_table: notation,
+          helper_lemma_envs: helperEnvs,
+          informal_derivation: informalDerivations.get(c.obj_id) ?? "(none recorded for this result)",
+          notation_table: notationForArtifact(notation, refineArtifact),
         }),
         cwd: repoRoot,
         reasoningEffort: "high",
@@ -571,13 +738,14 @@ export async function runProofAudit(
   for (const pt of proofTargets) {
     const proofTex = await readFile(join(io.outDir, "proofs", `${pt.obj_id}.tex`), "utf8").catch(() => null);
     if (proofTex === null) continue; // statement-only / no rendered proof
-    const leanPointer = `file: ${join(repoRoot, leanSubdir, pt.lean.file)}\ndeclaration: ${pt.lean.decl}\nRead the file with your tools; do not guess its contents.`;
+    const resolved = await resolveLeanDeclaration(repoRoot, leanSubdir, { ...pt.lean, line: 0 });
+    const resolvedPath = await resolvedLeanAbsolutePath(repoRoot, resolved.file);
+    const leanPointer = `file: ${resolvedPath}\ndeclaration: ${resolved.decl}\nRead the file with your tools; do not guess its contents.`;
     // Best-effort def unfold for the refiner: extract the decl snippet, then unfold its referenced defs.
     let leanProofSource = "";
     let leanProofCacheSource = "";
     try {
-      const fullLeanSource = await leanSource(pt.lean.file);
-      const exactDecl = extractFullDeclSource(fullLeanSource, pt.lean.decl, 0);
+      const exactDecl = extractFullDeclSource(await readFile(resolvedPath, "utf8"), resolved.decl, 0);
       leanProofSource = exactDecl;
       leanProofCacheSource = exactDecl;
       if (exactDecl) refDefsByObjId.set(pt.obj_id, await unfoldReferencedDefs(exactDecl));
@@ -590,7 +758,13 @@ export async function runProofAudit(
       leanPointer,
       leanProofSource,
       leanProofCacheSource,
-      notationTable: notationForArtifact(notation, `${proofTex}\n${leanProofSource}`),
+      // Only the notation rows the auditor can encounter in THIS proof's material —
+      // the full table averaged 32-42% of every proof_audit input (2026-08-20 token
+      // audit); the filter is the one already trusted on the equivalence path. The
+      // filtered table enters proofAuditCacheKey via notationTable, so this change
+      // re-keys verdicts once per bundle (a deliberate one-time re-audit sweep).
+      notationTable: notationForArtifact(notation,
+        `${proofTex}\n${leanProofSource}\n${targetStatementFor(pt.obj_id)}`),
       isMain: pt.isMain,
     });
   }
@@ -622,9 +796,14 @@ export async function runProofAudit(
   const refined = new Map<string, string>();
   const problems: LintProblem[] = [];
   for (const { pt, refined: r } of refinedResults) {
-    const newBody = r.body.trim();
+    // Canonical title on BOTH the in-memory map and disk: stamping the verdict cache
+    // against a body that differs from what the next run reads from disk costs a
+    // redundant re-audit per title-repaired proof. Compare CANONICALLY so a faithful
+    // proof whose only difference is a legacy title is not rewritten or drift-reported
+    // (P2's entry points heal titles on read).
+    const newBody = canonicalizeProofTitle(pt.obj_id, r.body.trim());
     refined.set(pt.obj_id, newBody);
-    if (newBody !== pt.proofTex) {
+    if (newBody !== canonicalizeProofTitle(pt.obj_id, pt.proofTex)) {
       await writeFile(join(io.outDir, "proofs", `${pt.obj_id}.tex`), newBody + "\n", "utf8");
       await appendDriftReport(io.outDir, `${pt.obj_id} (proof)`, pt.proofTex, newBody, r.rounds, r.note);
     }

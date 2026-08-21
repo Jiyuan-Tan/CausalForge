@@ -1,8 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { parseNoteBlocks } from "../src/presentation/note_parser.js";
-import { buildFrozenLayer } from "../src/presentation/frozen_layer.js";
+import { parseNoteBlocks, type NoteBlock } from "../src/presentation/note_parser.js";
 import { parseAnchoredEnvs } from "../src/presentation/tex_anchors.js";
 import { assumptionTable } from "../src/presentation/emit.js";
 import type { CrosswalkEntry } from "../src/presentation/types.js";
@@ -17,6 +16,20 @@ const fixture = () =>
   readFile(join(import.meta.dirname, "fixtures/presentation/mini_note_current.md"), "utf8");
 
 const lean = (decl: string) => ({ file: "Mock.lean", decl, decl_kind: "theorem", line: 1 });
+
+// Minimal frozen-layer fixture builder (the former frozen_layer.buildFrozenLayer,
+// retired 2026-08): one env per crosswalked block, statement text from the note.
+const frozenLayerTex = (blocks: NoteBlock[], crosswalk: CrosswalkEntry[]): string =>
+  crosswalk
+    .map((c) => {
+      const b = blocks.find((x) => x.obj_id === c.obj_id)!;
+      const env = c.obj_id.startsWith("T-") ? "theoremv" : "definitionv";
+      const stmt = c.obj_id.startsWith("T-")
+        ? `Under the stated assumptions:\n${b.fields["Load-bearing hypotheses"] ?? ""}\n${b.fields["Statement"] ?? ""}`
+        : b.body.trim();
+      return `\\begin{${env}}{${c.obj_id}}[${c.obj_id}]\n${stmt.trim()}\n\\end{${env}}`;
+    })
+    .join("\n\n");
 const cw = (obj_id: string, kind: string): CrosswalkEntry => ({
   obj_id,
   kind,
@@ -41,7 +54,7 @@ describe("note-format contract (current causalsmith F1 dialect)", () => {
     const blocks = parseNoteBlocks(await fixture());
     // P-1 and T-1 are frozen (crosswalked); P-2 is deliberately note-only (no anchor).
     const crosswalk = [cw("P-1", "definition"), cw("T-1", "theorem")];
-    const envs = parseAnchoredEnvs(buildFrozenLayer(blocks, crosswalk));
+    const envs = parseAnchoredEnvs(frozenLayerTex(blocks, crosswalk));
     const { problems } = assumptionTable(blocks, envs, {});
     // No "no load-bearing hypotheses" (plain H1/H2 parse) and no false
     // "references P-2 which is not presented" (P-2 is a note block).

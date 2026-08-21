@@ -1,0 +1,1467 @@
+\documentclass{article}
+\usepackage[margin=0.8in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{mathrsfs,bm,bbm}
+\usepackage{graphicx,booktabs,array,multirow,tabularx,longtable}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{algorithm,algpseudocode}
+\usepackage{subcaption,tikz}
+\usepackage{siunitx,cancel,accents}
+\usepackage{microtype}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{cleveref}
+\setlength{\emergencystretch}{2em}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{openendedquestion}{Open-ended Question}
+\newtheorem{conjecture}{Conjecture}
+\newcommand{\coreref}[1]{\ref{#1}}
+
+\begin{document}
+
+\sloppy
+
+\section*{stat\_\allowbreak{}sequential\_\allowbreak{}second\_\allowbreak{}order\_\allowbreak{}frontier}
+
+\noindent\textit{Specialization:} v1\par
+
+\paragraph{TL;DR.} One law-independent sequential algorithm, not using \(s\) or \(r\), attains for every fixed smoothness pair the constructive log-free upper rate \(n^{-1-2s/(2s+d)}\vee n^{-1-2r/(2r+d)}\) in the unrestricted oracle-subtracted excess-MSE decision problem. If one and the same known allocation, independent of the law and both smoothness indices, is pointwise oracle-optimal throughout the union of model classes, a smoothness-agnostic AIPW construction attains the sharper mean-only upper rate \(n^{-1-2s/(2s+d)}\). Equal conditional variance and pointwise singleton-support weights furnish such allocations. These are upper results: no positive centered converse over all measurable, possibly biased estimators, and hence no exact causal minimax order, is claimed.
+
+\section{Project justification}
+
+\paragraph{Gap.} Li and Simchi-Levi's second-order upper result retains logarithmic slack, while its converse is stated for exactly unbiased estimators and uses an exact-centering excess-variance identity that does not settle oracle-subtracted mean-squared error for arbitrary biased estimators at the second-order scale. Existing adaptive variance-estimation results also do not directly yield a log-free sequential causal excess-risk theorem.
+
+\paragraph{Niche.} The decision problem fixes one law-independent non-anticipating design and one unrestricted observed-path estimator before the supremum over the Hölder law. Its upper theory must control expected allocation regret and predictable AIPW regression error without epochwise logarithmic losses. Its lower theory must preserve the law-dependent subtraction \(V^*(P)/n\) inside an unrestricted Bayes-risk calculation.
+
+\paragraph{Fill.} The paper proves fixed-smoothness and smoothness-agnostic log-free upper constructions, reduces the achievable rate to standalone mean and variance risks, and identifies a sharper mean-only regime whenever one known allocation is simultaneously oracle-optimal across all smoothness classes served by the algorithm. The unrestricted centered converse remains the precisely stated posterior-variance problem; smoothness adaptation of the upper construction is settled.
+
+\section{Related work}
+
+Li and Simchi-Levi, \cite{LiSimchiLevi2026SequentialEfficiency}, Definition 2.1, motivate the law-independent non-anticipating design class. Their Section 4.4 upper theorem has logarithmic slack, and their converse quantifies over an unbiased estimator pair; its exact-centering projection does not settle oracle-subtracted MSE for arbitrary biased estimators. The present fixed-smoothness and smoothness-agnostic constructions remove logarithmic loss on the upper side only. Shen, Gao, Witten, and Han, \cite{ShenGaoWittenHan2020Variance}, and Wang, Brown, Cai, and Levine, \cite{WangBrownCaiLevine2008MeanVariance}, explain why variance learning with an unknown rough mean requires explicit treatment. Cai and Wang, \cite{CaiWang2008AdaptiveVariance}, study adaptive variance estimation with logarithmic slack in a different regression experiment; here held-out finite-library selection is absorbed at the causal second-order scale. Li and Owen, \cite{LiOwen2024BatchDML}, and Kato, Ishihara, Honda, and Narita, \cite{KatoIshiharaHondaNarita2020AdaptiveATE}, provide first-order predictable cross-fitting and AIPW precedents. Brown and Low, \cite{BrownLow1996ConstrainedRisk}, and Duchi and Ruan, \cite{DuchiRuan2021ConstrainedRisk}, motivate bias-robust lower-bound tools but do not calculate the adaptive law-dependent oracle subtraction. That centered Bayes problem remains open; smoothness adaptation of the upper construction does not.
+
+\section{Setup}
+
+Target (estimand / structural parameter): \(\theta(P)=E_P[\sum_{a\in\mathcal A}\omega_a(X_t)\mu_a(X_t)]\).
+Primary functional / estimator / diagnostic: One law-independent algorithm, not using \(s\) or \(r\), attains for every fixed \(s,r>0\) the constructive log-free upper bound
+\[
+\mathsf R_n(s,r,d;\omega)
+\lesssim n^{-1-2s/(2s+d)}\vee n^{-1-2r/(2r+d)}.
+\]
+Under the active-weight-region condition and \(v_{\min}<v_{\max}\), the standalone nuisance maximum is
+\[
+\mathsf Q_n^{\mu}(s,d;\omega)\vee\mathsf Q_n^{\sigma}(s,r,d;\omega)
+\asymp n^{-2s/(2s+d)}\vee n^{-2r/(2r+d)}.
+\]
+If a known measurable allocation is pointwise oracle-optimal for every law in the model, the same smoothness-agnostic construction instead gives \(\mathsf R_n(s,r,d;\omega)\lesssim n^{-1-2s/(2s+d)}\). This includes \(v_{\min}=v_{\max}\) and pointwise singleton-support weights. No positive unrestricted oracle-subtracted lower bound is established, so no exact causal minimax order is claimed..
+\begin{itemize}
+  \item \(n\) --- \texttt{sample size}; \(\mathbb N\); \texttt{index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Number of experimental units.}
+  \item \(K\) --- \texttt{arm count}; \(\{2,3,\ldots\}\); \texttt{index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Fixed number of treatment arms.}
+  \item \(d\) --- \texttt{covariate dimension}; \(\mathbb N\); \texttt{regime parameter}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Fixed dimension of the covariate vector.}
+  \item \(\mathcal A\) --- \texttt{arm set}; \texttt{finite sets}; \texttt{index set}
+  \par\smallskip\noindent\emph{Definition.} \(\mathcal A=\{1,\ldots,K\}\).
+  \item \(t\) --- \texttt{unit index}; \(\{1,\ldots,n\}\); \texttt{index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Assignment-\allowbreak{}order index.}
+  \item \(a\) --- \texttt{arm index}; \(\mathcal A\); \texttt{index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Generic treatment arm.}
+  \item \(s\) --- \texttt{mean smoothness}; \((0,\infty)\); \texttt{regime parameter}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Hölder order of every conditional outcome mean.}
+  \item \(r\) --- \texttt{variance smoothness}; \((0,\infty)\); \texttt{regime parameter}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Hölder order of every conditional outcome variance.}
+  \item \(L_{\mu}\) --- \texttt{Hölder radius}; \((0,\infty)\); \texttt{class constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Fixed radius for the outcome-\allowbreak{}mean Hölder balls.}
+  \item \(L_{\sigma}\) --- \texttt{Hölder radius}; \((0,\infty)\); \texttt{class constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Fixed radius for the variance Hölder balls.}
+  \item \(M\) --- \texttt{mean bound}; \((0,\infty)\); \texttt{class constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Fixed uniform bound for the conditional outcome means.}
+  \item \(c_X\) --- \texttt{density lower bound}; \((0,\infty)\); \texttt{class constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Fixed lower bound for the covariate density.}
+  \item \(C_X\) --- \texttt{density upper bound}; \([c_X,\infty)\); \texttt{class constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Fixed upper bound for the covariate density.}
+  \item \(v_{\min}\) --- \texttt{variance lower bound}; \((0,\infty)\); \texttt{class constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Fixed lower bound for every conditional outcome variance.}
+  \item \(v_{\max}\) --- \texttt{variance upper bound}; \([v_{\min},\infty)\); \texttt{class constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Fixed upper bound for every conditional outcome variance.}
+  \item \(\varepsilon\) --- \texttt{positivity floor}; \((0,1/K)\); \texttt{design constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Fixed lower bound on every predictable treatment probability.}
+  \item \(W\) --- \texttt{weight bound}; \((0,\infty)\); \texttt{class constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Fixed uniform bound for the known contrast weights.}
+  \item \(w_{\min}\) --- \texttt{weight lower bound}; \((0,W]\); \texttt{corollary constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Lower magnitude bound used only for the explicit constant-\allowbreak{}weight corollaries.}
+  \item \(b_0\) --- \texttt{active-\allowbreak{}region volume}; \((0,1]\); \texttt{target constant}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Fixed lower bound on the volume of an active contrast region.}
+  \item \(B_0\) --- \texttt{active contrast region}; axis-aligned subcubes of \([0,1]^d\); \texttt{target region}
+  \par\smallskip\noindent\emph{Definition.} Fixed axis-aligned cube satisfying \(\operatorname{Leb}(B_0)\ge b_0\).
+  \item \(a_0\) --- \texttt{active arm}; \(\mathcal A\); \texttt{target index}
+  \par\smallskip\noindent\emph{Definition.} Arm whose known contrast weight is nonzero on \(B_0\).
+  \item \(X_t\) --- \texttt{covariate}; \([0,1]^d\); \texttt{causal primitive}
+  \par\smallskip\noindent\emph{Definition.} Covariate vector of unit \(t\).
+  \item \(Y_t(a)\) --- \texttt{potential outcome}; \(\mathbb R\); \texttt{causal primitive}
+  \par\smallskip\noindent\emph{Definition.} Potential outcome of unit \(t\) under arm \(a\).
+  \item \(U_t\) --- \texttt{latent unit}; \([0,1]^d\times\mathbb R^K\); \texttt{sampling unit}
+  \par\smallskip\noindent\emph{Definition.} \(U_t=(X_t,Y_t(1),\ldots,Y_t(K))\).
+  \item \(P\) --- \texttt{superpopulation law}; laws on \([0,1]^d\times\mathbb R^K\); \texttt{model}
+  \par\smallskip\noindent\emph{Definition.} Law of one latent unit \(U_t\).
+  \item \(P_X\) --- \texttt{covariate law}; laws on \([0,1]^d\); \texttt{nuisance law}
+  \par\smallskip\noindent\emph{Definition.} Marginal law of \(X_t\) under \(P\).
+  \item \(p_X\) --- \texttt{covariate density}; \([0,1]^d\to[0,\infty)\); \texttt{nuisance}
+  \par\smallskip\noindent\emph{Definition.} Lebesgue density of \(P_X\).
+  \item \(\omega_a\) --- \texttt{known contrast weight}; \([0,1]^d\to\mathbb R\); \texttt{target primitive}
+  \par\smallskip\noindent\emph{Definition.} Fixed, known weight for arm \(a\).
+  \item \(\mu_a\) --- \texttt{outcome regression}; \([0,1]^d\to\mathbb R\); \texttt{nuisance}
+  \par\smallskip\noindent\emph{Definition.} \(\mu_a(x)=E_P[Y_t(a)\mid X_t=x]\).
+  \item \(\sigma_a^2\) --- \texttt{conditional variance}; \([0,1]^d\to(0,\infty)\); \texttt{nuisance}
+  \par\smallskip\noindent\emph{Definition.} \(\sigma_a^2(x)=\operatorname{Var}_P(Y_t(a)\mid X_t=x)\).
+  \item \(m_a\) --- \texttt{design-\allowbreak{}relevant variance function}; \([0,1]^d\to[0,\infty)\); \texttt{design nuisance}
+  \par\smallskip\noindent\emph{Definition.} \(m_a(x)=\omega_a(x)^2\sigma_a^2(x)\).
+  \item \(\theta(P)\) --- \texttt{linear causal functional}; \(\mathbb R\); \texttt{causal target}
+  \par\smallskip\noindent\emph{Definition.} \(\theta(P)=E_P[\sum_{a\in\mathcal A}\omega_a(X_t)\mu_a(X_t)]\).
+  \item \(A_t\) --- \texttt{assigned treatment}; \(\mathcal A\); \texttt{observed data}
+  \par\smallskip\noindent\emph{Definition.} Treatment assigned to unit \(t\).
+  \item \(Y_t\) --- \texttt{observed outcome}; \(\mathbb R\); \texttt{observed data}
+  \par\smallskip\noindent\emph{Definition.} Observed outcome generated as \(Y_t=Y_t(A_t)\) after assignment.
+  \item \(O_t\) --- \texttt{observed record}; \([0,1]^d\times\mathcal A\times\mathbb R\); \texttt{observed data}
+  \par\smallskip\noindent\emph{Definition.} \(O_t=(X_t,A_t,Y_t)\).
+  \item \(H_t\) --- \texttt{observed history}; \texttt{finite observed-\allowbreak{}data paths}; \texttt{dependence structure}
+  \par\smallskip\noindent\emph{Definition.} Admissible information available after time \(t\), containing \(O_1,\ldots,O_t\) and any baseline covariates revealed under the fixed information order; \(H_0\) may be empty or contain pre-experimental covariates but contains no potential outcomes.
+  \item \(\mathcal H_t\) --- \texttt{history space}; \texttt{measurable spaces}; \texttt{kernel domain}
+  \par\smallskip\noindent\emph{Definition.} Canonical product measurable space containing \(H_t\).
+  \item \(D\) --- \texttt{sequential design algorithm}; \texttt{sequences of assignment kernels}; \texttt{design primitive}
+  \par\smallskip\noindent\emph{Definition.} \texttt{A sequence of assignment kernels fixed before the superpopulation law is chosen.}
+  \item \(q_t^D\) --- \texttt{law-\allowbreak{}independent assignment kernel}; \(\mathcal A\times[0,1]^d\times\mathcal H_{t-1}\to[0,1]\); \texttt{design primitive}
+  \par\smallskip\noindent\emph{Definition.} \(q_t^D(a\mid x,h)\) is the probability with which design \(D\) assigns arm \(a\) after observing current covariate \(x\) and past history \(h\).
+  \item \(\mathbb P_n^{D,P}\) --- \texttt{induced sequential experiment}; \texttt{laws on latent and observed trajectories}; \texttt{sampling law}
+  \par\smallskip\noindent\emph{Definition.} Joint law constructed in \(\mathrm{def{:}induced\text{-}experiment}\) after choosing \(D\) and \(P\).
+  \item \(\mathcal F_t^{D,P}\) --- \texttt{induced observed filtration}; \texttt{sigma-\allowbreak{}fields}; \texttt{observation sigma-\allowbreak{}field}
+  \par\smallskip\noindent\emph{Definition.} \(\mathcal F_t^{D,P}=\sigma(H_t)\) under \(\mathbb P_n^{D,P}\).
+  \item \(e_{t,a}^{D,P}\) --- \texttt{induced predictable assignment probability}; \(\Omega\to[0,1]\); \texttt{induced design quantity}
+  \par\smallskip\noindent\emph{Definition.} \(e_{t,a}^{D,P}:=\mathbb P_n^{D,P}(A_t=a\mid\mathcal F_{t-1}^{D,P},X_t)=q_t^D(a\mid X_t,H_{t-1})\) almost surely.
+  \item \(\mathfrak T_n\) --- \texttt{unrestricted estimator class}; \texttt{sets of measurable real-\allowbreak{}valued maps}; \texttt{decision class}
+  \par\smallskip\noindent\emph{Definition.} All Borel-measurable maps from the canonical observed path \(H_n\) to \(\mathbb R\); equivalently, the common class of \(\mathcal F_n^{D,P}\)-measurable estimators before completion by null sets.
+  \item \(T\) --- \texttt{estimator}; \(\mathfrak T_n\); \texttt{decision rule}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Generic unrestricted estimator based on the observed trajectory.}
+  \item \(e\) --- \texttt{static propensity vector}; \([0,1]^d\to\Delta_K\); \texttt{oracle design}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Generic covariate-\allowbreak{}dependent allocation used to define the oracle benchmark.}
+  \item \(V(e;P)\) --- \texttt{oracle variance functional}; \([0,\infty)\); \texttt{benchmark}
+  \par\smallskip\noindent\emph{Definition.} Variance functional constructed in \(\mathrm{def{:}oracle\text{-}benchmark}\).
+  \item \(V^*(P)\) --- \texttt{optimal oracle variance}; \([0,\infty)\); \texttt{benchmark}
+  \par\smallskip\noindent\emph{Definition.} Minimum of \(V(e;P)\) over allocations obeying the positivity floor.
+  \item \(Z_{i,a}\) --- \texttt{auxiliary arm-\allowbreak{}specific observation}; \([0,1]^d\times\mathbb R\); \texttt{comparison experiment}
+  \par\smallskip\noindent\emph{Definition.} \(Z_{i,a}=(X_i,Y_i(a))\), used only to define standalone nuisance minimax risks.
+  \item \(\mathcal P(s,r)\) --- \texttt{fixed Hölder model class}; \texttt{sets of superpopulation laws}; \texttt{model class}
+  \par\smallskip\noindent\emph{Definition.} Class constructed in \(\mathrm{def{:}model\text{-}class}\).
+  \item \(\mathfrak D_{n,\varepsilon}\) --- \texttt{non-\allowbreak{}anticipating design class}; \texttt{sets of assignment kernels}; \texttt{design class}
+  \par\smallskip\noindent\emph{Definition.} Class constructed in \(\mathrm{def{:}design\text{-}class}\).
+  \item \(\mathsf Q_n^{\mu}(s,d;\omega)\) --- \texttt{standalone weighted-\allowbreak{}mean minimax risk}; \([0,\infty)\); \texttt{rate object}
+  \par\smallskip\noindent\emph{Definition.} Risk constructed in \(\mathrm{def{:}standalone\text{-}risks}\).
+  \item \(\mathsf Q_n^{\sigma}(s,r,d;\omega)\) --- \texttt{standalone weighted-\allowbreak{}variance minimax risk}; \([0,\infty)\); \texttt{rate object}
+  \par\smallskip\noindent\emph{Definition.} Risk constructed in \(\mathrm{def{:}standalone\text{-}risks}\).
+  \item \(\mathsf R_n(s,r,d;\omega)\) --- \texttt{sequential minimax excess MSE}; \(\mathbb R\); \texttt{target risk}
+  \par\smallskip\noindent\emph{Definition.} Risk constructed in \(\mathrm{def{:}excess\text{-}risk}\).
+  \item \(\alpha_d\) --- \texttt{weighted-\allowbreak{}mean root-\allowbreak{}risk exponent}; \((0,1/2)\); \texttt{derived regime parameter}
+  \par\smallskip\noindent\emph{Definition.} \(\alpha_d=s/(2s+d)\).
+  \item \(\beta_d\) --- \texttt{known-\allowbreak{}mean variance root-\allowbreak{}risk exponent}; \((0,1/2)\); \texttt{comparison regime parameter}
+  \par\smallskip\noindent\emph{Definition.} \(\beta_d=r/(2r+d)\).
+  \item \(\alpha_1\) --- \texttt{one-\allowbreak{}dimensional mean root-\allowbreak{}risk exponent}; \((0,1/2)\); \texttt{specialized regime parameter}
+  \par\smallskip\noindent\emph{Definition.} \(\alpha_1=s/(2s+1)\).
+  \item \(\beta_1\) --- \texttt{one-\allowbreak{}dimensional known-\allowbreak{}mean variance root-\allowbreak{}risk exponent}; \((0,1/2)\); \texttt{specialized regime parameter}
+  \par\smallskip\noindent\emph{Definition.} \(\beta_1=r/(2r+1)\).
+  \item \(\gamma_1\) --- \texttt{unknown-\allowbreak{}mean variance root-\allowbreak{}risk exponent}; \((0,1/2)\); \texttt{derived regime parameter}
+  \par\smallskip\noindent\emph{Definition.} \(\gamma_1=\min\{4sr/(4sr+2s+r),\ r/(2r+1)\}\).
+  \item \(\mathsf H_n\) --- \texttt{predictable difference-\allowbreak{}learning handle}; \texttt{algorithmic handles}; \texttt{method handle}
+  \par\smallskip\noindent\emph{Definition.} Construction specified in \(\mathrm{def{:}attainment\text{-}handle}\).
+  \item \(\Pi_n\) --- \texttt{candidate Bayes prior}; probability measures on \(\mathcal P(s,r)\); \texttt{open converse handle}
+  \par\smallskip\noindent\emph{Definition.} An \(n\)-dependent prior whose construction is requested by \(\mathrm{oeq{:}unrestricted\text{-}centered\text{-}converse}\).
+\end{itemize}
+
+\section{Assumptions}
+
+\begin{assumption}[ass:latent-iid]\label{ass:latent-iid}
+\(U_1,\ldots,U_n\stackrel{\mathrm{iid}}{\sim}P\).
+\par\smallskip\noindent\emph{Standard} (independent superpopulation sampling, \cite{LiSimchiLevi2026SequentialEfficiency}).
+\end{assumption}
+
+\begin{assumption}[ass:bounded-density]\label{ass:bounded-density}
+\(c_X\le p_X(x)\le C_X\) for Lebesgue-almost every \(x\in[0,1]^d\).
+\par\smallskip\noindent\emph{Standard} (random-design density bounded above and below, \cite{ShenGaoWittenHan2020Variance}).
+\end{assumption}
+
+\begin{assumption}[ass:gaussian-outcomes]\label{ass:gaussian-outcomes}
+\(Y_t(a)\mid X_t=x\sim\mathcal N(\mu_a(x),\sigma_a^2(x))\) for every \(a\in\mathcal A\).
+\par\smallskip\noindent\emph{Standard} (heteroscedastic Gaussian nonparametric regression, \cite{ShenGaoWittenHan2020Variance}).
+\end{assumption}
+
+\begin{assumption}[ass:mean-holder]\label{ass:mean-holder}
+\(\mu_a\in\mathcal H^s([0,1]^d,L_{\mu})\) for every \(a\in\mathcal A\).
+\par\smallskip\noindent\emph{Standard} (isotropic Hölder smoothness for the unknown mean, \cite{ShenGaoWittenHan2020Variance}).
+\end{assumption}
+
+\begin{assumption}[ass:mean-bound]\label{ass:mean-bound}
+\(\max_{a\in\mathcal A}\|\mu_a\|_{\infty}\le M\).
+\par\smallskip\noindent\emph{Standard} (uniformly bounded regression functions, \cite{LiSimchiLevi2026SequentialEfficiency}).
+\end{assumption}
+
+\begin{assumption}[ass:variance-holder]\label{ass:variance-holder}
+\(\sigma_a^2\in\mathcal H^r([0,1]^d,L_{\sigma})\) for every \(a\in\mathcal A\).
+\par\smallskip\noindent\emph{Standard} (isotropic Hölder smoothness for the variance function, \cite{ShenGaoWittenHan2020Variance}).
+\end{assumption}
+
+\begin{assumption}[ass:variance-range]\label{ass:variance-range}
+\(v_{\min}\le\sigma_a^2(x)\le v_{\max}\) for every \(a\in\mathcal A\) and \(x\in[0,1]^d\).
+\par\smallskip\noindent\emph{Standard} (uniformly nondegenerate conditional variance, \cite{LiSimchiLevi2026SequentialEfficiency}).
+\end{assumption}
+
+\begin{assumption}[ass:known-bounded-weights]\label{ass:known-bounded-weights}
+\(\max_{a\in\mathcal A}\|\omega_a\|_{\infty}\le W\).
+\par\smallskip\noindent\emph{Standard} (known bounded weights for linear outcome-mean functionals, \cite{LiSimchiLevi2026SequentialEfficiency}).
+\end{assumption}
+
+\begin{assumption}[ass:kernel-measurability]\label{ass:kernel-measurability}
+For every \(t\), \(q_t^D(a\mid x,h)\) is jointly measurable in \(a\), \(x\), and \(h\in\mathcal H_{t-1}\).
+\par\smallskip\noindent\emph{Standard} (measurable non-anticipating assignment kernel, \cite{LiSimchiLevi2026SequentialEfficiency}).
+\end{assumption}
+
+\begin{assumption}[ass:kernel-normalization]\label{ass:kernel-normalization}
+\(\sum_{a\in\mathcal A}q_t^D(a\mid x,h)=1\) for every \(t\), \(x\in[0,1]^d\), and \(h\in\mathcal H_{t-1}\).
+\par\smallskip\noindent\emph{Standard} (assignment-kernel normalization, \cite{LiSimchiLevi2026SequentialEfficiency}).
+\end{assumption}
+
+\begin{assumption}[ass:kernel-positivity]\label{ass:kernel-positivity}
+\(q_t^D(a\mid x,h)\ge\varepsilon\) for every \(t\), \(a\in\mathcal A\), \(x\in[0,1]^d\), and \(h\in\mathcal H_{t-1}\).
+\par\smallskip\noindent\emph{Standard} (uniform sequential positivity, \cite{LiSimchiLevi2026SequentialEfficiency}).
+\end{assumption}
+
+\begin{assumption}[ass:constant-weights]\label{ass:constant-weights}
+\(\omega_a(x)=\omega_a(x')\) for every \(a\in\mathcal A\) and every \(x,x'\in[0,1]^d\).
+\par\smallskip\noindent\emph{Standard} (constant ATE contrast weights, \cite{LiSimchiLevi2026SequentialEfficiency}).
+\end{assumption}
+
+\begin{assumption}[ass:nondegenerate-weights]\label{ass:nondegenerate-weights}
+\(|\omega_a(x)|\ge w_{\min}\) for every \(a\in\mathcal A\) and every \(x\in[0,1]^d\).
+\par\smallskip\noindent\emph{Standard} (nondegenerate linear contrast, \cite{LiSimchiLevi2026SequentialEfficiency}).
+\end{assumption}
+
+\begin{assumption}[ass:active-weight-region]\label{ass:active-weight-region}
+\(|\omega_{a_0}(x)|\ge w_{\min}\) for every \(x\in B_0\).
+\par\smallskip\noindent\emph{Standard} (nondegenerate weighted linear functional on an interior region, \cite{LiSimchiLevi2026SequentialEfficiency}).
+\end{assumption}
+
+\begin{assumption}[ass:strict-variance-range]\label{ass:strict-variance-range}
+\(v_{\min}<v_{\max}\).
+\par\smallskip\noindent\emph{Novel.} standard: nondegenerate parameter interval for a Gaussian variance submodel
+\end{assumption}
+
+\section{Definitions}
+
+\begin{definition}[def:model-class]\label{def:model-class}
+\par\smallskip\noindent\emph{Defined object.} \texttt{fixed joint Hölder superpopulation class}
+\par\smallskip\noindent\emph{Construction.} \(\mathcal P(s,r):=\{P: P\text{ is a law of }U_t\text{ satisfying the bounded-density, Gaussian-outcome, mean-Hölder, mean-bound, variance-Hölder, and variance-range conditions}\}\). The radii and bounds are fixed independently of \(n\).
+\par\smallskip\noindent\emph{Member properties.} \texttt{ass:\allowbreak{}bounded-\allowbreak{}density}; \texttt{ass:\allowbreak{}gaussian-\allowbreak{}outcomes}; \texttt{ass:\allowbreak{}mean-\allowbreak{}holder}; \texttt{ass:\allowbreak{}mean-\allowbreak{}bound}; \texttt{ass:\allowbreak{}variance-\allowbreak{}holder}; \texttt{ass:\allowbreak{}variance-\allowbreak{}range}.
+\end{definition}
+
+\begin{definition}[def:design-class]\label{def:design-class}
+\par\smallskip\noindent\emph{Defined object.} \texttt{law-\allowbreak{}independent positive non-\allowbreak{}anticipating design class}
+\par\smallskip\noindent\emph{Construction.} \(\mathfrak D_{n,\varepsilon}:=\{D=(q_t^D)_{t=1}^n: q_t^D\text{ is a law-independent assignment kernel satisfying kernel measurability, normalization, and positivity}\}\). Each kernel is a function only of \(a\), the current covariate \(x\), and the realized past history \(h\in\mathcal H_{t-1}\).
+\par\smallskip\noindent\emph{Member properties.} \texttt{ass:\allowbreak{}kernel-\allowbreak{}measurability}; \texttt{ass:\allowbreak{}kernel-\allowbreak{}normalization}; \texttt{ass:\allowbreak{}kernel-\allowbreak{}positivity}.
+\end{definition}
+
+\begin{definition}[def:induced-experiment]\label{def:induced-experiment}
+\par\smallskip\noindent\emph{Defined object.} \texttt{sequential experiment induced by a design and a superpopulation law}
+\par\smallskip\noindent\emph{Construction.} For \(D\in\mathfrak D_{n,\varepsilon}\) and \(P\in\mathcal P(s,r)\), draw \(U_1,\ldots,U_n\stackrel{\mathrm{iid}}{\sim}P\), reveal the baseline covariates allowed by the fixed information order in \(H_0\), and recursively draw \(A_t\mid(X_t,H_{t-1})\sim q_t^D(\cdot\mid X_t,H_{t-1})\), set \(Y_t:=Y_t(A_t)\), and append \(O_t=(X_t,A_t,Y_t)\) to the history. This defines \(\mathbb P_n^{D,P}\), \(\mathcal F_t^{D,P}:=\sigma(H_t)\), and \(e_{t,a}^{D,P}:=\mathbb P_n^{D,P}(A_t=a\mid\mathcal F_{t-1}^{D,P},X_t)=q_t^D(a\mid X_t,H_{t-1})\) almost surely.
+\par\smallskip\noindent\emph{Inputs.} \(D\); \(P\); \texttt{ass:\allowbreak{}latent-\allowbreak{}iid}; \texttt{ass:\allowbreak{}kernel-\allowbreak{}measurability}; \texttt{ass:\allowbreak{}kernel-\allowbreak{}normalization}; \texttt{ass:\allowbreak{}kernel-\allowbreak{}positivity}; \texttt{def:\allowbreak{}model-\allowbreak{}class}; \texttt{def:\allowbreak{}design-\allowbreak{}class}.
+\end{definition}
+
+\begin{definition}[def:oracle-benchmark]\label{def:oracle-benchmark}
+\par\smallskip\noindent\emph{Defined object.} \texttt{positivity-\allowbreak{}constrained generalized Neyman benchmark}
+\par\smallskip\noindent\emph{Construction.} For \(e_a(x)\ge\varepsilon\) and \(\sum_{a\in\mathcal A}e_a(x)=1\), define \[V(e;P):=\operatorname{Var}_P\!\left(\sum_{a\in\mathcal A}\omega_a(X_t)\mu_a(X_t)\right)+E_P\!\left[\sum_{a\in\mathcal A}\frac{m_a(X_t)}{e_a(X_t)}\right],\qquad V^*(P):=\inf_e V(e;P).\]
+\par\smallskip\noindent\emph{Inputs.} \(P\); \(e\); \texttt{ass:\allowbreak{}variance-\allowbreak{}range}; \texttt{ass:\allowbreak{}known-\allowbreak{}bounded-\allowbreak{}weights}.
+\end{definition}
+
+\begin{definition}[def:standalone-risks]\label{def:standalone-risks}
+\par\smallskip\noindent\emph{Defined object.} \texttt{standalone armwise nuisance minimax risks}
+\par\smallskip\noindent\emph{Construction.} For \(j\in\{\mu,\sigma\}\), let the estimator observe \(Z_{1,a},\ldots,Z_{n,a}\stackrel{\mathrm{iid}}{\sim}P_a\), where \(P_a\) is the \((X_t,Y_t(a))\)-marginal of \(P\). Define \[\mathsf Q_n^{\mu}(s,d;\omega):=\max_{a\in\mathcal A}\inf_{\widehat g}\sup_{P\in\mathcal P(s,r)}E_P\|\widehat g-\omega_a\mu_a\|_{L_2(P_X)}^2,\] \[\mathsf Q_n^{\sigma}(s,r,d;\omega):=\max_{a\in\mathcal A}\inf_{\widehat h}\sup_{P\in\mathcal P(s,r)}E_P\|\widehat h-m_a\|_{L_2(P_X)}^2,\] where each infimum ranges over all measurable functions of the corresponding arm-specific sample.
+\par\smallskip\noindent\emph{Inputs.} \(Z_{i,a}\); \(\mathcal P(s,r)\); \texttt{ass:\allowbreak{}gaussian-\allowbreak{}outcomes}; \texttt{ass:\allowbreak{}mean-\allowbreak{}holder}; \texttt{ass:\allowbreak{}variance-\allowbreak{}holder}; \texttt{ass:\allowbreak{}known-\allowbreak{}bounded-\allowbreak{}weights}.
+\end{definition}
+
+\begin{definition}[def:excess-risk]\label{def:excess-risk}
+\par\smallskip\noindent\emph{Defined object.} \texttt{unrestricted sequential minimax excess MSE}
+\par\smallskip\noindent\emph{Construction.} \[\mathsf R_n(s,r,d;\omega):=\inf_{D\in\mathfrak D_{n,\varepsilon}}\inf_{T\in\mathfrak T_n}\sup_{P\in\mathcal P(s,r)}\left\{E_{\mathbb P_n^{D,P}}[(T-\theta(P))^2]-\frac{V^*(P)}{n}\right\}.\] The design \(D\) and estimator \(T\) are chosen from the same law-independent classes before the supremum over \(P\); under each induced experiment, \(T\) is \(\mathcal F_n^{D,P}\)-measurable, with no unbiasedness, regularity, asymptotic-linearity, or bias-rate restriction.
+\par\smallskip\noindent\emph{Inputs.} \(\mathfrak D_{n,\varepsilon}\); \(\mathfrak T_n\); \(\mathcal P(s,r)\); \(\mathbb P_n^{D,P}\); \(\theta(P)\); \(V^*(P)\); \texttt{def:\allowbreak{}induced-\allowbreak{}experiment}.
+\end{definition}
+
+\begin{definition}[def:attainment-handle]\label{def:attainment-handle}
+\par\smallskip\noindent\emph{Defined object.} \texttt{predictable difference-\allowbreak{}learning and constrained-\allowbreak{}risk handle}
+\par\smallskip\noindent\emph{Construction.} \(\mathsf H_n\) denotes the candidate family of procedures obtained from fold-specific history-measurable propensities, pooled cross-fitted augmented inverse-probability scores, pairwise-difference local-polynomial estimators for \(m_a\), opposite-fold updates of the positivity-constrained generalized Neyman allocation, and predictable bandwidth selection on training folds.  The definition names this family only.  Any integrated-risk bound, constrained-risk converse, log-removal claim, or smoothness-adaptation property must be established by a separate theorem and is not part of the definition.
+\par\smallskip\noindent\emph{Inputs.} \texttt{def:\allowbreak{}oracle-\allowbreak{}benchmark}; \texttt{def:\allowbreak{}standalone-\allowbreak{}risks}; \texttt{def:\allowbreak{}excess-\allowbreak{}risk}.
+\end{definition}
+
+\section{Main results}
+
+\begin{proposition}[prop:oracle-identification]\label{prop:oracle-identification}
+For every \(D\in\mathfrak D_{n,\varepsilon}\) and \(P\in\mathcal P(s,r)\), the observation-generation map under \(\mathbb P_n^{D,P}\), together with \(e_{t,a}^{D,P}\ge\varepsilon\), identifies \(\theta(P)\). For a fixed static allocation \(e\), the efficient influence-function variance is \(V(e;P)\), and minimizing it over the positivity-constrained simplex gives \(V^*(P)\).
+\end{proposition}
+\begin{proof}
+Put \(h_P(x):=\sum_{a\in\mathcal A}\omega_a(x)\mu_a(x)\).  Bounded weights, bounded means, the variance range, and \(e_{t,a}^{D,P}\geq\varepsilon\) imply that all quantities below are square integrable.  For any fixed \(t\), iterated conditional expectation and the non-anticipating assignment rule give
+\[
+\begin{aligned}
+E_{\mathbb P_n^{D,P}}\!\left[
+ \sum_{a\in\mathcal A}
+ \frac{\mathbf 1\{A_t=a\}}{e_{t,a}^{D,P}}
+ \omega_a(X_t)Y_t
+ \ \middle|\ X_t,\mathcal F_{t-1}^{D,P}
+\right]
+&=\sum_{a\in\mathcal A}\omega_a(X_t)
+ E_P[Y_t(a)\mid X_t]\\
+&=h_P(X_t).
+\end{aligned}
+\]
+The first equality uses consistency \(Y_t=Y_t(A_t)\), conditional randomization from the induced-experiment definition, and positivity for the division.  Since \(X_t\sim P_X\) by latent i.i.d. sampling, a second expectation yields
+\[
+\theta(P)=E_{\mathbb P_n^{D,P}}\!\left[
+ \sum_{a\in\mathcal A}
+ \frac{\mathbf 1\{A_t=a\}}{e_{t,a}^{D,P}}
+ \omega_a(X_t)Y_t
+\right].
+\]
+Thus the right-hand side is a computable observed-law functional because \(D\), hence its realized predictable probabilities, is known.  This proves identification; it does not define the causal target by the observed functional.
+
+For the efficiency calculation, fix a static measurable allocation \(e\) with \(e_a(x)\geq\varepsilon\) and \(\sum_a e_a(x)=1\).  Work in the ambient dominated observed-data model through \(P\), with the treatment kernel held fixed.  Its canonical gradient for the displayed linear functional is
+\[
+\phi_e(O_t;P)
+=h_P(X_t)-\theta(P)
+ +\sum_{a\in\mathcal A}
+ \frac{\mathbf 1\{A_t=a\}}{e_a(X_t)}
+ \omega_a(X_t)\{Y_t-\mu_a(X_t)\}.
+\]
+Indeed, \(E_P[\phi_e]=0\).  Against a covariate-law score, the first term represents the derivative of \(E_P h_P(X)\); against an arm-specific conditional-outcome score, conditional expectation of the corresponding inverse-probability term is the derivative of \(E_P\{\omega_a(X)\mu_a(X)\}\); and against an assignment score the derivative is zero because the target does not depend on the known treatment kernel.  These three score spaces are mutually orthogonal, so this gradient is canonical.  This is an ambient-model efficiency statement; at a boundary point of a fixed Hölder ball or variance interval it should not be read as asserting the existence of a two-sided submodel contained in the restricted class.
+
+Conditional centering makes the first term orthogonal to every residual term, and residual terms from distinct arms have zero product.  Therefore
+\[
+\begin{aligned}
+\operatorname{Var}_P\{\phi_e(O_t;P)\}
+&=\operatorname{Var}_P\{h_P(X_t)\}
+ +E_P\!\left[
+  \sum_{a\in\mathcal A}
+  \frac{\omega_a(X_t)^2\sigma_a^2(X_t)}{e_a(X_t)}
+ \right]\\
+&=\operatorname{Var}_P\{h_P(X_t)\}
+ +E_P\!\left[\sum_{a\in\mathcal A}\frac{m_a(X_t)}{e_a(X_t)}\right]
+=V(e;P).
+\end{aligned}
+\]
+Finally, the positivity-constrained simplex is compact pointwise, the objective is continuous in \(e\), and a measurable minimizer can be selected explicitly by the finite-dimensional convex program
+\[
+\min\left\{\sum_{a\in\mathcal A}\frac{m_a(x)}{u_a}:
+u_a\geq\varepsilon,\ \sum_{a\in\mathcal A}u_a=1\right\}
+\]
+with deterministic lexicographic tie breaking.  Integrating its value gives exactly the infimum named \(V^*(P)\) in the oracle-benchmark definition.  The case in which some or all \(m_a(x)\) vanish is covered by the same compact program; nonuniqueness affects neither its value nor the conclusion.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This proposition separates the causal target from its observed-data identifying functional and fixes the oracle first-order variance benchmark. \textit{Gap.} No new identification claim is made beyond the known randomized-design functional and efficient influence function. \textit{Consumer.} Every excess-risk statement subtracts this same explicitly defined benchmark.
+
+\begin{theorem}[thm:nuisance-reduction-frontier]\label{thm:nuisance-reduction-frontier}
+Under the active-weight-region condition and \(v_{\min}<v_{\max}\), there exist constants \(C<\infty\) and \(n_0\), depending only on the fixed class constants, such that for every \(n\geq n_0\),
+\[
+\mathsf R_n(s,r,d;\omega)
+\leq \frac{C}{n}\left\{\mathsf Q_n^{\mu}(s,d;\omega)\vee
+\mathsf Q_n^{\sigma}(s,r,d;\omega)\right\}.
+\]
+The bound is witnessed by one law-independent non-anticipating design and one predictable augmented inverse-probability estimator.  The decision problem still ranges over all \(D\in\mathfrak D_{n,\varepsilon}\) and all \(T\in\mathfrak T_n\), including biased estimators, and the bound has no logarithmic factor.  No positive lower bound for the oracle-subtracted unrestricted mean-squared-error criterion is asserted.
+\end{theorem}
+\begin{proof}
+Let \((D_n^{\circ},T_n^{\circ})\) be the single data-driven pair furnished by \(\mathrm{lem{:}predictable\text{-}aipw\text{-}holder\text{-}upper}\). By \(\mathrm{def{:}excess\text{-}risk}\), evaluating the two infima defining \(\mathsf R_n(s,r,d;\omega)\) at this admissible pair gives
+\[
+\mathsf R_n(s,r,d;\omega)
+\leq C_1\left(n^{-1-2\alpha_d}\vee n^{-1-2\beta_d}\right).
+\tag{62}
+\]
+The active-weight-region assumption and \(v_{\min}<v_{\max}\) are precisely the side conditions under which \(\mathrm{lem{:}variance\text{-}risk\text{-}absorption}\) gives, for all sufficiently large \(n\),
+\[
+\mathsf Q_n^{\mu}(s,d;\omega)\vee
+\mathsf Q_n^{\sigma}(s,r,d;\omega)
+\geq c_0\left(n^{-2\alpha_d}\vee n^{-2\beta_d}\right)
+\tag{63}
+\]
+with \(c_0>0\). Combining (62) and (63) yields
+\[
+\mathsf R_n(s,r,d;\omega)
+\leq \frac{C_1}{c_0n}
+\left\{\mathsf Q_n^{\mu}(s,d;\omega)\vee
+\mathsf Q_n^{\sigma}(s,r,d;\omega)\right\}.
+\]
+Increasing the constant and the threshold \(n_0\) proves the theorem. The witness is the same law-independent non-anticipating design and predictable augmented inverse-probability estimator as in the cited lemma. Both ingredients are expected-risk inequalities with constants independent of \(n\), so their comparison introduces no logarithmic factor. Finally, this argument only inserts one admissible pair into the defining infima. It neither restricts the remaining decision class nor reverses an infimum, and therefore asserts no lower bound for arbitrary, possibly biased, estimators.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This is the evaluable nuisance-risk form of the constructive log-free upper result under the active-region and strict-range conditions. \textit{Gap.} The comparison is one-sided; it does not show the nuisance maximum is unavoidable for biased estimators. \textit{Consumer.} The result separates attainable causal excess risk into standalone mean and variance learning problems.
+
+\begin{lemma}[lem:variance-risk-absorption]\label{lem:variance-risk-absorption}
+Under the active-weight-region condition, and provided the variance range has nonempty interior, there exist fixed constants \(0<c<C<\infty\) such that
+\[
+c n^{-2\alpha_d}\leq\mathsf Q_n^{\mu}(s,d;\omega)\leq C n^{-2\alpha_d},
+\]
+\[
+c n^{-2\beta_d}\leq\mathsf Q_n^{\sigma}(s,r,d;\omega)
+\leq C\left(n^{-2\beta_d}\vee n^{-2\alpha_d}\right).
+\]
+Consequently,
+\[
+\mathsf Q_n^{\mu}(s,d;\omega)\vee\mathsf Q_n^{\sigma}(s,r,d;\omega)
+\asymp n^{-2\alpha_d}\vee n^{-2\beta_d}.
+\]
+\end{lemma}
+\begin{proof}
+Write \(q_{\mu,n}=n^{-2s/(2s+d)}\) and \(q_{\sigma,n}=n^{-2r/(2r+d)}\).  We first establish the random-design regression bound used below.  If \(f\in\mathcal H^u([0,1]^d,L)\), the design density is between fixed positive constants, and the regression noise has uniformly bounded second moment, a boundary-corrected tensor local-polynomial estimator of degree \(\lfloor u\rfloor\), clipped to a fixed envelope, satisfies
+\[
+\sup_f E\|\widehat f-f\|_{L_2(P_X)}^2
+\leq C\{h^{2u}+(nh^d)^{-1}\}.
+\tag{7}
+\]
+Indeed, on each cube of side \(h\), Taylor expansion to degree \(\lfloor u\rfloor\) leaves a remainder bounded by \(Lh^u\), giving integrated squared bias at most \(Ch^{2u}\).  The density bounds make the population Gram matrices of the rescaled fixed-dimensional polynomial bases uniformly nonsingular.  A finite-net exponential-Markov bound for their bounded entries gives probability at most \(Ce^{-cnh^d}\) that an empirical Gram matrix has eigenvalue below half its population bound; use zero and clip on that event.  On the complement, direct conditional variance calculation gives \(C/(nh^d)\).  This proves (7).  Taking \(h\asymp n^{-1/(2u+d)}\) gives the upper rate \(n^{-2u/(2u+d)}\).
+
+For the matching regression lower bound, place disjoint smooth bumps of width \(h\) and height \(h^u\) on a regular grid inside a fixed cube of positive volume.  Adjacent Gaussian-location experiments have Kullback--Leibler divergence at most \(Cnh^{2u+d}\).  With \(h\asymp n^{-1/(2u+d)}\), reduce the fixed bump amplitude so the adjacent testing affinity is bounded below.  The bit-testing inequality then gives integrated squared risk at least
+\[
+c h^{-d}h^{2u+d}=ch^{2u}=c n^{-2u/(2u+d)}.
+\tag{8}
+\]
+The amplitude can be chosen once so that all bumps obey the Hölder radius and the sup-norm bound.
+
+For the mean upper bound, estimate \(\mu_a\) by (7) and put \(\widehat g_a=\omega_a\widehat\mu_a\).  The known-weight bound gives
+\[
+E\|\widehat g_a-\omega_a\mu_a\|_{L_2(P_X)}^2
+\leq W^2E\|\widehat\mu_a-\mu_a\|_{L_2(P_X)}^2
+\leq Cq_{\mu,n}.
+\tag{9}
+\]
+For the reverse inequality, choose the active arm \(a_0\), use the uniform covariate density, keep all other nuisances fixed at admissible constants, and place the mean bumps from (8) inside \(B_0\).  Nonemptiness of the density class on the unit-volume cube implies \(c_X\leq1\leq C_X\), so the uniform density is admissible.  On \(B_0\), \(|\omega_{a_0}|\geq w_{\min}\); hence weighted squared loss is at least \(w_{\min}^2\) times the unweighted bump loss.  Equation (8) gives
+\[
+\mathsf Q_n^{\mu}(s,d;\omega)\geq cq_{\mu,n}.
+\tag{10}
+\]
+
+For the variance upper bound, split an arm-specific sample into two halves.  Construct a clipped mean estimator \(\widehat\mu_a\) on the first half.  On the second half regress
+\[
+R_i=\{Y_i(a)-\widehat\mu_a(X_i)\}^2
+\]
+on \(X_i\) with the degree-\(\lfloor r\rfloor\) local-polynomial operator \(S_h\), and put \(\widehat h_a=\omega_a^2S_hR\).  Conditional on the first half,
+\[
+E[R_i\mid X_i=x,\widehat\mu_a]
+=\sigma_a^2(x)+\{\widehat\mu_a(x)-\mu_a(x)\}^2.
+\tag{11}
+\]
+Gaussianity, clipping, and the variance range uniformly bound the conditional second moment of \(R_i\).  Equation (7) gives risk \(Cq_{\sigma,n}\) for smoothing the \(r\)-Hölder function \(\sigma_a^2\).  The same Gram-matrix calculation makes \(S_h\) uniformly bounded on \(L_2(P_X)\).  Since clipping makes \(|\widehat\mu_a-\mu_a|\leq2M\),
+\[
+\|\{\widehat\mu_a-\mu_a\}^2\|_{L_2(P_X)}^2
+=E_P|\widehat\mu_a-\mu_a|^4
+\leq4M^2E_P|\widehat\mu_a-\mu_a|^2
+\leq Cq_{\mu,n}.
+\tag{12}
+\]
+Multiplication by \(\omega_a^2\) costs at most \(W^4\).  Equations (11)--(12) yield
+\[
+\mathsf Q_n^{\sigma}(s,r,d;\omega)
+\leq C(q_{\sigma,n}\vee q_{\mu,n}).
+\tag{13}
+\]
+
+For the variance lower bound, the registered strict condition \(v_{\min}<v_{\max}\) permits a fixed \(v_0\in(v_{\min},v_{\max})\).  Set every mean to zero and, for the active arm, use
+\[
+\sigma_{a_0,\xi}^2(x)=v_0+\rho h^r\sum_{j=1}^{N_h}\xi_j
+\psi\!\left(\frac{x-x_j}{h}\right),
+\qquad \xi_j\in\{-1,1\},
+\]
+where the supports are disjoint and contained in \(B_0\), \(N_h\asymp h^{-d}\), and \(\rho>0\) is fixed sufficiently small.  These functions lie in the variance Hölder ball and strictly inside the variance range.  For adjacent vertices,
+\[
+\operatorname{KL}\{\mathcal N(0,v),\mathcal N(0,v')\}
+=\frac12\left\{\frac{v}{v'}-1-\log\frac{v}{v'}\right\}
+\leq C(v-v')^2,
+\]
+uniformly over the fixed variance interval.  Thus the \(n\)-sample divergence is at most \(Cnh^{2r+d}\).  Take \(h\asymp n^{-1/(2r+d)}\) and reduce \(\rho\) so adjacent affinity is bounded below.  Because \(|\omega_{a_0}|\geq w_{\min}\) on each bump,
+\[
+\|m_{a_0,\xi}-m_{a_0,\xi'}\|_{L_2(P_X)}^2
+\geq c w_{\min}^4h^{2r+d}.
+\]
+The bit-testing inequality over the \(N_h\) signs gives
+\[
+\mathsf Q_n^{\sigma}(s,r,d;\omega)
+\geq cN_hh^{2r+d}=ch^{2r}=cq_{\sigma,n}.
+\tag{14}
+\]
+Equations (9)--(10) and (13)--(14), together with \(q_{\mu,n}=n^{-2\alpha_d}\) and \(q_{\sigma,n}=n^{-2\beta_d}\), prove all three displays.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The lemma derives the standalone nuisance scales without claiming an unsupported exact variance-function exponent. \textit{Gap.} Strict variance range is necessary for its variance lower submodel. \textit{Consumer.} It converts the causal upper result into explicit Hölder exponents.
+
+\begin{theorem}[thm:explicit-holder-frontier]\label{thm:explicit-holder-frontier}
+Under the active-weight-region condition, there exist constants \(C<\infty\) and \(n_0\), depending only on the fixed class constants, such that for every \(n\geq n_0\),
+\[
+\mathsf R_n(s,r,d;\omega)
+\leq C\left(n^{-1-2\alpha_d}\vee n^{-1-2\beta_d}\right),
+\qquad
+\alpha_d=\frac{s}{2s+d},\quad
+\beta_d=\frac{r}{2r+d}.
+\]
+The infimum remains over all law-independent kernels \(D\in\mathfrak D_{n,\varepsilon}\) and all estimators \(T\in\mathfrak T_n\), including biased estimators.  The displayed upper bound is constructive and contains no logarithmic factor.  No positive lower bound for the oracle-subtracted unrestricted mean-squared-error criterion, and hence no matching minimax-rate assertion in any smoothness regime, is made here.
+\end{theorem}
+\begin{proof}
+The construction in \(\mathrm{lem{:}predictable\text{-}aipw\text{-}holder\text{-}upper}\) supplies one pair
+\[
+(D_n^{\circ},T_n^{\circ})\in
+\mathfrak D_{n,\varepsilon}\times\mathfrak T_n
+\]
+such that
+\[
+\sup_{P\in\mathcal P(s,r)}
+\left\{
+E_{\mathbb P_n^{D_n^{\circ},P}}
+[(T_n^{\circ}-\theta(P))^2]-\frac{V^*(P)}n
+\right\}
+\leq C\left(n^{-1-2\alpha_d}\vee n^{-1-2\beta_d}\right).
+\tag{61}
+\]
+By \(\mathrm{def{:}excess\text{-}risk}\), the two infima defining \(\mathsf R_n(s,r,d;\omega)\) range over classes containing this pair. Substitution of the pair into those infima proves the asserted upper bound. The equalities
+\[
+\alpha_d=\frac{s}{2s+d},\qquad
+\beta_d=\frac{r}{2r+d}
+\]
+are the declared exponent definitions. The lemma sums expected epoch risks geometrically and does not take a simultaneous high-probability maximum over epochs, so (61) has no logarithmic factor. The active-weight-region condition is not needed by this construction but is compatible with its stated scope. No step lower-bounds the centered loss or reverses the defining infimum, so the proof yields only the claimed constructive upper result and no minimax converse.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This theorem states the direct log-free Hölder upper law furnished by the explicit predictable design and estimator. \textit{Gap.} No positive unrestricted oracle-subtracted lower bound is proved. \textit{Consumer.} ATE, weighted-ATE, subgroup, and fixed-policy experiments obtain a concrete fixed-smoothness achievable rate.
+
+\begin{theorem}[thm:one-dimensional-explicit-frontier]\label{thm:one-dimensional-explicit-frontier}
+Suppose \(d=1\), every contrast weight is a constant with magnitude at least \(w_{\min}\), and the variance range has nonempty interior.  Then
+\[
+\mathsf Q_n^{\mu}(s,1;\omega)\asymp n^{-2s/(2s+1)},
+\]
+and there are fixed constants \(0<c<C<\infty\) such that
+\[
+c n^{-2r/(2r+1)}
+\leq\mathsf Q_n^{\sigma}(s,r,1;\omega)
+\leq C n^{-2\gamma_1},
+\qquad
+\gamma_1=\min\left\{\frac{4sr}{4sr+2s+r},\frac{r}{2r+1}\right\}.
+\]
+Nevertheless the maximum is exact:
+\[
+\mathsf Q_n^{\mu}(s,1;\omega)\vee\mathsf Q_n^{\sigma}(s,r,1;\omega)
+\asymp n^{-2s/(2s+1)}\vee n^{-2r/(2r+1)}.
+\]
+\end{theorem}
+\begin{proof}
+Constant weights of magnitude at least \(w_{\min}\) imply the active-weight-region condition on \(B_0\).  The variance-risk absorption lemma at \(d=1\), using \(v_{\min}<v_{\max}\), gives
+\[
+\mathsf Q_n^{\mu}(s,1;\omega)\asymp n^{-2\alpha_1},
+\qquad
+\mathsf Q_n^{\sigma}(s,r,1;\omega)\geq c n^{-2\beta_1}.
+\tag{15}
+\]
+The already-established transfer of the Shen--Gao--Witten--Han random-design estimator gives only the upper inequality
+\[
+\mathsf Q_n^{\sigma}(s,r,1;\omega)\leq Cn^{-2\gamma_1}.
+\tag{16}
+\]
+No lower bound at exponent \(\gamma_1\) is used.
+
+It remains to identify the maximum.  Put
+\[
+g_1=\frac{4sr}{4sr+2s+r}.
+\]
+Positive denominators give
+\[
+g_1<\beta_1
+\quad\Longleftrightarrow\quad
+4s(2r+1)<4sr+2s+r
+\quad\Longleftrightarrow\quad
+s<\frac{r}{4r+2}.
+\tag{17}
+\]
+Moreover,
+\[
+g_1-\alpha_1
+=\frac{s\{s(4r-2)+3r\}}
+{(4sr+2s+r)(2s+1)}.
+\tag{18}
+\]
+If \(r\geq1/2\), the numerator in (18) is positive.  If \(0<r<1/2\) and \(s<r/(4r+2)\), then
+\[
+s(2-4r)<\frac{r(2-4r)}{4r+2}<r<3r,
+\]
+so the numerator is again positive.  Thus \(\gamma_1=\min\{g_1,\beta_1\}\geq\alpha_1\wedge\beta_1\).  Equation (16) is consequently bounded above by a constant times \(n^{-2\alpha_1}\vee n^{-2\beta_1}\).  The two lower bounds in (15) supply the two respective terms.  Their maximum proves the final display.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This theorem concerns standalone nuisance risks and their exact maximum only. \textit{Gap.} The Shen--Gao--Witten--Han result is used only for an upper bound under the present density class. \textit{Consumer.} Scalar-covariate studies can select nuisance resolution without inferring an unsupported causal equivalence.
+
+\begin{proposition}[prop:rough-mean-absorption]\label{prop:rough-mean-absorption}
+If \(s<r/(4r+2)\), then
+\[
+\gamma_1=\frac{4sr}{4sr+2s+r}<\beta_1=\frac{r}{2r+1},
+\qquad
+\alpha_1=\frac{s}{2s+1}\leq\gamma_1.
+\]
+If \(s\geq r/(4r+2)\), then \(\gamma_1=\beta_1\).  Consequently, for every \(s,r>0\),
+\[
+\alpha_1\wedge\gamma_1=\alpha_1\wedge\beta_1.
+\]
+\end{proposition}
+\begin{proof}
+Put \(g=4sr/(4sr+2s+r)\).  Because every denominator is positive,
+\[
+g<\beta_1
+\quad\Longleftrightarrow\quad
+4s(2r+1)<4sr+2s+r
+\quad\Longleftrightarrow\quad
+s<\frac{r}{4r+2}.
+\]
+Thus below the threshold \(\gamma_1=g<\beta_1\), while at or above it \(\gamma_1=\beta_1\).  Also
+\[
+g-\alpha_1
+=\frac{s\{s(4r-2)+3r\}}
+{(4sr+2s+r)(2s+1)}.
+\]
+For \(r\geq1/2\) its numerator is positive.  For \(0<r<1/2\) in the below-threshold regime,
+\[
+s(2-4r)<\frac{r(2-4r)}{4r+2}<r<3r,
+\]
+and hence \(s(4r-2)+3r>0\).  Therefore \(\alpha_1\leq g=\gamma_1\) below the threshold.  In that regime both \(\alpha_1\wedge\gamma_1\) and \(\alpha_1\wedge\beta_1\) equal \(\alpha_1\); at or above the threshold \(\gamma_1=\beta_1\).  This proves the identity.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This is a direct algebraic identity among three exponents. \textit{Gap.} It has no causal-risk conclusion. \textit{Consumer.} It explains the exact maximum in the rough-mean regime.
+
+\begin{proposition}[prop:smooth-mean-reduction]\label{prop:smooth-mean-reduction}
+If \(s\geq r/(4r+2)\), then
+\[
+\gamma_1=\beta_1=\frac{r}{2r+1}.
+\]
+\end{proposition}
+\begin{proof}
+Put \(g=4sr/(4sr+2s+r)\).  Since all denominators are positive,
+\[
+g\geq\frac{r}{2r+1}
+\quad\Longleftrightarrow\quad
+4s(2r+1)\geq4sr+2s+r
+\quad\Longleftrightarrow\quad
+s\geq\frac{r}{4r+2}.
+\]
+Under the stated condition,
+\[
+\gamma_1=\min\left\{g,\frac{r}{2r+1}\right\}
+=\frac{r}{2r+1}=\beta_1.
+\]
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This is the direct algebraic smoothness-threshold identity. \textit{Gap.} It has no causal-risk conclusion. \textit{Consumer.} It identifies when the joint variance upper exponent equals the known-mean exponent.
+
+\begin{lemma}[lem:shen-random-design-variance-upper]\label{lem:shen-random-design-variance-upper}
+For every pair \(u,v>0\), in the univariate heteroscedastic random-design regression model of Shen, Gao, Witten, and Han with an \(u\)-Hölder mean, a \(v\)-Hölder variance, their stated design-density condition, and a bounded fourth error moment, there is a local-polynomial pairwise-difference estimator whose global integrated squared risk is at most
+\[
+C\left(n^{-8uv/(4uv+2u+v)}\vee n^{-2v/(2v+1)}\right).
+\]
+\end{lemma}
+\par\smallskip\noindent \textit{Justification.} This cited leaf supplies only the published univariate variance upper bound. \textit{Gap.} Its lower construction is not imported into the bounded-below density class. \textit{Consumer.} The univariate transfer lemma uses its estimator rate.
+
+\begin{lemma}[lem:shen-upper-transfer]\label{lem:shen-upper-transfer}
+Suppose \(d=1\) and every \(\omega_a\) is constant.  Then the standalone weighted-variance risk satisfies
+\[
+\mathsf Q_n^{\sigma}(s,r,1;\omega)\leq Cn^{-2\gamma_1},
+\qquad
+\gamma_1=\min\left\{\frac{4sr}{4sr+2s+r},\frac{r}{2r+1}\right\}.
+\]
+\end{lemma}
+\begin{proof}
+Fix an arm.  The bounded-density condition implies the design-density condition in the cited theorem: for \(|u|\leq1/2\),
+\[
+p_{X-X}(u)=\int_{[0,1]\cap([0,1]+u)}p_X(x)p_X(x-u)\,dx
+\geq\frac{c_X^2}{2}.
+\]
+The Gaussian outcome assumption and variance range give a uniformly bounded fourth standardized-error moment.  The mean and variance functions have Hölder orders \(s\) and \(r\), respectively.  Thus the cited estimator \(\widehat\sigma_a^2\) obeys
+\[
+\sup_{P\in\mathcal P(s,r)}E_P\|\widehat\sigma_a^2-\sigma_a^2\|_{L_2(P_X)}^2
+\leq C\left(n^{-8sr/(4sr+2s+r)}\vee n^{-2r/(2r+1)}\right).
+\]
+Set \(\widehat h_a=\omega_a^2\widehat\sigma_a^2\).  Constancy and \(|\omega_a|\leq W\) multiply the risk by at most \(W^4\).  Maximizing over the fixed finite arm set and observing that the displayed maximum equals \(n^{-2\gamma_1}\) proves the claim.  This argument transfers only the published upper bound; it does not import that paper's lower construction into the more restrictive bounded-below density class.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This lemma transfers the sourced univariate upper bound through constant known weights. \textit{Gap.} It proves no equivalence and no causal statement. \textit{Consumer.} The one-dimensional nuisance theorem uses it for the upper side of \(\mathsf Q_n^{\sigma}\).
+
+\begin{lemma}[lem:predictable-aipw-holder-upper]\label{lem:predictable-aipw-holder-upper}
+Under the latent-i.i.d., bounded-density, Gaussian-outcome, Hölder-smoothness, boundedness, and uniform-positivity conditions, there exist a law-independent non-anticipating design \(D_n^{\circ}\in\mathfrak D_{n,\varepsilon}\) and an explicit predictable augmented inverse-probability estimator \(T_n^{\circ}\in\mathfrak T_n\) such that, for a constant \(C<\infty\) depending only on the fixed class constants,
+\[
+\sup_{P\in\mathcal P(s,r)}
+\left\{
+E_{\mathbb P_n^{D_n^{\circ},P}}[(T_n^{\circ}-\theta(P))^2]
+-\frac{V^*(P)}{n}
+\right\}
+\leq C\left(n^{-1-2\alpha_d}\vee n^{-1-2\beta_d}\right).
+\]
+The construction uses geometric epochs, predictable clipped local-polynomial regression, predictable raw residual-square regression followed by fitted-variance clipping, the positivity-constrained generalized Neyman allocation, and recorded assignment probabilities; no union bound over epochs is used.
+\end{lemma}
+\begin{proof}
+Put
+\[
+h_P(x):=\sum_{a\in\mathcal A}\omega_a(x)\mu_a(x),
+\qquad
+z_a(x):=|\omega_a(x)|\sigma_a(x),
+\]
+and define
+\[
+\mathcal E_{\varepsilon}:=
+\left\{u\in[\varepsilon,1]^K:\sum_{a\in\mathcal A}u_a=1\right\},
+\qquad
+F_z(u):=\sum_{a\in\mathcal A}\frac{z_a^2}{u_a}.
+\tag{64}
+\]
+The boundary condition \(0<\varepsilon<1/K\) makes \(\mathcal E_{\varepsilon}\) nonempty and compact. The variance range and bounded weights give \(0\leq z_a(x)\leq W\sqrt{v_{\max}}\), and every division below is valid because \(u_a\geq\varepsilon\).
+
+Let \(u^*(z)\) be the lexicographically selected minimizer of \(F_z\) on \(\mathcal E_{\varepsilon}\), and write \(\Phi(z):=F_z\{u^*(z)\}\). If \(z\neq0\), the multiplier equations for this finite-dimensional constrained problem give
+\[
+u_a^*(z)=\max\{\varepsilon,z_a/\lambda\},
+\qquad
+\sum_{a\in\mathcal A}u_a^*(z)=1,
+\tag{65}
+\]
+for a unique normalizing \(\lambda>0\). Coordinates with \(z_a=0\) equal \(\varepsilon\) whenever another coordinate is positive; if \(z=0\), use the stated deterministic tie-break. Formula (65), together with that tie-break, shows directly that \(u^*\) is Borel measurable. Consequently \(x\mapsto u^*\{z(x)\}\) is an admissible allocation. Since every admissible allocation has pointwise objective at least \(\Phi\{z(x)\}\), the oracle-benchmark definition yields
+\[
+V^*(P)=\operatorname{Var}_P\{h_P(X)\}+E_P\Phi\{z(X)\}.
+\tag{66}
+\]
+
+We next record the deterministic allocation inequality. The map \((z,u)\mapsto\sum_a z_a^2/u_a\) is jointly convex, because each summand is the perspective of the square function. Partial minimization over the convex set \(\mathcal E_{\varepsilon}\) makes \(\Phi\) convex. On each active-set piece, direct differentiation of (65) gives
+\[
+\nabla_a\Phi(z)=\frac{2z_a}{u_a^*(z)}.
+\]
+The derivatives agree when an active set changes; at a zero coordinate both one-sided derivatives are zero. Thus this is also a subgradient at every boundary point. For \(z,\widetilde z\in\mathbb R_+^K\), put \(\delta=z-\widetilde z\) and \(\widetilde u=u^*(\widetilde z)\). Expanding the square at the fixed allocation \(\widetilde u\), and then applying the subgradient inequality for \(\Phi\), gives
+\[
+\begin{aligned}
+F_z(\widetilde u)
+&=\Phi(\widetilde z)+\nabla\Phi(\widetilde z)^{\mathsf T}\delta
++\sum_{a\in\mathcal A}\frac{\delta_a^2}{\widetilde u_a},\\
+\Phi(z)&\geq
+\Phi(\widetilde z)+\nabla\Phi(\widetilde z)^{\mathsf T}\delta.
+\end{aligned}
+\]
+It follows that
+\[
+0\leq F_z\{u^*(\widetilde z)\}-F_z\{u^*(z)\}
+\leq\varepsilon^{-1}\|z-\widetilde z\|_2^2.
+\tag{67}
+\]
+This controls changes of the positivity-constrained active set without requiring the optimizer itself to be Lipschitz.
+
+We now construct the predictable learners. Let
+\[
+\mathcal G_{t-1}:=\sigma(O_1,\ldots,O_{t-1})
+\]
+augmented only by randomization already used before time \(t\), and put \(\mathcal G_{t-1}^{+}:=\sigma(\mathcal G_{t-1},X_t)\). The constructed kernels ignore any additional future baseline covariates that the ambient history convention may place in \(H_0\). By latent i.i.d. sampling, \(X_t\) is independent of \(\mathcal G_{t-1}\), and conditional on \(\mathcal G_{t-1}^{+}\) the current potential outcomes have their superpopulation conditional law given \(X_t\).
+
+Partition time into geometric blocks
+\[
+I_j:=\{2^j,\ldots,(2^{j+1}-1)\wedge n\},
+\qquad N_j:=2^j.
+\tag{68}
+\]
+Use \(I_0\cup I_1\) as a fixed initialization prefix. For an evaluation block \(I_j\), \(j\geq2\), use \(I_{j-2}\) to fit the means and the later disjoint block \(I_{j-1}\) to fit the variances. The completed training-block sizes are within fixed factors of \(N_j\); a truncated final evaluation block causes no change.
+
+For clarity, we give the expected local-polynomial calculation used twice below. On each boundary-corrected cube of side \(b\), take the rescaled tensor-polynomial basis of degree at least \(\lfloor u\rfloor\). For arm \(a\), weight its empirical Gram and response contributions by \(\mathbf1\{A_i=a\}/e_{i,a}\), using the recorded predictable propensity. Conditional randomization makes the conditional expectation of each Gram contribution equal to its full-data counterpart. Its centered entries are bounded by a constant depending on \(\varepsilon\), while the density lower bound makes every population Gram matrix uniformly nonsingular.
+
+Here is a self-contained concentration step. If \((\xi_i)\) is a bounded martingale-difference sequence with \(|\xi_i|\leq B\), then expansion of the exponential and the elementary inequality
+\[
+E[e^{\lambda\xi_i}\mid\mathcal G_{i-1}]
+\leq
+\exp\!\left\{
+\frac{\lambda^2E[\xi_i^2\mid\mathcal G_{i-1}]}
+{2(1-|\lambda|B/3)}
+\right\},
+\qquad |\lambda|B<3,
+\]
+follow by using \(q!\geq2\,3^{q-2}\) for \(q\geq2\). Iterating conditional expectations, applying exponential Markov, and optimizing \(\lambda\) gives
+\[
+\Pr\!\left(\left|\sum_{i=1}^m\xi_i\right|\geq x\right)
+\leq2\exp\!\left\{-\frac{x^2}{2(v+Bx/3)}\right\}
+\tag{69}
+\]
+when the sum of conditional variances is at most \(v\). Applying (69) to a fixed net of the fixed-dimensional polynomial basis shows that the empirical Gram matrix is singular or has eigenvalue below half its population bound with probability at most \(C\exp(-cmb^d)\). This concentration is applied only to bounded Gram increments, not to the unbounded Gaussian responses. On the exceptional event use a fixed bounded fit. On its complement, Taylor expansion gives integrated squared bias \(Cb^{2u}\), while martingale orthogonality and the conditional second-moment bound of the response give variance \(C/(mb^d)\). Hence
+\[
+E\|\widehat f-f\|_{L_2(P_X)}^2
+\leq C\{b^{2u}+(mb^d)^{-1}\}.
+\tag{70}
+\]
+
+Apply (70) on \(I_{j-2}\) with \(u=s\) and \(b_{\mu,j}\asymp N_j^{-1/(2s+d)}\), and project the fitted regression onto \([-M,M]\). Projection cannot increase pointwise error because \(|\mu_a|\leq M\). Thus
+\[
+\sup_{P\in\mathcal P(s,r)}
+E_P\|\widehat\mu_{j,a}-\mu_a\|_{L_2(P_X)}^2
+\leq C N_j^{-2\alpha_d}.
+\tag{71}
+\]
+The fit is frozen before \(I_{j-1}\).
+
+For \(i\in I_{j-1}\) assigned to arm \(a\), form the raw response
+\[
+R_i:=\{Y_i-\widehat\mu_{j,a}(X_i)\}^2.
+\tag{72}
+\]
+Conditional on the mean-training block and on \(X_i=x,A_i=a\),
+\[
+E_P[R_i\mid X_i=x,A_i=a]
+=\sigma_a^2(x)+\{\widehat\mu_{j,a}(x)-\mu_a(x)\}^2.
+\tag{73}
+\]
+No response clipping is used, so (73) is exact. Gaussianity, the variance range, and clipping of \(\widehat\mu_{j,a}\) give a uniform conditional second moment for \(R_i\). Apply the degree-\(\lfloor r\rfloor\) local-polynomial smoother with \(b_{\sigma,j}\asymp N_j^{-1/(2r+d)}\), and then project the fitted function onto \([v_{\min},v_{\max}]\); call the result \(\widehat v_{j,a}\). On the good-Gram event, weighted least squares and Cauchy--Schwarz give the expected conditional stability bound
+\[
+E\|S_{j,a}g\|_{L_2(P_X)}^2
+\leq C\|g\|_{L_2(P_X)}^2
+\]
+for the frozen function used here, with an exponentially small clipped contribution on the bad event. With \(g=(\widehat\mu_{j,a}-\mu_a)^2\), boundedness gives
+\[
+\begin{aligned}
+E_P\|g\|_{L_2(P_X)}^2
+&=E_P|\widehat\mu_{j,a}(X)-\mu_a(X)|^4\\
+&\leq4M^2E_P|\widehat\mu_{j,a}(X)-\mu_a(X)|^2.
+\end{aligned}
+\tag{74}
+\]
+Equations (70)--(74), with projection at the end, imply
+\[
+\sup_{P\in\mathcal P(s,r)}
+E_P\|\widehat v_{j,a}-\sigma_a^2\|_{L_2(P_X)}^2
+\leq C\left(N_j^{-2\beta_d}\vee N_j^{-2\alpha_d}\right).
+\tag{75}
+\]
+
+At the start of \(I_j\), set
+\[
+\widehat z_{j,a}(x):=|\omega_a(x)|\sqrt{\widehat v_{j,a}(x)},
+\qquad
+e_{t,a}(x):=u_a^*(\widehat z_j(x)),
+\quad t\in I_j.
+\tag{76}
+\]
+This is a law-independent measurable function of the current covariate and revealed past observations. Equations (64)--(65) give normalization and \(e_{t,a}\geq\varepsilon\), so the resulting design \(D_n^{\circ}\) belongs to \(\mathfrak D_{n,\varepsilon}\). Since fitted and true variances are at least \(v_{\min}>0\),
+\[
+|\widehat z_{j,a}(x)-z_a(x)|^2
+\leq\frac{W^2}{4v_{\min}}
+|\widehat v_{j,a}(x)-\sigma_a^2(x)|^2.
+\tag{77}
+\]
+Using (66)--(67) and then (75)--(77) gives, uniformly for \(t\in I_j\),
+\[
+E_P\{V(e_t;P)-V^*(P)\}
+\leq C\left(N_j^{-2\beta_d}\vee N_j^{-2\alpha_d}\right).
+\tag{78}
+\]
+
+For \(t\in I_j\), define the recorded-propensity score
+\[
+\Psi_t:=
+\sum_{a\in\mathcal A}\omega_a(X_t)\widehat\mu_{j,a}(X_t)
++\sum_{a\in\mathcal A}
+\frac{\mathbf1\{A_t=a\}}{e_{t,a}(X_t)}
+\omega_a(X_t)\{Y_t-\widehat\mu_{j,a}(X_t)\},
+\qquad
+T_n^{\circ}:=\frac1n\sum_{t=1}^n\Psi_t.
+\tag{79}
+\]
+Use fixed bounded predictable fits and a fixed positive allocation on the initialization prefix. Every learned quantity in (79) is \(\mathcal G_{t-1}\)-measurable. Conditional randomization, consistency, and positivity give
+\[
+E[\Psi_t\mid\mathcal G_{t-1}^{+}]=h_P(X_t).
+\]
+Latent i.i.d. sampling and the deliberate exclusion of future covariates from the constructed kernel then imply
+\[
+E[\Psi_t\mid\mathcal G_{t-1}]=E_Ph_P(X)=\theta(P).
+\tag{80}
+\]
+Thus \(\Psi_t-\theta(P)\) is a square-integrable martingale difference.
+
+Put \(\delta_{j,a}:=\omega_a(\widehat\mu_{j,a}-\mu_a)\). Conditional on \(\mathcal G_{t-1}^{+}\), the outcome residual in arm \(a\) has mean zero and variance \(\sigma_a^2(X_t)\). Direct expansion of (79), followed by integration over the fresh \(X_t\), gives the exact identity
+\[
+\begin{aligned}
+E[(\Psi_t-\theta(P))^2\mid\mathcal G_{t-1}]
+&=V(e_t;P)\\
+&\quad+E_P\!\left[
+\sum_{a\in\mathcal A}\frac{\delta_{j,a}(X)^2}{e_{t,a}(X)}
+-\left\{\sum_{a\in\mathcal A}\delta_{j,a}(X)\right\}^2
+\,\middle|\,\mathcal G_{t-1}\right].
+\end{aligned}
+\tag{81}
+\]
+The final square is nonnegative. Positivity, bounded weights, and (71) bound the remaining term above by \(CN_j^{-2\alpha_d}\). Martingale orthogonality, (78), and (81) therefore yield
+\[
+E[(T_n^{\circ}-\theta(P))^2]-\frac{V^*(P)}n
+\leq\frac{C}{n^2}\sum_{j\geq2}|I_j|
+\left(N_j^{-2\alpha_d}\vee N_j^{-2\beta_d}\right)
++\frac{C}{n^2}.
+\]
+Because \(|I_j|\leq N_j\), \(N_j=2^j\), and \(0<\alpha_d,\beta_d<1/2\), the geometric sum is at most
+\[
+C\left(n^{1-2\alpha_d}\vee n^{1-2\beta_d}\right).
+\]
+This proves the asserted uniform bound after multiplication by \(n^{-2}\). Equations (76) and (79) define one common law-independent, data-driven pair, and the argument used expected epoch risks rather than a maximum over epochs, so no logarithmic factor occurs.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This lemma gives the explicit fixed-smoothness predictable design and estimator underlying the constructive upper bound. \textit{Gap.} It is an upper witness only and does not establish a centered lower bound over unrestricted estimators. \textit{Consumer.} The explicit Hölder theorem and nuisance-risk reduction use this fixed-bandwidth witness; the separate adaptive theorem removes its dependence on known smoothness.
+
+\begin{theorem}[thm:smoothness-adaptive-log-free-upper]\label{thm:smoothness-adaptive-log-free-upper}
+There is one law-independent algorithm, not depending on \(s\) or \(r\), with the following property.  For every fixed \(s,r>0\), there are constants \(C<\infty\) and \(n_0\), depending on \(s,r\) and the fixed class constants but not on \(n\), such that, for every \(n\geq n_0\), the algorithm returns \(D\in\mathfrak D_{n,\varepsilon}\) and \(T\in\mathfrak T_n\) satisfying
+\[
+\sup_{P\in\mathcal P(s,r)}
+\left\{
+E_{\mathbb P_n^{D,P}}[(T-\theta(P))^2]-\frac{V^*(P)}n
+\right\}
+\leq C\left(
+n^{-1-2s/(2s+d)}\vee n^{-1-2r/(2r+d)}
+\right).
+\]
+The algorithm is a smoothness-agnostic residual-square modification of \(\mathsf H_n\): it uses geometric epochs, fixed ordered training and validation folds, finite dyadic local-polynomial libraries, held-out empirical-risk selection with recorded inverse propensities, fitted-variance clipping, the positivity-constrained generalized Neyman allocation, and a predictable augmented inverse-probability score.  Thus neither a multiplicative nor an additive logarithmic loss remains at the displayed second-order scale, both when \(s\leq r\) and when \(r<s\).  This is an upper result and supplies no centered converse over unrestricted estimators.
+\end{theorem}
+\begin{proof}
+We give the algorithm and its expected-risk analysis. The construction knows \(d,K,\varepsilon,M,v_{\min},v_{\max}\) and the fixed weights, but never uses \(s\) or \(r\).
+
+Partition time into geometric epochs \(I_j\) of length comparable to \(N_j=2^j\). Permanently divide each completed epoch, in chronological order, into four deterministic subfolds of comparable sizes: mean training, mean validation, variance training, and variance validation. Fits selected during epoch \(I_j\) are frozen and used for assignment and scoring only in \(I_{j+1}\). The first finitely many epochs use fixed bounded fits and any fixed allocation in the positivity simplex.
+
+For a training fold of size \(m\), define the smoothness-independent library
+\[
+\mathcal L_m:=
+\left\{(p,k):0\leq p\leq\lceil\log m\rceil,
+\ b_k=2^{-k},\ mb_k^d\geq c\log m\right\}.
+\tag{82}
+\]
+There are at most \(C(\log m)^2\) pairs. For every arm and every pair in (82), form the recorded-inverse-propensity local-polynomial fit of degree \(p\) and bandwidth \(b_k\), using a fixed bounded fallback when its empirical Gram matrix is ill-conditioned. Mean candidates are clipped to \([-M,M]\); variance candidates are clipped to \([v_{\min},v_{\max}]\). All ties below are broken lexicographically, so the algorithm is a Borel-measurable map of the observed path.
+
+We first prove the finite-library selection inequality used for both nuisances. Conditional on a training fold, let \(g_1,\ldots,g_N\) be the resulting bounded candidate functions, frozen before a later validation fold \(J\) of size \(m\). Let \(Z_i(a)\) be either \(Y_i(a)\), for mean selection, or \(\{Y_i(a)-\widehat\mu_a(X_i)\}^2\), where the mean fit was selected and frozen before the variance folds. Define
+\[
+\widehat L_\ell:=\frac1m\sum_{i\in J}
+\frac{\mathbf1\{A_i=a\}}{e_{i,a}}
+\{Z_i-g_\ell(X_i)\}^2,
+\qquad
+\widehat\ell\in\operatorname*{argmin}_{1\leq\ell\leq N}\widehat L_\ell.
+\tag{83}
+\]
+Recorded propensities and non-anticipation imply, for every integrable \(q\),
+\[
+E\!\left[
+\frac{\mathbf1\{A_i=a\}}{e_{i,a}}q(X_i,Z_i(a))
+\,\middle|\,\mathcal G_{i-1}
+\right]
+=E_Pq(X,Z(a)).
+\tag{84}
+\]
+Conditional on the frozen training objects, put \(f(x)=E[Z(a)\mid X=x]\) and \(R_\ell=\|g_\ell-f\|_{L_2(P_X)}^2\). The difference of two squared losses factorizes as
+\[
+\{Z-g_\ell(X)\}^2-\{Z-g_k(X)\}^2
+=\{g_k(X)-g_\ell(X)\}\{2Z-g_\ell(X)-g_k(X)\}.
+\tag{85}
+\]
+The candidate differences are uniformly bounded. In the mean case, the remaining random factor is a bounded shift of a Gaussian with variance at most \(v_{\max}\). In the variance case, it is a bounded affine function of the square of such a Gaussian, because both the true and fitted means are in \([-M,M]\). Direct Gaussian integration therefore gives constants \(B,C<\infty\), independent of the candidates, such that the centered martingale increment \(\zeta_i^{\ell k}\) associated with (85) satisfies, for every integer \(q\geq2\),
+\[
+E[|\zeta_i^{\ell k}|^q\mid\mathcal G_{i-1}]
+\leq\frac{q!}{2}B^{q-2}C(R_\ell+R_k).
+\tag{86}
+\]
+Indeed, the Gaussian moment-generating function is finite for every linear argument, while the moment-generating function of a noncentral Gaussian square is uniformly finite on a neighborhood of zero under the mean and variance bounds; multiplication by the bounded candidate difference and by the inverse propensity costs only fixed powers of the positivity constant. Its second moment is bounded by a constant times \(E_P(g_\ell-g_k)^2\leq2(R_\ell+R_k)\), and the higher moments give (86).
+
+Expanding the exponential in (86) shows, for \(|\lambda|B<1\),
+\[
+E[e^{\lambda\zeta_i^{\ell k}}\mid\mathcal G_{i-1}]
+\leq
+\exp\!\left\{
+\frac{C\lambda^2(R_\ell+R_k)}{2(1-|\lambda|B)}
+\right\}.
+\]
+Conditional iteration and exponential Markov yield the Bernstein bound for the validation average. A union bound over at most \(N^2\) pairs, followed by \(2\sqrt{xy}\leq x/4+4y\), implies that, with probability at least \(1-\eta\), simultaneously for all \(\ell,k\),
+\[
+\left|\{\widehat L_\ell-\widehat L_k\}-(R_\ell-R_k)\right|
+\leq\frac14(R_\ell+R_k)
++C\frac{\log(N/\eta)}m.
+\tag{87}
+\]
+Use (87) with \(\ell=\widehat\ell\), the empirical minimizing inequality \(\widehat L_{\widehat\ell}\leq\widehat L_k\), and absorb \(R_{\widehat\ell}/4\). Integrating the tail in \(\eta\) gives the expected oracle inequality
+\[
+E R_{\widehat\ell}
+\leq C\min_{1\leq k\leq N}ER_k
++C\frac{\log N}{m}.
+\tag{88}
+\]
+This derivation remains valid under history-dependent assignment because (84) supplies the martingale centering and positivity supplies the uniform moment constants.
+
+For any fixed Hölder order \(u>0\), once \(m\) is sufficiently large the library (82) contains a degree \(p\geq\lfloor u\rfloor\) and a dyadic bandwidth within a factor two of \(m^{-1/(2u+d)}\). The Taylor, good-Gram, and conditional-variance calculation in \(\mathrm{lem{:}predictable\text{-}aipw\text{-}holder\text{-}upper}\), applied to this one fixed-degree candidate, gives
+\[
+E\|\widehat f_{p,k}-f\|_{L_2(P_X)}^2
+\leq C\{b_k^{2u}+(mb_k^d)^{-1}\}
+\leq C m^{-2u/(2u+d)}.
+\tag{89}
+\]
+The optimal bandwidth satisfies \(mb_k^d\asymp m^{2u/(2u+d)}\), so it obeys the occupancy restriction in (82) for all large \(m\). Since \(N\leq C(\log m)^2\) and \(2u/(2u+d)<1\),
+\[
+\frac{\log N}{m}
+\leq C_u m^{-2u/(2u+d)}
+\tag{90}
+\]
+for all sufficiently large \(m\). Equations (88)--(90), with \(u=s\), prove for the selected mean
+\[
+\sup_{P\in\mathcal P(s,r)}
+E_P\|\widehat\mu_{j,a}-\mu_a\|_{L_2(P_X)}^2
+\leq C_sN_j^{-2s/(2s+d)}.
+\tag{91}
+\]
+
+On the later variance-training fold use the raw residual-square response \(R=\{Y(a)-\widehat\mu_{j,a}(X)\}^2\). Conditional on the earlier mean folds,
+\[
+E[R\mid X=x]
+=\sigma_a^2(x)+\{\widehat\mu_{j,a}(x)-\mu_a(x)\}^2.
+\tag{92}
+\]
+For each variance candidate, the local-polynomial stability calculation separates smoothing of the \(r\)-Hölder function \(\sigma_a^2\) from smoothing of the second term in (92). Because both means are bounded,
+\[
+E\|\{\widehat\mu_{j,a}-\mu_a\}^2\|_{L_2(P_X)}^2
+\leq4M^2E\|\widehat\mu_{j,a}-\mu_a\|_{L_2(P_X)}^2.
+\tag{93}
+\]
+Apply (88)--(90) on the variance-validation fold with \(u=r\), and use (91)--(93). Projection onto \([v_{\min},v_{\max}]\) cannot increase error relative to \(\sigma_a^2\), so
+\[
+\sup_{P\in\mathcal P(s,r)}
+E_P\|\widehat v_{j,a}-\sigma_a^2\|_{L_2(P_X)}^2
+\leq C_{s,r}\left\{
+N_j^{-2r/(2r+d)}\vee N_j^{-2s/(2s+d)}
+\right\}.
+\tag{94}
+\]
+Thus both selectors are independent of smoothness, and their library-selection remainders have been absorbed rather than carried as logarithmic multipliers.
+
+It remains to transfer (91)--(94) to the causal excess risk. For
+\[
+F_z(u)=\sum_a z_a^2/u_a,
+\qquad z_a=|\omega_a|\sigma_a,
+\]
+let \(u^*(z)\) minimize \(F_z\) over \(u_a\geq\varepsilon\), \(\sum_a u_a=1\). Expansion at \(u^*(\widehat z)\) and convexity of the minimized value give the deterministic inequality
+\[
+0\leq F_z\{u^*(\widehat z)\}-F_z\{u^*(z)\}
+\leq\varepsilon^{-1}\|z-\widehat z\|_2^2.
+\tag{95}
+\]
+With \(\widehat z_a=|\omega_a|\sqrt{\widehat v_a}\), the variance lower bound implies
+\[
+|\widehat z_a-z_a|^2
+\leq\frac{W^2}{4v_{\min}}|\widehat v_a-\sigma_a^2|^2.
+\tag{96}
+\]
+Use \(e_{t,a}(x)=u_a^*\{\widehat z_j(x)\}\) in the next epoch. Measurability, normalization, and positivity follow from the explicit water-filling rule, so this defines a law-independent \(D\in\mathfrak D_{n,\varepsilon}\). Equations (94)--(96) give expected allocation regret of order
+\[
+N_j^{-2s/(2s+d)}\vee N_j^{-2r/(2r+d)}.
+\tag{97}
+\]
+
+Finally, use the selected mean and the recorded propensities in the augmented inverse-probability score
+\[
+\Psi_t=
+\sum_a\omega_a(X_t)\widehat\mu_{j,a}(X_t)
++\sum_a\frac{\mathbf1\{A_t=a\}}{e_{t,a}(X_t)}
+\omega_a(X_t)\{Y_t-\widehat\mu_{j,a}(X_t)\},
+\qquad
+T=\frac1n\sum_{t=1}^n\Psi_t.
+\tag{98}
+\]
+All fits in (98) were frozen in the preceding epoch. Hence conditional randomization and latent i.i.d. sampling make \(\Psi_t-\theta(P)\) a martingale difference. If \(\Delta_a=\omega_a(\widehat\mu_{j,a}-\mu_a)\), direct square expansion gives
+\[
+E[(\Psi_t-\theta(P))^2\mid\mathcal G_{t-1}]
+=V(e_t;P)+E\!\left[
+\sum_a\frac{\Delta_a(X)^2}{e_{t,a}(X)}
+-\left\{\sum_a\Delta_a(X)\right\}^2
+\,\middle|\,\mathcal G_{t-1}\right].
+\tag{99}
+\]
+Positivity and (91) bound the second term from above at the mean rate. Martingale orthogonality, (97), and (99) now give
+\[
+E[(T-\theta(P))^2]-\frac{V^*(P)}n
+\leq\frac{C}{n^2}\sum_j|I_j|
+\left\{N_j^{-2s/(2s+d)}\vee N_j^{-2r/(2r+d)}\right\}
++\frac{C_{s,r}}{n^2}.
+\]
+Both exponents lie strictly between zero and one. Geometric summation therefore proves
+\[
+E[(T-\theta(P))^2]-\frac{V^*(P)}n
+\leq C_{s,r}\left\{
+n^{-1-2s/(2s+d)}\vee n^{-1-2r/(2r+d)}
+\right\}
+\]
+uniformly over \(P\in\mathcal P(s,r)\). The finitely many epochs preceding availability of the required fixed degrees contribute only \(C_{s,r}n^{-2}\), which is smaller. This proves the theorem in both smoothness orderings. Nothing in the construction or proof lower-bounds the centered unrestricted risk, so no converse follows.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This theorem settles upper-side smoothness adaptation: one law-independent algorithm not using \(s\) or \(r\) attains the fixed-smoothness log-free rate for every fixed smoothness pair. \textit{Gap.} The constants are not uniform over smoothness, Gaussianity is retained, and no centered converse is supplied. \textit{Consumer.} An experimenter can use one predictable procedure without knowing the Hölder orders while retaining the displayed second-order upper rate.
+
+\begin{lemma}[lem:weighted-mean-holder-risk]\label{lem:weighted-mean-holder-risk}
+Under the active-weight-region condition, there are constants \(0<c<C<\infty\) and \(n_0\), depending only on the fixed class constants, such that for all \(n\geq n_0\),
+\[
+c n^{-2\alpha_d}
+\leq \mathsf Q_n^{\mu}(s,d;\omega)
+\leq C n^{-2\alpha_d},
+\qquad \alpha_d=\frac{s}{2s+d}.
+\]
+This conclusion does not require \(v_{\min}<v_{\max}\).
+\end{lemma}
+\begin{proof}
+For the upper bound, fix an arm \(a\) and estimate \(\mu_a\) from its standalone i.i.d. sample by a boundary-corrected tensor local-polynomial estimator of degree \(\lfloor s\rfloor\), bandwidth \(h\), and projection onto \([-M,M]\). The bounded-density assumption makes every population polynomial Gram matrix uniformly nonsingular, while the Gaussian outcome and variance-range assumptions give a uniform conditional second-moment bound. Taylor expansion of an \(s\)-Hölder function on cubes of side \(h\), followed by the conditional variance calculation, gives
+\[
+E_P\|\widehat\mu_a-\mu_a\|_{L_2(P_X)}^2
+\leq C\{h^{2s}+(nh^d)^{-1}\}.
+\tag{40}
+\]
+Projection cannot increase the error because \(|\mu_a|\leq M\). Taking \(h\asymp n^{-1/(2s+d)}\) and setting \(\widehat g_a=\omega_a\widehat\mu_a\), the known-weight bound yields
+\[
+E_P\|\widehat g_a-\omega_a\mu_a\|_{L_2(P_X)}^2
+\leq W^2 E_P\|\widehat\mu_a-\mu_a\|_{L_2(P_X)}^2
+\leq C n^{-2s/(2s+d)}.
+\tag{41}
+\]
+The maximum over the fixed number \(K\) of arms preserves the constant.
+
+For the lower bound, use the active arm \(a_0\), choose the uniform covariate density, and keep every nuisance other than \(\mu_{a_0}\) fixed at an admissible constant. Nonemptiness of the bounded-density class on the unit-volume cube implies \(c_X\leq1\leq C_X\), so this density is admissible. Place disjoint \(s\)-Hölder bumps of width \(h\) and height \(\rho h^s\) on a regular grid inside \(B_0\), with \(\rho>0\) fixed small enough to obey both the Hölder radius and the sup-norm bound. There are \(N_h\asymp h^{-d}\) bumps. For adjacent sign vertices the one-observation Gaussian location divergence is bounded by a constant times \(h^{2s}\) on a region of volume \(h^d\), so the \(n\)-sample Kullback--Leibler divergence is at most \(Cnh^{2s+d}\). Choose \(h\asymp n^{-1/(2s+d)}\) and reduce \(\rho\), if necessary, so every adjacent testing affinity is bounded below by a fixed positive constant. On \(B_0\), \(|\omega_{a_0}|\geq w_{\min}\); hence the weighted squared separation for one changed bit is at least \(c w_{\min}^2h^{2s+d}\). The bit-testing inequality over the \(N_h\) signs gives
+\[
+\mathsf Q_n^{\mu}(s,d;\omega)
+\geq cN_hh^{2s+d}
+=c h^{2s}
+=c n^{-2s/(2s+d)}.
+\tag{42}
+\]
+No step uses a strict variance interval: one may fix the Gaussian variance at any value allowed by the variance-range assumption. Equations (41)--(42) prove the lemma.
+\end{proof}
+
+\begin{theorem}[thm:law-invariant-oracle-allocation-upper]\label{thm:law-invariant-oracle-allocation-upper}
+Suppose there is a single known Borel-measurable allocation \(e:[0,1]^d\to\Delta_K\), independent of \(P\), \(s\), and \(r\), such that \(e_a(x)\geq\varepsilon\) for every \(a\in\mathcal A\) and \(x\in[0,1]^d\), and such that, simultaneously for every \(s,r>0\), every \(P\in\mathcal P(s,r)\), and \(P_X\)-almost every \(x\),
+\[
+\sum_{a\in\mathcal A}\frac{m_a(x)}{e_a(x)}
+=\min_{\substack{u_a\geq\varepsilon\\ \sum_{a\in\mathcal A}u_a=1}}
+\sum_{a\in\mathcal A}\frac{m_a(x)}{u_a}.
+\tag{43}
+\]
+Then there is one law-independent algorithm, depending on this same known allocation \(e\) but not on \(s\) or \(r\), with the following property. For every fixed \(s,r>0\), there are constants \(C_s<\infty\) and \(n_0(s)<\infty\) such that, for all \(n\geq n_0(s)\), it returns \(D\in\mathfrak D_{n,\varepsilon}\) and \(T\in\mathfrak T_n\) satisfying
+\[
+\sup_{P\in\mathcal P(s,r)}
+\left\{
+E_{\mathbb P_n^{D,P}}[(T-\theta(P))^2]-\frac{V^*(P)}n
+\right\}
+\leq C_s n^{-1-2s/(2s+d)}.
+\tag{44}
+\]
+Consequently \(\mathsf R_n(s,r,d;\omega)\leq C_s n^{-1-2s/(2s+d)}\). This is a mean-only upper result and asserts no centered converse.
+\end{theorem}
+\begin{proof}
+\textbf{Proof.}
+Fix the single allocation \(e\) in the hypothesis.  The same \(e\) is used below for every pair \((s,r)\); in particular, neither the design nor any step of the estimator receives \(s\) or \(r\) as an input.
+
+\emph{Step 1: the law-independent design.}
+For every \(t\), every history \(h\in\mathcal H_{t-1}\), every \(x\in[0,1]^d\), and every \(a\in\mathcal A\), set
+\[
+q_t^D(a\mid x,h):=e_a(x).
+\tag{45}
+\]
+Borel measurability of \(e\), the fact that \(e(x)\in\Delta_K\), and the floor \(e_a(x)\geq\varepsilon\) verify, respectively, kernel measurability, normalization, and positivity.  Hence \(D\in\mathfrak D_{n,\varepsilon}\).  Because \(e\) is known and independent of \(P\), \(s\), and \(r\), this single design is law-independent and smoothness-agnostic.
+
+For any fixed \(s,r>0\) and \(P\in\mathcal P(s,r)\), define
+\[
+h_P(x):=\sum_{a\in\mathcal A}\omega_a(x)\mu_a(x).
+\]
+The pointwise equality in (43) gives
+\[
+\begin{aligned}
+V(e;P)
+&=\operatorname{Var}_P\{h_P(X_t)\}
+  +E_P\!\left[\sum_{a\in\mathcal A}\frac{m_a(X_t)}{e_a(X_t)}\right]\\
+&=\operatorname{Var}_P\{h_P(X_t)\}
+  +E_P\!\left[
+    \min_{\substack{u_a\geq\varepsilon\\\sum_a u_a=1}}
+    \sum_{a\in\mathcal A}\frac{m_a(X_t)}{u_a}
+  \right]
+=V^*(P).
+\tag{46}
+\end{aligned}
+\]
+Indeed, every admissible allocation is bounded below pointwise by the displayed pointwise minimum, while \(e\) attains that minimum and is itself admissible.  This proves the last equality directly from the definition of \(V^*(P)\).
+
+\emph{Step 2: one smoothness-agnostic mean learner.}
+Partition the assignment order into deterministic geometric epochs.  Apart from an initial epoch of fixed size, the epoch used for evaluation has size comparable to the preceding epoch.  Split each completed epoch into fixed ordered training and validation halves.  A fit constructed from one completed epoch is frozen before it is used in the next epoch, so it is measurable with respect to the past at every evaluation time.
+
+For a training half of size \(m\), use the finite library
+\[
+\mathcal L_m
+:=\left\{(p,k):0\leq p\leq\lceil\log m\rceil,
+\ b_k=2^{-k},\ mb_k^d\geq c_0\log m\right\}.
+\tag{47}
+\]
+For arm \(a\) and \((p,k)\in\mathcal L_m\), fit a boundary-corrected local polynomial of degree \(p\) and bandwidth \(b_k\) by weighted least squares with recorded weight
+\[
+\frac{\mathbf 1\{A_i=a\}}{e_a(X_i)}.
+\]
+If the empirical local Gram matrix has smallest eigenvalue below a fixed positive threshold, use the zero fit, and otherwise clip the fitted regression to \([-M,M]\).  This specifies a Borel-measurable candidate \(\widehat\mu_{a,p,k}\).
+
+We record the candidate risk calculation.  If \(p\geq\lfloor s\rfloor\), the Hölder condition gives, on every boundary-corrected local cell, a polynomial approximation with squared bias at most \(C_s b_k^{2s}\).  The density bounds and \(e_a\geq\varepsilon\) bound the conditional weighted-noise variance by \(C/(m b_k^d)\).  The same bounds give an exponential lower-tail bound \(C\exp(-c m b_k^d)\) for the local Gram eigenvalue; clipping bounds its contribution by \(4M^2C\exp(-c m b_k^d)\).  Thus, whenever \(m b_k^d\geq c_0\log m\), choosing \(c_0\) fixed and sufficiently large yields
+\[
+\sup_{P\in\mathcal P(s,r)}
+E_P\|\widehat\mu_{a,p,k}-\mu_a\|_{L_2(P_X)}^2
+\leq C_s\left(b_k^{2s}+\frac{1}{m b_k^d}\right).
+\tag{48}
+\]
+All constants used in the variance part of this calculation are uniform in \(r\), because only \(v_{\max}\), \(c_X\), \(C_X\), and \(\varepsilon\) enter it.
+
+On the validation half select the candidate minimizing
+\[
+\widehat L_{a,p,k}
+:=\frac1m\sum_{i}
+\frac{\mathbf 1\{A_i=a\}}{e_a(X_i)}
+\{Y_i-\widehat\mu_{a,p,k}(X_i)\}^2,
+\tag{49}
+\]
+with deterministic lexicographic tie-breaking.  To verify the selector, condition on the training half, so every candidate is fixed and bounded by \(M\).  For a fixed bounded candidate \(g\), inverse-propensity cancellation gives
+\[
+E_P\!\left[
+\frac{\mathbf 1\{A_i=a\}}{e_a(X_i)}
+\bigl(\{Y_i-g(X_i)\}^2-\{Y_i-\mu_a(X_i)\}^2\bigr)
+\right]
+=\|g-\mu_a\|_{L_2(P_X)}^2.
+\tag{50}
+\]
+The centered summand in (50) is the sum of a bounded term and
+\[
+-2\frac{\mathbf 1\{A_i=a\}}{e_a(X_i)}
+\{Y_i(a)-\mu_a(X_i)\}\{g(X_i)-\mu_a(X_i)\}.
+\]
+Conditional Gaussianity, \(\sigma_a^2\leq v_{\max}\), \(e_a\geq\varepsilon\), and \(|g-\mu_a|\leq2M\) therefore imply, by direct evaluation of the Gaussian moment-generating function, that for fixed constants \(c,C>0\),
+\[
+\mathbb P\!\left(
+|(\mathbb P_m-P)(\ell_g-\ell_{\mu_a})|
+>\frac14\|g-\mu_a\|_{L_2(P_X)}^2+C\frac{x}{m}
+\,\middle|\,\text{training}
+\right)
+\leq 2e^{-cx}.
+\tag{51}
+\]
+Apply (51) to every member of \(\mathcal L_m\), take (x) equal to a constant multiple of \(u+\log|\mathcal L_m|\), and use the empirical minimizing inequality in (49).  On the resulting event, comparison with any candidate (g\_0) gives
+\[
+\|\widehat\mu_{m,a}-\mu_a\|_{L_2(P_X)}^2
+\leq C\|g_0-\mu_a\|_{L_2(P_X)}^2
++C\frac{u+\log|\mathcal L_m|}{m}.
+\]
+Integrating the (e\textasciicircum{}{-cu}) tail and then the training sample yields
+\[
+E_P\|\widehat\mu_{m,a}-\mu_a\|_{L_2(P_X)}^2
+\leq C\min_{(p,k)\in\mathcal L_m}
+E_P\|\widehat\mu_{a,p,k}-\mu_a\|_{L_2(P_X)}^2
++C\frac{\log|\mathcal L_m|}{m}.
+\tag{52}
+\]
+
+For every fixed (s>0), all sufficiently large libraries contain a degree (p\geq\lfloor s\rfloor) and a dyadic bandwidth within a factor two of (m\textasciicircum{}{-1/(2s+d)}); this bandwidth also satisfies the restriction in (47).  Since (|\mathcal L\_m|\leq C(1+\log m)\textasciicircum{}2) and (2s/(2s+d)<1), equations (48) and (52) imply
+\[
+\sup_{P\in\mathcal P(s,r)}
+E_P\|\widehat\mu_{m,a}-\mu_a\|_{L_2(P_X)}^2
+\leq C_s m^{-2s/(2s+d)}
+\tag{53}
+\]
+for all (m\geq m\_0(s)).  The library and selection rule themselves do not depend on (s) or (r).
+
+\emph{Step 3: the predictable estimator and its exact second moment.}
+For (t) in an evaluation epoch (j), let (widehat\mu\_{j,a}) be the arm-(a) fit frozen from the preceding epoch, and put
+\[
+\Psi_t
+:=\sum_{a\in\mathcal A}\omega_a(X_t)\widehat\mu_{j,a}(X_t)
++\sum_{a\in\mathcal A}
+\frac{\mathbf 1\{A_t=a\}}{e_a(X_t)}
+\omega_a(X_t)\{Y_t-\widehat\mu_{j,a}(X_t)\},
+\qquad
+T:=\frac1n\sum_{t=1}^n\Psi_t.
+\tag{54}
+\]
+Use the fixed bounded initialization fit in the initial epoch.  Formula (54), the deterministic folds, and lexicographic tie-breaking make (T) a Borel-measurable function of (H\_n), hence (T\in\mathfrak T\_n).
+
+Let (mathcal G\_{t-1}) contain the past and all fits frozen before time (t).  By latent i.i.d. sampling and (45), conditional first on (X\_t) and then on (mathcal G\_{t-1}), inverse-propensity cancellation gives
+\[
+E_{\mathbb P_n^{D,P}}[\Psi_t\mid\mathcal G_{t-1}]=\theta(P).
+\tag{55}
+\]
+Thus (Psi\_t-  heta(P)) are square-integrable martingale differences.  Define
+\[
+\delta_{j,a}(x):=\omega_a(x)\{\widehat\mu_{j,a}(x)-\mu_a(x)\}.
+\]
+Expanding the conditional square in (54), the cross-term with the outcome noise is zero given (X\_t), and the conditional variance of
+(sum\_a\delta\_{j,a}(X\_t)-\delta\_{j,A\_t}(X\_t)/e\_{A\_t}(X\_t))
+equals
+(sum\_a\delta\_{j,a}(X\_t)\textasciicircum{}2/e\_a(X\_t)-\{\sum\_a\delta\_{j,a}(X\_t)\}\textasciicircum{}2).
+Consequently, using (46),
+\[
+\begin{aligned}
+E[(\Psi_t-\theta(P))^2\mid\mathcal G_{t-1}]
+&=V^*(P)\\
+&\quad+E_P\!\left[
+\sum_{a\in\mathcal A}\frac{\delta_{j,a}(X)^2}{e_a(X)}
+-\left\{\sum_{a\in\mathcal A}\delta_{j,a}(X)\right\}^2
+\,\middle|\,\mathcal G_{t-1}
+\right].
+\tag{56}
+\end{aligned}
+\]
+Dropping the last nonnegative square, using (e\_a\geq\varepsilon), (|\omega\_a|\leq W), and (53), we obtain, with (m\_j) the preceding training-half size,
+\[
+E[(\Psi_t-\theta(P))^2]-V^*(P)
+\leq C_s m_j^{-q},
+\qquad q:=\frac{2s}{2s+d}\in(0,1).
+\tag{57}
+\]
+
+Martingale orthogonality, (57), and geometric epoch sizes now give
+\[
+\begin{aligned}
+E[(T-\theta(P))^2]-\frac{V^*(P)}n
+&\leq\frac{C}{n^2}
++\frac{C_s}{n^2}\sum_{j\geq1}|I_j|m_j^{-q}\\
+&\leq\frac{C}{n^2}
++\frac{C_s}{n^2}\sum_{j\leq C\log n}2^{j(1-q)}
+\leq C_s n^{-1-q}.
+\tag{58}
+\end{aligned}
+\]
+The first term is the fixed-size initialization contribution, and the last inequality uses (q<1).  Every bound is uniform over (P\in\mathcal P(s,r)), proving (44).
+
+Finally, the design (45) and estimator (54) are one admissible law-independent pair, fixed before the supremum over (P).  Substitution into the two infima in the definition of (mathsf R\_n(s,r,d;\omega)) gives
+\[
+\mathsf R_n(s,r,d;\omega)\leq C_s n^{-1-2s/(2s+d)}.
+\]
+Nothing in the argument supplies a lower bound for the oracle-subtracted unrestricted criterion.  This proves the stated upper result. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This theorem isolates the structural regime in which one common known oracle allocation works simultaneously across laws and smoothness classes, so allocation learning is unnecessary and the variance-smoothness term vanishes from the upper rate. \textit{Gap.} It is conditional on a single allocation independent of \(P\), \(s\), and \(r\), and it remains an upper result without a centered converse. \textit{Consumer.} The equal-variance and pointwise singleton-support corollaries use the same smoothness-agnostic mean-only construction.
+
+\begin{proposition}[prop:known-variance-mean-only-upper]\label{prop:known-variance-mean-only-upper}
+Suppose the known weights are Borel measurable and \(v_{\min}=v_{\max}=:v_0\). Then every \(P\in\mathcal P(s,r)\) has \(\sigma_a^2(x)=v_0\) for all arms and covariates, and the known allocation
+\[
+e^{\circ}(x)
+=u^*\!\left(\sqrt{v_0}\,(|\omega_1(x)|,\ldots,|\omega_K(x)|)\right),
+\]
+where \(u^*(z)\) is the lexicographically selected minimizer of \(\sum_a z_a^2/u_a\) over \(u_a\geq\varepsilon\) and \(\sum_a u_a=1\), is pointwise oracle-optimal for every law in the model. Consequently,
+\[
+\mathsf Q_n^{\sigma}(s,r,d;\omega)=0,
+\qquad
+\mathsf R_n(s,r,d;\omega)
+\leq \frac{C}{n}\mathsf Q_n^{\mu}(s,d;\omega)
+\asymp n^{-1-2s/(2s+d)}
+\]
+under the active-weight-region condition, where the symbol \(\asymp\) describes \(n^{-1}\mathsf Q_n^{\mu}\), not a matching lower bound for \(\mathsf R_n\). One algorithm not using \(s\) or \(r\) attains the displayed causal upper rate.
+\end{proposition}
+\begin{proof}
+The variance-range condition with equal endpoints forces \(\sigma_a^2(x)=v_0\) pointwise for every arm and every law in the model. Hence
+\[
+m_a(x)=v_0\omega_a(x)^2
+\]
+is a known function. The displayed allocation is precisely the measurable, positivity-constrained minimizer of \(\sum_a m_a(x)/u_a\); lexicographic selection from the compact simplex makes it a known Borel rule. Thus the hypothesis of \(\mathrm{thm{:}law\text{-}invariant\text{-}oracle\text{-}allocation\text{-}upper}\) holds and gives
+\[
+\mathsf R_n(s,r,d;\omega)\leq C n^{-1-2s/(2s+d)}.
+\tag{55}
+\]
+In the standalone variance problem, the deterministic estimator \(\widehat h_a(x)=v_0\omega_a(x)^2=m_a(x)\) has zero loss for every arm and every \(P\). Nonnegativity of squared loss therefore implies \(\mathsf Q_n^{\sigma}(s,r,d;\omega)=0\). Finally, \(\mathrm{lem{:}weighted\text{-}mean\text{-}holder\text{-}risk}\) gives
+\[
+c n^{-2s/(2s+d)}
+\leq\mathsf Q_n^{\mu}(s,d;\omega)
+\leq C n^{-2s/(2s+d)}.
+\tag{56}
+\]
+Combining (55) with the lower inequality in (56), and enlarging the constant, gives \(\mathsf R_n\leq Cn^{-1}\mathsf Q_n^{\mu}\); the full display follows from (56). No inequality is reversed for \(\mathsf R_n\), so no centered converse is asserted.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} Equal variance bounds force the entire variance function to be known, making the standalone weighted-variance risk zero and the oracle allocation law-invariant. \textit{Gap.} The proposition does not imply a matching centered causal lower bound. \textit{Consumer.} Experiments with known common conditional variance can omit variance learning and use the mean-only upper rate.
+
+\begin{proposition}[prop:singleton-support-mean-only-upper]\label{prop:singleton-support-mean-only-upper}
+Suppose the known weights are Borel measurable and have pointwise singleton support: for every \(x\in[0,1]^d\), exactly one arm \(a(x)\in\mathcal A\) satisfies \(\omega_{a(x)}(x)\neq0\). Then the known allocation
+\[
+e_{a(x)}^{\circ}(x)=1-(K-1)\varepsilon,
+\qquad
+e_b^{\circ}(x)=\varepsilon\quad\text{for }b\neq a(x),
+\]
+is pointwise oracle-optimal for every \(P\in\mathcal P(s,r)\). Consequently one law-independent algorithm not using \(s\) or \(r\) satisfies
+\[
+\mathsf R_n(s,r,d;\omega)
+\leq C_s n^{-1-2s/(2s+d)}.
+\]
+\end{proposition}
+\begin{proof}
+At a fixed covariate value \(x\), singleton support makes every design-relevant variance coordinate zero except
+\[
+m_{a(x)}(x)=\omega_{a(x)}(x)^2\sigma_{a(x)}^2(x)>0.
+\]
+Thus the pointwise objective is \(m_{a(x)}(x)/u_{a(x)}\), which is strictly decreasing in \(u_{a(x)}\). Under \(u_b\geq\varepsilon\) and \(\sum_bu_b=1\), the largest feasible value is \(u_{a(x)}=1-(K-1)\varepsilon\), attained only by assigning \(\varepsilon\) to every other arm. The optimizer therefore does not depend on the unknown variance. The active-index map is Borel because the finite collection of known weights is Borel measurable and the support is a singleton; hence the displayed allocation is a known measurable rule. It satisfies the hypothesis of \(\mathrm{thm{:}law\text{-}invariant\text{-}oracle\text{-}allocation\text{-}upper}\), which gives the asserted smoothness-agnostic mean-only upper rate.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} With exactly one weighted arm at each covariate, the positivity-constrained optimizer is determined by support alone and is independent of unknown variances. \textit{Gap.} The condition is structural and pointwise; no comparable simplification is asserted for overlapping weighted supports. \textit{Consumer.} Pointwise single-arm policy-value targets can use the known allocation and the mean-only upper rate.
+
+\begin{openendedquestion}[oeq:unrestricted-centered-converse]\label{oeq:unrestricted-centered-converse}
+Can one establish a positive centered converse over the unrestricted estimator class by a first-principles Bayes-risk calculation?  Concretely, for every fixed law-independent \(D\in\mathfrak D_{n,\varepsilon}\), can one construct a prior \(\Pi_n\) supported on an active-weight submodel of \(\mathcal P(s,r)\) and a constant \(c>0\) such that
+\[
+\inf_{T\in\mathfrak T_n}
+E_{P\sim\Pi_n}E_{\mathbb P_n^{D,P}}[(T-\theta(P))^2]
+\geq E_{P\sim\Pi_n}\frac{V^*(P)}n
++c n^{-1-2\alpha_d}?
+\]
+Every vertex-dependent contribution to \(V^*(P)\) must be calculated inside the Bayes decomposition.  Total-risk testing bounds and target separation alone are insufficient because their leading \(n^{-1}\) term can be absorbed by the law-dependent benchmark subtraction.  A positive answer would give the missing unrestricted regression-driven lower bound; a negative answer must exhibit an explicit design--estimator obstruction.  This question is separate from the variance-driven allocation-sensitivity converse when \(r<s\); smoothness adaptation of the upper construction is settled by \(\mathrm{thm{:}smoothness\text{-}adaptive\text{-}log\text{-}free\text{-}upper}\).
+\end{openendedquestion}
+For every prior \(\Pi_n\) and fixed \(D\), the unrestricted Bayes rule is the posterior mean \(\overline\theta_n=E[\theta(P)\mid H_n]\), and conditional orthogonality gives the exact identity
+\[
+\inf_{T\in\mathfrak T_n}
+E_{P\sim\Pi_n}E_{\mathbb P_n^{D,P}}[(T-\theta(P))^2]
+=E\!\left\{\operatorname{Var}(\theta(P)\mid H_n)\right\}.
+\]
+Writing
+\[
+h_P(x)=\sum_{a\in\mathcal A}\omega_a(x)\mu_a(x),
+\qquad
+z_{P,a}(x)=|\omega_a(x)|\sigma_a(x),
+\qquad
+\Phi(z)=\min_{\substack{u_a\geq\varepsilon\\\sum_a u_a=1}}
+\sum_a\frac{z_a^2}{u_a},
+\]
+measurable pointwise minimization on the compact positivity simplex gives
+\[
+V^*(P)=\operatorname{Var}_P\{h_P(X_t)\}+E_P\Phi\{z_P(X_t)\}.
+\]
+Consequently the requested converse is equivalent, with no unbiasedness or regularity restriction, to constructing \(\Pi_n\) such that
+\[
+E\!\left\{\operatorname{Var}(\theta(P)\mid H_n)\right\}
+-\frac1nE_{P\sim\Pi_n}\!\left[
+\operatorname{Var}_P\{h_P(X_t)\}+E_P\Phi\{z_P(X_t)\}
+\right]
+\geq c n^{-1-2\alpha_d}.
+\]
+The new calculation above proves that an independent one-level critical product prior cannot establish this inequality: its prior-shrinkage deficit is negative of order \(n^{-1}\).  Therefore any positive resolution must separate a diffuse first-order target direction from critical zero-target nuisance directions and evaluate the two oracle vertices under the same prior; the sign of that coarse--fine centered remainder is the precise residual open step.
+\par\smallskip\noindent \textit{Justification.} This records the remaining posterior-variance calculation needed for a positive lower bound over all measurable, possibly biased estimators. \textit{Gap.} The law-dependent oracle benchmark must be canceled inside the Bayes calculation at second order; total-risk testing bounds do not accomplish this. \textit{Consumer.} A positive or negative solution would determine whether any proved upper rate is unavoidable under the unrestricted centered criterion. This question is separate from the variance-driven allocation-sensitivity converse when \(r<s\); smoothness adaptation of the upper construction is settled by \(\text{thm:smoothness-adaptive-log-free-upper}\).
+
+\section{Interpretation}
+
+The two-nuisance display is an achievable second-order law, not a minimax equality. Mean error enters through the predictable AIPW variance remainder, whereas variance error enters through regret from learning the generalized Neyman allocation. When the same oracle allocation is known and valid for every law and every smoothness class under consideration, allocation regret is identically zero and only the mean rate remains. Smoothness knowledge is unnecessary for these upper conclusions because the held-out selection penalty \(m^{-1}\log\log m\) is asymptotically smaller than every fixed Hölder risk \(m^{-2u/(2u+d)}\).
+
+\section*{Technical internal limitation (diagnostic only)}
+
+The proofs retain conditional Gaussianity, fixed positive overlap, and fixed \(n\)-independent Hölder classes. The smoothness-adaptive theorem gives one algorithm for every fixed \(s,r>0\), but its constants and threshold need not be uniform over smoothness. The sharper mean-only theorem additionally requires one known allocation, independent of \(P\), \(s\), and \(r\), that is pointwise oracle-optimal simultaneously across the union of classes served by that algorithm. Gaussianity supplies exponential-moment control for residual-square learning and held-out selection; no non-Gaussian extension, leading minimax constant, vanishing-overlap theory, unrestricted centered converse, or variance-driven converse under merely bounded weights is proved.
+
+\section{Honest scope}
+
+The proved contribution is a constructive log-free upper bound for the unrestricted sequential oracle-subtracted excess-MSE problem, including one smoothness-agnostic law-independent algorithm that attains the stated rate for every fixed \(s,r>0\). The paper also proves the standalone nuisance maximum under active-region and strict-range conditions and its one-dimensional refinements. If a single known allocation is simultaneously oracle-optimal over every law and smoothness class covered by the algorithm---as in the retained equal-variance and pointwise singleton-support corollaries---the achievable rate sharpens to \(n^{-1-2s/(2s+d)}\). There is no positive lower bound for the unrestricted centered criterion, no causal minimax equality, and no exact all-regime frontier. The centered Bayes-risk converse and allocation-sensitive lower theory when \(r<s\) remain open; smoothness adaptation of the upper construction is settled.
+
+\begin{thebibliography}{99}
+
+  \bibitem{LiSimchiLevi2026SequentialEfficiency} Li, Jiachun, and David Simchi-Levi (2026). "Semiparametric efficiency in sequential experiments: characterization and design via average propensity." arXiv:2606.31190v2.
+
+  \bibitem{ShenGaoWittenHan2020Variance} Shen, Yandi, Chao Gao, Daniela Witten, and Fang Han (2020). "Optimal estimation of variance in nonparametric regression with random design." Annals of Statistics 48(6): 3589--3618.
+
+  \bibitem{DuchiRuan2021ConstrainedRisk} Duchi, John C., and Feng Ruan (2021). "A constrained risk inequality for general losses." Proceedings of AISTATS, PMLR 130: 802--810.
+
+  \bibitem{BrownLow1996ConstrainedRisk} Brown, Lawrence D., and Mark G. Low (1996). "A constrained risk inequality with applications to nonparametric functional estimation." Annals of Statistics 24(6): 2524--2535.
+
+  \bibitem{LiOwen2024BatchDML} Li, Harrison H., and Art B. Owen (2024). "Double machine learning and design in batch adaptive experiments." Journal of Causal Inference 12(1), article 20230068.
+
+  \bibitem{WangBrownCaiLevine2008MeanVariance} Wang, Lie, Lawrence D. Brown, T. Tony Cai, and Michael Levine (2008). "Effect of mean on variance function estimation in nonparametric regression." Annals of Statistics 36(2): 646--664.
+
+  \bibitem{CaiLevineWang2009MultivariateVariance} Cai, T. Tony, Michael Levine, and Lie Wang (2009). "Variance function estimation in multivariate nonparametric regression with fixed design." Journal of Multivariate Analysis 100(1): 126--136.
+
+  \bibitem{KatoIshiharaHondaNarita2020AdaptiveATE} Kato, Masahiro, Takuya Ishihara, Junya Honda, and Yusuke Narita (2020). "Efficient adaptive experimental design for average treatment effect estimation." arXiv:2002.05308.
+
+  \bibitem{Zhao2024AdaptiveNeyman} Zhao, Jinglong (2024). "Adaptive Neyman allocation." Proceedings of the ACM Conference on Economics and Computation.
+
+  \bibitem{ArbourDimmeryMaiRao2022OnlineBalanced} Arbour, David, Drew Dimmery, Tung Mai, and Anup Rao (2022). "Online balanced experimental design." arXiv:2203.02025.
+
+  \bibitem{NeopaneRamdasSingh2024Logarithmic} Neopane, Ojash, Aaditya Ramdas, and Aarti Singh (2024). "Logarithmic Neyman regret for adaptive estimation of the average treatment effect." arXiv:2411.14341.
+
+  \bibitem{CaiWang2008AdaptiveVariance} Cai, T. Tony, and Lie Wang (2008). "Adaptive variance function estimation in heteroscedastic nonparametric regression." Annals of Statistics 36(5): 2025--2054. arXiv:0810.4780.
+
+\end{thebibliography}
+
+\end{document}

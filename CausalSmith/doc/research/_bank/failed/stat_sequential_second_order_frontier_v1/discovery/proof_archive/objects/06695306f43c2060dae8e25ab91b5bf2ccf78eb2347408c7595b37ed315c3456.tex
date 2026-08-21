@@ -1,0 +1,177 @@
+We give the algorithm and its expected-risk analysis.  The construction knows \(d,K,\varepsilon,M,v_{\min},v_{\max}\) and the fixed weights, but never uses \(s\) or \(r\).
+
+Partition time into geometric epochs \(I_j\) of length comparable to \(N_j=2^j\).  Permanently divide each completed epoch, in chronological order, into four deterministic subfolds of comparable sizes: mean training, mean validation, variance training, and variance validation.  Fits selected during epoch \(I_j\) are frozen and used for assignment and scoring only in \(I_{j+1}\).  The first finitely many epochs use fixed bounded fits and any fixed allocation in the positivity simplex.
+
+For a training fold of size \(m\), define the smoothness-independent library
+\[
+\mathcal L_m:=
+\left\{(p,k):0\leq p\leq\lceil\log m\rceil,
+\ b_k=2^{-k},\ mb_k^d\geq c\log m\right\}.
+\tag{22}
+\]
+There are at most \(C(\log m)^2\) pairs.  For every arm and every pair in (22), form the recorded-inverse-propensity local-polynomial fit of degree \(p\) and bandwidth \(b_k\), using a fixed bounded fallback when its empirical Gram matrix is ill-conditioned.  Mean candidates are clipped to \([-M,M]\); variance candidates are clipped to \([v_{\min},v_{\max}]\).  All ties below are broken lexicographically, so the algorithm is a Borel-measurable map of the observed path.
+
+We first prove the finite-library selection inequality used for both nuisances.  Conditional on a training fold, let \(g_1,\ldots,g_N\) be the resulting bounded candidate functions, frozen before a later validation fold \(J\) of size \(m\).  Let \(Z_i(a)\) be either \(Y_i(a)\), for mean selection, or
+\(\{Y_i(a)-\widehat\mu_a(X_i)\}^2\), where the mean fit was selected and frozen before the variance folds.  Define
+\[
+\widehat L_\ell:=\frac1m\sum_{i\in J}
+\frac{\mathbf 1\{A_i=a\}}{e_{i,a}}
+\{Z_i-g_\ell(X_i)\}^2,
+\qquad
+\widehat\ell\in\operatorname*{argmin}_{1\leq\ell\leq N}\widehat L_\ell.
+\tag{23}
+\]
+Recorded propensities and non-anticipation imply, for every integrable \(q\),
+\[
+E\!\left[
+\frac{\mathbf 1\{A_i=a\}}{e_{i,a}}q(X_i,Z_i(a))
+\,\middle|\,\mathcal G_{i-1}
+\right]
+=E_Pq(X,Z(a)).
+\tag{24}
+\]
+Conditional on the frozen training objects, put \(f(x)=E[Z(a)\mid X=x]\) and
+\(R_\ell=\|g_\ell-f\|_{L_2(P_X)}^2\).  The difference of two squared losses factorizes as
+\[
+\{Z-g_\ell(X)\}^2-\{Z-g_k(X)\}^2
+=\{g_k(X)-g_\ell(X)\}\{2Z-g_\ell(X)-g_k(X)\}.
+\tag{25}
+\]
+The candidate differences are uniformly bounded.  In the mean case, the remaining random factor is a bounded shift of a Gaussian with variance at most \(v_{\max}\).  In the variance case, it is a bounded affine function of the square of such a Gaussian, because both the true and fitted means are in \([-M,M]\).  Direct Gaussian integration therefore gives constants \(B,C<\infty\), independent of the candidates, such that the centered martingale increment \(\zeta_i^{\ell k}\) associated with (25) satisfies, for every integer \(q\geq2\),
+\[
+E[|\zeta_i^{\ell k}|^q\mid\mathcal G_{i-1}]
+\leq\frac{q!}{2}B^{q-2}C(R_\ell+R_k).
+\tag{26}
+\]
+Indeed, the Gaussian moment-generating function is finite for every linear argument, while the moment-generating function of a noncentral Gaussian square is uniformly finite on a neighborhood of zero under the mean and variance bounds; multiplication by the bounded candidate difference and by the inverse propensity costs only fixed powers of the positivity constant.  Its second moment is bounded by a constant times
+\(E_P(g_\ell-g_k)^2\leq2(R_\ell+R_k)\), and the higher moments give (26).
+
+Expanding the exponential in (26) shows, for \(|\lambda|B<1\),
+\[
+E[e^{\lambda\zeta_i^{\ell k}}\mid\mathcal G_{i-1}]
+\leq
+\exp\!\left\{
+\frac{C\lambda^2(R_\ell+R_k)}{2(1-|\lambda|B)}
+\right\}.
+\]
+Conditional iteration and exponential Markov yield the Bernstein bound for the validation average.  A union bound over at most \(N^2\) pairs, followed by
+\(2\sqrt{xy}\leq x/4+4y\), implies that, with probability at least \(1-\eta\), simultaneously for all \(\ell,k\),
+\[
+\left|\{\widehat L_\ell-\widehat L_k\}-(R_\ell-R_k)\right|
+\leq\frac14(R_\ell+R_k)
++C\frac{\log(N/\eta)}m.
+\tag{27}
+\]
+Use (27) with \(\ell=\widehat\ell\), the empirical minimizing inequality
+\(\widehat L_{\widehat\ell}\leq\widehat L_k\), and absorb \(R_{\widehat\ell}/4\).  Integrating the tail in \(\eta\) gives the expected oracle inequality
+\[
+E R_{\widehat\ell}
+\leq C\min_{1\leq k\leq N}ER_k
++C\frac{\log N}{m}.
+\tag{28}
+\]
+This derivation remains valid under history-dependent assignment because (24) supplies the martingale centering and positivity supplies the uniform moment constants.
+
+For any fixed Hölder order \(u>0\), once \(m\) is sufficiently large the library (22) contains a degree \(p\geq\lfloor u\rfloor\) and a dyadic bandwidth within a factor two of \(m^{-1/(2u+d)}\).  The Taylor, good-Gram, and conditional-variance calculation in \(\mathrm{lem{:}predictable\text{-}aipw\text{-}holder\text{-}upper}\), applied to this one fixed-degree candidate, gives
+\[
+E\|\widehat f_{p,k}-f\|_{L_2(P_X)}^2
+\leq C\{b_k^{2u}+(mb_k^d)^{-1}\}
+\leq C m^{-2u/(2u+d)}.
+\tag{29}
+\]
+The optimal bandwidth satisfies \(mb_k^d\asymp m^{2u/(2u+d)}\), so it obeys the occupancy restriction in (22) for all large \(m\).  Since \(N\leq C(\log m)^2\) and \(2u/(2u+d)<1\),
+\[
+\frac{\log N}{m}
+\leq C_u m^{-2u/(2u+d)}
+\tag{30}
+\]
+for all sufficiently large \(m\).  Equations (28)--(30), with \(u=s\), prove for the selected mean
+\[
+\sup_{P\in\mathcal P(s,r)}
+E_P\|\widehat\mu_{j,a}-\mu_a\|_{L_2(P_X)}^2
+\leq C_sN_j^{-2s/(2s+d)}.
+\tag{31}
+\]
+
+On the later variance-training fold use the raw residual-square response
+\(R=\{Y(a)-\widehat\mu_{j,a}(X)\}^2\).  Conditional on the earlier mean folds,
+\[
+E[R\mid X=x]
+=\sigma_a^2(x)+\{\widehat\mu_{j,a}(x)-\mu_a(x)\}^2.
+\tag{32}
+\]
+For each variance candidate, the local-polynomial stability calculation separates smoothing of the \(r\)-Hölder function \(\sigma_a^2\) from smoothing of the second term in (32).  Because both means are bounded,
+\[
+E\|\{\widehat\mu_{j,a}-\mu_a\}^2\|_{L_2(P_X)}^2
+\leq4M^2E\|\widehat\mu_{j,a}-\mu_a\|_{L_2(P_X)}^2.
+\tag{33}
+\]
+Apply (28)--(30) on the variance-validation fold with \(u=r\), and use (31)--(33).  Projection onto \([v_{\min},v_{\max}]\) cannot increase error relative to \(\sigma_a^2\), so
+\[
+\sup_{P\in\mathcal P(s,r)}
+E_P\|\widehat v_{j,a}-\sigma_a^2\|_{L_2(P_X)}^2
+\leq C_{s,r}\left\{
+N_j^{-2r/(2r+d)}\vee N_j^{-2s/(2s+d)}
+\right\}.
+\tag{34}
+\]
+Thus both selectors are independent of smoothness, and their library-selection remainders have been absorbed rather than carried as logarithmic multipliers.
+
+It remains to transfer (31)--(34) to the causal excess risk.  For
+\[
+F_z(u)=\sum_a z_a^2/u_a,
+\qquad z_a=|\omega_a|\sigma_a,
+\]
+let \(u^*(z)\) minimize \(F_z\) over \(u_a\geq\varepsilon\), \(\sum_a u_a=1\).  Expansion at \(u^*(\widehat z)\) and convexity of the minimized value give the deterministic inequality
+\[
+0\leq F_z\{u^*(\widehat z)\}-F_z\{u^*(z)\}
+\leq\varepsilon^{-1}\|z-\widehat z\|_2^2.
+\tag{35}
+\]
+With \(\widehat z_a=|\omega_a|\sqrt{\widehat v_a}\), the variance lower bound implies
+\[
+|\widehat z_a-z_a|^2
+\leq\frac{W^2}{4v_{\min}}|\widehat v_a-\sigma_a^2|^2.
+\tag{36}
+\]
+Use \(e_{t,a}(x)=u_a^*\{\widehat z_j(x)\}\) in the next epoch.  Measurability, normalization, and positivity follow from the explicit water-filling rule, so this defines a law-independent \(D\in\mathfrak D_{n,\varepsilon}\).  Equations (34)--(36) give expected allocation regret of order
+\[
+N_j^{-2s/(2s+d)}\vee N_j^{-2r/(2r+d)}.
+\tag{37}
+\]
+
+Finally, use the selected mean and the recorded propensities in the augmented inverse-probability score
+\[
+\Psi_t=
+\sum_a\omega_a(X_t)\widehat\mu_{j,a}(X_t)
++\sum_a\frac{\mathbf1\{A_t=a\}}{e_{t,a}(X_t)}
+\omega_a(X_t)\{Y_t-\widehat\mu_{j,a}(X_t)\},
+\qquad
+T=\frac1n\sum_{t=1}^n\Psi_t.
+\tag{38}
+\]
+All fits in (38) were frozen in the preceding epoch.  Hence conditional randomization and latent i.i.d. sampling make \(\Psi_t-\theta(P)\) a martingale difference.  If
+\(\Delta_a=\omega_a(\widehat\mu_{j,a}-\mu_a)\), direct square expansion gives
+\[
+E[(\Psi_t-\theta(P))^2\mid\mathcal G_{t-1}]
+=V(e_t;P)+E\!\left[
+\sum_a\frac{\Delta_a(X)^2}{e_{t,a}(X)}
+-\left\{\sum_a\Delta_a(X)\right\}^2
+\,\middle|\,\mathcal G_{t-1}\right].
+\tag{39}
+\]
+Positivity and (31) bound the second term from above at the mean rate.  Martingale orthogonality, (37), and (39) now give
+\[
+E[(T-\theta(P))^2]-\frac{V^*(P)}n
+\leq\frac{C}{n^2}\sum_j|I_j|
+\left{N_j^{-2s/(2s+d)}\vee N_j^{-2r/(2r+d)}\right}
++\frac{C_{s,r}}{n^2}.
+\]
+Both exponents lie strictly between zero and one.  Geometric summation therefore proves
+\[
+E[(T-\theta(P))^2]-\frac{V^*(P)}n
+\leq C_{s,r}\left\{
+n^{-1-2s/(2s+d)}\vee n^{-1-2r/(2r+d)}
+\right\}
+\]
+uniformly over \(P\in\mathcal P(s,r)\).  The finitely many epochs preceding availability of the required fixed degrees contribute only \(C_{s,r}n^{-2}\), which is smaller.  This proves the theorem in both smoothness orderings.  Nothing in the construction or proof lower-bounds the centered unrestricted risk, so no converse follows.

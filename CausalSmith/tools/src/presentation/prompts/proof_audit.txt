@@ -1,0 +1,40 @@
+You are auditing whether a prose appendix proof faithfully AND legibly renders the Lean proof it claims to render.
+
+Prose proof:
+{{proof_tex}}
+
+Lean proof source (ground truth):
+{{lean_proof_source}}
+
+Formal layer (open it to check any environment or hypothesis list the proof cites — this file
+is the CURRENT canonical inventory of the paper's formal environments; the assembled paper.tex
+may lag it for newly added environments, so judge cref-target existence against THIS file):
+{{paper_path}}
+
+Notation table (paper notation ↔ Lean identifiers — apply it before judging a mismatch):
+{{notation_table}}
+
+Calibration (asymmetric, mirrors the statement gate): the prose may phrase displays in the PAPER'S notation — including its frozen-statement form of the same lemma (e.g. conditional-expectation framing that Lean encodes by passing fixed nuisances as function arguments, clamped denominators written with the paper's subscript convention, named differences like δ-terms the paper defines). Apply the notation table and the lemma's own paper statement before judging; flag a mismatch only when the prose asserts mathematical CONTENT the Lean proof does not deliver (wrong sign after translation, a bound or case the Lean route lacks, an attribution to a helper that does not do what the prose says). This leniency governs checks 1-3 only; checks 4-7 judge the prose and its attributions, and are never excused by a correct Lean step.
+
+Check, step by step:
+1. Does every numbered prose step correspond to a real piece of the Lean proof (its `% lean:` tag exists and does what the prose says)?
+2. Are the case splits and intermediate bounds the SAME as in Lean (not a classical argument that happens to reach the same conclusion)?
+3. Is anything in the Lean proof's load-bearing structure silently omitted (collapsed bookkeeping is fine; skipped case splits are not)?
+4. SELF-CONTAINEDNESS — can a reader who never opens the formal development follow the argument? Flag as `incomplete`: a symbol the prose introduces and never defines by a display; a bound, identity, or calibrated constant asserted without displaying what is bounded by what; a mathematical step replaced by a name for it or for the object it produces. Bookkeeping the Lean does (measurability, coercions, integrability, rewriting) may stay collapsed, and a step delegated to a cited paper environment is fine — the gap is a Lean helper whose conclusion the prose alludes to but never states, AND a displayed bound or identity asserted with only a naming clause while its Lean derivation carries substantive mathematical steps: open the tagged Lean helper, and if its proof is more than bookkeeping/a single standard fact, the prose must derive the display, not just state it.
+
+5. THE PROSE ON ITS OWN TERMS — read it as a referee who cannot see the Lean. A correct Lean step neither supplies nor excuses any of these:
+   (a) a stated justification that does not entail its conclusion — flag the reason even when the conclusion is true. Compression tends to cite every hypothesis in scope rather than the ones used, or a weaker condition than the step needs. Check the DIRECTION of every invoked inequality, and ask whether the cited reason could reach the conclusion at all;
+   (b) a symbol carrying two meanings, or used before its defining display. Hunt SHADOWING deliberately: nothing looks missing, because the symbol is defined — just elsewhere, as something else. List the letters bound earlier in the paper and check every name the proof introduces against it, throwaway names included (case labels, decomposition summands, generic reals/laws/events, indices). Report it even when the local reasoning is correct;
+   (b2) a symbol defined under a proviso ("when the conditioning event has positive probability") but used with no such restriction. If Lean totalizes by a junk-value convention, the paper must state that convention where the symbol is introduced;
+   (c) a Lean object transliterated instead of rendered as mathematics, or a meta-reference to the formalization in reader-visible text. This covers the SHAPE of a term, not only its name: a half-substituted instantiation carrying anonymous constants, kept because the Lean wrote it that way. Ask of every display whether a reader could say why it is written in that form.
+
+6. CLAIMS ABOUT OTHER OBJECTS — "recall from <env> that …", "the stated <hypothesis>", "by the convention of <env>", "the only facts used are …". Each asserts something about a DIFFERENT object, so open that object and check it: the cited environment in the paper, or this result's own hypothesis list. A formula supplied rather than recalled, a hypothesis that exists only in the Lean, a convention recorded for a different object, or a dependency the statement does assume all read as sound prose and are invisible to the Lean comparison.
+   (a) the fact consumed must be in the cited environment's STATEMENT, not its proof — a value, integrality, or sharper form visible only inside that proof cannot be reached by label;
+   (b) mirror defect: if this proof establishes something its own statement omits and another result cites it for that, report the missing conjunct against the statement;
+   (c) hypotheses must be discharged over the WHOLE range — empty index sets, zero dimension, zero mass, smallest admissible parameter. Lean usually carries an explicit branch; prose that assumes the generic case has not verified what it claims.
+
+7. THE APPARATUS, not just the symbols: a computation model, cost measure, or algorithmic input must be defined where the reader meets it. Re-derive one claimed count from the stated model — if it does not reproduce, the model is under-described and reads as an error. Name the number that fails.
+
+Output exactly one JSON object:
+{"theorem": "{{obj_id}}", "verdict": "faithful" | "unfaithful" | "incomplete", "issues": ["<each concrete mismatch or unstated step, with the prose step number>"]}
+Use `unfaithful` when checks 1-3 fail, or when checks 5-7 find a conclusion or an attribution that is itself wrong; use `incomplete` when only checks 4-7 do. Report `unfaithful` when both apply, listing every issue either way. Default to `unfaithful` when uncertain about content, `incomplete` when uncertain about the prose.

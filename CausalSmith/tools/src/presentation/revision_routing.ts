@@ -28,8 +28,24 @@ export function requiresNewResearch(f: ReviewFinding): boolean {
   return /\b(?:prove|new theorem|new lemma|derive a result|additional result|simulation|empirical exercise|experiment|implement|new data|collect data|literature search|find a citation|source formalization|change the lean|change the theorem)\b/.test(text);
 }
 
+/** A `statement` finding that concerns only an environment's TITLE — the display name, not the
+ *  mathematics. A title is presentation: it names a result, it does not state it, and the
+ *  statement audit keys on the BODY. So an overstating title ("Adaptive root-n minimaxity" over a
+ *  theorem that is fixed-code and fixed-separation) is repairable in-run and must not be routed to
+ *  the operator: user directive 2026-08-21, renames need no approval. Detected narrowly — the
+ *  finding must talk about the name AND propose a rewrite — so a finding about the mathematics
+ *  still escalates. */
+export function isTitleOnlyFinding(f: ReviewFinding): boolean {
+  if (f.remedy && f.remedy !== "rewrite") return false;
+  const text = norm(`${f.issue} ${f.fix}`);
+  const namesTheTitle = /\b(?:title|titled|heading|named|name of|shorthand|label)\b/.test(text);
+  const aboutOverstatement = /\b(?:overstate|overstates|overstating|oversell|overclaim|overclaims|misleading|promises|suggests more|stronger than)\b/.test(text);
+  return namesTheTitle && aboutOverstatement;
+}
+
 export function actionForFinding(f: ReviewFinding): RevisionAction {
   if (requiresNewResearch(f)) return { type: "escalate" };
+  if (f.kind === "statement" && isTitleOnlyFinding(f)) return { type: "revise" };
   return KIND_ACTION[f.kind ?? "other"];
 }
 

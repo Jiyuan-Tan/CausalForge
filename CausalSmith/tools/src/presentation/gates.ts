@@ -26,45 +26,24 @@ export interface StatementCheck {
   citedDependencies?: string;
 }
 
-export interface ProofCheck {
-  obj_id: string;
-  proofTex: string;
-  leanPointer: string;
-  /** "main" (theorem, audited individually at high effort) or "auxiliary"
-   *  (lemma, audited in batches at medium effort). Defaults to "main". */
-  tier?: "main" | "auxiliary";
-}
-
 export interface GateRunners {
-  equivalence(s: StatementCheck, notation: string): Promise<{ verdict: string; detail?: string }>;
-  proofAudit(p: ProofCheck): Promise<{ verdict: string; issues?: string[] }>;
   overclaim(
     frontMatter: string,
     frozenEnvsTex: string,
   ): Promise<{ clean: boolean; flags?: { sentence: string; fix?: string }[] }>;
-  citationSupport(
-    sentence: string,
-    entry: BibEntry,
-  ): Promise<{ verdict: "supported" | "unsupported" | "unverifiable"; reason?: string }>;
-  /** Optional batch pre-pass (cost economy): verdicts keyed by `${key}|${sentence}`.
-   *  Pairs missing from the result fall through to individual citationSupport calls. */
-  citationSupportBatch?(
+  /** Batched citation-support audit: verdicts keyed by `${key}|${sentence}`. The runner must
+   *  attempt every pair (including singletons); a pair missing from the result is treated as
+   *  `unverifiable` (advisory) by the caller, never silently supported. */
+  citationSupportBatch(
     pairs: { sentence: string; entry: BibEntry }[],
   ): Promise<Map<string, { verdict: "supported" | "unsupported" | "unverifiable"; reason?: string }>>;
-  /** Optional batch pre-pass for auxiliary (lemma) proofs: verdicts keyed by
-   *  obj_id. Proofs missing from the result fall through to individual
-   *  proofAudit calls. */
-  proofAuditBatch?(
-    proofs: ProofCheck[],
-  ): Promise<Map<string, { verdict: string; issues?: string[] }>>;
 }
 
 export interface HardGateInput {
   paperTex: string;
   notation: string;
   knownObjIds: Set<string>;
-  frozenHashes: Map<string, string>;
-  proofs: ProofCheck[];
+  frozenBodies: Map<string, string>; // obj_id → canonical frozen body
   frontMatter: string;
   frozenEnvsTex: string;
   bibEntries: BibEntry[];
@@ -154,11 +133,6 @@ export async function refineStatement(opts: {
   return { body, faithful, escalated: !faithful, rounds: round, detail: v.detail, note: lastNote };
 }
 
-/** Max concurrent codex audits in the hard gates (proof / citation). The audits are independent
- *  (each proof/citation pair against its own source), so they run concurrently rather than in a
- *  sequential `for…await` loop. */
-export const GATE_CONCURRENCY = 6;
-
 /** Concurrency-limited map: run `fn` over `items` with at most `limit` in flight, results in order. */
 export async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T, i: number) => Promise<R>): Promise<R[]> {
   const results = new Array<R>(items.length);
@@ -175,7 +149,7 @@ export async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T, i:
 
 export async function runHardGates(inp: HardGateInput, r: GateRunners): Promise<LintProblem[]> {
   const problems: LintProblem[] = [];
-  problems.push(...lintAnchors(inp.paperTex, inp.knownObjIds, inp.frozenHashes));
+  problems.push(...lintAnchors(inp.paperTex, inp.knownObjIds, inp.frozenBodies));
   problems.push(...lintDefinitionOrder(inp.paperTex, inp.notation));
   problems.push(...lintReferences(inp.paperTex));
   problems.push(...lintNegativeContributionFraming(inp.paperTex));
@@ -186,22 +160,6 @@ export async function runHardGates(inp: HardGateInput, r: GateRunners): Promise<
     if (!pool.has(k)) problems.push({ gate: "cite-pool", detail: `\\cite{${k}} not in the verified pool` });
   }
 
-  // Proof audit: auxiliary (lemma) proofs are batched; the main (theorem) proofs are audited
-  // individually — in PARALLEL (each vs its own Lean proof, independent).
-  const auxProofs = inp.proofs.filter((p) => p.tier === "auxiliary");
-  const proofPre = auxProofs.length > 0 ? ((await r.proofAuditBatch?.(auxProofs)) ?? new Map()) : new Map();
-  const proofVerdicts = await mapLimit(inp.proofs, GATE_CONCURRENCY, async (p) => ({
-    p,
-    v: proofPre.get(p.obj_id) ?? (await r.proofAudit(p)),
-  }));
-  for (const { p, v } of proofVerdicts) {
-    if (v.verdict !== "faithful") {
-      problems.push({
-        gate: "proof-audit",
-        detail: `${p.obj_id}: ${(v.issues ?? ["unfaithful"]).join("; ")}`,
-      });
-    }
-  }
   const oc = await r.overclaim(inp.frontMatter, inp.frozenEnvsTex);
   if (!oc.clean) {
     for (const f of oc.flags ?? []) {
@@ -218,12 +176,15 @@ export async function runHardGates(inp: HardGateInput, r: GateRunners): Promise<
       pairs.push({ sentence, entry });
     }
   }
-  // Citation support: batched first, individual fallbacks audited in PARALLEL.
-  const pre = (await r.citationSupportBatch?.(pairs)) ?? new Map();
-  const citeVerdicts = await mapLimit(pairs, GATE_CONCURRENCY, async ({ sentence, entry }) => ({
+  // Citation support: one batched runner covers every pair. A pair the auditor returned no
+  // verdict for stays advisory (`unverifiable`) so a parse failure can neither block nor
+  // silently pass — and it is not cached, so a re-run retries it.
+  const pre = await r.citationSupportBatch(pairs);
+  const citeVerdicts = pairs.map(({ sentence, entry }) => ({
     sentence,
     entry,
-    v: pre.get(`${entry.key}|${sentence}`) ?? (await r.citationSupport(sentence, entry)),
+    v: pre.get(`${entry.key}|${sentence}`) ??
+      { verdict: "unverifiable" as const, reason: "auditor returned no verdict for this pair" },
   }));
   for (const { sentence, entry, v } of citeVerdicts) {
     const k = entry.key;
@@ -241,6 +202,10 @@ export async function runHardGates(inp: HardGateInput, r: GateRunners): Promise<
 export interface RubricReview {
   scores: Record<string, number>;
   weaknesses: string[];
+  /** Concrete, locatable, mechanically fixable reader-facing defects. Unlike `weaknesses`
+   *  (judgment calls, weighed against the score threshold) these are ALWAYS repaired: a
+   *  defect every reviewer flagged used to ship whenever the numeric score cleared the bar. */
+  defects: string[];
 }
 
 /** Boundary validation for a model-emitted rubric review. Malformed JSON must be
@@ -248,13 +213,17 @@ export interface RubricReview {
  *  is false — a garbage review would silently pass the gate. */
 export function parseRubricReview(v: unknown): RubricReview | null {
   if (typeof v !== "object" || v === null) return null;
-  const o = v as { scores?: unknown; weaknesses?: unknown };
+  const o = v as { scores?: unknown; weaknesses?: unknown; defects?: unknown };
   if (typeof o.scores !== "object" || o.scores === null) return null;
   const entries = Object.entries(o.scores as Record<string, unknown>);
   if (entries.length === 0 || !entries.every(([, s]) => typeof s === "number" && Number.isFinite(s))) return null;
   const weaknesses = o.weaknesses === undefined ? [] : o.weaknesses;
   if (!Array.isArray(weaknesses) || !weaknesses.every((w) => typeof w === "string")) return null;
-  return { scores: o.scores as Record<string, number>, weaknesses };
+  // `defects` is optional at the boundary so reviews cached before the field existed stay
+  // valid (they simply carry none); a malformed value is still a rejected review.
+  const defects = (o as { defects?: unknown }).defects === undefined ? [] : (o as { defects?: unknown }).defects;
+  if (!Array.isArray(defects) || !defects.every((w) => typeof w === "string")) return null;
+  return { scores: o.scores as Record<string, number>, weaknesses, defects };
 }
 
 const reviewMeans = (reviews: RubricReview[]): number[] =>
@@ -264,11 +233,6 @@ const reviewMeans = (reviews: RubricReview[]): number[] =>
       return v.reduce((a, b) => a + b, 0) / Math.max(1, v.length);
     })
     .sort((a, b) => a - b);
-
-export function medianRubric(reviews: RubricReview[]): number {
-  const means = reviewMeans(reviews);
-  return means.length === 0 ? 0 : means[Math.floor(means.length / 2)];
-}
 
 /** Pass statistic for a 2-reviewer ensemble: the harsher reviewer binds. */
 export function minRubric(reviews: RubricReview[]): number {

@@ -10,8 +10,6 @@ import { parseNotationReviewerOutput } from "../src/presentation/stages/p1_plan.
 import { acceptedBankEntry, causalSmithRoot } from "./helpers.js";
 import { MODELS } from "../src/models.js";
 import { PRESENTATION_PROSE_POLICY_VERSION } from "../src/presentation/prompt_io.js";
-import { frontMatterRevisionBrief } from "../src/presentation/revision_brief.js";
-import { legacyFrontMatterCacheKey } from "../src/presentation/stages/p2_draft.js";
 
 // Run against whatever paper is currently banked (the pipeline reads its graph + Lean; the models
 // are stubbed). Tracks bank re-curation instead of a hardcoded qid.
@@ -63,6 +61,14 @@ let outlineAttempts = 0;
 let batchOmissionExercised = false;
 let omittedBatchId = "";
 let singleRecoveryCalls = 0;
+// One entry per individual (resp. batch) proof-render prompt: true iff a REAL D-stage
+// derivation (not the "(none recorded…)" placeholder) reached the prompt.
+const derivationSeen: boolean[] = [];
+const batchDerivationSeen: boolean[] = [];
+// Section prompts carrying REAL D-stage per-result notes / front matter carrying the
+// REAL contribution narrative (not the "(none recorded)" placeholder).
+const sectionNotesSeen: boolean[] = [];
+let frontNarrativeSeen = false;
 let p0Model = "";
 let p0Effort = "";
 let frontMatterPrompt = "";
@@ -141,11 +147,14 @@ const deps: PaperDeps = {
       return { stdout: JSON.stringify({ verdict: "faithful" }), stderr: "" };
     }
     // P2 proof equivalence audit (runProofAudit) → faithful.
-    if (prompt.includes("auditing whether a prose appendix proof faithfully renders")) {
+    if (prompt.includes("auditing whether a prose appendix proof faithfully")) {
       return { stdout: JSON.stringify({ verdict: "faithful" }), stderr: "" };
     }
     // P2 body section (now codex).
     if (prompt.includes("Write ONE section")) {
+      if (prompt.includes("Per-result notes from the research stage")) {
+        sectionNotesSeen.push(!prompt.includes("{{result_notes}}") && !/Per-result notes[^\n]*\n[^\n]*\(none recorded\)/.test(prompt));
+      }
       const envs = parseAnchoredEnvs(prompt);
       return {
         stdout: "\\section{Stub Section}\nProse stub.\n\n" + envs.map(renderEnv).join("\n\n"),
@@ -154,6 +163,10 @@ const deps: PaperDeps = {
     }
     // P2 intro + abstract (now codex).
     if (prompt.includes("abstract and introduction")) {
+      frontNarrativeSeen =
+        prompt.includes("Contribution narrative from the research stage") &&
+        !prompt.includes("{{contribution_narrative}}") &&
+        prompt.includes("TLDR (pre-formalization research summary)");
       frontMatterPrompt = prompt;
       frontMatterCalls += 1;
       return {
@@ -165,10 +178,31 @@ const deps: PaperDeps = {
     // batched lemma-proof render: one marker + proof per requested obj_id
     const ids = [...prompt.matchAll(/obj_id ([\w:-]+)\n/g)].map((m) => m[1]); // ids may contain ':'
     if (prompt.includes("%% PROOF <obj_id>") && ids.length > 0) {
+      batchDerivationSeen.push(
+        prompt.includes("Informal derivation (UNTRUSTED exposition aid") &&
+          !prompt.includes("{{informal_derivation}}") &&
+          !prompt.includes("(none recorded for this result)"),
+      );
       return {
         stdout: ids
           .map((id) => `%% PROOF ${id}\n\\begin{proof}[Proof of \\cref{obj:${id}}]\nStep. % lean: stub\n\\end{proof}`)
           .join("\n"),
+        stderr: "",
+      };
+    }
+    // Single main-result proof render (p2_proof). The stub must reproduce the prompt's REQUIRED
+    // title, `\begin{proof}[Proof of \cref{obj:<id>}]` — with a generic "[Proof]" the assembled
+    // paper carries no way to tell which result a proof belongs to, and the proof-dropped lint
+    // (rightly) reports every main result as unproved.
+    const thmId = prompt.match(/\\begin\{(?:theoremv|propositionv)\}\{([\w:-]+)\}/)?.[1];
+    if (thmId) {
+      if (prompt.includes("Informal derivation from the discovery stage")) {
+        derivationSeen.push(
+          !prompt.includes("(none recorded for this result)") && !prompt.includes("{{informal_derivation}}"),
+        );
+      }
+      return {
+        stdout: `chatter\n\\begin{proof}[Proof of \\cref{obj:${thmId}}]\nStep 1. % lean: t_thm\n\\end{proof}\nmore chatter`,
         stderr: "",
       };
     }
@@ -207,7 +241,7 @@ describe("stages P0-P2 against the real bank entry (stubbed models)", () => {
     const bib = await readFile(join(dir, "references.bib"), "utf8");
     expect(bib).toContain("robins1994");
     const layer = await readFile(join(dir, "formal_layer.tex"), "utf8");
-    expect(layer).toMatch(/^% causalsmith-p1-synth model=.* version=notation-definition-order-v9\n/);
+    expect(layer).toMatch(/^% DERIVED from formal_layer\.json/);
     const envs = parseAnchoredEnvs(layer);
     expect(envs.length).toBeGreaterThan(20);
     // Every env has a non-empty body. (Loose nodes carry the stub render's "Touched statement body.";
@@ -216,7 +250,7 @@ describe("stages P0-P2 against the real bank entry (stubbed models)", () => {
     expect(envs.every((e) => e.body.trim().length > 0)).toBe(true);
     const looseEnvs = envs.filter((e) => e.body.includes("Touched statement body."));
     expect(looseEnvs.length).toBeGreaterThan(0);
-    // The freeze lives in the JSON formal layer (each env block's body_hash), not a frozen_hashes.json.
+    // The freeze lives in the JSON formal layer (each env block's canonical body).
     const layerSrc = FormalLayerSource.parse(JSON.parse(await readFile(join(dir, "formal_layer.json"), "utf8")));
     expect(layerSrc.blocks.filter((b) => b.env).length).toBe(envs.length);
   });
@@ -237,10 +271,22 @@ describe("stages P0-P2 against the real bank entry (stubbed models)", () => {
     expect(paper).toContain("\\begin{abstract}");
     expect(paper).toContain("\\appendix");
     expect(paper).toContain("\\begin{proof}");
-    // Frozen hashes come from the JSON formal layer (per-block body_hash), keyed by env obj_id.
+    // The D-stage informal derivation must reach every individual proof-render prompt,
+    // and for this real bank entry it must be the actual derivation, not the placeholder
+    // (the pre-2026-08 renderer reconstructed prose from tactic scripts alone).
+    expect(derivationSeen.length).toBeGreaterThan(0);
+    expect(derivationSeen.every(Boolean)).toBe(true);
+    // The lemma BATCH prompt embeds per-lemma derivations in its lemmas_block too.
+    expect(batchDerivationSeen.length).toBeGreaterThan(0);
+    expect(batchDerivationSeen.every(Boolean)).toBe(true);
+    // The D-stage narrative layer reaches the section drafter (at least one section with
+    // real per-result notes) and the front-matter author (real contribution narrative).
+    expect(sectionNotesSeen.some(Boolean)).toBe(true);
+    expect(frontNarrativeSeen).toBe(true);
+    // Frozen bodies come from the JSON formal layer (per-block body), keyed by env obj_id.
     const layerSrc = FormalLayerSource.parse(JSON.parse(await readFile(join(dir, "formal_layer.json"), "utf8")));
     const frozen = new Map<string, string>(
-      layerSrc.blocks.filter((b) => b.env).map((b) => [b.obj_id, b.body_hash]),
+      layerSrc.blocks.filter((b) => b.env).map((b) => [b.obj_id, b.body]),
     );
     const known = new Set(
       parseAnchoredEnvs(await readFile(join(dir, "formal_layer.tex"), "utf8")).map((e) => e.obj_id),
@@ -255,42 +301,6 @@ describe("stages P0-P2 against the real bank entry (stubbed models)", () => {
     for (const key of pool) expect(frontMatterPrompt).toContain(key);
     expect(frontMatterPrompt).toContain("Cite ONLY the allowed bibliography keys above.");
     expect(frontMatterPrompt).toContain("may name works removed from the verified bibliography");
-
-    // A bundle produced before the citation-pool cache input has the old
-    // four-input key. Install that exact legacy key and re-enter P2: the
-    // reviewed front matter must be retained and migrated without another
-    // authoring call.
-    const savedPaper = await readFile(join(dir, "paper.tex"), "utf8");
-    const savedFront = (await readFile(join(dir, "front_matter.tex"), "utf8")).trimEnd();
-    const frontStart = savedPaper.indexOf(savedFront);
-    const bodyStart = frontStart + savedFront.length + 2;
-    const bodyEnd = savedPaper.lastIndexOf("\n\n\\end{document}");
-    expect(frontStart).toBeGreaterThanOrEqual(0);
-    expect(bodyEnd).toBeGreaterThan(bodyStart);
-    const savedBody = savedPaper.slice(bodyStart, bodyEnd);
-    const savedBrief = await readFile(join(dir, "related_work_brief.md"), "utf8");
-    const cachePath = join(dir, "sections", "_cache_keys.json");
-    const cacheKeys = JSON.parse(await readFile(cachePath, "utf8")) as Record<string, string>;
-    cacheKeys._front = legacyFrontMatterCacheKey(
-      `${deps.codexModel ?? "unspecified-codex-model"}|${PRESENTATION_PROSE_POLICY_VERSION}`,
-      savedBody,
-      frontMatterRevisionBrief(null),
-      savedBrief,
-    );
-    await writeFile(cachePath, JSON.stringify(cacheKeys), "utf8");
-    frontMatterCalls = 0;
-    const migrated = await runPaperPipeline({
-      repoRoot: root,
-      qid: QID,
-      spec: SPEC,
-      deps,
-      from: "P2",
-      auto: true,
-      stopAfter: "P2",
-      outDir: dir,
-    });
-    expect(migrated.halt).toBe("stopped:P2");
-    expect(frontMatterCalls).toBe(0);
 
     // This is deliberately a second real P2 invocation, not a helper hash
     // comparison. Changing only the pool must invalidate the front-matter

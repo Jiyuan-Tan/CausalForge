@@ -1,0 +1,106 @@
+Put \(h_P(x)=\sum_{a\in\mathcal A}\omega_a(x)\mu_a(x)\), \(z_a(x)=|\omega_a(x)|\sigma_a(x)\), and
+\[
+\mathcal E_{\varepsilon}:=
+\left\{u\in[\varepsilon,1]^K:\sum_{a\in\mathcal A}u_a=1\right\},
+\qquad
+F_z(u):=\sum_{a\in\mathcal A}\frac{z_a^2}{u_a}.
+\]
+The restriction \(\varepsilon<1/K\) makes \(\mathcal E_{\varepsilon}\) nonempty.  Give every finite convex program below deterministic lexicographic tie breaking.  For \(z\in[0,W\sqrt{v_{\max}}]^K\), let \(u^*(z)\) minimize \(F_z\) on \(\mathcal E_{\varepsilon}\).  The Karush--Kuhn--Tucker equations give, for some \(\lambda\geq0\),
+\[
+u_a^*(z)=\max\{\varepsilon,z_a/\lambda\},
+\qquad
+\sum_{a\in\mathcal A}u_a^*(z)=1,
+\]
+with the evident lexicographic convention when \(z=0\).  On each of the finitely many regions determined by the active set \(\{a:u_a^*(z)>\varepsilon\}\), substitution of this display shows that \(F_z(u^*(z))\) is a quadratic form in \(z\), and the first derivatives agree when an active-set boundary is crossed.  Taylor's identity on a region, followed by subdivision of the line segment between \(z\) and \(\widetilde z\) at its finitely many boundary crossings, therefore gives the uniform regret inequality
+\[
+0\leq F_z\{u^*(\widetilde z)\}-F_z\{u^*(z)\}
+\leq C_{K,\varepsilon}\|z-\widetilde z\|_2^2.
+\tag{1}
+\]
+All denominators are at least \(\varepsilon\), so the Hessians of the finitely many quadratic pieces are bounded by a constant depending only on \(K\) and \(\varepsilon\).  This proves (1), including boundary allocations and zero coordinates.
+
+Partition assignment times into geometric epochs \(I_j=\{2^j,\ldots,(2^{j+1}-1)\wedge n\}\), with three fixed finite initialization epochs.  At the beginning of \(I_j\), use only observations before \(I_j\).  For every arm, fit a boundary-corrected tensor local polynomial of degree \(\lfloor s\rfloor\) with bandwidth \(N_j^{-1/(2s+d)}\), where \(N_j=2^j\), to the inverse-propensity weighted arm observations in \(I_{j-2}\), and clip the result to \([-M,M]\).  Denote it by \(\widehat\mu_{j,a}\).  Freeze this fit before epoch \(I_{j-1}\); using the disjoint, subsequent block \(I_{j-1}\), regress the clipped squared residuals \(\{Y_i-\widehat\mu_{j,a}(X_i)\}^2\) on \(X_i\) by a degree-\(\lfloor r\rfloor\) local polynomial with bandwidth \(N_j^{-1/(2r+d)}\), and clip the result to \([v_{\min},v_{\max}]\).  Call it \(\widehat v_{j,a}\).  The two training blocks have sizes within fixed factors of \(N_j\); the two-epoch lag makes the mean fit fixed before every residual used for variance fitting.
+
+Here is the expected-risk calculation for these predictable learners.  On a cube of side \(b\), the Hölder Taylor remainder is at most \(Cb^u\), so its integrated squared contribution is at most \(Cb^{2u}\).  Conditional on the past, inverse propensity is at most \(\varepsilon^{-1}\).  The entries of the rescaled polynomial Gram matrix have bounded conditional second moments, and the response terms have uniformly bounded second moments after clipping; a finite-net exponential-Markov calculation for the fixed-dimensional polynomial basis gives probability at most \(C\exp(-cN_jb^d)\) that the Gram matrix has eigenvalue below a fixed positive constant.  On that event use the clipped zero fit.  Off that event, direct conditional variance calculation gives \(C/(N_jb^d)\).  Consequently,
+\[
+\sup_{P\in\mathcal P(s,r)}
+E_P\|\widehat\mu_{j,a}-\mu_a\|_{L_2(P_X)}^2
+\leq C N_j^{-2\alpha_d}.
+\tag{2}
+\]
+For the residual-square fit, conditional on its mean-training fold,
+\[
+E_P[\{Y_i(a)-\widehat\mu_{j,a}(X_i)\}^2\mid X_i=x]
+=\sigma_a^2(x)+\{\widehat\mu_{j,a}(x)-\mu_a(x)\}^2.
+\]
+Gaussianity, clipping, and the variance range give a uniform second-moment bound for this response.  The same local-polynomial calculation, the \(L_2(P_X)\)-boundedness of its smoothing operator, and
+\[
+E_P|\widehat\mu_{j,a}(X)-\mu_a(X)|^4
+\leq 4M^2 E_P|\widehat\mu_{j,a}(X)-\mu_a(X)|^2
+\]
+yield
+\[
+\sup_{P\in\mathcal P(s,r)}
+E_P\|\widehat v_{j,a}-\sigma_a^2\|_{L_2(P_X)}^2
+\leq C\left(N_j^{-2\beta_d}\vee N_j^{-2\alpha_d}\right).
+\tag{3}
+\]
+These are expected integrated-risk bounds, so neither (2) nor (3) uses a union bound over \(j\).
+
+During epoch \(I_j\), set
+\[
+\widehat z_{j,a}(x)=|\omega_a(x)|\sqrt{\widehat v_{j,a}(x)},
+\qquad
+e_{t,a}(x)=u_a^*(\widehat z_j(x)).
+\]
+This is a measurable, history-predictable, law-independent kernel and belongs to \(\mathfrak D_{n,\varepsilon}\).  Since both variances in the square roots are at least \(v_{\min}\),
+\[
+|\widehat z_{j,a}(x)-z_a(x)|^2
+\leq \frac{W^2}{4v_{\min}}
+|\widehat v_{j,a}(x)-\sigma_a^2(x)|^2.
+\]
+Combining this inequality with (1) and (3) gives, uniformly for \(t\in I_j\),
+\[
+E_P\{V(e_t;P)-V^*(P)\}
+\leq C\left(N_j^{-2\beta_d}\vee N_j^{-2\alpha_d}\right).
+\tag{4}
+\]
+
+For \(t\in I_j\), define the recorded-propensity score
+\[
+\Psi_t=
+\sum_{a\in\mathcal A}\omega_a(X_t)\widehat\mu_{j,a}(X_t)
++\sum_{a\in\mathcal A}
+\frac{\mathbf 1\{A_t=a\}}{e_{t,a}(X_t)}
+\omega_a(X_t)\{Y_t-\widehat\mu_{j,a}(X_t)\},
+\qquad
+T_n^{\circ}=\frac1n\sum_{t=1}^n\Psi_t.
+\]
+Every fitted quantity is measurable before unit \(t\) is assigned.  Consistency, latent i.i.d. sampling, non-anticipation, and positivity therefore give
+\[
+E_{\mathbb P_n^{D_n^{\circ},P}}[\Psi_t\mid\mathcal F_{t-1}^{D_n^{\circ},P}]=\theta(P).
+\tag{5}
+\]
+Thus \(\Psi_t-\theta(P)\) are square-integrable martingale differences.  Put \(\delta_{j,a}=\omega_a(\widehat\mu_{j,a}-\mu_a)\).  Expanding the conditional square in (5), using conditional centering of \(Y_t(a)-\mu_a(X_t)\), gives the exact identity
+\[
+E[(\Psi_t-\theta(P))^2\mid\mathcal F_{t-1}^{D_n^{\circ},P}]
+=V(e_t;P)
++E_P\!\left[
+\sum_{a\in\mathcal A}\frac{\delta_{j,a}(X)^2}{e_{t,a}(X)}
+-\left\{\sum_{a\in\mathcal A}\delta_{j,a}(X)\right\}^2
+\middle|\mathcal F_{t-1}^{D_n^{\circ},P}
+\right].
+\tag{6}
+\]
+The second term in braces is nonpositive and \(e_{t,a}\geq\varepsilon\); hence (2) bounds the remainder in (6) by \(CN_j^{-2\alpha_d}\).  Orthogonality of martingale differences, followed by (4)--(6), now yields
+\[
+E[(T_n^{\circ}-\theta(P))^2]-\frac{V^*(P)}n
+\leq \frac{C}{n^2}\sum_j |I_j|
+\left(N_j^{-2\alpha_d}\vee N_j^{-2\beta_d}\right)+\frac{C}{n^2}.
+\]
+Because \(|I_j|\leq N_j\), \(N_j=2^j\), and \(\alpha_d,\beta_d\in(0,1/2)\), the geometric sum is at most
+\[
+C n^{-2}\left(n^{1-2\alpha_d}\vee n^{1-2\beta_d}\right)
+=C\left(n^{-1-2\alpha_d}\vee n^{-1-2\beta_d}\right).
+\]
+The initialization contribution \(Cn^{-2}\) is smaller than this display.  Taking the supremum over \(P\) proves the lemma.  The construction explicitly supplies one common data-driven pair \((D_n^{\circ},T_n^{\circ})\); no law-specific oracle estimator is used.

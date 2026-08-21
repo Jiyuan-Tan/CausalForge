@@ -8,6 +8,7 @@ import { parseOutline, reconcileXrefAdvisories } from "../stage_util.js";
 import { parseAnchoredEnvs, lintAnchors, lintClarity, lintDefinitionOrder, lintNegativeContributionFraming, lintNestedMathDelimiters, lintReferences, repairObjRefs } from "../tex_anchors.js";
 import { FormalLayerSource, normalizeCitedScopeFootnotes, paperEnvMismatches } from "../formal_layer.js";
 import { parseNoteBlocks } from "../note_parser.js";
+import { SYNTHETIC_COMPANION_RE } from "../paper_index_orphans.js";
 import { parseBib, verifyEntry, defaultLookup, citedKeys, canonicalizeBibEntry, UNREACHABLE } from "../citations.js";
 import { buildBundle, buildProseEntries, buildFormalLayer, buildSymbolRealizations, assumptionTable, paperLabels } from "../emit.js";
 import { discoverRealizedSymbols, buildSymbolClusters } from "../../formalization/crosswalk.js";
@@ -17,7 +18,8 @@ import { extractLeanrefIds } from "../tex2html.js";
 import { paperReferenceLabels, resolveObjCrefsPlain, tex2html } from "../tex2html.js";
 import { PresentationCrosswalk, LeanSnippets, FormalLayer, PaperMeta } from "../types.js";
 import { MODELS } from "../../models.js";
-import { assertP2AssemblyFresh, recordP2Assembly } from "../assembly_freshness.js";
+import { assertP2AssemblyFresh, recordP2Assembly, texFilesUnder } from "../assembly_freshness.js";
+import { loadJsonCache } from "../cache.js";
 
 const execFileP = promisify(execFile);
 const COMPILE_ATTEMPTS = 3;
@@ -76,7 +78,9 @@ function validatePaperIndexReplacement(
     typeof entry.name === "string" ? [[entry.name, entry] as const] : [],
   ));
   const lost = previous.entries!.filter(hasSourceLocation).flatMap((entry) =>
-    byName.has(entry.name) ? [] : [entry.name],
+    // Synthetic companions in an older cache may carry a borrowed source slice
+    // or an `add_decl_doc` range; the extractor now omits them by design.
+    byName.has(entry.name) || SYNTHETIC_COMPANION_RE.test(entry.name) ? [] : [entry.name],
   );
   if (lost.length > 0)
     throw new Error(`P4: paper_index would drop ${lost.length} published declaration(s): ${lost.slice(0, 12).join(", ")}`);
@@ -98,12 +102,19 @@ function validatePaperIndexReplacement(
 
 /** Only Lean-backed blocks have a Lean equivalence claim to audit. Presentation-
  * synthesized definitions are frozen and linted, but intentionally have no Lean
- * declaration and therefore no P1 equivalence verdict. */
+ * declaration and therefore no P1 equivalence verdict. EXCEPTION: a lean-null
+ * block whose cache entry still records `drift` blocks anyway — otherwise
+ * removing a block's Lean mapping would launder a recorded frozen-layer↔Lean
+ * disagreement past emission. */
 export function blocksMissingEquivalence(
   blocks: Array<{ obj_id: string; lean: unknown | null }>,
   cache: Record<string, { verdict?: string }>,
 ): Array<{ obj_id: string; lean: unknown | null }> {
-  return blocks.filter((b) => b.lean !== null && cache[b.obj_id]?.verdict !== "faithful");
+  return blocks.filter((b) =>
+    b.lean !== null
+      ? cache[b.obj_id]?.verdict !== "faithful"
+      : cache[b.obj_id]?.verdict === "drift",
+  );
 }
 
 /**
@@ -123,36 +134,19 @@ export async function stageP4(io: StageIO): Promise<void> {
   // spuriously enter the model-driven LaTeX repair loop and get patched into paper.tex itself.
   const macros = await readFile(join(import.meta.dirname, "..", "templates", "paper_macros.tex"), "utf8");
   await writeFile(join(io.outDir, "paper_macros.tex"), macros, "utf8");
-  // Equivalence is the trust anchor. The P3 gate throws to halt on a `drift`
-  // verdict, but the standard re-emit path `--from P4` skips P3 entirely — so a
-  // paper could ship with a known frozen-layer↔Lean mismatch still recorded in
-  // the cache (live incident: P-8 shipped with verdict="drift" while
-  // hard_gate_failures was 0). Emission must re-consult the persistent anchor,
-  // not transient state: block while any equivalence verdict is `drift`. The
-  // only way to clear it is to amend the frozen body so a fresh P3 audit flips
-  // it to `faithful` (the content-keyed cache invalidates on the body change),
-  // which forces the de-laundering to land before the paper can ship. A
-  // false-positive drift adjudicated as auditor-miscalibration is reseeded to
-  // `faithful` (existing workflow) and does not block.
-  const equivalenceCache = JSON.parse(
-    await readFile(join(io.outDir, "equivalence_cache.json"), "utf8").catch(() => "{}"),
-  ) as Record<string, { verdict?: string; detail?: string }>;
-  {
-    const drifts = Object.entries(equivalenceCache).filter(([, v]) => v?.verdict === "drift");
-    if (drifts.length > 0) {
-      throw new Error(
-        `P4 blocked: ${drifts.length} equivalence drift verdict(s) unresolved ` +
-          `(${drifts.map(([id]) => id).join(", ")}). The frozen layer disagrees with Lean — ` +
-          `adjudicate (amend the frozen body to the Lean-true form and re-run P1 to clear, or ` +
-          `reseed to faithful if the drift is an auditor false positive) before emitting. ` +
-          drifts.map(([id, v]) => `[${id}] ${v.detail ?? ""}`).join("; "),
-      );
-    }
-  }
+  // Equivalence is the trust anchor, and the standard re-emit path `--from P4`
+  // skips the earlier stages — so emission must re-consult the persistent cache
+  // (live incident: P-8 shipped with verdict="drift" while hard_gate_failures
+  // was 0). `blocksMissingEquivalence` below blocks every Lean-backed block
+  // whose current verdict is not `faithful` (drift, missing, or unparseable),
+  // plus any retained lean-null block still carrying a `drift` verdict.
+  const equivalenceCache = await loadJsonCache<Record<string, { verdict?: string; detail?: string }>>(
+    join(io.outDir, "equivalence_cache.json"),
+  );
   const paperPath = join(io.outDir, "paper.tex");
   let paperTex = await readFile(paperPath, "utf8");
   await assertP2AssemblyFresh(io.outDir);
-  // Formal layer (source of truth); the freeze lives in each block's body_hash (no frozen_hashes.json).
+  // Formal layer (source of truth); the freeze IS each block's `body` — env bodies are compared against it.
   const formalLayer = FormalLayerSource.parse(
     JSON.parse(await readFile(join(io.outDir, "formal_layer.json"), "utf8")),
   );
@@ -166,12 +160,18 @@ export async function stageP4(io: StageIO): Promise<void> {
   }
   const unaudited = blocksMissingEquivalence(formalLayer.blocks, equivalenceCache);
   if (unaudited.length > 0) {
+    const details = unaudited
+      .map((b) => `[${b.obj_id}] ${equivalenceCache[b.obj_id]?.verdict ?? "missing"}: ${equivalenceCache[b.obj_id]?.detail ?? ""}`)
+      .join("; ");
     throw new Error(
       `P4 blocked: ${unaudited.length} formal-layer object(s) lack a current faithful P1 equivalence verdict ` +
-        `(${unaudited.map((b) => b.obj_id).join(", ")}). Re-run from P1; P4 will not emit an unaudited correspondence panel.`,
+        `(${unaudited.map((b) => b.obj_id).join(", ")}). Amend the frozen body so a fresh P1 audit passes ` +
+        `(the content-keyed cache invalidates on the body change), or — for an auditor false positive, or a ` +
+        `lean-null block with a lingering drift verdict — reseed that entry to faithful; P4 will not emit an ` +
+        `unaudited correspondence panel. ${details}`,
     );
   }
-  const frozen = new Map<string, string>(formalLayer.blocks.map((b) => [b.obj_id, b.body_hash]));
+  const frozen = new Map<string, string>(formalLayer.blocks.map((b) => [b.obj_id, b.body]));
   // The emitted namespace is the frozen formal layer, which also contains
   // presentation-synthesized definitions absent from the accepted-bank graph.
   const known = new Set(formalLayer.blocks.map((b) => b.obj_id));
@@ -188,6 +188,7 @@ export async function stageP4(io: StageIO): Promise<void> {
   const finalLint = [
     ...lintAnchors(paperTex, known, frozen),
     ...lintDefinitionOrder(paperTex, notation),
+    ...lintClarity(paperTex),
     ...lintNestedMathDelimiters(paperTex),
     ...lintReferences(paperTex),
     ...lintNegativeContributionFraming(paperTex),
@@ -196,16 +197,6 @@ export async function stageP4(io: StageIO): Promise<void> {
   if (finalLint.length > 0) {
     throw new Error(`P4 entry lint failed: ${finalLint.map((p) => p.detail).join("; ")}`);
   }
-  // Readability backstop: the P1 clarity lint runs before the freeze, but an
-  // orchestrator re-freeze of the formal layer can bypass P1 entirely — surface
-  // (don't block) any Lean-identifier / formalization-procedure leakage here.
-  const clarity = lintClarity(paperTex);
-  if (clarity.length > 0) {
-    io.state.notes.push(
-      `P4 clarity warning (${clarity.length}; frozen layer reads like Lean — re-author the flagged envs): ${clarity.map((p) => p.detail).join("; ")}`,
-    );
-  }
-
   // citation re-verification on the final pool — only entries ACTUALLY cited in
   // the paper. Uncited bib entries never reach the compiled bibliography, so a
   // dead entry (e.g. a pre-DOI classic that an external registry cannot match on
@@ -383,72 +374,27 @@ export async function stageP4(io: StageIO): Promise<void> {
     maxBuffer: 16 * 1024 * 1024,
     timeout: 1800_000,
   });
-  const firstEmittedIndex = await emitIndex(priorIndex);
+  const emittedIndex = await emitIndex(priorIndex);
 
-  // NL docstring coverage: the site renders each decl's docstring as its
-  // natural-language statement, so an undocumented decl in the paper's modules
-  // ships as "no translation yet". One batched codex pass documents the gaps
-  // (docstring insertions only), the build re-validates, and the index is
-  // re-emitted. Failed docstring edits are restored, but a failed re-emit is
-  // fatal so an older index cannot be accepted for the changed Lean sources.
-  let docstringsUpdated = false;
-  try {
-    const idx = JSON.parse(await readFile(indexPath, "utf8")) as {
-      entries: { name: string; file: string; line: number; kind: string; doc: string | null }[];
-    };
-    const undoc = idx.entries.filter((e) => !e.doc);
-    if (undoc.length > 0) {
-      const byFile = new Map<string, typeof undoc>();
-      for (const e of undoc) byFile.set(e.file, [...(byFile.get(e.file) ?? []), e]);
-      const declList = [...byFile.entries()]
-        .map(([f, es]) =>
-          [f, ...es.sort((a, b) => a.line - b.line).map((e) => `  L${e.line} ${e.kind} ${e.name}`)].join("\n"),
-        )
-        .join("\n\n");
-      // Snapshot the exact bytes of every target file BEFORE the codex pass, so a
-      // build-failure rollback restores only this pass's docstring edits. NEVER use
-      // `git checkout` here: it reverts to HEAD and so destroys any pre-existing
-      // uncommitted work (e.g. in-flight de-laundering) that this pass did not author.
-      const snapshot = new Map<string, string>();
-      for (const f of byFile.keys()) {
-        snapshot.set(f, await readFile(join(io.ctx.repoRoot, f), "utf8"));
-      }
-      await io.ctx.deps.runCodex({
-        prompt: await presentationPrompt("p4_docstrings", {
-          package_root: io.ctx.repoRoot,
-          decl_list: declList,
-        }),
-        cwd: io.ctx.repoRoot,
-        reasoningEffort: "medium",
-        leanLsp: false,
-        model: MODELS.codexMechanical,
-      });
-      try {
-        await execFileP("lake", ["-d", io.ctx.repoRoot, "build", modPrefix], {
-          cwd: io.ctx.repoRoot, maxBuffer: 16 * 1024 * 1024, timeout: 1800_000,
-        });
-      } catch (buildErr) {
-        // a docstring edit must never leave the tree broken — restore from the
-        // pre-pass snapshot (byte-for-byte), preserving unrelated uncommitted work.
-        for (const [f, content] of snapshot) {
-          await writeFile(join(io.ctx.repoRoot, f), content, "utf8");
-        }
-        throw buildErr;
-      }
-      docstringsUpdated = true;
-    }
-  } catch (e: unknown) {
-    const msg = (e as Error).message?.slice(0, 300) ?? String(e);
-    io.state.notes.push(`P4: docstring-coverage pass failed (rerunnable): ${msg}`);
-  }
-  if (docstringsUpdated) {
-    await emitIndex(firstEmittedIndex);
-    io.state.notes.push("P4: docstring coverage updated; paper_library_index re-emitted");
+  // Docstring coverage is authored UPSTREAM (the F5 docstring pass; docstring-canonical
+  // workflow) — P4 only verifies it. An undocumented decl would ship as "no translation yet"
+  // in the site drawer, so the emit fails with the exact list instead of editing Lean here.
+  const undocumented = (emittedIndex.entries ?? []).filter(
+    (e) => !e.doc && typeof e.name === "string",
+  );
+  if (undocumented.length > 0) {
+    throw new Error(
+      `P4: ${undocumented.length} declaration(s) in the paper's modules lack docstrings — ` +
+      undocumented.slice(0, 12).map((e) => `${e.file}:${e.line} ${e.name}`).join(", ") +
+      (undocumented.length > 12 ? ` (+${undocumented.length - 12} more)` : "") +
+      `. Docstrings are authored at F5 (first paragraph = the NL translation), not at emit; ` +
+      `add them to the Lean sources and re-run --from P4.`,
+    );
   }
 
   // Join off the JSON source of truth (explicit obj_id = node id, loaded above), not a re-parse of
   // paper.tex. The paper's assembled envs must still match the source exactly — that is now an
-  // equality lint (stronger than the legacy frozen-hash compare: it checks every body, not a hash).
+  // equality lint (also catches MISSING envs, which the per-env body compare cannot).
   const layerMismatches = paperEnvMismatches(paperTex, formalLayer.blocks);
   if (layerMismatches.length > 0) {
     throw new Error(`P4: paper.tex disagrees with formal_layer.json: ${layerMismatches.join("; ")}`);
@@ -768,10 +714,6 @@ export async function stageP4(io: StageIO): Promise<void> {
 /** Authored/cache TeX inputs that P2 uses to assemble paper.tex. Repairs must land here as
  * well as in the assembled file, otherwise a later P2 pass resurrects the compiler error. */
 async function authoredTexSources(outDir: string): Promise<string> {
-  const paths = [join(outDir, "front_matter.tex")];
-  for (const dir of ["sections", "proofs"]) {
-    const names = await readdir(join(outDir, dir)).catch(() => []);
-    paths.push(...names.filter((n) => n.endsWith(".tex")).sort().map((n) => join(outDir, dir, n)));
-  }
+  const paths = [join(outDir, "front_matter.tex"), ...(await texFilesUnder(outDir, ["sections", "proofs"]))];
   return paths.join("\n");
 }

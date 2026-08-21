@@ -1,0 +1,55 @@
+/-
+Copyright (c) 2026 Jiyuan Tan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Jiyuan Tan
+-/
+
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Basic
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.AdaptiveSelectorPacket
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.AffineGaussianKL
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.AffineGaussianOutcomePath
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.AffineGaussianSubGaussian
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.BoundedCertifiedComplex
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.CertifiedComplex
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.CertifiedTranscendental
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.ClassRelations
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.ComplexAnalysisLocal
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.ContourBank
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.Cumulant
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.EmpiricalTransform
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.EmpiricalTransformSeries
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.FixedCodeConverse
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.GaussianRademacherBenchmark
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.HardSubmodel
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.JensenBlaschke
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.JmsComparator
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.KnownZeroAssembly
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.KnownZeroConditional
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.KnownZeroOrthogonality
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.LuxemburgMGF
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.PopulationNumeratorBound
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.ProjectedOutputCertification
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.SelectorSoundness
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.SineRisk
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.SineScore
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.SpectralEstimator
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.SpectralMeasurability
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.Transforms
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.Helpers.UniformDiskSeries
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.OpenQuestions
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.T1_KnownZeroInstrument
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.T2_ExactContourIdentification
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.T3_AdaptiveRootNMinimax
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.T4_JmsAceAlignment
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.T5_CommonExperimentDichotomy
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.T6_SymmetricMixtureReduction
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.T7_LocalToGaussianPartialBenchmarks
+import CausalSmith.Stat.STAT_SaPlmCumulantConverse_Research.T8_BoundedOutcomeGaussianDegeneracy
+
+/-! # Run barrel (auto-generated)
+
+Aggregates every module of this causalsmith run so the whole run is ONE buildable target
+(`lake build <this module>`). Research modules are not reachable from the top-level
+`CausalSmith.lean` barrel, so the default lake target skips them and reports green on stale
+oleans. Rewritten from the run's module set on every F-stage entry — do not hand-edit. -/

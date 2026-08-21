@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdtemp, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { restoreFrozenEnvsAfterRevision, stageP5HolisticRevision } from "../src/presentation/stages/p5_holistic_revision.js";
+import { stageP5HolisticRevision } from "../src/presentation/stages/p5_holistic_revision.js";
+import { restoreFrozenEnvsAfterRevision } from "../src/presentation/prose_revision.js";
 import { freshPaperState } from "../src/presentation/state.js";
 import type { PaperDeps, StageIO } from "../src/presentation/pipeline.js";
 import type { PriorReview } from "../src/presentation/revision_brief.js";
@@ -58,7 +59,7 @@ describe("P5 holistic manuscript reviser", () => {
       runClaude: async () => "",
       runCodex: async (args) => {
         call = args;
-        await writeFile(join(outDir, "paper.tex"), "Econometric reframing.\n");
+        await writeFile(join(outDir, "sections", "01_intro.tex"), "Econometric reframing.\n");
         return { stdout: "Reframed the verified contribution.", stderr: "" };
       },
       dryRun: false,
@@ -99,6 +100,8 @@ describe("P5 holistic manuscript reviser", () => {
     expect(receipt).toContain("mode: reframe");
     expect(receipt).toContain("Reframed the verified contribution.");
     await expect(readFile(join(outDir, "front_matter.tex"), "utf8")).resolves.toBe("Old abstract.\n");
+    // paper.tex is derived: the reviser edits sources; P2 reassembly rebuilds it later.
+    await expect(readFile(join(outDir, "paper.tex"), "utf8")).resolves.toBe("Old paper.\n");
   });
 
   it("invalidates only purely derived P4 artifacts after a source-changing revision", async () => {
@@ -116,10 +119,11 @@ describe("P5 holistic manuscript reviser", () => {
       ["assumption_table.md", "stale table"],
       ["meta.json", "{\"tldr\":\"sticky\",\"score\":8,\"score_rationale\":\"verified\"}"],
     ]) await writeFile(join(outDir, name), body);
+    await writeFile(join(outDir, "sections", "01_body.tex"), "Body.\n");
     const deps: PaperDeps = {
       runClaude: async () => "",
       runCodex: async () => {
-        await writeFile(join(outDir, "paper.tex"), "Revised source.\n");
+        await writeFile(join(outDir, "sections", "01_body.tex"), "Revised source.\n");
         return { stdout: "changed", stderr: "" };
       },
       dryRun: false,
@@ -134,7 +138,7 @@ describe("P5 holistic manuscript reviser", () => {
     }, review, review.findings);
 
     expect(result.changed).toBe(true);
-    await expect(readFile(join(outDir, "paper.tex"), "utf8")).resolves.toBe("Revised source.\n");
+    await expect(readFile(join(outDir, "sections", "01_body.tex"), "utf8")).resolves.toBe("Revised source.\n");
     for (const name of ["paper.pdf", "paper_body.html", "lean_snippets.json", "presentation_crosswalk.json", "formal_layer_web.json", "assumption_table.md"]) {
       await expect(stat(join(outDir, name))).rejects.toMatchObject({ code: "ENOENT" });
     }
@@ -217,7 +221,7 @@ describe("P5 holistic manuscript reviser", () => {
     }, review, review.findings)).rejects.toThrow(/protected formal/i);
   });
 
-  it("fails closed if the reviser edits a cached section instead of paper.tex", async () => {
+  it("fails closed if the reviser edits derived paper.tex instead of the authored sources", async () => {
     const outDir = await mkdtemp(join(tmpdir(), "p5-holistic-cache-"));
     dirs.push(outDir);
     await mkdir(join(outDir, "sections"));
@@ -236,8 +240,8 @@ describe("P5 holistic manuscript reviser", () => {
     const deps: PaperDeps = {
       runClaude: async () => "",
       runCodex: async () => {
-        await writeFile(join(outDir, "sections", "01_body.tex"), "Stale split source.\n");
-        return { stdout: "changed cache", stderr: "" };
+        await writeFile(join(outDir, "paper.tex"), "Edited the derived artifact.\n");
+        return { stdout: "changed derived", stderr: "" };
       },
       dryRun: false,
     };
@@ -248,6 +252,20 @@ describe("P5 holistic manuscript reviser", () => {
     await expect(stageP5HolisticRevision({
       ctx: { repoRoot: outDir, qid: "q", spec: "v1", deps, outDir },
       state: freshPaperState("q", "v1"), bank: {} as StageIO["bank"], outDir,
-    }, review, review.findings)).rejects.toThrow(/protected formal or P2 cache artifact/i);
+    }, review, review.findings)).rejects.toThrow(/protected formal or derived artifact/i);
+  });
+});
+
+describe("applyProseRevision rogue-env seal", () => {
+  it("throws when a reviser renames a frozen env to an unknown obj_id (forged body smuggling)", async () => {
+    const { applyProseRevision } = await import("../src/presentation/prose_revision.js");
+    const block = {
+      obj_id: "thm:a", alias: null, kind: "theorem" as const, env: "theoremv" as const, title: null,
+      body: "True claim.", ref_set: [], lean: null, status: "matched", provenance: "test", cited_dependencies: [],
+    };
+    const before = "\\begin{theoremv}{thm:a}\nTrue claim.\n\\end{theoremv}";
+    const renamed = "\\begin{theoremv}{thm:a-evil}\nForged claim.\n\\end{theoremv}";
+    expect(() => applyProseRevision({ before, revised: renamed, blocks: [block], who: "test reviser" }))
+      .toThrow(/introduced unknown anchored environment/);
   });
 });

@@ -1,0 +1,82 @@
+The paper-independent bounded-build obligation \(\mathsf{CCIA}_{\mathrm{build}}\) is the following finite implementation specification.  A certified real record consists of rational closed intervals \(I_m=[I_m^-,I_m^+]\), an executable modulus \(\mu:\mathbb Q_{>0}\to\mathbb N\), and the semantic contract
+\[
+ x\in I_{m+1}\subseteq I_m,
+ \qquad
+ I_{\mu(e)}^+-I_{\mu(e)}^-\le e.
+\]
+A positive record additionally supplies a rational \(p>0\) with \(p\le x\).  Executable code may inspect only the interval, modulus, and positivity fields.  It may not inspect a semantic exact-real value.
+
+For rational intervals \(A=[a_-,a_+]\) and \(B=[b_-,b_+]\), define
+\[
+ A+B=[a_-+b_-,a_++b_+],
+ \qquad
+ A-B=[a_--b_+,a_+-b_-],
+\]
+\[
+ A B=
+ [\min\{a_-b_-,a_-b_+,a_+b_-,a_+b_+\},
+  \max\{a_-b_-,a_-b_+,a_+b_-,a_+b_+\}].
+\]
+A complex rectangle is \(A+iB\).  Complex addition, subtraction, conjugation, and multiplication are implemented by these endpoint operations and
+\[
+ (A+iB)(C+iD)=(AC-BD)+i(AD+BC).
+\]
+For \(A=[a_-,a_+]\), put
+\[
+ \operatorname{sq}_{-}(A)=
+ \begin{cases}
+ 0,&a_-\le0\le a_+,\\
+ \min\{a_-^2,a_+^2\},&\text{otherwise},
+ \end{cases}
+ \qquad
+ \operatorname{sq}_{+}(A)=\max\{a_-^2,a_+^2\}.
+\]
+Thus \(|A+iB|^2\) is enclosed by the rational interval obtained by adding the corresponding square bounds.  Rational bisection between nonnegative rational endpoints gives lower and upper square-root enclosures: after \(q\) bisections their width is at most the initial width times \(2^{-q}\).  This supplies certified modulus lower and upper bounds.  Division is the guarded operation
+\[
+ \frac{A+iB}{C+iD}
+ =(A+iB)(C-iD)(C^2+D^2)^{-1},
+\]
+and is executed only when the modulus routine has returned a rational lower bound \(m>0\); outward division by the positive rational interval enclosing \(C^2+D^2\) is then sound.
+
+The certified name of \(\pi\) is constructed, rather than postulated, from Machin's identity
+\[
+ \pi=16\arctan(1/5)-4\arctan(1/239).
+\]
+For \(0<x<1\), the first \(N+1\) terms of
+\[
+ \arctan x=\sum_{j=0}^{N}(-1)^j\frac{x^{2j+1}}{2j+1}+R_N(x),
+ \qquad
+ |R_N(x)|\le\frac{x^{2N+3}}{2N+3},
+\]
+give rational nested enclosures after intersecting the first \(m+1\) requested enclosures.  If \(e=p/q>0\) is in lowest terms, the explicit choice \(N=5q+5\) makes the propagated Machin remainder smaller than \(e\), so this is an effective modulus with finite fuel.
+
+For a rational interval contained in \([-B,B]\), with rational \(B\ge0\), evaluate the Taylor polynomials for \(\exp\), \(\sin\), and \(\cos\) by the preceding interval operations.  The Lagrange remainders are bounded respectively by
+\[
+ 3^{\lceil B\rceil}\frac{B^{N+1}}{(N+1)!},
+ \qquad
+ \frac{B^{N+1}}{(N+1)!},
+ \qquad
+ \frac{B^{N+1}}{(N+1)!}.
+\]
+For a requested rational error \(e=p/q>0\), take
+\[
+ N=\lceil2B\rceil+q+2\lceil B\rceil+2.
+\]
+After the index \(\lceil2B\rceil\), successive absolute Taylor terms decrease by at least a factor \(1/2\); since \(3^{\lceil B\rceil}<2^{2\lceil B\rceil}\) and \(2^{-q}\le q^{-1}\le e\), this displayed \(N\) gives a sound error at most \(e\).  Finite intersections make the output rectangles nested.  Hence
+\[
+ \exp(x+iy)=\exp(x)\{\cos y+i\sin y\}
+\]
+has a nested complex-rectangle extension with an effective modulus on every bounded input rectangle.  Combining the constructed \(\pi\) name with these trigonometric operations gives, from a positive radius record \(\mathfrak r\) and integers \(N\ge1\), \(0\le q<N\), certified circle-node records for
+\[
+ r\exp(2\pi iq/N)
+ \quad\text{and}\quad
+ 2\pi i r\exp(2\pi iq/N).
+\]
+
+Finite rectangle sums and products are primitive recursive.  If a complex-valued function on \([0,1]\) has a supplied rational Lipschitz bound \(L\), a uniform mesh with
+\[
+ N_{\mathrm{mesh}}=\lceil L/e\rceil+1
+\]
+has oscillation at most \(e\) on each cell.  Evaluating every node to a rational error budget divided by the displayed finite number of operations therefore yields sound finite infimum, supremum, and trapezoidal-integral enclosures.  Their fuel consists of \(N_{\mathrm{mesh}}+1\) node calls, the displayed Taylor cutoffs, square-root bisection cutoffs, and a finite number of endpoint operations.  Absolute value of a real interval is implemented by the square-free endpoint rule implicit in \(\operatorname{sq}_{-}\) and \(\operatorname{sq}_{+}\), and has the same compositional modulus property.
+
+A concrete implementation discharges \(\mathsf{CCIA}_{\mathrm{build}}\) only if it implements these algorithms, exports their soundness and effective-modulus contracts, and compiles the resulting module.  This definition is the explicit bounded-build obligation; it does not state or imply that the missing complex operations are already exported by Causalean.  Until such an implementation is added and compiled, later executable conclusions are conditional on a build satisfying this specification.

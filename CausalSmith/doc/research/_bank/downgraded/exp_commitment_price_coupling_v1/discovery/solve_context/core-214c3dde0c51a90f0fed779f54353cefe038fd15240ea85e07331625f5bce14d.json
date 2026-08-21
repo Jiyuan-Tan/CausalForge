@@ -1,0 +1,1162 @@
+{
+  "qid": "exp_commitment_price_coupling",
+  "specialization": "v1",
+  "cluster": "experimentation",
+  "symbols": [
+    {
+      "name": "q",
+      "type": "number_of_quadruples",
+      "space": "\\(\\mathbb N\\)",
+      "def": "The number of predeclared four-unit blocks.",
+      "role": "design_size"
+    },
+    {
+      "name": "n",
+      "type": "population_size",
+      "space": "\\(4\\mathbb N\\)",
+      "def": "The finite-population size \\(n=4q\\).",
+      "role": "design_size",
+      "refs": [
+        "q"
+      ]
+    },
+    {
+      "name": "ell",
+      "type": "block_index",
+      "space": "\\(\\{1,\\ldots,q\\}\\)",
+      "def": "A quadruple index.",
+      "role": "index",
+      "refs": [
+        "q"
+      ]
+    },
+    {
+      "name": "i",
+      "type": "unit_index",
+      "space": "\\(\\{1,\\ldots,n\\}\\)",
+      "def": "A unit index.",
+      "role": "index",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "j",
+      "type": "response_class_index",
+      "space": "\\(\\{1,2\\}\\)",
+      "def": "The index of one of the two response-structure classes.",
+      "role": "index"
+    },
+    {
+      "name": "k",
+      "type": "local_direction_index",
+      "space": "\\(\\{1,2,3\\}\\)",
+      "def": "The index of a balanced assignment direction within a quadruple.",
+      "role": "index"
+    },
+    {
+      "name": "1_n",
+      "type": "all_ones_vector",
+      "space": "\\(\\mathbb R^n\\)",
+      "def": "The vector \\(\\mathbf 1_n=(1,\\ldots,1)^\\top\\).",
+      "role": "linear_algebra_primitive",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "I_n",
+      "type": "identity_matrix",
+      "space": "\\(\\mathbb R^{n\\times n}\\)",
+      "def": "The \\(n\\)-dimensional identity matrix.",
+      "role": "linear_algebra_primitive",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "P_n",
+      "type": "centering_projection",
+      "space": "\\(\\mathbb R^{n\\times n}\\)",
+      "def": "\\(P_n=I_n-\\mathbf 1_n\\mathbf 1_n^\\top/n\\).",
+      "role": "centering_operator",
+      "refs": [
+        "n",
+        "1_n",
+        "I_n"
+      ]
+    },
+    {
+      "name": "v_k",
+      "type": "local_balanced_sign_vector",
+      "space": "\\(\\{-1,1\\}^4\\)",
+      "def": "The three vectors \\(v_1=(1,1,-1,-1)^\\top\\), \\(v_2=(1,-1,1,-1)^\\top\\), and \\(v_3=(1,-1,-1,1)^\\top\\).",
+      "role": "local_assignment_basis",
+      "refs": [
+        "k"
+      ]
+    },
+    {
+      "name": "h_k",
+      "type": "local_orthonormal_contrast",
+      "space": "\\(\\mathbb R^4\\)",
+      "def": "\\(h_k=v_k/2\\), so \\(h_1,h_2,h_3\\) are an orthonormal basis of \\(\\mathbf 1_4^\\perp\\).",
+      "role": "local_response_basis",
+      "refs": [
+        "k",
+        "v_k"
+      ]
+    },
+    {
+      "name": "E_ell",
+      "type": "block_embedding",
+      "space": "\\(\\mathbb R^{n\\times4}\\)",
+      "def": "The coordinate embedding of \\(\\mathbb R^4\\) into quadruple \\(\\ell\\).",
+      "role": "block_embedding",
+      "refs": [
+        "ell",
+        "n"
+      ]
+    },
+    {
+      "name": "a",
+      "type": "wrong_direction_spectral_increment",
+      "space": "\\(\\mathbb R_{>0}\\)",
+      "def": "The larger squared-loading increment in each response geometry.",
+      "role": "menu_parameter"
+    },
+    {
+      "name": "b",
+      "type": "shared_direction_spectral_increment",
+      "space": "\\(\\{b\\in\\mathbb R_{>0}:a>2b\\}\\)",
+      "def": "The smaller squared-loading increment along the shared assignment direction.",
+      "role": "menu_parameter",
+      "refs": [
+        "a"
+      ]
+    },
+    {
+      "name": "c_j",
+      "type": "class_irreducible_score_level",
+      "space": "\\(\\mathbb R_{>0}\\)",
+      "def": "The positive squared loading attained by the class-\\(j\\) oracle direction.",
+      "role": "menu_parameter",
+      "refs": [
+        "j"
+      ]
+    },
+    {
+      "name": "s_j",
+      "type": "class_spectral_scale",
+      "space": "\\(\\mathbb R_{>0}\\)",
+      "def": "The scale multiplying the two controllable squared-loading increments for class \\(j\\).",
+      "role": "menu_parameter",
+      "refs": [
+        "j"
+      ]
+    },
+    {
+      "name": "kappa_j",
+      "type": "relative_efficiency_scale",
+      "space": "\\(\\mathbb R_{>0}\\)",
+      "def": "\\(\\kappa_j=s_j/c_j\\).",
+      "role": "comparator_scale",
+      "refs": [
+        "j",
+        "s_j",
+        "c_j"
+      ]
+    },
+    {
+      "name": "u_jell",
+      "type": "block_response_loading",
+      "space": "\\(\\mathbb R^n\\)",
+      "def": "For class \\(1\\), \\(u_{1\\ell}=E_\\ell\\{\\sqrt{c_1}h_1+\\sqrt{c_1+s_1a}h_2+\\sqrt{c_1+s_1b}h_3\\}\\); for class \\(2\\), \\(u_{2\\ell}=E_\\ell\\{\\sqrt{c_2+s_2a}h_1+\\sqrt{c_2}h_2+\\sqrt{c_2+s_2b}h_3\\}\\).",
+      "role": "response_loading",
+      "refs": [
+        "j",
+        "ell",
+        "E_ell",
+        "h_k",
+        "c_j",
+        "s_j",
+        "a",
+        "b"
+      ]
+    },
+    {
+      "name": "U_j",
+      "type": "block_response_loading_matrix",
+      "space": "\\(\\mathbb R^{n\\times q}\\)",
+      "def": "\\(U_j=[u_{j1},\\ldots,u_{jq}]\\).",
+      "role": "response_feature_map",
+      "refs": [
+        "j",
+        "u_jell",
+        "n",
+        "q"
+      ]
+    },
+    {
+      "name": "K_j",
+      "type": "response_gram_matrix",
+      "space": "\\(\\mathbb S_+^n\\)",
+      "def": "\\(K_j=U_jU_j^\\top\\), a rank-\\(q\\) centered block Gram matrix.",
+      "role": "response_geometry",
+      "refs": [
+        "j",
+        "U_j",
+        "q",
+        "n"
+      ]
+    },
+    {
+      "name": "x",
+      "type": "candidate_response_vector",
+      "space": "\\(\\mathbb R^n\\)",
+      "def": "A generic response vector used to define an ellipsoid.",
+      "role": "class_member",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "M_j",
+      "type": "response_structure_class",
+      "space": "\\(2^{\\mathbb R^n}\\)",
+      "def": "The unit ellipsoid generated by \\(K_j\\), defined in \\(\\mathrm{def:response-classes}\\).",
+      "role": "nature_class",
+      "refs": [
+        "j",
+        "K_j",
+        "n"
+      ]
+    },
+    {
+      "name": "Z_n",
+      "type": "quadruple_balanced_assignment_set",
+      "space": "\\(2^{\\{-1,1\\}^n}\\)",
+      "def": "The assignments that use one of the six balanced sign vectors \\(\\{\\pm v_1,\\pm v_2,\\pm v_3\\}\\) in every quadruple.",
+      "role": "assignment_support",
+      "refs": [
+        "n",
+        "v_k",
+        "ell"
+      ]
+    },
+    {
+      "name": "Pi_n",
+      "type": "blinded_block_balanced_design_space",
+      "space": "\\(\\Delta(\\mathcal Z_n)\\)",
+      "def": "The convex class of blinded laws on \\(\\mathcal Z_n\\), defined in \\(\\mathrm{def:design-space}\\).",
+      "role": "design_feasible_set",
+      "refs": [
+        "Z_n",
+        "n"
+      ]
+    },
+    {
+      "name": "pi",
+      "type": "randomization_design",
+      "space": "\\(\\Pi_n\\)",
+      "def": "A precommitted randomization law.",
+      "role": "design_decision",
+      "refs": [
+        "Pi_n"
+      ]
+    },
+    {
+      "name": "Z",
+      "type": "assignment_vector",
+      "space": "\\(\\mathcal Z_n\\)",
+      "def": "The random assignment drawn from \\(\\pi\\), with \\(Z_i=1\\) for treatment and \\(Z_i=-1\\) for control.",
+      "role": "design_randomness",
+      "refs": [
+        "Z_n",
+        "pi",
+        "i"
+      ]
+    },
+    {
+      "name": "pi_0",
+      "type": "block_complete_randomization_baseline",
+      "space": "\\(\\Pi_n\\)",
+      "def": "The product law that independently chooses each of \\(\\pm v_1,\\pm v_2,\\pm v_3\\) with probability \\(1/6\\) in every quadruple.",
+      "role": "named_baseline",
+      "refs": [
+        "Pi_n",
+        "v_k",
+        "ell"
+      ]
+    },
+    {
+      "name": "pi_sh",
+      "type": "shared_direction_design",
+      "space": "\\(\\Pi_n\\)",
+      "def": "The product law that independently chooses \\(v_3\\) or \\(-v_3\\) with probability \\(1/2\\) in every quadruple.",
+      "role": "attaining_design",
+      "refs": [
+        "Pi_n",
+        "v_k",
+        "ell"
+      ]
+    },
+    {
+      "name": "p_k",
+      "type": "average_local_direction_frequency",
+      "space": "\\([0,1]\\)",
+      "def": "\\(p_k(\\pi)=q^{-1}\\sum_{\\ell=1}^q\\Pr_\\pi\\{Z_{[\\ell]}\\in\\{v_k,-v_k\\}\\}\\).",
+      "role": "observable_design_summary",
+      "refs": [
+        "k",
+        "pi",
+        "q",
+        "ell",
+        "Z",
+        "v_k"
+      ]
+    },
+    {
+      "name": "Y_i(0)",
+      "type": "control_potential_outcome",
+      "space": "\\(\\mathbb R\\)",
+      "def": "The fixed outcome for unit \\(i\\) under control.",
+      "role": "potential_outcome",
+      "refs": [
+        "i"
+      ]
+    },
+    {
+      "name": "Y_i(1)",
+      "type": "treated_potential_outcome",
+      "space": "\\(\\mathbb R\\)",
+      "def": "The fixed outcome for unit \\(i\\) under treatment.",
+      "role": "potential_outcome",
+      "refs": [
+        "i"
+      ]
+    },
+    {
+      "name": "tau_N",
+      "type": "finite_population_average_treatment_effect",
+      "space": "\\(\\mathbb R\\)",
+      "def": "\\(\\tau_N=n^{-1}\\sum_{i=1}^n\\{Y_i(1)-Y_i(0)\\}\\).",
+      "role": "target_estimand",
+      "refs": [
+        "n",
+        "i",
+        "Y_i(0)",
+        "Y_i(1)"
+      ]
+    },
+    {
+      "name": "mu",
+      "type": "centered_sum_potential_outcome_vector",
+      "space": "\\(\\mathbf 1_n^\\perp\\)",
+      "def": "\\(\\mu=P_n\\{Y(1)+Y(0)\\}\\).",
+      "role": "response_schedule",
+      "refs": [
+        "P_n",
+        "Y_i(0)",
+        "Y_i(1)",
+        "1_n"
+      ]
+    },
+    {
+      "name": "Y_i_obs",
+      "type": "observed_outcome",
+      "space": "\\(\\mathbb R\\)",
+      "def": "\\(Y_i^{\\mathrm{obs}}=(1+Z_i)Y_i(1)/2+(1-Z_i)Y_i(0)/2\\).",
+      "role": "observed_data",
+      "refs": [
+        "i",
+        "Z",
+        "Y_i(0)",
+        "Y_i(1)"
+      ]
+    },
+    {
+      "name": "hat_tau",
+      "type": "difference_in_means_estimator",
+      "space": "\\(\\mathbb R\\)",
+      "def": "\\(\\widehat\\tau=(2/n)\\sum_{i=1}^nZ_iY_i^{\\mathrm{obs}}\\).",
+      "role": "design_based_estimator",
+      "refs": [
+        "n",
+        "i",
+        "Z",
+        "Y_i_obs"
+      ]
+    },
+    {
+      "name": "Q_pi",
+      "type": "assignment_second_moment",
+      "space": "\\(\\mathbb S_+^n\\)",
+      "def": "\\(Q_\\pi=\\mathbb E_\\pi[ZZ^\\top]\\).",
+      "role": "design_covariance",
+      "refs": [
+        "pi",
+        "Z",
+        "n"
+      ]
+    },
+    {
+      "name": "C_j",
+      "type": "class_score_second_moment",
+      "space": "\\(\\mathbb S_+^q\\)",
+      "def": "\\(C_j(\\pi)=U_j^\\top Q_\\pi U_j=\\mathbb E_\\pi[(U_j^\\top Z)(U_j^\\top Z)^\\top]\\).",
+      "role": "spectral_certificate_matrix",
+      "refs": [
+        "j",
+        "pi",
+        "U_j",
+        "Q_pi",
+        "Z",
+        "q"
+      ]
+    },
+    {
+      "name": "V_pi",
+      "type": "design_variance_functional",
+      "space": "\\([\\mathbb R^n\\to\\mathbb R_+]\\)",
+      "def": "\\(V_\\pi(x)=n^{-2}x^\\top Q_\\pi x\\).",
+      "role": "finite_population_risk",
+      "refs": [
+        "pi",
+        "x",
+        "n",
+        "Q_pi"
+      ]
+    },
+    {
+      "name": "R_j",
+      "type": "class_worst_case_variance",
+      "space": "\\([\\Pi_n\\to\\mathbb R_+]\\)",
+      "def": "\\(R_j(\\pi)=\\sup_{x\\in\\mathcal M_j}V_\\pi(x)\\).",
+      "role": "class_risk",
+      "refs": [
+        "j",
+        "pi",
+        "Pi_n",
+        "M_j",
+        "V_pi",
+        "x"
+      ]
+    },
+    {
+      "name": "B_j",
+      "type": "baseline_class_risk",
+      "space": "\\(\\mathbb R_{>0}\\)",
+      "def": "\\(B_j=R_j(\\pi_0)\\).",
+      "role": "baseline_risk",
+      "refs": [
+        "j",
+        "R_j",
+        "pi_0"
+      ]
+    },
+    {
+      "name": "r_j_star",
+      "type": "class_oracle_risk",
+      "space": "\\(\\mathbb R_{>0}\\)",
+      "def": "\\(r_j^\\star=\\min_{\\pi\\in\\Pi_n}R_j(\\pi)\\).",
+      "role": "oracle_benchmark",
+      "refs": [
+        "j",
+        "pi",
+        "Pi_n",
+        "R_j"
+      ]
+    },
+    {
+      "name": "Delta_j",
+      "type": "class_oracle_gain",
+      "space": "\\(\\mathbb R_{>0}\\)",
+      "def": "\\(\\Delta_j=B_j-r_j^\\star\\).",
+      "role": "gain_denominator",
+      "refs": [
+        "j",
+        "B_j",
+        "r_j_star"
+      ]
+    },
+    {
+      "name": "g_j",
+      "type": "retained_gain_fraction",
+      "space": "\\([\\Pi_n\\to\\mathbb R]\\)",
+      "def": "\\(g_j(\\pi)=\\{B_j-R_j(\\pi)\\}/\\Delta_j\\).",
+      "role": "class_utility",
+      "refs": [
+        "j",
+        "pi",
+        "Pi_n",
+        "B_j",
+        "R_j",
+        "Delta_j"
+      ]
+    },
+    {
+      "name": "lambda_star",
+      "type": "commitment_value",
+      "space": "\\([0,1]\\)",
+      "def": "\\(\\lambda^\\star=\\max_{\\pi\\in\\Pi_n}\\min_{j\\in\\{1,2\\}}g_j(\\pi)\\).",
+      "role": "focal_design_value",
+      "refs": [
+        "pi",
+        "Pi_n",
+        "j",
+        "g_j"
+      ]
+    },
+    {
+      "name": "RE_j",
+      "type": "ryan_relative_efficiency",
+      "space": "\\([0,1]\\)",
+      "def": "\\(\\operatorname{RE}_j(\\pi)=r_j^\\star/R_j(\\pi)\\), the exact variance ratio used in Ryan--Esserman--Li equation (8).",
+      "role": "published_criterion_component",
+      "refs": [
+        "j",
+        "pi",
+        "r_j_star",
+        "R_j"
+      ]
+    },
+    {
+      "name": "eta_REL",
+      "type": "ryan_maximin_relative_efficiency_value",
+      "space": "\\([0,1]\\)",
+      "def": "\\(\\eta_{\\mathrm{REL}}=\\max_{\\pi\\in\\Pi_n}\\min_{j\\in\\{1,2\\}}\\operatorname{RE}_j(\\pi)\\).",
+      "role": "published_criterion_comparator",
+      "refs": [
+        "pi",
+        "Pi_n",
+        "j",
+        "RE_j"
+      ]
+    },
+    {
+      "name": "J_gen",
+      "type": "general_menu_size",
+      "space": "\\(\\{3,4,\\ldots\\}\\)",
+      "def": "The number of classes in the higher-rank extension.",
+      "role": "open_question_index"
+    },
+    {
+      "name": "K_j_gen",
+      "type": "general_block_response_gram_family",
+      "space": "\\(\\{K_j^{\\mathrm{gen}}\\in\\mathbb S_+^n:K_j^{\\mathrm{gen}}\\mathbf 1_n=0,\\ 1\\le j\\le J_{\\mathrm{gen}}\\}\\)",
+      "def": "A menu of known block-supported centered Gram matrices with block rank exceeding one allowed.",
+      "role": "open_question_geometry",
+      "refs": [
+        "n",
+        "1_n",
+        "j",
+        "J_gen"
+      ]
+    },
+    {
+      "name": "lambda_gen_star",
+      "type": "general_menu_commitment_value",
+      "space": "\\([0,1]\\)",
+      "def": "The gain-normalized commitment value obtained by replacing \\(K_1,K_2\\) with \\(\\{K_j^{\\mathrm{gen}}:1\\le j\\le J_{\\mathrm{gen}}\\}\\).",
+      "role": "open_question_target",
+      "refs": [
+        "K_j",
+        "K_j_gen",
+        "j",
+        "J_gen",
+        "lambda_star"
+      ]
+    },
+    {
+      "name": "H_mat",
+      "type": "matrix_discrepancy_handle",
+      "space": "construction handles",
+      "def": "The trace-relaxation and matrix-discrepancy route defined in \\(\\mathrm{def:matrix-discrepancy-handle}\\).",
+      "role": "open_question_handle",
+      "refs": [
+        "K_j_gen",
+        "lambda_gen_star"
+      ]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ass:fixed-potential-outcomes",
+      "kind": "design_based_sampling",
+      "condition": "The schedule \\(\\{Y_i(0),Y_i(1):1\\le i\\le n\\}\\) is fixed before treatment assignment.",
+      "free_symbols": [
+        "Y_i(0)",
+        "Y_i(1)",
+        "i",
+        "n"
+      ],
+      "standard": {
+        "name": "Neyman finite-population potential outcomes",
+        "cite": "Neyman1923"
+      },
+      "used_by": [
+        "lem:variance-and-spectral-risk",
+        "thm:quadruple-menu-frontier"
+      ]
+    },
+    {
+      "id": "ass:no-interference",
+      "kind": "causal_structure",
+      "condition": "For each unit \\(i\\), the observed outcome under assignment \\(Z\\) equals \\(Y_i(1)\\) when \\(Z_i=1\\) and equals \\(Y_i(0)\\) when \\(Z_i=-1\\).",
+      "free_symbols": [
+        "i",
+        "Z",
+        "Y_i(0)",
+        "Y_i(1)",
+        "Y_i_obs"
+      ],
+      "standard": {
+        "name": "no interference and consistency",
+        "cite": "Kallus2018OptimalBalance"
+      },
+      "used_by": [
+        "lem:variance-and-spectral-risk"
+      ]
+    },
+    {
+      "id": "ass:assignment-only-randomness",
+      "kind": "randomization",
+      "condition": "Conditional on the fixed potential outcomes and the design-stage Gram matrices, \\(Z\\) has law \\(\\pi\\).",
+      "free_symbols": [
+        "Z",
+        "pi",
+        "Y_i(0)",
+        "Y_i(1)",
+        "K_j"
+      ],
+      "standard": {
+        "name": "design-based assignment randomness",
+        "cite": "Kallus2021OptimalRandomization"
+      },
+      "used_by": [
+        "lem:variance-and-spectral-risk",
+        "thm:quadruple-menu-frontier",
+        "thm:ryan-criterion-separation"
+      ]
+    },
+    {
+      "id": "ass:response-range",
+      "kind": "response_class_member_property",
+      "condition": "A candidate member \\(x\\) of class \\(j\\) satisfies \\(x\\in\\operatorname{range}(K_j)\\).",
+      "free_symbols": [
+        "x",
+        "j",
+        "K_j"
+      ],
+      "standard": {
+        "name": "finite-sample RKHS range restriction",
+        "cite": "Kallus2018OptimalBalance"
+      },
+      "used_by": [
+        "def:response-classes"
+      ]
+    },
+    {
+      "id": "ass:response-radius",
+      "kind": "response_class_member_property",
+      "condition": "A candidate member \\(x\\) of class \\(j\\) satisfies \\(x^\\top K_j^\\dagger x\\le1\\).",
+      "free_symbols": [
+        "x",
+        "j",
+        "K_j"
+      ],
+      "standard": {
+        "name": "unit RKHS ellipsoid restriction",
+        "cite": "Kallus2018OptimalBalance"
+      },
+      "used_by": [
+        "def:response-classes"
+      ]
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def:block-geometry",
+      "name": "two_class_quadruple_spectral_menu",
+      "construction": "Set \\(v_1=(1,1,-1,-1)^\\top\\), \\(v_2=(1,-1,1,-1)^\\top\\), \\(v_3=(1,-1,-1,1)^\\top\\), and \\(h_k=v_k/2\\). For each block \\(\\ell\\), form \\(u_{1\\ell}=E_\\ell\\{\\sqrt{c_1}h_1+\\sqrt{c_1+s_1a}h_2+\\sqrt{c_1+s_1b}h_3\\}\\) and \\(u_{2\\ell}=E_\\ell\\{\\sqrt{c_2+s_2a}h_1+\\sqrt{c_2}h_2+\\sqrt{c_2+s_2b}h_3\\}\\). Set \\(U_j=[u_{j1},\\ldots,u_{jq}]\\) and \\(K_j=U_jU_j^\\top\\).",
+      "free_symbols": [
+        "v_k",
+        "h_k",
+        "k",
+        "ell",
+        "E_ell",
+        "u_jell",
+        "j",
+        "c_j",
+        "s_j",
+        "a",
+        "b",
+        "U_j",
+        "q",
+        "K_j"
+      ],
+      "inputs": [
+        "q",
+        "a",
+        "b",
+        "c_j",
+        "s_j"
+      ],
+      "revision": "rev:4e62ba4755047ad98ce7cad72956815269e2c1291e59bbbbc1b0492ebc823639"
+    },
+    {
+      "id": "def:block-assignments",
+      "name": "quadruple_balanced_assignment_set",
+      "construction": "\\(\\mathcal Z_n=\\{z\\in\\{-1,1\\}^n:z_{[\\ell]}\\in\\{\\pm v_1,\\pm v_2,\\pm v_3\\}\\text{ for every }\\ell=1,\\ldots,q\\}\\).",
+      "free_symbols": [
+        "Z_n",
+        "n",
+        "ell",
+        "v_k",
+        "q"
+      ],
+      "inputs": [
+        "q",
+        "v_k"
+      ],
+      "revision": "rev:797e0c49ea3061cafe6dd1fcf061ff840dc753ed48618db1dc23dbf51fec989a"
+    },
+    {
+      "id": "def:design-space",
+      "name": "blinded_quadruple_balanced_design_space",
+      "construction": "\\(\\Pi_n=\\{\\pi\\in\\Delta(\\mathcal Z_n):\\pi(z)=\\pi(-z)\\text{ for every }z\\in\\mathcal Z_n\\}\\).",
+      "free_symbols": [
+        "Pi_n",
+        "pi",
+        "Z_n",
+        "n"
+      ],
+      "inputs": [
+        "Z_n"
+      ],
+      "revision": "rev:21132c8cd91ceca0f43dac99adb4440e385ae5f1376c32e125004e1b22dd2316"
+    },
+    {
+      "id": "def:baseline-design",
+      "name": "block_complete_randomization",
+      "construction": "Under \\(\\pi_0\\), the block assignments are independent and each element of \\(\\{\\pm v_1,\\pm v_2,\\pm v_3\\}\\) has probability \\(1/6\\).",
+      "free_symbols": [
+        "pi_0",
+        "ell",
+        "v_k"
+      ],
+      "inputs": [
+        "Z_n",
+        "v_k"
+      ],
+      "revision": "rev:4b3bfbdd22d037a4751a3835faed4b4fb0a7c43fb74ecade8d0219ec44b13454"
+    },
+    {
+      "id": "def:shared-design",
+      "name": "shared_direction_product_randomization",
+      "construction": "Under \\(\\pi_{\\mathrm{sh}}\\), independently across \\(\\ell\\), set \\(Z_{[\\ell]}=\\varepsilon_\\ell v_3\\) with \\(\\Pr(\\varepsilon_\\ell=1)=\\Pr(\\varepsilon_\\ell=-1)=1/2\\).",
+      "free_symbols": [
+        "pi_sh",
+        "Z",
+        "ell",
+        "v_k"
+      ],
+      "inputs": [
+        "v_k",
+        "q"
+      ],
+      "revision": "rev:b9c4f1a984a0aea177fbe6b9649087276ef57d188464bdb4263d7f4fceaa21f9"
+    },
+    {
+      "id": "def:response-classes",
+      "name": "block_response_ellipsoids",
+      "construction": "\\(\\mathcal M_j=\\{x\\in\\mathbb R^n:x\\in\\operatorname{range}(K_j),\\ x^\\top K_j^\\dagger x\\le1\\},\\quad j\\in\\{1,2\\}\\).",
+      "free_symbols": [
+        "M_j",
+        "x",
+        "n",
+        "j",
+        "K_j"
+      ],
+      "by_member_properties": [
+        "ass:response-range",
+        "ass:response-radius"
+      ],
+      "revision": "rev:49f70624f44cade9dcd8609ab5d5701c63d9fd146764068d620527e0e7a072fd"
+    },
+    {
+      "id": "def:estimator",
+      "name": "balanced_difference_in_means",
+      "construction": "Given \\(Z\\in\\mathcal Z_n\\), set \\(Y_i^{\\mathrm{obs}}=(1+Z_i)Y_i(1)/2+(1-Z_i)Y_i(0)/2\\) and \\(\\widehat\\tau=(2/n)\\sum_{i=1}^nZ_iY_i^{\\mathrm{obs}}\\).",
+      "free_symbols": [
+        "Z",
+        "Z_n",
+        "Y_i_obs",
+        "i",
+        "Y_i(0)",
+        "Y_i(1)",
+        "hat_tau",
+        "n"
+      ],
+      "inputs": [
+        "Z",
+        "Y_i_obs"
+      ],
+      "revision": "rev:54918817755816f9051e5e8a68b6195a362499e43be6e40d29c1e9d8e0e623fc"
+    },
+    {
+      "id": "def:design-risk",
+      "name": "assignment_covariance_score_matrix_and_class_risk",
+      "construction": "For \\(\\pi\\in\\Pi_n\\), set \\(Q_\\pi=\\mathbb E_\\pi[ZZ^\\top]\\), \\(C_j(\\pi)=U_j^\\top Q_\\pi U_j\\), \\(V_\\pi(x)=n^{-2}x^\\top Q_\\pi x\\), and \\(R_j(\\pi)=\\sup_{x\\in\\mathcal M_j}V_\\pi(x)\\).",
+      "free_symbols": [
+        "pi",
+        "Pi_n",
+        "Q_pi",
+        "Z",
+        "C_j",
+        "j",
+        "U_j",
+        "V_pi",
+        "x",
+        "n",
+        "R_j",
+        "M_j"
+      ],
+      "inputs": [
+        "pi",
+        "U_j",
+        "M_j"
+      ],
+      "revision": "rev:cc242cfb3e658983aeaf36bb5b8a2c4e4dc02b3d90e43ac46d666b1bd65bcbdd"
+    },
+    {
+      "id": "def:direction-frequencies",
+      "name": "average_block_direction_frequencies",
+      "construction": "For \\(k\\in\\{1,2,3\\}\\), set \\(p_k(\\pi)=q^{-1}\\sum_{\\ell=1}^q\\Pr_\\pi\\{Z_{[\\ell]}\\in\\{v_k,-v_k\\}\\}\\).",
+      "free_symbols": [
+        "k",
+        "p_k",
+        "pi",
+        "q",
+        "ell",
+        "Z",
+        "v_k"
+      ],
+      "inputs": [
+        "pi",
+        "Z",
+        "v_k"
+      ],
+      "revision": "rev:8e42d806e46ef1f411902f5c6f338c014c264d59ba756194c13be1a5c7e1b4c1"
+    },
+    {
+      "id": "def:commitment-value",
+      "name": "baseline_gain_commitment_value",
+      "construction": "For \\(j\\in\\{1,2\\}\\), set \\(B_j=R_j(\\pi_0)\\), \\(r_j^\\star=\\min_{\\pi\\in\\Pi_n}R_j(\\pi)\\), \\(\\Delta_j=B_j-r_j^\\star\\), and \\(g_j(\\pi)=\\{B_j-R_j(\\pi)\\}/\\Delta_j\\). Set \\(\\lambda^\\star=\\max_{\\pi\\in\\Pi_n}\\min_{j\\in\\{1,2\\}}g_j(\\pi)\\).",
+      "free_symbols": [
+        "j",
+        "B_j",
+        "R_j",
+        "pi_0",
+        "r_j_star",
+        "pi",
+        "Pi_n",
+        "Delta_j",
+        "g_j",
+        "lambda_star"
+      ],
+      "inputs": [
+        "R_j",
+        "pi_0",
+        "Pi_n"
+      ],
+      "revision": "rev:52f5fd6a4bcb2b030a816c16e6d5df49d8d615b7c49f3b81082f09701af807c3"
+    },
+    {
+      "id": "def:ryan-relative-efficiency",
+      "name": "exact_ryan_esserman_li_variance_ratio",
+      "construction": "For each response scenario \\(j\\), set \\(\\operatorname{RE}_j(\\pi)=r_j^\\star/R_j(\\pi)\\) and \\(\\eta_{\\mathrm{REL}}=\\max_{\\pi\\in\\Pi_n}\\min_{j\\in\\{1,2\\}}\\operatorname{RE}_j(\\pi)\\). This is equation (8) and Algorithm 1's maximin operation after mapping \\(\\sigma_j^{2*}\\) to \\(r_j^\\star\\) and \\(\\sigma_j^2(\\pi)\\) to \\(R_j(\\pi)\\).",
+      "free_symbols": [
+        "j",
+        "RE_j",
+        "pi",
+        "r_j_star",
+        "R_j",
+        "eta_REL",
+        "Pi_n"
+      ],
+      "inputs": [
+        "r_j_star",
+        "R_j",
+        "Pi_n"
+      ],
+      "revision": "rev:01a53d2ed6422b3c4c74fe6d943888e7aca6389c27bd6f80dc27f7316d87ec8c"
+    },
+    {
+      "id": "def:matrix-discrepancy-handle",
+      "name": "higher_rank_matrix_discrepancy_handle",
+      "construction": "Start from the normalized trace relaxation for the menu \\(\\{K_j^{\\mathrm{gen}}:1\\le j\\le J_{\\mathrm{gen}}\\}\\), then use blockwise balanced matrix discrepancy and noncommutative spectral concentration to construct a blinded assignment law whose class score second moments approach the relaxation simultaneously. The relaxation gap and the attaining law are the objects to be derived.",
+      "free_symbols": [
+        "H_mat",
+        "K_j_gen",
+        "j",
+        "J_gen",
+        "lambda_gen_star"
+      ],
+      "inputs": [
+        "K_j_gen",
+        "J_gen"
+      ],
+      "revision": "rev:2c28f79218eacf59af6ac7b4b32d9a25b2e524da81e0af81240fba8a0886618e"
+    }
+  ],
+  "statements": [
+    {
+      "id": "lem:variance-and-spectral-risk",
+      "kind": "lemma",
+      "statement": "For every \\(\\pi\\in\\Pi_n\\), \\(\\widehat\\tau-\\tau_N=n^{-1}Z^\\top\\mu\\), \\(\\mathbb E_\\pi[\\widehat\\tau]=\\tau_N\\), and \\(\\operatorname{Var}_\\pi(\\widehat\\tau)=V_\\pi(\\mu)=n^{-2}\\mu^\\top Q_\\pi\\mu\\). For each \\(j\\in\\{1,2\\}\\), \\[R_j(\\pi)=n^{-2}\\lambda_{\\max}(K_j^{1/2}Q_\\pi K_j^{1/2})=n^{-2}\\lambda_{\\max}\\{C_j(\\pi)\\}.\\] Consequently, \\(\\mu\\in\\mathcal M_j\\) implies \\(\\operatorname{Var}_\\pi(\\widehat\\tau)\\le R_j(\\pi)\\).",
+      "free_symbols": [
+        "pi",
+        "Pi_n",
+        "hat_tau",
+        "tau_N",
+        "n",
+        "Z",
+        "mu",
+        "V_pi",
+        "Q_pi",
+        "j",
+        "R_j",
+        "K_j",
+        "C_j",
+        "M_j"
+      ],
+      "depends_on": [
+        "ass:fixed-potential-outcomes",
+        "ass:no-interference",
+        "ass:assignment-only-randomness",
+        "def:block-assignments",
+        "def:design-space",
+        "def:response-classes",
+        "def:estimator",
+        "def:design-risk"
+      ],
+      "status": "proved",
+      "justification": "This identifies the exact finite-population causal variance and the observable eigenvalue that certifies every subsequent design comparison.",
+      "gap": "Kallus gives the single-class covariance-risk representation; the lemma specializes it to the block score matrices used by the quantitative two-class frontier.",
+      "consumer": "A trial auditor can compute each declared worst-case variance from the design-stage Gram matrix and the published assignment law.",
+      "proof_tex": "Fix \\(\\pi\\in\\Pi_n\\).  Every \\(z\\in\\mathcal Z_n\\) is balanced within every quadruple, hence \\(z^\\top\\mathbf 1_n=0\\).  By \\(\\texttt{def:estimator}\\) and consistency in \\(\\texttt{ass:no-interference}\\), for each unit\n\\[\n2Z_iY_i^{\\mathrm{obs}}\n=Z_i\\{(1+Z_i)Y_i(1)+(1-Z_i)Y_i(0)\\}\n=Y_i(1)-Y_i(0)+Z_i\\{Y_i(1)+Y_i(0)\\}.\n\\]\nSumming, dividing by \\(n\\), and using \\(Z^\\top\\mathbf 1_n=0\\) gives\n\\[\n\\widehat\\tau-\\tau_N\n=n^{-1}Z^\\top\\{Y(1)+Y(0)\\}\n=n^{-1}Z^\\top P_n\\{Y(1)+Y(0)\\}\n=n^{-1}Z^\\top\\mu. \\tag{1}\n\\]\nThe potential-outcome schedule is fixed by \\(\\texttt{ass:fixed-potential-outcomes}\\), and assignment is the only randomness by \\(\\texttt{ass:assignment-only-randomness}\\).  Moreover, the blinding identity \\(\\pi(z)=\\pi(-z)\\) from \\(\\texttt{def:design-space}\\) implies\n\\[\n\\mathbb E_\\pi Z=\\sum_{z\\in\\mathcal Z_n}z\\pi(z)=0. \\tag{2}\n\\]\nThus (1)--(2) yield \\(\\mathbb E_\\pi\\widehat\\tau=\\tau_N\\).  Since \\(Q_\\pi=\\mathbb E_\\pi[ZZ^\\top]\\), they also yield\n\\[\n\\operatorname{Var}_\\pi(\\widehat\\tau)\n=n^{-2}\\mathbb E_\\pi[(Z^\\top\\mu)^2]\n=n^{-2}\\mu^\\top Q_\\pi\\mu\n=V_\\pi(\\mu). \\tag{3}\n\\]\nNo assignment-probability inverse is used; the boundary designs in \\(\\Pi_n\\) are therefore allowed.  Blinding nevertheless gives treatment probability \\(1/2\\) to every unit.\n\nIt remains to compute the ellipsoidal supremum.  Fix \\(j\\).  The declared rank condition \\(\\operatorname{rank}(K_j)=q\\), together with \\(K_j=U_jU_j^\\top\\) and the fact that \\(U_j\\) has \\(q\\) columns, implies that \\(U_j\\) has full column rank.  Its polar decomposition is\n\\[\nU_j=W_jH_j,\\qquad W_j^\\top W_j=I_q,qquad H_j=(U_j^\\top U_j)^{1/2}\\succ0. \\tag{4}\n\\]\nConsequently,\n\\[\nK_j=W_jH_j^2W_j^\\top,qquad\nK_j^\\dagger=W_jH_j^{-2}W_j^\\top. \\tag{5}\n\\]\nEvery \\(x\\in\\operatorname{range}(K_j)=\\operatorname{range}(U_j)\\) has a unique representation \\(x=U_j\\beta\\).  Equations (4)--(5) show\n\\[\nx^\\top K_j^\\dagger x\n=\\beta^\\top H_jW_j^\\top W_jH_j^{-2}W_j^\\top W_jH_j\\beta\n=\\|\\beta\\|_2^2. \\tag{6}\n\\]\nThus \\(\\texttt{def:response-classes}\\) gives\n\\[\n\\mathcal M_j=\\{U_j\\beta:\\|\\beta\\|_2\\le1\\}. \\tag{7}\n\\]\nThe Rayleigh--Ritz identity, applied to the positive-semidefinite matrix \\(C_j(\\pi)=U_j^\\top Q_\\pi U_j\\), now gives\n\\[\nR_j(\\pi)\n=n^{-2}\\sup_{\\|\\beta\\|_2\\le1}\\beta^\\top C_j(\\pi)\\beta\n=n^{-2}\\lambda_{\\max}\\{C_j(\\pi)\\}. \\tag{8}\n\\]\nAlso, (4) gives\n\\[\nK_j^{1/2}Q_\\pi K_j^{1/2}\n=W_j\\{H_jW_j^\\top Q_\\pi W_jH_j\\}W_j^\\top,\n\\qquad\nC_j(\\pi)=H_jW_j^\\top Q_\\pi W_jH_j. \\tag{9}\n\\]\nThe matrix on the left of (9) is the orthogonal embedding by \\(W_j\\) of the matrix on the right, with zeros on the orthogonal complement.  Their largest eigenvalues therefore agree.  This proves both spectral identities.  Finally, if \\(\\mu\\in\\mathcal M_j\\), then (3) and the definition of the supremum in \\(R_j\\) give \\(\\operatorname{Var}_\\pi(\\widehat\\tau)=V_\\pi(\\mu)\\le R_j(\\pi)\\), as claimed.",
+      "revision": "rev:c5d49410a7ddea140a4a1908f2496055f8d8e7a9c11dc0ed8b939f31ebb31e62"
+    },
+    {
+      "id": "thm:quadruple-menu-frontier",
+      "kind": "theorem",
+      "statement": "For every finite \\(q\\ge1\\) and the two-class menu in \\(\\mathrm{def:block-geometry}\\), \\[r_j^\\star=\\frac{4c_j}{n^2},\\qquad B_j=\\frac{4}{n^2}\\left(c_j+\\frac{s_j(a+b)}{3}\\right),\\qquad \\Delta_j=\\frac{4s_j(a+b)}{3n^2}.\\] For every \\(\\pi\\in\\Pi_n\\), the observable score matrices obey the sharp spectral lower certificate \\[\\lambda_{\\max}\\{C_1(\\pi)\\}\\ge\\frac{\\operatorname{tr}C_1(\\pi)}q=4\\{c_1+s_1(ap_2(\\pi)+bp_3(\\pi))\\},\\] \\[\\lambda_{\\max}\\{C_2(\\pi)\\}\\ge\\frac{\\operatorname{tr}C_2(\\pi)}q=4\\{c_2+s_2(ap_1(\\pi)+bp_3(\\pi))\\}.\\] These inequalities and \\(a>2b>0\\) imply the exact finite-sample commitment frontier \\[\\lambda^\\star=\\frac{a-2b}{a+b}.\\] The product law \\(\\pi_{\\mathrm{sh}}\\) attains equality in both spectral certificates, is therefore minimax, and strictly improves on block complete randomization for both classes: \\(R_j(\\pi_{\\mathrm{sh}})=4(c_j+s_jb)/n^2<B_j\\). The displayed trace lower bound and the matching eigenvalue of \\(C_j(\\pi_{\\mathrm{sh}})\\) form a finite-\\(n\\) optimality certificate using only the known Gram matrices and the committed assignment law.",
+      "free_symbols": [
+        "q",
+        "n",
+        "j",
+        "r_j_star",
+        "c_j",
+        "B_j",
+        "s_j",
+        "a",
+        "b",
+        "Delta_j",
+        "pi",
+        "Pi_n",
+        "C_j",
+        "p_k",
+        "lambda_star",
+        "pi_sh",
+        "R_j"
+      ],
+      "depends_on": [
+        "ass:fixed-potential-outcomes",
+        "ass:assignment-only-randomness",
+        "def:block-geometry",
+        "def:block-assignments",
+        "def:design-space",
+        "def:baseline-design",
+        "def:shared-design",
+        "def:response-classes",
+        "def:design-risk",
+        "def:direction-frequencies",
+        "def:commitment-value",
+        "lem:variance-and-spectral-risk"
+      ],
+      "status": "proved",
+      "justification": "The theorem gives an exact, nonasymptotic price of committing across two incompatible response structures and supplies the implementable law and matching spectral certificate.",
+      "gap": "Kallus optimizes one response class, while generic maximin equivalence theorems characterize scalarization; neither derives this quantitative causal commitment frontier or its sharp block-score eigenvalue bound.",
+      "consumer": "A trial organized in matched quadruples can randomize once along the declared shared contrast and guarantee exactly the stated fraction of each prognostic model's available variance reduction.",
+      "proof_tex": "Fix \\(q\\ge1\\).  The conditions \\(c_j>0\\) and \\(s_j>0\\), and the disjoint block supports, ensure that every \\(U_j\\) has rank \\(q\\); all eigenvalues and divisions below are therefore well defined.  For a block \\(\\ell\\), write\n\\[\nd_{1,1}=c_1,\\quad d_{1,2}=c_1+s_1a,\\quad d_{1,3}=c_1+s_1b,\n\\]\n\\[\nd_{2,1}=c_2+s_2a,\\quad d_{2,2}=c_2,\\quad d_{2,3}=c_2+s_2b. \\tag{1}\n\\]\nBecause \\(h_k=v_k/2\\) and the \\(h_k\\)'s are orthonormal, whenever \\(Z_{[\\ell]}=\\varepsilon v_k\\), with \\(\\varepsilon\\in\\{-1,1\\}\\),\n\\[\nu_{j\\ell}^\\top Z=2\\varepsilon\\sqrt{d_{j,k}},\n\\qquad\n(u_{j\\ell}^\\top Z)^2=4d_{j,k}. \\tag{2}\n\\]\nNo independence across blocks is needed for (2).  Since \\(C_j(\\pi)=\\mathbb E_\\pi[(U_j^\\top Z)(U_j^\\top Z)^\\top]\\), summing its diagonal entries and using \\(\\texttt{def:direction-frequencies}\\) gives\n\\[\n\\frac{\\operatorname{tr}C_1(\\pi)}q\n=4\\{c_1+s_1(ap_2(\\pi)+bp_3(\\pi))\\}, \\tag{3}\n\\]\n\\[\n\\frac{\\operatorname{tr}C_2(\\pi)}q\n=4\\{c_2+s_2(ap_1(\\pi)+bp_3(\\pi))\\}. \\tag{4}\n\\]\nThe matrix \\(C_j(\\pi)\\) is positive semidefinite and has dimension \\(q\\).  If its eigenvalues are \\(\\rho_1\\ge\\cdots\\ge\\rho_q\\ge0\\), then \\(\\rho_1\\ge q^{-1}\\sum_{\\ell=1}^q\\rho_\\ell\\).  Equations (3)--(4) therefore prove the two displayed spectral lower certificates.\n\nBecause \\(p_1+p_2+p_3=1\\) and all frequencies are nonnegative, (3)--(4), together with \\(\\texttt{lem:variance-and-spectral-risk}\\), imply \\(R_j(\\pi)\\ge4c_j/n^2\\).  For class \\(1\\), take independent Rademacher signs on direction \\(v_1\\) in every block.  Then the block scores in (2) are independent, centered, and have squared magnitude \\(4c_1\\), so \\(C_1=4c_1I_q\\).  The analogous design on \\(v_2\\) gives \\(C_2=4c_2I_q\\).  Both laws belong to \\(\\Pi_n\\).  Hence the lower bounds are attained and\n\\[\nr_j^\\star=\\frac{4c_j}{n^2}. \\tag{5}\n\\]\nUnder \\(\\pi_0\\), every local direction has probability \\(1/3\\), independent signs center the block scores, and different blocks are independent.  Thus\n\\[\nC_j(\\pi_0)=4\\left\\{c_j+\\frac{s_j(a+b)}3\\right\\}I_q. \\tag{6}\n\\]\nEquations (5)--(6) and the spectral-risk lemma give\n\\[\nB_j=\\frac4{n^2}\\left\\{c_j+\\frac{s_j(a+b)}3\\right\\},\n\\qquad\n\\Delta_j=\\frac{4s_j(a+b)}{3n^2}>0. \\tag{7}\n\\]\nThe positivity in (7) uses \\(s_j>0\\) and \\(a+b>0\\), so gain normalization is legitimate.\n\nWe next certify the commitment optimum.  Suppress the argument \\(\\pi\\) and put\n\\[\nL_1=ap_2+bp_3,qquad L_2=ap_1+bp_3,qquad A=a+b. \\tag{8}\n\\]\nThe trace certificates, (7), and the definition of \\(g_j\\) imply\n\\[\ng_1(\\pi)\\le1-\\frac{3L_1}{A},\n\\qquad\ng_2(\\pi)\\le1-\\frac{3L_2}{A}. \\tag{9}\n\\]\nMoreover,\n\\[\n\\max(L_1,L_2)\n\\ge\\frac{L_1+L_2}{2}\n=\\frac a2(1-p_3)+bp_3\n=b+\\left(\\frac a2-b\\right)(1-p_3)\n\\ge b, \\tag{10}\n\\]\nwhere the last inequality uses the primitive boundary condition \\(a>2b\\) and \\(0\\le p_3\\le1\\).  Combining (9)--(10), every feasible law obeys\n\\[\n\\min_{j\\in\\{1,2\\}}g_j(\\pi)\n\\le1-\\frac{3b}{a+b}\n=\\frac{a-2b}{a+b}. \\tag{11}\n\\]\nUnder \\(\\pi_{\\mathrm{sh}}\\), (2) and independent signs give\n\\[\nC_j(\\pi_{\\mathrm{sh}})=4(c_j+s_jb)I_q,qquad\nR_j(\\pi_{\\mathrm{sh}})=\\frac{4(c_j+s_jb)}{n^2}. \\tag{12}\n\\]\nThus both inequalities in (9) are equalities with \\(p_3=1\\), and each gain fraction equals the right side of (11).  The matching upper and lower bounds prove\n\\[\n\\lambda^\\star=\\frac{a-2b}{a+b}, \\tag{13}\n\\]\nand (3)--(4), together with (12), are the asserted finite-sample optimality certificate.  In fact, equality in (10) requires \\(p_3=1\\), because \\(a/2-b>0\\); hence every gain-normalized optimizer has \\(p_3=1\\).  Finally,\n\\[\nB_j-R_j(\\pi_{\\mathrm{sh}})\n=\\frac{4s_j}{n^2}\\left(\\frac{a+b}{3}-b\\right)\n=\\frac{4s_j(a-2b)}{3n^2}>0, \\tag{14}\n\\]\nwhich proves strict improvement.\n\nFor the required smallest-instance check, take \\(q=1\\), so \\(n=4\\).  A blinded law assigns total masses \\(p_1,p_2,p_3\\) to the three pairs \\(\\{\\pm v_k\\}\\).  The score matrix is then scalar, so (3)--(4) are equalities for every one of the six assignments and every mixture of them.  Direct enumeration gives \\(p_k=1/3\\) for \\(\\pi_0\\), \\(p_3=1\\) for \\(\\pi_{\\mathrm{sh}}\\), and exactly (5)--(14).  At the excluded boundary \\(a=2b\\), the strict coefficient in (10) vanishes and the strict improvement in (14) disappears; thus the stated boundary condition is load bearing rather than cosmetic.",
+      "revision": "rev:5b91044fe95f203c02e480625139935d7b90647a3ba93fdb3d221e74d7abde1b"
+    },
+    {
+      "id": "thm:ryan-criterion-separation",
+      "kind": "theorem",
+      "statement": "Embed the menu as the two-scenario maximin variance subproblem of Ryan, Esserman, and Li (2023, equation (8) and Algorithm 1) by setting \\(\\sigma_j^{2*}=r_j^\\star\\) and \\(\\sigma_j^2(\\pi)=R_j(\\pi)\\). Then their exact component criterion is \\(\\operatorname{RE}_j(\\pi)=r_j^\\star/R_j(\\pi)\\). If \\(\\kappa_2>\\kappa_1\\), its maximin value on the same implementable design space is \\[\\eta_{\\mathrm{REL}}=\\left[1+\\frac{ab\\kappa_1\\kappa_2}{\\kappa_1(a-b)+\\kappa_2b}\\right]^{-1}.\\] Every relative-efficiency optimizer has average direction frequencies \\[p_1=0,\\qquad p_2=\\frac{b(\\kappa_2-\\kappa_1)}{\\kappa_1(a-b)+\\kappa_2b},\\qquad p_3=1-p_2,\\] and an independent-block, independent-sign law with these frequencies attains the value. Every gain-normalized commitment optimizer instead has \\(p_3=1\\). Hence the optimizer sets are disjoint for the open parameter region \\(a>2b>0\\) and \\(\\kappa_2>\\kappa_1>0\\), even though both criteria use the same two oracle variances, committed variances, and feasible balanced assignment laws.",
+      "free_symbols": [
+        "j",
+        "r_j_star",
+        "R_j",
+        "pi",
+        "RE_j",
+        "kappa_j",
+        "eta_REL",
+        "a",
+        "b",
+        "p_k"
+      ],
+      "depends_on": [
+        "ass:assignment-only-randomness",
+        "def:block-geometry",
+        "def:block-assignments",
+        "def:design-space",
+        "def:design-risk",
+        "def:direction-frequencies",
+        "def:commitment-value",
+        "def:ryan-relative-efficiency",
+        "thm:quadruple-menu-frontier"
+      ],
+      "status": "proved",
+      "justification": "The exact shared-subproblem calculation shows that baseline-gain retention answers a different design promise than the published oracle-variance ratio.",
+      "gap": "Ryan, Esserman, and Li define relative efficiency by equation (8) and maximize its worst scenario in Algorithm 1; they do not analyze the fraction of improvement over a common randomized baseline or the resulting stable optimizer separation.",
+      "consumer": "A planner can decide whether the operational promise is protection of oracle-relative efficiency or protection of each model's attainable improvement over the routine randomization baseline.",
+      "proof_tex": "By \\(\\texttt{thm:quadruple-menu-frontier}\\), \\(r_j^\\star=4c_j/n^2\\).  The exact component criterion in \\(\\texttt{def:ryan-relative-efficiency}\\) is therefore the stated ratio \\(\\operatorname{RE}_j(\\pi)=r_j^\\star/R_j(\\pi)\\); no identification or asymptotic substitution is being made.  The spectral certificates in that theorem imply, with \\(p_k=p_k(\\pi)\\),\n\\[\n\\operatorname{RE}_1(\\pi)\n\\le\\frac1{1+F_1},qquad\n\\operatorname{RE}_2(\\pi)\n\\le\\frac1{1+F_2}, \\tag{1}\n\\]\nwhere\n\\[\nF_1=\\kappa_1(ap_2+bp_3),qquad\nF_2=\\kappa_2(ap_1+bp_3). \\tag{2}\n\\]\nAll denominators are positive because \\(c_j,s_j,a,b>0\\).  Hence maximizing the worst upper bound in (1) is equivalent to minimizing \\(\\max(F_1,F_2)\\) on the frequency simplex.\n\nAssume \\(\\kappa_2>\\kappa_1>0\\), and define\n\\[\nD=\\kappa_1(a-b)+\\kappa_2b,qquad\n\\alpha=\\frac{\\kappa_2b}{D},qquad\n1-\\alpha=\\frac{\\kappa_1(a-b)}D. \\tag{3}\n\\]\nSince \\(a>2b>0\\), one has \\(D>0\\) and \\(0<\\alpha<1\\).  Substituting \\(p_3=1-p_1-p_2\\) into (2) and simplifying gives the global affine certificate\n\\[\n\\begin{aligned}\n\\alpha F_1+(1-\\alpha)F_2\n&=\\frac{ab\\kappa_1\\kappa_2}{D}\n+\\frac{a(a-2b)\\kappa_1\\kappa_2}{D}p_1\\\\\n&\\ge \\frac{ab\\kappa_1\\kappa_2}{D}=:m. \n\\end{aligned} \\tag{4}\n\\]\nBecause a maximum dominates every convex combination, (4) proves \\(\\max(F_1,F_2)\\ge m\\).\n\nEquality is feasible.  Set\n\\[\np_1^\\circ=0,qquad\np_2^\\circ=\\frac{b(\\kappa_2-\\kappa_1)}D,qquad\np_3^\\circ=1-p_2^\\circ. \\tag{5}\n\\]\nThe numerator in \\(p_2^\\circ\\) is positive, while\n\\[\nD-b(\\kappa_2-\\kappa_1)=a\\kappa_1>0, \\tag{6}\n\\]\nso (5) lies in the simplex.  Direct substitution yields \\(F_1=F_2=m\\).  Construct a law that, independently in every block, chooses direction \\(k\\) with probability \\(p_k^\\circ\\) and then multiplies it by an independent Rademacher sign.  This law belongs to \\(\\Pi_n\\).  Its block scores are centered and independent, and their second moments are identical across blocks; consequently\n\\[\nC_j=4c_j(1+F_j)I_q,qquad\nR_j=\\frac{4c_j}{n^2}(1+F_j). \\tag{7}\n\\]\nThus (1) is attained for both classes, and (4)--(7) prove\n\\[\n\\eta_{\\mathrm{REL}}\n=\\frac1{1+m}\n=\\left[1+\\frac{ab\\kappa_1\\kappa_2}{\\kappa_1(a-b)+\\kappa_2b}\\right]^{-1}. \\tag{8}\n\\]\n\nThe certificate also proves the asserted uniqueness of average frequencies.  If any design attains (8), then both inequalities\n\\[\n\\min_j\\operatorname{RE}_j(\\pi)\n\\le\\{1+\\max(F_1,F_2)\\}^{-1}\n\\le(1+m)^{-1} \\tag{9}\n\\]\nmust be equalities.  Equality in (4) forces \\(p_1=0\\), since its coefficient is strictly positive.  Equality between a maximum and the strictly interior convex combination in (4) forces \\(F_1=F_2=m\\).  Solving this equality on the face \\(p_1=0\\) yields exactly (5).  Hence every relative-efficiency optimizer has the displayed average frequencies.\n\nFor the gain-normalized problem, the proof of \\(\\texttt{thm:quadruple-menu-frontier}\\) showed\n\\[\n\\max\\{ap_2+bp_3,ap_1+bp_3\\}\n\\ge b+\\left(\\frac a2-b\\right)(1-p_3). \\tag{10}\n\\]\nAttaining its commitment value requires equality with \\(b\\), and \\(a/2-b>0\\) forces \\(p_3=1\\).  In contrast, (5) has \\(p_2^\\circ>0\\) whenever \\(\\kappa_2>\\kappa_1\\).  The two optimizer sets are therefore disjoint throughout the stated open parameter region.  Both witnesses are blinded block-balanced laws on precisely the same finite support, so the separation is caused by the normalization criterion and not by a change of feasible designs.",
+      "revision": "rev:da2a7839cff35d430ecaa9474125ff434bf7a37220b29c2146b9116048c326b5"
+    },
+    {
+      "id": "prop:single-class-reduction",
+      "kind": "proposition",
+      "statement": "If the design criterion is restricted to class \\(1\\), the product law using independent signs on local direction \\(v_1\\) attains \\(R_1=4c_1/n^2=r_1^\\star\\); if it is restricted to class \\(2\\), the analogous law on \\(v_2\\) attains \\(R_2=4c_2/n^2=r_2^\\star\\). Thus either one-class commitment problem has value \\(1\\), while the two-class value is strictly smaller than \\(1\\).",
+      "free_symbols": [
+        "v_k",
+        "R_j",
+        "c_j",
+        "n",
+        "r_j_star",
+        "lambda_star"
+      ],
+      "depends_on": [
+        "def:block-geometry",
+        "def:block-assignments",
+        "def:design-space",
+        "def:response-classes",
+        "def:design-risk",
+        "def:commitment-value",
+        "thm:quadruple-menu-frontier"
+      ],
+      "status": "proved",
+      "justification": "This recovers the known single-class oracle boundary and isolates the loss caused only by response-structure uncertainty.",
+      "gap": "The one-class equality is a validation reduction, not a novelty claim.",
+      "consumer": "The reduction lets users verify that the new criterion agrees with established minimax balance when only one prognostic structure is credible.",
+      "proof_tex": "Consider class \\(1\\).  Under the product law that assigns \\(Z_{[\\ell]}=\\varepsilon_\\ell v_1\\) with independent Rademacher signs, orthonormality of the \\(h_k\\)'s gives\n\\[\nu_{1\\ell}^\\top Z=2\\varepsilon_\\ell\\sqrt{c_1}.\n\\]\nThe scores are independent and centered across blocks, so \\(C_1=4c_1I_q\\).  The spectral-risk identity then gives \\(R_1=4c_1/n^2\\), which equals \\(r_1^\\star\\) by \\(\\texttt{thm:quadruple-menu-frontier}\\).  Replacing \\(v_1,c_1\\) by \\(v_2,c_2\\) gives \\(C_2=4c_2I_q\\) and \\(R_2=4c_2/n^2=r_2^\\star\\) for class \\(2\\).  Both laws are in \\(\\Pi_n\\), including at every finite \\(q\\ge1\\), because independent symmetric signs imply \\(\\pi(z)=\\pi(-z)\\).\n\nFor either single class, \\(R_j(\\pi)\\ge r_j^\\star\\) for every feasible design by the definition of the oracle minimum.  Since \\(\\Delta_j>0\\), this implies \\(g_j(\\pi)\\le1\\), while the displayed oracle law attains \\(g_j=1\\).  Thus each one-class commitment value is exactly \\(1\\).  For both classes together, \\(\\texttt{thm:quadruple-menu-frontier}\\) gives\n\\[\n\\lambda^\\star=\\frac{a-2b}{a+b}.\n\\]\nThe conditions \\(a>2b>0\\) imply \\(0<\\lambda^\\star<1\\), proving that the loss relative to the one-class boundary is caused by simultaneous response-structure uncertainty.",
+      "revision": "rev:50f5511db1413ef74135f06e023e3193a20eab7cebb7517a4720a45a201e1c44"
+    },
+    {
+      "id": "oeq:higher-rank-menu-frontier",
+      "kind": "openendedquestion",
+      "statement": "For \\(J_{\\mathrm{gen}}\\ge3\\) block-supported response classes with noncommuting within-block Gram matrices \\(K_j^{\\mathrm{gen}}\\), characterize necessary and sufficient spectral conditions under which the normalized trace relaxation equals \\(\\lambda_{\\mathrm{gen}}^\\star\\). When equality fails, determine the sharp finite-\\(n\\) integrality gap and construct from \\(\\mathcal H_{\\mathrm{mat}}\\) a blinded block-balanced law attaining that gap up to the optimal constant.",
+      "free_symbols": [
+        "J_gen",
+        "K_j_gen",
+        "j",
+        "lambda_gen_star",
+        "n",
+        "H_mat"
+      ],
+      "depends_on": [
+        "def:matrix-discrepancy-handle",
+        "thm:quadruple-menu-frontier"
+      ],
+      "status": "to-prove",
+      "justification": "The rank-one menu makes the trace certificate exact; the open problem asks when that phenomenon survives genuinely matrix-valued and multi-class response uncertainty.",
+      "gap": "Harshaw et al. control one chosen feature geometry, and Kallus optimizes one chosen response class; neither gives a sharp simultaneous-oracle spectral relaxation gap for several noncommuting Gram matrices.",
+      "consumer": "A platform carrying several linear and nonlinear prognostic kernels could determine whether a single launch-time blocked randomization has a certifiable simultaneous gain guarantee.",
+      "revision": "rev:7626a6471f1900d6d0c6aa6cd36d812199a06f6372a782cfe34de4d7bc6f4727"
+    }
+  ],
+  "sampling_model": {
+    "design": "A finite population of size \\(n=4q\\) is partitioned before assignment into \\(q\\) matched quadruples. The experimenter commits to a blinded probability law supported on assignments with two treated and two control units in every quadruple.",
+    "units": "The units have fixed potential-outcome pairs \\(Y_i(0),Y_i(1)\\), fixed block membership, and two design-stage response Gram matrices \\(K_1,K_2\\).",
+    "treatment": "Within each quadruple the local assignment is one of \\(\\pm v_1,\\pm v_2,\\pm v_3\\); therefore every realized assignment has exactly \\(n/2\\) treated units.",
+    "overlap": "Global blinding \\(\\pi(z)=\\pi(-z)\\) gives marginal treatment probability \\(1/2\\) for every unit, and exact balance holds within every predeclared quadruple.",
+    "nuisance_estimation": "There is no superpopulation nuisance estimation. The block partition, response Gram matrices, and spectral parameters are fixed and observable at design time; the potential outcomes remain fixed and unobserved at assignment.",
+    "causal_interpretation": "The only randomness is \\(Z\\sim\\pi\\). The difference in means is design-unbiased for the finite-population average treatment effect, and each risk bound is conditional on the fixed schedule."
+  },
+  "estimand_functional": "\\(\\lambda^\\star=\\dfrac{a-2b}{a+b}\\), attained by \\(\\pi_{\\mathrm{sh}}\\), with \\(R_j(\\pi_{\\mathrm{sh}})=4(c_j+s_jb)/n^2<R_j(\\pi_0)\\)",
+  "target_estimand": "\\(\\tau_N=n^{-1}\\sum_{i=1}^n\\{Y_i(1)-Y_i(0)\\}\\)",
+  "bibliography": [
+    {
+      "key": "Neyman1923",
+      "citation": "J. Neyman (1923; English translation 1990), On the application of probability theory to agricultural experiments: Essay on principles, Section 9, Statistical Science 5, 465--472."
+    },
+    {
+      "key": "Kallus2018OptimalBalance",
+      "citation": "N. Kallus (2018), Optimal a priori balance in the design of controlled experiments, Journal of the Royal Statistical Society, Series B 80, 85--112, doi:10.1111/rssb.12240. Locators: Theorem 1 and Sections 1 and 7."
+    },
+    {
+      "key": "Kallus2021OptimalRandomization",
+      "citation": "N. Kallus (2021), On the optimality of randomization in experimental design: How to randomize for minimax variance and design-based inference, Journal of the Royal Statistical Society, Series B 83, 404--409, doi:10.1111/rssb.12412. Locators: Sections 1 and 4--6."
+    },
+    {
+      "key": "RyanEssermanLi2023MaximinHTE",
+      "citation": "M. M. Ryan, D. Esserman, and F. Li (2023), Maximin optimal cluster randomized designs for assessing treatment effect heterogeneity, Statistics in Medicine 42, 3764--3785, doi:10.1002/sim.9830, arXiv:2302.09138. Exact locators: Section 3.2, equation (8), and Algorithm 1, steps 2--4; equation (8) defines \\(\\operatorname{RE}_{\\mathrm{HTE}}=\\sigma_{\\mathrm{HTE}}^{2*}/\\sigma_{\\mathrm{HTE}}^2\\), and Algorithm 1 chooses the design with the largest value among the scenario-wise smallest relative efficiencies."
+    },
+    {
+      "key": "TommasiRodriguezDiazLopezFidalgo2023",
+      "citation": "C. Tommasi, J. M. Rodr\\'iguez-D\\'iaz, and J. F. L\\'opez-Fidalgo (2023), An equivalence theorem for design optimality with respect to a multi-objective criterion, Statistical Papers 64, 1041--1056, doi:10.1007/s00362-023-01431-2. Locator: Theorem 3."
+    },
+    {
+      "key": "HarshawSavjeSpielmanZhang2024GSW",
+      "citation": "C. Harshaw, F. S\\\"avje, D. A. Spielman, and P. Zhang (2024), Balancing covariates in randomized experiments with the Gram--Schmidt Walk design, Journal of the American Statistical Association 119, 2934--2946, doi:10.1080/01621459.2023.2285474. Locators: Sections 1, 8, and 9."
+    },
+    {
+      "key": "Bai2023WhyRandomize",
+      "citation": "Y. Bai (2023), Why randomize? Minimax optimality under permutation invariance, Journal of Econometrics 232, 565--575, doi:10.1016/j.jeconom.2021.10.009. Locators: Theorem 2.1 and Remark 2.4."
+    }
+  ],
+  "comparator_promise_table": [
+    {
+      "comparator_bibkey": "RyanEssermanLi2023MaximinHTE",
+      "comparator_claim": "Equation (8) defines relative efficiency as oracle variance divided by the candidate-design variance, and Algorithm 1 maximizes the smallest relative efficiency over the parameter grid.",
+      "matched_by": "Theorem 2",
+      "match_kind": "non_representability"
+    },
+    {
+      "comparator_bibkey": "Kallus2018OptimalBalance",
+      "comparator_claim": "Theorem 1 links worst-case mean-squared error for one response-function class to its balance criterion and derives the corresponding minimax design problem.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "Kallus2021OptimalRandomization",
+      "comparator_claim": "The paper characterizes minimax randomization for one specified response class through the assignment covariance and emphasizes genuinely mixed optimal designs.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "TommasiRodriguezDiazLopezFidalgo2023",
+      "comparator_claim": "Theorem 3 gives the established equivalence between maximin component efficiency and a Bayesian criterion supported on binding objectives.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "HarshawSavjeSpielmanZhang2024GSW",
+      "comparator_claim": "The Gram--Schmidt Walk controls covariance and discrepancy for one chosen feature geometry.",
+      "matched_by": "Open-ended Question 1",
+      "match_kind": "downgraded_to_informed_by"
+    }
+  ],
+  "tldr": "For \\(n=4q\\) units randomized within matched quadruples, two rank-\\(q\\) response ellipsoids have different oracle assignment directions but share a third near-oracle direction. The main theorem derives the exact finite-sample commitment frontier \\(\\lambda^\\star=(a-2b)/(a+b)\\): an observable trace lower bound on each class score matrix upper-bounds every law's guarantee, and independent random signs on the shared direction attain the bound while strictly reducing both class risks relative to block complete randomization. A second theorem embeds the same two-scenario variance problem into Ryan--Esserman--Li's exact equation (8) relative-efficiency criterion and proves that its optimizer is disjoint on an open parameter region. Generic maximin saddle equivalence is prior method, not a contribution. The open question asks when the trace certificate remains sharp for higher-rank, noncommuting kernel menus.",
+  "project_justification": {
+    "gap": "Single-class causal randomization results determine one response-class oracle, and general multi-objective design results provide established saddle and binding-weight technology. They do not give a quantitative finite-population price for committing across response geometries, a matching observable spectral certificate, or a direct comparison with the exact published relative-efficiency formula.",
+    "niche": "Matched-quadruple experiments provide a nontrivial implementable setting in which incompatible class oracles, a shared safe assignment, and the full randomization law can all be analyzed without asymptotics or a relaxation-only design.",
+    "fill": "The project derives the exact finite-\\(n\\) frontier \\(\\lambda^\\star=(a-2b)/(a+b)\\), proves sharpness through matching trace and eigenvalue bounds, supplies the attaining block-balanced law, establishes strict improvement over block complete randomization for both classes, and proves stable nonrepresentability against Ryan--Esserman--Li equation (8) on the same two-scenario variance subproblem."
+  },
+  "related_work": "Kallus (2018, Theorem 1 and Sections 1 and 7) makes a response-function class the primitive of a minimax balancing problem. Kallus (2021, Sections 1 and 4--6) shows why the optimizer for one class is generally a mixed assignment law characterized through covariance. These papers inform the class risk and the one-class reduction; the new theorem instead computes the exact loss from one commitment across a specified two-class menu. Proposition 1 gives the one-class oracle boundary without claiming a sharper single-class result. Ryan, Esserman, and Li (2023, Section 3.2, equation (8), and Algorithm 1) are the exact criterion comparator. Their equation is \\(\\operatorname{RE}_{\\mathrm{HTE}}=\\sigma_{\\mathrm{HTE}}^{2*}/\\sigma_{\\mathrm{HTE}}^2\\), and Algorithm 1 instructs the user to identify the scenario with the \"smallest RE\" and then choose the design with the \"largest RE\" among those minima. Theorem 2 maps these two variances to the class oracle and committed risks on the same two-scenario design problem and proves that this published rule and baseline-gain retention have disjoint optimizers on an open parameter region. Tommasi, Rodr\\'iguez-D\\'iaz, and L\\'opez-Fidalgo (2023, Theorem 3) already establish the generic maximin binding-weight equivalence. That result is methodological background only; no abstract saddle theorem is claimed here. Harshaw, S\\\"avje, Spielman, and Zhang (2024, Sections 1, 8, and 9) provide covariance and discrepancy tools for one feature geometry, which motivate the matrix-discrepancy handle for the higher-rank open question. Bai (2023, Theorem 2.1) supplies the permutation-invariant complete-randomization benchmark but does not address the structured two-geometry commitment price.",
+  "technical_internal_limitation": "The exact frontier uses a deliberately structured rank-\\(q\\) menu with identical four-unit geometry across predeclared blocks. The trace certificate need not be sharp for higher-rank noncommuting block kernels, and resolving that integrality gap is the explicit open question. The generic saddle or binding-weight equivalence is established by Tommasi, Rodr\\'iguez-D\\'iaz, and L\\'opez-Fidalgo (2023, Theorem 3) and carries no novelty claim.",
+  "honest_scope": "The theorem targets are the finite-population variance identity, the exact two-class frontier, the matching implementable design and spectral certificate, the strict improvement over block complete randomization, and the exact separation from Ryan--Esserman--Li relative efficiency. The higher-rank, noncommuting menu frontier remains open. Deleting either response class recovers the established one-class oracle value \\(1\\). No asymptotic limit law, universal kernel-menu rate, unrestricted global-balance theorem, or polynomial-time solver is claimed."
+}

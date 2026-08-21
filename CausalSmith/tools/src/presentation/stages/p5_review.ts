@@ -5,9 +5,11 @@ import { z } from "zod";
 import type { StageIO } from "../pipeline.js";
 import { presentationPrompt } from "../prompt_io.js";
 import { parseJsonLoose } from "../gates.js";
+import { reviewerTexFor } from "../tex_anchors.js";
 import { bankAcceptedDir } from "../paths.js";
 import type { ReviewFinding } from "../revision_brief.js";
 import { buildVerificationContract } from "../verification_contract.js";
+import { loadBankNarrative } from "../bank.js";
 import { findingFingerprint } from "../revision_routing.js";
 
 interface Review {
@@ -63,6 +65,10 @@ const ReviewSchema = z.object({
  * re-draft safe prose/structure findings, but never statement/citation/source-truth
  * findings; those are routed to an explicit adjudication halt.
  */
+/** Back-compat alias: the reviewer-copy strip now lives in `tex_anchors` because the P3
+ *  rubric reviewer needs it too (same reasoning — a scorer reads the paper, not the build). */
+export const refereeTexFor = reviewerTexFor;
+
 export async function stageP5(io: StageIO): Promise<void> {
   if (io.ctx.deps.dryRun) {
     await writeFile(join(io.outDir, "p5.stub"), "dry-run\n");
@@ -89,18 +95,15 @@ export async function stageP5(io: StageIO): Promise<void> {
     "utf8",
   );
 
-  const prior = await readOptionalJson("p5_review.json", { findings: [] }) as { findings?: ReviewFinding[] };
-  const priorIssueFamilies = (prior.findings ?? []).map((f) => ({
-    finding_id: f.finding_id,
-    section: f.section,
-    issue: f.issue,
-    remedy: f.remedy,
-  }));
+  // Only the restriction-shaped honest_scope reaches the referee — never the tldr /
+  // justification advertisements, which would anchor an independent review to the
+  // authors' own framing.
+  const narrative = await loadBankNarrative(io.ctx.repoRoot, io.ctx.qid, io.ctx.spec);
   const prompt = await presentationPrompt("p5_review", {
-    paper_tex: paperTex,
+    paper_tex: refereeTexFor(paperTex),
     related_work_brief: relatedWork,
+    honest_scope: narrative.honestScope || "(none recorded)",
     verification_contract: JSON.stringify(verificationContract),
-    prior_issue_families: JSON.stringify(priorIssueFamilies),
   });
   const { stdout } = await io.ctx.deps.runCodex({
     prompt,

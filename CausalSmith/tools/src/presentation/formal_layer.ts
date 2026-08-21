@@ -1,8 +1,7 @@
 import { z } from "zod";
-import { createHash } from "node:crypto";
 import { citedDependencies, renderedNodes, refTargets, envForNode, type OverrideEnv } from "./graph_view.js";
 import { isUndeliveredNode } from "../graph/types.js";
-import { appendAfterAnchoredEnvs, normalizeAnchoredEnvScopeMarkers, parseAnchoredEnvs } from "./tex_anchors.js";
+import { appendAfterAnchoredEnvs, hashEnvBody, normalizeAnchoredEnvScopeMarkers, parseAnchoredEnvs } from "./tex_anchors.js";
 import type { FormalizationGraph } from "../graph/types.js";
 
 /**
@@ -17,7 +16,7 @@ export const FormalBlock = z.object({
   obj_id: z.string(), // node id — the canonical join key
   alias: z.string().nullable(), // display only (the note's P-/A-/T- anchor)
   kind: z.enum(["setup", "definition", "assumption", "lemma", "theorem", "gate"]),
-  env: z.enum(["theoremv", "assumptionv", "lemmav", "definitionv", "citedv", "propositionv", "remarkv"]).nullable(), // null for setup/prose-only
+  env: z.enum(["theoremv", "assumptionv", "lemmav", "definitionv", "citedv", "propositionv", "remarkv", "algorithmv"]).nullable(), // null for setup/prose-only
   title: z.string().nullable(),
   body: z.string(), // rendered LaTeX statement
   ref_set: z.array(z.string()),
@@ -34,7 +33,6 @@ export const FormalBlock = z.object({
     statement: z.string(),
     status: z.string(),
   })).default([]),
-  body_hash: z.string(), // sha256 of the whitespace-normalized body — the freeze
 });
 export type FormalBlock = z.infer<typeof FormalBlock>;
 
@@ -44,10 +42,6 @@ export const FormalLayerSource = z.object({
 });
 export type FormalLayerSource = z.infer<typeof FormalLayerSource>;
 
-/** Per-block freeze: sha256 of the whitespace-normalized body (matches the legacy `hashEnvBody`). */
-export function hashBody(body: string): string {
-  return createHash("sha256").update(body.replace(/\s+/g, " ").trim()).digest("hex");
-}
 
 /** One LaTeX env for a block, or "" for a non-env (setup / prose-only) block. */
 export function texEnvFor(b: FormalBlock): string {
@@ -200,7 +194,6 @@ export function blocksFromGraph(
         statement: d.nl.statement,
         status: d.review.status,
       })),
-      body_hash: hashBody(body),
     });
   });
 }

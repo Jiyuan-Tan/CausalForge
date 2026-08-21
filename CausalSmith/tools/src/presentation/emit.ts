@@ -59,6 +59,7 @@ const DISPLAY: Record<AnchoredEnv["env"], string> = {
   citedv: "Cited result",
   propositionv: "Proposition",
   remarkv: "Remark",
+  algorithmv: "Algorithm",
 };
 
 /** Paper numbering: per-environment-class counters in appearance order. */

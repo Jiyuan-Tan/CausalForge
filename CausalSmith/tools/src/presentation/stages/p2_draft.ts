@@ -1,10 +1,12 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { PROOF_AUDIT_FAILURE_MARKER } from "../promotion.js";
 import { join } from "node:path";
 import { extractBalancedEnv } from "../../shared/tex_text.js";
 import type { StageIO } from "../pipeline.js";
 import { PRESENTATION_PROSE_POLICY_VERSION, presentationPrompt } from "../prompt_io.js";
-import { parseOutline, unwrapArtifact, type Outline } from "../stage_util.js";
+import { notationForArtifact, parseOutline, unwrapArtifact, type Outline } from "../stage_util.js";
 import {
+  canonicalizeProofTitle,
   lintAnchors,
   stripRedundantEnvLabels,
   normalizeFrozenEnvs,
@@ -15,22 +17,22 @@ import {
   normalizeCrefs,
   hashEnvBody,
   type AnchoredEnv,
+  type LintProblem,
 } from "../tex_anchors.js";
 import { FormalLayerSource, normalizeCitedScopeFootnotes, texEnvFor } from "../formal_layer.js";
 import { assumptionCiteContext } from "../assumption_citations.js";
-import {
-  sectionRevisionBrief,
-  frontMatterRevisionBrief,
-  proofRevisionBrief,
-} from "../revision_brief.js";
+import { FIRST_DRAFT_BRIEF } from "../revision_brief.js";
 import { symbolProseTargets, normalizeSymbolLeanrefs, promoteSymbolLeanrefs, repairSymbolLeanrefTargets } from "../emit.js";
 import { writeJsonAtomic } from "../json_io.js";
+import { loadJsonCache } from "../cache.js";
 import { recordP2Assembly } from "../assembly_freshness.js";
 import { runProofAudit } from "../audit.js";
 import { extractFullDeclSource } from "../lean_extract.js";
 import { discoverRealizedSymbols, buildSymbolClusters } from "../../formalization/crosswalk.js";
 import type { FormalizationGraph } from "../graph_view.js";
 import { parseBib } from "../citations.js";
+import { resolveLeanDeclaration, resolvedLeanAbsolutePath } from "../declaration_resolver.js";
+import { loadBankNarrative, loadInformalDerivations } from "../bank.js";
 
 /** Content key for a P2 section cache entry: changes iff a drafting input changes — the section's
  *  objs list (membership AND order), brief, allowed cites, the frozen env bodies it places, or its
@@ -40,6 +42,60 @@ export function sectionCacheKey(
   name: string, objs: string[], brief: string, allowedKeys: string, envBodies: string[], revBrief: string,
 ): string {
   return hashEnvBody([name, objs.join(","), brief, allowedKeys, ...envBodies, revBrief].join("§"));
+}
+
+export interface ProofHelperContext { obj_id: string; tex: string }
+
+/** Obj ids whose LAST persisted proof-audit verdict was `faithful`. A statement/helper
+ * change moves the render key, but a previously-faithful proof need not be redrafted
+ * wholesale (user directive, 2026-08-20 — the audits are the bottleneck): it is reused
+ * as an audit candidate and the mandatory audit against the CURRENT statement decides.
+ * A failing or never-audited proof still redrafts fresh — that path is load-bearing for
+ * the promotion round, whose redrafts must cite the newly promoted helper lemmas. */
+export async function priorFaithfulProofVerdicts(outDir: string): Promise<Set<string>> {
+  const raw = await readFile(join(outDir, "proof_audit_cache.json"), "utf8").catch(() => "{}");
+  const entries = JSON.parse(raw) as Record<string, { verdict?: string } | undefined>;
+  return new Set(Object.keys(entries).filter((id) => entries[id]?.verdict === "faithful"));
+}
+
+export async function existingProofForP2(
+  proofPath: string, storedKey: string | undefined, currentKey: string, allowAuditCandidate: boolean,
+): Promise<{ text: string; cacheHit: boolean } | null> {
+  if (storedKey !== currentKey && !allowAuditCandidate) return null;
+  const text = await readFile(proofPath, "utf8").catch(() => null);
+  return text === null ? null : { text, cacheHit: storedKey === currentKey };
+}
+
+function sortedProofHelperContext(context: ProofHelperContext[]): ProofHelperContext[] {
+  const seen = new Set<string>();
+  for (const entry of context) {
+    if (seen.has(entry.obj_id)) throw new Error(`P2 proof helper context has duplicate obj_id ${entry.obj_id}`);
+    seen.add(entry.obj_id);
+  }
+  return [...context].sort((a, b) => a.obj_id < b.obj_id ? -1 : a.obj_id > b.obj_id ? 1 :
+    hashEnvBody(a.tex).localeCompare(hashEnvBody(b.tex)));
+}
+
+/** Proof helpers are a mathematical context set, not a presentation sequence.
+ * Canonicalize only the cache-key view; the prompt retains formal-layer order. */
+export function canonicalProofHelperContext(context: ProofHelperContext[]): string {
+  return sortedProofHelperContext(context)
+    .map(({ obj_id, tex }) => `${obj_id}\n${tex}`).join("\n\n");
+}
+const canonicalProofHelperTex = (context: ProofHelperContext[]): string =>
+  sortedProofHelperContext(context)
+    .map(({ tex }) => tex).join("\n\n");
+
+export function proofRenderCacheKey(parts: {
+  modelKey: string; objId: string; envTex: string; leanPath: string; leanDecl: string;
+  exactDecl: string; helperContext: ProofHelperContext[]; notation: string; revisionBrief: string;
+  citedDependencies: string; informalDerivation: string;
+}): string {
+  return hashEnvBody([
+    parts.modelKey, "proof-helper-set-v2", parts.objId, parts.envTex, parts.leanPath, parts.leanDecl,
+    parts.exactDecl, canonicalProofHelperContext(parts.helperContext), parts.notation,
+    parts.revisionBrief, parts.citedDependencies, "citation-erasure-v1", parts.informalDerivation,
+  ].join("§"));
 }
 
 /** The front-matter author must receive at least one verified citation key. */
@@ -58,25 +114,6 @@ export function frontMatterCacheKey(
   return hashEnvBody([modelCacheKey, body, frontBrief, brief, allowedBibKeys].join("§"));
 }
 
-/** Cache format used before the citation-pool prompt input was added. Keep this
- * only to migrate reviewed front matter rather than replacing it wholesale. */
-export function legacyFrontMatterCacheKey(
-  modelCacheKey: string, body: string, frontBrief: string, brief: string,
-): string {
-  return hashEnvBody([modelCacheKey, body, frontBrief, brief].join("§"));
-}
-
-/** Keep only notation rows whose control sequences/identifiers occur in this artifact.
- * Unrelated outline-notation edits must not invalidate every expensive proof render. */
-export function relevantNotation(notation: string, artifact: string): string {
-  const tokens = new Set(artifact.match(/\\[A-Za-z]+|[A-Za-z][A-Za-z0-9_']{1,}/g) ?? []);
-  const rows = notation.split("\n").filter((row) => {
-    const rowTokens = row.match(/\\[A-Za-z]+|[A-Za-z][A-Za-z0-9_']{1,}/g) ?? [];
-    return rowTokens.some((token) => tokens.has(token));
-  });
-  return rows.length > 0 ? rows.join("\n") : "(no artifact-specific notation rows)";
-}
-
 /** Run-local Lean pointer for a paper object, from the graph (node id → decl).
  *  `null` for an object with no run-local decl (statement-only, or an external
  *  reuse decl with `file: null`). The graph carries no line number, so `line: 0`
@@ -87,10 +124,35 @@ function leanPointer(graph: FormalizationGraph, objId: string): { file: string; 
   return { file: n.lean.file, decl: n.lean.decl_name, line: 0 };
 }
 
+
+/** Strip heading decoration that would DOUBLE the letter `\appendix` prints. LaTeX numbers
+ *  appendix sections A, B, … by itself, so a drafter-supplied "Appendix:", "Appendix B:", or
+ *  a bare enumerator "B: " / "B. " / "B) " renders as "B B: …". Applied repeatedly because the
+ *  spellings compose ("Appendix B: proofs"); a single letter is only stripped when followed by
+ *  enumerator punctuation, so a title like "A note on codes" survives. */
+export function stripAppendixHeadingDecoration(sectionHead: string): string {
+  const m = /^(\\section\{\s*)([\s\S]*)$/.exec(sectionHead);
+  if (!m) return sectionHead;
+  let title = m[2];
+  for (let i = 0; i < 3; i++) {
+    const next = title
+      .replace(/^Appendix\s*[A-Z]?\s*[:.)]?\s+/i, "")
+      .replace(/^[A-Z][:.)]\s+/, "");
+    if (next === title) break;
+    title = next;
+  }
+  // Sentence case: the stripped enumerator carried the capital ("A: proofs…"), so a title
+  // left starting with a lowercase ASCII letter must be re-capitalized — otherwise the
+  // appendix reads "A proofs for identification…" next to "E Proofs of the main results".
+  // Only a plain leading letter is touched: a title opening with math or a macro is left as is.
+  if (title !== m[2] && /^[a-z]/.test(title)) title = title[0].toUpperCase() + title.slice(1);
+  return m[1] + title;
+}
+
 /**
  * P2 — section-by-section body draft (codex, high effort), Lean-faithful appendix proofs
  * (codex + lean-lsp), abstract/intro written last from the finished body.
- * The assembled paper.tex must pass the anchor + frozen-hash lint before the
+ * The assembled paper.tex must pass the anchor + frozen-body lint before the
  * draft checkpoint; a P2 that breaks the frozen layer never reaches the user.
  */
 export async function stageP2(io: StageIO): Promise<void> {
@@ -113,9 +175,16 @@ export async function stageP2(io: StageIO): Promise<void> {
       `(${legacyFormalRefs.map((b) => b.obj_id).join(", ")}). Re-run from P1 so formal_layer.json remains the source of truth.`,
     );
   }
-  const frozen: Record<string, string> = Object.fromEntries(layerSrc.blocks.map((b) => [b.obj_id, b.body_hash]));
+  const frozen: Record<string, string> = Object.fromEntries(layerSrc.blocks.map((b) => [b.obj_id, b.body]));
   const brief = await readFile(join(io.outDir, "related_work_brief.md"), "utf8");
   const outline = parseOutline(outlineRaw);
+  // D-stage informal derivations: exposition context for the proof renderer. UNTRUSTED —
+  // the prompt subordinates them to the Lean route and the P2 proof audit rejects any
+  // non-Lean route, so a wrong or never-formalized derivation cannot be laundered in.
+  const informalDerivations = await loadInformalDerivations(io.ctx.repoRoot, io.ctx.qid, io.ctx.spec);
+  const narrative = await loadBankNarrative(io.ctx.repoRoot, io.ctx.qid, io.ctx.spec);
+  const informalDerivationFor = (objId: string): string =>
+    informalDerivations.get(objId) ?? "(none recorded for this result)";
 
   const envBlocks = layerSrc.blocks.filter((b) => b.env);
   const envs: AnchoredEnv[] = envBlocks.map((b, i) => ({
@@ -172,11 +241,6 @@ export async function stageP2(io: StageIO): Promise<void> {
   const bibText = await readFile(bibPath, "utf8").catch(() => "");
   const bibInjections = new Map<string, string>(); // dedup by injected key
 
-  // P5 feedback is never fanned back out across section/proof writers. These
-  // inert briefs retain the first-draft prompt contract; post-review work is
-  // performed only by the holistic reviser.
-  const priorReview = null;
-
   // body sections (abstract/introduction are written last)
   const bodySections = outline.sections.filter((s) => !/^(abstract|introduction)$/i.test(s.name));
   const isAppendixSection = (name: string) => /^appendix\b/i.test(name.trim());
@@ -188,7 +252,7 @@ export async function stageP2(io: StageIO): Promise<void> {
   // An outline restructure that moves an env between sections changes the affected sections' objs,
   // so they re-draft instead of shipping a stale env placement (which the P4 ref-lint would reject).
   const cacheKeyPath = join(io.outDir, "sections", "_cache_keys.json");
-  const cacheKeys: Record<string, string> = JSON.parse(await readFile(cacheKeyPath, "utf8").catch(() => "{}"));
+  const cacheKeys = await loadJsonCache<Record<string, string>>(cacheKeyPath);
   const modelCacheKey = `${io.ctx.deps.codexModel ?? "unspecified-codex-model"}|${PRESENTATION_PROSE_POLICY_VERSION}`;
   for (let i = 0; i < bodySections.length; i++) {
     const s = bodySections[i];
@@ -208,15 +272,34 @@ export async function stageP2(io: StageIO): Promise<void> {
       .filter((id) => (blockById.get(id)?.cited_dependencies.length ?? 0) > 0)
       .map((id) => `${id}:\n${citedDependencyPromptFor(id)}`)
       .join("\n\n") || "(none)";
-    const revBrief = sectionRevisionBrief(priorReview, s.name);
-    // Content key: re-draft when any drafting input changes (objs/brief/cites/env bodies/revision).
-    const sectionKey = hashEnvBody([modelCacheKey, sectionCacheKey(name, s.objs, s.brief, allowedKeys, s.objs.map((id) => envText.get(id) ?? ""), `${revBrief}\n${citedNotes}`)].join("§"));
+    const revBrief = FIRST_DRAFT_BRIEF;
+    // D-stage per-result notes for THIS section's objects: why each result matters and what
+    // it unlocks, plus the D-stage condition text behind each assumption. Grounded motivation
+    // for the prose the prompt demands — subordinated to the frozen envs.
+    const resultNotes = s.objs
+      .map((id) => {
+        const note = narrative.statementNotes.get(id);
+        const condition = narrative.assumptionConditions.get(id);
+        const parts = [
+          note?.justification && `why it matters: ${note.justification}`,
+          note?.consumer && `what it unlocks: ${note.consumer}`,
+          condition && `D-stage condition: ${condition}`,
+        ].filter(Boolean);
+        return parts.length > 0 ? `${id}:\n${parts.join("\n")}` : "";
+      })
+      .filter(Boolean)
+      .join("\n\n") || "(none recorded)";
+    // Content key: re-draft when any drafting input changes (objs/brief/cites/env bodies/revision/notes).
+    const sectionKey = hashEnvBody([modelCacheKey, sectionCacheKey(name, s.objs, s.brief, allowedKeys, s.objs.map((id) => envText.get(id) ?? ""), `${revBrief}\n${citedNotes}\n${resultNotes}`)].join("§"));
     // Artifact cache, content-keyed: an unchanged section is reused (a P2 retry does not re-draft);
     // a changed objs/brief/env-set re-drafts. Delete sections/ to force a full regenerate.
-    let tex = cacheKeys[name] === sectionKey ? await readFile(join(io.outDir, "sections", name), "utf8").catch(() => null) : null;
+    let tex = io.reassemble || cacheKeys[name] === sectionKey ? await readFile(join(io.outDir, "sections", name), "utf8").catch(() => null) : null;
     // A cache predating the global prose contract must not bypass the P2 authoring rule.
-    if (tex !== null && lintNegativeContributionFraming(tex).length > 0) tex = null;
+    // (Not in reassemble mode: there the on-disk file is the reviser's authored text —
+    // a violation is an error below, never a silent re-draft that discards the revision.)
+    if (!io.reassemble && tex !== null && lintNegativeContributionFraming(tex).length > 0) tex = null;
     if (tex === null) {
+      if (io.reassemble) throw new Error(`P2 reassemble: sections/${name} is missing — the revision cycle only reassembles authored sources, it never re-drafts`);
       // Codex drafts the body section; high effort (the main faithful prose, must
       // match the frozen envs + outline and cite only the allowed keys).
       const { stdout: reply } = await io.ctx.deps.runCodex({
@@ -226,6 +309,7 @@ export async function stageP2(io: StageIO): Promise<void> {
           frozen_envs_for_section: s.objs.map((id) => envText.get(id)!).join("\n\n"),
           allowed_bib_keys: allowedKeys,
           assumption_notes: aCtx.notes || "(no assumptions in this section)",
+          result_notes: resultNotes,
           cited_dependency_notes: citedNotes,
           notation_table: outline.notation,
           // Sections already drafted (for narrative coherence: no repetition,
@@ -252,7 +336,7 @@ export async function stageP2(io: StageIO): Promise<void> {
     if (proseStyle.length > 0) {
       throw new Error(`P2 section ${s.name} violates the affirmative prose contract: ${proseStyle.map((p) => p.detail).join("; ")}`);
     }
-    await writeFile(join(io.outDir, "sections", name), tex + "\n", "utf8");
+    await writeFile(join(io.outDir, "sections", name), tex.replace(/\n+$/, "") + "\n", "utf8");
     cacheKeys[name] = sectionKey;
     // Persist the key with its section: a crash in a LATER section or in the proof
     // loop must not discard this draft's cache entry (a retry would re-pay every
@@ -262,9 +346,7 @@ export async function stageP2(io: StageIO): Promise<void> {
       // Placed after \appendix below, which auto-letters each section (A, B, …). Strip any heading
       // decoration the drafter added that would DOUBLE that letter: an "Appendix:" prefix (→ "A
       // Appendix: …") or a redundant manual "A. "/"B. " letter prefix (→ "A A. …").
-      tex = tex
-        .replace(/\\section\{\s*Appendix:?\s*/i, "\\section{")
-        .replace(/\\section\{\s*[A-Z]\.\s+/, "\\section{");
+      tex = tex.replace(/\\section\{[^}]*/, (h) => stripAppendixHeadingDecoration(h));
       appendixTexs.push(tex);
     } else {
       sectionTexs.push(tex);
@@ -300,44 +382,71 @@ export async function stageP2(io: StageIO): Promise<void> {
   // Lean-faithful appendix proofs, one per theorem env. Cached per theorem in
   // proofs/<obj_id>.tex (codex renders are the most expensive P2 calls);
   // delete a file to re-render that proof.
-  const allLemmaTex = envs.filter((e) => e.env === "lemmav").map((e) => envText.get(e.obj_id)!).join("\n\n");
-  const allCitableTex = [...envText.values()].join("\n\n");
+  // Annotate each citable env with the Lean declaration it realizes so the proof
+  // renderer can map the Lean route's helpers onto paper labels and cite them
+  // ("where the helper does have a paper environment, cite it by label"). Prompt
+  // text only — helperContextFor (the cache-key input) stays unannotated so
+  // existing proof render keys are unaffected.
+  const annotatedTex = (e: AnchoredEnv) => {
+    const decl = leanPointer(io.bank.graph, e.obj_id)?.decl;
+    return `${decl ? `% realizes Lean declaration: ${decl}\n` : ""}${envText.get(e.obj_id)!}`;
+  };
+  const allLemmaTex = envs.filter((e) => e.env === "lemmav").map(annotatedTex).join("\n\n");
+  const allCitableTex = envs.map(annotatedTex).join("\n\n");
+  const allLemmaContext = envs.filter((e) => e.env === "lemmav")
+    .map((e) => ({ obj_id: e.obj_id, tex: envText.get(e.obj_id)! }));
+  const allCitableContext = envs.map((e) => ({ obj_id: e.obj_id, tex: envText.get(e.obj_id)! }));
   const helperTexFor = (objId: string) => {
     // Graph proof-use edges are extraction hints, not a complete dependency
     // record. Keep the conservative pre-existing citable set in both prompt and
     // key so an omitted-edge helper edit can never reuse a stale rendered proof.
     return envs.find((e) => e.obj_id === objId)?.env === "lemmav" ? allCitableTex : allLemmaTex;
   };
+  const helperContextFor = (objId: string) =>
+    envs.find((e) => e.obj_id === objId)?.env === "lemmav" ? allCitableContext : allLemmaContext;
   const theoremProofById = new Map<string, string>(); // for ordering the consolidated proofs section
   await mkdir(join(io.outDir, "proofs"), { recursive: true });
   const proofCacheKeyPath = join(io.outDir, "proofs", "_cache_keys.json");
-  const proofCacheKeys: Record<string, string> = JSON.parse(await readFile(proofCacheKeyPath, "utf8").catch(() => "{}"));
+  const proofCacheKeys = await loadJsonCache<Record<string, string>>(proofCacheKeyPath);
+  const priorFaithful = await priorFaithfulProofVerdicts(io.outDir);
   const proofRenderKey = async (
     objId: string,
     envTex: string,
     lean: { file: string; decl: string },
-    helperTex: string,
+    helperContext: ProofHelperContext[],
     revisionBrief: string,
   ) => {
-    const leanPath = join(io.ctx.repoRoot, io.bank.leanSubdir, lean.file);
-    const leanSource = await readFile(leanPath, "utf8").catch(() => "");
-    const exactDecl = leanSource
-      ? (() => { try { return extractFullDeclSource(leanSource, lean.decl, 0); } catch { return `full-file:${hashEnvBody(leanSource)}`; } })()
-      : "";
-    const notation = relevantNotation(outline.notation, `${envTex}\n${exactDecl}\n${helperTex}`);
-    return hashEnvBody([modelCacheKey, objId, envTex, leanPath, lean.decl, exactDecl, helperTex, notation, revisionBrief, citedDependencyPromptFor(objId), "citation-erasure-v1"].join("§"));
+    const resolved = await resolveLeanDeclaration(io.ctx.repoRoot, io.bank.leanSubdir,
+      { file: lean.file, decl: lean.decl, line: 0 });
+    const leanPath = await resolvedLeanAbsolutePath(io.ctx.repoRoot, resolved.file);
+    const exactDecl = extractFullDeclSource(await readFile(leanPath, "utf8"), resolved.decl, 0);
+    const canonicalHelpers = canonicalProofHelperTex(helperContext);
+    const notation = notationForArtifact(outline.notation, `${envTex}\n${exactDecl}\n${canonicalHelpers}`);
+    return proofRenderCacheKey({ modelKey: modelCacheKey, objId, envTex, leanPath, leanDecl: resolved.decl,
+      exactDecl, helperContext, notation, revisionBrief, citedDependencies: citedDependencyPromptFor(objId),
+      informalDerivation: informalDerivationFor(objId) });
   };
-  for (const e of envs.filter((x) => x.env === "theoremv")) {
+  for (const e of envs.filter((x) => isMainProofEnv(x.env))) {
     const lean = leanPointer(io.bank.graph, e.obj_id);
     if (!lean) continue; // theorem without a run-local Lean decl gets no rendered proof
     const proofPath = join(io.outDir, "proofs", `${e.obj_id}.tex`);
     const helperTex = helperTexFor(e.obj_id);
-    const proofBrief = proofRevisionBrief(priorReview, e.obj_id);
-    const notation = relevantNotation(outline.notation, `${envText.get(e.obj_id)!}\n${helperTex}`);
-    const proofKey = await proofRenderKey(e.obj_id, envText.get(e.obj_id)!, lean, helperTex, proofBrief);
-    const cached = proofCacheKeys[e.obj_id] === proofKey ? await readFile(proofPath, "utf8").catch(() => null) : null;
-    if (cached !== null) {
-      theoremProofById.set(e.obj_id, normalizeCrefs(cached.trim()));
+    const proofBrief = FIRST_DRAFT_BRIEF;
+    const notation = notationForArtifact(outline.notation, `${envText.get(e.obj_id)!}\n${helperTex}`);
+    const proofKey = await proofRenderKey(e.obj_id, envText.get(e.obj_id)!, lean, helperContextFor(e.obj_id), proofBrief);
+    // Reassemble mode: the on-disk proof (possibly reviser-edited) is authoritative — reuse
+    // it as an audit candidate (the proof audit below re-verifies it against Lean); never
+    // fall through to a codex re-render, and treat a missing file as the error it is.
+    const existing = await existingProofForP2(proofPath, proofCacheKeys[e.obj_id], proofKey,
+      io.ctx.reuseExistingProofsForAudit === true || io.reassemble === true || priorFaithful.has(e.obj_id));
+    if (existing === null && io.reassemble) {
+      throw new Error(`P2 reassemble: proofs/${e.obj_id}.tex is missing — the revision cycle only reassembles authored sources, it never re-renders`);
+    }
+    if (existing !== null) {
+      theoremProofById.set(e.obj_id, canonicalizeProofTitle(e.obj_id, normalizeCrefs(existing.text.trim())));
+      if (!existing.cacheHit) {
+        io.state.notes.push(`P2: reused existing proof candidate ${e.obj_id} for mandatory current audit (render cache remains missed)`);
+      }
       continue;
     }
     const leanPath = join(io.ctx.repoRoot, io.bank.leanSubdir, lean.file);
@@ -347,6 +456,7 @@ export async function stageP2(io: StageIO): Promise<void> {
         lean_proof_source: `file: ${leanPath}\ndeclaration: ${lean.decl}\nRead the file with your tools; do not guess its contents.`,
         helper_lemma_envs: helperTex || "(no paper lemma is a direct dependency)",
         cited_dependencies: citedDependencyPromptFor(e.obj_id),
+        informal_derivation: informalDerivationFor(e.obj_id),
         notation_table: notation,
         revision_brief: proofBrief,
       }),
@@ -360,7 +470,7 @@ export async function stageP2(io: StageIO): Promise<void> {
     // Depth-aware: a lazy match ended at the FIRST `\end{proof}`, truncating any
     // proof that nests `\begin{proof}[Proof of Claim 1]` and leaving an
     // unbalanced `\end{proof}` for P4 after the audit already blessed the text.
-    const proof = normalizeCrefs(extractBalancedEnv(stdout, "proof") ?? "");
+    const proof = canonicalizeProofTitle(e.obj_id, normalizeCrefs(extractBalancedEnv(stdout, "proof") ?? ""));
     if (!proof) throw new Error(`P2: no proof block in codex output for ${e.obj_id}`);
     await writeFile(proofPath, proof + "\n", "utf8");
     proofCacheKeys[e.obj_id] = proofKey;
@@ -373,8 +483,8 @@ export async function stageP2(io: StageIO): Promise<void> {
   // Lemma proofs: rendered in BATCHES (cost economy — lemmas are auxiliary),
   // cached per lemma in proofs/<obj_id>.tex exactly like theorem proofs.
   const lemmaProofTexts = await renderLemmaProofBatches(
-    io, envs, envText, outline, priorReview, helperTexFor, proofCacheKeys, proofRenderKey,
-    citedDependencyPromptFor, proofCacheKeyPath,
+    io, envs, envText, outline, helperTexFor, proofCacheKeys, proofRenderKey,
+    citedDependencyPromptFor, proofCacheKeyPath, helperContextFor, informalDerivationFor,
   );
   await writeJsonAtomic(proofCacheKeyPath, proofCacheKeys);
 
@@ -383,27 +493,30 @@ export async function stageP2(io: StageIO): Promise<void> {
   // toward Lean (always safe; the Lean proof type-checks) and rewriting proofs/<id>.tex. A residual
   // unfaithful proof halts P2 (re-render or adjudicate) rather than reaching the draft checkpoint.
   const proofTargets = envs
-    .filter((e) => e.env === "theoremv" || e.env === "lemmav")
+    .filter((e) => isMainProofEnv(e.env) || e.env === "lemmav")
     .map((e) => ({ e, lean: leanPointer(io.bank.graph, e.obj_id) }))
     .filter((x): x is { e: AnchoredEnv; lean: { file: string; decl: string; line: number } } => x.lean !== null)
-    .map(({ e, lean }) => ({ obj_id: e.obj_id, isMain: e.env === "theoremv", lean: { file: lean.file, decl: lean.decl } }));
+    .map(({ e, lean }) => ({ obj_id: e.obj_id, isMain: isMainProofEnv(e.env), lean: { file: lean.file, decl: lean.decl } }));
   const { refined: refinedProofs, problems: proofProblems } = await runProofAudit(io, proofTargets);
   if (proofProblems.length > 0) {
     throw new Error(
-      `P2 proof equivalence audit failed (${proofProblems.length} proof(s) still unfaithful after refinement — ` +
+      `${PROOF_AUDIT_FAILURE_MARKER} (${proofProblems.length} proof(s) still unfaithful after refinement — ` +
         `re-render or adjudicate): ` + proofProblems.map((p) => p.detail).join("; "),
     );
   }
   // Assembly uses the REFINED proofs (override the freshly-rendered maps).
   for (const [id, proof] of refinedProofs) {
-    const canonicalProof = normalizeCrefs(proof);
+    // The refiner may rewrite the title line (observed: dropping the obj: prefix,
+    // which makes the proof invisible to lintProofsReachedPaper AND leaks a bare
+    // obj_id into prose) — canonicalize on this path too, not only on render/reuse.
+    const canonicalProof = canonicalizeProofTitle(id, normalizeCrefs(proof));
     if (theoremProofById.has(id)) theoremProofById.set(id, canonicalProof);
     if (lemmaProofTexts.has(id)) lemmaProofTexts.set(id, canonicalProof);
   }
   await writeFile(
     join(io.outDir, "appendix_proofs.tex"),
     envs
-      .filter((e) => e.env === "theoremv")
+      .filter((e) => isMainProofEnv(e.env))
       .map((e) => theoremProofById.get(e.obj_id))
       .filter((p): p is string => !!p)
       .join("\n\n") + "\n",
@@ -431,7 +544,7 @@ export async function stageP2(io: StageIO): Promise<void> {
   // Consolidated proofs appendix: main-result theorems + body-placed lemmas, in paper (env) order.
   const proofById = new Map<string, string>([...lemmaProofTexts, ...theoremProofById]);
   const deferredProofs = envs
-    .filter((e) => e.env === "theoremv" || (e.env === "lemmav" && bodyLemmaIds.has(e.obj_id)))
+    .filter((e) => isMainProofEnv(e.env) || (e.env === "lemmav" && bodyLemmaIds.has(e.obj_id)))
     .map((e) => proofById.get(e.obj_id))
     .filter((p): p is string => !!p);
 
@@ -453,16 +566,31 @@ export async function stageP2(io: StageIO): Promise<void> {
 
   // Front matter is a summary of the finished body — content-key it on the body + its revision brief
   // so a re-drafted/restructured body (or a referee front-matter finding) regenerates the abstract/intro.
-  const frontBrief = frontMatterRevisionBrief(priorReview);
-  const frontKey = frontMatterCacheKey(modelCacheKey, body, frontBrief, brief, allowedFrontMatterBibKeys); // why: front-matter prompt includes the completed body, related-work brief, allowed bibliography keys, revision brief, and authoring model.
-  const legacyFrontKey = legacyFrontMatterCacheKey(modelCacheKey, body, frontBrief, brief);
-  // Existing bundles store the four-input key. Accept it once, then write the
-  // current key below, so adding citation-pool awareness never discards P3's
-  // reviewed front matter on the next P2 run.
-  const frontCacheHit = cacheKeys["_front"] === frontKey || cacheKeys["_front"] === legacyFrontKey;
-  let front = frontCacheHit ? await readFile(join(io.outDir, "front_matter.tex"), "utf8").catch(() => null) : null;
-  if (front !== null && lintNegativeContributionFraming(front).length > 0) front = null;
+  const frontBrief = FIRST_DRAFT_BRIEF;
+  // D-stage contribution narrative for the front matter — motivation/positioning only,
+  // subordinated to the body (the prompt forbids importing any claim the body lacks).
+  const contributionNarrative = [
+    narrative.tldr && `TLDR (pre-formalization research summary):\n${narrative.tldr}`,
+    narrative.projectJustification && `Project justification:\n${narrative.projectJustification}`,
+    narrative.interpretation && `Interpretation:\n${narrative.interpretation}`,
+    narrative.honestScope && `Honest scope (claims the research stage itself disclaims — never contradict this):\n${narrative.honestScope}`,
+  ].filter(Boolean).join("\n\n") || "(none recorded)";
+  const frontKey = frontMatterCacheKey(modelCacheKey, body, frontBrief, `${brief}\n${contributionNarrative}`, allowedFrontMatterBibKeys); // why: front-matter prompt includes the completed body, related-work brief + contribution narrative, allowed bibliography keys, revision brief, and authoring model.
+  const frontCacheHit = cacheKeys["_front"] === frontKey;
+  // Reassemble mode: front_matter.tex is the reviser's authored text — reuse it
+  // regardless of the body-keyed cache (the revised body WILL have changed the key;
+  // re-drafting here would clobber the revision), and bless the new key below.
+  let front = io.reassemble || frontCacheHit ? await readFile(join(io.outDir, "front_matter.tex"), "utf8").catch(() => null) : null;
+  if (!io.reassemble && front !== null && lintNegativeContributionFraming(front).length > 0) front = null;
+  if (front !== null && io.reassemble) {
+    const proseStyle = lintNegativeContributionFraming(front);
+    if (proseStyle.length > 0) {
+      throw new Error(`P2 reassemble: front_matter.tex violates the affirmative prose contract: ${proseStyle.map((p) => p.detail).join("; ")}`);
+    }
+    front = normalizeCrefs(front);
+  }
   if (front === null) {
+    if (io.reassemble) throw new Error("P2 reassemble: front_matter.tex is missing — the revision cycle only reassembles authored sources, it never re-drafts");
     // Intro + abstract: medium effort (summarization of the already-drafted body).
     front = unwrapArtifact(
       (
@@ -470,6 +598,7 @@ export async function stageP2(io: StageIO): Promise<void> {
           prompt: await presentationPrompt("p2_intro_abstract", {
             full_body_tex: body,
             related_work_brief: brief,
+            contribution_narrative: contributionNarrative,
             allowed_bib_keys: allowedFrontMatterBibKeys,
             revision_brief: frontBrief,
           }),
@@ -499,7 +628,10 @@ export async function stageP2(io: StageIO): Promise<void> {
     "\\usepackage{amssymb,mathtools,natbib}",
     "\\input{paper_macros.tex}",
     `\\title{${outline.title}}`,
-    "\\author{CausalSmith\\thanks{Machine-generated and Lean-verified by the CausalSmith research pipeline.}}",
+    // Scope the verification claim accurately: Lean verifies the displayed formal
+    // statements and proofs under the citation interface — not the prose
+    // interpretation, and not results imported from the literature.
+    "\\author{CausalSmith\\thanks{Machine-generated by the CausalSmith research pipeline. The displayed formal statements and proofs are Lean-verified under the paper's theorem-local citation interface; results cited from the literature enter as published inputs.}}",
     "\\date{\\today}",
     "\\begin{document}",
     "\\maketitle",
@@ -524,6 +656,7 @@ export async function stageP2(io: StageIO): Promise<void> {
   const problems = [
     ...lintAnchors(paperSafe, known, new Map(Object.entries(frozen))),
     ...lintReferences(paperSafe),
+    ...lintProofsReachedPaper(paperSafe, proofById.keys()),
     ...refProblems,
   ];
   if (problems.length > 0) {
@@ -534,6 +667,42 @@ export async function stageP2(io: StageIO): Promise<void> {
   await writeFile(join(io.outDir, "paper.tex"), paperSafe + "\n", "utf8");
   await recordP2Assembly(io.outDir);
 }
+
+/**
+ * Every rendered proof must actually reach the assembled paper.
+ *
+ * Placement is spread across several filters (main results into the deferred-proofs appendix,
+ * appendix-placed lemmas inline after their env, body-placed lemmas behind a pointer). A result
+ * whose env kind matched none of them was rendered into `proofs/<id>.tex`, audited, and then
+ * silently dropped: `propositionv` did exactly that, and four `lemmav`/`theoremv` proofs in shipped
+ * bundles are missing for a still-unidentified reason. No lint noticed, because every check ran on
+ * what the paper CONTAINS rather than on what the stage PRODUCED. This compares the two.
+ *
+ * Exported for tests.
+ */
+export function lintProofsReachedPaper(paperTex: string, renderedProofIds: Iterable<string>): LintProblem[] {
+  const problems: LintProblem[] = [];
+  for (const objId of renderedProofIds) {
+    if (!paperTex.includes(`\\begin{proof}[Proof of \\cref{obj:${objId}}]`)) {
+      problems.push({
+        gate: "proof-dropped",
+        objId,
+        detail: `${objId}: a proof was rendered and audited for this result but never placed in paper.tex — the reader sees the statement with no proof`,
+      });
+    }
+  }
+  return problems;
+}
+
+/** Env kinds carrying a MAIN result, i.e. one whose proof is rendered individually, audited at
+ *  high effort, and placed in the deferred-proofs appendix. `propositionv` belongs here: it was
+ *  omitted from every proof path, so a result presented as a Proposition silently shipped with no
+ *  proof rendered, none audited, and none in the paper — even with a verified Lean declaration. */
+export function isMainProofEnv(env: string): boolean {
+  return env === "theoremv" || env === "propositionv";
+}
+
+export { canonicalizeProofTitle };
 
 const LEMMA_BATCH = 5;
 
@@ -567,30 +736,40 @@ async function renderLemmaProofBatches(
   envs: AnchoredEnv[],
   envText: Map<string, string>,
   outline: Outline,
-  priorReview: null,
   helperTexFor: (objId: string) => string,
   proofCacheKeys: Record<string, string>,
   proofRenderKey: (
     objId: string,
     envTex: string,
     lean: { file: string; decl: string },
-    helperTex: string,
+    helperContext: ProofHelperContext[],
     revisionBrief: string,
   ) => Promise<string>,
   citedDependencyPromptFor: (objId: string) => string,
   proofCacheKeyPath: string,
+  helperContextFor: (objId: string) => ProofHelperContext[],
+  informalDerivationFor: (objId: string) => string,
 ): Promise<Map<string, string>> {
   const out = new Map<string, string>();
+  const priorFaithful = await priorFaithfulProofVerdicts(io.outDir);
   const pending: { e: AnchoredEnv; lean: { file: string; decl: string; line: number } }[] = [];
   for (const e of envs.filter((x) => x.env === "lemmav")) {
     const lean = leanPointer(io.bank.graph, e.obj_id);
     if (!lean) continue; // statement-only lemma (no run-local Lean decl) gets no proof
     const proofKey = await proofRenderKey(
-      e.obj_id, envText.get(e.obj_id)!, lean, helperTexFor(e.obj_id), proofRevisionBrief(priorReview, e.obj_id),
+      e.obj_id, envText.get(e.obj_id)!, lean, helperContextFor(e.obj_id), FIRST_DRAFT_BRIEF,
     );
-    const cached = proofCacheKeys[e.obj_id] === proofKey ? await readFile(join(io.outDir, "proofs", `${e.obj_id}.tex`), "utf8").catch(() => null) : null;
-    if (cached !== null) {
-      out.set(e.obj_id, cached.trim());
+    const proofPath = join(io.outDir, "proofs", `${e.obj_id}.tex`);
+    const existing = await existingProofForP2(proofPath, proofCacheKeys[e.obj_id], proofKey,
+      io.ctx.reuseExistingProofsForAudit === true || io.reassemble === true || priorFaithful.has(e.obj_id));
+    if (existing === null && io.reassemble) {
+      throw new Error(`P2 reassemble: proofs/${e.obj_id}.tex is missing — the revision cycle only reassembles authored sources, it never re-renders`);
+    }
+    if (existing !== null) {
+      out.set(e.obj_id, canonicalizeProofTitle(e.obj_id, existing.text.trim()));
+      if (!existing.cacheHit) {
+        io.state.notes.push(`P2: reused existing proof candidate ${e.obj_id} for mandatory current audit (render cache remains missed)`);
+      }
       continue;
     }
     pending.push({ e, lean });
@@ -602,14 +781,14 @@ async function renderLemmaProofBatches(
       .map(({ e, lean }, j) => {
         const leanPath = join(io.ctx.repoRoot, io.bank.leanSubdir, lean.file);
         const cited = citedDependencyPromptFor(e.obj_id);
-        return `### Lemma ${j + 1} — obj_id ${e.obj_id}\n${envText.get(e.obj_id)!}\nLean proof: file ${leanPath}, declaration ${lean.decl}. Read the file with your tools; do not guess its contents.\nPublished cited dependencies:\n${cited}\nRevision brief for this lemma:\n${proofRevisionBrief(priorReview, e.obj_id)}`;
+        return `### Lemma ${j + 1} — obj_id ${e.obj_id}\n${envText.get(e.obj_id)!}\nLean proof: file ${leanPath}, declaration ${lean.decl}. Read the file with your tools; do not guess its contents.\nPublished cited dependencies:\n${cited}\nInformal derivation (UNTRUSTED exposition aid — see rules):\n${informalDerivationFor(e.obj_id)}\nRevision brief for this lemma:\n${FIRST_DRAFT_BRIEF}`;
       })
       .join("\n\n");
     const { stdout } = await io.ctx.deps.runCodex({
       prompt: await presentationPrompt("p2_lemma_proofs_batch", {
         lemmas_block: block,
         citable_envs: citable,
-        notation_table: relevantNotation(outline.notation, `${block}\n${citable}`),
+        notation_table: notationForArtifact(outline.notation, `${block}\n${citable}`),
         revision_brief: "(each lemma carries its own object-scoped brief above)",
       }),
       cwd: io.ctx.repoRoot,
@@ -618,7 +797,7 @@ async function renderLemmaProofBatches(
     });
     const parsed = parseLemmaProofBatch(stdout, batch.map(({ e }) => e.obj_id));
     for (const [id, rawProof] of parsed) {
-      const proof = normalizeCrefs(rawProof);
+      const proof = canonicalizeProofTitle(id, normalizeCrefs(rawProof));
       if (/^\s*UNCLEAR:/.test(proof)) {
         throw new Error(`P2 lemma proof for ${id} reported UNCLEAR — see codex output`);
       }
@@ -627,8 +806,8 @@ async function renderLemmaProofBatches(
         id,
         envText.get(id)!,
         batch.find(({ e }) => e.obj_id === id)!.lean,
-        helperTexFor(id),
-        proofRevisionBrief(priorReview, id),
+        helperContextFor(id),
+        FIRST_DRAFT_BRIEF,
       );
       out.set(id, proof);
     }

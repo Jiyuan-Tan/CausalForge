@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  restoreAuditedProofBlocks,
-  stripLatexCommentLines,
-} from "../src/presentation/stages/p3_gates.js";
+import { stripLatexCommentLines } from "../src/presentation/stages/p3_gates.js";
+import { restoreAuditedProofBlocks } from "../src/presentation/prose_revision.js";
 
 describe("P3 audited-proof restoration", () => {
   const audited = [

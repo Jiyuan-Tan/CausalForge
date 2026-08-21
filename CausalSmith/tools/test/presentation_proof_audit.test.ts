@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runProofAudit } from "../src/presentation/audit.js";
+import { proofAuditCacheKey, proofAuditSemanticNotation, runProofAudit } from "../src/presentation/audit.js";
 import type { StageIO } from "../src/presentation/pipeline.js";
 
 /**
@@ -14,8 +14,23 @@ import type { StageIO } from "../src/presentation/pipeline.js";
  *   • thm_bad — unfaithful even after refine            → best attempt persisted, one problem
  */
 
+import { canonicalizeProofTitle } from "../src/presentation/stages/p2_draft.js";
+
+describe("canonicalizeProofTitle", () => {
+  it("rewrites free-form, prefixless, and missing titles to the canonical attributable form", () => {
+    const canon = "\\begin{proof}[Proof of \\cref{obj:lem:x}]body\\end{proof}";
+    expect(canonicalizeProofTitle("lem:x", "\\begin{proof}body\\end{proof}")).toBe(canon);
+    expect(canonicalizeProofTitle("lem:x", "\\begin{proof}[Free-form title]body\\end{proof}")).toBe(canon);
+    expect(canonicalizeProofTitle("lem:x", "\\begin{proof}[Proof of \\cref{lem:x}]body\\end{proof}")).toBe(canon);
+    expect(canonicalizeProofTitle("lem:x", canon)).toBe(canon); // idempotent
+  });
+});
+
 function proofBody(id: string, refined = false): string {
-  return `\\begin{proof}${refined ? "REFINED" : "draft"} proof of ${id}\\end{proof}`;
+  // Refined proofs are persisted with the CANONICAL title (the refiner may rewrite
+  // or drop it, making the proof unattributable and invisible to the placement lint).
+  const title = refined ? `[Proof of \\cref{obj:${id}}]` : "";
+  return `\\begin{proof}${title}${refined ? "REFINED" : "draft"} proof of ${id}\\end{proof}`;
 }
 
 // Stub runCodex: routes by the prompt's output-format marker (refine prompt asks for "refined_proof";
@@ -84,8 +99,9 @@ describe("runProofAudit (P2 proof equivalence)", () => {
   it("leaves a faithful proof untouched and rewrites a refined one on disk", async () => {
     const { refined } = await runProofAudit(makeIO(), targets);
 
-    // thm_ok was faithful first pass → unchanged.
-    expect(refined.get("thm_ok")).toBe(proofBody("thm_ok"));
+    // thm_ok was faithful first pass → disk untouched; the returned map carries the
+    // canonically-titled view (what P2 assembly uses).
+    expect(refined.get("thm_ok")).toBe(canonicalizeProofTitle("thm_ok", proofBody("thm_ok")));
     expect(await readFile(join(dir, "proofs", "thm_ok.tex"), "utf8")).toBe(proofBody("thm_ok") + "\n");
 
     // thm_fix was refined → both the returned body and the persisted file carry the REFINED proof.
@@ -105,8 +121,55 @@ describe("runProofAudit (P2 proof equivalence)", () => {
     await runProofAudit(makeIO(), targets);
     const cache = JSON.parse(await readFile(join(dir, "proof_audit_cache.json"), "utf8"));
     expect(cache.thm_ok.verdict).toBe("faithful");
-    const reviews = (await readFile(join(dir, "reviews.jsonl"), "utf8")).trim().split("\n").map((l) => JSON.parse(l));
+    const reviews = (await readFile(join(dir, "logs", "reviews.jsonl"), "utf8")).trim().split("\n").map((l) => JSON.parse(l));
     const refineLines = reviews.filter((r) => r.kind === "proof-refine");
     expect(refineLines.map((r) => r.obj_id).sort()).toEqual(["thm_bad", "thm_fix", "thm_ok"]);
   });
+});
+
+describe("proof-audit semantic notation fingerprint", () => {
+  const row = (label: string, symbol: string, meaning: string, home: string) =>
+    `| ${label} | ${symbol} | ${meaning} | ${home} |`;
+  const table = (rows: string[]) => [
+    "metadata: deliberately excluded from proof semantics",
+    "| note symbol | paper notation | defining property in one phrase | home |",
+    "|---|---|---|---|",
+    ...rows,
+  ].join("\n");
+  const key = (notationTable: string) => proofAuditCacheKey({
+    proofTex: "proof", leanPointer: "pointer", leanProofCacheSource: "source", notationTable, auditPromptFp: "fp", targetStatement: "stmt",
+  });
+
+  it("is invariant to notation row order, home ownership, and non-table placement metadata", () => {
+    const a = table([
+      row("radius", "\\(w=A\\Delta^{1/q}\\)", "hypercube radius", "lem:old"),
+      row("mass", "\\(m_n\\)", "common cell mass", "lem:packing"),
+    ]);
+    const b = table([
+      row("mass", "\\(m_n\\)", "common cell mass", "thm:new-home"),
+      row("radius", "\\(w=A\\Delta^{1/q}\\)", "hypercube radius", "thm:new-home"),
+    ]).replace("metadata: deliberately excluded", "env_overrides: changed placement");
+    expect(proofAuditSemanticNotation(a)).toBe(proofAuditSemanticNotation(b));
+    expect(key(a)).toBe(key(b));
+  });
+
+  it("changes when exact symbol spelling or parameterization changes", () => {
+    const base = table([row("radius", "\\(w=A\\Delta^{1/q}\\)", "hypercube radius", "lem:x")]);
+    const spelling = table([row("radius", "\\(w_n=A\\Delta^{1/q}\\)", "hypercube radius", "lem:x")]);
+    const parameters = table([row("radius", "\\(w=A\\Delta^{1/p}\\)", "hypercube radius", "lem:x")]);
+    expect(key(spelling)).not.toBe(key(base));
+    expect(key(parameters)).not.toBe(key(base));
+  });
+
+  it("changes when a symbol's reader-facing meaning changes", () => {
+    const base = table([row("radius", "\\(w\\)", "hypercube radius", "lem:x")]);
+    const changed = table([row("radius", "\\(w\\)", "cell probability", "lem:x")]);
+    expect(key(changed)).not.toBe(key(base));
+    expect(key(table([]))).not.toBe(key(base));
+    expect(key(table([
+      row("radius", "\\(w\\)", "hypercube radius", "lem:x"),
+      row("mass", "\\(m\\)", "cell probability", "lem:x"),
+    ]))).not.toBe(key(base));
+  });
+
 });

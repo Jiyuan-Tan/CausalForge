@@ -1,0 +1,292 @@
+\section{Explicit mixture reductions and local benchmarks}
+
+The preceding comparison keeps the cumulant separation level fixed. This section records two constructive weak-non-Gaussian benchmarks that make the transform-zero mechanism explicit in one dimension. The first benchmark treats a symmetric two-component Gaussian mixture, where the relevant zero is known and the contour search collapses to a sine moment. The second follows a Gaussian--Rademacher path indexed by a mixture amplitude, so the denominator scale and the fourth cumulant can be read from the same parameter. These examples connect the contour construction to non-Gaussian identification ideas in independent-component and structural-shock settings \citep{Comon1994,HyvarinenOja1997,HyvarinenKarhunenOja2001,LanneMeitzSaikkonen2017,LeeMesters2024,HoeschLeeMesters2024,ReizingerEtAl2025}.
+
+The first construction is the clipped sine-ratio estimator \(\widehat\theta_{\sin,n}\). It uses the known imaginary zero of the symmetric mixture transform and estimates the corresponding ratio directly from the empirical moments of \(Y\sin(\pi Z_n/2)\) and \(Z_n\sin(\pi Z_n/2)\).
+
+\begin{definitionv}{def:sine-estimator}[Sine-ratio estimator \(\widehat\theta_{\sin,n}\)]
+Write \(\Pi_{[-C_{\theta},C_{\theta}]}(u)=\min\{\max\{u,-C_{\theta}\},C_{\theta}\}\) for the projection of a real number onto \([-C_{\theta},C_{\theta}]\).  For \(n\ge 1\) observed triples \(O_i=(X_i,T_i,Y_i)\), let \(\mathbb P_n f=n^{-1}\sum_{i=1}^n f(O_i)\) and let \(Z_n=T-\bar g_n(X)\), where \(\bar g_n\) is the supplied treatment code clipped to \([-C_g,C_g]\). The clipped sine-ratio estimator is
+\[
+\widehat\theta_{\sin,n}
+=
+\begin{cases}
+\displaystyle
+\Pi_{[-C_{\theta},C_{\theta}]}
+\left\{
+\frac{\mathbb P_n[Y\sin(\pi Z_n/2)]}
+{\mathbb P_n[Z_n\sin(\pi Z_n/2)]}
+\right\},
+&\displaystyle \mathbb P_n[Z_n\sin(\pi Z_n/2)]\ge e^{-\pi^2/8}/4,\\[3mm]
+0,
+&\displaystyle \mathbb P_n[Z_n\sin(\pi Z_n/2)]< e^{-\pi^2/8}/4.
+\end{cases}
+\]
+\end{definitionv}
+
+The threshold in \cref{obj:def:sine-estimator} is tied to the population denominator scale that appears in the next proposition. In the symmetric mixture experiment, the treatment innovation has a known transform zero at \(i\pi/2\), and \(L^1(P_X)\) control of the supplied treatment code keeps the sine denominator bounded away from zero.
+
+\begin{propositionv}{prop:symmetric-mixture-reduction}[Symmetric mixture reduction]
+For any real constants \(C_{\theta},C_g,C_q,\psi_{\xi}\), there is a constant \(C>0\), depending only on these four constants, such that the following holds.  Let \(p\) be a parameter record whose constants \(C_{\theta},C_g,C_q,\psi_{\xi}\) are the ones just fixed, write \(n\) for its sample size, and let \(P\) be a law in the corresponding model.  Assume the usual measurability and integrability conditions, and suppose that
+\begin{itemize}
+\item \textbf{(Sampling.)} \(O_1,\ldots,O_n\) are drawn according to the i.i.d. product law in \cref{obj:ass:iid-sampling}.
+\item \textbf{(Symmetric mixture.)} The treatment innovation \(\eta=T-g_0(X)\) has law
+\[
+\tfrac12 N(-1,1)+\tfrac12 N(1,1).
+\]
+\item \textbf{(Independence and ranges.)} The treatment innovation is independent of \(X\) as in \cref{obj:ass:independent-treatment-noise}, the outcome innovation satisfies \cref{obj:ass:outcome-mean-independence}, and the range and tail conditions in \cref{obj:ass:theta-range,obj:ass:g-range,obj:ass:q-range,obj:ass:xi-subgaussian} hold.
+\item \textbf{(Treatment code.)} The supplied treatment code obeys
+\[
+\|\bar g_n-g_0\|_{L^1(P_X)}\le \varepsilon_{1,n},
+\qquad
+\varepsilon_{1,n}\le \frac1\pi .
+\]
+\end{itemize}
+Then the fourth cumulant of \(\eta\) is
+\[
+\kappa_4(\eta)=-2,
+\]
+the treatment-innovation moment-generating function \(M(z)=E_P[e^{z\eta}]\) satisfies
+\[
+M(i\pi/2)=0,
+\]
+and, writing \(Z_n=T-\bar g_n(X)\) and \(D_n=g_0(X)-\bar g_n(X)\),
+\[
+E_P\!\left[
+Z_n\sin\!\left(\frac{\pi Z_n}{2}\right)
+\right]
+=
+e^{-\pi^2/8}
+E_P\!\left[
+\cos\!\left(\frac{\pi D_n}{2}\right)
+\right],
+\]
+with
+\[
+\frac{e^{-\pi^2/8}}{2}
+\le
+E_P\!\left[
+Z_n\sin\!\left(\frac{\pi Z_n}{2}\right)
+\right].
+\]
+Moreover, for the sine estimator \(\widehat\theta_{\sin,n}\) in \cref{obj:def:sine-estimator},
+\[
+E_P\!\left[
+\bigl(\widehat\theta_{\sin,n}-\theta_0(P)\bigr)^2
+\right]
+\le
+\frac{C}{n}.
+\]
+\end{propositionv}
+
+\Cref{obj:prop:symmetric-mixture-reduction} gives a fully explicit root-\(n\) benchmark for a symmetric non-Gaussian treatment innovation. The mixture has fourth cumulant \(-2\), its transform vanishes at \(i\pi/2\), and the sine denominator equals a positive contamination factor times \(e^{-\pi^2/8}\). The resulting empirical ratio attains \(C/n\) mean-squared error under the stated range, tail, independence, and \(L^1(P_X)\) treatment-code conditions.
+
+The next elementary inequality is the algebraic device behind the sine-risk calculations. It separates numerator fluctuation from denominator fluctuation after clipping, using only a lower bound on the population denominator mean.
+
+\begin{lemmav}{lem:clipped-ratio-risk-decomposition}[Clipped ratio risk decomposition]
+Let \(\Omega\) be any observation space. For a sample \(O_1,\ldots,O_n\in\Omega\), write the empirical average as \(\mathbb P_n f=n^{-1}\sum_{i=1}^n f(O_i)\), as in \cref{obj:def:model-parameters}. Let \(W,R:\Omega\to\mathbb R\), and let \(\theta\), \(C_{\theta}\), \(A\), and \(\mu_W\) be real numbers. Suppose that
+\begin{itemize}
+\item \textbf{(Sample size.)} \(n\ge 1\).
+\item \textbf{(Clipping range.)} The target value \(\theta\) lies inside the clipping radius \(C_{\theta}\): \(|\theta|\le C_{\theta}\).
+\item \textbf{(Denominator scale.)} \(A>0\).
+\item \textbf{(Population denominator mean.)} \(\mu_W\ge A/2\).
+\end{itemize}
+Define the clipped ratio statistic at threshold \(A/4\) by
+\[
+\widehat\theta
+=
+\begin{cases}
+\min\!\left\{\max\!\left\{\dfrac{\theta\,\mathbb P_n W+\mathbb P_n R}{\mathbb P_n W},-C_{\theta}\right\},C_{\theta}\right\},
+& A/4\le \mathbb P_n W,\\[1.1em]
+0,
+& A/4>\mathbb P_n W.
+\end{cases}
+\]
+Then, for every sample \(O_1,\ldots,O_n\in\Omega\),
+\[
+(\widehat\theta-\theta)^2
+\le
+\frac{16}{A^2}
+\left\{
+(\mathbb P_n R)^2
++
+C_{\theta}^2\bigl(\mathbb P_n(W-\mu_W)\bigr)^2
+\right\}.
+\]
+\end{lemmav}
+
+\Cref{obj:lem:clipped-ratio-risk-decomposition} is deterministic. In applications, \(W\) is the sine-weighted residualized treatment, \(R\) is the centered outcome-noise contribution to the sine numerator, and \(A\) is the population denominator scale. Once the sine moment gives \(\mu_W\ge A/2\), the ratio error is controlled by two empirical averages.
+
+The Gaussian--Rademacher path provides a local family approaching Gaussian treatment noise through an explicit fourth-cumulant parameter. Let \(\eta_a\) denote the centered Gaussian--Rademacher treatment innovation in the next statement. Its first positive transform zero, denominator scale, and cumulant magnitude are all explicit functions of \(a\).
+
+\begin{lemmav}{lem:gaussian-rademacher-l1-benchmark}[Gaussian--Rademacher sine benchmark]
+Fix real constants \(C_{\theta},C_g,C_q,\psi_{\xi}\).  There is a constant \(C>0\), depending only on these four constants, such that the following statement holds.  Let \(p\) be an admissible parameter record whose constants \(C_{\theta},C_g,C_q,\psi_{\xi}\) are the ones just fixed and whose cumulant order is \(k=4\), let \(a\in(0,1]\), and let \(P\) be a law in the model \(m\).  Assume:
+\begin{itemize}
+\item \textbf{(Gaussian--Rademacher path.)} The treatment innovation \(\eta=T-g_0(X)\) has the law of
+\[
+\eta_a=\sqrt{1-a^2}\,G_{\circ}+aS,
+\]
+where \(G_{\circ}\sim N(0,1)\), \(S\) is symmetric Rademacher, and \(G_{\circ}\) and \(S\) are independent.
+\item \textbf{(Sampling and model restrictions.)} The law satisfies \cref{obj:ass:iid-sampling,obj:ass:independent-treatment-noise,obj:ass:outcome-mean-independence,obj:ass:theta-range,obj:ass:g-range,obj:ass:q-range,obj:ass:xi-subgaussian}.
+\item \textbf{(Current treatment-code radius.)} For the clipped supplied treatment code \(\bar g_n\),
+\[
+\int |\,\bar g_n(x)-g_0(x)\,|\,dP_X(x)\le \varepsilon_{1,n},
+\]
+under the usual integrability condition for this \(L^1(P_X)\) quantity.
+\end{itemize}
+Define
+\[
+t_a=\frac{\pi}{2a},\qquad
+A_a=a\exp\!\left\{-\frac{(1-a^2)\pi^2}{8a^2}\right\},\qquad
+\Delta_a=2a^4.
+\]
+Then the treatment-innovation moment-generating function satisfies
+\[
+M_a(z)=\exp\!\left(\frac{1-a^2}{2}z^2\right)\cosh(az),
+\]
+the fourth cumulant satisfies \(\kappa_4(\eta_a)=-2a^4\), and \(t_a>0\) is the first positive zero of the characteristic transform: \(M_a(it_a)=0\) and \(M_a(iu)\ne0\) for every \(u\in(0,t_a)\).  Moreover, for every \(d\in\mathbb R\),
+\[
+E_P[\sin\{t_a(\eta+d)\}]=0.
+\]
+
+Let \(Z_n=T-\bar g_n(X)\) and \(D_n=g_0(X)-\bar g_n(X)\).  If \(t_a\varepsilon_{1,n}\le 1/2\), then
+\[
+E_P[Z_n\sin(t_aZ_n)]
+=A_aE_P[\cos(t_aD_n)]
+\]
+and
+\[
+E_P[Z_n\sin(t_aZ_n)]\ge A_a/2.
+\]
+With \(\mathbb P_n\) denoting empirical averaging over \(O_1,\ldots,O_n\), define
+\[
+ \widehat\theta_{a,n}
+ =
+ \begin{cases}
+ \displaystyle
+ \Pi_{[-C_{\theta},C_{\theta}]}
+ \frac{\mathbb P_n[Y\sin(t_aZ_n)]}
+      {\mathbb P_n[Z_n\sin(t_aZ_n)]},
+ &\displaystyle \mathbb P_n[Z_n\sin(t_aZ_n)]\ge A_a/4,\\[3mm]
+ 0,&\text{otherwise},
+ \end{cases}
+\]
+where \(\Pi_{[-C_{\theta},C_{\theta}]}\) clips to \([-C_{\theta},C_{\theta}]\).  Its mean squared error obeys
+\[
+ E_P[(\widehat\theta_{a,n}-\theta_0)^2]
+ \le
+ C\min\!\left\{1,\frac1n a^{-2}
+ \exp\!\left(\frac{(1-a^2)\pi^2}{4a^2}\right)\right\}.
+\]
+The same smallness condition also gives
+\[
+\varepsilon_{1,n}\le \frac{\Delta_a^{1/4}}{2^{1/4}\pi}
+\]
+and the equivalent cumulant-parameterized bound
+\[
+ E_P[(\widehat\theta_{a,n}-\theta_0)^2]
+ \le
+ C\min\!\left\{1,\frac1n\Delta_a^{-1/2}
+ \exp\!\left(\frac{\pi^2\sqrt2}{4}\Delta_a^{-1/2}\right)\right\}.
+\]
+\end{lemmav}
+
+\Cref{obj:lem:gaussian-rademacher-l1-benchmark} shows how the explicit sine reduction behaves as the treatment-noise law moves toward Gaussianity. The first zero is \(t_a=\pi/(2a)\), while the denominator scale \(A_a\) decays exponentially as \(a\) decreases. Expressing the same bound through \(\Delta_a=2a^4\) makes the dependence on fourth-cumulant magnitude explicit. The condition \(t_a\varepsilon_{1,n}\le1/2\) is exactly the treatment-code accuracy gate used by this pathwise calculation.
+
+The section closes with a local benchmark statement. It combines the Gaussian--Rademacher path just described with a localized version of the published ACE oracle envelope from \citet{JinMackeySyrgkanis2025}. The sequence \((\delta_n)_{n\in\mathbb N}\) supplies the shrinking cumulant threshold, and the ACE clause evaluates the published bound after replacing the fixed separation level by the local value \(\Delta=\delta_n\).
+
+\begin{theoremv}{thm:local-to-gaussian-partial-benchmarks}[Local Gaussian Benchmarks]
+Let \((\delta_n)_{n\in\mathbb N}\) be a real sequence with \(\delta_n>0\) for every \(n\), nonincreasing in \(n\), and \(\delta_n\to0\).  Fix \(C_{\theta},C_g,C_q,\psi_{\xi}\in\mathbb R\).  The following two assertions hold.
+
+\begin{itemize}
+\item \textbf{(Gaussian--Rademacher path.)} There is a constant \(C>0\), depending only on \(C_{\theta},C_g,C_q,\psi_{\xi}\), such that the following holds.  Let \(p\) be any parameter record whose constants \(C_{\theta},C_g,C_q,\psi_{\xi}\) are the ones just fixed and whose orders are \(k=4\) and \(r=3\).  For any \(a\in(0,1]\) and any law \(P\) in a model \(m\), assume that the treatment noise satisfies
+\[
+\eta\sim \sqrt{1-a^2}\,G_{\circ}+aS,
+\]
+where \(G_{\circ}\sim N(0,1)\), \(S\) is symmetric Rademacher, and \(G_{\circ}\perp S\).  Assume also \cref{obj:ass:iid-sampling,obj:ass:independent-treatment-noise,obj:ass:outcome-mean-independence,obj:ass:theta-range,obj:ass:g-range,obj:ass:q-range,obj:ass:xi-subgaussian}.  At the sample size \(n\) of \(p\), assume the supplied clipped treatment code \(\bar g_n\) satisfies
+\[
+x\mapsto |\bar g_n(x)-g_0(x)|\in L^1(P_X),
+\qquad
+\int |\bar g_n(x)-g_0(x)|\,dP_X(x)\le \varepsilon_{1,n}.
+\]
+Then the conclusion of \cref{obj:lem:gaussian-rademacher-l1-benchmark} — the explicit mean-squared-error bound along the Gaussian--Rademacher path — holds with constant \(C\) for \(p,m,a\).
+
+\item \textbf{(Local ACE oracle envelope.)} For every published ACE handle, every \(\gamma\in\mathbb R\), and every \(C_{\gamma}\in\mathbb R\), if the handle satisfies the conclusion of Theorem~5.4 of \citet{JinMackeySyrgkanis2025} at \((\gamma,C_{\gamma})\), then \(C_{\gamma}>0\) and the following local ACE statement holds.  For every parameter record \(p\) whose probability level is \(\gamma\), writing \(n\) for its sample size, if \(\varepsilon_{1,n}>0\) and \(\varepsilon_{2,n}>0\), then for every deterministic treatment code \(\widehat g\), deterministic outcome code \(\widehat q\), and every model, whenever
+\[
+\bar g_n=\Pi_{[-C_g,C_g]}\widehat g_n,
+\qquad
+\bar q_n=\Pi_{[-C_q,C_q]}\widehat q_n,
+\]
+and, writing \(r\) and \(k\) for the orders of \(p\) and \(\Delta=\delta_n\), the local ACE class conditions
+\[
+1\le n,
+\qquad
+\left|\operatorname{Re}\left(\left.\frac{d^k}{dz^k}\log M(z)\right|_{z=0}\right)\right|\ge \Delta,
+\]
+hold together with \cref{obj:ass:independent-treatment-noise,obj:ass:outcome-mean-independence,obj:ass:theta-range,obj:ass:g-range,obj:ass:q-range,obj:ass:xi-subgaussian}, the treatment-noise exponential envelope
+\[
+o\mapsto \exp\{\eta(o)^2/\psi_{\eta}^2\}\in L^1(P),
+\qquad
+\int \exp\{\eta(o)^2/\psi_{\eta}^2\}\,dP(o)\le 2,
+\]
+and the nuisance-radius bounds
+\[
+\|\bar g_n-g_0\|_{L^r(P_X)}\le \varepsilon_{1,n},
+\qquad
+\|\bar q_n-q_0\|_{L^r(P_X)}\le \varepsilon_{2,n},
+\]
+and whenever the local JMS eligibility quantities
+\[
+a_{1,n}=2\log\!\left(6(C_g+\psi_{\eta})\varepsilon_{1,n}^{-1}\right),
+\qquad
+b_{1,n}=\log(\gamma n/9),
+\]
+\[
+a_2=4(C_g+\psi_{\eta}),
+\qquad
+b_{2,n}(\Delta)=
+\frac{200\min\{1,C_{\theta}\}\Delta}{\max\{\varepsilon_{1,n},\varepsilon_{2,n},(\gamma n)^{-1/2}(\psi_{\xi}+C_{\theta}\psi_{\eta})\}}
+\]
+satisfy
+\[
+a_{1,n}\ne0,
+\qquad
+0<\frac{b_{1,n}}{a_{1,n}},
+\qquad
+0<a_2b_{2,n}(\Delta),
+\qquad
+a_2\log\{a_2b_{2,n}(\Delta)\}\ne0,
+\]
+and
+\[
+r\le
+\min\left\{
+\frac{b_{1,n}}{a_{1,n}}-a_{1,n}^{-1}\log\!\left(\frac{b_{1,n}}{a_{1,n}}\right),
+\frac{b_{2,n}(\Delta)}{a_2\log\{a_2b_{2,n}(\Delta)\}}
+\right\},
+\]
+the published order-\(r\) ACE estimator obeys
+\[
+Q_{P,1-\gamma}
+\!\left(\left|\widehat\theta_{\mathrm{ACE},r,n}-\theta_0(P)\right|\right)
+\le
+B_{\mathrm{ACE},n,\gamma}(\delta_n;C_{\gamma}),
+\]
+where
+\[
+B_{\mathrm{ACE},n,\gamma}(\Delta;C_{\gamma})
+=
+C_{\gamma}\,r!\,16^r\,\Delta^{-1}
+\left(
+\varepsilon_{1,n}^r\varepsilon_{2,n}
++C_{\theta}\varepsilon_{1,n}^{r+1}
++64(C_g+\psi_{\eta})^r
+\bigl(r^2(C_g+\psi_{\eta})+\psi_{\xi}+C_{\theta}\psi_{\eta}\bigr)
+(\gamma n)^{-1/2}
+\right).
+\]
+\end{itemize}
+\end{theoremv}
+
+\Cref{obj:thm:local-to-gaussian-partial-benchmarks} gives two procedure-specific local upper benchmarks. The Gaussian--Rademacher clause reuses \cref{obj:lem:gaussian-rademacher-l1-benchmark} for the \(k=4,r=3\) path under the stated \(L^1(P_X)\) treatment-code condition. The ACE clause specializes the published order-\(r\) generalized-quantile guarantee of \citet{JinMackeySyrgkanis2025} to a local cumulant threshold \(\Delta=\delta_n\), with the displayed eligibility quantities and the resulting envelope \(B_{\mathrm{ACE},n,\gamma}(\delta_n;C_{\gamma})\). The last algebraic clause records how an oracle upper bound that is valid under two sets of hypotheses can be summarized by the smaller of the two displayed upper inputs.
+
+These local statements complement the fixed-separation results by making the dependence on the non-Gaussian signal explicit in tractable submodels. For the symmetric mixture, the sine denominator is bounded by a fixed positive scale and the risk is \(C/n\). Along the Gaussian--Rademacher path, the same sine construction has a denominator scale \(A_a\) and a cumulant magnitude \(\Delta_a\), yielding the explicit exponential dependence displayed in \cref{obj:lem:gaussian-rademacher-l1-benchmark}. The localized ACE envelope gives the corresponding published finite-order benchmark under its stated eligibility and nuisance-radius conditions.

@@ -58,11 +58,45 @@ describe("parseOutline env_overrides", () => {
     const orig = console.error;
     console.error = (m?: unknown) => { errs.push(String(m)); };
     try {
-      const o = parseOutline(withOv("env_overrides: a1=definitionv, prop:x=propositionv, oeq:y=remarkv, b2=bogusv"));
-      expect(o.envOverrides).toEqual({ a1: "definitionv", "prop:x": "propositionv", "oeq:y": "remarkv" });
+      const o = parseOutline(withOv("env_overrides: a1=definitionv, prop:x=propositionv, oeq:y=remarkv, def:est=algorithmv, b2=bogusv"));
+      expect(o.envOverrides).toEqual({ a1: "definitionv", "prop:x": "propositionv", "oeq:y": "remarkv", "def:est": "algorithmv" });
       expect(errs.some((m) => /b2=bogusv ignored/.test(m))).toBe(true); // not silently dropped
     } finally {
       console.error = orig;
     }
+  });
+});
+
+describe("appendix heading decoration", () => {
+  it("strips a doubled letter, an Appendix word, and both together", async () => {
+    const { stripAppendixHeadingDecoration: f } = await import("../src/presentation/stages/p2_draft.js");
+    // The stripped enumerator carried the capital, so the title is re-capitalized.
+    expect(f("\\section{B: empirical process lemmas")).toBe("\\section{Empirical process lemmas");
+    expect(f("\\section{A. proofs")).toBe("\\section{Proofs");
+    expect(f("\\section{Appendix: verification note")).toBe("\\section{Verification note");
+    expect(f("\\section{Appendix B: proofs")).toBe("\\section{Proofs");
+    // An untouched title keeps its case, and a title opening with math/macro is left alone.
+    expect(f("\\section{proofs of the main results")).toBe("\\section{proofs of the main results");
+    expect(f("\\section{B: \\(\\theta\\) bounds")).toBe("\\section{\\(\\theta\\) bounds");
+    expect(f("\\section{A note on fixed codes")).toBe("\\section{A note on fixed codes");
+  });
+});
+
+describe("main-body placement of statement dependencies", () => {
+  it("flags a definition stranded in an appendix and accepts proof-only appendix lemmas", async () => {
+    const { lintMainBodyDependencies, parseOutline } = await import("../src/presentation/stage_util.js");
+    const md = [
+      "# Title", "T", "# Notation", "", "# Sections",
+      "## section: Main results", "objs: thm:main",
+      "## section: Appendix A: proofs", "objs: def:estimator, lem:helper",
+    ].join("\n");
+    const outline = parseOutline(md);
+    const kinds: Record<string, string> = { "thm:main": "theorem", "def:estimator": "definition", "lem:helper": "lemma" };
+    const problems = lintMainBodyDependencies(outline, (id) => (id === "thm:main" ? ["def:estimator"] : []), (id) => kinds[id]);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain("def:estimator");
+    expect(problems[0]).toContain("Main results");
+    // A proof-only dependency (no statement-uses edge) is not flagged.
+    expect(lintMainBodyDependencies(outline, () => [], (id) => kinds[id])).toEqual([]);
   });
 });

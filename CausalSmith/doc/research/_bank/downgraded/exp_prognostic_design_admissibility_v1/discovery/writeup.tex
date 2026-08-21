@@ -1,0 +1,1582 @@
+\documentclass{article}
+\usepackage[margin=0.8in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{mathrsfs,bm,bbm}
+\usepackage{graphicx,booktabs,array,multirow,tabularx,longtable}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{algorithm,algpseudocode}
+\usepackage{subcaption,tikz}
+\usepackage{siunitx,cancel,accents}
+\usepackage{microtype}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{cleveref}
+\setlength{\emergencystretch}{2em}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{openendedquestion}{Open-ended Question}
+\newtheorem{conjecture}{Conjecture}
+\newcommand{\coreref}[1]{\ref{#1}}
+
+\begin{document}
+
+\sloppy
+
+\section*{exp\_\allowbreak{}prognostic\_\allowbreak{}design\_\allowbreak{}admissibility}
+
+\noindent\textit{Specialization:} v1\par
+
+\paragraph{TL;DR.} An external prognostic score can improve design only when the fixed potential-outcome mean vector is sufficiently aligned with the centered score subspace; the realized alignment \(\rho_{\mu}(S)=\|P_S\mu\|_2/\|\mu\|_2\) is not observable at the design stage, and \(\rho\) is a free oracle lower-bound index rather than a score-matrix functional. For an arbitrary score subspace, the paper gives an exact finite, generally exponential saddle program for the minimax SATE risk over every balanced mean-zero assignment law, with an attaining sign-pair mixture and a matching full-class converse. Its main closed-form result is the leverage-only frontier \(\gamma(S)=U(\operatorname{diag}(P_S))\), so \(S\) is admissible exactly when \(\gamma(S)<1\), and then \(\rho^*(S)=\sqrt{\gamma(S)}\); this threshold is computed from the score matrix by a one-dimensional feasibility search. Exact closed forms are also obtained for unequal two-block spaces and homogeneous even-block spaces, with matched pairs as the block-size-two specialization. For a single design chosen without knowing \(\rho\), the exact finite regret is given by a generally exponential robust program and obeys the universal normalized bracket \[\frac{p}{n-1}\{c_n-\kappa(S)\}\leq\frac{n}{4M}R^*(n,S)\leq c_n-\kappa(S).\] Complete randomization witnesses the upper bound, and homogeneous even-block spaces attain the lower bound.
+
+\section{Project justification}
+
+\paragraph{Gap.} Existing work supplies design-based covariance identities, no-free-lunch benchmarks, restricted rerandomization criteria, analysis-stage adjustment using prognostic scores, and a broader mixed-strategy largest-eigenvalue framework for specified outcome classes. It does not derive the exact leverage-only identity \(\gamma(S)=U(\operatorname{diag}(P_S))\) for the nonellipsoidal lower score-energy shell inside the fixed-count balanced covariance hull, nor the resulting design-stage quality threshold. The generic arbitrary-subspace oracle and regret problems also lack closed forms, so the appropriate deliverable there is an exact finite, generally exponential optimization and quantitative certificates rather than a polynomial-time formula.
+
+\paragraph{Niche.} The score-quality shell is strong enough to make the indexed minimax comparison nondegenerate while allowing external-score miscalibration or population shift. Exact balance keeps the design in the realizable balanced sign covariance hull, whereas the projector diagonal exposes a smaller design-stage invariant that determines the admissibility threshold without assignment enumeration. The realized quality remains outcome-dependent and unavailable before randomization.
+
+\paragraph{Fill.} The paper combines a rank-one-exact adversary lift, a full-hull finite saddle program, and an affine-hull plus zero-sum Gram completion argument. This yields the attaining oracle design and converse, the exact score-matrix-only one-dimensional frontier, a generally exponential exact program for unknown-quality regret, the universal bracket \(\frac{p}{n-1}\{c_n-\kappa(S)\}\leq nR^*(n,S)/(4M)\leq c_n-\kappa(S)\), and closed-form oracle frontiers and regrets for unequal two-block and homogeneous even-block geometries, including matched pairs.
+
+\section{Related work}
+
+Harshaw, Sävje, Spielman, and Zhang (2024) provide the design-based covariance identity and explain that the analogous realized quality ratio cannot be directly observed or estimated at the design stage. Kallus (2018) develops the zero-sum mixed-design architecture and the unstructured no-free-lunch benchmark. Kallus (2021), Section 5, gives the broader mixed-strategy minimax-design framework and a largest-eigenvalue criterion for ellipsoidal conditional-mean classes. It does not derive \(\gamma(S)=U(\operatorname{diag}(P_S))\) or the leverage-only threshold, and the present lower-score-energy-shell result does not subsume Kallus's broader outcome-class framework. Huber and Marić (2019), page 5, Theorem 2, characterize symmetric Bernoulli correlations through a cut-polytope image, but do not impose fixed treatment counts or study causal risk. Bai (2022) proves matched-pair optimality within a stratified superpopulation design class, whereas the present pair result is design-based and its converse ranges over all balanced finite-population assignment laws. Kapelner, Krieger, Sklar, and Azriel (2022) show that rerandomization tuning depends on unknown response features, motivating oracle-relative regret. Schuler, Walsh, Hall, Walsh, and Fisher (2022) study analysis-stage linear adjustment with an externally trained prognostic score and show that efficiency gains depend on predictive accuracy in the trial. The present result instead studies design-stage balanced randomization under an unknown score-subspace quality index and derives a leverage-only admissibility threshold; neither result subsumes the other. Schindl and Branson (2024) compare quadratic-form rerandomization rules within that family. Guo, Liang, and Toulis (2025) optimize a Gaussianized covariance subclass because full binary covariance geometry is hard; the present exact finite programs retain the full discrete balanced hull and accept generally exponential worst-case computation.
+
+\section{Setup}
+
+Target (estimand / structural parameter): \(\tau_n=n^{-1}\sum_{i=1}^n\{y_i(1)-y_i(0)\}\).
+Primary functional / estimator / diagnostic: \(V^*(\rho;S)=\frac{4M}{n}\min_{A\in\mathcal C_n}\max_{X\in\mathcal X_\rho(S)}\operatorname{tr}(AX)\).
+\begin{itemize}
+  \item \texttt{n} --- \texttt{even finite-\allowbreak{}population size}; \(\{4,6,8,\ldots\}\); \texttt{design size}
+  \par\smallskip\noindent\emph{Definition.} \texttt{The number of experimental units.}
+  \item \texttt{I\_\allowbreak{}n} --- \texttt{identity matrix}; \(\mathbb R^{n\times n}\); \texttt{linear-\allowbreak{}algebra primitive}
+  \par\smallskip\noindent\emph{Definition.} The \(n\)-dimensional identity matrix.
+  \item \texttt{one\_\allowbreak{}n} --- \texttt{all-\allowbreak{}ones vector}; \(\mathbb R^n\); \texttt{balance direction}
+  \par\smallskip\noindent\emph{Definition.} The vector \(\mathbf 1_n=(1,\ldots,1)^\top\).
+  \item \texttt{H\_\allowbreak{}n} --- \texttt{centered subspace}; \(\mathbb R^n\); \texttt{effective outcome space}
+  \par\smallskip\noindent\emph{Definition.} \(H_n=\{x\in\mathbb R^n:\mathbf 1_n^\top x=0\}\).
+  \item \texttt{P\_\allowbreak{}H} --- \texttt{orthogonal projector}; \(\mathbb R^{n\times n}\); \texttt{centering operator}
+  \par\smallskip\noindent\emph{Definition.} \(P_H=I_n-n^{-1}\mathbf 1_n\mathbf 1_n^\top\), the orthogonal projector onto \(H_n\).
+  \item \texttt{Z\_\allowbreak{}n} --- \texttt{balanced assignment set}; \(\{-1,+1\}^n\); \texttt{design support}
+  \par\smallskip\noindent\emph{Definition.} \(\mathcal Z_n=\{z\in\{-1,+1\}^n:\mathbf 1_n^\top z=0\}\).
+  \item \texttt{Delta\_\allowbreak{}Z\_\allowbreak{}n} --- \texttt{probability simplex}; \(\mathbb R^{|\mathcal Z_n|}\); \texttt{mixed-\allowbreak{}design ambient space}
+  \par\smallskip\noindent\emph{Definition.} \(\Delta(\mathcal Z_n)=\{p:p_z\geq0,\ \sum_{z\in\mathcal Z_n}p_z=1\}\).
+  \item \texttt{d} --- \texttt{assignment distribution}; \(\Delta(\mathcal Z_n)\); \texttt{design decision}
+  \par\smallskip\noindent\emph{Definition.} \texttt{A probability law selected before outcomes are observed.}
+  \item \texttt{z} --- \texttt{random assignment vector}; \(\mathcal Z_n\); \texttt{only random object}
+  \par\smallskip\noindent\emph{Definition.} The assignment drawn from \(d\), with \(z_i=+1\) for treatment and \(z_i=-1\) for control.
+  \item \texttt{D\_\allowbreak{}n} --- \texttt{balanced mean-\allowbreak{}zero design class}; \(\Delta(\mathcal Z_n)\); \texttt{feasible design class}
+  \par\smallskip\noindent\emph{Definition.} \(\mathcal D_n=\{d\in\Delta(\mathcal Z_n):\mathbb E_d[z]=0\}\).
+  \item \texttt{A\_\allowbreak{}d} --- \texttt{assignment covariance}; \(\mathbb S_+^n\); \texttt{design risk operator}
+  \par\smallskip\noindent\emph{Definition.} \(A_d=\operatorname{Cov}_d(z)=\mathbb E_d[zz^\top]\) for \(d\in\mathcal D_n\).
+  \item \texttt{C\_\allowbreak{}n} --- \texttt{balanced assignment-\allowbreak{}covariance hull}; \(\mathbb S_+^n\); \texttt{exact feasible covariance set}
+  \par\smallskip\noindent\emph{Definition.} \(\mathcal C_n=\operatorname{conv}\{zz^\top:z\in\mathcal Z_n\}\).
+  \item \texttt{treatment\_\allowbreak{}label} --- \texttt{treatment label}; \(\{0,1\}\); \texttt{potential-\allowbreak{}outcome index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{A label indexing the two fixed potential outcomes.}
+  \item \texttt{y\_\allowbreak{}i\_\allowbreak{}a} --- \texttt{potential outcome}; \(\mathbb R\); \texttt{finite-\allowbreak{}population primitive}
+  \par\smallskip\noindent\emph{Definition.} \(y_i(a)\) is unit \(i\)'s potential outcome under \(a\in\{0,1\}\).
+  \item \texttt{Y\_\allowbreak{}i\_\allowbreak{}obs} --- \texttt{observed outcome}; \(\mathbb R\); \texttt{observed response}
+  \par\smallskip\noindent\emph{Definition.} The outcome recorded for unit \(i\) after the assignment is drawn.
+  \item \texttt{tau\_\allowbreak{}n} --- \texttt{sample average treatment effect}; \(\mathbb R\); \texttt{causal estimand}
+  \par\smallskip\noindent\emph{Definition.} \(\tau_n=n^{-1}\sum_{i=1}^n\{y_i(1)-y_i(0)\}\).
+  \item \texttt{hat\_\allowbreak{}tau\_\allowbreak{}d} --- \texttt{difference-\allowbreak{}in-\allowbreak{}means estimator}; \(\mathbb R\); \texttt{design-\allowbreak{}unbiased estimator}
+  \par\smallskip\noindent\emph{Definition.} \(\widehat\tau_d=2n^{-1}\sum_{i=1}^n z_iY_i^{\mathrm{obs}}\).
+  \item \texttt{mu} --- \texttt{potential-\allowbreak{}outcome mean vector}; \(\mathbb R^n\); \texttt{risk index}
+  \par\smallskip\noindent\emph{Definition.} Let \(m_i=\{y_i(1)+y_i(0)\}/2\); then \(\mu=P_Hm\in H_n\) is its centered component.
+  \item \texttt{M} --- \texttt{outcome-\allowbreak{}energy scale}; \((0,\infty)\); \texttt{risk scale}
+  \par\smallskip\noindent\emph{Definition.} The fixed scale satisfying \(\|\mu\|_2^2=nM\).
+  \item \texttt{S} --- \texttt{design-\allowbreak{}stage score subspace}; \(\{L:L\text{ is a linear subspace of }H_n,\ 1\leq\dim L\leq n-1\}\); \texttt{score geometry}
+  \par\smallskip\noindent\emph{Definition.} \texttt{The span generated from the external prognostic score matrix after centering,\allowbreak{} known before assignment.}
+  \item \texttt{P\_\allowbreak{}S} --- \texttt{orthogonal projector}; \(\mathbb S_+^n\); \texttt{score-\allowbreak{}energy operator}
+  \par\smallskip\noindent\emph{Definition.} The orthogonal projector onto \(S\).
+  \item \texttt{rho\_\allowbreak{}mu} --- \texttt{realized score quality}; \([0,1]\); \texttt{realized outcome-\allowbreak{}-\allowbreak{}score alignment}
+  \par\smallskip\noindent\emph{Definition.} For a specified nonzero \(\mu\in H_n\), \(\rho_{\mu}(S)=\|P_S\mu\|_2/\|\mu\|_2\).
+  \item \texttt{rho} --- \texttt{design-\allowbreak{}stage quality lower bound}; \([0,1]\); \texttt{free oracle regime parameter}
+  \par\smallskip\noindent\emph{Definition.} A free parameter indexing the oracle class through the restriction \(\rho_{\mu}(S)\geq\rho\); it is not a functional of the score matrix.
+  \item \texttt{Y\_\allowbreak{}rho\_\allowbreak{}M\_\allowbreak{}S} --- \texttt{score-\allowbreak{}quality shell}; \(H_n\); \texttt{adversary class}
+  \par\smallskip\noindent\emph{Definition.} \(\mathcal Y(\rho,M;S)=\{\mu\in H_n:\|\mu\|_2^2=nM,\ \|P_S\mu\|_2^2\geq\rho^2\|\mu\|_2^2\}\).
+  \item \texttt{c\_\allowbreak{}n} --- \texttt{complete-\allowbreak{}randomization eigenvalue}; \((1,\infty)\); \texttt{benchmark constant}
+  \par\smallskip\noindent\emph{Definition.} \(c_n=n/(n-1)\).
+  \item \texttt{A\_\allowbreak{}CRD} --- \texttt{complete-\allowbreak{}randomization covariance}; \(\mathcal C_n\); \texttt{benchmark design operator}
+  \par\smallskip\noindent\emph{Definition.} \(A_{\mathrm{CRD}}=c_nP_H\).
+  \item \texttt{X\_\allowbreak{}rho\_\allowbreak{}S} --- \texttt{lifted adversary spectrahedron}; \(\mathbb S_+^n\); \texttt{rank-\allowbreak{}free adversary set}
+  \par\smallskip\noindent\emph{Definition.} \(\mathcal X_\rho(S)=\{X\succeq0:X=P_HXP_H,\ \operatorname{tr}(X)=1,\ \operatorname{tr}(P_SX)\geq\rho^2\}\).
+  \item \texttt{q\_\allowbreak{}rho} --- \texttt{normalized worst-\allowbreak{}case quadratic risk}; \(\mathcal C_n\times[0,1]\to\mathbb R_+\); \texttt{fixed-\allowbreak{}design loss}
+  \par\smallskip\noindent\emph{Definition.} \(q_\rho(A;S)=\max\{u^\top Au:u\in H_n,\ \|u\|_2=1,\ u^\top P_Su\geq\rho^2\}\).
+  \item \texttt{v\_\allowbreak{}star} --- \texttt{normalized oracle value}; \(\mathbb R_+\); \texttt{minimax design value}
+  \par\smallskip\noindent\emph{Definition.} \(v^*(\rho;S)=\min_{A\in\mathcal C_n}q_\rho(A;S)\).
+  \item \texttt{V\_\allowbreak{}star} --- \texttt{exact minimax mean squared error}; \(\mathbb R_+\); \texttt{headline risk}
+  \par\smallskip\noindent\emph{Definition.} \(V^*(\rho;S)=(4M/n)v^*(\rho;S)\).
+  \item \texttt{V\_\allowbreak{}CRD} --- \texttt{complete-\allowbreak{}randomization risk}; \(\mathbb R_+\); \texttt{risk benchmark}
+  \par\smallskip\noindent\emph{Definition.} \(V_{\mathrm{CRD}}(\rho;S)=4M/(n-1)\).
+  \item \texttt{kappa\_\allowbreak{}S} --- \texttt{perfect-\allowbreak{}quality compressed spectral value}; \(\mathbb R_+\); \texttt{admissibility certificate}
+  \par\smallskip\noindent\emph{Definition.} \(\kappa(S)=\min_{A\in\mathcal C_n}\lambda_{\max}(P_SAP_S\mid S)\).
+  \item \texttt{gamma\_\allowbreak{}S} --- \texttt{critical squared-\allowbreak{}quality invariant}; \(\mathbb R_+\); \texttt{threshold certificate}
+  \par\smallskip\noindent\emph{Definition.} \(\gamma(S)=\inf_{A\in\mathcal C_n,\ \eta>0}\{\lambda_{\max}(A+\eta P_S\mid H_n)-c_n\}/\eta\).
+  \item \texttt{A\_\allowbreak{}n} --- \texttt{admissible score-\allowbreak{}subspace family}; \(\{S:S\subseteq H_n\}\); \texttt{admissibility dichotomy}
+  \par\smallskip\noindent\emph{Definition.} \(\mathfrak A_n=\{S:\exists\rho<1,\ V^*(\rho;S)<V_{\mathrm{CRD}}(\rho;S)\}\).
+  \item \texttt{rho\_\allowbreak{}star\_\allowbreak{}S} --- \texttt{critical score quality}; \([0,1]\); \texttt{quality frontier}
+  \par\smallskip\noindent\emph{Definition.} \(\rho^*(S)=\inf\{\rho\in[0,1]:V^*(\rho;S)<V_{\mathrm{CRD}}(\rho;S)\}\), with value \(1\) when the set is empty.
+  \item \texttt{Delta\_\allowbreak{}reg} --- \texttt{normalized unknown-\allowbreak{}quality regret}; \(\mathcal C_n\to\mathbb R_+\); \texttt{oracle-\allowbreak{}relative loss}
+  \par\smallskip\noindent\emph{Definition.} \(\Delta_{\mathrm{reg}}(A;S)=\sup_{\rho\in[0,1]}\{q_\rho(A;S)-v^*(\rho;S)\}\).
+  \item \texttt{R\_\allowbreak{}star} --- \texttt{finite-\allowbreak{}population additive minimax regret}; \(\mathbb R_+\); \texttt{unknown-\allowbreak{}quality design criterion}
+  \par\smallskip\noindent\emph{Definition.} \(R^*(n,S)=(4M/n)\min_{A\in\mathcal C_n}\Delta_{\mathrm{reg}}(A;S)\).
+  \item \texttt{d\_\allowbreak{}reg} --- \texttt{quality-\allowbreak{}agnostic assignment distribution}; \(\mathcal D_n\); \texttt{quality-\allowbreak{}agnostic design}
+  \par\smallskip\noindent\emph{Definition.} A design selected without committing to a value of the free lower-bound index \(\rho\) and evaluated by additive oracle regret.
+  \item \texttt{u\_\allowbreak{}4} --- \texttt{four-\allowbreak{}unit centered score basis vector}; \(\mathbb R^4\); \texttt{worked score basis}
+  \par\smallskip\noindent\emph{Definition.} \(u_4=2^{-1}(1,1,-1,-1)^\top\).
+  \item \texttt{d\_\allowbreak{}pair\_\allowbreak{}4} --- \texttt{four-\allowbreak{}unit balanced sign-\allowbreak{}pair design}; \(\Delta(\{z\in\{-1,+1\}^4:\mathbf 1_4^\top z=0\})\); \texttt{worked attaining design}
+  \par\smallskip\noindent\emph{Definition.} The law assigning probability \(1/4\) to each element of \(\{\pm(1,-1,1,-1)^\top,\ \pm(1,-1,-1,1)^\top\}\).
+  \item \texttt{A\_\allowbreak{}pair\_\allowbreak{}4} --- \texttt{four-\allowbreak{}unit assignment covariance}; \(\mathbb S_+^4\); \texttt{worked cut-\allowbreak{}hull optimizer}
+  \par\smallskip\noindent\emph{Definition.} \(A_{\mathrm{pair},4}=\mathbb E_{w\sim d_{\mathrm{pair},4}}[ww^\top]=\begin{pmatrix}1&-1&0&0\\-1&1&0&0\\0&0&1&-1\\0&0&-1&1\end{pmatrix}\).
+  \item \texttt{S\_\allowbreak{}partition} --- \texttt{partition score subspace}; \(\{L:L\text{ is a block-constant linear subspace of }H_n\}\); \texttt{arbitrary partition score geometry}
+  \par\smallskip\noindent\emph{Definition.} For a partition \(\mathcal P=(G_1,\ldots,G_B)\) of \(\{1,\ldots,n\}\), \(S_{\mathcal P}=\{x\in H_n:x_i=x_{i'}\text{ whenever }i,i'\in G_j\text{ for some }j\}\).
+  \item \texttt{S\_\allowbreak{}B} --- \texttt{homogeneous even-\allowbreak{}block score subspace}; \(H_n\); \texttt{closed-\allowbreak{}form homogeneous partition family}
+  \par\smallskip\noindent\emph{Definition.} For a fixed partition into \(B\) equal blocks of even size \(m=n/B\), write \(S_B=S_{\mathcal P}\).
+  \item \texttt{S\_\allowbreak{}pair} --- \texttt{pair-\allowbreak{}partition score subspace}; \(H_n\); \texttt{matched-\allowbreak{}pair specialization of homogeneous blocks}
+  \par\smallskip\noindent\emph{Definition.} \(S_{\mathrm{pair}}=\{x\in H_n:x_{2j-1}=x_{2j},\ j=1,\ldots,n/2\}\); equivalently, it is the homogeneous partition space \(S_{n/2}\) with block size \(m=2\).
+  \item \texttt{S\_\allowbreak{}4} --- \texttt{four-\allowbreak{}unit score subspace}; \(\mathbb R^4\); \texttt{worked admissible geometry}
+  \par\smallskip\noindent\emph{Definition.} \(S_4=\operatorname{span}\{u_4\}\), the \(n=4\) instance of \(S_{\mathrm{pair}}\).
+  \item \texttt{G\_\allowbreak{}Pi} --- \texttt{block-\allowbreak{}sum second-\allowbreak{}moment polytope}; \(\mathbb S_+^B\); \texttt{unequal-\allowbreak{}block reduced feasible set}
+  \par\smallskip\noindent\emph{Definition.} For block sizes \(m_j=|G_j|\), let \(\mathcal R_{\mathcal P}=\{r\in\mathbb Z^B:r_j\in\{-m_j,-m_j+2,\ldots,m_j\},\ \sum_jr_j=0\}\) and \(\mathcal G_{\mathcal P}=\operatorname{conv}\{rr^\top:r\in\mathcal R_{\mathcal P}\}\).
+  \item \texttt{A\_\allowbreak{}Pi\_\allowbreak{}G} --- \texttt{within-\allowbreak{}block-\allowbreak{}orbit covariance candidate}; \(\mathbb S^n\); \texttt{orbit-\allowbreak{}symmetrized covariance formula}
+  \par\smallskip\noindent\emph{Definition.} With \(W=[\mathbf 1_{G_1}\ \cdots\ \mathbf 1_{G_B}]\), \(D=\operatorname{diag}(m_1,\ldots,m_B)\), and embedded \(P_j=I_{G_j}-m_j^{-1}\mathbf 1_{G_j}\mathbf 1_{G_j}^\top\), define \(A_{\mathcal P}(G)=WD^{-1}GD^{-1}W^\top+\sum_{j:m_j>1}\{(m_j^2-G_{jj})/[m_j(m_j-1)]\}P_j\).
+\end{itemize}
+
+\section{Assumptions}
+
+\begin{assumption}[ass:fixed-potential-outcomes]\label{ass:fixed-potential-outcomes}
+The array \(\{y_i(0),y_i(1):i=1,\ldots,n\}\) is fixed with respect to the assignment law \(d\).
+\par\smallskip\noindent\emph{Standard} (Fixed finite-population potential outcomes, \cite{HarshawSavjeSpielmanZhang2024}).
+\end{assumption}
+
+\begin{assumption}[ass:consistency-no-interference]\label{ass:consistency-no-interference}
+For every unit \(i\), \(Y_i^{\mathrm{obs}}=y_i(1)\mathbf 1\{z_i=1\}+y_i(0)\mathbf 1\{z_i=-1\}\).
+\par\smallskip\noindent\emph{Standard} (Consistency with no interference, \cite{HarshawSavjeSpielmanZhang2024}).
+\end{assumption}
+
+\section{Definitions}
+
+\begin{definition}[def:balanced-design-space]\label{def:balanced-design-space}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Balanced mean-\allowbreak{}zero design space}
+\par\smallskip\noindent\emph{Construction.} \(\mathcal D_n=\{d\in\Delta(\mathcal Z_n):\sum_{z\in\mathcal Z_n}d(z)z=0\}\).
+\end{definition}
+
+\begin{definition}[def:covariance-hull]\label{def:covariance-hull}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Exact balanced covariance hull}
+\par\smallskip\noindent\emph{Construction.} \(\mathcal C_n=\operatorname{conv}\{zz^\top:z\in\mathcal Z_n\}\), represented by weights on sign-pairs \(\{z,-z\}\).
+\end{definition}
+
+\begin{definition}[def:realized-score-quality]\label{def:realized-score-quality}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Realized score quality}
+\par\smallskip\noindent\emph{Construction.} For each specified nonzero \(\mu\in H_n\), \(\rho_{\mu}(S)=\|P_S\mu\|_2/\|\mu\|_2\); the free oracle index \(\rho\in[0,1]\) imposes the lower-bound condition \(\rho_{\mu}(S)\geq\rho\).
+\end{definition}
+
+\begin{definition}[def:score-quality-shell]\label{def:score-quality-shell}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Score-\allowbreak{}quality shell}
+\par\smallskip\noindent\emph{Construction.} \(\mathcal Y(\rho,M;S)=\{\mu\in H_n:\|\mu\|_2^2=nM,\ \mu^\top P_S\mu\geq\rho^2\|\mu\|_2^2\}\).
+\end{definition}
+
+\begin{definition}[def:lifted-adversary]\label{def:lifted-adversary}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Lifted quality spectrahedron}
+\par\smallskip\noindent\emph{Construction.} \(\mathcal X_\rho(S)=\{X\in\mathbb S_+^n:X=P_HXP_H,\ \operatorname{tr}(X)=1,\ \operatorname{tr}(P_SX)\geq\rho^2\}\).
+\end{definition}
+
+\begin{definition}[def:oracle-risk]\label{def:oracle-risk}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Score-\allowbreak{}quality oracle risk}
+\par\smallskip\noindent\emph{Construction.} \(v^*(\rho;S)=\min_{A\in\mathcal C_n}q_\rho(A;S)\) and \(V^*(\rho;S)=(4M/n)v^*(\rho;S)\).
+\end{definition}
+
+\begin{definition}[def:admissibility-invariants]\label{def:admissibility-invariants}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Admissibility and threshold invariants}
+\par\smallskip\noindent\emph{Construction.} \(\kappa(S)=\min_{A\in\mathcal C_n}\lambda_{\max}(P_SAP_S\mid S)\) and \(\gamma(S)=\inf_{A\in\mathcal C_n,\eta>0}\{\lambda_{\max}(A+\eta P_S\mid H_n)-c_n\}/\eta\).
+\end{definition}
+
+\begin{definition}[def:regret-object]\label{def:regret-object}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Unknown-\allowbreak{}quality additive regret}
+\par\smallskip\noindent\emph{Construction.} \(R^*(n,S)=(4M/n)\min_{A\in\mathcal C_n}\sup_{\rho\in[0,1]}\{q_\rho(A;S)-v^*(\rho;S)\}\).
+\end{definition}
+
+\begin{definition}[def:regret-handle]\label{def:regret-handle}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Compactified spectral-\allowbreak{}regret handle}
+\par\smallskip\noindent\emph{Construction.} Put \(s=\rho^2\). For \(A\in\mathcal C_n\) and finite \(\eta\geq0\), define \(F_{A,s}(\eta)=\lambda_{\max}(A+\eta P_S\mid H_n)-\eta s\) and use \(\inf_{\eta\geq0}F_{A,s}(\eta)\). Under \(h=(1+\eta)^{-1}\), adjoin \(h=0\) with boundary value \(+\infty\) when \(s<1\) and \(\lambda_{\max}(P_SAP_S\mid S)\) when \(s=1\). The finite-multiplier robust regret epigraph is interpreted through this value closure; it does not assert an inner optimizer at finite \(\eta\). The balanced-cut-hull support oracle, active-simplex faces, and eigenvalue-crossing cells give the finite real-algebraic handle for \(R^*(n,S)\) and \(d_{\mathrm{reg}}\).
+\end{definition}
+
+\begin{definition}[def:pair-score-space]\label{def:pair-score-space}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Partition score geometry and homogeneous even-\allowbreak{}block specialization}
+\par\smallskip\noindent\emph{Construction.} Let \(\mathcal P=(G_1,\ldots,G_B)\) be a partition of \(\{1,\ldots,n\}\), with \(B\geq2\) and \(m_j=|G_j|\). Define
+\[
+S_{\mathcal P}=\{x\in H_n:x_i=x_{i'}\text{ whenever }i,i'\in G_j\text{ for some }j\}.
+\]
+For a fixed homogeneous partition into \(B\) equal blocks of even size \(m=n/B\), write \(S_B=S_{\mathcal P}\). The pair partition has \(B=n/2\), \(m=2\), \(G_j=\{2j-1,2j\}\), and \(S_{\mathrm{pair}}=S_{n/2}\).
+\end{definition}
+
+\begin{definition}[def:four-unit-score-mixture]\label{def:four-unit-score-mixture}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Four-\allowbreak{}unit score basis and balanced sign-\allowbreak{}pair mixture}
+\par\smallskip\noindent\emph{Construction.} Set \(u_4=2^{-1}(1,1,-1,-1)^\top\) and \(S_4=\operatorname{span}\{u_4\}\). Define \(d_{\mathrm{pair},4}\) by probability \(1/4\) on each assignment in \(\{\pm(1,-1,1,-1)^\top,\ \pm(1,-1,-1,1)^\top\}\); its covariance is \(A_{\mathrm{pair},4}=\begin{pmatrix}1&-1&0&0\\-1&1&0&0\\0&0&1&-1\\0&0&-1&1\end{pmatrix}\).
+\end{definition}
+
+\begin{definition}[def:partition-orbit-covariance]\label{def:partition-orbit-covariance}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Partition block-\allowbreak{}sum moment polytope and orbit covariance}
+\par\smallskip\noindent\emph{Construction.} For a partition \(\mathcal P=(G_1,\ldots,G_B)\) with block sizes \(m_j=|G_j|\), define the feasible block-sum lattice and its second-moment polytope by
+\[
+\mathcal R_{\mathcal P}
+=\left\{r\in\mathbb Z^B:r_j\in\{-m_j,-m_j+2,\ldots,m_j\},\ \sum_{j=1}^B r_j=0\right\},
+\qquad
+\mathcal G_{\mathcal P}=\operatorname{conv}\{rr^\top:r\in\mathcal R_{\mathcal P}\}.
+\]
+Let \(W=[\mathbf 1_{G_1}\ \cdots\ \mathbf 1_{G_B}]\), let \(D=\operatorname{diag}(m_1,\ldots,m_B)\), and let \(P_j=I_{G_j}-m_j^{-1}\mathbf 1_{G_j}\mathbf 1_{G_j}^\top\) be embedded in the coordinates of block \(G_j\). For \(G\in\mathcal G_{\mathcal P}\), define
+\[
+A_{\mathcal P}(G)
+=WD^{-1}GD^{-1}W^\top
++\sum_{j:m_j>1}\frac{m_j^2-G_{jj}}{m_j(m_j-1)}P_j.
+\]
+This formula defines the orbit-covariance candidate used by the reduced unequal-block problem; its realizability and the exactness of the orbit reduction are theorem conclusions, not part of this construction.
+\end{definition}
+
+\section{Main results}
+
+\begin{lemma}[lem:exact-design-risk]\label{lem:exact-design-risk}
+For every \(d\in\mathcal D_n\), the estimator \(\widehat\tau_d\) is design-unbiased for \(\tau_n\) and obeys \[\mathbb E_d[(\widehat\tau_d-\tau_n)^2]=\frac{4}{n^2}\mu^\top A_d\mu.\]
+\end{lemma}
+\begin{proof}
+Put \(m_i=\{y_i(1)+y_i(0)\}/2\) and \(\delta_i=y_i(1)-y_i(0)\).  The potential outcomes are fixed by Assumption \(\text{ass:fixed-potential-outcomes}\), so all expectations below are with respect to the assignment alone.  Assumption \(\text{ass:consistency-no-interference}\) and \(z_i\in\{-1,1\}\) give, identically for every supported assignment,
+\[
+Y_i^{\mathrm{obs}}=m_i+\frac{z_i\delta_i}{2}.
+\]
+Consequently,
+\[
+\widehat\tau_d
+=\frac{2}{n}\sum_{i=1}^n z_i m_i+\frac{1}{n}\sum_{i=1}^n z_i^2\delta_i
+=\tau_n+\frac{2}{n}z^\top m.
+\]
+Every \(z\in\mathcal Z_n\) is orthogonal to \(\mathbf 1_n\).  Since \(\mu=P_Hm\), this implies \(z^\top m=z^\top\mu\), and hence
+\[
+\widehat\tau_d-\tau_n=\frac{2}{n}z^\top\mu.
+\]
+The defining mean-zero condition in \(\mathcal D_n\) yields \(\mathbb E_d[z]=0\).  Thus \(\mathbb E_d[\widehat\tau_d]=\tau_n\).  It also implies \(A_d=\mathbb E_d[zz^\top]\), and therefore
+\[
+\mathbb E_d[(\widehat\tau_d-\tau_n)^2]
+=\frac{4}{n^2}\mathbb E_d[\mu^\top zz^\top\mu]
+=\frac{4}{n^2}\mu^\top A_d\mu.
+\]
+Finally, because each \(z_i\) is binary and has mean zero, \(\Pr_d(z_i=1)=\Pr_d(z_i=-1)=1/2\).  Thus the marginal exposure probabilities used by the unbiasedness calculation are positive; no superpopulation or outcome randomness has been introduced.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This identity turns the design problem into an exact quadratic-risk problem with assignment as the only source of randomness. \textit{Gap.} HarshawSavjeSpielmanZhang2024, Lemma 1, gives the corresponding covariance identity; the present lemma fixes the balanced difference-in-means normalization used by the new oracle. \textit{Consumer.} The exact value, admissibility frontier, and regret statements all use this equality to translate their covariance criteria into SATE mean squared error.
+
+\begin{lemma}[lem:balanced-covariance-realizability]\label{lem:balanced-covariance-realizability}
+The covariance image of \(\mathcal D_n\) is exactly \(\mathcal C_n\): \[\{A_d:d\in\mathcal D_n\}=\operatorname{conv}\{zz^\top:z\in\mathcal Z_n\}.\] In particular, every convex representation can be symmetrized over \(\{z,-z\}\) to yield a mean-zero attaining design without changing its covariance.
+\end{lemma}
+\begin{proof}
+Let \(d\in\mathcal D_n\).  Its support is contained in the finite set \(\mathcal Z_n\), and its mean is zero.  Hence
+\[
+A_d=\mathbb E_d[zz^\top]
+=\sum_{z\in\mathcal Z_n}d(z)zz^\top
+\in\operatorname{conv}\{zz^\top:z\in\mathcal Z_n\}=\mathcal C_n.
+\]
+This proves one inclusion.
+
+Conversely, take \(A\in\mathcal C_n\) and a convex representation
+\[
+A=\sum_{j=1}^J a_j z^{(j)}z^{(j)\top},
+\qquad a_j\geq0,\quad \sum_{j=1}^J a_j=1,
+\quad z^{(j)}\in\mathcal Z_n.
+\]
+Define a law by putting mass \(a_j/2\) at each of \(z^{(j)}\) and \(-z^{(j)}\), combining masses when assignments repeat.  The set \(\mathcal Z_n\) is closed under sign reversal because \(n\) is even and every supported vector is balanced.  The resulting law has mean
+\[
+\sum_{j=1}^J\frac{a_j}{2}\{z^{(j)}-z^{(j)}\}=0,
+\]
+so it belongs to \(\mathcal D_n\), while its covariance is
+\[
+\sum_{j=1}^J\frac{a_j}{2}
+\{z^{(j)}z^{(j)\top}+(-z^{(j)})(-z^{(j)})^\top\}=A.
+\]
+Thus every point of the cut hull is implementable by an actual balanced, mean-zero randomization, proving the reverse inclusion and the stated symmetrization claim.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This is the implementability bridge that rules out fictitious positive-semidefinite covariance solutions. \textit{Gap.} HuberMaric2019, p. 5, Theorem 2, characterizes symmetric Bernoulli correlations through the cut polytope, but does not impose the fixed-treatment-count support \(\mathcal Z_n\) or connect it to SATE risk. \textit{Consumer.} An experimenter can convert every optimizer in the later finite program into an actual balanced randomization distribution.
+
+\begin{theorem}[thm:cone-lift-dual]\label{thm:cone-lift-dual}
+For every \(A\in\mathcal C_n\) and \(\rho\in[0,1]\), the nonconvex spherical-shell adversary has the rank-one-exact lift and scalar dual
+\[
+q_\rho(A;S)=\max_{X\in\mathcal X_\rho(S)}\operatorname{tr}(AX)
+=\inf_{\eta\geq0}\left\{\lambda_{\max}(A+\eta P_S\mid H_n)-\eta\rho^2\right\}.
+\]
+Moreover, the lifted maximum admits a rank-one optimizer. Put \(s=\rho^2\) and, on the one-point compactification \([0,\infty]\), define
+\[
+\overline F_{A,s}(\eta)=\lambda_{\max}(A+\eta P_S\mid H_n)-\eta s
+\quad(\eta<\infty),
+\]
+with \(\overline F_{A,s}(\infty)=+\infty\) for \(s<1\), and
+\[
+\overline F_{A,1}(\infty)=\lambda_{\max}(P_SAP_S\mid S).
+\]
+Then
+\[
+q_\rho(A;S)=\min_{\eta\in[0,\infty]}\overline F_{A,s}(\eta).
+\]
+If \(\rho<1\), the infimum over finite \(\eta\) is attained; at \(\rho=1\), it may be attained only at \(\eta=\infty\).
+\end{theorem}
+\begin{proof}
+\textit{Proof.}
+Write \(s=\rho^2\), and let
+\[
+\mathcal E_H=\{X\succeq0:X=P_HXP_H,\ \operatorname{tr}(X)=1\}.
+\]
+The set
+\[
+K_s=\{X\in\mathcal E_H:\operatorname{tr}(P_SX)\geq s\}
+=\mathcal X_\rho(S)
+\]
+is nonempty and compact: if \(x\) is any unit vector in \(S\), then \(xx^\top\in K_s\). Every unit vector \(u\in H_n\) feasible for \(q_\rho(A;S)\) gives the feasible rank-one matrix \(X=uu^\top\), and \(\operatorname{tr}(AX)=u^\top Au\).
+
+We prove the converse by identifying the extreme points relevant to the lifted maximum. A linear functional on the compact convex set \(K_s\) has an extreme-point maximizer. Suppose that an extreme point \(X\) has rank \(r\geq2\), and let \(R=\operatorname{range}(X)\subseteq H_n\). The vector space of symmetric operators on \(R\) has dimension \(r(r+1)/2\geq3\). If the score constraint is active, there is therefore a nonzero symmetric operator \(D\), supported on \(R\), such that
+\[
+\operatorname{tr}(D)=0,
+\qquad
+\operatorname{tr}(P_SD)=0,
+\]
+because these are at most two homogeneous linear equations. If the score constraint is inactive, choose a nonzero such \(D\) subject only to \(\operatorname{tr}(D)=0\). Since \(X\) is positive definite on \(R\), for all sufficiently small \(\epsilon>0\), both \(X+\epsilon D\) and \(X-\epsilon D\) are positive semidefinite. They retain the support and trace restrictions. In the active case they retain the score equality, and in the inactive case the strict slack persists for sufficiently small \(\epsilon\). Thus \(X\) is the midpoint of two distinct points of \(K_s\), contradicting extremality. Every extreme point is consequently rank one. A rank-one point of \(K_s\) is \(uu^\top\) for a unit \(u\in H_n\) satisfying \(u^\top P_Su\geq s\). Hence
+\[
+q_\rho(A;S)=\max_{X\in K_s}\operatorname{tr}(AX),
+\]
+and the maximum has a rank-one optimizer.
+
+We next derive the scalar dual without assuming a limit law or a dual-attainment statement. For \(K>0\), define
+\[
+L(X,\eta)=\operatorname{tr}(AX)+\eta\{\operatorname{tr}(P_SX)-s\},
+\qquad X\in\mathcal E_H,\quad 0\leq\eta\leq K.
+\]
+We first verify the elementary compact bilinear minimax identity
+\[
+\max_{X\in\mathcal E_H}\min_{0\leq\eta\leq K}L(X,\eta)
+=\min_{0\leq\eta\leq K}\max_{X\in\mathcal E_H}L(X,\eta).
+\tag{1}
+\]
+Indeed, the set
+\[
+\mathcal G=\{(L(X,0),L(X,K)):X\in\mathcal E_H\}\subset\mathbb R^2
+\]
+is compact and convex. If \(r>\max_X\min\{L(X,0),L(X,K)\}\), then \(\mathcal G\) is disjoint from \([r,\infty)^2\). Finite-dimensional strong separation gives nonnegative weights \(a_0,a_K\), normalized so that \(a_0+a_K=1\), for which
+\[
+\max_{X\in\mathcal E_H}\{a_0L(X,0)+a_KL(X,K)\}<r.
+\]
+The expression in braces is \(L(X,a_KK)\). Letting \(r\) decrease to the left side of (1) proves the nontrivial inequality in (1); the reverse inequality is the elementary weak-minimax inequality.
+
+Because \(L\) is affine in \(\eta\), the left side of (1) equals
+\[
+\Phi_K
+=\max_{X\in\mathcal E_H}
+\left[\operatorname{tr}(AX)-K\{s-\operatorname{tr}(P_SX)\}_+\right].
+\tag{2}
+\]
+The sequence \(\Phi_K\) decreases as \(K\) increases and is bounded below by the constrained maximum over \(K_s\). Choose a maximizer \(X_K\) in (2). Since \(\operatorname{tr}(AX)\) is uniformly bounded on \(\mathcal E_H\), comparison with any fixed member of \(K_s\) gives
+\[
+\{s-\operatorname{tr}(P_SX_K)\}_+=O(K^{-1}).
+\]
+Every cluster point of \(X_K\) is therefore in \(K_s\). Along a convergent subsequence, (2) and continuity give
+\[
+\limsup_{K\to\infty}\Phi_K
+\leq\max_{X\in K_s}\operatorname{tr}(AX).
+\]
+The reverse inequality holds for every \(K\), so \(\Phi_K\) converges to the lifted primal value.
+
+For fixed \(\eta\), the spectral decomposition of the symmetric operator \(A+\eta P_S\) on \(H_n\) gives
+\[
+\max_{X\in\mathcal E_H}L(X,\eta)
+=\lambda_{\max}(A+\eta P_S\mid H_n)-\eta s.
+\]
+Taking \(K\to\infty\) on the right side of (1) consequently proves
+\[
+\max_{X\in K_s}\operatorname{tr}(AX)
+=\inf_{\eta\geq0}
+\{\lambda_{\max}(A+\eta P_S\mid H_n)-\eta s\}.
+\tag{3}
+\]
+
+It remains to establish the asserted boundary and attainment facts. Since \(A\in\mathcal C_n\), it is positive semidefinite. Testing \(A+\eta P_S\) on any unit vector in \(S\) gives
+\[
+\lambda_{\max}(A+\eta P_S\mid H_n)-\eta s
+\geq\eta(1-s).
+\]
+Thus, for \(s<1\), the continuous finite-multiplier objective tends to \(+\infty\) as \(\eta\to\infty\), so its infimum is attained at a finite \(\eta\).
+
+Now let \(s=1\). If \(X\in K_1\), then
+\[
+\operatorname{tr}\{(P_H-P_S)X\}
+=\operatorname{tr}(X)-\operatorname{tr}(P_SX)=0.
+\]
+Positive semidefiniteness forces \(X=P_SXP_S\). Therefore
+\[
+q_1(A;S)=c,
+\qquad
+c:=\lambda_{\max}(P_SAP_S\mid S).
+\tag{4}
+\]
+Weak duality in (3) gives
+\[
+\lambda_{\max}(A+\eta P_S\mid H_n)-\eta\geq c
+\quad\text{for every finite }\eta.
+\tag{5}
+\]
+To obtain the matching limit, put \(T=H_n\cap S^\perp\) and \(L_A=\|A\|_{\mathrm{op}}\). For a unit vector \(u=x+y\), with \(x\in S\), \(y\in T\), and \(b=\|y\|_2\), the Rayleigh quotient and (4) imply, for \(\eta>L_A\),
+\[
+u^\top(A+\eta P_S)u-\eta
+\leq c+2L_Ab-(\eta-L_A)b^2
+\leq c+\frac{L_A^2}{\eta-L_A}.
+\]
+When \(T=\{0\}\), the same conclusion is immediate with equality. Taking the supremum over unit \(u\), combining with (5), and sending \(\eta\to\infty\) yields
+\[
+\lambda_{\max}(A+\eta P_S\mid H_n)-\eta
+\longrightarrow\lambda_{\max}(P_SAP_S\mid S).
+\]
+Consequently the displayed definition of \(\overline F_{A,s}(\infty)\) is exactly the extended-real limit of the finite-multiplier objective. The one-point compactification therefore turns (3) into the stated attained minimum. At \(s=1\), the example in which the finite objective decreases strictly to (4) shows why only the compactified endpoint, rather than a finite multiplier, can be guaranteed. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The exact lift preserves the nonconvex score-quality shell, while the infimum carrier handles the perfect-quality boundary without a false finite-attainment claim. \textit{Gap.} Kallus2018OptimalBalance and Kallus2021Randomization provide eigenvalue reductions for other structured classes, but not this rank-one-exact lower-score-energy lift with its compactified boundary. \textit{Consumer.} The theorem supplies the scalar slope used by the admissibility threshold, the oracle saddle program, and the closure of the unknown-quality regret representation.
+
+\begin{theorem}[thm:exact-oracle-saddle]\label{thm:exact-oracle-saddle}
+For every \(\rho\in[0,1]\), \[v^*(\rho;S)=\min_{A\in\mathcal C_n}\max_{X\in\mathcal X_\rho(S)}\operatorname{tr}(AX)=\max_{X\in\mathcal X_\rho(S)}\min_{z\in\mathcal Z_n}z^\top Xz.\] Equivalently, \(v^*(\rho;S)\) is the optimum of \[\max_{X,t}\ t\quad\text{subject to}\quad X\in\mathcal X_\rho(S),\quad t\leq z^\top Xz\ \text{for every }z\in\mathcal Z_n.\] The dual yields weights on balanced sign-pairs defining an attaining \(d^*_{\rho,S}\in\mathcal D_n\), and every \(d\in\mathcal D_n\) satisfies \[\sup_{\mu\in\mathcal Y(\rho,M;S)}\mathbb E_d[(\widehat\tau_d-\tau_n)^2]\geq V^*(\rho;S),\] with equality for \(d^*_{\rho,S}\).
+\end{theorem}
+\begin{proof}
+\textit{Proof.}
+Fix \(\rho\in[0,1]\) and write \(K=\mathcal X_\rho(S)\).  The set \(K\) is nonempty: because \(1\leq\dim S\), a unit vector \(x\in S\) exists, and \(X=xx^\top\) satisfies \(X=P_HXP_H\), \(\operatorname{tr}(X)=1\), and
+\[
+\operatorname{tr}(P_SX)=x^\top P_Sx=1\geq\rho^2.
+\]
+It is compact and convex because it is a closed, bounded spectrahedron in the finite-dimensional space of symmetric matrices.  The covariance hull \(\mathcal C_n\) is also nonempty, compact, and convex: balanced assignments exist because \(n\) is even, and \(\mathcal C_n\) is the convex hull of the finite set \(\{zz^\top:z\in\mathcal Z_n\}\).  These observations cover the boundary \(\rho=1\); no strict feasibility condition is used below.
+
+Choose one representative \(z^{(1)},\ldots,z^{(J)}\) from every sign-pair \(\{z,-z\}\subseteq\mathcal Z_n\), where \(J=|\mathcal Z_n|/2\), and let \(\Delta_J\) be the probability simplex.  For \(a\in\Delta_J\), put
+\[
+A(a)=\sum_{j=1}^J a_j z^{(j)}z^{(j)\top},
+\qquad
+g_j(X)=z^{(j)\top}Xz^{(j)}.
+\]
+Sign reversal leaves \(zz^\top\) unchanged, so \(\{A(a):a\in\Delta_J\}=\mathcal C_n\).  We next prove, without assuming a minimax theorem, that
+\[
+\min_{a\in\Delta_J}\max_{X\in K}\sum_{j=1}^J a_jg_j(X)
+=
+\max_{X\in K}\min_{1\leq j\leq J}g_j(X).
+\tag{1}
+\]
+Denote the right-hand side by \(b\).  For every \(a\in\Delta_J\) and \(X\in K\),
+\[
+\min_j g_j(X)\leq\sum_{j=1}^J a_jg_j(X),
+\]
+so the left-hand side of (1) is at least \(b\).
+
+For the reverse inequality, fix \(r>b\) and consider the compact convex set
+\[
+G_r=\{(g_1(X)-r,\ldots,g_J(X)-r):X\in K\}\subseteq\mathbb R^J.
+\]
+It is disjoint from the closed nonnegative orthant \(\mathbb R_+^J\), since a point in their intersection would give an \(X\in K\) with \(\min_jg_j(X)\geq r>b\).  Choose \(g^*\in G_r\) and \(y^*\in\mathbb R_+^J\) minimizing \(\|g-y\|_2\), and set \(c=y^*-g^*\).  Compactness of \(G_r\), closedness of the orthant, and disjointness imply \(c\neq0\).  Differentiating squared distance along line segments from \(g^*\) and \(y^*\) gives
+\[
+c^\top(g-g^*)\leq0\quad(g\in G_r),
+\qquad
+c^\top(y-y^*)\geq0\quad(y\in\mathbb R_+^J).
+\tag{2}
+\]
+Taking \(y=t e_j\) and letting \(t\to\infty\) in the second inequality shows \(c_j\geq0\) for every \(j\).  Taking \(y=0\) then gives \(c^\top y^*\leq0\); because both vectors are nonnegative, \(c^\top y^*=0\).  Hence
+\[
+c^\top g^*=c^\top y^*-\|c\|_2^2=-\|c\|_2^2<0,
+\]
+and the first inequality in (2) yields \(c^\top g<0\) for every \(g\in G_r\).  Normalize \(a_j=c_j/\sum_hc_h\).  Then \(a\in\Delta_J\) and
+\[
+\max_{X\in K}\sum_{j=1}^J a_j\{g_j(X)-r\}<0.
+\]
+Therefore the left-hand side of (1) is smaller than \(r\).  Letting \(r\downarrow b\) proves the reverse inequality.  The two extrema in (1) are attained by compactness and continuity.
+
+Using the representation of \(\mathcal C_n\), equation (1) becomes
+\[
+\min_{A\in\mathcal C_n}\max_{X\in K}\operatorname{tr}(AX)
+=
+\max_{X\in K}\min_{1\leq j\leq J}z^{(j)\top}Xz^{(j)}
+=
+\max_{X\in K}\min_{z\in\mathcal Z_n}z^\top Xz.
+\tag{3}
+\]
+By \(\text{thm:cone-lift-dual}\), for every \(A\in\mathcal C_n\),
+\[
+q_\rho(A;S)=\max_{X\in K}\operatorname{tr}(AX).
+\]
+Combining this identity with \(\text{def:oracle-risk}\) and (3) proves the first display of the theorem.
+
+For fixed \(X\), the elementary finite-set identity
+\[
+t\leq\min_{z\in\mathcal Z_n}z^\top Xz
+\quad\Longleftrightarrow\quad
+t\leq z^\top Xz\ \text{ for every }z\in\mathcal Z_n
+\]
+gives the stated semidefinite program.  Its maximum is attained because \(K\) is compact and, at an optimum, \(t\) equals the continuous function \(\min_{z\in\mathcal Z_n}z^\top Xz\).
+
+Let \(a^*\in\Delta_J\) attain the left side of (1), and write \(A^*=A(a^*)\).  Put probability \(a_j^*/2\) on each of \(z^{(j)}\) and \(-z^{(j)}\).  This law is supported on \(\mathcal Z_n\), has mean zero, and has covariance
+\[
+\sum_{j=1}^J\frac{a_j^*}{2}
+\left\{z^{(j)}z^{(j)\top}+(-z^{(j)})(-z^{(j)})^\top\right\}=A^*.
+\]
+Thus \(\text{lem:balanced-covariance-realizability}\) identifies it as an attaining design \(d^*_{\rho,S}\in\mathcal D_n\).  In particular, every unit has marginal treatment probability \(1/2\), because its assignment coordinate is \(\{-1,+1\}\)-valued and mean zero.
+
+It remains to translate the game value into the design risk for the causal estimand.  Since \(M>0\), the change of variables \(\mu=\sqrt{nM}\,u\) is a bijection between \(\mathcal Y(\rho,M;S)\) and the unit vectors \(u\in H_n\) satisfying \(u^\top P_Su\geq\rho^2\).  Consequently, for every \(d\in\mathcal D_n\), \(\text{lem:exact-design-risk}\) gives
+\[
+\begin{aligned}
+\sup_{\mu\in\mathcal Y(\rho,M;S)}
+\mathbb E_d\!\left[(\widehat\tau_d-\tau_n)^2\right]
+&=\frac{4}{n^2}\sup_{\mu\in\mathcal Y(\rho,M;S)}\mu^\top A_d\mu\\
+&=\frac{4M}{n}q_\rho(A_d;S)\\
+&\geq\frac{4M}{n}v^*(\rho;S)
+=V^*(\rho;S).
+\end{aligned}
+\tag{4}
+\]
+For \(d=d^*_{\rho,S}\), its covariance is the minimizing matrix \(A^*\), so equality holds in (4).  This supplies both the attaining randomized design and the matching converse over the full class \(\mathcal D_n\).
+
+As a smallest-case check, take \(n=4\), \(S=H_n\), and any \(\rho\).  Then \(K\) is the set of trace-one positive semidefinite matrices on \(H_n\), so the inner maximum is \(\lambda_{\max}(A\mid H_n)\).  Every \(A\in\mathcal C_n\) has trace \(4\) and annihilates \(\mathbf 1_n\); hence \(\lambda_{\max}(A\mid H_n)\geq4/3\), while complete randomization attains equality.  Thus (3) returns \(v^*=4/3\), agreeing with direct enumeration of the three balanced sign-pairs.  The causal target throughout is the fixed finite-population SATE \(\tau_n\); \(V^*(\rho;S)\) is its exact worst-case design risk for \(\widehat\tau_d\), not a redefinition of the estimand. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This theorem gives the exact design and matching converse over the full discrete balanced design class. It optimizes directly over the realizable covariance hull, returns sign-pair weights for an actual randomization, and does not report an elliptope relaxation or merely a candidate procedure. \textit{Gap.} Kallus2021Randomization gives the generic mixed-strategy architecture for a specified conditional-mean class. The accepted-bank theorem \(\texttt{exp\_design\_pm1\_exactness\_boundary\_v1/thm:sharp-rho-star}\) is the closest in-repository result because it also treats randomized \(\{-1,+1\}\) covariances and implementability. Its theorem, however, compares a two-community block-elliptope optimum with a parity-constrained realizable slice for an interference objective. The present theorem instead places the design variable directly in \(\mathcal C_n\), places a rank-one-exact score-quality adversary in \(\mathcal X_\rho(S)\), and proves the resulting SATE-risk saddle and full-design-class converse. It neither uses nor resolves the bank theorem's relaxation gap, while the bank theorem contains no score subspace, quality shell, or SATE-risk oracle. Thus the two results share covariance substrate but neither subsumes the other. \textit{Consumer.} A trial designer with a prespecified external score can enumerate or column-generate the saddle program, symmetrize the returned cut weights into a valid balanced assignment law, and report its certified worst-case SATE risk for a stated quality lower bound.
+
+\begin{theorem}[thm:admissibility-frontier]\label{thm:admissibility-frontier}
+The following conditions are equivalent:
+\[
+(i)\ S\in\mathfrak A_n,
+\qquad
+(ii)\ \kappa(S)<c_n,
+\qquad
+(iii)\ \gamma(S)<1.
+\]
+When these conditions hold, \(\rho^*(S)=\sqrt{\gamma(S)}\); otherwise \(\rho^*(S)=1\).  Put \(p=\dim(S)\), \(\beta=p/(n-1)\), and \(\ell_i=(P_S)_{ii}\).  For \(t\in[\beta,1]\), define
+\[
+d_i(t)=\frac{n-1}{n}t-\ell_i
+\]
+and
+\[
+U(\ell)=\min\left\{
+t\in[\beta,1]:\ d_i(t)\geq0\ \text{for every }i,\quad
+2\max_i\sqrt{d_i(t)}\leq\sum_{i=1}^n\sqrt{d_i(t)}
+\right\}.
+\]
+Then the critical squared quality is determined exactly by the score leverage profile:
+\[
+\gamma(S)
+=\min_{\substack{K=K^\top,\ K\mathbf1_n=0\\
+\operatorname{diag}(K)=\operatorname{diag}(P_S)}}
+\lambda_{\max}(K\mid H_n)
+=U\!\left(\operatorname{diag}(P_S)\right).
+\]
+In particular, the sharp leverage and dimension bounds are
+\[
+\gamma(S)\geq\frac{n}{n-1}\max_i\ell_i
+\geq\frac{p}{n-1},
+\]
+and equality in the dimension bound holds if and only if
+\[
+\operatorname{diag}(P_S)=\frac{p}{n}(1,\ldots,1)^\top.
+\]
+At \(n=4\), the rank-one leverage profiles
+\[
+\left(\tfrac14,\tfrac14,\tfrac14,\tfrac14\right),\qquad
+\left(\tfrac16,\tfrac16,0,\tfrac23\right),\qquad
+\left(\tfrac34,\tfrac1{12},\tfrac1{12},\tfrac1{12}\right)
+\]
+have exact threshold invariants \(1/3\), \(8/9\), and \(1\), respectively.
+
+Consequently, for every \(S\),
+\[
+\{\rho^*(S)\}^2\geq\frac{p}{n-1},
+\]
+where the convention \(\rho^*(S)=1\) applies off \(\mathfrak A_n\), and
+\[
+V^*(\rho;S)<V_{\mathrm{CRD}}(\rho;S)
+\quad\Longrightarrow\quad
+\rho^2>\gamma(S)\geq\frac{n}{n-1}\max_i\ell_i
+\geq\frac{p}{n-1}.
+\]
+Given a basis matrix for \(S\), forming \(P_S\) and performing a one-dimensional feasibility search computes \(\gamma(S)\) and \(\rho^*(S)\) from the score matrix alone.  Enumeration of \(\mathcal Z_n\) and semidefinite optimization compute \(\kappa(S)\) and an \(\varepsilon\)-optimal implementable assignment mixture.
+\end{theorem}
+\begin{proof}
+\textbf{Proof.}
+Put \(s=\rho^2\), \(d_0=n-1\), \(p=\dim(S)\), and \(\beta=p/d_0\). Every \(A\in\mathcal C_n\) is a convex combination of matrices \(zz^\top\) with \(z\in\mathcal Z_n\). Consequently,
+\[
+A\succeq0,
+\qquad
+A\mathbf1_n=0,
+\qquad
+\operatorname{diag}(A)=\mathbf1_n,
+\qquad
+\operatorname{tr}(A\mid H_n)=n.
+\tag{1}
+\]
+It follows that \(\lambda_{\max}(A\mid H_n)\geq c_n=n/d_0\), with equality at \(A_{\mathrm{CRD}}=c_nP_H\).
+
+At \(s=1\), the admissible unit vectors are precisely those in \(S\), so
+\[
+q_1(A;S)=\lambda_{\max}(P_SAP_S\mid S),
+\qquad
+v^*(1;S)=\kappa(S).
+\tag{2}
+\]
+If improvement occurs at some \(s<1\), nesting of the adversary shells gives \(\kappa(S)<c_n\). Conversely, let \(A_0\) attain \(\kappa(S)<c_n\). Compactness of the unit sphere gives
+\[
+q_{\sqrt{s}}(A_0;S)\longrightarrow q_1(A_0;S)=\kappa(S)
+\qquad(s\uparrow1).
+\tag{3}
+\]
+Indeed, any sequence of maximizing unit vectors has a convergent subsequence, and a limit of vectors whose score energy tends to one lies in \(S\). Thus
+\[
+S\in\mathfrak A_n
+\quad\Longleftrightarrow\quad
+\kappa(S)<c_n.
+\tag{4}
+\]
+
+By \(\text{thm:cone-lift-dual}\), and because the multiplier-zero value is at least \(c_n\),
+\[
+\begin{aligned}
+v^*(\sqrt{s};S)<c_n
+&\Longleftrightarrow
+\text{there exist }A\in\mathcal C_n\text{ and }\eta>0\text{ such that}\\
+&\hspace{1.5cm}
+\lambda_{\max}(A+\eta P_S\mid H_n)-\eta s<c_n\\
+&\Longleftrightarrow
+s>\inf_{A\in\mathcal C_n,\,\eta>0}
+\frac{\lambda_{\max}(A+\eta P_S\mid H_n)-c_n}{\eta}\\
+&\Longleftrightarrow s>\gamma(S).
+\end{aligned}
+\tag{5}
+\]
+The first equivalence also holds at \(s=1\): if the scalar-dual infimum lies below \(c_n\), some finite multiplier already lies below \(c_n\). Taking \(A=c_nP_H\) gives \(\gamma(S)\leq1\). Hence the improving squared-quality set is \((\gamma(S),1]\) when \(\gamma(S)<1\), and is empty when \(\gamma(S)=1\). Equations \((4)\)--\((5)\) prove the three-way equivalence and the formula for \(\rho^*(S)\).
+
+We next establish the affine-hull fact needed to identify \(\gamma(S)\) exactly. Let
+\[
+\mathcal L=\{B\in\mathbb S^n:\operatorname{diag}(B)=0,\ B\mathbf1_n=0\}.
+\]
+Then
+\[
+\operatorname{aff}(\mathcal C_n)=c_nP_H+\mathcal L,
+\qquad
+c_nP_H\in\operatorname{relint}(\mathcal C_n).
+\tag{6}
+\]
+The forward affine inclusion follows from \((1)\). For the reverse inclusion, suppose that a symmetric matrix \(Q=(q_{ij})\) has \(z^\top Qz\) constant over balanced sign vectors. Write \(z_T=2\mathbf1_T-\mathbf1_n\) for each \(T\subseteq\{1,\ldots,n\}\) of size \(n/2\). Given four distinct indices \(i,j,k,\ell\), choose \(U\) of size \(n/2-2\) disjoint from them. The alternating sum corresponding to
+\[
+U\cup\{i,k\},\quad U\cup\{j,k\},\quad
+U\cup\{i,\ell\},\quad U\cup\{j,\ell\}
+\]
+yields
+\[
+q_{ik}-q_{jk}-q_{i\ell}+q_{j\ell}=0.
+\tag{7}
+\]
+Choosing three anchors and applying \((7)\) shows that \(q_{ij}=a_i+a_j\) off the diagonal. Thus \(Q\) differs from \(\mathbf1_na^\top+a\mathbf1_n^\top\) by a diagonal matrix and is orthogonal to \(\mathcal L\). Equality of orthogonal complements proves the affine equality in \((6)\). The uniform average of the distinct balanced matrices \(zz^\top\) is \(c_nP_H\). Every element of \(\mathcal L\) is a zero-sum linear combination of these matrices by the affine equality, and sufficiently small positive and negative perturbations of their uniform weights remain nonnegative. This proves the relative-interior assertion.
+
+Define
+\[
+g(S)=\inf_{\substack{K=K^\top,\ K\mathbf1_n=0\\
+\operatorname{diag}(K)=\operatorname{diag}(P_S)}}
+\lambda_{\max}(K\mid H_n).
+\tag{8}
+\]
+For every \(A\in\mathcal C_n\) and \(\eta>0\), set
+\[
+K=P_S+\eta^{-1}(A-c_nP_H).
+\tag{9}
+\]
+Equations \((1)\) and \(\operatorname{diag}(c_nP_H)=\mathbf1_n\) show that \(K\mathbf1_n=0\) and \(\operatorname{diag}(K)=\operatorname{diag}(P_S)\). Moreover, on \(H_n\),
+\[
+A+\eta P_S=c_nP_H+\eta K,
+\]
+so
+\[
+\frac{\lambda_{\max}(A+\eta P_S\mid H_n)-c_n}{\eta}
+=\lambda_{\max}(K\mid H_n).
+\tag{10}
+\]
+Taking the infimum gives \(\gamma(S)\geq g(S)\).
+
+Conversely, let \(K\) satisfy the affine constraints in \((8)\). Then \(K-P_S\in\mathcal L\), so \((6)\) implies that for every sufficiently small \(t>0\),
+\[
+A_t=c_nP_H+t(K-P_S)\in\mathcal C_n.
+\tag{11}
+\]
+Using the multiplier \(\eta=t\), we obtain \(A_t+tP_S=c_nP_H+tK\), and hence the quotient defining \(\gamma(S)\) equals \(\lambda_{\max}(K\mid H_n)\). Therefore
+\[
+\gamma(S)=g(S).
+\tag{12}
+\]
+
+We now evaluate \((8)\). For nonnegative numbers \(r_1,\ldots,r_n\), vectors \(v_1,\ldots,v_n\) with
+\[
+\|v_i\|_2=r_i,
+\qquad
+\sum_{i=1}^n v_i=0
+\tag{13}
+\]
+exist if and only if
+\[
+2\max_i r_i\leq\sum_{i=1}^n r_i.
+\tag{14}
+\]
+Necessity is the triangle inequality after isolating a longest vector. For sufficiency, the possible lengths of the sum of planar vectors with prescribed lengths \(r_1,\ldots,r_k\) form the interval
+\[
+\left[
+\max\left\{0,2\max_{i\leq k}r_i-\sum_{i\leq k}r_i\right\},
+\sum_{i\leq k}r_i
+\right].
+\tag{15}
+\]
+This follows by induction: after the first \(k-1\) vectors have resultant length \(x\), adjoining a vector of length \(r_k\) produces every length in \([|x-r_k|,x+r_k]\), and these intervals overlap as \(x\) ranges over the preceding interval. Condition \((14)\) makes the left endpoint in \((15)\) equal to zero. Taking \(D_{ij}=v_i^\top v_j\), and conversely using a Gram representation, proves that prescribed \(d_i\geq0\) admit
+\[
+D\succeq0,
+\qquad
+D\mathbf1_n=0,
+\qquad
+\operatorname{diag}(D)=d
+\tag{16}
+\]
+if and only if
+\[
+2\max_i\sqrt{d_i}\leq\sum_{i=1}^n\sqrt{d_i}.
+\tag{17}
+\]
+
+Every affine-feasible \(K\) in \((8)\) has trace \(p\) on the \((n-1)\)-dimensional space \(H_n\), so \(\lambda_{\max}(K\mid H_n)\geq\beta\). The choice \(K=P_S\) shows that the infimum is at most one. Fix \(t\in[\beta,1]\). If an affine-feasible \(K\) satisfies \(\lambda_{\max}(K\mid H_n)\leq t\), then
+\[
+D=tP_H-K\succeq0,
+\qquad
+D\mathbf1_n=0,
+\qquad
+D_{ii}=\frac{n-1}{n}t-\ell_i=d_i(t).
+\tag{18}
+\]
+By \((16)\)--\((17)\), \(t\) belongs to the set defining \(U(\ell)\). Conversely, if \(t\) belongs to that set, \((16)\)--\((17)\) produce such a matrix \(D\). Then
+\[
+K=tP_H-D
+\tag{19}
+\]
+annihilates \(\mathbf1_n\), has diagonal \(\ell\), and obeys \(K\preceq tP_H\), so \(\lambda_{\max}(K\mid H_n)\leq t\). The defining set for \(U(\ell)\) is closed and nonempty: at \(t=1\), the matrix \(P_H-P_S\) verifies \((16)\). Feasibility also persists upward, because if \(D_0\) is feasible at \(t_0\), then
+\[
+D_t=D_0+(t-t_0)P_H
+\]
+is feasible at every \(t\geq t_0\). Hence the minimum exists, bisection is valid, and \((12)\), \((18)\), and \((19)\) give
+\[
+\gamma(S)=g(S)=U(\ell).
+\tag{20}
+\]
+
+For the leverage bound, if \(\lambda=\lambda_{\max}(A+\eta P_S\mid H_n)\), then positive semidefiniteness and support on \(H_n\) give
+\[
+A+\eta P_S\preceq\lambda P_H.
+\]
+Taking diagonal entries and using \((1)\) yields
+\[
+1+\eta\ell_i\leq\lambda\frac{n-1}{n},
+\qquad
+\frac{\lambda-c_n}{\eta}\geq\frac{n}{n-1}\ell_i.
+\tag{21}
+\]
+Maximizing over \(i\) and taking the infimum gives
+\[
+\gamma(S)\geq\frac{n}{n-1}\max_i\ell_i
+\geq\frac{p}{n-1},
+\tag{22}
+\]
+where \(\sum_i\ell_i=p\). If \(\gamma(S)=\beta\), equation \((22)\) forces every \(\ell_i=p/n\). Conversely, equal leverage makes \(d_i(\beta)=0\) for every \(i\), so \((20)\) gives \(\gamma(S)=\beta\). This proves the equality characterization.
+
+For the four-unit checks, the three leverage vectors are
+\[
+\left(\tfrac14,\tfrac14,\tfrac14,\tfrac14\right),
+\qquad
+\left(\tfrac16,\tfrac16,0,\tfrac23\right),
+\qquad
+\left(\tfrac34,\tfrac1{12},\tfrac1{12},\tfrac1{12}\right).
+\tag{23}
+\]
+For the first, \(t=1/3\) makes every \(d_i(t)=0\). For the second, diagonal nonnegativity forces \(t\geq8/9\), and at \(t=8/9\) the values of \(d_i(t)\) are \((1/2,1/2,2/3,0)\), whose square roots satisfy \((17)\). For the third, diagonal nonnegativity of the first coordinate forces \(t\geq1\). Formula \((20)\) therefore gives the exact values \(1/3\), \(8/9\), and \(1\).
+
+Finally, \((5)\) and the positive scaling \(V^*=(4M/n)v^*\) give the displayed causal-risk implications. The leverage vector is computed from any score basis by forming its orthogonal projector. Formula \((20)\), together with upward persistence of feasibility, gives a score-matrix-only one-dimensional computation of \(\gamma(S)\) and \(\rho^*(S)\). If \(z^{(1)},\ldots,z^{(m)}\) represent the balanced sign-pairs and \(Q_S\) is an orthonormal basis for \(S\), enumeration turns \(\kappa(S)\) into the explicit semidefinite program
+\[
+\min_{a\in\Delta_m,\,r}\ r
+\quad\text{subject to}\quad
+rI_p-Q_S^\top\left\{\sum_{j=1}^m a_jz^{(j)}z^{(j)\top}\right\}Q_S\succeq0.
+\tag{24}
+\]
+The finite saddle program in \(\text{thm:exact-oracle-saddle}\) computes quality-specific optimal weights, and sign symmetrization yields an \(\varepsilon\)-optimal implementable balanced assignment law. The causal target remains the fixed finite-population SATE; the optimized quantities are design risks. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The theorem turns the arbitrary-subspace design-stage admissibility question into the exact computable identity \(\gamma(S)=U(\operatorname{diag}(P_S))\), proves the equivalence with \(\kappa(S)<c_n\), and gives the sharp threshold \(\rho^*(S)=\sqrt{\gamma(S)}\). It supplies the leverage certificate used by the partition results: for unequal two-block spaces the subsequent exact reduction gives squared threshold \(s_0=\ell/\{m(n-1)\}\), while homogeneous even blocks attain the dimension lower bound and matched pairs follow as a specialization. \textit{Gap.} The broader mixed-strategy and largest-eigenvalue framework does not show that the projector leverage profile alone determines the critical squared score quality inside the realizable fixed-count covariance hull. The missing step is the exact affine-hull reduction and zero-sum Gram-diagonal feasibility characterization, not generic existence of an optimal mixture. \textit{Consumer.} Given a basis for \(S\), a protocol author forms \(P_S\), evaluates the leverage deficits by one-dimensional feasibility search, and obtains \(\rho^*(S)\) without enumerating assignments. The author can then screen design-useless score geometries and, only when a quality regime is specified, use the finite saddle program to recover an implementable sign-pair mixture. For unequal two-block and homogeneous even-block score spaces, the companion partition formulas remove even that final numerical optimization.
+
+\begin{proposition}[prop:endpoint-reductions]\label{prop:endpoint-reductions}
+If \(S=H_n\), then \(v^*(\rho;S)=c_n\) for every \(\rho\in[0,1]\), so \(S\notin\mathfrak A_n\). Let \(r_1=(1,0,\ldots,0)^\top\), and define the singleton-versus-rest score space and its normalized basis by
+\[
+S_{\mathrm{out}}=\operatorname{span}\{P_Hr_1\},
+\qquad
+u_{\mathrm{out}}=\frac{P_Hr_1}{\|P_Hr_1\|_2}.
+\]
+For every \(z\in\mathcal Z_n\), \((u_{\mathrm{out}}^\top z)^2=c_n\), and consequently
+\[
+v^*(\rho;S_{\mathrm{out}})=c_n\quad(0\leq\rho\leq1),
+\qquad
+\kappa(S_{\mathrm{out}})=c_n,
+\qquad
+\gamma(S_{\mathrm{out}})=1,
+\qquad
+S_{\mathrm{out}}\notin\mathfrak A_n.
+\]
+At \(n=4\), define
+\[
+u_{\mathrm{mid}}=6^{-1/2}(1,1,0,-2)^\top,
+\qquad
+S_{\mathrm{mid}}=\operatorname{span}\{u_{\mathrm{mid}}\}.
+\]
+Then
+\[
+\kappa(S_{\mathrm{mid}})=\frac23,
+\qquad
+\gamma(S_{\mathrm{mid}})=\frac89,
+\qquad
+\rho^*(S_{\mathrm{mid}})=\frac{2\sqrt2}{3},
+\qquad
+S_{\mathrm{mid}}\in\mathfrak A_4.
+\]
+For the worked equal-leverage basis \(u_4=2^{-1}(1,1,-1,-1)^\top\) and \(S_4=\operatorname{span}\{u_4\}=S_{\mathrm{pair}}\), the displayed balanced sign-pair mixture \(d_{\mathrm{pair},4}\) has covariance \(A_{\mathrm{pair},4}\) and satisfies
+\[
+v^*(\rho;S_4)=\min\left\{\frac43,\ 2(1-\rho^2)\right\},
+\qquad
+\kappa(S_4)=0,
+\qquad
+\gamma(S_4)=\frac13,
+\qquad
+\rho^*(S_4)=\frac1{\sqrt3}.
+\]
+Complete randomization attains the first branch for \(\rho\leq1/\sqrt3\), while \(d_{\mathrm{pair},4}\) attains the second branch for \(\rho\geq1/\sqrt3\). Thus the three rank-one four-unit spaces \(S_4\), \(S_{\mathrm{mid}}\), and \(S_{\mathrm{out}}\) have threshold invariants \(1/3\), \(8/9\), and \(1\), respectively, so the variational invariant contains information not determined by dimension alone. More generally, independent fair orientations within fixed pairs give \(\kappa(S_{\mathrm{pair}})=0\), so \(S_{\mathrm{pair}}\in\mathfrak A_n\). At \(n=8\) and \(M=1\), \(V^*(1;S_{\mathrm{pair}})=0\) while \(V_{\mathrm{CRD}}(1;S_{\mathrm{pair}})=4/7\).
+\end{proposition}
+\begin{proof}
+\textbf{Proof.}
+Suppose first that \(S=H_n\).  The score constraint is automatic for every unit vector in \(H_n\), and hence
+\[
+q_\rho(A;H_n)=\lambda_{\max}(A\mid H_n).
+\tag{1}
+\]
+Every \(A\in\mathcal C_n\) is positive semidefinite, annihilates \(\mathbf1_n\), and has trace \(n\).  Therefore
+\[
+\lambda_{\max}(A\mid H_n)\geq\frac{n}{n-1}=c_n.
+\tag{2}
+\]
+Complete randomization has covariance \(c_nP_H\), so \((1)\)--\((2)\) give \(v^*(\rho;H_n)=c_n\) for every \(\rho\), and thus \(H_n\notin\mathfrak A_n\).
+
+For the singleton-versus-rest geometry, put \(w=P_Hr_1\) and \(u_{\mathrm{out}}=w/\|w\|_2\).  Since
+\[
+w=r_1-\frac1n\mathbf1_n,
+\qquad
+\|w\|_2^2=r_1^\top P_Hr_1=1-\frac1n=\frac{n-1}{n},
+\tag{3}
+\]
+every balanced assignment \(z\in\mathcal Z_n\) satisfies
+\[
+(u_{\mathrm{out}}^\top z)^2
+=\frac{(r_1^\top z)^2}{\|w\|_2^2}
+=\frac{n}{n-1}=c_n,
+\tag{4}
+\]
+because \(\mathbf1_n^\top z=0\) and \(z_1^2=1\).  Convex averaging gives, for every \(A\in\mathcal C_n\),
+\[
+u_{\mathrm{out}}^\top Au_{\mathrm{out}}=c_n.
+\tag{5}
+\]
+The vector \(u_{\mathrm{out}}\) lies in \(S_{\mathrm{out}}\), so it is feasible at every quality.  Thus \(q_\rho(A;S_{\mathrm{out}})\geq c_n\), while complete randomization attains equality.  Hence
+\[
+v^*(\rho;S_{\mathrm{out}})=c_n
+\qquad(0\leq\rho\leq1).
+\tag{6}
+\]
+Because \(S_{\mathrm{out}}\) is one-dimensional, \((5)\) also gives \(\kappa(S_{\mathrm{out}})=c_n\).  The admissibility-frontier theorem then gives \(S_{\mathrm{out}}\notin\mathfrak A_n\) and \(\gamma(S_{\mathrm{out}})=1\).
+
+We next prove the intermediate four-unit calculation by exact enumeration.  Choose the three balanced sign-pair representatives
+\[
+z^{(1)}=(1,1,-1,-1)^\top,
+\quad
+z^{(2)}=(1,-1,1,-1)^\top,
+\quad
+z^{(3)}=(1,-1,-1,1)^\top,
+\tag{7}
+\]
+and put \(e_j=z^{(j)}/2\).  Every balanced four-unit assignment is one of \(\pm z^{(1)},\pm z^{(2)},\pm z^{(3)}\), and \((e_1,e_2,e_3)\) is an orthonormal basis of \(H_4\).  Every \(A\in\mathcal C_4\) is diagonal in this basis with eigenvalues
+\[
+\lambda_j=4a_j\geq0,
+\qquad
+\lambda_1+\lambda_2+\lambda_3=4,
+\tag{8}
+\]
+for some probability vector \((a_1,a_2,a_3)\).  The coordinates of \(u_{\mathrm{mid}}\) are
+\[
+(e_1^\top u_{\mathrm{mid}},e_2^\top u_{\mathrm{mid}},e_3^\top u_{\mathrm{mid}})
+=\left(\sqrt{\frac23},\sqrt{\frac16},-\sqrt{\frac16}\right).
+\tag{9}
+\]
+It follows that
+\[
+u_{\mathrm{mid}}^\top Au_{\mathrm{mid}}
+=\frac23\lambda_1+\frac16\lambda_2+\frac16\lambda_3
+\geq\frac23.
+\tag{10}
+\]
+Equality is attained, for example, by \((\lambda_1,\lambda_2,\lambda_3)=(0,4,0)\).  Since \(S_{\mathrm{mid}}\) is one-dimensional, this proves \(\kappa(S_{\mathrm{mid}})=2/3\).
+
+To calculate \(\gamma(S_{\mathrm{mid}})\), reverse the sign of \(e_3\).  This preserves the diagonal representation and changes the coordinate vector in \((9)\) to
+\[
+c=\frac1{\sqrt6}(2,1,1)^\top.
+\tag{11}
+\]
+Let \(r=3^{-1/2}(1,1,1)^\top\).  For every feasible diagonal covariance and every \(\eta>0\), the Rayleigh quotient at \(r\) gives
+\[
+\lambda_{\max}(A+\eta P_{S_{\mathrm{mid}}}\mid H_4)
+\geq r^\top\{A+\eta cc^\top\}r
+=\frac43+\frac89\eta.
+\tag{12}
+\]
+Thus every quotient defining \(\gamma(S_{\mathrm{mid}})\) is at least \(8/9\).  For the matching attainment, fix \(0<\eta\leq3\) and choose the feasible covariance whose eigenvalues are
+\[
+\lambda_1=\frac43-\frac49\eta,
+\qquad
+\lambda_2=\lambda_3=\frac43+\frac29\eta.
+\tag{13}
+\]
+They are nonnegative and sum to four.  Direct multiplication shows that the eigenvalues of \(A+\eta cc^\top\) are
+\[
+\frac43+\frac89\eta,
+\qquad
+\frac43+\frac29\eta,
+\qquad
+\frac43-\frac19\eta,
+\tag{14}
+\]
+with respective eigenvectors proportional to \((1,1,1)^\top\), \((0,1,-1)^\top\), and \((-2,1,1)^\top\).  The first is largest, so
+\[
+\gamma(S_{\mathrm{mid}})=\frac89.
+\tag{15}
+\]
+The admissibility-frontier theorem yields
+\[
+S_{\mathrm{mid}}\in\mathfrak A_4,
+\qquad
+\rho^*(S_{\mathrm{mid}})=\sqrt{\frac89}=\frac{2\sqrt2}{3}.
+\tag{16}
+\]
+
+For the pair geometry, \(\text{lem:pair-space-exact-frontier}\), specialized to homogeneous blocks of size two, gives for every even \(n\geq4\)
+\[
+v^*(\rho;S_{\mathrm{pair}})
+=\min\left\{\frac{n}{n-1},2(1-\rho^2)\right\},
+\qquad
+\kappa(S_{\mathrm{pair}})=0,
+\tag{17}
+\]
+and
+\[
+\gamma(S_{\mathrm{pair}})=\frac{n-2}{2(n-1)},
+\qquad
+\rho^*(S_{\mathrm{pair}})=\sqrt{\frac{n-2}{2(n-1)}}.
+\tag{18}
+\]
+At \(n=4\), together with \(S_4=S_{\mathrm{pair}}\), these become
+\[
+v^*(\rho;S_4)=\min\left\{\frac43,2(1-\rho^2)\right\},
+\quad
+\kappa(S_4)=0,
+\quad
+\gamma(S_4)=\frac13,
+\quad
+\rho^*(S_4)=\frac1{\sqrt3}.
+\tag{19}
+\]
+The branches meet at \(\rho^2=1/3\), and the lemma supplies complete randomization and independent fair within-pair orientations as their respective attaining designs.
+
+To verify the displayed four-unit law directly, put
+\[
+a=(1,-1,1,-1)^\top,
+\qquad
+b=(1,-1,-1,1)^\top.
+\]
+The support of \(d_{\mathrm{pair},4}\) is \(\{a,-a,b,-b\}\), with probability \(1/4\) at each point.  It is balanced and sign symmetric, and
+\[
+\begin{aligned}
+\mathbb E_{d_{\mathrm{pair},4}}[zz^\top]
+&=\frac12aa^\top+\frac12bb^\top\\
+&=\begin{pmatrix}
+1&-1&0&0\\
+-1&1&0&0\\
+0&0&1&-1\\
+0&0&-1&1
+\end{pmatrix}
+=A_{\mathrm{pair},4}.
+\end{aligned}
+\tag{20}
+\]
+For general even \(n\), \(\kappa(S_{\mathrm{pair}})=0<c_n\), so \(S_{\mathrm{pair}}\in\mathfrak A_n\).  The three four-unit leverage profiles consequently have threshold invariants \(1/3\), \(8/9\), and \(1\), despite having the same dimension.  Finally, at \(n=8\), \(M=1\), and \(\rho=1\),
+\[
+V^*(1;S_{\mathrm{pair}})=\frac{4M}{n}v^*(1;S_{\mathrm{pair}})=0,
+\qquad
+V_{\mathrm{CRD}}(1;S_{\mathrm{pair}})=\frac{4M}{n-1}=\frac47.
+\tag{21}
+\]
+This proves every assertion. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The endpoint proposition gives three reproducible rank-one four-unit geometries with exact thresholds \(1/3\), \(8/9\), and \(1\), plus the eight-unit perfect-quality pair check. \textit{Gap.} Dimension alone does not distinguish equal-leverage, intermediate, and design-useless rank-one scores; the explicit covariance witnesses expose the leverage-profile effect. \textit{Consumer.} The examples provide exact unit tests for implementations and concrete warnings against extrapolating perfect-quality matched-pair gains to lower-quality outcomes.
+
+\begin{theorem}[thm:finite-unknown-quality-regret]\label{thm:finite-unknown-quality-regret}
+Let \(z^{(1)},\ldots,z^{(m)}\) contain one representative from every balanced sign-pair, where \(m=|\mathcal Z_n|/2\), let \(\Delta_m\) be the probability simplex, and put \(A(a)=\sum_{j=1}^m a_jz^{(j)}z^{(j)\top}\).  If \(Q_H\) is any orthonormal basis matrix for \(H_n\), then the normalized unknown-quality regret has the exact finite, generally exponential, robust semidefinite representation
+\[
+\frac{n}{4M}R^*(n,S)
+=\min_{a\in\Delta_m}\ \sup_{\substack{u\in H_n,\ \|u\|_2=1;\ b\in\Delta_m,\ \eta\geq0,\ \ell\in\mathbb R\\
+\ell I_{n-1}-Q_H^\top\{A(b)+\eta P_S\}Q_H\succeq0}}
+\left[u^\top A(a)u+\eta u^\top P_Su-\ell\right],
+\]
+where the value closure at \(\eta=\infty\) is the compressed-spectrum endpoint specified in the regret handle.  The outer minimum is attained and, with \(p=\dim(S)\), satisfies the universal quantitative bounds
+\[
+\frac{p}{n-1}\{c_n-\kappa(S)\}
+\leq\frac{n}{4M}R^*(n,S)
+\leq c_n-\kappa(S).
+\]
+Complete randomization witnesses the upper bound.  The lower bound is attained for every homogeneous even-block score space, and both bounds equal zero whenever \(\kappa(S)=c_n\).
+
+Symmetrizing optimal cut-hull weights gives a design \(d_{\mathrm{reg}}\in\mathcal D_n\) satisfying
+\[
+\sup_{\rho\in[0,1]}
+\left\{
+\sup_{\mu\in\mathcal Y(\rho,M;S)}
+\mathbb E_{d_{\mathrm{reg}}}[(\widehat\tau_{d_{\mathrm{reg}}}-\tau_n)^2]
+-V^*(\rho;S)
+\right\}=R^*(n,S),
+\]
+whereas the left side is at least \(R^*(n,S)\) for every single \(d\in\mathcal D_n\) chosen without knowledge of \(\rho\).  Thus an arbitrary score space has an exact finite program and nonvacuous value bounds; no general closed form or polynomial-time claim is made.
+\end{theorem}
+\begin{proof}
+\textbf{Proof.}
+Write \(s=\rho^2\), \(q_s(A)=q_{\sqrt{s}}(A;S)\), and \(v(s)=v^*(\sqrt{s};S)\).  For a unit vector \(u\in H_n\), put \(t(u)=u^\top P_Su\).  Compactness of every spherical shell and monotonicity of \(v\) give
+\[
+\sup_{0\leq s\leq1}\{q_s(A)-v(s)\}
+=\sup_{\substack{u\in H_n\\\|u\|_2=1}}
+\{u^\top Au-v(t(u))\}.
+\tag{1}
+\]
+For the lower inequality, set \(s=t(u)\).  For the reverse inequality, choose a maximizer \(u_s\) for \(q_s(A)\); since \(t(u_s)\geq s\) and \(v\) is nonincreasing,
+\[
+q_s(A)-v(s)\leq u_s^\top Au_s-v(t(u_s)).
+\]
+
+Every \(B\in\mathcal C_n\) is \(A(b)\) for some \(b\in\Delta_m\).  The scalar dual in \(\text{thm:cone-lift-dual}\) therefore yields
+\[
+v(t)=
+\inf_{\substack{b\in\Delta_m,\ \eta\geq0,\ \ell\in\mathbb R\\
+\ell I_{n-1}-Q_H^\top\{A(b)+\eta P_S\}Q_H\succeq0}}
+\{\ell-\eta t\}.
+\tag{2}
+\]
+Indeed, the matrix inequality is equivalent to \(\ell\geq\lambda_{\max}(A(b)+\eta P_S\mid H_n)\).  At \(t=1\), equation \((2)\) is interpreted by the compactified compressed-spectrum limit in \(\text{thm:cone-lift-dual}\) and \(\text{def:regret-handle}\); equality of values does not require a finite multiplier.  Substituting \((2)\) into \((1)\), using the identity that the negative of an infimum is the supremum of the negatives, gives
+\[
+\Delta_{\mathrm{reg}}(A(a);S)
+=\sup_{\substack{u\in H_n,\ \|u\|_2=1;\ b\in\Delta_m,\ \eta\geq0,\ \ell\in\mathbb R\\
+\ell I_{n-1}-Q_H^\top\{A(b)+\eta P_S\}Q_H\succeq0}}
+\left[u^\top A(a)u+\eta u^\top P_Su-\ell\right].
+\tag{3}
+\]
+Minimizing over \(a\in\Delta_m\) and applying \(\text{def:regret-object}\) proves the displayed robust representation.  It is finite-dimensional; the number \(m=\binom{n}{n/2}/2\) of balanced sign-pairs is generally exponential in \(n\).  The compactified endpoint is precisely the value closure specified in the regret handle.
+
+We next prove the universal bounds.  For fixed \(A\in\mathcal C_n\), define
+\[
+L=\lambda_{\max}(A\mid H_n),
+\qquad
+K=\lambda_{\max}(P_SAP_S\mid S),
+\qquad
+r=\Delta_{\mathrm{reg}}(A;S).
+\]
+At the two quality endpoints, \(q_0(A)=L\), \(v(0)=c_n\), \(q_1(A)=K\), and \(v(1)=\kappa(S)\).  Hence
+\[
+r\geq L-c_n,
+\qquad
+r\geq K-\kappa(S).
+\tag{4}
+\]
+Let \(T=H_n\cap S^\perp\), so \(\dim(T)=n-1-p\).  Taking traces of the two diagonal compressions and bounding their eigenvalues by \(K\) and \(L\), respectively, gives
+\[
+n=\operatorname{tr}(A\mid H_n)
+\leq pK+(n-1-p)L.
+\tag{5}
+\]
+By \((4)\), \(K\leq r+\kappa(S)\) and \(L\leq r+c_n\).  Substitution in \((5)\), followed by \((n-1)c_n=n\), yields
+\[
+r\geq\frac{p}{n-1}\{c_n-\kappa(S)\}.
+\tag{6}
+\]
+For the upper bound choose complete randomization.  Its loss is \(c_n\) for every \(s\), while \(v(s)\) is nonincreasing from \(c_n\) to \(\kappa(S)\).  Therefore
+\[
+\Delta_{\mathrm{reg}}(c_nP_H;S)=c_n-\kappa(S).
+\tag{7}
+\]
+Equations \((6)\)--\((7)\) prove the universal bounds and also show that both vanish when \(\kappa(S)=c_n\).
+
+We verify the asserted lower-bound equality for homogeneous even blocks.  Suppose \(S=S_B\) comes from \(B\) equal blocks of even size.  Put \(p=B-1\), \(h=n-B\), \(\beta=p/(n-1)\), and \(\delta=n/h\).  Averaging within blocks and across blocks preserves the covariance hull and the score shells and cannot increase loss by convexity.  The resulting covariance acts as \(aP_S+b(P_H-P_S)\), with
+\[
+pa+hb=n.
+\tag{8}
+\]
+Its shell loss is \(\max\{a,sa+(1-s)b\}\).  For \(0\leq a\leq c_n\), equation \((8)\) gives \(b\geq a\) and
+\[
+sa+(1-s)b
+=\delta(1-s)+a\left\{s-\frac{p}{h}(1-s)\right\}.
+\tag{9}
+\]
+The coefficient of \(a\) changes sign at \(s=\beta\); values \(a>c_n\) already have loss above the complete-randomization value.  Complete randomization realizes \(a=b=c_n\), and independent complete randomization within the even blocks realizes \(a=0\), \(b=\delta\).  Therefore
+\[
+v(s)=\min\{c_n,\delta(1-s)\},
+\qquad
+\kappa(S_B)=0,
+\qquad
+c_n=\delta(1-\beta).
+\tag{10}
+\]
+The mixture placing weight \(\beta\) on complete randomization and weight \(1-\beta\) on the within-block design has loss
+\[
+\beta c_n+(1-\beta)\delta(1-s).
+\]
+Subtracting the two branches in \((10)\) shows that its regret is maximized at \(s=0\) and \(s=1\), with common value
+\[
+c_n\beta=\frac{p}{n-1}\{c_n-\kappa(S_B)\}.
+\tag{11}
+\]
+Thus every homogeneous even-block score space attains the universal lower bound.
+
+It remains to prove outer attainment and the design interpretation.  The fixed-design shell loss is jointly continuous in \(A\) and \(s\).  If \(S\neq H_n\), write every unit vector of exact score energy \(t\) as
+\[
+u=\sqrt t\,x+\sqrt{1-t}\,y,
+\qquad x\in S,\quad y\in H_n\cap S^\perp,
+\]
+with \(x\) and \(y\) unit vectors.  The quadratic form
+\[
+t x^\top Ax+(1-t)y^\top Ay
++2\sqrt{t(1-t)}x^\top Ay
+\]
+is jointly continuous on a compact parameter set, and parameterizing \(t=s+(1-s)e\), \(e\in[0,1]\), proves continuity of \(q_s(A)\).  The case \(S=H_n\) is immediate.  Compact minimization over \(A\in\mathcal C_n\) makes \(v(s)\) continuous, and \((1)\) then makes \(\Delta_{\mathrm{reg}}(A;S)\) continuous in \(A\).  Since \(\mathcal C_n\) is compact, an outer minimizer \(A_{\mathrm{reg}}\) exists.  By \(\text{lem:balanced-covariance-realizability}\), its cut-hull weights can be sign-symmetrized into a mean-zero balanced design \(d_{\mathrm{reg}}\).
+
+Finally, \(\text{thm:exact-oracle-saddle}\) and \(\text{lem:exact-design-risk}\) give, for every \(d\in\mathcal D_n\),
+\[
+\begin{aligned}
+&\sup_{\rho\in[0,1]}
+\left\{
+\sup_{\mu\in\mathcal Y(\rho,M;S)}
+\mathbb E_d[(\widehat\tau_d-\tau_n)^2]-V^*(\rho;S)
+\right\}\\
+&\qquad=\frac{4M}{n}\Delta_{\mathrm{reg}}(A_d;S)
+\geq R^*(n,S),
+\end{aligned}
+\tag{12}
+\]
+with equality for the design realizing \(A_{\mathrm{reg}}\).  Thus the design is chosen without knowledge of \(\rho\), the converse ranges over all \(d\in\mathcal D_n\), and the only randomness is assignment.  No general closed form or polynomial-time conclusion has been used. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The theorem gives an exact finite quality-agnostic design program together with nonvacuous universal lower and upper value certificates; complete randomization witnesses the upper bound and homogeneous even blocks attain the lower bound. \textit{Gap.} Generic existence or decidability does not quantify the price of choosing one design when the score-quality lower bound is unknown at randomization time. \textit{Consumer.} A designer obtains a certified interval for the optimal additive regret, an attaining balanced assignment mixture from the robust program, and exact equality information for homogeneous block designs.
+
+\begin{lemma}[lem:pair-space-exact-frontier]\label{lem:pair-space-exact-frontier}
+Let \(\mathcal P=(G_1,\ldots,G_B)\) be a partition of \(\{1,\ldots,n\}\), where \(B\geq2\), and put \(m_j=|G_j|\).  For every \(\rho\in[0,1]\), within-block orbit averaging gives the exact finite reduction
+\[
+v^*(\rho;S_{\mathcal P})
+=\min_{G\in\mathcal G_{\mathcal P}}
+q_\rho\!\left(A_{\mathcal P}(G);S_{\mathcal P}\right).
+\]
+Every reduced covariance is realized by within-block permutation and sign symmetrization, and for every \(A\in\mathcal C_n\) a reduced covariance has no larger loss.  Thus the reduction supplies an attaining design and a matching converse over the full balanced covariance hull.  Moreover,
+\[
+\kappa(S_{\mathcal P})=0
+\quad\Longleftrightarrow\quad
+m_j\text{ is even for every }j=1,\ldots,B.
+\]
+
+For the unequal two-block family, let \(B=2\), let \(m=\min(m_1,m_2)\), let \(\ell=\max(m_1,m_2)\), and suppose \(m<\ell\).  The two block sizes have the same parity.  Put \(e=0\) in the even--even case and \(e=1\) in the odd--odd case.  The block-sum moment polytope is the interval
+\[
+q=\mathbb E[R_1^2]=\mathbb E[R_2^2]\in[e,m^2],
+\qquad
+q_c=\frac{m\ell}{n-1}.
+\]
+For \(m>1\), define
+\[
+\kappa_2=\frac{ne}{m\ell},
+\qquad
+b_0=\frac{m^2-e}{m(m-1)},
+\qquad
+s_0=\frac{\ell}{m(n-1)}.
+\]
+Then the exact oracle frontier, threshold, and normalized regret are
+\[
+v^*(\rho;S_{\mathcal P})
+=\min\{c_n,\,(1-\rho^2)b_0+\rho^2\kappa_2\},
+\qquad
+\kappa(S_{\mathcal P})=\kappa_2,
+\qquad
+\gamma(S_{\mathcal P})=s_0,
+\qquad
+\rho^*(S_{\mathcal P})=\sqrt{s_0},
+\]
+and
+\[
+\min_{A\in\mathcal C_n}\Delta_{\mathrm{reg}}(A;S_{\mathcal P})
+=s_0(c_n-\kappa_2),
+\qquad
+R^*(n,S_{\mathcal P})
+=\frac{4M}{n}s_0(c_n-\kappa_2).
+\]
+Complete randomization, whose block-sum moment is \(q_c\), attains the first oracle branch.  A parity-endpoint design with block sums \((0,0)\) in the even--even case or \((\pm1,\mp1)\) in the odd--odd case attains the second branch.  The regret optimizer mixes complete randomization with the parity-endpoint design, with weight \(s_0\) on complete randomization, and has block-sum moment
+\[
+q_{\mathrm{reg}}=(1-s_0)e+s_0q_c.
+\]
+The regret constraints at \(\rho=0\) and \(\rho=1\) give a matching lower bound over every \(A\in\mathcal C_n\).  If \(m=1\), then \(q=1\) is forced,
+\[
+v^*(\rho;S_{\mathcal P})=c_n\quad(0\leq\rho\leq1),
+\qquad
+\kappa(S_{\mathcal P})=c_n,
+\qquad
+\gamma(S_{\mathcal P})=1,
+\qquad
+\rho^*(S_{\mathcal P})=1,
+\]
+and the regret is zero.
+
+If instead the partition has \(B\) equal blocks of even size \(m=n/B\), put \(p=B-1\), \(h=n-B\), \(\delta_m=n/h\), and \(\beta=p/(n-1)\).  Then
+\[
+v^*(\rho;S_B)=\min\{c_n,\delta_m(1-\rho^2)\},
+\quad
+\kappa(S_B)=0,
+\quad
+\gamma(S_B)=\beta,
+\quad
+\rho^*(S_B)=\sqrt\beta,
+\]
+and the mixture with weight \(\beta\) on complete randomization and weight \(1-\beta\) on independent within-block complete randomization attains
+\[
+\min_{A\in\mathcal C_n}\Delta_{\mathrm{reg}}(A;S_B)
+=\frac{np}{(n-1)^2},
+\qquad
+R^*(n,S_B)=\frac{4Mp}{(n-1)^2}.
+\]
+The pair partition is the specialization \(B=n/2\), \(m=2\), so
+\[
+v^*(\rho;S_{\mathrm{pair}})=\min\{c_n,2(1-\rho^2)\},
+\quad
+\kappa(S_{\mathrm{pair}})=0,
+\quad
+\gamma(S_{\mathrm{pair}})=\frac{n-2}{2(n-1)},
+\quad
+\rho^*(S_{\mathrm{pair}})=\sqrt{\frac{n-2}{2(n-1)}}.
+\]
+No universal closed form is asserted for unequal partitions with more than two blocks; their exact value is the finite moment-polytope program in the first display.
+\end{lemma}
+\begin{proof}
+\textbf{Proof.}
+We divide the argument into the orbit reduction, the parity classification, the unequal two-block calculation, and the homogeneous calculation.
+
+Let \(\mathfrak G_{\mathcal P}\) be the product of the within-block permutation groups.  For \(A\in\mathcal C_n\), define
+\[
+\overline A=|\mathfrak G_{\mathcal P}|^{-1}
+\sum_{g\in\mathfrak G_{\mathcal P}}U_gAU_g^\top.
+\tag{1}
+\]
+The covariance hull and every score-quality shell for \(S_{\mathcal P}\) are invariant under this action.  Since \(A\mapsto q_\rho(A;S_{\mathcal P})\) is a maximum of linear functionals, it is convex, and Jensen's inequality gives
+\[
+q_\rho(\overline A;S_{\mathcal P})\leq q_\rho(A;S_{\mathcal P}).
+\tag{2}
+\]
+
+For an assignment \(z\), write \(r_j=\sum_{i\in G_j}z_i\).  Conditional on \(r\), uniform within-block permutation gives
+\[
+\mathbb E[z_i z_{i'}\mid r]=\frac{r_jr_\ell}{m_jm_\ell}
+\quad
+(i\in G_j,\ i'\in G_\ell,\ j\ne\ell),
+\tag{3}
+\]
+and, for distinct \(i,i'\in G_j\),
+\[
+\mathbb E[z_i z_{i'}\mid r]
+=\frac{r_j^2-m_j}{m_j(m_j-1)}.
+\tag{4}
+\]
+Equation \((4)\) follows by expanding \(r_j^2\).  Equations \((3)\)--\((4)\) are exactly the entries of \(A_{\mathcal P}(rr^\top)\).  Thus a convex representation of \(A\) supplies \(G\in\mathcal G_{\mathcal P}\) with \(\overline A=A_{\mathcal P}(G)\), proving the full-hull converse by \((2)\).
+
+Conversely, express \(G\) as a mixture of \(rr^\top\) over \(\mathcal R_{\mathcal P}\).  For every such \(r\), choose signs with those block sums, permute them uniformly within blocks, and multiply the whole assignment by an independent fair sign.  This is a mean-zero law in \(\mathcal D_n\), and \((3)\)--\((4)\) show that its covariance is \(A_{\mathcal P}(rr^\top)\).  Mixing realizes \(A_{\mathcal P}(G)\).  Compactness proves attainment and hence
+\[
+v^*(\rho;S_{\mathcal P})
+=\min_{G\in\mathcal G_{\mathcal P}}
+q_\rho(A_{\mathcal P}(G);S_{\mathcal P}).
+\tag{5}
+\]
+
+For parity, if every \(m_j\) is even, the lattice contains \(r=0\); its covariance annihilates all block-constant centered vectors, so \(\kappa(S_{\mathcal P})=0\).  Conversely, if a cut-hull mixture has zero compression on \(S_{\mathcal P}\), positivity implies that every supported assignment satisfies \(x^\top z=0\) for every \(x\in S_{\mathcal P}\).  Its block-sum vector \(r\) is therefore orthogonal to every \(t\) satisfying \(\sum_jm_jt_j=0\), hence is proportional to \((m_1,\ldots,m_B)\).  Balance gives \(\sum_jr_j=0\), so the proportionality constant is zero.  Thus every block sum is zero, which is possible only when every block size is even.  This proves the parity equivalence.
+
+We now solve the unequal two-block problem.  Write the block sizes as \(m<\ell\).  Balance forces \(r=(R,-R)\), where
+\[
+R\in\{-m,-m+2,\ldots,m\}.
+\]
+Because \(m+\ell=n\) is even, the block sizes have the same parity.  The convex hull of the possible squares is
+\[
+q=\mathbb E[R^2]\in[e,m^2],
+\qquad
+e=0\ \text{in the even--even case},\quad e=1\ \text{in the odd--odd case}.
+\tag{6}
+\]
+Every point of this interval is obtained by mixing squared lattice values.
+
+Let \(w\) be the unit vector in the one-dimensional score space, constant on each block.  Direct normalization gives the score eigenvalue
+\[
+a(q)=w^\top A_{\mathcal P}(G)w=\frac{nq}{m\ell}.
+\tag{7}
+\]
+On the within-block contrast space of a block of size \(j>1\), the eigenvalue is
+\[
+b_j(q)=\frac{j^2-q}{j(j-1)}.
+\tag{8}
+\]
+These mutually orthogonal spaces decompose \(H_n\).  If \(m>1\), put \(B(q)=\max\{b_m(q),b_\ell(q)\}\).  For \(s=\rho^2\), allocating the nonscore energy to the larger contrast eigenvalue gives
+\[
+q_{\sqrt{s}}(A_{\mathcal P}(q);S_{\mathcal P})
+=\max\{a(q),\,sa(q)+(1-s)B(q)\}.
+\tag{9}
+\]
+
+The three eigenvalues meet at
+\[
+q_c=\frac{m\ell}{n-1},
+\qquad
+a(q_c)=b_m(q_c)=b_\ell(q_c)=c_n.
+\tag{10}
+\]
+This is also the complete-randomization moment, because summing the covariance \(c_nP_H\) over either block gives \(m\ell/(n-1)\).  Subtracting the affine expressions in \((7)\)--\((8)\) shows that, for \(e\leq q\leq q_c\),
+\[
+b_m(q)\geq b_\ell(q)\geq a(q),
+\]
+whereas \(a(q)\) is largest for \(q\geq q_c\).  Consequently the minimization of \((9)\) reduces on \([e,q_c]\) to
+\[
+sa(q)+(1-s)b_m(q).
+\tag{11}
+\]
+Its slope changes sign at
+\[
+s_0=\frac{\ell}{m(n-1)}.
+\tag{12}
+\]
+Thus \((11)\) is minimized at \(q_c\) for \(s\leq s_0\), and at \(q=e\) for \(s\geq s_0\).  Substitution gives
+\[
+v^*(\sqrt{s};S_{\mathcal P})
+=\min\{c_n,(1-s)b_0+s\kappa_2\},
+\quad
+b_0=\frac{m^2-e}{m(m-1)},
+\quad
+\kappa_2=\frac{ne}{m\ell}.
+\tag{13}
+\]
+The two branches meet at \(s_0\).  The parity-endpoint laws in the statement realize \(q=e\), while complete randomization realizes \(q=q_c\).  Equation \((13)\) gives \(\kappa(S_{\mathcal P})=\kappa_2\), and \(\text{thm:admissibility-frontier}\) gives \(\gamma(S_{\mathcal P})=s_0\) and \(\rho^*(S_{\mathcal P})=\sqrt{s_0}\).
+
+For fixed \(q\), the loss in \((9)\) is convex in \(s\), and the oracle value in \((13)\) is concave in \(s\).  Their difference is therefore convex, so its maximum on \([0,1]\) occurs at an endpoint.  Since \(v(0)=c_n\) and \(v(1)=\kappa_2\),
+\[
+\Delta_{\mathrm{reg}}(A_{\mathcal P}(q);S_{\mathcal P})
+=\max\{\max(a(q),B(q))-c_n,\ a(q)-\kappa_2\}.
+\tag{14}
+\]
+On \([e,q_c]\), the first term is \(b_m(q)-c_n\), which decreases, and the second is \(a(q)-\kappa_2\), which increases.  They are equal at
+\[
+q_{\mathrm{reg}}=(1-s_0)e+s_0q_c,
+\tag{15}
+\]
+with common value
+\[
+s_0(c_n-\kappa_2).
+\tag{16}
+\]
+Outside \([e,q_c]\), equation \((14)\) is no smaller.  The orbit reduction makes this a converse for every covariance in \(\mathcal C_n\).  Mixing the parity-endpoint law with complete randomization using weight \(s_0\) gives \((15)\), so the converse is attained.  Scaling \((16)\) by \(4M/n\) proves the stated regret formula and shows that the constraints at \(\rho=0\) and \(\rho=1\) are jointly binding.
+
+If \(m=1\), equation \((6)\) forces \(q=1=q_c\).  Only the \(\ell\)-block contrast space remains, and \((7)\)--\((8)\) both equal \(c_n\).  Hence the loss is \(c_n\) at every quality, \(\kappa=c_n\), \(\gamma=1\), \(\rho^*=1\), and the regret is zero.
+
+Finally, suppose there are \(B\) equal blocks of even size \(m=n/B\).  Averaging also over block permutations reduces a covariance to
+\[
+aP_S+b(P_H-P_S),
+\qquad pa+hb=n,
+\]
+where \(p=B-1\) and \(h=n-B\).  Its score-shell loss is \(\max\{a,sa+(1-s)b\}\).  When \(a\leq c_n\), one has \(b\geq a\) and
+\[
+sa+(1-s)b
+=\frac{n}{h}(1-s)+a\left\{s-\frac{p}{h}(1-s)\right\}.
+\]
+The coefficient of \(a\) changes sign at \(\beta=p/(n-1)\), whereas \(a>c_n\) already has loss above the complete-randomization value.  Complete randomization realizes \(a=b=c_n\), and independent within-block complete randomization realizes \(a=0\), \(b=\delta_m=n/h\).  Therefore
+\[
+v^*(\sqrt{s};S_B)=\min\{c_n,\delta_m(1-s)\},
+\qquad
+\kappa(S_B)=0,
+\qquad
+\gamma(S_B)=\beta,
+\qquad
+\rho^*(S_B)=\sqrt\beta.
+\tag{17}
+\]
+The mixture with weight \(\beta\) on complete randomization has normalized regret \(c_n\beta=np/(n-1)^2\).  Conversely, for any \(A\in\mathcal C_n\), let \(K=\lambda_{\max}(P_SAP_S\mid S)\) and \(L=\lambda_{\max}(A\mid H_n)\).  If \(r=\Delta_{\mathrm{reg}}(A;S_B)\), the endpoint constraints give \(r\geq K\) and \(r\geq L-c_n\), while the trace gives \(n\leq pK+hL\).  Hence \(r\geq np/(n-1)^2\), proving the matching full-hull lower bound.  Multiplication by \(4M/n\) gives \(R^*(n,S_B)=4Mp/(n-1)^2\).
+
+Setting \(B=n/2\) and block size two in \((17)\) gives the displayed pair specialization.  For unequal partitions with more than two blocks, equation \((5)\) remains the exact finite program, and no further closed form has been asserted. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The partition theorem supplies the exact finite orbit reduction for every partition and adds closed-form, parity-correct oracle and regret solutions for every unequal two-block geometry. \textit{Gap.} Matched-pair and equal-block calculations do not determine the odd--odd parity floor, the forced design-useless singleton-block case, or the exact unequal two-block regret mixture over the unrestricted balanced design class. \textit{Consumer.} A block-randomization designer can compute the unequal two-block frontier and quality-agnostic mixture directly from the two block sizes, while using the finite moment polytope for more general unequal partitions.
+
+\begin{theorem}[thm:exact-pair-space-regret]\label{thm:exact-pair-space-regret}
+Let \(S=S_{\mathrm{pair}}\), write \(n=2k\), and put
+\[
+ \alpha_n=\frac{n-2}{2(n-1)}.
+\]
+Then
+\[
+ v^*(\rho;S_{\mathrm{pair}})
+ =\min\left\{c_n,\,2(1-\rho^2)\right\}.
+\]
+Moreover,
+\[
+ \kappa(S_{\mathrm{pair}})=0,
+ \qquad
+ \gamma(S_{\mathrm{pair}})=\alpha_n,
+ \qquad
+ \rho^*(S_{\mathrm{pair}})=\sqrt{\alpha_n}.
+\]
+The design which mixes complete randomization with independent fair within-pair orientations, with weight \(\alpha_n\) on complete randomization, has covariance
+\[
+ A_{\mathrm{mix}}
+ =\alpha_n c_nP_H+(1-\alpha_n)2(P_H-P_S)\in\mathcal C_n
+\]
+and attains the exact full-class unknown-quality regret
+\[
+ \min_{A\in\mathcal C_n}\Delta_{\mathrm{reg}}(A;S_{\mathrm{pair}})
+ =\frac{n(n-2)}{2(n-1)^2},
+ \qquad
+ R^*(n,S_{\mathrm{pair}})=\frac{2M(n-2)}{(n-1)^2}.
+\]
+The regret constraints at \(\rho=0\) and \(\rho=1\) are jointly binding.  For \(n=4\), the three balanced sign-pair weights can be chosen as \((1/9,4/9,4/9)\), with the weight \(1/9\) on the sign-pair omitted by the within-pair design; the normalized regret is \(4/9\) and \(R^*(4,S_4)=4M/9\).
+\end{theorem}
+\begin{proof}
+\textbf{Proof.}
+Put \(T=H_n\cap S_{\mathrm{pair}}^\perp\).  The pair-partition definition gives
+\[
+H_n=S_{\mathrm{pair}}\mathbin\oplus T,
+\qquad
+\dim(S_{\mathrm{pair}})=k-1,
+\qquad
+\dim(T)=k,
+\qquad
+P_T=P_H-P_S.
+\tag{1}
+\]
+The homogeneous even-block result in \(\text{lem:pair-space-exact-frontier}\), specialized to \(B=k\) blocks of size \(m=2\), has \(p=k-1\), \(\delta_m=2\), and
+\[
+\beta=\frac{k-1}{2k-1}
+=\frac{n-2}{2(n-1)}=\alpha_n.
+\tag{2}
+\]
+It therefore gives, over the full balanced covariance hull,
+\[
+v^*(\rho;S_{\mathrm{pair}})
+=\min\{c_n,2(1-\rho^2)\},
+\qquad
+\kappa(S_{\mathrm{pair}})=0,
+\tag{3}
+\]
+and
+\[
+\gamma(S_{\mathrm{pair}})=\alpha_n,
+\qquad
+\rho^*(S_{\mathrm{pair}})=\sqrt{\alpha_n}.
+\tag{4}
+\]
+
+Let \(A_W=2P_T\) be the covariance of independent fair within-pair orientations.  Mixing this design with complete randomization using weight \(\alpha_n\) on complete randomization gives
+\[
+A_{\mathrm{mix}}
+=\alpha_nc_nP_H+(1-\alpha_n)2P_T
+=\alpha_nc_nP_H+(1-\alpha_n)2(P_H-P_S)
+\in\mathcal C_n.
+\tag{5}
+\]
+The exact homogeneous-block regret calculation in the same lemma gives
+\[
+\Delta_{\mathrm{reg}}(A_{\mathrm{mix}};S_{\mathrm{pair}})
+=c_n\alpha_n
+=\frac{n(n-2)}{2(n-1)^2},
+\tag{6}
+\]
+with equal worst-case regret at \(\rho=0\) and \(\rho=1\), and for every \(A\in\mathcal C_n\),
+\[
+\Delta_{\mathrm{reg}}(A;S_{\mathrm{pair}})
+\geq\frac{n(n-2)}{2(n-1)^2}.
+\tag{7}
+\]
+Thus \((5)\)--\((7)\) furnish an attaining design and a matching converse over the full covariance class.  The balanced-covariance realizability lemma converts the covariance mixture into a mean-zero, exactly balanced assignment law.  Rescaling \((6)\) by \(4M/n\) gives
+\[
+R^*(n,S_{\mathrm{pair}})
+=\frac{2M(n-2)}{(n-1)^2}.
+\tag{8}
+\]
+
+When \(n=4\), \(\alpha_4=1/3\), and, up to global sign, the balanced assignments form three sign-pairs.  Complete randomization assigns weight \(1/3\) to each sign-pair, while the within-pair law assigns weights \((0,1/2,1/2)\), with zero on the omitted sign-pair.  Their mixture therefore has weights
+\[
+\left(
+\frac13\frac13,
+\frac13\frac13+\frac23\frac12,
+\frac13\frac13+\frac23\frac12
+\right)
+=\left(\frac19,\frac49,\frac49\right).
+\tag{9}
+\]
+These weights are nonnegative and sum to one.  Equation \((6)\) becomes normalized regret \(4/9\); because \(4M/n=M\) at \(n=4\), equation \((8)\) becomes \(R^*(4,S_4)=4M/9\). \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This theorem node is retained as an explicit convenience corollary of the homogeneous even-block part of \(\text{lem:pair-space-exact-frontier}\), not as an independent contribution. \textit{Gap.} The matched-pair specialization adds no mathematics beyond the parent partition theorem, but isolates the formula most often needed in applications and the exact four-unit weights. \textit{Consumer.} Readers using matched pairs get the oracle switch, regret-optimal mixture weight, and four-unit sign-pair probabilities without repeating the general block substitution.
+
+\begin{lemma}[lem:kallus-mixed-strategy-eigenvalue-framework]\label{lem:kallus-mixed-strategy-eigenvalue-framework}
+Kallus (2021, Section 5) considers the ellipsoidal conditional-mean class
+\[
+\mathcal M_K=\{Ku:u^\top Ku\leq C\},
+\qquad K\succeq0,
+\]
+for which a symmetric balanced mixed design \(\sigma\), with assignment second moment \(Q(\sigma)\), has worst-case design variance
+\[
+\mathcal V(\sigma,\mathcal M_K)
+=C\lambda_{\max}\!\left(K^{1/2}Q(\sigma)K^{1/2}\right),
+\]
+and the mixed-strategy optimal design minimizes this largest-eigenvalue criterion over the paper's feasible design class.
+\end{lemma}
+
+\section{Interpretation}
+
+The causal estimand is the fixed finite-population SATE \(\tau_n\); the optimized objects are design risks for the design-unbiased difference-in-means estimator, not alternative estimands. The score matrix determines the subspace \(S\), its projector, and therefore the threshold \(\rho^*(S)\), but it does not determine the realized outcome--score alignment \(\rho_{\mu}(S)\). Thus the frontier is an oracle map describing when score-informed randomization can improve on complete randomization, and the additive-regret design is the operational choice when no quality lower bound is available.
+
+\section*{Technical internal limitation (diagnostic only)}
+
+For \(n=8\) and \(S=S_{\mathrm{pair}}\), the matched-pair design has zero risk on vectors constant within pairs, yet exact enumeration also produces a fixed mean vector with within-pair variation on which its risk is \(1.75\) times the complete-randomization risk. Thus \(V^*(1;S_{\mathrm{pair}})=0\) does not justify matched pairs at lower quality, and no theorem may infer global dominance from perfect-score performance. For arbitrary score spaces the exact oracle and regret programs can require enumeration of exponentially many balanced sign-pairs.
+
+\section{Honest scope}
+
+For arbitrary \(S\), the paper proves an exact leverage-only formula and one-dimensional search for \(\gamma(S)\) and \(\rho^*(S)\), while \(\kappa(S)\), the quality-specific oracle mixture, and the unknown-quality regret are computed through exact finite programs that can require enumeration of exponentially many balanced sign-pairs. No polynomial-time guarantee and no general closed form for the oracle frontier or regret are claimed for arbitrary \(S\). Closed forms are proved for unequal two-block partitions and homogeneous even-block partitions; matched pairs are the block-size-two homogeneous specialization. Unequal partitions with more than two blocks retain the exact finite moment-polytope reduction but have no claimed universal closed form. The universal regret result is the bracket \(\frac{p}{n-1}\{c_n-\kappa(S)\}\leq nR^*(n,S)/(4M)\leq c_n-\kappa(S)\): complete randomization witnesses the upper bound, and homogeneous even blocks attain the lower bound. The score matrix determines \(S\) and its leverage frontier, not the realized quality \(\rho_{\mu}(S)\); hence the results do not select an oracle \(\rho\) from design-stage data and do not establish one design's dominance at every quality. No asymptotic growing-rank theory is claimed. The causal estimand remains the fixed finite-population SATE; all optimized objects are design risks for its unbiased difference-in-means estimator.
+
+\begin{thebibliography}{99}
+
+  \bibitem{HarshawSavjeSpielmanZhang2024} Harshaw, C., Sävje, F., Spielman, D. A., and Zhang, P. (2024). Balancing Covariates in Randomized Experiments with the Gram--Schmidt Walk Design. Journal of the American Statistical Association 119, 2934--2946. DOI: 10.1080/01621459.2023.2285474.
+
+  \bibitem{Kallus2018OptimalBalance} Kallus, N. (2018). Optimal A Priori Balance in the Design of Controlled Experiments. Journal of the Royal Statistical Society, Series B 80, 85--112. DOI: 10.1111/rssb.12240.
+
+  \bibitem{Kallus2021Randomization} Kallus, N. (2021). On the Optimality of Randomization in Experimental Design: How to Randomize for Minimax Variance and Design-Based Inference. Journal of the Royal Statistical Society, Series B 83, 404--409. DOI: 10.1111/rssb.12412.
+
+  \bibitem{HuberMaric2019} Huber, M., and Marić, N. (2019). Admissible Bernoulli Correlations. Journal of Statistical Distributions and Applications 6, article 2. DOI: 10.1186/s40488-019-0091-5.
+
+  \bibitem{Bai2022MatchedPairs} Bai, Y. (2022). Optimality of Matched-Pair Designs in Randomized Controlled Trials. American Economic Review 112, 3911--3940. DOI: 10.1257/aer.20201856.
+
+  \bibitem{KapelnerKriegerSklarAzriel2022} Kapelner, A., Krieger, A. M., Sklar, M., and Azriel, D. (2022). Optimal Rerandomization Designs via a Criterion that Provides Insurance Against Failed Experiments. Journal of Statistical Planning and Inference 219, 63--84. DOI: 10.1016/j.jspi.2021.11.005.
+
+  \bibitem{SchulerWalshHallWalshFisher2022} Schuler, A., Walsh, D., Hall, D., Walsh, J., and Fisher, C. (2022). Increasing the Efficiency of Randomized Trial Estimates via Linear Adjustment for a Prognostic Score. International Journal of Biostatistics 18, 329--356. DOI: 10.1515/ijb-2021-0072.
+
+  \bibitem{JohanssonRubinSchultzberg2021} Johansson, P., Rubin, D. B., and Schultzberg, M. (2021). On Optimal Rerandomization Designs. Journal of the Royal Statistical Society, Series B 83, 395--403. DOI: 10.1111/rssb.12417.
+
+  \bibitem{SchindlBranson2024} Schindl, K., and Branson, Z. (2024). A Unified Framework for Rerandomization Using Quadratic Forms. arXiv:2403.12815.
+
+  \bibitem{GuoLiangToulis2025} Guo, W., Liang, T., and Toulis, P. (2025). Gaussianized Design Optimization for Covariate Balance in Randomized Experiments. arXiv:2502.16042.
+
+  \bibitem{ChatterjeeDeyGoswami2025} Chatterjee, S., Dey, P. S., and Goswami, S. (2025). Central Limit Theorem for the Gram--Schmidt Random Walk Design. Annals of Applied Probability 35. arXiv:2305.12512.
+
+  \bibitem{HuZhuBrunskillWager2024} Hu, Y., Zhu, H., Brunskill, E., and Wager, S. (2024). Minimax-Regret Sample Selection in Randomized Experiments. Proceedings of the 25th ACM Conference on Economics and Computation. DOI: 10.1145/3670865.3673458.
+
+\end{thebibliography}
+
+\end{document}

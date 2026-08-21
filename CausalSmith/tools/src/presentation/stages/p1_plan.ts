@@ -1,8 +1,8 @@
 import { readFile, writeFile, mkdir, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import type { StageIO } from "../pipeline.js";
-import { PRESENTATION_PROSE_POLICY_VERSION, presentationPrompt } from "../prompt_io.js";
-import { parseOutline, unwrapArtifact } from "../stage_util.js";
+import { PRESENTATION_PROSE_POLICY_VERSION, presentationPrompt, promptContractFiles, promptFingerprint } from "../prompt_io.js";
+import { parseOutline, unwrapArtifact, lintMainBodyDependencies } from "../stage_util.js";
 import {
   lintAnchors,
   lintClarity,
@@ -11,12 +11,11 @@ import {
   lintReferences,
   normalizeCrefs,
   lintHypothesisPresentation,
-  orphanParameterizedClasses,
   hashEnvBody,
-  parseAnchoredEnvs,
   containsNotation,
-  displaysDefiningEquality,
-  sameEstimatorNotationFamily,
+  definingNotationKey,
+  notationHomes,
+  usesSymbolUndecorated,
   type LintProblem,
 } from "../tex_anchors.js";
 import { parseBib } from "../citations.js";
@@ -24,17 +23,20 @@ import { parseJsonLoose, mapLimit } from "../gates.js";
 import { buildLeanContextIndex, type LeanContext } from "../lean_context.js";
 import { citedDependencies, renderedNodes, topoOrder, refTargets, envForNode, isCitedNode } from "../graph_view.js";
 import { citedStdFromNode, reconcileCite, indexBib } from "../assumption_citations.js";
-import { outlineRevisionBrief } from "../revision_brief.js";
-import { blocksFromGraph, blocksToTex, FormalLayerSource, hashBody, type FormalBlock } from "../formal_layer.js";
+import { FIRST_DRAFT_BRIEF } from "../revision_brief.js";
+import { blocksFromGraph, blocksToTex, FormalLayerSource, type FormalBlock } from "../formal_layer.js";
 import {
   runP1Loop,
   renderMechanicalLayer,
+  atomicRequestedNotationSymbols,
   type P1Env,
   type P1Finding,
   type P1LoopHooks,
 } from "../p1_loop.js";
 import { runStatementAudit } from "../audit.js";
 import { writeJsonAtomic } from "../json_io.js";
+import { loadJsonCache } from "../cache.js";
+import { loadBankNarrative } from "../bank.js";
 import {
   discoverRealizedSymbols,
   buildRealizedNotationMatcher,
@@ -44,106 +46,6 @@ const OPEN_DIRECTION_RE = /\b(?:open (?:question|problem|direction)|unresolved (
 const ASSERTED_RESULT_RE = /\b(?:(?:we|this (?:paper|work)|our (?:paper|work|result|analysis))\s+(?:prove|proves|establish|establishes|show|shows|derive|derives|demonstrate|demonstrates)|(?:theorem|corollary|proposition|our result)\b[^.!?]{0,100}\b(?:prove|proves|establish|establishes|show|shows|imply|implies)|it follows that|we conclude that|is established here|has been proved)\b/i;
 const ASSERTIVE_REVERSAL_RE = /\b(?:nevertheless|in fact|indeed|therefore|thus|hence)\b/i;
 const LEGALISTIC_UNDELIVERED_RE = /^\s*this work does not (?:establish|prove|deliver)/i;
-// v8: invalidates v7-era receipts written while normalizeSynthNotation's tab repair
-// used "\\\\t" and could freeze `\to` row-breaks into environment bodies.
-// v9: realized-symbol suppression became conditional on a displayed defining equality
-// (a Lean `@realizes` tag alone no longer blocks a paper-side definition), so v8-era
-// receipts were filtered under a different eligibility rule.
-const P1_SYNTH_RESUME_VERSION = "notation-definition-order-v9";
-
-/** The stamped successful layer is newer evidence than a rejected receipt that a prior failed
- * attempt may have left behind. Keep the marker in the TeX view rather than extending the
- * formal-layer JSON schema: the view already round-trips through parseAnchoredEnvs and preserves
- * synthetic ids and titles. */
-export function p1SynthResumeMarker(model?: string): string {
-  return `% causalsmith-p1-synth model=${model ?? "?"} version=${P1_SYNTH_RESUME_VERSION}`;
-}
-
-export type SynthRecoverySource = "formal_layer.tex" | "formal_layer_rejected.tex";
-
-export function selectSynthRecoveryLayer(
-  formalLayerTex: string,
-  rejectedLayerTex: string,
-  marker: string,
-): { source: SynthRecoverySource; tex: string } | null {
-  // Prefer the successful artifact. This ordering also makes the write-then-delete cleanup below
-  // crash-safe: if both files exist after an interruption, the stale rejection cannot win.
-  if (formalLayerTex.startsWith(marker)) return { source: "formal_layer.tex", tex: formalLayerTex };
-  if (rejectedLayerTex.startsWith(marker)) return { source: "formal_layer_rejected.tex", tex: rejectedLayerTex };
-  return null;
-}
-
-/** Apply the same conservative replay rules to either a rejected receipt or a stamped successful
- * formal layer. Lean realization status is deliberately evaluated now, not trusted from the
- * earlier run, because it can change between stage re-runs. */
-export function recoverSynthesizedDefinitions(
-  layer: string,
-  options: {
-    isLeanRealizedNotation: (notation: string | undefined) => boolean;
-    titleById: Map<string, string>;
-    graphDefinitionNotation: readonly string[];
-    normalizeBody: (body: string) => string;
-    note: (message: string) => void;
-  },
-): { envs: P1Env[]; synthCount: number } {
-  let synthCount = 0;
-  const envs: P1Env[] = [];
-  const recoveredFamilies = new Set<string>();
-  const allEnvs = parseAnchoredEnvs(layer);
-  const candidates = allEnvs
-    .filter((x) => /^synth_\d+$/.test(x.obj_id))
-    .sort((a, b) => Number(a.obj_id.slice("synth_".length)) - Number(b.obj_id.slice("synth_".length)));
-  // A recovered definition is a duplicate only when the layer OUTSIDE the pending synth
-  // candidates already displays the symbol's defining equality — the candidate's own body
-  // always does (it IS the definition), so it must not vouch for itself, and two recovered
-  // definitions of the same symbol must not vouch for each other (that would drop BOTH;
-  // keep-first-drop-rest is the correct semantics). Already-kept candidates re-enter the
-  // evidence base so a later same-symbol duplicate is still recognized.
-  const synthCandidateIds = new Set(candidates.map((x) => x.obj_id));
-  const keptSynthIds = new Set<string>();
-  const vouchingLayerFor = (objId: string): string =>
-    allEnvs
-      .filter((x) => x.obj_id !== objId && (!synthCandidateIds.has(x.obj_id) || keptSynthIds.has(x.obj_id)))
-      .map((x) => `[${x.title ?? ""}]\n${x.body}`)
-      .join("\n");
-  for (const e of candidates) {
-    const n = Number(e.obj_id.slice("synth_".length));
-    if (Number.isFinite(n)) synthCount = Math.max(synthCount, n);
-    // A title is the durable declaration of which notation a synthetic block owns. Titleless
-    // output cannot be safely deduplicated or placed; let the live reviewer request it again.
-    if (!e.title) {
-      options.note(`P1: discarded titleless recovered notation definition ${e.obj_id}`);
-      continue;
-    }
-    const mathFragments = [...e.title.matchAll(/\$([^$]+)\$|\\\((.*?)\\\)|\\\[([\s\S]*?)\\\]/g)]
-      .map((m) => m[1] ?? m[2] ?? m[3]).filter((x): x is string => !!x);
-    if (mathFragments.length === 0) {
-      options.note(`P1: discarded recovered notation definition ${e.obj_id} with no parseable notation in its title`);
-      continue;
-    }
-    // A Lean realization suppresses the recovered definition only when the rest of the
-    // layer also DISPLAYS the symbol's defining equality; an `@realizes` tag alone leaves
-    // a PDF reader with no definition (the transported-LATE θ_T regression).
-    const hasLeanHome = mathFragments.some(
-      (fragment) =>
-        options.isLeanRealizedNotation(fragment) &&
-        displaysDefiningEquality(vouchingLayerFor(e.obj_id), fragment),
-    );
-    const familyPeer = [...recoveredFamilies, ...options.titleById.values()]
-      .some((title) => sameEstimatorNotationFamily(title, e.title!)) ||
-      options.graphDefinitionNotation.some((text) => sameEstimatorNotationFamily(text, e.title!));
-    if (hasLeanHome || familyPeer) {
-      options.note(`P1: discarded duplicate recovered notation definition ${e.obj_id}`);
-      continue;
-    }
-    recoveredFamilies.add(e.title);
-    keptSynthIds.add(e.obj_id);
-    options.titleById.set(e.obj_id, e.title);
-    const body = options.normalizeBody(e.body.trim());
-    envs.push({ id: e.obj_id, env: "definitionv", statement: body, body, refSet: [] });
-  }
-  return { envs, synthCount };
-}
 
 /** A model-written remark is acceptable only when it clearly frames the claim as an open
  * direction and does not turn around and assert it as a theorem/result. */
@@ -155,15 +57,14 @@ export function safelyFramesUndeliveredRemark(body: string): boolean {
 /** Boundary parse of the P1 notation-reviewer reply. An unusable reply must throw,
  *  not collapse to a clean review: this path previously defaulted to `[]`, so a
  *  reviewer that answered in prose silently passed the notation gate. */
-export function parseNotationReviewerOutput(
-  stdout: string,
-): { symbol?: string; used_in?: string[]; case?: string; fix?: string }[] {
+export interface NotationReviewerProblem { symbol?: string; used_in?: string[]; case?: string; fix?: string }
+export function parseNotationReviewerOutput(stdout: string): NotationReviewerProblem[] {
   const parsed = parseJsonLoose(stdout) as { clean?: unknown; problems?: unknown } | null;
   if (parsed === null) {
     throw new Error("P1 notation reviewer output is not parseable JSON — re-run P1 (inputs are cached)");
   }
   if (Array.isArray(parsed.problems)) {
-    return parsed.problems as { symbol?: string; used_in?: string[]; case?: string; fix?: string }[];
+    return parsed.problems as NotationReviewerProblem[];
   }
   if (parsed.clean === true) return [];
   throw new Error("P1 notation reviewer output has neither clean:true nor a problems array — re-run P1");
@@ -219,34 +120,316 @@ function validateOutline(outlineMd: string, ids: string[], poolKeys: Set<string>
 
 /** Place presentation-synthesized setup definitions in the paper outline. They are not graph
  * theorem nodes, but P2 still requires every formal-layer environment to be assigned exactly once. */
-export function placeSynthesizedDefinitions(outlineMd: string, ids: string[]): string {
+export function removeSynthesizedPlacements(outlineMd: string): string {
+  return outlineMd.split("\n").map((line) => {
+    const prefix = line.match(/^objs:\s*/)?.[0];
+    if (!prefix || !line.slice(prefix.length).split(",").some((item) => /^synth_\d+$/.test(item.trim())))
+      return line;
+    const kept = line.slice(prefix.length).split(",").filter((item) => !/^synth_\d+$/.test(item.trim()));
+    return `${prefix}${kept.length > 0 ? kept.join(",") : "none"}`;
+  }).join("\n");
+}
+
+export function placeSynthesizedDefinitions(
+  outlineMd: string,
+  ids: string[],
+  preferredSectionById: ReadonlyMap<string, string> = new Map(),
+  // The deterministic layer order (orderedEnvs ids). When supplied, each synth id is
+  // inserted into the objs list at its layer position — immediately before the first
+  // env that follows it in the layer — so the PAPER's emission order (objs drives
+  // P2's frozen_envs_for_section) matches the dependency order the layer certifies.
+  // Without it, legacy behavior: prepend the batch (front of the section).
+  layerOrder: readonly string[] = [],
+): string {
   const lines = outlineMd.split("\n");
+  const current = [...new Set(ids)];
+  let sectionName = "";
+  const occurrenceSections = new Map<string, string[]>();
+  const sectionOrder: string[] = [];
+  for (const line of lines) {
+    const heading = line.match(/^## section:\s*(.+)$/);
+    if (heading) { sectionName = heading[1].trim(); sectionOrder.push(sectionName); continue; }
+    const prefix = line.match(/^objs:\s*/)?.[0];
+    if (!prefix) continue;
+    for (const item of line.slice(prefix.length).split(",").map((part) => part.trim()))
+      if (/^synth_\d+$/.test(item)) occurrenceSections.set(item, [...(occurrenceSections.get(item) ?? []), sectionName]);
+  }
+  const sectionIndex = new Map(sectionOrder.map((name, index) => [name, index] as const));
+  const retained = new Set(current.filter((id) => {
+    const occurrences = occurrenceSections.get(id) ?? [];
+    if (occurrences.length !== 1) return false;
+    const preferred = preferredSectionById.get(id);
+    return !preferred || (sectionIndex.get(occurrences[0]) ?? Infinity) <= (sectionIndex.get(preferred) ?? -1);
+  }));
+  // Remove stale, duplicate, and too-late synth placements token-by-token. Raw
+  // graph tokens and every line without a removed synth remain byte-identical.
+  for (let i = 0; i < lines.length; i++) {
+    const prefix = lines[i].match(/^objs:\s*/)?.[0];
+    if (!prefix) continue;
+    const items = lines[i].slice(prefix.length).split(",");
+    if (!items.some((item) => /^synth_\d+$/.test(item.trim()) && !retained.has(item.trim()))) continue;
+    const kept = items.filter((item) => !/^synth_\d+$/.test(item.trim()) || retained.has(item.trim()));
+    lines[i] = `${prefix}${kept.length > 0 ? kept.join(",") : "none"}`;
+  }
   let sectionStart = lines.findIndex((line) => /^## section:.*(?:setup|assumption)/i.test(line));
   if (sectionStart < 0) sectionStart = lines.findIndex((line) => /^## section:/.test(line));
   if (sectionStart < 0) throw new Error("P1 cannot place synthesized definitions: outline has no section");
-  const nextSection = lines.findIndex((line, i) => i > sectionStart && /^## section:/.test(line));
-  const sectionEnd = nextSection < 0 ? lines.length : nextSection;
-  const objsLine = lines.findIndex((line, i) => i > sectionStart && i < sectionEnd && /^objs:\s*/.test(line));
-  if (objsLine < 0) throw new Error("P1 cannot place synthesized definitions: target section has no objs line");
-  const existingRaw = lines[objsLine].replace(/^objs:\s*/, "").trim();
-  const existing = /^(?:none|\(none\))$/i.test(existingRaw)
-    ? []
-    : existingRaw.split(",").map((x) => x.trim()).filter((x) => x && !/^synth_\d+$/.test(x));
-  lines[objsLine] = `objs: ${[...new Set([...ids, ...existing])].join(", ")}`;
+  const defaultSection = lines[sectionStart].match(/^## section:\s*(.+)$/)![1].trim();
+  const missingBySection = new Map<string, string[]>();
+  for (const id of current.filter((candidate) => !retained.has(candidate))) {
+    const target = sectionIndex.has(preferredSectionById.get(id) ?? "") ? preferredSectionById.get(id)! : defaultSection;
+    missingBySection.set(target, [...(missingBySection.get(target) ?? []), id]);
+  }
+  for (const [target, missing] of missingBySection) {
+    const targetStart = lines.findIndex((line) => line.match(/^## section:\s*(.+)$/)?.[1].trim() === target);
+    const nextSection = lines.findIndex((line, i) => i > targetStart && /^## section:/.test(line));
+    const sectionEnd = nextSection < 0 ? lines.length : nextSection;
+    const objsLine = lines.findIndex((line, i) => i > targetStart && i < sectionEnd && /^objs:\s*/.test(line));
+    if (objsLine < 0) throw new Error(`P1 cannot place synthesized definitions: section ${target} has no objs line`);
+    const prefix = lines[objsLine].match(/^objs:\s*/)![0];
+    const existingRaw = lines[objsLine].slice(prefix.length);
+    const empty = /^(?:none|\(none\))$/i.test(existingRaw.trim());
+    if (layerOrder.length === 0) {
+      lines[objsLine] = `${prefix}${missing.join(", ")}${!empty ? "," : ""}${empty ? "" : existingRaw}`;
+      continue;
+    }
+    const pos = new Map(layerOrder.map((id, i) => [id, i] as const));
+    const items = empty ? [] : existingRaw.split(",").map((t) => t.trim()).filter(Boolean);
+    // Insert earlier-layer synths first so equal insertion points keep layer order.
+    for (const id of [...missing].sort((a, b) => (pos.get(a) ?? -1) - (pos.get(b) ?? -1))) {
+      const my = pos.get(id);
+      let at = 0; // unknown to the layer → front (a prerequisite of another synth)
+      if (my !== undefined) {
+        const successor = items.findIndex((item) => (pos.get(item) ?? Infinity) > my);
+        at = successor < 0 ? items.length : successor;
+      }
+      items.splice(at, 0, id);
+    }
+    lines[objsLine] = `${prefix}${items.join(", ")}`;
+  }
   return lines.join("\n");
+}
+
+/** Deterministic section preference for each synthesized definition: the PAPER-order
+ * minimum section over ALL envs that use any of its covered symbols. The planner cannot
+ * place synth envs — they are absent from its frozen-layer view — so without this every
+ * synthesized definition landed in the setup section regardless of use, making the
+ * APPENDIX-ONLY APPARATUS rule unactionable for synthesized apparatus (escalation,
+ * 2026-08-20). The preference must NOT follow layer order (topological — a lemma
+ * precedes the theorems citing it, inverting paper order routinely): a synth reaches
+ * the appendix only when EVERY user is appendix-placed, which is exactly the rule's
+ * premise; any main-body user pulls the definition to that earlier section (audit
+ * counterexample, 2026-08-20). No user found, a user unplaced, or ANOTHER synth env
+ * using the symbol (mutual synth sections are undetermined at preference time) → no
+ * preference (fail-safe to the setup default, which precedes everything). No model
+ * call. */
+export function preferredSectionsForSynths(
+  outlineMd: string,
+  graphEnvs: readonly { id: string; body: string; title?: string }[],
+  symbolsBySynthId: ReadonlyMap<string, readonly string[]>,
+  synthEnvs: readonly { id: string; body: string; title?: string }[] = [],
+): Map<string, string> {
+  const sectionByEnv = new Map<string, string>();
+  const sectionIndex = new Map<string, number>();
+  let section = "";
+  for (const line of outlineMd.split("\n")) {
+    const heading = line.match(/^## section:\s*(.+)$/);
+    if (heading) {
+      section = heading[1].trim();
+      if (!sectionIndex.has(section)) sectionIndex.set(section, sectionIndex.size);
+      continue;
+    }
+    const prefix = line.match(/^objs:\s*/)?.[0];
+    if (!prefix || !section) continue;
+    for (const item of line.slice(prefix.length).split(",").map((t) => t.trim()))
+      if (item && !/^(?:none|\(none\))$/i.test(item)) sectionByEnv.set(item, section);
+  }
+  const out = new Map<string, string>();
+  for (const [synthId, symbols] of symbolsBySynthId) {
+    const synthUser = synthEnvs.some((e) =>
+      e.id !== synthId && symbols.some((symbol) => usesSymbolUndecorated(`${e.title ?? ""} ${e.body}`, symbol)));
+    if (synthUser) continue;
+    let best: string | undefined;
+    let unplacedUser = false;
+    for (const e of graphEnvs) {
+      const text = `${e.title ?? ""} ${e.body}`;
+      if (!symbols.some((symbol) => usesSymbolUndecorated(text, symbol))) continue;
+      const s = sectionByEnv.get(e.id);
+      if (!s) { unplacedUser = true; break; }
+      if (best === undefined || (sectionIndex.get(s) ?? Infinity) < (sectionIndex.get(best) ?? Infinity)) best = s;
+    }
+    if (best !== undefined && !unplacedUser) out.set(synthId, best);
+  }
+  return out;
+}
+
+/** Normalized ledger key for a requested notation symbol: one synthesis attempt per key, ever. */
+export const synthLedgerKey = (symbol: string): string => definingNotationKey(symbol);
+
+/** One synthesis attempt, recorded durably in p1_cache.json. `accepted:false` means the
+ * attempt failed (rejected output or model error); the symbol becomes a checkpoint
+ * advisory and is never re-dispatched. `accepted:true` carries the definition itself —
+ * the cache, not the emitted TeX, is the recovery source across re-runs. */
+export interface SynthLedgerEntry {
+  symbol: string;
+  accepted: boolean;
+  id?: string;
+  title?: string;
+  body?: string;
+}
+
+/** Deterministic layer order: graph environments keep their topological graph order;
+ * each synthesized definition is inserted immediately before its first user (the first
+ * environment whose title/body uses the symbol it was synthesized for), so a definition
+ * always precedes its uses without any prose-certification machinery. A synthesized
+ * definition nothing visibly uses goes to the front (it is a prerequisite of another
+ * synthesized block whose spelling drifted — harmless placement, never a lost env). */
+export function orderEnvsForLayer(
+  graphEnvsInOrder: P1Env[],
+  synthEnvs: P1Env[],
+  // A CONSOLIDATED synthesized definition covers several symbols; placement must
+  // precede the FIRST use of ANY of them (splicing by one arbitrary sibling let the
+  // others be used before their definition — a hard P3 definition-order failure).
+  symbolsBySynthId: ReadonlyMap<string, readonly string[]>,
+  titleById: ReadonlyMap<string, string>,
+): P1Env[] {
+  const out = [...graphEnvsInOrder];
+  const sorted = [...synthEnvs].sort((a, b) =>
+    Number(a.id.slice("synth_".length)) - Number(b.id.slice("synth_".length)));
+  for (const synth of sorted) {
+    const symbols = symbolsBySynthId.get(synth.id) ?? [];
+    const firstUses = symbols
+      .map((symbol) => out.findIndex((e) => e.id !== synth.id &&
+        containsNotation(`${titleById.get(e.id) ?? ""} ${e.body}`, symbol)))
+      .filter((i) => i >= 0);
+    const at = firstUses.length > 0 ? Math.min(...firstUses) : -1;
+    out.splice(at >= 0 ? at : 0, 0, synth);
+  }
+  return out;
+}
+
+/** Route the notation reviewer's problems to loop findings. Pure so the routing policy —
+ * the single semantic notation authority — has direct regression coverage.
+ *
+ * - `undefined`/`no-anchor`: synthesize a paper definition, UNLESS the symbol is
+ *   Lean-realized (then the designated graph home must display it — re-render that env in
+ *   place; presentation-only synthesis would compete with the Lean-backed authority), or
+ *   the ledger already holds an attempt (one attempt per symbol, ever — further reports
+ *   become non-blocking checkpoint advisories).
+ * - `wrong-ref`/`mismatch`: re-render each using env with the defect.
+ * - anything else: halt (fail loud on reviewer drift).
+ */
+export function routeNotationProblems(
+  problems: NotationReviewerProblem[],
+  opts: {
+    isLeanRealized: (symbol: string) => boolean;
+    designatedHomeFor: (symbol: string) => string | undefined;
+    ledgerHas: (key: string) => boolean;
+    graphNodeIds: ReadonlySet<string>;
+    lockedIds: ReadonlySet<string>;
+  },
+): P1Finding[] {
+  return problems.flatMap<P1Finding>((p) => {
+    // A problem without a symbol cannot be routed — fail loud rather than silently
+    // discard a defect the reviewer reported.
+    if (!p.symbol) {
+      return [{ gate: "notation-reviewer", fixLocus: "halt", detail: `reviewer reported a symbol-less problem [${p.case ?? "?"}] — ${p.fix ?? "unroutable"}` }];
+    }
+    const symbol = p.symbol;
+    const detail = `${symbol} [${p.case ?? "?"}] in ${(p.used_in ?? []).join("/")} — ${p.fix ?? ""}`;
+    if (p.case === "undefined" || p.case === "no-anchor") {
+      // HOME-FIRST for ANY symbol, not only Lean-realized ones: when the notation table
+      // designates an editable graph-env home, the symbol is defined THERE (journal
+      // style — notation lives with the object that owns it: witness values inside the
+      // witness definition, arm masses inside the estimator). Synthesizing a standalone
+      // micro-definition is the LAST resort, for symbols with no natural owner; the
+      // over-synthesis it produced (34 of 68 envs) read as machine clutter.
+      const home = opts.designatedHomeFor(symbol);
+      const editable = home && opts.graphNodeIds.has(home) && !opts.lockedIds.has(home);
+      if (editable) {
+        return [{
+          gate: "notation-reviewer", objId: home, symbol, fixLocus: "wording-revise",
+          detail: `${detail} (display its defining content in its home ${home}, do not synthesize a standalone duplicate)`,
+        }];
+      }
+      if (opts.isLeanRealized(symbol)) {
+        return [{
+          gate: "notation-reviewer", symbol, fixLocus: "halt",
+          detail: `${detail} (Lean-realized symbol with no editable designated home — fix the notation table or the graph env)`,
+        }];
+      }
+      // The ledger is keyed per ATOM (the loop splits a compound reviewer symbol
+      // before synthesis), so check the atoms: a compound report whose every atom
+      // already used its one attempt must become an advisory, not an eternal
+      // synthesize-def that idles the loop to its cap. A symbol that splits to
+      // NOTHING (delimiter/whitespace-only) can never be synthesized — halt loud
+      // rather than dispatch a no-op that idles the loop.
+      const atoms = atomicRequestedNotationSymbols(symbol);
+      if (atoms.length === 0) {
+        return [{ gate: "notation-reviewer", symbol, fixLocus: "halt", detail: `${detail} (symbol has no synthesizable atom)` }];
+      }
+      if (atoms.every((atom) => opts.ledgerHas(synthLedgerKey(atom)))) {
+        return [{ gate: "notation-unresolved", symbol, detail: `${detail} (synthesis already attempted once — resolve at the checkpoint)` }];
+      }
+      return [{ gate: "notation-reviewer", symbol, fixLocus: "synthesize-def", detail }];
+    }
+    if (p.case === "wrong-ref" || p.case === "mismatch") {
+      // No usable env target → halt (fail loud) instead of mapping to zero findings.
+      const targets = (p.used_in ?? []).filter(Boolean);
+      if (targets.length === 0) {
+        return [{ gate: "notation-reviewer", symbol, fixLocus: "halt", detail: `${detail} (no used_in env to revise)` }];
+      }
+      return targets.map((objId) => ({
+        gate: "notation-reviewer", objId, fixLocus: "wording-revise" as const, detail,
+      }));
+    }
+    return [{ gate: "notation-reviewer", symbol, fixLocus: "halt", detail }];
+  });
 }
 
 /** Convert a deterministic LintProblem to a loop finding (gate/objId/detail carry over). */
 const toFinding = (p: LintProblem): P1Finding => ({ gate: p.gate, objId: p.objId, detail: p.detail });
 
+
+/** Failure-path diagnostic dumps land under logs/ so the bundle root stays durable-only. */
+async function writeDiagnostic(outDir: string, name: string, content: string): Promise<void> {
+  const dir = join(outDir, "logs");
+  await mkdir(dir, { recursive: true });
+  await writeFile(join(dir, name), content, "utf8");
+}
+
 /**
- * P1 — paper plan + frozen formal layer, as the executor→reviewer→router loop
- * (design §4.6). Statements come from the graph (`nl.statement`); the codex
- * executor renders them to paper prose; the codex reviewer + deterministic floor
- * check readability / self-containment / notation; the router re-renders, or
- * synthesizes a missing class, or halts. Frozen bodies are then hash-pinned and
- * the dispatcher halts at the outline checkpoint.
+ * P1 — paper plan + frozen formal layer, as the executor→reviewer→router loop.
+ * Statements come from the graph (`nl.statement`); the codex executor renders them to
+ * paper prose; ONE semantic authority — the codex notation reviewer — plus a floor of
+ * mechanical lints check readability / self-containment / notation; the router
+ * re-renders, or synthesizes a missing definition (once per symbol, ledgered), or
+ * halts. Frozen bodies are then hash-pinned, audited against Lean, and the dispatcher
+ * halts at the outline checkpoint, where unresolved-notation advisories surface for
+ * the orchestrator.
  */
+
+/** P1 render-cache key. `envHint` is appended ONLY when non-empty so objects without an
+ * env override hash byte-identically to the legacy (pre-override) formula — an
+ * unconditional "" element would still emit a "§" and cold every render cache. */
+export function renderCacheKey(
+  renderModelKey: string,
+  r: { statement: string; refSet: string[]; priorBody?: string; defects?: string[]; delivery?: unknown },
+  citedPrompt: string,
+  envHint: string,
+): string {
+  return hashEnvBody([
+    renderModelKey,
+    r.statement,
+    [...r.refSet].sort().join(","),
+    r.priorBody ?? "",
+    (r.defects ?? []).join("|"),
+    JSON.stringify(r.delivery ?? null),
+    citedPrompt,
+    ...(envHint ? [envHint] : []),
+  ].join("§"));
+}
+
 export async function stageP1(io: StageIO): Promise<void> {
   await mkdir(io.outDir, { recursive: true });
   if (io.ctx.deps.dryRun) {
@@ -255,6 +438,13 @@ export async function stageP1(io: StageIO): Promise<void> {
   }
   const { deps, repoRoot } = io.ctx;
   const graph = io.bank.graph;
+  // D-stage narrative layer (UNTRUSTED pre-formalization prose; authoring uses are
+  // subordinated to the frozen layer, restriction-shaped fields feed detectors).
+  const narrative = await loadBankNarrative(io.ctx.repoRoot, io.ctx.qid, io.ctx.spec);
+  const dstageDefinitionContext = [
+    narrative.definitionList && `D-stage definition constructions (source of truth for named objects):\n${narrative.definitionList}`,
+    narrative.symbolTable && `D-stage symbol table:\n${narrative.symbolTable}`,
+  ].filter(Boolean).join("\n\n") || "(none recorded)";
   const nodes = topoOrder(graph, renderedNodes(graph));
   if (nodes.length === 0) throw new Error("P1: graph has no frozen paper-env nodes to render");
   const nodeIds = nodes.map((n) => n.id);
@@ -308,85 +498,85 @@ export async function stageP1(io: StageIO): Promise<void> {
   }
 
   // P5 revision is owned by the single holistic reviser. P1 is initial planning
-  // only and must not independently reinterpret a prior referee report.
-  const priorReview = null;
-  const outlineBrief = outlineRevisionBrief(priorReview);
-  const hasOutlineRevision = priorReview !== null && /^\s*-\s*\[/m.test(outlineBrief);
+  // only and must not independently reinterpret a prior referee report, so the
+  // outline prompt's revision slot always carries the inert first-draft brief.
+  const outlineBrief = FIRST_DRAFT_BRIEF;
 
   const t0 = Date.now();
   const log = (m: string) => console.error(`[causalsmith P1] +${Math.round((Date.now() - t0) / 1000)}s ${m}`);
   log(`graph: ${nodes.length} frozen paper-env nodes → ${nodeIds.join(", ")}`);
 
-  // Content-keyed cache (cost economy — a re-run only re-pays for changed inputs,
-  // mirroring the old equivalence/gate caches). `render`: keyed by the touch-up
-  // input (statement + refs + prior body + defects) → {title, body}. `notation`:
-  // keyed by the layer hash → the codex notation findings. Delete the file to force
-  // a full re-render.
+  // Content-keyed cache (cost economy — a re-run only re-pays for changed inputs).
+  // `render`: keyed by the touch-up input → {title, body}. `notation`: keyed by the layer
+  // hash → the RAW reviewer problems (routing is re-derived on every read, so ledger/policy
+  // changes apply to cached reviews too). `synth`: the per-symbol synthesis ledger AND the
+  // durable store of accepted definitions (recovery source across re-runs — no TeX
+  // re-parsing). Delete the file to force a full re-render.
   const cachePath = join(io.outDir, "p1_cache.json");
   type RenderHit = { title?: string; body: string };
   const cache: {
     render: Record<string, RenderHit>;
-    notation: Record<string, P1Finding[]>;
-    outlineKey?: string;
+    notation: Record<string, NotationReviewerProblem[]>;
+    synth: Record<string, SynthLedgerEntry>;
+    /** Mechanical-failure retry counts per ledger key: the unparseable-reply un-burn
+     * grants ONE retry, ever — unbounded un-burning re-dispatched the same symbols
+     * round after round (measured 2-3x per symbol, 2026-08-20 token audit). */
+    synthRetries?: Record<string, number>;
     outlineStructureKey?: string;
-    outlineModel?: string;
-  } = {
-    render: {},
-    notation: {},
-    ...(JSON.parse(await readFile(cachePath, "utf8").catch(() => "{}")) as object),
-  };
+  } = await loadJsonCache(cachePath, { defaults: { render: {}, notation: {}, synth: {} } });
   const saveCache = () => writeJsonAtomic(cachePath, cache); // why: a crash mid-write must not corrupt the render cache (next run would throw on parse).
-  const modelCacheKey = `${io.ctx.deps.codexModel ?? "unspecified-codex-model"}|${PRESENTATION_PROSE_POLICY_VERSION}`;
+
+  // Model + prompt fingerprints: hashing the actual prompt templates into each cache key
+  // makes prompt edits self-invalidating — no manually bumped version strings. One
+  // fingerprint PER CONSUMER (outline / render / notation), so editing e.g. the synthesis
+  // prompt does not needlessly cold every render cache and force an outline regeneration.
+  // Shared with the P3 rubric key; the formula lives in prompt_io so both consumers hash
+  // identically (see `promptFingerprint`).
+  const promptFp = promptFingerprint;
+  const modelKeyBase = `${io.ctx.deps.codexModel ?? "unspecified-codex-model"}|${PRESENTATION_PROSE_POLICY_VERSION}`;
+  const outlineModelKey = `${modelKeyBase}|${await promptFp("p1_plan")}`;
+  const renderModelKey = `${modelKeyBase}|${await promptFp("p1_touchup", "p1_render_from_lean")}`;
+  const notationModelKey = `${modelKeyBase}|${await promptFp("p1_notation_check")}`;
   const renderKey = (r: { id: string; statement: string; refSet: string[]; priorBody?: string; defects?: string[]; delivery?: P1Env["delivery"] }) =>
-    hashEnvBody([
-      modelCacheKey,
-      r.statement,
-      [...r.refSet].sort().join(","),
-      r.priorBody ?? "",
-      (r.defects ?? []).join("|"),
-      JSON.stringify(r.delivery ?? null),
-      citedPromptFor(r.id),
-      r.delivery?.status === "undelivered" ? "undelivered-open-direction-v2" : "",
-    ].join("§"));
+    renderCacheKey(renderModelKey, r, citedPromptFor(r.id), envHintFor(r.id));
 
   // ── Outline (executor / codex): structure + notation table over the mechanical layer.
-  // Cache by presence (like sections/ and the proof caches): a valid existing outline.md is REUSED.
-  // The outline is non-deterministic across codex calls, so a re-run — `--from P1` after a graph fix,
-  // or a re-draft incorporating a P5 review — must NOT silently RESTRUCTURE the paper. `validateOutline`
-  // guards staleness: if the env set changed since the outline was written, an env is no longer placed
-  // exactly once → it fails → we regenerate. Delete outline.md to force a fresh structure.
+  // Cache by presence: a valid existing outline.md is REUSED (structure must not silently
+  // change on a re-run). `validateOutline` guards staleness: if the env set changed since
+  // the outline was written, an env is no longer placed exactly once → regenerate.
+  // Delete outline.md to force a fresh structure.
   const mechanical = renderMechanicalLayer(nodes);
-  const outlineKey = hashEnvBody([modelCacheKey, mechanical, [...poolKeys].sort().join(","), brief, outlineBrief].join("§")); // why: a valid outline can still be stale for changed bodies/notation inputs or a changed authoring model.
+  // D-stage contribution narrative for the outline planner (subordinated; honest_scope
+  // doubles as a framing constraint alongside the REFUTED/DEAD-OBJECTS rule).
+  const outlineNarrative = [
+    narrative.tldr && `TLDR (pre-formalization research summary):\n${narrative.tldr}`,
+    narrative.projectJustification && `Project justification:\n${narrative.projectJustification}`,
+    narrative.interpretation && `Interpretation:\n${narrative.interpretation}`,
+    narrative.honestScope && `Honest scope (claims the research stage itself disclaims):\n${narrative.honestScope}`,
+  ].filter(Boolean).join("\n\n") || "(none recorded)";
   const outlineStructureKey = hashEnvBody([
-    modelCacheKey,
+    outlineModelKey,
     nodes.map((n) => `${n.id}:${n.kind}`).join(","),
     [...poolKeys].sort().join(","),
     brief,
     outlineBrief,
+    outlineNarrative,
   ].join("§"));
   const existingOutline = (await readFile(join(io.outDir, "outline.md"), "utf8").catch(() => "")).trim();
   let outlineMd: string;
-  const outlineCacheMatches = cache.outlineStructureKey
-    ? cache.outlineStructureKey === outlineStructureKey
-    : cache.outlineKey != null && (cache.outlineModel == null || cache.outlineModel === modelCacheKey);
-  if (existingOutline && outlineCacheMatches && validateOutline(existingOutline, nodeIds, poolKeys).length === 0) {
+  if (existingOutline && cache.outlineStructureKey === outlineStructureKey &&
+      validateOutline(existingOutline, nodeIds, poolKeys).length === 0) {
     outlineMd = existingOutline;
-    cache.outlineStructureKey = outlineStructureKey;
-    cache.outlineModel = modelCacheKey;
-    await saveCache();
     log("outline: reusing existing valid outline.md (no restructure on re-run)");
   } else {
     log(
       `outline: calling codex…${
-        hasOutlineRevision
-          ? " (regenerating to apply the P5 structural revision brief)"
-          : existingOutline
-            ? " (existing outline invalid for current env set — regenerating)"
-            : ""
+        existingOutline ? " (existing outline invalid for current env set — regenerating)" : ""
       }`,
     );
     const baseOutlinePrompt = await presentationPrompt("p1_plan", {
         note_md: io.bank.noteMd,
+        contribution_narrative: outlineNarrative,
         related_work_brief: brief,
         frozen_layer_tex: mechanical,
         pool_keys: [...poolKeys].join(", "),
@@ -409,88 +599,58 @@ export async function stageP1(io: StageIO): Promise<void> {
         cwd: repoRoot,
         reasoningEffort: "medium",
         leanLsp: false,
+        webSearch: true,
       });
       outlineMd = unwrapArtifact(outlineRes.stdout, ["markdown", "md"], "outline_md");
       outlineProblems = validateOutline(outlineMd, nodeIds, poolKeys);
       if (outlineProblems.length === 0) break;
-      await writeFile(join(io.outDir, "outline_rejected.md"), outlineMd + "\n", "utf8");
+      await writeDiagnostic(io.outDir, "outline_rejected.md", outlineMd + "\n");
       log(`outline: rejected attempt ${attempt + 1}/2 — ${outlineProblems.join("; ")}`);
     }
     if (outlineProblems.length > 0) {
       throw new Error(`P1 outline invalid after repair: ${outlineProblems.join("; ")}`);
     }
     await writeFile(join(io.outDir, "outline.md"), outlineMd + "\n", "utf8");
-    cache.outlineKey = outlineKey;
     cache.outlineStructureKey = outlineStructureKey;
-    cache.outlineModel = modelCacheKey;
     await saveCache();
     log("outline: ok");
   }
+  // Placement enforcement: an object a MAIN-BODY theorem uses IN ITS STATEMENT must not be
+  // defined only in an appendix (user directive 2026-08-21 — "important objects like theta hat
+  // must be in the main body"). Advisory rather than fatal: the outline may be operator-curated
+  // mid-run, and halting P1 over placement would cost a full cycle for something a checkpoint
+  // reader can fix in one line. It is logged loudly and carried into the checkpoint findings.
+  {
+    const statementUsesOf = (id: string): string[] =>
+      graph.edges.filter((e) => e.kind === "statement-uses" && e.from === id).map((e) => e.to);
+    const kindOf = (id: string): string | undefined => graph.nodes.find((n) => n.id === id)?.kind;
+    const placementProblems = lintMainBodyDependencies(parseOutline(outlineMd), statementUsesOf, kindOf);
+    for (const m of placementProblems) log(`placement: ${m}`);
+  }
   const notation = parseOutline(outlineMd).notation;
+  // Objects the planner re-kinded to `algorithmv` render as numbered-step procedures: the touchup
+  // prompt is told so (`environment: algorithmv`) and the hint joins the render cache key.
+  const envHintFor = (id: string): string =>
+    parseOutline(outlineMd).envOverrides[id] === "algorithmv" ? "environment: algorithmv" : "";
   const leanDir = join(repoRoot, io.bank.leanSubdir);
   const realizedSymbols = await discoverRealizedSymbols(leanDir);
   const isLeanRealizedNotation = buildRealizedNotationMatcher(realizedSymbols);
+  const realizedList = realizedSymbols.length > 0
+    ? realizedSymbols.map((s) => `- ${s}`).join("\n")
+    : "(none — this paper has no @realizes-tagged symbols)";
   if (realizedSymbols.length > 0) {
     log(`notation: ${realizedSymbols.length} Lean-realized symbol(s) available as authoritative homes`);
   }
+  // Designated home for a symbol: the notation-table row whose symbol normalizes to the
+  // same key. Simple table lookup — the reviewer owns all semantic judgment.
+  const designatedHomeFor = (symbol: string): string | undefined =>
+    notationHomes(notation).find((row) => definingNotationKey(row.symbol) === definingNotationKey(symbol))?.home;
 
   // ── Loop hooks (the model calls runP1Loop orchestrates).
-  // Titles are carried in a side-map (the render emits them; the loop tracks only
-  // bodies). A titled definition env lets notation resolution match a class.
+  // Titles are carried in a side-map (the render emits them; the loop tracks only bodies).
   const titleById = new Map<string, string>();
-  // Split on UNESCAPED pipes (`\|` is a TeX norm inside a math cell, and
-  // doubles as markdown's escaped pipe) and keep POSITIONAL columns —
-  // `.filter(Boolean)` shifted every column when a cell was empty. Both row
-  // formats the corpus actually contains are accepted: `| a | b | … |` (edge
-  // pipes) and the prompt-specified pipe-less `a | b | …` — requiring a
-  // leading pipe silently parsed ZERO rows from 4 of 9 real papers.
-  const notationSymbols = notation.split("\n").flatMap((line) => {
-    const parts = line.split(/(?<!\\)\|/).map((x) => x.trim());
-    if (parts.length > 1 && parts[0] === "") parts.shift();
-    if (parts.length > 1 && parts[parts.length - 1] === "") parts.pop();
-    if (parts.length < 4) return [];
-    const symbol = parts[1].replace(/^\$|\$$/g, "").replace(/^\\\(|\\\)$/g, "").trim();
-    return symbol && !/^[A-Za-z]$/.test(symbol) ? [symbol] : [];
-  });
-  /** Stable topological order induced by notation definitions. This lets a synthetic definition
-   * live after the graph objects it depends on (for example theta-star) but before its consumers,
-   * instead of forcing every synthetic setup block to the very front or very back. */
-  const orderByNotationDefinitions = (envs: P1Env[]): P1Env[] => {
-    const byId = new Map(envs.map((e) => [e.id, e]));
-    const originalPos = new Map(envs.map((e, i) => [e.id, i]));
-    const outgoing = new Map(envs.map((e) => [e.id, new Set<string>()]));
-    const indegree = new Map(envs.map((e) => [e.id, 0]));
-    for (const symbol of notationSymbols) {
-      // Titles are the reliable primary-object signal. A body can mention many symbols in
-      // equations (`theta*` inside the definition of an energy denominator); treating every such
-      // equality as a definition creates false duplicates and disables the ordering edge.
-      const definitions = envs.filter((e) => containsNotation(titleById.get(e.id) ?? "", symbol));
-      if (definitions.length !== 1) continue;
-      const def = definitions[0];
-      for (const use of envs) {
-        if (use.id === def.id || !containsNotation(`${titleById.get(use.id) ?? ""} ${use.body}`, symbol)) continue;
-        if (!outgoing.get(def.id)!.has(use.id)) {
-          outgoing.get(def.id)!.add(use.id);
-          indegree.set(use.id, (indegree.get(use.id) ?? 0) + 1);
-        }
-      }
-    }
-    const ready = envs.filter((e) => indegree.get(e.id) === 0).map((e) => e.id);
-    const out: P1Env[] = [];
-    while (ready.length > 0) {
-      ready.sort((a, b) => originalPos.get(a)! - originalPos.get(b)!);
-      const id = ready.shift()!;
-      out.push(byId.get(id)!);
-      for (const to of outgoing.get(id) ?? []) {
-        indegree.set(to, indegree.get(to)! - 1);
-        if (indegree.get(to) === 0) ready.push(to);
-      }
-    }
-    // Cycles or duplicate-definition ambiguities retain their stable input order; the semantic
-    // reviewer still sees them and can request a wording repair rather than losing an environment.
-    const emitted = new Set(out.map((e) => e.id));
-    return [...out, ...envs.filter((e) => !emitted.has(e.id))];
-  };
+  const graphNodeIds = new Set(nodes.map((n) => n.id));
+  let lockedIds = new Set<string>();
   // Locked envs: a P3-validated frozen body persisted on the node (`nl.frozen_body`) — used VERBATIM
   // so a P1 re-run cannot revert the tightening P3 reconciled to Lean. They are NOT rendered or
   // re-gated; they appear in the reviewed layer only so a loose env's `\ref` to a locked env resolves.
@@ -498,17 +658,40 @@ export async function stageP1(io: StageIO): Promise<void> {
   // before the node became `undelivered` must never be copied verbatim into a remark: that would
   // re-publish the very claim the delivery decision omitted. Undelivered nodes therefore always
   // take the loose path, where the deterministic renderer below replaces the body completely.
-  // Citation-erased statements must be freshly rendered under the current policy. A body frozen
-  // before this policy may expose the cited proposition as an ordinary paper assumption.
+  // Cited-dependency envs USED to be excluded so citation-erasure policy changes would force a
+  // fresh render — but that safety now lives in the statement audit, which still audits locked
+  // envs and keys on the cited-dependency text plus the erasure-policy token (a policy change
+  // misses the verdict cache; genuine drift halts as locked-env-drift). The exclusion's only
+  // remaining effect was making operator wording fixes on such envs unfixable (the freeze was
+  // silently ignored and the renderer regenerated the flagged identifiers every run).
+  // An `algorithmv` override on a node with a frozen body is self-defeating: the box prints
+  // numbered steps, but a frozen body is emitted VERBATIM, so the reader gets an "Algorithm"
+  // wrapping unstepped prose. Release the BODY lock for exactly those nodes so the renderer can
+  // step them under the ALGORITHM BODY rule. Never touch `nl.frozen` — that field is paper-env
+  // membership (`renderedNodes`), and clearing it deletes the environment from the paper. The
+  // statement audit still gates the re-rendered body, and P3 re-freezes what it validates.
+  const outlineEnvOverrides = parseOutline(outlineMd).envOverrides;
+  // The layer written DURING the P1 loop must agree with the layer built after it: the post-loop
+  // view derives from `formal_layer.json`, whose blocks apply `env_overrides` (blocksFromGraph),
+  // while the in-loop `assemble` used the raw `envForNode`. On a NON-CONVERGED run only the
+  // in-loop view survives, so an operator inspecting formal_layer.tex saw `definitionv` for an
+  // object the pipeline had correctly re-kinded — and read it as "the renderer ignored the
+  // override" (sa_plm 2026-08-21). One resolver, both views.
+  const envForNodeWithOverride = (n: Parameters<typeof envForNode>[0]) =>
+    (outlineEnvOverrides[n.id] as ReturnType<typeof envForNode>) ?? envForNode(n);
+  const steppedNodes = nodes.filter((n) => n.nl.frozen_body && outlineEnvOverrides[n.id] === "algorithmv");
   const lockedNodes = nodes.filter((n) =>
-    n.nl.frozen_body && n.delivery?.status !== "undelivered" && (citedDepsById.get(n.id)?.length ?? 0) === 0,
+    n.nl.frozen_body && n.delivery?.status !== "undelivered" && outlineEnvOverrides[n.id] !== "algorithmv",
   );
+  if (steppedNodes.length > 0) {
+    log(`algorithmv: body lock released so the renderer can step ${steppedNodes.map((n) => n.id).join(", ")} (frozen membership kept; audit still gates)`);
+  }
   const looseNodes = nodes.filter((n) => !lockedNodes.includes(n));
-  const lockedIds = new Set(lockedNodes.map((n) => n.id));
+  lockedIds = new Set(lockedNodes.map((n) => n.id));
   for (const n of lockedNodes) if (n.nl.frozen_title != null) titleById.set(n.id, n.nl.frozen_title);
   const lockedEnvs: P1Env[] = lockedNodes.map((n) => ({
     id: n.id,
-    env: envForNode(n)!,
+    env: envForNodeWithOverride(n)!,
     statement: n.nl.statement,
     body: normalizeCrefs(n.nl.frozen_body!),
     refSet: [...(refTargetsById.get(n.id) ?? [])],
@@ -531,10 +714,31 @@ export async function stageP1(io: StageIO): Promise<void> {
   }
   if (leanCtxById.size > 0) log(`Lean-aware render: ${leanCtxById.size} theorem/lemma statement(s) will render from Lean`);
 
+  // Synthesized-definition bookkeeping (backed by cache.synth — the ledger).
+  const symbolsBySynthId = new Map<string, string[]>();
+  for (const e of Object.values(cache.synth)) {
+    if (e.accepted && e.id) symbolsBySynthId.set(e.id, [...(symbolsBySynthId.get(e.id) ?? []), e.symbol]);
+  }
+  // A consolidated synthesized definition may cover SEVERAL ledger symbols; map the env
+  // id to every backing ledger key so body write-backs update all of them together.
+  const ledgerKeysBySynthId = new Map<string, string[]>();
+  for (const [k, e] of Object.entries(cache.synth)) {
+    if (e.accepted && e.id) ledgerKeysBySynthId.set(e.id, [...(ledgerKeysBySynthId.get(e.id) ?? []), k]);
+  }
+  let synthCount = Math.max(0, ...[...symbolsBySynthId.keys()].map((id) => Number(id.slice("synth_".length))).filter(Number.isFinite));
+
+  const nodeOrder = new Map(nodes.map((n, i) => [n.id, i] as const));
+  const orderLayerEnvs = (envs: P1Env[]): P1Env[] => {
+    const all = [...envs, ...lockedEnvs];
+    const graphEnvs = all.filter((e) => !e.id.startsWith("synth_"))
+      .sort((a, b) => (nodeOrder.get(a.id) ?? 0) - (nodeOrder.get(b.id) ?? 0));
+    const synthEnvs = all.filter((e) => e.id.startsWith("synth_"));
+    return orderEnvsForLayer(graphEnvs, synthEnvs, symbolsBySynthId, titleById);
+  };
   const assemble = (envs: P1Env[]): string =>
     [
       "% Frozen formal layer — causalsmith P1 (graph render). Bodies are hash-pinned; do not edit.",
-      ...orderByNotationDefinitions([...envs, ...lockedEnvs]).flatMap((e) => {
+      ...orderLayerEnvs(envs).flatMap((e) => {
         const t = titleById.get(e.id);
         return [`\\begin{${e.env}}{${e.id}}${t ? `[${t}]` : ""}`, e.body, `\\end{${e.env}}`, ""];
       }),
@@ -553,7 +757,6 @@ export async function stageP1(io: StageIO): Promise<void> {
       // and froze `x \\to y` into formal_layer.json.
       .replace(/\t(?=[A-Za-z])/g, "\\t")
       .replace(/D_\{G_i,\s*t\}/g, "D_{G_i t}");
-  const recoveredSynthBodies = new Map<string, string>();
 
   /** Parse the delimiter-based render output (robust to multi-line LaTeX, which a
    *  JSON container mangles via unescaped newlines). Format per env:
@@ -587,7 +790,7 @@ export async function stageP1(io: StageIO): Promise<void> {
               `### ${r.id}`,
               `ref_set: ${r.refSet.join(", ") || "(none)"}`,
               `cited_dependencies: ${citedPromptFor(r.id)}`,
-              r.delivery ? `delivery_status: ${r.delivery.status}\ndelivery_role: ${r.delivery.role ?? "secondary"}\ndelivery_reason: ${r.delivery.reason}\nenvironment: remarkv` : "",
+              r.delivery ? `delivery_status: ${r.delivery.status}\ndelivery_role: ${r.delivery.role ?? "secondary"}\ndelivery_reason: ${r.delivery.reason}\nenvironment: remarkv` : envHintFor(r.id),
               `statement: ${r.statement}`,
               r.priorBody ? `prior_body: ${r.priorBody}` : "",
               r.defects ? `defects: ${r.defects.join(" | ")}` : "",
@@ -603,28 +806,23 @@ export async function stageP1(io: StageIO): Promise<void> {
     });
     const parsed = parseRender(res.stdout);
     if (parsed.size < reqs.length) {
-      await writeFile(join(io.outDir, "p1_render_raw.txt"), res.stdout.slice(0, 20000), "utf8");
+      await writeDiagnostic(io.outDir, "p1_render_raw.txt", res.stdout.slice(0, 20000));
     }
     return parsed;
   };
 
   // Cache key for a Lean-rendered env: depends on the LEAN statement (so an edited Lean re-renders),
   // not the NL headline. Separate from `renderKey` so the two render modes never collide.
-  // `modelCacheKey` and `delivery` are included for the same reason `renderKey` includes
-  // them: without them a model switch or a PRESENTATION_PROSE_POLICY_VERSION bump re-drafts
-  // definitions/assumptions but silently reuses cached prose for exactly the theorems and
-  // lemmas — the paper's headline statements — and an env that flips to `undelivered` can
-  // hit an entry rendered under its old delivery role.
   const leanKey = (r: RenderReq, ctx: LeanContext): string =>
     hashEnvBody([
-      modelCacheKey,
+      renderModelKey,
       ctx.statement,
       [...r.refSet].sort().join(","),
       citedPromptFor(r.id),
       r.priorBody ?? "",
       (r.defects ?? []).join("|"),
       JSON.stringify(r.delivery ?? null),
-      "lean-citation-erasure-v1",
+      "lean-render",
     ].join("§"));
   /** Render one theorem/lemma statement directly from its Lean signature + referenced defs. Output is
    *  the same `@@@ENV/TITLE/BODY` envelope the NL render uses, so `parseRender` handles both. */
@@ -646,7 +844,7 @@ export async function stageP1(io: StageIO): Promise<void> {
       leanLsp: false,
     });
     const hit = parseRender(res.stdout).get(r.id);
-    if (!hit) await writeFile(join(io.outDir, "p1_render_from_lean_raw.txt"), res.stdout.slice(0, 20000), "utf8");
+    if (!hit) await writeDiagnostic(io.outDir, "p1_render_from_lean_raw.txt", res.stdout.slice(0, 20000));
     return hit ?? null;
   };
 
@@ -658,10 +856,14 @@ export async function stageP1(io: StageIO): Promise<void> {
     const leanMiss: { r: RenderReq; ctx: LeanContext }[] = [];
     const nlMiss: RenderReq[] = [];
     for (const r of reqs) {
-      const recoveredBody = !r.defects ? recoveredSynthBodies.get(r.id) : undefined;
-      if (recoveredBody != null) {
-        out.set(r.id, recoveredBody);
-        continue;
+      // A synthesized definition's body IS its authored content (cache.synth) — it is not
+      // re-rendered unless the reviewer raised defects against it.
+      if (r.id.startsWith("synth_") && !r.defects) {
+        const entry = cache.synth[ledgerKeysBySynthId.get(r.id)?.[0] ?? ""];
+        if (entry?.body != null) {
+          out.set(r.id, normalizeSynthNotation(entry.body));
+          continue;
+        }
       }
       const ctx = leanCtxById.get(r.id);
       const k = ctx ? leanKey(r, ctx) : renderKey(r);
@@ -677,6 +879,21 @@ export async function stageP1(io: StageIO): Promise<void> {
       } else if (ctx) leanMiss.push({ r, ctx });
       else nlMiss.push(r);
     }
+    const acceptHit = (r: RenderReq, hit: RenderHit) => {
+      out.set(r.id, r.id.startsWith("synth_")
+        ? normalizeSynthNotation(hit.body)
+        : enforceUndeliveredDisclosure(r, hit.body));
+      if (hit.title) titleById.set(r.id, hit.title);
+      const k = keyById.get(r.id);
+      if (k) cache.render[k] = hit;
+      // Keep the ledger's stored body in step with a defect-driven synth re-render,
+      // so a later re-run recovers the repaired definition, not the flagged one.
+      for (const ledgerKey of ledgerKeysBySynthId.get(r.id) ?? []) {
+        if (cache.synth[ledgerKey]) {
+          cache.synth[ledgerKey] = { ...cache.synth[ledgerKey], body: normalizeSynthNotation(hit.body), title: hit.title ?? cache.synth[ledgerKey].title };
+        }
+      }
+    };
     const total = leanMiss.length + nlMiss.length;
     if (total === 0) {
       log(`render: all ${reqs.length} env(s) cached`);
@@ -688,11 +905,8 @@ export async function stageP1(io: StageIO): Promise<void> {
     const leanFallback: RenderReq[] = [];
     await mapLimit(leanMiss, 4, async ({ r, ctx }) => {
       const hit = await renderFromLean(r, ctx);
-      if (hit) {
-        out.set(r.id, enforceUndeliveredDisclosure(r, hit.body));
-        if (hit.title) titleById.set(r.id, hit.title);
-        cache.render[keyById.get(r.id)!] = hit;
-      } else leanFallback.push(r);
+      if (hit) acceptHit(r, hit);
+      else leanFallback.push(r);
     });
     const nlAll = [...nlMiss, ...leanFallback];
     if (nlAll.length > 0) {
@@ -703,11 +917,7 @@ export async function stageP1(io: StageIO): Promise<void> {
       for (const m of maps) {
         for (const [id, hit] of m) {
           const req = missById.get(id);
-          out.set(id, req?.id.startsWith("synth_")
-            ? normalizeSynthNotation(hit.body)
-            : req ? enforceUndeliveredDisclosure(req, hit.body) : hit.body);
-          if (hit.title) titleById.set(id, hit.title);
-          if (missById.has(id)) cache.render[keyById.get(id)!] = hit;
+          if (req) acceptHit(req, hit);
         }
       }
       // A long batched model response can occasionally omit one otherwise-valid envelope.
@@ -720,12 +930,7 @@ export async function stageP1(io: StageIO): Promise<void> {
         for (let i = 0; i < missing.length; i++) {
           const r = missing[i];
           const hit = retries[i].get(r.id);
-          if (!hit) continue;
-          out.set(r.id, r.id.startsWith("synth_")
-            ? normalizeSynthNotation(hit.body)
-            : enforceUndeliveredDisclosure(r, hit.body));
-          if (hit.title) titleById.set(r.id, hit.title);
-          cache.render[keyById.get(r.id)!] = hit;
+          if (hit) acceptHit(r, hit);
         }
       }
     }
@@ -734,230 +939,202 @@ export async function stageP1(io: StageIO): Promise<void> {
     return canonicalOut();
   };
 
-  // The most recent layer the review hook saw — the synthesize hook's evidence base for
-  // the conditional Lean-realized skip (the loop always reviews before it synthesizes).
-  let lastReviewedLayer = "";
+  // The most recent env set the review hook saw — the synthesize hook's evidence base
+  // for usage excerpts (the loop always reviews before it synthesizes).
+  let latestEnvs: P1Env[] = [];
+  const routeOpts = {
+    isLeanRealized: (symbol: string) => isLeanRealizedNotation(symbol),
+    designatedHomeFor,
+    ledgerHas: (key: string) => Object.hasOwn(cache.synth, key),
+    graphNodeIds,
+    lockedIds,
+  };
+  /** One cached call to the SINGLE semantic notation authority. Raw problems are cached
+   * by layer content; routing is recomputed on every read so the ledger state applies. */
+  const reviewNotation = async (layer: string): Promise<NotationReviewerProblem[]> => {
+    const layerKey = hashEnvBody(`${notationModelKey}§${layer}§${notation}§${realizedList}`);
+    if (Object.hasOwn(cache.notation, layerKey)) return cache.notation[layerKey];
+    const res = await deps.runCodex({
+      prompt: await presentationPrompt("p1_notation_check", {
+        frozen_layer: layer,
+        notation_table: notation,
+        lean_realized_symbols: realizedList,
+      }),
+      cwd: repoRoot,
+      reasoningEffort: "medium",
+      leanLsp: false,
+    });
+    const problems = parseNotationReviewerOutput(res.stdout);
+    cache.notation[layerKey] = problems;
+    await saveCache();
+    return problems;
+  };
   const review: P1LoopHooks["review"] = async (layer, envs) => {
+    latestEnvs = envs;
     log("review: lints + codex notation…");
     // `known` must include the LOCKED env ids too: they are present in the assembled layer (as fixed
     // context so loose-env xrefs resolve), so `lintAnchors` would otherwise flag each as
     // `unknown-objid` — a finding with no objId that the locked-filter below cannot drop.
     const known = new Set([...envs.map((e) => e.id), ...lockedIds]);
-    const lintProblems: LintProblem[] = [
+    const findings: P1Finding[] = [
       ...lintAnchors(layer, known, null),
       ...lintClarity(layer),
       ...lintSelfContainment(layer),
       ...lintCrossRefs(layer, refTargetsById),
       ...lintReferences(layer),
       ...lintHypothesisPresentation(layer),
-    ];
-    const findings: P1Finding[] = lintProblems.map(toFinding);
-    // Orphan classes → synthesize-def (clean symbol carried for the handler).
-    for (const o of orphanParameterizedClasses(layer)) {
-      findings.push({ gate: "notation-undefined", fixLocus: "synthesize-def", symbol: o.symbol, detail: `class ${o.symbol} used in ${o.usedIn.join("/")} with no defining env` }); // why: deterministic orphan findings must not be treated like advisory reviewer notation.
-    }
-    // Codex reviewer (medium effort on 5.5): semantic notation-resolvability
-    // (catches \mathrm operators, wrong cross-refs, prose-only defs the deterministic backstop
-    // misses). Cached by layer hash — an unchanged layer (e.g. a re-run) is not re-reviewed.
-    const anchored = parseAnchoredEnvs(layer);
-    const duplicateSynthFinding = (f: P1Finding): boolean =>
-      f.fixLocus === "synthesize-def" && !!f.symbol && anchored.some((e) =>
-        containsNotation(e.title ?? "", f.symbol!) || sameEstimatorNotationFamily(e.title ?? "", f.symbol!)
-      );
-    // Lean-realized symbols are suppressed from the ACTION list below ONLY when the layer
-    // already DISPLAYS their defining equality (`displaysDefiningEquality`): there a
-    // paper-side duplicate would compete with the displayed definition for authority (and
-    // the reviewer re-derived exactly those gaps every round — in one run `q_k`/`p_k`/
-    // `\pi_k`/`\mu_{ak}` were re-reported 7/6/6/5 times across 10 high-effort ~39.5k-char
-    // calls, all structurally unactionable — so the prompt still tells it about the
-    // realization list). An `@realizes` tag WITHOUT a displayed definition is NOT
-    // suppression grounds: it resolves the symbol for the web drawer only, and the
-    // transported-LATE paper shipped with its central estimand θ_T undefined because the
-    // old unconditional filter ate the finding. Part of the cache key: a changed
-    // realization set changes the valid findings.
-    const realizedList = realizedSymbols.length > 0
-      ? realizedSymbols.map((s) => `- ${s}`).join("\n")
-      : "(none — this paper has no @realizes-tagged symbols)";
-    const layerKey = hashEnvBody(`notation-definition-order-v10§${deps.codexModel ?? "?"}§${layer}§${notation}§${realizedList}`);
-    if (cache.notation[layerKey]) {
-      // Cached model findings are advisory evidence, not authority. Reapply
-      // deterministic duplicate suppression on every read so an old spelling
-      // mismatch cannot survive a parser improvement and burn the repair cap.
-      findings.push(...cache.notation[layerKey].filter((f) => !duplicateSynthFinding(f)));
-    } else {
-      try {
-        const res = await deps.runCodex({
-          prompt: await presentationPrompt("p1_notation_check", {
-            frozen_layer: layer,
-            notation_table: notation,
-            lean_realized_symbols: realizedList,
-          }),
-          cwd: repoRoot,
-          reasoningEffort: "medium",
-          leanLsp: false,
-        });
-        const problems = parseNotationReviewerOutput(res.stdout);
-        const notationFindings: P1Finding[] = problems
-          .filter((p) => p.symbol)
-          .flatMap<P1Finding>((p): P1Finding[] => {
-            const symbol = p.symbol!;
-            const detail = `${p.symbol} [${p.case ?? "?"}] in ${(p.used_in ?? []).join("/")} — ${p.fix ?? ""}`;
-            if (p.case === "undefined" || p.case === "no-anchor") {
-              // Deterministic evidence wins over reviewer resampling: a titled anchored
-              // definition means the symbol is not undefined. Synthesizing a duplicate here
-              // creates mismatched notation and can induce dangling synthetic cross-references.
-              if (anchored.some((e) =>
-                containsNotation(e.title ?? "", symbol) || sameEstimatorNotationFamily(e.title ?? "", symbol)
-              )) return [];
-              return [{ gate: "notation-reviewer", symbol, fixLocus: "synthesize-def", detail }];
-            }
-            if (p.case === "wrong-ref" || p.case === "mismatch") {
-              return (p.used_in ?? []).map((objId) => ({
-                gate: "notation-reviewer",
-                objId,
-                fixLocus: "wording-revise" as const,
-                detail,
-              }));
-            }
-            return [{ gate: "notation-reviewer", symbol, fixLocus: "halt", detail }];
-          });
-        cache.notation[layerKey] = notationFindings;
-        await saveCache();
-        findings.push(...notationFindings);
-      } catch (e) {
-        io.state.notes.push(`P1 notation review skipped (deterministic floor still applied): ${(e as Error).message?.slice(0, 120)}`);
-      }
-    }
+    ].map(toFinding);
+    // The reviewer is the ONLY notation check — a failed/unparseable review must
+    // fail the stage, never let the loop converge with notation unexamined
+    // (successful renders/reviews are cached, so the re-run is cheap).
+    findings.push(...routeNotationProblems(await reviewNotation(layer), routeOpts));
     // Locked envs are P3-validated and used verbatim — never surface a finding against them (they
     // are not in the loop's env set, so any lint hit on the context copy would just stall the loop).
-    // Report what the reviewer emitted but the pipeline discarded. A silently dropped
-    // finding is indistinguishable from a reviewer that never raised it, which is how the
-    // Lean-realized re-report loop stayed invisible across runs.
-    const realizedAndDisplayed = (f: P1Finding): boolean =>
-      f.fixLocus === "synthesize-def" &&
-      isLeanRealizedNotation(f.symbol) &&
-      displaysDefiningEquality(layer, f.symbol ?? "");
-    const leanSuppressed = findings.filter(realizedAndDisplayed);
-    if (leanSuppressed.length > 0) {
-      log(
-        `notation: suppressed ${leanSuppressed.length} synthesize-def finding(s) for Lean-realized ` +
-          `symbol(s) ${leanSuppressed.map((f) => f.symbol).join(", ")} whose defining equality the ` +
-          `layer already displays — the reviewer should have been told these are resolvable; ` +
-          `recurrence across rounds means the prompt is not landing`,
-      );
-    }
-    const leanOnlyAllowed = findings.filter(
-      (f) => f.fixLocus === "synthesize-def" && isLeanRealizedNotation(f.symbol) && !realizedAndDisplayed(f),
-    );
-    if (leanOnlyAllowed.length > 0) {
-      log(
-        `notation: ${leanOnlyAllowed.length} Lean-realized symbol(s) ${leanOnlyAllowed
-          .map((f) => f.symbol)
-          .join(", ")} are used in statements but no environment displays their defining ` +
-          `equality — eligible for paper-side synthesis, subject to the duplicate/locked ` +
-          `filters (the Lean link alone leaves a PDF reader with an undefined symbol)`,
-      );
-    }
-    lastReviewedLayer = layer;
-    return findings.filter((f) =>
-      (!f.objId || !lockedIds.has(f.objId)) &&
-      !duplicateSynthFinding(f) &&
-      // A paper-side definition is unnecessary ONLY when the notation is Lean-realized
-      // AND some environment already displays its defining equality — there a second
-      // definition would compete for authority (the duplicate setup blocks seen in the
-      // panel-PPML presentation). A Lean realization by itself must not suppress: that
-      // is how the transported-LATE paper shipped with θ_T undefined.
-      !realizedAndDisplayed(f)
-    );
+    return findings.filter((f) => !f.objId || !lockedIds.has(f.objId));
   };
 
-  const synthResumeMarker = p1SynthResumeMarker(deps.codexModel);
-  let synthCount = 0;
-  const recoveredSynth: P1Env[] = [];
-  const graphDefinitionNotation = nodes
-    .filter((n) => n.kind === "setup" || n.kind === "definition" || n.kind === "assumption")
-    .map((n) => `${n.nl.frozen_title ?? ""} ${n.nl.statement}`);
-  // A capped semantic loop can spend many model calls building valid setup definitions before
-  // discovering one deeper missing symbol. Both a rejected receipt and a converged formal layer
-  // are resumable, but only when explicitly model/version-stamped so a model switch or prompt
-  // migration cannot silently carry old authored prose forward.
-  const rejectedPath = join(io.outDir, "formal_layer_rejected.tex");
-  const formalLayerPath = join(io.outDir, "formal_layer.tex");
-  const formalLayerTex = await readFile(formalLayerPath, "utf8").catch(() => "");
-  const rejected = await readFile(rejectedPath, "utf8").catch(() => "");
-  const resumeLayer = selectSynthRecoveryLayer(formalLayerTex, rejected, synthResumeMarker);
-  if (resumeLayer) {
-    const recovered = recoverSynthesizedDefinitions(resumeLayer.tex, {
-      isLeanRealizedNotation,
-      titleById,
-      graphDefinitionNotation,
-      normalizeBody: normalizeSynthNotation,
-      note: (message) => io.state.notes.push(message),
-    });
-    synthCount = recovered.synthCount;
-    recoveredSynth.push(...recovered.envs);
-    for (const e of recovered.envs) recoveredSynthBodies.set(e.id, e.body);
-    if (recoveredSynth.length > 0) log(`resume: recovered ${recoveredSynth.length} model-matched synthesized definition(s)`);
-  }
   const synthesize: P1LoopHooks["synthesize"] = async (symbols) => {
     const out: P1Env[] = [];
-    // A notation-heavy setup can legitimately expose more than four missing
-    // anchors at once (panel arrays + collapsed design + target definitions).
-    // Keep synthesis bounded, but allow eight per round so the capped loop
-    // can repair dozens of anchors instead of failing solely by batch arithmetic.
-    for (const symbol of symbols.slice(0, 8)) {
-      // Defensive backstop: even if a future reviewer bypasses the filtering above, an
-      // `@realizes` symbol whose defining equality the layer ALREADY displays must never
-      // become presentation-synthesized (a duplicate would compete for authority). A
-      // realized symbol the layer never defines is legitimate synthesis input. When no
-      // layer has been reviewed yet, fail closed (skip) as before.
-      if (
-        isLeanRealizedNotation(symbol) &&
-        (lastReviewedLayer === "" || displaysDefiningEquality(lastReviewedLayer, symbol))
-      ) continue;
-      // A reviewer may spell an already-defined estimator with its semantic
-      // tag in a different script position.  Do not create a second synthetic
-      // definition for that cosmetic variant.
-      if ([...titleById.values()].some((title) => sameEstimatorNotationFamily(title, symbol))) continue;
-      try {
-        const res = await deps.runCodex({
-          prompt: await presentationPrompt("p1_synthesize_definition", {
-            symbol,
-            usages: "(used in the frozen layer; see the notation table)",
-            note_md: io.bank.noteMd,
-            lean_subdir: io.bank.leanSubdir,
-          }),
-          cwd: repoRoot,
-          reasoningEffort: "medium",
-          leanLsp: true,
-        });
-        const p = parseJsonLoose(res.stdout) as { title?: string; body?: string } | null;
+    // The ledger grants ONE synthesis attempt per symbol, ever. A prior accepted entry
+    // means the definition already exists in the layer; a prior failed entry means the
+    // symbol is a checkpoint advisory. Either way: no repeat model call.
+    const fresh = symbols.slice(0, 8).filter((symbol) => !Object.hasOwn(cache.synth, synthLedgerKey(symbol)));
+    if (fresh.length === 0) return out;
+    for (const symbol of fresh) cache.synth[synthLedgerKey(symbol)] = { symbol, accepted: false };
+    await saveCache();
+    const usagesFor = (symbol: string) => {
+      const usageEnvs = latestEnvs
+        .filter((e) => containsNotation(`${titleById.get(e.id) ?? ""} ${e.body}`, symbol))
+        .slice(0, 3);
+      return usageEnvs.length > 0
+        ? usageEnvs.map((e) => `  - ${e.id}: ${e.body.replace(/\s+/g, " ").slice(0, 600)}`).join("\n")
+        : "  (used in the frozen layer; see the notation table)";
+    };
+    // ONE batched call for the whole round: the model groups symbols of a single object
+    // FAMILY into one definition (journal style — witness values, companion polynomials,
+    // one apparatus) instead of minting a micro-definition per symbol (the per-symbol
+    // path produced 34 synthesized envs in a 68-env layer).
+    const symbolsBlock = fresh.map((symbol) => `SYMBOL: ${symbol}\n${usagesFor(symbol)}`).join("\n\n");
+    try {
+      const res = await deps.runCodex({
+        prompt: await presentationPrompt("p1_synthesize_definition", {
+          symbols_block: symbolsBlock,
+          dstage_constructions: dstageDefinitionContext,
+          note_md: io.bank.noteMd,
+          lean_subdir: io.bank.leanSubdir,
+        }),
+        cwd: repoRoot,
+        reasoningEffort: "medium",
+        leanLsp: true,
+      });
+      const groups = parseJsonLoose(res.stdout) as { symbols?: string[]; title?: string; body?: string }[] | null;
+      if (!Array.isArray(groups)) {
+        // MECHANICAL failure (unparseable reply), not a judgment of undefinability:
+        // un-burn the pre-marks so ONE retry may happen — but only one, tracked in
+        // synthRetries. Unbounded un-burning re-dispatched the same symbols round
+        // after round; a second mechanical failure burns the symbol to a checkpoint
+        // advisory like any other failed attempt.
+        const retried: string[] = [];
+        const burned: string[] = [];
+        cache.synthRetries ??= {};
+        for (const symbol of fresh) {
+          const k = synthLedgerKey(symbol);
+          const n = (cache.synthRetries[k] ?? 0) + 1;
+          cache.synthRetries[k] = n;
+          if (n <= 1) {
+            delete cache.synth[k];
+            retried.push(symbol);
+          } else {
+            burned.push(symbol); // pre-mark stays: accepted:false advisory
+          }
+        }
+        io.state.notes.push(
+          `P1: batched synthesis reply unparseable — ${retried.length} symbol(s) left for one retry` +
+          (burned.length > 0 ? `; ${burned.length} burned after repeated mechanical failure (advisory)` : ""),
+        );
+        await saveCache();
+        return out;
+      }
+      const freshSet = new Set(fresh.map((x) => synthLedgerKey(x)));
+      for (const g of Array.isArray(groups) ? groups : []) {
+        const covered = (g.symbols ?? []).filter((x) => freshSet.has(synthLedgerKey(x)));
         // Reject labels and STRUCTURAL environments, but keep subsidiary math
         // environments: `cases`/`aligned`/matrices are the natural body of a
-        // piecewise class definition, and a blanket `\begin` ban silently
-        // discarded the synthesis every round until the loop cap was hit.
-        const structuralEnv = [...(p?.body ?? "").matchAll(/\\(?:begin|end)\{([A-Za-z]+)\*?\}/g)].some(
+        // piecewise class definition.
+        const structuralEnv = [...(g.body ?? "").matchAll(/\\(?:begin|end)\{([A-Za-z]+)\*?\}/g)].some(
           (m) => !/^(?:cases|dcases|aligned|alignedat|gathered|split|array|[pbBvV]?matrix|smallmatrix)$/.test(m[1]),
         );
-        if (!p?.body || structuralEnv || /\\label\b/.test(p.body)) continue;
+        if (covered.length === 0 || !g.body || structuralEnv || /\\label\b/.test(g.body)) {
+          if (covered.length > 0) {
+            io.state.notes.push(`P1: synthesis for ${covered.join(", ")} rejected (structural env/label/empty) — left for the checkpoint`);
+          }
+          continue;
+        }
         const id = `synth_${++synthCount}`;
-        if (p.title) titleById.set(id, p.title);
-        const body = normalizeSynthNotation(p.body.trim());
+        const body = normalizeSynthNotation(g.body.trim());
+        if (g.title) titleById.set(id, g.title);
+        for (const symbol of covered) {
+          cache.synth[synthLedgerKey(symbol)] = { symbol, accepted: true, id, title: g.title, body };
+          ledgerKeysBySynthId.set(id, [...(ledgerKeysBySynthId.get(id) ?? []), synthLedgerKey(symbol)]);
+        }
+        symbolsBySynthId.set(id, covered);
         out.push({ id, env: "definitionv", statement: body, body, refSet: [] });
-        io.state.notes.push(`P1: synthesized definition ${id} for orphan class ${symbol}`);
-      } catch {
-        /* best-effort: leave the orphan for the next review round / checkpoint */
+        io.state.notes.push(`P1: synthesized definition ${id} for orphan symbol(s) ${covered.join(", ")}`);
       }
+      const coveredKeys = new Set<string>();
+      for (const g of Array.isArray(groups) ? groups : []) {
+        for (const x of g.symbols ?? []) coveredKeys.add(synthLedgerKey(x));
+      }
+      const omitted = fresh.filter((x) => !coveredKeys.has(synthLedgerKey(x)));
+      if (omitted.length > 0) {
+        io.state.notes.push(`P1: synthesis deliberately omitted ${omitted.join(", ")} (model judged them not faithfully definable) — checkpoint advisories`);
+      }
+    } catch (e) {
+      // MECHANICAL failure (thrown dispatch): same ONE-retry accounting as the
+      // unparseable-reply branch above — an unconditional un-burn here re-armed a
+      // repeatedly-crashing batch forever, the exact loop the retry bound exists
+      // to kill (audit finding, 2026-08-20).
+      const retried: string[] = [];
+      const burned: string[] = [];
+      cache.synthRetries ??= {};
+      for (const symbol of fresh) {
+        const k = synthLedgerKey(symbol);
+        const n = (cache.synthRetries[k] ?? 0) + 1;
+        cache.synthRetries[k] = n;
+        if (n <= 1) {
+          delete cache.synth[k];
+          retried.push(symbol);
+        } else {
+          burned.push(symbol); // pre-mark stays: accepted:false advisory
+        }
+      }
+      io.state.notes.push(
+        `P1: batched synthesis failed (${(e as Error).message?.slice(0, 80)}) — ${retried.length} symbol(s) left for one retry` +
+        (burned.length > 0 ? `; ${burned.length} burned after repeated mechanical failure (advisory)` : ""),
+      );
+      await saveCache();
+      return out;
     }
+    await saveCache();
     return out;
   };
 
   // ── Build the initial env set and run the loop (over the LOOSE nodes only; locked envs bypass it).
-  // Higher synth ids were discovered as prerequisites in later review rounds, so place them
-  // first when recovering an older append-ordered rejected layer.
-  const envs0: P1Env[] = [...recoveredSynth.reverse(), ...looseNodes.map((n) => ({
+  // Accepted ledger entries are the durable recovery source: a rewound/converged prior run's
+  // synthesized definitions re-enter the loop verbatim (delete p1_cache.json to regenerate).
+  const seenSynthIds = new Set<string>();
+  const recoveredSynth: P1Env[] = Object.values(cache.synth)
+    .filter((e): e is Required<Pick<SynthLedgerEntry, "id" | "body">> & SynthLedgerEntry => e.accepted && !!e.id && e.body != null)
+    .filter((e) => !seenSynthIds.has(e.id) && (seenSynthIds.add(e.id), true)) // consolidated synths: one env per id
+    .map((e) => {
+      if (e.title) titleById.set(e.id, e.title);
+      const body = normalizeSynthNotation(e.body);
+      return { id: e.id, env: "definitionv" as const, statement: body, body, refSet: [] };
+    });
+  if (recoveredSynth.length > 0) log(`resume: recovered ${recoveredSynth.length} synthesized definition(s) from the ledger`);
+  const envs0: P1Env[] = [...recoveredSynth, ...looseNodes.map((n) => ({
     id: n.id,
-    env: envForNode(n)!,
+    env: envForNodeWithOverride(n)!,
     statement: n.nl.statement,
     body: n.nl.statement,
     refSet: [...(refTargetsById.get(n.id) ?? [])],
@@ -965,40 +1142,63 @@ export async function stageP1(io: StageIO): Promise<void> {
       ? { delivery: { status: "undelivered" as const, role: n.delivery.role, reason: n.delivery.reason ?? "the item is outside the delivered theorem inventory" } }
       : {}),
   }))];
+  const formalLayerPath = join(io.outDir, "formal_layer.tex");
   const onRound: P1LoopHooks["onRound"] = async ({ phase, iter, envs, findings }) => {
     // Always persist the latest layer so a slow/timed-out run leaves the render on disk.
     await writeFile(formalLayerPath, assemble(envs) + "\n", "utf8");
     if (phase === "render0") log(`render0: persisted ${envs.length}-env layer to formal_layer.tex`);
     else {
-      const blocking = (findings ?? []).filter((f) => f.gate !== "xref-missing" && !(f.gate === "notation-undefined" && f.fixLocus == null));
+      const blocking = (findings ?? []).filter((f) => f.gate !== "xref-missing" && f.gate !== "notation-unresolved");
       log(`review iter ${iter}: ${findings?.length ?? 0} finding(s) (${blocking.length} actionable) — ${[...new Set(blocking.map((f) => f.gate))].join(", ") || "clean"}`);
     }
   };
-  const result = await runP1Loop(envs0, { render, review, synthesize, assemble, onRound, maxIterations: 6 });
+  // notation_review.json is written on EVERY exit path (success, non-convergence,
+  // audit failure, mid-loop throw) so a failed re-run can never leave a prior
+  // converged run's `ok: true` file on disk to mislead the checkpoint reader.
+  const dedupeAdvisories = (fs: P1Finding[]): P1Finding[] => {
+    const seen = new Set<string>();
+    return fs.filter((f) => {
+      const key = `${f.gate}|${f.objId ?? ""}|${f.detail}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+  const writeNotationReview = (ok: boolean, advisories: P1Finding[], iterations: number) =>
+    writeJsonAtomic(join(io.outDir, "notation_review.json"), {
+      ok,
+      iterations,
+      advisories: dedupeAdvisories(advisories),
+      synth_ledger: cache.synth,
+    });
+  let result;
+  try {
+    result = await runP1Loop(envs0, { render, review, synthesize, assemble, onRound, maxIterations: 6 });
+  } catch (e) {
+    await writeNotationReview(false, [], 0).catch(() => undefined); // why: best-effort — the loop error is the primary signal.
+    throw e;
+  }
   log(`loop: ${result.ok ? "converged" : "did NOT converge"} in ${result.iterations} iter(s); ${result.advisories.length} advisory`);
 
-  const layer = assemble(result.envs);
   if (!result.ok) {
-    await writeFile(join(io.outDir, "formal_layer_rejected.tex"), synthResumeMarker + "\n" + layer + "\n", "utf8");
+    await writeNotationReview(false, result.advisories, result.iterations);
     throw new Error(
-      `P1 loop did not converge in ${result.iterations} iterations: ` +
+      `P1 loop did not converge in ${result.iterations} iterations (latest layer persisted to formal_layer.tex; ` +
+        `renders/reviews/synthesis are cached — fix the blocking input and re-run): ` +
         result.unresolved.map((f) => `[${f.gate}] ${f.objId ?? ""} ${f.detail}`).join("; "),
     );
   }
   // Source of truth: the formal layer as typed JSON blocks (obj_id = node id, lean/status/ref_set
-  // from the graph), with a per-block body_hash freeze. The `.tex` is a DERIVED read-only view for
-  // human review; the freeze lives in each block's body_hash (no standalone frozen_hashes.json).
-  // See docs/superpowers/specs/2026-06-25-causalsmith-p1-json-formal-layer-design.md.
-  // Frozen layer = loop-rendered bodies for loose nodes + verbatim frozen_body for locked nodes,
-  // in topological `nodes` order (keeps the derived .tex view stable).
+  // from the graph). The `.tex` is a DERIVED read-only view for human review; the freeze IS each
+  // block's `body` — downstream stages compare paper env bodies against it directly.
+  // Frozen layer = loop-rendered bodies for loose nodes + verbatim frozen_body for locked nodes.
   const looseBody = new Map(result.envs.map((e) => [e.id, e.body]));
   const bodies = new Map(nodes.map((n) => [
     n.id,
     normalizeCrefs(presentedBody(n.delivery?.status, n.nl.frozen_body, looseBody.get(n.id))),
   ] as const));
-  const graphIds = new Set(nodes.map((n) => n.id));
-  const orderedResultEnvs = orderByNotationDefinitions(result.envs);
-  const syntheticEnvs = orderedResultEnvs.filter((e) => !graphIds.has(e.id));
+  const orderedEnvs = orderLayerEnvs(result.envs);
+  const syntheticEnvs = orderedEnvs.filter((e) => e.id.startsWith("synth_"));
   const syntheticBlocks: FormalBlock[] = syntheticEnvs.map((e) => ({
     obj_id: e.id,
     alias: null,
@@ -1011,7 +1211,6 @@ export async function stageP1(io: StageIO): Promise<void> {
     status: "presentation-synthesized",
     provenance: "presentation-synthesized",
     cited_dependencies: [],
-    body_hash: hashBody(e.body),
   }));
   const graphBlocks = blocksFromGraph(
     graph,
@@ -1022,26 +1221,30 @@ export async function stageP1(io: StageIO): Promise<void> {
     { citeKeyByNodeId: citeKeyById, locatorByNodeId: locatorById },
   );
   const blockById = new Map([...graphBlocks, ...syntheticBlocks].map((b) => [b.obj_id, b] as const));
-  const finalOrder = parseAnchoredEnvs(assemble(result.envs)).map((e) => e.obj_id);
-  const blocks = finalOrder.flatMap((id) => {
-    const block = blockById.get(id);
+  const blocks = orderedEnvs.flatMap((e) => {
+    const block = blockById.get(e.id);
     return block ? [block] : [];
   });
-  const placedOutline = placeSynthesizedDefinitions(outlineMd, syntheticEnvs.map((e) => e.id));
+  const layerIds = orderedEnvs.map((e) => e.id);
+  const placedOutline = placeSynthesizedDefinitions(
+    outlineMd, syntheticEnvs.map((e) => e.id),
+    preferredSectionsForSynths(
+      outlineMd,
+      orderedEnvs.filter((e) => !e.id.startsWith("synth_"))
+        .map((e) => ({ id: e.id, body: e.body, title: titleById.get(e.id) })),
+      symbolsBySynthId,
+      syntheticEnvs.map((e) => ({ id: e.id, body: e.body, title: titleById.get(e.id) })),
+    ),
+    layerIds,
+  );
   await writeFile(join(io.outDir, "outline.md"), placedOutline, "utf8");
   await writeFile(
     join(io.outDir, "formal_layer.json"),
     JSON.stringify(FormalLayerSource.parse({ commit: null, blocks }), null, 2) + "\n",
     "utf8",
   );
-  // Put the successful receipt first so recovery can distinguish this final layer from an
-  // in-progress onRound render. If a stale rejected receipt remains after an interruption, the
-  // startup selection above deliberately prefers this newer successful layer.
-  await writeFile(
-    formalLayerPath,
-    synthResumeMarker + "\n% DERIVED from formal_layer.json — read-only, do not edit.\n" + blocksToTex(blocks) + "\n",
-    "utf8",
-  );
+  const preAuditTex = "% DERIVED from formal_layer.json — read-only, do not edit.\n" + blocksToTex(blocks) + "\n";
+  await writeFile(formalLayerPath, preAuditTex, "utf8");
   // ── STATEMENT EQUIVALENCE AUDIT (co-located with statement production). Each frozen env body is
   // reconciled against its Lean declaration the moment it is rendered; drift is refined toward Lean
   // and the validated body is persisted onto the graph (nl.frozen_body) so a re-run stays tight. A
@@ -1049,16 +1252,9 @@ export async function stageP1(io: StageIO): Promise<void> {
   // the outline checkpoint already verified against Lean, so P2/P3 confirm rather than reconstruct.
   log("statement audit: reconciling frozen envs against Lean…");
   const eqProblems = await runStatementAudit(io);
-  // The audit may tighten a body and re-derive formal_layer.tex from JSON. Reapply the receipt
-  // marker after that write so the final audited artifact—not a pre-audit intermediate—is what a
-  // later P1 re-run can safely recover from.
-  const auditedLayerTex = await readFile(formalLayerPath, "utf8");
-  const unstampedAuditedLayer = auditedLayerTex.startsWith(synthResumeMarker + "\n")
-    ? auditedLayerTex.slice(synthResumeMarker.length + 1)
-    : auditedLayerTex;
-  await writeFile(formalLayerPath, synthResumeMarker + "\n" + unstampedAuditedLayer, "utf8");
   if (eqProblems.length > 0) {
     io.state.hard_gate_failures = eqProblems;
+    await writeNotationReview(false, result.advisories, result.iterations);
     throw new Error(
       `P1 statement equivalence audit failed (${eqProblems.length} statement(s) still drift after up to 2 ` +
         `refinement rounds; the frozen layer disagrees with Lean beyond what auto-refinement could tighten — ` +
@@ -1066,23 +1262,30 @@ export async function stageP1(io: StageIO): Promise<void> {
         eqProblems.map((p) => p.detail).join("; "),
     );
   }
+  // Statement refinement is model-authored and can add or drop a defining display. Re-run
+  // the ONE semantic notation authority on the audited layer — but only when the audit
+  // actually changed something (the common case is byte-identical, and an unchanged layer
+  // needs no second opinion). Problems for ledgered symbols are already advisories.
+  const auditedLayerTex = await readFile(formalLayerPath, "utf8");
+  if (auditedLayerTex !== preAuditTex) {
+    log("statement audit changed the layer — re-running the notation reviewer on the audited layer…");
+    const postProblems = routeNotationProblems(await reviewNotation(auditedLayerTex), routeOpts);
+    const blocking = postProblems.filter((f) => f.gate !== "notation-unresolved");
+    result.advisories.push(...postProblems.filter((f) => f.gate === "notation-unresolved"));
+    if (blocking.length > 0) {
+      await writeNotationReview(false, result.advisories, result.iterations);
+      throw new Error(`P1 post-audit notation resolvability failed: ${blocking.map((f) => f.detail).join("; ")}`);
+    }
+  }
   log("statement audit: all frozen envs faithful to Lean");
 
-  // Advisory cross-reference findings → checkpoint note (never blocking).
-  if (result.advisories.length > 0) {
+  // Advisory findings (xref + unresolved notation) → checkpoint notes (never blocking).
+  const advisories = dedupeAdvisories(result.advisories);
+  if (advisories.length > 0) {
     io.state.notes.push(
-      `P1 cross-reference advisories (${result.advisories.length}, for checkpoint review): ` +
-        result.advisories.map((f) => f.detail).join("; "),
+      `P1 advisories (${advisories.length}, for checkpoint review): ` +
+        advisories.map((f) => f.detail).join("; "),
     );
   }
-  await writeFile(
-    join(io.outDir, "notation_review.json"),
-    JSON.stringify({ ok: result.ok, iterations: result.iterations, advisories: result.advisories }, null, 2) + "\n",
-    "utf8",
-  );
-  // The stamped successful layer is now the recovery source. Removing an old failure receipt
-  // prevents it from being mistaken for the current run by tools or readers outside this stage.
-  await unlink(rejectedPath).catch((e: NodeJS.ErrnoException) => {
-    if (e.code !== "ENOENT") throw e;
-  });
+  await writeNotationReview(result.ok, advisories, result.iterations);
 }

@@ -1,0 +1,644 @@
+{
+  "qid": "exp_commitment_price_coupling",
+  "specialization": "v1",
+  "cluster": "experimentation",
+  "target_subdirectory": "CausalSmith/Experimentation/EXP_CommitmentPriceCoupling_Research",
+  "namespace": "CausalSmith.Experimentation.CommitmentPriceCoupling",
+
+  "encoding_decisions": [
+    {
+      "id": "E-1",
+      "decision": "Unit index type is `Fin q x Fin 4` (block, within-block position), so `n = 4q` is `Fintype.card`, the block embedding `E_ell` is `Sigma`-style coordinate injection, and `G_j^bd = ⨁_ℓ G_{jℓ}` is literally a block-diagonal `Matrix (Fin q x Fin 4) (Fin q x Fin 4) ℝ` that vanishes off the diagonal blocks. Removes all index arithmetic from every direct-sum proof.",
+      "why": "The paper's entire productization argument is a statement about diagonal principal blocks; a product index type makes `[Q]_{ℓr}` a definitional projection."
+    },
+    {
+      "id": "E-2",
+      "decision": "The assignment space is `BlockCode q := Fin q → (Fin 3 x Bool)` (per block: which of the three balanced directions, and its sign), with the decoding `signOf : BlockCode q → (Fin q x Fin 4) → ℝ`, `signOf z (ℓ,u) = (if (z ℓ).2 then 1 else -1) * v ((z ℓ).1) u`. `Z_n` is `Set.range signOf`; a design is a `Causalean.Experimentation.DesignBased.FiniteDesign (BlockCode q)`. `Fintype (BlockCode q)` is automatic, so NO `Fin (6^q)` enumeration is ever needed and arbitrary cross-block dependence is still representable.",
+      "why": "`Z_n ≃ (Fin 3 x Bool)^q` exactly; this is the single decision that makes the exponential-support theorem finitely tractable."
+    },
+    {
+      "id": "E-3",
+      "decision": "The Moore-Penrose radius `xᵀ K† x ≤ 1` is encoded WITHOUT a pseudoinverse: `ass:response-range` is `∃ y, x = K *ᵥ y` and `ass:response-radius` is `∀ y, x = K *ᵥ y → y ⬝ᵥ (K *ᵥ y) ≤ 1`. For PSD `K` and `x ∈ range K` these are exactly `x ∈ range K` and `xᵀ K† x ≤ 1` (if `x = Ky = Ky'` then `y - y' ∈ ker K` so `yᵀKy = y'ᵀKy'`, and `K†x = P_range y`). Mathlib has no Moore-Penrose pseudoinverse for matrices, so this is the faithful pseudoinverse-free form; the sibling run `EXP_DesignPm1ExactnessBoundaryV1_Research` (`twoBlockLaplacianPinv`) had to hand-build a spectral-action pseudoinverse for one fixed matrix, which does not generalize to a menu.",
+      "why": "Avoids building a general Moore-Penrose theory while keeping `def:response-classes` a literal two-atom structure (P2)."
+    },
+    {
+      "id": "E-4",
+      "decision": "`λ_max` is a TOTAL function `lambdaMaxPSD (A) := sSup {t | ∃ y, ‖y‖ ≤ 1 ∧ t = y ⬝ᵥ (A *ᵥ y)}` (no `IsHermitian` argument), with the two bridge lemmas F3 needs: `lambdaMaxPSD A ≤ c ↔ (c • 1 - A).PosSemidef` (the LMI form used in every boxed program) and `lambdaMaxPSD A = hA.eigenvalues.sup'` for Hermitian `A` (the trace/eigenvalue form used by `lem:finite-trace-isotropy`).",
+      "why": "Every boxed program in the paper is stated as an LMI `L ⪯ cI`; a total sSup-Rayleigh definition makes the LMI direction free and confines the spectral theorem to one helper file."
+    },
+    {
+      "id": "E-5",
+      "decision": "Handle nodes (`def:matrix-discrepancy-handle`, `def:heterogeneous-block-local-sdp`) are each ONE `def` returning a bundled record (`MatrixProgramData`, `HetLocalSDPData`), declared as auxiliary non-node structures in the same file. This keeps the one-node-one-`def` mapping while letting the def carry the several objects the core packages into `H_mat` / `H_het`.",
+      "why": "P3 requires a construction definition to be a single `def`; the core's own text calls these 'construction handles' collecting several objects."
+    }
+  ],
+
+  "env": [
+    {
+      "id": "S1",
+      "world": "Finite blinded block-balanced randomization world: a design is a probability law on the per-block direction/sign code `BlockCode q = Fin q → (Fin 3 x Bool)`, decoded to a ±1 assignment on units `Fin q x Fin 4`; `Q_π = E_π[ZZᵀ]`, block/average direction marginals, the baseline, shared-direction and product laws.",
+      "binds_symbols": ["q", "n", "ell", "i", "k", "1_n", "I_n", "P_n", "v_k", "h_k", "E_ell", "H_loc", "Z_n", "Pi_n", "pi", "Z", "pi_0", "pi_sh", "pi_p", "p_k", "p_ellk", "Q_pi"],
+      "binds_sampling_model": true,
+      "disposition": "reuse",
+      "reuse": "Causalean.Experimentation.DesignBased.FiniteDesign",
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Causalean.Experimentation.DesignBased.Product",
+        "Causalean.Experimentation.DesignBased.ProductBlock",
+        "Causalean.Experimentation.DesignBased.Optimality",
+        "Causalean.Experimentation.DesignBased.Designs.Coin"
+      ],
+      "notes": "AUTHORITATIVE world reuse. `FiniteDesign Ω` is a pmf on a finite assignment space with finite-sum `E`/`Var`/`Cov`/`Pr` — exactly the paper's Δ(Z_n) layer, instantiated at `Ω := BlockCode q` (E-2); `Causalean...DesignBased.DesignFamily = Set (FiniteDesign Ω)` types `Π_n`. Three further exact reuses drive the productization proofs: `prodDesign : (∀ i, FiniteDesign (α i)) → FiniteDesign (∀ i, α i)` realizes π_0, π_sh and π_p as independent-block laws; `FiniteDesign.E_prod_prod` / `E_prod_apply` give the per-block marginal identities; and `Causalean...DesignBased.Cov_prod_disjoint_zero` gives `[Q_{π_p}]_{ℓr} = 0` for ℓ ≠ r — the deleted cross-block covariance that IS the productization step in thm:block-diagonal and thm:heterogeneous. The sibling run `EXP_DesignPm1ExactnessBoundaryV1_Research/Basic.lean` uses the same `FiniteDesign`-on-sign-codes world (`signOf`, `assignmentSecondMoment`, `BalancedSignDesign`) and is the reference layout to adapt. Verified by reading `Causalean/Experimentation/DesignBased/{DesignCore,Product,ProductBlock,Optimality}.lean`."
+    },
+    {
+      "id": "S2",
+      "world": "Design-based finite-population potential-outcome world: a fixed schedule `Y(0), Y(1) : Fin q x Fin 4 → ℝ`, the SATE `τ_N`, the observed outcome, the balanced difference in means, and the centered sum vector `μ = P_n{Y(1)+Y(0)}`.",
+      "binds_symbols": ["Y_i(0)", "Y_i(1)", "tau_N", "mu", "Y_i_obs", "hat_tau"],
+      "binds_sampling_model": false,
+      "disposition": "reuse",
+      "reuse": "Causalean.Experimentation.DesignBased.sateEstimand",
+      "modules": [
+        "Causalean.Experimentation.DesignBased.Estimators.DifferenceInMeans",
+        "Causalean.Experimentation.DesignBased.DesignCore"
+      ],
+      "notes": "`sateEstimand Y1 Y0 = (∑ i, Y1 i - Y0 i) / card U` is LITERALLY the core's `τ_N`, so the estimand is reused verbatim. The estimator is NOT reused: Causalean's `diffInMeans`/`treatedMean`/`controlMean` are indexed by a treated `Finset` of fixed cardinality under `completeRandomization`, whereas this paper's `τ̂ = (2/n)∑ Z_i Y_i^obs` is the ±1-coded balanced form on `Z_n`; bypass-justified — the ±1 sign coding is what makes `τ̂ - τ_N = n⁻¹Zᵀμ` a one-line identity, and translating through treated sets would destroy it. Search trace: read `Causalean/Experimentation/DesignBased/Estimators/DifferenceInMeans.lean` (`sateEstimand`, `diffInMeans`, `E_diffInMeans_eq_sate`, `unbiased_diffInMeans`) and `.../PotentialOutcome.lean` (`Yobs`, `ProperlySpecified`, exposure-mapping form)."
+    },
+    {
+      "id": "S3",
+      "world": "Response-geometry / ellipsoid-risk world: PSD Gram matrices on `Fin q x Fin 4`, their unit ellipsoids, the design variance functional, class worst-case variance, baseline / oracle / gain-fraction normalization, and the maximin commitment value; plus the homogeneous two-class menu parameters.",
+      "binds_symbols": ["j", "x", "a", "b", "c_j", "s_j", "kappa_j", "u_jell", "U_j", "K_j", "M_j", "C_j", "V_pi", "R_j", "B_j", "r_j_star", "Delta_j", "g_j", "lambda_star", "RE_j", "eta_REL"],
+      "binds_sampling_model": false,
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.LinearAlgebra.Matrix.PosDef",
+        "Mathlib.Analysis.Matrix.Order",
+        "Mathlib.Analysis.Matrix.Spectrum",
+        "Mathlib.LinearAlgebra.Matrix.Trace",
+        "Mathlib.LinearAlgebra.Matrix.Rank",
+        "Causalean.Experimentation.DesignBased.Optimality.Minimax"
+      ],
+      "modules_bypass_justified": true,
+      "notes": "Bypass-justified Mathlib-matrix world: Causalean has no response-ellipsoid / worst-case-variance-over-a-response-class layer at all. Search trace: `grep -E 'ellipsoid|Ellipsoid|productiz|blinded|gainFraction|commitmentValue|signPair'` over the whole `AutoID/` tree (*.lean) → only `Stat/Inference/{WaldVec,ChiSquaredWald}.lean` (confidence ellipsoids, unrelated); `grep -E 'eigenvalue|Rayleigh|lambda_max|lambdaMax|IsHermitian'` over `Causalean/` → 9 files, none design-side (MonomialGram, ConvexProjection, OperatorSqrt, LocalPoly, Kernel/EffectiveDimension, Ridge, BLUE) → not found. Mathlib side checked: `lean_leansearch 'square root of a positive semidefinite matrix'` → `Matrix.PosSemidef.sqrt` / `sq_sqrt` / `posSemidef_sqrt` in `Mathlib.Analysis.Matrix.Order` (REUSED for `K^{1/2}`, `G^{1/2}`); `lean_leansearch 'largest eigenvalue of Hermitian matrix equals supremum of Rayleigh quotient'` → only operator-level `LinearMap.IsSymmetric.hasEigenvalue_iSup_of_finiteDimensional` in `Mathlib.Analysis.InnerProductSpace.Rayleigh`, no matrix-level `λ_max ≤ c ↔ A ⪯ cI` → build `lambdaMaxPSD` inline (E-4). Partial-fit reuse recorded, not taken as a discharge: `Causalean...DesignBased.Optimality.Minimax.worstRisk` (`Finset.sup'` of a risk over a finite class set) fits `max_j` of the NORMALIZED risks, hence `min_j g_j = 1 - worstRisk`; F3 may use it, but the class risk `R_j` itself is a `sup` over a continuum ellipsoid and `bestRisk` requires a FINITE design family whereas `Π_n` is a continuum, so `IsMinimaxOn`/`bestRisk` do not fit and the maximin value is defined by `sSup`/`sInf` locally."
+    },
+    {
+      "id": "S4",
+      "world": "Block-specific rank-one-per-block spectral menu world: positive direction loadings `d_{jℓk}`, the rank-one block response vectors and their Gram matrices, the induced class risks and the polynomial-size commitment LP.",
+      "binds_symbols": ["J_blk", "j_blk", "d_jellk", "u_jell_blk", "U_j_blk", "K_j_blk", "M_j_blk", "C_j_blk", "R_j_blk", "b_j_blk", "rbar_j", "B_j_blk", "r_j_blk_star", "Delta_j_blk", "g_j_blk", "lambda_blk_star"],
+      "binds_sampling_model": false,
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.LinearAlgebra.Matrix.PosDef",
+        "Mathlib.Analysis.Matrix.Order",
+        "Mathlib.Analysis.InnerProductSpace.Basic"
+      ],
+      "modules_bypass_justified": true,
+      "notes": "Specialization world layered on S3; no Causalean analogue. Search trace: `grep -E 'quadruple|matchedQuadruple|blockBalanced|balancedSign|directionMarginal'` over `AutoID/**/*.lean` → 4 files, all `quadratic`-substring false positives (EdgeVarianceBound, VarEstQuadBound, VarEstConsistencyConditions, SeqDRMoment) → not found. `Causalean.Experimentation.MatchedPairDesign` is the closest structural analogue (independent blocks of size 2, `prodDesign (fun _ => pairCoinDesign)`, `mpTreatInd` per-block marginals) and is recorded as the ANALOGOUS module whose per-block-marginal proof pattern F3 should adapt; the abstraction gap to bridge is block size 2 → 4 with three direction choices per block rather than one coin."
+    },
+    {
+      "id": "S5",
+      "world": "Block-diagonal centered PSD menu world on matched quadruples: arbitrary-rank centered local kernels `G_{jℓ} ∈ S_+^4` with `G 1_4 = 0`, their `H`-coordinate compressions and square roots, the local score matrices `L_{jℓ}(p_ℓ)`, and the order-three local LMI program.",
+      "binds_symbols": ["G_jell_bd", "G_j_bd", "Ghat_jell_bd", "S_jell_bd", "L_jell_bd", "M_j_bd", "R_j_bd", "beta_j_bd", "omega_jell_bd", "rho_j_bd", "delta_j_bd", "g_j_bd", "lambda_bd_star"],
+      "binds_sampling_model": false,
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.LinearAlgebra.Matrix.PosDef",
+        "Mathlib.Analysis.Matrix.Order",
+        "Mathlib.LinearAlgebra.Matrix.Block",
+        "Causalean.Mathlib.OperatorSqrt"
+      ],
+      "modules_bypass_justified": true,
+      "notes": "Local kernel square roots `S_{jℓ} = (Hᵀ G_{jℓ} H)^{1/2}` reuse `Matrix.PosSemidef.sqrt` (`Mathlib.Analysis.Matrix.Order`, confirmed by leansearch). `Causalean.Mathlib.OperatorSqrt` (`LinearMap.IsPositive.posSqrt`, `posSqrt_mul_self`, `eigBasis`, `eigVals`, `eigVals_nonneg`) is the operator-side analogue and is recorded as the fallback if F3 needs an eigenbasis-level square root rather than the CFC one; the gap to bridge is `Matrix ↔ E →ₗ[ℝ] E` transport. Search trace for a design-side block-diagonal PSD menu: `grep -E 'ellipsoid|productiz|blinded|signPair'` over `AutoID/**/*.lean` → none; `Glob Causalean/Experimentation/**/*.lean` (103 files) surveyed, no kernel-menu module → not found."
+    },
+    {
+      "id": "S6",
+      "world": "General higher-rank exact-program world: an arbitrary finite menu of nonzero PSD kernels on `Fin q x Fin 4` with unrestricted cross-block coupling, the sign-pair representative set, the mass simplex, the exact SDP, its trace LP relaxation and its dual.",
+      "binds_symbols": ["J_gen", "j_gen", "K_j_gen", "lambda_gen_star", "H_mat"],
+      "binds_sampling_model": false,
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.LinearAlgebra.Matrix.PosDef",
+        "Mathlib.Analysis.Matrix.Order",
+        "Mathlib.Analysis.Convex.Caratheodory",
+        "Mathlib.Analysis.Convex.Cone.Dual",
+        "Causalean.PO.ID.Partial.LP.ConicDuality"
+      ],
+      "modules_bypass_justified": true,
+      "notes": "Two genuine reuses found and confirmed. (1) Caratheodory: `lean_leansearch 'Caratheodory theorem convex hull affinely independent finite support'` → `Mathlib.Analysis.Convex.Caratheodory` with `Caratheodory.mem_convexHull_erase`, `Caratheodory.affineIndependent_minCardFinsetOfMemConvexHull`, `convexHull_eq_union` — this IS the support-reduction engine of `prop:higher-rank-sparse-support`, so that proposition is build-inline, not Defer. (2) Conic duality: `grep -E 'Slater|strongDuality|strong_duality|dualCertificate|weak_duality|weakDuality'` over `AutoID/**/*.lean` → `Causalean/PO/ID/Partial/LP/ConicDuality.lean` and `Causalean/Mathlib/Optimization/KKT.lean`; `ConicDuality` supplies `ConicProgram`, `PrimalFeasible`/`DualFeasible`, `weak_duality`, `dualValue_le_primalValue`, `farkas`, `strong_duality_primal_attained` and `strong_duality_zero_gap` (closed-augmented-image CQ) over real Hilbert spaces. Mathlib side checked: `lean_leansearch 'strong duality of semidefinite program Slater condition conic duality'` → only `ProperCone.dual`/`PointedCone.dual` primitives, NO SDP strong-duality theorem → the missing piece is the PSD-cone instantiation, recorded as I-1 and the sole reason `thm:higher-rank-menu-exact-program` is Defer-tier."
+    },
+    {
+      "id": "S7",
+      "world": "Heterogeneous even-block world: `L` predeclared even blocks of sizes `b_ℓ`, explicitly enumerated nonempty centrally symmetric exactly balanced local supports with sign-pair representatives, the blinded law class on the product support, and the local SDP over `∏_ℓ Δ_{m_ℓ}`.",
+      "binds_symbols": ["H_het", "lambda_het_star"],
+      "binds_sampling_model": false,
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Causalean.Experimentation.DesignBased.Product",
+        "Causalean.Experimentation.DesignBased.ProductBlock",
+        "Mathlib.Analysis.Matrix.Order",
+        "Mathlib.LinearAlgebra.Matrix.PosDef"
+      ],
+      "notes": "Generalization of S1/S5 to a dependent block-size family: units are `Σ ℓ : Fin L, Fin (b ℓ)` and the assignment code is `∀ ℓ, Fin (m ℓ) x Bool`, so `prodDesign` and `Cov_prod_disjoint_zero` apply UNCHANGED — that is why the heterogeneous headline is no harder than its matched-quadruple corollary and stays in scope. Search trace: `grep -E 'quadruple|blockBalanced|balancedSign|directionMarginal'` over `AutoID/**/*.lean` → no heterogeneous-block design world; `Causalean.Experimentation.MatchedPairDesign` (all `b_ℓ = 2`, `m_ℓ = 1`) is the degenerate instance the theorem's own smallest boundary check describes and is the analogous module to adapt → not found as a general facility."
+    }
+  ],
+
+  "nodes": {
+    "ass:fixed-potential-outcomes": {
+      "lean_kind": "assumption",
+      "lean_name": "FixedPotentialOutcomes",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.DesignCore"],
+      "defer_tier": false,
+      "gate": false,
+      "kind_class": "modeling",
+      "target_file": "Basic.lean",
+      "notes": "Modeling assumption (design-based sampling); threaded Prop, never discharged. Encoding: given a possibly assignment-dependent schedule `Y1z Y0z : BlockCode q → U → ℝ` and a fixed schedule `Y1 Y0 : U → ℝ`, the atom is `∀ z i, Y1z z i = Y1 i ∧ Y0z z i = Y0 i` — the schedule is fixed before assignment. Search trace: `grep -E 'FixedSchedule|fixedPotentialOutcome|ProperlySpecified'` over `Causalean/Experimentation/` → `DesignBased/PotentialOutcome.lean` has `ProperlySpecified y yr f θ : ∀ i z, yr i z = y i (expo f θ i z)`, which is the EXPOSURE-MAPPING form (fixed response along an exposure), a partial fit only: it presupposes an exposure map `f`, which this paper does not use (no interference). Not discharged, not reused; kept as the note's own atom."
+    },
+    "ass:no-interference": {
+      "lean_kind": "assumption",
+      "lean_name": "NoInterference",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.DesignCore"],
+      "defer_tier": false,
+      "gate": false,
+      "kind_class": "modeling",
+      "target_file": "Basic.lean",
+      "notes": "Modeling assumption (causal structure: no interference + consistency); threaded Prop. Encoding: `∀ z i, Yobs z i = if signOf z i = 1 then Y1 i else Y0 i` — the observed outcome depends on `z` only through that unit's own sign. Search trace: `grep -E 'NoInterference|noInterference|Consistency'` over `Causalean/Experimentation/` → the interference modules (`ExposureMappingInterference`, `TwoStageInterference`, `UnknownInterference`) all assume the OPPOSITE regime (nontrivial exposure mappings); `DesignBased/PotentialOutcome.lean::ProperlySpecified` is the exposure-indexed generalization, partial fit only → not found as this atom."
+    },
+    "ass:assignment-only-randomness": {
+      "lean_kind": "assumption",
+      "lean_name": "AssignmentOnlyRandomness",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.DesignCore"],
+      "defer_tier": false,
+      "gate": false,
+      "kind_class": "modeling",
+      "target_file": "Basic.lean",
+      "notes": "Modeling assumption (randomization); threaded Prop. Encoding: conditional on the fixed schedule and the design-stage Gram matrices, the only random object is `Z ~ π` — stated as the conjunction `(∀ z, Kz z = K) ∧ D ∈ blindedDesignSpace q`, i.e. the response Grams do not depend on the realized assignment and every moment below is taken under the SAME law `D`. Deliberately thin, because in the `FiniteDesign` world 'assignment is the only randomness' is carried structurally by `FiniteDesign.E` being a finite sum over `z` alone; the atom is retained (not dropped) because the core declares it and three theorems cite it. Search trace: `grep -E 'assignmentOnly|randomizationOnly|designBasedRandomness'` over `Causalean/` → none → not found."
+    },
+    "ass:response-range": {
+      "lean_kind": "assumption",
+      "lean_name": "ResponseInRange",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.LinearAlgebra.Matrix.PosDef", "Mathlib.Data.Matrix.Basic"],
+      "defer_tier": false,
+      "gate": false,
+      "kind_class": "class-member-restriction",
+      "target_file": "Basic.lean",
+      "notes": "Class-member property (member atom of def:response-classes). `ResponseInRange K x : Prop := ∃ y, x = K *ᵥ y` (E-3). Search trace: `lean_loogle`/`grep -E 'pseudoInverse|pinv|MoorePenrose'` over `AutoID/**/*.lean` → only `EXP_DesignPm1ExactnessBoundaryV1_Research/Basic.lean::twoBlockLaplacianPinv`, a spectral-action pseudoinverse hand-built for ONE fixed Laplacian, not a general facility; Mathlib side: no `Matrix.pseudoinverse` / Moore-Penrose decl surfaced by leansearch → not found, hence the range/radius split of E-3."
+    },
+    "ass:response-radius": {
+      "lean_kind": "assumption",
+      "lean_name": "ResponseRadiusLe",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.LinearAlgebra.Matrix.PosDef", "Mathlib.Data.Matrix.Basic"],
+      "defer_tier": false,
+      "gate": false,
+      "kind_class": "class-member-restriction",
+      "target_file": "Basic.lean",
+      "notes": "Class-member property (member atom of def:response-classes). `ResponseRadiusLe K x : Prop := ∀ y, x = K *ᵥ y → y ⬝ᵥ (K *ᵥ y) ≤ 1`, which equals `xᵀ K† x ≤ 1` on `range K` for PSD `K` (E-3); a companion helper lemma `radius_wellDefined` proves the `∀`-form is independent of the representative. Same search trace as ass:response-range (no Moore-Penrose pseudoinverse in Causalean or Mathlib)."
+    },
+
+    "def:block-assignments": {
+      "lean_kind": "def",
+      "lean_name": "quadrupleBalancedAssignments",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.DesignCore"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "`Z_n = Set.range (signOf q)` where `signOf : BlockCode q → (Fin q x Fin 4) → ℝ` decodes a per-block (direction, sign) code (E-2); companion `signOf_mem_iff` proves the set equals the core's `{z ∈ {-1,1}^n : z_[ℓ] ∈ {±v_1,±v_2,±v_3} ∀ ℓ}`, and `signOf_sum_zero` gives `zᵀ1_n = 0`. Search trace: `grep -E 'quadruple|blockBalanced|balancedSign'` over `AutoID/**/*.lean` → 4 files, all `quadratic` false positives → not found. Closest existing coding is `EXP_DesignPm1ExactnessBoundaryV1_Research/Basic.lean::signOf`/`cutPlus` (unstructured `Fin (2m) → Bool` sign vectors, no block-balance constraint) — analogous module, gap = per-block balance restriction."
+    },
+    "def:design-space": {
+      "lean_kind": "def",
+      "lean_name": "blindedDesignSpace",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.DesignCore", "Causalean.Experimentation.DesignBased.Optimality"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "`Π_n : DesignFamily (BlockCode q) := {D | ∀ z, D.p z = D.p (negCode z)}` with `negCode z ℓ = ((z ℓ).1, !(z ℓ).2)`. TYPE is reused: `Causalean...DesignBased.DesignFamily Ω = Set (FiniteDesign Ω)` (abbrev in `Optimality.lean`); the blinding predicate is this paper's. The sibling `EXP_DesignPm1ExactnessBoundaryV1_Research/Basic.lean::BalancedSignDesign`/`BalancedDesignClass` is the same global sign-symmetry predicate on an unstructured sign space — analogous module, gap = block-code carrier. Search trace: `grep -E 'blinded|Blinded|signSymmetric'` over `AutoID/**/*.lean` → no Causalean facility → not found."
+    },
+    "def:baseline-design": {
+      "lean_kind": "def",
+      "lean_name": "baselineDesign",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.Product", "Causalean.Experimentation.DesignBased.DesignCore"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "`π_0 := prodDesign (fun _ : Fin q => uniformDirSign)` with `uniformDirSign : FiniteDesign (Fin 3 x Bool)` the uniform law on the six local codes. HEAVY reuse: `Causalean...DesignBased.prodDesign` supplies the independent-block construction and its `p_sum` proof verbatim; only the six-point local law is new. Search trace: `grep prodDesign Causalean/Experimentation/DesignBased/Product.lean` → `prodDesign`, `prodDesign_p`, `E_prod_prod`, `E_prod_apply` (read); a uniform-on-six-local-codes design is not in `DesignBased/Designs/` (`Bernoulli`, `Coin`, `CompleteRandomization`, `ClusterRandomization`, `Stratified` surveyed) → not found."
+    },
+    "def:shared-design": {
+      "lean_kind": "def",
+      "lean_name": "sharedDirectionDesign",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.Product", "Causalean.Experimentation.DesignBased.Designs.Coin"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "`π_sh := prodDesign (fun _ : Fin q => diracDir 2 ⊗ fairSign)` — unit mass on direction `v_3`, independent fair sign. Reuses `prodDesign` and `Causalean...DesignBased.coinDesign (1/2)` (the fair-sign factor; `coinDesign` read in `Designs/Coin.lean`, used by `MatchedPairDesign.pairCoinDesign`). Same search trace as def:baseline-design."
+    },
+    "def:response-classes": {
+      "lean_kind": "structure",
+      "lean_name": "ResponseClassMem",
+      "members": ["ass:response-range", "ass:response-radius"],
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.LinearAlgebra.Matrix.PosDef"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "CLASS node: `structure ResponseClassMem (K) (x) : Prop` with exactly the two fields `inRange : ResponseInRange K x` and `radiusLe : ResponseRadiusLe K x` (== the core's `by_member_properties`, P2). Companion `def responseClass (K) : Set (U → ℝ) := {x | ResponseClassMem K x}` realizes `M_j` as a set for the `sup` in `def:design-risk`. Search trace: `grep -E 'ellipsoid|Ellipsoid|responseClass|unitBall.*Gram'` over `AutoID/**/*.lean` → only `Stat/Inference/{WaldVec,ChiSquaredWald}.lean` (Wald confidence ellipsoids, wrong object) → not found."
+    },
+    "def:estimator": {
+      "lean_kind": "def",
+      "lean_name": "balancedDiffInMeans",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.Estimators.DifferenceInMeans", "Causalean.Experimentation.DesignBased.DesignCore"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "`obsOutcome Y1 Y0 z i = (1 + signOf z i)/2 * Y1 i + (1 - signOf z i)/2 * Y0 i` and `balancedDiffInMeans Y1 Y0 z = (2/n) * ∑ i, signOf z i * obsOutcome Y1 Y0 z i` (auxiliary `obsOutcome` in the same file; the node's headline def is the estimator). `τ_N` is REUSED as `Causalean...DesignBased.sateEstimand Y1 Y0` (S2). Bypass-justified for the estimator itself: Causalean's `diffInMeans n₁ Y1 Y0 S` is indexed by a treated `Finset` of fixed cardinality under `completeRandomization`, not by a ±1 sign vector, so the key identity `τ̂ - τ_N = n⁻¹Zᵀμ` would not be available; read `Estimators/DifferenceInMeans.lean` in full to confirm."
+    },
+    "def:design-risk": {
+      "lean_kind": "def",
+      "lean_name": "classRisk",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.LinearAlgebra.Matrix.PosDef", "Mathlib.LinearAlgebra.Matrix.Trace", "Causalean.Experimentation.DesignBased.DesignCore"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "Headline def `classRisk (D) (K) : ℝ := sSup (designVariance D '' responseClass K)` realizing `R_j(π) = sup_{x ∈ M_j} V_π(x)`, with three auxiliary non-node defs in the same file carrying the node's other free symbols: `assignmentSecondMoment D : Matrix U U ℝ := Matrix.of fun i j => D.E (fun z => signOf z i * signOf z j)` (`Q_π`), `classScoreMatrix D U_j := U_jᵀ * Q_π * U_j` (`C_j`), `designVariance D x := (n:ℝ)⁻² * (x ⬝ᵥ (Q_π *ᵥ x))` (`V_π`). `assignmentSecondMoment` is the same construction as `EXP_DesignPm1ExactnessBoundaryV1_Research/Basic.lean::assignmentSecondMoment` (analogous module, adapt verbatim modulo the block-code carrier). Search trace as for S3 (`grep -E 'ellipsoid|assignmentSecondMoment|classRisk'` over `Causalean/` → none)."
+    },
+    "def:ryan-relative-efficiency": {
+      "lean_kind": "def",
+      "lean_name": "relativeEfficiencyValue",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.Optimality.Minimax"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Menus.lean",
+      "notes": "Headline def `relativeEfficiencyValue` (`η_REL = sSup over Π_n of min_j RE_j`), with auxiliary `relativeEfficiency D j := oracleRisk j / classRisk D j` (`RE_j`). This is a CRITERION-LEVEL application of the Ryan-Esserman-Li variance-ratio normalization, not a claim that the menu is a submodel of their outcome model — the docstring must say so (the core's own construction text and `thm:ryan-criterion-separation`'s closing sentence). `min_j` over `Fin 2` uses `Finset.inf'`; `Causalean...Optimality.Minimax.worstRisk` is the dual `sup'` form and is available if F3 prefers it. Search trace: `grep -E 'relativeEfficiency|varianceRatio|RE_HTE'` over `AutoID/**/*.lean` → none → not found."
+    },
+    "def:matrix-discrepancy-handle": {
+      "lean_kind": "def",
+      "lean_name": "matrixExactProgramHandle",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.Analysis.Matrix.Order", "Mathlib.Analysis.Convex.Caratheodory", "Causalean.PO.ID.Partial.LP.ConicDuality"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "THigherRankExactProgram.lean",
+      "notes": "One `def` returning the bundled record `MatrixProgramData` (E-5): sign-pair representatives `𝒮 = {z : BlockCode q // (z 0).2 = true}` with `card 𝒮 = 6^q/2`, the mass-simplex map `α ↦ Q`, the exact SDP value, the trace LP value, the active-isotropy criterion, the dual objective, the blinded law `π_α`, and the sparse-support bound. Build-inline: it is a bundle of definitions, so it carries no proof risk of its own (all the risk sits in `thm:higher-rank-menu-exact-program`). Search trace: `grep -E 'massSimplex|signPair|exactProgram|discrepancy'` over `AutoID/**/*.lean` → none → not found; `Mathlib.Analysis.Convex.Caratheodory` (confirmed via leansearch) supplies the support-reduction primitives the handle exposes."
+    },
+    "def:block-specific-spectral-menu": {
+      "lean_kind": "def",
+      "lean_name": "blockSpecificMenu",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.LinearAlgebra.Matrix.PosDef", "Mathlib.Analysis.SpecialFunctions.Sqrt"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Menus.lean",
+      "notes": "`u^blk_{jℓ} = E_ℓ ∑_k √(d_{jℓk}) h_k`, `U_j^blk`, `K_j^blk = U_j^blk (U_j^blk)ᵀ`, `M_j^blk`. With E-1 the block embedding `E_ℓ` is `fun w (ℓ',u) => if ℓ' = ℓ then w u else 0`, so `U_j^blk` has literally disjoint column supports and full column rank `q` is immediate. Search trace: same as S4 (`grep -E 'quadruple|blockBalanced|directionMarginal'` → false positives only) → not found."
+    },
+    "def:block-geometry": {
+      "lean_kind": "def",
+      "lean_name": "twoClassQuadrupleMenu",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.Analysis.SpecialFunctions.Sqrt"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Menus.lean",
+      "notes": "The `J_blk = 2`, block-homogeneous specialization: `twoClassQuadrupleMenu q a b c s := blockSpecificMenu q 2 (fun j ℓ k => …)` with the loading table `(c_1, c_1+s_1 a, c_1+s_1 b)` / `(c_2+s_2 a, c_2, c_2+s_2 b)`. Defined AS a specialization of `blockSpecificMenu` so that `thm:quadruple-menu-frontier` can invoke `thm:block-specific-finite-class-frontier` by `rfl`-level unfolding, exactly as the paper's proof does. Search trace: same as S4 → not found."
+    },
+    "def:commitment-value": {
+      "lean_kind": "def",
+      "lean_name": "commitmentValue",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.Optimality.Minimax"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Menus.lean",
+      "notes": "Headline `λ* = sSup ((fun D => Finset.univ.inf' _ (gainFraction D)) '' Π_n)`, with auxiliaries `baselineRisk` (`B_j`), `oracleRisk` (`r_j^★ = sInf (classRisk · j '' Π_n)`), `oracleGain` (`Δ_j`), `gainFraction` (`g_j`). Partial-fit reuse recorded, NOT taken as a discharge: `Causalean...Optimality.Minimax.worstRisk`/`bestRisk`/`IsMinimaxOn` fit a FINITE design family with a `Finset` of response classes; `Π_n` is a continuum, so `bestRisk` (which needs `𝒟.Finite`) does not apply and `r_j^★` must be an `sInf`. `worstRisk` DOES fit `max_j` of the normalized risks, giving `min_j g_j = 1 - worstRisk`; F3 may use that bridge. Search trace: `grep -E 'commitmentValue|gainFraction|retainedGain'` over `AutoID/**/*.lean` → none → not found."
+    },
+    "def:block-direction-marginals": {
+      "lean_kind": "def",
+      "lean_name": "blockDirectionMarginal",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.DesignCore"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "`p_{ℓk}(π) := D.Pr (fun z => (z ℓ).1 = k)` — REUSES `Causalean...DesignBased.FiniteDesign.Pr` (read in `DesignCore.lean`), and the companion simplex facts `p_nonneg`/`∑_k p = 1` come free from `Pr_nonneg` and `Pr_split`/`E_sum`. With E-2 the event `{Z_[ℓ] ∈ {v_k, -v_k}}` is exactly the code event `(z ℓ).1 = k`, which is why no set-of-sign-vectors bookkeeping is needed. Search trace: `grep -E 'directionMarginal|blockMarginal'` over `Causalean/Experimentation/` → none; the closest is `MatchedPairDesign.mpTreatInd`/`matchedPairDesign_E_mpTreatInd` (per-block marginal probability = 1/2 for blocks of size 2) — analogous module, gap = three direction choices instead of one coin → not found."
+    },
+    "def:direction-frequencies": {
+      "lean_kind": "def",
+      "lean_name": "averageDirectionFrequency",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.DesignCore"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "`p_k(π) := q⁻¹ ∑_ℓ blockDirectionMarginal D ℓ k`. Trivial averaging def over the previous node; search trace inherited from def:block-direction-marginals (`grep -E 'directionMarginal|blockMarginal'` over `Causalean/` → none) → not found."
+    },
+    "def:block-product-design": {
+      "lean_kind": "def",
+      "lean_name": "blockProductDesign",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.Product", "Causalean.Experimentation.DesignBased.ProductBlock"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "`π_p := prodDesign (fun ℓ => localDirSign (p ℓ))` where `localDirSign (p_ℓ) : FiniteDesign (Fin 3 x Bool)` draws the direction with mass `p_{ℓk}` and an independent fair sign. This node is essentially an INSTANTIATION of `Causalean...DesignBased.prodDesign`, and the two facts the productization theorems need are reused wholesale: `FiniteDesign.E_prod_apply` (each block's marginal is preserved, giving `[Q_{π_p}]_{ℓℓ} = [Q_π]_{ℓℓ}`) and `Causalean...DesignBased.Cov_prod_disjoint_zero` (cross-block covariance vanishes, giving `[Q_{π_p}]_{ℓr} = 0` for ℓ ≠ r). Only `localDirSign` and the membership `π_p ∈ Π_n` are new. Verified by reading `Product.lean` and `ProductBlock.lean`."
+    },
+    "def:block-specific-commitment-value": {
+      "lean_kind": "def",
+      "lean_name": "blockSpecificCommitmentValue",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.Optimality.Minimax"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Menus.lean",
+      "notes": "Headline `λ_blk^★`, with auxiliaries `C_j^blk`, `R_j^blk`, `b_j = max_ℓ (1/3)∑_k d_{jℓk}`, `r̄_j = max_ℓ min_k d_{jℓk}`, `B_j^blk`, `(r_j^blk)^★`, `Δ_j^blk`, `g_j^blk`, all as `Finset.sup'`/`Finset.inf'` over `Fin q` and `Fin 3` (nonempty since `q ≥ 1`). Same reuse note and search trace as def:commitment-value."
+    },
+    "def:block-diagonal-psd-menu": {
+      "lean_kind": "def",
+      "lean_name": "blockDiagonalPsdMenu",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.Analysis.Matrix.Order", "Mathlib.LinearAlgebra.Matrix.PosDef", "Mathlib.LinearAlgebra.Matrix.Block"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Menus.lean",
+      "notes": "`H = [h_1 h_2 h_3]`, `Ĝ^bd_{jℓ} = Hᵀ G^bd_{jℓ} H`, `S^bd_{jℓ} = (Ĝ^bd_{jℓ})^{1/2}`, `L^bd_{jℓ}(p_ℓ) = 4 S Diag(p) S`, `G_j^bd = ⨁_ℓ G^bd_{jℓ}` (definitionally a matrix on `Fin q x Fin 4` that vanishes off diagonal blocks, by E-1), `M_j^bd`. REUSED for the square root: `Matrix.PosSemidef.sqrt` with `Matrix.PosSemidef.sq_sqrt` / `posSemidef_sqrt` (`Mathlib.Analysis.Matrix.Order`, confirmed via `lean_leansearch 'square root of a positive semidefinite matrix'`). Search trace for a block-diagonal PSD menu facility: `grep -E 'blockDiagonal.*PSD|directSum.*kernel|kernelMenu'` over `AutoID/**/*.lean` → none → not found."
+    },
+    "def:block-diagonal-commitment-value": {
+      "lean_kind": "def",
+      "lean_name": "blockDiagonalCommitmentValue",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.Analysis.Matrix.Order", "Causalean.Experimentation.DesignBased.Optimality.Minimax"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Menus.lean",
+      "notes": "Headline `λ_bd^★`, with auxiliaries `R_j^bd`, `β_j^bd = n⁻² max_ℓ lambdaMaxPSD ((4/3) G^bd_{jℓ})`, `ω^bd_{jℓ} = sInf over Δ_3 of lambdaMaxPSD (L^bd_{jℓ} p_ℓ)`, `ρ_j^bd`, `δ_j^bd`, `g_j^bd`. Uses the S3 `lambdaMaxPSD` (E-4). Same reuse note and search trace as def:commitment-value."
+    },
+    "def:heterogeneous-block-local-sdp": {
+      "lean_kind": "def",
+      "lean_name": "heterogeneousBlockLocalSDP",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.Product", "Causalean.Experimentation.DesignBased.ProductBlock", "Mathlib.Analysis.Matrix.Order"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "THeterogeneousFrontier.lean",
+      "notes": "One `def` returning the bundled record `HetLocalSDPData` (E-5) parameterized by `(L, b : Fin L → ℕ, hb : ∀ ℓ, Even (b ℓ) ∧ 2 ≤ b ℓ, A : ∀ ℓ, Finset …, …)`: unit type `Σ ℓ, Fin (b ℓ)`, the enumerated sign-pair representatives `a_{ℓr}` and `m_ℓ`, `Π_het`, `p_{ℓr}`, `Σ_ℓ(p_ℓ)`, `π_p` and `π_0^het` (both via `prodDesign`), `Q_π`, the kernels `G_{jℓ}`, the orthonormal `H_ℓ`, `S_{jℓ}`, `w_{ℓr}`, `L_{jℓ}(p_ℓ)`, `M_j`, `R_j`, `β_j`, `ω_{jℓ}`, `ρ_j`, `δ_j`, `g_j`, `λ_het^★`. Build-inline (a bundle of definitions; all proof risk sits in the theorem). Reuses `prodDesign` for both product laws and `Matrix.PosSemidef.sqrt` for `S_{jℓ}`. Search trace: `grep -E 'heterogeneous.*block|evenBlock|localSDP'` over `AutoID/**/*.lean` → none; `Causalean.Experimentation.MatchedPairDesign` is the `b_ℓ = 2, m_ℓ = 1` degenerate instance (analogous module) → not found as a general facility."
+    },
+
+    "lem:variance-and-spectral-risk": {
+      "lean_kind": "lemma",
+      "lean_name": "variance_and_spectral_risk",
+      "local_id": "t1",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Causalean.Experimentation.DesignBased.Estimators.DifferenceInMeans",
+        "Mathlib.Analysis.Matrix.Order",
+        "Mathlib.LinearAlgebra.Matrix.PosDef"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/VarianceRisk.lean",
+      "hyps": ["ass:fixed-potential-outcomes", "ass:no-interference", "ass:assignment-only-randomness"],
+      "notes": "Four conclusions: (i) `τ̂ - τ_N = n⁻¹ Zᵀμ` (pointwise algebra from `2 Z_i Y_i^obs = Y_i(1) - Y_i(0) + Z_i{Y_i(1)+Y_i(0)}` plus `Zᵀ1_n = 0`, which is `signOf_sum_zero`); (ii) `E_π τ̂ = τ_N` (blinding ⇒ `E_π Z = 0`, a sign-involution reindex of `FiniteDesign.E`); (iii) `Var_π τ̂ = n⁻² μᵀ Q_π μ` — REUSES `Causalean...DesignBased.FiniteDesign.Var_linear_comb` and `Var_eq` (read in `DesignCore.lean`); (iv) `R_j(π) = n⁻² lambdaMaxPSD (C_j(π)) = n⁻² lambdaMaxPSD (K_j^{1/2} Q_π K_j^{1/2})` via the polar decomposition `U_j = W_j H_j` and Rayleigh-Ritz, using `Matrix.PosSemidef.sqrt` and the `Helpers/Spectral.lean` bridge lemmas of E-4. Build-inline, `small`-to-`medium`: (i)-(iii) are `Finset` algebra over reused Causalean lemmas; (iv) is the one nontrivial step and is the machinery every later theorem consumes, so it belongs in a Helpers file. Search trace: `grep -E 'ellipsoid|classRisk|spectralRisk|Rayleigh'` over `Causalean/` → 9 eigenvalue files, none design-side → not found; Mathlib side `lean_leansearch 'largest eigenvalue of Hermitian matrix equals supremum of Rayleigh quotient'` → operator-level `Mathlib.Analysis.InnerProductSpace.Rayleigh` only, no matrix ellipsoid-sup identity → build inline."
+    },
+    "lem:finite-trace-isotropy": {
+      "lean_kind": "lemma",
+      "lean_name": "finite_trace_isotropy",
+      "local_id": "t2",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.Matrix.Spectrum",
+        "Mathlib.Analysis.Matrix.Order",
+        "Mathlib.LinearAlgebra.Matrix.PosDef",
+        "Mathlib.LinearAlgebra.Matrix.Trace",
+        "Mathlib.LinearAlgebra.Matrix.Rank"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/Spectral.lean",
+      "hyps": [],
+      "notes": "`λ_max(A) ≥ tr(A)/r` with equality iff `A = (tr A / r) P_K`, for `A = K^{1/2} Q K^{1/2}`, `r = rank K`. Pure linear algebra, no design content, `depends_on = []`. Proof route: `range A ⊆ range K` (since `range K^{1/2} = range K`), the eigenvalues of `A` restricted to `range K` are `r` nonnegative numbers summing to `tr A`, so max ≥ average with equality iff all equal; then `A` vanishes on `range(K)ᗮ`. REUSES `Matrix.IsHermitian.spectral_theorem` / `Matrix.IsHermitian.eigenvalues` (`Mathlib.Analysis.Matrix.Spectrum`), `Matrix.PosSemidef.sqrt` (`Mathlib.Analysis.Matrix.Order`) and `Matrix.rank` (`Mathlib.LinearAlgebra.Matrix.Rank`), plus the E-4 bridge `lambdaMaxPSD A = hA.eigenvalues.sup'`. Build-inline, `medium`: the equality case (identifying the restriction with a multiple of the range projector) is the only delicate step and is standard. Search trace: `lean_leansearch 'largest eigenvalue of Hermitian matrix equals supremum of Rayleigh quotient'` and `lean_local_search 'lambdaMax'` (empty — index does not cover Mathlib, so not evidence of absence) → no ready-made max-vs-average-of-eigenvalues lemma with an equality characterization surfaced; `grep -E 'eigenvalue|IsHermitian'` over `Causalean/` → 9 files (MonomialGram, ConvexProjection, OperatorSqrt, DensityConstants, EffectiveDimension, Ridge/Rate, IntegralMoment, DesignMatrixPosDef, BLUE), none states a trace/rank isotropy bound → not found. `Causalean.Mathlib.OperatorSqrt` (`eigBasis`, `eigVals`, `eigVals_nonneg`) is the analogous module supplying the eigenbasis discipline to adapt."
+    },
+    "thm:block-diagonal-psd-finite-class-frontier": {
+      "lean_kind": "theorem",
+      "lean_name": "block_diagonal_psd_finite_class_frontier",
+      "local_id": "t3",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.Product",
+        "Causalean.Experimentation.DesignBased.ProductBlock",
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Mathlib.Analysis.Matrix.Order",
+        "Mathlib.LinearAlgebra.Matrix.PosDef",
+        "Mathlib.Topology.Algebra.Order.Compact"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "TBlockDiagonalFrontier.lean",
+      "hyps": ["ass:fixed-potential-outcomes", "ass:no-interference", "ass:assignment-only-randomness"],
+      "notes": "The matched-quadruple order-three LMI theorem: sign-symmetric block marginals, `[Q_{π_p}]_{ℓℓ} = [Q_π]_{ℓℓ} = 4 H Diag(p_ℓ) Hᵀ` and `[Q_{π_p}]_{ℓr} = 0`, principal-block spectral domination, `R_j^bd(π_p) ≤ R_j^bd(π)` simultaneously in `j`, the baseline/oracle values `β_j^bd`/`ρ_j^bd`, and the boxed `3q+1`-variable SDP. Build-inline. The two productization identities are DIRECT reuses of `Causalean...DesignBased.FiniteDesign.E_prod_apply` and `Causalean...DesignBased.Cov_prod_disjoint_zero` (both read); the ellipsoid risk identity is `lem:variance-and-spectral-risk`(iv) generalized to singular `G` via `Matrix.PosSemidef.sqrt`; the LMI form `λ_max(L) ≤ u ↔ L ⪯ uI` is the E-4 bridge; existence of an optimizer is compactness of `∏_ℓ Δ_3` (`Mathlib.Topology.Algebra.Order.Compact`, `IsCompact.exists_isMinOn`). Substantial but entirely elementary — no open step. Search trace as for def:block-diagonal-psd-menu (`grep -E 'blockDiagonal.*PSD|productiz|directSum.*kernel'` over `AutoID/**/*.lean` → none) → not found."
+    },
+    "thm:block-specific-finite-class-frontier": {
+      "lean_kind": "theorem",
+      "lean_name": "block_specific_finite_class_frontier",
+      "local_id": "t4",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.Product",
+        "Causalean.Experimentation.DesignBased.ProductBlock",
+        "Mathlib.Analysis.Matrix.Order",
+        "Mathlib.Topology.Algebra.Order.Compact"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "TBlockSpecificFrontier.lean",
+      "hyps": ["ass:fixed-potential-outcomes", "ass:no-interference", "ass:assignment-only-randomness"],
+      "notes": "The rank-one-per-block LP corollary of t3: full column rank of `U_j^blk` (immediate from disjoint block supports, E-1), `R_j^blk = n⁻² λ_max(C_j^blk)`, the diagonal formula `[C_j^blk]_{ℓℓ} = 4 ∑_k d_{jℓk} p_{ℓk}`, productization Pareto-domination, `B_j^blk = 4b_j/n²`, `(r_j^blk)^★ = 4r̄_j/n²`, and the boxed LP with `3q+1` variables. Build-inline; specializes t3, so the only new work is the rank-one scalarization `λ_max(L_{jℓ}) = 4σ² ∑_r p_{ℓr} q_r²` which turns each LMI into a scalar linear constraint. The core also records `external_refs` to the accepted-bank run `exp_design_pm1_exactness_boundary_v1_experimentation/{thm:sharp-rho-star, thm:gap-window}`; the Lean sibling is `CausalSmith/Experimentation/EXP_DesignPm1ExactnessBoundaryV1_Research/` (`Helpers/SimplexActiveSet*.lean`, `Helpers/WeightedSimplexKKT.lean`, `Helpers/SimplexTruncation*.lean`) — recorded as the ANALOGOUS module family for the simplex active-set / KKT LP argument F3 should adapt; the gap to bridge is a per-block product of 3-simplices with a common epigraph variable instead of a single weighted simplex. Search trace: `grep -E 'quadruple|blockBalanced|directionMarginal'` over `AutoID/**/*.lean` → false positives only → not found."
+    },
+    "prop:block-specific-single-class-reduction": {
+      "lean_kind": "theorem",
+      "lean_name": "block_specific_single_class_reduction",
+      "local_id": "t5",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.Product"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "PBlockSpecificSingleClass.lean",
+      "hyps": [],
+      "notes": "Small corollary of t4: putting unit mass in each block on any `k_ℓ ∈ argmin_k d_{jℓk}` attains `R_j^blk = 4r̄_j/n² = (r_j^blk)^★`, so the one-class value is `1`. Build-inline, `small`; the only content beyond t4 is the boundary product law (zero direction masses are allowed, no positivity is used). NOTE: the core node is `kind: proposition`; per the enum it maps to `lean_kind: \"theorem\"` (there is no `proposition` kind). Search trace inherited from t4 → not found."
+    },
+    "thm:quadruple-menu-frontier": {
+      "lean_kind": "theorem",
+      "lean_name": "quadruple_menu_frontier",
+      "local_id": "t6",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.Product", "Mathlib.Analysis.SpecialFunctions.Sqrt", "Mathlib.Tactic.Linarith"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "TQuadrupleFrontier.lean",
+      "hyps": [],
+      "notes": "The closed-form two-class frontier: `r_j^★ = 4c_j/n²`, `B_j`, `Δ_j`, the two sharp trace certificates, the piecewise `λ^★ = (a-2b)/(a+b)` for `a ≥ 2b` and `(2b-a)/(2(a+b))` for `a ≤ 2b`, the EXACT set of attaining average frequency vectors in all three regimes, strict improvement iff `a ≠ 2b`, and `π_sh` attaining when `a > 2b`. Build-inline; specializes t4 through `def:block-geometry` (defined as a `blockSpecificMenu` instance precisely so this is an unfolding). The bulk is real-arithmetic case analysis on `a` vs `2b` plus the necessity argument (equality in `max(L_1,L_2) ≥ (L_1+L_2)/2 ≥ min(a/2,b)` forces the stated `p`), which is `nlinarith`/`rcases`-shaped. Search trace: `grep -E 'commitmentValue|frontier|elbow'` over `AutoID/**/*.lean` → no closed-form design frontier of this shape → not found."
+    },
+    "prop:single-class-reduction": {
+      "lean_kind": "theorem",
+      "lean_name": "single_class_reduction",
+      "local_id": "t7",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.Product"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "PSingleClassReduction.lean",
+      "hyps": [],
+      "notes": "Small: applies t5 to the two-class menu (class 1's minimum loading is on `v_1`, class 2's on `v_2`), then t6 gives `λ^★ < 1`. Build-inline, `small`. Core `kind: proposition` → `lean_kind: \"theorem\"` per the enum. Search trace inherited from t5/t6 → not found."
+    },
+    "thm:ryan-criterion-separation": {
+      "lean_kind": "theorem",
+      "lean_name": "ryan_criterion_separation",
+      "local_id": "t8",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.Tactic.Linarith", "Mathlib.Tactic.Positivity"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "TRyanSeparation.lean",
+      "hyps": ["ass:assignment-only-randomness"],
+      "notes": "On the open region `a > 2b > 0`, `κ_2 > κ_1 > 0`: `η_REL = [1 + abκ_1κ_2/(κ_1(a-b)+κ_2 b)]⁻¹`, the exact optimizer frequencies `(0, b(κ_2-κ_1)/D, 1-p_2)`, and disjointness from the gain-normalized optimizer set (which forces `p_3 = 1` by t6's `a > 2b` branch). Build-inline, `small`-to-`medium`: given t6's trace certificates this is an affine-certificate computation plus a strict-positivity argument, all real arithmetic. The docstring MUST carry the core's scope caveat — this is a CRITERION-LEVEL application of Ryan-Esserman-Li eq. (8) / Algorithm 1 to the present menu, not a submodel claim about their cluster-randomized HTE variance formulas. Search trace: `grep -E 'relativeEfficiency|varianceRatio|maximinRatio'` over `AutoID/**/*.lean` → none → not found."
+    },
+    "thm:higher-rank-menu-exact-program": {
+      "lean_kind": "theorem",
+      "lean_name": "higher_rank_menu_exact_program",
+      "local_id": "t9",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.PO.ID.Partial.LP.ConicDuality",
+        "Mathlib.Analysis.Convex.Cone.Dual",
+        "Mathlib.Geometry.Convex.Cone.Dual",
+        "Mathlib.Analysis.Matrix.Order",
+        "Mathlib.LinearAlgebra.Matrix.PosDef",
+        "Mathlib.Topology.Algebra.Order.Compact"
+      ],
+      "defer_tier": true,
+      "defer_tag": "crux",
+      "gate": false,
+      "target_file": "THigherRankExactProgram.lean",
+      "hyps": ["ass:fixed-potential-outcomes", "ass:no-interference", "ass:assignment-only-randomness"],
+      "notes": "THE ONLY Defer-tier node. Scaffold ALL parts; F3 can prove every part EXCEPT the dual certificate (C). Provable now: the mass-simplex bijection `α_s = 2π(s)`, `Q_π = ∑_s α_s ssᵀ` and `G^{1/2}Q_πG^{1/2} = A_j(α)` (E-2 makes `𝒮 = {z // (z 0).2 = true}` a clean `Fintype` with `card = 6^q/2`); the singular-ellipsoid risk identity (4)-(5) via `Matrix.PosSemidef.sqrt`; the variance bound from `lem:variance-and-spectral-risk`; the exact primal (P) with attainment by compactness of `Δ_m`; the trace LP (T) and `λ_gen^★ ≤ λ̄` via `lem:finite-trace-isotropy`; the active-isotropy characterization (E)/(I) (same lemma's equality case); the gap (G); and the blinded optimizer (D). NOT provable now: the matching dual (C) with strong duality and dual attainment. Reason for Defer (`large`, ≥3 files): the paper proves (C) by a separating-hyperplane / Lagrangian argument for a SEMIDEFINITE program. Causalean ALREADY has the conic-duality backbone — `Causalean.PartialID.ConicProgram` in `Causalean/PO/ID/Partial/LP/ConicDuality.lean` supplies `weak_duality`, `dualValue_le_primalValue`, `farkas` (= `ProperCone.relative_hyperplane_separation`), `strong_duality_primal_attained` and `strong_duality_zero_gap` under a closed-augmented-image CQ — but it is stated for a `ProperCone ℝ E` on a real Hilbert space, and the PSD cone on symmetric matrices with the Frobenius inner product is NOT packaged anywhere as a `ProperCone`. The missing bridge is I-1. Tagged CRUX, not substrate-gate: the exact program (P)/(C) is the paper's OWN content, so it must be BUILT, never assumed; the blocking piece is an infrastructure bridge to an existing Causalean backbone, which is exactly what an orchestrator SUBSTRATE-BUILT round can supply. The statement is NOT dropped (it stays fully planned), so no `deferred_conjecture`. Search trace: `grep -E 'Slater|strongDuality|strong_duality|dualCertificate|weak_duality|weakDuality'` over `AutoID/**/*.lean` → `Causalean/PO/ID/Partial/LP/ConicDuality.lean` + `Causalean/Mathlib/Optimization/KKT.lean` (both read); Mathlib side `lean_leansearch 'strong duality of semidefinite program Slater condition conic duality'` → only `ProperCone.dual`, `PointedCone.dual`, `ProperCone.dual_dual_flip`, `PointedCone.mem_dual` primitives, and `lean_leansearch 'linear programming duality theorem finite dimensional'` → nothing relevant → no packaged PSD `ProperCone` and no SDP strong-duality theorem exists on either side."
+    },
+    "prop:higher-rank-sparse-support": {
+      "lean_kind": "theorem",
+      "lean_name": "higher_rank_sparse_support",
+      "local_id": "t10",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.Convex.Caratheodory",
+        "Mathlib.LinearAlgebra.Matrix.Trace",
+        "Mathlib.LinearAlgebra.AffineSpace.Independent"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "PSparseSupport.lean",
+      "hyps": [],
+      "notes": "Explicitly NOT deferred even though it cites t9: it depends only on t9's mass representation of `Q_π` (provable now), never on the dual (C). Content: every `s ∈ 𝒮` lies in `ℋ = ⨁_ℓ 1_4ᗮ` with `dim ℋ = 3q` and `tr(ssᵀ) = n`, so the matrices `ssᵀ` lie in an affine slice of `Sym(ℋ)` of dimension ≤ `D - 1`, `D = 3q(3q+1)/2`; affine dependence then lets one strip masses to support ≤ `min{6^q/2, D}` while preserving `Q^★`. REUSED: `Mathlib.Analysis.Convex.Caratheodory` — `Caratheodory.mem_convexHull_erase` (the exact one-step mass-stripping lemma), `Caratheodory.affineIndependent_minCardFinsetOfMemConvexHull`, `Caratheodory.minCardFinsetOfMemConvexHull_subseteq`, `convexHull_eq_union` — confirmed via `lean_leansearch 'Caratheodory theorem convex hull affinely independent finite support'`. Build-inline, `medium`; the only bespoke part is the trace-slice dimension count (`D - 1` rather than `D`). Core `kind: proposition` → `lean_kind: \"theorem\"` per the enum. Search trace: `grep -E 'signPair|supportReduction|sparseSupport'` over `AutoID/**/*.lean` → none → not found in Causalean; found in Mathlib as above."
+    },
+    "thm:heterogeneous-block-psd-finite-class-frontier": {
+      "lean_kind": "theorem",
+      "lean_name": "heterogeneous_block_psd_finite_class_frontier",
+      "local_id": "t11",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.Product",
+        "Causalean.Experimentation.DesignBased.ProductBlock",
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Mathlib.Analysis.Matrix.Order",
+        "Mathlib.LinearAlgebra.Matrix.PosDef",
+        "Mathlib.Topology.Algebra.Order.Compact"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "THeterogeneousFrontier.lean",
+      "hyps": [],
+      "notes": "The generalized headline. `hyps = []` because the core node's `depends_on` is exactly `[def:heterogeneous-block-local-sdp]` (P4); the causal clause is stated with the fixed-array quantifier INLINE, exactly as the statement text does ('For any fixed potential-outcome array …'). Build-inline and genuinely no harder than t3: with E-1/E-2 generalized to `Σ ℓ, Fin (b ℓ)` and `∀ ℓ, Fin (m ℓ) x Bool`, the SAME two Causalean reuses carry the productization — `FiniteDesign.E_prod_apply` for `[Q_{π_p}]_{ℓℓ} = Σ_ℓ(p_ℓ)` and `Cov_prod_disjoint_zero` for `[Q_{π_p}]_{ℓs} = 0` — while `H_ℓ` orthonormal columns spanning `1_{b_ℓ}ᗮ`, `S_{jℓ} = (H_ℓᵀ G_{jℓ} H_ℓ)^{1/2}` (`Matrix.PosSemidef.sqrt`), the principal-block spectral domination, the singular-ellipsoid representation (9), the local oracle SDPs and the boxed program are the block-size-general versions of t3's steps. Existence of an optimizer is compactness of `∏_ℓ Δ_{m_ℓ}`. Deliberately NOT deferred: no step here needs duality or rounding — it is a productization + epigraph-reformulation argument. Search trace: `grep -E 'heterogeneous.*block|evenBlock|localSDP|productiz'` over `AutoID/**/*.lean` → none; `Glob Causalean/Experimentation/**/*.lean` (103 files) surveyed; `Causalean.Experimentation.MatchedPairDesign` is the `b_ℓ=2, m_ℓ=1` degenerate instance (analogous module, gap = enumerated multi-element local supports) → not found."
+    }
+  },
+
+  "file_plan": [
+    {"file": "Basic.lean", "contents": "S1/S2 world primitives (BlockCode, signOf, negCode, v_k, h_k, H, E_ell, P_n), the 5 assumption atoms, def:block-assignments, def:design-space, def:baseline-design, def:shared-design, def:block-direction-marginals, def:direction-frequencies, def:block-product-design, def:response-classes, def:estimator, def:design-risk", "projected_lines": 520},
+    {"file": "Menus.lean", "contents": "def:block-specific-spectral-menu, def:block-geometry, def:block-diagonal-psd-menu, def:commitment-value, def:block-specific-commitment-value, def:block-diagonal-commitment-value, def:ryan-relative-efficiency", "projected_lines": 380},
+    {"file": "Helpers/Spectral.lean", "contents": "lambdaMaxPSD (E-4) + its LMI and eigenvalue bridges, the singular-ellipsoid representation, Rayleigh-Ritz, principal-block spectral domination, lem:finite-trace-isotropy", "projected_lines": 600},
+    {"file": "Helpers/VarianceRisk.lean", "contents": "lem:variance-and-spectral-risk (+ signOf_sum_zero, E_π Z = 0 under blinding)", "projected_lines": 420},
+    {"file": "Helpers/Productization.lean", "contents": "localDirSign, pi_p membership in Pi_n, marginal preservation via E_prod_apply, cross-block covariance vanishing via Cov_prod_disjoint_zero, the shared Q-block computation (consumed by t3, t4 and t11)", "projected_lines": 450},
+    {"file": "TBlockDiagonalFrontier.lean", "contents": "thm:block-diagonal-psd-finite-class-frontier", "projected_lines": 700},
+    {"file": "TBlockSpecificFrontier.lean", "contents": "thm:block-specific-finite-class-frontier", "projected_lines": 650},
+    {"file": "PBlockSpecificSingleClass.lean", "contents": "prop:block-specific-single-class-reduction", "projected_lines": 180},
+    {"file": "TQuadrupleFrontier.lean", "contents": "thm:quadruple-menu-frontier", "projected_lines": 750},
+    {"file": "PSingleClassReduction.lean", "contents": "prop:single-class-reduction", "projected_lines": 160},
+    {"file": "TRyanSeparation.lean", "contents": "thm:ryan-criterion-separation", "projected_lines": 400},
+    {"file": "THigherRankExactProgram.lean", "contents": "def:matrix-discrepancy-handle, thm:higher-rank-menu-exact-program (parts (P)/(T)/(E)/(I)/(G)/(D) provable; part (C) blocked on I-1)", "projected_lines": 850},
+    {"file": "PSparseSupport.lean", "contents": "prop:higher-rank-sparse-support", "projected_lines": 380},
+    {"file": "THeterogeneousFrontier.lean", "contents": "def:heterogeneous-block-local-sdp, thm:heterogeneous-block-psd-finite-class-frontier", "projected_lines": 880}
+  ],
+
+  "substrate_survey": [
+    {"module": "Causalean.Experimentation.DesignBased.DesignCore", "decision": "reuse (S1)", "reason": "FiniteDesign / E / Var / Cov / Pr / Var_linear_comb / E_sum are exactly the finite blinded-law layer; instantiated at BlockCode q."},
+    {"module": "Causalean.Experimentation.DesignBased.Product", "decision": "reuse (S1, S7)", "reason": "prodDesign + E_prod_prod + E_prod_apply realize pi_0, pi_sh, pi_p and their per-block marginals."},
+    {"module": "Causalean.Experimentation.DesignBased.ProductBlock", "decision": "reuse (S1, S7)", "reason": "Cov_prod_disjoint_zero is literally the deleted-cross-block-covariance step of both productization theorems."},
+    {"module": "Causalean.Experimentation.DesignBased.Optimality", "decision": "reuse (type)", "reason": "DesignFamily = Set (FiniteDesign Omega) types Pi_n and Pi_het."},
+    {"module": "Causalean.Experimentation.DesignBased.Optimality.Minimax", "decision": "partial reuse", "reason": "worstRisk (Finset.sup' over classes) fits max_j of normalized risks; bestRisk/IsMinimaxOn require a FINITE design family whereas Pi_n is a continuum, so oracle risks are sInf. Recorded, not treated as a discharge."},
+    {"module": "Causalean.Experimentation.DesignBased.Estimators.DifferenceInMeans", "decision": "partial reuse", "reason": "sateEstimand IS tau_N (reused verbatim); diffInMeans is treated-set-indexed under completeRandomization, not the +-1-coded balanced estimator — bypass-justified."},
+    {"module": "Causalean.Experimentation.DesignBased.PotentialOutcome", "decision": "bypass-justified", "reason": "Yobs/ProperlySpecified are exposure-mapping indexed; this paper is no-interference, so the exposure layer adds structure the atoms do not need."},
+    {"module": "Causalean.Experimentation.MatchedPairDesign", "decision": "bypass-justified (analogous module)", "reason": "The b_ell = 2, m_ell = 1 degenerate instance of the heterogeneous world; its per-block-marginal proof pattern (mpTreatInd, matchedPairDesign_E_mpTreatInd) is the reference for the three-direction case, but the facility itself does not generalize."},
+    {"module": "Causalean.PO.ID.Partial.LP.ConicDuality", "decision": "reuse (S6), blocked on I-1", "reason": "ConicProgram / weak_duality / farkas / strong_duality_zero_gap is the right backbone for the dual certificate (C); the missing piece is a PSD ProperCone on symmetric matrices plus the closed-augmented-image CQ."},
+    {"module": "Causalean.Mathlib.OperatorSqrt", "decision": "fallback reuse (S5)", "reason": "LinearMap.IsPositive.posSqrt / eigBasis / eigVals if F3 needs an eigenbasis-level square root; primary route is Matrix.PosSemidef.sqrt."},
+    {"module": "Causalean.Experimentation.DesignBased.{Risk,Variance,HT,Exposure,Concentration,IndepSummandsCLT,GaussianCDF,DependencyCLT,EdgeVarianceBound}", "decision": "bypass-justified", "reason": "Surveyed via Glob over Causalean/Experimentation/**/*.lean (103 files). All are Horvitz-Thompson / exposure-mapping / asymptotic-normality machinery; this run is exact finite-sample design geometry with no HT weights, no inverse assignment probabilities (boundary designs with zero direction mass are explicitly allowed) and no asymptotics, so none of the reuse-list items (htTotal, htMean, htEffect, var_htMean_le, chebyshev, IndepSummandsCLT, GaussianCDF, SteinMethod, DepGraphCLT, LocalDependenceCLT) can apply."},
+    {"module": "CausalSmith.Experimentation.DesignPm1 (EXP_DesignPm1ExactnessBoundaryV1_Research)", "decision": "analogous module (adapt, do not import)", "reason": "Same +-1 FiniteDesign world (signOf, assignmentSecondMoment, BalancedSignDesign, blockElliptope); its Helpers/SimplexActiveSet*, WeightedSimplexKKT, SimplexTruncation*, SpectralCoordinates carry the simplex active-set / KKT proof pattern F3 should adapt for the LP in t4/t6. Its objects are two-community-interference specific, so nothing is directly importable."},
+    {"module": "Mathlib.Analysis.Matrix.Order", "decision": "reuse", "reason": "Matrix.PosSemidef.sqrt / sq_sqrt / posSemidef_sqrt for K^{1/2}, G^{1/2}, S_{jl}."},
+    {"module": "Mathlib.Analysis.Convex.Caratheodory", "decision": "reuse", "reason": "Caratheodory.mem_convexHull_erase et al. are the support-reduction engine of prop:higher-rank-sparse-support."},
+    {"module": "Mathlib.Analysis.Matrix.Spectrum", "decision": "reuse", "reason": "Matrix.IsHermitian.eigenvalues / spectral_theorem for lem:finite-trace-isotropy and the lambdaMaxPSD eigenvalue bridge."}
+  ]
+}

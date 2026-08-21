@@ -1,225 +1,232 @@
 \begin{proof}[Proof of \cref{obj:thm:overlap-adaptive-universal-hybrid}]
-Throughout, for \(n,d\in\mathbb N\) write
-\[
-r_{n,d}
-=
-\frac1n+\frac{d^2}{n^2(\log n)^2}
-\]
-for the target rate, and, for a single-observation law \(P\) and a sample
-\(O_1,\ldots,O_n\), write
-\[
-\mathcal D_{\mathcal H}
-=
-\widehat T_{\mathcal H}-\sum_{k\in\widehat{\mathcal H}_n}\phi(q_k),
-\qquad
-\mathcal D_{\mathcal L}
-=
-\widehat T_{\mathcal L}-\sum_{k\in\widehat{\mathcal L}_n}\phi(q_k)
-\]
-for the errors of the two branches of \cref{obj:def:hybrid-estimator-handle}
-against their pilot-selected targets, with \(\widehat T_{\mathcal H}\),
-\(\widehat T_{\mathcal L}\), \(\widehat{\mathcal H}_n\),
-\(\widehat{\mathcal L}_n\) as defined there and \(\phi\) as in
-\cref{obj:def:cell-functional}.  Both \(\mathcal D_{\mathcal H}\) and
-\(\mathcal D_{\mathcal L}\) are functions of the sample alone.
-% lean: heavyContribution, targetHeavy, lightContribution, targetLight, minimaxRate
 \begin{enumerate}
-\item \textbf{(Computability.)}  The first assertion of
-\cref{obj:lem:light-cell-polynomial} is precisely the computability clause: there
-is a universal constant \(K>0\) such that, for every \(n\) and \(d\), a
-real-arithmetic program reading the hybrid count vector returns
-\(\widehat\tau_n^{\mathrm{hyb}}\) exactly on every sample \(O_1,\ldots,O_n\) and
-uses at most \(K\,d\,M(n)^4\) arithmetic and comparison operations.  It is proved
-there with the explicit value \(K=450\), which is a positive integer, so the
-clause holds with that \(K\).
-% lean: hybridEstimatorComputable, hybridArithmeticProgram_eval, hybridArithmeticProgram_operationCount
+\item \textbf{Computability.}
+Use the real-arithmetic program model in which a program is a finite register list with input reads, real constants, additions, subtractions, multiplications, divisions, and branch comparisons.  Input reads and constants have cost zero, while each arithmetic operation and comparison has cost one.  Division is the total real-field operation, so division by a zero denominator returns zero.  A branch comparison has a test expression and two branch expressions and returns the first branch when the test value is nonpositive and the second branch otherwise.
 
-\item \textbf{(Calibration of the constants.)}  Fix \(0<\epsilon<1/2\).
-\Cref{obj:lem:light-cell-polynomial}, applicable because \(0<\epsilon\le1/2\),
-supplies constants \(C_L,c_L>0\) depending only on \(\epsilon\) such that
-\(\mathbb E_{P^{\otimes n}}[\mathcal D_{\mathcal L}^2]\le C_L\,r_{n,d}\) for every
-\(P^{\otimes n}\in\mathcal E_{n,d,\epsilon}\) with \(d\le c_L n\log n\).
-\Cref{obj:lem:universal-heavy-cell-rate}, applicable because
-\(0<\epsilon<1/2\), supplies constants \(C_H,c_H>0\) and an integer
-\(N_H<\infty\), again depending only on \(\epsilon\), such that
-\(\mathbb E_{P^{\otimes n}}[\mathcal D_{\mathcal H}^2]\le C_H\,r_{n,d}\) for every
-\(P^{\otimes n}\in\mathcal E_{n,d,\epsilon}\) with \(n\ge N_H\) and
-\(d\le c_H n\log n\).  Set
+For \(n,d\in\mathbb N\), the input alphabet for the program is
 \[
-C_\epsilon=2(C_L+C_H),\qquad
-\rho_\epsilon=\min\{c_L,c_H\},\qquad
-N_\epsilon=N_H .
+\{0,1\}\times\{1,\ldots,d\}\times\{0,1\}\times\{0,1\}.
 \]
-Then \(C_\epsilon>0\) and \(\rho_\epsilon>0\).  Fix \(n,d\in\mathbb N\) with
-\(n\ge N_\epsilon\) and \(d\le \rho_\epsilon n\log n\).  Since \(n\ge1\) gives
-\(n\log n\ge0\), and since \(\rho_\epsilon\le c_L\) and
-\(\rho_\epsilon\le c_H\), the growth hypothesis transfers to both component
-lemmas:
+At input coordinate \((j,k,a,y)\) the program reads the real number
 \[
-d\le \rho_\epsilon n\log n\le c_L n\log n,
+N^{(j)}_{aky}
+=
+\#\{i\in I_j:(X_i,A_i,Y_i)=(k,a,y)\}.
+\]
+Equivalently, the input vector is the collection of the \(8d\) split cell counts \(N^{(j)}_{aky}\).  Sums and products below are compiled as expression trees folded onto the initial constants \(0\) and \(1\): a list sum has cost equal to the sum of the costs of its entries plus one addition for each entry, and a list product has cost equal to the sum of the costs of its entries plus one multiplication for each entry.  Thus a four-term category count has cost \(4\), not \(3\).
+
+If \(d=0\), the program is the constant-zero program.  Its operation count is zero, and its value agrees with \(\widehat\tau_n^{\mathrm{hyb}}\), since the heavy and light sums range over the empty alphabet and the truncation of zero is zero.
+
+Now suppose \(d>0\), and write \(M=M(n)\).  A split-count input has cost zero.  For a natural-valued expression \(x\), the truncated subtraction \((x-i)_+\) is compiled as a branch on \(x-i\), returning \(0\) on the nonpositive branch and \(x-i\) on the positive branch.  This expression has cost \(2\operatorname{op}(x)+3\).  The falling factorial \(x(x-1)_+\cdots(x-r+1)_+\) is compiled by the corresponding folded product, so its cost is \(r\{2\operatorname{op}(x)+4\}\).  Therefore, for a split-count input \(x\), the falling-factorial expression of order \(r\) has cost \(4r\).
+
+For a multi-index \(r\), the factorial monomial expression is
+\[
+\frac{\prod_{a,y}\bigl(N^{(1)}_{aky}\bigr)_{r_{ay}}}
+     {(m_1)_{|r|}},
+\]
+with the same total division convention as the program model.  The folded product over the four cells contributes \(4|r|+4\) operations, and the final division by the constant denominator contributes one more, giving
+\[
+\operatorname{op}\{\text{factorial monomial }r\}=4|r|+5.
+\]
+For the multi-indices used in the arm expansion of \(P_{M,B}\), \(|r|=j+2\).  After multiplication by its coefficient, one fixed-cell summand at level \((j,t)\) has cost
+\[
+4j+14.
+\]
+Since \(M\ge2\), the nested sums in one treatment arm satisfy
+\[
+\operatorname{op}\{\text{sum over }(a,y)\text{ at fixed }j,t\}
+\le 50M,
+\]
+\[
+\operatorname{op}\{\text{sum over }t\text{ at fixed }j\}
+\le 51M^2,
 \qquad
-d\le \rho_\epsilon n\log n\le c_H n\log n .
+\operatorname{op}\{\text{one arm sum}\}
+\le 52M^3.
 \]
-% lean: light_cell_polynomial, universal_heavy_cell_rate, hybrid_upper_fixed_interior
-
-\item \textbf{(Hybrid envelope.)}  Let \(P^{\otimes n}\in\mathcal E_{n,d,\epsilon}\)
-be arbitrary, so that \(P\) satisfies \cref{obj:ass:overlap} with constant
-\(\epsilon\) and the sample law is the product law of
-\cref{obj:def:experiment-class}.  We first bound the squared error pointwise in
-the sample.
-
-Because \(\widehat{\mathcal L}_n\) is the complement of
-\(\widehat{\mathcal H}_n\) in \(\{1,\ldots,d\}\), the two pilot-selected targets
-add up to the estimand: by \cref{obj:def:ate-functional},
+Subtracting the two arm sums gives the light-cell expression, and hence
 \[
-\sum_{k\in\widehat{\mathcal H}_n}\phi(q_k)
+\operatorname{op}\{\text{light-cell expression for category }k\}
+\le 105M^4.
+\]
+
+The heavy expression for category \(k\) is
+\[
+\frac{N_k^{(1)}}{m_1}
+\left\{
+\frac{N^{(1)}_{1k1}}{N^{(1)}_{1k0}+N^{(1)}_{1k1}}
+-
+\frac{N^{(1)}_{0k1}}{N^{(1)}_{0k0}+N^{(1)}_{0k1}}
+\right\},
+\]
+where \(N_k^{(1)}=\sum_{a,y}N^{(1)}_{aky}\), again using total division at zero denominators.  This expression has cost \(11\) and agrees exactly with \(\widehat h_k\).  The pilot count expression \(\sum_{a,y}N^{(0)}_{aky}\) has cost \(4\), so the comparison expression \(\sum_{a,y}N^{(0)}_{aky}-\lambda_0L\) has cost \(5\).  For \(n\ge N_0\), the selected category expression branches to the light expression when the pilot count is at most \(\lambda_0L\) and to the heavy expression when it is larger.  Its cost is at most
+\[
+5+105M^4+11+1\le 110M^4,
+\]
+where the final \(1\) is the branch comparison itself.  For \(n<N_0\), the selected category expression is the heavy expression, whose cost \(11\) is also at most \(110M^4\).  Thus each selected category expression has operation count at most \(110M(n)^4\).
+
+Summing the \(d\) selected category expressions uses one addition node per category in the folded sum, so the untruncated expression has cost at most
+\[
+111\,d\,M(n)^4.
+\]
+The truncation
+\[
+x\longmapsto \max\{-1,\min\{1,x\}\}
+\]
+is compiled by two branch comparisons, with the relevant expression duplicated in the branch subtrees.  Consequently
+\[
+\operatorname{op}\{\operatorname{clamp}(x)\}
+=4\operatorname{op}(x)+6.
+\]
+For \(d>0\), this gives
+\[
+\operatorname{op}(\mathscr A_{n,d})
+\le 4\cdot 111\,d\,M(n)^4+6
+\le 450\,d\,M(n)^4,
+\]
+because \(1\le dM(n)^4\).  Together with the zero-alphabet branch, the compiled program \(\mathscr A_{n,d}\) satisfies
+\[
+\operatorname{op}(\mathscr A_{n,d})
+\le 450\,d\,M(n)^4
+\]
+and, for every sample,
+\[
+\mathscr A_{n,d}\bigl((N^{(j)}_{aky})_{j,k,a,y}\bigr)
+=
+\widehat\tau_n^{\mathrm{hyb}}(O_{1:n}).
+\]
+Taking \(K=450\) proves the computability clause.
+% lean: hybridEstimatorComputable
+
+\item \textbf{Fixed-interior hybrid bound.}
+Fix \(0<\epsilon<1/2\).  Let \(C_{\mathrm L},c_{\mathrm L}>0\) be the constants supplied by \cref{obj:lem:light-cell-polynomial}, and let \(C_{\mathrm H},\rho_{\mathrm H}>0\) and \(N_{\mathrm H}\in\mathbb N\) be the constants supplied by \cref{obj:lem:universal-heavy-cell-rate}.  Set
+\[
+C_\epsilon=2(C_{\mathrm L}+C_{\mathrm H}),
+\qquad
+\rho_\epsilon=\min\{c_{\mathrm L},\rho_{\mathrm H}\},
+\qquad
+N_\epsilon=N_{\mathrm H}.
+\]
+These constants are positive in the required real coordinates.
+
+For a sample \(z=O_{1:n}\), define
+\[
+T_{\mathcal H}^{\circ}(P,z)
+=
+\sum_{k\in\widehat{\mathcal H}_n(z)}\phi(q_k),
+\qquad
+T_{\mathcal L}^{\circ}(P,z)
+=
+\sum_{k\in\widehat{\mathcal L}_n(z)}\phi(q_k).
+\]
+Since \(\widehat{\mathcal L}_n(z)=\widehat{\mathcal H}_n(z)^c\),
+\[
+T_{\mathcal H}^{\circ}(P,z)+T_{\mathcal L}^{\circ}(P,z)=\tau(P).
+\]
+Also \(\tau(P)\in[-1,1]\) for every law in the overlap class.  Hence the truncation map is contractive around \(\tau(P)\), and
+\[
+\begin{aligned}
+\left(\widehat\tau_n^{\mathrm{hyb}}(z)-\tau(P)\right)^2
+&\le
+\left[
+\{\widehat T_{\mathcal H}(z)-T_{\mathcal H}^{\circ}(P,z)\}
 +
-\sum_{k\in\widehat{\mathcal L}_n}\phi(q_k)
-=
-\sum_{k=1}^{d}\phi(q_k)
-=
-\tau(P),
+\{\widehat T_{\mathcal L}(z)-T_{\mathcal L}^{\circ}(P,z)\}
+\right]^2  \\
+&\le
+2\{\widehat T_{\mathcal H}(z)-T_{\mathcal H}^{\circ}(P,z)\}^2
++
+2\{\widehat T_{\mathcal L}(z)-T_{\mathcal L}^{\circ}(P,z)\}^2 .
+\end{aligned}
 \]
-for every realization of the pilot split.
-% lean: targetHeavy_add_targetLight, lightCells_eq_compl
-
-Next, the estimand lies in the range enforced by the truncation.  By
-\cref{obj:def:ate-functional}, \(\tau(P)=\sum_kp_k(\mu_{1k}-\mu_{0k})\); the
-category masses satisfy \(p_k\ge0\) and \(\sum_kp_k=1\), and each conditional
-mean lies in \([0,1]\), so \(|\mu_{1k}-\mu_{0k}|\le1\).  Hence
+Integrating under any \(P^{\otimes n}\in\mathcal E_{n,d,\epsilon}\) gives
 \[
-|\tau(P)|\le\sum_{k=1}^dp_k|\mu_{1k}-\mu_{0k}|\le\sum_{k=1}^dp_k=1,
-\qquad\text{i.e.}\qquad
-\tau(P)\in[-1,1].
-\]
-% lean: ateFunctional_mem_interval, ateFunctional_eq_weighted_regression
-
-Consequently the truncation in \cref{obj:def:hybrid-estimator-handle} cannot
-increase the squared error: for every \(x\in\mathbb R\) and every \(t\in[-1,1]\),
-\[
-\left(\max\{-1,\min(1,x)\}-t\right)^2\le (x-t)^2 .
-\]
-Indeed, if \(-1\le x\le1\) the two sides are equal; if \(x>1\) the left-hand side
-is \((1-t)^2\) and \(0\le 1-t\le x-t\); and if \(x<-1\) the left-hand side is
-\((-1-t)^2\) with \(x-t\le -1-t\le0\).
-% lean: clamp_sq_error_le
-
-Applying this with \(x=\widehat T_{\mathcal H}+\widehat T_{\mathcal L}\) and
-\(t=\tau(P)\), so that
-\(\max\{-1,\min(1,x)\}=\widehat\tau_n^{\mathrm{hyb}}\), then substituting the
-target identity and using \((\alpha-\beta)^2\ge0\), we obtain pointwise in the
-sample
-\[
+\begin{aligned}
+E_P\!\left[
 \left(\widehat\tau_n^{\mathrm{hyb}}-\tau(P)\right)^2
-\le
-\left(\widehat T_{\mathcal H}+\widehat T_{\mathcal L}-\tau(P)\right)^2
-=
-\left(\mathcal D_{\mathcal H}+\mathcal D_{\mathcal L}\right)^2
-\le
-2\,\mathcal D_{\mathcal H}^2+2\,\mathcal D_{\mathcal L}^2 .
-\]
-All the quantities involved are functions of a sample from a finite alphabet,
-hence bounded and integrable, so integrating this inequality against
-\(P^{\otimes n}\) and using linearity gives
-\[
-\mathbb E_{P^{\otimes n}}\left[(\widehat\tau_n^{\mathrm{hyb}}-\tau(P))^2\right]
-\le
-2\,\mathbb E_{P^{\otimes n}}\left[\mathcal D_{\mathcal H}^2\right]
+\right]
+&\le
+2C_{\mathrm H}\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\}
 +
-2\,\mathbb E_{P^{\otimes n}}\left[\mathcal D_{\mathcal L}^2\right].
+2C_{\mathrm L}\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\}  \\
+&=
+C_\epsilon\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\},
+\end{aligned}
 \]
-% lean: hybrid_mse_le_component_errors
+whenever \(0<n\), \(N_\epsilon\le n\), and \(d\le\rho_\epsilon n\log n\).  The light and heavy bounds apply because this dimension condition implies both
+\[
+d\le c_{\mathrm L}n\log n
+\quad\text{and}\quad
+d\le \rho_{\mathrm H}n\log n .
+\]
+Taking the supremum over \(P^{\otimes n}\in\mathcal E_{n,d,\epsilon}\) proves the fixed-interior calibration bound for \(\widehat\tau_n^{\mathrm{hyb}}\).  In the auxiliary zero-alphabet case used by the selector lemma, the experiment class is empty and the displayed upper bound follows from the empty-supremum convention and nonnegativity of the rate.
+% lean: hybrid_mse_le_component_errors; hybrid_upper_fixed_interior
 
-The two component bounds of Step 2 are in force at this \(n\), \(d\), and law,
-so the right-hand side is at most
+\item \textbf{Selector envelope.}
+Apply \cref{obj:lem:combined-upper-envelope} with the constants just constructed and with the hybrid bound from the previous step.  For every \(n,d\in\mathbb N\) with \(0<n\), \(0<d\), \(N_\epsilon\le n\), and \(d\le\rho_\epsilon n\log n\), the selected estimator that chooses \(\widehat\tau_n^{\mathrm{hyb}}\) when
 \[
-2C_H\,r_{n,d}+2C_L\,r_{n,d}
-=
-C_\epsilon\,r_{n,d}.
-\]
-The constants \(C_L,C_H\) do not depend on the member of the class, so the same
-bound holds for every \(P^{\otimes n}\in\mathcal E_{n,d,\epsilon}\) and therefore
-for the supremum:
-\[
-\sup_{P^{\otimes n}\in\mathcal E_{n,d,\epsilon}}
-\mathbb E_{P^{\otimes n}}
- \left[(\widehat\tau_n^{\mathrm{hyb}}-\tau(P))^2\right]
+C_\epsilon\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\}
 \le
-C_\epsilon\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\}.
+\frac1n+4(1/2-\epsilon)^2
 \]
-This is the first display of the fixed-overlap clause, and it holds for every
-\(n\ge N_\epsilon\) and every \(d\) with \(d\le \rho_\epsilon n\log n\).
-% lean: hybrid_upper_fixed_interior
-
-\item \textbf{(Selected estimator.)}  Keep \(n,d\) as in Step 2.  The selection
-rule of \cref{obj:def:selected-estimator} compares the two real numbers
-\(C_\epsilon\{1/n+d^2/(n^2\log^2n)\}\) and \(1/n+4(1/2-\epsilon)^2\), neither of
-which depends on the data; \(\widehat\tau^{\mathrm{sel}}_{C_\epsilon,\epsilon}\)
-is therefore equal to \(\widehat\tau_n^{\mathrm{hyb}}\) or to
-\(\widehat\tau_{\mathrm{ctr}}\) as a fixed function of the sample, and in either
-case it is a measurable estimator based on \(O_1,\ldots,O_n\).  Since the
-infimum in \cref{obj:def:minimax-risk} ranges over all such estimators, it is no
-larger than the worst-case risk of this one:
+and chooses \(\widehat\tau_{\mathrm{ctr}}\) otherwise satisfies
 \[
 \mathsf R_{n,d,\epsilon}
 \le
 \sup_{P^{\otimes n}\in\mathcal E_{n,d,\epsilon}}
-\mathbb E_{P^{\otimes n}}
- \left[(\widehat\tau^{\mathrm{sel}}_{C_\epsilon,\epsilon}
-        -\tau(P))^2\right].
+E_P\!\left[
+\left(\widehat\tau^{\mathrm{sel}}_{C_\epsilon,\epsilon}-\tau(P)\right)^2
+\right]
+\]
+and
+\[
+\sup_{P^{\otimes n}\in\mathcal E_{n,d,\epsilon}}
+E_P\!\left[
+\left(\widehat\tau^{\mathrm{sel}}_{C_\epsilon,\epsilon}-\tau(P)\right)^2
+\right]
+\le
+\max\{C_\epsilon,4\}
+\left[
+\frac1n+
+\min\left\{
+\frac{d^2}{n^2(\log n)^2},
+(1/2-\epsilon)^2
+\right\}
+\right].
 \]
 % lean: combined_upper_envelope
 
-For the envelope itself, the hypotheses of
-\cref{obj:lem:combined-upper-envelope} have all been verified: \(0<\epsilon<1/2\)
-by assumption, \(C_\epsilon>0\) and \(\rho_\epsilon>0\) by Step 2, and the hybrid
-worst-case bound at every \(n,d\in\mathbb N\) with \(n\ge N_\epsilon\) and
-\(d\le\rho_\epsilon n\log n\) by Step 3.  Its selected estimator is the one just
-described, formed from the same \(C_\epsilon\) and \(\epsilon\), and it yields
+\item \textbf{Centered randomization bound.}
+Fix \(0<\epsilon\le1/2\), \(0<n\), and \(0<d\).  For every \(P^{\otimes n}\in\mathcal E_{n,d,\epsilon}\), \cref{obj:lem:near-randomization-linear-upper} gives
+\[
+E_P\!\left[
+\left(\widehat\tau_{\mathrm{ctr}}-\tau(P)\right)^2
+\right]
+\le
+\frac1n+4(1/2-\epsilon)^2 .
+\]
+The right-hand side is independent of \(P\), so taking the supremum over the experiment class gives
 \[
 \sup_{P^{\otimes n}\in\mathcal E_{n,d,\epsilon}}
-\mathbb E_{P^{\otimes n}}
- \left[(\widehat\tau^{\mathrm{sel}}_{C_\epsilon,\epsilon}
-        -\tau(P))^2\right]
-\le
-\max\{C_\epsilon,4\}
-\left\{
-\frac1n+
-\min\left[
-\frac{d^2}{n^2(\log n)^2},(1/2-\epsilon)^2
+E_P\!\left[
+\left(\widehat\tau_{\mathrm{ctr}}-\tau(P)\right)^2
 \right]
-\right\},
-\]
-which is the remaining display of the fixed-overlap clause with
-\(K_\epsilon=\max\{C_\epsilon,4\}\).
-% lean: combined_upper_envelope, selectedEstimator
-
-\item \textbf{(Centered estimator.)}  Now fix \(0<\epsilon\le 1/2\) and
-\(n,d\in\mathbb N\).  If \(\mathcal E_{n,d,\epsilon}\) has no members, its
-supremum is \(0\) and the asserted bound holds because
-\(1/n+4(1/2-\epsilon)^2\ge0\).  Otherwise, let
-\(P^{\otimes n}\in\mathcal E_{n,d,\epsilon}\).  The hypotheses of
-\cref{obj:lem:near-randomization-linear-upper} hold, since \(n>0\) and
-\(P^{\otimes n}\) is a member of the experiment class generated by \(P\), so
-\[
-\mathbb E_{P^{\otimes n}}
- \left[(\widehat\tau_{\mathrm{ctr}}-\tau(P))^2\right]
 \le
-\frac1n+4\left(\frac12-\epsilon\right)^2 ,
+\frac1n+4(1/2-\epsilon)^2 .
 \]
-with \(\widehat\tau_{\mathrm{ctr}}\) the estimator of
-\cref{obj:def:centered-estimator}.  The right-hand side does not depend on the
-member, so taking the supremum over the class gives the centered-estimator
-clause.
-% lean: near_randomization_linear_upper, overlap_adaptive_universal_hybrid_statistical
+The same conclusion covers the empty-class branch through the same empty-supremum convention.
+% lean: near_randomization_linear_upper
 
-\item \textbf{(Endpoint bracket.)}  Finally, for every \(n,d\in\mathbb N\) with
-\(n>0\) and \(d>0\), \cref{obj:lem:randomized-endpoint-minimax} gives the
-endpoint clause directly:
+\item \textbf{Endpoint bracket.}
+For \(0<n\) and \(0<d\), \cref{obj:lem:randomized-endpoint-minimax} gives directly
 \[
-\frac{1}{100n}\le \mathsf R_{n,d,1/2}\le \frac1n .
+\frac{1}{100n}
+\le
+\mathsf R_{n,d,1/2}
+\le
+\frac1n .
 \]
-Together with Steps 1, 3, 4, and 5 this proves the theorem.
-% lean: randomized_endpoint_minimax, overlap_adaptive_universal_hybrid
+This is the endpoint bracket.
+% lean: randomized_endpoint_minimax
 \end{enumerate}
 \end{proof}

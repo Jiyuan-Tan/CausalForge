@@ -1,0 +1,180 @@
+\textbf{Proof.}
+Fix the single allocation \(e\) in the hypothesis.  The same \(e\) is used below for every pair \((s,r)\); in particular, neither the design nor any step of the estimator receives \(s\) or \(r\) as an input.
+
+\emph{Step 1: the law-independent design.}
+For every \(t\), every history \(h\in\mathcal H_{t-1}\), every \(x\in[0,1]^d\), and every \(a\in\mathcal A\), set
+\[
+q_t^D(a\mid x,h):=e_a(x).
+\tag{45}
+\]
+Borel measurability of \(e\), the fact that \(e(x)\in\Delta_K\), and the floor \(e_a(x)\geq\varepsilon\) verify, respectively, kernel measurability, normalization, and positivity.  Hence \(D\in\mathfrak D_{n,\varepsilon}\).  Because \(e\) is known and independent of \(P\), \(s\), and \(r\), this single design is law-independent and smoothness-agnostic.
+
+For any fixed \(s,r>0\) and \(P\in\mathcal P(s,r)\), define
+\[
+h_P(x):=\sum_{a\in\mathcal A}\omega_a(x)\mu_a(x).
+\]
+The pointwise equality in (43) gives
+\[
+\begin{aligned}
+V(e;P)
+&=\operatorname{Var}_P\{h_P(X_t)\}
+  +E_P\!\left[\sum_{a\in\mathcal A}\frac{m_a(X_t)}{e_a(X_t)}\right]\\
+&=\operatorname{Var}_P\{h_P(X_t)\}
+  +E_P\!\left[
+    \min_{\substack{u_a\geq\varepsilon\\\sum_a u_a=1}}
+    \sum_{a\in\mathcal A}\frac{m_a(X_t)}{u_a}
+  \right]
+=V^*(P).
+\tag{46}
+\end{aligned}
+\]
+Indeed, every admissible allocation is bounded below pointwise by the displayed pointwise minimum, while \(e\) attains that minimum and is itself admissible.  This proves the last equality directly from the definition of \(V^*(P)\).
+
+\emph{Step 2: one smoothness-agnostic mean learner.}
+Partition the assignment order into deterministic geometric epochs.  Apart from an initial epoch of fixed size, the epoch used for evaluation has size comparable to the preceding epoch.  Split each completed epoch into fixed ordered training and validation halves.  A fit constructed from one completed epoch is frozen before it is used in the next epoch, so it is measurable with respect to the past at every evaluation time.
+
+For a training half of size \(m\), use the finite library
+\[
+\mathcal L_m
+:=\left\{(p,k):0\leq p\leq\lceil\log m\rceil,
+\ b_k=2^{-k},\ mb_k^d\geq c_0\log m\right\}.
+\tag{47}
+\]
+For arm \(a\) and \((p,k)\in\mathcal L_m\), fit a boundary-corrected local polynomial of degree \(p\) and bandwidth \(b_k\) by weighted least squares with recorded weight
+\[
+\frac{\mathbf 1\{A_i=a\}}{e_a(X_i)}.
+\]
+If the empirical local Gram matrix has smallest eigenvalue below a fixed positive threshold, use the zero fit, and otherwise clip the fitted regression to \([-M,M]\).  This specifies a Borel-measurable candidate \(\widehat\mu_{a,p,k}\).
+
+We record the candidate risk calculation.  If \(p\geq\lfloor s\rfloor\), the Hölder condition gives, on every boundary-corrected local cell, a polynomial approximation with squared bias at most \(C_s b_k^{2s}\).  The density bounds and \(e_a\geq\varepsilon\) bound the conditional weighted-noise variance by \(C/(m b_k^d)\).  The same bounds give an exponential lower-tail bound \(C\exp(-c m b_k^d)\) for the local Gram eigenvalue; clipping bounds its contribution by \(4M^2C\exp(-c m b_k^d)\).  Thus, whenever \(m b_k^d\geq c_0\log m\), choosing \(c_0\) fixed and sufficiently large yields
+\[
+\sup_{P\in\mathcal P(s,r)}
+E_P\|\widehat\mu_{a,p,k}-\mu_a\|_{L_2(P_X)}^2
+\leq C_s\left(b_k^{2s}+\frac{1}{m b_k^d}\right).
+\tag{48}
+\]
+All constants used in the variance part of this calculation are uniform in \(r\), because only \(v_{\max}\), \(c_X\), \(C_X\), and \(\varepsilon\) enter it.
+
+On the validation half select the candidate minimizing
+\[
+\widehat L_{a,p,k}
+:=\frac1m\sum_{i}
+\frac{\mathbf 1\{A_i=a\}}{e_a(X_i)}
+\{Y_i-\widehat\mu_{a,p,k}(X_i)\}^2,
+\tag{49}
+\]
+with deterministic lexicographic tie-breaking.  To verify the selector, condition on the training half, so every candidate is fixed and bounded by \(M\).  For a fixed bounded candidate \(g\), inverse-propensity cancellation gives
+\[
+E_P\!\left[
+\frac{\mathbf 1\{A_i=a\}}{e_a(X_i)}
+\bigl(\{Y_i-g(X_i)\}^2-\{Y_i-\mu_a(X_i)\}^2\bigr)
+\right]
+=\|g-\mu_a\|_{L_2(P_X)}^2.
+\tag{50}
+\]
+The centered summand in (50) is the sum of a bounded term and
+\[
+-2\frac{\mathbf 1\{A_i=a\}}{e_a(X_i)}
+\{Y_i(a)-\mu_a(X_i)\}\{g(X_i)-\mu_a(X_i)\}.
+\]
+Conditional Gaussianity, \(\sigma_a^2\leq v_{\max}\), \(e_a\geq\varepsilon\), and \(|g-\mu_a|\leq2M\) therefore imply, by direct evaluation of the Gaussian moment-generating function, that for fixed constants \(c,C>0\),
+\[
+\mathbb P\!\left(
+|(\mathbb P_m-P)(\ell_g-\ell_{\mu_a})|
+>\frac14\|g-\mu_a\|_{L_2(P_X)}^2+C\frac{x}{m}
+\,\middle|\,\text{training}
+\right)
+\leq 2e^{-cx}.
+\tag{51}
+\]
+Apply (51) to every member of \(\mathcal L_m\), take (x) equal to a constant multiple of \(u+\log|\mathcal L_m|\), and use the empirical minimizing inequality in (49).  On the resulting event, comparison with any candidate (g_0) gives
+\[
+\|\widehat\mu_{m,a}-\mu_a\|_{L_2(P_X)}^2
+\leq C\|g_0-\mu_a\|_{L_2(P_X)}^2
++C\frac{u+\log|\mathcal L_m|}{m}.
+\]
+Integrating the (e^{-cu}) tail and then the training sample yields
+\[
+E_P\|\widehat\mu_{m,a}-\mu_a\|_{L_2(P_X)}^2
+\leq C\min_{(p,k)\in\mathcal L_m}
+E_P\|\widehat\mu_{a,p,k}-\mu_a\|_{L_2(P_X)}^2
++C\frac{\log|\mathcal L_m|}{m}.
+\tag{52}
+\]
+
+For every fixed (s>0), all sufficiently large libraries contain a degree (p\geq\lfloor s\rfloor) and a dyadic bandwidth within a factor two of (m^{-1/(2s+d)}); this bandwidth also satisfies the restriction in (47).  Since (|\mathcal L_m|\leq C(1+\log m)^2) and (2s/(2s+d)<1), equations (48) and (52) imply
+\[
+\sup_{P\in\mathcal P(s,r)}
+E_P\|\widehat\mu_{m,a}-\mu_a\|_{L_2(P_X)}^2
+\leq C_s m^{-2s/(2s+d)}
+\tag{53}
+\]
+for all (m\geq m_0(s)).  The library and selection rule themselves do not depend on (s) or (r).
+
+\emph{Step 3: the predictable estimator and its exact second moment.}
+For (t) in an evaluation epoch (j), let (widehat\mu_{j,a}) be the arm-(a) fit frozen from the preceding epoch, and put
+\[
+\Psi_t
+:=\sum_{a\in\mathcal A}\omega_a(X_t)\widehat\mu_{j,a}(X_t)
++\sum_{a\in\mathcal A}
+\frac{\mathbf 1\{A_t=a\}}{e_a(X_t)}
+\omega_a(X_t)\{Y_t-\widehat\mu_{j,a}(X_t)\},
+\qquad
+T:=\frac1n\sum_{t=1}^n\Psi_t.
+\tag{54}
+\]
+Use the fixed bounded initialization fit in the initial epoch.  Formula (54), the deterministic folds, and lexicographic tie-breaking make (T) a Borel-measurable function of (H_n), hence (T\in\mathfrak T_n).
+
+Let (mathcal G_{t-1}) contain the past and all fits frozen before time (t).  By latent i.i.d. sampling and (45), conditional first on (X_t) and then on (mathcal G_{t-1}), inverse-propensity cancellation gives
+\[
+E_{\mathbb P_n^{D,P}}[\Psi_t\mid\mathcal G_{t-1}]=\theta(P).
+\tag{55}
+\]
+Thus (Psi_t-  heta(P)) are square-integrable martingale differences.  Define
+\[
+\delta_{j,a}(x):=\omega_a(x)\{\widehat\mu_{j,a}(x)-\mu_a(x)\}.
+\]
+Expanding the conditional square in (54), the cross-term with the outcome noise is zero given (X_t), and the conditional variance of
+(sum_a\delta_{j,a}(X_t)-\delta_{j,A_t}(X_t)/e_{A_t}(X_t))
+equals
+(sum_a\delta_{j,a}(X_t)^2/e_a(X_t)-\{\sum_a\delta_{j,a}(X_t)\}^2).
+Consequently, using (46),
+\[
+\begin{aligned}
+E[(\Psi_t-\theta(P))^2\mid\mathcal G_{t-1}]
+&=V^*(P)\\
+&\quad+E_P\!\left[
+\sum_{a\in\mathcal A}\frac{\delta_{j,a}(X)^2}{e_a(X)}
+-\left\{\sum_{a\in\mathcal A}\delta_{j,a}(X)\right\}^2
+\,\middle|\,\mathcal G_{t-1}
+\right].
+\tag{56}
+\end{aligned}
+\]
+Dropping the last nonnegative square, using (e_a\geq\varepsilon), (|\omega_a|\leq W), and (53), we obtain, with (m_j) the preceding training-half size,
+\[
+E[(\Psi_t-\theta(P))^2]-V^*(P)
+\leq C_s m_j^{-q},
+\qquad q:=\frac{2s}{2s+d}\in(0,1).
+\tag{57}
+\]
+
+Martingale orthogonality, (57), and geometric epoch sizes now give
+\[
+\begin{aligned}
+E[(T-\theta(P))^2]-\frac{V^*(P)}n
+&\leq\frac{C}{n^2}
++\frac{C_s}{n^2}\sum_{j\geq1}|I_j|m_j^{-q}\\
+&\leq\frac{C}{n^2}
++\frac{C_s}{n^2}\sum_{j\leq C\log n}2^{j(1-q)}
+\leq C_s n^{-1-q}.
+\tag{58}
+\end{aligned}
+\]
+The first term is the fixed-size initialization contribution, and the last inequality uses (q<1).  Every bound is uniform over (P\in\mathcal P(s,r)), proving (44).
+
+Finally, the design (45) and estimator (54) are one admissible law-independent pair, fixed before the supremum over (P).  Substitution into the two infima in the definition of (mathsf R_n(s,r,d;\omega)) gives
+\[
+\mathsf R_n(s,r,d;\omega)\leq C_s n^{-1-2s/(2s+d)}.
+\]
+Nothing in the argument supplies a lower bound for the oracle-subtracted unrestricted criterion.  This proves the stated upper result. \(\square\)

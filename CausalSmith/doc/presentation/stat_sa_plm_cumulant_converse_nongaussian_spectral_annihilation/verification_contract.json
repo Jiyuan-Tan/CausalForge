@@ -1,0 +1,1556 @@
+{
+  "schema": "causalsmith-p5-verification-contract-v1",
+  "commit": "7a7392fa7d871cbd03c3506130f14a48cf74b2d3",
+  "objects": [
+    {
+      "obj_id": "def:model-parameters",
+      "kind": "definition",
+      "title": "Parameter record and standing conventions",
+      "status": "matched",
+      "paper_statement": "A parameter record fixes a sample size \\(n\\ge 1\\), an order pair \\(r,k\\in\\mathbb N\\) with\n\\[\n k=r+1,\\qquad r\\ge 2,\n\\]\na comparison exponent \\(s\\in[0,\\infty]\\) with \\(s\\ge r\\), a probability level \\(\\gamma\\in(1/2,1)\\), positive constants\n\\[\n C_{\\theta},\\ C_g,\\ C_q,\\ \\psi_{\\eta},\\ \\psi_{\\xi},\\ \\delta,\\ \\sigma>0,\n\\]\nand two code-radius sequences \\(\\varepsilon_1,\\varepsilon_2:\\mathbb N\\to\\mathbb R\\) that are nonnegative and nonincreasing on positive indices; their values at \\(n\\) are written \\(\\varepsilon_{1,n}\\) and \\(\\varepsilon_{2,n}\\).\n\nTwo conventions are used throughout: \\(N(m,v)\\) denotes the Gaussian law on \\(\\mathbb R\\) with mean \\(m\\) and variance \\(v\\), and \\(\\mathbb P_n f=n^{-1}\\sum_{i=1}^{n}f(O_i)\\) denotes the empirical average of \\(f\\) over the sample.  The sample is split into the two deterministic folds\n\\[\n I_0=\\{i:i<\\lfloor n/2\\rfloor\\},\\qquad I_1=\\{i:i\\ge\\lfloor n/2\\rfloor\\},\n\\]\nwritten \\(I_a\\) for \\(a\\in\\{0,1\\}\\).\n\nFor a real random variable \\(W\\) and \\(t>0\\), the Luxemburg sub-Gaussian convention is that \\(\\lVert W\\rVert_{\\psi_2}\\le t\\) means \\(E[\\exp(W^2/t^2)]\\le 2\\), and its conditional form \\(\\lVert W\\rVert_{\\psi_2\\mid X}\\le t\\) means \\(E[\\exp(W^2/t^2)\\mid X]\\le 2\\) almost surely.",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "CausalSmith.Stat.SaPlmCumulantConverse.Parameters",
+        "file": "Basic.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "e40e3617de192afe"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "def:plm-model",
+      "kind": "definition",
+      "title": "Observed-data partially linear model",
+      "status": "matched",
+      "paper_statement": "An observation is the triple \\(O=(X,T,Y)\\), where \\(X\\) takes values in a measurable covariate space \\(\\mathcal X\\) and \\(T,Y\\in\\mathbb R\\).  A model over a parameter record consists of a probability law \\(P\\) for \\(O\\) under which \\(T\\) and \\(Y\\) are integrable, a real coefficient \\(\\theta_0\\), measurable regression functions \\(g_0,q_0\\) on the covariate space with\n\\[\n g_0(X)=E_P[T\\mid X],\\qquad q_0(X)=E_P[Y\\mid X]\n\\]\n\\(P\\)-almost surely, and deterministic measurable supplied code sequences \\(\\widehat g=(\\widehat g_n)_{n\\in\\mathbb N}\\) and \\(\\widehat q=(\\widehat q_n)_{n\\in\\mathbb N}\\) for \\(g_0\\) and \\(q_0\\).  The treatment and outcome innovations are\n\\[\n \\eta=T-g_0(X),\\qquad \\xi=Y-q_0(X)-\\theta_0\\eta,\n\\]\nand the clipped supplied codes at index \\(n\\) are\n\\[\n \\bar g_n(x)=\\min\\{\\max\\{\\widehat g_n(x),-C_g\\},C_g\\},\\qquad\n \\bar q_n(x)=\\min\\{\\max\\{\\widehat q_n(x),-C_q\\},C_q\\}.\n\\]\nThe covariate marginal of \\(P\\) is written \\(P_X\\).  A model is written \\(m\\), and when the law has to be displayed the coefficient is written \\(\\theta_0(P)\\).",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Basic.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "6c2a25fee3d19071",
+          "e40e3617de192afe"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "ass:iid-sampling",
+      "kind": "assumption",
+      "title": "I.i.d. sampling",
+      "status": "matched",
+      "paper_statement": "Under \\cref{obj:def:plm-model,obj:def:model-parameters}, the observations satisfy\n\\[\nO_1,\\ldots,O_n \\stackrel{\\mathrm{iid}}{\\sim} P .\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Basic.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "254df2f08254a6e9",
+          "59dfa1002247b14d",
+          "6c2a25fee3d19071",
+          "e40e3617de192afe"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "ass:independent-treatment-noise",
+      "kind": "assumption",
+      "title": "Independent treatment noise",
+      "status": "matched",
+      "paper_statement": "Under \\cref{obj:def:plm-model,obj:def:model-parameters}, the treatment innovation is independent of the covariates:\n\\[\n\\eta \\perp X .\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Basic.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "c1599ffb8690e107",
+          "52d7d349ff0496aa",
+          "411ca7a1d7e9d6cc",
+          "6c2a25fee3d19071",
+          "e40e3617de192afe"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "ass:outcome-mean-independence",
+      "kind": "assumption",
+      "title": "Outcome mean independence",
+      "status": "matched",
+      "paper_statement": "Under \\cref{obj:def:plm-model,obj:def:model-parameters}, the outcome innovation has conditional mean zero given the covariates and treatment:\n\\[\nE_P[\\xi\\mid X,T]=0\n\\]\nalmost surely.",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Basic.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "56f3260d1e39be04",
+          "52d7d349ff0496aa",
+          "411ca7a1d7e9d6cc",
+          "6c2a25fee3d19071",
+          "e40e3617de192afe"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "ass:theta-range",
+      "kind": "assumption",
+      "title": "Coefficient range",
+      "status": "matched",
+      "paper_statement": "Under \\cref{obj:def:plm-model,obj:def:model-parameters}, the partially linear coefficient satisfies\n\\[\n|\\theta_0|\\le C_{\\theta}.\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Basic.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "99b746be227c79af",
+          "52d7d349ff0496aa",
+          "411ca7a1d7e9d6cc",
+          "6c2a25fee3d19071",
+          "e40e3617de192afe"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "ass:g-range",
+      "kind": "assumption",
+      "title": "Treatment regression range",
+      "status": "matched",
+      "paper_statement": "Under \\cref{obj:def:plm-model,obj:def:model-parameters}, the treatment regression satisfies\n\\[\n\\|g_0\\|_{\\infty}\\le C_g.\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Basic.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "72febe441f3d34f2",
+          "52d7d349ff0496aa",
+          "411ca7a1d7e9d6cc",
+          "6c2a25fee3d19071",
+          "e40e3617de192afe"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "ass:q-range",
+      "kind": "assumption",
+      "title": "Outcome regression range",
+      "status": "matched",
+      "paper_statement": "Under \\cref{obj:def:plm-model,obj:def:model-parameters}, the outcome regression satisfies\n\\[\n\\|q_0\\|_{\\infty}\\le C_q.\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Basic.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "ae94a8c5fcf7cb18",
+          "52d7d349ff0496aa",
+          "411ca7a1d7e9d6cc",
+          "6c2a25fee3d19071",
+          "e40e3617de192afe"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "ass:bounded-gaussian-outcome",
+      "kind": "assumption",
+      "title": "Bounded outcome",
+      "status": "matched",
+      "paper_statement": "In the model of \\cref{obj:def:plm-model} with constants as in \\cref{obj:def:model-parameters}, the outcome is uniformly bounded:\n\\[\n|Y|\\le C_q\n\\]\nalmost surely.",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Basic.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "ef32adb6a61b9343",
+          "52d7d349ff0496aa",
+          "411ca7a1d7e9d6cc",
+          "6c2a25fee3d19071",
+          "e40e3617de192afe"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "ass:eta-subgaussian",
+      "kind": "assumption",
+      "title": "Sub-Gaussian treatment noise",
+      "status": "matched",
+      "paper_statement": "In the model of \\cref{obj:def:plm-model} with constants as in \\cref{obj:def:model-parameters}, the Luxemburg sub-Gaussian norm is\n\\[\n\\lVert W\\rVert_{\\psi_2}\n=\n\\inf\\{u>0:E_P[\\exp(W^2/u^2)]\\le 2\\}.\n\\]\nUnder this convention, the treatment innovation satisfies\n\\[\n\\lVert\\eta\\rVert_{\\psi_2}\\le \\psi_{\\eta}.\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Basic.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "bf523048203c778d",
+          "52d7d349ff0496aa",
+          "411ca7a1d7e9d6cc",
+          "6c2a25fee3d19071",
+          "e40e3617de192afe"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "ass:xi-subgaussian",
+      "kind": "assumption",
+      "title": "Sub-Gaussian outcome noise",
+      "status": "matched",
+      "paper_statement": "In the model of \\cref{obj:def:plm-model} with constants as in \\cref{obj:def:model-parameters}, the outcome innovation satisfies\n\\[\n\\lVert \\xi\\rVert_{\\psi_2\\mid X}\\le \\psi_{\\xi}\n\\]\nalmost surely.",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Basic.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "01aa95e2062c3edb",
+          "52d7d349ff0496aa",
+          "411ca7a1d7e9d6cc",
+          "6c2a25fee3d19071",
+          "e40e3617de192afe"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "ass:cumulant-separation",
+      "kind": "assumption",
+      "title": "Cumulant separation",
+      "status": "matched",
+      "paper_statement": "In the model of \\cref{obj:def:plm-model} with parameters as in \\cref{obj:def:model-parameters}, the \\(k\\)th cumulant of the treatment innovation satisfies\n\\[\n|\\kappa_k(\\eta)|\\ge \\delta.\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Basic.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "6db02c5887583687",
+          "52d7d349ff0496aa",
+          "411ca7a1d7e9d6cc",
+          "6c2a25fee3d19071",
+          "e40e3617de192afe"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "ass:treatment-code-radius",
+      "kind": "assumption",
+      "title": "Treatment code radius",
+      "status": "drift",
+      "paper_statement": "In the model of \\cref{obj:def:plm-model} with parameters as in \\cref{obj:def:model-parameters}, for every \\(n\\),\n\\[\n\\lVert \\bar g_n-g_0\\rVert_{L^s(P_X)}\\le \\varepsilon_{1,n}.\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Basic.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "48b64edb703a8ec0",
+          "52d7d349ff0496aa",
+          "411ca7a1d7e9d6cc",
+          "6c2a25fee3d19071",
+          "e40e3617de192afe"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "ass:outcome-code-radius",
+      "kind": "assumption",
+      "title": "Outcome code radius",
+      "status": "drift",
+      "paper_statement": "In the model of \\cref{obj:def:plm-model} with parameters as in \\cref{obj:def:model-parameters}, for every \\(n\\),\n\\[\n\\lVert \\bar q_n-q_0\\rVert_{L^s(P_X)}\\le \\varepsilon_{2,n}.\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Basic.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "191613cc66bd77c8",
+          "52d7d349ff0496aa",
+          "411ca7a1d7e9d6cc",
+          "6c2a25fee3d19071",
+          "e40e3617de192afe"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "ass:jms-treatment-code-radius",
+      "kind": "assumption",
+      "title": "Treatment code radius",
+      "status": "drift",
+      "paper_statement": "In the notation of \\cref{obj:def:plm-model,obj:def:model-parameters}, for every \\(n\\ge 1\\),\n\\[\n\\lVert \\bar g_n-g_0\\rVert_{L^r(P_X)}\\le \\varepsilon_{1,n}.\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Basic.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "003c7d02d25450fd",
+          "52d7d349ff0496aa",
+          "411ca7a1d7e9d6cc",
+          "6c2a25fee3d19071",
+          "e40e3617de192afe"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "ass:jms-outcome-code-radius",
+      "kind": "assumption",
+      "title": "Outcome code radius",
+      "status": "drift",
+      "paper_statement": "In the notation of \\cref{obj:def:plm-model,obj:def:model-parameters}, for every \\(n\\ge 1\\),\n\\[\n\\lVert \\bar q_n-q_0\\rVert_{L^r(P_X)}\\le \\varepsilon_{2,n}.\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Basic.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "f7e049ef328d3dd4",
+          "52d7d349ff0496aa",
+          "411ca7a1d7e9d6cc",
+          "6c2a25fee3d19071",
+          "e40e3617de192afe"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "ass:gaussian-treatment-noise",
+      "kind": "assumption",
+      "title": "Gaussian treatment noise",
+      "status": "matched",
+      "paper_statement": "In the notation of \\cref{obj:def:plm-model,obj:def:model-parameters}, the treatment innovation satisfies\n\\[\n\\eta\\sim N(0,\\sigma^2).\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Basic.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "2c0234b3b2655d82",
+          "52d7d349ff0496aa",
+          "411ca7a1d7e9d6cc",
+          "6c2a25fee3d19071",
+          "e40e3617de192afe"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "ass:l1-treatment-code-radius",
+      "kind": "assumption",
+      "title": "\\(L^1\\) treatment radius",
+      "status": "matched",
+      "paper_statement": "In the notation of \\cref{obj:def:plm-model,obj:def:model-parameters}, for every \\(n\\ge 1\\),\n\\[\n\\lVert \\bar g_n-g_0\\rVert_{L^1(P_X)}\\le \\varepsilon_{1,n}.\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Basic.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "640aedf8edf75000",
+          "52d7d349ff0496aa",
+          "411ca7a1d7e9d6cc",
+          "6c2a25fee3d19071",
+          "e40e3617de192afe"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "def:non-gaussian-class",
+      "kind": "definition",
+      "title": "Non-Gaussian law class \\(\\mathcal P_{\\mathrm{NG},n}\\)",
+      "status": "matched",
+      "paper_statement": "In the notation of \\cref{obj:ass:independent-treatment-noise,obj:ass:outcome-mean-independence,obj:ass:theta-range,obj:ass:g-range,obj:ass:q-range,obj:ass:eta-subgaussian,obj:ass:xi-subgaussian,obj:ass:cumulant-separation,obj:def:plm-model,obj:def:model-parameters}, let \\(P\\) be an observed-data law on \\(O=(X,T,Y)\\). Define\n\\[\ng_0(x)=E_P[T\\mid X=x],\n\\qquad\nq_0(x)=E_P[Y\\mid X=x],\n\\]\nlet \\(\\theta_0(P)\\) be the constant coefficient in the partially linear conditional mean\n\\[\nE_P[Y\\mid X,T]=q_0(X)+\\theta_0(P)\\{T-g_0(X)\\},\n\\]\nand set\n\\[\n\\eta=T-g_0(X),\n\\qquad\n\\xi=Y-q_0(X)-\\theta_0(P)\\eta.\n\\]\nFor each \\(n\\ge 1\\), \\(\\mathcal P_{\\mathrm{NG},n}\\) is the class of such laws \\(P\\) satisfying:\n\\begin{itemize}\n\\item \\textbf{(Treatment independence.)} \\(\\eta\\perp X\\).\n\\item \\textbf{(Outcome mean.)} \\(E_P[\\xi\\mid X,T]=0\\).\n\\item \\textbf{(Coefficient range.)} \\(|\\theta_0(P)|\\le C_{\\theta}\\).\n\\item \\textbf{(Treatment regression range.)} \\(\\lVert g_0\\rVert_{\\infty}\\le C_g\\).\n\\item \\textbf{(Outcome regression range.)} \\(\\lVert q_0\\rVert_{\\infty}\\le C_q\\).\n\\item \\textbf{(Treatment tail.)} \\(\\lVert \\eta\\rVert_{\\psi_2}\\le \\psi_{\\eta}\\).\n\\item \\textbf{(Outcome tail.)} \\(\\lVert \\xi\\rVert_{\\psi_2\\mid X}\\le \\psi_{\\xi}\\).\n\\item \\textbf{(Cumulant separation.)} \\(|\\kappa_{r+1}(\\eta)|\\ge \\delta\\).\n\\item \\textbf{(Treatment code control.)} \\(\\lVert \\bar g_n-g_0\\rVert_{L^1(P_X)}\\le \\varepsilon_{1,n}\\).\n\\end{itemize}",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Basic.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "e909f5736a146e24",
+          "52d7d349ff0496aa",
+          "411ca7a1d7e9d6cc",
+          "c1599ffb8690e107",
+          "56f3260d1e39be04",
+          "99b746be227c79af",
+          "72febe441f3d34f2",
+          "ae94a8c5fcf7cb18",
+          "bf523048203c778d",
+          "01aa95e2062c3edb",
+          "6db02c5887583687",
+          "0c0f31cdb4f40e3d",
+          "6c2a25fee3d19071",
+          "e40e3617de192afe"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "def:gaussian-class",
+      "kind": "definition",
+      "title": null,
+      "status": "matched",
+      "paper_statement": "\\[\n\\mathcal P_{\\mathrm G,n}^{\\mathrm{JMS}}:=\\left\\{P:\\begin{array}{l}1\\le n,\\ E_P[\\xi\\mid X,T]=0\\ P\\text{-a.s.},\\ \\xi\\in L^1(P),\\ |\\theta_0|\\le C_{\\theta},\\ |Y|\\le C_q\\ P\\text{-a.s.},\\\\ \\eta\\perp X,\\ \\eta\\sim N(0,\\sigma^2),\\ |g_0(x)|\\le C_g\\ P_X\\text{-a.e.},\\\\ \\|\\bar g_n-g_0\\|_{L^s(P_X)}\\le\\varepsilon_{1,n},\\ \\|\\bar q_n-q_0\\|_{L^s(P_X)}\\le\\varepsilon_{2,n}\\end{array}\\right\\}.\n\\]\nHere \\(g_0,q_0,\\eta,\\xi\\) are the residual functionals determined by \\(P\\) in \\cref{obj:def:non-gaussian-class}.",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Basic.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "29dfa989a507efe8",
+          "52d7d349ff0496aa",
+          "411ca7a1d7e9d6cc",
+          "c1599ffb8690e107",
+          "56f3260d1e39be04",
+          "99b746be227c79af",
+          "72febe441f3d34f2",
+          "ef32adb6a61b9343",
+          "2c0234b3b2655d82",
+          "e6bf1c891aa19967",
+          "e1dcc659cb2e048c",
+          "08d60a87d81333fb",
+          "6c2a25fee3d19071",
+          "e40e3617de192afe"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "def:jms-ace-class",
+      "kind": "definition",
+      "title": "JMS ACE comparison class \\(\\mathcal P_{\\mathrm{ACE},n}^{\\mathrm{JMS}}\\)",
+      "status": "matched",
+      "paper_statement": "Fix an admissible parameter record with positive sample-size coordinate and\n\\[\nk=r+1,\\qquad 2\\le r,\\qquad r\\le s,\\qquad \\gamma\\in(1/2,1),\n\\]\nwith\n\\[\n0<C_{\\theta},\\quad 0<C_g,\\quad 0<C_q,\\quad\n0<\\psi_{\\eta},\\quad 0<\\psi_{\\xi},\\quad 0<\\delta,\n\\quad 0<\\sigma,\n\\]\nand with radius sequences satisfying\n\\[\n0\\le \\varepsilon_{j,b}\\le \\varepsilon_{j,a}\n\\qquad (j\\in\\{1,2\\},\\ 1\\le a\\le b).\n\\]\nAt any positive class index \\(n\\), the JMS ACE comparison class \\(\\mathcal P_{\\mathrm{ACE},n}^{\\mathrm{JMS}}\\) consists of all model records \\(m\\) whose observed-data component \\(P\\) is a probability law on \\(O=X\\times\\mathbb R\\times\\mathbb R\\), carrying a real \\(\\theta_0\\), measurable functions \\(g_0,q_0:X\\to\\mathbb R\\), and deterministic measurable supplied code sequences whose clipped versions are denoted \\(\\bar g_\\ell\\) and \\(\\bar q_\\ell\\). The coordinates \\(T\\) and \\(Y\\) are \\(P\\)-integrable, and the conditional-mean identities\n\\[\ng_0(X)=E_P[T\\mid X],\\qquad q_0(X)=E_P[Y\\mid X]\n\\]\nhold \\(P\\)-almost surely. Writing \\(\\eta=T-g_0(X)\\) and \\(\\xi=Y-q_0(X)-\\theta_0\\eta\\), the member conditions in \\cref{obj:ass:independent-treatment-noise,obj:ass:outcome-mean-independence,obj:ass:theta-range,obj:ass:g-range,obj:ass:q-range,obj:ass:eta-subgaussian,obj:ass:xi-subgaussian,obj:ass:cumulant-separation} hold in the following form:\n\\[\n\\xi\\in L^1(P),\\qquad E_P[\\xi\\mid X,T]=0,\\qquad \\eta\\perp X,\n\\]\nwith the conditional-mean identity for \\(\\xi\\) holding \\(P\\)-almost surely;\n\\[\n|\\theta_0|\\le C_{\\theta},\\qquad |g_0(x)|\\le C_g,\n\\qquad |q_0(x)|\\le C_q,\n\\]\nwith the displayed bounds on \\(g_0\\) and \\(q_0\\) holding for \\(P_X\\)-almost every \\(x\\);\n\\[\n\\exp(\\eta^2/\\psi_{\\eta}^2)\\in L^1(P),\\qquad\n\\int \\exp(\\eta^2/\\psi_{\\eta}^2)\\,dP\\le 2,\n\\]\n\\[\n\\exp(\\xi^2/\\psi_{\\xi}^2)\\in L^1(P),\\qquad\nE_P[\\exp(\\xi^2/\\psi_{\\xi}^2)\\mid X]\\le 2,\n\\]\nwith the conditional tail bound holding \\(P\\)-almost surely; and\n\\[\n|\\kappa_{r+1}(\\eta)|\\ge\\delta,\\qquad\n\\|\\bar g_n-g_0\\|_{L^r(P_X)}\\le\\varepsilon_{1,n},\\qquad\n\\|\\bar q_n-q_0\\|_{L^r(P_X)}\\le\\varepsilon_{2,n}.\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Basic.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "88b6031de756dc34",
+          "52d7d349ff0496aa",
+          "411ca7a1d7e9d6cc",
+          "c1599ffb8690e107",
+          "56f3260d1e39be04",
+          "99b746be227c79af",
+          "72febe441f3d34f2",
+          "ae94a8c5fcf7cb18",
+          "bf523048203c778d",
+          "01aa95e2062c3edb",
+          "6db02c5887583687",
+          "8b549e74c347a071",
+          "564e10b1218aec9f",
+          "6c2a25fee3d19071",
+          "e40e3617de192afe"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "def:generalized-quantile",
+      "kind": "definition",
+      "title": "Generalized quantile \\(Q_{P,1-\\gamma}(W)\\)",
+      "status": "matched",
+      "paper_statement": "In the sampling setting of \\cref{obj:ass:iid-sampling,obj:def:plm-model,obj:def:model-parameters}, let \\(P\\) be an observed-data law, let \\(n\\ge 1\\), and let \\(W=W(O_1,\\ldots,O_n)\\) be a real-valued statistic of the sample. Under \\(P^{\\otimes n}\\), write\n\\[\nF_W(t)=\\Pr(W\\le t)\n\\]\nfor the distribution function of \\(W\\). For \\(\\gamma\\in(1/2,1)\\), the generalized lower \\((1-\\gamma)\\)-quantile of \\(W\\) is\n\\[\nQ_{P,1-\\gamma}(W)=\\inf\\{t\\in\\mathbb R:\\ F_W(t)\\ge 1-\\gamma\\}.\n\\]\nEquivalently, \\(Q_{P,1-\\gamma}(W)\\) is the left-continuous generalized inverse of \\(F_W\\) evaluated at level \\(1-\\gamma\\).",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Basic.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "a84b9c26b3f21c02",
+          "254df2f08254a6e9",
+          "6c2a25fee3d19071",
+          "e40e3617de192afe"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "def:outcome-contamination",
+      "kind": "definition",
+      "title": "Treatment-code error \\(D_n\\), outcome contamination \\(b_n\\), and its transform \\(B_n\\)",
+      "status": "matched",
+      "paper_statement": "Fix a law \\(P\\), an index \\(n\\), and the clipped supplied treatment code \\(\\bar g_n\\).  The treatment-code error and the outcome contamination are the covariate functions\n\\[\n D_n(X)=g_0(X)-\\bar g_n(X),\n \\qquad\n b_n(X)=q_0(X)-\\theta_0\\{g_0(X)-\\bar g_n(X)\\}=q_0(X)-\\theta_0 D_n(X),\n\\]\nand the contamination transform is their weighted exponential transform\n\\[\n B_n(z)=E_P\\bigl[b_n(X)e^{zD_n(X)}\\bigr],\\qquad z\\in\\mathbb C.\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Helpers/Transforms.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "fd2f49c5a0517232",
+          "e909f5736a146e24",
+          "6c2a25fee3d19071",
+          "e40e3617de192afe"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "def:jms-eligibility-quantities",
+      "kind": "definition",
+      "title": "JMS eligibility quantities \\(a_{1,n},b_{1,n},a_2,b_{2,n}\\)",
+      "status": "matched",
+      "paper_statement": "Under the notation and conditions in \\cref{obj:ass:theta-range,obj:ass:g-range,obj:ass:eta-subgaussian,obj:ass:xi-subgaussian,obj:ass:cumulant-separation,obj:ass:jms-treatment-code-radius,obj:ass:jms-outcome-code-radius,obj:def:plm-model,obj:def:model-parameters}, the four quantities entering the Jin--Mackey--Syrgkanis order-\\(r\\) eligibility condition at index \\(n\\) are\n\\[\n a_{1,n}=2\\log\\!\\left(\\frac{6(C_g+\\psi_{\\eta})}{\\varepsilon_{1,n}}\\right),\n \\qquad\n b_{1,n}=\\log\\!\\left(\\frac{\\gamma n}{9}\\right),\n \\qquad\n a_2=4(C_g+\\psi_{\\eta}),\n\\]\n\\[\n b_{2,n}=\n \\frac{200\\min\\{1,C_{\\theta}\\}\\,\\delta}\n      {\\max\\bigl\\{\\varepsilon_{1,n},\\ \\varepsilon_{2,n},\\ (\\gamma n)^{-1/2}(\\psi_{\\xi}+C_{\\theta}\\psi_{\\eta})\\bigr\\}} .\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Helpers/JmsComparator.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "9ca1bc6c74c7a20c",
+          "99b746be227c79af",
+          "72febe441f3d34f2",
+          "bf523048203c778d",
+          "01aa95e2062c3edb",
+          "6db02c5887583687",
+          "003c7d02d25450fd",
+          "f7e049ef328d3dd4",
+          "6c2a25fee3d19071",
+          "e40e3617de192afe"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "def:zero-instrument",
+      "kind": "definition",
+      "title": "Treatment-innovation transform \\(M\\)",
+      "status": "matched",
+      "paper_statement": "Let \\(M:\\mathbb C\\to\\mathbb C\\), let \\(z_0\\in\\mathbb C\\), and let \\(\\ell\\in\\mathbb N\\) satisfy \\(1\\le \\ell\\), \\(M(z_0)=0\\), and analytic order \\(\\ell\\) for \\(M\\) at \\(z_0\\). Define\n\\[\nJ_{z_0,\\ell}(w)=w^{\\ell-1}e^{z_0w},\\qquad w\\in\\mathbb C.\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "CausalSmith.Stat.SaPlmCumulantConverse.zeroInstrument",
+        "file": "Helpers/Transforms.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "f914d45f8326184c"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "def:contour-functional",
+      "kind": "definition",
+      "title": "Contour functional \\(\\Theta_{C_j}(F_n,G_n)\\)",
+      "status": "matched",
+      "paper_statement": "For \\(Z_n=T-\\bar g_n(X)\\), define\n\\[\nF_n(z)=E_P[e^{zZ_n}],\n\\qquad\nG_n(z)=E_P[Ye^{zZ_n}],\n\\qquad\nH_n(z)=E_P[e^{z\\{g_0(X)-\\bar g_n(X)\\}}].\n\\]\nLet \\(C_j\\) be a positively oriented circle centered at the origin with positive radius, and suppose \\(F_n\\) is analytic on a neighborhood of the closed disk bounded by \\(C_j\\). Let \\(N_{C_j}(F_n)\\) denote the number of zeros of \\(F_n\\) strictly inside \\(C_j\\), counted with multiplicity. When \\(F_n\\) is zero-free on \\(C_j\\) and \\(N_{C_j}(F_n)\\ge1\\), define\n\\[\n\\Theta_{C_j}(F_n,G_n)\n=\n\\{N_{C_j}(F_n)2\\pi i\\}^{-1}\n\\oint_{C_j}\\frac{G_n(z)}{F_n(z)}\\,dz .\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "CausalSmith.Stat.SaPlmCumulantConverse.contourFunctional",
+        "file": "Helpers/Transforms.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "fe2996ebf5cc1a64"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "def:minimax-risks",
+      "kind": "definition",
+      "title": "Minimax risks \\(\\mathfrak R_n^{\\mathrm{NG}},\\mathfrak R_n^{\\mathrm G},\\mathfrak M_{n,1-\\gamma}^{\\mathrm G}\\)",
+      "status": "matched",
+      "paper_statement": "For fixed supplied code sequences, let \\(\\bar g_n\\) and \\(\\bar q_n\\) denote their current-index clippings to \\([-C_g,C_g]\\) and \\([-C_q,C_q]\\). All infima below range over measurable estimators based on \\(O_1,\\ldots,O_n\\), and each supremum is restricted to laws in the displayed class whose clipped treatment and outcome codes at index \\(n\\) are \\(\\bar g_n\\) and \\(\\bar q_n\\). Given a parameter record \\(p\\) and supplied code sequences \\(\\widehat g,\\widehat q\\), a class \\(\\mathcal C\\) of laws carries the notation \\(\\mathcal C(p;\\bar g_n,\\bar q_n)\\) for the subset cut out by this fixed-code restriction, and we write \\(\\mathfrak R_n^{\\mathrm{NG}}(p;\\widehat g,\\widehat q)\\), \\(\\mathfrak R_n^{\\mathrm G}(p;\\widehat g,\\widehat q)\\), and \\(\\mathfrak M_{n,1-\\gamma}^{\\mathrm G}(p;\\widehat g,\\widehat q)\\) for the three risks defined next whenever their dependence on the parameter record and the supplied codes has to be displayed. Define the non-Gaussian minimax mean-squared risk by\n\\[\n\\mathfrak R_n^{\\mathrm{NG}}\n=\n\\inf_{\\widetilde\\theta(O_1,\\ldots,O_n;\\bar g_n,\\bar q_n)}\n\\sup_{P\\in\\mathcal P_{\\mathrm{NG},n}}\nE_P\\!\\left[(\\widetilde\\theta-\\theta_0(P))^2\\right].\n\\]\nDefine the Gaussian JMS minimax mean-squared risk by\n\\[\n\\mathfrak R_n^{\\mathrm G}\n=\n\\inf_{\\widetilde\\theta(O_1,\\ldots,O_n;\\bar g_n,\\bar q_n)}\n\\sup_{P\\in\\mathcal P_{\\mathrm G,n}^{\\mathrm{JMS}}}\nE_P\\!\\left[(\\widetilde\\theta-\\theta_0(P))^2\\right].\n\\]\nFor \\(1/2<\\gamma<1\\), define the Gaussian JMS minimax generalized lower-quantile risk by\n\\[\n\\mathfrak M_{n,1-\\gamma}^{\\mathrm G}\n=\n\\inf_{\\widetilde\\theta}\n\\sup_{P\\in\\mathcal P_{\\mathrm G,n}^{\\mathrm{JMS}}}\nQ_{P,1-\\gamma}\\!\\left(|\\widetilde\\theta-\\theta_0(P)|\\right).\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Basic.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "c4b219ab3e654a87",
+          "52d7d349ff0496aa",
+          "a84b9c26b3f21c02",
+          "6c2a25fee3d19071",
+          "e40e3617de192afe"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "def:jms-eligibility",
+      "kind": "definition",
+      "title": "JMS eligibility condition \\(\\mathsf E_n^{\\mathrm{JMS}}\\)",
+      "status": "matched",
+      "paper_statement": "Let \\(a_{1,n},b_{1,n},a_2,b_{2,n}\\) be the quantities in \\cref{obj:def:jms-eligibility-quantities}. For every index \\(n\\) for which the following expressions are defined, \\(\\mathsf E_n^{\\mathrm{JMS}}\\) is the condition\n\\[\nr\n\\le\n\\min\\left\\{\n\\frac{b_{1,n}}{a_{1,n}}-\\frac{1}{a_{1,n}}\\log\\!\\left(\\frac{b_{1,n}}{a_{1,n}}\\right),\n\\frac{b_{2,n}}{a_2\\log(a_2b_{2,n})}\n\\right\\}.\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Helpers/JmsComparator.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "34a238acd57b4f68",
+          "52d7d349ff0496aa",
+          "9ca1bc6c74c7a20c"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "def:sine-estimator",
+      "kind": "definition",
+      "title": "Sine-ratio estimator \\(\\widehat\\theta_{\\sin,n}\\)",
+      "status": "matched",
+      "paper_statement": "Write \\(\\Pi_{[-C_{\\theta},C_{\\theta}]}(u)=\\min\\{\\max\\{u,-C_{\\theta}\\},C_{\\theta}\\}\\) for the projection of a real number onto \\([-C_{\\theta},C_{\\theta}]\\).  For \\(n\\ge 1\\) observed triples \\(O_i=(X_i,T_i,Y_i)\\), let \\(\\mathbb P_n f=n^{-1}\\sum_{i=1}^n f(O_i)\\) and let \\(Z_n=T-\\bar g_n(X)\\), where \\(\\bar g_n\\) is the supplied treatment code clipped to \\([-C_g,C_g]\\). The clipped sine-ratio estimator is\n\\[\n\\widehat\\theta_{\\sin,n}\n=\n\\begin{cases}\n\\displaystyle\n\\Pi_{[-C_{\\theta},C_{\\theta}]}\n\\left\\{\n\\frac{\\mathbb P_n[Y\\sin(\\pi Z_n/2)]}\n{\\mathbb P_n[Z_n\\sin(\\pi Z_n/2)]}\n\\right\\},\n&\\displaystyle \\mathbb P_n[Z_n\\sin(\\pi Z_n/2)]\\ge e^{-\\pi^2/8}/4,\\\\[3mm]\n0,\n&\\displaystyle \\mathbb P_n[Z_n\\sin(\\pi Z_n/2)]< e^{-\\pi^2/8}/4.\n\\end{cases}\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Helpers/SineScore.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "582bb1702a845c07",
+          "52d7d349ff0496aa",
+          "411ca7a1d7e9d6cc",
+          "59dfa1002247b14d"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "def:local-gaussian-handle",
+      "kind": "definition",
+      "title": "Local Gaussian handle \\(\\mathscr C_m\\)",
+      "status": "matched",
+      "paper_statement": "Fix a parameter tuple with positive sample size \\(n\\), fixed ACE order \\(r\\ge2\\), cumulant order \\(k=r+1\\), \\(s\\ge r\\), \\(\\gamma\\in(1/2,1)\\), strictly positive \\(C_\\theta,C_g,C_q,\\psi_\\eta,\\psi_\\xi,\\delta,\\sigma\\), and nonnegative nonincreasing sequences \\(\\epsilon_{1n}\\) and \\(\\epsilon_{2n}\\) on positive indices. Work on a measurable covariate space with observations \\(O=(X,T,Y)\\), and fix a probability law \\(P\\) with real functional \\(\\theta_0(P)\\), measurable conditional means \\(g_0(X)=E_P[T\\mid X]\\) and \\(q_0(X)=E_P[Y\\mid X]\\), integrable \\(T\\) and \\(Y\\), and deterministic measurable supplied regression-code sequences for treatment and outcome.\n\nFor each library depth \\(d\\), let \\(\\mathscr C_d\\) be the deterministic finite library of rational circles represented by the positive rational radii \\(\\rho=j+1\\), \\(0\\le j<d\\). For a realized sample indexed by \\(\\{0,\\ldots,n-1\\}\\), form the empirical transforms \\(\\widehat F_{a,n}\\) and \\(\\widehat G_{a,n}\\) on the prespecified deterministic fold \\(a\\in\\{0,1\\}\\), using indices below \\(n/2\\) for \\(a=0\\) and indices at least \\(n/2\\) for \\(a=1\\). For a circle \\(C\\in\\mathscr C_d\\), \\(C=\\{\\rho e^{it}:0\\le t\\le2\\pi\\}\\), on which the empirical boundary modulus is certified positive, the candidate record consists of quantities definitionally computed from the empirical contour integrands\n\\[\n W_{a,C}(t)=\\rho e^{it}\n \\frac{\\widehat F'_{a,n}(\\rho e^{it})}\n      {\\widehat F_{a,n}(\\rho e^{it})},\n \\qquad\n V_{a,C}(t)=\\rho e^{it}\n \\frac{\\widehat G_{a,n}(\\rho e^{it})}\n      {\\widehat F_{a,n}(\\rho e^{it})}.\n\\]\nSpecifically, the record contains a rational interval enclosure of the boundary modulus \\(\\inf_{z\\in C}|\\widehat F_{a,n}(z)|\\), a complex rational interval enclosure for \\((2\\pi)^{-1}\\int_0^{2\\pi}W_{a,C}(t)\\,dt\\), a complex rational interval enclosure for \\((2\\pi)^{-1}\\int_0^{2\\pi}V_{a,C}(t)\\,dt\\), and a rational interval enclosure of the angular variance\n\\[\n \\widehat v_{a,C}\n =\\frac1{2\\pi}\\int_0^{2\\pi}\n \\left|V_{a,C}(t)-\n \\frac1{2\\pi}\\int_0^{2\\pi}V_{a,C}(u)\\,du\\right|^2dt.\n\\]\nEach enclosure is accompanied by its soundness certificate for the displayed empirical quantity, and the actual empirical transforms on the stated deterministic fold are the transform inputs of the schema. These records are candidate data for one realized sample, one deterministic inference fold, and one rational circle.",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "OpenQuestions.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "a44123b98c34c2e2",
+          "52d7d349ff0496aa",
+          "411ca7a1d7e9d6cc",
+          "59dfa1002247b14d"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "def:ace-comparison-subclass",
+      "kind": "definition",
+      "title": "ACE comparison subclass \\(\\mathcal P_{\\mathrm{NG},n}^{\\mathrm{ACE}}\\)",
+      "status": "matched",
+      "paper_statement": "Relative to \\cref{obj:def:non-gaussian-class}, define\n\\[\n\\mathcal P_{\\mathrm{NG},n}^{\\mathrm{ACE}}\n=\n\\left\\{\nP\\in\\mathcal P_{\\mathrm{NG},n}:\n\\|\\bar g_n-g_0\\|_{L^s(P_X)}\\le\\varepsilon_{1,n},\n\\quad\n\\|\\bar q_n-q_0\\|_{L^s(P_X)}\\le\\varepsilon_{2,n}\n\\right\\}.\n\\]\nThus \\(\\mathcal P_{\\mathrm{NG},n}^{\\mathrm{ACE}}\\) is the subclass of the broad spectral class that satisfies both supplied-code restrictions.",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Basic.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "f153e2d18a795b78",
+          "52d7d349ff0496aa",
+          "411ca7a1d7e9d6cc",
+          "e909f5736a146e24",
+          "e6bf1c891aa19967",
+          "e1dcc659cb2e048c"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "def:certified-contour-arithmetic-substrate",
+      "kind": "definition",
+      "title": "Certified contour arithmetic substrate \\(\\mathsf{CCIA}_{\\mathrm{build}}\\)",
+      "status": "matched",
+      "paper_statement": "The paper-independent bounded-build obligation \\(\\mathsf{CCIA}_{\\mathrm{build}}\\) is the following finite implementation specification. A certified real record consists of rational closed intervals \\(I_m=[I_m^-,I_m^+]\\), an executable modulus \\(\\mu:\\mathbb Q_{>0}\\to\\mathbb N\\), and the semantic contract\n\\[\nx\\in I_{m+1}\\subseteq I_m,\n\\qquad\nI_{\\mu(e)}^+-I_{\\mu(e)}^-\\le e.\n\\]\nA positive record additionally supplies a rational \\(p>0\\) such that \\(p\\le x\\). Executable code is restricted to inspecting the interval, modulus, and positivity fields.\n\nFor rational intervals \\(A=[a_-,a_+]\\) and \\(B=[b_-,b_+]\\), define\n\\[\nA+B=[a_-+b_-,a_++b_+],\n\\qquad\nA-B=[a_--b_+,a_+-b_-],\n\\]\nand\n\\[\nAB=\n\\left[\n\\min\\{a_-b_-,a_-b_+,a_+b_-,a_+b_+\\},\n\\max\\{a_-b_-,a_-b_+,a_+b_-,a_+b_+\\}\n\\right].\n\\]\nA complex rectangle is \\(A+iB\\). Complex addition, subtraction, conjugation, and multiplication are implemented by these endpoint operations and\n\\[\n(A+iB)(C+iD)=(AC-BD)+i(AD+BC).\n\\]\nFor \\(A=[a_-,a_+]\\), set\n\\[\n\\operatorname{sq}_{-}(A)=\n\\begin{cases}\n0,&a_-\\le0\\le a_+,\\\\\n\\min\\{a_-^2,a_+^2\\},&\\text{otherwise},\n\\end{cases}\n\\qquad\n\\operatorname{sq}_{+}(A)=\\max\\{a_-^2,a_+^2\\}.\n\\]\nThen \\(|A+iB|^2\\) is enclosed by the rational interval obtained by adding the corresponding square bounds. Rational bisection between nonnegative rational endpoints gives lower and upper square-root enclosures: after \\(q\\) bisections their width is at most the initial width times \\(2^{-q}\\). This supplies certified modulus lower and upper bounds. Division is the guarded operation\n\\[\n\\frac{A+iB}{C+iD}\n=\n(A+iB)(C-iD)(C^2+D^2)^{-1},\n\\]\nexecuted when the modulus routine has returned a rational lower bound \\(m>0\\); outward division by the positive rational interval enclosing \\(C^2+D^2\\) is then sound.\n\nThe certified name of \\(\\pi\\) is constructed from Machin's identity\n\\[\n\\pi=16\\arctan(1/5)-4\\arctan(1/239).\n\\]\nFor \\(0<x<1\\), the first \\(N+1\\) terms of\n\\[\n\\arctan x=\\sum_{j=0}^{N}(-1)^j\\frac{x^{2j+1}}{2j+1}+R_N(x),\n\\qquad\n|R_N(x)|\\le\\frac{x^{2N+3}}{2N+3},\n\\]\ngive rational nested enclosures after intersecting the first \\(m+1\\) requested enclosures. If \\(e=p/q>0\\) is in lowest terms, the explicit choice \\(N=5q+5\\) makes the propagated Machin remainder smaller than \\(e\\), giving an effective modulus with finite fuel.\n\nFor a rational interval contained in \\([-B,B]\\), with rational \\(B\\ge0\\), evaluate the Taylor polynomials for \\(\\exp\\), \\(\\sin\\), and \\(\\cos\\) by the preceding interval operations. The Lagrange remainders are bounded respectively by\n\\[\n3^{\\lceil B\\rceil}\\frac{B^{N+1}}{(N+1)!},\n\\qquad\n\\frac{B^{N+1}}{(N+1)!},\n\\qquad\n\\frac{B^{N+1}}{(N+1)!}.\n\\]\nFor a requested rational error \\(e=p/q>0\\), take\n\\[\nN=\\lceil2B\\rceil+q+2\\lceil B\\rceil+2.\n\\]\nAfter the index \\(\\lceil2B\\rceil\\), successive absolute Taylor terms decrease by at least a factor \\(1/2\\); since \\(3^{\\lceil B\\rceil}<2^{2\\lceil B\\rceil}\\) and \\(2^{-q}\\le q^{-1}\\le e\\), this displayed \\(N\\) gives a sound error at most \\(e\\). Finite intersections make the output rectangles nested. Hence\n\\[\n\\exp(x+iy)=\\exp(x)\\{\\cos y+i\\sin y\\}\n\\]\nhas a nested complex-rectangle extension with an effective modulus on every bounded input rectangle. Combining the constructed \\(\\pi\\) name with these trigonometric operations gives, from a positive radius record \\(\\mathfrak r\\) and integers \\(N\\ge1\\) and \\(0\\le q<N\\), certified circle-node records for\n\\[\nr\\exp(2\\pi iq/N)\n\\quad\\text{and}\\quad\n2\\pi i r\\exp(2\\pi iq/N).\n\\]\n\nFinite rectangle sums and products are primitive recursive. If a complex-valued function on \\([0,1]\\) has a supplied rational Lipschitz bound \\(L\\), a uniform mesh with\n\\[\nN_{\\mathrm{mesh}}=\\lceil L/e\\rceil+1\n\\]\nhas oscillation at most \\(e\\) on each cell. Evaluating every node to a rational error budget divided by the displayed finite number of operations therefore yields sound finite infimum, supremum, and trapezoidal-integral enclosures. Their fuel consists of \\(N_{\\mathrm{mesh}}+1\\) node calls, the displayed Taylor cutoffs, square-root bisection cutoffs, and a finite number of endpoint operations. Absolute value of a real interval is implemented by the square-free endpoint rule implicit in \\(\\operatorname{sq}_{-}\\) and \\(\\operatorname{sq}_{+}\\), and has the same compositional modulus property.\n\nA concrete implementation discharges \\(\\mathsf{CCIA}_{\\mathrm{build}}\\) exactly when it implements these algorithms, exports their soundness and effective-modulus contracts, and compiles the resulting module. This definition records the explicit bounded-build obligation. Later executable conclusions are conditional on a compiled build satisfying this specification.",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "CausalSmith.Stat.SaPlmCumulantConverse.complexCertifiedIntervalArithmetic",
+        "file": "Helpers/BoundedCertifiedComplex.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "f9a84a69542ce470"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "def:contour-bank-handle",
+      "kind": "definition",
+      "title": "Certified contour-bank handle $\\mathfrak p_{\\star}$",
+      "status": "matched",
+      "paper_statement": "Let \\(p\\) be a parameter record with sample size \\(n\\in\\mathbb N\\), \\(1\\le n\\), orders \\(r,k\\in\\mathbb N\\) satisfying \\(k=r+1\\) and \\(2\\le r\\), exponent \\(s\\in[0,\\infty]\\) satisfying \\(r\\le s\\), probability level \\(\\gamma\\in(1/2,1)\\), constants \\(C_{\\theta},C_g,C_q,\\psi_{\\eta},\\psi_{\\xi},\\delta,\\sigma>0\\), and sequences \\(\\varepsilon_1,\\varepsilon_2:\\mathbb N\\to\\mathbb R\\) satisfying \\(\\varepsilon_\\ell(t)\\ge0\\) for \\(t\\ge1\\) and \\(\\varepsilon_\\ell(j)\\le\\varepsilon_\\ell(i)\\) whenever \\(1\\le i\\le j\\), for \\(\\ell=1,2\\). Let \\(\\operatorname{Name}(x)\\) denote a supplied certified-real record with value \\(x\\), and let \\(\\operatorname{Name}_{+}(x)\\) denote such a record together with a rational lower-bound witness \\(\\ell>0\\) satisfying \\(\\ell\\le x\\). As part of the experiment convention, fix the supplied record\n\\[\n \\mathfrak p_{\\star}=\n \\bigl(k_{\\star},\\mathfrak d_{\\star},\\mathfrak p_{\\eta,\\star},\n       \\mathfrak r_{0,\\star},\\mathfrak r_{1,\\star}\\bigr),\n\\]\nwhere \\(k_{\\star}\\) is exact with \\(k_{\\star}=k\\) and\n\\[\n \\mathfrak d_{\\star}:\\operatorname{Name}_{+}(\\delta),\\quad\n \\mathfrak p_{\\eta,\\star}:\\operatorname{Name}_{+}(\\psi_{\\eta}),\\quad\n \\mathfrak r_{0,\\star}:\\operatorname{Name}_{+}(R_0),\\quad\n \\mathfrak r_{1,\\star}:\\operatorname{Name}_{+}(R_1).\n\\]\nThe value contracts are\n\\[\n R_0=(2^{k+4}k!)^{1/(k-2)}\n       (\\psi_{\\eta}^2/\\delta)^{1/(k-2)},\n \\qquad R_1=R_0+1.\n\\]\nWriting \\(A_k=(2^{k+4}k!)^{1/(k-2)}\\) for the numerical factor, this reads \\(R_0=A_k(\\psi_{\\eta}^2/\\delta)^{1/(k-2)}\\).\nThe record \\(\\mathfrak p_{\\star}\\) is the primitive certified input shared by the bank and the estimator for this parameter record.  The bank data assembled below from \\(p\\) and \\(\\mathfrak p_{\\star}\\) is written \\(B\\).\n\nInvoke the supplied moduli of \\(\\mathfrak p_{\\eta,\\star}\\) and \\(\\mathfrak r_{1,\\star}\\) at error one. If the returned intervals have rational upper endpoints \\(u_{\\psi}\\) and \\(u_R\\), define\n\\[\n U_{\\psi}=\\left\\lceil\\max\\{1,u_{\\psi}\\}\\right\\rceil,\n \\qquad\n U_R=\\left\\lceil\\max\\{1,u_R\\}\\right\\rceil,\n \\qquad\n N_{\\mathrm{cert}}=4U_{\\psi}^2(U_R+2)^3.\n\\]\nSet\n\\[\n m_{\\star}=N_{\\mathrm{cert}}+3,\n \\qquad d_{\\star}=2^{-m_{\\star}},\n \\qquad h_{\\star}=d_{\\star}/3,\n \\qquad J_{\\mathrm{base}}=2^{m_{\\star}-1}.\n\\]\nThe bank therefore contains\n\\[\n J=J_{\\mathrm{base}}+1\n\\]\ncircles, indexed by \\(j\\in\\{0,\\ldots,J_{\\mathrm{base}}\\}\\).\nFor each \\(j=0,\\ldots,J_{\\mathrm{base}}\\), use certified addition on the fixed record \\(\\mathfrak r_{0,\\star}\\) and the rational point record for \\(1/4+j2^{-m_{\\star}}\\) to form\n\\[\n \\mathfrak\\rho_j\n =\\mathfrak r_{0,\\star}+\\operatorname{Name}(1/4+j2^{-m_{\\star}}).\n\\]\nThe associated real-valued radius field is\n\\[\n \\rho_j=(\\mathfrak\\rho_j).\\operatorname{value}\n       =R_0+1/4+j2^{-m_{\\star}}.\n\\]\n\nDefine the integers\n\\[\n e_{\\star}=8U_RU_{\\psi}^2(U_R+1)^2,\n \\qquad\n d_{\\star}^{\\mathrm{den}}=3(2U_R+1),\n\\]\n\\[\n u_{\\star}=2e_{\\star}\n +N_{\\mathrm{cert}}(m_{\\star}+d_{\\star}^{\\mathrm{den}}).\n\\]\nDefine the rational dyadic certificate and its real value by\n\\[\n a_{\\star,\\mathbb Q}=2^{-u_{\\star}}>0,\n \\qquad\n a_{\\star}=(a_{\\star,\\mathbb Q}:\\mathbb R).\n\\]\nEvery output datum is obtained by the displayed finite modulus calls, rational endpoint operations, certified additions with rational point records, and primitive recursion over the displayed integer bounds. The construction is a finite certified procedure in the supplied record \\(\\mathfrak p_{\\star}\\).",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Helpers/ContourBank.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "12fba4f27336ad97",
+          "52d7d349ff0496aa",
+          "c8363c5356d852bd",
+          "98c51ed9fecff346"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "def:adaptive-contour-estimator",
+      "kind": "definition",
+      "title": "Adaptive contour statistic \\(\\widehat\\theta_{\\mathrm{spec},n}\\)",
+      "status": "matched",
+      "paper_statement": "The construction has a mathematical layer and a represented-data layer, both relative to exactly the same experiment-wide parameter and primitive records.\n\nLet \\(\\mathcal X\\) be a measurable covariate space. Fix a parameter record \\(p\\) consisting of a positive sample size \\(n\\), natural numbers \\(r\\) and \\(k\\) with \\(k=r+1\\) and \\(2\\le r\\), an exponent \\(s\\in[0,\\infty]\\) with \\(r\\le s\\), a probability level \\(\\gamma\\in(1/2,1)\\), strictly positive constants \\(C_{\\theta},C_g,C_q,\\psi_{\\eta},\\psi_{\\xi},\\delta,\\sigma\\), and two sequences \\(\\varepsilon_{1n},\\varepsilon_{2n}:\\mathbb N\\to\\mathbb R\\) that are nonnegative on positive indices and nonincreasing there: for \\(\\ell\\ge1\\), \\(0\\le\\varepsilon_{1n}(\\ell)\\) and \\(0\\le\\varepsilon_{2n}(\\ell)\\), and whenever \\(1\\le a\\le b\\), \\(\\varepsilon_{1n}(b)\\le\\varepsilon_{1n}(a)\\) and \\(\\varepsilon_{2n}(b)\\le\\varepsilon_{2n}(a)\\). Fix a deterministic treatment-regression code sequence; the estimator records measurability of its current \\(n\\)th code as its public-domain proposition.\n\nFix the record \\(\\mathfrak p_{\\star}\\) from the contour-bank handle: its natural-name field equals \\(k\\), its positive certified-real fields represent \\(\\delta\\), \\(\\psi_{\\eta}\\), \\(R_0\\), and \\(R_1\\), and its value contracts are\n\\[\n R_0=A_k\\left(\\frac{\\psi_{\\eta}^2}{\\delta}\\right)^{(k-2)^{-1}},\n \\qquad R_1=R_0+1.\n\\]\nOnce for all, fix one actual range record\n\\[\n \\mathfrak c_{\\theta,\\star}:\\operatorname{Name}_{+}(C_{\\theta}).\n\\]\nThese records are fixed for the estimator before the law or sample varies, and they remain the primitive names used throughout the construction.\n\nAt the mathematical layer, for an ordinary real observation coordinate set\n\\[\n \\mathcal I_m(x)=\n \\left[2^{-m}\\lfloor2^m x\\rfloor,\n       2^{-m}\\{\\lfloor2^m x\\rfloor+1\\}\\right],\n \\qquad m\\ge1.\n\\]\nCanonicalize \\(T_i\\), \\(Y_i\\), and \\(\\bar g_n(X_i)\\) through these floor-dyadic records, where \\(\\bar g_n\\) is the projection of the current treatment-regression code onto \\([-C_g,C_g]\\). Run the finite rational procedure below with those observation records and with the already fixed, unchanged records \\(\\mathfrak p_{\\star}\\) and \\(\\mathfrak c_{\\theta,\\star}\\). The ordinary program is the resulting finite-rational result, the full trace is its trace field, and the ordinary value is the projection of its raw rational output onto the fixed certified range \\([-C_{\\theta},C_{\\theta}]\\). This defines \\(\\widehat\\theta_{\\mathrm{spec},n}\\) as a total map on ordinary real samples relative to the fixed full primitive record. The canonical observation digits are part of this mathematical interpretation.\n\nAt the represented-data layer, callers supply the observation record\n\\[\n \\widetilde{\\mathfrak s}=\n \\bigl((\\mathfrak t_i,\\mathfrak y_i,\\mathfrak g_i)_{i=1}^n\\bigr),\n\\]\nwhere \\(\\mathfrak t_i\\), \\(\\mathfrak y_i\\), and \\(\\mathfrak g_i\\) are supplied certified digital records for \\(T_i\\), \\(Y_i\\), and \\(\\bar g_n(X_i)\\). The represented program forms the full internal input\n\\[\n \\mathfrak s_{\\star}=\n \\bigl((\\mathfrak t_i,\\mathfrak y_i,\\mathfrak g_i)_{i=1}^n,\n       \\mathfrak p_{\\star},\\mathfrak c_{\\theta,\\star}\\bigr)\n\\]\nby adjoining the displayed fixed primitive components. For each supplied compiled bounded spectral adapter, consisting of the build together with pilot-boundary, winding-quadrature, and evaluation-quadrature entry points satisfying their exact correspondence contracts with the built finite programs, the represented program applies those entry points to this full internal input. Its output-correspondence proposition asserts that, for every ordinary data set, the represented result on the canonical represented input equals the ordinary finite-rational result, the two traces are equal, and the represented output name certifies the ordinary clipped value.\n\nInvoke the contour-bank handle on \\(\\mathfrak p_{\\star}\\), and form \\(\\mathfrak z_i=\\mathfrak t_i-\\mathfrak g_i\\) by certified subtraction. At every certified circle node, use the substrate's complex rectangle operations and nested complex-exponential extension to construct, by finite sums, enclosures of\n\\[\n \\widehat F_{a,n}^{(p)}(z)\n =|I_a|^{-1}\\sum_{i\\in I_a}Z_{n,i}^{p}e^{zZ_{n,i}},\n \\quad p\\in\\{0,1,2\\},\n\\]\nand\n\\[\n \\widehat G_{a,n}^{(p)}(z)\n =|I_a|^{-1}\\sum_{i\\in I_a}Y_iZ_{n,i}^{p}e^{zZ_{n,i}},\n \\quad p\\in\\{0,1\\}.\n\\]\nEvery node precision is obtained by applying the compositional modulus to a rational error budget.\n\nFor explicit mesh fuel, refine each observation record at error one and take the resulting rational upper magnitude bounds \\(U_{Z,i}\\), \\(U_{Y,i}\\), and \\(U_{\\rho,j}\\). Use \\(e^x\\le3^{\\lceil x\\rceil}\\) for \\(x\\ge0\\) and \\(\\pi<4\\) to turn the finite empirical derivative sums into rational bounds for all functions below. With \\(z_j(t)=\\rho_je^{2\\pi it}\\), put\n\\[\n W_{0j}(t)=\n \\rho_je^{2\\pi it}\n \\frac{\\widehat F'_{0,n}(z_j(t))}\n      {\\widehat F_{0,n}(z_j(t))},\n\\]\nand\n\\[\n V_j(t)=\n \\rho_je^{2\\pi it}\n \\frac{\\widehat G_{1,n}(z_j(t))}\n      {\\widehat F_{1,n}(z_j(t))}.\n\\]\nThe integrand \\(V_j\\) is NOT normalized at this stage: the certified zero count \\(N_j\\) divides the finished mesh enclosure, not the integrand.\nIf a rational lower modulus certificate is \\(m>0\\), use\n\\[\n |W'_{0j}(t)|\\le\n 64\\left[\n \\rho_j\\frac{\\sup|\\widehat F'_{0,n}|}{m}\n +\\rho_j^2\\left\\{\n \\frac{\\sup|\\widehat F''_{0,n}|}{m}\n +\\frac{\\sup|\\widehat F'_{0,n}|^2}{m^2}\n \\right\\}\\right],\n\\]\nand\n\\[\n |V'_j(t)|\\le\n 64\\left[\n \\rho_j\\frac{\\sup|\\widehat G_{1,n}|}{m}\n +\\rho_j^2\\left\\{\n \\frac{\\sup|\\widehat G'_{1,n}|}{m}\n +\\frac{\\sup|\\widehat G_{1,n}|\\sup|\\widehat F'_{1,n}|}{m^2}\n \\right\\}\\right].\n\\]\nBoth displays carry the rational constant \\(64\\) rather than the analytically tight factor coming from \\(dz_j/dt\\): the whole mesh schedule is evaluated in \\(\\mathbb Q\\), so the certified Lipschitz constant must itself be rational, and enlarging it only refines the mesh.\nFor a rational tolerance \\(e>0\\) and any resulting rational bound \\(L\\), take the mesh size \\(\\lceil L/e\\rceil+1\\), and allocate node error by the finite number of operations. Thus every precision and mesh has displayed finite fuel.\n\nOn the pilot fold, compute for every \\(j\\) a sound interval of width at most \\(a_{\\star}/64\\) enclosing \\(\\inf_{C_j}|\\widehat F_{0,n}|\\). If its lower endpoint \\(m_j\\) is positive, guarded division and finite quadrature enclose\n\\[\n \\int_0^1W_{0j}(t)\\,dt\n =\\frac{1}{2\\pi i}\\oint_{C_j}\n   \\frac{\\widehat F'_{0,n}(z)}{\\widehat F_{0,n}(z)}\\,dz\n\\]\nin a complex rectangle whose coordinate widths are strictly below \\(1/4\\). Record \\(N_j\\) exactly when the real interval contains a unique nonnegative integer and the imaginary interval contains zero; otherwise reject the circle. A circle is admissible exactly when \\(m_j\\ge a_{\\star}/2\\) and \\(N_j\\ge1\\). Select an admissible circle having the greatest rational lower endpoint, with smallest-index tie-break, and return the certified zero name if the admissible set is empty.\n\nOn the evaluation fold, compute the analogous modulus enclosure and return the certified zero name if its lower endpoint is below \\(a_{\\star}/4\\). Otherwise guarded division and finite quadrature enclose the unnormalized integral\n\\[\n \\int_0^1V_j(t)\\,dt\n =\\frac{1}{2\\pi i}\\oint_{C_j}\n   \\frac{\\widehat G_{1,n}(z)}{\\widehat F_{1,n}(z)}\\,dz,\n\\]\nand dividing that enclosure by \\(N_j\\) afterwards gives a rectangle of coordinate radius at most \\(1/n\\) enclosing\n\\[\n \\frac{1}{N_j2\\pi i}\\oint_{C_j}\n   \\frac{\\widehat G_{1,n}(z)}{\\widehat F_{1,n}(z)}\\,dz.\n\\]\nLet \\(y\\in\\mathbb Q\\) be the rational midpoint of the real interval of that normalized rectangle, represented by its rational point name. Projection uses certified addition, subtraction, multiplication by \\(1/2\\), and the interval absolute-value operation to construct a certified name whose value is\n\\[\n \\operatorname{clip}_{C_{\\theta}}(y)\n =\\frac{|y+C_{\\theta}|-|y-C_{\\theta}|}{2}\n =\\Pi_{[-C_{\\theta},C_{\\theta}]}(y).\n\\]\nThis certified-real name is the program output.\n\nAn execution trace is the finite list of input-modulus calls, returned precisions, Taylor and square-root cutoffs, mesh sizes, rational rectangle operations, guarded divisions, rational endpoint comparisons, fallback decisions, and the tie-break. Identical ordinary samples with the same parameter, treatment-regression code sequence, and fixed primitive records have identical ordinary traces and output records; identical represented observation records with the same fixed primitive records and the same compiled bounded spectral adapter have identical represented traces and output records. The value represented by the ordinary output is, by definition, the ordinary-sample statistic evaluated with the same fixed primitive records. The procedure uses \\(\\bar g_n\\). The ordinary program, ordinary value, and full trace are defined directly by the canonical represented input and the finite rational adapter; the represented output correspondence is the stated contract for each supplied compiled bounded spectral adapter.",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "(composite)",
+        "file": "Helpers/SpectralEstimator.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "ef56ba274bb47db0",
+          "52d7d349ff0496aa",
+          "c8363c5356d852bd",
+          "982a142082b736f0",
+          "376b92fda1ee71a9"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "thm:known-zero-instrument",
+      "kind": "theorem",
+      "title": "Known zero instrument",
+      "status": "matched",
+      "paper_statement": "Fix \\(n\\ge 1\\) and a law \\(P\\in\\mathcal P_{\\mathrm{NG},n}\\) as in \\cref{obj:def:non-gaussian-class}. Let\n\\[\nM(z)=E_P[e^{z\\eta}],\n\\qquad\nZ_n=T-\\bar g_n(X),\n\\qquad\nH_n(z)=E_P[e^{z\\{g_0(X)-\\bar g_n(X)\\}}].\n\\]\nSuppose that:\n\\begin{itemize}\n\\item \\textbf{(Order.)} \\(\\ell\\ge 1\\).\n\\item \\textbf{(Zero.)} \\(z_0\\in\\mathbb C\\) satisfies \\(M(z_0)=0\\).\n\\item \\textbf{(Multiplicity.)} The analytic order of \\(M\\) at \\(z_0\\) is \\(\\ell\\).\n\\end{itemize}\nFor the zero-based instrument \\(J_{z_0,\\ell}(w)=w^{\\ell-1}e^{z_0w}\\) from \\cref{obj:def:zero-instrument}, the following identities hold:\n\\[\n\\forall d\\in\\mathbb R,\\qquad E_P[J_{z_0,\\ell}(\\eta+d)]=0,\n\\]\n\\[\nE_P[J_{z_0,\\ell}(Z_n)\\mid X]=0\n\\qquad P\\text{-a.s.},\n\\]\nand\n\\[\nE_P[Z_nJ_{z_0,\\ell}(Z_n)]\n=\nM^{(\\ell)}(z_0)H_n(z_0).\n\\]\nConsequently, whenever \\(E_P[Z_nJ_{z_0,\\ell}(Z_n)]\\ne 0\\),\n\\[\n\\theta_0\n=\n\\frac{E_P[YJ_{z_0,\\ell}(Z_n)]}\n{E_P[Z_nJ_{z_0,\\ell}(Z_n)]}.\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "CausalSmith.Stat.SaPlmCumulantConverse.known_zero_instrument",
+        "file": "T1_KnownZeroInstrument.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "367834c9a2a87002"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": "faithful"
+      }
+    },
+    {
+      "obj_id": "lem:observable-factorization",
+      "kind": "lemma",
+      "title": "Observable transform factorization",
+      "status": "matched",
+      "paper_statement": "Let \\(n\\ge 1\\), and let \\(P\\in\\mathcal P_{\\mathrm{NG},n}\\) satisfy \\cref{obj:def:non-gaussian-class}. Put\n\\[\nZ_n=T-\\bar g_n(X),\\qquad\nD_n(X)=g_0(X)-\\bar g_n(X),\n\\]\nand let \\(b_n(X)=q_0(X)-\\theta_0D_n(X)\\), as in \\cref{obj:def:outcome-contamination}. Define, for \\(z\\in\\mathbb C\\),\n\\[\nF_n(z)=E_P[e^{zZ_n}],\\quad\nM(z)=E_P[e^{z\\eta}],\\quad\nH_n(z)=E_P[e^{zD_n(X)}],\n\\]\nand\n\\[\nG_n(z)=E_P[Ye^{zZ_n}],\\qquad\nB_n(z)=E_P[b_n(X)e^{zD_n(X)}].\n\\]\nThen, for every \\(z\\in\\mathbb C\\),\n\\[\nF_n(z)=M(z)H_n(z)\n\\]\nand\n\\[\nG_n(z)=\\theta_0 F_n'(z)+M(z)B_n(z).\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "CausalSmith.Stat.SaPlmCumulantConverse.observable_factorization",
+        "file": "Helpers/Transforms.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "c7761794817af66a"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": "faithful"
+      }
+    },
+    {
+      "obj_id": "thm:exact-contour-identification",
+      "kind": "theorem",
+      "title": "Exact contour identification",
+      "status": "matched",
+      "paper_statement": "Fix \\(n\\ge 1\\), a law \\(P\\in\\mathcal P_{\\mathrm{NG},n}\\) as in \\cref{obj:def:non-gaussian-class}, and a certified contour-bank input \\(\\mathfrak p_{\\star}\\) as in \\cref{obj:def:contour-bank-handle}. For any bank index \\(j\\in\\{0,\\ldots,J_{\\mathrm{base}}\\}\\), let \\(C_j\\) be the positively oriented circle with radius \\(\\rho_j\\), and let\n\\[\nF_n(z)=E_P[e^{zZ_n}],\\qquad\nG_n(z)=E_P[Ye^{zZ_n}],\\qquad\nH_n(z)=E_P[e^{z\\{g_0(X)-\\bar g_n(X)\\}}].\n\\]\nAssume:\n\\begin{itemize}\n\\item \\textbf{(Residual zero-freeness.)} \\(F_n(z)\\ne 0\\) for every \\(z\\in C_j\\).\n\\item \\textbf{(Nuisance zero-freeness.)} \\(H_n(z)\\ne 0\\) for every \\(z\\) on or inside \\(C_j\\).\n\\item \\textbf{(Positive contour count.)} The zero count \\(N_{C_j}(F_n)\\), counted with multiplicity inside \\(C_j\\), satisfies \\(N_{C_j}(F_n)\\ge 1\\).\n\\end{itemize}\nThen the contour functional of \\cref{obj:def:contour-functional} identifies the partially linear coefficient and is given by the normalized contour integral:\n\\[\n(\\theta_0(P):\\mathbb C)\n=\n\\Theta_{C_j}(F_n,G_n)\n=\n\\{N_{C_j}(F_n)\\,2\\pi i\\}^{-1}\n\\oint_{C_j}\\frac{G_n(z)}{F_n(z)}\\,dz .\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "CausalSmith.Stat.SaPlmCumulantConverse.exact_contour_identification",
+        "file": "T2_ExactContourIdentification.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "cf025b56fbddc656"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": "faithful"
+      }
+    },
+    {
+      "obj_id": "lem:luxemburg-mgf-envelope",
+      "kind": "lemma",
+      "title": "Luxemburg MGF envelope",
+      "status": "matched",
+      "paper_statement": "Let \\(P\\) be a probability law and let \\(\\psi>0\\). Let \\(W\\) be a real-valued random variable under \\(P\\). Suppose that:\n\\begin{itemize}\n\\item \\textbf{(Regularity.)} \\(W\\) is measurable and \\(W\\in L^1(P)\\).\n\\item \\textbf{(Centering.)} \\(E_P W=0\\).\n\\item \\textbf{(Luxemburg envelope.)} Under the Luxemburg sub-Gaussian convention of \\cref{obj:def:model-parameters}, \\(\\exp(W^2/\\psi^2)\\in L^1(P)\\) and\n\\[\nE_P\\exp(W^2/\\psi^2)\\le 2.\n\\]\n\\end{itemize}\nThen, for every \\(t\\in\\mathbb R\\),\n\\[\nE_P e^{tW}\\le \\exp(4\\psi^2t^2).\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "CausalSmith.Stat.SaPlmCumulantConverse.integral_exp_mul_le_exp_four_mul_sq_of_luxemburg",
+        "file": "Helpers/LuxemburgMGF.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "bc8d84f544f6b0e5"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": "faithful"
+      }
+    },
+    {
+      "obj_id": "lem:zero-localization",
+      "kind": "lemma",
+      "title": null,
+      "status": "matched",
+      "paper_statement": "Fix a primitive parameter tuple \\(p\\) and a law \\(P\\) for \\(O=(X,T,Y)\\). Assume:\n\\begin{itemize}\n\\item \\(k=r+1\\) with \\(r\\ge2\\);\n\\item \\(\\eta=T-g_0(X)\\) is centered;\n\\item \\(\\|\\eta\\|_{\\psi_2}\\le\\psi_{\\eta}\\) under the convention in \\cref{obj:ass:eta-subgaussian}; and\n\\item \\(|\\kappa_k(\\eta)|\\ge\\delta\\) as in \\cref{obj:ass:cumulant-separation}.\n\\end{itemize}\nDefine\n\\[\nA_k=(2^{k+4}k!)^{1/(k-2)},\\qquad\nR_0=A_k(\\psi_{\\eta}^2/\\delta)^{1/(k-2)},\\qquad\nM(z)=E_P[e^{z\\eta}].\n\\]\nThen there exists \\(z_0\\in\\mathbb C\\) such that \\(|z_0|\\le R_0\\) and \\(M(z_0)=0\\).",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "CausalSmith.Stat.SaPlmCumulantConverse.zero_localization",
+        "file": "Helpers/Cumulant.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "1215c622ee7f7a01"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": "faithful"
+      }
+    },
+    {
+      "obj_id": "lem:finite-contour-bank",
+      "kind": "lemma",
+      "title": "Finite contour bank",
+      "status": "matched",
+      "paper_statement": "Fix the primitive parameter record \\(p\\), the positive certified-real input record \\(\\mathfrak p_{\\star}\\) of \\cref{obj:def:contour-bank-handle}, an index \\(n\\) with \\(n\\ge 1\\), and a law \\(P\\) in \\(\\mathcal P_{\\mathrm{NG},n}\\) as specified by \\cref{obj:def:non-gaussian-class}. Let \\(B\\) be the contour-bank data computed from \\((p,\\mathfrak p_{\\star})\\), with constants \\(U_{\\psi},U_R,N_{\\mathrm{cert}},m_{\\star},d_{\\star},h_{\\star},e_{\\star},d_{\\star}^{\\mathrm{den}},u_{\\star},a_{\\star}\\), total size \\(J\\), and radii \\(\\rho_j\\).\n\nThen the following properties hold:\n\\begin{itemize}\n\\item \\textbf{(Positive certificate.)} \\(a_{\\star}>0\\).\n\\item \\textbf{(Bookkeeping identities.)}\n\\[\n\\begin{gathered}\nN_{\\mathrm{cert}}=4U_{\\psi}^2(U_R+2)^3,\\qquad\nm_{\\star}=N_{\\mathrm{cert}}+3,\\qquad\nJ=2^{m_{\\star}-1}+1,\\\\\nd_{\\star}=2^{-m_{\\star}},\\qquad\nh_{\\star}=d_{\\star}/3,\\qquad\ne_{\\star}=8U_RU_{\\psi}^2(U_R+1)^2,\\\\\nd_{\\star}^{\\mathrm{den}}=3(2U_R+1),\\qquad\nu_{\\star}=2e_{\\star}+N_{\\mathrm{cert}}\\bigl(m_{\\star}+d_{\\star}^{\\mathrm{den}}\\bigr),\\qquad\na_{\\star}=2^{-u_{\\star}} .\n\\end{gathered}\n\\]\n\\item \\textbf{(Bank geometry.)} The radii are strictly increasing and satisfy\n\\[\nR_0<\\rho_j<R_1\n\\]\nfor every bank index \\(j\\).\n\\item \\textbf{(Uniform treatment-noise certificate.)} For the treatment-noise moment-generating function \\(M(z)=E_P[e^{z\\eta}]\\), there is a bank index \\(j\\) such that, with \\(C_j=\\{z\\in\\mathbb C:|z|=\\rho_j\\}\\),\n\\[\nN_{C_j}(M)\\ge 1\n\\]\nand\n\\[\na_{\\star}\\le |M(z)|\\qquad\\text{for every }z\\in C_j .\n\\]\n\\end{itemize}",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "CausalSmith.Stat.SaPlmCumulantConverse.finite_contour_bank",
+        "file": "Helpers/ContourBank.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "6db241ce29272d95"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": "faithful"
+      }
+    },
+    {
+      "obj_id": "lem:gaussian-exponential-square-quarter-scale",
+      "kind": "lemma",
+      "title": "Gaussian square exponential bound",
+      "status": "matched",
+      "paper_statement": "Use the Gaussian-law notation of \\cref{obj:def:model-parameters}. For every positive scale \\(\\psi>0\\), let \\(\\zeta\\sim N(0,(\\psi/4)^2)\\). Then \\(\\exp(\\zeta^2/\\psi^2)\\) is integrable under the law of \\(\\zeta\\), and\n\\[\n\\mathbb E\\exp(\\zeta^2/\\psi^2)\\le 2 .\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "CausalSmith.Stat.SaPlmCumulantConverse.gaussian_exp_sq_integrable_and_integral_le_two",
+        "file": "Helpers/AffineGaussianSubGaussian.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "232becf6d2f61d32"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": "faithful"
+      }
+    },
+    {
+      "obj_id": "lem:population-numerator-envelope",
+      "kind": "lemma",
+      "title": "Population numerator envelope",
+      "status": "matched",
+      "paper_statement": "Let \\(p\\) be a parameter record as in \\cref{obj:def:model-parameters}, with sample size \\(n\\), primitive constants \\(C_{\\theta},C_g,C_q,\\psi_{\\eta},\\psi_{\\xi}\\), and outer search radius \\(R_1\\) as in \\cref{obj:def:contour-bank-handle}. Define\n\\[\nC_G(p)=\\left[64\\{C_q^4+4C_{\\theta}^4\\psi_{\\eta}^4+4\\psi_{\\xi}^4\\}+2\\exp\\{16R_1C_g+16R_1^2\\psi_{\\eta}^2\\}\\right]^{1/2}.\n\\]\nLet \\(m\\) be a model with observed-data law \\(P\\) as in \\cref{obj:def:plm-model}. Suppose that \\(P\\) belongs to the non-Gaussian class \\(\\mathcal P_{\\mathrm{NG},n}\\) of \\cref{obj:def:non-gaussian-class}, where \\(n\\) is the sample size in \\(p\\). Then, for every \\(z\\in\\mathbb C\\) with \\(|z|\\le R_1\\), the observable outcome-weighted transform \\(G_n(z)=E_P[Ye^{zZ_n}]\\) from \\cref{obj:def:contour-functional} satisfies\n\\[\n|G_n(z)|\\le C_G(p).\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "CausalSmith.Stat.SaPlmCumulantConverse.outcomeResidualTransform_norm_le_populationNumeratorEnvelope",
+        "file": "Helpers/PopulationNumeratorBound.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "d82ee6de9eead407"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": "faithful"
+      }
+    },
+    {
+      "obj_id": "lem:selected-contour-perturbation-bound",
+      "kind": "lemma",
+      "title": "Selected contour perturbation bound",
+      "status": "matched",
+      "paper_statement": "Fix \\(p\\) as in \\cref{obj:def:model-parameters}, the primitive certified record \\(\\mathfrak p_{\\star}\\) of \\cref{obj:def:contour-bank-handle}, the range certified record \\(\\mathfrak c_{\\theta,\\star}\\) of \\cref{obj:def:adaptive-contour-estimator}, a treatment-regression code sequence, and observations \\(O_1,\\ldots,O_n\\) with \\(O=(X,T,Y)\\) as in \\cref{obj:def:plm-model}. Let \\(B\\) be the contour bank generated from \\(p\\) and \\(\\mathfrak p_{\\star}\\), with radii \\(\\rho_j\\) and lower-modulus certificate \\(a_{\\star}\\), and let \\(\\widehat\\theta_{\\mathrm{spec},n}\\) be the canonical certified statistic of \\cref{obj:def:adaptive-contour-estimator}. Let \\(F,G:\\mathbb C\\to\\mathbb C\\), let \\(d,e,C_G,\\mu,\\nu\\in\\mathbb R\\), and let \\(\\vartheta\\in\\mathbb R\\) satisfy \\(|\\vartheta|\\le C_{\\theta}\\).\n\nAssume the following conditions.\n\\begin{itemize}\n\\item \\textbf{(Selector event.)} The canonical selector event holds: \\(d\\ge0\\), \\(e\\ge0\\), \\(C_G\\ge0\\), \\(\\mu>0\\), \\(\\nu>0\\),\n\\[\n\\mu=\\frac{31a_{\\star}}{64},\n\\qquad\n\\nu=\\frac{23a_{\\star}}{64},\n\\qquad\nd\\le \\mu-\\nu,\n\\]\nand, for the canonical represented input built from the sample, there are a bank index \\(j\\) and an integer \\(N\\ge1\\) such that the selector chooses \\(C_j\\), the pilot pass at \\(C_j\\) decodes to \\(N\\), the evaluation-fold modulus lower endpoint at \\(C_j\\) is at least \\(a_{\\star}/4\\), and every \\(z\\in C_j\\) satisfies\n\\[\n\\mu\\le |F(z)|,\\qquad |G(z)|\\le C_G,\\qquad\n|\\widehat F_{1,n}(z)-F(z)|\\le d,\\qquad\n|\\widehat G_{1,n}(z)-G(z)|\\le e .\n\\]\n\\item \\textbf{(Selected-circle integrability.)} For every bank index \\(j\\) selected by the canonical program, the functions\n\\[\nz\\mapsto \\frac{\\widehat G_{1,n}(z)}{\\widehat F_{1,n}(z)}\n\\qquad\\text{and}\\qquad\nz\\mapsto \\frac{G(z)}{F(z)}\n\\]\nare contour integrable on \\(C_j\\).\n\\item \\textbf{(Selected-circle identification.)} For every bank index \\(j\\) selected by the canonical program and every decoded pilot integer \\(N\\), the target is identified by\n\\[\n\\vartheta\n=\n\\Re\\left[\n\\{N\\,2\\pi i\\}^{-1}\n\\oint_{C_j}\\frac{G(z)}{F(z)}\\,dz\n\\right].\n\\]\n\\end{itemize}\nThen\n\\[\n\\left|\\widehat\\theta_{\\mathrm{spec},n}-\\vartheta\\right|\n\\le\nR_1\\max\\{\\nu^{-1},\\,C_G(\\mu\\nu)^{-1}\\}(d+e)\n+\\frac{1}{\\max\\{n,1\\}} .\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "CausalSmith.Stat.SaPlmCumulantConverse.thetaHatSpec_good_event_exact_contour_perturbation",
+        "file": "Helpers/SelectorSoundness.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "8738c99238b539db"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": "faithful"
+      }
+    },
+    {
+      "obj_id": "thm:adaptive-rootn-minimax",
+      "kind": "theorem",
+      "title": "Adaptive root-n minimaxity",
+      "status": "matched",
+      "paper_statement": "Fix \\(r\\ge 2\\) and positive constants \\(\\delta,C_{\\theta},C_g,C_q,\\psi_{\\eta},\\psi_{\\xi}\\).  Then there are constants \\(c>0\\) and \\(C>0\\), depending only on these fixed primitive constants, such that the following statements hold.\n\nFor every measurable covariate space, let \\(p_0\\) be a parameter record whose primitive entries \\(r,\\delta,C_{\\theta},C_g,C_q,\\psi_{\\eta},\\psi_{\\xi}\\) equal the fixed constants above, and fix one experiment-wide record consisting of the certified contour-bank input and the represented range input for \\(p_0\\).  For every parameter record \\(p\\) with the same primitive entries as \\(p_0\\), and for every base model satisfying the usual measurability, conditional-mean, and integrability requirements, write \\(n\\) for the sample size of \\(p\\).  Let \\(\\widehat\\theta_{\\mathrm{spec},n}\\) be the total Borel statistic of \\cref{obj:def:adaptive-contour-estimator}, constructed from the transported fixed records and the base treatment-code sequence.  Define the fixed-code non-Gaussian class\n\\[\n\\mathcal P_{\\mathrm{NG},n}(p;\\mathrm{base})\n=\n\\{P:\\ P\\in\\mathcal P_{\\mathrm{NG},n}\\text{ of }\\cref{obj:def:non-gaussian-class},\\ \n\\bar g_n(P)=\\bar g_n(\\mathrm{base}),\\ \n\\bar q_n(P)=\\bar q_n(\\mathrm{base})\\}.\n\\]\nDefine the fixed-code JMS ACE class\n\\[\n\\mathcal P_{\\mathrm{ACE},n}^{\\mathrm{JMS}}(p;\\mathrm{base})\n=\n\\{P:\\ P\\in\\mathcal P_{\\mathrm{ACE},n}^{\\mathrm{JMS}}\\text{ of }\\cref{obj:def:jms-ace-class},\\ \n\\bar g_n(P)=\\bar g_n(\\mathrm{base}),\\ \n\\bar q_n(P)=\\bar q_n(\\mathrm{base})\\}.\n\\]\n\n\\begin{itemize}\n\\item \\textbf{(Measurable statistic.)}  The statistic \\(\\widehat\\theta_{\\mathrm{spec},n}\\) is measurable.\n\\item \\textbf{(Represented execution.)}  For every compiled bounded spectral adapter satisfying the full canonical build-and-compilation specification for \\(p\\), the transported fixed records, and the base treatment-code sequence, the represented-data execution realizes the same \\(\\widehat\\theta_{\\mathrm{spec},n}\\) as in \\cref{obj:def:adaptive-contour-estimator}.\n\\item \\textbf{(Class relations.)}  Every law in \\(\\mathcal P_{\\mathrm{ACE},n}^{\\mathrm{JMS}}\\) belongs to \\(\\mathcal P_{\\mathrm{NG},n}\\).  If \\(s=r\\), then \\(\\mathcal P_{\\mathrm{ACE},n}^{\\mathrm{JMS}}\\) coincides with the \\(L^s(P_X)\\)-restricted subclass \\(\\mathcal P_{\\mathrm{NG},n}^{\\mathrm{ACE}}\\) of \\cref{obj:def:ace-comparison-subclass}.\n\\item \\textbf{(Non-Gaussian fixed-code risk.)}  If the sample law is the i.i.d. product law of \\cref{obj:ass:iid-sampling}, \\(\\mathcal P_{\\mathrm{NG},n}(p;\\mathrm{base})\\) is nonempty, \\(n\\ge 2\\), and\n\\[\n\\varepsilon_{1,n}\\le \\{4R_1\\exp(2C_gR_1)\\}^{-1},\n\\]\nwhere \\(R_1\\) is the search radius from the contour-bank construction in \\cref{obj:def:adaptive-contour-estimator}, then\n\\[\n\\frac{c}{n}\n\\le\n\\mathfrak R_n^{\\mathrm{NG}}\n\\le\n\\sup_{P\\in\\mathcal P_{\\mathrm{NG},n}(p;\\mathrm{base})}\nE_P\\!\\left[(\\widehat\\theta_{\\mathrm{spec},n}-\\theta_0(P))^2\\right]\n\\le\n\\frac{C}{n},\n\\]\nand\n\\[\n\\sup_{P\\in\\mathcal P_{\\mathrm{NG},n}(p;\\mathrm{base})}\nQ_{P,1-\\gamma}\\!\\left(|\\widehat\\theta_{\\mathrm{spec},n}-\\theta_0(P)|\\right)\n\\le\n\\sqrt{\\frac{C}{\\gamma n}},\n\\]\nwith generalized lower quantiles as in \\cref{obj:def:generalized-quantile}.\n\\item \\textbf{(ACE fixed-code risk.)}  If \\(\\mathcal P_{\\mathrm{ACE},n}^{\\mathrm{JMS}}(p;\\mathrm{base})\\) is nonempty, \\(n\\ge 2\\), and\n\\[\n\\varepsilon_{1,n}\\le \\{4R_1\\exp(2C_gR_1)\\}^{-1},\n\\]\nthen\n\\[\n\\frac{c}{n}\n\\le\n\\inf_{\\widetilde\\theta}\n\\sup_{P\\in\\mathcal P_{\\mathrm{ACE},n}^{\\mathrm{JMS}}(p;\\mathrm{base})}\nE_P\\!\\left[(\\widetilde\\theta-\\theta_0(P))^2\\right]\n\\le\n\\sup_{P\\in\\mathcal P_{\\mathrm{ACE},n}^{\\mathrm{JMS}}(p;\\mathrm{base})}\nE_P\\!\\left[(\\widehat\\theta_{\\mathrm{spec},n}-\\theta_0(P))^2\\right]\n\\le\n\\frac{C}{n},\n\\]\nwhere the infimum is over measurable real-valued estimators of \\(O_1,\\ldots,O_n\\).  Moreover,\n\\[\n\\sup_{P\\in\\mathcal P_{\\mathrm{ACE},n}^{\\mathrm{JMS}}(p;\\mathrm{base})}\nQ_{P,1-\\gamma}\\!\\left(|\\widehat\\theta_{\\mathrm{spec},n}-\\theta_0(P)|\\right)\n\\le\n\\sqrt{\\frac{C}{\\gamma n}}.\n\\]\n\\end{itemize}",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "CausalSmith.Stat.SaPlmCumulantConverse.adaptive_rootn_minimax",
+        "file": "T3_AdaptiveRootNMinimax.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "6b96b6d856024cd3"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": "faithful"
+      }
+    },
+    {
+      "obj_id": "prop:jms-ace-alignment",
+      "kind": "theorem",
+      "title": "ACE and spectral alignment",
+      "status": "matched",
+      "paper_statement": "Fix an ACE order \\(r\\ge2\\) and positive constants\n\\(\\delta,C_{\\theta},C_g,C_q,\\psi_{\\eta},\\psi_{\\xi}\\).  There is a constant\n\\(C_{\\mathrm{spec}}>0\\), depending only on these fixed constants, such that\nthe following statements hold.\n\nLet \\(\\gamma\\in(1/2,1)\\), let \\(C_{\\gamma}>0\\) be the constant in the\npublished order-\\(r\\) ACE generalized-quantile guarantee, and write\n\\(\\widehat\\theta_{\\mathrm{ACE},r,n}\\) for the estimator supplied by that\npublished ACE handle.  Let \\(p_0\\) be a parameter record whose\n\\(r,\\delta,C_{\\theta},C_g,C_q,\\psi_{\\eta},\\psi_{\\xi}\\), and \\(\\gamma\\)\ncoordinates equal the displayed constants, and fix the certified primitive\nbank and range records associated with \\(p_0\\).  For any parameter record\n\\(p\\) sharing the same fixed experiment constants as \\(p_0\\) and the same\nprobability level \\(\\gamma\\), and for any supplied code sequences whose clipped\nversions are \\(\\bar g_n\\) and \\(\\bar q_n\\), the following hold, under the\nusual measurability and integrability conditions.\n\n\\begin{itemize}\n\\item \\textbf{Class relations.} At the sample size \\(n\\) of \\(p\\),\n\\[\n \\mathcal P_{\\mathrm{ACE},n}^{\\mathrm{JMS}}\n \\subseteq \\mathcal P_{\\mathrm{NG},n},\n \\qquad\n \\mathcal P_{\\mathrm{NG},n}^{\\mathrm{ACE}}\n \\subseteq \\mathcal P_{\\mathrm{ACE},n}^{\\mathrm{JMS}}.\n\\]\nIf the comparison exponent of \\(p\\) satisfies \\(s=r\\), then the common clipped-code convention gives\n\\[\n \\mathcal P_{\\mathrm{ACE},n}^{\\mathrm{JMS}}\n =\\mathcal P_{\\mathrm{NG},n}^{\\mathrm{ACE}}.\n\\]\nHere the classes and the comparison subclass are those of\n\\cref{obj:def:jms-ace-class,obj:def:non-gaussian-class,obj:def:ace-comparison-subclass}.\n\n\\item \\textbf{ACE upper guarantee.} If a law \\(P\\in\\mathcal P_{\\mathrm{ACE},n}^{\\mathrm{JMS}}\\)\nuses the clipped supplied treatment and outcome codes \\(\\bar g_n,\\bar q_n\\),\nif the JMS eligibility condition \\(\\mathsf E_n^{\\mathrm{JMS}}\\) of\n\\cref{obj:def:jms-eligibility,obj:def:jms-eligibility-quantities} holds,\nand if \\(\\varepsilon_{1,n}>0\\) and \\(\\varepsilon_{2,n}\\ge0\\), then\n\\[\n Q_{P,1-\\gamma}\n \\bigl(|\\widehat\\theta_{\\mathrm{ACE},r,n}-\\theta_0(P)|\\bigr)\n \\le B_{\\mathrm{ACE},n,\\gamma},\n\\]\nwhere \\(Q_{P,1-\\gamma}\\) is the generalized quantile in\n\\cref{obj:def:generalized-quantile} and\n\\[\n\\begin{aligned}\n B_{\\mathrm{ACE},n,\\gamma}\n &= C_{\\gamma} r!16^r\\delta^{-1}\n \\Big[\n   \\varepsilon_{1,n}^r\\varepsilon_{2,n}\n   + C_{\\theta}\\varepsilon_{1,n}^{r+1}  \\\\\n &\\qquad\\qquad\n   +64(C_g+\\psi_{\\eta})^r\n   \\{r^2(C_g+\\psi_{\\eta})+\\psi_{\\xi}+C_{\\theta}\\psi_{\\eta}\\}\n   (\\gamma n)^{-1/2}\n \\Big].\n\\end{aligned}\n\\]\n\n\\item \\textbf{Spectral upper guarantee.} If\n\\(\\mathcal P_{\\mathrm{ACE},n}^{\\mathrm{JMS}}\\) contains at least one law using\nthe clipped supplied codes, \\(n\\ge2\\), \\(\\mathsf E_n^{\\mathrm{JMS}}\\) holds,\n\\(\\varepsilon_{1,n}>0\\), and\n\\[\n \\varepsilon_{1,n}\n \\le\n \\{4R_1\\exp(2C_gR_1)\\}^{-1},\n\\]\nwhere \\(R_1\\) is the outer contour radius of \\cref{obj:def:contour-bank-handle} determined by the parameter record in force,\nthen the certified contour statistic\n\\(\\widehat\\theta_{\\mathrm{spec},n}\\) of\n\\cref{obj:def:adaptive-contour-estimator}, built from the fixed primitive\nrecords, satisfies\n\\[\n \\sup_{P\\in\\mathcal P_{\\mathrm{ACE},n}^{\\mathrm{JMS}}}\n Q_{P,1-\\gamma}\n \\bigl(|\\widehat\\theta_{\\mathrm{spec},n}-\\theta_0(P)|\\bigr)\n \\le\n \\sqrt{\\frac{C_{\\mathrm{spec}}}{\\gamma n}},\n\\]\nwhere the supremum ranges over laws in the published ACE class whose clipped\nsupplied treatment and outcome codes are \\(\\bar g_n\\) and \\(\\bar q_n\\).\n\n\\item \\textbf{Upper-guarantee separation along sequences.} For any sequence\n\\((p_n)\\) of parameter records whose sample size at index \\(n\\) is \\(n\\), with the\nsame fixed experiment constants as \\(p_0\\),\nthe same radius sequences \\(\\varepsilon_{1,\\cdot},\\varepsilon_{2,\\cdot}\\),\nand \\(p_n.\\gamma=\\gamma\\), suppose that eventually\n\\(n\\ge2\\), \\(\\mathsf E_n^{\\mathrm{JMS}}\\) holds,\n\\(\\varepsilon_{1,n}>0\\), \\(\\varepsilon_{2,n}\\ge0\\),\n\\[\n \\varepsilon_{1,n}\n \\le\n \\{4R_1\\exp(2C_gR_1)\\}^{-1},\n\\]\nand the published ACE class contains a law using the clipped supplied codes.\nIf\n\\[\n \\frac{\n   \\varepsilon_{1,n}^r\\varepsilon_{2,n}\n   + C_{\\theta}\\varepsilon_{1,n}^{r+1}\n }{n^{-1/2}}\n \\longrightarrow \\infty,\n\\]\nthen\n\\[\n \\frac{\n   \\sqrt{C_{\\mathrm{spec}}/(\\gamma n)}\n }{\n   B_{\\mathrm{ACE},n,\\gamma}\n }\n \\longrightarrow 0 .\n\\]\n\\end{itemize}",
+      "external_dependencies": [
+        {
+          "node_id": "lem:jms-ace-quantile-upper",
+          "cite_id": "cite:jms2025-thm54",
+          "cite_key": "JinMackeySyrgkanis2025",
+          "locator": "Theorem 5.4, equations (21)--(22)",
+          "statement": "If \\(\\mathsf E_n^{\\mathrm{JMS}}\\) holds and \\(\\varepsilon_{1,n},\\varepsilon_{2,n}>0\\), Jin--Mackey--Syrgkanis Theorem 5.4 gives, on \\(\\mathcal P_{\\mathrm{ACE},n}^{\\mathrm{JMS}}\\),\n\\[\n \\begin{aligned}\n &\\sup_{P\\in\\mathcal P_{\\mathrm{ACE},n}^{\\mathrm{JMS}}}\n Q_{P,1-\\gamma}(|\\widehat\\theta_{\\mathrm{ACE},r,n}-\\theta_0(P)|)\\\\\n &\\quad\\le C_{\\gamma}r!16^r\\delta^{-1}\n \\Big[\\varepsilon_{1,n}^r\\varepsilon_{2,n}\n +C_{\\theta}\\varepsilon_{1,n}^{r+1}\n +64(C_g+\\psi_{\\eta})^r\n \\{r^2(C_g+\\psi_{\\eta})+\\psi_{\\xi}+C_{\\theta}\\psi_{\\eta}\\}\n (\\gamma n)^{-1/2}\\Big].\n \\end{aligned}\n\\]",
+          "status": "matched"
+        }
+      ],
+      "lean": {
+        "decl": "CausalSmith.Stat.SaPlmCumulantConverse.jms_ace_alignment",
+        "file": "T4_JmsAceAlignment.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "e368ac97487a62eb"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": "faithful"
+      }
+    },
+    {
+      "obj_id": "thm:common-experiment-dichotomy",
+      "kind": "theorem",
+      "title": "Common Experiment Dichotomy",
+      "status": "matched",
+      "paper_statement": "Fix \\(r\\ge 2\\) and positive constants \\(\\delta,C_{\\theta},C_g,C_q,\\psi_{\\eta},\\psi_{\\xi}\\). For every measurable covariate space, the following hold.\n\n\\begin{itemize}\n\\item \\textbf{(Non-Gaussian sequence.)} Let \\(p_0\\) have these fixed values of \\(r,\\delta,C_{\\theta},C_g,C_q,\\psi_{\\eta},\\psi_{\\xi}\\), and fix the primitive records \\(\\mathfrak p_{\\star}\\) and \\(\\mathfrak c_{\\theta,\\star}\\) of \\cref{obj:def:contour-bank-handle,obj:def:adaptive-contour-estimator}. Let \\((p_j)\\) be any parameter sequence with the same fixed values of \\(r,\\delta,C_{\\theta},C_g,C_q,\\psi_{\\eta},\\psi_{\\xi}\\) as \\(p_0\\), and with common supplied radii \\(\\varepsilon_{1,n}\\) and \\(\\varepsilon_{2,n}\\). Let \\((\\widehat g_n,\\widehat q_n)\\) be any measurable deterministic code pair, and write \\((\\bar g_n,\\bar q_n)\\) for the clipped pair. Suppose that \\(n_j=p_j.n\\to\\infty\\) and, for all sufficiently large \\(j\\),\n\\[\n\\mathcal P_{\\mathrm{NG},n_j}(p_j;\\bar g_{n_j},\\bar q_{n_j})\\neq\\varnothing,\\qquad\nn_j\\ge 2,\\qquad\n\\varepsilon_{1,n_j}\\le\n\\Bigl(4R_1(p_j)\\exp\\{2C_gR_1(p_j)\\}\\Bigr)^{-1}.\n\\]\nThen there are constants \\(c,C>0\\) such that, with\n\\(B\\) the translated-dyadic contour bank generated from \\(p_0\\) and \\(\\mathfrak p_{\\star}\\), for all sufficiently large \\(j\\) the transported primitive bank for \\(p_j\\) generates the same bank \\(B\\), the statistic \\(\\widehat\\theta_{\\mathrm{spec},n_j}\\) of \\cref{obj:def:adaptive-contour-estimator} is measurable, every compiled bounded spectral adapter satisfying the full canonical build and compilation specification is represented by the corresponding execution on the same transported primitive records, and\n\\[\n\\frac{c}{n_j}\\le\n\\mathfrak R_{n_j}^{\\mathrm{NG}}(p_j;\\widehat g,\\widehat q)\n\\le\n\\frac{C}{n_j}.\n\\]\nMoreover, the same statistic witnesses the upper bound:\n\\[\n\\sup_{P\\in \\mathcal P_{\\mathrm{NG},n_j}(p_j;\\bar g_{n_j},\\bar q_{n_j})}\n\\mathbb E_P\\!\\left[\n\\bigl(\\widehat\\theta_{\\mathrm{spec},n_j}-\\theta_0(P)\\bigr)^2\n\\right]\n\\le\n\\frac{C}{n_j}.\n\\]\n\n\\item \\textbf{(Gaussian class.)} For every parameter record \\(p\\), writing \\(n\\) for its sample size, every \\(P\\in\\mathcal P_{\\mathrm G,n}^{\\mathrm{JMS}}\\) in \\cref{obj:def:gaussian-class} satisfies\n\\[\n\\theta_0(P)=0.\n\\]\nFor every measurable deterministic code pair \\((\\widehat g_n,\\widehat q_n)\\), whenever the clipped-code intersection of \\(\\mathcal P_{\\mathrm G,n}^{\\mathrm{JMS}}\\) is nonempty,\n\\[\n\\mathfrak R_{n}^{\\mathrm G}(p;\\widehat g,\\widehat q)=0,\n\\qquad\n\\mathfrak M_{n,1-\\gamma}^{\\mathrm G}(p;\\widehat g,\\widehat q)=0.\n\\]\n\\end{itemize}",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "CausalSmith.Stat.SaPlmCumulantConverse.common_experiment_dichotomy",
+        "file": "T5_CommonExperimentDichotomy.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "497acee1105b8b1d"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": "faithful"
+      }
+    },
+    {
+      "obj_id": "prop:symmetric-mixture-reduction",
+      "kind": "theorem",
+      "title": "Symmetric mixture reduction",
+      "status": "matched",
+      "paper_statement": "For any real constants \\(C_{\\theta},C_g,C_q,\\psi_{\\xi}\\), there is a constant \\(C>0\\), depending only on these four constants, such that the following holds.  Let \\(p\\) be a parameter record whose constants \\(C_{\\theta},C_g,C_q,\\psi_{\\xi}\\) are the ones just fixed, write \\(n\\) for its sample size, and let \\(P\\) be a law in the corresponding model.  Assume the usual measurability and integrability conditions, and suppose that\n\\begin{itemize}\n\\item \\textbf{(Sampling.)} \\(O_1,\\ldots,O_n\\) are drawn according to the i.i.d. product law in \\cref{obj:ass:iid-sampling}.\n\\item \\textbf{(Symmetric mixture.)} The treatment innovation \\(\\eta=T-g_0(X)\\) has law\n\\[\n\\tfrac12 N(-1,1)+\\tfrac12 N(1,1).\n\\]\n\\item \\textbf{(Independence and ranges.)} The treatment innovation is independent of \\(X\\) as in \\cref{obj:ass:independent-treatment-noise}, the outcome innovation satisfies \\cref{obj:ass:outcome-mean-independence}, and the range and tail conditions in \\cref{obj:ass:theta-range,obj:ass:g-range,obj:ass:q-range,obj:ass:xi-subgaussian} hold.\n\\item \\textbf{(Treatment code.)} The supplied treatment code obeys\n\\[\n\\|\\bar g_n-g_0\\|_{L^1(P_X)}\\le \\varepsilon_{1,n},\n\\qquad\n\\varepsilon_{1,n}\\le \\frac1\\pi .\n\\]\n\\end{itemize}\nThen the fourth cumulant of \\(\\eta\\) is\n\\[\n\\kappa_4(\\eta)=-2,\n\\]\nthe treatment-innovation moment-generating function \\(M(z)=E_P[e^{z\\eta}]\\) satisfies\n\\[\nM(i\\pi/2)=0,\n\\]\nand, writing \\(Z_n=T-\\bar g_n(X)\\) and \\(D_n=g_0(X)-\\bar g_n(X)\\),\n\\[\nE_P\\!\\left[\nZ_n\\sin\\!\\left(\\frac{\\pi Z_n}{2}\\right)\n\\right]\n=\ne^{-\\pi^2/8}\nE_P\\!\\left[\n\\cos\\!\\left(\\frac{\\pi D_n}{2}\\right)\n\\right],\n\\]\nwith\n\\[\n\\frac{e^{-\\pi^2/8}}{2}\n\\le\nE_P\\!\\left[\nZ_n\\sin\\!\\left(\\frac{\\pi Z_n}{2}\\right)\n\\right].\n\\]\nMoreover, for the sine estimator \\(\\widehat\\theta_{\\sin,n}\\) in \\cref{obj:def:sine-estimator},\n\\[\nE_P\\!\\left[\n\\bigl(\\widehat\\theta_{\\sin,n}-\\theta_0(P)\\bigr)^2\n\\right]\n\\le\n\\frac{C}{n}.\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "CausalSmith.Stat.SaPlmCumulantConverse.symmetric_mixture_reduction",
+        "file": "T6_SymmetricMixtureReduction.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "8e6520ad86079b70"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": "faithful"
+      }
+    },
+    {
+      "obj_id": "oeq:local-to-gaussian-frontier",
+      "kind": "definition",
+      "title": "Local-to-Gaussian frontier",
+      "status": "matched",
+      "paper_statement": "For triangular treatment-noise laws with \\(|\\kappa_k(\\eta_n)|\\ge\\delta_n\\) and \\(\\delta_n\\downarrow0\\) under the same supplied code sequences, a natural next question is whether there exists a data-driven selector among ordinary DML, finite-order ACE, and global-contour procedures that attains the sharp minimax mean-squared-error rate as a function of \\((n,\\varepsilon_{1,n},\\varepsilon_{2,n},\\delta_n)\\), yields uniformly valid inference across these regimes, and admits a matching local minimax lower bound. Resolving this question requires specifying a sharp-rate functional, a uniform-inference or coverage criterion, an existential selector, a confidence procedure, and a matching lower-bound witness.",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "CausalSmith.Stat.SaPlmCumulantConverse.LocalToGaussianFrontier",
+        "file": "OpenQuestions.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "fc97a24d9316f5c2"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": null
+      }
+    },
+    {
+      "obj_id": "lem:clipped-ratio-risk-decomposition",
+      "kind": "lemma",
+      "title": "Clipped ratio risk decomposition",
+      "status": "matched",
+      "paper_statement": "Let \\(\\Omega\\) be any observation space. For a sample \\(O_1,\\ldots,O_n\\in\\Omega\\), write the empirical average as \\(\\mathbb P_n f=n^{-1}\\sum_{i=1}^n f(O_i)\\), as in \\cref{obj:def:model-parameters}. Let \\(W,R:\\Omega\\to\\mathbb R\\), and let \\(\\theta\\), \\(C_{\\theta}\\), \\(A\\), and \\(\\mu_W\\) be real numbers. Suppose that\n\\begin{itemize}\n\\item \\textbf{(Sample size.)} \\(n\\ge 1\\).\n\\item \\textbf{(Clipping range.)} The target value \\(\\theta\\) lies inside the clipping radius \\(C_{\\theta}\\): \\(|\\theta|\\le C_{\\theta}\\).\n\\item \\textbf{(Denominator scale.)} \\(A>0\\).\n\\item \\textbf{(Population denominator mean.)} \\(\\mu_W\\ge A/2\\).\n\\end{itemize}\nDefine the clipped ratio statistic at threshold \\(A/4\\) by\n\\[\n\\widehat\\theta\n=\n\\begin{cases}\n\\min\\!\\left\\{\\max\\!\\left\\{\\dfrac{\\theta\\,\\mathbb P_n W+\\mathbb P_n R}{\\mathbb P_n W},-C_{\\theta}\\right\\},C_{\\theta}\\right\\},\n& A/4\\le \\mathbb P_n W,\\\\[1.1em]\n0,\n& A/4>\\mathbb P_n W.\n\\end{cases}\n\\]\nThen, for every sample \\(O_1,\\ldots,O_n\\in\\Omega\\),\n\\[\n(\\widehat\\theta-\\theta)^2\n\\le\n\\frac{16}{A^2}\n\\left\\{\n(\\mathbb P_n R)^2\n+\nC_{\\theta}^2\\bigl(\\mathbb P_n(W-\\mu_W)\\bigr)^2\n\\right\\}.\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "CausalSmith.Stat.SaPlmCumulantConverse.clippedRatioFromScores_sq_le",
+        "file": "Helpers/SineRisk.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "1b074eb44117b302"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": "faithful"
+      }
+    },
+    {
+      "obj_id": "lem:empirical-transform-uniform-l2",
+      "kind": "lemma",
+      "title": "Uniform transform concentration",
+      "status": "matched",
+      "paper_statement": "Fix \\(C_{\\theta},C_g,C_q,\\psi_{\\eta},\\psi_{\\xi},R_1\\in\\mathbb R\\). There is a constant \\(K>0\\), depending on these displayed constants, such that the following holds. Let \\(p\\) be a parameter tuple and let \\(P\\in\\mathcal P_{\\mathrm{NG},n}\\) be represented by a model in \\cref{obj:def:non-gaussian-class}. Assume:\n\\begin{itemize}\n\\item \\textbf{(Primitive constants.)} The primitive constants of \\(p\\) are \\(C_{\\theta},C_g,C_q,\\psi_{\\eta},\\psi_{\\xi}\\), and its search radius is \\(R_1\\).\n\\item \\textbf{(Sample size.)} \\(n\\ge 2\\).\n\\item \\textbf{(Sampling.)} \\(O_1,\\ldots,O_n\\) follow the i.i.d. product law specified in \\cref{obj:ass:iid-sampling}.\n\\item \\textbf{(Fold.)} \\(a\\in\\{0,1\\}\\) and the corresponding inference fold \\(I_a\\) is nonempty.\n\\end{itemize}\nWith \\(Z_n=T-\\bar g_n(X)\\), define\n\\[\n\\widehat F_{a,n}(z)=\\frac{1}{|I_a|}\\sum_{i\\in I_a}\\exp(zZ_{n,i}),\n\\qquad\n\\widehat G_{a,n}(z)=\\frac{1}{|I_a|}\\sum_{i\\in I_a}Y_i\\exp(zZ_{n,i}),\n\\]\nand\n\\[\nF_n(z)=E_P[\\exp(zZ_n)],\n\\qquad\nG_n(z)=E_P[Y\\exp(zZ_n)].\n\\]\nThen\n\\[\nE\\!\\left[\\sup_{|z|\\le R_1}\\left|\\widehat F_{a,n}(z)-F_n(z)\\right|^2\\right]\n+\nE\\!\\left[\\sup_{|z|\\le R_1}\\left|\\widehat G_{a,n}(z)-G_n(z)\\right|^2\\right]\n\\le \\frac{K}{|I_a|}.\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "CausalSmith.Stat.SaPlmCumulantConverse.empirical_transform_uniform_l2",
+        "file": "Helpers/EmpiricalTransformSeries.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "5707a826c37332b5"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": "faithful"
+      }
+    },
+    {
+      "obj_id": "lem:l1-nuisance-zero-free",
+      "kind": "lemma",
+      "title": "Zero-Free Nuisance Factor",
+      "status": "matched",
+      "paper_statement": "For every \\(P\\in\\mathcal P_{\\mathrm{NG},n}\\) satisfying \\cref{obj:def:non-gaussian-class}, the associated treatment-code discrepancy \\(D_n\\) obeys\n\\[\n |D_n|\\le 2C_g\\quad\\text{almost surely},\n \\qquad\n E_P|D_n|\\le \\varepsilon_{1,n}.\n\\]\nConsequently, for the corresponding factor \\(H_n\\) and radius \\(R_1\\),\n\\[\n \\sup_{|z|\\le R_1}|H_n(z)-1|\n \\le R_1 e^{2C_gR_1}\\varepsilon_{1,n}.\n\\]\nIf \\(\\varepsilon_{1,n}\\le (4R_1 e^{2C_gR_1})^{-1}\\), then \\(|H_n(z)|\\ge 3/4\\) for every \\(|z|\\le R_1\\), and \\(F_n\\) and \\(M\\) have the same zeros in \\(\\{|z|\\le R_1\\}\\), counted with multiplicity.",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "CausalSmith.Stat.SaPlmCumulantConverse.l1_nuisance_zero_free",
+        "file": "Helpers/Transforms.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "61d6b8955ee7e63f"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": "faithful"
+      }
+    },
+    {
+      "obj_id": "thm:local-to-gaussian-partial-benchmarks",
+      "kind": "theorem",
+      "title": "Local Gaussian Benchmarks",
+      "status": "matched",
+      "paper_statement": "Let \\((\\delta_n)_{n\\in\\mathbb N}\\) be a real sequence with \\(\\delta_n>0\\) for every \\(n\\), nonincreasing in \\(n\\), and \\(\\delta_n\\to0\\).  Fix \\(C_{\\theta},C_g,C_q,\\psi_{\\xi}\\in\\mathbb R\\).  The following two assertions hold.\n\n\\begin{itemize}\n\\item \\textbf{(Gaussian--Rademacher path.)} There is a constant \\(C>0\\), depending only on \\(C_{\\theta},C_g,C_q,\\psi_{\\xi}\\), such that the following holds.  Let \\(p\\) be any parameter record whose constants \\(C_{\\theta},C_g,C_q,\\psi_{\\xi}\\) are the ones just fixed and whose orders are \\(k=4\\) and \\(r=3\\).  For any \\(a\\in(0,1]\\) and any law \\(P\\) in a model \\(m\\), assume that the treatment noise satisfies\n\\[\n\\eta\\sim \\sqrt{1-a^2}\\,G_{\\circ}+aS,\n\\]\nwhere \\(G_{\\circ}\\sim N(0,1)\\), \\(S\\) is symmetric Rademacher, and \\(G_{\\circ}\\perp S\\).  Assume also \\cref{obj:ass:iid-sampling,obj:ass:independent-treatment-noise,obj:ass:outcome-mean-independence,obj:ass:theta-range,obj:ass:g-range,obj:ass:q-range,obj:ass:xi-subgaussian}.  At the sample size \\(n\\) of \\(p\\), assume the supplied clipped treatment code \\(\\bar g_n\\) satisfies\n\\[\nx\\mapsto |\\bar g_n(x)-g_0(x)|\\in L^1(P_X),\n\\qquad\n\\int |\\bar g_n(x)-g_0(x)|\\,dP_X(x)\\le \\varepsilon_{1,n}.\n\\]\nThen the conclusion of \\cref{obj:lem:gaussian-rademacher-l1-benchmark} — the explicit mean-squared-error bound along the Gaussian--Rademacher path — holds with constant \\(C\\) for \\(p,m,a\\).\n\n\\item \\textbf{(Local ACE oracle envelope.)} For every published ACE handle, every \\(\\gamma\\in\\mathbb R\\), and every \\(C_{\\gamma}\\in\\mathbb R\\), if the handle satisfies the conclusion of Theorem~5.4 of \\citet{JinMackeySyrgkanis2025} at \\((\\gamma,C_{\\gamma})\\), then \\(C_{\\gamma}>0\\) and the following local ACE statement holds.  For every parameter record \\(p\\) whose probability level is \\(\\gamma\\), writing \\(n\\) for its sample size, if \\(\\varepsilon_{1,n}>0\\) and \\(\\varepsilon_{2,n}>0\\), then for every deterministic treatment code \\(\\widehat g\\), deterministic outcome code \\(\\widehat q\\), and every model, whenever\n\\[\n\\bar g_n=\\Pi_{[-C_g,C_g]}\\widehat g_n,\n\\qquad\n\\bar q_n=\\Pi_{[-C_q,C_q]}\\widehat q_n,\n\\]\nand, writing \\(r\\) and \\(k\\) for the orders of \\(p\\) and \\(\\Delta=\\delta_n\\), the local ACE class conditions\n\\[\n1\\le n,\n\\qquad\n\\left|\\operatorname{Re}\\left(\\left.\\frac{d^k}{dz^k}\\log M(z)\\right|_{z=0}\\right)\\right|\\ge \\Delta,\n\\]\nhold together with \\cref{obj:ass:independent-treatment-noise,obj:ass:outcome-mean-independence,obj:ass:theta-range,obj:ass:g-range,obj:ass:q-range,obj:ass:xi-subgaussian}, the treatment-noise exponential envelope\n\\[\no\\mapsto \\exp\\{\\eta(o)^2/\\psi_{\\eta}^2\\}\\in L^1(P),\n\\qquad\n\\int \\exp\\{\\eta(o)^2/\\psi_{\\eta}^2\\}\\,dP(o)\\le 2,\n\\]\nand the nuisance-radius bounds\n\\[\n\\|\\bar g_n-g_0\\|_{L^r(P_X)}\\le \\varepsilon_{1,n},\n\\qquad\n\\|\\bar q_n-q_0\\|_{L^r(P_X)}\\le \\varepsilon_{2,n},\n\\]\nand whenever the local JMS eligibility quantities\n\\[\na_{1,n}=2\\log\\!\\left(6(C_g+\\psi_{\\eta})\\varepsilon_{1,n}^{-1}\\right),\n\\qquad\nb_{1,n}=\\log(\\gamma n/9),\n\\]\n\\[\na_2=4(C_g+\\psi_{\\eta}),\n\\qquad\nb_{2,n}(\\Delta)=\n\\frac{200\\min\\{1,C_{\\theta}\\}\\Delta}{\\max\\{\\varepsilon_{1,n},\\varepsilon_{2,n},(\\gamma n)^{-1/2}(\\psi_{\\xi}+C_{\\theta}\\psi_{\\eta})\\}}\n\\]\nsatisfy\n\\[\na_{1,n}\\ne0,\n\\qquad\n0<\\frac{b_{1,n}}{a_{1,n}},\n\\qquad\n0<a_2b_{2,n}(\\Delta),\n\\qquad\na_2\\log\\{a_2b_{2,n}(\\Delta)\\}\\ne0,\n\\]\nand\n\\[\nr\\le\n\\min\\left\\{\n\\frac{b_{1,n}}{a_{1,n}}-a_{1,n}^{-1}\\log\\!\\left(\\frac{b_{1,n}}{a_{1,n}}\\right),\n\\frac{b_{2,n}(\\Delta)}{a_2\\log\\{a_2b_{2,n}(\\Delta)\\}}\n\\right\\},\n\\]\nthe published order-\\(r\\) ACE estimator obeys\n\\[\nQ_{P,1-\\gamma}\n\\!\\left(\\left|\\widehat\\theta_{\\mathrm{ACE},r,n}-\\theta_0(P)\\right|\\right)\n\\le\nB_{\\mathrm{ACE},n,\\gamma}(\\delta_n;C_{\\gamma}),\n\\]\nwhere\n\\[\nB_{\\mathrm{ACE},n,\\gamma}(\\Delta;C_{\\gamma})\n=\nC_{\\gamma}\\,r!\\,16^r\\,\\Delta^{-1}\n\\left(\n\\varepsilon_{1,n}^r\\varepsilon_{2,n}\n+C_{\\theta}\\varepsilon_{1,n}^{r+1}\n+64(C_g+\\psi_{\\eta})^r\n\\bigl(r^2(C_g+\\psi_{\\eta})+\\psi_{\\xi}+C_{\\theta}\\psi_{\\eta}\\bigr)\n(\\gamma n)^{-1/2}\n\\right).\n\\]\n\\end{itemize}",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "CausalSmith.Stat.SaPlmCumulantConverse.local_to_gaussian_partial_benchmarks",
+        "file": "T7_LocalToGaussianPartialBenchmarks.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "72cd35b24f726471"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": "faithful"
+      }
+    },
+    {
+      "obj_id": "prop:bounded-outcome-gaussian-degeneracy",
+      "kind": "theorem",
+      "title": "Gaussian class degeneracy",
+      "status": "matched",
+      "paper_statement": "Fix a parameter tuple with:\n\\begin{itemize}\n\\item \\textbf{(Sample size.)} A positive sample size \\(n\\ge 1\\).\n\\item \\textbf{(Orders and exponent.)} Integers \\(r,k\\in\\mathbb N\\) satisfying \\(k=r+1\\) and \\(r\\ge 2\\), and an exponent \\(s\\ge r\\).\n\\item \\textbf{(Probability level.)} A level \\(\\gamma\\in(1/2,1)\\).\n\\item \\textbf{(Positive constants.)} Constants \\(C_{\\theta},C_g,C_q,\\psi_{\\eta},\\psi_{\\xi},\\delta,\\sigma>0\\).\n\\item \\textbf{(Code-radius sequences.)} Sequences \\(\\varepsilon_1,\\varepsilon_2:\\mathbb N\\to\\mathbb R\\) whose values are nonnegative on positive indices and nonincreasing on positive indices.\n\\end{itemize}\nOn any measurable covariate space, the following hold.\n\\begin{itemize}\n\\item \\textbf{(Degenerate target.)} Every model \\(m\\) in the bounded-outcome Gaussian JMS comparison class \\(\\mathcal P_{\\mathrm G,n}^{\\mathrm{JMS}}\\) satisfying \\cref{obj:def:gaussian-class} has\n\\[\n\\theta_0(P)=0.\n\\]\n\\item \\textbf{(Zero minimax risks.)} For any supplied deterministic code sequences \\(\\widehat g=(\\widehat g_j)_{j\\in\\mathbb N}\\) and \\(\\widehat q=(\\widehat q_j)_{j\\in\\mathbb N}\\), suppose there is a model \\(m\\in\\mathcal P_{\\mathrm G,n}^{\\mathrm{JMS}}\\) satisfying \\cref{obj:def:gaussian-class} whose clipped supplied treatment and outcome codes agree pointwise at index \\(n\\) with\n\\[\nx\\mapsto \\min\\{\\max\\{\\widehat g_n(x),-C_g\\},C_g\\}\n\\quad\\text{and}\\quad\nx\\mapsto \\min\\{\\max\\{\\widehat q_n(x),-C_q\\},C_q\\}.\n\\]\nThen\n\\[\n\\mathfrak R_n^{\\mathrm G}(p;\\widehat g,\\widehat q)=0\n\\quad\\text{and}\\quad\n\\mathfrak M_{n,1-\\gamma}^{\\mathrm G}(p;\\widehat g,\\widehat q)=0.\n\\]\n\\end{itemize}",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "CausalSmith.Stat.SaPlmCumulantConverse.bounded_outcome_gaussian_degeneracy",
+        "file": "T8_BoundedOutcomeGaussianDegeneracy.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "3ac886c49f0297c6"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": "faithful"
+      }
+    },
+    {
+      "obj_id": "lem:jms-ace-class-relations",
+      "kind": "lemma",
+      "title": "ACE class relations",
+      "status": "matched",
+      "paper_statement": "Fix a parameter tuple \\(p\\) with ACE order \\(r\\), comparison exponent \\(s\\), cumulant order \\(k=r+1\\), \\(2\\le r\\), \\(r\\le s\\), probability level \\(\\gamma\\in(1/2,1)\\), strictly positive constants \\(C_{\\theta},C_g,C_q,\\psi_{\\eta},\\psi_{\\xi},\\delta,\\sigma\\), and nonnegative nonincreasing code-radius sequences \\((\\varepsilon_{1,n})\\) and \\((\\varepsilon_{2,n})\\) on positive indices. For every class index \\(n\\) and every law \\(P\\) with its supplied regression codes satisfying the usual measurability and integrability conditions,\n\\[\nP\\in\\mathcal P_{\\mathrm{ACE},n}^{\\mathrm{JMS}}\n\\quad\\Longrightarrow\\quad\nP\\in\\mathcal P_{\\mathrm{NG},n},\n\\]\nwhere the two classes are those of \\cref{obj:def:jms-ace-class} and \\cref{obj:def:non-gaussian-class}. Moreover,\n\\[\nP\\in\\mathcal P_{\\mathrm{NG},n}^{\\mathrm{ACE}}\n\\quad\\Longrightarrow\\quad\nP\\in\\mathcal P_{\\mathrm{ACE},n}^{\\mathrm{JMS}},\n\\]\nwhere \\(\\mathcal P_{\\mathrm{NG},n}^{\\mathrm{ACE}}\\) is the subclass in \\cref{obj:def:ace-comparison-subclass}. If \\(s=r\\), then for every such \\(P\\),\n\\[\nP\\in\\mathcal P_{\\mathrm{ACE},n}^{\\mathrm{JMS}}\n\\quad\\Longleftrightarrow\\quad\nP\\in\\mathcal P_{\\mathrm{NG},n}^{\\mathrm{ACE}} .\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "CausalSmith.Stat.SaPlmCumulantConverse.jms_ace_class_relations",
+        "file": "Helpers/ClassRelations.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "9dabd47fc9499ebd"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": "faithful"
+      }
+    },
+    {
+      "obj_id": "lem:non-gaussian-hard-submodel",
+      "kind": "lemma",
+      "title": "One-dimensional hard submodel",
+      "status": "matched",
+      "paper_statement": "Fix \\(r\\in\\mathbb N\\) and real constants\n\\(\\delta,C_{\\theta},C_g,C_q,\\psi_{\\eta},\\psi_{\\xi}\\) with \\(\\psi_{\\xi}>0\\). There exist constants\n\\(c_0,C_0,\\tau,c_{\\mathrm{ACE}}\\in\\mathbb R\\) such that\n\\[\n0<c_0,\\qquad 0<C_0,\\qquad 0<\\tau\\le \\psi_{\\xi},\\qquad 0<c_{\\mathrm{ACE}} .\n\\]\nFor every parameter record \\(p\\) whose constants\n\\(r,\\delta,C_{\\theta},C_g,C_q,\\psi_{\\eta},\\psi_{\\xi}\\) are the ones just fixed, and every \\(n\\ge 1\\), if the non-Gaussian class in \\cref{obj:def:non-gaussian-class} is nonempty, then there are a base law \\(P^{\\circ}\\in\\mathcal P_{\\mathrm{NG},n}\\) and a family \\(\\{P_{n,\\vartheta}:|\\vartheta|\\le c_0\\}\\) such that:\n\\begin{itemize}\n\\item \\textbf{(Class membership and target.)} For every \\(|\\vartheta|\\le c_0\\), \\(P_{n,\\vartheta}\\in\\mathcal P_{\\mathrm{NG},n}\\) and \\(\\theta_0(P_{n,\\vartheta})=\\vartheta\\).\n\\item \\textbf{(Fixed observed treatment law.)} For every \\(|\\vartheta|\\le c_0\\), the law of \\((X,T)\\) under \\(P_{n,\\vartheta}\\) equals its law under \\(P^{\\circ}\\).\n\\item \\textbf{(Fixed regressions and supplied codes.)} For every \\(|\\vartheta|\\le c_0\\), the functions \\(g_0,q_0\\) and the clipped supplied codes \\(\\bar g_n,\\bar q_n\\) under \\(P_{n,\\vartheta}\\) equal those under \\(P^{\\circ}\\).\n\\item \\textbf{(Gaussian outcome innovation.)} For every \\(|\\vartheta|\\le c_0\\), the outcome innovation \\(\\xi=Y-q_0(X)-\\theta_0\\eta\\) under \\(P_{n,\\vartheta}\\) has law \\(N(0,\\tau^2)\\) and is independent of \\((X,T)\\).\n\\item \\textbf{(Outcome equation.)} For every \\(|\\vartheta|\\le c_0\\),\n\\[\nY=q_0(X)+\\vartheta\\,\\eta+\\xi\n\\]\nalmost surely under \\(P_{n,\\vartheta}\\).\n\\item \\textbf{(Product relative entropy.)} For all real \\(\\vartheta_0,\\vartheta_1,h\\) with \\(|\\vartheta_0|\\le c_0\\), \\(|\\vartheta_1|\\le c_0\\), and\n\\[\n|\\vartheta_1-\\vartheta_0|=\\frac{h}{\\sqrt n},\n\\]\none has\n\\[\nD_{\\mathrm{KL}}\\!\\left(P_{n,\\vartheta_0}^{\\otimes n}\\,\\middle\\|\\,P_{n,\\vartheta_1}^{\\otimes n}\\right)\n\\le C_0 h^2 .\n\\]\n\\end{itemize}\nMoreover, for every starting law \\(P^{\\circ}\\in\\mathcal P_{\\mathrm{ACE},n}^{\\mathrm{JMS}}\\) in the class of \\cref{obj:def:jms-ace-class}, there is a family \\(\\{P_{n,\\vartheta}^{\\mathrm{ACE}}:|\\vartheta|\\le c_0\\}\\) such that:\n\\begin{itemize}\n\\item \\textbf{(JMS ACE membership and target.)} For every \\(|\\vartheta|\\le c_0\\), \\(P_{n,\\vartheta}^{\\mathrm{ACE}}\\in\\mathcal P_{\\mathrm{ACE},n}^{\\mathrm{JMS}}\\) and \\(\\theta_0(P_{n,\\vartheta}^{\\mathrm{ACE}})=\\vartheta\\).\n\\item \\textbf{(Fixed observed treatment law.)} For every \\(|\\vartheta|\\le c_0\\), the law of \\((X,T)\\) under \\(P_{n,\\vartheta}^{\\mathrm{ACE}}\\) equals its law under \\(P^{\\circ}\\).\n\\item \\textbf{(Fixed nuisance objects.)} For every \\(|\\vartheta|\\le c_0\\), the functions \\(g_0,q_0\\), the clipped supplied codes \\(\\bar g_n,\\bar q_n\\), and the treatment innovation \\(\\eta\\) under \\(P_{n,\\vartheta}^{\\mathrm{ACE}}\\) equal those under \\(P^{\\circ}\\), and the treatment and outcome code-radius conditions in \\cref{obj:def:jms-ace-class} hold at \\(P_{n,\\vartheta}^{\\mathrm{ACE}}\\).\n\\item \\textbf{(Gaussian outcome innovation.)} For every \\(|\\vartheta|\\le c_0\\), the outcome innovation \\(\\xi=Y-q_0(X)-\\theta_0\\eta\\) under \\(P_{n,\\vartheta}^{\\mathrm{ACE}}\\) has law \\(N(0,\\tau^2)\\) and is independent of \\((X,T)\\).\n\\item \\textbf{(Outcome equation.)} For every \\(|\\vartheta|\\le c_0\\),\n\\[\nY=q_0(X)+\\vartheta\\,\\eta+\\xi\n\\]\nalmost surely under \\(P_{n,\\vartheta}^{\\mathrm{ACE}}\\).\n\\item \\textbf{(Product relative entropy.)} For all real \\(\\vartheta_0,\\vartheta_1,h\\) with \\(|\\vartheta_0|\\le c_0\\), \\(|\\vartheta_1|\\le c_0\\), and\n\\[\n|\\vartheta_1-\\vartheta_0|=\\frac{h}{\\sqrt n},\n\\]\none has\n\\[\nD_{\\mathrm{KL}}\\!\\left((P_{n,\\vartheta_0}^{\\mathrm{ACE}})^{\\otimes n}\\,\\middle\\|\\,(P_{n,\\vartheta_1}^{\\mathrm{ACE}})^{\\otimes n}\\right)\n\\le C_0 h^2 .\n\\]\n\\end{itemize}\nFinally, for every pair of clipped-code functions \\(g_{\\star},q_{\\star}:\\mathcal X\\to\\mathbb R\\), if there is a law \\(P^{\\circ}\\in\\mathcal P_{\\mathrm{ACE},n}^{\\mathrm{JMS}}\\) with \\(\\bar g_n=g_{\\star}\\) and \\(\\bar q_n=q_{\\star}\\), then the fixed-code JMS ACE minimax risk satisfies\n\\[\n\\frac{c_{\\mathrm{ACE}}}{n}\n\\le\n\\inf_{\\widetilde\\theta(O_1,\\ldots,O_n;\\bar g_n,\\bar q_n)}\n\\sup_{\\substack{P\\in\\mathcal P_{\\mathrm{ACE},n}^{\\mathrm{JMS}}:\\\\ \\bar g_n=g_{\\star},\\ \\bar q_n=q_{\\star}}}\nE_P\\!\\left[\\{\\widetilde\\theta-\\theta_0(P)\\}^2\\right].\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "CausalSmith.Stat.SaPlmCumulantConverse.non_gaussian_hard_submodel",
+        "file": "Helpers/HardSubmodel.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "0e5cb05b6cc37319"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": "faithful"
+      }
+    },
+    {
+      "obj_id": "lem:gaussian-rademacher-l1-benchmark",
+      "kind": "lemma",
+      "title": "Gaussian--Rademacher sine benchmark",
+      "status": "matched",
+      "paper_statement": "Fix real constants \\(C_{\\theta},C_g,C_q,\\psi_{\\xi}\\).  There is a constant \\(C>0\\), depending only on these four constants, such that the following statement holds.  Let \\(p\\) be an admissible parameter record whose constants \\(C_{\\theta},C_g,C_q,\\psi_{\\xi}\\) are the ones just fixed and whose cumulant order is \\(k=4\\), let \\(a\\in(0,1]\\), and let \\(P\\) be a law in the model \\(m\\).  Assume:\n\\begin{itemize}\n\\item \\textbf{(Gaussian--Rademacher path.)} The treatment innovation \\(\\eta=T-g_0(X)\\) has the law of\n\\[\n\\eta_a=\\sqrt{1-a^2}\\,G_{\\circ}+aS,\n\\]\nwhere \\(G_{\\circ}\\sim N(0,1)\\), \\(S\\) is symmetric Rademacher, and \\(G_{\\circ}\\) and \\(S\\) are independent.\n\\item \\textbf{(Sampling and model restrictions.)} The law satisfies \\cref{obj:ass:iid-sampling,obj:ass:independent-treatment-noise,obj:ass:outcome-mean-independence,obj:ass:theta-range,obj:ass:g-range,obj:ass:q-range,obj:ass:xi-subgaussian}.\n\\item \\textbf{(Current treatment-code radius.)} For the clipped supplied treatment code \\(\\bar g_n\\),\n\\[\n\\int |\\,\\bar g_n(x)-g_0(x)\\,|\\,dP_X(x)\\le \\varepsilon_{1,n},\n\\]\nunder the usual integrability condition for this \\(L^1(P_X)\\) quantity.\n\\end{itemize}\nDefine\n\\[\nt_a=\\frac{\\pi}{2a},\\qquad\nA_a=a\\exp\\!\\left\\{-\\frac{(1-a^2)\\pi^2}{8a^2}\\right\\},\\qquad\n\\Delta_a=2a^4.\n\\]\nThen the treatment-innovation moment-generating function satisfies\n\\[\nM_a(z)=\\exp\\!\\left(\\frac{1-a^2}{2}z^2\\right)\\cosh(az),\n\\]\nthe fourth cumulant satisfies \\(\\kappa_4(\\eta_a)=-2a^4\\), and \\(t_a>0\\) is the first positive zero of the characteristic transform: \\(M_a(it_a)=0\\) and \\(M_a(iu)\\ne0\\) for every \\(u\\in(0,t_a)\\).  Moreover, for every \\(d\\in\\mathbb R\\),\n\\[\nE_P[\\sin\\{t_a(\\eta+d)\\}]=0.\n\\]\n\nLet \\(Z_n=T-\\bar g_n(X)\\) and \\(D_n=g_0(X)-\\bar g_n(X)\\).  If \\(t_a\\varepsilon_{1,n}\\le 1/2\\), then\n\\[\nE_P[Z_n\\sin(t_aZ_n)]\n=A_aE_P[\\cos(t_aD_n)]\n\\]\nand\n\\[\nE_P[Z_n\\sin(t_aZ_n)]\\ge A_a/2.\n\\]\nWith \\(\\mathbb P_n\\) denoting empirical averaging over \\(O_1,\\ldots,O_n\\), define\n\\[\n \\widehat\\theta_{a,n}\n =\n \\begin{cases}\n \\displaystyle\n \\Pi_{[-C_{\\theta},C_{\\theta}]}\n \\frac{\\mathbb P_n[Y\\sin(t_aZ_n)]}\n      {\\mathbb P_n[Z_n\\sin(t_aZ_n)]},\n &\\displaystyle \\mathbb P_n[Z_n\\sin(t_aZ_n)]\\ge A_a/4,\\\\[3mm]\n 0,&\\text{otherwise},\n \\end{cases}\n\\]\nwhere \\(\\Pi_{[-C_{\\theta},C_{\\theta}]}\\) clips to \\([-C_{\\theta},C_{\\theta}]\\).  Its mean squared error obeys\n\\[\n E_P[(\\widehat\\theta_{a,n}-\\theta_0)^2]\n \\le\n C\\min\\!\\left\\{1,\\frac1n a^{-2}\n \\exp\\!\\left(\\frac{(1-a^2)\\pi^2}{4a^2}\\right)\\right\\}.\n\\]\nThe same smallness condition also gives\n\\[\n\\varepsilon_{1,n}\\le \\frac{\\Delta_a^{1/4}}{2^{1/4}\\pi}\n\\]\nand the equivalent cumulant-parameterized bound\n\\[\n E_P[(\\widehat\\theta_{a,n}-\\theta_0)^2]\n \\le\n C\\min\\!\\left\\{1,\\frac1n\\Delta_a^{-1/2}\n \\exp\\!\\left(\\frac{\\pi^2\\sqrt2}{4}\\Delta_a^{-1/2}\\right)\\right\\}.\n\\]",
+      "external_dependencies": [],
+      "lean": {
+        "decl": "CausalSmith.Stat.SaPlmCumulantConverse.gaussian_rademacher_l1_benchmark",
+        "file": "Helpers/GaussianRademacherBenchmark.lean",
+        "sorry_free": true,
+        "declaration_refs": [
+          "98f1cd5dadebb629"
+        ]
+      },
+      "audits": {
+        "statement": "faithful",
+        "proof": "faithful"
+      }
+    }
+  ],
+  "declarations": {
+    "e40e3617de192afe": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.Parameters",
+      "statement": "/-- Primitive constants and deterministic code-radius sequences. -/\nstructure Parameters where\n  n : ℕ -- @realizes n(natural sample size)\n  n_pos : 1 ≤ n -- @realizes n(positive sample size)\n  r : ℕ -- @realizes r(fixed ACE order)\n  k : ℕ -- @realizes k(cumulant order)\n  k_eq : k = r + 1 -- @realizes k(k = r+1)\n  r_ge_two : 2 ≤ r -- @realizes r(r at least two)\n  s : ℝ≥0∞ -- @realizes s(Lp exponent in [r,infinity])\n  r_le_s : (r : ℝ≥0∞) ≤ s -- @realizes s(s at least r)\n  gamma : ℝ -- @realizes gamma(probability level)\n  gamma_mem : gamma ∈ Ioo (1 / 2 : ℝ) 1 -- @realizes gamma(range (1/2,1))\n  Ctheta : ℝ -- @realizes Ctheta(positive target bound)\n  Cg : ℝ -- @realizes Cg(positive treatment-regression bound)\n  Cq : ℝ -- @realizes Cq(positive outcome bound)\n  psieta : ℝ -- @realizes psieta(positive treatment-noise scale)\n  psixi : ℝ -- @realizes psixi(positive outcome-noise scale)\n  delta : ℝ -- @realizes delta(positive cumulant separation)\n  sigma : ℝ -- @realizes sigma(positive Gaussian standard deviation)\n  constants_pos :\n    0 < Ctheta ∧ -- @realizes Ctheta(strictly positive)\n    0 < Cg ∧ -- @realizes Cg(strictly positive)\n    0 < Cq ∧ -- @realizes Cq(strictly positive)\n    0 < psieta ∧ -- @realizes psieta(strictly positive)\n    0 < psixi ∧ -- @realizes psixi(strictly positive)\n    0 < delta ∧ -- @realizes delta(strictly positive)\n    0 < sigma -- @realizes sigma(strictly positive)\n  eps1n : ℕ → ℝ -- @realizes eps1n(nonnegative nonincreasing sequence)\n  eps2n : ℕ → ℝ -- @realizes eps2n(nonnegative nonincreasing sequence)\n  eps1_nonneg : ∀ n, 1 ≤ n → 0 ≤ eps1n n -- @realizes eps1n(values nonnegative for n>=1)\n  eps2_nonneg : ∀ n, 1 ≤ n → 0 ≤ eps2n n -- @realizes eps2n(values nonnegative for n>=1)\n  eps1_antitone : ∀ ⦃a b⦄, 1 ≤ a → a ≤ b → eps1n b ≤ eps1n a\n    -- @realizes eps1n(nonincreasing on positive indices)\n  eps2_antitone : ∀ ⦃a b⦄, 1 ≤ a → a ≤ b → eps2n b ≤ eps2n a\n    -- @realizes eps2n(nonincreasing on positive indices)\n\n-- @env: S1\nvariable {Xspace : Type*} [MeasurableSpace Xspace]"
+    },
+    "6c2a25fee3d19071": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.Model",
+      "statement": "  -- @realizes Xspace(general measurable covariate space)\n\n/-- A law and its deterministic supplied regression codes. -/\nstructure Model (p : Parameters) where\n  P : Measure (Obs Xspace) -- @realizes P(probability law on O)\n  probability : IsProbabilityMeasure P -- @realizes P(total mass one)\n  theta0 : ℝ -- @realizes theta0(real law functional; range constrained by ThetaRange)\n  g0 : Xspace → ℝ -- @realizes g0(carrier Xspace to real; conditional mean pinned by model assumptions)\n  q0 : Xspace → ℝ -- @realizes q0(carrier Xspace to real; conditional mean pinned by model assumptions)\n  gcode : ℕ → Xspace → ℝ -- @realizes gcode(deterministic sequence Xspace to real)\n  qcode : ℕ → Xspace → ℝ -- @realizes qcode(deterministic sequence Xspace to real)\n  g0_measurable : Measurable g0 -- @realizes g0(measurable)\n  q0_measurable : Measurable q0 -- @realizes q0(measurable)\n  gcode_measurable : ∀ n, Measurable (gcode n) -- @realizes gcode(each code measurable)\n  qcode_measurable : ∀ n, Measurable (qcode n) -- @realizes qcode(each code measurable)\n  treatment_integrable : Integrable (fun o : Obs Xspace ↦ o.2.1) P\n    -- @realizes T(integrable domain of the conditional mean)\n  outcome_integrable : Integrable (fun o : Obs Xspace ↦ o.2.2) P\n    -- @realizes Y(integrable domain of the conditional mean)\n  g0_condMean :\n    @MeasureTheory.condExp (Obs Xspace) ℝ\n      (MeasurableSpace.comap (fun o : Obs Xspace ↦ o.1) inferInstance)\n      inferInstance _ _ P (fun o ↦ o.2.1) =ᵐ[P] fun o ↦ g0 o.1\n    -- @realizes g0(g0(X) = E[T|X])\n  q0_condMean :\n    @MeasureTheory.condExp (Obs Xspace) ℝ\n      (MeasurableSpace.comap (fun o : Obs Xspace ↦ o.1) inferInstance)\n      inferInstance _ _ P (fun o ↦ o.2.2) =ᵐ[P] fun o ↦ q0 o.1\n    -- @realizes q0(q0(X) = E[Y|X])\n\n/-- The observed-data law carried by a model is a probability measure, i.e. it\nassigns total mass one to the observation space. This is exactly the\nnormalization recorded among the model's defining conditions, made available\nautomatically wherever a probability law is required. -/\ninstance (p : Parameters) (m : Model (Xspace := Xspace) p) : IsProbabilityMeasure m.P :=\n  m.probability"
+    },
+    "254df2f08254a6e9": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.IidSampling",
+      "statement": "def IidSampling (n : ℕ) (P : Measure (Obs Xspace))\n    (mu : Measure (Fin n → Obs Xspace)) : Prop :=\n  mu = Measure.pi (fun _ : Fin n ↦ P)"
+    },
+    "59dfa1002247b14d": {
+      "label": "Obs",
+      "statement": "/-- The observation space: a single observed unit is a triple made of a covariate\nvalue drawn from the covariate space, a real-valued treatment, and a real-valued\noutcome. Every law considered in the paper is a probability distribution on this\nspace. -/\nabbrev Obs (Xspace : Type*) := Xspace × ℝ × ℝ"
+    },
+    "c1599ffb8690e107": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.IndependentTreatmentNoise",
+      "statement": "def IndependentTreatmentNoise (p : Parameters) (m : Model (Xspace := Xspace) p) : Prop :=\n  ProbabilityTheory.IndepFun (eta p m) covariate m.P"
+    },
+    "52d7d349ff0496aa": {
+      "label": "Parameters",
+      "statement": "/-- Primitive constants and deterministic code-radius sequences. -/\nstructure Parameters where\n  n : ℕ -- @realizes n(natural sample size)\n  n_pos : 1 ≤ n -- @realizes n(positive sample size)\n  r : ℕ -- @realizes r(fixed ACE order)\n  k : ℕ -- @realizes k(cumulant order)\n  k_eq : k = r + 1 -- @realizes k(k = r+1)\n  r_ge_two : 2 ≤ r -- @realizes r(r at least two)\n  s : ℝ≥0∞ -- @realizes s(Lp exponent in [r,infinity])\n  r_le_s : (r : ℝ≥0∞) ≤ s -- @realizes s(s at least r)\n  gamma : ℝ -- @realizes gamma(probability level)\n  gamma_mem : gamma ∈ Ioo (1 / 2 : ℝ) 1 -- @realizes gamma(range (1/2,1))\n  Ctheta : ℝ -- @realizes Ctheta(positive target bound)\n  Cg : ℝ -- @realizes Cg(positive treatment-regression bound)\n  Cq : ℝ -- @realizes Cq(positive outcome bound)\n  psieta : ℝ -- @realizes psieta(positive treatment-noise scale)\n  psixi : ℝ -- @realizes psixi(positive outcome-noise scale)\n  delta : ℝ -- @realizes delta(positive cumulant separation)\n  sigma : ℝ -- @realizes sigma(positive Gaussian standard deviation)\n  constants_pos :\n    0 < Ctheta ∧ -- @realizes Ctheta(strictly positive)\n    0 < Cg ∧ -- @realizes Cg(strictly positive)\n    0 < Cq ∧ -- @realizes Cq(strictly positive)\n    0 < psieta ∧ -- @realizes psieta(strictly positive)\n    0 < psixi ∧ -- @realizes psixi(strictly positive)\n    0 < delta ∧ -- @realizes delta(strictly positive)\n    0 < sigma -- @realizes sigma(strictly positive)\n  eps1n : ℕ → ℝ -- @realizes eps1n(nonnegative nonincreasing sequence)\n  eps2n : ℕ → ℝ -- @realizes eps2n(nonnegative nonincreasing sequence)\n  eps1_nonneg : ∀ n, 1 ≤ n → 0 ≤ eps1n n -- @realizes eps1n(values nonnegative for n>=1)\n  eps2_nonneg : ∀ n, 1 ≤ n → 0 ≤ eps2n n -- @realizes eps2n(values nonnegative for n>=1)\n  eps1_antitone : ∀ ⦃a b⦄, 1 ≤ a → a ≤ b → eps1n b ≤ eps1n a\n    -- @realizes eps1n(nonincreasing on positive indices)\n  eps2_antitone : ∀ ⦃a b⦄, 1 ≤ a → a ≤ b → eps2n b ≤ eps2n a\n    -- @realizes eps2n(nonincreasing on positive indices)\n\n-- @env: S1\nvariable {Xspace : Type*} [MeasurableSpace Xspace]"
+    },
+    "411ca7a1d7e9d6cc": {
+      "label": "Model",
+      "statement": "  -- @realizes Xspace(general measurable covariate space)\n\n/-- A law and its deterministic supplied regression codes. -/\nstructure Model (p : Parameters) where\n  P : Measure (Obs Xspace) -- @realizes P(probability law on O)\n  probability : IsProbabilityMeasure P -- @realizes P(total mass one)\n  theta0 : ℝ -- @realizes theta0(real law functional; range constrained by ThetaRange)\n  g0 : Xspace → ℝ -- @realizes g0(carrier Xspace to real; conditional mean pinned by model assumptions)\n  q0 : Xspace → ℝ -- @realizes q0(carrier Xspace to real; conditional mean pinned by model assumptions)\n  gcode : ℕ → Xspace → ℝ -- @realizes gcode(deterministic sequence Xspace to real)\n  qcode : ℕ → Xspace → ℝ -- @realizes qcode(deterministic sequence Xspace to real)\n  g0_measurable : Measurable g0 -- @realizes g0(measurable)\n  q0_measurable : Measurable q0 -- @realizes q0(measurable)\n  gcode_measurable : ∀ n, Measurable (gcode n) -- @realizes gcode(each code measurable)\n  qcode_measurable : ∀ n, Measurable (qcode n) -- @realizes qcode(each code measurable)\n  treatment_integrable : Integrable (fun o : Obs Xspace ↦ o.2.1) P\n    -- @realizes T(integrable domain of the conditional mean)\n  outcome_integrable : Integrable (fun o : Obs Xspace ↦ o.2.2) P\n    -- @realizes Y(integrable domain of the conditional mean)\n  g0_condMean :\n    @MeasureTheory.condExp (Obs Xspace) ℝ\n      (MeasurableSpace.comap (fun o : Obs Xspace ↦ o.1) inferInstance)\n      inferInstance _ _ P (fun o ↦ o.2.1) =ᵐ[P] fun o ↦ g0 o.1\n    -- @realizes g0(g0(X) = E[T|X])\n  q0_condMean :\n    @MeasureTheory.condExp (Obs Xspace) ℝ\n      (MeasurableSpace.comap (fun o : Obs Xspace ↦ o.1) inferInstance)\n      inferInstance _ _ P (fun o ↦ o.2.2) =ᵐ[P] fun o ↦ q0 o.1\n    -- @realizes q0(q0(X) = E[Y|X])\n\n/-- The observed-data law carried by a model is a probability measure, i.e. it\nassigns total mass one to the observation space. This is exactly the\nnormalization recorded among the model's defining conditions, made available\nautomatically wherever a probability law is required. -/\ninstance (p : Parameters) (m : Model (Xspace := Xspace) p) : IsProbabilityMeasure m.P :=\n  m.probability"
+    },
+    "56f3260d1e39be04": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.OutcomeMeanIndependence",
+      "statement": "def OutcomeMeanIndependence (p : Parameters) (m : Model (Xspace := Xspace) p) : Prop :=\n  Integrable (xi p m) m.P ∧\n    @MeasureTheory.condExp (Obs Xspace) ℝ (xTSigma (Xspace := Xspace)) inferInstance _ _\n        m.P (xi p m) =ᵐ[m.P] 0"
+    },
+    "99b746be227c79af": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.ThetaRange",
+      "statement": "def ThetaRange (p : Parameters) (m : Model (Xspace := Xspace) p) : Prop :=\n  |m.theta0| ≤ p.Ctheta -- @realizes theta0(range [-Ctheta,Ctheta])"
+    },
+    "72febe441f3d34f2": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.GRange",
+      "statement": "def GRange (p : Parameters) (m : Model (Xspace := Xspace) p) : Prop :=\n  ∀ᵐ x ∂covariateLaw p m, |m.g0 x| ≤ p.Cg -- @realizes g0(essential range bounded by Cg)"
+    },
+    "ae94a8c5fcf7cb18": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.QRange",
+      "statement": "def QRange (p : Parameters) (m : Model (Xspace := Xspace) p) : Prop :=\n  ∀ᵐ x ∂covariateLaw p m, |m.q0 x| ≤ p.Cq -- @realizes q0(essential range bounded by Cq)"
+    },
+    "ef32adb6a61b9343": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.BoundedGaussianOutcome",
+      "statement": "def BoundedGaussianOutcome (p : Parameters) (m : Model (Xspace := Xspace) p) : Prop :=\n  ∀ᵐ o ∂m.P, |outcome o| ≤ p.Cq"
+    },
+    "bf523048203c778d": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.EtaSubGaussian",
+      "statement": "def EtaSubGaussian (p : Parameters) (m : Model (Xspace := Xspace) p) : Prop :=\n  Integrable (fun o ↦ Real.exp ((eta p m o) ^ 2 / p.psieta ^ 2)) m.P ∧\n    ∫ o, Real.exp ((eta p m o) ^ 2 / p.psieta ^ 2) ∂m.P ≤ 2"
+    },
+    "01aa95e2062c3edb": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.XiSubGaussian",
+      "statement": "def XiSubGaussian (p : Parameters) (m : Model (Xspace := Xspace) p) : Prop :=\n  Integrable (fun w ↦ Real.exp ((xi p m w) ^ 2 / p.psixi ^ 2)) m.P ∧\n    ∀ᵐ o ∂m.P,\n      (@MeasureTheory.condExp (Obs Xspace) ℝ\n        (MeasurableSpace.comap covariate inferInstance) inferInstance _ _ m.P\n        (fun w ↦ Real.exp ((xi p m w) ^ 2 / p.psixi ^ 2))) o ≤ 2"
+    },
+    "6db02c5887583687": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.CumulantSeparation",
+      "statement": "def CumulantSeparation (p : Parameters) (m : Model (Xspace := Xspace) p) : Prop :=\n  |kappaEta p m| ≥ p.delta -- @realizes delta(lower cumulant separation)"
+    },
+    "48b64edb703a8ec0": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.TreatmentCodeRadiusLs",
+      "statement": "def TreatmentCodeRadiusLs (p : Parameters) (m : Model (Xspace := Xspace) p) : Prop :=\n  ∀ n : ℕ, 1 ≤ n →\n    eLpNorm (fun x ↦ barG p m n x - m.g0 x) p.s (covariateLaw p m) ≤\n      ENNReal.ofReal (p.eps1n n)"
+    },
+    "191613cc66bd77c8": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.OutcomeCodeRadiusLs",
+      "statement": "def OutcomeCodeRadiusLs (p : Parameters) (m : Model (Xspace := Xspace) p) : Prop :=\n  ∀ n : ℕ, 1 ≤ n →\n    eLpNorm (fun x ↦ barQ p m n x - m.q0 x) p.s (covariateLaw p m) ≤\n      ENNReal.ofReal (p.eps2n n)"
+    },
+    "003c7d02d25450fd": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.TreatmentCodeRadiusLr",
+      "statement": "def TreatmentCodeRadiusLr (p : Parameters) (m : Model (Xspace := Xspace) p) : Prop :=\n  ∀ n : ℕ, 1 ≤ n →\n    eLpNorm (fun x ↦ barG p m n x - m.g0 x) (p.r : ℝ≥0∞) (covariateLaw p m) ≤\n      ENNReal.ofReal (p.eps1n n)"
+    },
+    "f7e049ef328d3dd4": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.OutcomeCodeRadiusLr",
+      "statement": "def OutcomeCodeRadiusLr (p : Parameters) (m : Model (Xspace := Xspace) p) : Prop :=\n  ∀ n : ℕ, 1 ≤ n →\n    eLpNorm (fun x ↦ barQ p m n x - m.q0 x) (p.r : ℝ≥0∞) (covariateLaw p m) ≤\n      ENNReal.ofReal (p.eps2n n)"
+    },
+    "2c0234b3b2655d82": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.GaussianTreatmentNoise",
+      "statement": "def GaussianTreatmentNoise (p : Parameters) (m : Model (Xspace := Xspace) p) : Prop :=\n  m.P.map (eta p m) = ProbabilityTheory.gaussianReal 0 ⟨p.sigma ^ 2, sq_nonneg p.sigma⟩"
+    },
+    "640aedf8edf75000": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.TreatmentCodeRadiusL1",
+      "statement": "def TreatmentCodeRadiusL1 (p : Parameters) (m : Model (Xspace := Xspace) p)\n    : Prop :=\n  ∀ n : ℕ, 1 ≤ n →\n    Integrable (fun x ↦ |barG p m n x - m.g0 x|) (covariateLaw p m) ∧\n      ∫ x, |barG p m n x - m.g0 x| ∂covariateLaw p m ≤ p.eps1n n"
+    },
+    "e909f5736a146e24": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.NonGaussianClass",
+      "statement": "structure NonGaussianClass (p : Parameters) (n : ℕ)\n    (m : Model (Xspace := Xspace) p) : Prop where\n  n_pos : 1 ≤ n -- @realizes n(positive class index)\n  independentTreatmentNoise : IndependentTreatmentNoise p m\n  outcomeMeanIndependence : OutcomeMeanIndependence p m\n  thetaRange : ThetaRange p m\n  gRange : GRange p m\n  qRange : QRange p m\n  etaSubGaussian : EtaSubGaussian p m\n  xiSubGaussian : XiSubGaussian p m\n  cumulantSeparation : CumulantSeparation p m\n  treatmentCodeRadiusL1 : TreatmentCodeRadiusL1At p m n"
+    },
+    "0c0f31cdb4f40e3d": {
+      "label": "TreatmentCodeRadiusL1At",
+      "statement": "/-- The mean-absolute-error accuracy budget imposed at a single sample size: the\ndeviation between the clipped treatment code and the true treatment regression\nfunction is integrable under the covariate marginal, with mean at most the first\naccuracy sequence evaluated at that sample size. -/\ndef TreatmentCodeRadiusL1At (p : Parameters) (m : Model (Xspace := Xspace) p)\n    (n : ℕ) : Prop :=\n  Integrable (fun x ↦ |barG p m n x - m.g0 x|) (covariateLaw p m) ∧\n    ∫ x, |barG p m n x - m.g0 x| ∂covariateLaw p m ≤ p.eps1n n"
+    },
+    "29dfa989a507efe8": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.GaussianClass",
+      "statement": "structure GaussianClass (p : Parameters) (n : ℕ)\n    (m : Model (Xspace := Xspace) p) : Prop where\n  n_pos : 1 ≤ n -- @realizes n(positive class index)\n  independentTreatmentNoise : IndependentTreatmentNoise p m\n  outcomeMeanIndependence : OutcomeMeanIndependence p m\n  thetaRange : ThetaRange p m\n  gRange : GRange p m\n  boundedGaussianOutcome : BoundedGaussianOutcome p m\n  gaussianTreatmentNoise : GaussianTreatmentNoise p m\n  treatmentCodeRadius : TreatmentCodeRadiusLsAt p m n\n  outcomeCodeRadius : OutcomeCodeRadiusLsAt p m n"
+    },
+    "e6bf1c891aa19967": {
+      "label": "TreatmentCodeRadiusLsAt",
+      "statement": "/-- The treatment-side accuracy budget imposed at a single sample size: the\nclipped treatment code approximates the true treatment regression function to\nwithin the first accuracy sequence evaluated at that sample size, measured in\nthe norm of exponent s under the covariate marginal.\n\nThis is the one-index form of the treatment code-radius condition, used when a\nmodel class is indexed by a fixed sample size. -/\ndef TreatmentCodeRadiusLsAt (p : Parameters) (m : Model (Xspace := Xspace) p)\n    (n : ℕ) : Prop :=\n  eLpNorm (fun x ↦ barG p m n x - m.g0 x) p.s (covariateLaw p m) ≤\n    ENNReal.ofReal (p.eps1n n)"
+    },
+    "e1dcc659cb2e048c": {
+      "label": "OutcomeCodeRadiusLsAt",
+      "statement": "/-- The outcome-side accuracy budget imposed at a single sample size: the\nclipped outcome code approximates the true outcome regression function to within\nthe second accuracy sequence evaluated at that sample size, measured in the norm\nof exponent s under the covariate marginal.\n\nThis is the one-index form of the outcome code-radius condition. -/\ndef OutcomeCodeRadiusLsAt (p : Parameters) (m : Model (Xspace := Xspace) p)\n    (n : ℕ) : Prop :=\n  eLpNorm (fun x ↦ barQ p m n x - m.q0 x) p.s (covariateLaw p m) ≤\n    ENNReal.ofReal (p.eps2n n)"
+    },
+    "08d60a87d81333fb": {
+      "label": "outcome",
+      "statement": "/-- Outcome coordinate. -/\ndef outcome (o : Obs Xspace) : ℝ := o.2.2 -- @realizes Y(real outcome)"
+    },
+    "88b6031de756dc34": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.JmsAceClass",
+      "statement": "structure JmsAceClass (p : Parameters) (n : ℕ)\n    (m : Model (Xspace := Xspace) p) : Prop where\n  n_pos : 1 ≤ n -- @realizes n(positive class index)\n  independentTreatmentNoise : IndependentTreatmentNoise p m\n  outcomeMeanIndependence : OutcomeMeanIndependence p m\n  thetaRange : ThetaRange p m\n  gRange : GRange p m\n  qRange : QRange p m\n  etaSubGaussian : EtaSubGaussian p m\n  xiSubGaussian : XiSubGaussian p m\n  cumulantSeparation : CumulantSeparation p m\n  treatmentCodeRadiusLr : TreatmentCodeRadiusLrAt p m n\n  outcomeCodeRadiusLr : OutcomeCodeRadiusLrAt p m n"
+    },
+    "8b549e74c347a071": {
+      "label": "TreatmentCodeRadiusLrAt",
+      "statement": "/-- The comparator's treatment-side accuracy budget imposed at a single sample\nsize: the clipped treatment code approximates the true treatment regression\nfunction to within the first accuracy sequence evaluated at that sample size,\nmeasured in the norm of exponent r under the covariate marginal. -/\ndef TreatmentCodeRadiusLrAt (p : Parameters) (m : Model (Xspace := Xspace) p)\n    (n : ℕ) : Prop :=\n  eLpNorm (fun x ↦ barG p m n x - m.g0 x) (p.r : ℝ≥0∞) (covariateLaw p m) ≤\n    ENNReal.ofReal (p.eps1n n)"
+    },
+    "564e10b1218aec9f": {
+      "label": "OutcomeCodeRadiusLrAt",
+      "statement": "/-- The comparator's outcome-side accuracy budget imposed at a single sample\nsize: the clipped outcome code approximates the true outcome regression function\nto within the second accuracy sequence evaluated at that sample size, measured\nin the norm of exponent r under the covariate marginal. -/\ndef OutcomeCodeRadiusLrAt (p : Parameters) (m : Model (Xspace := Xspace) p)\n    (n : ℕ) : Prop :=\n  eLpNorm (fun x ↦ barQ p m n x - m.q0 x) (p.r : ℝ≥0∞) (covariateLaw p m) ≤\n    ENNReal.ofReal (p.eps2n n)"
+    },
+    "a84b9c26b3f21c02": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.generalizedQuantile",
+      "statement": "/-- The lower quantile at level one minus the confidence parameter gamma of a\nreal-valued statistic of the sample, the quantile being taken of the\ndistribution the statistic induces when the n units are drawn independently from\nthe given law.\n\nSince gamma lies strictly between one half and one, the level is below one half,\nso applied to the absolute estimation error this is a value the error exceeds\nwith probability at least gamma. Bounding it from below therefore says that the\nestimator misses by at least that much with high probability, which is the\nhigh-probability form of the paper's converse. The generalized inverse is used\nso that no continuity of the error distribution need be assumed. -/\ndef generalizedQuantile (p : Parameters) (n : ℕ)\n    (m : Model (Xspace := Xspace) p)\n    (W : (Fin n → Obs Xspace) → ℝ) : ℝ :=\n  Causalean.Stat.quantile (Measure.map W (iidLaw m n)) (1 - p.gamma)"
+    },
+    "fd2f49c5a0517232": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.contaminationTransform",
+      "statement": "/-- The exponential transform of the treatment-code error weighted by the\noutcome-side contamination: the expectation of the contamination evaluated at\nthe covariate times the exponential of the complex argument multiplied by the\ntreatment-code error. -/\ndef contaminationTransform (z : ℂ) : ℂ :=\n  weightedTransform m.P (fun o ↦ outcomeContamination p m n (covariate o))\n    (treatmentError p m n) z -- @realizes B(E[b_n(X) exp(z D_n)])"
+    },
+    "9ca1bc6c74c7a20c": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.jmsA1",
+      "statement": "    -- @realizes thetahatACE(the published order-r ACE estimator)\n\n-- @env: S5\n/-- The first exponential-tilt scale of the published eligibility condition:\ntwice the logarithm of six times the sum of the treatment-regression bound and\nthe treatment sub-Gaussian scale, divided by the treatment-code accuracy budget\nat sample size `n`. -/\ndef jmsA1 (p : Parameters) (n : ℕ) : ℝ :=\n  2 * Real.log (6 * (p.Cg + p.psieta) * (p.eps1n n)⁻¹)"
+    },
+    "f914d45f8326184c": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.zeroInstrument",
+      "statement": "def zeroInstrument (M : ℂ → ℂ) (z0 : ℂ) (ell : ℕ)\n    (_hell : 1 ≤ ell) (_hz : M z0 = 0)\n    (_hmult : analyticOrderNatAt M z0 = ell) (w : ℂ) : ℂ :=\n  w ^ (ell - 1) * Complex.exp (z0 * w)"
+    },
+    "fe2996ebf5cc1a64": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.contourFunctional",
+      "statement": "def contourFunctional (F G : ℂ → ℂ) (rho : ℝ)\n    (_hrho : 0 < rho)\n    (_hEntire : AnalyticOnNhd ℂ F (closedBall (0 : ℂ) rho))\n    (_hzero : ∀ z ∈ sphere (0 : ℂ) rho, F z ≠ 0)\n    (_hcount : 1 ≤\n      Causalean.Mathlib.Analysis.ArgumentPrincipleCircle.zeroMultiplicityCount F 0 rho) : ℂ :=\n  (contourCount F rho * (2 * (Real.pi : ℂ) * Complex.I))⁻¹ *\n    circleIntegral (fun z ↦ G z / F z) 0 rho"
+    },
+    "c4b219ab3e654a87": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.minimaxRisks",
+      "statement": "def minimaxRisks (p : Parameters) (n : ℕ)\n    (gcode qcode : ℕ → Xspace → ℝ) : ℝ≥0∞ × ℝ≥0∞ × ℝ≥0∞ :=\n  (minimaxRiskOn p n\n      {m | NonGaussianClass p n m ∧\n        barG p m n = clippedTreatmentCode p gcode n ∧\n        barQ p m n = clippedOutcomeCode p qcode n},\n    minimaxRiskOn p n\n      {m | GaussianClass p n m ∧\n        barG p m n = clippedTreatmentCode p gcode n ∧\n        barQ p m n = clippedOutcomeCode p qcode n},\n    minimaxQuantileRiskGOn p n gcode qcode)"
+    },
+    "34a238acd57b4f68": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.jmsEligible",
+      "statement": "def jmsEligible (p : Parameters) (n : ℕ) : Prop :=\n  jmsEligibleAt p n p.delta"
+    },
+    "582bb1702a845c07": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.thetaHatSin",
+      "statement": "def thetaHatSin (p : Parameters) (m : Model (Xspace := Xspace) p)\n    (data : Fin p.n → Obs Xspace) : ℝ :=\n  thetaHatAt p m p.n (Real.pi / 2) (Real.exp (-Real.pi ^ 2 / 8) / 4) data"
+    },
+    "a44123b98c34c2e2": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.candidateRecord",
+      "statement": "def candidateRecord (p : Parameters) (m : Model (Xspace := Xspace) p)\n    (data : Fin p.n → Obs Xspace) (depth : ℕ) (C : RationalCircle)\n    (hC : C ∈ libraryOfCircles depth) (a : Fin 2) : Type :=\n  CandidateRecord p m data depth C hC a"
+    },
+    "f153e2d18a795b78": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.AceComparisonSubclass",
+      "statement": "structure AceComparisonSubclass (p : Parameters) (n : ℕ)\n    (m : Model (Xspace := Xspace) p) : Prop extends NonGaussianClass p n m where\n  treatmentCodeRadius : TreatmentCodeRadiusLsAt p m n\n  outcomeCodeRadius : OutcomeCodeRadiusLsAt p m n"
+    },
+    "f9a84a69542ce470": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.complexCertifiedIntervalArithmetic",
+      "statement": "def complexCertifiedIntervalArithmetic : Type := ComplexCertifiedIntervalArithmetic"
+    },
+    "12fba4f27336ad97": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.contourBank",
+      "statement": "def contourBank (p : Parameters) (pStar : CertifiedBankInputs p) : ContourBankData :=\n  let psiI := certifiedIntervalArithmetic.refine pStar.psietaName.name errorOne\n  let R1I := certifiedIntervalArithmetic.refine pStar.R1Name.name errorOne\n  let Upsi := positiveCeil psiI.hi\n  let UR := positiveCeil R1I.hi\n  let Ncert := 4 * Upsi ^ 2 * (UR + 2) ^ 3\n  let mStar := Ncert + 3\n  let dStar : ℚ := (1 / 2) ^ mStar\n  let hStar := dStar / 3\n  let JBase := 2 ^ (mStar - 1)\n  let rhoName : Fin (JBase + 1) → CertifiedReal := fun j ↦\n    CertifiedReal.add pStar.R0Name.name\n      (CertifiedReal.ofRat (1 / 4 + j.1 * dStar))\n  let eStar := 8 * UR * Upsi ^ 2 * (UR + 1) ^ 2\n  let dStarDen := 3 * (2 * UR + 1)\n  let uStar := 2 * eStar + Ncert * (mStar + dStarDen)\n  let aStarRat : ℚ := (1 / 2) ^ uStar\n  { Upsi := Upsi\n    UR := UR\n    Ncert := Ncert\n    mStar := mStar\n    JBase := JBase\n    rhoName := rhoName\n    rho := fun j ↦ (rhoName j).value\n    rho_value := fun _ ↦ rfl\n    dStar := dStar\n    hStar := hStar\n    eStar := eStar\n    dStarDen := dStarDen\n    uStar := uStar\n    aStarRat := aStarRat\n    aStarRat_pos := by dsimp [aStarRat]; positivity\n    aStar := (aStarRat : ℝ)\n    aStar_eq := rfl }"
+    },
+    "c8363c5356d852bd": {
+      "label": "CertifiedBankInputs",
+      "statement": "/-- The one fixed primitive record shared by the bank and estimator. -/\nstructure CertifiedBankInputs (p : Parameters) where\n  kName : ℕ\n  k_value : kName = p.k\n  deltaName : PositiveCertifiedReal\n  delta_value : deltaName.name.value = p.delta\n  psietaName : PositiveCertifiedReal\n  psieta_value : psietaName.name.value = p.psieta\n  R0Name : PositiveCertifiedReal\n  R0_value : R0Name.name.value = zeroRadius p\n  R1Name : PositiveCertifiedReal\n  R1_value : R1Name.name.value = searchRadius p\n  zeroRadius_contract :\n    zeroRadius p = Ak p.k * (p.psieta ^ 2 / p.delta) ^ ((p.k - 2 : ℝ)⁻¹)\n  searchRadius_contract : searchRadius p = zeroRadius p + 1"
+    },
+    "98c51ed9fecff346": {
+      "label": "ContourBankData",
+      "statement": "/-- All data computed by the displayed fixed-fuel bank program. -/\nstructure ContourBankData where\n  Upsi : ℕ\n  UR : ℕ\n  Ncert : ℕ\n  mStar : ℕ\n  JBase : ℕ\n  rhoName : Fin (JBase + 1) → CertifiedReal\n  rho : Fin (JBase + 1) → ℝ -- @realizes rho(increasing finite vector in (R0,R1))\n  rho_value : ∀ j, (rhoName j).value = rho j\n  dStar : ℚ\n  hStar : ℚ\n  eStar : ℕ\n  dStarDen : ℕ\n  uStar : ℕ\n  aStarRat : ℚ\n  aStarRat_pos : 0 < aStarRat\n  aStar : ℝ -- @realizes aStar(positive dyadic boundary-modulus certificate)\n  aStar_eq : aStar = (aStarRat : ℝ)"
+    },
+    "ef56ba274bb47db0": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.thetaHatSpec",
+      "statement": "/-- The estimator itself, assembled for a given parameter block, fixed certified records, and\nsupplied treatment-regression code sequence: it requires the code at the current sample size\nto be measurable, runs the canonical finite-rational program, reports the clipped point\nestimate, exposes the full execution trace, and demands of any compiled implementation the\nrepresented-execution contract. -/\nnoncomputable def thetaHatSpec (p : Parameters) (pStar : CertifiedBankInputs p)\n    (cStar : CertifiedRangeInput p) (gcode : ℕ → Xspace → ℝ) :\n    AdaptiveContourEstimator Xspace p pStar cStar :=\n  { publicDomain := Measurable (gcode p.n)\n    ordinaryProgram := ordinaryFiniteRationalResult p pStar cStar gcode\n    ordinaryValue := ordinaryThetaHatValue p pStar cStar gcode\n    fullTrace := fun data ↦ (ordinaryFiniteRationalResult p pStar cStar gcode data).trace\n    representedProgram := fun compiled input ↦\n      representedSpectralProgram compiled\n        (SuppliedRepresentedSpectralInput.withFixedRecords pStar cStar input)\n    representedOutputCorrespondence := fun compiled ↦\n      representedExecutionContract compiled p pStar cStar gcode }"
+    },
+    "982a142082b736f0": {
+      "label": "CertifiedRangeInput",
+      "statement": "/-- A certified record for the experiment-wide range constant Ctheta: a strictly positive\nreal number supplied as a certified name (a nested family of rational enclosures with an\nexplicit accuracy modulus), together with the requirement that the number it names is\nexactly the parameter block's range constant Ctheta. -/\nstructure CertifiedRangeInput (p : Parameters) where\n  CthetaName : PositiveCertifiedReal\n  Ctheta_value : CthetaName.name.value = p.Ctheta"
+    },
+    "376b92fda1ee71a9": {
+      "label": "AdaptiveContourEstimator",
+      "statement": "/-- The estimator packaged as one object: the domain condition it requires of the supplied\nregression code, the program it runs on a data set, the real point estimate it reports, the\nexecution trace it emits, the version of the program driven by a compiled implementation,\nand the correspondence property tying that version to the reference one. -/\nstructure AdaptiveContourEstimator (Xspace : Type*) [MeasurableSpace Xspace]\n    (p : Parameters) (pStar : CertifiedBankInputs p) (cStar : CertifiedRangeInput p) where\n  publicDomain : Prop\n  ordinaryProgram : (Fin p.n → Obs Xspace) → SpectralProgramResult\n  ordinaryValue : (Fin p.n → Obs Xspace) → ℝ\n  fullTrace : (Fin p.n → Obs Xspace) → SpectralExecutionTrace\n  representedProgram : CompiledBoundedSpectralAdapter →\n    SuppliedRepresentedSpectralInput p pStar cStar → SpectralProgramResult\n  representedOutputCorrespondence : CompiledBoundedSpectralAdapter → Prop\n\n/-- Lets a packaged estimator be applied directly to a data set, returning its real point\nestimate. -/\ninstance (p : Parameters) (pStar : CertifiedBankInputs p) (cStar : CertifiedRangeInput p) :\n    CoeFun (AdaptiveContourEstimator Xspace p pStar cStar)\n    (fun _ ↦ (Fin p.n → Obs Xspace) → ℝ) :=\n  ⟨AdaptiveContourEstimator.ordinaryValue⟩"
+    },
+    "367834c9a2a87002": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.known_zero_instrument",
+      "statement": "theorem known_zero_instrument (p : Parameters) (m : Model (Xspace := Xspace) p)\n    (n : ℕ) (hn : 1 ≤ n) (hclass : NonGaussianClass p n m)\n    (ell : ℕ) (hell : 1 ≤ ell) (z0 : ℂ)\n    (hz : treatmentMGF p m z0 = 0)\n    (hmult : analyticOrderNatAt (treatmentMGF p m) z0 = ell) :\n    (∀ d : ℝ,\n      ∫ o, zeroInstrument (treatmentMGF p m) z0 ell hell hz hmult\n        ((eta p m o + d : ℝ) : ℂ) ∂m.P = 0) ∧\n    (@MeasureTheory.condExp (Obs Xspace) ℂ\n      (MeasurableSpace.comap covariate inferInstance) inferInstance _ _ m.P\n      (fun o ↦ zeroInstrument (treatmentMGF p m) z0 ell hell hz hmult\n        (learnedResidual p m n o))) =ᵐ[m.P] 0 ∧\n    (∫ o, (learnedResidual p m n o : ℂ) *\n        zeroInstrument (treatmentMGF p m) z0 ell hell hz hmult\n          (learnedResidual p m n o) ∂m.P =\n      iteratedDeriv ell (treatmentMGF p m) z0 * nuisanceMGF p m n z0) ∧\n    ((∫ o, (learnedResidual p m n o : ℂ) *\n          zeroInstrument (treatmentMGF p m) z0 ell hell hz hmult\n            (learnedResidual p m n o) ∂m.P) ≠ 0 →\n      (m.theta0 : ℂ) =\n        (∫ o, (outcome o : ℂ) *\n          zeroInstrument (treatmentMGF p m) z0 ell hell hz hmult\n            (learnedResidual p m n o) ∂m.P) /\n        (∫ o, (learnedResidual p m n o : ℂ) *\n          zeroInstrument (treatmentMGF p m) z0 ell hell hz hmult\n            (learnedResidual p m n o) ∂m.P))"
+    },
+    "c7761794817af66a": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.observable_factorization",
+      "statement": "lemma observable_factorization (hclass : NonGaussianClass p n m) :\n    ∀ z : ℂ,\n      residualMGF p m n z = treatmentMGF p m z * nuisanceMGF p m n z ∧\n      outcomeResidualTransform p m n z =\n        (m.theta0 : ℂ) * deriv (residualMGF p m n) z +\n          treatmentMGF p m z * contaminationTransform p m n z"
+    },
+    "cf025b56fbddc656": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.exact_contour_identification",
+      "statement": "theorem exact_contour_identification (p : Parameters)\n    (m : Model (Xspace := Xspace) p) (n : ℕ) (hn : 1 ≤ n)\n    (hclass : NonGaussianClass p n m)\n    (pStar : CertifiedBankInputs p)\n    (j : Fin ((contourBank p pStar).JBase + 1))\n    (hF : ∀ z ∈ sphere (0 : ℂ) ((contourBank p pStar).rho j),\n      residualMGF p m n z ≠ 0)\n    (hH : ∀ z ∈ closedBall (0 : ℂ) ((contourBank p pStar).rho j),\n      nuisanceMGF p m n z ≠ 0)\n    (hcount : 1 ≤ zeroMultiplicityCount (residualMGF p m n) 0\n      ((contourBank p pStar).rho j)) :\n    (m.theta0 : ℂ) = contourFunctional (residualMGF p m n)\n      (outcomeResidualTransform p m n) ((contourBank p pStar).rho j)\n        (contourBank_rho_pos p pStar j)\n        (residualMGF_analyticOn_closedBall p m n hclass\n          ((contourBank p pStar).rho j)) hF hcount ∧\n    contourFunctional (residualMGF p m n) (outcomeResidualTransform p m n)\n        ((contourBank p pStar).rho j)\n        (contourBank_rho_pos p pStar j)\n        (residualMGF_analyticOn_closedBall p m n hclass\n          ((contourBank p pStar).rho j)) hF hcount =\n      (contourCount (residualMGF p m n) ((contourBank p pStar).rho j) *\n        (2 * (Real.pi : ℂ) * Complex.I))⁻¹ *\n          circleIntegral (fun z ↦ outcomeResidualTransform p m n z /\n            residualMGF p m n z) 0 ((contourBank p pStar).rho j)"
+    },
+    "bc8d84f544f6b0e5": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.integral_exp_mul_le_exp_four_mul_sq_of_luxemburg",
+      "statement": "/-- A centered Luxemburg square-exponential bound implies the global MGF\nestimate `E exp(tX) ≤ exp(4 ψ²t²)`. -/\nlemma integral_exp_mul_le_exp_four_mul_sq_of_luxemburg\n    [IsProbabilityMeasure μ]\n    (hψ : 0 < ψ) (hXmeas : Measurable X) (hXint : Integrable X μ)\n    (hLuxInt : Integrable (fun ω ↦ Real.exp (X ω ^ 2 / ψ ^ 2)) μ)\n    (hLux : ∫ ω, Real.exp (X ω ^ 2 / ψ ^ 2) ∂μ ≤ 2)\n    (hcenter : ∫ ω, X ω ∂μ = 0) (t : ℝ) :\n    ∫ ω, Real.exp (t * X ω) ∂μ ≤ Real.exp (4 * ψ ^ 2 * t ^ 2)"
+    },
+    "1215c622ee7f7a01": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.zero_localization",
+      "statement": "lemma zero_localization (p : Parameters) (m : Model (Xspace := Xspace) p)\n    (hpsi : EtaSubGaussian p m) (hsep : CumulantSeparation p m) :\n    ∃ z : ℂ, ‖z‖ ≤ zeroRadius p ∧ treatmentMGF p m z = 0"
+    },
+    "6db241ce29272d95": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.finite_contour_bank",
+      "statement": "lemma finite_contour_bank {Xspace : Type*} [MeasurableSpace Xspace]\n    (p : Parameters) (pStar : CertifiedBankInputs p) (n : ℕ) (hn : 1 ≤ n)\n    (m : Model (Xspace := Xspace) p)\n    (hclass : NonGaussianClass p n m) :\n    let B"
+    },
+    "232becf6d2f61d32": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.gaussian_exp_sq_integrable_and_integral_le_two",
+      "statement": "/-- At standard deviation `psi / 4`, a centered Gaussian's exponential-square\nmoment at Luxemburg scale `psi` is finite and at most two. -/\nlemma gaussian_exp_sq_integrable_and_integral_le_two (psi : ℝ) (hpsi : 0 < psi) :\n    Integrable (fun z : ℝ ↦ Real.exp (z ^ 2 / psi ^ 2))\n        (gaussianReal 0 ⟨(psi / 4) ^ 2, sq_nonneg (psi / 4)⟩) ∧\n      ∫ z, Real.exp (z ^ 2 / psi ^ 2)\n          ∂(gaussianReal 0 ⟨(psi / 4) ^ 2, sq_nonneg (psi / 4)⟩) ≤ 2"
+    },
+    "d82ee6de9eead407": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.outcomeResidualTransform_norm_le_populationNumeratorEnvelope",
+      "statement": "lemma outcomeResidualTransform_norm_le_populationNumeratorEnvelope\n    (p : Parameters) (m : Model (Xspace := Xspace) p)\n    (hclass : NonGaussianClass p p.n m) {z : ℂ}\n    (hz : ‖z‖ ≤ searchRadius p) :\n    ‖outcomeResidualTransform p m p.n z‖ ≤ populationNumeratorEnvelope p"
+    },
+    "8738c99238b539db": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.thetaHatSpec_good_event_exact_contour_perturbation",
+      "statement": "/-- The selected-circle ratio bound plus the separate finite rational\nmidpoint error. -/\nlemma thetaHatSpec_good_event_exact_contour_perturbation\n    (p : Parameters) (pStar : CertifiedBankInputs p) (cStar : CertifiedRangeInput p)\n    (gcode : ℕ → Xspace → ℝ) (data : Fin p.n → Obs Xspace)\n    (F G : ℂ → ℂ) (d e C_G mu nu target : ℝ)\n    (htarget : |target| ≤ p.Ctheta)\n    (hgood : CanonicalSelectorGoodEvent p pStar cStar gcode data\n      F G d e C_G mu nu)\n    (hratioIntegrable : ∀ j,\n      selectedContour (canonicalRepresentedInput p pStar cStar gcode data)\n          (contourBank p pStar) = some j →\n      CircleIntegrable\n          (fun z ↦ semanticEmpiricalG p gcode data (spectralFold p.n 1) 0 z /\n            semanticEmpiricalF p gcode data (spectralFold p.n 1) 0 z)\n          0 ((contourBank p pStar).rho j) ∧\n      CircleIntegrable (fun z ↦ G z / F z) 0 ((contourBank p pStar).rho j))\n    (hidentify : ∀ j N,\n      selectedContour (canonicalRepresentedInput p pStar cStar gcode data)\n          (contourBank p pStar) = some j →\n      (pilotOutcome (canonicalRepresentedInput p pStar cStar gcode data)\n        (contourBank p pStar) j).decoded = some N →\n      target = ((((N : ℂ) * (2 * Real.pi : ℂ) * Complex.I)⁻¹ *\n        circleIntegral (fun z ↦ G z / F z) 0\n          ((contourBank p pStar).rho j)).re)) :\n    |thetaHatSpec p pStar cStar gcode data - target| ≤\n      ordinaryContourPerturbationConstant p C_G mu nu * (d + e) +\n        1 / (max p.n 1 : ℝ)"
+    },
+    "6b96b6d856024cd3": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.adaptive_rootn_minimax",
+      "statement": "theorem adaptive_rootn_minimax\n    (r : ℕ) (delta Ctheta Cg Cq psieta psixi : ℝ)\n    (hr : 2 ≤ r) (hdelta : 0 < delta) (hCtheta : 0 < Ctheta)\n    (hCg : 0 < Cg) (hCq : 0 < Cq) (hpsieta : 0 < psieta)\n    (hpsixi : 0 < psixi) :\n    ∃ c C : ℝ, 0 < c ∧ 0 < C ∧\n      ∀ {Xspace : Type*} [MeasurableSpace Xspace]\n      (p0 : Parameters), p0.r = r → p0.delta = delta →\n      p0.Ctheta = Ctheta → p0.Cg = Cg → p0.Cq = Cq →\n      p0.psieta = psieta → p0.psixi = psixi →\n      (fixed : FixedExperimentRecords p0) →\n      ∀ (p : Parameters), (hfixed : SameFixedExperimentConstants p0 p) →\n      ∀ base : Model (Xspace := Xspace) p,\n        let pStarP"
+    },
+    "e368ac97487a62eb": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.jms_ace_alignment",
+      "statement": "theorem jms_ace_alignment\n    : ∀ (r : ℕ) (delta Ctheta Cg Cq psieta psixi : ℝ),\n      2 ≤ r → 0 < delta → 0 < Ctheta → 0 < Cg → 0 < Cq →\n      0 < psieta → 0 < psixi →\n      ∃ Cspec : ℝ, 0 < Cspec ∧\n      ∀ {Xspace : Type u} [MeasurableSpace Xspace],\n      ∀ (published : PublishedAceHandle Xspace),\n      ∀ (gamma : ℝ), gamma ∈ Set.Ioo (1 / 2 : ℝ) 1 →\n      ∀ Cgamma : ℝ,\n      JmsAceQuantileUpper published gamma Cgamma →\n      ∀ (p0 : Parameters), p0.r = r → p0.delta = delta →\n        p0.Ctheta = Ctheta → p0.Cg = Cg → p0.Cq = Cq →\n      p0.psieta = psieta → p0.psixi = psixi →\n      p0.gamma = gamma →\n      ∀ fixed : FixedExperimentRecords p0,\n      ∀ (p : Parameters) (hfixed : SameFixedExperimentConstants p0 p),\n        p.gamma = gamma →\n        let pStarP"
+    },
+    "497acee1105b8b1d": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.common_experiment_dichotomy",
+      "statement": "theorem common_experiment_dichotomy\n    (r : ℕ) (delta Ctheta Cg Cq psieta psixi : ℝ)\n    (hr : 2 ≤ r) (hdelta : 0 < delta) (hCtheta : 0 < Ctheta)\n    (hCg : 0 < Cg) (hCq : 0 < Cq) (hpsieta : 0 < psieta)\n    (hpsixi : 0 < psixi) :\n    ∀ {Xspace : Type*} [MeasurableSpace Xspace],\n    (∀ (p0 : Parameters), p0.r = r → p0.delta = delta →\n      p0.Ctheta = Ctheta → p0.Cg = Cg → p0.Cq = Cq →\n      p0.psieta = psieta → p0.psixi = psixi →\n      (fixed : FixedExperimentRecords p0) →\n      ∀ (pSeq : ℕ → Parameters)\n        (gcode qcode : ℕ → Xspace → ℝ) (eps1 eps2 : ℕ → ℝ),\n      (∀ j, Measurable (gcode j)) →\n      (∀ j, Measurable (qcode j)) →\n      (hfixed : ∀ j, SameFixedExperimentConstants p0 (pSeq j) ∧\n        (pSeq j).eps1n = eps1 ∧ (pSeq j).eps2n = eps2) →\n      Filter.Tendsto (fun j ↦ (pSeq j).n) Filter.atTop Filter.atTop →\n      (∀ᶠ j in Filter.atTop,\n        ({m : Model (Xspace := Xspace) (pSeq j) |\n          NonGaussianClass (pSeq j) (pSeq j).n m ∧\n            barG (pSeq j) m (pSeq j).n =\n                clippedTreatmentCode (pSeq j) gcode (pSeq j).n ∧\n              barQ (pSeq j) m (pSeq j).n =\n                clippedOutcomeCode (pSeq j) qcode (pSeq j).n}).Nonempty ∧\n        2 ≤ (pSeq j).n ∧\n        (pSeq j).eps1n (pSeq j).n ≤ (4 * searchRadius (pSeq j) *\n          Real.exp (2 * (pSeq j).Cg * searchRadius (pSeq j)))⁻¹) →\n      ∃ c C : ℝ, 0 < c ∧ 0 < C ∧\n      let B := contourBank p0 fixed.bank\n      ∀ᶠ j in Filter.atTop,\n        let pStarj := fixedBankInput fixed.bank (hfixed j).1\n        let cStarj := fixedRangeInput fixed.range (hfixed j).1\n        contourBank (pSeq j) pStarj = B ∧\n        ENNReal.ofReal (c / (pSeq j).n) ≤\n            minimaxRisk (pSeq j) (pSeq j).n gcode qcode ∧\n        minimaxRisk (pSeq j) (pSeq j).n gcode qcode ≤\n            ENNReal.ofReal (C / (pSeq j).n) ∧\n        Measurable (thetaHatSpec (pSeq j) pStarj cStarj gcode) ∧\n        (∀ compiled : CompiledBoundedSpectralAdapter,\n          FullCanonicalBuildAndCompilation compiled (pSeq j) pStarj cStarj gcode →\n            CompiledRepresentedExecution compiled (pSeq j) pStarj cStarj gcode) ∧\n        (⨆ m : Model (Xspace := Xspace) (pSeq j),\n          ⨆ (_ : NonGaussianClass (pSeq j) (pSeq j).n m ∧\n            barG (pSeq j) m (pSeq j).n =\n                clippedTreatmentCode (pSeq j) gcode (pSeq j).n ∧\n              barQ (pSeq j) m (pSeq j).n =\n                clippedOutcomeCode (pSeq j) qcode (pSeq j).n),\n          mseRisk m (pSeq j).n\n            (thetaHatSpec (pSeq j) pStarj cStarj gcode)) ≤\n              ENNReal.ofReal (C / (pSeq j).n)) ∧\n    (∀ (p : Parameters) (m : Model (Xspace := Xspace) p),\n      GaussianClass p p.n m → m.theta0 = 0) ∧\n    (∀ (p : Parameters) (gcode qcode : ℕ → Xspace → ℝ),\n      (∀ j, Measurable (gcode j)) →\n      (∀ j, Measurable (qcode j)) →\n      ({m : Model (Xspace := Xspace) p |\n        GaussianClass p p.n m ∧\n          barG p m p.n = clippedTreatmentCode p gcode p.n ∧\n          barQ p m p.n = clippedOutcomeCode p qcode p.n}).Nonempty →\n      minimaxRiskG (Xspace := Xspace) p p.n gcode qcode = 0 ∧\n      minimaxQuantileRiskG (Xspace := Xspace) p p.n gcode qcode = 0)"
+    },
+    "8e6520ad86079b70": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.symmetric_mixture_reduction",
+      "statement": "theorem symmetric_mixture_reduction (Ctheta Cg Cq psixi : ℝ) :\n    ∃ C : ℝ, 0 < C ∧\n      ∀ (p : Parameters), p.Ctheta = Ctheta → p.Cg = Cg →\n        p.Cq = Cq → p.psixi = psixi →\n      ∀ (m : Model (Xspace := Xspace) p),\n        m.P.map (eta p m) = symmetricGaussianMixture →\n        IidSampling p.n m.P (iidLaw m p.n) →\n        IndependentTreatmentNoise p m → OutcomeMeanIndependence p m →\n        ThetaRange p m → GRange p m → QRange p m →\n        XiSubGaussian p m → TreatmentCodeRadiusL1At p m p.n →\n        p.eps1n p.n ≤ 1 / Real.pi →\n        fourthCumulant p m = -2 ∧\n        treatmentMGF p m (Complex.I * (Real.pi / 2 : ℝ)) = 0 ∧\n        ∫ o, learnedResidual p m p.n o *\n            Real.sin (Real.pi * learnedResidual p m p.n o / 2) ∂m.P =\n          Real.exp (-Real.pi ^ 2 / 8) *\n            ∫ o, Real.cos (Real.pi * treatmentError p m p.n o / 2) ∂m.P ∧\n        Real.exp (-Real.pi ^ 2 / 8) / 2 ≤\n          ∫ o, learnedResidual p m p.n o *\n            Real.sin (Real.pi * learnedResidual p m p.n o / 2) ∂m.P ∧\n        mseRisk m p.n (thetaHatSin p m) ≤ ENNReal.ofReal (C / p.n)"
+    },
+    "fc97a24d9316f5c2": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.LocalToGaussianFrontier",
+      "statement": "def LocalToGaussianFrontier : String :=\n  \"Open question: for triangular treatment-noise laws with absolute k-th cumulant at least delta_n decreasing to zero under the same supplied code sequences, ask whether there exists a data-driven selector among ordinary DML, finite-order ACE, and global-contour procedures that attains the sharp minimax mean-squared-error rate as a function of n, epsilon_1_n, epsilon_2_n, and delta_n; yields uniformly valid inference across these regimes; and admits a matching local minimax lower bound. Nonassertion: this is a research agenda, not a theorem; the paper defines no unique sharp-rate functional or uniform-inference/coverage criterion and asserts no existential selector, confidence procedure, or matching lower-bound witness. This String is descriptive payload only, contains no witness fields, and is absent from every delivered theorem dependency.\""
+    },
+    "1b074eb44117b302": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.clippedRatioFromScores_sq_le",
+      "statement": "/-- With [at least one observation](hyp:hn), a [target value inside the clipping\nbound](hyp:htheta), a [strictly positive denominator level](hyp:hA) and a\n[population denominator mean of at least half that level](hyp:hmu), the [squared\nerror of the clipped ratio estimator run at a threshold of one quarter of the\nlevel is at most sixteen over the squared level, times the sum of the squared\nsample average of the remainder scores and the squared clipping bound times the\nsquared sample average of the centered denominator scores](goal).\n\nThe bound holds pathwise, on every sample: the branch where the threshold fails\nis absorbed because the denominator must then be far from its population mean. -/\nlemma clippedRatioFromScores_sq_le {Ω : Type*} (Ctheta theta A : ℝ)\n    (n : ℕ) (W R : Ω → ℝ) (muW : ℝ)\n    (hn : 0 < n) (htheta : |theta| ≤ Ctheta) (hA : 0 < A) (hmu : A / 2 ≤ muW)\n    (data : Fin n → Ω) :\n    (clippedRatioFromScores Ctheta theta n (A / 4) W R data - theta) ^ 2 ≤\n      16 / A ^ 2 *\n        (((n : ℝ)⁻¹ * ∑ i, R (data i)) ^ 2 +\n          Ctheta ^ 2 * (((n : ℝ)⁻¹ * ∑ i, (W (data i) - muW)) ^ 2)) := by\n  let den := (n : ℝ)⁻¹ * ∑ i, W (data i)\n  let rem := (n : ℝ)⁻¹ * ∑ i, R (data i)\n  have hcenter : (n : ℝ)⁻¹ * ∑ i, (W (data i) - muW) = den - muW := by\n    simp only [Finset.sum_sub_distrib, Finset.sum_const, Finset.card_fin,\n      nsmul_eq_mul]\n    dsimp [den]\n    have hnR : (n : ℝ) ≠ 0 := by exact_mod_cast Nat.ne_of_gt hn\n    field_simp\n  rw [hcenter]\n  unfold clippedRatioFromScores\n  dsimp only\n  split_ifs with hgood\n  · have hden : 0 < den := lt_of_lt_of_le (by positivity : 0 < A / 4) hgood\n    have hclip : |min (max ((theta * den + rem) / den) (-Ctheta)) Ctheta - theta| ≤\n        |((theta * den + rem) / den) - theta| := by\n      have hθclip : min (max theta (-Ctheta)) Ctheta = theta := by\n        rw [max_eq_left]\n        · exact min_eq_left (le_trans (le_abs_self theta) htheta)\n        · linarith [neg_le_of_abs_le htheta]\n      calc\n        _ = |min (max ((theta * den + rem) / den) (-Ctheta)) Ctheta -\n            min (max theta (-Ctheta)) Ctheta| := by rw [hθclip]\n        _ ≤ max |max ((theta * den + rem) / den) (-Ctheta) -\n            max theta (-Ctheta)| |Ctheta - Ctheta| :=\n          abs_min_sub_min_le_max _ _ _ _\n        _ ≤ |((theta * den + rem) / den) - theta| := by\n          simp only [sub_self, abs_zero, max_le_iff]\n          exact ⟨(abs_max_sub_max_le_max _ _ _ _).trans (by simp), abs_nonneg _⟩\n    have hratio : ((theta * den + rem) / den) - theta = rem / den := by\n      field_simp [hden.ne']\n      ring\n    have hsquare := sq_le_sq₀ (abs_nonneg _) (abs_nonneg _) |>.2 hclip\n    rw [sq_abs, sq_abs, hratio] at hsquare\n    calc\n      _ ≤ (rem / den) ^ 2 := hsquare\n      _ ≤ 16 / A ^ 2 * rem ^ 2 := by\n        rw [div_pow]\n        have hdenSq : (A / 4) ^ 2 ≤ den ^ 2 :=\n          sq_le_sq₀ (by positivity) hden.le |>.2 hgood\n        have hd2 : 0 < den ^ 2 := sq_pos_of_pos hden\n        rw [div_le_iff₀ hd2]\n        field_simp [hA.ne']\n        nlinarith [sq_nonneg rem]\n      _ ≤ 16 / A ^ 2 * (rem ^ 2 + Ctheta ^ 2 * (den - muW) ^ 2) := by\n        have hc : 0 ≤ 16 / A ^ 2 := by positivity\n        have hp : 0 ≤ Ctheta ^ 2 * (den - muW) ^ 2 := mul_nonneg (sq_nonneg _) (sq_nonneg _)\n        nlinarith\n  · have hbad : den < A / 4 := lt_of_not_ge hgood\n    have hdev : A / 4 ≤ muW - den := by linarith\n    have hC : 0 ≤ Ctheta := (abs_nonneg theta).trans htheta\n    have hthetaSq : theta ^ 2 ≤ Ctheta ^ 2 := by\n      have hu : theta ≤ Ctheta := (le_abs_self theta).trans htheta\n      have hl : -Ctheta ≤ theta := by linarith [neg_le_of_abs_le htheta]\n      nlinarith\n    have hfail : Ctheta ^ 2 ≤ 16 / A ^ 2 *\n        (Ctheta ^ 2 * (den - muW) ^ 2) := by\n      field_simp [hA.ne']\n      have hsq : A ^ 2 ≤ 16 * (den - muW) ^ 2 := by\n        nlinarith [sq_nonneg (4 * (muW - den) - A)]\n      nlinarith [mul_le_mul_of_nonneg_left hsq (sq_nonneg Ctheta)]\n    calc\n      (0 - theta) ^ 2 = theta ^ 2 := by ring\n      _ ≤ Ctheta ^ 2 := hthetaSq\n      _ ≤ 16 / A ^ 2 * (Ctheta ^ 2 * (den - muW) ^ 2) := hfail\n      _ ≤ 16 / A ^ 2 * (rem ^ 2 + Ctheta ^ 2 * (den - muW) ^ 2) := by\n        have hc : 0 ≤ 16 / A ^ 2 := by positivity\n        nlinarith [sq_nonneg rem]\n\n/-- Whenever the [target value lies inside the clipping bound](hyp:htheta), the\n[squared error of the clipped ratio estimator never exceeds four times the\nsquared clipping bound](goal), on every sample and whatever the denominator\nlevel. This is the crude fallback used where the sharp bound is unavailable. -/\nlemma clippedRatioFromScores_sq_le_global {Ω : Type*} (Ctheta theta A : ℝ)\n    (n : ℕ) (W R : Ω → ℝ) (muW : ℝ)\n    (htheta : |theta| ≤ Ctheta) (data : Fin n → Ω) :\n    (clippedRatioFromScores Ctheta theta n (A / 4) W R data - theta) ^ 2 ≤\n      4 * Ctheta ^ 2 := by\n  have hC : 0 ≤ Ctheta := (abs_nonneg theta).trans htheta\n  unfold clippedRatioFromScores\n  dsimp only\n  split_ifs\n  · have hlo : -Ctheta ≤ min\n        (max ((theta * ((n : ℝ)⁻¹ * ∑ i, W (data i)) +\n          (n : ℝ)⁻¹ * ∑ i, R (data i)) /\n          ((n : ℝ)⁻¹ * ∑ i, W (data i))) (-Ctheta)) Ctheta :=\n      le_min (le_trans (le_max_right _ _) (le_refl _)) (by linarith)\n    have hhi : min\n        (max ((theta * ((n : ℝ)⁻¹ * ∑ i, W (data i)) +\n          (n : ℝ)⁻¹ * ∑ i, R (data i)) /\n          ((n : ℝ)⁻¹ * ∑ i, W (data i))) (-Ctheta)) Ctheta ≤ Ctheta := min_le_right _ _\n    have htlo : -Ctheta ≤ theta := by linarith [neg_le_of_abs_le htheta]\n    have hthi : theta ≤ Ctheta := (le_abs_self theta).trans htheta\n    nlinarith [sq_nonneg (min\n      (max ((theta * ((n : ℝ)⁻¹ * ∑ i, W (data i)) +\n        (n : ℝ)⁻¹ * ∑ i, R (data i)) /\n        ((n : ℝ)⁻¹ * ∑ i, W (data i))) (-Ctheta)) Ctheta - theta)]\n  · have ht : theta ^ 2 ≤ Ctheta ^ 2 := by\n      have htlo : -Ctheta ≤ theta := by linarith [neg_le_of_abs_le htheta]\n      have hthi : theta ≤ Ctheta := (le_abs_self theta).trans htheta\n      nlinarith\n    nlinarith\n\n/-- For an independent sample of [size at least one](hyp:hn) from a probability\nlaw, with a [target value inside the clipping bound](hyp:htheta), a [strictly\npositive denominator level](hyp:hA) and a [population denominator mean of at\nleast half that level](hyp:hmu), and with [measurable](hyp:hWmeas,hRmeas) and\n[square-integrable](hyp:hW,hR) denominator and remainder scores whose\n[population means are that denominator mean and zero respectively](hyp:hWmean,hRmean),\nthe [expected squared error of the clipped ratio estimator run at a threshold of\none quarter of the level is at most sixteen over the squared level, divided by\nthe sample size, times the sum of the second moment of the remainder score and\nthe squared clipping bound times the second moment of the denominator\nscore](goal).\n\nThis is the sample-average version of the pathwise bound: averaging independent\ncentered scores contributes the usual one-over-sample-size factor. -/\nlemma clippedRatioFromScores_lintegral_le {Ω : Type*} [MeasurableSpace Ω]\n    (P : Measure Ω) [IsProbabilityMeasure P]\n    (Ctheta theta A : ℝ) (n : ℕ) (W R : Ω → ℝ) (muW : ℝ)\n    (hn : 0 < n) (htheta : |theta| ≤ Ctheta) (hA : 0 < A) (hmu : A / 2 ≤ muW)\n    (hWmeas : Measurable W) (hRmeas : Measurable R)\n    (hW : MemLp W 2 P) (hR : MemLp R 2 P)\n    (hWmean : ∫ o, W o ∂P = muW) (hRmean : ∫ o, R o ∂P = 0) :\n    ∫⁻ data : Fin n → Ω, ENNReal.ofReal\n      ((clippedRatioFromScores Ctheta theta n (A / 4) W R data - theta) ^ 2)\n        ∂Measure.pi (fun _ : Fin n ↦ P) ≤\n      ENNReal.ofReal (16 / A ^ 2) * (n : ENNReal)⁻¹ *\n        (ENNReal.ofReal ((eLpNorm R 2 P).toReal ^ 2) +\n          ENNReal.ofReal (Ctheta ^ 2) *\n            ENNReal.ofReal ((eLpNorm W 2 P).toReal ^ 2)) := by\n  let rbar : (Fin n → Ω) → ℝ := fun data ↦\n    (n : ℝ)⁻¹ * ∑ i, (R (data i) - ∫ o, R o ∂P)\n  let wbar : (Fin n → Ω) → ℝ := fun data ↦\n    (n : ℝ)⁻¹ * ∑ i, (W (data i) - ∫ o, W o ∂P)\n  have hr := pi_centered_average_sq_lintegral_le\n    (ι"
+    },
+    "5707a826c37332b5": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.empirical_transform_uniform_l2",
+      "statement": "lemma empirical_transform_uniform_l2\n    {Xspace : Type*} [MeasurableSpace Xspace]\n    (Ctheta Cg Cq psieta psixi R1 : ℝ) :\n    ∃ K : ℝ, 0 < K ∧\n      ∀ (p : Parameters), p.Ctheta = Ctheta → p.Cg = Cg → p.Cq = Cq →\n        p.psieta = psieta → p.psixi = psixi → searchRadius p = R1 → 2 ≤ p.n →\n      ∀ (m : Model (Xspace := Xspace) p), NonGaussianClass p p.n m →\n      IidSampling p.n m.P (iidLaw m p.n) →\n      ∀ a : Fin 2, (inferenceFold p.n a).Nonempty →\n        (∫⁻ data, ENNReal.ofReal\n          ((transformSupError\n            (fun data z ↦ empiricalF p m p.n data (inferenceFold p.n a) z)\n            (residualMGF p m p.n) R1 data) ^ 2) ∂iidLaw m p.n) +\n        (∫⁻ data, ENNReal.ofReal\n          ((transformSupError\n            (fun data z ↦ empiricalG p m p.n data (inferenceFold p.n a) z)\n            (outcomeResidualTransform p m p.n) R1 data) ^ 2) ∂iidLaw m p.n) ≤\n          ENNReal.ofReal (K / (inferenceFold p.n a).card)"
+    },
+    "61d6b8955ee7e63f": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.l1_nuisance_zero_free",
+      "statement": "lemma l1_nuisance_zero_free (hclass : NonGaussianClass p n m) :\n    let R1"
+    },
+    "72cd35b24f726471": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.local_to_gaussian_partial_benchmarks",
+      "statement": "theorem local_to_gaussian_partial_benchmarks\n    (deltaSeq : ℕ → ℝ) -- @realizes deltaSeq(carrier Nat to Real)\n    (hdeltaPos : ∀ n, 0 < deltaSeq n) -- @realizes deltaSeq(pointwise positive)\n    (hdeltaAnti : Antitone deltaSeq) -- @realizes deltaSeq(nonincreasing)\n    (hdeltaZero : Filter.Tendsto deltaSeq Filter.atTop (nhds 0))\n      -- @realizes deltaSeq(converges to zero)\n    (Ctheta Cg Cq psixi : ℝ) :\n    (∃ C : ℝ, 0 < C ∧\n      ∀ (p : Parameters), p.Ctheta = Ctheta → p.Cg = Cg →\n        p.Cq = Cq → p.psixi = psixi → p.k = 4 → p.r = 3 →\n      ∀ a : ℝ, a ∈ Ioc (0 : ℝ) 1 →\n        ∀ m : Model (Xspace := Xspace) p,\n          m.P.map (eta p m) = gaussianRademacherLaw a →\n          IidSampling p.n m.P (iidLaw m p.n) →\n          IndependentTreatmentNoise p m → OutcomeMeanIndependence p m →\n          ThetaRange p m → GRange p m → QRange p m →\n          XiSubGaussian p m → TreatmentCodeRadiusL1At p m p.n →\n          GaussianRademacherPathConclusion p m a C) ∧\n    (∀ (published : PublishedAceHandle Xspace) (gamma Cgamma : ℝ),\n      JmsAceTheoremFiveFour published gamma Cgamma →\n      (0 < Cgamma ∧\n      ∀ (p : Parameters), p.gamma = gamma →\n      0 < p.eps1n p.n → 0 < p.eps2n p.n →\n        ∀ (gcode qcode : ℕ → Xspace → ℝ) (m : Model (Xspace := Xspace) p),\n          barG p m p.n = clippedTreatmentCode p gcode p.n →\n          barQ p m p.n = clippedOutcomeCode p qcode p.n →\n          JmsAceClassAt p p.n m (deltaSeq p.n) →\n          jmsEligibleAt p p.n (deltaSeq p.n) →\n          generalizedQuantile p p.n m\n            (fun data ↦ abs\n              (published.estimator p.r p.n gcode qcode data - m.theta0)) ≤\n              jmsBound p p.n Cgamma (deltaSeq p.n)))"
+    },
+    "3ac886c49f0297c6": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.bounded_outcome_gaussian_degeneracy",
+      "statement": "theorem bounded_outcome_gaussian_degeneracy (p : Parameters) :\n    (∀ m : Model (Xspace := Xspace) p, GaussianClass p p.n m → m.theta0 = 0) ∧\n    (∀ gcode qcode : ℕ → Xspace → ℝ,\n      ({m : Model (Xspace := Xspace) p |\n        GaussianClass p p.n m ∧\n          barG p m p.n = clippedTreatmentCode p gcode p.n ∧\n          barQ p m p.n = clippedOutcomeCode p qcode p.n}).Nonempty →\n      minimaxRiskG p p.n gcode qcode = 0 ∧\n      minimaxQuantileRiskG p p.n gcode qcode = 0)"
+    },
+    "9dabd47fc9499ebd": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.jms_ace_class_relations",
+      "statement": "theorem jms_ace_class_relations (p : Parameters) (n : ℕ) :\n    (∀ m : Model (Xspace := Xspace) p,\n      JmsAceClass p n m → NonGaussianClass p n m) ∧\n    (∀ m : Model (Xspace := Xspace) p,\n      AceComparisonSubclass p n m → JmsAceClass p n m) ∧\n    (p.s = (p.r : ENNReal) →\n      ∀ m : Model (Xspace := Xspace) p,\n        JmsAceClass p n m ↔ AceComparisonSubclass p n m)"
+    },
+    "0e5cb05b6cc37319": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.non_gaussian_hard_submodel",
+      "statement": "lemma non_gaussian_hard_submodel\n    (r : ℕ) (delta Ctheta Cg Cq psieta psixi : ℝ) (hpsixi : 0 < psixi) :\n    ∃ c0 C0 tau cACE : ℝ,\n      0 < c0 ∧ 0 < C0 ∧ 0 < tau ∧ tau ≤ psixi ∧ 0 < cACE ∧\n      ∀ (p : Parameters), p.r = r → p.delta = delta → p.Ctheta = Ctheta →\n        p.Cg = Cg → p.Cq = Cq → p.psieta = psieta → p.psixi = psixi →\n      ∀ n : ℕ, 1 ≤ n →\n      ((∃ base : Model (Xspace := Xspace) p, NonGaussianClass p n base) →\n      ∃ (base : Model (Xspace := Xspace) p) (family : ℝ → Model (Xspace := Xspace) p),\n        NonGaussianClass p n base ∧\n        (∀ theta, |theta| ≤ c0 → NonGaussianClass p n (family theta)) ∧\n        (∀ theta, |theta| ≤ c0 → (family theta).theta0 = theta) ∧\n        (∀ theta, |theta| ≤ c0 →\n          (family theta).P.map (fun o ↦ (covariate o, treatment o)) =\n            base.P.map (fun o ↦ (covariate o, treatment o))) ∧\n        (∀ theta, |theta| ≤ c0 →\n          (family theta).g0 = base.g0 ∧ (family theta).q0 = base.q0 ∧\n          (∀ x, barG p (family theta) n x = barG p base n x) ∧\n          (∀ x, barQ p (family theta) n x = barQ p base n x)) ∧\n        (∀ theta, |theta| ≤ c0 →\n          (family theta).P.map (xi p (family theta)) =\n              gaussianReal 0 ⟨tau ^ 2, sq_nonneg tau⟩ ∧\n            IndepFun (xi p (family theta))\n              (fun o ↦ (covariate o, treatment o)) (family theta).P) ∧\n        (∀ theta, |theta| ≤ c0 →\n          ∀ᵐ o ∂(family theta).P,\n            outcome o = base.q0 (covariate o) + theta * eta p (family theta) o +\n              xi p (family theta) o) ∧\n        (∀ (theta0 theta1 h : ℝ),\n          |theta0| ≤ c0 → |theta1| ≤ c0 →\n          |theta1 - theta0| = h / Real.sqrt n →\n          InformationTheory.klDiv (iidLaw (family theta0) n)\n            (iidLaw (family theta1) n) ≤ ENNReal.ofReal (C0 * h ^ 2)) ) ∧\n        (∀ aceBase : Model (Xspace := Xspace) p,\n          JmsAceClass p n aceBase →\n          ∃ aceFamily : ℝ → Model (Xspace := Xspace) p,\n            (∀ theta, |theta| ≤ c0 → JmsAceClass p n (aceFamily theta)) ∧\n            (∀ theta, |theta| ≤ c0 → (aceFamily theta).theta0 = theta) ∧\n            (∀ theta, |theta| ≤ c0 →\n              (aceFamily theta).P.map (fun o ↦ (covariate o, treatment o)) =\n                aceBase.P.map (fun o ↦ (covariate o, treatment o))) ∧\n            (∀ theta, |theta| ≤ c0 →\n              (aceFamily theta).g0 = aceBase.g0 ∧\n              (aceFamily theta).q0 = aceBase.q0 ∧\n              (∀ x, barG p (aceFamily theta) n x = barG p aceBase n x) ∧\n              (∀ x, barQ p (aceFamily theta) n x = barQ p aceBase n x) ∧\n              eta p (aceFamily theta) = eta p aceBase ∧\n              TreatmentCodeRadiusLrAt p (aceFamily theta) n ∧\n              OutcomeCodeRadiusLrAt p (aceFamily theta) n) ∧\n            (∀ theta, |theta| ≤ c0 →\n              (aceFamily theta).P.map (xi p (aceFamily theta)) =\n                gaussianReal 0 ⟨tau ^ 2, sq_nonneg tau⟩ ∧\n              IndepFun (xi p (aceFamily theta))\n                (fun o ↦ (covariate o, treatment o)) (aceFamily theta).P) ∧\n            (∀ theta, |theta| ≤ c0 →\n              ∀ᵐ o ∂(aceFamily theta).P,\n                outcome o = aceBase.q0 (covariate o) +\n                  theta * eta p (aceFamily theta) o + xi p (aceFamily theta) o) ∧\n            ∀ (theta0 theta1 h : ℝ),\n              |theta0| ≤ c0 → |theta1| ≤ c0 →\n              |theta1 - theta0| = h / Real.sqrt n →\n              InformationTheory.klDiv (iidLaw (aceFamily theta0) n)\n                (iidLaw (aceFamily theta1) n) ≤ ENNReal.ofReal (C0 * h ^ 2)) ∧\n        (∀ gbar qbar : Xspace → ℝ,\n          (∃ aceBase : Model (Xspace := Xspace) p,\n            JmsAceClass p n aceBase ∧ barG p aceBase n = gbar ∧\n              barQ p aceBase n = qbar) →\n            ENNReal.ofReal (cACE / n) ≤\n              minimaxRiskOn p n {m : Model (Xspace := Xspace) p |\n                JmsAceClass p n m ∧ barG p m n = gbar ∧ barQ p m n = qbar})"
+    },
+    "98f1cd5dadebb629": {
+      "label": "CausalSmith.Stat.SaPlmCumulantConverse.gaussian_rademacher_l1_benchmark",
+      "statement": "lemma gaussian_rademacher_l1_benchmark (Ctheta Cg Cq psixi : ℝ) :\n    ∃ C : ℝ, 0 < C ∧\n      ∀ (p : Parameters), p.Ctheta = Ctheta → p.Cg = Cg →\n        p.Cq = Cq → p.psixi = psixi → p.k = 4 →\n      ∀ (a : ℝ), a ∈ Ioc (0 : ℝ) 1 →\n      ∀ (m : Model (Xspace := Xspace) p),\n        m.P.map (eta p m) = gaussianRademacherLaw a →\n        IidSampling p.n m.P (iidLaw m p.n) →\n        IndependentTreatmentNoise p m → OutcomeMeanIndependence p m →\n        ThetaRange p m → GRange p m → QRange p m →\n        XiSubGaussian p m → TreatmentCodeRadiusL1At p m p.n →\n        GaussianRademacherPathConclusion p m a C"
+    }
+  }
+}

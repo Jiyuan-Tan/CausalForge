@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mkdtempSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ensureComponentsForEnvs } from "../src/presentation/components.js";
@@ -42,6 +42,9 @@ const graph: FormalizationGraph = {
 describe("ensureComponentsForEnvs graph-first", () => {
   it("uses graph component specs and does not call codex", async () => {
     const dir = mkdtempSync(join(tmpdir(), "comp-"));
+    mkdirSync(join(dir, "nonexistent"));
+    writeFileSync(join(dir, "nonexistent", "Basic.lean"),
+      "def declA : Nat := 1\ndef declH : Nat := 2\n", "utf8");
     const throwingCodex = {
       runCodex: async () => {
         throw new Error("codex must not be called when graph specs exist");

@@ -49,6 +49,50 @@ export interface Outline {
   envOverrides: Record<string, OverrideEnv>;
 }
 
+
+/** Objects a MAIN-BODY result needs in the main body. A reader cannot parse a theorem whose
+ *  statement quantifies over an object defined only in an appendix — this is what stranded
+ *  sa_plm's estimator (and therefore its statistic and every count inside it) in Appendix C
+ *  while the headline theorem in the main body was about it. Rule, deliberately narrow: if a
+ *  theorem/lemma placed in a MAIN-BODY section STATEMENT-uses a definition-like object, that
+ *  object must also be main-body. Proof-only dependencies are untouched — appendix lemmas are
+ *  exactly where they belong; `statement-uses` is the edge that means "appears in the claim".
+ *  Returns one message per violation, empty when the placement is sound. */
+export function lintMainBodyDependencies(
+  outline: Outline,
+  statementUsesOf: (id: string) => string[],
+  kindOf: (id: string) => string | undefined,
+): string[] {
+  const isAppendix = (name: string) => /^appendix\b/i.test(name.trim());
+  const sectionOf = new Map<string, string>();
+  for (const s of outline.sections) for (const id of s.objs) sectionOf.set(id, s.name);
+  const defLike = (id: string) => {
+    const k = kindOf(id);
+    const env = outline.envOverrides[id];
+    if (env) return env === "definitionv" || env === "algorithmv";
+    return k === "definition";
+  };
+  const out: string[] = [];
+  for (const s of outline.sections) {
+    if (isAppendix(s.name)) continue;
+    for (const id of s.objs) {
+      const k = kindOf(id);
+      if (k !== "theorem" && k !== "lemma") continue;
+      for (const dep of statementUsesOf(id)) {
+        if (!defLike(dep)) continue;
+        const depSection = sectionOf.get(dep);
+        if (depSection && isAppendix(depSection)) {
+          out.push(
+            `${dep} is defined in "${depSection}" but ${id} in main-body "${s.name}" uses it in its STATEMENT; ` +
+              `move ${dep} to a main-body section (its implementation realization may stay in the appendix)`,
+          );
+        }
+      }
+    }
+  }
+  return out;
+}
+
 /**
  * Parses the P1 outline.md contract:
  *   # Title / # Notation / # Sections with `## section: <name>` blocks each
@@ -152,4 +196,14 @@ export function bibChunks(bib: string): Map<string, string> {
     if (key) out.set(key.trim(), chunk.trim());
   }
   return out;
+}
+
+/** Keep only notation rows whose control sequences/identifiers occur in this artifact.
+ * Unrelated outline-notation edits must not invalidate every expensive proof render. */
+export function notationForArtifact(notation: string, artifact: string): string {
+  const tokens = new Set(artifact.match(/\\[A-Za-z]+|[A-Za-z][A-Za-z0-9_']{1,}/g) ?? []);
+  const rows = notation.split("\n").filter((row) =>
+    (row.match(/\\[A-Za-z]+|[A-Za-z][A-Za-z0-9_']{1,}/g) ?? []).some((token) => tokens.has(token)),
+  );
+  return rows.length > 0 ? rows.join("\n") : "(no artifact-specific notation rows)";
 }

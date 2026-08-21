@@ -36,6 +36,17 @@ describe("indexBib", () => {
 });
 
 describe("reconcileCite", () => {
+  it("matches a compact author-initial acronym plus year and theorem locator", () => {
+    const idx = indexBib(`@article{JinMackeySyrgkanis2025,
+      author = {Jin, Jikai and Mackey, Lester and Syrgkanis, Vasilis},
+      year = {2025}
+    }`);
+    expect(reconcileCite(
+      { name: "cited theorem", cite: "jms2025-thm54" },
+      idx,
+    )).toEqual({ citeKey: "JinMackeySyrgkanis2025", inject: null });
+  });
+
   const idx = indexBib(BIB);
   it("matches a discovery cite to the paper key by surname + exact year", () => {
     const r = reconcileCite(

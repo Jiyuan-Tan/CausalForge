@@ -13,7 +13,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { runPaperPipeline, type PaperDeps } from "./pipeline.js";
 import { PaperStage } from "./types.js";
-import { presentationDir, ensureLogsDir } from "./paths.js";
+import { bankAcceptedDir, presentationDir, ensureLogsDir } from "./paths.js";
 import { findCausalSmithRoot } from "../shared/repo_root.js";
 import { withAgentLogging } from "./agent_log.js";
 import { runCodex } from "../shared/codex.js";
@@ -23,7 +23,7 @@ import { MODELS } from "../models.js";
 
 function usage(): never {
   console.error(
-    "usage: causalsmith present <qid> <spec> [--resume] [--auto] [--dry-run] [--revise] [--stop-after P0..P5] [--from P0..P5] [--max-p5-reviews N]",
+    "usage: causalsmith present <qid> <spec> [--resume] [--auto] [--dry-run] [--revise] [--reassemble] [--reuse-existing-proofs-for-audit] [--refresh-statement-audit] [--stop-after P0..P5] [--from P0..P5] [--max-p5-reviews N]",
   );
   process.exit(2);
 }
@@ -37,6 +37,9 @@ export async function runPresentationCli(argv: string[]): Promise<void> {
   let stopAfter: string | undefined;
   let from: string | undefined;
   let revise = false;
+  let reassembleP2 = false;
+  let refreshStatementAudit = false;
+  let reuseExistingProofsForAudit = false;
   let maxP5Reviews: number | undefined;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -44,8 +47,19 @@ export async function runPresentationCli(argv: string[]): Promise<void> {
     else if (a === "--auto") auto = true;
     else if (a === "--dry-run") dryRun = true;
     else if (a === "--revise") revise = true;
-    else if (a === "--stop-after") stopAfter = argv[++i];
-    else if (a === "--from") from = argv[++i];
+    else if (a === "--reassemble") reassembleP2 = true;
+    else if (a === "--refresh-statement-audit") refreshStatementAudit = true;
+    else if (a === "--reuse-existing-proofs-for-audit") reuseExistingProofsForAudit = true;
+    else if (a === "--stop-after") {
+      const value = argv[++i];
+      if (!value || value.startsWith("--")) usage();
+      stopAfter = value;
+    }
+    else if (a === "--from") {
+      const value = argv[++i];
+      if (!value || value.startsWith("--")) usage();
+      from = value;
+    }
     else if (a === "--max-p5-reviews") {
       const raw = argv[++i];
       maxP5Reviews = Number(raw);
@@ -58,6 +72,10 @@ export async function runPresentationCli(argv: string[]): Promise<void> {
   const [qid, spec] = positional;
   const parsedStop = stopAfter === undefined ? undefined : PaperStage.parse(stopAfter);
   const parsedFrom = from === undefined ? undefined : PaperStage.parse(from);
+  if (reassembleP2 && parsedFrom !== "P2") {
+    console.error("--reassemble requires --from P2 (it re-enters at assembly over the existing authored sources)");
+    process.exit(2);
+  }
   const repoRoot = findCausalSmithRoot(process.cwd());
 
   // `--revise`: read the existing P5 review and print the orchestrator routing plan
@@ -81,7 +99,7 @@ export async function runPresentationCli(argv: string[]): Promise<void> {
     // Presentation work uses the dedicated 5.5 tier for literature breadth and
     // journal-style prose. Individual stages still own their task-specific effort.
     // Env: CAUSALEAN_MODEL_CODEX_PRESENT.
-    runCodex: (args) => runCodex({ cwd: args.cwd, prompt: args.prompt, reasoningEffort: args.reasoningEffort, leanLsp: args.leanLsp, model: args.model ?? MODELS.codexPresentation }),
+    runCodex: (args) => runCodex({ cwd: args.cwd, prompt: args.prompt, reasoningEffort: args.reasoningEffort, leanLsp: args.leanLsp, webSearch: args.webSearch, model: args.model ?? MODELS.codexPresentation }),
     dryRun,
   };
   // Per-run agent-call transcript (every codex/claude INPUT + OUTPUT), mirroring
@@ -91,11 +109,45 @@ export async function runPresentationCli(argv: string[]): Promise<void> {
   const logFile = join(runLogsDir, "agent_calls.log");
   const deps = withAgentLogging(baseDeps, logFile);
 
+  if (refreshStatementAudit) {
+    if (reuseExistingProofsForAudit || resume || auto || dryRun || revise || stopAfter || from || maxP5Reviews) usage();
+    const { loadBankEntry } = await import("./bank.js");
+    const { loadPaperState, savePaperState } = await import("./state.js");
+    const { runStatementAudit } = await import("./audit.js");
+    const outDir = presentationDir(repoRoot, qid, spec);
+    const problems = await withRunHeartbeatAt(runLogsDir, qid, spec, async () => {
+      const state = await loadPaperState(outDir, qid, spec);
+      if (!state) throw new Error("statement-audit refresh requires an existing presentation run");
+      // A refresh may follow an edit made before this process started, so no
+      // before/after comparison can certify the assembled manuscript current.
+      // Persist the safe boundary first: even if auditing throws after a write,
+      // resume must pass through cached P2 assembly before P4 can emit.
+      state.stage_completed = "P1";
+      state.checkpoint_pending = null;
+      state.notes.push("Statement-audit refresh requires cached P2 reassembly before P4.");
+      await savePaperState(outDir, state);
+      const found = await runStatementAudit({
+        ctx: { repoRoot, qid, spec, deps, outDir },
+        state,
+        bank: await loadBankEntry(repoRoot, qid, spec),
+        outDir,
+      });
+      state.hard_gate_failures = found;
+      if (found.length > 0) state.notes.push("Statement-audit refresh found unresolved drift; P4 remains blocked.");
+      await savePaperState(outDir, state);
+      return found;
+    });
+    console.log(`Statement audit refreshed: ${problems.length} problem(s); unchanged faithful entries were cached.`);
+    if (problems.length > 0) process.exitCode = 1;
+    return;
+  }
+
   // P0--P5 mutate one shared bundle.  A foreground terminal may report its
   // child complete before the child exits, so refuse a second invocation until
   // the first has released its durable heartbeat.
   const { halt } = await withRunHeartbeatAt(runLogsDir, qid, spec, () =>
-    runPaperPipeline({ repoRoot, qid, spec, deps, resume, auto, stopAfter: parsedStop, from: parsedFrom, maxP5Reviews }),
+    runPaperPipeline({ repoRoot, qid, spec, deps, resume, auto, stopAfter: parsedStop, from: parsedFrom,
+      maxP5Reviews, reuseExistingProofsForAudit, reassembleP2 }),
   );
   const outDir = presentationDir(repoRoot, qid, spec);
   if (halt === "checkpoint:outline") {

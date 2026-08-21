@@ -57,7 +57,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
-import { findOrphanPaperModules } from "../src/presentation/paper_index_orphans.js";
+import { findOrphanPaperModules, SYNTHETIC_COMPANION_RE } from "../src/presentation/paper_index_orphans.js";
 
 /** Severities that fail `--strict`. Everything else is informational. */
 const HARD = new Set([
@@ -425,11 +425,12 @@ async function lintBundle(
         for (const p of prev.entries) {
           const cur = now.get(p.name);
           if (!cur) {
-            // Lean-generated `congr_simp` companions have neither source nor a
-            // stable authored identity.  Older extractor output could give one
-            // a borrowed neighbour's source slice, so a repair may now drop it
-            // even when the old cache appeared locatable.
-            if (p.name.endsWith(".congr_simp")) {
+            // Lean-generated synthetic companions (`congr_simp`, equation
+            // lemmas) have neither source nor a stable authored identity.
+            // Older extractor output could give one a borrowed neighbour's
+            // source slice or an `add_decl_doc` range, so a repair may now
+            // drop it even when the old cache appeared locatable.
+            if (SYNTHETIC_COMPANION_RE.test(p.name)) {
               add("dropped-synthetic", p.name, `unlocatable generated entry at ${opts.vs} omitted now`);
               continue;
             }
@@ -456,7 +457,8 @@ async function lintBundle(
               (() => {
                 const declared = firstDeclaredLeaf(p.source!);
                 const leaf = p.name.split(".").pop()!;
-                const syntheticDocTarget = /\badd_decl_doc\s+(\S+\.congr_simp)\b/.exec(p.source!)?.[1] ?? null;
+                const syntheticDocTarget =
+                  /\badd_decl_doc\s+(\S+\.(?:congr_simp|eq_def|eq_unfold|eq_\d+))\b/.exec(p.source!)?.[1] ?? null;
                 const precedingDecl =
                   declared !== null && declared !== leaf && !p.name.endsWith(`.${declared}`)
                     ? declared

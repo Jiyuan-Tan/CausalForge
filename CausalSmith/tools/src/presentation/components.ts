@@ -6,15 +6,17 @@
 // and the P4 emit (render the pieces as a composite). The single `lean` anchor
 // in the crosswalk stays the "primary representative decl"; this is the full set.
 
-import { readFile, readdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { readFile, readdir, realpath, writeFile } from "node:fs/promises";
+import { isAbsolute, join, relative, sep } from "node:path";
 import { z } from "zod";
 import { hashEnvBody, type AnchoredEnv } from "./tex_anchors.js";
-import { extractDeclSnippet, extractHypothesisBinders, parseSourceDecls } from "./lean_extract.js";
+import { loadJsonCache } from "./cache.js";
+import { extractHypothesisBinders } from "./lean_extract.js";
 import { parseJsonLoose } from "./gates.js";
 import { presentationPrompt } from "./prompt_io.js";
 import { writeJsonAtomic } from "./json_io.js";
 import { graphComponentSpecs } from "./graph_components.js";
+import { fullyQualifiedSourceDecls, resolveLeanDeclaration, type ResolvedLeanDeclaration } from "./declaration_resolver.js";
 import type { CrosswalkEntry } from "./types.js";
 import type { FormalizationGraph } from "../graph/types.js";
 
@@ -28,12 +30,20 @@ const ComponentSpecSchema = z.union([
   z.object({ type: z.literal("hypotheses"), theorem: z.string().min(1), binders: z.array(z.string().min(1)) }),
 ]);
 const ComponentsResponseSchema = z.object({ components: z.array(ComponentSpecSchema) });
-const CachedComponentsSchema = z.array(ComponentSpecSchema);
+const COMPONENT_DISCOVERY_POLICY = "component-discovery-v2";
+const CachedComponentEntrySchema = z.object({
+  policy: z.literal(COMPONENT_DISCOVERY_POLICY),
+  key: z.string().min(1),
+  complete: z.literal(true),
+  components: z.array(ComponentSpecSchema),
+});
 
 export interface ModuleDecl {
   file: string;
   line: number;
   kind: string;
+  decl?: string;
+  sourceHash?: string;
 }
 
 /** codex runner shape (subset of PaperDeps.runCodex); kept local to avoid a
@@ -57,16 +67,35 @@ export async function buildModuleDeclIndex(
   leanSubdir: string,
 ): Promise<Map<string, ModuleDecl>> {
   const out = new Map<string, ModuleDecl>();
+  const shortCandidates = new Map<string, ModuleDecl[]>();
+  const ambiguousFull = new Set<string>();
   const root = join(repoRoot, leanSubdir);
   try {
-    const files = (await readdir(root, { recursive: true })).map(String).filter((f) => f.endsWith(".lean"));
+    const rootReal = await realpath(root);
+    const files = (await readdir(rootReal, { recursive: true })).map(String).filter((f) => f.endsWith(".lean"));
     for (const rel of files) {
-      for (const d of parseSourceDecls(await readFile(join(root, rel), "utf8"))) {
-        if (!out.has(d.name)) out.set(d.name, { file: rel, line: d.line, kind: d.kind });
+      const fileReal = await realpath(join(rootReal, rel));
+      const fromRoot = relative(rootReal, fileReal);
+      if (fromRoot === ".." || fromRoot.startsWith(`..${sep}`) || isAbsolute(fromRoot)) {
+        throw new Error(`P1 module declaration candidate symlink escapes run root: ${rel}`);
+      }
+      const source = await readFile(fileReal, "utf8");
+      const sourceHash = hashEnvBody(source);
+      for (const d of fullyQualifiedSourceDecls(source)) {
+        if (out.has(d.name)) { out.delete(d.name); ambiguousFull.add(d.name); }
+        else if (!ambiguousFull.has(d.name)) out.set(d.name, { file: rel, line: d.line, kind: d.kind, decl: d.name, sourceHash });
+        const short = d.name.slice(d.name.lastIndexOf(".") + 1);
+        const candidates = shortCandidates.get(short) ?? [];
+        candidates.push({ file: rel, line: d.line, kind: d.kind, decl: d.name, sourceHash });
+        shortCandidates.set(short, candidates);
       }
     }
-  } catch {
-    /* tolerant: fall back to crosswalk-only resolution */
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+    /* absent run directory: fall back to crosswalk-only resolution */
+  }
+  for (const [short, candidates] of shortCandidates) {
+    if (candidates.length === 1 && !out.has(short)) out.set(short, candidates[0]);
   }
   return out;
 }
@@ -93,8 +122,8 @@ export async function buildTheoremStatements(
   const parts: string[] = [];
   // Theorems by kind (node-id keyed crosswalk: ids are `t1`, not `T-1`).
   for (const t of crosswalk.filter((c) => c.kind === "theorem" && c.lean)) {
-    const src = await readFile(join(repoRoot, leanSubdir, t.lean!.file), "utf8");
-    parts.push(extractDeclSnippet(src, t.lean!.decl, t.lean!.line));
+    const hit = await resolveLeanDeclaration(repoRoot, leanSubdir, t.lean!);
+    parts.push(hit.snippet);
   }
   return parts.join("\n\n");
 }
@@ -105,11 +134,11 @@ function resolveDecl(
   decl: string,
   crosswalk: CrosswalkEntry[],
   moduleDecls: Map<string, ModuleDecl>,
-): { file: string; line: number } | null {
+): { file: string; decl: string; line: number } | null {
   const c = crosswalk.find((x) => x.lean?.decl === decl);
-  if (c?.lean) return { file: c.lean.file, line: c.lean.line };
+  if (c?.lean) return { file: c.lean.file, decl: c.lean.decl, line: c.lean.line };
   const m = moduleDecls.get(decl);
-  return m ? { file: m.file, line: m.line } : null;
+  return m ? { file: m.file, decl: m.decl ?? decl, line: m.line } : null;
 }
 
 /** Codex discovery: which Lean pieces formalize this env body. Valid `[]` means
@@ -147,34 +176,29 @@ export async function assembleComponentText(args: {
   moduleDecls: Map<string, ModuleDecl>;
   repoRoot: string;
   leanSubdir: string;
-}): Promise<string> {
-  const sources = new Map<string, string>();
-  const readSrc = async (file: string) => {
-    const p = join(args.repoRoot, args.leanSubdir, file);
-    if (!sources.has(p)) sources.set(p, await readFile(p, "utf8"));
-    return sources.get(p)!;
-  };
+}): Promise<{ text: string; resolved: ResolvedLeanDeclaration[] }> {
   const blocks: string[] = [];
+  const resolved: ResolvedLeanDeclaration[] = [];
   for (const spec of args.specs) {
-    // Best-effort per piece: a component that does not resolve, or whose snippet
-    // cannot be extracted (e.g. a codex-named decl the regex can't locate), is
-    // SKIPPED — never crash the whole assembly / stage for one bad piece.
-    try {
-      if (spec.type === "decl") {
-        const loc = resolveDecl(spec.decl, args.crosswalk, args.moduleDecls);
-        if (!loc) continue;
-        blocks.push(`-- ${spec.decl}  (${loc.file})\n${extractDeclSnippet(await readSrc(loc.file), spec.decl, loc.line)}`);
-      } else {
-        const loc = resolveDecl(spec.theorem, args.crosswalk, args.moduleDecls);
-        if (!loc) continue;
-        const stmt = extractDeclSnippet(await readSrc(loc.file), spec.theorem, loc.line);
-        blocks.push(`-- hypotheses of ${spec.theorem}\n${extractHypothesisBinders(stmt, spec.binders)}`);
+    const named = spec.type === "decl" ? spec.decl : spec.theorem;
+    const loc = resolveDecl(named, args.crosswalk, args.moduleDecls);
+    if (!loc) throw new Error(`P1 component ${named} is not present in the crosswalk or run declaration index`);
+    const hit = await resolveLeanDeclaration(args.repoRoot, args.leanSubdir, loc);
+    resolved.push(hit);
+    if (spec.type === "decl") blocks.push(`-- ${hit.decl}  (${hit.file})\n${hit.snippet}`);
+    else {
+      const hypotheses = extractHypothesisBinders(hit.snippet, spec.binders);
+      const missing = spec.binders.filter((name) =>
+        hypotheses.includes(`-- (binder ${name} not found in the statement)`));
+      if (missing.length > 0) {
+        throw new Error(`P1 component hypotheses {${missing.join(", ")}} are absent from ${hit.decl}`);
       }
-    } catch {
-      /* unresolvable piece — skip */
+      if (!hypotheses.trim()) throw new Error(`P1 component hypotheses {${spec.binders.join(", ")}} are absent from ${hit.decl}`);
+      blocks.push(`-- hypotheses of ${hit.decl}  (${hit.file})\n${hypotheses}`);
     }
   }
-  return blocks.join("\n\n");
+  if (resolved.length !== args.specs.length) throw new Error("P1 component resolution was partial");
+  return { text: blocks.join("\n\n"), resolved };
 }
 
 /** Stable signature of a component set (for cache keys / drift detection). */
@@ -210,47 +234,72 @@ export async function ensureComponentsForEnvs(args: {
    *  the graph (own decl + statement-uses neighbours) FIRST; codex discovery is the fallback
    *  used only where the graph yields nothing — so no Lean piece is ever silently dropped. */
   graph?: FormalizationGraph;
-}): Promise<{ components: Record<string, ComponentSpec[]>; moduleDecls: Map<string, ModuleDecl> }> {
+}): Promise<{
+  components: Record<string, ComponentSpec[]>;
+  complete: Record<string, true>;
+  moduleDecls: Map<string, ModuleDecl>;
+}> {
   const cwById = new Map(args.crosswalk.map((c) => [c.obj_id, c]));
-  const cache: Record<string, { key: string; components: ComponentSpec[] }> = JSON.parse(
-    await readFile(args.cachePath, "utf8").catch(() => "{}"),
-  );
+  // repair:false — values are Lean-derived text (not model-authored LaTeX) and zod-guarded below.
+  const cache = await loadJsonCache<Record<string, unknown>>(args.cachePath, { repair: false });
   const moduleDecls = await buildModuleDeclIndex(args.repoRoot, args.leanSubdir);
   const declList = buildDeclList(args.crosswalk, moduleDecls);
   const select =
     args.select ??
     ((e: AnchoredEnv, cw: CrosswalkEntry) => {
-      const isDefLike = e.env === "definitionv" || e.env === "assumptionv";
+      const isDefLike = e.env === "definitionv" || e.env === "algorithmv" || e.env === "assumptionv";
       return !(cw.lean && !isDefLike); // def/assumption envs + any env with no single decl
     });
   const contentFor = (e: AnchoredEnv) => args.noteBlocks?.get(e.obj_id) ?? e.body;
-  let theoremStatements: string | null = null;
+  // These inputs jointly define the discovery universe. A body-only key allowed
+  // an old []/partial answer to survive changed declarations, statements, graph,
+  // or crosswalk provenance and silently turn a formal object into note-only text.
+  const theoremStatements = await buildTheoremStatements(args.crosswalk, args.repoRoot, args.leanSubdir);
+  const canonicalCrosswalkSources: string[] = [];
+  for (const cw of args.crosswalk) {
+    if (!cw.lean) continue;
+    const hit = await resolveLeanDeclaration(args.repoRoot, args.leanSubdir, cw.lean);
+    canonicalCrosswalkSources.push(
+      `${cw.obj_id}|${hit.file}|${hit.decl}|${hit.line}|${hashEnvBody(hit.snippet)}`,
+    );
+  }
+  const candidateInventory = [...moduleDecls.entries()]
+    .map(([name, d]) => `${name}|${d.decl ?? ""}|${d.file}|${d.line}|${d.kind}|${d.sourceHash ?? ""}`)
+    .sort().join("\n");
+  const provenance = JSON.stringify({
+    crosswalk: args.crosswalk.map((c) => ({ obj_id: c.obj_id, kind: c.kind, verdict: c.verdict, lean: c.lean })),
+    graph: args.graph ? {
+      nodes: args.graph.nodes.map((n) => ({ id: n.id, obj_id: n.obj_id, provenance: n.provenance, lean: n.lean, review: n.review })),
+      edges: args.graph.edges,
+    } : null,
+  });
+  const discoveryUniverse = hashEnvBody(
+    `${COMPONENT_DISCOVERY_POLICY}\n${declList}\n${candidateInventory}\n${canonicalCrosswalkSources.sort().join("\n")}\n${theoremStatements}\n${provenance}`,
+  );
   const out: Record<string, ComponentSpec[]> = {};
+  const complete: Record<string, true> = {};
   for (const e of args.envs) {
     const cw = cwById.get(e.obj_id);
     if (!cw || !select(e, cw)) continue;
     const content = contentFor(e);
-    const key = hashEnvBody(content);
+    const key = hashEnvBody(`${COMPONENT_DISCOVERY_POLICY}|${discoveryUniverse}|${content}`);
     // Graph-first: the verified graph enumerates the Lean pieces deterministically. When it
     // yields a set, use it and skip codex discovery entirely (authoritative — overrides any
     // stale codex-discovered cache entry for the same content).
     const graphSpecs = args.graph ? graphComponentSpecs(args.graph, e.obj_id) : [];
     if (graphSpecs.length > 0) {
       out[e.obj_id] = graphSpecs;
-      cache[e.obj_id] = { key, components: graphSpecs };
+      complete[e.obj_id] = true;
+      cache[e.obj_id] = { policy: COMPONENT_DISCOVERY_POLICY, key, complete: true, components: graphSpecs };
       continue;
     }
-    const cached = cache[e.obj_id];
-    if (cached && cached.key === key) {
-      const parsed = CachedComponentsSchema.safeParse(cached.components);
-      if (parsed.success) {
-        out[e.obj_id] = parsed.data;
+    const parsedCache = CachedComponentEntrySchema.safeParse(cache[e.obj_id]);
+    if (parsedCache.success && parsedCache.data.key === key) {
+        out[e.obj_id] = parsedCache.data.components;
+        complete[e.obj_id] = true;
         continue;
-      }
-      delete cache[e.obj_id]; // why: stale pre-schema cache entries must not bypass ComponentSpec validation.
     }
-    if (theoremStatements === null)
-      theoremStatements = await buildTheoremStatements(args.crosswalk, args.repoRoot, args.leanSubdir);
+    delete cache[e.obj_id]; // stale, incomplete, pre-policy, or malformed entries are never receipts.
     const comps = await discoverComponents({
       envBody: content,
       declList,
@@ -259,8 +308,9 @@ export async function ensureComponentsForEnvs(args: {
       repoRoot: args.repoRoot,
     });
     out[e.obj_id] = comps;
-    cache[e.obj_id] = { key, components: comps };
+    complete[e.obj_id] = true;
+    cache[e.obj_id] = { policy: COMPONENT_DISCOVERY_POLICY, key, complete: true, components: comps };
   }
   await writeJsonAtomic(args.cachePath, cache);
-  return { components: out, moduleDecls };
+  return { components: out, complete, moduleDecls };
 }

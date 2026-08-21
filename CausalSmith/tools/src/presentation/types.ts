@@ -51,7 +51,7 @@ export const PresentationEntry = z.object({
   // web-only (no body block, no NL). "symbol" ⇒ a core symbol's Lean realization cluster (the
   // `@realizes <sym>` tags), web-only — surfaced in the Formal-layer panel's symbol group. All
   // open the drawer.
-  env: z.enum(["theoremv", "assumptionv", "lemmav", "definitionv", "citedv", "propositionv", "remarkv", "prose", "auxiliary", "symbol"]),
+  env: z.enum(["theoremv", "assumptionv", "lemmav", "definitionv", "citedv", "propositionv", "remarkv", "algorithmv", "prose", "auxiliary", "symbol"]),
   paper_label: z.string(), // e.g. "Theorem 2"
   title: z.string().nullable(),
   lean: CrosswalkLean.nullable(), // null ⇒ drawer shows `fallback`

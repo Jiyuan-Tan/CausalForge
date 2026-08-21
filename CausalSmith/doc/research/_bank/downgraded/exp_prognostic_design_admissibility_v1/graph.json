@@ -1,0 +1,1541 @@
+{
+  "qid": "exp_prognostic_design_admissibility",
+  "specialization": "v1",
+  "nodes": [
+    {
+      "id": "S1",
+      "obj_id": "S-1",
+      "kind": "setup",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Design-based finite-population world: a balanced mean-zero randomization law on the finite sign-assignment space. Carrier `FiniteDesign (Fin n → Bool)` (Causalean's finite-sum probability layer), with `signOf z i = if z i then 1 else -1`, the balance predicate `IsBalanced z ↔ ∑ i, signOf z i = 0` cutting out `Z_n`, and fixed potential outcomes `y : Fin n → Bool → ℝ`. Assignment is the ONLY source of randomness; there is no superpopulation draw and no measure-theoretic layer. — Highest-leverage reuse decision: this IS the design-based flavour of the PO framework, and encoding the paper over the measure-theoretic `PO/` world would be an infidelity (the core's sampling model states 'a fixed finite population of even size n; there is no superpopulation draw'). `FiniteDesign.E`/`Var`/`Cov` give `E_d[z] = 0`, `A_d = E_d[z zᵀ]`, and the MSE identity as pure `Finset` algebra with no integrability obligations. `Delta(Z_n)` needs no separate simplex carrier: a `FiniteDesign` IS a point of the simplex on `Fin n → Bool`, and `D_n` is the subset supported on `IsBalanced` with `E_d[signOf · i] = 0` for every `i`. Evenness of `n` (`Even n`, `2 ≤ n`) is threaded as an ambient side condition on the S1 index, matching the core's declaration of `n`'s space as `{4,6,8,...}`.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "Causalean.Experimentation.DesignBased.FiniteDesign",
+        "file": null
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      },
+      "setup": {
+        "required_modules": [
+          "Causalean.Experimentation.DesignBased.DesignCore",
+          "Causalean.Experimentation.DesignBased.PotentialOutcome",
+          "Causalean.Experimentation.DesignBased.Risk"
+        ]
+      }
+    },
+    {
+      "id": "S2",
+      "obj_id": "S-2",
+      "kind": "setup",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Euclidean/spectral geometry world over `ℝ^n`: the centered subspace `H_n = (span 1_n)ᗮ`, orthogonal projectors `P_H`/`P_S`, symmetric PSD matrices, the balanced covariance hull `C_n = convexHull ℝ {s sᵀ : s = signOf z, z balanced}`, the lifted spectrahedron, and constrained top eigenvalues realized as Rayleigh suprema on subspaces (PD-4). Everything is `Matrix (Fin n) (Fin n) ℝ` acting on `EuclideanSpace ℝ (Fin n)`. — bypass-justified: purely algebraic/analytic geometry over Mathlib matrices; Causalean has no elliptope / cut-hull / constrained-eigenvalue primitive. SEARCH TRACE — `lean_local_search` on `elliptope` (0 hits), `cutHull` (0 hits), `lambdaMax` (0 hits), `rayleigh` (Mathlib `ContinuousLinearMap.rayleighQuotient` family only, an unconstrained operator-norm-style quotient with no subspace-restricted variant), `minimax` (Causalean `Stat/Minimax/MinimaxValue.lean` + `Estimation/MinimaxATE`, both statistical-decision minimax over risk functions, not conic geometry); `assignmentSecondMoment` (only the paper-specific `DesignPm1` decls). Mathlib-side check: `lean_leansearch \"von Neumann minimax theorem convex compact saddle point exists\"` returns only `Mathlib.Order.SaddlePoint` (order-theoretic weak duality `iSup₂_iInf₂_le_iInf₂_iSup₂` + `IsSaddlePointOn` bookkeeping) — no convexity-based minimax. Result: not found; S2 is defined locally over Mathlib.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": null,
+        "file": null
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      },
+      "setup": {
+        "required_modules": [
+          "Mathlib.Data.Matrix.Basic",
+          "Mathlib.LinearAlgebra.Matrix.Trace",
+          "Mathlib.LinearAlgebra.Matrix.PosDef",
+          "Mathlib.Analysis.Matrix",
+          "Mathlib.Analysis.Matrix.Spectrum",
+          "Mathlib.Analysis.InnerProductSpace.PiL2",
+          "Mathlib.Analysis.Convex.Combination",
+          "Mathlib.Analysis.Convex.Topology",
+          "Mathlib.Analysis.SpecialFunctions.Sqrt"
+        ]
+      }
+    },
+    {
+      "id": "ass:fixed-potential-outcomes",
+      "obj_id": "A-1",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "The array \\(\\{y_i(0),y_i(1):i=1,\\ldots,n\\}\\) is fixed with respect to the assignment law \\(d\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.FixedPotentialOutcomes",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "f4e45c878e7910468260b76ef6ec14499a159990",
+        "note": "Constancy of Y i a across every realized assignment z is equivalent to the potential-outcome array being fixed with respect to assignment randomization."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "standard": {
+        "name": "Fixed finite-population potential outcomes",
+        "cite": "HarshawSavjeSpielmanZhang2024",
+        "citation": "Harshaw, C., Sävje, F., Spielman, D. A., and Zhang, P. (2024). Balancing Covariates in Randomized Experiments with the Gram--Schmidt Walk Design. Journal of the American Statistical Association 119, 2934--2946. DOI: 10.1080/01621459.2023.2285474."
+      }
+    },
+    {
+      "id": "ass:consistency-no-interference",
+      "obj_id": "A-2",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For every unit \\(i\\), \\(Y_i^{\\mathrm{obs}}=y_i(1)\\mathbf 1\\{z_i=1\\}+y_i(0)\\mathbf 1\\{z_i=-1\\}\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.ConsistencyNoInterference",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "d2699be5187fe5b43a80d366ce763351a2374b5f",
+        "note": "With true/false representing treatment labels +1/−1, fixedOutcome Y i (z i) is exactly y_i(1)1{z_i=1}+y_i(0)1{z_i=−1}, quantified over every unit and assignment."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "standard": {
+        "name": "Consistency with no interference",
+        "cite": "HarshawSavjeSpielmanZhang2024",
+        "citation": "Harshaw, C., Sävje, F., Spielman, D. A., and Zhang, P. (2024). Balancing Covariates in Randomized Experiments with the Gram--Schmidt Walk Design. Journal of the American Statistical Association 119, 2934--2946. DOI: 10.1080/01621459.2023.2285474."
+      }
+    },
+    {
+      "id": "def:balanced-design-space",
+      "obj_id": "P-1",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "\\(\\mathcal D_n=\\{d\\in\\Delta(\\mathcal Z_n):\\sum_{z\\in\\mathcal Z_n}d(z)z=0\\}\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.balancedDesignSpace",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "bc232b4812165224b7d7c71bc35fd6ec6471605c",
+        "note": "FiniteDesign supplies nonnegative unit-sum weights; support on IsBalanced and coordinatewise zero expectations are exactly d∈Δ(Z_n) and Σ_z d(z)z=0."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:covariance-hull",
+      "obj_id": "P-2",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "\\(\\mathcal C_n=\\operatorname{conv}\\{zz^\\top:z\\in\\mathcal Z_n\\}\\), represented by weights on sign-pairs \\(\\{z,-z\\}\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.covarianceHull",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "4bc3fde94e72372e20b1bab6b0928bdfa26abc8f",
+        "note": "signOf bijectively represents ±1 assignments, balancedAssignments is exactly Z_n, and convexHull of their signOuter images equals the stated hull; pairing z with -z does not change the image."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:realized-score-quality",
+      "obj_id": "P-3",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For each specified nonzero \\(\\mu\\in H_n\\), \\(\\rho_{\\mu}(S)=\\|P_S\\mu\\|_2/\\|\\mu\\|_2\\); the free oracle index \\(\\rho\\in[0,1]\\) imposes the lower-bound condition \\(\\rho_{\\mu}(S)\\geq\\rho\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.RealizedQualityAtLeast",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "822527866c9f647ecc13dc0e918246832126d94a",
+        "note": "On the stated domain, unfolding realizedQuality gives ‖P_S μ‖₂/‖μ‖₂, and the existential proof binders express exactly S ≤ H_n, nonzero μ ∈ H_n, ρ ∈ [0,1], and ρ_μ(S) ≥ ρ."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:score-quality-shell",
+      "obj_id": "P-4",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "\\(\\mathcal Y(\\rho,M;S)=\\{\\mu\\in H_n:\\|\\mu\\|_2^2=nM,\\ \\mu^\\top P_S\\mu\\geq\\rho^2\\|\\mu\\|_2^2\\}\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.qualityShell",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "7784025162efc6f7aaa602a942dc524f14766bad",
+        "note": "After unfolding centeredSubspace and projMatrix, the Lean norm-square inequality is equivalent to μᵀP_Sμ ≥ ρ²‖μ‖², so both definitions select exactly the same centered shell."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:lifted-adversary",
+      "obj_id": "P-5",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "\\(\\mathcal X_\\rho(S)=\\{X\\in\\mathbb S_+^n:X=P_HXP_H,\\ \\operatorname{tr}(X)=1,\\ \\operatorname{tr}(P_SX)\\geq\\rho^2\\}\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.liftedAdversary",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "c84eef4352acd54320067d68533ac434142bc98d",
+        "note": "Matrix.PosSemidef supplies X ∈ 𝕊ⁿ₊, while projHMat and projMatrix are the orthogonal projectors P_H and P_S; all centering, trace-one, and score-trace clauses coincide."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:oracle-risk",
+      "obj_id": "P-6",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "\\(v^*(\\rho;S)=\\min_{A\\in\\mathcal C_n}q_\\rho(A;S)\\) and \\(V^*(\\rho;S)=(4M/n)v^*(\\rho;S)\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.oracleRisk",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "2273e749989b5b538ec408126523035cd2a48ddc",
+        "note": "Unfolding oracleValue yields the infimum of q_ρ(A;S) over A ∈ C_n, equal to the paper's attained minimum on the stated compact nonempty domain, and oracleRisk applies exactly the factor 4M/n."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:admissibility-invariants",
+      "obj_id": "P-7",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "\\(\\kappa(S)=\\min_{A\\in\\mathcal C_n}\\lambda_{\\max}(P_SAP_S\\mid S)\\) and \\(\\gamma(S)=\\inf_{A\\in\\mathcal C_n,\\eta>0}\\{\\lambda_{\\max}(A+\\eta P_S\\mid H_n)-c_n\\}/\\eta\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.admissibilityInvariants",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "6b92660e630a044e7b061eb53c2c593c09397887",
+        "note": "Unfolding both components gives exactly the minimum compressed eigenvalue over C_n and the infimum over A ∈ C_n and η > 0 of [λ_max(A+ηP_S | H_n)−c_n]/η."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:regret-object",
+      "obj_id": "P-8",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "\\(R^*(n,S)=(4M/n)\\min_{A\\in\\mathcal C_n}\\sup_{\\rho\\in[0,1]}\\{q_\\rho(A;S)-v^*(\\rho;S)\\}\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.minimaxRegret",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "88057a54ca0aca28a97c62382514c2aa35081d4e",
+        "note": "Unfolding regretGap and oracleValue gives exactly (4M/n) times the attained minimum over A ∈ C_n of sup_{ρ∈[0,1]}[q_ρ(A;S)−v*(ρ;S)]."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:regret-handle",
+      "obj_id": "P-9",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Put \\(s=\\rho^2\\). For \\(A\\in\\mathcal C_n\\) and finite \\(\\eta\\geq0\\), define \\(F_{A,s}(\\eta)=\\lambda_{\\max}(A+\\eta P_S\\mid H_n)-\\eta s\\) and use \\(\\inf_{\\eta\\geq0}F_{A,s}(\\eta)\\). Under \\(h=(1+\\eta)^{-1}\\), adjoin \\(h=0\\) with boundary value \\(+\\infty\\) when \\(s<1\\) and \\(\\lambda_{\\max}(P_SAP_S\\mid S)\\) when \\(s=1\\). The finite-multiplier robust regret epigraph is interpreted through this value closure; it does not assert an inner optimizer at finite \\(\\eta\\). The balanced-cut-hull support oracle, active-simplex faces, and eigenvalue-crossing cells give the finite real-algebraic handle for \\(R^*(n,S)\\) and \\(d_{\\mathrm{reg}}\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.compactifiedRegretProgram",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "10cc9cbd769c71045c85f9f019b7c8cc2758e3de",
+        "note": "Unfolding spectralRegretEpigraph, compactifiedDual, and spectralRegretHandle gives A ∈ C_n, s = rho², eta ≥ 0, the finite-multiplier infimum, and the h = 0 endpoint; omitting the +∞ endpoint when s < 1 preserves exactly the same infimum."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:pair-score-space",
+      "obj_id": "P-10",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Let \\(\\mathcal P=(G_1,\\ldots,G_B)\\) be a partition of \\(\\{1,\\ldots,n\\}\\), with \\(B\\geq2\\) and \\(m_j=|G_j|\\). Define\n\\[\nS_{\\mathcal P}=\\{x\\in H_n:x_i=x_{i'}\\text{ whenever }i,i'\\in G_j\\text{ for some }j\\}.\n\\]\nFor a fixed homogeneous partition into \\(B\\) equal blocks of even size \\(m=n/B\\), write \\(S_B=S_{\\mathcal P}\\). The pair partition has \\(B=n/2\\), \\(m=2\\), \\(G_j=\\{2j-1,2j\\}\\), and \\(S_{\\mathrm{pair}}=S_{n/2}\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.partitionScoreGeometry",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "c6a1cc469fa18f1b99c190a7d10979e072762fba",
+        "note": "After unfolding all components, the general and homogeneous carriers are exactly centered vectors constant on partition blocks, while i.val / 2 gives precisely the paper's one-based pairs {2j−1,2j}; the positivity, evenness, equal-size, surjectivity, n = Bm, and n ≥ 4 conditions match or are redundant consequences in both directions."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:four-unit-score-mixture",
+      "obj_id": "P-11",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Set \\(u_4=2^{-1}(1,1,-1,-1)^\\top\\) and \\(S_4=\\operatorname{span}\\{u_4\\}\\). Define \\(d_{\\mathrm{pair},4}\\) by probability \\(1/4\\) on each assignment in \\(\\{\\pm(1,-1,1,-1)^\\top,\\ \\pm(1,-1,-1,1)^\\top\\}\\); its covariance is \\(A_{\\mathrm{pair},4}=\\begin{pmatrix}1&-1&0&0\\\\-1&1&0&0\\\\0&0&1&-1\\\\0&0&-1&1\\end{pmatrix}\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.FourUnitScoreMixture",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "ae8d6b64c666c7b58145eccdd544399a8aad8d62",
+        "note": "Unfolding u4, scoreSpace4, pairDesign4, covPair4, and balancedDesignSpace gives the stated score vector and span, uniform law on exactly the four sign assignments, the displayed covariance, and the entailed balanced symmetric-design property."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:partition-orbit-covariance",
+      "obj_id": "P-12",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For a partition \\(\\mathcal P=(G_1,\\ldots,G_B)\\) with block sizes \\(m_j=|G_j|\\), define the feasible block-sum lattice and its second-moment polytope by\n\\[\n\\mathcal R_{\\mathcal P}\n=\\left\\{r\\in\\mathbb Z^B:r_j\\in\\{-m_j,-m_j+2,\\ldots,m_j\\},\\ \\sum_{j=1}^B r_j=0\\right\\},\n\\qquad\n\\mathcal G_{\\mathcal P}=\\operatorname{conv}\\{rr^\\top:r\\in\\mathcal R_{\\mathcal P}\\}.\n\\]\nLet \\(W=[\\mathbf 1_{G_1}\\ \\cdots\\ \\mathbf 1_{G_B}]\\), let \\(D=\\operatorname{diag}(m_1,\\ldots,m_B)\\), and let \\(P_j=I_{G_j}-m_j^{-1}\\mathbf 1_{G_j}\\mathbf 1_{G_j}^\\top\\) be embedded in the coordinates of block \\(G_j\\). For \\(G\\in\\mathcal G_{\\mathcal P}\\), define\n\\[\nA_{\\mathcal P}(G)\n=WD^{-1}GD^{-1}W^\\top\n+\\sum_{j:m_j>1}\\frac{m_j^2-G_{jj}}{m_j(m_j-1)}P_j.\n\\]\nThis formula defines the orbit-covariance candidate used by the reduced unequal-block problem; its realizability and the exactness of the orbit reduction are theorem conclusions, not part of this construction.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.orbitCovariance",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "316d8f6f05544407cfcdc455340c2b9ebf047fe4",
+        "note": "Surjectivity makes every block size positive, blockSumLattice exactly expresses the bounded parity lattice, blockSumPolytope is its outer-product convex hull, and the entrywise formula is precisely WD⁻¹GD⁻¹Wᵀ plus the stated embedded projector terms."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:exact-design-risk",
+      "obj_id": "L-1",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For every \\(d\\in\\mathcal D_n\\), the estimator \\(\\widehat\\tau_d\\) is design-unbiased for \\(\\tau_n\\) and obeys \\[\\mathbb E_d[(\\widehat\\tau_d-\\tau_n)^2]=\\frac{4}{n^2}\\mu^\\top A_d\\mu.\\]",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.exact_design_risk",
+        "file": "TExactDesignRisk.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "5dce51aad6de51a6aecc329987e15e2cea3a0de7",
+        "note": "After unfolding the expectation, balanced design class, estimator, SATE, covariance, quadratic form, and centered outcome mean, the two conjuncts are exactly design-unbiasedness and the stated 4/n² covariance-quadratic MSE identity."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:balanced-covariance-realizability",
+      "obj_id": "L-2",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "The covariance image of \\(\\mathcal D_n\\) is exactly \\(\\mathcal C_n\\): \\[\\{A_d:d\\in\\mathcal D_n\\}=\\operatorname{conv}\\{zz^\\top:z\\in\\mathcal Z_n\\}.\\] In particular, every convex representation can be symmetrized over \\(\\{z,-z\\}\\) to yield a mean-zero attaining design without changing its covariance.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.balanced_covariance_realizability",
+        "file": "TBalancedCovarianceRealizability.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "44101dd7acbb57d6e69a58f4d61f18d5f87a1a86",
+        "note": "The image equality is exactly {A_d : d ∈ D_n} = C_n, and the second conjunct gives every hull covariance a balanced attaining law invariant under z ↦ -z, equivalently the stated sign symmetrization."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "thm:cone-lift-dual",
+      "obj_id": "T-1",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For every \\(A\\in\\mathcal C_n\\) and \\(\\rho\\in[0,1]\\), the nonconvex spherical-shell adversary has the rank-one-exact lift and scalar dual\n\\[\nq_\\rho(A;S)=\\max_{X\\in\\mathcal X_\\rho(S)}\\operatorname{tr}(AX)\n=\\inf_{\\eta\\geq0}\\left\\{\\lambda_{\\max}(A+\\eta P_S\\mid H_n)-\\eta\\rho^2\\right\\}.\n\\]\nMoreover, the lifted maximum admits a rank-one optimizer. Put \\(s=\\rho^2\\) and, on the one-point compactification \\([0,\\infty]\\), define\n\\[\n\\overline F_{A,s}(\\eta)=\\lambda_{\\max}(A+\\eta P_S\\mid H_n)-\\eta s\n\\quad(\\eta<\\infty),\n\\]\nwith \\(\\overline F_{A,s}(\\infty)=+\\infty\\) for \\(s<1\\), and\n\\[\n\\overline F_{A,1}(\\infty)=\\lambda_{\\max}(P_SAP_S\\mid S).\n\\]\nThen\n\\[\nq_\\rho(A;S)=\\min_{\\eta\\in[0,\\infty]}\\overline F_{A,s}(\\eta).\n\\]\nIf \\(\\rho<1\\), the infimum over finite \\(\\eta\\) is attained; at \\(\\rho=1\\), it may be attained only at \\(\\eta=\\infty\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.cone_lift_dual",
+        "file": "TConeLiftDual.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "2c76a9fb0f598e83b54aa7cee3bae584ffc35658",
+        "note": "After unfolding all referenced definitions, Lean gives the same shell supremum, lifted trace maximum with a rank-one optimizer, finite-multiplier scalar infimum, compactified endpoint value, finite attainment for ρ<1, and finite-or-infinite attainment at ρ=1; its hypotheses exactly instantiate the paper's global domains n∈{4,6,…} and nonzero S≤H_n."
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 1
+      }
+    },
+    {
+      "id": "thm:exact-oracle-saddle",
+      "obj_id": "T-2",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For every \\(\\rho\\in[0,1]\\), \\[v^*(\\rho;S)=\\min_{A\\in\\mathcal C_n}\\max_{X\\in\\mathcal X_\\rho(S)}\\operatorname{tr}(AX)=\\max_{X\\in\\mathcal X_\\rho(S)}\\min_{z\\in\\mathcal Z_n}z^\\top Xz.\\] Equivalently, \\(v^*(\\rho;S)\\) is the optimum of \\[\\max_{X,t}\\ t\\quad\\text{subject to}\\quad X\\in\\mathcal X_\\rho(S),\\quad t\\leq z^\\top Xz\\ \\text{for every }z\\in\\mathcal Z_n.\\] The dual yields weights on balanced sign-pairs defining an attaining \\(d^*_{\\rho,S}\\in\\mathcal D_n\\), and every \\(d\\in\\mathcal D_n\\) satisfies \\[\\sup_{\\mu\\in\\mathcal Y(\\rho,M;S)}\\mathbb E_d[(\\widehat\\tau_d-\\tau_n)^2]\\geq V^*(\\rho;S),\\] with equality for \\(d^*_{\\rho,S}\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.exact_oracle_saddle",
+        "file": "TExactOracleSaddle.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "29dffc7db846b56d6e1fc9041f2ba992564bcf09",
+        "note": "Unfolding ExactOracleSaddleStatement and its referenced definitions gives the two saddle-value identities, equivalent epigraph program, an attaining balanced design, and the full-design risk converse; compactness/rank-one attainment, exact_design_risk, and balanced_covariance_realizability recover the paper’s maxima/minima and sign-symmetric pair weights in both directions."
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 1
+      }
+    },
+    {
+      "id": "thm:admissibility-frontier",
+      "obj_id": "T-3",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "The following conditions are equivalent:\n\\[\n(i)\\ S\\in\\mathfrak A_n,\n\\qquad\n(ii)\\ \\kappa(S)<c_n,\n\\qquad\n(iii)\\ \\gamma(S)<1.\n\\]\nWhen these conditions hold, \\(\\rho^*(S)=\\sqrt{\\gamma(S)}\\); otherwise \\(\\rho^*(S)=1\\).  Put \\(p=\\dim(S)\\), \\(\\beta=p/(n-1)\\), and \\(\\ell_i=(P_S)_{ii}\\).  For \\(t\\in[\\beta,1]\\), define\n\\[\nd_i(t)=\\frac{n-1}{n}t-\\ell_i\n\\]\nand\n\\[\nU(\\ell)=\\min\\left\\{\nt\\in[\\beta,1]:\\ d_i(t)\\geq0\\ \\text{for every }i,\\quad\n2\\max_i\\sqrt{d_i(t)}\\leq\\sum_{i=1}^n\\sqrt{d_i(t)}\n\\right\\}.\n\\]\nThen the critical squared quality is determined exactly by the score leverage profile:\n\\[\n\\gamma(S)\n=\\min_{\\substack{K=K^\\top,\\ K\\mathbf1_n=0\\\\\n\\operatorname{diag}(K)=\\operatorname{diag}(P_S)}}\n\\lambda_{\\max}(K\\mid H_n)\n=U\\!\\left(\\operatorname{diag}(P_S)\\right).\n\\]\nIn particular, the sharp leverage and dimension bounds are\n\\[\n\\gamma(S)\\geq\\frac{n}{n-1}\\max_i\\ell_i\n\\geq\\frac{p}{n-1},\n\\]\nand equality in the dimension bound holds if and only if\n\\[\n\\operatorname{diag}(P_S)=\\frac{p}{n}(1,\\ldots,1)^\\top.\n\\]\nAt \\(n=4\\), the rank-one leverage profiles\n\\[\n\\left(\\tfrac14,\\tfrac14,\\tfrac14,\\tfrac14\\right),\\qquad\n\\left(\\tfrac16,\\tfrac16,0,\\tfrac23\\right),\\qquad\n\\left(\\tfrac34,\\tfrac1{12},\\tfrac1{12},\\tfrac1{12}\\right)\n\\]\nhave exact threshold invariants \\(1/3\\), \\(8/9\\), and \\(1\\), respectively.\n\nConsequently, for every \\(S\\),\n\\[\n\\{\\rho^*(S)\\}^2\\geq\\frac{p}{n-1},\n\\]\nwhere the convention \\(\\rho^*(S)=1\\) applies off \\(\\mathfrak A_n\\), and\n\\[\nV^*(\\rho;S)<V_{\\mathrm{CRD}}(\\rho;S)\n\\quad\\Longrightarrow\\quad\n\\rho^2>\\gamma(S)\\geq\\frac{n}{n-1}\\max_i\\ell_i\n\\geq\\frac{p}{n-1}.\n\\]\nGiven a basis matrix for \\(S\\), forming \\(P_S\\) and performing a one-dimensional feasibility search computes \\(\\gamma(S)\\) and \\(\\rho^*(S)\\) from the score matrix alone.  Enumeration of \\(\\mathcal Z_n\\) and semidefinite optimization compute \\(\\kappa(S)\\) and an \\(\\varepsilon\\)-optimal implementable assignment mixture.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.admissibility_frontier",
+        "file": "TAdmissibilityFrontier.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "38f9959de63cf9757670e6b8c2cbd5fe45b3e86f",
+        "note": "Unfolding AdmissibilityFrontierStatement gives the three-way equivalence, on/off-admissibility critical-quality formula, exact matrix and one-dimensional leverage frontiers, sharp bounds and equality case, all three four-unit profiles, risk consequences, finite SDP value, and ε-optimal implementability; ∀i replaces the finite maximum condition equivalently, sInf equals the displayed minima because the relevant feasible sets are nonempty and attain their infima, and the omitted middle chain inequality follows from ∑ᵢ(P_S)ᵢᵢ=dim(S)."
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 1
+      }
+    },
+    {
+      "id": "prop:endpoint-reductions",
+      "obj_id": "T-4",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "If \\(S=H_n\\), then \\(v^*(\\rho;S)=c_n\\) for every \\(\\rho\\in[0,1]\\), so \\(S\\notin\\mathfrak A_n\\). Let \\(r_1=(1,0,\\ldots,0)^\\top\\), and define the singleton-versus-rest score space and its normalized basis by\n\\[\nS_{\\mathrm{out}}=\\operatorname{span}\\{P_Hr_1\\},\n\\qquad\nu_{\\mathrm{out}}=\\frac{P_Hr_1}{\\|P_Hr_1\\|_2}.\n\\]\nFor every \\(z\\in\\mathcal Z_n\\), \\((u_{\\mathrm{out}}^\\top z)^2=c_n\\), and consequently\n\\[\nv^*(\\rho;S_{\\mathrm{out}})=c_n\\quad(0\\leq\\rho\\leq1),\n\\qquad\n\\kappa(S_{\\mathrm{out}})=c_n,\n\\qquad\n\\gamma(S_{\\mathrm{out}})=1,\n\\qquad\nS_{\\mathrm{out}}\\notin\\mathfrak A_n.\n\\]\nAt \\(n=4\\), define\n\\[\nu_{\\mathrm{mid}}=6^{-1/2}(1,1,0,-2)^\\top,\n\\qquad\nS_{\\mathrm{mid}}=\\operatorname{span}\\{u_{\\mathrm{mid}}\\}.\n\\]\nThen\n\\[\n\\kappa(S_{\\mathrm{mid}})=\\frac23,\n\\qquad\n\\gamma(S_{\\mathrm{mid}})=\\frac89,\n\\qquad\n\\rho^*(S_{\\mathrm{mid}})=\\frac{2\\sqrt2}{3},\n\\qquad\nS_{\\mathrm{mid}}\\in\\mathfrak A_4.\n\\]\nFor the worked equal-leverage basis \\(u_4=2^{-1}(1,1,-1,-1)^\\top\\) and \\(S_4=\\operatorname{span}\\{u_4\\}=S_{\\mathrm{pair}}\\), the displayed balanced sign-pair mixture \\(d_{\\mathrm{pair},4}\\) has covariance \\(A_{\\mathrm{pair},4}\\) and satisfies\n\\[\nv^*(\\rho;S_4)=\\min\\left\\{\\frac43,\\ 2(1-\\rho^2)\\right\\},\n\\qquad\n\\kappa(S_4)=0,\n\\qquad\n\\gamma(S_4)=\\frac13,\n\\qquad\n\\rho^*(S_4)=\\frac1{\\sqrt3}.\n\\]\nComplete randomization attains the first branch for \\(\\rho\\leq1/\\sqrt3\\), while \\(d_{\\mathrm{pair},4}\\) attains the second branch for \\(\\rho\\geq1/\\sqrt3\\). Thus the three rank-one four-unit spaces \\(S_4\\), \\(S_{\\mathrm{mid}}\\), and \\(S_{\\mathrm{out}}\\) have threshold invariants \\(1/3\\), \\(8/9\\), and \\(1\\), respectively, so the variational invariant contains information not determined by dimension alone. More generally, independent fair orientations within fixed pairs give \\(\\kappa(S_{\\mathrm{pair}})=0\\), so \\(S_{\\mathrm{pair}}\\in\\mathfrak A_n\\). At \\(n=8\\) and \\(M=1\\), \\(V^*(1;S_{\\mathrm{pair}})=0\\) while \\(V_{\\mathrm{CRD}}(1;S_{\\mathrm{pair}})=4/7\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.endpoint_reductions",
+        "file": "TEndpointReductions.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "1bd0a375f94fff64ec53f1608192a8e8664290ee",
+        "note": "After unfolding all referenced definitions, the Lean conjunction encodes the full-space and outlier identities, four-unit middle and pair invariants, covariance and branch attainment, general paired admissibility, and the n=8 risk check; the rank-one and S₄=S_pair facts follow from the explicit span and pair-space definitions."
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 1
+      }
+    },
+    {
+      "id": "thm:finite-unknown-quality-regret",
+      "obj_id": "T-5",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Let \\(z^{(1)},\\ldots,z^{(m)}\\) contain one representative from every balanced sign-pair, where \\(m=|\\mathcal Z_n|/2\\), let \\(\\Delta_m\\) be the probability simplex, and put \\(A(a)=\\sum_{j=1}^m a_jz^{(j)}z^{(j)\\top}\\).  If \\(Q_H\\) is any orthonormal basis matrix for \\(H_n\\), then the normalized unknown-quality regret has the exact finite, generally exponential, robust semidefinite representation\n\\[\n\\frac{n}{4M}R^*(n,S)\n=\\min_{a\\in\\Delta_m}\\ \\sup_{\\substack{u\\in H_n,\\ \\|u\\|_2=1;\\ b\\in\\Delta_m,\\ \\eta\\geq0,\\ \\ell\\in\\mathbb R\\\\\n\\ell I_{n-1}-Q_H^\\top\\{A(b)+\\eta P_S\\}Q_H\\succeq0}}\n\\left[u^\\top A(a)u+\\eta u^\\top P_Su-\\ell\\right],\n\\]\nwhere the value closure at \\(\\eta=\\infty\\) is the compressed-spectrum endpoint specified in the regret handle.  The outer minimum is attained and, with \\(p=\\dim(S)\\), satisfies the universal quantitative bounds\n\\[\n\\frac{p}{n-1}\\{c_n-\\kappa(S)\\}\n\\leq\\frac{n}{4M}R^*(n,S)\n\\leq c_n-\\kappa(S).\n\\]\nComplete randomization witnesses the upper bound.  The lower bound is attained for every homogeneous even-block score space, and both bounds equal zero whenever \\(\\kappa(S)=c_n\\).\n\nSymmetrizing optimal cut-hull weights gives a design \\(d_{\\mathrm{reg}}\\in\\mathcal D_n\\) satisfying\n\\[\n\\sup_{\\rho\\in[0,1]}\n\\left\\{\n\\sup_{\\mu\\in\\mathcal Y(\\rho,M;S)}\n\\mathbb E_{d_{\\mathrm{reg}}}[(\\widehat\\tau_{d_{\\mathrm{reg}}}-\\tau_n)^2]\n-V^*(\\rho;S)\n\\right\\}=R^*(n,S),\n\\]\nwhereas the left side is at least \\(R^*(n,S)\\) for every single \\(d\\in\\mathcal D_n\\) chosen without knowledge of \\(\\rho\\).  Thus an arbitrary score space has an exact finite program and nonvacuous value bounds; no general closed form or polynomial-time claim is made.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.finite_unknown_quality_regret",
+        "file": "TFiniteUnknownQualityRegret.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "7f7a728733094a3230620f73c86965e551b3f6ce",
+        "note": "After unfolding the bundled predicate and referenced definitions, Lean encodes the same finite sign-pair robust SDP value (including value closure through the supremum over finite multipliers), outer attainment, universal bracket, CRD witness, homogeneous even-block equality, zero endpoint, attaining balanced design, and all-design converse; both implication directions hold under the paper’s global n, S, and M domain assumptions."
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 1
+      }
+    },
+    {
+      "id": "lem:pair-space-exact-frontier",
+      "obj_id": "L-3",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Let \\(\\mathcal P=(G_1,\\ldots,G_B)\\) be a partition of \\(\\{1,\\ldots,n\\}\\), where \\(B\\geq2\\), and put \\(m_j=|G_j|\\).  For every \\(\\rho\\in[0,1]\\), within-block orbit averaging gives the exact finite reduction\n\\[\nv^*(\\rho;S_{\\mathcal P})\n=\\min_{G\\in\\mathcal G_{\\mathcal P}}\nq_\\rho\\!\\left(A_{\\mathcal P}(G);S_{\\mathcal P}\\right).\n\\]\nEvery reduced covariance is realized by within-block permutation and sign symmetrization, and for every \\(A\\in\\mathcal C_n\\) a reduced covariance has no larger loss.  Thus the reduction supplies an attaining design and a matching converse over the full balanced covariance hull.  Moreover,\n\\[\n\\kappa(S_{\\mathcal P})=0\n\\quad\\Longleftrightarrow\\quad\nm_j\\text{ is even for every }j=1,\\ldots,B.\n\\]\n\nFor the unequal two-block family, let \\(B=2\\), let \\(m=\\min(m_1,m_2)\\), let \\(\\ell=\\max(m_1,m_2)\\), and suppose \\(m<\\ell\\).  The two block sizes have the same parity.  Put \\(e=0\\) in the even--even case and \\(e=1\\) in the odd--odd case.  The block-sum moment polytope is the interval\n\\[\nq=\\mathbb E[R_1^2]=\\mathbb E[R_2^2]\\in[e,m^2],\n\\qquad\nq_c=\\frac{m\\ell}{n-1}.\n\\]\nFor \\(m>1\\), define\n\\[\n\\kappa_2=\\frac{ne}{m\\ell},\n\\qquad\nb_0=\\frac{m^2-e}{m(m-1)},\n\\qquad\ns_0=\\frac{\\ell}{m(n-1)}.\n\\]\nThen the exact oracle frontier, threshold, and normalized regret are\n\\[\nv^*(\\rho;S_{\\mathcal P})\n=\\min\\{c_n,\\,(1-\\rho^2)b_0+\\rho^2\\kappa_2\\},\n\\qquad\n\\kappa(S_{\\mathcal P})=\\kappa_2,\n\\qquad\n\\gamma(S_{\\mathcal P})=s_0,\n\\qquad\n\\rho^*(S_{\\mathcal P})=\\sqrt{s_0},\n\\]\nand\n\\[\n\\min_{A\\in\\mathcal C_n}\\Delta_{\\mathrm{reg}}(A;S_{\\mathcal P})\n=s_0(c_n-\\kappa_2),\n\\qquad\nR^*(n,S_{\\mathcal P})\n=\\frac{4M}{n}s_0(c_n-\\kappa_2).\n\\]\nComplete randomization, whose block-sum moment is \\(q_c\\), attains the first oracle branch.  A parity-endpoint design with block sums \\((0,0)\\) in the even--even case or \\((\\pm1,\\mp1)\\) in the odd--odd case attains the second branch.  The regret optimizer mixes complete randomization with the parity-endpoint design, with weight \\(s_0\\) on complete randomization, and has block-sum moment\n\\[\nq_{\\mathrm{reg}}=(1-s_0)e+s_0q_c.\n\\]\nThe regret constraints at \\(\\rho=0\\) and \\(\\rho=1\\) give a matching lower bound over every \\(A\\in\\mathcal C_n\\).  If \\(m=1\\), then \\(q=1\\) is forced,\n\\[\nv^*(\\rho;S_{\\mathcal P})=c_n\\quad(0\\leq\\rho\\leq1),\n\\qquad\n\\kappa(S_{\\mathcal P})=c_n,\n\\qquad\n\\gamma(S_{\\mathcal P})=1,\n\\qquad\n\\rho^*(S_{\\mathcal P})=1,\n\\]\nand the regret is zero.\n\nIf instead the partition has \\(B\\) equal blocks of even size \\(m=n/B\\), put \\(p=B-1\\), \\(h=n-B\\), \\(\\delta_m=n/h\\), and \\(\\beta=p/(n-1)\\).  Then\n\\[\nv^*(\\rho;S_B)=\\min\\{c_n,\\delta_m(1-\\rho^2)\\},\n\\quad\n\\kappa(S_B)=0,\n\\quad\n\\gamma(S_B)=\\beta,\n\\quad\n\\rho^*(S_B)=\\sqrt\\beta,\n\\]\nand the mixture with weight \\(\\beta\\) on complete randomization and weight \\(1-\\beta\\) on independent within-block complete randomization attains\n\\[\n\\min_{A\\in\\mathcal C_n}\\Delta_{\\mathrm{reg}}(A;S_B)\n=\\frac{np}{(n-1)^2},\n\\qquad\nR^*(n,S_B)=\\frac{4Mp}{(n-1)^2}.\n\\]\nThe pair partition is the specialization \\(B=n/2\\), \\(m=2\\), so\n\\[\nv^*(\\rho;S_{\\mathrm{pair}})=\\min\\{c_n,2(1-\\rho^2)\\},\n\\quad\n\\kappa(S_{\\mathrm{pair}})=0,\n\\quad\n\\gamma(S_{\\mathrm{pair}})=\\frac{n-2}{2(n-1)},\n\\quad\n\\rho^*(S_{\\mathrm{pair}})=\\sqrt{\\frac{n-2}{2(n-1)}}.\n\\]\nNo universal closed form is asserted for unequal partitions with more than two blocks; their exact value is the finite moment-polytope program in the first display.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.pair_space_exact_frontier",
+        "file": "TPairSpaceExactFrontier.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "c3abb54f3264e6b48dd9cfb2717c56da92fb6cd6",
+        "note": "Unfolding the frontier bundle and all referenced definitions gives the exact attained orbit reduction and full-hull converse, parity equivalence, unequal-two-block moment interval, branch formulas and realizing CRD/endpoint/regret mixtures, singleton case, homogeneous-even-block formulas and attaining mixture, and matched-pair specialization; the sInf formulations are equivalent to the paper's minima because the statement supplies feasible attaining witnesses."
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 1
+      }
+    },
+    {
+      "id": "thm:exact-pair-space-regret",
+      "obj_id": "T-6",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Let \\(S=S_{\\mathrm{pair}}\\), write \\(n=2k\\), and put\n\\[\n \\alpha_n=\\frac{n-2}{2(n-1)}.\n\\]\nThen\n\\[\n v^*(\\rho;S_{\\mathrm{pair}})\n =\\min\\left\\{c_n,\\,2(1-\\rho^2)\\right\\}.\n\\]\nMoreover,\n\\[\n \\kappa(S_{\\mathrm{pair}})=0,\n \\qquad\n \\gamma(S_{\\mathrm{pair}})=\\alpha_n,\n \\qquad\n \\rho^*(S_{\\mathrm{pair}})=\\sqrt{\\alpha_n}.\n\\]\nThe design which mixes complete randomization with independent fair within-pair orientations, with weight \\(\\alpha_n\\) on complete randomization, has covariance\n\\[\n A_{\\mathrm{mix}}\n =\\alpha_n c_nP_H+(1-\\alpha_n)2(P_H-P_S)\\in\\mathcal C_n\n\\]\nand attains the exact full-class unknown-quality regret\n\\[\n \\min_{A\\in\\mathcal C_n}\\Delta_{\\mathrm{reg}}(A;S_{\\mathrm{pair}})\n =\\frac{n(n-2)}{2(n-1)^2},\n \\qquad\n R^*(n,S_{\\mathrm{pair}})=\\frac{2M(n-2)}{(n-1)^2}.\n\\]\nThe regret constraints at \\(\\rho=0\\) and \\(\\rho=1\\) are jointly binding.  For \\(n=4\\), the three balanced sign-pair weights can be chosen as \\((1/9,4/9,4/9)\\), with the weight \\(1/9\\) on the sign-pair omitted by the within-pair design; the normalized regret is \\(4/9\\) and \\(R^*(4,S_4)=4M/9\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.exact_pair_space_regret",
+        "file": "TExactPairSpaceRegret.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "df90bf3cfda6c7ec82a850c44583bef766f261d1",
+        "note": "Unfolding ExactPairSpaceRegretStatement and its referenced definitions yields the same two-branch frontier, invariants, feasible CRD/pair covariance mixture, attained minimum regret, binding endpoint constraints, and n=4 sign-pair weights and regrets; the additional representative and arithmetic conjuncts are definitionally derivable, while even n ≥ 4 and M > 0 are exactly the declared domains."
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 1
+      }
+    },
+    {
+      "id": "lem:kallus-mixed-strategy-eigenvalue-framework",
+      "kind": "gate",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Kallus (2021, Section 5) considers the ellipsoidal conditional-mean class\n\\[\n\\mathcal M_K=\\{Ku:u^\\top Ku\\leq C\\},\n\\qquad K\\succeq0,\n\\]\nfor which a symmetric balanced mixed design \\(\\sigma\\), with assignment second moment \\(Q(\\sigma)\\), has worst-case design variance\n\\[\n\\mathcal V(\\sigma,\\mathcal M_K)\n=C\\lambda_{\\max}\\!\\left(K^{1/2}Q(\\sigma)K^{1/2}\\right),\n\\]\nand the mixed-strategy optimal design minimizes this largest-eigenvalue criterion over the paper's feasible design class.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.KallusMixedStrategyEigenvalueFramework",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "84143c5822f9d6b8ab5318b2dd4f97fa440f5d5f",
+        "note": "The attested source, note, and Lean agree: Lean self-containedly defines M_K, the symmetric balanced feasible mixed-design class, its second moment and worst-case variance, quantifies over PSD square roots, and states both the eigenvalue identity and minimizing design; 0 ≤ C makes explicit the ellipsoid-radius domain."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "gate": {
+        "gate_class": "cited",
+        "source": "cite:kallus2021-mixed-strategy-eigenvalue"
+      }
+    },
+    {
+      "id": "aux_AdmissibilityFrontierStatement",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def AdmissibilityFrontierStatement, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "AdmissibilityFrontierStatement",
+        "file": "TAdmissibilityFrontier.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_admissibleFamily",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def admissibleFamily, flavor const-exist)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "admissibleFamily",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_ConeLiftDualStatement",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def ConeLiftDualStatement, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "ConeLiftDualStatement",
+        "file": "TConeLiftDual.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_ExactOracleSaddleStatement",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def ExactOracleSaddleStatement, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "ExactOracleSaddleStatement",
+        "file": "TExactOracleSaddle.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_ExactPairSpaceRegretStatement",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def ExactPairSpaceRegretStatement, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "ExactPairSpaceRegretStatement",
+        "file": "TExactPairSpaceRegret.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_finiteRobustRegretValue",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def finiteRobustRegretValue, flavor const-exist)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "finiteRobustRegretValue",
+        "file": "TFiniteUnknownQualityRegret.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_FiniteUnknownQualityRegretStatement",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def FiniteUnknownQualityRegretStatement, flavor const-exist)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "FiniteUnknownQualityRegretStatement",
+        "file": "TFiniteUnknownQualityRegret.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_IsBalanced",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def IsBalanced, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "IsBalanced",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_LeverageFeasible",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def LeverageFeasible, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "LeverageFeasible",
+        "file": "TAdmissibilityFrontier.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_SignPairRepresentatives",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def SignPairRepresentatives, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "SignPairRepresentatives",
+        "file": "TFiniteUnknownQualityRegret.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_CenteredOrthonormalBasis",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def CenteredOrthonormalBasis, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CenteredOrthonormalBasis",
+        "file": "TFiniteUnknownQualityRegret.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_FourPairRepresentativeProperty",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def FourPairRepresentativeProperty, flavor predicate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "FourPairRepresentativeProperty",
+        "file": "TExactPairSpaceRegret.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "aux_regretGap",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(hidden def regretGap, flavor const-exist)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "regretGap",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "assignmentComplement",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Experimentation.PrognosticDesignAdmissibility.assignmentComplement)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.assignmentComplement",
+        "file": "TBalancedCovarianceRealizability.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": "d66011fe0acf8cae8037126bd5457dd8d911ecba"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "assignmentComplement_involutive",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.PrognosticDesignAdmissibility.assignmentComplement_involutive)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.assignmentComplement_involutive",
+        "file": "TBalancedCovarianceRealizability.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": "d8a4ad24e04e003ff88c0c2361844b9c1c9b8841"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "signOf_complement",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.PrognosticDesignAdmissibility.signOf_complement)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.signOf_complement",
+        "file": "TBalancedCovarianceRealizability.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": "c9de82a210cf07f8bab58b1895161ad6d5f9078c"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "isBalanced_complement",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.PrognosticDesignAdmissibility.isBalanced_complement)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.isBalanced_complement",
+        "file": "TBalancedCovarianceRealizability.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": "a821ff54810b12d54edffab2ea4f7a1ab894bd68"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "covarianceHull_has_symmetric_design",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.PrognosticDesignAdmissibility.covarianceHull_has_symmetric_design)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.PrognosticDesignAdmissibility.covarianceHull_has_symmetric_design",
+        "file": "TBalancedCovarianceRealizability.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": "c27b3b1f42e80ab321a84e9eadb31230559538e1"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "kind": "proof-uses",
+      "from": "lem:exact-design-risk",
+      "to": "ass:fixed-potential-outcomes",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:exact-design-risk",
+      "to": "ass:consistency-no-interference",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:exact-design-risk",
+      "to": "def:balanced-design-space",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:balanced-covariance-realizability",
+      "to": "def:balanced-design-space",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:balanced-covariance-realizability",
+      "to": "def:covariance-hull",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:cone-lift-dual",
+      "to": "def:realized-score-quality",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:cone-lift-dual",
+      "to": "def:score-quality-shell",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:cone-lift-dual",
+      "to": "def:lifted-adversary",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:cone-lift-dual",
+      "to": "def:covariance-hull",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:exact-oracle-saddle",
+      "to": "lem:exact-design-risk",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:exact-oracle-saddle",
+      "to": "lem:balanced-covariance-realizability",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:exact-oracle-saddle",
+      "to": "thm:cone-lift-dual",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:exact-oracle-saddle",
+      "to": "def:oracle-risk",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:admissibility-frontier",
+      "to": "thm:cone-lift-dual",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:admissibility-frontier",
+      "to": "thm:exact-oracle-saddle",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:admissibility-frontier",
+      "to": "def:admissibility-invariants",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:admissibility-frontier",
+      "to": "def:covariance-hull",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:endpoint-reductions",
+      "to": "def:covariance-hull",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:endpoint-reductions",
+      "to": "def:oracle-risk",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:endpoint-reductions",
+      "to": "thm:admissibility-frontier",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:endpoint-reductions",
+      "to": "def:pair-score-space",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:endpoint-reductions",
+      "to": "def:four-unit-score-mixture",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:endpoint-reductions",
+      "to": "lem:pair-space-exact-frontier",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:finite-unknown-quality-regret",
+      "to": "lem:exact-design-risk",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:finite-unknown-quality-regret",
+      "to": "lem:balanced-covariance-realizability",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:finite-unknown-quality-regret",
+      "to": "thm:cone-lift-dual",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:finite-unknown-quality-regret",
+      "to": "thm:exact-oracle-saddle",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:finite-unknown-quality-regret",
+      "to": "thm:admissibility-frontier",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:finite-unknown-quality-regret",
+      "to": "def:regret-object",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:finite-unknown-quality-regret",
+      "to": "def:regret-handle",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:pair-space-exact-frontier",
+      "to": "def:balanced-design-space",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:pair-space-exact-frontier",
+      "to": "def:covariance-hull",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:pair-space-exact-frontier",
+      "to": "def:oracle-risk",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:pair-space-exact-frontier",
+      "to": "def:admissibility-invariants",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:pair-space-exact-frontier",
+      "to": "def:regret-object",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:pair-space-exact-frontier",
+      "to": "def:pair-score-space",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:pair-space-exact-frontier",
+      "to": "def:partition-orbit-covariance",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:pair-space-exact-frontier",
+      "to": "thm:admissibility-frontier",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:exact-pair-space-regret",
+      "to": "lem:balanced-covariance-realizability",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:exact-pair-space-regret",
+      "to": "lem:pair-space-exact-frontier",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:exact-pair-space-regret",
+      "to": "def:pair-score-space",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:exact-pair-space-regret",
+      "to": "def:four-unit-score-mixture",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:exact-pair-space-regret",
+      "to": "def:regret-object",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "thm:cone-lift-dual",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "thm:cone-lift-dual",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "thm:exact-oracle-saddle",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "thm:exact-oracle-saddle",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "thm:admissibility-frontier",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "thm:admissibility-frontier",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "prop:endpoint-reductions",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "prop:endpoint-reductions",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "thm:finite-unknown-quality-regret",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "thm:finite-unknown-quality-regret",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "thm:exact-pair-space-regret",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "thm:exact-pair-space-regret",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:balanced-design-space",
+      "to": "S1",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:admissibility-frontier",
+      "to": "aux_AdmissibilityFrontierStatement",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "assignmentComplement_involutive",
+      "to": "assignmentComplement",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "signOf_complement",
+      "to": "assignmentComplement",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "isBalanced_complement",
+      "to": "aux_IsBalanced",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "isBalanced_complement",
+      "to": "assignmentComplement",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "covarianceHull_has_symmetric_design",
+      "to": "def:covariance-hull",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "covarianceHull_has_symmetric_design",
+      "to": "def:balanced-design-space",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "covarianceHull_has_symmetric_design",
+      "to": "assignmentComplement",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:balanced-covariance-realizability",
+      "to": "def:balanced-design-space",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:balanced-covariance-realizability",
+      "to": "def:covariance-hull",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:cone-lift-dual",
+      "to": "aux_ConeLiftDualStatement",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:exact-design-risk",
+      "to": "S1",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:exact-design-risk",
+      "to": "def:balanced-design-space",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:exact-design-risk",
+      "to": "ass:fixed-potential-outcomes",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:exact-design-risk",
+      "to": "ass:consistency-no-interference",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exact-oracle-saddle",
+      "to": "aux_ExactOracleSaddleStatement",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:exact-pair-space-regret",
+      "to": "aux_ExactPairSpaceRegretStatement",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:finite-unknown-quality-regret",
+      "to": "aux_FiniteUnknownQualityRegretStatement",
+      "source": "extracted"
+    }
+  ],
+  "symbolReview": {
+    "sym:n": {
+      "verdict": "matched",
+      "hash": "c107ec7d027b519aa27237d47ce42b7f744fd7df"
+    },
+    "sym:Z_n": {
+      "verdict": "matched",
+      "hash": "70d89f1b407cf7ddd098f311d327e358c7bb5af7"
+    },
+    "sym:treatment_label": {
+      "verdict": "matched",
+      "hash": "dcf7f3a0c832052162332af6c857d395bd57ab3b"
+    },
+    "sym:M": {
+      "verdict": "matched",
+      "hash": "30e11835f66855456e55564843039ebaacc4298d"
+    },
+    "sym:rho_mu": {
+      "verdict": "matched",
+      "hash": "a9a7c0332bf920c5d320433e7c194794de6c432a"
+    },
+    "sym:rho": {
+      "verdict": "matched",
+      "hash": "e7f4a91e1fedbc7d9da10c81efd6abbc24768a53"
+    },
+    "sym:c_n": {
+      "verdict": "matched",
+      "hash": "71f7007d1e998bb48e2bb6718d138819790b8a36"
+    },
+    "sym:rho_star_S": {
+      "verdict": "matched",
+      "hash": "effb03ca7f976cbb10ed4c8d0bcaa734cc75f8e5"
+    },
+    "sym:d_pair_4": {
+      "verdict": "matched",
+      "hash": "dc9d743a1998e2411575c91bedcdb688dd34acf1"
+    }
+  }
+}

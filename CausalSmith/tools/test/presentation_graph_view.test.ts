@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  citedDependencies, renderedNodes, envForKind, envForNode, isCitedNode, topoOrder, refTargets,
+  citedDependencies, renderedNodes, envForKind, envForNode, isCitedNode, topoOrder, refTargets, OVERRIDE_ENVS,
 } from "../src/presentation/graph_view.js";
 import type { FormalizationGraph, GraphNode, GraphEdge } from "../src/graph/types.js";
 
@@ -37,6 +37,10 @@ describe("envForKind", () => {
     expect(envForKind("definition")).toBe("definitionv");
     expect(envForKind("setup")).toBeNull();
     expect(envForKind("gate")).toBeNull(); // kind-only: a gate's env depends on gate_class
+  });
+  it("algorithmv is a planner override target only — never a default kind mapping", () => {
+    expect(OVERRIDE_ENVS).toContain("algorithmv");
+    expect(["theorem", "lemma", "assumption", "definition", "setup", "gate"].map((k) => envForKind(k as never))).not.toContain("algorithmv");
   });
 });
 

@@ -14,6 +14,8 @@ import { stageP4 } from "./stages/p4_emit.js";
 import { stageP5 } from "./stages/p5_review.js";
 import { stageP5HolisticRevision } from "./stages/p5_holistic_revision.js";
 import { loadPriorReview } from "./revision_brief.js";
+import { assertP2AssemblyFresh } from "./assembly_freshness.js";
+import { PROOF_AUDIT_FAILURE_MARKER, runPromotionRound } from "./promotion.js";
 import {
   MAX_P5_REVISION_PASSES,
   findingFingerprint,
@@ -38,6 +40,7 @@ export interface PaperDeps {
     cwd: string;
     reasoningEffort?: "minimal" | "low" | "medium" | "high" | "xhigh";
     leanLsp?: boolean;
+    webSearch?: boolean;
     /** codex model id override (present mode defaults to MODELS.codexPresentation). */
     model?: string;
     /** Codex native sub-agents — default-off (opt-in); set true only for a lone low-concurrency call whose prompt uses spawn_agent (see CodexRunInput.multiAgent). */
@@ -67,8 +70,13 @@ export interface PaperCtx {
   from?: PaperStage;
   /** Output dir override (tests MUST set this — the default is the live run dir). */
   outDir?: string;
-  /** Internal cost mode used by P3's independent rubric review. */
-  p3ReviewMode?: "intermediate" | "final";
+  /** On a P2 render-key miss, keep an existing proof file as an unaudited
+   * candidate and send it through the normal proof audit/refinement gate. */
+  reuseExistingProofsForAudit?: boolean;
+  /** With `--from P2`: run P2 in reassemble mode (rebuild paper.tex from the
+   * on-disk authored sources, no drafting) — the manual-revision re-entry after
+   * hand-edits to front_matter.tex / sections/ / proofs/. */
+  reassembleP2?: boolean;
 }
 
 export interface StageIO {
@@ -76,6 +84,14 @@ export interface StageIO {
   state: PaperState;
   bank: BankEntry;
   outDir: string;
+  /** P2 only, revision cycle: reassemble paper.tex from the on-disk authored
+   * sources (which the P5 reviser just edited) — never re-draft; a missing or
+   * contract-violating source is an error, not a redraft trigger. */
+  reassemble?: boolean;
+  /** Revision entry (P5 cycle or `--from P2 --reassemble`): P3 runs hard gates
+   * only and skips the rubric — the P5 referee is the holistic judge of a
+   * revision, so re-scoring it here duplicates full-paper calls per cycle. */
+  revisionCycle?: boolean;
 }
 
 export type StageFn = (io: StageIO) => Promise<void>;
@@ -91,7 +107,7 @@ const ORDER: { stage: PaperStage; fn: StageFn; checkpointAfter?: "outline" | "dr
 
 export async function runPaperPipeline(ctx: PaperCtx): Promise<{ halt: string }> {
   const outDir = ctx.outDir ?? presentationDir(ctx.repoRoot, ctx.qid, ctx.spec);
-  const bank = await loadBankEntry(ctx.repoRoot, ctx.qid, ctx.spec);
+  let bank = await loadBankEntry(ctx.repoRoot, ctx.qid, ctx.spec);
   const prior = ctx.resume || ctx.from || ctx.auto ? await loadPaperState(outDir, ctx.qid, ctx.spec) : null;
   const state = prior ?? freshPaperState(ctx.qid, ctx.spec);
   if (state.checkpoint_pending && ctx.resume) state.checkpoint_pending = null; // resume = checkpoint approved
@@ -113,11 +129,39 @@ export async function runPaperPipeline(ctx: PaperCtx): Promise<{ halt: string }>
       ? ORDER.findIndex((s) => s.stage === state.stage_completed) + 1
       : 0;
   }
+  let promotionUsed = false;
   for (let i = startIdx; i < ORDER.length; i++) {
     const { stage, fn, checkpointAfter } = ORDER[i];
-    await fn({ ctx, state, bank, outDir });
+    const io = { ctx, state, bank, outDir, reassemble: stage === "P2" && ctx.reassembleP2 === true, revisionCycle: ctx.reassembleP2 === true };
+    try {
+      await fn(io);
+    } catch (err) {
+      // PROMOTION ROUND (once per invocation): a P2 proof-audit failure usually means the
+      // failing steps' content needs to become citable auxiliary lemmas. Author them
+      // (agent call), re-run P1 as a cheap delta (only new statements render/audit),
+      // and retry P2 once. Anything else — or a second failure — propagates as before.
+      const msg = err instanceof Error ? err.message : String(err);
+      // Never in a reassemble/revision re-entry: new formal environments are forbidden
+      // there (no draft checkpoint would review them, and a promoted lemma has no
+      // rendered proof for the reassemble guard to reuse).
+      if (stage !== "P2" || promotionUsed || ctx.reassembleP2 === true || !msg.includes(PROOF_AUDIT_FAILURE_MARKER)) throw err;
+      promotionUsed = true;
+      const added = await runPromotionRound(io, msg);
+      state.notes.push(`P2 promotion round: added ${added} — review at the draft checkpoint.`);
+      await savePaperState(outDir, state);
+      // The promotion agent edited graph.json ON DISK; the loaded bank (graph, crosswalk,
+      // lean pointers) is stale. Reload so the P1 re-run, the P2 retry, and every later
+      // stage see the new nodes.
+      bank = await loadBankEntry(ctx.repoRoot, ctx.qid, ctx.spec);
+      const retryIo = { ...io, bank };
+      await stageP1({ ...retryIo, reassemble: false });
+      await fn(retryIo);
+    }
     state.stage_completed = stage;
-    if (checkpointAfter && !ctx.auto) state.checkpoint_pending = checkpointAfter;
+    // A reassemble re-entry is a revision of an already-reviewed draft, not a first
+    // draft awaiting approval — do not halt it at the P2 draft checkpoint.
+    const skipCheckpoint = ctx.auto || (stage === "P2" && ctx.reassembleP2 === true);
+    if (checkpointAfter && !skipCheckpoint) state.checkpoint_pending = checkpointAfter;
     await savePaperState(outDir, state);
     if (stage === "P5") {
       p5ReviewsRun += 1;
@@ -126,7 +170,7 @@ export async function runPaperPipeline(ctx: PaperCtx): Promise<{ halt: string }>
       }
     }
     if (ctx.stopAfter === stage) return { halt: `stopped:${stage}` };
-    if (checkpointAfter && !ctx.auto) return { halt: `checkpoint:${checkpointAfter}` };
+    if (checkpointAfter && !skipCheckpoint) return { halt: `checkpoint:${checkpointAfter}` };
   }
   // P5 revision: one holistic manuscript reviser may make at most two passes.
   // Initial P1/P2 drafting remains stage-structured, but referee-driven repair no
@@ -134,6 +178,27 @@ export async function runPaperPipeline(ctx: PaperCtx): Promise<{ halt: string }>
   // may reframe the whole paper while the verification contract freezes the math.
   if (!ctx.deps.dryRun && ctx.stopAfter === undefined) {
     while (true) {
+      // Stale-source guard: if the authored sources are newer than the recorded
+      // assembly (a prior pass's reviser succeeded but the P2→P5 re-gate died, or
+      // the operator hand-edited sources before --resume), finish the re-gate FIRST.
+      // Without this, the loop would re-dispatch the reviser against the old review
+      // and misroute to p5:non-converging on identical fingerprints.
+      const assemblyStale = await assertP2AssemblyFresh(outDir).then(() => false, () => true);
+      if (assemblyStale) {
+        for (const stage of ["P2", "P3", "P4", "P5"] as const) {
+          const { fn } = ORDER.find((entry) => entry.stage === stage)!;
+          await fn({ ctx, state, bank, outDir, reassemble: stage === "P2", revisionCycle: true });
+          state.stage_completed = stage;
+          await savePaperState(outDir, state);
+          if (stage === "P5") {
+            p5ReviewsRun += 1;
+            if (ctx.maxP5Reviews !== undefined && p5ReviewsRun >= ctx.maxP5Reviews) {
+              return { halt: "p5:review-cap" };
+            }
+          }
+        }
+        continue;
+      }
       const review = await loadPriorReview(outDir);
       if (!review) break;
       if (review.recommendation === "accept" && review.findings.length === 0) break;
@@ -178,23 +243,20 @@ export async function runPaperPipeline(ctx: PaperCtx): Promise<{ halt: string }>
       state.revision_round += 1;
       state.notes.push(`P5 holistic revision pass ${state.p5_revision_passes}/${MAX_P5_REVISION_PASSES}.`);
       await savePaperState(outDir, state);
-      const priorReviewMode = ctx.p3ReviewMode;
-      ctx.p3ReviewMode = "final";
-      try {
-        for (const stage of ["P3", "P4", "P5"] as const) {
-          const { fn } = ORDER.find((entry) => entry.stage === stage)!;
-          await fn({ ctx, state, bank, outDir });
-          state.stage_completed = stage;
-          await savePaperState(outDir, state);
-          if (stage === "P5") {
-            p5ReviewsRun += 1;
-            if (ctx.maxP5Reviews !== undefined && p5ReviewsRun >= ctx.maxP5Reviews) {
-              return { halt: "p5:review-cap" };
-            }
+      // P2 runs in reassemble mode: the reviser edited the authored sources
+      // (front_matter/sections/proofs), so P2 rebuilds paper.tex from disk with
+      // no drafting; P3 then re-gates the revised text and P4 re-emits.
+      for (const stage of ["P2", "P3", "P4", "P5"] as const) {
+        const { fn } = ORDER.find((entry) => entry.stage === stage)!;
+        await fn({ ctx, state, bank, outDir, reassemble: stage === "P2", revisionCycle: true });
+        state.stage_completed = stage;
+        await savePaperState(outDir, state);
+        if (stage === "P5") {
+          p5ReviewsRun += 1;
+          if (ctx.maxP5Reviews !== undefined && p5ReviewsRun >= ctx.maxP5Reviews) {
+            return { halt: "p5:review-cap" };
           }
         }
-      } finally {
-        ctx.p3ReviewMode = priorReviewMode;
       }
     }
     const residual = await loadPriorReview(outDir);

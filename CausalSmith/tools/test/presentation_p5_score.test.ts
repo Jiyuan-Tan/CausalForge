@@ -75,3 +75,35 @@ describe("P5 review history", () => {
     }
   });
 });
+
+// Referee copy: comments never reach the referee; escaped percents and content do.
+import { refereeTexFor } from "../src/presentation/stages/p5_review.js";
+describe("refereeTexFor", () => {
+  it("strips % comments (incl. % lean: provenance) but keeps \\% and prose", () => {
+    const tex = "A rate of 5\\% holds. % lean: adaptive_rootn_minimax\n% full-line comment\n\n\nNext paragraph.\n";
+    const out = refereeTexFor(tex);
+    expect(out).toContain("5\\% holds.");
+    expect(out).not.toContain("lean:");
+    expect(out).not.toContain("full-line comment");
+    expect(out).not.toMatch(/\n[ \t]*\n[ \t]*\n/);
+    expect(out).toContain("Next paragraph.");
+  });
+});
+
+describe("title-only findings are repaired in-run, not escalated", () => {
+  it("routes an overstating-title finding to the reviser but keeps math findings escalated", async () => {
+    const { actionForFinding } = await import("../src/presentation/revision_routing.js");
+    const titleFinding = {
+      severity: "major", section: "main result", kind: "statement", remedy: "rewrite",
+      issue: 'The title "Adaptive root-n minimaxity" overstates the delivered result, which is fixed-code.',
+      fix: 'Rename the theorem to name the fixed-code, fixed-separation scope.',
+    } as never;
+    const mathFinding = {
+      severity: "major", section: "main result", kind: "statement", remedy: "rewrite",
+      issue: "The theorem assumes bounded outcomes but the proof needs sub-Gaussian tails.",
+      fix: "Strengthen the hypothesis.",
+    } as never;
+    expect(actionForFinding(titleFinding)).toEqual({ type: "revise" });
+    expect(actionForFinding(mathFinding)).toEqual({ type: "escalate" });
+  });
+});

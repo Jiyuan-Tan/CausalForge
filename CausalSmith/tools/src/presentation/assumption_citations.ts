@@ -112,6 +112,23 @@ export function reconcileCite(
     (b) => b.key.replace(/[^A-Za-z0-9]/g, "").toLowerCase() === normalizedCite,
   );
   if (normalizedHit) return { citeKey: normalizedHit.key, inject: null };
+  // Some research gates use a compact multi-author acronym followed by the year and
+  // a theorem locator, e.g. `jms2025-thm54`. Match that strict source identity to a
+  // curated entry whose author-family initials and year agree. The locator suffix is
+  // intentionally ignored; both pieces of bibliographic identity must still match.
+  const compact = normalizedCite.match(/^([a-z]+)((?:19|20)\d{2})(?:[a-z0-9]*)$/);
+  if (compact) {
+    const [, initials, year] = compact;
+    const authorInitials = (author: string): string => author
+      .split(/\s+and\s+/i)
+      .map((part) => {
+        const family = part.includes(",") ? part.split(",", 1)[0] : part.trim().split(/\s+/).at(-1) ?? "";
+        return family.match(/[A-Za-z]/)?.[0]?.toLowerCase() ?? "";
+      })
+      .join("");
+    const acronymHit = bibIndex.find((b) => b.year === year && authorInitials(b.author) === initials);
+    if (acronymHit) return { citeKey: acronymHit.key, inject: null };
+  }
   const citation = std.citation;
   if (citation) {
     const surname = firstAuthorSurname(citation);

@@ -8,7 +8,7 @@
       "kind": "setup",
       "provenance": "from-note",
       "nl": {
-        "statement": "Finite-alphabet i.i.d. observational world, in TWO explicitly bridged views. (a) CANONICAL / statement view: one observed unit is O = (X, A, Y) : Fin d x Bool x Bool; the single-observation law P is a probability Measure (built from a PMF) on that finite type with ARBITRARY cell masses; the n-sample law is the finite i.i.d. product Measure.pi (fun _ : Fin n => P), and every statement, estimator (a measurable Fin n -> Obs -> R) and the minimax inf/sup live HERE. (b) AMBIENT view, used only to import IIDSample-typed Causalean declarations: the infinite i.i.d. product Omega_inf = (ℕ -> Obs) with mu_inf = MeasureTheory.Measure.infinitePi (fun _ : ℕ => P), whose coordinate process Z i omega = omega i is a genuine Causalean.Stat.IIDSample (ℕ -> Obs) Obs mu_inf P. BRIDGE (both directions available, in scope, for arbitrary P): Causalean.Stat.iidSample_finN_pushforward pushes mu_inf forward along the first-n-coordinates map onto Measure.pi (fun _ : Fin n => P), so any event/integral of the first n coordinates has equal mass in the two views. Primitives p_k = P(X=k), pi_k = P(A=1|X=k), mu_{ak} = E[Y|A=a,X=k], q_{aky} = P(X=k,A=a,Y=y) and the four-cell vector q_k are DERIVED real-valued readouts of the single-observation law P (finite sums over atoms), not independent fields. Scalars epsilon in (0,1/2], c in (0,inf) are plain reals. — HIGHEST-LEVERAGE REUSE DECISION, and the closest analogue in the library. Causalean.Estimation.MinimaxATE.Model realizes ALMOST exactly this world: Obs C = C x Bool x Bool over a Fintype C, binary treatment and binary outcome, obsReal/obsPMF/obsLaw the single-observation law, productLaw = Measure.pi over Fin n, nMSE the n-sample MSE, minimaxMiss the sup-over-class miss, plus the Chebyshev/Markov bridge nMiss_sq_le_nMSE. BLOCKING MISMATCH (verified by reading Causalean/Estimation/MinimaxATE/Model.lean lines 87-89 and 137-138): obsReal HARDCODES a UNIFORM covariate marginal (Fintype.card C)^{-1}, and `ate g` averages with the same uniform weights. This note's entire d^2/(n^2 log^2 n) rate is driven by ARBITRARY, in particular rare, cell masses p_k, so the uniform-P_X model is a strictly different (and for this result degenerate) world -> NOT a verbatim reuse; define-local a p_k-parameterized law in Basic.lean, keeping the Obs/productLaw/nMSE naming and construction pattern one-to-one so F3 can port MinimaxATE proof idioms. *** IIDSample BRIDGE (round-2 correction FLAG-IIDSample-world; see decisions.iid_world_is_finite_product_with_infinite_ambient_view). *** Causalean.Stat.IIDSample is the sampling primitive the concentration engines are typed over (Concentration.hoeffding_ge : (S : IIDSample Omega X mu P) -> ... -> mu.real {omega | eps <= S.sampleMean f n omega - integral f} <= exp(...), verified at Stat/Concentration/TailBounds/Hoeffding.lean:87-91), but it is a structure over an AMBIENT mu carrying an ℕ-INDEXED process Z : ℕ -> Omega -> X with iIndepFun Z mu (Stat/Sample.lean:42-48). The finite coordinate process of Measure.pi (fun _ : Fin n => P) is Fin n-indexed and therefore CANNOT itself be an IIDSample -- the prior plan's claim that this world 'exposes an IIDSample view of the product law' was wrong, and PiTransport does not repair it (iidSample_finN_pushforward CONSUMES an IIDSample to produce the finite product, it does not produce one). The world therefore carries view (b) EXPLICITLY: Basic.lean defines `iidOfInfinitePi (P) : IIDSample (ℕ -> Obs) Obs (Measure.infinitePi (fun _ : ℕ => P)) P` with Z := fun i omega => omega i, meas := measurable_pi_apply, indep := ProbabilityTheory.iIndepFun_infinitePi (fun _ => measurable_id), identDist/law := MeasureTheory.Measure.infinitePi_map_eval -- COMPILED 0-sorry against this repo's pinned Mathlib, so this is a verified ~10-line def, not a conjecture -- together with the transport corollary `finProductLaw_eq_map` : (Measure.infinitePi (fun _ : ℕ => P)).map (fun omega (k : Fin n) => omega k) = Measure.pi (fun _ : Fin n => P), which is Causalean.Stat.iidSample_finN_pushforward APPLIED to iidOfInfinitePi (its Z k omega = omega k reduces definitionally). F3's usage pattern for every IIDSample-typed engine: state the target event as a measurable set E in Set (Fin n -> Obs), apply the engine on Omega_inf, then move the bound across with Causalean.Stat.event_pullback_along_iidSample / Measure.map_apply. This holds for ARBITRARY P (infinitePi needs only IsProbabilityMeasure P, which the PMF construction supplies), so it adds NO hypothesis to any statement and imposes no restriction on the cell masses -- exactly the point of keeping the finite product as the canonical statement world. Search trace for the bridge: loogle 'MeasureTheory.Measure.infinitePi' and 'ProbabilityTheory.iIndepFun _ (MeasureTheory.Measure.infinitePi _)' -> Measure.infinitePi / infinitePi_map_eval / measurePreserving_eval_infinitePi (Mathlib.Probability.ProductMeasure) and iIndepFun_infinitePi (Mathlib.Probability.Independence.InfinitePi), all four #check-confirmed present in the pinned toolchain; globbed Causalean/**/Sample/**/*.lean -> PiTransport.lean is the ONLY Sample bridge file and carries only the IIDSample -> Measure.pi direction (read in full, 93 lines) -> the finite-to-infinite view is absent from Causalean and is built here. Search trace: read ../doc/API.md sections '## 13sa. Estimation/MinimaxATE/' and '## 12. Stat/' + '### 12a. Stat/Sample.lean'; grepped Causalean/Estimation/MinimaxATE/Model.lean for structure/def/theorem; grepped Causalean for 'alphabet' -> no large-alphabet / arbitrary-discrete-mass observational model found.",
+        "statement": "Finite-alphabet i.i.d. observational world, in TWO explicitly bridged views. (a) CANONICAL / statement view: one observed unit is O = (X, A, Y) : Fin d x Bool x Bool; the single-observation law P is a probability Measure (built from a PMF) on that finite type with ARBITRARY cell masses; the n-sample law is the finite i.i.d. product Measure.pi (fun _ : Fin n => P), and every statement, estimator (a measurable Fin n -> Obs -> R) and the minimax inf/sup live HERE. (b) AMBIENT view, used only to import IIDSample-typed Causalean declarations: the infinite i.i.d. product Omega_inf = (\u2115 -> Obs) with mu_inf = MeasureTheory.Measure.infinitePi (fun _ : \u2115 => P), whose coordinate process Z i omega = omega i is a genuine Causalean.Stat.IIDSample (\u2115 -> Obs) Obs mu_inf P. BRIDGE (both directions available, in scope, for arbitrary P): Causalean.Stat.iidSample_finN_pushforward pushes mu_inf forward along the first-n-coordinates map onto Measure.pi (fun _ : Fin n => P), so any event/integral of the first n coordinates has equal mass in the two views. Primitives p_k = P(X=k), pi_k = P(A=1|X=k), mu_{ak} = E[Y|A=a,X=k], q_{aky} = P(X=k,A=a,Y=y) and the four-cell vector q_k are DERIVED real-valued readouts of the single-observation law P (finite sums over atoms), not independent fields. Scalars epsilon in (0,1/2], c in (0,inf) are plain reals. \u2014 HIGHEST-LEVERAGE REUSE DECISION, and the closest analogue in the library. Causalean.Estimation.MinimaxATE.Model realizes ALMOST exactly this world: Obs C = C x Bool x Bool over a Fintype C, binary treatment and binary outcome, obsReal/obsPMF/obsLaw the single-observation law, productLaw = Measure.pi over Fin n, nMSE the n-sample MSE, minimaxMiss the sup-over-class miss, plus the Chebyshev/Markov bridge nMiss_sq_le_nMSE. BLOCKING MISMATCH (verified by reading Causalean/Estimation/MinimaxATE/Model.lean lines 87-89 and 137-138): obsReal HARDCODES a UNIFORM covariate marginal (Fintype.card C)^{-1}, and `ate g` averages with the same uniform weights. This note's entire d^2/(n^2 log^2 n) rate is driven by ARBITRARY, in particular rare, cell masses p_k, so the uniform-P_X model is a strictly different (and for this result degenerate) world -> NOT a verbatim reuse; define-local a p_k-parameterized law in Basic.lean, keeping the Obs/productLaw/nMSE naming and construction pattern one-to-one so F3 can port MinimaxATE proof idioms. *** IIDSample BRIDGE (round-2 correction FLAG-IIDSample-world; see decisions.iid_world_is_finite_product_with_infinite_ambient_view). *** Causalean.Stat.IIDSample is the sampling primitive the concentration engines are typed over (Concentration.hoeffding_ge : (S : IIDSample Omega X mu P) -> ... -> mu.real {omega | eps <= S.sampleMean f n omega - integral f} <= exp(...), verified at Stat/Concentration/TailBounds/Hoeffding.lean:87-91), but it is a structure over an AMBIENT mu carrying an \u2115-INDEXED process Z : \u2115 -> Omega -> X with iIndepFun Z mu (Stat/Sample.lean:42-48). The finite coordinate process of Measure.pi (fun _ : Fin n => P) is Fin n-indexed and therefore CANNOT itself be an IIDSample -- the prior plan's claim that this world 'exposes an IIDSample view of the product law' was wrong, and PiTransport does not repair it (iidSample_finN_pushforward CONSUMES an IIDSample to produce the finite product, it does not produce one). The world therefore carries view (b) EXPLICITLY: Basic.lean defines `iidOfInfinitePi (P) : IIDSample (\u2115 -> Obs) Obs (Measure.infinitePi (fun _ : \u2115 => P)) P` with Z := fun i omega => omega i, meas := measurable_pi_apply, indep := ProbabilityTheory.iIndepFun_infinitePi (fun _ => measurable_id), identDist/law := MeasureTheory.Measure.infinitePi_map_eval -- COMPILED 0-sorry against this repo's pinned Mathlib, so this is a verified ~10-line def, not a conjecture -- together with the transport corollary `finProductLaw_eq_map` : (Measure.infinitePi (fun _ : \u2115 => P)).map (fun omega (k : Fin n) => omega k) = Measure.pi (fun _ : Fin n => P), which is Causalean.Stat.iidSample_finN_pushforward APPLIED to iidOfInfinitePi (its Z k omega = omega k reduces definitionally). F3's usage pattern for every IIDSample-typed engine: state the target event as a measurable set E in Set (Fin n -> Obs), apply the engine on Omega_inf, then move the bound across with Causalean.Stat.event_pullback_along_iidSample / Measure.map_apply. This holds for ARBITRARY P (infinitePi needs only IsProbabilityMeasure P, which the PMF construction supplies), so it adds NO hypothesis to any statement and imposes no restriction on the cell masses -- exactly the point of keeping the finite product as the canonical statement world. Search trace for the bridge: loogle 'MeasureTheory.Measure.infinitePi' and 'ProbabilityTheory.iIndepFun _ (MeasureTheory.Measure.infinitePi _)' -> Measure.infinitePi / infinitePi_map_eval / measurePreserving_eval_infinitePi (Mathlib.Probability.ProductMeasure) and iIndepFun_infinitePi (Mathlib.Probability.Independence.InfinitePi), all four #check-confirmed present in the pinned toolchain; globbed Causalean/**/Sample/**/*.lean -> PiTransport.lean is the ONLY Sample bridge file and carries only the IIDSample -> Measure.pi direction (read in full, 93 lines) -> the finite-to-infinite view is absent from Causalean and is built here. Search trace: read ../doc/API.md sections '## 13sa. Estimation/MinimaxATE/' and '## 12. Stat/' + '### 12a. Stat/Sample.lean'; grepped Causalean/Estimation/MinimaxATE/Model.lean for structure/def/theorem; grepped Causalean for 'alphabet' -> no large-alphabet / arbitrary-discrete-mass observational model found.",
         "tex_anchor": "",
         "frozen": true
       },
@@ -42,7 +42,7 @@
       "kind": "setup",
       "provenance": "from-note",
       "nl": {
-        "statement": "Potential-outcome overlay on S1: binary potential outcomes Y(0), Y(1) : Omega -> Bool on the same finite probability space as (X, A, Y), with consistency (Y = Y(A) a.s.) and conditional exchangeability ((Y(0),Y(1)) indep A | X). Used only by the witness cluster; the estimation/minimax cluster is stated on the observed-data law alone. — Causalean.PO (POSystem, PO.Assumptions.Consistency, PO.Assumptions.IndepCF) is the framework analogue but is regime/graph-indexed over general measurable outcome spaces -- far heavier than the two-point binary overlay needed here, where def:two-category-witness supplies its OWN explicit full-data coupling ((Y(0),Y(1)) = (0, 1{X=1}), then A | X=k ~ Bernoulli(pi_k)) and prop:two-category-confounding VERIFIES consistency/exchangeability on it directly. Define-local over Mathlib with naming aligned to Causalean.PO. Search trace: read ../doc/API.md '## 8h. PO/' index (PO/Core/Regime, PO/Core/System, PO/Assumptions/Consistency, PO/Assumptions/IndepCF, PO/ID/Exact/ATE); no finite-alphabet binary PO overlay to reuse verbatim -> not found.",
+        "statement": "Potential-outcome overlay on S1: binary potential outcomes Y(0), Y(1) : Omega -> Bool on the same finite probability space as (X, A, Y), with consistency (Y = Y(A) a.s.) and conditional exchangeability ((Y(0),Y(1)) indep A | X). Used only by the witness cluster; the estimation/minimax cluster is stated on the observed-data law alone. \u2014 Causalean.PO (POSystem, PO.Assumptions.Consistency, PO.Assumptions.IndepCF) is the framework analogue but is regime/graph-indexed over general measurable outcome spaces -- far heavier than the two-point binary overlay needed here, where def:two-category-witness supplies its OWN explicit full-data coupling ((Y(0),Y(1)) = (0, 1{X=1}), then A | X=k ~ Bernoulli(pi_k)) and prop:two-category-confounding VERIFIES consistency/exchangeability on it directly. Define-local over Mathlib with naming aligned to Causalean.PO. Search trace: read ../doc/API.md '## 8h. PO/' index (PO/Core/Regime, PO/Core/System, PO/Assumptions/Consistency, PO/Assumptions/IndepCF, PO/ID/Exact/ATE); no finite-alphabet binary PO overlay to reuse verbatim -> not found.",
         "tex_anchor": "",
         "frozen": true
       },
@@ -72,7 +72,7 @@
       "kind": "setup",
       "provenance": "from-note",
       "nl": {
-        "statement": "Functional / experiment-class / risk layer over S1: the overlap-restricted four-cell cone C_eps as a Set of four-vectors, the homogeneous cell contribution phi, the ATE functional tau(P) = sum_k phi(q_k), the experiment class E_{n,d,eps} of overlap-satisfying product laws, and the minimax risk R_{n,d,eps} = inf over measurable estimators of the sup-over-class MSE. — The risk shape (inf over measurable estimators of sup over a class of the n-sample MSE) is exactly Causalean.Estimation.MinimaxATE.Model's minimaxMiss/nMSE pattern, but over the p_k-parameterized class of S1 rather than the uniform-P_X structure-agnostic class, and in MSE (not miss-probability) form -> define-local, importing nMiss_sq_le_nMSE's Markov-bridge idiom. Search trace: grepped ../doc/API.md for 'Minimax' -> Stat/Minimax/{TotalVariation,LeCam,Pinsker,Scheffe,ChiSquared,ChiSquaredFinite,MinimaxRisk,Fano,Assouad,Mixture} and Estimation/MinimaxATE; Stat/Minimax/MinimaxRisk.lean supplies the two-point REDUCTIONS (reused by lem:one-category-bernoulli-lower) but carries no packaged inf-sup minimax-risk DEFINITION over a law class -> the risk def is not found and is build-inline.",
+        "statement": "Functional / experiment-class / risk layer over S1: the overlap-restricted four-cell cone C_eps as a Set of four-vectors, the homogeneous cell contribution phi, the ATE functional tau(P) = sum_k phi(q_k), the experiment class E_{n,d,eps} of overlap-satisfying product laws, and the minimax risk R_{n,d,eps} = inf over measurable estimators of the sup-over-class MSE. \u2014 The risk shape (inf over measurable estimators of sup over a class of the n-sample MSE) is exactly Causalean.Estimation.MinimaxATE.Model's minimaxMiss/nMSE pattern, but over the p_k-parameterized class of S1 rather than the uniform-P_X structure-agnostic class, and in MSE (not miss-probability) form -> define-local, importing nMiss_sq_le_nMSE's Markov-bridge idiom. Search trace: grepped ../doc/API.md for 'Minimax' -> Stat/Minimax/{TotalVariation,LeCam,Pinsker,Scheffe,ChiSquared,ChiSquaredFinite,MinimaxRisk,Fano,Assouad,Mixture} and Estimation/MinimaxATE; Stat/Minimax/MinimaxRisk.lean supplies the two-point REDUCTIONS (reused by lem:one-category-bernoulli-lower) but carries no packaged inf-sup minimax-risk DEFINITION over a law class -> the risk def is not found and is build-inline.",
         "tex_anchor": "",
         "frozen": true
       },
@@ -102,7 +102,7 @@
       "kind": "setup",
       "provenance": "from-note",
       "nl": {
-        "statement": "Estimator layer over S1: the balanced deterministic split I_0 = {1..floor(n/2)}, I_1 = the rest; split cell counts N^{(j)}_{aky}; four-cell exponent multi-indices r in N_0^4 with |r| = sum r_{ay}; the falling factorial z_r; the pilot-certified heavy/light partition (Hhat_n, Lhat_n); the light-cell factorial-moment polynomial contribution That_L; and the truncated hybrid tauhat_n^hyb. — z_r is Mathlib's Nat.descFactorial (z_r = z.descFactorial r, with z_0 = 1 definitional) -- REUSED, not redefined; Causalean.Stat.injectiveTupleCount_eq_descFactorial (Stat/UStatistic/OrderM/Basic.lean) is the exact combinatorial bridge 'ordered injective tuple count = falling factorial' that the note's eq (9) unbiasedness E[U_{k,r}] = q_k^r rests on, and is reused as the counting engine in Helpers/FactorialMoments.lean. Causalean.Stat.SampleSplit / OneShotSplit is the analogue for the two-fold split but is a RANDOM cross-fitting split over a growing index family; the note fixes a DETERMINISTIC balanced split I_0/I_1 of Fin n, so the split itself is a two-line Finset definition -> build-inline. Search trace: grepped ../doc/API.md for 'descFactorial|fallingFactorial' -> Stat/UStatistic/OrderM/Basic.lean only; grepped ../doc/API.md and Causalean/ for 'factorial moment' -> not found (no factorial-moment unbiased-lift estimator layer exists); grepped Causalean for 'Chebyshev' (case-insensitive) -> all 15 hits are Chebyshev's INEQUALITY (Experimentation/DesignBased/Chebyshev.lean, Stat/Concentration, Mathlib/InformationTheory/Fano), none is the Chebyshev POLYNOMIAL; Mathlib's Polynomial.Chebyshev.T (Mathlib.RingTheory.Polynomial.Chebyshev, confirmed via loogle with T_one/T_mul/T_natAbs) is the reused primitive for T_M.",
+        "statement": "Estimator layer over S1: the balanced deterministic split I_0 = {1..floor(n/2)}, I_1 = the rest; split cell counts N^{(j)}_{aky}; four-cell exponent multi-indices r in N_0^4 with |r| = sum r_{ay}; the falling factorial z_r; the pilot-certified heavy/light partition (Hhat_n, Lhat_n); the light-cell factorial-moment polynomial contribution That_L; and the truncated hybrid tauhat_n^hyb. \u2014 z_r is Mathlib's Nat.descFactorial (z_r = z.descFactorial r, with z_0 = 1 definitional) -- REUSED, not redefined; Causalean.Stat.injectiveTupleCount_eq_descFactorial (Stat/UStatistic/OrderM/Basic.lean) is the exact combinatorial bridge 'ordered injective tuple count = falling factorial' that the note's eq (9) unbiasedness E[U_{k,r}] = q_k^r rests on, and is reused as the counting engine in Helpers/FactorialMoments.lean. Causalean.Stat.SampleSplit / OneShotSplit is the analogue for the two-fold split but is a RANDOM cross-fitting split over a growing index family; the note fixes a DETERMINISTIC balanced split I_0/I_1 of Fin n, so the split itself is a two-line Finset definition -> build-inline. Search trace: grepped ../doc/API.md for 'descFactorial|fallingFactorial' -> Stat/UStatistic/OrderM/Basic.lean only; grepped ../doc/API.md and Causalean/ for 'factorial moment' -> not found (no factorial-moment unbiased-lift estimator layer exists); grepped Causalean for 'Chebyshev' (case-insensitive) -> all 15 hits are Chebyshev's INEQUALITY (Experimentation/DesignBased/Chebyshev.lean, Stat/Concentration, Mathlib/InformationTheory/Fano), none is the Chebyshev POLYNOMIAL; Mathlib's Polynomial.Chebyshev.T (Mathlib.RingTheory.Polynomial.Chebyshev, confirmed via loogle with T_one/T_mul/T_natAbs) is the reused primitive for T_M.",
         "tex_anchor": "",
         "frozen": true
       },
@@ -132,9 +132,11 @@
       "kind": "assumption",
       "provenance": "from-note",
       "nl": {
-        "statement": "\\(O_1,\\ldots,O_n\\stackrel{\\mathrm{iid}}{\\sim}P\\).",
+        "statement": "The observed data are \\(O_i=(X_i,A_i,Y_i)\\), \\(i=1,\\ldots,n\\), with \\(O_1,\\ldots,O_n\\stackrel{\\mathrm{iid}}{\\sim}P\\), where the covariate \\(X\\) takes values in \\(\\{1,\\ldots,d\\}\\), the treatment \\(A\\) and outcome \\(Y\\) are binary. For each category \\(k\\in\\{1,\\ldots,d\\}\\) write \\(p_k=P(X=k)\\) for the category mass, \\(\\pi_k=P(A=1\\mid X=k)\\) for the treatment probability, and, for each treatment arm \\(a\\in\\{0,1\\}\\), \\(\\mu_{ak}=E_P[Y\\mid A=a,X=k]\\) for the conditional mean outcome.",
         "tex_anchor": "",
-        "frozen": true
+        "frozen": true,
+        "frozen_body": "The observed data are \\(O_i=(X_i,A_i,Y_i)\\), \\(i=1,\\ldots,n\\), with \\(O_1,\\ldots,O_n\\stackrel{\\mathrm{iid}}{\\sim}P\\), where the covariate \\(X\\) takes values in \\(\\{1,\\ldots,d\\}\\), the treatment \\(A\\) and outcome \\(Y\\) are binary. For each category \\(k\\in\\{1,\\ldots,d\\}\\) write \\(p_k=P(X=k)\\) for the category mass, \\(\\pi_k=P(A=1\\mid X=k)\\) for the treatment probability, and, for each treatment arm \\(a\\in\\{0,1\\}\\), \\(\\mu_{ak}=E_P[Y\\mid A=a,X=k]\\) for the conditional mean outcome.",
+        "frozen_title": "IID observed-data model"
       },
       "lean": {
         "decl_name": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.IidSampling",
@@ -143,7 +145,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "dc63217a59570366cf9dc4d14464dc60ca487fc0",
-        "note": "Equality of the sample law with Measure.pi of the one-unit observation law is equivalent to O₁,…,Oₙ being i.i.d. with law P."
+        "note": "Equality of the sample law with Measure.pi of the one-unit observation law is equivalent to O\u2081,\u2026,O\u2099 being i.i.d. with law P. OPERATOR ADJUDICATION 2026-08-20: body includes the notation displays p_k, pi_k, mu_{ak} required by the notation gate; each is a definition of an observable functional of P (packaging, not an added hypothesis)."
       },
       "proof": {
         "state": "complete",
@@ -172,7 +174,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "e82b64538e0166b041793101025cb5c70b1112ce",
-        "note": "Unfolding cellMass and propensity gives exactly epsilon ≤ P(A=1|X=k) ≤ 1-epsilon for every category having positive marginal mass."
+        "note": "Unfolding cellMass and propensity gives exactly epsilon \u2264 P(A=1|X=k) \u2264 1-epsilon for every category having positive marginal mass."
       },
       "proof": {
         "state": "complete",
@@ -259,7 +261,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "c01c3d49597a1df15c6b1ef547bf0dd905eae1c1",
-        "note": "After unfolding IidSampling and Overlap, this is exactly the class of n-fold product laws from a probability law on Fin d × Bool × Bool satisfying 0 < epsilon ≤ 1/2 and the stated positive-cell overlap condition."
+        "note": "After unfolding IidSampling and Overlap, this is exactly the class of n-fold product laws from a probability law on Fin d \u00d7 Bool \u00d7 Bool satisfying 0 < epsilon \u2264 1/2 and the stated positive-cell overlap condition."
       },
       "proof": {
         "state": "complete",
@@ -283,7 +285,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "c0d723076b18d4a32aee451f668bfe25ff2b38af",
-        "note": "Unfolding vectorMass and vectorArmMass gives exactly nonnegative u₀₀,u₀₁,u₁₀,u₁₁ with εΣu ≤ u₁₀+u₁₁ ≤ (1-ε)Σu."
+        "note": "Unfolding vectorMass and vectorArmMass gives exactly nonnegative u\u2080\u2080,u\u2080\u2081,u\u2081\u2080,u\u2081\u2081 with \u03b5\u03a3u \u2264 u\u2081\u2080+u\u2081\u2081 \u2264 (1-\u03b5)\u03a3u."
       },
       "proof": {
         "state": "complete",
@@ -307,7 +309,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "3355181cf13571696b460509b18207dedc375c0a",
-        "note": "Unfolding cellPhi gives 0 at the zero vector and otherwise Σu·(u₁₁/(u₁₀+u₁₁)-u₀₁/(u₀₀+u₀₁)), on precisely overlapCone ε."
+        "note": "Unfolding cellPhi gives 0 at the zero vector and otherwise \u03a3u\u00b7(u\u2081\u2081/(u\u2081\u2080+u\u2081\u2081)-u\u2080\u2081/(u\u2080\u2080+u\u2080\u2081)), on precisely overlapCone \u03b5."
       },
       "proof": {
         "state": "complete",
@@ -322,7 +324,9 @@
       "nl": {
         "statement": "\\(\\tau(P):=\\sum_{k=1}^{d}p_k(\\mu_{1k}-\\mu_{0k})=\\sum_{k=1}^{d}\\phi(q_k)\\).",
         "tex_anchor": "",
-        "frozen": true
+        "frozen": true,
+        "frozen_body": "For a probability law \\(P\\) on \\(\\{1,\\ldots,d\\}\\times\\{0,1\\}\\times\\{0,1\\}\\), with arbitrary masses on this finite observation alphabet, define, for \\(a,y\\in\\{0,1\\}\\) and \\(k\\in\\{1,\\ldots,d\\}\\), the joint cell mass\n\\[\nq_{aky}=P(A=a,X=k,Y=y),\n\\]\nand set\n\\[\nq_k=(q_{0k0},q_{0k1},q_{1k0},q_{1k1}).\n\\]\nThe average treatment effect functional is\n\\[\n\\tau(P)\n=\n\\sum_{k=1}^{d}\\phi(q_k).\n\\]",
+        "frozen_title": "Average treatment effect \\(\\tau(P)\\)"
       },
       "lean": {
         "decl_name": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.ateFunctional",
@@ -331,7 +335,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "b9e8c65c0deb5abcc94cfe30bf3f1e9ad8d96b8c",
-        "note": "Unfolding cellVector and cellPhi yields exactly Σₖ φ(qₖ), mathematically equal on overlap laws to Σₖ pₖ(μ₁ₖ-μ₀ₖ)."
+        "note": "Unfolding cellVector and cellPhi yields exactly \u03a3\u2096 \u03c6(q\u2096), mathematically equal on overlap laws to \u03a3\u2096 p\u2096(\u03bc\u2081\u2096-\u03bc\u2080\u2096)."
       },
       "proof": {
         "state": "complete",
@@ -344,10 +348,10 @@
       "kind": "definition",
       "provenance": "from-note",
       "nl": {
-        "statement": "Set \\(I_0=\\{1,\\ldots,\\lfloor n/2\\rfloor\\}\\), \\(I_1=\\{\\lfloor n/2\\rfloor+1,\\ldots,n\\}\\), \\(m_j=|I_j|\\), and \\(L=\\log(en)\\). Set \\(A=6\\), and put \\(\\lambda_0=256\\), \\(b_0=4096\\), \\(D_A=8\\log(9A/8)=8\\log(27/4)\\), and\n\\[\n\\alpha_0=\\min\\left\\{1,\\frac1{32\\log A},\\frac1{256D_A}\\right\\}.\n\\]\nFor \\(n\\ge2\\), put \\(M(n)=\\max\\{2,\\lfloor\\alpha_0L\\rfloor\\}\\) and \\(B(n)=b_0L/m_1\\). Let \\(N_0\\) be the least numerical cutoff such that, for every \\(n\\ge N_0\\), \\(\\alpha_0L\\ge2\\), \\(4M(n)^2\\le m_1\\), and \\(4M(n)/m_1\\le3B(n)/4\\). For \\(n\\ge N_0\\), abbreviate \\(M=M(n)\\), \\(B=B(n)\\), and set\n\\[\n\\widehat{\\mathcal H}_n=\\left\\{k:\\sum_{a,y}N^{(0)}_{aky}>\\lambda_0L\\right\\},\\qquad \\widehat{\\mathcal L}_n=\\widehat{\\mathcal H}_n^c.\n\\]\nPut \\(N_k^{(1)}=\\sum_{a,y}N^{(1)}_{aky}\\), \\(N_{ak}^{(1)}=\\sum_yN^{(1)}_{aky}\\), and\n\\[\n\\widehat h_k=\\frac{N_k^{(1)}}{m_1}\\left\\{\\frac{N^{(1)}_{1k1}}{N^{(1)}_{1k}}\\mathbf1\\{N^{(1)}_{1k}>0\\}-\\frac{N^{(1)}_{0k1}}{N^{(1)}_{0k}}\\mathbf1\\{N^{(1)}_{0k}>0\\}\\right\\}.\n\\]\nDefine \\(H_M(x)=\\{1-T_M(1-2x)\\}/(2M^2)\\), \\(E_M(x)=H_M(x)/x\\), and \\(G_M(x)=\\{1-E_M(x)\\}/x\\), using polynomial continuation at zero, and\n\\[\nP_{M,B}(u)=\\frac{s(u)t_1(u)}B G_M\\!\\left(\\frac{s_1(u)}B\\right)-\\frac{s(u)t_0(u)}B G_M\\!\\left(\\frac{s_0(u)}B\\right).\n\\]\nHere \\(s_a(u)=u_{a0}+u_{a1}\\), \\(s(u)=s_0(u)+s_1(u)\\), \\(t_1(u)=u_{11}\\), and \\(t_0(u)=u_{01}\\). Expand \\(P_{M,B}(u)=\\sum_{|r|\\le M}c_ru^r\\), set\n\\[\n\\widehat P_k=\\sum_{|r|\\le M}c_r\\frac{\\prod_{a,y}(N^{(1)}_{aky})_{r_{ay}}}{(m_1)_{|r|}},\\quad \\widehat T_{\\mathcal H}=\\sum_{k\\in\\widehat{\\mathcal H}_n}\\widehat h_k,\\quad \\widehat T_{\\mathcal L}=\\sum_{k\\in\\widehat{\\mathcal L}_n}\\widehat P_k,\n\\]\nand define \\(\\widehat\\tau_n^{\\mathrm{hyb}}=\\max\\{-1,\\min(1,\\widehat T_{\\mathcal H}+\\widehat T_{\\mathcal L})\\}\\). For \\(n<N_0\\), set \\(\\widehat{\\mathcal L}_n=\\varnothing\\) and use the ratio branch on every category. The estimator uses no overlap constant and is computable in \\(O(dM^4)\\) arithmetic operations.",
+        "statement": "With the deterministic splits \\(I_0,I_1\\), split sizes \\(m_j\\), scale \\(L=\\log(en)\\), and split cell counts \\(N^{(j)}_{aky}\\) of \\cref{obj:def:sample-splits}: Set \\(A=6\\), and put \\(\\lambda_0=256\\), \\(b_0=4096\\), \\(D_A=8\\log(9A/8)=8\\log(27/4)\\), and\n\\[\n\\alpha_0=\\min\\left\\{1,\\frac1{32\\log A},\\frac1{256D_A}\\right\\}.\n\\]\nFor \\(n\\ge2\\), put \\(M(n)=\\max\\{2,\\lfloor\\alpha_0L\\rfloor\\}\\) and \\(B(n)=b_0L/m_1\\). Let \\(N_0\\) be the least numerical cutoff such that, for every \\(n\\ge N_0\\), \\(\\alpha_0L\\ge2\\), \\(4M(n)^2\\le m_1\\), and \\(4M(n)/m_1\\le3B(n)/4\\). For \\(n\\ge N_0\\), abbreviate \\(M=M(n)\\), \\(B=B(n)\\), and set\n\\[\n\\widehat{\\mathcal H}_n=\\left\\{k:\\sum_{a,y}N^{(0)}_{aky}>\\lambda_0L\\right\\},\\qquad \\widehat{\\mathcal L}_n=\\widehat{\\mathcal H}_n^c.\n\\]\nPut \\(N_k^{(1)}=\\sum_{a,y}N^{(1)}_{aky}\\), \\(N_{ak}^{(1)}=\\sum_yN^{(1)}_{aky}\\), and\n\\[\n\\widehat h_k=\\frac{N_k^{(1)}}{m_1}\\left\\{\\frac{N^{(1)}_{1k1}}{N^{(1)}_{1k}}\\mathbf1\\{N^{(1)}_{1k}>0\\}-\\frac{N^{(1)}_{0k1}}{N^{(1)}_{0k}}\\mathbf1\\{N^{(1)}_{0k}>0\\}\\right\\}.\n\\]\nDefine \\(H_M(x)=\\{1-T_M(1-2x)\\}/(2M^2)\\), \\(E_M(x)=H_M(x)/x\\), and \\(G_M(x)=\\{1-E_M(x)\\}/x\\), using polynomial continuation at zero, and\n\\[\nP_{M,B}(u)=\\frac{s(u)t_1(u)}B G_M\\!\\left(\\frac{s_1(u)}B\\right)-\\frac{s(u)t_0(u)}B G_M\\!\\left(\\frac{s_0(u)}B\\right).\n\\]\nHere \\(s_a(u)=u_{a0}+u_{a1}\\), \\(s(u)=s_0(u)+s_1(u)\\), \\(t_1(u)=u_{11}\\), and \\(t_0(u)=u_{01}\\). Expand \\(P_{M,B}(u)=\\sum_{|r|\\le M}c_ru^r\\), set\n\\[\n\\widehat P_k=\\sum_{|r|\\le M}c_r\\frac{\\prod_{a,y}(N^{(1)}_{aky})_{r_{ay}}}{(m_1)_{|r|}},\\quad \\widehat T_{\\mathcal H}=\\sum_{k\\in\\widehat{\\mathcal H}_n}\\widehat h_k,\\quad \\widehat T_{\\mathcal L}=\\sum_{k\\in\\widehat{\\mathcal L}_n}\\widehat P_k,\n\\]\nand define \\(\\widehat\\tau_n^{\\mathrm{hyb}}=\\max\\{-1,\\min(1,\\widehat T_{\\mathcal H}+\\widehat T_{\\mathcal L})\\}\\). For \\(n<N_0\\), set \\(\\widehat{\\mathcal L}_n=\\varnothing\\) and use the ratio branch on every category. The estimator uses no overlap constant and is computable in \\(O(dM^4)\\) arithmetic operations.",
         "tex_anchor": "",
         "frozen": true,
-        "frozen_body": "For a sample \\(O_1,\\ldots,O_n\\) with \\(O_i=(X_i,A_i,Y_i)\\in\\{1,\\ldots,d\\}\\times\\{0,1\\}\\times\\{0,1\\}\\), set\n\\[\nI_0=\\{1,\\ldots,\\lfloor n/2\\rfloor\\},\\qquad\nI_1=\\{\\lfloor n/2\\rfloor+1,\\ldots,n\\},\\qquad\nm_j=|I_j|,\\qquad\nL=\\log(en).\n\\]\nLet \\(A=6\\), and set\n\\[\n\\lambda_0=256,\\qquad\nb_0=4096,\\qquad\nD_A=8\\log(9A/8)=8\\log(27/4),\n\\]\nand\n\\[\n\\alpha_0\n=\n\\min\\left\\{\n1,\\frac1{32\\log A},\\frac1{256D_A}\n\\right\\}.\n\\]\nFor \\(n\\ge2\\), define\n\\[\nM(n)=\\max\\{2,\\lfloor\\alpha_0L\\rfloor\\},\n\\qquad\nB(n)=b_0L/m_1.\n\\]\nLet \\(N_0\\) be the least numerical cutoff such that, for every \\(n\\ge N_0\\),\n\\[\n\\alpha_0L\\ge2,\\qquad\n4M(n)^2\\le m_1,\\qquad\n4M(n)/m_1\\le 3B(n)/4.\n\\]\nFor \\(n\\ge N_0\\), write \\(M=M(n)\\) and \\(B=B(n)\\), and define the pilot-certified heavy and light category sets by\n\\[\n\\widehat{\\mathcal H}_n\n=\n\\left\\{\nk:\\sum_{a,y}N^{(0)}_{aky}>\\lambda_0L\n\\right\\},\n\\qquad\n\\widehat{\\mathcal L}_n=\\widehat{\\mathcal H}_n^c.\n\\]\nFor the second split, put\n\\[\nN_k^{(1)}=\\sum_{a,y}N^{(1)}_{aky},\n\\qquad\nN_{ak}^{(1)}=\\sum_yN^{(1)}_{aky},\n\\]\nand define the heavy-category ratio contribution\n\\[\n\\widehat h_k\n=\n\\frac{N_k^{(1)}}{m_1}\n\\left\\{\n\\frac{N^{(1)}_{1k1}}{N^{(1)}_{1k}}\\mathbf1\\{N^{(1)}_{1k}>0\\}\n-\n\\frac{N^{(1)}_{0k1}}{N^{(1)}_{0k}}\\mathbf1\\{N^{(1)}_{0k}>0\\}\n\\right\\}.\n\\]\nLet\n\\[\nH_M(x)=\\frac{1-T_M(1-2x)}{2M^2},\n\\qquad\nE_M(x)=\\frac{H_M(x)}{x},\n\\qquad\nG_M(x)=\\frac{1-E_M(x)}{x},\n\\]\nwhere \\(E_M\\) and \\(G_M\\) are interpreted by polynomial continuation at zero. For \\(u=(u_{00},u_{01},u_{10},u_{11})\\), set\n\\[\ns_a(u)=u_{a0}+u_{a1},\\qquad\ns(u)=s_0(u)+s_1(u),\\qquad\nt_1(u)=u_{11},\\qquad\nt_0(u)=u_{01}.\n\\]\nDefine the light-cell polynomial approximation\n\\[\nP_{M,B}(u)\n=\n\\frac{s(u)t_1(u)}B\nG_M\\!\\left(\\frac{s_1(u)}B\\right)\n-\n\\frac{s(u)t_0(u)}B\nG_M\\!\\left(\\frac{s_0(u)}B\\right).\n\\]\nExpanding \\(P_{M,B}(u)=\\sum_{|r|\\le M}c_ru^r\\), set\n\\[\n\\widehat P_k\n=\n\\sum_{|r|\\le M}\nc_r\n\\frac{\\prod_{a,y}(N^{(1)}_{aky})_{r_{ay}}}{(m_1)_{|r|}},\n\\qquad\n\\widehat T_{\\mathcal H}\n=\n\\sum_{k\\in\\widehat{\\mathcal H}_n}\\widehat h_k,\n\\qquad\n\\widehat T_{\\mathcal L}\n=\n\\sum_{k\\in\\widehat{\\mathcal L}_n}\\widehat P_k.\n\\]\nThe truncated balanced ratio-polynomial hybrid estimator is\n\\[\n\\widehat\\tau_n^{\\mathrm{hyb}}\n=\n\\max\\{-1,\\min(1,\\widehat T_{\\mathcal H}+\\widehat T_{\\mathcal L})\\}.\n\\]\nFor \\(n<N_0\\), set \\(\\widehat{\\mathcal L}_n=\\varnothing\\) and use the ratio branch on every category. The definition uses no overlap parameter.",
+        "frozen_body": "Using the deterministic splits \\(I_0,I_1\\), split sizes \\(m_j\\), logarithmic scale \\(L=\\log(en)\\), and split counts \\(N^{(j)}_{aky}\\) from \\cref{obj:def:sample-splits}, set\n\\[\nA_0=6,\\qquad \\lambda_0=256,\\qquad b_0=4096,\n\\]\n\\[\nD_{A_0}=8\\log(9A_0/8)=8\\log(27/4),\n\\]\nand\n\\[\n\\alpha_0=\\min\\left\\{1,\\frac1{32\\log A_0},\\frac1{256D_{A_0}}\\right\\}.\n\\]\nFor \\(n\\ge2\\), define\n\\[\nM(n)=\\max\\{2,\\lfloor\\alpha_0L\\rfloor\\},\\qquad B(n)=b_0L/m_1.\n\\]\nLet \\(N_0\\) be the least numerical cutoff such that, for every \\(n\\ge N_0\\),\n\\[\n\\alpha_0L\\ge2,\\qquad 4M(n)^2\\le m_1,\\qquad 4M(n)/m_1\\le 3B(n)/4.\n\\]\nFor every \\(n\\), define the pilot-certified heavy and light category sets\n\\[\n\\widehat{\\mathcal H}_n\n=\n\\left\\{k:\\sum_{a,y}N^{(0)}_{aky}>\\lambda_0L\\right\\},\n\\qquad\n\\widehat{\\mathcal L}_n=\\widehat{\\mathcal H}_n^c\\quad(n\\ge N_0),\n\\qquad\n\\widehat{\\mathcal L}_n=\\varnothing\\quad(n<N_0),\n\\]\nso that for \\(n<N_0\\) every category is treated by the ratio branch below. For \\(n\\ge N_0\\), abbreviate \\(M=M(n)\\) and \\(B=B(n)\\).\nPut\n\\[\nN_k^{(1)}=\\sum_{a,y}N^{(1)}_{aky},\n\\qquad\nN_{ak}^{(1)}=\\sum_yN^{(1)}_{aky},\n\\]\nand define the heavy-category ratio contribution\n\\[\n\\widehat h_k\n=\n\\frac{N_k^{(1)}}{m_1}\n\\left\\{\n\\frac{N^{(1)}_{1k1}}{N^{(1)}_{1k}}\\mathbf1\\{N^{(1)}_{1k}>0\\}\n-\n\\frac{N^{(1)}_{0k1}}{N^{(1)}_{0k}}\\mathbf1\\{N^{(1)}_{0k}>0\\}\n\\right\\}.\n\\]\nDefine\n\\[\nH_M(x)=\\frac{1-T_M(1-2x)}{2M^2},\n\\qquad\nE_M(x)=\\frac{H_M(x)}{x},\n\\qquad\nG_M(x)=\\frac{1-E_M(x)}{x},\n\\]\nwhere \\(E_M\\) and \\(G_M\\) are interpreted by polynomial continuation at zero. For \\(u=(u_{00},u_{01},u_{10},u_{11})\\), set\n\\[\ns_a(u)=u_{a0}+u_{a1},\\qquad s(u)=s_0(u)+s_1(u),\n\\]\n\\[\nt_1(u)=u_{11},\\qquad t_0(u)=u_{01},\n\\]\nand define the light-cell polynomial\n\\[\nP_{M,B}(u)\n=\n\\frac{s(u)t_1(u)}B\nG_M\\!\\left(\\frac{s_1(u)}B\\right)\n-\n\\frac{s(u)t_0(u)}B\nG_M\\!\\left(\\frac{s_0(u)}B\\right).\n\\]\nExpand\n\\[\nP_{M,B}(u)=\\sum_{|r|\\le M}c_ru^r.\n\\]\nFor each category \\(k\\), define\n\\[\n\\widehat P_k\n=\n\\sum_{|r|\\le M}\nc_r\n\\frac{\\prod_{a,y}(N^{(1)}_{aky})_{r_{ay}}}{(m_1)_{|r|}}.\n\\]\nThe heavy and light sums are\n\\[\n\\widehat T_{\\mathcal H}\n=\n\\sum_{k\\in\\widehat{\\mathcal H}_n}\\widehat h_k,\n\\qquad\n\\widehat T_{\\mathcal L}\n=\n\\sum_{k\\in\\widehat{\\mathcal L}_n}\\widehat P_k.\n\\]\nThe truncated balanced ratio-polynomial hybrid estimator is\n\\[\n\\widehat\\tau_n^{\\mathrm{hyb}}\n=\n\\max\\{-1,\\min(1,\\widehat T_{\\mathcal H}+\\widehat T_{\\mathcal L})\\}.\n\\]\nThe same calibrated estimator is used for every overlap level.",
         "frozen_title": "Hybrid estimator \\(\\widehat\\tau_n^{\\mathrm{hyb}}\\)"
       },
       "lean": {
@@ -357,7 +361,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "767f6c2e7073e8db344a437577dd45738bfa7423",
-        "note": "The nested definitions reproduce the balanced split, numerical cutoff and tuning, pilot partition, ratio branch, Chebyshev G_M coefficients, factorial-moment polynomial branch, low-n fallback, truncation, and absence of an ε input; the sparse expansion is coefficient-equivalent to the displayed P_{M,B} expansion."
+        "note": "The nested definitions reproduce the balanced split, numerical cutoff and tuning, pilot partition, ratio branch, Chebyshev G_M coefficients, factorial-moment polynomial branch, low-n fallback, truncation, and absence of an \u03b5 input; the sparse expansion is coefficient-equivalent to the displayed P_{M,B} expansion. OPERATOR ADJUDICATION 2026-08-20: Chebyshev calibration constant written A_0 (Lean name A) to avoid colliding with the treatment letter A; pure notation, per the notation table."
       },
       "proof": {
         "state": "complete",
@@ -381,7 +385,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "4b4ca41cd48d404e98d4a24fe8ad84900095dd01",
-        "note": "Unfolding worstCaseMSE, ClassLaw, ExperimentClass, mse, and productLaw gives the infimum over measurable sample estimators of the supremum over overlap-class product laws of E_P[(est-τ(P))²]."
+        "note": "Unfolding worstCaseMSE, ClassLaw, ExperimentClass, mse, and productLaw gives the infimum over measurable sample estimators of the supremum over overlap-class product laws of E_P[(est-\u03c4(P))\u00b2]."
       },
       "proof": {
         "state": "complete",
@@ -396,7 +400,9 @@
       "nl": {
         "statement": "For \\(d=2\\), set \\(p_1=p_2=1/2\\), \\(\\pi_1=\\epsilon\\), \\(\\pi_2=1-\\epsilon\\), \\(\\mu_{01}=\\mu_{02}=0\\), \\(\\mu_{11}=1\\), and \\(\\mu_{12}=0\\). Define a full-data extension by drawing \\((Y(0),Y(1))=(0,\\mathbf 1\\{X=1\\})\\) and then drawing \\(A\\mid X=k\\sim\\mathsf{Bernoulli}(\\pi_k)\\).",
         "tex_anchor": "",
-        "frozen": true
+        "frozen": true,
+        "frozen_body": "For \\(d=2\\) and \\(0\\le \\epsilon\\le 1\\), set\n\\[\np_1=p_2=\\frac12,\\qquad\n\\pi_1=\\epsilon,\\qquad\n\\pi_2=1-\\epsilon,\\qquad\n\\mu_{01}=\\mu_{02}=0,\\qquad\n\\mu_{11}=1,\\qquad\n\\mu_{12}=0.\n\\]\nDefine the corresponding full-data extension by drawing\n\\[\n(Y(0),Y(1))=(0,\\mathbf 1\\{X=1\\})\n\\]\nsetting \\(Y=Y(A)\\), and then drawing \\(A\\mid X=k\\sim\\mathsf{Bernoulli}(\\pi_k)\\).",
+        "frozen_title": "Two-category witness law"
       },
       "lean": {
         "decl_name": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.twoCategoryWitness",
@@ -405,7 +411,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "33798378bda1c08563bc3ca1b1ff05593e9d4326",
-        "note": "Unfolding twoCategoryMass gives mass (1/2)·P(A=a|X=k) exactly when Y(0)=0, Y(1)=1{X=1}, and Y=Y(A); thus X is uniform and the two propensities are epsilon and 1-epsilon, while h0 and h1 are the necessary probability-range bookkeeping."
+        "note": "Unfolding twoCategoryMass gives mass (1/2)\u00b7P(A=a|X=k) exactly when Y(0)=0, Y(1)=1{X=1}, and Y=Y(A); thus X is uniform and the two propensities are epsilon and 1-epsilon, while h0 and h1 are the necessary probability-range bookkeeping."
       },
       "proof": {
         "state": "complete",
@@ -429,7 +435,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "4ed99e79a60850a7024351334839cbf6339bdc1e",
-        "note": "Unfolding the witness, observed marginal, consistency, finite conditional-independence identity, overlap, ATE functional, and naive contrast yields exactly the paper’s five claims for the standing domain 0 < epsilon <= 1/2."
+        "note": "Unfolding the witness, observed marginal, consistency, finite conditional-independence identity, overlap, ATE functional, and naive contrast yields exactly the paper\u2019s five claims for the standing domain 0 < epsilon <= 1/2."
       },
       "proof": {
         "state": "complete",
@@ -552,7 +558,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "435a345b8878ef1ce33edca0747000a3693e61ac",
-        "note": "Unfolding minimaxRate gives exactly 1/n+d²/(n²log²n); the existential cutoff encodes sufficiently large n, positive d is the alphabet-size domain, and hZeng exposes the paper's established cited one-arm premise."
+        "note": "Unfolding minimaxRate gives exactly 1/n+d\u00b2/(n\u00b2log\u00b2n); the existential cutoff encodes sufficiently large n, positive d is the alphabet-size domain, and hZeng exposes the paper's established cited one-arm premise."
       },
       "proof": {
         "state": "complete",
@@ -576,7 +582,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "2ea50831bf3de4e2bd03c34d41ace5fa7bb03332",
-        "note": "centeredEstimator unfolds to the displayed 2/n centered score, ExperimentClass exactly supplies positive epsilon, epsilon≤1/2, iid product sampling and overlap, and mse is the stated expected squared error."
+        "note": "centeredEstimator unfolds to the displayed 2/n centered score, ExperimentClass exactly supplies positive epsilon, epsilon\u22641/2, iid product sampling and overlap, and mse is the stated expected squared error."
       },
       "proof": {
         "state": "complete",
@@ -600,7 +606,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "314d11efb1528662282aaf76b1d47980f8ce6eb7",
-        "note": "The inequality is exactly R_{n,d,1/2}≥1/(100n); hn and hd merely enforce the intrinsic positive sample-size and nonempty-alphabet domains required by the paper's notation."
+        "note": "The inequality is exactly R_{n,d,1/2}\u22651/(100n); hn and hd merely enforce the intrinsic positive sample-size and nonempty-alphabet domains required by the paper's notation."
       },
       "proof": {
         "state": "complete",
@@ -648,7 +654,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "971bf2df21caa9817917899422447032b8622ff6",
-        "note": "Unfolding selectedEstimator and minimaxRate gives exactly the paper's deterministic selector and K_epsilon=max{C_epsilon,4} envelope; the additional minimaxRisk≤worstCaseMSE conjunct is automatic from the minimax infimum over measurable estimators."
+        "note": "Unfolding selectedEstimator and minimaxRate gives exactly the paper's deterministic selector and K_epsilon=max{C_epsilon,4} envelope; the additional minimaxRisk\u2264worstCaseMSE conjunct is automatic from the minimax infimum over measurable estimators."
       },
       "proof": {
         "state": "complete",
@@ -672,7 +678,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "127aa49bf4dc8c659a9dc07321ad010b2415f5c6",
-        "note": "Unfolding ExperimentClass, minimaxRate, minimaxRisk, worstCaseMSE, and hybridEstimator gives the same uniform three-sided rate, parametric-order consequence, and sequencewise consistency equivalence; 0<d is the intrinsic nonempty-alphabet domain, the P/mu_n binders are admissible realization guards, and hZeng is the paper's sanctioned cited lower-bound input. | All three conjuncts are logically equivalent to the note. Conjunct 1 is the exact three-sided display a_ε·rate ≤ minimaxRisk ≤ worstCaseMSE(hybrid) ≤ C_ε·rate with minimaxRate unfolding to 1/n+d²/(n²log²n), worstCaseMSE=sup_{P∈E}E[(τ̂−τ)²], minimaxRisk=inf-sup; the extra P/mu_n/ExperimentClass and 0<d are nonemptiness-witness/alphabet-domain bookkeeping, not content. Conjunct 2 (∀K>0 ∃C_K, a_ε/n ≤ R ≤ C_K/n under d≤K√n log n) faithfully encodes 'parametric order n⁻¹ whenever d=O(√n log n)'. Conjunct 3 (R→0 ↔ ds/(ns log ns)→0 along eventually-in-range sequences) encodes 'converges to 0 iff d=o(n log n)'. The added hZeng hypothesis is the cited one-arm lower gate (status:cited); the ATE lower bound is not directly assumed but derived via the Lean-proved oneArmMinimaxRisk_le_minimaxRisk restriction — sanctioned citation, not laundering."
+        "note": "Unfolding ExperimentClass, minimaxRate, minimaxRisk, worstCaseMSE, and hybridEstimator gives the same uniform three-sided rate, parametric-order consequence, and sequencewise consistency equivalence; 0<d is the intrinsic nonempty-alphabet domain, the P/mu_n binders are admissible realization guards, and hZeng is the paper's sanctioned cited lower-bound input. | All three conjuncts are logically equivalent to the note. Conjunct 1 is the exact three-sided display a_\u03b5\u00b7rate \u2264 minimaxRisk \u2264 worstCaseMSE(hybrid) \u2264 C_\u03b5\u00b7rate with minimaxRate unfolding to 1/n+d\u00b2/(n\u00b2log\u00b2n), worstCaseMSE=sup_{P\u2208E}E[(\u03c4\u0302\u2212\u03c4)\u00b2], minimaxRisk=inf-sup; the extra P/mu_n/ExperimentClass and 0<d are nonemptiness-witness/alphabet-domain bookkeeping, not content. Conjunct 2 (\u2200K>0 \u2203C_K, a_\u03b5/n \u2264 R \u2264 C_K/n under d\u2264K\u221an log n) faithfully encodes 'parametric order n\u207b\u00b9 whenever d=O(\u221an log n)'. Conjunct 3 (R\u21920 \u2194 ds/(ns log ns)\u21920 along eventually-in-range sequences) encodes 'converges to 0 iff d=o(n log n)'. The added hZeng hypothesis is the cited one-arm lower gate (status:cited); the ATE lower bound is not directly assumed but derived via the Lean-proved oneArmMinimaxRisk_le_minimaxRisk restriction \u2014 sanctioned citation, not laundering."
       },
       "proof": {
         "state": "complete",
@@ -696,7 +702,216 @@
       "review": {
         "status": "matched",
         "passed_hash": "55bddcff50fbc9ab53600a3b2463df3efd7aded2",
-        "note": "After unfolding the estimator, computability, rate, selector, worst-case MSE, minimax risk, experiment class, product law, and ATE functional, the Lean conjunction is equivalent to clauses (i)–(iv): it fixes the numerical epsilon-free hybrid and O(dM^4) realization, states the same fixed-interior and centered bounds, endpoint bracket, and deterministic combined envelope; clause (v) is faithfully reflected by the pointwise-in-epsilon quantifiers and absence of any triangular-array lower claim."
+        "note": "After unfolding the estimator, computability, rate, selector, worst-case MSE, minimax risk, experiment class, product law, and ATE functional, the Lean conjunction is equivalent to clauses (i)\u2013(iv): it fixes the numerical epsilon-free hybrid and O(dM^4) realization, states the same fixed-interior and centered bounds, endpoint bracket, and deterministic combined envelope; clause (v) is faithfully reflected by the pointwise-in-epsilon quantifiers and absence of any triangular-array lower claim."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:calibration-consequences",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Let \\(L=\\log(en)\\), \\(\\ell=\\log n\\), \\(M=M(n)\\), \\(B=B(n)\\), and \\(m_1=|I_1|\\). If \\(n\\ge N_0\\) and \\(L\\ge240\\), then\n\\[\n0<\\ell\\le L\\le2\\ell,\\qquad 0<m_1,\\qquad n\\le2m_1,\\qquad M\\le L,\\qquad B\\le\\frac{8192L}{n},\\qquad (6^{2M})^2L^6\\le n.\n\\]\nIn particular \\(1/m_1\\le2/n\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.large_calibration_bounds",
+        "file": "Helpers/LightCellRateAsymptotic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "7f8f1b9b7bea2d5905c9057af76e4570d160d165",
+        "note": "Unfolding logScale, polynomialDegree, bandwidth, and splitSize gives exactly the listed conjunction of calibration consequences under calibrationCutoff<=n and 240<=logScale n; 1/m_1<=2/n restates n<=2*m_1."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:factorial-moment-mean",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Let \\(P\\) be a single-observation law on \\(d\\) categories and let \\(k\\) be a category. For every \\(n\\ge N_0\\), the factorial-moment polynomial estimate of the light-cell contribution has exact mean\n\\[\nE_{P^{\\otimes n}}\\left[\\widehat P_k\\right]=P_{M(n),B(n)}(q_k).\n\\]",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_factorialPolynomialContribution_trunc",
+        "file": "Helpers/LightCell.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "fe4dc644b25eac65f8c43b16e88bddcf56a18e3f",
+        "note": "The Lean statement integrates factorialPolynomialContribution over the iid product law and equates it with cellApproxPolynomial evaluated at the four-cell vector q_k; unfolding these gives E[P_k hat]=P_{M,B}(q_k) under the calibration cutoff."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:coefficient-envelope",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Write \\(P_{M,B}(u)=\\sum_r c_ru^r\\) in multi-index form over the four cells. For every degree \\(M\\), scale \\(B>0\\), and nonnegative four-cell vector \\(v\\), the absolute-coefficient envelope obeys\n\\[\n\\sum_r|c_r|\\,v^r\\le B\\,6^M\\max\\left\\{\\left(\\frac{s(v)}{B}\\right)^2,\\left(\\frac{s(v)}{B}\\right)^M\\right\\};\n\\]\nin particular it is at most \\(B\\,6^M\\) whenever \\(s(v)\\le B\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.cellApproxPolynomial_coeff_envelope",
+        "file": "Helpers/ChebyshevCertificate.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "0af13b8e3ddd6850672ca2f50a9d869477bb7dbf",
+        "note": "The Lean statement bounds the support sum of |coeff| times the monomial at v for cellApproxPolynomial M B by B*6^M*max((vectorMass v/B)^2,(vectorMass v/B)^M); the s(v)<=B specialization makes the max factor at most one."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:factorial-moment-variance",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Let \\(\\bar P_k\\) be the sparse factorial-polynomial mean of category \\(k\\) (the exact mean of \\(\\widehat P_k\\) under the stated conditions). If \\(m_1>0\\), \\(M(n)\\ge1\\), \\(B(n)>0\\), \\(4M(n)^2\\le m_1\\), and the shifted mass obeys \\(p_k+4M(n)/m_1\\le B(n)\\) together with \\(p_k\\le B(n)\\), then\n\\[\nE_{P^{\\otimes n}}\\left[\\left(\\widehat P_k-\\bar P_k\\right)^2\\right]\\le8(\\mathrm e+1)\\left\\{B(n)\\,6^{M(n)}\\right\\}^2.\n\\]",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_factorialPolynomial_centered_sq_le",
+        "file": "Helpers/LightCellRateDeterministic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "ea263ccc5bc6f64f0057043021dfb1e4718d8f7a",
+        "note": "The Lean statement centers factorialPolynomialContribution at sparsePolynomialMean and bounds the second moment under the product law by 8(e+1)(bandwidth*6^degree)^2, with hypotheses 0<splitSize, 0<degree, 0<bandwidth, 4M^2<=m_1, and the shifted-mass inequality; the sparse mean equals E[P_k hat] because M<=m_1 follows from 1<=M and 4M^2<=m_1."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:factorial-moment-covariance",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Let \\(\\bar P_k\\) be the sparse factorial-polynomial mean of category \\(k\\). For distinct categories \\(k\\ne l\\) with \\(p_k\\le B(n)\\) and \\(p_l\\le B(n)\\), if \\(M(n)\\ge1\\), \\(B(n)>0\\), and \\(4M(n)^2\\le m_1\\), then\n\\[\nE_{P^{\\otimes n}}\\left[\\left(\\widehat P_k-\\bar P_k\\right)\\left(\\widehat P_l-\\bar P_l\\right)\\right]\\le\\frac{8M(n)^2}{m_1}\\left\\{B(n)\\,6^{M(n)}\\right\\}^2.\n\\]",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_factorialPolynomial_centered_cross_le",
+        "file": "Helpers/LightCellRateDeterministic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "f9e20b517f58a8ee2126bf02872ca2a7201a35d7",
+        "note": "The Lean statement bounds the centered cross moment of two factorialPolynomialContribution terms under the product law by 8*degree^2/splitSize*(bandwidth*6^degree)^2, with hypotheses k<>l, 0<degree, 0<bandwidth, 4M^2<=m_1, and unshifted mass at most bandwidth on both categories."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:chebyshev-reciprocal-certificate",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Fix a degree \\(M\\ge1\\), a scale \\(B\\), and \\(\\epsilon>0\\). For every four-cell vector \\(u\\in\\mathcal C_\\epsilon\\) with \\(s(u)\\le B\\),\n\\[\n\\left|P_{M,B}(u)-\\phi(u)\\right|\\le\\frac{2B}{\\epsilon M^2}.\n\\]",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.cellApproxPolynomial_error",
+        "file": "Helpers/ChebyshevCertificate.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "c1ee822f3fafef7a444163ef03ff93e7ae43df64",
+        "note": "The Lean statement bounds |eval of cellApproxPolynomial M B at u minus cellPhi u| by 2B/(epsilon*M^2) for u in overlapCone epsilon with vectorMass u<=B; this is the Chebyshev reciprocal-approximation certificate in paper notation."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:false-light-envelope",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Let \\(P\\) satisfy overlap at some level \\(\\epsilon\\) and let \\(S_k=\\mathbf 1\\{k\\in\\widehat{\\mathcal L}_n\\}\\). If \\(n\\ge N_0\\) and \\(\\log(en)\\ge240\\), then the false-light target error obeys\n\\[\nE_{P^{\\otimes n}}\\left[\\left\\{\\sum_{k:p_k>B(n)/4}S_k\\left(\\widehat P_k-\\phi(q_k)\\right)\\right\\}^2\\right]\\le8(\\mathrm e+1)8192^2\\left\\{\\frac1n+\\frac{d^2}{n^2\\log^2n}\\right\\},\n\\]\nwith a constant not depending on \\(\\epsilon\\), \\(d\\), or \\(P\\).",
+        "tex_anchor": "",
+        "frozen": true,
+        "frozen_body": "Let \\(P\\) be a probability law on \\(\\{1,\\ldots,d\\}\\times\\{0,1\\}^2\\). Suppose that:\n\\begin{itemize}\n\\item \\textbf{(Overlap.)} For every category \\(k\\) with \\(p_k>0\\), the treatment probability satisfies\n\\[\n\\epsilon \\le \\pi_k \\le 1-\\epsilon .\n\\]\n\\item \\textbf{(Calibration cutoff.)} The sample size satisfies \\(n\\ge N_0\\), where \\(N_0\\) is the least numerical cutoff satisfying the calibration inequalities used in the estimator.\n\\item \\textbf{(Logarithmic scale.)} With \\(L=\\log(en)\\), one has \\(L\\ge 240\\).\n\\end{itemize}\nFor the pilot-light indicator \\(S_k=\\mathbf 1\\{k\\in\\widehat{\\mathcal L}_n\\}\\), the selected false-light error over categories whose population mass exceeds the light-cell threshold satisfies\n\\[\nE_{P^{\\otimes n}}\\left[\n\\left\\{\n\\sum_{\\substack{k\\in\\{1,\\ldots,d\\}\\\\ p_k>B(n)/4}}\nS_k\\bigl(\\widehat P_k-\\phi(q_k)\\bigr)\n\\right\\}^2\n\\right]\n\\le\n8(\\mathrm e+1)8192^2\n\\left\\{\n\\frac1n+\\frac{d^2}{n^2(\\log n)^2}\n\\right\\}.\n\\]",
+        "frozen_title": "False-light error envelope"
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.selectedFalseLightError_rate",
+        "file": "Helpers/LightCellRateAsymptotic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "85b0e50e5bf070bb2f6feca7294e30cf48d0cd01",
+        "note": "The Lean statement integrates the square of selectedFalseLightError (the sum over falseLightSet, i.e. categories with p_k>bandwidth/4, of lightIndicator times the centered target error) and bounds it by 8(e+1)8192^2 times lightAsymptoticRate n d, under Overlap epsilon P, the calibration cutoff, and 240<=logScale n."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:heavy-residual-bound",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Let \\(P\\) satisfy overlap at level \\(\\epsilon>0\\), let \\(H\\) be a deterministic set of categories with \\(p_k>0\\) for every \\(k\\in H\\), fix an arm \\(a\\in\\{0,1\\}\\), and draw an iid \\(P\\)-sample of size \\(m\\). With counts computed from this sample, the aggregate centered ratio residual\n\\[\n\\mathcal R_a(H)=\\sum_{k\\in H}N_k\\frac{\\mathbf 1\\{N_{ak}>0\\}}{N_{ak}}\\left\\{N_{ak1}-\\mu_{ak}N_{ak}\\right\\}\n\\]\nobeys\n\\[\nE\\left[\\mathcal R_a(H)^2\\right]\\le\\frac{2m}{\\epsilon}\\sum_{k\\in H}p_k:\n\\]\nall off-diagonal residual products cancel exactly, and the surviving diagonal loses only one factor \\(1/\\epsilon\\) through overlap.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_fixedRatioResidual_sq_le",
+        "file": "Helpers/HeavyCellMoments.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "838decd94031d65ea58ebca141cb9b65c77ac808",
+        "note": "The Lean statement bounds the second moment of fixedRatioResidual (tupleRatioCoeff, equal to N_k/N_ak on {N_ak>0} and zero otherwise, times the summed armOutcomeResidual, equal to N_ak1-mu_ak*N_ak) over the m-fold product law by (2m/epsilon)*sum of cell masses, under Overlap epsilon P, 0<epsilon, and positive mass on H."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:missing-arm-envelope",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Let \\(P\\) satisfy overlap at level \\(\\epsilon>0\\), fix \\(B>0\\) and a deterministic set \\(H\\) of categories with \\(p_k\\ge B\\) for every \\(k\\in H\\), an arm \\(a\\), and an iid \\(P\\)-sample of size \\(m\\ge3\\). With \\(Z_{ak}=N_k\\mathbf 1\\{N_{ak}=0\\}\\) and \\(u=((m-2)/2)\\epsilon\\), the missing-arm count obeys\n\\[\nE\\left[\\left(\\sum_{k\\in H}Z_{ak}\\right)^2\\right]\\le m+m^2\\left[\\frac{|H|}{\\left\\{((m-2)/2)\\epsilon\\right\\}^2B}\\right]^2.\n\\]\nThe diagonal contributes at most \\(m\\); the off-diagonal terms and the exponentially small part of the diagonal combine into the square of the mass-exponential sum \\(\\sum_{k\\in H}p_ke^{-up_k}\\), which the mass floor \\(p_k\\ge B\\) converts into the displayed envelope.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_fixedMissingCount_sq_le",
+        "file": "Helpers/HeavyCellMoments.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "4a1790393c904954fccb5402ff4b1bf30f822126",
+        "note": "The Lean statement bounds the second moment of fixedMissingCount (the sum over H of the category count on the event that arm a is unobserved in that category) over the m-fold product law by m+m^2*(|H|/((((m-2)/2)epsilon)^2 B))^2, under 3<=m, Overlap epsilon P, 0<epsilon, 0<B, and B<=p_k on H."
       },
       "proof": {
         "state": "complete",
@@ -2880,6 +3095,79 @@
         "state": "complete",
         "sorry_count": 0
       }
+    },
+    {
+      "id": "lem:factorial-product-moment",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Fix \\(n,d\\in\\mathbb N\\), a probability law \\(P\\) on \\(\\{1,\\ldots,d\\}\\times\\{0,1\\}^2\\), a category \\(k\\), and multi-indices \\(r,s\\) over the four treatment--outcome cells with \\(|r|\\le|s|\\). For a multi-index \\(r\\), write \\(\\mathfrak m_{k,r}=\\prod_{(a,y)}\\bigl(N^{(1)}_{aky}\\bigr)_{r_{ay}}/(m_1)_{|r|}\\) for the normalized factorial-moment monomial of category \\(k\\) computed from the estimation split, where \\((z)_t\\) is the falling factorial. Assume \\(m_1>0\\) and \\(4|s|^2\\le m_1\\). Then\n\\[\nE_{P^{\\otimes n}}\\bigl[\\mathfrak m_{k,r}\\,\\mathfrak m_{k,s}\\bigr]\\le \\mathrm e\\,\\prod_{(a,y)}\\bigl(q_{aky}\\bigr)^{r_{ay}}\\prod_{(a,y)}\\Bigl(q_{aky}+\\tfrac{|s|}{m_1}\\Bigr)^{s_{ay}}.\n\\]",
+        "tex_anchor": "",
+        "frozen": true,
+        "frozen_body": "Fix \\(n,d\\in\\mathbb N\\), \\(P\\in\\mathsf{Prob}(\\{1,\\ldots,d\\}\\times\\{0,1\\}^2)\\), a category \\(k\\in\\{1,\\ldots,d\\}\\), and four-cell multi-indices \\(r,s\\). Using the split counts and split size in \\cref{obj:def:sample-splits}, let\n\\[\n\\mathfrak m_{k,r}\n=\n\\frac{\\prod_{(a,y)}(N^{(1)}_{aky})_{r_{ay}}}{(m_1)_{|r|}},\n\\]\nwhere \\((z)_t\\) denotes the falling factorial and \\(|r|=\\sum_{(a,y)}r_{ay}\\). Let \\(q_{aky}\\) denote the treatment--outcome cell mass in category \\(k\\), as in \\cref{obj:def:ate-functional}. Assume:\n\\begin{itemize}\n\\item \\textbf{(Nonempty estimation split.)} \\(m_1>0\\).\n\\item \\textbf{(Degree ordering.)} \\(|r|\\le |s|\\).\n\\item \\textbf{(Split-size condition.)} \\(4|s|^2\\le m_1\\).\n\\end{itemize}\nThen, under the iid product law generated by \\(P\\),\n\\[\n\\mathbb E_{P^{\\otimes n}}\\!\\left[\\mathfrak m_{k,r}\\mathfrak m_{k,s}\\right]\n\\le \\mathrm e\\,\\prod_{(a,y)}q_{aky}^{\\,r_{ay}}\n\\prod_{(a,y)}\n\\left(q_{aky}+\\frac{|s|}{m_1}\\right)^{s_{ay}} .\n\\]",
+        "frozen_title": "Factorial product moment"
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_factorialMonomial_mul_trunc_le",
+        "file": "Helpers/LightCellAssembly.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "34ec490580ab25474ab204bda587976ba2db1cdc",
+        "note": "Lean bounds the product integral of two truncated factorial monomials (degrees ordered, 4|s|^2 <= split size) by e times the raw cell-mass monomial at r and the (|s|/m_1)-shifted cell-mass monomial at s. OPERATOR ADJUDICATION 2026-08-20: fixed renderer typo \\le\\ne -> \\le \\mathrm e (Euler constant, matching the Lean bound's exp 1 factor); body otherwise the audited render."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:coefficient-sum-certificate",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Let \\(M\\ge1\\) and \\(z\\ge0\\). With \\(g_{M,j}\\) the coefficients of the polynomial continuation \\(G_M\\) of \\cref{obj:def:hybrid-estimator-handle}, the one-arm absolute coefficient sum \\(g_M^+(z)=\\sum_{j=0}^{M-2}|g_{M,j}|\\,z^j\\) satisfies\n\\[\ng_M^+(z)\\le 6^M\\max\\bigl\\{1,;z^{M-2}\\bigr\\}.\n\\]",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.gpos_bound",
+        "file": "Helpers/ChebyshevCertificate.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "da625b69c9a438888abcc197f2bd724c2ea0e5b9",
+        "note": "Lean's gpos M z is the absolute-coefficient sum of gPolynomial (the G_M continuation); gpos_bound gives gpos M z <= 6^M * max 1 (z^(M-2)) via the Chebyshev evaluation T_M(3) <= 6^M."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:sample-splits",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For a sample \\(O_1,\\ldots,O_n\\) with \\(O_i=(X_i,A_i,Y_i)\\in\\{1,\\ldots,d\\}\\times\\{0,1\\}\\times\\{0,1\\}\\), define the deterministic half-sample splits, their sizes, and the logarithmic scale\n\\[\nI_0=\\{1,\\ldots,\\lfloor n/2\\rfloor\\},\\qquad I_1=\\{\\lfloor n/2\\rfloor+1,\\ldots,n\\},\\qquad m_j=|I_j|,\\qquad L=\\log(en),\n\\]\nand, for each split \\(j\\in\\{0,1\\}\\), treatment arm \\(a\\in\\{0,1\\}\\), category \\(k\\in\\{1,\\ldots,d\\}\\), and outcome \\(y\\in\\{0,1\\}\\), the split cell count\n\\[\nN^{(j)}_{aky}=\\#\\{i\\in I_j:(A_i,X_i,Y_i)=(a,k,y)\\}.\n\\]",
+        "tex_anchor": "",
+        "frozen": true,
+        "frozen_body": "For a sample \\(O_1,\\ldots,O_n\\) with \\(O_i=(X_i,A_i,Y_i)\\in\\{1,\\ldots,d\\}\\times\\{0,1\\}\\times\\{0,1\\}\\), define the deterministic half-sample splits, their sizes, and the logarithmic scale\n\\[\nI_0=\\{1,\\ldots,\\lfloor n/2\\rfloor\\},\\qquad I_1=\\{\\lfloor n/2\\rfloor+1,\\ldots,n\\},\\qquad m_j=|I_j|,\\qquad L=\\log(en),\n\\]\nand, for each split \\(j\\in\\{0,1\\}\\), treatment arm \\(a\\in\\{0,1\\}\\), category \\(k\\in\\{1,\\ldots,d\\}\\), and outcome \\(y\\in\\{0,1\\}\\), the split cell count\n\\[\nN^{(j)}_{aky}=\\#\\{i\\in I_j:(A_i,X_i,Y_i)=(a,k,y)\\}.\n\\]",
+        "frozen_title": "Sample splits \\(I_0,I_1\\) and counts \\(N^{(j)}_{aky}\\)"
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.splitCellCount",
+        "file": "Helpers/Estimator.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "28bdfe2583df6ee3a184c1d44a44141bc353e637",
+        "note": "Bundles the deterministic split apparatus: splitIndices n j (first/second half-sample), splitSize (cardinality), and splitCellCount (per-split (a,k,y) cell count); L=log(en) is the logScale used throughout. OPERATOR ADJUDICATION 2026-08-20: bundled-packaging faithful \u2014 each display is Lean-backed by splitIndices (I_0,I_1), splitSize (m_j), logScale (L=log(en)), splitCellCount (N^{(j)}_{aky}); the single-decl mapping cannot express the bundle, so the body is operator-frozen."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
     }
   ],
   "edges": [
@@ -4616,6 +4904,228 @@
       "from": "prop:two-category-confounding",
       "to": "def:ate-functional",
       "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:light-cell-polynomial",
+      "to": "lem:calibration-consequences",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:light-cell-polynomial",
+      "to": "lem:factorial-moment-mean",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:light-cell-polynomial",
+      "to": "lem:coefficient-envelope",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:light-cell-polynomial",
+      "to": "lem:factorial-moment-variance",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:light-cell-polynomial",
+      "to": "lem:factorial-moment-covariance",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:light-cell-polynomial",
+      "to": "lem:chebyshev-reciprocal-certificate",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:light-cell-polynomial",
+      "to": "lem:false-light-envelope",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:universal-heavy-cell-rate",
+      "to": "lem:heavy-residual-bound",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:universal-heavy-cell-rate",
+      "to": "lem:missing-arm-envelope",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:false-light-envelope",
+      "to": "lem:factorial-product-moment",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:false-light-envelope",
+      "to": "lem:coefficient-sum-certificate",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:factorial-moment-variance",
+      "to": "lem:factorial-product-moment",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:factorial-moment-covariance",
+      "to": "lem:factorial-product-moment",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:hybrid-estimator-handle",
+      "to": "def:sample-splits",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:factorial-product-moment",
+      "to": "def:sample-splits",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:pilot-sandwich",
+      "to": "def:sample-splits",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:factorial-moment-variance",
+      "to": "def:sample-splits",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:factorial-moment-covariance",
+      "to": "def:sample-splits",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:false-light-envelope",
+      "to": "def:sample-splits",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:calibration-consequences",
+      "to": "def:sample-splits",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:calibration-consequences",
+      "to": "def:hybrid-estimator-handle",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:factorial-moment-mean",
+      "to": "def:sample-splits",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:factorial-moment-mean",
+      "to": "def:hybrid-estimator-handle",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:factorial-moment-variance",
+      "to": "def:hybrid-estimator-handle",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:factorial-moment-covariance",
+      "to": "def:hybrid-estimator-handle",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:coefficient-envelope",
+      "to": "def:hybrid-estimator-handle",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:chebyshev-reciprocal-certificate",
+      "to": "def:hybrid-estimator-handle",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:chebyshev-reciprocal-certificate",
+      "to": "def:cell-functional",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:chebyshev-reciprocal-certificate",
+      "to": "def:overlap-cone",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:coefficient-sum-certificate",
+      "to": "def:hybrid-estimator-handle",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:false-light-envelope",
+      "to": "def:hybrid-estimator-handle",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:false-light-envelope",
+      "to": "def:ate-functional",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:heavy-residual-bound",
+      "to": "def:sample-splits",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:heavy-residual-bound",
+      "to": "def:hybrid-estimator-handle",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:missing-arm-envelope",
+      "to": "def:sample-splits",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:missing-arm-envelope",
+      "to": "def:hybrid-estimator-handle",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:factorial-product-moment",
+      "to": "def:ate-functional",
+      "source": "declared"
     }
   ],
   "symbolReview": {

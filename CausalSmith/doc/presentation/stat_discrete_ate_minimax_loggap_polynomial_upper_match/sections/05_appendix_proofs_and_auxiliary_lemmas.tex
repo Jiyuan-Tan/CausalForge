@@ -1,0 +1,430 @@
+\section{Appendix: Proofs and auxiliary lemmas}
+
+This appendix collects the auxiliary statements used to assemble the fixed-interior lower bound, the heavy-cell and light-cell upper bounds, the endpoint bracket, and the combined estimator envelope. The statements are grouped by their mathematical role in the argument: pilot classification, lower-bound transfer, endpoint control, calibration, polynomial approximation, ratio residuals, factorial moments, and the two aggregate bounds for the hybrid estimator.
+
+The first ingredient controls the pilot split. It shows that empirical heavy and light categories are aligned with population mass thresholds, with either an arbitrary polynomial tail after choosing the threshold large enough or the fixed numerical threshold used in \cref{obj:def:hybrid-estimator-handle}.
+
+\begin{lemmav}{lem:pilot-sandwich}[Pilot sandwich tail bound]
+Let \(L=\log(en)\), and let \(m_0=|I_0|\) be the pilot-split size from \cref{obj:def:sample-splits}.  For a threshold \(t>0\), define
+\[
+\widehat{\mathcal H}=\{k:N_k^{(0)}>tL\},
+\qquad
+\widehat{\mathcal L}=\widehat{\mathcal H}^{c},
+\qquad
+B_-=\frac{tL}{2m_0},
+\qquad
+B_+=\frac{2tL}{m_0}.
+\]
+The following bounds hold.
+\begin{itemize}
+\item \textbf{(Arbitrary polynomial tail.)} For every \(K>0\) and every \(c>0\), there are constants \(t_0>0\), \(C>0\), and \(N\) such that, for every \(t\ge t_0\), every \(n\ge N\), every dimension \(d\) with \(d\le c n L\), every law \(P\) on \(\{1,\ldots,d\}\times\{0,1\}^2\), and every sample law satisfying \cref{obj:ass:iid-sampling},
+\[
+\mathbb P_{\mu_n}\left(
+\widehat{\mathcal H}\not\subseteq\{k:p_k\ge B_-\}
+\ \text{or}\
+\widehat{\mathcal L}\not\subseteq\{k:p_k\le B_+\}
+\right)
+\le C n^{-K}.
+\]
+\item \textbf{(Fixed threshold.)} For every \(c>0\), there are constants \(C>0\) and \(N\) such that, for every \(n\ge N\), every dimension \(d\) with \(d\le c n L\), every law \(P\) on \(\{1,\ldots,d\}\times\{0,1\}^2\), and every sample law satisfying \cref{obj:ass:iid-sampling}, the same sandwich event at threshold \(t=256\) obeys
+\[
+\mathbb P_{\mu_n}\left(
+\widehat{\mathcal H}\not\subseteq\left\{k:p_k\ge \frac{256L}{2m_0}\right\}
+\ \text{or}\
+\widehat{\mathcal L}\not\subseteq\left\{k:p_k\le \frac{2\cdot256L}{m_0}\right\}
+\right)
+\le C n^{-4}.
+\]
+\end{itemize}
+\end{lemmav}
+
+\Cref{obj:lem:pilot-sandwich} is the selection device behind the hybrid decomposition. On its high-probability event, categories sent to the ratio branch have a population mass floor, while categories sent to the polynomial branch have a population mass ceiling at the scale \(L/m_0\). The fixed-threshold clause matches the numerical constant in \cref{obj:def:hybrid-estimator-handle}.
+
+The lower-bound component transfers a published large-alphabet functional lower bound to the ATE risk. On the subclass with zero control means, the ATE functional in \cref{obj:def:ate-functional} coincides with the treated response functional used by \citet{ZengBalakrishnanHanKennedy2024}, so restricting the experiment class yields the following risk lower bound.
+
+\begin{lemmav}{lem:ate-lower-bound-transfer}[ATE lower-bound transfer]*
+Fix an overlap parameter \(\epsilon\) with \(0<\epsilon<1/2\), and let \(\mathsf R_{n,d,\epsilon}\) be the minimax mean-squared-error risk in \cref{obj:def:minimax-risk}. Then there exist constants \(a_\epsilon,b_\epsilon>0\) and \(N_\epsilon\in\mathbb N\) such that, for every \(n,d\in\mathbb N\), if \(0<d\), \(N_\epsilon\le n\), and
+\[
+d\le b_\epsilon n\log n,
+\]
+then
+\[
+a_\epsilon\left\{\frac{1}{n}+\frac{d^2}{n^2(\log n)^2}\right\}
+\le
+\mathsf R_{n,d,\epsilon}.
+\]
+\end{lemmav}
+% CAUSALSMITH-CITED-SCOPE-BEGIN lem:ate-lower-bound-transfer
+\verificationfootnotetext{\textbf{Formalization scope.} This result uses the published conclusion \citep{ZengBalakrishnanHanKennedy2024} (Theorem 2; Appendix C.5; Lemma 4; Appendix D.2). The cited source proof is not formalized here: Lean verifies its use and all remaining steps. If that cited conclusion is false, the portions of this result that depend on it are not certified.}
+% CAUSALSMITH-CITED-SCOPE-END lem:ate-lower-bound-transfer
+
+\Cref{obj:lem:ate-lower-bound-transfer} supplies the lower side of the sharp sandwich in \cref{obj:thm:sharp-minimax-fixed-interior}. The constants depend on the fixed interior overlap level, and the dimension range has the same \(n\log n\) scale as the upper-bound construction.
+
+The endpoint and near-endpoint controls are based on a centered linear estimator. These statements give the parametric endpoint bracket and the deterministic comparison term used by the selected estimator.
+
+\begin{lemmav}{lem:near-randomization-linear-upper}[Centered linear upper bound]
+For every \(n,d\in\mathbb N\) with \(n>0\), every overlap parameter \(\epsilon\), every single-observation law \(P\), and every sample law \(\mu_n\) such that \(\mu_n\in\mathcal E_{n,d,\epsilon}\) for \(P\) in the sense of \cref{obj:def:experiment-class}, define
+\[
+\widehat\tau_{\mathrm{ctr}}
+=
+\frac1n\sum_{i=1}^n
+2(2A_i-1)\left(Y_i-\frac12\right).
+\]
+Then the mean squared error of \(\widehat\tau_{\mathrm{ctr}}\) for the average treatment effect functional \(\tau(P)\) in \cref{obj:def:ate-functional} satisfies
+\[
+\int \bigl(\widehat\tau_{\mathrm{ctr}}(o_1,\ldots,o_n)-\tau(P)\bigr)^2\,d\mu_n(o_1,\ldots,o_n)
+\le
+\frac1n+4\left(\frac12-\epsilon\right)^2 .
+\]
+\end{lemmav}
+
+\begin{lemmav}{lem:one-category-bernoulli-lower}[Bernoulli randomization lower bound]
+For all positive integers \(n\) and \(d\), the minimax mean-squared-error risk \(\mathsf R_{n,d,\epsilon}\) of \cref{obj:def:minimax-risk}, evaluated at \(\epsilon=1/2\), satisfies
+\[
+\frac{1}{100n}\le \mathsf R_{n,d,1/2}.
+\]
+\end{lemmav}
+
+\begin{lemmav}{lem:randomized-endpoint-minimax}[Randomized endpoint risk]
+For every \(n,d\in\mathbb N\) with \(0<n\) and \(0<d\), the minimax mean-squared-error risk \(\mathsf R_{n,d,\epsilon}\) defined in \cref{obj:def:minimax-risk} satisfies, at \(\epsilon=1/2\),
+\[
+\frac{1}{100n}\le \mathsf R_{n,d,1/2}\le \frac{1}{n}.
+\]
+\end{lemmav}
+
+\Cref{obj:lem:near-randomization-linear-upper} bounds the centered estimator by a variance term and a squared distance from the randomized endpoint. \Cref{obj:lem:one-category-bernoulli-lower,obj:lem:randomized-endpoint-minimax} then place the exact endpoint risk at the parametric scale, uniformly over positive alphabet sizes.
+
+The following selector lemma combines the fixed-interior hybrid envelope with the centered endpoint envelope. Its estimator choice is deterministic once \(n,d,\epsilon\), and the constants in the fixed-interior upper bound are specified.
+
+\begin{lemmav}{lem:combined-upper-envelope}[Combined envelope selector]
+Fix constants \(\epsilon,C_\epsilon,\rho_\epsilon\in\mathbb R\) and \(N_\epsilon\in\mathbb N\). Assume:
+\begin{itemize}
+\item \textbf{(Interior overlap.)} \(0<\epsilon<1/2\).
+\item \textbf{(Positive constants.)} \(C_\epsilon>0\) and \(\rho_\epsilon>0\).
+\item \textbf{(Hybrid bound.)} For every \(n,d\in\mathbb N\), if \(0<n\), \(N_\epsilon\le n\), and \(d\le \rho_\epsilon n\log n\), then the hybrid estimator \(\widehat\tau_n^{\mathrm{hyb}}\) of \cref{obj:def:hybrid-estimator-handle} satisfies
+\[
+\sup_{P^{\otimes n}\in\mathcal E_{n,d,\epsilon}}
+\mathbb E_{P^{\otimes n}}\!\left[\left(\widehat\tau_n^{\mathrm{hyb}}-\tau(P)\right)^2\right]
+\le
+C_\epsilon\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\}.
+\]
+\end{itemize}
+Then for every \(n,d\in\mathbb N\) with \(0<n\), \(N_\epsilon\le n\), and \(d\le \rho_\epsilon n\log n\), let \(K_\epsilon=\max\{C_\epsilon,4\}\). Define the \(C_\epsilon,\epsilon\)-dependent selected estimator \(\widehat\tau^{\mathrm{sel}}_{C_\epsilon,\epsilon}\) to be \(\widehat\tau_n^{\mathrm{hyb}}\) when
+\[
+C_\epsilon\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\}
+\le
+\frac1n+4(1/2-\epsilon)^2
+\]
+and to be \(\widehat\tau_{\mathrm{ctr}}\) otherwise. This selected estimator satisfies
+\[
+\mathsf R_{n,d,\epsilon}\le
+\sup_{P^{\otimes n}\in\mathcal E_{n,d,\epsilon}}
+\mathbb E_{P^{\otimes n}}\!\left[\left(\widehat\tau^{\mathrm{sel}}_{C_\epsilon,\epsilon}-\tau(P)\right)^2\right]
+\le
+K_\epsilon\left[
+\frac1n+
+\min\left\{\frac{d^2}{n^2(\log n)^2},(1/2-\epsilon)^2\right\}
+\right],
+\]
+where \(\mathsf R_{n,d,\epsilon}\) is the minimax risk of \cref{obj:def:minimax-risk}.
+\end{lemmav}
+
+The selector in \cref{obj:lem:combined-upper-envelope} is the algebraic step behind the combined envelope in \cref{obj:thm:overlap-adaptive-universal-hybrid}. It converts two available upper bounds into the smaller of the sparse-cell and near-randomization scales, up to \(K_\epsilon=\max\{C_\epsilon,4\}\).
+
+The next block records the deterministic calibration and polynomial approximation facts used by the light branch. The Chebyshev construction follows the same approximation-theoretic principle used for nonsmooth discrete-distribution functionals \citep{JiaoVenkatHanWeissman2015,WuYang2016,HanJiaoWeissman2020,CaiLow2011}.
+
+\begin{lemmav}{lem:calibration-consequences}[Calibration consequences]
+Let \(L=\log(en)\), let \(\ell=\log n\), and let \(m_1=|I_1|\) be the second split size from \cref{obj:def:sample-splits}. Let \(M=M(n)\) and \(B=B(n)\) be the polynomial degree and light-cell approximation scale from \cref{obj:def:hybrid-estimator-handle}. Suppose that
+\begin{itemize}
+\item \textbf{(Calibration cutoff.)} \(n\ge N_0\).
+\item \textbf{(Large logarithmic scale.)} \(L\ge240\).
+\end{itemize}
+Then
+\[
+0<\ell,\qquad
+\ell\le L,\qquad
+L\le2\ell,\qquad
+0<m_1,\qquad
+n\le2m_1,\qquad
+M\le L,\qquad
+B\le\frac{8192L}{n},\qquad
+(6^{2M})^2L^6\le n .
+\]
+\end{lemmav}
+
+\begin{lemmav}{lem:factorial-moment-mean}[Exact factorial mean]
+Let \(d,n\in\mathbb N\), let \(P\) be a single-observation law on \(\{1,\ldots,d\}\times\{0,1\}^2\), and let \(k\) be a category. Suppose that \(n\ge N_0\), where \(N_0\) is the calibration cutoff in \cref{obj:def:hybrid-estimator-handle}. With \(M=M(n)\), \(B=B(n)\), and \(\widehat P_k\) the factorial-moment polynomial estimate defined in \cref{obj:def:hybrid-estimator-handle}, its exact mean under the iid product law generated by \(P\) is
+\[
+\int \widehat P_k(O_1,\ldots,O_n)\,dP^{\otimes n}
+=
+P_{M(n),B(n)}(q_k).
+\]
+\end{lemmav}
+
+\begin{lemmav}{lem:coefficient-envelope}[Absolute coefficient envelope]
+With \(P_{M,B}\), \(s(\cdot)\), \(c_r\), and \(u^r\) as in \cref{obj:def:hybrid-estimator-handle}, write
+\[
+P_{M,B}(u)=\sum_r c_r u^r .
+\]
+For every nonnegative integer \(M\), every scale \(B>0\), and every nonnegative four-cell vector \(v\),
+\[
+\sum_{r\in \operatorname{supp}(P_{M,B})}|c_r|\,v^r
+\le
+B\,6^M
+\max\left\{
+\left(\frac{s(v)}{B}\right)^2,
+\left(\frac{s(v)}{B}\right)^M
+\right\}.
+\]
+\end{lemmav}
+
+\begin{lemmav}{lem:chebyshev-reciprocal-certificate}[Polynomial approximation certificate]
+With the notation for \(\mathcal C_\epsilon\), \(s(u)\), \(P_{M,B}\), and \(\phi(u)\) from \cref{obj:def:overlap-cone,obj:def:hybrid-estimator-handle,obj:def:cell-functional}, let \(M\), \(B\), the overlap level \(\epsilon\), and \(u\) satisfy:
+\begin{itemize}
+\item \textbf{(Degree.)} \(M\ge 1\).
+\item \textbf{(Overlap.)} \(\epsilon>0\).
+\item \textbf{(Cone membership.)} \(u\in\mathcal C_\epsilon\).
+\item \textbf{(Mass bound.)} \(s(u)\le B\).
+\end{itemize}
+Then
+\[
+\left|P_{M,B}(u)-\phi(u)\right|\le \frac{2B}{\epsilon M^2}.
+\]
+\end{lemmav}
+
+\Cref{obj:lem:calibration-consequences} turns the numerical choices in \cref{obj:def:hybrid-estimator-handle} into inequalities at the scales used in the variance and bias calculations. \Cref{obj:lem:factorial-moment-mean} identifies the population target of each factorial-polynomial term exactly, while \cref{obj:lem:coefficient-envelope,obj:lem:chebyshev-reciprocal-certificate} control the coefficient growth and approximation error of \(P_{M,B}\).
+
+The heavy branch is controlled through residual and missing-arm bounds for deterministic category sets. These auxiliary statements quantify the two finite-sample effects that remain after conditioning on the pilot split: centered binomial variation within observed arms and the contribution of categories whose estimation split misses one treatment arm.
+
+\begin{lemmav}{lem:heavy-residual-bound}[Fixed-set residual variance]
+Let \(P\) be a law on \(\{1,\ldots,d\}\times\{0,1\}^2\), and let \(O_i=(X_i,A_i,Y_i)\), \(i\in I\), be an iid \(P\)-sample indexed by a finite set \(I\). Put \(m=|I|\), \(p_k=P(X=k)\), and \(\mu_{ak}=E_P[Y\mid A=a,X=k]\). For a deterministic set \(H\subseteq\{1,\ldots,d\}\) and an arm \(a\in\{0,1\}\), define
+\[
+\mathcal R_a(H)
+=
+\sum_{k\in H}
+N_k\frac{\mathbf 1\{N_{ak}>0\}}{N_{ak}}
+\{N_{ak1}-\mu_{ak}N_{ak}\}.
+\]
+Assume:
+\begin{itemize}
+\item \textbf{(Positive overlap.)} The overlap level satisfies \(\epsilon>0\), and every category with positive mass satisfies
+\[
+\epsilon\le P(A=1\mid X=k)\le 1-\epsilon .
+\]
+\item \textbf{(Positive mass on \(H\).)} For every \(k\in H\), \(p_k>0\).
+\end{itemize}
+Then
+\[
+E_P\!\left[\mathcal R_a(H)^2\right]
+\le
+\frac{2m}{\epsilon}\sum_{k\in H}p_k .
+\]
+\end{lemmav}
+
+\begin{lemmav}{lem:missing-arm-envelope}[Missing-arm second moment]
+Let \(P\) be a probability law for one observed unit \(O=(X,A,Y)\), with \(X\in\{1,\ldots,d\}\) and \(A,Y\in\{0,1\}\). Let \(J\) be a finite index set and write \(m=|J|\). For an iid \(P\)-sample \((O_j)_{j\in J}\), a deterministic category set \(H\subseteq\{1,\ldots,d\}\), and an arm \(a\in\{0,1\}\), set
+\[
+Z_{ak}=N_k\mathbf 1\{N_{ak}=0\},
+\qquad
+N_k=\sum_{j\in J}\mathbf 1\{X_j=k\},
+\qquad
+N_{ak}=\sum_{j\in J}\mathbf 1\{X_j=k,A_j=a\}.
+\]
+Assume:
+\begin{itemize}
+\item \textbf{(Sample size.)} \(m\ge 3\).
+\item \textbf{(Overlap.)} \(P\) satisfies overlap at level \(\epsilon\), the overlap parameter, and \(\epsilon>0\).
+\item \textbf{(Mass floor.)} \(B>0\) and \(p_k=P(X=k)\ge B\) for every \(k\in H\).
+\end{itemize}
+Then
+\[
+E_{P^{\otimes J}}\left[\left(\sum_{k\in H}Z_{ak}\right)^2\right]
+\le
+m
++
+m^2
+\left[
+\frac{|H|}
+{\left\{((m-2)/2)\epsilon\right\}^2 B}
+\right]^2 .
+\]
+\end{lemmav}
+
+Together, \cref{obj:lem:heavy-residual-bound,obj:lem:missing-arm-envelope} provide the finite-set estimates needed after the pilot sandwich supplies the mass floor for heavy categories. The residual term scales with the total population mass of the selected set, and the missing-arm term is controlled by overlap and the pilot-certified mass floor.
+
+The factorial-moment product and coefficient-sum statements support the second-moment analysis of the light branch. They are the count-level analogues of the approximation bounds above and are applied to the split-one multinomial cell counts.
+
+\begin{lemmav}{lem:factorial-product-moment}[Factorial product moment]
+Fix \(n,d\in\mathbb N\), \(P\in\mathsf{Prob}(\{1,\ldots,d\}\times\{0,1\}^2)\), a category \(k\in\{1,\ldots,d\}\), and four-cell multi-indices \(r,s\). Using the split counts and split size in \cref{obj:def:sample-splits}, let
+\[
+\mathfrak m_{k,r}
+=
+\frac{\prod_{(a,y)}(N^{(1)}_{aky})_{r_{ay}}}{(m_1)_{|r|}},
+\]
+where \((z)_t\) denotes the falling factorial and \(|r|=\sum_{(a,y)}r_{ay}\). Let \(q_{aky}\) denote the treatment--outcome cell mass in category \(k\), as in \cref{obj:def:ate-functional}. Assume:
+\begin{itemize}
+\item \textbf{(Nonempty estimation split.)} \(m_1>0\).
+\item \textbf{(Degree ordering.)} \(|r|\le |s|\).
+\item \textbf{(Split-size condition.)} \(4|s|^2\le m_1\).
+\end{itemize}
+Then, under the iid product law generated by \(P\),
+\[
+\mathbb E_{P^{\otimes n}}\!\left[\mathfrak m_{k,r}\mathfrak m_{k,s}\right]
+\le \mathrm e\,\prod_{(a,y)}q_{aky}^{\,r_{ay}}
+\prod_{(a,y)}
+\left(q_{aky}+\frac{|s|}{m_1}\right)^{s_{ay}} .
+\]
+\end{lemmav}
+
+\begin{lemmav}{lem:coefficient-sum-certificate}[Coefficient sum certificate]
+Let \(M\) be a positive integer and let \(z\ge 0\). With \(g_{M,j}\) denoting the coefficients of the polynomial continuation \(G_M\) in \cref{obj:def:hybrid-estimator-handle}, define
+\[
+g_M^+(z):=\sum_{0\le j<M-1}|g_{M,j}|z^j .
+\]
+Then
+\[
+g_M^+(z)\le 6^M\max\{1,z^{M-2}\}.
+\]
+\end{lemmav}
+
+\Cref{obj:lem:factorial-product-moment} gives a uniform product-moment bound for normalized falling-factorial monomials, and \cref{obj:lem:coefficient-sum-certificate} supplies the one-arm coefficient growth bound inherited by the polynomial continuation. These two estimates feed directly into the variance and covariance controls for light cells.
+
+The aggregate heavy-cell statement packages the pilot, residual, and missing-arm controls into the rate needed for the hybrid estimator. Its target is the pilot-heavy contribution to the ATE decomposition.
+
+\begin{lemmav}{lem:universal-heavy-cell-rate}[Heavy-cell aggregate rate]
+For every overlap parameter \(\epsilon\) with \(0<\epsilon<1/2\), there exist constants
+\(C_\epsilon>0\) and \(\rho_\epsilon>0\), and a sample-size cutoff
+\(N_\epsilon<\infty\), such that the following holds.  For every \(n,d\), every
+single-observation law \(P\in\mathsf{Prob}(\{1,\ldots,d\}\times\{0,1\}^2)\), and every
+sample law \(\mu_n\) for \(O_1,\ldots,O_n\), suppose that
+\begin{itemize}
+\item \textbf{(Sample size.)} \(n\ge N_\epsilon\).
+\item \textbf{(Dimension range.)} \(d\le \rho_\epsilon n\log n\).
+\item \textbf{(Experiment class.)} \(\mu_n\in\mathcal E_{n,d,\epsilon}\) for \(P\), as in
+\cref{obj:def:experiment-class}.
+\end{itemize}
+Then the mean squared error, under \(\mu_n\), of the heavy-cell aggregate ratio branch
+\(\widehat T_{\mathcal H}=\sum_{k\in\widehat{\mathcal H}_n}\widehat h_k\) around the
+pilot-heavy target \(\sum_{k\in\widehat{\mathcal H}_n}\phi(q_k)\) satisfies
+\[
+\int
+\left(
+\sum_{k\in\widehat{\mathcal H}_n}\widehat h_k
+-
+\sum_{k\in\widehat{\mathcal H}_n}\phi(q_k)
+\right)^2
+\,d\mu_n
+\le
+C_\epsilon\left\{
+\frac{1}{n}
++
+\frac{d^2}{n^2(\log n)^2}
+\right\}.
+\]
+\end{lemmav}
+
+\Cref{obj:lem:universal-heavy-cell-rate} gives the heavy branch the same rate as the full fixed-interior theorem. Its conditions match the interior overlap and dimension range used in \cref{obj:thm:sharp-minimax-fixed-interior}.
+
+The light-branch analysis separates within-category variance, cross-category covariance, false-light selection, and the final aggregate polynomial rate. The following statements give those components in the calibrated regime.
+
+\begin{lemmav}{lem:factorial-moment-variance}[Factorial-polynomial variance bound]
+Let \(P\) be a law on the observed-data alphabet and let \(k\) be a category. With the sample splits and the calibration \(M(n)\) and \(B(n)\) defined in \cref{obj:def:sample-splits,obj:def:hybrid-estimator-handle}, write \(\widehat P_k\) for the factorial-moment polynomial estimate in \cref{obj:def:hybrid-estimator-handle} and write \(\bar P_k\) for its sparse factorial-polynomial mean.
+
+Assume that
+\begin{itemize}
+\item \textbf{(Nonempty second split.)} \(m_1>0\).
+\item \textbf{(Positive degree and scale.)} \(M(n)>0\) and \(B(n)>0\).
+\item \textbf{(Split-size calibration.)} \(4M(n)^2\le m_1\).
+\item \textbf{(Light-cell mass bounds.)} The category mass \(p_k=P(X=k)\) satisfies
+\[
+p_k+\frac{4M(n)}{m_1}\le B(n)
+\qquad\text{and}\qquad
+p_k\le B(n).
+\]
+\end{itemize}
+Then
+\[
+E_{P^{\otimes n}}\!\left[\left(\widehat P_k-\bar P_k\right)^2\right]
+\le
+8(\mathrm e+1)\left\{B(n)6^{M(n)}\right\}^2 .
+\]
+\end{lemmav}
+
+\begin{lemmav}{lem:factorial-moment-covariance}[Cross-cell factorial covariance]
+Let \(P\) be a law on the finite observed-data alphabet, and let \(k\) and \(l\) be categories.  Define \(\bar P_k\) and \(\bar P_l\) as the sparse factorial-polynomial means of the light-cell factorial estimates \(\widehat P_k\) and \(\widehat P_l\) from \cref{obj:def:hybrid-estimator-handle}.  Suppose that
+\begin{itemize}
+\item \textbf{(Distinct categories.)} \(k\ne l\).
+\item \textbf{(Degree and scale.)} \(M(n)>0\) and \(B(n)>0\), with \(M(n)\), \(B(n)\), and \(m_1\) as in \cref{obj:def:sample-splits,obj:def:hybrid-estimator-handle}.
+\item \textbf{(Split size.)} \(4M(n)^2\le m_1\).
+\item \textbf{(Light-cell masses.)} \(p_k\le B(n)\) and \(p_l\le B(n)\).
+\end{itemize}
+Then
+\[
+E_{P^{\otimes n}}\!\left[
+  \left(\widehat P_k-\bar P_k\right)
+  \left(\widehat P_l-\bar P_l\right)
+\right]
+\le
+\frac{8M(n)^2}{m_1}\left\{B(n)6^{M(n)}\right\}^2 .
+\]
+\end{lemmav}
+
+\begin{lemmav}{lem:false-light-envelope}[False-light error envelope]
+Let \(P\) be a probability law on \(\{1,\ldots,d\}\times\{0,1\}^2\). Suppose that:
+\begin{itemize}
+\item \textbf{(Overlap.)} For every category \(k\) with \(p_k>0\), the treatment probability satisfies
+\[
+\epsilon \le \pi_k \le 1-\epsilon .
+\]
+\item \textbf{(Calibration cutoff.)} The sample size satisfies \(n\ge N_0\), where \(N_0\) is the least numerical cutoff satisfying the calibration inequalities used in the estimator.
+\item \textbf{(Logarithmic scale.)} With \(L=\log(en)\), one has \(L\ge 240\).
+\end{itemize}
+For the pilot-light indicator \(S_k=\mathbf 1\{k\in\widehat{\mathcal L}_n\}\), the selected false-light error over categories whose population mass exceeds the light-cell threshold satisfies
+\[
+E_{P^{\otimes n}}\left[
+\left\{
+\sum_{\substack{k\in\{1,\ldots,d\}\\ p_k>B(n)/4}}
+S_k\bigl(\widehat P_k-\phi(q_k)\bigr)
+\right\}^2
+\right]
+\le
+8(\mathrm e+1)8192^2
+\left\{
+\frac1n+\frac{d^2}{n^2(\log n)^2}
+\right\}.
+\]
+\end{lemmav}
+
+\begin{lemmav}{lem:light-cell-polynomial}[Light-cell polynomial rate]
+Fix the overlap parameter \(\epsilon\) with \(0<\epsilon\le 1/2\). The following conditions hold:
+\begin{itemize}
+\item \textbf{(Overlap level.)} The fixed overlap parameter satisfies \(0<\epsilon\) and \(\epsilon\le 1/2\).
+\item \textbf{(Computability.)} The hybrid estimator admits a real-arithmetic implementation: there is a universal operation-count constant \(K\in\mathbb N\), \(K>0\), such that for every \(n\) and \(d\) the program reads the split-count vector, returns \(\widehat\tau_n^{\mathrm{hyb}}\) exactly, and uses at most \(K\,d\,M(n)^4\) arithmetic and comparison operations.
+\item \textbf{(Constants.)} There are constants \(C_\epsilon,c_\epsilon>0\).
+\item \textbf{(Experiment and dimension.)} For every \(n,d\), every single-observation law \(P\in\mathsf{Prob}(\{1,\ldots,d\}\times\{0,1\}^2)\), and every sample law \(\mu_n\) satisfying \(\mu_n\in\mathcal E_{n,d,\epsilon}\) as in \cref{obj:def:experiment-class}, the dimension satisfies
+\[
+d\le c_\epsilon n\log n.
+\]
+\end{itemize}
+Under these conditions, the light-cell contribution \(\widehat T_{\mathcal L}\) satisfies
+\[
+E_{\mu_n}\!\left[
+\left\{
+\widehat T_{\mathcal L}
+-
+\sum_{k\in\widehat{\mathcal L}_n}\phi(q_k)
+\right\}^2
+\right]
+\le
+C_\epsilon
+\left\{
+\frac{1}{n}
++
+\frac{d^2}{n^2(\log n)^2}
+\right\}.
+\]
+\end{lemmav}
+
+\Cref{obj:lem:factorial-moment-variance,obj:lem:factorial-moment-covariance} control the second moments of the sparse factorial-polynomial terms within and across categories. \Cref{obj:lem:false-light-envelope} handles categories that are selected as light by the pilot split while having population mass above the light-cell scale. Combining these ingredients with the approximation certificate yields \cref{obj:lem:light-cell-polynomial}, which gives the aggregate light-branch rate and the real-arithmetic computability claim used in \cref{obj:thm:overlap-adaptive-universal-hybrid}.
+
+The fixed-interior upper bound in \cref{obj:thm:sharp-minimax-fixed-interior} is obtained by summing the heavy and light errors from \cref{obj:lem:universal-heavy-cell-rate,obj:lem:light-cell-polynomial} around the pilot partition and then applying the truncation in \cref{obj:def:hybrid-estimator-handle}. The lower bound is supplied by \cref{obj:lem:ate-lower-bound-transfer}, and the endpoint and selected-estimator conclusions follow from \cref{obj:lem:near-randomization-linear-upper,obj:lem:randomized-endpoint-minimax,obj:lem:combined-upper-envelope}.

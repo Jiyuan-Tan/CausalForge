@@ -1,0 +1,71 @@
+Use the following canonical representation convention.  For every observed real number \(x\), its input name is the unique nested dyadic name
+\[
+ \mathcal I_m(x)=
+ \left[2^{-m}\lfloor2^m x\rfloor,
+       2^{-m}\{\lfloor2^m x\rfloor+1\}\right],
+ \qquad m\ge1.
+\]
+Thus the represented sample consists of the canonical names of \(T_i\), \(Y_i\), and \(\bar g_n(X_i)\), \(1\le i\le n\), together with the canonical certified names of the primitive constants.  The algorithm first invokes \(\text{def:contour-bank-handle}\) internally on \((k,\delta,\psi_{\eta},R_0,R_1)\); it receives no externally chosen bank, contour diagnostics, empirical-transform names, or law-specific information.  It then constructs the canonical interval names of
+\[
+ Z_{n,i}=T_i-\bar g_n(X_i),
+ \qquad
+ \widehat F_{a,n}^{(p)}(z)
+ =|I_a|^{-1}\sum_{i\in I_a}Z_{n,i}^{p}e^{zZ_{n,i}},
+ \quad p\in\{0,1,2\},
+\]
+and
+\[
+ \widehat G_{a,n}^{(p)}(z)
+ =|I_a|^{-1}\sum_{i\in I_a}Y_iZ_{n,i}^{p}e^{zZ_{n,i}},
+ \quad p\in\{0,1\},
+\]
+by finite outward-rounded rational operations and the standard interval Taylor algorithm for the complex exponential.  In particular, \(\widehat F_{a,n}^{(0)}=\widehat F_{a,n}\) and \(\widehat G_{a,n}^{(0)}=\widehat G_{a,n}\).  These are derived names, not additional inputs.
+
+All contour computations use \(z=\rho_je^{it}\), \(0\le t\le2\pi\), and deterministic uniform angular meshes.  For each fold and circle, the algorithm derives the certified upper bound
+\[
+ L^F_{aj}=\rho_j\sup_{z\in C_j}|\widehat F_{a,n}'(z)|
+ \le \rho_j|I_a|^{-1}\sum_{i\in I_a}|Z_{n,i}|e^{\rho_j|Z_{n,i}|}.
+\]
+It increases the mesh and the precision of every canonically derived node enclosure until the mesh error is at most \(a_{\star}/128\) and the aggregate node-enclosure error is at most \(a_{\star}/128\).  The minimum of the nodewise rational lower modulus endpoints minus the Lipschitz mesh allowance and the analogous upper endpoint form a canonical certified interval for \(\inf_{C_j}|\widehat F_{a,n}|\) of width at most \(a_{\star}/64\).
+
+Whenever its certified lower endpoint \(m\) is positive, the algorithm derives enclosures of the actual winding integrand
+\[
+ W_{0j}(t)=
+ \rho_je^{it}
+ \frac{\widehat F'_{0,n}(\rho_je^{it})}
+      {\widehat F_{0,n}(\rho_je^{it})}
+\]
+and uses the derived sums for \(\widehat F'_{0,n}\) and \(\widehat F''_{0,n}\) to certify
+\[
+ |W_{0j}'(t)|\le
+ \rho_j\frac{\sup_{C_j}|\widehat F'_{0,n}|}{m}
+ +\rho_j^2\left\{
+ \frac{\sup_{C_j}|\widehat F''_{0,n}|}{m}
+ +\frac{\sup_{C_j}|\widehat F'_{0,n}|^2}{m^2}
+ \right\}.
+\]
+It refines the mesh and the canonically derived node enclosures until the outward enclosure of \((2\pi)^{-1}\int_0^{2\pi}W_{0j}(t)\,dt\) has radius strictly below \(1/4\).  If that enclosure contains a unique nonnegative integer, that integer is \(\widehat N_{0j,n}\); otherwise the circle is inadmissible.  Declare \(j\) pilot-admissible when its certified lower modulus endpoint is at least \(a_{\star}/2\) and \(\widehat N_{0j,n}\ge1\).  Let \(\widehat j_n\) be the smallest index among the admissible indices having maximal certified lower modulus endpoint.  Return zero if there is no such index.
+
+On the evaluation fold, compute the same canonical modulus certificate on \(C_{\widehat j_n}\), and return zero if its lower endpoint is below \(a_{\star}/4\).  Otherwise the algorithm derives enclosures of the actual final contour integrand
+\[
+ V(t)=\rho_{\widehat j_n}e^{it}
+ \frac{\widehat G_{1,n}(\rho_{\widehat j_n}e^{it})}
+      {\widehat F_{1,n}(\rho_{\widehat j_n}e^{it})}
+\]
+and the bound
+\[
+ |V'(t)|\le
+ \rho_{\widehat j_n}\frac{\sup|\widehat G_{1,n}|}{m}
+ +\rho_{\widehat j_n}^2\left\{
+ \frac{\sup|\widehat G'_{1,n}|}{m}
+ +\frac{\sup|\widehat G_{1,n}|\sup|\widehat F'_{1,n}|}{m^2}
+ \right\}.
+\]
+It refines until the canonical complex enclosure of
+\[
+ \frac{1}{2\pi\widehat N_{0\widehat j_n,n}}
+ \int_0^{2\pi}V(t)\,dt
+\]
+has radius at most \(1/n\).  Its canonical rational midpoint is the sole numerical output before taking the real part and projecting onto \([-C_{\theta},C_{\theta}]\); the result is \(\widehat\theta_{\mathrm{spec},n}\).
+
+An execution trace is the finite list of requested name precisions, mesh sizes, rational interval operations, rational comparisons, and branch decisions just described.  All threshold comparisons are comparisons of rational certified endpoints with the fixed rational thresholds, and every division is performed only after a positive rational denominator certificate.  The canonical-name convention makes the trace and output functions of the represented real values, not of arbitrary names.  The definition fixes the thresholds \(a_{\star}/2\) and \(a_{\star}/4\), the fallback zero, the smallest-index tie-break, and the final \(1/n\) error.  It uses \(\bar g_n\), uses no supplied outcome code, and has no access to the law of \(\eta\).  Termination, extensionality, and Borel measurability of this canonical algorithm are conclusions proved in \(\text{thm:adaptive-rootn-minimax}\), not assumptions of the definition.

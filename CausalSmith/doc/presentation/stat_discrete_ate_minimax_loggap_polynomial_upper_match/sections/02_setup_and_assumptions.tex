@@ -1,0 +1,465 @@
+\section{Setup and assumptions}
+
+Throughout, constants denoted by \(C\), \(c\), and their indexed variants are positive and may change from line to line; dependence on the fixed overlap level \leanref{sym:epsilon}{$\epsilon$} is displayed when it matters. Asymptotic notation is along integer sequences with \(n\to\infty\) and alphabet size \(d=d_n\), and all category sums range over \leanref{sym:k}{$k$}\(\in\{1,\ldots,d\}\). Probability laws for one observed unit are denoted by \leanref{sym:P}{$P$}, expectations under \(P\) by \(E_P\), and logarithms are natural.
+
+\subsection{Data, identification, and overlap}
+
+The observed-data model is a finite-alphabet observational experiment. The binary treatment and outcome coordinates are recorded first, followed by the iid sampling condition and the overlap restriction that defines the fixed-interior class.
+
+\begin{definitionv}{synth_7}[Binary observed treatment $A$]
+We write $A\in\{0,1\}$ for the binary observed treatment, with $A=1$ denoting treated status and $A=0$ denoting untreated status.
+\end{definitionv}
+
+\begin{definitionv}{synth_8}[Binary observed outcome $Y$]
+We say \(Y\) is the observed outcome when \(Y\in\{0,1\}\) is the binary outcome coordinate of a single observed unit drawn from the observed-data law \(P\).
+\end{definitionv}
+
+The \leanref{S-1}{finite-alphabet iid observational world} consists of observed units \leanref{sym:O_i}{$O_i=(X_i,A_i,Y_i)$}, where the covariate \leanref{sym:X}{$X$} takes finitely many values, \leanref{sym:A}{$A$} is the treatment coordinate, and \leanref{sym:Y}{$Y$} is the observed outcome.
+
+\begin{assumptionv}{ass:iid-sampling}[IID observed-data model]
+The observed data are \(O_i=(X_i,A_i,Y_i)\), \(i=1,\ldots,n\), with \(O_1,\ldots,O_n\stackrel{\mathrm{iid}}{\sim}P\), where the covariate \(X\) takes values in \(\{1,\ldots,d\}\), the treatment \(A\) and outcome \(Y\) are binary. For each category \(k\in\{1,\ldots,d\}\) write \(p_k=P(X=k)\) for the category mass, \(\pi_k=P(A=1\mid X=k)\) for the treatment probability, and, for each treatment arm \(a\in\{0,1\}\), \(\mu_{ak}=E_P[Y\mid A=a,X=k]\) for the conditional mean outcome.
+\end{assumptionv}
+
+The iid observed-data model is the standard independent and identically distributed sampling condition for discrete-covariate ATE analysis \citep{ZengBalakrishnanHanKennedy2024}. It fixes the single-observation law, the category masses \leanref{sym:p_k}{$p_k$}, the treatment probabilities \leanref{sym:pi_k}{$\pi_k$}, and the outcome regressions \leanref{sym:mu_{ak}}{$\mu_{ak}$} that enter the estimand.
+
+\begin{assumptionv}{ass:overlap}[Fixed overlap]
+For every category \(k\) with \(p_k>0\), the treatment probability \(\pi_k\) satisfies
+\[
+\epsilon \le \pi_k \le 1-\epsilon.
+\]
+\end{assumptionv}
+
+The fixed-overlap condition is the standard strong overlap requirement in this finite-alphabet setting \citep{ZengBalakrishnanHanKennedy2024}. It keeps every positive-mass category inside a common treatment-probability interval, which makes within-category treated and control outcome means jointly identifiable from the observed law.
+
+For the causal interpretation and the compact witness below, the observed-data model is paired with binary potential outcomes. The potential-outcome overlay follows the usual consistency and conditional exchangeability formulation.
+
+\begin{assumptionv}{ass:consistency}[Potential-outcome consistency]
+The observed outcome agrees almost surely with the potential outcome realized under the observed treatment:
+\[
+Y=Y(A)\quad\text{almost surely}.
+\]
+\end{assumptionv}
+
+Potential-outcome consistency is the standard condition equating the realized observed outcome with the potential outcome selected by the observed treatment \citep{ZengBalakrishnanHanKennedy2024}. In words, the \leanref{S-2}{potential-outcome overlay} supplies binary potential outcomes \leanref{sym:Y(a)}{$Y(0),Y(1)$} on the same probability space as \((X,A,Y)\).
+
+\begin{definitionv}{synth_9}[Control potential outcome $Y(0)$]
+We say \(Y(0)\) is the control potential outcome when \(Y(0)\) is a \(\{0,1\}\)-valued random variable on the same probability space as \((X,A,Y)\) whose value is the outcome under treatment level \(0\).
+\end{definitionv}
+
+\begin{assumptionv}{ass:conditional-exchangeability}[Conditional exchangeability]
+The binary potential outcomes are conditionally independent of treatment given covariates:
+\[
+(Y(0),Y(1))\perp A\mid X.
+\]
+\end{assumptionv}
+
+Conditional exchangeability is the standard no-unmeasured-confounding condition after conditioning on the finite covariate \(X\) \citep{ZengBalakrishnanHanKennedy2024}. Together, \cref{obj:ass:consistency,obj:ass:conditional-exchangeability} give the observed-law expression of the average treatment effect used below.
+
+The statistical experiment is expressed directly at the observed-data level. The next definitions introduce the overlap-restricted product-law class, the four-cell cone, the cell contribution, the ATE functional, and the corresponding minimax risk.
+
+\subsection{The experiment class and the average treatment effect}
+
+\begin{definitionv}{def:experiment-class}[Experiment class \(\mathcal E_{n,d,\epsilon}\)]
+For \(n,d\in\mathbb N\) and \(0<\epsilon\le 1/2\), the overlap-restricted iid product-law experiment class associated with \cref{obj:ass:iid-sampling,obj:ass:overlap} is
+\[
+\mathcal E_{n,d,\epsilon}
+:=
+\left\{
+P^{\otimes n}:
+P\in\mathsf{Prob}(\{1,\ldots,d\}\times\{0,1\}^2)
+\text{ and } P \text{ satisfies the overlap condition}
+\right\}.
+\]
+\end{definitionv}
+
+The experiment class \leanref{sym:\mathcal E_{n,d,\epsilon}}{$\mathcal E_{n,d,\epsilon}$} collects iid product laws \(P^{\otimes n}\) whose one-observation laws satisfy the fixed-overlap restriction in \cref{obj:ass:overlap}.
+
+\begin{definitionv}{def:overlap-cone}[Overlap cone \(\mathcal C_\epsilon\)]
+The overlap-restricted cone of nonnegative four-cell vectors is
+\[
+\mathcal C_\epsilon
+:=
+\left\{
+u=(u_{00},u_{01},u_{10},u_{11})\in\mathbb R_+^4:
+\epsilon(u_{00}+u_{01}+u_{10}+u_{11})
+\le
+u_{10}+u_{11}
+\le
+(1-\epsilon)(u_{00}+u_{01}+u_{10}+u_{11})
+\right\}.
+\]
+\end{definitionv}
+
+The cone \leanref{sym:\mathcal C_\epsilon}{$\mathcal C_\epsilon$} is the category-level version of overlap: its coordinates are the four treatment--outcome cell masses in a single covariate category.
+
+\begin{definitionv}{def:cell-functional}[Cell functional \(\phi(u)\)]
+For \(u=(u_{00},u_{01},u_{10},u_{11})\in\mathcal C_\epsilon\), with \(\mathcal C_\epsilon\) as in \cref{obj:def:overlap-cone}, define
+\[
+\phi(u)
+=
+(u_{00}+u_{01}+u_{10}+u_{11})
+\left\{
+\frac{u_{11}}{u_{10}+u_{11}}
+-
+\frac{u_{01}}{u_{00}+u_{01}}
+\right\}
+\]
+when \(u\ne(0,0,0,0)\), and set
+\[
+\phi(0,0,0,0)=0.
+\]
+\end{definitionv}
+
+The homogeneous cell contribution \leanref{sym:\phi}{$\phi$} multiplies the category mass by the treated-minus-control difference in conditional outcome means. Its ratio form is the nonsmooth feature handled by the estimator in \cref{obj:def:hybrid-estimator-handle}.
+
+\begin{definitionv}{def:ate-functional}[Average treatment effect \(\tau(P)\)]
+For a probability law \(P\) on \(\{1,\ldots,d\}\times\{0,1\}\times\{0,1\}\), with arbitrary masses on this finite observation alphabet, define, for \(a,y\in\{0,1\}\) and \(k\in\{1,\ldots,d\}\), the joint cell mass
+\[
+q_{aky}=P(A=a,X=k,Y=y),
+\]
+and set
+\[
+q_k=(q_{0k0},q_{0k1},q_{1k0},q_{1k1}).
+\]
+The average treatment effect functional is
+\[
+\tau(P)
+=
+\sum_{k=1}^{d}\phi(q_k).
+\]
+\end{definitionv}
+
+The joint atom \leanref{sym:q_{aky}}{$q_{aky}$} and four-cell vector \leanref{sym:q_k}{$q_k$} put the ATE functional \leanref{sym:\tau(P)}{$\tau(P)$} in a form that depends only on the observed law. Under \cref{obj:ass:consistency,obj:ass:conditional-exchangeability}, this observed-law functional has the usual potential-outcome interpretation \citep{Rubin1974,RosenbaumRubin1983}.
+
+\subsection{Minimax risk and a two-category witness}
+
+\begin{definitionv}{def:minimax-risk}[Minimax risk \(\mathsf R_{n,d,\epsilon}\)]
+Define the minimax mean-squared-error risk by
+\[
+\mathsf R_{n,d,\epsilon}
+=
+\inf_{\widehat\tau}
+\sup_{P^{\otimes n}\in\mathcal E_{n,d,\epsilon}}
+E_P\!\left[(\widehat\tau-\tau(P))^2\right],
+\]
+where the infimum ranges over all measurable estimators \(\widehat\tau\) based on \(O_1,\ldots,O_n\).
+\end{definitionv}
+
+The risk $\mathsf R_{n,d,\epsilon}$ measures the best worst-case mean-squared error over the fixed-overlap experiment class. The main theorem in the next section characterizes this quantity over its stated sample-size and dimension range.
+
+A two-category construction clarifies the causal target by displaying a law in which the ATE functional and the marginal observed contrast differ exactly. The construction fixes four outcome regressions and then couples them to binary potential outcomes.
+
+\begin{definitionv}{synth_15}[Control outcome regression in category 1]
+We write \(\mu_{01}:=E_P[Y\mid A=0,X=1]\) whenever \(P(A=0,X=1)>0\).
+\end{definitionv}
+
+\begin{definitionv}{synth_16}[Control outcome regression \(\mu_{02}\)]
+For an observed-data law \(P\) with \(P(A=0,X=2)>0\), define \(\mu_{02}:=E_P[Y\mid A=0,X=2]\).
+\end{definitionv}
+
+\begin{definitionv}{synth_17}[Treated outcome regression in category 1]
+We write \(\mu_{11}\) for the conditional mean \(E_P[Y\mid A=1,X=1]\), whenever \(P(A=1,X=1)>0\).
+\end{definitionv}
+
+\begin{definitionv}{synth_18}[Treated outcome regression in category 2]
+In the two-category witness, \(\mu_{12}\) is the treated outcome regression in the second covariate category, \(\mu_{12}=E_P[Y\mid A=1,X=2]\), and this construction sets \(\mu_{12}=0\).
+\end{definitionv}
+
+\begin{definitionv}{def:two-category-witness}[Two-category witness law]
+For \(d=2\) and \(0\le \epsilon\le 1\), set
+\[
+p_1=p_2=\frac12,\qquad
+\pi_1=\epsilon,\qquad
+\pi_2=1-\epsilon,\qquad
+\mu_{01}=\mu_{02}=0,\qquad
+\mu_{11}=1,\qquad
+\mu_{12}=0.
+\]
+Define the corresponding full-data extension by drawing
+\[
+(Y(0),Y(1))=(0,\mathbf 1\{X=1\})
+\]
+setting \(Y=Y(A)\), and then drawing \(A\mid X=k\sim\mathsf{Bernoulli}(\pi_k)\).
+\end{definitionv}
+
+\begin{propositionv}{prop:two-category-confounding}[Two-category confounding witness]
+For every real \(\epsilon\) with \(0<\epsilon\le 1/2\), let \(Q\) be the full-data law constructed in \cref{obj:def:two-category-witness}, and let \(P\) be its observed marginal law for \(O=(X,A,Y)\). Then:
+\begin{itemize}
+\item \textbf{(Consistency.)} \(Q\) satisfies \cref{obj:ass:consistency}.
+\item \textbf{(Conditional exchangeability.)} \(Q\) satisfies \cref{obj:ass:conditional-exchangeability}.
+\item \textbf{(Overlap.)} \(P\) satisfies \(\epsilon\)-overlap in the sense of \cref{obj:ass:overlap}.
+\end{itemize}
+The average treatment effect functional in \cref{obj:def:ate-functional} and the naive observed contrast under \(P\) obey
+\[
+\tau(P)=\frac12,
+\qquad
+E_P[Y\mid A=1]-E_P[Y\mid A=0]=\epsilon .
+\]
+\end{propositionv}
+
+\Cref{obj:prop:two-category-confounding} records the exact separation: the full-data law satisfies the standard causal assumptions, the observed marginal satisfies overlap, and the ATE equals \(1/2\) while the naive treated-minus-control contrast equals \(\epsilon\). This example anchors the estimand before the minimax analysis turns to unrestricted alphabet size.
+
+The estimator used for the upper bound combines deterministic sample splitting, direct ratio estimation in pilot-heavy categories, and factorial-moment polynomial estimation in pilot-light categories. The following definitions fix the auxiliary notation and then state the estimator in full.
+
+\begin{definitionv}{synth_10}[Centered endpoint estimator $\widehat\tau_{\mathrm{ctr}}$]
+For \(n\in\mathbb N\) with \(n>0\) and observed units \(O_i=(X_i,A_i,Y_i)\in\{1,\ldots,d\}\times\{0,1\}\times\{0,1\}\), define the centered endpoint estimator by \[ \widehat\tau_{\mathrm{ctr}}(O_1,\ldots,O_n)=\frac1n\sum_{i=1}^n 2(2A_i-1)\left(Y_i-\frac12\right). \]
+\end{definitionv}
+
+\begin{definitionv}{synth_13}[Sample law \(\mu_n\)]
+For a sample \(O_1,\ldots,O_n\) with single-observation law \(P\) on \(\{1,\ldots,d\}\times\{0,1\}\times\{0,1\}\), we write \(\mu_n=P^{\otimes n}\) for the \(n\)-fold product law of the observed sample.
+\end{definitionv}
+
+\subsection{Sample splits and the hybrid estimator}
+
+\begin{definitionv}{def:sample-splits}[Sample splits \(I_0,I_1\) and counts \(N^{(j)}_{aky}\)]
+For a sample \(O_1,\ldots,O_n\) with \(O_i=(X_i,A_i,Y_i)\in\{1,\ldots,d\}\times\{0,1\}\times\{0,1\}\), define the deterministic half-sample splits, their sizes, and the logarithmic scale
+\[
+I_0=\{1,\ldots,\lfloor n/2\rfloor\},\qquad I_1=\{\lfloor n/2\rfloor+1,\ldots,n\},\qquad m_j=|I_j|,\qquad L=\log(en),
+\]
+and, for each split \(j\in\{0,1\}\), treatment arm \(a\in\{0,1\}\), category \(k\in\{1,\ldots,d\}\), and outcome \(y\in\{0,1\}\), the split cell count
+\[
+N^{(j)}_{aky}=\#\{i\in I_j:(A_i,X_i,Y_i)=(a,k,y)\}.
+\]
+\end{definitionv}
+
+The deterministic split \leanref{sym:I_a}{$I_0,I_1$} separates category selection from estimation, and the split cell counts \leanref{sym:N^{(j)}_{aky}}{$N^{(j)}_{aky}$} provide the multinomial factorial moments used by the light branch.
+
+\begin{definitionv}{synth_3}[Chebyshev polynomial \(T_M\)]
+For \(M\in\mathbb N\), \(T_M\) denotes the degree-\(M\) Chebyshev polynomial of the first kind, characterized by \(T_M(\cos\theta)=\cos(M\theta)\) for every \(\theta\in\mathbb R\).
+\end{definitionv}
+
+\begin{definitionv}{synth_49}[Numerical cutoff $N_0$]
+We define $N_0$ to be the least $N\in\mathbb N$ such that, for every $n\ge N$, with $L=\log(en)$, $m_1=|I_1|$, $M(n)=\max\{2,\lfloor\alpha_0L\rfloor\}$, and $B(n)=b_0L/m_1$, the inequalities $\alpha_0L\ge2$, $4M(n)^2\le m_1$, and $4M(n)/m_1\le3B(n)/4$ all hold.
+\end{definitionv}
+
+\begin{definitionv}{synth_38}[Degree schedule \(M(n)\)]
+For \(n\ge2\), the logarithmic polynomial degree schedule is
+\[
+M(n)=\max\{2,\lfloor\alpha_0\log(en)\rfloor\},
+\]
+where
+\[
+\alpha_0
+=
+\min\left\{
+1,\frac{1}{32\log 6},\frac{1}{256\cdot 8\log(27/4)}
+\right\}.
+\]
+\end{definitionv}
+
+\begin{definitionv}{synth_4}[Falling factorial split-cell count]
+For a split-one cell count \(N^{(1)}_{aky}\) and multi-index coordinate \(r_{ay}\in\mathbb N_0\), we write \((N^{(1)}_{aky})_{r_{ay}}\) for the falling factorial \(N^{(1)}_{aky}(N^{(1)}_{aky}-1)\cdots(N^{(1)}_{aky}-r_{ay}+1)\) when \(r_{ay}\ge1\), with \((N^{(1)}_{aky})_0=1\).
+\end{definitionv}
+
+\begin{definitionv}{synth_5}[Four-cell monomial $u^r$]
+For a four-cell vector \(u=(u_{00},u_{01},u_{10},u_{11})\) and a multi-index \(r=(r_{ay})_{a,y\in\{0,1\}}\in\mathbb N_0^4\), write \(u^r=\prod_{a,y\in\{0,1\}}u_{ay}^{r_{ay}}\).
+\end{definitionv}
+
+The multi-index \leanref{sym:r=(r_{ay})_{a,y\in\{0,1\}}}{$r=(r_{ay})_{a,y\in\{0,1\}}$} indexes monomials in the four observed cells. Falling factorials give unbiased polynomial-moment estimates for multinomial cell probabilities, with the scalar convention \leanref{sym:z_r}{$(z)_r$} used analogously.
+
+\begin{definitionv}{synth_28}[Calibration constant $b_0$]
+The calibration constant $b_0$ is the fixed numerical value $4096$.
+\end{definitionv}
+
+\begin{definitionv}{synth_29}[Hybrid degree constant $\alpha_0$]
+The numerical hybrid degree constant is \(\alpha_0=\min\left\{1,\frac{1}{32\log 6},\frac{1}{2048\log(27/4)}\right\}\).
+\end{definitionv}
+
+\begin{definitionv}{synth_30}[Total four-cell mass \(s(u)\)]
+For a four-cell vector \(u=(u_{00},u_{01},u_{10},u_{11})\), define \(s(u)=u_{00}+u_{01}+u_{10}+u_{11}\).
+\end{definitionv}
+
+\begin{definitionv}{synth_31}[Control-cell mass $s_0(u)$]
+For a four-cell vector $u=(u_{00},u_{01},u_{10},u_{11})$, define $s_0(u)=u_{00}+u_{01}$.
+\end{definitionv}
+
+\begin{definitionv}{synth_32}[Treated-arm mass $s_1(u)$]
+For a four-cell vector \(u=(u_{00},u_{01},u_{10},u_{11})\), ordered by \((A,Y)=(0,0),(0,1),(1,0),(1,1)\), define \(s_1(u):=u_{10}+u_{11}\).
+\end{definitionv}
+
+\begin{definitionv}{synth_33}[Control outcome-one cell $t_0(u)$]
+For a four-cell vector \(u=(u_{00},u_{01},u_{10},u_{11})\), define \(t_0(u)=u_{01}\).
+\end{definitionv}
+
+\begin{definitionv}{synth_34}[Treated outcome-one cell \(t_1(u)\)]
+For a four-cell vector \(u=(u_{00},u_{01},u_{10},u_{11})\), define \(t_1(u)=u_{11}\).
+\end{definitionv}
+
+\begin{definitionv}{synth_40}[Coefficients \(c_r\)]
+For a nonnegative integer \(M\) and scale \(B>0\), \(c_r\) is the coefficient of \(u^r\) in the monomial expansion of the ratio-polynomial \(P_{M,B}\):
+\[
+P_{M,B}(u)=\sum_{|r|\le M} c_r u^r .
+\]
+\end{definitionv}
+
+\begin{definitionv}{synth_41}[Split-size falling factorial \((m_1)_{|r|}\)]
+For the estimation-split size \(m_1\) and four-cell multi-index \(r\), the denominator \((m_1)_{|r|}\) denotes the falling factorial \(\prod_{\ell=0}^{|r|-1}(m_1-\ell)\), with the empty product equal to \(1\).
+\end{definitionv}
+
+\begin{definitionv}{synth_48}[Light-cell approximation scale $B(n)$]
+For the calibrated hybrid estimator, the light-cell approximation scale is \(B(n)=b_0L/m_1\), with \(L=\log(en)\), \(m_1=|I_1|\), and \(b_0=4096\).
+\end{definitionv}
+
+\begin{definitionv}{synth_35}[Factorial-moment contribution \(\widehat P_k\)]
+For \(n\ge N_0\), set \(M=M(n)\) and \(B=B(n)\). If the ratio-polynomial has monomial expansion
+\[
+P_{M,B}(u)=\sum_{|r|\le M}c_ru^r,
+\]
+then the factorial-moment polynomial contribution for category \(k\) is
+\[
+\widehat P_k
+=
+\sum_{|r|\le M}c_r
+\frac{\prod_{a,y\in\{0,1\}}(N^{(1)}_{aky})_{r_{ay}}}{(m_1)_{|r|}}.
+\]
+\end{definitionv}
+
+\begin{definitionv}{synth_46}[Category count \(N_k\)]
+For a sample \(O_i=(X_i,A_i,Y_i)\), \(i\in I\), indexed by a finite set \(I\), the category count for \(k\in\{1,\ldots,d\}\) is \(N_k=\sum_{i\in I}\mathbf 1\{X_i=k\}\).
+\end{definitionv}
+
+\begin{definitionv}{synth_47}[Arm-specific category count $N_{ak}$]
+For observations \(O_i=(X_i,A_i,Y_i)\) indexed by a finite set \(I\), category \(k\in\{1,\ldots,d\}\), and arm \(a\in\{0,1\}\), define \(N_{ak}:=\sum_{i\in I}\mathbf 1\{X_i=k,A_i=a\}\).
+\end{definitionv}
+
+The estimator layer \leanref{S-4}{uses the deterministic split, pilot categories, and four-cell factorial moments} to balance ratio estimation and polynomial approximation. Heavy categories are selected from the pilot split; light categories use the polynomial \(P_{M,B}\) through the factorial-moment contribution \(\widehat P_k\).
+
+\begin{definitionv}{def:hybrid-estimator-handle}[Hybrid estimator \(\widehat\tau_n^{\mathrm{hyb}}\)]
+Using the deterministic splits \(I_0,I_1\), split sizes \(m_j\), logarithmic scale \(L=\log(en)\), and split counts \(N^{(j)}_{aky}\) from \cref{obj:def:sample-splits}, set
+\[
+A_0=6,\qquad \lambda_0=256,\qquad b_0=4096,
+\]
+\[
+D_{A_0}=8\log(9A_0/8)=8\log(27/4),
+\]
+and
+\[
+\alpha_0=\min\left\{1,\frac1{32\log A_0},\frac1{256D_{A_0}}\right\}.
+\]
+For \(n\ge2\), define
+\[
+M(n)=\max\{2,\lfloor\alpha_0L\rfloor\},\qquad B(n)=b_0L/m_1.
+\]
+Let \(N_0\) be the least numerical cutoff such that, for every \(n\ge N_0\),
+\[
+\alpha_0L\ge2,\qquad 4M(n)^2\le m_1,\qquad 4M(n)/m_1\le 3B(n)/4.
+\]
+For every \(n\), define the pilot-certified heavy and light category sets
+\[
+\widehat{\mathcal H}_n
+=
+\left\{k:\sum_{a,y}N^{(0)}_{aky}>\lambda_0L\right\},
+\qquad
+\widehat{\mathcal L}_n=\widehat{\mathcal H}_n^c\quad(n\ge N_0),
+\qquad
+\widehat{\mathcal L}_n=\varnothing\quad(n<N_0),
+\]
+so that for \(n<N_0\) every category is treated by the ratio branch below. For \(n\ge N_0\), abbreviate \(M=M(n)\) and \(B=B(n)\).
+Put
+\[
+N_k^{(1)}=\sum_{a,y}N^{(1)}_{aky},
+\qquad
+N_{ak}^{(1)}=\sum_yN^{(1)}_{aky},
+\]
+and define the heavy-category ratio contribution
+\[
+\widehat h_k
+=
+\frac{N_k^{(1)}}{m_1}
+\left\{
+\frac{N^{(1)}_{1k1}}{N^{(1)}_{1k}}\mathbf1\{N^{(1)}_{1k}>0\}
+-
+\frac{N^{(1)}_{0k1}}{N^{(1)}_{0k}}\mathbf1\{N^{(1)}_{0k}>0\}
+\right\}.
+\]
+Define
+\[
+H_M(x)=\frac{1-T_M(1-2x)}{2M^2},
+\qquad
+E_M(x)=\frac{H_M(x)}{x},
+\qquad
+G_M(x)=\frac{1-E_M(x)}{x},
+\]
+where \(E_M\) and \(G_M\) are interpreted by polynomial continuation at zero. For \(u=(u_{00},u_{01},u_{10},u_{11})\), set
+\[
+s_a(u)=u_{a0}+u_{a1},\qquad s(u)=s_0(u)+s_1(u),
+\]
+\[
+t_1(u)=u_{11},\qquad t_0(u)=u_{01},
+\]
+and define the light-cell polynomial
+\[
+P_{M,B}(u)
+=
+\frac{s(u)t_1(u)}B
+G_M\!\left(\frac{s_1(u)}B\right)
+-
+\frac{s(u)t_0(u)}B
+G_M\!\left(\frac{s_0(u)}B\right).
+\]
+Expand
+\[
+P_{M,B}(u)=\sum_{|r|\le M}c_ru^r.
+\]
+For each category \(k\), define
+\[
+\widehat P_k
+=
+\sum_{|r|\le M}
+c_r
+\frac{\prod_{a,y}(N^{(1)}_{aky})_{r_{ay}}}{(m_1)_{|r|}}.
+\]
+The heavy and light sums are
+\[
+\widehat T_{\mathcal H}
+=
+\sum_{k\in\widehat{\mathcal H}_n}\widehat h_k,
+\qquad
+\widehat T_{\mathcal L}
+=
+\sum_{k\in\widehat{\mathcal L}_n}\widehat P_k.
+\]
+The truncated balanced ratio-polynomial hybrid estimator is
+\[
+\widehat\tau_n^{\mathrm{hyb}}
+=
+\max\{-1,\min(1,\widehat T_{\mathcal H}+\widehat T_{\mathcal L})\}.
+\]
+The same calibrated estimator is used for every overlap level.
+\end{definitionv}
+
+The numerical constants in \cref{obj:def:hybrid-estimator-handle} are chosen for proof convenience and are not optimized. In particular, \(\alpha_0=\min\{1,(32\log A_0)^{-1},(256D_{A_0})^{-1}\}\approx2.6\times10^{-4}\), so the cutoff \(N_0\) determined by \(\alpha_0L\ge2\) corresponds to an astronomically large sample size, and the calibration range \(L\ge240\) appearing in the auxiliary lemmas is of the same nature. The rate statements should therefore be read as sharp-order characterizations of the calibrated estimator's large-sample regime: the exponents and the logarithmic factor are intrinsic to the problem, while the explicit finite-\(n\) thresholds reflect the slack of the concrete numerical calibration rather than any barrier in the analysis. Below the cutoff, the estimator simply applies the ratio branch to every category, and the operation-count clause of \cref{obj:thm:overlap-adaptive-universal-hybrid} is unaffected.
+
+The pilot partition $\widehat{\mathcal H}_n,\widehat{\mathcal L}_n$ sends empirically large categories to the ratio branch and empirically small categories to the polynomial branch. The light sum \leanref{sym:\widehat T_{\mathcal L}}{$\widehat T_{\mathcal L}$} aggregates factorial-polynomial contributions, and the truncated hybrid estimator \leanref{sym:\widehat\tau_n^{\mathrm{hyb}}}{$\widehat\tau_n^{\mathrm{hyb}}$} is the estimator analyzed in the main fixed-interior theorem.
+
+The remaining definitions collect auxiliary notation used in the proof statements and appendices. They keep the sample-splitting, factorial-moment, and coefficient notation explicit at the point where the estimator is introduced.
+
+\begin{definitionv}{synth_1}[Pilot category count]
+With the pilot-split cell counts \(N^{(0)}_{aky}\) of \cref{obj:def:sample-splits}, define the pilot category count \(N_k^{(0)}=\sum_{a,y\in\{0,1\}}N^{(0)}_{aky}\).
+\end{definitionv}
+
+\begin{definitionv}{synth_2}[Pilot split size \(m_0\)]
+We write \(m_0:=|I_0|\) for the cardinality of the deterministic pilot split \(I_0\).
+\end{definitionv}
+
+\begin{definitionv}{synth_23}[Treatment-arm outcome count \(N_{ak1}\)]
+For a finite index set \(I\) and observations \((O_i)_{i\in I}\) with \(O_i=(X_i,A_i,Y_i)\), we write \(N_{ak1}=\sum_{i\in I}\mathbf 1\{A_i=a,\ X_i=k,\ Y_i=1\}\) for the number of observations in treatment arm \(a\), category \(k\), and outcome level one.
+\end{definitionv}
+
+\begin{definitionv}{synth_43}[Finite-index product law $P^{\otimes J}$]
+For a finite index set $J$ and a probability law $P$ for one observed unit $O=(X,A,Y)$, we write $P^{\otimes J}$ for the product law on families $(O_j)_{j\in J}$ under which the coordinates are independent and each coordinate has law $P$.
+\end{definitionv}
+
+\begin{definitionv}{synth_45}[Euler factor \(\mathrm e\)]
+We write \(\mathrm e=\exp(1)\) for the base of the natural logarithm.
+\end{definitionv}
+
+\begin{definitionv}{synth_19}[Chebyshev reciprocal coefficients \(g_{M,j}\)]
+For an integer \(M\ge2\), we say \(g_{M,j}\), \(0\le j\le M-2\), are the Chebyshev reciprocal coefficients when they are the unique real coefficients satisfying \[\frac{1-\frac{1-T_M(1-2x)}{2M^2x}}{x}=\sum_{j=0}^{M-2}g_{M,j}x^j,\] with the left-hand side interpreted by polynomial continuation at \(x=0\), where \(T_M\) is the degree-\(M\) Chebyshev polynomial of the first kind.
+\end{definitionv}
+
+\begin{definitionv}{synth_20}[Sparse factorial-polynomial mean \(\bar P_k\)]
+Given a law \(P\), a category \(k\in\{1,\ldots,d\}\), a degree \(M\), and a scale \(B\), define the sparse factorial-polynomial mean of category \(k\) by \(\bar P_k=P_{M,B}(q_k)\), where \(q_k=(q_{0k0},q_{0k1},q_{1k0},q_{1k1})\) is the four-cell mass vector for category \(k\) under \(P\).
+\end{definitionv}
+
+Together, \cref{obj:def:experiment-class,obj:def:ate-functional,obj:def:minimax-risk,obj:def:hybrid-estimator-handle} define the functional, risk, and estimator objects used in the rate statements. The next section states the fixed-interior minimax characterization for this experiment class.

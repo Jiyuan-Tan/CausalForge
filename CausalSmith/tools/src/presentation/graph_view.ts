@@ -6,12 +6,13 @@ import { loadGraph, graphPath } from "../graph/store.js";
 import { isUndeliveredNode, type FormalizationGraph, type GraphNode, type NodeKind } from "../graph/types.js";
 
 export type { FormalizationGraph, GraphNode } from "../graph/types.js";
-export type EnvName = "theoremv" | "assumptionv" | "lemmav" | "definitionv" | "citedv" | "propositionv" | "remarkv";
+export type EnvName = "theoremv" | "assumptionv" | "lemmav" | "definitionv" | "citedv" | "propositionv" | "remarkv" | "algorithmv";
 
 /** The subset of env kinds an outline `env_overrides:` line may re-kind an object to:
  *  a constructive definition/assumption swap, a proposition tier, or a (non-load-bearing)
- *  remark. Theorems/lemmas/cited results are never override targets. */
-export const OVERRIDE_ENVS = ["definitionv", "assumptionv", "propositionv", "remarkv"] as const;
+ *  remark, or a definition-kind procedure boxed as numbered steps (`algorithmv`).
+ *  Theorems/lemmas/cited results are never override targets. */
+export const OVERRIDE_ENVS = ["definitionv", "assumptionv", "propositionv", "remarkv", "algorithmv"] as const;
 export type OverrideEnv = (typeof OVERRIDE_ENVS)[number];
 
 const ENV_BY_KIND: Partial<Record<NodeKind, EnvName>> = {

@@ -1,116 +1,140 @@
 \begin{proof}[Proof of \cref{obj:lem:near-randomization-linear-upper}]
-Membership of \(\mu_n\) in \(\mathcal E_{n,d,\epsilon}\) supplies \(\mu_n=P^{\otimes n}\), the range restriction \(0<\epsilon\le 1/2\), and the overlap bounds of \cref{obj:ass:overlap} for \(P\); these are used throughout.
-% lean: ExperimentClass
-
-Write
+For one observation \(z=(x,a,y)\), define
 \[
-S(O)=2(2A-1)\left(Y-\frac12\right),
+W(z)=2(2a-1)\left(y-\frac12\right),
+\]
+with \(a,y\in\{0,1\}\). Then
+\[
+\widehat\tau_{\mathrm{ctr}}
+=
+\frac1n\sum_{i=1}^n W(O_i),
 \qquad
-\widehat\tau_{\mathrm{ctr}}=\frac1n\sum_{i=1}^nS(O_i).
+W(z)^2=1
+\quad\text{for every }z .
 \]
-% lean: centeredUnitScore, centeredEstimator_eq_scoreMean
-Since \(A\) and \(Y\) are binary, \(S(O)=1\) when \(A=Y\) and \(S(O)=-1\) when \(A\neq Y\); in particular \(S(O)^2=1\) pointwise, so
-\[
-\operatorname{Var}_P(S)
-=
-E_P\!\left[S(O)^2\right]-\left\{E_PS(O)\right\}^2
-=
-1-\left\{E_PS(O)\right\}^2
-\le
-1 .
-\]
-% lean: centeredUnitScore_sq, centeredUnitScore_variance_le_one
-Under \(\mu_n=P^{\otimes n}\) the observations \(O_1,\ldots,O_n\) are iid, so the variance of their average is the one-observation variance divided by \(n\):
-\[
-\operatorname{Var}_{\mu_n}(\widehat\tau_{\mathrm{ctr}})
-=
-\frac{\operatorname{Var}_P(S)}{n}
-\le
-\frac1n .
-\]
-% lean: centeredEstimator_variance_le
+% lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredEstimator_eq_scoreMean; CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredUnitScore_sq
 
-It remains to bound the bias.  Evaluating \(S\) on the four atoms of a category, its value is \(+1\) at \((a,y)\in\{(1,1),(0,0)\}\) and \(-1\) at \((a,y)\in\{(1,0),(0,1)\}\), so summing the atom masses against these values,
+Writing \(q_{aky}=P(A=a,X=k,Y=y)\), direct summation gives
 \[
-E_PS(O)
+E_P[W(O)]
 =
-\sum_{k=1}^d\left(q_{1k1}-q_{1k0}+q_{0k0}-q_{0k1}\right).
+\sum_{k=1}^d
+\{q_{1k1}-q_{1k0}+q_{0k0}-q_{0k1}\}.
 \]
-% lean: centeredUnitScore_mean
+% lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredUnitScore_mean
 
-Fix \(k\) with \(p_k>0\).  Overlap together with \(\epsilon>0\) gives \(0<\epsilon\le\pi_k\le1-\epsilon<1\), so both arm masses \(q_{1k0}+q_{1k1}=\pi_kp_k\) and \(q_{0k0}+q_{0k1}=(1-\pi_k)p_k\) are strictly positive and \(\mu_{1k},\mu_{0k}\) are the genuine conditional means of \(Y\) in the two arms.  Consequently
+For the sums below, set
+\[
+p_k=\sum_{a=0}^1\sum_{y=0}^1 q_{aky},
+\qquad
+\pi_k=\frac{q_{1k0}+q_{1k1}}{p_k},
+\qquad
+\mu_{ak}=\frac{q_{ak1}}{q_{ak0}+q_{ak1}},
+\]
+using ordinary real division, so a quotient with zero denominator is assigned the value zero. If \(p_k>0\), overlap and \(\epsilon>0\) make both arm masses positive, and the definitions give
 \[
 q_{1k1}=\mu_{1k}\pi_kp_k,
-\quad
+\qquad
 q_{1k0}=(1-\mu_{1k})\pi_kp_k,
-\quad
-q_{0k1}=\mu_{0k}(1-\pi_k)p_k,
-\quad
-q_{0k0}=(1-\mu_{0k})(1-\pi_k)p_k,
 \]
-and substituting these four expressions and rearranging yields the exact conditional-bias identity
+and
+\[
+q_{0k1}=\mu_{0k}(1-\pi_k)p_k,
+\qquad
+q_{0k0}=(1-\mu_{0k})(1-\pi_k)p_k .
+\]
+Hence
 \[
 q_{1k1}-q_{1k0}+q_{0k0}-q_{0k1}
 =
 p_k(\mu_{1k}-\mu_{0k})
-+2\left(\pi_k-\tfrac12\right)p_k(\mu_{1k}+\mu_{0k}-1).
++
+2\left(\pi_k-\frac12\right)p_k(\mu_{1k}+\mu_{0k}-1).
 \]
-% lean: centeredScore_category_identity
-If instead \(p_k=0\), then the four nonnegative masses \(q_{0k0},q_{0k1},q_{1k0},q_{1k1}\) sum to \(0\) and therefore all vanish, so the left-hand side above is \(0\); the right-hand side is \(0\) as well, both of its terms carrying the factor \(p_k=0\).  The displayed identity therefore holds for every \(k\).
-% lean: jointMass_eq_zero_of_cellMass_eq_zero
+If \(p_k=0\), all four joint masses in category \(k\) are zero; with the totalized definitions above, both weighted terms also vanish because they are multiplied by \(p_k\). Thus the same identity holds with zero contribution in that category. % lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredScore_category_identity; CausalSmith.Stat.DiscreteAteMinimaxLoggap.jointMass_eq_zero_of_cellMass_eq_zero
 
-Summing the identity over \(k\) and subtracting \(\tau(P)=\sum_{k=1}^dp_k(\mu_{1k}-\mu_{0k})\) from \cref{obj:def:ate-functional}, which is the form the ATE functional takes under \cref{obj:ass:overlap}, gives
+By \cref{obj:def:ate-functional}, \(\tau(P)=\sum_{k=1}^d\phi(q_k)\), with \(q_k=(q_{0k0},q_{0k1},q_{1k0},q_{1k1})\). For a category with \(p_k=0\), the preceding zero-mass argument gives \(q_k=0\), so the zero-cell branch in \cref{obj:def:cell-functional} gives \(\phi(q_k)=0=p_k(\mu_{1k}-\mu_{0k})\). For a category with \(p_k>0\), overlap and \(\epsilon>0\) give positive treated and control arm masses, and the nonzero-cell branch of \cref{obj:def:cell-functional} gives
 \[
-E_PS(O)-\tau(P)
+\phi(q_k)
 =
-\sum_{k=1}^d2\left(\pi_k-\tfrac12\right)p_k(\mu_{1k}+\mu_{0k}-1).
+p_k\left\{
+\frac{q_{1k1}}{q_{1k0}+q_{1k1}}
+-
+\frac{q_{0k1}}{q_{0k0}+q_{0k1}}
+\right\}
+=
+p_k(\mu_{1k}-\mu_{0k}).
 \]
-% lean: centeredUnitScore_bias_identity, ateFunctional_eq_weighted_regression
+Summing over categories yields
+\[
+\tau(P)=\sum_{k=1}^d p_k(\mu_{1k}-\mu_{0k}).
+\]
+Combining this identity with the preceding category identity gives the exact bias identity
+\[
+E_P[W(O)]-\tau(P)
+=
+\sum_{k=1}^d
+2\left(\pi_k-\frac12\right)p_k(\mu_{1k}+\mu_{0k}-1).
+\]
+% lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredUnitScore_bias_identity
 
-For a category with \(p_k>0\), the overlap bounds \(\epsilon\le\pi_k\le1-\epsilon\) give \(|\pi_k-\tfrac12|\le\tfrac12-\epsilon\), while \(\mu_{1k},\mu_{0k}\in[0,1]\) gives \(|\mu_{1k}+\mu_{0k}-1|\le1\); since \(\tfrac12-\epsilon\ge0\) and \(p_k\ge0\), multiplying these bounds yields
+The class assumptions give \(0<\epsilon\le1/2\) and, on every category with \(p_k>0\),
+\(\epsilon\le\pi_k\le1-\epsilon\). The totalized outcome means satisfy \(0\le\mu_{ak}\le1\) for every category and arm. Hence, for every positive-mass category,
 \[
-\left|2\left(\pi_k-\tfrac12\right)p_k(\mu_{1k}+\mu_{0k}-1)\right|
-\le
-2\left(\frac12-\epsilon\right)p_k ,
+\left|\pi_k-\frac12\right|\le\frac12-\epsilon,
+\qquad
+|\mu_{1k}+\mu_{0k}-1|\le1,
 \]
-and for \(p_k=0\) both sides vanish, so the bound holds for every \(k\).  The triangle inequality applied to the previous display, followed by \(\sum_{k=1}^dp_k=1\) (the categories partition the sample space), gives
+and therefore
 \[
-\left|E_PS(O)-\tau(P)\right|
+\left|2\left(\pi_k-\frac12\right)p_k(\mu_{1k}+\mu_{0k}-1)\right|
 \le
-\sum_{k=1}^d2\left(\frac12-\epsilon\right)p_k
+2\left(\frac12-\epsilon\right)p_k .
+\]
+For a zero-mass category, \(p_k=0\) makes both sides of this last bound equal to zero. Applying the triangle inequality to the bias identity and using \(\sum_{k=1}^d p_k=1\) gives
+\[
+\left|E_P[W(O)]-\tau(P)\right|
+\le
+\sum_{k=1}^d 2\left(\frac12-\epsilon\right)p_k
 =
 2\left(\frac12-\epsilon\right).
 \]
-% lean: centeredUnitScore_bias_bound, cellMass_sum
+% lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredUnitScore_bias_bound; CausalSmith.Stat.DiscreteAteMinimaxLoggap.cellMass_sum
 
-Finally, \(n>0\) and \(\mu_n=P^{\otimes n}\) give
+The sample law in the class is the product law, and \(n>0\), so
 \[
-E_{\mu_n}\widehat\tau_{\mathrm{ctr}}
-=
-\frac1n\sum_{i=1}^nE_PS(O_i)
-=
-E_PS(O),
+E_{\mu_n}[\widehat\tau_{\mathrm{ctr}}]=E_P[W(O)].
 \]
-% lean: centeredEstimator_mean
-so the bias of \(\widehat\tau_{\mathrm{ctr}}\) is exactly the quantity just bounded, and since \(2(\tfrac12-\epsilon)\ge0\) the bound squares to
+Moreover, independence gives
 \[
-\left\{E_{\mu_n}\widehat\tau_{\mathrm{ctr}}-\tau(P)\right\}^2
+\operatorname{Var}_{\mu_n}(\widehat\tau_{\mathrm{ctr}})
+=
+\frac1n\operatorname{Var}_P(W(O))
 \le
-4\left(\frac12-\epsilon\right)^2 .
+\frac1n E_P[W(O)^2]
+=
+\frac1n .
 \]
-The mean-squared error splits as
+% lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredEstimator_mean; CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredUnitScore_variance_le_one; CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredEstimator_variance_le
+
+Finally, the bias--variance identity gives
 \[
-E_{\mu_n}\!\left[(\widehat\tau_{\mathrm{ctr}}-\tau(P))^2\right]
+\int
+\bigl(\widehat\tau_{\mathrm{ctr}}-\tau(P)\bigr)^2\,d\mu_n
 =
 \operatorname{Var}_{\mu_n}(\widehat\tau_{\mathrm{ctr}})
-+\left\{E_{\mu_n}\widehat\tau_{\mathrm{ctr}}-\tau(P)\right\}^2 ,
++
+\left(E_{\mu_n}[\widehat\tau_{\mathrm{ctr}}]-\tau(P)\right)^2 .
 \]
-% lean: mse_eq_variance_add_sq_bias
-and adding the variance bound to the squared-bias bound gives
+Combining the preceding variance and bias bounds yields
 \[
-E_{\mu_n}\!\left[(\widehat\tau_{\mathrm{ctr}}-\tau(P))^2\right]
+\int
+\bigl(\widehat\tau_{\mathrm{ctr}}-\tau(P)\bigr)^2\,d\mu_n
 \le
+\frac1n+
+\left\{2\left(\frac12-\epsilon\right)\right\}^2
+=
 \frac1n+4\left(\frac12-\epsilon\right)^2 .
 \]
-% lean: near_randomization_linear_upper
+% lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.mse_eq_variance_add_sq_bias; CausalSmith.Stat.DiscreteAteMinimaxLoggap.near_randomization_linear_upper
 \end{proof}

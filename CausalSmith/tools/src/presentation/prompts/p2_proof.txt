@@ -1,4 +1,4 @@
-Write the appendix proof of one theorem as mathematician-readable prose that is faithful to the LEAN proof's actual route (the formal proof is ground truth — not any earlier informal derivation).
+Write the appendix proof of one theorem as mathematician-readable prose that is faithful to the LEAN proof's actual route (the formal proof is ground truth; the informal derivation below is exposition context only).
 
 Theorem environment (statement, frozen — do not restate differently):
 {{theorem_env}}
@@ -12,6 +12,9 @@ Auxiliary lemma environments available to cite in the proof:
 Published conclusions invoked by the Lean proof but not re-proved/formalized here:
 {{cited_dependencies}}
 
+Informal derivation from the discovery stage (UNTRUSTED exposition aid — see rules):
+{{informal_derivation}}
+
 Notation table:
 {{notation_table}}
 
@@ -19,12 +22,21 @@ Referee revision brief (findings on a PREVIOUS draft about the rendered proofs):
 {{revision_brief}}
 
 Rules:
+- INFORMAL DERIVATION: the derivation above is the human-style argument that PRECEDED formalization; it may be wrong or follow a route that was never formalized. Use it only to write better exposition — the motivating idea behind a step, natural mathematical phrasing, the reason an estimate is the right one — and only where it agrees with the Lean route. Where it diverges from Lean (different case split, different bound, a claim with no Lean counterpart), follow Lean and ignore it. Never import a step, constant, or claim that has no counterpart in the Lean proof.
 - REVISION BRIEF: if the brief above lists findings (not the "first draft" sentinel), address each one that applies to this proof's PRESENTATION (e.g. clarity, an unexplained step, distracting bookkeeping shown to the reader). Faithfulness to the Lean route stays paramount and overrides any finding: do not drop, reorder, or alter a load-bearing step to satisfy the referee, and keep every `% lean:` comment (those are invisible audit markers, not reader-visible text). Never mention the review or a revision.
-- Follow the Lean proof's structure: same case splits, same intermediate bounds, same order of argument. Collapse pure bookkeeping (measurability side goals, coercions, rewriting chains) into a sentence.
+- Follow the Lean proof's structure: same case splits, same intermediate bounds, same order of argument. Collapse pure bookkeeping (measurability side goals, coercions, integrability, rewriting chains) into a sentence — bookkeeping ONLY, never a mathematical inequality, case split, construction, or constant calibration.
+- SELF-CONTAINED ARGUMENT: a reader must be able to follow the proof without opening the formal development. (a) Every symbol the proof introduces gets an explicit defining display in the paper's notation at first use; a noun-phrase gloss ("X is the centered term", "the residual part") is not a definition. (b) Every step the argument leans on is STATED as the identity or inequality it is, and only then justified in a clause; naming a step or an object in place of displaying what is bounded by what is not a proof step. (c) Where the Lean route delegates to a helper with no paper environment, render that helper's CONCLUSION as a display in the paper's notation and DERIVE it at the same standard as any other step, following the helper's own Lean route (compressing only bookkeeping); a one-clause justification is enough only when the helper's proof is itself a single standard fact. Asserting a displayed bound whose derivation contains real mathematics is not a proof step. Where the helper does have a paper environment, cite it by label instead.
+- NEVER RE-BIND A LETTER THE PAPER HAS ALREADY SPENT — check the notation table, statement and setup before naming anything, throwaway names included (case labels, decomposition summands, generic reals/laws/events, indices). Reusing a letter is worse than leaving it undefined: the reader silently applies the old meaning. Lean's namespacing hides collisions that are real on the page. When letters are scarce, prefer a subscript naming what the object is.
+- STATE A SYMBOL'S FULL DOMAIN. If it is defined under a proviso but used outside it, say what it is there; where Lean totalizes by a junk-value convention, state that convention at the point of definition.
+- CONSUME ONLY WHAT A CITED STATEMENT ASSERTS — never a value or sharper form that lives only in that environment's proof. If this proof establishes something its own frozen statement omits, report it rather than relying on it.
+- DISCHARGE HYPOTHESES OVER THE WHOLE RANGE, degenerate cases included (empty index set, zero dimension, zero mass, smallest parameter). If Lean branches on such a case, the prose needs a sentence for it.
+- DEFINE THE APPARATUS, not only the symbols: a computation model, cost measure, or algorithmic input must be precise enough to reproduce the paper's own numbers. Re-derive one before writing a count.
+- Length follows the argument, never a budget: as short as the mathematics allows, as long as self-containedness requires. Do not pad with restatement or motivation, and do not compress by dropping a display.
 - SELF-CONTAINED PROSE: the proof must read as a standard mathematical argument with NO reference to the formalization in reader-visible text. Never write "Lean writes/represents…", "in Lean", "the Lean …", "the formal proof/definition/statement", "machine-checked", or "the formalization". State the mathematics directly — write "the pooled supremum equals the integral …", not "Lean writes the pooled supremum as …". Lean is named ONLY in the invisible `% lean: <decl>` comments, never in prose.
 - NO LEAN IDENTIFIERS AS MATH: never put a Lean declaration name into reader-visible math — not a camelCase decl name, not a decl applied to its Lean arguments (e.g. `someSchedule α γ a c n`), not a field projection (e.g. `(someConstant …).field`), not a scaffolding alias. Always use the paper's own notation from the notation table / the statement (a schedule written `q_n`, a rate exponent `r`, a constant `\bar u`, …). A raw Lean identifier renders as un-mathematical text and is the single clearest machine-generated tell; the `% lean:` comment is where the Lean name belongs.
+- NO TRANSCRIBED LEAN EXPRESSIONS. Banning Lean NAMES is not enough: do not copy the literal SHAPE of a Lean term either. If the Lean instantiates a general formula at fixed values, either state the general form and name the values, or give the reduced number — never the half-substituted expression with anonymous constants. A display no reader can motivate is the tell.
 - Each numbered step ends with a LaTeX comment `% lean: <declaration name>` naming the Lean lemma/step it renders.
-- Where the proof invokes an auxiliary lemma that has its own environment, cite it by its paper label, not by Lean name.
+- Where the proof invokes an auxiliary lemma that has its own environment, cite it by its paper label, not by Lean name. The auxiliary environments above are annotated with `% realizes Lean declaration: <decl>` — when the Lean route invokes that declaration, the correct rendering IS a `\cref` to that environment (stating what it supplies in the paper's notation), never an inline re-derivation of content the paper already states.
 - When the cited-dependency list is nonempty, invoke that published conclusion with the supplied `\citep{...}` and locator in ordinary mathematical prose. Do not call it an assumption of this paper and do not claim to re-prove it. The theorem-local footnote separately records the machine-verification boundary.
 - If the Lean route is unclear at any step, output `UNCLEAR: <what is unclear>` and stop — do not improvise a classical argument.
 - Output ONLY the LaTeX proof block: \begin{proof}[Proof of ...] ... \end{proof}.

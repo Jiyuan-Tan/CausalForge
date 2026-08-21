@@ -16,7 +16,7 @@ describe("cache key formulas are byte-stable", () => {
         envBody: "BODY", mapping: "F.lean:decl:3", leanStatement: "STMT",
         refDefs: "DEFS", citedDependencies: "CITED",
       }),
-    ).toBe("f6741bb319146cf7c9706aede0c027954ab7cbba67d2e06bedccb90d8e84998a");
+    ).toBe("48b289c8f51566fc0672af2bcf131f5cff0219d663d983d679afded933b3c22e");
   });
 
   it("sectionCacheKey (sections/_cache_keys.json)", () => {
@@ -45,9 +45,9 @@ describe("cache key formulas are byte-stable", () => {
   // proofAuditCacheKey embeds PRESENTATION_PROSE_POLICY_VERSION, whose bumps are
   // INTENTIONAL whole-cache invalidations — so pin the composition, not raw hex.
   it("proofAuditCacheKey (proof_audit_cache.json) — layout pin", () => {
-    const parts = { proofTex: "P", leanPointer: "L", leanProofCacheSource: "S", notationTable: "| a | b | c | d |" };
+    const parts = { proofTex: "P", leanPointer: "L", leanProofCacheSource: "S", notationTable: "| a | b | c | d |", auditPromptFp: "F", targetStatement: "T" };
     expect(proofAuditCacheKey(parts)).toBe(
-      hashEnvBody(`${PRESENTATION_PROSE_POLICY_VERSION}|P|L|S|${proofAuditSemanticNotation(parts.notationTable)}`),
+      hashEnvBody(`${PRESENTATION_PROSE_POLICY_VERSION}|F|T|P|L|S|${proofAuditSemanticNotation(parts.notationTable)}`),
     );
   });
 });

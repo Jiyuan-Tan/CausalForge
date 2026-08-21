@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { FormalLayerSource, type FormalLayerSource as FormalLayer } from "./formal_layer.js";
 import { LeanSnippets, type LeanSnippets as SnippetBundle } from "./types.js";
 
-type AuditCache = Record<string, { key?: string; verdict?: string }>;
+type AuditCache = Record<string, { verdict?: string }>;
 
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
 
@@ -37,7 +37,6 @@ export function buildVerificationContract(
       title: block.title,
       status: block.status,
       paper_statement: block.body,
-      paper_statement_hash: block.body_hash,
       external_dependencies: block.cited_dependencies,
       lean: snippet
         ? {
@@ -49,9 +48,7 @@ export function buildVerificationContract(
         : null,
       audits: {
         statement: statementAudit[block.obj_id]?.verdict ?? null,
-        statement_key: statementAudit[block.obj_id]?.key ?? null,
         proof: proofAudit[block.obj_id]?.verdict ?? null,
-        proof_key: proofAudit[block.obj_id]?.key ?? null,
       },
     };
   });

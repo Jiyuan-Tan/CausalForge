@@ -19,7 +19,6 @@ const block = (obj_id: string, kind: string, env: string, body: string) => ({
   status: "matched",
   provenance: "test",
   cited_dependencies: [],
-  body_hash: "h",
 });
 
 const QID = "q_test";

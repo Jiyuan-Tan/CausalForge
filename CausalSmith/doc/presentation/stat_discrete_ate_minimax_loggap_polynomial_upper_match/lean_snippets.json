@@ -1,5 +1,5 @@
 {
-  "commit": "e9985812a5308ff91d3863abd80990252d4fd114",
+  "commit": "9e50bac48c19ec217cddf7e9b996ce4fbc9ad12e",
   "snippets": {
     "ass:iid-sampling": {
       "decl": "(composite)",
@@ -131,48 +131,6 @@
         }
       ]
     },
-    "def:falling-factorial": {
-      "decl": "fallingFactorial",
-      "file": "Helpers/Estimator.lean",
-      "line": 45,
-      "statement": "/-- Falling factorial, reusing Mathlib's `Nat.descFactorial`. -/\ndef fallingFactorial (z r : ℕ) : ℕ := z.descFactorial r",
-      "sorry_free": true,
-      "axioms": null
-    },
-    "def:hybrid-estimator-handle": {
-      "decl": "(composite)",
-      "file": "Helpers/Estimator.lean",
-      "line": 0,
-      "statement": "",
-      "sorry_free": true,
-      "axioms": null,
-      "components": [
-        {
-          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.hybridEstimator",
-          "statement": "noncomputable def hybridEstimator {n d : ℕ} (sample : Fin n → Obs d) : ℝ :=\n  max (-1) (min 1 (heavyContribution sample + lightContribution sample))"
-        },
-        {
-          "label": "Obs",
-          "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
-        }
-      ]
-    },
-    "def:centered-estimator": {
-      "decl": "centeredEstimator",
-      "file": "Helpers/Estimator.lean",
-      "line": 388,
-      "statement": "/-- The sample average of a bounded one-observation score obtained by centering the\nbinary outcome at one half, doubling it, and attaching the sign of the treatment\nindicator -- positive for treated units and negative for controls. -/\nnoncomputable def centeredEstimator {n d : ℕ} (sample : Fin n → Obs d) : ℝ :=\n  (n : ℝ)⁻¹ * ∑ i : Fin n,\n    2 * (if (sample i).2.1 then 1 else -1) *\n      ((if (sample i).2.2 then 1 else 0) - 1 / 2)",
-      "sorry_free": true,
-      "axioms": null
-    },
-    "def:selected-estimator": {
-      "decl": "selectedEstimator",
-      "file": "Helpers/CombinedEnvelope.lean",
-      "line": 8,
-      "statement": "/-- Deterministic choice between the hybrid and centered estimators. -/\nnoncomputable def selectedEstimator (C epsilon : ℝ) {n d : ℕ} :\n    (Fin n → Obs d) → ℝ :=\n  if C * minimaxRate n d ≤ 1 / (n : ℝ) + 4 * (1 / 2 - epsilon) ^ 2 then\n    hybridEstimator\n  else centeredEstimator",
-      "sorry_free": true,
-      "axioms": null
-    },
     "def:minimax-risk": {
       "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.minimaxRisk",
       "file": "Basic.lean",
@@ -197,6 +155,36 @@
       "sorry_free": true,
       "axioms": null
     },
+    "def:sample-splits": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.splitCellCount",
+      "file": "Helpers/Estimator.lean",
+      "line": 0,
+      "statement": "/-- Count of one `(k,a,y)` atom in a split. -/\ndef splitCellCount {n d : ℕ} (sample : Fin n → Obs d) (j : Fin 2)\n    (k : Fin d) (a y : Fin 2) : ℕ :=\n  ((splitIndices n j).filter\n    (fun i => sample i = (k, finTwoEquiv a, finTwoEquiv y))).card",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:hybrid-estimator-handle": {
+      "decl": "(composite)",
+      "file": "Helpers/Estimator.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.hybridEstimator",
+          "statement": "noncomputable def hybridEstimator {n d : ℕ} (sample : Fin n → Obs d) : ℝ :=\n  max (-1) (min 1 (heavyContribution sample + lightContribution sample))"
+        },
+        {
+          "label": "Obs",
+          "statement": "/-- One observed unit `(X,A,Y)`. -/\nabbrev Obs (d : ℕ) := Fin d × Bool × Bool"
+        },
+        {
+          "label": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.splitCellCount",
+          "statement": "/-- Count of one `(k,a,y)` atom in a split. -/\ndef splitCellCount {n d : ℕ} (sample : Fin n → Obs d) (j : Fin 2)\n    (k : Fin d) (a y : Fin 2) : ℕ :=\n  ((splitIndices n j).filter\n    (fun i => sample i = (k, finTwoEquiv a, finTwoEquiv y))).card"
+        }
+      ]
+    },
     "thm:sharp-minimax-fixed-interior": {
       "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.sharp_minimax_fixed_interior",
       "file": "T_SharpMinimaxFixedInterior.lean",
@@ -213,27 +201,11 @@
       "sorry_free": true,
       "axioms": null
     },
-    "lem:light-cell-polynomial": {
-      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.light_cell_polynomial",
-      "file": "Helpers/LightCell.lean",
-      "line": 0,
-      "statement": "/-- The factorial-polynomial light branch attains the fixed-interior minimax rate.\nThe constants are chosen before the law and are allowed to depend only on the\nfixed overlap constant. -/\nlemma light_cell_polynomial (epsilon : ℝ) (he0 : 0 < epsilon)\n    (he1 : epsilon ≤ 1 / 2) :\n    HybridEstimatorComputable ∧\n      ∃ C_epsilon c_epsilon : ℝ,\n        0 < C_epsilon ∧ 0 < c_epsilon ∧\n        ∀ (n d : ℕ) (P : DiscreteLaw d)\n          (mu_n : Measure (Fin n → Obs d)),\n          ExperimentClass n epsilon P mu_n →\n          (d : ℝ) ≤ c_epsilon * n * Real.log n →\n          componentErrorMSE mu_n lightContribution (targetLight P) ≤\n            C_epsilon * minimaxRate n d",
-      "sorry_free": true,
-      "axioms": null
-    },
     "lem:pilot-sandwich": {
       "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.pilot_sandwich",
       "file": "Helpers/PilotSandwich.lean",
       "line": 0,
       "statement": "/-- Polynomially small failure probability for the pilot heavy/light sandwich. -/\nlemma pilot_sandwich :\n    (∀ K c : ℝ, 0 < K → 0 < c →\n        -- @realizes c(positive constant in d ≤ c n log n)\n        ∃ t₀ C N, 0 < t₀ ∧ 0 < C ∧ ∀ t : ℝ, t₀ ≤ t →\n            ∀ (n d : ℕ) (P : DiscreteLaw d)\n              (mu_n : Measure (Fin n → Obs d)),\n              N ≤ n → (d : ℝ) ≤ c * n * logScale n →\n              IidSampling P mu_n →\n              mu_n.real (pilotBadEvent P t) ≤ C * Real.rpow n (-K)) ∧\n      (∀ c : ℝ, 0 < c →\n        -- @realizes c(positive constant in the K=4 specialization)\n        ∃ C N, 0 < C ∧\n          ∀ (n d : ℕ) (P : DiscreteLaw d)\n            (mu_n : Measure (Fin n → Obs d)),\n            N ≤ n → (d : ℝ) ≤ c * n * logScale n →\n            IidSampling P mu_n →\n            mu_n.real (pilotBadEvent P 256) ≤ C * Real.rpow n (-4))",
-      "sorry_free": true,
-      "axioms": null
-    },
-    "lem:universal-heavy-cell-rate": {
-      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.universal_heavy_cell_rate",
-      "file": "Helpers/HeavyCell.lean",
-      "line": 0,
-      "statement": "/-- The aggregate ratio branch has the same rate on pilot-heavy categories. -/\nlemma universal_heavy_cell_rate (epsilon : ℝ) (he0 : 0 < epsilon)\n    (he1 : epsilon < 1 / 2) :\n    ∃ C_epsilon rho_epsilon : ℝ, ∃ N_epsilon : ℕ,\n      0 < C_epsilon ∧ 0 < rho_epsilon ∧\n      ∀ (n d : ℕ) (P : DiscreteLaw d)\n        (mu_n : Measure (Fin n → Obs d)),\n        N_epsilon ≤ n →\n        (d : ℝ) ≤ rho_epsilon * n * Real.log n →\n        ExperimentClass n epsilon P mu_n →\n        componentErrorMSE mu_n heavyContribution (targetHeavy P) ≤\n          C_epsilon * minimaxRate n d",
       "sorry_free": true,
       "axioms": null
     },
@@ -274,6 +246,110 @@
       "file": "Helpers/CombinedEnvelope.lean",
       "line": 0,
       "statement": "/-- The deterministic smaller-bound selector attains the combined envelope. -/\nlemma combined_upper_envelope (epsilon C_epsilon rho_epsilon : ℝ)\n    (N_epsilon : ℕ) (he0 : 0 < epsilon) (he1 : epsilon < 1 / 2)\n    (hC : 0 < C_epsilon) (hrho : 0 < rho_epsilon)\n    (hHybrid : ∀ n d : ℕ, 0 < n → N_epsilon ≤ n →\n      (d : ℝ) ≤ rho_epsilon * n * Real.log n →\n      worstCaseMSE n d epsilon hybridEstimator ≤\n        C_epsilon * minimaxRate n d) :\n    ∀ n d : ℕ, 0 < n → N_epsilon ≤ n →\n      (d : ℝ) ≤ rho_epsilon * n * Real.log n →\n      let K_epsilon",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:calibration-consequences": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.large_calibration_bounds",
+      "file": "Helpers/LightCellRateAsymptotic.lean",
+      "line": 0,
+      "statement": "/-- Establishes the stated upper bound for large calibration bounds. -/\nlemma large_calibration_bounds {n : ℕ}\n    (hcut : calibrationCutoff ≤ n) (hLlarge : 240 ≤ logScale n) :\n    let L",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:factorial-moment-mean": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_factorialPolynomialContribution_trunc",
+      "file": "Helpers/LightCell.lean",
+      "line": 0,
+      "statement": "/-- Evaluates or bounds the stated integral involving integral factorial Polynomial Contribution trunc. -/\nlemma integral_factorialPolynomialContribution_trunc {n d : ℕ}\n    (P : DiscreteLaw d) (k : Fin d)\n    (hcut : calibrationCutoff ≤ n) :\n    ∫ ω : ℕ → Obs d,\n        factorialPolynomialContribution (fun i : Fin n => ω i) k\n        ∂(Measure.infinitePi (fun _ : ℕ => obsLaw P)) =\n      (cellApproxPolynomial (polynomialDegree n) (bandwidth n)).eval\n        (cellVector P k)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:coefficient-envelope": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.cellApproxPolynomial_coeff_envelope",
+      "file": "Helpers/ChebyshevCertificate.lean",
+      "line": 0,
+      "statement": "/-- The numerical absolute-coefficient certificate with base `A=6`. -/\nlemma cellApproxPolynomial_coeff_envelope (M : ℕ) {B : ℝ} (hB : 0 < B)\n    (v : Cell → ℝ) (hv : ∀ i, 0 ≤ v i) :\n    ∑ r ∈ (cellApproxPolynomial M B).support,\n        |(cellApproxPolynomial M B).coeff r| *\n          r.prod (fun i e => (v i) ^ e) ≤\n      B * 6 ^ M *\n        max ((vectorMass v / B) ^ 2) ((vectorMass v / B) ^ M)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:chebyshev-reciprocal-certificate": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.cellApproxPolynomial_error",
+      "file": "Helpers/ChebyshevCertificate.lean",
+      "line": 0,
+      "statement": "/-- Cone approximation bound for the explicit four-cell polynomial. -/\nlemma cellApproxPolynomial_error {M : ℕ} (hM : 0 < M) {B epsilon : ℝ}\n    {u : Cell → ℝ} (he0 : 0 < epsilon) (hu : u ∈ overlapCone epsilon)\n    (hB : vectorMass u ≤ B) :\n    |(cellApproxPolynomial M B).eval u - cellPhi u| ≤\n      2 * B / (epsilon * M ^ 2)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:heavy-residual-bound": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_fixedRatioResidual_sq_le",
+      "file": "Helpers/HeavyCellMoments.lean",
+      "line": 0,
+      "statement": "/-- Aggregate fixed-set residual variance.  Cross-cell cancellation preserves\nthe parametric order and the only overlap loss is one factor epsilon inverse. -/\nlemma integral_fixedRatioResidual_sq_le\n    {I : Type*} [Fintype I] [DecidableEq I] {d : ℕ} {epsilon : ℝ}\n    (P : DiscreteLaw d) (hOverlap : Overlap epsilon P) (hepsilon : 0 < epsilon)\n    (H : Finset (Fin d)) (a : Fin 2)\n    (hp : ∀ k ∈ H, 0 < cellMass P k) :\n    ∫ z : I → Obs d, (fixedRatioResidual P z H a) ^ 2\n        ∂(Measure.pi (fun _ : I => obsLaw P)) ≤\n      (2 * (Fintype.card I : ℝ) / epsilon) *\n        ∑ k ∈ H, cellMass P k",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:missing-arm-envelope": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_fixedMissingCount_sq_le",
+      "file": "Helpers/HeavyCellMoments.lean",
+      "line": 0,
+      "statement": "/-- Aggregate second-moment bound for the missing-arm count on a fixed set of\nheavy categories.  The diagonal contributes at most `m`; the off-diagonal\nand exponentially small part of the diagonal combine into the square of one\nmass-exponential sum. -/\nlemma integral_fixedMissingCount_sq_le {J : Type*} [Fintype J] [DecidableEq J]\n    {d : ℕ} {epsilon B : ℝ} (P : DiscreteLaw d) (H : Finset (Fin d))\n    (a : Bool) (hm : 3 ≤ Fintype.card J) (hOverlap : Overlap epsilon P)\n    (hepsilon : 0 < epsilon) (hB : 0 < B)\n    (hp : ∀ k ∈ H, B ≤ cellMass P k) :\n    ∫ z : J → Obs d, (fixedMissingCount z H a) ^ 2\n        ∂(Measure.pi (fun _ : J => obsLaw P)) ≤\n      (Fintype.card J : ℝ) + (Fintype.card J : ℝ) ^ 2 *\n        (H.card /\n          (((((Fintype.card J - 2 : ℕ) : ℝ) / 2 * epsilon) ^ 2) * B)) ^ 2",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:factorial-product-moment": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_factorialMonomial_mul_trunc_le",
+      "file": "Helpers/LightCellAssembly.lean",
+      "line": 0,
+      "statement": "/-- Evaluates or bounds the stated integral involving integral factorial Monomial mul trunc le. -/\nlemma integral_factorialMonomial_mul_trunc_le {n d : ℕ} (P : DiscreteLaw d)\n    (k : Fin d) (r s : MultiIndex)\n    (hn : 0 < splitSize n 1) (hdeg : multiDegree r ≤ multiDegree s)\n    (hsize : 4 * (multiDegree s) ^ 2 ≤ splitSize n 1) :\n    ∫ ω : ℕ → Obs d,\n        factorialMonomial (fun i : Fin n => ω i) k r *\n          factorialMonomial (fun i : Fin n => ω i) k s\n        ∂(Measure.infinitePi (fun _ : ℕ => obsLaw P)) ≤\n      Real.exp 1 *\n        (∏ ay : Cell, (cellVector P k ay) ^ (r ay)) *\n        ∏ ay : Cell,\n          (cellVector P k ay + (multiDegree s : ℝ) / splitSize n 1) ^ (s ay)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:coefficient-sum-certificate": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.gpos_bound",
+      "file": "Helpers/ChebyshevCertificate.lean",
+      "line": 0,
+      "statement": "/-- Establishes the stated upper bound for gpos bound. -/\nlemma gpos_bound {M : ℕ} (hM : 0 < M) {z : ℝ} (hz : 0 ≤ z) :\n    gpos M z ≤ (6:ℝ)^M * max 1 (z^(M-2))",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:universal-heavy-cell-rate": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.universal_heavy_cell_rate",
+      "file": "Helpers/HeavyCell.lean",
+      "line": 0,
+      "statement": "/-- The aggregate ratio branch has the same rate on pilot-heavy categories. -/\nlemma universal_heavy_cell_rate (epsilon : ℝ) (he0 : 0 < epsilon)\n    (he1 : epsilon < 1 / 2) :\n    ∃ C_epsilon rho_epsilon : ℝ, ∃ N_epsilon : ℕ,\n      0 < C_epsilon ∧ 0 < rho_epsilon ∧\n      ∀ (n d : ℕ) (P : DiscreteLaw d)\n        (mu_n : Measure (Fin n → Obs d)),\n        N_epsilon ≤ n →\n        (d : ℝ) ≤ rho_epsilon * n * Real.log n →\n        ExperimentClass n epsilon P mu_n →\n        componentErrorMSE mu_n heavyContribution (targetHeavy P) ≤\n          C_epsilon * minimaxRate n d",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:factorial-moment-variance": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_factorialPolynomial_centered_sq_le",
+      "file": "Helpers/LightCellRateDeterministic.lean",
+      "line": 0,
+      "statement": "/-- Evaluates or bounds the stated integral involving integral factorial Polynomial centered sq le. -/\nlemma integral_factorialPolynomial_centered_sq_le {n d : ℕ}\n    (P : DiscreteLaw d) (k : Fin d) (hn : 0 < splitSize n 1)\n    (hM : 0 < polynomialDegree n) (hB : 0 < bandwidth n)\n    (hsize : 4 * polynomialDegree n ^ 2 ≤ splitSize n 1)\n    (hmassShift : cellMass P k +\n      4 * (polynomialDegree n : ℝ) / splitSize n 1 ≤ bandwidth n)\n    (hmass : cellMass P k ≤ bandwidth n) :\n    ∫ ω : ℕ → Obs d,\n        (factorialPolynomialContribution (fun i : Fin n => ω i) k -\n          sparsePolynomialMean P k (polynomialDegree n) (bandwidth n)) ^ 2\n        ∂(Measure.infinitePi (fun _ : ℕ => obsLaw P)) ≤\n      8 * (Real.exp 1 + 1) *\n        (bandwidth n * 6 ^ polynomialDegree n) ^ 2",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:factorial-moment-covariance": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_factorialPolynomial_centered_cross_le",
+      "file": "Helpers/LightCellRateDeterministic.lean",
+      "line": 0,
+      "statement": "/-- The off-diagonal centered covariance estimate, packaged separately so that\nthe pilot-selection layer need not normalize a large factorial expression. -/\nlemma integral_factorialPolynomial_centered_cross_le {n d : ℕ}\n    (P : DiscreteLaw d) (k l : Fin d) (hkl : k ≠ l)\n    (hM : 0 < polynomialDegree n) (hB : 0 < bandwidth n)\n    (hsize : 4 * polynomialDegree n ^ 2 ≤ splitSize n 1)\n    (hk : cellMass P k ≤ bandwidth n)\n    (hl : cellMass P l ≤ bandwidth n) :\n    ∫ ω : ℕ → Obs d,\n        (factorialPolynomialContribution (fun i : Fin n => ω i) k -\n          sparsePolynomialMean P k (polynomialDegree n) (bandwidth n)) *\n        (factorialPolynomialContribution (fun i : Fin n => ω i) l -\n          sparsePolynomialMean P l (polynomialDegree n) (bandwidth n))\n        ∂(Measure.infinitePi (fun _ : ℕ => obsLaw P)) ≤\n      8 * (polynomialDegree n : ℝ) ^ 2 / splitSize n 1 *\n        (bandwidth n * 6 ^ polynomialDegree n) ^ 2",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:false-light-envelope": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.selectedFalseLightError_rate",
+      "file": "Helpers/LightCellRateAsymptotic.lean",
+      "line": 0,
+      "statement": "/-- Establishes the stated upper bound for selected False Light Error rate. -/\nlemma selectedFalseLightError_rate {n d : ℕ} {epsilon : ℝ}\n    (P : DiscreteLaw d) (hOverlap : Overlap epsilon P)\n    (hcut : calibrationCutoff ≤ n) (hLlarge : 240 ≤ logScale n) :\n    ∫ ω : ℕ → Obs d,\n        selectedFalseLightError P (fun i : Fin n => ω i) ^ 2\n        ∂(Measure.infinitePi (fun _ : ℕ => obsLaw P)) ≤\n      (8 * (Real.exp 1 + 1) * 8192 ^ 2) * lightAsymptoticRate n d",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:light-cell-polynomial": {
+      "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.light_cell_polynomial",
+      "file": "Helpers/LightCell.lean",
+      "line": 0,
+      "statement": "/-- The factorial-polynomial light branch attains the fixed-interior minimax rate.\nThe constants are chosen before the law and are allowed to depend only on the\nfixed overlap constant. -/\nlemma light_cell_polynomial (epsilon : ℝ) (he0 : 0 < epsilon)\n    (he1 : epsilon ≤ 1 / 2) :\n    HybridEstimatorComputable ∧\n      ∃ C_epsilon c_epsilon : ℝ,\n        0 < C_epsilon ∧ 0 < c_epsilon ∧\n        ∀ (n d : ℕ) (P : DiscreteLaw d)\n          (mu_n : Measure (Fin n → Obs d)),\n          ExperimentClass n epsilon P mu_n →\n          (d : ℝ) ≤ c_epsilon * n * Real.log n →\n          componentErrorMSE mu_n lightContribution (targetLight P) ≤\n            C_epsilon * minimaxRate n d",
       "sorry_free": true,
       "axioms": null
     },
@@ -807,6 +883,14 @@
       "sorry_free": true,
       "axioms": null
     },
+    "aux_centeredEstimator": {
+      "decl": "centeredEstimator",
+      "file": "Helpers/Estimator.lean",
+      "line": 388,
+      "statement": "/-- The sample average of a bounded one-observation score obtained by centering the\nbinary outcome at one half, doubling it, and attaching the sign of the treatment\nindicator -- positive for treated units and negative for controls. -/\nnoncomputable def centeredEstimator {n d : ℕ} (sample : Fin n → Obs d) : ℝ :=\n  (n : ℝ)⁻¹ * ∑ i : Fin n,\n    2 * (if (sample i).2.1 then 1 else -1) *\n      ((if (sample i).2.2 then 1 else 0) - 1 / 2)",
+      "sorry_free": true,
+      "axioms": null
+    },
     "aux_ControlZeroClass": {
       "decl": "ControlZeroClass",
       "file": "Helpers/LowerBound.lean",
@@ -852,6 +936,14 @@
       "file": "Basic.lean",
       "line": 367,
       "statement": "/-- Worst-case MSE of one measurable estimator over the experiment class. -/\n-- @realizes \\(\\mathsf R_{n,d,\\epsilon}\\)(supremum over the overlap experiment class)\nnoncomputable def worstCaseMSE (n d : ℕ) (epsilon : ℝ)\n    (est : (Fin n → Obs d) → ℝ) : ℝ :=\n  ⨆ P : ClassLaw n d epsilon, mse (productLaw P.1 n) est (ateFunctional P.1)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "aux_selectedEstimator": {
+      "decl": "selectedEstimator",
+      "file": "Helpers/CombinedEnvelope.lean",
+      "line": 8,
+      "statement": "/-- Deterministic choice between the hybrid and centered estimators. -/\nnoncomputable def selectedEstimator (C epsilon : ℝ) {n d : ℕ} :\n    (Fin n → Obs d) → ℝ :=\n  if C * minimaxRate n d ≤ 1 / (n : ℝ) + 4 * (1 / 2 - epsilon) ^ 2 then\n    hybridEstimator\n  else centeredEstimator",
       "sorry_free": true,
       "axioms": null
     },
@@ -1790,7 +1882,7 @@
     "integral_factorialPolynomialContribution_trunc": {
       "decl": "(composite)",
       "file": "Helpers/LightCell.lean",
-      "line": 194,
+      "line": 0,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
@@ -2154,7 +2246,7 @@
     "integral_factorialMonomial_mul_trunc_le": {
       "decl": "(composite)",
       "file": "Helpers/LightCellAssembly.lean",
-      "line": 300,
+      "line": 0,
       "statement": "",
       "sorry_free": true,
       "axioms": null,

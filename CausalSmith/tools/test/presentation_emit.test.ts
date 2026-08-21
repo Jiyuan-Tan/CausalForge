@@ -50,6 +50,10 @@ describe("bundle join", () => {
     expect(labels.get("P-2")).toBe("Assumption 1");
     expect(labels.get("P-1")).toBe("Definition 1");
     expect(labels.get("T-1")).toBe("Theorem 1");
+    // an algorithm has its own counter class, numbered independently of definitions
+    const withAlg = parseAnchoredEnvs(PAPER + "\\begin{algorithmv}{def:est}[Est]\\begin{enumerate}\\item s\\end{enumerate}\\end{algorithmv}");
+    expect(paperLabels(withAlg).get("def:est")).toBe("Algorithm 1");
+    expect(paperLabels(withAlg).get("P-1")).toBe("Definition 1");
 
     const bundle = await buildBundle({
       envs,
@@ -326,10 +330,30 @@ x=1.
     expect(html).toContain("References");
     expect(html).not.toContain("PSMITHBLOCK");
     expect(html).not.toContain("\\begin{theoremv}");
-    expect(html).toContain('definition <a class="objref" href="#obj-P-1">1</a>');
-    expect(html).toContain('theorem <a class="objref" href="#obj-T-1">1</a>');
-    expect(html).toContain("section 2");
+    // House style: cref kinds always print capitalized, in any sentence position.
+    expect(html).toContain('Definition <a class="objref" href="#obj-P-1">1</a>');
+    expect(html).toContain('Theorem <a class="objref" href="#obj-T-1">1</a>');
+    expect(html).toContain("Section 2");
     expect(html).not.toContain("\\cref");
+  });
+
+  it("renders an algorithmv as a boxed Algorithm block with its steps as an ordered list", { timeout: 120_000 }, async () => {
+    const tex = `\\documentclass{article}\\begin{document}
+See \\cref{obj:def:est}.
+\\begin{algorithmv}{def:est}[Estimator \\(\\hat\\theta\\)]
+\\begin{enumerate}
+\\item Split the sample into \\(K\\) folds.
+\\item Output \\[ \\hat\\theta := \\frac1K\\sum_j N_j. \\]
+\\end{enumerate}
+\\end{algorithmv}
+\\end{document}`;
+    const html = await tex2html(tex, []);
+    expect(html).toContain('class="formal-block kind-algorithm"');
+    expect(html).toContain('data-objid="def:est"');
+    expect(html).toContain("Algorithm 1");
+    expect(html).toContain('Algorithm <a class="objref" href="#obj-def:est">1</a>');
+    expect(html).toMatch(/<ol[^>]*>[\s\S]*<li>[\s\S]*Split the sample[\s\S]*<\/li>[\s\S]*<li>[\s\S]*N_j[\s\S]*<\/li>[\s\S]*<\/ol>/);
+    expect(html).not.toContain("\\begin{enumerate}");
   });
 
   it("keeps bracketed math titles intact in formal blocks", { timeout: 120_000 }, async () => {

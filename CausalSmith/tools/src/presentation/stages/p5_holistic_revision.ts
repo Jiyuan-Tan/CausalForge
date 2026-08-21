@@ -1,16 +1,20 @@
-import { createHash } from "node:crypto";
-import { readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { digestPaths, texFilesUnder } from "../assembly_freshness.js";
 import { presentationPrompt } from "../prompt_io.js";
 import type { StageIO } from "../pipeline.js";
 import type { PriorReview } from "../revision_brief.js";
 import { findingFingerprint, revisionMode } from "../revision_routing.js";
 import { MODELS } from "../../models.js";
-import { FormalLayerSource, normalizeCitedScopeFootnotes, texEnvFor, type FormalBlock } from "../formal_layer.js";
-import { normalizeFrozenEnvs, parseAnchoredEnvs } from "../tex_anchors.js";
+import { FormalLayerSource } from "../formal_layer.js";
+import { applyProseRevision } from "../prose_revision.js";
+import { loadBankNarrative } from "../bank.js";
 
 async function editableFiles(outDir: string): Promise<string[]> {
-  return [join(outDir, "paper.tex")];
+  // The AUTHORED sources: the reviser edits these, and the pipeline reassembles
+  // paper.tex from them (P2 reassemble mode) so revisions persist in the sources
+  // and survive later re-entries/redrafts instead of living only in paper.tex.
+  return [join(outDir, "front_matter.tex"), ...(await texFilesUnder(outDir, ["sections", "proofs"]))];
 }
 
 function protectedFiles(outDir: string): string[] {
@@ -24,30 +28,20 @@ function protectedFiles(outDir: string): string[] {
   ];
 }
 
-async function protectedAuthoredCaches(outDir: string): Promise<string[]> {
-  const paths = [
+function protectedAuthoredCaches(outDir: string): string[] {
+  // outline.md is protected: the section set/order is P1's job — a structural
+  // finding routes to a P1 re-plan, never to this reviser. paper.tex and
+  // appendix_proofs.tex are DERIVED (P2 reassembles them from the edited sources).
+  return [
     join(outDir, "outline.md"),
-    join(outDir, "front_matter.tex"),
-    join(outDir, "appendix_proofs.tex"),
     join(outDir, "references.bib"),
+    join(outDir, "paper.tex"),
+    join(outDir, "appendix_proofs.tex"),
   ];
-  for (const dir of ["sections", "proofs"]) {
-    const names = await readdir(join(outDir, dir)).catch(() => []);
-    paths.push(...names.filter((name) => name.endsWith(".tex")).sort().map((name) => join(outDir, dir, name)));
-  }
-  return paths;
 }
 
-async function contentDigest(paths: string[]): Promise<string> {
-  const hash = createHash("sha256");
-  for (const path of paths) {
-    hash.update(path);
-    hash.update("\0");
-    hash.update(await readFile(path).catch(() => Buffer.from("")));
-    hash.update("\0");
-  }
-  return hash.digest("hex");
-}
+/** Same-process before/after comparison only — absolute-path labels, missing files tolerated. */
+const contentDigest = (paths: string[]): Promise<string> => digestPaths(paths, { missingAsEmpty: true });
 
 // P4 owns these purely derived publishable views of the authored manuscript. If
 // P5 changes an editable source, retaining any one of them would make a directory
@@ -74,64 +68,6 @@ async function invalidateP4DerivedArtifacts(outDir: string): Promise<void> {
   await Promise.all(P4_DERIVED_ARTIFACTS.map((name) => rm(join(outDir, name), { force: true })));
 }
 
-/**
- * Reinsert any frozen environments that a holistic prose revision deleted.
- * Existing bodies are first reset to their canonical text. Missing blocks are
- * placed relative to their nearest surviving neighbour in the pre-revision
- * source, so the reviser's surrounding prose is preserved. Adding or moving an
- * anchored environment across authored files is rejected: P5 is a manuscript
- * revision stage, not a formal-layer editor.
- */
-export function restoreFrozenEnvsAfterRevision(
-  before: string,
-  revised: string,
-  canonical: Map<string, string>,
-): string {
-  const beforeIds = parseAnchoredEnvs(before).map((e) => e.obj_id).filter((id) => canonical.has(id));
-  const beforeSet = new Set(beforeIds);
-  const revisedIds = parseAnchoredEnvs(revised).map((e) => e.obj_id).filter((id) => canonical.has(id));
-  const added = revisedIds.filter((id) => !beforeSet.has(id));
-  if (added.length > 0) {
-    throw new Error(`P5 holistic reviser moved/added frozen environment(s): ${[...new Set(added)].join(", ")}`);
-  }
-  const duplicate = revisedIds.find((id, i) => revisedIds.indexOf(id) !== i);
-  if (duplicate) throw new Error(`P5 holistic reviser duplicated frozen environment: ${duplicate}`);
-  const survivingOrder = beforeIds.filter((id) => revisedIds.includes(id));
-  if (revisedIds.some((id, i) => id !== survivingOrder[i])) {
-    throw new Error("P5 holistic reviser reordered frozen environments");
-  }
-  if (beforeIds.length === 0) return revised;
-
-  let out = normalizeFrozenEnvs(revised, canonical);
-  for (let i = 0; i < beforeIds.length; i++) {
-    const id = beforeIds[i];
-    if (parseAnchoredEnvs(out).some((e) => e.obj_id === id)) continue;
-    const env = canonical.get(id)!;
-    const present = new Set(parseAnchoredEnvs(out).map((e) => e.obj_id));
-    const next = beforeIds.slice(i + 1).find((candidate) => present.has(candidate));
-    const prev = [...beforeIds.slice(0, i)].reverse().find((candidate) => present.has(candidate));
-    if (next) {
-      const marker = canonical.get(next)!;
-      const at = out.indexOf(marker);
-      if (at >= 0) {
-        out = `${out.slice(0, at)}${env}\n\n${out.slice(at)}`;
-        continue;
-      }
-    }
-    if (prev) {
-      const marker = canonical.get(prev)!;
-      const at = out.indexOf(marker);
-      if (at >= 0) {
-        const end = at + marker.length;
-        out = `${out.slice(0, end)}\n\n${env}${out.slice(end)}`;
-        continue;
-      }
-    }
-    out = `${out.replace(/\s*$/, "")}\n\n${env}\n`;
-  }
-  return normalizeFrozenEnvs(out, canonical);
-}
-
 export async function stageP5HolisticRevision(
   io: StageIO,
   review: PriorReview,
@@ -145,7 +81,7 @@ export async function stageP5HolisticRevision(
   const sourceBefore = new Map<string, string>();
   for (const path of files) sourceBefore.set(path, await readFile(path, "utf8").catch(() => ""));
   const before = await contentDigest(files);
-  const protectedPaths = [...protectedFiles(io.outDir), ...await protectedAuthoredCaches(io.outDir)];
+  const protectedPaths = [...protectedFiles(io.outDir), ...protectedAuthoredCaches(io.outDir)];
   const protectedBefore = await contentDigest(protectedPaths);
   const formalLayer = FormalLayerSource.safeParse(
     JSON.parse(await readFile(join(io.outDir, "formal_layer.json"), "utf8").catch(() => "{}")),
@@ -154,11 +90,25 @@ export async function stageP5HolisticRevision(
   const relatedWork = await readFile(join(io.outDir, "related_work_brief.md"), "utf8").catch(() => "");
   const pass = io.state.p5_revision_passes + 1;
   const mode = revisionMode(repairable);
+  // Context parity with an orchestrator revision: the reviser sees the FULL review
+  // (blocked findings marked context-only) and the research-stage narrative/charter,
+  // not just the routed rewrite subset.
+  const repairableSet = new Set(repairable);
+  const blocked = review.findings.filter((f) => !repairableSet.has(f));
+  const narrative = await loadBankNarrative(io.ctx.repoRoot, io.ctx.qid, io.ctx.spec).catch(() => null);
+  const narrativeText = narrative
+    ? [
+        narrative.interpretation && `Interpretation:\n${narrative.interpretation}`,
+        narrative.honestScope && `Honest scope (the entry's own do-not-claim charter — never contradict it):\n${narrative.honestScope}`,
+      ].filter(Boolean).join("\n\n")
+    : "";
   const prompt = await presentationPrompt("p5_holistic_revision", {
     out_dir: io.outDir,
     revision_pass: String(pass),
     revision_mode: mode,
     p5_review: JSON.stringify({ ...review, findings: repairable }, null, 2),
+    blocked_findings: blocked.length > 0 ? JSON.stringify(blocked, null, 2) : "(none)",
+    contribution_narrative: narrativeText || "(none recorded)",
     verification_contract: verificationContract,
     related_work_brief: relatedWork,
     editable_files: files.map((path) => `- ${path}`).join("\n"),
@@ -173,16 +123,18 @@ export async function stageP5HolisticRevision(
   });
   const protectedAfter = await contentDigest(protectedPaths);
   if (protectedAfter !== protectedBefore) {
-    throw new Error("P5 holistic reviser modified a protected formal or P2 cache artifact; restore it before continuing.");
+    throw new Error("P5 holistic reviser modified a protected formal or derived artifact (outline.md, references.bib, paper.tex, appendix_proofs.tex and the formal layer are not editable — edit the authored sources); restore it before continuing.");
   }
   if (formalLayer.success) {
-    const envBlocks = formalLayer.data.blocks.filter((b): b is FormalBlock & { env: NonNullable<FormalBlock["env"]> } => b.env != null);
-    const canonical = new Map(envBlocks.map((b) => [b.obj_id, texEnvFor(b)]));
     const restoredByPath = new Map<string, string>();
     for (const path of files.filter((p) => p.endsWith(".tex"))) {
       const revised = await readFile(path, "utf8").catch(() => "");
-      let restored = restoreFrozenEnvsAfterRevision(sourceBefore.get(path) ?? "", revised, canonical);
-      restored = normalizeCitedScopeFootnotes(restored, envBlocks);
+      const restored = applyProseRevision({
+        before: sourceBefore.get(path) ?? "",
+        revised,
+        blocks: formalLayer.data.blocks,
+        who: "P5 holistic reviser",
+      });
       if (restored !== revised) restoredByPath.set(path, restored);
     }
     // Validate every authored file before writing any repair. A cross-file move

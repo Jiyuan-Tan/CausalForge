@@ -55,7 +55,7 @@ export async function stageP0(io: StageIO): Promise<void> {
   }
   const prompt = await presentationPrompt("p0_literature", {
     topic: io.bank.readme.topic ?? io.ctx.qid,
-    proposal_tex: anchorLiterature(io),
+    research_writeup_tex: anchorLiterature(io),
     source_bibliography: JSON.stringify(io.bank.sourceBibliography, null, 2),
     // The full reviews jsonl is too large to inline; the proposal already
     // carries the anchor-literature map, which is what P0 needs.

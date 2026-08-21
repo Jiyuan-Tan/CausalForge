@@ -37,7 +37,6 @@ const formalLayer = (withFrozen = false) => JSON.stringify({
     status: "matched",
     provenance: "test",
     cited_dependencies: [],
-    body_hash: hashEnvBody("Formal claim."),
   }] : [],
 });
 
@@ -46,6 +45,9 @@ async function writeFixture(dir: string, paper: string, front: string, withFroze
     writeFile(join(dir, "paper.tex"), paper, "utf8"),
     writeFile(join(dir, "front_matter.tex"), front, "utf8"),
     writeFile(join(dir, "outline.md"), "# Notation\n\n# Sections\n", "utf8"),
+    // P3's replacement propagation re-records the assembly manifest, which digests
+    // appendix_proofs.tex — always present in a real P2-assembled bundle.
+    writeFile(join(dir, "appendix_proofs.tex"), "", "utf8"),
     writeFile(join(dir, "formal_layer.tex"), withFrozen ? FROZEN_ENV : "", "utf8"),
     writeFile(join(dir, "formal_layer.json"), formalLayer(withFrozen), "utf8"),
     writeFile(join(dir, "related_work_brief.md"), "Literature summary.\n", "utf8"),
@@ -71,7 +73,13 @@ const ioFor = (dir: string, runCodex: (arg: { prompt: string }) => Promise<{ std
 
 const cleanCodex = async ({ prompt }: { prompt: string }) => {
   if (prompt.includes("p3_overclaim")) return { stdout: JSON.stringify({ clean: true, flags: [] }), stderr: "" };
-  if (prompt.includes("p3_citation_support")) return { stdout: JSON.stringify({ verdict: "supported" }), stderr: "" };
+  if (prompt.includes("p3_citation_support")) {
+    const n = (prompt.match(/^\[\d+\] sentence:/gm) ?? []).length;
+    return {
+      stdout: JSON.stringify({ results: Array.from({ length: n }, (_, i) => ({ id: i + 1, verdict: "supported" })) }),
+      stderr: "",
+    };
+  }
   return { stdout: JSON.stringify({ scores: { rigor: 7 } }), stderr: "" };
 };
 
@@ -191,6 +199,40 @@ Results.
       expect(front).not.toContain("STALE FRONT");
       expect(front).not.toContain("\\section{Results}");
       expect(parseAnchoredEnvs(front)).toEqual([]);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("retries a failed citation-support batch once in-run and caches the retry's verdicts", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "psmith-p3-cite-retry-"));
+    let citationCalls = 0;
+    const paper = String.raw`\begin{abstract}
+Abstract.
+\end{abstract}
+\section{Introduction}
+The introduction cites \citep{keep2021}.
+\section{Results}
+Results.
+\end{document}`;
+    try {
+      await writeFixture(dir, paper, "STALE FRONT\n");
+      await stageP3(ioFor(dir, async ({ prompt }) => {
+        if (prompt.includes("p3_citation_support")) {
+          citationCalls += 1;
+          // First batch call is unparseable; the in-run retry must re-ask the
+          // same pair and its verdict must bind (and be cached) like a first-pass one.
+          if (citationCalls === 1) return { stdout: "the auditor returned no JSON this time", stderr: "" };
+        }
+        return cleanCodex({ prompt });
+      }));
+      expect(citationCalls).toBe(2);
+      const cache = JSON.parse(await readFile(join(dir, "gate_cache.json"), "utf8")) as {
+        citationSupport: Record<string, { verdict: string }>;
+      };
+      expect(Object.values(cache.citationSupport)).toContainEqual(
+        expect.objectContaining({ verdict: "supported" }),
+      );
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

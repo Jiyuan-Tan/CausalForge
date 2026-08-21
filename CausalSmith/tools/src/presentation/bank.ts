@@ -185,3 +185,136 @@ export async function loadBankEntry(
     citedChecks: state.cited_checks ?? [],
   };
 }
+
+/**
+ * D-stage informal derivations from the banked discovery core: node id →
+ * `proof_tex` (the human-style argument that PRECEDED formalization). Supplied
+ * to the P2 proof renderer as UNTRUSTED exposition context only — the Lean
+ * proof stays the sole ground truth; the derivation may be wrong or follow a
+ * route that was never formalized (the prompt subordinates it explicitly, and
+ * the P2 proof audit rejects any non-Lean route). Core statement ids equal
+ * graph node ids (verified across every accepted entry, 2026-08-16). Older
+ * entries without a discovery store yield an empty map.
+ */
+export async function loadInformalDerivations(
+  repoRoot: string,
+  qid: string,
+  spec: string,
+): Promise<Map<string, string>> {
+  const corePath = join(bankAcceptedDir(repoRoot, qid, spec), "discovery", "core.json");
+  try {
+    const core = JSON.parse(await readFile(corePath, "utf8")) as {
+      statements?: { id?: string; proof_tex?: string }[];
+    };
+    return new Map(
+      (core.statements ?? [])
+        .filter((s): s is { id: string; proof_tex: string } =>
+          typeof s.id === "string" && typeof s.proof_tex === "string" && s.proof_tex.trim().length > 0)
+        .map((s) => [s.id, s.proof_tex.trim()]),
+    );
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") return new Map();
+    throw err;
+  }
+}
+
+/** The D-stage narrative layer of the banked discovery core — the publication
+ * prose the formalization stages deliberately strip (`formalization/core_context.ts`
+ * reserves it for "the completed paper"; presentation IS that consumer). All
+ * fields are UNTRUSTED pre-formalization text: they may advertise more than the
+ * frozen layer delivers, so authoring prompts must subordinate them to the
+ * frozen environments, while restriction-shaped fields (honest_scope, the
+ * comparator promises) feed detectors as monotone tightening inputs. */
+export interface BankNarrative {
+  tldr: string;
+  /** gap / niche / fill, rendered as three labeled paragraphs. */
+  projectJustification: string;
+  interpretation: string;
+  honestScope: string;
+  technicalLimitation: string;
+  /** One line per comparator: bibkey, its claim, the match kind, matching node. */
+  comparatorPromises: string;
+  /** node id → per-result "why it matters / what it unlocks" notes. */
+  statementNotes: Map<string, { justification: string; gap: string; consumer: string }>;
+  /** definition NAME and id → its exact D-stage construction text. */
+  definitionConstructions: Map<string, string>;
+  /** `- name (id): construction` — one line per D-stage definition (display form). */
+  definitionList: string;
+  /** `name (type, in space; role): def` — one line per D-stage symbol. */
+  symbolTable: string;
+  /** assumption id → its D-stage condition text. */
+  assumptionConditions: Map<string, string>;
+}
+
+// A function, not a shared constant: the maps are mutable, and a shared singleton
+// would let one caller's mutation corrupt every later missing-core load.
+const emptyNarrative = (): BankNarrative => ({
+  tldr: "", projectJustification: "", interpretation: "", honestScope: "",
+  technicalLimitation: "", comparatorPromises: "", statementNotes: new Map(),
+  definitionConstructions: new Map(), definitionList: "", symbolTable: "", assumptionConditions: new Map(),
+});
+
+export async function loadBankNarrative(
+  repoRoot: string,
+  qid: string,
+  spec: string,
+): Promise<BankNarrative> {
+  const corePath = join(bankAcceptedDir(repoRoot, qid, spec), "discovery", "core.json");
+  let core: Record<string, unknown>;
+  try {
+    core = JSON.parse(await readFile(corePath, "utf8")) as Record<string, unknown>;
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") return emptyNarrative();
+    throw err;
+  }
+  const str = (v: unknown): string => (typeof v === "string" ? v.trim() : "");
+  const pj = (core.project_justification ?? {}) as Record<string, unknown>;
+  const rows = Array.isArray(core.comparator_promise_table) ? core.comparator_promise_table : [];
+  const statements = Array.isArray(core.statements) ? core.statements : [];
+  const definitions = Array.isArray(core.definitions) ? core.definitions : [];
+  const symbols = Array.isArray(core.symbols) ? core.symbols : [];
+  const assumptions = Array.isArray(core.assumptions) ? core.assumptions : [];
+  return {
+    tldr: str(core.tldr),
+    projectJustification: [
+      pj.gap ? `Gap: ${str(pj.gap)}` : "",
+      pj.niche ? `Niche: ${str(pj.niche)}` : "",
+      pj.fill ? `Fill: ${str(pj.fill)}` : "",
+    ].filter(Boolean).join("\n"),
+    interpretation: str(core.interpretation),
+    honestScope: str(core.honest_scope),
+    technicalLimitation: str(core.technical_internal_limitation),
+    comparatorPromises: rows
+      .map((r: Record<string, unknown>) =>
+        `- \\citep{${str(r.comparator_bibkey)}}: ${str(r.comparator_claim)} [${str(r.match_kind)}; matched by ${str(r.matched_by)}]`)
+      .join("\n"),
+    statementNotes: new Map(
+      statements
+        .filter((s: Record<string, unknown>) => typeof s.id === "string")
+        .map((s: Record<string, unknown>) => [s.id as string, {
+          justification: str(s.justification), gap: str(s.gap), consumer: str(s.consumer),
+        }]),
+    ),
+    definitionConstructions: new Map(
+      definitions.flatMap((d: Record<string, unknown>) => {
+        const construction = str(d.construction);
+        if (!construction) return [];
+        return [[str(d.id), construction], [str(d.name), construction]]
+          .filter(([k]) => k.length > 0) as [string, string][];
+      }),
+    ),
+    definitionList: definitions
+      .filter((d: Record<string, unknown>) => str(d.construction))
+      .map((d: Record<string, unknown>) => `- ${str(d.name)} (${str(d.id)}): ${str(d.construction)}`)
+      .join("\n"),
+    symbolTable: symbols
+      .map((s: Record<string, unknown>) =>
+        `${str(s.name)} (${str(s.type)}${s.space ? `, in ${str(s.space)}` : ""}${s.role ? `; ${str(s.role)}` : ""}): ${str(s.def)}`)
+      .join("\n"),
+    assumptionConditions: new Map(
+      assumptions
+        .filter((a: Record<string, unknown>) => typeof a.id === "string" && str(a.condition))
+        .map((a: Record<string, unknown>) => [a.id as string, str(a.condition)]),
+    ),
+  };
+}

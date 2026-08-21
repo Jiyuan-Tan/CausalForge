@@ -91,11 +91,19 @@ def shouldSkipDeclOther (env : Environment) (n : Name) : Bool :=
   -- compiler-generated companions namespaced under a constructor (e.g. `BBDir.fromChild.elim`)
   env.isConstructor n.getPrefix
 
+/-- Leaf names of compiler-synthesized companion theorems: `<decl>.congr_simp`
+(from `@[congr]`) and the on-demand equation lemmas `<decl>.eq_def`,
+`<decl>.eq_unfold`, `<decl>.eq_<i>`.  They have no authored declaration range
+or source; the declaration they support is indexed.  Callers that admit
+hand-written declarations reusing one of these reserved leaves must pair this
+with a declaration-range check (see `entryFor?`). -/
+def isSyntheticCompanionLeaf (s : String) : Bool :=
+  s == "congr_simp" || s == "eq_def" || s == "eq_unfold" ||
+  (s.startsWith "eq_" && !(s.drop 3).isEmpty && (s.drop 3).all Char.isDigit)
+
 def shouldSkipDecl (env : Environment) (n : Name) : Bool :=
   shouldSkipDeclOther env n ||
-  -- `@[congr]` synthesizes `<decl>.congr_simp` theorem constants.  They have
-  -- no authored declaration range or source; the declaration they support is indexed.
-  declarationLeaf n == "congr_simp"
+  isSyntheticCompanionLeaf (declarationLeaf n)
 
 def uniqueSortedStrings (xs : Array String) : Array String :=
   xs.foldl
@@ -265,12 +273,12 @@ def entryFor? (pfx : Name) (srcRoot : String)
   let n := ci.name
   if !isLibDecl pfx env n || shouldSkipDeclOther env n then
     return none
-  let isCongrSimp := declarationLeaf n == "congr_simp"
-  if isCongrSimp && (← findDeclarationRanges? n).isNone then
+  let isSynthetic := isSyntheticCompanionLeaf (declarationLeaf n)
+  if isSynthetic && (← findDeclarationRanges? n).isNone then
     return none
   let some moduleName := moduleNameOf? env n
     | return none
-  let congrSource ← if isCongrSimp then
+  let congrSource ← if isSynthetic then
       sourceFor fileCache moduleName srcRoot (moduleToFile moduleName) n
     else
       pure none
@@ -319,7 +327,7 @@ def entryFor? (pfx : Name) (srcRoot : String)
   let file := moduleToFile moduleName
   -- Theorems carry their source too: the proof renders behind an expandable
   -- "Proof" link on the site (statement stays the primary view).
-  let source ← if isCongrSimp then
+  let source ← if isSynthetic then
       pure congrSource
     else
       sourceFor fileCache moduleName srcRoot file n

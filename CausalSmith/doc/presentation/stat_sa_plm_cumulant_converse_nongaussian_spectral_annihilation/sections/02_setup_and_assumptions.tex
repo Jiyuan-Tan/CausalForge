@@ -1,0 +1,404 @@
+\section{Setup and assumptions}
+
+We use generic constants \(c\) and \(C\) only in later bounds, where their dependence is stated locally. All norms are taken under the law displayed in the surrounding statement, and \(L^p(P_X)\) denotes integration with respect to the covariate marginal. The sample index is fixed within each finite-\(n\) experiment, while class constants and code-radius sequences are carried by the parameter record. Asymptotic comparisons in later sections vary the sample size through these records, with the order pair, tail scales, cumulant separation, and range bounds held according to the relevant theorem hypotheses.
+
+The basic experiment is a partially linear model with deterministic supplied codes for the treatment and outcome regressions. The first definition records the numerical constants, the split convention, and the exact sub-Gaussian norm convention used throughout.
+
+\subsection{Fixed-code decision problem}
+
+The supplied treatment and outcome codes are inputs to the current finite-\(n\) decision problem. At sample size \(n\), the estimator uses the clipped pair \((\bar g_n,\bar q_n)\), and the risks below compare laws whose current clipped code pair agrees with that same input. The data used in the risk bound are then the i.i.d. product sample from the law under evaluation, with the code pair treated as fixed for that experiment.
+
+This convention is the one used by the minimax criteria in \cref{obj:def:minimax-risks} and by the fixed-code classes in \cref{obj:thm:adaptive-rootn-minimax}. When the supplied codes come from an external training stage, the theorem applies through the deterministic code pair obtained after conditioning on that training output, or through any deterministic code sequence fixed before the product-law sample is drawn. The theorem's code-radius assumptions are assumptions about that current clipped pair under the covariate marginal \(P_X\).
+
+\begin{definitionv}{def:model-parameters}[Parameter record and standing conventions]
+A parameter record fixes a sample size \(n\ge 1\), an order pair \(r,k\in\mathbb N\) with
+\[
+ k=r+1,\qquad r\ge 2,
+\]
+a comparison exponent \(s\in[0,\infty]\) with \(s\ge r\), a probability level \(\gamma\in(1/2,1)\), positive constants
+\[
+ C_{\theta},\ C_g,\ C_q,\ \psi_{\eta},\ \psi_{\xi},\ \delta,\ \sigma>0,
+\]
+and two code-radius sequences \(\varepsilon_1,\varepsilon_2:\mathbb N\to\mathbb R\) that are nonnegative and nonincreasing on positive indices; their values at \(n\) are written \(\varepsilon_{1,n}\) and \(\varepsilon_{2,n}\).
+
+Two conventions are used throughout: \(N(m,v)\) denotes the Gaussian law on \(\mathbb R\) with mean \(m\) and variance \(v\), and \(\mathbb P_n f=n^{-1}\sum_{i=1}^{n}f(O_i)\) denotes the empirical average of \(f\) over the sample.  The sample is split into the two deterministic folds
+\[
+ I_0=\{i:i<\lfloor n/2\rfloor\},\qquad I_1=\{i:i\ge\lfloor n/2\rfloor\},
+\]
+written \(I_a\) for \(a\in\{0,1\}\).
+
+For a real random variable \(W\) and \(t>0\), the Luxemburg sub-Gaussian convention is that \(\lVert W\rVert_{\psi_2}\le t\) means \(E[\exp(W^2/t^2)]\le 2\), and its conditional form \(\lVert W\rVert_{\psi_2\mid X}\le t\) means \(E[\exp(W^2/t^2)\mid X]\le 2\) almost surely.
+\end{definitionv}
+
+The observation-level model follows the usual partially linear decomposition, with \(g_0\) and \(q_0\) denoting the treatment and outcome regressions and with supplied code sequences clipped to the fixed ranges in \cref{obj:def:model-parameters}.
+
+\begin{definitionv}{def:plm-model}[Observed-data partially linear model]
+An observation is the triple \(O=(X,T,Y)\), where \(X\) takes values in a measurable covariate space \(\mathcal X\) and \(T,Y\in\mathbb R\).  A model over a parameter record consists of a probability law \(P\) for \(O\) under which \(T\) and \(Y\) are integrable, a real coefficient \(\theta_0\), measurable regression functions \(g_0,q_0\) on the covariate space with
+\[
+ g_0(X)=E_P[T\mid X],\qquad q_0(X)=E_P[Y\mid X]
+\]
+\(P\)-almost surely, and deterministic measurable supplied code sequences \(\widehat g=(\widehat g_n)_{n\in\mathbb N}\) and \(\widehat q=(\widehat q_n)_{n\in\mathbb N}\) for \(g_0\) and \(q_0\).  The treatment and outcome innovations are
+\[
+ \eta=T-g_0(X),\qquad \xi=Y-q_0(X)-\theta_0\eta,
+\]
+and the clipped supplied codes at index \(n\) are
+\[
+ \bar g_n(x)=\min\{\max\{\widehat g_n(x),-C_g\},C_g\},\qquad
+ \bar q_n(x)=\min\{\max\{\widehat q_n(x),-C_q\},C_q\}.
+\]
+The covariate marginal of \(P\) is written \(P_X\).  A model is written \(m\), and when the law has to be displayed the coefficient is written \(\theta_0(P)\).
+\end{definitionv}
+
+The sampling and structural restrictions are collected next. They separate the finite-sample product experiment, the partially linear conditional mean, the bounded ranges, and the tail and cumulant conditions that define the statistical classes.
+
+\begin{assumptionv}{ass:iid-sampling}[I.i.d. sampling]
+Under \cref{obj:def:plm-model,obj:def:model-parameters}, the observations satisfy
+\[
+O_1,\ldots,O_n \stackrel{\mathrm{iid}}{\sim} P .
+\]
+\end{assumptionv}
+
+The i.i.d. sampling condition is the standard finite-sample product-law setup for orthogonal and semiparametric procedures \citep{ChernozhukovEtAl2018DML}. It fixes the probability space on which all estimators and generalized quantiles below are evaluated.
+
+\begin{assumptionv}{ass:independent-treatment-noise}[Independent treatment noise]
+Under \cref{obj:def:plm-model,obj:def:model-parameters}, the treatment innovation is independent of the covariates:
+\[
+\eta \perp X .
+\]
+\end{assumptionv}
+
+Independent treatment noise is the standard residual independence condition used in the cumulant-based partially linear comparison \citep{JinMackeySyrgkanis2025}. In this paper it also makes the treatment-innovation transform a law-level object separate from the covariate distribution.
+
+\begin{assumptionv}{ass:outcome-mean-independence}[Outcome mean independence]
+Under \cref{obj:def:plm-model,obj:def:model-parameters}, the outcome innovation has conditional mean zero given the covariates and treatment:
+\[
+E_P[\xi\mid X,T]=0
+\]
+almost surely.
+\end{assumptionv}
+
+Outcome mean independence is the standard partially linear conditional mean restriction \citep{Robinson1988}. It pins down the coefficient through the conditional mean of \(Y\) given \(X\) and \(T\).
+
+\begin{assumptionv}{ass:theta-range}[Coefficient range]
+Under \cref{obj:def:plm-model,obj:def:model-parameters}, the partially linear coefficient satisfies
+\[
+|\theta_0|\le C_{\theta}.
+\]
+\end{assumptionv}
+
+The coefficient range is the standard bounded target range condition in the JMS comparison framework \citep{JinMackeySyrgkanis2025}. It supplies a common compact parameter range for minimax risks and clipped estimators.
+
+\begin{assumptionv}{ass:g-range}[Treatment regression range]
+Under \cref{obj:def:plm-model,obj:def:model-parameters}, the treatment regression satisfies
+\[
+\|g_0\|_{\infty}\le C_g.
+\]
+\end{assumptionv}
+
+The bounded treatment regression condition is standard in the same comparison class \citep{JinMackeySyrgkanis2025}. It also aligns the supplied treatment code with the clipping radius used in \cref{obj:def:plm-model}.
+
+\begin{assumptionv}{ass:q-range}[Outcome regression range]
+Under \cref{obj:def:plm-model,obj:def:model-parameters}, the outcome regression satisfies
+\[
+\|q_0\|_{\infty}\le C_q.
+\]
+\end{assumptionv}
+
+The bounded outcome regression condition is the standard common sub-Gaussian PLM range condition \citep{JinMackeySyrgkanis2025}. Together with the treatment and coefficient bounds, it fixes the envelope in which the supplied outcome code is compared.
+
+\begin{assumptionv}{ass:bounded-gaussian-outcome}[Bounded outcome]
+In the model of \cref{obj:def:plm-model} with constants as in \cref{obj:def:model-parameters}, the outcome is uniformly bounded:
+\[
+|Y|\le C_q
+\]
+almost surely.
+\end{assumptionv}
+
+The bounded observed-outcome restriction is the standard bounded-\(Y\) condition in the simultaneous Gaussian comparison experiment \citep{JinMackeySyrgkanis2025}. It is used only for that Gaussian intersection class.
+
+\begin{assumptionv}{ass:eta-subgaussian}[Sub-Gaussian treatment noise]
+In the model of \cref{obj:def:plm-model} with constants as in \cref{obj:def:model-parameters}, the Luxemburg sub-Gaussian norm is
+\[
+\lVert W\rVert_{\psi_2}
+=
+\inf\{u>0:E_P[\exp(W^2/u^2)]\le 2\}.
+\]
+Under this convention, the treatment innovation satisfies
+\[
+\lVert\eta\rVert_{\psi_2}\le \psi_{\eta}.
+\]
+\end{assumptionv}
+
+The treatment-tail condition is the standard uniform sub-Gaussian treatment-noise requirement under the exact Luxemburg convention \citep{JinMackeySyrgkanis2025}. The convention matches the concentration and transform-envelope bounds used later; background sub-Gaussian facts follow the usual conventions in \citet{Vershynin2018} and \citet{Wainwright2019}.
+
+\begin{assumptionv}{ass:xi-subgaussian}[Sub-Gaussian outcome noise]
+In the model of \cref{obj:def:plm-model} with constants as in \cref{obj:def:model-parameters}, the outcome innovation satisfies
+\[
+\lVert \xi\rVert_{\psi_2\mid X}\le \psi_{\xi}
+\]
+almost surely.
+\end{assumptionv}
+
+The outcome-tail condition is the standard uniform conditional sub-Gaussian outcome-noise restriction \citep{JinMackeySyrgkanis2025}. It provides the conditional exponential-square control needed for empirical outcome-weighted transforms.
+
+\begin{assumptionv}{ass:cumulant-separation}[Cumulant separation]
+In the model of \cref{obj:def:plm-model} with parameters as in \cref{obj:def:model-parameters}, the \(k\)th cumulant of the treatment innovation satisfies
+\[
+|\kappa_k(\eta)|\ge \delta.
+\]
+\end{assumptionv}
+
+Cumulant separation is the standard Jin--Mackey--Syrgkanis nonzero cumulant condition with a uniform separation level \citep{JinMackeySyrgkanis2025}. In the contour analysis, the same lower bound supplies the non-Gaussian signal that later yields transform zeros.
+
+The supplied-code restrictions specify how the deterministic first-stage codes enter the statistical classes. The \(L^s(P_X)\) conditions give a common language for comparison with ACE, the \(L^r(P_X)\) versions match the published order-\(r\) condition, the Gaussian condition defines the comparison experiment, and the \(L^1(P_X)\) condition is the stability requirement used by the contour class.
+
+\begin{assumptionv}{ass:treatment-code-radius}[Treatment code radius]
+In the model of \cref{obj:def:plm-model} with parameters as in \cref{obj:def:model-parameters}, for every \(n\),
+\[
+\lVert \bar g_n-g_0\rVert_{L^s(P_X)}\le \varepsilon_{1,n}.
+\]
+\end{assumptionv}
+
+The \(L^s(P_X)\) treatment-code radius is a standard structure-agnostic supplied-code uncertainty set \citep{JinMackeySyrgkanis2025}. It measures the current-index treatment-code error under the covariate marginal.
+
+\begin{assumptionv}{ass:outcome-code-radius}[Outcome code radius]
+In the model of \cref{obj:def:plm-model} with parameters as in \cref{obj:def:model-parameters}, for every \(n\),
+\[
+\lVert \bar q_n-q_0\rVert_{L^s(P_X)}\le \varepsilon_{2,n}.
+\]
+\end{assumptionv}
+
+The matching \(L^s(P_X)\) outcome-code radius is the standard supplied-code uncertainty set for the outcome regression \citep{JinMackeySyrgkanis2025}. It places the outcome code and treatment code on the same comparison scale.
+
+\begin{assumptionv}{ass:jms-treatment-code-radius}[Treatment code radius]
+In the notation of \cref{obj:def:plm-model,obj:def:model-parameters}, for every \(n\ge 1\),
+\[
+\lVert \bar g_n-g_0\rVert_{L^r(P_X)}\le \varepsilon_{1,n}.
+\]
+\end{assumptionv}
+
+The \(L^r(P_X)\) treatment-code radius is the standard Theorem 5.4 treatment-code uncertainty set in the JMS ACE guarantee \citep{JinMackeySyrgkanis2025}. It is stated separately because the published finite-order bound is indexed by the ACE order \(r\).
+
+\begin{assumptionv}{ass:jms-outcome-code-radius}[Outcome code radius]
+In the notation of \cref{obj:def:plm-model,obj:def:model-parameters}, for every \(n\ge 1\),
+\[
+\lVert \bar q_n-q_0\rVert_{L^r(P_X)}\le \varepsilon_{2,n}.
+\]
+\end{assumptionv}
+
+The \(L^r(P_X)\) outcome-code radius is the corresponding standard Theorem 5.4 outcome-code uncertainty set \citep{JinMackeySyrgkanis2025}. It is paired with \cref{obj:ass:jms-treatment-code-radius} in the ACE comparison class.
+
+\begin{assumptionv}{ass:gaussian-treatment-noise}[Gaussian treatment noise]
+In the notation of \cref{obj:def:plm-model,obj:def:model-parameters}, the treatment innovation satisfies
+\[
+\eta\sim N(0,\sigma^2).
+\]
+\end{assumptionv}
+
+The Gaussian treatment-noise condition is the standard known-variance Gaussian experiment used in Theorem 3.2 of \citet{JinMackeySyrgkanis2025}. It defines the Gaussian benchmark class against which the non-Gaussian contour class is compared.
+
+\begin{assumptionv}{ass:l1-treatment-code-radius}[\(L^1\) treatment radius]
+In the notation of \cref{obj:def:plm-model,obj:def:model-parameters}, for every \(n\ge 1\),
+\[
+\lVert \bar g_n-g_0\rVert_{L^1(P_X)}\le \varepsilon_{1,n}.
+\]
+\end{assumptionv}
+
+The \(L^1(P_X)\) treatment radius is specific to this analysis. It is the stability condition that controls the code-residual perturbation of the treatment transform in the contour argument. Throughout, a \emph{code residual} means \(Z_n=T-\bar g_n(X)\) formed with the deterministic supplied clipped code \(\bar g_n\). All risk statements condition on deterministic supplied clipped treatment and outcome codes and evaluate fixed-code performance at the current sample index.
+
+We now package these restrictions into the law classes used by the main theorem and by the ACE and Gaussian comparisons. The broad spectral class keeps the cumulant-separated treatment noise and the \(L^1(P_X)\) treatment-code control that are needed for the contour construction.
+
+\begin{definitionv}{def:non-gaussian-class}[Non-Gaussian law class \(\mathcal P_{\mathrm{NG},n}\)]
+In the notation of \cref{obj:ass:independent-treatment-noise,obj:ass:outcome-mean-independence,obj:ass:theta-range,obj:ass:g-range,obj:ass:q-range,obj:ass:eta-subgaussian,obj:ass:xi-subgaussian,obj:ass:cumulant-separation,obj:def:plm-model,obj:def:model-parameters}, let \(P\) be an observed-data law on \(O=(X,T,Y)\). Define
+\[
+g_0(x)=E_P[T\mid X=x],
+\qquad
+q_0(x)=E_P[Y\mid X=x],
+\]
+let \(\theta_0(P)\) be the constant coefficient in the partially linear conditional mean
+\[
+E_P[Y\mid X,T]=q_0(X)+\theta_0(P)\{T-g_0(X)\},
+\]
+and set
+\[
+\eta=T-g_0(X),
+\qquad
+\xi=Y-q_0(X)-\theta_0(P)\eta.
+\]
+For each \(n\ge 1\), \(\mathcal P_{\mathrm{NG},n}\) is the class of such laws \(P\) satisfying:
+\begin{itemize}
+\item \textbf{(Treatment independence.)} \(\eta\perp X\).
+\item \textbf{(Outcome mean.)} \(E_P[\xi\mid X,T]=0\).
+\item \textbf{(Coefficient range.)} \(|\theta_0(P)|\le C_{\theta}\).
+\item \textbf{(Treatment regression range.)} \(\lVert g_0\rVert_{\infty}\le C_g\).
+\item \textbf{(Outcome regression range.)} \(\lVert q_0\rVert_{\infty}\le C_q\).
+\item \textbf{(Treatment tail.)} \(\lVert \eta\rVert_{\psi_2}\le \psi_{\eta}\).
+\item \textbf{(Outcome tail.)} \(\lVert \xi\rVert_{\psi_2\mid X}\le \psi_{\xi}\).
+\item \textbf{(Cumulant separation.)} \(|\kappa_{r+1}(\eta)|\ge \delta\).
+\item \textbf{(Treatment code control.)} \(\lVert \bar g_n-g_0\rVert_{L^1(P_X)}\le \varepsilon_{1,n}\).
+\end{itemize}
+\end{definitionv}
+
+The bounded-outcome Gaussian class uses the same partially linear residual functionals but imposes Gaussian treatment noise and the supplied-code restrictions at exponent \(s\). It is the source-stated Gaussian comparison class for the diagnostic and minimax criteria below.
+
+\begin{definitionv}{def:gaussian-class}
+\[
+\mathcal P_{\mathrm G,n}^{\mathrm{JMS}}:=\left\{P:\begin{array}{l}1\le n,\ E_P[\xi\mid X,T]=0\ P\text{-a.s.},\ \xi\in L^1(P),\ |\theta_0|\le C_{\theta},\ |Y|\le C_q\ P\text{-a.s.},\\ \eta\perp X,\ \eta\sim N(0,\sigma^2),\ |g_0(x)|\le C_g\ P_X\text{-a.e.},\\ \|\bar g_n-g_0\|_{L^s(P_X)}\le\varepsilon_{1,n},\ \|\bar q_n-q_0\|_{L^s(P_X)}\le\varepsilon_{2,n}\end{array}\right\}.
+\]
+Here \(g_0,q_0,\eta,\xi\) are the residual functionals determined by \(P\) in \cref{obj:def:non-gaussian-class}.
+\end{definitionv}
+
+The ACE comparison class records the published cumulant-separated setup at order \(r\). Its member conditions mirror the preceding assumptions while using the \(L^r(P_X)\) code radii that enter the JMS finite-order guarantee.
+
+\begin{definitionv}{def:jms-ace-class}[JMS ACE comparison class \(\mathcal P_{\mathrm{ACE},n}^{\mathrm{JMS}}\)]
+Fix an admissible parameter record with positive sample-size coordinate and
+\[
+k=r+1,\qquad 2\le r,\qquad r\le s,\qquad \gamma\in(1/2,1),
+\]
+with
+\[
+0<C_{\theta},\quad 0<C_g,\quad 0<C_q,\quad
+0<\psi_{\eta},\quad 0<\psi_{\xi},\quad 0<\delta,
+\quad 0<\sigma,
+\]
+and with radius sequences satisfying
+\[
+0\le \varepsilon_{j,b}\le \varepsilon_{j,a}
+\qquad (j\in\{1,2\},\ 1\le a\le b).
+\]
+At any positive class index \(n\), the JMS ACE comparison class \(\mathcal P_{\mathrm{ACE},n}^{\mathrm{JMS}}\) consists of all model records \(m\) whose observed-data component \(P\) is a probability law on \(O=X\times\mathbb R\times\mathbb R\), carrying a real \(\theta_0\), measurable functions \(g_0,q_0:X\to\mathbb R\), and deterministic measurable supplied code sequences whose clipped versions are denoted \(\bar g_\ell\) and \(\bar q_\ell\). The coordinates \(T\) and \(Y\) are \(P\)-integrable, and the conditional-mean identities
+\[
+g_0(X)=E_P[T\mid X],\qquad q_0(X)=E_P[Y\mid X]
+\]
+hold \(P\)-almost surely. Writing \(\eta=T-g_0(X)\) and \(\xi=Y-q_0(X)-\theta_0\eta\), the member conditions in \cref{obj:ass:independent-treatment-noise,obj:ass:outcome-mean-independence,obj:ass:theta-range,obj:ass:g-range,obj:ass:q-range,obj:ass:eta-subgaussian,obj:ass:xi-subgaussian,obj:ass:cumulant-separation} hold in the following form:
+\[
+\xi\in L^1(P),\qquad E_P[\xi\mid X,T]=0,\qquad \eta\perp X,
+\]
+with the conditional-mean identity for \(\xi\) holding \(P\)-almost surely;
+\[
+|\theta_0|\le C_{\theta},\qquad |g_0(x)|\le C_g,
+\qquad |q_0(x)|\le C_q,
+\]
+with the displayed bounds on \(g_0\) and \(q_0\) holding for \(P_X\)-almost every \(x\);
+\[
+\exp(\eta^2/\psi_{\eta}^2)\in L^1(P),\qquad
+\int \exp(\eta^2/\psi_{\eta}^2)\,dP\le 2,
+\]
+\[
+\exp(\xi^2/\psi_{\xi}^2)\in L^1(P),\qquad
+E_P[\exp(\xi^2/\psi_{\xi}^2)\mid X]\le 2,
+\]
+with the conditional tail bound holding \(P\)-almost surely; and
+\[
+|\kappa_{r+1}(\eta)|\ge\delta,\qquad
+\|\bar g_n-g_0\|_{L^r(P_X)}\le\varepsilon_{1,n},\qquad
+\|\bar q_n-q_0\|_{L^r(P_X)}\le\varepsilon_{2,n}.
+\]
+\end{definitionv}
+
+Risk comparisons use a generalized lower quantile for absolute estimation error. Because \(\gamma\in(1/2,1)\), the controlled level \(1-\gamma\) lies below one half, so \(Q_{P,1-\gamma}\) is a lower quantile of the absolute error and every quantile bound below is to be read on that scale. The definition is stated for an arbitrary real sample statistic so it can be applied both to estimator errors and to the published ACE quantile bound.
+
+\begin{definitionv}{def:generalized-quantile}[Generalized quantile \(Q_{P,1-\gamma}(W)\)]
+In the sampling setting of \cref{obj:ass:iid-sampling,obj:def:plm-model,obj:def:model-parameters}, let \(P\) be an observed-data law, let \(n\ge 1\), and let \(W=W(O_1,\ldots,O_n)\) be a real-valued statistic of the sample. Under \(P^{\otimes n}\), write
+\[
+F_W(t)=\Pr(W\le t)
+\]
+for the distribution function of \(W\). For \(\gamma\in(1/2,1)\), the generalized lower \((1-\gamma)\)-quantile of \(W\) is
+\[
+Q_{P,1-\gamma}(W)=\inf\{t\in\mathbb R:\ F_W(t)\ge 1-\gamma\}.
+\]
+Equivalently, \(Q_{P,1-\gamma}(W)\) is the left-continuous generalized inverse of \(F_W\) evaluated at level \(1-\gamma\).
+\end{definitionv}
+
+The contour factorization in the next section is expressed through the covariate-level error made by the supplied treatment code. The following notation isolates that error and the corresponding outcome-contamination transform.
+
+\begin{definitionv}{def:outcome-contamination}[Treatment-code error \(D_n\), outcome contamination \(b_n\), and its transform \(B_n\)]
+Fix a law \(P\), an index \(n\), and the clipped supplied treatment code \(\bar g_n\).  The treatment-code error and the outcome contamination are the covariate functions
+\[
+ D_n(X)=g_0(X)-\bar g_n(X),
+ \qquad
+ b_n(X)=q_0(X)-\theta_0\{g_0(X)-\bar g_n(X)\}=q_0(X)-\theta_0 D_n(X),
+\]
+and the contamination transform is their weighted exponential transform
+\[
+ B_n(z)=E_P\bigl[b_n(X)e^{zD_n(X)}\bigr],\qquad z\in\mathbb C.
+\]
+\end{definitionv}
+
+For comparison with \citet{JinMackeySyrgkanis2025}, we also record the eligibility quantities that enter the published order-\(r\) ACE condition. They combine code radii, sample size, tail scales, coefficient range, and cumulant separation into the finite-order admissibility check.
+
+\begin{definitionv}{def:jms-eligibility-quantities}[JMS eligibility quantities \(a_{1,n},b_{1,n},a_2,b_{2,n}\)]
+Under the notation and conditions in \cref{obj:ass:theta-range,obj:ass:g-range,obj:ass:eta-subgaussian,obj:ass:xi-subgaussian,obj:ass:cumulant-separation,obj:ass:jms-treatment-code-radius,obj:ass:jms-outcome-code-radius,obj:def:plm-model,obj:def:model-parameters}, the four quantities entering the Jin--Mackey--Syrgkanis order-\(r\) eligibility condition at index \(n\) are
+\[
+ a_{1,n}=2\log\!\left(\frac{6(C_g+\psi_{\eta})}{\varepsilon_{1,n}}\right),
+ \qquad
+ b_{1,n}=\log\!\left(\frac{\gamma n}{9}\right),
+ \qquad
+ a_2=4(C_g+\psi_{\eta}),
+\]
+\[
+ b_{2,n}=
+ \frac{200\min\{1,C_{\theta}\}\,\delta}
+      {\max\bigl\{\varepsilon_{1,n},\ \varepsilon_{2,n},\ (\gamma n)^{-1/2}(\psi_{\xi}+C_{\theta}\psi_{\eta})\bigr\}} .
+\]
+\end{definitionv}
+
+The minimax criteria are class-indexed and fix the supplied codes at the current sample size. This keeps the decision problem focused on laws compatible with the same clipped code pair.
+
+\begin{definitionv}{def:minimax-risks}[Minimax risks \(\mathfrak R_n^{\mathrm{NG}},\mathfrak R_n^{\mathrm G},\mathfrak M_{n,1-\gamma}^{\mathrm G}\)]
+For fixed supplied code sequences, let \(\bar g_n\) and \(\bar q_n\) denote their current-index clippings to \([-C_g,C_g]\) and \([-C_q,C_q]\). All infima below range over measurable estimators based on \(O_1,\ldots,O_n\), and each supremum is restricted to laws in the displayed class whose clipped treatment and outcome codes at index \(n\) are \(\bar g_n\) and \(\bar q_n\). Given a parameter record \(p\) and supplied code sequences \(\widehat g,\widehat q\), a class \(\mathcal C\) of laws carries the notation \(\mathcal C(p;\bar g_n,\bar q_n)\) for the subset cut out by this fixed-code restriction, and we write \(\mathfrak R_n^{\mathrm{NG}}(p;\widehat g,\widehat q)\), \(\mathfrak R_n^{\mathrm G}(p;\widehat g,\widehat q)\), and \(\mathfrak M_{n,1-\gamma}^{\mathrm G}(p;\widehat g,\widehat q)\) for the three risks defined next whenever their dependence on the parameter record and the supplied codes has to be displayed. Define the non-Gaussian minimax mean-squared risk by
+\[
+\mathfrak R_n^{\mathrm{NG}}
+=
+\inf_{\widetilde\theta(O_1,\ldots,O_n;\bar g_n,\bar q_n)}
+\sup_{P\in\mathcal P_{\mathrm{NG},n}}
+E_P\!\left[(\widetilde\theta-\theta_0(P))^2\right].
+\]
+Define the Gaussian JMS minimax mean-squared risk by
+\[
+\mathfrak R_n^{\mathrm G}
+=
+\inf_{\widetilde\theta(O_1,\ldots,O_n;\bar g_n,\bar q_n)}
+\sup_{P\in\mathcal P_{\mathrm G,n}^{\mathrm{JMS}}}
+E_P\!\left[(\widetilde\theta-\theta_0(P))^2\right].
+\]
+For \(1/2<\gamma<1\), define the Gaussian JMS minimax generalized lower-quantile risk by
+\[
+\mathfrak M_{n,1-\gamma}^{\mathrm G}
+=
+\inf_{\widetilde\theta}
+\sup_{P\in\mathcal P_{\mathrm G,n}^{\mathrm{JMS}}}
+Q_{P,1-\gamma}\!\left(|\widetilde\theta-\theta_0(P)|\right).
+\]
+\end{definitionv}
+
+The order-\(r\) ACE guarantee is invoked in later comparisons through its eligibility predicate. The predicate below is the finite-sample condition formed from the four quantities in \cref{obj:def:jms-eligibility-quantities}.
+
+\begin{definitionv}{def:jms-eligibility}[JMS eligibility condition \(\mathsf E_n^{\mathrm{JMS}}\)]
+Let \(a_{1,n},b_{1,n},a_2,b_{2,n}\) be the quantities in \cref{obj:def:jms-eligibility-quantities}. For every index \(n\) for which the following expressions are defined, \(\mathsf E_n^{\mathrm{JMS}}\) is the condition
+\[
+r
+\le
+\min\left\{
+\frac{b_{1,n}}{a_{1,n}}-\frac{1}{a_{1,n}}\log\!\left(\frac{b_{1,n}}{a_{1,n}}\right),
+\frac{b_{2,n}}{a_2\log(a_2b_{2,n})}
+\right\}.
+\]
+\end{definitionv}
+
+Finally, the common ACE comparison class is obtained by adding the \(L^s(P_X)\) treatment- and outcome-code restrictions to the broad spectral class. This subclass is the domain on which the contour and ACE upper guarantees are aligned in the comparison section.
+
+\begin{definitionv}{def:ace-comparison-subclass}[ACE comparison subclass \(\mathcal P_{\mathrm{NG},n}^{\mathrm{ACE}}\)]
+Relative to \cref{obj:def:non-gaussian-class}, define
+\[
+\mathcal P_{\mathrm{NG},n}^{\mathrm{ACE}}
+=
+\left\{
+P\in\mathcal P_{\mathrm{NG},n}:
+\|\bar g_n-g_0\|_{L^s(P_X)}\le\varepsilon_{1,n},
+\quad
+\|\bar q_n-q_0\|_{L^s(P_X)}\le\varepsilon_{2,n}
+\right\}.
+\]
+Thus \(\mathcal P_{\mathrm{NG},n}^{\mathrm{ACE}}\) is the subclass of the broad spectral class that satisfies both supplied-code restrictions.
+\end{definitionv}

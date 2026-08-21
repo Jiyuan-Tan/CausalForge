@@ -8,7 +8,7 @@ import { extractBalancedEnv, maskNonBoundaryPeriods, stripTexComments } from "..
  */
 
 export interface AnchoredEnv {
-  env: "theoremv" | "assumptionv" | "lemmav" | "definitionv" | "citedv" | "propositionv" | "remarkv";
+  env: "theoremv" | "assumptionv" | "lemmav" | "definitionv" | "citedv" | "propositionv" | "remarkv" | "algorithmv";
   obj_id: string;
   title: string | null;
   body: string;
@@ -23,8 +23,8 @@ export interface LintProblem {
 }
 
 const ENV_BEGIN_RE =
-  /\\begin\{(theoremv|assumptionv|lemmav|definitionv|citedv|propositionv|remarkv)\}\{([^}]+)\}/g;
-const BARE_RE = /\\begin\{(theorem|assumption|lemma|definition|proposition|corollary)\}/g;
+  /\\begin\{(theoremv|assumptionv|lemmav|definitionv|citedv|propositionv|remarkv|algorithmv)\}\{([^}]+)\}/g;
+const BARE_RE = /\\begin\{(theorem|assumption|lemma|definition|proposition|corollary|algorithm)\}/g;
 
 interface EnvMatch extends AnchoredEnv {
   scopeMarked: boolean;
@@ -207,7 +207,7 @@ function atSentenceStart(source: string, offset: number): boolean {
  * cleveref. Running it repeatedly is idempotent; label ids and mathematical content are unchanged. */
 export function normalizeCrefs(tex: string): string {
   let out = tex.replace(
-    /\b(?:Appendix|Appendices|Chapters?|Sections?|Figures?|Tables?|Equations?|Theorems?|Lemmas?|Definitions?|Assumptions?|Propositions?|Remarks?|Cited results?)\s*~?\s*\\(?:Cref|cref|autoref|eqref|ref)\{([^}]+)\}/gi,
+    /\b(?:Appendix|Appendices|Chapters?|Sections?|Figures?|Tables?|Equations?|Theorems?|Lemmas?|Definitions?|Assumptions?|Propositions?|Remarks?|Algorithms?|Cited results?)\s*~?\s*\\(?:Cref|cref|autoref|eqref|ref)\{([^}]+)\}/gi,
     (_whole, label: string, offset: number, source: string) =>
       `\\${atSentenceStart(source, offset) ? "Cref" : "cref"}{${label}}`,
   );
@@ -240,9 +240,6 @@ function unwrapReferenceOnlyInlineMath(tex: string): string {
   out = out.replace(/(?<![\\$])\$(?!\$)([\s\S]*?)(?<![\\$])\$(?!\$)/g, unwrap);
   return out;
 }
-
-/** @deprecated Use `normalizeCrefs`; retained for downstream callers during the migration. */
-export const normalizeObjCrefs = normalizeCrefs;
 
 /**
  * Repair + lint `\cref{obj:…}`/`\Cref{obj:…}` cross-references against the labels actually defined in the paper
@@ -282,21 +279,14 @@ export function repairObjRefs(tex: string, definedIds: Set<string>): { tex: stri
   return { tex: out, problems };
 }
 
-/**
- * Replace the body of the formal environment anchored at `objId` with `newBody`, preserving the
- * environment kind, obj-id, and optional title. Used by the P3 refine loop to write a statement
- * tightened toward Lean fidelity back into the frozen layer + paper. Returns the tex unchanged if
- * no such environment is found.
- */
-export function replaceEnvBody(tex: string, objId: string, newBody: string): string {
-  return replaceAnchoredEnvs(tex, (e) =>
-    e.obj_id === objId ? `${tex.slice(e.start, e.bodyStart)}\n${newBody.trim()}\n${tex.slice(e.bodyEnd, e.end)}` : e.raw,
-  );
+/** Whitespace-insensitive canonical form: reflowing prose is not drift, changing tokens is. */
+function normalizeBody(body: string): string {
+  return body.replace(/\s+/g, " ").trim();
 }
 
 /** Whitespace-insensitive: reflowing prose is not drift, changing tokens is. */
 export function hashEnvBody(body: string): string {
-  return createHash("sha256").update(body.replace(/\s+/g, " ").trim()).digest("hex");
+  return createHash("sha256").update(normalizeBody(body)).digest("hex");
 }
 
 /**
@@ -306,6 +296,43 @@ export function hashEnvBody(body: string): string {
  */
 export function lintNestedMathDelimiters(tex: string): LintProblem[] {
   const problems: LintProblem[] = [];
+  // `\text{...}` temporarily enters text mode, so `\text{\(P\) ...}` is a
+  // legitimate text-to-math re-entry rather than math nested directly in math.
+  // Track balanced arguments (including nested formatting braces) and exempt
+  // only delimiters wholly inside those arguments.
+  const textRanges: Array<{ start: number; end: number }> = [];
+  for (const startMatch of tex.matchAll(/\\text\s*\{/g)) {
+    const start = startMatch.index!;
+    const brace = start + startMatch[0].lastIndexOf("{");
+    let depth = 1;
+    for (let i = brace + 1; i < tex.length; i++) {
+      const escaped = i > 0 && (() => {
+        let slashes = 0;
+        for (let j = i - 1; j >= 0 && tex[j] === "\\"; j--) slashes++;
+        return slashes % 2 === 1;
+      })();
+      if (escaped) continue;
+      if (tex[i] === "{") depth++;
+      else if (tex[i] === "}" && --depth === 0) {
+        textRanges.push({ start: brace + 1, end: i });
+        break;
+      }
+    }
+  }
+  const textMathEndpoints = new Set<number>();
+  for (const range of textRanges) {
+    let opener: number | null = null;
+    for (const m of tex.slice(range.start, range.end).matchAll(/(\\+)([()])/g)) {
+      if (m[1].length % 2 === 0) continue;
+      const at = range.start + m.index! + m[1].length - 1;
+      if (m[2] === "(" && opener === null) opener = at;
+      else if (m[2] === ")" && opener !== null) {
+        textMathEndpoints.add(opener);
+        textMathEndpoints.add(at);
+        opener = null;
+      }
+    }
+  }
   // Backslash-RUN parity, not a single-char lookbehind: an ODD run before the
   // bracket is a delimiter, an even run is a row break/literal. The lookbehind
   // version got runs ≥ 2 wrong in both directions — `\\[1.1em]` (row break with
@@ -319,6 +346,7 @@ export function lintNestedMathDelimiters(tex: string): LintProblem[] {
     if (m[1].length % 2 === 0) continue;
     const at = m.index! + m[1].length - 1;
     const delim = m[2];
+    if ((delim === "(" || delim === ")") && textMathEndpoints.has(at)) continue;
     if (openAt == null) {
       if (delim === "[") {
         openAt = at;
@@ -346,46 +374,6 @@ export function lintNestedMathDelimiters(tex: string): LintProblem[] {
     }
   }
   return problems;
-}
-
-/** Unicode math chars that note headers carry; pdflatex chokes on them raw. */
-const TEX_CHAR: Record<string, string> = {
-  "κ": "\\kappa ", "β": "\\beta ", "λ": "\\lambda ", "ρ": "\\rho ", "τ": "\\tau ",
-  "η": "\\eta ", "μ": "\\mu ", "φ": "\\varphi ", "χ": "\\chi ", "Δ": "\\Delta ",
-  "Ω": "\\Omega ", "𝒫": "\\mathcal{P}", "𝒳": "\\mathcal{X}", "≲": "\\lesssim ",
-  "≤": "\\le ", "≥": "\\ge ", "≍": "\\asymp ", "∈": "\\in ", "−": "-", "⋆": "\\star ",
-  "†": "\\dagger ", "★": "\\star ",
-};
-
-function mapTexChars(s: string): string {
-  // combining circumflex: `τ̂` → \hat{\tau}
-  s = s.replace(/(.)̂/gu, (_, c: string) => `\\hat{${TEX_CHAR[c]?.trim() ?? c}}`);
-  // the `u` flag makes `.` match full code points (𝒫 is a surrogate pair)
-  return s.replace(/./gsu, (c) => TEX_CHAR[c] ?? c);
-}
-
-/**
- * Note-block titles arrive with backtick Lean-ish notation, raw Unicode math,
- * and pipeline vocabulary; none of that may reach the PDF. Backtick spans
- * become math mode, Unicode is transliterated, "(P-form of A2)" → "(A2)",
- * ".tex NNN-NNN" anchors are dropped.
- */
-export function texSafeTitle(title: string): string {
-  let t = title
-    .replace(/\(P-form of (A\d+)[^)]*\)/g, "($1)")
-    .replace(/,?\s*\.tex[\s0-9–-]+/g, "")
-    .replace(/–/g, "--")
-    // Self-containedness: development-history adjectives describe the note's
-    // revision process, not the mathematics — they may not reach the paper.
-    .replace(/^(Corrected|Revised|Updated|Amended|Fixed|Final)\s+(\S)/i, (_, _adj, c: string) =>
-      c.toUpperCase(),
-    );
-  t = t.replace(/`([^`]*)`/g, (_, span: string) => {
-    const mapped = mapTexChars(span);
-    // a span already carrying its own $…$ manages its math mode itself
-    return span.includes("$") ? mapped : `$${mapped}$`;
-  });
-  return mapTexChars(t).replace(/\s+([,)\]])/g, "$1").trim();
 }
 
 /**
@@ -423,7 +411,7 @@ export function stripRedundantEnvLabels(tex: string): string {
 export function lintSelfContainment(tex: string): LintProblem[] {
   const defined = new Set<string>();
   for (const e of parseAnchoredEnvs(tex)) {
-    if (e.env === "definitionv" || e.env === "assumptionv") {
+    if (e.env === "definitionv" || e.env === "algorithmv" || e.env === "assumptionv") {
       for (const t of `${e.title ?? ""} ${e.body}`.match(/\b[A-Z]\d+\b/g) ?? []) defined.add(t);
     }
   }
@@ -479,8 +467,7 @@ export function lintSelfContainment(tex: string): LintProblem[] {
  */
 const LEAN_IDENT_RE = /(?<![\\A-Za-z0-9])[A-Za-z][a-z0-9]*(?:[A-Z][a-z0-9]+){2,}\b/g;
 const FORMALIZATION_PHRASING: { re: RegExp; what: string }[] = [
-  { re: /Lean[-\s]?side/i, what: `"Lean-side" formalization framing` },
-  { re: /Lean[-\s]?verified input/i, what: `"Lean-verified inputs" framing` },
+  { re: /\bLean\b/i, what: `Lean implementation framing` },
   { re: /\bchecks have shown\b/i, what: `proof-procedure phrasing ("checks have shown")` },
   { re: /analytic shape and scale checks/i, what: `proof-procedure phrasing ("…shape and scale checks…")` },
 ];
@@ -495,7 +482,7 @@ export function lintClarity(tex: string): LintProblem[] {
     // DISPLAYED notation, not leaked Lean identifiers — drop their contents too.
     const proseBody = e.body
       .replace(/\\cite[A-Za-z]*\s*(?:\[[^\]]*\]\s*){0,2}\{[^}]*\}/g, "")
-      .replace(/\\(?:mathrm|mathsf|mathtt|text|texttt|operatorname\*?)\s*\{[^{}]*\}/g, "");
+      .replace(/\\(?:mathrm|mathsf|mathtt|text|operatorname\*?)\s*\{[^{}]*\}/g, "");
     LEAN_IDENT_RE.lastIndex = 0;
     while ((m = LEAN_IDENT_RE.exec(proseBody))) idents.add(m[0]);
     for (const id of idents) {
@@ -514,6 +501,51 @@ export function lintClarity(tex: string): LintProblem[] {
         });
       }
     }
+    // Mangled-word guard: a bare single-letter word in PROSE (outside math, refs,
+    // and macros) is almost always a symbol missing \(..\) or a word clobbered by
+    // a careless per-env rename (observed 2026-08-20: an operator risk→u rename
+    // turned "(ACE fixed-code risk.)" into "(ACE fixed-code u.)" inside a frozen
+    // body, invisible to every gate until the P5 referee). Articles/pronouns
+    // (a/A/I/i) and parenthesized list markers "(b)" are excluded. Frozen bodies
+    // reach this lint via the assembled layer at P1 and unfiltered via P4's paper
+    // scan, so an operator freeze cannot ship a mangled word past emit.
+    const noMath = e.body
+      .replace(/\\\[[\s\S]*?\\\]/g, " ")
+      .replace(/\\\((?:[^\\]|\\[^)])*?\\\)/g, " ")
+      .replace(/\$[^$]*\$/g, " ")
+      .replace(/\\(?:cref|Cref|ref|label|cite[A-Za-z]*|leanref)\s*\{[^}]*\}(?:\{[^}]*\})?/g, " ")
+      .replace(/\\[A-Za-z]+/g, " ");
+    for (const w of noMath.matchAll(/(?:^|[\s~])((?![aAiI])[A-Za-z])(?=[\s.,;:!?]|$)/g)) {
+      problems.push({
+        gate: "mangled-word",
+        objId: e.obj_id,
+        detail: `${e.obj_id}: bare single-letter word "${w[1]}" in prose — a math symbol missing \\(..\\), or a word corrupted by a bad rename; fix the source text`,
+      });
+    }
+  }
+  // PROOF blocks get the same reader-facing gate: "Lean proves …" inside a prose
+  // proof is exactly as much of a formalization leak as in a statement body, and
+  // no other lint ever scanned proofs. Balanced extraction (proofs nest — "Proof
+  // of Claim 1"); `% lean: <decl>` provenance comments are legitimate machinery,
+  // so strip comments BEFORE scanning; \cite/text-font-math spans drop as above.
+  let rest = tex;
+  for (let block = extractBalancedEnv(rest, "proof"); block !== null; block = extractBalancedEnv(rest, "proof")) {
+    rest = rest.replace(block, () => " ");
+    // Label from the proof's TITLE bracket only — a body \cref must not name the proof.
+    const title = /^\\begin\{proof\}\[([^\]]*)\]/.exec(block)?.[1] ?? "";
+    const label = /\\cref\{obj:([^}]*)\}/.exec(title)?.[1] ?? "proof";
+    const proofProse = stripTexComments(block)
+      .replace(/\\cite[A-Za-z]*\s*(?:\[[^\]]*\]\s*){0,2}\{[^}]*\}/g, "")
+      .replace(/\\(?:mathrm|mathsf|mathtt|text|operatorname\*?)\s*\{[^{}]*\}/g, "");
+    for (const p of FORMALIZATION_PHRASING) {
+      if (p.re.test(proofProse)) {
+        problems.push({
+          gate: "formalization-leak",
+          objId: label,
+          detail: `proof of ${label}: ${p.what} in the prose proof — give the mathematical argument, not how it was formalized/checked`,
+        });
+      }
+    }
   }
   return problems;
 }
@@ -529,8 +561,8 @@ export function lintClarity(tex: string): LintProblem[] {
  *    e.g. `Section~\ref{obj:def:risk}` must not silently render as "Section 14".
  */
 const PREP_REF_RE = /\b(of|in|from|see)\s*~?\s*\\ref\{obj:([^}]+)\}/g;
-const TYPED_OBJ_REF_RE = /\b(Sections?|Theorems?|Lemmas?|Definitions?|Assumptions?|Propositions?|Remarks?|Cited results?)~\\ref\{obj:([^}]+)\}/gi;
-const MANUALLY_TYPED_CREF_RE = /\b(Appendix|Appendices|Chapters?|Sections?|Figures?|Tables?|Equations?|Theorems?|Lemmas?|Definitions?|Assumptions?|Propositions?|Remarks?|Cited results?)\s*~?\s*\\(?:c|C)ref\{([^}]+)\}/gi;
+const TYPED_OBJ_REF_RE = /\b(Sections?|Theorems?|Lemmas?|Definitions?|Assumptions?|Propositions?|Remarks?|Algorithms?|Cited results?)~\\ref\{obj:([^}]+)\}/gi;
+const MANUALLY_TYPED_CREF_RE = /\b(Appendix|Appendices|Chapters?|Sections?|Figures?|Tables?|Equations?|Theorems?|Lemmas?|Definitions?|Assumptions?|Propositions?|Remarks?|Algorithms?|Cited results?)\s*~?\s*\\(?:c|C)ref\{([^}]+)\}/gi;
 const ENV_REFERENCE_KIND: Record<AnchoredEnv["env"], string> = {
   theoremv: "theorem",
   assumptionv: "assumption",
@@ -539,101 +571,34 @@ const ENV_REFERENCE_KIND: Record<AnchoredEnv["env"], string> = {
   citedv: "cited result",
   propositionv: "proposition",
   remarkv: "remark",
+  algorithmv: "algorithm",
 };
-/**
- * Notation-resolvability gate (deterministic; the Hölder-class incident). A
- * PARAMETERIZED named class — `\mathcal{X}` immediately followed by a super/sub
- * script or argument list (`\mathcal H^\beta(...)`, `\mathcal P_{\kappa,...}`) —
- * used in a STATEMENT (non-definition) body must be DEFINED somewhere anchored: a
- * `definitionv` whose title names it, or a "we say/denote/the class/let … X" /
- * "X := …" phrase. A bare ambient space (`\mathcal X`, no parameters) is NOT
- * checked. Flags a parameterized class used in a statement with no such anchor.
- */
-// Which fonts name a CLASS for the deterministic detector. Calligraphic/script/
-// fraktur are low false-positive (function classes, σ-fields, law families) — unlike
-// `\mathbb` (standard sets ℝ, 𝔼, ℙ → `\mathbb E_{H_n}` is not an orphan) and `\mathrm`
-// (operators, but also sub/superscript labels like `\varphi^{\mathrm{bd}}`), which the
-// codex notation check handles with its standard-symbol exclusions and operator-vs-
-// label judgment. Each font's letters are written both braced (`\mathcal{H}`) and
-// bare/spaced (`\mathcal H`) in the same paper — the Hölder-ball incident: the
-// braced-only regex missed every `\mathcal H^\beta`. Match both forms and canonicalise
-// to `\<font>{X}` so the two spellings of one class collide (a def `\mathcal{P}`
-// covers a use `\mathcal P`).
-const CLASS_FONTS = "mathcal|mathscr|mathfrak";
-const CLASS_FONT_RE = new RegExp(`\\\\(${CLASS_FONTS})\\s*(?:\\{([A-Z])\\}|([A-Z]))`, "g");
-/** Canonical class symbols (`\mathcal{H}`, …) in a string; exported so the P1
- *  synthesis pass can match a cached Definition (by the class its title names) to
- *  a detected orphan. */
-export function classSymbolsIn(s: string): string[] {
-  const out: string[] = [];
-  for (const m of s.matchAll(CLASS_FONT_RE)) out.push(`\\${m[1]}{${m[2] ?? m[3]}}`);
-  return out;
-}
-const CLASS_FONT_SRC = `\\\\(?:${CLASS_FONTS})\\s*(?:\\{[A-Z]\\}|[A-Z])`;
-
-export function orphanParameterizedClasses(tex: string): { symbol: string; usedIn: string[] }[] {
-  const envs = parseAnchoredEnvs(tex);
-  const defined = new Set<string>();
-  for (const e of envs) {
-    if (e.env === "definitionv") for (const c of classSymbolsIn(e.title ?? "")) defined.add(c);
-    // Case-insensitivity is confined to the cue words: under a `gi` flag the
-    // CLASS_FONT capture also matched lowercase (`\mathcal p`), which
-    // `classSymbolsIn` (case-sensitive) then failed to canonicalize — the class
-    // silently went unregistered and a redundant definition was synthesized.
-    // Periods are masked so `let $\mathcal H^{0.5}$` survives the `[^.]` window.
-    for (const m of maskNonBoundaryPeriods(e.body).matchAll(
-      new RegExp(`(?:[Ww]e say|[Dd]enote|[Tt]he class|[Ll]et)\\b[^.]{0,50}?(${CLASS_FONT_SRC})`, "g"),
-    ))
-      for (const c of classSymbolsIn(m[1])) defined.add(c);
-    for (const m of e.body.matchAll(new RegExp(`(${CLASS_FONT_SRC})[\\s^_{}A-Za-z0-9\\\\,;()|-]{0,30}?:=`, "g")))
-      for (const c of classSymbolsIn(m[1])) defined.add(c);
-  }
-  const used = new Map<string, Set<string>>();
-  for (const e of envs) {
-    if (e.env === "definitionv") continue;
-    // PARAMETERIZED use only: the class is immediately followed by a super/sub
-    // script or argument list (a bare ambient `\mathcal X` is not a named class).
-    for (const m of e.body.matchAll(new RegExp(`(${CLASS_FONT_SRC})\\s*(\\^|_|\\()`, "g"))) {
-      const sym = classSymbolsIn(m[1])[0];
-      if (!sym || defined.has(sym)) continue;
-      // Standard-normal notation is ordinary mathematics, not a paper-defined class.  Without
-      // this exclusion, `Z\\sim\\mathcal N(0,1)` is routed into P1's synthesize-definition loop;
-      // that adds a redundant definition of the normal law and can consume the whole repair cap.
-      // Keep parameterized neighbourhoods such as `\\mathcal N_i` covered by the detector.
-      if (sym === "\\mathcal{N}" && m[2] === "(") {
-        const call = e.body.slice((m.index ?? 0) + m[0].length - 1);
-        if (/^\(\s*0\s*,\s*1\s*\)/.test(call)) continue;
-      }
-      let s = used.get(sym);
-      if (!s) used.set(sym, (s = new Set()));
-      s.add(e.obj_id);
-    }
-  }
-  return [...used].map(([symbol, ids]) => ({ symbol, usedIn: [...ids] }));
-}
-
-export function lintNotation(tex: string): LintProblem[] {
-  return orphanParameterizedClasses(tex).map(({ symbol, usedIn }) => ({
-    gate: "notation-undefined",
-    detail: `the named class ${symbol} is used in ${usedIn.join("/")} but has no defining environment (no definitionv whose title names it, nor a "we say … ${symbol} … when" / "${symbol} := …" phrase) — give it an anchored definition and \\ref it from each use`,
-  }));
-}
-
 interface NotationHome {
   symbol: string;
   home: string;
+}
+
+/** The reviewer copy of a paper: TeX comments (`% lean:` provenance, scope sentinels,
+ *  drafting notes) never render, waste prompt tokens, and have produced findings against
+ *  text no reader sees. Strip them for READ-ONLY reviewers (P5 referee, P3 rubric) only —
+ *  the artifact and every editing path keep their comments, because a patch-applying
+ *  reviser must see the file as it really is. Comment-only lines collapse so the copy has
+ *  no runs of blank lines. */
+export function reviewerTexFor(paperTex: string): string {
+  return stripTexComments(paperTex).replace(/\n[ \t]*\n(?:[ \t]*\n)+/g, "\n\n");
 }
 
 /** Parse the P1 notation table rows that assign a paper symbol to an anchored home. */
 export function notationHomes(notation: string): NotationHome[] {
   const out: NotationHome[] = [];
   for (const line of notation.split("\n")) {
-    if (!/^\s*\|/.test(line)) continue;
     // Split on UNESCAPED pipes only: a math cell containing `\|` (a TeX norm,
     // doubling as the markdown escape for a literal pipe) must not add columns —
     // `| $\|\beta\|_1$ | … |` used to shatter into six bogus cells and the row
     // was silently dropped from the definition-order gate.
-    const cells = line.split(/(?<!\\)\|/).slice(1, -1).map((x) => x.trim());
+    const parts = line.split(/(?<!\\)\|/);
+    const edged = /^\s*\|/.test(line) && /(?<!\\)\|\s*$/.test(line);
+    const cells = (edged ? parts.slice(1, -1) : parts).map((x) => x.trim());
     if (cells.length < 4 || cells[0].toLowerCase() === "note symbol" || /^-+$/.test(cells[0])) continue;
     const home = cells[3].replace(/^`|`$/g, "").trim();
     if (!/^[A-Za-z0-9:_-]+$/.test(home) || home === "notation_gaps") continue;
@@ -653,10 +618,10 @@ export function notationHomes(notation: string): NotationHome[] {
       if (/[()]/.test(lhs) || !balanced("{", "}") || !balanced("[", "]")) continue;
       symbol = lhs;
     }
-    // Bare ASCII parameters are too overloaded for a sound text-only home check (`d` may denote
-    // both a weight family and, later, a polynomial degree). Structured tokens and TeX-named
-    // parameters remain unambiguous enough to gate deterministically.
-    if (!symbol || /^[A-Za-z]$/.test(symbol) || /(?:\\ldots|\\dots)/.test(symbol)) continue;
+    // A one-letter ASCII symbol is retained ONLY as explicit structured
+    // metadata. It cannot own anything by itself: P1 independently requires
+    // the named definitionv body to certify this exact symbol.
+    if (!symbol || /(?:\\ldots|\\dots)/.test(symbol)) continue;
     out.push({ symbol, home });
   }
   return out;
@@ -705,6 +670,40 @@ export function containsNotation(tex: string, symbol: string): boolean {
   return haystack.includes(needle);
 }
 
+/** TRUE iff `text` uses `symbol` AS ITSELF, not merely as the base of a LABELLED variant.
+ *  `containsNotation` is substring-based for multi-character needles, so a bare `N_k` matches
+ *  inside `N_k^{(1)}`. For placement and for the definition-order gate that is wrong: the
+ *  split count `N_k^{(1)}` is a different object owned by a different definition, so counting
+ *  it as a use drags the bare symbol's definition into the wrong section (or hard-fails the
+ *  paper for a move placement just made).
+ *
+ *  Only a LABEL-like superscript forms a new object: a parenthesized index (`^{(1)}`) or a
+ *  text-font tag (`^{\mathrm{loc}}`, `^{\text{...}}`, `^{\mathsf{...}}`). Arithmetic and
+ *  operator superscripts — `^2`, `^{-1}`, `^{1/2}`, `^\top`, `^*`, `^T` — decorate the SAME
+ *  object, so `N_k^2` before its home is still a genuine early use and must stay detected;
+ *  treating every `^` as object-forming traded a loud failure for silent under-detection.
+ *  Kept as a separate predicate rather than tightening `containsNotation`, whose substring
+ *  semantics the notation lints rely on. Known (harmless) gaps: an operator written INSIDE a
+ *  text-font macro — `^{\mathrm{-1}}`, `^{\mathrm{\top}}` — still reads as a label; nobody
+ *  writes those, and the ordinary `^{-1}` / `^\top` spellings are handled. Anything else the
+ *  pattern fails to recognize counts as a use, the conservative direction. Single-character
+ *  symbols never reach this logic: `containsNotation` already applies a stricter word-boundary
+ *  test for one-char needles, so `X` does not match inside `X^2`. */
+export function usesSymbolUndecorated(text: string, symbol: string): boolean {
+  if (!containsNotation(text, symbol)) return false;
+  const esc = symbol.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  // Label-like superscript: `^{(...)}`, `^(...)`, or `^{\mathrm|\text|\mathsf|\mathit{...}}`.
+  // A text-font tag must be at least TWO characters: `X^{\mathsf{T}}` / `X^{\mathrm{T}}` is
+  // transpose — the same object, exactly like `^\top` — not a label naming a new one. Anything
+  // this pattern fails to recognize (e.g. `\operatorname{...}`, nested braces) falls through to
+  // "counts as a use", the conservative direction.
+  const label = String.raw`\^\s*(?:\((?:[^()]*)\)|\{\s*(?:\([^()]*\)|\\(?:mathrm|text|mathsf|mathit|mathbf)\s*\{\s*[^{}\s]{2,}[^{}]*\})\s*\})`;
+  const labelled = new RegExp(`${esc}\\s*${label}`);
+  if (!labelled.test(text)) return true;
+  // Some occurrence must be unlabelled: strip every labelled occurrence and re-test.
+  return containsNotation(text.replace(new RegExp(`${esc}\\s*${label}`, "g"), " "), symbol);
+}
+
 /**
  * TRUE iff some anchored environment DISPLAYS a defining equality for `symbol`: an
  * occurrence of the symbol immediately followed by `=`, `:=`, `\coloneqq`, or `\equiv`
@@ -750,70 +749,147 @@ export function displaysDefiningEquality(tex: string, symbol: string): boolean {
   return false;
 }
 
-/**
- * A deliberately narrow semantic signature for decorated estimator notation.
- * Presentation reviewers often alternate between, for example,
- * `\widehat\tau_{\mathrm{sel}}` and
- * `\widehat\tau^{\mathrm{sel}}_{C_\epsilon,\epsilon}`.  Exact TeX matching
- * treats those as different symbols and used to synthesize the same reader
- * definition twice.  The base accent/letter plus a descriptive decorator
- * (`sel`, `ctr`, `hyb`, …) is stable; parameter decorators are not part of the
- * notation family.
- *
- * This intentionally returns null for undecorated quantities and for generic
- * subscripts such as `n`, `d`, or `epsilon`, keeping the heuristic out of the
- * general notation resolver.
- */
-export function estimatorNotationFamilies(tex: string): string[] {
-  const compact = notationSearchText(tex);
-  const ignored = new Set(["n", "d", "c", "epsilon", "varepsilon"]);
-  const matches = [...compact.matchAll(/\\widehat\{?(\\[A-Za-z]+|[A-Za-z])\}?/g)];
+/** Like `displaysDefiningEquality`, but treats a function's displayed argument list as
+ * incidental to the notation home. Thus `\Psi_{t,x}(h)=...` is a home for a reviewer
+ * request spelled `\Psi_{t,x}(h_n)`, while the decorated-symbol protections above still
+ * prevent an estimator equality from defining its undecorated target. */
+export function displaysDefiningEqualityFamily(tex: string, symbol: string): boolean {
+  if (displaysDefiningEquality(tex, symbol)) return true;
+  const canon = (s: string) =>
+    notationSearchText(s)
+      .replace(/\\[,;!:]/g, "")
+      .replace(/([_^])\{([^{}])\}/g, "$1$2");
+  const full = canon(symbol);
+  // A reviewer may name the operator (`\psi_B`) or one displayed application
+  // (`\Psi(h_n)`). In both cases the definition home may use another bound argument.
+  const stem = full.replace(/\([^()]*\)$/, "");
+  if (!stem) return false;
+  const haystack = canon(tex);
+  const accentBefore =
+    /\\(?:hat|widehat|bar|overline|underline|tilde|widetilde|dot|ddot|vec|overrightarrow|check|breve|acute|grave|mathring|bm|boldsymbol|mathbf)\{?$/;
+  for (let at = haystack.indexOf(stem); at >= 0; at = haystack.indexOf(stem, at + 1)) {
+    const before = haystack[at - 1] ?? "";
+    if (/^[A-Za-z]/.test(stem) && /[A-Za-z0-9\\\u0001]/.test(before)) continue;
+    if (/[_^]$/.test(haystack.slice(0, at).replace(/\{$/, "")) || accentBefore.test(haystack.slice(0, at))) continue;
+    let rest = haystack.slice(at + stem.length);
+    if (/\\[A-Za-z]+$/.test(stem) && /^[A-Za-z]/.test(rest)) continue;
+    if (!rest.startsWith("(")) continue;
+    let depth = 0;
+    let end = -1;
+    for (let i = 0; i < rest.length; i++) {
+      if (rest[i] === "(") depth++;
+      else if (rest[i] === ")" && --depth === 0) { end = i + 1; break; }
+    }
+    if (end < 0) continue;
+    rest = rest.slice(end).replace(/^&/, "");
+    if (/^(?::?=|\\coloneqq(?![A-Za-z])|\\equiv(?![A-Za-z]))/.test(rest)) return true;
+  }
+  return false;
+}
+
+
+function splitTopLevel(text: string): string[] | null {
+  const args: string[] = [];
+  let start = 0, round = 0, square = 0, curly = 0;
+  for (let i = 0; i <= text.length; i++) {
+    const c = text[i];
+    if (c === "(") round++; else if (c === ")") round--;
+    else if (c === "[") square++; else if (c === "]") square--;
+    else if (c === "{") curly++; else if (c === "}") curly--;
+    if (round < 0 || square < 0 || curly < 0) return null;
+    if ((c === "," && round === 0 && square === 0 && curly === 0) || i === text.length) {
+      args.push(text.slice(start, i).trim());
+      start = i + 1;
+    }
+  }
+  return round || square || curly || args.some((x) => !x) ? null : args;
+}
+
+function terminalApplication(text: string): { base: string; args: string[]; open: string; close: string } | null {
+  const delimiters = [["(", ")"], ["[", "]"], ["{", "}"], ["\\{", "\\}"]] as const;
+  const pair = delimiters.find(([, close]) => text.endsWith(close));
+  if (!pair) return null;
+  const [openToken, closeToken] = pair;
+  let depth = 0;
+  let open = -1;
+  for (let i = text.length - closeToken.length; i >= 0; i--) {
+    if (text.startsWith(closeToken, i)) { depth++; i -= closeToken.length - 1; }
+    else if (text.startsWith(openToken, i) && --depth === 0) { open = i; break; }
+  }
+  if (open <= 0 || depth !== 0) return null;
+  const base = text.slice(0, open).trim();
+  if (!base) return null;
+  const args = splitTopLevel(text.slice(open + openToken.length, -closeToken.length));
+  return args ? { base, args, open: openToken, close: closeToken } : null;
+}
+
+function applicationShape(text: string): string {
+  const value = text.trim();
+  const call = terminalApplication(value);
+  if (call) return `${call.open}${call.args.map(applicationShape).join(",")}${call.close}`;
+  // TeX set braces are escaped and therefore two-character delimiters.
+  if (value.startsWith("\\{") && value.endsWith("\\}")) {
+    const parts = splitTopLevel(value.slice(2, -2));
+    if (parts) return `\\{${parts.map(applicationShape).join(",")}\\}`;
+  }
+  const pairs = [["(", ")"], ["[", "]"], ["{", "}"]] as const;
+  for (const [open, close] of pairs) {
+    if (!value.startsWith(open) || !value.endsWith(close)) continue;
+    const parts = splitTopLevel(value.slice(1, -1));
+    if (parts) return `${open}${parts.map(applicationShape).join(",")}${close}`;
+  }
+  return "•";
+}
+
+/** Canonical identity of notation owned by a defining LHS. Bound argument NAMES
+ * are ignored, but application structure is retained: `Ψ(h)` matches `Ψ(h_n)`,
+ * not scalar `Ψ` or binary `Ψ(h,z)`; nested calls retain their shape. */
+export function definingNotationKey(symbol: string): string {
+  const normalized = notationSearchText(symbol)
+    .replace(/\\[,;!:]/g, "")
+    .replace(/([_^])\{([^{}])\}/g, "$1$2");
+  const call = terminalApplication(normalized);
+  // A braced super/subscript is a semantic decorator, not a function
+  // application. Collapsing `^{NP}` and `^{PI}` to the same argument-shape key
+  // creates false duplicate owners between distinct decision classes/risks.
+  return call && !(call.open === "{" && /[_^]$/.test(call.base))
+    ? `${call.base}${applicationShape(normalized)}` : normalized;
+}
+
+/** Parse atomic left-hand sides of top-level defining equalities in displayed/inline
+ * mathematics. Equality signs inside binders (`i=1`) are ignored by bracket depth. */
+export function definingNotationLhses(tex: string): string[] {
+  const spans = [
+    ...[...tex.matchAll(/\\\[([\s\S]*?)\\\]/g)].map((m) => m[1]),
+    ...[...tex.matchAll(/\\\((.*?)\\\)/g)].map((m) => m[1]),
+    ...[...tex.matchAll(/(?<!\\)\$([^$\n]+)(?<!\\)\$/g)].map((m) => m[1]),
+  ];
   const out = new Set<string>();
-  for (const match of matches) {
-    if (match.index == null) continue;
-    const base = match[0].replace(/[{}]/g, "");
-    const suffix = compact.slice(match.index + match[0].length);
-    let at = 0;
-    const decorators: string[] = [];
-    // Only consume scripts attached to this occurrence. Scanning the whole
-    // remaining statement merges a selector with the hybrid/centered
-    // estimators used in its defining branches.
-    while (suffix[at] === "_" || suffix[at] === "^") {
-      at += 1;
-      if (suffix[at] === "{") {
-        const start = ++at;
-        let depth = 1;
-        while (at < suffix.length && depth > 0) {
-          if (suffix[at] === "{") depth += 1;
-          else if (suffix[at] === "}") depth -= 1;
-          at += 1;
-        }
-        decorators.push(suffix.slice(start, Math.max(start, at - 1)));
-      } else {
-        const token = suffix.slice(at).match(/^(?:\\[A-Za-z]+|[A-Za-z0-9-]+)/)?.[0];
-        if (!token) break;
-        decorators.push(token);
-        at += token.length;
+  for (const span0 of spans) {
+    const span = span0.replace(/\\begin\{(?:aligned|gathered|split|array)\}(?:\{[^}]*\})?/g, "")
+      .replace(/\\end\{(?:aligned|gathered|split|array)\}/g, "");
+    for (const row0 of span.split(/\\\\|\n/)) {
+      const row = row0.trim();
+      let round = 0, square = 0, curly = 0;
+      let at = -1;
+      for (let i = 0; i < row.length; i++) {
+        const c = row[i];
+        if (c === "(") round++; else if (c === ")") round--;
+        else if (c === "[") square++; else if (c === "]") square--;
+        else if (c === "{") curly++; else if (c === "}") curly--;
+        if (round || square || curly) continue;
+        if (row.startsWith("\\coloneqq", i) || row.startsWith("\\equiv", i) || row.startsWith(":=", i) || c === "=") { at = i; break; }
       }
+      if (at < 0) continue;
+      let lhs = row.slice(0, at).replace(/&/g, "").trim();
+      lhs = lhs.replace(/^.*?(?:\\text\{[^}]*\}\s*)+/, "").trim();
+      if (!lhs || lhs.length > 180 || /(?:\\(?:le|ge|in|subset|sim)\b|[<>≤≥∈])/.test(lhs)) continue;
+      // Reject prose/composite arithmetic; retain decorated identifiers, calls, and classes.
+      if (/\s(?:and|or|for|when)\s/i.test(lhs) || /\s[+\-*/]\s/.test(lhs)) continue;
+      out.add(lhs);
     }
-    const tags: string[] = [];
-    for (const decorator of decorators) {
-      for (const m of decorator.matchAll(/\\(?:mathrm|text)\{([A-Za-z][A-Za-z0-9-]*)\}/g)) tags.push(m[1].toLowerCase());
-      if (/^[A-Za-z][A-Za-z0-9-]*$/.test(decorator)) tags.push(decorator.toLowerCase());
-    }
-    const descriptive = [...new Set(tags.filter((tag) => tag.length >= 2 && !ignored.has(tag)))].sort();
-    if (descriptive.length > 0) out.add(`${base}:${descriptive.join(",")}`);
   }
   return [...out];
-}
-
-export function estimatorNotationFamily(tex: string): string | null {
-  return estimatorNotationFamilies(tex)[0] ?? null;
-}
-
-export function sameEstimatorNotationFamily(a: string, b: string): boolean {
-  const fa = new Set(estimatorNotationFamilies(a));
-  return estimatorNotationFamilies(b).some((family) => fa.has(family));
 }
 
 export function proseDefinesNotation(prose: string, symbol: string): boolean {
@@ -836,18 +912,61 @@ export function proseDefinesNotation(prose: string, symbol: string): boolean {
 /**
  * Hard reader-scope gate: a notation-table symbol may not occur in a formal environment before
  * the anchored environment recorded as its home, unless preceding prose explicitly introduces it.
- * This complements `lintNotation`, which detects orphan named classes but cannot see ordinary
- * vectors/functions such as `u_j` or distinguish a later definition from an earlier one.
+ * Complements the codex notation reviewer: it sees ordinary vectors/functions such as
+ * `u_j` positionally, without needing semantic judgment about what defines them.
  */
 export function lintDefinitionOrder(tex: string, notation: string): LintProblem[] {
   const envs = scanAnchoredEnvs(tex);
   const byId = new Map(envs.map((e) => [e.obj_id, e]));
   const problems: LintProblem[] = [];
   const seen = new Set<string>();
+  const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  // Displayed-LHS defines→uses graph, for cycle detection only: X→Y iff some equality
+  // LHS displayed in X appears in Y. Mutually reachable envs form a definition cycle —
+  // no linear layout satisfies both, so order is not enforced within one.
+  const lhsById = new Map(envs.map((e) => [e.obj_id, definingNotationLhses(e.body)]));
+  const outEdges = new Map(envs.map((x) => [x.obj_id, envs
+    .filter((y) => y.obj_id !== x.obj_id &&
+      (lhsById.get(x.obj_id) ?? []).some((lhs) => containsNotation(y.body, lhs)))
+    .map((y) => y.obj_id)] as const));
+  const reaches = (from: string, to: string): boolean => {
+    const queue = [from], visited = new Set([from]);
+    while (queue.length > 0) {
+      const at = queue.shift()!;
+      if (at === to) return true;
+      for (const next of outEdges.get(at) ?? []) if (!visited.has(next)) { visited.add(next); queue.push(next); }
+    }
+    return false;
+  };
+  const mutuallyDependent = (a: string, b: string): boolean => reaches(a, b) && reaches(b, a);
   for (const { symbol, home } of notationHomes(notation)) {
     const homeEnv = byId.get(home);
-    if (!homeEnv) continue; // Missing homes are owned by the existing resolvability review.
-    const firstUse = envs.find((e) => e.order < homeEnv.order && containsNotation(`${e.title ?? ""} ${e.body}`, symbol));
+    // Same notion of "use" as the first-use scan below: a home that carries only a labelled
+    // variant does not introduce the bare symbol, so it must not anchor the ordering check.
+    if (!homeEnv || !usesSymbolUndecorated(`${homeEnv.title ?? ""} ${homeEnv.body}`, symbol)) continue;
+    // Enforce only for a home that visibly INTRODUCES the symbol (a definition env, a
+    // displayed defining equality, defining prose, or an existential binder). A table row
+    // whose claimed home merely mentions the symbol is metadata drift, not a reader-order
+    // constraint.
+    const flatHome = homeEnv.body.replace(/\s+/g, " ");
+    const existentially = (body: string) =>
+      new RegExp(String.raw`there\s+(?:exists?|is|are)\b[^.;]{0,80}?` + escapeRe(symbol)).test(body);
+    const witnessed = homeEnv.env === "definitionv" || homeEnv.env === "algorithmv" ||
+      displaysDefiningEqualityFamily(homeEnv.body, symbol) ||
+      proseDefinesNotation(homeEnv.body, symbol) ||
+      existentially(flatHome);
+    if (!witnessed) continue;
+    const firstUse = envs.find((e) =>
+      e.order < homeEnv.order &&
+      // Must agree with the PLACEMENT scan (p1_plan `preferredSectionsForSynths`): if a
+      // decorated variant (`N_k^{(1)}`) does not count as a user for placement, it must not
+      // count as a first USE here either — otherwise placement moves a definition later and
+      // this gate hard-fails the paper for the move it just made.
+      usesSymbolUndecorated(`${e.title ?? ""} ${e.body}`, symbol) &&
+      // An existential local binder introduces the symbol in scope ("there exists an
+      // integer M_n such that …") — a bound occurrence, not a free premature use.
+      !existentially(e.body.replace(/\s+/g, " ")) &&
+      !mutuallyDependent(e.obj_id, homeEnv.obj_id));
     if (!firstUse) continue;
     const proseBeforeUse = stripAnchoredEnvBlocks(tex.slice(0, firstUse.start));
     if (proseDefinesNotation(proseBeforeUse, symbol)) continue;
@@ -1011,7 +1130,7 @@ export function lintCrossRefs(tex: string, allowed: Map<string, Set<string>>): L
 export function lintAnchors(
   tex: string,
   knownObjIds: Set<string>,
-  frozenHashes: Map<string, string> | null, // null before the P1 freeze
+  frozenBodies: Map<string, string> | null, // obj_id → canonical body; null before the P1 freeze
 ): LintProblem[] {
   const problems: LintProblem[] = [];
   BARE_RE.lastIndex = 0;
@@ -1026,11 +1145,11 @@ export function lintAnchors(
     if (!knownObjIds.has(e.obj_id)) {
       problems.push({ gate: "unknown-objid", detail: `${e.env}{${e.obj_id}} not in bank crosswalk` });
     }
-    if (frozenHashes) {
-      const h = frozenHashes.get(e.obj_id);
-      if (h === undefined) {
+    if (frozenBodies) {
+      const canonical = frozenBodies.get(e.obj_id);
+      if (canonical === undefined) {
         problems.push({ gate: "not-frozen", detail: `${e.obj_id} absent from frozen layer` });
-      } else if (h !== hashEnvBody(e.body)) {
+      } else if (normalizeBody(canonical) !== normalizeBody(e.body)) {
         problems.push({ gate: "frozen-drift", detail: `${e.obj_id} body differs from frozen layer` });
       }
     }
@@ -1056,4 +1175,12 @@ export function lintAnchors(
     }
   }
   return problems;
+}
+
+/** Canonical proof-title line: the paper (and the proof-placement lint) identify a proof by
+ *  `\\begin{proof}[Proof of \\cref{obj:<id>}]`. Renderers and refiners sometimes emit a
+ *  free-form, prefixless, or missing title, leaving a proof a READER cannot attribute —
+ *  normalize deterministically at every path that persists proof text. */
+export function canonicalizeProofTitle(objId: string, proof: string): string {
+  return proof.replace(/^\s*\\begin\{proof\}(\[[^\]]*\])?/, `\\begin{proof}[Proof of \\cref{obj:${objId}}]`);
 }

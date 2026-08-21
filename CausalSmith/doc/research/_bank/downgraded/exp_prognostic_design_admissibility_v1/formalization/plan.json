@@ -1,0 +1,857 @@
+{
+  "qid": "exp_prognostic_design_admissibility",
+  "specialization": "v1",
+  "cluster": "experimentation",
+  "lean_target_subdir": "CausalSmith/Experimentation/EXP_PrognosticDesignAdmissibility_Research",
+  "namespace": "CausalSmith.Experimentation.PrognosticDesignAdmissibility",
+  "verdict_hint": "needs-new-infrastructure",
+  "decisions": [
+    {
+      "id": "PD-1",
+      "decision": "No paper manifest (`state.theorems`) was supplied in the brief, so the paper-scoped preamble is inert. Every statement node that is a proof obligation nevertheless carries a `local_id`, set to the core node id; the `theorems` manifest in the stdout receipt uses the same ids. If the orchestrator later supplies numeric `t1..tN` ids, they map 1-1 onto this list in the order given here."
+    },
+    {
+      "id": "PD-2",
+      "decision": "Index type is `Fin n` with `n` even (`hn : 2 ≤ n`, `hpar : Even n` threaded as ambient S2 side conditions, not as core assumption nodes: the core declares evenness inside the symbol `n`'s space, not as an `ass:` node)."
+    },
+    {
+      "id": "PD-3",
+      "decision": "Assignments are encoded as `Fin n → Bool` with the `±1` sign map `signOf z i = if z i then 1 else -1` (the same encoding the sibling accepted-bank artifact `EXP_DesignPm1ExactnessBoundaryV1_Research` uses), NOT as `Fin n → ({-1,1} : Set ℝ)`. `Z_n` is the balance predicate `∑ i, signOf z i = 0` on that space; `Delta(Z_n)` is realized as `FiniteDesign (Fin n → Bool)` supported on the balance predicate, so the simplex needs no separate carrier."
+    },
+    {
+      "id": "PD-4",
+      "decision": "`lambda_max(A | H_n)` (a constrained top eigenvalue on a subspace) is realized as the supremum of the Rayleigh quotient over unit vectors of the subspace (`sSup` over `{u | u ∈ H_n ∧ ‖u‖ = 1}` of `u ⬝ A u`), NOT via `Matrix.IsHermitian.eigenvalues`. Attainment is a proved helper (compact sphere ∩ subspace, continuous quotient), so the paper's `min`/`max` claims stay faithful without carrying an eigenvector indexing scheme."
+    },
+    {
+      "id": "PD-5",
+      "decision": "SYNC-BACK redirect: `def:regret-handle` is anchored to `compactifiedRegretProgram`, whose epigraph enforces `A ∈ C_n`, `rho ∈ [0,1]`, `s = rho²`, the `eta ≥ 0` infimum, and the perfect-quality boundary closure. `balancedCutSupportOracle` records the finite cut-hull support-oracle component used by the active-simplex algebraic handle; no polynomial-time claim is added."
+    },
+    {
+      "id": "PD-6",
+      "decision": "SYNC-BACK redirect: multi-object definition nodes use a full public anchor: `oracleRisk` for v*/V*, `admissibilityInvariants` for the κ/γ pair, `minimaxRegret` for Delta_reg/R*, `partitionScoreGeometry` for constrained genuine partitions plus its specializations, `FourUnitScoreMixture` for u4/S4/d_pair4/A_pair4 and the covariance assertion, and constrained `orbitCovariance` for G_P/A_P(G). Component definitions remain untagged companions."
+    },
+    {
+      "id": "PD-7",
+      "decision": "`V_CRD` is a symbol, not a node: it is emitted as the closed-form `def crdRisk (n) (M) : ℝ := 4 * M / (n - 1)` inside the `def:oracle-risk` node block (S2-bound symbol, no independent node)."
+    }
+  ],
+  "substrate_survey": [
+    {
+      "module": "Causalean.Experimentation.DesignBased.DesignCore (`FiniteDesign`, `E`, `Var`, `Cov`, `Pr`, `ind`)",
+      "decision": "reuse (S1)",
+      "reason": "The paper's design world is literally a pmf on a finite assignment space with finite-sum moments and assignment as the only randomness; `FiniteDesign (Fin n → Bool)` plus `E`/`Var` is exactly that layer. `E_const`/`E_add`/`E_const_mul`/`Var_eq`/`Cov_linear_comb` discharge every moment identity in `lem:exact-design-risk`."
+    },
+    {
+      "module": "Causalean.Experimentation.DesignBased.PotentialOutcome (`ProperlySpecified`, `Yobs`, `Yobs_eq_sum`)",
+      "decision": "define-local assumption; reuse `ProperlySpecified` only as a proof bridge",
+      "reason": "The core keeps the potential-outcome array assignment-indexed until `ass:fixed-potential-outcomes` is applied. `ProperlySpecified` is structurally fixed and therefore only partially fits this pair of atoms: using it directly would make the fixity hypothesis redundant. F2 defines the exact pointwise atom `yr i z = Y i (z i) z`; Stage 3 combines it with fixity to derive the Causalean predicate."
+    },
+    {
+      "module": "Causalean.Experimentation.DesignBased.Exposure (`expo`, `expoInd`, `prop`)",
+      "decision": "reuse (indirect, via ProperlySpecified) / no further use",
+      "reason": "Needed only to instantiate `ProperlySpecified`; the paper has no nontrivial exposure mapping (exposure = own treatment), so the generalized-propensity layer (`prop`, `propPairSame`) is not consumed."
+    },
+    {
+      "module": "Causalean.Experimentation.DesignBased.HT/{Estimator,Unbiased,Variance} (`htTotal`, `htMean`, `htEffect`, `E_htEffect`, `Var_htTotal`)",
+      "decision": "bypass-justified",
+      "reason": "The paper's estimator is the balanced difference in means `2 n⁻¹ ∑ z_i Y_i^obs`, an exactly-`n/2` fixed-count contrast, not an inverse-propensity HT total over an exposure alphabet. The HT unbiasedness/variance identities are stated in `1/π_i(d)` weights that do not specialize to the `±1` contrast normalization without rewriting; reusing them would cost more plumbing than the two-line consistency substitution. Recorded, not silently skipped."
+    },
+    {
+      "module": "Causalean.Experimentation.DesignBased.Estimators.DifferenceInMeans (`sateEstimand`, `diffInMeans`, `E_diffInMeans_eq_sate`, `unbiased_diffInMeans`)",
+      "decision": "bypass-justified (analogous module recorded for F3)",
+      "reason": "Closest existing analogue: SATE unbiasedness of the difference in means. But it is stated for `completeRandomization n₁` on the carrier `{S : Finset U // S.card = n₁}` — ONE specific design — whereas `lem:exact-design-risk` must hold for EVERY `d ∈ D_n` (an arbitrary mean-zero law on the balanced sign space), and must deliver the exact MSE identity `4 n⁻² μᵀ A_d μ`, which this module does not state. Partial fit, not a discharge. F3 should ADAPT the proof pattern of `E_diffInMeans_eq_sate` (`Causalean/Experimentation/DesignBased/Estimators/DifferenceInMeans.lean:181`), bridging design-specific → design-class and mean → second moment."
+    },
+    {
+      "module": "Causalean.Experimentation.DesignBased.Designs.CompleteRandomization (`completeRandomization`, `completeRandomization_incl`, `completeRandomization_incl_pair`)",
+      "decision": "bypass-justified (first/second-order moments reused as a proof template)",
+      "reason": "The CRD benchmark `A_CRD = c_n P_H` needs exactly the two facts `E[z_i] = 0` and `E[z_i z_j] = -1/(n-1)` for `i ≠ j`. This module proves the corresponding inclusion probabilities `n₁/N` and `n₁(n₁-1)/(N(N-1))` on the `Finset`-subtype carrier; the arithmetic transfers, but the carrier differs from the `Fin n → Bool` sign encoding fixed by PD-3, and the ±1 second-moment form is not stated. F3 adapts `completeRandomization_incl_pair` rather than re-deriving the counting."
+    },
+    {
+      "module": "Causalean.Experimentation.MatchedPairDesign.{MatchedPair,Estimator,Variance} (`matchedPairDesign`, `matchedPairDesign_E_mpTreatInd_cross`)",
+      "decision": "bypass-justified (analogous module recorded for F3)",
+      "reason": "`matchedPairDesign` IS independent fair within-pair orientations — the attaining design `A_W = 2 P_T` of `thm:exact-pair-space-regret` — realized as a product of pair coins on `P → Bool`. The carrier (`P → Bool`, one bit per pair) differs from the unit-indexed `Fin n → Bool` space, and the covariance matrix `E[z zᵀ]` is nowhere formed there, so it is not a discharge; but its cross-pair independence lemmas are the template for the within-block covariance computation in `Helpers/OrbitReduction.lean`."
+    },
+    {
+      "module": "Causalean.Experimentation.DesignBased.Optimality{,/Minimax,/Neyman} (`DesignFamily`, `IsOptimalOn`, `exists_isOptimalOn`, `worstRisk`, `IsMinimaxOn`, `bestRisk`, `regret`, `regret_nonneg`)",
+      "decision": "bypass-justified (abstraction mismatch), analogue recorded",
+      "reason": "The abstract minimax/regret layer is stated over a FINITE design family with a `LinearOrder`-valued risk and gets existence from `Finset` extremality. The paper's outer variable ranges over the COMPACT CONVEX hull `C_n` (a continuum), its adversary over a spectrahedron, and its attainment comes from compactness + continuity, not finiteness; `bestRisk`/`regret` are indexed by a state `y`, whereas `Delta_reg` takes a sup over the continuum `ρ ∈ [0,1]` of an oracle-relative gap. Reusing `regret` would force a fictitious finite family. The naming and the `regret = risk − bestRisk` shape are nonetheless mirrored deliberately."
+    },
+    {
+      "module": "Causalean.Experimentation.DesignBased.Risk (`mseRisk`, `mseRisk_eq_var_of_unbiased`)",
+      "decision": "reuse (opportunistic, inside `lem:exact-design-risk`)",
+      "reason": "`mseRisk_eq_var_of_unbiased` converts the unbiasedness half of `lem:exact-design-risk` into the variance half for free once `E_d[τ̂_d] = τ_n` is proved; F3 should use it rather than re-expanding `E[(τ̂ − τ)²]`."
+    },
+    {
+      "module": "CausalSmith.Experimentation.DesignPm1 (`EXP_DesignPm1ExactnessBoundaryV1_Research`: `signOf`, `assignmentSecondMoment`, `assignmentSecondMoment_posSemidef`, `Helpers/SymmetryReduction.lean`, `Helpers/SpectralCoordinates.lean`, `Helpers/SimplexActiveSet*.lean`, `Helpers/WeightedSimplexKKT.lean`, `Helpers/ParitySlice*.lean`)",
+      "decision": "bypass-justified as a DEPENDENCY; recorded as the primary ANALOGOUS module for F3",
+      "reason": "Same technique family (randomized ±1 covariances, cut-hull vs elliptope, symmetry/orbit reduction, simplex active-set optimality, parity obstructions) but hard-wired to the two-block index `Fin (2*m)` with block-symmetric `X(u,v)` coordinates and a homophily objective; it has no score subspace, no quality shell, no SATE risk, and its sign symmetry is global sign reversal rather than fixed-count balance. Importing a sibling research artifact would also couple two banked papers. F3 should ADAPT, file by file: `Helpers/SymRedDesign.lean` (`assignmentSecondMoment_posSemidef`/`_diag`/`_symm`) → our `Helpers/CovarianceHull.lean` PSD/diag/zero-row-sum facts (core eq. (1)); `Helpers/SymmetryReduction.lean` → `Helpers/OrbitReduction.lean` (Jensen over a permutation orbit); `Helpers/ParitySliceVertices.lean` → the parity classification `kappa(S_P) = 0 ⟺ every block even`; `Helpers/WeightedSimplexKKT.lean` → the simplex-side optimality in `thm:exact-oracle-saddle`."
+    },
+    {
+      "module": "CausalSmith.Experimentation.SaturationSkew (`EXP_SaturationSkewThreshold_Research/Helpers/{Duality,ExtremePoints,Convex,MomentAlgebra}.lean`)",
+      "decision": "bypass-justified; recorded as a secondary ANALOGOUS module",
+      "reason": "Carries the same proof pattern (LP/conic duality over a moment set, Krein–Milman extreme-point reduction, finite moment-polytope algebra) for a saturation-design objective. Different objective and feasible set, so no decl fits; but `Helpers/ExtremePoints.lean` (over `Mathlib.Analysis.Convex.KreinMilman`) and `Helpers/Duality.lean` (over `Mathlib.Analysis.LocallyConvex.Separation`) are the closest in-repo templates for our `Helpers/ExtremePoints.lean` and `Helpers/Separation.lean`."
+    },
+    {
+      "module": "Causalean.PO/ (superpopulation potential-outcome framework)",
+      "decision": "bypass-justified",
+      "reason": "The sampling model is a FIXED finite population with assignment as the only randomness and no superpopulation draw; the measure-theoretic `PO/` world would import probability-space machinery that every identity here provably does not need (the design-based substrate is a deliberate sibling of `PO/` that never imports it). Explicitly surveyed and declined."
+    },
+    {
+      "module": "Mathlib matrix/convexity/spectral layer (`Mathlib.LinearAlgebra.Matrix.PosDef`, `Mathlib.Analysis.Matrix.Spectrum`, `Mathlib.Analysis.Convex.{Combination,Caratheodory,KreinMilman,Extreme,Topology}`, `Mathlib.Analysis.LocallyConvex.Separation`, `Mathlib.Analysis.InnerProductSpace.PiL2`)",
+      "decision": "bypass-justified to Mathlib (S2 world)",
+      "reason": "The geometry world (projectors, PSD matrices, convex hulls of finite matrix sets, Rayleigh quotients, separation) is purely algebraic/analytic over `Matrix (Fin n) (Fin n) ℝ` and `EuclideanSpace ℝ (Fin n)`. Searched Causalean for `elliptope`, `cutHull`, `lambdaMax`, `rayleigh`, `spectrahedron`, `convexHull` matrix primitives (`lean_local_search`): the only hits are Mathlib's `ContinuousLinearMap.rayleighQuotient` family and the paper-specific `DesignPm1` decls above — no Causalean-level counterpart exists, so S2 is a justified Mathlib bypass."
+    }
+  ],
+  "env": [
+    {
+      "id": "S1",
+      "world": "Design-based finite-population world: a balanced mean-zero randomization law on the finite sign-assignment space. Carrier `FiniteDesign (Fin n → Bool)` (Causalean's finite-sum probability layer), with `signOf z i = if z i then 1 else -1`, the balance predicate `IsBalanced z ↔ ∑ i, signOf z i = 0` cutting out `Z_n`, and fixed potential outcomes `y : Fin n → Bool → ℝ`. Assignment is the ONLY source of randomness; there is no superpopulation draw and no measure-theoretic layer.",
+      "binds_symbols": [
+        "n",
+        "Z_n",
+        "Delta_Z_n",
+        "d",
+        "z",
+        "D_n",
+        "treatment_label",
+        "y_i_a",
+        "Y_i_obs",
+        "tau_n",
+        "hat_tau_d",
+        "d_reg",
+        "d_pair_4"
+      ],
+      "binds_sampling_model": true,
+      "disposition": "reuse",
+      "reuse": "Causalean.Experimentation.DesignBased.FiniteDesign",
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Causalean.Experimentation.DesignBased.PotentialOutcome",
+        "Causalean.Experimentation.DesignBased.Risk"
+      ],
+      "notes": "Highest-leverage reuse decision: this IS the design-based flavour of the PO framework, and encoding the paper over the measure-theoretic `PO/` world would be an infidelity (the core's sampling model states 'a fixed finite population of even size n; there is no superpopulation draw'). `FiniteDesign.E`/`Var`/`Cov` give `E_d[z] = 0`, `A_d = E_d[z zᵀ]`, and the MSE identity as pure `Finset` algebra with no integrability obligations. `Delta(Z_n)` needs no separate simplex carrier: a `FiniteDesign` IS a point of the simplex on `Fin n → Bool`, and `D_n` is the subset supported on `IsBalanced` with `E_d[signOf · i] = 0` for every `i`. Evenness of `n` (`Even n`, `2 ≤ n`) is threaded as an ambient side condition on the S1 index, matching the core's declaration of `n`'s space as `{4,6,8,...}`."
+    },
+    {
+      "id": "S2",
+      "world": "Euclidean/spectral geometry world over `ℝ^n`: the centered subspace `H_n = (span 1_n)ᗮ`, orthogonal projectors `P_H`/`P_S`, symmetric PSD matrices, the balanced covariance hull `C_n = convexHull ℝ {s sᵀ : s = signOf z, z balanced}`, the lifted spectrahedron, and constrained top eigenvalues realized as Rayleigh suprema on subspaces (PD-4). Everything is `Matrix (Fin n) (Fin n) ℝ` acting on `EuclideanSpace ℝ (Fin n)`.",
+      "binds_symbols": [
+        "I_n",
+        "one_n",
+        "H_n",
+        "P_H",
+        "A_d",
+        "C_n",
+        "mu",
+        "M",
+        "S",
+        "P_S",
+        "rho_mu",
+        "rho",
+        "Y_rho_M_S",
+        "c_n",
+        "A_CRD",
+        "X_rho_S",
+        "q_rho",
+        "v_star",
+        "V_star",
+        "V_CRD",
+        "kappa_S",
+        "gamma_S",
+        "A_n",
+        "rho_star_S",
+        "Delta_reg",
+        "R_star",
+        "u_4",
+        "A_pair_4",
+        "S_partition",
+        "S_B",
+        "S_pair",
+        "S_4",
+        "G_Pi",
+        "A_Pi_G"
+      ],
+      "binds_sampling_model": false,
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Data.Matrix.Basic",
+        "Mathlib.LinearAlgebra.Matrix.Trace",
+        "Mathlib.LinearAlgebra.Matrix.PosDef",
+        "Mathlib.Analysis.Matrix",
+        "Mathlib.Analysis.Matrix.Spectrum",
+        "Mathlib.Analysis.InnerProductSpace.PiL2",
+        "Mathlib.Analysis.Convex.Combination",
+        "Mathlib.Analysis.Convex.Topology",
+        "Mathlib.Analysis.SpecialFunctions.Sqrt"
+      ],
+      "notes": "bypass-justified: purely algebraic/analytic geometry over Mathlib matrices; Causalean has no elliptope / cut-hull / constrained-eigenvalue primitive. SEARCH TRACE — `lean_local_search` on `elliptope` (0 hits), `cutHull` (0 hits), `lambdaMax` (0 hits), `rayleigh` (Mathlib `ContinuousLinearMap.rayleighQuotient` family only, an unconstrained operator-norm-style quotient with no subspace-restricted variant), `minimax` (Causalean `Stat/Minimax/MinimaxValue.lean` + `Estimation/MinimaxATE`, both statistical-decision minimax over risk functions, not conic geometry); `assignmentSecondMoment` (only the paper-specific `DesignPm1` decls). Mathlib-side check: `lean_leansearch \"von Neumann minimax theorem convex compact saddle point exists\"` returns only `Mathlib.Order.SaddlePoint` (order-theoretic weak duality `iSup₂_iInf₂_le_iInf₂_iSup₂` + `IsSaddlePointOn` bookkeeping) — no convexity-based minimax. Result: not found; S2 is defined locally over Mathlib."
+    }
+  ],
+  "citations": [
+    {
+      "id": "cite:kallus2021-mixed-strategy-eigenvalue",
+      "title": "On the Optimality of Randomization in Experimental Design: How to Randomize for Minimax Variance and Design-Based Inference",
+      "authors": "Kallus, N.",
+      "year": 2021,
+      "venue": "Journal of the Royal Statistical Society, Series B 83, 404--409",
+      "cite": "Kallus2021Randomization",
+      "locator": "Section 5, first paragraph, pp. 407--408",
+      "doi": "10.1111/rssb.12412",
+      "url": "https://academic.oup.com/jrsssb/article/83/2/404/7056002",
+      "bibliography_key": "Kallus2021Randomization",
+      "statement": "For the ellipsoidal conditional-mean class M_K = {K u : uᵀ K u ≤ C} with K ⪰ 0, a symmetric balanced mixed design σ with assignment second moment Q(σ) has worst-case design variance V(σ, M_K) = C · λ_max(K^{1/2} Q(σ) K^{1/2}), and the randomized mixed-strategy optimal design minimizes that largest-eigenvalue criterion over the paper's feasible design class.",
+      "used_by_nodes": [
+        "lem:kallus-mixed-strategy-eigenvalue-framework"
+      ],
+      "verbatim_statement": "An example is M_K := {K u : u^T K u <= C} for a positive semidefinite K, for which V(sigma,M_K)=C lambda_max(K^(1/2) Q(sigma) K^(1/2)). The randomized MSOD solves min over sigma in S of this largest-eigenvalue criterion.",
+      "attestation": {
+        "by": "main",
+        "note": "Verified 2026-08-08 against the publisher HTML for Kallus (2021), Section 5, opening paragraphs (journal pp. 407-408), https://academic.oup.com/jrsssb/article/83/2/404/7056002; the page states the ellipsoidal class and variance formula and then defines the randomized MSOD minimization over sigma in S.",
+        "at": "2026-08-09T04:12:51.107Z"
+      }
+    }
+  ],
+  "nodes": {
+    "ass:fixed-potential-outcomes": {
+      "lean_kind": "assumption",
+      "lean_name": "FixedPotentialOutcomes",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "kind_class": "modeling assumption",
+      "shape": "def FixedPotentialOutcomes {n : ℕ} (Y : Fin n → Bool → (Fin n → Bool) → ℝ) : Prop := ∀ i a z z', Y i a z = Y i a z'",
+      "notes": "Design-based finite-population atom: the potential-outcome array is fixed with respect to the assignment law. Encoded non-vacuously by carrying a possibly assignment-indexed array `Y i a z` and asserting `z`-invariance; the fixed array `y i a` is then extracted (`y i a := Y i a z₀`) and every downstream expectation is over the assignment alone. A MODELING assumption on the data-generating stance, never a proof obligation: kept as a threaded `Prop` hypothesis of `lem:exact-design-risk`, never discharged. SEARCH TRACE — `lean_local_search` on `FixedPotentialOutcomes`, `fixedPotentialOutcome`, `ProperlySpecified`, `PotentialOutcome` over `Causalean/Experimentation/DesignBased/{PotentialOutcome,Exposure,DesignCore}.lean`: Causalean makes fixity STRUCTURAL (its `y : ι → Δ → ℝ` simply has no `Ω` argument) and therefore states no such predicate; a named Prop is still required by the node→Lean map, so it is defined locally. Mathlib-side check not applicable (domain-specific modeling stance, not a mathematical fact)."
+    },
+    "ass:consistency-no-interference": {
+      "lean_kind": "assumption",
+      "lean_name": "ConsistencyNoInterference",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.PotentialOutcome",
+        "Causalean.Experimentation.DesignBased.Exposure"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "kind_class": "causal-structural modeling assumption",
+      "shape": "def ConsistencyNoInterference (Y : Fin n → Bool → (Fin n → Bool) → ℝ) (yr : Fin n → (Fin n → Bool) → ℝ) : Prop := ∀ i z, yr i z = fixedOutcome Y i (z i)",
+      "notes": "SYNC-BACK redirect: the observed response is equated to the fixed two-argument potential-outcome array, so it cannot depend on other units' assignments. The separate `FixedPotentialOutcomes` atom still records the design-based fixed-array stance for the original assignment-indexed input."
+    },
+    "def:balanced-design-space": {
+      "lean_kind": "def",
+      "lean_name": "balancedDesignSpace",
+      "companions": [
+        "signOf",
+        "IsBalanced",
+        "balancedAssignments"
+      ],
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "shape": "def IsBalanced (z : Fin n → Bool) : Prop := ∑ i, signOf z i = 0 ;  def balancedDesignSpace (n : ℕ) : Set (FiniteDesign (Fin n → Bool)) := {D | (∀ z, D.p z ≠ 0 → IsBalanced z) ∧ ∀ i, D.E (fun z => signOf z i) = 0}",
+      "notes": "The feasible design class `D_n`: laws supported on the balanced sign vectors with zero mean. Build-inline over the reused `FiniteDesign` carrier. SEARCH TRACE — CLI concept words `balanced design`, `mean zero assignment`, `fixed treatment count`, `sign symmetric design` and `lean_local_search` on `BalancedSignDesign`, `balancedDesign`, `completeRandomization`, `MatchedPair`: the nearest hits are `CausalSmith.Experimentation.DesignPm1.BalancedSignDesign` (GLOBAL SIGN SYMMETRY `p z = p (−z)`, which is strictly stronger than mean-zero and does not impose the fixed-count support) and `Causalean...completeRandomization` (one specific law on a `Finset`-subtype carrier, not a class). Neither is the mean-zero + balanced-support CLASS. Not found; defined locally. Mathlib-side check not applicable (domain object, not a standard mathematical fact)."
+    },
+    "def:covariance-hull": {
+      "lean_kind": "def",
+      "lean_name": "covarianceHull",
+      "companions": [
+        "signOuter",
+        "designCovariance"
+      ],
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.Convex.Combination",
+        "Mathlib.Data.Matrix.Basic",
+        "Causalean.Experimentation.DesignBased.DesignCore"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "shape": "def signOuter (z : Fin n → Bool) : Matrix (Fin n) (Fin n) ℝ := fun i j => signOf z i * signOf z j ;  def covarianceHull (n : ℕ) : Set (Matrix (Fin n) (Fin n) ℝ) := convexHull ℝ (signOuter '' {z | IsBalanced z}) ;  def designCovariance (D) : Matrix .. := fun i j => D.E (fun z => signOf z i * signOf z j)   -- A_d",
+      "notes": "`C_n` as a Mathlib `convexHull` of a finite matrix set, plus the design-side covariance operator `A_d` (the S2 symbol `A_d`). SEARCH TRACE — `lean_local_search` on `cutHull` (0 hits), `elliptope` (0 hits), `convexHull` matrix primitives in Causalean (none), `assignmentSecondMoment` (only `CausalSmith.Experimentation.DesignPm1.assignmentSecondMoment`, which is the same E[z zᵀ] construction but hard-wired to `Fin (2*m)` and consumed only through its block-symmetric reduction; its PSD/diag/symm lemmas in `Helpers/SymRedDesign.lean` are the ANALOGOUS module F3 should adapt for core eq. (1): `A ⪰ 0`, `A 1 = 0`, `diag A = 1`, `tr(A | H_n) = n`). Not found as a reusable decl; defined locally. Mathlib-side check: `convexHull ℝ` over `Matrix` is available (`Mathlib.Analysis.Convex.Combination`), so only the paper-specific vertex set is new."
+    },
+    "def:realized-score-quality": {
+      "lean_kind": "def",
+      "lean_name": "RealizedQualityAtLeast",
+      "companions": [
+        "realizedQuality",
+        "centeredSubspace",
+        "projH",
+        "projS"
+      ],
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.InnerProductSpace.PiL2",
+        "Mathlib.Data.Matrix.Basic",
+        "Mathlib.Analysis.SpecialFunctions.Sqrt"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "shape": "def RealizedQualityAtLeast (S) (μ) (ρ : ℝ) : Prop := ∃ hSH : S ≤ H_n, ∃ hμH : μ ∈ H_n, ∃ hμ0 : μ ≠ 0, ρ ∈ Set.Icc 0 1 ∧ realizedQuality S hSH μ hμH hμ0 ≥ ρ",
+      "notes": "SYNC-BACK redirect: the tagged public object now carries the paper domain `S ≤ H_n`, nonzero `μ ∈ H_n`, `ρ ∈ [0,1]`, and the lower-bound condition. The raw norm ratio remains an untagged companion with proof binders for its valid domain."
+    },
+    "def:score-quality-shell": {
+      "lean_kind": "def",
+      "lean_name": "qualityShell",
+      "companions": [],
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.InnerProductSpace.PiL2"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "shape": "def qualityShell (ρ M : ℝ) (S : Submodule ℝ (EuclideanSpace ℝ (Fin n))) : Set ... := {μ | ρ ∈ Set.Icc 0 1 ∧ 0 < M ∧ μ ∈ centeredSubspace n ∧ ‖μ‖^2 = n*M ∧ ρ^2*‖μ‖^2 ≤ ‖P_S μ‖^2}",
+      "notes": "SYNC-BACK redirect: shell membership now pins the symbol spaces `rho ∈ [0,1]` and `M > 0` at the tagged declaration itself, before imposing the centered energy shell and score lower bound."
+    },
+    "def:lifted-adversary": {
+      "lean_kind": "def",
+      "lean_name": "liftedAdversary",
+      "companions": [],
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.LinearAlgebra.Matrix.PosDef",
+        "Mathlib.LinearAlgebra.Matrix.Trace"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "shape": "def liftedAdversary (ρ : ℝ) (S) : Set (Matrix (Fin n) (Fin n) ℝ) := {X | X.PosSemidef ∧ X = projHMat n * X * projHMat n ∧ X.trace = 1 ∧ ρ^2 ≤ (projSMat S * X).trace}",
+      "notes": "The rank-free lifted spectrahedron `X_ρ(S)`. Build-inline over `Matrix.PosSemidef` + `Matrix.trace`. SEARCH TRACE — `lean_local_search` on `spectrahedron`, `elliptope`, `liftedAdversary`, `traceOne`, `PosSemidef` sets in Causalean: 0 hits for a trace-normalized PSD constraint set (the sibling `DesignPm1.blockElliptope` is the block-symmetric correlation slice, a different set with unit diagonal rather than unit trace). Mathlib-side check: `Matrix.PosSemidef` and `Matrix.trace` exist (`Mathlib.LinearAlgebra.Matrix.PosDef`, `.../Trace`); the constraint set is paper-specific."
+    },
+    "def:oracle-risk": {
+      "lean_kind": "def",
+      "lean_name": "oracleRisk",
+      "companions": [
+        "shellLoss",
+        "oracleValue",
+        "crdRisk",
+        "crdCovariance",
+        "cnConst"
+      ],
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.Convex.Topology",
+        "Mathlib.LinearAlgebra.Matrix.PosDef",
+        "Mathlib.Analysis.InnerProductSpace.PiL2"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "shape": "def shellLoss (A) (ρ) (S) : ℝ := sSup {r | ∃ u, u ∈ centeredSubspace n ∧ ‖u‖ = 1 ∧ ρ^2 ≤ ⟪u, projS S u⟫ ∧ r = ⟪u, A u⟫}   -- q_ρ(A;S) ;  def oracleValue (ρ) (S) : ℝ := sInf (shellLoss · ρ S '' covarianceHull n)   -- v* ;  def oracleRisk (ρ) (S) (M) : ℝ := (4*M/n) * oracleValue ρ S   -- V* ;  def crdRisk (M) : ℝ := 4*M/(n-1)   -- V_CRD ;  def crdCovariance : Matrix .. := cnConst n • projHMat n   -- A_CRD",
+      "notes": "SYNC-BACK redirect: the node tag is on the scaled public `oracleRisk = (4M/n)·oracleValue`, so the anchor exposes the complete V* definition while `oracleValue` remains the normalized v* companion. The other benchmark companions are unchanged."
+    },
+    "def:admissibility-invariants": {
+      "lean_kind": "def",
+      "lean_name": "admissibilityInvariants",
+      "companions": [
+        "kappaInvariant",
+        "gammaInvariant",
+        "lambdaMaxOn",
+        "compressedLambdaMax",
+        "admissibleFamily",
+        "criticalQuality"
+      ],
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.Matrix.Spectrum",
+        "Mathlib.LinearAlgebra.Matrix.PosDef",
+        "Mathlib.Analysis.InnerProductSpace.PiL2"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "shape": "def lambdaMaxOn (A) (L : Submodule ℝ (EuclideanSpace ℝ (Fin n))) : ℝ := sSup {r | ∃ u ∈ L, ‖u‖ = 1 ∧ r = ⟪u, A u⟫} ;  def kappaInvariant (S) : ℝ := sInf (fun A => lambdaMaxOn (projS S * A * projS S) S) '' covarianceHull n ;  def gammaInvariant (S) : ℝ := sInf {t | ∃ A ∈ covarianceHull n, ∃ η > 0, t = (lambdaMaxOn (A + η • projSMat S) (centeredSubspace n) - cnConst n)/η} ;  def admissibleFamily (n) : Set (Submodule ..) ;  def criticalQuality (S) : ℝ := sInf ({ρ ∈ [0,1] | oracleRisk ρ S M < crdRisk M} ∪ {1})",
+      "notes": "SYNC-BACK redirect: the tagged `admissibilityInvariants` returns the paired `(kappaInvariant, gammaInvariant)` object, so neither half of the paper definition is omitted. Component and frontier definitions remain companions."
+    },
+    "def:regret-object": {
+      "lean_kind": "def",
+      "lean_name": "minimaxRegret",
+      "companions": [
+        "regretGap"
+      ],
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.Convex.Topology",
+        "Mathlib.LinearAlgebra.Matrix.PosDef"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "shape": "def regretGap (A) (S) : ℝ := sSup {r | ∃ ρ ∈ Set.Icc (0:ℝ) 1, r = shellLoss A ρ S - oracleValue ρ S}   -- Δ_reg ;  def minimaxRegret (n) (S) (M) : ℝ := (4*M/n) * sInf (regretGap · S '' covarianceHull n)   -- R*",
+      "notes": "Additive oracle regret (S2 symbols `Delta_reg`, `R_star`). Deliberately mirrors the shape of `Causalean...DesignBased.regret = R y D − bestRisk`, but cannot reuse it: that decl is indexed by a state `y` and takes `bestRisk` over a FINITE design family, whereas here the inner variable is the continuum `ρ ∈ [0,1]` and the outer minimization runs over the compact convex hull `C_n` (see the substrate survey — bypass-justified, abstraction mismatch). SEARCH TRACE — `lean_local_search` on `regret`, `minimaxRegret`, `worstRisk`, `bestRisk`: hits `Causalean.Experimentation.DesignBased.{regret,regret_nonneg,bestRisk,worstRisk}` (finite-family) and `CausalSmith.Stat.PolicyRegretMarginOverlap.minimaxRegret` (policy-learning regret, unrelated carrier). Partial fits only; defined locally."
+    },
+    "def:regret-handle": {
+      "lean_kind": "def",
+      "lean_name": "compactifiedRegretProgram",
+      "companions": [
+        "spectralRegretHandle",
+        "compactifiedDual",
+        "balancedCutSupportOracle",
+        "spectralRegretEpigraph"
+      ],
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.Matrix.Spectrum",
+        "Mathlib.LinearAlgebra.Matrix.PosDef"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "shape": "def spectralRegretHandle (A) (S) (s η : ℝ) : ℝ := lambdaMaxOn (A + η • projSMat S) (centeredSubspace n) - η * s   -- F_{A,s}(η) ;  def compactifiedDual (A) (S) (s : ℝ) : ℝ := if s = 1 then min (sInf {F_{A,s} η | η ≥ 0}) (lambdaMaxOn (projS S * A * projS S) S) else sInf {F_{A,s} η | η ≥ 0}",
+      "notes": "SYNC-BACK redirect: the tagged compactified program is the scaled epigraph value over `A ∈ C_n` and `rho ∈ [0,1]`; the epigraph substitutes `s=rho²` into the eta-infimum and its perfect-quality endpoint. The balanced-cut support oracle records the finite active-face algebraic handle without asserting polynomial time."
+    },
+    "def:pair-score-space": {
+      "lean_kind": "def",
+      "lean_name": "partitionScoreGeometry",
+      "companions": [
+        "partitionScoreSpace",
+        "homogeneousBlockScoreSpace",
+        "pairScoreSpace"
+      ],
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.InnerProductSpace.PiL2",
+        "Mathlib.Data.Setoid.Partition"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "shape": "def partitionScoreSpace (P : Fin n → Fin B) : Submodule ℝ (EuclideanSpace ℝ (Fin n)) := {x | x ∈ centeredSubspace n ∧ ∀ i i', P i = P i' → x i = x i'} ; def homogeneousBlockScoreSpace (Ph) (m) (_hm : 0 < m) (_hmeven : Even m) (_hsize : ∀ j, blockSize Ph j = m) := partitionScoreSpace Ph ; def pairScoreSpace (n) := {x | x ∈ centeredSubspace n ∧ ∀ i i', i.val / 2 = i'.val / 2 → x i = x i'} ; def partitionScoreGeometry (P) (Ph) (m) (hm) (hmeven) (hnBhm : n = Bh * m) (hsize) (hn : 4 ≤ n) (hpar : Even n) := (partitionScoreSpace P, homogeneousBlockScoreSpace Ph m hm hmeven hsize, pairScoreSpace n hn hpar)",
+      "notes": "SYNC-BACK redirect attempt 2: the tagged anchor now packages all three objects from the core construction without restricting the arbitrary general partition to the homogeneous case. Its first component requires `2 ≤ B` and a surjective labelling `P`; its independently specified second component requires a surjective `Ph` with equal positive even block size `m` and `n = Bh * m`; and its third component is the canonical quotient-by-two matched-pair space on the ambient even `n ≥ 4` domain."
+    },
+    "def:four-unit-score-mixture": {
+      "lean_kind": "def",
+      "lean_name": "FourUnitScoreMixture",
+      "companions": [
+        "pairDesign4",
+        "u4",
+        "scoreSpace4",
+        "covPair4"
+      ],
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Mathlib.Data.Matrix.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "shape": "def u4 : EuclideanSpace ℝ (Fin 4) := ![1,1,-1,-1] / 2 ;  def scoreSpace4 : Submodule ℝ .. := ℝ ∙ u4 ;  def pairDesign4 : FiniteDesign (Fin 4 → Bool) := uniform on {±(1,-1,1,-1), ±(1,-1,-1,1)} ;  def covPair4 : Matrix (Fin 4) (Fin 4) ℝ := !![1,-1,0,0; -1,1,0,0; 0,0,1,-1; 0,0,-1,1]",
+      "notes": "SYNC-BACK redirect: the tagged specification references `u4`, `scoreSpace4`, the explicit four-point `pairDesign4`, `covPair4`, the covariance identity, and balanced-design membership. The concrete components remain companions."
+    },
+    "def:partition-orbit-covariance": {
+      "lean_kind": "def",
+      "lean_name": "orbitCovariance",
+      "companions": [
+        "blockSumLattice",
+        "blockSumPolytope"
+      ],
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.Convex.Combination",
+        "Mathlib.Data.Matrix.Basic",
+        "Mathlib.LinearAlgebra.Matrix.Trace"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "shape": "def orbitCovariance (P) (hB : 2 ≤ B) (hP : Function.Surjective P) (G) (hG : G ∈ blockSumPolytope P) : Matrix ... := A_P(G)",
+      "notes": "`G_P` (block-sum second-moment polytope) and `A_P(G)` (the orbit-symmetrized covariance FORMULA). Per the core's own wording, this node is a CONSTRUCTION only — realizability of `A_P(G)` and exactness of the orbit reduction are conclusions of `lem:pair-space-exact-frontier`, so nothing here may assert them. SEARCH TRACE — `lean_local_search` on `orbitCovariance`, `symmetrization`, `SymmetryReduction`, `blockSum`: hits `CausalSmith.Experimentation.DesignPm1.{blockSumA,blockSumB}` and `Helpers/SymmetryReduction.lean` / `Helpers/SymRedMatrix.lean` — the same Jensen-over-a-permutation-orbit technique, but for the two-block automorphism group on `Fin (2*m)` with scalar block sums, not a `B`-block lattice-valued sum vector with a matrix-valued moment polytope. Recorded as the ANALOGOUS module for `Helpers/OrbitReduction.lean`; defined locally."
+    },
+    "lem:exact-design-risk": {
+      "lean_kind": "lemma",
+      "lean_name": "exact_design_risk",
+      "local_id": "lem:exact-design-risk",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Causalean.Experimentation.DesignBased.PotentialOutcome",
+        "Causalean.Experimentation.DesignBased.Risk"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "TExactDesignRisk.lean",
+      "hyps": [
+        "ass:fixed-potential-outcomes",
+        "ass:consistency-no-interference"
+      ],
+      "notes": "Design unbiasedness of τ̂_d for τ_n plus the exact MSE identity `E_d[(τ̂_d − τ_n)²] = 4 n⁻² μᵀ A_d μ`. Build-inline, in scope: the whole proof is `Finset` algebra over the reused `FiniteDesign` layer — `Yobs = m_i + z_i δ_i/2` (from the reused `ProperlySpecified`), `τ̂_d − τ_n = 2 n⁻¹ zᵀ μ` (using `zᵀ 1 = 0` on the balanced support so `zᵀ m = zᵀ μ`), then `E_const_mul` + `Cov_linear_comb` + `mseRisk_eq_var_of_unbiased`. ANALOGOUS module: `Causalean/Experimentation/DesignBased/Estimators/DifferenceInMeans.lean:181` (`E_diffInMeans_eq_sate`) has the same unbiasedness pattern for ONE design on a `Finset`-subtype carrier — adapt it to an arbitrary `d ∈ D_n` on the sign carrier and extend from the mean to the second moment. Both assumption atoms stay threaded hypotheses (modeling assumptions, never discharged)."
+    },
+    "lem:balanced-covariance-realizability": {
+      "lean_kind": "lemma",
+      "lean_name": "balanced_covariance_realizability",
+      "local_id": "lem:balanced-covariance-realizability",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.Convex.Combination",
+        "Causalean.Experimentation.DesignBased.DesignCore"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "TBalancedCovarianceRealizability.lean",
+      "hyps": [],
+      "notes": "`{A_d : d ∈ D_n} = C_n`, with the sign-symmetrization construction that turns any convex representation into a mean-zero attaining design. Build-inline (medium): forward inclusion is `convexHull` membership of a finite convex combination (`Finset.centerMass` / `mem_convexHull_iff_exists_fintype`); the converse builds an explicit `FiniteDesign` putting mass `a_j/2` on `±z^(j)` and verifies `p_nonneg`/`p_sum`, closure of the balanced set under sign reversal (needs `Even n`), zero mean, and covariance invariance under `z ↦ −z`. Uses `Mathlib.Analysis.Convex.Caratheodory` only if a finite support representation is needed. This lemma is the implementability bridge consumed by `thm:exact-oracle-saddle`, `thm:finite-unknown-quality-regret`, and `thm:exact-pair-space-regret`."
+    },
+    "thm:cone-lift-dual": {
+      "lean_kind": "theorem",
+      "lean_name": "cone_lift_dual",
+      "local_id": "thm:cone-lift-dual",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.Convex.KreinMilman",
+        "Mathlib.Analysis.Convex.Extreme",
+        "Mathlib.Analysis.LocallyConvex.Separation",
+        "Mathlib.Analysis.Matrix.Spectrum",
+        "Mathlib.LinearAlgebra.Matrix.PosDef"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "TConeLiftDual.lean",
+      "hyps": [],
+      "notes": "Rank-one exactness of the lift, the scalar dual `q_ρ(A;S) = inf_{η ≥ 0}{λ_max(A + η P_S | H_n) − η ρ²}`, and the compactified attainment statement. Build-inline and IN SCOPE — every step is elementary and fully written out in the core's `proof_tex`; nothing here is open mathematics. It is, however, the heaviest single obligation, so it is planned as a theorem file over four dedicated helper files: `Helpers/ExtremePoints.lean` (extreme points of the compact convex `K_s` are rank one, via the trace-zero/score-trace-zero perturbation `D` supported on `range X` — over `Mathlib.Analysis.Convex.Extreme` + `KreinMilman`); `Helpers/Separation.lean` (the elementary compact BILINEAR minimax on `E_H × [0,K]` from finite-dimensional strong separation of the compact convex 2-D image set — Mathlib has NO convexity-based minimax, see the S2 search trace, so this is a small reusable build-inline helper, NOT a Defer item, since the core supplies the whole separation argument); `Helpers/Spectral.lean` (`max_{X ∈ E_H} tr((A + ηP_S)X) = λ_max(A + ηP_S | H_n)` and Rayleigh attainment); `Helpers/Compactness.lean` (the `Φ_K → primal` penalty limit and the `s = 1` endpoint estimate `u = x + y`, `≤ c + L_A²/(η − L_A)`). ANALOGOUS modules for F3: `EXP_SaturationSkewThreshold_Research/Helpers/{ExtremePoints,Duality}.lean` (same Krein–Milman + separation pattern for a saturation moment problem)."
+    },
+    "thm:exact-oracle-saddle": {
+      "lean_kind": "theorem",
+      "lean_name": "exact_oracle_saddle",
+      "local_id": "thm:exact-oracle-saddle",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.Convex.Combination",
+        "Mathlib.Analysis.Convex.Topology",
+        "Mathlib.LinearAlgebra.Matrix.PosDef",
+        "Causalean.Experimentation.DesignBased.DesignCore"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "TExactOracleSaddle.lean",
+      "hyps": [],
+      "notes": "The full-hull saddle identity `v* = min_{A ∈ C_n} max_{X ∈ X_ρ(S)} tr(AX) = max_X min_{z ∈ Z_n} zᵀXz`, its `(X,t)` program form, the attaining sign-pair design `d*_{ρ,S} ∈ D_n`, and the matching converse in SATE-risk units. Build-inline, in scope. Key sub-obligation: the simplex-vs-compact minimax (core eq. (1)) proved by the projection/separation argument onto `ℝ_+^J` — factored into `Helpers/SimplexMinimax.lean` (reusing `Helpers/Separation.lean`); ANALOGOUS module `EXP_DesignPm1ExactnessBoundaryV1_Research/Helpers/WeightedSimplexKKT.lean` (the same simplex active-set/first-order optimality pattern over a weighted simplex). The design-side conversion is `lem:balanced-covariance-realizability`; the risk-side conversion is `lem:exact-design-risk` composed with the bijection `μ = √(nM)·u` between the shell and the score-constrained unit sphere. The `n = 4, S = H_n` smallest-case check is discharged in `Helpers/FourUnit.lean` and re-exported here."
+    },
+    "thm:admissibility-frontier": {
+      "lean_kind": "theorem",
+      "lean_name": "admissibility_frontier",
+      "local_id": "thm:admissibility-frontier",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.Matrix.Spectrum",
+        "Mathlib.Analysis.Convex.Combination",
+        "Mathlib.Analysis.InnerProductSpace.PiL2",
+        "Mathlib.Analysis.SpecialFunctions.Sqrt"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "TAdmissibilityFrontier.lean",
+      "hyps": [],
+      "notes": "The headline: `(i) S ∈ 𝔄_n ⟺ (ii) κ(S) < c_n ⟺ (iii) γ(S) < 1`, `ρ*(S) = √γ(S)`, the leverage-only identity `γ(S) = U(diag P_S)`, the sharp bounds `γ(S) ≥ (n/(n−1))·max_i ℓ_i ≥ p/(n−1)` with its equality case, and the three `n = 4` leverage profiles. Build-inline, in scope, over three dedicated helpers: `Helpers/AffineHull.lean` (`aff(C_n) = c_n P_H + L` where `L = {B symmetric : diag B = 0, B 1 = 0}`, via the four-index alternating-sum identity `q_ik − q_jk − q_iℓ + q_jℓ = 0`, plus `c_n P_H ∈ relint C_n`); `Helpers/GramDiagonal.lean` (prescribed nonnegative diagonal `d` with `D ⪰ 0`, `D 1 = 0` is realizable ⟺ `2 max_i √d_i ≤ ∑_i √d_i`, via the planar-resultant interval `[max(0, 2max r − ∑r), ∑r]` by induction, then a Gram representation); `Helpers/LeverageProfile.lean` (`U(ℓ)` as a one-dimensional feasibility minimum, closedness, upward persistence, bisection validity). SEARCH TRACE for the Gram/polygon fact — `lean_local_search` on `gramMatrix`, `polygonInequality`, `prescribedDiagonal`, `sumZeroVectors`: 0 hits in Causalean; Mathlib-side `lean_leansearch \"vectors with prescribed norms summing to zero exist polygon inequality\"` returns only triangle-inequality/`SameRay` equality-case lemmas (`not_sameRay_iff_norm_add_lt`, `norm_add_eq_add_norm_iff_angle_eq_zero`) — the EXISTENCE direction is absent. Not found; build-inline (medium, one file), the core's induction supplying the whole argument."
+    },
+    "prop:endpoint-reductions": {
+      "lean_kind": "theorem",
+      "lean_name": "endpoint_reductions",
+      "local_id": "prop:endpoint-reductions",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.Matrix.Spectrum",
+        "Mathlib.Data.Matrix.Basic",
+        "Causalean.Experimentation.DesignBased.DesignCore"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "TEndpointReductions.lean",
+      "hyps": [],
+      "notes": "The endpoint/worked-example proposition: `S = H_n` and `S_out` are inadmissible with `v* = c_n`; the `n = 4` intermediate space `S_mid` has `κ = 2/3`, `γ = 8/9`, `ρ* = 2√2/3`; the equal-leverage `S_4 = S_pair` has `v*(ρ) = min{4/3, 2(1−ρ²)}`, `κ = 0`, `γ = 1/3`, `ρ* = 1/√3`; plus the `n = 8`, `M = 1`, `ρ = 1` check `V* = 0 < 4/7 = V_CRD`. Note the core maps a `prop:` node to `lean_kind:\"theorem\"` (there is no `\"proposition\"` kind). Build-inline, in scope: the `n = 4` content is finite enumeration of the three balanced sign-pairs in the orthonormal basis `e_j = z^(j)/2`, factored into `Helpers/FourUnit.lean` (with `decide`/`norm_num` on the explicit `4 × 4` matrices); the general-`n` parts reuse `thm:admissibility-frontier` and `lem:pair-space-exact-frontier`. This node also carries the paper's own falsification check (matched pairs are NOT globally dominant), so the encoding must state the exact `v*` branch formula, not merely an inequality."
+    },
+    "thm:finite-unknown-quality-regret": {
+      "lean_kind": "theorem",
+      "lean_name": "finite_unknown_quality_regret",
+      "local_id": "thm:finite-unknown-quality-regret",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.Convex.Topology",
+        "Mathlib.Analysis.Matrix.Spectrum",
+        "Mathlib.LinearAlgebra.Matrix.PosDef",
+        "Causalean.Experimentation.DesignBased.DesignCore"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "TFiniteUnknownQualityRegret.lean",
+      "hyps": [],
+      "notes": "The exact finite robust-SDP representation of `R*(n,S)`, outer attainment, the universal bracket `(p/(n−1))(c_n − κ(S)) ≤ (n/4M)R* ≤ c_n − κ(S)` with CRD witnessing the upper bound and homogeneous even blocks attaining the lower bound, and the design-level regret statement over all of `D_n`. Build-inline, in scope. Sub-pieces: the sup-over-shells reduction (core eq. (1)) needs monotonicity of `v` and the score-energy reparametrisation `t = s + (1−s)e`, factored into `Helpers/RegretRepresentation.lean`; joint continuity of `(A,s) ↦ q_s(A)` and hence of `Δ_reg` (compactness ⇒ outer minimizer exists) goes in `Helpers/Compactness.lean`; the trace inequality `n ≤ pK + (n−1−p)L` is one line over `Helpers/Spectral.lean`. The statement must record that `m = C(n, n/2)/2` is generally EXPONENTIAL — a size remark, not a complexity claim (PD-5): no decidability or polynomial-time assertion is encoded."
+    },
+    "lem:pair-space-exact-frontier": {
+      "lean_kind": "lemma",
+      "lean_name": "pair_space_exact_frontier",
+      "local_id": "lem:pair-space-exact-frontier",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.Convex.Combination",
+        "Mathlib.Analysis.Matrix.Spectrum",
+        "Mathlib.GroupTheory.Perm.Basic",
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Causalean.Experimentation.DesignBased.Product"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "TPairSpaceExactFrontier.lean",
+      "hyps": [],
+      "notes": "The partition workhorse: the exact orbit reduction `v*(ρ;S_P) = min_{G ∈ G_P} q_ρ(A_P(G);S_P)`, the parity classification `κ(S_P) = 0 ⟺ every block size is even`, the unequal two-block closed forms (`κ₂`, `b₀`, `s₀`, the `v*` branch formula, the regret `s₀(c_n − κ₂)` and its mixture), the `m = 1` degenerate case, and the homogeneous even-block family (`γ = β`, `R* = 4Mp/(n−1)²`) with matched pairs as the `m = 2` specialization. Build-inline and in scope, but the largest node: split into `Helpers/OrbitReduction.lean` (Jensen over the within-block permutation group; the conditional second moments `E[z_i z_{i'} | r] = r_j r_ℓ/(m_j m_ℓ)` and `(r_j² − m_j)/(m_j(m_j−1))`, i.e. the entries of `A_P(rrᵀ)`; the realizing law = choose signs with the given block sums, permute uniformly within blocks, multiply by an independent fair global sign — `Causalean...prodDesign` / `E_prod_prod` supply the independent-coin layer), `Helpers/BlockSpectrum.lean` (the eigenvalues `a(q) = nq/(mℓ)`, `b_j(q) = (j² − q)/(j(j−1))`, their crossing at `q_c = mℓ/(n−1)`, and the slope sign change at `s₀`), and `Helpers/HomogeneousBlocks.lean` (block-permutation averaging to `aP_S + b(P_H − P_S)`, `pa + hb = n`, the two attaining designs, and the `β`-mixture regret). ANALOGOUS modules: `EXP_DesignPm1ExactnessBoundaryV1_Research/Helpers/{SymmetryReduction,SymRedMatrix,ParitySliceParity,ParitySliceVertices}.lean` — same orbit-averaging and parity-obstruction technique on the two-block index, to be adapted to a general `B`-block labelling."
+    },
+    "thm:exact-pair-space-regret": {
+      "lean_kind": "theorem",
+      "lean_name": "exact_pair_space_regret",
+      "local_id": "thm:exact-pair-space-regret",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.Matrix.Spectrum",
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Causalean.Experimentation.MatchedPairDesign.MatchedPair"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "TExactPairSpaceRegret.lean",
+      "hyps": [],
+      "notes": "The matched-pair corollary: `v*(ρ;S_pair) = min{c_n, 2(1−ρ²)}`, `κ = 0`, `γ = ρ*² = α_n = (n−2)/(2(n−1))`, the mixture covariance `A_mix = α_n c_n P_H + (1−α_n)·2(P_H − P_S) ∈ C_n`, the exact regret `n(n−2)/(2(n−1)²)` and `R* = 2M(n−2)/(n−1)²`, both endpoint constraints binding, and the `n = 4` sign-pair weights `(1/9, 4/9, 4/9)`. The core itself flags this as a convenience corollary of the homogeneous even-block half of `lem:pair-space-exact-frontier` at `B = n/2`, `m = 2`, so the Lean proof is a specialization plus arithmetic — small, in scope. `Causalean...matchedPairDesign` is the within-pair-orientation design (`A_W = 2 P_T`); it is on the per-pair carrier `P → Bool`, so it enters as a proof template rather than a literal reuse (see the substrate survey)."
+    },
+    "lem:kallus-mixed-strategy-eigenvalue-framework": {
+      "lean_kind": "assumption",
+      "lean_name": "KallusMixedStrategyEigenvalueFramework",
+      "local_id": "lem:kallus-mixed-strategy-eigenvalue-framework",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.Analysis.Matrix.Spectrum",
+        "Mathlib.LinearAlgebra.Matrix.PosDef"
+      ],
+      "defer_tier": true,
+      "gate": true,
+      "gate_class": "cited",
+      "source": "cite:kallus2021-mixed-strategy-eigenvalue",
+      "source_cite": "Kallus2021Randomization",
+      "source_locator": "Section 5, first paragraph, pp. 407--408",
+      "target_file": "Basic.lean",
+      "hyps": [],
+      "consumers": [],
+      "shape": "def KallusMixedStrategyEigenvalueFramework (K) (C) : Prop := K.PosSemidef ∧ 0 ≤ C → (∀ D ∈ kallusFeasibleDesigns n, ∀ R, IsPSDSquareRoot K R → kallusWorstVariance D K C = C * lambdaMaxOn (R * designCovariance D * R) ⊤) ∧ ∃ Dopt ∈ kallusFeasibleDesigns n, ∀ D ∈ kallusFeasibleDesigns n, kallusWorstVariance Dopt K C ≤ kallusWorstVariance D K C",
+      "notes": "SYNC-BACK redirect: the cited gate now defines the ellipsoidal class `M_K`, symmetric balanced feasible mixed designs, `Q(sigma)=designCovariance D`, and worst-case variance before stating both the eigenvalue identity and minimization. No arbitrary `feasible` or `variance` parameters remain."
+    }
+  },
+  "helpers": [
+    {
+      "file": "Helpers/Spectral.lean",
+      "content": "`lambdaMaxOn` API: Rayleigh sup on a subspace, monotonicity, `λ_max ≥ tr/dim`, `A ⪯ λ P_L`, `P_S A P_S` compression, `max_{X ∈ E_H} tr((A+ηP_S)X) = λ_max(A+ηP_S | H_n)`.",
+      "effort": "small",
+      "in_scope": true
+    },
+    {
+      "file": "Helpers/Compactness.lean",
+      "content": "Attainment: the score-constrained unit sphere in `H_n` is compact and the quadratic form continuous, so `shellLoss` is a max; `C_n` is compact (convex hull of a finite set) so `oracleValue` is a min; joint continuity of `(A,s) ↦ q_s(A)` and continuity of `Δ_reg`.",
+      "effort": "small",
+      "in_scope": true
+    },
+    {
+      "file": "Helpers/CovarianceHull.lean",
+      "content": "Core eq. (1): every `A ∈ C_n` is PSD, annihilates `1_n`, has unit diagonal and `tr(A | H_n) = n`; hence `λ_max(A | H_n) ≥ c_n` with equality at `A_CRD`. Adapted from `DesignPm1/Helpers/SymRedDesign.lean`.",
+      "effort": "small",
+      "in_scope": true
+    },
+    {
+      "file": "Helpers/Separation.lean",
+      "content": "The elementary compact bilinear minimax on `E_H × [0,K]` and the `ℝ_+^J` projection/separation lemma, both from finite-dimensional strong separation. Mathlib has no convexity-based minimax (search trace in S2), so this is a new, reusable, build-inline helper.",
+      "effort": "medium",
+      "in_scope": true
+    },
+    {
+      "file": "Helpers/ExtremePoints.lean",
+      "content": "Extreme points of `K_s = X_ρ(S)` are rank one (trace-zero/score-trace-zero perturbation on `range X`), over `Mathlib.Analysis.Convex.{Extreme,KreinMilman}`.",
+      "effort": "medium",
+      "in_scope": true
+    },
+    {
+      "file": "Helpers/SimplexMinimax.lean",
+      "content": "The `Δ_J × K` minimax (core eq. (1) of `thm:exact-oracle-saddle`) and the extraction of optimal sign-pair weights.",
+      "effort": "medium",
+      "in_scope": true
+    },
+    {
+      "file": "Helpers/AffineHull.lean",
+      "content": "`aff(C_n) = c_n P_H + L`, the four-index alternating-sum identity, and `c_n P_H ∈ relint C_n`.",
+      "effort": "medium",
+      "in_scope": true
+    },
+    {
+      "file": "Helpers/GramDiagonal.lean",
+      "content": "Zero-sum vectors with prescribed norms exist iff `2 max r ≤ ∑ r` (planar resultant interval by induction), hence the Gram characterization of `D ⪰ 0`, `D 1 = 0`, `diag D = d`. Absent from Mathlib (search trace on `thm:admissibility-frontier`).",
+      "effort": "medium",
+      "in_scope": true
+    },
+    {
+      "file": "Helpers/LeverageProfile.lean",
+      "content": "`U(ℓ)` as a one-dimensional feasibility minimum: closedness, nonemptiness at `t = 1`, upward persistence, attainment.",
+      "effort": "small",
+      "in_scope": true
+    },
+    {
+      "file": "Helpers/OrbitReduction.lean",
+      "content": "Within-block permutation orbit averaging (Jensen), the conditional second-moment entries of `A_P(rrᵀ)`, and the realizing balanced law. Adapted from `DesignPm1/Helpers/SymmetryReduction.lean`.",
+      "effort": "medium",
+      "in_scope": true
+    },
+    {
+      "file": "Helpers/BlockSpectrum.lean",
+      "content": "Two-block eigenvalues `a(q)`, `b_j(q)`, their crossing at `q_c`, and the slope sign change at `s₀`.",
+      "effort": "medium",
+      "in_scope": true
+    },
+    {
+      "file": "Helpers/HomogeneousBlocks.lean",
+      "content": "Block-permutation averaging to `aP_S + b(P_H − P_S)` with `pa + hb = n`; the two attaining designs and the `β`-mixture regret.",
+      "effort": "medium",
+      "in_scope": true
+    },
+    {
+      "file": "Helpers/RegretRepresentation.lean",
+      "content": "The sup-over-shells reduction, monotonicity of `v`, and the robust-SDP epigraph form.",
+      "effort": "medium",
+      "in_scope": true
+    },
+    {
+      "file": "Helpers/FourUnit.lean",
+      "content": "The `n = 4` enumeration: three balanced sign-pairs, the orthonormal basis `e_j = z^(j)/2`, diagonalization of every `A ∈ C_4`, and the three leverage profiles with values `1/3`, `8/9`, `1`.",
+      "effort": "small",
+      "in_scope": true
+    }
+  ],
+  "file_plan": [
+    {
+      "file": "Basic.lean",
+      "holds": "S1/S2 environment preamble + substrate-survey table, the two local assumption-atom Props, all 12 construction defs with their companions, and the cited gate Prop.",
+      "projected_lines": 520
+    },
+    {
+      "file": "Helpers.lean",
+      "holds": "Aggregator importing the 14 helper files.",
+      "projected_lines": 20
+    },
+    {
+      "file": "TExactDesignRisk.lean",
+      "holds": "lem:exact-design-risk",
+      "projected_lines": 260
+    },
+    {
+      "file": "TBalancedCovarianceRealizability.lean",
+      "holds": "lem:balanced-covariance-realizability",
+      "projected_lines": 340
+    },
+    {
+      "file": "TConeLiftDual.lean",
+      "holds": "thm:cone-lift-dual (assembly over Helpers/{ExtremePoints,Separation,Spectral,Compactness})",
+      "projected_lines": 520
+    },
+    {
+      "file": "TExactOracleSaddle.lean",
+      "holds": "thm:exact-oracle-saddle (assembly over Helpers/SimplexMinimax)",
+      "projected_lines": 480
+    },
+    {
+      "file": "TAdmissibilityFrontier.lean",
+      "holds": "thm:admissibility-frontier (assembly over Helpers/{AffineHull,GramDiagonal,LeverageProfile})",
+      "projected_lines": 560
+    },
+    {
+      "file": "TEndpointReductions.lean",
+      "holds": "prop:endpoint-reductions (assembly over Helpers/FourUnit)",
+      "projected_lines": 420
+    },
+    {
+      "file": "TFiniteUnknownQualityRegret.lean",
+      "holds": "thm:finite-unknown-quality-regret (assembly over Helpers/{RegretRepresentation,Compactness})",
+      "projected_lines": 520
+    },
+    {
+      "file": "TPairSpaceExactFrontier.lean",
+      "holds": "lem:pair-space-exact-frontier (assembly over Helpers/{OrbitReduction,BlockSpectrum,HomogeneousBlocks})",
+      "projected_lines": 580
+    },
+    {
+      "file": "TExactPairSpaceRegret.lean",
+      "holds": "thm:exact-pair-space-regret",
+      "projected_lines": 280
+    }
+  ],
+  "theorems": [
+    {
+      "theorem_local_id": "lem:exact-design-risk"
+    },
+    {
+      "theorem_local_id": "lem:balanced-covariance-realizability"
+    },
+    {
+      "theorem_local_id": "thm:cone-lift-dual"
+    },
+    {
+      "theorem_local_id": "thm:exact-oracle-saddle"
+    },
+    {
+      "theorem_local_id": "thm:admissibility-frontier"
+    },
+    {
+      "theorem_local_id": "prop:endpoint-reductions"
+    },
+    {
+      "theorem_local_id": "thm:finite-unknown-quality-regret"
+    },
+    {
+      "theorem_local_id": "lem:pair-space-exact-frontier"
+    },
+    {
+      "theorem_local_id": "thm:exact-pair-space-regret"
+    }
+  ],
+  "infrastructure_needed": [
+    {
+      "id": "lem:kallus-mixed-strategy-eigenvalue-framework",
+      "kind": "autoid-lemma",
+      "description": "SUBSTRATE_DEBT (cited): Kallus (2021, §5) ellipsoidal-class worst-case design variance V(σ,M_K) = C·λ_max(K^{1/2}Q(σ)K^{1/2}) and the randomized MSOD criterion — a source-matched related-work interface, assumed as a named Prop, with no consumer in this paper's dependency graph.",
+      "effort": "medium",
+      "gate_class": "cited"
+    }
+  ],
+  "self_check": {
+    "P1": "24 core nodes (2 assumptions + 12 definitions + 10 statements) — exactly one `nodes` entry each, none invented. All 47 core symbols bound: 13 by S1, 34 by S2, no overlap.",
+    "P2": "No core definition carries `by_member_properties`, so no `structure` node exists and the members check is vacuous.",
+    "P3": "assumption → `assumption`; every definition (all constructions, `inputs`-style) → `def`; statements → `theorem`/`lemma` following the core `kind` (`prop:endpoint-reductions` → `theorem`, there being no `\"proposition\"` kind); the `status:\"cited\"` statement → `assumption` with `gate:true`.",
+    "P4": "Only `lem:exact-design-risk` has assumption dependencies; its `hyps` = both of them and is a subset of its `depends_on`. Every other statement's `depends_on` contains only definitions/lemmas/theorems (used, not assumed), so `hyps = []`.",
+    "P5": "The S1 carrier reuses `Causalean.Experimentation.DesignBased.FiniteDesign` (DesignCore.lean:45). `ProperlySpecified` (PotentialOutcome.lean:45) is verified but only partially fits the assignment-indexed pair of core atoms, so the consistency atom is synchronized to `define-local`; Stage 3 can derive the substrate predicate after applying fixity.",
+    "P6": "All listed module paths verified present: the Causalean `Experimentation/DesignBased/{DesignCore,PotentialOutcome,Exposure,Risk,Product}.lean` and `Experimentation/MatchedPairDesign/MatchedPair.lean`; Mathlib `Data/Matrix/Basic`, `LinearAlgebra/Matrix/{Trace,PosDef}`, `Analysis/{Matrix,Matrix/Spectrum}`, `Analysis/InnerProductSpace/PiL2`, `Analysis/Convex/{Combination,Caratheodory,Topology,Extreme,KreinMilman}`, `Analysis/LocallyConvex/Separation`, `Analysis/SpecialFunctions/Sqrt`, `Data/Setoid/Partition`, `GroupTheory/Perm/Basic`."
+  }
+}

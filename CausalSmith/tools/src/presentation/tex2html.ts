@@ -66,25 +66,24 @@ function joinNatural(parts: string[]): string {
   return `${parts.slice(0, -1).join(", ")}, and ${parts[parts.length - 1]}`;
 }
 
-function crefWords(parts: ObjLabelPart[], capitalize: boolean, link: (p: ObjLabelPart) => string): string {
+// House style (matches the PDF's cleveref `capitalise` setup): reference names always
+// print with a capital first letter ("Theorem 1"), whether authored as \cref or \Cref.
+function crefWords(parts: ObjLabelPart[], link: (p: ObjLabelPart) => string): string {
+  const cap = (k: string): string => k[0].toUpperCase() + k.slice(1);
   const sameKind = parts.every((p) => p.kind === parts[0]?.kind);
   if (sameKind) {
     let kind = parts[0]?.kind ?? "result";
     if (parts.length > 1) kind += kind.endsWith("s") ? "" : "s";
-    kind = capitalize ? kind[0].toUpperCase() + kind.slice(1) : kind.toLowerCase();
-    return `${kind} ${joinNatural(parts.map(link))}`;
+    return `${cap(kind)} ${joinNatural(parts.map(link))}`;
   }
-  return joinNatural(parts.map((p) => {
-    const kind = capitalize ? p.kind[0].toUpperCase() + p.kind.slice(1) : p.kind.toLowerCase();
-    return `${kind} ${link(p)}`;
-  }));
+  return joinNatural(parts.map((p) => `${cap(p.kind)} ${link(p)}`));
 }
 
 /** Resolve cleveref references for page metadata, where hyperlinks are unavailable. */
 export function resolveObjCrefsPlain(tex: string, labels: ReadonlyMap<string, string>): string {
-  let out = tex.replace(/\\(Cref|cref)\{([^}]+)\}/g, (whole, command: string, raw: string) => {
+  let out = tex.replace(/\\(Cref|cref)\{([^}]+)\}/g, (whole, _command: string, raw: string) => {
     const parts = objLabelParts(raw, labels);
-    return parts ? crefWords(parts, command === "Cref", (p) => p.number) : whole;
+    return parts ? crefWords(parts, (p) => p.number) : whole;
   });
   // Legacy bundles remain readable while the pipeline gate requires new prose to use cleveref.
   out = out.replace(/\\ref\{([^}]+)\}/g, (_whole, raw: string) => {
@@ -139,13 +138,13 @@ export async function tex2html(
   // Pandoc cannot resolve these (no aux file), so swap in tokens pre-conversion and patch HTML.
   const refLabels = paperReferenceLabels(body);
   const refTokens: { token: string; html: string }[] = [];
-  tex = tex.replace(/\\(Cref|cref)\{([^}]+)\}/g, (whole, command: string, raw: string) => {
+  tex = tex.replace(/\\(Cref|cref)\{([^}]+)\}/g, (whole, _command: string, raw: string) => {
     const parts = objLabelParts(raw, refLabels);
     if (!parts) return whole;
     const token = `PSMITHREF${refTokens.length}X`;
     refTokens.push({
       token,
-      html: crefWords(parts, command === "Cref", (p) =>
+      html: crefWords(parts, (p) =>
         raw.split(",").map((x) => x.trim()).find((x) => (x.startsWith("obj:") ? x.slice(4) : x) === p.id)?.startsWith("obj:")
           ? `<a class="objref" href="#obj-${esc(p.id)}">${esc(p.number)}</a>`
           : esc(p.number)),
@@ -246,7 +245,7 @@ function stripLatexComments(tex: string): string {
 }
 
 const FORMAL_BEGIN_RE =
-  /\\begin\{(theoremv|assumptionv|lemmav|definitionv|citedv|propositionv|remarkv)\}\{([^}]+)\}/g;
+  /\\begin\{(theoremv|assumptionv|lemmav|definitionv|citedv|propositionv|remarkv|algorithmv)\}\{([^}]+)\}/g;
 
 function readOptionalFormalTitle(tex: string, pos: number): { title: string | undefined; end: number } {
   if (tex[pos] !== "[") return { title: undefined, end: pos };

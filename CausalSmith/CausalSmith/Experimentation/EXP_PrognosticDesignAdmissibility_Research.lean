@@ -1,0 +1,38 @@
+/-
+Copyright (c) 2026 Jiyuan Tan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Jiyuan Tan
+-/
+
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.Basic
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.Helpers
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.Helpers.AffineHull
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.Helpers.BlockSpectrum
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.Helpers.Compactness
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.Helpers.CovarianceHull
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.Helpers.ExtremePoints
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.Helpers.FourUnit
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.Helpers.GramDiagonal
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.Helpers.HomogeneousBlocks
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.Helpers.LeverageProfile
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.Helpers.OrbitReduction
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.Helpers.RegretRepresentation
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.Helpers.Separation
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.Helpers.SimplexMinimax
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.Helpers.Spectral
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.TAdmissibilityFrontier
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.TBalancedCovarianceRealizability
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.TConeLiftDual
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.TEndpointReductions
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.TExactDesignRisk
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.TExactOracleSaddle
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.TExactPairSpaceRegret
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.TFiniteUnknownQualityRegret
+import CausalSmith.Experimentation.EXP_PrognosticDesignAdmissibility_Research.TPairSpaceExactFrontier
+
+/-! # Run barrel (auto-generated)
+
+Aggregates every module of this causalsmith run so the whole run is ONE buildable target
+(`lake build <this module>`). Research modules are not reachable from the top-level
+`CausalSmith.lean` barrel, so the default lake target skips them and reports green on stale
+oleans. Rewritten from the run's module set on every F-stage entry — do not hand-edit. -/

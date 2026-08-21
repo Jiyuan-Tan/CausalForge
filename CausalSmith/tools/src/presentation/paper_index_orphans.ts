@@ -41,6 +41,10 @@ export async function findOrphanPaperModules(
   const orphans: OrphanPaperModule[] = [];
   for (const file of files) {
     const normalizedFile = file.replaceAll(path.sep, "/");
+    // The run-local tmp/ tree is an explicitly disposable proof-probe
+    // workspace. It is excluded from graph extraction and never belongs in a
+    // published module inventory, even when a probe uses public declarations.
+    if (normalizedFile === "tmp.lean" || normalizedFile.startsWith("tmp/")) continue;
     const module = `${modulePrefix}.${normalizedFile.slice(0, -".lean".length).replaceAll("/", ".")}`;
     if (indexedEntryModules.has(module)) continue;
     const source = await readFile(path.join(runDir, file), "utf8");
@@ -48,3 +52,12 @@ export async function findOrphanPaperModules(
   }
   return orphans;
 }
+
+/**
+ * Compiler-synthesized companion theorems that the Lean extractor omits from
+ * paper/library indexes unless demonstrably hand-authored: `congr_simp` (from
+ * `@[congr]`) and the on-demand equation lemmas `eq_def` / `eq_unfold` /
+ * `eq_<i>`. Mirrors `isSyntheticCompanionLeaf` in `LibraryIndexCore.lean`;
+ * keep the two in sync.
+ */
+export const SYNTHETIC_COMPANION_RE = /\.(?:congr_simp|eq_def|eq_unfold|eq_\d+)$/;

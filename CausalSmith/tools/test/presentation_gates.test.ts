@@ -2,14 +2,13 @@ import { describe, it, expect } from "vitest";
 import {
   runHardGates,
   gateLoop,
-  medianRubric,
   parseRubricReview,
   parseJsonLoose,
   citingSentences,
   type GateRunners,
   type HardGateInput,
 } from "../src/presentation/gates.js";
-import { parseAnchoredEnvs, hashEnvBody } from "../src/presentation/tex_anchors.js";
+import { parseAnchoredEnvs } from "../src/presentation/tex_anchors.js";
 import { parseBib } from "../src/presentation/citations.js";
 
 const PAPER = `
@@ -28,13 +27,12 @@ const BIB = parseBib(
 );
 
 function makeInput(over: Partial<HardGateInput> = {}): HardGateInput {
-  const frozen = new Map(parseAnchoredEnvs(PAPER).map((e) => [e.obj_id, hashEnvBody(e.body)]));
+  const frozen = new Map(parseAnchoredEnvs(PAPER).map((e) => [e.obj_id, e.body]));
   return {
     paperTex: PAPER,
     notation: "",
     knownObjIds: new Set(["T-1"]),
-    frozenHashes: frozen,
-    proofs: [{ obj_id: "T-1", proofTex: "\\begin{proof}...\\end{proof}", leanPointer: "file: x" }],
+    frozenBodies: frozen,
     frontMatter: "We prove a bound.",
     frozenEnvsTex: "",
     bibEntries: BIB,
@@ -42,11 +40,12 @@ function makeInput(over: Partial<HardGateInput> = {}): HardGateInput {
   };
 }
 
+const batchVerdict = (verdict: "supported" | "unsupported" | "unverifiable", reason?: string): GateRunners["citationSupportBatch"] =>
+  async (pairs) => new Map(pairs.map((p) => [`${p.entry.key}|${p.sentence}`, { verdict, reason }]));
+
 const passingRunners: GateRunners = {
-  equivalence: async () => ({ verdict: "faithful" }),
-  proofAudit: async () => ({ verdict: "faithful" }),
   overclaim: async () => ({ clean: true }),
-  citationSupport: async () => ({ verdict: "supported" as const }),
+  citationSupportBatch: batchVerdict("supported"),
 };
 
 describe("hard gates", () => {
@@ -54,13 +53,7 @@ describe("hard gates", () => {
     expect(await runHardGates(makeInput(), passingRunners)).toEqual([]);
   });
 
-  it("a single drift / unsupported / overclaim verdict fails the run", async () => {
-    const unfaithful = await runHardGates(makeInput(), {
-      ...passingRunners,
-      proofAudit: async () => ({ verdict: "unfaithful", issues: ["step 2 invented"] }),
-    });
-    expect(unfaithful.some((p) => p.gate === "proof-audit")).toBe(true);
-
+  it("a single unsupported / overclaim verdict fails the run", async () => {
     const oc = await runHardGates(makeInput(), {
       ...passingRunners,
       overclaim: async () => ({ clean: false, flags: [{ sentence: "We solve everything." }] }),
@@ -69,9 +62,18 @@ describe("hard gates", () => {
 
     const cs = await runHardGates(makeInput(), {
       ...passingRunners,
-      citationSupport: async () => ({ verdict: "unsupported" as const, reason: "overgeneralized" }),
+      citationSupportBatch: batchVerdict("unsupported", "overgeneralized"),
     });
     expect(cs.some((p) => p.gate === "citation-support")).toBe(true);
+  });
+
+  it("a pair the batch auditor returned no verdict for is advisory-unverifiable, never silently supported", async () => {
+    const problems = await runHardGates(makeInput(), {
+      ...passingRunners,
+      citationSupportBatch: async () => new Map(),
+    });
+    expect(problems.some((p) => p.gate === "citation-unverifiable" && p.detail.includes("no verdict"))).toBe(true);
+    expect(problems.some((p) => p.gate === "citation-support")).toBe(false);
   });
 
   it("flags citations outside the pool and frozen drift", async () => {
@@ -96,13 +98,13 @@ describe("hard gates", () => {
 \begin{definitionv}{def:forward-cumulant-map}[Forward map]
 Let \(u_j\) be the forward loading vector.
 \end{definitionv}`;
-    const frozen = new Map(parseAnchoredEnvs(orderPaper).map((e) => [e.obj_id, hashEnvBody(e.body)]));
+    const frozen = new Map(parseAnchoredEnvs(orderPaper).map((e) => [e.obj_id, e.body]));
     const problems = await runHardGates(
       makeInput({
         paperTex: orderPaper,
         notation: String.raw`| forward loadings | \(u_j\) | source loading vectors | def:forward-cumulant-map |`,
         knownObjIds: new Set(["T-1", "ass:forward-axis-model", "def:forward-cumulant-map"]),
-        frozenHashes: frozen,
+        frozenBodies: frozen,
       }),
       passingRunners,
     );
@@ -143,16 +145,6 @@ describe("gate loop", () => {
 });
 
 describe("helpers", () => {
-  it("medianRubric takes the median of per-review means", () => {
-    expect(
-      medianRubric([
-        { scores: { a: 2, b: 4 }, weaknesses: [] }, // 3
-        { scores: { a: 8, b: 8 }, weaknesses: [] }, // 8
-        { scores: { a: 6, b: 6 }, weaknesses: [] }, // 6
-      ]),
-    ).toBe(6);
-  });
-
   it("parseJsonLoose finds JSON in chatter", () => {
     expect(parseJsonLoose('blah\n{"verdict": "drift"}\nbye')).toEqual({ verdict: "drift" });
     expect(parseJsonLoose(String.raw`{"verdict":"faithful","detail":"Matches \\(m\\ge1\\)."}`)).toEqual({
@@ -179,9 +171,14 @@ describe("helpers", () => {
 });
 
 describe("parseRubricReview (P3 rubric JSON boundary)", () => {
-  it("accepts a well-formed review and defaults weaknesses", () => {
+  it("accepts a well-formed review and defaults weaknesses/defects", () => {
     expect(parseRubricReview({ scores: { rigor: 7, novelty: 6.5 } }))
-      .toEqual({ scores: { rigor: 7, novelty: 6.5 }, weaknesses: [] });
+      .toEqual({ scores: { rigor: 7, novelty: 6.5 }, weaknesses: [], defects: [] });
+  });
+  it("carries the defects list and rejects a malformed one", () => {
+    expect(parseRubricReview({ scores: { rigor: 7 }, defects: ["placeholder text in a label"] }))
+      .toEqual({ scores: { rigor: 7 }, weaknesses: [], defects: ["placeholder text in a label"] });
+    expect(parseRubricReview({ scores: { rigor: 7 }, defects: "not an array" })).toBeNull();
   });
   it("rejects string scores (previously became NaN and passed)", () => {
     expect(parseRubricReview({ scores: { rigor: "7/10" }, weaknesses: [] })).toBeNull();
@@ -197,7 +194,7 @@ describe("parseRubricReview (P3 rubric JSON boundary)", () => {
   it("parseRubricReview filters legacy malformed cache entries", () => {
     const cached: unknown[] = [{ scores: { rigor: "7/10" } }, { scores: { rigor: 7 } }];
     const valid = cached.map((v) => parseRubricReview(v)).filter(Boolean);
-    expect(valid).toEqual([{ scores: { rigor: 7 }, weaknesses: [] }]);
+    expect(valid).toEqual([{ scores: { rigor: 7 }, weaknesses: [], defects: [] }]);
   });
 });
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { FormalLayerSource, blocksToTex, texEnvFor, hashBody, blocksFromGraph, normalizeCitedScopeFootnotes, paperEnvMismatches, type FormalBlock } from "../src/presentation/formal_layer.js";
+import { FormalLayerSource, blocksToTex, texEnvFor, blocksFromGraph, normalizeCitedScopeFootnotes, paperEnvMismatches, type FormalBlock } from "../src/presentation/formal_layer.js";
 import { parseAnchoredEnvs } from "../src/presentation/tex_anchors.js";
 import type { FormalizationGraph } from "../src/graph/types.js";
 
@@ -32,7 +32,6 @@ const block: FormalBlock = {
   status: "matched",
   provenance: "from-note",
   cited_dependencies: [],
-  body_hash: "deadbeef",
 };
 
 describe("formal layer source", () => {
@@ -55,9 +54,18 @@ describe("formal layer source", () => {
     expect(texEnvFor(setup)).toBe("");
   });
 
-  it("hashBody is whitespace-insensitive (reflow is not a change)", () => {
-    expect(hashBody("a   b\n c")).toBe(hashBody("a b c"));
-    expect(hashBody("a b c")).toHaveLength(64);
+  it("a legacy formal_layer.json carrying the retired body_hash field still parses (unknown keys stripped)", () => {
+    const legacy = {
+      commit: null,
+      blocks: [{
+        obj_id: "T-1", alias: null, kind: "theorem", env: "theoremv", title: null,
+        body: "Legacy body.", ref_set: [], lean: null, status: "matched", provenance: "test",
+        body_hash: "deadbeef".repeat(8),
+      }],
+    };
+    const parsed = FormalLayerSource.parse(legacy);
+    expect(parsed.blocks[0].body).toBe("Legacy body.");
+    expect("body_hash" in parsed.blocks[0]).toBe(false);
   });
 
   it("blocksFromGraph builds a block per rendered node, obj_id = node id, lean/status/ref_set from graph", () => {
@@ -68,7 +76,6 @@ describe("formal layer source", () => {
     expect(b.lean).toEqual({ decl: "mainThm", file: "T.lean" });
     expect(b.ref_set).toContain("ass:x"); // statement-uses target, by node id
     expect(b.body).toBe("BODY");
-    expect(b.body_hash).toHaveLength(64);
     // the assumption node also renders (frozen + env-kind), with an empty body when not supplied
     expect(blocks.find((x) => x.obj_id === "ass:x")?.body).toBe("");
   });
@@ -86,6 +93,9 @@ describe("formal layer source", () => {
     const blocked = blocksFromGraph(g, bodies, new Map(), { "ass:x": "remarkv" }, (m) => dropped.push(m));
     expect(blocked.find((x) => x.obj_id === "ass:x")!.env).toBe("assumptionv"); // override ignored
     expect(dropped.some((m) => /load-bearing/.test(m))).toBe(true);
+    // a definition-kind procedure may be boxed as an algorithm, even when load-bearing
+    const boxed = blocksFromGraph(g, bodies, new Map(), { "ass:x": "algorithmv" }, () => {});
+    expect(boxed.find((x) => x.obj_id === "ass:x")!.env).toBe("algorithmv");
   });
 
   it("the derived .tex round-trips: parseAnchoredEnvs recovers every block's obj_id + body", () => {

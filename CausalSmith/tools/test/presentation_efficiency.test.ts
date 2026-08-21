@@ -2,16 +2,15 @@ import { describe, expect, it } from "vitest";
 import {
   applyTargetedReplacements,
   claimUnits,
-  proseOnlyReplacements,
   revisionContext,
 } from "../src/presentation/stages/p3_gates.js";
-import { relevantNotation } from "../src/presentation/stages/p2_draft.js";
+import { notationForArtifact } from "../src/presentation/stage_util.js";
 import { buildVerificationContract } from "../src/presentation/verification_contract.js";
 
 describe("presentation token-efficiency helpers", () => {
   it("selects only artifact-relevant notation rows", () => {
     const notation = "q_n: schedule\nR_P: regret\nmu: mean";
-    const selected = relevantNotation(notation, "The proof controls q_n.");
+    const selected = notationForArtifact(notation, "The proof controls q_n.");
     expect(selected).toContain("q_n");
     expect(selected).not.toContain("R_P");
   });
@@ -27,25 +26,13 @@ describe("presentation token-efficiency helpers", () => {
     expect(revisionContext(tex, ["fix the overstated rate comparison"])).toBe("A rate comparison is overstated.");
   });
 
-  it("salvages prose edges when a revision improperly includes frozen environments", () => {
-    const replacements = proseOnlyReplacements([{
-      before: "Old prose.\n\n\\begin{definitionv}{d}Old body\\end{definitionv}\n\nSame tail.",
-      after: "New prose.\n\n\\begin{definitionv}{d}Rewritten body\\end{definitionv}\n\nSame tail.",
-    }]);
-    expect(replacements).toEqual([{ before: "Old prose.\n\n", after: "New prose.\n\n" }]);
-    expect(applyTargetedReplacements(
-      "Old prose.\n\n\\begin{definitionv}{d}Canonical body\\end{definitionv}\n\nSame tail.",
-      replacements,
-    )).toContain("New prose.\n\n\\begin{definitionv}{d}Canonical body");
-  });
-
   it("deduplicates repeated Lean declarations in the P5 contract", () => {
     const formal = {
       commit: "abc",
       blocks: ["a", "b"].map((obj_id) => ({
         obj_id, alias: null, kind: "theorem", env: "theoremv", title: null,
         body: `statement ${obj_id}`, ref_set: [], lean: { decl: "shared", file: "X.lean" },
-        status: "matched", provenance: "from-note", body_hash: `hash-${obj_id}`,
+        status: "matched", provenance: "from-note",
       })),
     };
     const snippets = {

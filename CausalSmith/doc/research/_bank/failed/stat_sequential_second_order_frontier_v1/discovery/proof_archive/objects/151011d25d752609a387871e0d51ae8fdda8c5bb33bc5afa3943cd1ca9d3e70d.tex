@@ -1,0 +1,84 @@
+We construct the single smoothness-agnostic algorithm. Partition time into geometric epochs. Within every completed epoch, reserve deterministic ordered mean-training and mean-validation folds of comparable size; a fit selected from epoch \(j\) is frozen before it is used to score units in epoch \(j+1\). Initialization uses any fixed bounded fit. Assignment never uses a learned variance: for every unit set
+\[
+q_t^D(a\mid x,h):=e_a(x).
+\tag{45}
+\]
+The assumed measurability, normalization, and floor in (43) show directly that \(D\in\mathfrak D_{n,\varepsilon}\), and this design is law-independent.
+
+For a mean-training fold of size \(m\), form the finite library
+\[
+\mathcal L_m=
+\left\{(p,k):0\leq p\leq\lceil\log m\rceil,
+\ b_k=2^{-k},\ mb_k^d\geq c\log m\right\}.
+\tag{46}
+\]
+For every arm and every \((p,k)\in\mathcal L_m\), fit a boundary-corrected local polynomial of degree \(p\) and bandwidth \(b_k\), weighting observations by the recorded factor \(\mathbf1\{A_i=a\}/e_a(X_i)\); use a fixed bounded fallback when the empirical Gram matrix is ill-conditioned and project the fit onto \([-M,M]\). On the later validation fold select the candidate minimizing
+\[
+\widehat L_{p,k}
+=\frac1m\sum_i
+\frac{\mathbf1\{A_i=a\}}{e_a(X_i)}
+\{Y_i-\widehat\mu_{a,p,k}(X_i)\}^2,
+\tag{47}
+\]
+with deterministic lexicographic tie-breaking.
+
+We verify the rate because this is the step that removes smoothness knowledge. Conditional on the training fold, all candidates are frozen and bounded. For two candidates \(g_\ell,g_k\), the loss difference is
+\[
+\{Y-g_\ell(X)\}^2-\{Y-g_k(X)\}^2
+=\{g_k(X)-g_\ell(X)\}\{2Y-g_\ell(X)-g_k(X)\}.
+\tag{48}
+\]
+Recorded inverse propensities give the correct conditional mean. The first factor is bounded, and, under conditional Gaussianity and the variance range, the centered second factor has uniformly bounded exponential moments in a neighborhood of zero. Conditional Bernstein's inequality, a union bound over the at most \(C(\log m)^2\) candidates, the empirical minimizing inequality, and integration of the tail therefore give
+\[
+E\|\widehat\mu_{m,a}-\mu_a\|_{L_2(P_X)}^2
+\leq C\min_{(p,k)\in\mathcal L_m}
+E\|\widehat\mu_{a,p,k}-\mu_a\|_{L_2(P_X)}^2
++C\frac{\log|\mathcal L_m|}{m}.
+\tag{49}
+\]
+For any fixed \(s>0\), when \(m\) is sufficiently large the library contains a degree at least \(\lfloor s\rfloor\) and a dyadic bandwidth within a factor two of \(m^{-1/(2s+d)}\). The local-polynomial bias--variance calculation gives risk at most \(Cm^{-2s/(2s+d)}\) for that candidate. Moreover,
+\[
+\frac{\log|\mathcal L_m|}{m}
+\leq C_s m^{-2s/(2s+d)}
+\tag{50}
+\]
+for all sufficiently large \(m\), because \(2s/(2s+d)<1\). Thus the selected, clipped fit satisfies
+\[
+\sup_{P\in\mathcal P(s,r)}
+E_P\|\widehat\mu_{j,a}-\mu_a\|_{L_2(P_X)}^2
+\leq C_s N_j^{-2s/(2s+d)}
+\tag{51}
+\]
+in an evaluation epoch whose preceding training sample is comparable to \(N_j\). Neither the library nor the selector uses \(s\) or \(r\).
+
+For a unit \(t\) in that evaluation epoch, define the predictable score
+\[
+\Psi_t=
+\sum_{a\in\mathcal A}\omega_a(X_t)\widehat\mu_{j,a}(X_t)
++\sum_{a\in\mathcal A}
+\frac{\mathbf1\{A_t=a\}}{e_a(X_t)}
+\omega_a(X_t)\{Y_t-\widehat\mu_{j,a}(X_t)\},
+\qquad
+T=\frac1n\sum_{t=1}^n\Psi_t.
+\tag{52}
+\]
+All fits are frozen before use. Conditional randomization and latent i.i.d. sampling imply \(E[\Psi_t\mid\mathcal G_{t-1}]=\theta(P)\), so the centered scores are square-integrable martingale differences. Put \(\delta_{j,a}=\omega_a(\widehat\mu_{j,a}-\mu_a)\). Direct conditional square expansion yields
+\[
+\begin{aligned}
+E[(\Psi_t-\theta(P))^2\mid\mathcal G_{t-1}]
+&=V(e;P)\\
+&\quad+E_P\!\left[
+\sum_{a\in\mathcal A}\frac{\delta_{j,a}(X)^2}{e_a(X)}
+-\left\{\sum_{a\in\mathcal A}\delta_{j,a}(X)\right\}^2
+\,\middle|\,\mathcal G_{t-1}\right].
+\end{aligned}
+\tag{53}
+\]
+Condition (43) and the pointwise form of the oracle benchmark imply \(V(e;P)=V^*(P)\) for every \(P\). Dropping the final nonnegative square, using \(e_a\geq\varepsilon\), bounded weights, and (51), we obtain an excess conditional second moment at most \(C_sN_j^{-2s/(2s+d)}\). Martingale orthogonality and geometric summation give
+\[
+E[(T-\theta(P))^2]-\frac{V^*(P)}n
+\leq\frac{C_s}{n^2}\sum_j |I_j|N_j^{-2s/(2s+d)}+\frac{C_s}{n^2}
+\leq C_s n^{-1-2s/(2s+d)}.
+\tag{54}
+\]
+The initialization term is \(O(n^{-2})\), and the exponent is strictly below one. This proves (44) uniformly over \(P\). Substitution of this single admissible pair into the two infima in the definition of \(\mathsf R_n\) proves the final assertion.

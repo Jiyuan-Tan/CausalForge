@@ -4,12 +4,6 @@
 import type { GraphNode } from "../graph/types.js";
 import { envForNode, type EnvName } from "./graph_view.js";
 
-/** Model assignment for the P1 loop. The touch-up render runs on codex (medium); the
- *  notation review runs on codex at HIGH effort (user choice 2026-06-25). Independence now
- *  comes from the role + effort split and the deterministic lint floor, not a separate model.
- *  See doc/presentation/2026-06-17-causalsmith-graph-simplification-design.md §4.6.0. */
-export const P1_MODELS = { executor: "codex", reviewer: "codex" } as const;
-
 /**
  * The deterministic mechanical frozen layer, rendered from already-topo-ordered
  * paper nodes (caller applies `topoOrder(renderedNodes(graph))`). Each env body is
@@ -63,19 +57,16 @@ const WORDING_GATES = new Set([
   "hypothesis-not-itemized",
   "hypothesis-restated",
 ]);
-/** Findings that need a NEW env (a missing class definition) — back to the executor. */
-const SYNTH_GATES = new Set(["notation-undefined"]);
-
 /**
  * Route a finding to its handler by gate name (the deterministic part of the
  * router — §4.6.0). The codex reviewer may also emit an explicit `fix_locus` on a
- * semantic finding; the caller prefers that when present and falls back here.
- * Anything unrecognized → `halt` (fail loud: unknown-objid, env-set-changed,
- * bare-env, not-frozen, …) rather than silently revising.
+ * semantic finding; the caller prefers that when present and falls back here
+ * (synthesis is requested only via an explicit `fix_locus`). Anything
+ * unrecognized → `halt` (fail loud: unknown-objid, env-set-changed, bare-env,
+ * not-frozen, …) rather than silently revising.
  */
 export function routeFinding(gate: string): FixLocus {
   if (WORDING_GATES.has(gate)) return "wording-revise";
-  if (SYNTH_GATES.has(gate)) return "synthesize-def";
   return "halt";
 }
 
@@ -96,11 +87,13 @@ export interface P1Env {
   delivery?: { status: "undelivered"; role?: string; reason: string };
 }
 
-/** Gates that are surfaced for the checkpoint but never block the loop. Deterministic
- *  `notation-undefined` remains advisory unless its producer explicitly opts into synthesis.
+/** Gates that are surfaced for the checkpoint but never block the loop.
+ *  `notation-unresolved` is the synthesis ledger's terminal state: the one allowed
+ *  synthesis attempt for the symbol failed (or the reviewer re-flagged it afterwards),
+ *  so the loop records it for the checkpoint instead of burning further rounds.
  *  Semantic `notation-reviewer` findings are deliberately NOT advisory: the presentation
  *  contract requires every named object to resolve before the P1 checkpoint can pass. */
-const ADVISORY_GATES = new Set(["xref-missing", "notation-undefined"]);
+const ADVISORY_GATES = new Set(["xref-missing", "notation-unresolved"]);
 
 /** A reviewer/lint finding. `fixLocus` is the codex reviewer's explicit route when
  *  present; otherwise the router falls back to `routeFinding(gate)`. `symbol` names
@@ -147,6 +140,48 @@ const locusOf = (f: P1Finding): FixLocus => f.fixLocus ?? routeFinding(f.gate);
 const isAdvisoryFinding = (f: P1Finding): boolean =>
   ADVISORY_GATES.has(f.gate) && f.fixLocus == null; // why: deterministic orphan notation opts into synthesis explicitly.
 
+/** Reviewer findings occasionally name several missing symbols in one field.
+ * Split only at visible math-fragment boundaries or top-level commas: commas
+ * inside function arguments/subscripts remain part of one notation atom. */
+export function atomicRequestedNotationSymbols(symbol: string): string[] {
+  // Preserve the gaps between math fragments too: reviewers sometimes emit a
+  // mixed form such as `m_1(h), \(m_2(h)\)`.  Selecting only the delimited
+  // fragments silently dropped the bare atom.
+  const raw = symbol.replace(/\$([^$]+)\$|\\\((.*?)\\\)|\\\[([\s\S]*?)\\\]/g,
+    (_whole, dollar: string | undefined, inline: string | undefined, display: string | undefined) =>
+      dollar ?? inline ?? display ?? "");
+  const split = (raw: string): string[] => {
+    const parts: string[] = [];
+    let round = 0, square = 0, curly = 0, start = 0;
+    const push = (end: number) => {
+      const part = raw.slice(start, end).trim()
+        .replace(/^(?:\\(?:[,;:!]|quad|qquad)\s*)+|(?:\s*\\(?:[,;:!]|quad|qquad))+$/g, "")
+        .replace(/^[,;:]+|[,;:]+$/g, "").trim();
+      if (part) parts.push(part);
+    };
+    for (let i = 0; i < raw.length; i++) {
+      const c = raw[i];
+      if (c === "(") round++; else if (c === ")") round--;
+      else if (c === "[") square++; else if (c === "]") square--;
+      else if (c === "{") curly++; else if (c === "}") curly--;
+      else if (round === 0 && square === 0 && curly === 0) {
+        if ((c === "," || c === ";") && raw[i - 1] !== "\\") {
+          push(i); start = i + 1;
+        } else {
+          const connector = raw.slice(i).match(/^\s+and\s+|^(?:\\(?:[,;:!]|quad|qquad)\s*)+(?:and|\\text\{\s*and\s*\})(?:\s*\\(?:[,;:!]|quad|qquad))+/i)?.[0];
+          if (!connector) continue;
+          push(i);
+          i += connector.length - 1;
+          start = i + 1;
+        }
+      }
+    }
+    push(raw.length);
+    return parts;
+  };
+  return [...new Set(split(raw.trim()))];
+}
+
 /**
  * Run the loop: render-all (round 0) → {review → route → handle} until the
  * reviewer is clean, a `halt` fires, or the iteration cap is hit. The
@@ -181,6 +216,7 @@ export async function runP1Loop(initial: P1Env[], h: P1LoopHooks): Promise<P1Loo
       }
     }
   };
+  let prevActionableFp = "";
   for (let iter = 1; iter <= h.maxIterations; iter++) {
     const findings = await h.review(h.assemble(envs), envs);
     await h.onRound?.({ phase: "review", iter, envs, findings });
@@ -191,13 +227,27 @@ export async function runP1Loop(initial: P1Env[], h: P1LoopHooks): Promise<P1Loo
     const halts = actionable.filter((f) => locusOf(f) === "halt");
     if (halts.length > 0) return { envs, ok: false, unresolved: halts, advisories, iterations: iter };
 
+    // Fast-exit: if this round's actionable set is IDENTICAL to the previous round's
+    // (same gates/loci/envs/symbols), the previous repair dispatch changed nothing the
+    // reviewer cares about — an ordering or structural problem re-rendering cannot fix.
+    // Halt loudly with the findings instead of burning the remaining iteration budget
+    // re-paying identical render+review rounds (observed: two full 6-iteration burns).
+    const actionableFp = actionable
+      .map((f) => `${f.gate}|${locusOf(f)}|${f.objId ?? ""}|${f.symbol ?? ""}|${f.detail}`)
+      .sort()
+      .join(";");
+    if (actionableFp === prevActionableFp) {
+      return { envs, ok: false, unresolved: actionable, advisories, iterations: iter };
+    }
+    prevActionableFp = actionableFp;
+
     // synthesize-def → add rendered envs before the layer they explain. A definition appended
     // after its first use is still unresolved to a reader, and nested repair rounds naturally
     // discover prerequisites of earlier synthetic definitions. Prepending each later batch gives
     // those prerequisites the correct dependency order without another model call.
-    const symbols = [
-      ...new Set(actionable.filter((f) => locusOf(f) === "synthesize-def").map((f) => f.symbol).filter((s): s is string => !!s)),
-    ];
+    const symbols = [...new Set(actionable
+      .filter((f) => locusOf(f) === "synthesize-def")
+      .flatMap((f) => f.symbol ? atomicRequestedNotationSymbols(f.symbol) : []))];
     if (symbols.length > 0) envs = [...(await h.synthesize(symbols)), ...envs];
 
     // wording-revise → re-render the flagged envs with their accumulated defects.
