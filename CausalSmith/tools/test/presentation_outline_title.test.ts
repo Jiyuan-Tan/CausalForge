@@ -100,3 +100,12 @@ describe("main-body placement of statement dependencies", () => {
     expect(lintMainBodyDependencies(outline, () => [], (id) => kinds[id])).toEqual([]);
   });
 });
+
+describe("algorithmv body lock", () => {
+  it("releases an unstepped frozen body but keeps a validated stepped one", async () => {
+    const { isSteppedBodyForTest } = await import("../src/presentation/stages/p1_plan.js");
+    expect(isSteppedBodyForTest("Let x be the statistic. Then it converges.")).toBe(false);
+    expect(isSteppedBodyForTest("\\begin{enumerate}\\item Split the sample.\\end{enumerate}")).toBe(true);
+    expect(isSteppedBodyForTest("Inputs are named. \\item Output the statistic.")).toBe(true);
+  });
+});

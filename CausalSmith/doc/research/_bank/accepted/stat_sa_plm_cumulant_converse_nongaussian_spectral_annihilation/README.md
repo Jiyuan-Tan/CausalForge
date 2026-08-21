@@ -19,8 +19,8 @@ proof_attempt_summary: |
   The shrinking-separation local minimax frontier, adaptive switching, and
   uniform inference remain open by design.
 banked_on: "2026-08-15"
-paper_score: 6.2
-paper_score_rationale: "The verified core is substantial and potentially publishable, but the manuscript needs serious tightening of scope, naming, exposition, and several claim-fidelity repairs before it reads like a journal submission."
+paper_score: 6.6
+paper_score_rationale: "The verified core is mathematically ambitious and internally supported, but the manuscript needs substantial revision to make its contribution legible, correctly scoped, and consistently aligned with the formal contract."
 ---
 
 # stat_sa_plm_cumulant_converse / nongaussian_spectral_annihilation — Accepted

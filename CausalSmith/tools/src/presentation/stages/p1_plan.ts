@@ -409,6 +409,12 @@ async function writeDiagnostic(outDir: string, name: string, content: string): P
  * the orchestrator.
  */
 
+/** TRUE iff a body is already written as numbered steps — i.e. it IS an algorithm box.
+ *  Gates whether the `algorithmv` body lock is released: released to CREATE the box from
+ *  unstepped prose, kept once P3 has validated and frozen a stepped body, so a verified box
+ *  is not re-rolled on every planning entry. */
+export const isSteppedBodyForTest = (body: string): boolean => /\\begin\{enumerate\}|\\item\b/.test(body);
+
 /** P1 render-cache key. `envHint` is appended ONLY when non-empty so objects without an
  * env override hash byte-identically to the legacy (pre-override) formula — an
  * unconditional "" element would still emit a "§" and cold every render cache. */
@@ -679,9 +685,16 @@ export async function stageP1(io: StageIO): Promise<void> {
   // override" (sa_plm 2026-08-21). One resolver, both views.
   const envForNodeWithOverride = (n: Parameters<typeof envForNode>[0]) =>
     (outlineEnvOverrides[n.id] as ReturnType<typeof envForNode>) ?? envForNode(n);
-  const steppedNodes = nodes.filter((n) => n.nl.frozen_body && outlineEnvOverrides[n.id] === "algorithmv");
+  // …but only while the frozen body is NOT already stepped. Once P3 validates a stepped body
+  // and freezes it, that body IS the algorithm box, and re-rendering it every entry would throw
+  // away a verified box and re-roll the dice on its content (sa_plm's N_j display is exactly
+  // what a re-roll can lose). So: release the lock to CREATE the box, keep it once it exists.
+  const isSteppedBody = isSteppedBodyForTest;
+  const steppedNodes = nodes.filter(
+    (n) => n.nl.frozen_body && outlineEnvOverrides[n.id] === "algorithmv" && !isSteppedBody(n.nl.frozen_body),
+  );
   const lockedNodes = nodes.filter((n) =>
-    n.nl.frozen_body && n.delivery?.status !== "undelivered" && outlineEnvOverrides[n.id] !== "algorithmv",
+    n.nl.frozen_body && n.delivery?.status !== "undelivered" && !steppedNodes.includes(n),
   );
   if (steppedNodes.length > 0) {
     log(`algorithmv: body lock released so the renderer can step ${steppedNodes.map((n) => n.id).join(", ")} (frozen membership kept; audit still gates)`);

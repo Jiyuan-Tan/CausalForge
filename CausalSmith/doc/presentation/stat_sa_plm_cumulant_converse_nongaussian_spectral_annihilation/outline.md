@@ -43,7 +43,7 @@
 | \(b_n(X)\) | \(b_n(X)=q_0(X)-\theta_0D_n(X)\) | outcome contamination induced by treatment-code error | def:outcome-contamination |
 | \(B_n(z)\) | \(B_n(z)=E_P[b_n(X)e^{zD_n(X)}]\) | weighted exponential transform of outcome contamination | def:outcome-contamination |
 | \(a_{1,n},b_{1,n},a_2,b_{2,n}\) | \(a_{1,n},b_{1,n},a_2,b_{2,n}\) | JMS eligibility quantities from condition (21) | def:jms-eligibility-quantities |
-| \(M(z)\) | \(M(z)=E_P[e^{z\eta}]\) | treatment-innovation moment-generating function | def:zero-instrument |
+| \(M(z)\) | \(M(z)=E_P[e^{z\eta}]\) | treatment-innovation moment-generating function | thm:known-zero-instrument |
 | \(z_0,\ell\) | \(z_0,\ell\) | zero of \(M\) and its multiplicity | def:zero-instrument |
 | \(J_{z_0,\ell}(w)\) | \(J_{z_0,\ell}(w)=w^{\ell-1}e^{z_0w}\) | zero-based instrument | def:zero-instrument |
 | \(Z_n\) | \(Z_n=T-\bar g_n(X)\) | residualized treatment using the supplied treatment code | def:contour-functional |
@@ -73,7 +73,6 @@
 | \(I_m\) | \(I_m=[I_m^-,I_m^+]\) | rational closed interval in a certified-real record | def:certified-contour-arithmetic-substrate |
 | \(\mu\) | \(\mu:\mathbb Q_{>0}\to\mathbb N\) | executable modulus in a certified-real record | def:certified-contour-arithmetic-substrate |
 | \(p>0\) | \(p>0\) | rational positivity witness for a positive record | def:certified-contour-arithmetic-substrate |
-| \(A,B,C,D\) | \(A=[a_-,a_+]\), \(B=[b_-,b_+]\), \(C+iD\) | rational intervals and complex-rectangle components used in endpoint arithmetic | def:certified-contour-arithmetic-substrate |
 | \(\operatorname{sq}_{-}(A),\operatorname{sq}_{+}(A)\) | \(\operatorname{sq}_{-}(A),\operatorname{sq}_{+}(A)\) | lower and upper square bounds for a real interval | def:certified-contour-arithmetic-substrate |
 | \(N_{\mathrm{mesh}}\) | \(N_{\mathrm{mesh}}=\lceil L/e\rceil+1\) | mesh size used for certified contour enclosures | def:certified-contour-arithmetic-substrate |
 | \(\operatorname{Name}(x)\) | \(\operatorname{Name}(x)\) | certified-real record for \(x\) | def:contour-bank-handle |
@@ -123,7 +122,6 @@
 | \((p_j)\) | \((p_j)\) | sequence of parameter records in the common-experiment result | thm:common-experiment-dichotomy |
 | \(n_j\) | \(n_j=p_j.n\) | sample size along the common-experiment sequence | thm:common-experiment-dichotomy |
 | \(W,R,\theta,A,\mu_W\) | \(W,R,\theta,A,\mu_W\) | numerator, denominator, target, scale, and denominator mean in clipped-ratio algebra | lem:clipped-ratio-risk-decomposition |
-| \(\widehat\theta\) | \(\widehat\theta\) | generic clipped ratio statistic at threshold \(A/4\) | lem:clipped-ratio-risk-decomposition |
 | \(K\) | \(K\) | constant in the uniform empirical-transform \(L^2\) bound | lem:empirical-transform-uniform-l2 |
 | \(c_0,C_0,\tau,c_{\mathrm{ACE}}\) | \(c_0,C_0,\tau,c_{\mathrm{ACE}}\) | constants in the one-dimensional lower-bound submodel | lem:non-gaussian-hard-submodel |
 | \(P_{n,\vartheta}\) | \(P_{n,\vartheta}\) | one-dimensional hard submodel indexed by \(\vartheta\) | lem:non-gaussian-hard-submodel |
@@ -143,7 +141,7 @@
 
 notation_gaps: none
 
-env_overrides: prop:jms-ace-alignment=propositionv, prop:symmetric-mixture-reduction=propositionv, prop:bounded-outcome-gaussian-degeneracy=propositionv, oeq:local-to-gaussian-frontier=remarkv
+env_overrides: prop:jms-ace-alignment=propositionv, prop:symmetric-mixture-reduction=propositionv, prop:bounded-outcome-gaussian-degeneracy=propositionv, oeq:local-to-gaussian-frontier=remarkv, def:adaptive-contour-estimator=algorithmv
 
 # Sections
 ## section: Introduction
@@ -168,7 +166,7 @@ bib: KaganLinnikRao1973, Mattner1992, DHaultfoeuille2011, DarollesFanFlorensRena
 
 ## section: Main fixed-separation result
 This section will present the fixed-\(\delta\) contour construction in standard statistical language: cumulant separation gives a numerical zero-localization radius, \(L^1(P_X)\) treatment-code stability preserves the relevant zero geometry, empirical transforms are controlled on the contour domain, and the resulting total Borel statistic attains \(\Theta(n^{-1})\) minimax MSE with the corresponding generalized-quantile bound. It will then give the sequence-level companion: along any sequence of parameter records sharing the fixed constants, one contour bank serves the sequence, and on the bounded-outcome Gaussian comparison class the target is degenerate. Implementation-specific certified-record clauses in the theorems will be interpreted briefly and developed in the certified-construction appendix.
-objs: lem:luxemburg-mgf-envelope, lem:zero-localization, lem:population-numerator-envelope, thm:adaptive-rootn-minimax, thm:common-experiment-dichotomy
+objs: lem:luxemburg-mgf-envelope, lem:zero-localization, lem:population-numerator-envelope, def:adaptive-contour-estimator, thm:adaptive-rootn-minimax, thm:common-experiment-dichotomy
 bib: BickelKlaassenRitovWellner1993, VanDerVaart1998, VanDerVaartWellner1996, ChernozhukovEtAl2018DML, NeweyRobins2018, RobinsLiTchetgenVanDerVaart2008, LiuMukherjeeRobinsTchetgen2021, LiuMukherjeeNeweyRobins2017, MackeySyrgkanisZadik2018, MichelenSahasrabudhe2019, EremenkoFryntov2021, DinhGhoshTranTran2021
 
 ## section: Comparison with ACE and Gaussian benchmarks
@@ -198,7 +196,7 @@ bib: VanDerVaart1998, VanDerVaartWellner1996, BickelKlaassenRitovWellner1993, Ve
 
 ## section: Appendix C: certified construction and executable correspondence
 This technical appendix will preserve the finite-representation contract while keeping the main statistical exposition focused on identification and risk. It will give the bounded-build specification, certified-real record conventions, dyadic bank construction, represented-data transducer, fallback behavior, and trace-level correspondence required by the executable clauses, all relative to the same fixed primitive records used by the ordinary-sample Borel statistic. It will close with the deterministic good-event accuracy bound for the statistic on a selected bank circle, which the main risk proof cites for its perturbation display.
-objs: def:certified-contour-arithmetic-substrate, def:contour-bank-handle, def:adaptive-contour-estimator, lem:selected-contour-perturbation-bound
+objs: def:certified-contour-arithmetic-substrate, def:contour-bank-handle, lem:selected-contour-perturbation-bound
 bib: Weihrauch2000, Ko1991, Moore1966
 
 ## section: Appendix D: verification scope and crosswalk

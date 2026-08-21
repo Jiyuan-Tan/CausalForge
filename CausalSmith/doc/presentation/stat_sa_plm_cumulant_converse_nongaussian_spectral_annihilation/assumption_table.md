@@ -4,9 +4,9 @@ Machine-generated map from each presented theorem's Lean hypotheses to the paper
 
 | Theorem | Hypothesis | Source objects | Status |
 |---|---|---|---|
-| Theorem 1 (thm:known-zero-instrument) | Order | — | presented |
-| Theorem 1 (thm:known-zero-instrument) | Zero | — | presented |
-| Theorem 1 (thm:known-zero-instrument) | Multiplicity | — | presented |
+| Theorem 1 (thm:known-zero-instrument) | Non-Gaussian class | — | presented |
+| Theorem 1 (thm:known-zero-instrument) | Zero and multiplicity | — | presented |
+| Theorem 1 (thm:known-zero-instrument) | Instrument | — | presented |
 | Theorem 2 (thm:exact-contour-identification) | Residual zero-freeness | — | presented |
 | Theorem 2 (thm:exact-contour-identification) | Nuisance zero-freeness | — | presented |
 | Theorem 2 (thm:exact-contour-identification) | Positive contour count | — | presented |

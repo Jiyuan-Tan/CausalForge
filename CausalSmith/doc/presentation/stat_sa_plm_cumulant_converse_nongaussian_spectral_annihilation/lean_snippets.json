@@ -1,5 +1,5 @@
 {
-  "commit": "7e9054c56896e640647c586b920950ff8b6ad631",
+  "commit": "d9fe30bab3257b7b93377086aeb96629cd3f85e0",
   "snippets": {
     "def:model-parameters": {
       "decl": "CausalSmith.Stat.SaPlmCumulantConverse.Parameters",
@@ -957,6 +957,36 @@
       "sorry_free": true,
       "axioms": null
     },
+    "def:adaptive-contour-estimator": {
+      "decl": "(composite)",
+      "file": "Helpers/SpectralEstimator.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.SaPlmCumulantConverse.thetaHatSpec",
+          "statement": "/-- The estimator itself, assembled for a given parameter block, fixed certified records, and\nsupplied treatment-regression code sequence: it requires the code at the current sample size\nto be measurable, runs the canonical finite-rational program, reports the clipped point\nestimate, exposes the full execution trace, and demands of any compiled implementation the\nrepresented-execution contract. -/\nnoncomputable def thetaHatSpec (p : Parameters) (pStar : CertifiedBankInputs p)\n    (cStar : CertifiedRangeInput p) (gcode : ℕ → Xspace → ℝ) :\n    AdaptiveContourEstimator Xspace p pStar cStar :=\n  { publicDomain := Measurable (gcode p.n)\n    ordinaryProgram := ordinaryFiniteRationalResult p pStar cStar gcode\n    ordinaryValue := ordinaryThetaHatValue p pStar cStar gcode\n    fullTrace := fun data ↦ (ordinaryFiniteRationalResult p pStar cStar gcode data).trace\n    representedProgram := fun compiled input ↦\n      representedSpectralProgram compiled\n        (SuppliedRepresentedSpectralInput.withFixedRecords pStar cStar input)\n    representedOutputCorrespondence := fun compiled ↦\n      representedExecutionContract compiled p pStar cStar gcode }"
+        },
+        {
+          "label": "Parameters",
+          "statement": "/-- Primitive constants and deterministic code-radius sequences. -/\nstructure Parameters where\n  n : ℕ -- @realizes n(natural sample size)\n  n_pos : 1 ≤ n -- @realizes n(positive sample size)\n  r : ℕ -- @realizes r(fixed ACE order)\n  k : ℕ -- @realizes k(cumulant order)\n  k_eq : k = r + 1 -- @realizes k(k = r+1)\n  r_ge_two : 2 ≤ r -- @realizes r(r at least two)\n  s : ℝ≥0∞ -- @realizes s(Lp exponent in [r,infinity])\n  r_le_s : (r : ℝ≥0∞) ≤ s -- @realizes s(s at least r)\n  gamma : ℝ -- @realizes gamma(probability level)\n  gamma_mem : gamma ∈ Ioo (1 / 2 : ℝ) 1 -- @realizes gamma(range (1/2,1))\n  Ctheta : ℝ -- @realizes Ctheta(positive target bound)\n  Cg : ℝ -- @realizes Cg(positive treatment-regression bound)\n  Cq : ℝ -- @realizes Cq(positive outcome bound)\n  psieta : ℝ -- @realizes psieta(positive treatment-noise scale)\n  psixi : ℝ -- @realizes psixi(positive outcome-noise scale)\n  delta : ℝ -- @realizes delta(positive cumulant separation)\n  sigma : ℝ -- @realizes sigma(positive Gaussian standard deviation)\n  constants_pos :\n    0 < Ctheta ∧ -- @realizes Ctheta(strictly positive)\n    0 < Cg ∧ -- @realizes Cg(strictly positive)\n    0 < Cq ∧ -- @realizes Cq(strictly positive)\n    0 < psieta ∧ -- @realizes psieta(strictly positive)\n    0 < psixi ∧ -- @realizes psixi(strictly positive)\n    0 < delta ∧ -- @realizes delta(strictly positive)\n    0 < sigma -- @realizes sigma(strictly positive)\n  eps1n : ℕ → ℝ -- @realizes eps1n(nonnegative nonincreasing sequence)\n  eps2n : ℕ → ℝ -- @realizes eps2n(nonnegative nonincreasing sequence)\n  eps1_nonneg : ∀ n, 1 ≤ n → 0 ≤ eps1n n -- @realizes eps1n(values nonnegative for n>=1)\n  eps2_nonneg : ∀ n, 1 ≤ n → 0 ≤ eps2n n -- @realizes eps2n(values nonnegative for n>=1)\n  eps1_antitone : ∀ ⦃a b⦄, 1 ≤ a → a ≤ b → eps1n b ≤ eps1n a\n    -- @realizes eps1n(nonincreasing on positive indices)\n  eps2_antitone : ∀ ⦃a b⦄, 1 ≤ a → a ≤ b → eps2n b ≤ eps2n a\n    -- @realizes eps2n(nonincreasing on positive indices)\n\n-- @env: S1\nvariable {Xspace : Type*} [MeasurableSpace Xspace]"
+        },
+        {
+          "label": "CertifiedBankInputs",
+          "statement": "/-- The one fixed primitive record shared by the bank and estimator. -/\nstructure CertifiedBankInputs (p : Parameters) where\n  kName : ℕ\n  k_value : kName = p.k\n  deltaName : PositiveCertifiedReal\n  delta_value : deltaName.name.value = p.delta\n  psietaName : PositiveCertifiedReal\n  psieta_value : psietaName.name.value = p.psieta\n  R0Name : PositiveCertifiedReal\n  R0_value : R0Name.name.value = zeroRadius p\n  R1Name : PositiveCertifiedReal\n  R1_value : R1Name.name.value = searchRadius p\n  zeroRadius_contract :\n    zeroRadius p = Ak p.k * (p.psieta ^ 2 / p.delta) ^ ((p.k - 2 : ℝ)⁻¹)\n  searchRadius_contract : searchRadius p = zeroRadius p + 1"
+        },
+        {
+          "label": "CertifiedRangeInput",
+          "statement": "/-- A certified record for the experiment-wide range constant Ctheta: a strictly positive\nreal number supplied as a certified name (a nested family of rational enclosures with an\nexplicit accuracy modulus), together with the requirement that the number it names is\nexactly the parameter block's range constant Ctheta. -/\nstructure CertifiedRangeInput (p : Parameters) where\n  CthetaName : PositiveCertifiedReal\n  Ctheta_value : CthetaName.name.value = p.Ctheta"
+        },
+        {
+          "label": "AdaptiveContourEstimator",
+          "statement": "/-- The estimator packaged as one object: the domain condition it requires of the supplied\nregression code, the program it runs on a data set, the real point estimate it reports, the\nexecution trace it emits, the version of the program driven by a compiled implementation,\nand the correspondence property tying that version to the reference one. -/\nstructure AdaptiveContourEstimator (Xspace : Type*) [MeasurableSpace Xspace]\n    (p : Parameters) (pStar : CertifiedBankInputs p) (cStar : CertifiedRangeInput p) where\n  publicDomain : Prop\n  ordinaryProgram : (Fin p.n → Obs Xspace) → SpectralProgramResult\n  ordinaryValue : (Fin p.n → Obs Xspace) → ℝ\n  fullTrace : (Fin p.n → Obs Xspace) → SpectralExecutionTrace\n  representedProgram : CompiledBoundedSpectralAdapter →\n    SuppliedRepresentedSpectralInput p pStar cStar → SpectralProgramResult\n  representedOutputCorrespondence : CompiledBoundedSpectralAdapter → Prop\n\n/-- Lets a packaged estimator be applied directly to a data set, returning its real point\nestimate. -/\ninstance (p : Parameters) (pStar : CertifiedBankInputs p) (cStar : CertifiedRangeInput p) :\n    CoeFun (AdaptiveContourEstimator Xspace p pStar cStar)\n    (fun _ ↦ (Fin p.n → Obs Xspace) → ℝ) :=\n  ⟨AdaptiveContourEstimator.ordinaryValue⟩"
+        }
+      ]
+    },
     "thm:adaptive-rootn-minimax": {
       "decl": "CausalSmith.Stat.SaPlmCumulantConverse.adaptive_rootn_minimax",
       "file": "T3_AdaptiveRootNMinimax.lean",
@@ -1160,36 +1190,6 @@
         {
           "label": "ContourBankData",
           "statement": "/-- All data computed by the displayed fixed-fuel bank program. -/\nstructure ContourBankData where\n  Upsi : ℕ\n  UR : ℕ\n  Ncert : ℕ\n  mStar : ℕ\n  JBase : ℕ\n  rhoName : Fin (JBase + 1) → CertifiedReal\n  rho : Fin (JBase + 1) → ℝ -- @realizes rho(increasing finite vector in (R0,R1))\n  rho_value : ∀ j, (rhoName j).value = rho j\n  dStar : ℚ\n  hStar : ℚ\n  eStar : ℕ\n  dStarDen : ℕ\n  uStar : ℕ\n  aStarRat : ℚ\n  aStarRat_pos : 0 < aStarRat\n  aStar : ℝ -- @realizes aStar(positive dyadic boundary-modulus certificate)\n  aStar_eq : aStar = (aStarRat : ℝ)"
-        }
-      ]
-    },
-    "def:adaptive-contour-estimator": {
-      "decl": "(composite)",
-      "file": "Helpers/SpectralEstimator.lean",
-      "line": 0,
-      "statement": "",
-      "sorry_free": true,
-      "axioms": null,
-      "components": [
-        {
-          "label": "CausalSmith.Stat.SaPlmCumulantConverse.thetaHatSpec",
-          "statement": "/-- The estimator itself, assembled for a given parameter block, fixed certified records, and\nsupplied treatment-regression code sequence: it requires the code at the current sample size\nto be measurable, runs the canonical finite-rational program, reports the clipped point\nestimate, exposes the full execution trace, and demands of any compiled implementation the\nrepresented-execution contract. -/\nnoncomputable def thetaHatSpec (p : Parameters) (pStar : CertifiedBankInputs p)\n    (cStar : CertifiedRangeInput p) (gcode : ℕ → Xspace → ℝ) :\n    AdaptiveContourEstimator Xspace p pStar cStar :=\n  { publicDomain := Measurable (gcode p.n)\n    ordinaryProgram := ordinaryFiniteRationalResult p pStar cStar gcode\n    ordinaryValue := ordinaryThetaHatValue p pStar cStar gcode\n    fullTrace := fun data ↦ (ordinaryFiniteRationalResult p pStar cStar gcode data).trace\n    representedProgram := fun compiled input ↦\n      representedSpectralProgram compiled\n        (SuppliedRepresentedSpectralInput.withFixedRecords pStar cStar input)\n    representedOutputCorrespondence := fun compiled ↦\n      representedExecutionContract compiled p pStar cStar gcode }"
-        },
-        {
-          "label": "Parameters",
-          "statement": "/-- Primitive constants and deterministic code-radius sequences. -/\nstructure Parameters where\n  n : ℕ -- @realizes n(natural sample size)\n  n_pos : 1 ≤ n -- @realizes n(positive sample size)\n  r : ℕ -- @realizes r(fixed ACE order)\n  k : ℕ -- @realizes k(cumulant order)\n  k_eq : k = r + 1 -- @realizes k(k = r+1)\n  r_ge_two : 2 ≤ r -- @realizes r(r at least two)\n  s : ℝ≥0∞ -- @realizes s(Lp exponent in [r,infinity])\n  r_le_s : (r : ℝ≥0∞) ≤ s -- @realizes s(s at least r)\n  gamma : ℝ -- @realizes gamma(probability level)\n  gamma_mem : gamma ∈ Ioo (1 / 2 : ℝ) 1 -- @realizes gamma(range (1/2,1))\n  Ctheta : ℝ -- @realizes Ctheta(positive target bound)\n  Cg : ℝ -- @realizes Cg(positive treatment-regression bound)\n  Cq : ℝ -- @realizes Cq(positive outcome bound)\n  psieta : ℝ -- @realizes psieta(positive treatment-noise scale)\n  psixi : ℝ -- @realizes psixi(positive outcome-noise scale)\n  delta : ℝ -- @realizes delta(positive cumulant separation)\n  sigma : ℝ -- @realizes sigma(positive Gaussian standard deviation)\n  constants_pos :\n    0 < Ctheta ∧ -- @realizes Ctheta(strictly positive)\n    0 < Cg ∧ -- @realizes Cg(strictly positive)\n    0 < Cq ∧ -- @realizes Cq(strictly positive)\n    0 < psieta ∧ -- @realizes psieta(strictly positive)\n    0 < psixi ∧ -- @realizes psixi(strictly positive)\n    0 < delta ∧ -- @realizes delta(strictly positive)\n    0 < sigma -- @realizes sigma(strictly positive)\n  eps1n : ℕ → ℝ -- @realizes eps1n(nonnegative nonincreasing sequence)\n  eps2n : ℕ → ℝ -- @realizes eps2n(nonnegative nonincreasing sequence)\n  eps1_nonneg : ∀ n, 1 ≤ n → 0 ≤ eps1n n -- @realizes eps1n(values nonnegative for n>=1)\n  eps2_nonneg : ∀ n, 1 ≤ n → 0 ≤ eps2n n -- @realizes eps2n(values nonnegative for n>=1)\n  eps1_antitone : ∀ ⦃a b⦄, 1 ≤ a → a ≤ b → eps1n b ≤ eps1n a\n    -- @realizes eps1n(nonincreasing on positive indices)\n  eps2_antitone : ∀ ⦃a b⦄, 1 ≤ a → a ≤ b → eps2n b ≤ eps2n a\n    -- @realizes eps2n(nonincreasing on positive indices)\n\n-- @env: S1\nvariable {Xspace : Type*} [MeasurableSpace Xspace]"
-        },
-        {
-          "label": "CertifiedBankInputs",
-          "statement": "/-- The one fixed primitive record shared by the bank and estimator. -/\nstructure CertifiedBankInputs (p : Parameters) where\n  kName : ℕ\n  k_value : kName = p.k\n  deltaName : PositiveCertifiedReal\n  delta_value : deltaName.name.value = p.delta\n  psietaName : PositiveCertifiedReal\n  psieta_value : psietaName.name.value = p.psieta\n  R0Name : PositiveCertifiedReal\n  R0_value : R0Name.name.value = zeroRadius p\n  R1Name : PositiveCertifiedReal\n  R1_value : R1Name.name.value = searchRadius p\n  zeroRadius_contract :\n    zeroRadius p = Ak p.k * (p.psieta ^ 2 / p.delta) ^ ((p.k - 2 : ℝ)⁻¹)\n  searchRadius_contract : searchRadius p = zeroRadius p + 1"
-        },
-        {
-          "label": "CertifiedRangeInput",
-          "statement": "/-- A certified record for the experiment-wide range constant Ctheta: a strictly positive\nreal number supplied as a certified name (a nested family of rational enclosures with an\nexplicit accuracy modulus), together with the requirement that the number it names is\nexactly the parameter block's range constant Ctheta. -/\nstructure CertifiedRangeInput (p : Parameters) where\n  CthetaName : PositiveCertifiedReal\n  Ctheta_value : CthetaName.name.value = p.Ctheta"
-        },
-        {
-          "label": "AdaptiveContourEstimator",
-          "statement": "/-- The estimator packaged as one object: the domain condition it requires of the supplied\nregression code, the program it runs on a data set, the real point estimate it reports, the\nexecution trace it emits, the version of the program driven by a compiled implementation,\nand the correspondence property tying that version to the reference one. -/\nstructure AdaptiveContourEstimator (Xspace : Type*) [MeasurableSpace Xspace]\n    (p : Parameters) (pStar : CertifiedBankInputs p) (cStar : CertifiedRangeInput p) where\n  publicDomain : Prop\n  ordinaryProgram : (Fin p.n → Obs Xspace) → SpectralProgramResult\n  ordinaryValue : (Fin p.n → Obs Xspace) → ℝ\n  fullTrace : (Fin p.n → Obs Xspace) → SpectralExecutionTrace\n  representedProgram : CompiledBoundedSpectralAdapter →\n    SuppliedRepresentedSpectralInput p pStar cStar → SpectralProgramResult\n  representedOutputCorrespondence : CompiledBoundedSpectralAdapter → Prop\n\n/-- Lets a packaged estimator be applied directly to a data set, returning its real point\nestimate. -/\ninstance (p : Parameters) (pStar : CertifiedBankInputs p) (cStar : CertifiedRangeInput p) :\n    CoeFun (AdaptiveContourEstimator Xspace p pStar cStar)\n    (fun _ ↦ (Fin p.n → Obs Xspace) → ℝ) :=\n  ⟨AdaptiveContourEstimator.ordinaryValue⟩"
         }
       ]
     },
