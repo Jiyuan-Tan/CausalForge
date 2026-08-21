@@ -8,7 +8,7 @@
       "kind": "setup",
       "provenance": "from-note",
       "nl": {
-        "statement": "Finite-alphabet i.i.d. observational world, in TWO explicitly bridged views. (a) CANONICAL / statement view: one observed unit is O = (X, A, Y) : Fin d x Bool x Bool; the single-observation law P is a probability Measure (built from a PMF) on that finite type with ARBITRARY cell masses; the n-sample law is the finite i.i.d. product Measure.pi (fun _ : Fin n => P), and every statement, estimator (a measurable Fin n -> Obs -> R) and the minimax inf/sup live HERE. (b) AMBIENT view, used only to import IIDSample-typed Causalean declarations: the infinite i.i.d. product Omega_inf = (\u2115 -> Obs) with mu_inf = MeasureTheory.Measure.infinitePi (fun _ : \u2115 => P), whose coordinate process Z i omega = omega i is a genuine Causalean.Stat.IIDSample (\u2115 -> Obs) Obs mu_inf P. BRIDGE (both directions available, in scope, for arbitrary P): Causalean.Stat.iidSample_finN_pushforward pushes mu_inf forward along the first-n-coordinates map onto Measure.pi (fun _ : Fin n => P), so any event/integral of the first n coordinates has equal mass in the two views. Primitives p_k = P(X=k), pi_k = P(A=1|X=k), mu_{ak} = E[Y|A=a,X=k], q_{aky} = P(X=k,A=a,Y=y) and the four-cell vector q_k are DERIVED real-valued readouts of the single-observation law P (finite sums over atoms), not independent fields. Scalars epsilon in (0,1/2], c in (0,inf) are plain reals. \u2014 HIGHEST-LEVERAGE REUSE DECISION, and the closest analogue in the library. Causalean.Estimation.MinimaxATE.Model realizes ALMOST exactly this world: Obs C = C x Bool x Bool over a Fintype C, binary treatment and binary outcome, obsReal/obsPMF/obsLaw the single-observation law, productLaw = Measure.pi over Fin n, nMSE the n-sample MSE, minimaxMiss the sup-over-class miss, plus the Chebyshev/Markov bridge nMiss_sq_le_nMSE. BLOCKING MISMATCH (verified by reading Causalean/Estimation/MinimaxATE/Model.lean lines 87-89 and 137-138): obsReal HARDCODES a UNIFORM covariate marginal (Fintype.card C)^{-1}, and `ate g` averages with the same uniform weights. This note's entire d^2/(n^2 log^2 n) rate is driven by ARBITRARY, in particular rare, cell masses p_k, so the uniform-P_X model is a strictly different (and for this result degenerate) world -> NOT a verbatim reuse; define-local a p_k-parameterized law in Basic.lean, keeping the Obs/productLaw/nMSE naming and construction pattern one-to-one so F3 can port MinimaxATE proof idioms. *** IIDSample BRIDGE (round-2 correction FLAG-IIDSample-world; see decisions.iid_world_is_finite_product_with_infinite_ambient_view). *** Causalean.Stat.IIDSample is the sampling primitive the concentration engines are typed over (Concentration.hoeffding_ge : (S : IIDSample Omega X mu P) -> ... -> mu.real {omega | eps <= S.sampleMean f n omega - integral f} <= exp(...), verified at Stat/Concentration/TailBounds/Hoeffding.lean:87-91), but it is a structure over an AMBIENT mu carrying an \u2115-INDEXED process Z : \u2115 -> Omega -> X with iIndepFun Z mu (Stat/Sample.lean:42-48). The finite coordinate process of Measure.pi (fun _ : Fin n => P) is Fin n-indexed and therefore CANNOT itself be an IIDSample -- the prior plan's claim that this world 'exposes an IIDSample view of the product law' was wrong, and PiTransport does not repair it (iidSample_finN_pushforward CONSUMES an IIDSample to produce the finite product, it does not produce one). The world therefore carries view (b) EXPLICITLY: Basic.lean defines `iidOfInfinitePi (P) : IIDSample (\u2115 -> Obs) Obs (Measure.infinitePi (fun _ : \u2115 => P)) P` with Z := fun i omega => omega i, meas := measurable_pi_apply, indep := ProbabilityTheory.iIndepFun_infinitePi (fun _ => measurable_id), identDist/law := MeasureTheory.Measure.infinitePi_map_eval -- COMPILED 0-sorry against this repo's pinned Mathlib, so this is a verified ~10-line def, not a conjecture -- together with the transport corollary `finProductLaw_eq_map` : (Measure.infinitePi (fun _ : \u2115 => P)).map (fun omega (k : Fin n) => omega k) = Measure.pi (fun _ : Fin n => P), which is Causalean.Stat.iidSample_finN_pushforward APPLIED to iidOfInfinitePi (its Z k omega = omega k reduces definitionally). F3's usage pattern for every IIDSample-typed engine: state the target event as a measurable set E in Set (Fin n -> Obs), apply the engine on Omega_inf, then move the bound across with Causalean.Stat.event_pullback_along_iidSample / Measure.map_apply. This holds for ARBITRARY P (infinitePi needs only IsProbabilityMeasure P, which the PMF construction supplies), so it adds NO hypothesis to any statement and imposes no restriction on the cell masses -- exactly the point of keeping the finite product as the canonical statement world. Search trace for the bridge: loogle 'MeasureTheory.Measure.infinitePi' and 'ProbabilityTheory.iIndepFun _ (MeasureTheory.Measure.infinitePi _)' -> Measure.infinitePi / infinitePi_map_eval / measurePreserving_eval_infinitePi (Mathlib.Probability.ProductMeasure) and iIndepFun_infinitePi (Mathlib.Probability.Independence.InfinitePi), all four #check-confirmed present in the pinned toolchain; globbed Causalean/**/Sample/**/*.lean -> PiTransport.lean is the ONLY Sample bridge file and carries only the IIDSample -> Measure.pi direction (read in full, 93 lines) -> the finite-to-infinite view is absent from Causalean and is built here. Search trace: read ../doc/API.md sections '## 13sa. Estimation/MinimaxATE/' and '## 12. Stat/' + '### 12a. Stat/Sample.lean'; grepped Causalean/Estimation/MinimaxATE/Model.lean for structure/def/theorem; grepped Causalean for 'alphabet' -> no large-alphabet / arbitrary-discrete-mass observational model found.",
+        "statement": "Finite-alphabet i.i.d. observational world, in TWO explicitly bridged views. (a) CANONICAL / statement view: one observed unit is O = (X, A, Y) : Fin d x Bool x Bool; the single-observation law P is a probability Measure (built from a PMF) on that finite type with ARBITRARY cell masses; the n-sample law is the finite i.i.d. product Measure.pi (fun _ : Fin n => P), and every statement, estimator (a measurable Fin n -> Obs -> R) and the minimax inf/sup live HERE. (b) AMBIENT view, used only to import IIDSample-typed Causalean declarations: the infinite i.i.d. product Omega_inf = (ℕ -> Obs) with mu_inf = MeasureTheory.Measure.infinitePi (fun _ : ℕ => P), whose coordinate process Z i omega = omega i is a genuine Causalean.Stat.IIDSample (ℕ -> Obs) Obs mu_inf P. BRIDGE (both directions available, in scope, for arbitrary P): Causalean.Stat.iidSample_finN_pushforward pushes mu_inf forward along the first-n-coordinates map onto Measure.pi (fun _ : Fin n => P), so any event/integral of the first n coordinates has equal mass in the two views. Primitives p_k = P(X=k), pi_k = P(A=1|X=k), mu_{ak} = E[Y|A=a,X=k], q_{aky} = P(X=k,A=a,Y=y) and the four-cell vector q_k are DERIVED real-valued readouts of the single-observation law P (finite sums over atoms), not independent fields. Scalars epsilon in (0,1/2], c in (0,inf) are plain reals. — HIGHEST-LEVERAGE REUSE DECISION, and the closest analogue in the library. Causalean.Estimation.MinimaxATE.Model realizes ALMOST exactly this world: Obs C = C x Bool x Bool over a Fintype C, binary treatment and binary outcome, obsReal/obsPMF/obsLaw the single-observation law, productLaw = Measure.pi over Fin n, nMSE the n-sample MSE, minimaxMiss the sup-over-class miss, plus the Chebyshev/Markov bridge nMiss_sq_le_nMSE. BLOCKING MISMATCH (verified by reading Causalean/Estimation/MinimaxATE/Model.lean lines 87-89 and 137-138): obsReal HARDCODES a UNIFORM covariate marginal (Fintype.card C)^{-1}, and `ate g` averages with the same uniform weights. This note's entire d^2/(n^2 log^2 n) rate is driven by ARBITRARY, in particular rare, cell masses p_k, so the uniform-P_X model is a strictly different (and for this result degenerate) world -> NOT a verbatim reuse; define-local a p_k-parameterized law in Basic.lean, keeping the Obs/productLaw/nMSE naming and construction pattern one-to-one so F3 can port MinimaxATE proof idioms. *** IIDSample BRIDGE (round-2 correction FLAG-IIDSample-world; see decisions.iid_world_is_finite_product_with_infinite_ambient_view). *** Causalean.Stat.IIDSample is the sampling primitive the concentration engines are typed over (Concentration.hoeffding_ge : (S : IIDSample Omega X mu P) -> ... -> mu.real {omega | eps <= S.sampleMean f n omega - integral f} <= exp(...), verified at Stat/Concentration/TailBounds/Hoeffding.lean:87-91), but it is a structure over an AMBIENT mu carrying an ℕ-INDEXED process Z : ℕ -> Omega -> X with iIndepFun Z mu (Stat/Sample.lean:42-48). The finite coordinate process of Measure.pi (fun _ : Fin n => P) is Fin n-indexed and therefore CANNOT itself be an IIDSample -- the prior plan's claim that this world 'exposes an IIDSample view of the product law' was wrong, and PiTransport does not repair it (iidSample_finN_pushforward CONSUMES an IIDSample to produce the finite product, it does not produce one). The world therefore carries view (b) EXPLICITLY: Basic.lean defines `iidOfInfinitePi (P) : IIDSample (ℕ -> Obs) Obs (Measure.infinitePi (fun _ : ℕ => P)) P` with Z := fun i omega => omega i, meas := measurable_pi_apply, indep := ProbabilityTheory.iIndepFun_infinitePi (fun _ => measurable_id), identDist/law := MeasureTheory.Measure.infinitePi_map_eval -- COMPILED 0-sorry against this repo's pinned Mathlib, so this is a verified ~10-line def, not a conjecture -- together with the transport corollary `finProductLaw_eq_map` : (Measure.infinitePi (fun _ : ℕ => P)).map (fun omega (k : Fin n) => omega k) = Measure.pi (fun _ : Fin n => P), which is Causalean.Stat.iidSample_finN_pushforward APPLIED to iidOfInfinitePi (its Z k omega = omega k reduces definitionally). F3's usage pattern for every IIDSample-typed engine: state the target event as a measurable set E in Set (Fin n -> Obs), apply the engine on Omega_inf, then move the bound across with Causalean.Stat.event_pullback_along_iidSample / Measure.map_apply. This holds for ARBITRARY P (infinitePi needs only IsProbabilityMeasure P, which the PMF construction supplies), so it adds NO hypothesis to any statement and imposes no restriction on the cell masses -- exactly the point of keeping the finite product as the canonical statement world. Search trace for the bridge: loogle 'MeasureTheory.Measure.infinitePi' and 'ProbabilityTheory.iIndepFun _ (MeasureTheory.Measure.infinitePi _)' -> Measure.infinitePi / infinitePi_map_eval / measurePreserving_eval_infinitePi (Mathlib.Probability.ProductMeasure) and iIndepFun_infinitePi (Mathlib.Probability.Independence.InfinitePi), all four #check-confirmed present in the pinned toolchain; globbed Causalean/**/Sample/**/*.lean -> PiTransport.lean is the ONLY Sample bridge file and carries only the IIDSample -> Measure.pi direction (read in full, 93 lines) -> the finite-to-infinite view is absent from Causalean and is built here. Search trace: read ../doc/API.md sections '## 13sa. Estimation/MinimaxATE/' and '## 12. Stat/' + '### 12a. Stat/Sample.lean'; grepped Causalean/Estimation/MinimaxATE/Model.lean for structure/def/theorem; grepped Causalean for 'alphabet' -> no large-alphabet / arbitrary-discrete-mass observational model found.",
         "tex_anchor": "",
         "frozen": true
       },
@@ -42,7 +42,7 @@
       "kind": "setup",
       "provenance": "from-note",
       "nl": {
-        "statement": "Potential-outcome overlay on S1: binary potential outcomes Y(0), Y(1) : Omega -> Bool on the same finite probability space as (X, A, Y), with consistency (Y = Y(A) a.s.) and conditional exchangeability ((Y(0),Y(1)) indep A | X). Used only by the witness cluster; the estimation/minimax cluster is stated on the observed-data law alone. \u2014 Causalean.PO (POSystem, PO.Assumptions.Consistency, PO.Assumptions.IndepCF) is the framework analogue but is regime/graph-indexed over general measurable outcome spaces -- far heavier than the two-point binary overlay needed here, where def:two-category-witness supplies its OWN explicit full-data coupling ((Y(0),Y(1)) = (0, 1{X=1}), then A | X=k ~ Bernoulli(pi_k)) and prop:two-category-confounding VERIFIES consistency/exchangeability on it directly. Define-local over Mathlib with naming aligned to Causalean.PO. Search trace: read ../doc/API.md '## 8h. PO/' index (PO/Core/Regime, PO/Core/System, PO/Assumptions/Consistency, PO/Assumptions/IndepCF, PO/ID/Exact/ATE); no finite-alphabet binary PO overlay to reuse verbatim -> not found.",
+        "statement": "Potential-outcome overlay on S1: binary potential outcomes Y(0), Y(1) : Omega -> Bool on the same finite probability space as (X, A, Y), with consistency (Y = Y(A) a.s.) and conditional exchangeability ((Y(0),Y(1)) indep A | X). Used only by the witness cluster; the estimation/minimax cluster is stated on the observed-data law alone. — Causalean.PO (POSystem, PO.Assumptions.Consistency, PO.Assumptions.IndepCF) is the framework analogue but is regime/graph-indexed over general measurable outcome spaces -- far heavier than the two-point binary overlay needed here, where def:two-category-witness supplies its OWN explicit full-data coupling ((Y(0),Y(1)) = (0, 1{X=1}), then A | X=k ~ Bernoulli(pi_k)) and prop:two-category-confounding VERIFIES consistency/exchangeability on it directly. Define-local over Mathlib with naming aligned to Causalean.PO. Search trace: read ../doc/API.md '## 8h. PO/' index (PO/Core/Regime, PO/Core/System, PO/Assumptions/Consistency, PO/Assumptions/IndepCF, PO/ID/Exact/ATE); no finite-alphabet binary PO overlay to reuse verbatim -> not found.",
         "tex_anchor": "",
         "frozen": true
       },
@@ -72,7 +72,7 @@
       "kind": "setup",
       "provenance": "from-note",
       "nl": {
-        "statement": "Functional / experiment-class / risk layer over S1: the overlap-restricted four-cell cone C_eps as a Set of four-vectors, the homogeneous cell contribution phi, the ATE functional tau(P) = sum_k phi(q_k), the experiment class E_{n,d,eps} of overlap-satisfying product laws, and the minimax risk R_{n,d,eps} = inf over measurable estimators of the sup-over-class MSE. \u2014 The risk shape (inf over measurable estimators of sup over a class of the n-sample MSE) is exactly Causalean.Estimation.MinimaxATE.Model's minimaxMiss/nMSE pattern, but over the p_k-parameterized class of S1 rather than the uniform-P_X structure-agnostic class, and in MSE (not miss-probability) form -> define-local, importing nMiss_sq_le_nMSE's Markov-bridge idiom. Search trace: grepped ../doc/API.md for 'Minimax' -> Stat/Minimax/{TotalVariation,LeCam,Pinsker,Scheffe,ChiSquared,ChiSquaredFinite,MinimaxRisk,Fano,Assouad,Mixture} and Estimation/MinimaxATE; Stat/Minimax/MinimaxRisk.lean supplies the two-point REDUCTIONS (reused by lem:one-category-bernoulli-lower) but carries no packaged inf-sup minimax-risk DEFINITION over a law class -> the risk def is not found and is build-inline.",
+        "statement": "Functional / experiment-class / risk layer over S1: the overlap-restricted four-cell cone C_eps as a Set of four-vectors, the homogeneous cell contribution phi, the ATE functional tau(P) = sum_k phi(q_k), the experiment class E_{n,d,eps} of overlap-satisfying product laws, and the minimax risk R_{n,d,eps} = inf over measurable estimators of the sup-over-class MSE. — The risk shape (inf over measurable estimators of sup over a class of the n-sample MSE) is exactly Causalean.Estimation.MinimaxATE.Model's minimaxMiss/nMSE pattern, but over the p_k-parameterized class of S1 rather than the uniform-P_X structure-agnostic class, and in MSE (not miss-probability) form -> define-local, importing nMiss_sq_le_nMSE's Markov-bridge idiom. Search trace: grepped ../doc/API.md for 'Minimax' -> Stat/Minimax/{TotalVariation,LeCam,Pinsker,Scheffe,ChiSquared,ChiSquaredFinite,MinimaxRisk,Fano,Assouad,Mixture} and Estimation/MinimaxATE; Stat/Minimax/MinimaxRisk.lean supplies the two-point REDUCTIONS (reused by lem:one-category-bernoulli-lower) but carries no packaged inf-sup minimax-risk DEFINITION over a law class -> the risk def is not found and is build-inline.",
         "tex_anchor": "",
         "frozen": true
       },
@@ -102,7 +102,7 @@
       "kind": "setup",
       "provenance": "from-note",
       "nl": {
-        "statement": "Estimator layer over S1: the balanced deterministic split I_0 = {1..floor(n/2)}, I_1 = the rest; split cell counts N^{(j)}_{aky}; four-cell exponent multi-indices r in N_0^4 with |r| = sum r_{ay}; the falling factorial z_r; the pilot-certified heavy/light partition (Hhat_n, Lhat_n); the light-cell factorial-moment polynomial contribution That_L; and the truncated hybrid tauhat_n^hyb. \u2014 z_r is Mathlib's Nat.descFactorial (z_r = z.descFactorial r, with z_0 = 1 definitional) -- REUSED, not redefined; Causalean.Stat.injectiveTupleCount_eq_descFactorial (Stat/UStatistic/OrderM/Basic.lean) is the exact combinatorial bridge 'ordered injective tuple count = falling factorial' that the note's eq (9) unbiasedness E[U_{k,r}] = q_k^r rests on, and is reused as the counting engine in Helpers/FactorialMoments.lean. Causalean.Stat.SampleSplit / OneShotSplit is the analogue for the two-fold split but is a RANDOM cross-fitting split over a growing index family; the note fixes a DETERMINISTIC balanced split I_0/I_1 of Fin n, so the split itself is a two-line Finset definition -> build-inline. Search trace: grepped ../doc/API.md for 'descFactorial|fallingFactorial' -> Stat/UStatistic/OrderM/Basic.lean only; grepped ../doc/API.md and Causalean/ for 'factorial moment' -> not found (no factorial-moment unbiased-lift estimator layer exists); grepped Causalean for 'Chebyshev' (case-insensitive) -> all 15 hits are Chebyshev's INEQUALITY (Experimentation/DesignBased/Chebyshev.lean, Stat/Concentration, Mathlib/InformationTheory/Fano), none is the Chebyshev POLYNOMIAL; Mathlib's Polynomial.Chebyshev.T (Mathlib.RingTheory.Polynomial.Chebyshev, confirmed via loogle with T_one/T_mul/T_natAbs) is the reused primitive for T_M.",
+        "statement": "Estimator layer over S1: the balanced deterministic split I_0 = {1..floor(n/2)}, I_1 = the rest; split cell counts N^{(j)}_{aky}; four-cell exponent multi-indices r in N_0^4 with |r| = sum r_{ay}; the falling factorial z_r; the pilot-certified heavy/light partition (Hhat_n, Lhat_n); the light-cell factorial-moment polynomial contribution That_L; and the truncated hybrid tauhat_n^hyb. — z_r is Mathlib's Nat.descFactorial (z_r = z.descFactorial r, with z_0 = 1 definitional) -- REUSED, not redefined; Causalean.Stat.injectiveTupleCount_eq_descFactorial (Stat/UStatistic/OrderM/Basic.lean) is the exact combinatorial bridge 'ordered injective tuple count = falling factorial' that the note's eq (9) unbiasedness E[U_{k,r}] = q_k^r rests on, and is reused as the counting engine in Helpers/FactorialMoments.lean. Causalean.Stat.SampleSplit / OneShotSplit is the analogue for the two-fold split but is a RANDOM cross-fitting split over a growing index family; the note fixes a DETERMINISTIC balanced split I_0/I_1 of Fin n, so the split itself is a two-line Finset definition -> build-inline. Search trace: grepped ../doc/API.md for 'descFactorial|fallingFactorial' -> Stat/UStatistic/OrderM/Basic.lean only; grepped ../doc/API.md and Causalean/ for 'factorial moment' -> not found (no factorial-moment unbiased-lift estimator layer exists); grepped Causalean for 'Chebyshev' (case-insensitive) -> all 15 hits are Chebyshev's INEQUALITY (Experimentation/DesignBased/Chebyshev.lean, Stat/Concentration, Mathlib/InformationTheory/Fano), none is the Chebyshev POLYNOMIAL; Mathlib's Polynomial.Chebyshev.T (Mathlib.RingTheory.Polynomial.Chebyshev, confirmed via loogle with T_one/T_mul/T_natAbs) is the reused primitive for T_M.",
         "tex_anchor": "",
         "frozen": true
       },
@@ -145,7 +145,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "dc63217a59570366cf9dc4d14464dc60ca487fc0",
-        "note": "Equality of the sample law with Measure.pi of the one-unit observation law is equivalent to O\u2081,\u2026,O\u2099 being i.i.d. with law P. OPERATOR ADJUDICATION 2026-08-20: body includes the notation displays p_k, pi_k, mu_{ak} required by the notation gate; each is a definition of an observable functional of P (packaging, not an added hypothesis)."
+        "note": "Equality of the sample law with Measure.pi of the one-unit observation law is equivalent to O₁,…,Oₙ being i.i.d. with law P. OPERATOR ADJUDICATION 2026-08-20: body includes the notation displays p_k, pi_k, mu_{ak} required by the notation gate; each is a definition of an observable functional of P (packaging, not an added hypothesis)."
       },
       "proof": {
         "state": "complete",
@@ -174,7 +174,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "e82b64538e0166b041793101025cb5c70b1112ce",
-        "note": "Unfolding cellMass and propensity gives exactly epsilon \u2264 P(A=1|X=k) \u2264 1-epsilon for every category having positive marginal mass."
+        "note": "Unfolding cellMass and propensity gives exactly epsilon ≤ P(A=1|X=k) ≤ 1-epsilon for every category having positive marginal mass."
       },
       "proof": {
         "state": "complete",
@@ -261,7 +261,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "c01c3d49597a1df15c6b1ef547bf0dd905eae1c1",
-        "note": "After unfolding IidSampling and Overlap, this is exactly the class of n-fold product laws from a probability law on Fin d \u00d7 Bool \u00d7 Bool satisfying 0 < epsilon \u2264 1/2 and the stated positive-cell overlap condition."
+        "note": "After unfolding IidSampling and Overlap, this is exactly the class of n-fold product laws from a probability law on Fin d × Bool × Bool satisfying 0 < epsilon ≤ 1/2 and the stated positive-cell overlap condition."
       },
       "proof": {
         "state": "complete",
@@ -285,7 +285,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "c0d723076b18d4a32aee451f668bfe25ff2b38af",
-        "note": "Unfolding vectorMass and vectorArmMass gives exactly nonnegative u\u2080\u2080,u\u2080\u2081,u\u2081\u2080,u\u2081\u2081 with \u03b5\u03a3u \u2264 u\u2081\u2080+u\u2081\u2081 \u2264 (1-\u03b5)\u03a3u."
+        "note": "Unfolding vectorMass and vectorArmMass gives exactly nonnegative u₀₀,u₀₁,u₁₀,u₁₁ with εΣu ≤ u₁₀+u₁₁ ≤ (1-ε)Σu."
       },
       "proof": {
         "state": "complete",
@@ -309,7 +309,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "3355181cf13571696b460509b18207dedc375c0a",
-        "note": "Unfolding cellPhi gives 0 at the zero vector and otherwise \u03a3u\u00b7(u\u2081\u2081/(u\u2081\u2080+u\u2081\u2081)-u\u2080\u2081/(u\u2080\u2080+u\u2080\u2081)), on precisely overlapCone \u03b5."
+        "note": "Unfolding cellPhi gives 0 at the zero vector and otherwise Σu·(u₁₁/(u₁₀+u₁₁)-u₀₁/(u₀₀+u₀₁)), on precisely overlapCone ε."
       },
       "proof": {
         "state": "complete",
@@ -335,7 +335,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "b9e8c65c0deb5abcc94cfe30bf3f1e9ad8d96b8c",
-        "note": "Unfolding cellVector and cellPhi yields exactly \u03a3\u2096 \u03c6(q\u2096), mathematically equal on overlap laws to \u03a3\u2096 p\u2096(\u03bc\u2081\u2096-\u03bc\u2080\u2096)."
+        "note": "Unfolding cellVector and cellPhi yields exactly Σₖ φ(qₖ), mathematically equal on overlap laws to Σₖ pₖ(μ₁ₖ-μ₀ₖ)."
       },
       "proof": {
         "state": "complete",
@@ -361,7 +361,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "767f6c2e7073e8db344a437577dd45738bfa7423",
-        "note": "The nested definitions reproduce the balanced split, numerical cutoff and tuning, pilot partition, ratio branch, Chebyshev G_M coefficients, factorial-moment polynomial branch, low-n fallback, truncation, and absence of an \u03b5 input; the sparse expansion is coefficient-equivalent to the displayed P_{M,B} expansion. OPERATOR ADJUDICATION 2026-08-20: Chebyshev calibration constant written A_0 (Lean name A) to avoid colliding with the treatment letter A; pure notation, per the notation table."
+        "note": "The nested definitions reproduce the balanced split, numerical cutoff and tuning, pilot partition, ratio branch, Chebyshev G_M coefficients, factorial-moment polynomial branch, low-n fallback, truncation, and absence of an ε input; the sparse expansion is coefficient-equivalent to the displayed P_{M,B} expansion. OPERATOR ADJUDICATION 2026-08-20: Chebyshev calibration constant written A_0 (Lean name A) to avoid colliding with the treatment letter A; pure notation, per the notation table."
       },
       "proof": {
         "state": "complete",
@@ -385,7 +385,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "4b4ca41cd48d404e98d4a24fe8ad84900095dd01",
-        "note": "Unfolding worstCaseMSE, ClassLaw, ExperimentClass, mse, and productLaw gives the infimum over measurable sample estimators of the supremum over overlap-class product laws of E_P[(est-\u03c4(P))\u00b2]."
+        "note": "Unfolding worstCaseMSE, ClassLaw, ExperimentClass, mse, and productLaw gives the infimum over measurable sample estimators of the supremum over overlap-class product laws of E_P[(est-τ(P))²]."
       },
       "proof": {
         "state": "complete",
@@ -411,7 +411,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "33798378bda1c08563bc3ca1b1ff05593e9d4326",
-        "note": "Unfolding twoCategoryMass gives mass (1/2)\u00b7P(A=a|X=k) exactly when Y(0)=0, Y(1)=1{X=1}, and Y=Y(A); thus X is uniform and the two propensities are epsilon and 1-epsilon, while h0 and h1 are the necessary probability-range bookkeeping."
+        "note": "Unfolding twoCategoryMass gives mass (1/2)·P(A=a|X=k) exactly when Y(0)=0, Y(1)=1{X=1}, and Y=Y(A); thus X is uniform and the two propensities are epsilon and 1-epsilon, while h0 and h1 are the necessary probability-range bookkeeping."
       },
       "proof": {
         "state": "complete",
@@ -435,7 +435,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "4ed99e79a60850a7024351334839cbf6339bdc1e",
-        "note": "Unfolding the witness, observed marginal, consistency, finite conditional-independence identity, overlap, ATE functional, and naive contrast yields exactly the paper\u2019s five claims for the standing domain 0 < epsilon <= 1/2."
+        "note": "Unfolding the witness, observed marginal, consistency, finite conditional-independence identity, overlap, ATE functional, and naive contrast yields exactly the paper’s five claims for the standing domain 0 < epsilon <= 1/2."
       },
       "proof": {
         "state": "complete",
@@ -558,7 +558,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "435a345b8878ef1ce33edca0747000a3693e61ac",
-        "note": "Unfolding minimaxRate gives exactly 1/n+d\u00b2/(n\u00b2log\u00b2n); the existential cutoff encodes sufficiently large n, positive d is the alphabet-size domain, and hZeng exposes the paper's established cited one-arm premise."
+        "note": "Unfolding minimaxRate gives exactly 1/n+d²/(n²log²n); the existential cutoff encodes sufficiently large n, positive d is the alphabet-size domain, and hZeng exposes the paper's established cited one-arm premise."
       },
       "proof": {
         "state": "complete",
@@ -582,7 +582,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "2ea50831bf3de4e2bd03c34d41ace5fa7bb03332",
-        "note": "centeredEstimator unfolds to the displayed 2/n centered score, ExperimentClass exactly supplies positive epsilon, epsilon\u22641/2, iid product sampling and overlap, and mse is the stated expected squared error."
+        "note": "centeredEstimator unfolds to the displayed 2/n centered score, ExperimentClass exactly supplies positive epsilon, epsilon≤1/2, iid product sampling and overlap, and mse is the stated expected squared error."
       },
       "proof": {
         "state": "complete",
@@ -606,7 +606,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "314d11efb1528662282aaf76b1d47980f8ce6eb7",
-        "note": "The inequality is exactly R_{n,d,1/2}\u22651/(100n); hn and hd merely enforce the intrinsic positive sample-size and nonempty-alphabet domains required by the paper's notation."
+        "note": "The inequality is exactly R_{n,d,1/2}≥1/(100n); hn and hd merely enforce the intrinsic positive sample-size and nonempty-alphabet domains required by the paper's notation."
       },
       "proof": {
         "state": "complete",
@@ -654,7 +654,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "971bf2df21caa9817917899422447032b8622ff6",
-        "note": "Unfolding selectedEstimator and minimaxRate gives exactly the paper's deterministic selector and K_epsilon=max{C_epsilon,4} envelope; the additional minimaxRisk\u2264worstCaseMSE conjunct is automatic from the minimax infimum over measurable estimators."
+        "note": "Unfolding selectedEstimator and minimaxRate gives exactly the paper's deterministic selector and K_epsilon=max{C_epsilon,4} envelope; the additional minimaxRisk≤worstCaseMSE conjunct is automatic from the minimax infimum over measurable estimators."
       },
       "proof": {
         "state": "complete",
@@ -678,7 +678,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "127aa49bf4dc8c659a9dc07321ad010b2415f5c6",
-        "note": "Unfolding ExperimentClass, minimaxRate, minimaxRisk, worstCaseMSE, and hybridEstimator gives the same uniform three-sided rate, parametric-order consequence, and sequencewise consistency equivalence; 0<d is the intrinsic nonempty-alphabet domain, the P/mu_n binders are admissible realization guards, and hZeng is the paper's sanctioned cited lower-bound input. | All three conjuncts are logically equivalent to the note. Conjunct 1 is the exact three-sided display a_\u03b5\u00b7rate \u2264 minimaxRisk \u2264 worstCaseMSE(hybrid) \u2264 C_\u03b5\u00b7rate with minimaxRate unfolding to 1/n+d\u00b2/(n\u00b2log\u00b2n), worstCaseMSE=sup_{P\u2208E}E[(\u03c4\u0302\u2212\u03c4)\u00b2], minimaxRisk=inf-sup; the extra P/mu_n/ExperimentClass and 0<d are nonemptiness-witness/alphabet-domain bookkeeping, not content. Conjunct 2 (\u2200K>0 \u2203C_K, a_\u03b5/n \u2264 R \u2264 C_K/n under d\u2264K\u221an log n) faithfully encodes 'parametric order n\u207b\u00b9 whenever d=O(\u221an log n)'. Conjunct 3 (R\u21920 \u2194 ds/(ns log ns)\u21920 along eventually-in-range sequences) encodes 'converges to 0 iff d=o(n log n)'. The added hZeng hypothesis is the cited one-arm lower gate (status:cited); the ATE lower bound is not directly assumed but derived via the Lean-proved oneArmMinimaxRisk_le_minimaxRisk restriction \u2014 sanctioned citation, not laundering."
+        "note": "Unfolding ExperimentClass, minimaxRate, minimaxRisk, worstCaseMSE, and hybridEstimator gives the same uniform three-sided rate, parametric-order consequence, and sequencewise consistency equivalence; 0<d is the intrinsic nonempty-alphabet domain, the P/mu_n binders are admissible realization guards, and hZeng is the paper's sanctioned cited lower-bound input. | All three conjuncts are logically equivalent to the note. Conjunct 1 is the exact three-sided display a_ε·rate ≤ minimaxRisk ≤ worstCaseMSE(hybrid) ≤ C_ε·rate with minimaxRate unfolding to 1/n+d²/(n²log²n), worstCaseMSE=sup_{P∈E}E[(τ̂−τ)²], minimaxRisk=inf-sup; the extra P/mu_n/ExperimentClass and 0<d are nonemptiness-witness/alphabet-domain bookkeeping, not content. Conjunct 2 (∀K>0 ∃C_K, a_ε/n ≤ R ≤ C_K/n under d≤K√n log n) faithfully encodes 'parametric order n⁻¹ whenever d=O(√n log n)'. Conjunct 3 (R→0 ↔ ds/(ns log ns)→0 along eventually-in-range sequences) encodes 'converges to 0 iff d=o(n log n)'. The added hZeng hypothesis is the cited one-arm lower gate (status:cited); the ATE lower bound is not directly assumed but derived via the Lean-proved oneArmMinimaxRisk_le_minimaxRisk restriction — sanctioned citation, not laundering."
       },
       "proof": {
         "state": "complete",
@@ -702,7 +702,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "55bddcff50fbc9ab53600a3b2463df3efd7aded2",
-        "note": "After unfolding the estimator, computability, rate, selector, worst-case MSE, minimax risk, experiment class, product law, and ATE functional, the Lean conjunction is equivalent to clauses (i)\u2013(iv): it fixes the numerical epsilon-free hybrid and O(dM^4) realization, states the same fixed-interior and centered bounds, endpoint bracket, and deterministic combined envelope; clause (v) is faithfully reflected by the pointwise-in-epsilon quantifiers and absence of any triangular-array lower claim."
+        "note": "After unfolding the estimator, computability, rate, selector, worst-case MSE, minimax risk, experiment class, product law, and ATE functional, the Lean conjunction is equivalent to clauses (i)–(iv): it fixes the numerical epsilon-free hybrid and O(dM^4) realization, states the same fixed-interior and centered bounds, endpoint bracket, and deterministic combined envelope; clause (v) is faithfully reflected by the pointwise-in-epsilon quantifiers and absence of any triangular-array lower claim."
       },
       "proof": {
         "state": "complete",
@@ -726,6 +726,52 @@
         "status": "matched",
         "passed_hash": "7f8f1b9b7bea2d5905c9057af76e4570d160d165",
         "note": "Unfolding logScale, polynomialDegree, bandwidth, and splitSize gives exactly the listed conjunction of calibration consequences under calibrationCutoff<=n and 240<=logScale n; 1/m_1<=2/n restates n<=2*m_1."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:ambient-sample-marginal",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Let \\(P\\) be a single-observation law on \\(\\{1,\\ldots,d\\}\\times\\{0,1\\}^2\\) and let \\(n\\in\\mathbb N\\). Write \\(P^{\\otimes\\infty}\\) for the law of the ambient infinite iid sequence \\((O_i)_{i\\ge1}\\) generated by \\(P\\). Then the image of \\(P^{\\otimes\\infty}\\) under the coordinate restriction \\((O_i)_{i\\ge1}\\mapsto(O_1,\\ldots,O_n)\\) is the \\(n\\)-fold product law \\(P^{\\otimes n}\\) of \\cref{obj:def:experiment-class}; that is, under \\(P^{\\otimes\\infty}\\) the initial segment \\((O_1,\\ldots,O_n)\\) has law \\(P^{\\otimes n}\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.finProductLaw_eq_map",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "076f593c926b0b3e7a0fb3dc7b9d66fd0b7fc48d",
+        "note": "Lean's finProductLaw_eq_map states that the ambient infinite product Measure.infinitePi pushes forward under restriction to the first n coordinates to Measure.pi over Fin n; instantiated at obsLaw P this is exactly the identification of the law of \\((O_1,\\ldots,O_n)\\) with \\(P^{\\otimes n}\\) (productLaw)."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:sparse-arm-expansion",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Fix \\(n\\ge N_0\\) and a category \\(k\\), and abbreviate \\(M=M(n)\\), \\(B=B(n)\\) as in \\cref{obj:def:hybrid-estimator-handle}. Let \\(g_{M,j}\\) be the coefficients of the polynomial continuation \\(G_M\\), so that \\(G_M(x)=\\sum_{j=0}^{M-2}g_{M,j}x^j\\), and for an arm \\(a\\in\\{0,1\\}\\), a cell index \\(c\\in\\{0,1\\}^2\\), and integers \\(0\\le t\\le j\\), let \\(r^{a,c,j,t}\\) be the four-cell exponent vector determined by \\(u^{r^{a,c,j,t}}=u_cu_{a1}u_{a0}^{\\,t}u_{a1}^{\\,j-t}\\). With the split counts \\(N^{(1)}_{bky}\\) and split size \\(m_1\\) of \\cref{obj:def:sample-splits}, define the sparse arm contributions\n\\[\n\\widehat A_{a,k}=\\sum_{j=0}^{M-2}\\sum_{t=0}^{j}\\sum_{c\\in\\{0,1\\}^2}B^{-1}g_{M,j}B^{-j}\\binom jt\\frac{\\prod_{b,y}(N^{(1)}_{bky})_{r^{a,c,j,t}_{by}}}{(m_1)_{|r^{a,c,j,t}|}}.\n\\]\nThen the factorial-moment polynomial estimate \\(\\widehat P_k\\) of \\cref{obj:def:hybrid-estimator-handle} admits the sparse two-arm representation \\(\\widehat P_k=\\widehat A_{1,k}-\\widehat A_{0,k}\\).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.factorialPolynomialContribution_eq_sparseArms",
+        "file": "Helpers/LightCellVariance.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "66a8bef2beb7bc39e339ca45992184c2719eaa3a",
+        "note": "Lean formalizes the factorial lift as factorialPolynomialContribution, which is written in the sparse arm/binomial form, so factorialPolynomialContribution_eq_sparseArms closes by rfl; the node makes that sparse two-arm representation of \\(\\widehat P_k\\) citable rather than re-deriving it from the coefficient-support display of \\cref{obj:def:hybrid-estimator-handle}."
       },
       "proof": {
         "state": "complete",
@@ -3162,7 +3208,7 @@
       "review": {
         "status": "matched",
         "passed_hash": "28bdfe2583df6ee3a184c1d44a44141bc353e637",
-        "note": "Bundles the deterministic split apparatus: splitIndices n j (first/second half-sample), splitSize (cardinality), and splitCellCount (per-split (a,k,y) cell count); L=log(en) is the logScale used throughout. OPERATOR ADJUDICATION 2026-08-20: bundled-packaging faithful \u2014 each display is Lean-backed by splitIndices (I_0,I_1), splitSize (m_j), logScale (L=log(en)), splitCellCount (N^{(j)}_{aky}); the single-decl mapping cannot express the bundle, so the body is operator-frozen."
+        "note": "Bundles the deterministic split apparatus: splitIndices n j (first/second half-sample), splitSize (cardinality), and splitCellCount (per-split (a,k,y) cell count); L=log(en) is the logScale used throughout. OPERATOR ADJUDICATION 2026-08-20: bundled-packaging faithful — each display is Lean-backed by splitIndices (I_0,I_1), splitSize (m_j), logScale (L=log(en)), splitCellCount (N^{(j)}_{aky}); the single-decl mapping cannot express the bundle, so the body is operator-frozen."
       },
       "proof": {
         "state": "complete",
@@ -5125,6 +5171,48 @@
       "kind": "statement-uses",
       "from": "lem:factorial-product-moment",
       "to": "def:ate-functional",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:factorial-moment-mean",
+      "to": "lem:sparse-arm-expansion",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:factorial-moment-mean",
+      "to": "lem:ambient-sample-marginal",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:sparse-arm-expansion",
+      "to": "def:hybrid-estimator-handle",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:sparse-arm-expansion",
+      "to": "def:sample-splits",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:sparse-arm-expansion",
+      "to": "def:overlap-cone",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:ambient-sample-marginal",
+      "to": "def:experiment-class",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:ambient-sample-marginal",
+      "to": "ass:iid-sampling",
       "source": "declared"
     }
   ],

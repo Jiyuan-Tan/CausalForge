@@ -1,84 +1,121 @@
 \begin{proof}[Proof of \cref{obj:lem:factorial-moment-mean}]
-Write \(M=M(n)\), \(B=B(n)\), and let \(q=q_k\) be the four-cell vector for category \(k\). Set
+Write
 \[
-g_{M,j}=(-1)^j\frac{2^{2j+3}}{M(M+j+2)}\binom{M+j+2}{2j+4}.
+\mu_\infty=P^{\otimes\infty},\qquad
+M=M(n),\qquad B=B(n),\qquad m_1=|I_1|,
 \]
-The polynomial whose mean is evaluated is the finite polynomial
+where \(\mu_\infty\) is the ambient iid product law.  For a cell
+\(c=(a,y)\in\{0,1\}^2\), write
 \[
-P_{M,B}(u)
+q_c=q_{aky}=P(X=k,A=a,Y=y),
+\qquad
+q_k=(q_c)_{c\in\{0,1\}^2}.
+\]
+Since \(n\ge N_0\), the calibration in \cref{obj:def:hybrid-estimator-handle} gives
+\[
+4M^2\le m_1 .
+\]
+Because \(M\ge2\), this implies \(M\le m_1\).
+% lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.calibrationCutoff
+
+For any multi-index \(r=(r_c)_c\) with \(|r|\le m_1\), the normalized factorial monomial satisfies
+\[
+\int
+\mathfrak m_{k,r}\,d\mu_\infty
 =
-B^{-1}s(u)t_1(u)\sum_{j=0}^{M-2}g_{M,j}\{B^{-1}s_1(u)\}^j
--
-B^{-1}s(u)t_0(u)\sum_{j=0}^{M-2}g_{M,j}\{B^{-1}s_0(u)\}^j .
+\prod_{c\in\{0,1\}^2} q_c^{\,r_c}.
 \]
-We compute the factorial lift in its sparse arm expansion.  The factorial-moment contribution is
+Indeed, on the estimation split \(I_1\), define
 \[
-\widehat P_k=\widehat A_{1,k}-\widehat A_{0,k},
+L_i=
+\begin{cases}
+(A_i,Y_i),& X_i=k,\\
+\star,& X_i\ne k .
+\end{cases}
 \]
-where, for \(a\in\{0,1\}\),
+The variables \(L_i\), \(i\in I_1\), are iid, and \(P(L_i=c)=q_c\).  Expanding
+\(\prod_c (N^{(1)}_{kc})_{r_c}\) counts ordered injective assignments of \(|r|\) requested labels to distinct indices in \(I_1\).  There are \((m_1)_{|r|}\) such assignments, each has probability \(\prod_c q_c^{r_c}\), and division by \((m_1)_{|r|}\) gives the displayed identity.
+% lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_factorialMonomial_trunc
+
+For the sparse arms in \cref{obj:lem:sparse-arm-expansion}, write
 \[
 \widehat A_{a,k}
 =
 \sum_{j=0}^{M-2}\sum_{t=0}^{j}\sum_{c\in\{0,1\}^2}
-B^{-1}g_{M,j}(B^{-1})^j\binom jt\,
-\frac{\prod_{b,y}(N^{(1)}_{bky})_{r^{a,c,j,t}_{by}}}{(m_1)_{|r^{a,c,j,t}|}}.
+B^{-1}g_{M,j}B^{-j}\binom jt\,
+\mathfrak m_{k,r^{a,c,j,t}} .
 \]
-The merged exponent vector \(r^{a,c,j,t}\) is defined by
+That lemma gives the pointwise identity
 \[
-u^{r^{a,c,j,t}}
-=
-u_c\,u_{a1}\,u_{a0}^{\,t}\,u_{a1}^{\,j-t}.
+\widehat P_k=\widehat A_{1,k}-\widehat A_{0,k}.
 \]
-Thus \(\widehat P_k\) is the difference of the two displayed sparse arm sums.  % lean: factorialPolynomialContribution_eq_sparseArms
+% lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.factorialPolynomialContribution_eq_sparseArms
 
-The cutoff condition \(n\ge N_0\) includes \(4M^2\le m_1\); since \(M>0\), this implies \(M\le m_1\). In every displayed summand, \(0\le t\le j\le M-2\), and the merged exponent vector has total degree
+For \(a\in\{0,1\}\), \(j\in\{0,\ldots,M-2\}\), \(t\in\{0,\ldots,j\}\), and \(c\in\{0,1\}^2\), the sparse exponent
+\[
+r^{a,c,j,t}
+=
+e_c+e_{a1}+t\,e_{a0}+(j-t)\,e_{a1}
+\]
+has total degree
 \[
 |r^{a,c,j,t}|=j+2\le M\le m_1 .
 \]
-For each such multi-index \(r\), the factorial-moment identity for the second-split multinomial cell counts gives
+% lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.multiDegree_factorialExpansionIndex
+Therefore the factorial-monomial identity applies in every summand of each sparse arm.  Finite-sum linearity gives, for each \(a\in\{0,1\}\),
 \[
-\mathbb E_{P^{\otimes\infty}}\!\left[
-\frac{\prod_{b,y}(N^{(1)}_{bky})_{r_{by}}}{(m_1)_{|r|}}
-\right]
-=
-\prod_{b,y}q_{by}^{r_{by}} .
-\]
-Because the arm sums are finite sums of integrable factorial monomials, termwise integration yields, for each arm \(a\),
-\[
-\mathbb E_{P^{\otimes\infty}}[\widehat A_{a,k}]
+\int \widehat A_{a,k}\,d\mu_\infty
 =
 \sum_{j=0}^{M-2}\sum_{t=0}^{j}\sum_{c\in\{0,1\}^2}
-B^{-1}g_{M,j}(B^{-1})^j\binom jt\,
-q^{\,r^{a,c,j,t}} .
+B^{-1}g_{M,j}B^{-j}\binom jt\,
+q_k^{\,r^{a,c,j,t}} .
 \]
-% lean: integral_factorialMonomial_trunc
+% lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_factorialPolynomialContribution_trunc
 
-For fixed \(a\) and \(j\), the inner finite sum collapses as
+By the definition of \(r^{a,c,j,t}\),
+\[
+q_k^{\,r^{a,c,j,t}}
+=
+q_c\,q_{a1}\,q_{a0}^{\,t}\,q_{a1}^{\,j-t}.
+\]
+Thus, for each fixed \(a\) and \(j\),
 \[
 \sum_{t=0}^{j}\sum_{c\in\{0,1\}^2}
-\binom jt\,q^{\,r^{a,c,j,t}}
+\binom jt q_k^{\,r^{a,c,j,t}}
 =
-\left(\sum_{b,y}q_{by}\right)q_{a1}(q_{a0}+q_{a1})^j.
+\left(\sum_{c\in\{0,1\}^2}q_c\right)
+q_{a1}
+(q_{a0}+q_{a1})^j,
 \]
-Indeed, the merged-exponent monomial identity writes each summand as
-\(q_c q_{a1}q_{a0}^tq_{a1}^{j-t}\); summing over \(c\) gives the total mass \(\sum_{b,y}q_{by}\), and summing over \(t\) gives the binomial theorem. % lean: factorialExpansionIndex_binomial_sum
-
-Writing \(s(q)=\sum_{b,y}q_{by}\), \(s_a(q)=q_{a0}+q_{a1}\), and \(t_a(q)=q_{a1}\), we obtain
+by the binomial theorem.
+% lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.factorialExpansionIndex_binomial_sum
+Consequently, for each \(a\in\{0,1\}\),
 \[
-\mathbb E_{P^{\otimes\infty}}[\widehat A_{a,k}]
+\int \widehat A_{a,k}\,d\mu_\infty
 =
-B^{-1}s(q)t_a(q)
+\frac{s(q_k)t_a(q_k)}{B}
 \sum_{j=0}^{M-2}
-g_{M,j}\{B^{-1}s_a(q)\}^{j}.
-\]
-Substituting this identity for \(a=1\) and \(a=0\) into the sparse arm representation of \(\widehat P_k\) gives
-\[
-\mathbb E_{P^{\otimes\infty}}[\widehat P_k]
+g_{M,j}
+\left(\frac{s_a(q_k)}{B}\right)^j
 =
-B^{-1}s(q)t_1(q)\sum_{j=0}^{M-2}g_{M,j}\{B^{-1}s_1(q)\}^j
--
-B^{-1}s(q)t_0(q)\sum_{j=0}^{M-2}g_{M,j}\{B^{-1}s_0(q)\}^j.
+\frac{s(q_k)t_a(q_k)}{B}
+G_M\!\left(\frac{s_a(q_k)}{B}\right),
 \]
-By the displayed definition of \(P_{M,B}\), the right-hand side is
-\(P_{M(n),B(n)}(q_k)\). % lean: integral_factorialPolynomialContribution_trunc
+where \(t_1(q_k)=q_{11}\) and \(t_0(q_k)=q_{01}\).
+% lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_factorialPolynomialContribution_trunc
+
+Subtracting the two arm identities and using \cref{obj:lem:sparse-arm-expansion},
+\[
+\int \widehat P_k\,d\mu_\infty
+=
+\frac{s(q_k)t_1(q_k)}{B}
+G_M\!\left(\frac{s_1(q_k)}{B}\right)
+-
+\frac{s(q_k)t_0(q_k)}{B}
+G_M\!\left(\frac{s_0(q_k)}{B}\right)
+=
+P_{M,B}(q_k),
+\]
+where the final equality is the definition of the light-cell polynomial in \cref{obj:def:hybrid-estimator-handle}.  Substituting \(M=M(n)\) and \(B=B(n)\) gives the claimed identity.
+% lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_factorialPolynomialContribution_trunc
 \end{proof}
