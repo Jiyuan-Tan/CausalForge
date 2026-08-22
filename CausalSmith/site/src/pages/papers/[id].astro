@@ -3,9 +3,9 @@ import { loadBundles, type Bundle } from "../../lib/bundles.js";
 import { bundleRoots, GITHUB_REPO, SERIES_NAME, SERIES_TAGLINE, sourceRef } from "../../lib/config.js";
 import SeoHead from "../../components/SeoHead.astro";
 import { renderTexCompact, renderLabel } from "../../lib/docmd.js";
+import { renderMath } from "../../lib/paperMath.js";
 import "../../styles/series.css";
 import "../../styles/paper.css";
-import katex from "katex";
 
 export async function getStaticPaths() {
   const bundles = await loadBundles(bundleRoots());
@@ -15,50 +15,6 @@ export async function getStaticPaths() {
 const { bundle } = Astro.props as { bundle: Bundle };
 const base = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-// Render pandoc math spans at BUILD TIME so formulas are baked into the static
-// HTML (no client-side KaTeX dependency, immune to load order / cache / the
-// HTML-entity-escaped `&gt;`/`&lt;` that pandoc emits inside `\(...\)`). The
-// client script still re-runs on any span left raw, as a fallback.
-function decodeEntities(s: string): string {
-  return s
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#0*39;|&#x0*27;/gi, "'")
-    .replace(/&#0*(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
-    .replace(/&amp;/g, "&");
-}
-function renderMath(html: string): string {
-  return html.replace(
-    /<span class="math (inline|display)">([\s\S]*?)<\/span>/g,
-    (whole, mode: string, body: string) => {
-      const tex = decodeEntities(body)
-        .replace(/^\s*\\\(|\\\)\s*$/g, "")
-        .replace(/^\s*\\\[|\\\]\s*$/g, "")
-        // A cross-reference (\ref{obj:X}) that sits INSIDE a math span (e.g. the
-        // rollout-law-class definition's "\text{satisfies Assumptions~\ref{…}}")
-        // is emitted as an <a class="objref"> HTML anchor. KaTeX cannot parse raw
-        // HTML, so convert each anchor to KaTeX's own \href (rendered as a clickable
-        // link; trusted below for internal #-fragment targets only) instead of
-        // letting the whole block fall back to raw LaTeX.
-        .replace(
-          /<a\b[^>]*\bhref="([^"]*)"[^>]*>([\s\S]*?)<\/a>/g,
-          (_m, url: string, txt: string) => `\\href{${url}}{${txt.replace(/<[^>]+>/g, "").trim()}}`,
-        )
-        .trim();
-      try {
-        return katex.renderToString(tex, {
-          displayMode: mode === "display",
-          throwOnError: false,
-          trust: (ctx) => ctx.command === "\\href" && ctx.url.startsWith("#"),
-        });
-      } catch {
-        return whole; // leave raw; client-side fallback will retry
-      }
-    },
-  );
-}
 const renderedBody = renderMath(bundle.bodyHtml);
 
 // Build-time table of contents from the rendered body's headings
@@ -202,6 +158,7 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
     <script type="application/json" id="paper-data" set:html={JSON.stringify(paperData)} />
     <script>
       import { initDrawer } from "../../scripts/drawer.js";
+      import { katexOptions } from "../../lib/katexConfig.js";
       // Wire the drawer FIRST, and never behind a top-level `import katex` — a
       // failed katex load (e.g. a stale Vite optimize-deps chunk 504ing in dev)
       // would otherwise abort this whole module before initDrawer() runs, leaving
@@ -258,10 +215,11 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
                 const tex = (el.textContent ?? "").replace(/^\\[([]|\\[)\]]$/g, "");
                 const clean = tex.replace(/^\\\(|\\\)$/g, "").replace(/^\\\[|\\\]$/g, "");
                 try {
-                  katex.render(clean, el as HTMLElement, {
-                    displayMode: el.classList.contains("display"),
-                    throwOnError: false,
-                  });
+                  katex.render(
+                    clean,
+                    el as HTMLElement,
+                    katexOptions(el.classList.contains("display")),
+                  );
                 } catch {
                   /* leave raw TeX visible */
                 }

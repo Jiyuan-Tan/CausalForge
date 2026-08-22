@@ -1,5 +1,7 @@
 /** Slide-over drawer: click a formal block → show its verified Lean statement. */
 
+import { KATEX_MACROS } from "../lib/katexConfig.js";
+
 // katex is OPTIONAL for the drawer: only the title's inline math needs it; the
 // Lean statement (the drawer's substance) does not. Load it lazily so a failed
 // katex fetch can't abort this module — a top-level `import katex` that 504s in
@@ -76,7 +78,7 @@ function renderLabelMath(s: string): string {
       if (!m) return esc(part);
       if (!katex) return esc(part); // katex not loaded (yet/at all) — show raw
       try {
-        return katex.renderToString(m[1], { throwOnError: false });
+        return katex.renderToString(m[1], { throwOnError: false, macros: { ...KATEX_MACROS } });
       } catch {
         return esc(part);
       }

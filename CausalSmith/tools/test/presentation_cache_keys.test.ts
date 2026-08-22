@@ -20,8 +20,11 @@ describe("cache key formulas are byte-stable", () => {
   });
 
   it("sectionCacheKey (sections/_cache_keys.json)", () => {
-    expect(sectionCacheKey("Intro", ["a", "b"], "brief", "k1, k2", ["e1", "e2"], "rev"))
-      .toBe("4ba8e5cf357b8d4555d398488131f309eb953bf7ae96c373a5eb79e437199668");
+    // Hex updated 2026-08-21: env bodies REMOVED from the key — an INTENTIONAL one-time
+    // section-cache miss per bundle (use `--from P2 --reassemble` on a live bundle to skip
+    // it), after which re-rendered env bodies no longer re-draft the prose that places them.
+    expect(sectionCacheKey("Intro", ["a", "b"], "brief", "k1, k2", "rev"))
+      .toBe("1f2779cca5fd936dea8d744426bc2c2a5f84b9483e6340966f65a31d67c0cbb2");
   });
 
   it("proofRenderCacheKey (proofs/_cache_keys.json)", () => {

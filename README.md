@@ -1,12 +1,14 @@
-# CausalForge
+# CausalSmith
 
-**🌐 Website: [jiyuan-tan.github.io/CausalForge](https://jiyuan-tan.github.io/CausalForge/)** —
+**🌐 Website: [jiyuan-tan.github.io/CausalSmith](https://jiyuan-tan.github.io/CausalSmith/)** —
 browse the Causalean library (every definition and theorem with a plain-English
 translation) and the machine-verified working papers.
 
-CausalForge lays foundations for **formalized, machine-checked causal inference**
-and builds an **AI theorem pipeline** on top of it. It contains two
-[Lean 4](https://leanprover.github.io/) packages with a one-way dependency:
+CausalSmith lays foundations for **formalized, machine-checked causal inference**
+and builds an **AI theorem pipeline** on top of it. The project is two
+[Lean 4](https://leanprover.github.io/) packages with a one-way dependency — the
+`Causalean` library, and the `CausalSmith` package that carries the pipeline and
+shares the project's name:
 
 - **`Causalean/`** — the foundational library. Built on
   [Mathlib](https://github.com/leanprover-community/mathlib4), it formalizes core
@@ -34,7 +36,7 @@ curl https://elan.lean-lang.org/elan-init.sh -sSf | sh   # if you don't have ela
 lake exe cache get
 lake build
 
-# 3. Retrieval tooling — how you actually find things in a ~7000-declaration library
+# 3. Retrieval tooling — how you actually find things in a ~8000-declaration library
 cd CausalSmith/tools && npm install
 npm run search -- "backdoor adjustment"
 ```
@@ -57,7 +59,7 @@ Then, depending on what you came for:
 
 ## Finding things in the library
 
-Causalean has ~7000 declarations, so grep is usually the wrong tool. The project
+Causalean has ~8000 declarations, so grep is usually the wrong tool. The project
 ships a ranked retrieval CLI over a docstring-derived index
 (`doc/library_index.json`), which is the same engine the CausalSmith pipeline
 uses to find reusable lemmas:

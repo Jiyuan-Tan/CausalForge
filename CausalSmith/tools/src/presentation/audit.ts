@@ -337,6 +337,10 @@ export async function runStatementAudit(io: StageIO): Promise<LintProblem[]> {
   );
   const lockedVerbatim = (e: AnchoredEnv) => frozenBodyById.get(e.obj_id) === canonBody(e.body);
   const statements: (StatementCheck & { cacheKey: string; mapping: string; env: string; locked: boolean })[] = [];
+  // Envs whose CURRENT body already holds a cached faithful verdict — validated, so they are
+  // frozen below like any other faithful body (a verdict cached before this freeze policy
+  // existed would otherwise leave the body loose and re-rendered on the next prompt edit).
+  const cachedFaithful: AnchoredEnv[] = [];
   for (const e of envs) {
     const cw = io.bank.crosswalk.find((c) => c.obj_id === e.obj_id);
     const comps = componentsMap[e.obj_id] ?? [];
@@ -395,7 +399,10 @@ export async function runStatementAudit(io: StageIO): Promise<LintProblem[]> {
     refDefsByObjId.set(e.obj_id, refDefs);
     const citedDependencies = citedTextByObjId.get(e.obj_id) ?? "(none — no Lean premise may be erased)";
     const key = equivalenceAuditKey({ envBody: e.body, mapping, leanStatement, refDefs, citedDependencies });
-    if (cache[e.obj_id]?.key === key && cache[e.obj_id].verdict === "faithful") continue;
+    if (cache[e.obj_id]?.key === key && cache[e.obj_id].verdict === "faithful") {
+      cachedFaithful.push(e);
+      continue;
+    }
     statements.push({
       obj_id: e.obj_id,
       envBody: e.body,
@@ -532,6 +539,24 @@ export async function runStatementAudit(io: StageIO): Promise<LintProblem[]> {
   const layerSrc = FormalLayerSource.parse(JSON.parse(await readFile(layerPath, "utf8")));
   let bankGraphDirty = false;
   let layerDirty = false;
+  // FREEZE EVERY FAITHFUL BODY, not only refined ones. A body that passed on its first audit used
+  // to stay loose, so the next render-prompt (or global contract) edit re-rendered it — wording
+  // drift with no Lean change — which re-keyed its statement audit, every proof audit citing it,
+  // and every section placing it: one prompt commit became a near-full re-run (sa_plm, 2026-08-21).
+  // Validated ⇒ locked: P1 reuses the body verbatim; a LEAN change still re-audits it (the verdict
+  // key holds the Lean source) and halts as locked-env-drift for adjudication. To push a prompt
+  // improvement into an already-frozen paper, re-enter with `--from P1 --refresh-frozen-bodies`.
+  const freezeFaithful = (objId: string, body: string): void => {
+    const node = io.bank.graph.nodes.find((n) => n.id === objId);
+    if (!node || node.delivery?.status === "undelivered") return;
+    const trimmed = body.trim();
+    if (node.nl.frozen_body === trimmed) return;
+    node.nl.frozen_body = trimmed;
+    node.nl.frozen_title = layerSrc.blocks.find((b) => b.obj_id === objId)?.title ?? null;
+    bankGraphDirty = true;
+  };
+  for (const e of cachedFaithful) freezeFaithful(e.obj_id, e.body);
+  for (const { s, v0 } of audited) if (v0.verdict === "faithful") freezeFaithful(s.obj_id, s.envBody);
   for (const { s, refined } of refinedResults) {
     if (refined.body.trim() !== s.envBody.trim()) {
       // Persist the refiner's BEST attempt (faithful or not) into the source of truth — a
@@ -586,7 +611,7 @@ export async function runStatementAudit(io: StageIO): Promise<LintProblem[]> {
       graphPath(bankAcceptedDir(repoRoot, io.ctx.qid, io.ctx.spec), io.ctx.qid, io.ctx.spec),
       io.bank.graph,
     );
-    io.state.notes.push("P1: persisted refined statement(s) to the bank graph (nl.frozen_body) — a re-run now stays tight.");
+    io.state.notes.push("P1: persisted audit-faithful statement body/bodies to the bank graph (nl.frozen_body) — a re-run reuses them verbatim instead of re-rendering.");
   }
   await writeJsonAtomic(cachePath, cache); // why: the equivalence cache is the P4 trust anchor — a corrupt write must not survive.
   await appendFile(reviewsPath, JSON.stringify({ kind: "equivalence", problems: eqProblems }) + "\n", "utf8");

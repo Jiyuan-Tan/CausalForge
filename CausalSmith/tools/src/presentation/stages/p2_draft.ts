@@ -34,14 +34,19 @@ import { parseBib } from "../citations.js";
 import { resolveLeanDeclaration, resolvedLeanAbsolutePath } from "../declaration_resolver.js";
 import { loadBankNarrative, loadInformalDerivations } from "../bank.js";
 
-/** Content key for a P2 section cache entry: changes iff a drafting input changes — the section's
- *  objs list (membership AND order), brief, allowed cites, the frozen env bodies it places, or its
- *  revision brief. An outline restructure that moves an env between sections changes the affected
- *  objs lists, so those sections re-draft rather than reuse a stale env placement. */
+/** Content key for a P2 section cache entry: changes iff an input that SHAPES the prose changes —
+ *  the section's objs list (membership AND order), brief, allowed cites, or its revision brief.
+ *  Environment BODIES are deliberately NOT in the key: the drafter never authors them (the frozen
+ *  layer is substituted mechanically by `normalizeFrozenEnvs` on every assembly, cache hit or not),
+ *  so a re-rendered env swaps into the cached prose with no authoring call. Keying on bodies made
+ *  one prompt edit re-draft nine sections and silently revert referee-repaired prose (2026-08-21).
+ *  Prose that describes an env's content can go stale; the P3 gates and P5 referee review the
+ *  assembled paper and catch that. An outline restructure that moves an env between sections
+ *  changes the affected objs lists, so those sections re-draft rather than reuse a stale placement. */
 export function sectionCacheKey(
-  name: string, objs: string[], brief: string, allowedKeys: string, envBodies: string[], revBrief: string,
+  name: string, objs: string[], brief: string, allowedKeys: string, revBrief: string,
 ): string {
-  return hashEnvBody([name, objs.join(","), brief, allowedKeys, ...envBodies, revBrief].join("§"));
+  return hashEnvBody([name, objs.join(","), brief, allowedKeys, revBrief].join("§"));
 }
 
 export interface ProofHelperContext { obj_id: string; tex: string }
@@ -289,8 +294,9 @@ export async function stageP2(io: StageIO): Promise<void> {
       })
       .filter(Boolean)
       .join("\n\n") || "(none recorded)";
-    // Content key: re-draft when any drafting input changes (objs/brief/cites/env bodies/revision/notes).
-    const sectionKey = hashEnvBody([modelCacheKey, sectionCacheKey(name, s.objs, s.brief, allowedKeys, s.objs.map((id) => envText.get(id) ?? ""), `${revBrief}\n${citedNotes}\n${resultNotes}`)].join("§"));
+    // Content key: re-draft when a prose-shaping input changes (objs/brief/cites/revision/notes);
+    // env bodies are substituted mechanically below and are NOT a drafting input.
+    const sectionKey = hashEnvBody([modelCacheKey, sectionCacheKey(name, s.objs, s.brief, allowedKeys, `${revBrief}\n${citedNotes}\n${resultNotes}`)].join("§"));
     // Artifact cache, content-keyed: an unchanged section is reused (a P2 retry does not re-draft);
     // a changed objs/brief/env-set re-drafts. Delete sections/ to force a full regenerate.
     let tex = io.reassemble || cacheKeys[name] === sectionKey ? await readFile(join(io.outDir, "sections", name), "utf8").catch(() => null) : null;

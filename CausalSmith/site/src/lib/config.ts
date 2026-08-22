@@ -29,5 +29,5 @@ export function sourceRef(commit: string): string {
   return GITHUB_REF ?? commit;
 }
 
-export const SERIES_NAME = "CausalForge";
+export const SERIES_NAME = "CausalSmith";
 export const SERIES_TAGLINE = "AI Causal Scientist";

@@ -34,6 +34,8 @@ import {
   type P1LoopHooks,
 } from "../p1_loop.js";
 import { runStatementAudit } from "../audit.js";
+import { bankAcceptedDir } from "../paths.js";
+import { saveGraph, graphPath } from "../../graph/store.js";
 import { writeJsonAtomic } from "../json_io.js";
 import { loadJsonCache } from "../cache.js";
 import { loadBankNarrative } from "../bank.js";
@@ -677,6 +679,22 @@ export async function stageP1(io: StageIO): Promise<void> {
   // membership (`renderedNodes`), and clearing it deletes the environment from the paper. The
   // statement audit still gates the re-rendered body, and P3 re-freezes what it validates.
   const outlineEnvOverrides = parseOutline(outlineMd).envOverrides;
+  // `--from P1 --refresh-frozen-bodies`: release every frozen body so the current render prompts
+  // reach the whole layer (bodies are otherwise locked the moment the audit finds them faithful,
+  // which is what keeps a prompt edit from re-rolling — and re-auditing — every env). Persisted
+  // immediately so a crash mid-P1 does not leave the graph half-released.
+  if (io.ctx.refreshFrozenBodies) {
+    const released = nodes.filter((n) => n.nl.frozen_body != null);
+    for (const n of released) {
+      delete n.nl.frozen_body;
+      delete n.nl.frozen_title;
+    }
+    if (released.length > 0) {
+      await saveGraph(graphPath(bankAcceptedDir(repoRoot, io.ctx.qid, io.ctx.spec), io.ctx.qid, io.ctx.spec), io.bank.graph);
+      log(`refresh-frozen-bodies: released ${released.length} frozen body/bodies — ${released.map((n) => n.id).join(", ")}`);
+      io.state.notes.push(`P1: --refresh-frozen-bodies released ${released.length} frozen body/bodies; all re-render and re-audit this entry.`);
+    }
+  }
   // The layer written DURING the P1 loop must agree with the layer built after it: the post-loop
   // view derives from `formal_layer.json`, whose blocks apply `env_overrides` (blocksFromGraph),
   // while the in-loop `assemble` used the raw `envForNode`. On a NON-CONVERGED run only the

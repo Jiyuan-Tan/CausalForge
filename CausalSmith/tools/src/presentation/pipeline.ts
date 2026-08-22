@@ -77,6 +77,11 @@ export interface PaperCtx {
    * on-disk authored sources, no drafting) — the manual-revision re-entry after
    * hand-edits to front_matter.tex / sections/ / proofs/. */
   reassembleP2?: boolean;
+  /** With `--from P1`: release every audit-frozen body (`nl.frozen_body`) before planning, so the
+   * render prompts are applied afresh to the whole layer. Every body then re-renders and re-audits
+   * (the audit re-freezes what passes). The deliberate knob for pushing a render-prompt
+   * improvement into a paper whose bodies are otherwise locked against prompt churn. */
+  refreshFrozenBodies?: boolean;
 }
 
 export interface StageIO {

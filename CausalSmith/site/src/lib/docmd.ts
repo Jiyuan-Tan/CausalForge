@@ -1,4 +1,5 @@
 import katex from "katex";
+import { KATEX_MACROS } from "./katexConfig.js";
 
 /**
  * Minimal docstring → HTML renderer for Lean docstrings: paragraphs, `*`/`-` bullets,
@@ -20,7 +21,11 @@ function esc(s: string): string {
 
 function tex(src: string, display: boolean): string {
   try {
-    return katex.renderToString(src, { displayMode: display, throwOnError: false });
+    return katex.renderToString(src, {
+      displayMode: display,
+      throwOnError: false,
+      macros: { ...KATEX_MACROS },
+    });
   } catch {
     return `<code>${esc(src)}</code>`;
   }
@@ -106,7 +111,7 @@ export function renderLabel(s: string): string {
   if (!/\\[a-zA-Z]/.test(s)) return esc(s);
   const tex = s.replace(/^\s*\\\(|\\\)\s*$/g, "").trim();
   try {
-    return katex.renderToString(tex, { throwOnError: true });
+    return katex.renderToString(tex, { throwOnError: true, macros: { ...KATEX_MACROS } });
   } catch {
     return esc(s);
   }

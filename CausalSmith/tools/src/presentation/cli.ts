@@ -23,7 +23,7 @@ import { MODELS } from "../models.js";
 
 function usage(): never {
   console.error(
-    "usage: causalsmith present <qid> <spec> [--resume] [--auto] [--dry-run] [--revise] [--reassemble] [--reuse-existing-proofs-for-audit] [--refresh-statement-audit] [--stop-after P0..P5] [--from P0..P5] [--max-p5-reviews N]",
+    "usage: causalsmith present <qid> <spec> [--resume] [--auto] [--dry-run] [--revise] [--reassemble] [--refresh-frozen-bodies] [--reuse-existing-proofs-for-audit] [--refresh-statement-audit] [--stop-after P0..P5] [--from P0..P5] [--max-p5-reviews N]",
   );
   process.exit(2);
 }
@@ -38,6 +38,7 @@ export async function runPresentationCli(argv: string[]): Promise<void> {
   let from: string | undefined;
   let revise = false;
   let reassembleP2 = false;
+  let refreshFrozenBodies = false;
   let refreshStatementAudit = false;
   let reuseExistingProofsForAudit = false;
   let maxP5Reviews: number | undefined;
@@ -48,6 +49,7 @@ export async function runPresentationCli(argv: string[]): Promise<void> {
     else if (a === "--dry-run") dryRun = true;
     else if (a === "--revise") revise = true;
     else if (a === "--reassemble") reassembleP2 = true;
+    else if (a === "--refresh-frozen-bodies") refreshFrozenBodies = true;
     else if (a === "--refresh-statement-audit") refreshStatementAudit = true;
     else if (a === "--reuse-existing-proofs-for-audit") reuseExistingProofsForAudit = true;
     else if (a === "--stop-after") {
@@ -72,6 +74,10 @@ export async function runPresentationCli(argv: string[]): Promise<void> {
   const [qid, spec] = positional;
   const parsedStop = stopAfter === undefined ? undefined : PaperStage.parse(stopAfter);
   const parsedFrom = from === undefined ? undefined : PaperStage.parse(from);
+  if (refreshFrozenBodies && parsedFrom !== "P1") {
+    console.error("--refresh-frozen-bodies requires --from P1 (it releases the audit-frozen bodies before the layer is re-planned)");
+    process.exit(2);
+  }
   if (reassembleP2 && parsedFrom !== "P2") {
     console.error("--reassemble requires --from P2 (it re-enters at assembly over the existing authored sources)");
     process.exit(2);
@@ -147,7 +153,7 @@ export async function runPresentationCli(argv: string[]): Promise<void> {
   // the first has released its durable heartbeat.
   const { halt } = await withRunHeartbeatAt(runLogsDir, qid, spec, () =>
     runPaperPipeline({ repoRoot, qid, spec, deps, resume, auto, stopAfter: parsedStop, from: parsedFrom,
-      maxP5Reviews, reuseExistingProofsForAudit, reassembleP2 }),
+      maxP5Reviews, reuseExistingProofsForAudit, reassembleP2, refreshFrozenBodies }),
   );
   const outDir = presentationDir(repoRoot, qid, spec);
   if (halt === "checkpoint:outline") {
