@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { runPaperPipeline, type PaperDeps } from "../src/presentation/pipeline.js";
 import { loadPaperState } from "../src/presentation/state.js";
-import { acceptedBankEntry, causalSmithRoot } from "./helpers.js";
+import { acceptedBankEntry, causalSmithRoot, guardBankEntry } from "./helpers.js";
 
 const stubDeps: PaperDeps = {
   runClaude: async () => "STUB",
@@ -20,6 +20,9 @@ describe("pipeline dry-run (integration)", () => {
   // NEVER the real presentationDir: a test run must not clobber live artifacts.
   const dirP = mkdtemp(join(tmpdir(), "causalsmith-dryrun-"));
   afterAll(async () => rm(await dirP, { recursive: true, force: true }));
+  // Nor the real BANK entry: P1's statement audit, promotion and P5 persist into it, so a
+  // stubbed run would write stub bodies into a tracked record. Snapshot now, restore after.
+  afterAll(guardBankEntry(QID, SPEC));
 
   it("P0→P1 stops at outline checkpoint; resumes through draft to done", async () => {
     const dir = await dirP;

@@ -7,7 +7,7 @@ import { parseAnchoredEnvs, lintAnchors, type AnchoredEnv } from "../src/present
 import { FormalLayerSource } from "../src/presentation/formal_layer.js";
 import { parseBib } from "../src/presentation/citations.js";
 import { parseNotationReviewerOutput } from "../src/presentation/stages/p1_plan.js";
-import { acceptedBankEntry, causalSmithRoot } from "./helpers.js";
+import { acceptedBankEntry, causalSmithRoot, guardBankEntry } from "./helpers.js";
 import { MODELS } from "../src/models.js";
 import { PRESENTATION_PROSE_POLICY_VERSION } from "../src/presentation/prompt_io.js";
 
@@ -228,6 +228,9 @@ describe("stages P0-P2 against the real bank entry (stubbed models)", () => {
   // NEVER the real presentationDir: a test run must not clobber live artifacts.
   const dirP = mkdtemp(join(tmpdir(), "causalsmith-p0p2-"));
   afterAll(async () => rm(await dirP, { recursive: true, force: true }));
+  // The pipeline persists audit-faithful bodies onto the real bank graph; with the models stubbed
+  // that means stub bodies in a tracked record. Snapshot the entry now, restore it after.
+  afterAll(guardBankEntry(QID, SPEC));
 
   it("P0+P1 produce pool, outline, frozen layer; halts at outline checkpoint", async () => {
     const dir = await dirP;
