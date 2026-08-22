@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { runStageNeg1_1 } from "../../src/discovery/stages/neg1_1.js";
+import { buildGapsContextBlock, runStageNeg1_1 } from "../../src/discovery/stages/neg1_1.js";
 import { MODELS } from "../../src/models.js";
 import { promptPath } from "../../src/paths.js";
 import type { StageDeps } from "../../src/pipeline_support.js";
@@ -37,6 +37,28 @@ function makeState(): StateJson {
 }
 
 describe("runStageNeg1_1", () => {
+  it("injects opportunities without origin-based ranking bonuses", async () => {
+    const repoRoot = await mkdtemp(path.join(tmpdir(), "stage-neg11-"));
+    try {
+      const gapsPath = path.join(repoRoot, "gaps.json");
+      await writeFile(gapsPath, JSON.stringify({
+        open_problems: [{
+          open_problem: "Can the construction identify optimal policy value?",
+          source: "both",
+          why_unsolved: "the final scalar aggregation becomes an optimization; destination-pair search found no occupied result",
+        }],
+      }), "utf8");
+      const block = await buildGapsContextBlock({
+        ctx: makeCtx(repoRoot), state: makeState(), gapsPath,
+      });
+      expect(block).toContain("destination-pair search found no occupied result");
+      expect(block).toContain("Rank opportunities by evidence, mathematical depth, novelty");
+      expect(block).not.toMatch(/highest leverage|higher signal/);
+    } finally {
+      await rm(repoRoot, { recursive: true, force: true });
+    }
+  });
+
   it("uses the Codex kernel tier for the literature scout", async () => {
     const repoRoot = await mkdtemp(path.join(tmpdir(), "stage-neg11-"));
     try {

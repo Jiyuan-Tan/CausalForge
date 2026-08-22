@@ -4,18 +4,12 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   buildCrosswalkSkeleton,
-  buildCompleteCrosswalk,
   buildCompleteCrosswalkFromGraph,
   findHiddenStatementDefs,
   findStatementSemanticDefs,
-  mergeCrosswalkVerdicts,
-  foldCrosswalkIntoReview,
   persistCrosswalk,
   renderCrosswalkMd,
-  type ReviewerCrosswalkVerdict,
 } from "../../src/formalization/crosswalk.js";
-import type { CrosswalkEntry } from "../../src/types.js";
-import type { ReviewResult } from "../../src/judgment.js";
 import type { FormalizationGraph } from "../../src/graph/types.js";
 
 // A Basic.lean mirroring the stat_ate_overlap_decay shape: a P-10 class def
@@ -197,92 +191,6 @@ theorem t1_thm (n : Nat) : 0 + n = n := by simp
   });
 });
 
-describe("crosswalk drift gating (P-10 acceptance test)", () => {
-  it("folds a weaker-in-Lean P-10 verdict into a class-S revise finding", async () => {
-    const sk = await buildCrosswalkSkeleton(leanDir, mdPath);
-    const verdicts: ReviewerCrosswalkVerdict[] = [
-      {
-        obj_id: "P-10",
-        verdict: "weaker-in-Lean",
-        note: "Lean class omits A4/A5/A6 — widened; unsafe for the converse.",
-        fix_locus: "lean-scaffold",
-        clauses: [{ src: "A4 drift envelopes", lean: "absent", v: "missing-in-Lean" }],
-      },
-      { obj_id: "T-1", verdict: "exact" },
-    ];
-    const merged = mergeCrosswalkVerdicts(sk, verdicts);
-    const pass: ReviewResult = { status: "pass", notes: "all checks clean" } as ReviewResult;
-    const folded = foldCrosswalkIntoReview(pass, merged);
-    expect(folded.status).toBe("revise");
-    if (folded.status === "revise") {
-      expect(folded.classification).toBe("S");
-      const f = folded.perItemFindings.find((x: { label: string }) => x.label.includes("triangularClass"));
-      expect(f).toBeDefined();
-      expect(f!.verdict).toBe("FLAG-K");
-      expect(f!.fix_locus).toBe("lean-scaffold");
-    }
-  });
-
-  it("does NOT block when every definition verdict is exact/equivalent", async () => {
-    const sk = await buildCrosswalkSkeleton(leanDir, mdPath);
-    const merged = mergeCrosswalkVerdicts(sk, [
-      { obj_id: "P-10", verdict: "exact" },
-      { obj_id: "T-1", verdict: "equivalent" },
-    ]);
-    const pass: ReviewResult = { status: "pass", notes: "clean" } as ReviewResult;
-    expect(foldCrosswalkIntoReview(pass, merged).status).toBe("pass");
-  });
-
-  it("appends findings to a reject without flipping it to revise", async () => {
-    const sk = await buildCrosswalkSkeleton(leanDir, mdPath);
-    const merged = mergeCrosswalkVerdicts(sk, [{ obj_id: "P-10", verdict: "drift", note: "x" }]);
-    const reject: ReviewResult = {
-      status: "reject",
-      classification: "V",
-      perItemFindings: [{ label: "T1.lean:t1_thm", verdict: "FLAG-H.2", one_line: "vacuous" }],
-      verbatim_critique: "nl-source vacuity",
-    } as ReviewResult;
-    const folded = foldCrosswalkIntoReview(reject, merged);
-    expect(folded.status).toBe("reject");
-    if (folded.status === "reject") expect(folded.perItemFindings.length).toBe(2);
-  });
-});
-
-describe("full mode (F5) + buildCompleteCrosswalk", () => {
-  it("default mode excludes the L-7 lemma; full mode includes it", async () => {
-    const def = await buildCrosswalkSkeleton(leanDir, mdPath);
-    expect(def.some((e) => e.obj_id === "L-7")).toBe(false);
-    const full = await buildCrosswalkSkeleton(leanDir, mdPath, { includeLemmas: true });
-    const l7 = full.find((e) => e.obj_id === "L-7");
-    expect(l7).toBeDefined();
-    expect(l7!.kind).toBe("lemma");
-    expect(l7!.lean).toMatchObject({ decl: "l7_aux", decl_kind: "lemma" });
-  });
-
-  it("carries the F2.5 verdict forward onto the matching row and re-stamps the anchor", async () => {
-    const f25: CrosswalkEntry[] = [
-      {
-        obj_id: "P-10",
-        kind: "definition",
-        title: "stale title",
-        tex: { label: "stale", line_range: "" },
-        // a STALE anchor (wrong line) — buildCompleteCrosswalk must refresh it
-        lean: { file: "Basic.lean", decl: "triangularClass", decl_kind: "def", line: 1 },
-        verdict: "weaker-in-Lean",
-        note: "carried-forward F2.5 verdict",
-      },
-    ];
-    const full = await buildCompleteCrosswalk(leanDir, mdPath, f25);
-    const p10 = full.find((e) => e.obj_id === "P-10");
-    expect(p10!.verdict).toBe("weaker-in-Lean"); // verdict inherited
-    expect(p10!.note).toBe("carried-forward F2.5 verdict");
-    expect(p10!.lean!.line).toBeGreaterThan(1); // anchor re-stamped from final file
-    // The lemma row is present and descriptive (no carried verdict).
-    const l7 = full.find((e) => e.obj_id === "L-7");
-    expect(l7!.verdict).toBe("unmatched");
-  });
-});
-
 describe("buildCompleteCrosswalkFromGraph", () => {
   it("downgrades unresolved local anchors instead of writing line:null", async () => {
     const g: FormalizationGraph = {
@@ -411,33 +319,12 @@ describe("hidden-statement-def augmentation (laundering surface)", () => {
     expect(sk.some((e) => e.lean?.decl === "helperVal")).toBe(false); // ℝ-valued, not in a conclusion
     expect(sk.some((e) => e.lean?.decl === "unreachedClass")).toBe(false); // reached by no theorem
   });
-
-  it("a weaker-in-Lean verdict on the AUX row folds into a class-S revise", async () => {
-    const sk = await buildCrosswalkSkeleton(ldir, lmd);
-    const merged = mergeCrosswalkVerdicts(sk, [
-      {
-        obj_id: "AUX-lawClass",
-        verdict: "weaker-in-Lean",
-        note: "per-law ∃Co lets the converse witness carry n-dependent constants.",
-        fix_locus: "lean-scaffold",
-      },
-    ]);
-    const pass: ReviewResult = { status: "pass", notes: "clean" } as ReviewResult;
-    const folded = foldCrosswalkIntoReview(pass, merged);
-    expect(folded.status).toBe("revise");
-    if (folded.status === "revise") {
-      expect(folded.classification).toBe("S");
-      const f = folded.perItemFindings.find((x: { label: string }) => x.label.includes("lawClass"));
-      expect(f).toBeDefined();
-      expect(f!.fix_locus).toBe("lean-scaffold");
-    }
-  });
 });
 
 describe("persistCrosswalk + renderCrosswalkMd", () => {
   it("writes JSON + MD and the MD shows the P-10 row", async () => {
     const sk = await buildCrosswalkSkeleton(leanDir, mdPath);
-    const merged = mergeCrosswalkVerdicts(sk, [{ obj_id: "P-10", verdict: "weaker-in-Lean", note: "n" }]);
+    const merged = sk.map((e) => (e.obj_id === "P-10" ? { ...e, verdict: "weaker-in-Lean" as const, note: "n" } : e));
     const jsonPath = path.join(dir, "cw.json");
     const md = path.join(dir, "cw.md");
     await persistCrosswalk(jsonPath, md, merged);

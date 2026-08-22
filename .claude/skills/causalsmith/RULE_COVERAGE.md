@@ -16,11 +16,10 @@ dropped** (mechanical grep verification, re-runnable — see the `chk` loop in t
 | Codex-validity-gate + neutral prompt + recurrence-is-real | "codex-validity-gate", "Prompt neutrally" |
 | Whack-a-mole D0.5 not terminal | "whack-a-mole", "hygiene-only rotation" |
 | Bank tool + tiers (terminal only) | "bank_entry", tier rules |
-| Argument forms | "from-question", "upgrade-axis" |
+| Argument forms | "upgrade-axis" |
 | Launch — cwd = CausalSmith root, node via `node_env.sh`, run-artifact paths | "cwd must be the CausalSmith", "node_env.sh" |
 | After TS exits | "After TS exits", "next_step_guidance" |
 | Mathlib helper staging | "Mathlib helper staging" |
-| Phase 4 CHECKPOINT_NEXT | "CHECKPOINT_NEXT" |
 | `--study` main-launched side-run | "Because it is a … node process" |
 | Pipeline-bug — diagnose own I/O, recurrence threshold | "EMITTED vs PERSISTED", "_agent_logs" |
 | Cross-boundary rewind — verify first | "Rewind discipline", "rewind-D0" |

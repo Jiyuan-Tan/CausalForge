@@ -27,7 +27,7 @@
 
 import type { Core, CoreStatement } from "./core/schema.js";
 import { extractCitationRefs } from "./core/node_ids.js";
-import { snapshotMember, type SolvedMember, type WorkingState } from "./stages/d0_working.js";
+import { snapshotMember, type WorkingState } from "./stages/d0_working.js";
 
 /** The member with its claim/proof-cited node ids unioned into `depends_on` —
  *  the closure `snapshotMember` walks, matching what dependency auto-wiring
@@ -38,7 +38,7 @@ export function withWiredDeps(member: CoreStatement, proofTex: string): CoreStat
   // another paper, never a local dependency — including its bare suffix
   // poisoned the closure with an id that exists nowhere and read the record
   // permanently stale (audit R2BB2).
-  for (const ref of extractCitationRefs(`${member.statement ?? ""}\n${proofTex}`)) {
+  for (const ref of extractCitationRefs(`${member.statement}\n${proofTex}`)) {
     if (ref !== member.id) deps.add(ref);
   }
   // SORTED: the snapshot's `depends_on` is provenance (validity walks the

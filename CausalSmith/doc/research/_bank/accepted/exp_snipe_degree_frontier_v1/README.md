@@ -58,8 +58,8 @@ proof_attempt_summary: |
   of sorry/admit/native_decide/axiom, and all six core statements axiom-clean
   [propext, Classical.choice, Quot.sound] under `lake env lean`.
 banked_on: "2026-07-28"
-paper_score: 8
-paper_score_rationale: "The paper delivers a verified and substantively useful minimax characterization, with remaining issues concentrated in exposition, scope wording, and reference hygiene rather than mathematical validity."
+paper_score: 7.8
+paper_score_rationale: "The verified mathematical core delivers a sharp and useful minimax calibration, while the manuscript needs targeted prose repairs for comparison scope, cross-reference hygiene, and a few stale or confusing exposition points."
 ---
 
 # exp_snipe_degree_frontier / v1 — Accepted

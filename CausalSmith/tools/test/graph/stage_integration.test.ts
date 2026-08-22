@@ -2,15 +2,15 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtemp, rm, writeFile, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { emitGraphFromStage1 } from "../../src/formalization/stage1.js";
 import {
   hiddenDefinitionChangeTargets,
   linkGraphFromStage2,
   pendingSourceRewindDirtyNodeIds,
 } from "../../src/formalization/stage2.js";
 import type { StateJson } from "../../src/types.js";
-import { createEmptyGraph, loadGraph, graphPath, saveGraph } from "../../src/graph/store.js";
+import { createEmptyGraph, graphPath, saveGraph } from "../../src/graph/store.js";
 import { addNode, markPassed } from "../../src/graph/mutate.js";
+import { buildGraphFromMd } from "../../src/graph/from_note.js";
 import type { HiddenStatementDef } from "../../src/formalization/crosswalk.js";
 
 let dir: string;
@@ -22,27 +22,11 @@ const MD = `### T-block: t1 — Rate theorem
 **\`.tex\` line range.** "L1-9"
 `;
 
-describe("F1 graph emission", () => {
-  it("emitGraphFromStage1 writes a graph next to the .md", async () => {
-    const mdPath = path.join(dir, "q_v1.md");
-    await writeFile(mdPath, MD, "utf8");
-    await emitGraphFromStage1({ qid: "q", spec: "v1", formalizationDir: dir, mdPath });
-    const g = await loadGraph(graphPath(dir, "q", "v1"));
-    expect(g.nodes.find((n) => n.id === "t1")?.kind).toBe("theorem");
-  });
-
-  it("is best-effort: a missing .md does not throw", async () => {
-    await expect(
-      emitGraphFromStage1({ qid: "q", spec: "v1", formalizationDir: dir, mdPath: path.join(dir, "nope.md") }),
-    ).resolves.toBeUndefined();
-  });
-});
-
 describe("F2 graph link + extract", () => {
   it("links annotated decls and refreshes proof state, advisory-only", async () => {
     const mdPath = path.join(dir, "q_v1.md");
     await writeFile(mdPath, MD, "utf8");
-    await emitGraphFromStage1({ qid: "q", spec: "v1", formalizationDir: dir, mdPath });
+    await saveGraph(graphPath(dir, "q", "v1"), await buildGraphFromMd("q", "v1", mdPath));
 
     const leanDir = path.join(dir, "lean");
     await mkdir(leanDir, { recursive: true });

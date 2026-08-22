@@ -3,7 +3,6 @@
 
 import path from "node:path";
 import { readdir, readFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
 import { MODEL_PLAN } from "../../constants.js";
 import { formalizationDir, resolveInDir } from "../../paths.js";
 import { saveState } from "../../state.js";
@@ -189,48 +188,6 @@ export async function runStageNeg0_5(args: {
     state: args.state,
   });
 
-  // Phase 3 — method-scoped novelty corpus. When the run was launched via
-  // `--from-question <oq_id>`, Stage -1.2 cached the seed Method id on
-  // state.method_id. Walk the graph for BankedTheorems instantiating that
-  // Method and render a compact block the reviewer uses INSTEAD of the
-  // full-bank scan. Empty string under legacy (full-bank) invocations.
-  let methodScopedNoveltyBlock = "";
-  if (args.state.from_question_oq_id && args.state.method_id) {
-    try {
-      const { loadGraph, bankedTheoremsForMethod } = await import("../../shared/graph.js");
-      const graph = await loadGraph(path.join(args.ctx.repoRoot, "doc", "study"));
-      const allBts = bankedTheoremsForMethod(graph, args.state.method_id, Number.MAX_SAFE_INTEGER);
-      const limit = 10;
-      const shown = allBts.slice(0, limit);
-      const truncated = allBts.length > limit;
-      const lines: string[] = [
-        "=== METHOD_SCOPED_BANKED_PRECEDENTS (load-bearing — see method-scoped novelty corpus directive in base prompt) ===",
-        `method_id: ${args.state.method_id}`,
-      ];
-      if (shown.length === 0) {
-        lines.push("_(none — this method has no banked precedents in the graph)_");
-      } else {
-        for (const bt of shown) {
-          const inst = (bt.instantiates ?? []).join(", ") || "—";
-          const uses = (bt.uses ?? []).join(", ") || "—";
-          lines.push(`- ${bt.bt_id}: instantiates [${inst}], uses [${uses}]`);
-        }
-        if (truncated) {
-          lines.push(`_(showing top ${limit} of ${allBts.length}; older entries omitted)_`);
-        }
-      }
-      lines.push("=== END METHOD_SCOPED_BANKED_PRECEDENTS ===");
-      methodScopedNoveltyBlock = lines.join("\n");
-    } catch (err) {
-      // Failure here just leaves the reviewer in legacy full-bank mode.
-      const msg = err instanceof Error ? err.message : String(err);
-      // eslint-disable-next-line no-console
-      console.warn(
-        `[stage -0.5] method-scoped novelty corpus unavailable (${msg}); falling back to full-bank reviewer scan.`,
-      );
-    }
-  }
-
   const iterations = pf.iterations ?? [];
   const archivedProposals = pf.archived_proposals ?? [];
   const exhaustedAngles = pf.exhausted_angles ?? [];
@@ -410,7 +367,6 @@ export async function runStageNeg0_5(args: {
       draftJson,
       noveltyTarget: pf.novelty_target,
       stage0_5RejectionBlock,
-      methodScopedNoveltyBlock,
     });
     // A reviewer whose output could not be parsed has NOT reviewed anything. Halt on
     // it rather than letting the `?? "REVISE"` default below burn a revise round (cap
@@ -721,7 +677,6 @@ export async function runNeg1Review(args: {
   draftJson: Record<string, unknown>;
   noveltyTarget: NoveltyTarget;
   stage0_5RejectionBlock?: string;
-  methodScopedNoveltyBlock?: string;
 }): Promise<{ raw: string; verdict: string | null; json: Record<string, unknown>; parseError: string | null }> {
   // (Fail-closed on the proposal source lives in `buildProtoCoreReviewBlock`
   // below: absent/empty/torn proto core throws a plumbing error there, never a
@@ -753,9 +708,6 @@ export async function runNeg1Review(args: {
   );
   if (args.stage0_5RejectionBlock && args.stage0_5RejectionBlock.length > 0) {
     parts.push("", args.stage0_5RejectionBlock);
-  }
-  if (args.methodScopedNoveltyBlock && args.methodScopedNoveltyBlock.length > 0) {
-    parts.push("", args.methodScopedNoveltyBlock);
   }
   const prompt = parts.join("\n");
   // Referee harness: dispatch + parse + scaffolding-strip + verdict extraction.

@@ -46,15 +46,15 @@ only the novelty framing was too high — re-anchor at the corrected tier or
 pivot to the kernel recorded under the entry's **Re-anchor path** heading;
 `true-negative` means the kernel is refuted and should stay banked.
 
-## Bank reads (load semantics)
+## Bank reads
 
-- `loadBurnedSeeds` walks **all four** tiers. With `candidates/` retired
-  there is no longer a tier whose seeds are exempt from burning.
-- `loadReusableArtifacts` also walks **all four** tiers, attaching a
-  per-tier trust label (`trustLabel` in `tools/src/discovery/bank.ts`).
-  Re-tiered ex-candidate entries carry the `downgraded` label —
-  "math-sound, novelty-biased": their `literature_map` artifacts are
-  trusted, their novelty framing is not.
+The bank is read by people and by the `causalsmith-topics` skill (README
+frontmatter, `seeds_burned`, `reusable_artifacts`), and by the D-1.1
+literature scout when it mines prior proposals. There is no programmatic
+loader: the former `loadBurnedSeeds` / `loadReusableArtifacts` helpers were
+never wired into a stage and were removed on 2026-08-21. Re-tiered
+ex-candidate entries under `downgraded/` are "math-sound, novelty-biased":
+their `literature_map` artifacts are trustworthy, their novelty framing is not.
 
 ## Layout
 
@@ -120,9 +120,9 @@ context not captured by the structured fields.
 - **Never delete a banked entry.** Move, downgrade, or re-tier; do not remove.
 - **Keep the run artifacts verbatim.** The bank's value comes from being
   able to re-derive the tier drift; rewriting old derivations defeats that.
-- **`burned: true` propagates to the global seed registry.** When `seeds_burned`
-  lists a seed, future proposal runs on the same anchor topic should skip that
-  seed unless explicitly unburned (with reason).
+- **`seeds_burned` is a human/skill-read record.** When it lists a seed, the
+  topics skill and future proposal runs on the same anchor topic should skip
+  that seed unless explicitly unburned (with reason); nothing enforces it in code.
 - **Promotion to AutoID** is a separate, manual step. Banking accepted ≠
   upstreamed; that happens only after a human review copies the Lean
   statement+proof into AutoID and confirms it builds.

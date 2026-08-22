@@ -20,8 +20,7 @@
  *   npx tsx tools/bin/dneg1_directive.ts <qid> <spec> --directive -        # read from stdin
  *   npx tsx tools/bin/dneg1_directive.ts <qid> <spec> --directive "…" --note "<short note>"
  */
-import { existsSync, readFileSync } from "node:fs";
-import path from "node:path";
+import { readFileSync } from "node:fs";
 import process from "node:process";
 import type { PipelineContext } from "../src/types.js";
 import { sanitizeDirectiveForCli } from "../src/shared/directive_text.js";

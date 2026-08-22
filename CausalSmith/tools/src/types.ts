@@ -92,7 +92,7 @@ export interface StateLineage {
  *   • `SharedState` — fields read or written by both phases (orchestrator
  *     bookkeeping, paper-batching coordinates, loop tag, lineage).
  *   • `DiscoveryState` — fields owned by Stages −1.1 … 1.5 (gap intake,
- *     proposer state, from-question wiring, OpenQuestion close hook).
+ *     proposer state).
  *   • `FormalizationState` — fields owned by Stages 2 … 5 (pending sorries,
  *     design decisions, added assumptions).
  *
@@ -383,14 +383,6 @@ export interface FormalizationFlags {
   /** Stage 3.5: stamped when Codex pruning broke `lake build` and the edits were reverted. */
   stage3_5_build_failed?: string;
   /**
-   * F2.5 tex↔Lean crosswalk PASS snapshot: the merged crosswalk entries
-   * (obj_id → anchors + drift verdict) captured at the last F2.5 PASS. This is
-   * the authoritative correspondence backbone the future paper↔Lean linked view
-   * consumes; on a non-PASS outcome the on-disk crosswalk is still written but
-   * not snapshotted here.
-   */
-  f25_crosswalk?: CrosswalkEntry[];
-  /**
    * F3→F2.5 assumption delta re-review counter (cap `MAX_ASSUMPTION_REVIEWS`).
    * Bumped each time an F3 localPatch adds a premise and rewinds to F2.5 to
    * re-audit it. Kept SEPARATE from `scaffold_redirect_count` so an assumption
@@ -475,43 +467,21 @@ export interface SharedState {
 }
 
 /**
- * Discovery-phase fields (Stages −1.1 … 1.5): literature gaps, proposer
- * state, from-question wiring, OpenQuestion close hook.
+ * Discovery-phase fields (Stages −1.1 … 1.5): literature gaps, proposer state.
  */
 export interface DiscoveryState {
   /**
-   * Phase 3 — set by `/causalsmith --from-question <oq_id>` to wire the research
-   * loop into the idea-map graph. When non-null the Stage -1.2 driver splices
-   * the rendered OpenQuestion bundle into the proposer prompt, the Stage -0.5
-   * driver scopes its novelty corpus to `bankedTheoremsForMethod(method_id)`,
-   * and `pipeline.ts` fires the post-Stage-5 `close_open_question` hook.
-   * Existing state files load as `null` (backward-compatible).
+   * Retired knowledge-graph fields (`--from-question` wiring, the post-F5
+   * OpenQuestion close hook, Stage-0 OEQ banking). Kept in the schema so banked
+   * state files that carry them still load; nothing reads or writes them any
+   * more.
    */
   from_question_oq_id?: string | null;
-  /**
-   * Phase 3 — the seed Method id for the from-question OpenQuestion, captured
-   * during the Stage -1.2 bundle resolution so Stage -0.5 can scope its
-   * novelty corpus without re-walking the graph.
-   */
   method_id?: string | null;
-  /**
-   * Phase 3 — populated by the post-Stage-5 close hook after a successful
-   * `closeOpenQuestion`. Downstream tooling (and the Phase 4 CHECKPOINT_NEXT)
-   * inspects this to confirm the OpenQuestion was minted into a
-   * BankedTheorem.
-   */
   closed_oq?: {
     oq_id: string;
     bt_id: string;
   } | null;
-  /**
-   * OpenQuestion ids banked by the Stage 0 short-circuit (zero Conjectures
-   * + ≥1 load-bearing Open Question in the D-1.2 proposal §8). Present iff
-   * the run terminated via that path. Each id corresponds to a node at
-   * `<graph_root>/nodes/open_question/<oq_id>.json` (see
-   * `mint_proposal_oq.ts`). A future `--from-question <oq_id>` dispatch
-   * can claim/close any of these once a candidate construction is proposed.
-   */
   banked_open_ended_question_ids?: string[];
   /**
    * Open-problem substrate produced by Stage -1.1 (literature scout). Populated
@@ -678,16 +648,6 @@ export interface PipelineContext {
    * stages are unaffected.
    */
   proposerOverride?: DraftRunner;
-  /**
-   * Phase 3 — `/causalsmith --from-question <oq_id>` flag. On cold start the
-   * pipeline atomically claims the OpenQuestion (status: in_progress) under
-   * `withGraphWriteLock`, resolves its radius-1 neighborhood, and persists
-   * `from_question_oq_id` on the run state. On clean Stage 5 completion the
-   * close hook mints a BankedTheorem and flips status to closed_by:<bt_id>.
-   * Mutually exclusive with `--propose`, `--upgrade`, `--upgrade-axis` (per
-   * spec §7.1/7.2 the form is alone-standing).
-   */
-  fromQuestionOqId?: string;
 }
 
 export interface StageResult {

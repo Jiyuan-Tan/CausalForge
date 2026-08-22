@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { createEmptyGraph } from "../../src/graph/store.js";
 import { addNode } from "../../src/graph/mutate.js";
-import { frozenNlFingerprint, frozenMutationReason, assertFrozenNlStable } from "../../src/graph/frozen_nl_guard.js";
+import { frozenNlFingerprint, frozenMutationReason } from "../../src/graph/frozen_nl_guard.js";
 
 function graphWith() {
   let g = createEmptyGraph("q", "v1");
@@ -15,7 +15,6 @@ describe("frozen-note immutability guard", () => {
     const g = graphWith();
     const base = frozenNlFingerprint(g);
     expect(frozenMutationReason(base, g)).toBeNull();
-    expect(() => assertFrozenNlStable(base, g)).not.toThrow();
   });
 
   it("flags a weakened frozen NL (the A-1/D1 laundering shape)", () => {
@@ -27,7 +26,6 @@ describe("frozen-note immutability guard", () => {
     };
     const reason = frozenMutationReason(base, weakened);
     expect(reason).toContain("a1");
-    expect(() => assertFrozenNlStable(base, weakened)).toThrow(/frozen-note immutability violated/);
   });
 
   it("flags a deleted frozen node", () => {

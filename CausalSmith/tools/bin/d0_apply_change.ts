@@ -28,7 +28,6 @@
  * Accepted qualifiers are the four channels (statement, definition, assumption,
  * core-edit) and any core-edit kind (statement-replace, bibliography-replace, …).
  */
-import { existsSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";

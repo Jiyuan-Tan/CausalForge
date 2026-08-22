@@ -7,16 +7,16 @@
 // collection, OEQ resolution application, prose application, LaTeX repair, id
 // auto-heal, citation wiring, and the self-containment repair + dangling-edge
 // check at the merge boundary.
-import { CoreSchema, ProjectJustificationSchema, type Core, type CoreStatement } from "../core/schema.js";
+import { ProjectJustificationSchema, type Core, type CoreStatement } from "../core/schema.js";
 import {
   proofContentClosureIntersects,
   rebuildAssumptionUsedBy,
-  wireStatementProofDependencies,
-} from "../core/dependencies.js";
-import { assertCanonicalAlignedRowTerminators, repairCoreLatexSerialization, repairLatexStringsDeep } from "../core/latex_serialization.js";
-import { extractNodeRefs, healStatementId } from "../core/node_ids.js";
+  } from "../core/dependencies.js";
+
+import { assertCanonicalAlignedRowTerminators, repairLatexStringsDeep } from "../core/latex_serialization.js";
+import { healStatementId } from "../core/node_ids.js";
 import { mergeProseOverlay, assembleCore } from "../core/assemble.js";
-import { solvedStatus, isUnfinishedCarriedRecord } from "../core/status.js";
+import { isUnfinishedCarriedRecord } from "../core/status.js";
 import { type ProofToArchive } from "../proof_archive.js";
 import { recordProof } from "../working_writer.js";
 import { validateSolveManifest } from "../semantic_manifest.js";
@@ -34,7 +34,6 @@ import type {
   ProposedDefinitionChange,
   ProposedAssumption,
   OpenObligation,
-  ProseUpdates,
 } from "./schemas.js";
 import {
   projectOutputsToWriteCapabilities,
@@ -142,7 +141,6 @@ export function mergeSolveOutputs(args: {
     prev,
     next,
     sourceById,
-    persistedOeqReplacements,
     pendingSupersessionEdits,
     hasPendingDirective,
     requiresCoreChanges,
@@ -787,11 +785,6 @@ export function mergeSolveOutputs(args: {
     const rec = next.solved[id];
     if (rec !== undefined && rec.partial !== true && (rec.proof_tex ?? "").trim().length > 0) return true;
     return initialSettledProofs.has(id) && next.solved[id] === undefined;
-  };
-  const settledProofBytes = (id: string): string | undefined => {
-    const rec = next.solved[id];
-    if (rec !== undefined && rec.partial !== true && (rec.proof_tex ?? "").trim().length > 0) return rec.proof_tex;
-    return initialSettledProofs.get(id);
   };
   const pendingSameRoundProofs: Array<{
     proof: { id: string; proof_tex?: string; argues_proposed?: boolean }; ownerLabel: string;
@@ -1598,7 +1591,6 @@ export function mergeSolveOutputs(args: {
       normalizedText(change.proposed) !== normalizedText(target.construction);
   });
   const existingAssumptionIds = new Set(core.assumptions.map((assumption) => assumption.id));
-  const assumptionById = new Map(core.assumptions.map((assumption) => [assumption.id, assumption]));
   const applicableAssumptions = proposedAssumptions.filter((assumption) =>
     assumption.id.startsWith("ass:") && !existingAssumptionIds.has(assumption.id)
   );
@@ -1845,12 +1837,6 @@ export function mergeSolveOutputs(args: {
   const coreEditApplicable = (edit: RawCoreEdit): boolean => {
     const preview = receiptBefore.get(edit)?.core ?? proto;
     const previewWorking = receiptBefore.get(edit)?.working ?? next;
-    const previewStatements = new Map(
-      [
-        ...preview.statements,
-        ...Object.values(previewWorking?.solved ?? {}).flatMap((record) => record.node ? [record.node] : []),
-      ].map((statement) => [statement.id, statement] as const),
-    );
     if (edit.kind === "assumption-replace") {
       const current = preview.assumptions.find((assumption) => assumption.id === edit.id);
       return current !== undefined &&

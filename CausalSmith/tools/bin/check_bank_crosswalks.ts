@@ -20,7 +20,7 @@
  * Exit code: 0 (report-only) unless `--strict`, where any missing-decl /
  * moved-file / unresolvable-lean-dir yields exit 1 (line-drift never fails).
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
@@ -30,25 +30,9 @@ import {
   crosswalkAnchorIntegrity,
   type AnchorIntegrityFinding,
 } from "../src/formalization/bank_crosswalk_lint.js";
+import { findCausalSmithRoot } from "../src/shared/repo_root.js";
 
 const TIERS = ["accepted", "downgraded"] as const;
-
-function findCausalSmithRoot(start: string): string {
-  let cur = path.resolve(start);
-  for (;;) {
-    const lakefile = path.join(cur, "lakefile.toml");
-    if (existsSync(lakefile)) {
-      try {
-        if (/^\s*name\s*=\s*"CausalSmith"/m.test(readFileSync(lakefile, "utf8"))) return cur;
-      } catch {
-        /* fall through */
-      }
-    }
-    const parent = path.dirname(cur);
-    if (parent === cur) throw new Error(`Could not locate CausalSmith package root from ${start}`);
-    cur = parent;
-  }
-}
 
 interface EntryReport {
   tier: string;

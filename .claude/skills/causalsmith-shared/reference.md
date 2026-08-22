@@ -235,7 +235,7 @@ npx --prefix tools tsx tools/bin/bank_entry.ts \
   [--seeds-burned "0,3" --seed-burn-reason "<why these seeds are burned>"] \
   [--reusable <solver_blocked|not_reusable|unknown>] \
   [--reraise-status <re-raise|retry|true-negative|unknown>] \
-  [--proposal-promise-gap <gap>] [--no-mint-oqs] \
+  [--proposal-promise-gap <gap>] \
   [--dry-run]
 
 # Tier-drift snapshot (audit only)
@@ -244,9 +244,9 @@ npx --prefix tools tsx tools/bin/bank_drift.ts --json   # machine-readable
 
 ```
 
-`bank_entry.ts` atomically: (1) patches `banked: true`, `banked_tier`, `banked_on`, `banked_reason` into state.json; (2) moves the run directory to `_bank/<tier>/<qid>_<spec>/`; (3) generates a README scaffold with TODOs for `gap_reasons[]`, `reusable_artifacts[]`, `proof_attempt_summary`; (4) on `--seeds-burned`, flags the seed entries and emits a top-level `seeds_burned[]` array — cold-start D-1 reads this to filter future proposals (no manual wiring). Refuses to re-bank an already-banked state or overwrite an existing destination.
+`bank_entry.ts` atomically: (1) patches `banked: true`, `banked_tier`, `banked_on`, `banked_reason` into state.json; (2) moves the run directory to `_bank/<tier>/<qid>_<spec>/`; (3) generates a README scaffold with TODOs for `gap_reasons[]`, `reusable_artifacts[]`, `proof_attempt_summary`; (4) on `--seeds-burned`, flags the seed entries and emits a top-level `seeds_burned[]` array. Refuses to re-bank an already-banked state or overwrite an existing destination.
 
-Extra flags: `--achieved-tier <incremental|subfield|field|flagship>` — persist the validity-gate's achieved tier on a below-floor bank so later upgrades can enforce a target at or above it; `--reraise-status <re-raise|retry|true-negative|unknown>` — your hopeless-vs-fixable call (`true-negative` = hopeless topic/deterrent; `re-raise` = sound math, novelty over-framed; `retry` = sound math, one construction fell short — drives the `/causalsmith-topics` saturation check; default `unknown` forces a future reviews-skim); `--reusable <solver_blocked|not_reusable|unknown>` — tag whether the proposal is worth retrying with a stronger solver (default auto-inferred from the proposal-promise gap); `--proposal-promise-gap <gap>` — override the README's `proposal_promise_gap` field (otherwise parsed from the reviews log); `--no-mint-oqs` — skip minting failed-theorem OpenQuestions into the study graph.
+Extra flags: `--achieved-tier <incremental|subfield|field|flagship>` — persist the validity-gate's achieved tier on a below-floor bank so later upgrades can enforce a target at or above it; `--reraise-status <re-raise|retry|true-negative|unknown>` — your hopeless-vs-fixable call (`true-negative` = hopeless topic/deterrent; `re-raise` = sound math, novelty over-framed; `retry` = sound math, one construction fell short — drives the `/causalsmith-topics` saturation check; default `unknown` forces a future reviews-skim); `--reusable <solver_blocked|not_reusable|unknown>` — tag whether the proposal is worth retrying with a stronger solver (default auto-inferred from the proposal-promise gap); `--proposal-promise-gap <gap>` — override the README's `proposal_promise_gap` field (otherwise parsed from the reviews log).
 
 Schema and per-entry README format: [`_bank/README.md`](../../../CausalSmith/doc/research/_bank/README.md). Worked example: [`_bank/downgraded/stat_sa_cate_pointwise_v1/README.md`](../../../CausalSmith/doc/research/_bank/downgraded/stat_sa_cate_pointwise_v1/README.md).
 

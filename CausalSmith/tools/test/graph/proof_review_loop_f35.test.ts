@@ -76,12 +76,12 @@ describe("proof-review loop F3.5 unused-hypothesis gate", () => {
     // (dispatchAgent/dispatchClaudeAgent), which logs a "dispatch"/"dispatch-complete"
     // pair around each underlying model call in addition to the loop's own per-phase
     // "completed" entries — same calls as before, just newly visible in pipeline.jsonl.
+    // Phase B starts from a fresh refresh, so the node phase A just cleared is not in the
+    // frontier again: exactly one delta dispatch, not two.
     expect(phaseRows.map((row) => [row.stage, row.status])).toEqual([
       ["2.5", "dispatch"],
       ["2.5", "dispatch-complete"],
       ["2.5", "completed"],
-      ["2.5", "dispatch"],
-      ["2.5", "dispatch-complete"],
       ["3", "completed"],
       ["3.5", "completed"],
       ["4", "dispatch"],

@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { maskNonBoundaryPeriods } from "../shared/tex_text.js";
 import { parseNoteBlocks } from "../presentation/note_parser.js";
 import { createEmptyGraph } from "./store.js";
-import { addEdge, addNode } from "./mutate.js";
+import { addEdge, addNode, withSetup, withExternalLean } from "./mutate.js";
 import type { FormalizationGraph, NodeKind } from "./types.js";
 
 /** obj_id → node id.
@@ -118,12 +118,6 @@ function scanEnvAndAssumptionBlocks(md: string): RawBlock[] {
   return out;
 }
 
-function withSetup(g: FormalizationGraph, id: string, mods: string[]): FormalizationGraph {
-  return { ...g, nodes: g.nodes.map((n) => (n.id === id ? { ...n, setup: { required_modules: mods } } : n)) };
-}
-function withExternalLean(g: FormalizationGraph, id: string, decl: string): FormalizationGraph {
-  return { ...g, nodes: g.nodes.map((n) => (n.id === id ? { ...n, lean: { decl_name: decl, file: null } } : n)) };
-}
 
 /**
  * Build the formalization graph from an F1 `.md` plan:

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { citedDependencies, renderedNodes, refTargets, envForNode, type OverrideEnv } from "./graph_view.js";
 import { isUndeliveredNode } from "../graph/types.js";
-import { appendAfterAnchoredEnvs, hashEnvBody, normalizeAnchoredEnvScopeMarkers, parseAnchoredEnvs } from "./tex_anchors.js";
+import { appendAfterAnchoredEnvs, normalizeAnchoredEnvScopeMarkers, parseAnchoredEnvs } from "./tex_anchors.js";
 import type { FormalizationGraph } from "../graph/types.js";
 
 /**

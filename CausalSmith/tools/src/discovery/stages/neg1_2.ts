@@ -2,8 +2,8 @@
 // Extracted from pipeline_stages.ts in Step 2.2 of the three-submodules refactor.
 
 import path from "node:path";
-import { mkdir, readFile, rename, writeFile, copyFile, access } from "node:fs/promises";
-import { formalizationDir, resolveInDir, templatePath } from "../../paths.js";
+import { mkdir, rename, writeFile, copyFile, access } from "node:fs/promises";
+import { formalizationDir, resolveInDir } from "../../paths.js";
 import type { PipelineContext, StageResult, StateJson } from "../../types.js";
 import { appendReviewLog, type ReviewLogEntry } from "../../log.js";
 import {

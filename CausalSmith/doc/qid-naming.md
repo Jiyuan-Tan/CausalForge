@@ -80,9 +80,9 @@ was about, and inconsistent cluster prefixes silently shrink bank-matching.
 - **Greppability**: `ls _bank/downgraded/` should tell you what topics were
   tried, not what tier they targeted. Tier shows up via `banked_tier` and
   `proposed_from.novelty_target` in state.json.
-- **Bank matching**: `loadReusableArtifacts` matches on cluster prefix. If
-  every exploratory run sits in a `flagship_*` namespace, the matcher cannot
-  tell them apart from any other cluster — defeating the purpose.
+- **Bank matching**: the topics skill and D-1.1 group prior runs by cluster
+  prefix. If every exploratory run sits in a `flagship_*` namespace they cannot
+  be told apart from any other cluster — defeating the purpose.
 - **Cross-run literature reuse**: `pid_*` runs share the IV/compliance
   literature; `panel_*` runs share the panel-methods literature; `eid_*` runs share
   the graphical-ID literature. Topic-encoded qids let the proposer inherit

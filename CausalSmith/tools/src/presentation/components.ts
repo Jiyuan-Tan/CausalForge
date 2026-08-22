@@ -6,7 +6,7 @@
 // and the P4 emit (render the pieces as a composite). The single `lean` anchor
 // in the crosswalk stays the "primary representative decl"; this is the full set.
 
-import { readFile, readdir, realpath, writeFile } from "node:fs/promises";
+import { readFile, readdir, realpath } from "node:fs/promises";
 import { isAbsolute, join, relative, sep } from "node:path";
 import { z } from "zod";
 import { hashEnvBody, type AnchoredEnv } from "./tex_anchors.js";

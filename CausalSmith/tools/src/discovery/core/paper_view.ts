@@ -22,13 +22,11 @@
 // rule is: NOBODY assembles the paper themselves. Every consumer calls
 // `loadPaperView` and reads `view.core` / `view.tex`. A new reviewer added later
 // is correct by construction rather than by remembering to overlay.
-import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { artifactPath } from "../../paths.js";
 import type { PipelineContext } from "../../types.js";
 import { loadWorkingState } from "../stages/d0_working.js";
 import { readRoundProposals } from "../solve/proposals.js";
-import { CoreSchema, type Core } from "./schema.js";
+import { type Core } from "./schema.js";
 import { renderCoreTex } from "./render_tex.js";
 import { coreJsonPath } from "../stages/d0_core.js";
 import { readTypedCore } from "./core_io.js";

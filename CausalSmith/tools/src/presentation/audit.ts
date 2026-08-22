@@ -2,7 +2,7 @@ import { readFile, writeFile, appendFile, mkdir } from "node:fs/promises";
 
 import { join } from "node:path";
 import type { StageIO } from "./pipeline.js";
-import { PRESENTATION_PROSE_POLICY_VERSION, presentationPrompt, promptContractFiles } from "./prompt_io.js";
+import { PRESENTATION_PROSE_POLICY_VERSION, presentationPrompt, promptFingerprint } from "./prompt_io.js";
 import { notationForArtifact, parseOutline } from "./stage_util.js";
 import { canonicalizeProofTitle, hashEnvBody, normalizeCrefs, type AnchoredEnv, type LintProblem } from "./tex_anchors.js";
 import { fixOverEscapedTex } from "./emit.js";
@@ -83,17 +83,6 @@ export function proofAuditCacheKey(parts: {
   targetStatement: string;
 }): string {
   return hashEnvBody(`${PRESENTATION_PROSE_POLICY_VERSION}|${parts.auditPromptFp}|${parts.targetStatement}|${parts.proofTex}|${parts.leanPointer}|${parts.leanProofCacheSource}|${proofAuditSemanticNotation(parts.notationTable)}`);
-}
-
-/** Fingerprint of the proof-audit prompt as dispatched (template + whatever contract
- *  header presentationPrompt actually prepends — the contract digest, for this
- *  verdict-only prompt) — the "what is the auditor asked to check" input to the key. */
-export async function proofAuditPromptFp(): Promise<string> {
-  const dir = join(import.meta.dirname, "prompts");
-  const files = await Promise.all(
-    ["proof_audit", ...promptContractFiles("proof_audit")].map((n) => readFile(join(dir, `${n}.txt`), "utf8")),
-  );
-  return hashEnvBody(files.join("§"));
 }
 
 /** Proof validity depends on symbol spelling and reader-facing meaning, not on
@@ -627,6 +616,34 @@ export async function runStatementAudit(io: StageIO): Promise<LintProblem[]> {
  * still unfaithful after refinement — the P2 caller halts on a non-empty `problems` (re-render or
  * adjudicate). `proofTargets` are the (obj_id, env-kind, leanFile/decl) tuples P2 already resolved.
  */
+/**
+ * Lean routes (`% lean: declA, declB`) the refinement dropped, compared as declaration names with
+ * their occurrence counts — so reordering, spacing, and a route moving to another line all count as
+ * PRESENT, while deleting one of two identically-anchored branches still counts as dropped.
+ *
+ * The refiner rewrites toward Lean and only removes prose; it never supplies a conclusion the
+ * auditor reported missing. A refinement that drops an anchored step has deleted content tied to a
+ * declaration, and the auditor re-reports the same omission next cycle.
+ *
+ * Deliberately kept to one pattern: an escaped `\%` is not a route, and no other TeX context
+ * is modelled. A false positive here keeps the input proof, which then HALTS for adjudication
+ * rather than assembling silently, so the failure mode is loud and a scrubbing pass is not worth
+ * the complexity.
+ */
+export function droppedLeanRoutes(before: string, after: string): string[] {
+  const decls = (tex: string): Map<string, number> => {
+    const counts = new Map<string, number>();
+    for (const m of tex.matchAll(/(?<!\\)%\s*lean:\s*([^\n]+)/g))
+      for (const raw of m[1].split(",")) {
+        const name = raw.trim().replace(/[.;]+$/, "");
+        if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
+      }
+    return counts;
+  };
+  const kept = decls(after);
+  return [...decls(before)].filter(([name, n]) => (kept.get(name) ?? 0) < n).map(([name]) => name);
+}
+
 export async function runProofAudit(
   io: StageIO,
   proofTargets: { obj_id: string; isMain: boolean; lean: { file: string; decl: string } }[],
@@ -691,7 +708,7 @@ export async function runProofAudit(
   const cache = await loadJsonCache<Record<string, { key: string; verdict: string; issues?: string[] }>>(cachePath);
   const saveCache = () => writeJsonAtomic(cachePath, cache); // why: proofAudit workers save concurrently under mapLimit — interleaved plain writes can corrupt the cache.
 
-  const auditPromptFp = await proofAuditPromptFp();
+  const auditPromptFp = await promptFingerprint("proof_audit");
   // UNFILTERED lookup: propositionv proofs are audited too (isMainProofEnv), and the
   // citable list excludes them — a filtered lookup would leave their targetStatement
   // permanently "", replaying stale verdicts across statement fixes.
@@ -826,7 +843,21 @@ export async function runProofAudit(
     // redundant re-audit per title-repaired proof. Compare CANONICALLY so a faithful
     // proof whose only difference is a legacy title is not rewritten or drift-reported
     // (P2's entry points heal titles on read).
-    const newBody = canonicalizeProofTitle(pt.obj_id, r.body.trim());
+    let newBody = canonicalizeProofTitle(pt.obj_id, r.body.trim());
+    // A refinement may reword an anchored step; it may not delete one. When it does, keep the
+    // input — and treat the retained proof as UNFAITHFUL regardless of the discarded body's
+    // verdict. The verdict below describes the text that was thrown away; inheriting it would
+    // let an unaudited proof reach assembly, which is worse than the deletion being guarded.
+    let faithful = r.faithful;
+    const lost = droppedLeanRoutes(pt.proofTex, newBody);
+    if (lost.length > 0) {
+      newBody = canonicalizeProofTitle(pt.obj_id, pt.proofTex);
+      faithful = false;
+      io.state.notes.push(
+        `P2: refinement of ${pt.obj_id} discarded — it dropped Lean-anchored step(s) (${lost.join("; ")}); ` +
+          `kept the input proof, which halts for adjudication rather than assembling an unaudited body.`,
+      );
+    }
     refined.set(pt.obj_id, newBody);
     if (newBody !== canonicalizeProofTitle(pt.obj_id, pt.proofTex)) {
       await writeFile(join(io.outDir, "proofs", `${pt.obj_id}.tex`), newBody + "\n", "utf8");
@@ -834,11 +865,23 @@ export async function runProofAudit(
     }
     await appendFile(
       reviewsPath,
-      JSON.stringify({ kind: "proof-refine", obj_id: pt.obj_id, rounds: r.rounds, faithful: r.faithful, note: r.note }) + "\n",
+      JSON.stringify({
+        kind: "proof-refine",
+        obj_id: pt.obj_id,
+        rounds: r.rounds,
+        faithful,
+        ...(lost.length > 0 ? { discarded: true, discarded_verdict: r.faithful, dropped_routes: lost } : {}),
+        note: r.note,
+      }) + "\n",
       "utf8",
     );
-    if (!r.faithful) {
-      problems.push({ gate: "proof-audit", detail: `${pt.obj_id}: ${r.detail ?? "unfaithful"}` });
+    if (!faithful) {
+      problems.push({
+        gate: "proof-audit",
+        detail: `${pt.obj_id}: ${lost.length > 0
+          ? `refinement discarded for dropping Lean-anchored step(s) (${lost.join("; ")}); the input proof stands unaudited`
+          : r.detail ?? "unfaithful"}`,
+      });
       io.state.notes.push(
         `P2: proof ${pt.obj_id} refined toward Lean (${r.rounds} round(s)); STILL unfaithful — best attempt persisted, will halt for adjudication`,
       );

@@ -57,17 +57,6 @@ function snippet(s: string): string {
   return one.length > 80 ? one.slice(0, 77) + "…" : one;
 }
 
-/**
- * Assert that every frozen node in `baseline` is still present in `graph` with an UNCHANGED
- * `nl.statement`. Throws `FrozenNlMutationError` listing every drift. New frozen nodes appearing
- * are not flagged here (the loop adds agent-introduced nodes, never frozen ones; a spurious new
- * frozen node is caught by the from-note provenance checks elsewhere).
- */
-export function assertFrozenNlStable(baseline: Map<string, string>, graph: FormalizationGraph): void {
-  const changed = frozenNlChanges(baseline, graph);
-  if (changed.length > 0) throw new FrozenNlMutationError(changed);
-}
-
 /** The set of frozen NLs that drifted from `baseline` (present-but-changed, or deleted). */
 export function frozenNlChanges(baseline: Map<string, string>, graph: FormalizationGraph): FrozenNlChange[] {
   const now = new Map(graph.nodes.filter(isFrozen).map((n) => [n.id, n.nl?.statement ?? ""] as const));

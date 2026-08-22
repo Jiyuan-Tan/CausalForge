@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { extractBalancedEnv, maskNonBoundaryPeriods, stripTexComments } from "../shared/tex_text.js";
+import { extractBalancedEnv, stripTexComments } from "../shared/tex_text.js";
 
 /**
  * Parser + linter for obj_id-anchored formal environments in paper tex.

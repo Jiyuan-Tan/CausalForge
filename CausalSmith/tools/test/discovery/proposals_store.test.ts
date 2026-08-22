@@ -15,9 +15,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   readRoundProposals,
   emptyProposals,
-  hasProposals,
   pinWhitespaceEquivalentCurrent,
-  proposalIds,
 } from "../../src/discovery/solve/proposals.js";
 import { artifactPath } from "../../src/paths.js";
 import { definitionRevision, statementRevision } from "../../src/discovery/core/revision.js";
@@ -33,7 +31,6 @@ function legacyProposalPath(ctx: PipelineContext, kind: keyof typeof LEGACY_NAME
   const name = LEGACY_NAME[kind];
   return artifactPath(ctx.repoRoot, ctx.qid, "discovery", name, [`${ctx.qid}_${name}`]);
 }
-import { coreEditTarget } from "../../src/discovery/stages/d0_apply.js";
 import type { PipelineContext } from "../../src/types.js";
 import type { WorkingState } from "../../src/discovery/stages/d0_working.js";
 
@@ -89,7 +86,6 @@ describe("readRoundProposals", () => {
 
   it("returns an empty payload when there is neither store nor file", async () => {
     const p = await readRoundProposals(await ctxIn(), null);
-    expect(hasProposals(p)).toBe(false);
     expect(p).toEqual(emptyProposals());
   });
 
@@ -192,17 +188,3 @@ describe("pinWhitespaceEquivalentCurrent", () => {
   });
 });
 
-describe("proposalIds", () => {
-  it("covers every kind, so the closure gate cannot omit one", async () => {
-    const p = await readRoundProposals(await ctxIn(), working({
-      statements: [{ id: "thm:a", proposed: "x" }],
-      definitions: [{ id: "def:d", proposed: "y" }],
-      assumptions: [{ id: "ass:a", condition: "c" }],
-      coreEdits: [{ kind: "symbol-add", name: "S", proposed: { name: "S" }, direction: "correct" }],
-      proofs: [{ id: "lem:p", proof_tex: "QED." }],
-    }));
-    expect(proposalIds(p, coreEditTarget)).toEqual(
-      new Set(["thm:a", "def:d", "ass:a", "sym:S", "lem:p"]),
-    );
-  });
-});

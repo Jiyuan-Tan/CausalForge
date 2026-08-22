@@ -4,18 +4,12 @@
 // CORE node ids (`ass:…`, `def:…`, `thm:…`) so the `-- @node: <core id>` tags F2
 // emits link straight to graph nodes. See CausalSmith/doc/research/F1_F2_PLAN_REDESIGN.md.
 import { createEmptyGraph } from "./store.js";
-import { addEdge, addNode } from "./mutate.js";
+import { addEdge, addNode, withSetup, withExternalLean } from "./mutate.js";
 import type { FormalizationGraph, NodeKind } from "./types.js";
 import { buildDagFromCore } from "../discovery/core/dag.js";
 import type { Core } from "../discovery/core/schema.js";
 import type { Plan } from "../formalization/plan/schema.js";
 
-function withSetup(g: FormalizationGraph, id: string, mods: string[]): FormalizationGraph {
-  return { ...g, nodes: g.nodes.map((n) => (n.id === id ? { ...n, setup: { required_modules: mods } } : n)) };
-}
-function withExternalLean(g: FormalizationGraph, id: string, decl: string): FormalizationGraph {
-  return { ...g, nodes: g.nodes.map((n) => (n.id === id ? { ...n, lean: { decl_name: decl, file: null } } : n)) };
-}
 function withStandard(
   g: FormalizationGraph,
   id: string,

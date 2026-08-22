@@ -52,9 +52,9 @@ import { coreJsonPath } from "./stages/d0_core.js";
 import {
   loadWorkingState,
   readEscalationLog,
-  workingPath,
   type WorkingState,
 } from "./stages/d0_working.js";
+
 import { applyProposedChanges, validatePendingApplyTransaction } from "./stages/d0_apply.js";
 import { readRoundProposals, type RoundProposals } from "./solve/proposals.js";
 import { readSolveUnitOutput } from "./solve/dispatch.js";

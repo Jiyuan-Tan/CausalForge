@@ -53,11 +53,6 @@ export function emptyProposals(): RoundProposals {
   return { statements: [], definitions: [], assumptions: [], coreEdits: [], proofs: [] };
 }
 
-export function hasProposals(p: RoundProposals): boolean {
-  return p.statements.length > 0 || p.definitions.length > 0 || p.assumptions.length > 0 ||
-    p.coreEdits.length > 0 || p.proofs.length > 0;
-}
-
 /** True when ordinary whitespace normalization is not semantics-preserving TeX.
  * Exact byte matches remain safe; non-exact fields containing comments or
  * whitespace-preserving literal/code constructs must stay fail-closed. */
@@ -138,19 +133,6 @@ export function pendingStatementSupersessions(p: Pick<RoundProposals, "coreEdits
       ? [{ obsoleteId: edit.id, replacementId: edit.replacement_id }]
       : [],
   );
-}
-
-/** Every id the payload would carry into the atomic base — the set the closure
- *  check in `core/coherence.ts` needs, computed HERE so no consumer has to
- *  reconstruct it. */
-export function proposalIds(p: RoundProposals, coreEditTarget: (e: RawCoreEdit) => string): Set<string> {
-  return new Set<string>([
-    ...p.statements.map((c) => c.id),
-    ...p.definitions.map((c) => c.id),
-    ...p.assumptions.map((a) => a.id),
-    ...p.coreEdits.map(coreEditTarget),
-    ...p.proofs.map((x) => x.id),
-  ]);
 }
 
 // ---------------------------------------------------------------------------

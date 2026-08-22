@@ -27,7 +27,7 @@
  * an empty bank prints an empty table and exits 0 (drift is undefined,
  * not an error).
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";

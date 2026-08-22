@@ -8,7 +8,7 @@
 // checkpoint (advance:false) — the human/orchestrator resolves it.
 import { existsSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { readFile, rm, writeFile } from "node:fs/promises";
+import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import type { PipelineContext, StageResult, StateJson } from "../../types.js";
 import { appendReview, artifactPaths, type StageDeps } from "../../pipeline_support.js";

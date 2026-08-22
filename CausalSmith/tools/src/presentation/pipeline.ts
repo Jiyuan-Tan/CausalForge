@@ -15,7 +15,7 @@ import { stageP5 } from "./stages/p5_review.js";
 import { stageP5HolisticRevision } from "./stages/p5_holistic_revision.js";
 import { loadPriorReview } from "./revision_brief.js";
 import { assertP2AssemblyFresh } from "./assembly_freshness.js";
-import { PROOF_AUDIT_FAILURE_MARKER, runPromotionRound } from "./promotion.js";
+import { PROMOTION_ESCALATION_MARKER, PROOF_AUDIT_FAILURE_MARKER, runPromotionRound } from "./promotion.js";
 import {
   MAX_P5_REVISION_PASSES,
   findingFingerprint,
@@ -82,6 +82,12 @@ export interface PaperCtx {
    * (the audit re-freezes what passes). The deliberate knob for pushing a render-prompt
    * improvement into a paper whose bodies are otherwise locked against prompt churn. */
   refreshFrozenBodies?: boolean;
+  /**
+   * Grant one further P2 promotion round. The orchestrator sets this after reading the audit
+   * findings on a `P2 promotion decision required` halt and judging that the failing proofs lack
+   * a citable step rather than being mis-rendered.
+   */
+  promoteAgain?: boolean;
 }
 
 export interface StageIO {
@@ -150,9 +156,36 @@ export async function runPaperPipeline(ctx: PaperCtx): Promise<{ halt: string }>
       // there (no draft checkpoint would review them, and a promoted lemma has no
       // rendered proof for the reassemble guard to reuse).
       if (stage !== "P2" || promotionUsed || ctx.reassembleP2 === true || !msg.includes(PROOF_AUDIT_FAILURE_MARKER)) throw err;
+      // Bounded across the whole bundle, not just this invocation: `promotionUsed` caps rounds
+      // per process, so re-entering P2 repeatedly grants a fresh round each time and the chain
+      // grows without limit. The persisted budget is what actually terminates it; at the cap the
+      // run halts for adjudication rather than promoting again.
+      if (state.promotion_rounds > 0 && ctx.promoteAgain !== true) {
+        state.notes.push(
+          `P2 promotion decision required after ${state.promotion_rounds} round(s): the orchestrator decides ` +
+            `whether another round closes a gap or the proofs need adjudicating.`,
+        );
+        await savePaperState(outDir, state);
+        throw new Error(
+          `${PROMOTION_ESCALATION_MARKER}: ${state.promotion_rounds} promotion round(s) already ran and proofs ` +
+            `still fail the audit. Read the findings below and decide. A further round helps only when a proof ` +
+            `lacks a CITABLE STEP; it cannot fix a rendering defect (leaked conventions, mis-attribution, an ` +
+            `omitted conjunct, symbol shadowing), which needs the proof or the statement adjudicated instead. ` +
+            `To grant another round, re-run with --promote-again.\n\n${msg}`,
+        );
+      }
       promotionUsed = true;
+      // Record the round BEFORE the agent mutates graph.json: a crash between the graph edit and
+      // this save would otherwise hand the next process a fresh automatic round over an
+      // already-grown graph, which is the cascade this guards. The trade-off is that a crashed
+      // or refused promotion still consumes the automatic round — recoverable, since the
+      // orchestrator can grant another with --promote-again, and loud either way.
+      state.promotion_rounds += 1;
+      await savePaperState(outDir, state);
       const added = await runPromotionRound(io, msg);
-      state.notes.push(`P2 promotion round: added ${added} — review at the draft checkpoint.`);
+      state.notes.push(
+        `P2 promotion round ${state.promotion_rounds}: added ${added} — review at the draft checkpoint.`,
+      );
       await savePaperState(outDir, state);
       // The promotion agent edited graph.json ON DISK; the loaded bank (graph, crosswalk,
       // lean pointers) is stale. Reload so the P1 re-run, the P2 retry, and every later

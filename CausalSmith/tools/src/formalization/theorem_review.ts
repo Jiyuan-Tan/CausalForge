@@ -67,34 +67,22 @@ export function classHintFromFQPHNLX(code: string | undefined): ClassHint | null
   }
 }
 
+/** Class hint for an F1.5 rejection (the only stage that propagates theorem
+ * reviews): the FLAG code on the finding, else the review's classification,
+ * else `statement_wrong` — NL formalization rejections most commonly mean the
+ * claim itself doesn't survive precise restatement. */
 export function inferClassHint(
-  stage: Stage,
   finding: { verdict?: string } | null,
   review: ReviewResult,
 ): ClassHint {
-  if (stage === "1.5") {
-    const verdict = finding?.verdict ?? "";
-    const code = verdict.match(/FLAG-([FQPHUNLX])/)?.[1];
-    const fromFinding = classHintFromFQPHNLX(code);
-    if (fromFinding) return fromFinding;
-    const cls = (review as Record<string, unknown>).classification;
-    const fromTop = classHintFromFQPHNLX(typeof cls === "string" ? cls : undefined);
-    if (fromTop) return fromTop;
-    // Stage 1.5 default: NL formalization rejections most commonly mean the
-    // claim itself doesn't survive precise restatement.
-    return "statement_wrong";
-  }
-  if (stage === "0.5") {
-    // Stage 0.5 reviews the math claim itself — any rejection is about the
-    // statement, not the translation.
-    return "statement_wrong";
-  }
-  if (stage === "4") {
-    // Stage 4 compares Lean output to the math; most rejections trace to
-    // translation drift (the proof shape doesn't match the sketch).
-    return "lean_translation_issue";
-  }
-  return "lean_translation_issue";
+  const verdict = finding?.verdict ?? "";
+  const code = verdict.match(/FLAG-([FQPHUNLX])/)?.[1];
+  const fromFinding = classHintFromFQPHNLX(code);
+  if (fromFinding) return fromFinding;
+  const cls = (review as Record<string, unknown>).classification;
+  const fromTop = classHintFromFQPHNLX(typeof cls === "string" ? cls : undefined);
+  if (fromTop) return fromTop;
+  return "statement_wrong";
 }
 
 /**
@@ -176,7 +164,6 @@ export function propagateTheoremReview(
           ? String((firstFinding as { one_line?: unknown }).one_line ?? "")
           : "";
       const hint = inferClassHint(
-        stage,
         firstFinding && typeof firstFinding === "object" ? (firstFinding as { verdict?: string }) : null,
         review,
       );

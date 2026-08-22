@@ -16,6 +16,9 @@
 \newtheorem{proposition}{Proposition}
 \newtheorem{remark}{Remark}
 \newtheorem{citedresult}{Cited result}
+% The amsthm counter is `algorithmbox` (not `algorithm`) so a later `\usepackage{algorithm}` cannot clash.
+\newcounter{algorithmbox}
+\renewcommand{\thealgorithmbox}{\arabic{algorithmbox}}
 \NewDocumentEnvironment{theoremv}{m o s}{\begin{theorem}\label{obj:#1}{\normalfont[\texttt{\detokenize{#1}}]\IfValueT{#2}{\ (#2)}\IfBooleanT{#3}{\verificationfootnotemark}\ }}{\end{theorem}}
 \NewDocumentEnvironment{lemmav}{m o s}{\begin{lemma}\label{obj:#1}{\normalfont[\texttt{\detokenize{#1}}]\IfValueT{#2}{\ (#2)}\IfBooleanT{#3}{\verificationfootnotemark}\ }}{\end{lemma}}
 \NewDocumentEnvironment{assumptionv}{m o s}{\begin{assumption}\label{obj:#1}{\normalfont[\texttt{\detokenize{#1}}]\IfValueT{#2}{\ (#2)}\IfBooleanT{#3}{\verificationfootnotemark}\ }}{\end{assumption}}
@@ -25,6 +28,21 @@
 % A `remarkv` holds NON-load-bearing interpretive / open-question content (e.g. a causalsmith `oeq:`
 % open question). It is neither proved nor assumed; no theorem may depend on it.
 \NewDocumentEnvironment{remarkv}{m o s}{\begin{remark}\label{obj:#1}{\normalfont[\texttt{\detokenize{#1}}]\IfValueT{#2}{\ (#2)}\IfBooleanT{#3}{\verificationfootnotemark}\ }}{\end{remark}}
+% An `algorithmv` is a DEFINITION-kind object presented as a boxed, numbered-step procedure (an
+% estimator / selection rule built in stages). Same anchor contract as `definitionv`; its body is
+% ordinary LaTeX whose steps are `\begin{enumerate}` items, so tex2html needs no extra machinery.
+% Presented in the CONVENTIONAL algorithm style readers expect from `algorithm`+`algorithmic`:
+% a rule above, an "Algorithm N (Title)" caption line, a rule under the caption, the numbered
+% steps, and a closing rule. It is NOT a float — the anchor contract requires the object to stay
+% where the outline places it, and floats drift. The obj-id tag is suppressed here (it is
+% bookkeeping, and a caption line carrying it reads as debug output in a finished paper).
+\NewDocumentEnvironment{algorithmv}{m o s}%
+  {\par\addvspace{\medskipamount}\noindent\rule{\linewidth}{0.8pt}\par\nobreak\vspace{2pt}%
+   \refstepcounter{algorithmbox}\label{obj:#1}%
+   \noindent\textbf{Algorithm \thealgorithmbox}\IfValueT{#2}{ \textnormal{(#2)}}%
+   \IfBooleanT{#3}{\verificationfootnotemark}\par\nobreak\vspace{2pt}%
+   \noindent\rule{\linewidth}{0.4pt}\par\nobreak\vspace{2pt}\normalfont}%
+  {\par\nobreak\vspace{2pt}\noindent\rule{\linewidth}{0.8pt}\par\addvspace{\medskipamount}}
 % A `citedv` is an IMPORTED external result the paper relies on but does NOT prove
 % (a causalsmith `gate_class:"cited"` node). It is machine-checked against the cited
 % source at F2.5, never proved here; the fixed provenance note makes that explicit
@@ -43,20 +61,24 @@
 \newcommand{\verificationfootnote}[1]{\verificationfootnotemark\verificationfootnotetext{#1}}
 % hyperref follows natbib and the environment macros; cleveref must follow hyperref.
 \usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
-\usepackage[nameinlink,noabbrev]{cleveref}
+\usepackage[capitalise,nameinlink,noabbrev]{cleveref}
 % Pin the names explicitly: labels are placed inside the underlying amsthm environments, and these
-% declarations make the PDF contract independent of cleveref's theorem-name inference.
-\crefname{theorem}{theorem}{theorems}
+% declarations make the PDF contract independent of cleveref's theorem-name inference. House style:
+% reference names always print with a capital first letter ("Theorem 1", "Definition 2"), in any
+% sentence position — hence `capitalise` above and capitalized \crefname forms below.
+\crefname{theorem}{Theorem}{Theorems}
 \Crefname{theorem}{Theorem}{Theorems}
-\crefname{lemma}{lemma}{lemmas}
+\crefname{lemma}{Lemma}{Lemmas}
 \Crefname{lemma}{Lemma}{Lemmas}
-\crefname{assumption}{assumption}{assumptions}
+\crefname{assumption}{Assumption}{Assumptions}
 \Crefname{assumption}{Assumption}{Assumptions}
-\crefname{definition}{definition}{definitions}
+\crefname{definition}{Definition}{Definitions}
 \Crefname{definition}{Definition}{Definitions}
-\crefname{proposition}{proposition}{propositions}
+\crefname{proposition}{Proposition}{Propositions}
 \Crefname{proposition}{Proposition}{Propositions}
-\crefname{remark}{remark}{remarks}
+\crefname{remark}{Remark}{Remarks}
 \Crefname{remark}{Remark}{Remarks}
-\crefname{citedresult}{cited result}{cited results}
+\crefname{citedresult}{Cited result}{Cited results}
 \Crefname{citedresult}{Cited result}{Cited results}
+\crefname{algorithmbox}{Algorithm}{Algorithms}
+\Crefname{algorithmbox}{Algorithm}{Algorithms}

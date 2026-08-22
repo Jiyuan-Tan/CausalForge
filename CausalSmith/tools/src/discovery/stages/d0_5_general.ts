@@ -33,10 +33,10 @@ import type { ReviewResult } from "../../judgment.js";
 import { formalizationDir, researchBankRoot, resolveInDir } from "../../paths.js";
 import {
   discoveryBrief,
-  readIfExists,
   readPrompt,
   type StageDeps,
 } from "../../pipeline_support.js";
+
 import type { PipelineContext, StateJson } from "../../types.js";
 import type { NoveltyTarget } from "../../novelty.js";
 import { loadPaperView, logPaperView } from "../core/paper_view.js";

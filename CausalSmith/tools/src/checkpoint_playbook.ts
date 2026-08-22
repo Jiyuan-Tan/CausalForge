@@ -150,7 +150,7 @@ function perStageGuidance(
     case "5":
       return (
         "F5 / CKPT 2: banking, promotion, and commit require user approval; bank `failed` only if the math is wrong. " +
-        "A clean bank writes CHECKPOINT_NEXT.md for the user's next command. SKILL §F5 / Phase 4."
+        "After a clean bank, pick the next topic with `/causalsmith-topics`. SKILL §F5."
       );
 
     default:

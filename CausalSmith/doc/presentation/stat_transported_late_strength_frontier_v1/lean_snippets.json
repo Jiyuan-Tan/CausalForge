@@ -1,5 +1,5 @@
 {
-  "commit": "a90838033b0efece90be38573811c11b651f0e5c",
+  "commit": "999467ddffba00e8ef1278e89604aca26a0fd25a",
   "snippets": {
     "ass:full-data-support": {
       "decl": "(composite)",
@@ -367,6 +367,96 @@
         }
       ]
     },
+    "def:finite-cell-class": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.FiniteCellClass",
+          "statement": "/-- Uniform finite-cell subclass, flattened to the sixteen core members.\nIts `finiteCellSource` field carries the exact finite pushforward-law\nexhaustion condition, rather than merely requiring full mass on some subset. -/\nstructure FiniteCellClass (P : TransportedArray 𝒳) (N k : ℕ → ℕ)\n    (c epsilon : ℝ) (n : ℕ) : Prop where\n  fullDataSupport : FullDataSupport P n\n  populationPresence : PopulationPresence P n\n  twoSampleArray : TwoSampleArray P N c\n  instrumentOverlap : InstrumentOverlap P n epsilon\n  sourceObservation : SourceAssignmentConsistency P n\n  ivRandomization : IVRandomization P n\n  ivExclusion : IVExclusion P n\n  ivMonotonicity : IVMonotonicity P n\n  outcomeTransport : OutcomeTransport P n\n  receiptTransport : ReceiptTransport P n\n  targetComplierPositivity : TargetComplierPositivity P n\n  transportDomination : TransportDomination P n\n  weightEnvelope : WeightEnvelope P k n\n  weightSecondMoment : WeightSecondMoment P k n\n  degradingArray : DegradingArray P k\n  finiteCellSource : FiniteCellSource P k n"
+        },
+        {
+          "label": "TransportedArray",
+          "statement": "/-- An array law contains only primitive laws and conditional-mean versions.\nThe assumption atoms below pin every version to its law by integral identities. -/\nstructure TransportedArray (𝒳 : Type*) [MeasurableSpace 𝒳] where\n  fullLaw : ℕ → Measure (FullData 𝒳)\n    -- @realizes P_n^F(full-data law carrier; probability/support via FullDataSupport)\n    -- @realizes P(triangular array primitive)\n  assignedSourceLaw : ℕ → Measure (AssignedFullData 𝒳)\n    -- @realizes P_S(source assigned-full-data carrier)\n  propensity : ℕ → 𝒳 → ℝ\n    -- @realizes e(carrier 𝒳→ℝ; range pinned by InstrumentOverlap)\n  propensity_measurable : ∀ n, Measurable (propensity n)\n  assignmentOutcome : ℕ → Bool → FullData 𝒳 → ℝ\n    -- @realizes Y^Z(z)(assignment-potential-outcome carrier; pinned by IVExclusion)\n  assignmentOutcome_measurable : ∀ n z, Measurable (assignmentOutcome n z)\n  assignmentContrast : ℕ → Bool → 𝒳 → ℝ\n  assignmentContrast_measurable : ∀ n s, Measurable (assignmentContrast n s)\n  receiptContrast : ℕ → Bool → 𝒳 → ℝ\n  receiptContrast_measurable : ∀ n s, Measurable (receiptContrast n s)\n\n-- @env: S1\nvariable {𝒳 : Type*} [MeasurableSpace 𝒳]\n  -- @realizes \\mathcal X(measurable covariate space)\nvariable (n : ℕ)\n  -- @realizes n(asymptotic index in Nat)\nvariable (P : TransportedArray 𝒳)"
+        },
+        {
+          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.FullDataSupport",
+          "statement": "/-- Full-data probability law and bounded potential outcomes. -/\ndef FullDataSupport (P : TransportedArray 𝒳) (n : ℕ) : Prop :=\n  IsProbabilityMeasure (P.fullLaw n) ∧ -- @realizes P_n^F(probability measure)\n    ∀ᵐ o : FullData 𝒳 ∂P.fullLaw n,\n      fullY0 o ∈ Set.Icc (0 : ℝ) 1 ∧ -- @realizes Y(d)(Y(0)∈[0,1])\n                                         -- @realizes Y^Z(z)(bounded support inherited from Y(0),Y(1))\n      fullY1 o ∈ Set.Icc (0 : ℝ) 1   -- @realizes Y(d)(Y(1)∈[0,1])"
+        },
+        {
+          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.PopulationPresence",
+          "statement": "/-- Both populations have strictly positive full-data mass. -/\ndef PopulationPresence (P : TransportedArray 𝒳) (n : ℕ) : Prop :=\n  ∀ s : Bool, 0 < (P.fullLaw n {o | fullS o = s}).toReal"
+        },
+        {
+          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.TwoSampleArray",
+          "statement": "/-- The two sample factors are probability laws and `N_n/n → c`. -/\ndef TwoSampleArray (P : TransportedArray 𝒳) (N : ℕ → ℕ) (c : ℝ) : Prop :=\n  0 < c ∧ -- @realizes c(c∈(0,∞))\n    (∀ n, IsProbabilityMeasure (sourceObsLaw P n)) ∧\n    (∀ n, IsProbabilityMeasure (targetXLaw P n)) ∧\n    Tendsto (fun n : ℕ => (N n : ℝ) / (n : ℝ)) atTop (𝓝 c)"
+        },
+        {
+          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.InstrumentOverlap",
+          "statement": "/-- Instrument propensity is in `[ε,1-ε]` source-almost surely. -/\ndef InstrumentOverlap (P : TransportedArray 𝒳) (n : ℕ) (epsilon : ℝ) : Prop :=\n  0 < epsilon ∧ epsilon < 1 / 2 ∧\n    ∀ᵐ x ∂sourceXLaw P n,\n      epsilon ≤ P.propensity n x ∧\n      P.propensity n x ≤ 1 - epsilon"
+        },
+        {
+          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.SourceAssignmentConsistency",
+          "statement": "/-- The paper's source assignment and consistency assumption.  The assigned\noverlay is a genuine probability law with the source-population full-data\nmarginal; mapping it through `observeSource` enforces `D=D(Z)` and `Y=Y(D)`,\nwhile the last clause pins the assignment propensity. -/\ndef SourceAssignmentConsistency (P : TransportedArray 𝒳) (n : ℕ) : Prop :=\n  IsProbabilityMeasure (P.assignedSourceLaw n) ∧\n    (P.assignedSourceLaw n).map Prod.fst = populationLaw P n true ∧\n    (∀ A, MeasurableSet A →\n      (sourceObsLaw P n {o | o.1 ∈ A ∧ o.2.1 = true}).toReal =\n        ∫ x in A, P.propensity n x ∂sourceXLaw P n)"
+        },
+        {
+          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.IVRandomization",
+          "statement": "/-- Conditional randomization: the assigned-full-data law factors with\nBernoulli propensity given the source full-data law. -/\ndef IVRandomization (P : TransportedArray 𝒳) (n : ℕ) : Prop :=\n  ∀ (A : Set (FullData 𝒳)), MeasurableSet A → ∀ z : Bool,\n    (P.assignedSourceLaw n {q | q.1 ∈ A ∧ q.2 = z}).toReal =\n      ∫ o in A, (if z then P.propensity n (fullX o)\n        else 1 - P.propensity n (fullX o)) ∂populationLaw P n true"
+        },
+        {
+          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.IVExclusion",
+          "statement": "/-- Exclusion pins the assignment potential outcome to `Y(D(z))` in both\npopulations. -/\ndef IVExclusion (P : TransportedArray 𝒳) (n : ℕ) : Prop :=\n  ∀ s z : Bool, P.assignmentOutcome n z =ᵐ[populationLaw P n s]\n    fun o => derivedAssignmentOutcome o z"
+        },
+        {
+          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.IVMonotonicity",
+          "statement": "/-- No defiers in either population. -/\ndef IVMonotonicity (P : TransportedArray 𝒳) (n : ℕ) : Prop :=\n  ∀ s : Bool, ∀ᵐ o ∂populationLaw P n s,\n    boolReal (fullD0 o) ≤ boolReal (fullD1 o)"
+        },
+        {
+          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.OutcomeTransport",
+          "statement": "/-- Conditional assignment-outcome contrasts are pinned to each population law\nand agree target-almost everywhere. -/\ndef OutcomeTransport (P : TransportedArray 𝒳) (n : ℕ) : Prop :=\n  (∀ s : Bool, ∀ A, MeasurableSet A →\n    ∫ o in {o | fullX o ∈ A},\n        (P.assignmentOutcome n true o - P.assignmentOutcome n false o)\n        ∂populationLaw P n s =\n      ∫ x in A, P.assignmentContrast n s x ∂populationXLaw P n s) ∧\n  P.assignmentContrast n false =ᵐ[targetXLaw P n]\n    P.assignmentContrast n true"
+        },
+        {
+          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.ReceiptTransport",
+          "statement": "/-- Integrated first-stage transport, with population conditional receipt\ncontrasts pinned by integral identities. -/\ndef ReceiptTransport (P : TransportedArray 𝒳) (n : ℕ) : Prop :=\n  (∀ s : Bool, ∀ A, MeasurableSet A →\n    ∫ o in {o | fullX o ∈ A},\n        (boolReal (fullD1 o) - boolReal (fullD0 o))\n        ∂populationLaw P n s =\n      ∫ x in A, P.receiptContrast n s x ∂populationXLaw P n s) ∧\n  (∫ x, P.receiptContrast n false x ∂targetXLaw P n) =\n    ∫ x, P.receiptContrast n true x ∂targetXLaw P n"
+        },
+        {
+          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.TargetComplierPositivity",
+          "statement": "/-- The target complier share is positive. -/\ndef TargetComplierPositivity (P : TransportedArray 𝒳) (n : ℕ) : Prop :=\n  0 < targetComplierShare P n"
+        },
+        {
+          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.TransportDomination",
+          "statement": "/-- Target covariate law is absolutely continuous with respect to source. -/\ndef TransportDomination (P : TransportedArray 𝒳) (n : ℕ) : Prop :=\n  targetXLaw P n ≪ sourceXLaw P n"
+        },
+        {
+          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.WeightEnvelope",
+          "statement": "/-- The transport density ratio is capped by `2 k_n`. -/\ndef WeightEnvelope (P : TransportedArray 𝒳) (k : ℕ → ℕ) (n : ℕ) : Prop :=\n  ∀ᵐ x ∂sourceXLaw P n,\n    0 ≤ transportWeight P n x ∧ transportWeight P n x ≤ 2 * (k n : ℝ)"
+        },
+        {
+          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.WeightSecondMoment",
+          "statement": "/-- Kish dispersion is at most the envelope. -/\ndef WeightSecondMoment (P : TransportedArray 𝒳) (k : ℕ → ℕ) (n : ℕ) : Prop :=\n  kishDispersion P n ≤ (k n : ℝ)"
+        },
+        {
+          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.DegradingArray",
+          "statement": "/-- The overlap envelope diverges sub-root-`n` while the first stage vanishes. -/\ndef DegradingArray (P : TransportedArray 𝒳) (k : ℕ → ℕ) : Prop :=\n  Tendsto (fun n => (k n : ℝ)) atTop atTop ∧\n    Tendsto (fun n => (k n : ℝ) / Real.sqrt n) atTop (𝓝 0) ∧\n    Tendsto\n      (fun n => ∫ x, transportWeight P n x * P.deltaD n x\n        ∂sourceXLaw P n)\n      atTop (𝓝 0)"
+        },
+        {
+          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.FiniteCellSource",
+          "statement": "/-- At index `n`, `cell` realizes the paper's literal finite covariate\nexperiment inside the common ambient carrier.  The source law is exactly the\nuniform pushforward from `Fin (k n)`; hence the injected image exhausts the\nrow-law carrier and every ambient point outside it is null. -/\ndef FiniteCellSource (P : TransportedArray 𝒳) (k : ℕ → ℕ) (n : ℕ) : Prop :=\n  0 < k n ∧\n  IsProbabilityMeasure (sourceXLaw P n) ∧\n  ∃ cell : Fin (k n) ↪ 𝒳,\n    (∀ i, MeasurableSet {cell i}) ∧\n    sourceXLaw P n (Set.range cell) = 1 ∧\n    (∀ i, (sourceXLaw P n {cell i}).toReal = (k n : ℝ)⁻¹) ∧\n    sourceXLaw P n = finiteUniformCellLaw cell ∧\n    (∀ᵐ x ∂sourceXLaw P n, P.propensity n x = 1 / 2)"
+        }
+      ]
+    },
+    "prop:compact-causal-range": {
+      "decl": "CausalSmith.Stat.TransportedLateStrengthFrontier.compact_causal_range",
+      "file": "T_CompactCausalRange.lean",
+      "line": 0,
+      "statement": "/-- Source randomization identifies the two conditional contrasts; transport\nidentifies their target means; their Wald ratio is the target CACE and belongs\nto the forced interval `[-1,1]`. -/\ntheorem compact_causal_range\n    (P : TransportedArray 𝒳) (N k : ℕ → ℕ) (c epsilon : ℝ) (n : ℕ)\n    (hAssignmentContrastIntegrable :\n      Integrable (P.assignmentContrast n true) (sourceXLaw P n))\n    (hReceiptContrastIntegrable :\n      Integrable (P.receiptContrast n true) (sourceXLaw P n))\n    (hP : TransportedIVClass P N k c epsilon n) :\n    OutcomeContrastRepresentation P n (P.deltaY n) ∧\n    ReceiptContrastRepresentation P n (P.deltaD n) ∧\n    transportedOutcomeITT P n =\n      ∫ o, (fullY1 o - fullY0 o) *\n        (if fullD1 o = true ∧ fullD0 o = false then 1 else 0)\n        ∂populationLaw P n false ∧\n    transportedFirstStage P n = targetComplierShare P n ∧\n    transportedOutcomeITT P n / transportedFirstStage P n =\n      targetCACE P n ∧\n    targetCACE P n ∈ parameterSpace",
+      "sorry_free": true,
+      "axioms": null
+    },
     "def:oracle-honesty": {
       "decl": "(composite)",
       "file": "Frontier.lean",
@@ -436,14 +526,6 @@
           "statement": "    -- @realizes C_n(law-indexed evaluation on the source-a.e. quotient of w)\n\n/-- Sample-only finite-cell confidence-set sequence on the ambient carrier. -/\nstructure FiniteCellProcedure (𝒳 : Type*) [MeasurableSpace 𝒳]\n    (N k : ℕ → ℕ) where\n  set : ∀ n, FiniteCellInput 𝒳 N k n → Set ℝ\n    -- @realizes C_n(sample-only finite-cell random set)\n  subset : ∀ n x, set n x ⊆ parameterSpace\n  measurableGraph : ∀ n (cell : Fin (k n) ↪ 𝒳), (∀ i, MeasurableSet {cell i}) →\n    MeasurableSet {p : FiniteCellInput 𝒳 N k n × ℝ |\n      ((∀ i, (p.1.1 i).1 ∈ Set.range cell) ∧ (∀ j, p.1.2 j ∈ Set.range cell)) ∧\n        p.2 ∈ set n p.1}"
         }
       ]
-    },
-    "prop:compact-causal-range": {
-      "decl": "CausalSmith.Stat.TransportedLateStrengthFrontier.compact_causal_range",
-      "file": "T_CompactCausalRange.lean",
-      "line": 0,
-      "statement": "/-- Source randomization identifies the two conditional contrasts; transport\nidentifies their target means; their Wald ratio is the target CACE and belongs\nto the forced interval `[-1,1]`. -/\ntheorem compact_causal_range\n    (P : TransportedArray 𝒳) (N k : ℕ → ℕ) (c epsilon : ℝ) (n : ℕ)\n    (hAssignmentContrastIntegrable :\n      Integrable (P.assignmentContrast n true) (sourceXLaw P n))\n    (hReceiptContrastIntegrable :\n      Integrable (P.receiptContrast n true) (sourceXLaw P n))\n    (hP : TransportedIVClass P N k c epsilon n) :\n    OutcomeContrastRepresentation P n (P.deltaY n) ∧\n    ReceiptContrastRepresentation P n (P.deltaD n) ∧\n    transportedOutcomeITT P n =\n      ∫ o, (fullY1 o - fullY0 o) *\n        (if fullD1 o = true ∧ fullD0 o = false then 1 else 0)\n        ∂populationLaw P n false ∧\n    transportedFirstStage P n = targetComplierShare P n ∧\n    transportedOutcomeITT P n / transportedFirstStage P n =\n      targetCACE P n ∧\n    targetCACE P n ∈ parameterSpace",
-      "sorry_free": true,
-      "axioms": null
     },
     "def:inversion-handle": {
       "decl": "CausalSmith.Stat.TransportedLateStrengthFrontier.inversionHandle",
@@ -557,41 +639,19 @@
         }
       ]
     },
-    "def:least-favorable-witness": {
-      "decl": "(composite)",
-      "file": "Helpers/Witness.lean",
+    "prop:no-shift-reduction": {
+      "decl": "CausalSmith.Stat.TransportedLateStrengthFrontier.no_shift_reduction",
+      "file": "T_NoShiftReduction.lean",
       "line": 0,
-      "statement": "",
+      "statement": "/-- If the transport weight is one, the target and source covariate laws agree,\nKish dispersion is one, and effective strength reduces to `n μ_n²`.  The\nconditional frontier is therefore the compact single-population weak-ratio\nfrontier. -/\ntheorem no_shift_reduction\n    (N k : ℕ → ℕ) (c epsilon alpha : ℝ) (g : Geometry 𝒳)\n    (hc : 0 < c)\n    (hepsilon : 0 < epsilon ∧ epsilon < 1 / 2)\n    (halpha : 0 < alpha ∧ alpha < 1)\n      -- @realizes \\alpha(noncoverage in (0,1))\n    (hN : Tendsto (fun n : ℕ => (N n : ℝ) / (n : ℝ)) atTop (𝓝 c))\n      -- @realizes N_n(N_n/n→c)\n    (hkPos : ∀ n, 0 < k n)\n    (hkInf : Tendsto (fun n : ℕ => (k n : ℝ)) atTop atTop)\n    (hkRoot : Tendsto (fun n : ℕ =>\n      (k n : ℝ) / Real.sqrt n) atTop (𝓝 0))\n      -- @realizes k_n(positive, diverging, and o(√n))\n    (hg : AdmissibleGeometry g k epsilon)\n    (hw : ∀ n, g.weight n =ᵐ[g.sourceX n] fun _ => 1) :\n    (∀ n, geometryKish g n = 1 ∧ g.targetX n = g.sourceX n) ∧\n    (∀ (P : TransportedArray 𝒳) n,\n      fixedGeometrySlice P g N k c epsilon n →\n      effectiveStrength P n =\n        (n : ℝ) * transportedFirstStage P n ^ 2) ∧\n    (∀ (t0 : ℝ) (ht0 : 0 < t0), -- @realizes t_0(positive frontier threshold)\n      let Lalpha := Real.sqrt (8 / (alpha * epsilon ^ 2))\n      let calpha := 3 * (1 - alpha) ^ 2 / 16\n      let Calpha := max 2 (4 * Lalpha + 8 / epsilon ^ 2)\n      calpha * min 1 (t0 ^ (-1 / 2 : ℝ)) ≤\n        fixedGeometryValue N k c epsilon alpha ⟨g, hg⟩ ⟨t0, ht0⟩ ∧\n      fixedGeometryValue N k c epsilon alpha ⟨g, hg⟩ ⟨t0, ht0⟩ ≤\n        Calpha * min 1 (t0 ^ (-1 / 2 : ℝ)))",
       "sorry_free": true,
-      "axioms": null,
-      "components": [
-        {
-          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.leastFavorableWitness",
-          "statement": "/-- The continuum family `Q_{n,h}^g`.  Each population has the same conditional\npotential-data kernel given `X`, integrated against `g.sourceX` in the source\nand `g.targetX` in the target. Compliance types have probabilities `p_n`,\n`(1-p_n)/2`, `(1-p_n)/2`; `Y(0)=0`; and binary `Y(1)` has mean `1/2+h` for\ncompliers and `1/2` otherwise. -/\nnoncomputable def leastFavorableWitness\n    (g : Geometry 𝒳) (N k : ℕ → ℕ) (c epsilon alpha t0 rho : ℝ)\n    (n : ℕ) (h : ℝ) (P : TransportedArray 𝒳) : Prop :=\n  AdmissibleGeometry g k epsilon ∧\n  0 < alpha ∧ alpha < 1 ∧ -- @realizes \\alpha(noncoverage level in (0,1))\n  0 < t0 ∧ -- @realizes t_0(positive fixed-strength threshold)\n  rho = (1 - alpha) / 8 ∧\n  |h| ≤ min (1 / 4) (rho * t0 ^ (-1 / 2 : ℝ)) ∧\n  fixedGeometrySlice P g N k c epsilon n ∧\n  (∃ K : 𝒳 → Measure PotentialCoordinates,\n    (∀ x, IsProbabilityMeasure (K x)) ∧\n    (∀ B, MeasurableSet B → Measurable fun x => K x B) ∧\n    ∀ s A B, MeasurableSet A → MeasurableSet B →\n      populationLaw P n s\n          {o | fullX o ∈ A ∧ potentialCoordinates o ∈ B} =\n        ∫⁻ x in A, K x B ∂geometryPopulationX g n s) ∧\n  transportedFirstStage P n = geometryMu g t0 n ∧\n    -- @realizes \\mu_n(fixed-strength witness first stage; range inherited from class membership)\n  effectiveStrength P n = t0 ∧\n  targetCACE P n = 1 / 2 + h ∧\n  (∀ s : Bool, ∀ᵐ o ∂populationLaw P n s,\n    fullY0 o = 0 ∧ (fullY1 o = 0 ∨ fullY1 o = 1)) ∧\n  (∀ s : Bool, ∀ A, MeasurableSet A →\n    (populationLaw P n s\n      {o | fullX o ∈ A ∧ fullD0 o = false ∧ fullD1 o = true}).toReal =\n      ∫ x in A, geometryCompliance g t0 n x ∂geometryPopulationX g n s) ∧\n  (∀ s : Bool, ∀ A, MeasurableSet A →\n    (populationLaw P n s\n      {o | fullX o ∈ A ∧ fullD0 o = true ∧ fullD1 o = true}).toReal =\n      ∫ x in A, (1 - geometryCompliance g t0 n x) / 2\n        ∂geometryPopulationX g n s) ∧\n  (∀ s : Bool, ∀ A, MeasurableSet A →\n    (populationLaw P n s\n      {o | fullX o ∈ A ∧ fullD0 o = false ∧ fullD1 o = false}).toReal =\n      ∫ x in A, (1 - geometryCompliance g t0 n x) / 2\n        ∂geometryPopulationX g n s) ∧\n  (∀ s : Bool, ∀ A, MeasurableSet A →\n    ∫ o in {o | fullX o ∈ A ∧ fullD0 o = false ∧ fullD1 o = true},\n        fullY1 o ∂populationLaw P n s =\n      ∫ x in A, geometryCompliance g t0 n x * (1 / 2 + h)\n        ∂geometryPopulationX g n s) ∧\n  (∀ s : Bool, ∀ A, MeasurableSet A →\n    ∫ o in {o | fullX o ∈ A ∧ fullD0 o = true ∧ fullD1 o = true},\n        fullY1 o ∂populationLaw P n s =\n      ∫ x in A, (1 - geometryCompliance g t0 n x) / 4\n        ∂geometryPopulationX g n s) ∧\n  (∀ s : Bool, ∀ A, MeasurableSet A →\n    ∫ o in {o | fullX o ∈ A ∧ fullD0 o = false ∧ fullD1 o = false},\n        fullY1 o ∂populationLaw P n s =\n      ∫ x in A, (1 - geometryCompliance g t0 n x) / 4\n        ∂geometryPopulationX g n s)"
-        },
-        {
-          "label": "Geometry",
-          "statement": "-- @env: S3\n/-- Deterministic source/target covariate, weight, and propensity arrays. -/\nstructure Geometry (𝒳 : Type*) [MeasurableSpace 𝒳] where\n  sourceX : ℕ → Measure 𝒳\n    -- @realizes P_S^X(geometry source-law array)\n  targetX : ℕ → Measure 𝒳\n    -- @realizes P_T(geometry target-law array)\n  weight : ℕ → 𝒳 → ℝ\n    -- @realizes w(geometry density-ratio array)\n  propensity : ℕ → 𝒳 → ℝ\n    -- @realizes e(geometry propensity array)\n  weight_measurable : ∀ n, Measurable (weight n)\n  propensity_measurable : ∀ n, Measurable (propensity n)"
-        },
-        {
-          "label": "TransportedArray",
-          "statement": "/-- An array law contains only primitive laws and conditional-mean versions.\nThe assumption atoms below pin every version to its law by integral identities. -/\nstructure TransportedArray (𝒳 : Type*) [MeasurableSpace 𝒳] where\n  fullLaw : ℕ → Measure (FullData 𝒳)\n    -- @realizes P_n^F(full-data law carrier; probability/support via FullDataSupport)\n    -- @realizes P(triangular array primitive)\n  assignedSourceLaw : ℕ → Measure (AssignedFullData 𝒳)\n    -- @realizes P_S(source assigned-full-data carrier)\n  propensity : ℕ → 𝒳 → ℝ\n    -- @realizes e(carrier 𝒳→ℝ; range pinned by InstrumentOverlap)\n  propensity_measurable : ∀ n, Measurable (propensity n)\n  assignmentOutcome : ℕ → Bool → FullData 𝒳 → ℝ\n    -- @realizes Y^Z(z)(assignment-potential-outcome carrier; pinned by IVExclusion)\n  assignmentOutcome_measurable : ∀ n z, Measurable (assignmentOutcome n z)\n  assignmentContrast : ℕ → Bool → 𝒳 → ℝ\n  assignmentContrast_measurable : ∀ n s, Measurable (assignmentContrast n s)\n  receiptContrast : ℕ → Bool → 𝒳 → ℝ\n  receiptContrast_measurable : ∀ n s, Measurable (receiptContrast n s)\n\n-- @env: S1\nvariable {𝒳 : Type*} [MeasurableSpace 𝒳]\n  -- @realizes \\mathcal X(measurable covariate space)\nvariable (n : ℕ)\n  -- @realizes n(asymptotic index in Nat)\nvariable (P : TransportedArray 𝒳)"
-        }
-      ]
+      "axioms": null
     },
     "thm:fixed-geometry-frontier": {
       "decl": "CausalSmith.Stat.TransportedLateStrengthFrontier.fixed_geometry_frontier",
       "file": "T_FixedGeometryFrontier.lean",
       "line": 0,
       "statement": "/-- For every admissible deterministic geometry, the conditional honest\nexpected-length frontier has order `min(1,t0⁻¹/²)`, with constants independent\nof the geometry. -/\ntheorem fixed_geometry_frontier\n    (N k : ℕ → ℕ) (c epsilon alpha : ℝ) (g : Geometry 𝒳)\n    (hc : 0 < c) -- @realizes c(c∈(0,∞))\n    (hN : Tendsto (fun n : ℕ => (N n : ℝ) / (n : ℝ)) atTop (𝓝 c))\n      -- @realizes N_n(N_n/n→c)\n    (hkPos : ∀ n, 0 < k n)\n    (hkInf : Tendsto (fun n : ℕ => (k n : ℝ)) atTop atTop)\n    (hkRoot : Tendsto (fun n : ℕ =>\n      (k n : ℝ) / Real.sqrt n) atTop (𝓝 0))\n      -- @realizes k_n(positive, diverging, and o(√n))\n    (hepsilon : 0 < epsilon ∧ epsilon < 1 / 2)\n    (hg : AdmissibleGeometry g k epsilon)\n    (hTwo : ∀ n P, fixedGeometrySlice P g N k c epsilon n →\n      TwoSampleArray P N c)\n    (hOverlap : ∀ n P, fixedGeometrySlice P g N k c epsilon n →\n      InstrumentOverlap P n epsilon)\n    (hEnvelope : ∀ n P, fixedGeometrySlice P g N k c epsilon n →\n      WeightEnvelope P k n)\n    (hSecond : ∀ n P, fixedGeometrySlice P g N k c epsilon n →\n      WeightSecondMoment P k n)\n    (hDegrade : ∀ n P, fixedGeometrySlice P g N k c epsilon n →\n      DegradingArray P k)\n    (hAlpha : 0 < alpha ∧ alpha < 1) :\n      -- @realizes \\alpha(noncoverage in (0,1))\n    ∀ (t0 : ℝ) (ht0 : 0 < t0), -- @realizes t_0(positive frontier threshold)\n      let Lalpha",
-      "sorry_free": true,
-      "axioms": null
-    },
-    "prop:no-shift-reduction": {
-      "decl": "CausalSmith.Stat.TransportedLateStrengthFrontier.no_shift_reduction",
-      "file": "T_NoShiftReduction.lean",
-      "line": 0,
-      "statement": "/-- If the transport weight is one, the target and source covariate laws agree,\nKish dispersion is one, and effective strength reduces to `n μ_n²`.  The\nconditional frontier is therefore the compact single-population weak-ratio\nfrontier. -/\ntheorem no_shift_reduction\n    (N k : ℕ → ℕ) (c epsilon alpha : ℝ) (g : Geometry 𝒳)\n    (hc : 0 < c)\n    (hepsilon : 0 < epsilon ∧ epsilon < 1 / 2)\n    (halpha : 0 < alpha ∧ alpha < 1)\n      -- @realizes \\alpha(noncoverage in (0,1))\n    (hN : Tendsto (fun n : ℕ => (N n : ℝ) / (n : ℝ)) atTop (𝓝 c))\n      -- @realizes N_n(N_n/n→c)\n    (hkPos : ∀ n, 0 < k n)\n    (hkInf : Tendsto (fun n : ℕ => (k n : ℝ)) atTop atTop)\n    (hkRoot : Tendsto (fun n : ℕ =>\n      (k n : ℝ) / Real.sqrt n) atTop (𝓝 0))\n      -- @realizes k_n(positive, diverging, and o(√n))\n    (hg : AdmissibleGeometry g k epsilon)\n    (hw : ∀ n, g.weight n =ᵐ[g.sourceX n] fun _ => 1) :\n    (∀ n, geometryKish g n = 1 ∧ g.targetX n = g.sourceX n) ∧\n    (∀ (P : TransportedArray 𝒳) n,\n      fixedGeometrySlice P g N k c epsilon n →\n      effectiveStrength P n =\n        (n : ℝ) * transportedFirstStage P n ^ 2) ∧\n    (∀ (t0 : ℝ) (ht0 : 0 < t0), -- @realizes t_0(positive frontier threshold)\n      let Lalpha := Real.sqrt (8 / (alpha * epsilon ^ 2))\n      let calpha := 3 * (1 - alpha) ^ 2 / 16\n      let Calpha := max 2 (4 * Lalpha + 8 / epsilon ^ 2)\n      calpha * min 1 (t0 ^ (-1 / 2 : ℝ)) ≤\n        fixedGeometryValue N k c epsilon alpha ⟨g, hg⟩ ⟨t0, ht0⟩ ∧\n      fixedGeometryValue N k c epsilon alpha ⟨g, hg⟩ ⟨t0, ht0⟩ ≤\n        Calpha * min 1 (t0 ^ (-1 / 2 : ℝ)))",
       "sorry_free": true,
       "axioms": null
     },
@@ -647,85 +707,25 @@
       "sorry_free": true,
       "axioms": null
     },
-    "def:finite-cell-class": {
+    "def:least-favorable-witness": {
       "decl": "(composite)",
-      "file": "Basic.lean",
+      "file": "Helpers/Witness.lean",
       "line": 0,
       "statement": "",
       "sorry_free": true,
       "axioms": null,
       "components": [
         {
-          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.FiniteCellClass",
-          "statement": "/-- Uniform finite-cell subclass, flattened to the sixteen core members.\nIts `finiteCellSource` field carries the exact finite pushforward-law\nexhaustion condition, rather than merely requiring full mass on some subset. -/\nstructure FiniteCellClass (P : TransportedArray 𝒳) (N k : ℕ → ℕ)\n    (c epsilon : ℝ) (n : ℕ) : Prop where\n  fullDataSupport : FullDataSupport P n\n  populationPresence : PopulationPresence P n\n  twoSampleArray : TwoSampleArray P N c\n  instrumentOverlap : InstrumentOverlap P n epsilon\n  sourceObservation : SourceAssignmentConsistency P n\n  ivRandomization : IVRandomization P n\n  ivExclusion : IVExclusion P n\n  ivMonotonicity : IVMonotonicity P n\n  outcomeTransport : OutcomeTransport P n\n  receiptTransport : ReceiptTransport P n\n  targetComplierPositivity : TargetComplierPositivity P n\n  transportDomination : TransportDomination P n\n  weightEnvelope : WeightEnvelope P k n\n  weightSecondMoment : WeightSecondMoment P k n\n  degradingArray : DegradingArray P k\n  finiteCellSource : FiniteCellSource P k n"
+          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.leastFavorableWitness",
+          "statement": "/-- The continuum family `Q_{n,h}^g`.  Each population has the same conditional\npotential-data kernel given `X`, integrated against `g.sourceX` in the source\nand `g.targetX` in the target. Compliance types have probabilities `p_n`,\n`(1-p_n)/2`, `(1-p_n)/2`; `Y(0)=0`; and binary `Y(1)` has mean `1/2+h` for\ncompliers and `1/2` otherwise. -/\nnoncomputable def leastFavorableWitness\n    (g : Geometry 𝒳) (N k : ℕ → ℕ) (c epsilon alpha t0 rho : ℝ)\n    (n : ℕ) (h : ℝ) (P : TransportedArray 𝒳) : Prop :=\n  AdmissibleGeometry g k epsilon ∧\n  0 < alpha ∧ alpha < 1 ∧ -- @realizes \\alpha(noncoverage level in (0,1))\n  0 < t0 ∧ -- @realizes t_0(positive fixed-strength threshold)\n  rho = (1 - alpha) / 8 ∧\n  |h| ≤ min (1 / 4) (rho * t0 ^ (-1 / 2 : ℝ)) ∧\n  fixedGeometrySlice P g N k c epsilon n ∧\n  (∃ K : 𝒳 → Measure PotentialCoordinates,\n    (∀ x, IsProbabilityMeasure (K x)) ∧\n    (∀ B, MeasurableSet B → Measurable fun x => K x B) ∧\n    ∀ s A B, MeasurableSet A → MeasurableSet B →\n      populationLaw P n s\n          {o | fullX o ∈ A ∧ potentialCoordinates o ∈ B} =\n        ∫⁻ x in A, K x B ∂geometryPopulationX g n s) ∧\n  transportedFirstStage P n = geometryMu g t0 n ∧\n    -- @realizes \\mu_n(fixed-strength witness first stage; range inherited from class membership)\n  effectiveStrength P n = t0 ∧\n  targetCACE P n = 1 / 2 + h ∧\n  (∀ s : Bool, ∀ᵐ o ∂populationLaw P n s,\n    fullY0 o = 0 ∧ (fullY1 o = 0 ∨ fullY1 o = 1)) ∧\n  (∀ s : Bool, ∀ A, MeasurableSet A →\n    (populationLaw P n s\n      {o | fullX o ∈ A ∧ fullD0 o = false ∧ fullD1 o = true}).toReal =\n      ∫ x in A, geometryCompliance g t0 n x ∂geometryPopulationX g n s) ∧\n  (∀ s : Bool, ∀ A, MeasurableSet A →\n    (populationLaw P n s\n      {o | fullX o ∈ A ∧ fullD0 o = true ∧ fullD1 o = true}).toReal =\n      ∫ x in A, (1 - geometryCompliance g t0 n x) / 2\n        ∂geometryPopulationX g n s) ∧\n  (∀ s : Bool, ∀ A, MeasurableSet A →\n    (populationLaw P n s\n      {o | fullX o ∈ A ∧ fullD0 o = false ∧ fullD1 o = false}).toReal =\n      ∫ x in A, (1 - geometryCompliance g t0 n x) / 2\n        ∂geometryPopulationX g n s) ∧\n  (∀ s : Bool, ∀ A, MeasurableSet A →\n    ∫ o in {o | fullX o ∈ A ∧ fullD0 o = false ∧ fullD1 o = true},\n        fullY1 o ∂populationLaw P n s =\n      ∫ x in A, geometryCompliance g t0 n x * (1 / 2 + h)\n        ∂geometryPopulationX g n s) ∧\n  (∀ s : Bool, ∀ A, MeasurableSet A →\n    ∫ o in {o | fullX o ∈ A ∧ fullD0 o = true ∧ fullD1 o = true},\n        fullY1 o ∂populationLaw P n s =\n      ∫ x in A, (1 - geometryCompliance g t0 n x) / 4\n        ∂geometryPopulationX g n s) ∧\n  (∀ s : Bool, ∀ A, MeasurableSet A →\n    ∫ o in {o | fullX o ∈ A ∧ fullD0 o = false ∧ fullD1 o = false},\n        fullY1 o ∂populationLaw P n s =\n      ∫ x in A, (1 - geometryCompliance g t0 n x) / 4\n        ∂geometryPopulationX g n s)"
+        },
+        {
+          "label": "Geometry",
+          "statement": "-- @env: S3\n/-- Deterministic source/target covariate, weight, and propensity arrays. -/\nstructure Geometry (𝒳 : Type*) [MeasurableSpace 𝒳] where\n  sourceX : ℕ → Measure 𝒳\n    -- @realizes P_S^X(geometry source-law array)\n  targetX : ℕ → Measure 𝒳\n    -- @realizes P_T(geometry target-law array)\n  weight : ℕ → 𝒳 → ℝ\n    -- @realizes w(geometry density-ratio array)\n  propensity : ℕ → 𝒳 → ℝ\n    -- @realizes e(geometry propensity array)\n  weight_measurable : ∀ n, Measurable (weight n)\n  propensity_measurable : ∀ n, Measurable (propensity n)"
         },
         {
           "label": "TransportedArray",
           "statement": "/-- An array law contains only primitive laws and conditional-mean versions.\nThe assumption atoms below pin every version to its law by integral identities. -/\nstructure TransportedArray (𝒳 : Type*) [MeasurableSpace 𝒳] where\n  fullLaw : ℕ → Measure (FullData 𝒳)\n    -- @realizes P_n^F(full-data law carrier; probability/support via FullDataSupport)\n    -- @realizes P(triangular array primitive)\n  assignedSourceLaw : ℕ → Measure (AssignedFullData 𝒳)\n    -- @realizes P_S(source assigned-full-data carrier)\n  propensity : ℕ → 𝒳 → ℝ\n    -- @realizes e(carrier 𝒳→ℝ; range pinned by InstrumentOverlap)\n  propensity_measurable : ∀ n, Measurable (propensity n)\n  assignmentOutcome : ℕ → Bool → FullData 𝒳 → ℝ\n    -- @realizes Y^Z(z)(assignment-potential-outcome carrier; pinned by IVExclusion)\n  assignmentOutcome_measurable : ∀ n z, Measurable (assignmentOutcome n z)\n  assignmentContrast : ℕ → Bool → 𝒳 → ℝ\n  assignmentContrast_measurable : ∀ n s, Measurable (assignmentContrast n s)\n  receiptContrast : ℕ → Bool → 𝒳 → ℝ\n  receiptContrast_measurable : ∀ n s, Measurable (receiptContrast n s)\n\n-- @env: S1\nvariable {𝒳 : Type*} [MeasurableSpace 𝒳]\n  -- @realizes \\mathcal X(measurable covariate space)\nvariable (n : ℕ)\n  -- @realizes n(asymptotic index in Nat)\nvariable (P : TransportedArray 𝒳)"
-        },
-        {
-          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.FullDataSupport",
-          "statement": "/-- Full-data probability law and bounded potential outcomes. -/\ndef FullDataSupport (P : TransportedArray 𝒳) (n : ℕ) : Prop :=\n  IsProbabilityMeasure (P.fullLaw n) ∧ -- @realizes P_n^F(probability measure)\n    ∀ᵐ o : FullData 𝒳 ∂P.fullLaw n,\n      fullY0 o ∈ Set.Icc (0 : ℝ) 1 ∧ -- @realizes Y(d)(Y(0)∈[0,1])\n                                         -- @realizes Y^Z(z)(bounded support inherited from Y(0),Y(1))\n      fullY1 o ∈ Set.Icc (0 : ℝ) 1   -- @realizes Y(d)(Y(1)∈[0,1])"
-        },
-        {
-          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.PopulationPresence",
-          "statement": "/-- Both populations have strictly positive full-data mass. -/\ndef PopulationPresence (P : TransportedArray 𝒳) (n : ℕ) : Prop :=\n  ∀ s : Bool, 0 < (P.fullLaw n {o | fullS o = s}).toReal"
-        },
-        {
-          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.TwoSampleArray",
-          "statement": "/-- The two sample factors are probability laws and `N_n/n → c`. -/\ndef TwoSampleArray (P : TransportedArray 𝒳) (N : ℕ → ℕ) (c : ℝ) : Prop :=\n  0 < c ∧ -- @realizes c(c∈(0,∞))\n    (∀ n, IsProbabilityMeasure (sourceObsLaw P n)) ∧\n    (∀ n, IsProbabilityMeasure (targetXLaw P n)) ∧\n    Tendsto (fun n : ℕ => (N n : ℝ) / (n : ℝ)) atTop (𝓝 c)"
-        },
-        {
-          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.InstrumentOverlap",
-          "statement": "/-- Instrument propensity is in `[ε,1-ε]` source-almost surely. -/\ndef InstrumentOverlap (P : TransportedArray 𝒳) (n : ℕ) (epsilon : ℝ) : Prop :=\n  0 < epsilon ∧ epsilon < 1 / 2 ∧\n    ∀ᵐ x ∂sourceXLaw P n,\n      epsilon ≤ P.propensity n x ∧\n      P.propensity n x ≤ 1 - epsilon"
-        },
-        {
-          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.SourceAssignmentConsistency",
-          "statement": "/-- The paper's source assignment and consistency assumption.  The assigned\noverlay is a genuine probability law with the source-population full-data\nmarginal; mapping it through `observeSource` enforces `D=D(Z)` and `Y=Y(D)`,\nwhile the last clause pins the assignment propensity. -/\ndef SourceAssignmentConsistency (P : TransportedArray 𝒳) (n : ℕ) : Prop :=\n  IsProbabilityMeasure (P.assignedSourceLaw n) ∧\n    (P.assignedSourceLaw n).map Prod.fst = populationLaw P n true ∧\n    (∀ A, MeasurableSet A →\n      (sourceObsLaw P n {o | o.1 ∈ A ∧ o.2.1 = true}).toReal =\n        ∫ x in A, P.propensity n x ∂sourceXLaw P n)"
-        },
-        {
-          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.IVRandomization",
-          "statement": "/-- Conditional randomization: the assigned-full-data law factors with\nBernoulli propensity given the source full-data law. -/\ndef IVRandomization (P : TransportedArray 𝒳) (n : ℕ) : Prop :=\n  ∀ (A : Set (FullData 𝒳)), MeasurableSet A → ∀ z : Bool,\n    (P.assignedSourceLaw n {q | q.1 ∈ A ∧ q.2 = z}).toReal =\n      ∫ o in A, (if z then P.propensity n (fullX o)\n        else 1 - P.propensity n (fullX o)) ∂populationLaw P n true"
-        },
-        {
-          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.IVExclusion",
-          "statement": "/-- Exclusion pins the assignment potential outcome to `Y(D(z))` in both\npopulations. -/\ndef IVExclusion (P : TransportedArray 𝒳) (n : ℕ) : Prop :=\n  ∀ s z : Bool, P.assignmentOutcome n z =ᵐ[populationLaw P n s]\n    fun o => derivedAssignmentOutcome o z"
-        },
-        {
-          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.IVMonotonicity",
-          "statement": "/-- No defiers in either population. -/\ndef IVMonotonicity (P : TransportedArray 𝒳) (n : ℕ) : Prop :=\n  ∀ s : Bool, ∀ᵐ o ∂populationLaw P n s,\n    boolReal (fullD0 o) ≤ boolReal (fullD1 o)"
-        },
-        {
-          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.OutcomeTransport",
-          "statement": "/-- Conditional assignment-outcome contrasts are pinned to each population law\nand agree target-almost everywhere. -/\ndef OutcomeTransport (P : TransportedArray 𝒳) (n : ℕ) : Prop :=\n  (∀ s : Bool, ∀ A, MeasurableSet A →\n    ∫ o in {o | fullX o ∈ A},\n        (P.assignmentOutcome n true o - P.assignmentOutcome n false o)\n        ∂populationLaw P n s =\n      ∫ x in A, P.assignmentContrast n s x ∂populationXLaw P n s) ∧\n  P.assignmentContrast n false =ᵐ[targetXLaw P n]\n    P.assignmentContrast n true"
-        },
-        {
-          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.ReceiptTransport",
-          "statement": "/-- Integrated first-stage transport, with population conditional receipt\ncontrasts pinned by integral identities. -/\ndef ReceiptTransport (P : TransportedArray 𝒳) (n : ℕ) : Prop :=\n  (∀ s : Bool, ∀ A, MeasurableSet A →\n    ∫ o in {o | fullX o ∈ A},\n        (boolReal (fullD1 o) - boolReal (fullD0 o))\n        ∂populationLaw P n s =\n      ∫ x in A, P.receiptContrast n s x ∂populationXLaw P n s) ∧\n  (∫ x, P.receiptContrast n false x ∂targetXLaw P n) =\n    ∫ x, P.receiptContrast n true x ∂targetXLaw P n"
-        },
-        {
-          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.TargetComplierPositivity",
-          "statement": "/-- The target complier share is positive. -/\ndef TargetComplierPositivity (P : TransportedArray 𝒳) (n : ℕ) : Prop :=\n  0 < targetComplierShare P n"
-        },
-        {
-          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.TransportDomination",
-          "statement": "/-- Target covariate law is absolutely continuous with respect to source. -/\ndef TransportDomination (P : TransportedArray 𝒳) (n : ℕ) : Prop :=\n  targetXLaw P n ≪ sourceXLaw P n"
-        },
-        {
-          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.WeightEnvelope",
-          "statement": "/-- The transport density ratio is capped by `2 k_n`. -/\ndef WeightEnvelope (P : TransportedArray 𝒳) (k : ℕ → ℕ) (n : ℕ) : Prop :=\n  ∀ᵐ x ∂sourceXLaw P n,\n    0 ≤ transportWeight P n x ∧ transportWeight P n x ≤ 2 * (k n : ℝ)"
-        },
-        {
-          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.WeightSecondMoment",
-          "statement": "/-- Kish dispersion is at most the envelope. -/\ndef WeightSecondMoment (P : TransportedArray 𝒳) (k : ℕ → ℕ) (n : ℕ) : Prop :=\n  kishDispersion P n ≤ (k n : ℝ)"
-        },
-        {
-          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.DegradingArray",
-          "statement": "/-- The overlap envelope diverges sub-root-`n` while the first stage vanishes. -/\ndef DegradingArray (P : TransportedArray 𝒳) (k : ℕ → ℕ) : Prop :=\n  Tendsto (fun n => (k n : ℝ)) atTop atTop ∧\n    Tendsto (fun n => (k n : ℝ) / Real.sqrt n) atTop (𝓝 0) ∧\n    Tendsto\n      (fun n => ∫ x, transportWeight P n x * P.deltaD n x\n        ∂sourceXLaw P n)\n      atTop (𝓝 0)"
-        },
-        {
-          "label": "CausalSmith.Stat.TransportedLateStrengthFrontier.FiniteCellSource",
-          "statement": "/-- At index `n`, `cell` realizes the paper's literal finite covariate\nexperiment inside the common ambient carrier.  The source law is exactly the\nuniform pushforward from `Fin (k n)`; hence the injected image exhausts the\nrow-law carrier and every ambient point outside it is null. -/\ndef FiniteCellSource (P : TransportedArray 𝒳) (k : ℕ → ℕ) (n : ℕ) : Prop :=\n  0 < k n ∧\n  IsProbabilityMeasure (sourceXLaw P n) ∧\n  ∃ cell : Fin (k n) ↪ 𝒳,\n    (∀ i, MeasurableSet {cell i}) ∧\n    sourceXLaw P n (Set.range cell) = 1 ∧\n    (∀ i, (sourceXLaw P n {cell i}).toReal = (k n : ℝ)⁻¹) ∧\n    sourceXLaw P n = finiteUniformCellLaw cell ∧\n    (∀ᵐ x ∂sourceXLaw P n, P.propensity n x = 1 / 2)"
         }
       ]
     },
@@ -746,6 +746,94 @@
           "statement": "-- @env: S3\n/-- Deterministic source/target covariate, weight, and propensity arrays. -/\nstructure Geometry (𝒳 : Type*) [MeasurableSpace 𝒳] where\n  sourceX : ℕ → Measure 𝒳\n    -- @realizes P_S^X(geometry source-law array)\n  targetX : ℕ → Measure 𝒳\n    -- @realizes P_T(geometry target-law array)\n  weight : ℕ → 𝒳 → ℝ\n    -- @realizes w(geometry density-ratio array)\n  propensity : ℕ → 𝒳 → ℝ\n    -- @realizes e(geometry propensity array)\n  weight_measurable : ∀ n, Measurable (weight n)\n  propensity_measurable : ∀ n, Measurable (propensity n)"
         }
       ]
+    },
+    "lem:geometry-handle-eventually-inhabited": {
+      "decl": "CausalSmith.Stat.TransportedLateStrengthFrontier.geometryHandle_eventually_inhabited",
+      "file": "Helpers/Witness.lean",
+      "line": 0,
+      "statement": "/-- The named least-favourable family supplies the complete geometry handle,\nincluding its chi-square and total-variation calibration, eventually in `n`. -/\nlemma geometryHandle_eventually_inhabited\n    (g : Geometry 𝒳) (N k : ℕ → ℕ) (c epsilon alpha t0 rho : ℝ)\n    (hc : 0 < c) (hepsilon : 0 < epsilon ∧ epsilon < 1 / 2)\n    (halpha : 0 < alpha ∧ alpha < 1) (ht0 : 0 < t0)\n    (hrho : rho = (1 - alpha) / 8)\n    (hg : AdmissibleGeometry g k epsilon)\n    (hN : Tendsto (fun n : ℕ => (N n : ℝ) / (n : ℝ)) atTop (𝓝 c))\n    (hkPos : ∀ n, 0 < k n)\n    (hkInf : Tendsto (fun n : ℕ => (k n : ℝ)) atTop atTop)\n    (hkRoot : Tendsto (fun n : ℕ => (k n : ℝ) / Real.sqrt n)\n      atTop (𝓝 0)) :\n    ∀ᶠ n in atTop,\n      geometryHandle g N k c epsilon alpha t0 rho n",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:finite-cell-class-inhabited": {
+      "decl": "CausalSmith.Stat.TransportedLateStrengthFrontier.finiteCellClass_inhabited",
+      "file": "Helpers/Witness.lean",
+      "line": 0,
+      "statement": "/-- The uniform finite-cell construction is realizable on any measurable\ncarrier admitting the required rowwise finite injections.  The injected\n`Fin (k n)` image carries full mass, so growing support constrains the measure\nrather than identifying the ambient carrier with a finite type. -/\nlemma finiteCellClass_inhabited\n    (N k : ℕ → ℕ) (c epsilon : ℝ)\n    (hCarrier : ∀ n, ∃ cell : Fin (k n) ↪ 𝒳, ∀ i, MeasurableSet {cell i})\n    (hc : 0 < c) (hepsilon : 0 < epsilon ∧ epsilon < 1 / 2)\n    (hN : Tendsto (fun n : ℕ => (N n : ℝ) / (n : ℝ)) atTop (𝓝 c))\n    (hkPos : ∀ n, 0 < k n)\n    (hkInf : Tendsto (fun n : ℕ => (k n : ℝ)) atTop atTop)\n    (hkRoot : Tendsto (fun n : ℕ => (k n : ℝ) / Real.sqrt n) atTop (𝓝 0)) :\n    ∀ n, ∃ P : TransportedArray 𝒳,\n      FiniteCellClass P N k c epsilon n",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:fixed-geometry-slice-inhabited": {
+      "decl": "CausalSmith.Stat.TransportedLateStrengthFrontier.fixedGeometrySlice_eventually_inhabited",
+      "file": "Helpers/Witness.lean",
+      "line": 0,
+      "statement": "/-- The continuum construction supplies a member of every sufficiently late\nfixed-geometry strength slice.  In particular, lower bounds use an exhibited\nlaw and never a nonemptiness assumption on the model class. -/\nlemma fixedGeometrySlice_eventually_inhabited\n    (g : Geometry 𝒳) (N k : ℕ → ℕ) (c epsilon t0 : ℝ)\n    (hc : 0 < c) (hepsilon : 0 < epsilon ∧ epsilon < 1 / 2)\n    (ht0 : 0 < t0)\n    (hg : AdmissibleGeometry g k epsilon)\n    (hN : Tendsto (fun n : ℕ => (N n : ℝ) / (n : ℝ)) atTop (𝓝 c))\n    (hkPos : ∀ n, 0 < k n)\n    (hkInf : Tendsto (fun n : ℕ => (k n : ℝ)) atTop atTop)\n    (hkRoot : Tendsto (fun n : ℕ => (k n : ℝ) / Real.sqrt n) atTop (𝓝 0)) :\n    ∀ᶠ n in atTop, ∃ P : TransportedArray 𝒳,\n      fixedGeometrySlice P g N k c epsilon n ∧\n      t0 ≤ effectiveStrength P n",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:regular-finite-cell-class-inhabited": {
+      "decl": "CausalSmith.Stat.TransportedLateStrengthFrontier.regularFiniteCellClass_inhabited",
+      "file": "Helpers/Witness.lean",
+      "line": 0,
+      "statement": "/-- The same uniform witness inhabits every regular finite-cell class whose\nfixed constants contain the uniform mass `1 / k_n`. -/\nlemma regularFiniteCellClass_inhabited\n    (N k : ℕ → ℕ) (c epsilon cminus cplus : ℝ)\n    (hCarrier : ∀ n, ∃ cell : Fin (k n) ↪ 𝒳, ∀ i, MeasurableSet {cell i})\n    (hc : 0 < c) (hepsilon : 0 < epsilon ∧ epsilon < 1 / 2)\n    (hcminus : 0 < cminus ∧ cminus ≤ 1) (hcplus : 1 ≤ cplus)\n    (hN : Tendsto (fun n : ℕ => (N n : ℝ) / (n : ℝ)) atTop (𝓝 c))\n    (hkPos : ∀ n, 0 < k n)\n    (hkInf : Tendsto (fun n : ℕ => (k n : ℝ)) atTop atTop)\n    (hkRoot : Tendsto (fun n : ℕ => (k n : ℝ) / Real.sqrt n) atTop (𝓝 0)) :\n    ∀ n, ∃ P : TransportedArray 𝒳,\n      RegularFiniteCellClass P N k c epsilon cminus cplus n",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:setwise-domination-unit-bound": {
+      "decl": "CausalSmith.Stat.TransportedLateStrengthFrontier.abs_le_one_ae_of_setIntegral_le",
+      "file": "Helpers/ScoreRisk.lean",
+      "line": 0,
+      "statement": "/-- A measurable function whose set integrals are dominated by the measure of\nthe set is almost everywhere bounded by one.  Truncation to the bounded slices\n`{m < f ≤ m + 1}` is what makes this hold without assuming `f` integrable: on\neach slice `f` is bounded, so the set integral is genuine rather than Lean's\njunk value for a non-integrable integrand. -/\nlemma abs_le_one_ae_of_setIntegral_le\n    {Ω : Type*} [MeasurableSpace Ω] (mu : Measure Ω)\n    [IsFiniteMeasure mu] (f : Ω → ℝ) (hf : Measurable f)\n    (hdom : ∀ A, MeasurableSet A →\n      |∫ x in A, f x ∂mu| ≤ (mu A).toReal) :\n    ∀ᵐ x ∂mu, |f x| ≤ 1",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:fixed-geometry-value-le-frontier-risk": {
+      "decl": "CausalSmith.Stat.TransportedLateStrengthFrontier.fixedGeometryValue_le_frontierRisk",
+      "file": "Helpers/FrontierOrder.lean",
+      "line": 0,
+      "statement": "/-- Consequently the conditional minimax value is bounded by the risk of each\nglobally honest procedure, without identifying a.e.-equal weight versions\npointwise. -/\nlemma fixedGeometryValue_le_frontierRisk\n    (g : Geometry 𝒳) (C : OracleProcedure 𝒳 N k c epsilon)\n    (hC : OracleHonest N k c epsilon alpha C) (t0 : ℝ)\n    (hc : 0 < c) (hepsilon : 0 < epsilon ∧ epsilon < 1 / 2) (ht0 : 0 < t0)\n    (hg : AdmissibleGeometry g k epsilon)\n    (hN : Tendsto (fun n : ℕ => (N n : ℝ) / (n : ℝ)) atTop (𝓝 c))\n    (hkPos : ∀ n, 0 < k n)\n    (hkInf : Tendsto (fun n : ℕ => (k n : ℝ)) atTop atTop)\n    (hkRoot : Tendsto (fun n : ℕ => (k n : ℝ) / Real.sqrt n) atTop (𝓝 0)) :\n    fixedGeometryValueTotal N k c epsilon alpha ⟨g, hg⟩ t0 ≤\n      frontierRiskTotal N k c epsilon C t0",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:source-observation-facts": {
+      "decl": "CausalSmith.Stat.TransportedLateStrengthFrontier.sourceObservationFacts_of_class",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "      -- @realizes \\Delta_D(observed conditional receipt ITT in [0,1])\n\n/-- The probability, boundedness, and identified-contrast consequences of the\ncomplete transported-IV model assumptions. -/\nlemma sourceObservationFacts_of_class\n    (P : TransportedArray 𝒳) (N k : ℕ → ℕ) (c epsilon : ℝ) (n : ℕ)\n    (hP : TransportedIVClass P N k c epsilon n) :\n    SourceObservationFacts P n",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:transported-contrast-integrable": {
+      "decl": "CausalSmith.Stat.TransportedLateStrengthFrontier.transportedIVClass_contrast_integrable",
+      "file": "Helpers/ScoreRisk.lean",
+      "line": 0,
+      "statement": "/-- On a global class member both population contrast functions are integrable\nagainst the source covariate law.  This is what lets `compact_causal_range` be\napplied on the global class without carrying its two integrability hypotheses\nas assumptions; every regular-cell consumer already discharges them from the\nfinite cell support, and this is the corresponding global discharge. -/\nlemma transportedIVClass_contrast_integrable\n    (P : TransportedArray 𝒳) (N k : ℕ → ℕ) (c epsilon : ℝ) (n : ℕ)\n    (hP : TransportedIVClass P N k c epsilon n) :\n    Integrable (P.assignmentContrast n true) (sourceXLaw P n) ∧\n    Integrable (P.receiptContrast n true) (sourceXLaw P n)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:class-compact-causal-range": {
+      "decl": "CausalSmith.Stat.TransportedLateStrengthFrontier.scoreRiskClass_compact_causal_range",
+      "file": "Helpers/ScoreRisk.lean",
+      "line": 0,
+      "statement": "/-- Consequently `compact_causal_range` applies to every member of any\nabstract score-risk class, without an integrability hypothesis in the class\ninterface. -/\nlemma scoreRiskClass_compact_causal_range\n    {cls : ℕ → TransportedArray 𝒳 → Prop}\n    {N k : ℕ → ℕ} {c epsilon : ℝ}\n    (atoms : ScoreRiskClassAtoms cls N k c epsilon)\n    {n : ℕ} {P : TransportedArray 𝒳} (hP : cls n P) :\n    (P.deltaY n =ᵐ[sourceXLaw P n] P.assignmentContrast n true) ∧\n    (P.deltaD n =ᵐ[sourceXLaw P n] P.receiptContrast n true) ∧\n    transportedOutcomeITT P n =\n      ∫ o, (fullY1 o - fullY0 o) *\n        (if fullD1 o = true ∧ fullD0 o = false then 1 else 0)\n        ∂populationLaw P n false ∧\n    transportedFirstStage P n = targetComplierShare P n ∧\n    transportedOutcomeITT P n / transportedFirstStage P n =\n      targetCACE P n ∧\n    targetCACE P n ∈ parameterSpace",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:score-receipt-bad-slope-probability": {
+      "decl": "CausalSmith.Stat.TransportedLateStrengthFrontier.scoreReceiptMean_bad_probability",
+      "file": "Helpers/ScoreRisk.lean",
+      "line": 0,
+      "statement": "/-- S1.6: the receipt mean/variance calculation gives exactly the paper's\n`4 / (epsilon² t)` bad-slope bound. -/\nlemma scoreReceiptMean_bad_probability\n    {Ω : Type*} [MeasurableSpace Ω] (Q : Measure Ω)\n    [IsProbabilityMeasure Q] (B : Ω → ℝ)\n    (n : ℕ) (epsilon mu kappa t : ℝ)\n    (hn : 0 < n) (hepsilon : 0 < epsilon) (hmu : 0 < mu)\n    (hkappa : 0 < kappa) (hB : MemLp B 2 Q)\n    (hmean : (∫ x, B x ∂Q) = mu)\n    (hvar : variance B Q ≤ kappa / (epsilon ^ 2 * n))\n    (ht : t = (n : ℝ) * mu ^ 2 / kappa) :\n    (Q {x | mu / 2 < |B x - mu|}).toReal ≤\n      4 / (epsilon ^ 2 * t)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:regular-cell-conditional-moment-bound": {
+      "decl": "CausalSmith.Stat.TransportedLateStrengthFrontier.regularCell_source_conditional_mean_variance",
+      "file": "Helpers/RegularCellRisk_Part2.lean",
+      "line": 0,
+      "statement": "/-- Conditional on a fixed target sample, the source mean and variance have\nthe paper's finite-cell expressions. -/\nlemma regularCell_source_conditional_mean_variance\n    (P : TransportedArray 𝒳) (N k : ℕ → ℕ)\n    (c epsilon cminus cplus theta : ℝ) (n : ℕ)\n    (target : TargetSample 𝒳 (N n))\n    (hn : 0 < n)\n    (hP : RegularFiniteCellClass P N k c epsilon cminus cplus n)\n    (htheta : theta ∈ parameterSpace) :\n    let q",
+      "sorry_free": true,
+      "axioms": null
     },
     "sym:P_n^F": {
       "decl": "(symbol)",

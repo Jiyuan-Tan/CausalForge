@@ -23,8 +23,8 @@ proof_attempt_summary: |
   atoms, after which all seven headline results passed independent proof review,
   full Lean verification, and axiom audits; no conjecture collapsed.
 banked_on: "2026-08-02"
-paper_score: 7
-paper_score_rationale: "The verified core results are interesting and plausibly publishable, but the manuscript still needs substantial expository repair around result typing, contribution scope, and finite-cell assumptions before it reads like a journal submission."
+paper_score: 6.8
+paper_score_rationale: "The verified results deliver a coherent and potentially useful rate characterization, but the manuscript needs substantial exposition, positioning, and scope-clarity repairs before it reads like a publishable econometrics paper."
 ---
 
 # stat_transported_late_strength_frontier / v1 — Accepted

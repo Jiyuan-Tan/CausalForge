@@ -22,8 +22,7 @@
  *   npx tsx tools/bin/f3_directive.ts <qid> <spec> --clear              # remove the directive
  *   npx tsx tools/bin/f3_directive.ts <qid> <spec> --show               # print the current directive
  */
-import { existsSync, readFileSync } from "node:fs";
-import path from "node:path";
+import { readFileSync } from "node:fs";
 import process from "node:process";
 import { loadState, saveState } from "../src/state.js";
 import { sanitizeDirectiveForCli } from "../src/shared/directive_text.js";

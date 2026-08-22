@@ -16,8 +16,6 @@
  * Usage:
  *   reset_proposal_cursor.ts <qid> <spec> [--angle N] [--version V] [--mode revise|pivot|draft-rebuild|kernel-replace] [--no-restore] [--fresh-angle]
  */
-import { existsSync } from "node:fs";
-import path from "node:path";
 import process from "node:process";
 import { resetProposalCursor, type ProposalMode } from "../src/discovery/proposal_cursor.js";
 import { findCausalSmithRoot } from "../src/shared/repo_root.js";

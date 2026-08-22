@@ -46,6 +46,7 @@ import {
  *  process/file-handle count well under the cluster caps even when convergence doubles the per-unit calls. */
 const REVIEW_CONCURRENCY = 6;
 
+
 /** Fence a fetched-TeX excerpt for a prompt. `~~~~~` fences instead of triple
  * backticks (fetched papers legitimately contain ``` in listings/verbatim,
  * which would end a backtick fence mid-paper and spill the rest outside the
@@ -117,6 +118,16 @@ export async function runReviewer(args: {
   const { statementTargets, assumptionTargets, definitionTargets, lemmaTargets, deliveryTargets } =
     args.mode === "convergence" ? convergenceTargets(args.graph) : reviewTargets(args.graph, args.dirty);
   const targetNodeIds = [...statementTargets, ...definitionTargets, ...assumptionTargets, ...lemmaTargets, ...deliveryTargets];
+  if (args.mode === "delta" && targetNodeIds.length > 0) {
+    // Why each target is in scope (hash-dirty vs. not-yet-cleared status) — without this a node
+    // re-reviewed every round leaves no trace of WHICH condition kept re-selecting it.
+    const dirtySet = new Set(args.dirty);
+    const why = targetNodeIds.map((id) => {
+      const st = args.graph.nodes.find((n) => n.id === id)?.review.status ?? "?";
+      return `${id}(${dirtySet.has(id) ? "dirty" : "status=" + st})`;
+    });
+    console.warn(`[f2.5] delta targets: ${why.join(", ")}`);
+  }
   const deliveryObjIds = new Set(deliveryTargets.map(nodeIdToObjId));
   const targetObjIds = new Set(targetNodeIds.map(nodeIdToObjId));
   const failReview = (kind: string, reason: string, blocking: string[] = [...targetObjIds]): ReviewerResult => ({

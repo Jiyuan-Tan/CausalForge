@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir, readdir, rename, rm } from "node:fs/promises";
+import { readFile, writeFile, mkdir, rename, rm } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -10,7 +10,7 @@ import { FormalLayerSource, normalizeCitedScopeFootnotes, paperEnvMismatches } f
 import { parseNoteBlocks } from "../note_parser.js";
 import { SYNTHETIC_COMPANION_RE } from "../paper_index_orphans.js";
 import { parseBib, verifyEntry, defaultLookup, citedKeys, canonicalizeBibEntry, UNREACHABLE } from "../citations.js";
-import { buildBundle, buildProseEntries, buildFormalLayer, buildSymbolRealizations, assumptionTable, paperLabels } from "../emit.js";
+import { buildBundle, buildProseEntries, buildFormalLayer, buildSymbolRealizations, assumptionTable } from "../emit.js";
 import { discoverRealizedSymbols, buildSymbolClusters } from "../../formalization/crosswalk.js";
 import { auxiliaryNodes, isCitedNode } from "../graph_view.js";
 import { ensureComponentsForEnvs } from "../components.js";

@@ -11,7 +11,7 @@ import {
   readPrompt,
   type StageDeps,
 } from "../pipeline_support.js";
-import { buildCompleteCrosswalk, buildCompleteCrosswalkFromGraph, parseLeanDecls, persistCrosswalk, crosswalkVerifiedWithoutAnchor } from "./crosswalk.js";
+import { buildCompleteCrosswalkFromGraph, parseLeanDecls, persistCrosswalk, crosswalkVerifiedWithoutAnchor } from "./crosswalk.js";
 import { graphPath, loadGraph } from "../graph/store.js";
 import { existsSync } from "node:fs";
 import { bankSoundnessIssues } from "./bank_soundness.js";
@@ -43,13 +43,11 @@ async function emitCompleteCrosswalk(args: {
   const paths = artifactPaths(args.ctx, args.state);
   let full;
   try {
-    // Prefer the core-keyed graph (the trust anchor — carries every paper object,
-    // its Lean link, and its obj_id alias). Fall back to the legacy .md parse only
-    // when no graph exists (a pre-migration run).
+    // The core-keyed graph is the trust anchor (every paper object, its Lean
+    // link, and its obj_id alias); F2 always emits it before F5 can run.
     const gp = graphPath(paths.formalizationDir, args.ctx.qid, args.ctx.specialization);
-    full = existsSync(gp)
-      ? await buildCompleteCrosswalkFromGraph(await loadGraph(gp), paths.leanDir)
-      : await buildCompleteCrosswalk(paths.leanDir, paths.md, args.state.flags.f25_crosswalk);
+    if (!existsSync(gp)) throw new Error(`graph.json missing at ${gp}`);
+    full = await buildCompleteCrosswalkFromGraph(await loadGraph(gp), paths.leanDir);
     await persistCrosswalk(paths.crosswalkFullJson, paths.crosswalkFullMd, full);
   } catch (err) {
     return (

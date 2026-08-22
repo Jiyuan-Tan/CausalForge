@@ -7,7 +7,6 @@
  * Usage:
  *   npx tsx tools/bin/oneshot_stage0_5_field.ts <qid> <specialization>
  */
-import { existsSync, readFileSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";

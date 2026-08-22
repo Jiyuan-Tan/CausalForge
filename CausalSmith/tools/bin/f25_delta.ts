@@ -9,7 +9,6 @@
  * Makes a live Codex call. Run from the CausalSmith package root.
  */
 import path from "node:path";
-import { existsSync, readFileSync } from "node:fs";
 import { loadState } from "../src/state.js";
 import { artifactPaths, defaultDeps } from "../src/pipeline_support.js";
 import { coreJsonPath } from "../src/discovery/stages/d0_core.js";

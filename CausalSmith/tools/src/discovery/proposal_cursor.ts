@@ -94,10 +94,6 @@ async function listMatching(dir: string, pattern: RegExp): Promise<string[]> {
   return entries.filter((name) => pattern.test(name));
 }
 
-async function removeMatching(dir: string, pattern: RegExp): Promise<void> {
-  const names = await listMatching(dir, pattern);
-  await Promise.all(names.map((name) => rm(path.join(dir, name), { force: true })));
-}
 
 async function removeAngleReviewRows(reviewsJsonl: string, angle: number): Promise<void> {
   if (!(await fileExists(reviewsJsonl))) return;

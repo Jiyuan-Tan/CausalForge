@@ -1,47 +1,67 @@
 \begin{abstract}
-This paper studies design-based estimation of the finite-population all-treated-versus-all-control effect under known bounded-degree interference and low-order polynomial potential-outcome schedules. Under common-probability Bernoulli assignment, coefficient mass bounded by \(B\), graph in- and out-degree bounded by \(d\), and fixed interaction order \(\beta\), the minimax mean squared error is characterized up to constants depending only on \((\beta,p)\):
+For fixed interaction order \(\beta\ge1\) and fixed assignment probability \(p\in(0,1)\), this paper establishes a finite-population design-based minimax mean squared error frontier, up to constants depending on \((\beta,p)\), for estimating the all-treated-versus-all-control effect under known bounded-degree low-order polynomial interference and common-probability Bernoulli assignment. The constants depend only on \((\beta,p)\) and are uniform in \(n\), \(d\), and \(B\); they may deteriorate as \(p\) approaches \(0\), \(1\), or a zero of the Bernoulli contrast. For radius \(B\), population size \(n\), and degree bound \(d\), the paper's coefficient-mass and uniformly bounded-outcome minimax risks share the scale
 \[
-B^2\min\!\left\{1,\frac{d\binom{d}{k_\star(d,\beta,p)}}{n}\right\}.
+B^2\min\!\left\{1,\frac{dA_d}{n}\right\},
 \]
-Here \(k_\star(d,\beta,p)\) is the maximum \(r\in\{1,\ldots,\min\{\beta,d\}\}\) whose Bernoulli all-treated-versus-all-control contrast is nonzero when this set is nonempty, with \(k_\star=0\) under the degree-zero convention. For each fixed \((\beta,p)\), the implied constants are uniform in \(n\), \(d\), and \(B\). The upper bound is achieved by the clipped SNIPE estimator, and the lower bound is obtained from complete-block least-favourable priors built from the block representer. The same block energy \(A_d\) governs a uniformly bounded-outcome model class, yielding the equivalent frontier \(B^2\min\{1,dA_d/n\}\). On complete-block graph sequences, the local linear benchmark has exact finite-sample value \(B^2A_d/m\), and asymptotic optimality is characterized by a blockwise quadratic excess criterion. For fair-coin assignment, only odd interaction orders contribute to \(A_d\); for first-order interactions \((\beta=1)\), the frontier becomes \(B^2\min\{1,d^2/n\}\).
+where \(A_d\), the complete-block score energy, is the design second moment of the complete-block score used by the score-weighted neighborhood inverse-probability estimator (SNIPE, the shifted-neighbourhood inverse-probability estimator introduced by \citet{CortezRodriguezEichhornYu2023}). Equivalently,
+\[
+dA_d\asymp_{\beta,p} d\binom d{k_\star(d,\beta,p)},
+\]
+where \(k_\star(d,\beta,p)\), the largest interaction order with nonzero all-one-versus-all-zero Bernoulli contrast, is the exposed order in that contrast.
+
+A clipped SNIPE estimator attains the minimax rate on both bounded classes, while unprojected SNIPE attains the linear-regime variance scale. Complete directed \(d\)-blocks, with \(\lfloor n/d\rfloor\) active blocks in the block construction of \cref{obj:def:block-family}, supply the matching lower-bound construction. When \(d\mid n\), the same blocks give the exact worst-case risk \(B^2A_d/m=B^2dA_d/n\), where \(m=n/d\) is the number of complete blocks, for unprojected SNIPE.
+
+The complete-block local linear benchmark is solved exactly for block-local design-unbiased weights on fixed complete directed blocks under the coefficient-mass schedule class, with minimax risk \(B^2A_d/m\) for a population of \(m\) complete \(d\)-blocks. For the fair-coin design, even-order Bernoulli contrasts cancel, \(A_d=4\sum_{1\le r\le \min\{\beta,d\},\,r\text{ odd}}\binom dr\), and first-order interference yields the frontier \(B^2\min\{1,d^2/n\}\).
 \end{abstract}
 
 \section{Introduction}
 
-Network experiments routinely target contrasts between global treatment policies while observing outcomes under randomized assignments that expose only a small portion of the potential-outcome schedule. When one unit's outcome may depend on nearby units' assignments, the variance of a graph-aware estimator is shaped both by the size of each exposure neighborhood and by the number of other outcomes that share the same treatment coordinates. This paper gives a finite-population, design-based minimax calculation for that tradeoff under known bounded-degree interference and low-order polynomial response schedules.
+Randomized experiments on networks raise a basic design question: how much Bernoulli assignment variation is available for estimating a population-level contrast when each unit's outcome may depend on its neighbors' assignments? In the finite-population design-based tradition, potential outcomes are fixed and the assignment mechanism supplies the probability law for estimation \citep{HorvitzThompson1952,Rubin1978,ImbensRubin2015}. Interference changes the problem by making the all-treated-versus-all-control total treatment effect depend on exposure patterns induced by the graph, so the risk of an estimator reflects both local treatment-contrast geometry and overlap among neighborhoods.
 
-The estimand is the average all-treated-versus-all-control contrast. The population, graph, and potential outcomes are fixed, and randomness comes from independent Bernoulli assignment with common treatment probability \(p\in(0,1)\). Each unit's outcome is a polynomial in the assignments in its graph neighborhood, with interaction order bounded by a fixed \(\beta\) and coefficient mass bounded by \(B\). The graph has maximum in-degree and out-degree at most \(d\), with self-loops counted. This is the coefficient-mass model class in \cref{obj:def:model-class}, and risk is the design mean squared error in \cref{obj:def:minimax-risk}.
+This paper studies that question for known directed interference graphs with bounded in- and out-degree, common-probability Bernoulli assignment, and low-order polynomial potential outcomes. The estimand is the finite-population all-treated-versus-all-control effect \(\tau_n\), the average difference between the all-one and all-zero assignments. The estimator observes the graph, the treatment assignment, and one realized outcome per unit. The two bounded classes considered here impose either a unitwise \(\ell_1\) coefficient-mass radius \(B\) or a uniform potential-outcome radius \(B\); \cref{obj:def:model-class,obj:def:bounded-outcome-model-class} define these classes.
 
-The main result, \cref{obj:thm:degree-frontier}, establishes the minimax frontier
+The main result is a matched minimax frontier. For fixed interaction order \(\beta\ge1\) and treatment probability \(p\in(0,1)\), \cref{obj:thm:degree-frontier,obj:thm:bounded-outcome-degree-frontier} establish
 \[
-R_n^\star(d,\beta,p,B)
+R_{n,\ell_1}^{\star}(d,\beta,p,B)
 \asymp_{\beta,p}
-B^2\min\!\left\{1,\frac{d\binom{d}{k_\star(d,\beta,p)}}{n}\right\}.
-\]
-The index \(k_\star(d,\beta,p)\), defined in \cref{obj:def:exposed-order}, is the maximum \(r\in\{1,\ldots,\min\{\beta,d\}\}\) whose Bernoulli all-treated-versus-all-control contrast is nonzero when this set is nonempty, with \(k_\star=0\) under the degree-zero convention. Thus the rate separates three components: the sample-size factor \(1/n\), the graph-overlap factor \(d\), and the number of exposed interaction subsets inside a degree-\(d\) neighborhood. The clipped SNIPE estimator in \cref{obj:def:snipe-estimator} attains the upper bound, while the unprojected SNIPE estimator has worst-case mean squared error bounded by the corresponding untruncated variance scale.
-
-The proof identifies two finite-design objects behind the rate. The first is the complete-block score energy \(A_d\) introduced in \cref{obj:def:block-score-energy}. \Cref{obj:lem:block-energy-representer} proves that, for complete-block product Bernoulli designs on \(\{0,1\}^d\) and the low-order polynomial space \(\mathcal P_d\), the block score represents the all-treated-versus-all-control contrast, \(A_d\) is the minimum energy of an unbiased local weight, and \(A_d^{-1}\) is the minimum energy of a normalized local perturbation. The second is the overlap count in \cref{obj:thm:degree-frontier}, which shows that each \(r\)-way treatment subset in one neighborhood can be reused by at most \(d\) outcome scores. Together these facts convert local Bernoulli information into the global variance scale \(dA_d/n\), and \cref{obj:lem:block-energy-representer} relates \(A_d\) to \(\binom{d}{k_\star(d,\beta,p)}\).
-
-The lower bound uses complete directed blocks as least-favourable carriers. Within each block, the perturbation is aligned with the normalized Riesz representer \(h_d\), and random baseline coefficients are drawn from a smooth compactly supported density. The two signed priors shift the target by \(\rho\delta\) and \(-\rho\delta\), while their squared Hellinger distance is controlled by \(m\delta^2/(B^2A_d)\). This construction yields the lower frontier at the same scale as the SNIPE upper bound.
-
-The complete-block calculation also gives an exact benchmark for local linear estimators. In \cref{obj:thm:sharp-local-linear-constant-and-representers}, for a fixed complete-block graph sequence with block size \(d_t\), \(m_t=n_t/d_t\) blocks, and the moment restrictions in \cref{obj:def:local-linear-estimator-class}, the local linear minimax risk is
-\[
-R_t^{\mathrm{loc,lin}}=\frac{B^2A_{d_t}}{m_t}.
-\]
-The theorem gives a finite-sample blockwise quadratic criterion \(\Psi_{b,t}\), proves that its excess over \(d_t^2A_{d_t}\) exactly characterizes asymptotic attainment of the benchmark, and shows that risk-optimal local linear weights can remain separated from the canonical complete-block SNIPE score in normalized \(L^2\) distance when \(d_t\to\infty\).
-
-The coefficient-mass model has a bounded-outcome analogue in \cref{obj:def:bounded-outcome-model-class}. For this class, \cref{obj:thm:bounded-outcome-degree-frontier} characterizes the minimax order through the same energy scale:
-\[
 R_{n,\infty}^{\star}(d,\beta,p,B)
 \asymp_{\beta,p}
 B^2\min\!\left\{1,\frac{dA_d}{n}\right\}.
 \]
-The projected estimator is clipped to the natural total-effect range \([-2B,2B]\), and the unprojected SNIPE estimator remains unbiased with worst-case mean squared error at most \(B^2dA_d/n\). On complete blocks with \(d\mid n\), canonical SNIPE has exact worst-case risk \(B^2A_d/m\) for both the coefficient-mass and bounded-outcome classes.
-
-The fair-coin specialization in \cref{obj:thm:fair-coin-energy-frontier} makes the exposure calculation explicit. At \(p=1/2\), even-order Bernoulli contrasts cancel and odd orders determine the energy:
+Here \(A_d\), the complete-block score energy in \cref{obj:def:block-score-energy}, is the design second moment of the Bernoulli score representing the local all-treated-versus-all-control contrast on a \(d\)-coordinate block. The same theorems compare this energy to the exposed binomial scale:
 \[
-A_d=4\sum_{\substack{1\le r\le \bar\beta_d\\ r\text{ odd}}}\binom{d}{r}.
+dA_d\asymp_{\beta,p}d\binom d{k_\star(d,\beta,p)},
 \]
-For first-order interactions \((\beta=1)\), \(A_d=4d\), so the minimax frontier is of order \(B^2\min\{1,d^2/n\}\). This case gives a transparent calibration of the quadratic degree cost induced by first-order interference under fair Bernoulli assignment.
+where \(k_\star(d,\beta,p)\) is the largest exposed interaction order with nonzero Bernoulli contrast as defined in \cref{obj:def:exposed-order}.
 
-The results build on the design-based potential-outcomes tradition for randomized experiments \citep{Rubin1978,HorvitzThompson1952,ImbensRubin2015} and on interference frameworks based on exposure mappings, local dependence, and network randomization \citep{Sobel2006,HudgensHalloran2008,Aronow2017,Ugander2013,Eckles2017,Leung2022,Savje2021,Hu2022,Gao2025}. The closest antecedent is the SNIPE analysis for low-order neighborhood interference in \citet{CortezRodriguezEichhornYu2023}, which supplies the known-graph Bernoulli estimator and its overlap-aware design variance calculation. The present paper characterizes the matched minimax mean-squared-error frontier in that setting, with explicit degree dependence \(dA_d/n\asymp_{\beta,p}d\binom{d}{k_\star}/n\). Its lower bound is generated by a complete-block least-favourable family aligned with the Riesz representer, and its extensions give the bounded-outcome frontier and the exact complete-block local linear benchmark. The calculation also supplies a unit-randomized reference point for recent work on low-order, clustered, and covariate-adjusted interference estimators \citep{HarshawSavjeWang2025,EichhornKhanUganderYu2026,WangLi2026}. A Lean 4 development accompanies the paper; the verification appendix states the precise formal scope.
+The rate separates two sources of design difficulty. The first is local: \(A_d\) is the squared norm of the Bernoulli representer for the block contrast. The second is graph-combinatorial: the extra factor \(d\) is the out-degree overlap charge, arising because one assignment coordinate can enter the scores of as many as \(d\) units under \cref{obj:ass:bounded-degree}. The overlap count in \cref{obj:lem:overlap-count} converts shared assignment monomials across neighborhoods into this single additional degree factor.
+
+The estimator attaining the frontier is SNIPE with clipping. The unprojected statistic averages observed outcomes weighted by the unit score \(g_{i,\beta,p}\) in \cref{obj:def:snipe-score,obj:def:snipe-estimator}. On the coefficient-mass class, projection to \([-B,B]\) supplies the saturated branch of the minimax bound; on the uniformly bounded-outcome class, projection to \([-2B,2B]\) gives the corresponding bounded-outcome estimator in \cref{obj:def:bounded-outcome-clipped-snipe}. The unprojected estimator is design-unbiased on both bounded classes and has worst-case mean squared error at most \(B^2dA_d/n\), giving the linear branch directly.
+
+The lower bound comes from complete directed \(d\)-blocks. The block family in \cref{obj:def:block-family} perturbs compactly supported baseline outcomes in the direction of the normalized representer \(h_d=g_d/A_d\). The perturbation changes the total treatment effect by a controlled amount while the Hellinger distance between the two sign-indexed prior predictive laws remains bounded through the energy identity for \(h_d\). When \(d\mid n\), \cref{obj:thm:bounded-outcome-degree-frontier} gives the exact complete-block worst-case risk of canonical unprojected SNIPE:
+\[
+\frac{B^2A_d}{m}
+=
+\frac{B^2dA_d}{n},
+\]
+where \(m=n/d\) is the number of complete blocks.
+
+The complete-block local linear benchmark fixes complete directed block graphs, restricts attention to block-local linear weights satisfying the unbiasedness equations in \cref{obj:def:local-linear-estimator-class}, and evaluates them over the coefficient-mass schedules in \cref{obj:def:local-linear-class}. \Cref{obj:thm:sharp-local-linear-constant-and-representers} shows that the minimax risk over this class is exactly
+\[
+\frac{B^2A_{d_t}}{m_t}.
+\]
+Its blockwise criterion \(\Psi_{b,t}\) gives an exact worst-case risk decomposition, and the complete-block score \(g_{d_t}\) attains the benchmark. The same result characterizes asymptotic optimality through blockwise excess risk and gives a sufficient representer-closeness condition in \(L^2(P_Z)\).
+
+The fair-coin specialization makes the role of the assignment probability explicit. At \(p=1/2\), \(\Delta_r(1/2)\) vanishes for even \(r\) and equals \(2^{1-r}\) for odd \(r\). Consequently, \cref{obj:thm:fair-coin-energy-frontier} gives
+\[
+A_d
+=
+4\sum_{\substack{1\le r\le \min\{\beta,d\}\\ r\ \mathrm{odd}}}\binom dr .
+\]
+For first-order interference, this reduces to \(A_d=4d\), so the minimax scale becomes \(B^2\min\{1,d^2/n\}\), with exact complete-block unprojected SNIPE risk \(4B^2d^2/n\) when \(d\mid n\).
+
+In words, each neighborhood creates a local Bernoulli contrast problem, and \(A_d\) measures its design cost. The graph then charges one additional factor \(d\) because a treatment coordinate can enter many neighboring outcome equations. The frontier says that these two quantities, together with \(n\) and the envelope \(B\), determine the finite-population design difficulty under the stated bounded low-order model.
+
+The results connect to work on design-based causal inference under interference, including partial-interference, exposure-mapping, and network-experiment formulations \citep{Sobel2006,HudgensHalloran2008,Bowers2013,Ugander2013,Aronow2017,Eckles2017,Ogburn2017}. They are closest to low-order SNIPE analysis under Bernoulli assignment \citep{CortezRodriguezEichhornYu2023} and to Riesz and pseudoinverse perspectives on linear estimation \citep{Swaminathan2017,HarshawSavjeWang2025}. The frontier here gives the known-graph Bernoulli benchmark for bounded low-order polynomial interference, providing a calibration point for settings with graph uncertainty, clustered assignment, and covariate adjustment \citep{YuAiroldiBorgsChayes2022,EichhornKhanUganderYu2026,WangLi2026}.
+
+The remainder of the paper is organized as follows. The related-work section positions the result within design-based causal inference under interference and the SNIPE literature. The setup section fixes the finite population, Bernoulli design, low-order interference model, bounded model classes, SNIPE scores, minimax risks, and block quantities. The main-results section states the two-class minimax frontier, the complete-block lower construction and clipped-SNIPE upper bounds, the bounded-outcome counterpart, the exact local linear benchmark, and the fair-coin specialization. The discussion interprets the block score energy and out-degree overlap charge and records limitations and future work. The appendices collect the mathematical proofs; the cited literature supplies econometric framing, terminology, and positioning.

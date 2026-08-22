@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { compactD05DecisionAdapter, compactD05DecisionPrompt, runStage0_5Core } from "../../src/discovery/stages/d0_5_core.js";
+import { compactD05DecisionAdapter, runStage0_5Core } from "../../src/discovery/stages/d0_5_core.js";
 import { citationVerificationCheckpoint, runStage0_5Typed } from "../../src/discovery/stages/d0.js";
 import { coreJsonPath } from "../../src/discovery/stages/d0_core.js";
 import {
@@ -35,12 +35,11 @@ describe("D0.5 ExactID reviewer contract", () => {
     expect(prompt).toContain("causal target [effect OR graph/order/mechanism]");
     expect(prompt).toContain("Cluster by the CAUSAL TARGET, not by the proof technique");
     expect(prompt).toContain("Do NOT re-anchor such a note to Stat merely because it proves a recovery-risk limit");
-    expect(prompt).toContain("local information boundary for graph/order/mechanism recovery");
-    expect(prompt).toContain("Generic testing, LAN, concentration, or algebra used as the **proof engine** does not by itself demote");
-    const effective = compactD05DecisionPrompt(prompt);
-    expect(effective).not.toContain("=== TIER-AWARENESS REASONING");
-    expect(effective).toContain("=== PROPOSAL_PROMISE_GAP");
-    expect(effective).toContain("Proof correctness belongs to the math referee");
+    // The decision referee's prompt ships without the cold referee's tier rubric
+    // (baked in, no runtime rewriting) but keeps the promise-gap taxonomy.
+    expect(prompt).not.toContain("=== TIER-AWARENESS REASONING");
+    expect(prompt).toContain("=== PROPOSAL_PROMISE_GAP");
+    expect(prompt).toContain("Proof correctness belongs to the math referee");
     const adapter = await readFile(
       new URL("../../src/discovery/prompts/D0.5/stage0_5_core_adapter.txt", import.meta.url),
       "utf8",

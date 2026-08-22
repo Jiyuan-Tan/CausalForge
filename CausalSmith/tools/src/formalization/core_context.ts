@@ -3,8 +3,12 @@ import { parseTypedCore } from "../discovery/core/core_io.js";
 
 /** Structural core view for F1.5 reuse-fit and F2 scaffolding. These stages
  * need exact declarations and dependency metadata, not the completed paper's
- * proof bodies or publication prose. Parse first so projection never hides a
- * malformed/missing core. */
+ * proof bodies, positioning prose (per-statement justification/gap/consumer,
+ * the comparator table), or bibliography (F2's cited-gate docstrings come from
+ * the plan's `citations[]`, which F1 mints from the raw core). Parse first so
+ * projection never hides a malformed/missing core. PROMPT-ONLY: this string is
+ * never persisted; later stages read core.json itself. Serialized compact —
+ * indentation was ~11% of the F2/F1.5 prompt bytes. */
 export async function readFormalizationCoreContext(
   corePath: string,
   label: string,
@@ -24,13 +28,18 @@ export async function readFormalizationCoreContext(
     "interpretation",
     "technical_internal_limitation",
     "statement_notes",
+    "comparator_promise_table",
+    "bibliography",
   ]) delete projected[key];
   if (Array.isArray(projected.statements)) {
     projected.statements = projected.statements.map((value) => {
       const statement = { ...(value as Record<string, unknown>) };
       delete statement.proof_tex;
+      delete statement.justification;
+      delete statement.gap;
+      delete statement.consumer;
       return statement;
     });
   }
-  return JSON.stringify(projected, null, 2);
+  return JSON.stringify(projected);
 }

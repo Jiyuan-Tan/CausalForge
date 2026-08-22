@@ -23,9 +23,7 @@
  * filename); this harness passes a high debug attempt index (99). Run it against a
  * throwaway dir — it overwrites the real run's `review_general.json`.
  */
-import { existsSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import path from "node:path";
 import process from "node:process";
 import { defaultDeps } from "../src/pipeline_support.js";
 import { meetsNoveltyFloor } from "../src/pipeline_stages.js";

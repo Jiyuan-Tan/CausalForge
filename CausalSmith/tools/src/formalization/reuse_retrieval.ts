@@ -23,7 +23,7 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { isTier1, type AreaSidecar, type LibDecl, type Library } from "../library/schema.js";
-import { CLUSTER_SUBSTRATE_ROOTS, inClusterSubstrate, type ClusterKey } from "../constants.js";
+import { inClusterSubstrate, type ClusterKey } from "../constants.js";
 import { expandQuery, normalizeConcept } from "./causal_aliases.js";
 import { stripNlCrosslinks } from "../shared/nl_crosslinks.js";
 import type { SemanticTier } from "./semantic_tier.js";

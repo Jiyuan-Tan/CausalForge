@@ -1,5 +1,5 @@
 import { describe, it, expect, afterAll } from "vitest";
-import { appendFile, readFile, rm, mkdtemp, writeFile } from "node:fs/promises";
+import { appendFile, readFile, rm, mkdtemp } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { runPaperPipeline, type PaperDeps } from "../src/presentation/pipeline.js";
@@ -9,7 +9,6 @@ import { parseBib } from "../src/presentation/citations.js";
 import { parseNotationReviewerOutput } from "../src/presentation/stages/p1_plan.js";
 import { acceptedBankEntry, causalSmithRoot, guardBankEntry } from "./helpers.js";
 import { MODELS } from "../src/models.js";
-import { PRESENTATION_PROSE_POLICY_VERSION } from "../src/presentation/prompt_io.js";
 
 // Run against whatever paper is currently banked (the pipeline reads its graph + Lean; the models
 // are stubbed). Tracks bank re-curation instead of a hardcoded qid.

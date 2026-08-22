@@ -58,8 +58,8 @@ export function renderDependencyBlock(rows: GraphSkeletonRow[]): string {
 }
 
 /**
- * Project the graph into the legacy `CrosswalkEntry` shape (so it slots into
- * `crosswalkReviewInstruction` / `mergeCrosswalkVerdicts` unchanged) PLUS
+ * Project the graph into the `CrosswalkEntry` shape
+ * (what the F5 full table and the viz consume) PLUS
  * per-row dependency edges. The `verdict` is the skeleton
  * placeholder `unmatched`; durable review state lives on `node.review`.
  */

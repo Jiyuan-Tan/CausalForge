@@ -12,9 +12,7 @@
  *   npx tsx tools/bin/d0_restore_agent_nodes.ts <qid> <spec> \
  *     --nodes-json <statements.json> --owner <owner-id> --expect-round <n>
  */
-import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import path from "node:path";
 import process from "node:process";
 import type { PipelineContext } from "../src/types.js";
 import { CoreSchema, StatementSchema, coreNodeIds } from "../src/discovery/core/schema.js";

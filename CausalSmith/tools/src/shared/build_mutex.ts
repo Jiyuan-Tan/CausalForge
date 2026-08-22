@@ -10,7 +10,7 @@
  *
  * Lock file: `<repoRoot>/.lake-build.lock` (gitignore this).
  *
- * Uses `proper-lockfile`, same as `shared/graph_lock.ts`. A 60-min stale window
+ * Uses `proper-lockfile`, same as `shared/ledger_update.ts`. A 60-min stale window
  * accommodates Mathlib-scale rebuilds; in practice each acquisition completes
  * in seconds-to-minutes and the lock is released promptly.
  */

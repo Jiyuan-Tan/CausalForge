@@ -334,7 +334,7 @@ export async function runProofReviewLoop(args: {
   refresh?: () => Promise<RefreshState>;
   /** Proof filler. `directive` is supplied for a local compile-repair pass when the independent
    *  build gate finds a red tree after the model claimed completion. */
-  fill?: (graph: FormalizationGraph, directive?: string) => Promise<FillerResult>;
+  fill?: (graph: FormalizationGraph, directive?: string, priorSessions?: string) => Promise<FillerResult>;
   review?: (s: RefreshState, mode: "delta" | "convergence") => Promise<ReviewerResult>;
   /** Phase-A re-scaffold (F2 revise-mode). Given a directive + the flagged target obj_ids, edit
    *  the Lean statements in place to match the note, preserving existing proofs. When absent, a
@@ -444,8 +444,8 @@ export async function runProofReviewLoop(args: {
       if (!r.graph) throw new Error(r.error ? `proof-review loop: graph refresh failed — ${r.error}` : "proof-review loop: no graph to refresh");
       return { graph: r.graph, skeleton: r.skeleton, dirty: r.dirty, hashes: r.hashes };
     });
-  const fill: (g: FormalizationGraph, directive?: string) => Promise<FillerResult> =
-    args.fill ?? (async (graph, directive) => {
+  const fill: (g: FormalizationGraph, directive?: string, priorSessions?: string) => Promise<FillerResult> =
+    args.fill ?? (async (graph, directive, priorSessions) => {
       const liveDirective = await resolveLiveFillerDirective(
         args.ctx,
         args.state,
@@ -459,6 +459,7 @@ export async function runProofReviewLoop(args: {
         texPath: args.texPath,
         corePath: args.corePath,
         directive: [liveDirective, directive].filter((x): x is string => !!x?.trim()).join("\n\n") || null,
+        priorSessions: priorSessions ?? null,
       });
     });
   const review: (s: RefreshState, mode: "delta" | "convergence") => Promise<ReviewerResult> =
@@ -705,10 +706,32 @@ export async function runProofReviewLoop(args: {
     await persist(state.graph);
   }
 
+  // Phase A's last review wrote its verdicts onto `state.graph` but `state.dirty`/`hashes` still
+  // date from the refresh BEFORE that review, so phase B's first delta pass would re-review every
+  // node phase A just cleared (at every loop entry, i.e. every resume). Recompute once here.
+  state = await refresh();
+
   // ── PHASE B — PROOF-FILL LOOP (the old F3, with the old F4 as the final convergence review).
   // Statements are settled; advance proofs, re-checking the dirty frontier each iteration so the
   // assumption- and definition-gate catch any laundering the filler introduces.
   markPhaseStarted("3");
+  // Short session memory for the filler: each codex session starts cold, and without this the
+  // prompt is byte-identical round after round — a session that hits a blocker re-discovers it
+  // from scratch next round (observed: ~25 of 60 consecutive rounds returned "no proof closed,
+  // blocker remains"). The last few one-line summaries are cheap and make repeat dead-ends visible.
+  const recentSummaries: string[] = [];
+  const priorSessionsBlock = (): string | undefined =>
+    recentSummaries.length === 0
+      ? undefined
+      : "=== PRIOR FILLER SESSIONS (informational, not a directive; most recent last — do not redo, do not re-hit the same wall) ===\n" +
+        recentSummaries.map((s, i) => `${i + 1}. ${s}`).join("\n") +
+        "\n=== END PRIOR FILLER SESSIONS ===";
+  const remember = (summary: string) => {
+    const s = summary.trim();
+    if (!s) return;
+    recentSummaries.push(s.length > 400 ? s.slice(0, 400) + "…" : s);
+    if (recentSummaries.length > 4) recentSummaries.shift();
+  };
   while (counters.iters < MAX_ITERS) {
     // Charge and persist this round before any external call so a crash cannot refund it.
     counters.iters++;
@@ -785,7 +808,9 @@ export async function runProofReviewLoop(args: {
             "Run a low-noise build that preserves the exit status and prints the diagnostic tail before returning.",
             build.errors,
           ].join("\n"),
+          priorSessionsBlock(),
         );
+        remember(repair.summary);
         await persist(repair.graph);
         if (repair.escalate) {
           return { status: "escalate", route: fillerRoute(repair.escalate), phase: "3", reason: repair.escalate.reason };
@@ -915,7 +940,8 @@ export async function runProofReviewLoop(args: {
 
     // 3. Filler advances.
     const prev = state.graph;
-    const f = await fill(state.graph);
+    const f = await fill(state.graph, undefined, priorSessionsBlock());
+    remember(f.summary);
     await persist(f.graph);
     if (f.escalate) return { status: "escalate", route: fillerRoute(f.escalate), phase: "3", reason: f.escalate.reason };
 

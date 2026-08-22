@@ -1,5 +1,5 @@
 import { readFile, realpath } from "node:fs/promises";
-import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { maskLeanCommentsAndStrings } from "../graph/extractor.js";
 import { extractDeclSnippet, parseSourceDecls } from "./lean_extract.js";
 

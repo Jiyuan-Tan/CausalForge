@@ -872,7 +872,7 @@ export function pruneOrphanLemmas(
   const edgesOf = (s: CoreStatement | undefined): string[] => {
     if (!s) return [];
     const refs = new Set<string>(s.depends_on ?? []);
-    const prose = `${s.proof_tex ?? ""} ${s.statement ?? ""}`;
+    const prose = `${s.proof_tex ?? ""} ${s.statement}`;
     for (const r of extractNodeRefs(prose)) refs.add(r);
     return [...refs];
   };
@@ -923,7 +923,7 @@ export function findDanglingCitations(
   for (const s of core.statements) {
     // `cited` leaves legitimately name def:/ass: notation they do not prove; skip them.
     if (s.status === "cited") continue;
-    const prose = `${s.proof_tex ?? ""} ${s.statement ?? ""}`;
+    const prose = `${s.proof_tex ?? ""} ${s.statement}`;
     // A node may also NAME another paper's result it does not depend on. Those are
     // declared in `external_refs`; honour the declaration by id as well, so a paper
     // credited in bare form (rather than as `<qid>/<node-id>`) is not a phantom defect.

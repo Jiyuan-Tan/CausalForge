@@ -20,8 +20,7 @@
  *   npx tsx tools/bin/add_assumption.ts <qid> <spec> --remove L                # remove by label
  *   npx tsx tools/bin/add_assumption.ts <qid> <spec> --show                    # list current
  */
-import { existsSync, readFileSync } from "node:fs";
-import path from "node:path";
+import { readFileSync } from "node:fs";
 import process from "node:process";
 import { loadState, saveState } from "../src/state.js";
 import { findCausalSmithRoot } from "../src/shared/repo_root.js";

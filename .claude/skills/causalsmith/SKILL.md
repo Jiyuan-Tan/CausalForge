@@ -103,7 +103,7 @@ skill on `Invoke skill`:
 For a no-qid `--propose`, dispatch a topic-selection subagent and have it invoke `causalsmith-topics`.
 Main owns ≤4 re-steers beyond that initial dispatch. On `ESCALATION`, read receipts,
 ranked untried levers with headroom, and tier-honest fallback; choose one highest-EV steer
-(refine/re-seed/jump/transplant/reframe), warm-continue with accumulated anti-constraints, and track burned
+(refine/re-seed/jump/apply/reframe), warm-continue with accumulated anti-constraints, and track burned
 levers. Steer; do not redo its deep reads/gate. `DONE` launches its command. `BLOCKED` fixes tooling and
 retries the same round. Empty genuine headroom or four rounds is a hard user-stop, even `--auto`, reporting
 burned levers, fallback, and remaining choices. Never lower tier to manufacture acceptance. Record the
@@ -318,7 +318,6 @@ escalation) plus every terminal/rewind already committed.
 | `--resume <qid> <spec>` | Resume after CKPT 1 / 1.5 / 2 or a `missing_architecture` block. |
 | `--propose <topic> <qid> <spec>` | Run with D-1 question proposal first. |
 | `--propose <topic> --novelty <tier> --upgrade <parent_qid>_<parent_spec> --upgrade-axis <axis> <qid> <spec>` | Upgrade a banked accepted / downgraded parent. `<tier>` must be at or above the parent's `banked_novelty_tier` (equal is allowed — e.g. field→field; the delta is enforced by the D-0.5 `upgrade_axis` rubric, not by the tier). |
-| `--from-question <oq_id> <qid> <spec>` | Phase 3 — seed from a graph-resident OpenQuestion. Atomically claims the OQ. On clean F5 the `close_open_question` hook mints a BankedTheorem. Repair a `close_oq_failed` via `close_oq.ts <qid> <spec> <oq_id>`. |
 | `--downgrade-tier <tier> <qid> <spec>` | Accept an achieved lower tier on a `terminal:below-floor` run: lower the persisted novelty floor to `<tier>` and re-pass D0.5, then continue per `--auto` (into F) or halt at the go/no-go. Guarded — `<tier>` must be strictly below the current floor AND ≤ the reviewer-assessed tier; logs a `command` decision-log entry. Use after the codex-validity-gate confirms + the user opts to carry the sound sub-tier result into F rather than bank `downgraded`. |
 | `--angle-action <continue\|switch\|retry\|give-up> <qid> <spec>` | Resolve a persisted D-0.5 checkpoint. `continue` acknowledges a routine REVISE; `switch` archives the exhausted angle; `retry --extra-revisions N` persists a per-angle cap; `give-up` writes a terminal proposal block. Add `--angle-directive <text\|->` to persist the D-orchestrator repair before any next proposer starts. Non-give-up actions resume in the same CLI process. |
 
@@ -405,10 +404,3 @@ only Mathlib/Causalean; `rg '^import CausalSmith\..*_Research'` over the promote
 New Mathlib-shaped helpers produced during F3 land in `CausalSmith/CausalSmith/Mathlib/`, not
 `Causalean/Mathlib/`. Promotion to Causalean is a deliberate human step requiring (a) ≥2 independent
 call sites or a fully general statement, and (b) no CausalSmith-specific dependencies.
-
-## Phase 4 — CHECKPOINT_NEXT
-
-After F5 closes cleanly the pipeline writes `CHECKPOINT_NEXT.md` under `doc/research/active/<qid>/`
-proposing 1-3 next actions plus Stop. Nothing auto-launches; the user picks and invokes the printed
-command in a fresh run.
-</content>

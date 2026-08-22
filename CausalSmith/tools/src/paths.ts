@@ -575,7 +575,7 @@ export function bankRootFor(repoRoot: string, kind: FormalizationKind): string {
  * so adding a new stage-N prompt does not require touching this table.
  *
  *   stage_neg1_*, stage0_*   → discovery     (Stages −1, 0, 0.5 — math claim only)
- *   stage1_*, stage2_*, stage3_*, stage4_*, stage5_*, intervention*, correction_*
+ *   stage1_*, stage2_*, stage5_*, intervention*
  *                            → formalization (Stage 1 is the NL formalization plan;
  *                                             1.5 reviews it; 2–5 are Lean.)
  */
@@ -609,14 +609,6 @@ export function promptSubfolder(name: string): string {
   if (name.startsWith("stage1_5")) return "F1.5";
   if (name.startsWith("stage1")) return "F1";
   if (name.startsWith("stage2")) return "F2";
-  if (
-    name === "failure_classifier.txt" ||
-    name.startsWith("stage3_") ||
-    name.startsWith("stage4_") ||
-    name.startsWith("correction_")
-  ) {
-    return "F4";
-  }
   if (name.startsWith("stage5")) return "F5";
   if (name.startsWith("proof_") || name.startsWith("intervention")) {
     return "F4";

@@ -81,7 +81,6 @@ interface CliArgs {
   noveltyTarget?: NoveltyTarget;
   upgradeFrom?: UpgradeFrom;
   proposerOverride?: DraftRunner;
-  fromQuestionOqId?: string;
   /** Debugging knob: halt the pipeline immediately after this stage completes.
    * Pre-existing as the `CAUSALSMITH_STOP_AFTER` env var; the flag is the
    * preferred surface and overrides the env var when both are set. */
@@ -263,18 +262,6 @@ export function parseArgs(argv: string[]): CliArgs {
       "--upgrade requires --novelty <incremental|subfield|field|flagship>; " +
         "the selected tier must be at or above the parent's achieved banked tier",
     );
-  }
-
-  const fromQuestionIndex = args.indexOf("--from-question");
-  let fromQuestionOqId: string | undefined;
-  if (fromQuestionIndex !== -1) {
-    const raw = args[fromQuestionIndex + 1];
-    args.splice(fromQuestionIndex, 2);
-    if (!raw)
-      throw new Error(
-        "Usage: causalsmith research --from-question <oq_id> <qid> <specialization> [--dry-run]",
-      );
-    fromQuestionOqId = raw;
   }
 
   // Debugging knob: halt right after the named stage completes. The CLI
@@ -492,20 +479,10 @@ export function parseArgs(argv: string[]): CliArgs {
     } as CliArgs;
   }
 
-  // Phase 3: --from-question is the entrypoint form; reject combinations.
-  if (fromQuestionOqId) {
-    if (proposeTopic) {
-      throw new Error("--from-question is mutually exclusive with --propose");
-    }
-    if (upgradeParent) {
-      throw new Error("--from-question is mutually exclusive with --upgrade / --upgrade-axis");
-    }
-  }
-
   const [qid, specialization, extra] = args;
   if (!qid || !specialization || extra !== undefined) {
     throw new Error(
-      "Usage: causalsmith research [--resume] [--auto] [--propose <topic>] [--proposer <codex|claude>] [--novelty <incremental|subfield|field|flagship>] [--upgrade <parent_qid>_<parent_spec> --upgrade-axis <axis>] [--from-question <oq_id>] [--stop-after <stage>] [--from-stage <stage>] [--clear-gate <flag>] <qid> <specialization> [--dry-run]\n" +
+      "Usage: causalsmith research [--resume] [--auto] [--propose <topic>] [--proposer <codex|claude>] [--novelty <incremental|subfield|field|flagship>] [--upgrade <parent_qid>_<parent_spec> --upgrade-axis <axis>] [--stop-after <stage>] [--from-stage <stage>] [--clear-gate <flag>] <qid> <specialization> [--dry-run]\n" +
         "  or: causalsmith research --reopen <qid> <spec> [--dry-run]   (pull a banked entry back to its working dir)\n" +
         "  or: causalsmith research --discharge-gate <qid> <spec> <node_id> [--from-stage <stage>] [--auto] [--dry-run]   (reopen, ungate, re-verify F2.5→F5, re-bank)\n" +
         "  or: causalsmith research --downgrade-tier <incremental|subfield|field|flagship> <qid> <spec> [--auto] [--stop-after <stage>] [--dry-run]   (accept an achieved lower tier: lower the novelty floor and re-pass D0.5)\n" +
@@ -535,7 +512,6 @@ export function parseArgs(argv: string[]): CliArgs {
     noveltyTarget,
     upgradeFrom,
     proposerOverride,
-    fromQuestionOqId,
     stopAfter,
     fromStage,
     clearGates: clearGates.length > 0 ? clearGates : undefined,
@@ -958,18 +934,6 @@ export async function runCli(argv: string[]): Promise<void> {
     );
   }
 
-  // Phase 3: cold-start --from-question must atomically claim the OpenQuestion
-  // (status: open → in_progress) under the graph write lock BEFORE the pipeline
-  // begins. On --resume this is a no-op (the OQ is already in_progress and the
-  // qid is the checkout key). See spec §15.4 point 2 (double-consumption).
-  if (parsed.fromQuestionOqId && !parsed.resume) {
-    const { claimOpenQuestionForRun } = await import("./shared/claim_open_question.js");
-    await claimOpenQuestionForRun({
-      repoRoot,
-      oq_id: parsed.fromQuestionOqId,
-    });
-  }
-
   const finalState = await runPipeline(
     {
       repoRoot,
@@ -982,7 +946,6 @@ export async function runCli(argv: string[]): Promise<void> {
       noveltyTarget: parsed.noveltyTarget,
       upgradeFrom: parsed.upgradeFrom,
       proposerOverride: parsed.proposerOverride,
-      fromQuestionOqId: parsed.fromQuestionOqId,
     },
     undefined,
     { stopAfterStage, startStage, clearGates: parsed.clearGates },

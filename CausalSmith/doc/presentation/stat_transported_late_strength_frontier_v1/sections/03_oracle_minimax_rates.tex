@@ -1,0 +1,297 @@
+\section{Oracle minimax rates}
+
+The expected-length criterion in \cref{obj:def:frontier-risk} reduces the transported weak-first-stage problem to the scalar
+\[
+t_n=\frac{n\mu_n^2}{\kappa_n}.
+\]
+The numerator is the squared transported first stage scaled by the source sample size, and the denominator is the Kish dispersion of the target-to-source weights. Thus a design with the same transported first stage can be statistically weaker when the target population is represented by a more uneven reweighting of the source covariate distribution.
+
+The oracle benchmark treats the target-to-source density ratio and source assignment propensity as known. This leads to an Anderson--Rubin and Fieller style inversion of a transported reduced-form score \citep{AndersonRubin1949,Fieller1954}. The candidate value is retained when the weighted source score is small relative to the oracle weight-dispersion radius.
+
+\begin{algorithmv}{def:inversion-handle}[Score-inversion set $C_n$]
+With oracle-known \(w\) and \(e\), define \(C_n\) by the following source-sample inversion procedure.
+\begin{enumerate}
+\item For each \(\vartheta\in\Theta\), define the inverse-propensity score
+\[
+\psi_i(\vartheta)
+=
+w(X_i)\left\{\frac{Z_i}{e(X_i)}-\frac{1-Z_i}{1-e(X_i)}\right\}(Y_i-\vartheta D_i).
+\]
+
+\item Define the empirical score mean
+\[
+\widehat m_n(\vartheta)
+=
+\frac{1}{n}\sum_{i=1}^n \psi_i(\vartheta).
+\]
+
+\item Define the oracle critical radius
+\[
+r_n
+=
+L_\alpha
+\left\{
+\frac{1}{n}\cdot \frac{1}{n}\sum_{i=1}^n w(X_i)^2
+\right\}^{1/2},
+\]
+where \(L_\alpha\) is the critical constant supplied to the procedure at noncoverage level \(\alpha\).
+
+\item Output the score-inversion confidence set
+\[
+C_n
+=
+\left\{
+\vartheta\in\Theta:
+\left|\widehat m_n(\vartheta)\right|\le r_n
+\right\}.
+\]
+\end{enumerate}
+\end{algorithmv}
+
+\Cref{obj:def:inversion-handle} is the transported analogue of weak-IV score inversion. For a fixed candidate \(\vartheta\), the score tests whether the transported reduced-form contrast is compatible with \(\vartheta\) times the transported first-stage contrast. The critical radius has order \(\sqrt{\widehat\kappa_n/n}\), so it expands with the empirical second moment of the oracle weights.
+
+The lower bound applies to the oracle value over the full transported model and to the finite-cell oracle value. It shows that the same effective-strength index governing the score radius also governs the minimax expected length.
+
+\begin{theoremv}{thm:oracle-converse}[Oracle lower frontier]
+Fix \(c>0\), an instrument-overlap constant \(\varepsilon\in(0,1/2)\), and a noncoverage level \(\alpha\in(0,1)\). There exist constants \(c_0>0\) and \(t_c>0\), depending only on \((\alpha,\varepsilon,c)\), such that the following holds for every measurable covariate space \(\mathcal X\).
+
+Let \(N_n\) and \(k_n\) be integer sequences satisfying:
+\begin{itemize}
+\item \textbf{(Target-source ratio.)} \(N_n/n\to c\).
+\item \textbf{(Positive cells.)} \(k_n>0\) for every \(n\).
+\item \textbf{(Diverging cells.)} \(k_n\to\infty\).
+\item \textbf{(Sub-root growth.)} \(k_n/\sqrt n\to 0\).
+\item \textbf{(Measurable carrier.)} For each \(n\), \(\mathcal X\) contains a measurable \(k_n\)-cell carrier.
+\item \textbf{(Transported-IV model.)} Every array in the transported complier-effect class \(\mathcal P_n\) of \cref{obj:def:model-class} satisfies \cref{obj:ass:full-data-support,obj:ass:population-presence,obj:ass:two-sample-array,obj:ass:instrument-overlap,obj:ass:source-observation,obj:ass:iv-randomization,obj:ass:iv-exclusion,obj:ass:iv-monotonicity,obj:ass:outcome-transport,obj:ass:receipt-transport,obj:ass:target-complier-positivity,obj:ass:transport-domination,obj:ass:weight-envelope,obj:ass:weight-second-moment,obj:ass:degrading-array}.
+\item \textbf{(Finite-cell source.)} Every array in the finite-cell class \(\mathcal N_n\) of \cref{obj:def:finite-cell-class} satisfies \cref{obj:ass:finite-cell-source}.
+\end{itemize}
+
+Then, for every effective-strength threshold \(t_0>0\),
+\[
+  c_0 \min\{1,t_0^{-1/2}\}
+  \le V^\star(t_0)
+\]
+and
+\[
+  c_0 \min\{1,t_0^{-1/2}\}
+  \le V_{\mathcal N}^\star(t_0),
+\]
+where \(V^\star(t_0)\) and \(V_{\mathcal N}^\star(t_0)\) are the oracle values in \cref{obj:def:oracle-value,obj:def:finite-cell-oracle-value}. Moreover, whenever \(0<t_0\le t_c\),
+\[
+  c_0 \le V^\star(t_0).
+\]
+\end{theoremv}
+
+The converse in \cref{obj:thm:oracle-converse} gives the information-theoretic side of the rate. Above a fixed threshold \(t_0\), honest expected length is bounded below by the smaller of a constant and \(t_0^{-1/2}\). At very small effective strength, the final display gives the order-one elbow: honest oracle procedures retain nonvanishing worst-case expected length.
+
+The matching upper bound is attained by the oracle-known-weight score-inversion rule, which takes the true transport-weight version and the source propensity as oracle inputs. Writing
+\[
+H_i=\frac{Z_i}{e(X_i)}-\frac{1-Z_i}{1-e(X_i)},
+\]
+the procedure can be expressed as an inversion of the weighted reduced-form mean against the weighted first-stage mean.
+
+\begin{theoremv}{thm:oracle-score-inversion-attainment}[Oracle score inversion]
+Let \(N_n\) and \(k_n\) be integer sequences, and let \(c\), \(\varepsilon\), and \(\alpha\) be constants.  Suppose that:
+\begin{itemize}
+\item \textbf{(Sampling ratio.)} \(c>0\) and \(N_n/n\to c\).
+\item \textbf{(Overlap and coverage constants.)} \(0<\varepsilon<1/2\) and \(0<\alpha<1\).
+\item \textbf{(Envelope scale.)} \(k_n>0\) for every \(n\), \(k_n\to\infty\), and \(k_n/\sqrt n\to0\).
+\item \textbf{(Admissible geometry.)} The measurable covariate space admits a deterministic geometry \(\mathfrak g\) satisfying \cref{obj:def:admissible-geometry-class} with envelope scale \(k_n\) and overlap constant \(\varepsilon\).
+\item \textbf{(Model-class implications.)} For every \(n\) and every transported array \(P\), membership of \(P\) in the transported complier-effect model class \(\mathcal P_n\) of \cref{obj:def:model-class} implies \cref{obj:ass:two-sample-array,obj:ass:instrument-overlap,obj:ass:weight-envelope,obj:ass:weight-second-moment,obj:ass:degrading-array}.
+\end{itemize}
+Define
+\[
+L_\alpha=\left(\frac{8}{\alpha\varepsilon^2}\right)^{1/2},
+\qquad
+H_i=\frac{Z_i}{e(X_i)}-\frac{1-Z_i}{1-e(X_i)},
+\]
+and
+\[
+\widehat A_n=\frac1n\sum_{i=1}^n w(X_i)H_iY_i,
+\qquad
+\widehat B_n=\frac1n\sum_{i=1}^n w(X_i)H_iD_i,
+\qquad
+\widehat\kappa_n=\frac1n\sum_{i=1}^n w(X_i)^2 .
+\]
+Let the score-inversion confidence set be
+\[
+C_n
+=
+\left\{\vartheta\in\Theta:
+\left|\widehat A_n-\vartheta\widehat B_n\right|
+\le
+L_\alpha\sqrt{\widehat\kappa_n/n}
+\right\}.
+\]
+Then the sequence \((C_n)\) is oracle honest, \((C_n)\in\mathfrak C^{\mathrm{or}}\) in the sense of \cref{obj:def:oracle-honesty}, and for every fixed effective-strength threshold \(t_0>0\),
+\[
+R((C_n),t_0)
+\le
+C_0\min\{1,t_0^{-1/2}\},
+\qquad
+C_0=\max\left\{2,4L_\alpha+\frac8{\varepsilon^2}\right\}.
+\]
+Consequently, for the oracle minimax value \(V^\star(t_0)\) of \cref{obj:def:oracle-value},
+\[
+\frac{3(1-\alpha)^2}{16}\min\{1,t_0^{-1/2}\}
+\le
+V^\star(t_0)
+\le
+C_0\min\{1,t_0^{-1/2}\},
+\]
+and for every admissible geometry \(\mathfrak g'\in\mathcal G\) the fixed-geometry value of \cref{obj:def:fixed-geometry-value} obeys the same two-sided bounds,
+\[
+\frac{3(1-\alpha)^2}{16}\min\{1,t_0^{-1/2}\}
+\le
+V_{\mathfrak g'}^\star(t_0)
+\le
+C_0\min\{1,t_0^{-1/2}\}.
+\]
+\end{theoremv}
+
+\Cref{obj:thm:oracle-score-inversion-attainment} supplies the constructive half of the oracle frontier. The set is always restricted to \(\Theta=[-1,1]\), and its random width is controlled by the same dispersion-normalized standard-error scale that appears in \(t_n\). Combining \cref{obj:thm:oracle-converse,obj:thm:oracle-score-inversion-attainment} yields the matched oracle rate \(\min\{1,t_0^{-1/2}\}\) for \(V^\star(t_0)\), up to constants depending on the stated coverage, overlap, and sampling-ratio inputs.
+
+It is useful to separate the causal array from the deterministic geometry that carries the source covariate law, transport weights, and source propensity. The next definitions fix this geometry and evaluate honest expected length conditionally on it.
+
+\begin{definitionv}{def:admissible-geometry-class}[Admissible geometry class \(\mathcal G\)]
+\(\mathcal G\) is the class of deterministic arrays
+\[
+\mathfrak g=(P_S^X,w,e)_{n\ge1}
+\]
+such that, for each \(n\),
+\begin{itemize}
+\item \textbf{(Source marginal.)} \(P_S^X\) is a probability law on \(\mathcal X\).
+\item \textbf{(Instrument overlap.)} The source assignment propensity satisfies
+\[
+e:\mathcal X\to[\varepsilon,1-\varepsilon].
+\]
+\item \textbf{(Transport weights.)} The target-to-source covariate density ratio satisfies
+\[
+w:\mathcal X\to[0,2k_n],
+\qquad
+\mathbb E_S[w(X)]=1.
+\]
+\item \textbf{(Dispersion.)} The second moment of the transport weight is
+\[
+\kappa_n=\mathbb E_S[w(X)^2]\le k_n.
+\]
+\item \textbf{(Target law.)} For every measurable \(A\subseteq\mathcal X\),
+\[
+P_T(A)=\mathbb E_S[w(X)\mathbf 1\{X\in A\}].
+\]
+\end{itemize}
+\end{definitionv}
+
+\Cref{obj:def:admissible-geometry-class} records the deterministic ingredients shared by the lower and upper bounds: an overlapped assignment propensity, a normalized target-to-source density ratio, a second-moment bound, and the induced target covariate law. Holding these objects fixed isolates the weak-first-stage and outcome-tilt variation inside the transported model class.
+
+\begin{definitionv}{def:fixed-geometry-slice}[Fixed-geometry slice \(\mathcal P_n(\mathfrak g)\)]
+For \(\mathfrak g\in\mathcal G\),
+\[
+\mathcal P_n(\mathfrak g)
+=
+\{P\in\mathcal P_n:(P_S^X,w,e)\text{ equals the index-}n\text{ component of }\mathfrak g\}.
+\]
+\end{definitionv}
+
+\Cref{obj:def:fixed-geometry-slice} restricts attention to laws whose source covariate marginal, transport weight, and propensity match the chosen geometry. The causal contrasts and first-stage strength vary within that slice subject to the model restrictions.
+
+\begin{definitionv}{def:fixed-geometry-honesty}[Fixed-geometry oracle class \(\mathfrak C^{\mathrm{or}}(\mathfrak g)\)]
+For \(\mathfrak g\in\mathcal G\) as in \cref{obj:def:admissible-geometry-class},
+\[
+\mathfrak C^{\mathrm{or}}(\mathfrak g)
+=
+\left\{
+(C_n)_{n\ge1}:
+C_n=C_n\!\left((O_i^S)_{i=1}^n,(X_j^T)_{j=1}^{N_n},w,e\right)\subseteq\Theta,\ 
+\liminf_{n\to\infty}\inf_{P\in\mathcal P_n(\mathfrak g)}
+P(\theta_T\in C_n)\ge1-\alpha
+\right\}.
+\]
+\end{definitionv}
+
+The fixed-geometry honesty class in \cref{obj:def:fixed-geometry-honesty} requires uniform asymptotic coverage only over the slice in \cref{obj:def:fixed-geometry-slice}. The procedure remains oracle in the same sense as \cref{obj:def:oracle-honesty}: it may use the fixed weight and propensity inputs.
+
+\begin{definitionv}{def:fixed-geometry-value}[Fixed-geometry value \(V_{\mathfrak g}^\star(t_0)\)]
+For \(\mathfrak g\in\mathcal G\) as in \cref{obj:def:admissible-geometry-class},
+\[
+V_{\mathfrak g}^\star(t_0)
+=
+\inf_{(C_n)\in\mathfrak C^{\mathrm{or}}(\mathfrak g)}
+\limsup_{n\to\infty}
+\sup_{P\in\mathcal P_n(\mathfrak g):\,t_n\ge t_0}
+\mathbb E_P[\lambda(C_n)].
+\]
+\end{definitionv}
+
+The value in \cref{obj:def:fixed-geometry-value} is the conditional minimax expected length at effective-strength threshold \(t_0\). It keeps the weighting and overlap geometry fixed while retaining the same length and strength criteria used in \cref{obj:def:frontier-risk}.
+
+A transparent special case is the absence of covariate shift. When the density ratio is identically one, the target and source covariate laws coincide and the effective strength becomes the familiar sample-size-scaled squared first stage.
+
+\begin{theoremv}{prop:no-shift-reduction}[No-shift reduction]
+Fix a measurable covariate space and deterministic arrays \(N_n\), \(k_n\), and \(\mathfrak g\). Suppose:
+\begin{itemize}
+\item \textbf{(Sample-size ratio.)} \(c>0\) and \(N_n/n\to c\).
+\item \textbf{(Coverage and overlap constants.)} \(0<\alpha<1\) and \(0<\varepsilon<1/2\).
+\item \textbf{(Cell-scale regime.)} For every \(n\), \(k_n>0\), with \(k_n\to\infty\) and \(k_n/\sqrt n\to0\).
+\item \textbf{(Admissible geometry.)} The geometry \(\mathfrak g\) belongs to the admissible class \(\mathcal G\) in \cref{obj:def:admissible-geometry-class}.
+\item \textbf{(No covariate shift.)} For every \(n\), \(w_n(X)=1\) \(P_{S,n}^X\)-almost surely.
+\end{itemize}
+Then, for every \(n\), the geometry has
+\[
+\kappa_n=\int w_n(x)^2\,dP_{S,n}^X(x)=1
+\]
+and \(P_{T,n}=P_{S,n}^X\). Moreover, for every transported array \(P_n^F\) in the fixed-geometry slice \(\mathcal P_n(\mathfrak g)\) of \cref{obj:def:fixed-geometry-slice},
+\[
+t_n=\frac{n\mu_n^2}{\kappa_n}=n\mu_n^2 .
+\]
+Finally, for every \(t_0>0\), define
+\[
+L_\alpha=\sqrt{\frac{8}{\alpha\varepsilon^2}},
+\qquad
+c_\alpha=\frac{3(1-\alpha)^2}{16},
+\qquad
+C_\alpha=\max\left\{2,\,4L_\alpha+\frac{8}{\varepsilon^2}\right\}.
+\]
+The fixed-geometry minimax value \(V_{\mathfrak g}^\star(t_0)\) in \cref{obj:def:fixed-geometry-value} satisfies
+\[
+c_\alpha\min\{1,t_0^{-1/2}\}
+\le
+V_{\mathfrak g}^\star(t_0)
+\le
+C_\alpha\min\{1,t_0^{-1/2}\}.
+\]
+\end{theoremv}
+
+\Cref{obj:prop:no-shift-reduction} anchors the transported rate to the single-population weak-ratio scale. With \(w=1\), there is no Kish deflation and the denominator of \(t_n\) is one. The displayed bounds then express the same order-one elbow and \(t_0^{-1/2}\) decay in terms of \(n\mu_n^2\).
+
+The fixed-geometry theorem gives the conditional version of the full oracle characterization. It shows that the lower and upper bounds hold uniformly over admissible deterministic geometry arrays.
+
+\begin{theoremv}{thm:fixed-geometry-frontier}[Fixed-geometry length frontier]
+Let \(c>0\), let \(N_n\) be target sample sizes with \(N_n/n\to c\), let \(k_n\) be positive integers with \(k_n\to\infty\) and \(k_n/\sqrt n\to0\), let \(\varepsilon\in(0,1/2)\), and let \(\alpha\in(0,1)\).  Let \(\mathfrak g\) be a deterministic geometry array satisfying \cref{obj:def:admissible-geometry-class} at scale \(k_n\) and overlap parameter \(\varepsilon\).  Assume that, for every \(n\), every law in the fixed-geometry slice \(\mathcal P_n(\mathfrak g)\) of \cref{obj:def:fixed-geometry-slice} satisfies
+\begin{itemize}
+\item \textbf{(Two samples.)} \cref{obj:ass:two-sample-array} with target-to-source ratio \(c\).
+\item \textbf{(Overlap.)} \cref{obj:ass:instrument-overlap} with overlap parameter \(\varepsilon\).
+\item \textbf{(Envelope.)} \cref{obj:ass:weight-envelope} at scale \(k_n\).
+\item \textbf{(Second moment.)} \cref{obj:ass:weight-second-moment} at scale \(k_n\).
+\item \textbf{(Degradation.)} \cref{obj:ass:degrading-array} at scale \(k_n\).
+\end{itemize}
+Define
+\[
+L_\alpha=\left(\frac{8}{\alpha\varepsilon^2}\right)^{1/2},
+\qquad
+c_\alpha=\frac{3(1-\alpha)^2}{16},
+\qquad
+C_\alpha=\max\{2,4L_\alpha+8\varepsilon^{-2}\}.
+\]
+Then, for every fixed effective-strength threshold \(t_0>0\), the fixed-geometry minimax expected-length value \(V_{\mathfrak g}^\star(t_0)\) of \cref{obj:def:fixed-geometry-value} satisfies
+\[
+c_\alpha\min\{1,t_0^{-1/2}\}
+\le
+V_{\mathfrak g}^\star(t_0)
+\le
+C_\alpha\min\{1,t_0^{-1/2}\}.
+\]
+The constants \(c_\alpha\) and \(C_\alpha\) depend only on \(\alpha\) and \(\varepsilon\), uniformly over admissible deterministic geometry arrays \(\mathfrak g\).
+\end{theoremv}
+
+\Cref{obj:thm:fixed-geometry-frontier} establishes the same rate after conditioning on the source-covariate, transport-weight, and propensity array. The lower bound treats Kish dispersion as part of the information scale, and the upper bound is attained by the same score radius \(L_\alpha\sqrt{\widehat\kappa_n/n}\) used in \cref{obj:thm:oracle-score-inversion-attainment}. Together, the oracle, no-shift, and fixed-geometry results pin the minimax expected-length rate order, up to constants, as a function of the effective-strength threshold, within the procedure classes stated.

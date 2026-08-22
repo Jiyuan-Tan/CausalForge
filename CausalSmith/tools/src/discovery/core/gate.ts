@@ -136,7 +136,7 @@ export function pruneDeadAssumptions(coreInput: unknown): { core: Core; pruned: 
     // consistency gate (dangling citation). Mirrors the reachability fix in
     // stage0_working.pruneOrphanLemmas; a truly-unused assumption (cited nowhere) is still pruned.
     if (s) {
-      const prose = `${s.proof_tex ?? ""} ${s.statement ?? ""}`;
+      const prose = `${s.proof_tex ?? ""} ${s.statement}`;
       for (const r of extractNodeRefs(prose)) stack.push(r);
     }
   }

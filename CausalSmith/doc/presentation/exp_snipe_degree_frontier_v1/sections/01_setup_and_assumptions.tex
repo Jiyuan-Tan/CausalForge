@@ -1,6 +1,6 @@
-\section{Setup and Assumptions}
+\section{Setup and assumptions}
 
-We work in a finite-population design-based setting. The population is the finite unit set \leanref{sym:V_n}{\ensuremath{V_n}} with size \leanref{sym:n}{\ensuremath{n}}; indices such as \leanref{sym:i}{\ensuremath{i}} and \leanref{sym:j}{\ensuremath{j}} refer to units in \(V_n\). A known directed graph \leanref{sym:G_n}{\ensuremath{G_n}} records interference, with \leanref{sym:N_i}{\ensuremath{N_i}} denoting the assignment coordinates that can enter unit \(i\)'s potential outcome. For an assignment vector \leanref{sym:z}{\ensuremath{z}}, the potential outcome schedule is \leanref{sym:Y_i(z)}{\ensuremath{Y_i(z)}}, and the realized assignment is \leanref{sym:Z}{\ensuremath{Z}}. The observed outcome is \leanref{sym:Y_i^{\mathrm{obs}}}{\ensuremath{Y_i^{\mathrm{obs}}}} \(=Y_i(Z)\). The estimand is the average all-treated-versus-all-control contrast \leanref{sym:\tau_n}{\ensuremath{\tau_n}}. This \leanref{S-1}{finite-population design-based randomization world} and the accompanying \leanref{S-2}{fixed-potential-outcome polynomial interference world} provide the objects used in all risk statements below.
+We work in a finite-population design-based setting. The population is the finite unit set \leanref{sym:V_n}{\ensuremath{V_n}} with size \leanref{sym:n}{\ensuremath{n}}; indices such as \leanref{sym:i}{\ensuremath{i}} and \leanref{sym:j}{\ensuremath{j}} refer to units in \(V_n\). A known directed graph \leanref{sym:G_n}{\ensuremath{G_n}} records interference, with \leanref{sym:N_i}{\ensuremath{N_i}} denoting the assignment coordinates that can enter unit \(i\)'s potential outcome. For an assignment vector \leanref{sym:z}{\ensuremath{z}}, the potential outcome schedule is \leanref{sym:Y_i(z)}{\ensuremath{Y_i(z)}}, and the realized assignment is \leanref{sym:Z}{\ensuremath{Z}}. The observed outcome is \leanref{sym:Y_i^{\mathrm{obs}}}{\ensuremath{Y_i^{\mathrm{obs}}}} \(=Y_i(Z)\). The estimand is the average all-treated-versus-all-control contrast \leanref{sym:\tau_n}{\ensuremath{\tau_n}}. This \leanref{S-1}{finite-population Bernoulli randomization framework} and the accompanying \leanref{S-2}{fixed low-order polynomial interference model} provide the objects used in all risk statements below.
 
 The assignment mechanism is the independent Bernoulli design. We write \leanref{sym:p}{\ensuremath{p}} for the common treatment probability, \leanref{sym:P_Z}{\ensuremath{P_Z}} for the product assignment law, and \leanref{sym:\mathbb E_Z}{\ensuremath{\mathbb E_Z}} for expectation under that law.
 
@@ -35,11 +35,17 @@ Object group & Role & First main use \\
 The setup first introduces the design, graph, model class, estimator, and risk. The block programs, least-favourable laws, local-linear sequence, and bounded-outcome envelope then appear at the points where the main theorems use them.
 
 \begin{assumptionv}{ass:bernoulli-design}[Bernoulli assignment]
-The assignment law \(P_Z\) is the common-probability product Bernoulli design with \(p\in(0,1)\). Equivalently, the assignments \(\{Z_j:j\in V_n\}\) are mutually independent and
+Let \(V_n\) be a finite population of \(n:=|V_n|\) units, indexed by \(i,j\in V_n\), and let \(p\in(0,1)\). For every unit \(j\in V_n\),
 \[
-\Pr(Z_j=1)=p
+\Pr(Z_j=1)=p,
 \]
-for every \(j\in V_n\).
+and the variables \(\{Z_j:j\in V_n\}\) are mutually independent. The assignment law \(P_Z\) on \(\{0,1\}^{V_n}\) is
+\[
+P_Z(z)
+=
+\prod_{j\in V_n} p^{z_j}(1-p)^{1-z_j},
+\]
+and \(\mathbb E_Z\) denotes expectation under \(P_Z\).
 \end{assumptionv}
 
 \Cref{obj:ass:bernoulli-design} is the standard unit-level Bernoulli randomization condition used in design-based analyses of SNIPE-type estimators \citep{CortezRodriguezEichhornYu2023}. Its independence and common-probability clauses make the finite-design moments of centered assignment monomials explicit.
@@ -47,7 +53,7 @@ for every \(j\in V_n\).
 Interference is local in the known graph. The parameter \leanref{sym:d}{\ensuremath{d}} bounds both the number of assignment coordinates entering each unit's outcome and the number of outcomes affected by each assignment coordinate, with self-loops counted in both directions.
 
 \begin{assumptionv}{ass:bounded-degree}[Bounded interference degree]
-Self-loops are allowed and count in both degrees. The interference neighborhoods satisfy
+Let \(G_n\subseteq V_n\times V_n\) be a directed interference graph, and write \(N_i:=\{j\in V_n:(j,i)\in G_n\}\) for the interference neighborhood of unit \(i\). Self-loops are allowed and count in both the in-degree and out-degree. The interference neighborhoods \(N_i\) satisfy
 \[
 \max_{i\in V_n}|N_i|\le d
 \qquad\text{and}\qquad
@@ -59,12 +65,13 @@ Self-loops are allowed and count in both degrees. The interference neighborhoods
 
 Potential outcomes are represented by raw assignment monomials on the relevant neighborhood. The coefficient schedule is \leanref{sym:c}{\ensuremath{c}}, with \leanref{sym:c_{i,S}}{\ensuremath{c_{i,S}}} denoting the coefficient on a finite subset \leanref{sym:S}{\ensuremath{S}} of assignment coordinates. The interaction order \leanref{sym:\beta}{\ensuremath{\beta}} fixes the maximum monomial degree used by the model.
 
-\begin{assumptionv}{ass:low-order}[Low-order interactions]
-For every \(i\in V_n\) and every finite subset \(S\subseteq V_n\),
+\begin{assumptionv}{ass:low-order}[Low-order polynomial outcomes]
+For every unit \(i\in V_n\) and every finite subset \(S\subseteq V_n\), the coefficient schedule satisfies
 \[
 c_{i,S}=0
+\qquad\text{whenever}\qquad
+|S|>\beta .
 \]
-whenever \(|S|>\beta\).
 \end{assumptionv}
 
 \Cref{obj:ass:low-order} is the standard bounded polynomial interaction order condition \citep{CortezRodriguezEichhornYu2023}. It turns the neighborhood outcome schedule into a low-order polynomial and separates the role of graph degree from the role of interaction order.
@@ -72,7 +79,7 @@ whenever \(|S|>\beta\).
 The coefficient envelope \leanref{sym:B}{\ensuremath{B}} normalizes the size of each unit's outcome polynomial.
 
 \begin{assumptionv}{ass:bounded-coefficient-mass}[Bounded coefficient mass]
-For every \(i\in V_n\),
+For every unit \(i\in V_n\), the coefficient mass satisfies
 \[
 \sum_{S\subseteq N_i}|c_{i,S}|\le B .
 \]
@@ -87,47 +94,49 @@ The exposed interaction order records how much of the polynomial class can be se
 Whether \(\Delta_r(p)\) vanishes decides which interaction orders the design can expose, and hence the value of \(k_\star\) below.
 
 \begin{definitionv}{def:exposed-order}[Exposed order \(\bar\beta_d\) and \(k_\star(d,\beta,p)\)]
-For every \(d\ge0\), set
+For \(r\ge1\), define the order-\(r\) all-one-versus-all-zero Bernoulli contrast coefficient by
+\[
+\Delta_r(p):=(1-p)^r-(-p)^r .
+\]
+For every \(d\ge0\), define
 \[
 \bar\beta_d:=\min\{\beta,d\}.
 \]
-In particular, \(\bar\beta_0=0\).
-
+In particular,
+\[
+\bar\beta_0=0 .
+\]
 If \(\bar\beta_d\ge1\), define
 \[
 k_\star(d,\beta,p)
 :=
 \max\bigl\{r\in\{1,\ldots,\bar\beta_d\}:\Delta_r(p)\ne0\bigr\}.
 \]
-Since \(\Delta_1(p)=1\), the index set contains \(r=1\), so this maximum is well defined.
-
-If \(\bar\beta_d=0\), equivalently \(d=0\) or \(\beta=0\), set
+Since \(\Delta_1(p)=1\), this maximum is well defined. If \(\bar\beta_d=0\), equivalently \(d=0\) or \(\beta=0\), define
 \[
 k_\star(d,\beta,p):=0
 \]
-as a totality convention rather than as an attained interaction order. Thus the maximum case applies exactly when \(d\ge1\) and \(\beta\ge1\). Throughout the subsequent results, \(\beta\ge1\) is fixed.
+as a totality convention, rather than as an attained interaction order. Thus the maximum case applies exactly when \(d\ge1\) and \(\beta\ge1\); subsequent statements take \(\beta\ge1\).
 \end{definitionv}
 
 The quantities \leanref{sym:\bar\beta_d}{\ensuremath{\bar\beta_d}} and \leanref{sym:k_\star}{\ensuremath{k_\star(d,\beta,p)}} determine which centered monomial contrasts carry identifying content under the Bernoulli design.
 
-\begin{definitionv}{def:zero-degree-conventions}[Zero-degree conventions \(\binom00\), \(g_0\), \(A_0\), and \(h_0\)]
+\begin{definitionv}{def:zero-degree-conventions}[Zero-degree conventions \(\binom{0}{0}\), \(g_0\), \(A_0\), and \(h_0\)]
 For every \(\beta\in\mathbb N\) and \(p\in\mathbb R\), the degree-zero conventions are
 \[
-\bar\beta_0:=\min\{\beta,0\}=0,
+\bar\beta_0=0,
 \qquad
-k_\star(0,\beta,p):=0,
+k_\star(0,\beta,p)=0,
 \qquad
-g_0:=0,
+g_0=0,
 \qquad
-A_0:=0.
+A_0=0,
+\qquad
+h_0=0,
+\qquad
+h_{0,T}=0\ \text{for every }T\subseteq\{1,\ldots,0\}.
 \]
-The normalized representer is guarded at degree zero by setting
-\[
-h_0:=0,
-\qquad
-h_{0,T}:=0
-\]
-for every block-coordinate subset \(T\) of the zero-coordinate block, with \(h_0\) imposed as an empty-object convention rather than as the quotient \(g_0/A_0\).
+Here \(h_0\) is imposed directly as the zero representer, rather than formed as the quotient \(g_0/A_0\).
 \end{definitionv}
 
 These conventions allow the formulas for scores, energies, and representers to remain total across degree values, while the main results use the positive-degree regime stated in their conditions.
@@ -135,31 +144,38 @@ These conventions allow the formulas for scores, energies, and representers to r
 We next collect the graph and coefficient classes. The graph carrier is \leanref{sym:\mathcal G_{n,d}}{\ensuremath{\mathcal G_{n,d}}}, the coefficient carrier is \leanref{sym:\mathcal C_{n,d,\beta}(B)}{\ensuremath{\mathcal C_{n,d,\beta}(B)}}, and their product model class is \leanref{sym:\mathcal M_{n,d,\beta}(B)}{\ensuremath{\mathcal M_{n,d,\beta}(B)}}.
 
 \begin{definitionv}{def:graph-class}[Graph class $\mathcal G_{n,d}$]
-The graph class with degree bound \(d\) is
 \[
 \mathcal G_{n,d}
 :=
-\{G_n\subseteq V_n\times V_n:\ G_n \text{ satisfies } \cref{obj:ass:bounded-degree}\}.
+\left\{
+G_n\in 2^{V_n\times V_n}:
+G_n \text{ satisfies } \cref{obj:ass:bounded-degree}
+\right\}.
 \]
 \end{definitionv}
 
 \begin{definitionv}{def:coefficient-class}[Coefficient class $\mathcal C_{n,d,\beta}(B)$]
-The coefficient class with interaction order \(\beta\) and mass radius \(B\) is
 \[
 \mathcal C_{n,d,\beta}(B)
 :=
-\left\{c=(c_{i,S})_{i\in V_n,\,S\subseteq V_n}:
- c_{i,S}=0 \text{ whenever } S\not\subseteq N_i,
-\ c \text{ satisfies } \cref{obj:ass:low-order,obj:ass:bounded-coefficient-mass}\right\}.
+\left\{
+c=(c_{i,S})_{i,S}:
+c_{i,S}=0 \text{ whenever } S\not\subseteq N_i,
+\ c \text{ satisfies } \cref{obj:ass:low-order,obj:ass:bounded-coefficient-mass}
+\right\}.
 \]
 \end{definitionv}
 
-\begin{definitionv}{def:model-class}[Model class $\mathcal M_{n,d,\beta}(B)$]
-Under \cref{obj:ass:bounded-degree,obj:ass:low-order,obj:ass:bounded-coefficient-mass}, with coefficient schedules supported on the in-neighborhoods in the sense that \(c_{i,S}=0\) whenever \(S\not\subseteq N_i\), the model class is
+\begin{definitionv}{def:model-class}[Model class \(\mathcal M_{n,d,\beta}(B)\)]
+Under \cref{obj:ass:bounded-degree,obj:ass:low-order,obj:ass:bounded-coefficient-mass}, with coefficient schedules supported on the in-neighborhoods in the sense that \(c_{i,S}=0\) whenever \(S\not\subseteq N_i\), define
 \[
 \mathcal M_{n,d,\beta}(B)
 :=
-\{(G_n,c):\ G_n\in\mathcal G_{n,d},\ c\in\mathcal C_{n,d,\beta}(B)\}.
+\left\{
+(G_n,c):
+G_n\in\mathcal G_{n,d},\ 
+c\in\mathcal C_{n,d,\beta}(B)
+\right\}.
 \]
 \end{definitionv}
 
@@ -167,8 +183,7 @@ Together, \cref{obj:def:graph-class,obj:def:coefficient-class,obj:def:model-clas
 
 The estimator uses centered Bernoulli contrast scores. For unit \(i\), the score \leanref{sym:g_{i,\beta,p}}{\ensuremath{g_{i,\beta,p}}} weights observed outcomes by all centered neighborhood monomials up to the exposed order.
 
-\begin{definitionv}{def:snipe-score}[SNIPE score \(g_{i,\beta,p}\)]
-For unit \(i\), the SNIPE score is
+\begin{definitionv}{def:snipe-score}[SNIPE score $g_{i,\beta,p}$]
 \[
 g_{i,\beta,p}(z)
 :=
@@ -179,87 +194,133 @@ g_{i,\beta,p}(z)
 \]
 \end{definitionv}
 
+When \(|N_i|<\bar\beta_d\), the inner subset sum is empty for every order \(r>|N_i|\). Equivalently, the same score can be read as summing over \(1\le r\le \min\{\beta,|N_i|\}\) for unit \(i\).
+
 The unprojected estimator \leanref{sym:\widehat\tau_n^{\mathrm{SNIPE}}}{\ensuremath{\widehat\tau_n^{\mathrm{SNIPE}}}} averages observed outcomes weighted by these scores, and the projected estimator \leanref{sym:\widehat\tau_n^{\mathrm{up}}}{\ensuremath{\widehat\tau_n^{\mathrm{up}}}} clips that average to \([-B,B]\) for the coefficient-mass risk comparison.
 
-\begin{definitionv}{def:snipe-estimator}[SNIPE estimator \(\widehat\tau_n^{\mathrm{SNIPE}}\)]
+\begin{definitionv}{def:snipe-estimator}
+For each unit \(i\in V_n\), the observed outcome under the realized assignment is
+\[
+Y_i^{\mathrm{obs}}:=Y_i(Z).
+\]
 The unprojected SNIPE estimator is
 \[
 \widehat\tau_n^{\mathrm{SNIPE}}
 :=
-\frac{1}{n}\sum_{i\in V_n}Y_i^{\mathrm{obs}}g_{i,\beta,p}(Z).
+\frac{1}{n}
+\sum_{i\in V_n}
+Y_i^{\mathrm{obs}}\,g_{i,\beta,p}(Z).
 \]
-Its projected version is
+The projected SNIPE estimator is
 \[
 \widehat\tau_n^{\mathrm{up}}
 :=
-\Pi_{[-B,B]}\bigl(\widehat\tau_n^{\mathrm{SNIPE}}\bigr),
+\Pi_{[-B,B]}
+\left(
+\widehat\tau_n^{\mathrm{SNIPE}}
+\right),
 \]
-where \(\Pi_{[-B,B]}\) denotes Euclidean projection onto \([-B,B]\).
+where \(\Pi_{[-B,B]}\) is Euclidean projection onto \([-B,B]\).
 \end{definitionv}
 
-The decision problem is graph-aware and design-based: estimators may use the graph, the assignment, and the observed outcomes, while risk averages only over the random assignment. The generic estimator is \leanref{sym:\widehat\tau_n}{\ensuremath{\widehat\tau_n}}, and the resulting coefficient-class minimax risk is \leanref{sym:R_n^\star(d,\beta,p,B)}{\ensuremath{R_n^\star(d,\beta,p,B)}}. This is the \leanref{S-3}{design-based decision-theoretic world} used by the main theorem.
+The decision problem is graph-aware and design-based: estimators may use the graph, the assignment, and the observed outcomes, while risk averages only over the random assignment. The generic estimator is \leanref{sym:\widehat\tau_n}{\ensuremath{\widehat\tau_n}}, and the resulting coefficient-class minimax risk is \leanref{sym:R_n^\star(d,\beta,p,B)}{\ensuremath{R_n^\star(d,\beta,p,B)}}. This is the \leanref{S-3}{design-based decision-theoretic setting} used by the main theorem.
 
-\begin{definitionv}{def:minimax-risk}[Minimax risk \(R_n^\star(d,\beta,p,B)\)]
-The minimax design mean squared error over \(\mathcal M_{n,d,\beta}(B)\) is
+\begin{definitionv}{def:minimax-risk}
+The finite-population all-treated-versus-all-control effect is
+\[
+\tau_n:=\frac{1}{n}\sum_{i\in V_n}\bigl(Y_i(\mathbf 1)-Y_i(\mathbf 0)\bigr),
+\]
+where \(\mathbf 1\) and \(\mathbf 0\) denote the all-one and all-zero assignments. The minimax risk is
 \[
 R_n^\star(d,\beta,p,B)
 :=
 \inf_{\widehat\tau_n}
 \sup_{(G_n,c)\in\mathcal M_{n,d,\beta}(B)}
-\mathbb E_Z\!\left[
-\bigl(\widehat\tau_n-\tau_n\bigr)^2
-\right],
+\mathbb E_Z
+\left[
+\left(
+\widehat\tau_n-\tau_n
+\right)^2
+\right].
 \]
-where the infimum ranges over estimators \(\widehat\tau_n\) measurable with respect to \((G_n,Z,\{Y_i^{\mathrm{obs}}:i\in V_n\})\).
+The infimum ranges over estimators \(\widehat\tau_n\) that are measurable functions of \(G_n\), \(Z\), and \(\{Y_i^{\mathrm{obs}}:i\in V_n\}\).
 \end{definitionv}
 
 The lower-bound construction and the local linear benchmark both reduce to complete blocks. For one \(d\)-block, the block score \leanref{sym:g_d}{\ensuremath{g_d}}, energy \leanref{sym:A_d}{\ensuremath{A_d}}, normalized representer \leanref{sym:h_d}{\ensuremath{h_d}}, block-coordinate subset \leanref{sym:T}{\ensuremath{T}}, and raw coefficient \leanref{sym:h_{d,T}}{\ensuremath{h_{d,T}}} are as follows.
 
-\begin{definitionv}{def:block-score-energy}[Complete-block score and energy \(g_d,A_d,h_d\)]
-For \(d\ge 1\) and a Bernoulli assignment vector \(z=(z_1,\ldots,z_d)\), define
+\begin{definitionv}{def:block-score-energy}[Block score energy \(g_d,A_d,h_d\)]
+For \(d\ge 1\) and a \(d\)-coordinate Bernoulli assignment vector \(z\), define
 \[
-g_d(z):=\sum_{r=1}^{\bar\beta_d}\frac{\Delta_r(p)}{[p(1-p)]^r}\sum_{\substack{S\subseteq\{1,\ldots,d\}\\ |S|=r}}\prod_{j\in S}(z_j-p).
+g_d(z)
+:=
+\sum_{r=1}^{\bar\beta_d}
+\frac{\Delta_r(p)}{[p(1-p)]^r}
+\sum_{\substack{S\subseteq\{1,\ldots,d\}\\ |S|=r}}
+\prod_{j\in S}(z_j-p).
 \]
-The corresponding energy is
+The complete-block score energy is
 \[
-A_d:=\sum_{r=1}^{\bar\beta_d}\binom{d}{r}\frac{\Delta_r(p)^2}{[p(1-p)]^r}.
+A_d
+:=
+\sum_{r=1}^{\bar\beta_d}
+\binom{d}{r}
+\frac{\Delta_r(p)^2}{[p(1-p)]^r}.
 \]
 The normalized block representer is
 \[
-h_d:=\frac{g_d}{A_d}.
+h_d:=\frac{g_d}{A_d},
 \]
-Its raw-monomial expansion is
+with raw-monomial expansion
 \[
-h_d(z)=\sum_{T\subseteq\{1,\ldots,d\}}h_{d,T}\prod_{j\in T}z_j.
+h_d(z)=
+\sum_{T\subseteq\{1,\ldots,d\}}
+h_{d,T}\prod_{j\in T}z_j .
 \]
 \end{definitionv}
 
-The least-favourable family places complete directed blocks inside the population. Its notation includes the number of blocks \leanref{sym:m}{\ensuremath{m}}, active units \leanref{sym:q}{\ensuremath{q}}, active fraction \leanref{sym:\rho}{\ensuremath{\rho}}, active block \leanref{sym:V_b}{\ensuremath{V_b}}, block index \leanref{sym:b}{\ensuremath{b}}, baseline halfwidth \leanref{sym:s}{\ensuremath{s}}, density \leanref{sym:f_s}{\ensuremath{f_s}}, block baseline \leanref{sym:U_b}{\ensuremath{U_b}}, representer mass bound \leanref{sym:H_{\beta,p}}{\ensuremath{H_{\beta,p}}}, perturbation amplitude \leanref{sym:\delta}{\ensuremath{\delta}}, sign \leanref{sym:\sigma}{\ensuremath{\sigma}}, and prior \leanref{sym:\Pi_\sigma}{\ensuremath{\Pi_\sigma}}. This is the \leanref{S-4}{least-favourable block world} used to calibrate the minimax lower bound.
+The least-favourable family places complete directed blocks inside the population. Its notation includes the number of blocks \leanref{sym:m}{\ensuremath{m}}, active units \leanref{sym:q}{\ensuremath{q}}, active fraction \leanref{sym:\rho}{\ensuremath{\rho}}, active block \leanref{sym:V_b}{\ensuremath{V_b}}, block index \leanref{sym:b}{\ensuremath{b}}, baseline halfwidth \leanref{sym:s}{\ensuremath{s}}, density \leanref{sym:f_s}{\ensuremath{f_s}}, block baseline \leanref{sym:U_b}{\ensuremath{U_b}}, representer mass bound \leanref{sym:H_{\beta,p}}{\ensuremath{H_{\beta,p}}}, perturbation amplitude \leanref{sym:\delta}{\ensuremath{\delta}}, sign \leanref{sym:\sigma}{\ensuremath{\sigma}}, and prior \leanref{sym:\Pi_\sigma}{\ensuremath{\Pi_\sigma}}. This is the \leanref{S-4}{least-favourable block construction} used to calibrate the minimax lower bound.
 
-\begin{definitionv}{def:block-family}[Least-favourable block family \(\Pi_\sigma\)]
-For \(B>0\) and \(1\le d\le n\), set
+\begin{definitionv}{def:block-family}[Block priors \(\Pi_\sigma\), \(\delta(n,d,\beta,B,p)\), and \(H^2\)]
+For \(n,d,\beta\in\mathbb N\), \(B>0\), \(p\in\mathbb R\), \(1\le d\le n\), and \(\sigma\in\{-1,1\}\), define
 \[
-m:=\lfloor n/d\rfloor,\qquad q:=md,\qquad \rho:=q/n.
+m:=\left\lfloor \frac nd\right\rfloor,
+\qquad
+q:=md,
+\qquad
+\rho:=\frac qn .
 \]
-Partition \(q\) units into \(m\) blocks \(V_b\) of size \(d\). Each block contains every within-block directed arrow, including loops, and the remaining \(n-q\) units are isolated.
+On the first \(q\) units, form consecutive blocks \(V_b\), each of size \(d\). Each block contains every within-block directed arrow, including loops, and the remaining \(n-q\) units are isolated.
 
-Set
+Define
 \[
-s:=B/2,\qquad f_s(u):=s^{-1}\cos^2\!\left(\frac{\pi u}{2s}\right)\mathbf 1\{|u|\le s\}.
+s:=\frac B2
 \]
-Let \(U_1,\ldots,U_m\) be independent draws from density \(f_s\). Define
+and
 \[
-H_{\beta,p}:=\sup_{d\ge1}\sum_T |h_{d,T}|
+f_s(u):=
+s^{-1}\cos^2\left(\frac{\pi u}{2s}\right)\mathbf 1\{|u|\le s\}.
 \]
-and choose
+Let \(U_1,\ldots,U_m\) be independent real draws with density \(f_s\). Define
 \[
-\delta:=B\min\{(2H_{\beta,p})^{-1},(4\pi)^{-1}\}\min\{1,\sqrt{A_d/m}\}.
+H_{\beta,p}:=
+\sup_{r\ge 1}\sum_T |h_{r,T}|
 \]
-Under \(\Pi_\sigma\), each active unit \(i\in V_b\) has coefficients
+and
 \[
-c_{i,T}:=U_b\mathbf1\{T=\varnothing\}+\sigma\delta h_{d,T},\qquad |T|\le k_\star.
+\delta(n,d,\beta,B,p)
+:=
+B\min\left\{(2H_{\beta,p})^{-1},(4\pi)^{-1}\right\}
+\min\left\{1,\sqrt{\frac{A_d}{m}}\right\}.
 \]
-All remaining coefficients, including coefficients of inactive units, are zero. The variables \(U_b\) randomize fixed potential-outcome schedules as prior draws over schedules.
+Write \(\delta:=\delta(n,d,\beta,B,p)\). The prior \(\Pi_\sigma\) is the pushforward of the law of \((U_1,\ldots,U_m)\) under the following coefficient-schedule map. For each active unit \(i\in V_b\) and within-block subset \(T\subseteq V_b\),
+\[
+c_{i,T}
+:=
+U_b\mathbf 1\{T=\varnothing\}
++\sigma\delta h_{d,T},
+\qquad |T|\le k_\star .
+\]
+All coefficients for subsets not contained in the active block, and all coefficients of inactive units, are zero.
 \end{definitionv}
 
 The two signed versions of the construction also induce prior-predictive laws. The negative law is named separately because the affinity comparison in the lower-bound argument uses the pair symmetrically.
@@ -272,7 +333,7 @@ We write $\Pi_-$ for the prior-predictive law induced by the least-favourable bl
 In the complete-block construction with \(B>0\) and \(1\le d\le n\), we write \(\Pi_+(n,d,\beta,B,p)\) for the probability law on fixed coefficient schedules induced by independent draws \(U_b\sim f_s\) under which each active unit \(i\in V_b\) has \(c_{i,T}=U_b\mathbf 1\{T=\varnothing\}+\delta h_{d,T}\) for \(|T|\le k_\star(d,\beta,p)\), and every other coefficient, including each coefficient of an inactive unit, equals \(0\).
 \end{definitionv}
 
-For the complete-block Riesz calculations, the finite design space and the polynomial contrast space are useful in their own right. We use the \leanref{S-5}{block-local Riesz world}: the block polynomial subspace \leanref{sym:\mathcal P_d}{\ensuremath{\mathcal P_d}}, candidate polynomial \leanref{sym:f}{\ensuremath{f}}, candidate perturbation \leanref{sym:h}{\ensuremath{h}}, all-one-versus-all-zero contrast functional \leanref{sym:L_d}{\ensuremath{L_d}}, candidate block-local weight \leanref{sym:w}{\ensuremath{w}}, and the associated minimum-energy programs. The contrast functional evaluates a block polynomial at the all-treated and all-control assignments,
+For the complete-block Riesz calculations, the finite design space and the polynomial contrast space are useful in their own right. We use the \leanref{S-5}{block-local Riesz formulation}: the block polynomial subspace \leanref{sym:\mathcal P_d}{\ensuremath{\mathcal P_d}}, candidate polynomial \leanref{sym:f}{\ensuremath{f}}, candidate perturbation \leanref{sym:h}{\ensuremath{h}}, all-one-versus-all-zero contrast functional \leanref{sym:L_d}{\ensuremath{L_d}}, candidate block-local weight \leanref{sym:w}{\ensuremath{w}}, and the associated minimum-energy programs. The contrast functional evaluates a block polynomial at the all-treated and all-control assignments,
 \[
 L_d(f):=f(\mathbf 1_d)-f(\mathbf 0_d),
 \]
@@ -290,10 +351,27 @@ We write $L^2(P_Z)$ for the real vector space of functions $w:\{0,1\}^{\{1,\ldot
 For \(d\ge1\), \(\mathcal P_d\) is the linear subspace of \(L^2(P_Z)\) spanned by the raw monomials \(z\mapsto\prod_{j\in S} z_j\) with \(S\subseteq\{1,\ldots,d\}\) and \(|S|\le\bar\beta_d\).
 \end{definitionv}
 
-\begin{definitionv}{def:perturbation-program}[Perturbation program \(\mathsf{PerturbProg}_{d,\beta,p}\)]
-For \(d\ge1\), define
+\begin{definitionv}{def:perturbation-program}[Low-order block space $\mathcal P_d$, contrast $L_d$, and program $\mathsf{PerturbProg}_{d,\beta,p}$]
+For \(d\ge 1\), let \(\mathcal P_d\) be the low-order polynomial subspace on \(d\) Bernoulli coordinates,
 \[
-\mathsf{PerturbProg}_{d,\beta,p}:=\min_{h\in\mathcal P_d}\mathbb E_Z[h(Z)^2]
+\mathcal P_d
+:=
+\left\{
+h(z)=\sum_{\substack{S\subseteq \{1,\ldots,d\}\\ |S|\le \bar\beta_d}}
+a_S\prod_{j\in S}z_j
+\right\}.
+\]
+Define the all-one-versus-all-zero block contrast functional \(L_d:\mathcal P_d\to\mathbb R\) by
+\[
+L_d(h)
+:=
+h(1,\ldots,1)-h(0,\ldots,0).
+\]
+The perturbation program is
+\[
+\mathsf{PerturbProg}_{d,\beta,p}
+:=
+\min_{h\in\mathcal P_d}\mathbb E_Z[h(Z)^2]
 \]
 subject to
 \[
@@ -302,9 +380,11 @@ L_d(h)=1.
 \end{definitionv}
 
 \begin{definitionv}{def:weight-program}[Weight program \(\mathsf{WeightProg}_{d,\beta,p}\)]
-For \(d\ge1\), define
+For \(d\ge 1\), define
 \[
-\mathsf{WeightProg}_{d,\beta,p}:=\min_{w\in L^2(P_Z)}\mathbb E_Z[w(Z)^2]
+\mathsf{WeightProg}_{d,\beta,p}
+:=
+\min_{w\in L^2(P_Z)}\mathbb E_Z[w(Z)^2]
 \]
 subject to
 \[
@@ -312,7 +392,7 @@ subject to
 \]
 and, for every nonempty \(S\subseteq\{1,\ldots,d\}\) with \(|S|\le\bar\beta_d\),
 \[
-\mathbb E_Z\!\left[w(Z)\prod_{j\in S}Z_j\right]=1.
+\mathbb E_Z\left[w(Z)\prod_{j\in S}Z_j\right]=1.
 \]
 \end{definitionv}
 
@@ -320,38 +400,56 @@ The perturbation program \leanref{sym:\mathsf{PerturbProg}_{d,\beta,p}}{\ensurem
 
 The fixed-graph local linear benchmark specializes the population sequence to complete blocks. Let \leanref{sym:G_t}{\ensuremath{G_t}} be the fixed complete-block graph at index \(t\), with carrier \leanref{sym:V_{n_t}}{\ensuremath{V_{n_t}}}, size \leanref{sym:n_t}{\ensuremath{n_t}}, block size \leanref{sym:d_t}{\ensuremath{d_t}}, and neighborhoods \leanref{sym:N_i^{G_t}}{\ensuremath{N_i^{G_t}}}. The local coefficient class is \leanref{sym:\mathcal M_t(G_t)}{\ensuremath{\mathcal M_t(G_t)}}.
 
-\begin{definitionv}{def:local-linear-class}[Fixed-graph class \(\mathcal M_t(G_t)\)]
-Under \cref{obj:ass:low-order,obj:ass:bounded-coefficient-mass}, on the fixed graph \(G_t\), define \(\mathcal M_t(G_t)\) as the set of coefficient schedules \(c\) satisfying
+\begin{definitionv}{def:local-linear-class}[Local class \(\mathcal M_t(G_t)\)]
+Under \cref{obj:ass:low-order,obj:ass:bounded-coefficient-mass}, on the fixed graph \(G_t\), define
 \[
-c_{i,S}=0
-\]
-whenever \(S\subseteq N_i^{G_t}\) and \(|S|\le\bar\beta_{d_t}\) fail to hold, and satisfying, for every \(i\in V_{n_t}\),
-\[
-\sum_{S\subseteq N_i^{G_t}}|c_{i,S}|\le B.
+\mathcal M_t(G_t)
+:=
+\left\{
+c:
+c_{i,S}=0\ \text{unless } S\subseteq N_i^{G_t}\text{ and } |S|\le \bar\beta_{d_t},
+\quad
+\sum_{S\subseteq N_i^{G_t}} |c_{i,S}|\le B
+\text{ for every } i\in V_{n_t}
+\right\}.
 \]
 \end{definitionv}
 
 A local linear estimator uses a block-local assignment weight \leanref{sym:w_{i,t}}{\ensuremath{w_{i,t}}}. If \leanref{sym:b(i)}{\ensuremath{b(i)}} denotes the block containing unit \(i\), then \leanref{sym:Z_{b(i)}}{\ensuremath{Z_{b(i)}}} is the assignment vector in that block, \leanref{sym:\widehat\tau_{w,t}}{\ensuremath{\widehat\tau_{w,t}}} is the resulting estimator, and \leanref{sym:\mathcal E_t^{\mathrm{loc,lin}}}{\ensuremath{\mathcal E_t^{\mathrm{loc,lin}}}} is the moment-restricted class.
 
-\begin{definitionv}{def:local-linear-estimator-class}[Local linear estimators \(\mathcal E_t^{\mathrm{loc,lin}}\)]
-Define \(\mathcal E_t^{\mathrm{loc,lin}}\) as the set of estimators
+\begin{definitionv}{def:local-linear-estimator-class}[Block-local estimators $\mathcal E_t^{\mathrm{loc,lin}}$]
+For each unit \(i\in V_{n_t}\), let \(b(i)\) be the index of the complete block containing \(i\), and let \(Z_{b(i)}\) be the assignment vector restricted to that block:
 \[
-\widehat\tau_{w,t}:=n_t^{-1}\sum_{i\in V_{n_t}}w_{i,t}(Z_{b(i)})Y_i(Z)
+b(i)
+:=
+\text{the unique } b \text{ such that } i\in V_b,
+\qquad
+Z_{b(i)}
+:=
+(Z_j)_{j\in V_{b(i)}}.
 \]
-such that \(w_{i,t}\in L^2(P_Z)\) is measurable with respect to \(Z_{b(i)}\),
+Let \(L^2(P_Z)\) denote the finite-design square-integrable functions under \(P_Z\). Define
 \[
-\mathbb E_Z[w_{i,t}]=0,
-\]
-and, for every nonempty \(S\subseteq N_i^{G_t}\) with \(|S|\le\bar\beta_{d_t}\),
-\[
-\mathbb E_Z\!\left[w_{i,t}\prod_{j\in S}Z_j\right]=1.
+\mathcal E_t^{\mathrm{loc,lin}}
+:=
+\left\{
+\widehat\tau_{w,t}
+=
+\frac{1}{n_t}\sum_{i\in V_{n_t}} w_{i,t}(Z_{b(i)})Y_i(Z):
+\begin{array}{l}
+w_{i,t}\in L^2(P_Z)\text{ is measurable with respect to }Z_{b(i)},\\
+\mathbb E_Z[w_{i,t}]=0,\\
+\mathbb E_Z\left[w_{i,t}\prod_{j\in S}Z_j\right]=1
+\text{ for every nonempty }S\subseteq N_i^{G_t}
+\text{ with }|S|\le\bar\beta_{d_t}
+\end{array}
+\right\}.
 \]
 \end{definitionv}
 
 The fixed-graph local linear risk \leanref{sym:R_t^{\mathrm{loc,lin}}}{\ensuremath{R_t^{\mathrm{loc,lin}}}} evaluates these estimators over the corresponding coefficient schedules.
 
-\begin{definitionv}{def:local-linear-risk}[Local linear risk \(R_t^{\mathrm{loc,lin}}\)]
-For a fixed complete-block graph \(G_t\), define
+\begin{definitionv}{def:local-linear-risk}[Local linear risk $R_t^{\mathrm{loc,lin}}$]
 \[
 R_t^{\mathrm{loc,lin}}
 :=
@@ -361,50 +459,45 @@ R_t^{\mathrm{loc,lin}}
 \left(\widehat\tau_{w,t}-\tau_{n_t}\right)^2
 \right].
 \]
-The supremum ranges over coefficient schedules on the fixed graph \(G_t\).
+The supremum ranges over coefficient schedules in \(\mathcal M_t(G_t)\) on the fixed graph \(G_t\).
 \end{definitionv}
 
 Finally, we introduce the uniformly bounded-outcome class. Its schedule carrier is \leanref{sym:\mathcal C_{n,d,\beta}^{\infty}(B)}{\ensuremath{\mathcal C_{n,d,\beta}^{\infty}(B)}}, and its model class is \leanref{sym:\mathcal M_{n,d,\beta}^{\infty}(B)}{\ensuremath{\mathcal M_{n,d,\beta}^{\infty}(B)}}.
 
-\begin{definitionv}{def:bounded-outcome-coefficient-class}[Bounded-outcome coefficient class \(\mathcal C_{n,d,\beta}^{\infty}(B)\)]
-Under \cref{obj:ass:low-order}, define
+\begin{definitionv}{def:bounded-outcome-coefficient-class}[Bounded-outcome coefficient class $\mathcal C_{n,d,\beta}^{\infty}(B)$]
 \[
 \mathcal C_{n,d,\beta}^{\infty}(B)
 :=
 \left\{
 c:
-c_{i,S}=0\ \text{whenever } S\not\subseteq N_i,
-\quad
-c_{i,S}=0\ \text{whenever } |S|>\beta,
-\quad
-\sup_{z\in\{0,1\}^{V_n}} |Y_i(z)|\le B
-\ \text{for every } i\in V_n
+ c_{i,S}=0\ \text{whenever } S\not\subseteq N_i,\quad
+ c_{i,S}=0\ \text{whenever } |S|>\beta,\quad
+\sup_{z\in\{0,1\}^{V_n}} |Y_i(z)|\le B\ \text{for every } i\in V_n
 \right\}.
 \]
+The low-order restriction is the one in \cref{obj:ass:low-order}.
 \end{definitionv}
 
-\begin{definitionv}{def:bounded-outcome-model-class}[Bounded-outcome model class \(\mathcal M_{n,d,\beta}^{\infty}(B)\)]
-Under \cref{obj:ass:bounded-degree,obj:ass:low-order}, define
+\begin{definitionv}{def:bounded-outcome-model-class}[Bounded-outcome model class $\mathcal M_{n,d,\beta}^{\infty}(B)$]
 \[
 \mathcal M_{n,d,\beta}^{\infty}(B)
 :=
 \left\{
 (G_n,c):
-G_n\in\mathcal G_{n,d},
-\quad
+G_n\in\mathcal G_{n,d},\quad
 c\in\mathcal C_{n,d,\beta}^{\infty}(B)
 \right\}.
 \]
+The graph component satisfies \cref{obj:ass:bounded-degree}, and the coefficient component satisfies the low-order condition in \cref{obj:ass:low-order}.
 \end{definitionv}
 
 The notation for the two minimax risks distinguishes the coefficient-mass class from the uniformly bounded-outcome class. We write \leanref{sym:R_{n,\ell_1}^{\star}(d,\beta,p,B)}{\ensuremath{R_{n,\ell_1}^{\star}(d,\beta,p,B)}} for the coefficient-mass risk and \leanref{sym:R_{n,\infty}^{\star}(d,\beta,p,B)}{\ensuremath{R_{n,\infty}^{\star}(d,\beta,p,B)}} for the bounded-outcome risk.
 
-\begin{definitionv}{def:two-class-minimax-risks}[Two minimax risks \(R_{n,\ell_1}^{\star}\) and \(R_{n,\infty}^{\star}\)]
-For \(0\le p\le 1\), define
+\begin{definitionv}{def:two-class-minimax-risks}[Two minimax risks $R_{n,\ell_1}^{\star}$ and $R_{n,\infty}^{\star}$]
 \[
 R_{n,\ell_1}^{\star}(d,\beta,p,B)
 :=
-R_n^\star(d,\beta,p,B)
+R_n^\star(d,\beta,p,B),
 \]
 and
 \[
@@ -414,31 +507,20 @@ R_{n,\infty}^{\star}(d,\beta,p,B)
 \sup_{(G_n,c)\in\mathcal M_{n,d,\beta}^{\infty}(B)}
 \mathbb E_Z\!\left[
 \left(\widehat\tau_n-\tau_n\right)^2
-\right].
+\right],
 \]
-The infimum ranges over graph-aware estimators \(\widehat\tau_n\) of \(G_n\), \(Z\), and \(\{Y_i^{\mathrm{obs}}:i\in V_n\}\) that, for each fixed \(G_n\) and \(Z\), are measurable as functions of the observed-outcome vector and whose modelwise bounded-outcome risk range
-\[
-\left\{
-\mathbb E_Z\!\left[
-\left(\widehat\tau_n-\tau_n\right)^2
-\right]
-:
-(G_n,c)\in\mathcal M_{n,d,\beta}^{\infty}(B)
-\right\}
-\]
-is bounded above.
+where \(\widehat\tau_n\) is measurable with respect to \((G_n,Z,\{Y_i^{\mathrm{obs}}:i\in V_n\})\).
 \end{definitionv}
 
 For the bounded-outcome comparison, the SNIPE estimator is projected to the natural range of the total-effect contrast. The clipped version is \leanref{sym:\widehat\tau_{n,\infty}^{\mathrm{up}}}{\ensuremath{\widehat\tau_{n,\infty}^{\mathrm{up}}}}.
 
-\begin{definitionv}{def:bounded-outcome-clipped-snipe}[Bounded-outcome clipped SNIPE \(\widehat\tau_{n,\infty}^{\mathrm{up}}\)]
-Define
+\begin{definitionv}{def:bounded-outcome-clipped-snipe}[Bounded-outcome clipped SNIPE $\widehat\tau_{n,\infty}^{\mathrm{up}}$]
 \[
 \widehat\tau_{n,\infty}^{\mathrm{up}}
 :=
 \Pi_{[-2B,2B]}\!\left(\widehat\tau_n^{\mathrm{SNIPE}}\right),
 \]
-where \(\Pi_{[-2B,2B]}\) denotes Euclidean projection onto \([-2B,2B]\).
+where \(\Pi_{[-2B,2B]}\) is Euclidean projection onto \([-2B,2B]\).
 \end{definitionv}
 
 Two prior laws are compared through the squared Hellinger distance, used throughout in its unhalved form: for laws \(P\) and \(Q\) with densities \(f\) and \(g\) with respect to a common dominating measure \(\lambda\),

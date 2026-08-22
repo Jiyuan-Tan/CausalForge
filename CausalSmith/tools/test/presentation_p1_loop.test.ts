@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import { renderMechanicalLayer, routeFinding } from "../src/presentation/p1_loop.js";
 import {
   placeSynthesizedDefinitions,
-  removeSynthesizedPlacements,
   presentedBody,
   routeNotationProblems,
   orderEnvsForLayer,
@@ -50,7 +49,6 @@ describe("P1 synthesized-definition placement", () => {
     expect(placed).toContain("objs: synth_2, synth_1,graph-a");
     expect(placed).toContain("objs: graph-b");
     expect(placed).not.toMatch(/synth_(?:88|99)/);
-    expect(removeSynthesizedPlacements(placed)).toBe(removeSynthesizedPlacements(outline));
     expect(placeSynthesizedDefinitions(placed, ["synth_2", "synth_1"])).toBe(placed);
   });
   it("retains valid one-time synth placements across sections and places only missing ids at first use", () => {

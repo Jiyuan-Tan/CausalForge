@@ -58,6 +58,7 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { findOrphanPaperModules, SYNTHETIC_COMPANION_RE } from "../src/presentation/paper_index_orphans.js";
+import { findCausalSmithRoot } from "../src/shared/repo_root.js";
 
 /** Severities that fail `--strict`. Everything else is informational. */
 const HARD = new Set([
@@ -124,23 +125,6 @@ interface CrosswalkEntry {
 /** `prefix` itself and its descendants, but never a textual lookalike. */
 function isWithinModulePrefix(moduleName: string, prefix: string): boolean {
   return moduleName === prefix || moduleName.startsWith(`${prefix}.`);
-}
-
-function findCausalSmithRoot(start: string): string {
-  let cur = path.resolve(start);
-  for (;;) {
-    const lakefile = path.join(cur, "lakefile.toml");
-    if (existsSync(lakefile)) {
-      try {
-        if (/^\s*name\s*=\s*"CausalSmith"/m.test(readFileSync(lakefile, "utf8"))) return cur;
-      } catch {
-        /* fall through */
-      }
-    }
-    const parent = path.dirname(cur);
-    if (parent === cur) throw new Error(`Could not locate CausalSmith package root from ${start}`);
-    cur = parent;
-  }
 }
 
 /** Both extractors cap long slices with a `-- … truncated …` sentinel; drop it before matching. */

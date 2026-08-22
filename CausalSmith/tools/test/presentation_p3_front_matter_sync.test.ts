@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { frontMatterFromPaper, stageP3 } from "../src/presentation/stages/p3_gates.js";
 import { freshPaperState } from "../src/presentation/state.js";
-import { hashEnvBody, parseAnchoredEnvs } from "../src/presentation/tex_anchors.js";
+import { parseAnchoredEnvs } from "../src/presentation/tex_anchors.js";
 
 const PAPER = String.raw`\documentclass{article}
 \begin{document}

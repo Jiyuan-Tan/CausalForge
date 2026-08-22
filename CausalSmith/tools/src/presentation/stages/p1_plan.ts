@@ -1,7 +1,7 @@
-import { readFile, writeFile, mkdir, unlink } from "node:fs/promises";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import type { StageIO } from "../pipeline.js";
-import { PRESENTATION_PROSE_POLICY_VERSION, presentationPrompt, promptContractFiles, promptFingerprint } from "../prompt_io.js";
+import { PRESENTATION_PROSE_POLICY_VERSION, presentationPrompt, promptFingerprint } from "../prompt_io.js";
 import { parseOutline, unwrapArtifact, lintMainBodyDependencies } from "../stage_util.js";
 import {
   lintAnchors,
@@ -118,18 +118,6 @@ function validateOutline(outlineMd: string, ids: string[], poolKeys: Set<string>
     if (!poolKeys.has(key)) problems.push(`bib key ${key} is not in the citation pool`);
   }
   return problems;
-}
-
-/** Place presentation-synthesized setup definitions in the paper outline. They are not graph
- * theorem nodes, but P2 still requires every formal-layer environment to be assigned exactly once. */
-export function removeSynthesizedPlacements(outlineMd: string): string {
-  return outlineMd.split("\n").map((line) => {
-    const prefix = line.match(/^objs:\s*/)?.[0];
-    if (!prefix || !line.slice(prefix.length).split(",").some((item) => /^synth_\d+$/.test(item.trim())))
-      return line;
-    const kept = line.slice(prefix.length).split(",").filter((item) => !/^synth_\d+$/.test(item.trim()));
-    return `${prefix}${kept.length > 0 ? kept.join(",") : "none"}`;
-  }).join("\n");
 }
 
 export function placeSynthesizedDefinitions(
@@ -436,6 +424,33 @@ export function renderCacheKey(
     citedPrompt,
     ...(envHint ? [envHint] : []),
   ].join("§"));
+}
+
+export function shouldUseLeanRender(deliveryStatus: string | undefined, hasLeanContext: boolean): boolean {
+  return hasLeanContext && deliveryStatus !== "undelivered";
+}
+
+export function p1TouchupEnvInput(input: {
+  id: string;
+  refSet: string[];
+  citedDependencies: string;
+  statement: string;
+  delivery?: P1Env["delivery"];
+  environmentHint?: string;
+  priorBody?: string;
+  defects?: string[];
+}): string {
+  return [
+    `### ${input.id}`,
+    `ref_set: ${input.refSet.join(", ") || "(none)"}`,
+    `cited_dependencies: ${input.citedDependencies}`,
+    input.delivery
+      ? `delivery_status: ${input.delivery.status}\ndelivery_role: ${input.delivery.role ?? "secondary"}\ndelivery_reason: ${input.delivery.reason}\nenvironment: remarkv`
+      : input.environmentHint ?? "",
+    `statement: ${input.statement}`,
+    input.priorBody ? `prior_body: ${input.priorBody}` : "",
+    input.defects ? `defects: ${input.defects.join(" | ")}` : "",
+  ].filter(Boolean).join("\n");
 }
 
 export async function stageP1(io: StageIO): Promise<void> {
@@ -816,19 +831,11 @@ export async function stageP1(io: StageIO): Promise<void> {
       prompt: await presentationPrompt("p1_touchup", {
         notation_table: notation,
         envs_block: reqs
-          .map((r) =>
-            [
-              `### ${r.id}`,
-              `ref_set: ${r.refSet.join(", ") || "(none)"}`,
-              `cited_dependencies: ${citedPromptFor(r.id)}`,
-              r.delivery ? `delivery_status: ${r.delivery.status}\ndelivery_role: ${r.delivery.role ?? "secondary"}\ndelivery_reason: ${r.delivery.reason}\nenvironment: remarkv` : envHintFor(r.id),
-              `statement: ${r.statement}`,
-              r.priorBody ? `prior_body: ${r.priorBody}` : "",
-              r.defects ? `defects: ${r.defects.join(" | ")}` : "",
-            ]
-              .filter(Boolean)
-              .join("\n"),
-          )
+          .map((r) => p1TouchupEnvInput({
+            ...r,
+            citedDependencies: citedPromptFor(r.id),
+            environmentHint: envHintFor(r.id),
+          }))
           .join("\n\n"),
       }),
       cwd: repoRoot,
@@ -897,7 +904,8 @@ export async function stageP1(io: StageIO): Promise<void> {
         }
       }
       const ctx = leanCtxById.get(r.id);
-      const k = ctx ? leanKey(r, ctx) : renderKey(r);
+      const useLean = shouldUseLeanRender(r.delivery?.status, ctx !== undefined);
+      const k = useLean ? leanKey(r, ctx!) : renderKey(r);
       keyById.set(r.id, k);
       // A defect-driven render is itself evidence that the prior body is unsuitable. Never let
       // that response become a fixed point by reusing its cache entry on the next repair round.
@@ -907,7 +915,7 @@ export async function stageP1(io: StageIO): Promise<void> {
           ? normalizeSynthNotation(hit.body)
           : enforceUndeliveredDisclosure(r, hit.body));
         if (hit.title) titleById.set(r.id, hit.title);
-      } else if (ctx) leanMiss.push({ r, ctx });
+      } else if (useLean) leanMiss.push({ r, ctx: ctx! });
       else nlMiss.push(r);
     }
     const acceptHit = (r: RenderReq, hit: RenderHit) => {

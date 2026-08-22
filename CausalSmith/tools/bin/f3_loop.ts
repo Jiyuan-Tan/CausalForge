@@ -9,7 +9,7 @@
  * Makes live Codex+Claude calls and edits <leanDir>. Run from the CausalSmith package root.
  */
 import path from "node:path";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { loadState } from "../src/state.js";
 import { artifactPaths, defaultDeps } from "../src/pipeline_support.js";

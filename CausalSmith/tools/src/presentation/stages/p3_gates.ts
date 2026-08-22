@@ -5,7 +5,7 @@ import type { StageIO } from "../pipeline.js";
 import { presentationPrompt, promptFingerprint } from "../prompt_io.js";
 import { parseOutline } from "../stage_util.js";
 import { lintAnchors, lintDefinitionOrder, hashEnvBody, parseAnchoredEnvs, repairObjRefs, reviewerTexFor } from "../tex_anchors.js";
-import { FormalLayerSource, normalizeCitedScopeFootnotes } from "../formal_layer.js";
+import { FormalLayerSource } from "../formal_layer.js";
 import { applyProseRevision, proofBlocks } from "../prose_revision.js";
 import { recordP2Assembly, texFilesUnder } from "../assembly_freshness.js";
 import { parseBib } from "../citations.js";

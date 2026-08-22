@@ -312,16 +312,6 @@ export function correctionBlock(
   ].join("\n");
 }
 
-// Body-scan helpers for the producer-side safety net: when a paper-scoped stage
-// returns a JSON `theorems[]` manifest that omits an entry but the artifact body
-// still covers it, repair the manifest instead of falsely marking the entry
-// `stuck`. Used by Stage 0/1/2 handlers in pipeline_stages.ts.
-export function bodyMentionsTheoremId(body: string, id: string): boolean {
-  if (!id || !body) return false;
-  const escaped = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return new RegExp(`\\b${escaped}\\b`, "i").test(body);
-}
-
 // Stage 2 convention (stage2_scaffold.txt:11): theorem decl is `<id>_thm` or
 // `<id>_<suffix>`. Returns the recovered decl name if a matching decl exists.
 export function findLeanDeclByLocalId(leanSource: string, id: string): string | null {
@@ -580,28 +570,6 @@ async function persistReviewBoundaryJson(
       `[causalsmith] persistReviewBoundaryJson failed for ${boundary} attempt ${attempt}: ${reason}`,
     );
   }
-}
-
-export async function writeAssumptionTableIfPresent(
-  ctx: PipelineContext,
-  output: unknown,
-): Promise<string | undefined> {
-  if (typeof output === "object" && output !== null && "assumption_table_markdown" in output) {
-    const table = (output as { assumption_table_markdown?: unknown }).assumption_table_markdown;
-    if (typeof table === "string" && table.trim()) {
-      const file = assumptionTablePath(ctx.repoRoot, ctx.qid, ctx.specialization);
-      await mkdir(path.dirname(file), { recursive: true });
-      await writeFile(file, `${table.trim()}\n`, "utf8");
-      return file;
-    }
-  }
-  const parsed = stageOutputSchema.safeParse(output);
-  const table = parsed.success ? parsed.data.assumption_table_markdown : undefined;
-  if (!table?.trim()) return undefined;
-  const file = assumptionTablePath(ctx.repoRoot, ctx.qid, ctx.specialization);
-  await mkdir(path.dirname(file), { recursive: true });
-  await writeFile(file, `${table.trim()}\n`, "utf8");
-  return file;
 }
 
 const SUBSTRATE_DEBT_HEADER = `# Substrate debt ledger

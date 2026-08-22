@@ -59,6 +59,20 @@ describe("Stage 2 proof carry-over", () => {
     expect(names).toEqual(["l_fix", "l_keep"]); // t_thm is sorry → excluded
   });
 
+  it("comment-aware sorry detection ignores line comments and sees through them", async () => {
+    const src = `import Basic
+theorem t_hidden : True := by
+  -- TODO: real proof
+  sorry
+theorem t_real : True := by
+  -- sorry, this one is actually fine
+  trivial
+`;
+    await write(dir, "T.lean", src);
+    const snap = await snapshotPriorProofs(dir);
+    expect([...snap.values()].map((v) => v.name)).toEqual(["t_real"]);
+  });
+
   it("re-attaches a prior proof for a signature-UNCHANGED decl, not a changed one", async () => {
     await write(dir, "T.lean", PRIOR);
     const snap = await snapshotPriorProofs(dir);

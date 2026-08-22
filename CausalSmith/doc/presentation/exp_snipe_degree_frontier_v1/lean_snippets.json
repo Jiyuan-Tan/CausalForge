@@ -1,5 +1,5 @@
 {
-  "commit": "a90838033b0efece90be38573811c11b651f0e5c",
+  "commit": "3e2bcb6cd8d39ae12f626d431db070178e56201d",
   "snippets": {
     "ass:bernoulli-design": {
       "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.IsProductBernoulli",
@@ -93,6 +93,14 @@
         }
       ]
     },
+    "def:potential-outcome": {
+      "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.potentialOutcome",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "-- @realizes B(nonnegative coefficient envelope when theorem assumptions impose 0 ≤ B)\n\n/-- A raw-monomial potential outcome on the in-neighborhood of `i`. -/\n-- @env: S2\nnoncomputable def potentialOutcome\n    (G : V → V → Prop) (c : V → Finset V → ℝ)\n    (i : V) (z : V → Bool) : ℝ := -- @realizes z(generic assignment z : V → Bool)\n  ∑ S ∈ (nbhd G i).powerset,\n    c i S * ∏ j ∈ S, if z j then (1 : ℝ) else 0",
+      "sorry_free": true,
+      "axioms": null
+    },
     "def:model-class": {
       "decl": "(composite)",
       "file": "Basic.lean",
@@ -154,86 +162,6 @@
       "statement": "noncomputable def blockScoreEnergyBundle (β : ℕ) (p : ℝ) (d : ℕ) :\n    ((Fin d → Bool) → ℝ) × ℝ ×\n      ((Fin d → Bool) → ℝ) × (Finset (Fin d) → ℝ) :=\n  (blockScore β p d, blockEnergy β p d,\n    blockRepresenter β p d, blockRawCoef β p d)",
       "sorry_free": true,
       "axioms": null
-    },
-    "def:block-family": {
-      "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.blockFamilyBundle",
-      "file": "Helpers/LeastFavourable.lean",
-      "line": 0,
-      "statement": "noncomputable def blockFamilyBundle\n    (n d β : ℕ) (B p σ : ℝ)\n    (hB : 0 < B) (hd : 1 ≤ d) (hdn : d ≤ n)\n    (hσ : σ = -1 ∨ σ = 1) :\n    ℕ × ℕ × ℝ × (Fin n → Fin n → Prop) ×\n      Measure (Fin n → Finset (Fin n) → ℝ) :=\n  (blockCount n d, activeCount n d, activeShare n d, blockGraph n d,\n    blockSchedulePrior n d β B p σ hσ)",
-      "sorry_free": true,
-      "axioms": null
-    },
-    "def:perturbation-program": {
-      "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.perturbProg",
-      "file": "Helpers/BlockScore.lean",
-      "line": 0,
-      "statement": "noncomputable def perturbProg\n    (β d : ℕ) (p : ℝ) (hp0 : 0 ≤ p) (hp1 : p ≤ 1) : ℝ :=\n  sInf {q : ℝ | ∃ h : (Fin d → Bool) → ℝ,\n    PerturbFeasible β d h ∧\n      q = (blockDesign d p hp0 hp1).E (fun z => h z ^ 2)}",
-      "sorry_free": true,
-      "axioms": null
-    },
-    "def:weight-program": {
-      "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.weightProg",
-      "file": "Helpers/BlockScore.lean",
-      "line": 0,
-      "statement": "noncomputable def weightProg\n    (β d : ℕ) (p : ℝ) (hp0 : 0 ≤ p) (hp1 : p ≤ 1) : ℝ :=\n  sInf {q : ℝ | ∃ w : (Fin d → Bool) → ℝ,\n    WeightFeasible β d p hp0 hp1 w ∧\n      q = (blockDesign d p hp0 hp1).E (fun z => w z ^ 2)}",
-      "sorry_free": true,
-      "axioms": null
-    },
-    "def:local-linear-class": {
-      "decl": "(composite)",
-      "file": "Helpers/LocalLinearClass.lean",
-      "line": 0,
-      "statement": "",
-      "sorry_free": true,
-      "axioms": null,
-      "components": [
-        {
-          "label": "CausalSmith.Experimentation.SnipeDegreeFrontier.LocLinSchedClass",
-          "statement": "structure LocLinSchedClass\n    (G : V → V → Prop) (d β : ℕ) (B : ℝ) where\n  coef : V → Finset V → ℝ -- @realizes \\mathcal M_t(G_t)(fixed-graph schedule)\n  supported : ∀ i S, ¬ S ⊆ nbhd G i → coef i S = 0\n  low_order : LowOrder coef (effBeta β d)\n  mass_le : BoundedCoeffMass G coef B"
-        },
-        {
-          "label": "nbhd",
-          "statement": "-- @realizes V_n(finite population carrier)\n-- @realizes n(Fintype.card V)\n-- @realizes i(unit index in V)\n-- @realizes j(assignment-coordinate index in V)\n-- @realizes l(overlapping-neighborhood index in V)\n\n/-- The in-neighborhood `{j | G j i}` of an outcome unit. -/\nnoncomputable def nbhd (G : V → V → Prop) (i : V) : Finset V :=\n  by\n    classical\n    exact Finset.univ.filter (fun j => G j i)"
-        },
-        {
-          "label": "CausalSmith.Experimentation.SnipeDegreeFrontier.LowOrder",
-          "statement": "def LowOrder (c : V → Finset V → ℝ) (β : ℕ) : Prop :=\n  ∀ i S, β < S.card → c i S = 0"
-        },
-        {
-          "label": "effBeta",
-          "statement": "-- @realizes \\Delta_r(p)((1-p)^r - (-p)^r)\n\n/-- The effective interaction order `min β d`. -/\ndef effBeta (β d : ℕ) : ℕ := min β d"
-        },
-        {
-          "label": "CausalSmith.Experimentation.SnipeDegreeFrontier.BoundedCoeffMass",
-          "statement": "noncomputable def BoundedCoeffMass\n    (G : V → V → Prop) (c : V → Finset V → ℝ) (B : ℝ) : Prop :=\n  ∀ i, ∑ S ∈ (nbhd G i).powerset, |c i S| ≤ B"
-        }
-      ]
-    },
-    "def:local-linear-estimator-class": {
-      "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.locLinEstimatorClass",
-      "file": "Helpers/LocalLinearClass.lean",
-      "line": 0,
-      "statement": "noncomputable def locLinEstimatorClass\n    (G : V → V → Prop) (d β : ℕ) (p : ℝ)\n    (hp0 : 0 ≤ p) (hp1 : p ≤ 1) :\n    Set ((V → Bool) → (V → ℝ) → ℝ) :=\n  Set.range (locLinEstimator G d β p hp0 hp1)",
-      "sorry_free": true,
-      "axioms": null
-    },
-    "def:local-linear-risk": {
-      "decl": "(composite)",
-      "file": "Helpers/LocalLinearClass.lean",
-      "line": 0,
-      "statement": "",
-      "sorry_free": true,
-      "axioms": null,
-      "components": [
-        {
-          "label": "CausalSmith.Experimentation.SnipeDegreeFrontier.locLinMinimaxRisk",
-          "statement": "noncomputable def locLinMinimaxRisk\n    (G : V → V → Prop) (d β : ℕ) (B p : ℝ)\n    (hp0 : 0 ≤ p) (hp1 : p ≤ 1) : ℝ :=\n  sInf (Set.range fun w : LocLinWeights G d β p hp0 hp1 =>\n    locLinWorstRisk G d β B p hp0 hp1 w)"
-        },
-        {
-          "label": "locLinMinimaxRisk",
-          "statement": "noncomputable def locLinMinimaxRisk\n    (G : V → V → Prop) (d β : ℕ) (B p : ℝ)\n    (hp0 : 0 ≤ p) (hp1 : p ≤ 1) : ℝ :=\n  sInf (Set.range fun w : LocLinWeights G d β p hp0 hp1 =>\n    locLinWorstRisk G d β B p hp0 hp1 w)"
-        }
-      ]
     },
     "def:bounded-outcome-coefficient-class": {
       "decl": "(composite)",
@@ -299,19 +227,19 @@
       "sorry_free": true,
       "axioms": null
     },
+    "def:block-family": {
+      "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.blockFamilyBundle",
+      "file": "Helpers/LeastFavourable.lean",
+      "line": 0,
+      "statement": "noncomputable def blockFamilyBundle\n    (n d β : ℕ) (B p σ : ℝ)\n    (hB : 0 < B) (hd : 1 ≤ d) (hdn : d ≤ n)\n    (hσ : σ = -1 ∨ σ = 1) :\n    ℕ × ℕ × ℝ × (Fin n → Fin n → Prop) ×\n      Measure (Fin n → Finset (Fin n) → ℝ) :=\n  (blockCount n d, activeCount n d, activeShare n d, blockGraph n d,\n    blockSchedulePrior n d β B p σ hσ)",
+      "sorry_free": true,
+      "axioms": null
+    },
     "thm:degree-frontier": {
       "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.degree_frontier",
       "file": "T_degree_frontier.lean",
       "line": 0,
       "statement": "theorem degree_frontier\n    (β : ℕ) (p : ℝ) (hβ : 1 ≤ β) (hp0 : 0 < p) (hp1 : p < 1) :\n    ∃ cLower cUpper : ℝ,\n      0 < cLower ∧ cLower ≤ cUpper ∧\n      ∀ (n d : ℕ) (B : ℝ), 1 ≤ n → DegreeIndex (Fin n) d → 0 ≤ B →\n        cLower * B ^ 2 *\n            min 1 ((d : ℝ) * Nat.choose d (kStar d β p) / n) ≤\n          minimaxRisk (V := Fin n) p (le_of_lt hp0) (le_of_lt hp1) d β B ∧\n        minimaxRisk (V := Fin n) p (le_of_lt hp0) (le_of_lt hp1) d β B ≤\n          worstRisk (V := Fin n) p (le_of_lt hp0) (le_of_lt hp1) d β B\n            (snipeClipped B β p) ∧\n        worstRisk (V := Fin n) p (le_of_lt hp0) (le_of_lt hp1) d β B\n            (snipeClipped B β p) ≤\n          cUpper * B ^ 2 *\n            min 1 ((d : ℝ) * Nat.choose d (kStar d β p) / n) ∧\n        worstRisk (V := Fin n) p (le_of_lt hp0) (le_of_lt hp1) d β B\n            (snipeEstimator β p) ≤\n          cUpper * B ^ 2 *\n            ((d : ℝ) * Nat.choose d (kStar d β p) / n) ∧\n        (∀ M : ModelClass (Fin n) d β B, ∀ i,\n          localEnergy M.edge β p i ≤ blockEnergy β p d) ∧\n        (∀ M : ModelClass (Fin n) d β B, ∀ (r : ℕ) (i : Fin n),\n          1 ≤ r →\n          (∑ l : Fin n,\n              Nat.choose ((nbhd M.edge i ∩ nbhd M.edge l).card) r) =\n              ∑ S ∈ ((nbhd M.edge i).powerset.filter\n                (fun S => S.card = r)),\n                containingNeighborhoods M.edge S ∧\n          (∑ S ∈ ((nbhd M.edge i).powerset.filter\n                (fun S => S.card = r)),\n                containingNeighborhoods M.edge S) ≤\n              d * Nat.choose (nbhd M.edge i).card r ∧\n          d * Nat.choose (nbhd M.edge i).card r ≤ d * Nat.choose d r) ∧\n        (0 < B → 1 ≤ d →\n          let m := blockCount n d\n          let ρ := activeShare n d\n          let δ := tiltAmplitude B β p m d\n          (∀ U : Fin m → ℝ, (∀ b, |U b| ≤ B / 2) →\n            (∃ Mplus : ModelClass (Fin n) d β B,\n              Mplus.edge = blockGraph n d ∧\n              Mplus.coef = blockSchedule n d β B p 1 (by norm_num) U) ∧\n            (∃ Mminus : ModelClass (Fin n) d β B,\n              Mminus.edge = blockGraph n d ∧\n              Mminus.coef =\n                blockSchedule n d β B p (-1) (by norm_num) U) ∧\n            tte (blockGraph n d)\n                (blockSchedule n d β B p 1 (by norm_num) U) = ρ * δ ∧\n            tte (blockGraph n d)\n                (blockSchedule n d β B p (-1) (by norm_num) U) =\n              -ρ * δ) ∧\n          hellingerSqDensity (blockDominatingMeasure n d)\n              (blockPriorDensity n d β B p 1)\n              (blockPriorDensity n d β B p (-1)) ≤\n            4 * Real.pi ^ 2 * m * δ ^ 2 /\n              (B ^ 2 * blockEnergy β p d) ∧\n          (1 / 2 : ℝ) ≤ ρ ∧ ρ ≤ 1 ∧\n          blockEnergy β p d / m =\n            ((d : ℝ) * blockEnergy β p d / n) / ρ)",
-      "sorry_free": true,
-      "axioms": null
-    },
-    "thm:sharp-local-linear-constant-and-representers": {
-      "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.sharp_local_linear_constant_and_representers",
-      "file": "T_sharp_local_linear.lean",
-      "line": 0,
-      "statement": "theorem sharp_local_linear_constant_and_representers\n    (β : ℕ) (p B : ℝ) (hβ : 1 ≤ β) (hp0 : 0 < p) (hp1 : p < 1)\n    (hB : 0 < B)\n    (n d : ℕ → ℕ)\n    (D : ∀ t, FiniteDesign (Fin (n t) → Bool))\n    (hn : ∀ t, 1 ≤ n t) (hd : ∀ t, 1 ≤ d t)\n    (hdiv : ∀ t, d t ∣ n t)\n    (hD : ∀ t, IsProductBernoulli (D t) p) :\n    (∀ t,\n      locLinMinimaxRisk (blockGraph (n t) (d t)) (d t) β B p\n          (le_of_lt hp0) (le_of_lt hp1) =\n        B ^ 2 * blockEnergy β p (d t) / blockCount (n t) (d t) ∧\n      B ^ 2 * blockEnergy β p (d t) / blockCount (n t) (d t) =\n        B ^ 2 * (d t : ℝ) * blockEnergy β p (d t) / n t) ∧\n    (∀ t (w : LocLinWeights (blockGraph (n t) (d t)) (d t) β p\n        (le_of_lt hp0) (le_of_lt hp1)),\n      locLinWorstRisk (blockGraph (n t) (d t)) (d t) β B p\n          (le_of_lt hp0) (le_of_lt hp1) w =\n        B ^ 2 / (n t : ℝ) ^ 2 *\n          ∑ b : Fin (blockCount (n t) (d t)),\n            blockExtremal (blockGraph (n t) (d t)) (d t) β p\n              (le_of_lt hp0) (le_of_lt hp1) w (blockUnits (n t) (d t) b) ∧\n      ∀ b : Fin (blockCount (n t) (d t)),\n        (d t : ℝ) ^ 2 * blockEnergy β p (d t) ≤\n          blockExtremal (blockGraph (n t) (d t)) (d t) β p\n            (le_of_lt hp0) (le_of_lt hp1) w (blockUnits (n t) (d t) b)) ∧\n    (∀ w : ∀ t, LocLinWeights (blockGraph (n t) (d t)) (d t) β p\n        (le_of_lt hp0) (le_of_lt hp1),\n      Tendsto (fun t => locLinRiskRatio (n t) (d t) β B p\n          (le_of_lt hp0) (le_of_lt hp1) (w t)) atTop (𝓝 1) ↔\n      Tendsto (fun t => normalizedBlockExcess (n t) (d t) β p\n          (le_of_lt hp0) (le_of_lt hp1) (w t)) atTop (𝓝 0)) ∧\n    (∀ w : ∀ t, LocLinWeights (blockGraph (n t) (d t)) (d t) β p\n        (le_of_lt hp0) (le_of_lt hp1),\n      Tendsto (fun t => normalizedWeightDistance (n t) (d t) β p\n          (le_of_lt hp0) (le_of_lt hp1) (w t)) atTop (𝓝 0) →\n      Tendsto (fun t => locLinRiskRatio (n t) (d t) β B p\n          (le_of_lt hp0) (le_of_lt hp1) (w t)) atTop (𝓝 1)) ∧\n    (Tendsto d atTop atTop →\n      ∃ w : ∀ t, LocLinWeights (blockGraph (n t) (d t)) (d t) β p\n          (le_of_lt hp0) (le_of_lt hp1),\n        Tendsto (fun t => locLinRiskRatio (n t) (d t) β B p\n            (le_of_lt hp0) (le_of_lt hp1) (w t)) atTop (𝓝 1) ∧\n        ∀ᶠ t in atTop,\n          normalizedWeightDistance (n t) (d t) β p\n              (le_of_lt hp0) (le_of_lt hp1) (w t) = 2 ∧\n          ∀ π : Fin (n t) ≃ Fin (n t),\n            (∀ i, (π i).val / d t = i.val / d t) →\n            normalizedWeightDistanceRelabeled (n t) (d t) β p\n              (le_of_lt hp0) (le_of_lt hp1) (w t) π = 2)",
       "sorry_free": true,
       "axioms": null
     },
@@ -323,11 +251,91 @@
       "sorry_free": true,
       "axioms": null
     },
+    "def:local-linear-class": {
+      "decl": "(composite)",
+      "file": "Helpers/LocalLinearClass.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Experimentation.SnipeDegreeFrontier.LocLinSchedClass",
+          "statement": "structure LocLinSchedClass\n    (G : V → V → Prop) (d β : ℕ) (B : ℝ) where\n  coef : V → Finset V → ℝ -- @realizes \\mathcal M_t(G_t)(fixed-graph schedule)\n  supported : ∀ i S, ¬ S ⊆ nbhd G i → coef i S = 0\n  low_order : LowOrder coef (effBeta β d)\n  mass_le : BoundedCoeffMass G coef B"
+        },
+        {
+          "label": "nbhd",
+          "statement": "-- @realizes V_n(finite population carrier)\n-- @realizes n(Fintype.card V)\n-- @realizes i(unit index in V)\n-- @realizes j(assignment-coordinate index in V)\n-- @realizes l(overlapping-neighborhood index in V)\n\n/-- The in-neighborhood `{j | G j i}` of an outcome unit. -/\nnoncomputable def nbhd (G : V → V → Prop) (i : V) : Finset V :=\n  by\n    classical\n    exact Finset.univ.filter (fun j => G j i)"
+        },
+        {
+          "label": "CausalSmith.Experimentation.SnipeDegreeFrontier.LowOrder",
+          "statement": "def LowOrder (c : V → Finset V → ℝ) (β : ℕ) : Prop :=\n  ∀ i S, β < S.card → c i S = 0"
+        },
+        {
+          "label": "effBeta",
+          "statement": "-- @realizes \\Delta_r(p)((1-p)^r - (-p)^r)\n\n/-- The effective interaction order `min β d`. -/\ndef effBeta (β d : ℕ) : ℕ := min β d"
+        },
+        {
+          "label": "CausalSmith.Experimentation.SnipeDegreeFrontier.BoundedCoeffMass",
+          "statement": "noncomputable def BoundedCoeffMass\n    (G : V → V → Prop) (c : V → Finset V → ℝ) (B : ℝ) : Prop :=\n  ∀ i, ∑ S ∈ (nbhd G i).powerset, |c i S| ≤ B"
+        }
+      ]
+    },
+    "def:local-linear-estimator-class": {
+      "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.locLinEstimatorClass",
+      "file": "Helpers/LocalLinearClass.lean",
+      "line": 0,
+      "statement": "noncomputable def locLinEstimatorClass\n    (G : V → V → Prop) (d β : ℕ) (p : ℝ)\n    (hp0 : 0 ≤ p) (hp1 : p ≤ 1) :\n    Set ((V → Bool) → (V → ℝ) → ℝ) :=\n  Set.range (locLinEstimator G d β p hp0 hp1)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:local-linear-risk": {
+      "decl": "(composite)",
+      "file": "Helpers/LocalLinearClass.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Experimentation.SnipeDegreeFrontier.locLinMinimaxRisk",
+          "statement": "noncomputable def locLinMinimaxRisk\n    (G : V → V → Prop) (d β : ℕ) (B p : ℝ)\n    (hp0 : 0 ≤ p) (hp1 : p ≤ 1) : ℝ :=\n  sInf (Set.range fun w : LocLinWeights G d β p hp0 hp1 =>\n    locLinWorstRisk G d β B p hp0 hp1 w)"
+        },
+        {
+          "label": "locLinMinimaxRisk",
+          "statement": "noncomputable def locLinMinimaxRisk\n    (G : V → V → Prop) (d β : ℕ) (B p : ℝ)\n    (hp0 : 0 ≤ p) (hp1 : p ≤ 1) : ℝ :=\n  sInf (Set.range fun w : LocLinWeights G d β p hp0 hp1 =>\n    locLinWorstRisk G d β B p hp0 hp1 w)"
+        }
+      ]
+    },
+    "thm:sharp-local-linear-constant-and-representers": {
+      "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.sharp_local_linear_constant_and_representers",
+      "file": "T_sharp_local_linear.lean",
+      "line": 0,
+      "statement": "theorem sharp_local_linear_constant_and_representers\n    (β : ℕ) (p B : ℝ) (hβ : 1 ≤ β) (hp0 : 0 < p) (hp1 : p < 1)\n    (hB : 0 < B)\n    (n d : ℕ → ℕ)\n    (D : ∀ t, FiniteDesign (Fin (n t) → Bool))\n    (hn : ∀ t, 1 ≤ n t) (hd : ∀ t, 1 ≤ d t)\n    (hdiv : ∀ t, d t ∣ n t)\n    (hD : ∀ t, IsProductBernoulli (D t) p) :\n    (∀ t,\n      locLinMinimaxRisk (blockGraph (n t) (d t)) (d t) β B p\n          (le_of_lt hp0) (le_of_lt hp1) =\n        B ^ 2 * blockEnergy β p (d t) / blockCount (n t) (d t) ∧\n      B ^ 2 * blockEnergy β p (d t) / blockCount (n t) (d t) =\n        B ^ 2 * (d t : ℝ) * blockEnergy β p (d t) / n t) ∧\n    (∀ t (w : LocLinWeights (blockGraph (n t) (d t)) (d t) β p\n        (le_of_lt hp0) (le_of_lt hp1)),\n      locLinWorstRisk (blockGraph (n t) (d t)) (d t) β B p\n          (le_of_lt hp0) (le_of_lt hp1) w =\n        B ^ 2 / (n t : ℝ) ^ 2 *\n          ∑ b : Fin (blockCount (n t) (d t)),\n            blockExtremal (blockGraph (n t) (d t)) (d t) β p\n              (le_of_lt hp0) (le_of_lt hp1) w (blockUnits (n t) (d t) b) ∧\n      ∀ b : Fin (blockCount (n t) (d t)),\n        (d t : ℝ) ^ 2 * blockEnergy β p (d t) ≤\n          blockExtremal (blockGraph (n t) (d t)) (d t) β p\n            (le_of_lt hp0) (le_of_lt hp1) w (blockUnits (n t) (d t) b)) ∧\n    (∀ w : ∀ t, LocLinWeights (blockGraph (n t) (d t)) (d t) β p\n        (le_of_lt hp0) (le_of_lt hp1),\n      Tendsto (fun t => locLinRiskRatio (n t) (d t) β B p\n          (le_of_lt hp0) (le_of_lt hp1) (w t)) atTop (𝓝 1) ↔\n      Tendsto (fun t => normalizedBlockExcess (n t) (d t) β p\n          (le_of_lt hp0) (le_of_lt hp1) (w t)) atTop (𝓝 0)) ∧\n    (∀ w : ∀ t, LocLinWeights (blockGraph (n t) (d t)) (d t) β p\n        (le_of_lt hp0) (le_of_lt hp1),\n      Tendsto (fun t => normalizedWeightDistance (n t) (d t) β p\n          (le_of_lt hp0) (le_of_lt hp1) (w t)) atTop (𝓝 0) →\n      Tendsto (fun t => locLinRiskRatio (n t) (d t) β B p\n          (le_of_lt hp0) (le_of_lt hp1) (w t)) atTop (𝓝 1)) ∧\n    (Tendsto d atTop atTop →\n      ∃ w : ∀ t, LocLinWeights (blockGraph (n t) (d t)) (d t) β p\n          (le_of_lt hp0) (le_of_lt hp1),\n        Tendsto (fun t => locLinRiskRatio (n t) (d t) β B p\n            (le_of_lt hp0) (le_of_lt hp1) (w t)) atTop (𝓝 1) ∧\n        ∀ᶠ t in atTop,\n          normalizedWeightDistance (n t) (d t) β p\n              (le_of_lt hp0) (le_of_lt hp1) (w t) = 2 ∧\n          ∀ π : Fin (n t) ≃ Fin (n t),\n            (∀ i, (π i).val / d t = i.val / d t) →\n            normalizedWeightDistanceRelabeled (n t) (d t) β p\n              (le_of_lt hp0) (le_of_lt hp1) (w t) π = 2)",
+      "sorry_free": true,
+      "axioms": null
+    },
     "thm:fair-coin-energy-frontier": {
       "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.fair_coin_energy_frontier",
       "file": "T_fair_coin_frontier.lean",
       "line": 0,
       "statement": "theorem fair_coin_energy_frontier :\n    (∀ (n d β : ℕ) (B : ℝ),\n      1 ≤ n → 1 ≤ d → DegreeIndex (Fin n) d → 1 ≤ β → 0 ≤ B →\n      (∀ r : ℕ, 1 ≤ r →\n        bernoulliContrast (1 / 2 : ℝ) r =\n          if Odd r then 2 ^ (1 - (r : ℤ)) else 0) ∧\n      blockEnergy β (1 / 2 : ℝ) d =\n        4 * ∑ r ∈ (Finset.Icc 1 (effBeta β d)).filter Odd,\n          (Nat.choose d r : ℝ) ∧\n      kStar d β (1 / 2 : ℝ) = largestOddLE (effBeta β d)) ∧\n    ∃ cLower cUpper : ℝ,\n      0 < cLower ∧ cLower ≤ cUpper ∧\n      ∀ (n d : ℕ) (B : ℝ),\n        1 ≤ n → 1 ≤ d → DegreeIndex (Fin n) d → 0 ≤ B →\n        blockEnergy 1 (1 / 2 : ℝ) d = 4 * d ∧\n        cLower * B ^ 2 * min 1 ((d : ℝ) ^ 2 / n) ≤\n          minimaxRisk (V := Fin n) (1 / 2 : ℝ) (by norm_num) (by norm_num)\n            d 1 B ∧\n        minimaxRisk (V := Fin n) (1 / 2 : ℝ) (by norm_num) (by norm_num)\n            d 1 B =\n          minimaxRiskL1 (V := Fin n) (1 / 2 : ℝ) (by norm_num) (by norm_num)\n            d 1 B ∧\n        minimaxRiskL1 (V := Fin n) (1 / 2 : ℝ) (by norm_num) (by norm_num)\n            d 1 B ≤\n          minimaxRiskBddOutcome (V := Fin n) (1 / 2 : ℝ)\n            (by norm_num) (by norm_num) d 1 B ∧\n        minimaxRiskBddOutcome (V := Fin n) (1 / 2 : ℝ)\n            (by norm_num) (by norm_num) d 1 B ≤\n          cUpper * B ^ 2 * min 1 ((d : ℝ) ^ 2 / n) ∧\n        (d ∣ n →\n          worstRisk (V := Fin n) (1 / 2 : ℝ) (by norm_num) (by norm_num)\n              d 1 B (snipeEstimator 1 (1 / 2 : ℝ)) =\n            4 * B ^ 2 * d ^ 2 / n ∧\n          worstRiskBdd (V := Fin n) (1 / 2 : ℝ) (by norm_num) (by norm_num)\n              d 1 B (snipeEstimator 1 (1 / 2 : ℝ)) =\n            4 * B ^ 2 * d ^ 2 / n)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:perturbation-program": {
+      "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.perturbProg",
+      "file": "Helpers/BlockScore.lean",
+      "line": 0,
+      "statement": "noncomputable def perturbProg\n    (β d : ℕ) (p : ℝ) (hp0 : 0 ≤ p) (hp1 : p ≤ 1) : ℝ :=\n  sInf {q : ℝ | ∃ h : (Fin d → Bool) → ℝ,\n    PerturbFeasible β d h ∧\n      q = (blockDesign d p hp0 hp1).E (fun z => h z ^ 2)}",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:weight-program": {
+      "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.weightProg",
+      "file": "Helpers/BlockScore.lean",
+      "line": 0,
+      "statement": "noncomputable def weightProg\n    (β d : ℕ) (p : ℝ) (hp0 : 0 ≤ p) (hp1 : p ≤ 1) : ℝ :=\n  sInf {q : ℝ | ∃ w : (Fin d → Bool) → ℝ,\n    WeightFeasible β d p hp0 hp1 w ∧\n      q = (blockDesign d p hp0 hp1).E (fun z => w z ^ 2)}",
       "sorry_free": true,
       "axioms": null
     },
@@ -344,6 +352,22 @@
       "file": "Helpers/OverlapCount.lean",
       "line": 0,
       "statement": "lemma overlap_count_le\n    (G : V → V → Prop) (d r : ℕ) (i : V)\n    (hdegree : BoundedDegree G d) (hr : 1 ≤ r) :\n    (∑ l : V, Nat.choose ((nbhd G i ∩ nbhd G l).card) r) =\n        ∑ S ∈ ((nbhd G i).powerset.filter (fun S => S.card = r)),\n          containingNeighborhoods G S ∧\n      (∑ S ∈ ((nbhd G i).powerset.filter (fun S => S.card = r)),\n          containingNeighborhoods G S) ≤\n        d * Nat.choose (nbhd G i).card r ∧\n      d * Nat.choose (nbhd G i).card r ≤ d * Nat.choose d r",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:block-prior-dominating-measure": {
+      "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.blockPriorDensity_integral_one",
+      "file": "Helpers/LeastFavourable.lean",
+      "line": 0,
+      "statement": "/-- Under the paper's parameter restrictions the prior density integrates to\none against the common dominating measure. -/\nlemma blockPriorDensity_integral_one\n    (n d β : ℕ) (B p σ : ℝ)\n    (hn : 1 ≤ n) (hd : 1 ≤ d) (hdn : d ≤ n)\n    (hB : 0 < B) (hp0 : 0 < p) (hp1 : p < 1)\n    (hσ : σ = -1 ∨ σ = 1) :\n    ∫ x, blockPriorDensity n d β B p σ x ∂blockDominatingMeasure n d = 1",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:block-prior-hellinger-bound": {
+      "decl": "CausalSmith.Experimentation.SnipeDegreeFrontier.blockPrior_hellinger_le",
+      "file": "Helpers/BlockPriorHellinger.lean",
+      "line": 0,
+      "statement": "/-- The two explicit prior-predictive densities obey the displayed global\nHellinger bound. -/\nlemma blockPrior_hellinger_le\n    (n d β : ℕ) (B p : ℝ)\n    (hn : 1 ≤ n) (hd : 1 ≤ d) (hdn : d ≤ n)\n    (hB : 0 < B) (hβ : 1 ≤ β)\n    (hp0 : 0 < p) (hp1 : p < 1) :\n    hellingerSqDensity (blockDominatingMeasure n d)\n        (blockPriorDensity n d β B p 1)\n        (blockPriorDensity n d β B p (-1)) ≤\n      4 * Real.pi ^ 2 * blockCount n d *\n          tiltAmplitude B β p (blockCount n d) d ^ 2 /\n        (B ^ 2 * blockEnergy β p d)",
       "sorry_free": true,
       "axioms": null
     },

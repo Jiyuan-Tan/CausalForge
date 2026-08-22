@@ -10,10 +10,10 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile, rm, readdir, rename } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
-import { artifactPath, statePath } from "../../paths.js";
+import { statePath } from "../../paths.js";
 import { loadState, saveState } from "../../state.js";
 import type { PipelineContext, StateJson } from "../../types.js";
-import { assertMandateBasis, coreEditOperationKey, resolveRequiredCoreEditMandates } from "../solve/mandates.js";
+import { assertMandateBasis, resolveRequiredCoreEditMandates } from "../solve/mandates.js";
 import { protoCoreJsonPath } from "./neg1_2_author.js";
 import { coreJsonPath } from "./d0_core.js";
 import {
@@ -24,10 +24,10 @@ import {
   proposalRevision,
   readEscalationLog,
   saveWorkingState,
-  snapshotMember,
   type EscalationLogEntry,
   type WorkingState,
 } from "./d0_working.js";
+
 import {
   CoreSchema,
   type Core,
@@ -37,7 +37,7 @@ import {
   type CoreSymbol,
   type ComparatorPromise,
 } from "../core/schema.js";
-import { archiveProofs, proofBytesInRoundFile, type ProofToArchive } from "../proof_archive.js";
+import { archiveProofs, proofBytesInRoundFile } from "../proof_archive.js";
 import { statementRevision } from "../core/revision.js";
 import { recordProof, wiredSnapshot } from "../working_writer.js";
 import { agentOeqSourceFromFingerprint, oeqSourceFingerprint } from "../solve/oeq_source.js";
@@ -1062,14 +1062,12 @@ export async function applyProposedChanges(args: {
     definitions.filter((c) => !sel || sel.matchesDefinition(c.id)).length +
     assumptions.filter((a) => !sel || sel.matchesAssumption(a.id)).length +
     coreEdits.filter((edit) => !sel || sel.matchesCoreEdit(edit)).length;
-  let workingChanged = false;
 
   /** Demote an adjudicated, reopened OEQ's former answer to an ordinary carried
    * theorem. The theorem record is intentionally untouched. */
   const detachResolvedOeq = (sourceId: string): void => {
     if (working?.resolved_oeqs?.[sourceId] === undefined) return;
     delete working.resolved_oeqs[sourceId];
-    workingChanged = true;
   };
 
   const changed: EscalationLogEntry["changed"] = [];
@@ -1132,7 +1130,6 @@ export async function applyProposedChanges(args: {
       // the frozen branch). `partial` alone carries the invalidation; the snapshot is
       // rewritten when a proof of the new claim lands.
       carried.partial = true;
-      workingChanged = true;
       changed.push({
         id: c.id,
         kind: "statement",
@@ -1198,7 +1195,6 @@ export async function applyProposedChanges(args: {
       const rec = working?.solved[c.id];
       if (rec) {
         rec.partial = true;
-        workingChanged = true;
       } else if (working && s.status === "cited") {
         // A frozen CITED member normally has NO working record (a citation needs no
         // proof of ours), so the `partial` marker above had nothing to land on and the
@@ -1212,7 +1208,6 @@ export async function applyProposedChanges(args: {
           snapshot: wiredSnapshot(proto, { ...s, statement: priorFrozenStatement }, ""),
           partial: true,
         };
-        workingChanged = true;
       }
     }
   }
@@ -1424,7 +1419,6 @@ export async function applyProposedChanges(args: {
           if (!claimChangedIds.has(edit.id)) carried.snapshot = wiredSnapshot(proto, carried.node, carried.proof_tex ?? "");
           carried.partial = true;
         }
-        workingChanged = true;
         continue;
       }
       const original = originalStatements.get(edit.id);
@@ -1515,7 +1509,6 @@ export async function applyProposedChanges(args: {
         protoRec.proof_tex = pairedProto;
         protoRec.snapshot = wiredSnapshot(proto, composed, pairedProto);
         delete protoRec.partial;
-        workingChanged = true;
       } else if (
         protoRec &&
         hasSettledOverlay &&
@@ -1548,7 +1541,6 @@ export async function applyProposedChanges(args: {
         ) {
           protoRec.snapshot = repaired;
           delete protoRec.partial;
-          workingChanged = true;
         } else {
           skipped.push({
             id: edit.id, kind: "proof-pairing",
@@ -1557,7 +1549,6 @@ export async function applyProposedChanges(args: {
               "the node keeps its original snapshot and re-derives if that content changes",
           });
           protoRec.partial = true;
-          workingChanged = true;
         }
       } else if (structuralBasisNarrowed && working) {
         // A declaration/dependency shrink narrows the future staleness basis. It is
@@ -1573,7 +1564,6 @@ export async function applyProposedChanges(args: {
           };
         }
         if (composed.status === "cited") reopenedCitedIds.push(edit.id);
-        workingChanged = true;
       }
     } else if (edit.kind === "statement-delete") {
       const priorFrozen = proto.statements.find((s) => s.id === edit.id);
@@ -1687,7 +1677,6 @@ export async function applyProposedChanges(args: {
           }
           if (sourceId === edit.id || theoremId === edit.id) delete working.resolved_oeqs![sourceId];
         }
-        workingChanged = true;
       }
       rebuildAssumptionUsedBy(proto, carriedStatements(working));
       changed.push({
@@ -1780,7 +1769,6 @@ export async function applyProposedChanges(args: {
       }
       for (const symbol of proto.symbols) if (symbol.ref === edit.id) delete symbol.ref;
       rebuildAssumptionUsedBy(proto, carriedStatements(working));
-      if (working) workingChanged = true;
       changed.push({ id: edit.id, kind: "definition", from: JSON.stringify(prior), to: "<deleted>", reason: edit.reason ?? "" });
     } else if (edit.kind === "bibliography-replace") {
       const i = proto.bibliography.findIndex((b) => b.key === edit.key);
@@ -1964,7 +1952,6 @@ export async function applyProposedChanges(args: {
         }
         pendingPromotionIds.delete(id);
         promotedThisPass = true;
-        workingChanged = true;
       }
     }
   }

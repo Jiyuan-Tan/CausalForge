@@ -55,6 +55,28 @@ export interface StageNeg1_2ProtoCoreResult {
   handoff: Record<string, unknown>;
 }
 
+export function assembleNeg1_2AuthorPrompt(parts: {
+  head: string;
+  core: string;
+  brief: string;
+  contextBlocks?: string;
+  modeBlock?: string;
+  corePath: string;
+}): string {
+  return [
+    parts.head,
+    "",
+    parts.core,
+    "",
+    parts.brief,
+    parts.contextBlocks ? `\n${parts.contextBlocks}` : "",
+    parts.modeBlock ? `\n${parts.modeBlock}` : "",
+    "",
+    `Write the typed proposal core JSON to this path (create it): ${parts.corePath}`,
+    'Return only JSON on stdout: {"status":"completed"|"needs-pivot","message":"...","artifacts":["<proto_core.json>"], "literature_checklist":[...]}.',
+  ].join("\n");
+}
+
 /** Ideation-metadata keys preserved verbatim from the raw authored core at the
  * persist boundary (everything else outside CoreSchema is dropped — see the
  * persist comment in `runStageNeg1_2ProtoCore`). Exported so the prompt↔schema
@@ -205,18 +227,14 @@ export async function runStageNeg1_2ProtoCore(args: {
   const headName = `stage_neg1_2_proto_head_${args.mode.replace(/-/g, "_")}.txt`;
   const modeBlock = await modeInputBlock(args.mode, args.state, editBasePath);
 
-  const basePrompt = [
-    await readPrompt(args.ctx, headName),
-    "",
-    await readPrompt(args.ctx, "stage_neg1_2_proto_core.txt"),
-    "",
-    discoveryBrief(args.ctx, args.state),
-    args.contextBlocks ? `\n${args.contextBlocks}` : "",
-    modeBlock ? `\n${modeBlock}` : "",
-    "",
-    `Write the typed proposal core JSON to this path (create it): ${corePath}`,
-    'Return only JSON on stdout: {"status":"completed"|"needs-pivot","message":"...","artifacts":["<proto_core.json>"], "literature_checklist":[...]}.',
-  ].join("\n");
+  const basePrompt = assembleNeg1_2AuthorPrompt({
+    head: await readPrompt(args.ctx, headName),
+    core: await readPrompt(args.ctx, "stage_neg1_2_proto_core.txt"),
+    brief: discoveryBrief(args.ctx, args.state),
+    contextBlocks: args.contextBlocks,
+    modeBlock,
+    corePath,
+  });
 
   // The proposal gate (G1–G7 + GP1–GP3) can reject the authored core (e.g. prose
   // in an atomic `condition`/target field). Re-author with the violations fed back

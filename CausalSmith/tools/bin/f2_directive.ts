@@ -26,9 +26,8 @@
  *   npx tsx tools/bin/f2_directive.ts <qid> <spec> --clear         # remove the directive
  *   npx tsx tools/bin/f2_directive.ts <qid> <spec> --show          # print the current directive
  */
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { sanitizeDirectiveForCli } from "../src/shared/directive_text.js";
-import path from "node:path";
 import process from "node:process";
 import { loadState, saveState } from "../src/state.js";
 import { findCausalSmithRoot } from "../src/shared/repo_root.js";

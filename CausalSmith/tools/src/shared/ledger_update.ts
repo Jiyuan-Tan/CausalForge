@@ -9,7 +9,7 @@
  * leave a truncated ledger. Since the ledger is the externally visible record of disclosed
  * substrate debt, a silently dropped row is a disclosure failure, not a cosmetic one.
  *
- * Mirrors `graph_lock.ts`: `proper-lockfile` on a sibling marker (PID-aliveness steals locks from
+ * `proper-lockfile` on a sibling marker (PID-aliveness steals locks from
  * dead processes), then temp-file + `rename` so a reader never observes a partial ledger.
  */
 

@@ -9,6 +9,20 @@ import { bankAcceptedDir } from "./paths.js";
 export const PROOF_AUDIT_FAILURE_MARKER = "P2 proof equivalence audit failed";
 
 /**
+ * Marks a halt asking the ORCHESTRATOR whether to promote again.
+ *
+ * The first promotion round runs automatically: a proof failing for want of a citable step is the
+ * common case and the round is cheap. A SECOND round is a judgement call the pipeline cannot make.
+ * Whether promoting again converges depends on WHY the proof failed — a genuine derivation gap
+ * closes with another lemma, while a rendering defect (leaked conventions, mis-attribution, an
+ * omitted conjunct) promotes for ever without closing anything, and that distinction lives in the
+ * auditor's findings rather than in any property of the failing node. So the run halts here and
+ * the orchestrator, which reads those findings, decides: re-run with `--promote-again` to grant
+ * another round, or adjudicate the proof directly.
+ */
+export const PROMOTION_ESCALATION_MARKER = "P2 promotion decision required";
+
+/**
  * PROMOTION ROUND (user-approved feature, kept deliberately simple — see the
  * lemma-promotion-round design note): when the P2 proof audit still fails after
  * its refine rounds, the failing steps' content usually needs to become citable

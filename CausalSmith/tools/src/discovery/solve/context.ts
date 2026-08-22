@@ -7,7 +7,7 @@
 // re-application, the carry plan, lemma/member carry, stale-agent recovery, and
 // required-target recovery from the prior published core.
 import { existsSync } from "node:fs";
-import { mkdir, readFile } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import type { PipelineContext, StateJson } from "../../types.js";
 import { clusterFor, loadDiscoveryClusterSetupBlock } from "../cluster_setup.js";

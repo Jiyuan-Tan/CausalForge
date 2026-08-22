@@ -120,3 +120,12 @@ export function markPassed(g: FormalizationGraph, id: string, hash: string): For
 export function markUnreviewed(g: FormalizationGraph, id: string): FormalizationGraph {
   return updateNode(g, id, (n) => ({ ...n, review: { status: "unreviewed", passed_hash: null } }));
 }
+
+/** Attach the setup (required Lean modules) to one node. */
+export function withSetup(g: FormalizationGraph, id: string, mods: string[]): FormalizationGraph {
+  return { ...g, nodes: g.nodes.map((n) => (n.id === id ? { ...n, setup: { required_modules: mods } } : n)) };
+}
+/** Point one node at an external (library) Lean declaration. */
+export function withExternalLean(g: FormalizationGraph, id: string, decl: string): FormalizationGraph {
+  return { ...g, nodes: g.nodes.map((n) => (n.id === id ? { ...n, lean: { decl_name: decl, file: null } } : n)) };
+}

@@ -53,25 +53,6 @@ function reviewVerdictPath(ctx: PipelineContext, role: string): string {
   return path.join(reviewsDir(ctx.repoRoot, ctx.qid, ctx.specialization), `review_${fileRole}.json`);
 }
 
-/** Remove tier instructions owned by the separate cold referee. Preserve the
- * proposal-promise-gap taxonomy: downstream banking consumes that diagnosis. */
-export function compactD05DecisionPrompt(prompt: string): string {
-  return prompt
-    .replace(
-      /^You are D0\.5\.2[^\n]*\n/,
-      "You are D0.5.2 of CausalSmith: an adversarial journal-style referee for the typed CORE. Review node-by-node; you own NOVELTY/positioning and deliverable/usability. Structure is owned by the structural gate, correctness by the math referee, and tier by the separate cold referee. Report only; do not edit files.\n",
-    )
-    .replace(
-      /- `revise`:.*\n/,
-      "- `revise`: the note has a real theorem-level contribution but has fixable novelty, positioning, exposition, deliverable, example, or assumption gaps.\n",
-    )
-    .replace(
-      /- `fail`:.*\n/,
-      "- `fail`: novelty/positioning or the promised deliverable has a severe, non-fixable failure (for example a tautological/non-novel claim or anchor-cluster drift). Proof correctness belongs to the math referee.\n",
-    )
-    .replace(/\n=== TIER-AWARENESS REASONING \(NO OUTPUT FIELD\) ===[\s\S]*?(?=\n=== OUTPUT ===)/, "\n");
-}
-
 /** Retarget the shared core adapter to the decision referee without carrying
  * the math referee's reproduce-proof or tier instructions back in later. */
 export function compactD05DecisionAdapter(adapter: string): string {
@@ -182,7 +163,7 @@ async function reviewWithReferee(args: {
   const rawRefereePrompt = await readPrompt(ctx, referee.prompt);
   const rawAdapter = await readPrompt(ctx, "stage0_5_core_adapter.txt");
   const prompt = [
-    referee.role === "decision" ? compactD05DecisionPrompt(rawRefereePrompt) : rawRefereePrompt,
+    rawRefereePrompt,
     "",
     referee.role === "decision" ? compactD05DecisionAdapter(rawAdapter) : rawAdapter,
     "",

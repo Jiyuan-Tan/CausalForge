@@ -44,7 +44,7 @@
  * refuses to overwrite an existing _bank/<tier>/<qid>_<spec>/ destination,
  * and it leaves the original directory untouched in --dry-run mode.
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
@@ -113,16 +113,14 @@ interface Args {
   seedsBurned: number[];
   seedBurnReason?: string;
   dryRun: boolean;
-  noMintOqs: boolean;
   /** Gate node ids discharged before this (re-)bank; recorded when re-banking a reopened entry. */
   dischargedGates?: string[];
 }
 
 function parseArgs(argv: string[]): Args {
-  const a: Partial<Args> & { seedsBurned: number[]; dryRun: boolean; noMintOqs: boolean } = {
+  const a: Partial<Args> & { seedsBurned: number[]; dryRun: boolean } = {
     seedsBurned: [],
     dryRun: false,
-    noMintOqs: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const k = argv[i];
@@ -145,7 +143,6 @@ function parseArgs(argv: string[]): Args {
       case "--seeds-burned":     a.seedsBurned = v.split(",").map((s) => parseInt(s.trim(), 10)).filter(Number.isFinite); i++; break;
       case "--seed-burn-reason": a.seedBurnReason = v; i++; break;
       case "--dry-run":          a.dryRun = true; break;
-      case "--no-mint-oqs":      a.noMintOqs = true; break;
       default:
         if (k?.startsWith("--")) throw new Error(`Unknown flag: ${k}`);
     }
@@ -556,7 +553,6 @@ export interface BankEntryArgs {
   seedsBurned?: number[];
   seedBurnReason?: string;
   dryRun?: boolean;
-  noMintOqs?: boolean;
   repoRoot?: string;
   /**
    * Gate node ids discharged since the entry was reopened. Recorded (with a
@@ -590,7 +586,6 @@ export async function bankEntry(input: BankEntryArgs): Promise<BankEntryResult> 
     seedsBurned: input.seedsBurned ?? [],
     seedBurnReason: input.seedBurnReason,
     dryRun: input.dryRun ?? false,
-    noMintOqs: input.noMintOqs ?? false,
     dischargedGates: input.dischargedGates ?? [],
   };
   if (!TIERS.includes(args.tier)) {
@@ -816,92 +811,6 @@ export async function bankEntry(input: BankEntryArgs): Promise<BankEntryResult> 
     patched.seeds_burned = seedsBurnedEntries.map((s) => ({ ...s, burned_on: bankedOn }));
   }
 
-  // Mint OpenQuestion nodes for any failed theorem entries.
-  // Runs in --dry-run mode too — minting is content-additive and never
-  // touches the source dir; but the patched state.json is only persisted
-  // outside dry-run, so dry-run reports without writing.
-  //
-  // Stage 0.5 gate: theorems whose stage_completed is <= "0.5" are SKIPPED;
-  // they remain recorded in the per-run fail bank but do not produce an OQ.
-  // See src/shared/mint_failed_theorem_oq.ts for the rationale.
-  type TheoremDispatch =
-    | { theorem_local_id: string; outcome: "minted"; oq_id: string; existed: boolean }
-    | { theorem_local_id: string; outcome: "skipped"; reason: string }
-    | { theorem_local_id: string; outcome: "dry-run"; oq_id_would_be: string };
-
-  if (!args.noMintOqs && Array.isArray(patched.theorems)) {
-    const graphRoot = path.join(repoRoot, "doc", "study");
-    const dispatches: TheoremDispatch[] = [];
-    const stuckTheorems: string[] = [];
-    const { mintFailedTheoremOpenQuestion } = await import(
-      "../src/shared/mint_failed_theorem_oq.js"
-    );
-    for (let i = 0; i < patched.theorems.length; i++) {
-      const t = patched.theorems[i] as any;
-      // Defensive log for in-flight non-terminal entries — banking a run with
-      // stuck theorems usually means something was abandoned mid-pipeline.
-      // We don't mint OQs for them (stuck != "valid claim, unproved"; the work
-      // may still resume), but the operator should see them at bank time.
-      if (t?.status === "stuck" || t?.status === "in_progress" || t?.status === "pending") {
-        stuckTheorems.push(`${t.theorem_local_id} (status=${t.status})`);
-        continue;
-      }
-      if (t?.status !== "failed") continue;
-      if (typeof t.minted_oq_id === "string" && t.minted_oq_id.length > 0) continue;
-      if (args.dryRun) {
-        dispatches.push({
-          theorem_local_id: t.theorem_local_id,
-          outcome: "dry-run",
-          oq_id_would_be: `oq_failed_${args.qid}_${args.spec}_${t.theorem_local_id}`,
-        });
-        continue;
-      }
-      const res = await mintFailedTheoremOpenQuestion({
-        qid: args.qid,
-        spec: args.spec,
-        theorem: t,
-        graphRoot,
-      });
-      if (res.kind === "skipped") {
-        dispatches.push({
-          theorem_local_id: t.theorem_local_id,
-          outcome: "skipped",
-          reason: res.reason,
-        });
-        continue;
-      }
-      t.minted_oq_id = res.oq_id;
-      dispatches.push({
-        theorem_local_id: t.theorem_local_id,
-        outcome: "minted",
-        oq_id: res.oq_id,
-        existed: res.kind === "existed",
-      });
-    }
-    if (dispatches.length > 0) {
-      console.error(`failed-theorem dispatch (${dispatches.length} entries):`);
-      for (const d of dispatches) {
-        if (d.outcome === "minted") {
-          console.error(`  - ${d.theorem_local_id} -> ${d.oq_id}${d.existed ? " (existed)" : ""}`);
-        } else if (d.outcome === "skipped") {
-          console.error(`  - ${d.theorem_local_id} -> skipped (${d.reason})`);
-        } else {
-          console.error(`  - ${d.theorem_local_id} -> would mint ${d.oq_id_would_be} (dry-run)`);
-        }
-      }
-    }
-    if (stuckTheorems.length > 0) {
-      console.error(
-        `warning: ${stuckTheorems.length} non-terminal theorem(s) at bank time ` +
-          `(not minted as OQs; consider resuming or marking failed before re-banking):\n` +
-          stuckTheorems.map((s) => `  - ${s}`).join("\n"),
-      );
-    }
-    // (No globalThis stash needed: renderReadme below re-derives the dispatch
-    // status from patched.theorems directly, which has been mutated in-place
-    // with minted_oq_id by this loop.)
-  }
-
   const readme = renderReadme({
     state: patched,
     tier: args.tier,
@@ -1103,7 +1012,6 @@ async function main() {
     seedsBurned: args.seedsBurned,
     seedBurnReason: args.seedBurnReason,
     dryRun: args.dryRun,
-    noMintOqs: args.noMintOqs,
     repoRoot,
   })) as BankEntryResult & { __dryRun?: boolean };
 

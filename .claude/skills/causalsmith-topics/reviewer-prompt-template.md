@@ -36,7 +36,7 @@ Precision refers to the OBJECT, not to computed values. A kernel that fully spec
 Mode-specific witness requirements (per the MODE slot; gap mode uses the generic witness above):
 - diagnose: the witness MUST be the numerically verified counterexample to the audited belief (or, on the belief-true branch, the verified instance of validity), and the kernel MUST be a positive characterization (valid-iff-C / decomposition with Δ = 0 iff C) with a corrected object — a bare-counterexample headline is a TIER SHORTFALL (the characterization theorem, not the counterexample, is the contribution).
 - bridge: the witness MUST include the shared object stated formally on BOTH sides plus the outside-coincidence counterexample; a renaming dictionary with no coincidence theorem is a refutation-by-relabeling (principle 6).
-- transplant: the witness is the non-verbatim break-point witness (failing assumption, counterpart-less estimand, broken proof step, or conditions-required correspondence).
+- apply: the witness is the non-verbatim break-point witness (failing assumption, counterpart-less estimand, broken proof step, or conditions-required correspondence).
 
 CONSUMER CHECK: the candidate names a consumer — >=1 published applied work or a software default whose practice/conclusions change if the kernel is true. Verify the named consumer works on the SAME applied question and would plausibly adopt, or be corrected by, the kernel's result (search if needed). Do NOT require it to already compute the kernel's exact object: a novel object has no such consumer by construction, so the test is whether practice would CHANGE, not whether the object is already in use. consumer_is_real:false only when no applied work or software default on that question would change — not merely because the exact object is new. An empty or missing CONSUMER slot is an automatic consumer_is_real:false (never treat it as "not applicable").
 
@@ -63,8 +63,8 @@ Report the single weakest principle.
  4. Do not add sensitivity analysis to an unidentified target.
  5. Prefer estimation-nontrivial content over routine identification iff statements.
  6. Cross-field bridges must concern the same object and require a theorem.
- 7. A real extension of a named paper with a new object/regime is strongly positive.
- 8. Target the residual opening, not an already-occupied headline.
+ 7. Any extension of a named paper must create a new object/regime and change a load-bearing proof step.
+ 8. Target a live opportunity and avoid occupied results; rank by evidence, mathematical depth, novelty, feasibility, and consumer value, not opportunity origin.
  9. ID/partial-ID kernels need an estimation/inference rung; SCM may instead use a constructive decision procedure.
 10. Prefer constructive results; negative results must be surprising or quantitatively sharp.
 11. Crowdedness and cluster choice are not rejection reasons.
@@ -80,7 +80,7 @@ Report the single weakest principle.
 =========================
 ANCHOR PHRASE: {{ANCHOR_PHRASE}}
 ACADEMIC FIELD: {{ACADEMIC_FIELD}}
-MODE: {{MODE}}   (gap | diagnose | bridge | transplant)
+MODE: {{MODE}}   (gap | diagnose | bridge | apply)
 CLUSTER: {{CLUSTER}}   AXIS: {{AXIS}}   MOTIF: {{MOTIF}}
 TARGET TIER: {{TARGET_TIER}}
 
@@ -93,8 +93,8 @@ BACKGROUND (established results and how they were checked):
 MODEL / DATA REGIME (observations, randomness, estimand, model class):
 {{MODEL_REGIME}}
 
-RESIDUAL NICHE:
-{{RESIDUAL_NICHE}}
+LIVE OPPORTUNITY (unresolved question | technique-derived direction):
+{{LIVE_OPPORTUNITY}}
 
 GROUNDING (anchor theorem/open statement and load-bearing proof fact):
 {{GROUNDING}}
@@ -106,7 +106,7 @@ FOCAL OBJECT: {{FOCAL_OBJECT}}
 COMPUTATION ROUTE: {{COMPUTATION}}
 ESTIMATION / INFERENCE RUNG: {{ESTIMATION_RUNG}}
 CONSUMER (who + what changes in their practice): {{CONSUMER}}
-MODE-SPECIFIC LINES (diagnose: practice/belief+recon/remedy; bridge: sides/shared object+coincidence/payoff; transplant: donor/setting/witness; gap: omit):
+MODE-SPECIFIC LINES (diagnose: practice/belief+recon/remedy; bridge: sides/shared object+coincidence/payoff; apply: donor/setting/witness; gap: omit):
 {{MODE_LINES}}
 
 MINIMAL SANITY WITNESS:

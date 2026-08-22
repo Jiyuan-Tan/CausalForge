@@ -15,6 +15,7 @@ export function freshPaperState(qid: string, spec: string): PaperState {
     revision_round: 0,
     p5_revision_passes: 0,
     p5_last_fingerprints: [],
+    promotion_rounds: 0,
     hard_gate_failures: [],
     notes: [],
   };

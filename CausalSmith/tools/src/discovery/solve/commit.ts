@@ -97,7 +97,7 @@ export async function surfaceProposalCheckpoint(args: {
   commitRound: () => Promise<void>;
 }): Promise<StageResult | null> {
   const { ctx, sctx, mr, commitRound } = args;
-  const { proto, core, corePath, next } = sctx;
+  const { corePath, next } = sctx;
   const {
     emissionConflicts,
     addedLemmaCollisions,

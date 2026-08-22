@@ -1,6 +1,5 @@
-import { join, resolve, dirname } from "node:path";
-import { existsSync, readFileSync, mkdirSync } from "node:fs";
-import { findCausalSmithRoot } from "../shared/repo_root.js";
+import { join } from "node:path";
+import { mkdirSync } from "node:fs";
 
 
 /** `qid`/`spec` become literal path segments — reject anything that could escape

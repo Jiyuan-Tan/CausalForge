@@ -104,10 +104,12 @@ const TOP_LEVEL_DECL_RE =
 
 /**
  * Replace Lean comments with spaces (preserving newlines) so character offsets
- * and line numbers are identical to the original source. Avoids false positives
- * in usage / wildcard scans from text inside docstrings.
+ * and line numbers are identical to the original source. Nesting-aware
+ * (`/- … /- … -/ … -/`) and line-comment-aware (a `/-` after `--` does not
+ * open a block). Avoids false positives in usage / wildcard scans from text
+ * inside docstrings. Shared with `proof_carryover.ts`.
  */
-function stripComments(src: string): string {
+export function stripLeanComments(src: string): string {
   const chars = Array.from(src);
   let i = 0;
   while (i < chars.length) {
@@ -300,7 +302,7 @@ function isBridgeOnlyProof(body: string, bridgeName: string): boolean {
 }
 
 export function lintUnusedHypotheses(source: string): LintResult {
-  const stripped = stripComments(source);
+  const stripped = stripLeanComments(source);
   const decls = findDeclarations(stripped);
   const findings: UnusedHypothesisFinding[] = [];
   const skipped: SkippedTheorem[] = [];

@@ -6,7 +6,7 @@
 // codex workers are killed at exit 137 under contention.
 
 import { describe, it, expect } from "vitest";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { applyProposedChanges } from "../../src/discovery/stages/d0_apply.js";
 import { saveWorkingState, loadWorkingState } from "../../src/discovery/stages/d0_working.js";
 import { protoCoreJsonPath } from "../../src/discovery/stages/neg1_2_author.js";

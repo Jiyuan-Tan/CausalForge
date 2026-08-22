@@ -9,8 +9,7 @@
  *   npx tsx tools/bin/decision_log.ts append <qid> <spec> --json '<json>'   # or --json -  (stdin)
  *   npx tsx tools/bin/decision_log.ts read   <qid> <spec> [--phase D|F] [--type <t>] [--tail N]
  */
-import { existsSync, readFileSync } from "node:fs";
-import path from "node:path";
+import { readFileSync } from "node:fs";
 import process from "node:process";
 import { appendEntry, readEntries, type DecisionLogEntry } from "../src/decision_log.js";
 import { findCausalSmithRoot } from "../src/shared/repo_root.js";

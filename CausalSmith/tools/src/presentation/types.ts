@@ -35,6 +35,19 @@ export const PaperState = z.object({
   p5_revision_passes: z.number().int().nonnegative().default(0),
   /** Repairable P5 issue families supplied to the immediately preceding holistic pass. */
   p5_last_fingerprints: z.array(z.string()).default([]),
+  /**
+   * P2 promotion rounds already spent in this bundle.
+   *
+   * A promotion round makes an underivable proof step citable, and a promoted lemma legitimately
+   * needing one more helper is a convergent case worth allowing. What is NOT convergent is an
+   * unbounded chain: each promoted lemma needs its own prose proof against the same faithfulness
+   * bar, so a fidelity failure (leaked conventions, mis-attribution, omitted conjuncts) can
+   * promote for ever without closing anything (2026-08-22: four rounds, eleven lemmas). Whether a
+   * given failure is a real gap or a rendering defect cannot be read off the failing node's
+   * identity, so this budget bounds the chain instead of trying to infer futility, and the run
+   * halts for adjudication at the cap.
+   */
+  promotion_rounds: z.number().int().nonnegative().default(0),
   hard_gate_failures: z.array(z.object({ gate: z.string(), detail: z.string() })),
   notes: z.array(z.string()),
 });

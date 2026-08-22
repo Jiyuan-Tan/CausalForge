@@ -27,7 +27,6 @@ import {
 import { interventionBlock } from "../shared/intervention_routing.js";
 import { writeLeanLspMcpConfig } from "../workers/claude.js";
 import { dispatchClaudeAgent } from "../framework/agent_dispatch.js";
-import { buildGraphFromMd } from "../graph/from_note.js";
 import { buildGraphFromCorePlan } from "../graph/from_core.js";
 import { renderBridgeNote } from "../graph/render_note.js";
 import { graphPath, loadGraph, saveGraph } from "../graph/store.js";
@@ -68,24 +67,6 @@ export function copyVerifiedCitedSourcesToPlan(planObj: unknown, core: Core): nu
     copied++;
   }
   return copied;
-}
-
-/** Legacy helper: build the formalization graph from an F1 .md and persist it.
- *  Retained as a standalone export (a test exercises it directly); F1 no longer
- *  calls it — graph emission migrates to a core+plan source in Phase 5. */
-export async function emitGraphFromStage1(a: {
-  qid: string;
-  spec: string;
-  formalizationDir: string;
-  mdPath: string;
-}): Promise<void> {
-  try {
-    if (!existsSync(a.mdPath)) return;
-    const g = await buildGraphFromMd(a.qid, a.spec, a.mdPath);
-    await saveGraph(graphPath(a.formalizationDir, a.qid, a.spec), g);
-  } catch (err) {
-    console.warn(`[graph] F1 emission skipped: ${err instanceof Error ? err.message : String(err)}`);
-  }
 }
 
 /** True when the plan has a statement node realizing this `theorem_local_id`

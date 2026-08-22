@@ -1,28 +1,37 @@
 # Referee review
 
 **Recommendation:** minor_revision
-**Overall score:** 8/10 — The paper delivers a verified and substantively useful minimax characterization, with remaining issues concentrated in exposition, scope wording, and reference hygiene rather than mathematical validity.
+**Overall score:** 7.8/10 — The verified mathematical core delivers a sharp and useful minimax calibration, while the manuscript needs targeted prose repairs for comparison scope, cross-reference hygiene, and a few stale or confusing exposition points.
 
-The submission establishes minimax mean-squared-error frontiers for design-based total-effect estimation under bounded-degree, low-order network interference, with clipped SNIPE attaining the upper bound and complete-block constructions furnishing matching lower bounds. The verified statements support the central rate claims and the complete-block local-linear benchmark. The paper is publication-worthy after tightening several prose claims and improving the reader-facing organization.
+The paper establishes a finite-population minimax MSE frontier for known bounded-degree low-order polynomial interference under common Bernoulli assignment, with matched clipped-SNIPE upper bounds, complete-block lower constructions, exact complete-block SNIPE risks, and a block-local linear benchmark. The contribution is technically meaningful for design-based network experiments and is well aligned with the verified statements. Publication is plausible after focused revisions that sharpen the comparison to prior SNIPE work, clean up presentation, and repair a few contract violations.
 
 ## Strengths
-- The main minimax frontier has clear econometric value for known-graph Bernoulli network experiments.
-- The paper connects SNIPE variance calculations, complete-block Riesz representers, and least-favourable priors in a coherent way.
-- The formal verification contract gives unusually strong assurance for the finite-design algebra and stated theorem claims.
-- The fair-coin and first-order specialization provides a useful calibration of the degree cost.
+- Sharp two-envelope minimax frontier with explicit dependence on the complete-block score energy and the out-degree overlap factor.
+- Useful exact complete-block calculations and local-linear benchmark that clarify the geometry behind SNIPE weights.
+- The paper states fixed-parameter constants and boundary cases carefully in most places, including fair-coin cancellations and degree-zero conventions.
+- Dedicated related-work section engages the main interference and SNIPE literatures early in the manuscript.
 
 ## Findings
-- **[minor·prose] Setup and Assumptions** — The prose says the projected SNIPE estimator "clips that average to the coefficient-mass target range." Under the coefficient-mass envelope the all-treated-versus-all-control target is naturally bounded at scale 2B, while the verified coefficient-class estimator is projected to [-B,B] and the proof uses this as a scale-preserving bounded projection rather than the full target range.
-  - *Fix:* Rewrite the sentence to say that the projected estimator clips the SNIPE average to [-B,B] for the coefficient-mass risk comparison. Reserve "natural total-effect range" for the bounded-outcome projection to [-2B,2B], or explicitly state the coefficient-class target-scale bound used by the theorem.
-- **[minor·structure] Setup and Assumptions** — The notation map is helpful, but the setup still introduces many objects in quick succession, including the prior laws, block programs, local-linear sequence, and bounded-outcome class before the reader reaches the main theorem logic.
-  - *Fix:* Move the synthesized prior-predictive laws and some local-linear notation to the point where they are used, or add a compact table with columns for object, role, and first theorem using it. Keep the main setup focused on the design, model classes, estimator, risk, and block energy.
-- **[minor·prose] Introduction / Discussion and Extensions** — The comparison with Cortez-Rodriguez, Eichhorn, and Yu is directionally accurate but still compressed. The manuscript states that the present paper "sharpens" that setting, but readers would benefit from a more concrete division between the antecedent estimator/variance analysis and the present minimax, lower-bound, bounded-outcome, and local-linear contributions.
-  - *Fix:* Add 2-3 sentences specifying what CREY already supplies and what this paper adds: matched minimax lower bounds, the explicit dA_d/n or d choose(d,k*) degree frontier, the complete-block least-favourable construction, and the exact local-linear benchmark.
-- **[nit·prose] Main Results** — Several reader-facing cross-references are wrapped in math mode, for example "Under the notation in \(\cref{obj:def:exposed-order,obj:def:minimax-risk,obj:def:model-class}\)". This is visually inconsistent with the cleveref-only cross-reference convention.
-  - *Fix:* Remove math-mode wrappers around prose cross-references throughout the manuscript: use "Under the notation in \cref{...}" and the corresponding \Cref form at sentence starts.
-- **[nit·prose] abstract / Main Results** — The phrase "degree-one" can still be read as graph degree one because d denotes graph degree throughout the paper, even though the intended specialization is interaction order beta=1.
-  - *Fix:* Use "first-order interactions (beta=1)" in theorem subtitles and surrounding prose, for example rename the fair-coin item to "First-order interaction minimax frontier."
+- **[minor·prose] Related work** — The comparison to Cortez-Rodriguez, Eichhorn, and Yu is mostly careful, but the sentence "their SNIPE analysis supplies design-unbiasedness and a stated worst-case worst-case variance upper bound whose degree dependence enters through \(d^{\beta}\)" contains a typo and leaves the exact comparator too imprecise for a central novelty claim.
+  - *Fix:* Replace the sentence with a precise description of the cited theorem's assumptions, normalization, and displayed degree factor; remove the duplicated "worst-case" and state that the present result calibrates the bounded known-graph class against that stated upper bound.
+- **[minor·prose] Main results** — The theorem map says "Exact complete-block SNIPE risk" and "canonical unprojected SNIPE on complete directed blocks" but the surrounding prose also says the result is "globally" exact for that estimator. A reader could miss that exactness is for the worst-case risk of the fixed estimator when \(d\mid n\), not the exact all-estimator minimax constant.
+  - *Fix:* Add one clarifying sentence after the theorem map: the exact equality concerns canonical unprojected SNIPE's worst-case risk on the fixed block graph and the global supremum over the two classes when \(d\mid n\); the all-measurable minimax leading constant is addressed only by the rate bounds.
+- **[minor·prose] Verification note** — The sentence "where a result from the literature is a formal dependency, it enters as a published input rather than a Lean-checked step" in the author footnote is stale relative to the verification contract for this submission, which records no external formal dependencies for the displayed objects.
+  - *Fix:* Update the author footnote and verification-note wording to match the current contract: the displayed formal statements and proofs are Lean-verified, and cited work supplies econometric framing, terminology, and positioning for these objects.
+- **[minor·structure] Appendices** — Several appendix proof paragraphs present long informal derivations for theorem statements already declared verified. This is acceptable, but the main text does not give readers a short proof roadmap before entering very lengthy proof blocks.
+  - *Fix:* At the start of the appendix, add a compact roadmap listing which verified declarations establish the representer identity, overlap count, Hellinger bound, minimax frontier, bounded-outcome frontier, local-linear benchmark, and fair-coin specialization.
+- **[minor·statement] Setup and assumptions** — The score definition uses \(\bar\beta_d\) in the outer sum for every unit and then explains the empty-sum convention for units with \(|N_i|<\bar\beta_d\). This is correct, but it is less transparent than the Lean declaration, which sums to \(\min\{\beta,|N_i|\}\).
+  - *Fix:* Rewrite \cref{obj:def:snipe-score} with outer limit \(\min\{\beta,|N_i|\}\), then mention that this equals the displayed block limit when \(|N_i|=d\).
+- **[minor·structure] Related work** — The related-work section cites many strands, but the closest comparison would benefit from a small displayed rate table or paragraph aligning assumptions across the prior SNIPE theorem, the present coefficient-mass class, and the bounded-outcome class.
+  - *Fix:* Add a short comparison table with columns for graph knowledge, assignment design, outcome class, estimator, target, and risk or variance rate; keep the text explicit that the present result sharpens the bounded-class calibration rather than the prior paper's unrestricted theorem.
+- **[nit·prose] global** — House typography requires sentence case headings. The theorem and definition titles mostly comply, but title-like item labels such as "Coefficient-mass minimax frontier" and table headers are acceptable; ensure no remaining generated headings outside the excerpt are Title Case.
+  - *Fix:* Run a heading pass over the full source and keep section/subsection titles in sentence case, preserving proper nouns and math symbols.
+- **[nit·prose] Related work** — The phrase "a stated worst-case worst-case variance upper bound" is a copy-editing error.
+  - *Fix:* Delete one occurrence of "worst-case".
+- **[nit·prose] Main results** — The local-linear theorem includes the striking distance-equals-two construction, but the surrounding discussion gives only one sentence of interpretation. Readers may not immediately understand why this result belongs beside the minimax frontier.
+  - *Fix:* Add one sentence before or after the theorem explaining that the construction separates asymptotic risk optimality from normalized pointwise closeness to the canonical representer within the block-local unbiased linear class.
 
 ## Questions for authors
-- Is the coefficient-class projection to [-B,B] intended purely as a bounded scale projection, while the full total-effect range remains [-2B,2B]?
+- Can the closest-prior-work comparison state the exact theorem number, normalization, and degree factor from Cortez-Rodriguez, Eichhorn, and Yu so readers can verify the sharpening directly?
+- Do the authors want the exact complete-block unprojected-SNIPE equality to be highlighted as an estimator-risk identity rather than as evidence about the all-measurable minimax constant?
 

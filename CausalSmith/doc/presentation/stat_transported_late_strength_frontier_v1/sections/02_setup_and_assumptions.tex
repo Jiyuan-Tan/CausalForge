@@ -1,0 +1,404 @@
+\section{Setup and assumptions}
+
+All objects are indexed by the source sample size \leanref{sym:n}{$n$}, and limits are taken along the triangular array. Generic positive constants may change from line to line unless they are named in a formal statement. Expectations and probabilities are evaluated under the law indicated by the subscript, and equalities involving conditional laws are understood up to the corresponding almost-sure version. For a set \(C\subseteq[-1,1]\), \(\lambda(C)\) denotes its Lebesgue length restricted to the displayed interval. The symbols introduced below are reused throughout the paper.
+
+\subsection{Full-data, sampling, and instrument structure}
+
+At each index, the \leanref{S-1}{two-population full-data potential-outcome world} is carried by the full-data law \leanref{sym:P_n^F}{$P_n^F$}. The population indicator \leanref{sym:S}{$S$} distinguishes the source and target populations; \leanref{sym:X}{$X$} denotes covariates; \leanref{sym:D(z)}{$D(z)$} and \leanref{sym:Y(d)}{$Y(d)$} denote treatment-receipt and outcome potential variables. The first condition fixes the bounded binary structure used by the ratio problem.
+
+\begin{assumptionv}{ass:full-data-support}[Full-data support]
+The full-data vector is \((S,X,D(0),D(1),Y(0),Y(1))\), where \(X\) is the covariate taking values in \(\mathcal X\). The full-data law \(P_n^F\) satisfies
+\[
+P_n^F\{S\in\{0,1\},\ D(0),D(1)\in\{0,1\},\ Y(0),Y(1)\in[0,1]\}=1.
+\]
+\end{assumptionv}
+
+\Cref{obj:ass:full-data-support} is specific to this analysis: it encodes binary receipt, bounded outcomes, and the two-population indexing in a single support condition. The bounded outcome scale is the source of the compact causal range established below.
+
+\begin{assumptionv}{ass:population-presence}[Population presence]
+For each \(s\in\{0,1\}\),
+\[
+P_n^F(S=s)>0.
+\]
+\end{assumptionv}
+
+\Cref{obj:ass:population-presence} is the standard two-population support condition, ensuring that both source and target conditional laws are well defined \citep{ChenHuang2025}. Sampling then proceeds from the observed source law \leanref{sym:P_S}{$P_S$} and target covariate law \leanref{sym:P_T}{$P_T$}.
+
+\begin{assumptionv}{ass:two-sample-array}[Two-sample array]
+The source observed law \(P_S\), target covariate law \(P_T\), target sample size \(N_n\), and asymptotic target-to-source sample-size ratio \(c\) satisfy:
+\begin{itemize}
+\item \textbf{(Source law.)} For every \(n\), \(P_S\) at array index \(n\) is a probability measure on the source observation \(O_i^S\).
+\item \textbf{(Target law.)} For every \(n\), \(P_T\) at array index \(n\) is a probability measure on the target covariate \(X_j^T\).
+\item \textbf{(Sample-size ratio.)} \(0<c\) and \(N_n/n\to c\).
+\end{itemize}
+\end{assumptionv}
+
+The \leanref{S-2}{observed two-sample triangular-array sampling world} comprises source observations \leanref{sym:O_i^S}{$O_i^S$}, target covariate draws \leanref{sym:X_j^T}{$X_j^T$}, target sample size \leanref{sym:N_n}{$N_n$}, and sample-size limit \leanref{sym:c}{$c$}. \Cref{obj:ass:two-sample-array} is the standard independent two-sample triangular-array sampling condition for transported CACE settings \citep{ChenHuang2025}.
+
+The next group imposes the source encouragement-design restrictions. Let \leanref{sym:e}{$e(X)$} be the source assignment propensity and \leanref{sym:\varepsilon}{$\varepsilon$} the overlap constant.
+
+\begin{assumptionv}{ass:instrument-overlap}[Instrument overlap]
+For the source assignment propensity \(e(X)\) and instrument-overlap constant \(\varepsilon\), \(0<\varepsilon<1/2\), and
+\[
+\varepsilon\le e(X)\le 1-\varepsilon
+\]
+\(P_S^X\)-almost surely, where \(P_S^X\) denotes the covariate marginal of the source law \(P_S\).
+\end{assumptionv}
+
+\Cref{obj:ass:instrument-overlap} is the standard instrument positivity condition \citep{ChenHuang2025}. It keeps the inverse-propensity source contrasts controlled over the source covariate marginal \leanref{sym:P_S^X}{$P_S^X$}.
+
+\begin{assumptionv}{ass:source-observation}[Source observation]
+Conditional on \(S=1\), the observed source law satisfies:
+\begin{itemize}
+\item \textbf{(Assignment propensity.)} \(P(Z=1\mid X,S=1)=e(X)\).
+\item \textbf{(Treatment receipt.)} \(D=D(Z)\).
+\item \textbf{(Observed outcome.)} \(Y=Y(D)\).
+\end{itemize}
+\end{assumptionv}
+
+With source encouragement \leanref{sym:Z}{$Z$}, observed receipt \leanref{sym:D}{$D$}, and observed outcome \leanref{sym:Y}{$Y$}, \cref{obj:ass:source-observation} is the standard source assignment and consistency condition \citep{ChenHuang2025}. It connects the observed source variables to the potential-outcome objects in \cref{obj:ass:full-data-support}.
+
+\begin{assumptionv}{ass:iv-randomization}[Instrument randomization]
+Conditional on \((X,S=1)\),
+\[
+Z\perp (Y(0),Y(1),D(0),D(1)).
+\]
+\end{assumptionv}
+
+\Cref{obj:ass:iv-randomization} is the standard conditional instrument exchangeability condition \citep{ChenHuang2025}. It makes the source encouragement contrast interpretable within covariate strata.
+
+\begin{assumptionv}{ass:iv-exclusion}[Instrument exclusion]
+For each \(z,s\in\{0,1\}\), under the full-data law \(P_n^F\),
+\[
+Y^Z(z)=Y(D(z))
+\]
+almost surely conditional on \(S=s\).
+\end{assumptionv}
+
+The assignment-generated outcome \leanref{sym:Y^Z(z)}{$Y^Z(z)$} satisfies the standard instrument exclusion restriction in \cref{obj:ass:iv-exclusion} \citep{ChenHuang2025}. The restriction ties assignment effects on outcomes to assignment effects on treatment receipt.
+
+\begin{assumptionv}{ass:iv-monotonicity}[Instrument monotonicity]
+For each \(s\in\{0,1\}\), under the full-data law \(P_n^F\),
+\[
+D(1)\ge D(0)
+\]
+almost surely conditional on \(S=s\).
+\end{assumptionv}
+
+\Cref{obj:ass:iv-monotonicity} is the standard monotonicity condition for the encouragement design \citep{ChenHuang2025}. Together, \cref{obj:source-observation,obj:ass:iv-randomization,obj:ass:iv-exclusion,obj:ass:iv-monotonicity} supply the IV structure used to read source reduced-form and receipt contrasts as complier-weighted quantities.
+
+\subsection{Transport and dispersion}
+
+Transport is organized through the covariate space \leanref{sym:\mathcal X}{$\mathcal X$} and the density ratio \leanref{sym:w}{$w(X)$} from the target covariate law to the source covariate marginal. The \leanref{S-3}{transport and overlap geometry world} collects the source marginal, density ratio, and propensity array that govern extrapolation from the source sample to the target population.
+
+\begin{assumptionv}{ass:outcome-transport}[Outcome transport]
+The source conditional outcome contrast is
+\[
+\Delta_Y(x)
+=
+\mathbb E_{P_n^F}\!\left[Y^Z(1)-Y^Z(0)\mid X=x,S=1\right].
+\]
+For \(P_T\)-almost every \(x\), where \(P_T\) is the target covariate law,
+\[
+\mathbb E_{P_n^F}\!\left[Y^Z(1)-Y^Z(0)\mid X=x,S=0\right]
+=
+\Delta_Y(x).
+\]
+The transported reduced-form outcome mean is \(\mu_{Y,n}:=\mathbb E_{X\mid S=0}[\Delta_Y(X)]\).
+\end{assumptionv}
+
+The source conditional outcome contrast \leanref{sym:\Delta_Y}{$\Delta_Y(x)$} is transported conditionally in \cref{obj:ass:outcome-transport}. This is the standard conditional transport of the assignment-outcome contrast condition \citep{ChenHuang2025}.
+
+\begin{assumptionv}{ass:receipt-transport}[Receipt transport]
+The source conditional receipt contrast is
+\[
+\Delta_D(x)
+=
+\mathbb E_{P_n^F}\!\left[D(1)-D(0)\mid X=x,S=1\right].
+\]
+Under the full-data law \(P_n^F\),
+\[
+\mathbb E_{X\mid S=0}\!\left[
+\mathbb E_{P_n^F}\!\left[D(1)-D(0)\mid X,S=0\right]
+\right]
+=
+\mathbb E_{X\mid S=0}\!\left[\Delta_D(X)\right].
+\]
+This common value is the transported first-stage mean \(\mu_n:=\mathbb E_{X\mid S=0}[\Delta_D(X)]\).
+\end{assumptionv}
+
+The source conditional receipt contrast \leanref{sym:\Delta_D}{$\Delta_D(x)$} enters through the integrated first-stage transport condition in \cref{obj:ass:receipt-transport}. This is the standard integrated transport of the first stage \citep{ChenHuang2025}, matching the target average receipt contrast to the transported source contrast.
+
+\begin{assumptionv}{ass:target-complier-positivity}[Target complier positivity]
+Under the full-data law \(P_n^F\),
+\[
+P_n^F\!\left(D(1)>D(0)\mid S=0\right)>0.
+\]
+\end{assumptionv}
+
+\Cref{obj:ass:target-complier-positivity} is the standard positive target complier share condition \citep{ChenHuang2025}. It gives a positive denominator for the transported complier ratio.
+
+\begin{assumptionv}{ass:transport-domination}[Transport domination]
+The target covariate law \(P_T\) and the source covariate marginal \(P_S^X\) are laws on the covariate space \(\mathcal X\), and \(P_T\) is absolutely continuous with respect to \(P_S^X\):
+\[
+P_T\ll P_S^X.
+\]
+We write
+\[
+w:=\frac{dP_T}{dP_S^X}
+\]
+for the resulting target-to-source covariate density ratio.
+\end{assumptionv}
+
+\Cref{obj:ass:transport-domination} is the standard transport covariate-support inclusion condition \citep{ChenHuang2025}. It provides the density-ratio representation used by the transported moments.
+
+The remaining conditions are specific to this analysis. They encode the weight-dispersion and weak-first-stage array along which the expected-length results are evaluated.
+
+\begin{assumptionv}{ass:weight-envelope}[Weight envelope]
+The target-to-source covariate density ratio satisfies
+\[
+0 \le w(X) \le 2k_n
+\]
+\(P_S\)-almost surely, where \(k_n\) is the transport-weight envelope scale.
+\end{assumptionv}
+
+\Cref{obj:ass:weight-envelope} is specific to this analysis. It bounds the pointwise transport weight by the envelope and cell-count scale \leanref{sym:k_n}{$k_n$}, allowing target reweighting while keeping a finite deterministic envelope.
+
+\begin{assumptionv}{ass:weight-second-moment}[Weight second moment]
+The second moment of the transport weight,
+\[
+\kappa_n:=\mathbb E_S\!\left[w(X)^2\right],
+\]
+satisfies
+\[
+\kappa_n \le k_n .
+\]
+\end{assumptionv}
+
+The second moment \leanref{sym:\kappa_n}{$\kappa_n$} is the Kish dispersion scale of the transport weights. \Cref{obj:ass:weight-second-moment} is specific to this analysis and links dispersion to the same scale that controls the weight envelope.
+
+\begin{assumptionv}{ass:degrading-array}[Degrading array rates]
+The array satisfies the following rate conditions:
+\begin{itemize}
+\item \textbf{(Envelope scale.)} \(k_n \to \infty\).
+\item \textbf{(Sampling scale.)} \(k_n=o(n^{1/2})\).
+\item \textbf{(First-stage strength.)} \(\mu_n\to0\).
+\end{itemize}
+\end{assumptionv}
+
+The transported first-stage mean \leanref{sym:\mu_n}{$\mu_n$} is allowed to drift toward zero under \cref{obj:ass:degrading-array}. The condition is specific to this analysis and defines the weak-first-stage asymptotic regime while keeping the weight scale sub-root in the source sample size.
+
+\begin{assumptionv}{ass:finite-cell-source}[Uniform finite-cell source]
+The source covariate marginal \(P_S^X\) is supported on exactly \(k_n\) measurable cells, assigns mass \(1/k_n\) to each cell, and satisfies
+\[
+e(X)=\frac12
+\]
+\(P_S\)-almost surely.
+\end{assumptionv}
+
+\Cref{obj:ass:finite-cell-source} is specific to this analysis. It defines the uniform finite-cell design used for the feasible target-weight-learning construction, with equal source cell masses and a known balanced assignment propensity.
+
+\subsection{Model classes, estimand, and risk}
+
+The main model class collects the support, sampling, IV, transport, and dispersion restrictions above.
+
+\begin{definitionv}{def:model-class}[Transported complier-effect model class \(\mathcal P_n\)]
+For each \(n\), the transported complier-effect model class is
+\[
+\mathcal P_n
+=
+\left\{
+P=(P_n^F,e):
+P \text{ satisfies the conditions below at index } n
+\right\}.
+\]
+The conditions are:
+\begin{itemize}
+\item \textbf{(Full-data and population structure.)} \(P\) satisfies \cref{obj:ass:full-data-support,obj:ass:population-presence}.
+\item \textbf{(Sampling structure.)} \(P\) satisfies \cref{obj:ass:two-sample-array}.
+\item \textbf{(Instrument and observation structure.)} \(P\) satisfies \cref{obj:ass:instrument-overlap,obj:ass:source-observation,obj:ass:iv-randomization,obj:ass:iv-exclusion,obj:ass:iv-monotonicity}.
+\item \textbf{(Transport and target-complier structure.)} \(P\) satisfies \cref{obj:ass:outcome-transport,obj:ass:receipt-transport,obj:ass:target-complier-positivity,obj:ass:transport-domination}.
+\item \textbf{(Envelope and degradation structure.)} \(P\) satisfies \cref{obj:ass:weight-envelope,obj:ass:weight-second-moment,obj:ass:degrading-array}.
+\end{itemize}
+\end{definitionv}
+
+The transported complier-effect model class \leanref{sym:\mathcal P_n}{$\mathcal P_n$} is the domain for the oracle confidence-set analysis. Its elements bundle a full-data law and source propensity satisfying the restrictions at a fixed array index.
+
+\begin{definitionv}{def:finite-cell-class}[Finite-cell submodel \(\mathcal N_n\)]
+For each \(n\), the finite-cell submodel is
+\[
+\mathcal N_n
+=
+\left\{
+P=(P_n^F,e):
+P \text{ satisfies the conditions below at index } n
+\right\}.
+\]
+The conditions are:
+\begin{itemize}
+\item \textbf{(Full-data and population structure.)} \(P\) satisfies \cref{obj:ass:full-data-support,obj:ass:population-presence}.
+\item \textbf{(Sampling structure.)} \(P\) satisfies \cref{obj:ass:two-sample-array}.
+\item \textbf{(Instrument and observation structure.)} \(P\) satisfies \cref{obj:ass:instrument-overlap,obj:ass:source-observation,obj:ass:iv-randomization,obj:ass:iv-exclusion,obj:ass:iv-monotonicity}.
+\item \textbf{(Transport and target-complier structure.)} \(P\) satisfies \cref{obj:ass:outcome-transport,obj:ass:receipt-transport,obj:ass:target-complier-positivity,obj:ass:transport-domination}.
+\item \textbf{(Envelope and degradation structure.)} \(P\) satisfies \cref{obj:ass:weight-envelope,obj:ass:weight-second-moment,obj:ass:degrading-array}.
+\item \textbf{(Finite-cell source structure.)} \(P\) satisfies \cref{obj:ass:finite-cell-source}.
+\end{itemize}
+\end{definitionv}
+
+The finite-cell submodel \leanref{sym:\mathcal N_n}{$\mathcal N_n$} adds the uniform source-cell structure in \cref{obj:ass:finite-cell-source}. It is the benchmark for procedures that learn target weights from the covariate-only target sample.
+
+Before defining the expected-length criterion, we record the identification and range statement supplied by the assumptions. The \leanref{S-4}{identification and effective-strength scalar world} uses the transported reduced-form outcome mean \leanref{sym:\mu_{Y,n}}{$\mu_{Y,n}$}, first-stage mean \(\mu_n\), and target complier contrast \leanref{sym:\theta_T}{$\theta_T$}.
+
+\begin{theoremv}{prop:compact-causal-range}[Compact causal range]
+Fix \(n\), \(P\), \(N_n\), \(k_n\), \(c\), and the instrument-overlap constant \(\varepsilon\). Suppose that:
+\begin{itemize}
+\item \textbf{(Model class.)} \(P\) belongs to the transported complier-effect model class \(\mathcal P_n\) of \cref{obj:def:model-class}.
+\item \textbf{(Source contrasts.)} The source conditional outcome contrast \(\Delta_Y(x)\) and the source conditional receipt contrast \(\Delta_D(x)\) are measurable and integrable with respect to the source covariate marginal \(P_S^X\).
+\end{itemize}
+Then \(\Delta_Y\) and \(\Delta_D\) represent the observed source contrasts: for every measurable covariate set \(A\),
+\[
+\int_{\{O^S:X\in A\}} H(O^S)Y\,dP_S
+=
+\int_A \Delta_Y(x)\,dP_S^X(x),
+\qquad
+\int_{\{O^S:X\in A\}} H(O^S)D\,dP_S
+=
+\int_A \Delta_D(x)\,dP_S^X(x).
+\]
+Moreover, with
+\[
+\mu_{Y,n}
+=
+\int \bigl(Y(1)-Y(0)\bigr)\mathbf 1\{D(1)=1,\ D(0)=0\}\,dP_n^F(\,\cdot\mid S=0)
+\]
+and
+\[
+\mu_n
+=
+P_n^F\{D(1)=1,\ D(0)=0\mid S=0\},
+\]
+the transported reduced-form and first-stage means satisfy
+\[
+\int w(x)\Delta_Y(x)\,dP_S^X(x)=\mu_{Y,n},
+\qquad
+\int w(x)\Delta_D(x)\,dP_S^X(x)=\mu_n.
+\]
+Consequently,
+\[
+\frac{\mu_{Y,n}}{\mu_n}
+=
+\theta_T
+=
+\mathbb E_{P_n^F}\!\left[Y(1)-Y(0)\mid D(1)=1,\ D(0)=0,\ S=0\right]
+\in \Theta=[-1,1].
+\]
+\end{theoremv}
+
+\Cref{obj:prop:compact-causal-range} establishes that the transported source reduced-form and first-stage contrasts identify the target complier-conditional contrast, and that the contrast lies in the compact parameter space \([-1,1]\). The intuition is direct: bounded potential outcomes place every complier outcome contrast in the same bounded interval, while monotone binary receipt turns the transported first stage into the target complier share.
+
+The confidence-set definitions use the compact parameter space \leanref{sym:\Theta}{$\Theta$}. The \leanref{S-5}{procedure and minimax-risk world} treats a confidence-set sequence as a random subset of this space, with the oracle version allowed to use the transport weights and assignment propensity.
+
+\begin{definitionv}{def:oracle-honesty}[Oracle honesty class $\mathfrak C^{\mathrm{or}}$, estimand $\theta_T$, and space $\Theta$]
+Let the target complier estimand and compact parameter space be
+\[
+\theta_T=\frac{\mu_{Y,n}}{\mu_n},
+\qquad
+\Theta=[-1,1].
+\]
+For a noncoverage level \(\alpha\), the oracle honest confidence-set class is
+\[
+\mathfrak C^{\mathrm{or}}
+=
+\left\{
+(C_n)_{n\ge 1} :
+C_n
+=
+C_n\!\left((O_i^S)_{i=1}^n,(X_j^T)_{j=1}^{N_n},w,e\right)
+\subseteq \Theta,\ 
+\liminf_{n\to\infty}\inf_{P\in\mathcal P_n}
+P\{\theta_T\in C_n\}
+\ge 1-\alpha
+\right\}.
+\]
+\end{definitionv}
+
+The oracle class \leanref{sym:\mathfrak C^{\mathrm{or}}}{$\mathfrak C^{\mathrm{or}}$} formalizes honest coverage uniformly over \(\mathcal P_n\) for random sets \leanref{sym:C_n}{$C_n$}. The noncoverage level is \leanref{sym:\alpha}{$\alpha$}.
+
+\begin{definitionv}{def:frontier-risk}[Frontier risk $R((C_n),t_0)$]
+For a confidence set \(C_n\subseteq\Theta\), let \(\lambda(C_n)\) denote its Lebesgue length restricted to \(\Theta\). The effective identification strength is
+\[
+t_n=\frac{n\mu_n^2}{\kappa_n}.
+\]
+Fix a threshold \(t_0>0\) and let \((C_n)_{n\ge 1}\) be an oracle procedure: each
+\[
+C_n=C_n\!\left((O_i^S)_{i=1}^n,(X_j^T)_{j=1}^{N_n},w,e\right)\subseteq\Theta
+\]
+is formed from the observed samples together with the transport weight \(w\) and the propensity \(e\). For each fixed measurable pair \((w,e)\), the sample-by-parameter graph \(\{(\text{sample},\vartheta):\vartheta\in C_n\}\) is measurable; and under each law in \(\mathcal P_n\), replacing \(w\) by another version of that law's transport weight, evaluated at the true propensity, leaves \(C_n\) almost surely unchanged. The frontier risk of \((C_n)_{n\ge1}\) at \(t_0\) is
+\[
+R((C_n),t_0)
+=
+\limsup_{n\to\infty}
+\sup_{P\in\mathcal P_n:\,t_n\ge t_0}
+\mathbb E_P[\lambda(C_n)].
+\]
+Here the supremum over an empty set of laws is zero, so a sample size at which no law meets the strength restriction contributes nothing to the frontier risk.
+\end{definitionv}
+
+The effective identification strength \leanref{sym:t_n}{$t_n$} combines source sample size, transported first-stage magnitude, and weight dispersion. For a fixed threshold \leanref{sym:t_0}{$t_0$}, the risk \leanref{sym:R}{$R((C_n),t_0)$} measures limiting worst-case expected length over laws whose effective strength exceeds that threshold.
+
+\begin{definitionv}{def:oracle-value}[Oracle value $V^\star(t_0)$]
+\[
+V^\star(t_0)
+=
+\inf_{(C_n)\in\mathfrak C^{\mathrm{or}}}
+R((C_n),t_0).
+\]
+\end{definitionv}
+
+The oracle value \leanref{sym:V^\star}{$V^\star(t_0)$} is the minimax expected length over oracle-honest procedures. It is the population-weight-known benchmark for the rate results in the next section.
+
+\begin{definitionv}{def:finite-cell-oracle-value}[Finite-cell oracle value $V_{\mathcal N}^\star(t_0)$]
+\[
+V_{\mathcal N}^\star(t_0)
+=
+\inf_{(C_n)\in\mathfrak C^{\mathrm{or}}}
+\limsup_{n\to\infty}
+\sup_{P\in\mathcal N_n:\,t_n\ge t_0}
+\mathbb E_P[\lambda(C_n)].
+\]
+\end{definitionv}
+
+The finite-cell oracle value \leanref{sym:V_{\mathcal N}^\star}{$V_{\mathcal N}^\star(t_0)$} evaluates the same oracle procedures on the finite-cell submodel. It separates the statistical effect of the finite-cell geometry from the additional task of learning target weights.
+
+\begin{definitionv}{def:finite-cell-feasible-honesty}[Finite-cell feasible class $\mathfrak C^{\mathrm{cell}}$]
+\[
+\mathfrak C^{\mathrm{cell}}
+=
+\left\{
+(C_n)_{n\ge 1} :
+C_n
+=
+C_n\!\left((O_i^S)_{i=1}^n,(X_j^T)_{j=1}^{N_n}\right)
+\subseteq \Theta,\ 
+\liminf_{n\to\infty}\inf_{P\in\mathcal N_n}
+P\{\theta_T\in C_n\}
+\ge 1-\alpha
+\right\}.
+\]
+\end{definitionv}
+
+The feasible finite-cell class \leanref{sym:\mathfrak C^{\mathrm{cell}}}{$\mathfrak C^{\mathrm{cell}}$} restricts procedures to the observed source sample and target covariate sample. This class is the setting for the finite-cell target-weight-learning construction in \cref{obj:thm:finite-cell-unknown-weight-attainment}.
+
+\subsection{Reading the design restrictions}
+
+The feasible classes carry restrictions worth separating into design features, approximations, and
+technical regimes. Uniform source cells of mass \(1/k_n\) and balanced assignment describe a stratified
+experiment in which the sampling frame fixes equal-sized strata and randomizes within them; this is a
+design the experimenter can implement, not an assumption about nature. In the regular-cell class the
+cell probabilities \(q_{x,n}\) and the cell-varying propensity are supplied by that same frame — they
+are known because the design records them — so the result should be read as covering registry- or
+survey-based settings where stratum sizes and assignment rates are administrative facts rather than
+quantities to be estimated. The growth condition \(k_n=o(\sqrt n)\) is the technical regime: it keeps
+the number of cells small enough that per-cell frequencies concentrate fast enough for the collision
+estimator to learn the target weights, and it is the condition under which learning the weights costs
+nothing in rate. The theorems accordingly cover designs with known strata, supplied assignment probabilities, and cell counts obeying \(k_n=o(\sqrt n)\), the regime in which the cell-frequency and collision terms calibrate at the oracle rate.

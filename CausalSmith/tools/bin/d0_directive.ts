@@ -26,7 +26,6 @@
  * `--allow-dirty-capture` writes the text verbatim.
  */
 import { existsSync, readFileSync } from "node:fs";
-import path from "node:path";
 import process from "node:process";
 import type { PipelineContext } from "../src/types.js";
 import { appendEscalationLog, loadWorkingState } from "../src/discovery/stages/d0_working.js";

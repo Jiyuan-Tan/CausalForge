@@ -22,6 +22,7 @@ import { existsSync } from "node:fs";
 import { readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { isPaperTmpPath } from "../paths.js";
+import { stripLeanComments } from "./unused_hypothesis_lint.js";
 
 interface DeclSigBody {
   name: string;
@@ -36,10 +37,6 @@ const CARRYOVER_TAG = "PRIOR PROOF (carry-over: auto";
 
 function normWs(s: string): string {
   return s.replace(/\s+/g, " ").trim();
-}
-
-function stripComments(s: string): string {
-  return s.replace(/\/-[\s\S]*?-\//g, " ").replace(/--[^\n]*/g, " ");
 }
 
 /**
@@ -84,7 +81,7 @@ function parseDecls(fileText: string): DeclSigBody[] {
         name: m[2],
         normSig: normWs(declText.slice(0, cut)),
         body: declText.slice(cut).replace(/^\r?\n/, ""),
-        isSorry: /^\s*sorry\b/.test(stripComments(declText.slice(cut)).trim()),
+        isSorry: /^\s*sorry\b/.test(stripLeanComments(declText.slice(cut)).trim()),
         headerLineIdx,
         endLineIdx: j - 1,
       });

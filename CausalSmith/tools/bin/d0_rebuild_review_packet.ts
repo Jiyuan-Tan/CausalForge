@@ -12,7 +12,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
-import { artifactPath } from "../src/paths.js";
 import type { PipelineContext } from "../src/types.js";
 import { CoreSchema } from "../src/discovery/core/schema.js";
 import { protoCoreJsonPath } from "../src/discovery/stages/neg1_2_author.js";

@@ -167,6 +167,9 @@ export async function runFiller(args: {
    *  injected verbatim near the top of the prompt. A proof hint ONLY — must not be read as
    *  license to weaken a statement, add an unsanctioned hypothesis, or axiomatize a goal. */
   directive?: string | null;
+  /** Informational memory of earlier filler sessions this run (their one-line summaries); rendered
+   *  as context, deliberately OUTSIDE the orchestrator-directive fence so it carries no authority. */
+  priorSessions?: string | null;
 }): Promise<FillerResult> {
   // repoRoot IS the CausalSmith package dir → resolve via the shared promptPath helper, not a
   // hardcoded "CausalSmith/tools/..." prefix (which double-nests and leaves basePrompt empty).
@@ -189,10 +192,13 @@ export async function runFiller(args: {
           "",
         ].join("\n")
       : "";
+  const priorSessionsBlock =
+    args.priorSessions && args.priorSessions.trim().length > 0 ? args.priorSessions.trim() + "\n" : "";
   const prompt = [
     basePrompt,
     "",
     directiveBlock,
+    priorSessionsBlock,
     renderFillerContext(args.graph),
     "",
     "SOURCES (read the relevant proof step before filling a sorry):",

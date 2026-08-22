@@ -1,0 +1,177 @@
+\section{Cell weight learning}
+
+The oracle procedure in \cref{obj:thm:oracle-score-inversion-attainment} uses the target-to-source weights as inputs. This section turns that benchmark into a feasible finite-cell construction. In the uniform finite-cell experiment of \cref{obj:def:finite-cell-class}, the target covariate sample estimates the cell probabilities directly, and the source sample estimates the cellwise reduced-form and first-stage contrasts. The resulting score inversion has the same expected-length order as the oracle benchmark, with the dispersion scale estimated from target-cell coincidences. This connects transported noncompliance inference to the weighting and two-sample transport ideas in \citet{RudolphVanderLaan2017}, \citet{ChenHuang2025}, and \citet{ZengKennedyBodnarNaimi2024}, while retaining the weak-ratio inversion logic used in robust IV procedures \citep{ChoiGuShen2018,ChoiShen2019}.
+
+\begin{theoremv}{thm:finite-cell-unknown-weight-attainment}[Finite-cell sample-only attainment]
+Let \(N_n\) and \(k_n\) be positive integer sequences, let \(c,\varepsilon,\alpha\in\mathbb R\), and suppose the following conditions hold.
+\begin{itemize}
+\item \textbf{(Sampling ratio.)} \(c>0\) and \(N_n/n\to c\).
+\item \textbf{(Overlap and coverage levels.)} \(0<\varepsilon<1/2\) and \(0<\alpha<1\).
+\item \textbf{(Cell growth.)} \(k_n>0\) for every \(n\), \(k_n\to\infty\), and \(k_n/\sqrt n\to0\).
+\item \textbf{(Ambient carrier.)} For every \(n\), the measurable covariate space contains an injected copy of \(\{1,\ldots,k_n\}\) whose singleton images are measurable.
+\item \textbf{(Finite-cell rows.)} For every row \(n\) and every transported array \(P\in\mathcal N_n\), with \(\mathcal N_n\) as in \cref{obj:def:finite-cell-class}, the row satisfies the two-sample condition in \cref{obj:ass:two-sample-array}, the uniform finite-cell source condition in \cref{obj:ass:finite-cell-source}, and the degrading-array condition in \cref{obj:ass:degrading-array}.
+\end{itemize}
+Put
+\[
+B_c=32(1+c^{-1}),\qquad
+L_{\alpha,c}=\left(\frac{2B_c}{\alpha}\right)^{1/2},\qquad
+C_0=\max\{2,4\sqrt2\,L_{\alpha,c}+8B_c\}.
+\]
+Then \(C_0>0\), and there exists a sample-only finite-cell confidence-set sequence \(C=(C_n)\) in the feasible class \(\mathfrak C^{\mathrm{cell}}\) of \cref{obj:def:finite-cell-feasible-honesty} such that, for every \(n\) and every \(P\in\mathcal N_n\), \(C_n\) agrees \(P\)-almost surely under the two-sample law with the finite-cell score-inversion rule using critical constant \(L_{\alpha,c}\). Equivalently, on the finite-cell experiment, this rule is given by
+\[
+H_i=2(2Z_i-1),\qquad
+\widehat p_{x,n}=\frac1{N_n}\sum_{j=1}^{N_n}\mathbf 1\{X_j^T=x\},
+\]
+and, for \(G\in\{Y,D\}\),
+\[
+\widehat m_{G,n}(x)=\frac{k_n}{n}\sum_{i=1}^n
+\mathbf 1\{X_i=x\}H_iG_i,\qquad
+\widehat M_{G,n}=\sum_{x=1}^{k_n}\widehat p_{x,n}\widehat m_{G,n}(x).
+\]
+For \(N_n\ge2\), define
+\[
+\widehat\kappa_{U,n}
+=\frac{k_n}{N_n(N_n-1)}
+\sum_{j\ne\ell}\mathbf 1\{X_j^T=X_\ell^T\},\qquad
+\widehat K_n=1+\widehat\kappa_{U,n},
+\]
+and set
+\[
+C_n=\left\{\vartheta\in\Theta:
+|\widehat M_{Y,n}-\vartheta\widehat M_{D,n}|
+\le L_{\alpha,c}\sqrt{\widehat K_n/n}\right\},
+\]
+with \(C_n=\Theta\) at indices for which \(N_n<2\). For every \(t_0>0\),
+\[
+\limsup_{n\to\infty}\sup_{P\in\mathcal N_n:\,t_n\ge t_0}
+\mathbb E_P[\lambda(C_n)]
+\le
+C_0\min\{1,t_0^{-1/2}\}.
+\]
+Moreover, for every \(t_0>0\), the feasible finite-cell honest minimax risk satisfies
+\[
+\frac{3(1-\alpha)^2}{16}\min\{1,t_0^{-1/2}\}
+\le
+\inf_{\widetilde C\in\mathfrak C^{\mathrm{cell}}}
+\limsup_{n\to\infty}\sup_{P\in\mathcal N_n:\,t_n\ge t_0}
+\mathbb E_P[\lambda(\widetilde C_n)].
+\]
+\end{theoremv}
+
+\Cref{obj:thm:finite-cell-unknown-weight-attainment} establishes that empirical target cell frequencies can be substituted for oracle transport weights in the uniform finite-cell design while preserving the order \(\min\{1,t_0^{-1/2}\}\). The statistic \(\widehat p_{x,n}\) learns the target mass of each cell; \(\widehat m_{G,n}(x)\) estimates the source encouragement contrast in that cell; and \(\widehat M_{G,n}\) transports those source contrasts to the target population. The U-statistic \(\widehat\kappa_{U,n}\) estimates the collision component of the weight dispersion, so the feasible radius uses the same strength scale that governs the oracle expected length.
+
+The lower bound in \cref{obj:thm:finite-cell-unknown-weight-attainment} matches the oracle order from \cref{obj:thm:oracle-converse} on the same finite-cell submodel. Thus the target-weight-learning step contributes a fully sample-based construction whose honest expected length remains governed by the effective-strength threshold. The condition \(k_n/\sqrt n\to0\) is the cell-growth regime under which the theorem calibrates the source-cell contrast error and the target-frequency error at the displayed rate.
+
+The regular extension allows the source cells to have known nonuniform probabilities. This formulation keeps the source cell masses and the assignment propensity available to the procedure, matching settings in which the sampling frame or design supplies these quantities, as in standard inverse-probability and semiparametric weighting constructions \citep{HiranoImbensRidder2003,RobinsRotnitzkyZhao1994,VanDerLaanRubin2006,Chernozhukov2018}.
+
+\begin{definitionv}{def:regular-finite-cell-class}[Regular finite-cell class \(\mathcal N_n^{\mathrm{reg}}\)]
+\[
+\mathcal N_n^{\mathrm{reg}}
+=
+\left\{
+P\in\mathcal P_n:
+\begin{array}{l}
+P_S^X \text{ is supported on exactly } k_n \text{ measurable cells},\\
+q_{x,n}=P_S^X(X \text{ lies in cell } x),\\
+c_-/k_n\le q_{x,n}\le c_+/k_n \text{ for every } x
+\end{array}
+\right\},
+\]
+where \(0<c_-\le 1\le c_+<\infty\) are fixed.
+\end{definitionv}
+
+\Cref{obj:def:regular-finite-cell-class} replaces equal source-cell masses with regular cell masses bounded above and below by constants times \(1/k_n\). The known probabilities \(q_{x,n}\) let the source contrast estimator normalize each cell by its actual source mass, while the constants \(c_-\) and \(c_+\) keep the finite-cell geometry comparable across cells.
+
+\begin{definitionv}{def:regular-cell-feasible-honesty}[Regular-cell feasible honesty class \(\mathfrak C^{\mathrm{reg}}\)]
+\[
+\mathfrak C^{\mathrm{reg}}
+=
+\left\{
+(C_n)_{n\ge 1}:
+C_n
+=
+C_n\left(
+(O_i^S)_{i=1}^n,
+(X_j^T)_{j=1}^{N_n},
+(q_{x,n})_{x=1}^{k_n},e
+\right)
+\subseteq \Theta,\ 
+\liminf_{n\to\infty}\inf_{P\in\mathcal N_n^{\mathrm{reg}}}
+P(\theta_T\in C_n)\ge 1-\alpha
+\right\}.
+\]
+\end{definitionv}
+
+\Cref{obj:def:regular-cell-feasible-honesty} records the information available to the regular-cell procedure: the two samples, the known source-cell probabilities, and the propensity. Honesty is uniform over the regular finite-cell class, using the same compact parameter space and target complier contrast introduced in \cref{obj:def:oracle-honesty,obj:prop:compact-causal-range}.
+
+\begin{theoremv}{thm:regular-cell-unknown-weight-attainment}[Regular-cell score attainment]
+Fix \(c,\varepsilon,\alpha,c_-,c_+\in\mathbb R\), target sample sizes \(N_n\), and cell counts \(k_n\).  Suppose that
+\begin{itemize}
+\item \textbf{(Sample-size ratio.)} \(0<c\) and \(N_n/n\to c\).
+\item \textbf{(Overlap and coverage levels.)} \(0<\varepsilon<1/2\) and \(0<\alpha<1\).
+\item \textbf{(Regular cell constants.)} \(0<c_-\le 1\) and \(1\le c_+\).
+\item \textbf{(Cell growth.)} \(k_n>0\) for every \(n\), \(k_n\to\infty\), and \(k_n/\sqrt n\to0\).
+\item \textbf{(Measurable carrier.)} For every \(n\), the covariate carrier contains \(k_n\) injected measurable singleton cells.
+\item \textbf{(Model restrictions.)} Every array \(P\in\mathcal N_n^{\mathrm{reg}}\) from \cref{obj:def:regular-finite-cell-class} with constants \(c,\varepsilon,c_-,c_+\) satisfies \cref{obj:ass:two-sample-array}, \cref{obj:ass:instrument-overlap}, and \cref{obj:ass:degrading-array}.
+\end{itemize}
+On \(\mathcal N_n^{\mathrm{reg}}\), let \(q_{x,n}=P_S^X(X=x)\) and define
+\[
+H_i=\frac{Z_i}{e(X_i)}-\frac{1-Z_i}{1-e(X_i)}.
+\]
+For \(G\in\{Y,D\}\), set
+\[
+\widehat p_{x,n}=\frac1{N_n}\sum_{j=1}^{N_n}\mathbf 1\{X_j^T=x\},
+\qquad
+\widehat m_{G,n}(x)=\frac1{nq_{x,n}}\sum_{i=1}^n
+\mathbf 1\{X_i=x\}H_iG_i,
+\]
+and
+\[
+\widehat M_{G,n}=\sum_{x=1}^{k_n}\widehat p_{x,n}\widehat m_{G,n}(x).
+\]
+For \(N_n\ge2\), set
+\[
+\widehat\kappa_{U,n}
+=
+\frac1{N_n(N_n-1)}\sum_{j\ne\ell}
+\frac{\mathbf 1\{X_j^T=X_\ell^T\}}{q_{X_j^T,n}},
+\qquad
+\widehat K_n=1+\widehat\kappa_{U,n},
+\]
+and put \(C_n^{\mathrm{reg}}=\Theta\) when \(N_n<2\).  Let
+\[
+B_{\varepsilon,c}=8(\varepsilon^{-2}+c^{-1}).
+\]
+For every \(L\ge\{2B_{\varepsilon,c}/\alpha\}^{1/2}\), define
+\[
+C_{0}=\max\{2,4\sqrt2L+8B_{\varepsilon,c}\}.
+\]
+Then \(0<C_0\), and there exists a regular-cell procedure \(C=(C_n)_{n\ge1}\) such that, for every \(n\) and every \(P\in\mathcal N_n^{\mathrm{reg}}\), \(C_n\) agrees almost surely under the two-sample law with
+\[
+C_n^{\mathrm{reg}}
+=
+\left\{\vartheta\in\Theta:
+|\widehat M_{Y,n}-\vartheta\widehat M_{D,n}|
+\le L\sqrt{\widehat K_n/n}\right\}
+\]
+for \(N_n\ge2\), together with the preceding convention for \(N_n<2\).  This procedure belongs to \(\mathfrak C^{\mathrm{reg}}\) from \cref{obj:def:regular-cell-feasible-honesty}.  Moreover, for every fixed \(t_0>0\),
+\[
+\limsup_{n\to\infty}\sup_{P\in\mathcal N_n^{\mathrm{reg}}:\,t_n\ge t_0}
+\mathbb E_P[\lambda(C_n)]
+\le
+C_0\min\{1,t_0^{-1/2}\}.
+\]
+For every fixed \(t_0>0\), the minimax risk over \(\mathfrak C^{\mathrm{reg}}\) satisfies
+\[
+\frac{3(1-\alpha)^2}{16}\min\{1,t_0^{-1/2}\}
+\le
+\inf_{C\in\mathfrak C^{\mathrm{reg}}}
+\limsup_{n\to\infty}\sup_{P\in\mathcal N_n^{\mathrm{reg}}:\,t_n\ge t_0}
+\mathbb E_P[\lambda(C_n)].
+\]
+Thus, with known regular source-cell probabilities and a known cell-varying propensity satisfying the stated overlap, the feasible regular-cell construction attains the oracle frontier order on \(\mathcal N_n^{\mathrm{reg}}\).
+\end{theoremv}
+
+\Cref{obj:thm:regular-cell-unknown-weight-attainment} extends the sample-only construction to regular nonuniform source cells. The inverse-propensity score \(H_i\) now uses the known cell-varying assignment propensity, and the source contrast estimator rescales observations by \(q_{x,n}\). The dispersion estimator similarly weights target-cell coincidences by the known source mass of the matched cell. Under the displayed regularity and growth conditions, the resulting score-inversion confidence set is honest over \(\mathcal N_n^{\mathrm{reg}}\) and has worst-case expected length bounded by a constant times \(\min\{1,t_0^{-1/2}\}\).
+
+In the uniform finite-cell class and in the known regular nonuniform-cell class with known source cell probabilities and known cell-varying propensity, \cref{obj:thm:finite-cell-unknown-weight-attainment,obj:thm:regular-cell-unknown-weight-attainment} show that empirical target-cell frequencies and collision dispersion estimates attain the oracle expected-length order. The finite-cell procedures use the target sample only through empirical cell frequencies and dispersion estimates, while the source sample supplies the outcome and receipt contrasts. In both finite-cell classes, the effective-strength scalar \(t_n\) remains the quantity that determines the transition between the compact-range regime and the square-root contraction regime.

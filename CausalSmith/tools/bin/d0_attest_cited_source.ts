@@ -1,7 +1,6 @@
 #!/usr/bin/env -S npx tsx
 /** Main-orchestrator source-of-record attestation for an agent-authored cited node. */
 import process from "node:process";
-import { readFile } from "node:fs/promises";
 import type { PipelineContext } from "../src/types.js";
 import { findCausalSmithRoot } from "../src/shared/repo_root.js";
 import { readArgs } from "../src/shared/cli_args.js";
