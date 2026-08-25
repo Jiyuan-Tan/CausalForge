@@ -18,6 +18,12 @@
 //                      default `workspace-write`; set `danger-full-access` only
 //                      when the machine is already externally confined and its
 //                      Linux bubblewrap/user namespaces are unavailable.
+//   authMode / anthropicAuth / openaiAuth / *ApiKey / *ApiKeyFile / codexApiHome
+//                    — who PAYS for the model calls: the operator's subscription
+//                      logins (default) or an API key you supply. The fields are
+//                      declared below; the precedence rules, the env overrides,
+//                      and the reasons behind them live in `src/auth.ts`, which
+//                      is the only module that interprets them.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -29,6 +35,23 @@ export interface LocalConfig {
   leanProjectPath?: string;
   mcpTimeoutMs: number;
   codexSandbox: "workspace-write" | "danger-full-access";
+  /** Billing path for BOTH runners; per-provider fields below override it.
+   *  Parsed and validated in `src/auth.ts`, not here, so that a bad value fails
+   *  with an auth-specific message at the dispatch boundary. */
+  authMode?: string;
+  /** Billing path for the `claude` workers only. */
+  anthropicAuth?: string;
+  /** Billing path for the `codex` workers only. */
+  openaiAuth?: string;
+  anthropicApiKey?: string;
+  /** Path to a file whose first non-empty line is the Anthropic key. */
+  anthropicApiKeyFile?: string;
+  openaiApiKey?: string;
+  /** Path to a file whose first non-empty line is the OpenAI key. */
+  openaiApiKeyFile?: string;
+  /** CODEX_HOME used in codex api mode; kept separate from `~/.codex` so the
+   *  subscription login is never evicted. Default `~/.codex-causalsmith-api`. */
+  codexApiHome?: string;
 }
 
 const CONFIG_DIR = path.resolve(
@@ -97,6 +120,19 @@ export function localConfig(): LocalConfig {
     codexSandbox: parseCodexSandbox(
       process.env.CAUSALSMITH_CODEX_SANDBOX ?? file.codexSandbox ?? "workspace-write",
     ),
+    // Auth fields pass through VERBATIM: `src/auth.ts` owns their precedence
+    // (env beats file) and their validation, so duplicating either here would
+    // give two places to disagree about which credential a run used.
+    // `?? undefined` normalizes the example file's explicit `null` placeholders,
+    // so consumers only ever see a string or absence.
+    authMode: file.authMode ?? undefined,
+    anthropicAuth: file.anthropicAuth ?? undefined,
+    openaiAuth: file.openaiAuth ?? undefined,
+    anthropicApiKey: file.anthropicApiKey ?? undefined,
+    anthropicApiKeyFile: file.anthropicApiKeyFile ?? undefined,
+    openaiApiKey: file.openaiApiKey ?? undefined,
+    openaiApiKeyFile: file.openaiApiKeyFile ?? undefined,
+    codexApiHome: file.codexApiHome ?? undefined,
   };
   return cached;
 }

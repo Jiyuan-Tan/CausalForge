@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { applyWorkerEnv } from "../src/local_config.js";
+import { applyAuthEnv, authSummary } from "../src/auth.js";
 
 export type CausalSmithMode = "research" | "present" | "study";
 
@@ -17,6 +19,12 @@ export function parseCausalSmithCommand(argv: string[]): { mode: CausalSmithMode
 
 async function main(argv: string[]): Promise<void> {
   const { mode, args } = parseCausalSmithCommand(argv);
+  // Machine env + billing path resolved ONCE here, before any mode-specific
+  // import, so `present` gets the same treatment as `research`/`study` and a
+  // misconfigured api mode fails before a run starts rather than mid-dispatch.
+  applyWorkerEnv();
+  applyAuthEnv();
+  console.log(`[causalsmith] auth: ${authSummary()}`);
   if (mode === "research") {
     const { runCli } = await import("../src/cli.js");
     await runCli(args);

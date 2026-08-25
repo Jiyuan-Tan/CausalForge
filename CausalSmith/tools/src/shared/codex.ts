@@ -1,8 +1,11 @@
-import { open, readdir, stat } from "node:fs/promises";
+import { open, readdir, stat, mkdir, readFile, writeFile, copyFile, chmod } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import lockfile from "proper-lockfile";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnWithInactivityTimeout } from "../workers/spawn.js";
+import { codexHome, redactSecrets, resolveProviderAuth, workerEnv } from "../auth.js";
 import {
   localConfig,
   leanProjectPathFor,
@@ -179,6 +182,129 @@ function leanLspCodexFlags(input: CodexRunInput): string[] {
 }
 
 /**
+ * Prepare the SEPARATE codex home used in api mode, and log it in with the key.
+ *
+ * Why a separate home at all: codex allows exactly one login method per
+ * CODEX_HOME. Forcing api auth on a home that holds ChatGPT credentials makes
+ * codex DELETE them ("API key login is required, but ChatGPT is currently being
+ * used. Logging out."). Pointing api-mode runs at their own home is what keeps
+ * `~/.codex` — and the operator's subscription — intact.
+ *
+ * The operator's global `config.toml` is COPIED in on first creation (not
+ * symlinked: codex rewrites its own config, and a symlink would let a pipeline
+ * run edit the real one), so model/tool settings carry over. Re-login happens
+ * only when the home has no `auth.json` or the configured key changed, tracked
+ * by a fingerprint sidecar so the key itself is never re-read from codex's
+ * storage format.
+ */
+const codexApiHomeReady = new Map<string, Promise<void>>();
+
+export async function ensureCodexApiHome(home: string, apiKey: string): Promise<void> {
+  const fingerprint = createHash("sha256").update(apiKey).digest("hex");
+  const memoKey = `${home}::${fingerprint}`;
+  const existing = codexApiHomeReady.get(memoKey);
+  if (existing) return existing;
+  const task = bootstrapCodexApiHome(home, apiKey, fingerprint);
+  codexApiHomeReady.set(memoKey, task);
+  try {
+    await task;
+  } catch (err) {
+    // why: a failed bootstrap must not be cached as "ready" for the whole run.
+    codexApiHomeReady.delete(memoKey);
+    throw err;
+  }
+}
+
+/** Already logged in with THIS key? (`auth.json` present and the stamp matches.) */
+async function codexApiHomeBootstrapped(home: string, fingerprint: string): Promise<boolean> {
+  const [stamp, hasAuth] = await Promise.all([
+    readFile(codexApiHomeStamp(home), "utf8").then((s) => s.trim()).catch(() => ""),
+    stat(path.join(home, "auth.json")).then(() => true).catch(() => false),
+  ]);
+  return hasAuth && stamp === fingerprint;
+}
+
+function codexApiHomeStamp(home: string): string {
+  return path.join(home, ".causalsmith_api_key.sha256");
+}
+
+/** Strip the key out of child output before it can reach a run log. */
+function redactKey(text: string, apiKey: string): string {
+  return apiKey ? text.split(apiKey).join("***") : text;
+}
+
+async function bootstrapCodexApiHome(
+  home: string,
+  apiKey: string,
+  fingerprint: string,
+): Promise<void> {
+  await mkdir(home, { recursive: true });
+  // 0700 explicitly: `mkdir`'s mode is masked by the process umask (0002 on this
+  // cluster yields 0775), and this directory holds a credential. Best-effort —
+  // a filesystem that refuses chmod must not fail the run.
+  await chmod(home, 0o700).catch(() => {});
+  if (await codexApiHomeBootstrapped(home, fingerprint)) return;
+  // Cross-process lock: the in-process memo covers one run's mapLimit fan-out,
+  // but concurrent sessions share this tree (and this home). Without it two
+  // `codex login` calls race on the same `auth.json` while a third worker is
+  // reading it.
+  await withCodexApiHomeLock(home, async () => {
+    // Re-check inside the lock: the process we queued behind may have just done it.
+    if (await codexApiHomeBootstrapped(home, fingerprint)) return;
+    const configPath = path.join(home, "config.toml");
+    const operatorConfig = path.join(os.homedir(), ".codex", "config.toml");
+    if (!(await stat(configPath).then(() => true).catch(() => false))) {
+      await copyFile(operatorConfig, configPath).catch(() => {
+        /* no global config to inherit — codex's own defaults apply */
+      });
+    }
+    const result = await spawnWithInactivityTimeout("codex", ["login", "--with-api-key"], {
+      cwd: home,
+      env: { ...process.env, CODEX_HOME: home, OPENAI_API_KEY: apiKey },
+      inactivityTimeoutMs: 2 * 60 * 1000,
+      maxTotalMs: 5 * 60 * 1000,
+      input: apiKey,
+    });
+    if (result.exitCode !== 0) {
+      throw new CodexRunError(
+        `codex login --with-api-key failed in CODEX_HOME=${home} (exit ${result.exitCode}). ` +
+          `stderr-tail=${redactKey(result.stderr.trim(), apiKey).slice(-300)}`,
+        redactKey(result.stdout, apiKey),
+        redactKey(result.stderr, apiKey),
+      );
+    }
+    await writeFile(codexApiHomeStamp(home), `${fingerprint}\n`, { encoding: "utf8", mode: 0o600 });
+  });
+}
+
+/** `proper-lockfile` mutex over one codex api home, mirroring `shared/build_mutex.ts`. */
+async function withCodexApiHomeLock<T>(home: string, action: () => Promise<T>): Promise<T> {
+  const lockTarget = path.join(home, ".causalsmith_bootstrap.lock");
+  if (!(await stat(lockTarget).then(() => true).catch(() => false))) {
+    await writeFile(lockTarget, "{}\n", { encoding: "utf8", mode: 0o600 });
+  }
+  const release = await lockfile.lock(lockTarget, {
+    stale: 10 * 60_000,
+    // Budget must exceed what the lock PROTECTS (a cold `codex login`, capped at
+    // maxTotalMs = 5 min) or a process queued behind a legitimately slow holder
+    // throws ELOCKED and fails its stage for no reason. ~60 retries ≈ 9 min.
+    retries: { retries: 60, factor: 1.5, minTimeout: 200, maxTimeout: 10_000 },
+    realpath: false,
+    // proper-lockfile's DEFAULT onCompromised rethrows from a refresh timer, i.e.
+    // as an uncaught exception that kills the whole run — not just this bootstrap.
+    // On an NFS home a stalled mtime update is a transient, so warn instead.
+    onCompromised: (err: Error) => {
+      console.warn(`[codex-auth] bootstrap lock compromised (continuing): ${err.message}`);
+    },
+  });
+  try {
+    return await action();
+  } finally {
+    await release();
+  }
+}
+
+/**
  * Thrown when the codex child was watchdog-killed or exited nonzero. Callers
  * that tolerate job-level failure (the F3 per-job dispatch, bucket fixes)
  * already wrap dispatches in `.catch`; stage-level callers let it propagate so
@@ -210,6 +336,20 @@ export async function runCodex(input: CodexRunInput): Promise<{ stdout: string; 
   // abort the `&&` chain. node_env.sh prints its own diagnostic to stderr.
   const setup = `. ${shellQuote(NODE_ENV_SCRIPT)} || true`;
   const sandboxMode = input.sandboxMode ?? codexSandboxMode();
+  // Billing path. In api mode the key rides in via `workerEnv()` (which also
+  // points CODEX_HOME at the dedicated home) and `forced_login_method="api"`
+  // makes the choice explicit, so a home that somehow held ChatGPT credentials
+  // fails loudly there instead of quietly billing the subscription. That flag is
+  // NEVER emitted in subscription mode: against `~/.codex` it evicts the login.
+  const auth = resolveProviderAuth("openai");
+  if (auth.mode === "api") {
+    // No fail-open `&& auth.apiKey` guard here: skipping the bootstrap on a
+    // keyless api resolution would still let `workerEnv()` redirect CODEX_HOME,
+    // i.e. run codex against a home that was never logged in. `resolveProviderAuth`
+    // already refuses that combination, so this asserts the invariant instead.
+    if (!auth.apiKey) throw new Error("codex api auth resolved without a key");
+    await ensureCodexApiHome(codexHome(), auth.apiKey);
+  }
   const cmd = [
     // `codex exec` is non-interactive, so approval remains `never`; this selects
     // only the explicitly configured local-tool sandbox. Never use the blanket
@@ -229,6 +369,7 @@ export async function runCodex(input: CodexRunInput): Promise<{ stdout: string; 
     // without raw sandbox egress. An explicit danger-full-access machine setting
     // delegates both filesystem and network confinement to the outer environment.
     "-c windows.sandbox=unelevated",
+    ...(auth.mode === "api" ? ['-c forced_login_method="api"'] : []),
     // Default fallback tier is mechanical (gpt-5.6-terra); every hard-math / kernel caller
     // passes an explicit `input.model` (codexKernel = gpt-5.5), so this default only applies
     // to unspecified/clerical codex calls.
@@ -291,7 +432,9 @@ export async function runCodex(input: CodexRunInput): Promise<{ stdout: string; 
   const promptWithMarker = `${input.prompt}\n\n[${marker}] — machine tag for run-liveness tracking; ignore.`;
   const result = await spawnWithInactivityTimeout("bash", ["-lc", script], {
     cwd: input.cwd,
-    env: process.env,
+    // Carries OPENAI_API_KEY + the dedicated CODEX_HOME in api mode; identical
+    // to process.env otherwise.
+    env: workerEnv(),
     // Fix ②: LONG inactivity timeout — resets on ANY child output, so a worker that is still making
     // progress (a hard lean-lsp elaboration, a slow filler) is NEVER killed and its work is never
     // lost; only a genuinely SILENT hang (no output for the whole window) trips it, and then it throws
@@ -330,24 +473,29 @@ export async function runCodex(input: CodexRunInput): Promise<{ stdout: string; 
       ? `inactivity timeout (${Math.round((input.inactivityTimeoutMs ?? 25 * 60 * 1000) / 60000)}m without output)`
       : null);
   if (killed) {
+    // Redact BEFORE slicing: a key straddling the 300-char cut must not survive
+    // in a fragment. These messages are persisted to doc/research/_agent_logs/.
     throw new CodexRunError(
-      `codex killed: ${killed}. stderr-tail=${result.stderr.trim().slice(-300)}`,
-      result.stdout,
-      result.stderr,
+      `codex killed: ${killed}. stderr-tail=${redactSecrets(result.stderr.trim()).slice(-300)}`,
+      redactSecrets(result.stdout),
+      redactSecrets(result.stderr),
     );
   }
   if (result.exitCode !== null && result.exitCode !== 0) {
     throw new CodexRunError(
-      `codex exited ${result.exitCode}. stderr-tail=${result.stderr.trim().slice(-300)}`,
-      result.stdout,
-      result.stderr,
+      `codex exited ${result.exitCode}. stderr-tail=${redactSecrets(result.stderr.trim()).slice(-300)}`,
+      redactSecrets(result.stdout),
+      redactSecrets(result.stderr),
     );
   }
   return { stdout: result.stdout, stderr: result.stderr };
 }
 
 async function codexSessionStarted(after: number, marker: string): Promise<boolean> {
-  const root = path.join(os.homedir(), ".codex", "sessions");
+  // Must follow the ACTIVE codex home: api mode relocates CODEX_HOME, and a
+  // hardcoded `~/.codex/sessions` would then never see the marker, so the
+  // startup watchdog would kill every healthy worker at the startup window.
+  const root = path.join(codexHome(), "sessions");
   const candidates: string[] = [];
   await collectNewerJsonl(root, after, 3, candidates);
   for (const file of candidates) {

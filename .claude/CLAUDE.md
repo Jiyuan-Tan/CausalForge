@@ -73,6 +73,21 @@ policies; do not impose interactive-collaboration rules on them.
   state the general rule, not examples tied to the specific instance that
   surfaced the issue.
 
+- **Model calls bill the machine's subscription logins by DEFAULT; API-key
+  billing is a config switch, not a code change.** Set `authMode` (or
+  per-provider `anthropicAuth` / `openaiAuth`) plus a key in
+  `CausalSmith/tools/config/local.json`, or use `CAUSALSMITH_AUTH_MODE` /
+  `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` (env wins). `tools/src/auth.ts` resolves
+  it once at CLI startup and every PIPELINE-spawned worker inherits it (a
+  `codex exec` you run BY HAND bypasses it and spends the machine's codex
+  login); mixed modes (claude on api, codex on subscription) are supported. Two traps: api mode with
+  NO key aborts the run rather than falling back to the subscription (a silent
+  fallback would only surface on an invoice); and codex permits ONE login method
+  per `CODEX_HOME`, so forcing api auth on `~/.codex` DELETES the stored ChatGPT
+  credentials — api-mode codex therefore runs against its own `codexApiHome`.
+  Never hand-run `-c forced_login_method="api"` against `~/.codex`; recover a
+  lost login with `codex login --device-auth`.
+
 ## Workspace layout (two-package split)
 
 - `Causalean/` (repo root package) — foundational library. Hand-curated, stable.

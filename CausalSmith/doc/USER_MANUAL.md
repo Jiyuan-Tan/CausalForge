@@ -104,6 +104,30 @@ Machine-specific paths live in **one** place: `tools/config/local.json` (gitigno
 | `mcpTimeoutMs` | `MCP_TIMEOUT` | Per-call timeout for the slow-cold-starting lean-lsp server (default 120000). |
 | `codexSandbox` | `CAUSALSMITH_CODEX_SANDBOX` | Codex local-tool sandbox. Default `workspace-write`. `danger-full-access` is a persistent machine-local grant of unrestricted filesystem/network tools to every CausalSmith Codex worker; use it only when that is explicitly intended or an outer environment supplies confinement. |
 
+## Who pays for the model calls (subscription vs API key)
+
+By default the pipeline bills the interactive logins already on the machine: `claude` uses its stored OAuth login, `codex` uses the ChatGPT plan in `~/.codex`. That is `subscription` mode and needs no configuration.
+
+The alternative is `api` mode: you supply an API key and the run is billed to it. Set it in the same `tools/config/local.json`, or via env (env always wins). `tools/src/auth.ts` is the only module that interprets these; it prints the resolved modes at startup (`[causalsmith] auth: claude=… codex=…`) and never prints a key.
+
+| Field | Env override | Purpose |
+|---|---|---|
+| `authMode` | `CAUSALSMITH_AUTH_MODE` | `subscription` (default) or `api`, for **both** runners. |
+| `anthropicAuth` | `CAUSALSMITH_ANTHROPIC_AUTH` | Per-provider override for the `claude` workers. |
+| `openaiAuth` | `CAUSALSMITH_OPENAI_AUTH` | Per-provider override for the `codex` workers. |
+| `anthropicApiKey` / `anthropicApiKeyFile` | `ANTHROPIC_API_KEY` | The Anthropic key, inline or as a path to a file whose first non-empty line is the key. |
+| `openaiApiKey` / `openaiApiKeyFile` | `OPENAI_API_KEY` | Same, for OpenAI. |
+| `codexApiHome` | `CAUSALSMITH_CODEX_HOME_API` | `CODEX_HOME` used in codex api mode. Default `~/.codex-causalsmith-api`. |
+
+Mixed modes are supported and often what you want — e.g. `"anthropicAuth": "api"` with `"openaiAuth": "subscription"` runs the claude reviewers on an API key while codex keeps the ChatGPT plan.
+
+Four properties worth knowing:
+
+- **A missing key is a hard failure, not a fallback.** `api` mode with no key throws at CLI startup, naming every place a key may live. A run that quietly reverted to subscription billing would only surface on an invoice.
+- **This covers the calls the PIPELINE makes, not every model call in the project.** Both dispatchers (`runClaude`, `runCodex`) route through `src/auth.ts`, so every D-/F-/P-stage worker obeys the setting. Calls an *orchestrator* fires by hand — the `codex exec` adversarial gate in `causalsmith-topics`, or any `codex exec` you run yourself under the CLAUDE.md tooling grant — never touch this module and always use the machine's own codex login.
+- **API mode never touches your subscription credentials.** `claude` api calls run with `--bare`, which restricts that process to `ANTHROPIC_API_KEY` and never reads the keychain — the stored OAuth login is left alone. Codex is stricter: it permits one login method per `CODEX_HOME` and *deletes* stored ChatGPT credentials when api auth is forced on that home, so api-mode codex runs against its own `codexApiHome`, bootstrapped once with `codex login --with-api-key` (your global `~/.codex/config.toml` is copied in on first use).
+- **`--bare` also skips CLAUDE.md auto-discovery, hooks, and auto-memory** for the claude workers. That is safe here because pipeline prompts are self-contained by contract, and the MCP set is passed explicitly via `--strict-mcp-config` in both modes.
+
 **lean-lsp MCP wiring.** Both worker backends can query Lean live, but MCP must be configured explicitly (it is NOT auto-enabled): the `claude` worker gets a generated `--mcp-config` (F1 feasibility gate, F2 scaffold verify); the `codex` worker gets inline `-c mcp_servers.lean-lsp.*` flags when a stage passes `leanLsp: true` (F3 proof-fill). In the default network-off `workspace-write` mode, the *search* tools (`lean_leansearch`/`lean_loogle`/`lean_leanfinder`) are blocked but the local tools (`lean_diagnostic_messages`/`lean_goal`/`lean_multi_attempt`/`lean_local_search`) work.
 
 ## Running the `causalsmith research` pipeline

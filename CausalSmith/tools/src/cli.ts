@@ -7,6 +7,7 @@ import { createRequire } from "node:module";
 import { runPipeline, type RunPipelineOptions } from "./pipeline.js";
 import { CAP_GATE_FLAGS } from "./cap_gates.js";
 import { applyWorkerEnv, leanProjectPathFor } from "./local_config.js";
+import { applyAuthEnv } from "./auth.js";
 import {
   formatStageLabel,
   resolveStageHaltId,
@@ -816,6 +817,7 @@ export function parseStudyArgsForTest(argv: string[]): StudyArgs {
 /** Run the reusable-substrate builder behind `causalsmith study`. */
 export async function runStudyCli(argv: string[]): Promise<void> {
   applyWorkerEnv();
+  applyAuthEnv();
   const parsed = parseStudyArgs(argv);
   const repoRoot = findCausalSmithRoot(process.cwd());
   const { runSubstratePipeline } = await import("./substrate/pipeline.js");
@@ -860,6 +862,10 @@ export async function runCli(argv: string[]): Promise<void> {
   // Inject worker-required env from the central local config (git-bash path for
   // the headless `claude` CLI on Windows; MCP_TIMEOUT) before any worker spawns.
   applyWorkerEnv();
+  // Resolve the billing path (subscription vs API key) before the first worker
+  // spawns, so a misconfigured api mode fails here instead of silently charging
+  // the subscription mid-run. Secret-free — prints the modes, never the keys.
+  applyAuthEnv();
   const parsed = parseArgs(argv);
 
   // The live `causalsmith research` pipeline owns `doc/research/active/<qid>/`.

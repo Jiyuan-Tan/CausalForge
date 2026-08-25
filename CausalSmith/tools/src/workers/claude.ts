@@ -4,6 +4,7 @@ import fsSync from "node:fs";
 import { fileURLToPath } from "node:url";
 import { spawnWithInactivityTimeout } from "./spawn.js";
 import { localConfig, leanProjectPathFor } from "../local_config.js";
+import { redactSecrets, resolveProviderAuth, workerEnv, type AuthMode } from "../auth.js";
 import type { ClaudeModel } from "../models.js";
 
 export interface ClaudeRunInput {
@@ -200,14 +201,29 @@ export class ClaudeRunError extends Error {
   }
 }
 
+/**
+ * The auth flags for one claude call — the ONLY difference between the two
+ * billing paths.
+ *
+ * `subscription` keeps `--setting-sources user`, which is what lets the CLI read
+ * the operator's stored OAuth login. `--bare` is deliberately NOT used there:
+ * it restricts auth to ANTHROPIC_API_KEY / apiKeyHelper and never reads the
+ * keychain, so with no key present the call hangs at login and returns "Not
+ * logged in" instead of JSON.
+ *
+ * `api` inverts exactly that property, which is why it is the right lever here:
+ * `--bare` GUARANTEES the call is billed to ANTHROPIC_API_KEY (supplied via
+ * `workerEnv()`) and can never silently fall through to the subscription. It
+ * also skips hooks, plugin sync, auto-memory, and CLAUDE.md auto-discovery —
+ * acceptable because pipeline prompts are self-contained by contract (see the
+ * preamble: "The prompt is the world"), and the MCP set is passed explicitly
+ * via `--strict-mcp-config` in both modes.
+ */
+export function claudeAuthArgs(mode: AuthMode): string[] {
+  return mode === "api" ? ["--bare"] : ["--setting-sources", "user"];
+}
+
 export async function runClaude(input: ClaudeRunInput): Promise<string> {
-  // NOTE: --bare would suppress hooks/LSP/CLAUDE.md and isolate the call, but it
-  // also restricts auth to ANTHROPIC_API_KEY / apiKeyHelper only (keychain OAuth
-  // is never read). Without an API key in the environment this hangs at login,
-  // returning "Not logged in" instead of JSON and crashing the intervention
-  // judge. We drop --bare and rely on --setting-sources user + --tools to keep
-  // the call narrow; parseStreamJson only consumes assistant/result events so
-  // non-bare init lines are ignored.
   // lean-lsp is default-ON: merge the lean read/query tools into the allow-list
   // (so the preamble permits them) unless the caller opts out with leanLsp:false.
   const useLean = input.leanLsp !== false;
@@ -228,6 +244,7 @@ export async function runClaude(input: ClaudeRunInput): Promise<string> {
   // positional. A large F-stage prompt (~70k chars) exceeds the Windows
   // CreateProcess command-line limit (~32k) and the spawn fails silently;
   // stdin has no such limit and works identically on Linux.
+  const auth = resolveProviderAuth("anthropic");
   const args = [
     "-p",
     "--model",
@@ -235,8 +252,7 @@ export async function runClaude(input: ClaudeRunInput): Promise<string> {
     "--output-format",
     "stream-json",
     "--verbose",
-    "--setting-sources",
-    "user",
+    ...claudeAuthArgs(auth.mode),
     "--disable-slash-commands",
     "--tools",
     allowedTools.join(","),
@@ -275,7 +291,8 @@ export async function runClaude(input: ClaudeRunInput): Promise<string> {
 
   const result = await spawnWithInactivityTimeout("claude", args, {
     cwd: input.cwd,
-    env: process.env,
+    // Carries ANTHROPIC_API_KEY in api mode; identical to process.env otherwise.
+    env: workerEnv(),
     inactivityTimeoutMs: input.inactivityTimeoutMs ?? 20 * 60 * 1000,
     input: input.prompt,
   });
@@ -294,10 +311,12 @@ export async function runClaude(input: ClaudeRunInput): Promise<string> {
       parsedText: "",
     };
     const reason = killed ?? `exit ${result.exitCode}`;
+    // Redact BEFORE slicing: in api mode the key is in the child's env, and a CLI
+    // that echoes a rejected credential would otherwise persist it to the run log.
     throw new ClaudeRunError(
-      `claude failed: ${reason}. stdout-tail=${result.stdout.trim().slice(-300)} stderr-tail=${result.stderr.trim().slice(-300)}`,
-      result.stdout,
-      result.stderr,
+      `claude failed: ${reason}. stdout-tail=${redactSecrets(result.stdout.trim()).slice(-300)} stderr-tail=${redactSecrets(result.stderr.trim()).slice(-300)}`,
+      redactSecrets(result.stdout),
+      redactSecrets(result.stderr),
     );
   }
   if (input.onResolvedModel) {
