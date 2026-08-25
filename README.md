@@ -45,7 +45,8 @@ Step 3 needs Node ≥ 20.20.2 and is worth doing before you read any Lean source
 the library is large, and `npm run search` is the intended entry point for
 locating a definition, lemma, or module. Everything above works offline from a
 fresh clone — there are no API keys, no sibling checkouts, and no network
-dependencies beyond Mathlib's cache.
+dependencies beyond Mathlib's cache. (Running the theorem-generation pipeline is
+the one part that needs model access — see below.)
 
 Then, depending on what you came for:
 
@@ -56,6 +57,26 @@ Then, depending on what you came for:
 | Browse a module's API | [`doc/API.md`](doc/API.md), section `## <n>. <path>` |
 | Contribute a declaration | Write the docstring — see [Documentation](#documentation) |
 | Run the theorem-generation pipeline | [`CausalSmith/doc/SETUP.md`](CausalSmith/doc/SETUP.md) |
+
+### Model access for the pipeline
+
+The library and the search tooling need no credentials. The `CausalSmith
+research` pipeline does — it drives the `claude` and `codex` CLIs — and you
+choose how those calls are paid for:
+
+- **Subscription (default).** Sign the two CLIs in (`claude`, then `codex
+  login`) and runs spend those logins. Nothing to configure.
+- **API key.** Set `"authMode": "api"` in `CausalSmith/tools/config/local.json`
+  (gitignored; copy `local.example.json`) and supply `anthropicApiKey` /
+  `openaiApiKey` — inline, or as `anthropicApiKeyFile` / `openaiApiKeyFile`
+  paths to files outside the repo. The `ANTHROPIC_API_KEY` / `OPENAI_API_KEY`
+  environment variables override the file.
+
+`anthropicAuth` and `openaiAuth` set the mode per provider, so running the
+claude workers on an API key while codex stays on its subscription is a
+supported mix. Selecting `api` without a key aborts the run rather than quietly
+falling back to a subscription, and each run prints which path it resolved.
+Full reference: [`CausalSmith/doc/SETUP.md`](CausalSmith/doc/SETUP.md).
 
 ## Finding things in the library
 
