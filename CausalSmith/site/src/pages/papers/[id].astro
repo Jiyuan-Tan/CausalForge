@@ -2,10 +2,13 @@
 import { loadBundles, type Bundle } from "../../lib/bundles.js";
 import { bundleRoots, GITHUB_REPO, SERIES_NAME, SERIES_TAGLINE, sourceRef } from "../../lib/config.js";
 import SeoHead from "../../components/SeoHead.astro";
+import PaperComments from "../../components/PaperComments.astro";
 import { renderTexCompact, renderLabel } from "../../lib/docmd.js";
 import { renderMath } from "../../lib/paperMath.js";
+import discussionNumbers from "../../lib/comments/discussions.json";
 import "../../styles/series.css";
 import "../../styles/paper.css";
+import "../../styles/comments.css";
 
 export async function getStaticPaths() {
   const bundles = await loadBundles(bundleRoots());
@@ -47,6 +50,17 @@ const paperData = {
   snippets: bundle.snippets,
   leanPage: bundle.paperLib ? `${base}/papers/${bundle.id}/formalization` : null,
   leanAnchors,
+  // Reader-commentary config. `commentsWorker` is the feature flag: unset (the
+  // CI/dev default) means the controller returns before touching the DOM or the
+  // network, and the page is exactly what it was before commenting existed.
+  paperId: bundle.id,
+  revision: bundle.commit,
+  commentsWorker: import.meta.env.PUBLIC_COMMENTS_WORKER ?? "",
+  // The paper's pre-provisioned discussion number (from discussions.json, baked
+  // at build). null → not provisioned: the page reads empty and shows the
+  // "commenting isn't open" state, never creating a thread from a visitor.
+  discussionNumber:
+    (discussionNumbers as Record<string, number>)[bundle.id] ?? null,
 };
 
 // Formal-layer panel: objects already presented in the paper (a formal block or an inline
@@ -101,7 +115,7 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
         {bundle.paperLib && <> · <a href={`${base}/papers/${bundle.id}/formalization`}>Lean code</a></>}
       </div>
       <h1>{bundle.meta.title}</h1>
-      <div set:html={renderedBody} />
+      <div id="paper-body" set:html={renderedBody} />
 
       {bundle.formalLayer && bundle.formalLayer.groups.length > 0 && (
         <aside class="formal-layer" aria-label="Formal layer">
@@ -143,6 +157,8 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
           </details>
         </aside>
       )}
+
+      <PaperComments />
     </article>
 
     <div class="drawer-scrim" id="drawer-scrim"></div>
@@ -158,12 +174,21 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
     <script type="application/json" id="paper-data" set:html={JSON.stringify(paperData)} />
     <script>
       import { initDrawer } from "../../scripts/drawer.js";
+      import { initComments } from "../../scripts/comments.js";
       import { katexOptions } from "../../lib/katexConfig.js";
       // Wire the drawer FIRST, and never behind a top-level `import katex` — a
       // failed katex load (e.g. a stale Vite optimize-deps chunk 504ing in dev)
       // would otherwise abort this whole module before initDrawer() runs, leaving
       // every formal block un-clickable. katex is loaded lazily below instead.
       initDrawer();
+      // Reader commentary — no-ops unless PUBLIC_COMMENTS_WORKER is set. Runs
+      // after the drawer so a comments failure can never cost the Lean layer,
+      // and after parsing so the sentence segmenter sees the whole body.
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", () => initComments());
+      } else {
+        initComments();
+      }
       // #<objId> deep link (e.g. from the Lean page's "in the paper" badge):
       // scroll to and flash the matching formal block
       {

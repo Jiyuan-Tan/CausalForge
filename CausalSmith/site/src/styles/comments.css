@@ -1,0 +1,676 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Paper-page margin comments.
+
+   Ported from the approved interaction demo onto the site's design tokens:
+   the parchment/cardinal world, Charter serif, the verified green and the
+   amber `--axiom` family standing in for the demo's "problem" hue. Focus rings
+   and the reduced-motion rule come from tokens.css and are not repeated here.
+
+   Layout: the whole UI lives inside `article.paper`, which becomes the
+   positioning context. Above --cs-wide the rail floats in the right margin and
+   its cards are absolutely positioned next to their sentences; below it the
+   rail is an ordinary list under the paper and each card shows its quote.
+   ───────────────────────────────────────────────────────────────────────── */
+
+@import "./tokens.css";
+@import "./fonts.css";
+
+article.paper {
+  position: relative;
+}
+
+.cs-comments[hidden] {
+  display: none;
+}
+
+.cs-comments {
+  --cs-problem: var(--axiom);
+  --cs-problem-wash: var(--axiom-wash);
+  --cs-card: #ffffff;
+  font-family: Charter, Georgia, "Times New Roman", serif;
+}
+
+.cs-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ── Sentence highlights ─────────────────────────────────────────────────── */
+
+.cs-s {
+  border-radius: 2px;
+  transition: background 0.15s ease;
+}
+/* Each state also publishes its wash and rule colour as custom properties, so
+   the math rules further down can mirror it without repeating the palette. */
+.cs-hl-none {
+  --cs-wash: var(--lean-wash);
+  --cs-line: var(--lean-line);
+  background: var(--lean-wash);
+  box-shadow: inset 0 -2px 0 var(--lean-line);
+  cursor: pointer;
+}
+.cs-hl-verified {
+  --cs-wash: var(--verified-wash);
+  --cs-line: var(--verified);
+  background: var(--verified-wash);
+  box-shadow: inset 0 -2px 0 var(--verified);
+  cursor: pointer;
+}
+.cs-hl-problem {
+  --cs-wash: var(--axiom-wash);
+  --cs-line: var(--axiom);
+  background: var(--axiom-wash);
+  box-shadow: inset 0 -2px 0 var(--axiom);
+  cursor: pointer;
+}
+/* Drifted: the quote moved, so the highlight loosens to a dashed underline. */
+.cs-hl-drift {
+  --cs-wash: transparent;
+  --cs-line: var(--ink-ghost);
+  background: transparent;
+  box-shadow: none;
+  border-bottom: 2px dashed var(--ink-ghost);
+}
+.cs-hl-drift.cs-hl-verified {
+  --cs-wash: #f0f5f1;
+  --cs-line: var(--verified);
+  background: #f0f5f1;
+  border-bottom-color: var(--verified);
+}
+.cs-hl-drift.cs-hl-none {
+  --cs-line: var(--lean-line);
+  border-bottom-color: var(--lean-line);
+}
+.cs-hl-drift.cs-hl-problem {
+  --cs-line: var(--axiom);
+  border-bottom-color: var(--axiom);
+}
+.cs-s.cs-pending {
+  outline: 2px solid var(--accent-bright);
+  outline-offset: 1px;
+  background: var(--accent-wash);
+}
+.cs-s.cs-linked {
+  outline: 2px solid var(--lean);
+  outline-offset: 1px;
+}
+
+/* ── Math inside a highlighted sentence ──────────────────────────────────────
+   A formula needs its OWN highlight surface, even though it already sits inside
+   the sentence span.
+
+   `.katex-display` is a block box, and pandoc puts it inside the paragraph that
+   discusses it — so the sentence span becomes an inline box wrapped around a
+   block child, and an inline box paints its background only over its own inline
+   fragments, never behind a block-level child. The prose either side lit up and
+   the equation stayed bare. A tall inline formula (a fraction) has the same
+   problem in miniature: it overflows the inline background box vertically.
+
+   Every rule below is keyed off the classes the sentence span already carries,
+   so hover / pending / drifted stay in lockstep with the prose, and every
+   declaration is paint-only (background, outline, border-bottom) — no display,
+   position, margin, or width — so a centred display equation is untouched. */
+.cs-s > .katex,
+.cs-s > .katex-display,
+.cs-s > .math {
+  border-radius: 2px;
+  transition: background 0.15s ease;
+}
+.cs-s[class*="cs-hl-"] > .katex,
+.cs-s[class*="cs-hl-"] > .katex-display,
+.cs-s[class*="cs-hl-"] > .math {
+  background: var(--cs-wash);
+}
+/* Drift reads as the same dashed rule the prose gets, not as a wash. */
+.cs-s.cs-hl-drift > .katex,
+.cs-s.cs-hl-drift > .katex-display,
+.cs-s.cs-hl-drift > .math {
+  border-bottom: 2px dashed var(--cs-line);
+}
+.cs-s.cs-pending > .katex,
+.cs-s.cs-pending > .katex-display,
+.cs-s.cs-pending > .math {
+  outline: 2px solid var(--accent-bright);
+  outline-offset: 1px;
+  background: var(--accent-wash);
+}
+.cs-s.cs-linked > .katex,
+.cs-s.cs-linked > .katex-display,
+.cs-s.cs-linked > .math {
+  outline: 2px solid var(--lean);
+  outline-offset: 1px;
+}
+
+/* ── Margin rail ─────────────────────────────────────────────────────────── */
+
+.cs-rail {
+  position: relative;
+  margin-top: var(--sp-8);
+  font-size: var(--fs-sm);
+}
+.cs-rail-head {
+  font-family: var(--code-font);
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: var(--sp-1);
+  margin-bottom: var(--sp-3);
+}
+.cs-rail-count {
+  color: var(--ink-faint);
+  text-transform: none;
+  letter-spacing: 0.03em;
+}
+.cs-rail-thread {
+  float: right;
+  color: var(--accent);
+  text-transform: none;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  border-bottom: none;
+}
+.cs-rail-thread[hidden] {
+  display: none;
+}
+.cs-rail-empty {
+  font-size: var(--fs-sm);
+  color: var(--ink-ghost);
+  font-style: italic;
+}
+.cs-rail-empty[hidden] {
+  display: none;
+}
+.cs-group-head {
+  font-family: var(--code-font);
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: var(--sp-4) 0 var(--sp-2);
+}
+
+.cs-card {
+  background: var(--cs-card);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-card);
+  padding: 0.6rem 0.8rem 0.65rem;
+  font-size: var(--fs-sm);
+  margin-bottom: var(--sp-3);
+  cursor: pointer;
+  transition: box-shadow 0.15s ease;
+}
+.cs-card:hover,
+.cs-card.cs-linked {
+  box-shadow: 0 0 0 2px var(--lean);
+}
+.cs-byline {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-1);
+}
+.cs-name {
+  font-weight: 700;
+  font-size: var(--fs-xs);
+}
+.cs-when,
+.cs-vlbl {
+  font-family: var(--code-font);
+  font-size: var(--fs-2xs);
+  color: var(--ink-ghost);
+}
+.cs-av {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent-muted);
+  color: #ffffff;
+  font-family: var(--code-font);
+  font-size: 0.58rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  object-fit: cover;
+}
+/* Delete affordance: reads as byline metadata until hovered, then as an action.
+   Only rendered on the signed-in visitor's own comments — and GitHub, not this
+   CSS, is what refuses a delete from anyone else. */
+.cs-del-wrap {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.cs-del-wrap button {
+  font-family: var(--code-font);
+  font-size: var(--fs-2xs);
+  background: none;
+  border: none;
+  padding: 0 0.15rem;
+  cursor: pointer;
+  color: var(--ink-ghost);
+}
+.cs-del-wrap button:hover:not(:disabled) {
+  color: var(--sorry);
+  text-decoration: underline;
+}
+.cs-del-wrap button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.cs-del-ask {
+  font-family: var(--code-font);
+  font-size: var(--fs-2xs);
+  color: var(--ink-faint);
+}
+.cs-del-wrap .cs-del-yes {
+  color: var(--sorry);
+  font-weight: 700;
+}
+.cs-tagb {
+  font-family: var(--code-font);
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+  border-radius: var(--r-badge);
+  padding: 0.1rem 0.42rem;
+}
+.cs-tagb.cs-t-verified {
+  background: var(--verified-wash);
+  color: var(--verified);
+}
+.cs-tagb.cs-t-problem {
+  background: var(--axiom-wash);
+  color: var(--axiom);
+}
+/* Comment text is PLAIN TEXT (no markdown in v1) — newlines survive here. */
+.cs-body {
+  color: var(--ink);
+  line-height: 1.5;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.cs-quote {
+  display: block;
+  font-size: var(--fs-2xs);
+  color: var(--ink-faint);
+  border-left: 2px solid var(--rule);
+  padding-left: var(--sp-2);
+  margin: 0.35rem 0 0.1rem;
+  font-style: italic;
+}
+.cs-drift-note {
+  margin-top: 0.45rem;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  border-radius: 4px;
+  padding: 0.3rem 0.5rem;
+  background: var(--parchment);
+  color: var(--ink-soft);
+  border: 1px dashed var(--rule);
+}
+.cs-drift-note.cs-strong {
+  background: var(--axiom-wash);
+  border-color: var(--axiom);
+  color: #7c3a06;
+}
+
+/* ── Reply threads ───────────────────────────────────────────────────────────
+   GitHub Discussions threads one level deep, and so does this: a comment and
+   its replies. Collapsed by default so the rail stays scannable — a card only
+   grows when the reader asks it to. */
+
+.cs-footer {
+  margin-top: 0.45rem;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.cs-reply-toggle {
+  font-family: var(--code-font);
+  font-size: var(--fs-2xs);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--lean);
+}
+.cs-reply-toggle:hover {
+  text-decoration: underline;
+}
+.cs-reply-toggle.cs-ghost {
+  color: var(--ink-ghost);
+}
+.cs-reply-toggle.cs-ghost:hover {
+  color: var(--lean);
+}
+.cs-reply-toggle[aria-expanded="true"]::before {
+  content: "▾ ";
+}
+.cs-reply-toggle[aria-expanded="false"]::before {
+  content: "▸ ";
+}
+
+.cs-thread:not(:empty) {
+  margin-top: 0.5rem;
+  padding-left: 0.6rem;
+  border-left: 2px solid var(--rule);
+}
+.cs-reply {
+  padding: 0.35rem 0 0.4rem;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.cs-reply:last-of-type {
+  border-bottom: none;
+}
+.cs-reply-byline {
+  margin-bottom: 0.15rem;
+}
+.cs-av-sm {
+  width: 15px;
+  height: 15px;
+  font-size: 0.52rem;
+}
+.cs-reply-body {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.cs-reply-box {
+  padding-top: 0.4rem;
+}
+.cs-reply-note {
+  font-size: var(--fs-2xs);
+  color: var(--ink-faint);
+  margin-bottom: 0.3rem;
+}
+.cs-reply-text {
+  width: 100%;
+  resize: vertical;
+  font-family: inherit;
+  font-size: var(--fs-xs);
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 0.35rem 0.5rem;
+}
+.cs-reply-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  margin-top: 0.3rem;
+}
+.cs-reply-actions button {
+  font-family: inherit;
+  font-size: var(--fs-2xs);
+  border-radius: 4px;
+  padding: 0.2rem 0.6rem;
+  cursor: pointer;
+}
+.cs-reply-box .cs-signin {
+  font-family: inherit;
+  font-size: var(--fs-2xs);
+  border-radius: 4px;
+  padding: 0.2rem 0.6rem;
+  cursor: pointer;
+}
+
+/* ── Archived comments (article foot) ────────────────────────────────────── */
+
+.cs-archived {
+  margin-top: var(--sp-8);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-card);
+  background: var(--parchment);
+  font-size: var(--fs-sm);
+}
+.cs-archived[hidden] {
+  display: none;
+}
+.cs-archived > summary {
+  cursor: pointer;
+  padding: 0.6rem 1rem;
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+.cs-abody {
+  padding: 0 1rem 0.8rem;
+}
+.cs-acard {
+  background: var(--cs-card);
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--r-card);
+  padding: 0.6rem 0.8rem;
+  margin-bottom: var(--sp-2);
+}
+.cs-oq {
+  font-size: var(--fs-xs);
+  color: var(--ink-faint);
+  font-style: italic;
+  border-left: 2px solid var(--rule);
+  padding-left: var(--sp-2);
+  margin: 0.3rem 0;
+}
+.cs-anote {
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  margin-top: 0.3rem;
+}
+
+/* ── Floating selection button ───────────────────────────────────────────── */
+
+.cs-selbtn {
+  position: absolute;
+  z-index: 30;
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  border-radius: var(--r-pill);
+  padding: 0.32rem 0.9rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+.cs-selbtn[hidden] {
+  display: none;
+}
+.cs-selbtn::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: 100%;
+  border: 5px solid transparent;
+  border-top-color: var(--ink);
+}
+
+/* ── Composer popover ────────────────────────────────────────────────────── */
+
+.cs-composer {
+  position: absolute;
+  z-index: 35;
+  width: 23rem;
+  max-width: calc(100vw - 2rem);
+  background: var(--cs-card);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-frame);
+  box-shadow: 0 8px 28px rgba(26, 26, 26, 0.18);
+  padding: 0.9rem 1rem 1rem;
+  font-size: var(--fs-sm);
+}
+.cs-composer[hidden] {
+  display: none;
+}
+.cs-anchor-line {
+  font-size: var(--fs-xs);
+  color: var(--ink-faint);
+  margin: 0 0 var(--sp-2);
+  line-height: 1.45;
+}
+.cs-anchor-line em {
+  color: var(--ink-soft);
+}
+.cs-snap {
+  color: var(--ink-ghost);
+  font-style: normal;
+}
+.cs-seg {
+  display: flex;
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: var(--sp-2);
+}
+.cs-seg button {
+  flex: 1;
+  font-family: inherit;
+  font-size: var(--fs-xs);
+  padding: 0.35rem 0.2rem;
+  border: none;
+  border-right: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink-soft);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cs-seg button:last-child {
+  border-right: none;
+}
+.cs-seg button.is-on.cs-t-none {
+  background: var(--lean-wash);
+  color: var(--lean);
+  font-weight: 700;
+}
+.cs-seg button.is-on.cs-t-verified {
+  background: var(--verified-wash);
+  color: var(--verified);
+  font-weight: 700;
+}
+.cs-seg button.is-on.cs-t-problem {
+  background: var(--axiom-wash);
+  color: var(--axiom);
+  font-weight: 700;
+}
+.cs-tagnote {
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+  margin: -0.1rem 0 0.55rem;
+  min-height: 1em;
+}
+.cs-composer textarea {
+  width: 100%;
+  min-height: 4.2rem;
+  resize: vertical;
+  font-family: inherit;
+  font-size: var(--fs-body-s);
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 0.5rem 0.65rem;
+}
+.cs-counter,
+.cs-status {
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+  margin: 0.3rem 0 0;
+  min-height: 0.9em;
+}
+.cs-status:not(:empty) {
+  color: var(--accent);
+}
+.cs-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+  flex-wrap: wrap;
+}
+.cs-grow {
+  flex: 1;
+}
+.cs-idchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: var(--fs-2xs);
+  color: var(--ink-soft);
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--r-pill);
+  background: var(--parchment);
+  padding: 0.15rem 0.6rem 0.15rem 0.2rem;
+}
+.cs-idchip[hidden] {
+  display: none;
+}
+.cs-foot button {
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  border-radius: 4px;
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+}
+.cs-signin {
+  background: var(--lean-wash);
+  border: 1px solid var(--lean-line);
+  color: var(--lean);
+  font-weight: 700;
+}
+.cs-signin[hidden] {
+  display: none;
+}
+.cs-cancel {
+  background: none;
+  border: 1px solid var(--rule);
+  color: var(--ink-soft);
+}
+.cs-post {
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: var(--paper);
+  font-weight: 700;
+}
+.cs-post:hover:not(:disabled) {
+  background: var(--accent-deep);
+}
+.cs-post:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ── Wide viewports: the rail floats in the right margin ─────────────────── */
+
+@media (min-width: 1300px) {
+  .cs-rail {
+    position: absolute;
+    top: var(--sp-12);
+    left: 100%;
+    margin-top: 0;
+    margin-left: var(--sp-4);
+    /* Never wider than the free space beside the centred 760px column, so the
+       rail can never push a horizontal scrollbar onto the page. */
+    width: min(19rem, calc(50vw - 380px - 2.5rem));
+  }
+  .cs-rail-cards .cs-card {
+    position: absolute;
+    width: 100%;
+    margin-bottom: 0;
+  }
+  /* Beside the paper the highlight IS the quote, so the card drops it; in the
+     narrow list mode below there is no highlight to point at, so it stays. */
+  .cs-quote {
+    display: none;
+  }
+}

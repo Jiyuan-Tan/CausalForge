@@ -281,7 +281,13 @@ export function initDrawer(): void {
 
   for (const block of document.querySelectorAll("[data-objid]")) {
     const objId = (block as HTMLElement).dataset.objid!;
-    block.addEventListener("click", () => open(objId, block));
+    block.addEventListener("click", () => {
+      // A click that ends a text selection (e.g. selecting a passage to leave
+      // a margin comment on) must not open the drawer.
+      const sel = window.getSelection();
+      if (sel && !sel.isCollapsed) return;
+      open(objId, block);
+    });
     block.addEventListener("keydown", (ev) => {
       if ((ev as KeyboardEvent).key === "Enter") open(objId, block);
     });
